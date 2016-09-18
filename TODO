@@ -1,0 +1,120 @@
+
+TODO list:
+==========
+
+- create ../configure --prefix / make / make install scripts
+- implement chdl namespaces chdl::core, chdl::sim, chdl::stl
+- toVerilog() renaming module arguments
+- investigate using std::bind and variadic functions for device creation
+- add mutex and fifo primitives for TML modelling
+- move memory functions into classes to support onetime initialization: ch_mem<N, W, AsyncR> mem(..); x = mem.read(addr); mem.write(en, addr, val);
+- support ch_device_interface<type> for user to derive and implement emit()
+- enforce type safety in CHDL for explicit size casting
+- experiment if/else using lambdas ch_when(a > 1, []{...}).when(b > 1, []{...}).otherwise([]{...})
+- revisit the next() operator concept to make reg implicit
+- check out usefull AVX shuffle api to support in CHDL
+- CHDL conditionals: ch_when(?, :=).when(?, :=).otherwise(:=)
+- global Reset device->reset() => manually reset all nodes in device to zero.
+- FSM designs integration
+- should generate high-level verilog
+- consider using "typedef ch_bitv<1> ch_logic" to simplify code and reduce compiler issues
+- refactor ch_tristate class => move to function
+- implement unit test framework like in MyHDL/chisel
+- fix hierarchy support
+- implement netlist export/import
+- implement binary export/import
+- implement AAL toolchain
+- add direct initialization buffer support for ch_mem and ch_rom
+- extend operators argument to support different bit size
+- refactor ch_llrom
+- add file initialization support to ch_llmem
+- implement __ch_union and __ch_struct as part of aggregate.h
+- implement ch_int and ch_unit classes
+- implement plugin interface for attaching other simulators
+- implement default simulator loging
+- add source location information to user objects for debugging
+- implement module functions generation and reuse
+- implement new analysis api
+- implement new netlist export/import
+- implement GCC "#pragma chdl module" to convert native functions to CHDL module
+- redesign schematic export to use new clock design
+- accelerate simulation using a virtual machine
+- support for high-level custom compoment plugins (with query cycle and gate count)
+- support for persistence
+
+Completed:
+==========
+
+- refactor ch_reg class => move to function
+- refactor ch_wire class => all objects operate as wires before first assignment
+- move ch_rom into llmem.h
+- create chdl.h header file
+- adding native support for integers operations
+- add CHDL_ to all header files #define declarations
+- implement chdl_internal to cleanup api namespace
+- keep all implementation specific headers private
+- append ch_ to CHDL public types and functions
+- runtime assertion support for testing
+- explicit clock implementation
+- explicit clock simulation 
+- redesign concatenation support to use the comma operation
+- add special assign operator '<=' for non-blocking assignments
+- implement signal class
+- implement efficient proxy classes for concatenate and slice operators
+- headers cleanup/refactoring
+- implement true assignment operator
+- generic clock signal generation
+- register enable/reset control
+- optimize global states management (static objects => scoped objects)
+- fix signals update during simulation (should only optimize read-only literals)
+- redesign optimizer + remove all redundant loops
+- redesign optimizer + optimize dead_code_removal calls
+- optimize all loop to use auto& construct
+- use C++ 11 std containers emplace api to reduce object construction overhead
+- automic device instantiation
+- new vcd simulator class
+- implement ch_select
+- implement ch_case
+- update llrom
+- update llram
+- fix memory implementation
+- implemtned latch support
+- replace abort() with runtime assertion macro
+- implement ch_pushcd, ch_popcd api (check out the opengl matrix api)
+- implement new verilog generator
+
+notes:
+======
+
+// infering multiple cycles operations
+y = ch_pipeline(x, 2) = ch_reg(ch_reg(x));
+z = ch_pipeline(x * y, 2); => z = ch_reg(mult1(x,y,ch_reg(mult0(x,y)));
+
+// Detecting leaks using valgrind
+valgrind --leak-check=yes <app> <args...>
+
+// Detecting Cycles in CHDL?
+// cycles only occurs when combinatorial nets eval() function is entered a second time without having exited.
+bool nandimpl::eval(cycle_t t) { 
+  if (m_ctime != t) {    
+	if (m_ctime > t) {
+		CHDL_ABBORT("found cycle");
+	}
+    m_ctime = t + 1;
+    m_cval = !(m_srcs[0].eval(t) && m_srcs[1].eval(t));
+	m_ctime  = t;
+  }
+  return m_cval;
+}
+
+//
+// alternative CHDL programming model
+// enable realtime debugging in behavioral mode
+//
+template <unsigned N>
+void Counter(ch_bitv<N>& out) {
+  ontick([&]() {
+    out = out + 0x1;
+  });
+}
+
