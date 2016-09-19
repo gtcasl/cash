@@ -43,14 +43,6 @@ aluimpl::~aluimpl() {
   //--
 }
 
-bool aluimpl::ready() const {
-  return true;
-}
-
-bool aluimpl::valid() const {
-  return true;
-}
-
 const bitvector& aluimpl::eval(ch_cycle t) {  
   if (m_ctime != t) {  
     m_ctime = t;

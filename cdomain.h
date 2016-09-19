@@ -13,11 +13,11 @@ enum EDGE_DIR {
 
 class clock_event {
 public:  
-  clock_event(const ch_node& node, EDGE_DIR edgedir);
+  clock_event(const ch_node& signal, EDGE_DIR edgedir);
   ~clock_event();
   
   const ch_node& get_signal() const {
-    return m_node;
+    return m_signal;
   }
   
   EDGE_DIR get_edgedir() const {
@@ -25,11 +25,11 @@ public:
   }
   
   bool operator==(const ch_node& n) const {
-    return (m_node.get_id() == n.get_id());
+    return (m_signal.get_id() == n.get_id());
   }
   
   bool operator==(const clock_event& e) const {
-    return (m_node.get_id() == e.get_signal().get_id()) && 
+    return (m_signal.get_id() == e.get_signal().get_id()) && 
            (m_edgedir == e.get_edgedir());
   }
   
@@ -38,7 +38,7 @@ public:
   void print_vl(std::ostream& out) const;
   
 protected:
-  ch_node  m_node;
+  ch_node  m_signal;
   EDGE_DIR m_edgedir;
   bool     m_cval; 
 };

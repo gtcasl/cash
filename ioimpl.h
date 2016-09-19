@@ -44,8 +44,6 @@ public:
   outputimpl(const ch_node& src, const std::string name);
   ~outputimpl() {}
   
-  bool ready() const override;
-  bool valid() const override;  
   const bitvector& eval(ch_cycle t);
 };
 
@@ -53,6 +51,9 @@ class iobridge : public refcounted {
 public:
   iobridge() {}
   ~iobridge() {}
+  
+  virtual bool ready() const = 0;
+  virtual bool valid() const = 0;  
 
   virtual void detach() = 0;
   virtual const bitvector& eval(ch_cycle t) = 0;
@@ -62,8 +63,11 @@ class ibridge : public iobridge {
 public:
   explicit ibridge(busimpl* impl) : m_impl(impl) {}
   ~ibridge() {}
+  
+  bool ready() const override;
+  bool valid() const override;
 
-  void detach();
+  void detach() override;
   const bitvector& eval(ch_cycle t) override;
 
 private:
@@ -76,8 +80,11 @@ public:
   explicit obridge(ioimpl* impl) : m_impl(impl) {}
   ~obridge() {}
   
-  void detach();
-  const bitvector& eval(ch_cycle t);
+  bool ready() const override;
+  bool valid() const override;
+  
+  void detach() override;
+  const bitvector& eval(ch_cycle t) override;
   
 private:
 

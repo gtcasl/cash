@@ -1,25 +1,19 @@
 #pragma once
 
 #include "nodeimpl.h"
-#include "arithm.h"
 
 namespace chdl_internal {
 
-class aluimpl : public nodeimpl {
+class selectimpl : public nodeimpl {
 public:
-  aluimpl(ch_operator op, const ch_node& a, const ch_node& b);
-  ~aluimpl();
-  
-  ch_operator get_op() const {
-    return m_op;
-  }  
+  selectimpl(const ch_node& test, const ch_node& a, const ch_node& b);
+  virtual ~selectimpl() {}
 
   const bitvector& eval(ch_cycle t) override;  
   void print(std::ostream& out) const override;
   void print_vl(std::ostream& out) const override;
   
-protected:
-  ch_operator m_op;
+private:
   ch_cycle m_ctime;
 };
 

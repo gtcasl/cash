@@ -20,22 +20,14 @@ litimpl::litimpl(context* ctx, uint32_t size, const std::initializer_list<uint32
   }
 }
 
-bool litimpl::ready() const {
-  return true;
-}
-
-bool litimpl::valid() const {
-  return true;
-}
-
 const bitvector& litimpl::eval(ch_cycle) { 
   return m_value; 
 }
 
 void litimpl::print(ostream& out) const {
-  //out << "  lit" << m_value << ' ' << m_id << endl;
+  TODO();
 }
 
 void litimpl::print_vl(ostream& out) const {
-  //out << "  assign __x" << m_id << " = " << (m_value ? "1'b1" : "1'b0") << ';' << endl;
+  TODO();
 }

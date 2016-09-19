@@ -63,6 +63,11 @@ public:
     return value;
   }
   
+  operator busimpl*() const { 
+    this->ensureInitialized();
+    return m_impl; 
+  }
+  
 protected:
   
   void ensureInitialized() const {
@@ -70,21 +75,11 @@ protected:
       m_impl = new busimpl(N);
   }
   
-  template <unsigned N_> 
-  friend busimpl* get_impl(const ch_bus<N_>& bus);
-  
   friend class context;
   friend class ch_simulator;
   
   mutable busimpl* m_impl;
 };
-
-template <unsigned N> 
-busimpl* get_impl(const ch_bus<N>& bus) {
-  bus.ensureInitialized();
-  return bus.m_impl;
-}
-
 
 class ch_signal : public ch_bus<1> {
 public:  

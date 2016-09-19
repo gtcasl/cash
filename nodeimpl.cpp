@@ -35,6 +35,22 @@ void nodeimpl::replace_ref(nodeimpl* impl) {
   m_refs.clear();
 }
 
+bool nodeimpl::ready() const {
+  for (auto& src : m_srcs) {
+    if (!src.ready())
+      return false;
+  }
+  return true;
+}
+
+bool nodeimpl::valid() const {
+  for (auto& src : m_srcs) {
+    if (!src.valid())
+      return false;
+  }
+  return true;
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 undefimpl::undefimpl(context* ctx, uint32_t size) : nodeimpl(ctx, size, true) {
@@ -47,14 +63,6 @@ undefimpl::undefimpl(context* ctx, uint32_t size) : nodeimpl(ctx, size, true) {
 
 undefimpl::~undefimpl() {
   assert(m_refs.empty());
-}
-
-bool undefimpl::ready() const {
-  return true;  
-}
-
-bool undefimpl::valid() const {
-  return true;
 }
 
 const bitvector& undefimpl::eval(ch_cycle t) {
@@ -73,16 +81,25 @@ void undefimpl::print_vl(std::ostream& out) const {
 ///////////////////////////////////////////////////////////////////////////////
 
 ch_node::ch_node(const ch_node& rhs) : m_impl(nullptr) {  
-  this->assign(rhs.m_impl, true);
+  this->assign(rhs.m_impl);
+}
+
+ch_node::ch_node(ch_node&& rhs) : m_impl(nullptr) {  
+  this->assign(rhs.m_impl, false);
+  rhs.clear();
 }
 
 ch_node::ch_node(const ch_node& rhs, uint32_t size) : m_impl(nullptr) {
   rhs.ensureInitialized(ctx_curr(), size);  
-  this->assign(rhs.m_impl, true);
+  this->assign(rhs.m_impl);
+}
+
+ch_node::ch_node(nodeimpl* impl) : m_impl(nullptr) {
+  this->assign(impl);
 }
 
 ch_node::ch_node(const std::initializer_list<uint32_t>& value, uint32_t size) : m_impl(nullptr) {
-  this->assign(new litimpl(ctx_curr(), size, value), true);
+  this->assign(new litimpl(ctx_curr(), size, value));
 }
 
 ch_node::~ch_node() {
@@ -102,9 +119,13 @@ void ch_node::clear() {
 }
 
 ch_node& ch_node::operator=(const ch_node& rhs) {
-  assert(rhs.m_impl);
-  if (m_impl != rhs.m_impl)
-    this->assign(rhs.m_impl, false);
+  this->assign(rhs.m_impl);
+  return *this;
+}
+
+ch_node& ch_node::operator=(ch_node&& rhs) {
+  this->assign(rhs.m_impl, false);
+  rhs.clear();
   return *this;
 }
 
@@ -143,6 +164,8 @@ void ch_node::ensureInitialized(context* ctx, uint32_t size) const {
 
 void ch_node::assign(nodeimpl* impl, bool replace_all) {
   assert(impl);
+  if (m_impl == impl)
+    return;
   if (m_impl) {
     m_impl->remove_ref(this);
     undefimpl* undef = dynamic_cast<undefimpl*>(m_impl);
@@ -155,8 +178,8 @@ void ch_node::assign(nodeimpl* impl, bool replace_all) {
         if (undef->unreferenced()) {
           --undef->get_ctx()->undefcount;
           delete undef;
-        }
-      }      
+        }  
+      }
     }
   }
   impl->add_ref(this);
@@ -169,7 +192,7 @@ void ch_node::assign(uint32_t size, uint32_t dst_offset, const ch_node& src, uin
   src.ensureInitialized(ctx, src_length);
   if (size == src_length && size == src.get_size()) {
     assert(dst_offset == 0 && src_offset == 0);
-    this->assign(src.m_impl, true);
+    this->assign(src.m_impl);
   } else {
     proxyimpl* proxy = dynamic_cast<proxyimpl*>(m_impl);
     if (proxy) {
@@ -179,7 +202,7 @@ void ch_node::assign(uint32_t size, uint32_t dst_offset, const ch_node& src, uin
       proxyimpl* proxy = new proxyimpl(*this);
       proxy->add_src(dst_offset, src, src_offset, src_length);
       this->clear();
-      this->assign(proxy, true);
+      this->assign(proxy);
     }
   }  
 }

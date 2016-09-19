@@ -25,7 +25,7 @@ public:
 protected:    
   
   template <typename T>
-  ioport_arg(T& arg) : m_node(get_node(arg)) {}
+  ioport_arg(T& arg) : m_node(arg) {}
 
   ch_node& m_node;
   friend class ch_device;
@@ -38,7 +38,7 @@ public:
 protected:
   
   template <typename T>
-  bus_arg(const T& arg) : m_impl(get_impl(arg)) {}
+  bus_arg(const T& arg) : m_impl(arg) {}
 
   busimpl* m_impl;
   friend class ch_device;

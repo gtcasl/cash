@@ -4,6 +4,8 @@
 
 namespace chdl_internal {
 
+ch_node createSelectNode(const ch_node& test, const ch_node& a, const ch_node& b);
+
 template <unsigned N> class select_when_t {
 public:
   ~select_when_t() {
@@ -20,7 +22,7 @@ public:
     auto& values = m_stmts->values;
     while (!values.empty()) {
       auto& stmt = values.top();
-      curr = ch_mux(stmt.first, *pcurr, *stmt.second);
+      curr = ch_bitv<N>(createSelectNode(stmt.first, ch_bitv<N>(*stmt.second), ch_bitv<N>(*pcurr)));
       pcurr = &curr;
       values.pop();
     }
@@ -52,7 +54,7 @@ protected:
 
 template <unsigned N>
 ch_bitv<N> ch_select(const ch_logic& test, const ch_bitbase<N>& True, const ch_bitbase<N>& False) {
-  return ch_mux<N>(test, False, True);
+  return ch_bitv<N>(createSelectNode(test, ch_bitv<N>(True), ch_bitv<N>(False)));
 }
 
 template <unsigned N> 

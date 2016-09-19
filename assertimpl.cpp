@@ -21,5 +21,5 @@ void assertion::eval(ch_cycle t) {
 }
 
 void chdl_internal::ch_assert(const ch_logic& l, const std::string& msg) {
-  ctx_curr()->create_assertion(get_node(l), msg);  
+  ctx_curr()->create_assertion(l, msg);  
 }

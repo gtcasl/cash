@@ -13,13 +13,16 @@ public:
 
   ch_node() : m_impl(nullptr) {}
   ch_node(const ch_node& rhs);
+  ch_node(ch_node&& rhs);
   ch_node(const ch_node& rhs, uint32_t size);
-  explicit ch_node(nodeimpl* impl) : m_impl(impl) {}  
+  explicit ch_node(nodeimpl* impl);
   explicit ch_node(const std::initializer_list<uint32_t>& value, uint32_t size);
 
   virtual ~ch_node();
   
   ch_node& operator=(const ch_node& rhs);
+  
+  ch_node& operator=(ch_node&& rhs);
 
   uint64_t get_id() const;
   
@@ -35,13 +38,15 @@ public:
   
   void assign(uint32_t size, uint32_t dst_offset, const ch_node& src, uint32_t src_offset, uint32_t src_length);
   
-  void assign_priv(const ch_node& rhs);
+  operator nodeimpl*() const { 
+    return m_impl; 
+  }
 
 protected:
 
   void ensureInitialized(context* ctx, uint32_t size) const;
 
-  void assign(nodeimpl* impl, bool replace_all);
+  void assign(nodeimpl* impl, bool replace_all = true);
   
   void clear();
     

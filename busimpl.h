@@ -15,6 +15,10 @@ public:
   
   void bind(busimpl* src);
   
+  bool ready() const;
+  
+  bool valid() const;
+  
   const bitvector& eval(ch_cycle t);
   
   bool get_bit(uint32_t idx) const {
@@ -30,6 +34,10 @@ public:
   }
   
   void get_bindings(std::set<context*>& bindings) const;
+  
+  operator const bitvector&() const { 
+    return m_value; 
+  }
   
 protected:
 
@@ -50,6 +58,7 @@ protected:
   bridges_t m_bridges;
   obridge*  m_obridge;
   bitvector m_value;
+  ch_cycle m_ctime;
 };
 
 }

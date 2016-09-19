@@ -135,22 +135,6 @@ void proxyimpl::add_src(uint32_t dst_offset, const ch_node& src, uint32_t src_of
   }
 }
 
-bool proxyimpl::ready() const {
-  for (auto& src : m_srcs) {
-    if (!src.ready())
-      return false;
-  }
-  return true;
-}
-
-bool proxyimpl::valid() const {
-  for (auto& src : m_srcs) {
-    if (!src.valid())
-      return false;
-  }
-  return true;
-}
-
 const bitvector& proxyimpl::eval(ch_cycle t) {
   if (m_ctime != t) {  
     m_ctime = t;

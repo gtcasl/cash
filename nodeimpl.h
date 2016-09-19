@@ -53,8 +53,12 @@ public:
     return m_value.get_size();
   }
   
-  virtual bool ready() const = 0;
-  virtual bool valid() const = 0;
+  operator const bitvector&() const { 
+    return m_value; 
+  }
+  
+  virtual bool ready() const;
+  virtual bool valid() const;  
   virtual const bitvector& eval(ch_cycle t) = 0;
   
   virtual void print(std::ostream &) const = 0;
@@ -76,10 +80,7 @@ public:
   undefimpl(context* ctx, uint32_t size);
   virtual ~undefimpl();
 
-  bool ready() const override;
-  bool valid() const override;
-  const bitvector& eval(ch_cycle t) override;
-  
+  const bitvector& eval(ch_cycle t) override;  
   void print(std::ostream& out) const override;
   void print_vl(std::ostream& out) const override;
 };

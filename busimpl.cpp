@@ -4,7 +4,10 @@
 using namespace std;
 using namespace chdl_internal;
 
-busimpl::busimpl(uint32_t size) : m_value(size), m_obridge(nullptr) {
+busimpl::busimpl(uint32_t size) 
+  : m_value(size)
+  , m_obridge(nullptr)
+  , m_ctime(~0ull) {
   //--
 }
 
@@ -45,9 +48,23 @@ void busimpl::bind(busimpl* src) {
   this->bind(portid->ctx, portid->idx, src->m_obridge);
 }
 
-const bitvector& busimpl::eval(ch_cycle t) {
+bool busimpl::ready() const {
   if (m_obridge)
-    return m_obridge->eval(t);
+    return m_obridge->ready();  
+  return true;
+}
+
+bool busimpl::valid() const {
+  if (m_obridge)
+    return m_obridge->valid();
+  return true;
+}
+
+const bitvector& busimpl::eval(ch_cycle t) {
+  if (m_obridge && m_ctime != t) {
+    m_ctime = t;
+    m_value = m_obridge->eval(t);
+  }
   return m_value;
 }
 

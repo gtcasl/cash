@@ -26,7 +26,7 @@ public:
   
   ch_bitv(const ch_bitv& v) : m_node(v.m_node, N) {}
   
-  ch_bitv(const ch_bitbase<N>& v) {
+  explicit ch_bitv(const ch_bitbase<N>& v) {
     this->operator =(v);
   }
   
@@ -35,6 +35,14 @@ public:
   ch_bitv(uint32_t value) : m_node({value}, N) {}
   
   ch_bitv(const std::initializer_list<uint32_t>& value) : m_node(value, N) {} 
+  
+  operator const ch_node&() const { 
+    return m_node; 
+  }
+  
+  operator ch_node&() { 
+    return m_node; 
+  }
   
 protected:
   
@@ -57,12 +65,6 @@ protected:
       offset += p.length;
     }
   }
-  
-  template <unsigned N_>
-  friend ch_node& get_node(ch_bitv<N_>& b);
-  
-  template <unsigned N_> 
-  friend const ch_node& get_node(const ch_bitv<N_>& b);
   
   ch_node m_node;
 };
@@ -104,16 +106,6 @@ protected:
 
   using base::m_node;
 };
-
-template <unsigned N> 
-ch_node& get_node(ch_bitv<N>& l) {
-  return l.m_node;
-}
-
-template <unsigned N> 
-const ch_node& get_node(const ch_bitv<N>& l) {
-  return l.m_node;
-}
 
 // concatenation operator
 
@@ -319,12 +311,12 @@ ch_bitv<N> ch_shuffle(const ch_bitbase<N>& in, const std::initializer_list<int>&
 
 template <unsigned N>
 ch_bitv<N> ch_lit(uint32_t value) {
-  TODO();
+  return ch_bitv<N>(value);
 }
 
 template <unsigned N>
-ch_bitv<N> ch_lit(const std::initializer_list<uint32_t>& values) {
-  TODO();
+ch_bitv<N> ch_lit(const std::initializer_list<uint32_t>& value) {
+  return ch_bitv<N>(value);
 }
 
 }

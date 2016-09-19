@@ -70,6 +70,8 @@ public:
     return *this;
   }
   
+  virtual operator ch_node() const  = 0;
+  
 protected:
   
   template <typename T_> 

@@ -8,17 +8,10 @@ namespace chdl_internal {
 
 class regimpl : public tickable, public nodeimpl {
 public:
-  regimpl(
-      context* ctx,
-      cdomain* cd,
-      const ch_node& next,
-      const ch_node* enable = nullptr,
-      const ch_node* init = nullptr,
-      const ch_node* reset = nullptr
-  );
+  regimpl(const ch_node& next);
   virtual ~regimpl();
-
-  const bitvector& eval(ch_cycle t) override;
+  
+  const bitvector& eval(ch_cycle t) override;  
   void print(std::ostream& out) const override;
   void print_vl(std::ostream& out) const override;
 
@@ -28,12 +21,32 @@ public:
 protected:
 
   cdomain* m_cd;
-  int  m_reset;
-  int  m_enable;
-  int  m_init;
-  int  m_next;
   bitvector m_q;
   bitvector m_next_q;
+  ch_cycle m_ctime;
+};
+
+class latchimpl : public tickable, public nodeimpl {
+public:
+  latchimpl(
+      const ch_node& next,
+      const ch_node& init,
+      const ch_node& enable,      
+      const ch_node& reset
+  );
+  virtual ~latchimpl();
+  
+  const bitvector& eval(ch_cycle t) override;  
+  void print(std::ostream& out) const override;
+  void print_vl(std::ostream& out) const override;
+
+  void tick(ch_cycle t);
+  void tick_next(ch_cycle t);
+  
+protected:
+
+  cdomain* m_cd;
+  bitvector m_q;
   ch_cycle m_ctime;
 };
 
