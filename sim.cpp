@@ -18,8 +18,10 @@ ch_simulator::~ch_simulator() {
   for (auto& tap : m_taps) {
     tap.bus->release();
   }
-  delete m_clk;
-  delete m_reset;
+  if (m_clk)
+    m_clk->release();
+  if (m_reset)
+    m_reset->release();
 }
 
 void ch_simulator::ensureInitialize() {

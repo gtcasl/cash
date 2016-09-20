@@ -14,9 +14,9 @@ int main(int argc, char **argv) {
   ch_device myDevice(Counter<4>);
   myDevice.bind(out);
 
-  std::ofstream v_file("counter.v");
+  /*std::ofstream v_file("counter.v");
   myDevice.toVerilog("counter", v_file);
-  v_file.close();
+  v_file.close();*/
 
   ch_vcdtracer tracer("counter.vcd");
   __ch_trace(tracer, out);

@@ -37,12 +37,12 @@ ch_bitv<N> ch_reg(const ch_bitbase<N>& next, const ch_bitbase<N>& init = ch_lit<
 template <unsigned N>
 ch_bitv<N> ch_latch(const ch_bitbase<N>& next, const ch_bitbase<1>& enable) {
   ch_node init({0}, N);
-  return ch_bitv<N>(createLatchNode(next, init, enable, ch_reset()));
+  return ch_bitv<N>(createLatchNode(ch_bitv<N>(next), init, ch_bitv<1>(enable), ch_reset()));
 }
 
 template <unsigned N>
 ch_bitv<N> ch_latch(const ch_bitbase<N>& next, const ch_bitbase<1>& enable, const ch_bitbase<N>& init) {
-  return ch_bitv<N>(createLatchNode(next, init, enable, ch_reset()));
+  return ch_bitv<N>(createLatchNode(ch_bitv<N>(next), ch_bitv<N>(init), ch_bitv<1>(enable), ch_reset()));
 }
 
 }

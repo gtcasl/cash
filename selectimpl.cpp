@@ -28,5 +28,5 @@ void selectimpl::print_vl(std::ostream& out) const {
 }
 
 ch_node chdl_internal::createSelectNode(const ch_node& test, const ch_node& a, const ch_node& b) {
-  
+  return ch_node(new selectimpl(test, a, b));
 }

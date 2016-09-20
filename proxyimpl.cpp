@@ -56,58 +56,46 @@ void proxyimpl::add_src(uint32_t dst_offset, const ch_node& src, uint32_t src_of
   }
   
   uint32_t delta = src_end - offset;
-  
-  if (dst_offset > start_offset) {
-    // split range start       
-    ++start; ++end;    
-    range_t r_new = {src_idx, src_offset, src_length};
-    m_ranges.insert(m_ranges.begin() + start, r_new);   
-    
-    // split range end
-    if (end == start && delta > 0) {     
+  if (delta > 0) {
+    if (end > start) {
+      // resize end range
+      range_t& r = m_ranges[end];
+      r.offset += delta;
+      r.length -= delta;
+    } else {
+      // split curr range
+      assert(end == start);
       ++end;
-      range_t r_new = m_ranges[start-1];      
+      range_t r_new = m_ranges[start];      
       r_new.offset += delta;
       r_new.length -= delta;
       m_ranges.insert(m_ranges.begin() + end, r_new); 
-      delta = 0;
     }
-      
-    // update first partition length
-    m_ranges[start-1].length = delta - src_length;
-  } else {                   
+  }
+  
+  if (dst_offset > start_offset) {
+    // split curr range
+    m_ranges[start].length = dst_offset - start_offset;
+    ++start; ++end;    
+    range_t r_new = {src_idx, src_offset, src_length};
+    m_ranges.insert(m_ranges.begin() + start, r_new);    
+  } else {   
     // split range end
-    if (end == start && delta > 0) {      
-      ++end;      
-      range_t r_new = m_ranges[start];
-      r_new.offset += delta;
-      r_new.length -= delta;
-      m_ranges.insert(m_ranges.begin() + end, r_new);
-      delta = 0;
-    } else {
-      range_t& r = m_ranges[start];
-      deleted.insert(r.src);
+    assert(dst_offset == start_offset);
+    // replace curr range
+    if (delta == 0 || end != start) {
+      deleted.insert(m_ranges[start].src);       
     }
-    
-    // reuse start range
     range_t& r = m_ranges[start];
     r.src    = src_idx;
     r.offset = src_offset;
     r.length = src_length;
   }
-  
-  if (end > start && delta > 0) {    
-    // resize last range
-    range_t& r = m_ranges[end];
-    r.offset += delta;
-    r.length -= delta;
-  } 
 
   // remove overlapped ranges
-  for (uint32_t i = end - 1; i > start; --i) {
+  for (int i = end - 1; i > start; --i) {
     range_t& r = m_ranges[i];
-    if (r.src != src_idx)    
-      deleted.insert(r.src);     
+    deleted.insert(r.src);     
     m_ranges.erase(m_ranges.begin() + i);
   }
   

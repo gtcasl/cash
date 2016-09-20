@@ -1,6 +1,7 @@
 #pragma once
 
-#include "bitbase.h"
+#include "node.h"
+#include "typebase.h"
 #include "vec.h"
 
 #define CHDL_CONCAT_GEN(T, TcB, TcA, TB, TA, cB, cA, B, A) \
@@ -15,6 +16,8 @@
 
 namespace chdl_internal {
 
+template <unsigned N> using ch_bitbase = typebase<N, ch_node>;
+
 template <unsigned N> 
 class ch_bitv : public ch_bitbase<N> {
 public:
@@ -26,7 +29,7 @@ public:
   
   ch_bitv(const ch_bitv& v) : m_node(v.m_node, N) {}
   
-  explicit ch_bitv(const ch_bitbase<N>& v) {
+  ch_bitv(const ch_bitbase<N>& v) {
     this->operator =(v);
   }
   

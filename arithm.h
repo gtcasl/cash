@@ -86,12 +86,12 @@ CHDL_SHIFTOP_GEN(operator>>, ch_slr)
 
 template <ch_operator op, unsigned N>
 ch_bitv<N> OpBinary(const ch_bitbase<N>& a, const ch_bitbase<N>& b) {
-  return ch_bitv<N>(createAluNode(N, op, a, b));
+  return ch_bitv<N>(createAluNode(N, op, ch_bitv<N>(a), ch_bitv<N>(b)));
 }
 
 template <ch_operator op, unsigned N>
 ch_bitv<N> OpUnary(const ch_bitbase<N>& in) {
-  return ch_bitv<N>(createAluNode(N, op, in));
+  return ch_bitv<N>(createAluNode(N, op, ch_bitv<N>(in)));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
