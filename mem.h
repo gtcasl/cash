@@ -4,113 +4,58 @@
 
 namespace chdl_internal {
 
-template <unsigned N, unsigned A>
+class memimpl;
+
+class memory {
+public:
+  memory(uint32_t data_width, uint32_t addr_width, bool syncRead, bool writeEnable);
+  memory(uint32_t data_width, uint32_t addr_width, bool syncRead, bool writeEnable, const std::string& init_file);
+  memory(uint32_t data_width, uint32_t addr_width, bool syncRead, bool writeEnable, const std::vector<uint32_t>& init_data);
+  ~memory();  
+  
+  ch_node read(const ch_node& addr) const;
+  void write(const ch_node& addr, const ch_node& value, const ch_node& enable);
+  
+private:
+  memimpl* m_impl;
+};
+
+template <unsigned N, unsigned A, bool SyncRead = false>
 class ch_rom {
 public:
-    ch_rom(const std::string& init_file = "") {
-      TODO();
+    ch_rom() : m_mem(N, A, SyncRead, false) {}
+  
+    ch_rom(const std::string& init_file) : m_mem(N, A, SyncRead, false, init_file) {}
+    
+    ch_rom(const std::vector<uint32_t>& init_data) : m_mem(N, A, SyncRead, false, init_data) {}
+    
+    ch_bitv<N> read(const ch_bitbase<A>& addr) const {
+      return ch_bitv<N>(m_mem.read(ch_bitv<A>(addr)));
     }
     
-    ch_rom(const std::vector<uint32_t>& init_data) {
-      TODO();
-    }
-    
-    ch_bitv<N> read(const ch_bitbase<A>& addr) {
-      TODO();
-    }
+private:
+    memory m_mem;
 };
 
-template <unsigned N, unsigned A>
-class ch_mem : public ch_rom<N, A> {
-public:
-    using base = ch_rom<N, A>;
+template <unsigned N, unsigned A, bool SyncRead = false>
+class ch_mem {
+public:  
+    ch_mem() : m_mem(N, A, SyncRead, true) {}
   
-    ch_mem(const std::string& init_file = "") : base(init_file) {}
+    ch_mem(const std::string& init_file) : m_mem(N, A, SyncRead, true, init_file) {}
     
-    ch_mem(const std::vector<uint32_t>& init_data) : base(init_data) {
-      TODO();
+    ch_mem(const std::vector<uint32_t>& init_data) : m_mem(N, A, SyncRead, true, init_data) {}
+    
+    ch_bitv<N> read(const ch_bitbase<A>& addr) const {
+      return ch_bitv<N>(m_mem.read(ch_bitv<A>(addr)));
     }
     
-    void write(const ch_bitbase<N>& value, const ch_bitbase<A>& addr, const ch_logic& enable) {
-      TODO();
+    void write(const ch_bitbase<A>& addr, const ch_bitbase<N>& value, const ch_bitbase<1>& enable) {
+      m_mem.write(ch_bitv<A>(addr), ch_bitv<N>(value), ch_bitv<1>(enable));
     }
+    
+private:
+    memory m_mem;
 };
-
-/*void memory_init(
-  std::vector<std::vector<node>>& out,
-  const std::vector<node>& d,
-  const std::vector<node>& da,
-  const std::vector<std::vector<node>>& qa,
-  const node& w,
-  bool rd_sync,
-  const std::string& init_file
-);
-
-template <unsigned N, unsigned A, unsigned P>
-ch_vec<P, ch_bitv<N>> ch_mem(
-    const ch_bitbase<N>& d, 
-    const ch_bitbase<A>& da, 
-    const ch_bitbase<P * A>& qa,
-    const ch_logic& w,
-    bool rd_sync = false,
-    std::string init_file = "") {
-  ch_vec<P, ch_bitv<N>> out;
-  
-  std::vector<std::vector<node>> qa_vec(P), q_vec;
-  std::vector<node> d_vec, da_vec;
-  
-  for (unsigned p = 0; p < P; ++p) {
-    for (unsigned i = 0; i < A; ++i) {
-      qa_vec[p].emplace_back(qa[p * A + i]);
-    }
-  }
-    
-  for (unsigned i = 0; i < A; ++i) {
-    da_vec.emplace_back(da[i]);
-  }
-  
-  for (unsigned i = 0; i < N; ++i) {
-    d_vec.emplace_back(d[i]);
-  }
-
-  memory_init(q_vec, d_vec, da_vec, qa_vec, w, rd_sync, init_file);
-    
-  for (unsigned p = 0; p < P; ++p) {
-    for (unsigned i = 0; i < N; ++i) {
-      out[p][i] = q_vec[p][i];
-    }
-  }
-
-  return out;
-}
-
-template <unsigned N, unsigned A>
-ch_bitv<N> ch_mem(
-    const ch_bitbase<N>& d, 
-    const ch_bitbase<A>& da, 
-    const ch_bitbase<A>& qa,
-    const ch_logic& w,
-    bool rd_sync = false,
-    const std::string& init_file = "") {
-  return ch_mem<N, A, 1>(d, da, ch_vec<1, ch_bitv<A>>(qa), w, rd_sync, init_file)[0];
-}
-
-template <unsigned N, unsigned A>
-ch_bitv<N> ch_mem(
-    const ch_bitbase<N>& d, 
-    const ch_bitbase<A>& a,
-    const ch_logic& w, 
-    bool rd_sync = false,
-    const std::string& init_file = "") {
-  return ch_mem<N, A>(d, a, a, w, rd_sync, init_file);
-}
-
-template <unsigned N, unsigned A>
-ch_bitv<N> ch_rom(
-    const ch_bitbase<A>& qa, 
-    bool rd_sync,
-    const std::string& init_file) {
-  return ch_mem<N, A>(ch_lit<N>(0), ch_lit<A>(0), qa, '0', rd_sync, init_file)[0];
-}*/
 
 }

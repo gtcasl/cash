@@ -12,7 +12,7 @@ regimpl::regimpl(const ch_node& next)
 {
   context* ctx = next.get_ctx();
   
-  ch_node clk = ctx->get_clk();  
+  const ch_node& clk = ctx->get_clk();  
   m_cd = ctx->create_cdomain({clock_event(clk, EDGE_POS)});
   m_cd->add_use(this);
   m_cd->release();

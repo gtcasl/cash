@@ -5,78 +5,64 @@
 
 namespace chdl_internal {
 
-/*class memimpl : public tickable, public refcounted {
+class memportimpl;
+
+class memimpl : public tickable, public refcounted {
 public:  
-  memimpl(context* ctx,
-         const std::vector<node>& d,
-         const std::vector<node>& da,
-         const std::vector<std::vector<node>>& qa,
-         const node& w, 
-         bool rd_sync,
-         const std::string& init_file);
-  
+  memimpl(uint32_t data_width, uint32_t addr_width, bool sync_read, bool write_enable);  
+  memimpl(uint32_t data_width, uint32_t addr_width, bool sync_read, bool write_enable, const std::string& init_file);  
+  memimpl(uint32_t data_width, uint32_t addr_width, bool sync_read, bool write_enable, const std::vector<uint32_t>& init_data);
   ~memimpl();
   
-  void tick(ch_cycle t);
-  void tick_next(ch_cycle t);
+  memportimpl* read(const ch_node& addr);
+  void write(const ch_node& addr, const ch_node& value, const ch_node& enable);  
+  
+  void tick(ch_cycle t) override;
+  void tick_next(ch_cycle t) override;
   
   void print(std::ostream& out) const;
   void print_vl(std::ostream& out) const;
 
 protected:
   
-  node m_w;
-  std::vector<node> m_d;
-  std::vector<node> m_da;
-  std::vector<std::vector<node>> m_q;
-  std::vector<std::vector<node>> m_qa;
+  memportimpl* get_port(const ch_node& addr);
   
-  bool m_do_write;
-  std::vector<bool> m_wrdata;
-  size_t m_waddr;
-  std::vector<size_t> m_raddr;
-  std::vector<std::vector<bool>> m_rdval;
-  std::vector<bool> m_contents;
-  std::string m_init_file;
-  bool m_rd_sync;
-  bool m_wenable;
+  friend class memportimpl;
   
+  std::vector<memportimpl*> m_ports;
+  std::vector<bitvector> m_content;
+  bool     m_syncRead;
+  bool     m_writeEnable;   
   cdomain* m_cd;
-  
-  friend class qnodeimpl;
-  friend void memory_init(
-      std::vector<std::vector<node>>& out,
-      const std::vector<node>& d,
-      const std::vector<node>& da,
-      const std::vector<std::vector<node>>& qa,
-      const node& w,
-      bool rd_sync,   
-      const std::string& init_file);
 };
 
-class qnodeimpl : public nodeimpl {
+class memportimpl : public nodeimpl {
 public:  
-  qnodeimpl(context* ctx, memimpl *mem, unsigned port, unsigned idx);
-  ~qnodeimpl();
+  memportimpl(memimpl* mem, const ch_node& addr);
+  ~memportimpl();
   
-  bool eval(ch_cycle t) override;
-
-  void print(std::ostream& out) const override {
-    if (m_port == 0 && m_idx == 0)
-      m_mem->print(out);
-  }
-
-  void print_vl(std::ostream& out) const override {
-    if (m_port == 0 && m_idx == 0)
-      m_mem->print_vl(out);
-  }
+  void write(const ch_node& value, const ch_node& enable);  
+  
+  void tick(ch_cycle t);
+  void tick_next(ch_cycle t);
+  
+  const bitvector& eval(ch_cycle t) override;
+  void print(std::ostream& out) const override;
+  void print_vl(std::ostream& out) const override;
 
 protected:
+  
+  friend class memimpl;
+  
   memimpl* m_mem;
-  unsigned m_port;
-  unsigned m_idx;
+  bool m_writeEnable;
+  
+  bitvector m_rddata;
+  bitvector m_wrdata;
+  uint32_t  m_addr;
+  bool      m_do_write;  
+  
   ch_cycle m_ctime;
-  bool     m_cval;
-};*/
+};
 
 }

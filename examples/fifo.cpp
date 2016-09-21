@@ -28,7 +28,7 @@ void FiFo(
   empty = (wr_ptr == rd_ptr);
   full  = (wr_addr == rd_addr) && (wr_ptr[ADDR] != rd_ptr[ADDR]);
   dout  = mem.read(rd_addr);
-  mem.write(din, wr_addr, writing);
+  mem.write(wr_addr, din, writing);
 };
 
 int main(int argc, char **argv) {
@@ -38,9 +38,9 @@ int main(int argc, char **argv) {
   ch_device myDevice(FiFo<1, 2>);
   myDevice.bind(din, push, pop, dout, empty, full);
 
-  std::ofstream v_file("fifo.v");
+  /*std::ofstream v_file("fifo.v");
   myDevice.toVerilog("fifo", v_file);
-  v_file.close();
+  v_file.close();*/
 
   ch_vcdtracer tracer("fifo.vcd");
   __ch_trace(tracer, din, push, pop, dout, empty, full);
