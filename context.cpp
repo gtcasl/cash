@@ -149,6 +149,7 @@ void context::bind(unsigned index, busimpl* bus) {
   ioport->bind(bridge);    
   bridge->release();
 }
+
 void context::syntax_check() {
   // check for unitilaized nodes
   for (auto node : nodes) {

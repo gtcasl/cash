@@ -43,7 +43,7 @@ void clock_event::print_vl(ostream& out) const {
 cdomain::cdomain(context* ctx, const std::vector<clock_event>& sensitivity_list)
   : m_ctx(ctx) {
   m_sensitivity_list.reserve(sensitivity_list.size());
-  for (auto& e : sensitivity_list) {
+  for (const clock_event& e : sensitivity_list) {
     assert(get_impl<undefimpl>(e.get_signal()) == nullptr);
     // constants are omitted by default
     if (get_impl<litimpl>(e.get_signal())) {
@@ -74,9 +74,9 @@ void cdomain::remove_use(tickable* reg) {
 bool cdomain::operator==(const std::vector<clock_event>& events) const {
   if (events.size() != m_sensitivity_list.size())
     return false;
-  for (auto& e1 : m_sensitivity_list) {
+  for (const clock_event& e1 : m_sensitivity_list) {
     bool found = false;
-    for (auto& e2 : events) {
+    for (const clock_event& e2 : events) {
       if (e1 == e2) {
         found = true;
         break;
@@ -89,9 +89,9 @@ bool cdomain::operator==(const std::vector<clock_event>& events) const {
 }
 
 void cdomain::tick(ch_cycle t) {
-  for (auto& event : m_sensitivity_list) {
+  for (clock_event& event : m_sensitivity_list) {
     if (event.eval(t)) {
-      for (auto reg : m_regs)
+      for (tickable* reg : m_regs)
         reg->tick(t);
       return;
     }
@@ -106,7 +106,7 @@ void cdomain::tick_next(ch_cycle t) {
 
 void cdomain::print_vl(ostream& out) const {
   bool first_event = true;
-  for (auto& event : m_sensitivity_list) {
+  for (const clock_event& event : m_sensitivity_list) {
     if (first_event)
       first_event = false;
     else

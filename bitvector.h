@@ -30,6 +30,7 @@ public:
   explicit bitvector(uint32_t size) : m_size(size) {
     uint32_t num_words = (size + WORD_MASK) >> WORD_SIZE_LOG;
     m_words = new uint32_t[num_words];
+    std::fill(m_words, m_words + num_words, 0x0);
   }
   
   ~bitvector() {
@@ -39,10 +40,13 @@ public:
   void resize(uint32_t size) {
     uint32_t num_words = (size + WORD_MASK) >> WORD_SIZE_LOG;
     uint32_t* words = new uint32_t[num_words];
-    if (m_words) {
-      uint32_t old_num_words = (m_size + WORD_MASK) >> WORD_SIZE_LOG;
+    uint32_t old_num_words = (m_size + WORD_MASK) >> WORD_SIZE_LOG;
+    if (m_words) {      
       std::copy(m_words, m_words + std::min(num_words, old_num_words), words);
       delete [] m_words;
+    }
+    if (num_words > old_num_words) {
+      std::fill(words + old_num_words, words + num_words, 0x0);
     }
     m_words = words;
     m_size = size;

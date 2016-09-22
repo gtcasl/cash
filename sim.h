@@ -24,8 +24,7 @@ public:
   
   template <unsigned N> 
   void add_trace(const std::string& name, const ch_bus<N>& bus) {
-    bus.ensureInitialized();
-    this->add_tap(name, bus.m_impl);
+    this->add_tap(name, bus);
   }
 
 protected:

@@ -127,7 +127,13 @@ memportimpl::memportimpl(memimpl* mem, const ch_node& addr)
   m_srcs.push_back(addr); // idx=0 
   if (mem->m_cd) {
     const ch_node& clk = mem->m_cd->get_sensitivity_list()[0].get_signal();
-    m_srcs.push_back(clk); // idx=1
+    m_srcs.emplace_back(clk); // idx=1
+  } 
+  // add dependency from all write ports
+  for (memportimpl* port : m_mem->m_ports) {
+    if (port != this && port->m_writeEnable) {
+      this->m_srcs.emplace_back(port);
+    }
   }
 }
 
@@ -136,9 +142,32 @@ memportimpl::~memportimpl() {
 }
 
 void memportimpl::write(const ch_node& value, const ch_node& enable) {
-  m_srcs.push_back(value); // idx=2
-  m_srcs.push_back(enable); // idx=3
-  m_writeEnable = true;
+  // positions 0 & 1 are used by addr and clk nodes respectively
+  // local port write source nodes have fixed position (2, 3)
+  // write source nodes from other ports are appended starting at 
+  // index 2 if local port is not writeenable otherwise index 4
+  if (m_writeEnable) {
+    // replace local port sources
+    m_srcs[2] = value;
+    m_srcs[3] = enable;
+  } else {
+    // add local port sources
+    if (m_srcs.size() > 2) {
+      // push write dependency nodes to the right
+      m_srcs.insert(m_srcs.begin() + 2, value); 
+      m_srcs.insert(m_srcs.begin() + 3, enable);
+    } else {
+      assert(m_srcs.size() == 2);
+      m_srcs.push_back(value);
+      m_srcs.push_back(enable);
+    }        
+    // add write dependency to all ports
+    for (memportimpl* port : m_mem->m_ports) {
+      if (port != this)
+        port->m_srcs.emplace_back(this);
+    }    
+    m_writeEnable = true;
+  }    
 }
 
 void memportimpl::tick(ch_cycle t) {

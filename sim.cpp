@@ -80,6 +80,7 @@ void ch_simulator::bind(ioimpl* ioport) {
 
   // add to list
   this->add_tap(ioport->get_name(), bus);
+  bus->add_ref();
 }
 
 void ch_simulator::add_tap(const std::string& name, busimpl* bus) {
@@ -101,6 +102,7 @@ void ch_simulator::add_tap(const std::string& name, busimpl* bus) {
     full_name = fstring("%s_%d", name.c_str(), instances);
   }
   m_taps.emplace_back(full_name, bus);
+  bus->add_ref();
 }
 
 void ch_simulator::tick(ch_cycle t) { 

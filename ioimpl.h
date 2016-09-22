@@ -61,7 +61,7 @@ public:
 
 class ibridge : public iobridge {
 public:
-  explicit ibridge(busimpl* impl) : m_impl(impl) {}
+  ibridge(busimpl* impl) : m_impl(impl) {}
   ~ibridge() {}
   
   bool ready() const override;
@@ -77,7 +77,7 @@ private:
 
 class obridge : public iobridge {
 public:
-  explicit obridge(ioimpl* impl) : m_impl(impl) {}
+  obridge(ioimpl* impl) : m_impl(impl) {}
   ~obridge() {}
   
   bool ready() const override;

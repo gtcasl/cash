@@ -27,10 +27,10 @@ public:
       
   ch_bitv() {}
   
-  ch_bitv(const ch_bitv& v) : m_node(v.m_node, N) {}
+  ch_bitv(const ch_bitv& rhs) : m_node(rhs.m_node, N) {}
   
-  ch_bitv(const ch_bitbase<N>& v) {
-    this->operator =(v);
+  ch_bitv(const ch_bitbase<N>& rhs) {
+    this->operator =(rhs);
   }
   
   explicit ch_bitv(const ch_node& node) : m_node(node, N) {}

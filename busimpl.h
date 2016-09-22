@@ -58,7 +58,7 @@ protected:
   bridges_t m_bridges;
   obridge*  m_obridge;
   bitvector m_value;
-  ch_cycle m_ctime;
+  ch_cycle  m_ctime;
 };
 
 }

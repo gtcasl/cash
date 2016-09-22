@@ -14,9 +14,13 @@ public:
       
   ch_bus() : m_impl(nullptr) {}
   
-  ch_bus(const ch_bus& b) : m_impl(b.m_impl){
+  ch_bus(const ch_bus& rhs) : m_impl(rhs.m_impl) {
     if (m_impl)
       m_impl->add_ref();
+  }
+  
+  ch_bus(ch_bus&& rhs) : m_impl(rhs.m_impl) {
+    rhs.m_impl = nullptr;
   }
 
   ch_bus(const std::initializer_list<uint32_t>& value) {
@@ -24,15 +28,16 @@ public:
     if (W * value.size() != N)
         CHDL_ABORT("initializer list size mismatch");
     uint32_t i = value.size() - 1;
-    m_impl = new busimpl(N);
+    busimpl* impl = new busimpl(N);
     for (uint32_t word : value) {
       for (uint32_t j = 0; j < W; ++j) {
-        m_impl->set_bit(i * W + j, word & 0x1);
+        impl->set_bit(i * W + j, word & 0x1);
         word >>= 1;
       }
       assert(word == 0);
       --i;
     }
+    m_impl = impl;
   }
   
   ch_bus(uint32_t value) : ch_bus({value}) {}   
@@ -63,6 +68,23 @@ public:
     return value;
   }
   
+  ch_bus& operator=(const ch_bus& rhs) {
+    if (m_impl)
+      m_impl->release();
+     m_impl = rhs.m_impl;
+     if (m_impl)
+       m_impl->add_ref();
+    return *this;
+  }
+  
+  ch_bus& operator=(ch_bus&& rhs) {
+    if (m_impl)
+      m_impl->release();
+    m_impl = rhs.m_impl;
+    rhs.m_impl = nullptr;
+    return *this;
+  }
+  
   operator busimpl*() const { 
     this->ensureInitialized();
     return m_impl; 
@@ -76,7 +98,6 @@ protected:
   }
   
   friend class context;
-  friend class ch_simulator;
   
   mutable busimpl* m_impl;
 };

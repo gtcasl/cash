@@ -166,7 +166,7 @@ const bitvector& aluimpl::eval(ch_cycle t) {
     
     switch (m_op) {
     case op_inv:
-      unaryop<op_and>(m_value, m_srcs[0].eval(t));  
+      unaryop<op_inv>(m_value, m_srcs[0].eval(t));  
       break;
     case op_and:
       binaryop<op_and>(m_value, m_srcs[0].eval(t), m_srcs[1].eval(t));  
