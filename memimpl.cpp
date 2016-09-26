@@ -116,7 +116,7 @@ void memimpl::print_vl(ostream& out) const {
 ///////////////////////////////////////////////////////////////////////////////
 
 memportimpl::memportimpl(memimpl* mem, const ch_node& addr)
-    : nodeimpl(addr.get_ctx(), mem->m_content[0].get_size())
+    : nodeimpl("memport", addr.get_ctx(), mem->m_content[0].get_size())
     , m_mem(mem)
     , m_writeEnable(false)
     , m_addr(0)
@@ -196,10 +196,6 @@ const bitvector& memportimpl::eval(ch_cycle t) {
       m_mem->m_content[m_srcs[0].eval(t).get_word(0)];
   }
   return m_value;
-}
-
-void memportimpl::print(std::ostream& out) const {
-  TODO();
 }
 
 void memportimpl::print_vl(std::ostream& out) const {

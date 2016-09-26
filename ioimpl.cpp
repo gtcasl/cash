@@ -5,9 +5,8 @@
 using namespace std;
 using namespace chdl_internal;
 
-ioimpl::ioimpl(context* ctx, uint32_t size, const std::string name)
-  : nodeimpl(ctx, size)
-  , m_name(name)
+ioimpl::ioimpl(const std::string& name, context* ctx, uint32_t size)
+  : nodeimpl(name, ctx, size)  
   , m_bridge(nullptr)
 {}
 
@@ -25,8 +24,9 @@ void ioimpl::bind(iobridge* bridge) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-inputimpl::inputimpl(context* ctx, uint32_t size, const std::string name)
-  : ioimpl(ctx, size, name) {}
+inputimpl::inputimpl(const std::string& name, uint32_t index, context* ctx, uint32_t size) 
+  : ioimpl(name, ctx, size)
+  , m_index(index){}
 
 bool inputimpl::ready() const {
   return m_bridge->ready();
@@ -40,15 +40,43 @@ const bitvector& inputimpl::eval(ch_cycle t) {
   return m_bridge->eval(t);
 }
 
+void inputimpl::print(std::ostream& out) const {
+  out << "#" << m_id << " <- " << m_name << m_value.get_size();
+  if (m_index != -1)
+    out << "(" << m_index << ")";
+  out << endl;
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
-outputimpl::outputimpl(const ch_node& src, const std::string name) 
-  : ioimpl(src.get_ctx(), src.get_size(), name) {
+outputimpl::outputimpl(const std::string& name, uint32_t index, const ch_node& src) 
+  : ioimpl(name, src.get_ctx(), src.get_size())
+  , m_index(index) {
   m_srcs.reserve(1);
   m_srcs.emplace_back(src);
 }
 
 const bitvector& outputimpl::eval(ch_cycle t) {
+  return m_srcs[0].eval(t);
+}
+
+void outputimpl::print(std::ostream& out) const {
+  out << "#" << m_id << " <- " << m_name << m_value.get_size();
+  if (m_index != -1)
+    out << "(" << m_index << ")";
+  out << endl;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+tapimpl::tapimpl(const std::string& name, const ch_node& src) 
+  : ioimpl("tap", src.get_ctx(), src.get_size())
+  , m_tapName(name) {
+  m_srcs.reserve(1);
+  m_srcs.emplace_back(src);
+}
+
+const bitvector& tapimpl::eval(ch_cycle t) {
   return m_srcs[0].eval(t);
 }
 

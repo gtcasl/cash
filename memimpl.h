@@ -47,7 +47,6 @@ public:
   void tick_next(ch_cycle t);
   
   const bitvector& eval(ch_cycle t) override;
-  void print(std::ostream& out) const override;
   void print_vl(std::ostream& out) const override;
 
 protected:

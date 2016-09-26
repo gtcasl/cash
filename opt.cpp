@@ -22,6 +22,9 @@ void optimizer::optimize() {
   
   // syntax check
   m_ctx->syntax_check();
+  
+  // debugging
+  m_ctx->print(cout);
 }
 
 bool optimizer::dead_node_elimination() {

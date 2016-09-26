@@ -9,42 +9,61 @@ class busimpl;
 
 class ioimpl : public nodeimpl {
 public:
-  ioimpl(context* ctx, uint32_t size, const std::string name);
+  ioimpl(const std::string& name, context* ctx, uint32_t size);
   virtual ~ioimpl();
-  
-  const std::string get_name() const {
-    return m_name;
-  }
   
   void bind(iobridge* bridge);
   
-  void print(std::ostream& out) const override {}
   void print_vl(std::ostream& out) const override {}
   
 protected:
 
-  std::string m_name;
   iobridge* m_bridge;
-  
+    
   friend class context;
 };
 
 class inputimpl : public ioimpl {
 public:
-  inputimpl(context* ctx, uint32_t size, const std::string name);
+  inputimpl(const std::string& name, uint32_t index, context* ctx, uint32_t size);
   ~inputimpl() {}
 
   bool ready() const override;
   bool valid() const override;  
   const bitvector& eval(ch_cycle t) override;
+  
+  virtual void print(std::ostream& out) const;
+  
+protected:
+  uint32_t  m_index;
 };
 
 class outputimpl : public ioimpl {
 public:
-  outputimpl(const ch_node& src, const std::string name);
+  outputimpl(const std::string& name, uint32_t index, const ch_node& src);
   ~outputimpl() {}
   
   const bitvector& eval(ch_cycle t);
+  
+  virtual void print(std::ostream& out) const;
+
+protected:
+  uint32_t  m_index;
+};
+
+class tapimpl : public ioimpl {
+public:
+  tapimpl(const std::string& name, const ch_node& src);
+  ~tapimpl() {}
+  
+  const std::string& get_tapName() const {
+    return m_tapName;
+  }
+  
+  const bitvector& eval(ch_cycle t);
+  
+protected:
+  std::string  m_tapName;
 };
 
 class iobridge : public refcounted {

@@ -5,7 +5,7 @@ using namespace std;
 using namespace chdl_internal;
 
 proxyimpl::proxyimpl(const ch_node& node) 
-  : nodeimpl(node.get_ctx(), node.get_size())
+  : nodeimpl("proxy", node.get_ctx(), node.get_size())
   , m_ctime(~0ull) {
   m_srcs.emplace_back(node);
   m_ranges.push_back({0, 0, m_value.get_size()});    
@@ -135,10 +135,6 @@ const bitvector& proxyimpl::eval(ch_cycle t) {
     }
   }  
   return m_value;
-}
-
-void proxyimpl::print(std::ostream& out) const {
-  TODO();
 }
 
 void proxyimpl::print_vl(std::ostream& out) const {

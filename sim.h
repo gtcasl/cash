@@ -1,11 +1,12 @@
-#pragma once
+﻿#pragma once
 
 #include <functional>
 #include "device.h"
 
 namespace chdl_internal {
 
-class ioimpl;
+class inputimpl;
+class tapimpl;
 
 class ch_simulator {
 public:  
@@ -24,7 +25,7 @@ public:
   
   template <unsigned N> 
   void add_trace(const std::string& name, const ch_bus<N>& bus) {
-    this->add_tap(name, bus);
+    this->add_tap(name, static_cast<busimpl*>(bus));
   }
 
 protected:
@@ -40,8 +41,10 @@ protected:
   
   virtual void ensureInitialize();
   
-  void bind(ioimpl* ioport);
-
+  void bind(inputimpl* input, busimpl** bus);
+  
+  void bind(tapimpl* tap);
+  
   void add_tap(const std::string& name, busimpl* bus);
 
   std::vector<tap_t> m_taps;
@@ -64,11 +67,11 @@ protected:
   std::ostream& m_out;
 };
 
-void register_tap(const std::string& name, const ch_node& node);
+void register_tap(const std::string& name, const ch_node& node, uint32_t size);
 
 template <unsigned N> 
 void ch_tap(const std::string& name, const ch_bitv<N>& v) { 
-  register_tap(name, v.m_node);
+  register_tap(name, v, N);
 }
 
 }

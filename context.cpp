@@ -17,7 +17,6 @@ thread_local context* tls_ctx = nullptr;
 
 context::context()
   : nodeids(0)
-  , undefcount(0)
   , g_clk(nullptr)
   , g_reset(nullptr)
 {}
@@ -26,12 +25,8 @@ context::~context() {
   //
   // cleanup allocated resources
   //
-
-  for (auto assertion : assertions) {
-    delete assertion;
-  }
   
-  for (auto node : nodes) {
+  for (nodeimpl* node : nodes) {
     delete node;
   }
 
@@ -71,7 +66,7 @@ ch_node context::get_clk() {
   if (!clk_stack.empty())
     return clk_stack.top();
   if (g_clk == nullptr)
-    g_clk = new inputimpl(this, 1, "clk");
+    g_clk = new inputimpl("clk", -1, this, 1);
   return ch_node(g_clk);
 }
 
@@ -79,7 +74,7 @@ ch_node context::get_reset() {
   if (!reset_stack.empty())
     return reset_stack.top();
   if (g_reset == nullptr)
-     g_reset = new inputimpl(this, 1, "reset");
+     g_reset = new inputimpl("reset", -1, this, 1);
   return ch_node(g_reset);
 }
 
@@ -97,20 +92,14 @@ cdomain* context::create_cdomain(const std::vector<clock_event>& sensitivity_lis
   return cd;
 }
 
-void context::create_assertion(const ch_node& node, const std::string& msg) {
-  node.ensureInitialized(this, 1);
-  assertions.emplace_back(new assertion(this, node, msg));
-}
-
 void context::register_io(unsigned index, ch_node& node) {
   ioimpl* impl;
-  string name(fstring("arg%d", index));
   if (node.m_impl == nullptr
    || dynamic_cast<undefimpl*>(node.m_impl)) {
-    impl = new inputimpl(this, node.get_size(), name);
-    node.assign(impl, true);
+    impl = new inputimpl("input", index, this, node.get_size());
+    node.assign(impl);
   } else {
-    impl = new outputimpl(node, name);
+    impl = new outputimpl("output", index, node);
   }  
   // add to list
   ioports.emplace_back(impl);
@@ -124,14 +113,14 @@ void context::register_tap(const std::string& name, const ch_node& node) {
     if (instances == 1) {
       // rename first instance
       auto iter = std::find_if(taps.begin(), taps.end(),
-        [name](outputimpl* p)->bool { return p->get_name() == name; });
+        [name](tapimpl* t)->bool { return t->get_tapName() == name; });
       assert(iter != taps.end());
       (*iter)->m_name = fstring("%s_%d", name.c_str(), 0);
     }
     full_name = fstring("%s_%d", name.c_str(), instances);
   }
   // add to list
-  taps.emplace_back(new outputimpl(node, full_name));
+  taps.emplace_back(new tapimpl(full_name, node));
 }
 
 void context::bind(unsigned index, busimpl* bus) {
@@ -161,25 +150,22 @@ void context::syntax_check() {
 
 void context::get_live_nodes(std::set<nodeimpl*>& live_nodes) {
   // get io ports
-  for (auto node : ioports) {
+  for (nodeimpl* node : ioports) {
     live_nodes.emplace(node);
   }  
   
   // get debug taps
-  for (auto node : taps) {
+  for (nodeimpl* node : taps) {
     live_nodes.emplace(node);
   }
 
   // get assert taps
-  for (auto node : gtaps) {
+  for (nodeimpl* node : gtaps) {
     live_nodes.emplace(node);
   }
 }
 
 void context::tick(ch_cycle t) {
-  for (auto a : assertions) {
-    a->eval(t);
-  }
   for (auto cd : cdomains) {
     cd->tick(t);
   }  
@@ -193,6 +179,12 @@ void context::tick_next(ch_cycle t) {
 
 void context::toVerilog(const std::string& module_name, std::ostream& out) {
   TODO();
+}
+
+void context::print(std::ostream& out) {
+  for (nodeimpl* node :nodes) {
+    node->print(out);
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////

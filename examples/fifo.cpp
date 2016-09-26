@@ -20,11 +20,11 @@ void FiFo(
   ch_bitv<ADDR> wr_addr(ch_slice<ADDR>(wr_ptr));
 
   ch_logic reading(pop && !empty);
-  ch_logic writing(push && (!full || pop));
-
+  ch_logic writing(push && (!full || pop));  
+  
   rd_ptr = ch_reg(ch_select(reading, rd_ptr + 1, rd_ptr));
   wr_ptr = ch_reg(ch_select(writing, wr_ptr + 1, wr_ptr));
-
+  
   empty = (wr_ptr == rd_ptr);
   full  = (wr_addr == rd_addr) && (wr_ptr[ADDR] != rd_ptr[ADDR]);
   dout  = mem.read(rd_addr);
@@ -46,25 +46,25 @@ int main(int argc, char **argv) {
   __ch_trace(tracer, din, push, pop, dout, empty, full);
   tracer.run([&](ch_cycle time)->bool {
     switch (time) {
-    case 1:
+    case 0:
       din  = 0x1;
       push = '1';
       break;
-    case 2:
+    case 1:
       din  = 0x2;
       push = '1';
       break;
-    case 3:
+    case 2:
       din  = 0x0;
       push = '0';
+      break;
+    case 3:
+      pop = '1';
       break;
     case 4:
       pop = '1';
       break;
     case 5:
-      pop = '1';
-      break;
-    case 6:
       pop = '0';
       break;
     }

@@ -12,7 +12,6 @@ public:
   virtual ~regimpl();
   
   const bitvector& eval(ch_cycle t) override;  
-  void print(std::ostream& out) const override;
   void print_vl(std::ostream& out) const override;
 
   void tick(ch_cycle t) override;
@@ -37,7 +36,6 @@ public:
   virtual ~latchimpl();
   
   const bitvector& eval(ch_cycle t) override;  
-  void print(std::ostream& out) const override;
   void print_vl(std::ostream& out) const override;
 
   void tick(ch_cycle t) override;

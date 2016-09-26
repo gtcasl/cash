@@ -1,10 +1,12 @@
 #pragma once
 
-#include "ioimpl.h"
+#include "bitvector.h"
 
 namespace chdl_internal {
 
-class ibridge;
+class iobridge;
+class obridge;
+class context;
 
 class busimpl : public refcounted {
 public:
@@ -20,13 +22,32 @@ public:
   bool valid() const;
   
   const bitvector& eval(ch_cycle t);
-  
-  bool get_bit(uint32_t idx) const {
-    return m_value.get_bit(idx);
+   
+  template <typename T>
+  T read() const {
+    T value = 0;
+    for (uint32_t i = 0, n = m_value.get_size(); i < n; ++i) {
+      T sign = m_value.get_bit(i) ? 1 : 0;
+      value |= sign << i;
+    }
+    return value;
   }
   
-  void set_bit(uint32_t idx, bool value ) {
-    m_value.set_bit(idx, value);
+  template <typename T>
+  void write(T value) {
+    for (uint32_t i = 0, n = m_value.get_size(); i < n; ++i) {
+      m_value.set_bit(i, value & 0x1);
+      value >>= 1;
+    }
+    assert(value == 0);
+  }
+  
+  bool get_bit(uint32_t bidx) const {
+    return m_value.get_bit(bidx);
+  }
+  
+  void set_bit(uint32_t bidx, bool value ) {
+    m_value.set_bit(bidx, value);
   }
   
   uint32_t get_size() const {
@@ -60,5 +81,16 @@ protected:
   bitvector m_value;
   ch_cycle  m_ctime;
 };
+
+template<>
+inline uint32_t busimpl::read<uint32_t>() const {
+  return m_value.get_word(0);
+}
+
+template<>
+inline void busimpl::write<uint32_t>(uint32_t value) {
+  assert((value >> m_value.get_size()) == 0);
+  m_value.set_word(0, value);    
+}
 
 }

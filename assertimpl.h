@@ -1,18 +1,17 @@
 #pragma once
 
-#include "nodeimpl.h"
-#include "tickable.h"
+#include "ioimpl.h"
 
 namespace chdl_internal {
 
-class assertion {
+class assertimpl : public ioimpl {
 public:
-  assertion(context* ctx, const ch_node& src, const std::string& msg);
+  assertimpl(const ch_node& src, const std::string& msg);
+  ~assertimpl() {}
   
-  void eval(ch_cycle t);
+  const bitvector& eval(ch_cycle t);
 
 private:
-  ch_node m_x;
   std::string m_msg;
 };
 

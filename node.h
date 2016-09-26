@@ -1,6 +1,5 @@
 #pragma once
 
-#include "common.h"
 #include "bitvector.h"
 
 namespace chdl_internal {
@@ -38,15 +37,17 @@ public:
   
   void assign(uint32_t size, uint32_t dst_offset, const ch_node& src, uint32_t src_offset, uint32_t src_length);
   
-  operator nodeimpl*() const { 
+  explicit operator nodeimpl*() const { 
     return m_impl; 
   }
+  
+  void ensureInitialized(uint32_t size) const;
 
 protected:
 
-  void ensureInitialized(context* ctx, uint32_t size) const;
-
-  void assign(nodeimpl* impl, bool replace_all = true);
+  void assign(nodeimpl* impl);
+  
+  void move(ch_node& rhs);
   
   void clear();
     
@@ -68,5 +69,4 @@ inline std::ostream& operator<<(std::ostream& out, const ch_node& rhs) {
 }
 
 ch_node createNullNode(uint32_t size);
-
 }

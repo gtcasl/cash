@@ -2,6 +2,7 @@
 #include "cdomain.h"
 #include "context.h"
 #include "busimpl.h"
+#include "ioimpl.h"
 #include "opt.h"
 
 using namespace std;
@@ -35,34 +36,13 @@ void ch_simulator::ensureInitialize() {
 
   // bind context taps
   for (auto ctx : m_contexts) {
-    if (ctx->g_clk) {
-      if (m_clk == nullptr) {
-        // setup global clock
-        m_clk = new busimpl(1);
-        this->add_tap("clk", m_clk);
-      }
+    if (ctx->g_clk)
+      this->bind(ctx->g_clk, &m_clk);
 
-      // bind global clock
-      ibridge* bridge = new ibridge(m_clk);
-      ctx->g_clk->bind(bridge);
-      bridge->release();
-    }
-
-    if (ctx->g_reset) {
-      if (m_reset == nullptr) {
-        // setup global reset
-        m_reset = new busimpl(1);
-        this->add_tap("reset", m_reset);
-      }
-
-      // bind global reset
-      ibridge* bridge = new ibridge(m_reset);
-      ctx->g_reset->bind(bridge);
-      bridge->release();
-    }
+    if (ctx->g_reset)
+      this->bind(ctx->g_reset, &m_reset);
     
-    // bind debug taps
-    for (auto tap : ctx->taps) {
+    for (tapimpl* tap : ctx->taps) {
       this->bind(tap);
     }
   }
@@ -70,16 +50,26 @@ void ch_simulator::ensureInitialize() {
   m_initialized = true;
 }
 
-void ch_simulator::bind(ioimpl* ioport) {  
-  obridge* bridge = new obridge(ioport);
-  ioport->bind(bridge);
+void ch_simulator::bind(inputimpl* input, busimpl** bus) {
+  if (*bus == nullptr) {
+    *bus = new busimpl(1);
+    this->add_tap(input->get_name(), *bus);
+  }    
+  ibridge* bridge = new ibridge(*bus);
+  input->bind(bridge);
+  bridge->release();
+}
+
+void ch_simulator::bind(tapimpl* tap) {  
+  obridge* bridge = new obridge(tap);
+  tap->bind(bridge);
   bridge->release();
 
-  busimpl* bus = new busimpl(ioport->get_size());
-  bus->bind(ioport->get_ctx(), 0, bridge);
+  busimpl* bus = new busimpl(tap->get_size());
+  bus->bind(tap->get_ctx(), 0, bridge);
 
   // add to list
-  this->add_tap(ioport->get_name(), bus);
+  this->add_tap(tap->get_tapName(), bus);
   bus->add_ref();
 }
 
@@ -124,8 +114,8 @@ void ch_simulator::tick(ch_cycle t) {
 }
 
 void ch_simulator::run(const std::function<bool(ch_cycle time)>& callback) {
-  ch_cycle time = this->reset(0);
-  for (; callback(time); ++time) {
+  ch_cycle start = this->reset(0);
+  for (ch_cycle time = start; callback(time - start); ++time) {
     this->step(time);
   }
 }
@@ -177,6 +167,7 @@ void ch_tracer::tick(ch_cycle t) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void chdl_internal::register_tap(const string& name, const ch_node& node) {
+void chdl_internal::register_tap(const string& name, const ch_node& node, uint32_t size) {
+  node.ensureInitialized(size);
   node.get_ctx()->register_tap(name, node);
 }

@@ -50,6 +50,7 @@ public:
 protected:
   
   void read(std::vector< partition<data_type> >& out, size_t offset, size_t length) const override {
+    m_node.ensureInitialized(N);
     out.push_back({m_node, offset, length});
   }
   
@@ -84,6 +85,8 @@ public:
   ch_logic(const ch_bitv<1>& v) : base(v) {}
   
   ch_logic(const ch_bitbase<1>& v) : base(v) {}
+  
+  explicit ch_logic(const ch_node& node) : base(node) {}
   
   ch_logic(bool value) : base(value ? 1 : 0) {}
   

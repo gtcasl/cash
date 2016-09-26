@@ -10,7 +10,6 @@ public:
   virtual ~selectimpl() {}
 
   const bitvector& eval(ch_cycle t) override;  
-  void print(std::ostream& out) const override;
   void print_vl(std::ostream& out) const override;
   
 private:

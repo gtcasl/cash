@@ -8,11 +8,15 @@ class context;
 
 class nodeimpl {
 public:
-  nodeimpl(context* ctx, uint32_t size, bool undefined = false);
+  nodeimpl(const std::string& name, context* ctx, uint32_t size, bool undefined = false);
   virtual ~nodeimpl();
   
   uint64_t get_id() const {
     return m_id;
+  }
+  
+  const std::string get_name() const {
+    return m_name;
   }
   
   context* get_ctx() const {
@@ -61,11 +65,12 @@ public:
   virtual bool valid() const;  
   virtual const bitvector& eval(ch_cycle t) = 0;
   
-  virtual void print(std::ostream &) const = 0;
-  virtual void print_vl(std::ostream &) const = 0;
+  virtual void print(std::ostream& out) const;
+  virtual void print_vl(std::ostream& out) const = 0;
 
 protected:
 
+  std::string m_name;
   std::set<const ch_node*> m_refs;
   std::vector<ch_node> m_srcs;
   context* m_ctx;
@@ -77,17 +82,17 @@ protected:
 
 class undefimpl : public nodeimpl {
 public:
-  undefimpl(context* ctx, uint32_t size);
+  undefimpl(const std::string& name, context* ctx, uint32_t size);
+  undefimpl(context* ctx, uint32_t size) : undefimpl("undef", ctx, size) {}
   virtual ~undefimpl();
 
   const bitvector& eval(ch_cycle t) override;  
-  void print(std::ostream& out) const override;
   void print_vl(std::ostream& out) const override;
 };
 
 class nullimpl : public undefimpl {
 public:
-  nullimpl(context* ctx, uint32_t size) : undefimpl(ctx, size) {}
+  nullimpl(context* ctx, uint32_t size) : undefimpl("null", ctx, size) {}
   ~nullimpl() {}
 };
 

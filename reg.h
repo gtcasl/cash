@@ -30,7 +30,7 @@ ch_logic ch_valid(const ch_bitv<N>& x) {
 
 template <unsigned N>
 ch_bitv<N> ch_reg(const ch_bitbase<N>& next, const ch_bitbase<N>& init = ch_lit<N>(0x0)) {
-  ch_bitv<N> d(ch_select(ch_reset(), next, init));
+  ch_bitv<N> d(ch_select(ch_reset(), init, next));
   return ch_bitv<N>(createRegNode(d));
 }
 

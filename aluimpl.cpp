@@ -4,6 +4,39 @@
 using namespace std;
 using namespace chdl_internal;
 
+static const char* op_name(ch_operator op) {
+  switch (op) {
+  case op_inv:  return "inv";
+  case op_and:  return "and";
+  case op_or:   return "or";
+  case op_xor:  return "xor";
+  case op_nand: return "nand";
+  case op_nor:  return "nor";
+  case op_xnor: return "xnor";
+  case op_andr: return "andr";
+  case op_orr:  return "orr";
+  case op_xorr: return "xorr";
+  case op_sll:  return "sll";
+  case op_slr:  return "slr";
+  case op_rotl: return "rotl";
+  case op_rotr: return "rotr";
+  case op_add:  return "add";
+  case op_sub:  return "sub";
+  case op_neg:  return "neg";
+  case op_mult: return "mult";
+  case op_div:  return "div";
+  case op_mod:  return "mod";
+  case op_eq:   return "eq";
+  case op_ne:   return "ne";
+  case op_lt:   return "lt";
+  case op_gt:   return "gt";
+  case op_le:   return "le";
+  case op_ge:   return "ge";
+   default:
+    CHDL_ABORT("invalid operator");
+  }
+}
+
 template <ch_operator op>
 static void unaryop(bitvector& dst, const bitvector& a) {
   uint32_t num_words = ((dst.get_size() + 31) >> 5);
@@ -141,16 +174,18 @@ static void add(bitvector& dst, const bitvector& a, const bitvector& b) {
   }
 }
 
-aluimpl::aluimpl(ch_operator op, const ch_node& a, const ch_node& b) 
-  : nodeimpl(a.get_ctx(), a.get_size())
+///////////////////////////////////////////////////////////////////////////////
+
+aluimpl::aluimpl(ch_operator op, uint32_t size, const ch_node& a, const ch_node& b) 
+  : nodeimpl(op_name(op), a.get_ctx(), size)
   , m_op(op)
   , m_ctime(~0ull) {
   m_srcs.push_back(a);
   m_srcs.push_back(b);
 }
 
-aluimpl::aluimpl(ch_operator op, const ch_node& a) 
-  : nodeimpl(a.get_ctx(), a.get_size())
+aluimpl::aluimpl(ch_operator op, uint32_t size, const ch_node& a) 
+  : nodeimpl(op_name(op), a.get_ctx(), size)
   , m_op(op)
   , m_ctime(~0ull) {
   m_srcs.push_back(a);
@@ -243,18 +278,14 @@ const bitvector& aluimpl::eval(ch_cycle t) {
   return m_value;
 }
 
-void aluimpl::print(std::ostream& out) const {
-  TODO();
-}
-
 void aluimpl::print_vl(std::ostream& out) const {
   TODO();
 }
 
-ch_node chdl_internal::createAluNode(uint32_t size, ch_operator op, const ch_node& a, const ch_node& b) {
-  return ch_node(new aluimpl(op, a, b)); 
+ch_node chdl_internal::createAluNode(ch_operator op, uint32_t size, const ch_node& a, const ch_node& b) {
+  return ch_node(new aluimpl(op, size, a, b)); 
 }
 
-ch_node chdl_internal::createAluNode(uint32_t size, ch_operator op, const ch_node& a) {
-  return ch_node(new aluimpl(op, a));
+ch_node chdl_internal::createAluNode(ch_operator op, uint32_t size, const ch_node& a) {
+  return ch_node(new aluimpl(op, size, a));
 }

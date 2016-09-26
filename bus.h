@@ -23,24 +23,13 @@ public:
     rhs.m_impl = nullptr;
   }
 
-  ch_bus(const std::initializer_list<uint32_t>& value) {
-    uint32_t W = N / value.size();
-    if (W * value.size() != N)
-        CHDL_ABORT("initializer list size mismatch");
-    uint32_t i = value.size() - 1;
-    busimpl* impl = new busimpl(N);
-    for (uint32_t word : value) {
-      for (uint32_t j = 0; j < W; ++j) {
-        impl->set_bit(i * W + j, word & 0x1);
-        word >>= 1;
-      }
-      assert(word == 0);
-      --i;
-    }
-    m_impl = impl;
+  ch_bus(const std::initializer_list<uint32_t>& value) : m_impl(nullptr) {
+    this->operator =(value);
   }
   
-  ch_bus(uint32_t value) : ch_bus({value}) {}   
+  ch_bus(uint32_t value) : m_impl(nullptr) {
+    this->operator =({value});
+  }
   
   ~ch_bus() {
     if (m_impl)
@@ -50,22 +39,23 @@ public:
   template <typename T>
   void write(T value) {
     this->ensureInitialized();
-    for (uint32_t i = 0; i < N; ++i) {
-      m_impl->set_bit(i, value & 0x1);
-      value >>= 1;
-    }
-    assert(value == 0);
+    m_impl->write(value);
   }
   
   template <typename T>
   T read() const {
-   this->ensureInitialized();
-    T value = 0;
-    for (uint32_t i = 0; i < N; ++i) {
-      T sign = m_impl->get_bit(i) ? 1 : 0;
-      value |= sign << i;
-    }
-    return value;
+    this->ensureInitialized();
+    return m_impl->read<T>();
+  }
+  
+  bool read(uint32_t bit) const {
+    this->ensureInitialized();
+    return m_impl->get_bit(bit);
+  }
+  
+  void write(uint32_t bit, bool value) {
+    this->ensureInitialized();
+    return m_impl->set_bit(bit, value);
   }
   
   ch_bus& operator=(const ch_bus& rhs) {
@@ -85,7 +75,28 @@ public:
     return *this;
   }
   
-  operator busimpl*() const { 
+  ch_bus& operator=(const std::initializer_list<uint32_t>& value) {
+    this->ensureInitialized();
+    uint32_t W = N / value.size();
+    if (W * value.size() != N)
+        CHDL_ABORT("initializer list size mismatch");
+    uint32_t i = value.size() - 1;
+    for (uint32_t word : value) {
+      for (uint32_t j = 0; j < W; ++j) {
+        m_impl->set_bit(i * W + j, word & 0x1);
+        word >>= 1;
+      }
+      assert(word == 0);
+      --i;
+    }
+    return *this; 
+  }
+  
+  ch_bus& operator=(uint32_t value) {
+    return this->operator =({value});
+  }
+  
+  explicit operator busimpl*() const { 
     this->ensureInitialized();
     return m_impl; 
   }
@@ -105,19 +116,34 @@ protected:
 class ch_signal : public ch_bus<1> {
 public:  
   using base = ch_bus<1>;
+  using base::base; // inherit base constructors
   
   ch_signal() {}
   
-  ch_signal(bool value) : base(value ? 1 : 0) {}
+  ch_signal(bool value) : base() {
+    this->operator =(value);
+  }
   
-  ch_signal(char value) : base((value == 0 || value == '0') ? 0 : 1) {}
+  ch_signal(char value) : base() {
+    this->operator =(value);
+  }
   
   void write(bool value) {
-    base::write<uint32_t>(value ? 1 : 0);
+    base::write(0, value);
   }
   
   bool read() const {
-    return base::read<uint32_t>();
+    return base::read(0);
+  }
+  
+  ch_signal& operator=(bool value) {
+    base::write(0, value);
+    return *this;
+  }
+  
+  ch_signal& operator=(char value) {
+    base::write(0, !(value == 0 || value == '0'));
+    return *this;
   }
 };
 

@@ -6,7 +6,7 @@ using namespace std;
 using namespace chdl_internal;
 
 regimpl::regimpl(const ch_node& next)
-  : nodeimpl(next.get_ctx(), next.get_size())
+  : nodeimpl("reg", next.get_ctx(), next.get_size())
   , m_q(next.get_size())
   , m_ctime(~0ull)
 {
@@ -29,10 +29,6 @@ const bitvector& regimpl::eval(ch_cycle t) {
   return m_q; 
 }
 
-void regimpl::print(ostream& out) const {
-  TODO();
-}
-
 void regimpl::print_vl(ostream& out) const {
   TODO();
 }
@@ -51,7 +47,7 @@ latchimpl::latchimpl(const ch_node& next,
                      const ch_node& init,
                      const ch_node& enable,                 
                      const ch_node& reset)
-  : nodeimpl(next.get_ctx(), next.get_size())
+  : nodeimpl("latch", next.get_ctx(), next.get_size())
   , m_q(next.get_size())
   , m_ctime(~0ull)
 {
@@ -75,10 +71,6 @@ latchimpl::~latchimpl() {
 
 const bitvector& latchimpl::eval(ch_cycle t) {
   return m_q; 
-}
-
-void latchimpl::print(ostream& out) const {
-  TODO();
 }
 
 void latchimpl::print_vl(ostream& out) const {

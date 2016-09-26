@@ -1,5 +1,5 @@
 #include "busimpl.h"
-#include "signal.h"
+#include "ioimpl.h"
 
 using namespace std;
 using namespace chdl_internal;

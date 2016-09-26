@@ -13,8 +13,8 @@ void ch_device::register_io(const std::vector<ioport_arg>& args) {
   for (unsigned i = 0, n = args.size(); i < n; ++i) {
     m_ctx->register_io(i, args[i].m_node);
   }
-  // ensure all undefined nodes are resolved
-  assert(0 == m_ctx->undefcount);
+  // ensure all undefined nodes are deleted
+  assert(m_ctx->undefs.size() == 0);
 }
 
 void ch_device::compile() {
