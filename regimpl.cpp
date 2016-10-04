@@ -5,14 +5,14 @@
 using namespace std;
 using namespace chdl_internal;
 
-regimpl::regimpl(const ch_node& next)
-  : nodeimpl("reg", next.get_ctx(), next.get_size())
+regimpl::regimpl(const lnode& next)
+  : lnodeimpl("reg", next.get_ctx(), next.get_size())
   , m_q(next.get_size())
   , m_ctime(~0ull)
 {
   context* ctx = next.get_ctx();
   
-  const ch_node& clk = ctx->get_clk();  
+  const lnode& clk = ctx->get_clk();  
   m_cd = ctx->create_cdomain({clock_event(clk, EDGE_POS)});
   m_cd->add_use(this);
   m_cd->release();
@@ -43,11 +43,11 @@ void regimpl::tick_next(ch_cycle t) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-latchimpl::latchimpl(const ch_node& next,
-                     const ch_node& init,
-                     const ch_node& enable,                 
-                     const ch_node& reset)
-  : nodeimpl("latch", next.get_ctx(), next.get_size())
+latchimpl::latchimpl(const lnode& next,
+                     const lnode& init,
+                     const lnode& enable,                 
+                     const lnode& reset)
+  : lnodeimpl("latch", next.get_ctx(), next.get_size())
   , m_q(next.get_size())
   , m_ctime(~0ull)
 {
@@ -82,9 +82,9 @@ void latchimpl::tick(ch_cycle t) {
 }
 
 void latchimpl::tick_next(ch_cycle t) {
-  if (m_srcs[3].eval(t).get_bit(0)) {
+  if (m_srcs[3].eval(t)[0]) {
     m_q = m_srcs[1].eval(t);
-  } else if (m_srcs[2].eval(t).get_bit(0)) {
+  } else if (m_srcs[2].eval(t)[0]) {
     m_q = m_srcs[0].eval(t);
   }
 }
@@ -115,21 +115,21 @@ void chdl_internal::ch_popreset() {
   TODO();
 }
 
-ch_node chdl_internal::createRegNode(const ch_node& next) {
-  return ch_node(new regimpl(next));
+lnode chdl_internal::createRegNode(const lnode& next) {
+  return lnode(new regimpl(next));
 }
 
-ch_node chdl_internal::createLatchNode(const ch_node& next, 
-                                       const ch_node& init, 
-                                       const ch_node& enable, 
-                                       const ch_node& reset) {
-  return ch_node(new latchimpl(next, init, enable, reset));
+lnode chdl_internal::createLatchNode(const lnode& next, 
+                                       const lnode& init, 
+                                       const lnode& enable, 
+                                       const lnode& reset) {
+  return lnode(new latchimpl(next, init, enable, reset));
 }
 
-ch_node chdl_internal::createReadyNode(const ch_node& node) {
+lnode chdl_internal::createReadyNode(const lnode& node) {
   TODO();
 }
 
-ch_node chdl_internal::createValidNode(const ch_node& node) {
+lnode chdl_internal::createValidNode(const lnode& node) {
   TODO();
 }

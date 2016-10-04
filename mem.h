@@ -13,8 +13,8 @@ public:
   memory(uint32_t data_width, uint32_t addr_width, bool syncRead, bool writeEnable, const std::vector<uint32_t>& init_data);
   ~memory();  
   
-  ch_node read(const ch_node& addr) const;
-  void write(const ch_node& addr, const ch_node& value, const ch_node& enable);
+  lnode read(const lnode& addr) const;
+  void write(const lnode& addr, const lnode& value, const lnode& enable);
   
 private:
   memimpl* m_impl;
@@ -50,8 +50,16 @@ public:
       return ch_bitv<N>(m_mem.read(ch_bitv<A>(addr)));
     }
     
-    void write(const ch_bitbase<A>& addr, const ch_bitbase<N>& value, const ch_bitbase<1>& enable) {
-      m_mem.write(ch_bitv<A>(addr), ch_bitv<N>(value), ch_bitv<1>(enable));
+    ch_bitv<N> read(const ch_bitv<A>& addr) const {
+      return ch_bitv<N>(m_mem.read(ch_bitv<A>(addr)));
+    }
+    
+    void write(const ch_bitbase<A>& addr, const ch_bitbase<N>& value, const ch_logicbase& enable) {
+      m_mem.write(addr, value, enable);
+    }
+    
+    void write(const ch_bitv<A>& addr, const ch_bitv<N>& value, const ch_logic& enable) {
+      m_mem.write(addr, value, enable);
     }
     
 private:

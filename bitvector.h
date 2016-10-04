@@ -13,87 +13,261 @@ public:
     WORD_MASK     = WORD_SIZE - 1,
   };
   
+  class const_iterator;
+  class iterator;
+  
+  typedef bool const_reference;
+  
+  class reference {
+  public:    
+    
+    reference& operator=(bool rhs) {
+      if (rhs)
+        m_word |= m_mask;
+      else
+        m_word &= ~m_mask;
+    }
+    
+    operator bool() const {
+      return (m_word & m_mask) != 0;
+    }
+    
+  protected:
+    
+    reference(uint32_t& word, uint32_t mask) : m_word(word), m_mask(mask) {}
+    
+    uint32_t& m_word;
+    uint32_t  m_mask;
+    
+    friend class iterator;
+    friend class bitvector;
+  };  
+    
+  class const_iterator {
+  public:        
+    const_iterator(const const_iterator& rhs) 
+      : m_words(rhs.m_words)
+      , m_index(rhs.m_index)
+    {}
+    
+    ~const_iterator() {}
+    
+    const_iterator& operator=(const const_iterator& rhs) {
+      m_words = rhs.m_words;
+      m_index = rhs.m_index;
+      return *this;
+    }
+    
+    const_reference operator*() const {
+      return (*m_words & (1 << (m_index & WORD_MASK))) != 0;
+    }
+    
+    bool operator==(const const_iterator& rhs) const {
+      return m_index == rhs.m_index;
+    }
+    
+    bool operator!=(const const_iterator& rhs) const {
+      return !(*this == rhs);
+    }
+    
+    const_iterator& operator++() {
+      if (0 == (++m_index & WORD_MASK))
+          ++m_words;
+      return *this;
+    }
+    
+    const_iterator& operator--() {
+      if (0 == (m_index-- & WORD_MASK))
+          --m_words;
+      return *this;
+    }
+    
+    const_iterator operator++(int) {
+      const_iterator ret(*this);
+      this->operator++();
+      return ret;
+    }
+    
+    const_iterator operator--(int) {
+      const_iterator ret(*this);
+      this->operator--();
+      return ret;
+    }
+    
+    const_iterator& operator+=(int incr) {
+      this->advance(incr);
+      return *this;
+    }
+    
+    const_iterator& operator-=(int dec) {
+      this->advance(-dec);      
+      return *this;
+    }
+    
+    const_iterator operator+(int incr) const {
+      const_iterator ret(*this);
+      ret += incr;
+      return ret;
+    }
+    
+    const_iterator operator-(int dec) const {
+      const_iterator ret(*this);
+      ret -= dec;
+      return ret;
+    }
+    
+  protected:
+    
+    const_iterator(const uint32_t* words, uint32_t index) 
+      : m_words(const_cast<uint32_t*>(words))
+      , m_index(index) 
+    {}
+    
+    void advance(int delta) {
+      int offset = (m_index & WORD_MASK) + delta;
+      if (offset >= 0) {
+        m_words += (offset >> WORD_SIZE_LOG);    
+      } else {
+        m_words -= ((WORD_MASK - offset) >> WORD_SIZE_LOG);
+      }
+      m_index += delta;
+    }
+    
+    uint32_t  m_index;
+    uint32_t* m_words;
+    
+    friend class iterator;
+    friend class bitvector;
+  };
+  
+  class iterator : public const_iterator {
+  public:
+    using base = const_iterator;
+    using base::m_words;
+    using base::m_index;
+    
+    iterator(const iterator& rhs) : base(rhs) {}
+    
+    iterator(const const_iterator& rhs) : base(rhs) {}
+    
+    ~iterator() {}    
+    
+    reference operator*() const {
+      return reference(*m_words, 1 << (m_index & WORD_MASK));
+    }
+    
+    bool operator==(const iterator& rhs) const {
+      return base::operator ==(rhs);
+    }
+    
+    bool operator!=(const iterator& rhs) const {
+      return base::operator !=(rhs);
+    }
+    
+    iterator& operator++() {
+      if (0 == (++m_index & WORD_MASK))
+          ++m_words;
+      return *this;
+    } 
+    
+    iterator& operator--() {
+      if (0 == (m_index-- & WORD_MASK))
+          --m_words;
+      return *this;
+    }
+    
+    iterator operator++(int) {
+      iterator ret(*this);
+      this->operator++();
+      return ret;
+    }
+    
+    iterator operator--(int) {
+      iterator ret(*this);
+      this->operator--();
+      return ret;
+    }
+    
+    iterator& operator+=(int incr) {
+      this->advance(incr);
+      return *this;
+    }
+    
+    iterator& operator-=(int dec) {
+      this->advance(-dec);      
+      return *this;
+    }
+    
+    iterator operator+(int incr) const {
+      iterator ret(*this);
+      ret += incr;
+      return ret;
+    }
+    
+    iterator operator-(int dec) const {
+      iterator ret(*this);
+      ret -= dec;
+      return ret;
+    }
+    
+  protected:  
+    
+    iterator(uint32_t* words, uint32_t index) : const_iterator(words, index) {}
+    
+    friend class bitvector;
+  };
+  
   bitvector() : m_words(nullptr), m_size(0) {}
   
-  bitvector(const bitvector& rhs) {
-    uint32_t num_words = (rhs.m_size + WORD_MASK) >> WORD_SIZE_LOG;
-    m_words = new uint32_t[num_words];
-    m_size  = rhs.m_size;
-    std::copy(rhs.m_words, rhs.m_words + num_words, m_words);
-  }
+  bitvector(const bitvector& rhs);
   
-  bitvector(bitvector&& rhs) {
-    m_words = rhs.m_words;
-    m_size = rhs.m_size;
-    rhs.m_words = nullptr;
-    rhs.m_size = 0;
-  }
+  bitvector(bitvector&& rhs);
   
-  explicit bitvector(uint32_t size) : m_size(size) {
-    uint32_t num_words = (size + WORD_MASK) >> WORD_SIZE_LOG;
-    m_words = new uint32_t[num_words];
-    std::fill(m_words, m_words + num_words, 0x0);
-  }
+  explicit bitvector(uint32_t size, uint32_t defaultValue = 0x0);
   
-  ~bitvector() {
-    delete [] m_words;
-  }
+  bitvector(const std::initializer_list<uint32_t>& value, uint32_t size);
   
-  void resize(uint32_t size) {
-    uint32_t num_words = (size + WORD_MASK) >> WORD_SIZE_LOG;
-    uint32_t* words = new uint32_t[num_words];
-    uint32_t old_num_words = (m_size + WORD_MASK) >> WORD_SIZE_LOG;
-    if (m_words) {      
-      std::copy(m_words, m_words + std::min(num_words, old_num_words), words);
-      delete [] m_words;
-    }
-    if (num_words > old_num_words) {
-      std::fill(words + old_num_words, words + num_words, 0x0);
-    }
-    m_words = words;
-    m_size = size;
-  }
+  ~bitvector();
   
-  bitvector& operator=(const bitvector& rhs) {
-    uint32_t num_words = (rhs.m_size + WORD_MASK) >> WORD_SIZE_LOG;    
-    if (m_size != rhs.m_size) {
-      m_size = rhs.m_size;
-      delete[] m_words;
-      m_words = new uint32_t[num_words];
-    }      
-    std::copy(rhs.m_words, rhs.m_words + num_words, m_words);
-  }
+  void resize(uint32_t size, uint32_t defaultValue = 0x0, bool initialize = true, bool preserve = true);
   
-  bitvector& operator=(bitvector&& rhs) {
-    delete[] m_words;
-    m_size = rhs.m_size;
-    m_words = rhs.m_words;
-    rhs.m_size = 0;
-    rhs.m_words = nullptr;
-  }
+  bitvector& operator=(const bitvector& rhs);
   
-  bool get_bit(uint32_t idx) const {
+  bitvector& operator=(bitvector&& rhs);
+  
+  bitvector& operator=(const std::initializer_list<uint32_t>& value);
+  
+  const_reference at(uint32_t idx) const {
+    assert(idx < m_size);
     uint32_t widx = idx >> WORD_SIZE_LOG;
     uint32_t wbit = idx & WORD_MASK;
     uint32_t mask = 1 << wbit;
-    return m_words[widx] & mask;
+    return (m_words[widx] & mask) != 0;
   }
   
-  void set_bit(uint32_t idx, bool value ) {
+  reference at(uint32_t idx) {
+    assert(idx < m_size);
     uint32_t widx = idx >> WORD_SIZE_LOG;
     uint32_t wbit = idx & WORD_MASK;
     uint32_t mask = 1 << wbit;
-    if (value)
-      m_words[widx] |= mask;
-    else
-      m_words[widx] &= ~mask;
+    return reference(m_words[widx], mask);
+  }
+  
+  const_reference operator[](uint32_t idx) const {
+    return this->at(idx);
+  }
+  
+  reference operator[](uint32_t idx) {
+    return this->at(idx);
   }
   
   uint32_t get_word(uint32_t widx) const {
+    assert(widx < this->get_num_words());
     return m_words[widx];
   }
   
   void set_word(uint32_t widx, uint32_t word) {
+    assert(widx < this->get_num_words());
     m_words[widx] = word;
   }
   
@@ -105,43 +279,122 @@ public:
     return m_size;
   }
   
-  void copy(uint32_t dst_offset, const bitvector& src, uint32_t src_offset, uint32_t src_length) {
-    if (src_length == m_size && src.m_size == m_size) {
-      assert(dst_offset == 0 && src_offset == 0);
-      *this = src;
-    } else {    
-      uint32_t src_widx = src_offset >> WORD_SIZE_LOG;
-      uint32_t src_wbit = src_offset & WORD_MASK;
-      uint32_t src_bits = src.m_words[src_widx];
-      
-      uint32_t dst_widx = dst_offset >> WORD_SIZE_LOG;
-      uint32_t dst_wbit = dst_offset & WORD_MASK;
-      uint32_t* dst_bits = &m_words[dst_widx];
-      
-      while (src_length--) {
-        uint32_t src_mask = 1 << src_wbit;
-        uint32_t dst_mask = 1 << dst_wbit;
-        if (src_bits & src_mask) {
-          *dst_bits |= dst_mask;
-        } else {
-          *dst_bits &= ~dst_mask;
-        }      
-        if (++src_wbit == WORD_SIZE) {        
-          src_bits = src.m_words[++src_widx];
-          src_wbit = 0;
-        }      
-        if (++dst_wbit == WORD_SIZE) {        
-          dst_bits = &m_words[++dst_widx];
-          dst_wbit = 0;
-        }
-      }
-    }
+  void copy(uint32_t dst_offset, const bitvector& src, uint32_t src_offset, uint32_t src_length);
+  
+  bitvector& flip();
+  
+  bitvector& flip(uint32_t idx) {
+    assert(idx < m_size);
+    m_words[idx >> WORD_SIZE_LOG] ^= 1 << (idx & WORD_MASK);
+    return *this;
+  }
+  
+  bitvector operator~() const {
+    bitvector ret(*this);
+    ret.flip();
+    return ret;
+  }
+  
+  bitvector operator<<(uint32_t dist) const {
+    bitvector ret(*this);
+    ret >>= dist;
+    return ret;
+  }
+  
+  bitvector operator>>(uint32_t dist) const {
+    bitvector ret(*this);
+    ret >>= dist;
+    return ret;
+  }
+  
+  bitvector& operator<<=(uint32_t dist);
+  
+  bitvector& operator>>=(uint32_t dist);
+  
+  bitvector& operator&=(const bitvector& rhs);
+  
+  bitvector& operator|=(const bitvector& rhs);
+  
+  bitvector& operator^=(const bitvector& rhs);
+  
+  bool operator==(const std::initializer_list<uint32_t>& rhs) const;
+  
+  bool operator==(const bitvector& rhs) const;
+  
+  bool operator!=(const bitvector& rhs) const {
+    return !(*this == rhs);
+  }
+  
+  bool operator<(const bitvector& rhs) const;
+  
+  bool operator>(const bitvector& rhs) const {
+    return (rhs < *this);
+  }
+  
+  bool operator<=(const bitvector& rhs) const {
+    return !(*this > rhs);
+  }
+  
+  bool operator>=(const bitvector& rhs) const {
+    return !(*this < rhs);
+  }
+    
+  bitvector operator&(const bitvector& rhs) const {
+    bitvector ret(*this);
+    ret &= rhs;
+    return ret;
+  }
+  
+  bitvector operator|(const bitvector& rhs) const {
+    bitvector ret(*this);
+    ret |= rhs;
+    return ret;
+  }
+  
+  bitvector operator^(const bitvector& rhs) const {
+    bitvector ret(*this);
+    ret ^= rhs;
+    return ret;
+  }
+  
+  const_reference front() const {
+    return this->at(0);
+  }
+  
+  reference front() {
+    return this->at(0);
+  }
+  
+  const_reference back() const {
+    return this->at(m_size - 1);
+  }
+  
+  reference back() {
+    return this->at(m_size - 1);
+  }
+  
+  iterator begin() {
+    return iterator(m_words, 0);
+  }
+  
+  iterator end() {
+    return iterator(nullptr, m_size);
+  }
+  
+  const_iterator begin() const {
+    return const_iterator(m_words, m_size);
+  }
+  
+  const_iterator end() const {
+    return const_iterator(nullptr, m_size);
   }
   
 protected:
   
+  void clear_unused_bits();
+  
   uint32_t* m_words;
-  uint32_t m_size;
+  uint32_t  m_size;
 };
 
 }

@@ -1,10 +1,10 @@
 #pragma once
 
-#include "nodeimpl.h"
+#include "lnodeimpl.h"
 
 namespace chdl_internal {
 
-class litimpl : public nodeimpl {
+class litimpl : public lnodeimpl {
 public:
   litimpl(context* ctx, uint32_t size, const std::initializer_list<uint32_t>& value);
   virtual ~litimpl() {}

@@ -1,14 +1,14 @@
 #pragma once
 
-#include "nodeimpl.h"
+#include "lnodeimpl.h"
 #include "tickable.h"
 #include "cdomain.h"
 
 namespace chdl_internal {
 
-class regimpl : public tickable, public nodeimpl {
+class regimpl : public tickable, public lnodeimpl {
 public:
-  regimpl(const ch_node& next);
+  regimpl(const lnode& next);
   virtual ~regimpl();
   
   const bitvector& eval(ch_cycle t) override;  
@@ -25,13 +25,13 @@ protected:
   ch_cycle m_ctime;
 };
 
-class latchimpl : public tickable, public nodeimpl {
+class latchimpl : public tickable, public lnodeimpl {
 public:
   latchimpl(
-      const ch_node& next,
-      const ch_node& init,
-      const ch_node& enable,      
-      const ch_node& reset
+      const lnode& next,
+      const lnode& init,
+      const lnode& enable,      
+      const lnode& reset
   );
   virtual ~latchimpl();
   

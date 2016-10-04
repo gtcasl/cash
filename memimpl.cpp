@@ -6,14 +6,11 @@
 using namespace std;
 using namespace chdl_internal;
 
-memimpl::memimpl(uint32_t data_width, uint32_t addr_width, bool sync_read, bool write_enable) 
-  : m_syncRead(sync_read)
-  , m_writeEnable(write_enable) {
-  m_content.resize(1 << addr_width);
-  for (auto& line : m_content) {
-    line.resize(data_width);
-  }
-  
+memimpl::memimpl(uint32_t data_width, uint32_t addr_width, 
+                 bool sync_read, bool write_enable) 
+  : m_content(1 << addr_width, bitvector(data_width))
+  , m_syncRead(sync_read)
+  , m_writeEnable(write_enable) {  
   // register clock domain
   if (sync_read || write_enable) {
     context* ctx = ctx_curr();        
@@ -23,7 +20,9 @@ memimpl::memimpl(uint32_t data_width, uint32_t addr_width, bool sync_read, bool 
   }
 }
 
-memimpl::memimpl(uint32_t data_width, uint32_t addr_width, bool sync_read, bool write_enable, const std::string& init_file)
+memimpl::memimpl(uint32_t data_width, uint32_t addr_width, 
+                 bool sync_read, bool write_enable, 
+                 const std::string& init_file)
   : memimpl(data_width, addr_width, sync_read, write_enable) {  
   uint32_t a = 0, i = 0;
   ifstream in(init_file.c_str());  
@@ -31,7 +30,7 @@ memimpl::memimpl(uint32_t data_width, uint32_t addr_width, bool sync_read, bool 
     uint32_t value;
     in >> hex >> value;
     for (uint32_t j = 0; j < 32; ++j) {
-      m_content[a].set_bit(i++, value & 1);
+      m_content[a][i++] = (value & 1) != 0;
       value >>= 1;
       if (i == data_width) {
         i = 0;
@@ -45,12 +44,14 @@ memimpl::memimpl(uint32_t data_width, uint32_t addr_width, bool sync_read, bool 
   in.close();
 }
 
-memimpl::memimpl(uint32_t data_width, uint32_t addr_width, bool sync_read, bool write_enable, const std::vector<uint32_t>& init_data)
+memimpl::memimpl(uint32_t data_width, uint32_t addr_width, 
+                 bool sync_read, bool write_enable, 
+                 const std::vector<uint32_t>& init_data)
   : memimpl(data_width, addr_width, sync_read, write_enable) {  
   uint32_t a = 0, i = 0;
   for (uint32_t value : init_data) {
     for (uint32_t j = 0; j < 32; ++j) {
-      m_content[a].set_bit(i++, value & 1);
+      m_content[a][i++] = (value & 1) != 0;
       value >>= 1;
       if (i == data_width) {
         i = 0;
@@ -69,16 +70,16 @@ memimpl::~memimpl() {
   }
 }
 
-memportimpl* memimpl::read(const ch_node& addr) {
+memportimpl* memimpl::read(const lnode& addr) {
   return this->get_port(addr);
 }
 
-void memimpl::write(const ch_node& addr, const ch_node& value, const ch_node& enable) {
+void memimpl::write(const lnode& addr, const lnode& value, const lnode& enable) {
   memportimpl* port = this->get_port(addr);
   port->write(value, enable);
 }
 
-memportimpl* memimpl::get_port(const ch_node& addr) {
+memportimpl* memimpl::get_port(const lnode& addr) {
   memportimpl* port = nullptr; 
   for (auto item : m_ports) {
     if (item->m_srcs[0].get_id() == addr.get_id()) {
@@ -115,8 +116,8 @@ void memimpl::print_vl(ostream& out) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-memportimpl::memportimpl(memimpl* mem, const ch_node& addr)
-    : nodeimpl("memport", addr.get_ctx(), mem->m_content[0].get_size())
+memportimpl::memportimpl(memimpl* mem, const lnode& addr)
+    : lnodeimpl("memport", addr.get_ctx(), mem->m_content[0].get_size())
     , m_mem(mem)
     , m_writeEnable(false)
     , m_addr(0)
@@ -126,7 +127,7 @@ memportimpl::memportimpl(memimpl* mem, const ch_node& addr)
   mem->add_ref();
   m_srcs.push_back(addr); // idx=0 
   if (mem->m_cd) {
-    const ch_node& clk = mem->m_cd->get_sensitivity_list()[0].get_signal();
+    const lnode& clk = mem->m_cd->get_sensitivity_list()[0].get_signal();
     m_srcs.emplace_back(clk); // idx=1
   } 
   // add dependency from all write ports
@@ -141,7 +142,7 @@ memportimpl::~memportimpl() {
   m_mem->release();
 }
 
-void memportimpl::write(const ch_node& value, const ch_node& enable) {
+void memportimpl::write(const lnode& value, const lnode& enable) {
   // positions 0 & 1 are used by addr and clk nodes respectively
   // local port write source nodes have fixed position (2, 3)
   // write source nodes from other ports are appended starting at 
@@ -182,7 +183,7 @@ void memportimpl::tick(ch_cycle t) {
 void memportimpl::tick_next(ch_cycle t) {
   m_addr = m_srcs[0].eval(t).get_word(0);
   if (m_writeEnable) {
-    m_do_write = m_srcs[3].eval(t).get_bit(0);
+    m_do_write = m_srcs[3].eval(t)[0];
     if (m_do_write) {    
       m_wrdata = m_srcs[2].eval(t);
     }
@@ -221,10 +222,10 @@ memory::~memory() {
     m_impl->release();
 }
 
-ch_node memory::read(const ch_node& addr) const {
-  return ch_node(m_impl->read(addr));
+lnode memory::read(const lnode& addr) const {
+  return lnode(m_impl->read(addr));
 }
 
-void memory::write(const ch_node& addr, const ch_node& value, const ch_node& enable) {
+void memory::write(const lnode& addr, const lnode& value, const lnode& enable) {
   m_impl->write(addr, value, enable);
 }

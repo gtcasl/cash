@@ -1,14 +1,14 @@
 #pragma once
 
-#include "nodeimpl.h"
+#include "lnodeimpl.h"
 #include "arithm.h"
 
 namespace chdl_internal {
 
-class aluimpl : public nodeimpl {
+class aluimpl : public lnodeimpl {
 public:
-  aluimpl(ch_operator op, uint32_t size, const ch_node& a, const ch_node& b);
-  aluimpl(ch_operator op, uint32_t size, const ch_node& a);
+  aluimpl(ch_operator op, uint32_t size, const lnode& a, const lnode& b);
+  aluimpl(ch_operator op, uint32_t size, const lnode& a);
   ~aluimpl();
   
   ch_operator get_op() const {

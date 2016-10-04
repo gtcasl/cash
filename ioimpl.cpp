@@ -1,12 +1,12 @@
 #include "ioimpl.h"
-#include "busimpl.h"
+#include "snodeimpl.h"
 #include "context.h"
 
 using namespace std;
 using namespace chdl_internal;
 
 ioimpl::ioimpl(const std::string& name, context* ctx, uint32_t size)
-  : nodeimpl(name, ctx, size)  
+  : lnodeimpl(name, ctx, size)  
   , m_bridge(nullptr)
 {}
 
@@ -49,7 +49,7 @@ void inputimpl::print(std::ostream& out) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-outputimpl::outputimpl(const std::string& name, uint32_t index, const ch_node& src) 
+outputimpl::outputimpl(const std::string& name, uint32_t index, const lnode& src) 
   : ioimpl(name, src.get_ctx(), src.get_size())
   , m_index(index) {
   m_srcs.reserve(1);
@@ -69,7 +69,7 @@ void outputimpl::print(std::ostream& out) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-tapimpl::tapimpl(const std::string& name, const ch_node& src) 
+tapimpl::tapimpl(const std::string& name, const lnode& src) 
   : ioimpl("tap", src.get_ctx(), src.get_size())
   , m_tapName(name) {
   m_srcs.reserve(1);

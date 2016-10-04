@@ -5,7 +5,7 @@
 using namespace std;
 using namespace chdl_internal;
 
-assertimpl::assertimpl(const ch_node& src, const std::string& msg)
+assertimpl::assertimpl(const lnode& src, const std::string& msg)
   : ioimpl("assert", src.get_ctx(), 1)
   , m_msg(msg) {
   m_srcs.emplace_back(src);
@@ -13,7 +13,7 @@ assertimpl::assertimpl(const ch_node& src, const std::string& msg)
 
 const bitvector& assertimpl::eval(ch_cycle t) {
   const bitvector& bits = m_srcs[0].eval(t);
-  if (!bits.get_bit(0)) {
+  if (!bits[0]) {
     CHDL_ABORT("assertion failure at cycle %ld, %s", t, m_msg.c_str());
   }
 }

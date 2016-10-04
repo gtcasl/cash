@@ -1,10 +1,10 @@
 #include <thread>
-#include "node.h"
+#include "lnode.h"
 #include "litimpl.h"
 #include "regimpl.h"
 #include "memimpl.h"
 #include "ioimpl.h"
-#include "busimpl.h"
+#include "snodeimpl.h"
 #include "assertimpl.h"
 #include "cdomain.h"
 #include "device.h"
@@ -26,16 +26,16 @@ context::~context() {
   // cleanup allocated resources
   //
   
-  for (nodeimpl* node : nodes) {
+  for (lnodeimpl* node : nodes) {
     delete node;
   }
 
   assert(cdomains.empty());
 }
 
-std::list<nodeimpl*>::iterator
-context::erase_node(const std::list<nodeimpl*>::iterator& iter) {
-  nodeimpl* node = *iter;
+std::list<lnodeimpl*>::iterator
+context::erase_node(const std::list<lnodeimpl*>::iterator& iter) {
+  lnodeimpl* node = *iter;
   if (node == g_clk) {
     g_clk = nullptr;
   } else
@@ -46,7 +46,7 @@ context::erase_node(const std::list<nodeimpl*>::iterator& iter) {
   return nodes.erase(iter);
 }
 
-void context::push_clk(const ch_node& clk) {
+void context::push_clk(const lnode& clk) {
   clk_stack.push(clk);
 }
 
@@ -54,7 +54,7 @@ void context::pop_clk() {
   clk_stack.pop();
 }
 
-void context::push_reset(const ch_node& reset) {
+void context::push_reset(const lnode& reset) {
   reset_stack.push(reset);
 }
 
@@ -62,20 +62,33 @@ void context::pop_reset() {
   reset_stack.pop();
 }
 
-ch_node context::get_clk() {
+lnode context::get_clk() {
   if (!clk_stack.empty())
     return clk_stack.top();
   if (g_clk == nullptr)
     g_clk = new inputimpl("clk", -1, this, 1);
-  return ch_node(g_clk);
+  return lnode(g_clk);
 }
 
-ch_node context::get_reset() {
+lnode context::get_reset() {
   if (!reset_stack.empty())
     return reset_stack.top();
   if (g_reset == nullptr)
      g_reset = new inputimpl("reset", -1, this, 1);
-  return ch_node(g_reset);
+  return lnode(g_reset);
+}
+
+
+litimpl* context::create_literal(const std::initializer_list<uint32_t>& value, uint32_t size) {
+  for (litimpl* lit : literals) {
+    if (lit->get_size() == size 
+     && lit->get_value() == value) {
+      return lit;
+    }
+  }
+  litimpl* lit = new litimpl(this, size, value);
+  literals.emplace_back(lit);
+  return lit;
 }
 
 cdomain* context::create_cdomain(const std::vector<clock_event>& sensitivity_list) {
@@ -92,20 +105,17 @@ cdomain* context::create_cdomain(const std::vector<clock_event>& sensitivity_lis
   return cd;
 }
 
-void context::register_io(unsigned index, ch_node& node) {
-  ioimpl* impl;
-  if (node.m_impl == nullptr
-   || dynamic_cast<undefimpl*>(node.m_impl)) {
-    impl = new inputimpl("input", index, this, node.get_size());
-    node.assign(impl);
-  } else {
-    impl = new outputimpl("output", index, node);
-  }  
-  // add to list
+void context::register_input(unsigned index, const lnode& node) {
+  ioimpl* impl = new inputimpl("input", index, this, node.get_size());
+  node.assign(impl);
   ioports.emplace_back(impl);
 }
 
-void context::register_tap(const std::string& name, const ch_node& node) {
+void context::register_output(unsigned index, const lnode& node) {
+  ioports.emplace_back(new outputimpl("output", index, node));
+}
+
+void context::register_tap(const std::string& name, const lnode& node) {
   // resolve duplicate names
   string full_name(name);
   unsigned instances = m_dup_taps[name]++;
@@ -123,7 +133,8 @@ void context::register_tap(const std::string& name, const ch_node& node) {
   taps.emplace_back(new tapimpl(full_name, node));
 }
 
-void context::bind(unsigned index, busimpl* bus) {
+void context::bind(unsigned index, const snode& node) {
+  snodeimpl* bus = node.m_impl;
   ioimpl* ioport = ioports[index];
   unsigned n = bus->get_size();
   if (n != ioport->get_size())
@@ -148,19 +159,19 @@ void context::syntax_check() {
   }
 }
 
-void context::get_live_nodes(std::set<nodeimpl*>& live_nodes) {
+void context::get_live_nodes(std::set<lnodeimpl*>& live_nodes) {
   // get io ports
-  for (nodeimpl* node : ioports) {
+  for (lnodeimpl* node : ioports) {
     live_nodes.emplace(node);
   }  
   
   // get debug taps
-  for (nodeimpl* node : taps) {
+  for (lnodeimpl* node : taps) {
     live_nodes.emplace(node);
   }
 
   // get assert taps
-  for (nodeimpl* node : gtaps) {
+  for (lnodeimpl* node : gtaps) {
     live_nodes.emplace(node);
   }
 }
@@ -181,21 +192,21 @@ void context::toVerilog(const std::string& module_name, std::ostream& out) {
   TODO();
 }
 
-void context::print(std::ostream& out) {
-  for (nodeimpl* node :nodes) {
+void context::dumpNodes(std::ostream& out) {
+  for (lnodeimpl* node :nodes) {
     node->print(out);
   }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-context* chdl_internal::ctx_enter() {
+context* chdl_internal::ctx_begin() {
   context* ctx = new context();
   tls_ctx = ctx;
   return ctx;
 }
 
-void chdl_internal::ctx_exit() {
+void chdl_internal::ctx_end() {
   tls_ctx = nullptr;
 }
 

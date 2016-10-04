@@ -1,6 +1,6 @@
 #pragma once
 
-#include "nodeimpl.h"
+#include "lnodeimpl.h"
 #include "tickable.h"
 
 namespace chdl_internal {
@@ -13,10 +13,10 @@ enum EDGE_DIR {
 
 class clock_event {
 public:  
-  clock_event(const ch_node& signal, EDGE_DIR edgedir);
+  clock_event(const lnode& signal, EDGE_DIR edgedir);
   ~clock_event();
   
-  const ch_node& get_signal() const {
+  const lnode& get_signal() const {
     return m_signal;
   }
   
@@ -24,7 +24,7 @@ public:
     return m_edgedir;
   }
   
-  bool operator==(const ch_node& n) const {
+  bool operator==(const lnode& n) const {
     return (m_signal.get_id() == n.get_id());
   }
   
@@ -38,7 +38,7 @@ public:
   void print_vl(std::ostream& out) const;
   
 protected:
-  ch_node  m_signal;
+  lnode  m_signal;
   EDGE_DIR m_edgedir;
   bool     m_cval; 
 };

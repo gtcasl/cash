@@ -2,6 +2,10 @@
 TODO list:
 ==========
 
+- implement ch_bitbase.clone() to enable fork assignments
+- prevent assignments to yourself (e.g. a = a, a[0] = a[1])
+- implement ch_make_device() to use compiler time binding
+- add C++ user defined literals for _b, _h, _d, _o convertion to bitv<N> and bus<N>
 - create ../configure --prefix / make / make install scripts
 - implement chdl namespaces chdl::core, chdl::sim, chdl::stl
 - toVerilog() renaming module arguments
@@ -117,4 +121,29 @@ void Counter(ch_bitv<N>& out) {
     out = out + 0x1;
   });
 }
+
+
+// user-defined literals for binary numbers
+constexpr unsigned long long Scale(unsigned long long x, const char* s)
+{
+    return (!*s ? x : Scale(10*x + ((unsigned long long)*s)-((unsigned long long)'0'), s+1));
+} 
+constexpr unsigned long long ToScaledBinary
+    (unsigned long long x, unsigned long long scale, const char* s)
+{
+    return (!*s 
+                ? x 
+                : ( *s == 'e' || *s == 'E'  
+                        ? (x << Scale(0,s+1)) // put the digits in the right position
+                        : ToScaledBinary(x + x + (*s =='1'? 1 : 0), scale,  s+1)));
+}
+std::cout << std::hex << "0x" << 1111111111_b << std::endl;    
+std::cout << std::hex << "0x" << 1111111111e16_b << std::endl;
+
+//--
+ch_device my_adder = ch_make_device(Adder<2>);
+__ch_tie(out, cout) = my_adder.bind(lhs, rhs, cin);
+http://stackoverflow.com/questions/25513380/c-style-callbacks-in-c11
+http://en.cppreference.com/w/cpp/thread/packaged_task
+http://stackoverflow.com/questions/38561242/struct-to-from-stdtuple-conversion
 

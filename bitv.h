@@ -1,22 +1,25 @@
 #pragma once
 
-#include "node.h"
-#include "typebase.h"
+#include "bitbase.h"
 #include "vec.h"
 
 #define CHDL_CONCAT_GEN(T, TcB, TcA, TB, TA, cB, cA, B, A) \
-  T inline const_concat_ref<TcB, TcA> ch_concat(cB b, cA a) { return const_concat_ref<TcB, TcA>(b, a); } \
-  T inline const_concat_ref<TcB, TA> ch_concat(cB b, A a) { return const_concat_ref<TcB, TA>(b, a); } \
-  T inline const_concat_ref<TB, TcA> ch_concat(B b, cA a) { return const_concat_ref<TB, TcA>(b, a); } \
-  T inline concat_ref<TB, TA> ch_concat(B b, A a) { return concat_ref<TB, TA>(b, a); } \
   T inline const_concat_ref<TcB, TcA> operator,(cB b, cA a) { return const_concat_ref<TcB, TcA>(b, a); } \
   T inline const_concat_ref<TcB, TA> operator,(cB b, A a) { return const_concat_ref<TcB, TA>(b, a); } \
   T inline const_concat_ref<TB, TcA> operator,(B b, cA a) { return const_concat_ref<TB, TcA>(b, a); } \
-  T inline concat_ref<TB, TA> operator,(B b, A a) { return concat_ref<TB, TA>(b, a); }
+  T inline concat_ref<TB, TA> operator,(B b, A a) { return concat_ref<TB, TA>(b, a); } \
+  T inline const_concat_ref<TcB, TcA> ch_concat(cB b, cA a) { return const_concat_ref<TcB, TcA>(b, a); } \
+  T inline const_concat_ref<TcB, TA> ch_concat(cB b, A a) { return const_concat_ref<TcB, TA>(b, a); } \
+  T inline const_concat_ref<TB, TcA> ch_concat(B b, cA a) { return const_concat_ref<TB, TcA>(b, a); } \
+  T inline concat_ref<TB, TA> ch_concat(B b, A a) { return concat_ref<TB, TA>(b, a); }
 
 namespace chdl_internal {
 
-template <unsigned N> using ch_bitbase = typebase<N, ch_node>;
+template <unsigned N> class ch_bus;
+using ch_signal = ch_bus<1>;
+
+template <unsigned N> class ch_bitv;
+using ch_logic = ch_bitv<1>;
 
 template <unsigned N> 
 class ch_bitv : public ch_bitbase<N> {
@@ -24,6 +27,8 @@ public:
   using base = ch_bitbase<N>;
   using base::operator=;
   typedef typename base::data_type data_type;
+  typedef ch_bitv<N> logic_type;
+  typedef ch_bus<N>  bus_type;
       
   ch_bitv() {}
   
@@ -33,17 +38,22 @@ public:
     this->operator =(rhs);
   }
   
-  explicit ch_bitv(const ch_node& node) : m_node(node, N) {}
+  ch_bitv(int value) : m_node({(uint32_t)value}, N) {}
   
-  ch_bitv(uint32_t value) : m_node({value}, N) {}
+  ch_bitv(const std::initializer_list<uint32_t>& value) : m_node(value, N) {}
   
-  ch_bitv(const std::initializer_list<uint32_t>& value) : m_node(value, N) {} 
+  explicit ch_bitv(const lnode& node) : m_node(node, N) {}
   
-  operator const ch_node&() const { 
+  base& operator=(const std::initializer_list<uint32_t>& value) {
+    m_node.assign(value, N);
+    return *this;
+  }
+  
+  operator const lnode&() const { 
     return m_node; 
   }
   
-  operator ch_node&() { 
+  operator lnode&() { 
     return m_node; 
   }
   
@@ -55,63 +65,84 @@ protected:
   }
   
   void write(size_t dst_offset, const std::vector< partition<data_type> >& src, size_t src_offset, size_t src_length) override {
-    size_t offset = 0;
-    size_t length = src_offset;
     for (auto& p : src) {
-      if (src_offset < offset + p.length) {
-        size_t s_length = std::min(p.length, src_length);        
-        size_t s_offset = p.offset + (length - offset);
-        length = offset + p.length;
-        m_node.assign(N, dst_offset, p.data, s_offset, s_length);         
-        dst_offset += s_length;
-        src_length -= s_length;        
+      if (src_offset < p.length) {
+        size_t len = std::min(p.length - src_offset, src_length);
+        m_node.assign(dst_offset, p.data, p.offset + src_offset, len, N);         
+        src_length -= len;
+        if (src_length == 0)
+          return;
+        dst_offset += len;                
+        src_offset = p.length;
       }
-      offset += p.length;
+      src_offset -= p.length;
     }
   }
   
-  ch_node m_node;
+  lnode m_node;
 };
 
-class ch_logic : public ch_bitv<1> {
-public:  
-  using base = ch_bitv<1>;
-  using base::base::operator=;
+/*template <> 
+class ch_bitv<1> : public ch_logicbase {
+public:    
+  using base = ch_logicbase;
+  using base::operator=;
+  typedef typename base::data_type data_type;
+  typedef ch_bitv<1> logic_type;
+  typedef ch_signal  bus_type;
   
-  ch_logic() {}
+  ch_bitv() {}
   
-  ch_logic(const ch_logic& l) : base(l) {}
+  ch_bitv(const ch_bitv& rhs) : m_node(rhs.m_node, 1) {}
   
-  ch_logic(const ch_bitv<1>& v) : base(v) {}
+  ch_bitv(const ch_logicbase& rhs) {
+    this->operator =(rhs);
+  }
   
-  ch_logic(const ch_bitbase<1>& v) : base(v) {}
+  ch_bitv(int value) : m_node({(uint32_t)value}, 1) {}
   
-  explicit ch_logic(const ch_node& node) : base(node) {}
+  ch_bitv(const std::initializer_list<uint32_t>& value) : m_node(value, 1) {}
   
-  ch_logic(bool value) : base(value ? 1 : 0) {}
+  ch_bitv(bool value) : ch_bitv(value ? 0x1 : 0x0) {}
   
-  ch_logic(char value) : base((value == 0 || value == '0') ? 0 : 1) {}
+  ch_bitv(char value) : ch_bitv(value != '0') {}
   
-  template <unsigned M>
-  const_slice_ref<M, base::base> slice(size_t index) = delete;
+  explicit ch_bitv(const lnode& node) : m_node(node, 1) {}
   
-  template <unsigned M>
-  slice_ref<M, base::base> slice(size_t index) = delete;
+  base& operator=(const std::initializer_list<uint32_t>& value) {
+    m_node.assign(value, 1);
+    return *this;
+  }
   
-  template <unsigned M>
-  const_slice_ref<M, base::base> aslice(size_t index) const = delete;
+  operator const lnode&() const { 
+    return m_node; 
+  }
   
-  template <unsigned M>
-  slice_ref<M, base::base> aslice(size_t index) = delete;
-  
-  const_subscript_ref<base::base> operator[](size_t index) const = delete;
-  
-  subscript_ref<base::base> operator[](size_t index) = delete;  
+  operator lnode&() { 
+    return m_node; 
+  }
   
 protected:
-
-  using base::m_node;
-};
+  
+  void read(std::vector< partition<data_type> >& out, size_t offset, size_t length) const override {
+    assert(length == 1);
+    m_node.ensureInitialized(1);    
+    out.push_back({m_node, offset, 1});
+  }
+  
+  void write(size_t dst_offset, const std::vector< partition<data_type> >& src, size_t src_offset, size_t src_length) override {
+    assert(src_length == 1);
+    for (auto& p : src) {
+      if (src_offset < p.length) {
+        m_node.assign(dst_offset, p.data, p.offset + src_offset, 1, 1);  
+        return;
+      }
+      src_offset -= p.length;
+    }
+  }
+  
+  lnode m_node;
+};*/
 
 // concatenation operator
 
@@ -121,11 +152,17 @@ CHDL_CONCAT_GEN(template <typename BB CHDL_COMMA typename BA CHDL_COMMA typename
                 const const_concat_ref<BB CHDL_COMMA BA>&, const const_concat_ref<AB CHDL_COMMA AA>&,
                 const concat_ref<BB CHDL_COMMA BA>&, const concat_ref<AB CHDL_COMMA AA>&)
 
-CHDL_CONCAT_GEN(template <unsigned NB CHDL_COMMA typename TB CHDL_COMMA unsigned NA CHDL_COMMA typename TA>, 
-                const_slice_ref<NB CHDL_COMMA TB>, const_slice_ref<NA CHDL_COMMA TA>,
-                slice_ref<NB CHDL_COMMA TB>, slice_ref<NA CHDL_COMMA TA>,
-                const const_slice_ref<NB CHDL_COMMA TB>&, const const_slice_ref<NA CHDL_COMMA TA>&,
-                const slice_ref<NB CHDL_COMMA TB>&, const slice_ref<NA CHDL_COMMA TA>&)
+CHDL_CONCAT_GEN(template <typename TB CHDL_COMMA unsigned NB CHDL_COMMA typename TA CHDL_COMMA unsigned NA>, 
+                const_slice_ref<TB CHDL_COMMA NB>, const_slice_ref<TA CHDL_COMMA NA>,
+                slice_ref<TB CHDL_COMMA NB>, slice_ref<TA CHDL_COMMA NA>,
+                const const_slice_ref<TB CHDL_COMMA NB>&, const const_slice_ref<TA CHDL_COMMA NA>&,
+                const slice_ref<TB CHDL_COMMA NB>&, const slice_ref<TA CHDL_COMMA NA>&)
+
+CHDL_CONCAT_GEN(template <typename TB CHDL_COMMA typename TA>, 
+                const_subscript_ref<TB>, const_subscript_ref<TA>,
+                subscript_ref<TB>, subscript_ref<TA>,
+                const const_subscript_ref<TB>&, const const_subscript_ref<TA>&,
+                const subscript_ref<TB>&, const subscript_ref<TA>&)
 
 CHDL_CONCAT_GEN(template <unsigned NB CHDL_COMMA unsigned NA>, 
                 ch_bitbase<NB>, ch_bitbase<NA>,
@@ -138,12 +175,19 @@ CHDL_CONCAT_GEN(,
                 ch_logic, ch_logic,
                 const ch_logic&, const ch_logic&,
                 ch_logic&, ch_logic&)
+//--
 
-CHDL_CONCAT_GEN(template <typename BB CHDL_COMMA typename BA CHDL_COMMA unsigned NA CHDL_COMMA typename TA>, 
-                const_concat_ref<BB CHDL_COMMA BA>, const_slice_ref<NA CHDL_COMMA TA>,
-                concat_ref<BB CHDL_COMMA BA>, slice_ref<NA CHDL_COMMA TA>,
-                const const_concat_ref<BB CHDL_COMMA BA>&, const const_slice_ref<NA CHDL_COMMA TA>&,
-                const concat_ref<BB CHDL_COMMA BA>&, const slice_ref<NA CHDL_COMMA TA>&)
+CHDL_CONCAT_GEN(template <typename BB CHDL_COMMA typename BA CHDL_COMMA typename TA CHDL_COMMA unsigned NA>, 
+                const_concat_ref<BB CHDL_COMMA BA>, const_slice_ref<TA CHDL_COMMA NA>,
+                concat_ref<BB CHDL_COMMA BA>, slice_ref<TA CHDL_COMMA NA>,
+                const const_concat_ref<BB CHDL_COMMA BA>&, const const_slice_ref<TA CHDL_COMMA NA>&,
+                const concat_ref<BB CHDL_COMMA BA>&, const slice_ref<TA CHDL_COMMA NA>&)
+
+CHDL_CONCAT_GEN(template <typename BB CHDL_COMMA typename BA CHDL_COMMA typename TA>, 
+                const_concat_ref<BB CHDL_COMMA BA>, const_subscript_ref<TA>,
+                concat_ref<BB CHDL_COMMA BA>, subscript_ref<TA>,
+                const const_concat_ref<BB CHDL_COMMA BA>&, const const_subscript_ref<TA>&,
+                const concat_ref<BB CHDL_COMMA BA>&, const subscript_ref<TA>&)
 
 CHDL_CONCAT_GEN(template <typename BB CHDL_COMMA typename BA CHDL_COMMA unsigned NA>, 
                 const_concat_ref<BB CHDL_COMMA BA>, ch_bitbase<NA>,
@@ -157,11 +201,59 @@ CHDL_CONCAT_GEN(template <typename BB CHDL_COMMA typename BA>,
                 const const_concat_ref<BB CHDL_COMMA BA>&, const ch_logic&,
                 const concat_ref<BB CHDL_COMMA BA>&, ch_logic&)
 
-CHDL_CONCAT_GEN(template <unsigned NB CHDL_COMMA typename TB CHDL_COMMA typename AB CHDL_COMMA typename AA>, 
-                const_slice_ref<NB CHDL_COMMA TB>, const_concat_ref<AB CHDL_COMMA AA>,
-                slice_ref<NB CHDL_COMMA TB>, concat_ref<AB CHDL_COMMA AA>,
-                const const_slice_ref<NB CHDL_COMMA TB>&, const const_concat_ref<AB CHDL_COMMA AA>&,
-                const slice_ref<NB CHDL_COMMA TB>&, const concat_ref<AB CHDL_COMMA AA>&)
+//--
+
+CHDL_CONCAT_GEN(template <typename TB CHDL_COMMA unsigned NB CHDL_COMMA typename AB CHDL_COMMA typename AA>, 
+                const_slice_ref<TB CHDL_COMMA NB>, const_concat_ref<AB CHDL_COMMA AA>,
+                slice_ref<TB CHDL_COMMA NB>, concat_ref<AB CHDL_COMMA AA>,
+                const const_slice_ref<TB CHDL_COMMA NB>&, const const_concat_ref<AB CHDL_COMMA AA>&,
+                const slice_ref<TB CHDL_COMMA NB>&, const concat_ref<AB CHDL_COMMA AA>&)
+
+CHDL_CONCAT_GEN(template <typename TB CHDL_COMMA unsigned NB CHDL_COMMA typename TA>, 
+                const_slice_ref<TB CHDL_COMMA NB>, const_subscript_ref<TA>,
+                slice_ref<TB CHDL_COMMA NB>, subscript_ref<TA>,
+                const const_slice_ref<TB CHDL_COMMA NB>&, const const_subscript_ref<TA>&,
+                const slice_ref<TB CHDL_COMMA NB>&, const subscript_ref<TA>&)
+
+CHDL_CONCAT_GEN(template <typename TB CHDL_COMMA unsigned NB CHDL_COMMA unsigned NA>, 
+                const_slice_ref<TB CHDL_COMMA NB>, ch_bitbase<NA>,
+                slice_ref<TB CHDL_COMMA NB>, ch_bitbase<NA>,
+                const const_slice_ref<TB CHDL_COMMA NB>&, const ch_bitbase<NA>&,
+                const slice_ref<TB CHDL_COMMA NB>&, ch_bitbase<NA>&)
+
+CHDL_CONCAT_GEN(template <typename TB CHDL_COMMA unsigned NB>, 
+                const_slice_ref<TB CHDL_COMMA NB>, ch_logic,
+                slice_ref<TB CHDL_COMMA NB>, ch_logic,
+                const const_slice_ref<TB CHDL_COMMA NB>&, const ch_logic&,
+                const slice_ref<TB CHDL_COMMA NB>&, ch_logic&)
+
+//--
+
+CHDL_CONCAT_GEN(template <typename TB CHDL_COMMA typename AB CHDL_COMMA typename AA>, 
+                const_subscript_ref<TB>, const_concat_ref<AB CHDL_COMMA AA>,
+                subscript_ref<TB>, concat_ref<AB CHDL_COMMA AA>,
+                const const_subscript_ref<TB>&, const const_concat_ref<AB CHDL_COMMA AA>&,
+                const subscript_ref<TB>&, const concat_ref<AB CHDL_COMMA AA>&)
+
+CHDL_CONCAT_GEN(template <typename TB CHDL_COMMA typename TA CHDL_COMMA unsigned NA>, 
+                const_subscript_ref<TB>, const_slice_ref<TA CHDL_COMMA NA>,
+                subscript_ref<TB>, slice_ref<TA CHDL_COMMA NA>,
+                const const_subscript_ref<TB>&, const const_slice_ref<TA CHDL_COMMA NA>&,
+                const subscript_ref<TB>&, const slice_ref<TA CHDL_COMMA NA>&)
+
+CHDL_CONCAT_GEN(template <typename TB CHDL_COMMA unsigned NA>, 
+                const_subscript_ref<TB>, ch_bitbase<NA>,
+                subscript_ref<TB>, ch_bitbase<NA>,
+                const const_subscript_ref<TB>&, const ch_bitbase<NA>&,
+                const subscript_ref<TB>&, ch_bitbase<NA>&)
+
+CHDL_CONCAT_GEN(template <typename TB>, 
+                const_subscript_ref<TB>, ch_logic,
+                subscript_ref<TB>, ch_logic,
+                const const_subscript_ref<TB>&, const ch_logic&,
+                const subscript_ref<TB>&, ch_logic&)
+
+//--
 
 CHDL_CONCAT_GEN(template <unsigned NB CHDL_COMMA typename AB CHDL_COMMA typename AA>, 
                 ch_bitbase<NB>, const_concat_ref<AB CHDL_COMMA AA>,
@@ -169,41 +261,43 @@ CHDL_CONCAT_GEN(template <unsigned NB CHDL_COMMA typename AB CHDL_COMMA typename
                 const ch_bitbase<NB>&, const const_concat_ref<AB CHDL_COMMA AA>&,
                 ch_bitbase<NB>&, const concat_ref<AB CHDL_COMMA AA>&)
 
-CHDL_CONCAT_GEN(template <typename AB CHDL_COMMA typename AA>, 
-                ch_logic, const_concat_ref<AB CHDL_COMMA AA>,
-                ch_logic, concat_ref<AB CHDL_COMMA AA>,
-                const ch_logic&, const const_concat_ref<AB CHDL_COMMA AA>&,
-                ch_logic&, const concat_ref<AB CHDL_COMMA AA>&)
+CHDL_CONCAT_GEN(template <unsigned NB CHDL_COMMA typename TA CHDL_COMMA unsigned NA>, 
+                ch_bitbase<NB>, const_slice_ref<TA CHDL_COMMA NA>,
+                ch_bitbase<NB>, slice_ref<TA CHDL_COMMA NA>,
+                const ch_bitbase<NB>&, const const_slice_ref<TA CHDL_COMMA NA>&,
+                ch_bitbase<NB>&, const slice_ref<TA CHDL_COMMA NA>&)
 
-CHDL_CONCAT_GEN(template <unsigned NB CHDL_COMMA typename TB CHDL_COMMA unsigned NA>, 
-                const_slice_ref<NB CHDL_COMMA TB>, ch_bitbase<NA>,
-                slice_ref<NB CHDL_COMMA TB>, ch_bitbase<NA>,
-                const const_slice_ref<NB CHDL_COMMA TB>&, const ch_bitbase<NA>&,
-                const slice_ref<NB CHDL_COMMA TB>&, ch_bitbase<NA>&)
-
-CHDL_CONCAT_GEN(template <unsigned NB CHDL_COMMA typename TB>, 
-                const_slice_ref<NB CHDL_COMMA TB>, ch_logic,
-                slice_ref<NB CHDL_COMMA TB>, ch_logic,
-                const const_slice_ref<NB CHDL_COMMA TB>&, const ch_logic&,
-                const slice_ref<NB CHDL_COMMA TB>&, ch_logic&)
-
-CHDL_CONCAT_GEN(template <unsigned NB CHDL_COMMA unsigned NA CHDL_COMMA typename TA>, 
-                ch_bitbase<NB>, const_slice_ref<NA CHDL_COMMA TA>,
-                ch_bitbase<NB>, slice_ref<NA CHDL_COMMA TA>,
-                const ch_bitbase<NB>&, const const_slice_ref<NA CHDL_COMMA TA>&,
-                ch_bitbase<NB>&, const slice_ref<NA CHDL_COMMA TA>&)
-
-CHDL_CONCAT_GEN(template <unsigned NA CHDL_COMMA typename TA>, 
-                ch_logic, const_slice_ref<NA CHDL_COMMA TA>,
-                ch_logic, slice_ref<NA CHDL_COMMA TA>,
-                const ch_logic&, const const_slice_ref<NA CHDL_COMMA TA>&,
-                ch_logic&, const slice_ref<NA CHDL_COMMA TA>&)
+CHDL_CONCAT_GEN(template <unsigned NB CHDL_COMMA typename TA>, 
+                ch_bitbase<NB>, const_subscript_ref<TA>,
+                ch_bitbase<NB>, subscript_ref<TA>,
+                const ch_bitbase<NB>&, const const_subscript_ref<TA>&,
+                ch_bitbase<NB>&, const subscript_ref<TA>&)
 
 CHDL_CONCAT_GEN(template <unsigned NB>, 
                 ch_bitbase<NB>, ch_logic,
                 ch_bitbase<NB>, ch_logic,
                 const ch_bitbase<NB>&, const ch_logic&,
                 ch_bitbase<NB>&, ch_logic&)
+
+//--
+
+CHDL_CONCAT_GEN(template <typename AB CHDL_COMMA typename AA>, 
+                ch_logic, const_concat_ref<AB CHDL_COMMA AA>,
+                ch_logic, concat_ref<AB CHDL_COMMA AA>,
+                const ch_logic&, const const_concat_ref<AB CHDL_COMMA AA>&,
+                ch_logic&, const concat_ref<AB CHDL_COMMA AA>&)
+
+CHDL_CONCAT_GEN(template <typename TA CHDL_COMMA unsigned NA>, 
+                ch_logic, const_slice_ref<TA CHDL_COMMA NA>,
+                ch_logic, slice_ref<TA CHDL_COMMA NA>,
+                const ch_logic&, const const_slice_ref<TA CHDL_COMMA NA>&,
+                ch_logic&, const slice_ref<TA CHDL_COMMA NA>&)
+
+CHDL_CONCAT_GEN(template <typename TA>, 
+                ch_logic, const_subscript_ref<TA>,
+                ch_logic, subscript_ref<TA>,
+                const ch_logic&, const const_subscript_ref<TA>&,
+                ch_logic&, const subscript_ref<TA>&)
 
 CHDL_CONCAT_GEN(template <unsigned NA>, 
                 ch_logic, ch_bitbase<NA>,
@@ -221,22 +315,22 @@ ch_bitv<N> ch_null() {
 // slice operators
 
 template <unsigned N, unsigned M>
-const_slice_ref<N, ch_bitbase<M>> ch_slice(const ch_bitbase<M>& in, size_t index = 0) {
+const_slice_ref<ch_bitbase<M>, N> ch_slice(const ch_bitbase<M>& in, size_t index = 0) {
   return in.template slice<N>(index);
 }
 
 template <unsigned N, unsigned M>
-slice_ref<N, ch_bitbase<M>> ch_slice(ch_bitbase<M>& in, size_t index = 0) {
+slice_ref<ch_bitbase<M>, N> ch_slice(ch_bitbase<M>& in, size_t index = 0) {
   return in.template slice<N>(index);
 }
 
 template <unsigned N, unsigned M>
-const_slice_ref<N, ch_bitbase<M>> ch_aslice(const ch_bitbase<M>& in, size_t index = 0) {
+const_slice_ref<ch_bitbase<M>, N> ch_aslice(const ch_bitbase<M>& in, size_t index = 0) {
   return in.template aslice<N>(index);
 }
 
 template <unsigned N, unsigned M>
-slice_ref<N, ch_bitbase<M>> ch_aslice(ch_bitbase<M>& in, size_t index = 0) {
+slice_ref<ch_bitbase<M>, N> ch_aslice(ch_bitbase<M>& in, size_t index = 0) {
   return in.template aslice<N>(index);
 }
 
@@ -271,8 +365,8 @@ public:
 template <unsigned D>
 class sext_pad<1, D> {
 public:
-    ch_bitv<(1+D)> operator() (const ch_bitbase<1>& in) {
-      return (in[0], ch_bitv<D>(0x0));
+    ch_bitv<(1+D)> operator() (const ch_logicbase& in) {
+      return (in, ch_bitv<D>(0x0));
     }
 };
 
@@ -316,7 +410,7 @@ ch_bitv<N> ch_shuffle(const ch_bitbase<N>& in, const std::initializer_list<int>&
 // literal operators
 
 template <unsigned N>
-ch_bitv<N> ch_lit(uint32_t value) {
+ch_bitv<N> ch_lit(int value) {
   return ch_bitv<N>(value);
 }
 

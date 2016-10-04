@@ -46,6 +46,21 @@ struct identity {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+template <typename Function>
+struct function_traits : public function_traits<decltype(&Function::operator())> {};
+
+template <typename Class, typename Ret, typename... Args>
+struct function_traits<Ret(Class::*)(Args...) const> {
+    typedef const std::function<Ret(Args...)> function;
+};
+
+template <typename Function>
+typename function_traits<Function>::function to_function(const Function& func) {
+    return static_cast<typename function_traits<Function>::function>(func);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 class refcounted {
 public:
   void add_ref() const {

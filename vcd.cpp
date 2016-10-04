@@ -1,6 +1,6 @@
 #include <fstream>
 #include "vcd.h"
-#include "busimpl.h"
+#include "snodeimpl.h"
 
 using namespace std;
 using namespace chdl_internal;
@@ -35,11 +35,11 @@ void ch_vcdtracer::tick(ch_cycle t) {
   // log net values
   m_file << '#' << t << endl;  
   for (auto& tap : m_taps) {
-    const busimpl& bus = *tap.bus;
+    const snodeimpl& bus = *tap.bus;
     if (bus.get_size() > 1)
       m_file << 'b';
     for (int j = bus.get_size()-1; j >= 0; --j) {
-      m_file << (bus.get_bit(j) ? '1' : '0');
+      m_file << (bus[j] ? '1' : '0');
     }
     if (bus.get_size() > 1)
       m_file << ' ';

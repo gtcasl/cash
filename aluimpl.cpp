@@ -39,56 +39,61 @@ static const char* op_name(ch_operator op) {
 
 template <ch_operator op>
 static void unaryop(bitvector& dst, const bitvector& a) {
-  uint32_t num_words = ((dst.get_size() + 31) >> 5);
-  for (uint32_t i = 0; i < num_words; ++i) {
-    uint32_t a_w = a.get_word(i);
-    uint32_t d_w;
-    switch (op) {
-    case op_inv:
-      d_w = ~a_w;
-      break;
-    default:
-      TODO();
-    }
-    dst.set_word(i, d_w);
+  switch (op) {
+  case op_inv:
+    dst = ~a;
+    break;
+  default:
+    TODO();
   }
 }
 
 template <ch_operator op>
 static void binaryop(bitvector& dst, const bitvector& a, const bitvector& b) {
-  uint32_t num_words = ((dst.get_size() + 31) >> 5);
-  for (uint32_t i = 0; i < num_words; ++i) {
-    uint32_t a_w = a.get_word(i);
-    uint32_t b_w = b.get_word(i);
-    uint32_t d_w;    
-    switch (op) {
-    case op_and:
-      d_w = a_w & b_w;
-      break;
-    case op_or:
-      d_w = a_w | b_w;
-      break;
-    case op_xor:
-      d_w = a_w ^ b_w;
-      break;
-    case op_nand:
-      d_w = ~(a_w & b_w);
-      break;
-    case op_nor:
-      d_w = ~(a_w | b_w);
-      break;
-    case op_xnor:
-      d_w = ~(a_w ^ b_w);
-      break;
-    default:
-      TODO();
-    }
-    dst.set_word(i, d_w);
+  switch (op) {
+  case op_and:
+    dst = a & b;
+    break;
+  case op_or:
+    dst = a | b;
+    break;
+  case op_xor:
+    dst = a ^ b;
+    break;
+  case op_nand:
+    dst = ~(a & b);
+    break;
+  case op_nor:
+    dst = ~(a | b);
+    break;
+  case op_xnor:
+    dst = ~(a ^ b);
+    break;
+  default:
+    TODO();
+  }
+}
+
+template <ch_operator op>
+static void shiftop(bitvector& dst, const bitvector& a, const bitvector& b) {
+  assert(b.get_num_words() == 1);
+  assert(dst.get_size() == a.get_size());
+  uint32_t dist = b.get_word(0);
+  switch (op) {  
+  case op_sll:
+    dst = a << dist;
+    break;
+  case op_slr:
+    dst = a >> dist;
+    break;
+  default:
+    TODO();
   }
 }
 
 template <ch_operator op>
 static void reduceop(bitvector& dst, const bitvector& in) {
+  assert(dst.get_size() == 1);
   uint32_t size = in.get_size();
   uint32_t result;
   for (uint32_t i = 0, j = 0, in_w; i < size; ++i) {
@@ -121,30 +126,32 @@ static void reduceop(bitvector& dst, const bitvector& in) {
 
 template <ch_operator op>
 static void compareop(bitvector& dst, const bitvector& a, const bitvector& b) {
-  uint32_t num_words = ((dst.get_size() + 31) >> 5);
-  for (uint32_t i = 0; i < num_words; ++i) {
-    uint32_t a_w = a.get_word(i);
-    uint32_t b_w = b.get_word(i);        
-    bool cmp;
-    switch (op) {
-    case op_eq:
-      cmp = a_w == b_w;
-      break;
-    case op_lt:
-      cmp = a_w < b_w;
-      break;
-    case op_le:
-      cmp = a_w <= b_w;
-      break;
-    default:
-      TODO();
-    }
-    if (!cmp) {
-      dst.set_word(0, 0);
-      return;
-    }
+  assert(a.get_size() == b.get_size());
+  assert(dst.get_size() == 1);
+  bool result;
+  switch (op) {
+  case op_eq:
+    result = a == b;
+    break;
+  case op_ne:
+    result = a != b;
+    break;
+  case op_lt:
+    result = a < b;
+    break;
+  case op_gt:
+    result = a > b;
+    break;
+  case op_le:
+    result = a <= b;
+    break;
+  case op_ge:
+    result = a >= b;
+    break;
+  default:
+    TODO();
   }
-  dst.set_word(0, 1);
+  dst[0] = result;
 }
 
 static void add(bitvector& dst, const bitvector& a, const bitvector& b) {
@@ -176,16 +183,16 @@ static void add(bitvector& dst, const bitvector& a, const bitvector& b) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-aluimpl::aluimpl(ch_operator op, uint32_t size, const ch_node& a, const ch_node& b) 
-  : nodeimpl(op_name(op), a.get_ctx(), size)
+aluimpl::aluimpl(ch_operator op, uint32_t size, const lnode& a, const lnode& b) 
+  : lnodeimpl(op_name(op), a.get_ctx(), size)
   , m_op(op)
   , m_ctime(~0ull) {
   m_srcs.push_back(a);
   m_srcs.push_back(b);
 }
 
-aluimpl::aluimpl(ch_operator op, uint32_t size, const ch_node& a) 
-  : nodeimpl(op_name(op), a.get_ctx(), size)
+aluimpl::aluimpl(ch_operator op, uint32_t size, const lnode& a) 
+  : lnodeimpl(op_name(op), a.get_ctx(), size)
   , m_op(op)
   , m_ctime(~0ull) {
   m_srcs.push_back(a);
@@ -233,11 +240,17 @@ const bitvector& aluimpl::eval(ch_cycle t) {
       break;
       
     case op_sll:
+      shiftop<op_sll>(m_value, m_srcs[0].eval(t), m_srcs[1].eval(t));
+      break;
     case op_slr:
+      shiftop<op_slr>(m_value, m_srcs[0].eval(t), m_srcs[1].eval(t));
+      break;
     case op_rotl:
+      shiftop<op_rotl>(m_value, m_srcs[0].eval(t), m_srcs[1].eval(t));
+      break;
     case op_rotr:
-      TODO();
-      break;  
+      shiftop<op_rotr>(m_value, m_srcs[0].eval(t), m_srcs[1].eval(t));
+      break;
       
     case op_add:
       add(m_value, m_srcs[0].eval(t), m_srcs[1].eval(t));        
@@ -253,22 +266,19 @@ const bitvector& aluimpl::eval(ch_cycle t) {
       compareop<op_eq>(m_value, m_srcs[0].eval(t), m_srcs[1].eval(t));
       break;
     case op_ne:
-      compareop<op_eq>(m_value, m_srcs[0].eval(t), m_srcs[1].eval(t));
-      m_value.set_bit(0, !m_value.get_bit(0));
+      compareop<op_ne>(m_value, m_srcs[0].eval(t), m_srcs[1].eval(t));
       break;
     case op_lt:
       compareop<op_lt>(m_value, m_srcs[0].eval(t), m_srcs[1].eval(t));
       break;
     case op_gt:
-      compareop<op_le>(m_value, m_srcs[0].eval(t), m_srcs[1].eval(t));
-      m_value.set_bit(0, !m_value.get_bit(0));
+      compareop<op_gt>(m_value, m_srcs[0].eval(t), m_srcs[1].eval(t));
       break;
     case op_le:
-      compareop<op_le>(m_value, m_srcs[0].eval(t), m_srcs[1].eval(t));
+      compareop<op_le>(m_value, m_srcs[0].eval(t), m_srcs[1].eval(t));  
       break;
     case op_ge:
-      compareop<op_lt>(m_value, m_srcs[0].eval(t), m_srcs[1].eval(t));
-      m_value.set_bit(0, !m_value.get_bit(0));
+      compareop<op_ge>(m_value, m_srcs[0].eval(t), m_srcs[1].eval(t));
       break;  
       
     default:
@@ -282,10 +292,10 @@ void aluimpl::print_vl(std::ostream& out) const {
   TODO();
 }
 
-ch_node chdl_internal::createAluNode(ch_operator op, uint32_t size, const ch_node& a, const ch_node& b) {
-  return ch_node(new aluimpl(op, size, a, b)); 
+lnode chdl_internal::createAluNode(ch_operator op, uint32_t size, const lnode& a, const lnode& b) {
+  return lnode(new aluimpl(op, size, a, b)); 
 }
 
-ch_node chdl_internal::createAluNode(ch_operator op, uint32_t size, const ch_node& a) {
-  return ch_node(new aluimpl(op, size, a));
+lnode chdl_internal::createAluNode(ch_operator op, uint32_t size, const lnode& a) {
+  return lnode(new aluimpl(op, size, a));
 }

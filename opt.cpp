@@ -23,18 +23,18 @@ void optimizer::optimize() {
   // syntax check
   m_ctx->syntax_check();
   
-  // debugging
-  m_ctx->print(cout);
+  // dump nodes
+  m_ctx->dumpNodes(cout);
 }
 
 bool optimizer::dead_node_elimination() {
-  set<nodeimpl*> live_nodes = m_live_nodes;    
-  std::list<nodeimpl*> working_set(live_nodes.begin(), live_nodes.end());
+  set<lnodeimpl*> live_nodes = m_live_nodes;    
+  std::list<lnodeimpl*> working_set(live_nodes.begin(), live_nodes.end());
   
   while (!working_set.empty()) {
-    nodeimpl* nimpl = working_set.front();      
+    lnodeimpl* nimpl = working_set.front();      
     for (auto& src : nimpl->get_srcs()) {
-      nodeimpl* src_impl = get_impl<nodeimpl>(src);
+      lnodeimpl* src_impl = get_impl<lnodeimpl>(src);
       assert(src_impl);
       auto iter = live_nodes.emplace(src_impl);
       if (iter.second)
@@ -46,7 +46,7 @@ bool optimizer::dead_node_elimination() {
   return (this->remove_dead_nodes(live_nodes) != 0);
 }
 
-size_t optimizer::remove_dead_nodes(const std::set<nodeimpl*>& live_nodes) {
+size_t optimizer::remove_dead_nodes(const std::set<lnodeimpl*>& live_nodes) {
   size_t deleted = 0;
   auto& nodes = m_ctx->nodes;
   auto iter = nodes.begin();

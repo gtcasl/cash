@@ -15,6 +15,7 @@
 #include <limits>
 #include <assert.h>
 #include <atomic>
+#include <functional>
 #include "macros.h"
 #include "utils.h"
 

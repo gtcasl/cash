@@ -2,6 +2,8 @@
 
 // macro primitives
 #define CHDL_COMMA ,
+#define CHDL_SEMICOLON() ;
+#define CHDL_PLUS() +
 #define CHDL_REM(...) __VA_ARGS__
 #define CHDL_EAT(...)
 #define CHDL_STRINGIZE(x) #x
@@ -103,3 +105,8 @@
 
 #define CHDL_FOR_EACH_(N, what, sep, ...) CHDL_CONCAT(CHDL_FOR_EACH_, N)(what, sep, __VA_ARGS__)
 #define CHDL_FOR_EACH(what, sep, ...) CHDL_FOR_EACH_(CHDL_NARG(__VA_ARGS__), what, sep, __VA_ARGS__)
+
+#define CHDL_OUT(...) std::tuple<__VA_ARGS__>
+#define CHDL_RET(...) std::make_tuple(__VA_ARGS__)
+#define CHDL_TIE(...) std::forward_as_tuple(__VA_ARGS__)
+

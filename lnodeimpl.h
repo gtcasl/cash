@@ -1,15 +1,15 @@
 #pragma once
 
-#include "node.h"
+#include "lnode.h"
 
 namespace chdl_internal {
 
 class context;
 
-class nodeimpl {
+class lnodeimpl {
 public:
-  nodeimpl(const std::string& name, context* ctx, uint32_t size, bool undefined = false);
-  virtual ~nodeimpl();
+  lnodeimpl(const std::string& name, context* ctx, uint32_t size, bool undefined = false);
+  virtual ~lnodeimpl();
   
   uint64_t get_id() const {
     return m_id;
@@ -27,29 +27,29 @@ public:
     return m_refs.empty();
   }
 
-  void add_ref(const ch_node* node) {
+  void add_ref(const lnode* node) {
     m_refs.emplace(node);
   }
 
-  void remove_ref(const ch_node* node) {
+  void remove_ref(const lnode* node) {
     m_refs.erase(node);
   }
 
-  void replace_ref(nodeimpl* impl);
+  void replace_ref(lnodeimpl* impl);
   
-  const std::vector<ch_node>& get_srcs() const {
+  const std::vector<lnode>& get_srcs() const {
     return m_srcs;
   }
   
-  std::vector<ch_node>& get_srcs() {
+  std::vector<lnode>& get_srcs() {
     return m_srcs;
   }
   
-  const ch_node& get_src(unsigned i) const {
+  const lnode& get_src(unsigned i) const {
     return m_srcs[i];
   }
   
-  ch_node& get_src(unsigned i) {
+  lnode& get_src(unsigned i) {
     return m_srcs[i];
   }
   
@@ -57,8 +57,8 @@ public:
     return m_value.get_size();
   }
   
-  operator const bitvector&() const { 
-    return m_value; 
+  const bitvector& get_value() const { 
+    return m_value;
   }
   
   virtual bool ready() const;
@@ -71,8 +71,8 @@ public:
 protected:
 
   std::string m_name;
-  std::set<const ch_node*> m_refs;
-  std::vector<ch_node> m_srcs;
+  std::set<const lnode*> m_refs;
+  std::vector<lnode> m_srcs;
   context* m_ctx;
   uint64_t m_id;
   bitvector m_value;
@@ -80,7 +80,7 @@ protected:
   friend class context;
 };
 
-class undefimpl : public nodeimpl {
+class undefimpl : public lnodeimpl {
 public:
   undefimpl(const std::string& name, context* ctx, uint32_t size);
   undefimpl(context* ctx, uint32_t size) : undefimpl("undef", ctx, size) {}

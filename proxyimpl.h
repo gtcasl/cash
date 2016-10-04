@@ -1,15 +1,15 @@
 #pragma once
 
-#include "nodeimpl.h"
+#include "lnodeimpl.h"
 
 namespace chdl_internal {
 
-class proxyimpl : public nodeimpl {
+class proxyimpl : public lnodeimpl {
 public:  
-  proxyimpl(const ch_node& node);
+  proxyimpl(context* ctx, uint32_t size);
   ~proxyimpl();
   
-  void add_src(uint32_t dst_offset, const ch_node& src, uint32_t src_offset, uint32_t src_length);
+  void add_src(uint32_t dst_offset, const lnode& src, uint32_t src_offset, uint32_t src_length);
   
   const bitvector& eval(ch_cycle t) override;  
   void print_vl(std::ostream& out) const override;

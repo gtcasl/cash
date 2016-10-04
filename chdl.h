@@ -1,10 +1,10 @@
 #pragma once
 
+#include "literals.h"
 #include "bitv.h"
 #include "reg.h"
 #include "mem.h"
 #include "arithm.h"
-#include "select.h"
 #include "bus.h"
 #include "device.h"
 #include "sim.h"
@@ -14,6 +14,11 @@
 
 namespace chdl {
 
+//
+// core namespace
+//
+namespace core {
+
   //
   // basic types
   //
@@ -22,19 +27,13 @@ namespace chdl {
   using chdl_internal::LOG2;
   using chdl_internal::CLOG2;
 
+  template<typename T, unsigned N> using ch_vec = chdl_internal::ch_vec<T, N>;
+
+  template<unsigned N> using ch_bitv = chdl_internal::ch_bitv<N>;
   using ch_logic = chdl_internal::ch_logic;
 
-  template<unsigned N, typename T>
-  using ch_vec = chdl_internal::ch_vec<N, T>;
-
-  template<unsigned N>
-  using ch_bitv = chdl_internal::ch_bitv<N>;
-
-  template<unsigned N>
-  using ch_uint = chdl_internal::ch_bitv<N>;
-
-  template<unsigned N>
-  using ch_bitbase = chdl_internal::ch_bitbase<N>;
+  template<unsigned N> using ch_bitbase = chdl_internal::ch_bitbase<N>;
+  using ch_logicbase = chdl_internal::ch_logicbase;
 
   //
   // pre-defined data types
@@ -47,12 +46,11 @@ namespace chdl {
   typedef ch_bitv<32> ch_bit32;
   typedef ch_bitv<64> ch_bit64;
 
-  typedef ch_uint<2>  ch_uint2;
-  typedef ch_uint<4>  ch_uint4;
-  typedef ch_uint<8>  ch_uint8;
-  typedef ch_uint<16> ch_uint16;
-  typedef ch_uint<32> ch_uint32;
-  typedef ch_uint<64> ch_uint64;
+  //
+  // literals
+  //
+
+  using chdl_internal::operator "" _b;
 
   //
   // subscript operators
@@ -161,31 +159,35 @@ namespace chdl {
   //
 
   using chdl_internal::fstring;
+}
+
+//
+// simulation namespace
+//
+namespace sim {
 
   //
-  // simulation namespace
+  // basic types
   //
-  namespace sim {
 
-    //
-    // basic types
-    //
+  using ch_cycle  = chdl_internal::ch_cycle; 
+  
+  template<unsigned N> using ch_bus = chdl_internal::ch_bus<N>;
+  using ch_signal = chdl_internal::ch_signal;
 
-    using ch_cycle  = chdl_internal::ch_cycle;
-    using ch_signal = chdl_internal::ch_signal;
+  template<unsigned N> using ch_busbase = chdl_internal::ch_busbase<N>;
+  using ch_signalbase = chdl_internal::ch_signalbase;
 
-    template<unsigned N>
-    using ch_bus = chdl_internal::ch_bus<N>;
+  //
+  // api objects
+  //
 
-    //
-    // api objects
-    //
+  using ch_device     = chdl_internal::ch_device;
+  using ch_simulator  = chdl_internal::ch_simulator;
+  using ch_tracer     = chdl_internal::ch_tracer;
+  using ch_vcdtracer  = chdl_internal::ch_vcdtracer;
+}
 
-    using ch_device     = chdl_internal::ch_device;
-    using ch_simulator  = chdl_internal::ch_simulator;
-    using ch_tracer     = chdl_internal::ch_tracer;
-    using ch_vcdtracer  = chdl_internal::ch_vcdtracer;
-  }
 }
 
 //
@@ -199,3 +201,6 @@ namespace chdl {
 #define __ch_assert  CHDL_ASSERT
 #define __ch_struct  CHDL_STRUCT
 #define __ch_union   CHDL_UNION
+#define __ch_out     CHDL_OUT
+#define __ch_ret     CHDL_RET
+#define __ch_tie     CHDL_TIE

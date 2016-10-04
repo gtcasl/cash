@@ -2,17 +2,18 @@
 #include <fstream>
 #include <chdl.h>
 
-using namespace chdl;
+using namespace chdl::core;
 using namespace chdl::sim;
 
 template <unsigned ADDR, unsigned WIDTH>
-void FiFo(
+__ch_out(ch_bitv<WIDTH>, ch_logic, ch_logic) FiFo(
   const ch_bitv<WIDTH>& din,
   const ch_logic& push,
-  const ch_logic& pop,
-  ch_bitv<WIDTH>& dout,
-  ch_logic& empty,
-  ch_logic& full) {
+  const ch_logic& pop) {
+  
+  ch_bitv<WIDTH> dout;
+  ch_logic empty;
+  ch_logic full;
   
   ch_mem<WIDTH, ADDR> mem;
   ch_bitv<ADDR+1> rd_ptr, wr_ptr;
@@ -29,14 +30,15 @@ void FiFo(
   full  = (wr_addr == rd_addr) && (wr_ptr[ADDR] != rd_ptr[ADDR]);
   dout  = mem.read(rd_addr);
   mem.write(wr_addr, din, writing);
+  
+  return __ch_ret(dout, empty, full);
 };
 
 int main(int argc, char **argv) {
   ch_bus<2> din, dout;
   ch_signal push, pop, empty, full;
 
-  ch_device myDevice(FiFo<1, 2>);
-  myDevice.bind(din, push, pop, dout, empty, full);
+  ch_device myDevice(FiFo<1, 2>, din, push, pop, dout, empty, full);
 
   /*std::ofstream v_file("fifo.v");
   myDevice.toVerilog("fifo", v_file);
@@ -48,24 +50,24 @@ int main(int argc, char **argv) {
     switch (time) {
     case 0:
       din  = 0x1;
-      push = '1';
+      push = 1_b;
       break;
     case 1:
       din  = 0x2;
-      push = '1';
+      push = 1_b;
       break;
     case 2:
       din  = 0x0;
-      push = '0';
+      push = 0_b;
       break;
     case 3:
-      pop = '1';
+      pop = 1_b;
       break;
     case 4:
-      pop = '1';
+      pop = 1_b;
       break;
     case 5:
-      pop = '0';
+      pop = 0_b;
       break;
     }
     return (time < 10);

@@ -1,7 +1,7 @@
 #include "sim.h"
 #include "cdomain.h"
 #include "context.h"
-#include "busimpl.h"
+#include "snodeimpl.h"
 #include "ioimpl.h"
 #include "opt.h"
 
@@ -50,9 +50,9 @@ void ch_simulator::ensureInitialize() {
   m_initialized = true;
 }
 
-void ch_simulator::bind(inputimpl* input, busimpl** bus) {
+void ch_simulator::bind(inputimpl* input, snodeimpl** bus) {
   if (*bus == nullptr) {
-    *bus = new busimpl(1);
+    *bus = new snodeimpl(1);
     this->add_tap(input->get_name(), *bus);
   }    
   ibridge* bridge = new ibridge(*bus);
@@ -65,7 +65,7 @@ void ch_simulator::bind(tapimpl* tap) {
   tap->bind(bridge);
   bridge->release();
 
-  busimpl* bus = new busimpl(tap->get_size());
+  snodeimpl* bus = new snodeimpl(tap->get_size());
   bus->bind(tap->get_ctx(), 0, bridge);
 
   // add to list
@@ -73,7 +73,7 @@ void ch_simulator::bind(tapimpl* tap) {
   bus->add_ref();
 }
 
-void ch_simulator::add_tap(const std::string& name, busimpl* bus) {
+void ch_simulator::add_tap(const std::string& name, snodeimpl* bus) {
   if (m_initialized) {
     CHDL_ABORT("new tap not allowed after simulation has started");
   }
@@ -132,9 +132,9 @@ ch_cycle ch_simulator::reset(ch_cycle t) {
   this->ensureInitialize();
 
   if (m_reset) {
-    m_reset->set_bit(0, true);    
+    (*m_reset)[0] = true;    
     this->step(t++);
-    m_reset->set_bit(0, false);
+    (*m_reset)[0] = false;
     this->step(t++);
   }
   
@@ -145,7 +145,7 @@ void ch_simulator::step(ch_cycle t) {
   if (m_clk) {
     for (int i = 0; i < 2; ++i) {
       this->tick(t * 2 + i);
-      m_clk->set_bit(0, !m_clk->get_bit(0));
+      (*m_clk)[0] = !(*m_clk)[0];
     }
   } else {
     this->tick(t);
@@ -167,7 +167,7 @@ void ch_tracer::tick(ch_cycle t) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void chdl_internal::register_tap(const string& name, const ch_node& node, uint32_t size) {
+void chdl_internal::register_tap(const string& name, const lnode& node, uint32_t size) {
   node.ensureInitialized(size);
   node.get_ctx()->register_tap(name, node);
 }

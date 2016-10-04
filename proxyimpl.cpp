@@ -4,18 +4,19 @@
 using namespace std;
 using namespace chdl_internal;
 
-proxyimpl::proxyimpl(const ch_node& node) 
-  : nodeimpl("proxy", node.get_ctx(), node.get_size())
+proxyimpl::proxyimpl(context* ctx, uint32_t size) 
+  : lnodeimpl("proxy", ctx, size)
   , m_ctime(~0ull) {
+  lnode node(new undefimpl(ctx, size));
   m_srcs.emplace_back(node);
-  m_ranges.push_back({0, 0, m_value.get_size()});    
+  m_ranges.push_back({0, 0, size});    
 }
 
 proxyimpl::~proxyimpl() {
   //--
 }
 
-void proxyimpl::add_src(uint32_t dst_offset, const ch_node& src, uint32_t src_offset, uint32_t src_length) {  
+void proxyimpl::add_src(uint32_t dst_offset, const lnode& src, uint32_t src_offset, uint32_t src_length) {  
   uint32_t src_idx = -1;
   uint32_t offset  = 0;  
   set<uint32_t> deleted;

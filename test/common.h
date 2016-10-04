@@ -2,7 +2,7 @@
 
 #include <chdl.h>
 
-using namespace chdl;
+using namespace chdl::core;
 using namespace chdl::sim;
 
 using ch_bit2   = ch_bitv<2>;

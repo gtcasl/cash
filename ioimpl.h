@@ -1,13 +1,13 @@
 #pragma once
 
-#include "nodeimpl.h"
+#include "lnodeimpl.h"
 
 namespace chdl_internal {
 
 class iobridge;
-class busimpl;
+class snodeimpl;
 
-class ioimpl : public nodeimpl {
+class ioimpl : public lnodeimpl {
 public:
   ioimpl(const std::string& name, context* ctx, uint32_t size);
   virtual ~ioimpl();
@@ -40,7 +40,7 @@ protected:
 
 class outputimpl : public ioimpl {
 public:
-  outputimpl(const std::string& name, uint32_t index, const ch_node& src);
+  outputimpl(const std::string& name, uint32_t index, const lnode& src);
   ~outputimpl() {}
   
   const bitvector& eval(ch_cycle t);
@@ -53,7 +53,7 @@ protected:
 
 class tapimpl : public ioimpl {
 public:
-  tapimpl(const std::string& name, const ch_node& src);
+  tapimpl(const std::string& name, const lnode& src);
   ~tapimpl() {}
   
   const std::string& get_tapName() const {
@@ -80,7 +80,7 @@ public:
 
 class ibridge : public iobridge {
 public:
-  ibridge(busimpl* impl) : m_impl(impl) {}
+  ibridge(snodeimpl* impl) : m_impl(impl) {}
   ~ibridge() {}
   
   bool ready() const override;
@@ -91,7 +91,7 @@ public:
 
 private:
 
-  busimpl* m_impl;
+  snodeimpl* m_impl;
 };
 
 class obridge : public iobridge {

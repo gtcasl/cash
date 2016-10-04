@@ -25,34 +25,39 @@ public:
   
   template <unsigned N> 
   void add_trace(const std::string& name, const ch_bus<N>& bus) {
-    this->add_tap(name, static_cast<busimpl*>(bus));
+    this->add_tap(name, static_cast<snodeimpl*>(static_cast<const snode&>(bus)));
+  }  
+  
+  template <unsigned N> 
+  void add_trace(const std::string& name, const ch_busbase<N>& bus) {
+    this->add_trace<N>(name, ch_bus<N>(bus));
   }
 
 protected:
   
   struct tap_t {
-    tap_t(const std::string& name_, busimpl* bus_)
+    tap_t(const std::string& name_, snodeimpl* bus_)
       : name(name_), bus(bus_)
     {}
 
     std::string name;
-    busimpl* bus;
+    snodeimpl* bus;
   };
   
   virtual void ensureInitialize();
   
-  void bind(inputimpl* input, busimpl** bus);
+  void bind(inputimpl* input, snodeimpl** bus);
   
   void bind(tapimpl* tap);
   
-  void add_tap(const std::string& name, busimpl* bus);
+  void add_tap(const std::string& name, snodeimpl* bus);
 
   std::vector<tap_t> m_taps;
   std::map<std::string, unsigned> m_dup_taps;
   std::set<context*> m_contexts;  
   bool m_initialized;
-  busimpl* m_clk;
-  busimpl* m_reset;
+  snodeimpl* m_clk;
+  snodeimpl* m_reset;
 };
 
 class ch_tracer : public ch_simulator {
@@ -67,11 +72,16 @@ protected:
   std::ostream& m_out;
 };
 
-void register_tap(const std::string& name, const ch_node& node, uint32_t size);
+void register_tap(const std::string& name, const lnode& node, uint32_t size);
 
 template <unsigned N> 
 void ch_tap(const std::string& name, const ch_bitv<N>& v) { 
   register_tap(name, v, N);
+}
+
+template <unsigned N> 
+void ch_tap(const std::string& name, const ch_bitbase<N>& v) { 
+  ch_tap(name, ch_bitv<N>(v));
 }
 
 }

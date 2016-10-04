@@ -4,26 +4,26 @@
 
 #define CHDL_BINOP_GEN(op, func) \
   template <unsigned N, unsigned M> ch_bitv<CHDL_MAX(N,M)> func(const ch_bitbase<N>& a, const ch_bitbase<M>& b) { return func(ch_zext<CHDL_MAX(N,M)>(a), ch_zext<CHDL_MAX(N,M)>(b)); } \
-  template <unsigned N> ch_bitv<N> func(uint32_t a, const ch_bitbase<N>& b) { return func(ch_bitv<N>(a), b); } \
-  template <unsigned N> ch_bitv<N> func(const ch_bitbase<N>& a, uint32_t b) { return func(a, ch_bitv<N>(b)); } \
+  template <unsigned N> ch_bitv<N> func(int a, const ch_bitbase<N>& b) { return func(ch_bitv<N>(a), b); } \
+  template <unsigned N> ch_bitv<N> func(const ch_bitbase<N>& a, int b) { return func(a, ch_bitv<N>(b)); } \
   template <unsigned N, unsigned M> ch_bitv<CHDL_MAX(N,M)> op(const ch_bitbase<N>& a, const ch_bitbase<M>& b) { return func(a, b); } \
-  template <unsigned N> ch_bitv<N> op(uint32_t a, const ch_bitbase<N>& b) { return func(ch_bitv<N>(a), b); } \
-  template <unsigned N> ch_bitv<N> op(const ch_bitbase<N>& a, uint32_t b) { return func(a, ch_bitv<N>(b)); }
+  template <unsigned N> ch_bitv<N> op(int a, const ch_bitbase<N>& b) { return func(ch_bitv<N>(a), b); } \
+  template <unsigned N> ch_bitv<N> op(const ch_bitbase<N>& a, int b) { return func(a, ch_bitv<N>(b)); }
 
 #define CHDL_UNARYOP_GEN(op, func) \
   template <unsigned N> ch_bitv<N> op(const ch_bitbase<N>& in) { return func(in); }
   
 #define CHDL_COMPAREOP_GEN(op, func) \
-  template <unsigned N> ch_logic func(uint32_t a, const ch_bitbase<N>& b) { return func(ch_bitv<N>(a), b); } \
-  template <unsigned N> ch_logic func(const ch_bitbase<N>& a, uint32_t b) { return func(a, ch_bitv<N>(b)); } \
+  template <unsigned N> ch_logic func(int a, const ch_bitbase<N>& b) { return func(ch_bitv<N>(a), b); } \
+  template <unsigned N> ch_logic func(const ch_bitbase<N>& a, int b) { return func(a, ch_bitv<N>(b)); } \
   template <unsigned N> ch_logic op(const ch_bitbase<N>& a, const ch_bitbase<N>& b) { return func(a, b); } \
-  template <unsigned N> ch_logic op(uint32_t a, const ch_bitbase<N>& b) { return func(a, b); } \
-  template <unsigned N> ch_logic op(const ch_bitbase<N>& a, uint32_t b) { return func(a, b); }
+  template <unsigned N> ch_logic op(int a, const ch_bitbase<N>& b) { return func(a, b); } \
+  template <unsigned N> ch_logic op(const ch_bitbase<N>& a, int b) { return func(a, b); }
 
 #define CHDL_SHIFTOP_GEN(op, func) \
-  template <unsigned N> ch_bitv<N> func(const ch_bitbase<N>& a, uint32_t b) { return func(a, ch_bitv<N>(b)); } \
+  template <unsigned N> ch_bitv<N> func(const ch_bitbase<N>& a, int b) { return func(a, ch_bitv<N>(b)); } \
   template <unsigned N, unsigned M> ch_bitv<N> op(const ch_bitbase<N>& a, const ch_bitbase<M>& b) { return func(a, b); } \
-  template <unsigned N> ch_bitv<N> op(const ch_bitbase<N>& a, uint32_t b) { return func(a, ch_bitv<N>(b)); }
+  template <unsigned N> ch_bitv<N> op(const ch_bitbase<N>& a, int b) { return func(a, ch_bitv<N>(b)); }
 
 #define CHDL_REDUCEOP_GEN(op, func) \
   template <unsigned N> ch_logic op(const ch_bitv<N>& in) { return func(in); }
@@ -59,8 +59,8 @@ enum ch_operator {
   op_ge,
 };
 
-ch_node createAluNode(ch_operator op, uint32_t size, const ch_node& a, const ch_node& b);
-ch_node createAluNode(ch_operator op, uint32_t size, const ch_node& a);
+lnode createAluNode(ch_operator op, uint32_t size, const lnode& a, const lnode& b);
+lnode createAluNode(ch_operator op, uint32_t size, const lnode& a);
 
 // compare operators
 
@@ -96,22 +96,22 @@ CHDL_SHIFTOP_GEN(operator>>, ch_slr)
 
 template <ch_operator op, unsigned N, unsigned M>
 ch_bitv<N> OpBinary(const ch_bitbase<N>& a, const ch_bitbase<M>& b) {
-  return ch_bitv<N>(createAluNode(op, N, ch_bitv<N>(a), ch_bitv<M>(b)));
+  return ch_bitv<N>(createAluNode(op, N, a, b));
 }
 
 template <ch_operator op, unsigned N>
 ch_logic OpCompare(const ch_bitbase<N>& a, const ch_bitbase<N>& b) {
-  return ch_logic(createAluNode(op, 1, ch_bitv<N>(a), ch_bitv<N>(b)));
+  return ch_logic(createAluNode(op, 1, a, b));
 }
 
 template <ch_operator op, unsigned N>
 ch_bitv<N> OpUnary(const ch_bitbase<N>& a) {
-  return ch_bitv<N>(createAluNode(op, N, ch_bitv<N>(a)));
+  return ch_bitv<N>(createAluNode(op, N, a));
 }
 
 template <ch_operator op, unsigned N>
-ch_bitv<N> OpReduce(const ch_bitbase<N>& a) {
-  return ch_bitv<N>(createAluNode(op, 1, ch_bitv<N>(a)));
+ch_logic OpReduce(const ch_bitbase<N>& a) {
+  return ch_logic(createAluNode(op, 1, a));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -290,15 +290,15 @@ ch_bitv<CLOG2(N)> ch_enc(const ch_bitbase<N>& a) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-inline ch_bitv<1> operator! (const ch_bitbase<1>& a) {
+inline ch_logic operator! (const ch_logicbase& a) {
   return ch_inv(a);         
 }
 
-inline ch_bitv<1> operator&& (const ch_bitbase<1>& a, const ch_bitbase<1>& b) {
+inline ch_logic operator&& (const ch_logicbase& a, const ch_logicbase& b) {
   return ch_and(a, b);      
 }
 
-inline ch_bitv<1> operator|| (const ch_bitbase<1>& a, const ch_bitbase<1>& b) {
+inline ch_logic operator|| (const ch_logicbase& a, const ch_logicbase& b) {
   return ch_or(a, b);      
 }
 

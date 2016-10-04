@@ -6,7 +6,7 @@
 using namespace std;
 using namespace chdl_internal;
 
-clock_event::clock_event(const ch_node& signal, EDGE_DIR edgedir)
+clock_event::clock_event(const lnode& signal, EDGE_DIR edgedir)
   : m_signal(signal)
   , m_edgedir(edgedir)
   , m_cval(false) 
@@ -17,7 +17,7 @@ clock_event::~clock_event() {
 }
 
 bool clock_event::eval(ch_cycle t) {
-  bool value = m_signal.eval(t).get_bit(0);
+  bool value = m_signal.eval(t)[0];
   if (m_cval != value) {
     m_cval = value;
     return (value  && (m_edgedir == EDGE_POS || m_edgedir == EDGE_ANY)) ||

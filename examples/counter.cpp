@@ -1,18 +1,19 @@
 #include <chdl.h>
 
-using namespace chdl;
+using namespace chdl::core;
 using namespace chdl::sim;
 
 template <unsigned N>
-void Counter(ch_bitv<N>& out) {
+ch_bitv<N> Counter() {
+  ch_bitv<N> out;
   out = ch_reg(out + 0x1);
+  return out;
 }
 
 int main(int argc, char **argv) {
   ch_bus<4> out;
 
-  ch_device myDevice(Counter<4>);
-  myDevice.bind(out);
+  ch_device myDevice(Counter<4>, out);
 
   /*std::ofstream v_file("counter.v");
   myDevice.toVerilog("counter", v_file);

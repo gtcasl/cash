@@ -1,15 +1,16 @@
-#include "nodeimpl.h"
+#include "lnodeimpl.h"
 #include "context.h"
 #include "proxyimpl.h"
 #include "litimpl.h"
 #include "ioimpl.h"
 #include "tickable.h"
 #include "ioimpl.h"
+#include "bitv.h"
 
 using namespace std;
 using namespace chdl_internal;
 
-nodeimpl::nodeimpl(const std::string& name, context* ctx, uint32_t size, bool undefined) 
+lnodeimpl::lnodeimpl(const std::string& name, context* ctx, uint32_t size, bool undefined) 
   : m_name(name)
   , m_ctx(ctx)
   , m_value(size) {
@@ -21,13 +22,13 @@ nodeimpl::nodeimpl(const std::string& name, context* ctx, uint32_t size, bool un
   }
 }
 
-nodeimpl::~nodeimpl() {
+lnodeimpl::~lnodeimpl() {
   for (auto node : m_refs) {
     node->m_impl = nullptr;
   }
 }
 
-void nodeimpl::replace_ref(nodeimpl* impl) {
+void lnodeimpl::replace_ref(lnodeimpl* impl) {
   assert(impl != this);
   for (auto node : m_refs) {
     assert(node->m_impl == this);
@@ -37,7 +38,7 @@ void nodeimpl::replace_ref(nodeimpl* impl) {
   m_refs.clear();
 }
 
-bool nodeimpl::ready() const {
+bool lnodeimpl::ready() const {
   for (auto& src : m_srcs) {
     if (!src.ready())
       return false;
@@ -45,7 +46,7 @@ bool nodeimpl::ready() const {
   return true;
 }
 
-bool nodeimpl::valid() const {
+bool lnodeimpl::valid() const {
   for (auto& src : m_srcs) {
     if (!src.valid())
       return false;
@@ -53,7 +54,7 @@ bool nodeimpl::valid() const {
   return true;
 }
 
-void nodeimpl::print(std::ostream& out) const {
+void lnodeimpl::print(std::ostream& out) const {
   out << "#" << m_id << " <- " << m_name << m_value.get_size();
   uint32_t n = m_srcs.size();
   if (n > 0) {
@@ -71,7 +72,7 @@ void nodeimpl::print(std::ostream& out) const {
 ///////////////////////////////////////////////////////////////////////////////
 
 undefimpl::undefimpl(const std::string& name, context* ctx, uint32_t size) 
-  : nodeimpl(name, ctx, size, true) {
+  : lnodeimpl(name, ctx, size, true) {
   const char* dbg_node = std::getenv("CHDL_DEBUG_NODE");
   if (dbg_node) {
     uint64_t dbg_node_id = strtoll(dbg_node, nullptr, 10);
@@ -96,32 +97,32 @@ void undefimpl::print_vl(std::ostream& out) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-ch_node::ch_node(const ch_node& rhs) : m_impl(nullptr) {  
+lnode::lnode(const lnode& rhs) : m_impl(nullptr) {  
   this->assign(rhs.m_impl);
 }
 
-ch_node::ch_node(ch_node&& rhs) : m_impl(nullptr) {  
+lnode::lnode(lnode&& rhs) : m_impl(nullptr) {  
   this->move(rhs);
 }
 
-ch_node::ch_node(const ch_node& rhs, uint32_t size) : m_impl(nullptr) {
+lnode::lnode(const lnode& rhs, uint32_t size) : m_impl(nullptr) {
   rhs.ensureInitialized(size);  
   this->assign(rhs.m_impl);
 }
 
-ch_node::ch_node(nodeimpl* impl) : m_impl(nullptr) {
+lnode::lnode(lnodeimpl* impl) : m_impl(nullptr) {
   this->assign(impl);
 }
 
-ch_node::ch_node(const std::initializer_list<uint32_t>& value, uint32_t size) : m_impl(nullptr) {
-  this->assign(new litimpl(ctx_curr(), size, value));
+lnode::lnode(const std::initializer_list<uint32_t>& value, uint32_t size) : m_impl(nullptr) {
+  this->assign(ctx_curr()->create_literal(value, size));
 }
 
-ch_node::~ch_node() {
+lnode::~lnode() {
   this->clear();
 }
 
-void ch_node::clear() {
+void lnode::clear() {
   if (m_impl) {
     m_impl->remove_ref(this);
     undefimpl* impl_ = dynamic_cast<undefimpl*>(m_impl);
@@ -131,43 +132,47 @@ void ch_node::clear() {
   }
 }
 
-ch_node& ch_node::operator=(const ch_node& rhs) {
+void lnode::assign(const std::initializer_list<uint32_t>& value, uint32_t size) {
+  this->assign(ctx_curr()->create_literal(value, size));
+}
+
+lnode& lnode::operator=(const lnode& rhs) {
   this->assign(rhs.m_impl);
   return *this;
 }
 
-ch_node& ch_node::operator=(ch_node&& rhs) {
+lnode& lnode::operator=(lnode&& rhs) {
   this->move(rhs);
   return *this;
 }
 
-uint64_t ch_node::get_id() const {
+uint64_t lnode::get_id() const {
   return m_impl ? m_impl->get_id() : 0; 
 }
 
-context* ch_node::get_ctx() const {
+context* lnode::get_ctx() const {
   assert(m_impl);
   return m_impl->get_ctx();
 }
 
-uint32_t ch_node::get_size() const {
+uint32_t lnode::get_size() const {
   return m_impl ? m_impl->get_size() : 0;
 }
 
-bool ch_node::ready() const {
+bool lnode::ready() const {
   return m_impl ? m_impl->ready() : true;
 }
 
-bool ch_node::valid() const {
+bool lnode::valid() const {
   return m_impl ? m_impl->valid() : true;
 }
 
-const bitvector& ch_node::eval(ch_cycle t) {
+const bitvector& lnode::eval(ch_cycle t) {
   assert(m_impl);
   return m_impl->eval(t);
 }
 
-void ch_node::ensureInitialized(uint32_t size) const {
+void lnode::ensureInitialized(uint32_t size) const {
   if (m_impl == nullptr) {
     m_impl = new undefimpl(ctx_curr(), size);
     m_impl->add_ref(this);
@@ -175,7 +180,7 @@ void ch_node::ensureInitialized(uint32_t size) const {
   assert(m_impl->get_size() == size);
 }
 
-void ch_node::assign(nodeimpl* impl) {
+void lnode::assign(lnodeimpl* impl) const {
   assert(impl);
   if (m_impl == impl)
     return;
@@ -192,7 +197,7 @@ void ch_node::assign(nodeimpl* impl) {
   m_impl = impl;
 }
 
-void ch_node::move(ch_node& rhs) {
+void lnode::move(lnode& rhs) {
   assert(rhs.m_impl);
   if (m_impl != rhs.m_impl) {
     if (m_impl) {
@@ -207,7 +212,7 @@ void ch_node::move(ch_node& rhs) {
   rhs.clear();
 }
 
-void ch_node::assign(uint32_t size, uint32_t dst_offset, const ch_node& src, uint32_t src_offset, uint32_t src_length) {
+void lnode::assign(uint32_t dst_offset, const lnode& src, uint32_t src_offset, uint32_t src_length, uint32_t size) {
   assert(size > dst_offset && size >= dst_offset + src_length);
   if (size == src_length && size == src.get_size()) {
     assert(dst_offset == 0 && src_offset == 0);
@@ -217,10 +222,8 @@ void ch_node::assign(uint32_t size, uint32_t dst_offset, const ch_node& src, uin
     if (proxy) {
       proxy->add_src(dst_offset, src, src_offset, src_length);
     } else {
-      this->ensureInitialized(size);
-      proxyimpl* proxy = new proxyimpl(*this);
+      proxyimpl* proxy = new proxyimpl(src.get_ctx(), size);
       proxy->add_src(dst_offset, src, src_offset, src_length);
-      this->clear();
       this->assign(proxy);
     }
   }  
@@ -228,6 +231,20 @@ void ch_node::assign(uint32_t size, uint32_t dst_offset, const ch_node& src, uin
 
 ///////////////////////////////////////////////////////////////////////////////
 
-ch_node chdl_internal::createNullNode(uint32_t size) {
-  return ch_node(new nullimpl(ctx_curr(), size));
+ch_logicbase& ch_logicbase::operator=(const std::initializer_list<uint32_t>& value) {
+  return this->operator =(ch_logic(value));
+}
+
+ch_logicbase::operator const lnode&() const { 
+  return ch_logic(*this); 
+}
+
+ch_logicbase::operator lnode&() { 
+  return ch_logic(*this);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+lnode chdl_internal::createNullNode(uint32_t size) {
+  return lnode(new nullimpl(ctx_curr(), size));
 }

@@ -4,8 +4,10 @@
 
 namespace chdl_internal {
 
-class ch_node;
-class nodeimpl;
+class lnode;
+class snode;
+class lnodeimpl;
+class snodeimpl;
 class memimpl;
 class cdomain;
 class ioimpl;
@@ -14,7 +16,6 @@ class outputimpl;
 class tapimpl;
 class assertimpl;
 class litimpl;
-class busimpl;
 class clock_event;
 
 class context {
@@ -24,14 +25,15 @@ private:
 
 public:
   //--
-  std::list<nodeimpl*> undefs;
-  std::list<nodeimpl*> nodes;
+  std::list<lnodeimpl*> undefs;
+  std::list<lnodeimpl*> nodes;
   std::list<cdomain*> cdomains;
-  std::stack<ch_node> clk_stack;
-  std::stack<ch_node> reset_stack;
+  std::stack<lnode> clk_stack;
+  std::stack<lnode> reset_stack;
   std::vector<ioimpl*> ioports;
   std::vector<tapimpl*> taps;
   std::list<assertimpl*> gtaps;
+  std::list<litimpl*> literals;
 
   //--
   uint64_t nodeids;
@@ -43,29 +45,31 @@ public:
 
   //--
 
-  std::list<nodeimpl*>::iterator erase_node(const std::list<nodeimpl*>::iterator& iter);
+  std::list<lnodeimpl*>::iterator erase_node(const std::list<lnodeimpl*>::iterator& iter);
 
   //--
 
-  void push_clk(const ch_node& clk);
+  void push_clk(const lnode& clk);
   void pop_clk();
-  ch_node get_clk();
+  lnode get_clk();
 
-  void push_reset(const ch_node& reset);
+  void push_reset(const lnode& reset);
   void pop_reset();
-  ch_node get_reset();
+  lnode get_reset();
 
   //--
 
+  litimpl* create_literal(const std::initializer_list<uint32_t>& value, uint32_t size);
   cdomain* create_cdomain(const std::vector<clock_event>& sensitivity_list);
-  void create_assertion(const ch_node& ch_node, const std::string& msg);
+  void create_assertion(const lnode& lnode, const std::string& msg);
   
   //-- 
 
-  void register_io(unsigned index, ch_node& node);
-  void register_tap(const std::string& name, const ch_node& ch_node);
+  void register_input(unsigned index, const lnode& node);
+  void register_output(unsigned index, const lnode& node);
+  void register_tap(const std::string& name, const lnode& lnode);
   
-  void bind(unsigned index, busimpl* bus);
+  void bind(unsigned index, const snode& node);
   
   //--
   
@@ -73,7 +77,7 @@ public:
     
   //--
   
-  void get_live_nodes(std::set<nodeimpl*>& live_nodes);
+  void get_live_nodes(std::set<lnodeimpl*>& live_nodes);
   
   //--
   
@@ -84,11 +88,11 @@ public:
   
   void toVerilog(const std::string& module_name, std::ostream& out);
   
-  void print(std::ostream& out);
+  void dumpNodes(std::ostream& out);
 };
 
-context* ctx_enter();
+context* ctx_begin();
 context* ctx_curr();
-void ctx_exit();
+void ctx_end();
 
 }

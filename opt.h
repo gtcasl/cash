@@ -1,6 +1,6 @@
 #pragma once
 
-#include "node.h"
+#include "lnode.h"
 
 namespace chdl_internal {
 
@@ -17,9 +17,9 @@ protected:
   
   bool dead_node_elimination();
 
-  size_t remove_dead_nodes(const std::set<nodeimpl*>& live_nodes);  
+  size_t remove_dead_nodes(const std::set<lnodeimpl*>& live_nodes);  
   
-  std::set<nodeimpl*> m_live_nodes;
+  std::set<lnodeimpl*> m_live_nodes;
   context* m_ctx;
 };
 

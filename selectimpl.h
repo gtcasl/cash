@@ -1,12 +1,12 @@
 #pragma once
 
-#include "nodeimpl.h"
+#include "lnodeimpl.h"
 
 namespace chdl_internal {
 
-class selectimpl : public nodeimpl {
+class selectimpl : public lnodeimpl {
 public:
-  selectimpl(const ch_node& test, const ch_node& a, const ch_node& b);
+  selectimpl(const lnode& test, const lnode& a, const lnode& b);
   virtual ~selectimpl() {}
 
   const bitvector& eval(ch_cycle t) override;  

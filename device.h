@@ -1,6 +1,5 @@
 ﻿#pragma once
 
-#include <functional>
 #include "bitv.h"
 #include "bus.h"
 
@@ -8,168 +7,202 @@ namespace chdl_internal {
 
 class context;
 
-template <typename T>
-struct to_value_type {
-  typedef T value;
-};
-
-template <unsigned N>
-struct to_value_type< ch_bitbase<N> > {
-  typedef ch_bitv<N> value;
-};
-
-class ioport_arg {
-public:
-  ~ioport_arg() {}
-
-protected:    
-  
-  template <typename T>
-  ioport_arg(T& arg) : m_node(arg) {}
-
-  ch_node& m_node;
-  friend class ch_device;
-};
-
-class bus_arg {
-public:
-  ~bus_arg() {}
-
-protected:
-  
-  template <typename T>
-  bus_arg(const T& arg) : m_impl(arg) {}
-
-  busimpl* m_impl;
-  friend class ch_device;
-};
-
-context* ctx_enter();
-void ctx_exit();
+context* ctx_begin();
+void ctx_end();
 
 class ch_device {
 public:
-  template <typename... Args>  
-  ch_device(void (*func)(Args...)) {
-    m_ctx = ctx_enter();
-    {
-      std::tuple<typename to_value_type<typename std::remove_const<
-          typename std::remove_reference<Args>::type >::type>::value...> args;       
-      this->load(func, args);
-      this->compile();
-    }
-    ctx_exit();
+  
+  template <typename Function, typename ...Args>  
+  ch_device(const Function& func, const Args&... args) {
+    m_ctx = ctx_begin();
+    this->load(to_function(func), args...);
+    this->compile();
+    ctx_end();
   }
   
-  template <typename Ret, typename... Args>  
-  ch_device(Ret (*func)(Args...)) {
-    m_ctx = ctx_enter();
-    {
-      std::tuple<typename to_value_type<typename std::remove_const<
-          typename std::remove_reference<Args>::type >::type>::value...> args; 
-      this->load(func, args);
-      this->compile();
-    }
-    ctx_exit();
+  template <typename FuncRet, typename ...FuncArgs, typename ...Args>  
+  ch_device(FuncRet (*func)(FuncArgs...), const Args&... args) {
+    m_ctx = ctx_begin();
+    this->load(std::function<FuncRet(FuncArgs...)>(func), args...);
+    this->compile();
+    ctx_end();
   }
   
-  template <typename T, typename... Args>  
-  ch_device(const T* obj, void (T::*func)(Args...) const) {
-    m_ctx = ctx_enter();
-    {
-      std::tuple<typename to_value_type<typename std::remove_const<
-          typename std::remove_reference<Args>::type >::type>::value...> args; 
-      this->load(obj, func, args);
-      this->compile();
-    }
-    ctx_exit();
-  }
-  
-  template <typename T, typename Ret, typename... Args>  
-  ch_device(const T* obj, Ret (T::*func)(Args...) const) {
-    m_ctx = ctx_enter();
-    {
-      std::tuple<typename to_value_type<typename std::remove_const<
-          typename std::remove_reference<Args>::type >::type>::value...> args; 
-      this->load(obj, func, args); 
-      this->compile();
-    }
-    ctx_exit();
-  }
-  
-  ~ch_device();
-  
-  template<typename... Args>
-  void bind(Args&&... args) {
-    this->bind({bus_arg(std::forward<Args>(args))...});
-  }
-  
-  template<typename Ret, typename... Args>
-  void bind(Ret& ret, Args&&... args) {
-    this->bind({bus_arg(ret), bus_arg(std::forward<Args>(args))...});
-  }
+  virtual ~ch_device();
   
   void toVerilog(const std::string& module_name, std::ostream& out);  
   
 protected:
- 
-  template<typename ...Args1, typename ...Args2, size_t ...I>
-  void load_impl(void (*func)(Args1...), std::tuple<Args2...>& args, index_sequence<I...>) {
-    auto ioports = {ioport_arg(std::get<I>(args))...};
-    func(std::get<I>(args)...);
-    this->register_io(ioports);
+  
+  template <typename T>
+  struct to_value_type {
+    typedef T value;
+  };
+  
+  template <unsigned N>
+  struct to_value_type< ch_bitbase<N> > {
+    typedef ch_bitv<N> value;
+  };
+  
+  template <typename T>
+  struct output_size {};
+  
+  template <typename ...OutputArgs>
+  struct output_size< std::tuple<OutputArgs...> > {
+    static const size_t value = sizeof...(OutputArgs);
+  };
+  
+  template <unsigned N>
+  struct output_size< ch_bitv<N> > {
+    static const size_t value = 1;
+  };
+  
+  template <bool Enable, size_t I>
+  struct bind_output_impl {};
+  
+  template <size_t I>
+  struct bind_output_impl<false, I> {
+    template <typename ...OutputArgs, typename Arg>
+    static void bind(const ch_device& dev, const std::tuple<OutputArgs...>& outputs, const Arg& arg) {
+      // do nothing!
+    }
+  };
+  
+  template <size_t I>
+  struct bind_output_impl<true, I> {
+    template <typename ...OutputArgs, typename Arg>
+    static void bind(const ch_device& dev, const std::tuple<OutputArgs...>& outputs, const Arg& arg) {
+      dev.bind_output(I-1, std::get<sizeof...(OutputArgs)-I>(outputs), arg);
+    }
+  };
+  
+  template <size_t I>
+  struct bind_outputs_impl {
+    template <typename ...OutputArgs, typename Arg, typename ...Args>
+    static void bind(const ch_device& dev, const std::tuple<OutputArgs...>& outputs, const Arg& arg, const Args&... args) {
+      bind_output_impl<(I <= sizeof...(OutputArgs)), I>::bind(dev, outputs, arg);
+      bind_outputs_impl<I-1>::bind(dev, outputs, args...);
+    }
+  };
+  
+  template <size_t I>
+  struct bind_outputs_impl2 {
+    template <typename Ret, typename Arg, typename ...Args>
+    static void bind(const ch_device& dev, const Ret& output, const Arg& arg, const Args&... args) {
+      bind_outputs_impl2<I-1>::bind(dev, output, args...);
+    }
+  };
+  
+  template <size_t I>
+  struct bind_inputs_impl {
+    template <typename ...InputArgs, typename Arg, typename ...Args>
+    static void bind(const ch_device& dev, const std::tuple<InputArgs...>& inputs, const Arg& arg, const Args&... args) {
+      dev.bind_input(I-1, std::get<sizeof...(InputArgs)-I>(inputs), arg);
+      bind_inputs_impl<I-1>::bind(dev, inputs, args...);
+    }
+  };
+  
+  template<typename FuncRet, typename ...FuncArgs, typename ...Args, size_t ...I>
+  FuncRet load_impl(std::function<FuncRet(FuncArgs...)> func, std::tuple<Args...>& args, index_sequence<I...>) {
+    return func(std::get<I>(args)...);
   }
   
-  template <typename ...Args1, typename ...Args2>
-  void load(void (*func)(Args1...), std::tuple<Args2...>& args) {
-      this->load_impl(func, args, make_index_sequence<sizeof...(Args2)>());
+  template <typename FuncRet, typename ...FuncArgs, typename ...Args>
+  void load(const std::function<FuncRet(FuncArgs...)>& func, const Args&... args) {
+    static_assert(sizeof...(FuncArgs) + output_size<FuncRet>::value == sizeof...(Args), "number of arguments mismatch!");
+    std::tuple<typename to_value_type<typename std::remove_const<
+          typename std::remove_reference<FuncArgs>::type >::type>::value...> func_args;
+    this->bind_inputs(func_args, args...);
+    FuncRet ret(this->load_impl(func, func_args, make_index_sequence<sizeof...(FuncArgs)>()));
+    this->bind_outputs(ret, args...);
   }
   
-  template<typename Ret, typename ...Args1, typename ...Args2, size_t ...I>
-  void load_impl(Ret (*func)(Args1...), std::tuple<Args2...>& args, index_sequence<I...>) {
-    Ret ret;
-    auto ioports = {ioport_arg(ret), ioport_arg(std::get<I>(args))...};
-    ret = func(std::get<I>(args)...);
-    this->register_io(ioports);
+  template <typename ...InputArgs, typename ...Args>
+  void bind_inputs(const std::tuple<InputArgs...>& inputs, const Args&... args) {
+    bind_inputs_impl<sizeof...(InputArgs)>::bind(*this, inputs, args...);
   }
   
-  template <typename Ret, typename ...Args1, typename ...Args2>
-  void load(Ret (*func)(Args1...), std::tuple<Args2...>& args) {
-      this->load_impl(func, args, make_index_sequence<sizeof...(Args2)>());
+  template <typename ...OutputArgs, typename ...Args>
+  void bind_outputs(const std::tuple<OutputArgs...>& outputs, const Args&... args) {
+    bind_outputs_impl<sizeof...(Args)>::bind(*this, outputs, args...);
   }
   
-  template<typename T, typename ...Args1, typename ...Args2, size_t ...I>
-  void load_impl(const T* obj, void (T::*func)(Args1...) const, std::tuple<Args2...>& args, index_sequence<I...>) {
-    auto ioports = {ioport_arg(std::get<I>(args))...};
-    (obj->*func)(std::get<I>(args)...);
-    this->register_io(ioports);
+  template <typename Ret, typename ...Args>
+  void bind_outputs(const Ret& output, const Args&... args) {
+    bind_outputs_impl2<sizeof...(Args)>::bind(*this, output, args...);
   }
-  
-  template <typename T, typename ...Args1, typename ...Args2>
-  void load(const T* obj, void (T::*func)(Args1...) const, std::tuple<Args2...>& args) {
-      this->load_impl(obj, func, args, make_index_sequence<sizeof...(Args2)>());
-  }
-  
-  template<typename T, typename Ret, typename ...Args1, typename ...Args2, size_t ...I>
-  void load_impl(const T* obj, Ret (T::*func)(Args1...) const, std::tuple<Args2...>& args, index_sequence<I...>) {
-    Ret ret;
-    auto ioports = {ioport_arg(ret), ioport_arg(std::get<I>(args))...};
-    ret = (obj->*func)(std::get<I>(args)...);
-    this->register_io(ioports);
-  }
-  
-  template <typename T, typename Ret, typename ...Args1, typename ...Args2>
-  void load(const T* obj, Ret (T::*func)(Args1...) const, std::tuple<Args2...>& args) {
-    this->load_impl(obj, func, args, make_index_sequence<sizeof...(Args2)>());
-  }
-  
-  void register_io(const std::vector<ioport_arg>& ioports);
 
+  template <unsigned N>
+  void bind_input(unsigned index, const ch_bitbase<N>& input, const ch_busbase<N>& bus) const {
+    this->bind_input(index, static_cast<lnode>(input), static_cast<snode>(bus));
+  }
+  
+  template <unsigned N>
+  void bind_output(unsigned index, const ch_bitbase<N>& output, const ch_busbase<N>& bus) const {
+    this->bind_output(index, static_cast<lnode>(output), static_cast<snode>(bus));
+  }
+  
+  void bind_input(unsigned index, const lnode& input, const snode& bus) const;
+  
+  void bind_output(unsigned index, const lnode& output, const snode& bus) const;
+  
   void compile();
   
-  void bind(const std::vector<bus_arg>& args);
-  
   context* m_ctx;
+};
+
+template <>
+struct ch_device::bind_inputs_impl<1> {
+  template <typename ...InputArgs, typename Arg, typename ...Args>
+  static void bind(const ch_device& dev, const std::tuple<InputArgs...>& inputs, const Arg& arg, const Args&... args) {
+    dev.bind_input(0, std::get<sizeof...(InputArgs)-1>(inputs), arg);
+  }
+  
+  template <typename ...InputArgs, typename Arg>
+  static void bind(const ch_device& dev, const std::tuple<InputArgs...>& inputs, const Arg& arg) {
+    dev.bind_input(0, std::get<sizeof...(InputArgs)-1>(inputs), arg);
+  }
+};
+
+template <>
+struct ch_device::bind_inputs_impl<0> {
+  template <typename ...InputArgs, typename ...Args>
+  static void bind(const ch_device& dev, const std::tuple<InputArgs...>& inputs, const Args&... args) {
+    // no inputs!
+  }
+};
+
+template <>
+struct ch_device::bind_outputs_impl<1> {  
+  template <typename ...OutputArgs, typename Arg>
+  static void bind(const ch_device& dev, const std::tuple<OutputArgs...>& outputs, const Arg& arg) {
+    bind_output_impl<true, 1>::bind(dev, outputs, arg);
+  }
+};
+
+template <>
+struct ch_device::bind_outputs_impl<0> {
+  template <typename ...OutputArgs, typename Arg, typename ...Args>
+  static void bind(const ch_device& dev, const std::tuple<OutputArgs...>& outputs, const Args&... args) {
+    // no inputs!
+  }
+};
+
+template <>
+struct ch_device::bind_outputs_impl2<1> {
+  template <typename Ret, typename Arg, typename ...Args>
+  static void bind(const ch_device& dev, const Ret& output, const Arg& arg) {
+    dev.bind_output(0, output, arg);
+  }
+};
+
+template <>
+struct ch_device::bind_outputs_impl2<0> {
+  template <typename Ret, typename Arg, typename ...Args>
+  static void bind(const ch_device& dev, const Ret& output, const Args&... args) {
+    // no inputs!
+  }
 };
 
 }
