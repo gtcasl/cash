@@ -1,50 +1,23 @@
 #pragma once
 
-#include "lnode.h"
-#include "snode.h"
-
 namespace chdl_internal {
 
-class cdomain;
+class lnode;
+class snode;
+class lnodeimpl;
+class snodeimpl;
+class undefimpl;
+class litimpl;
 class ioimpl;
 class inputimpl;
 class outputimpl;
 class tapimpl;
 class assertimpl;
-class litimpl;
 class clock_event;
+class cdomain;
 
-typedef refcounted_ptr<ioimpl>     ioimpl_ptr;
-typedef refcounted_ptr<inputimpl>  inputimpl_ptr;
-typedef refcounted_ptr<outputimpl> outputimpl_ptr;
-typedef refcounted_ptr<tapimpl>    tapimpl_ptr;
-typedef refcounted_ptr<assertimpl> assertimpl_ptr;
-typedef refcounted_ptr<litimpl>    litimpl_ptr;
-
-typedef refcounted_ptr<cdomain>    cdomain_ptr;
-
-class context : refcounted {
-private:
-
-  std::map<std::string, unsigned> m_dup_taps;
-
+class context {
 public:
-  //--
-  std::list<lnodeimpl_ptr> undefs;
-  std::list<lnodeimpl_ptr> nodes;
-  std::list<cdomain_ptr> cdomains;
-  std::stack<lnode> clk_stack;
-  std::stack<lnode> reset_stack;
-  std::vector<ioimpl_ptr> ioports;
-  std::vector<tapimpl_ptr> taps;
-  std::list<assertimpl_ptr> gtaps;
-  std::list<litimpl_ptr> literals;
-
-  //--
-  uint32_t      nodeids;
-  inputimpl_ptr g_clk;
-  inputimpl_ptr g_reset;
-
   context();
   ~context();
 
@@ -63,11 +36,17 @@ public:
   lnode get_reset();
 
   //--
-
+  
+  uint32_t add_node(lnodeimpl* node);  
+  void remove_node(undefimpl* node);
+  
   litimpl* create_literal(const std::initializer_list<uint32_t>& value, uint32_t size);
   litimpl* create_literal(const std::string& value);
+  
   cdomain* create_cdomain(const std::vector<clock_event>& sensitivity_list);
-  void create_assertion(const lnode& lnode, const std::string& msg);
+  void remove_cdomain(cdomain* cd);
+  
+  void create_assertion(const lnode& node, const std::string& msg);
   
   //-- 
 
@@ -95,10 +74,31 @@ public:
   void toVerilog(const std::string& module_name, std::ostream& out);
   
   void dumpNodes(std::ostream& out);
+  
+protected:
+
+  std::list<lnodeimpl*>   m_undefs;
+  std::list<lnodeimpl*>   m_nodes;
+  std::list<cdomain*>     m_cdomains;
+  std::stack<lnode>       m_clk_stack;
+  std::stack<lnode>       m_reset_stack;
+  std::vector<ioimpl*>    m_ioports;
+  std::vector<tapimpl*>   m_taps;
+  std::list<assertimpl*>  m_gtaps;
+  std::list<litimpl*>     m_literals;
+
+  uint32_t   m_nodeids;
+  inputimpl* m_clk;
+  inputimpl* m_reset;
+  
+  std::map<std::string, unsigned> m_dup_taps;
+  
+  friend class optimizer;
+  friend class ch_simulator;
 };
 
-context_ptr ctx_begin();
-context_ptr ctx_curr();
+context* ctx_begin();
+context* ctx_curr();
 void ctx_end();
 
 }

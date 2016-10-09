@@ -40,6 +40,15 @@ typename function_traits<Function>::function to_function(const Function& func) {
 class refcounted {
 public:
   
+  void acquire() const {
+    ++m_refcount;
+  }
+
+  void release() const {
+    if (--m_refcount <= 0)
+      delete this;
+  }
+  
   long get_refcount() const {
     return m_refcount;
   }
@@ -51,19 +60,12 @@ protected:
   
 private:
   
-  void acquire() const {
-    ++m_refcount;
-  }
-
-  void release() const {
-    if (0 == --m_refcount)
-      delete this;
-  }
-      
-  mutable unsigned m_refcount;
+  mutable long m_refcount;
   
   template <typename T> friend class refcounted_ptr;
 };
+
+///////////////////////////////////////////////////////////////////////////////
 
 template <typename T>
 class refcounted_ptr {
@@ -111,6 +113,14 @@ public:
     return m_ptr;
   }
   
+  T* release() const {
+    T* ret(m_ptr);
+    if (ret)
+     ret->release();    
+    m_ptr = nullptr;
+    return ret;
+  }
+  
   bool is_unique() const {
     return m_ptr ? (m_ptr->get_refcount() == 1) : false;
   }
@@ -119,11 +129,21 @@ public:
     return m_ptr ? (m_ptr->get_refcount() == 1) : false;
   }
   
-  void reset() {
+  void reset(T* ptr = nullptr) {
+    if (ptr)
+      ptr->acquire();
     if (m_ptr)
       m_ptr->release();
-    m_ptr = nullptr;
+    m_ptr = ptr;    
     return *this;
+  }
+  
+  bool operator==(const refcounted_ptr& rhs) const {
+    return (m_ptr == rhs.m_ptr);
+  }
+  
+  bool operator==(const T* rhs) const {
+    return (m_ptr == rhs);
   }
   
   operator bool() const {

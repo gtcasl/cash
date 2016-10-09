@@ -16,6 +16,6 @@ const bitvector& assertimpl::eval(ch_cycle t) {
   CHDL_REQUIRED(bits[0], "assertion failure at cycle %ld, %s", t, m_msg.c_str());  
 }
 
-void chdl_internal::ch_assert(const ch_logic& l, const std::string& msg) {
-  ctx_curr()->gtaps.emplace_back(new assertimpl(l, msg));  
+void chdl_internal::ch_assert(const ch_logicbase& l, const std::string& msg) {
+  ctx_curr()->create_assertion(l, msg);  
 }

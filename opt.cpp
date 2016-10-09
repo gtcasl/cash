@@ -13,12 +13,12 @@ optimizer::optimizer(context* ctx) : m_ctx(ctx) {}
 optimizer::~optimizer() {}
 
 void optimizer::optimize() {
-  cerr << "Before optimization: " << m_ctx->nodes.size() << endl;
+  cerr << "Before optimization: " << m_ctx->m_nodes.size() << endl;
   
   m_ctx->get_live_nodes(m_live_nodes);
   
   this->dead_node_elimination();
-  cerr << "After dead node elimination: " << m_ctx->nodes.size() << endl;
+  cerr << "After dead node elimination: " << m_ctx->m_nodes.size() << endl;
   
   // dump nodes
   m_ctx->dumpNodes(cout);
@@ -45,7 +45,7 @@ bool optimizer::dead_node_elimination() {
 
 size_t optimizer::remove_dead_nodes(const std::set<lnodeimpl*>& live_nodes) {
   size_t deleted = 0;
-  auto& nodes = m_ctx->nodes;
+  auto& nodes = m_ctx->m_nodes;
   auto iter = nodes.begin();
   while (iter != nodes.end()) {
     if (live_nodes.count(*iter) == 0) {

@@ -15,7 +15,6 @@ regimpl::regimpl(const lnode& next)
   const lnode& clk = ctx->get_clk();  
   m_cd = ctx->create_cdomain({clock_event(clk, EDGE_POS)});
   m_cd->add_use(this);
-  m_cd->release();
 
   m_srcs.emplace_back(next);
   m_srcs.emplace_back(clk);
@@ -57,7 +56,6 @@ latchimpl::latchimpl(const lnode& next,
     {clock_event(enable, EDGE_ANY), clock_event(next, EDGE_ANY),
      clock_event(reset, EDGE_ANY), clock_event(init, EDGE_ANY)});
   m_cd->add_use(this);
-  m_cd->release();
 
   m_srcs.emplace_back(next);
   m_srcs.emplace_back(init);

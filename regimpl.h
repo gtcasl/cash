@@ -19,10 +19,10 @@ public:
   
 protected:
 
-  refcounted_ptr m_cd;
+  cdomain*  m_cd;
   bitvector m_q;
   bitvector m_next_q;
-  ch_cycle m_ctime;
+  ch_cycle  m_ctime;
 };
 
 class latchimpl : public tickable, public lnodeimpl {
@@ -43,9 +43,9 @@ public:
   
 protected:
 
-  refcounted_ptr m_cd;
+  cdomain*  m_cd;
   bitvector m_q;
-  ch_cycle m_ctime;
+  ch_cycle  m_ctime;
 };
 
 }

@@ -4,7 +4,7 @@
 
 namespace chdl_internal {
 
-void ch_assert(const ch_logic& l, const std::string& msg);
+void ch_assert(const ch_logicbase& l, const std::string& msg);
 
 }
 

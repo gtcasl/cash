@@ -1,13 +1,16 @@
 #pragma once
 
-#include "context.h"
+#include "lnode.h"
+#include "snode.h"
 
 namespace chdl_internal {
+
+class ioimpl;
 
 class snodeimpl : public refcounted {
 public:
   snodeimpl(uint32_t size);
-  snodeimpl(ioimpl_ptr output);
+  snodeimpl(ioimpl* output);
   snodeimpl(const std::string& value);
   snodeimpl(const std::initializer_list<uint32_t>& value, uint32_t size);
   ~snodeimpl();  
@@ -16,7 +19,7 @@ public:
     return m_id;
   }
   
-  void assign(uint32_t start, snodeimpl_ptr src, uint32_t offset, uint32_t length);
+  void assign(uint32_t start, snodeimpl* src, uint32_t offset, uint32_t length);
 
   const bitvector& eval(ch_cycle t);
    
@@ -49,17 +52,17 @@ public:
 protected:
   
   struct source_t {
-    snodeimpl_ptr node;
+    snodeimpl* node;
     uint32_t start;    
     uint32_t offset;    
     uint32_t length;
   };
   
   std::vector<source_t> m_srcs;
-  ioimpl_ptr m_output;
-  bitvector  m_value;
-  ch_cycle   m_ctime;
-  uint32_t   m_id;
+  ioimpl*   m_output;
+  bitvector m_value;
+  ch_cycle  m_ctime;
+  uint32_t  m_id;
 };
 
 }

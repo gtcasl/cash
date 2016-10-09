@@ -4,7 +4,7 @@
 
 namespace chdl_internal {
 
-class memimpl_ptr;
+class memimpl;
 
 class memory {
 public:
@@ -17,7 +17,7 @@ public:
   void write(const lnode& addr, const lnode& value, const lnode& enable);
   
 private:
-  memimpl_ptr m_impl;
+  memimpl* m_impl;
 };
 
 template <unsigned N, unsigned A, bool SyncRead = false>

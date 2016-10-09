@@ -36,15 +36,15 @@ protected:
   struct select_stmts : public refcounted {
     std::stack<select_stmt> values;
   };
-  typedef refcounted_ptr<select_stmts> select_stmts_ptr;
-
-  select_when_t(select_stmts_ptr stmts, const ch_logic& test, const ch_bitbase<N>& value) 
-    : m_stmts(stmts) {
+  
+  select_when_t(select_stmts* stmts, const ch_logic& test, const ch_bitbase<N>& value) 
+    : m_stmts(stmts) {    
     stmts->values.emplace(test, &value);
+    stmts->acquire();
   }
   
   select_when_t(const ch_logic& test, const ch_bitbase<N>& value)
-    : select_when_t(make_ptr<select_stmts>(), test, value) {}  
+    : select_when_t(new select_stmts(), test, value) {}  
   
   ch_bitv<N> eval(const ch_bitbase<N>& value) {
     ch_bitv<N> curr;
@@ -59,7 +59,7 @@ protected:
     return curr;
   }
   
-  select_stmts_ptr m_stmts;
+  select_stmts* m_stmts;
   
   template <unsigned N2> friend select_when_t<N2> ch_select(const ch_logic& test, const ch_bitbase<N2>& value);
   friend select_when_t<1> ch_select(const ch_logic& test, const ch_logic& value);

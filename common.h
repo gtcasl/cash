@@ -16,5 +16,6 @@
 #include <assert.h>
 #include <atomic>
 #include <functional>
+#include <fstream>
 #include "macros.h"
 #include "utils.h"

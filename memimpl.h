@@ -31,12 +31,10 @@ protected:
   std::vector<bitvector> m_content;
   bool     m_syncRead;
   bool     m_writeEnable;   
-  cdomain_ptr m_cd;
+  cdomain* m_cd;
   
   friend class memportimpl;
 };
-
-typedef refcounted_ptr<memimpl> memimpl_ptr;
 
 class memportimpl : public lnodeimpl {
 public:  
@@ -53,15 +51,15 @@ public:
 
 protected:
   
-  memimpl_ptr m_mem;
-  bool m_writeEnable;
+  memimpl*  m_mem;
+  bool      m_writeEnable;
   
   bitvector m_rddata;
   bitvector m_wrdata;
   uint32_t  m_addr;
   bool      m_do_write;  
   
-  ch_cycle m_ctime;
+  ch_cycle  m_ctime;
   
   friend class memimpl;
 };

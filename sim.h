@@ -1,6 +1,5 @@
 ﻿#pragma once
 
-#include <functional>
 #include "device.h"
 
 namespace chdl_internal {
@@ -36,10 +35,10 @@ public:
 protected:
   
   struct tap_t {
-    tap_t(const std::string& name_, snodeimpl_tr bus_) : name(name_), bus(bus_) {}
+    tap_t(const std::string& name_, snodeimpl* bus_) : name(name_), bus(bus_) {}
 
     std::string name;
-    snodeimpl_ptr bus;
+    snodeimpl* bus;
   };
   
   virtual void ensureInitialize();
@@ -48,10 +47,10 @@ protected:
 
   std::vector<tap_t> m_taps;
   std::map<std::string, unsigned> m_dup_taps;
-  std::set<context_ptr> m_contexts;  
+  std::set<context*> m_contexts;  
   bool m_initialized;
-  snodeimpl_ptr m_clk;
-  snodeimpl_ptr m_reset;
+  snodeimpl* m_clk;
+  snodeimpl* m_reset;
 };
 
 class ch_tracer : public ch_simulator {

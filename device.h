@@ -149,7 +149,7 @@ protected:
   
   void compile();
   
-  context_ptr m_ctx;
+  context* m_ctx;
 };
 
 template <>

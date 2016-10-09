@@ -4,8 +4,6 @@
 
 namespace chdl_internal {
 
-class context_ptr;
-
 class optimizer {
 public:  
   optimizer(context* ctx);  
@@ -20,7 +18,7 @@ protected:
   size_t remove_dead_nodes(const std::set<lnodeimpl*>& live_nodes);  
   
   std::set<lnodeimpl*> m_live_nodes;
-  context_ptr m_ctx;
+  context* m_ctx;
 };
 
 }

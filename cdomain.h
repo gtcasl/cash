@@ -47,7 +47,7 @@ protected:
 
 class cdomain : public refcounted {
 public:
-  cdomain(context_ptr ctx, const std::vector<clock_event>& sensitivity_list);
+  cdomain(context* ctx, const std::vector<clock_event>& sensitivity_list);
   
   void add_use(tickable* reg);
   void remove_use(tickable* reg);
@@ -56,7 +56,7 @@ public:
     return m_sensitivity_list;
   }
   
-  context_ptr get_ctx() const {
+  context* get_ctx() const {
     return m_ctx;
   }
   
@@ -73,9 +73,7 @@ protected:
   
   std::vector<clock_event> m_sensitivity_list;
   std::list<tickable*> m_regs;
-  context_ptr m_ctx;
+  context* m_ctx;
 };
-
-typedef refcounted_ptr<cdomain> cdomain_ptr;
 
 }

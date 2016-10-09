@@ -4,9 +4,11 @@
 
 namespace chdl_internal {
 
+class snodeimpl;
+
 class ioimpl : public lnodeimpl {
 public:
-  ioimpl(const std::string& name, context_ptr ctx, uint32_t size)
+  ioimpl(const std::string& name, context* ctx, uint32_t size)
     : lnodeimpl(name, ctx, size)  {}
   
   virtual ~ioimpl() {}
@@ -14,10 +16,10 @@ public:
 
 class inputimpl : public ioimpl {
 public:
-  inputimpl(const std::string& name, uint32_t index, context_ptr ctx, uint32_t size);
+  inputimpl(const std::string& name, uint32_t index, context* ctx, uint32_t size);
   ~inputimpl();
   
-  void bind(snodeimpl_ptr bus);
+  void bind(snodeimpl* bus);
 
   const bitvector& eval(ch_cycle t) override;
   
@@ -26,7 +28,7 @@ public:
   void print_vl(std::ostream& out) const override {}
   
 protected:
-  snodeimpl_ptr m_bus;
+  snodeimpl* m_bus;
   uint32_t m_index;
 };
 

@@ -38,29 +38,27 @@ void ch_simulator::ensureInitialize() {
 
   // bind context taps
   for (auto ctx : m_contexts) {
-    if (ctx->g_clk) {
+    if (ctx->m_clk) {
       if (m_clk == nullptr)
         m_clk = new snodeimpl(1);
-      ctx->g_clk->bind(m_clk);
+      ctx->m_clk->bind(m_clk);
     }
 
-    if (ctx->g_reset) {
+    if (ctx->m_reset) {
       if (m_reset == nullptr)
         m_reset = new snodeimpl(1);
-      ctx->g_reset->bind(m_reset);
+      ctx->m_reset->bind(m_reset);
     }
     
-    for (tapimpl_ptr : ctx->taps) {
-      snodeimpl* bus = new snodeimpl(tap);
-      this->add_tap(tap->get_tapName(), bus);
-      bus->release();
+    for (tapimpl* tap : ctx->m_taps) {
+      this->add_tap(tap->get_tapName(), new snodeimpl(tap));
     }
   }
   
   m_initialized = true;
 }
 
-void ch_simulator::add_tap(const std::string& name, snodeimpl_ptr bus) {
+void ch_simulator::add_tap(const std::string& name, snodeimpl* bus) {
   CHDL_REQUIRED(!m_initialized, "new tap not allowed after simulation has started");
   
   // resolve duplicate names  

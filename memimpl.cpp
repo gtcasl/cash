@@ -1,4 +1,3 @@
-#include <fstream>
 #include "memimpl.h"
 #include "mem.h"
 #include "context.h"
@@ -16,7 +15,6 @@ memimpl::memimpl(uint32_t data_width, uint32_t addr_width,
     context* ctx = ctx_curr();        
     m_cd = ctx->create_cdomain({clock_event(ctx->get_clk(), EDGE_POS)});
     m_cd->add_use(this);
-    m_cd->release();
   }
 }
 

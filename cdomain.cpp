@@ -57,12 +57,12 @@ cdomain::cdomain(context* ctx, const std::vector<clock_event>& sensitivity_list)
 } 
 
 cdomain::~cdomain() {
-  m_ctx->cdomains.remove(this);
+  m_ctx->remove_cdomain(this);
 }
 
 void cdomain::add_use(tickable* reg) {
-  this->acquire();
   m_regs.emplace_back(reg);
+  this->acquire();
 }
 
 void cdomain::remove_use(tickable* reg) {

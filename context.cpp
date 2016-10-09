@@ -16,9 +16,9 @@ using namespace chdl_internal;
 thread_local context* tls_ctx = nullptr;
 
 context::context()
-  : nodeids(0)
-  , g_clk(nullptr)
-  , g_reset(nullptr)
+  : m_nodeids(0)
+  , m_clk(nullptr)
+  , m_reset(nullptr)
 {}
 
 context::~context() { 
@@ -26,86 +26,103 @@ context::~context() {
   // cleanup allocated resources
   //
   
-  for (lnodeimpl_ptr node : nodes) {
+  for (lnodeimpl* node : m_nodes) {
     node->release();
   }
 
-  assert(cdomains.empty());
+  assert(m_cdomains.empty());
 }
 
 std::list<lnodeimpl*>::iterator
 context::erase_node(const std::list<lnodeimpl*>::iterator& iter) {
   lnodeimpl* node = *iter;
-  if (node == g_clk) {
-    g_clk = nullptr;
+  if (node == m_clk) {
+    m_clk = nullptr;
   } else
-  if (node == g_reset) {
-    g_reset = nullptr;
+  if (node == m_reset) {
+    m_reset = nullptr;
   }
   node->release();
-  return nodes.erase(iter);
+  return m_nodes.erase(iter);
 }
 
 void context::push_clk(const lnode& clk) {
-  clk_stack.push(clk);
+  m_clk_stack.push(clk);
 }
 
 void context::pop_clk() {
-  clk_stack.pop();
+  m_clk_stack.pop();
 }
 
 void context::push_reset(const lnode& reset) {
-  reset_stack.push(reset);
+  m_reset_stack.push(reset);
 }
 
 void context::pop_reset() {
-  reset_stack.pop();
+  m_reset_stack.pop();
 }
 
 lnode context::get_clk() {
-  if (!clk_stack.empty())
-    return clk_stack.top();
-  if (g_clk == nullptr)
-    g_clk = new inputimpl("clk", -1, this, 1);
-  return lnode(g_clk);
+  if (!m_clk_stack.empty())
+    return m_clk_stack.top();
+  if (m_clk == nullptr)
+    m_clk = new inputimpl("clk", -1, this, 1);
+  return lnode(m_clk);
 }
 
 lnode context::get_reset() {
-  if (!reset_stack.empty())
-    return reset_stack.top();
-  if (g_reset == nullptr)
-     g_reset = new inputimpl("reset", -1, this, 1);
-  return lnode(g_reset);
+  if (!m_reset_stack.empty())
+    return m_reset_stack.top();
+  if (m_reset == nullptr)
+     m_reset = new inputimpl("reset", -1, this, 1);
+  return lnode(m_reset);
 }
 
+uint32_t context::add_node(lnodeimpl* node) {
+  if (node->m_name == "undef") {
+    m_undefs.emplace_back(node);
+  } else {
+    m_nodes.emplace_back(node);
+  }  
+  return ++m_nodeids;
+}
+
+void context::remove_node(undefimpl* node) {
+  assert(m_undefs.size() > 0);
+  m_undefs.remove(node);
+}
 
 litimpl* context::create_literal(const std::initializer_list<uint32_t>& value, uint32_t size) {
   bitvector tmp(value, size);
-  for (litimpl* lit : literals) {
+  for (litimpl* lit : m_literals) {
     if (lit->get_value() == tmp) {
       return lit;
     }
   }
   litimpl* lit = new litimpl(this, tmp);
-  literals.emplace_back(lit);
+  m_literals.emplace_back(lit);
   return lit;
 }
 
 litimpl* context::create_literal(const std::string& value) {
   bitvector tmp(value);
-  for (litimpl* lit : literals) {
+  for (litimpl* lit : m_literals) {
     if (lit->get_value() == tmp) {
       return lit;
     }
   }
   litimpl* lit = new litimpl(this, tmp);
-  literals.emplace_back(lit);
+  m_literals.emplace_back(lit);
   return lit;
+}
+
+void context::create_assertion(const lnode& node, const std::string& msg) {
+  m_gtaps.emplace_back(new assertimpl(node, msg));  
 }
 
 cdomain* context::create_cdomain(const std::vector<clock_event>& sensitivity_list) {
   // return existing cdomain 
-  for (cdomain* cd : cdomains) {
+  for (cdomain* cd : m_cdomains) {
     if (*cd == sensitivity_list) {
       cd->acquire(); // increment reference for reuse
       return cd;
@@ -113,23 +130,25 @@ cdomain* context::create_cdomain(const std::vector<clock_event>& sensitivity_lis
   }  
   // allocate new cdomain
   cdomain* cd = new cdomain(this, sensitivity_list);
-  this->cdomains.emplace_back(cd);
+  m_cdomains.emplace_back(cd);
   return cd;
+}
+
+void context::remove_cdomain(cdomain* cd) {
+  m_cdomains.remove(cd);
 }
 
 void context::bind_input(unsigned index, const lnode& input, const snode& bus) {
   inputimpl* impl = new inputimpl("input", index, this, bus.m_impl->get_size());
   impl->bind(bus.m_impl);
   input.assign(impl);
-  this->ioports.emplace_back(impl);
+  m_ioports.emplace_back(impl);
 }
 
 snode context::bind_output(unsigned index, const lnode& output) {
   outputimpl* impl = new outputimpl("output", index, output);
-  this->ioports.emplace_back(impl);
-  snodeimpl* bus = new snodeimpl(impl);
-  scope_exit gc([&bus]() { bus->release(); }); // call release() on exit
-  return snode(bus);
+  m_ioports.emplace_back(impl);
+  return snode(new snodeimpl(impl));
 }
 
 void context::register_tap(const std::string& name, const lnode& node) {
@@ -139,53 +158,53 @@ void context::register_tap(const std::string& name, const lnode& node) {
   if (instances > 0) {
     if (instances == 1) {
       // rename first instance
-      auto iter = std::find_if(taps.begin(), taps.end(),
+      auto iter = std::find_if(m_taps.begin(), m_taps.end(),
         [name](tapimpl* t)->bool { return t->get_tapName() == name; });
-      assert(iter != taps.end());
+      assert(iter != m_taps.end());
       (*iter)->m_name = fstring("%s_%d", name.c_str(), 0);
     }
     full_name = fstring("%s_%d", name.c_str(), instances);
   }
   // add to list
-  taps.emplace_back(new tapimpl(full_name, node));
+  m_taps.emplace_back(new tapimpl(full_name, node));
 }
 
 void context::syntax_check() {
   // check for un-initialized nodes
-  if (this->undefs.size()) {
+  if (m_undefs.size()) {
     this->dumpNodes(cout);    
-    for (auto node : undefs) {
+    for (auto node : m_undefs) {
       fprintf(stderr, "error: un-initialized node #%d!\n", node->get_id());
     }
-    CHDL_ABORT("%zd nodes have not been initialized.", this->undefs.size());
+    CHDL_ABORT("%zd nodes have not been initialized.", m_undefs.size());
   }
 }
 
-void context::get_live_nodes(std::set<lnodeimpl_ptr>& live_nodes) {
+void context::get_live_nodes(std::set<lnodeimpl*>& live_nodes) {
   // get io ports
-  for (auto node : ioports) {
+  for (auto node : m_ioports) {
     live_nodes.emplace(node);
   }  
   
   // get debug taps
-  for (auto node : taps) {
+  for (auto node : m_taps) {
     live_nodes.emplace(node);
   }
 
   // get assert taps
-  for (auto node : gtaps) {
+  for (auto node : m_gtaps) {
     live_nodes.emplace(node);
   }
 }
 
 void context::tick(ch_cycle t) {
-  for (auto cd : cdomains) {
+  for (auto cd : m_cdomains) {
     cd->tick(t);
   }  
 }
 
 void context::tick_next(ch_cycle t) {
-  for (auto cd : cdomains) {
+  for (auto cd : m_cdomains) {
     cd->tick_next(t);
   }  
 }
@@ -195,7 +214,7 @@ void context::toVerilog(const std::string& module_name, std::ostream& out) {
 }
 
 void context::dumpNodes(std::ostream& out) {
-  for (lnodeimpl_ptr node :nodes) {
+  for (lnodeimpl* node : m_nodes) {
     node->print(out);
   }
 }

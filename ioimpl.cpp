@@ -11,9 +11,15 @@ inputimpl::inputimpl(const std::string& name, uint32_t index, context* ctx, uint
   , m_index(index)
 {}
 
-inputimpl::~inputimpl() {}
+inputimpl::~inputimpl() {
+  if (m_bus)
+    m_bus->release();
+}
 
-void inputimpl::bind(snodeimpl_ptr bus) {
+void inputimpl::bind(snodeimpl* bus) {
+  bus->acquire();
+  if (m_bus)
+    m_bus->release();
   m_bus = bus;
 }
 

@@ -17,7 +17,7 @@ snodeimpl::snodeimpl(uint32_t size)
   , m_ctime(~0ull) 
 {}
 
-snodeimpl::snodeimpl(ioimpl_ptr output) 
+snodeimpl::snodeimpl(ioimpl* output) 
   : m_id(generate_id())
   , m_output(output)
   , m_value(output->get_size())
@@ -51,7 +51,7 @@ snodeimpl::~snodeimpl() {
   }
 }
 
-void snodeimpl::assign(uint32_t start, snodeimpl_ptr src, uint32_t offset, uint32_t length) {
+void snodeimpl::assign(uint32_t start, snodeimpl* src, uint32_t offset, uint32_t length) {
   assert(this != src);
   // disconnect output port if present  
   if (m_output) {
@@ -178,9 +178,7 @@ snode::snode(snodeimpl* impl) : m_impl(nullptr) {
 }
 
 snode::snode(const std::string& value) : m_impl(nullptr) {
-  snodeimpl* impl = new snodeimpl(value);
-  this->assign(impl);
-  impl->release();
+  this->assign(new snodeimpl(value));
 }
 
 snode::snode(const std::initializer_list<uint32_t>& value, uint32_t size) : m_impl(nullptr) {
@@ -224,7 +222,7 @@ void snode::assign(const std::initializer_list<uint32_t>& value, uint32_t size) 
   this->assign(new snodeimpl(value, size));
 }
 
-void snode::assign(snodeimpl_ptr impl) {  
+void snode::assign(snodeimpl* impl) {  
   assert(impl);
   if (m_impl == nullptr) {
     impl->acquire();

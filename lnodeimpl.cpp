@@ -5,26 +5,23 @@
 #include "tickable.h"
 #include "cdomain.h"
 #include "snodeimpl.h"
+#include "context.h"
 #include "bitv.h"
 
 using namespace std;
 using namespace chdl_internal;
 
-lnodeimpl::lnodeimpl(const std::string& name, context_ptr ctx, uint32_t size, bool undefined) 
+lnodeimpl::lnodeimpl(const std::string& name, context* ctx, uint32_t size) 
   : m_name(name)
   , m_ctx(ctx)
   , m_value(size) {
-  m_id = ++ctx->nodeids;
-  if (undefined) {
-    ctx->undefs.emplace_back(this);
-  } else {
-    ctx->nodes.emplace_back(this);
-  }
+  m_id = ctx->add_node(this);
+  this->acquire();
 }
 
 lnodeimpl::~lnodeimpl() {
   for (auto node : m_refs) {
-    node->m_impl.reset();
+    node->m_impl = nullptr;
   }
 }
 
@@ -33,7 +30,7 @@ void lnodeimpl::update_all_refs(lnodeimpl* impl) {
   for (auto node : m_refs) {
     assert(node->m_impl == this);
     node->m_impl = impl;
-    impl->acquire(node);
+    impl->add_ref(node);
   }
   m_refs.clear();
 }
@@ -71,8 +68,8 @@ void lnodeimpl::print(std::ostream& out) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-undefimpl::undefimpl(const std::string& name, context* ctx, uint32_t size) 
-  : lnodeimpl(name, ctx, size, true) {
+undefimpl::undefimpl(context* ctx, uint32_t size) 
+  : lnodeimpl("undef", ctx, size) {
   const char* dbg_node = std::getenv("CHDL_DEBUG_NODE");
   if (dbg_node) {
     uint32_t dbg_node_id = strtol(dbg_node, nullptr, 10);
@@ -82,8 +79,7 @@ undefimpl::undefimpl(const std::string& name, context* ctx, uint32_t size)
 
 undefimpl::~undefimpl() {
   assert(m_refs.empty());
-  assert(m_ctx->undefs.size() > 0);
-  m_ctx->undefs.remove(this);
+  m_ctx->remove_node(this);
 }
 
 const bitvector& undefimpl::eval(ch_cycle t) {
@@ -129,9 +125,9 @@ lnode::~lnode() {
 void lnode::clear() {
   if (m_impl) {
     m_impl->remove_ref(this);
-    undefimpl* impl_ = dynamic_cast<undefimpl*>(m_impl);
-    if (impl_ && impl_->unreferenced())
-      impl_->release();    
+    undefimpl* undef = dynamic_cast<undefimpl*>(m_impl);
+    if (undef && undef->unreferenced())
+      undef->release();
     m_impl = nullptr;
   }
 }
@@ -179,7 +175,7 @@ const bitvector& lnode::eval(ch_cycle t) {
 void lnode::ensureInitialized(uint32_t size) const {
   if (m_impl == nullptr) {
     m_impl = new undefimpl(ctx_curr(), size);
-    m_impl->acquire(this);
+    m_impl->add_ref(this);
   }
   assert(m_impl->get_size() == size);
 }
@@ -197,7 +193,7 @@ void lnode::assign(lnodeimpl* impl) const {
       undef->release();
     }
   }
-  impl->acquire(this);
+  impl->add_ref(this);
   m_impl = impl;
 }
 
@@ -211,7 +207,7 @@ void lnode::move(lnode& rhs) {
         undef->release();
     }  
     m_impl = rhs.m_impl;
-    m_impl->acquire(this);
+    m_impl->add_ref(this);
   }
   rhs.clear();
 }
@@ -230,11 +226,5 @@ void lnode::assign(uint32_t dst_offset, const lnode& src, uint32_t src_offset, u
       proxy->add_src(dst_offset, src, src_offset, src_length);
       this->assign(proxy);
     }
-  }  
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-lnode chdl_internal::createNullNode(uint32_t size) {
-  return lnode(new nullimpl(ctx_curr(), size));
+  }
 }
