@@ -22,16 +22,62 @@ public:
     this->operator =(rhs);
   }
   
-  ch_bus(int value) : m_node({(uint32_t)value}, N) {}
-
-  ch_bus(const std::initializer_list<uint32_t>& value) : m_node(value, N) {} 
+  ch_bus(const std::string& value) : m_node(value) {
+    assert(m_node.get_size() == N);
+  }
+  
+  ch_bus(const std::initializer_list<uint32_t>& value) : m_node(value, N) {}
+  
+  ch_bus(uint32_t value) : m_node({value}, N) {}
+  
+  ch_bus(char value) : m_node({to_value<N>(value)}, N) {} 
+  
+#define CHDL_DEF_CTOR(type) \
+    ch_bus(type value) : m_node({static_cast<uint32_t>(value)}, N) {}
+  CHDL_DEF_CTOR(int8_t)
+  CHDL_DEF_CTOR(uint8_t)
+  CHDL_DEF_CTOR(int16_t)
+  CHDL_DEF_CTOR(uint16_t)
+  CHDL_DEF_CTOR(int32_t)
+  CHDL_DEF_CTOR(int64_t)
+  CHDL_DEF_CTOR(uint64_t)
+#undef CHDL_DEF_CTOR
   
   explicit ch_bus(const snode& node) : m_node(node, N) {}
   
-  base& operator=(const std::initializer_list<uint32_t>& value) {
+  ch_bus& operator=(const std::initializer_list<uint32_t>& value) {
     m_node.assign(value, N);
     return *this;
   }
+  
+  ch_bus& operator=(uint32_t value) {
+    m_node.assign({value}, N);
+    return *this;
+  }
+  
+  ch_bus& operator=(char value) {
+    m_node.assign({to_value<N>(value)}, N);
+    return *this;
+  }
+
+  ch_bus& operator=(bool value) {
+    m_node.assign({to_value<N>(value)}, N);
+    return *this;
+  }  
+  
+#define CHDL_DEF_AOP(type) \
+  ch_bus& operator=(type value) { \
+    m_node.assign({static_cast<uint32_t>(value)}, N); \
+    return *this; \
+  } 
+  CHDL_DEF_AOP(int8_t)
+  CHDL_DEF_AOP(uint8_t)
+  CHDL_DEF_AOP(int16_t)
+  CHDL_DEF_AOP(uint16_t)
+  CHDL_DEF_AOP(int32_t)
+  CHDL_DEF_AOP(int64_t)
+  CHDL_DEF_AOP(uint64_t)
+#undef CHDL_DEF_AOP
   
   uint32_t read(uint32_t idx) const {
     m_node.ensureInitialized(N);
@@ -57,7 +103,6 @@ public:
   
   template <typename T>
   void write(T value) {
-    static_assert(sizeof(T) * 4 <= N, "invalid input data size");
     m_node.ensureInitialized(N);
     for (uint32_t i = 0, n = (N + 31) / 32; i < n; ++i) {
       m_node.write(i, value & 0xffffffff);
@@ -66,26 +111,42 @@ public:
     assert(value == 0);
   }
   
-  operator const snode&() const { 
-    return m_node; 
+  bool read() const {
+    static_assert(N == 1, "invalid object size");
+    return m_node.read(0) != 0x0;
   }
   
-  operator snode&() { 
+  void write(bool value) {
+    static_assert(N == 1, "invalid object size");
+    m_node.ensureInitialized(1);
+    m_node.write(0, value ? 0x1 : 0x0);
+  }
+  
+  void write(char value) {
+    static_assert(N == 1, "invalid object size");
+    m_node.ensureInitialized(1);
+    m_node.write(0, value != 0 && value != '0');
+  }
+  
+  operator snode() const { 
+    m_node.ensureInitialized(N);
     return m_node; 
   }
   
 protected:
   
   void read(std::vector< partition<data_type> >& out, size_t offset, size_t length) const override {
+    assert((offset + length) <= N);
     m_node.ensureInitialized(N);
     out.push_back({m_node, offset, length});
   }
   
   void write(size_t dst_offset, const std::vector< partition<data_type> >& src, size_t src_offset, size_t src_length) override {
+    assert((dst_offset + src_length) <= N);
     for (auto& p : src) {
       if (src_offset < p.length) {
         size_t len = std::min(p.length - src_offset, src_length);
-        m_node.assign(dst_offset, p.data, p.offset + src_offset, len, 1);         
+        m_node.assign(dst_offset, p.data, p.offset + src_offset, len, N);         
         src_length -= len;
         if (src_length == 0)
           return;
@@ -100,120 +161,5 @@ protected:
   
   friend class context;
 };
-
-/*template <>
-class ch_bus<1> : public ch_busbase<1> {
-public:  
-  using base = ch_busbase<1>;
-  using base::operator=;
-  typedef typename base::data_type data_type;
-  typedef ch_bus<1> bus_type;
-  typedef ch_logic  logic_type;
-  
-  ch_bus() {}
-  
-  ch_bus(const ch_bus& rhs) : m_node(rhs.m_node, 1) {}
-  
-  ch_bus(const ch_busbase<1>& rhs) {
-    this->operator =(rhs);
-  }
-  
-  ch_bus(int value) : m_node({(uint32_t)value}, 1) {}
-  
-  explicit ch_bus(const snode& node) : m_node(node, 1) {}
-  
-  ch_bus(const std::initializer_list<uint32_t>& value) : m_node(value, 1) {} 
-  
-  ch_bus(bool value) : base() {
-    this->write(value);
-  }
-  
-  ch_bus(char value) : base() {
-    this->write(value);
-  }
-  
-  base& operator=(const std::initializer_list<uint32_t>& value) {
-    m_node.assign(value, 1);
-    return *this;
-  }
-  
-  ch_bus& operator=(bool value) {
-    this->write(value);
-    return *this;
-  }
-  
-  ch_bus& operator=(char value) {
-    this->write(value);
-    return *this;
-  }  
-  
-  uint32_t read(uint32_t idx) const {
-    m_node.ensureInitialized(1);
-    return m_node.read(idx);
-  }
-  
-  void write(uint32_t idx, uint32_t value) {
-    m_node.ensureInitialized(1);
-    m_node.write(idx, value);
-  }
-  
-  template <typename T>
-  T read() const {    
-    m_node.ensureInitialized(1);
-    T value(m_node.read(0));
-    return value;
-  }
-  
-  template <typename T>
-  void write(T value) {
-    m_node.ensureInitialized(1);
-    m_node.write(0, value & 0x1);
-    value >>= 1;
-    assert(value == 0);
-  }
-  
-  bool read() const {
-    return m_node.read(0) != 0;
-  }
-  
-  void write(bool value) {
-    m_node.write(0, value ? 0x1 : 0x0);
-  }
-  
-  void write(char value) {
-    this->write(value != '0');
-  }
-  
-  operator const snode&() const { 
-    return m_node; 
-  }
-  
-  operator snode&() { 
-    return m_node; 
-  }
-  
-protected:
-  
-  void read(std::vector< partition<data_type> >& out, size_t offset, size_t length) const override {
-    assert(length == 1);
-    m_node.ensureInitialized(1);
-    out.push_back({m_node, offset, 1});
-  }
-  
-  void write(size_t dst_offset, const std::vector< partition<data_type> >& src, size_t src_offset, size_t src_length) override {
-    assert(src_length == 1);
-    for (auto& p : src) {
-      if (src_offset < p.length) {
-        m_node.assign(dst_offset, p.data, p.offset + src_offset, 1, 1);         
-        return;
-      }
-      src_offset -= p.length;
-    }
-  }
-  
-  snode m_node;
-  
-  friend class context;
-};*/
 
 }

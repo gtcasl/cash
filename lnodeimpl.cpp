@@ -1,16 +1,16 @@
 #include "lnodeimpl.h"
-#include "context.h"
+#include "ioimpl.h"
 #include "proxyimpl.h"
 #include "litimpl.h"
-#include "ioimpl.h"
 #include "tickable.h"
-#include "ioimpl.h"
+#include "cdomain.h"
+#include "snodeimpl.h"
 #include "bitv.h"
 
 using namespace std;
 using namespace chdl_internal;
 
-lnodeimpl::lnodeimpl(const std::string& name, context* ctx, uint32_t size, bool undefined) 
+lnodeimpl::lnodeimpl(const std::string& name, context_ptr ctx, uint32_t size, bool undefined) 
   : m_name(name)
   , m_ctx(ctx)
   , m_value(size) {
@@ -24,16 +24,16 @@ lnodeimpl::lnodeimpl(const std::string& name, context* ctx, uint32_t size, bool 
 
 lnodeimpl::~lnodeimpl() {
   for (auto node : m_refs) {
-    node->m_impl = nullptr;
+    node->m_impl.reset();
   }
 }
 
-void lnodeimpl::replace_ref(lnodeimpl* impl) {
+void lnodeimpl::update_all_refs(lnodeimpl* impl) {
   assert(impl != this);
   for (auto node : m_refs) {
     assert(node->m_impl == this);
     node->m_impl = impl;
-    impl->add_ref(node);
+    impl->acquire(node);
   }
   m_refs.clear();
 }
@@ -75,7 +75,7 @@ undefimpl::undefimpl(const std::string& name, context* ctx, uint32_t size)
   : lnodeimpl(name, ctx, size, true) {
   const char* dbg_node = std::getenv("CHDL_DEBUG_NODE");
   if (dbg_node) {
-    uint64_t dbg_node_id = strtoll(dbg_node, nullptr, 10);
+    uint32_t dbg_node_id = strtol(dbg_node, nullptr, 10);
     assert(m_id != dbg_node_id);
   }
 }
@@ -87,7 +87,7 @@ undefimpl::~undefimpl() {
 }
 
 const bitvector& undefimpl::eval(ch_cycle t) {
-  CHDL_ABORT("undefined node: %ld!", m_id);
+  CHDL_ABORT("undefined node: %d!", m_id);
   return m_value; 
 }
 
@@ -114,8 +114,12 @@ lnode::lnode(lnodeimpl* impl) : m_impl(nullptr) {
   this->assign(impl);
 }
 
+lnode::lnode(const std::string& value) : m_impl(nullptr) {
+  this->assign(ctx_curr()->create_literal(value));
+}
+
 lnode::lnode(const std::initializer_list<uint32_t>& value, uint32_t size) : m_impl(nullptr) {
-  this->assign(ctx_curr()->create_literal(value, size));
+  this->assign(value, size);
 }
 
 lnode::~lnode() {
@@ -127,7 +131,7 @@ void lnode::clear() {
     m_impl->remove_ref(this);
     undefimpl* impl_ = dynamic_cast<undefimpl*>(m_impl);
     if (impl_ && impl_->unreferenced())
-      delete impl_;    
+      impl_->release();    
     m_impl = nullptr;
   }
 }
@@ -146,7 +150,7 @@ lnode& lnode::operator=(lnode&& rhs) {
   return *this;
 }
 
-uint64_t lnode::get_id() const {
+uint32_t lnode::get_id() const {
   return m_impl ? m_impl->get_id() : 0; 
 }
 
@@ -175,7 +179,7 @@ const bitvector& lnode::eval(ch_cycle t) {
 void lnode::ensureInitialized(uint32_t size) const {
   if (m_impl == nullptr) {
     m_impl = new undefimpl(ctx_curr(), size);
-    m_impl->add_ref(this);
+    m_impl->acquire(this);
   }
   assert(m_impl->get_size() == size);
 }
@@ -189,11 +193,11 @@ void lnode::assign(lnodeimpl* impl) const {
     m_impl->remove_ref(this);
     undefimpl* undef = dynamic_cast<undefimpl*>(m_impl);
     if (undef) {
-      undef->replace_ref(impl);
-      delete undef;
+      undef->update_all_refs(impl);
+      undef->release();
     }
   }
-  impl->add_ref(this);
+  impl->acquire(this);
   m_impl = impl;
 }
 
@@ -204,10 +208,10 @@ void lnode::move(lnode& rhs) {
       m_impl->remove_ref(this);
       undefimpl* undef = dynamic_cast<undefimpl*>(m_impl);
       if (undef && undef->unreferenced())
-        delete undef;
+        undef->release();
     }  
     m_impl = rhs.m_impl;
-    m_impl->add_ref(this);
+    m_impl->acquire(this);
   }
   rhs.clear();
 }
@@ -227,20 +231,6 @@ void lnode::assign(uint32_t dst_offset, const lnode& src, uint32_t src_offset, u
       this->assign(proxy);
     }
   }  
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-ch_logicbase& ch_logicbase::operator=(const std::initializer_list<uint32_t>& value) {
-  return this->operator =(ch_logic(value));
-}
-
-ch_logicbase::operator const lnode&() const { 
-  return ch_logic(*this); 
-}
-
-ch_logicbase::operator lnode&() { 
-  return ch_logic(*this);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

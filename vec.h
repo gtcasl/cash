@@ -28,8 +28,7 @@ public:
   }
        
   ch_vec(const std::initializer_list<T>& rhs) {
-    if (rhs.size() != N)
-      CHDL_ABORT("initializer list size missmatch!");
+    CHDL_REQUIRED(rhs.size() == N, "initializer list size missmatch!");
     unsigned i = 0;
     for (auto& x : rhs) {
       m_items[i++] = x;
@@ -43,14 +42,12 @@ public:
   virtual ~ch_vec() {}
 
   typename std::vector<T>::reference operator[](size_t i) {
-    if (i >= N) 
-      CHDL_ABORT("invalid subscript index");
+    CHDL_REQUIRED(i < N, "invalid subscript index");
     return m_items[i];
   }
 
   typename std::vector<T>::const_reference operator[](size_t i) const {
-    if (i >= N) 
-      CHDL_ABORT("invalid subscript index");
+    CHDL_REQUIRED(i < N, "invalid subscript index");
     return m_items[i];
   }
     
@@ -67,8 +64,7 @@ protected:
   std::array<T, N> m_items;
   
   void read(std::vector< partition<data_type> >& out, size_t offset, size_t length) const override {
-    if (offset + length > ch_vec::bit_count) 
-      CHDL_ABORT("invalid vector read range");
+    CHDL_REQUIRED(offset + length <= ch_vec::bit_count, "invalid vector read range");
     for (unsigned i = 0; i < N && length > 0; ++i) {
       if (offset < (i + 1) * T::bit_count) {
         size_t off = offset % T::bit_count;        
@@ -81,8 +77,7 @@ protected:
   }
   
   void write(size_t dst_offset, const std::vector< partition<data_type> >& src, size_t src_offset, size_t src_length) override {
-    if (dst_offset + src_length > ch_vec::bit_count) 
-      CHDL_ABORT("invalid vector write range");
+    CHDL_REQUIRED(dst_offset + src_length <= ch_vec::bit_count, "invalid vector write range");
     for (unsigned i = 0; i < N && src_length > 0; ++i) {
       if (dst_offset < (i + 1) * T::bit_count) {
         size_t off = dst_offset % T::bit_count;

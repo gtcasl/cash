@@ -106,6 +106,37 @@
 #define CHDL_FOR_EACH_(N, what, sep, ...) CHDL_CONCAT(CHDL_FOR_EACH_, N)(what, sep, __VA_ARGS__)
 #define CHDL_FOR_EACH(what, sep, ...) CHDL_FOR_EACH_(CHDL_NARG(__VA_ARGS__), what, sep, __VA_ARGS__)
 
+///////////////////////////////////////////////////////////////////////////////
+
+#ifdef NDEBUG
+  #define CHDL_ABORT(msg, ...) do { \
+      fprintf(stderr, "error: "); \
+      fprintf(stderr, msg, ##__VA_ARGS__); \
+      fprintf(stderr, "\n"); \
+      std::abort(); \
+    } while (0)
+#else
+  #define CHDL_ABORT(msg, ...) do { \
+      fprintf(stderr, "\nerror: "); \
+      fprintf(stderr, msg, ##__VA_ARGS__); \
+      fprintf(stderr, " (%s:%d:%s)", __FILE__, __LINE__, __FUNCTION__); \
+      fprintf(stderr, "\n"); \
+      std::abort(); \
+    } while (0)
+#endif
+
+#define CHDL_REQUIRED(x, msg, ...) do { \
+  if (!(x)) CHDL_ABORT(msg, ##__VA_ARGS__); \
+  } while (0)
+
+#define TODO(x) \
+  CHDL_ABORT(#x);
+
+#define CHDL_COUNTOF(a) (sizeof(a) / sizeof(a[0]))
+#define CHDL_MAX(a,b) (((a) > (b)) ? (a) : (b))
+
+///////////////////////////////////////////////////////////////////////////////
+ 
 #define CHDL_OUT(...) std::tuple<__VA_ARGS__>
 #define CHDL_RET(...) std::make_tuple(__VA_ARGS__)
 #define CHDL_TIE(...) std::forward_as_tuple(__VA_ARGS__)

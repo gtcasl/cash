@@ -4,8 +4,8 @@ CXXFLAGS += -fPIC -std=c++11 -O0 -g -fmax-errors=5
 LDFLAGS += -shared
 
 SRCS = utils.cpp bitvector.cpp \
-       lnodeimpl.cpp snodeimpl.cpp proxyimpl.cpp litimpl.cpp selectimpl.cpp regimpl.cpp memimpl.cpp aluimpl.cpp ioimpl.cpp assertimpl.cpp \
-       cdomain.cpp context.cpp device.cpp opt.cpp sim.cpp vcd.cpp
+       lnodeimpl.cpp proxyimpl.cpp litimpl.cpp selectimpl.cpp regimpl.cpp memimpl.cpp aluimpl.cpp ioimpl.cpp assertimpl.cpp \
+       snodeimpl.cpp cdomain.cpp context.cpp device.cpp opt.cpp sim.cpp vcd.cpp
 
 OBJS := $(SRCS:.cpp=.o)
 

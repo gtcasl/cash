@@ -57,6 +57,18 @@ ch_bit4 test_proxies(const ch_bit4& in1, const ch_bitv<64>& in2) {
   
   a.slice<1>(0) = 0x0;  
   __ch_tap(y);  
+  
+  dataS1_t xx;
+  ch_bitv<17> yy = (xx, '1');
+  
+  auto zz = a + '1';
+  
+  auto zz2 = ch_select(zz[0], xx, '1');
+  
+  auto zz3 = ch_reg<1>('1');  
+  
+  auto zz4 = ch_select(a[0], b, c);
+  
   return y;
 }
 
@@ -184,7 +196,7 @@ int main(int argc, char **argv) {
     ch_device myDevice(Demo, input, output);
     __ch_trace(sim, input, output);
     sim.run([&](ch_cycle time)->bool {
-      input = (time == 0) ? 1_b : 0_b;
+      input = (time == 0) ? 1 : 0;
       return (time < 10);
     });
     return true;

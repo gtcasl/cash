@@ -7,14 +7,20 @@ namespace chdl_internal {
 class lnodeimpl;
 class context;
 
+typedef refcounted_ptr<lnodeimpl> lnodeimpl_ptr;
+typedef refcounted_ptr<context>   context_ptr;
+
+typedef uint64_t ch_cycle;
+
 class lnode {
 public:
 
-  lnode() : m_impl(nullptr) {}
+  lnode() {}
   lnode(const lnode& rhs);
   lnode(lnode&& rhs);
   lnode(const lnode& rhs, uint32_t size);
-  explicit lnode(lnodeimpl* impl);
+  explicit lnode(lnodeimpl_ptr impl);
+  lnode(const std::string& value);
   explicit lnode(const std::initializer_list<uint32_t>& value, uint32_t size);
 
   virtual ~lnode();
@@ -23,11 +29,11 @@ public:
   
   lnode& operator=(lnode&& rhs);
 
-  uint64_t get_id() const;
+  uint32_t get_id() const;
   
   uint32_t get_size() const;
   
-  context* get_ctx() const;
+  context_ptr get_ctx() const;
   
   bool ready() const;
   
@@ -39,7 +45,7 @@ public:
   
   void assign(uint32_t dst_offset, const lnode& src, uint32_t src_offset, uint32_t src_length, uint32_t size);
   
-  explicit operator lnodeimpl*() const { 
+  explicit operator lnodeimpl_ptr() const { 
     return m_impl; 
   }
   
@@ -47,23 +53,18 @@ public:
 
 protected:
 
-  void assign(lnodeimpl* impl) const;
+  void assign(lnodeimpl_ptr impl) const;
   
   void move(lnode& rhs);
   
   void clear();
   
-  mutable lnodeimpl* m_impl;
+  lnodeimpl_ptr m_impl;
   
   friend class lnodeimpl;
   friend class context;
   template <typename T> friend T* get_impl(const lnode& n);
 };
-
-template <typename T>
-T* get_impl(const lnode& n) {
-  return dynamic_cast<T*>(n.m_impl);
-}
 
 inline std::ostream& operator<<(std::ostream& out, const lnode& rhs) {
   out << rhs.get_id();
@@ -71,4 +72,5 @@ inline std::ostream& operator<<(std::ostream& out, const lnode& rhs) {
 }
 
 lnode createNullNode(uint32_t size);
+
 }

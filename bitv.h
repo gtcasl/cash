@@ -22,6 +22,15 @@ template <unsigned N> class ch_bitv;
 using ch_logic = ch_bitv<1>;
 
 template <unsigned N> 
+static uint32_t to_value(char value) {
+  if (value == '0')
+    return 0x0;
+  if (value == '1')
+    return 0x1;
+  CHDL_ABORT("invalid character value");
+}
+
+template <unsigned N> 
 class ch_bitv : public ch_bitbase<N> {
 public:
   using base = ch_bitbase<N>;
@@ -38,33 +47,78 @@ public:
     this->operator =(rhs);
   }
   
-  ch_bitv(int value) : m_node({(uint32_t)value}, N) {}
+  ch_bitv(const std::string& value) : m_node(value) {
+    assert(m_node.get_size() == N);
+  }
   
   ch_bitv(const std::initializer_list<uint32_t>& value) : m_node(value, N) {}
   
+  ch_bitv(uint32_t value) : m_node({value}, N) {}
+  
+  ch_bitv(char value) : m_node({to_value<N>(value)}, N) {} 
+    
+#define CHDL_DEF_CTOR(type) \
+    ch_bitv(type value) : m_node({static_cast<uint32_t>(value)}, N) {}
+  CHDL_DEF_CTOR(int8_t)
+  CHDL_DEF_CTOR(uint8_t)
+  CHDL_DEF_CTOR(int16_t)
+  CHDL_DEF_CTOR(uint16_t)
+  CHDL_DEF_CTOR(int32_t)
+  CHDL_DEF_CTOR(int64_t)
+  CHDL_DEF_CTOR(uint64_t)
+#undef CHDL_DEF_CTOR
+  
   explicit ch_bitv(const lnode& node) : m_node(node, N) {}
   
-  base& operator=(const std::initializer_list<uint32_t>& value) {
+  ch_bitv& operator=(const std::initializer_list<uint32_t>& value) {
     m_node.assign(value, N);
     return *this;
   }
-  
-  operator const lnode&() const { 
-    return m_node; 
+
+  ch_bitv& operator=(uint32_t value) {
+    m_node.assign({value}, N);
+    return *this;
   }
+
+  ch_bitv& operator=(char value) {
+    m_node.assign({to_value<N>(value)}, N);
+    return *this;
+  }
+
+  ch_bitv& operator=(bool value) {
+    m_node.assign({to_value<N>(value)}, N);
+    return *this;
+  }  
   
-  operator lnode&() { 
+#define CHDL_DEF_AOP(type) \
+  ch_bitv& operator=(type value) { \
+    m_node.assign({static_cast<uint32_t>(value)}, N); \
+    return *this; \
+  } 
+  CHDL_DEF_AOP(int8_t)
+  CHDL_DEF_AOP(uint8_t)
+  CHDL_DEF_AOP(int16_t)
+  CHDL_DEF_AOP(uint16_t)
+  CHDL_DEF_AOP(int32_t)
+  CHDL_DEF_AOP(int64_t)
+  CHDL_DEF_AOP(uint64_t)
+#undef CHDL_DEF_AOP
+  
+  operator lnode() const { 
+    m_node.ensureInitialized(N);
     return m_node; 
   }
   
 protected:
   
   void read(std::vector< partition<data_type> >& out, size_t offset, size_t length) const override {
+    assert((offset + length) <= N);
     m_node.ensureInitialized(N);
     out.push_back({m_node, offset, length});
   }
   
   void write(size_t dst_offset, const std::vector< partition<data_type> >& src, size_t src_offset, size_t src_length) override {
+    assert((dst_offset + src_length) <= N);
     for (auto& p : src) {
       if (src_offset < p.length) {
         size_t len = std::min(p.length - src_offset, src_length);
@@ -81,68 +135,6 @@ protected:
   
   lnode m_node;
 };
-
-/*template <> 
-class ch_bitv<1> : public ch_logicbase {
-public:    
-  using base = ch_logicbase;
-  using base::operator=;
-  typedef typename base::data_type data_type;
-  typedef ch_bitv<1> logic_type;
-  typedef ch_signal  bus_type;
-  
-  ch_bitv() {}
-  
-  ch_bitv(const ch_bitv& rhs) : m_node(rhs.m_node, 1) {}
-  
-  ch_bitv(const ch_logicbase& rhs) {
-    this->operator =(rhs);
-  }
-  
-  ch_bitv(int value) : m_node({(uint32_t)value}, 1) {}
-  
-  ch_bitv(const std::initializer_list<uint32_t>& value) : m_node(value, 1) {}
-  
-  ch_bitv(bool value) : ch_bitv(value ? 0x1 : 0x0) {}
-  
-  ch_bitv(char value) : ch_bitv(value != '0') {}
-  
-  explicit ch_bitv(const lnode& node) : m_node(node, 1) {}
-  
-  base& operator=(const std::initializer_list<uint32_t>& value) {
-    m_node.assign(value, 1);
-    return *this;
-  }
-  
-  operator const lnode&() const { 
-    return m_node; 
-  }
-  
-  operator lnode&() { 
-    return m_node; 
-  }
-  
-protected:
-  
-  void read(std::vector< partition<data_type> >& out, size_t offset, size_t length) const override {
-    assert(length == 1);
-    m_node.ensureInitialized(1);    
-    out.push_back({m_node, offset, 1});
-  }
-  
-  void write(size_t dst_offset, const std::vector< partition<data_type> >& src, size_t src_offset, size_t src_length) override {
-    assert(src_length == 1);
-    for (auto& p : src) {
-      if (src_offset < p.length) {
-        m_node.assign(dst_offset, p.data, p.offset + src_offset, 1, 1);  
-        return;
-      }
-      src_offset -= p.length;
-    }
-  }
-  
-  lnode m_node;
-};*/
 
 // concatenation operator
 
@@ -305,6 +297,8 @@ CHDL_CONCAT_GEN(template <unsigned NA>,
                 const ch_logic&, const ch_bitbase<NA>&,
                 ch_logic&, ch_bitbase<NA>&)
 
+#undef CHDL_CONCAT_GEN
+
 // null operators
 
 template <unsigned N>
@@ -402,15 +396,18 @@ ch_bitv<N> ch_sext(const ch_bitbase<M>& in) {
 
 // shuffle operators
 
-template <unsigned N>
-ch_bitv<N> ch_shuffle(const ch_bitbase<N>& in, const std::initializer_list<int>& indices) {
-  TODO();
+template <unsigned N, unsigned I>
+ch_bitv<N> ch_shuffle(const ch_bitbase<N>& in, const std::array<uint32_t, I>& indices) {
+  static_assert((I % N) == 0, "invalid shuffle indices size");
+  for (unsigned i = 0; i < I; ++i) {
+    ch_aslice<(N / I)>(in) = indices[i];
+  }
 }
 
 // literal operators
 
 template <unsigned N>
-ch_bitv<N> ch_lit(int value) {
+ch_bitv<N> ch_lit(uint32_t value) {
   return ch_bitv<N>(value);
 }
 

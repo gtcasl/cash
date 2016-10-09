@@ -49,25 +49,25 @@ int main(int argc, char **argv) {
   tracer.run([&](ch_cycle time)->bool {
     switch (time) {
     case 0:
-      din  = 0x1;
-      push = 1_b;
+      din  = 1;
+      push = 1;
       break;
     case 1:
-      din  = 0x2;
-      push = 1_b;
+      din  = 2;
+      push = 1;
       break;
     case 2:
-      din  = 0x0;
-      push = 0_b;
+      din  = 0;
+      push = 0;
       break;
     case 3:
-      pop = 1_b;
+      pop = 1;
       break;
     case 4:
-      pop = 1_b;
+      pop = 1;
       break;
     case 5:
-      pop = 0_b;
+      pop = 0;
       break;
     }
     return (time < 10);

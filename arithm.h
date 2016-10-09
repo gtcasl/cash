@@ -2,31 +2,83 @@
 
 #include "bitv.h"
 
-#define CHDL_BINOP_GEN(op, func) \
-  template <unsigned N, unsigned M> ch_bitv<CHDL_MAX(N,M)> func(const ch_bitbase<N>& a, const ch_bitbase<M>& b) { return func(ch_zext<CHDL_MAX(N,M)>(a), ch_zext<CHDL_MAX(N,M)>(b)); } \
-  template <unsigned N> ch_bitv<N> func(int a, const ch_bitbase<N>& b) { return func(ch_bitv<N>(a), b); } \
-  template <unsigned N> ch_bitv<N> func(const ch_bitbase<N>& a, int b) { return func(a, ch_bitv<N>(b)); } \
-  template <unsigned N, unsigned M> ch_bitv<CHDL_MAX(N,M)> op(const ch_bitbase<N>& a, const ch_bitbase<M>& b) { return func(a, b); } \
-  template <unsigned N> ch_bitv<N> op(int a, const ch_bitbase<N>& b) { return func(ch_bitv<N>(a), b); } \
-  template <unsigned N> ch_bitv<N> op(const ch_bitbase<N>& a, int b) { return func(a, ch_bitv<N>(b)); }
-
-#define CHDL_UNARYOP_GEN(op, func) \
-  template <unsigned N> ch_bitv<N> op(const ch_bitbase<N>& in) { return func(in); }
+#define CHDL_BINOP_GEN0(func, type) \
+  template <unsigned N> ch_bitv<N> func(const ch_bitbase<N>& a, type b) { return func(a, ch_bitv<N>(b)); } \
+  template <unsigned N> ch_bitv<N> func(type a, const ch_bitbase<N>& b) { return func(ch_bitv<N>(a), b); }
   
-#define CHDL_COMPAREOP_GEN(op, func) \
-  template <unsigned N> ch_logic func(int a, const ch_bitbase<N>& b) { return func(ch_bitv<N>(a), b); } \
-  template <unsigned N> ch_logic func(const ch_bitbase<N>& a, int b) { return func(a, ch_bitv<N>(b)); } \
+#define CHDL_BINOP_GEN1(func) \
+  template <unsigned N, unsigned M> ch_bitv<CHDL_MAX(N,M)> func(const ch_bitbase<N>& a, const ch_bitbase<M>& b) { return func(ch_zext<CHDL_MAX(N,M)>(a), ch_zext<CHDL_MAX(N,M)>(b)); } \
+  CHDL_BINOP_GEN0(func, char) \
+  CHDL_BINOP_GEN0(func, int8_t) \
+  CHDL_BINOP_GEN0(func, uint8_t) \
+  CHDL_BINOP_GEN0(func, int16_t) \
+  CHDL_BINOP_GEN0(func, uint16_t) \
+  CHDL_BINOP_GEN0(func, int32_t) \
+  CHDL_BINOP_GEN0(func, uint32_t) \
+  CHDL_BINOP_GEN0(func, int64_t) \
+  CHDL_BINOP_GEN0(func, uint64_t)
+    
+  
+#define CHDL_BINOP_GEN2(func, op) \
+  CHDL_BINOP_GEN1(func) \
+  template <unsigned N, unsigned M> ch_bitv<CHDL_MAX(N,M)> op(const ch_bitbase<N>& a, const ch_bitbase<M>& b) { return func(a, b); } \
+  CHDL_BINOP_GEN0(op, char) \
+  CHDL_BINOP_GEN0(op, int8_t) \
+  CHDL_BINOP_GEN0(op, uint8_t) \
+  CHDL_BINOP_GEN0(op, int16_t) \
+  CHDL_BINOP_GEN0(op, uint16_t) \
+  CHDL_BINOP_GEN0(op, int32_t) \
+  CHDL_BINOP_GEN0(op, uint32_t) \
+  CHDL_BINOP_GEN0(op, int64_t) \
+  CHDL_BINOP_GEN0(op, uint64_t)
+
+#define CHDL_UNARYOP_GEN(func, op) \
+  template <unsigned N> ch_bitv<N> op(const ch_bitbase<N>& in) { return func(in); }
+
+#define CHDL_COMPAREOP_GEN0(func, op, type) \
+  template <unsigned N> ch_logic func(const ch_bitbase<N>& a, type b) { return func(a, ch_bitv<N>(b)); } \
+  template <unsigned N> ch_logic func(type a, const ch_bitbase<N>& b) { return func(ch_bitv<N>(a), b); } \
+  template <unsigned N> ch_logic op(const ch_bitbase<N>& a, type b) { return func(a, ch_bitv<N>(b)); } \
+  template <unsigned N> ch_logic op(type a, const ch_bitbase<N>& b) { return func(ch_bitv<N>(a), b); }
+  
+#define CHDL_COMPAREOP_GEN1(func, op) \
   template <unsigned N> ch_logic op(const ch_bitbase<N>& a, const ch_bitbase<N>& b) { return func(a, b); } \
-  template <unsigned N> ch_logic op(int a, const ch_bitbase<N>& b) { return func(a, b); } \
-  template <unsigned N> ch_logic op(const ch_bitbase<N>& a, int b) { return func(a, b); }
+  CHDL_COMPAREOP_GEN0(func, op, char) \
+  CHDL_COMPAREOP_GEN0(func, op, int8_t) \
+  CHDL_COMPAREOP_GEN0(func, op, uint8_t) \
+  CHDL_COMPAREOP_GEN0(func, op, int16_t) \
+  CHDL_COMPAREOP_GEN0(func, op, uint16_t) \
+  CHDL_COMPAREOP_GEN0(func, op, int32_t) \
+  CHDL_COMPAREOP_GEN0(func, op, uint32_t) \
+  CHDL_COMPAREOP_GEN0(func, op, int64_t) \
+  CHDL_COMPAREOP_GEN0(func, op, uint64_t)
 
-#define CHDL_SHIFTOP_GEN(op, func) \
-  template <unsigned N> ch_bitv<N> func(const ch_bitbase<N>& a, int b) { return func(a, ch_bitv<N>(b)); } \
+#define CHDL_SHIFTOP_GEN0(func, type) \
+  template <unsigned N> ch_bitv<N> func(const ch_bitbase<N>& a, type b) { return func(a, ch_bitv<N>(b)); }
+  
+#define CHDL_SHIFTOP_GEN1(func) \
+  CHDL_SHIFTOP_GEN0(func, char) \
+  CHDL_SHIFTOP_GEN0(func, int8_t) \
+  CHDL_SHIFTOP_GEN0(func, uint8_t) \
+  CHDL_SHIFTOP_GEN0(func, int16_t) \
+  CHDL_SHIFTOP_GEN0(func, uint16_t) \
+  CHDL_SHIFTOP_GEN0(func, int32_t) \
+  CHDL_SHIFTOP_GEN0(func, uint32_t) \
+  CHDL_SHIFTOP_GEN0(func, int64_t) \
+  CHDL_SHIFTOP_GEN0(func, uint64_t)
+
+#define CHDL_SHIFTOP_GEN2(func, op) \
+  CHDL_SHIFTOP_GEN1(func) \
   template <unsigned N, unsigned M> ch_bitv<N> op(const ch_bitbase<N>& a, const ch_bitbase<M>& b) { return func(a, b); } \
-  template <unsigned N> ch_bitv<N> op(const ch_bitbase<N>& a, int b) { return func(a, ch_bitv<N>(b)); }
-
-#define CHDL_REDUCEOP_GEN(op, func) \
-  template <unsigned N> ch_logic op(const ch_bitv<N>& in) { return func(in); }
+  CHDL_SHIFTOP_GEN0(op, char) \
+  CHDL_SHIFTOP_GEN0(op, int8_t) \
+  CHDL_SHIFTOP_GEN0(op, uint8_t) \
+  CHDL_SHIFTOP_GEN0(op, int16_t) \
+  CHDL_SHIFTOP_GEN0(op, uint16_t) \
+  CHDL_SHIFTOP_GEN0(op, int32_t) \
+  CHDL_SHIFTOP_GEN0(op, uint32_t) \
+  CHDL_SHIFTOP_GEN0(op, int64_t) \
+  CHDL_SHIFTOP_GEN0(op, uint64_t)
 
 namespace chdl_internal {
 
@@ -64,33 +116,38 @@ lnode createAluNode(ch_operator op, uint32_t size, const lnode& a);
 
 // compare operators
 
-CHDL_COMPAREOP_GEN(operator==, ch_eq)
-CHDL_COMPAREOP_GEN(operator!=, ch_ne)
-CHDL_COMPAREOP_GEN(operator<,  ch_lt)
-CHDL_COMPAREOP_GEN(operator>,  ch_gt)
-CHDL_COMPAREOP_GEN(operator<=, ch_le)
-CHDL_COMPAREOP_GEN(operator>=, ch_ge)
+CHDL_COMPAREOP_GEN1(ch_eq, operator==)
+CHDL_COMPAREOP_GEN1(ch_ne, operator!=)
+CHDL_COMPAREOP_GEN1(ch_lt, operator<)
+CHDL_COMPAREOP_GEN1(ch_gt, operator>)
+CHDL_COMPAREOP_GEN1(ch_le, operator<=)
+CHDL_COMPAREOP_GEN1(ch_ge, operator>=)
 
-// ch_logic operators
+// logic operators
 
-CHDL_BINOP_GEN(operator&, ch_and)
-CHDL_BINOP_GEN(operator|, ch_or)
-CHDL_BINOP_GEN(operator^, ch_xor)
-CHDL_UNARYOP_GEN(operator~, ch_inv)
+CHDL_BINOP_GEN2(ch_and, operator&)
+CHDL_BINOP_GEN2(ch_or, operator|)
+CHDL_BINOP_GEN2(ch_xor, operator^)
+CHDL_UNARYOP_GEN(ch_inv, operator~)
+CHDL_BINOP_GEN1(ch_nand)
+CHDL_BINOP_GEN1(ch_nor)
+CHDL_BINOP_GEN1(ch_xnor)
 
 // arithmetic operators
 
-CHDL_UNARYOP_GEN(operator-, ch_neg)
-CHDL_BINOP_GEN(operator+, ch_add)
-CHDL_BINOP_GEN(operator-, ch_sub)
-CHDL_BINOP_GEN(operator*, ch_mult)
-CHDL_BINOP_GEN(operator/, ch_div)
-CHDL_BINOP_GEN(operator%, ch_mod)
+CHDL_UNARYOP_GEN(ch_neg, operator-)
+CHDL_BINOP_GEN2(ch_add, operator+)
+CHDL_BINOP_GEN2(ch_sub, operator-)
+CHDL_BINOP_GEN2(ch_mult, operator*)
+CHDL_BINOP_GEN2(ch_div, operator/)
+CHDL_BINOP_GEN2(ch_mod, operator%)
 
 // shift operators
 
-CHDL_SHIFTOP_GEN(operator<<, ch_sll)
-CHDL_SHIFTOP_GEN(operator>>, ch_slr)
+CHDL_SHIFTOP_GEN2(ch_sll, operator<<)
+CHDL_SHIFTOP_GEN2(ch_slr, operator>>)
+CHDL_SHIFTOP_GEN1(ch_rotl)
+CHDL_SHIFTOP_GEN1(ch_rotr)
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -166,6 +223,20 @@ ch_logic ch_orr(const ch_bitbase<N>& a) {
 template <unsigned N> 
 ch_logic ch_xorr(const ch_bitbase<N>& a) {
   return OpReduce<op_xorr>(a);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+inline ch_logic operator! (const ch_logicbase& a) {
+  return ch_inv(a);         
+}
+
+inline ch_logic operator&& (const ch_logicbase& a, const ch_logicbase& b) {
+  return ch_and(a, b);      
+}
+
+inline ch_logic operator|| (const ch_logicbase& a, const ch_logicbase& b) {
+  return ch_or(a, b);      
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -258,62 +329,51 @@ ch_bitv<N> ch_mod(const ch_bitbase<N>& a, const ch_bitbase<N>& b) {
 
 template <unsigned N, unsigned S>
 ch_bitv<(N >> S)> ch_mux(const ch_bitbase<N>& in, const ch_bitbase<S>& sel) {
-  TODO();
+  TODO("Not yet implemented!");
 }
 
 template <unsigned N, unsigned S> 
 ch_bitv<(N << S)> ch_demux(const ch_bitbase<N>& in, const ch_bitbase<S>& sel) {
-  TODO();
+  TODO("Not yet implemented!");
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <unsigned N>
-ch_bitv<CLOG2(N)> ch_penc(ch_logic& valid, const ch_bitbase<N>& a, bool reverse = false) {
-  TODO();
-}
-
 template <unsigned N> 
 ch_bitv<CLOG2(N)> ch_log2(const ch_bitbase<N>& a) {
-  TODO();
+  TODO("Not yet implemented!");
 }
 
 template <unsigned N> 
 ch_bitv<CLOG2(N)> ch_lsb(const ch_bitbase<N>& a) {
-  TODO();
+  TODO("Not yet implemented!");
 }
 
 template <unsigned N> 
 ch_bitv<CLOG2(N)> ch_enc(const ch_bitbase<N>& a) {
-  TODO();
+  TODO("Not yet implemented!");
 }
 
-///////////////////////////////////////////////////////////////////////////////
-
-inline ch_logic operator! (const ch_logicbase& a) {
-  return ch_inv(a);         
-}
-
-inline ch_logic operator&& (const ch_logicbase& a, const ch_logicbase& b) {
-  return ch_and(a, b);      
-}
-
-inline ch_logic operator|| (const ch_logicbase& a, const ch_logicbase& b) {
-  return ch_or(a, b);      
+template <unsigned N> 
+ch_bitv<(1 << N)> ch_dec(const ch_bitbase<N>& a) {
+  TODO("Not yet implemented!");
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 template <unsigned N>
 void ch_print(const ch_bitbase<N>& a) {
-  TODO();
+  TODO("Not yet implemented!");
 }
 
 }
 
-#undef CHDL_BINOP_GEN
+#undef CHDL_BINOP_GEN0
+#undef CHDL_BINOP_GEN1
+#undef CHDL_BINOP_GEN2
 #undef CHDL_UNARYOP_GEN  
-#undef CHDL_COMPAREOP_GEN
-#undef CHDL_SHIFTOP_GEN
-#undef CHDL_REDUCEOP_GEN
-#undef CHDL_CONCAT_GEN
+#undef CHDL_COMPAREOP_GEN0
+#undef CHDL_COMPAREOP_GEN1
+#undef CHDL_SHIFTOP_GEN0
+#undef CHDL_SHIFTOP_GEN1
+#undef CHDL_SHIFTOP_GEN2

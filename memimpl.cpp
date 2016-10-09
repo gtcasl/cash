@@ -107,11 +107,11 @@ void memimpl::tick_next(ch_cycle t) {
 }
 
 void memimpl::print(ostream& out) const {
-  TODO();
+  TODO("Not yet implemented!");
 }
 
 void memimpl::print_vl(ostream& out) const {
-  TODO();  
+  TODO("Not yet implemented!");  
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -124,7 +124,7 @@ memportimpl::memportimpl(memimpl* mem, const lnode& addr)
     , m_do_write(false)
     , m_ctime(~0ull)
 {
-  mem->add_ref();
+  mem->acquire();
   m_srcs.push_back(addr); // idx=0 
   if (mem->m_cd) {
     const lnode& clk = mem->m_cd->get_sensitivity_list()[0].get_signal();
@@ -200,7 +200,7 @@ const bitvector& memportimpl::eval(ch_cycle t) {
 }
 
 void memportimpl::print_vl(std::ostream& out) const {
-  TODO();
+  TODO("Not yet implemented!");
 }
 
 ///////////////////////////////////////////////////////////////////////////////

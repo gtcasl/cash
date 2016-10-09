@@ -20,7 +20,7 @@ const bitvector& selectimpl::eval(ch_cycle t) {
 }
 
 void selectimpl::print_vl(std::ostream& out) const {
-  TODO();
+  TODO("Not yet implemented!");
 }
 
 lnode chdl_internal::createSelectNode(const lnode& test, const lnode& a, const lnode& b) {

@@ -20,9 +20,6 @@ void optimizer::optimize() {
   this->dead_node_elimination();
   cerr << "After dead node elimination: " << m_ctx->nodes.size() << endl;
   
-  // syntax check
-  m_ctx->syntax_check();
-  
   // dump nodes
   m_ctx->dumpNodes(cout);
 }

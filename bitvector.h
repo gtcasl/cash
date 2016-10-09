@@ -119,7 +119,7 @@ public:
   protected:
     
     const_iterator(const uint32_t* words, uint32_t index) 
-      : m_words(const_cast<uint32_t*>(words))
+      : m_words(words)
       , m_index(index) 
     {}
     
@@ -134,7 +134,7 @@ public:
     }
     
     uint32_t  m_index;
-    uint32_t* m_words;
+    const uint32_t* m_words;
     
     friend class iterator;
     friend class bitvector;
@@ -153,7 +153,7 @@ public:
     ~iterator() {}    
     
     reference operator*() const {
-      return reference(*m_words, 1 << (m_index & WORD_MASK));
+      return reference(const_cast<uint32_t&>(*m_words), 1 << (m_index & WORD_MASK));
     }
     
     bool operator==(const iterator& rhs) const {
@@ -225,6 +225,8 @@ public:
   
   explicit bitvector(uint32_t size, uint32_t defaultValue = 0x0);
   
+  bitvector(const std::string& value);
+  
   bitvector(const std::initializer_list<uint32_t>& value, uint32_t size);
   
   ~bitvector();
@@ -234,6 +236,8 @@ public:
   bitvector& operator=(const bitvector& rhs);
   
   bitvector& operator=(bitvector&& rhs);
+  
+  bitvector& operator=(const std::string& value);
   
   bitvector& operator=(const std::initializer_list<uint32_t>& value);
   
@@ -382,7 +386,7 @@ public:
   }
   
   const_iterator begin() const {
-    return const_iterator(m_words, m_size);
+    return const_iterator(m_words, 0);
   }
   
   const_iterator end() const {

@@ -13,9 +13,7 @@ assertimpl::assertimpl(const lnode& src, const std::string& msg)
 
 const bitvector& assertimpl::eval(ch_cycle t) {
   const bitvector& bits = m_srcs[0].eval(t);
-  if (!bits[0]) {
-    CHDL_ABORT("assertion failure at cycle %ld, %s", t, m_msg.c_str());
-  }
+  CHDL_REQUIRED(bits[0], "assertion failure at cycle %ld, %s", t, m_msg.c_str());  
 }
 
 void chdl_internal::ch_assert(const ch_logic& l, const std::string& msg) {

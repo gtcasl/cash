@@ -14,7 +14,7 @@ class ch_device {
 public:
   
   template <typename Function, typename ...Args>  
-  ch_device(const Function& func, const Args&... args) {
+  ch_device(const Function& func, Args&&... args) {
     m_ctx = ctx_begin();
     this->load(to_function(func), args...);
     this->compile();
@@ -22,7 +22,7 @@ public:
   }
   
   template <typename FuncRet, typename ...FuncArgs, typename ...Args>  
-  ch_device(FuncRet (*func)(FuncArgs...), const Args&... args) {
+  ch_device(FuncRet (*func)(FuncArgs...), Args&&... args) {
     m_ctx = ctx_begin();
     this->load(std::function<FuncRet(FuncArgs...)>(func), args...);
     this->compile();
@@ -64,7 +64,7 @@ protected:
   template <size_t I>
   struct bind_output_impl<false, I> {
     template <typename ...OutputArgs, typename Arg>
-    static void bind(const ch_device& dev, const std::tuple<OutputArgs...>& outputs, const Arg& arg) {
+    static void bind(const ch_device& dev, const std::tuple<OutputArgs...>& outputs, Arg&& arg) {
       // do nothing!
     }
   };
@@ -72,15 +72,15 @@ protected:
   template <size_t I>
   struct bind_output_impl<true, I> {
     template <typename ...OutputArgs, typename Arg>
-    static void bind(const ch_device& dev, const std::tuple<OutputArgs...>& outputs, const Arg& arg) {
-      dev.bind_output(I-1, std::get<sizeof...(OutputArgs)-I>(outputs), arg);
+    static void bind(const ch_device& dev, const std::tuple<OutputArgs...>& outputs, Arg&& arg) {
+      std::forward<Arg>(arg) = dev.bind_output(sizeof...(OutputArgs)-I, std::get<sizeof...(OutputArgs)-I>(outputs));
     }
   };
   
   template <size_t I>
   struct bind_outputs_impl {
     template <typename ...OutputArgs, typename Arg, typename ...Args>
-    static void bind(const ch_device& dev, const std::tuple<OutputArgs...>& outputs, const Arg& arg, const Args&... args) {
+    static void bind(const ch_device& dev, const std::tuple<OutputArgs...>& outputs, Arg&& arg, Args&&... args) {
       bind_output_impl<(I <= sizeof...(OutputArgs)), I>::bind(dev, outputs, arg);
       bind_outputs_impl<I-1>::bind(dev, outputs, args...);
     }
@@ -89,7 +89,7 @@ protected:
   template <size_t I>
   struct bind_outputs_impl2 {
     template <typename Ret, typename Arg, typename ...Args>
-    static void bind(const ch_device& dev, const Ret& output, const Arg& arg, const Args&... args) {
+    static void bind(const ch_device& dev, const Ret& output, Arg&& arg, Args&&... args) {
       bind_outputs_impl2<I-1>::bind(dev, output, args...);
     }
   };
@@ -97,8 +97,8 @@ protected:
   template <size_t I>
   struct bind_inputs_impl {
     template <typename ...InputArgs, typename Arg, typename ...Args>
-    static void bind(const ch_device& dev, const std::tuple<InputArgs...>& inputs, const Arg& arg, const Args&... args) {
-      dev.bind_input(I-1, std::get<sizeof...(InputArgs)-I>(inputs), arg);
+    static void bind(const ch_device& dev, const std::tuple<InputArgs...>& inputs, Arg&& arg, Args&&... args) {
+      dev.bind_input(sizeof...(InputArgs)-I, std::get<sizeof...(InputArgs)-I>(inputs), std::forward<Arg>(arg));
       bind_inputs_impl<I-1>::bind(dev, inputs, args...);
     }
   };
@@ -109,7 +109,7 @@ protected:
   }
   
   template <typename FuncRet, typename ...FuncArgs, typename ...Args>
-  void load(const std::function<FuncRet(FuncArgs...)>& func, const Args&... args) {
+  void load(const std::function<FuncRet(FuncArgs...)>& func, Args&&... args) {
     static_assert(sizeof...(FuncArgs) + output_size<FuncRet>::value == sizeof...(Args), "number of arguments mismatch!");
     std::tuple<typename to_value_type<typename std::remove_const<
           typename std::remove_reference<FuncArgs>::type >::type>::value...> func_args;
@@ -119,17 +119,17 @@ protected:
   }
   
   template <typename ...InputArgs, typename ...Args>
-  void bind_inputs(const std::tuple<InputArgs...>& inputs, const Args&... args) {
+  void bind_inputs(const std::tuple<InputArgs...>& inputs, Args&&... args) {
     bind_inputs_impl<sizeof...(InputArgs)>::bind(*this, inputs, args...);
   }
   
   template <typename ...OutputArgs, typename ...Args>
-  void bind_outputs(const std::tuple<OutputArgs...>& outputs, const Args&... args) {
+  void bind_outputs(const std::tuple<OutputArgs...>& outputs, Args&&... args) {
     bind_outputs_impl<sizeof...(Args)>::bind(*this, outputs, args...);
   }
   
   template <typename Ret, typename ...Args>
-  void bind_outputs(const Ret& output, const Args&... args) {
+  void bind_outputs(const Ret& output, Args&&... args) {
     bind_outputs_impl2<sizeof...(Args)>::bind(*this, output, args...);
   }
 
@@ -139,36 +139,36 @@ protected:
   }
   
   template <unsigned N>
-  void bind_output(unsigned index, const ch_bitbase<N>& output, const ch_busbase<N>& bus) const {
-    this->bind_output(index, static_cast<lnode>(output), static_cast<snode>(bus));
+  ch_bus<N> bind_output(unsigned index, const ch_bitbase<N>& output) const {
+    return ch_bus<N>(this->bind_output(index, static_cast<lnode>(output)));
   }
   
   void bind_input(unsigned index, const lnode& input, const snode& bus) const;
   
-  void bind_output(unsigned index, const lnode& output, const snode& bus) const;
+  snode bind_output(unsigned index, const lnode& output) const;
   
   void compile();
   
-  context* m_ctx;
+  context_ptr m_ctx;
 };
 
 template <>
 struct ch_device::bind_inputs_impl<1> {
   template <typename ...InputArgs, typename Arg, typename ...Args>
-  static void bind(const ch_device& dev, const std::tuple<InputArgs...>& inputs, const Arg& arg, const Args&... args) {
-    dev.bind_input(0, std::get<sizeof...(InputArgs)-1>(inputs), arg);
+  static void bind(const ch_device& dev, const std::tuple<InputArgs...>& inputs, Arg&& arg, Args&&... args) {
+    dev.bind_input(sizeof...(InputArgs)-1, std::get<sizeof...(InputArgs)-1>(inputs), std::forward<Arg>(arg));
   }
   
   template <typename ...InputArgs, typename Arg>
-  static void bind(const ch_device& dev, const std::tuple<InputArgs...>& inputs, const Arg& arg) {
-    dev.bind_input(0, std::get<sizeof...(InputArgs)-1>(inputs), arg);
+  static void bind(const ch_device& dev, const std::tuple<InputArgs...>& inputs, Arg&& arg) {
+    dev.bind_input(sizeof...(InputArgs)-1, std::get<sizeof...(InputArgs)-1>(inputs), std::forward<Arg>(arg));
   }
 };
 
 template <>
 struct ch_device::bind_inputs_impl<0> {
   template <typename ...InputArgs, typename ...Args>
-  static void bind(const ch_device& dev, const std::tuple<InputArgs...>& inputs, const Args&... args) {
+  static void bind(const ch_device& dev, const std::tuple<InputArgs...>& inputs, Args&&... args) {
     // no inputs!
   }
 };
@@ -176,7 +176,7 @@ struct ch_device::bind_inputs_impl<0> {
 template <>
 struct ch_device::bind_outputs_impl<1> {  
   template <typename ...OutputArgs, typename Arg>
-  static void bind(const ch_device& dev, const std::tuple<OutputArgs...>& outputs, const Arg& arg) {
+  static void bind(const ch_device& dev, const std::tuple<OutputArgs...>& outputs, Arg&& arg) {
     bind_output_impl<true, 1>::bind(dev, outputs, arg);
   }
 };
@@ -184,7 +184,7 @@ struct ch_device::bind_outputs_impl<1> {
 template <>
 struct ch_device::bind_outputs_impl<0> {
   template <typename ...OutputArgs, typename Arg, typename ...Args>
-  static void bind(const ch_device& dev, const std::tuple<OutputArgs...>& outputs, const Args&... args) {
+  static void bind(const ch_device& dev, const std::tuple<OutputArgs...>& outputs, Args&&... args) {
     // no inputs!
   }
 };
@@ -192,15 +192,15 @@ struct ch_device::bind_outputs_impl<0> {
 template <>
 struct ch_device::bind_outputs_impl2<1> {
   template <typename Ret, typename Arg, typename ...Args>
-  static void bind(const ch_device& dev, const Ret& output, const Arg& arg) {
-    dev.bind_output(0, output, arg);
+  static void bind(const ch_device& dev, const Ret& output, Arg&& arg) {
+    std::forward<Arg>(arg) = dev.bind_output(0, output);
   }
 };
 
 template <>
 struct ch_device::bind_outputs_impl2<0> {
   template <typename Ret, typename Arg, typename ...Args>
-  static void bind(const ch_device& dev, const Ret& output, const Args&... args) {
+  static void bind(const ch_device& dev, const Ret& output, Args&&... args) {
     // no inputs!
   }
 };

@@ -10,39 +10,22 @@ ch_device::~ch_device() {
 }
 
 void ch_device::bind_input(unsigned index, const lnode& input, const snode& bus) const {
-  //--
+  m_ctx->bind_input(index, input, bus);
 }
 
-void ch_device::bind_output(unsigned index, const lnode& output, const snode& bus) const {
-  //--
+snode ch_device::bind_output(unsigned index, const lnode& output) const {
+  return m_ctx->bind_output(index, output);
 }
-
-/*void ch_device::register_inputs(const std::vector<ioport_arg>& inputs) {  
-  unsigned i = 0;
-  for (auto& input : inputs) {
-    m_ctx->register_input(i++, input.m_node);
-  }
-  // ensure all undefined nodes are deleted
-  assert(m_ctx->undefs.size() == 0);
-}
-
-void ch_device::register_outputs(const std::vector<ioport_arg>& outputs) {  
-  unsigned i = 0;
-  for (auto& output : outputs) {
-    m_ctx->register_output(i++, output.m_node);
-  }
-}*/
-
-/*void ch_device::bind(const std::vector<bus_arg>& args) {
-  unsigned i = 0;
-  for (auto& arg : args) {
-    m_ctx->bind(i++, arg.m_node);
-  }
-}*/
 
 void ch_device::compile() {
-  optimizer opt(m_ctx);
-  opt.optimize();
+  // syntax check
+  m_ctx->syntax_check();
+  
+  {
+    // run optimizer
+    optimizer opt(m_ctx);
+    opt.optimize();
+  }
 }
 
 void ch_device::toVerilog(const std::string& module_name, std::ostream& out) {

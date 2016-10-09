@@ -36,28 +36,22 @@ public:
 protected:
   
   struct tap_t {
-    tap_t(const std::string& name_, snodeimpl* bus_)
-      : name(name_), bus(bus_)
-    {}
+    tap_t(const std::string& name_, snodeimpl_tr bus_) : name(name_), bus(bus_) {}
 
     std::string name;
-    snodeimpl* bus;
+    snodeimpl_ptr bus;
   };
   
   virtual void ensureInitialize();
-  
-  void bind(inputimpl* input, snodeimpl** bus);
-  
-  void bind(tapimpl* tap);
   
   void add_tap(const std::string& name, snodeimpl* bus);
 
   std::vector<tap_t> m_taps;
   std::map<std::string, unsigned> m_dup_taps;
-  std::set<context*> m_contexts;  
+  std::set<context_ptr> m_contexts;  
   bool m_initialized;
-  snodeimpl* m_clk;
-  snodeimpl* m_reset;
+  snodeimpl_ptr m_clk;
+  snodeimpl_ptr m_reset;
 };
 
 class ch_tracer : public ch_simulator {

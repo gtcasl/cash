@@ -15,9 +15,19 @@
 namespace chdl {
 
 //
+// utility namespace
+//
+
+namespace utility {
+  using chdl_internal::fstring;
+}
+
+//
 // core namespace
 //
 namespace core {
+
+  using namespace chdl::utility;
 
   //
   // basic types
@@ -144,7 +154,7 @@ namespace core {
   using chdl_internal::ch_log2;
   using chdl_internal::ch_lsb;
   using chdl_internal::ch_enc;
-  using chdl_internal::ch_penc;
+  using chdl_internal::ch_dec;
 
   //
   // utility functions
@@ -152,19 +162,15 @@ namespace core {
 
   using chdl_internal::ch_assert;
   using chdl_internal::ch_tap;
-  using chdl_internal::ch_print;
-
-  //
-  // miscellaneous
-  //
-
-  using chdl_internal::fstring;
+  using chdl_internal::ch_print;  
 }
 
 //
 // simulation namespace
 //
 namespace sim {
+
+  using namespace chdl::utility;
 
   //
   // basic types

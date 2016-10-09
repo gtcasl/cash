@@ -51,8 +51,7 @@ cdomain::cdomain(context* ctx, const std::vector<clock_event>& sensitivity_list)
     }
     // ensure unique signals
     auto it = std::find(m_sensitivity_list.begin(), m_sensitivity_list.end(), e.get_signal());
-    if (it != m_sensitivity_list.end())
-      CHDL_ABORT("a duplicate signal event provided");    
+    CHDL_REQUIRED(it == m_sensitivity_list.end(), "a duplicate signal event provided");    
     m_sensitivity_list.emplace_back(e);
   }
 } 
@@ -62,7 +61,7 @@ cdomain::~cdomain() {
 }
 
 void cdomain::add_use(tickable* reg) {
-  this->add_ref();
+  this->acquire();
   m_regs.emplace_back(reg);
 }
 

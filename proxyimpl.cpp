@@ -138,6 +138,21 @@ const bitvector& proxyimpl::eval(ch_cycle t) {
   return m_value;
 }
 
+void proxyimpl::print(std::ostream& out) const {
+  out << "#" << m_id << " <- " << m_name << m_value.get_size();
+  out << "(";
+  for (uint32_t i = 0, n = m_ranges.size(); i < n; ++i) {
+    const range_t& range = m_ranges[i];
+    if (i > 0)
+      out << ", ";
+    out << "#" << m_srcs[range.src].get_id() << "{" << range.offset;
+    if (range.length > 1)
+      out << "-" << range.offset + (range.length - 1);
+    out << "}";
+  }
+  out << ")" << endl;
+}
+
 void proxyimpl::print_vl(std::ostream& out) const {
-  TODO();
+  TODO("Not yet implemented!");
 }

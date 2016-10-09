@@ -1,17 +1,15 @@
 #pragma once
 
-#include "lnode.h"
+#include "context.h"
 
 namespace chdl_internal {
 
-class context;
-
-class lnodeimpl {
+class lnodeimpl : public refcounted {
 public:
-  lnodeimpl(const std::string& name, context* ctx, uint32_t size, bool undefined = false);
+  lnodeimpl(const std::string& name, context_ptr ctx, uint32_t size, bool undefined = false);
   virtual ~lnodeimpl();
   
-  uint64_t get_id() const {
+  uint32_t get_id() const {
     return m_id;
   }
   
@@ -19,7 +17,7 @@ public:
     return m_name;
   }
   
-  context* get_ctx() const {
+  context_ptr get_ctx() const {
     return m_ctx;
   }
 
@@ -27,7 +25,7 @@ public:
     return m_refs.empty();
   }
 
-  void add_ref(const lnode* node) {
+  void acquire(const lnode* node) {
     m_refs.emplace(node);
   }
 
@@ -35,7 +33,7 @@ public:
     m_refs.erase(node);
   }
 
-  void replace_ref(lnodeimpl* impl);
+  void update_all_refs(lnodeimpl_ptr impl);
   
   const std::vector<lnode>& get_srcs() const {
     return m_srcs;
@@ -73,17 +71,17 @@ protected:
   std::string m_name;
   std::set<const lnode*> m_refs;
   std::vector<lnode> m_srcs;
-  context* m_ctx;
-  uint64_t m_id;
   bitvector m_value;
+  context_ptr m_ctx;
+  uint32_t m_id;
   
   friend class context;
 };
 
 class undefimpl : public lnodeimpl {
 public:
-  undefimpl(const std::string& name, context* ctx, uint32_t size);
-  undefimpl(context* ctx, uint32_t size) : undefimpl("undef", ctx, size) {}
+  undefimpl(const std::string& name, context_ptr ctx, uint32_t size);
+  undefimpl(context_ptr ctx, uint32_t size) : undefimpl("undef", ctx, size) {}
   virtual ~undefimpl();
 
   const bitvector& eval(ch_cycle t) override;  
@@ -92,7 +90,7 @@ public:
 
 class nullimpl : public undefimpl {
 public:
-  nullimpl(context* ctx, uint32_t size) : undefimpl("null", ctx, size) {}
+  nullimpl(context_ptr ctx, uint32_t size) : undefimpl("null", ctx, size) {}
   ~nullimpl() {}
 };
 

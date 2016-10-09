@@ -19,7 +19,7 @@ public:
   
 protected:
 
-  cdomain* m_cd;
+  refcounted_ptr m_cd;
   bitvector m_q;
   bitvector m_next_q;
   ch_cycle m_ctime;
@@ -43,7 +43,7 @@ public:
   
 protected:
 
-  cdomain* m_cd;
+  refcounted_ptr m_cd;
   bitvector m_q;
   ch_cycle m_ctime;
 };

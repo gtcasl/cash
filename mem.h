@@ -4,7 +4,7 @@
 
 namespace chdl_internal {
 
-class memimpl;
+class memimpl_ptr;
 
 class memory {
 public:
@@ -17,7 +17,7 @@ public:
   void write(const lnode& addr, const lnode& value, const lnode& enable);
   
 private:
-  memimpl* m_impl;
+  memimpl_ptr m_impl;
 };
 
 template <unsigned N, unsigned A, bool SyncRead = false>
@@ -30,7 +30,11 @@ public:
     ch_rom(const std::vector<uint32_t>& init_data) : m_mem(N, A, SyncRead, false, init_data) {}
     
     ch_bitv<N> read(const ch_bitbase<A>& addr) const {
-      return ch_bitv<N>(m_mem.read(ch_bitv<A>(addr)));
+      return ch_bitv<N>(m_mem.read(addr));
+    }
+    
+    ch_bitv<N> read(const ch_bitv<A>& addr) const {
+      return ch_bitv<N>(m_mem.read(addr));
     }
     
 private:
@@ -47,14 +51,34 @@ public:
     ch_mem(const std::vector<uint32_t>& init_data) : m_mem(N, A, SyncRead, true, init_data) {}
     
     ch_bitv<N> read(const ch_bitbase<A>& addr) const {
-      return ch_bitv<N>(m_mem.read(ch_bitv<A>(addr)));
+      return ch_bitv<N>(m_mem.read(addr));
     }
     
     ch_bitv<N> read(const ch_bitv<A>& addr) const {
-      return ch_bitv<N>(m_mem.read(ch_bitv<A>(addr)));
+      return ch_bitv<N>(m_mem.read(addr));
     }
     
     void write(const ch_bitbase<A>& addr, const ch_bitbase<N>& value, const ch_logicbase& enable) {
+      m_mem.write(addr, value, enable);
+    }
+    
+    void write(const ch_bitv<A>& addr, const ch_bitbase<N>& value, const ch_logicbase& enable) {
+      m_mem.write(addr, value, enable);
+    }
+    
+    void write(const ch_bitbase<A>& addr, const ch_bitv<N>& value, const ch_logicbase& enable) {
+      m_mem.write(addr, value, enable);
+    }
+    
+    void write(const ch_bitv<A>& addr, const ch_bitv<N>& value, const ch_logicbase& enable) {
+      m_mem.write(addr, value, enable);
+    }
+    
+    void write(const ch_bitv<A>& addr, const ch_bitbase<N>& value, const ch_logic& enable) {
+      m_mem.write(addr, value, enable);
+    }
+    
+    void write(const ch_bitbase<A>& addr, const ch_bitv<N>& value, const ch_logic& enable) {
       m_mem.write(addr, value, enable);
     }
     

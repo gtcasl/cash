@@ -10,6 +10,8 @@ public:
   ~assertimpl() {}
   
   const bitvector& eval(ch_cycle t);
+  
+  void print_vl(std::ostream& out) const override {}
 
 private:
   std::string m_msg;

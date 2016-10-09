@@ -1,27 +1,23 @@
 #pragma once
 
-#include "bitvector.h"
+#include "context.h"
 
 namespace chdl_internal {
-
-class iobridge;
-class obridge;
-class context;
 
 class snodeimpl : public refcounted {
 public:
   snodeimpl(uint32_t size);
+  snodeimpl(ioimpl_ptr output);
+  snodeimpl(const std::string& value);
   snodeimpl(const std::initializer_list<uint32_t>& value, uint32_t size);
-  ~snodeimpl();
+  ~snodeimpl();  
   
-  void bind(context* ctx, unsigned index, iobridge* bridge);
+  uint32_t get_id() const {
+    return m_id;
+  }
   
-  void bind(snodeimpl* src);
-  
-  bool ready() const;
-  
-  bool valid() const;
-  
+  void assign(uint32_t start, snodeimpl_ptr src, uint32_t offset, uint32_t length);
+
   const bitvector& eval(ch_cycle t);
    
   bitvector::const_reference operator[](uint32_t idx) const {
@@ -44,32 +40,26 @@ public:
     return m_value.get_size();
   }
   
-  void get_bindings(std::set<context*>& bindings) const;
+  context* get_ctx() const;
   
   operator const bitvector&() const { 
     return m_value; 
   }
   
 protected:
-
-  struct portid_t {
-    context* ctx;
-    unsigned idx;
-
-    bool operator<(const portid_t& rhs) const {
-      return (ctx < rhs.ctx) || 
-            ((ctx == rhs.ctx) && (idx < rhs.idx));
-    }
+  
+  struct source_t {
+    snodeimpl_ptr node;
+    uint32_t start;    
+    uint32_t offset;    
+    uint32_t length;
   };
-
-  typedef std::map<portid_t, iobridge*> bridges_t;
-
-  const portid_t* get_portid(iobridge* bridge) const;
-
-  bridges_t m_bridges;
-  obridge*  m_obridge;
-  bitvector m_value;
-  ch_cycle  m_ctime;
+  
+  std::vector<source_t> m_srcs;
+  ioimpl_ptr m_output;
+  bitvector  m_value;
+  ch_cycle   m_ctime;
+  uint32_t   m_id;
 };
 
 }

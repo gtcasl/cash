@@ -38,7 +38,7 @@ public:
   void print_vl(std::ostream& out) const;
   
 protected:
-  lnode  m_signal;
+  lnode    m_signal;
   EDGE_DIR m_edgedir;
   bool     m_cval; 
 };
@@ -47,7 +47,7 @@ protected:
 
 class cdomain : public refcounted {
 public:
-  cdomain(context* ctx, const std::vector<clock_event>& sensitivity_list);
+  cdomain(context_ptr ctx, const std::vector<clock_event>& sensitivity_list);
   
   void add_use(tickable* reg);
   void remove_use(tickable* reg);
@@ -56,7 +56,7 @@ public:
     return m_sensitivity_list;
   }
   
-  context* get_ctx() const {
+  context_ptr get_ctx() const {
     return m_ctx;
   }
   
@@ -73,7 +73,9 @@ protected:
   
   std::vector<clock_event> m_sensitivity_list;
   std::list<tickable*> m_regs;
-  context* m_ctx;
+  context_ptr m_ctx;
 };
+
+typedef refcounted_ptr<cdomain> cdomain_ptr;
 
 }

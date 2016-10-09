@@ -30,7 +30,7 @@ const bitvector& regimpl::eval(ch_cycle t) {
 }
 
 void regimpl::print_vl(ostream& out) const {
-  TODO();
+  TODO("Not yet implemented!");
 }
 
 void regimpl::tick(ch_cycle t) { 
@@ -74,7 +74,7 @@ const bitvector& latchimpl::eval(ch_cycle t) {
 }
 
 void latchimpl::print_vl(ostream& out) const {
-  TODO();
+  TODO("Not yet implemented!");
 }
 
 void latchimpl::tick(ch_cycle t) { 
@@ -95,24 +95,24 @@ ch_logic chdl_internal::ch_clock() {
   return ch_logic(ctx_curr()->get_clk());
 }
 
-void chdl_internal::ch_pushclock(const ch_logic& clk) {
-  TODO();
+void chdl_internal::ch_pushclock(const ch_logicbase& clk) {
+  TODO("Not yet implemented!");
 }
 
 void chdl_internal::ch_popclock() {
-  TODO();
+  TODO("Not yet implemented!");
 }
 
 ch_logic chdl_internal::ch_reset() {
   return ch_logic(ctx_curr()->get_reset());
 }
 
-void chdl_internal::ch_pushreset(const ch_logic& reset) {
-  TODO();
+void chdl_internal::ch_pushreset(const ch_logicbase& reset) {
+  TODO("Not yet implemented!");
 }
 
 void chdl_internal::ch_popreset() {
-  TODO();
+  TODO("Not yet implemented!");
 }
 
 lnode chdl_internal::createRegNode(const lnode& next) {
@@ -127,9 +127,9 @@ lnode chdl_internal::createLatchNode(const lnode& next,
 }
 
 lnode chdl_internal::createReadyNode(const lnode& node) {
-  TODO();
+  TODO("Not yet implemented!");
 }
 
 lnode chdl_internal::createValidNode(const lnode& node) {
-  TODO();
+  TODO("Not yet implemented!");
 }

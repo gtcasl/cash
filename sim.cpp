@@ -29,55 +29,40 @@ void ch_simulator::ensureInitialize() {
   if (m_initialized)
     return;
 
-  // gather active contexts
+  // gather active contexts from output taps 
   for (auto tap : m_taps) {
-    tap.bus->get_bindings(m_contexts);
+    context* ctx = tap.bus->get_ctx();
+    if (ctx)
+      m_contexts.emplace(ctx);
   }
 
   // bind context taps
   for (auto ctx : m_contexts) {
-    if (ctx->g_clk)
-      this->bind(ctx->g_clk, &m_clk);
+    if (ctx->g_clk) {
+      if (m_clk == nullptr)
+        m_clk = new snodeimpl(1);
+      ctx->g_clk->bind(m_clk);
+    }
 
-    if (ctx->g_reset)
-      this->bind(ctx->g_reset, &m_reset);
+    if (ctx->g_reset) {
+      if (m_reset == nullptr)
+        m_reset = new snodeimpl(1);
+      ctx->g_reset->bind(m_reset);
+    }
     
-    for (tapimpl* tap : ctx->taps) {
-      this->bind(tap);
+    for (tapimpl_ptr : ctx->taps) {
+      snodeimpl* bus = new snodeimpl(tap);
+      this->add_tap(tap->get_tapName(), bus);
+      bus->release();
     }
   }
   
   m_initialized = true;
 }
 
-void ch_simulator::bind(inputimpl* input, snodeimpl** bus) {
-  if (*bus == nullptr) {
-    *bus = new snodeimpl(1);
-    this->add_tap(input->get_name(), *bus);
-  }    
-  ibridge* bridge = new ibridge(*bus);
-  input->bind(bridge);
-  bridge->release();
-}
-
-void ch_simulator::bind(tapimpl* tap) {  
-  obridge* bridge = new obridge(tap);
-  tap->bind(bridge);
-  bridge->release();
-
-  snodeimpl* bus = new snodeimpl(tap->get_size());
-  bus->bind(tap->get_ctx(), 0, bridge);
-
-  // add to list
-  this->add_tap(tap->get_tapName(), bus);
-  bus->add_ref();
-}
-
-void ch_simulator::add_tap(const std::string& name, snodeimpl* bus) {
-  if (m_initialized) {
-    CHDL_ABORT("new tap not allowed after simulation has started");
-  }
-
+void ch_simulator::add_tap(const std::string& name, snodeimpl_ptr bus) {
+  CHDL_REQUIRED(!m_initialized, "new tap not allowed after simulation has started");
+  
   // resolve duplicate names  
   string full_name(name);
   unsigned instances = m_dup_taps[name]++;
@@ -92,7 +77,7 @@ void ch_simulator::add_tap(const std::string& name, snodeimpl* bus) {
     full_name = fstring("%s_%d", name.c_str(), instances);
   }
   m_taps.emplace_back(full_name, bus);
-  bus->add_ref();
+  bus->acquire();
 }
 
 void ch_simulator::tick(ch_cycle t) { 
@@ -162,7 +147,7 @@ void ch_tracer::tick(ch_cycle t) {
   // advance simulation
   ch_simulator::tick(t);
   
-  TODO();
+  TODO("Not yet implemented!");
 }
 
 ///////////////////////////////////////////////////////////////////////////////

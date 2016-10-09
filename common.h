@@ -18,9 +18,3 @@
 #include <functional>
 #include "macros.h"
 #include "utils.h"
-
-namespace chdl_internal {
-
-typedef uint64_t ch_cycle;
-
-}

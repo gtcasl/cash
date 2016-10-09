@@ -44,7 +44,7 @@ static void unaryop(bitvector& dst, const bitvector& a) {
     dst = ~a;
     break;
   default:
-    TODO();
+    TODO("Not yet implemented!");
   }
 }
 
@@ -70,7 +70,7 @@ static void binaryop(bitvector& dst, const bitvector& a, const bitvector& b) {
     dst = ~(a ^ b);
     break;
   default:
-    TODO();
+    TODO("Not yet implemented!");
   }
 }
 
@@ -87,7 +87,7 @@ static void shiftop(bitvector& dst, const bitvector& a, const bitvector& b) {
     dst = a >> dist;
     break;
   default:
-    TODO();
+    TODO("Not yet implemented!");
   }
 }
 
@@ -118,7 +118,7 @@ static void reduceop(bitvector& dst, const bitvector& in) {
       result ^= bit;
       break;
     default:
-      TODO();
+      TODO("Not yet implemented!");
     }    
   }
   dst.set_word(0, result);
@@ -149,7 +149,7 @@ static void compareop(bitvector& dst, const bitvector& a, const bitvector& b) {
     result = a >= b;
     break;
   default:
-    TODO();
+    TODO("Not yet implemented!");
   }
   dst[0] = result;
 }
@@ -259,7 +259,7 @@ const bitvector& aluimpl::eval(ch_cycle t) {
     case op_mult:
     case op_div:
     case op_mod:
-      TODO();
+      TODO("Not yet implemented!");
       break;
       
     case op_eq:
@@ -282,14 +282,14 @@ const bitvector& aluimpl::eval(ch_cycle t) {
       break;  
       
     default:
-      TODO();
+      TODO("Not yet implemented!");
     }
   }
   return m_value;
 }
 
 void aluimpl::print_vl(std::ostream& out) const {
-  TODO();
+  TODO("Not yet implemented!");
 }
 
 lnode chdl_internal::createAluNode(ch_operator op, uint32_t size, const lnode& a, const lnode& b) {

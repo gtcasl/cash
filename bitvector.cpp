@@ -4,7 +4,7 @@ using namespace std;
 using namespace chdl_internal;
 
 bitvector::bitvector(const bitvector& rhs) : m_words(nullptr), m_size(0) {
-  this->resize(rhs.m_size);
+  this->resize(rhs.m_size, 0x0, false, false);
   std::copy(rhs.m_words, rhs.m_words + this->get_num_words(), m_words);
 }
 
@@ -16,12 +16,17 @@ bitvector::bitvector(bitvector&& rhs) {
 }
 
 bitvector::bitvector(uint32_t size, uint32_t defaultValue) : m_words(nullptr), m_size(0) {
-  this->resize(size);
-  std::fill(m_words, m_words + this->get_num_words(), defaultValue);
+  this->resize(size, defaultValue, true, false);
+}
+
+bitvector::bitvector(const std::string& value) : m_words(nullptr), m_size(0) {
+  this->operator =(value);
 }
 
 bitvector::bitvector(const std::initializer_list<uint32_t>& value, uint32_t size) 
   : m_words(nullptr), m_size(0) {  
+  CHDL_REQUIRED(0 == (*value.begin() >> (size & WORD_MASK)), "initializer list size mismatch");  
+  this->resize(size, 0x0, false, false);
   this->operator =(value);
 }
 
@@ -36,8 +41,9 @@ void bitvector::resize(uint32_t size, uint32_t defaultValue, bool initialize, bo
   if (new_num_words != old_num_words) {
     uint32_t* words = new uint32_t[new_num_words];  
     if (m_words) {      
-      if (preserve)
+      if (preserve) {
         std::copy(m_words, m_words + std::min(new_num_words, old_num_words), words);
+      }
       delete [] m_words;
     }
     if (initialize && new_num_words > old_num_words) {
@@ -62,6 +68,7 @@ bitvector& bitvector::operator=(const bitvector& rhs) {
   if (m_size != rhs.m_size)
     this->resize(rhs.m_size, 0x0, false, false);
   std::copy(rhs.m_words, rhs.m_words + rhs.get_num_words(), m_words);
+  return *this;
 }
 
 bitvector& bitvector::operator=(bitvector&& rhs) {
@@ -70,35 +77,80 @@ bitvector& bitvector::operator=(bitvector&& rhs) {
   m_words = rhs.m_words;
   rhs.m_size = 0;
   rhs.m_words = nullptr;
+  return *this;
+}
+
+bitvector& bitvector::operator=(const std::string& value) {
+  std::vector<uint32_t> tmp;
+  
+  uint32_t N = value.size();
+  uint32_t L(N - 1);
+    
+  for (uint32_t i = 0; i <= L; ++i) {
+    if (value[i] == 'e' || value[i] == 'E') {
+      N = stoul(value.substr(i + 1));
+      L = i - 1;
+      break;
+    }
+  }
+  
+  uint32_t num_words = (N + WORD_MASK) >> WORD_SIZE_LOG;
+  tmp.resize(num_words, 0x0);
+  
+  {
+    uint32_t j = 0;
+    uint32_t v = 0;
+    
+    for (uint32_t i = 0, j = 0; i <= L;) {
+      uint32_t c = (value[L - i] - '0');
+      v |= (c << (i % WORD_SIZE));
+      if (0 == (++i % WORD_SIZE))
+        tmp[j++] = v;
+    }  
+    tmp[j] = v;
+  }
+  
+  if (this->get_num_words() != num_words) {
+    this->resize(N, 0x0, false, false);    
+  }
+  
+  uint32_t* dst = m_words;
+  for (uint32_t v : tmp) {
+    *dst++ = v;
+  }
+  
+  return *this;
 }
 
 bitvector& bitvector::operator=(const std::initializer_list<uint32_t>& value) {
   size_t num_words = value.size();  
-  if (m_size != 0 
-    && (this->get_num_words() != num_words 
-      || (*value.begin() & (WORD_MASK << (m_size & WORD_MASK)))))
-      CHDL_ABORT("initializer list size mismatch");  
-  if (this->get_num_words() != num_words)
+  if (this->get_num_words() != num_words) {
     this->resize(num_words * WORD_SIZE, 0x0, false, false);    
-  uint32_t* dst = m_words + (num_words - 1);
-  for (uint32_t src : value) {
-    *dst-- = src;
   }
+  
+  uint32_t* dst = m_words + (num_words - 1);
+  for (uint32_t v : value) {
+    *dst-- = v;
+  }
+  
+  return *this;
 }
 
-bool bitvector::operator==(const std::initializer_list<uint32_t>& rhs) const {
-  if (this->get_num_words() != rhs.size())
+bool bitvector::operator==(const std::initializer_list<uint32_t>& value) const {
+  size_t num_words = value.size();  
+  if (this->get_num_words() != num_words)
     return false;
-  uint32_t i = 0;
-  for (uint32_t w : rhs) {
-    if (m_words[i++] != w)
+  uint32_t* dst = m_words + (num_words - 1);
+  for (uint32_t v : value) {
+    if (*dst++ != v)
       return false;
   }
   return true;
 }
 
 bool bitvector::operator==(const bitvector& rhs) const {
-  assert(m_size == rhs.m_size);
+  if (m_size != rhs.m_size)
+    return false;
   for (uint32_t i = 0, n = rhs.get_num_words(); i < n; ++i) {
     if (m_words[i] != rhs.m_words[i])
       return false;
@@ -124,8 +176,8 @@ void bitvector::copy(uint32_t dst_offset, const bitvector& src, uint32_t src_off
     assert(dst_offset == 0 && src_offset == 0);
     *this = src;
   } else {  
-    const_iterator iter_src = src.begin() + src_offset;
-    iterator iter_dst = this->begin() + dst_offset;
+    const_iterator iter_src(src.begin() + src_offset);
+    iterator iter_dst(this->begin() + dst_offset);
     while (src_length--) {
       *iter_dst++ = *iter_src++;
     }

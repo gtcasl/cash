@@ -4,8 +4,8 @@
 using namespace std;
 using namespace chdl_internal;
 
-litimpl::litimpl(context* ctx, uint32_t size, const std::initializer_list<uint32_t>& value) 
-  : lnodeimpl("lit", ctx, size) {
+litimpl::litimpl(context* ctx, const bitvector& value) 
+  : lnodeimpl("lit", ctx, value.get_size()) {
   m_value = value;
 }
 
@@ -24,5 +24,5 @@ void litimpl::print(ostream& out) const {
 }
 
 void litimpl::print_vl(ostream& out) const {
-  TODO();
+  TODO("Not yet implemented!");
 }

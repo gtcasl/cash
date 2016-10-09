@@ -2,30 +2,6 @@
 
 namespace chdl_internal {
 
-#ifdef NDEBUG
-  #define CHDL_ABORT(...) do { \
-      fprintf(stderr, "error: "); \
-      fprintf(stderr, ##__VA_ARGS__); \
-      fprintf(stderr, "\n"); \
-      std::abort(); \
-    } while (0)
-#else
-  #define CHDL_ABORT(...) do { \
-      fprintf(stderr, "\nerror: "); \
-      fprintf(stderr, ##__VA_ARGS__); \
-      fprintf(stderr, " (%s:%d:%s)", __FILE__, __LINE__, __FUNCTION__); \
-      fprintf(stderr, "\n"); \
-      std::abort(); \
-    } while (0)
-#endif
-
-#define TODO() \
-  CHDL_ABORT("Not yet implemented!");
-
-#define CHDL_COUNTOF(a) (sizeof(a) / sizeof(a[0])) 
-
-#define CHDL_MAX(a,b) (((a) > (b)) ? (a) : (b))
-
 std::string fstring(const char* format, ...);
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -63,7 +39,19 @@ typename function_traits<Function>::function to_function(const Function& func) {
 
 class refcounted {
 public:
-  void add_ref() const {
+  
+  long get_refcount() const {
+    return m_refcount;
+  }
+  
+protected:
+  
+  refcounted() : m_refcount(0) {}
+  virtual ~refcounted() {}
+  
+private:
+  
+  void acquire() const {
     ++m_refcount;
   }
 
@@ -71,17 +59,106 @@ public:
     if (0 == --m_refcount)
       delete this;
   }
+      
+  mutable unsigned m_refcount;
   
-  long get_refcount() const {
-    return m_refcount;
+  template <typename T> friend class refcounted_ptr;
+};
+
+template <typename T>
+class refcounted_ptr {
+public:
+  
+  refcounted_ptr() : m_ptr(nullptr) {}
+  
+  ~refcounted_ptr() {
+    if (m_ptr)
+      m_ptr->release();
   }
-    
+  
+  refcounted_ptr(const refcounted_ptr& rhs) : refcounted_ptr(rhs.m_ptr) {}
+  
+  refcounted_ptr(refcounted_ptr&& rhs) {
+    m_ptr = rhs.m_ptr;
+    rhs.m_ptr == nullptr;
+  }
+  
+  refcounted_ptr& operator=(const refcounted_ptr& rhs) {
+    if (rhs.m_ptr)
+      rhs.m_ptr->acquire();
+    if (m_ptr)
+      m_ptr->release();
+    m_ptr = rhs.m_ptr;
+    return *this;
+  }
+  
+  refcounted_ptr& operator=(refcounted_ptr&& rhs) {
+    if (rhs.m_ptr)
+      rhs.m_ptr->release();
+    m_ptr = rhs.m_ptr;
+    rhs.m_ptr == nullptr;
+  }
+  
+  T& operator*() const {
+    return *m_ptr;
+  }
+  
+  T* operator->() const {
+    return m_ptr;
+  }
+  
+  T* get() const {
+    return m_ptr;
+  }
+  
+  bool is_unique() const {
+    return m_ptr ? (m_ptr->get_refcount() == 1) : false;
+  }
+  
+  unsigned get_use_count() const {
+    return m_ptr ? (m_ptr->get_refcount() == 1) : false;
+  }
+  
+  void reset() {
+    if (m_ptr)
+      m_ptr->release();
+    m_ptr = nullptr;
+    return *this;
+  }
+  
+  operator bool() const {
+    return this->get_use_count() != 0;
+  }
+  
+protected:    
+  
+  refcounted_ptr(refcounted* ptr) : m_ptr(ptr) {
+    if (ptr)
+      ptr->acquire();
+  }
+  
+  refcounted* m_ptr;
+  
+  template <typename T_, typename... Args>
+  friend refcounted_ptr<T_> make_ptr(const Args&... args);
+};
+
+template <typename T, typename... Args>
+refcounted_ptr<T> make_ptr(const Args&... args) {
+  return refcounted_ptr<T>(new T(args...));
+} 
+
+///////////////////////////////////////////////////////////////////////////////
+
+class scope_exit {
+public:
+    scope_exit(const std::function<void()>& f) : m_f(f) {}
+    ~scope_exit() { m_f(); }
+    // force stack only allocation!
+    static void *operator new   (size_t) = delete;
+    static void *operator new[] (size_t) = delete;
 protected:
-  refcounted() : m_refcount(1) {}
-  virtual ~refcounted() {}
-    
-private:  
-  mutable long m_refcount;
+    std::function<void()> m_f;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
