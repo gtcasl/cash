@@ -50,8 +50,8 @@ public:
   
   //-- 
 
-  void bind_input(unsigned index, const lnode& input, const snode& bus);  
-  snode bind_output(unsigned index, const lnode& output);
+  void bind_input(const lnode& input, const snode& bus);  
+  snode bind_output(const lnode& output);
   void register_tap(const std::string& name, const lnode& lnode);
   
   void bind(unsigned index, const snode& node);

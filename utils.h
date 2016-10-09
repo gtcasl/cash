@@ -45,6 +45,7 @@ public:
   }
 
   void release() const {
+    assert(m_refcount > 0);
     if (--m_refcount <= 0)
       delete this;
   }

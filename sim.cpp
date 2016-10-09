@@ -39,14 +39,18 @@ void ch_simulator::ensureInitialize() {
   // bind context taps
   for (auto ctx : m_contexts) {
     if (ctx->m_clk) {
-      if (m_clk == nullptr)
+      if (m_clk == nullptr) {
         m_clk = new snodeimpl(1);
+        m_clk->acquire();
+      }
       ctx->m_clk->bind(m_clk);
     }
 
     if (ctx->m_reset) {
-      if (m_reset == nullptr)
+      if (m_reset == nullptr) {
         m_reset = new snodeimpl(1);
+        m_reset->acquire();
+      }
       ctx->m_reset->bind(m_reset);
     }
     

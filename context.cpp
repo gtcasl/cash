@@ -66,7 +66,7 @@ lnode context::get_clk() {
   if (!m_clk_stack.empty())
     return m_clk_stack.top();
   if (m_clk == nullptr)
-    m_clk = new inputimpl("clk", -1, this, 1);
+    m_clk = new inputimpl("clk", this, 1);
   return lnode(m_clk);
 }
 
@@ -74,7 +74,7 @@ lnode context::get_reset() {
   if (!m_reset_stack.empty())
     return m_reset_stack.top();
   if (m_reset == nullptr)
-     m_reset = new inputimpl("reset", -1, this, 1);
+     m_reset = new inputimpl("reset", this, 1);
   return lnode(m_reset);
 }
 
@@ -84,6 +84,7 @@ uint32_t context::add_node(lnodeimpl* node) {
   } else {
     m_nodes.emplace_back(node);
   }  
+  node->acquire();
   return ++m_nodeids;
 }
 
@@ -123,10 +124,8 @@ void context::create_assertion(const lnode& node, const std::string& msg) {
 cdomain* context::create_cdomain(const std::vector<clock_event>& sensitivity_list) {
   // return existing cdomain 
   for (cdomain* cd : m_cdomains) {
-    if (*cd == sensitivity_list) {
-      cd->acquire(); // increment reference for reuse
+    if (*cd == sensitivity_list)
       return cd;
-    }
   }  
   // allocate new cdomain
   cdomain* cd = new cdomain(this, sensitivity_list);
@@ -138,15 +137,15 @@ void context::remove_cdomain(cdomain* cd) {
   m_cdomains.remove(cd);
 }
 
-void context::bind_input(unsigned index, const lnode& input, const snode& bus) {
-  inputimpl* impl = new inputimpl("input", index, this, bus.m_impl->get_size());
+void context::bind_input(const lnode& input, const snode& bus) {
+  inputimpl* impl = new inputimpl("input", this, bus.m_impl->get_size());
   impl->bind(bus.m_impl);
   input.assign(impl);
   m_ioports.emplace_back(impl);
 }
 
-snode context::bind_output(unsigned index, const lnode& output) {
-  outputimpl* impl = new outputimpl("output", index, output);
+snode context::bind_output(const lnode& output) {
+  outputimpl* impl = new outputimpl("output", output);
   m_ioports.emplace_back(impl);
   return snode(new snodeimpl(impl));
 }

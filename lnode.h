@@ -55,7 +55,7 @@ protected:
   
   void move(lnode& rhs);
   
-  void clear();
+  void reset(lnodeimpl* impl = nullptr) const;
   
   mutable lnodeimpl* m_impl;
   

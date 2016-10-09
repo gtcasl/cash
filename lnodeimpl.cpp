@@ -15,8 +15,7 @@ lnodeimpl::lnodeimpl(const std::string& name, context* ctx, uint32_t size)
   : m_name(name)
   , m_ctx(ctx)
   , m_value(size) {
-  m_id = ctx->add_node(this);
-  this->acquire();
+  m_id = ctx->add_node(this);  
 }
 
 lnodeimpl::~lnodeimpl() {
@@ -119,15 +118,21 @@ lnode::lnode(const std::initializer_list<uint32_t>& value, uint32_t size) : m_im
 }
 
 lnode::~lnode() {
-  this->clear();
+  this->reset();
 }
 
-void lnode::clear() {
+void lnode::reset(lnodeimpl* impl) const {
   if (m_impl) {
     m_impl->remove_ref(this);
     undefimpl* undef = dynamic_cast<undefimpl*>(m_impl);
-    if (undef && undef->unreferenced())
-      undef->release();
+    if (undef) {
+      if (impl) {
+        assert(m_impl->get_size() == impl->get_size());
+        undef->update_all_refs(impl);
+      }
+      if (undef->unreferenced())
+        undef->release();
+    }
     m_impl = nullptr;
   }
 }
@@ -182,34 +187,21 @@ void lnode::ensureInitialized(uint32_t size) const {
 
 void lnode::assign(lnodeimpl* impl) const {
   assert(impl);
-  if (m_impl == impl)
-    return;
-  if (m_impl) {
-    assert(m_impl->get_size() == impl->get_size());
-    m_impl->remove_ref(this);
-    undefimpl* undef = dynamic_cast<undefimpl*>(m_impl);
-    if (undef) {
-      undef->update_all_refs(impl);
-      undef->release();
-    }
+  if (m_impl != impl) {
+    this->reset(impl);
+    impl->add_ref(this);
+    m_impl = impl;
   }
-  impl->add_ref(this);
-  m_impl = impl;
 }
 
 void lnode::move(lnode& rhs) {
   assert(rhs.m_impl);
   if (m_impl != rhs.m_impl) {
-    if (m_impl) {
-      m_impl->remove_ref(this);
-      undefimpl* undef = dynamic_cast<undefimpl*>(m_impl);
-      if (undef && undef->unreferenced())
-        undef->release();
-    }  
+    this->reset();
     m_impl = rhs.m_impl;
     m_impl->add_ref(this);
   }
-  rhs.clear();
+  rhs.reset();
 }
 
 void lnode::assign(uint32_t dst_offset, const lnode& src, uint32_t src_offset, uint32_t src_length, uint32_t size) {

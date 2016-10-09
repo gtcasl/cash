@@ -9,7 +9,8 @@ memimpl::memimpl(uint32_t data_width, uint32_t addr_width,
                  bool sync_read, bool write_enable) 
   : m_content(1 << addr_width, bitvector(data_width))
   , m_syncRead(sync_read)
-  , m_writeEnable(write_enable) {  
+  , m_writeEnable(write_enable)
+  , m_cd(nullptr) {  
   // register clock domain
   if (sync_read || write_enable) {
     context* ctx = ctx_curr();        
@@ -28,8 +29,7 @@ memimpl::memimpl(uint32_t data_width, uint32_t addr_width,
     uint32_t value;
     in >> hex >> value;
     for (uint32_t j = 0; j < 32; ++j) {
-      m_content[a][i++] = (value & 1) != 0;
-      value >>= 1;
+      m_content[a][i++] = (value & (1 << j)) != 0;
       if (i == data_width) {
         i = 0;
         ++a;
@@ -49,8 +49,7 @@ memimpl::memimpl(uint32_t data_width, uint32_t addr_width,
   uint32_t a = 0, i = 0;
   for (uint32_t value : init_data) {
     for (uint32_t j = 0; j < 32; ++j) {
-      m_content[a][i++] = (value & 1) != 0;
-      value >>= 1;
+      m_content[a][i++] = (value & (1 << j)) != 0;
       if (i == data_width) {
         i = 0;
         ++a;
@@ -205,14 +204,17 @@ void memportimpl::print_vl(std::ostream& out) const {
 
 memory::memory(uint32_t data_width, uint32_t addr_width, bool syncRead, bool writeEnable) {
   m_impl = new memimpl(data_width, addr_width, syncRead, writeEnable);
+  m_impl->acquire();
 }
 
 memory::memory(uint32_t data_width, uint32_t addr_width, bool syncRead, bool writeEnable, const std::string& init_file) {
   m_impl = new memimpl(data_width, addr_width, syncRead, writeEnable, init_file);
+  m_impl->acquire();
 }
 
 memory::memory(uint32_t data_width, uint32_t addr_width, bool syncRead, bool writeEnable, const std::vector<uint32_t>& init_data) {
   m_impl = new memimpl(data_width, addr_width, syncRead, writeEnable, init_data);
+  m_impl->acquire();
 }
 
 memory::~memory() {

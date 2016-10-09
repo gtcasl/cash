@@ -9,12 +9,12 @@ ch_device::~ch_device() {
   delete m_ctx;
 }
 
-void ch_device::bind_input(unsigned index, const lnode& input, const snode& bus) const {
-  m_ctx->bind_input(index, input, bus);
+void ch_device::bind_input(const lnode& input, const snode& bus) const {
+  m_ctx->bind_input(input, bus);
 }
 
-snode ch_device::bind_output(unsigned index, const lnode& output) const {
-  return m_ctx->bind_output(index, output);
+snode ch_device::bind_output(const lnode& output) const {
+  return m_ctx->bind_output(output);
 }
 
 void ch_device::compile() {

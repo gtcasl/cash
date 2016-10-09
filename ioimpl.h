@@ -16,7 +16,7 @@ public:
 
 class inputimpl : public ioimpl {
 public:
-  inputimpl(const std::string& name, uint32_t index, context* ctx, uint32_t size);
+  inputimpl(const std::string& name, context* ctx, uint32_t size);
   ~inputimpl();
   
   void bind(snodeimpl* bus);
@@ -29,12 +29,11 @@ public:
   
 protected:
   snodeimpl* m_bus;
-  uint32_t m_index;
 };
 
 class outputimpl : public ioimpl {
 public:
-  outputimpl(const std::string& name, uint32_t index, const lnode& src);
+  outputimpl(const std::string& name, const lnode& src);
   ~outputimpl() {}
   
   const bitvector& eval(ch_cycle t);
@@ -42,9 +41,6 @@ public:
   void print(std::ostream& out) const override;
   
   void print_vl(std::ostream& out) const override {}
-
-protected:
-  uint32_t  m_index;
 };
 
 class tapimpl : public ioimpl {
