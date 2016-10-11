@@ -29,10 +29,9 @@ int main(int argc, char **argv) {
   myDevice.toVerilog("adder", v_file);
   v_file.close();*/
 
-  ch_vcdtracer tracer("adder.vcd");
+  ch_vcdtracer tracer("adder.vcd", myDevice);
   __ch_trace(tracer, lhs, rhs, cin, out, cout);
   tracer.run();
-  tracer.close();
 
   return 0;
 }

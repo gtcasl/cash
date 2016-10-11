@@ -5,7 +5,7 @@ PROJECT = test.out
 
 all: $(PROJECT)
 
-$(PROJECT) : main.o
+$(PROJECT) : main.o basics.o
 	$(CXX) $(CXXFLAGS) $^ $(LDFLAGS) -o $@
 
 view: $(PROJECT).vcd

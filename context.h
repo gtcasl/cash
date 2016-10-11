@@ -52,7 +52,9 @@ public:
 
   void bind_input(const lnode& input, const snode& bus);  
   snode bind_output(const lnode& output);
+  
   void register_tap(const std::string& name, const lnode& lnode);
+  snode get_tap(std::string& name, uint32_t size);
   
   void bind(unsigned index, const snode& node);
   
@@ -68,6 +70,7 @@ public:
   
   void tick(ch_cycle t);  
   void tick_next(ch_cycle t);
+  void eval(ch_cycle t);
   
   //--
   
@@ -82,7 +85,8 @@ protected:
   std::list<cdomain*>     m_cdomains;
   std::stack<lnode>       m_clk_stack;
   std::stack<lnode>       m_reset_stack;
-  std::vector<ioimpl*>    m_ioports;
+  std::vector<ioimpl*>    m_inputs;
+  std::vector<ioimpl*>    m_outputs;
   std::vector<tapimpl*>   m_taps;
   std::list<assertimpl*>  m_gtaps;
   std::list<litimpl*>     m_literals;
@@ -95,6 +99,7 @@ protected:
   
   friend class optimizer;
   friend class ch_simulator;
+  friend class ch_tracer;
 };
 
 context* ctx_begin();

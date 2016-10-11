@@ -19,10 +19,9 @@ int main(int argc, char **argv) {
   myDevice.toVerilog("counter", v_file);
   v_file.close();*/
 
-  ch_vcdtracer tracer("counter.vcd");
+  ch_vcdtracer tracer("counter.vcd", myDevice);
   __ch_trace(tracer, out);
   tracer.run();
-  tracer.close();
 
   return 0;
 }

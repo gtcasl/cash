@@ -24,10 +24,9 @@ int main(int argc, char **argv) {
   myDevice.toVerilog("fastmul", v_file);
   v_file.close();*/
 
-  ch_vcdtracer tracer("fastmul.vcd");
+  ch_vcdtracer tracer("fastmul.vcd", myDevice);
   __ch_trace(tracer, lhs, rhs, out);
   tracer.run();
-  tracer.close();
 
   return 0;
 }

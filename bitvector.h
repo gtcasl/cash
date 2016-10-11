@@ -293,6 +293,8 @@ public:
     return *this;
   }
   
+  bool to_bool() const;
+  
   bitvector operator~() const {
     bitvector ret(*this);
     ret.flip();

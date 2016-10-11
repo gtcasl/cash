@@ -34,16 +34,21 @@ protected:
 class outputimpl : public ioimpl {
 public:
   outputimpl(const std::string& name, const lnode& src);
-  ~outputimpl() {}
+  ~outputimpl();
   
   const bitvector& eval(ch_cycle t);
+  
+  snodeimpl* get_bus();
   
   void print(std::ostream& out) const override;
   
   void print_vl(std::ostream& out) const override {}
+  
+private:
+  snodeimpl* m_bus;
 };
 
-class tapimpl : public ioimpl {
+class tapimpl : public outputimpl {
 public:
   tapimpl(const std::string& name, const lnode& src);
   ~tapimpl() {}

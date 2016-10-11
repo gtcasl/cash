@@ -80,22 +80,19 @@ public:
 #undef CHDL_DEF_AOP
   
   uint32_t read(uint32_t idx) const {
-    m_node.ensureInitialized(N);
-    return m_node.read(idx);
+    return m_node.read(idx, N);
   }
   
   void write(uint32_t idx, uint32_t value) {
-    m_node.ensureInitialized(N);
-    m_node.write(idx, value);
+    m_node.write(idx, value, N);
   }
   
   template <typename T>
   T read() const {  
     static_assert(sizeof(T) * 4 >= N, "invalid ouput data size");
     T value(0);    
-    m_node.ensureInitialized(N);
     for (uint32_t i = 0, n = (N + 31) / 32; i < n; ++i) {      
-      T part(m_node.read(i)); 
+      T part(m_node.read(i, N)); 
       value |= part << (i * 32);
     }
     return value;
@@ -103,9 +100,8 @@ public:
   
   template <typename T>
   void write(T value) {
-    m_node.ensureInitialized(N);
     for (uint32_t i = 0, n = (N + 31) / 32; i < n; ++i) {
-      m_node.write(i, value & 0xffffffff);
+      m_node.write(i, value & 0xffffffff, N);
       value >>= ((i + 1 < n) ? 32 : (N % 32));
     }
     assert(value == 0);
@@ -113,19 +109,21 @@ public:
   
   bool read() const {
     static_assert(N == 1, "invalid object size");
-    return m_node.read(0) != 0x0;
+    return m_node.read(0, N) != 0x0;
   }
   
   void write(bool value) {
     static_assert(N == 1, "invalid object size");
-    m_node.ensureInitialized(1);
-    m_node.write(0, value ? 0x1 : 0x0);
+    m_node.write(0, value ? 0x1 : 0x0, N);
   }
   
   void write(char value) {
     static_assert(N == 1, "invalid object size");
-    m_node.ensureInitialized(1);
-    m_node.write(0, value != 0 && value != '0');
+    m_node.write(0, value != 0 && value != '0', N);
+  }
+  
+  explicit operator bool() const {     
+    return m_node.to_bool(N); 
   }
   
   operator snode() const { 
@@ -136,25 +134,11 @@ public:
 protected:
   
   void read(std::vector< partition<data_type> >& out, size_t offset, size_t length) const override {
-    assert((offset + length) <= N);
-    m_node.ensureInitialized(N);
-    out.push_back({m_node, offset, length});
+    m_node.read(out, offset, length, N);
   }
   
   void write(size_t dst_offset, const std::vector< partition<data_type> >& src, size_t src_offset, size_t src_length) override {
-    assert((dst_offset + src_length) <= N);
-    for (auto& p : src) {
-      if (src_offset < p.length) {
-        size_t len = std::min(p.length - src_offset, src_length);
-        m_node.assign(dst_offset, p.data, p.offset + src_offset, len, N);         
-        src_length -= len;
-        if (src_length == 0)
-          return;
-        dst_offset += len;                
-        src_offset = p.length;
-      }
-      src_offset -= p.length;
-    }
+    m_node.write(dst_offset, src, src_offset, src_length, N);
   }
   
   snode m_node;

@@ -1,3 +1,4 @@
+#include "bitv.h"
 #include "lnodeimpl.h"
 #include "ioimpl.h"
 #include "proxyimpl.h"
@@ -6,7 +7,6 @@
 #include "cdomain.h"
 #include "snodeimpl.h"
 #include "context.h"
-#include "bitv.h"
 
 using namespace std;
 using namespace chdl_internal;
@@ -194,16 +194,6 @@ void lnode::assign(lnodeimpl* impl) const {
   }
 }
 
-void lnode::move(lnode& rhs) {
-  assert(rhs.m_impl);
-  if (m_impl != rhs.m_impl) {
-    this->reset();
-    m_impl = rhs.m_impl;
-    m_impl->add_ref(this);
-  }
-  rhs.reset();
-}
-
 void lnode::assign(uint32_t dst_offset, const lnode& src, uint32_t src_offset, uint32_t src_length, uint32_t size) {
   assert(size > dst_offset && size >= dst_offset + src_length);
   if (size == src_length && size == src.get_size()) {
@@ -218,5 +208,37 @@ void lnode::assign(uint32_t dst_offset, const lnode& src, uint32_t src_offset, u
       proxy->add_src(dst_offset, src, src_offset, src_length);
       this->assign(proxy);
     }
+  }
+}
+
+void lnode::move(lnode& rhs) {
+  assert(rhs.m_impl);
+  if (m_impl != rhs.m_impl) {
+    this->reset();
+    m_impl = rhs.m_impl;
+    m_impl->add_ref(this);
+  }
+  rhs.reset();
+}
+
+void lnode::read(std::vector< partition<lnode> >& out, uint32_t offset, uint32_t length, uint32_t size) const {
+  assert((offset + length) <= size);
+  this->ensureInitialized(size);
+  out.push_back({*this, offset, length});
+}
+
+void lnode::write(uint32_t dst_offset, const std::vector< partition<lnode> >& src, uint32_t src_offset, uint32_t src_length, uint32_t size) {
+  assert((dst_offset + src_length) <= size);
+  for (auto& p : src) {
+    if (src_offset < p.length) {
+      uint32_t len = std::min(p.length - src_offset, src_length);
+      this->assign(dst_offset, p.data, p.offset + src_offset, len, size);         
+      src_length -= len;
+      if (src_length == 0)
+        return;
+      dst_offset += len;                
+      src_offset = p.length;
+    }
+    src_offset -= p.length;
   }
 }

@@ -4,18 +4,18 @@
 
 namespace chdl_internal {
 
-class ch_vcdtracer: public ch_simulator {
+class ch_vcdtracer: public ch_tracer {
 public:
-  ch_vcdtracer(const std::string& filename);
+  template<typename ...Devices>
+  ch_vcdtracer(const std::string& filename, const Devices&... devices) : ch_vcdtracer(filename, {&devices...}) {}
+  ch_vcdtracer(const std::string& filename, const std::initializer_list<const ch_device*>& devices);
   ~ch_vcdtracer();
   
   void tick(ch_cycle t);
   
-  void close();
-  
 protected:  
 
-  virtual void ensureInitialize();
+  void ensureInitialize() override;
 
   std::ofstream m_file;
 

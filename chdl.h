@@ -46,7 +46,7 @@ namespace core {
   using ch_logicbase = chdl_internal::ch_logicbase;
 
   //
-  // pre-defined data types
+  // pre-defined bitv types
   //
 
   typedef ch_bitv<2>  ch_bit2;
@@ -183,6 +183,17 @@ namespace sim {
 
   template<unsigned N> using ch_busbase = chdl_internal::ch_busbase<N>;
   using ch_signalbase = chdl_internal::ch_signalbase;
+
+  //
+  // pre-defined bus types
+  //
+
+  using ch_bus2   = ch_bus<2>;
+  using ch_bus4   = ch_bus<4>;
+  using ch_bus8   = ch_bus<8>;
+  using ch_bus16  = ch_bus<16>;
+  using ch_bus32  = ch_bus<32>;
+  using ch_bus64  = ch_bus<64>;
 
   //
   // api objects

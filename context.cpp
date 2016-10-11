@@ -141,13 +141,13 @@ void context::bind_input(const lnode& input, const snode& bus) {
   inputimpl* impl = new inputimpl("input", this, bus.m_impl->get_size());
   impl->bind(bus.m_impl);
   input.assign(impl);
-  m_ioports.emplace_back(impl);
+  m_inputs.emplace_back(impl);
 }
 
 snode context::bind_output(const lnode& output) {
   outputimpl* impl = new outputimpl("output", output);
-  m_ioports.emplace_back(impl);
-  return snode(new snodeimpl(impl));
+  m_outputs.emplace_back(impl);
+  return snode(impl->get_bus());
 }
 
 void context::register_tap(const std::string& name, const lnode& node) {
@@ -168,6 +168,16 @@ void context::register_tap(const std::string& name, const lnode& node) {
   m_taps.emplace_back(new tapimpl(full_name, node));
 }
 
+snode context::get_tap(std::string& name, uint32_t size) {
+  for (tapimpl* tap : m_taps) {
+    if (tap->get_tapName() == name) {
+      CHDL_REQUIRED(tap->get_size() == size, "tap bus size mismatch: received %u, expected %u", size, tap->get_size());
+      return snode(tap->get_bus());
+    }
+  } 
+  CHDL_ABORT("couldn't find tab '%s'", name.c_str());
+}
+
 void context::syntax_check() {
   // check for un-initialized nodes
   if (m_undefs.size()) {
@@ -180,8 +190,13 @@ void context::syntax_check() {
 }
 
 void context::get_live_nodes(std::set<lnodeimpl*>& live_nodes) {
-  // get io ports
-  for (auto node : m_ioports) {
+  // get inputs
+  for (auto node : m_inputs) {
+    live_nodes.emplace(node);
+  }
+
+  // get outputs
+  for (auto node : m_outputs) {
     live_nodes.emplace(node);
   }  
   
@@ -206,6 +221,23 @@ void context::tick_next(ch_cycle t) {
   for (auto cd : m_cdomains) {
     cd->tick_next(t);
   }  
+}
+
+void context::eval(ch_cycle t) {
+  // evaluate outputs
+  for (auto node : m_outputs) {
+    node->eval(t);
+  }
+
+  // evaluate taps
+  for (auto node : m_taps) {
+    node->eval(t);
+  }  
+  
+  // evaluate asserts
+  for (auto node : m_gtaps) {
+    node->eval(t);
+  }
 }
 
 void context::toVerilog(const std::string& module_name, std::ostream& out) {

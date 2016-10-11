@@ -12,53 +12,31 @@ static uint32_t generate_id() {
 
 snodeimpl::snodeimpl(uint32_t size) 
   : m_id(generate_id())
-  , m_output(nullptr)
   , m_value(size)
-  , m_ctime(~0ull) 
+  , m_changeid(0) 
 {}
-
-snodeimpl::snodeimpl(ioimpl* output) 
-  : m_id(generate_id())
-  , m_output(output)
-  , m_value(output->get_size())
-  , m_ctime(~0ull) {
-  output->::refcounted::acquire();
-}
 
 snodeimpl::snodeimpl(const std::string& value)
   : m_id(generate_id())
-  , m_output(nullptr)
   , m_value(value)
-  , m_ctime(~0ull) 
+  , m_changeid(1) // m_value has been set
 {}
 
 snodeimpl::snodeimpl(const std::initializer_list<uint32_t>& value, uint32_t size) 
   : m_id(generate_id())
-  , m_output(nullptr)
   , m_value(value, size)
-  , m_ctime(~0ull) 
+  , m_changeid(1) // m_value has been set
 {}
 
 snodeimpl::~snodeimpl() {
-  if (m_output) {
-    m_output->release();
-    assert(m_srcs.size() == 0);
-  } else {
-    for (auto& src : m_srcs) {
-      assert(src.node);
-      src.node->release();
-    }
+  for (auto& src : m_srcs) {
+    assert(src.node);
+    src.node->release();
   }
 }
 
 void snodeimpl::assign(uint32_t start, snodeimpl* src, uint32_t offset, uint32_t length) {
-  assert(this != src);
-  // disconnect output port if present  
-  if (m_output) {
-    m_output->release();
-    m_output = nullptr;
-  }  
-  
+  assert(src != nullptr && this != src);  
   uint32_t n = m_srcs.size();
   if (n == 0) {
     src->acquire();
@@ -138,50 +116,46 @@ void snodeimpl::assign(uint32_t start, snodeimpl* src, uint32_t offset, uint32_t
   }
 }
 
-const bitvector& snodeimpl::eval(ch_cycle t) {
-  if (m_ctime != t) {
-    m_ctime = t;
-    
-    if (m_output) {
-      m_value = m_output->eval(t);
-    } else {
-      for (auto& src : m_srcs) {
-        assert(src.node);
-        m_value.copy(src.start, src.node->eval(t), src.offset, src.length);
-      }
+void snodeimpl::sync_sources() const {
+  if (m_srcs.size() == 0)
+    return;
+  
+  int changed = 0;
+  for (source_t& src : m_srcs) {
+    if (src.changeid != src.node->m_changeid) {
+      src.changeid = src.node->m_changeid;
+      m_value.copy(src.start, src.node->read(), src.offset, src.length);      
+      changed = 1;
     }
   }
-  return m_value;
-}
-
-context* snodeimpl::get_ctx() const {
-  return m_output ? m_output->get_ctx() : nullptr; 
+  m_changeid += changed;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-snode::snode(const snode& rhs) : m_impl(nullptr) {
+snode::snode(const snode& rhs) : m_impl(nullptr), m_readonly(false) {
   this->assign(rhs.m_impl); 
 }
 
-snode::snode(snode&& rhs) : m_impl(nullptr) {  
+snode::snode(snode&& rhs) : m_impl(nullptr), m_readonly(false) {  
   this->move(rhs);
 }
 
-snode::snode(const snode& rhs, uint32_t size) : m_impl(nullptr) {
+snode::snode(const snode& rhs, uint32_t size) : m_impl(nullptr), m_readonly(false) {
   rhs.ensureInitialized(size);  
   this->assign(rhs.m_impl);
 }
 
-snode::snode(snodeimpl* impl) : m_impl(nullptr) {
+snode::snode(snodeimpl* impl) : m_impl(nullptr), m_readonly(false) {
   this->assign(impl);
 }
 
-snode::snode(const std::string& value) : m_impl(nullptr) {
-  this->assign(new snodeimpl(value));
+snode::snode(const std::string& value) : m_impl(nullptr), m_readonly(false) {
+  this->assign(new snodeimpl(value), true);
 }
 
-snode::snode(const std::initializer_list<uint32_t>& value, uint32_t size) : m_impl(nullptr) {
+snode::snode(const std::initializer_list<uint32_t>& value, uint32_t size) 
+  : m_impl(nullptr), m_readonly(false) {
   this->assign(value, size);  
 }
 
@@ -216,21 +190,25 @@ void snode::ensureInitialized(uint32_t size) const {
 
 void snode::move(snode& rhs) {  
   m_impl = rhs.m_impl;
+  m_readonly = rhs.m_readonly;
   rhs.m_impl = nullptr;
+  rhs.m_readonly = false;
 }
 
 void snode::assign(const std::initializer_list<uint32_t>& value, uint32_t size) {
-  this->assign(new snodeimpl(value, size));
+  this->assign(new snodeimpl(value, size), true);
 }
 
-void snode::assign(snodeimpl* impl) {  
+void snode::assign(snodeimpl* impl, bool is_owner) {  
   assert(impl);
   if (m_impl == nullptr) {
     impl->acquire();
     m_impl = impl;
+    m_readonly = !is_owner;
   } else {
-    if (m_impl != impl)
-      m_impl->assign(0, impl, 0, impl->get_size());
+    if (m_readonly)
+      this->clone();
+    m_impl->assign(0, impl, 0, impl->get_size());
   }
 }
 
@@ -241,16 +219,57 @@ void snode::assign(uint32_t dst_offset, const snode& src, uint32_t src_offset, u
     this->assign(src.m_impl);
   } else {
     this->ensureInitialized(size);
+    if (m_readonly)
+      this->clone();
     m_impl->assign(dst_offset, src.m_impl, src_offset, src_length);
   }  
 }
 
-uint32_t snode::read(uint32_t idx) const {
-  assert(m_impl);
+void snode::clone() const {
+  assert(m_readonly);
+  snodeimpl* impl = m_impl;
+  m_impl = nullptr;
+  this->ensureInitialized(impl->get_size());  
+  m_impl->assign(0, impl, 0, impl->get_size());
+  impl->release();
+  m_readonly = false;
+}
+
+uint32_t snode::read(uint32_t idx, uint32_t size) const {
+  this->ensureInitialized(size);
   return m_impl->read(idx);
 }
 
-void snode::write(uint32_t idx, uint32_t value) {
-  assert(m_impl);
+void snode::write(uint32_t idx, uint32_t value, uint32_t size) {
+  this->ensureInitialized(size);
+  if (m_readonly)
+    this->clone();
   m_impl->write(idx, value);
+}
+
+bool snode::to_bool(uint32_t size) const {
+  this->ensureInitialized(size);
+  return m_impl->to_bool();
+}
+
+void snode::read(std::vector< partition<snode> >& out, uint32_t offset, uint32_t length, uint32_t size) const {
+  assert((offset + length) <= size);
+  this->ensureInitialized(size);
+  out.push_back({*this, offset, length});
+}
+
+void snode::write(uint32_t dst_offset, const std::vector< partition<snode> >& src, uint32_t src_offset, uint32_t src_length, uint32_t size) {
+  assert((dst_offset + src_length) <= size);
+  for (auto& p : src) {
+    if (src_offset < p.length) {
+      size_t len = std::min(p.length - src_offset, src_length);
+      this->assign(dst_offset, p.data, p.offset + src_offset, len, size);         
+      src_length -= len;
+      if (src_length == 0)
+        return;
+      dst_offset += len;                
+      src_offset = p.length;
+    }
+    src_offset -= p.length;
+  }
 }

@@ -8,17 +8,16 @@
 using namespace std;
 using namespace chdl_internal;
 
-ch_simulator::ch_simulator()
+ch_simulator::ch_simulator(const std::initializer_list<const ch_device*>& devices)
   : m_initialized(false)
   , m_clk(nullptr)
   , m_reset(nullptr) {
-  //--  
+  for (auto device : devices) {
+    m_contexts.emplace(device->m_ctx);
+  }
 }
 
 ch_simulator::~ch_simulator() {
-  for (auto& tap : m_taps) {
-    tap.bus->release();
-  }
   if (m_clk)
     m_clk->release();
   if (m_reset)
@@ -26,16 +25,7 @@ ch_simulator::~ch_simulator() {
 }
 
 void ch_simulator::ensureInitialize() {
-  if (m_initialized)
-    return;
-
-  // gather active contexts from output taps 
-  for (auto tap : m_taps) {
-    context* ctx = tap.bus->get_ctx();
-    if (ctx)
-      m_contexts.emplace(ctx);
-  }
-
+  
   // bind context taps
   for (auto ctx : m_contexts) {
     if (ctx->m_clk) {
@@ -53,50 +43,25 @@ void ch_simulator::ensureInitialize() {
       }
       ctx->m_reset->bind(m_reset);
     }
-    
-    for (tapimpl* tap : ctx->m_taps) {
-      this->add_tap(tap->get_tapName(), new snodeimpl(tap));
-    }
   }
-  
-  m_initialized = true;
-}
-
-void ch_simulator::add_tap(const std::string& name, snodeimpl* bus) {
-  CHDL_REQUIRED(!m_initialized, "new tap not allowed after simulation has started");
-  
-  // resolve duplicate names  
-  string full_name(name);
-  unsigned instances = m_dup_taps[name]++;
-  if (instances > 0) {
-    if (instances == 1) {
-      // rename first instance
-      auto iter = std::find_if(m_taps.begin(), m_taps.end(),
-        [name](const tap_t& t)->bool { return t.name == name; });
-      assert(iter != m_taps.end());
-      iter->name = fstring("%s_%d", name.c_str(), 0);
-    }
-    full_name = fstring("%s_%d", name.c_str(), instances);
-  }
-  m_taps.emplace_back(full_name, bus);
-  bus->acquire();
 }
 
 void ch_simulator::tick(ch_cycle t) { 
   // ensure initialized
-  this->ensureInitialize();
+  if (!m_initialized) {
+    this->ensureInitialize();
+    m_initialized = true;
+  }
   
-  // evaluate context registers  
+  // evaluate all contexts
   for (auto ctx : m_contexts) {
     ctx->tick(t);
   }
   for (auto ctx : m_contexts) {
     ctx->tick_next(t);
   }
-  
-  // evaluate all signals
-  for (auto tap : m_taps) {
-    tap.bus->eval(t);
+  for (auto ctx : m_contexts) {
+    ctx->eval(t);
   }
 }
 
@@ -116,7 +81,10 @@ void ch_simulator::run(ch_cycle cycles) {
 
 ch_cycle ch_simulator::reset(ch_cycle t) {
   // ensure initialized
-  this->ensureInitialize();
+  if (!m_initialized) {
+    this->ensureInitialize();
+    m_initialized = true;
+  }
 
   if (m_reset) {
     (*m_reset)[0] = true;    
@@ -141,9 +109,47 @@ void ch_simulator::step(ch_cycle t) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-ch_tracer::ch_tracer(std::ostream& out) : m_out(out) {}
+ch_tracer::ch_tracer(std::ostream& out, const std::initializer_list<const ch_device*>& devices) 
+  : ch_simulator(devices)
+  , m_out(out) {}
 
-ch_tracer::~ch_tracer() {}
+ch_tracer::~ch_tracer() {  
+  for (auto& tap : m_taps) {
+    tap.bus->release();
+  }
+}
+
+void ch_tracer::ensureInitialize() {
+  // call parent ensureInitialize()
+  ch_simulator::ensureInitialize();
+
+  // register context taps
+  for (auto ctx : m_contexts) {    
+    for (tapimpl* tap : ctx->m_taps) {
+      this->add_trace(tap->get_tapName(), tap->get_bus());
+    }
+  }
+}
+
+void ch_tracer::add_trace(const std::string& name, snodeimpl* bus) {
+  CHDL_REQUIRED(!m_initialized, "new tap not allowed after simulation has started");
+  
+  // resolve duplicate names  
+  string full_name(name);
+  unsigned instances = m_dup_taps[name]++;
+  if (instances > 0) {
+    if (instances == 1) {
+      // rename first instance
+      auto iter = std::find_if(m_taps.begin(), m_taps.end(),
+        [name](const tap_t& t)->bool { return t.name == name; });
+      assert(iter != m_taps.end());
+      iter->name = fstring("%s_%d", name.c_str(), 0);
+    }
+    full_name = fstring("%s_%d", name.c_str(), instances);
+  }
+  m_taps.emplace_back(full_name, bus);
+  bus->acquire();
+}
 
 void ch_tracer::tick(ch_cycle t) {
   // advance simulation

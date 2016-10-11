@@ -25,7 +25,7 @@ struct identity {
 template <typename Function>
 struct function_traits : public function_traits<decltype(&Function::operator())> {};
 
-template <typename Class, typename Ret, typename... Args>
+template <typename Class, typename Ret, typename ...Args>
 struct function_traits<Ret(Class::*)(Args...) const> {
     typedef const std::function<Ret(Args...)> function;
 };
@@ -160,11 +160,11 @@ protected:
   
   refcounted* m_ptr;
   
-  template <typename T_, typename... Args>
+  template <typename T_, typename ...Args>
   friend refcounted_ptr<T_> make_ptr(const Args&... args);
 };
 
-template <typename T, typename... Args>
+template <typename T, typename ...Args>
 refcounted_ptr<T> make_ptr(const Args&... args) {
   return refcounted_ptr<T>(new T(args...));
 } 

@@ -23,7 +23,8 @@ void inputimpl::bind(snodeimpl* bus) {
 }
 
 const bitvector& inputimpl::eval(ch_cycle t) {
-  return m_bus->eval(t);
+  assert(m_bus);
+  return m_bus->read();
 }
 
 void inputimpl::print(std::ostream& out) const {
@@ -39,13 +40,30 @@ void inputimpl::print(std::ostream& out) const {
 ///////////////////////////////////////////////////////////////////////////////
 
 outputimpl::outputimpl(const std::string& name, const lnode& src) 
-  : ioimpl(name, src.get_ctx(), src.get_size()) {
+  : ioimpl(name, src.get_ctx(), src.get_size())
+  , m_bus(nullptr) {
   m_srcs.reserve(1);
   m_srcs.emplace_back(src);
 }
 
+outputimpl::~outputimpl() {
+  if (m_bus)
+    m_bus->release();
+}
+
 const bitvector& outputimpl::eval(ch_cycle t) {
-  return m_srcs[0].eval(t);
+  const bitvector& bits = m_srcs[0].eval(t);
+  if (m_bus)
+    m_bus->write(bits);
+  return bits;
+}
+
+snodeimpl* outputimpl::get_bus() {
+  if (m_bus == nullptr) {
+    m_bus = new snodeimpl(m_value.get_size());
+    m_bus->acquire();
+  }
+  return m_bus;
 }
 
 void outputimpl::print(std::ostream& out) const {
@@ -57,7 +75,7 @@ void outputimpl::print(std::ostream& out) const {
 ///////////////////////////////////////////////////////////////////////////////
 
 tapimpl::tapimpl(const std::string& name, const lnode& src) 
-  : ioimpl("tap", src.get_ctx(), src.get_size())
+  : outputimpl("tap", src)
   , m_tapName(name) {
   m_srcs.reserve(1);
   m_srcs.emplace_back(src);

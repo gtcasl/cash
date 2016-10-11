@@ -112,25 +112,11 @@ public:
 protected:
   
   void read(std::vector< partition<data_type> >& out, size_t offset, size_t length) const override {
-    assert((offset + length) <= N);
-    m_node.ensureInitialized(N);
-    out.push_back({m_node, offset, length});
+    m_node.read(out, offset, length, N);
   }
   
   void write(size_t dst_offset, const std::vector< partition<data_type> >& src, size_t src_offset, size_t src_length) override {
-    assert((dst_offset + src_length) <= N);
-    for (auto& p : src) {
-      if (src_offset < p.length) {
-        size_t len = std::min(p.length - src_offset, src_length);
-        m_node.assign(dst_offset, p.data, p.offset + src_offset, len, N);         
-        src_length -= len;
-        if (src_length == 0)
-          return;
-        dst_offset += len;                
-        src_offset = p.length;
-      }
-      src_offset -= p.length;
-    }
+    m_node.write(dst_offset, src, src_offset, src_length, N);
   }
   
   lnode m_node;

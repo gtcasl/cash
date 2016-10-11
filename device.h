@@ -14,22 +14,21 @@ class ch_device {
 public:
   
   template <typename Function, typename ...Args>  
-  ch_device(const Function& func, Args&&... args) {
-    m_ctx = ctx_begin();
-    this->load(to_function(func), args...);
-    this->compile();
-    ctx_end();
+  ch_device(const Function& func, Args&&... args) {    
+    this->init(to_function(func), args...);   
   }
   
   template <typename FuncRet, typename ...FuncArgs, typename ...Args>  
   ch_device(FuncRet (*func)(FuncArgs...), Args&&... args) {
-    m_ctx = ctx_begin();
-    this->load(std::function<FuncRet(FuncArgs...)>(func), args...);
-    this->compile();
-    ctx_end();
+    this->init(std::function<FuncRet(FuncArgs...)>(func), args...);
   }
   
   virtual ~ch_device();
+  
+  template <unsigned N> 
+  ch_bus<N> get_tap(std::string& name) {
+    return this->get_tap(name, N);
+  }
   
   void toVerilog(const std::string& module_name, std::ostream& out);  
   
@@ -109,13 +108,18 @@ protected:
   }
   
   template <typename FuncRet, typename ...FuncArgs, typename ...Args>
-  void load(const std::function<FuncRet(FuncArgs...)>& func, Args&&... args) {
+  void init(const std::function<FuncRet(FuncArgs...)>& func, Args&&... args) {
     static_assert(sizeof...(FuncArgs) + output_size<FuncRet>::value == sizeof...(Args), "number of arguments mismatch!");
-    std::tuple<typename to_value_type<typename std::remove_const<
+    m_ctx = ctx_begin();
+    {
+      std::tuple<typename to_value_type<typename std::remove_const<
           typename std::remove_reference<FuncArgs>::type >::type>::value...> func_args;
-    this->bind_inputs(func_args, args...);
-    FuncRet ret(this->load_impl(func, func_args, make_index_sequence<sizeof...(FuncArgs)>()));
-    this->bind_outputs(ret, args...);
+      this->bind_inputs(func_args, args...);
+      FuncRet ret(this->load_impl(func, func_args, make_index_sequence<sizeof...(FuncArgs)>()));
+      this->bind_outputs(ret, args...);
+    }    
+    this->compile();
+    ctx_end();
   }
   
   template <typename ...InputArgs, typename ...Args>
@@ -147,9 +151,13 @@ protected:
   
   snode bind_output(const lnode& output) const;
   
+  snode get_tap(std::string& name, uint32_t size) const;
+  
   void compile();
   
   context* m_ctx;
+  
+  friend class ch_simulator;
 };
 
 template <>

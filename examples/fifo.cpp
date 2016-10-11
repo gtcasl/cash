@@ -44,7 +44,7 @@ int main(int argc, char **argv) {
   myDevice.toVerilog("fifo", v_file);
   v_file.close();*/
 
-  ch_vcdtracer tracer("fifo.vcd");
+  ch_vcdtracer tracer("fifo.vcd", myDevice);
   __ch_trace(tracer, din, push, pop, dout, empty, full);
   tracer.run([&](ch_cycle time)->bool {
     switch (time) {
@@ -72,7 +72,6 @@ int main(int argc, char **argv) {
     }
     return (time < 10);
   });
-  tracer.close();
 
   return 0;
 }

@@ -1,6 +1,5 @@
 #pragma once
 
-#include "typebase.h"
 #include "lnode.h"
 
 namespace chdl_internal {

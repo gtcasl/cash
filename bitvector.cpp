@@ -192,6 +192,14 @@ bitvector& bitvector::flip() {
   return *this;
 }
 
+bool bitvector::to_bool() const {
+  for (int32_t i = 0, n = this->get_num_words(); i < n; ++i) {
+    if (m_words[i])
+      return true;
+  }
+  return false;
+}
+
 bitvector& bitvector::operator&=(const bitvector& rhs) {
   assert(m_size == rhs.m_size);
   for (int32_t i = 0, n = rhs.get_num_words(); i < n; ++i) {

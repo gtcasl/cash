@@ -1,6 +1,7 @@
 #pragma once
 
 #include "bitvector.h"
+#include "typebase.h"
 
 namespace chdl_internal {
 
@@ -43,13 +44,18 @@ public:
   
   void assign(uint32_t dst_offset, const lnode& src, uint32_t src_offset, uint32_t src_length, uint32_t size);
   
-  explicit operator lnodeimpl*() const { 
-    return m_impl; 
-  }
+  void read(std::vector< partition<lnode> >& out, uint32_t offset, uint32_t length, uint32_t size) const;
+  
+  void write(uint32_t dst_offset, const std::vector< partition<lnode> >& src, uint32_t src_offset, uint32_t src_length, uint32_t size);
   
   void ensureInitialized(uint32_t size) const;
+    
+  explicit operator lnodeimpl*() const { 
+    assert(m_impl);
+    return m_impl; 
+  }  
 
-protected:
+protected:  
 
   void assign(lnodeimpl* impl) const;
   
