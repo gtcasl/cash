@@ -18,7 +18,7 @@ thread_local context* tls_ctx = nullptr;
 context::context()
   : m_nodeids(0)
   , m_clk(nullptr)
-  , m_reset(nullptr)
+  , m_reset(nullptr) 
 {}
 
 context::~context() { 
@@ -80,7 +80,13 @@ lnode context::get_reset() {
 
 uint32_t context::add_node(lnodeimpl* node) {
   if (node->m_name == "undef") {
-    m_undefs.emplace_back(node);
+    m_undefs.emplace_back(node);  
+  #ifndef NDEBUG
+    uint32_t dbg_node = platform::self().get_dbg_node();
+    if (dbg_node) {
+      assert(m_nodeids + 1 != dbg_node);
+    }
+  #endif
   } else {
     m_nodes.emplace_back(node);
   }  
@@ -181,7 +187,7 @@ snode context::get_tap(std::string& name, uint32_t size) {
 void context::syntax_check() {
   // check for un-initialized nodes
   if (m_undefs.size()) {
-    this->dumpNodes(cout);    
+    this->dumpAST(cout, 1);    
     for (auto node : m_undefs) {
       fprintf(stderr, "error: un-initialized node #%d!\n", node->get_id());
     }
@@ -244,7 +250,7 @@ void context::toVerilog(const std::string& module_name, std::ostream& out) {
   TODO("Not yet implemented!");
 }
 
-void context::dumpNodes(std::ostream& out) {
+void context::dumpAST(std::ostream& out, uint32_t level) {
   for (lnodeimpl* node : m_nodes) {
     node->print(out);
   }

@@ -68,13 +68,8 @@ void lnodeimpl::print(std::ostream& out) const {
 ///////////////////////////////////////////////////////////////////////////////
 
 undefimpl::undefimpl(context* ctx, uint32_t size) 
-  : lnodeimpl("undef", ctx, size) {
-  const char* dbg_node = std::getenv("CHDL_DEBUG_NODE");
-  if (dbg_node) {
-    uint32_t dbg_node_id = strtol(dbg_node, nullptr, 10);
-    assert(m_id != dbg_node_id);
-  }
-}
+  : lnodeimpl("undef", ctx, size) 
+{}
 
 undefimpl::~undefimpl() {
   assert(m_refs.empty());

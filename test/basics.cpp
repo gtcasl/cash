@@ -22,6 +22,26 @@ TEST_CASE("basic tests", "[basic]") {
       ch_bit4 c = a ^ 0101_b;
       return (c == 1001_b);
     });
+    TEST([]()->ch_logic {
+      ch_bit4 a(1);
+      ch_bit4 c = a << 2;
+      return (c == 0100_b);
+    });
+    TEST([]()->ch_logic {
+      ch_bit4 a(1000_b);
+      ch_bit4 c = a >> 2;
+      return (c == 0010_b);
+    });
+    TEST([]()->ch_logic {
+      ch_bit4 a(1), b(2);
+      ch_bit4 c = a << b;
+      return (c == 0100_b);
+    });
+    TEST([]()->ch_logic {
+      ch_bit4 a(1000_b), b(2);
+      ch_bit4 c = a >> b;
+      return (c == 0010_b);
+    });
   }  
   SECTION("test subscript") {
     TEST([]()->ch_logic {

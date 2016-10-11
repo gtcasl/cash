@@ -86,7 +86,3 @@ void tapimpl::print(std::ostream& out) const {
   out << "(" << m_tapName << ", " << "#" << m_srcs[0].get_id() << ")";
   out << endl;
 }
-
-const bitvector& tapimpl::eval(ch_cycle t) {
-  return m_srcs[0].eval(t);
-}

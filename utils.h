@@ -4,6 +4,16 @@ namespace chdl_internal {
 
 std::string fstring(const char* format, ...);
 
+void DbgPrint(int level, const char *format, ...);
+
+#ifndef NDEBUG
+  #define DBG(level, format, ...) do { \
+      DbgPrint(level, "DBG: " format, ##__VA_ARGS__); \
+    } while (0)
+#else
+  #define DBG(level, format, ...)
+#endif
+
 ///////////////////////////////////////////////////////////////////////////////
 
 template <size_t ...I>

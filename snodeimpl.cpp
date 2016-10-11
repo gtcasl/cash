@@ -116,19 +116,20 @@ void snodeimpl::assign(uint32_t start, snodeimpl* src, uint32_t offset, uint32_t
   }
 }
 
-void snodeimpl::sync_sources() const {
-  if (m_srcs.size() == 0)
-    return;
-  
-  int changed = 0;
-  for (source_t& src : m_srcs) {
-    if (src.changeid != src.node->m_changeid) {
-      src.changeid = src.node->m_changeid;
-      m_value.copy(src.start, src.node->read(), src.offset, src.length);      
-      changed = 1;
+uint64_t snodeimpl::sync_sources() const {
+  if (m_srcs.size() > 0) {  
+    int changed = 0;
+    for (source_t& src : m_srcs) {
+      uint64_t changeid = src.node->sync_sources();
+      if (src.changeid != changeid) {
+        src.changeid = changeid;
+        m_value.copy(src.start, src.node->read(), src.offset, src.length);      
+        changed = 1;
+      }
     }
+    m_changeid += changed;
   }
-  m_changeid += changed;
+  return m_changeid;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

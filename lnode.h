@@ -1,6 +1,5 @@
 #pragma once
 
-#include "bitvector.h"
 #include "typebase.h"
 
 namespace chdl_internal {

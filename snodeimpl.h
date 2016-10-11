@@ -66,7 +66,7 @@ public:
   
 protected:
   
-  void sync_sources() const;
+  uint64_t sync_sources() const;
   
   struct source_t {
     snodeimpl* node;

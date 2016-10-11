@@ -9,4 +9,4 @@ using namespace chdl::sim;
 bool runtest(const std::function<ch_logic()>& test, ch_cycle cycles = 1);
 
 #define TEST(...) \
-  REQUIRE(runtest(__VA_ARGS__))
+  CHECK(runtest(__VA_ARGS__))

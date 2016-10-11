@@ -16,3 +16,15 @@ std::string chdl_internal::fstring(const char* format, ...) {
   free(buf);
   return str;
 }
+
+void chdl_internal::DbgPrint(int level, const char *format, ...) {
+  char* buf = nullptr;
+  va_list vargs;
+  va_start(vargs, format);
+  if (level <= platform::self().get_dbg_level()) {
+    vasprintf(&buf, format, vargs);
+    std::cout << buf;
+  }
+  va_end(vargs);
+  free(buf);
+}

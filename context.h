@@ -76,7 +76,7 @@ public:
   
   void toVerilog(const std::string& module_name, std::ostream& out);
   
-  void dumpNodes(std::ostream& out);
+  void dumpAST(std::ostream& out, uint32_t level);
   
 protected:
 

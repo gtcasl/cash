@@ -122,6 +122,14 @@ ch_tracer::~ch_tracer() {
 void ch_tracer::ensureInitialize() {
   // call parent ensureInitialize()
   ch_simulator::ensureInitialize();
+  
+  // register clock signals
+  if (m_clk) {
+    this->add_trace("clk", m_clk);
+  }
+  if (m_reset) {
+    this->add_trace("reset", m_reset);
+  }
 
   // register context taps
   for (auto ctx : m_contexts) {    

@@ -303,7 +303,7 @@ public:
   
   bitvector operator<<(uint32_t dist) const {
     bitvector ret(*this);
-    ret >>= dist;
+    ret <<= dist;
     return ret;
   }
   

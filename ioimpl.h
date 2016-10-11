@@ -57,8 +57,6 @@ public:
     return m_tapName;
   }
   
-  const bitvector& eval(ch_cycle t);
-  
   void print(std::ostream& out) const override;
   
   void print_vl(std::ostream& out) const override {}

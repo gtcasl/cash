@@ -13,15 +13,20 @@ optimizer::optimizer(context* ctx) : m_ctx(ctx) {}
 optimizer::~optimizer() {}
 
 void optimizer::optimize() {
-  cerr << "Before optimization: " << m_ctx->m_nodes.size() << endl;
+  DBG(2, "Before optimization: %z", m_ctx->m_nodes.size());
   
   m_ctx->get_live_nodes(m_live_nodes);
   
   this->dead_node_elimination();
-  cerr << "After dead node elimination: " << m_ctx->m_nodes.size() << endl;
+  DBG(2, "After dead node elimination: %z", m_ctx->m_nodes.size());
   
+#ifndef NDEBUG
   // dump nodes
-  m_ctx->dumpNodes(cout);
+  uint32_t dump_ast = platform::self().get_dump_ast();
+  if (dump_ast) {
+    m_ctx->dumpAST(cout, dump_ast);
+  }
+#endif
 }
 
 bool optimizer::dead_node_elimination() {
