@@ -54,7 +54,7 @@
   CHDL_COMPAREOP_GEN0(func, op, uint64_t)
 
 #define CHDL_SHIFTOP_GEN0(func, type) \
-  template <unsigned N> ch_bitv<N> func(const ch_bitbase<N>& a, type b) { return func(a, ch_bitv<N>(b)); }
+  template <unsigned N> ch_bitv<N> func(const ch_bitbase<N>& a, type b) { return func(a, ch_bitv<32>(b)); }
   
 #define CHDL_SHIFTOP_GEN1(func) \
   CHDL_SHIFTOP_GEN0(func, char) \

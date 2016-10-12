@@ -61,6 +61,9 @@ namespace core {
   //
 
   using chdl_internal::operator "" _b;
+  using chdl_internal::operator "" _o;
+  using chdl_internal::operator "" _d;
+  using chdl_internal::operator "" _h;
 
   //
   // subscript operators
