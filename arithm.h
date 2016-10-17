@@ -109,6 +109,8 @@ enum ch_operator {
   op_gt,
   op_le,
   op_ge,
+  op_mux,
+  op_demux,
 };
 
 lnode createAluNode(ch_operator op, uint32_t size, const lnode& a, const lnode& b);
@@ -329,12 +331,12 @@ ch_bitv<N> ch_mod(const ch_bitbase<N>& a, const ch_bitbase<N>& b) {
 
 template <unsigned N, unsigned S>
 ch_bitv<(N >> S)> ch_mux(const ch_bitbase<N>& in, const ch_bitbase<S>& sel) {
-  TODO("Not yet implemented!");
+  return ch_bitv<(N >> S)>(createAluNode(op_mux, (N >> S), in, sel));
 }
 
 template <unsigned N, unsigned S> 
 ch_bitv<(N << S)> ch_demux(const ch_bitbase<N>& in, const ch_bitbase<S>& sel) {
-  TODO("Not yet implemented!");
+  return ch_bitv<(N << S)>(createAluNode(op_mux, (N << S), in, sel));
 }
 
 ///////////////////////////////////////////////////////////////////////////////

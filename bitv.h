@@ -22,19 +22,9 @@ template <unsigned N> class ch_bitv;
 using ch_logic = ch_bitv<1>;
 
 template <unsigned N> 
-static uint32_t to_value(char value) {
-  if (value == '0')
-    return 0x0;
-  if (value == '1')
-    return 0x1;
-  CHDL_ABORT("invalid character value");
-}
-
-template <unsigned N> 
 class ch_bitv : public ch_bitbase<N> {
 public:
   using base = ch_bitbase<N>;
-  using base::operator=;
   typedef typename base::data_type data_type;
   typedef ch_bitv<N> logic_type;
   typedef ch_bus<N>  bus_type;
@@ -44,7 +34,7 @@ public:
   ch_bitv(const ch_bitv& rhs) : m_node(rhs.m_node, N) {}
   
   ch_bitv(const ch_bitbase<N>& rhs) {
-    this->operator =(rhs);
+    base::operator =(rhs);
   }
   
   ch_bitv(const std::string& value) : m_node(value) {
@@ -70,6 +60,17 @@ public:
   
   explicit ch_bitv(const lnode& node) : m_node(node, N) {}
   
+  ch_bitv& operator=(const ch_bitv& rhs) {
+    rhs.m_node.ensureInitialized(0, N, N);
+    m_node = rhs.m_node;
+    return *this;
+  }
+  
+  ch_bitv& operator=(const ch_bitbase<N>& rhs) {
+    base::operator =(rhs);
+    return *this;
+  }
+  
   ch_bitv& operator=(const std::initializer_list<uint32_t>& value) {
     m_node.assign(value, N);
     return *this;
@@ -84,11 +85,6 @@ public:
     m_node.assign({to_value<N>(value)}, N);
     return *this;
   }
-
-  ch_bitv& operator=(bool value) {
-    m_node.assign({to_value<N>(value)}, N);
-    return *this;
-  }  
   
 #define CHDL_DEF_AOP(type) \
   ch_bitv& operator=(type value) { \
@@ -105,7 +101,7 @@ public:
 #undef CHDL_DEF_AOP
   
   operator lnode() const { 
-    m_node.ensureInitialized(N);
+    m_node.ensureInitialized(0, N, N);
     return m_node; 
   }
   

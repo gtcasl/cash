@@ -47,7 +47,7 @@ public:
   
   void write(uint32_t dst_offset, const std::vector< partition<lnode> >& src, uint32_t src_offset, uint32_t src_length, uint32_t size);
   
-  void ensureInitialized(uint32_t size) const;
+  void ensureInitialized(uint32_t offset, uint32_t length, uint32_t size) const;
     
   explicit operator lnodeimpl*() const { 
     assert(m_impl);
@@ -55,16 +55,17 @@ public:
   }  
 
 protected:  
+  
+  void reset(lnodeimpl* impl = nullptr) const;
 
   void assign(lnodeimpl* impl) const;
   
   void move(lnode& rhs);
   
-  void reset(lnodeimpl* impl = nullptr) const;
-  
   mutable lnodeimpl* m_impl;
   
   friend class lnodeimpl;
+  friend class proxyimpl;
   friend class context;
   template <typename T> friend T* get_impl(const lnode& n);
 };

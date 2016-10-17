@@ -16,7 +16,7 @@ class assertimpl;
 class clock_event;
 class cdomain;
 
-class context {
+class context : public refcounted {
 public:
   context();
   ~context();

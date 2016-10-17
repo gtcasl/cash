@@ -6,32 +6,34 @@ using namespace chdl_internal;
 
 static const char* op_name(ch_operator op) {
   switch (op) {
-  case op_inv:  return "inv";
-  case op_and:  return "and";
-  case op_or:   return "or";
-  case op_xor:  return "xor";
-  case op_nand: return "nand";
-  case op_nor:  return "nor";
-  case op_xnor: return "xnor";
-  case op_andr: return "andr";
-  case op_orr:  return "orr";
-  case op_xorr: return "xorr";
-  case op_sll:  return "sll";
-  case op_slr:  return "slr";
-  case op_rotl: return "rotl";
-  case op_rotr: return "rotr";
-  case op_add:  return "add";
-  case op_sub:  return "sub";
-  case op_neg:  return "neg";
-  case op_mult: return "mult";
-  case op_div:  return "div";
-  case op_mod:  return "mod";
-  case op_eq:   return "eq";
-  case op_ne:   return "ne";
-  case op_lt:   return "lt";
-  case op_gt:   return "gt";
-  case op_le:   return "le";
-  case op_ge:   return "ge";
+  case op_inv:    return "inv";
+  case op_and:    return "and";
+  case op_or:     return "or";
+  case op_xor:    return "xor";
+  case op_nand:   return "nand";
+  case op_nor:    return "nor";
+  case op_xnor:   return "xnor";
+  case op_andr:   return "andr";
+  case op_orr:    return "orr";
+  case op_xorr:   return "xorr";
+  case op_sll:    return "sll";
+  case op_slr:    return "slr";
+  case op_rotl:   return "rotl";
+  case op_rotr:   return "rotr";
+  case op_add:    return "add";
+  case op_sub:    return "sub";
+  case op_neg:    return "neg";
+  case op_mult:   return "mult";
+  case op_div:    return "div";
+  case op_mod:    return "mod";
+  case op_eq:     return "eq";
+  case op_ne:     return "ne";
+  case op_lt:     return "lt";
+  case op_gt:     return "gt";
+  case op_le:     return "le";
+  case op_ge:     return "ge";
+  case op_mux:    return "mux";
+  case op_demux:  return "demux";
    default:
     CHDL_ABORT("invalid operator");
   }
@@ -75,16 +77,16 @@ static void binaryop(bitvector& dst, const bitvector& a, const bitvector& b) {
 }
 
 template <ch_operator op>
-static void shiftop(bitvector& dst, const bitvector& a, const bitvector& b) {
-  assert(b.get_num_words() == 1);
-  assert(dst.get_size() == a.get_size());
-  uint32_t dist = b.get_word(0);
+static void shiftop(bitvector& dst, const bitvector& in, const bitvector& bits) {
+  assert(bits.get_num_words() == 1);
+  assert(dst.get_size() == in.get_size());
+  uint32_t wbits = bits.get_word(0);
   switch (op) {  
   case op_sll:
-    dst = a << dist;
+    dst = in << wbits;
     break;
   case op_slr:
-    dst = a >> dist;
+    dst = in >> wbits;
     break;
   default:
     TODO("Not yet implemented!");
@@ -179,6 +181,29 @@ static void add(bitvector& dst, const bitvector& a, const bitvector& b) {
     }    
     dst.set_word(i, c_w);
   }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+static void mux(bitvector& dst, const bitvector& in, const bitvector& sel) {
+  uint32_t D = dst.get_size();
+  uint32_t N = in.get_size();
+  uint32_t S = sel.get_size();
+  assert(D == N >> S);
+  
+  assert(sel.get_num_words() == 1);
+  uint32_t offset = sel.get_word(0) * D;
+  assert(offset + D <= N);
+  
+  bitvector::const_iterator iter_in(in.begin() + offset);
+  bitvector::iterator iter_dst(dst.begin());
+  for (uint32_t i = 0; i < D; ++i) {
+    *iter_dst++ = *iter_in++;
+  }
+}
+
+static void demux(bitvector& dst, const bitvector& in, const bitvector& sel) {
+  TODO("Not yet implemented!");
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -280,6 +305,13 @@ const bitvector& aluimpl::eval(ch_cycle t) {
     case op_ge:
       compareop<op_ge>(m_value, m_srcs[0].eval(t), m_srcs[1].eval(t));
       break;  
+      
+    case op_mux:
+      mux(m_value, m_srcs[0].eval(t), m_srcs[1].eval(t));
+      break;
+    case op_demux:
+      demux(m_value, m_srcs[0].eval(t), m_srcs[1].eval(t));
+      break;
       
     default:
       TODO("Not yet implemented!");

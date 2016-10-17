@@ -17,6 +17,7 @@
 #include <atomic>
 #include <functional>
 #include <fstream>
+#include <memory>
 #include "macros.h"
 #include "utils.h"
 #include "bitvector.h"

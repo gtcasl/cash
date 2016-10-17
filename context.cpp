@@ -187,11 +187,14 @@ snode context::get_tap(std::string& name, uint32_t size) {
 void context::syntax_check() {
   // check for un-initialized nodes
   if (m_undefs.size()) {
-    this->dumpAST(cout, 1);    
+    this->dumpAST(std::cerr, 1);    
     for (auto node : m_undefs) {
       fprintf(stderr, "error: un-initialized node #%d!\n", node->get_id());
     }
-    CHDL_ABORT("%zd nodes have not been initialized.", m_undefs.size());
+    if (m_undefs.size() == 1)
+      CHDL_ABORT("1 node has not been initialized.");
+    else
+      CHDL_ABORT("%zd nodes have not been initialized.", m_undefs.size());
   }
 }
 
@@ -261,6 +264,7 @@ void context::dumpAST(std::ostream& out, uint32_t level) {
 context* chdl_internal::ctx_begin() {
   context* ctx = new context();
   tls_ctx = ctx;
+  ctx->acquire();
   return ctx;
 }
 

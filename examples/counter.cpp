@@ -6,7 +6,7 @@ using namespace chdl::sim;
 template <unsigned N>
 ch_bitv<N> Counter() {
   ch_bitv<N> out;
-  out = ch_reg(out + 0x1);
+  out = ch_reg(out + 1);
   return out;
 }
 

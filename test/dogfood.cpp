@@ -1,5 +1,12 @@
 #include "common.h"
- 
-TEST_CASE("dogfood", "[debug]") {    
-  //--
+
+int g_debugbreak = 0;
+
+static void debugbreak() {
+  g_debugbreak = 1;
+}
+
+
+TEST_CASE("dogfood", "[debug]") {  
+  //--    
 }

@@ -14,6 +14,8 @@ public:
   ch_simulator(const Devices&... devices) : ch_simulator({&devices...}) {}  
   ch_simulator(const std::initializer_list<const ch_device*>& devices);
   ~ch_simulator();
+  
+  void add_device(const ch_device& device);
 
   void step(ch_cycle t);
   

@@ -29,6 +29,10 @@ public:
   typebase& operator=(uint32_t value) {
     return this->operator =({value});
   }
+  
+  typebase& operator=(char value) {
+    return this->operator =(to_value<N>(value));
+  }
 
 #define CHDL_DEF_AOP(type) \
   typebase& operator=(type value) { \

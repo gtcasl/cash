@@ -13,7 +13,10 @@ ch_simulator::ch_simulator(const std::initializer_list<const ch_device*>& device
   , m_clk(nullptr)
   , m_reset(nullptr) {
   for (auto device : devices) {
-    m_contexts.emplace(device->m_ctx);
+    context* ctx = device->m_ctx; 
+    auto ret = m_contexts.emplace(ctx);
+    if (ret.second)
+      ctx->acquire();
   }
 }
 
@@ -22,6 +25,16 @@ ch_simulator::~ch_simulator() {
     m_clk->release();
   if (m_reset)
     m_reset->release();
+  for (auto ctx : m_contexts) {
+    ctx->release();
+  }
+}
+
+void ch_simulator::add_device(const ch_device& device) {
+  context* ctx = device.m_ctx; 
+  auto ret = m_contexts.emplace(ctx);
+  if (ret.second)
+    ctx->acquire();
 }
 
 void ch_simulator::ensureInitialize() {
@@ -90,7 +103,6 @@ ch_cycle ch_simulator::reset(ch_cycle t) {
     (*m_reset)[0] = true;    
     this->step(t++);
     (*m_reset)[0] = false;
-    this->step(t++);
   }
   
   return t;
@@ -169,6 +181,6 @@ void ch_tracer::tick(ch_cycle t) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void chdl_internal::register_tap(const string& name, const lnode& node, uint32_t size) {
-  node.ensureInitialized(size);
+  node.ensureInitialized(0, size, size);
   node.get_ctx()->register_tap(name, node);
 }

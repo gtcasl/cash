@@ -94,11 +94,11 @@ ch_logic chdl_internal::ch_clock() {
 }
 
 void chdl_internal::ch_pushclock(const ch_logicbase& clk) {
-  TODO("Not yet implemented!");
+  ctx_curr()->push_clk(clk);
 }
 
 void chdl_internal::ch_popclock() {
-  TODO("Not yet implemented!");
+  ctx_curr()->pop_clk();
 }
 
 ch_logic chdl_internal::ch_reset() {
@@ -106,11 +106,11 @@ ch_logic chdl_internal::ch_reset() {
 }
 
 void chdl_internal::ch_pushreset(const ch_logicbase& reset) {
-  TODO("Not yet implemented!");
+  ctx_curr()->push_reset(reset);
 }
 
 void chdl_internal::ch_popreset() {
-  TODO("Not yet implemented!");
+  ctx_curr()->pop_reset();
 }
 
 lnode chdl_internal::createRegNode(const lnode& next) {

@@ -15,23 +15,26 @@ public:
   
   ch_vec() {}
   
-  ch_vec(const ch_vec& v) {
+  template <typename U>
+  ch_vec(const ch_vec<U, N>& rhs) {
     for (unsigned i = 0; i < N; ++i) {
-      m_items[i] = v[i];
+      m_items[i] = rhs.m_items[i];
     }
   }
   
-  ch_vec(const T& v) {
+  template <typename U>
+  ch_vec(const U& rhs) {
     for (unsigned i = 0; i < N; ++i) {
-      m_items[i] = v;
+      m_items[i] = rhs;
     }
   }
-       
-  ch_vec(const std::initializer_list<T>& rhs) {
+  
+  template <typename U>
+  ch_vec(const std::initializer_list<U>& rhs) {
     CHDL_REQUIRED(rhs.size() == N, "initializer list size missmatch!");
-    unsigned i = 0;
+    unsigned i = N;
     for (auto& x : rhs) {
-      m_items[i++] = x;
+      m_items[--i] = x;
     }
   }
   
@@ -40,6 +43,24 @@ public:
   }
  
   virtual ~ch_vec() {}
+  
+  template <typename U>
+  ch_vec& operator=(const ch_vec<U, N>& rhs) {
+    for (unsigned i = 0; i < N; ++i) {
+      m_items[i] = rhs.m_items[i];
+    }
+    return *this;
+  }
+  
+  template <typename U>
+  ch_vec& operator=(const std::initializer_list<U>& rhs) {
+    CHDL_REQUIRED(rhs.size() == N, "initializer list size missmatch!");
+    unsigned i = N;
+    for (auto& x : rhs) {
+      m_items[--i] = x;
+    }
+    return *this;
+  }
 
   typename std::vector<T>::reference operator[](size_t i) {
     CHDL_REQUIRED(i < N, "invalid subscript index");
@@ -65,28 +86,28 @@ protected:
   
   void read(std::vector< partition<data_type> >& out, size_t offset, size_t length) const override {
     CHDL_REQUIRED(offset + length <= ch_vec::bit_count, "invalid vector read range");
-    for (unsigned i = 0; i < N && length > 0; ++i) {
-      if (offset < (i + 1) * T::bit_count) {
-        size_t off = offset % T::bit_count;        
-        size_t len = std::min<size_t>(length, T::bit_count - off);                
-        read_data(m_items[i], out, off, len);        
+    for (unsigned i = 0; length && i < N; ++i) {
+      if (offset < T::bit_count) {     
+        size_t len = std::min<size_t>(length, T::bit_count - offset);                
+        read_data(m_items[i], out, offset, len);        
         length -= len;
-        offset = 0;
+        offset = T::bit_count;
       }
+      offset -= T::bit_count;
     }
   }
   
-  void write(size_t dst_offset, const std::vector< partition<data_type> >& src, size_t src_offset, size_t src_length) override {
-    CHDL_REQUIRED(dst_offset + src_length <= ch_vec::bit_count, "invalid vector write range");
-    for (unsigned i = 0; i < N && src_length > 0; ++i) {
-      if (dst_offset < (i + 1) * T::bit_count) {
-        size_t off = dst_offset % T::bit_count;
-        size_t len = std::min<size_t>(src_length, T::bit_count - off);        
-        write_data(m_items[i], off, src, src_offset, len);
-        src_length -= len;
-        src_offset += len;
-        dst_offset = 0;
+  void write(size_t start, const std::vector< partition<data_type> >& src, size_t offset, size_t length) override {
+    CHDL_REQUIRED(start + length <= ch_vec::bit_count, "invalid vector write range");
+    for (unsigned i = 0; length && i < N; ++i) {
+      if (start < T::bit_count) {
+        size_t len = std::min<size_t>(length, T::bit_count - start);        
+        write_data(m_items[i], start, src, offset, len);
+        length -= len;
+        offset += len;
+        start = T::bit_count;
       }
+      start -= T::bit_count;
     }
   }
 };

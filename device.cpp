@@ -6,7 +6,7 @@ using namespace std;
 using namespace chdl_internal;
 
 ch_device::~ch_device() {
-  delete m_ctx;
+  m_ctx->release();
 }
 
 void ch_device::bind_input(const lnode& input, const snode& bus) const {

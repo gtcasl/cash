@@ -6,133 +6,278 @@ using namespace chdl_internal;
 
 proxyimpl::proxyimpl(context* ctx, uint32_t size) 
   : lnodeimpl("proxy", ctx, size)
-  , m_ctime(~0ull) {
-  lnode node(new undefimpl(ctx, size));
-  m_srcs.emplace_back(node);
-  m_ranges.push_back({0, 0, size});    
-}
+  , m_ctime(~0ull) 
+{}
 
-proxyimpl::~proxyimpl() {
-  //--
-}
+proxyimpl::~proxyimpl() {}
 
-void proxyimpl::add_src(uint32_t dst_offset, const lnode& src, uint32_t src_offset, uint32_t src_length) {  
-  uint32_t src_idx = -1;
-  uint32_t offset  = 0;  
-  set<uint32_t> deleted;
-  
-  unsigned src_end = dst_offset + src_length;
-  
-  // update sources
+void proxyimpl::add_node(uint32_t start, lnodeimpl* src, uint32_t offset, uint32_t length, bool resize) {    
+  // add new source
+  uint32_t new_srcidx = -1;
   for (uint32_t i = 0, n = m_srcs.size(); i < n; ++i) {
-    if (m_srcs[i].get_id() == src.get_id()) {
-      src_idx = i;
+    if (m_srcs[i].get_id() == src->get_id()) {
+      new_srcidx = i;
       break;
     }
   }
-  if (src_idx == -1) {
-    src_idx = m_srcs.size();    
-    m_srcs.push_back(src);    
+  if (new_srcidx == -1) {
+    new_srcidx = m_srcs.size();    
+    m_srcs.emplace_back(src);    
   }
   
-  uint32_t start = 0; 
-  
-  // skip non-intersecting ranges  
-  for (uint32_t n = m_ranges.size(); start < n; ++start) {
-    range_t& r = m_ranges[start];        
-    if (offset + r.length > dst_offset)      
-      break;
-    offset += r.length;
-  }
-  
-  uint32_t start_offset = offset;
-  uint32_t end = start;
-        
-  // skip overlapped ranges    
-  for (uint32_t n = m_ranges.size(); end < n; ++end) {
-    range_t& r = m_ranges[end];
-    if (offset + r.length > src_end)
-      break;        
-    offset += r.length;
-  }
-  
-  uint32_t delta = src_end - offset;
-  if (delta > 0) {
-    if (end > start) {
-      // resize end range
-      range_t& r = m_ranges[end];
-      r.offset += delta;
-      r.length -= delta;
-    } else {
-      // split curr range
-      assert(end == start);
-      ++end;
-      range_t r_new = m_ranges[start];      
-      r_new.offset += delta;
-      r_new.length -= delta;
-      m_ranges.insert(m_ranges.begin() + end, r_new); 
-    }
-  }
-  
-  if (dst_offset > start_offset) {
-    // split curr range
-    m_ranges[start].length = dst_offset - start_offset;
-    ++start; ++end;    
-    range_t r_new = {src_idx, src_offset, src_length};
-    m_ranges.insert(m_ranges.begin() + start, r_new);    
-  } else {   
-    // split range end
-    assert(dst_offset == start_offset);
-    // replace curr range
-    if (delta == 0 || end != start) {
-      deleted.insert(m_ranges[start].src);       
-    }
-    range_t& r = m_ranges[start];
-    r.src    = src_idx;
-    r.offset = src_offset;
-    r.length = src_length;
-  }
-
-  // remove overlapped ranges
-  for (int i = end - 1; i > start; --i) {
-    range_t& r = m_ranges[i];
-    deleted.insert(r.src);     
-    m_ranges.erase(m_ranges.begin() + i);
-  }
-  
-  // delete replaced src's
-  for (auto src : deleted) {
-    bool found = false;
-    for (uint32_t i = 0, n = m_ranges.size(); i < n; ++i) {
-      if (m_ranges[i].src == src) {
-        found = true;
-        break;
-      }          
-    }      
-    if (!found) {
-      // remove src      
-      m_srcs.erase(m_srcs.begin() + src);
+  uint32_t n = m_ranges.size();
+  if (n > 0) {    
+    set<uint32_t> deleted;    
+    uint32_t i = 0;
+    for (; length && i < n; ++i) {
+      range_t& curr = m_ranges[i];
+      uint32_t src_end  = start + length;
+      uint32_t curr_end = curr.start + curr.length;     
       
-      // update references
-      for (uint32_t i = 0, n = m_ranges.size(); i < n; ++i) {
-        range_t& r = m_ranges[i];
-        if (r.src > src) {
-          r.src -= 1;
+      range_t new_range = { new_srcidx, start, offset, length };
+      
+      // do ranges intersect?
+      if ((start < curr_end && src_end > curr.start)) {
+        if (start <= curr.start && src_end >= curr_end) {
+          // source fully overlaps
+          deleted.emplace(curr.srcidx);                  
+          uint32_t len = curr_end - start;                    
+          new_range.length = len; 
+          curr = new_range;           
+          start  += len;        
+          offset += len;        
+          length -= len;        
+        } else if (start < curr.start) {
+          // source intersets left
+          uint32_t overlap = src_end - curr.start;
+          curr.start  += overlap;
+          curr.offset += overlap;
+          curr.length -= overlap;
+          
+          if (resize) {
+            m_srcs[curr.srcidx].m_impl->get_value().resize(curr.length);
+          }
+          
+          m_ranges.insert(m_ranges.begin() + i, new_range);
+          ++n;
+          
+          length = 0;
+        } else if (src_end > curr_end) {
+          // source intersets right
+          uint32_t overlap = curr_end - start;
+          curr.length -= overlap;
+          
+          if (resize) {
+            m_srcs[curr.srcidx].m_impl->get_value().resize(curr.length);
+          }
+          
+          new_range.length = overlap;
+          
+          ++i; 
+          m_ranges.insert(m_ranges.begin() + i, new_range);
+          ++n;       
+          
+          start  += overlap;
+          offset += overlap;
+          length -= overlap;
+        } else {
+          // source fully included          
+          uint32_t delta = src_end - curr.start;
+          range_t curr_after(curr);          
+          curr_after.length -= delta;
+          curr_after.start  += delta;
+          curr_after.offset += delta;          
+          curr.length -= (curr_end - start);
+          
+          if (resize) {
+            m_srcs[curr.srcidx].m_impl->get_value().resize(curr.length + curr_after.length);
+            curr_after.offset = curr.length;            
+          }
+          
+          if (curr.length > 0) {
+            ++i;
+            m_ranges.insert(m_ranges.begin() + i, 1, new_range);
+            ++n;
+          } else {
+            curr = new_range;
+          }          
+          
+          if (curr_after.length) {                              
+            m_ranges.insert(m_ranges.begin() + (i+1), 1, curr_after); 
+            ++n;
+          }         
+          length = 0;
         }
+      } else if (i+1 == n || src_end <= m_ranges[i+1].start) {
+        // no overlap with current and next
+        i += (curr_end <= start) ? 1 : 0;
+        m_ranges.insert(m_ranges.begin() + i, new_range);       
+        ++n;
+        
+        length = 0;
+      } else {
+        // no overlap with current, skip merge if no update took place
+        continue;
+      } 
+      
+      if (i > 0) {
+        // try merging inserted node on the left
+        this->merge_left(i);
+      }       
+    }
+    assert(length == 0);    
+    if (i < n) {
+      // try merging inserted node on the right
+      this->merge_left(i);
+    }
+    
+    // cleanup deleted nodes
+    for (uint32_t srcidx : deleted) {
+      bool in_use = false;
+      // ensure that it is not in use 
+      for (uint32_t i = 0, n = m_ranges.size(); i < n; ++i) {
+        if (m_ranges[i].srcidx == srcidx) {
+          in_use = true;
+          break;
+        }          
+      }      
+      if (!in_use) {
+        // remove src     
+        m_srcs.erase(m_srcs.begin() + srcidx);
+        
+        // update references due to vector resizing
+        for (uint32_t i = 0, n = m_ranges.size(); i < n; ++i) {
+          range_t& r = m_ranges[i];
+          if (r.srcidx > srcidx) {
+            r.srcidx -= 1;
+          }
+        }
+      }
+    }    
+  } else {
+    m_ranges.push_back({ new_srcidx, start, offset, length });
+  }
+}
+
+void proxyimpl::merge_left(uint32_t idx) {
+  assert(idx > 0);
+  if (m_ranges[idx-1].srcidx == m_ranges[idx].srcidx && 
+      (m_ranges[idx-1].start + m_ranges[idx-1].length) == m_ranges[idx].start &&
+      m_ranges[idx].offset == m_ranges[idx-1].offset + m_ranges[idx-1].length) {
+    m_ranges[idx-1].length += m_ranges[idx].length;
+    m_ranges.erase(m_ranges.begin() + idx);
+  }      
+}
+
+void proxyimpl::remove_ref(const lnode* curr_owner, lnodeimpl* new_owner) {
+  m_refs.erase(curr_owner);
+  if (new_owner) {
+    this->replace_undef_proxy(0, new_owner, 0, new_owner->get_size());    
+  }
+}
+
+void proxyimpl::replace_undef_proxy(uint32_t start, lnodeimpl* src, uint32_t offset, uint32_t length) {
+  for (uint32_t i = 0, n = m_ranges.size(); length && i < n; ++i) {
+    const range_t& curr = m_ranges[i];
+    uint32_t src_end  = start + length;
+    uint32_t curr_end = curr.start + curr.length;   
+    if ((start < curr_end && src_end > curr.start)) {      
+      if (start <= curr.start && src_end >= curr_end) {
+        // source fully overlaps
+        uint32_t delta = curr.start - start;        
+        m_srcs[curr.srcidx].m_impl->replace_undef_proxy(curr.offset, src, offset + delta, curr.length);        
+        uint32_t step = curr_end - start;
+        start  += step;        
+        offset += step;        
+        length -= step;        
+      } else if (start < curr.start) {
+        // source intersets left
+        uint32_t overlap = src_end - curr.start;
+        uint32_t delta = curr.start - start;
+        m_srcs[curr.srcidx].m_impl->replace_undef_proxy(curr.offset, src, offset + delta, overlap);     
+        length = 0;
+      } else if (src_end > curr_end) {
+        // source intersets right
+        uint32_t overlap = curr_end - start;        
+        uint32_t delta = start - curr.start;
+        m_srcs[curr.srcidx].m_impl->replace_undef_proxy(curr.offset + delta, src, offset, overlap);        
+        start  += overlap;
+        offset += overlap;
+        length -= overlap;
+      } else {
+        // source fully included          
+        uint32_t delta = start - curr.start;        
+        m_srcs[curr.srcidx].m_impl->replace_undef_proxy(curr.offset + delta, src, offset, length);
+        length = 0;
       }
     }
   }
+}
+
+void proxyimpl::resize(uint32_t start, uint32_t length) {  
+  assert(start + length <= this->get_size());
+  
+  for (uint32_t i = 0, n = m_ranges.size(); length && i < n; ++i) {
+    const range_t& curr = m_ranges[i];
+    uint32_t src_end  = start + length;
+    uint32_t curr_end = curr.start + curr.length;  
+    
+    if ((start < curr_end && src_end > curr.start)) {      
+      if (start < curr.start) {
+        // source extrudes left
+        uint32_t len = curr.start - start;           
+        uint32_t srcidx = m_srcs.size();
+        m_ranges.insert(m_ranges.begin() + i, { srcidx, start, 0, len });
+        m_srcs.emplace_back(new undefimpl(m_ctx, len));
+        ++i;
+        ++n;
+        uint32_t overlap = curr_end - start;
+        start  += overlap;       
+        length -= overlap;    
+      } else if (src_end > curr_end) {
+        // source extrudes right
+        uint32_t overlap = curr_end - start;
+        start  += overlap;    
+        length -= overlap;
+      }
+    }
+  }
+  if (length) {        
+    uint32_t srcidx = m_srcs.size();
+    m_ranges.push_back({ srcidx, start, 0, length });
+    m_srcs.emplace_back(new undefimpl(m_ctx, length));   
+  }
+}
+
+bool proxyimpl::includes(uint32_t start, uint32_t length) const {
+  for (const range_t& curr : m_ranges) {
+    uint32_t src_end  = start + length;
+    uint32_t curr_end = curr.start + curr.length;   
+    if ((start < curr_end && src_end > curr.start)) {      
+      if (start < curr.start) {
+        // source extrudes left
+        return false;
+      } else if (src_end > curr_end) {
+        // source extrudes right
+        uint32_t overlap = curr_end - start;
+        start  += overlap;
+        length -= overlap;
+      } else {
+        // source fully included        
+        return true;
+      }
+    }
+  }
+  return false;
 }
 
 const bitvector& proxyimpl::eval(ch_cycle t) {
   if (m_ctime != t) {  
     m_ctime = t;
     
-    uint32_t offset = 0;
-    for (auto& range : m_ranges) {
-      const bitvector& bits = m_srcs[range.src].eval(t);    
-      m_value.copy(offset, bits, range.offset, range.length);
-      offset += range.length;
+    for (const range_t& range : m_ranges) {
+      const bitvector& bits = m_srcs[range.srcidx].eval(t);    
+      m_value.copy(range.start, bits, range.offset, range.length);
     }
   }  
   return m_value;
@@ -145,7 +290,7 @@ void proxyimpl::print(std::ostream& out) const {
     const range_t& range = m_ranges[i];
     if (i > 0)
       out << ", ";
-    out << "#" << m_srcs[range.src].get_id() << "{" << range.offset;
+    out << range.start << ":#" << m_srcs[range.srcidx].get_id() << "{" << range.offset;
     if (range.length > 1)
       out << "-" << range.offset + (range.length - 1);
     out << "}";

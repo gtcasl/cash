@@ -6,13 +6,32 @@ std::string fstring(const char* format, ...);
 
 void DbgPrint(int level, const char *format, ...);
 
-#ifndef NDEBUG
+#ifdef NDEBUG
+  #define CHDL_ABORT(msg, ...) do { \
+      fprintf(stderr, "error: " msg "\n", ##__VA_ARGS__); \
+      std::abort(); \
+    } while (0)
+  #define DBG(level, format, ...)
+#else
+  #define CHDL_ABORT(msg, ...) do { \
+      fprintf(stderr, "\nerror: " msg " (%s:%d:%s)\n", ##__VA_ARGS__, __FILE__, __LINE__, __FUNCTION__); \
+      std::abort(); \
+    } while (0)
   #define DBG(level, format, ...) do { \
       DbgPrint(level, "DBG: " format, ##__VA_ARGS__); \
     } while (0)
-#else
-  #define DBG(level, format, ...)
 #endif
+
+#define CHDL_REQUIRED(x, msg, ...) do { \
+  if (!(x)) CHDL_ABORT(msg, ##__VA_ARGS__); \
+  } while (0)
+
+#define TODO(x) \
+  CHDL_ABORT(#x);
+
+#define CHDL_OUT(...) std::tuple<__VA_ARGS__>
+#define CHDL_RET(...) std::make_tuple(__VA_ARGS__)
+#define CHDL_TIE(...) std::forward_as_tuple(__VA_ARGS__)
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -27,7 +46,7 @@ struct make_index_sequence<0, I...> : public index_sequence<I...> {};
 
 template <typename T>
 struct identity {
-  typedef T type;
+  using type = T;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

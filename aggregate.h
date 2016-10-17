@@ -11,8 +11,20 @@ namespace chdl_internal {
 #define CHDL_STRUCT_FIELD(i, x) \
   CHDL_PAIR(x)
 
+#define CHDL_STRUCT_CTOR_ARG(i, x) \
+  const CHDL_PAIR_L(x)& CHDL_CONCAT(CHDL_PAIR_R(x),_)
+
+#define CHDL_STRUCT_CTOR_INIT(i, x) \
+  CHDL_PAIR_R(x)(CHDL_CONCAT(CHDL_PAIR_R(x),_))
+
+#define CHDL_STRUCT_ASSIGN(i, x) \
+  this->CHDL_PAIR_R(x) = rhs.CHDL_PAIR_R(x)
+
 #define CHDL_STRUCT_BUS_FIELD(i, x) \
   typename CHDL_PAIR_L(x)::bus_type CHDL_PAIR_R(x)
+
+#define CHDL_STRUCT_BUS_CTOR_ARG(i, x) \
+  const typename CHDL_PAIR_L(x)::bus_type& CHDL_CONCAT(CHDL_PAIR_R(x),_)
 
 #define CHDL_STRUCT_READ(i, x) \
   if (offset < CHDL_PAIR_L(x)::bit_count) { \
@@ -53,80 +65,83 @@ namespace chdl_internal {
     write_data(CHDL_PAIR_R(x), dst_offset, src, src_offset, len); \
   }
 
-#define CHDL_STRUCT_IMPL(...) \
-  public chdl_internal::ch_bitbase<CHDL_FOR_EACH(CHDL_STRUCT_SIZE, CHDL_PLUS, __VA_ARGS__)> { \
-    using base = chdl_internal::ch_bitbase<CHDL_FOR_EACH(CHDL_STRUCT_SIZE, CHDL_PLUS, __VA_ARGS__)>; \
+#define CHDL_STRUCT(name, ...) \
+  struct name : public chdl_internal::ch_bitbase<CHDL_FOR_EACH(CHDL_STRUCT_SIZE, CHDL_SEP_PLUS, __VA_ARGS__)> { \
+    using base = chdl_internal::ch_bitbase<CHDL_FOR_EACH(CHDL_STRUCT_SIZE, CHDL_SEP_PLUS, __VA_ARGS__)>; \
     using base::operator=; \
     typedef typename base::data_type data_type; \
-    typedef base self; \
-    struct __bus_type : public chdl_internal::ch_busbase<CHDL_FOR_EACH(CHDL_STRUCT_SIZE, CHDL_PLUS, __VA_ARGS__)> { \
-      using base = chdl_internal::ch_busbase<CHDL_FOR_EACH(CHDL_STRUCT_SIZE, CHDL_PLUS, __VA_ARGS__)>; \
+    struct __bus_type : public chdl_internal::ch_busbase<CHDL_FOR_EACH(CHDL_STRUCT_SIZE, CHDL_SEP_PLUS, __VA_ARGS__)> { \
+      using base = chdl_internal::ch_busbase<CHDL_FOR_EACH(CHDL_STRUCT_SIZE, CHDL_SEP_PLUS, __VA_ARGS__)>; \
       using base::operator=; \
       typedef typename base::data_type data_type; \
       typedef __bus_type bus_type; \
-      typedef self logic_type; \
-      CHDL_FOR_EACH(CHDL_STRUCT_BUS_FIELD, CHDL_SEMICOLON, __VA_ARGS__); \
+      typedef name logic_type; \
+      CHDL_FOR_EACH(CHDL_STRUCT_BUS_FIELD, CHDL_SEP_SEMICOLON, __VA_ARGS__); \
+      __bus_type() {} \
+      __bus_type(CHDL_REVERSE_FOR_EACH(CHDL_STRUCT_BUS_CTOR_ARG, CHDL_SEP_COMMA, __VA_ARGS__)) : CHDL_FOR_EACH(CHDL_STRUCT_CTOR_INIT, CHDL_SEP_COMMA, __VA_ARGS__) {} \
+      __bus_type& operator=(const __bus_type& rhs) { \
+        CHDL_FOR_EACH(CHDL_STRUCT_ASSIGN, CHDL_SEP_SEMICOLON, __VA_ARGS__); \
+        return *this; \
+      } \
       void read(std::vector< chdl_internal::partition<data_type> >& out, size_t offset, size_t length) const override { \
-        CHDL_FOR_EACH(CHDL_STRUCT_READ, CHDL_SEMICOLON, __VA_ARGS__); \
+        CHDL_FOR_EACH(CHDL_STRUCT_READ, CHDL_SEP_SEMICOLON, __VA_ARGS__); \
         CHDL_ABORT("invalid subscript index"); \
       } \
       void write(size_t dst_offset, const std::vector< chdl_internal::partition<data_type> >& src, size_t src_offset, size_t src_length) override { \
-        CHDL_FOR_EACH(CHDL_STRUCT_WRITE, CHDL_SEMICOLON, __VA_ARGS__); \
+        CHDL_FOR_EACH(CHDL_STRUCT_WRITE, CHDL_SEP_SEMICOLON, __VA_ARGS__); \
         CHDL_ABORT("invalid subscript index"); \
       } \
     }; \
-    typedef self logic_type; \
+    typedef name logic_type; \
     typedef __bus_type bus_type; \
-    CHDL_FOR_EACH(CHDL_STRUCT_FIELD, CHDL_SEMICOLON, __VA_ARGS__); \
+    CHDL_FOR_EACH(CHDL_STRUCT_FIELD, CHDL_SEP_SEMICOLON, __VA_ARGS__); \
+    name() {} \
+    name(CHDL_REVERSE_FOR_EACH(CHDL_STRUCT_CTOR_ARG, CHDL_SEP_COMMA, __VA_ARGS__)) : CHDL_FOR_EACH(CHDL_STRUCT_CTOR_INIT, CHDL_SEP_COMMA, __VA_ARGS__) {} \
+    name& operator=(const name& rhs) { \
+      CHDL_FOR_EACH(CHDL_STRUCT_ASSIGN, CHDL_SEP_SEMICOLON, __VA_ARGS__); \
+      return *this; \
+    } \
     void read(std::vector< chdl_internal::partition<data_type> >& out, size_t offset, size_t length) const override { \
-      CHDL_FOR_EACH(CHDL_STRUCT_READ, CHDL_SEMICOLON, __VA_ARGS__); \
+      CHDL_FOR_EACH(CHDL_STRUCT_READ, CHDL_SEP_SEMICOLON, __VA_ARGS__); \
       CHDL_ABORT("invalid subscript index"); \
     } \
     void write(size_t dst_offset, const std::vector< chdl_internal::partition<data_type> >& src, size_t src_offset, size_t src_length) override { \
-      CHDL_FOR_EACH(CHDL_STRUCT_WRITE, CHDL_SEMICOLON, __VA_ARGS__); \
+      CHDL_FOR_EACH(CHDL_STRUCT_WRITE, CHDL_SEP_SEMICOLON, __VA_ARGS__); \
       CHDL_ABORT("invalid subscript index"); \
     } \
   }
 
-#define CHDL_UNION_IMPL(...) \
-  public chdl_internal::ch_bitbase<CHDL_FOR_EACH(CHDL_STRUCT_SIZE, CHDL_PLUS, __VA_ARGS__)> { \
-    using base = chdl_internal::ch_bitbase<CHDL_FOR_EACH(CHDL_STRUCT_SIZE, CHDL_PLUS, __VA_ARGS__)>; \
+#define CHDL_UNION(name, ...) \
+  struct name : public chdl_internal::ch_bitbase<CHDL_FOR_EACH(CHDL_STRUCT_SIZE, CHDL_SEP_PLUS, __VA_ARGS__)> { \
+    using base = chdl_internal::ch_bitbase<CHDL_FOR_EACH(CHDL_STRUCT_SIZE, CHDL_SEP_PLUS, __VA_ARGS__)>; \
     using base::operator=; \
     typedef typename base::data_type data_type; \
-    typedef base self; \
-    struct __bus_type : public chdl_internal::ch_busbase<CHDL_FOR_EACH(CHDL_STRUCT_SIZE, CHDL_PLUS, __VA_ARGS__)> { \
-      using base = chdl_internal::ch_busbase<CHDL_FOR_EACH(CHDL_STRUCT_SIZE, CHDL_PLUS, __VA_ARGS__)>; \
+    struct __bus_type : public chdl_internal::ch_busbase<CHDL_FOR_EACH(CHDL_STRUCT_SIZE, CHDL_SEP_PLUS, __VA_ARGS__)> { \
+      using base = chdl_internal::ch_busbase<CHDL_FOR_EACH(CHDL_STRUCT_SIZE, CHDL_SEP_PLUS, __VA_ARGS__)>; \
       using base::operator=; \
       typedef __bus_type bus_type; \
-      typedef self logic_type; \
+      typedef name logic_type; \
       typedef typename base::data_type data_type; \
-      CHDL_FOR_EACH(CHDL_STRUCT_BUS_FIELD, CHDL_SEMICOLON, __VA_ARGS__); \
+      CHDL_FOR_EACH(CHDL_STRUCT_BUS_FIELD, CHDL_SEP_SEMICOLON, __VA_ARGS__); \
       void read(std::vector< chdl_internal::partition<data_type> >& out, size_t offset, size_t length) const override { \
-        CHDL_FOR_EACH(CHDL_UNION_READ, CHDL_SEMICOLON, __VA_ARGS__); \
+        CHDL_FOR_EACH(CHDL_UNION_READ, CHDL_SEP_SEMICOLON, __VA_ARGS__); \
         CHDL_ABORT("invalid subscript index"); \
       } \
       void write(size_t dst_offset, const std::vector< chdl_internal::partition<data_type> >& src, size_t src_offset, size_t src_length) override { \
-        CHDL_FOR_EACH(CHDL_UNION_WRITE, CHDL_SEMICOLON, __VA_ARGS__); \
+        CHDL_FOR_EACH(CHDL_UNION_WRITE, CHDL_SEP_SEMICOLON, __VA_ARGS__); \
         CHDL_ABORT("invalid subscript index"); \
       } \
     }; \
-    typedef self logic_type; \
+    typedef name logic_type; \
     typedef __bus_type bus_type; \
-    CHDL_FOR_EACH(CHDL_STRUCT_FIELD, CHDL_SEMICOLON, __VA_ARGS__); \
+    CHDL_FOR_EACH(CHDL_STRUCT_FIELD, CHDL_SEP_SEMICOLON, __VA_ARGS__); \
     void read(std::vector< chdl_internal::partition<data_type> >& out, size_t offset, size_t length) const override { \
-      CHDL_FOR_EACH(CHDL_UNION_READ, CHDL_SEMICOLON, __VA_ARGS__); \
+      CHDL_FOR_EACH(CHDL_UNION_READ, CHDL_SEP_SEMICOLON, __VA_ARGS__); \
       CHDL_ABORT("invalid subscript index"); \
     } \
     void write(size_t dst_offset, const std::vector< chdl_internal::partition<data_type> >& src, size_t src_offset, size_t src_length) override { \
-      CHDL_FOR_EACH(CHDL_UNION_WRITE, CHDL_SEMICOLON, __VA_ARGS__); \
+      CHDL_FOR_EACH(CHDL_UNION_WRITE, CHDL_SEP_SEMICOLON, __VA_ARGS__); \
       CHDL_ABORT("invalid subscript index"); \
     } \
-  }
-
-#define CHDL_STRUCT(name) \
-  struct name : CHDL_STRUCT_IMPL
-
-#define CHDL_UNION(name) \
-  struct name : CHDL_UNION_IMPL
-  
+  }  
 }

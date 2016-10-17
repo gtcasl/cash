@@ -9,7 +9,6 @@ template <unsigned N>
 class ch_bus : public ch_busbase<N> {
 public:  
   using base = ch_busbase<N>;
-  using base::operator=;
   typedef typename base::data_type data_type;
   typedef ch_bus     bus_type;
   typedef ch_bitv<N> logic_type;
@@ -19,7 +18,7 @@ public:
   ch_bus(const ch_bus& rhs) : m_node(rhs.m_node, N) {}
   
   ch_bus(const ch_busbase<N>& rhs) {
-    this->operator =(rhs);
+    base::operator =(rhs);
   }
   
   ch_bus(const std::string& value) : m_node(value) {
@@ -45,6 +44,16 @@ public:
   
   explicit ch_bus(const snode& node) : m_node(node, N) {}
   
+  ch_bus& operator=(const ch_bus& rhs) {
+    m_node = rhs.m_node;
+    return *this;
+  }
+  
+  ch_bus& operator=(const ch_busbase<N>& rhs) {
+    base::operator =(rhs);
+    return *this;
+  }
+  
   ch_bus& operator=(const std::initializer_list<uint32_t>& value) {
     m_node.assign(value, N);
     return *this;
@@ -59,11 +68,6 @@ public:
     m_node.assign({to_value<N>(value)}, N);
     return *this;
   }
-
-  ch_bus& operator=(bool value) {
-    m_node.assign({to_value<N>(value)}, N);
-    return *this;
-  }  
   
 #define CHDL_DEF_AOP(type) \
   ch_bus& operator=(type value) { \
@@ -110,11 +114,6 @@ public:
   bool read() const {
     static_assert(N == 1, "invalid object size");
     return m_node.read(0, N) != 0x0;
-  }
-  
-  void write(bool value) {
-    static_assert(N == 1, "invalid object size");
-    m_node.write(0, value ? 0x1 : 0x0, N);
   }
   
   void write(char value) {
