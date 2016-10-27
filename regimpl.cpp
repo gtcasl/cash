@@ -5,14 +5,14 @@
 using namespace std;
 using namespace chdl_internal;
 
-regimpl::regimpl(const lnode& next)
-  : lnodeimpl("reg", next.get_ctx(), next.get_size())
-  , m_q(next.get_size())
+regimpl::regimpl(lnodeimpl* next)
+  : lnodeimpl("reg", next->get_ctx(), next->get_size())
+  , m_q(next->get_size())
   , m_ctime(~0ull)
 {
-  context* ctx = next.get_ctx();
+  context* ctx = next->get_ctx();
   
-  const lnode& clk = ctx->get_clk();  
+  lnodeimpl* clk = ctx->get_clk();  
   m_cd = ctx->create_cdomain({clock_event(clk, EDGE_POS)});
   m_cd->add_use(this);
 
@@ -42,15 +42,15 @@ void regimpl::tick_next(ch_cycle t) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-latchimpl::latchimpl(const lnode& next,
-                     const lnode& init,
-                     const lnode& enable,                 
-                     const lnode& reset)
-  : lnodeimpl("latch", next.get_ctx(), next.get_size())
-  , m_q(next.get_size())
+latchimpl::latchimpl(lnodeimpl* next,
+                     lnodeimpl* init,
+                     lnodeimpl* enable,                 
+                     lnodeimpl* reset)
+  : lnodeimpl("latch", next->get_ctx(), next->get_size())
+  , m_q(next->get_size())
   , m_ctime(~0ull)
 {
-  context* ctx = next.get_ctx();
+  context* ctx = next->get_ctx();
   
   m_cd = ctx->create_cdomain(
     {clock_event(enable, EDGE_ANY), clock_event(next, EDGE_ANY),
@@ -113,21 +113,21 @@ void chdl_internal::ch_popreset() {
   ctx_curr()->pop_reset();
 }
 
-lnode chdl_internal::createRegNode(const lnode& next) {
-  return lnode(new regimpl(next));
+lnodeimpl* chdl_internal::createRegNode(lnodeimpl* next) {
+  return new regimpl(next);
 }
 
-lnode chdl_internal::createLatchNode(const lnode& next, 
-                                       const lnode& init, 
-                                       const lnode& enable, 
-                                       const lnode& reset) {
-  return lnode(new latchimpl(next, init, enable, reset));
+lnodeimpl* chdl_internal::createLatchNode(lnodeimpl* next, 
+                                       lnodeimpl* init, 
+                                       lnodeimpl* enable, 
+                                       lnodeimpl* reset) {
+  return new latchimpl(next, init, enable, reset);
 }
 
-lnode chdl_internal::createReadyNode(const lnode& node) {
+lnodeimpl* chdl_internal::createReadyNode(lnodeimpl* node) {
   TODO("Not yet implemented!");
 }
 
-lnode chdl_internal::createValidNode(const lnode& node) {
+lnodeimpl* chdl_internal::createValidNode(lnodeimpl* node) {
   TODO("Not yet implemented!");
 }

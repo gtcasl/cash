@@ -67,19 +67,19 @@ memimpl::~memimpl() {
   }
 }
 
-memportimpl* memimpl::read(const lnode& addr) {
+memportimpl* memimpl::read(lnodeimpl* addr) {
   return this->get_port(addr);
 }
 
-void memimpl::write(const lnode& addr, const lnode& value, const lnode& enable) {
+void memimpl::write(lnodeimpl* addr, lnodeimpl* data, lnodeimpl* enable) {
   memportimpl* port = this->get_port(addr);
-  port->write(value, enable);
+  port->write(data, enable);
 }
 
-memportimpl* memimpl::get_port(const lnode& addr) {
+memportimpl* memimpl::get_port(lnodeimpl* addr) {
   memportimpl* port = nullptr; 
-  for (auto item : m_ports) {
-    if (item->m_srcs[0].get_id() == addr.get_id()) {
+  for (memportimpl* item : m_ports) {
+    if (item == addr) {
       port = item;
       break;
     }
@@ -113,19 +113,25 @@ void memimpl::print_vl(ostream& out) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-memportimpl::memportimpl(memimpl* mem, const lnode& addr)
-    : lnodeimpl("memport", addr.get_ctx(), mem->m_content[0].get_size())
+memportimpl::memportimpl(memimpl* mem, lnodeimpl* addr)
+    : lnodeimpl("memport", addr->get_ctx(), mem->m_content[0].get_size())
     , m_mem(mem)
     , m_writeEnable(false)
     , m_addr(0)
     , m_do_write(false)
+    , m_addr_id(-1)
+    , m_clk_id(-1)
+    , m_wdata_id(-1)
+    , m_wenable_id(-1)
     , m_ctime(~0ull)
 {
   mem->acquire();
-  m_srcs.push_back(addr); // idx=0 
+  m_addr_id = m_srcs.size();
+  m_srcs.emplace_back(addr);
   if (mem->m_cd) {
-    const lnode& clk = mem->m_cd->get_sensitivity_list()[0].get_signal();
-    m_srcs.emplace_back(clk); // idx=1
+    lnodeimpl* clk = mem->m_cd->get_sensitivity_list()[0].get_signal();
+    m_clk_id = m_srcs.size();
+    m_srcs.emplace_back(clk);
   } 
   // add dependency from all write ports
   for (memportimpl* port : m_mem->m_ports) {
@@ -139,26 +145,22 @@ memportimpl::~memportimpl() {
   m_mem->release();
 }
 
-void memportimpl::write(const lnode& value, const lnode& enable) {
-  // positions 0 & 1 are used by addr and clk nodes respectively
-  // local port write source nodes have fixed position (2, 3)
-  // write source nodes from other ports are appended starting at 
-  // index 2 if local port is not writeenable otherwise index 4
-  if (m_writeEnable) {
-    // replace local port sources
-    m_srcs[2] = value;
-    m_srcs[3] = enable;
+void memportimpl::write(lnodeimpl* data, lnodeimpl* enable) {
+  if (m_wdata_id == -1) {
+    m_wdata_id = m_srcs.size();
+    m_srcs.emplace_back(data);
   } else {
-    // add local port sources
-    if (m_srcs.size() > 2) {
-      // push write dependency nodes to the right
-      m_srcs.insert(m_srcs.begin() + 2, value); 
-      m_srcs.insert(m_srcs.begin() + 3, enable);
-    } else {
-      assert(m_srcs.size() == 2);
-      m_srcs.push_back(value);
-      m_srcs.push_back(enable);
-    }        
+    m_srcs[m_wdata_id] = data;
+  }
+  
+  if (m_wenable_id == -1) {
+    m_wenable_id = m_srcs.size();
+    m_srcs.emplace_back(enable);
+  } else {
+    m_srcs[m_wenable_id] = enable;
+  }
+  
+  if (!m_writeEnable) {
     // add write dependency to all ports
     for (memportimpl* port : m_mem->m_ports) {
       if (port != this)
@@ -178,11 +180,11 @@ void memportimpl::tick(ch_cycle t) {
 }
 
 void memportimpl::tick_next(ch_cycle t) {
-  m_addr = m_srcs[0].eval(t).get_word(0);
+  m_addr = m_srcs[m_addr_id].eval(t).get_word(0);
   if (m_writeEnable) {
-    m_do_write = m_srcs[3].eval(t)[0];
+    m_do_write = m_srcs[m_wenable_id].eval(t)[0];
     if (m_do_write) {    
-      m_wrdata = m_srcs[2].eval(t);
+      m_wrdata = m_srcs[m_wdata_id].eval(t);
     }
   }
 }
@@ -191,7 +193,7 @@ const bitvector& memportimpl::eval(ch_cycle t) {
   if (m_ctime != t) {
     m_ctime = t;
     m_value = m_mem->m_syncRead ? m_rddata :
-      m_mem->m_content[m_srcs[0].eval(t).get_word(0)];
+      m_mem->m_content[m_srcs[m_addr_id].eval(t).get_word(0)];
   }
   return m_value;
 }
@@ -222,10 +224,10 @@ memory::~memory() {
     m_impl->release();
 }
 
-lnode memory::read(const lnode& addr) const {
-  return lnode(m_impl->read(addr));
+lnodeimpl* memory::read(lnodeimpl* addr) const {
+  return m_impl->read(addr);
 }
 
-void memory::write(const lnode& addr, const lnode& value, const lnode& enable) {
-  m_impl->write(addr, value, enable);
+void memory::write(lnodeimpl* addr, lnodeimpl* data, lnodeimpl* enable) {
+  m_impl->write(addr, data, enable);
 }

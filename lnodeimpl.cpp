@@ -24,7 +24,7 @@ lnodeimpl::~lnodeimpl() {
   }
 }
 
-void lnodeimpl::update_all_refs(lnodeimpl* impl) {
+void lnodeimpl::replace_refs(lnodeimpl* impl) {
   assert(impl != this);
   for (auto node : m_refs) {
     assert(node->m_impl == this);
@@ -32,6 +32,10 @@ void lnodeimpl::update_all_refs(lnodeimpl* impl) {
     impl->add_ref(node);
   }
   m_refs.clear();
+}
+
+lnodeimpl* lnodeimpl::resolve(lnodeimpl* impl) {
+  return m_ctx->resolve(impl, this);
 }
 
 bool lnodeimpl::ready() const {
@@ -80,27 +84,30 @@ void undefimpl::remove_ref(const lnode* curr_owner, lnodeimpl* new_owner) {
   m_refs.erase(curr_owner);
   if (new_owner) {
     assert(this->get_size() == new_owner->get_size());
-    this->update_all_refs(new_owner);
+    this->replace_refs(new_owner);
   }
   if (this->unreferenced())
     this->release();
 }
 
-void undefimpl::replace_undef_proxy(uint32_t start, lnodeimpl* src, uint32_t offset, uint32_t length) {
+void undefimpl::update_refs(uint32_t start, lnodeimpl* src, uint32_t offset, uint32_t length) {
   assert(length <= src->get_size());
   assert(length <= this->get_size());  
   if (length < this->get_size()) {
+    // copy region smaller than dst buffer
     proxyimpl* proxy = new proxyimpl(m_ctx, this->get_size());
-    this->update_all_refs(proxy);
+    this->replace_refs(proxy);
     proxy->add_node(0, this, 0, this->get_size());
     proxy->add_node(start, src, offset, length, true);    
   } else {
+    assert(length == this->get_size());
     lnodeimpl* impl = src; 
     if (length < src->get_size()) {
+      // copy region smaller than src buffer 
       impl = new proxyimpl(m_ctx, length);
       reinterpret_cast<proxyimpl*>(impl)->add_node(0, src, offset, length);
     }
-    this->update_all_refs(impl);
+    this->replace_refs(impl);
     this->release();
   }
 }
@@ -117,7 +124,7 @@ void undefimpl::print_vl(std::ostream& out) const {
 ///////////////////////////////////////////////////////////////////////////////
 
 lnode::lnode(const lnode& rhs) : m_impl(nullptr) {  
-  this->assign(rhs.m_impl);
+  this->assign(rhs.m_impl, true);
 }
 
 lnode::lnode(lnode&& rhs) : m_impl(nullptr) {  
@@ -126,30 +133,43 @@ lnode::lnode(lnode&& rhs) : m_impl(nullptr) {
 
 lnode::lnode(const lnode& rhs, uint32_t size) : m_impl(nullptr) {
   rhs.ensureInitialized(0, size, size);
-  this->assign(rhs.m_impl);
+  this->assign(rhs.m_impl, true);
 }
 
 lnode::lnode(lnodeimpl* impl) : m_impl(nullptr) {
-  this->assign(impl);
+  this->assign(impl, true);
+}
+
+lnode::lnode(const std::vector< partition<lnode> >& data, uint32_t size) : m_impl(nullptr) {  
+  uint32_t dst_offset = 0;
+  for (auto& p : data) {
+    this->assign(dst_offset, p.data.m_impl, p.offset, p.length, size, true);   
+    dst_offset += p.length;
+  }
 }
 
 lnode::lnode(const std::string& value) : m_impl(nullptr) {
-  this->assign(ctx_curr()->create_literal(value));
+  this->assign(ctx_curr()->create_literal(value), true);
 }
 
 lnode::lnode(const std::initializer_list<uint32_t>& value, uint32_t size) : m_impl(nullptr) {
-  this->assign(value, size);
+  this->assign(ctx_curr()->create_literal(value, size), true);
 }
 
 lnode::~lnode() {
   this->reset();
 }
 
-void lnode::reset(lnodeimpl* impl) const {
-  if (impl)
+void lnode::reset(lnodeimpl* impl, bool initialization) const {
+  if (impl) {
+    if (!initialization) {
+      impl = impl->resolve(m_impl);
+    }
     impl->add_ref(this);
-  if (m_impl)
+  }
+  if (m_impl) {
     m_impl->remove_ref(this, impl);
+  }
   m_impl = impl;
 }
 
@@ -164,6 +184,11 @@ lnode& lnode::operator=(const lnode& rhs) {
 
 lnode& lnode::operator=(lnode&& rhs) {
   this->move(rhs);
+  return *this;
+}
+
+lnode& lnode::operator=(lnodeimpl* rhs) {
+  this->assign(rhs);
   return *this;
 }
 
@@ -211,11 +236,11 @@ void lnode::ensureInitialized(uint32_t offset, uint32_t length, uint32_t size) c
   assert(m_impl->get_size() >= length);
 }
 
-void lnode::assign(lnodeimpl* impl) const {
+void lnode::assign(lnodeimpl* impl, bool initialization) const {
   assert(impl);
   if (m_impl == impl)
     return;
-  this->reset(impl);
+  this->reset(impl, initialization);
 }
 
 void lnode::move(lnode& rhs) {
@@ -234,12 +259,12 @@ void lnode::read(std::vector< partition<lnode> >& out, uint32_t offset, uint32_t
   out.push_back({*this, offset, length});
 }
 
-void lnode::write(uint32_t dst_offset, const std::vector< partition<lnode> >& src, uint32_t src_offset, uint32_t src_length, uint32_t size) {
+void lnode::write(uint32_t dst_offset, const std::vector< partition<lnode> >& data, uint32_t src_offset, uint32_t src_length, uint32_t size) {
   assert((dst_offset + src_length) <= size);
-  for (auto& p : src) {
+  for (auto& p : data) {
     if (src_offset < p.length) {
       uint32_t len = std::min(p.length - src_offset, src_length);
-      this->assign(dst_offset, p.data, p.offset + src_offset, len, size);         
+      this->assign(dst_offset, p.data.m_impl, p.offset + src_offset, len, size, false);         
       src_length -= len;
       if (src_length == 0)
         return;
@@ -250,28 +275,50 @@ void lnode::write(uint32_t dst_offset, const std::vector< partition<lnode> >& sr
   }
 }
 
-void lnode::assign(uint32_t dst_offset, const lnode& src, uint32_t src_offset, uint32_t src_length, uint32_t size) {
-  assert(size > dst_offset && size >= dst_offset + src_length);
-  if (size == src_length && size == src.get_size()) {
-    assert(dst_offset == 0 && src_offset == 0);
-    this->assign(src.m_impl);
+void lnode::assign(uint32_t dst_offset, lnodeimpl* src, uint32_t src_offset, uint32_t src_length, uint32_t size, bool initialization) {
+  assert(src);
+  assert(src != m_impl);
+  assert(size > dst_offset);
+  assert(size >= dst_offset + src_length);
+  
+  context* ctx = src->get_ctx();
+  
+  if (src_length == size) {
+    assert(dst_offset == 0);
+    if (src->get_size() > src_length) {
+      proxyimpl* proxy = new proxyimpl(ctx, src_length);
+      proxy->add_node(0, src, src_offset, src_length);
+      src = proxy;
+    }
+    this->assign(src, initialization);
   } else {
-    proxyimpl* proxy = dynamic_cast<proxyimpl*>(m_impl);
-    if (proxy) {
-      proxy->replace_undef_proxy(dst_offset, src.m_impl, src_offset, src_length);
-      proxy->add_node(dst_offset, src.m_impl, src_offset, src_length);      
+    assert(src_length < size);
+    if (m_impl) {
+      assert(m_impl->get_size() == size);
+      if (src->get_size() > src_length) {
+        proxyimpl* proxy = new proxyimpl(ctx, src_length);
+        proxy->add_node(0, src, src_offset, src_length);
+        src = proxy;
+      }
+      
+      proxyimpl* dst = dynamic_cast<proxyimpl*>(m_impl);
+      if (dst == nullptr) {
+        dst = new proxyimpl(ctx, size);
+        lnodeimpl* impl = m_impl;
+        impl->replace_refs(dst);
+        dst->add_node(0, impl, 0, size);
+      }
+      
+      proxyimpl* dst_subset = new proxyimpl(ctx, src_length);
+      dst_subset->add_node(0, dst, dst_offset, src_length);
+      lnode ds(dst_subset);
+      ds.assign(src, initialization);
+      
+      dst->add_node(dst_offset, ds.m_impl, 0, src_length);
     } else {
-      proxy = new proxyimpl(src.get_ctx(), size);
-      lnodeimpl* impl = m_impl;
-      if (impl) {
-        impl->update_all_refs(proxy);
-        proxy->add_node(0, impl, 0, size);
-        bool resize = (dynamic_cast<undefimpl*>(impl) != nullptr);
-        proxy->add_node(dst_offset, src.m_impl, src_offset, src_length, resize);
-      } else {
-        proxy->add_node(dst_offset, src.m_impl, src_offset, src_length);
-        this->assign(proxy);
-      }     
+      proxyimpl* proxy = new proxyimpl(ctx, size);
+      proxy->add_node(dst_offset, src, src_offset, src_length);
+      this->assign(proxy, initialization);
     }    
   }
 }

@@ -59,9 +59,14 @@ public:
     return m_value.get_size();
   }
   
-  operator const bitvector&() const { 
+  const bitvector& get_value() const { 
     this->sync_sources();
-    return m_value; 
+    return m_value;
+  }
+  
+  bitvector& get_value() {
+    this->sync_sources();
+    return m_value;
   }
   
 protected:

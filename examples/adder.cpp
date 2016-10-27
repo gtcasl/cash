@@ -16,7 +16,7 @@ __ch_out(ch_bitv<N>, ch_logic) Adder(
   __ch_tap(sum);
   cout = sum[N];
   out  = ch_slice<N>(sum);    
-  return __ch_ret(out, cout);
+  __ch_ret(out, cout);
 }
 
 int main(int argc, char **argv) {

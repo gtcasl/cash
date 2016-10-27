@@ -31,8 +31,8 @@ __ch_out(ch_bitv<WIDTH>, ch_logic, ch_logic) FiFo(
   dout  = mem.read(rd_addr);
   mem.write(wr_addr, din, writing);
   
-  return __ch_ret(dout, empty, full);
-};
+  __ch_ret(dout, empty, full);
+}
 
 int main(int argc, char **argv) {
   ch_bus<2> din, dout;

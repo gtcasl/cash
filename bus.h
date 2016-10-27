@@ -10,16 +10,13 @@ class ch_bus : public ch_busbase<N> {
 public:  
   using base = ch_busbase<N>;
   typedef typename base::data_type data_type;
-  typedef ch_bus     bus_type;
-  typedef ch_bitv<N> logic_type;
+  typedef ch_bus bus_type;
       
   ch_bus() {}
   
   ch_bus(const ch_bus& rhs) : m_node(rhs.m_node, N) {}
   
-  ch_bus(const ch_busbase<N>& rhs) {
-    base::operator =(rhs);
-  }
+  ch_bus(const ch_busbase<N>& rhs) : m_node(rhs, N) {}
   
   ch_bus(const std::string& value) : m_node(value) {
     assert(m_node.get_size() == N);
@@ -32,7 +29,7 @@ public:
   ch_bus(char value) : m_node({to_value<N>(value)}, N) {} 
   
 #define CHDL_DEF_CTOR(type) \
-    ch_bus(type value) : m_node({static_cast<uint32_t>(value)}, N) {}
+    ch_bus(type value) : m_node({bit_cast<uint32_t>(value)}, N) {}
   CHDL_DEF_CTOR(int8_t)
   CHDL_DEF_CTOR(uint8_t)
   CHDL_DEF_CTOR(int16_t)
@@ -71,7 +68,7 @@ public:
   
 #define CHDL_DEF_AOP(type) \
   ch_bus& operator=(type value) { \
-    m_node.assign({static_cast<uint32_t>(value)}, N); \
+    m_node.assign({bit_cast<uint32_t>(value)}, N); \
     return *this; \
   } 
   CHDL_DEF_AOP(int8_t)
@@ -136,8 +133,8 @@ protected:
     m_node.read(out, offset, length, N);
   }
   
-  void write(size_t dst_offset, const std::vector< partition<data_type> >& src, size_t src_offset, size_t src_length) override {
-    m_node.write(dst_offset, src, src_offset, src_length, N);
+  void write(size_t dst_offset, const std::vector< partition<data_type> >& data, size_t src_offset, size_t src_length) override {
+    m_node.write(dst_offset, data, src_offset, src_length, N);
   }
   
   snode m_node;

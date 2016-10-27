@@ -18,6 +18,7 @@ public:
   lnode(lnode&& rhs);
   lnode(const lnode& rhs, uint32_t size);
   explicit lnode(lnodeimpl* impl);
+  explicit lnode(const std::vector< partition<lnode> >& data, uint32_t size);
   lnode(const std::string& value);
   explicit lnode(const std::initializer_list<uint32_t>& value, uint32_t size);
 
@@ -26,7 +27,9 @@ public:
   lnode& operator=(const lnode& rhs);
   
   lnode& operator=(lnode&& rhs);
-
+  
+  lnode& operator=(lnodeimpl* rhs);
+  
   uint32_t get_id() const;
   
   uint32_t get_size() const;
@@ -37,49 +40,45 @@ public:
   
   bool valid() const;
  
-  const bitvector& eval(ch_cycle t);
+  const bitvector& eval(ch_cycle t);  
   
   void assign(const std::initializer_list<uint32_t>& value, uint32_t size);
   
-  void assign(uint32_t dst_offset, const lnode& src, uint32_t src_offset, uint32_t src_length, uint32_t size);
-  
   void read(std::vector< partition<lnode> >& out, uint32_t offset, uint32_t length, uint32_t size) const;
   
-  void write(uint32_t dst_offset, const std::vector< partition<lnode> >& src, uint32_t src_offset, uint32_t src_length, uint32_t size);
-  
-  void ensureInitialized(uint32_t offset, uint32_t length, uint32_t size) const;
+  void write(uint32_t dst_offset, const std::vector< partition<lnode> >& src, uint32_t src_offset, uint32_t src_length, uint32_t size); 
     
-  explicit operator lnodeimpl*() const { 
+  operator lnodeimpl*() const { 
     assert(m_impl);
     return m_impl; 
   }  
 
 protected:  
   
-  void reset(lnodeimpl* impl = nullptr) const;
+  void ensureInitialized(uint32_t offset, uint32_t length, uint32_t size) const;
+  
+  void reset(lnodeimpl* impl = nullptr, bool initialization = false) const;
 
-  void assign(lnodeimpl* impl) const;
+  void assign(lnodeimpl* impl, bool initialization = false) const;
   
   void move(lnode& rhs);
+  
+  void assign(uint32_t dst_offset, lnodeimpl* src, uint32_t src_offset, uint32_t src_length, uint32_t size, bool initialization);
   
   mutable lnodeimpl* m_impl;
   
   friend class lnodeimpl;
   friend class proxyimpl;
   friend class context;
-  template <typename T> friend T* get_impl(const lnode& n);
+  friend class ch_device;
+  template <unsigned N> friend class ch_bitv;
 };
-
-template <typename T>
-T* get_impl(const lnode& node) {
-  return dynamic_cast<T*>(node.m_impl);
-}
 
 inline std::ostream& operator<<(std::ostream& out, const lnode& rhs) {
   out << rhs.get_id();
   return out;
 }
 
-lnode createNullNode(uint32_t size);
+lnodeimpl* createNullNode(uint32_t size);
 
 }

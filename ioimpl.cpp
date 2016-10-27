@@ -39,8 +39,8 @@ void inputimpl::print(std::ostream& out) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-outputimpl::outputimpl(const std::string& name, const lnode& src) 
-  : ioimpl(name, src.get_ctx(), src.get_size())
+outputimpl::outputimpl(const std::string& name, lnodeimpl* src) 
+  : ioimpl(name, src->get_ctx(), src->get_size())
   , m_bus(nullptr) {
   m_srcs.reserve(1);
   m_srcs.emplace_back(src);
@@ -74,7 +74,7 @@ void outputimpl::print(std::ostream& out) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-tapimpl::tapimpl(const std::string& name, const lnode& src) 
+tapimpl::tapimpl(const std::string& name, lnodeimpl* src) 
   : outputimpl("tap", src)
   , m_tapName(name) {
   m_srcs.reserve(1);

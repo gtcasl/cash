@@ -10,7 +10,6 @@ public:
   using base = typebase<N * T::bit_count, typename T::data_type>;
   using base::operator=;
   typedef typename base::data_type data_type;
-  typedef ch_vec<typename T::logic_type, N> logic_type;
   typedef ch_vec<typename T::bus_type, N> bus_type;
   
   ch_vec() {}
@@ -31,7 +30,7 @@ public:
   
   template <typename U>
   ch_vec(const std::initializer_list<U>& rhs) {
-    CHDL_REQUIRED(rhs.size() == N, "initializer list size missmatch!");
+    CHDL_CHECK(rhs.size() == N, "initializer list size missmatch!");
     unsigned i = N;
     for (auto& x : rhs) {
       m_items[--i] = x;
@@ -54,7 +53,7 @@ public:
   
   template <typename U>
   ch_vec& operator=(const std::initializer_list<U>& rhs) {
-    CHDL_REQUIRED(rhs.size() == N, "initializer list size missmatch!");
+    CHDL_CHECK(rhs.size() == N, "initializer list size missmatch!");
     unsigned i = N;
     for (auto& x : rhs) {
       m_items[--i] = x;
@@ -63,12 +62,12 @@ public:
   }
 
   typename std::vector<T>::reference operator[](size_t i) {
-    CHDL_REQUIRED(i < N, "invalid subscript index");
+    CHDL_CHECK(i < N, "invalid subscript index");
     return m_items[i];
   }
 
   typename std::vector<T>::const_reference operator[](size_t i) const {
-    CHDL_REQUIRED(i < N, "invalid subscript index");
+    CHDL_CHECK(i < N, "invalid subscript index");
     return m_items[i];
   }
     
@@ -85,7 +84,7 @@ protected:
   std::array<T, N> m_items;
   
   void read(std::vector< partition<data_type> >& out, size_t offset, size_t length) const override {
-    CHDL_REQUIRED(offset + length <= ch_vec::bit_count, "invalid vector read range");
+    CHDL_CHECK(offset + length <= ch_vec::bit_count, "invalid vector read range");
     for (unsigned i = 0; length && i < N; ++i) {
       if (offset < T::bit_count) {     
         size_t len = std::min<size_t>(length, T::bit_count - offset);                
@@ -97,12 +96,12 @@ protected:
     }
   }
   
-  void write(size_t start, const std::vector< partition<data_type> >& src, size_t offset, size_t length) override {
-    CHDL_REQUIRED(start + length <= ch_vec::bit_count, "invalid vector write range");
+  void write(size_t start, const std::vector< partition<data_type> >& data, size_t offset, size_t length) override {
+    CHDL_CHECK(start + length <= ch_vec::bit_count, "invalid vector write range");
     for (unsigned i = 0; length && i < N; ++i) {
       if (start < T::bit_count) {
         size_t len = std::min<size_t>(length, T::bit_count - start);        
-        write_data(m_items[i], start, src, offset, len);
+        write_data(m_items[i], start, data, offset, len);
         length -= len;
         offset += len;
         start = T::bit_count;

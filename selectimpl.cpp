@@ -1,11 +1,15 @@
 #include "selectimpl.h"
 #include "select.h"
+#include "when.h"
+#include "case.h"
+#include "context.h"
+#include "arithm.h"
 
 using namespace std;
 using namespace chdl_internal;
 
-selectimpl::selectimpl(const lnode& test, const lnode& a, const lnode& b) 
-  : lnodeimpl("select", a.get_ctx(), a.get_size()), m_ctime(~0ull) {
+selectimpl::selectimpl(lnodeimpl* test, lnodeimpl* a, lnodeimpl* b) 
+  : lnodeimpl("select", a->get_ctx(), a->get_size()), m_ctime(~0ull) {
   m_srcs.emplace_back(test);
   m_srcs.emplace_back(a);
   m_srcs.emplace_back(b);
@@ -23,6 +27,35 @@ void selectimpl::print_vl(std::ostream& out) const {
   TODO("Not yet implemented!");
 }
 
-lnode chdl_internal::createSelectNode(const lnode& test, const lnode& a, const lnode& b) {
-  return lnode(new selectimpl(test, a, b));
+lnodeimpl* chdl_internal::createSelectNode(lnodeimpl* test, lnodeimpl* a, lnodeimpl* b) {
+  return new selectimpl(test, a, b);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void when_t::eval() {
+  context* ctx = ctx_curr();
+  stmts_t* stmts = m_stmts;
+  while (!stmts->empty()) {
+    const stmt_t& stmt = stmts->top();
+    ctx->push_cond(stmt.cond);
+    stmt.func();
+    ctx->pop_cond();
+    stmts->pop();
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void case_impl::eval() {
+  context* ctx = ctx_curr();
+  lnodeimpl* key = m_stmts->key;
+  auto& values = m_stmts->values;
+  while (!values.empty()) {
+    const stmt_t& stmt = values.top();
+    ctx->push_cond(createAluNode(op_eq, 1, key, stmt.value));
+    stmt.func();
+    ctx->pop_cond();
+    values.pop();
+  }
 }

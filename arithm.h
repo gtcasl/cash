@@ -113,8 +113,8 @@ enum ch_operator {
   op_demux,
 };
 
-lnode createAluNode(ch_operator op, uint32_t size, const lnode& a, const lnode& b);
-lnode createAluNode(ch_operator op, uint32_t size, const lnode& a);
+lnodeimpl* createAluNode(ch_operator op, uint32_t size, lnodeimpl* a, lnodeimpl* b);
+lnodeimpl* createAluNode(ch_operator op, uint32_t size, lnodeimpl* a);
 
 // compare operators
 

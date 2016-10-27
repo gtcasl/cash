@@ -2,6 +2,7 @@
 TODO list:
 ==========
 
+- implement ch_call(function, args...) using variadic template to generate modules binding 
 - implement ch_bitbase.clone() to enable fork assignments
 - prevent assignments to yourself (e.g. a = a, a[0] = a[1])
 - implement ch_make_device() to use compiler time binding

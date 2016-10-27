@@ -4,22 +4,23 @@
 
 namespace chdl_internal {
 
-lnode createSelectNode(const lnode& test, const lnode& a, const lnode& b);
+lnodeimpl* createSelectNode(lnodeimpl* cond, lnodeimpl* a, lnodeimpl* b);
 
 template <unsigned N> 
-class select_when_t {
+class select_t {
 public:
   
-  ~select_when_t() {
-    m_stmts->release();
+  ~select_t() {
+    if (m_stmts)
+      delete m_stmts;
   }
     
-  select_when_t<N> operator()(const ch_logic& test, const ch_bitbase<N>& value) {
-    return select_when_t<N>(m_stmts, test, value);
+  select_t<N> operator()(const ch_logic& cond, const ch_bitbase<N>& value) {
+    return this->push(cond, value);
   }
   
-  select_when_t<N> operator()(const ch_logic& test, const ch_bitv<N>& value) {
-    return select_when_t<N>(m_stmts, test, value);
+  select_t<N> operator()(const ch_logic& cond, const ch_bitv<N>& value) {
+    return this->push(cond, value);
   }
   
   ch_bitv<N> operator()(const ch_bitbase<N>& value) {
@@ -32,58 +33,60 @@ public:
   
 protected:
 
-  typedef std::pair<ch_logic, const ch_bitbase<N>*> select_stmt;
-  struct select_stmts : public refcounted {
-    std::stack<select_stmt> values;
+  struct stmt_t {
+    const ch_logic& cond;
+    const ch_bitbase<N>& value;
   };
   
-  select_when_t(select_stmts* stmts, const ch_logic& test, const ch_bitbase<N>& value) 
-    : m_stmts(stmts) {    
-    stmts->values.emplace(test, &value);
-    stmts->acquire();
-  }
+  typedef std::stack<stmt_t> stmts_t;
   
-  select_when_t(const ch_logic& test, const ch_bitbase<N>& value)
-    : select_when_t(new select_stmts(), test, value) {}  
+  select_t(stmts_t* stmts = new stmts_t()) : m_stmts(stmts) {}
+  
+  select_t push(const ch_logic& cond, const ch_bitbase<N>& value) {
+    stmts_t* stmts = m_stmts;
+    m_stmts = nullptr;
+    stmts->push({cond, value});
+    return select_t(stmts);
+  }  
   
   ch_bitv<N> eval(const ch_bitbase<N>& value) {
     ch_bitv<N> curr;
     const ch_bitbase<N>* pcurr = &value;
-    auto& values = m_stmts->values;
-    while (!values.empty()) {
-      auto& stmt = values.top();
-      curr = ch_bitv<N>(createSelectNode(stmt.first, *stmt.second, *pcurr));
+    stmts_t* stmts = m_stmts;
+    while (!stmts->empty()) {
+      const stmt_t& stmt = stmts->top();
+      curr = ch_bitv<N>(createSelectNode(stmt.cond, stmt.value, *pcurr));
       pcurr = &curr;
-      values.pop();
+      stmts->pop();
     }
     return curr;
   }
   
-  select_stmts* m_stmts;
+  stmts_t* m_stmts;
   
-  template <unsigned N2> friend select_when_t<N2> ch_select(const ch_logic& test, const ch_bitbase<N2>& value);
-  friend select_when_t<1> ch_select(const ch_logic& test, const ch_logic& value);
+  template <unsigned N2> friend select_t<N2> ch_select(const ch_logic& cond, const ch_bitbase<N2>& value);
+  friend select_t<1> ch_select(const ch_logic& cond, const ch_logic& value);
 };
 
 template <unsigned N> 
-select_when_t<N> ch_select(const ch_logic& test, const ch_bitbase<N>& value) {
-  return select_when_t<N>(test, value);
+select_t<N> ch_select(const ch_logic& cond, const ch_bitbase<N>& value) {
+  return select_t<N>().push(cond, value);
 }
 
 template <unsigned N> 
-select_when_t<N> ch_select(const ch_logic& test, const ch_bitv<N>& value) {
-  return ch_select(test, reinterpret_cast<const ch_bitbase<N>&>(value));
+select_t<N> ch_select(const ch_logic& cond, const ch_bitv<N>& value) {
+  return ch_select(cond, reinterpret_cast<const ch_bitbase<N>&>(value));
 }
 
 template <unsigned N>
-ch_bitv<N> ch_select(const ch_logic& test, const ch_bitbase<N>& True, const ch_bitbase<N>& False) {
-  return ch_bitv<N>(createSelectNode(test, True, False));
+ch_bitv<N> ch_select(const ch_logic& cond, const ch_bitbase<N>& True, const ch_bitbase<N>& False) {
+  return ch_bitv<N>(createSelectNode(cond, True, False));
 }
 
 #define CHDL_SELECT_GEN(type) \
-  template <unsigned N> ch_bitv<N> ch_select(const ch_logic& test, type True, const ch_bitbase<N>& False) { return ch_select(test, ch_bitv<N>(True), False); } \
-  template <unsigned N> ch_bitv<N> ch_select(const ch_logic& test, const ch_bitbase<N>& True, type False) { return ch_select(test, True, ch_bitv<N>(False)); } \
-  template <unsigned N> ch_bitv<N> ch_select(const ch_logic& test, type True, type False) { return ch_select(test, ch_bitv<N>(True), ch_bitv<N>(False)); }
+  template <unsigned N> ch_bitv<N> ch_select(const ch_logic& cond, type True, const ch_bitbase<N>& False) { return ch_select(cond, ch_bitv<N>(True), False); } \
+  template <unsigned N> ch_bitv<N> ch_select(const ch_logic& cond, const ch_bitbase<N>& True, type False) { return ch_select(cond, True, ch_bitv<N>(False)); } \
+  template <unsigned N> ch_bitv<N> ch_select(const ch_logic& cond, type True, type False) { return ch_select(cond, ch_bitv<N>(True), ch_bitv<N>(False)); }
 CHDL_SELECT_GEN(char)
 CHDL_SELECT_GEN(int8_t)
 CHDL_SELECT_GEN(uint8_t)

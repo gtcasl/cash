@@ -13,8 +13,8 @@ public:
   memory(uint32_t data_width, uint32_t addr_width, bool syncRead, bool writeEnable, const std::vector<uint32_t>& init_data);
   ~memory();  
   
-  lnode read(const lnode& addr) const;
-  void write(const lnode& addr, const lnode& value, const lnode& enable);
+  lnodeimpl* read(lnodeimpl* addr) const;
+  void write(lnodeimpl* addr, lnodeimpl* data, lnodeimpl* enable);
   
 private:
   memimpl* m_impl;
@@ -58,32 +58,32 @@ public:
       return ch_bitv<N>(m_mem.read(addr));
     }
     
-    void write(const ch_bitbase<A>& addr, const ch_bitbase<N>& value, const ch_logicbase& enable) {
-      m_mem.write(addr, value, enable);
+    void write(const ch_bitbase<A>& addr, const ch_bitbase<N>& data, const ch_logicbase& enable) {
+      m_mem.write(addr, data, enable);
     }
     
-    void write(const ch_bitv<A>& addr, const ch_bitbase<N>& value, const ch_logicbase& enable) {
-      m_mem.write(addr, value, enable);
+    void write(const ch_bitv<A>& addr, const ch_bitbase<N>& data, const ch_logicbase& enable) {
+      m_mem.write(addr, data, enable);
     }
     
-    void write(const ch_bitbase<A>& addr, const ch_bitv<N>& value, const ch_logicbase& enable) {
-      m_mem.write(addr, value, enable);
+    void write(const ch_bitbase<A>& addr, const ch_bitv<N>& data, const ch_logicbase& enable) {
+      m_mem.write(addr, data, enable);
     }
     
-    void write(const ch_bitv<A>& addr, const ch_bitv<N>& value, const ch_logicbase& enable) {
-      m_mem.write(addr, value, enable);
+    void write(const ch_bitv<A>& addr, const ch_bitv<N>& data, const ch_logicbase& enable) {
+      m_mem.write(addr, data, enable);
     }
     
-    void write(const ch_bitv<A>& addr, const ch_bitbase<N>& value, const ch_logic& enable) {
-      m_mem.write(addr, value, enable);
+    void write(const ch_bitv<A>& addr, const ch_bitbase<N>& data, const ch_logic& enable) {
+      m_mem.write(addr, data, enable);
     }
     
-    void write(const ch_bitbase<A>& addr, const ch_bitv<N>& value, const ch_logic& enable) {
-      m_mem.write(addr, value, enable);
+    void write(const ch_bitbase<A>& addr, const ch_bitv<N>& data, const ch_logic& enable) {
+      m_mem.write(addr, data, enable);
     }
     
-    void write(const ch_bitv<A>& addr, const ch_bitv<N>& value, const ch_logic& enable) {
-      m_mem.write(addr, value, enable);
+    void write(const ch_bitv<A>& addr, const ch_bitv<N>& data, const ch_logic& enable) {
+      m_mem.write(addr, data, enable);
     }
     
 private:

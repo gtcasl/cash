@@ -1,7 +1,7 @@
 PREFIX ?= /usr/local
 #CXXFLAGS += -fPIC -std=c++11 -O2 -DNDEBUG
-CXXFLAGS += -fPIC -std=c++11 -O0 -g -fmax-errors=5
-LDFLAGS += -shared
+CXXFLAGS += -fPIC -std=c++11 -O0 -g --coverage -fmax-errors=5
+LDFLAGS += -shared --coverage
 
 SRCS = utils.cpp bitvector.cpp platform.cpp \
        lnodeimpl.cpp proxyimpl.cpp litimpl.cpp selectimpl.cpp regimpl.cpp memimpl.cpp aluimpl.cpp ioimpl.cpp assertimpl.cpp \

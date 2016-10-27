@@ -152,7 +152,7 @@ void ch_tracer::ensureInitialize() {
 }
 
 void ch_tracer::add_trace(const std::string& name, snodeimpl* bus) {
-  CHDL_REQUIRED(!m_initialized, "new tap not allowed after simulation has started");
+  CHDL_CHECK(!m_initialized, "new tap not allowed after simulation has started");
   
   // resolve duplicate names  
   string full_name(name);
@@ -181,6 +181,5 @@ void ch_tracer::tick(ch_cycle t) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void chdl_internal::register_tap(const string& name, const lnode& node, uint32_t size) {
-  node.ensureInitialized(0, size, size);
   node.get_ctx()->register_tap(name, node);
 }

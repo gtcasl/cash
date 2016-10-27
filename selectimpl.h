@@ -6,7 +6,7 @@ namespace chdl_internal {
 
 class selectimpl : public lnodeimpl {
 public:
-  selectimpl(const lnode& test, const lnode& a, const lnode& b);
+  selectimpl(lnodeimpl* test, lnodeimpl* a, lnodeimpl* b);
   virtual ~selectimpl() {}
 
   const bitvector& eval(ch_cycle t) override;  

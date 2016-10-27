@@ -16,7 +16,7 @@ public:
   bool includes(uint32_t start, uint32_t length) const;
   
   void remove_ref(const lnode* curr_owner, lnodeimpl* new_owner) override;
-  void replace_undef_proxy(uint32_t start, lnodeimpl* new_owner, uint32_t offset, uint32_t length) override;
+  void update_refs(uint32_t start, lnodeimpl* new_owner, uint32_t offset, uint32_t length) override;
   
   const bitvector& eval(ch_cycle t) override;  
   void print(std::ostream& out) const override;

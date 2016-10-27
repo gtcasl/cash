@@ -7,8 +7,8 @@ namespace chdl_internal {
 
 class aluimpl : public lnodeimpl {
 public:
-  aluimpl(ch_operator op, uint32_t size, const lnode& a, const lnode& b);
-  aluimpl(ch_operator op, uint32_t size, const lnode& a);
+  aluimpl(ch_operator op, uint32_t size, lnodeimpl* a, lnodeimpl* b);
+  aluimpl(ch_operator op, uint32_t size, lnodeimpl* a);
   ~aluimpl();
   
   ch_operator get_op() const {

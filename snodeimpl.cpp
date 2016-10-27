@@ -187,6 +187,15 @@ snode::snode(snodeimpl* impl) : m_impl(nullptr), m_readonly(false) {
   this->assign(impl);
 }
 
+snode::snode(const std::vector< partition<snode> >& data, uint32_t size) 
+  : m_impl(nullptr), m_readonly(false) {  
+  uint32_t dst_offset = 0;
+  for (auto& p : data) {
+    this->assign(dst_offset, p.data, p.offset, p.length, size);   
+    dst_offset += p.length;
+  }
+}
+
 snode::snode(const std::string& value) : m_impl(nullptr), m_readonly(false) {
   this->assign(new snodeimpl(value), true);
 }

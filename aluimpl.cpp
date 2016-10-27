@@ -41,6 +41,8 @@ static const char* op_name(ch_operator op) {
 
 template <ch_operator op>
 static void unaryop(bitvector& dst, const bitvector& a) {
+  assert(dst.get_size() == a.get_size());
+  
   switch (op) {
   case op_inv:
     dst = ~a;
@@ -52,6 +54,9 @@ static void unaryop(bitvector& dst, const bitvector& a) {
 
 template <ch_operator op>
 static void binaryop(bitvector& dst, const bitvector& a, const bitvector& b) {
+  assert(dst.get_size() == a.get_size());
+  assert(a.get_size() == b.get_size());
+  
   switch (op) {
   case op_and:
     dst = a & b;
@@ -80,6 +85,7 @@ template <ch_operator op>
 static void shiftop(bitvector& dst, const bitvector& in, const bitvector& bits) {
   assert(bits.get_num_words() == 1);
   assert(dst.get_size() == in.get_size());
+  
   uint32_t wbits = bits.get_word(0);
   switch (op) {  
   case op_sll:
@@ -96,6 +102,7 @@ static void shiftop(bitvector& dst, const bitvector& in, const bitvector& bits) 
 template <ch_operator op>
 static void reduceop(bitvector& dst, const bitvector& in) {
   assert(dst.get_size() == 1);
+  
   uint32_t size = in.get_size();
   uint32_t result;
   for (uint32_t i = 0, j = 0, in_w; i < size; ++i) {
@@ -128,8 +135,9 @@ static void reduceop(bitvector& dst, const bitvector& in) {
 
 template <ch_operator op>
 static void compareop(bitvector& dst, const bitvector& a, const bitvector& b) {
-  assert(a.get_size() == b.get_size());
   assert(dst.get_size() == 1);
+  assert(a.get_size() == b.get_size());
+  
   bool result;
   switch (op) {
   case op_eq:
@@ -156,11 +164,13 @@ static void compareop(bitvector& dst, const bitvector& a, const bitvector& b) {
   dst[0] = result;
 }
 
-static void add(bitvector& dst, const bitvector& a, const bitvector& b) {
+static void add(bitvector& dst, const bitvector& a, const bitvector& b, uint32_t cin = 0) {
+  assert(dst.get_size() == a.get_size());
+  assert(a.get_size() == b.get_size());
+  
   uint32_t size = dst.get_size();
   uint32_t num_words = ((size + 31) >> 5);
   
-  uint32_t cin  = 0;
   for (uint32_t i = 0; i < num_words; ++i) {
     uint32_t a_w = a.get_word(i);
     uint32_t b_w = b.get_word(i);
@@ -208,19 +218,19 @@ static void demux(bitvector& dst, const bitvector& in, const bitvector& sel) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-aluimpl::aluimpl(ch_operator op, uint32_t size, const lnode& a, const lnode& b) 
-  : lnodeimpl(op_name(op), a.get_ctx(), size)
+aluimpl::aluimpl(ch_operator op, uint32_t size, lnodeimpl* a, lnodeimpl* b) 
+  : lnodeimpl(op_name(op), a->get_ctx(), size)
   , m_op(op)
   , m_ctime(~0ull) {
-  m_srcs.push_back(a);
-  m_srcs.push_back(b);
+  m_srcs.emplace_back(a);
+  m_srcs.emplace_back(b);
 }
 
-aluimpl::aluimpl(ch_operator op, uint32_t size, const lnode& a) 
-  : lnodeimpl(op_name(op), a.get_ctx(), size)
+aluimpl::aluimpl(ch_operator op, uint32_t size, lnodeimpl* a) 
+  : lnodeimpl(op_name(op), a->get_ctx(), size)
   , m_op(op)
   , m_ctime(~0ull) {
-  m_srcs.push_back(a);
+  m_srcs.emplace_back(a);
 }
 
 aluimpl::~aluimpl() {
@@ -280,7 +290,11 @@ const bitvector& aluimpl::eval(ch_cycle t) {
     case op_add:
       add(m_value, m_srcs[0].eval(t), m_srcs[1].eval(t));        
       break;
-    case op_sub:
+    case op_sub:{
+        bitvector minus_b(m_value.get_size());
+        unaryop<op_inv>(minus_b, m_srcs[1].eval(t));
+        add(m_value, m_srcs[0].eval(t), minus_b, 1);        
+      } break;
     case op_mult:
     case op_div:
     case op_mod:
@@ -324,10 +338,10 @@ void aluimpl::print_vl(std::ostream& out) const {
   TODO("Not yet implemented!");
 }
 
-lnode chdl_internal::createAluNode(ch_operator op, uint32_t size, const lnode& a, const lnode& b) {
-  return lnode(new aluimpl(op, size, a, b)); 
+lnodeimpl* chdl_internal::createAluNode(ch_operator op, uint32_t size, lnodeimpl* a, lnodeimpl* b) {
+  return new aluimpl(op, size, a, b); 
 }
 
-lnode chdl_internal::createAluNode(ch_operator op, uint32_t size, const lnode& a) {
-  return lnode(new aluimpl(op, size, a));
+lnodeimpl* chdl_internal::createAluNode(ch_operator op, uint32_t size, lnodeimpl* a) {
+  return new aluimpl(op, size, a);
 }

@@ -139,17 +139,17 @@ protected:
 
   template <unsigned N>
   void bind_input(const ch_bitbase<N>& input, const ch_busbase<N>& bus) const {
-    this->bind_input(static_cast<lnode>(input), static_cast<snode>(bus));
+    this->bind_input_(input, bus);
   }
   
   template <unsigned N>
   ch_bus<N> bind_output(const ch_bitbase<N>& output) const {
-    return ch_bus<N>(this->bind_output(static_cast<lnode>(output)));
+    return ch_bus<N>(this->bind_output_(output));
   }
   
-  void bind_input(const lnode& input, const snode& bus) const;
+  void bind_input_(const lnode& input, const snode& bus) const;
   
-  snode bind_output(const lnode& output) const;
+  snode bind_output_(const lnode& output) const;
   
   snode get_tap(std::string& name, uint32_t size) const;
   

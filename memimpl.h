@@ -14,8 +14,8 @@ public:
   memimpl(uint32_t data_width, uint32_t addr_width, bool sync_read, bool write_enable, const std::vector<uint32_t>& init_data);
   ~memimpl();
   
-  memportimpl* read(const lnode& addr);
-  void write(const lnode& addr, const lnode& value, const lnode& enable);  
+  memportimpl* read(lnodeimpl* addr);
+  void write(lnodeimpl* addr, lnodeimpl* data, lnodeimpl* enable);  
   
   void tick(ch_cycle t) override;
   void tick_next(ch_cycle t) override;
@@ -25,7 +25,7 @@ public:
 
 protected:
   
-  memportimpl* get_port(const lnode& addr);
+  memportimpl* get_port(lnodeimpl* addr);
   
   std::vector<memportimpl*> m_ports;
   std::vector<bitvector> m_content;
@@ -38,10 +38,14 @@ protected:
 
 class memportimpl : public lnodeimpl {
 public:  
-  memportimpl(memimpl* mem, const lnode& addr);
+  memportimpl(memimpl* mem, lnodeimpl* addr);
   ~memportimpl();
   
-  void write(const lnode& value, const lnode& enable);  
+  bool operator==(lnodeimpl* addr) const {
+    return (m_srcs[m_addr_id] == addr);
+  }
+  
+  void write(lnodeimpl* data, lnodeimpl* enable);  
   
   void tick(ch_cycle t);
   void tick_next(ch_cycle t);
@@ -58,6 +62,11 @@ protected:
   bitvector m_wrdata;
   uint32_t  m_addr;
   bool      m_do_write;  
+  
+  int       m_addr_id;
+  int       m_clk_id;
+  int       m_wdata_id;
+  int       m_wenable_id;
   
   ch_cycle  m_ctime;
   

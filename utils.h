@@ -22,7 +22,7 @@ void DbgPrint(int level, const char *format, ...);
     } while (0)
 #endif
 
-#define CHDL_REQUIRED(x, msg, ...) do { \
+#define CHDL_CHECK(x, msg, ...) do { \
   if (!(x)) CHDL_ABORT(msg, ##__VA_ARGS__); \
   } while (0)
 
@@ -30,7 +30,7 @@ void DbgPrint(int level, const char *format, ...);
   CHDL_ABORT(#x);
 
 #define CHDL_OUT(...) std::tuple<__VA_ARGS__>
-#define CHDL_RET(...) std::make_tuple(__VA_ARGS__)
+#define CHDL_RET(...) return std::make_tuple(__VA_ARGS__)
 #define CHDL_TIE(...) std::forward_as_tuple(__VA_ARGS__)
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -226,6 +226,17 @@ constexpr unsigned LOG2(unsigned x) {
 // return ceil of log2
 constexpr unsigned CLOG2(unsigned x) {
   return IS_POW2(x) ? LOG2(x) : (LOG2(x) + 1);
+}
+
+template <class D, class S>
+D bit_cast(const S& src) {
+  union merged_t {
+    S src;
+    D dst;    
+  };
+  merged_t m;
+  m.src = src;
+  return m.dst;  
 }
 
 }

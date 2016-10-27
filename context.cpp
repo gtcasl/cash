@@ -9,6 +9,8 @@
 #include "cdomain.h"
 #include "device.h"
 #include "context.h"
+#include "arithm.h"
+#include "select.h"
 
 using namespace std;
 using namespace chdl_internal;
@@ -46,57 +48,85 @@ context::erase_node(const std::list<lnodeimpl*>::iterator& iter) {
   return m_nodes.erase(iter);
 }
 
-void context::push_clk(const lnode& clk) {
-  m_clk_stack.push(clk);
+void context::push_clk(lnodeimpl* clk) {
+  m_clk_stack.emplace(clk);
 }
 
 void context::pop_clk() {
   m_clk_stack.pop();
 }
 
-void context::push_reset(const lnode& reset) {
-  m_reset_stack.push(reset);
+void context::push_reset(lnodeimpl* reset) {
+  m_reset_stack.emplace(reset);
 }
 
 void context::pop_reset() {
   m_reset_stack.pop();
 }
 
-lnode context::get_clk() {
+lnodeimpl* context::get_clk() {
   if (!m_clk_stack.empty())
     return m_clk_stack.top();
   if (m_clk == nullptr)
     m_clk = new inputimpl("clk", this, 1);
-  return lnode(m_clk);
+  return m_clk;
 }
 
-lnode context::get_reset() {
+lnodeimpl* context::get_reset() {
   if (!m_reset_stack.empty())
     return m_reset_stack.top();
   if (m_reset == nullptr)
      m_reset = new inputimpl("reset", this, 1);
-  return lnode(m_reset);
+  return m_reset;
 }
 
 uint32_t context::add_node(lnodeimpl* node) {
+  uint32_t nodeid = ++m_nodeids;
   if (node->m_name == "undef") {
     m_undefs.emplace_back(node);  
   #ifndef NDEBUG
     uint32_t dbg_node = platform::self().get_dbg_node();
     if (dbg_node) {
-      assert(m_nodeids + 1 != dbg_node);
+      assert(nodeid != dbg_node);
     }
   #endif
   } else {
     m_nodes.emplace_back(node);
   }  
   node->acquire();
-  return ++m_nodeids;
+  if (m_conds.size() > 0) {
+    m_conds.front().locals.emplace(node);
+  }
+  return nodeid;  
 }
 
 void context::remove_node(undefimpl* node) {
   assert(m_undefs.size() > 0);
   m_undefs.remove(node);
+}
+
+void context::push_cond(lnodeimpl* cond) {
+  m_conds.emplace_front(cond);
+}
+
+void context::pop_cond() {
+  m_conds.pop_front();
+}
+
+lnodeimpl* context::resolve(lnodeimpl* dst, lnodeimpl* src) {
+  if (m_conds.size() > 0 
+   && 0 == m_conds.front().locals.count(dst)) {
+    if (dst == nullptr) {
+      CHDL_ABORT("missing default statement on unitialized variable");
+    }
+    auto itcond = m_conds.begin();
+    lnodeimpl* cond((*itcond++).cond);
+    for (auto itEnd = m_conds.end(); itcond != itEnd;) {
+      cond = createAluNode(op_and, 1, cond, (*itcond++).cond);
+    }
+    src = createSelectNode(cond, src, dst);
+  }
+  return src;
 }
 
 litimpl* context::create_literal(const std::initializer_list<uint32_t>& value, uint32_t size) {
@@ -123,7 +153,7 @@ litimpl* context::create_literal(const std::string& value) {
   return lit;
 }
 
-void context::create_assertion(const lnode& node, const std::string& msg) {
+void context::create_assertion(lnodeimpl* node, const std::string& msg) {
   m_gtaps.emplace_back(new assertimpl(node, msg));  
 }
 
@@ -143,20 +173,20 @@ void context::remove_cdomain(cdomain* cd) {
   m_cdomains.remove(cd);
 }
 
-void context::bind_input(const lnode& input, const snode& bus) {
-  inputimpl* impl = new inputimpl("input", this, bus.m_impl->get_size());
-  impl->bind(bus.m_impl);
-  input.assign(impl);
+lnodeimpl* context::bind_input(snodeimpl* bus) {
+  inputimpl* impl = new inputimpl("input", this, bus->get_size());
+  impl->bind(bus);
   m_inputs.emplace_back(impl);
+  return impl;
 }
 
-snode context::bind_output(const lnode& output) {
+snodeimpl* context::bind_output(lnodeimpl* output) {
   outputimpl* impl = new outputimpl("output", output);
   m_outputs.emplace_back(impl);
-  return snode(impl->get_bus());
+  return impl->get_bus();
 }
 
-void context::register_tap(const std::string& name, const lnode& node) {
+void context::register_tap(const std::string& name, lnodeimpl* node) {
   // resolve duplicate names
   string full_name(name);
   unsigned instances = m_dup_taps[name]++;
@@ -177,7 +207,7 @@ void context::register_tap(const std::string& name, const lnode& node) {
 snode context::get_tap(std::string& name, uint32_t size) {
   for (tapimpl* tap : m_taps) {
     if (tap->get_tapName() == name) {
-      CHDL_REQUIRED(tap->get_size() == size, "tap bus size mismatch: received %u, expected %u", size, tap->get_size());
+      CHDL_CHECK(tap->get_size() == size, "tap bus size mismatch: received %u, expected %u", size, tap->get_size());
       return snode(tap->get_bus());
     }
   } 
@@ -273,6 +303,6 @@ void chdl_internal::ctx_end() {
 }
 
 context* chdl_internal::ctx_curr() {
-  CHDL_REQUIRED(tls_ctx, "invalid CHDL context!");
+  CHDL_CHECK(tls_ctx, "invalid CHDL context!");
   return tls_ctx;
 }

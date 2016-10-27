@@ -2,6 +2,9 @@
 
 #include "literals.h"
 #include "bitv.h"
+#include "select.h"
+#include "when.h"
+#include "case.h"
 #include "reg.h"
 #include "mem.h"
 #include "arithm.h"
@@ -11,6 +14,7 @@
 #include "vcd.h"
 #include "assertion.h"
 #include "aggregate.h"
+#include "fifo.h"
 
 namespace chdl {
 
@@ -81,6 +85,8 @@ namespace core {
   //
 
   using chdl_internal::ch_select;
+  using chdl_internal::ch_when;
+  using chdl_internal::ch_case;
 
   //
   // register functions
@@ -158,6 +164,7 @@ namespace core {
   using chdl_internal::ch_lsb;
   using chdl_internal::ch_enc;
   using chdl_internal::ch_dec;
+  using chdl_internal::ch_fifo;
 
   //
   // utility functions

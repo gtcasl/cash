@@ -8,7 +8,7 @@ namespace chdl_internal {
 
 class regimpl : public tickable, public lnodeimpl {
 public:
-  regimpl(const lnode& next);
+  regimpl(lnodeimpl* next);
   virtual ~regimpl();
   
   const bitvector& eval(ch_cycle t) override;  
@@ -28,10 +28,10 @@ protected:
 class latchimpl : public tickable, public lnodeimpl {
 public:
   latchimpl(
-      const lnode& next,
-      const lnode& init,
-      const lnode& enable,      
-      const lnode& reset
+      lnodeimpl* next,
+      lnodeimpl* init,
+      lnodeimpl* enable,      
+      lnodeimpl* reset
   );
   virtual ~latchimpl();
   

@@ -36,7 +36,7 @@ public:
 
 #define CHDL_DEF_AOP(type) \
   typebase& operator=(type value) { \
-    return this->operator =({static_cast<uint32_t>(value)}); \
+    return this->operator =({bit_cast<uint32_t>(value)}); \
   } 
   CHDL_DEF_AOP(int8_t)
   CHDL_DEF_AOP(uint8_t)
@@ -48,16 +48,18 @@ public:
 #undef CHDL_DEF_AOP
   
   operator snode() const { 
-    return ch_bus<N>(*this); 
+    std::vector< partition<data_type> > data;
+    this->read(data, 0, N);
+    return snode(data, N); 
   }
   
 protected:
 
   virtual void read(std::vector< partition<data_type> >& out, size_t offset, size_t length) const = 0;
-  virtual void write(size_t dst_offset, const std::vector< partition<data_type> >& src, size_t src_offset, size_t src_length) = 0;
+  virtual void write(size_t dst_offset, const std::vector< partition<data_type> >& data, size_t src_offset, size_t src_length) = 0;
   
   template <typename T_> friend void read_data(const T_& t, std::vector< partition<typename T_::data_type> >& out, size_t offset, size_t length);
-  template <typename T_> friend void write_data(T_& t, size_t dst_offset, const std::vector< partition<typename T_::data_type> >& src, size_t src_offset, size_t src_length);  
+  template <typename T_> friend void write_data(T_& t, size_t dst_offset, const std::vector< partition<typename T_::data_type> >& data, size_t src_offset, size_t src_length);  
 };
 
 template <unsigned N> using ch_busbase = typebase<N, snode>;

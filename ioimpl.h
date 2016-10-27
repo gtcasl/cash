@@ -33,7 +33,7 @@ protected:
 
 class outputimpl : public ioimpl {
 public:
-  outputimpl(const std::string& name, const lnode& src);
+  outputimpl(const std::string& name, lnodeimpl* src);
   ~outputimpl();
   
   const bitvector& eval(ch_cycle t);
@@ -50,7 +50,7 @@ private:
 
 class tapimpl : public outputimpl {
 public:
-  tapimpl(const std::string& name, const lnode& src);
+  tapimpl(const std::string& name, lnodeimpl* src);
   ~tapimpl() {}
   
   const std::string& get_tapName() const {

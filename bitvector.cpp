@@ -26,7 +26,7 @@ bitvector::bitvector(const std::string& value) : m_words(nullptr), m_size(0) {
 bitvector::bitvector(const std::initializer_list<uint32_t>& value, uint32_t size) 
   : m_words(nullptr), m_size(0) {  
   uint32_t num_words = (size + WORD_MASK) >> WORD_SIZE_LOG;
-  CHDL_REQUIRED((value.size() < num_words) || 
+  CHDL_CHECK((value.size() < num_words) || 
                   ((value.size() == num_words) && 
                     (0 == (size & WORD_MASK) || 
                       (0 == (*value.begin() >> (size & WORD_MASK))))), "input value out of bound");  
@@ -64,7 +64,7 @@ void bitvector::clear_unused_bits() {
   uint32_t extra_bits = m_size & WORD_MASK;
   if (extra_bits) {
     uint32_t num_words = this->get_num_words();
-    m_words[num_words-1] &= ~(WORD_MASK << extra_bits);
+    m_words[num_words-1] &= ~(~0UL << extra_bits);
   }
 }
 
@@ -152,7 +152,7 @@ bitvector& bitvector::operator=(const std::string& value) {
 bitvector& bitvector::operator=(const std::initializer_list<uint32_t>& value) {
   size_t old_num_words = this->get_num_words();
   size_t new_num_words = value.size();  
-  CHDL_REQUIRED(old_num_words >= new_num_words, "input value size out of bound");
+  CHDL_CHECK(old_num_words >= new_num_words, "input value size out of bound");
         
   uint32_t* dst = m_words + (old_num_words - 1);
   for (uint32_t n = old_num_words - new_num_words; n--;) {

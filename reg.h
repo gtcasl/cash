@@ -5,11 +5,11 @@
 
 namespace chdl_internal {
 
-lnode createRegNode(const lnode& next);
-lnode createLatchNode(const lnode& next, const lnode& init, const lnode& enable, const lnode& reset);
+lnodeimpl* createRegNode(lnodeimpl* next);
+lnodeimpl* createLatchNode(lnodeimpl* next, lnodeimpl* init, lnodeimpl* enable, lnodeimpl* reset);
 
-lnode createReadyNode(const lnode& node);
-lnode createValidNode(const lnode& node);
+lnodeimpl* createReadyNode(lnodeimpl* node);
+lnodeimpl* createValidNode(lnodeimpl* node);
 
 ch_logic ch_clock();
 void ch_pushclock(const ch_logicbase& clk);

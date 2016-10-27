@@ -70,10 +70,10 @@ public:
 protected:
 
   virtual void read(std::vector< partition<data_type> >& out, size_t offset, size_t length) const = 0;
-  virtual void write(size_t dst_offset, const std::vector< partition<data_type> >& src, size_t src_offset, size_t src_length) = 0;
+  virtual void write(size_t dst_offset, const std::vector< partition<data_type> >& data, size_t src_offset, size_t src_length) = 0;
   
   template <typename T_> friend void read_data(const T_& t, std::vector< partition<typename T_::data_type> >& out, size_t offset, size_t length);    
-  template <typename T_> friend void write_data(T_& t, size_t dst_offset, const std::vector< partition<typename T_::data_type> >& src, size_t src_offset, size_t src_length);    
+  template <typename T_> friend void write_data(T_& t, size_t dst_offset, const std::vector< partition<typename T_::data_type> >& data, size_t src_offset, size_t src_length);    
 };
 
 template <typename T>
@@ -82,8 +82,8 @@ void read_data(const T& t, std::vector< partition<typename T::data_type> >& out,
 }
 
 template <typename T>
-void write_data(T& t, size_t dst_offset, const std::vector< partition<typename T::data_type> >& src, size_t src_offset, size_t src_length) {
-  reinterpret_cast<typebase<T::bit_count,typename T::data_type>&>(t).write(dst_offset, src, src_offset, src_length);
+void write_data(T& t, size_t dst_offset, const std::vector< partition<typename T::data_type> >& data, size_t src_offset, size_t src_length) {
+  reinterpret_cast<typebase<T::bit_count,typename T::data_type>&>(t).write(dst_offset, data, src_offset, src_length);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -114,7 +114,7 @@ protected:
   const_subscript_ref(const T& container, size_t index)
     : m_container(const_cast<T&>(container))
     , m_index(index) {
-    CHDL_REQUIRED(index < T::bit_count, "invalid subscript index");
+    CHDL_CHECK(index < T::bit_count, "invalid subscript index");
   } 
   
   void read(std::vector< partition<data_type> >& out, size_t offset, size_t length) const override {
@@ -122,7 +122,7 @@ protected:
     read_data(m_container, out, m_index, 1);
   }
   
-  void write(size_t dst_offset, const std::vector< partition<data_type> >& src, size_t src_offset, size_t src_length) override {
+  void write(size_t dst_offset, const std::vector< partition<data_type> >& data, size_t src_offset, size_t src_length) override {
     CHDL_ABORT("invalid call!");
   }
 
@@ -153,9 +153,9 @@ protected:
   subscript_ref(const T& container, size_t index)
     : base(container, index) {}
   
-  void write(size_t dst_offset, const std::vector< partition<data_type> >& src, size_t src_offset, size_t src_length) override {
+  void write(size_t dst_offset, const std::vector< partition<data_type> >& data, size_t src_offset, size_t src_length) override {
     assert(dst_offset == 0 && src_length == 1);
-    write_data(m_container, m_index, src, src_offset, 1);
+    write_data(m_container, m_index, data, src_offset, 1);
   }
 
   using base::m_container;
@@ -182,15 +182,15 @@ protected:
   const_slice_ref(const T& container, size_t start)
     : m_container(const_cast<T&>(container))
     , m_start(start) {
-    CHDL_REQUIRED(start + N <= T::bit_count, "invalid slice range");
+    CHDL_CHECK(start + N <= T::bit_count, "invalid slice range");
   }
   
   void read(std::vector< partition<data_type> >& out, size_t offset, size_t length) const override {
-    CHDL_REQUIRED(offset + length <= N, "invalid slice read range");
+    CHDL_CHECK(offset + length <= N, "invalid slice read range");
     read_data(m_container, out, m_start + offset, length);
   }
   
-  void write(size_t dst_offset, const std::vector< partition<data_type> >& src, size_t src_offset, size_t src_length) override {
+  void write(size_t dst_offset, const std::vector< partition<data_type> >& data, size_t src_offset, size_t src_length) override {
     CHDL_ABORT("invalid call!");
   }
 
@@ -222,9 +222,9 @@ protected:
   slice_ref(const T& container, size_t start)
     : base(container, start) {}
 
-  void write(size_t dst_offset, const std::vector< partition<data_type> >& src, size_t src_offset, size_t src_length) override {
-    CHDL_REQUIRED(dst_offset + src_length <= N, "invalid slice write range");
-    write_data(m_container, m_start + dst_offset, src, src_offset, src_length);
+  void write(size_t dst_offset, const std::vector< partition<data_type> >& data, size_t src_offset, size_t src_length) override {
+    CHDL_CHECK(dst_offset + src_length <= N, "invalid slice write range");
+    write_data(m_container, m_start + dst_offset, data, src_offset, src_length);
   }
 
   using base::m_container;
@@ -256,7 +256,7 @@ public:
 protected:
 
   void read(std::vector< partition<data_type> >& out, size_t offset, size_t length) const override {
-    CHDL_REQUIRED(offset + length <= const_concat_ref::bit_count, "invalid concat read range");
+    CHDL_CHECK(offset + length <= const_concat_ref::bit_count, "invalid concat read range");
     if (offset + length <= A::bit_count)
       read_data(m_a, out, offset, length);
     else if (offset >= A::bit_count)
@@ -268,7 +268,7 @@ protected:
     }
   }
   
-  void write(size_t dst_offset, const std::vector< partition<data_type> >& src, size_t src_offset, size_t src_length) override {
+  void write(size_t dst_offset, const std::vector< partition<data_type> >& data, size_t src_offset, size_t src_length) override {
     CHDL_ABORT("invalid call!");
   }
 
@@ -297,16 +297,16 @@ public:
 
 protected:
   
-  void write(size_t dst_offset, const std::vector< partition<data_type> >& src, size_t src_offset, size_t src_length) override {
-    CHDL_REQUIRED(dst_offset + src_length <= concat_ref::bit_count, "invalid concat write range");
+  void write(size_t dst_offset, const std::vector< partition<data_type> >& data, size_t src_offset, size_t src_length) override {
+    CHDL_CHECK(dst_offset + src_length <= concat_ref::bit_count, "invalid concat write range");
     if (dst_offset + src_length <= A::bit_count)
-      write_data(m_a, dst_offset, src, src_offset, src_length);
+      write_data(m_a, dst_offset, data, src_offset, src_length);
     else if (dst_offset >= A::bit_count)
-      write_data(m_b, dst_offset - A::bit_count, src, src_offset, src_length);
+      write_data(m_b, dst_offset - A::bit_count, data, src_offset, src_length);
     else {
       size_t len = A::bit_count - dst_offset;
-      write_data(m_a, dst_offset, src, src_offset, len);
-      write_data(m_b, 0, src, src_offset + len, src_length - len);
+      write_data(m_a, dst_offset, data, src_offset, len);
+      write_data(m_b, 0, data, src_offset + len, src_length - len);
     }
   }
 

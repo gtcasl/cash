@@ -29,6 +29,100 @@ TEST_CASE("basic tests", "[basic]") {
     });
   }
   
+  SECTION("test select", "[select]") {    
+    TEST([]()->ch_logic {
+      ch_bitv<4> a(0), b(1), c;
+      c = ch_select(a < b, a, b);
+      return (c == a);
+    });
+    TEST([]()->ch_logic {
+      ch_bitv<4> a(0), b(1), c;
+      c = ch_select(a > b, a, b);
+      return (c == b);
+    });
+    TEST([]()->ch_logic {
+      ch_bitv<4> a(0), b(1), c;
+      c = ch_select(a > b, a)(a == 0, 0)(b);
+      return (c == 0);
+    });
+  }
+  
+  SECTION("test when", "[when]") {
+    TEST([]()->ch_logic {
+      ch_bitv<4> a(5), b(1), c(0);
+      ch_when(a > b, [&]() { 
+          c = a; 
+      }).end();
+      return (c == a);
+    });
+    TEST([]()->ch_logic {
+      ch_bitv<4> a(5), b(1), c(0);
+      ch_when(a < b, [&]() { 
+          c = a; 
+      }).when(a > b, [&]() {
+          c = b;
+      }).end();
+      return (c == b);
+    });
+    TEST([]()->ch_logic {
+      ch_bitv<4> a(5), b(1), c(0);
+      ch_when(a < b, [&]() { 
+          c = a; 
+      }).end([&]() { 
+          c = b; 
+      });
+      return (c == b);
+    });
+    TEST([]()->ch_logic {
+      ch_bitv<4> a(5), b(1), c(0);
+      ch_when(a > b, [&]() {
+        c = a - b; 
+        b = 0;
+      }) 
+      .when(a == b, [&]() {
+        c = 0; 
+      }) 
+      .end([&]() {
+        c = b;
+      });
+      return (c == 4 && b == 0);
+    });
+  }
+  SECTION("test case", "[case]") {
+    TEST([]()->ch_logic {
+      ch_bitv<4> a(5), b(1), c(0);
+      ch_case(a)
+      .when(0, [&]() {
+        c = a; 
+      }) 
+      .when(1, [&]() {
+        c = b; 
+      }) 
+      .end([&]() {
+        c = a + b;
+      });
+      return (c == 6);
+    });
+    TEST([]()->ch_logic {
+      ch_bitv<4> a(5), b(1), c(0);
+      ch_case(a)
+      .when(0, [&]() {
+        c = a; 
+      }) 
+      .when(1, [&]() {
+        c = b; 
+      }) 
+      .end([&]() {
+         ch_when(b > 0, [&]() {
+            c = a + b;       
+         }).end([&](){
+            c = a - b;
+         });        
+      });
+      return (c == 6);
+    });
+  }
+  
   SECTION("test subscript", "[subscript]") {
     TEST([]()->ch_logic {
       ch_bit4 a(1010_b);
@@ -79,6 +173,26 @@ TEST_CASE("basic tests", "[basic]") {
       ch_logic x = a[3];
       x = '1';
       return a == 1000_b;
+    });
+    TEST([]()->ch_logic {
+      ch_bit4 a;
+      a[0] = '0';
+      a[1] = '1';
+      a[2] = '1';
+      a[3] = '0';
+      a[0] = '1';
+      a[3] = '1';
+      a.slice<2>(1) = '0';     
+      return a == 1001_b;
+    });
+    TEST([]()->ch_logic {
+      ch_bit4 a;
+      ch_bit2 x = a.slice<2>(0);
+      ch_bit2 y = a.slice<2>(2);
+      a.slice<2>(1) = '0';     
+      x = '1';
+      y = '1';
+      return a == 0001_b;
     });
     TEST([]()->ch_logic {         
       ch_bit4 a, b(1);
@@ -236,14 +350,22 @@ TEST_CASE("basic tests", "[basic]") {
     TEST([]()->ch_logic {
       ch_bit4 a(0x1), b(0x2);
       ch_bit4 c = a + b;
-      return (c == 0x3);
+      return (c == 3);
     });
     TEST([]()->ch_logic {
       ch_bitv<64> a(0xffffffff), b(0x1);
       ch_bitv<64> c = a + b;
       return (c == 100000000e64_h);
-    });      
+    });
+    TEST([]()->ch_logic {
+      ch_bit4 a(0x1), b(0x2);
+      ch_bit4 c = b - a;
+      return (c == 1);
+    });
+    TEST([]()->ch_logic {
+      ch_bit4 a(0x1), b(0x2);
+      ch_bit4 c = a - b;
+      return (c == 0xf);
+    });
   }
 }
-
-

@@ -14,6 +14,7 @@ public:
   snode(snode&& rhs);
   snode(const snode& rhs, uint32_t size);
   explicit snode(snodeimpl* impl);
+  explicit snode(const std::vector< partition<snode> >& data, uint32_t size);
   snode(const std::string& value);
   explicit snode(const std::initializer_list<uint32_t>& value, uint32_t size);
 
@@ -37,11 +38,9 @@ public:
   
   void write(uint32_t dst_offset, const std::vector< partition<snode> >& src, uint32_t src_offset, uint32_t src_length, uint32_t size);
   
-  bool to_bool(uint32_t size) const;
+  bool to_bool(uint32_t size) const; 
   
-  void ensureInitialized(uint32_t size) const;
-  
-  explicit operator snodeimpl*() const {
+  operator snodeimpl*() const {
     assert(m_impl);
     if (m_readonly)
       this->clone();
@@ -49,6 +48,8 @@ public:
   }
 
 protected:
+  
+  void ensureInitialized(uint32_t size) const;
   
   void assign(snodeimpl* impl, bool is_owner = false);
   
@@ -60,6 +61,7 @@ protected:
   mutable bool m_readonly;
   
   friend class context;
+  template <unsigned N> friend class ch_bus;
 };
 
 }

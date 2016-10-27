@@ -33,9 +33,11 @@ public:
     m_refs.erase(curr_owner);
   }
 
-  void update_all_refs(lnodeimpl* impl);
+  void replace_refs(lnodeimpl* impl);
   
-  virtual void replace_undef_proxy(uint32_t start, lnodeimpl* new_owner, uint32_t offset, uint32_t length) {}
+  virtual void update_refs(uint32_t start, lnodeimpl* new_owner, uint32_t offset, uint32_t length) {}
+  
+  lnodeimpl* resolve(lnodeimpl* impl);
   
   const std::vector<lnode>& get_srcs() const {
     return m_srcs;
@@ -45,11 +47,11 @@ public:
     return m_srcs;
   }
   
-  const lnode& get_src(unsigned i) const {
+  lnodeimpl* get_src(unsigned i) const {
     return m_srcs[i];
   }
   
-  lnode& get_src(unsigned i) {
+  lnodeimpl* get_src(unsigned i) {
     return m_srcs[i];
   }
   
@@ -61,7 +63,7 @@ public:
     return m_value;
   }
   
- bitvector& get_value() { 
+  bitvector& get_value() { 
     return m_value;
   }
   
@@ -90,7 +92,7 @@ public:
   virtual ~undefimpl();
   
   void remove_ref(const lnode* curr_owner, lnodeimpl* new_owner) override;
-  void replace_undef_proxy(uint32_t start, lnodeimpl* new_owner, uint32_t offset, uint32_t length) override;
+  void update_refs(uint32_t start, lnodeimpl* new_owner, uint32_t offset, uint32_t length) override;
 
   const bitvector& eval(ch_cycle t) override;  
   void print_vl(std::ostream& out) const override;

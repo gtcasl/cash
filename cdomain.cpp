@@ -6,7 +6,7 @@
 using namespace std;
 using namespace chdl_internal;
 
-clock_event::clock_event(const lnode& signal, EDGE_DIR edgedir)
+clock_event::clock_event(lnodeimpl* signal, EDGE_DIR edgedir)
   : m_signal(signal)
   , m_edgedir(edgedir)
   , m_cval(false) 
@@ -44,14 +44,14 @@ cdomain::cdomain(context* ctx, const std::vector<clock_event>& sensitivity_list)
   : m_ctx(ctx) {
   m_sensitivity_list.reserve(sensitivity_list.size());
   for (const clock_event& e : sensitivity_list) {
-    assert(get_impl<undefimpl>(e.get_signal()) == nullptr);
+    assert(dynamic_cast<undefimpl*>(e.get_signal()) == nullptr);
     // constants are omitted by default
-    if (get_impl<litimpl>(e.get_signal())) {
+    if (dynamic_cast<litimpl*>(e.get_signal())) {
       continue;
     }
     // ensure unique signals
     auto it = std::find(m_sensitivity_list.begin(), m_sensitivity_list.end(), e.get_signal());
-    CHDL_REQUIRED(it == m_sensitivity_list.end(), "a duplicate signal event provided");    
+    CHDL_CHECK(it == m_sensitivity_list.end(), "a duplicate signal event provided");    
     m_sensitivity_list.emplace_back(e);
   }
 } 
