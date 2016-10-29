@@ -65,16 +65,31 @@ namespace chdl_internal {
     write_data(CHDL_PAIR_R(x), dst_offset, data, src_offset, len); \
   }
 
+template <typename Base>
+class struct_stub : public Base {
+public:
+  using Base::operator=; \
+  typedef typename Base::data_type data_type;
+  
+  struct_stub& operator=(const struct_stub& rhs) {
+    // the main purpose of this stub is for disabling the base class assignment operator
+    // such that the auto-generated derived assignment operators do not call it
+  }   
+};
+
 #define CHDL_STRUCT_IMPL(...) \
-  public chdl_internal::ch_bitbase<CHDL_FOR_EACH(CHDL_STRUCT_SIZE, CHDL_SEP_PLUS, __VA_ARGS__)> { \
-    using base = chdl_internal::ch_bitbase<CHDL_FOR_EACH(CHDL_STRUCT_SIZE, CHDL_SEP_PLUS, __VA_ARGS__)>; \
+  public chdl_internal::struct_stub< chdl_internal::ch_bitbase<CHDL_FOR_EACH(CHDL_STRUCT_SIZE, CHDL_SEP_PLUS, __VA_ARGS__)> > { \
+  public:\
+    using base = chdl_internal::struct_stub< chdl_internal::ch_bitbase<CHDL_FOR_EACH(CHDL_STRUCT_SIZE, CHDL_SEP_PLUS, __VA_ARGS__)> >; \
     using base::operator=; \
     typedef typename base::data_type data_type; \
-    struct bus_type : public chdl_internal::ch_busbase<CHDL_FOR_EACH(CHDL_STRUCT_SIZE, CHDL_SEP_PLUS, __VA_ARGS__)> { \
-      using base = chdl_internal::ch_busbase<CHDL_FOR_EACH(CHDL_STRUCT_SIZE, CHDL_SEP_PLUS, __VA_ARGS__)>; \
+    class bus_type : public chdl_internal::struct_stub< chdl_internal::ch_busbase<CHDL_FOR_EACH(CHDL_STRUCT_SIZE, CHDL_SEP_PLUS, __VA_ARGS__)> > { \
+    public: \
+      using base = chdl_internal::struct_stub< chdl_internal::ch_busbase<CHDL_FOR_EACH(CHDL_STRUCT_SIZE, CHDL_SEP_PLUS, __VA_ARGS__)> >; \
       using base::operator=; \
       typedef typename base::data_type data_type; \
       CHDL_FOR_EACH(CHDL_STRUCT_BUS_FIELD, CHDL_SEP_SEMICOLON, __VA_ARGS__); \
+    protected: \
       void read(std::vector< chdl_internal::partition<data_type> >& out, size_t offset, size_t length) const override { \
         CHDL_FOR_EACH(CHDL_STRUCT_READ, CHDL_SEP_SEMICOLON, __VA_ARGS__); \
         CHDL_ABORT("invalid subscript index"); \
@@ -83,8 +98,9 @@ namespace chdl_internal {
         CHDL_FOR_EACH(CHDL_STRUCT_WRITE, CHDL_SEP_SEMICOLON, __VA_ARGS__); \
         CHDL_ABORT("invalid subscript index"); \
       } \
-    }; \
+    };\
     CHDL_FOR_EACH(CHDL_STRUCT_FIELD, CHDL_SEP_SEMICOLON, __VA_ARGS__); \
+  protected: \
     void read(std::vector< chdl_internal::partition<data_type> >& out, size_t offset, size_t length) const override { \
       CHDL_FOR_EACH(CHDL_STRUCT_READ, CHDL_SEP_SEMICOLON, __VA_ARGS__); \
       CHDL_ABORT("invalid subscript index"); \
@@ -97,14 +113,17 @@ namespace chdl_internal {
 
 #define CHDL_UNION_IMPL(...) \
   public chdl_internal::ch_bitbase<CHDL_FOR_EACH(CHDL_STRUCT_SIZE, CHDL_SEP_PLUS, __VA_ARGS__)> { \
+  public:\
     using base = chdl_internal::ch_bitbase<CHDL_FOR_EACH(CHDL_STRUCT_SIZE, CHDL_SEP_PLUS, __VA_ARGS__)>; \
     using base::operator=; \
     typedef typename base::data_type data_type; \
-    struct bus_type : public chdl_internal::ch_busbase<CHDL_FOR_EACH(CHDL_STRUCT_SIZE, CHDL_SEP_PLUS, __VA_ARGS__)> { \
+    class bus_type : public chdl_internal::ch_busbase<CHDL_FOR_EACH(CHDL_STRUCT_SIZE, CHDL_SEP_PLUS, __VA_ARGS__)> { \
+    public:\
       using base = chdl_internal::ch_busbase<CHDL_FOR_EACH(CHDL_STRUCT_SIZE, CHDL_SEP_PLUS, __VA_ARGS__)>; \
       using base::operator=; \
       typedef typename base::data_type data_type; \
       CHDL_FOR_EACH(CHDL_STRUCT_BUS_FIELD, CHDL_SEP_SEMICOLON, __VA_ARGS__); \
+    protected:\
       void read(std::vector< chdl_internal::partition<data_type> >& out, size_t offset, size_t length) const override { \
         CHDL_FOR_EACH(CHDL_UNION_READ, CHDL_SEP_SEMICOLON, __VA_ARGS__); \
         CHDL_ABORT("invalid subscript index"); \
@@ -115,6 +134,7 @@ namespace chdl_internal {
       } \
     }; \
     CHDL_FOR_EACH(CHDL_STRUCT_FIELD, CHDL_SEP_SEMICOLON, __VA_ARGS__); \
+  protected:\
     void read(std::vector< chdl_internal::partition<data_type> >& out, size_t offset, size_t length) const override { \
       CHDL_FOR_EACH(CHDL_UNION_READ, CHDL_SEP_SEMICOLON, __VA_ARGS__); \
       CHDL_ABORT("invalid subscript index"); \
@@ -126,9 +146,9 @@ namespace chdl_internal {
   }  
 }
 
-#define CHDL_STRUCT(name) struct name : CHDL_STRUCT_IMPL
+#define CHDL_STRUCT(name) class name : CHDL_STRUCT_IMPL
 
-#define CHDL_UNION(name) struct name : CHDL_UNION_IMPL
+#define CHDL_UNION(name) class name : CHDL_UNION_IMPL
 
 
 

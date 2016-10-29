@@ -2,7 +2,9 @@
 
 #include "bitv.h"
 
-namespace chdl_internal {
+namespace chdl {
+
+namespace stl {
 
 template <unsigned ADDR, unsigned WIDTH>
 CHDL_OUT(ch_bitv<WIDTH>, ch_logic, ch_logic) ch_fifo(
@@ -33,4 +35,5 @@ CHDL_OUT(ch_bitv<WIDTH>, ch_logic, ch_logic) ch_fifo(
   CHDL_RET(dout, empty, full);
 }
 
+}
 }

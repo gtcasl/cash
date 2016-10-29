@@ -1,5 +1,7 @@
 #include "common.h"
 
+using namespace chdl::core_literals;
+
 __ch_struct(s1_t)(
   (ch_bit4) a
 );
@@ -35,8 +37,7 @@ template <unsigned N>
 
 typedef st_t<4> st4_t;
  
-TEST_CASE("aggregate tests", "[aggregate]") {     
-   
+TEST_CASE("aggregate tests", "[aggregate]") {  
   SECTION("test structs", "[struct]") {     
     TEST([]()->ch_logic {
       s1_t s1;

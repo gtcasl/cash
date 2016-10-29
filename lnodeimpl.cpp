@@ -131,11 +131,6 @@ lnode::lnode(lnode&& rhs) : m_impl(nullptr) {
   this->move(rhs);
 }
 
-lnode::lnode(const lnode& rhs, uint32_t size) : m_impl(nullptr) {
-  rhs.ensureInitialized(0, size, size);
-  this->assign(rhs.m_impl, true);
-}
-
 lnode::lnode(lnodeimpl* impl) : m_impl(nullptr) {
   this->assign(impl, true);
 }
@@ -148,33 +143,16 @@ lnode::lnode(const std::vector< partition<lnode> >& data, uint32_t size) : m_imp
   }
 }
 
-lnode::lnode(const std::string& value) : m_impl(nullptr) {
+lnode::lnode(const bitvector& value) : m_impl(nullptr) {
   this->assign(ctx_curr()->create_literal(value), true);
-}
-
-lnode::lnode(const std::initializer_list<uint32_t>& value, uint32_t size) : m_impl(nullptr) {
-  this->assign(ctx_curr()->create_literal(value, size), true);
 }
 
 lnode::~lnode() {
   this->reset();
 }
 
-void lnode::reset(lnodeimpl* impl, bool initialization) const {
-  if (impl) {
-    if (!initialization) {
-      impl = impl->resolve(m_impl);
-    }
-    impl->add_ref(this);
-  }
-  if (m_impl) {
-    m_impl->remove_ref(this, impl);
-  }
-  m_impl = impl;
-}
-
-void lnode::assign(const std::initializer_list<uint32_t>& value, uint32_t size) {
-  this->assign(ctx_curr()->create_literal(value, size));
+void lnode::assign(const bitvector& value) {
+  this->assign(ctx_curr()->create_literal(value));
 }
 
 lnode& lnode::operator=(const lnode& rhs) {
@@ -218,12 +196,13 @@ const bitvector& lnode::eval(ch_cycle t) {
   return m_impl->eval(t);
 }
 
-void lnode::ensureInitialized(uint32_t offset, uint32_t length, uint32_t size) const {
-  if (m_impl == nullptr) {    
-    if (length == size) {
-      m_impl = new undefimpl(ctx_curr(), length);
+const lnode& lnode::ensureInitialized(uint32_t size, uint32_t offset, uint32_t length) const {
+  if (m_impl == nullptr) {   
+    context* ctx = ctx_curr();
+    if (length == 0 || length == size) {
+      m_impl = new undefimpl(ctx, size);
     } else {
-      m_impl = new proxyimpl(ctx_curr(), size);
+      m_impl = new proxyimpl(ctx, size);
       reinterpret_cast<proxyimpl*>(m_impl)->resize(offset, length);
     }
     m_impl->add_ref(this);
@@ -234,17 +213,31 @@ void lnode::ensureInitialized(uint32_t offset, uint32_t length, uint32_t size) c
     }
   }
   assert(m_impl->get_size() >= length);
+  return *this;
+}
+
+void lnode::reset(lnodeimpl* impl, bool initialization) const {
+  if (impl) {
+    if (!initialization) {
+      impl = impl->resolve(m_impl);
+    }
+    impl->add_ref(this);
+  }
+  if (m_impl) {
+    m_impl->remove_ref(this, impl);
+  }
+  m_impl = impl;
 }
 
 void lnode::assign(lnodeimpl* impl, bool initialization) const {
   assert(impl);
-  if (m_impl == impl)
-    return;
+  assert(impl != m_impl);
   this->reset(impl, initialization);
 }
 
 void lnode::move(lnode& rhs) {
   assert(rhs.m_impl);
+  assert(rhs.m_impl != m_impl);
   if (m_impl != rhs.m_impl) {
     this->reset();
     m_impl = rhs.m_impl;
@@ -255,7 +248,7 @@ void lnode::move(lnode& rhs) {
 
 void lnode::read(std::vector< partition<lnode> >& out, uint32_t offset, uint32_t length, uint32_t size) const {
   assert((offset + length) <= size);
-  this->ensureInitialized(offset, length, size);
+  this->ensureInitialized(size, offset, length);
   out.push_back({*this, offset, length});
 }
 

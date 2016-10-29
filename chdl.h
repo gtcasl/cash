@@ -1,7 +1,7 @@
 #pragma once
 
-#include "literals.h"
 #include "bitv.h"
+#include "literals.h"
 #include "select.h"
 #include "when.h"
 #include "case.h"
@@ -14,7 +14,6 @@
 #include "vcd.h"
 #include "assertion.h"
 #include "aggregate.h"
-#include "fifo.h"
 
 namespace chdl {
 
@@ -59,15 +58,6 @@ namespace core {
   typedef ch_bitv<16> ch_bit16;
   typedef ch_bitv<32> ch_bit32;
   typedef ch_bitv<64> ch_bit64;
-
-  //
-  // literals
-  //
-
-  using chdl_internal::operator "" _b;
-  using chdl_internal::operator "" _o;
-  using chdl_internal::operator "" _d;
-  using chdl_internal::operator "" _h;
 
   //
   // subscript operators
@@ -164,7 +154,6 @@ namespace core {
   using chdl_internal::ch_lsb;
   using chdl_internal::ch_enc;
   using chdl_internal::ch_dec;
-  using chdl_internal::ch_fifo;
 
   //
   // utility functions
@@ -206,6 +195,11 @@ namespace sim {
   using ch_bus64  = ch_bus<64>;
 
   //
+  // literals
+  //
+  
+  
+  //
   // api objects
   //
 
@@ -213,6 +207,18 @@ namespace sim {
   using ch_simulator  = chdl_internal::ch_simulator;
   using ch_tracer     = chdl_internal::ch_tracer;
   using ch_vcdtracer  = chdl_internal::ch_vcdtracer;
+}
+
+//
+// literals
+//
+
+inline namespace core_literals { 
+  using namespace chdl_internal::core_literals;
+}
+
+inline namespace sim_literals {
+  using namespace chdl_internal::sim_literals;
 }
 
 }

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "typebase.h"
+#include "bitvector.h"
 
 namespace chdl_internal {
 
@@ -16,12 +17,10 @@ public:
   
   lnode(const lnode& rhs);
   lnode(lnode&& rhs);
-  lnode(const lnode& rhs, uint32_t size);
   explicit lnode(lnodeimpl* impl);
-  explicit lnode(const std::vector< partition<lnode> >& data, uint32_t size);
-  lnode(const std::string& value);
-  explicit lnode(const std::initializer_list<uint32_t>& value, uint32_t size);
-
+  lnode(const std::vector< partition<lnode> >& data, uint32_t size);
+  lnode(const bitvector& value);
+  
   virtual ~lnode();
   
   lnode& operator=(const lnode& rhs);
@@ -42,7 +41,7 @@ public:
  
   const bitvector& eval(ch_cycle t);  
   
-  void assign(const std::initializer_list<uint32_t>& value, uint32_t size);
+  void assign(const bitvector& value);
   
   void read(std::vector< partition<lnode> >& out, uint32_t offset, uint32_t length, uint32_t size) const;
   
@@ -55,7 +54,7 @@ public:
 
 protected:  
   
-  void ensureInitialized(uint32_t offset, uint32_t length, uint32_t size) const;
+  const lnode& ensureInitialized(uint32_t size, uint32_t offset = 0, uint32_t length = 0) const;
   
   void reset(lnodeimpl* impl = nullptr, bool initialization = false) const;
 

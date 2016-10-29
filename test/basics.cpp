@@ -1,5 +1,7 @@
 #include "common.h"
 
+using namespace chdl::core_literals;
+
 TEST_CASE("basic tests", "[basic]") {   
   
   SECTION("test literals", "[literal]") {        
@@ -233,12 +235,12 @@ TEST_CASE("basic tests", "[basic]") {
   SECTION("test concat", "[concat]") {
     TEST([]()->ch_logic {
       ch_bit4 a(1100_b);
-      ch_bitv<5> c = (a, '1');
+      ch_bitv<5> c = (a, 1_b);
       return (c == 11001_b);
     });
     TEST([]()->ch_logic {
       ch_bit4 a(1100_b);
-      ch_bitv<5> c = ('1', a);
+      ch_bitv<5> c = (1_b, a);
       return (c == 11100_b);
     });
     TEST([]()->ch_logic {

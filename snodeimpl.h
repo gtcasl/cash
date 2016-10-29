@@ -7,8 +7,7 @@ namespace chdl_internal {
 class snodeimpl : public refcounted {
 public:
   snodeimpl(uint32_t size);
-  snodeimpl(const std::string& value);
-  snodeimpl(const std::initializer_list<uint32_t>& value, uint32_t size);
+  snodeimpl(const bitvector& value);
   ~snodeimpl();  
   
   uint32_t get_id() const {

@@ -16,8 +16,7 @@
   CHDL_BINOP_GEN0(func, int32_t) \
   CHDL_BINOP_GEN0(func, uint32_t) \
   CHDL_BINOP_GEN0(func, int64_t) \
-  CHDL_BINOP_GEN0(func, uint64_t)
-    
+  CHDL_BINOP_GEN0(func, uint64_t)    
   
 #define CHDL_BINOP_GEN2(func, op) \
   CHDL_BINOP_GEN1(func) \
@@ -54,7 +53,7 @@
   CHDL_COMPAREOP_GEN0(func, op, uint64_t)
 
 #define CHDL_SHIFTOP_GEN0(func, type) \
-  template <unsigned N> ch_bitv<N> func(const ch_bitbase<N>& a, type b) { return func(a, ch_bitv<32>(b)); }
+  template <unsigned N> ch_bitv<N> func(const ch_bitbase<N>& a, type b) { return func(a, ch_bitv<N>(b)); }
   
 #define CHDL_SHIFTOP_GEN1(func) \
   CHDL_SHIFTOP_GEN0(func, char) \

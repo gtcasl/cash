@@ -44,8 +44,7 @@ public:
   void pop_cond();
   lnodeimpl* resolve(lnodeimpl* dst, lnodeimpl* src);
   
-  litimpl* create_literal(const std::initializer_list<uint32_t>& value, uint32_t size);
-  litimpl* create_literal(const std::string& value);
+  litimpl* create_literal(const bitvector& value);
   
   cdomain* create_cdomain(const std::vector<clock_event>& sensitivity_list);
   void remove_cdomain(cdomain* cd);

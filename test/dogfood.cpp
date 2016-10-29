@@ -1,5 +1,7 @@
 #include "common.h"
 
+using namespace chdl::core_literals;
+
 int g_debugbreak = 0;
 
 static void debugbreak() {
@@ -7,5 +9,5 @@ static void debugbreak() {
 }
 
 TEST_CASE("dogfood", "[debug]") {  
-  //-- 
+  //--
 }

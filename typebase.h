@@ -17,16 +17,6 @@ struct partition {
   uint32_t length;
 };
 
-
-template <unsigned N> 
-static uint32_t to_value(char value) {
-  if (value == '0')
-    return 0x0;
-  if (value == '1')
-    return 0x1;
-  CHDL_ABORT("invalid character value");
-}
-
 template <unsigned N, typename T>
 class typebase {
 public:   
@@ -88,31 +78,49 @@ void write_data(T& t, size_t dst_offset, const std::vector< partition<typename T
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T>
-class const_subscript_ref : public typebase<1, typename T::data_type> {
-public:
-  using base = typebase<1, typename T::data_type>;
-  typedef typename base::data_type data_type;
-  typedef T container_type;
-  
-  const_subscript_ref& operator=(const const_subscript_ref& rhs) = delete;
-  
-  template <unsigned M> const_slice_ref<base, M> slice(size_t index) = delete;
+template <unsigned N, typename T>
+class const_refbase: public typebase<N, T> {
+public:   
+  using base = typebase<N, T>;
+  static const unsigned bit_count = N;
+  typedef T data_type;
   
   template <unsigned M> slice_ref<base, M> slice(size_t index) = delete;
-  
-  template <unsigned M> const_slice_ref<base, M> aslice(size_t index) const = delete;
-  
   template <unsigned M> slice_ref<base, M> aslice(size_t index) = delete;
-  
-  const_subscript_ref<base> operator[](size_t index) const = delete;
-  
   subscript_ref<base> operator[](size_t index) = delete;  
+  
+private:
+  void write(size_t dst_offset, const std::vector< partition<data_type> >& data, size_t src_offset, size_t src_length) override {
+    assert(false); // invalid call
+  }
+};
+
+template <unsigned N, typename T>
+class  refbase: public typebase<N, T> {
+public:   
+  using base = typebase<N, T>;
+  using base::operator=;
+  static const unsigned bit_count = N;
+  typedef T data_type;  
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+template <typename T>
+class const_subscript_ref : public const_refbase<1, typename T::data_type> {
+public:
+  using base = const_refbase<1, typename T::data_type>;
+  typedef typename base::data_type data_type;
+  typedef T container_type;
+    
+  template <unsigned M> const_slice_ref<base, M> slice(size_t index) const = delete;   
+  template <unsigned M> const_slice_ref<base, M> aslice(size_t index) const = delete;    
+  const_subscript_ref<base> operator[](size_t index) const = delete;  
 
 protected: 
   
   const_subscript_ref(const T& container, size_t index)
-    : m_container(const_cast<T&>(container))
+    : m_container(container)
     , m_index(index) {
     CHDL_CHECK(index < T::bit_count, "invalid subscript index");
   } 
@@ -120,46 +128,54 @@ protected:
   void read(std::vector< partition<data_type> >& out, size_t offset, size_t length) const override {
     assert(offset == 0 && length == 1);
     read_data(m_container, out, m_index, 1);
-  }
-  
-  void write(size_t dst_offset, const std::vector< partition<data_type> >& data, size_t src_offset, size_t src_length) override {
-    CHDL_ABORT("invalid call!");
-  }
+  }  
 
-  T& m_container;
-  size_t m_index;   
+  const T& m_container;
+  size_t m_index;
   
-  friend T;  
-  template <typename T_> friend class subscript_ref;
+  friend T;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T>
-class subscript_ref : public const_subscript_ref<T> {
+class subscript_ref : public refbase<1, typename T::data_type> {
 public:
-  using base = const_subscript_ref<T>;
+  using base = refbase<1, typename T::data_type>;
   using base::base::operator=;
   typedef typename base::data_type data_type;
-  typedef typename base::container_type container_type;
+  typedef T container_type;
+    
+  template <unsigned M> slice_ref<base, M> slice(size_t index) = delete;   
+  template <unsigned M> slice_ref<base, M> aslice(size_t index) = delete;   
+  subscript_ref<base> operator[](size_t index) = delete;  
   
   subscript_ref& operator=(const subscript_ref& rhs) {
-    base::base::operator=(rhs);
+    m_container = rhs.m_container;
+    m_index = rhs.m_index;
     return *this;
   }
-  
-protected:
 
-  subscript_ref(const T& container, size_t index)
-    : base(container, index) {}
+protected: 
+  
+  subscript_ref(T& container, size_t index)
+    : m_container(container)
+    , m_index(index) {
+    CHDL_CHECK(index < T::bit_count, "invalid subscript index");
+  } 
+  
+  void read(std::vector< partition<data_type> >& out, size_t offset, size_t length) const override {
+    assert(offset == 0 && length == 1);
+    read_data(m_container, out, m_index, 1);
+  }  
   
   void write(size_t dst_offset, const std::vector< partition<data_type> >& data, size_t src_offset, size_t src_length) override {
     assert(dst_offset == 0 && src_length == 1);
     write_data(m_container, m_index, data, src_offset, 1);
   }
 
-  using base::m_container;
-  using base::m_index;
+  T& m_container;
+  size_t m_index;
   
   friend T;
 };
@@ -167,20 +183,16 @@ protected:
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T, unsigned N>
-class const_slice_ref : public typebase<N, typename T::data_type> {
+class const_slice_ref : public const_refbase<N, typename T::data_type> {
 public:
-  using base = typebase<N, typename T::data_type>;
+  using base = const_refbase<N, typename T::data_type>;
   typedef typename base::data_type data_type;
   typedef T container_type;
-  
-  const_slice_ref& operator=(const const_slice_ref& rhs) = delete;
-  
-  subscript_ref<base> operator[](size_t index) = delete;
 
 protected:
 
   const_slice_ref(const T& container, size_t start)
-    : m_container(const_cast<T&>(container))
+    : m_container(container)
     , m_start(start) {
     CHDL_CHECK(start + N <= T::bit_count, "invalid slice range");
   }
@@ -189,46 +201,49 @@ protected:
     CHDL_CHECK(offset + length <= N, "invalid slice read range");
     read_data(m_container, out, m_start + offset, length);
   }
-  
-  void write(size_t dst_offset, const std::vector< partition<data_type> >& data, size_t src_offset, size_t src_length) override {
-    CHDL_ABORT("invalid call!");
-  }
 
-  T& m_container;
+  const T& m_container;
   size_t m_start;
   
   friend T;
-  template <typename T_, unsigned N_> friend class slice_ref;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T, unsigned N>
-class slice_ref : public const_slice_ref<T, N> {
+class slice_ref : public refbase<N, typename T::data_type> {
 public:
-  using base = const_slice_ref<T, N>;
+  using base = refbase<N, typename T::data_type>;
   using base::base::operator=;
-  using base::base::operator[];
   typedef typename base::data_type data_type;
-  typedef typename base::container_type container_type;
+  typedef T container_type;
   
   slice_ref& operator=(const slice_ref& rhs) {
-    base::base::operator=(rhs);
+    m_container = rhs.m_container;
+    m_start = rhs.m_start;
     return *this;
   }
 
 protected:
 
-  slice_ref(const T& container, size_t start)
-    : base(container, start) {}
+  slice_ref(T& container, size_t start)
+    : m_container(container)
+    , m_start(start) {
+    CHDL_CHECK(start + N <= T::bit_count, "invalid slice range");
+  }
+  
+  void read(std::vector< partition<data_type> >& out, size_t offset, size_t length) const override {
+    CHDL_CHECK(offset + length <= N, "invalid slice read range");
+    read_data(m_container, out, m_start + offset, length);
+  }
 
   void write(size_t dst_offset, const std::vector< partition<data_type> >& data, size_t src_offset, size_t src_length) override {
     CHDL_CHECK(dst_offset + src_length <= N, "invalid slice write range");
     write_data(m_container, m_start + dst_offset, data, src_offset, src_length);
   }
 
-  using base::m_container;
-  using base::m_start;
+  T& m_container;
+  size_t m_start;
 
   friend T;
 };
@@ -236,24 +251,20 @@ protected:
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename B, typename A>
-class const_concat_ref : public typebase<B::bit_count + A::bit_count, typename A::data_type> {
+class const_concat_ref : public const_refbase<B::bit_count + A::bit_count, typename A::data_type> {
 public:
   static_assert(std::is_same<typename A::data_type, typename B::data_type>::value, "type mismatch!");
-  using base = typebase<B::bit_count + A::bit_count, typename A::data_type>;
+  using base = const_refbase<B::bit_count + A::bit_count, typename A::data_type>;
   typedef typename A::data_type data_type;
   typedef A first_container_type;
   typedef B second_container_type;
-  
-  const_concat_ref(const B& b, const A& a)
-    : m_b(const_cast<B&>(b))
-    , m_a(const_cast<A&>(a))
-  {}
-  
-  const_concat_ref& operator=(const const_concat_ref& rhs) = delete;
-
-  subscript_ref<base> operator[](size_t index) = delete;
 
 protected:
+   
+  const_concat_ref(const B& b, const A& a)
+    : m_b(b)
+    , m_a(a)
+  {}
 
   void read(std::vector< partition<data_type> >& out, size_t offset, size_t length) const override {
     CHDL_CHECK(offset + length <= const_concat_ref::bit_count, "invalid concat read range");
@@ -267,35 +278,56 @@ protected:
       read_data(m_b, out, 0, length - len);
     }
   }
-  
-  void write(size_t dst_offset, const std::vector< partition<data_type> >& data, size_t src_offset, size_t src_length) override {
-    CHDL_ABORT("invalid call!");
-  }
 
-  A& m_a;
-  B& m_b;
+  const A& m_a;
+  const B& m_b;
+  
+  template <typename B_, typename A_>
+  friend const_concat_ref<B_, A_> make_const_concat_ref(const B_& b, const A_& a);
 };
+
+template <typename B, typename A>
+const_concat_ref<B, A> make_const_concat_ref(const B& b, const A& a) {
+  return const_concat_ref<B, A>(b, a);
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename B, typename A>
-class concat_ref : public const_concat_ref<B, A> {
+class concat_ref : public refbase<B::bit_count + A::bit_count, typename A::data_type> {
 public:
-  using base = const_concat_ref<B, A>;
+  static_assert(std::is_same<typename A::data_type, typename B::data_type>::value, "type mismatch!");
+  using base = refbase<B::bit_count + A::bit_count, typename A::data_type>;
   using base::base::operator=;
-  using base::base::operator[];
-  typedef typename base::data_type data_type;
-  typedef typename base::first_container_type first_container_type;
-  typedef typename base::second_container_type second_container_type;
-  
-  concat_ref(const B& b, const A& a) : base(b, a) {}
+  typedef typename A::data_type data_type;
+  typedef A first_container_type;
+  typedef B second_container_type; 
   
   concat_ref& operator=(const concat_ref& rhs) {
-    base::base::operator=(rhs);
+    m_a = rhs.m_a;
+    m_b = rhs.m_b;
     return *this;
   }
 
 protected:
+  
+  concat_ref(const B& b, const A& a)
+    : m_b(const_cast<B&>(b))
+    , m_a(const_cast<A&>(a))
+  {}
+  
+  void read(std::vector< partition<data_type> >& out, size_t offset, size_t length) const override {
+    CHDL_CHECK(offset + length <= concat_ref::bit_count, "invalid concat read range");
+    if (offset + length <= A::bit_count)
+      read_data(m_a, out, offset, length);
+    else if (offset >= A::bit_count)
+      read_data(m_b, out, offset - A::bit_count, length);
+    else {
+      size_t len = A::bit_count - offset;
+      read_data(m_a, out, offset, len);
+      read_data(m_b, out, 0, length - len);
+    }
+  }
   
   void write(size_t dst_offset, const std::vector< partition<data_type> >& data, size_t src_offset, size_t src_length) override {
     CHDL_CHECK(dst_offset + src_length <= concat_ref::bit_count, "invalid concat write range");
@@ -310,8 +342,16 @@ protected:
     }
   }
 
-  using base::m_a;
-  using base::m_b;
+  A& m_a;
+  B& m_b;
+  
+  template <typename B_, typename A_>
+  friend concat_ref<B_, A_> make_concat_ref(const B_& b, const A_& a);
 };
+
+template <typename B, typename A>
+concat_ref<B, A> make_concat_ref(const B& b, const A& a) {
+  return concat_ref<B, A>(b, a);
+}
 
 }

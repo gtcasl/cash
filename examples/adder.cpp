@@ -3,6 +3,7 @@
 #include <chdl.h>
 
 using namespace chdl::core;
+using namespace chdl::core_literals;
 using namespace chdl::sim;
 
 template <unsigned N>
@@ -12,8 +13,8 @@ __ch_out(ch_bitv<N>, ch_logic) Adder(
            const ch_logic& cin) {
   ch_bitv<N> out;
   ch_logic cout;
+  ch_logic x(1_b);
   ch_bitv<N+1> sum((0_b, lhs) + rhs + cin);
-  __ch_tap(sum);
   cout = sum[N];
   out  = ch_slice<N>(sum);    
   __ch_ret(out, cout);

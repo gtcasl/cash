@@ -20,5 +20,4 @@
 #include <memory>
 #include "macros.h"
 #include "utils.h"
-#include "bitvector.h"
 #include "platform.h"

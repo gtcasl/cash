@@ -22,27 +22,18 @@ public:
     return *this;
   }
   
-  typebase& operator=(const std::initializer_list<uint32_t>& value) {
-    return this->operator =(ch_bus<N>(value));
-  } 
-  
-  typebase& operator=(uint32_t value) {
-    return this->operator =({value});
-  }
-  
-  typebase& operator=(char value) {
-    return this->operator =(to_value<N>(value));
-  }
-
 #define CHDL_DEF_AOP(type) \
   typebase& operator=(type value) { \
-    return this->operator =({bit_cast<uint32_t>(value)}); \
+    return this->operator =(ch_bus<N>(value)); \
   } 
+  CHDL_DEF_AOP(const std::initializer_list<uint32_t>&)
+  CHDL_DEF_AOP(char)
   CHDL_DEF_AOP(int8_t)
   CHDL_DEF_AOP(uint8_t)
   CHDL_DEF_AOP(int16_t)
   CHDL_DEF_AOP(uint16_t)
   CHDL_DEF_AOP(int32_t)
+  CHDL_DEF_AOP(uint32_t)
   CHDL_DEF_AOP(int64_t)
   CHDL_DEF_AOP(uint64_t)
 #undef CHDL_DEF_AOP
@@ -51,6 +42,10 @@ public:
     std::vector< partition<data_type> > data;
     this->read(data, 0, N);
     return snode(data, N); 
+  }
+  
+  operator snodeimpl*() const { 
+    return this->operator snode(); 
   }
   
 protected:

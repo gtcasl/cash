@@ -223,11 +223,29 @@ public:
   
   bitvector(bitvector&& rhs);
   
-  explicit bitvector(uint32_t size, uint32_t defaultValue = 0x0);
+  explicit bitvector(uint32_t size);
   
   bitvector(const std::string& value);
   
+  bitvector(uint32_t value, uint32_t size);
+  
   bitvector(const std::initializer_list<uint32_t>& value, uint32_t size);
+  
+  bitvector(char value, uint32_t size);
+    
+  bitvector(int8_t value, uint32_t size) : bitvector(bit_cast<uint32_t>(value), size) {}
+  
+  bitvector(uint8_t value, uint32_t size) : bitvector(bit_cast<uint32_t>(value), size) {}
+  
+  bitvector(int16_t value, uint32_t size) : bitvector(bit_cast<uint32_t>(value), size) {}
+  
+  bitvector(uint16_t value, uint32_t size) : bitvector(bit_cast<uint32_t>(value), size) {}
+  
+  bitvector(int32_t value, uint32_t size) : bitvector(bit_cast<uint32_t>(value), size) {}  
+  
+  bitvector(int64_t value, uint32_t size) : bitvector({bit_cast<uint32_t>(value >> 32), bit_cast<uint32_t>(value)}, size) {}
+  
+  bitvector(uint64_t value, uint32_t size) : bitvector({bit_cast<uint32_t>(value >> 32), bit_cast<uint32_t>(value)}, size) {}  
   
   ~bitvector();
   
@@ -238,8 +256,6 @@ public:
   bitvector& operator=(bitvector&& rhs);
   
   bitvector& operator=(const std::string& value);
-  
-  bitvector& operator=(const std::initializer_list<uint32_t>& value);
   
   const_reference at(uint32_t idx) const {
     assert(idx < m_size);
@@ -287,6 +303,10 @@ public:
   
   bitvector& flip();
   
+  int32_t find_first() const;
+  
+  int32_t find_last() const;
+  
   bitvector& flip(uint32_t idx) {
     assert(idx < m_size);
     m_words[idx >> WORD_SIZE_LOG] ^= 1 << (idx & WORD_MASK);
@@ -323,15 +343,13 @@ public:
   
   bitvector& operator^=(const bitvector& rhs);
   
-  bool operator==(const std::initializer_list<uint32_t>& rhs) const;
-  
   bool operator==(const bitvector& rhs) const;
+  
+  bool operator<(const bitvector& rhs) const;
   
   bool operator!=(const bitvector& rhs) const {
     return !(*this == rhs);
   }
-  
-  bool operator<(const bitvector& rhs) const;
   
   bool operator>(const bitvector& rhs) const {
     return (rhs < *this);

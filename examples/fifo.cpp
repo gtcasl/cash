@@ -3,6 +3,7 @@
 #include <chdl.h>
 
 using namespace chdl::core;
+using namespace chdl::core_literals;
 using namespace chdl::sim;
 
 template <unsigned ADDR, unsigned WIDTH>

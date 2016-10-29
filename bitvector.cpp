@@ -15,12 +15,22 @@ bitvector::bitvector(bitvector&& rhs) {
   rhs.m_size = 0;
 }
 
-bitvector::bitvector(uint32_t size, uint32_t defaultValue) : m_words(nullptr), m_size(0) {
-  this->resize(size, defaultValue, true, false);
+bitvector::bitvector(uint32_t size) : m_words(nullptr), m_size(0) {
+  this->resize(size, 0, true, false);
 }
 
 bitvector::bitvector(const std::string& value) : m_words(nullptr), m_size(0) {
   this->operator =(value);
+}
+
+bitvector::bitvector(uint32_t value, uint32_t size) : m_words(nullptr), m_size(0) {  
+  uint32_t num_words = (size + WORD_MASK) >> WORD_SIZE_LOG;
+  CHDL_CHECK((1 < num_words) || 
+                  ((1 == num_words) && 
+                    (0 == (size & WORD_MASK) || 
+                      (0 == (value >> (size & WORD_MASK))))), "input value out of bound");  
+  this->resize(size, 0x0, true, false);
+  m_words[0] = value;
 }
 
 bitvector::bitvector(const std::initializer_list<uint32_t>& value, uint32_t size) 
@@ -31,7 +41,24 @@ bitvector::bitvector(const std::initializer_list<uint32_t>& value, uint32_t size
                     (0 == (size & WORD_MASK) || 
                       (0 == (*value.begin() >> (size & WORD_MASK))))), "input value out of bound");  
   this->resize(size, 0x0, false, false);
-  this->operator =(value);
+  
+  uint32_t* dst = m_words + (num_words - 1);
+  for (uint32_t n = num_words - value.size(); n--;)
+    *dst-- = 0;
+  for (uint32_t v : value)
+    *dst-- = v;
+}
+
+bitvector::bitvector(char value, uint32_t size) : m_words(nullptr), m_size(0) {
+  uint32_t value_;
+  if (value == '0')
+    value_ = 0x0;
+  else if (value == '1')
+    value_ = 0x1;
+  else
+    CHDL_ABORT("invalid character value");  
+  this->resize(size, 0x0, false, false);
+  m_words[0] = value_;
 }
 
 bitvector::~bitvector() {
@@ -149,35 +176,6 @@ bitvector& bitvector::operator=(const std::string& value) {
   return *this;
 }
 
-bitvector& bitvector::operator=(const std::initializer_list<uint32_t>& value) {
-  size_t old_num_words = this->get_num_words();
-  size_t new_num_words = value.size();  
-  CHDL_CHECK(old_num_words >= new_num_words, "input value size out of bound");
-        
-  uint32_t* dst = m_words + (old_num_words - 1);
-  for (uint32_t n = old_num_words - new_num_words; n--;) {
-    *dst-- = 0;
-  }
-  
-  for (uint32_t v : value) {
-    *dst-- = v;
-  }
-  
-  return *this;
-}
-
-bool bitvector::operator==(const std::initializer_list<uint32_t>& value) const {
-  size_t num_words = value.size();  
-  if (this->get_num_words() != num_words)
-    return false;
-  uint32_t* dst = m_words + (num_words - 1);
-  for (uint32_t v : value) {
-    if (*dst++ != v)
-      return false;
-  }
-  return true;
-}
-
 bool bitvector::operator==(const bitvector& rhs) const {
   if (m_size != rhs.m_size)
     return false;
@@ -215,11 +213,33 @@ void bitvector::copy(uint32_t dst_offset, const bitvector& src, uint32_t src_off
 }
 
 bitvector& bitvector::flip() {
-  for (int32_t i = 0, n = this->get_num_words(); i < n; ++i) {
+  for (uint32_t i = 0, n = this->get_num_words(); i < n; ++i) {
     m_words[i] = ~m_words[i]; 
   }
   clear_unused_bits();
   return *this;
+}
+
+int32_t bitvector::find_first() const {
+  for (uint32_t i = 0, n = this->get_num_words(); i < n; ++i) {
+    uint32_t w = m_words[i];
+    if (w) {
+      int z = countTrailingZeros(w);
+      return z + i * WORD_SIZE;
+    }
+  }
+  return -1;
+}
+
+int32_t bitvector::find_last() const {
+  for (int32_t i = this->get_num_words() - 1; i >= 0; --i) {
+    uint32_t w = m_words[i];
+    if (w) {
+      int z = countLeadingZeros(w);
+      return (WORD_MASK - z) + i * WORD_SIZE;
+    }
+  }
+  return -1;
 }
 
 bool bitvector::to_bool() const {

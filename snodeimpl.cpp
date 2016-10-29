@@ -16,15 +16,9 @@ snodeimpl::snodeimpl(uint32_t size)
   , m_changeid(0) 
 {}
 
-snodeimpl::snodeimpl(const std::string& value)
+snodeimpl::snodeimpl(const bitvector& value)
   : m_id(generate_id())
   , m_value(value)
-  , m_changeid(1) // m_value has been set
-{}
-
-snodeimpl::snodeimpl(const std::initializer_list<uint32_t>& value, uint32_t size) 
-  : m_id(generate_id())
-  , m_value(value, size)
   , m_changeid(1) // m_value has been set
 {}
 
@@ -178,11 +172,6 @@ snode::snode(snode&& rhs) : m_impl(nullptr), m_readonly(false) {
   this->move(rhs);
 }
 
-snode::snode(const snode& rhs, uint32_t size) : m_impl(nullptr), m_readonly(false) {
-  rhs.ensureInitialized(size);  
-  this->assign(rhs.m_impl);
-}
-
 snode::snode(snodeimpl* impl) : m_impl(nullptr), m_readonly(false) {
   this->assign(impl);
 }
@@ -196,13 +185,8 @@ snode::snode(const std::vector< partition<snode> >& data, uint32_t size)
   }
 }
 
-snode::snode(const std::string& value) : m_impl(nullptr), m_readonly(false) {
+snode::snode(const bitvector& value) : m_impl(nullptr), m_readonly(false) {
   this->assign(new snodeimpl(value), true);
-}
-
-snode::snode(const std::initializer_list<uint32_t>& value, uint32_t size) 
-  : m_impl(nullptr), m_readonly(false) {
-  this->assign(value, size);  
 }
 
 snode::~snode() {
@@ -222,16 +206,27 @@ snode& snode::operator=(snode&& rhs) {
   return *this;
 }
 
+bool snode::operator==(const snode& rhs) const {
+  this->ensureInitialized(rhs.get_size());
+  return (m_impl->get_value() == rhs.m_impl->get_value());
+}
+
+bool snode::operator<(const snode& rhs) const {
+  this->ensureInitialized(rhs.get_size());
+  return (m_impl->get_value() < rhs.m_impl->get_value());
+}
+
 uint32_t snode::get_size() const {
   return m_impl ? m_impl->get_size() : 0;
 }
 
-void snode::ensureInitialized(uint32_t size) const {
+const snode& snode::ensureInitialized(uint32_t size) const {
   if (m_impl == nullptr) {
     m_impl = new snodeimpl(size);
     m_impl->acquire();
   }
   assert(m_impl->get_size() == size);
+  return *this;
 }
 
 void snode::move(snode& rhs) {  
@@ -241,8 +236,8 @@ void snode::move(snode& rhs) {
   rhs.m_readonly = false;
 }
 
-void snode::assign(const std::initializer_list<uint32_t>& value, uint32_t size) {
-  this->assign(new snodeimpl(value, size), true);
+void snode::assign(const bitvector& value) {
+  this->assign(new snodeimpl(value), true);
 }
 
 void snode::assign(snodeimpl* impl, bool is_owner) {  

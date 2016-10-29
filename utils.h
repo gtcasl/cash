@@ -235,8 +235,24 @@ D bit_cast(const S& src) {
     D dst;    
   };
   merged_t m;
+  m.dst = 0;
   m.src = src;
   return m.dst;  
+}
+
+inline unsigned countLeadingZeros(unsigned x) {
+  unsigned c;
+  if (x == 0) return 32; 
+  for (c = 0; ((x & 0x80000000) == 0); ++c, x <<= 1);
+  return c;
+}
+
+inline unsigned countTrailingZeros(unsigned x) {
+  unsigned c;
+  if (x == 0) return 32;
+  x = (x ^ (x - 1)) >> 1;  // Set x's trailing 0s to 1s and zero rest
+  for (c = 0; x; ++c, x >>= 1);
+  return c; 
 }
 
 }

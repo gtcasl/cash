@@ -129,26 +129,13 @@ lnodeimpl* context::resolve(lnodeimpl* dst, lnodeimpl* src) {
   return src;
 }
 
-litimpl* context::create_literal(const std::initializer_list<uint32_t>& value, uint32_t size) {
-  bitvector tmp(value, size);
+litimpl* context::create_literal(const bitvector& value) {
   for (litimpl* lit : m_literals) {
-    if (lit->get_value() == tmp) {
+    if (lit->get_value() == value) {
       return lit;
     }
   }
-  litimpl* lit = new litimpl(this, tmp);
-  m_literals.emplace_back(lit);
-  return lit;
-}
-
-litimpl* context::create_literal(const std::string& value) {
-  bitvector tmp(value);
-  for (litimpl* lit : m_literals) {
-    if (lit->get_value() == tmp) {
-      return lit;
-    }
-  }
-  litimpl* lit = new litimpl(this, tmp);
+  litimpl* lit = new litimpl(this, value);
   m_literals.emplace_back(lit);
   return lit;
 }

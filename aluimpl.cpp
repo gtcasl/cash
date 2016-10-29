@@ -82,9 +82,9 @@ static void binaryop(bitvector& dst, const bitvector& a, const bitvector& b) {
 }
 
 template <ch_operator op>
-static void shiftop(bitvector& dst, const bitvector& in, const bitvector& bits) {
-  assert(bits.get_num_words() == 1);
+static void shiftop(bitvector& dst, const bitvector& in, const bitvector& bits) {  
   assert(dst.get_size() == in.get_size());
+  CHDL_CHECK(bits.find_last() <= 31, "shift amount out of range!");
   
   uint32_t wbits = bits.get_word(0);
   switch (op) {  

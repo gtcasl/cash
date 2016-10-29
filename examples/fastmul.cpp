@@ -3,6 +3,7 @@
 #include <chdl.h>
 
 using namespace chdl::core;
+using namespace chdl::core_literals;
 using namespace chdl::sim;
 
 ch_bit8 FastMul(const ch_bit4& lhs, const ch_bit4& rhs) {
