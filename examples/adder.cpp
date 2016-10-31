@@ -33,6 +33,11 @@ int main(int argc, char **argv) {
   ch_vcdtracer tracer("adder.vcd", myDevice);
   __ch_trace(tracer, lhs, rhs, cin, out, cout);
   tracer.run();
+  
+  std::cout << "result:" << std::endl;
+  std::cout << "cout = " << cout << std::endl;
+  std::cout << "out = " << out << std::endl;
+  assert(cout == 1 && out == 1);
 
   return 0;
 }

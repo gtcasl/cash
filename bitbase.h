@@ -7,10 +7,10 @@ namespace chdl_internal {
 template <unsigned N> class ch_bitv;
 
 template <unsigned N>
-class typebase<N, lnode> {
+class typebase<N, lnode::bitstream_type> {
 public:   
   static const unsigned bit_count = N;
-  typedef lnode data_type;
+  typedef lnode::bitstream_type bitstream_type;
   
   typebase() {}
   virtual ~typebase() {}
@@ -44,7 +44,7 @@ public:
   }
   
   typebase& operator=(const typebase& rhs) {
-    std::vector< partition<data_type> > data;
+    bitstream_type data(N);
     rhs.read(data, 0, N);
     this->write(0, data, 0, N);
     return *this;
@@ -66,26 +66,22 @@ public:
   CHDL_DEF_AOP(uint64_t)
 #undef CHDL_DEF_AOP
   
-  operator lnode() const { 
-    std::vector< partition<data_type> > data;
+  virtual lnode get_node() const {
+    bitstream_type data(N);
     this->read(data, 0, N);
-    return lnode(data, N); 
-  }
-  
-  operator lnodeimpl*() const { 
-    return this->operator lnode(); 
+    return lnode(data);
   }
   
 protected:
 
-  virtual void read(std::vector< partition<data_type> >& out, size_t offset, size_t length) const = 0;
-  virtual void write(size_t dst_offset, const std::vector< partition<data_type> >& data, size_t src_offset, size_t src_length) = 0;
+  virtual void read(bitstream_type& inout, size_t offset, size_t length) const = 0;
+  virtual void write(size_t dst_offset, const bitstream_type& in, size_t src_offset, size_t src_length) = 0;
   
-  template <typename T_> friend void read_data(const T_& t, std::vector< partition<typename T_::data_type> >& out, size_t offset, size_t length);
-  template <typename T_> friend void write_data(T_& t, size_t dst_offset, const std::vector< partition<typename T_::data_type> >& data, size_t src_offset, size_t src_length);  
+  template <typename T_> friend void read_data(const T_& t, typename T_::bitstream_type& inout, size_t offset, size_t length);
+  template <typename T_> friend void write_data(T_& t, size_t dst_offset, const typename T_::bitstream_type& in, size_t src_offset, size_t src_length); 
 };
 
-template <unsigned N> using ch_bitbase = typebase<N, lnode>;
+template <unsigned N> using ch_bitbase = typebase<N, lnode::bitstream_type>;
 using ch_logicbase = ch_bitbase<1>;
 
 }

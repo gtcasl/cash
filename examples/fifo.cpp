@@ -50,28 +50,46 @@ int main(int argc, char **argv) {
   tracer.run([&](ch_cycle time)->bool {
     switch (time) {
     case 0:
+      assert(empty);
+      assert(!full);
       din  = 1;
-      push = 1;
-      break;
+      push = 1;      
+      break;      
     case 1:
+      assert(!empty);
+      assert(!full);
+      assert(dout == 1);      
       din  = 2;
       push = 1;
       break;
     case 2:
+      assert(!empty);
+      assert(full);
+      assert(dout == 1);
       din  = 0;
       push = 0;
       break;
     case 3:
+      assert(!empty);
+      assert(full);
+      assert(dout == 1);
       pop = 1;
       break;
     case 4:
+      assert(!empty);
+      assert(!full);
+      assert(dout == 2);
       pop = 1;
       break;
     case 5:
+      assert(empty);
+      assert(!full);
+      assert(dout == 1);
       pop = 0;
       break;
     }
-    return (time < 10);
+    std::cout << "t" << time<< ": din=" << din << ", push=" << push << ", pop=" << pop << ", dout=" << dout << ", empty=" << empty << ", full=" << full << std::endl;
+    return (time < 6);
   });
 
   return 0;

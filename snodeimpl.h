@@ -84,7 +84,7 @@ protected:
   
   mutable std::vector<source_t> m_srcs;
   mutable bitvector m_value;
-  mutable uint64_t m_changeid;
+  mutable uint64_t  m_changeid;
   uint32_t m_id;
 };
 

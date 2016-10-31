@@ -44,6 +44,7 @@ void ch_simulator::ensureInitialize() {
     if (ctx->m_clk) {
       if (m_clk == nullptr) {
         m_clk = new snodeimpl(1);
+        m_clk->write(0, 0x1); // initialize the clock to '1'
         m_clk->acquire();
       }
       ctx->m_clk->bind(m_clk);
@@ -111,8 +112,8 @@ ch_cycle ch_simulator::reset(ch_cycle t) {
 void ch_simulator::step(ch_cycle t) {
   if (m_clk) {
     for (int i = 0; i < 2; ++i) {
-      this->tick(t * 2 + i);
       (*m_clk)[0] = !(*m_clk)[0];
+      this->tick(t * 2 + i);      
     }
   } else {
     this->tick(t);
@@ -180,6 +181,6 @@ void ch_tracer::tick(ch_cycle t) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void chdl_internal::register_tap(const string& name, const lnode& node, uint32_t size) {
-  node.get_ctx()->register_tap(name, node);
+void chdl_internal::register_tap(const string& name, lnodeimpl* node) {
+  node->get_ctx()->register_tap(name, node);
 }

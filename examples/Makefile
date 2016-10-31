@@ -1,5 +1,5 @@
-#CXXFLAGS += -std=c++11 -O2 -DNDEBUG
-CXXFLAGS += -std=c++11 -O0 -g -fmax-errors=5 -DCHDL_DEBUG
+#CXXFLAGS += -std=c++14 -O2 -DNDEBUG
+CXXFLAGS += -std=c++14 -O0 -g -fmax-errors=5 -DCHDL_DEBUG
 LDFLAGS += -lchdl
 
 VCS_OPT = -I $(VCS_HOME)/include -full64

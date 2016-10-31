@@ -42,7 +42,7 @@ public:
   ~memportimpl();
   
   bool operator==(lnodeimpl* addr) const {
-    return (m_srcs[m_addr_id] == addr);
+    return (m_srcs[m_addr_id].get_impl() == addr);
   }
   
   void write(lnodeimpl* data, lnodeimpl* enable);  

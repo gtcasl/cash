@@ -21,56 +21,80 @@ void ch_popreset();
 
 template <unsigned N>
 ch_logic ch_ready(const ch_bitbase<N>& x) {
-  return ch_logic(createReadyNode(x));
+  return ch_logic(createReadyNode(x.get_node().get_impl()));
 }
 
 template <unsigned N>
 ch_logic ch_valid(const ch_bitbase<N>& x) {
-  return ch_logic(createValidNode(x));
+  return ch_logic(createValidNode(x.get_node().get_impl()));
 }
 
 template <unsigned N>
 ch_bitv<N> ch_reg(const ch_bitbase<N>& next, const ch_bitbase<N>& init = ch_bitv<N>(0x0)) {
   ch_bitv<N> d(ch_select(ch_reset(), init, next));
-  return ch_bitv<N>(createRegNode(d));
+  return ch_bitv<N>(createRegNode(d.get_node().get_impl()));
 }
 
-#define CHDL_REG_GEN(type) \
-  template <unsigned N> ch_bitv<N> ch_reg(type next, const ch_bitbase<N>& init) { return ch_reg(ch_bitv<N>(next), init); } \
-  template <unsigned N> ch_bitv<N> ch_reg(const ch_bitbase<N>& next, type init) { return ch_reg(next, ch_bitv<N>(init)); } \
-  template <unsigned N> ch_bitv<N> ch_reg(type next, type init = 0) { return ch_reg(ch_bitv<N>(next), ch_bitv<N>(init)); }
-CHDL_REG_GEN(char)
-CHDL_REG_GEN(int8_t)
-CHDL_REG_GEN(uint8_t)
-CHDL_REG_GEN(int16_t)
-CHDL_REG_GEN(uint16_t)
-CHDL_REG_GEN(int32_t)
-CHDL_REG_GEN(uint32_t)
-CHDL_REG_GEN(int64_t)
-CHDL_REG_GEN(uint64_t)
-#undef CHDL_REG_GEN
+template <unsigned N>
+ch_bitv<N> ch_reg(const ch_bitbase<N>& next, const ch_bitv<N>& init) {
+  return ch_reg<N>(next, reinterpret_cast<const ch_bitbase<N>&>(init));
+}
+
+template <unsigned N>
+ch_bitv<N> ch_reg(const ch_bitv<N>& next, const ch_bitbase<N>& init) {
+  return ch_reg<N>(reinterpret_cast<const ch_bitbase<N>&>(next), init);
+}
+
+template <unsigned N>
+ch_bitv<N> ch_reg(const ch_bitv<N>& next, const ch_bitv<N>& init) {
+  return ch_reg<N>(reinterpret_cast<const ch_bitbase<N>&>(next), 
+                reinterpret_cast<const ch_bitbase<N>&>(init));
+}
 
 template <unsigned N>
 ch_bitv<N> ch_latch(const ch_bitbase<N>& next, const ch_logicbase& enable = '1', const ch_bitbase<N>& init = ch_bitv<N>(0x0)) {
-  return ch_bitv<N>(createLatchNode(next, init, enable, ch_reset()));
+  return ch_bitv<N>(createLatchNode(next.get_node().get_impl(), init.get_node().get_impl(), enable.get_node().get_impl(), ch_reset().get_node().get_impl()));
 }
 
-#define CHDL_LATCH_GEN(type) \
-  template <unsigned N> ch_bitv<N> ch_latch(type next, const ch_logicbase& enable, const ch_bitbase<N>& init) { return ch_latch(ch_bitv<N>(next), enable, init); } \
-  template <unsigned N> ch_bitv<N> ch_latch(const ch_bitbase<N>& next, type enable, const ch_bitbase<N>& init) { return ch_latch(next, ch_logic(enable), init); } \
-  template <unsigned N> ch_bitv<N> ch_latch(type next, type enable, const ch_bitbase<N>& init) { return ch_latch(ch_bitv<N>(next), ch_logic(enable), init); } \
-  template <unsigned N> ch_bitv<N> ch_latch(type next, const ch_logicbase& enable, type init = 0) { return ch_latch(ch_bitv<N>(next), enable, ch_bitv<N>(init)); } \
-  template <unsigned N> ch_bitv<N> ch_latch(const ch_bitbase<N>& next, type enable, type init = 0) { return ch_latch(next, ch_logic(enable), ch_bitv<N>(init)); } \
-  template <unsigned N> ch_bitv<N> ch_latch(type next, type enable = 0, type init = 0) { return ch_latch(ch_bitv<N>(next), ch_logic(enable), ch_bitv<N>(init)); }  
-CHDL_LATCH_GEN(char)
-CHDL_LATCH_GEN(int8_t)
-CHDL_LATCH_GEN(uint8_t)
-CHDL_LATCH_GEN(int16_t)
-CHDL_LATCH_GEN(uint16_t)
-CHDL_LATCH_GEN(int32_t)
-CHDL_LATCH_GEN(uint32_t)
-CHDL_LATCH_GEN(int64_t)
-CHDL_LATCH_GEN(uint64_t)
-#undef CHDL_LATCH_GEN
+template <unsigned N>
+ch_bitv<N> ch_latch(const ch_bitbase<N>& next, const ch_logicbase& enable, const ch_bitv<N>& init) {
+  return ch_latch<N>(next, enable, reinterpret_cast<const ch_bitbase<N>&>(init));
+}
+
+template <unsigned N>
+ch_bitv<N> ch_latch(const ch_bitbase<N>& next, const ch_logic& enable, const ch_bitbase<N>& init = ch_bitv<N>(0x0)) {
+  return ch_latch<N>(next, reinterpret_cast<const ch_logicbase&>(enable), init);
+}
+
+template <unsigned N>
+ch_bitv<N> ch_latch(const ch_bitbase<N>& next, const ch_logic& enable, const ch_bitv<N>& init) {
+  return ch_latch<N>(next, reinterpret_cast<const ch_logicbase&>(enable), 
+                           reinterpret_cast<const ch_bitbase<N>&>(init));
+}
+
+template <unsigned N>
+ch_bitv<N> ch_latch(const ch_bitv<N>& next, const ch_logicbase& enable = '1', const ch_bitbase<N>& init = ch_bitv<N>(0x0)) {
+  return ch_latch<N>(reinterpret_cast<const ch_bitbase<N>&>(next), enable, init);
+}
+
+template <unsigned N>
+ch_bitv<N> ch_latch(const ch_bitv<N>& next, const ch_logicbase& enable, const ch_bitv<N>& init) {
+  return ch_latch<N>(reinterpret_cast<const ch_bitbase<N>&>(next), 
+                     enable, 
+                     reinterpret_cast<const ch_bitbase<N>&>(init));
+}
+
+template <unsigned N>
+ch_bitv<N> ch_latch(const ch_bitv<N>& next, const ch_logic& enable, const ch_bitbase<N>& init = ch_bitv<N>(0x0)) {
+  return ch_latch<N>(reinterpret_cast<const ch_bitbase<N>&>(next), 
+                     reinterpret_cast<const ch_logicbase&>(enable), init);
+}
+
+template <unsigned N>
+ch_bitv<N> ch_latch(const ch_bitv<N>& next, const ch_logic& enable, const ch_bitv<N>& init) {
+  return ch_latch<N>(reinterpret_cast<const ch_bitbase<N>&>(next), 
+                     reinterpret_cast<const ch_logicbase&>(enable), 
+                     reinterpret_cast<const ch_bitbase<N>&>(init));
+}
 
 }

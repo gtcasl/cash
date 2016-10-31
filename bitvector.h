@@ -419,6 +419,10 @@ protected:
   
   uint32_t* m_words;
   uint32_t  m_size;
+  
+  friend std::ostream& operator<<(std::ostream& os, const bitvector& b);
 };
+
+std::ostream& operator<<(std::ostream& os, const bitvector& b);
 
 }

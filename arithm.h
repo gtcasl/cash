@@ -154,22 +154,22 @@ CHDL_SHIFTOP_GEN1(ch_rotr)
 
 template <ch_operator op, unsigned N, unsigned M>
 ch_bitv<N> OpBinary(const ch_bitbase<N>& a, const ch_bitbase<M>& b) {
-  return ch_bitv<N>(createAluNode(op, N, a, b));
+  return ch_bitv<N>(createAluNode(op, N, a.get_node().get_impl(), b.get_node().get_impl()));
 }
 
 template <ch_operator op, unsigned N>
 ch_logic OpCompare(const ch_bitbase<N>& a, const ch_bitbase<N>& b) {
-  return ch_logic(createAluNode(op, 1, a, b));
+  return ch_logic(createAluNode(op, 1, a.get_node().get_impl(), b.get_node().get_impl()));
 }
 
 template <ch_operator op, unsigned N>
 ch_bitv<N> OpUnary(const ch_bitbase<N>& a) {
-  return ch_bitv<N>(createAluNode(op, N, a));
+  return ch_bitv<N>(createAluNode(op, N, a.get_node().get_impl()));
 }
 
 template <ch_operator op, unsigned N>
 ch_logic OpReduce(const ch_bitbase<N>& a) {
-  return ch_logic(createAluNode(op, 1, a));
+  return ch_logic(createAluNode(op, 1, a.get_node().get_impl()));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -330,12 +330,12 @@ ch_bitv<N> ch_mod(const ch_bitbase<N>& a, const ch_bitbase<N>& b) {
 
 template <unsigned N, unsigned S>
 ch_bitv<(N >> S)> ch_mux(const ch_bitbase<N>& in, const ch_bitbase<S>& sel) {
-  return ch_bitv<(N >> S)>(createAluNode(op_mux, (N >> S), in, sel));
+  return ch_bitv<(N >> S)>(createAluNode(op_mux, (N >> S), in.get_node().get_impl(), sel.get_node().get_impl()));
 }
 
 template <unsigned N, unsigned S> 
 ch_bitv<(N << S)> ch_demux(const ch_bitbase<N>& in, const ch_bitbase<S>& sel) {
-  return ch_bitv<(N << S)>(createAluNode(op_mux, (N << S), in, sel));
+  return ch_bitv<(N << S)>(createAluNode(op_mux, (N << S), in.get_node().get_impl(), sel.get_node().get_impl()));
 }
 
 ///////////////////////////////////////////////////////////////////////////////

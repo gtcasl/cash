@@ -20,7 +20,7 @@ protected:
     stmts_t(lnodeimpl* key_) : key(key_) {}
   };
   
-  mutable stmts_t* m_stmts;
+  stmts_t* m_stmts;
   
 public:
   
@@ -30,22 +30,13 @@ public:
       delete m_stmts;
     }
   }
-  
-  case_impl(stmts_t* stmts) : m_stmts(stmts) {}
-  
+    
   case_impl(lnodeimpl* key) {
     m_stmts = new stmts_t(key);
   }
   
-  case_impl(const case_impl& rhs) : m_stmts(rhs.m_stmts) {
-    rhs.m_stmts = nullptr;
-  }
-  
-  case_impl push(const lnode& value, const func_t& func) {    
-    stmts_t* stmts = m_stmts;
-    m_stmts = nullptr;
-    stmts->values.push({value, func});
-    return case_impl(stmts);
+  void push(lnodeimpl* value, const func_t& func) {
+    m_stmts->values.push({value, func});
   }
   
   void eval();
@@ -56,13 +47,15 @@ class case_t {
 public:
     
   template <typename Func>
-  case_t when(const ch_bitbase<N>& value, const Func& func) {
-    return case_t(m_impl.push(value, to_function(func)));
+  case_t& when(const ch_bitbase<N>& value, const Func& func) {
+    m_impl.push(value.get_node().get_impl(), to_function(func));
+    return *this;
   }
   
   template <typename Func>
-  case_t when(const ch_bitv<N>& value, const Func& func) {
-    return case_t(m_impl.push(value, to_function(func)));
+  case_t& when(const ch_bitv<N>& value, const Func& func) {    
+    m_impl.push(value.get_node().get_impl(), to_function(func));
+    return *this;
   }
   
   template <typename Func>
@@ -79,8 +72,6 @@ protected:
   
   case_t(lnodeimpl* key) : m_impl(key) {}
   
-  case_t(const case_impl& impl) : m_impl(impl) {}
-    
   case_impl m_impl;
     
   template <unsigned N_> 
@@ -89,12 +80,7 @@ protected:
 
 template <unsigned N> 
 case_t<N> ch_case(const ch_bitbase<N>& key) {
-  return case_t<N>(key);
-}
-
-template <unsigned N> 
-case_t<N> ch_case(const ch_bitv<N>& key) {
-  return ch_case<N>(reinterpret_cast<const ch_bitbase<N>&>(key));
+  return case_t<N>(key.get_node().get_impl());
 }
 
 }

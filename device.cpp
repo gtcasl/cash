@@ -9,12 +9,12 @@ ch_device::~ch_device() {
   m_ctx->release();
 }
 
-void ch_device::bind_input_(const lnode& input, const snode& bus) const {
-  input.assign(m_ctx->bind_input(bus));
+lnodeimpl* ch_device::bind_input_(snodeimpl* bus) const {
+  return m_ctx->bind_input(bus);
 }
 
-snode ch_device::bind_output_(const lnode& output) const {
-  return snode(m_ctx->bind_output(output));
+snodeimpl* ch_device::bind_output_(lnodeimpl* output) const {
+  return m_ctx->bind_output(output);
 }
 
 snode ch_device::get_tap(std::string& name, uint32_t size) const {

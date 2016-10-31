@@ -66,7 +66,7 @@ void context::pop_reset() {
 
 lnodeimpl* context::get_clk() {
   if (!m_clk_stack.empty())
-    return m_clk_stack.top();
+    return m_clk_stack.top().get_impl();
   if (m_clk == nullptr)
     m_clk = new inputimpl("clk", this, 1);
   return m_clk;
@@ -74,7 +74,7 @@ lnodeimpl* context::get_clk() {
 
 lnodeimpl* context::get_reset() {
   if (!m_reset_stack.empty())
-    return m_reset_stack.top();
+    return m_reset_stack.top().get_impl();
   if (m_reset == nullptr)
      m_reset = new inputimpl("reset", this, 1);
   return m_reset;

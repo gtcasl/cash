@@ -29,7 +29,7 @@ namespace chdl_internal {
 #define CHDL_STRUCT_READ(i, x) \
   if (offset < CHDL_PAIR_L(x)::bit_count) { \
     size_t len = std::min<size_t>(length, CHDL_PAIR_L(x)::bit_count - offset); \
-    read_data(CHDL_PAIR_R(x), out, offset, len); \
+    read_data(CHDL_PAIR_R(x), inout, offset, len); \
     length -= len; \
     if (length == 0) \
       return; \
@@ -40,7 +40,7 @@ namespace chdl_internal {
 #define CHDL_STRUCT_WRITE(i, x) \
   if (dst_offset < CHDL_PAIR_L(x)::bit_count) { \
     size_t len = std::min<size_t>(src_length, CHDL_PAIR_L(x)::bit_count - dst_offset); \
-    write_data(CHDL_PAIR_R(x), dst_offset, data, src_offset, len); \
+    write_data(CHDL_PAIR_R(x), dst_offset, in, src_offset, len); \
     src_length -= len; \
     if (src_length == 0) \
       return; \
@@ -52,7 +52,7 @@ namespace chdl_internal {
 #define CHDL_UNION_READ(i, x) \
   if (offset < CHDL_PAIR_L(x)::bit_count) { \
     size_t len = std::min<size_t>(length, CHDL_PAIR_L(x)::bit_count - offset); \
-    read_data(CHDL_PAIR_R(x), out, offset, len); \
+    read_data(CHDL_PAIR_R(x), inout, offset, len); \
     length -= len; \
     if (length == 0) \
       return; \
@@ -62,14 +62,14 @@ namespace chdl_internal {
 #define CHDL_UNION_WRITE(i, x) \
   if (dst_offset < CHDL_PAIR_L(x)::bit_count) { \
     size_t len = std::min<size_t>(src_length, CHDL_PAIR_L(x)::bit_count - dst_offset); \
-    write_data(CHDL_PAIR_R(x), dst_offset, data, src_offset, len); \
+    write_data(CHDL_PAIR_R(x), dst_offset, in, src_offset, len); \
   }
 
 template <typename Base>
 class struct_stub : public Base {
 public:
   using Base::operator=; \
-  typedef typename Base::data_type data_type;
+  typedef typename Base::bitstream_type bitstream_type;
   
   struct_stub& operator=(const struct_stub& rhs) {
     // the main purpose of this stub is for disabling the base class assignment operator
@@ -82,30 +82,30 @@ public:
   public:\
     using base = chdl_internal::struct_stub< chdl_internal::ch_bitbase<CHDL_FOR_EACH(CHDL_STRUCT_SIZE, CHDL_SEP_PLUS, __VA_ARGS__)> >; \
     using base::operator=; \
-    typedef typename base::data_type data_type; \
+    typedef typename base::bitstream_type bitstream_type; \
     class bus_type : public chdl_internal::struct_stub< chdl_internal::ch_busbase<CHDL_FOR_EACH(CHDL_STRUCT_SIZE, CHDL_SEP_PLUS, __VA_ARGS__)> > { \
     public: \
       using base = chdl_internal::struct_stub< chdl_internal::ch_busbase<CHDL_FOR_EACH(CHDL_STRUCT_SIZE, CHDL_SEP_PLUS, __VA_ARGS__)> >; \
       using base::operator=; \
-      typedef typename base::data_type data_type; \
+      typedef typename base::bitstream_type bitstream_type; \
       CHDL_FOR_EACH(CHDL_STRUCT_BUS_FIELD, CHDL_SEP_SEMICOLON, __VA_ARGS__); \
     protected: \
-      void read(std::vector< chdl_internal::partition<data_type> >& out, size_t offset, size_t length) const override { \
+      void read(bitstream_type& inout, size_t offset, size_t length) const override { \
         CHDL_FOR_EACH(CHDL_STRUCT_READ, CHDL_SEP_SEMICOLON, __VA_ARGS__); \
         CHDL_ABORT("invalid subscript index"); \
       } \
-      void write(size_t dst_offset, const std::vector< chdl_internal::partition<data_type> >& data, size_t src_offset, size_t src_length) override { \
+      void write(size_t dst_offset, const bitstream_type& in, size_t src_offset, size_t src_length) override { \
         CHDL_FOR_EACH(CHDL_STRUCT_WRITE, CHDL_SEP_SEMICOLON, __VA_ARGS__); \
         CHDL_ABORT("invalid subscript index"); \
       } \
     };\
     CHDL_FOR_EACH(CHDL_STRUCT_FIELD, CHDL_SEP_SEMICOLON, __VA_ARGS__); \
   protected: \
-    void read(std::vector< chdl_internal::partition<data_type> >& out, size_t offset, size_t length) const override { \
+    void read(bitstream_type& inout, size_t offset, size_t length) const override { \
       CHDL_FOR_EACH(CHDL_STRUCT_READ, CHDL_SEP_SEMICOLON, __VA_ARGS__); \
       CHDL_ABORT("invalid subscript index"); \
     } \
-    void write(size_t dst_offset, const std::vector< chdl_internal::partition<data_type> >& data, size_t src_offset, size_t src_length) override { \
+    void write(size_t dst_offset, const bitstream_type& in, size_t src_offset, size_t src_length) override { \
       CHDL_FOR_EACH(CHDL_STRUCT_WRITE, CHDL_SEP_SEMICOLON, __VA_ARGS__); \
       CHDL_ABORT("invalid subscript index"); \
     } \
@@ -116,30 +116,30 @@ public:
   public:\
     using base = chdl_internal::ch_bitbase<CHDL_FOR_EACH(CHDL_STRUCT_SIZE, CHDL_SEP_PLUS, __VA_ARGS__)>; \
     using base::operator=; \
-    typedef typename base::data_type data_type; \
+    typedef typename base::bitstream_type bitstream_type; \
     class bus_type : public chdl_internal::ch_busbase<CHDL_FOR_EACH(CHDL_STRUCT_SIZE, CHDL_SEP_PLUS, __VA_ARGS__)> { \
     public:\
       using base = chdl_internal::ch_busbase<CHDL_FOR_EACH(CHDL_STRUCT_SIZE, CHDL_SEP_PLUS, __VA_ARGS__)>; \
       using base::operator=; \
-      typedef typename base::data_type data_type; \
+      typedef typename base::bitstream_type bitstream_type; \
       CHDL_FOR_EACH(CHDL_STRUCT_BUS_FIELD, CHDL_SEP_SEMICOLON, __VA_ARGS__); \
     protected:\
-      void read(std::vector< chdl_internal::partition<data_type> >& out, size_t offset, size_t length) const override { \
+      void read(bitstream_type& inout, size_t offset, size_t length) const override { \
         CHDL_FOR_EACH(CHDL_UNION_READ, CHDL_SEP_SEMICOLON, __VA_ARGS__); \
         CHDL_ABORT("invalid subscript index"); \
       } \
-      void write(size_t dst_offset, const std::vector< chdl_internal::partition<data_type> >& data, size_t src_offset, size_t src_length) override { \
+      void write(size_t dst_offset, const bitstream_type& in, size_t src_offset, size_t src_length) override { \
         CHDL_FOR_EACH(CHDL_UNION_WRITE, CHDL_SEP_SEMICOLON, __VA_ARGS__); \
         CHDL_ABORT("invalid subscript index"); \
       } \
     }; \
     CHDL_FOR_EACH(CHDL_STRUCT_FIELD, CHDL_SEP_SEMICOLON, __VA_ARGS__); \
   protected:\
-    void read(std::vector< chdl_internal::partition<data_type> >& out, size_t offset, size_t length) const override { \
+    void read(bitstream_type& inout, size_t offset, size_t length) const override { \
       CHDL_FOR_EACH(CHDL_UNION_READ, CHDL_SEP_SEMICOLON, __VA_ARGS__); \
       CHDL_ABORT("invalid subscript index"); \
     } \
-    void write(size_t dst_offset, const std::vector< chdl_internal::partition<data_type> >& data, size_t src_offset, size_t src_length) override { \
+    void write(size_t dst_offset, const bitstream_type& in, size_t src_offset, size_t src_length) override { \
       CHDL_FOR_EACH(CHDL_UNION_WRITE, CHDL_SEP_SEMICOLON, __VA_ARGS__); \
       CHDL_ABORT("invalid subscript index"); \
     } \

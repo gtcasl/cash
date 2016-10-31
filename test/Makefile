@@ -1,4 +1,4 @@
-CXXFLAGS += -std=c++11 -O0 -g -fmax-errors=5 -DCHDL_DEBUG
+CXXFLAGS += -std=c++14 -O0 -g -fmax-errors=5 -DCHDL_DEBUG
 LDFLAGS += -lchdl
 
 PROJECT = test.out

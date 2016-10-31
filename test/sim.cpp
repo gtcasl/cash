@@ -27,4 +27,8 @@ TEST_CASE("simulation", "[sim]") {
     b = 2;
     return (b == 2 && c == 1);
   });
+  TESTX([]()->bool {          
+    ch_bus8 a(10), b(1), c(99), d(5), e(50);
+    return (a == 10 && b > 0 && c < 100 && d >= 5 && e <= 50);
+  });
 }

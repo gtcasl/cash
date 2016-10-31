@@ -20,16 +20,14 @@ lnodeimpl::lnodeimpl(const std::string& name, context* ctx, uint32_t size)
 
 lnodeimpl::~lnodeimpl() {
   for (auto node : m_refs) {
-    node->m_impl = nullptr;
+    node->set_impl(this, nullptr);
   }
 }
 
 void lnodeimpl::replace_refs(lnodeimpl* impl) {
   assert(impl != this);
   for (auto node : m_refs) {
-    assert(node->m_impl == this);
-    node->m_impl = impl;
-    impl->add_ref(node);
+    node->set_impl(this, impl);
   }
   m_refs.clear();
 }
@@ -135,10 +133,10 @@ lnode::lnode(lnodeimpl* impl) : m_impl(nullptr) {
   this->assign(impl, true);
 }
 
-lnode::lnode(const std::vector< partition<lnode> >& data, uint32_t size) : m_impl(nullptr) {  
+lnode::lnode(const bitstream_type& data) : m_impl(nullptr) {  
   uint32_t dst_offset = 0;
   for (auto& p : data) {
-    this->assign(dst_offset, p.data.m_impl, p.offset, p.length, size, true);   
+    this->assign(dst_offset, p.data, p.offset, p.length, data.get_size(), true);   
     dst_offset += p.length;
   }
 }
@@ -199,7 +197,7 @@ const bitvector& lnode::eval(ch_cycle t) {
 const lnode& lnode::ensureInitialized(uint32_t size, uint32_t offset, uint32_t length) const {
   if (m_impl == nullptr) {   
     context* ctx = ctx_curr();
-    if (length == 0 || length == size) {
+    if (length == size) {
       m_impl = new undefimpl(ctx, size);
     } else {
       m_impl = new proxyimpl(ctx, size);
@@ -214,6 +212,14 @@ const lnode& lnode::ensureInitialized(uint32_t size, uint32_t offset, uint32_t l
   }
   assert(m_impl->get_size() >= length);
   return *this;
+}
+
+void lnode::set_impl(lnodeimpl* curr_impl, lnodeimpl* new_impl) const {
+  assert(m_impl == curr_impl);
+  assert(curr_impl != new_impl);  
+  if (new_impl)
+    new_impl->add_ref(this);
+  m_impl = new_impl;
 }
 
 void lnode::reset(lnodeimpl* impl, bool initialization) const {
@@ -246,18 +252,18 @@ void lnode::move(lnode& rhs) {
   rhs.reset();
 }
 
-void lnode::read(std::vector< partition<lnode> >& out, uint32_t offset, uint32_t length, uint32_t size) const {
+void lnode::read(bitstream_type& inout, uint32_t offset, uint32_t length, uint32_t size) const {
   assert((offset + length) <= size);
   this->ensureInitialized(size, offset, length);
-  out.push_back({*this, offset, length});
+  inout.push({m_impl, offset, length});
 }
 
-void lnode::write(uint32_t dst_offset, const std::vector< partition<lnode> >& data, uint32_t src_offset, uint32_t src_length, uint32_t size) {
+void lnode::write(uint32_t dst_offset, const bitstream_type& in, uint32_t src_offset, uint32_t src_length, uint32_t size) {
   assert((dst_offset + src_length) <= size);
-  for (auto& p : data) {
+  for (auto& p : in) {
     if (src_offset < p.length) {
       uint32_t len = std::min(p.length - src_offset, src_length);
-      this->assign(dst_offset, p.data.m_impl, p.offset + src_offset, len, size, false);         
+      this->assign(dst_offset, p.data, p.offset + src_offset, len, size, false);         
       src_length -= len;
       if (src_length == 0)
         return;

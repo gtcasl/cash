@@ -36,8 +36,7 @@ bool optimizer::dead_node_elimination() {
   while (!working_set.empty()) {
     lnodeimpl* nimpl = working_set.front();      
     for (auto& src : nimpl->get_srcs()) {
-      lnodeimpl* src_impl = src;
-      assert(src_impl);
+      lnodeimpl* src_impl = src.get_impl();
       auto iter = live_nodes.emplace(src_impl);
       if (iter.second)
         working_set.emplace_back(src_impl);

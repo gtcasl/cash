@@ -59,8 +59,6 @@ public:
   void register_tap(const std::string& name, lnodeimpl* lnode);
   snode get_tap(std::string& name, uint32_t size);
   
-  void bind(unsigned index, const snode& node);
-  
   //--
   
   void syntax_check();

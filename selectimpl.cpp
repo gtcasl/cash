@@ -33,6 +33,19 @@ lnodeimpl* chdl_internal::createSelectNode(lnodeimpl* test, lnodeimpl* a, lnodei
 
 ///////////////////////////////////////////////////////////////////////////////
 
+lnodeimpl* select_impl::eval(lnodeimpl* value) {
+  lnodeimpl* curr = value;
+  stmts_t* stmts = m_stmts;
+  while (!stmts->empty()) {
+    const stmt_t& stmt = stmts->top();
+    curr = createSelectNode(stmt.cond, stmt.value, curr);
+    stmts->pop();
+  }
+  return curr;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 void when_t::eval() {
   context* ctx = ctx_curr();
   stmts_t* stmts = m_stmts;

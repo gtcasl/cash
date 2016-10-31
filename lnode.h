@@ -12,16 +12,31 @@ typedef uint64_t ch_cycle;
 
 class lnode {
 public:
+  
+  typedef bitstream<lnodeimpl> bitstream_type;
 
   lnode() : m_impl(nullptr) {}
   
   lnode(const lnode& rhs);
   lnode(lnode&& rhs);
   explicit lnode(lnodeimpl* impl);
-  lnode(const std::vector< partition<lnode> >& data, uint32_t size);
+  lnode(const bitstream_type& data);
   lnode(const bitvector& value);
   
   virtual ~lnode();
+  
+  const lnode& ensureInitialized(uint32_t size, uint32_t offset, uint32_t length) const;
+  
+  const lnode& ensureInitialized(uint32_t size) const {
+    return this->ensureInitialized(size, 0, size);
+  }
+  
+  lnodeimpl* get_impl() const {
+    assert(m_impl);
+    return m_impl;
+  }
+  
+  void set_impl(lnodeimpl* curr_impl, lnodeimpl* new_impl) const;
   
   lnode& operator=(const lnode& rhs);
   
@@ -43,18 +58,11 @@ public:
   
   void assign(const bitvector& value);
   
-  void read(std::vector< partition<lnode> >& out, uint32_t offset, uint32_t length, uint32_t size) const;
+  void read(bitstream_type& inout, uint32_t offset, uint32_t length, uint32_t size) const;
   
-  void write(uint32_t dst_offset, const std::vector< partition<lnode> >& src, uint32_t src_offset, uint32_t src_length, uint32_t size); 
-    
-  operator lnodeimpl*() const { 
-    assert(m_impl);
-    return m_impl; 
-  }  
+  void write(uint32_t dst_offset, const bitstream_type& in, uint32_t src_offset, uint32_t src_length, uint32_t size);
 
-protected:  
-  
-  const lnode& ensureInitialized(uint32_t size, uint32_t offset = 0, uint32_t length = 0) const;
+protected:   
   
   void reset(lnodeimpl* impl = nullptr, bool initialization = false) const;
 
@@ -65,12 +73,6 @@ protected:
   void assign(uint32_t dst_offset, lnodeimpl* src, uint32_t src_offset, uint32_t src_length, uint32_t size, bool initialization);
   
   mutable lnodeimpl* m_impl;
-  
-  friend class lnodeimpl;
-  friend class proxyimpl;
-  friend class context;
-  friend class ch_device;
-  template <unsigned N> friend class ch_bitv;
 };
 
 inline std::ostream& operator<<(std::ostream& out, const lnode& rhs) {

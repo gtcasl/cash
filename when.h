@@ -15,8 +15,9 @@ public:
   }
     
   template <typename Func>
-  when_t when(const ch_logic& cond, const Func& func) {
-    return this->push(cond, to_function(func));
+  when_t& when(const ch_logicbase& cond, const Func& func) {
+    m_stmts->push({cond.get_node().get_impl(), to_function(func)});
+    return *this; 
   }
   
   template <typename Func>
@@ -34,19 +35,14 @@ protected:
   typedef std::function<void ()> func_t;
   
   struct stmt_t {
-    const ch_logic& cond;
+    lnodeimpl* cond;
     func_t func;
   };
   
   typedef std::stack<stmt_t> stmts_t;
   
-  when_t(stmts_t* stmts = new stmts_t()) : m_stmts(stmts) {}
-  
-  when_t push(const ch_logic& cond, const func_t& func) {    
-    stmts_t* stmts = m_stmts;
-    m_stmts = nullptr;
-    stmts->push({cond, func});
-    return when_t(stmts);
+  when_t(lnodeimpl* cond, func_t func) : m_stmts(new stmts_t()) {
+    m_stmts->push({cond, func});
   }
   
   void eval();
@@ -54,12 +50,12 @@ protected:
   stmts_t* m_stmts;
     
   template <typename Func> 
-  friend when_t ch_when(const ch_logic& cond, const Func& func);
+  friend when_t ch_when(const ch_logicbase& cond, const Func& func);
 };
 
 template <typename Func> 
-when_t ch_when(const ch_logic& cond, const Func& func) {
-  return when_t().push(cond, to_function(func));
+when_t ch_when(const ch_logicbase& cond, const Func& func) {
+  return when_t(cond.get_node().get_impl(), to_function(func));
 }
 
 }

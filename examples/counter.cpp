@@ -22,7 +22,11 @@ int main(int argc, char **argv) {
 
   ch_vcdtracer tracer("counter.vcd", myDevice);
   __ch_trace(tracer, out);
-  tracer.run();
+  tracer.run(11);
+  
+  std::cout << "result:" << std::endl;
+  std::cout << "out = " << out << std::endl;
+  assert(out == 10);
 
   return 0;
 }

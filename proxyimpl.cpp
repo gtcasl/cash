@@ -30,10 +30,10 @@ void proxyimpl::add_node(uint32_t start, lnodeimpl* src, uint32_t offset, uint32
     set<uint32_t> deleted;    
     uint32_t i = 0;
     for (; length && i < n; ++i) {
-      range_t& curr = m_ranges[i];
-      uint32_t src_end  = start + length;
+      range_t& curr = m_ranges[i];      
+      lnodeimpl* curr_impl = m_srcs[curr.srcidx].get_impl();
       uint32_t curr_end = curr.start + curr.length;     
-      
+      uint32_t src_end  = start + length;
       range_t new_range = { new_srcidx, start, offset, length };
       
       // do ranges intersect?
@@ -73,7 +73,7 @@ void proxyimpl::add_node(uint32_t start, lnodeimpl* src, uint32_t offset, uint32
           curr.length -= (curr_end - start);
           
           if (resize) {
-            m_srcs[curr.srcidx].m_impl->get_value().resize(curr.length + curr_after.length);
+            curr_impl->get_value().resize(curr.length + curr_after.length);
             curr_after.offset = curr.length;            
           }
           
@@ -162,13 +162,14 @@ void proxyimpl::remove_ref(const lnode* curr_owner, lnodeimpl* new_owner) {
 void proxyimpl::update_refs(uint32_t start, lnodeimpl* src, uint32_t offset, uint32_t length) {
   for (uint32_t i = 0, n = m_ranges.size(); length && i < n; ++i) {
     const range_t& curr = m_ranges[i];
-    uint32_t src_end  = start + length;
-    uint32_t curr_end = curr.start + curr.length;   
+    lnodeimpl* curr_impl = m_srcs[curr.srcidx].get_impl();
+    uint32_t curr_end = curr.start + curr.length;     
+    uint32_t src_end  = start + length;    
     if ((start < curr_end && src_end > curr.start)) {      
       if (start <= curr.start && src_end >= curr_end) {
         // source fully overlaps
         uint32_t delta = curr.start - start;        
-        m_srcs[curr.srcidx].m_impl->update_refs(curr.offset, src, offset + delta, curr.length);        
+        curr_impl->update_refs(curr.offset, src, offset + delta, curr.length);        
         uint32_t step = curr_end - start;
         start  += step;        
         offset += step;        
@@ -177,7 +178,7 @@ void proxyimpl::update_refs(uint32_t start, lnodeimpl* src, uint32_t offset, uin
         // source intersets right
         uint32_t overlap = curr_end - start;        
         uint32_t delta = start - curr.start;
-        m_srcs[curr.srcidx].m_impl->update_refs(curr.offset + delta, src, offset, overlap);        
+        curr_impl->update_refs(curr.offset + delta, src, offset, overlap);        
         start  += overlap;
         offset += overlap;
         length -= overlap;
@@ -185,7 +186,7 @@ void proxyimpl::update_refs(uint32_t start, lnodeimpl* src, uint32_t offset, uin
         assert(!(start < curr.start)); // left intersections should not exit
         // source fully included          
         uint32_t delta = start - curr.start;        
-        m_srcs[curr.srcidx].m_impl->update_refs(curr.offset + delta, src, offset, length);
+        curr_impl->update_refs(curr.offset + delta, src, offset, length);
         length = 0;
       }
     }

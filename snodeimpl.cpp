@@ -176,11 +176,10 @@ snode::snode(snodeimpl* impl) : m_impl(nullptr), m_readonly(false) {
   this->assign(impl);
 }
 
-snode::snode(const std::vector< partition<snode> >& data, uint32_t size) 
-  : m_impl(nullptr), m_readonly(false) {  
+snode::snode(const bitstream_type& data) : m_impl(nullptr), m_readonly(false) {
   uint32_t dst_offset = 0;
   for (auto& p : data) {
-    this->assign(dst_offset, p.data, p.offset, p.length, size);   
+    this->assign(dst_offset, p.data, p.offset, p.length, data.get_size());   
     dst_offset += p.length;
   }
 }
@@ -207,12 +206,10 @@ snode& snode::operator=(snode&& rhs) {
 }
 
 bool snode::operator==(const snode& rhs) const {
-  this->ensureInitialized(rhs.get_size());
   return (m_impl->get_value() == rhs.m_impl->get_value());
 }
 
 bool snode::operator<(const snode& rhs) const {
-  this->ensureInitialized(rhs.get_size());
   return (m_impl->get_value() < rhs.m_impl->get_value());
 }
 
@@ -230,6 +227,7 @@ const snode& snode::ensureInitialized(uint32_t size) const {
 }
 
 void snode::move(snode& rhs) {  
+  assert(m_impl != rhs.m_impl);
   m_impl = rhs.m_impl;
   m_readonly = rhs.m_readonly;
   rhs.m_impl = nullptr;
@@ -253,16 +251,16 @@ void snode::assign(snodeimpl* impl, bool is_owner) {
   }
 }
 
-void snode::assign(uint32_t dst_offset, const snode& src, uint32_t src_offset, uint32_t src_length, uint32_t size) {
+void snode::assign(uint32_t dst_offset, snodeimpl* src, uint32_t src_offset, uint32_t src_length, uint32_t size) {
   assert((dst_offset + src_length) <= size);
-  if (size == src_length && size == src.get_size()) {
+  if (size == src_length && size == src->get_size()) {
     assert(dst_offset == 0 && src_offset == 0);
-    this->assign(src.m_impl);
+    this->assign(src);
   } else {
     this->ensureInitialized(size);
     if (m_readonly)
       this->clone();
-    m_impl->assign(dst_offset, src.m_impl, src_offset, src_length);
+    m_impl->assign(dst_offset, src, src_offset, src_length);
   }  
 }
 
@@ -276,32 +274,32 @@ void snode::clone() const {
   m_readonly = false;
 }
 
-uint32_t snode::read(uint32_t idx, uint32_t size) const {
-  this->ensureInitialized(size);
+uint32_t snode::read(uint32_t idx) const {
+  assert(m_impl);
   return m_impl->read(idx);
 }
 
-void snode::write(uint32_t idx, uint32_t value, uint32_t size) {
-  this->ensureInitialized(size);
+void snode::write(uint32_t idx, uint32_t value) {
+  assert(m_impl);
   if (m_readonly)
     this->clone();
   m_impl->write(idx, value);
 }
 
-bool snode::to_bool(uint32_t size) const {
-  this->ensureInitialized(size);
+bool snode::to_bool() const {
+  assert(m_impl);
   return m_impl->to_bool();
 }
 
-void snode::read(std::vector< partition<snode> >& out, uint32_t offset, uint32_t length, uint32_t size) const {
+void snode::read(bitstream_type& inout, uint32_t offset, uint32_t length, uint32_t size) const {
   assert((offset + length) <= size);
   this->ensureInitialized(size);
-  out.push_back({*this, offset, length});
+  inout.push({m_impl, offset, length});
 }
 
-void snode::write(uint32_t dst_offset, const std::vector< partition<snode> >& src, uint32_t src_offset, uint32_t src_length, uint32_t size) {
+void snode::write(uint32_t dst_offset, const bitstream_type& in, uint32_t src_offset, uint32_t src_length, uint32_t size) {
   assert((dst_offset + src_length) <= size);
-  for (auto& p : src) {
+  for (auto& p : in) {
     if (src_offset < p.length) {
       size_t len = std::min(p.length - src_offset, src_length);
       this->assign(dst_offset, p.data, p.offset + src_offset, len, size);         
@@ -313,4 +311,8 @@ void snode::write(uint32_t dst_offset, const std::vector< partition<snode> >& sr
     }
     src_offset -= p.length;
   }
+}
+
+std::ostream& chdl_internal::operator<<(std::ostream& os, const snode& node) {
+  return os << node.get_impl()->get_value();
 }

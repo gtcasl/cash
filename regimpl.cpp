@@ -94,7 +94,7 @@ ch_logic chdl_internal::ch_clock() {
 }
 
 void chdl_internal::ch_pushclock(const ch_logicbase& clk) {
-  ctx_curr()->push_clk(clk);
+  ctx_curr()->push_clk(clk.get_node().get_impl());
 }
 
 void chdl_internal::ch_popclock() {
@@ -106,7 +106,7 @@ ch_logic chdl_internal::ch_reset() {
 }
 
 void chdl_internal::ch_pushreset(const ch_logicbase& reset) {
-  ctx_curr()->push_reset(reset);
+  ctx_curr()->push_reset(reset.get_node().get_impl());
 }
 
 void chdl_internal::ch_popreset() {

@@ -19,15 +19,31 @@ TEST_CASE("basic tests", "[basic]") {
     });
     TEST([]()->ch_logic {
       ch_bitv<4> a(0x5);
-      return (a == 5_h);
+      return (a == 0x5_h);
     });
     TEST([]()->ch_logic {
       ch_bitv<4> a(0x5);
-      return (a == 5e4_h);
+      return (a == 0x5p4_h);
     });
     TEST([]()->ch_logic {
       ch_bitv<64> a(0x5);
-      return (a == 5e64_h);
+      return (a == 0x5p64_h);
+    });
+    TEST([]()->ch_logic {
+      ch_bitv<8> a(0x1'0_h);
+      return (a == 16);
+    });
+    TEST([]()->ch_logic {
+      ch_bitv<32> a(0x0001'0000_h);
+      return (a.aslice<4>(4) == 0x1_h);
+    });
+    TEST([]()->ch_logic {
+      ch_bitv<32> a(0x00'01'00'00p32_h);
+      return (a.aslice<4>(4) == 0x1_h);
+    });
+    TEST([]()->ch_logic {
+      ch_bitv<64> a(0x10000000'00000000_h);
+      return (a.aslice<4>(15) == 0x1_h);
     });
   }
   
@@ -46,6 +62,21 @@ TEST_CASE("basic tests", "[basic]") {
       ch_bitv<4> a(0), b(1), c;
       c = ch_select(a > b, a)(a == 0, 0)(b);
       return (c == 0);
+    });
+    TEST([]()->ch_logic {
+      ch_bitv<4> a(0), b(1), c;
+      c = ch_select<4>(a > b, a, 8);
+      return (c == 8);
+    });
+    TEST([]()->ch_logic {
+      ch_bitv<4> a(0), b(1), c;
+      c = ch_select<4>(a < b, 7, b);
+      return (c == 7);
+    });
+    TEST([]()->ch_logic {
+      ch_bitv<4> a(0), b(1), c;
+      c = ch_select<4>(a < b, 3, 5);
+      return (c == 3);
     });
   }
   
@@ -327,14 +358,14 @@ TEST_CASE("basic tests", "[basic]") {
       return (c == 0010_b);
     });
     TEST([]()->ch_logic {
-      ch_bitv<64> a(100000000e64_h);
+      ch_bitv<64> a(0x100000000p64_h);
       ch_bitv<64> c = a >> 32;
-      return (c == 1e64_h);
+      return (c == 0x1p64_h);
     });
     TEST([]()->ch_logic {
       ch_bitv<64> a(1);
       ch_bitv<64> c = a << 32;
-      return (c == 100000000e64_h);
+      return (c == 0x100000000p64_h);
     });
     /*TEST([]()->ch_logic {
       ch_bit4 a(1000_b), b(2);
@@ -357,7 +388,7 @@ TEST_CASE("basic tests", "[basic]") {
     TEST([]()->ch_logic {
       ch_bitv<64> a(0xffffffff), b(0x1);
       ch_bitv<64> c = a + b;
-      return (c == 100000000e64_h);
+      return (c == 0x100000000p64_h);
     });
     TEST([]()->ch_logic {
       ch_bit4 a(0x1), b(0x2);

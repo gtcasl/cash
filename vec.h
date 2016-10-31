@@ -5,11 +5,11 @@
 namespace chdl_internal {
 
 template <typename T, unsigned N> 
-class ch_vec : public typebase<N * T::bit_count, typename T::data_type> {
+class ch_vec : public typebase<N * T::bit_count, typename T::bitstream_type> {
 public:
-  using base = typebase<N * T::bit_count, typename T::data_type>;
+  using base = typebase<N * T::bit_count, typename T::bitstream_type>;
   using base::operator=;
-  typedef typename base::data_type data_type;
+  typedef typename base::bitstream_type bitstream_type;
   typedef ch_vec<typename T::bus_type, N> bus_type;
   
   ch_vec() {}
@@ -83,7 +83,7 @@ protected:
   
   std::array<T, N> m_items;
   
-  void read(std::vector< partition<data_type> >& out, size_t offset, size_t length) const override {
+  void read(bitstream_type& out, size_t offset, size_t length) const override {
     CHDL_CHECK(offset + length <= ch_vec::bit_count, "invalid vector read range");
     for (unsigned i = 0; length && i < N; ++i) {
       if (offset < T::bit_count) {     
@@ -96,7 +96,7 @@ protected:
     }
   }
   
-  void write(size_t start, const std::vector< partition<data_type> >& data, size_t offset, size_t length) override {
+  void write(size_t start, const bitstream_type& data, size_t offset, size_t length) override {
     CHDL_CHECK(start + length <= ch_vec::bit_count, "invalid vector write range");
     for (unsigned i = 0; length && i < N; ++i) {
       if (start < T::bit_count) {

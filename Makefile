@@ -1,6 +1,6 @@
 PREFIX ?= /usr/local
-#CXXFLAGS += -fPIC -std=c++11 -O2 -DNDEBUG
-CXXFLAGS += -fPIC -std=c++11 -O0 -g --coverage -fmax-errors=5
+#CXXFLAGS += -fPIC -std=c++14 -O2 -DNDEBUG
+CXXFLAGS += -fPIC -std=c++14 -O0 -g --coverage -fmax-errors=5
 LDFLAGS += -shared --coverage
 
 SRCS = utils.cpp bitvector.cpp platform.cpp \

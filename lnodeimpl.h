@@ -48,11 +48,11 @@ public:
   }
   
   lnodeimpl* get_src(unsigned i) const {
-    return m_srcs[i];
+    return m_srcs[i].get_impl();
   }
   
   lnodeimpl* get_src(unsigned i) {
-    return m_srcs[i];
+    return m_srcs[i].get_impl();
   }
   
   uint32_t get_size() const {

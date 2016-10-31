@@ -25,19 +25,23 @@ template <unsigned N>
 class ch_bitv : public ch_bitbase<N> {
 public:
   using base = ch_bitbase<N>;
-  typedef typename base::data_type data_type;
+  typedef typename base::bitstream_type bitstream_type;
   typedef ch_bus<N>  bus_type;
       
   ch_bitv() {}
   
   ch_bitv(const ch_bitv& rhs) : m_node(rhs.m_node.ensureInitialized(N)) {}
   
-  ch_bitv(const ch_bitbase<N>& rhs) : m_node(static_cast<lnodeimpl*>(rhs)) {}
+  ch_bitv(const ch_bitbase<N>& rhs) : m_node(rhs.get_node().get_impl()) {}
   
-  ch_bitv(const bitvector& rhs) : m_node(rhs) {}
+  ch_bitv(const bitvector& rhs) : m_node(rhs) {
+    assert(rhs.get_size() == N);
+  }
     
 #define CHDL_DEF_CTOR(type) \
-    ch_bitv(type value) : m_node(bitvector(value, N)) {}
+    ch_bitv(type value) : m_node(bitvector(value, N)) { \
+      assert(m_node.get_size() == N); \
+    }
   CHDL_DEF_CTOR(const std::initializer_list<uint32_t>&)
   CHDL_DEF_CTOR(char)
   CHDL_DEF_CTOR(int8_t)
@@ -50,11 +54,12 @@ public:
   CHDL_DEF_CTOR(uint64_t)
 #undef CHDL_DEF_CTOR
   
-  explicit ch_bitv(lnodeimpl* node) : m_node(node) {}
+  explicit ch_bitv(lnodeimpl* node) : m_node(node) {
+    assert(m_node.get_size() == N);
+  }
   
   ch_bitv& operator=(const ch_bitv& rhs) {
-    rhs.m_node.ensureInitialized(N);
-    m_node = rhs.m_node;
+    m_node = rhs.m_node.ensureInitialized(N);
     return *this;
   }
   
@@ -66,6 +71,7 @@ public:
 #define CHDL_DEF_AOP(type) \
   ch_bitv& operator=(type value) { \
     m_node.assign(bitvector(value, N)); \
+    assert(m_node.get_size() == N); \
     return *this; \
   } 
   CHDL_DEF_AOP(const std::initializer_list<uint32_t>&)
@@ -80,19 +86,18 @@ public:
   CHDL_DEF_AOP(uint64_t)
 #undef CHDL_DEF_AOP
   
-  operator lnodeimpl*() const { 
-    m_node.ensureInitialized(N);
-    return m_node; 
+  lnode get_node() const override { 
+    return m_node.ensureInitialized(N);
   }
   
 protected:
   
-  void read(std::vector< partition<data_type> >& out, size_t offset, size_t length) const override {
-    m_node.read(out, offset, length, N);
+  void read(bitstream_type& inout, size_t offset, size_t length) const override {
+    m_node.read(inout, offset, length, N);
   }
   
-  void write(size_t dst_offset, const std::vector< partition<data_type> >& data, size_t src_offset, size_t src_length) override {
-    m_node.write(dst_offset, data, src_offset, src_length, N);
+  void write(size_t dst_offset, const bitstream_type& in, size_t src_offset, size_t src_length) override {
+    m_node.write(dst_offset, in, src_offset, src_length, N);
   }
   
   lnode m_node;

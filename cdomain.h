@@ -17,7 +17,7 @@ public:
   ~clock_event();
   
   lnodeimpl* get_signal() const {
-    return m_signal;
+    return m_signal.get_impl();
   }
   
   EDGE_DIR get_edgedir() const {

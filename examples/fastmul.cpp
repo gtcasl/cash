@@ -28,6 +28,12 @@ int main(int argc, char **argv) {
   ch_vcdtracer tracer("fastmul.vcd", myDevice);
   __ch_trace(tracer, lhs, rhs, out);
   tracer.run();
+  
+  std::cout << "result:" << std::endl;
+  std::cout << "lhs = " << lhs << std::endl;
+  std::cout << "rhs = " << rhs << std::endl;
+  std::cout << "out = " << out << std::endl;
+  assert(out == 6);
 
   return 0;
 }

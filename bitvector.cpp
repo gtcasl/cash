@@ -35,18 +35,31 @@ bitvector::bitvector(uint32_t value, uint32_t size) : m_words(nullptr), m_size(0
 
 bitvector::bitvector(const std::initializer_list<uint32_t>& value, uint32_t size) 
   : m_words(nullptr), m_size(0) {  
-  uint32_t num_words = (size + WORD_MASK) >> WORD_SIZE_LOG;
-  CHDL_CHECK((value.size() < num_words) || 
-                  ((value.size() == num_words) && 
-                    (0 == (size & WORD_MASK) || 
-                      (0 == (*value.begin() >> (size & WORD_MASK))))), "input value out of bound");  
+  
+  auto iterValue = value.begin();
+  
+  uint32_t num_words = (size + WORD_MASK) >> WORD_SIZE_LOG;  
+  int32_t n = num_words - value.size();
+  
+  for (int32_t i = n; i < 0; ++i, ++iterValue) {
+    CHDL_CHECK(0 == *iterValue, "input value out of bound");
+  }
+  
+  CHDL_CHECK((value.size() < num_words) 
+          || (0 == (size & WORD_MASK) || (0 == (*iterValue >> (size & WORD_MASK)))), "input value out of bound");  
+             
   this->resize(size, 0x0, false, false);
   
-  uint32_t* dst = m_words + (num_words - 1);
-  for (uint32_t n = num_words - value.size(); n--;)
-    *dst-- = 0;
-  for (uint32_t v : value)
-    *dst-- = v;
+  uint32_t* dst = m_words + (num_words - 1);  
+  
+  
+  for (int32_t i = 0; i < n; ++i) {
+      *dst-- = 0x0;
+  }
+  
+  for (auto iterEnd = value.end(); iterValue != iterEnd; ++iterValue) {
+    *dst-- = *iterValue;
+  }
 }
 
 bitvector::bitvector(char value, uint32_t size) : m_words(nullptr), m_size(0) {
@@ -67,6 +80,7 @@ bitvector::~bitvector() {
 }
 
 void bitvector::resize(uint32_t size, uint32_t defaultValue, bool initialize, bool preserve) {  
+  assert(size > 0);
   uint32_t old_num_words = (m_size + WORD_MASK) >> WORD_SIZE_LOG;
   uint32_t new_num_words = (size + WORD_MASK) >> WORD_SIZE_LOG;
   if (new_num_words != old_num_words) {
@@ -115,6 +129,8 @@ bitvector& bitvector::operator=(const std::string& value) {
   std::vector<uint32_t> tmp;
   
   int base = 0;
+  int start = 0;
+  
   switch (value.back()) {
   case 'b':
     base = 2;
@@ -127,31 +143,42 @@ bitvector& bitvector::operator=(const std::string& value) {
     break;
   case 'h':
     base = 16;
+    if (value.size() > 1 && (value[1] == 'x' || value[1] == 'X')) {
+      start = 2;
+    }
     break;
   default:
-    CHDL_ABORT("invalid binary string format, '%s' is missing the last character type.", value.c_str());
+    CHDL_ABORT("invalid binary format, missing encoding base type.");
   }
   
   uint32_t log_base = CLOG2(base);
-  uint32_t S(value.size() - 1);
-  uint32_t N = S * log_base;
+  uint32_t len(value.size() - 1); // remove type character
+  uint32_t size = (len - start) * log_base;
     
-  for (uint32_t i = 0; i < S; ++i) {
-    if (value[i] == 'e' || value[i] == 'E') {
-      S = i;
-      N = stoul(value.substr(i + 1));      
+  // get inline size 
+  for (uint32_t i = start; i < len; ++i) {
+    if (value[i] == '\'') { 
+      size -= log_base; // adjust size if separator character
+      continue; 
+    }      
+    if ((base == 16 && (value[i] == 'p' || value[i] == 'P')) 
+     || (base != 16 && (value[i] == 'e' || value[i] == 'E'))) {
+      len = i;
+      size = stoul(value.substr(i + 1));      
       break;
     }
   }
   
-  uint32_t num_words = (N + WORD_MASK) >> WORD_SIZE_LOG;
+  uint32_t num_words = (size + WORD_MASK) >> WORD_SIZE_LOG;
   tmp.resize(num_words, 0x0);
   
   uint32_t j = 0;
   uint32_t w = 0;  
   char str[2] = {0, 0};    
-  for (uint32_t i = 0; i < S; ++i) {
-    str[0] = value[S - i - 1];
+  for (uint32_t i = 0, n = len - start; i < n; ++i) {
+    str[0] = value[len - i - 1];
+    if (str[0] == '\'')
+      continue; // skip separator character
     uint32_t v = strtol(str, nullptr, base);
     for (uint32_t k = 0; k < log_base; ++k) {
       uint32_t bit = (v >> k) & 0x1;  
@@ -165,7 +192,7 @@ bitvector& bitvector::operator=(const std::string& value) {
   tmp[j >> WORD_SIZE_LOG] = w;
   
   if (this->get_num_words() != num_words) {
-    this->resize(N, 0x0, false, false);    
+    this->resize(size, 0x0, false, false);    
   }
   
   uint32_t* dst = m_words;
@@ -301,4 +328,15 @@ bitvector& bitvector::operator>>=(uint32_t dist) {
     prev = curr;
   }  
   std::fill_n(m_words + (num_words - shift_words), shift_words, 0x0);
+}
+
+std::ostream& chdl_internal::operator<<(std::ostream& os, const bitvector& b) {
+  os << "0x";
+  for (int32_t i = b.get_num_words() - 1; i >= 0; --i) {
+    uint32_t word = b.get_word(i);
+    os << std::hex << word;
+    if (i != 0) 
+      os << "_";
+  }
+  return os;
 }

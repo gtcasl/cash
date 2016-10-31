@@ -17,5 +17,5 @@ const bitvector& assertimpl::eval(ch_cycle t) {
 }
 
 void chdl_internal::ch_assert(const ch_logicbase& l, const std::string& msg) {
-  ctx_curr()->create_assertion(l, msg);  
+  ctx_curr()->create_assertion(l.get_node().get_impl(), msg);  
 }

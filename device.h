@@ -96,8 +96,8 @@ protected:
   template <size_t I>
   struct bind_inputs_impl {
     template <typename ...InputArgs, typename Arg, typename ...Args>
-    static void bind(const ch_device& dev, const std::tuple<InputArgs...>& inputs, Arg&& arg, Args&&... args) {
-      dev.bind_input(std::get<sizeof...(InputArgs)-I>(inputs), std::forward<Arg>(arg));
+    static void bind(const ch_device& dev, std::tuple<InputArgs...>& inputs, Arg&& arg, Args&&... args) {
+      std::get<sizeof...(InputArgs)-I>(inputs) = dev.bind_input(std::forward<Arg>(arg));
       bind_inputs_impl<I-1>::bind(dev, inputs, args...);
     }
   };
@@ -123,7 +123,7 @@ protected:
   }
   
   template <typename ...InputArgs, typename ...Args>
-  void bind_inputs(const std::tuple<InputArgs...>& inputs, Args&&... args) {
+  void bind_inputs(std::tuple<InputArgs...>& inputs, Args&&... args) {
     bind_inputs_impl<sizeof...(InputArgs)>::bind(*this, inputs, args...);
   }
   
@@ -138,18 +138,18 @@ protected:
   }
 
   template <unsigned N>
-  void bind_input(const ch_bitbase<N>& input, const ch_busbase<N>& bus) const {
-    this->bind_input_(input, bus);
+  ch_bitv<N> bind_input(const ch_busbase<N>& bus) const {
+    return ch_bitv<N>(this->bind_input_(bus.get_node().get_impl()));
   }
   
   template <unsigned N>
   ch_bus<N> bind_output(const ch_bitbase<N>& output) const {
-    return ch_bus<N>(this->bind_output_(output));
+    return ch_bus<N>(this->bind_output_(output.get_node().get_impl()));
   }
   
-  void bind_input_(const lnode& input, const snode& bus) const;
+  lnodeimpl* bind_input_(snodeimpl* bus) const;
   
-  snode bind_output_(const lnode& output) const;
+  snodeimpl* bind_output_(lnodeimpl* output) const;
   
   snode get_tap(std::string& name, uint32_t size) const;
   
@@ -163,20 +163,20 @@ protected:
 template <>
 struct ch_device::bind_inputs_impl<1> {
   template <typename ...InputArgs, typename Arg, typename ...Args>
-  static void bind(const ch_device& dev, const std::tuple<InputArgs...>& inputs, Arg&& arg, Args&&... args) {
-    dev.bind_input(std::get<sizeof...(InputArgs)-1>(inputs), std::forward<Arg>(arg));
+  static void bind(const ch_device& dev, std::tuple<InputArgs...>& inputs, Arg&& arg, Args&&... args) {
+    std::get<sizeof...(InputArgs)-1>(inputs) = dev.bind_input(std::forward<Arg>(arg));
   }
   
   template <typename ...InputArgs, typename Arg>
-  static void bind(const ch_device& dev, const std::tuple<InputArgs...>& inputs, Arg&& arg) {
-    dev.bind_input(std::get<sizeof...(InputArgs)-1>(inputs), std::forward<Arg>(arg));
+  static void bind(const ch_device& dev, std::tuple<InputArgs...>& inputs, Arg&& arg) {
+    std::get<sizeof...(InputArgs)-1>(inputs) = dev.bind_input(std::forward<Arg>(arg));
   }
 };
 
 template <>
 struct ch_device::bind_inputs_impl<0> {
   template <typename ...InputArgs, typename ...Args>
-  static void bind(const ch_device& dev, const std::tuple<InputArgs...>& inputs, Args&&... args) {
+  static void bind(const ch_device& dev, std::tuple<InputArgs...>& inputs, Args&&... args) {
     // no inputs!
   }
 };
