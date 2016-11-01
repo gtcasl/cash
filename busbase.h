@@ -13,7 +13,7 @@ public:
   typedef snode::bitstream_type bitstream_type;
   
   typebase() {}
-  virtual ~typebase() {}
+  ~typebase() {}
   
   typebase& operator=(const typebase& rhs) {
     bitstream_type data(N);

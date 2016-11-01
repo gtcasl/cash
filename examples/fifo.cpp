@@ -88,7 +88,7 @@ int main(int argc, char **argv) {
       pop = 0;
       break;
     }
-    std::cout << "t" << time<< ": din=" << din << ", push=" << push << ", pop=" << pop << ", dout=" << dout << ", empty=" << empty << ", full=" << full << std::endl;
+    std::cout << "t" << time << ": din=" << din << ", push=" << push << ", pop=" << pop << ", dout=" << dout << ", empty=" << empty << ", full=" << full << std::endl;
     return (time < 6);
   });
 

@@ -19,14 +19,11 @@ public:
   snode(const bitstream_type& data);
   snode(const bitvector& value);
 
-  virtual ~snode();
+  ~snode();
   
   const snode& ensureInitialized(uint32_t size) const;
   
-  snodeimpl* get_impl() const {
-    assert(m_impl);
-    return m_impl;
-  }
+  snodeimpl* get_impl() const;
   
   snode& operator=(const snode& rhs);
   

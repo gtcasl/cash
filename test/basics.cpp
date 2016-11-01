@@ -259,7 +259,7 @@ TEST_CASE("basic tests", "[basic]") {
      y = 1_b;     
      z = 001_b;
      w = 1_b;
-     return (a == 1010_b);
+     return (a == 1010_b && a.slice<2>(1) == 01_b);
     });
   }
   
@@ -285,14 +285,14 @@ TEST_CASE("basic tests", "[basic]") {
     TEST([]()->ch_logic {
       ch_bit4 a(1100_b);
       ch_bit4 c = (a[3], a[2], a[1], a[0]);
-      return (c == 1100_b);
+      return (c == 1100_b && (a[3], a[0]) == 10_b);
     });
     TEST([]()->ch_logic {
        ch_bit4 a(1100_b);
        ch_bit4 c = (a[3], a[0], a[0], a[0]);
        return (c == 1000_b);
     });
-  } 
+  }
   
   SECTION("test logic", "[logic]") {
     TEST([]()->ch_logic {

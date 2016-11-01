@@ -13,7 +13,15 @@ public:
   typedef lnode::bitstream_type bitstream_type;
   
   typebase() {}
-  virtual ~typebase() {}
+  ~typebase() {}
+  
+  const_subscript_ref<typebase> operator[](size_t index) const {
+    return const_subscript_ref<typebase>(*this, index); 
+  }
+  
+  subscript_ref<typebase> operator[](size_t index) {
+    return subscript_ref<typebase>(*this, index); 
+  }
   
   template <unsigned M>
   const_slice_ref<typebase, M> slice(size_t index) const {
@@ -33,14 +41,6 @@ public:
   template <unsigned M>
   slice_ref<typebase, M> aslice(size_t index) {
     return slice_ref<typebase, M>(*this, index * M);
-  }
-  
-  const_subscript_ref<typebase> operator[](size_t index) const {
-    return const_subscript_ref<typebase>(*this, index); 
-  }
-  
-  subscript_ref<typebase> operator[](size_t index) {
-    return subscript_ref<typebase>(*this, index); 
   }
   
   typebase& operator=(const typebase& rhs) {

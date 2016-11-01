@@ -21,8 +21,13 @@ public:
     }
   }
   
-  template <typename U>
-  ch_vec(const U& rhs) {
+  ch_vec(const ch_bitbase<T::bit_count>& rhs) {
+    bitstream_type data(N);
+    rhs.read(data, 0, N);
+    this->write(0, data, 0, N);
+  }
+  
+  explicit ch_vec(const T& rhs) {
     for (unsigned i = 0; i < N; ++i) {
       m_items[i] = rhs;
     }
@@ -41,7 +46,7 @@ public:
     this->operator =(rhs);
   }
  
-  virtual ~ch_vec() {}
+  ~ch_vec() {}
   
   template <typename U>
   ch_vec& operator=(const ch_vec<U, N>& rhs) {

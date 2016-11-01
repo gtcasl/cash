@@ -217,6 +217,11 @@ uint32_t snode::get_size() const {
   return m_impl ? m_impl->get_size() : 0;
 }
 
+snodeimpl* snode::get_impl() const {
+  assert(m_impl);
+  return m_impl;
+}
+
 const snode& snode::ensureInitialized(uint32_t size) const {
   if (m_impl == nullptr) {
     m_impl = new snodeimpl(size);

@@ -28,12 +28,16 @@ public:
   void add_ref(const lnode* node) {
     m_refs.emplace(node);
   }
+  
+  void remove_ref(const lnode* curr_owner) {
+    m_refs.erase(curr_owner);
+  }
 
   virtual void remove_ref(const lnode* curr_owner, lnodeimpl* new_owner) {
     m_refs.erase(curr_owner);
   }
 
-  void replace_refs(lnodeimpl* impl);
+  void replace_all_refs(lnodeimpl* impl);
   
   virtual void update_refs(uint32_t start, lnodeimpl* new_owner, uint32_t offset, uint32_t length) {}
   

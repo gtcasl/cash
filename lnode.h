@@ -23,7 +23,7 @@ public:
   lnode(const bitstream_type& data);
   lnode(const bitvector& value);
   
-  virtual ~lnode();
+  ~lnode();
   
   const lnode& ensureInitialized(uint32_t size, uint32_t offset, uint32_t length) const;
   
@@ -31,10 +31,7 @@ public:
     return this->ensureInitialized(size, 0, size);
   }
   
-  lnodeimpl* get_impl() const {
-    assert(m_impl);
-    return m_impl;
-  }
+  lnodeimpl* get_impl() const;
   
   void set_impl(lnodeimpl* curr_impl, lnodeimpl* new_impl) const;
   

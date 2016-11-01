@@ -24,10 +24,12 @@ lnodeimpl::~lnodeimpl() {
   }
 }
 
-void lnodeimpl::replace_refs(lnodeimpl* impl) {
+void lnodeimpl::replace_all_refs(lnodeimpl* impl) {
   assert(impl != this);
   for (auto node : m_refs) {
     node->set_impl(this, impl);
+    if (impl)
+      impl->add_ref(node);
   }
   m_refs.clear();
 }
@@ -82,7 +84,7 @@ void undefimpl::remove_ref(const lnode* curr_owner, lnodeimpl* new_owner) {
   m_refs.erase(curr_owner);
   if (new_owner) {
     assert(this->get_size() == new_owner->get_size());
-    this->replace_refs(new_owner);
+    this->replace_all_refs(new_owner);
   }
   if (this->unreferenced())
     this->release();
@@ -94,7 +96,7 @@ void undefimpl::update_refs(uint32_t start, lnodeimpl* src, uint32_t offset, uin
   if (length < this->get_size()) {
     // copy region smaller than dst buffer
     proxyimpl* proxy = new proxyimpl(m_ctx, this->get_size());
-    this->replace_refs(proxy);
+    this->replace_all_refs(proxy);
     proxy->add_node(0, this, 0, this->get_size());
     proxy->add_node(start, src, offset, length, true);    
   } else {
@@ -105,7 +107,7 @@ void undefimpl::update_refs(uint32_t start, lnodeimpl* src, uint32_t offset, uin
       impl = new proxyimpl(m_ctx, length);
       reinterpret_cast<proxyimpl*>(impl)->add_node(0, src, offset, length);
     }
-    this->replace_refs(impl);
+    this->replace_all_refs(impl);
     this->release();
   }
 }
@@ -214,11 +216,14 @@ const lnode& lnode::ensureInitialized(uint32_t size, uint32_t offset, uint32_t l
   return *this;
 }
 
+lnodeimpl* lnode::get_impl() const {
+  assert(m_impl);
+  return m_impl;
+}
+
 void lnode::set_impl(lnodeimpl* curr_impl, lnodeimpl* new_impl) const {
-  assert(m_impl == curr_impl);
-  assert(curr_impl != new_impl);  
-  if (new_impl)
-    new_impl->add_ref(this);
+  assert(curr_impl != new_impl);
+  assert(m_impl == nullptr || m_impl == curr_impl);  
   m_impl = new_impl;
 }
 
@@ -300,19 +305,19 @@ void lnode::assign(uint32_t dst_offset, lnodeimpl* src, uint32_t src_offset, uin
         src = proxy;
       }
       
-      proxyimpl* dst = dynamic_cast<proxyimpl*>(m_impl);
-      if (dst == nullptr) {
-        dst = new proxyimpl(ctx, size);
-        lnodeimpl* impl = m_impl;
-        impl->replace_refs(dst);
-        dst->add_node(0, impl, 0, size);
-      }
-      
       proxyimpl* dst_subset = new proxyimpl(ctx, src_length);
-      dst_subset->add_node(0, dst, dst_offset, src_length);
+      dst_subset->add_node(0, m_impl, dst_offset, src_length);
       lnode ds(dst_subset);
       ds.assign(src, initialization);
       
+      proxyimpl* dst = dynamic_cast<proxyimpl*>(m_impl);
+      if (dst == nullptr) {
+        dst = new proxyimpl(ctx, size);
+        dst->add_node(0, m_impl, 0, size);
+        dst->add_ref(this);
+        m_impl->remove_ref(this);
+        m_impl = dst;
+      }         
       dst->add_node(dst_offset, ds.m_impl, 0, src_length);
     } else {
       proxyimpl* proxy = new proxyimpl(ctx, size);

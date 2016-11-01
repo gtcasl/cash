@@ -189,7 +189,10 @@ bitvector& bitvector::operator=(const std::string& value) {
       }
     }
   }  
-  tmp[j >> WORD_SIZE_LOG] = w;
+  
+  if (w) {
+    tmp[j >> WORD_SIZE_LOG] = w;
+  }
   
   if (this->get_num_words() != num_words) {
     this->resize(size, 0x0, false, false);    

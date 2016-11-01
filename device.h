@@ -23,7 +23,7 @@ public:
     this->init(std::function<FuncRet(FuncArgs...)>(func), args...);
   }
   
-  virtual ~ch_device();
+  ~ch_device();
   
   template <unsigned N> 
   ch_bus<N> get_tap(std::string& name) {

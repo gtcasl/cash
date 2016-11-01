@@ -56,5 +56,22 @@ TEST_CASE("aggregate tests", "[aggregate]") {
            
       return (s1, s4) == (s3, s2);
     });
+  } 
+  
+  SECTION("test vectors", "[vector]") {
+    TEST([]()->ch_logic {
+      ch_vec<ch_bit2, 2> a(0);
+      a[0][1] = 1;
+      return (a == 0010_b);
+    });
+    
+    TEST([]()->ch_logic {
+      ch_vec<ch_bit2, 2> a(0101_b), b;
+      b[0][0] = a[1][1];
+      b[0][1] = a[1][0];
+      b[1][0] = a[0][1];
+      b[1][1] = a[0][0];
+      return (b == 1010_b);
+    });
   }
 }

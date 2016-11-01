@@ -7,7 +7,7 @@ namespace chdl_internal {
 class optimizer {
 public:  
   optimizer(context* ctx);  
-  virtual ~optimizer();
+  ~optimizer();
   
   void optimize();
   
