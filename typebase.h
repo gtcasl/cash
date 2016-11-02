@@ -49,7 +49,7 @@ template <unsigned N, typename T>
 class typebase {
 public:   
   static const unsigned bit_count = N;
-  typedef T bitstream_type;
+  using bitstream_type = T;
   
   const const_subscript_ref<typebase>& operator[](size_t index) const {
     return const_subscript_ref<typebase>(*this, index); 
@@ -107,8 +107,7 @@ template <unsigned N, typename T>
 class const_refbase: public typebase<N, T> {
 public:   
   using base = typebase<N, T>;
-  static const unsigned bit_count = N;
-  typedef T bitstream_type;
+  using bitstream_type = T;
   
   template <unsigned M> slice_ref<base, M> slice(size_t index) = delete;
   template <unsigned M> slice_ref<base, M> aslice(size_t index) = delete;
@@ -125,8 +124,7 @@ class  refbase: public typebase<N, T> {
 public:   
   using base = typebase<N, T>;
   using base::operator=;
-  static const unsigned bit_count = N;
-  typedef T bitstream_type;  
+  using bitstream_type = T;  
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -135,8 +133,8 @@ template <typename T>
 class const_subscript_ref : public const_refbase<1, typename T::bitstream_type> {
 public:
   using base = const_refbase<1, typename T::bitstream_type>;
-  typedef typename base::bitstream_type bitstream_type;
-  typedef T container_type;
+  using bitstream_type = typename base::bitstream_type;
+  using container_type = T;
     
   template <unsigned M> const_slice_ref<base, M> slice(size_t index) const = delete;   
   template <unsigned M> const_slice_ref<base, M> aslice(size_t index) const = delete;    
@@ -168,8 +166,8 @@ class subscript_ref : public refbase<1, typename T::bitstream_type> {
 public:
   using base = refbase<1, typename T::bitstream_type>;
   using base::operator=;
-  typedef typename base::bitstream_type bitstream_type;
-  typedef T container_type;
+  using bitstream_type = typename base::bitstream_type;
+  using container_type = T;
     
   template <unsigned M> slice_ref<base, M> slice(size_t index) = delete;   
   template <unsigned M> slice_ref<base, M> aslice(size_t index) = delete;   
@@ -212,8 +210,8 @@ template <typename T, unsigned N>
 class const_slice_ref : public const_refbase<N, typename T::bitstream_type> {
 public:
   using base = const_refbase<N, typename T::bitstream_type>;
-  typedef typename base::bitstream_type bitstream_type;
-  typedef T container_type;
+  using bitstream_type = typename base::bitstream_type;
+  using container_type = T;
 
 protected:
 
@@ -241,8 +239,8 @@ class slice_ref : public refbase<N, typename T::bitstream_type> {
 public:
   using base = refbase<N, typename T::bitstream_type>;
   using base::operator=;
-  typedef typename base::bitstream_type bitstream_type;
-  typedef T container_type;
+  using bitstream_type = typename base::bitstream_type;
+  using container_type = T;
   
   slice_ref& operator=(const slice_ref& rhs) {
     bitstream_type data(N);
@@ -282,9 +280,9 @@ class const_concat_ref : public const_refbase<B::bit_count + A::bit_count, typen
 public:
   static_assert(std::is_same<typename A::bitstream_type, typename B::bitstream_type>::value, "type mismatch!");
   using base = const_refbase<B::bit_count + A::bit_count, typename A::bitstream_type>;
-  typedef typename A::bitstream_type bitstream_type;
-  typedef A first_container_type;
-  typedef B second_container_type;
+  using bitstream_type = typename A::bitstream_type;
+  using first_container_type = A;
+  using second_container_type = B;
 
 protected:
    
@@ -326,9 +324,9 @@ public:
   static_assert(std::is_same<typename A::bitstream_type, typename B::bitstream_type>::value, "type mismatch!");
   using base = refbase<B::bit_count + A::bit_count, typename A::bitstream_type>;
   using base::operator=;
-  typedef typename A::bitstream_type bitstream_type;
-  typedef A first_container_type;
-  typedef B second_container_type; 
+  using bitstream_type = typename A::bitstream_type;
+  using first_container_type = A;
+  using second_container_type = B;
   
   concat_ref& operator=(const concat_ref& rhs) {
     bitstream_type data(base::bit_count);

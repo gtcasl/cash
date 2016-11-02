@@ -10,7 +10,7 @@ template <unsigned N>
 class typebase<N, lnode::bitstream_type> {
 public:   
   static const unsigned bit_count = N;
-  typedef lnode::bitstream_type bitstream_type;
+  using bitstream_type = lnode::bitstream_type;
   
   typebase() {}
   ~typebase() {}

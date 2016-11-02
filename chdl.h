@@ -13,7 +13,9 @@
 #include "sim.h"
 #include "vcd.h"
 #include "assertion.h"
-#include "aggregate.h"
+#include "struct.h"
+#include "union.h"
+#include "enum.h"
 
 namespace chdl {
 
@@ -52,12 +54,12 @@ namespace core {
   // pre-defined bitv types
   //
 
-  typedef ch_bitv<2>  ch_bit2;
-  typedef ch_bitv<4>  ch_bit4;
-  typedef ch_bitv<8>  ch_bit8;
-  typedef ch_bitv<16> ch_bit16;
-  typedef ch_bitv<32> ch_bit32;
-  typedef ch_bitv<64> ch_bit64;
+  using ch_bit2  = ch_bitv<2>;
+  using ch_bit4  = ch_bitv<4>;
+  using ch_bit8  = ch_bitv<8>;
+  using ch_bit16 = ch_bitv<16>;
+  using ch_bit32 = ch_bitv<32>;
+  using ch_bit64 = ch_bitv<64>;
 
   //
   // subscript operators
@@ -234,6 +236,7 @@ inline namespace sim_literals {
 #define __ch_assert  CHDL_ASSERT
 #define __ch_struct  CHDL_STRUCT
 #define __ch_union   CHDL_UNION
+#define __ch_enum    CHDL_ENUM
 #define __ch_out     CHDL_OUT
 #define __ch_ret     CHDL_RET
 #define __ch_tie     CHDL_TIE

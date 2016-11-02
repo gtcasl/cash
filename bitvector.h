@@ -16,7 +16,7 @@ public:
   class const_iterator;
   class iterator;
   
-  typedef bool const_reference;
+  using const_reference = bool;
   
   class reference {
   public:    

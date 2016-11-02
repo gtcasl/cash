@@ -20,11 +20,7 @@
 #define CHDL_SEP_COMMA() ,
 #define CHDL_SEP_SEMICOLON() ;
 #define CHDL_SEP_PLUS() +
-
-// Remove parenthesis macro
-#define _CHDL_UNPAREN_
-#define CHDL_UNPAREN_(...) CHDL_UNPAREN_ __VA_ARGS__
-#define CHDL_UNPAREN(x) CHDL_CONCAT(_, CHDL_UNPAREN_ x)
+#define CHDL_SEP_COLON() :
 
 // MAKE_UNIQUE macro
 #define CHDL_MAKE_UNIQUE(x) CHDL_CONCAT(x, __COUNTER__)

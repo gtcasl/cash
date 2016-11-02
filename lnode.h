@@ -8,12 +8,12 @@ namespace chdl_internal {
 class lnodeimpl;
 class context;
 
-typedef uint64_t ch_cycle;
+using ch_cycle = uint64_t;
 
 class lnode {
 public:
   
-  typedef bitstream<lnodeimpl> bitstream_type;
+  using bitstream_type = bitstream<lnodeimpl>;
 
   lnode() : m_impl(nullptr) {}
   

@@ -7,7 +7,7 @@ namespace chdl_internal {
 class case_impl {  
 protected:
   
-  typedef std::function<void ()> func_t;
+  using func_t = std::function<void ()>;
   
   struct stmt_t {
     lnodeimpl* value;
@@ -47,24 +47,24 @@ class case_t {
 public:
     
   template <typename Func>
-  case_t& when(const ch_bitbase<N>& value, const Func& func) {
+  case_t& _when(const ch_bitbase<N>& value, const Func& func) {
     m_impl.push(value.get_node().get_impl(), to_function(func));
     return *this;
   }
   
   template <typename Func>
-  case_t& when(const ch_bitv<N>& value, const Func& func) {    
+  case_t& _when(const ch_bitv<N>& value, const Func& func) {    
     m_impl.push(value.get_node().get_impl(), to_function(func));
     return *this;
   }
   
   template <typename Func>
-  void end(const Func& func) {
+  void _else(const Func& func) {
     func(); // evaluate 'default' case
     m_impl.eval();
   }
   
-  void end() {
+  void _end() {
     m_impl.eval();
   }
   

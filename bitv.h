@@ -25,8 +25,8 @@ template <unsigned N>
 class ch_bitv : public ch_bitbase<N> {
 public:
   using base = ch_bitbase<N>;
-  typedef typename base::bitstream_type bitstream_type;
-  typedef ch_bus<N>  bus_type;
+  using bitstream_type = typename base::bitstream_type;
+  using bus_type = ch_bus<N>;
       
   ch_bitv() {}
   

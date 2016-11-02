@@ -85,23 +85,30 @@ TEST_CASE("basic tests", "[basic]") {
       ch_bitv<4> a(5), b(1), c(0);
       ch_when(a > b, [&]() { 
           c = a; 
-      }).end();
+      })._end();
       return (c == a);
     });
     TEST([]()->ch_logic {
       ch_bitv<4> a(5), b(1), c(0);
       ch_when(a < b, [&]() { 
           c = a; 
-      }).when(a > b, [&]() {
+      })._end();
+      return (c == 0);
+    });
+    TEST([]()->ch_logic {
+      ch_bitv<4> a(5), b(1), c(0);
+      ch_when(a < b, [&]() { 
+          c = a; 
+      })._when(a > b, [&]() {
           c = b;
-      }).end();
+      })._end();
       return (c == b);
     });
     TEST([]()->ch_logic {
       ch_bitv<4> a(5), b(1), c(0);
       ch_when(a < b, [&]() { 
           c = a; 
-      }).end([&]() { 
+      })._else([&]() { 
           c = b; 
       });
       return (c == b);
@@ -112,10 +119,10 @@ TEST_CASE("basic tests", "[basic]") {
         c = a - b; 
         b = 0;
       }) 
-      .when(a == b, [&]() {
+      ._when(a == b, [&]() {
         c = 0; 
       }) 
-      .end([&]() {
+      ._else([&]() {
         c = b;
       });
       return (c == 4 && b == 0);
@@ -125,13 +132,25 @@ TEST_CASE("basic tests", "[basic]") {
     TEST([]()->ch_logic {
       ch_bitv<4> a(5), b(1), c(0);
       ch_case(a)
-      .when(0, [&]() {
+      ._when(0, [&]() {
         c = a; 
       }) 
-      .when(1, [&]() {
+      ._when(1, [&]() {
         c = b; 
       }) 
-      .end([&]() {
+      ._end();
+      return (c == 0);
+    });
+    TEST([]()->ch_logic {
+      ch_bitv<4> a(5), b(1), c(0);
+      ch_case(a)
+      ._when(0, [&]() {
+        c = a; 
+      }) 
+      ._when(1, [&]() {
+        c = b; 
+      }) 
+      ._else([&]() {
         c = a + b;
       });
       return (c == 6);
@@ -139,16 +158,16 @@ TEST_CASE("basic tests", "[basic]") {
     TEST([]()->ch_logic {
       ch_bitv<4> a(5), b(1), c(0);
       ch_case(a)
-      .when(0, [&]() {
+      ._when(0, [&]() {
         c = a; 
       }) 
-      .when(1, [&]() {
+      ._when(1, [&]() {
         c = b; 
       }) 
-      .end([&]() {
+      ._else([&]() {
          ch_when(b > 0, [&]() {
             c = a + b;       
-         }).end([&](){
+         })._else([&](){
             c = a - b;
          });        
       });

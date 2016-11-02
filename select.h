@@ -14,7 +14,7 @@ protected:
     lnodeimpl* value;
   };
   
-  typedef std::stack<stmt_t> stmts_t;
+  using stmts_t = std::stack<stmt_t>;
   
   stmts_t* m_stmts;
   

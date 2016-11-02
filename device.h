@@ -36,12 +36,12 @@ protected:
   
   template <typename T>
   struct to_value_type {
-    typedef T value;
+    using value = T;
   };
   
   template <unsigned N>
   struct to_value_type< ch_bitbase<N> > {
-    typedef ch_bitv<N> value;
+    using value = ch_bitv<N>;
   };
   
   template <typename T>

@@ -9,8 +9,8 @@ class ch_vec : public typebase<N * T::bit_count, typename T::bitstream_type> {
 public:
   using base = typebase<N * T::bit_count, typename T::bitstream_type>;
   using base::operator=;
-  typedef typename base::bitstream_type bitstream_type;
-  typedef ch_vec<typename T::bus_type, N> bus_type;
+  using bitstream_type = typename base::bitstream_type;
+  using bus_type = ch_vec<typename T::bus_type, N>;
   
   ch_vec() {}
   

@@ -8,8 +8,8 @@ template <unsigned N>
 class ch_bus : public ch_busbase<N> {
 public:  
   using base = ch_busbase<N>;
-  typedef typename base::bitstream_type bitstream_type;
-  typedef ch_bus bus_type;
+  using bitstream_type = typename base::bitstream_type;
+  using bus_type = ch_bus;
       
   ch_bus() {}
   

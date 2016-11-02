@@ -10,7 +10,7 @@ class snodeimpl;
 class snode {
 public:
   
-  typedef bitstream<snodeimpl> bitstream_type;
+  using bitstream_type = bitstream<snodeimpl>;
   
   snode() : m_impl(nullptr), m_readonly(false) {}
   snode(const snode& rhs);

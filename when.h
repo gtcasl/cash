@@ -15,31 +15,31 @@ public:
   }
     
   template <typename Func>
-  when_t& when(const ch_logicbase& cond, const Func& func) {
+  when_t& _when(const ch_logicbase& cond, const Func& func) {
     m_stmts->push({cond.get_node().get_impl(), to_function(func)});
     return *this; 
   }
   
   template <typename Func>
-  void end(const Func& func) {
+  void _else(const Func& func) {
     func(); // evaluate 'else' case
     this->eval();
   }
   
-  void end() {
+  void _end() {
     this->eval();
   }
   
 protected:
   
-  typedef std::function<void ()> func_t;
+  using func_t = std::function<void ()>;
   
   struct stmt_t {
     lnodeimpl* cond;
     func_t func;
   };
   
-  typedef std::stack<stmt_t> stmts_t;
+  using stmts_t = std::stack<stmt_t>;
   
   when_t(lnodeimpl* cond, func_t func) : m_stmts(new stmts_t()) {
     m_stmts->push({cond, func});

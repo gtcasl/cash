@@ -56,7 +56,7 @@ struct function_traits : public function_traits<decltype(&Function::operator())>
 
 template <typename Class, typename Ret, typename ...Args>
 struct function_traits<Ret(Class::*)(Args...) const> {
-    typedef const std::function<Ret(Args...)> function;
+    using function = const std::function<Ret(Args...)>;
 };
 
 template <typename Function>

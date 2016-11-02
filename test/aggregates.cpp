@@ -35,7 +35,14 @@ template <unsigned N>
   (ch_bitv<N>) b
 );
 
-typedef st_t<4> st4_t;
+using st4_t = st_t<4>;
+ 
+ __ch_enum(my_enum, 4)(
+   idle = 0,
+   execute,
+   stats,
+   done
+ ); 
  
 TEST_CASE("aggregate tests", "[aggregate]") {  
   SECTION("test structs", "[struct]") {     
@@ -72,6 +79,18 @@ TEST_CASE("aggregate tests", "[aggregate]") {
       b[1][0] = a[0][1];
       b[1][1] = a[0][0];
       return (b == 1010_b);
+    });
+  }
+  
+  SECTION("test enums", "[enum]") {
+    TEST([]()->ch_logic {
+      my_enum a(my_enum::idle);
+      return (a == 0);
+    });
+    TEST([]()->ch_logic {
+      my_enum a;
+      a = my_enum::execute;
+      return (a == 1);
     });
   }
 }
