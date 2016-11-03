@@ -3,22 +3,6 @@
 #include "bitv.h"
 #include "bus.h"
 
-namespace chdl_internal {
-
-template <typename Base>
-class struct_stub : public Base {
-public:
-  using Base::operator=; \
-  using bitstream_type = typename Base::bitstream_type;
-  
-  struct_stub& operator=(const struct_stub& rhs) {
-    // the main purpose of this stub is for disabling the base class assignment operator
-    // such that the auto-generated derived assignment operators do not call it
-  }   
-};
-
-}
-
 #define CHDL_STRUCT_SIZE(i, x) \
   CHDL_PAIR_L(x)::bit_count
 
@@ -27,6 +11,9 @@ public:
 
 #define CHDL_STRUCT_BUS_FIELD(i, x) \
   typename CHDL_PAIR_L(x)::bus_type CHDL_PAIR_R(x)
+
+#define CHDL_STRUCT_ASSIGN(i, x) \
+  this->CHDL_PAIR_R(x) = rhs.CHDL_PAIR_R(x)
 
 #define CHDL_STRUCT_READ(i, x) \
   if (offset < CHDL_PAIR_L(x)::bit_count) { \
@@ -53,16 +40,20 @@ public:
 
 
 #define CHDL_STRUCT_IMPL(name, ...) \
-  class name : public chdl_internal::struct_stub< chdl_internal::ch_bitbase<CHDL_FOR_EACH(CHDL_STRUCT_SIZE, CHDL_SEP_PLUS, __VA_ARGS__)> > { \
+  class name : public chdl_internal::ch_bitbase<CHDL_FOR_EACH(CHDL_STRUCT_SIZE, CHDL_SEP_PLUS, __VA_ARGS__)> { \
   public:\
-    using base = chdl_internal::struct_stub< chdl_internal::ch_bitbase<CHDL_FOR_EACH(CHDL_STRUCT_SIZE, CHDL_SEP_PLUS, __VA_ARGS__)> >; \
+    using base = chdl_internal::ch_bitbase<CHDL_FOR_EACH(CHDL_STRUCT_SIZE, CHDL_SEP_PLUS, __VA_ARGS__)>; \
     using base::operator=; \
     using bitstream_type = typename base::bitstream_type; \
-    class bus_type : public chdl_internal::struct_stub< chdl_internal::ch_busbase<CHDL_FOR_EACH(CHDL_STRUCT_SIZE, CHDL_SEP_PLUS, __VA_ARGS__)> > { \
+    class bus_type : public chdl_internal::ch_busbase<CHDL_FOR_EACH(CHDL_STRUCT_SIZE, CHDL_SEP_PLUS, __VA_ARGS__)> { \
     public: \
-      using base = chdl_internal::struct_stub< chdl_internal::ch_busbase<CHDL_FOR_EACH(CHDL_STRUCT_SIZE, CHDL_SEP_PLUS, __VA_ARGS__)> >; \
+      using base = chdl_internal::ch_busbase<CHDL_FOR_EACH(CHDL_STRUCT_SIZE, CHDL_SEP_PLUS, __VA_ARGS__)>; \
       using base::operator=; \
       using bitstream_type = typename base::bitstream_type; \
+      bus_type& operator=(const bus_type& rhs) { \
+        CHDL_FOR_EACH(CHDL_STRUCT_ASSIGN, CHDL_SEP_SEMICOLON, __VA_ARGS__); \
+        return *this; \
+      } \
       CHDL_FOR_EACH(CHDL_STRUCT_BUS_FIELD, CHDL_SEP_SEMICOLON, __VA_ARGS__); \
     protected: \
       void read(bitstream_type& inout, size_t offset, size_t length) const override { \
@@ -74,6 +65,10 @@ public:
         CHDL_ABORT("invalid subscript index"); \
       } \
     };\
+    name& operator=(const name& rhs) { \
+      CHDL_FOR_EACH(CHDL_STRUCT_ASSIGN, CHDL_SEP_SEMICOLON, __VA_ARGS__); \
+      return *this; \
+    } \
     CHDL_FOR_EACH(CHDL_STRUCT_FIELD, CHDL_SEP_SEMICOLON, __VA_ARGS__); \
   protected: \
     void read(bitstream_type& inout, size_t offset, size_t length) const override { \

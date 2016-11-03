@@ -10,7 +10,6 @@
   class name : public chdl_internal::ch_bitv<size> { \
   public: \
     using base = chdl_internal::ch_bitv<size>; \
-    using base::operator=; \
     using bitstream_type = typename base::bitstream_type; \
     enum enum_type { \
     CHDL_FOR_EACH(CHDL_ENUM_FIELD, CHDL_SEP_COMMA, __VA_ARGS__) \
@@ -28,6 +27,17 @@
         bus_type(const bus_type& e) : base(e) {} \
         bus_type(enum_type e) : base(e) {} \
     }; \
+  private: \
+    name(const base& b) : base(b) {} \
+    friend name ch_reg(const name& next, const ch_bitv<size>& init); \
+    friend name ch_reg(const name& next, const ch_bitbase<size>& init); \
+  }; \
+  inline name ch_reg(const name& next, const ch_bitv<size>& init) { \
+    return ch_reg<size>(reinterpret_cast<const ch_bitbase<size>&>(next), \
+                        reinterpret_cast<const ch_bitbase<size>&>(init)); \
+  } \
+  inline name ch_reg(const name& next, const ch_bitbase<size>& init) { \
+    return ch_reg<size>(reinterpret_cast<const ch_bitbase<size>&>(next), init); \
   }
 
 #define CHDL_ENUM(name, size, body) CHDL_ENUM_IMPL(name, size, CHDL_REM body)
