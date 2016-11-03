@@ -7,9 +7,9 @@
   x
 
 #define CHDL_ENUM_IMPL(name, size, ...) \
-  class name : public chdl_internal::ch_bitv<size> { \
+  class name : public chdl_internal::ch_bit<size> { \
   public: \
-    using base = chdl_internal::ch_bitv<size>; \
+    using base = chdl_internal::ch_bit<size>; \
     using bitstream_type = typename base::bitstream_type; \
     enum enum_type { \
     CHDL_FOR_EACH(CHDL_ENUM_FIELD, CHDL_SEP_COMMA, __VA_ARGS__) \

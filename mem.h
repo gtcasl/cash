@@ -29,12 +29,12 @@ public:
     
     ch_rom(const std::vector<uint32_t>& init_data) : m_mem(N, A, SyncRead, false, init_data) {}
     
-    ch_bitv<N> read(const ch_bitbase<A>& addr) const {
-      return ch_bitv<N>(m_mem.read(addr.get_node().get_impl()));
+    ch_bit<N> read(const ch_bitbase<A>& addr) const {
+      return ch_bit<N>(m_mem.read(addr.get_node().get_impl()));
     }
     
-    ch_bitv<N> read(const ch_bitv<A>& addr) const {
-      return ch_bitv<N>(m_mem.read(addr.get_node().get_impl()));
+    ch_bit<N> read(const ch_bit<A>& addr) const {
+      return ch_bit<N>(m_mem.read(addr.get_node().get_impl()));
     }
     
 private:
@@ -50,12 +50,12 @@ public:
     
     ch_mem(const std::vector<uint32_t>& init_data) : m_mem(N, A, SyncRead, true, init_data) {}
     
-    ch_bitv<N> read(const ch_bitbase<A>& addr) const {
-      return ch_bitv<N>(m_mem.read(addr.get_node().get_impl()));
+    ch_bit<N> read(const ch_bitbase<A>& addr) const {
+      return ch_bit<N>(m_mem.read(addr.get_node().get_impl()));
     }
     
-    ch_bitv<N> read(const ch_bitv<A>& addr) const {
-      return ch_bitv<N>(m_mem.read(addr.get_node().get_impl()));
+    ch_bit<N> read(const ch_bit<A>& addr) const {
+      return ch_bit<N>(m_mem.read(addr.get_node().get_impl()));
     }
     
     void write(const ch_bitbase<A>& addr, const ch_bitbase<N>& data, const ch_logicbase& enable) {
@@ -66,27 +66,27 @@ public:
       m_mem.write(addr.get_node().get_impl(), data.get_node().get_impl(), enable.get_node().get_impl());
     }
     
-    void write(const ch_bitbase<A>& addr, const ch_bitv<N>& data, const ch_logicbase& enable) {
+    void write(const ch_bitbase<A>& addr, const ch_bit<N>& data, const ch_logicbase& enable) {
       m_mem.write(addr.get_node().get_impl(), data.get_node().get_impl(), enable.get_node().get_impl());
     }
     
-    void write(const ch_bitbase<A>& addr, const ch_bitv<N>& data, const ch_logic& enable) {
+    void write(const ch_bitbase<A>& addr, const ch_bit<N>& data, const ch_logic& enable) {
       m_mem.write(addr.get_node().get_impl(), data.get_node().get_impl(), enable.get_node().get_impl());
     }
     
-    void write(const ch_bitv<A>& addr, const ch_bitbase<N>& data, const ch_logicbase& enable) {
+    void write(const ch_bit<A>& addr, const ch_bitbase<N>& data, const ch_logicbase& enable) {
       m_mem.write(addr.get_node().get_impl(), data.get_node().get_impl(), enable.get_node().get_impl());
     }
     
-    void write(const ch_bitv<A>& addr, const ch_bitbase<N>& data, const ch_logic& enable) {
+    void write(const ch_bit<A>& addr, const ch_bitbase<N>& data, const ch_logic& enable) {
       m_mem.write(addr.get_node().get_impl(), data.get_node().get_impl(), enable.get_node().get_impl());
     }
     
-    void write(const ch_bitv<A>& addr, const ch_bitv<N>& data, const ch_logicbase& enable) {
+    void write(const ch_bit<A>& addr, const ch_bit<N>& data, const ch_logicbase& enable) {
       m_mem.write(addr.get_node().get_impl(), data.get_node().get_impl(), enable.get_node().get_impl());
     }
     
-    void write(const ch_bitv<A>& addr, const ch_bitv<N>& data, const ch_logic& enable) {
+    void write(const ch_bit<A>& addr, const ch_bit<N>& data, const ch_logic& enable) {
       m_mem.write(addr.get_node().get_impl(), data.get_node().get_impl(), enable.get_node().get_impl());
     }
     

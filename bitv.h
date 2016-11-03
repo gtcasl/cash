@@ -4,42 +4,42 @@
 #include "vec.h"
 
 #define CHDL_CONCAT_GEN(T, TcB, TcA, TB, TA, cB, cA, B, A) \
-  T inline const_concat_ref<TcB, TcA> operator,(cB b, cA a) { return make_const_concat_ref<TcB, TcA>(b, a); } \
-  T inline const_concat_ref<TcB, TA> operator,(cB b, A a) { return make_const_concat_ref<TcB, TA>(b, a); } \
-  T inline const_concat_ref<TB, TcA> operator,(B b, cA a) { return make_const_concat_ref<TB, TcA>(b, a); } \
-  T inline concat_ref<TB, TA> operator,(B b, A a) { return make_concat_ref<TB, TA>(b, a); } \
-  T inline const_concat_ref<TcB, TcA> ch_concat(cB b, cA a) { return make_const_concat_ref<TcB, TcA>(b, a); } \
-  T inline const_concat_ref<TcB, TA> ch_concat(cB b, A a) { return make_const_concat_ref<TcB, TA>(b, a); } \
-  T inline const_concat_ref<TB, TcA> ch_concat(B b, cA a) { return make_const_concat_ref<TB, TcA>(b, a); } \
-  T inline concat_ref<TB, TA> ch_concat(B b, A a) { return make_concat_ref<TB, TA>(b, a); }
+  T inline const_concat_ref<TcB, TcA> operator,(cB b, cA a) { return const_concat_ref<TcB, TcA>(b, a); } \
+  T inline const_concat_ref<TcB, TA> operator,(cB b, A a) { return const_concat_ref<TcB, TA>(b, a); } \
+  T inline const_concat_ref<TB, TcA> operator,(B b, cA a) { return const_concat_ref<TB, TcA>(b, a); } \
+  T inline concat_ref<TB, TA> operator,(B b, A a) { return concat_ref<TB, TA>(b, a); } \
+  T inline const_concat_ref<TcB, TcA> ch_concat(cB b, cA a) { return const_concat_ref<TcB, TcA>(b, a); } \
+  T inline const_concat_ref<TcB, TA> ch_concat(cB b, A a) { return const_concat_ref<TcB, TA>(b, a); } \
+  T inline const_concat_ref<TB, TcA> ch_concat(B b, cA a) { return const_concat_ref<TB, TcA>(b, a); } \
+  T inline concat_ref<TB, TA> ch_concat(B b, A a) { return concat_ref<TB, TA>(b, a); }
 
 namespace chdl_internal {
 
 template <unsigned N> class ch_bus;
 using ch_signal = ch_bus<1>;
 
-template <unsigned N> class ch_bitv;
-using ch_logic = ch_bitv<1>;
+template <unsigned N> class ch_bit;
+using ch_logic = ch_bit<1>;
 
 template <unsigned N> 
-class ch_bitv : public ch_bitbase<N> {
+class ch_bit : public ch_bitbase<N> {
 public:
   using base = ch_bitbase<N>;
   using bitstream_type = typename base::bitstream_type;
   using bus_type = ch_bus<N>;
       
-  ch_bitv() {}
+  ch_bit() {}
   
-  ch_bitv(const ch_bitv& rhs) : m_node(rhs.m_node.ensureInitialized(N)) {}
+  ch_bit(const ch_bit& rhs) : m_node(rhs.m_node.ensureInitialized(N)) {}
   
-  ch_bitv(const ch_bitbase<N>& rhs) : m_node(rhs.get_node().get_impl()) {}
+  ch_bit(const ch_bitbase<N>& rhs) : m_node(rhs.get_node().get_impl()) {}
   
-  ch_bitv(const bitvector& rhs) : m_node(rhs) {
+  ch_bit(const bitvector& rhs) : m_node(rhs) {
     assert(rhs.get_size() == N);
   }
     
 #define CHDL_DEF_CTOR(type) \
-    ch_bitv(type value) : m_node(bitvector(value, N)) { \
+    ch_bit(type value) : m_node(bitvector(value, N)) { \
       assert(m_node.get_size() == N); \
     }
   CHDL_DEF_CTOR(const std::initializer_list<uint32_t>&)
@@ -54,22 +54,22 @@ public:
   CHDL_DEF_CTOR(uint64_t)
 #undef CHDL_DEF_CTOR
   
-  explicit ch_bitv(lnodeimpl* node) : m_node(node) {
+  explicit ch_bit(lnodeimpl* node) : m_node(node) {
     assert(m_node.get_size() == N);
   }
   
-  ch_bitv& operator=(const ch_bitv& rhs) {
+  ch_bit& operator=(const ch_bit& rhs) {
     m_node = rhs.m_node.ensureInitialized(N);
     return *this;
   }
   
-  ch_bitv& operator=(const ch_bitbase<N>& rhs) {
+  ch_bit& operator=(const ch_bitbase<N>& rhs) {
     base::operator =(rhs);
     return *this;
   }
   
 #define CHDL_DEF_AOP(type) \
-  ch_bitv& operator=(type value) { \
+  ch_bit& operator=(type value) { \
     m_node.assign(bitvector(value, N)); \
     assert(m_node.get_size() == N); \
     return *this; \
@@ -137,8 +137,8 @@ CHDL_CONCAT_GEN(template <unsigned NB CHDL_COMMA unsigned NA CHDL_COMMA typename
 // null operators
 
 template <unsigned N>
-ch_bitv<N> ch_null() {
-  return ch_bitv<N>(createNullNode(N));
+ch_bit<N> ch_null() {
+  return ch_bit<N>(createNullNode(N));
 }
 
 // slice operators
@@ -169,8 +169,8 @@ template <unsigned D>
 class zext_select {
 public:
     template <unsigned M>
-    ch_bitv<(M+D)> operator() (const ch_bitbase<M>& in) {
-      return (ch_bitv<D>(0x0), in);
+    ch_bit<(M+D)> operator() (const ch_bitbase<M>& in) {
+      return (ch_bit<D>(0x0), in);
     }
 };
 
@@ -178,7 +178,7 @@ template <>
 class zext_select<0> {
 public:
     template <unsigned M>
-    ch_bitv<M> operator() (const ch_bitbase<M>& in) {
+    ch_bit<M> operator() (const ch_bitbase<M>& in) {
       return in;
     }
 };
@@ -186,16 +186,16 @@ public:
 template <unsigned M, unsigned D>
 class sext_pad {
 public:
-    ch_bitv<(M+D)> operator() (const ch_bitbase<M>& in) {
-      return (in[M-1], ch_bitv<D>(0x0), ch_slice<M-1>(in, 1));
+    ch_bit<(M+D)> operator() (const ch_bitbase<M>& in) {
+      return (in[M-1], ch_bit<D>(0x0), ch_slice<M-1>(in, 1));
     }    
 };
 
 template <unsigned D>
 class sext_pad<1, D> {
 public:
-    ch_bitv<(1+D)> operator() (const ch_logicbase& in) {
-      return (in, ch_bitv<D>(0x0));
+    ch_bit<(1+D)> operator() (const ch_logicbase& in) {
+      return (in, ch_bit<D>(0x0));
     }
 };
 
@@ -203,7 +203,7 @@ template <unsigned D>
 class sext_select {
 public:
     template <unsigned M>
-    ch_bitv<(M+D)> operator() (const ch_bitbase<M>& in) {
+    ch_bit<(M+D)> operator() (const ch_bitbase<M>& in) {
       return sext_pad<M, D>()(in);
     }
 };
@@ -212,19 +212,19 @@ template <>
 class sext_select<0> {
 public:
     template <unsigned M>
-    ch_bitv<M> operator() (const ch_bitbase<M>& in) {
+    ch_bit<M> operator() (const ch_bitbase<M>& in) {
       return in;
     }
 };
 
 template <unsigned N, unsigned M>
-ch_bitv<N> ch_zext(const ch_bitbase<M>& in) {
+ch_bit<N> ch_zext(const ch_bitbase<M>& in) {
   static_assert(N >= M, "invalid extend size");
   return zext_select<(N-M)>()(in);
 }
 
 template <unsigned N, unsigned M>
-ch_bitv<N> ch_sext(const ch_bitbase<M>& in) {
+ch_bit<N> ch_sext(const ch_bitbase<M>& in) {
   static_assert(N >= M, "invalid extend size");
   return sext_select<(N-M)>()(in);
 }
@@ -232,7 +232,7 @@ ch_bitv<N> ch_sext(const ch_bitbase<M>& in) {
 // shuffle operators
 
 template <unsigned N, unsigned I>
-ch_bitv<N> ch_shuffle(const ch_bitbase<N>& in, const std::array<uint32_t, I>& indices) {
+ch_bit<N> ch_shuffle(const ch_bitbase<N>& in, const std::array<uint32_t, I>& indices) {
   static_assert((I % N) == 0, "invalid shuffle indices size");
   for (unsigned i = 0; i < I; ++i) {
     ch_aslice<(N / I)>(in) = indices[i];

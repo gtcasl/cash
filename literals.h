@@ -123,27 +123,27 @@ struct lit_hex_size {
 namespace core_literals {
 
 template< char... Chars>
-constexpr ch_bitv<lit_bin_size<Chars...>::value> operator "" _b() {
+constexpr ch_bit<lit_bin_size<Chars...>::value> operator "" _b() {
   constexpr const char str[] = {Chars..., 'b', '\0'};
-  return ch_bitv<lit_bin_size<Chars...>::value>(bitvector(str));
+  return ch_bit<lit_bin_size<Chars...>::value>(bitvector(str));
 }
 
 template< char... Chars>
-constexpr ch_bitv<lit_oct_size<Chars...>::value> operator "" _o() {
+constexpr ch_bit<lit_oct_size<Chars...>::value> operator "" _o() {
   constexpr const char str[] = {Chars..., 'o', '\0'};
-  return ch_bitv<lit_oct_size<Chars...>::value>(bitvector(str));
+  return ch_bit<lit_oct_size<Chars...>::value>(bitvector(str));
 }
 
 template< char... Chars>
-constexpr ch_bitv<lit_dec_size<Chars...>::value> operator "" _d() {
+constexpr ch_bit<lit_dec_size<Chars...>::value> operator "" _d() {
   constexpr const char str[] = {Chars..., 'd', '\0'};
-  return ch_bitv<lit_dec_size<Chars...>::value>(bitvector(str));
+  return ch_bit<lit_dec_size<Chars...>::value>(bitvector(str));
 }
 
 template< char... Chars>
-constexpr ch_bitv<lit_hex_size<Chars...>::value> operator "" _h() {
+constexpr ch_bit<lit_hex_size<Chars...>::value> operator "" _h() {
   constexpr const char str[] = {Chars..., 'h', '\0'};
-  return ch_bitv<lit_hex_size<Chars...>::value>(bitvector(str));
+  return ch_bit<lit_hex_size<Chars...>::value>(bitvector(str));
 }
 
 }

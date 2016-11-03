@@ -53,7 +53,7 @@ public:
   }
   
   template <typename Func>
-  case_t& _when(const ch_bitv<N>& value, const Func& func) {    
+  case_t& _when(const ch_bit<N>& value, const Func& func) {    
     m_impl.push(value.get_node().get_impl(), to_function(func));
     return *this;
   }

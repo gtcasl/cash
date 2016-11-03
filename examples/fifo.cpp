@@ -7,19 +7,19 @@ using namespace chdl::core_literals;
 using namespace chdl::sim;
 
 template <unsigned ADDR, unsigned WIDTH>
-__ch_out(ch_bitv<WIDTH>, ch_logic, ch_logic) FiFo(
-  const ch_bitv<WIDTH>& din,
+__ch_out(ch_bit<WIDTH>, ch_logic, ch_logic) FiFo(
+  const ch_bit<WIDTH>& din,
   const ch_logic& push,
   const ch_logic& pop) {
   
-  ch_bitv<WIDTH> dout;
+  ch_bit<WIDTH> dout;
   ch_logic empty;
   ch_logic full;
   
   ch_mem<WIDTH, ADDR> mem;
-  ch_bitv<ADDR+1> rd_ptr, wr_ptr;
-  ch_bitv<ADDR> rd_addr(ch_slice<ADDR>(rd_ptr));
-  ch_bitv<ADDR> wr_addr(ch_slice<ADDR>(wr_ptr));
+  ch_bit<ADDR+1> rd_ptr, wr_ptr;
+  ch_bit<ADDR> rd_addr(ch_slice<ADDR>(rd_ptr));
+  ch_bit<ADDR> wr_addr(ch_slice<ADDR>(wr_ptr));
 
   ch_logic reading(pop && !empty);
   ch_logic writing(push && (!full || pop));  

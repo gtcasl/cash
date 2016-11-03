@@ -78,7 +78,7 @@ protected:
 void register_tap(const std::string& name, lnodeimpl* node);
 
 template <unsigned N> 
-void ch_tap(const std::string& name, const ch_bitv<N>& v) { 
+void ch_tap(const std::string& name, const ch_bit<N>& v) { 
   register_tap(name, v.get_node().get_impl());
 }
 

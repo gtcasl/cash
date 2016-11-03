@@ -31,11 +31,22 @@ __ch_struct(ss_t,(
 
 template <unsigned N> 
  __ch_struct(st_t,(
-  (ch_bitv<N>) a,
-  (ch_bitv<N>) b
+  (ch_bit<N>) a,
+  (ch_bit<N>) b
 ));
 
 using st4_t = st_t<4>;
+ 
+ __ch_union(u2_t,(
+   (ch_bit4) a,
+   (ch_bit4) b
+ ));
+ 
+ __ch_union(u3_t,(
+    (ch_bit2) a,
+    (ch_bit8) b,
+    (ch_bit4) c
+  ));
  
  __ch_enum(my_enum, 4,(
    idle = 0,
@@ -64,6 +75,26 @@ TEST_CASE("aggregate tests", "[aggregate]") {
       return (s1, s4) == (s3, s2);
     });
   } 
+  
+  SECTION("test unions", "[union]") {
+    TEST([]()->ch_logic {
+      u2_t u2;
+      u2.a = 1;
+      return (u2.b == 1);
+    });
+    TEST([]()->ch_logic {
+      u2_t u2;
+      u2.b = 1;
+      return (u2.a == 1);
+    });
+    TEST([]()->ch_logic {
+      u3_t u3;
+      u3.b = 01010101_b;
+      u3.a = 11_b;
+      u3.c.slice<2>(2) = 00_b;
+      return (u3 == 01010011_b);
+    });
+  }
   
   SECTION("test vectors", "[vector]") {
     TEST([]()->ch_logic {

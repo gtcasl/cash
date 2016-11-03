@@ -4,7 +4,7 @@
 
 namespace chdl_internal {
 
-template <unsigned N> class ch_bitv;
+template <unsigned N> class ch_bit;
 
 template <unsigned N>
 class typebase<N, lnode::bitstream_type> {
@@ -15,31 +15,37 @@ public:
   typebase() {}
   ~typebase() {}
   
-  const_subscript_ref<typebase> operator[](size_t index) const {
-    return const_subscript_ref<typebase>(*this, index); 
+  const_slice_ref<typebase, 1> operator[](size_t index) const {
+    static_assert(N > 1, "invalid call");
+    return const_slice_ref<typebase, 1>(*this, index); 
   }
   
-  subscript_ref<typebase> operator[](size_t index) {
-    return subscript_ref<typebase>(*this, index); 
+  slice_ref<typebase, 1> operator[](size_t index) {
+    static_assert(N > 1, "invalid call");
+    return slice_ref<typebase, 1>(*this, index); 
   }
   
   template <unsigned M>
   const_slice_ref<typebase, M> slice(size_t index) const {
+    static_assert(N > 1, "invalid call");
     return const_slice_ref<typebase, M>(*this, index);
   }
   
   template <unsigned M>
   slice_ref<typebase, M> slice(size_t index) {
+    static_assert(N > 1, "invalid call");
     return slice_ref<typebase, M>(*this, index);
   }
   
   template <unsigned M>
   const_slice_ref<typebase, M> aslice(size_t index) const {
+    static_assert(N > 1, "invalid call");
     return const_slice_ref<typebase, M>(*this, index * M);
   }
   
   template <unsigned M>
   slice_ref<typebase, M> aslice(size_t index) {
+    static_assert(N > 1, "invalid call");
     return slice_ref<typebase, M>(*this, index * M);
   }
   
@@ -52,7 +58,7 @@ public:
  
 #define CHDL_DEF_AOP(type) \
   typebase& operator=(type value) { \
-    return this->operator =(ch_bitv<N>(value)); \
+    return this->operator =(ch_bit<N>(value)); \
   } 
   CHDL_DEF_AOP(const std::initializer_list<uint32_t>&)
   CHDL_DEF_AOP(char)

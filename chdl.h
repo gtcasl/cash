@@ -44,7 +44,7 @@ namespace core {
 
   template<typename T, unsigned N> using ch_vec = chdl_internal::ch_vec<T, N>;
 
-  template<unsigned N> using ch_bitv = chdl_internal::ch_bitv<N>;
+  template<unsigned N> using ch_bit = chdl_internal::ch_bit<N>;
   using ch_logic = chdl_internal::ch_logic;
 
   template<unsigned N> using ch_bitbase = chdl_internal::ch_bitbase<N>;
@@ -54,12 +54,12 @@ namespace core {
   // pre-defined bitv types
   //
 
-  using ch_bit2  = ch_bitv<2>;
-  using ch_bit4  = ch_bitv<4>;
-  using ch_bit8  = ch_bitv<8>;
-  using ch_bit16 = ch_bitv<16>;
-  using ch_bit32 = ch_bitv<32>;
-  using ch_bit64 = ch_bitv<64>;
+  using ch_bit2  = ch_bit<2>;
+  using ch_bit4  = ch_bit<4>;
+  using ch_bit8  = ch_bit<8>;
+  using ch_bit16 = ch_bit<16>;
+  using ch_bit32 = ch_bit<32>;
+  using ch_bit64 = ch_bit<64>;
 
   //
   // subscript operators

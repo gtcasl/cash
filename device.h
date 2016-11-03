@@ -41,7 +41,7 @@ protected:
   
   template <unsigned N>
   struct to_value_type< ch_bitbase<N> > {
-    using value = ch_bitv<N>;
+    using value = ch_bit<N>;
   };
   
   template <typename T>
@@ -53,7 +53,7 @@ protected:
   };
   
   template <unsigned N>
-  struct output_size< ch_bitv<N> > {
+  struct output_size< ch_bit<N> > {
     static const size_t value = 1;
   };
   
@@ -138,8 +138,8 @@ protected:
   }
 
   template <unsigned N>
-  ch_bitv<N> bind_input(const ch_busbase<N>& bus) const {
-    return ch_bitv<N>(this->bind_input_(bus.get_node().get_impl()));
+  ch_bit<N> bind_input(const ch_busbase<N>& bus) const {
+    return ch_bit<N>(this->bind_input_(bus.get_node().get_impl()));
   }
   
   template <unsigned N>

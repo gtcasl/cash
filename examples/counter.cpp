@@ -5,8 +5,8 @@ using namespace chdl::core_literals;
 using namespace chdl::sim;
 
 template <unsigned N>
-ch_bitv<N> Counter() {
-  ch_bitv<N> out;
+ch_bit<N> Counter() {
+  ch_bit<N> out;
   out = ch_reg(out + 1);
   return out;
 }

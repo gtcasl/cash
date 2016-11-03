@@ -7,14 +7,14 @@ using namespace chdl::core_literals;
 using namespace chdl::sim;
 
 template <unsigned N>
-__ch_out(ch_bitv<N>, ch_logic) Adder(
-           const ch_bitv<N>& lhs,
-           const ch_bitv<N>& rhs,
+__ch_out(ch_bit<N>, ch_logic) Adder(
+           const ch_bit<N>& lhs,
+           const ch_bit<N>& rhs,
            const ch_logic& cin) {
-  ch_bitv<N> out;
+  ch_bit<N> out;
   ch_logic cout;
   ch_logic x(1_b);
-  ch_bitv<N+1> sum((0_b, lhs) + rhs + cin);
+  ch_bit<N+1> sum((0_b, lhs) + rhs + cin);
   cout = sum[N];
   out  = ch_slice<N>(sum);    
   __ch_ret(out, cout);
