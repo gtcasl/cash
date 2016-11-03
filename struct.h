@@ -51,8 +51,9 @@ public:
   } \
   dst_offset -= CHDL_PAIR_L(x)::bit_count
 
-#define CHDL_STRUCT_IMPL(...) \
-  public chdl_internal::struct_stub< chdl_internal::ch_bitbase<CHDL_FOR_EACH(CHDL_STRUCT_SIZE, CHDL_SEP_PLUS, __VA_ARGS__)> > { \
+
+#define CHDL_STRUCT_IMPL(name, ...) \
+  class name : public chdl_internal::struct_stub< chdl_internal::ch_bitbase<CHDL_FOR_EACH(CHDL_STRUCT_SIZE, CHDL_SEP_PLUS, __VA_ARGS__)> > { \
   public:\
     using base = chdl_internal::struct_stub< chdl_internal::ch_bitbase<CHDL_FOR_EACH(CHDL_STRUCT_SIZE, CHDL_SEP_PLUS, __VA_ARGS__)> >; \
     using base::operator=; \
@@ -85,4 +86,4 @@ public:
     } \
   }
 
-#define CHDL_STRUCT(name) class name : CHDL_STRUCT_IMPL
+#define CHDL_STRUCT(name, body) CHDL_STRUCT_IMPL(name, CHDL_REM body)

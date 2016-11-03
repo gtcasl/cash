@@ -2,47 +2,47 @@
 
 using namespace chdl::core_literals;
 
-__ch_struct(s1_t)(
+__ch_struct(s1_t,(
   (ch_bit4) a
-);
+));
 
-__ch_struct(s2_t)(
+__ch_struct(s2_t,(
   (ch_bit4) a,
   (ch_bit4) b
-);
+));
 
-__ch_struct(s3_t)(
+__ch_struct(s3_t,(
     (ch_bit4) a,
     (ch_bit4) b,
     (ch_bit4) c
-);
+));
 
-__ch_struct(s4_t)(
+__ch_struct(s4_t,(
     (ch_bit4) a,
     (ch_bit4) b,
     (ch_bit4) c,
     (ch_bit4) d
-);
+));
 
-__ch_struct(ss_t)(
+__ch_struct(ss_t,(
     (s1_t) a,
     (s1_t) b
-);
+));
 
 template <unsigned N> 
- __ch_struct(st_t)(
+ __ch_struct(st_t,(
   (ch_bitv<N>) a,
   (ch_bitv<N>) b
-);
+));
 
 using st4_t = st_t<4>;
  
- __ch_enum(my_enum, 4)(
+ __ch_enum(my_enum, 4,(
    idle = 0,
    execute,
    stats,
    done
- ); 
+ )); 
  
 TEST_CASE("aggregate tests", "[aggregate]") {  
   SECTION("test structs", "[struct]") {     

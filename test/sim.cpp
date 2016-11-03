@@ -2,12 +2,12 @@
 
 using namespace chdl::sim_literals;
 
-__ch_enum(my_enum, 4)(
+__ch_enum(my_enum, 4,(
   idle = 0,
   execute,
   stats,
   done
-); 
+)); 
 
 TEST_CASE("simulation tests", "[sim]") {  
   SECTION("test buses", "[bus][signal]") {
