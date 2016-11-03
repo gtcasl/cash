@@ -97,7 +97,6 @@ namespace core {
   // gates functions
   //
 
-  using chdl_internal::ch_lit;
   using chdl_internal::ch_nand;
   using chdl_internal::ch_inv;
   using chdl_internal::ch_nor;

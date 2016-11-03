@@ -30,7 +30,7 @@ ch_logic ch_valid(const ch_bitbase<N>& x) {
 }
 
 template <unsigned N>
-ch_bitv<N> ch_reg(const ch_bitbase<N>& next, const ch_bitbase<N>& init = ch_bitv<N>(0x0)) {
+ch_bitv<N> ch_reg(const ch_bitbase<N>& next, const ch_bitbase<N>& init = 0) {
   ch_bitv<N> d(ch_select(ch_reset(), init, next));
   return ch_bitv<N>(createRegNode(d.get_node().get_impl()));
 }
@@ -52,7 +52,7 @@ ch_bitv<N> ch_reg(const ch_bitv<N>& next, const ch_bitv<N>& init) {
 }
 
 template <unsigned N>
-ch_bitv<N> ch_latch(const ch_bitbase<N>& next, const ch_logicbase& enable = '1', const ch_bitbase<N>& init = ch_bitv<N>(0x0)) {
+ch_bitv<N> ch_latch(const ch_bitbase<N>& next, const ch_logicbase& enable = 1, const ch_bitbase<N>& init = 0) {
   return ch_bitv<N>(createLatchNode(next.get_node().get_impl(), init.get_node().get_impl(), enable.get_node().get_impl(), ch_reset().get_node().get_impl()));
 }
 
@@ -62,7 +62,7 @@ ch_bitv<N> ch_latch(const ch_bitbase<N>& next, const ch_logicbase& enable, const
 }
 
 template <unsigned N>
-ch_bitv<N> ch_latch(const ch_bitbase<N>& next, const ch_logic& enable, const ch_bitbase<N>& init = ch_bitv<N>(0x0)) {
+ch_bitv<N> ch_latch(const ch_bitbase<N>& next, const ch_logic& enable, const ch_bitbase<N>& init = 0) {
   return ch_latch<N>(next, reinterpret_cast<const ch_logicbase&>(enable), init);
 }
 
@@ -73,7 +73,7 @@ ch_bitv<N> ch_latch(const ch_bitbase<N>& next, const ch_logic& enable, const ch_
 }
 
 template <unsigned N>
-ch_bitv<N> ch_latch(const ch_bitv<N>& next, const ch_logicbase& enable = '1', const ch_bitbase<N>& init = ch_bitv<N>(0x0)) {
+ch_bitv<N> ch_latch(const ch_bitv<N>& next, const ch_logicbase& enable = 1, const ch_bitbase<N>& init = 0) {
   return ch_latch<N>(reinterpret_cast<const ch_bitbase<N>&>(next), enable, init);
 }
 
@@ -85,7 +85,7 @@ ch_bitv<N> ch_latch(const ch_bitv<N>& next, const ch_logicbase& enable, const ch
 }
 
 template <unsigned N>
-ch_bitv<N> ch_latch(const ch_bitv<N>& next, const ch_logic& enable, const ch_bitbase<N>& init = ch_bitv<N>(0x0)) {
+ch_bitv<N> ch_latch(const ch_bitv<N>& next, const ch_logic& enable, const ch_bitbase<N>& init = 0) {
   return ch_latch<N>(reinterpret_cast<const ch_bitbase<N>&>(next), 
                      reinterpret_cast<const ch_logicbase&>(enable), init);
 }

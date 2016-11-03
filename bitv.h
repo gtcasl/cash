@@ -239,16 +239,4 @@ ch_bitv<N> ch_shuffle(const ch_bitbase<N>& in, const std::array<uint32_t, I>& in
   }
 }
 
-// literal operators
-
-template <unsigned N>
-ch_bitv<N> ch_lit(uint32_t value) {
-  return ch_bitv<N>(value);
-}
-
-template <unsigned N>
-ch_bitv<N> ch_lit(const std::initializer_list<uint32_t>& value) {
-  return ch_bitv<N>(value);
-}
-
 }

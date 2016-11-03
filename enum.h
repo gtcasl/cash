@@ -29,15 +29,11 @@
     }; \
   private: \
     name(const base& b) : base(b) {} \
-    friend name ch_reg(const name& next, const ch_bitv<size>& init); \
-    friend name ch_reg(const name& next, const ch_bitbase<size>& init); \
-  }; \
-  inline name ch_reg(const name& next, const ch_bitv<size>& init) { \
-    return ch_reg<size>(reinterpret_cast<const ch_bitbase<size>&>(next), \
-                        reinterpret_cast<const ch_bitbase<size>&>(init)); \
-  } \
-  inline name ch_reg(const name& next, const ch_bitbase<size>& init) { \
-    return ch_reg<size>(reinterpret_cast<const ch_bitbase<size>&>(next), init); \
+    friend name ch_reg(const name& next, const name& init) { \
+      return chdl_internal::ch_reg<size>(reinterpret_cast<const chdl_internal::ch_bitbase<size>&>(next), \
+                    reinterpret_cast<const chdl_internal::ch_bitbase<size>&>(init)); \
+    } \
   }
+  
 
 #define CHDL_ENUM(name, size, body) CHDL_ENUM_IMPL(name, size, CHDL_REM body)
