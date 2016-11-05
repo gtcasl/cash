@@ -54,7 +54,8 @@ void snodeimpl::assign(uint32_t start, snodeimpl* src, uint32_t offset, uint32_t
           
           start  += len;        
           offset += len;        
-          length -= len;        
+          length -= len;    
+ // LCOV_EXCL_START        
         } else if (start < curr.start) {
           // source intersets left
           uint32_t overlap = src_end - curr.start;
@@ -106,6 +107,7 @@ void snodeimpl::assign(uint32_t start, snodeimpl* src, uint32_t offset, uint32_t
           }         
           length = 0;
         }
+ // LCOV_EXCL_END
       } else if (i+1 == n || src_end <= m_srcs[i+1].start) {
         // no overlap with current and next
         i += (curr_end <= start) ? 1 : 0;

@@ -45,8 +45,6 @@ public:
   ch_vec(const base& rhs) {
     this->operator =(rhs);
   }
- 
-  ~ch_vec() {}
   
   template <typename U>
   ch_vec& operator=(const ch_vec<U, N>& rhs) {

@@ -49,7 +49,7 @@ public:
   cdomain* create_cdomain(const std::vector<clock_event>& sensitivity_list);
   void remove_cdomain(cdomain* cd);
   
-  void create_assertion(lnodeimpl* node, const std::string& msg);
+  void register_gtap(ioimpl* node);
   
   //-- 
 
@@ -57,7 +57,7 @@ public:
   snodeimpl* bind_output(lnodeimpl* output);
   
   void register_tap(const std::string& name, lnodeimpl* lnode);
-  snode get_tap(std::string& name, uint32_t size);
+  snodeimpl* get_tap(const std::string& name, uint32_t size);
   
   //--
   
@@ -93,7 +93,7 @@ protected:
   std::vector<ioimpl*>    m_inputs;
   std::vector<ioimpl*>    m_outputs;
   std::vector<tapimpl*>   m_taps;
-  std::list<assertimpl*>  m_gtaps;
+  std::list<ioimpl*>      m_gtaps;
   std::list<litimpl*>     m_literals;
   std::list<cond_t>       m_conds;    
   std::stack<lnode>       m_clk_stack;

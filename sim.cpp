@@ -38,7 +38,6 @@ void ch_simulator::add_device(const ch_device& device) {
 }
 
 void ch_simulator::ensureInitialize() {
-  
   // bind context taps
   for (auto ctx : m_contexts) {
     if (ctx->m_clk) {

@@ -1,6 +1,6 @@
 ﻿#pragma once
 
-#include "bitv.h"
+#include "bit.h"
 #include "bus.h"
 
 namespace chdl_internal {
@@ -26,8 +26,8 @@ public:
   ~ch_device();
   
   template <unsigned N> 
-  ch_bus<N> get_tap(std::string& name) {
-    return this->get_tap(name, N);
+  ch_bus<N> get_tap(const std::string& name) {
+    return ch_bus<N>(this->get_tap(name, N));
   }
   
   void toVerilog(const std::string& module_name, std::ostream& out);  
@@ -151,7 +151,7 @@ protected:
   
   snodeimpl* bind_output_(lnodeimpl* output) const;
   
-  snode get_tap(std::string& name, uint32_t size) const;
+  snodeimpl* get_tap(const std::string& name, uint32_t size) const;
   
   void compile();
   

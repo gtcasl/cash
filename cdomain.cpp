@@ -26,6 +26,7 @@ bool clock_event::eval(ch_cycle t) {
   return false;
 }
 
+// LCOV_EXCL_START
 void clock_event::print_vl(ostream& out) const {
   switch (m_edgedir) {
   case EDGE_POS:
@@ -37,6 +38,7 @@ void clock_event::print_vl(ostream& out) const {
   }
   out << "__x" << m_signal.get_id();
 }
+// LCOV_EXCL_END
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -103,6 +105,7 @@ void cdomain::tick_next(ch_cycle t) {
   }
 }
 
+// LCOV_EXCL_START
 void cdomain::print_vl(ostream& out) const {
   bool first_event = true;
   for (const clock_event& event : m_sensitivity_list) {
@@ -113,3 +116,4 @@ void cdomain::print_vl(ostream& out) const {
     event.print_vl(out);
   }
 }
+// LCOV_EXCL_STOP

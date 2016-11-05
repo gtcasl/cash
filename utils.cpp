@@ -32,7 +32,7 @@ string chdl_internal::fstring(const char* format, ...) {
   
   result.assign(buffer);
   if (is_heap_buffer)
-      delete buffer;
+      delete[] buffer;
   
   return result;
 }

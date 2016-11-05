@@ -1,4 +1,4 @@
 #!/bin/bash
 
-lcov --capture --directory $1 --output-file lcov.log
+lcov -c -d $1 -o lcov.log
 genhtml lcov.log --output-directory genhtml_out

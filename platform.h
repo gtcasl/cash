@@ -4,7 +4,6 @@ class platform {
 public:
   
   platform();
-  ~platform();
   
   uint32_t get_dbg_level() const {
     return m_dbg_level;

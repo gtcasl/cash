@@ -23,9 +23,11 @@ const bitvector& selectimpl::eval(ch_cycle t) {
   return m_value;
 }
 
+// LCOV_EXCL_START
 void selectimpl::print_vl(std::ostream& out) const {
   TODO("Not yet implemented!");
 }
+// LCOV_EXCL_END
 
 lnodeimpl* chdl_internal::createSelectNode(lnodeimpl* test, lnodeimpl* a, lnodeimpl* b) {
   return new selectimpl(test, a, b);
@@ -36,10 +38,18 @@ lnodeimpl* chdl_internal::createSelectNode(lnodeimpl* test, lnodeimpl* a, lnodei
 lnodeimpl* select_impl::eval(lnodeimpl* value) {
   lnodeimpl* curr = value;
   stmts_t* stmts = m_stmts;
-  while (!stmts->empty()) {
-    const stmt_t& stmt = stmts->top();
-    curr = createSelectNode(stmt.cond, stmt.value, curr);
-    stmts->pop();
+  if (m_key) {
+    while (!stmts->empty()) {
+      const stmt_t& stmt = stmts->top();
+      curr = createSelectNode(createAluNode(op_eq, 1, m_key, stmt.cond), stmt.value, curr);
+      stmts->pop();
+    } 
+  } else {
+    while (!stmts->empty()) {
+      const stmt_t& stmt = stmts->top();
+      curr = createSelectNode(stmt.cond, stmt.value, curr);
+      stmts->pop();
+    }
   }
   return curr;
 }

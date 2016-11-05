@@ -6,8 +6,7 @@ namespace chdl_internal {
 
 class optimizer {
 public:  
-  optimizer(context* ctx);  
-  ~optimizer();
+  optimizer(context* ctx);
   
   void optimize();
   

@@ -10,10 +10,6 @@ ch_vcdtracer::ch_vcdtracer(const std::string& filename, const std::initializer_l
   , ch_tracer(m_file, devices) 
 {}
 
-ch_vcdtracer::~ch_vcdtracer() {
-  //--
-}
-
 void ch_vcdtracer::ensureInitialize() {
   // call parent ensureInitialize()
   ch_tracer::ensureInitialize();

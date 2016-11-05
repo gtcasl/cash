@@ -10,8 +10,6 @@ using namespace chdl_internal;
 
 optimizer::optimizer(context* ctx) : m_ctx(ctx) {}
 
-optimizer::~optimizer() {}
-
 void optimizer::optimize() {
   DBG(2, "Before optimization: %lu\n", m_ctx->m_nodes.size());
   

@@ -9,7 +9,6 @@ public:
   template<typename ...Devices>
   ch_vcdtracer(const std::string& filename, const Devices&... devices) : ch_vcdtracer(filename, {&devices...}) {}
   ch_vcdtracer(const std::string& filename, const std::initializer_list<const ch_device*>& devices);
-  ~ch_vcdtracer();
   
   void tick(ch_cycle t);
   

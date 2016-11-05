@@ -9,8 +9,6 @@ proxyimpl::proxyimpl(context* ctx, uint32_t size)
   , m_ctime(~0ull) 
 {}
 
-proxyimpl::~proxyimpl() {}
-
 void proxyimpl::add_node(uint32_t start, lnodeimpl* src, uint32_t offset, uint32_t length, bool resize) {    
   // add new source
   uint32_t new_srcidx = -1;
@@ -265,11 +263,16 @@ const bitvector& proxyimpl::eval(ch_cycle t) {
 void proxyimpl::print(std::ostream& out) const {
   out << "#" << m_id << " <- " << m_name << m_value.get_size();
   out << "(";
-  for (uint32_t i = 0, n = m_ranges.size(); i < n; ++i) {
+  for (uint32_t i = 0, s = 0, n = m_ranges.size(); i < n; ++i) {
     const range_t& range = m_ranges[i];
     if (i > 0)
       out << ", ";
-    out << range.start << ":#" << m_srcs[range.srcidx].get_id() << "{" << range.offset;
+    if (s != range.start) {
+      s = range.start;
+      out << range.start << ":";  
+    }
+    s += range.length;
+    out << "#" << m_srcs[range.srcidx].get_id() << "{" << range.offset;
     if (range.length > 1)
       out << "-" << range.offset + (range.length - 1);
     out << "}";
@@ -277,6 +280,8 @@ void proxyimpl::print(std::ostream& out) const {
   out << ")" << endl;
 }
 
+// LCOV_EXCL_START
 void proxyimpl::print_vl(std::ostream& out) const {
   TODO("Not yet implemented!");
 }
+// LCOV_EXCL_END

@@ -16,13 +16,15 @@ const bitvector& litimpl::eval(ch_cycle) {
 void litimpl::print(ostream& out) const {
   out << "#" << m_id << " <- " << m_name << m_value.get_size() << "(";
   for (uint32_t w = m_value.get_num_words(); w--;) {
-    out << m_value.get_word(w);
+    out << hex << m_value.get_word(w);
     if (w)
       out << "-";
   }
   out << ")" << endl;
 }
 
+// LCOV_EXCL_START
 void litimpl::print_vl(ostream& out) const {
   TODO("Not yet implemented!");
 }
+// LCOV_EXCL_END

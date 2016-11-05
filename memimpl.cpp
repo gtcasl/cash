@@ -23,22 +23,14 @@ memimpl::memimpl(uint32_t data_width, uint32_t addr_width,
                  bool sync_read, bool write_enable, 
                  const std::string& init_file)
   : memimpl(data_width, addr_width, sync_read, write_enable) {  
-  uint32_t a = 0, i = 0;
-  ifstream in(init_file.c_str());  
-  while (in) {
-    uint32_t value;
-    in >> hex >> value;
-    for (uint32_t j = 0; j < 32; ++j) {
-      m_content[a][i++] = (value & (1 << j)) != 0;
-      if (i == data_width) {
-        i = 0;
-        ++a;
-        break;
-      }
-    }
-    if (a == (1 << addr_width))
-      break;
-  }
+  ifstream in(init_file.c_str());
+  in.setf(std::ios_base::hex);
+  this->load_data([&in](uint32_t* out)->bool {
+    if (in.eof())
+      return false;
+    in >> *out;
+    return true;
+  });
   in.close();
 }
 
@@ -46,18 +38,38 @@ memimpl::memimpl(uint32_t data_width, uint32_t addr_width,
                  bool sync_read, bool write_enable, 
                  const std::vector<uint32_t>& init_data)
   : memimpl(data_width, addr_width, sync_read, write_enable) {  
-  uint32_t a = 0, i = 0;
-  for (uint32_t value : init_data) {
-    for (uint32_t j = 0; j < 32; ++j) {
-      m_content[a][i++] = (value & (1 << j)) != 0;
-      if (i == data_width) {
-        i = 0;
-        ++a;
-        break;
-      }
+  auto iter = init_data.begin(), iterEnd = init_data.end();
+  this->load_data([&iter, &iterEnd](uint32_t* out)->bool {    
+    if (iter == iterEnd)
+      return false;
+    *out = *iter++;
+    return true;
+  });
+}
+
+void memimpl::load_data(const std::function<bool(uint32_t* out)>& getdata) {
+  uint32_t max_addr   = m_content.size();  
+  uint32_t num_words  = m_content[0].get_num_words();
+  uint32_t data_width = m_content[0].get_size();
+  uint32_t mask_bits  = data_width;
+  uint32_t a = 0, w = 0, value;
+  while (getdata(&value)) {
+    uint32_t mask;
+    if (mask_bits >= 32) {
+      mask = 0xffffffff;
+      mask_bits -= 32;
+    } else {
+      mask = (1 << mask_bits)-1;
+      mask_bits = 0;
     }
-    if (a == (1 << addr_width))
-      break;
+    CHDL_CHECK(a < max_addr && w < num_words, "input value out of bound");
+    m_content[a].set_word(w++, value & mask);
+    if (mask_bits == 0) {
+      CHDL_CHECK((value & ~mask) == 0, "input value out of bound");
+      mask_bits = data_width;        
+      w = 0;
+      ++a;
+    }
   }
 }
 
@@ -103,13 +115,17 @@ void memimpl::tick_next(ch_cycle t) {
   }
 }
 
+// LCOV_EXCL_START
 void memimpl::print(ostream& out) const {
   TODO("Not yet implemented!");
 }
+// LCOV_EXCL_END
 
+// LCOV_EXCL_START
 void memimpl::print_vl(ostream& out) const {
-  TODO("Not yet implemented!");  
+  TODO("Not yet implemented!");
 }
+// LCOV_EXCL_END
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -119,6 +135,7 @@ memportimpl::memportimpl(memimpl* mem, lnodeimpl* addr)
     , m_writeEnable(false)
     , m_addr(0)
     , m_do_write(false)
+    , m_rddata(m_value.get_size())
     , m_addr_id(-1)
     , m_clk_id(-1)
     , m_wdata_id(-1)
@@ -135,7 +152,7 @@ memportimpl::memportimpl(memimpl* mem, lnodeimpl* addr)
   } 
   // add dependency from all write ports
   for (memportimpl* port : m_mem->m_ports) {
-    if (port != this && port->m_writeEnable) {
+    if (port->m_writeEnable) {
       this->m_srcs.emplace_back(port);
     }
   }
@@ -198,9 +215,11 @@ const bitvector& memportimpl::eval(ch_cycle t) {
   return m_value;
 }
 
+// LCOV_EXCL_START
 void memportimpl::print_vl(std::ostream& out) const {
   TODO("Not yet implemented!");
 }
+// LCOV_EXCL_END
 
 ///////////////////////////////////////////////////////////////////////////////
 

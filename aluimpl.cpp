@@ -45,7 +45,7 @@ static void unaryop(bitvector& dst, const bitvector& a) {
   
   switch (op) {
   case op_inv:
-    dst = ~a;
+    Invert(dst, a);
     break;
   default:
     TODO("Not yet implemented!");
@@ -59,22 +59,22 @@ static void binaryop(bitvector& dst, const bitvector& a, const bitvector& b) {
   
   switch (op) {
   case op_and:
-    dst = a & b;
+    And(dst, a, b);
     break;
   case op_or:
-    dst = a | b;
+    Or(dst, a, b);
     break;
   case op_xor:
-    dst = a ^ b;
+    Xor(dst, a, b);
     break;
   case op_nand:
-    dst = ~(a & b);
+    Nand(dst, a, b);
     break;
   case op_nor:
-    dst = ~(a | b);
+    Nor(dst, a, b);
     break;
   case op_xnor:
-    dst = ~(a ^ b);
+    Xnor(dst, a, b);
     break;
   default:
     TODO("Not yet implemented!");
@@ -89,10 +89,16 @@ static void shiftop(bitvector& dst, const bitvector& in, const bitvector& bits) 
   uint32_t wbits = bits.get_word(0);
   switch (op) {  
   case op_sll:
-    dst = in << wbits;
+    ShiftLeft(dst, in, wbits);
     break;
   case op_slr:
-    dst = in >> wbits;
+    ShiftRight(dst, in, wbits);
+    break;
+  case op_rotl:
+    RotateLeft(dst, in, wbits);
+    break;
+  case op_rotr:
+    RotateRight(dst, in, wbits);
     break;
   default:
     TODO("Not yet implemented!");
@@ -103,34 +109,21 @@ template <ch_operator op>
 static void reduceop(bitvector& dst, const bitvector& in) {
   assert(dst.get_size() == 1);
   
-  uint32_t size = in.get_size();
-  uint32_t result;
-  for (uint32_t i = 0, j = 0, in_w; i < size; ++i) {
-    if (0 == (i % bitvector::WORD_SIZE)) {
-      in_w = in.get_word(j++);
-    }    
-    uint32_t bit = in_w & 0x1;
-    in_w >>= 1;
-    
-    if (i == 0) {
-      result = bit; // initialize
-      continue;
-    }
-    switch (op) {
-    case op_andr:
-      result &= bit;
-      break;
-    case op_orr:
-      result |= bit;
-      break;
-    case op_xorr:
-      result ^= bit;
-      break;
-    default:
-      TODO("Not yet implemented!");
-    }    
-  }
-  dst.set_word(0, result);
+  bool result;
+  switch (op) {
+  case op_andr:
+    result = in.andr();
+    break;
+  case op_orr:
+    result = in.orr();
+    break;
+  case op_xorr:
+    result = in.xorr();
+    break;
+  default:
+    TODO("Not yet implemented!");
+  } 
+  dst[0] = result;
 }
 
 template <ch_operator op>
@@ -233,10 +226,6 @@ aluimpl::aluimpl(ch_operator op, uint32_t size, lnodeimpl* a)
   m_srcs.emplace_back(a);
 }
 
-aluimpl::~aluimpl() {
-  //--
-}
-
 const bitvector& aluimpl::eval(ch_cycle t) {  
   if (m_ctime != t) {  
     m_ctime = t;
@@ -334,9 +323,11 @@ const bitvector& aluimpl::eval(ch_cycle t) {
   return m_value;
 }
 
+// LCOV_EXCL_START
 void aluimpl::print_vl(std::ostream& out) const {
   TODO("Not yet implemented!");
-}
+} 
+//LCOV_EXCL_END
 
 lnodeimpl* chdl_internal::createAluNode(ch_operator op, uint32_t size, lnodeimpl* a, lnodeimpl* b) {
   return new aluimpl(op, size, a, b); 

@@ -12,12 +12,15 @@
 #include <stack>
 #include <algorithm>
 #include <iostream>
+#include <iomanip>
 #include <limits>
 #include <assert.h>
 #include <atomic>
 #include <functional>
 #include <fstream>
+#include <sstream>
 #include <memory>
+#include <limits.h>
 #include "macros.h"
 #include "utils.h"
 #include "platform.h"

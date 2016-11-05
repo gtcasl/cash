@@ -3,8 +3,9 @@ PREFIX ?= /usr/local
 CXXFLAGS += -fPIC -std=c++14 -O0 -g --coverage -fmax-errors=5
 LDFLAGS += -shared --coverage
 
-SRCS = utils.cpp bitvector.cpp platform.cpp \
-       lnodeimpl.cpp proxyimpl.cpp litimpl.cpp selectimpl.cpp regimpl.cpp memimpl.cpp aluimpl.cpp ioimpl.cpp assertimpl.cpp \
+SRCS = utils.cpp platform.cpp bitvector.cpp \
+       lnodeimpl.cpp proxyimpl.cpp litimpl.cpp selectimpl.cpp regimpl.cpp \
+	   memimpl.cpp aluimpl.cpp ioimpl.cpp assertimpl.cpp tickimpl.cpp printimpl.cpp \
        snodeimpl.cpp cdomain.cpp context.cpp device.cpp opt.cpp sim.cpp vcd.cpp
 
 OBJS := $(SRCS:.cpp=.o)

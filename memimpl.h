@@ -25,6 +25,8 @@ public:
 
 protected:
   
+  void load_data(const std::function<bool(uint32_t* out)>& getdata);
+  
   memportimpl* get_port(lnodeimpl* addr);
   
   std::vector<memportimpl*> m_ports;

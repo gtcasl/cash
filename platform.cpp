@@ -18,8 +18,6 @@ platform::platform()
     m_dump_ast = atol(dump_ast);  
 }
 
-platform::~platform() {}
-
 const platform& platform::self() {
   static platform s_instance;
   return s_instance;

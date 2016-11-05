@@ -7,13 +7,10 @@ namespace chdl_internal {
 template <unsigned N> class ch_bit;
 
 template <unsigned N>
-class typebase<N, lnode::bitstream_type> {
+class typebase<N, lnode::bitstream_type> { // LCOV_EXCL_LINE
 public:   
   static const unsigned bit_count = N;
   using bitstream_type = lnode::bitstream_type;
-  
-  typebase() {}
-  ~typebase() {}
   
   const_slice_ref<typebase, 1> operator[](size_t index) const {
     static_assert(N > 1, "invalid call");
@@ -72,11 +69,13 @@ public:
   CHDL_DEF_AOP(uint64_t)
 #undef CHDL_DEF_AOP
   
+ // LCOV_EXCL_START
   virtual lnode get_node() const {
     bitstream_type data(N);
     this->read(data, 0, N);
     return lnode(data);
   }
+// LCOV_EXCL_END
   
 protected:
 

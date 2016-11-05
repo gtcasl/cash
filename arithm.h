@@ -1,6 +1,6 @@
 #pragma once
 
-#include "bitv.h"
+#include "bit.h"
 
 #define CHDL_BINOP_GEN0(func, type) \
   template <unsigned N> ch_bit<N> func(const ch_bitbase<N>& a, type b) { return func(a, ch_bit<N>(b)); } \
@@ -357,13 +357,6 @@ ch_bit<CLOG2(N)> ch_enc(const ch_bitbase<N>& a) {
 
 template <unsigned N> 
 ch_bit<(1 << N)> ch_dec(const ch_bitbase<N>& a) {
-  TODO("Not yet implemented!");
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-template <unsigned N>
-void ch_print(const ch_bitbase<N>& a) {
   TODO("Not yet implemented!");
 }
 

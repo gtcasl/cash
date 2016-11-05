@@ -4,9 +4,9 @@
 
 namespace chdl_internal {
 
-class selectimpl : public lnodeimpl {
+class tickimpl : public lnodeimpl {
 public:
-  selectimpl(lnodeimpl* test, lnodeimpl* a, lnodeimpl* b);
+  tickimpl(context* ctx);
 
   const bitvector& eval(ch_cycle t) override;  
   void print_vl(std::ostream& out) const override;

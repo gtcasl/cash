@@ -1,4 +1,4 @@
-#include "bitv.h"
+#include "bit.h"
 #include "lnodeimpl.h"
 #include "ioimpl.h"
 #include "proxyimpl.h"

@@ -21,6 +21,9 @@ using ch_signal = ch_bus<1>;
 template <unsigned N> class ch_bit;
 using ch_logic = ch_bit<1>;
 
+void createPrintNode(lnodeimpl* cond, const std::string& format, 
+                     const std::initializer_list<lnodeimpl*>& args);
+
 template <unsigned N> 
 class ch_bit : public ch_bitbase<N> {
 public:
@@ -54,9 +57,11 @@ public:
   CHDL_DEF_CTOR(uint64_t)
 #undef CHDL_DEF_CTOR
   
+  // LCOV_EXCL_START
   explicit ch_bit(lnodeimpl* node) : m_node(node) {
     assert(m_node.get_size() == N);
   }
+  // LCOV_EXCL_END
   
   ch_bit& operator=(const ch_bit& rhs) {
     m_node = rhs.m_node.ensureInitialized(N);
@@ -86,12 +91,15 @@ public:
   CHDL_DEF_AOP(uint64_t)
 #undef CHDL_DEF_AOP
   
+  // LCOV_EXCL_START
   lnode get_node() const override { 
     return m_node.ensureInitialized(N);
   }
+  // LCOV_EXCL_END
   
 protected:
   
+  // LCOV_EXCL_START
   void read(bitstream_type& inout, size_t offset, size_t length) const override {
     m_node.read(inout, offset, length, N);
   }
@@ -99,6 +107,7 @@ protected:
   void write(size_t dst_offset, const bitstream_type& in, size_t src_offset, size_t src_length) override {
     m_node.write(dst_offset, in, src_offset, src_length, N);
   }
+  // LCOV_EXCL_END
   
   lnode m_node;
 };
@@ -133,13 +142,6 @@ CHDL_CONCAT_GEN(template <unsigned NB CHDL_COMMA unsigned NA CHDL_COMMA typename
                 ch_bitbase<NB>&, const refbase<NA CHDL_COMMA TA>&)
 
 #undef CHDL_CONCAT_GEN
-
-// null operators
-
-template <unsigned N>
-ch_bit<N> ch_null() {
-  return ch_bit<N>(createNullNode(N));
-}
 
 // slice operators
 
@@ -237,6 +239,25 @@ ch_bit<N> ch_shuffle(const ch_bitbase<N>& in, const std::array<uint32_t, I>& ind
   for (unsigned i = 0; i < I; ++i) {
     ch_aslice<(N / I)>(in) = indices[i];
   }
+}
+
+// utility functions
+
+ch_bit<64> ch_tick();
+
+template <typename...Args>
+void ch_print(const std::string& format, const Args& ...args) {
+  createPrintNode(nullptr, format, {args.get_node().get_impl()...});
+}
+
+template <typename...Args>
+void ch_print(const ch_logicbase& cond, const std::string& format, const Args& ...args) {
+  createPrintNode(cond.get_node().get_impl(), format, {args.get_node().get_impl()...});
+}
+
+template <typename...Args>
+void ch_print(const ch_logic& cond, const std::string& format, const Args& ...args) {
+  createPrintNode(cond.get_node().get_impl(), format, {args.get_node().get_impl()...});
 }
 
 }

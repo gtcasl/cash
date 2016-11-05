@@ -140,8 +140,8 @@ litimpl* context::create_literal(const bitvector& value) {
   return lit;
 }
 
-void context::create_assertion(lnodeimpl* node, const std::string& msg) {
-  m_gtaps.emplace_back(new assertimpl(node, msg));  
+void context::register_gtap(ioimpl* node) {
+  m_gtaps.emplace_back(node);  
 }
 
 cdomain* context::create_cdomain(const std::vector<clock_event>& sensitivity_list) {
@@ -191,11 +191,11 @@ void context::register_tap(const std::string& name, lnodeimpl* node) {
   m_taps.emplace_back(new tapimpl(full_name, node));
 }
 
-snode context::get_tap(std::string& name, uint32_t size) {
+snodeimpl* context::get_tap(const std::string& name, uint32_t size) {
   for (tapimpl* tap : m_taps) {
     if (tap->get_tapName() == name) {
       CHDL_CHECK(tap->get_size() == size, "tap bus size mismatch: received %u, expected %u", size, tap->get_size());
-      return snode(tap->get_bus());
+      return tap->get_bus();
     }
   } 
   CHDL_ABORT("couldn't find tab '%s'", name.c_str());

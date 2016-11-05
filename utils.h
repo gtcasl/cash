@@ -240,19 +240,29 @@ D bit_cast(const S& src) {
   return m.dst;  
 }
 
-inline unsigned countLeadingZeros(unsigned x) {
-  unsigned c;
-  if (x == 0) return 32; 
-  for (c = 0; ((x & 0x80000000) == 0); ++c, x <<= 1);
-  return c;
+inline uint32_t countLeadingZeros(uint32_t value) {
+  uint32_t count;
+  if (value == 0) return 32; 
+  for (count = 0; ((value & 0x80000000) == 0); ++count, value <<= 1);
+  return count;
 }
 
-inline unsigned countTrailingZeros(unsigned x) {
-  unsigned c;
-  if (x == 0) return 32;
-  x = (x ^ (x - 1)) >> 1;  // Set x's trailing 0s to 1s and zero rest
-  for (c = 0; x; ++c, x >>= 1);
-  return c; 
+inline uint32_t countTrailingZeros(uint32_t value) {
+  uint32_t count;
+  if (value == 0) return 32;
+  value = (value ^ (value - 1)) >> 1;  // Set x's trailing 0s to 1s and zero rest
+  for (count = 0; value; ++count, value >>= 1);
+  return count; 
+}
+
+inline uint32_t rotl(uint32_t value, uint32_t shift, uint32_t width) {
+  assert(shift < width);
+  return  (value << shift) | (value >> (width - shift));
+}
+
+inline uint32_t rotr(uint32_t value, uint32_t shift, uint32_t width) {
+  assert(shift < width);
+  return (value >> shift) | (value << (width  - shift));
 }
 
 }

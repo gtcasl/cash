@@ -17,7 +17,7 @@ snodeimpl* ch_device::bind_output_(lnodeimpl* output) const {
   return m_ctx->bind_output(output);
 }
 
-snode ch_device::get_tap(std::string& name, uint32_t size) const {
+snodeimpl* ch_device::get_tap(const std::string& name, uint32_t size) const {
   return m_ctx->get_tap(name, size);
 }
 
@@ -32,6 +32,8 @@ void ch_device::compile() {
   }
 }
 
+// LCOV_EXCL_START
 void ch_device::toVerilog(const std::string& module_name, std::ostream& out) {
   m_ctx->toVerilog(module_name, out);
 }
+// LCOV_EXCL_END

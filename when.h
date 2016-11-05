@@ -1,6 +1,6 @@
 #pragma once
 
-#include "bitv.h"
+#include "bit.h"
 
 namespace chdl_internal {
 
@@ -34,7 +34,7 @@ protected:
   
   using func_t = std::function<void ()>;
   
-  struct stmt_t {
+  struct stmt_t { // LCOV_EXCL_LINE
     lnodeimpl* cond;
     func_t func;
   };

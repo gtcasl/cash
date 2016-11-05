@@ -56,7 +56,7 @@ using st4_t = st_t<4>;
  )); 
  
 TEST_CASE("aggregate tests", "[aggregate]") {  
-  SECTION("test structs", "[struct]") {     
+  SECTION("test structs", "[struct]") {   
     TEST([]()->ch_logic {
       s1_t s1;
       s2_t s2;

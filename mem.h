@@ -1,6 +1,6 @@
 #pragma once
 
-#include "bitv.h"
+#include "bit.h"
 
 namespace chdl_internal {
 
@@ -29,6 +29,8 @@ public:
     
     ch_rom(const std::vector<uint32_t>& init_data) : m_mem(N, A, SyncRead, false, init_data) {}
     
+    ch_rom(const std::initializer_list<uint32_t>& init_data) : m_mem(N, A, SyncRead, false, init_data) {}
+    
     ch_bit<N> read(const ch_bitbase<A>& addr) const {
       return ch_bit<N>(m_mem.read(addr.get_node().get_impl()));
     }
@@ -49,6 +51,8 @@ public:
     ch_mem(const std::string& init_file) : m_mem(N, A, SyncRead, true, init_file) {}
     
     ch_mem(const std::vector<uint32_t>& init_data) : m_mem(N, A, SyncRead, true, init_data) {}
+    
+    ch_mem(const std::initializer_list<uint32_t>& init_data) : m_mem(N, A, SyncRead, true, init_data) {}
     
     ch_bit<N> read(const ch_bitbase<A>& addr) const {
       return ch_bit<N>(m_mem.read(addr.get_node().get_impl()));

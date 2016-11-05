@@ -6,12 +6,12 @@ namespace chdl_internal {
 
 class snodeimpl;
 
-class ioimpl : public lnodeimpl {
+class ioimpl : public lnodeimpl { // LCOV_EXCL_LINE
 public:
+  // LCOV_EXCL_START
   ioimpl(const std::string& name, context* ctx, uint32_t size)
     : lnodeimpl(name, ctx, size)  {}
-  
-  virtual ~ioimpl() {}
+  // LCOV_EXCL_END
 };
 
 class inputimpl : public ioimpl {
@@ -25,7 +25,7 @@ public:
   
   void print(std::ostream& out) const override;
   
-  void print_vl(std::ostream& out) const override {}
+  void print_vl(std::ostream& out) const override {} // LCOV_EXCL_LINE
   
 protected:
   snodeimpl* m_bus;
@@ -42,24 +42,25 @@ public:
   
   void print(std::ostream& out) const override;
   
-  void print_vl(std::ostream& out) const override {}
+  void print_vl(std::ostream& out) const override {} // LCOV_EXCL_LINE
   
 private:
   snodeimpl* m_bus;
 };
 
-class tapimpl : public outputimpl {
+class tapimpl : public outputimpl { // LCOV_EXCL_LINE
 public:
   tapimpl(const std::string& name, lnodeimpl* src);
-  ~tapimpl() {}
   
+  // LCOV_EXCL_START
   const std::string& get_tapName() const {
     return m_tapName;
   }
+  // LCOV_EXCL_END
   
   void print(std::ostream& out) const override;
   
-  void print_vl(std::ostream& out) const override {}
+  void print_vl(std::ostream& out) const override {} // LCOV_EXCL_LINE
   
 protected:
   std::string  m_tapName;

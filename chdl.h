@@ -1,6 +1,6 @@
 #pragma once
 
-#include "bitv.h"
+#include "bit.h"
 #include "literals.h"
 #include "select.h"
 #include "when.h"
@@ -160,6 +160,7 @@ namespace core {
   // utility functions
   //
 
+  using chdl_internal::ch_tick;
   using chdl_internal::ch_assert;
   using chdl_internal::ch_tap;
   using chdl_internal::ch_print;  

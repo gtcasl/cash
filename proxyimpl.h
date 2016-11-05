@@ -7,7 +7,6 @@ namespace chdl_internal {
 class proxyimpl : public lnodeimpl {
 public:  
   proxyimpl(context* ctx, uint32_t size);
-  ~proxyimpl();
   
   void add_node(uint32_t start, lnodeimpl* src, uint32_t offset, uint32_t length, bool resize = false);
   

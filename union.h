@@ -1,6 +1,6 @@
 #pragma once
 
-#include "bitv.h"
+#include "bit.h"
 #include "bus.h"
 
 #define CHDL_UNION_SIZE(i, x) \

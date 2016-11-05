@@ -1,6 +1,6 @@
 #pragma once
 
-#include "bitv.h"
+#include "bit.h"
 #include "bus.h"
 
 namespace chdl_internal {

@@ -9,7 +9,7 @@ protected:
   
   using func_t = std::function<void ()>;
   
-  struct stmt_t {
+  struct stmt_t { // LCOV_EXCL_LINE
     lnodeimpl* value;
     func_t func;
   };

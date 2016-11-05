@@ -12,9 +12,6 @@ public:
   static const unsigned bit_count = N;
   using bitstream_type = snode::bitstream_type;
   
-  typebase() {}
-  ~typebase() {}
-  
   typebase& operator=(const typebase& rhs) {
     bitstream_type data(N);
     rhs.read(data, 0, N);

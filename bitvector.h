@@ -50,8 +50,6 @@ public:
       , m_index(rhs.m_index)
     {}
     
-    ~const_iterator() {}
-    
     const_iterator& operator=(const const_iterator& rhs) {
       m_words = rhs.m_words;
       m_index = rhs.m_index;
@@ -149,8 +147,6 @@ public:
     iterator(const iterator& rhs) : base(rhs) {}
     
     iterator(const const_iterator& rhs) : base(rhs) {}
-    
-    ~iterator() {}    
     
     reference operator*() const {
       return reference(const_cast<uint32_t&>(*m_words), 1 << (m_index & WORD_MASK));
@@ -257,6 +253,26 @@ public:
   
   bitvector& operator=(const std::string& value);
   
+  bitvector& operator=(uint32_t value);
+  
+  bitvector& operator=(const std::initializer_list<uint32_t>& value);
+  
+  bitvector& operator=(char value);
+  
+  bitvector& operator=(int8_t value) { return this->operator =(bit_cast<uint32_t>(value)); }
+  
+  bitvector& operator=(uint8_t value) { return this->operator =(bit_cast<uint32_t>(value)); }
+  
+  bitvector& operator=(int16_t value) { return this->operator =(bit_cast<uint32_t>(value)); }
+  
+  bitvector& operator=(uint16_t value) { return this->operator =(bit_cast<uint32_t>(value)); }
+  
+  bitvector& operator=(int32_t value) { return this->operator =(bit_cast<uint32_t>(value)); }
+  
+  bitvector& operator=(int64_t value) { return this->operator =({bit_cast<uint32_t>(value >> 32), bit_cast<uint32_t>(value)}); }
+  
+  bitvector& operator=(uint64_t value) { return this->operator =({bit_cast<uint32_t>(value >> 32), bit_cast<uint32_t>(value)}); }  
+  
   const_reference at(uint32_t idx) const {
     assert(idx < m_size);
     uint32_t widx = idx >> WORD_SIZE_LOG;
@@ -301,47 +317,11 @@ public:
   
   void copy(uint32_t dst_offset, const bitvector& src, uint32_t src_offset, uint32_t src_length);
   
-  bitvector& flip();
-  
   int32_t find_first() const;
   
   int32_t find_last() const;
   
-  bitvector& flip(uint32_t idx) {
-    assert(idx < m_size);
-    m_words[idx >> WORD_SIZE_LOG] ^= 1 << (idx & WORD_MASK);
-    return *this;
-  }
-  
   bool to_bool() const;
-  
-  bitvector operator~() const {
-    bitvector ret(*this);
-    ret.flip();
-    return ret;
-  }
-  
-  bitvector operator<<(uint32_t dist) const {
-    bitvector ret(*this);
-    ret <<= dist;
-    return ret;
-  }
-  
-  bitvector operator>>(uint32_t dist) const {
-    bitvector ret(*this);
-    ret >>= dist;
-    return ret;
-  }
-  
-  bitvector& operator<<=(uint32_t dist);
-  
-  bitvector& operator>>=(uint32_t dist);
-  
-  bitvector& operator&=(const bitvector& rhs);
-  
-  bitvector& operator|=(const bitvector& rhs);
-  
-  bitvector& operator^=(const bitvector& rhs);
   
   bool operator==(const bitvector& rhs) const;
   
@@ -362,25 +342,13 @@ public:
   bool operator>=(const bitvector& rhs) const {
     return !(*this < rhs);
   }
+  
+  bool andr() const;
+  
+  bool orr() const;
+  
+  bool xorr() const;
     
-  bitvector operator&(const bitvector& rhs) const {
-    bitvector ret(*this);
-    ret &= rhs;
-    return ret;
-  }
-  
-  bitvector operator|(const bitvector& rhs) const {
-    bitvector ret(*this);
-    ret |= rhs;
-    return ret;
-  }
-  
-  bitvector operator^(const bitvector& rhs) const {
-    bitvector ret(*this);
-    ret ^= rhs;
-    return ret;
-  }
-  
   const_reference front() const {
     return this->at(0);
   }
@@ -420,8 +388,42 @@ protected:
   uint32_t* m_words;
   uint32_t  m_size;
   
+  friend void Invert(bitvector& out, const bitvector& in);  
+  friend void And(bitvector& out, const bitvector& lhs, const bitvector& rhs);  
+  friend void Or(bitvector& out, const bitvector& lhs, const bitvector& rhs);  
+  friend void Xor(bitvector& out, const bitvector& lhs, const bitvector& rhs);  
+  friend void Nand(bitvector& out, const bitvector& lhs, const bitvector& rhs);  
+  friend void Nor(bitvector& out, const bitvector& lhs, const bitvector& rhs);  
+  friend void Xnor(bitvector& out, const bitvector& lhs, const bitvector& rhs);  
+  friend void ShiftLeft(bitvector& out, const bitvector& in, uint32_t dist);  
+  friend void ShiftRight(bitvector& out, const bitvector& in, uint32_t dist);    
+  friend void RotateLeft(bitvector& out, const bitvector& in, uint32_t dist);  
+  friend void RotateRight(bitvector& out, const bitvector& in, uint32_t dist);    
+  
   friend std::ostream& operator<<(std::ostream& os, const bitvector& b);
 };
+
+void Invert(bitvector& out, const bitvector& in);
+
+void And(bitvector& out, const bitvector& lhs, const bitvector& rhs);
+
+void Or(bitvector& out, const bitvector& lhs, const bitvector& rhs);
+
+void Xor(bitvector& out, const bitvector& lhs, const bitvector& rhs);
+
+void Nand(bitvector& out, const bitvector& lhs, const bitvector& rhs);
+
+void Nor(bitvector& out, const bitvector& lhs, const bitvector& rhs);
+
+void Xnor(bitvector& out, const bitvector& lhs, const bitvector& rhs);
+
+void ShiftLeft(bitvector& out, const bitvector& in, uint32_t dist);
+
+void ShiftRight(bitvector& out, const bitvector& in, uint32_t dist);
+  
+void RotateLeft(bitvector& out, const bitvector& in, uint32_t dist);
+
+void RotateRight(bitvector& out, const bitvector& in, uint32_t dist);
 
 std::ostream& operator<<(std::ostream& os, const bitvector& b);
 

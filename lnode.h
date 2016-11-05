@@ -27,9 +27,11 @@ public:
   
   const lnode& ensureInitialized(uint32_t size, uint32_t offset, uint32_t length) const;
   
+  // LCOV_EXCL_START
   const lnode& ensureInitialized(uint32_t size) const {
     return this->ensureInitialized(size, 0, size);
   }
+  // LCOV_EXCL_END
   
   lnodeimpl* get_impl() const;
   
@@ -76,7 +78,5 @@ inline std::ostream& operator<<(std::ostream& out, const lnode& rhs) {
   out << rhs.get_id();
   return out;
 }
-
-lnodeimpl* createNullNode(uint32_t size);
 
 }

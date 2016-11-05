@@ -84,9 +84,17 @@ public:
   template <typename T>
   void write(T value) {
     m_node.ensureInitialized(N);
-    for (uint32_t i = 0, n = (N + 31) / 32; i < n; ++i) {
-      m_node.write(i, value & 0xffffffff);
-      value >>= ((i + 1 < n) ? 32 : (N % 32));
+    uint32_t shift = N % 32;
+    if (shift != 0) {
+      for (uint32_t i = 0, n = (N + 31) / 32; i < n; ++i) {
+        m_node.write(i, value & 0xffffffff);
+        value >>= ((i < n - 1) ? 32 : shift);
+      }
+    } else {
+      for (uint32_t i = 0, n = (N + 31) / 32; i < n; ++i) {
+        m_node.write(i, value);
+        value = (value >> 16) >> 16; // small hack to handle 32 bit shift. 
+      }
     }
     assert(value == 0);
   }

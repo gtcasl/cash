@@ -2,6 +2,16 @@
 
 using namespace chdl::sim_literals;
 
+ __ch_struct(s2_t,(
+  (ch_bit2) a,
+  (ch_bit2) b
+));
+ 
+ __ch_union(u2_t,(
+   (ch_bit2) a,
+   (ch_bit2) b
+ ));
+
 __ch_enum(my_enum, 4,(
   idle = 0,
   execute,
@@ -17,6 +27,11 @@ TEST_CASE("simulation tests", "[sim]") {
       return (c == 3);
     });
     TESTX([]()->bool {          
+      ch_bus64 a(1), b(2), c;
+      c.write<uint64_t>(a.read<uint64_t>() + b.read<uint64_t>());
+      return (c == 3);
+    });
+    TESTX([]()->bool {          
       ch_bus4 a(1), b(2), c;
       c = a;
       c = b;
@@ -27,6 +42,22 @@ TEST_CASE("simulation tests", "[sim]") {
       b = a;
       c = b;
       return (c == 1);
+    });
+    TESTX([]()->bool {          
+      ch_bus64 a(1), b;
+      b = a;
+      return (b == 1);
+    });
+    TESTX([]()->bool {          
+      ch_bus64 a(1), b;
+      b = a;
+      b.write<uint32_t>(4);
+      return (b == 4);
+    });
+    TESTX([]()->bool {          
+      ch_bus64 a(1);
+      a = 10;
+      return (a == 10);
     });
     TESTX([]()->bool {          
       ch_bus4 a(1), b, c;
@@ -40,6 +71,34 @@ TEST_CASE("simulation tests", "[sim]") {
       return (a == 10 && b > 0 && c < 100 && d >= 5 && e <= 50);
     });
   }
+  SECTION("test bus structs", "[struct]") {    
+    TESTX([]()->bool {          
+      s2_t::bus_type s2;
+      s2.a = 01_b;
+      s2.b = 10_b;
+      return (s2 == 1001_b);
+    });    
+    TESTX([]()->bool {          
+      s2_t::bus_type s2;
+      s2 = 1001_b;
+      return (s2 == 1001_b);
+    });
+    TESTX([]()->bool {          
+      s2_t::bus_type s1, s2;
+      s1 = 0;
+      s2 = s1;      
+      s2 = 1001_b;
+      return (s2 == 1001_b);
+    });
+  }  
+  SECTION("test bus unions", "[union]") {    
+    TESTX([]()->bool {          
+      u2_t::bus_type u2;
+      u2.a = 01_b;
+      u2.b = 10_b;
+      return (u2 == 10_b);
+    });
+  }  
   SECTION("test bus enums", "[enum]") {    
     TESTX([]()->bool {          
       my_enum::bus_type a(my_enum::idle);
