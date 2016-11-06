@@ -12,6 +12,18 @@
 #define CHDL_STRUCT_BUS_FIELD(i, x) \
   typename CHDL_PAIR_L(x)::bus_type CHDL_PAIR_R(x)
 
+#define CHDL_STRUCT_CTOR_INIT(i, x) \
+  CHDL_PAIR_R(x)(rhs.CHDL_PAIR_R(x))
+
+#define CHDL_STRUCT_CTOR_ARG(i, x) \
+  const CHDL_PAIR_L(x)& CHDL_CONCAT(CHDL_PAIR_R(x),_)
+
+#define CHDL_STRUCT_BUS_CTOR_ARG(i, x) \
+  const typename CHDL_PAIR_L(x)::bus_type& CHDL_CONCAT(CHDL_PAIR_R(x),_)
+
+#define CHDL_STRUCT_CTOR_ARG_INIT(i, x) \
+  CHDL_PAIR_R(x)(CHDL_CONCAT(CHDL_PAIR_R(x),_))
+
 #define CHDL_STRUCT_ASSIGN(i, x) \
   this->CHDL_PAIR_R(x) = rhs.CHDL_PAIR_R(x)
 
@@ -50,6 +62,10 @@
       using base = chdl_internal::ch_busbase<CHDL_FOR_EACH(CHDL_STRUCT_SIZE, CHDL_SEP_PLUS, __VA_ARGS__)>; \
       using base::operator=; \
       using bitstream_type = typename base::bitstream_type; \
+      bus_type() {} \
+      bus_type(const bus_type& rhs) : CHDL_FOR_EACH(CHDL_STRUCT_CTOR_INIT, CHDL_SEP_COMMA, __VA_ARGS__) {} \
+      bus_type(CHDL_REVERSE_FOR_EACH(CHDL_STRUCT_BUS_CTOR_ARG, CHDL_SEP_COMMA, __VA_ARGS__)) : CHDL_FOR_EACH(CHDL_STRUCT_CTOR_ARG_INIT, CHDL_SEP_COMMA, __VA_ARGS__) {} \
+      bus_type(const base& rhs) { base::operator=(rhs); } \
       bus_type& operator=(const bus_type& rhs) { \
         CHDL_FOR_EACH(CHDL_STRUCT_ASSIGN, CHDL_SEP_SEMICOLON, __VA_ARGS__); \
         return *this; \
@@ -65,6 +81,10 @@
         CHDL_ABORT("invalid subscript index"); \
       } \
     };\
+    name() {} \
+    name(const name& rhs) : CHDL_FOR_EACH(CHDL_STRUCT_CTOR_INIT, CHDL_SEP_COMMA, __VA_ARGS__) {} \
+    name(CHDL_REVERSE_FOR_EACH(CHDL_STRUCT_CTOR_ARG, CHDL_SEP_COMMA, __VA_ARGS__)) : CHDL_FOR_EACH(CHDL_STRUCT_CTOR_ARG_INIT, CHDL_SEP_COMMA, __VA_ARGS__) {} \
+    name(const base& rhs) { base::operator=(rhs); } \
     name& operator=(const name& rhs) { \
       CHDL_FOR_EACH(CHDL_STRUCT_ASSIGN, CHDL_SEP_SEMICOLON, __VA_ARGS__); \
       return *this; \
