@@ -3,16 +3,6 @@
 #include "bitbase.h"
 #include "vec.h"
 
-#define CHDL_CONCAT_GEN(T, TcB, TcA, TB, TA, cB, cA, B, A) \
-  T inline const_concat_ref<TcB, TcA> operator,(cB b, cA a) { return const_concat_ref<TcB, TcA>(b, a); } \
-  T inline const_concat_ref<TcB, TA> operator,(cB b, A a) { return const_concat_ref<TcB, TA>(b, a); } \
-  T inline const_concat_ref<TB, TcA> operator,(B b, cA a) { return const_concat_ref<TB, TcA>(b, a); } \
-  T inline concat_ref<TB, TA> operator,(B b, A a) { return concat_ref<TB, TA>(b, a); } \
-  T inline const_concat_ref<TcB, TcA> ch_concat(cB b, cA a) { return const_concat_ref<TcB, TcA>(b, a); } \
-  T inline const_concat_ref<TcB, TA> ch_concat(cB b, A a) { return const_concat_ref<TcB, TA>(b, a); } \
-  T inline const_concat_ref<TB, TcA> ch_concat(B b, cA a) { return const_concat_ref<TB, TcA>(b, a); } \
-  T inline concat_ref<TB, TA> ch_concat(B b, A a) { return concat_ref<TB, TA>(b, a); }
-
 namespace chdl_internal {
 
 template <unsigned N> class ch_bus;
@@ -114,6 +104,16 @@ protected:
 
 // concatenation operator
 
+#define CHDL_CONCAT_GEN(T, TcB, TcA, TB, TA, cB, cA, B, A) \
+  T inline const_concat_ref<TcB, TcA> operator,(cB b, cA a) { return const_concat_ref<TcB, TcA>(b, a); } \
+  T inline const_concat_ref<TcB, TA> operator,(cB b, A a) { return const_concat_ref<TcB, TA>(b, a); } \
+  T inline const_concat_ref<TB, TcA> operator,(B b, cA a) { return const_concat_ref<TB, TcA>(b, a); } \
+  T inline concat_ref<TB, TA> operator,(B b, A a) { return concat_ref<TB, TA>(b, a); } \
+  T inline const_concat_ref<TcB, TcA> ch_concat(cB b, cA a) { return const_concat_ref<TcB, TcA>(b, a); } \
+  T inline const_concat_ref<TcB, TA> ch_concat(cB b, A a) { return const_concat_ref<TcB, TA>(b, a); } \
+  T inline const_concat_ref<TB, TcA> ch_concat(B b, cA a) { return const_concat_ref<TB, TcA>(b, a); } \
+  T inline concat_ref<TB, TA> ch_concat(B b, A a) { return concat_ref<TB, TA>(b, a); }
+
 CHDL_CONCAT_GEN(template <unsigned NB CHDL_COMMA typename TB CHDL_COMMA unsigned NA CHDL_COMMA typename TA>, 
                 const_refbase<NB CHDL_COMMA TB>, const_refbase<NA CHDL_COMMA TA>,
                 refbase<NB CHDL_COMMA TB>, refbase<NA CHDL_COMMA TA>,
@@ -126,14 +126,11 @@ CHDL_CONCAT_GEN(template <unsigned NB CHDL_COMMA unsigned NA>,
                 const ch_bitbase<NB>&, const ch_bitbase<NA>&,
                 ch_bitbase<NB>&, ch_bitbase<NA>&)
 
-//--
-
 CHDL_CONCAT_GEN(template <unsigned NB CHDL_COMMA typename TB CHDL_COMMA unsigned NA>, 
                 const_refbase<NB CHDL_COMMA TB>, ch_bitbase<NA>,
                 refbase<NB CHDL_COMMA TB>, ch_bitbase<NA>,
                 const const_refbase<NB CHDL_COMMA TB>&, const ch_bitbase<NA>&,
                 const refbase<NB CHDL_COMMA TB>&, ch_bitbase<NA>&)
-//--
 
 CHDL_CONCAT_GEN(template <unsigned NB CHDL_COMMA unsigned NA CHDL_COMMA typename TA>, 
                 ch_bitbase<NB>, const_refbase<NA CHDL_COMMA TA>,

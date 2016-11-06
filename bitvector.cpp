@@ -19,7 +19,8 @@ bitvector::bitvector(uint32_t size) : m_words(nullptr), m_size(0) {
   this->resize(size, 0, true, false);
 }
 
-bitvector::bitvector(const std::string& value) : m_words(nullptr), m_size(0) {
+bitvector::bitvector(const std::string& value, uint32_t size) : m_words(nullptr), m_size(0) {
+  this->resize(size, 0x0, false, false);
   this->operator =(value);
 }
 
@@ -90,9 +91,30 @@ bitvector& bitvector::operator=(bitvector&& rhs) {
   return *this;
 }
 
-bitvector& bitvector::operator=(const std::string& value) {
-  std::vector<uint32_t> tmp;
-  
+static uint32_t chr2int(char x, int base) {
+  switch (base) {
+  case 2:
+    if (x >= '0' && x <= '1')
+      return (x - '0');
+    break;
+  case 8:
+    if (x >= '0' && x <= '7')
+      return (x - '0');
+    break;
+  case 16:
+    if (x >= '0' && x <= '9')
+      return (x - '0');
+    if (x >= 'A' && x <= 'F')
+      return (x - 'A') + 10;
+    if (x >= 'a' && x <= 'f')
+      return (x - 'a') + 10;
+    break;
+  default:
+    CHDL_ABORT("invalid literal value");
+  }
+}
+
+bitvector& bitvector::operator=(const std::string& value) {  
   int base = 0;
   int start = 0;
   
@@ -102,9 +124,6 @@ bitvector& bitvector::operator=(const std::string& value) {
     break;
   case 'o':
     base = 8;
-    break;
-  case 'd':
-    base = 10;
     break;
   case 'h':
     base = 16;
@@ -117,55 +136,52 @@ bitvector& bitvector::operator=(const std::string& value) {
   }
   
   uint32_t log_base = CLOG2(base);
-  uint32_t len(value.size() - 1); // remove type character
-  uint32_t size = (len - start) * log_base;
-    
-  // get inline size 
+  uint32_t len = value.size() - 1; // remove type character
+  
+  // calculate binary size
+  uint32_t size = 0;  
   for (uint32_t i = start; i < len; ++i) {
-    if (value[i] == '\'') { 
-      size -= log_base; // adjust size if separator character
-      continue; 
-    }      
-    if ((base == 16 && (value[i] == 'p' || value[i] == 'P')) 
-     || (base != 16 && (value[i] == 'e' || value[i] == 'E'))) {
-      len = i;
-      size = stoul(value.substr(i + 1));      
-      break;
-    }
-  }
-  
-  uint32_t num_words = (size + WORD_MASK) >> WORD_SIZE_LOG;
-  tmp.resize(num_words, 0x0);
-  
-  uint32_t j = 0;
-  uint32_t w = 0;  
-  char str[2] = {0, 0};    
-  for (uint32_t i = 0, n = len - start; i < n; ++i) {
-    str[0] = value[len - i - 1];
-    if (str[0] == '\'')
+    char chr = value[i];
+    if (chr == '\'') 
       continue; // skip separator character
-    uint32_t v = strtol(str, nullptr, base);
-    for (uint32_t k = 0; k < log_base; ++k) {
-      uint32_t bit = (v >> k) & 0x1;  
-      w |= (bit << (j % WORD_SIZE));
-      if (0 == (++j % WORD_SIZE)) {
-        tmp[(j - 1) >> WORD_SIZE_LOG] = w;
-        w = 0;
-      }
+    if (size == 0) {
+       // calculate exact bit coverage for the first non zero character
+       uint32_t v = chr2int(chr, base);
+       if (v) {
+         size += LOG2(v) + 1;
+       }
+    } else {
+      size += log_base;
     }
-  }  
+  }
   
+  CHDL_CHECK(size <= m_size, "literal value overflow");
+  
+  // clear unused words
+  uint32_t num_words = this->get_num_words();
+  uint32_t used_num_words = (size + WORD_MASK) >> WORD_SIZE_LOG;
+  if (used_num_words < num_words) {
+    std::fill_n(m_words + used_num_words, num_words - used_num_words, 0x0);    
+  }
+  
+  // write the value
+  uint32_t w = 0;  
+  uint32_t* dst = m_words;      
+  for (uint32_t i = 0, j = 0, n = len - start; i < n; ++i) {
+    char chr = value[len - i - 1];
+    if (chr == '\'')
+      continue; // skip separator character
+    uint32_t v = chr2int(chr, base);
+    w |= v << j;
+    j += log_base;
+    if (j >= WORD_SIZE) {
+      *dst++ = w;
+      j -= WORD_SIZE;
+      w = v >> (log_base - j);      
+    }
+  }    
   if (w) {
-    tmp[j >> WORD_SIZE_LOG] = w;
-  }
-  
-  if (this->get_num_words() != num_words) {
-    this->resize(size, 0x0, false, false);    
-  }
-  
-  uint32_t* dst = m_words;
-  for (uint32_t v : tmp) {
-    *dst++ = v;
+    *dst = w;
   }
   
   return *this;
@@ -198,7 +214,7 @@ bitvector& bitvector::operator=(uint32_t value) {
   CHDL_CHECK((1 < num_words) || 
                   ((1 == num_words) && 
                     (0 == (m_size & WORD_MASK) || 
-                      (0 == (value >> (m_size & WORD_MASK))))), "input value out of bound");  
+                      (0 == (value >> (m_size & WORD_MASK))))), "input value overflow");  
   // write the value
   m_words[0] = value;
   
@@ -211,19 +227,22 @@ bitvector& bitvector::operator=(const std::initializer_list<uint32_t>& value) {
   auto iterValue = value.begin();
   
   uint32_t num_words = (m_size + WORD_MASK) >> WORD_SIZE_LOG;   
-  int32_t unused_words = num_words - value.size(); 
+  uint32_t used_num_words = value.size();
   
   // check for extra bits
-  for (int32_t i = unused_words; i < 0; ++i, ++iterValue) {
-    CHDL_CHECK(0 == *iterValue, "input value out of bound");
+  for (uint32_t i = num_words; i < used_num_words; ++i) {
+    CHDL_CHECK(0 == *iterValue++, "input value overflow");
   }  
   CHDL_CHECK((value.size() < num_words) 
-          || (0 == (m_size & WORD_MASK) || (0 == (*iterValue >> (m_size & WORD_MASK)))), "input value out of bound");  
+          || (0 == (m_size & WORD_MASK) || (0 == (*iterValue >> (m_size & WORD_MASK)))), "input value overflow");  
      
   // clear unused words
   uint32_t* dst = m_words + (num_words - 1);
-  std::fill_n(dst, unused_words, 0x0);  
-  dst -= unused_words;
+  if (used_num_words < num_words) {
+    uint32_t unused_words = num_words - used_num_words;
+    std::fill_n(dst, unused_words, 0x0);  
+    dst -= unused_words;
+  }
   
   // write the value
   for (auto iterEnd = value.end(); iterValue != iterEnd; ++iterValue) {

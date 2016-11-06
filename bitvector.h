@@ -221,7 +221,7 @@ public:
   
   explicit bitvector(uint32_t size);
   
-  bitvector(const std::string& value);
+  bitvector(const std::string& value, uint32_t size);
   
   bitvector(uint32_t value, uint32_t size);
   

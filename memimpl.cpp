@@ -62,10 +62,10 @@ void memimpl::load_data(const std::function<bool(uint32_t* out)>& getdata) {
       mask = (1 << mask_bits)-1;
       mask_bits = 0;
     }
-    CHDL_CHECK(a < max_addr && w < num_words, "input value out of bound");
+    CHDL_CHECK(a < max_addr && w < num_words, "input value overflow");
     m_content[a].set_word(w++, value & mask);
     if (mask_bits == 0) {
-      CHDL_CHECK((value & ~mask) == 0, "input value out of bound");
+      CHDL_CHECK((value & ~mask) == 0, "input value overflow");
       mask_bits = data_width;        
       w = 0;
       ++a;

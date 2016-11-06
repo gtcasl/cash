@@ -126,27 +126,27 @@ TEST_CASE("arithmetic tests", "[arithmetic]") {
     TEST([]()->ch_logic {
       ch_bit<64> a(1);
       ch_bit<64> c = a << 32;
-      return (c == 0x100000000p64_h);
+      return (c == 0x100000000_h64);
     });
     TEST([]()->ch_logic {
-      ch_bit<64> a(0x100000000p64_h);
+      ch_bit<64> a(0x100000000_h64);
       ch_bit<64> c = a >> 32;
-      return (c == 0x1p64_h);
+      return (c == 0x1_h64);
     });
     TEST([]()->ch_logic {
-     ch_bit<128> a(0x10000000000000001p128_h);
+     ch_bit<128> a(0x10000000000000001_h128);
      ch_bit<128> c = a << 63;
-     return (c == 0x80000000000000008000000000000000p128_h);
+     return (c == 0x80000000000000008000000000000000_h128);
     });
     TEST([]()->ch_logic {
-      ch_bit<128> a(0xf010000000000000000p128_h);
+      ch_bit<128> a(0xf010000000000000000_h128);
       ch_bit<128> c = a >> 63;
-      return (c == 0x1e02p128_h);
+      return (c == 0x1e02_h128);
     });
     TEST([]()->ch_logic {
       ch_bit<128> a(1);
       ch_bit<128> c = a << 64;
-      return (c == 0x10000000000000000p128_h);
+      return (c == 0x10000000000000000_h128);
     });
     TEST([]()->ch_logic {
       ch_bit4 a(1000_b), b(2);
@@ -171,22 +171,22 @@ TEST_CASE("arithmetic tests", "[arithmetic]") {
     TEST([]()->ch_logic {
       ch_bit<64> a(1);
       ch_bit<64> c = ch_rotl(a, 48);
-      return (c == 0x1000000000000p64_h);
+      return (c == 0x1000000000000_h64);
     });
     TEST([]()->ch_logic {
       ch_bit<64> a(1);
       ch_bit<64> c = ch_rotl(a, 96);
-      return (c == 0x100000000p64_h);
+      return (c == 0x100000000_h64);
     });
     TEST([]()->ch_logic {
       ch_bit<64> a(1);
       ch_bit<64> c = ch_rotr(a, 48);
-      return (c == 0x10000p64_h);
+      return (c == 0x10000_h64);
     });
     TEST([]()->ch_logic {
       ch_bit<64> a(1);
       ch_bit<64> c = ch_rotr(a, 96);
-      return (c == 0x100000000p64_h);
+      return (c == 0x100000000_h64);
     });
   }
   
@@ -199,7 +199,7 @@ TEST_CASE("arithmetic tests", "[arithmetic]") {
     TEST([]()->ch_logic {
       ch_bit<64> a(0xffffffff), b(0x1);
       ch_bit<64> c = a + b;
-      return (c == 0x100000000p64_h);
+      return (c == 0x100000000_h64);
     });
     TEST([]()->ch_logic {
       ch_bit4 a(0x1), b(0x2);

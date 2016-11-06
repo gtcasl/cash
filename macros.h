@@ -21,6 +21,7 @@
 #define CHDL_SEP_SEMICOLON() ;
 #define CHDL_SEP_PLUS() +
 #define CHDL_SEP_COLON() :
+#define CHDL_SEP_SPACE() /**/
 
 // MAKE_UNIQUE macro
 #define CHDL_MAKE_UNIQUE(x) CHDL_CONCAT(x, __COUNTER__)
