@@ -229,11 +229,11 @@ inline namespace sim_literals {
 // utility macros
 //
 
+#define __ch_case     CHDL_CASE
 #define __ch_when     CHDL_WHEN
-#define _when         CHDL_WHEN2
-#define _else         CHDL_ELSE
-#define _default      CHDL_DEFAULT
-#define _end          CHDL_END
+#define __when        CHDL_WHEN2
+#define __else        CHDL_ELSE
+#define __default     CHDL_DEFAULT
 
 #define __ch_module   CHDL_MODULE
 #define __ch_modulex  CHDL_MODULEX

@@ -26,7 +26,7 @@ public:
     this->eval();
   }
   
-  void end() {
+  void operator()() {
     this->eval();
   }
   
@@ -60,9 +60,7 @@ when_t ch_when(const ch_logicbase& cond, const Func& func) {
 
 #define CHDL_WHEN_IMPL(value)   value})
 #define CHDL_WHEN(cond)         ch_when(cond, [&](){CHDL_WHEN_IMPL
-#define CHDL_WHEN2(cond)        when(cond, [&](){CHDL_WHEN_IMPL
-#define CHDL_ELSE(value)        otherwise([&](){value})
-#define CHDL_DEFAULT(value)     otherwise([&](){value})
-#define CHDL_END()              end()
+#define CHDL_WHEN2(cond)        .when(cond, [&](){CHDL_WHEN_IMPL
+#define CHDL_ELSE(value)        .otherwise([&](){value})
 
 }

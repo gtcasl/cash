@@ -41,30 +41,30 @@ TEST_CASE("conditionals tests", "[conditionals]") {
       ch_bit<4> a(5), b(1), c(0);
       __ch_when(a > b)(  
           c = a; 
-      )._end();
+      )();
       return (c == a);
     });
     TEST([]()->ch_logic {
       ch_bit<4> a(5), b(1), c(0);
       __ch_when(a < b)( 
           c = a; 
-      )._end();
+      )();
       return (c == 0);
     });
     TEST([]()->ch_logic {
       ch_bit<4> a(5), b(1), c(0);
       __ch_when(a < b)( 
           c = a; 
-      )._when(a > b)(
+      )__when(a > b)(
           c = b;
-      )._end();
+      )();
       return (c == b);
     });
     TEST([]()->ch_logic {
       ch_bit<4> a(5), b(1), c(0);
       __ch_when(a < b)( 
           c = a; 
-      )._else( 
+      )__else( 
           c = b; 
       );
       return (c == b);
@@ -75,10 +75,10 @@ TEST_CASE("conditionals tests", "[conditionals]") {
         c = a - b; 
         b = 0;
       ) 
-      ._when(a == b)( 
+      __when(a == b)( 
         c = 0; 
       ) 
-      ._else(
+      __else(
         c = b;
       );
       return (c == 4 && b == 0);
@@ -87,43 +87,42 @@ TEST_CASE("conditionals tests", "[conditionals]") {
   SECTION("test case", "[case]") {
     TEST([]()->ch_logic {
       ch_bit<4> a(5), b(1), c(0);
-      ch_case(a)
-      ._when(0)( 
+      __ch_case(a)
+      __when(0)( 
         c = a; 
       ) 
-      ._when(1)(
+      __when(1)(
         c = b; 
-      ) 
-      ._end();
+      )();
       return (c == 0);
     });
     TEST([]()->ch_logic {
       ch_bit<4> a(5), b(1), c(0);
-      ch_case(a)
-      ._when(0)( 
+      __ch_case(a)
+      __when(0)( 
         c = a; 
       ) 
-      ._when(1)(
+      __when(1)(
         c = b; 
       ) 
-      ._else(
+      __default(
         c = a + b;
       );
       return (c == 6);
     });
     TEST([]()->ch_logic {
       ch_bit<4> a(5), b(1), c(0);
-      ch_case(a)
-      ._when(0)(
+      __ch_case(a)
+      __when(0)(
         c = a; 
       ) 
-      ._when(1)(
+      __when(1)(
         c = b; 
       ) 
-      ._else(
+      __default(
          __ch_when(b > 0)( 
             c = a + b;       
-         )._else(
+         )__else(
             c = a - b;
          );        
       );

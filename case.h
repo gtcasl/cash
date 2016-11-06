@@ -64,7 +64,7 @@ public:
     m_impl.eval();
   }
   
-  void end() {
+  void operator()() {
     m_impl.eval();
   }
   
@@ -82,5 +82,8 @@ template <unsigned N>
 case_t<N> ch_case(const ch_bitbase<N>& key) {
   return case_t<N>(key.get_node().get_impl());
 }
+
+#define CHDL_CASE(key)          ch_case(key)
+#define CHDL_DEFAULT(value)     .otherwise([&](){value})
 
 }
