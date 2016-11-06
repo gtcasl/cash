@@ -45,16 +45,13 @@ protected:
   };
   
   template <typename T>
-  struct output_size {};
+  struct output_size {
+    static const size_t value = 1;
+  };
   
   template <typename ...OutputArgs>
   struct output_size< std::tuple<OutputArgs...> > {
     static const size_t value = sizeof...(OutputArgs);
-  };
-  
-  template <unsigned N>
-  struct output_size< ch_bit<N> > {
-    static const size_t value = 1;
   };
   
   template <bool Enable, size_t I>
