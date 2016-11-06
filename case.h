@@ -47,24 +47,24 @@ class case_t {
 public:
     
   template <typename Func>
-  case_t& _when(const ch_bitbase<N>& value, const Func& func) {
+  case_t& when(const ch_bitbase<N>& value, const Func& func) {
     m_impl.push(value.get_node().get_impl(), to_function(func));
     return *this;
   }
   
   template <typename Func>
-  case_t& _when(const ch_bit<N>& value, const Func& func) {    
+  case_t& when(const ch_bit<N>& value, const Func& func) {    
     m_impl.push(value.get_node().get_impl(), to_function(func));
     return *this;
   }
   
   template <typename Func>
-  void _else(const Func& func) {
+  void otherwise(const Func& func) {
     func(); // evaluate 'default' case
     m_impl.eval();
   }
   
-  void _end() {
+  void end() {
     m_impl.eval();
   }
   

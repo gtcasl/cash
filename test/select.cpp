@@ -39,48 +39,48 @@ TEST_CASE("conditionals tests", "[conditionals]") {
   SECTION("test when", "[when]") {
     TEST([]()->ch_logic {
       ch_bit<4> a(5), b(1), c(0);
-      ch_when(a > b, [&]() { 
+      __ch_when(a > b)(  
           c = a; 
-      })._end();
+      )._end();
       return (c == a);
     });
     TEST([]()->ch_logic {
       ch_bit<4> a(5), b(1), c(0);
-      ch_when(a < b, [&]() { 
+      __ch_when(a < b)( 
           c = a; 
-      })._end();
+      )._end();
       return (c == 0);
     });
     TEST([]()->ch_logic {
       ch_bit<4> a(5), b(1), c(0);
-      ch_when(a < b, [&]() { 
+      __ch_when(a < b)( 
           c = a; 
-      })._when(a > b, [&]() {
+      )._when(a > b)(
           c = b;
-      })._end();
+      )._end();
       return (c == b);
     });
     TEST([]()->ch_logic {
       ch_bit<4> a(5), b(1), c(0);
-      ch_when(a < b, [&]() { 
+      __ch_when(a < b)( 
           c = a; 
-      })._else([&]() { 
+      )._else( 
           c = b; 
-      });
+      );
       return (c == b);
     });
     TEST([]()->ch_logic {
       ch_bit<4> a(5), b(1), c(0);
-      ch_when(a > b, [&]() {
+      __ch_when(a > b)(
         c = a - b; 
         b = 0;
-      }) 
-      ._when(a == b, [&]() {
+      ) 
+      ._when(a == b)( 
         c = 0; 
-      }) 
-      ._else([&]() {
+      ) 
+      ._else(
         c = b;
-      });
+      );
       return (c == 4 && b == 0);
     });
   }
@@ -88,45 +88,45 @@ TEST_CASE("conditionals tests", "[conditionals]") {
     TEST([]()->ch_logic {
       ch_bit<4> a(5), b(1), c(0);
       ch_case(a)
-      ._when(0, [&]() {
+      ._when(0)( 
         c = a; 
-      }) 
-      ._when(1, [&]() {
+      ) 
+      ._when(1)(
         c = b; 
-      }) 
+      ) 
       ._end();
       return (c == 0);
     });
     TEST([]()->ch_logic {
       ch_bit<4> a(5), b(1), c(0);
       ch_case(a)
-      ._when(0, [&]() {
+      ._when(0)( 
         c = a; 
-      }) 
-      ._when(1, [&]() {
+      ) 
+      ._when(1)(
         c = b; 
-      }) 
-      ._else([&]() {
+      ) 
+      ._else(
         c = a + b;
-      });
+      );
       return (c == 6);
     });
     TEST([]()->ch_logic {
       ch_bit<4> a(5), b(1), c(0);
       ch_case(a)
-      ._when(0, [&]() {
+      ._when(0)(
         c = a; 
-      }) 
-      ._when(1, [&]() {
+      ) 
+      ._when(1)(
         c = b; 
-      }) 
-      ._else([&]() {
-         ch_when(b > 0, [&]() {
+      ) 
+      ._else(
+         __ch_when(b > 0)( 
             c = a + b;       
-         })._else([&](){
+         )._else(
             c = a - b;
-         });        
-      });
+         );        
+      );
       return (c == 6);
     });
   }

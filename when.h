@@ -15,18 +15,18 @@ public:
   }
     
   template <typename Func>
-  when_t& _when(const ch_logicbase& cond, const Func& func) {
+  when_t& when(const ch_logicbase& cond, const Func& func) {
     m_stmts->push({cond.get_node().get_impl(), to_function(func)});
     return *this; 
   }
   
   template <typename Func>
-  void _else(const Func& func) {
+  void otherwise(const Func& func) {
     func(); // evaluate 'else' case
     this->eval();
   }
   
-  void _end() {
+  void end() {
     this->eval();
   }
   
@@ -57,5 +57,12 @@ template <typename Func>
 when_t ch_when(const ch_logicbase& cond, const Func& func) {
   return when_t(cond.get_node().get_impl(), to_function(func));
 }
+
+#define CHDL_WHEN_IMPL(value)   value})
+#define CHDL_WHEN(cond)         ch_when(cond, [&](){CHDL_WHEN_IMPL
+#define CHDL_WHEN2(cond)        when(cond, [&](){CHDL_WHEN_IMPL
+#define CHDL_ELSE(value)        otherwise([&](){value})
+#define CHDL_DEFAULT(value)     otherwise([&](){value})
+#define CHDL_END()              end()
 
 }
