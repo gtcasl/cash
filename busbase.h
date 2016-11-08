@@ -19,6 +19,11 @@ public:
     return *this;
   }
   
+  typebase& operator=(bool value) {
+    static_assert(N == 1, "bool assignents only allowed on single-bit objects");
+    return this->operator =(ch_bus<N>(value ? 0x1 : 0x0));
+  } 
+  
 #define CHDL_DEF_AOP(type) \
   typebase& operator=(type value) { \
     return this->operator =(ch_bus<N>(value)); \
@@ -59,25 +64,6 @@ public:
     return !(*this < rhs);
   }
   
-#define CHDL_DEF_COMP(type) \
-  bool operator==(type value) const { return this->operator==(ch_bus<N>(value)); } \
-  bool operator!=(type value) const { return this->operator!=(ch_bus<N>(value)); } \
-  bool operator< (type value) const { return this->operator< (ch_bus<N>(value)); } \
-  bool operator> (type value) const { return this->operator> (ch_bus<N>(value)); } \
-  bool operator<=(type value) const { return this->operator<=(ch_bus<N>(value)); } \
-  bool operator>=(type value) const { return this->operator>=(ch_bus<N>(value)); }  
-  CHDL_DEF_COMP(const std::initializer_list<uint32_t>&)
-  CHDL_DEF_COMP(char)
-  CHDL_DEF_COMP(int8_t)
-  CHDL_DEF_COMP(uint8_t)
-  CHDL_DEF_COMP(int16_t)
-  CHDL_DEF_COMP(uint16_t)
-  CHDL_DEF_COMP(int32_t)
-  CHDL_DEF_COMP(uint32_t)
-  CHDL_DEF_COMP(int64_t)
-  CHDL_DEF_COMP(uint64_t)
-#undef CHDL_DEF_COMP  
-  
   virtual snode get_node() const {
     bitstream_type data(N);
     this->read(data, 0, N);
@@ -101,5 +87,28 @@ template <unsigned N>
 std::ostream& operator<<(std::ostream& os, const ch_busbase<N>& b) {
   return os << b.get_node();
 }
+
+#define CHDL_DEF_COMP_IMPL(op, type) \
+  template <unsigned N> bool op(const ch_busbase<N>& lhs, type rhs) { return lhs.op(ch_bus<N>(rhs)); } \
+  template <unsigned N> bool op(type rhs, const ch_busbase<N>& lhs) { return ch_bus<N>(lhs).op(rhs); }
+#define CHDL_DEF_COMP(type) \
+  CHDL_DEF_COMP_IMPL(operator==, type) \
+  CHDL_DEF_COMP_IMPL(operator!=, type) \
+  CHDL_DEF_COMP_IMPL(operator< , type) \
+  CHDL_DEF_COMP_IMPL(operator> , type) \
+  CHDL_DEF_COMP_IMPL(operator<=, type) \
+  CHDL_DEF_COMP_IMPL(operator>=, type) 
+  CHDL_DEF_COMP(const std::initializer_list<uint32_t>&)
+  CHDL_DEF_COMP(char)
+  CHDL_DEF_COMP(int8_t)
+  CHDL_DEF_COMP(uint8_t)
+  CHDL_DEF_COMP(int16_t)
+  CHDL_DEF_COMP(uint16_t)
+  CHDL_DEF_COMP(int32_t)
+  CHDL_DEF_COMP(uint32_t)
+  CHDL_DEF_COMP(int64_t)
+  CHDL_DEF_COMP(uint64_t)
+#undef CHDL_DEF_COMP
+#undef CHDL_DEF_COMP_IMPL
 
 }

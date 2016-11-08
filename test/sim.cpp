@@ -23,12 +23,12 @@ TEST_CASE("simulation tests", "[sim]") {
   SECTION("test buses", "[bus][signal]") {
     TESTX([]()->bool {          
       ch_bus4 a(1), b(2), c;
-      c.write<uint8_t>(a.read<uint8_t>() + b.read<uint8_t>());
+      c = (uint8_t)a + (uint8_t)b;
       return (c == 3);
     });
     TESTX([]()->bool {          
       ch_bus64 a(1), b(2), c;
-      c.write<uint64_t>(a.read<uint64_t>() + b.read<uint64_t>());
+      c = (uint64_t)a + (uint64_t)b;
       return (c == 3);
     });
     TESTX([]()->bool {          
@@ -51,7 +51,7 @@ TEST_CASE("simulation tests", "[sim]") {
     TESTX([]()->bool {          
       ch_bus64 a(1), b;
       b = a;
-      b.write<uint32_t>(4);
+      b = 4;
       return (b == 4);
     });
     TESTX([]()->bool {          
@@ -69,6 +69,30 @@ TEST_CASE("simulation tests", "[sim]") {
     TESTX([]()->bool {          
       ch_bus8 a(10), b(1), c(99), d(5), e(50);
       return (a == 10 && b > 0 && c < 100 && d >= 5 && e <= 50);
+    });
+    TESTX([]()->bool {          
+      ch_bus4 a(4);
+      uint8_t x;
+      a.read(&x, sizeof(x));
+      return (x == 4);
+    });
+    TESTX([]()->bool {          
+      ch_bus4 a(4);
+      uint32_t x;
+      a.read(&x, sizeof(x));
+      return (x == 4);
+    });
+    TESTX([]()->bool {          
+      ch_bus4 a;
+      uint8_t x = 4;
+      a.write(&x, sizeof(x));
+      return (a == 4);
+    });
+    TESTX([]()->bool {          
+      ch_bus4 a;
+      uint32_t x = 4;
+      a.write(&x, sizeof(x));
+      return (a == 4);
     });
   }
   SECTION("test bus structs", "[struct]") {    

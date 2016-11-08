@@ -56,7 +56,7 @@ const bitvector& printimpl::eval(ch_cycle t) {
   if (m_ctime != t) {
     m_ctime = t;    
     if (m_args_offset == 0 
-     || m_srcs[0].eval(t).to_bool()) {
+     || m_srcs[0].eval(t)[0]) {
       m_strbuf.clear();
       for (const char *str = m_format.c_str(); *str != '\0'; ++str) {
         if (*str == '{') {

@@ -20,11 +20,15 @@ public:
   ch_bus(const bitvector& rhs) : m_node(rhs) {
     assert(rhs.get_size() == N);
   }
+  
+  explicit ch_bus(bool value) : m_node(bitvector(value ? 0x1 : 0x0, N)) { \
+    static_assert(N == 1, "bool assignents only allowed on single-bit objects");
+  }
  
 #define CHDL_DEF_CTOR(type) \
-    ch_bus(type value) : m_node(bitvector(value, N))  { \
-      assert(m_node.get_size() == N); \
-    }
+  explicit ch_bus(type value) : m_node(bitvector(value, N))  { \
+    assert(m_node.get_size() == N); \
+  }
   CHDL_DEF_CTOR(const std::initializer_list<uint32_t>&)
   CHDL_DEF_CTOR(char)
   CHDL_DEF_CTOR(int8_t)
@@ -50,6 +54,13 @@ public:
     base::operator =(rhs);
     return *this;
   }
+  
+  ch_bus& operator=(bool value) {
+    static_assert(N == 1, "bool assignents only allowed on single-bit objects");
+    m_node.assign(bitvector(value ? 0x1 : 0x0, N)); \
+    assert(m_node.get_size() == N); \
+    return *this;
+  } 
  
 #define CHDL_DEF_AOP(type) \
   ch_bus& operator=(type value) { \
@@ -68,36 +79,6 @@ public:
   CHDL_DEF_AOP(int64_t)
   CHDL_DEF_AOP(uint64_t)
 #undef CHDL_DEF_AOP
-  
-  template <typename T>
-  T read() const {  
-    static_assert(sizeof(T) * 8 >= N, "invalid ouput data size");
-    T value(0);    
-    m_node.ensureInitialized(N);
-    for (uint32_t i = 0, n = (N + 31) / 32; i < n; ++i) {      
-      T part(m_node.read(i)); 
-      value |= part << (i * 32);
-    }
-    return value;
-  }
-  
-  template <typename T>
-  void write(T value) {
-    m_node.ensureInitialized(N);
-    uint32_t shift = N % 32;
-    if (shift != 0) {
-      for (uint32_t i = 0, n = (N + 31) / 32; i < n; ++i) {
-        m_node.write(i, value & 0xffffffff);
-        value >>= ((i < n - 1) ? 32 : shift);
-      }
-    } else {
-      for (uint32_t i = 0, n = (N + 31) / 32; i < n; ++i) {
-        m_node.write(i, value);
-        value = (value >> 16) >> 16; // small hack to handle 32 bit shift. 
-      }
-    }
-    assert(value == 0);
-  }
   
   bool operator==(const ch_bus& rhs) const {
     m_node.ensureInitialized(N);
@@ -126,15 +107,57 @@ public:
   bool operator>=(const ch_bus& rhs) const {
     return !(*this < rhs);
   }
-  
-  template <typename T>
-  explicit operator T() const {     
-    return this->read<T>();
+    
+  explicit operator bool() const {     
+    static_assert(N == 1, "bool assignents only allowed on single-bit objects");
+    m_node.ensureInitialized(N);
+    return m_node.read(0) != 0;
   }
   
-  explicit operator bool() const {     
+  explicit operator char() const {
+    static_assert(sizeof(char) * 8 >= N, "invalid ouput data size");
     m_node.ensureInitialized(N);
-    return m_node.to_bool(); 
+    return m_node.read(0) ? '1' : '0';
+  }
+  
+  #define CHDL_DEF_READ(type) \
+  explicit operator type() const { \
+    static_assert(sizeof(type) * 8 >= N, "invalid ouput data size"); \
+    m_node.ensureInitialized(N); \
+    return bit_cast<type>(m_node.read(0)); \
+  } 
+  CHDL_DEF_READ(int8_t)
+  CHDL_DEF_READ(uint8_t)
+  CHDL_DEF_READ(int16_t)
+  CHDL_DEF_READ(uint16_t)
+  CHDL_DEF_READ(int32_t)
+  CHDL_DEF_READ(uint32_t)
+  #undef CHDL_DEF_READ
+  
+  explicit operator uint64_t() const {
+    static_assert(sizeof(uint64_t) * 8 >= N, "invalid ouput data size");
+    m_node.ensureInitialized(N);
+    uint64_t value = m_node.read(0);
+    if (N > 32) {
+      value = ((uint64_t)m_node.read(1) << 32) | value;  
+    }
+    return value;
+  }
+  
+  explicit operator int64_t() const {
+    return this->operator uint64_t();
+  }
+  
+  void read(void* out, uint32_t sizeInBytes) const {  
+    assert(sizeInBytes * 8 >= N);
+    m_node.ensureInitialized(N);
+    m_node.readBytes(reinterpret_cast<uint8_t*>(out), sizeInBytes);
+  }
+  
+  void write(const void* in, uint32_t sizeInBytes) {
+    assert(sizeInBytes * 8 >= N);
+    m_node.ensureInitialized(N);
+    m_node.writeBytes(reinterpret_cast<const uint8_t*>(in), sizeInBytes);
   }
 
   snode get_node() const override { 

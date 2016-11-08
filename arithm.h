@@ -2,6 +2,42 @@
 
 #include "bit.h"
 
+namespace chdl_internal {
+
+enum ch_operator {
+  op_inv,
+  op_and,
+  op_or,
+  op_xor,
+  op_nand,
+  op_nor,
+  op_xnor,
+  op_andr,
+  op_orr,
+  op_xorr,
+  op_sll,
+  op_slr,
+  op_rotl,
+  op_rotr,
+  op_add,
+  op_sub,
+  op_neg,
+  op_mult,
+  op_div,
+  op_mod,
+  op_eq,
+  op_ne,
+  op_lt,
+  op_gt,
+  op_le,
+  op_ge,
+  op_mux,
+  op_demux,
+};
+
+lnodeimpl* createAluNode(ch_operator op, uint32_t size, lnodeimpl* a, lnodeimpl* b);
+lnodeimpl* createAluNode(ch_operator op, uint32_t size, lnodeimpl* a);
+
 #define CHDL_BINOP_GEN0(func, type) \
   template <unsigned N> ch_bit<N> func(const ch_bitbase<N>& a, type b) { return func(a, ch_bit<N>(b)); } \
   template <unsigned N> ch_bit<N> func(type a, const ch_bitbase<N>& b) { return func(ch_bit<N>(a), b); }
@@ -79,42 +115,6 @@
   CHDL_SHIFTOP_GEN0(op, int64_t) \
   CHDL_SHIFTOP_GEN0(op, uint64_t)
 
-namespace chdl_internal {
-
-enum ch_operator {
-  op_inv,
-  op_and,
-  op_or,
-  op_xor,
-  op_nand,
-  op_nor,
-  op_xnor,
-  op_andr,
-  op_orr,
-  op_xorr,
-  op_sll,
-  op_slr,
-  op_rotl,
-  op_rotr,
-  op_add,
-  op_sub,
-  op_neg,
-  op_mult,
-  op_div,
-  op_mod,
-  op_eq,
-  op_ne,
-  op_lt,
-  op_gt,
-  op_le,
-  op_ge,
-  op_mux,
-  op_demux,
-};
-
-lnodeimpl* createAluNode(ch_operator op, uint32_t size, lnodeimpl* a, lnodeimpl* b);
-lnodeimpl* createAluNode(ch_operator op, uint32_t size, lnodeimpl* a);
-
 // compare operators
 
 CHDL_COMPAREOP_GEN1(ch_eq, operator==)
@@ -149,6 +149,16 @@ CHDL_SHIFTOP_GEN2(ch_sll, operator<<)
 CHDL_SHIFTOP_GEN2(ch_slr, operator>>)
 CHDL_SHIFTOP_GEN1(ch_rotl)
 CHDL_SHIFTOP_GEN1(ch_rotr)
+
+#undef CHDL_BINOP_GEN0
+#undef CHDL_BINOP_GEN1
+#undef CHDL_BINOP_GEN2
+#undef CHDL_UNARYOP_GEN  
+#undef CHDL_COMPAREOP_GEN0
+#undef CHDL_COMPAREOP_GEN1
+#undef CHDL_SHIFTOP_GEN0
+#undef CHDL_SHIFTOP_GEN1
+#undef CHDL_SHIFTOP_GEN2
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -361,13 +371,3 @@ ch_bit<(1 << N)> ch_dec(const ch_bitbase<N>& a) {
 }
 
 }
-
-#undef CHDL_BINOP_GEN0
-#undef CHDL_BINOP_GEN1
-#undef CHDL_BINOP_GEN2
-#undef CHDL_UNARYOP_GEN  
-#undef CHDL_COMPAREOP_GEN0
-#undef CHDL_COMPAREOP_GEN1
-#undef CHDL_SHIFTOP_GEN0
-#undef CHDL_SHIFTOP_GEN1
-#undef CHDL_SHIFTOP_GEN2

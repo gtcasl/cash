@@ -27,11 +27,6 @@ public:
     return m_value[idx];
   }
   
-  bool to_bool() const {
-    this->sync_sources();
-    return m_value.to_bool();
-  } 
-  
   uint32_t read(uint32_t idx) const {
     this->sync_sources();
     return m_value.get_word(idx);
@@ -40,6 +35,17 @@ public:
   void write(uint32_t idx, uint32_t value) {
     this->sync_sources();
     m_value.set_word(idx, value);
+    ++m_changeid;
+  }
+  
+  void readBytes(uint8_t* out, uint32_t sizeInBytes) const {
+    this->sync_sources();
+    m_value.readBytes(out, sizeInBytes);
+  }
+  
+  void writeBytes(const uint8_t* in, uint32_t sizeInBytes) {
+    this->sync_sources();
+    m_value.writeBytes(in, sizeInBytes);
     ++m_changeid;
   }
   

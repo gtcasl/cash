@@ -30,6 +30,10 @@ public:
   ch_bit(const bitvector& rhs) : m_node(rhs) {
     assert(rhs.get_size() == N);
   }
+  
+  ch_bit(bool value) : m_node(bitvector(value ? 0x1 : 0x0, N)) { \
+    static_assert(N == 1, "bool assignents only allowed on single-bit objects");
+  }
     
 #define CHDL_DEF_CTOR(type) \
     ch_bit(type value) : m_node(bitvector(value, N)) { \
@@ -62,6 +66,13 @@ public:
     base::operator =(rhs);
     return *this;
   }
+  
+  ch_bit& operator=(bool value) {
+    static_assert(N == 1, "bool assignents only allowed on single-bit objects");
+    m_node.assign(bitvector(value ? 0x1 : 0x0 , N)); \
+    assert(m_node.get_size() == N); \
+    return *this;
+  } 
   
 #define CHDL_DEF_AOP(type) \
   ch_bit& operator=(type value) { \

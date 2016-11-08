@@ -317,11 +317,15 @@ public:
   
   void copy(uint32_t dst_offset, const bitvector& src, uint32_t src_offset, uint32_t src_length);
   
+  void readBytes(uint8_t* out, uint32_t sizeInBytes) const;  
+  
+  void writeBytes(const uint8_t* in, uint32_t sizeInBytes);  
+  
   int32_t find_first() const;
   
   int32_t find_last() const;
   
-  bool to_bool() const;
+  bool is_empty() const;
   
   bool operator==(const bitvector& rhs) const;
   

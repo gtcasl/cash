@@ -52,6 +52,11 @@ public:
     this->write(0, data, 0, N);
     return *this;
   }
+  
+  typebase& operator=(bool value) {
+    static_assert(N == 1, "bool assignents only allowed on single-bit objects");
+    return this->operator =(ch_bit<N>(value ? 0x1 : 0x0));
+  } 
  
 #define CHDL_DEF_AOP(type) \
   typebase& operator=(type value) { \

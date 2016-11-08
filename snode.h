@@ -39,6 +39,10 @@ public:
   
   void write(uint32_t idx, uint32_t value);
   
+  void readBytes(uint8_t* out, uint32_t sizeInBytes) const;
+  
+  void writeBytes(const uint8_t* in, uint32_t sizeInBytes);
+  
   void assign(const bitvector& value);
   
   void assign(uint32_t dst_offset, snodeimpl* src, uint32_t src_offset, uint32_t src_length, uint32_t size);
@@ -46,8 +50,6 @@ public:
   void read(bitstream_type& inout, uint32_t offset, uint32_t length, uint32_t size) const;
   
   void write(uint32_t dst_offset, const bitstream_type& in, uint32_t src_offset, uint32_t src_length, uint32_t size);
-  
-  bool to_bool() const;
 
 protected:
   
@@ -56,7 +58,7 @@ protected:
   void move(snode& rhs);
   
   void clone() const;
-  
+    
   mutable snodeimpl* m_impl;
   mutable bool m_readonly;
 };

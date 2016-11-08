@@ -293,9 +293,12 @@ void snode::write(uint32_t idx, uint32_t value) {
   m_impl->write(idx, value);
 }
 
-bool snode::to_bool() const {
-  assert(m_impl);
-  return m_impl->to_bool();
+void snode::readBytes(uint8_t* out, uint32_t sizeInBytes) const {
+  m_impl->readBytes(out, sizeInBytes);
+}
+
+void snode::writeBytes(const uint8_t* in, uint32_t sizeInBytes) {
+  m_impl->writeBytes(in, sizeInBytes);
 }
 
 void snode::read(bitstream_type& inout, uint32_t offset, uint32_t length, uint32_t size) const {
