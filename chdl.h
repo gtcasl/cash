@@ -1,11 +1,13 @@
 #pragma once
 
 #include "bit.h"
+#include "bus.h"
 #include "literals.h"
 #include "select.h"
 #include "when.h"
 #include "case.h"
 #include "reg.h"
+#include "seq.h"
 #include "mem.h"
 #include "arithm.h"
 #include "bus.h"
@@ -49,6 +51,8 @@ namespace core {
 
   template<unsigned N> using ch_bitbase = chdl_internal::ch_bitbase<N>;
   using ch_logicbase = chdl_internal::ch_logicbase;
+
+  template<typename T> using ch_seq = chdl_internal::ch_seq<T>;
 
   //
   // pre-defined bitv types

@@ -33,6 +33,9 @@
       return chdl_internal::ch_reg<size>(reinterpret_cast<const chdl_internal::ch_bitbase<size>&>(next), \
                     reinterpret_cast<const chdl_internal::ch_bitbase<size>&>(init)); \
     } \
+    friend name ch_reg(const name& next) { \
+      return chdl_internal::ch_reg<size>(reinterpret_cast<const chdl_internal::ch_bitbase<size>&>(next)); \
+    } \
   }
   
 

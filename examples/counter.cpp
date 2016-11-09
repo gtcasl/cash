@@ -6,8 +6,8 @@ using namespace chdl::sim;
 
 template <unsigned N>
 ch_bit<N> Counter() {
-  ch_bit<N> out;
-  out = ch_reg(out + 1);
+  ch_seq<ch_bit<N>> out;
+  out.next = out + 1;
   return out;
 }
 
