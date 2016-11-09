@@ -20,6 +20,9 @@ public:
   }
   
   base next;
+  
+protected:
+  using T::operator=; // disable assignments
 };
 
 }

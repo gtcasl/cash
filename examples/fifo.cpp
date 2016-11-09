@@ -17,20 +17,20 @@ __ch_out(ch_bit<WIDTH>, ch_logic, ch_logic) FiFo(
   ch_logic full;
   
   ch_mem<WIDTH, ADDR> mem;
-  ch_bit<ADDR+1> rd_ptr, wr_ptr;
+  ch_seq<ch_bit<ADDR+1>> rd_ptr, wr_ptr;
   ch_bit<ADDR> rd_addr(ch_slice<ADDR>(rd_ptr));
   ch_bit<ADDR> wr_addr(ch_slice<ADDR>(wr_ptr));
 
   ch_logic reading(pop && !empty);
   ch_logic writing(push && (!full || pop));  
   
-  rd_ptr = ch_reg(ch_select(reading, rd_ptr + 1, rd_ptr));
-  wr_ptr = ch_reg(ch_select(writing, wr_ptr + 1, wr_ptr));
+  rd_ptr.next = ch_select(reading, rd_ptr + 1, rd_ptr);
+  wr_ptr.next = ch_select(writing, wr_ptr + 1, wr_ptr);
   
   empty = (wr_ptr == rd_ptr);
   full  = (wr_addr == rd_addr) && (wr_ptr[ADDR] != rd_ptr[ADDR]);
   
-  dout  = mem[rd_addr];
+  dout = mem[rd_addr];
   __ch_when(writing)(
     mem[wr_addr] = din;
   )();
