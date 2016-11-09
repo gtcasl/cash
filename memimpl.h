@@ -7,11 +7,11 @@ namespace chdl_internal {
 
 class memportimpl;
 
-class memimpl : public tickable, public refcounted {
+class memimpl : public tickable, public lnodeimpl {
 public:  
-  memimpl(uint32_t data_width, uint32_t addr_width, bool sync_read, bool write_enable);  
-  memimpl(uint32_t data_width, uint32_t addr_width, bool sync_read, bool write_enable, const std::string& init_file);  
-  memimpl(uint32_t data_width, uint32_t addr_width, bool sync_read, bool write_enable, const std::vector<uint32_t>& init_data);
+  memimpl(context* ctx, uint32_t data_width, uint32_t addr_width, bool write_enable);  
+  memimpl(context* ctx, uint32_t data_width, uint32_t addr_width, bool write_enable, const std::string& init_file);  
+  memimpl(context* ctx, uint32_t data_width, uint32_t addr_width, bool write_enable, const std::vector<uint32_t>& init_data);
   ~memimpl();
   
   memportimpl* read(lnodeimpl* addr);
@@ -20,19 +20,17 @@ public:
   void tick(ch_cycle t) override;
   void tick_next(ch_cycle t) override;
   
-  void print(std::ostream& out) const;
+  const bitvector& eval(ch_cycle t) override;  
   void print_vl(std::ostream& out) const;
 
 protected:
   
   void load_data(const std::function<bool(uint32_t* out)>& getdata);
   
-  memportimpl* get_port(lnodeimpl* addr);
+  memportimpl* get_port(lnodeimpl* addr, bool writing);
   
-  std::vector<memportimpl*> m_ports;
   std::vector<bitvector> m_content;
-  bool     m_syncRead;
-  bool     m_writeEnable;   
+  uint32_t m_ports_offset;
   cdomain* m_cd;
   
   friend class memportimpl;
@@ -41,7 +39,6 @@ protected:
 class memportimpl : public lnodeimpl {
 public:  
   memportimpl(memimpl* mem, lnodeimpl* addr);
-  ~memportimpl();
   
   lnodeimpl* get_addr() const {
     return m_srcs[m_addr_id].get_impl();
@@ -56,14 +53,11 @@ public:
   void print_vl(std::ostream& out) const override;
 
 protected:
-  
-  memimpl*  m_mem;
-  
+    
   bitvector m_q_next;
   uint32_t  m_a_next;
   
   int       m_addr_id;
-  int       m_clk_id;
   int       m_wdata_id;
   
   ch_cycle  m_ctime;

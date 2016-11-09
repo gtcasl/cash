@@ -7,7 +7,7 @@ TEST_CASE("memory tests", "[memory]") {
     TEST([]()->ch_logic {
       ch_bit2 a;
       ch_bit4 q;
-      ch_rom<4, 2, false> rom({0xA, 0xB, 0xC, 0xD});
+      ch_rom<4, 2> rom({0xA, 0xB, 0xC, 0xD});
       q = rom[a];  
       a = ch_reg(a + 1);
       ch_bit4 e = ch_select(ch_tick())
@@ -23,8 +23,8 @@ TEST_CASE("memory tests", "[memory]") {
     TEST([]()->ch_logic {
       ch_bit2 a;
       ch_bit4 q;
-      ch_rom<4, 2, true> rom({0xA, 0xB, 0xC, 0xD});
-      q = rom[a];  
+      ch_rom<4, 2> rom({0xA, 0xB, 0xC, 0xD});
+      q = ch_reg<4>(rom[a]);  
       a = ch_reg(a + 1);
       ch_bit4 e = ch_select(ch_tick())
          (3, 0xA_h)
@@ -43,7 +43,7 @@ TEST_CASE("memory tests", "[memory]") {
       ch_bit2 a;
       ch_bit4 d, q;
       ch_logic en;
-      ch_mem<4, 2, false> mem({0xA, 0xB, 0xC, 0xD});
+      ch_mem<4, 2> mem({0xA, 0xB, 0xC, 0xD});
       q = mem[a];
       __ch_when(en)( 
         mem[a] = d;
@@ -70,8 +70,8 @@ TEST_CASE("memory tests", "[memory]") {
       ch_bit2 a;
       ch_bit4 d, q;
       ch_logic en;
-      ch_mem<4, 2, true> mem({0xA, 0xB, 0xC, 0xD});
-      q = mem[a]; 
+      ch_mem<4, 2> mem({0xA, 0xB, 0xC, 0xD});
+      q = ch_reg<4>(mem[a]); 
       __ch_when(en)(
         mem[a] = d;
       )();

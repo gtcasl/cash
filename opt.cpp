@@ -51,6 +51,7 @@ size_t optimizer::remove_dead_nodes(const std::set<lnodeimpl*>& live_nodes) {
   auto iter = nodes.begin();
   while (iter != nodes.end()) {
     if (live_nodes.count(*iter) == 0) {
+      DBG(3, "*** deleting node: x%d\n", (*iter)->get_id());
       iter = m_ctx->erase_node(iter);
       ++deleted;      
     } else {

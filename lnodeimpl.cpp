@@ -55,14 +55,14 @@ bool lnodeimpl::valid() const {
 }
 
 void lnodeimpl::print(std::ostream& out) const {
-  out << "#" << m_id << " <- " << m_name << m_value.get_size();
+  out << "#" << hex << m_id << " <- " << m_name << m_value.get_size();
   uint32_t n = m_srcs.size();
   if (n > 0) {
     out << "(";
     for (uint32_t i = 0; i < n; ++i) {
       if (i > 0)
         out << ", ";
-      out << "#" << m_srcs[i].get_id();
+      out << "#" << hex << m_srcs[i].get_id();
     }
     out << ")";
   }
@@ -101,13 +101,13 @@ void undefimpl::update_refs(uint32_t start, lnodeimpl* src, uint32_t offset, uin
     proxy->add_node(start, src, offset, length, true);    
   } else {
     assert(length == this->get_size());
-    lnodeimpl* impl = src; 
     if (length < src->get_size()) {
       // copy region smaller than src buffer 
-      impl = new proxyimpl(m_ctx, length);
-      reinterpret_cast<proxyimpl*>(impl)->add_node(0, src, offset, length);
+      proxyimpl* proxy = new proxyimpl(m_ctx, length);
+      proxy->add_node(0, src, offset, length);
+      src = proxy;
     }
-    this->replace_all_refs(impl);
+    this->replace_all_refs(src);
     this->release();
   }
 }
@@ -202,8 +202,9 @@ const lnode& lnode::ensureInitialized(uint32_t size, uint32_t offset, uint32_t l
     if (length == size) {
       m_impl = new undefimpl(ctx, size);
     } else {
-      m_impl = new proxyimpl(ctx, size);
-      reinterpret_cast<proxyimpl*>(m_impl)->resize(offset, length);
+      proxyimpl* proxy = new proxyimpl(ctx, size);
+      proxy->resize(offset, length);
+      m_impl = proxy;
     }
     m_impl->add_ref(this);
   } else {

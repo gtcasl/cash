@@ -8,10 +8,9 @@ class memimpl;
 
 class memory {
 public:
-  memory(uint32_t data_width, uint32_t addr_width, bool syncRead, bool writeEnable);
-  memory(uint32_t data_width, uint32_t addr_width, bool syncRead, bool writeEnable, const std::string& init_file);
-  memory(uint32_t data_width, uint32_t addr_width, bool syncRead, bool writeEnable, const std::vector<uint32_t>& init_data);
-  ~memory();  
+  memory(uint32_t data_width, uint32_t addr_width, bool writeEnable);
+  memory(uint32_t data_width, uint32_t addr_width, bool writeEnable, const std::string& init_file);
+  memory(uint32_t data_width, uint32_t addr_width, bool writeEnable, const std::vector<uint32_t>& init_data);
   
   lnodeimpl* read(lnodeimpl* addr) const;
   void write(lnodeimpl* addr, lnodeimpl* data);
@@ -20,16 +19,16 @@ private:
   memimpl* m_impl;
 };
 
-template <unsigned N, unsigned A, bool SyncRead = false>
+template <unsigned N, unsigned A>
 class ch_rom {
 public:
-    ch_rom() : m_mem(N, A, SyncRead, false) {}
+    ch_rom() : m_mem(N, A, false) {}
   
-    ch_rom(const std::string& init_file) : m_mem(N, A, SyncRead, false, init_file) {}
+    ch_rom(const std::string& init_file) : m_mem(N, A, false, init_file) {}
     
-    ch_rom(const std::vector<uint32_t>& init_data) : m_mem(N, A, SyncRead, false, init_data) {}
+    ch_rom(const std::vector<uint32_t>& init_data) : m_mem(N, A, false, init_data) {}
     
-    ch_rom(const std::initializer_list<uint32_t>& init_data) : m_mem(N, A, SyncRead, false, init_data) {}
+    ch_rom(const std::initializer_list<uint32_t>& init_data) : m_mem(N, A, false, init_data) {}
     
     ch_bit<N> operator[](const ch_bitbase<A>& addr) const {
       return ch_bit<N>(m_mem.read(addr.get_node().get_impl()));
@@ -43,7 +42,7 @@ private:
     memory m_mem;
 };
 
-template <unsigned N, unsigned A, bool SyncRead = false>
+template <unsigned N, unsigned A>
 class ch_mem {
 public:    
     class reference {
@@ -71,13 +70,13 @@ public:
       friend class ch_mem;
     };  
   
-    ch_mem() : m_mem(N, A, SyncRead, true) {}
+    ch_mem() : m_mem(N, A, true) {}
   
-    ch_mem(const std::string& init_file) : m_mem(N, A, SyncRead, true, init_file) {}
+    ch_mem(const std::string& init_file) : m_mem(N, A, true, init_file) {}
     
-    ch_mem(const std::vector<uint32_t>& init_data) : m_mem(N, A, SyncRead, true, init_data) {}
+    ch_mem(const std::vector<uint32_t>& init_data) : m_mem(N, A, true, init_data) {}
     
-    ch_mem(const std::initializer_list<uint32_t>& init_data) : m_mem(N, A, SyncRead, true, init_data) {}
+    ch_mem(const std::initializer_list<uint32_t>& init_data) : m_mem(N, A, true, init_data) {}
     
     ch_bit<N> operator[](const ch_bitbase<A>& addr) const {
       return ch_bit<N>(m_mem.read(addr.get_node().get_impl()));

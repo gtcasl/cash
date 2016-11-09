@@ -47,7 +47,6 @@ bitvector::~bitvector() {
 }
 
 void bitvector::resize(uint32_t size, uint32_t defaultValue, bool initialize, bool preserve) {  
-  assert(size > 0);
   uint32_t old_num_words = (m_size + WORD_MASK) >> WORD_SIZE_LOG;
   uint32_t new_num_words = (size + WORD_MASK) >> WORD_SIZE_LOG;
   if (new_num_words != old_num_words) {

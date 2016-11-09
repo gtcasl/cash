@@ -38,7 +38,7 @@ static int parse_format_index(const char** str) {
 
 printimpl::printimpl(context* ctx, lnodeimpl* cond, const std::string& format, 
                      const std::initializer_list<lnodeimpl*>& args) 
-  : ioimpl("print", ctx, 1)
+  : ioimpl("print", ctx, 0)
   , m_format(format)
   , m_args_offset(0)
   , m_ctime(~0ull) {

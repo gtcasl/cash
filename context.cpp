@@ -273,11 +273,9 @@ void context::toVerilog(const std::string& module_name, std::ostream& out) {
 }
 
 void context::dumpAST(std::ostream& out, uint32_t level) {
-  auto oldflags = out.setf(std::ios_base::hex);
   for (lnodeimpl* node : m_nodes) {
     node->print(out);
   }
-  out.unsetf(oldflags);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -5,25 +5,24 @@
 using namespace std;
 using namespace chdl_internal;
 
-memimpl::memimpl(uint32_t data_width, uint32_t addr_width, 
-                 bool sync_read, bool write_enable) 
-  : m_content(1 << addr_width, bitvector(data_width))
-  , m_syncRead(sync_read)
-  , m_writeEnable(write_enable)
+memimpl::memimpl(context* ctx, uint32_t data_width, uint32_t addr_width, bool write_enable) 
+  : lnodeimpl("mem", ctx, 0)
+  , m_content(1 << addr_width, bitvector(data_width))
+  , m_ports_offset(0)
   , m_cd(nullptr) {  
-  // register clock domain
-  if (sync_read || write_enable) {
-    context* ctx = ctx_curr();        
-    m_cd = ctx->create_cdomain({clock_event(ctx->get_clk(), EDGE_POS)});
+  if (write_enable) {
+    lnodeimpl* clk = ctx->get_clk();
+    m_cd = ctx->create_cdomain({clock_event(clk, EDGE_POS)});
     m_cd->add_use(this);
+    m_srcs.emplace_back(clk);
+    m_ports_offset = 1;
   }
 }
 
 // LCOV_EXCL_START
-memimpl::memimpl(uint32_t data_width, uint32_t addr_width, 
-                 bool sync_read, bool write_enable, 
+memimpl::memimpl(context* ctx, uint32_t data_width, uint32_t addr_width, bool write_enable, 
                  const std::string& init_file)
-  : memimpl(data_width, addr_width, sync_read, write_enable) {  
+  : memimpl(ctx, data_width, addr_width, write_enable) {  
   ifstream in(init_file.c_str());
   in.setf(std::ios_base::hex);
   this->load_data([&in](uint32_t* out)->bool {
@@ -36,10 +35,9 @@ memimpl::memimpl(uint32_t data_width, uint32_t addr_width,
 }
 // LCOV_EXCL_END
 
-memimpl::memimpl(uint32_t data_width, uint32_t addr_width, 
-                 bool sync_read, bool write_enable, 
+memimpl::memimpl(context* ctx, uint32_t data_width, uint32_t addr_width, bool write_enable, 
                  const std::vector<uint32_t>& init_data)
-  : memimpl(data_width, addr_width, sync_read, write_enable) {  
+  : memimpl(ctx, data_width, addr_width, write_enable) {  
   auto iter = init_data.begin(), iterEnd = init_data.end();
   this->load_data([&iter, &iterEnd](uint32_t* out)->bool {    
     if (iter == iterEnd)
@@ -82,17 +80,18 @@ memimpl::~memimpl() {
 }
 
 memportimpl* memimpl::read(lnodeimpl* addr) {
-  return this->get_port(addr);
+  return this->get_port(addr, false);
 }
 
 void memimpl::write(lnodeimpl* addr, lnodeimpl* data) {
-  memportimpl* port = this->get_port(addr);
-  port->write(data);
+  memportimpl* port = this->get_port(addr, true);
+  port->write(data);  
 }
 
-memportimpl* memimpl::get_port(lnodeimpl* addr) {
+memportimpl* memimpl::get_port(lnodeimpl* addr, bool writing) {
   memportimpl* port = nullptr; 
-  for (memportimpl* item : m_ports) {
+  for (uint32_t i = m_ports_offset, n = m_srcs.size(); i < n; ++i) {
+    memportimpl* item  = dynamic_cast<memportimpl*>(m_srcs[i].get_impl());
     if (item->get_addr() == addr) {
       port = item;
       break;
@@ -100,28 +99,29 @@ memportimpl* memimpl::get_port(lnodeimpl* addr) {
   }
   if (port == nullptr) {
     port = new memportimpl(this, addr);
-    m_ports.push_back(port);
+    if (writing)
+      m_srcs.emplace_back(port);
   }
   return port;
 }
 
 void memimpl::tick(ch_cycle t) {    
-  for (auto& port : m_ports) {
+  for (uint32_t i = m_ports_offset, n = m_srcs.size(); i < n; ++i) {
+    memportimpl* port = dynamic_cast<memportimpl*>(m_srcs[i].get_impl());
     port->tick(t);
   }
 }
 
 void memimpl::tick_next(ch_cycle t) {
-  for (auto& port : m_ports) {
-    port->tick_next(t);
+  for (uint32_t i = m_ports_offset, n = m_srcs.size(); i < n; ++i) {
+   memportimpl* port = dynamic_cast<memportimpl*>(m_srcs[i].get_impl());
+   port->tick_next(t);
   }
 }
 
-// LCOV_EXCL_START
-void memimpl::print(ostream& out) const {
-  TODO("Not yet implemented!");
+const bitvector& memimpl::eval(ch_cycle t) {
+  //--
 }
-// LCOV_EXCL_END
 
 // LCOV_EXCL_START
 void memimpl::print_vl(ostream& out) const {
@@ -133,52 +133,28 @@ void memimpl::print_vl(ostream& out) const {
 
 memportimpl::memportimpl(memimpl* mem, lnodeimpl* addr)
     : lnodeimpl("memport", addr->get_ctx(), mem->m_content[0].get_size())
-    , m_mem(mem)
     , m_a_next(0)
     , m_addr_id(-1)
-    , m_clk_id(-1)
     , m_wdata_id(-1)
-    , m_ctime(~0ull)
-{
-  mem->acquire();
+    , m_ctime(~0ull) {
+  m_srcs.emplace_back(mem);
   m_addr_id = m_srcs.size();
   m_srcs.emplace_back(addr);
-  if (mem->m_cd) {
-    lnodeimpl* clk = mem->m_cd->get_sensitivity_list()[0].get_signal();
-    m_clk_id = m_srcs.size();
-    m_srcs.emplace_back(clk);
-  } 
-  // add dependency from all write ports
-  for (memportimpl* port : m_mem->m_ports) {
-    if (port->m_wdata_id != -1) {
-      this->m_srcs.emplace_back(port);
-    }
-  }
-}
-
-memportimpl::~memportimpl() {
-  m_mem->release();
 }
 
 void memportimpl::write(lnodeimpl* data) {
+  // use explicit assignment to enable conditional resolution
   if (m_wdata_id == -1) {
     m_wdata_id = m_srcs.size();
     m_srcs.emplace_back(this);
-    
-    // make dependent to all exisiting ports
-    for (memportimpl* port : m_mem->m_ports) {
-      if (port != this) {
-        port->m_srcs.emplace_back(this);
-      }
-    }   
   } 
-  // use explicit assignment to enable conditional resolution
   m_srcs[m_wdata_id] = data;
 }
 
 void memportimpl::tick(ch_cycle t) {
   if (m_wdata_id != -1) {
-    m_mem->m_content[m_a_next] = m_q_next;
+    memimpl* mem = dynamic_cast<memimpl*>(m_srcs[0].get_impl());
+    mem->m_content[m_a_next] = m_q_next;
   }  
 }
 
@@ -193,7 +169,8 @@ const bitvector& memportimpl::eval(ch_cycle t) {
   if (m_ctime != t) {
     m_ctime = t;
     uint32_t addr = m_srcs[m_addr_id].eval(t).get_word(0);
-    m_value = m_mem->m_content[addr];
+    memimpl* mem = dynamic_cast<memimpl*>(m_srcs[0].get_impl());
+    m_value = mem->m_content[addr];
   }
   return m_value;
 }
@@ -206,24 +183,18 @@ void memportimpl::print_vl(std::ostream& out) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-memory::memory(uint32_t data_width, uint32_t addr_width, bool syncRead, bool writeEnable) {
-  m_impl = new memimpl(data_width, addr_width, syncRead, writeEnable);
-  m_impl->acquire();
+memory::memory(uint32_t data_width, uint32_t addr_width, bool writeEnable) {
+  m_impl = new memimpl(ctx_curr(), data_width, addr_width, writeEnable);
 }
 
-memory::memory(uint32_t data_width, uint32_t addr_width, bool syncRead, bool writeEnable, const std::string& init_file) {
-  m_impl = new memimpl(data_width, addr_width, syncRead, writeEnable, init_file);
-  m_impl->acquire();
+memory::memory(uint32_t data_width, uint32_t addr_width, bool writeEnable, 
+               const std::string& init_file) {
+  m_impl = new memimpl(ctx_curr(), data_width, addr_width, writeEnable, init_file);
 }
 
-memory::memory(uint32_t data_width, uint32_t addr_width, bool syncRead, bool writeEnable, const std::vector<uint32_t>& init_data) {
-  m_impl = new memimpl(data_width, addr_width, syncRead, writeEnable, init_data);
-  m_impl->acquire();
-}
-
-memory::~memory() {
-  if (m_impl)
-    m_impl->release();
+memory::memory(uint32_t data_width, uint32_t addr_width, bool writeEnable, 
+               const std::vector<uint32_t>& init_data) {
+  m_impl = new memimpl(ctx_curr(), data_width, addr_width, writeEnable, init_data);
 }
 
 lnodeimpl* memory::read(lnodeimpl* addr) const {
