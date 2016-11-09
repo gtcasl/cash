@@ -20,9 +20,7 @@ public:
 protected:
 
   cdomain*  m_cd;
-  bitvector m_q;
-  bitvector m_next_q;
-  ch_cycle  m_ctime;
+  bitvector m_q_next;
 };
 
 class latchimpl : public tickable, public lnodeimpl {
@@ -43,9 +41,7 @@ public:
   
 protected:
 
-  cdomain*  m_cd;
-  bitvector m_q;
-  ch_cycle  m_ctime;
+  cdomain* m_cd;
 };
 
 }

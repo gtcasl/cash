@@ -95,7 +95,9 @@ uint32_t context::add_node(lnodeimpl* node) {
   }  
   node->acquire();
   if (m_conds.size() > 0) {
-    m_conds.front().locals.emplace(node);
+    // memory objects have global scope
+    if (node->get_name() != "memport")
+      m_conds.front().locals.emplace(node);
   }
   return nodeid;  
 }
@@ -113,9 +115,9 @@ void context::pop_cond() {
   m_conds.pop_front();
 }
 
-lnodeimpl* context::resolve(lnodeimpl* dst, lnodeimpl* src) {
+lnodeimpl* context::resolve_conditionals(lnodeimpl* dst, lnodeimpl* src) {
   if (m_conds.size() > 0 
-   && 0 == m_conds.front().locals.count(dst)) {
+   && (0 == m_conds.front().locals.count(dst))) {
     if (dst == nullptr) {
       CHDL_ABORT("missing default statement on unitialized variable");
     }
@@ -271,9 +273,11 @@ void context::toVerilog(const std::string& module_name, std::ostream& out) {
 }
 
 void context::dumpAST(std::ostream& out, uint32_t level) {
+  auto oldflags = out.setf(std::ios_base::hex);
   for (lnodeimpl* node : m_nodes) {
     node->print(out);
   }
+  out.unsetf(oldflags);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

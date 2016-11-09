@@ -29,8 +29,11 @@ __ch_out(ch_bit<WIDTH>, ch_logic, ch_logic) FiFo(
   
   empty = (wr_ptr == rd_ptr);
   full  = (wr_addr == rd_addr) && (wr_ptr[ADDR] != rd_ptr[ADDR]);
-  dout  = mem.read(rd_addr);
-  mem.write(wr_addr, din, writing);
+  
+  dout  = mem[rd_addr];
+  __ch_when(writing)(
+    mem[wr_addr] = din;
+  )();
   
   __ch_ret(dout, empty, full);
 }

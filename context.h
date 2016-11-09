@@ -42,7 +42,7 @@ public:
   
   void push_cond(lnodeimpl* cond);
   void pop_cond();
-  lnodeimpl* resolve(lnodeimpl* dst, lnodeimpl* src);
+  lnodeimpl* resolve_conditionals(lnodeimpl* dst, lnodeimpl* src);
   
   litimpl* create_literal(const bitvector& value);
   

@@ -34,8 +34,8 @@ void lnodeimpl::replace_all_refs(lnodeimpl* impl) {
   m_refs.clear();
 }
 
-lnodeimpl* lnodeimpl::resolve(lnodeimpl* impl) {
-  return m_ctx->resolve(impl, this);
+lnodeimpl* lnodeimpl::resolve_conditionals(lnodeimpl* impl) {
+  return m_ctx->resolve_conditionals(impl, this);
 }
 
 bool lnodeimpl::ready() const {
@@ -230,7 +230,7 @@ void lnode::set_impl(lnodeimpl* curr_impl, lnodeimpl* new_impl) const {
 void lnode::reset(lnodeimpl* impl, bool initialization) const {
   if (impl) {
     if (!initialization) {
-      impl = impl->resolve(m_impl);
+      impl = impl->resolve_conditionals(m_impl);
     }
     impl->add_ref(this);
   }

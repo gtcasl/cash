@@ -14,7 +14,7 @@ public:
   ~memory();  
   
   lnodeimpl* read(lnodeimpl* addr) const;
-  void write(lnodeimpl* addr, lnodeimpl* data, lnodeimpl* enable);
+  void write(lnodeimpl* addr, lnodeimpl* data);
   
 private:
   memimpl* m_impl;
@@ -31,11 +31,11 @@ public:
     
     ch_rom(const std::initializer_list<uint32_t>& init_data) : m_mem(N, A, SyncRead, false, init_data) {}
     
-    ch_bit<N> read(const ch_bitbase<A>& addr) const {
+    ch_bit<N> operator[](const ch_bitbase<A>& addr) const {
       return ch_bit<N>(m_mem.read(addr.get_node().get_impl()));
     }
     
-    ch_bit<N> read(const ch_bit<A>& addr) const {
+    ch_bit<N> operator[](const ch_bit<A>& addr) const {
       return ch_bit<N>(m_mem.read(addr.get_node().get_impl()));
     }
     
@@ -45,7 +45,32 @@ private:
 
 template <unsigned N, unsigned A, bool SyncRead = false>
 class ch_mem {
-public:  
+public:    
+    class reference {
+    public:    
+      
+      void operator=(const ch_bitbase<N>& data) {
+        m_mem.write(m_addr.get_node().get_impl(), data.get_node().get_impl());
+      }
+      
+      void operator=(const ch_bit<N>& data) {
+        m_mem.write(m_addr.get_node().get_impl(), data.get_node().get_impl());
+      }
+      
+      operator ch_bit<N>() const {
+        return ch_bit<N>(m_mem.read(m_addr.get_node().get_impl()));
+      }
+      
+    protected:
+      
+      reference(memory& mem, const ch_bitbase<A>& addr) : m_mem(mem), m_addr(addr) {}
+      
+      memory& m_mem;
+      const ch_bitbase<A>& m_addr;
+      
+      friend class ch_mem;
+    };  
+  
     ch_mem() : m_mem(N, A, SyncRead, true) {}
   
     ch_mem(const std::string& init_file) : m_mem(N, A, SyncRead, true, init_file) {}
@@ -54,47 +79,23 @@ public:
     
     ch_mem(const std::initializer_list<uint32_t>& init_data) : m_mem(N, A, SyncRead, true, init_data) {}
     
-    ch_bit<N> read(const ch_bitbase<A>& addr) const {
+    ch_bit<N> operator[](const ch_bitbase<A>& addr) const {
       return ch_bit<N>(m_mem.read(addr.get_node().get_impl()));
     }
     
-    ch_bit<N> read(const ch_bit<A>& addr) const {
+    ch_bit<N> operator[](const ch_bit<A>& addr) const {
       return ch_bit<N>(m_mem.read(addr.get_node().get_impl()));
     }
     
-    void write(const ch_bitbase<A>& addr, const ch_bitbase<N>& data, const ch_logicbase& enable) {
-      m_mem.write(addr.get_node().get_impl(), data.get_node().get_impl(), enable.get_node().get_impl());
+    reference operator[](const ch_bitbase<A>& addr) {
+      return reference(m_mem, addr);
     }
     
-    void write(const ch_bitbase<A>& addr, const ch_bitbase<N>& data, const ch_logic& enable) {
-      m_mem.write(addr.get_node().get_impl(), data.get_node().get_impl(), enable.get_node().get_impl());
+    reference operator[](const ch_bit<A>& addr) {
+      return reference(m_mem, addr);
     }
     
-    void write(const ch_bitbase<A>& addr, const ch_bit<N>& data, const ch_logicbase& enable) {
-      m_mem.write(addr.get_node().get_impl(), data.get_node().get_impl(), enable.get_node().get_impl());
-    }
-    
-    void write(const ch_bitbase<A>& addr, const ch_bit<N>& data, const ch_logic& enable) {
-      m_mem.write(addr.get_node().get_impl(), data.get_node().get_impl(), enable.get_node().get_impl());
-    }
-    
-    void write(const ch_bit<A>& addr, const ch_bitbase<N>& data, const ch_logicbase& enable) {
-      m_mem.write(addr.get_node().get_impl(), data.get_node().get_impl(), enable.get_node().get_impl());
-    }
-    
-    void write(const ch_bit<A>& addr, const ch_bitbase<N>& data, const ch_logic& enable) {
-      m_mem.write(addr.get_node().get_impl(), data.get_node().get_impl(), enable.get_node().get_impl());
-    }
-    
-    void write(const ch_bit<A>& addr, const ch_bit<N>& data, const ch_logicbase& enable) {
-      m_mem.write(addr.get_node().get_impl(), data.get_node().get_impl(), enable.get_node().get_impl());
-    }
-    
-    void write(const ch_bit<A>& addr, const ch_bit<N>& data, const ch_logic& enable) {
-      m_mem.write(addr.get_node().get_impl(), data.get_node().get_impl(), enable.get_node().get_impl());
-    }
-    
-private:
+private:    
     memory m_mem;
 };
 

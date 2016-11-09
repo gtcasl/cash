@@ -41,7 +41,7 @@ public:
   
   virtual void update_refs(uint32_t start, lnodeimpl* new_owner, uint32_t offset, uint32_t length) {}
   
-  lnodeimpl* resolve(lnodeimpl* impl);
+  lnodeimpl* resolve_conditionals(lnodeimpl* impl);
   
   const std::vector<lnode>& get_srcs() const {
     return m_srcs;

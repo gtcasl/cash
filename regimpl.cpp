@@ -6,10 +6,7 @@ using namespace std;
 using namespace chdl_internal;
 
 regimpl::regimpl(lnodeimpl* next)
-  : lnodeimpl("reg", next->get_ctx(), next->get_size())
-  , m_q(next->get_size())
-  , m_ctime(~0ull)
-{
+  : lnodeimpl("reg", next->get_ctx(), next->get_size()) {
   context* ctx = next->get_ctx();
   
   lnodeimpl* clk = ctx->get_clk();  
@@ -24,8 +21,16 @@ regimpl::~regimpl() {
   m_cd->remove_use(this);
 }
 
+void regimpl::tick(ch_cycle t) { 
+  m_value = m_q_next;
+}
+
+void regimpl::tick_next(ch_cycle t) {
+  m_q_next = m_srcs[0].eval(t);
+}
+
 const bitvector& regimpl::eval(ch_cycle t) {
-  return m_q; 
+  return m_value; 
 }
 
 // LCOV_EXCL_START
@@ -34,24 +39,13 @@ void regimpl::print_vl(ostream& out) const {
 }
 // LCOV_EXCL_END
 
-void regimpl::tick(ch_cycle t) { 
-  m_q = m_next_q;
-}
-
-void regimpl::tick_next(ch_cycle t) {
-  m_next_q = m_srcs[0].eval(t);
-}
-
 ///////////////////////////////////////////////////////////////////////////////
 
 latchimpl::latchimpl(lnodeimpl* next,
                      lnodeimpl* init,
                      lnodeimpl* enable,                 
                      lnodeimpl* reset)
-  : lnodeimpl("latch", next->get_ctx(), next->get_size())
-  , m_q(next->get_size())
-  , m_ctime(~0ull)
-{
+  : lnodeimpl("latch", next->get_ctx(), next->get_size()) {
   context* ctx = next->get_ctx();
   
   m_cd = ctx->create_cdomain(
@@ -69,8 +63,20 @@ latchimpl::~latchimpl() {
   m_cd->remove_use(this);
 }
 
+void latchimpl::tick(ch_cycle t) { 
+  //--
+}
+
+void latchimpl::tick_next(ch_cycle t) {
+  if (m_srcs[3].eval(t)[0]) {
+    m_value = m_srcs[1].eval(t);
+  } else if (m_srcs[2].eval(t)[0]) {
+    m_value = m_srcs[0].eval(t);
+  }
+}
+
 const bitvector& latchimpl::eval(ch_cycle t) {
-  return m_q; 
+  return m_value; 
 }
 
 // LCOV_EXCL_START
@@ -78,18 +84,6 @@ void latchimpl::print_vl(ostream& out) const {
   TODO("Not yet implemented!");
 }
 // LCOV_EXCL_END
-
-void latchimpl::tick(ch_cycle t) { 
-  //--
-}
-
-void latchimpl::tick_next(ch_cycle t) {
-  if (m_srcs[3].eval(t)[0]) {
-    m_q = m_srcs[1].eval(t);
-  } else if (m_srcs[2].eval(t)[0]) {
-    m_q = m_srcs[0].eval(t);
-  }
-}
 
 ///////////////////////////////////////////////////////////////////////////////
 

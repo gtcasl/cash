@@ -15,7 +15,7 @@ public:
   ~memimpl();
   
   memportimpl* read(lnodeimpl* addr);
-  void write(lnodeimpl* addr, lnodeimpl* data, lnodeimpl* enable);  
+  void write(lnodeimpl* addr, lnodeimpl* data);  
   
   void tick(ch_cycle t) override;
   void tick_next(ch_cycle t) override;
@@ -43,11 +43,11 @@ public:
   memportimpl(memimpl* mem, lnodeimpl* addr);
   ~memportimpl();
   
-  bool operator==(lnodeimpl* addr) const {
-    return (m_srcs[m_addr_id].get_impl() == addr);
+  lnodeimpl* get_addr() const {
+    return m_srcs[m_addr_id].get_impl();
   }
   
-  void write(lnodeimpl* data, lnodeimpl* enable);  
+  void write(lnodeimpl* data);  
   
   void tick(ch_cycle t);
   void tick_next(ch_cycle t);
@@ -58,17 +58,13 @@ public:
 protected:
   
   memimpl*  m_mem;
-  bool      m_writeEnable;
   
-  bitvector m_rddata;
-  bitvector m_wrdata;
-  uint32_t  m_addr;
-  bool      m_do_write;  
+  bitvector m_q_next;
+  uint32_t  m_a_next;
   
   int       m_addr_id;
   int       m_clk_id;
   int       m_wdata_id;
-  int       m_wenable_id;
   
   ch_cycle  m_ctime;
   

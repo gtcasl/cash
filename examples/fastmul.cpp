@@ -12,7 +12,7 @@ ch_bit8 FastMul(const ch_bit4& lhs, const ch_bit4& rhs) {
     for (int i = 0; i < 16; ++i)
       tbl_mult[j * 16 + i] = i * j;
   ch_rom<8, 8> mem(tbl_mult);
-  return mem.read((ch_zext<8>(lhs) << 4) | rhs);
+  return mem[(ch_zext<8>(lhs) << 4) | rhs];
 }
 
 int main(int argc, char **argv) {

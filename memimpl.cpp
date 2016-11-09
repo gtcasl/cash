@@ -19,6 +19,7 @@ memimpl::memimpl(uint32_t data_width, uint32_t addr_width,
   }
 }
 
+// LCOV_EXCL_START
 memimpl::memimpl(uint32_t data_width, uint32_t addr_width, 
                  bool sync_read, bool write_enable, 
                  const std::string& init_file)
@@ -33,6 +34,7 @@ memimpl::memimpl(uint32_t data_width, uint32_t addr_width,
   });
   in.close();
 }
+// LCOV_EXCL_END
 
 memimpl::memimpl(uint32_t data_width, uint32_t addr_width, 
                  bool sync_read, bool write_enable, 
@@ -83,15 +85,15 @@ memportimpl* memimpl::read(lnodeimpl* addr) {
   return this->get_port(addr);
 }
 
-void memimpl::write(lnodeimpl* addr, lnodeimpl* data, lnodeimpl* enable) {
+void memimpl::write(lnodeimpl* addr, lnodeimpl* data) {
   memportimpl* port = this->get_port(addr);
-  port->write(data, enable);
+  port->write(data);
 }
 
 memportimpl* memimpl::get_port(lnodeimpl* addr) {
   memportimpl* port = nullptr; 
   for (memportimpl* item : m_ports) {
-    if (item == addr) {
+    if (item->get_addr() == addr) {
       port = item;
       break;
     }
@@ -132,14 +134,10 @@ void memimpl::print_vl(ostream& out) const {
 memportimpl::memportimpl(memimpl* mem, lnodeimpl* addr)
     : lnodeimpl("memport", addr->get_ctx(), mem->m_content[0].get_size())
     , m_mem(mem)
-    , m_writeEnable(false)
-    , m_addr(0)
-    , m_do_write(false)
-    , m_rddata(m_value.get_size())
+    , m_a_next(0)
     , m_addr_id(-1)
     , m_clk_id(-1)
     , m_wdata_id(-1)
-    , m_wenable_id(-1)
     , m_ctime(~0ull)
 {
   mem->acquire();
@@ -152,7 +150,7 @@ memportimpl::memportimpl(memimpl* mem, lnodeimpl* addr)
   } 
   // add dependency from all write ports
   for (memportimpl* port : m_mem->m_ports) {
-    if (port->m_writeEnable) {
+    if (port->m_wdata_id != -1) {
       this->m_srcs.emplace_back(port);
     }
   }
@@ -162,55 +160,40 @@ memportimpl::~memportimpl() {
   m_mem->release();
 }
 
-void memportimpl::write(lnodeimpl* data, lnodeimpl* enable) {
+void memportimpl::write(lnodeimpl* data) {
   if (m_wdata_id == -1) {
     m_wdata_id = m_srcs.size();
-    m_srcs.emplace_back(data);
-  } else {
-    m_srcs[m_wdata_id] = data;
-  }
-  
-  if (m_wenable_id == -1) {
-    m_wenable_id = m_srcs.size();
-    m_srcs.emplace_back(enable);
-  } else {
-    m_srcs[m_wenable_id] = enable;
-  }
-  
-  if (!m_writeEnable) {
-    // add write dependency to all ports
+    m_srcs.emplace_back(this);
+    
+    // make dependent to all exisiting ports
     for (memportimpl* port : m_mem->m_ports) {
-      if (port != this)
+      if (port != this) {
         port->m_srcs.emplace_back(this);
-    }    
-    m_writeEnable = true;
-  }    
+      }
+    }   
+  } 
+  // use explicit assignment to enable conditional resolution
+  m_srcs[m_wdata_id] = data;
 }
 
 void memportimpl::tick(ch_cycle t) {
-  if (m_do_write) {
-    m_mem->m_content[m_addr] = m_wrdata;
+  if (m_wdata_id != -1) {
+    m_mem->m_content[m_a_next] = m_q_next;
   }  
-  if (m_mem->m_syncRead) {
-    m_rddata = m_mem->m_content[m_addr];    
-  }
 }
 
 void memportimpl::tick_next(ch_cycle t) {
-  m_addr = m_srcs[m_addr_id].eval(t).get_word(0);
-  if (m_writeEnable) {
-    m_do_write = m_srcs[m_wenable_id].eval(t)[0];
-    if (m_do_write) {    
-      m_wrdata = m_srcs[m_wdata_id].eval(t);
-    }
+  if (m_wdata_id != -1) {
+    m_a_next = m_srcs[m_addr_id].eval(t).get_word(0);
+    m_q_next = m_srcs[m_wdata_id].eval(t);
   }
 }
 
 const bitvector& memportimpl::eval(ch_cycle t) {  
   if (m_ctime != t) {
     m_ctime = t;
-    m_value = m_mem->m_syncRead ? m_rddata :
-      m_mem->m_content[m_srcs[m_addr_id].eval(t).get_word(0)];
+    uint32_t addr = m_srcs[m_addr_id].eval(t).get_word(0);
+    m_value = m_mem->m_content[addr];
   }
   return m_value;
 }
@@ -247,6 +230,6 @@ lnodeimpl* memory::read(lnodeimpl* addr) const {
   return m_impl->read(addr);
 }
 
-void memory::write(lnodeimpl* addr, lnodeimpl* data, lnodeimpl* enable) {
-  m_impl->write(addr, data, enable);
+void memory::write(lnodeimpl* addr, lnodeimpl* data) {
+  m_impl->write(addr, data);
 }
