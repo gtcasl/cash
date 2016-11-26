@@ -5,10 +5,11 @@ using namespace chdl::core_literals;
 __ch_struct(s1_t,(
   (ch_bit4) a
 ),
-void foo() {
-  ch_bit<3> w = 100_b;
-  auto y = w.slice<2>() + 1;
-  a = (y, y);
+ch_logic get_LSB() const {
+  return a[0];
+}
+ch_logic get_MSB() const {
+  return a[3];
 }
 );
 
@@ -36,30 +37,36 @@ __ch_struct(ss_t,(
 ));
 
 template <unsigned N> 
- __ch_struct(st_t,(
+__ch_struct(st_t,(
   (ch_bit<N>) a,
   (ch_bit<N>) b
 ));
 
 using st4_t = st_t<4>;
  
- __ch_union(u2_t,(
-   (ch_bit4) a,
-   (ch_bit4) b
- ));
+__ch_union(u2_t,(
+  (ch_bit4) a,
+  (ch_bit4) b
+),
+ch_logic get_LSB() const {
+  return a[0];
+}
+ch_logic get_MSB() const {
+  return b[3];
+});
  
- __ch_union(u3_t,(
-    (ch_bit2) a,
-    (ch_bit8) b,
-    (ch_bit4) c
-  ));
+__ch_union(u3_t,(
+  (ch_bit2) a,
+  (ch_bit8) b,
+  (ch_bit4) c
+));
  
- __ch_enum(my_enum, 4,(
-   idle = 0,
-   execute,
-   stats,
-   done
- )); 
+__ch_enum(my_enum, 4,(
+  idle = 0,
+  execute,
+  stats,
+  done
+)); 
  
 TEST_CASE("aggregate tests", "[aggregate]") {  
   SECTION("test structs", "[struct]") {   
@@ -80,6 +87,11 @@ TEST_CASE("aggregate tests", "[aggregate]") {
            
       return (s1, s4) == (s3, s2);
     });
+    
+    TEST([]()->ch_logic {
+      s1_t s1(1010_b);
+      return (s1.get_LSB() != s1.get_MSB());
+    });
   } 
   
   SECTION("test unions", "[union]") {
@@ -99,6 +111,10 @@ TEST_CASE("aggregate tests", "[aggregate]") {
       u3.a = 11_b;
       u3.c.slice<2>(2) = 00_b;
       return (u3 == 01010011_b);
+    });
+    TEST([]()->ch_logic {
+      u2_t s1(1010_b);
+      return (s1.get_LSB() != s1.get_MSB());
     });
   }
   

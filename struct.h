@@ -98,6 +98,7 @@
     void write(size_t dst_offset, const bitstream_type& in, size_t src_offset, size_t src_length) override { \
       CHDL_FOR_EACH(CHDL_STRUCT_WRITE, CHDL_SEP_SEMICOLON, __VA_ARGS__); \
       CHDL_ABORT("invalid subscript index"); \
-    }
+    } \
+  public:
 
 #define CHDL_STRUCT(name, body, ...) CHDL_STRUCT_IMPL(name, CHDL_REM body) __VA_ARGS__ }

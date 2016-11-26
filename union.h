@@ -24,8 +24,8 @@
       using base::operator=; \
       using bitstream_type = typename base::bitstream_type; \
       bus_type() : CHDL_FOR_EACH(CHDL_UNION_CTOR_INIT, CHDL_SEP_COMMA, __VA_ARGS__) {} \
-      bus_type(const bus_type& rhs) : CHDL_FOR_EACH(CHDL_UNION_CTOR_INIT, CHDL_SEP_COMMA, __VA_ARGS__) {} \
-      bus_type(const base& rhs) : CHDL_FOR_EACH(CHDL_UNION_CTOR_INIT, CHDL_SEP_COMMA, __VA_ARGS__) {} \
+      bus_type(const bus_type& rhs) : CHDL_FOR_EACH(CHDL_UNION_CTOR_INIT, CHDL_SEP_COMMA, __VA_ARGS__), __m(rhs.__m) {} \
+      bus_type(const base& rhs) : CHDL_FOR_EACH(CHDL_UNION_CTOR_INIT, CHDL_SEP_COMMA, __VA_ARGS__) { base::operator=(rhs); } \
       bus_type& operator=(const bus_type& rhs) { \
         __m = rhs.__m; \
         return *this; \
@@ -41,8 +41,8 @@
       } \
     };\
     name() : CHDL_FOR_EACH(CHDL_UNION_CTOR_INIT, CHDL_SEP_COMMA, __VA_ARGS__) {} \
-    name(const name& rhs) : CHDL_FOR_EACH(CHDL_UNION_CTOR_INIT, CHDL_SEP_COMMA, __VA_ARGS__) {} \
-    name(const base& rhs) : CHDL_FOR_EACH(CHDL_UNION_CTOR_INIT, CHDL_SEP_COMMA, __VA_ARGS__) {} \
+    name(const name& rhs) : CHDL_FOR_EACH(CHDL_UNION_CTOR_INIT, CHDL_SEP_COMMA, __VA_ARGS__), __m(rhs.__m) {} \
+    name(const base& rhs) : CHDL_FOR_EACH(CHDL_UNION_CTOR_INIT, CHDL_SEP_COMMA, __VA_ARGS__) { base::operator=(rhs); } \
     name& operator=(const name& rhs) { \
       __m = rhs.__m; \
       return *this; \
@@ -55,6 +55,7 @@
     } \
     void write(size_t dst_offset, const bitstream_type& in, size_t src_offset, size_t src_length) override { \
       write_data(__m, dst_offset, in, src_offset, src_length); \
-    }
+    } \
+  public:
 
 #define CHDL_UNION(name, body, ...) CHDL_UNION_IMPL(name, CHDL_REM body) __VA_ARGS__ }
