@@ -94,7 +94,8 @@ void ch_tap(const std::string& name, const ch_bitbase<N>& v) {
 
 #define CHDL_MAKE_TRACE_SEP() ;
 
-#define CHDL_TRACE(x, ...) do { \
+#define CHDL_TRACE(x, ...) \
+  do { \
     chdl_internal::ch_tracer& __tracer = x; \
     CHDL_FOR_EACH(CHDL_MAKE_TRACE, CHDL_MAKE_TRACE_SEP, __VA_ARGS__); \
   } while (false)
@@ -103,7 +104,7 @@ void ch_tap(const std::string& name, const ch_bitbase<N>& v) {
   #define CHDL_TAP(x) \
     do {  \
       ch_tap(#x, x); \
-    } while (0)
+    } while (false)
 #else
   #define CHDL_TAP(x)
 #endif

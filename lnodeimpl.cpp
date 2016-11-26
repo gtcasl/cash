@@ -55,14 +55,14 @@ bool lnodeimpl::valid() const {
 }
 
 void lnodeimpl::print(std::ostream& out) const {
-  out << "#" << hex << m_id << " <- " << m_name << m_value.get_size();
+  out << "#" << m_id << " <- " << m_name << m_value.get_size();
   uint32_t n = m_srcs.size();
   if (n > 0) {
     out << "(";
     for (uint32_t i = 0; i < n; ++i) {
       if (i > 0)
         out << ", ";
-      out << "#" << hex << m_srcs[i].get_id();
+      out << "#" << m_srcs[i].get_id();
     }
     out << ")";
   }
@@ -236,14 +236,14 @@ void lnode::reset(lnodeimpl* impl, bool initialization) const {
     impl->add_ref(this);
   }
   if (m_impl) {
-    m_impl->remove_ref(this, impl);
-  }
+    assert(impl != m_impl);
+    m_impl->remove_ref(this, impl);    
+  }  
   m_impl = impl;
 }
 
 void lnode::assign(lnodeimpl* impl, bool initialization) const {
-  assert(impl);
-  assert(impl != m_impl);
+  assert(impl);  
   this->reset(impl, initialization);
 }
 

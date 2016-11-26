@@ -7,22 +7,48 @@ namespace chdl_internal {
 template <typename T>
 class ch_seq : public T {
 public:
-  using base = T;
-  using bitstream_type = typename base::bitstream_type;
-  using bus_type = typename base::bus_type;
+  using value_type = T;
+  using base = ch_bitbase<value_type::bit_count>;
+  using bitstream_type = typename value_type::bitstream_type;
+  using bus_type = typename value_type::bus_type;
   
   ch_seq() {
     T::operator =(ch_reg(next));
   }
   
-  ch_seq(const base& init) {
+  ch_seq(const value_type& init) {
     T::operator =(ch_reg(next, init));
   }
   
-  base next;
+  value_type next;
+  
+  const_slice_ref<base, 1> operator[](size_t index) {
+    return const_slice_ref<base, 1>(*this, index);
+  }
+  
+  template <unsigned M> 
+  const_slice_ref<base, M> slice(size_t index = 0) {
+    return const_slice_ref<base, M>(*this, index);
+  }
+  
+  template <unsigned M> 
+  const_slice_ref<base, M> aslice(size_t index = 0) {
+    return const_slice_ref<base, M>(*this, index * M);
+  }
+  
+  template <unsigned M> 
+  const_concat_ref<base, ch_bitbase<M>> concat(ch_bitbase<M>& rhs) {
+    return const_concat_ref<base, ch_bitbase<M>>(*this, rhs);
+  }
+  
+  template <unsigned M> 
+  const_concat_ref<base, ch_bitbase<M>> concat(const bitref<M>& rhs) {
+    return const_concat_ref<base, ch_bitbase<M>>(*this, rhs);
+  }
   
 protected:
-  using T::operator=; // disable assignments
+  // disable assigment operator
+  using T::operator=;    
 };
 
 }

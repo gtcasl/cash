@@ -173,11 +173,3 @@
 
 #define CHDL_REVERSE_FOR_EACH_(N, what, sep, ...) CHDL_CONCAT(CHDL_REVERSE_FOR_EACH_, N)(what, sep, __VA_ARGS__)
 #define CHDL_REVERSE_FOR_EACH(what, sep, ...) CHDL_REVERSE_FOR_EACH_(CHDL_NARG(__VA_ARGS__), what, sep, __VA_ARGS__)
-
-///////////////////////////////////////////////////////////////////////////////
-
-#define CHDL_COUNTOF(a) (sizeof(a) / sizeof(a[0]))
-#define CHDL_MAX(a,b) (((a) > (b)) ? (a) : (b))
-
-
-

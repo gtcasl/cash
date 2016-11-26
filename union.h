@@ -55,7 +55,6 @@
     } \
     void write(size_t dst_offset, const bitstream_type& in, size_t src_offset, size_t src_length) override { \
       write_data(__m, dst_offset, in, src_offset, src_length); \
-    } \
-  }
+    }
 
-#define CHDL_UNION(name, body) CHDL_UNION_IMPL(name, CHDL_REM body)
+#define CHDL_UNION(name, body, ...) CHDL_UNION_IMPL(name, CHDL_REM body) __VA_ARGS__ }

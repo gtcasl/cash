@@ -6,6 +6,8 @@ std::string fstring(const char* format, ...);
 
 void DbgPrint(int level, const char *format, ...);
 
+void dump_stack_trace(FILE* out, unsigned int max_frames = 32);
+
 #ifdef NDEBUG
   #define CHDL_ABORT(msg, ...) do { \
       fprintf(stderr, "error: " msg "\n", ##__VA_ARGS__); \
@@ -28,6 +30,9 @@ void DbgPrint(int level, const char *format, ...);
 
 #define TODO(x) \
   CHDL_ABORT(#x);
+
+#define CHDL_COUNTOF(a) (sizeof(a) / sizeof(a[0]))
+#define CHDL_MAX(a,b) (((a) > (b)) ? (a) : (b))
 
 #define CHDL_OUT(...) std::tuple<__VA_ARGS__>
 #define CHDL_RET(...) return std::make_tuple(__VA_ARGS__)

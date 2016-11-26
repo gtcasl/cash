@@ -45,7 +45,7 @@ TEST_CASE("memory tests", "[memory]") {
       ch_logic en;
       ch_mem<4, 2> mem({0xA, 0xB, 0xC, 0xD});
       q = mem[a];
-      __ch_when(en)( 
+      __if(en)( 
         mem[a] = d;
       )();
       (a, d, en) = ch_reg(ch_select(ch_tick())
@@ -72,7 +72,7 @@ TEST_CASE("memory tests", "[memory]") {
       ch_logic en;
       ch_mem<4, 2> mem({0xA, 0xB, 0xC, 0xD});
       q = ch_reg<4>(mem[a]); 
-      __ch_when(en)(
+      __if(en)(
         mem[a] = d;
       )();
       (a, d, en) = ch_reg(ch_select(ch_tick())

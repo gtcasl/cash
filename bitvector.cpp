@@ -571,12 +571,14 @@ void chdl_internal::RotateRight(bitvector& out, const bitvector& in, uint32_t di
 }
 
 std::ostream& chdl_internal::operator<<(std::ostream& os, const bitvector& b) {
+  os.setf(std::ios_base::hex);
   os << "0x";
   for (int32_t i = b.get_num_words() - 1; i >= 0; --i) {
     uint32_t word = b.get_word(i);
-    os << hex << word;
+    os << word;
     if (i != 0) 
       os << "_";
   }
+  os.unsetf(std::ios_base::hex);
   return os;
 }

@@ -4,8 +4,8 @@
 #include "bus.h"
 #include "literals.h"
 #include "select.h"
-#include "when.h"
-#include "case.h"
+#include "if.h"
+#include "switch.h"
 #include "reg.h"
 #include "seq.h"
 #include "mem.h"
@@ -81,8 +81,8 @@ namespace core {
   //
 
   using chdl_internal::ch_select;
-  using chdl_internal::ch_when;
-  using chdl_internal::ch_case;
+  using chdl_internal::ch_if;
+  using chdl_internal::ch_switch;
 
   //
   // register functions
@@ -233,10 +233,12 @@ inline namespace sim_literals {
 // utility macros
 //
 
-#define __ch_case     CHDL_CASE
-#define __ch_when     CHDL_WHEN
-#define __when        CHDL_WHEN2
+#define __if          CHDL_IF
+#define __elif        CHDL_ELIF
 #define __else        CHDL_ELSE
+
+#define __switch      CHDL_SWITCH
+#define __case        CHDL_CASE
 #define __default     CHDL_DEFAULT
 
 #define __ch_module   CHDL_MODULE

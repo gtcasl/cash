@@ -4,24 +4,24 @@
 
 namespace chdl_internal {
 
-class when_t {
+class if_t {
 public:
   
-  ~when_t() {
+  ~if_t() {
     if (m_stmts) {
-      CHDL_CHECK(m_stmts->empty(), "incomplete when statement");
+      CHDL_CHECK(m_stmts->empty(), "incomplete if statement");
       delete m_stmts;
     }
   }
     
   template <typename Func>
-  when_t& when(const ch_logicbase& cond, const Func& func) {
+  if_t& elif_(const ch_logicbase& cond, const Func& func) {
     m_stmts->push({cond.get_node().get_impl(), to_function(func)});
     return *this; 
   }
   
   template <typename Func>
-  void otherwise(const Func& func) {
+  void else_(const Func& func) {
     func(); // evaluate 'else' case
     this->eval();
   }
@@ -41,7 +41,7 @@ protected:
   
   using stmts_t = std::stack<stmt_t>;
   
-  when_t(lnodeimpl* cond, func_t func) : m_stmts(new stmts_t()) {
+  if_t(lnodeimpl* cond, func_t func) : m_stmts(new stmts_t()) {
     m_stmts->push({cond, func});
   }
   
@@ -50,17 +50,17 @@ protected:
   stmts_t* m_stmts;
     
   template <typename Func> 
-  friend when_t ch_when(const ch_logicbase& cond, const Func& func);
+  friend if_t ch_if(const ch_logicbase& cond, const Func& func);
 };
 
 template <typename Func> 
-when_t ch_when(const ch_logicbase& cond, const Func& func) {
-  return when_t(cond.get_node().get_impl(), to_function(func));
+if_t ch_if(const ch_logicbase& cond, const Func& func) {
+  return if_t(cond.get_node().get_impl(), to_function(func));
 }
 
-#define CHDL_WHEN_IMPL(value)   value})
-#define CHDL_WHEN(cond)         ch_when(cond, [&](){CHDL_WHEN_IMPL
-#define CHDL_WHEN2(cond)        .when(cond, [&](){CHDL_WHEN_IMPL
-#define CHDL_ELSE(value)        .otherwise([&](){value})
+#define CHDL_IF_BODY(value)   value})
+#define CHDL_IF(cond)         ch_if(cond, [&](){CHDL_IF_BODY
+#define CHDL_ELIF(cond)       .elif_(cond, [&](){CHDL_IF_BODY
+#define CHDL_ELSE(value)      .else_([&](){value})
 
 }

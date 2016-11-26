@@ -11,7 +11,7 @@ memimpl::memimpl(context* ctx, uint32_t data_width, uint32_t addr_width, bool wr
   , m_ports_offset(0)
   , m_cd(nullptr) {  
   if (write_enable) {
-    lnodeimpl* clk = ctx->get_clk();
+    lnodeimpl* const clk = ctx->get_clk();
     m_cd = ctx->create_cdomain({clock_event(clk, EDGE_POS)});
     m_cd->add_use(this);
     m_srcs.emplace_back(clk);
@@ -91,7 +91,7 @@ void memimpl::write(lnodeimpl* addr, lnodeimpl* data) {
 memportimpl* memimpl::get_port(lnodeimpl* addr, bool writing) {
   memportimpl* port = nullptr; 
   for (uint32_t i = m_ports_offset, n = m_srcs.size(); i < n; ++i) {
-    memportimpl* item  = dynamic_cast<memportimpl*>(m_srcs[i].get_impl());
+    memportimpl* const item  = dynamic_cast<memportimpl*>(m_srcs[i].get_impl());
     if (item->get_addr() == addr) {
       port = item;
       break;
@@ -107,14 +107,14 @@ memportimpl* memimpl::get_port(lnodeimpl* addr, bool writing) {
 
 void memimpl::tick(ch_cycle t) {    
   for (uint32_t i = m_ports_offset, n = m_srcs.size(); i < n; ++i) {
-    memportimpl* port = dynamic_cast<memportimpl*>(m_srcs[i].get_impl());
+    memportimpl* const port = dynamic_cast<memportimpl*>(m_srcs[i].get_impl());
     port->tick(t);
   }
 }
 
 void memimpl::tick_next(ch_cycle t) {
   for (uint32_t i = m_ports_offset, n = m_srcs.size(); i < n; ++i) {
-   memportimpl* port = dynamic_cast<memportimpl*>(m_srcs[i].get_impl());
+   memportimpl* const port = dynamic_cast<memportimpl*>(m_srcs[i].get_impl());
    port->tick_next(t);
   }
 }
@@ -153,7 +153,7 @@ void memportimpl::write(lnodeimpl* data) {
 
 void memportimpl::tick(ch_cycle t) {
   if (m_wdata_id != -1) {
-    memimpl* mem = dynamic_cast<memimpl*>(m_srcs[0].get_impl());
+    memimpl* const mem = dynamic_cast<memimpl*>(m_srcs[0].get_impl());
     mem->m_content[m_a_next] = m_q_next;
   }  
 }
@@ -169,7 +169,7 @@ const bitvector& memportimpl::eval(ch_cycle t) {
   if (m_ctime != t) {
     m_ctime = t;
     uint32_t addr = m_srcs[m_addr_id].eval(t).get_word(0);
-    memimpl* mem = dynamic_cast<memimpl*>(m_srcs[0].get_impl());
+    memimpl* const mem = dynamic_cast<memimpl*>(m_srcs[0].get_impl());
     m_value = mem->m_content[addr];
   }
   return m_value;

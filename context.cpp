@@ -87,7 +87,10 @@ uint32_t context::add_node(lnodeimpl* node) {
   #ifndef NDEBUG
     uint32_t dbg_node = platform::self().get_dbg_node();
     if (dbg_node) {
-      assert(nodeid != dbg_node);
+      if (nodeid == dbg_node) {
+        dump_stack_trace(stdout);
+        CHDL_ABORT("debugbreak on nodeid %d hit!", nodeid);
+      }
     }
   #endif
   } else {
@@ -208,7 +211,7 @@ void context::syntax_check() {
   if (m_undefs.size()) {
     this->dumpAST(std::cerr, 1);    
     for (auto node : m_undefs) {
-      fprintf(stderr, "error: un-initialized node #%d!\n", node->get_id());
+      fprintf(stderr, "error: un-initialized node %s%d(#%d)!\n", node->get_name().c_str(), node->get_size(), node->get_id());
     }
     if (m_undefs.size() == 1)
       CHDL_ABORT("1 node has not been initialized.");

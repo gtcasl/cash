@@ -28,9 +28,9 @@ const bitvector& inputimpl::eval(ch_cycle t) {
 }
 
 void inputimpl::print(std::ostream& out) const {
-  out << "#" << hex << m_id << " <- " << m_name << m_value.get_size() << "("; 
+  out << "#" << m_id << " <- " << m_name << m_value.get_size() << "("; 
   if (m_bus) {
-    out << "$" << hex << m_bus->get_id();
+    out << "$" << m_bus->get_id();
   } else {
     out << "?";
   }
@@ -67,8 +67,8 @@ snodeimpl* outputimpl::get_bus() {
 }
 
 void outputimpl::print(std::ostream& out) const {
-  out << "#" << hex << m_id << " <- " << m_name << m_value.get_size();
-  out << "(" << "#" << hex << m_srcs[0].get_id() << ")";
+  out << "#" << m_id << " <- " << m_name << m_value.get_size();
+  out << "(" << "#" << m_srcs[0].get_id() << ")";
   out << endl;
 }
 
@@ -82,7 +82,7 @@ tapimpl::tapimpl(const std::string& name, lnodeimpl* src)
 }
 
 void tapimpl::print(std::ostream& out) const {
-  out << "#" << hex << m_id << " <- " << m_name << m_value.get_size();
-  out << "(" << m_tapName << ", " << "#" << hex << m_srcs[0].get_id() << ")";
+  out << "#" << m_id << " <- " << m_name << m_value.get_size();
+  out << "(#" << m_srcs[0].get_id() << ", '" << m_tapName << "')";
   out << endl;
 }

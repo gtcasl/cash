@@ -36,46 +36,46 @@ TEST_CASE("conditionals tests", "[conditionals]") {
     });
   }
   
-  SECTION("test when", "[when]") {
+  SECTION("test if", "[if]") {
     TEST([]()->ch_logic {
       ch_bit<4> a(5), b(1), c(0);
-      __ch_when(a > b)(  
+      __if(a > b) (  
           c = a; 
       )();
       return (c == a);
     });
     TEST([]()->ch_logic {
       ch_bit<4> a(5), b(1), c(0);
-      __ch_when(a < b)( 
+      __if(a < b) ( 
           c = a; 
       )();
       return (c == 0);
     });
     TEST([]()->ch_logic {
       ch_bit<4> a(5), b(1), c(0);
-      __ch_when(a < b)( 
+      __if(a < b) ( 
           c = a; 
-      )__when(a > b)(
+      )__elif(a > b) (
           c = b;
       )();
       return (c == b);
     });
     TEST([]()->ch_logic {
       ch_bit<4> a(5), b(1), c(0);
-      __ch_when(a < b)( 
+      __if(a < b) ( 
           c = a; 
-      )__else( 
+      )__else ( 
           c = b; 
       );
       return (c == b);
     });
     TEST([]()->ch_logic {
       ch_bit<4> a(5), b(1), c(0);
-      __ch_when(a > b)(
+      __if(a > b)(
         c = a - b; 
         b = 0;
       ) 
-      __when(a == b)( 
+      __elif(a == b)( 
         c = 0; 
       ) 
       __else(
@@ -84,48 +84,48 @@ TEST_CASE("conditionals tests", "[conditionals]") {
       return (c == 4 && b == 0);
     });
   }
-  SECTION("test case", "[case]") {
+  SECTION("test switch", "[switch]") {
     TEST([]()->ch_logic {
       ch_bit<4> a(5), b(1), c(0);
-      __ch_case(a)
-      __when(0)( 
+      __switch(a) (
+      __case(0) ( 
         c = a; 
       ) 
-      __when(1)(
+      __case(1) (
         c = b; 
-      )();
+      )());
       return (c == 0);
     });
     TEST([]()->ch_logic {
       ch_bit<4> a(5), b(1), c(0);
-      __ch_case(a)
-      __when(0)( 
+      __switch(a) (
+      __case(0) ( 
         c = a; 
       ) 
-      __when(1)(
+      __case(1) (
         c = b; 
       ) 
-      __default(
+      __default (
         c = a + b;
-      );
+      ));
       return (c == 6);
     });
     TEST([]()->ch_logic {
       ch_bit<4> a(5), b(1), c(0);
-      __ch_case(a)
-      __when(0)(
+      __switch(a) (
+      __case(0) (
         c = a; 
       ) 
-      __when(1)(
+      __case(1) (
         c = b; 
       ) 
-      __default(
-         __ch_when(b > 0)( 
+      __default (
+         __if (b > 0) ( 
             c = a + b;       
          )__else(
             c = a - b;
          );        
-      );
+      ));
       return (c == 6);
     });
   }

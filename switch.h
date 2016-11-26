@@ -1,10 +1,10 @@
 #pragma once
 
-#include "when.h"
+#include "if.h"
 
 namespace chdl_internal {
 
-class case_impl {  
+class switch_impl {  
 protected:
   
   using func_t = std::function<void ()>;
@@ -24,14 +24,14 @@ protected:
   
 public:
   
-  ~case_impl() {
+  ~switch_impl() {
     if (m_stmts) {
-      CHDL_CHECK(m_stmts->values.empty(), "incomplete case statement");
+      CHDL_CHECK(m_stmts->values.empty(), "incomplete switch statement");
       delete m_stmts;
     }
   }
     
-  case_impl(lnodeimpl* key) {
+  switch_impl(lnodeimpl* key) {
     m_stmts = new stmts_t(key);
   }
   
@@ -43,23 +43,23 @@ public:
 };
 
 template <unsigned N>
-class case_t {
+class switch_t {
 public:
     
   template <typename Func>
-  case_t& when(const ch_bitbase<N>& value, const Func& func) {
+  switch_t& case_(const ch_bitbase<N>& value, const Func& func) {
     m_impl.push(value.get_node().get_impl(), to_function(func));
     return *this;
   }
   
   template <typename Func>
-  case_t& when(const ch_bit<N>& value, const Func& func) {    
+  switch_t& case_(const ch_bit<N>& value, const Func& func) {    
     m_impl.push(value.get_node().get_impl(), to_function(func));
     return *this;
   }
   
   template <typename Func>
-  void otherwise(const Func& func) {
+  void default_(const Func& func) {
     func(); // evaluate 'default' case
     m_impl.eval();
   }
@@ -70,20 +70,23 @@ public:
   
 protected:
   
-  case_t(lnodeimpl* key) : m_impl(key) {}
+  switch_t(lnodeimpl* key) : m_impl(key) {}
   
-  case_impl m_impl;
+  switch_impl m_impl;
     
   template <unsigned N_> 
-  friend case_t<N_> ch_case(const ch_bitbase<N_>& key);
+  friend switch_t<N_> ch_switch(const ch_bitbase<N_>& key);
 };
 
 template <unsigned N> 
-case_t<N> ch_case(const ch_bitbase<N>& key) {
-  return case_t<N>(key.get_node().get_impl());
+switch_t<N> ch_switch(const ch_bitbase<N>& key) {
+  return switch_t<N>(key.get_node().get_impl());
 }
 
-#define CHDL_CASE(key)          ch_case(key)
-#define CHDL_DEFAULT(value)     .otherwise([&](){value})
+#define CHDL_SWITCH_BODY(body)    body
+#define CHDL_SWITCH(key)          ch_switch(key) CHDL_SWITCH_BODY
+#define CHDL_CASE_BODY(value)     value})
+#define CHDL_CASE(cond)           .case_(cond, [&](){CHDL_CASE_BODY
+#define CHDL_DEFAULT(value)       .default_([&](){value})
 
 }

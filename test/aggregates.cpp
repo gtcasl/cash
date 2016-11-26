@@ -4,7 +4,13 @@ using namespace chdl::core_literals;
 
 __ch_struct(s1_t,(
   (ch_bit4) a
-));
+),
+void foo() {
+  ch_bit<3> w = 100_b;
+  auto y = w.slice<2>() + 1;
+  a = (y, y);
+}
+);
 
 __ch_struct(s2_t,(
   (ch_bit4) a,

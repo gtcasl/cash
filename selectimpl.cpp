@@ -1,7 +1,7 @@
 #include "selectimpl.h"
 #include "select.h"
-#include "when.h"
-#include "case.h"
+#include "if.h"
+#include "switch.h"
 #include "context.h"
 #include "arithm.h"
 
@@ -56,7 +56,7 @@ lnodeimpl* select_impl::eval(lnodeimpl* value) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void when_t::eval() {
+void if_t::eval() {
   context* ctx = ctx_curr();
   stmts_t* stmts = m_stmts;
   while (!stmts->empty()) {
@@ -70,7 +70,7 @@ void when_t::eval() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void case_impl::eval() {
+void switch_impl::eval() {
   context* ctx = ctx_curr();
   lnodeimpl* key = m_stmts->key;
   auto& values = m_stmts->values;

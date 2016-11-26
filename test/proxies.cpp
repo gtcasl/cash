@@ -115,7 +115,44 @@ TEST_CASE("proxies tests", "[proxies]") {
   }
   
   SECTION("test concat", "[concat]") {
-    TEST([]()->ch_logic {
+    TEST([]()->ch_logic {          
+    {
+      ch_bit4 x;
+      x.slice<3>().slice<2>() = 0x1_h2;    
+    }
+    
+    {
+      const ch_bit4 x(0x0);
+      auto q = x.slice<3>();
+      auto q2 = x.slice<3>().slice<2>();
+      //x.slice<3>() = 0x1_h3;
+      //x.slice<3>().slice<2>() = 0x1_h2;    
+    }
+    
+    {
+      ch_bit2 x(0x0);
+      ch_bit2 y(0x0);
+      (x, y) = 0x1_h4;    
+      (y, x) = 0x1_h4;
+      (y, x).slice<2>() = 0x1_h2;
+    }
+    
+    {
+      const ch_bit2 x(0x0);
+      ch_bit2 y(0x0);
+      ch_bit2 z(0x0);
+      ch_bit2 w(0x0);
+      (y, z, w) = 0x1_h6;
+      auto q = (0_b, 1_b, 0_b);
+      auto q2 = (0_b, y, 0_b);
+      auto q3 = (x, y).template slice<2>();
+      auto q4 = (y, x).template slice<2>();
+      auto q5 = (x, y, z).template slice<2>();
+      //(x, y) = 0x1_h4;    
+      //(y, x) = 0x1_h4;
+      //(x, y, z) = 0x1_h6;
+      //(y, x, z) = 0x1_h6;
+    }
       ch_bit4 a(1100_b);
       ch_bit<5> c = (a, 1_b);
       return (c == 11001_b);

@@ -31,7 +31,7 @@ __ch_out(ch_bit<WIDTH>, ch_logic, ch_logic) FiFo(
   full  = (wr_addr == rd_addr) && (wr_ptr[ADDR] != rd_ptr[ADDR]);
   
   dout = mem[rd_addr];
-  __ch_when(writing)(
+  __if (writing) (
     mem[wr_addr] = din;
   )();
   

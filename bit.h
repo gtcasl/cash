@@ -115,61 +115,49 @@ protected:
 
 // concatenation operator
 
-#define CHDL_CONCAT_GEN(T, TcB, TcA, TB, TA, cB, cA, B, A) \
-  T inline const_concat_ref<TcB, TcA> operator,(cB b, cA a) { return const_concat_ref<TcB, TcA>(b, a); } \
-  T inline const_concat_ref<TcB, TA> operator,(cB b, A a) { return const_concat_ref<TcB, TA>(b, a); } \
-  T inline const_concat_ref<TB, TcA> operator,(B b, cA a) { return const_concat_ref<TB, TcA>(b, a); } \
-  T inline concat_ref<TB, TA> operator,(B b, A a) { return concat_ref<TB, TA>(b, a); } \
-  T inline const_concat_ref<TcB, TcA> ch_concat(cB b, cA a) { return const_concat_ref<TcB, TcA>(b, a); } \
-  T inline const_concat_ref<TcB, TA> ch_concat(cB b, A a) { return const_concat_ref<TcB, TA>(b, a); } \
-  T inline const_concat_ref<TB, TcA> ch_concat(B b, cA a) { return const_concat_ref<TB, TcA>(b, a); } \
-  T inline concat_ref<TB, TA> ch_concat(B b, A a) { return concat_ref<TB, TA>(b, a); }
+#define CHDL_CONCAT_GEN(cB, cA, B, A) \
+  template <unsigned NB, unsigned NA> auto operator,(cB b, cA a) { return b.template concat(a); } \
+  template <unsigned NB, unsigned NA> auto operator,(cB b, A a) { return b.template concat(a); } \
+  template <unsigned NB, unsigned NA> auto operator,(B b, cA a) { return b.template concat(a); } \
+  template <unsigned NB, unsigned NA> auto operator,(B b, A a) { return b.template concat(a); } \
+  template <unsigned NB, unsigned NA> auto ch_concat(cB b, cA a) { return b.template concat(a); } \
+  template <unsigned NB, unsigned NA> auto ch_concat(cB b, A a) { return b.template concat(a); } \
+  template <unsigned NB, unsigned NA> auto ch_concat(B b, cA a) { return b.template concat(a); } \
+  template <unsigned NB, unsigned NA> auto ch_concat(B b, A a) { return b.template concat(a); }
 
-CHDL_CONCAT_GEN(template <unsigned NB CHDL_COMMA typename TB CHDL_COMMA unsigned NA CHDL_COMMA typename TA>, 
-                const_refbase<NB CHDL_COMMA TB>, const_refbase<NA CHDL_COMMA TA>,
-                refbase<NB CHDL_COMMA TB>, refbase<NA CHDL_COMMA TA>,
-                const const_refbase<NB CHDL_COMMA TB>&, const const_refbase<NA CHDL_COMMA TA>&,
-                const refbase<NB CHDL_COMMA TB>&, const refbase<NA CHDL_COMMA TA>&)
+CHDL_CONCAT_GEN(const const_bitref<NB>&, const const_bitref<NA>&,
+                const bitref<NB>&, const bitref<NA>&)
 
-CHDL_CONCAT_GEN(template <unsigned NB CHDL_COMMA unsigned NA>, 
-                ch_bitbase<NB>, ch_bitbase<NA>,
-                ch_bitbase<NB>, ch_bitbase<NA>,
-                const ch_bitbase<NB>&, const ch_bitbase<NA>&,
+CHDL_CONCAT_GEN(const const_bitref<NB>&, const ch_bitbase<NA>&,
+                const bitref<NB>&, ch_bitbase<NA>&)
+
+CHDL_CONCAT_GEN(const ch_bitbase<NB>&, const const_bitref<NA>&,
+                ch_bitbase<NB>&, const bitref<NA>&)
+
+CHDL_CONCAT_GEN(const ch_bitbase<NB>&, const ch_bitbase<NA>&,
                 ch_bitbase<NB>&, ch_bitbase<NA>&)
-
-CHDL_CONCAT_GEN(template <unsigned NB CHDL_COMMA typename TB CHDL_COMMA unsigned NA>, 
-                const_refbase<NB CHDL_COMMA TB>, ch_bitbase<NA>,
-                refbase<NB CHDL_COMMA TB>, ch_bitbase<NA>,
-                const const_refbase<NB CHDL_COMMA TB>&, const ch_bitbase<NA>&,
-                const refbase<NB CHDL_COMMA TB>&, ch_bitbase<NA>&)
-
-CHDL_CONCAT_GEN(template <unsigned NB CHDL_COMMA unsigned NA CHDL_COMMA typename TA>, 
-                ch_bitbase<NB>, const_refbase<NA CHDL_COMMA TA>,
-                ch_bitbase<NB>, refbase<NA CHDL_COMMA TA>,
-                const ch_bitbase<NB>&, const const_refbase<NA CHDL_COMMA TA>&,
-                ch_bitbase<NB>&, const refbase<NA CHDL_COMMA TA>&)
 
 #undef CHDL_CONCAT_GEN
 
 // slice operators
 
 template <unsigned N, unsigned M>
-const_slice_ref<ch_bitbase<M>, N> ch_slice(const ch_bitbase<M>& in, size_t index = 0) {
+auto ch_slice(const ch_bitbase<M>& in, size_t index = 0) {
   return in.template slice<N>(index);
 }
 
 template <unsigned N, unsigned M>
-slice_ref<ch_bitbase<M>, N> ch_slice(ch_bitbase<M>& in, size_t index = 0) {
+auto ch_slice(ch_bitbase<M>& in, size_t index = 0) {
   return in.template slice<N>(index);
 }
 
 template <unsigned N, unsigned M>
-const_slice_ref<ch_bitbase<M>, N> ch_aslice(const ch_bitbase<M>& in, size_t index = 0) {
+auto ch_aslice(const ch_bitbase<M>& in, size_t index = 0) {
   return in.template aslice<N>(index);
 }
 
 template <unsigned N, unsigned M>
-slice_ref<ch_bitbase<M>, N> ch_aslice(ch_bitbase<M>& in, size_t index = 0) {
+auto ch_aslice(ch_bitbase<M>& in, size_t index = 0) {
   return in.template aslice<N>(index);
 }
 
@@ -243,10 +231,12 @@ ch_bit<N> ch_sext(const ch_bitbase<M>& in) {
 
 template <unsigned N, unsigned I>
 ch_bit<N> ch_shuffle(const ch_bitbase<N>& in, const std::array<uint32_t, I>& indices) {
-  static_assert((I % N) == 0, "invalid shuffle indices size");
+  static_assert((I % N) == 0, "invalid indices size");
+  ch_bit<N> ret;
   for (unsigned i = 0; i < I; ++i) {
-    ch_aslice<(N / I)>(in) = indices[i];
+    ret.template aslice<<(N / I)>(i) = in.template aslice<(N / I)>(indices[i]);
   }
+  return ret;
 }
 
 // utility functions

@@ -261,7 +261,7 @@ const bitvector& proxyimpl::eval(ch_cycle t) {
 }
 
 void proxyimpl::print(std::ostream& out) const {
-  out << "#" << hex << m_id << " <- " << m_name << m_value.get_size();
+  out << "#" << m_id << " <- " << m_name << m_value.get_size();
   out << "(";
   for (uint32_t i = 0, s = 0, n = m_ranges.size(); i < n; ++i) {
     const range_t& range = m_ranges[i];
@@ -272,7 +272,7 @@ void proxyimpl::print(std::ostream& out) const {
       out << range.start << ":";  
     }
     s += range.length;
-    out << "#" << hex << m_srcs[range.srcidx].get_id() << "{" << range.offset;
+    out << "#" << m_srcs[range.srcidx].get_id() << "{" << range.offset;
     if (range.length > 1)
       out << "-" << range.offset + (range.length - 1);
     out << "}";

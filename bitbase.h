@@ -6,6 +6,11 @@ namespace chdl_internal {
 
 template <unsigned N> class ch_bit;
 
+template <unsigned N> using const_bitref = const_typeref<N, lnode::bitstream_type>;
+template <unsigned N> using bitref = typeref<N, lnode::bitstream_type>;
+template <unsigned N> using ch_bitbase = typebase<N, lnode::bitstream_type>;
+using ch_logicbase = ch_bitbase<1>;
+
 template <unsigned N>
 class typebase<N, lnode::bitstream_type> { // LCOV_EXCL_LINE
 public:   
@@ -23,27 +28,47 @@ public:
   }
   
   template <unsigned M>
-  const_slice_ref<typebase, M> slice(size_t index) const {
+  const_slice_ref<typebase, M> slice(size_t index = 0) const {
     static_assert(N > 1, "invalid call");
     return const_slice_ref<typebase, M>(*this, index);
   }
   
   template <unsigned M>
-  slice_ref<typebase, M> slice(size_t index) {
+  slice_ref<typebase, M> slice(size_t index = 0) {
     static_assert(N > 1, "invalid call");
     return slice_ref<typebase, M>(*this, index);
   }
   
   template <unsigned M>
-  const_slice_ref<typebase, M> aslice(size_t index) const {
+  const_slice_ref<typebase, M> aslice(size_t index = 0) const {
     static_assert(N > 1, "invalid call");
     return const_slice_ref<typebase, M>(*this, index * M);
   }
   
   template <unsigned M>
-  slice_ref<typebase, M> aslice(size_t index) {
+  slice_ref<typebase, M> aslice(size_t index = 0) {
     static_assert(N > 1, "invalid call");
     return slice_ref<typebase, M>(*this, index * M);
+  }
+  
+  template <unsigned M>
+  const_concat_ref<typebase, ch_bitbase<M>> concat(const ch_bitbase<M>& rhs) const {
+    return const_concat_ref<typebase, ch_bitbase<M>>(*this, rhs);
+  }
+  
+  template <unsigned M>
+  const_concat_ref<typebase, ch_bitbase<M>> concat(const ch_bitbase<M>& rhs) {
+    return const_concat_ref<typebase, ch_bitbase<M>>(*this, rhs);
+  }
+  
+  template <unsigned M>
+  concat_ref<typebase, ch_bitbase<M>> concat(ch_bitbase<M>& rhs) {
+    return concat_ref<typebase, ch_bitbase<M>>(*this, rhs);
+  }
+  
+  template <unsigned M>
+  concat_ref<typebase, ch_bitbase<M>> concat(const bitref<M>& rhs) {
+    return concat_ref<typebase, ch_bitbase<M>>(*this, rhs);
   }
   
   typebase& operator=(const typebase& rhs) {
@@ -90,8 +115,5 @@ protected:
   template <typename T_> friend void read_data(const T_& t, typename T_::bitstream_type& inout, size_t offset, size_t length);
   template <typename T_> friend void write_data(T_& t, size_t dst_offset, const typename T_::bitstream_type& in, size_t src_offset, size_t src_length); 
 };
-
-template <unsigned N> using ch_bitbase = typebase<N, lnode::bitstream_type>;
-using ch_logicbase = ch_bitbase<1>;
 
 }
