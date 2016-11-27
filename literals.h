@@ -26,7 +26,6 @@ struct lit_size<false, T, N, Char, Chars...> {
 
 template <typename T, unsigned N, char... Chars>
 struct lit_size<true, T, N, Chars...> {
-  static_assert(N > 0, "invalid literal size");
   static const unsigned value = N;
 };
 

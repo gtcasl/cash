@@ -87,10 +87,13 @@ TEST_CASE("aggregate tests", "[aggregate]") {
            
       return (s1, s4) == (s3, s2);
     });
-    
     TEST([]()->ch_logic {
       s1_t s1(1010_b);
       return (s1.get_LSB() != s1.get_MSB());
+    });
+    TEST([]()->ch_logic {
+      s2_t s2(1_b4, 0_b4);
+      return (s2 == 10000_b8);
     });
   } 
   
@@ -113,8 +116,8 @@ TEST_CASE("aggregate tests", "[aggregate]") {
       return (u3 == 01010011_b);
     });
     TEST([]()->ch_logic {
-      u2_t s1(1010_b);
-      return (s1.get_LSB() != s1.get_MSB());
+      u2_t u2(1010_b);
+      return (u2.get_LSB() != u2.get_MSB());
     });
   }
   
