@@ -15,8 +15,7 @@ public:
   
   using bitstream_type = bitstream<lnodeimpl>;
 
-  lnode() : m_impl(nullptr) {}
-  
+  lnode(uint32_t size);  
   lnode(const lnode& rhs);
   lnode(lnode&& rhs);
   explicit lnode(lnodeimpl* impl);

@@ -37,7 +37,7 @@ context::~context() {
 
 std::list<lnodeimpl*>::iterator
 context::erase_node(const std::list<lnodeimpl*>::iterator& iter) {
-  lnodeimpl* node = *iter;
+  lnodeimpl* const node = *iter;
   if (node == m_clk) {
     m_clk = nullptr;
   } else
@@ -81,18 +81,18 @@ lnodeimpl* context::get_reset() {
 }
 
 uint32_t context::add_node(lnodeimpl* node) {
-  uint32_t nodeid = ++m_nodeids;
-  if (node->m_name == "undef") {
-    m_undefs.emplace_back(node);  
-  #ifndef NDEBUG
-    uint32_t dbg_node = platform::self().get_dbg_node();
-    if (dbg_node) {
-      if (nodeid == dbg_node) {
-        dump_stack_trace(stdout);
-        CHDL_ABORT("debugbreak on nodeid %d hit!", nodeid);
-      }
+  uint32_t nodeid = ++m_nodeids;  
+#ifndef NDEBUG
+  uint32_t dbg_node = platform::self().get_dbg_node();
+  if (dbg_node) {
+    if (nodeid == dbg_node) {
+      dump_stack_trace(stdout);
+      CHDL_ABORT("debugbreak on nodeid %d hit!", nodeid);
     }
-  #endif
+  }
+#endif
+  if (node->m_name == "undef") {
+    m_undefs.emplace_back(node);
   } else {
     m_nodes.emplace_back(node);
   }  
@@ -110,24 +110,26 @@ void context::remove_node(undefimpl* node) {
   m_undefs.remove(node);
 }
 
-void context::push_cond(lnodeimpl* cond) {
+void context::begin_cond(lnodeimpl* cond) {
   m_conds.emplace_front(cond);
 }
 
-void context::pop_cond() {
+void context::end_cond() {
   m_conds.pop_front();
 }
 
 lnodeimpl* context::resolve_conditionals(lnodeimpl* dst, lnodeimpl* src) {
   if (m_conds.size() > 0 
    && (0 == m_conds.front().locals.count(dst))) {
-    if (dst == nullptr) {
-      CHDL_ABORT("missing default statement on unitialized variable");
-    }
-    auto itcond = m_conds.begin();
-    lnodeimpl* cond((*itcond++).cond);
-    for (auto itEnd = m_conds.end(); itcond != itEnd;) {
-      cond = createAluNode(op_and, 1, cond, (*itcond++).cond);
+    if (dst == nullptr) {   
+      dump_stack_trace(stdout);
+      CHDL_ABORT("missing destination node's default assignment for source node: %s%d(#%d)!\n", src->get_name().c_str(), src->get_size(), src->get_id());
+    }            
+    auto it = m_conds.begin();
+    lnodeimpl* cond = it->cond;    
+    ++it;
+    for (auto itEnd = m_conds.end(); it != itEnd && 0 == it->locals.count(dst); ++it) {
+      cond = createAluNode(op_and, 1, cond, it->cond);
     }
     src = createSelectNode(cond, src, dst);
   }
@@ -140,7 +142,7 @@ litimpl* context::create_literal(const bitvector& value) {
       return lit;
     }
   }
-  litimpl* lit = new litimpl(this, value);
+  litimpl* const lit = new litimpl(this, value);
   m_literals.emplace_back(lit);
   return lit;
 }
@@ -156,7 +158,7 @@ cdomain* context::create_cdomain(const std::vector<clock_event>& sensitivity_lis
       return cd;
   }  
   // allocate new cdomain
-  cdomain* cd = new cdomain(this, sensitivity_list);
+  cdomain* const cd = new cdomain(this, sensitivity_list);
   m_cdomains.emplace_back(cd);
   return cd;
 }
@@ -166,14 +168,14 @@ void context::remove_cdomain(cdomain* cd) {
 }
 
 lnodeimpl* context::bind_input(snodeimpl* bus) {
-  inputimpl* impl = new inputimpl("input", this, bus->get_size());
+  inputimpl* const impl = new inputimpl("input", this, bus->get_size());
   impl->bind(bus);
   m_inputs.emplace_back(impl);
   return impl;
 }
 
 snodeimpl* context::bind_output(lnodeimpl* output) {
-  outputimpl* impl = new outputimpl("output", output);
+  outputimpl* const impl = new outputimpl("output", output);
   m_outputs.emplace_back(impl);
   return impl->get_bus();
 }
@@ -284,7 +286,7 @@ void context::dumpAST(std::ostream& out, uint32_t level) {
 ///////////////////////////////////////////////////////////////////////////////
 
 context* chdl_internal::ctx_begin() {
-  context* ctx = new context();
+  context* const ctx = new context();
   tls_ctx = ctx;
   ctx->acquire();
   return ctx;

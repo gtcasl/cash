@@ -123,6 +123,13 @@ void undefimpl::print_vl(std::ostream& out) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+lnode::lnode(uint32_t size) : m_impl(nullptr) {
+  // force initialization of nested objects
+  if (ctx_curr()->is_conditional()) {
+    this->ensureInitialized(size);
+  }
+}
+
 lnode::lnode(const lnode& rhs) : m_impl(nullptr) {  
   this->assign(rhs.m_impl, true);
 }

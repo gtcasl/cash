@@ -22,12 +22,11 @@ public:
   
   template <typename Func>
   void else_(const Func& func) {
-    func(); // evaluate 'else' case
-    this->eval();
+    this->eval(to_function(func));
   }
   
   void operator()() {
-    this->eval();
+    this->eval(nullptr);
   }
   
 protected:
@@ -45,7 +44,7 @@ protected:
     m_stmts->push({cond, func});
   }
   
-  void eval();
+  void eval(func_t func);
   
   stmts_t* m_stmts;
     
@@ -58,9 +57,9 @@ if_t ch_if(const ch_logicbase& cond, const Func& func) {
   return if_t(cond.get_node().get_impl(), to_function(func));
 }
 
-#define CHDL_IF_BODY(value)   value})
-#define CHDL_IF(cond)         ch_if(cond, [&](){CHDL_IF_BODY
-#define CHDL_ELIF(cond)       .elif_(cond, [&](){CHDL_IF_BODY
-#define CHDL_ELSE(value)      .else_([&](){value})
+#define CHDL_IF_BODY(value)   value })
+#define CHDL_IF(cond)         ch_if(cond, [&](){ CHDL_IF_BODY
+#define CHDL_ELIF(cond)       .elif_(cond, [&](){ CHDL_IF_BODY
+#define CHDL_ELSE(value)      .else_([&](){ value })
 
 }

@@ -83,6 +83,24 @@ TEST_CASE("conditionals tests", "[conditionals]") {
       );
       return (c == 4 && b == 0);
     });
+    TEST([]()->ch_logic {
+      ch_bit<2> a;
+      ch_logic x(1), y(0);
+      __if (x) (
+        ch_bit<2> b;
+        __if (y) (
+          b = 1;
+        )
+        __else (
+          b = 2;
+        );
+        a = b;
+      )
+      __else (
+        a = 0;
+      );
+      return (a == 2);
+    });
   }
   SECTION("test switch", "[switch]") {
     TEST([]()->ch_logic {

@@ -39,7 +39,7 @@ public:
     m_stmts->values.push({value, func});
   }
   
-  void eval();
+  void eval(func_t func);
 };
 
 template <unsigned N>
@@ -60,12 +60,11 @@ public:
   
   template <typename Func>
   void default_(const Func& func) {
-    func(); // evaluate 'default' case
-    m_impl.eval();
+    m_impl.eval(to_function(func));
   }
   
   void operator()() {
-    m_impl.eval();
+    m_impl.eval(nullptr);
   }
   
 protected:
@@ -85,8 +84,8 @@ switch_t<N> ch_switch(const ch_bitbase<N>& key) {
 
 #define CHDL_SWITCH_BODY(body)    body
 #define CHDL_SWITCH(key)          ch_switch(key) CHDL_SWITCH_BODY
-#define CHDL_CASE_BODY(value)     value})
-#define CHDL_CASE(cond)           .case_(cond, [&](){CHDL_CASE_BODY
-#define CHDL_DEFAULT(value)       .default_([&](){value})
+#define CHDL_CASE_BODY(value)     value })
+#define CHDL_CASE(cond)           .case_(cond, [&](){ CHDL_CASE_BODY
+#define CHDL_DEFAULT(value)       .default_([&](){ value })
 
 }

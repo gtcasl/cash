@@ -21,7 +21,7 @@ public:
   using bitstream_type = typename base::bitstream_type;
   using bus_type = ch_bus<N>;
       
-  ch_bit() {}
+  ch_bit() : m_node(N) {}
   
   ch_bit(const ch_bit& rhs) : m_node(rhs.m_node.ensureInitialized(N)) {}
   

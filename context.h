@@ -40,8 +40,11 @@ public:
   uint32_t add_node(lnodeimpl* node);  
   void remove_node(undefimpl* node);
   
-  void push_cond(lnodeimpl* cond);
-  void pop_cond();
+  void begin_cond(lnodeimpl* cond);
+  void end_cond();
+  bool is_conditional() const {
+    return m_conds.size() != 0;
+  }
   lnodeimpl* resolve_conditionals(lnodeimpl* dst, lnodeimpl* src);
   
   litimpl* create_literal(const bitvector& value);
