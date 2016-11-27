@@ -85,10 +85,7 @@ uint32_t context::add_node(lnodeimpl* node) {
 #ifndef NDEBUG
   uint32_t dbg_node = platform::self().get_dbg_node();
   if (dbg_node) {
-    if (nodeid == dbg_node) {
-      dump_stack_trace(stdout);
-      CHDL_ABORT("debugbreak on nodeid %d hit!", nodeid);
-    }
+    CHDL_CHECK(nodeid != dbg_node, "debugbreak on nodeid %d hit!", nodeid);
   }
 #endif
   if (node->m_name == "undef") {
@@ -121,10 +118,7 @@ void context::end_cond() {
 lnodeimpl* context::resolve_conditionals(lnodeimpl* dst, lnodeimpl* src) {
   if (m_conds.size() > 0 
    && (0 == m_conds.front().locals.count(dst))) {
-    if (dst == nullptr) {   
-      dump_stack_trace(stdout);
-      CHDL_ABORT("missing destination node's default assignment for source node: %s%d(#%d)!\n", src->get_name().c_str(), src->get_size(), src->get_id());
-    }            
+    assert(dst);  
     auto it = m_conds.begin();
     lnodeimpl* cond = it->cond;    
     ++it;

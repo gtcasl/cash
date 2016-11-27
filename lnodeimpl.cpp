@@ -243,7 +243,7 @@ void lnode::reset(lnodeimpl* impl, bool initialization) const {
     impl->add_ref(this);
   }
   if (m_impl) {
-    assert(impl != m_impl);
+    CHDL_CHECK(impl != m_impl, "redundant assignment for node %s%d(#%d)!\n", impl->get_name().c_str(), impl->get_size(), impl->get_id());
     m_impl->remove_ref(this, impl);    
   }  
   m_impl = impl;
