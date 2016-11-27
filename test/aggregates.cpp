@@ -2,7 +2,7 @@
 
 using namespace chdl::core_literals;
 
-__ch_struct(s1_t,(
+__ch_struct (s1_t,(
   (ch_bit4) a
 ),
 ch_logic get_LSB() const {
@@ -13,38 +13,38 @@ ch_logic get_MSB() const {
 }
 );
 
-__ch_struct(s2_t,(
+__ch_struct (s2_t,(
   (ch_bit4) a,
   (ch_bit4) b
 ));
 
-__ch_struct(s3_t,(
+__ch_struct (s3_t,(
     (ch_bit4) a,
     (ch_bit4) b,
     (ch_bit4) c
 ));
 
-__ch_struct(s4_t,(
+__ch_struct (s4_t,(
     (ch_bit4) a,
     (ch_bit4) b,
     (ch_bit4) c,
     (ch_bit4) d
 ));
 
-__ch_struct(ss_t,(
+__ch_struct (ss_t,(
     (s1_t) a,
     (s1_t) b
 ));
 
 template <unsigned N> 
-__ch_struct(st_t,(
+__ch_struct (st_t,(
   (ch_bit<N>) a,
   (ch_bit<N>) b
 ));
 
 using st4_t = st_t<4>;
  
-__ch_union(u2_t,(
+__ch_union (u2_t,(
   (ch_bit4) a,
   (ch_bit4) b
 ),
@@ -55,13 +55,13 @@ ch_logic get_MSB() const {
   return b[3];
 });
  
-__ch_union(u3_t,(
+__ch_union (u3_t,(
   (ch_bit2) a,
   (ch_bit8) b,
   (ch_bit4) c
 ));
  
-__ch_enum(my_enum, 4,(
+__ch_enum (my_enum, 4,(
   idle = 0,
   execute,
   stats,

@@ -200,7 +200,7 @@ protected:
 template <typename B, typename A>
 class const_concat_ref : public const_typeref<B::bit_count + A::bit_count, typename A::bitstream_type> {
 public:
-  static_assert(std::is_same<typename A::bitstream_type, typename B::bitstream_type>::value, "bitstream type mismatch!");
+  static_assert(std::is_same<typename A::bitstream_type, typename B::bitstream_type>::value, "bitstream type mismatch");
   using base = const_typeref<B::bit_count + A::bit_count, typename A::bitstream_type>;
   using bitstream_type = typename A::bitstream_type;
   using first_container_type = A;
@@ -235,7 +235,7 @@ protected:
 template <typename B, typename A>
 class concat_ref : public typeref<B::bit_count + A::bit_count, typename A::bitstream_type> {
 public:
-  static_assert(std::is_same<typename A::bitstream_type, typename B::bitstream_type>::value, "bitstream type mismatch!");
+  static_assert(std::is_same<typename A::bitstream_type, typename B::bitstream_type>::value, "bitstream type mismatch");
   using base = typeref<B::bit_count + A::bit_count, typename A::bitstream_type>;
   using base::operator=;
   using bitstream_type = typename A::bitstream_type;

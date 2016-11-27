@@ -106,7 +106,7 @@ protected:
   
   template <typename FuncRet, typename ...FuncArgs, typename ...Args>
   void init(const std::function<FuncRet(FuncArgs...)>& func, Args&&... args) {
-    static_assert(sizeof...(FuncArgs) + output_size<FuncRet>::value == sizeof...(Args), "number of arguments mismatch!");
+    static_assert(sizeof...(FuncArgs) + output_size<FuncRet>::value == sizeof...(Args), "number of arguments mismatch");
     m_ctx = ctx_begin();
     {
       std::tuple<typename to_value_type<typename std::remove_const<

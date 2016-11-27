@@ -15,7 +15,7 @@
     CHDL_FOR_EACH(CHDL_ENUM_FIELD, CHDL_SEP_COMMA, __VA_ARGS__) \
     , __max_value__ \
     }; \
-    static_assert(CLOG2(__max_value__) <= base::bit_count); \
+    static_assert(CLOG2(__max_value__) <= base::bit_count, "enum size mismatch"); \
     name() {} \
     name(const name& e) : base(e) {} \
     name(enum_type e) : base(e) {} \
@@ -36,7 +36,6 @@
     friend name ch_reg(const name& next) { \
       return chdl_internal::ch_reg<size>(reinterpret_cast<const chdl_internal::ch_bitbase<size>&>(next)); \
     } \
-  }
+  public:
   
-
-#define CHDL_ENUM(name, size, body) CHDL_ENUM_IMPL(name, size, CHDL_REM body)
+#define CHDL_ENUM(name, size, body, ...) CHDL_ENUM_IMPL(name, size, CHDL_REM body) __VA_ARGS__ }

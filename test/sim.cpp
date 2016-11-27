@@ -2,17 +2,17 @@
 
 using namespace chdl::sim_literals;
 
- __ch_struct(s2_t,(
+ __ch_struct (s2_t,(
   (ch_bit2) a,
   (ch_bit2) b
 ));
  
- __ch_union(u2_t,(
+ __ch_union (u2_t,(
    (ch_bit2) a,
    (ch_bit2) b
  ));
 
-__ch_enum(my_enum, 4,(
+__ch_enum (my_enum, 4,(
   idle = 0,
   execute,
   stats,
