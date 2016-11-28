@@ -5,6 +5,7 @@
 #include "memimpl.h"
 #include "ioimpl.h"
 #include "snodeimpl.h"
+#include "selectimpl.h"
 #include "assertimpl.h"
 #include "cdomain.h"
 #include "device.h"
@@ -21,6 +22,7 @@ context::context()
   : m_nodeids(0)
   , m_clk(nullptr)
   , m_reset(nullptr) 
+  , m_active_branches(0)
 {}
 
 context::~context() { 
@@ -33,6 +35,7 @@ context::~context() {
   }
 
   assert(m_cdomains.empty());
+  assert(m_active_branches == 0);
 }
 
 std::list<lnodeimpl*>::iterator
@@ -95,9 +98,10 @@ uint32_t context::add_node(lnodeimpl* node) {
   }  
   node->acquire();
   if (m_conds.size() > 0) {
-    // memory objects have global scope
-    if (node->get_name() != "memport")
+    // memory ports have global scope
+    if (node->get_name() != "memport") {
       m_conds.front().locals.emplace(node);
+    }
   }
   return nodeid;  
 }
@@ -107,25 +111,71 @@ void context::remove_node(undefimpl* node) {
   m_undefs.remove(node);
 }
 
+void context::begin_branch() {
+  ++m_active_branches;
+}
+
+void context::end_branch() {
+  assert(m_active_branches > 0);
+  if (0 == --m_active_branches) {
+    m_cond_vals.clear();
+  }
+}
+
 void context::begin_cond(lnodeimpl* cond) {
   m_conds.emplace_front(cond);
 }
 
 void context::end_cond() {
+  const cond_block_t& cb = m_conds.front();
+  for (uint32_t v : cb.defs) {
+    m_cond_vals[v].defined = false; 
+  }
   m_conds.pop_front();
 }
 
 lnodeimpl* context::resolve_conditionals(lnodeimpl* dst, lnodeimpl* src) {
   if (m_conds.size() > 0 
    && (0 == m_conds.front().locals.count(dst))) {
-    assert(dst);  
-    auto it = m_conds.begin();
-    lnodeimpl* cond = it->cond;    
-    ++it;
-    for (auto itEnd = m_conds.end(); it != itEnd && 0 == it->locals.count(dst); ++it) {
-      cond = createAluNode(op_and, 1, cond, it->cond);
+    lnodeimpl* cond;
+    {
+      // aggregate nested condition value
+      auto iter = m_conds.begin();
+      cond = iter->cond;    
+      ++iter;
+      for (auto iterEnd = m_conds.end(); iter != iterEnd && 0 == iter->locals.count(dst); ++iter) {
+        if (iter->cond) {
+          if (cond) {
+            cond = createAluNode(op_and, 1, cond, iter->cond);
+          } else {
+            cond = iter->cond;
+          }
+        }
+      }
     }
-    src = createSelectNode(cond, src, dst);
+ 
+    // lookup dst value if already defined
+    auto iter = std::find_if(m_cond_vals.begin(), m_cond_vals.end(),
+      [dst](const cond_val_t& v)->bool { return v.dst == dst; });
+    if (iter != m_cond_vals.end()) {
+      CHDL_CHECK(!iter->defined, "redundant assignment to node %s%d(#%d)!\n", dst->get_name().c_str(), dst->get_size(), dst->get_id());   
+      if (cond) {
+        src = createSelectNode(cond, src, iter->sel);
+      }
+      dynamic_cast<selectimpl*>(iter->sel)->m_srcs[2].assign(src, true);
+      iter->sel = src;
+      src = dst; // return original value
+    } else {
+      if (cond) {
+        if (dst == nullptr) {
+          dst = new undefimpl(this, src->get_size());
+        }
+        src = createSelectNode(cond, src, dst);
+        cond_block_t& cb = m_conds.front();
+        cb.defs.push_back(m_cond_vals.size());
+        m_cond_vals.push_back({src, src, true});      
+      }
+    }
   }
   return src;
 }

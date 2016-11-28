@@ -7,47 +7,27 @@ namespace chdl_internal {
 class if_t {
 public:
   
-  ~if_t() {
-    if (m_stmts) {
-      CHDL_CHECK(m_stmts->empty(), "incomplete if statement");
-      delete m_stmts;
-    }
-  }
+  ~if_t();
     
   template <typename Func>
   if_t& elif_(const ch_logicbase& cond, const Func& func) {
-    m_stmts->push({cond.get_node().get_impl(), to_function(func)});
+    this->eval(cond.get_node().get_impl(), to_function(func));
     return *this; 
   }
   
   template <typename Func>
   void else_(const Func& func) {
-    this->eval(to_function(func));
-  }
-  
-  void operator()() {
-    this->eval(nullptr);
+    this->eval(nullptr, to_function(func));
   }
   
 protected:
   
   using func_t = std::function<void ()>;
   
-  struct stmt_t { // LCOV_EXCL_LINE
-    lnodeimpl* cond;
-    func_t func;
-  };
+  if_t(lnodeimpl* cond, func_t func);
   
-  using stmts_t = std::stack<stmt_t>;
+  void eval(lnodeimpl* cond, func_t func);
   
-  if_t(lnodeimpl* cond, func_t func) : m_stmts(new stmts_t()) {
-    m_stmts->push({cond, func});
-  }
-  
-  void eval(func_t func);
-  
-  stmts_t* m_stmts;
-    
   template <typename Func> 
   friend if_t ch_if(const ch_logicbase& cond, const Func& func);
 };

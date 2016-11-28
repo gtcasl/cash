@@ -11,12 +11,11 @@ using namespace chdl_internal;
 optimizer::optimizer(context* ctx) : m_ctx(ctx) {}
 
 void optimizer::optimize() {
-  DBG(2, "Before optimization: %lu\n", m_ctx->m_nodes.size());
+  size_t orig_num_nodes = m_ctx->m_nodes.size();
   
   m_ctx->get_live_nodes(m_live_nodes);
   
   this->dead_node_elimination();
-  DBG(2, "After dead code elimination: %lu\n", m_ctx->m_nodes.size());
   
 #ifndef NDEBUG
   // dump nodes
@@ -25,6 +24,9 @@ void optimizer::optimize() {
     m_ctx->dumpAST(std::cerr, dump_ast);
   }
 #endif
+  
+  DBG(2, "Before optimization: %lu\n", orig_num_nodes);
+  DBG(2, "After dead code elimination: %lu\n", m_ctx->m_nodes.size());  
 }
 
 bool optimizer::dead_node_elimination() {

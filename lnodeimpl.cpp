@@ -34,10 +34,6 @@ void lnodeimpl::replace_all_refs(lnodeimpl* impl) {
   m_refs.clear();
 }
 
-lnodeimpl* lnodeimpl::resolve_conditionals(lnodeimpl* impl) {
-  return m_ctx->resolve_conditionals(impl, this);
-}
-
 bool lnodeimpl::ready() const {
   for (auto& src : m_srcs) {
     if (!src.ready())
@@ -125,7 +121,7 @@ void undefimpl::print_vl(std::ostream& out) const {
 
 lnode::lnode(uint32_t size) : m_impl(nullptr) {
   // force initialization of nested objects
-  if (ctx_curr()->is_conditional()) {
+  if (ctx_curr()->has_conditionals()) {
     this->ensureInitialized(size);
   }
 }
@@ -238,7 +234,9 @@ void lnode::set_impl(lnodeimpl* curr_impl, lnodeimpl* new_impl) const {
 void lnode::reset(lnodeimpl* impl, bool initialization) const {
   if (impl) {
     if (!initialization) {
-      impl = impl->resolve_conditionals(m_impl);
+      impl = impl->get_ctx()->resolve_conditionals(m_impl, impl);
+      if (impl == m_impl)
+        return;
     }
     impl->add_ref(this);
   }

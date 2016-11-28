@@ -71,6 +71,8 @@ protected:
   void assign(uint32_t dst_offset, lnodeimpl* src, uint32_t src_offset, uint32_t src_length, uint32_t size, bool initialization);
   
   mutable lnodeimpl* m_impl;
+  
+  friend class context; 
 };
 
 inline std::ostream& operator<<(std::ostream& out, const lnode& rhs) {

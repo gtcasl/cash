@@ -99,8 +99,9 @@ memportimpl* memimpl::get_port(lnodeimpl* addr, bool writing) {
   }
   if (port == nullptr) {
     port = new memportimpl(this, addr);
-    if (writing)
+    if (writing) {
       m_srcs.emplace_back(port);
+    }
   }
   return port;
 }
@@ -143,7 +144,7 @@ memportimpl::memportimpl(memimpl* mem, lnodeimpl* addr)
 }
 
 void memportimpl::write(lnodeimpl* data) {
-  // use explicit assignment to enable conditional resolution
+  // use explicit assignment to force conditionals resolution
   if (m_wdata_id == -1) {
     m_wdata_id = m_srcs.size();
     m_srcs.emplace_back(this);

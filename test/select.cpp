@@ -39,43 +39,45 @@ TEST_CASE("conditionals tests", "[conditionals]") {
   SECTION("test if", "[if]") {
     TEST([]()->ch_logic {
       ch_bit<4> a(5), b(1), c(0);
-      __if(a > b) (  
+      __if (a > b) (  
           c = a; 
-      )();
+      );
       return (c == a);
     });
     TEST([]()->ch_logic {
       ch_bit<4> a(5), b(1), c(0);
-      __if(a < b) ( 
+      __if (a < b) ( 
           c = a; 
-      )();
+      );
       return (c == 0);
     });
     TEST([]()->ch_logic {
       ch_bit<4> a(5), b(1), c(0);
-      __if(a < b) ( 
+      __if (a < b) ( 
           c = a; 
-      )__elif(a > b) (
+      )
+      __elif (a > b) (
           c = b;
-      )();
+      );
       return (c == b);
     });
     TEST([]()->ch_logic {
       ch_bit<4> a(5), b(1), c(0);
-      __if(a < b) ( 
+      __if (a < b) ( 
           c = a; 
-      )__else ( 
+      )
+      __else ( 
           c = b; 
       );
       return (c == b);
     });
     TEST([]()->ch_logic {
       ch_bit<4> a(5), b(1), c(0);
-      __if(a > b)(
+      __if (a > b) (
         c = a - b; 
         b = 0;
       ) 
-      __elif(a == b)( 
+      __elif (a == b) ( 
         c = 0; 
       ) 
       __else(
@@ -105,22 +107,22 @@ TEST_CASE("conditionals tests", "[conditionals]") {
   SECTION("test switch", "[switch]") {
     TEST([]()->ch_logic {
       ch_bit<4> a(5), b(1), c(0);
-      __switch(a) (
-      __case(0) ( 
+      __switch (a) (
+      __case (0) ( 
         c = a; 
       ) 
-      __case(1) (
+      __case (1) (
         c = b; 
-      )());
+      ));
       return (c == 0);
     });
     TEST([]()->ch_logic {
       ch_bit<4> a(5), b(1), c(0);
-      __switch(a) (
-      __case(0) ( 
+      __switch (a) (
+      __case (0) ( 
         c = a; 
       ) 
-      __case(1) (
+      __case (1) (
         c = b; 
       ) 
       __default (
@@ -130,17 +132,18 @@ TEST_CASE("conditionals tests", "[conditionals]") {
     });
     TEST([]()->ch_logic {
       ch_bit<4> a(5), b(1), c(0);
-      __switch(a) (
-      __case(0) (
+      __switch (a) (
+      __case (0) (
         c = a; 
       ) 
-      __case(1) (
+      __case (1) (
         c = b; 
       ) 
       __default (
          __if (b > 0) ( 
             c = a + b;       
-         )__else(
+         )
+         __else (
             c = a - b;
          );        
       ));

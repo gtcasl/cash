@@ -4,67 +4,43 @@
 
 namespace chdl_internal {
 
-class switch_impl {  
-protected:
+class switch_impl {
+public:
+  
+  ~switch_impl();
   
   using func_t = std::function<void ()>;
   
-  struct stmt_t { // LCOV_EXCL_LINE
-    lnodeimpl* value;
-    func_t func;
-  };
+  void eval(lnodeimpl* cond, func_t func);
+ 
+private: 
+ 
+  switch_impl(lnodeimpl* key);
+ 
+  lnodeimpl* m_key;
   
-  struct stmts_t {
-    lnodeimpl* key;
-    std::stack<stmt_t> values;    
-    stmts_t(lnodeimpl* key_) : key(key_) {}
-  };
-  
-  stmts_t* m_stmts;
-  
-public:
-  
-  ~switch_impl() {
-    if (m_stmts) {
-      CHDL_CHECK(m_stmts->values.empty(), "incomplete switch statement");
-      delete m_stmts;
-    }
-  }
-    
-  switch_impl(lnodeimpl* key) {
-    m_stmts = new stmts_t(key);
-  }
-  
-  void push(lnodeimpl* value, const func_t& func) {
-    m_stmts->values.push({value, func});
-  }
-  
-  void eval(func_t func);
+  template <unsigned N> friend class switch_t;
 };
 
 template <unsigned N>
 class switch_t {
 public:
-    
+  
   template <typename Func>
   switch_t& case_(const ch_bitbase<N>& value, const Func& func) {
-    m_impl.push(value.get_node().get_impl(), to_function(func));
+    m_impl.eval(value.get_node().get_impl(), to_function(func));
     return *this;
   }
   
   template <typename Func>
   switch_t& case_(const ch_bit<N>& value, const Func& func) {    
-    m_impl.push(value.get_node().get_impl(), to_function(func));
+    m_impl.eval(value.get_node().get_impl(), to_function(func));
     return *this;
   }
   
   template <typename Func>
   void default_(const Func& func) {
-    m_impl.eval(to_function(func));
-  }
-  
-  void operator()() {
-    m_impl.eval(nullptr);
+    m_impl.eval(nullptr, to_function(func));
   }
   
 protected:

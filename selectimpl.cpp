@@ -56,35 +56,35 @@ lnodeimpl* select_impl::eval(lnodeimpl* value) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void if_t::eval(func_t func) {
+if_t::if_t(lnodeimpl* cond, func_t func) {  
+  cond->get_ctx()->begin_branch();
+  this->eval(cond, func);
+}
+
+if_t::~if_t() {
+  ctx_curr()->end_branch();
+}
+
+void if_t::eval(lnodeimpl* cond, func_t func) {
   context* const ctx = ctx_curr();
-  stmts_t* const stmts = m_stmts;
-  if (func) {
-    func();
-  }
-  while (!stmts->empty()) {
-    const stmt_t& stmt = stmts->top();
-    ctx->begin_cond(stmt.cond);
-    stmt.func();
-    ctx->end_cond();
-    stmts->pop();
-  }
+  ctx->begin_cond(cond);
+  func();
+  ctx->end_cond();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void switch_impl::eval(func_t func) {
-  context* const ctx = ctx_curr();
-  lnodeimpl* const key = m_stmts->key;
-  auto& values = m_stmts->values;
-  if (func) {
-    func();
-  }
-  while (!values.empty()) {
-    const stmt_t& stmt = values.top();
-    ctx->begin_cond(createAluNode(op_eq, 1, key, stmt.value));
-    stmt.func();
-    ctx->end_cond();
-    values.pop();
-  }
+switch_impl::switch_impl(lnodeimpl* key) : m_key(key) {
+  m_key->get_ctx()->begin_branch();
+}
+
+switch_impl::~switch_impl() {
+  m_key->get_ctx()->end_branch();
+}
+
+void switch_impl::eval(lnodeimpl* cond, func_t func) {
+  context* const ctx = m_key->get_ctx();
+  ctx->begin_cond(cond ? createAluNode(op_eq, 1, m_key, cond) : nullptr);
+  func();
+  ctx->end_cond();
 }

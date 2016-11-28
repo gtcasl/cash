@@ -40,10 +40,13 @@ public:
   uint32_t add_node(lnodeimpl* node);  
   void remove_node(undefimpl* node);
   
+  void begin_branch();
+  void end_branch();
+  
   void begin_cond(lnodeimpl* cond);
   void end_cond();
-  bool is_conditional() const {
-    return m_conds.size() != 0;
+  bool has_conditionals() const {
+    return m_active_branches != 0;
   }
   lnodeimpl* resolve_conditionals(lnodeimpl* dst, lnodeimpl* src);
   
@@ -84,10 +87,17 @@ public:
   
 protected:
   
-  struct cond_t {
+  struct cond_val_t {
+    lnodeimpl* dst;
+    lnodeimpl* sel;
+    bool defined;
+  };
+  
+  struct cond_block_t {
     lnodeimpl* cond;
     std::set<lnodeimpl*> locals;
-    cond_t(lnodeimpl* cond_) : cond(cond_) {}
+    std::vector<uint32_t> defs; 
+    cond_block_t(lnodeimpl* cond_) : cond(cond_) {}
   };
 
   std::list<lnodeimpl*>   m_undefs;
@@ -98,13 +108,16 @@ protected:
   std::vector<tapimpl*>   m_taps;
   std::list<ioimpl*>      m_gtaps;
   std::list<litimpl*>     m_literals;
-  std::list<cond_t>       m_conds;    
+  std::list<cond_block_t> m_conds;   
+  std::vector<cond_val_t> m_cond_vals;
   std::stack<lnode>       m_clk_stack;
   std::stack<lnode>       m_reset_stack;
 
   uint32_t   m_nodeids;
   inputimpl* m_clk;
   inputimpl* m_reset;
+  
+  int m_active_branches;
   
   std::map<std::string, unsigned> m_dup_taps;
   

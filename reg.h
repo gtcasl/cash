@@ -52,8 +52,13 @@ ch_bit<N> ch_reg(const ch_bit<N>& next, const ch_bit<N>& init) {
 }
 
 template <unsigned N>
-ch_bit<N> ch_latch(const ch_bitbase<N>& next, const ch_logicbase& enable, const ch_bitbase<N>& init) {
-  return ch_bit<N>(createLatchNode(next.get_node().get_impl(), init.get_node().get_impl(), enable.get_node().get_impl(), ch_reset().get_node().get_impl()));
+ch_bit<N> ch_latch(const ch_bitbase<N>& next, 
+                   const ch_logicbase& enable, 
+                   const ch_bitbase<N>& init) {
+  return ch_bit<N>(createLatchNode(next.get_node().get_impl(), 
+                                   init.get_node().get_impl(), 
+                                   enable.get_node().get_impl(), 
+                                   ch_reset().get_node().get_impl()));
 }
 
 template <unsigned N>
