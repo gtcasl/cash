@@ -2,6 +2,8 @@
 TODO list:
 ==========
 
+*** should consider gettng rid of defer initialization once auto dead code elimination is supported (will remove all nasty hacks in code where dst == nullptr is a worry)
+*** find a way to fix ch_seq such that it is initialized to itself by default (next -> this)
 *** automatic dead code elimination 
 *** use callstack api to save source file/line for undefined variables. check out GDB api (https://github.com/brasko/gdbwire) and libcwd (http://libcwd.sourceforge.net/index.html)
 *** move all the math routines into the bitvector class, then accelerate the bitvector class to intel SSE/AVX

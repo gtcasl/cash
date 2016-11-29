@@ -6,6 +6,7 @@
 #include "ioimpl.h"
 #include "snodeimpl.h"
 #include "selectimpl.h"
+#include "proxyimpl.h"
 #include "assertimpl.h"
 #include "cdomain.h"
 #include "device.h"
@@ -212,7 +213,13 @@ lnodeimpl* context::resolve_conditionals(lnodeimpl* dst, lnodeimpl* src) {
       if (cond) {
         if (dst == nullptr) {
           dst = new undefimpl(this, src->get_size());
-          cc.locals.erase(dst); // ensure global scope
+          // resolve partial proxy object
+          // make sure their undefined regions point to dst 
+          proxyimpl* proxy = dynamic_cast<proxyimpl*>(src);
+          if (proxy) {
+            proxy->ensureInitialized();
+            proxy->update_undefs(0, dst, 0, dst->get_size());
+          }
         }
         src = createSelectNode(cond, src, dst);        
         cc.defs.push_back(m_cond_vals.size());

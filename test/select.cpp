@@ -173,5 +173,19 @@ TEST_CASE("conditionals tests", "[conditionals]") {
       ));
       return (d + e == 3);
     });
+    TEST([]()->ch_logic {
+      ch_bit<4> a(0), b;
+      __switch (a) (
+      __case (0) ( 
+        b.slice<3>(0) = 101_b; 
+      ) 
+      __case (1) (
+        b = 0; 
+      )
+      __default(
+        b = 1000_b;
+      ));
+      return (b == 1101_b);
+    });
   }
 }

@@ -150,14 +150,14 @@ void proxyimpl::merge_left(uint32_t idx) {
   }      
 }
 
-void proxyimpl::remove_ref(const lnode* curr_owner, lnodeimpl* new_owner) {
-  m_refs.erase(curr_owner);
-  if (new_owner) {
-    this->update_refs(0, new_owner, 0, new_owner->get_size());    
+void proxyimpl::remove_ref(const lnode* node, lnodeimpl* src) {
+  m_refs.erase(node);
+  if (src) {
+    this->update_undefs(0, src, 0, src->get_size());    
   }
 }
 
-void proxyimpl::update_refs(uint32_t start, lnodeimpl* src, uint32_t offset, uint32_t length) {
+void proxyimpl::update_undefs(uint32_t start, lnodeimpl* src, uint32_t offset, uint32_t length) {
   for (uint32_t i = 0, n = m_ranges.size(); length && i < n; ++i) {
     const range_t& curr = m_ranges[i];
     lnodeimpl* curr_impl = m_srcs[curr.srcidx].get_impl();
@@ -167,7 +167,7 @@ void proxyimpl::update_refs(uint32_t start, lnodeimpl* src, uint32_t offset, uin
       if (start <= curr.start && src_end >= curr_end) {
         // source fully overlaps
         uint32_t delta = curr.start - start;        
-        curr_impl->update_refs(curr.offset, src, offset + delta, curr.length);        
+        curr_impl->update_undefs(curr.offset, src, offset + delta, curr.length);        
         uint32_t step = curr_end - start;
         start  += step;        
         offset += step;        
@@ -176,7 +176,7 @@ void proxyimpl::update_refs(uint32_t start, lnodeimpl* src, uint32_t offset, uin
         // source intersets right
         uint32_t overlap = curr_end - start;        
         uint32_t delta = start - curr.start;
-        curr_impl->update_refs(curr.offset + delta, src, offset, overlap);        
+        curr_impl->update_undefs(curr.offset + delta, src, offset, overlap);        
         start  += overlap;
         offset += overlap;
         length -= overlap;
@@ -184,7 +184,7 @@ void proxyimpl::update_refs(uint32_t start, lnodeimpl* src, uint32_t offset, uin
         assert(!(start < curr.start)); // left intersections should not exit
         // source fully included          
         uint32_t delta = start - curr.start;        
-        curr_impl->update_refs(curr.offset + delta, src, offset, length);
+        curr_impl->update_undefs(curr.offset + delta, src, offset, length);
         length = 0;
       }
     }

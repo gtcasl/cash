@@ -241,14 +241,14 @@ inline namespace sim_literals {
 #define __case        CHDL_CASE
 #define __default     CHDL_DEFAULT
 
-#define __ch_module   CHDL_MODULE
-#define __ch_modulex  CHDL_MODULEX
 #define __ch_tap      CHDL_TAP
 #define __ch_trace    CHDL_TRACE
 #define __ch_assert   CHDL_ASSERT
+
 #define __ch_struct   CHDL_STRUCT
 #define __ch_union    CHDL_UNION
 #define __ch_enum     CHDL_ENUM
+
 #define __ch_out      CHDL_OUT
 #define __ch_ret      CHDL_RET
 #define __ch_tie      CHDL_TIE

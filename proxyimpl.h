@@ -12,10 +12,21 @@ public:
   
   void resize(uint32_t start, uint32_t length);
   
+  void ensureInitialized(uint32_t start, uint32_t length) {
+    if (!includes(start, length)) {
+      this->resize(start, length);
+    }
+  }
+  
+  void ensureInitialized() {
+    this->ensureInitialized(0, this->get_size());
+  }
+  
   bool includes(uint32_t start, uint32_t length) const;
   
-  void remove_ref(const lnode* curr_owner, lnodeimpl* new_owner) override;
-  void update_refs(uint32_t start, lnodeimpl* new_owner, uint32_t offset, uint32_t length) override;
+  void remove_ref(const lnode* node, lnodeimpl* src) override;
+  
+  void update_undefs(uint32_t start, lnodeimpl* src, uint32_t offset, uint32_t length) override;
   
   const bitvector& eval(ch_cycle t) override;  
   void print(std::ostream& out) const override;

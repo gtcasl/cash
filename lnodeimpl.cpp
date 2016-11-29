@@ -85,7 +85,7 @@ void undefimpl::remove_ref(const lnode* curr_owner, lnodeimpl* new_owner) {
     this->release();
 }
 
-void undefimpl::update_refs(uint32_t start, lnodeimpl* src, uint32_t offset, uint32_t length) {
+void undefimpl::update_undefs(uint32_t start, lnodeimpl* src, uint32_t offset, uint32_t length) {
   assert(length <= src->get_size());
   assert(length <= this->get_size());  
   if (length < this->get_size()) {
@@ -125,19 +125,19 @@ lnode::lnode(uint32_t size) : m_impl(nullptr) {
   }
 }
 
-lnode::lnode(const lnode& rhs) : m_impl(nullptr) {  
+lnode::lnode(const lnode& rhs) : m_impl(nullptr) { 
   this->assign(rhs.m_impl, true);
 }
 
-lnode::lnode(lnode&& rhs) : m_impl(nullptr) {  
+lnode::lnode(lnode&& rhs) : m_impl(nullptr) {
   this->move(rhs);
 }
 
-lnode::lnode(lnodeimpl* impl) : m_impl(nullptr) {
+lnode::lnode(lnodeimpl* impl) : m_impl(nullptr) { 
   this->assign(impl, true);
 }
 
-lnode::lnode(const bitstream_type& data) : m_impl(nullptr) {  
+lnode::lnode(const bitstream_type& data) : m_impl(nullptr) {
   uint32_t dst_offset = 0;
   for (auto& p : data) {
     this->assign(dst_offset, p.data, p.offset, p.length, data.get_size(), true);   
@@ -205,14 +205,14 @@ const lnode& lnode::ensureInitialized(uint32_t size, uint32_t offset, uint32_t l
       m_impl = new undefimpl(ctx, size);
     } else {
       proxyimpl* proxy = new proxyimpl(ctx, size);
-      proxy->resize(offset, length);
+      proxy->ensureInitialized(offset, length);
       m_impl = proxy;
     }
     m_impl->add_ref(this);
   } else {
     proxyimpl* proxy = dynamic_cast<proxyimpl*>(m_impl);
-    if (proxy && !proxy->includes(offset, length)) {
-      proxy->resize(offset, length);
+    if (proxy) {
+      proxy->ensureInitialized(offset, length);
     }
   }
   assert(m_impl->get_size() >= length);
@@ -233,10 +233,12 @@ void lnode::set_impl(lnodeimpl* curr_impl, lnodeimpl* new_impl) const {
 void lnode::reset(lnodeimpl* impl, bool initialization) const {
   if (impl) {
     if (!initialization) {
+      // resolve conditionals if inside a branch
       impl = impl->get_ctx()->resolve_conditionals(m_impl, impl);
       if (impl == m_impl)
         return;
     }
+    
     impl->add_ref(this);
   }
   if (m_impl) {
@@ -310,10 +312,10 @@ void lnode::assign(uint32_t dst_offset, lnodeimpl* src, uint32_t src_offset, uin
         src = proxy;
       }
       
-      proxyimpl* dst_subset = new proxyimpl(ctx, src_length);
-      dst_subset->add_node(0, m_impl, dst_offset, src_length);
-      lnode ds(dst_subset);
-      ds.assign(src, initialization);
+      proxyimpl* subset_impl = new proxyimpl(ctx, src_length);
+      subset_impl->add_node(0, m_impl, dst_offset, src_length);
+      lnode subset(subset_impl);
+      subset.assign(src, initialization);
       
       proxyimpl* dst = dynamic_cast<proxyimpl*>(m_impl);
       if (dst == nullptr) {
@@ -323,7 +325,7 @@ void lnode::assign(uint32_t dst_offset, lnodeimpl* src, uint32_t src_offset, uin
         m_impl->remove_ref(this);
         m_impl = dst;
       }         
-      dst->add_node(dst_offset, ds.m_impl, 0, src_length);
+      dst->add_node(dst_offset, subset.get_impl(), 0, src_length);
     } else {
       proxyimpl* proxy = new proxyimpl(ctx, size);
       proxy->add_node(dst_offset, src, src_offset, src_length);

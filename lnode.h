@@ -15,6 +15,7 @@ public:
   
   using bitstream_type = bitstream<lnodeimpl>;
 
+  lnode() : m_impl(nullptr) {}
   lnode(uint32_t size);  
   lnode(const lnode& rhs);
   lnode(lnode&& rhs);
@@ -26,11 +27,9 @@ public:
   
   const lnode& ensureInitialized(uint32_t size, uint32_t offset, uint32_t length) const;
   
-  // LCOV_EXCL_START
   const lnode& ensureInitialized(uint32_t size) const {
     return this->ensureInitialized(size, 0, size);
   }
-  // LCOV_EXCL_END
   
   lnodeimpl* get_impl() const;
   

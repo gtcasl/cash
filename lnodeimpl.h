@@ -39,7 +39,7 @@ public:
 
   void replace_all_refs(lnodeimpl* impl);
   
-  virtual void update_refs(uint32_t start, lnodeimpl* new_owner, uint32_t offset, uint32_t length) {}
+  virtual void update_undefs(uint32_t start, lnodeimpl* new_owner, uint32_t offset, uint32_t length) {}
   
   const std::vector<lnode>& get_srcs() const {
     return m_srcs;
@@ -94,7 +94,7 @@ public:
   virtual ~undefimpl();
   
   void remove_ref(const lnode* curr_owner, lnodeimpl* new_owner) override;
-  void update_refs(uint32_t start, lnodeimpl* new_owner, uint32_t offset, uint32_t length) override;
+  void update_undefs(uint32_t start, lnodeimpl* new_owner, uint32_t offset, uint32_t length) override;
 
   const bitvector& eval(ch_cycle t) override;  
   void print_vl(std::ostream& out) const override;
