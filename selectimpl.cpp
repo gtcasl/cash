@@ -8,11 +8,11 @@
 using namespace std;
 using namespace chdl_internal;
 
-selectimpl::selectimpl(lnodeimpl* test, lnodeimpl* a, lnodeimpl* b) 
-  : lnodeimpl("select", a->get_ctx(), a->get_size()), m_ctime(~0ull) {
-  m_srcs.emplace_back(test);
-  m_srcs.emplace_back(a);
-  m_srcs.emplace_back(b);
+selectimpl::selectimpl(lnodeimpl* cond, lnodeimpl* true_, lnodeimpl* false_) 
+  : lnodeimpl("select", true_->get_ctx(), true_->get_size()), m_ctime(~0ull) {
+  m_srcs.emplace_back(cond);
+  m_srcs.emplace_back(true_);
+  m_srcs.emplace_back(false_);
 }
 
 const bitvector& selectimpl::eval(ch_cycle t) {
@@ -67,9 +67,9 @@ if_t::~if_t() {
 
 void if_t::eval(lnodeimpl* cond, func_t func) {
   context* const ctx = ctx_curr();
-  ctx->begin_cond(cond);
+  ctx->begin_case(cond);
   func();
-  ctx->end_cond();
+  ctx->end_case();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -84,7 +84,7 @@ switch_impl::~switch_impl() {
 
 void switch_impl::eval(lnodeimpl* cond, func_t func) {
   context* const ctx = m_key->get_ctx();
-  ctx->begin_cond(cond ? createAluNode(op_eq, 1, m_key, cond) : nullptr);
+  ctx->begin_case(cond ? createAluNode(op_eq, 1, m_key, cond) : nullptr);
   func();
-  ctx->end_cond();
+  ctx->end_case();
 }

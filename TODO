@@ -8,6 +8,8 @@ TODO list:
 *** CHDL binary shared library libspmv.so
 *** add support for ch_seq implace operators ++(), --(), >>=(), <<=(), &=(), |=(), ^=(), +=(), -=(), *=(), \=()
 *** test ch_shuffle
+*** printing struct, union, enum vales using reflection 
+*** allow ch_print() to use __if and __switch 
 
 - implement ch_call(function, args...) using variadic template to generate modules binding 
 - implement ch_bitbase.clone() to enable fork assignments

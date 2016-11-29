@@ -52,6 +52,10 @@ class tapimpl : public outputimpl { // LCOV_EXCL_LINE
 public:
   tapimpl(const std::string& name, lnodeimpl* src);
   
+  const lnode& get_target() const {
+    return m_srcs[0];
+  }
+  
   // LCOV_EXCL_START
   const std::string& get_tapName() const {
     return m_tapName;
@@ -60,7 +64,7 @@ public:
   
   void print(std::ostream& out) const override;
   
-  void print_vl(std::ostream& out) const override {} // LCOV_EXCL_LINE
+  void print_vl(std::ostream& out) const override {} // LCOV_EXCL_LINE 
   
 protected:
   std::string  m_tapName;

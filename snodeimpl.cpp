@@ -149,7 +149,7 @@ void snodeimpl::merge_left(uint32_t idx) {
 }
 
 uint64_t snodeimpl::sync_sources() const {
-  if (m_srcs.size() > 0) {  
+  if (!m_srcs.empty()) {  
     int changed = 0;
     for (source_t& src : m_srcs) {
       uint64_t changeid = src.node->sync_sources();

@@ -43,11 +43,12 @@ public:
   void begin_branch();
   void end_branch();
   
-  void begin_cond(lnodeimpl* cond);
-  void end_cond();
+  void begin_case(lnodeimpl* cond);
+  void end_case();
   bool has_conditionals() const {
-    return m_active_branches != 0;
+    return !m_cond_blocks.empty();
   }
+  
   lnodeimpl* resolve_conditionals(lnodeimpl* dst, lnodeimpl* src);
   
   litimpl* create_literal(const bitvector& value);
@@ -85,21 +86,32 @@ public:
   
   void dumpAST(std::ostream& out, uint32_t level);
   
+  void dumpCFG(lnodeimpl* node, std::ostream& out, uint32_t level);
+  
 protected:
   
   struct cond_val_t {
     lnodeimpl* dst;
     lnodeimpl* sel;
-    bool defined;
+    lnodeimpl* owner;
   };
   
-  struct cond_block_t {
+  struct cond_case_t {
     lnodeimpl* cond;
     std::set<lnodeimpl*> locals;
     std::vector<uint32_t> defs; 
-    cond_block_t(lnodeimpl* cond_) : cond(cond_) {}
+    cond_case_t(lnodeimpl* cond_) : cond(cond_) {}
   };
-
+  
+  struct cond_block_t {
+    std::list<cond_case_t> cases;
+  };
+  
+  typedef std::vector<cond_val_t> cond_vals_t;
+  typedef std::list<cond_block_t> cond_blocks_t;
+  
+  lnodeimpl* get_current_conditional(const cond_blocks_t::iterator& iterBlock, lnodeimpl* dst) const;
+  
   std::list<lnodeimpl*>   m_undefs;
   std::list<lnodeimpl*>   m_nodes;
   std::list<cdomain*>     m_cdomains;
@@ -108,16 +120,14 @@ protected:
   std::vector<tapimpl*>   m_taps;
   std::list<ioimpl*>      m_gtaps;
   std::list<litimpl*>     m_literals;
-  std::list<cond_block_t> m_conds;   
-  std::vector<cond_val_t> m_cond_vals;
+  cond_blocks_t           m_cond_blocks;   
+  cond_vals_t             m_cond_vals;
   std::stack<lnode>       m_clk_stack;
   std::stack<lnode>       m_reset_stack;
 
   uint32_t   m_nodeids;
   inputimpl* m_clk;
   inputimpl* m_reset;
-  
-  int m_active_branches;
   
   std::map<std::string, unsigned> m_dup_taps;
   

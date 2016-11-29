@@ -571,7 +571,8 @@ void chdl_internal::RotateRight(bitvector& out, const bitvector& in, uint32_t di
 }
 
 std::ostream& chdl_internal::operator<<(std::ostream& os, const bitvector& b) {
-  os.setf(std::ios_base::hex);
+  auto oldflags = os.flags();
+  os.setf(std::ios_base::hex, std::ios_base::basefield);
   os << "0x";
   for (int32_t i = b.get_num_words() - 1; i >= 0; --i) {
     uint32_t word = b.get_word(i);
@@ -579,6 +580,6 @@ std::ostream& chdl_internal::operator<<(std::ostream& os, const bitvector& b) {
     if (i != 0) 
       os << "_";
   }
-  os.unsetf(std::ios_base::hex);
+  os.flags(oldflags);
   return os;
 }

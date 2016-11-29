@@ -15,7 +15,7 @@ const bitvector& litimpl::eval(ch_cycle) {
 
 void litimpl::print(ostream& out) const {
   out << "#" << m_id << " <- " << m_name << m_value.get_size() 
-      << "(" << m_value << ")" << endl;
+      << "(" << m_value << ")";
 }
 
 // LCOV_EXCL_START

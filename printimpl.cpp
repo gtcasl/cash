@@ -49,7 +49,6 @@ printimpl::printimpl(context* ctx, lnodeimpl* cond, const std::string& format,
   for (auto arg : args) {
     m_srcs.emplace_back(arg);
   }
-  m_strbuf.setf(std::ios_base::hex); // enable hex formatting
 }
 
 const bitvector& printimpl::eval(ch_cycle t) {
@@ -57,16 +56,19 @@ const bitvector& printimpl::eval(ch_cycle t) {
     m_ctime = t;    
     if (m_args_offset == 0 
      || m_srcs[0].eval(t)[0]) {
-      m_strbuf.clear();
-      for (const char *str = m_format.c_str(); *str != '\0'; ++str) {
-        if (*str == '{') {
-          int index = parse_format_index(&str);      
-          m_strbuf << m_srcs[m_args_offset + index].eval(t);
-        } else {
-          m_strbuf.put(*str);
+      if (m_format != "") {
+        m_strbuf.clear();
+        for (const char *str = m_format.c_str(); *str != '\0'; ++str) {
+          if (*str == '{') {
+            int index = parse_format_index(&str);      
+            m_strbuf << m_srcs[m_args_offset + index].eval(t);
+          } else {
+            m_strbuf.put(*str);
+          }
         }
+        std::cout << m_strbuf.rdbuf();
       }
-      std::cout << m_strbuf.rdbuf() << std::endl;
+      std::cout << std::endl;
     }
   }
   return m_value;

@@ -149,5 +149,29 @@ TEST_CASE("conditionals tests", "[conditionals]") {
       ));
       return (c == 6);
     });
+    TEST([]()->ch_logic {
+      ch_bit<4> a(1), b(1), c(2), d, e;
+      __switch (a) (
+      __case (0) ( 
+        d = 0; 
+      ) 
+      __case (1) (
+         __if (b == 0) (
+           d = 1;
+         )
+         __elif (b == 1) (
+           e = 1;
+         )
+         __else (
+           d = 0;
+           e = 0;         
+         );
+      )
+      __default(
+         d = c;
+         e = c;         
+      ));
+      return (d + e == 3);
+    });
   }
 }

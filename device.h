@@ -31,7 +31,7 @@ public:
   }
   
   void toVerilog(const std::string& module_name, std::ostream& out);  
-  
+    
 protected:
   
   template <typename T>

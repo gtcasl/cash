@@ -277,7 +277,7 @@ void proxyimpl::print(std::ostream& out) const {
       out << "-" << range.offset + (range.length - 1);
     out << "}";
   }
-  out << ")" << endl;
+  out << ")";
 }
 
 // LCOV_EXCL_START

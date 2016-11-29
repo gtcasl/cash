@@ -22,7 +22,6 @@ context::context()
   : m_nodeids(0)
   , m_clk(nullptr)
   , m_reset(nullptr) 
-  , m_active_branches(0)
 {}
 
 context::~context() { 
@@ -35,7 +34,7 @@ context::~context() {
   }
 
   assert(m_cdomains.empty());
-  assert(m_active_branches == 0);
+  assert(m_cond_blocks.empty());
 }
 
 std::list<lnodeimpl*>::iterator
@@ -97,83 +96,127 @@ uint32_t context::add_node(lnodeimpl* node) {
     m_nodes.emplace_back(node);
   }  
   node->acquire();
-  if (m_conds.size() > 0) {
+  if (!m_cond_blocks.empty()
+   && !m_cond_blocks.front().cases.empty()) {
     // memory ports have global scope
     if (node->get_name() != "memport") {
-      m_conds.front().locals.emplace(node);
+      m_cond_blocks.front().cases.front().locals.emplace(node);
     }
   }
   return nodeid;  
 }
 
 void context::remove_node(undefimpl* node) {
-  assert(m_undefs.size() > 0);
+  assert(!m_undefs.empty());
   m_undefs.remove(node);
 }
 
 void context::begin_branch() {
-  ++m_active_branches;
+  m_cond_blocks.push_front(cond_block_t());
 }
 
 void context::end_branch() {
-  assert(m_active_branches > 0);
-  if (0 == --m_active_branches) {
+  assert(!m_cond_blocks.empty());
+  m_cond_blocks.pop_front();
+  if (m_cond_blocks.empty()) {
     m_cond_vals.clear();
   }
 }
 
-void context::begin_cond(lnodeimpl* cond) {
-  m_conds.emplace_front(cond);
+void context::begin_case(lnodeimpl* cond) {
+  assert(!m_cond_blocks.empty());
+  m_cond_blocks.front().cases.emplace_front(cond);
 }
 
-void context::end_cond() {
-  const cond_block_t& cb = m_conds.front();
-  for (uint32_t v : cb.defs) {
-    m_cond_vals[v].defined = false; 
+void context::end_case() {
+  assert(!m_cond_blocks.empty() && !m_cond_blocks.front().cases.empty());
+  const cond_case_t& cc = m_cond_blocks.front().cases.front();
+  for (uint32_t v : cc.defs) {
+    if (m_cond_vals[v].owner = cc.cond) {
+      m_cond_vals[v].owner = nullptr;
+    }
   }
-  m_conds.pop_front();
+}
+
+lnodeimpl* context::get_current_conditional(const cond_blocks_t::iterator& iterBlock, lnodeimpl* dst) const {
+  lnodeimpl* cond = nullptr;
+  if (0 == iterBlock->cases.front().locals.count(dst)) {      
+    // recursively compute nested conditional value
+    lnodeimpl* parent_cond = nullptr;
+    auto iterParentBlock = std::next(iterBlock);
+    if (iterParentBlock != m_cond_blocks.end()) {
+      parent_cond = this->get_current_conditional(iterParentBlock, dst);
+    }
+
+    auto iterCase = iterBlock->cases.begin();    
+    cond = iterCase->cond;        
+
+    if (parent_cond) {
+      if (cond == nullptr) {
+        // a default case with parent conditional requires a precise fallback test
+        for (auto iter = ++iterCase, iterEnd = iterBlock->cases.end(); iter != iterEnd; ++iter) {
+          assert(iter->cond);
+          // check if the case already assigned the variable
+          bool assigned = false;
+          for (auto v : iter->defs) {
+            if (m_cond_vals[v].dst == dst) {
+              assigned = true;
+              break;
+            }
+          }
+          if (!assigned) {
+            if (cond) {
+              cond = createAluNode(op_or, 1, cond, iter->cond);
+            } else {
+              cond = iter->cond;
+            }
+          }
+        }  
+        if (cond) {
+          cond = createAluNode(op_inv, 1, cond);
+        }
+      }      
+      if (cond) {
+        cond = createAluNode(op_and, 1, parent_cond, cond);    
+      } else {
+        cond = parent_cond;
+      }
+    }
+  }
+  return cond;
 }
 
 lnodeimpl* context::resolve_conditionals(lnodeimpl* dst, lnodeimpl* src) {
-  if (m_conds.size() > 0 
-   && (0 == m_conds.front().locals.count(dst))) {
-    lnodeimpl* cond;
-    {
-      // aggregate nested condition value
-      auto iter = m_conds.begin();
-      cond = iter->cond;    
-      ++iter;
-      for (auto iterEnd = m_conds.end(); iter != iterEnd && 0 == iter->locals.count(dst); ++iter) {
-        if (iter->cond) {
-          if (cond) {
-            cond = createAluNode(op_and, 1, cond, iter->cond);
-          } else {
-            cond = iter->cond;
-          }
-        }
-      }
-    }
+  // check if insize conditionall block and the node is not local
+  if (!m_cond_blocks.empty()
+   && !m_cond_blocks.front().cases.empty()
+   && (0 == m_cond_blocks.front().cases.front().locals.count(dst))) {
+    // get the current conditional value
+    auto iterBlock = m_cond_blocks.begin();
+    cond_case_t& cc = iterBlock->cases.front();
+    lnodeimpl* const cond = this->get_current_conditional(iterBlock, dst);
  
     // lookup dst value if already defined
     auto iter = std::find_if(m_cond_vals.begin(), m_cond_vals.end(),
       [dst](const cond_val_t& v)->bool { return v.dst == dst; });
     if (iter != m_cond_vals.end()) {
-      CHDL_CHECK(!iter->defined, "redundant assignment to node %s%d(#%d)!\n", dst->get_name().c_str(), dst->get_size(), dst->get_id());   
+      CHDL_CHECK(iter->owner == nullptr, "redundant assignment to node %s%d(#%d)!\n", dst->get_name().c_str(), dst->get_size(), dst->get_id());   
       if (cond) {
         src = createSelectNode(cond, src, iter->sel);
       }
-      dynamic_cast<selectimpl*>(iter->sel)->m_srcs[2].assign(src, true);
+      dynamic_cast<selectimpl*>(iter->sel)->get_false().assign(src, true);
       iter->sel = src;
+      cc.defs.push_back(iter - m_cond_vals.begin()); // save the index
       src = dst; // return original value
     } else {
       if (cond) {
         if (dst == nullptr) {
           dst = new undefimpl(this, src->get_size());
+          cc.locals.erase(dst); // ensure global scope
         }
-        src = createSelectNode(cond, src, dst);
-        cond_block_t& cb = m_conds.front();
-        cb.defs.push_back(m_cond_vals.size());
-        m_cond_vals.push_back({src, src, true});      
+        src = createSelectNode(cond, src, dst);        
+        cc.defs.push_back(m_cond_vals.size());
+        m_cond_vals.push_back({src, src, cond});      
       }
     }
   }
@@ -324,6 +367,52 @@ void context::toVerilog(const std::string& module_name, std::ostream& out) {
 void context::dumpAST(std::ostream& out, uint32_t level) {
   for (lnodeimpl* node : m_nodes) {
     node->print(out);
+    out << std::endl;
+  }
+}
+
+static void dumpCFG_r(lnodeimpl* node, std::ostream& out, uint32_t level, std::vector<bool>& visits, std::map<uint32_t, tapimpl*>& taps) {
+  visits[node->get_id()] = true;
+  node->print(out);
+  
+  auto iter = taps.find(node->get_id());
+  if (iter != taps.end()) {
+    out << " // " << iter->second->get_tapName();
+    out << std::endl;
+    return;
+  }  
+  out << std::endl;
+  
+  for (const lnode& src : node->get_srcs()) {
+    if (!visits[src.get_id()]) {
+      dumpCFG_r(src.get_impl(), out, level, visits, taps);
+    }
+  }  
+}
+
+void context::dumpCFG(lnodeimpl* node, std::ostream& out, uint32_t level) {
+  std::vector<bool> visits(m_nodeids + 1);
+  std::map<uint32_t, tapimpl*> taps;
+  
+  for (auto node : m_taps) {
+    taps[node->get_target().get_id()] = node;
+  }
+  
+  visits[node->get_id()] = true;
+  
+  tapimpl* tap = dynamic_cast<tapimpl*>(node);
+  if (tap) {
+    node = tap->get_target().get_impl();
+    node->print(out);
+    out << " // " << tap->get_tapName();        
+  } else {  
+    node->print(out);
+  }
+  out << std::endl;    
+  for (const lnode& src : node->get_srcs()) {
+    if (!visits[src.get_id()]) {
+      dumpCFG_r(src.get_impl(), out, level, visits, taps);
+    }
   }
 }
 

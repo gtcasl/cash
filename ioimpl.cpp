@@ -34,7 +34,7 @@ void inputimpl::print(std::ostream& out) const {
   } else {
     out << "?";
   }
-  out << ")" << endl;
+  out << ")";
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -69,7 +69,6 @@ snodeimpl* outputimpl::get_bus() {
 void outputimpl::print(std::ostream& out) const {
   out << "#" << m_id << " <- " << m_name << m_value.get_size();
   out << "(" << "#" << m_srcs[0].get_id() << ")";
-  out << endl;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -84,5 +83,4 @@ tapimpl::tapimpl(const std::string& name, lnodeimpl* src)
 void tapimpl::print(std::ostream& out) const {
   out << "#" << m_id << " <- " << m_name << m_value.get_size();
   out << "(#" << m_srcs[0].get_id() << ", '" << m_tapName << "')";
-  out << endl;
 }

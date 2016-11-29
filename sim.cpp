@@ -147,6 +147,13 @@ void ch_tracer::ensureInitialize() {
   for (auto ctx : m_contexts) {    
     for (tapimpl* tap : ctx->m_taps) {
       this->add_trace(tap->get_tapName(), tap->get_bus());
+    #ifndef NDEBUG
+      uint32_t dump_cfg = platform::self().get_dump_cfg();
+      if (dump_cfg) {
+        std::cout << "CFG dump for tap variable: " << tap->get_tapName() << std::endl;
+        ctx->dumpCFG(tap, std::cout, platform::self().get_dbg_level());
+      }
+    #endif
     }
   }
 }
