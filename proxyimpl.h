@@ -22,11 +22,18 @@ public:
     this->ensureInitialized(0, this->get_size());
   }
   
+  
+  bool is_slice() const;
+  
   bool includes(uint32_t start, uint32_t length) const;
   
   void remove_ref(const lnode* node, lnodeimpl* src) override;
   
-  void update_undefs(uint32_t start, lnodeimpl* src, uint32_t offset, uint32_t length) override;
+  void replace_undefs(uint32_t start, lnodeimpl* src, uint32_t offset, uint32_t length) override;
+  
+  bool has_undefs() {
+    return true;
+  }
   
   const bitvector& eval(ch_cycle t) override;  
   void print(std::ostream& out) const override;

@@ -61,7 +61,7 @@ public:
 
 protected:   
   
-  void reset(lnodeimpl* impl = nullptr, bool initialization = false) const;
+  void reset(lnodeimpl* impl = nullptr) const;
 
   void assign(lnodeimpl* impl, bool initialization = false) const;
   

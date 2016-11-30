@@ -88,7 +88,9 @@ uint32_t context::add_node(lnodeimpl* node) {
 #ifndef NDEBUG
   uint32_t dbg_node = platform::self().get_dbg_node();
   if (dbg_node) {
-    CHDL_CHECK(nodeid != dbg_node, "debugbreak on nodeid %d hit!", nodeid);
+    if (nodeid == dbg_node) {
+      CHDL_ABORT("debugbreak on nodeid %d hit!", nodeid);
+    }
   }
 #endif
   if (node->m_name == "undef") {
@@ -132,11 +134,18 @@ void context::begin_case(lnodeimpl* cond) {
 void context::end_case() {
   assert(!m_cond_blocks.empty() && !m_cond_blocks.front().cases.empty());
   const cond_case_t& cc = m_cond_blocks.front().cases.front();
-  for (uint32_t v : cc.defs) {
+  for (uint32_t v : cc.assignments) {
     if (m_cond_vals[v].owner = cc.cond) {
       m_cond_vals[v].owner = nullptr;
     }
   }
+}
+
+bool context::conditional_enabled(lnodeimpl* node) const {
+  if (m_cond_blocks.empty())
+    return false;
+  return (node == nullptr) 
+      || (0 == m_cond_blocks.front().cases.front().locals.count(node));
 }
 
 lnodeimpl* context::get_current_conditional(const cond_blocks_t::iterator& iterBlock, lnodeimpl* dst) const {
@@ -159,9 +168,12 @@ lnodeimpl* context::get_current_conditional(const cond_blocks_t::iterator& iterB
           assert(iter->cond);
           // check if the case already assigned the variable
           bool assigned = false;
-          for (auto v : iter->defs) {
+          for (auto v : iter->assignments) {
             if (m_cond_vals[v].dst == dst) {
-              assigned = true;
+              lnodeimpl* true_val = dynamic_cast<selectimpl*>(m_cond_vals[v].sel)->get_true().get_impl();
+              proxyimpl* true_proxy = dynamic_cast<proxyimpl*>(true_val);
+              if (true_proxy == nullptr || !true_proxy->has_undefs())
+                assigned = true;
               break;
             }
           }
@@ -187,7 +199,7 @@ lnodeimpl* context::get_current_conditional(const cond_blocks_t::iterator& iterB
   return cond;
 }
 
-lnodeimpl* context::resolve_conditionals(lnodeimpl* dst, lnodeimpl* src) {
+lnodeimpl* context::resolve_conditional(lnodeimpl* dst, lnodeimpl* src) {
   // check if insize conditionall block and the node is not local
   if (!m_cond_blocks.empty()
    && !m_cond_blocks.front().cases.empty()
@@ -196,34 +208,55 @@ lnodeimpl* context::resolve_conditionals(lnodeimpl* dst, lnodeimpl* src) {
     auto iterBlock = m_cond_blocks.begin();
     cond_case_t& cc = iterBlock->cases.front();
     lnodeimpl* const cond = this->get_current_conditional(iterBlock, dst);
- 
+    proxyimpl* proxy = dynamic_cast<proxyimpl*>(src);
+    
     // lookup dst value if already defined
     auto iter = std::find_if(m_cond_vals.begin(), m_cond_vals.end(),
       [dst](const cond_val_t& v)->bool { return v.dst == dst; });
     if (iter != m_cond_vals.end()) {
-      CHDL_CHECK(iter->owner == nullptr, "redundant assignment to node %s%d(#%d)!\n", dst->get_name().c_str(), dst->get_size(), dst->get_id());   
-      if (cond) {
-        src = createSelectNode(cond, src, iter->sel);
-      }
-      dynamic_cast<selectimpl*>(iter->sel)->get_false().assign(src, true);
-      iter->sel = src;
-      cc.defs.push_back(iter - m_cond_vals.begin()); // save the index
+      CHDL_CHECK((proxy && proxy->is_slice()) || iter->owner == nullptr, "redundant assignment to node %s%d(#%d)!\n", dst->get_name().c_str(), dst->get_size(), dst->get_id());
+      selectimpl* const sel = dynamic_cast<selectimpl*>(iter->sel);
+      if (iter->owner) {
+        assert(proxy && proxy->is_slice());
+        // merge existing select value and make sure their undefined regions point to dst
+        lnodeimpl* true_val = sel->get_true().get_impl();
+        proxy->ensureInitialized();
+        proxy->replace_undefs(0, true_val, 0, true_val->get_size());
+        sel->get_true().reset(src);
+      } else {
+        if (cond) {
+          lnodeimpl* false_val = sel->get_false().get_impl();
+          if (proxy && proxy->is_slice()) {
+            // resolve partial proxy object and make sure their undefined regions point to dst                     
+            proxy->ensureInitialized();
+            proxy->replace_undefs(0, false_val, 0, false_val->get_size());
+          }
+          src = createSelectNode(cond, src, false_val);
+          sel->get_false().reset(src);
+        } else {
+          sel->get_false().assign(src, true);
+        }
+        cc.assignments.push_back(iter - m_cond_vals.begin()); // save the index        
+        iter->sel = src;              
+      }     
       src = dst; // return original value
     } else {
       if (cond) {
         if (dst == nullptr) {
           dst = new undefimpl(this, src->get_size());
           // resolve partial proxy object
-          // make sure their undefined regions point to dst 
-          proxyimpl* proxy = dynamic_cast<proxyimpl*>(src);
-          if (proxy) {
+          // make sure their undefined regions point to dst           
+          if (proxy && proxy->is_slice()) {
             proxy->ensureInitialized();
-            proxy->update_undefs(0, dst, 0, dst->get_size());
+            proxy->replace_undefs(0, dst, 0, dst->get_size());
           }
-        }
-        src = createSelectNode(cond, src, dst);        
-        cc.defs.push_back(m_cond_vals.size());
-        m_cond_vals.push_back({src, src, cond});      
+          src = createSelectNode(cond, src, dst);                                   
+          cc.locals.erase(src); // ensure global scope                       
+        } else {             
+          src = createSelectNode(cond, src, dst);                         
+        } 
+        cc.assignments.push_back(m_cond_vals.size());  // save the index       
+        m_cond_vals.push_back({src, src, cond});     
       }
     }
   }

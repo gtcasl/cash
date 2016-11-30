@@ -12,6 +12,7 @@ TODO list:
 *** test ch_shuffle
 *** printing struct, union, enum vales using reflection 
 *** allow ch_print() to use __if and __switch 
+*** investigate alternative proxy implementation based on bitmask for simplicity
 
 - implement ch_call(function, args...) using variadic template to generate modules binding 
 - implement ch_bitbase.clone() to enable fork assignments

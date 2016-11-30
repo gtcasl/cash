@@ -9,24 +9,30 @@ void DbgPrint(int level, const char *format, ...);
 void dump_stack_trace(FILE* out, unsigned int max_frames = 32);
 
 #ifdef NDEBUG
-  #define CHDL_ABORT(msg, ...) do { \
+  #define CHDL_ABORT(msg, ...) \
+    do { \
       fprintf(stderr, "error: " msg "\n", ##__VA_ARGS__); \
       std::abort(); \
     } while (false)
   #define DBG(level, format, ...)
 #else
-  #define CHDL_ABORT(msg, ...) do { \
+  #define CHDL_ABORT(msg, ...) \
+    do { \
       chdl_internal::dump_stack_trace(stdout); \
       fprintf(stderr, "\nerror: " msg " (%s:%d:%s)\n", ##__VA_ARGS__, __FILE__, __LINE__, __FUNCTION__); \
       std::abort(); \
     } while (false)
-  #define DBG(level, format, ...) do { \
+  #define DBG(level, format, ...) \
+    do { \
       DbgPrint(level, "DBG: " format, ##__VA_ARGS__); \
     } while (false)
 #endif
 
-#define CHDL_CHECK(x, msg, ...) do { \
-  if (!(x)) CHDL_ABORT(msg, ##__VA_ARGS__); \
+#define CHDL_CHECK(x, msg, ...) \
+  do { \
+    if (!(x)) { \
+      CHDL_ABORT(msg, ##__VA_ARGS__); \
+    } \
   } while (false)
 
 #define TODO(x) \

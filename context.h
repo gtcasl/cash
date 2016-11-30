@@ -45,11 +45,8 @@ public:
   
   void begin_case(lnodeimpl* cond);
   void end_case();
-  bool has_conditionals() const {
-    return !m_cond_blocks.empty();
-  }
-  
-  lnodeimpl* resolve_conditionals(lnodeimpl* dst, lnodeimpl* src);
+  bool conditional_enabled(lnodeimpl* node = nullptr) const;
+  lnodeimpl* resolve_conditional(lnodeimpl* dst, lnodeimpl* src);
   
   litimpl* create_literal(const bitvector& value);
   
@@ -99,7 +96,7 @@ protected:
   struct cond_case_t {
     lnodeimpl* cond;
     std::set<lnodeimpl*> locals;
-    std::vector<uint32_t> defs; 
+    std::vector<uint32_t> assignments; 
     cond_case_t(lnodeimpl* cond_) : cond(cond_) {}
   };
   

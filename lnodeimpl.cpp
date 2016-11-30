@@ -75,17 +75,17 @@ undefimpl::~undefimpl() {
   m_ctx->remove_node(this);
 }
 
-void undefimpl::remove_ref(const lnode* curr_owner, lnodeimpl* new_owner) {
-  m_refs.erase(curr_owner);
-  if (new_owner) {
-    assert(this->get_size() == new_owner->get_size());
-    this->replace_all_refs(new_owner);
+void undefimpl::remove_ref(const lnode* node, lnodeimpl* src) {
+  m_refs.erase(node);
+  if (src) {
+    assert(this->get_size() == src->get_size());
+    this->replace_all_refs(src);
   }
   if (this->unreferenced())
     this->release();
 }
 
-void undefimpl::update_undefs(uint32_t start, lnodeimpl* src, uint32_t offset, uint32_t length) {
+void undefimpl::replace_undefs(uint32_t start, lnodeimpl* src, uint32_t offset, uint32_t length) {
   assert(length <= src->get_size());
   assert(length <= this->get_size());  
   if (length < this->get_size()) {
@@ -120,7 +120,7 @@ void undefimpl::print_vl(std::ostream& out) const {
 
 lnode::lnode(uint32_t size) : m_impl(nullptr) {
   // force initialization of nested objects
-  if (ctx_curr()->has_conditionals()) {
+  if (ctx_curr()->conditional_enabled()) {
     this->ensureInitialized(size);
   }
 }
@@ -230,11 +230,11 @@ void lnode::set_impl(lnodeimpl* curr_impl, lnodeimpl* new_impl) const {
   m_impl = new_impl;
 }
 
-void lnode::reset(lnodeimpl* impl, bool initialization) const {
+void lnode::assign(lnodeimpl* impl, bool initialization) const {
   if (impl) {
     if (!initialization) {
       // resolve conditionals if inside a branch
-      impl = impl->get_ctx()->resolve_conditionals(m_impl, impl);
+      impl = impl->get_ctx()->resolve_conditional(m_impl, impl);
       if (impl == m_impl)
         return;
     }
@@ -248,9 +248,14 @@ void lnode::reset(lnodeimpl* impl, bool initialization) const {
   m_impl = impl;
 }
 
-void lnode::assign(lnodeimpl* impl, bool initialization) const {
-  assert(impl);  
-  this->reset(impl, initialization);
+void lnode::reset(lnodeimpl* impl) const {
+  if (impl) {    
+    impl->add_ref(this);
+  }
+  if (m_impl) {
+    m_impl->remove_ref(this, nullptr);    
+  }  
+  m_impl = impl;
 }
 
 void lnode::move(lnode& rhs) {
@@ -292,12 +297,11 @@ void lnode::assign(uint32_t dst_offset, lnodeimpl* src, uint32_t src_offset, uin
   assert(size > dst_offset);
   assert(size >= dst_offset + src_length);
   
-  context* ctx = src->get_ctx();
-  
-  if (src_length == size) {
+  context* const ctx = src->get_ctx();
+   if (src_length == size) {
     assert(dst_offset == 0);
     if (src->get_size() > src_length) {
-      proxyimpl* proxy = new proxyimpl(ctx, src_length);
+      proxyimpl* const proxy = new proxyimpl(ctx, src_length);
       proxy->add_node(0, src, src_offset, src_length);
       src = proxy;
     }
@@ -305,31 +309,26 @@ void lnode::assign(uint32_t dst_offset, lnodeimpl* src, uint32_t src_offset, uin
   } else {
     assert(src_length < size);
     if (m_impl) {
-      assert(m_impl->get_size() == size);
-      if (src->get_size() > src_length) {
-        proxyimpl* proxy = new proxyimpl(ctx, src_length);
-        proxy->add_node(0, src, src_offset, src_length);
-        src = proxy;
+      assert(m_impl->get_size() == size);   
+      if (!initialization 
+       && ctx->conditional_enabled(m_impl)) {          
+        proxyimpl* const proxy = new proxyimpl(ctx, size);
+        proxy->add_node(dst_offset, src, src_offset, src_length);
+        this->assign(proxy, initialization);
+      } else {
+        proxyimpl* proxy = dynamic_cast<proxyimpl*>(m_impl);
+        if (proxy == nullptr) {
+          proxy = new proxyimpl(ctx, size);          
+          proxy->add_node(0, m_impl, 0, size);  
+          this->reset(proxy);
+        }      
+        proxy->replace_undefs(dst_offset, src, src_offset, src_length);
+        proxy->add_node(dst_offset, src, src_offset, src_length);      
       }
-      
-      proxyimpl* subset_impl = new proxyimpl(ctx, src_length);
-      subset_impl->add_node(0, m_impl, dst_offset, src_length);
-      lnode subset(subset_impl);
-      subset.assign(src, initialization);
-      
-      proxyimpl* dst = dynamic_cast<proxyimpl*>(m_impl);
-      if (dst == nullptr) {
-        dst = new proxyimpl(ctx, size);
-        dst->add_node(0, m_impl, 0, size);
-        dst->add_ref(this);
-        m_impl->remove_ref(this);
-        m_impl = dst;
-      }         
-      dst->add_node(dst_offset, subset.get_impl(), 0, src_length);
     } else {
-      proxyimpl* proxy = new proxyimpl(ctx, size);
+      proxyimpl* const proxy = new proxyimpl(ctx, size);
       proxy->add_node(dst_offset, src, src_offset, src_length);
       this->assign(proxy, initialization);
-    }    
+    }
   }
 }

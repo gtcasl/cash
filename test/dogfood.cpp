@@ -10,6 +10,6 @@ static void debugbreak() {
   g_debugbreak = 1;
 }
 
-TEST_CASE("dogfood", "[debug]") {        
+TEST_CASE("dogfood", "[debug]") { 
   //--
 }

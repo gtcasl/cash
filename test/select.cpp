@@ -187,5 +187,35 @@ TEST_CASE("conditionals tests", "[conditionals]") {
       ));
       return (b == 1101_b);
     });
+    TEST([]()->ch_logic {
+      ch_bit<4> a(0), b;
+      __switch (a) (
+      __case (0) ( 
+        b[0] = 1;
+        b[1] = 0;
+        b[2] = 1;
+      ) 
+      __case (1) (
+        b[1] = 1; 
+      )
+      __default(
+        b = 1000_b;
+      ));
+      return (b == 1101_b);
+    });
+    TEST([]()->ch_logic {
+      ch_bit<4> a(0), b;
+      __switch (a) (
+      __case (0) ( 
+        b = ch_zext<4>(10_b);
+      ) 
+      __case (1) (
+        b = ch_zext<4>(01_b);
+      )
+      __default (
+        b = 1000_b;
+      ));
+      return (b == 0010_b);
+    });
   }
 }

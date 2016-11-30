@@ -153,11 +153,11 @@ void proxyimpl::merge_left(uint32_t idx) {
 void proxyimpl::remove_ref(const lnode* node, lnodeimpl* src) {
   m_refs.erase(node);
   if (src) {
-    this->update_undefs(0, src, 0, src->get_size());    
+    this->replace_undefs(0, src, 0, src->get_size());    
   }
 }
 
-void proxyimpl::update_undefs(uint32_t start, lnodeimpl* src, uint32_t offset, uint32_t length) {
+void proxyimpl::replace_undefs(uint32_t start, lnodeimpl* src, uint32_t offset, uint32_t length) {
   for (uint32_t i = 0, n = m_ranges.size(); length && i < n; ++i) {
     const range_t& curr = m_ranges[i];
     lnodeimpl* curr_impl = m_srcs[curr.srcidx].get_impl();
@@ -167,7 +167,7 @@ void proxyimpl::update_undefs(uint32_t start, lnodeimpl* src, uint32_t offset, u
       if (start <= curr.start && src_end >= curr_end) {
         // source fully overlaps
         uint32_t delta = curr.start - start;        
-        curr_impl->update_undefs(curr.offset, src, offset + delta, curr.length);        
+        curr_impl->replace_undefs(curr.offset, src, offset + delta, curr.length);        
         uint32_t step = curr_end - start;
         start  += step;        
         offset += step;        
@@ -176,7 +176,7 @@ void proxyimpl::update_undefs(uint32_t start, lnodeimpl* src, uint32_t offset, u
         // source intersets right
         uint32_t overlap = curr_end - start;        
         uint32_t delta = start - curr.start;
-        curr_impl->update_undefs(curr.offset + delta, src, offset, overlap);        
+        curr_impl->replace_undefs(curr.offset + delta, src, offset, overlap);        
         start  += overlap;
         offset += overlap;
         length -= overlap;
@@ -184,7 +184,7 @@ void proxyimpl::update_undefs(uint32_t start, lnodeimpl* src, uint32_t offset, u
         assert(!(start < curr.start)); // left intersections should not exit
         // source fully included          
         uint32_t delta = start - curr.start;        
-        curr_impl->update_undefs(curr.offset + delta, src, offset, length);
+        curr_impl->replace_undefs(curr.offset + delta, src, offset, length);
         length = 0;
       }
     }
@@ -246,6 +246,14 @@ bool proxyimpl::includes(uint32_t start, uint32_t length) const {
     }
   }
   return false;
+}
+
+bool proxyimpl::is_slice() const {
+  uint32_t actual_size = 0;
+  for (const range_t& curr : m_ranges) {
+    actual_size += curr.length;
+  }
+  return actual_size != this->get_size(); 
 }
 
 const bitvector& proxyimpl::eval(ch_cycle t) {

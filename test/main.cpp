@@ -1,7 +1,14 @@
 #define CATCH_CONFIG_MAIN
 #include "common.h"
 
+static void begin_test() {
+  static int test_number = 0;
+  std::cout << "running test #" << test_number++ << " ..." << std::endl;
+}
+
 bool runtest(const std::function<ch_logic()>& test, ch_cycle cycles) {
+  begin_test();
+  
   ch_signal ret;
   ch_device dev(test, ret);
   ch_simulator sim(dev);
@@ -12,4 +19,9 @@ bool runtest(const std::function<ch_logic()>& test, ch_cycle cycles) {
     return (cycle < cycles);
   });
   return static_cast<bool>(ret);
+}
+
+bool runtestx(const std::function<bool()>& test) {
+  begin_test();
+  return test();
 }
