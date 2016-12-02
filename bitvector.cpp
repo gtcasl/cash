@@ -335,13 +335,13 @@ void bitvector::readBytes(uint8_t* out, uint32_t sizeInBytes) const {
 void bitvector::writeBytes(const uint8_t* in, uint32_t sizeInBytes) {
   assert(m_size > 0);
   assert(sizeInBytes * 8 >= m_size);
-  uint32_t srcBytes = (m_size + 7) / 8;
+  uint32_t dstBytes = (m_size + 7) / 8;
   // check for overflow
-  CHDL_CHECK(0 ==(in[srcBytes-1] & ~((1 << (m_size % 8))-1)), "input value overflow");
-  for (uint32_t i = srcBytes; i < sizeInBytes; ++i) {
+  CHDL_CHECK(0 == (m_size % 8) || 0 ==(in[dstBytes-1] & ~((1 << (m_size % 8))-1)), "input value overflow");
+  for (uint32_t i = dstBytes; i < sizeInBytes; ++i) {
     CHDL_CHECK(0 == in[i], "input value overflow"); 
   }  
-  memcpy(m_words, in, srcBytes);  
+  memcpy(m_words, in, dstBytes);  
 }
 
 void chdl_internal::Invert(bitvector& out, const bitvector& in) {

@@ -159,6 +159,8 @@ namespace core {
   using chdl_internal::ch_lsb;
   using chdl_internal::ch_enc;
   using chdl_internal::ch_dec;
+  using chdl_internal::ch_min;
+  using chdl_internal::ch_max;
 
   //
   // utility functions

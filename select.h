@@ -177,4 +177,44 @@ ch_bit<N> ch_select(const ch_logicbase& cond, const ch_bit<N>& True, const ch_bi
   return ch_bit<N>(createSelectNode(cond.get_node().get_impl(), True.get_node().get_impl(), False.get_node().get_impl()));
 }
 
+template <unsigned N> 
+ch_bit<N> ch_min(const ch_bitbase<N>& lhs, const ch_bitbase<N>& rhs) {
+  return ch_select<N>(lhs < rhs, lhs, rhs);
+}
+
+template <unsigned N> 
+ch_bit<N> ch_min(const ch_bitbase<N>& lhs, const ch_bit<N>& rhs) {
+  return ch_select<N>(lhs < rhs, lhs, rhs);
+}
+
+template <unsigned N> 
+ch_bit<N> ch_min(const ch_bit<N>& lhs, const ch_bitbase<N>& rhs) {
+  return ch_select<N>(lhs < rhs, lhs, rhs);
+}
+
+template <unsigned N> 
+ch_bit<N> ch_min(const ch_bit<N>& lhs, const ch_bit<N>& rhs) {
+  return ch_select<N>(lhs < rhs, lhs, rhs);
+}
+
+template <unsigned N> 
+ch_bit<N> ch_max(const ch_bitbase<N>& lhs, const ch_bitbase<N>& rhs) {
+  return ch_select<N>(lhs > rhs, lhs, rhs);
+}
+
+template <unsigned N> 
+ch_bit<N> ch_max(const ch_bitbase<N>& lhs, const ch_bit<N>& rhs) {
+  return ch_select<N>(lhs > rhs, lhs, rhs);
+}
+
+template <unsigned N> 
+ch_bit<N> ch_max(const ch_bit<N>& lhs, const ch_bitbase<N>& rhs) {
+  return ch_select<N>(lhs > rhs, lhs, rhs);
+}
+
+template <unsigned N> 
+ch_bit<N> ch_max(const ch_bit<N>& lhs, const ch_bit<N>& rhs) {
+  return ch_select<N>(lhs > rhs, lhs, rhs);
+}
+
 }
