@@ -8,6 +8,7 @@
 #include "switch.h"
 #include "reg.h"
 #include "seq.h"
+#include "float.h"
 #include "mem.h"
 #include "arithm.h"
 #include "bus.h"
@@ -53,6 +54,8 @@ namespace core {
   using ch_logicbase = chdl_internal::ch_logicbase;
 
   template<typename T> using ch_seq = chdl_internal::ch_seq<T>;
+
+  using ch_float = chdl_internal::ch_float;
 
   //
   // pre-defined bitv types

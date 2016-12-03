@@ -5,7 +5,7 @@ PROJECT = test.out
 
 all: $(PROJECT)
 
-$(PROJECT) : main.o dogfood.o literals.o proxies.o aggregates.o select.o arithm.o reg.o mem.o sim.o miscs.o
+$(PROJECT) : main.o dogfood.o literals.o proxies.o aggregates.o select.o arithm.o reg.o mem.o sim.o miscs.o float.o
 	$(CXX) $(CXXFLAGS) $^ $(LDFLAGS) -o $@
 
 view: $(PROJECT).vcd

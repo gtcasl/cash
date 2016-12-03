@@ -61,7 +61,12 @@ TEST_CASE("miscellaneous tests", "[miscs]") {
       ch_logic b(1);
       ch_print(b, "a={0}", a);
       return '1';
-    });   
+    });
+    TEST([]()->ch_logic {
+      ch_float a(0.1f);
+      ch_print("a={0:f}", a);
+      return '1';
+    });
   }
   
   SECTION("test vctracer", "[vctracer]") {

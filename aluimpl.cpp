@@ -34,6 +34,7 @@ static const char* op_name(ch_operator op) {
   case op_ge:     return "ge";
   case op_mux:    return "mux";
   case op_demux:  return "demux";
+  case op_fmult:  return "fmult";
    default:
     CHDL_ABORT("invalid operator");
   }
@@ -186,6 +187,20 @@ static void add(bitvector& dst, const bitvector& a, const bitvector& b, uint32_t
   }
 }
 
+static void fmult(bitvector& dst, const bitvector& a, const bitvector& b) {
+  assert(dst.get_size() == 32);
+  assert(a.get_size() == 32);
+  assert(b.get_size() == 32);
+  
+  uint32_t a_value = a.get_word(0);
+  uint32_t b_value = b.get_word(0);
+  float a_valuef = *(const float*)&a_value;
+  float b_valuef = *(const float*)&b_value;
+  float resultf = a_valuef * b_valuef;
+  uint32_t result = *(const uint32_t*)&resultf;
+  dst.set_word(0, result);
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 static void mux(bitvector& dst, const bitvector& in, const bitvector& sel) {
@@ -314,6 +329,10 @@ const bitvector& aluimpl::eval(ch_cycle t) {
       break;
     case op_demux:
       demux(m_value, m_srcs[0].eval(t), m_srcs[1].eval(t));
+      break;
+      
+    case op_fmult:
+      fmult(m_value, m_srcs[0].eval(t), m_srcs[1].eval(t));
       break;
       
     default:

@@ -2,6 +2,7 @@
 TODO list:
 ==========
 
+*** make ch_mem store the enclosed type liek ch_mem<ch_bit32, 10> 
 *** the branch.owner concept is broken (a nested assignment to global would not prevent outer assignment) - use bitmask intead to check overrides
 *** address the issue why friend member still don't get implicit template constructor (e.g. ch_min, ch_select, ...)
 *** should consider gettng rid of defer initialization once auto dead code elimination is supported (will remove all nasty hacks in code where dst == nullptr is a worry)

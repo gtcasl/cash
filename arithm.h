@@ -33,6 +33,7 @@ enum ch_operator {
   op_ge,
   op_mux,
   op_demux,
+  op_fmult
 };
 
 lnodeimpl* createAluNode(ch_operator op, uint32_t size, lnodeimpl* a, lnodeimpl* b);

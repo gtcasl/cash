@@ -5,35 +5,63 @@
 using namespace std;
 using namespace chdl_internal;
 
-static int parse_format_index(const char** str) {
-  assert(str);
+enum class fmttype {
+  Int,
+  Float,
+};
 
-  const char* curr = *str;
+struct fmtinfo_t {
+  int index;
+  fmttype type;
+};
+
+static const char* parse_format_index(fmtinfo_t* out, const char* str) {
+  assert(str);
   
   // check starting bracket
-  assert(*curr == '{');
+  assert(*str == '{');
   
-  ++curr; // advance to next char
+  ++str; // advance to next char
   
   // parse index value
-  const char *str_idx_end = curr;
-  uint32_t index = strtoul(curr, (char**)&str_idx_end, 0);
-  if (str_idx_end == curr || errno == ERANGE) {
+  const char *str_idx_end = str;
+  out->index = strtoul(str, (char**)&str_idx_end, 0);
+  if (str_idx_end == str || errno == ERANGE) {
     CHDL_ABORT("print format invalid index value");
-    return -1;
+    return str;
   }
   
   // advance pointer
-  curr = str_idx_end;
+  str = str_idx_end;
   
-  // check terminating bracket
-  if (*curr == '\0' || *curr != '}') {
-    CHDL_ABORT("print format missing terminating index bracket");
-    return -1;
+  // check type info
+  out->type = fmttype::Int;
+  if (*str == ':') {
+    ++str; // advance pointer
+    if (*str != '\0') {
+      switch (*str) {
+      case 'i':
+      case 'd':
+      case 'x':
+        out->type = fmttype::Int;
+        break;
+      case 'f':
+      case 'F':
+      case 'g':
+        out->type = fmttype::Float;
+        break;
+      }
+      ++str; // advance pointer
+    }    
   }
   
-  *str = curr;
-  return index;
+  // check terminating bracket
+  if (*str == '\0' || *str != '}') {
+    CHDL_ABORT("print format missing terminating index bracket");
+    return str;
+  }
+  
+  return str;
 }
 
 printimpl::printimpl(context* ctx, lnodeimpl* cond, const std::string& format, 
@@ -60,8 +88,19 @@ const bitvector& printimpl::eval(ch_cycle t) {
         m_strbuf.clear();
         for (const char *str = m_format.c_str(); *str != '\0'; ++str) {
           if (*str == '{') {
-            int index = parse_format_index(&str);      
-            m_strbuf << m_srcs[m_args_offset + index].eval(t);
+            fmtinfo_t fmt;
+            str = parse_format_index(&fmt, str);      
+            switch (fmt.type) {
+            case fmttype::Int:
+              m_strbuf << m_srcs[m_args_offset + fmt.index].eval(t);
+              break;
+            case fmttype::Float: {
+                uint32_t value = m_srcs[m_args_offset + fmt.index].eval(t).get_word(0);
+                float valuef = *(const float*)&value;
+                m_strbuf << valuef;
+              }
+              break;
+            }            
           } else {
             m_strbuf.put(*str);
           }
@@ -88,7 +127,9 @@ void chdl_internal::createPrintNode(lnodeimpl* cond, const std::string& format,
   int max_index = -1;
   for (const char *str = format.c_str(); *str != '\0'; ++str) {
     if (*str == '{') {
-      max_index = max(parse_format_index(&str), max_index);      
+      fmtinfo_t fmt;
+      str = parse_format_index(&fmt, str);
+      max_index = max(fmt.index, max_index);      
     }
   }
   CHDL_CHECK(max_index < (int)args.size(), "print format index out of range");
