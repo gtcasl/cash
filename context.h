@@ -23,10 +23,6 @@ public:
 
   //--
 
-  std::list<lnodeimpl*>::iterator erase_node(const std::list<lnodeimpl*>::iterator& iter);
-
-  //--
-
   void push_clk(lnodeimpl* clk);
   void pop_clk();
   lnodeimpl* get_clk();
@@ -38,7 +34,7 @@ public:
   //--
   
   uint32_t add_node(lnodeimpl* node);  
-  void remove_node(undefimpl* node);
+  void remove_node(lnodeimpl* node);
   
   void begin_branch();
   void end_branch();
@@ -52,9 +48,7 @@ public:
   
   cdomain* create_cdomain(const std::vector<clock_event>& sensitivity_list);
   void remove_cdomain(cdomain* cd);
-  
-  void register_gtap(ioimpl* node);
-  
+    
   //-- 
 
   lnodeimpl* bind_input(snodeimpl* bus);  
@@ -85,6 +79,8 @@ public:
   
   void dumpCFG(lnodeimpl* node, std::ostream& out, uint32_t level);
   
+  void dump_stats(std::ostream& out);
+  
 protected:
   
   struct cond_val_t {
@@ -109,14 +105,14 @@ protected:
   
   lnodeimpl* get_current_conditional(const cond_blocks_t::iterator& iterBlock, lnodeimpl* dst) const;
   
-  std::list<lnodeimpl*>   m_undefs;
   std::list<lnodeimpl*>   m_nodes;
-  std::list<cdomain*>     m_cdomains;
-  std::vector<ioimpl*>    m_inputs;
-  std::vector<ioimpl*>    m_outputs;
-  std::vector<tapimpl*>   m_taps;
+  std::list<undefimpl*>   m_undefs;  
+  std::list<inputimpl*>   m_inputs;
+  std::list<outputimpl*>  m_outputs;
+  std::list<tapimpl*>     m_taps;
   std::list<ioimpl*>      m_gtaps;
   std::list<litimpl*>     m_literals;
+  std::list<cdomain*>     m_cdomains;
   cond_blocks_t           m_cond_blocks;   
   cond_vals_t             m_cond_vals;
   std::stack<lnode>       m_clk_stack;
@@ -128,7 +124,7 @@ protected:
   
   std::map<std::string, unsigned> m_dup_taps;
   
-  friend class optimizer;
+  friend class ch_compiler;
   friend class ch_simulator;
   friend class ch_tracer;
 };

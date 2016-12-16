@@ -6,7 +6,7 @@ using namespace std;
 using namespace chdl_internal;
 
 tickimpl::tickimpl(context* ctx) 
-  : lnodeimpl("tick", ctx, CHAR_BIT * sizeof(ch_cycle))
+  : lnodeimpl(op_tick, ctx, CHAR_BIT * sizeof(ch_cycle))
   , m_ctime(~0ull) 
 {}
 

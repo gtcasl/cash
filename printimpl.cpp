@@ -66,7 +66,7 @@ static const char* parse_format_index(fmtinfo_t* out, const char* str) {
 
 printimpl::printimpl(context* ctx, lnodeimpl* cond, const std::string& format, 
                      const std::initializer_list<lnodeimpl*>& args) 
-  : ioimpl("print", ctx, 0)
+  : ioimpl(op_print, ctx, 0)
   , m_format(format)
   , m_args_offset(0)
   , m_ctime(~0ull) {
@@ -123,6 +123,10 @@ void printimpl::print_vl(std::ostream& out) const {
 
 void chdl_internal::createPrintNode(lnodeimpl* cond, const std::string& format, 
                      const std::initializer_list<lnodeimpl*>& args) {
+  // printing is only enabled in debug mode
+  if (platform::self().get_dbg_level() == 0)
+    return;
+  
   // check format
   int max_index = -1;
   for (const char *str = format.c_str(); *str != '\0'; ++str) {
@@ -134,5 +138,5 @@ void chdl_internal::createPrintNode(lnodeimpl* cond, const std::string& format,
   }
   CHDL_CHECK(max_index < (int)args.size(), "print format index out of range");
   context* ctx = ctx_curr();
-  ctx->register_gtap(new printimpl(ctx, cond, format, args));
+  new printimpl(ctx, cond, format, args);
 }

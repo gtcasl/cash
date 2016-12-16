@@ -56,6 +56,10 @@ public:
         m_mem.write(m_addr.get_node().get_impl(), data.get_node().get_impl());
       }
       
+      lnode get_node() const { 
+        return this->operator ch_bit<N>().get_node();
+      }
+      
       operator ch_bit<N>() const {
         return ch_bit<N>(m_mem.read(m_addr.get_node().get_impl()));
       }

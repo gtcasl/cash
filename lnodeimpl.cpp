@@ -4,6 +4,7 @@
 #include "proxyimpl.h"
 #include "litimpl.h"
 #include "tickable.h"
+#include "regimpl.h"
 #include "cdomain.h"
 #include "snodeimpl.h"
 #include "context.h"
@@ -11,27 +12,35 @@
 using namespace std;
 using namespace chdl_internal;
 
-lnodeimpl::lnodeimpl(const std::string& name, context* ctx, uint32_t size) 
-  : m_name(name)
+lnodeimpl::lnodeimpl(ch_operator op, context* ctx, uint32_t size) 
+  : m_op(op)
   , m_ctx(ctx)
   , m_value(size) {
   m_id = ctx->add_node(this);  
 }
 
-lnodeimpl::~lnodeimpl() {
-  for (auto node : m_refs) {
-    node->set_impl(this, nullptr);
+lnodeimpl::~lnodeimpl() {  
+  for (auto iter = m_refs.begin(), iterEnd = m_refs.end(); iter != iterEnd;) {
+    (*iter++)->reset();
   }
+  m_ctx->remove_node(this);  
+}
+
+void lnodeimpl::add_ref(const lnode* node) {
+  m_refs.emplace(node);  
+}
+
+void lnodeimpl::remove_ref(const lnode* node) {
+  m_refs.erase(node);
 }
 
 void lnodeimpl::replace_all_refs(lnodeimpl* impl) {
-  assert(impl != this);
-  for (auto node : m_refs) {
-    node->set_impl(this, impl);
-    if (impl)
-      impl->add_ref(node);
+  assert(impl && impl != this);
+  for (auto iter = m_refs.begin(), iterEnd = m_refs.end(); iter != iterEnd;) {
+    auto iterCur = iter++;  
+    const lnode* node = *iterCur; 
+    node->reset(impl);
   }
-  m_refs.clear();
 }
 
 bool lnodeimpl::ready() const {
@@ -50,8 +59,15 @@ bool lnodeimpl::valid() const {
   return true;
 }
 
+const char* lnodeimpl::get_name() const {
+  static const char* sc_names[] = {
+    CHDL_OPERATOR_ENUM(CHDL_OPERATOR_NAME)
+  };
+  return sc_names[(int)m_op];
+}
+
 void lnodeimpl::print(std::ostream& out) const {
-  out << "#" << m_id << " <- " << m_name << m_value.get_size();
+  out << "#" << m_id << " <- " << this->get_name() << m_value.get_size();
   uint32_t n = m_srcs.size();
   if (n > 0) {
     out << "(";
@@ -67,30 +83,15 @@ void lnodeimpl::print(std::ostream& out) const {
 ///////////////////////////////////////////////////////////////////////////////
 
 undefimpl::undefimpl(context* ctx, uint32_t size) 
-  : lnodeimpl("undef", ctx, size) 
+  : lnodeimpl(op_undef, ctx, size) 
 {}
-
-undefimpl::~undefimpl() {
-  assert(m_refs.empty());
-  m_ctx->remove_node(this);
-}
-
-void undefimpl::remove_ref(const lnode* node, lnodeimpl* src) {
-  m_refs.erase(node);
-  if (src) {
-    assert(this->get_size() == src->get_size());
-    this->replace_all_refs(src);
-  }
-  if (this->unreferenced())
-    this->release();
-}
 
 void undefimpl::replace_undefs(uint32_t start, lnodeimpl* src, uint32_t offset, uint32_t length) {
   assert(length <= src->get_size());
   assert(length <= this->get_size());  
   if (length < this->get_size()) {
     // copy region smaller than dst buffer
-    proxyimpl* proxy = new proxyimpl(m_ctx, this->get_size());
+    proxyimpl* const proxy = new proxyimpl(m_ctx, this->get_size());
     this->replace_all_refs(proxy);
     proxy->add_node(0, this, 0, this->get_size());
     proxy->add_node(start, src, offset, length, true);    
@@ -98,12 +99,11 @@ void undefimpl::replace_undefs(uint32_t start, lnodeimpl* src, uint32_t offset, 
     assert(length == this->get_size());
     if (length < src->get_size()) {
       // copy region smaller than src buffer 
-      proxyimpl* proxy = new proxyimpl(m_ctx, length);
+      proxyimpl* const proxy = new proxyimpl(m_ctx, length);
       proxy->add_node(0, src, offset, length);
       src = proxy;
     }
     this->replace_all_refs(src);
-    this->release();
   }
 }
 
@@ -224,12 +224,6 @@ lnodeimpl* lnode::get_impl() const {
   return m_impl;
 }
 
-void lnode::set_impl(lnodeimpl* curr_impl, lnodeimpl* new_impl) const {
-  assert(curr_impl != new_impl);
-  assert(m_impl == nullptr || m_impl == curr_impl);  
-  m_impl = new_impl;
-}
-
 void lnode::assign(lnodeimpl* impl, bool initialization) const {
   if (impl) {
     if (!initialization) {
@@ -237,13 +231,13 @@ void lnode::assign(lnodeimpl* impl, bool initialization) const {
       impl = impl->get_ctx()->resolve_conditional(m_impl, impl);
       if (impl == m_impl)
         return;
-    }
-    
+    }    
     impl->add_ref(this);
   }
   if (m_impl) {
-    CHDL_CHECK(impl != m_impl, "redundant assignment for node %s%d(#%d)!\n", impl->get_name().c_str(), impl->get_size(), impl->get_id());
-    m_impl->remove_ref(this, impl);    
+    CHDL_CHECK(impl != m_impl, "redundant assignment for node %s%d(#%d)!\n", impl->get_name(), impl->get_size(), impl->get_id());
+    m_impl->remove_ref(this);   
+    m_impl->replace_undefs(0, impl, 0, impl->get_size());
   }  
   m_impl = impl;
 }
@@ -253,7 +247,7 @@ void lnode::reset(lnodeimpl* impl) const {
     impl->add_ref(this);
   }
   if (m_impl) {
-    m_impl->remove_ref(this, nullptr);    
+    m_impl->remove_ref(this);
   }  
   m_impl = impl;
 }

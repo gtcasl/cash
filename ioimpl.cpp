@@ -5,8 +5,8 @@
 using namespace std;
 using namespace chdl_internal;
 
-inputimpl::inputimpl(const std::string& name, context* ctx, uint32_t size) 
-  : ioimpl(name, ctx, size)
+inputimpl::inputimpl(ch_operator op, context* ctx, uint32_t size) 
+  : ioimpl(op, ctx, size)
   , m_bus(nullptr)
 {}
 
@@ -28,7 +28,7 @@ const bitvector& inputimpl::eval(ch_cycle t) {
 }
 
 void inputimpl::print(std::ostream& out) const {
-  out << "#" << m_id << " <- " << m_name << m_value.get_size() << "("; 
+  out << "#" << m_id << " <- " << this->get_name() << m_value.get_size() << "("; 
   if (m_bus) {
     out << "$" << m_bus->get_id();
   } else {
@@ -39,8 +39,8 @@ void inputimpl::print(std::ostream& out) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-outputimpl::outputimpl(const std::string& name, lnodeimpl* src) 
-  : ioimpl(name, src->get_ctx(), src->get_size())
+outputimpl::outputimpl(ch_operator op, lnodeimpl* src) 
+  : ioimpl(op, src->get_ctx(), src->get_size())
   , m_bus(nullptr) {
   m_srcs.reserve(1);
   m_srcs.emplace_back(src);
@@ -67,20 +67,20 @@ snodeimpl* outputimpl::get_bus() {
 }
 
 void outputimpl::print(std::ostream& out) const {
-  out << "#" << m_id << " <- " << m_name << m_value.get_size();
+  out << "#" << m_id << " <- " << this->get_name() << m_value.get_size();
   out << "(" << "#" << m_srcs[0].get_id() << ")";
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 tapimpl::tapimpl(const std::string& name, lnodeimpl* src) 
-  : outputimpl("tap", src)
+  : outputimpl(op_tap, src)
   , m_tapName(name) {
   m_srcs.reserve(1);
   m_srcs.emplace_back(src);
 }
 
 void tapimpl::print(std::ostream& out) const {
-  out << "#" << m_id << " <- " << m_name << m_value.get_size();
+  out << "#" << m_id << " <- " << this->get_name() << m_value.get_size();
   out << "(#" << m_srcs[0].get_id() << ", '" << m_tapName << "')";
 }

@@ -6,7 +6,7 @@ using namespace std;
 using namespace chdl_internal;
 
 regimpl::regimpl(lnodeimpl* next)
-  : lnodeimpl("reg", next->get_ctx(), next->get_size()) {
+  : lnodeimpl(op_reg, next->get_ctx(), next->get_size()) {
   context* ctx = next->get_ctx();
   
   lnodeimpl* clk = ctx->get_clk();  
@@ -45,7 +45,7 @@ latchimpl::latchimpl(lnodeimpl* next,
                      lnodeimpl* init,
                      lnodeimpl* enable,                 
                      lnodeimpl* reset)
-  : lnodeimpl("latch", next->get_ctx(), next->get_size()) {
+  : lnodeimpl(op_latch, next->get_ctx(), next->get_size()) {
   context* ctx = next->get_ctx();
   
   m_cd = ctx->create_cdomain(

@@ -7,18 +7,18 @@ namespace chdl_internal {
 
 class aluimpl : public lnodeimpl {
 public:
-  aluimpl(ch_operator op, uint32_t size, lnodeimpl* a, lnodeimpl* b);
-  aluimpl(ch_operator op, uint32_t size, lnodeimpl* a);
+  aluimpl(ch_alu_operator alu_op, uint32_t size, lnodeimpl* a, lnodeimpl* b);
+  aluimpl(ch_alu_operator alu_op, uint32_t size, lnodeimpl* a);
   
-  ch_operator get_op() const {
-    return m_op;
+  ch_alu_operator get_alu_op() const {
+    return m_alu_op;
   }  
 
   const bitvector& eval(ch_cycle t) override;  
   void print_vl(std::ostream& out) const override;
   
 protected:
-  ch_operator m_op;
+  ch_alu_operator m_alu_op;
   ch_cycle m_ctime;
 };
 

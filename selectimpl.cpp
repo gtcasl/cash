@@ -9,7 +9,7 @@ using namespace std;
 using namespace chdl_internal;
 
 selectimpl::selectimpl(lnodeimpl* cond, lnodeimpl* true_, lnodeimpl* false_) 
-  : lnodeimpl("select", true_->get_ctx(), true_->get_size()), m_ctime(~0ull) {
+  : lnodeimpl(op_select, true_->get_ctx(), true_->get_size()), m_ctime(~0ull) {
   m_srcs.emplace_back(cond);
   m_srcs.emplace_back(true_);
   m_srcs.emplace_back(false_);
@@ -41,7 +41,7 @@ lnodeimpl* select_impl::eval(lnodeimpl* value) {
   if (m_key) {
     while (!stmts->empty()) {
       const stmt_t& stmt = stmts->top();
-      curr = createSelectNode(createAluNode(op_eq, 1, m_key, stmt.cond), stmt.value, curr);
+      curr = createSelectNode(createAluNode(alu_op_eq, 1, m_key, stmt.cond), stmt.value, curr);
       stmts->pop();
     } 
   } else {
@@ -84,7 +84,7 @@ switch_impl::~switch_impl() {
 
 void switch_impl::eval(lnodeimpl* cond, func_t func) {
   context* const ctx = m_key->get_ctx();
-  ctx->begin_case(cond ? createAluNode(op_eq, 1, m_key, cond) : nullptr);
+  ctx->begin_case(cond ? createAluNode(alu_op_eq, 1, m_key, cond) : nullptr);
   func();
   ctx->end_case();
 }

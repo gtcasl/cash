@@ -11,6 +11,10 @@ public:
   regimpl(lnodeimpl* next);
   virtual ~regimpl();
   
+  const lnode& get_next() const {
+    return m_srcs[0];
+  }
+  
   const bitvector& eval(ch_cycle t) override;  
   void print_vl(std::ostream& out) const override;
 

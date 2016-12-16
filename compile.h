@@ -4,15 +4,17 @@
 
 namespace chdl_internal {
 
-class optimizer {
+class ch_compiler {
 public:  
-  optimizer(context* ctx);
+  ch_compiler(context* ctx);
   
-  void optimize();
+  void run();
   
 protected:  
   
-  bool dead_node_elimination();
+  bool dead_code_elimination();
+  
+  void syntax_check();
 
   size_t remove_dead_nodes(const std::set<lnodeimpl*>& live_nodes);  
   

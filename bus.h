@@ -148,13 +148,13 @@ public:
     return this->operator uint64_t();
   }
   
-  void read(void* out, uint32_t sizeInBytes) const {  
+  void readBytes(void* out, uint32_t sizeInBytes) const override {  
     assert(sizeInBytes * 8 >= N);
     m_node.ensureInitialized(N);
     m_node.readBytes(reinterpret_cast<uint8_t*>(out), sizeInBytes);
   }
   
-  void write(const void* in, uint32_t sizeInBytes) {
+  void writeBytes(const void* in, uint32_t sizeInBytes) override {
     assert(sizeInBytes * 8 >= N);
     m_node.ensureInitialized(N);
     m_node.writeBytes(reinterpret_cast<const uint8_t*>(in), sizeInBytes);

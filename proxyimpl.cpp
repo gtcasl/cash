@@ -5,7 +5,7 @@ using namespace std;
 using namespace chdl_internal;
 
 proxyimpl::proxyimpl(context* ctx, uint32_t size) 
-  : lnodeimpl("proxy", ctx, size)
+  : lnodeimpl(op_proxy, ctx, size)
   , m_ctime(~0ull) 
 {}
 
@@ -150,13 +150,6 @@ void proxyimpl::merge_left(uint32_t idx) {
   }      
 }
 
-void proxyimpl::remove_ref(const lnode* node, lnodeimpl* src) {
-  m_refs.erase(node);
-  if (src) {
-    this->replace_undefs(0, src, 0, src->get_size());    
-  }
-}
-
 void proxyimpl::replace_undefs(uint32_t start, lnodeimpl* src, uint32_t offset, uint32_t length) {
   for (uint32_t i = 0, n = m_ranges.size(); length && i < n; ++i) {
     const range_t& curr = m_ranges[i];
@@ -269,7 +262,7 @@ const bitvector& proxyimpl::eval(ch_cycle t) {
 }
 
 void proxyimpl::print(std::ostream& out) const {
-  out << "#" << m_id << " <- " << m_name << m_value.get_size();
+  out << "#" << m_id << " <- " << this->get_name() << m_value.get_size();
   out << "(";
   for (uint32_t i = 0, s = 0, n = m_ranges.size(); i < n; ++i) {
     const range_t& range = m_ranges[i];

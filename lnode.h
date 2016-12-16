@@ -31,9 +31,7 @@ public:
     return this->ensureInitialized(size, 0, size);
   }
   
-  lnodeimpl* get_impl() const;
-  
-  void set_impl(lnodeimpl* curr_impl, lnodeimpl* new_impl) const;
+  lnodeimpl* get_impl() const;  
   
   lnode& operator=(const lnode& rhs);
   
@@ -60,7 +58,7 @@ public:
   void write(uint32_t dst_offset, const bitstream_type& in, uint32_t src_offset, uint32_t src_length, uint32_t size);
 
 protected:   
-  
+   
   void reset(lnodeimpl* impl = nullptr) const;
 
   void assign(lnodeimpl* impl, bool initialization = false) const;
@@ -71,6 +69,7 @@ protected:
   
   mutable lnodeimpl* m_impl;
   
+  friend class lnodeimpl;
   friend class context; 
 };
 

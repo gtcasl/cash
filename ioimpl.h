@@ -9,14 +9,14 @@ class snodeimpl;
 class ioimpl : public lnodeimpl { // LCOV_EXCL_LINE
 public:
   // LCOV_EXCL_START
-  ioimpl(const std::string& name, context* ctx, uint32_t size)
-    : lnodeimpl(name, ctx, size)  {}
+  ioimpl(ch_operator op, context* ctx, uint32_t size) : lnodeimpl(op, ctx, size)  {}
   // LCOV_EXCL_END
 };
 
 class inputimpl : public ioimpl {
 public:
-  inputimpl(const std::string& name, context* ctx, uint32_t size);
+  inputimpl(ch_operator op, context* ctx, uint32_t size);
+  inputimpl(context* ctx, uint32_t size) : inputimpl(op_input, ctx, size) {}
   ~inputimpl();
   
   void bind(snodeimpl* bus);
@@ -33,7 +33,8 @@ protected:
 
 class outputimpl : public ioimpl {
 public:
-  outputimpl(const std::string& name, lnodeimpl* src);
+  outputimpl(ch_operator op, lnodeimpl* src);
+  outputimpl(lnodeimpl* src) : outputimpl(op_output, src) {}
   ~outputimpl();
   
   const bitvector& eval(ch_cycle t);
@@ -56,11 +57,13 @@ public:
     return m_srcs[0];
   }
   
-  // LCOV_EXCL_START
+  void set_tagName(const std::string& tagName) {
+    m_tapName = tagName;
+  }
+  
   const std::string& get_tapName() const {
     return m_tapName;
   }
-  // LCOV_EXCL_END
   
   void print(std::ostream& out) const override;
   

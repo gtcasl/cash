@@ -6,7 +6,7 @@ LDFLAGS += -shared --coverage -lbfd
 SRCS = utils.cpp platform.cpp bitvector.cpp \
        lnodeimpl.cpp proxyimpl.cpp litimpl.cpp selectimpl.cpp regimpl.cpp \
 	   memimpl.cpp aluimpl.cpp ioimpl.cpp assertimpl.cpp tickimpl.cpp printimpl.cpp \
-       snodeimpl.cpp cdomain.cpp context.cpp device.cpp opt.cpp sim.cpp vcd.cpp
+       snodeimpl.cpp cdomain.cpp context.cpp device.cpp compile.cpp sim.cpp vcd.cpp
 
 OBJS := $(SRCS:.cpp=.o)
 

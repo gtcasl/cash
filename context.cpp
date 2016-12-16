@@ -7,6 +7,8 @@
 #include "snodeimpl.h"
 #include "selectimpl.h"
 #include "proxyimpl.h"
+#include "memimpl.h"
+#include "aluimpl.h"
 #include "assertimpl.h"
 #include "cdomain.h"
 #include "device.h"
@@ -25,30 +27,21 @@ context::context()
   , m_reset(nullptr) 
 {}
 
-context::~context() { 
-  //
-  // cleanup allocated resources
-  //
-  
-  for (lnodeimpl* node : m_nodes) {
-    node->release();
+context::~context() {  
+  // delete all nodes
+  for (auto iter = m_nodes.begin(), iterEnd = m_nodes.end(); iter != iterEnd;) {
+    delete *iter++;
   }
-
+  assert(m_undefs.empty());
+  assert(m_literals.empty());
+  assert(m_inputs.empty());
+  assert(m_outputs.empty());
+  assert(m_taps.empty());
+  assert(m_gtaps.empty());
+  assert(m_clk == nullptr);
+  assert(m_reset == nullptr);
   assert(m_cdomains.empty());
   assert(m_cond_blocks.empty());
-}
-
-std::list<lnodeimpl*>::iterator
-context::erase_node(const std::list<lnodeimpl*>::iterator& iter) {
-  lnodeimpl* const node = *iter;
-  if (node == m_clk) {
-    m_clk = nullptr;
-  } else
-  if (node == m_reset) {
-    m_reset = nullptr;
-  }
-  node->release();
-  return m_nodes.erase(iter);
 }
 
 void context::push_clk(lnodeimpl* clk) {
@@ -71,7 +64,7 @@ lnodeimpl* context::get_clk() {
   if (!m_clk_stack.empty())
     return m_clk_stack.top().get_impl();
   if (m_clk == nullptr)
-    m_clk = new inputimpl("clk", this, 1);
+    m_clk = new inputimpl(op_clk, this, 1);
   return m_clk;
 }
 
@@ -79,7 +72,7 @@ lnodeimpl* context::get_reset() {
   if (!m_reset_stack.empty())
     return m_reset_stack.top().get_impl();
   if (m_reset == nullptr)
-     m_reset = new inputimpl("reset", this, 1);
+     m_reset = new inputimpl(op_reset, this, 1);
   return m_reset;
 }
 
@@ -93,25 +86,78 @@ uint32_t context::add_node(lnodeimpl* node) {
     }
   }
 #endif
-  if (node->m_name == "undef") {
-    m_undefs.emplace_back(node);
-  } else {
-    m_nodes.emplace_back(node);
-  }  
-  node->acquire();
+  m_nodes.emplace_back(node);
+  
+  switch (node->get_op()) {
+  case op_undef:
+    m_undefs.emplace_back((undefimpl*)node);
+    break;
+  case op_lit:
+    m_literals.emplace_back((litimpl*)node);
+    break;
+  case op_input:
+  case op_clk:
+  case op_reset:  
+    m_inputs.emplace_back((inputimpl*)node);
+    break;  
+  case op_output:
+    m_outputs.emplace_back((outputimpl*)node);
+    break; 
+  case op_tap:
+    m_taps.emplace_back((tapimpl*)node);
+    break;
+  case op_assert:
+  case op_print:
+    m_gtaps.emplace_back((ioimpl*)node);
+    break;
+  }
+  
   if (!m_cond_blocks.empty()
    && !m_cond_blocks.front().cases.empty()) {
     // memory ports have global scope
-    if (node->get_name() != "memport") {
+    if (node->get_op() != op_memport) {
       m_cond_blocks.front().cases.front().locals.emplace(node);
     }
   }
   return nodeid;  
 }
 
-void context::remove_node(undefimpl* node) {
-  assert(!m_undefs.empty());
-  m_undefs.remove(node);
+void context::remove_node(lnodeimpl* node) {
+  DBG(3, "*** deleting node: %s%d(#%d)!\n", node->get_name(), node->get_size(), node->get_id());
+  
+  assert(!m_nodes.empty());
+  m_nodes.remove(node);
+  
+  switch (node->get_op()) {
+  case op_undef:
+    m_undefs.remove((undefimpl*)node);
+    break;
+  case op_lit:
+    m_literals.remove((litimpl*)node);
+    break;
+  case op_input:
+  case op_clk:
+  case op_reset:  
+    m_inputs.remove((inputimpl*)node);
+    break;  
+  case op_output:
+    m_outputs.remove((outputimpl*)node);
+    break; 
+  case op_tap:
+    m_taps.remove((tapimpl*)node);
+    break;
+  case op_assert:
+  case op_print:
+    m_gtaps.remove((ioimpl*)node);
+    break;
+  }
+  
+  if (node == m_clk) {
+    m_clk = nullptr;
+  } else
+  if (node == m_reset) {
+    m_reset = nullptr;
+  }
 }
 
 void context::begin_branch() {
@@ -179,18 +225,18 @@ lnodeimpl* context::get_current_conditional(const cond_blocks_t::iterator& iterB
           }
           if (!assigned) {
             if (cond) {
-              cond = createAluNode(op_or, 1, cond, iter->cond);
+              cond = createAluNode(alu_op_or, 1, cond, iter->cond);
             } else {
               cond = iter->cond;
             }
           }
         }  
         if (cond) {
-          cond = createAluNode(op_inv, 1, cond);
+          cond = createAluNode(alu_op_inv, 1, cond);
         }
       }      
       if (cond) {
-        cond = createAluNode(op_and, 1, parent_cond, cond);    
+        cond = createAluNode(alu_op_and, 1, parent_cond, cond);    
       } else {
         cond = parent_cond;
       }
@@ -208,24 +254,24 @@ lnodeimpl* context::resolve_conditional(lnodeimpl* dst, lnodeimpl* src) {
     auto iterBlock = m_cond_blocks.begin();
     cond_case_t& cc = iterBlock->cases.front();
     lnodeimpl* const cond = this->get_current_conditional(iterBlock, dst);
-    proxyimpl* proxy = dynamic_cast<proxyimpl*>(src);
+    proxyimpl* const proxy = dynamic_cast<proxyimpl*>(src);
     
     // lookup dst value if already defined
     auto iter = std::find_if(m_cond_vals.begin(), m_cond_vals.end(),
       [dst](const cond_val_t& v)->bool { return v.dst == dst; });
     if (iter != m_cond_vals.end()) {
-      CHDL_CHECK((proxy && proxy->is_slice()) || iter->owner == nullptr, "redundant assignment to node %s%d(#%d)!\n", dst->get_name().c_str(), dst->get_size(), dst->get_id());
+      CHDL_CHECK((proxy && proxy->is_slice()) || iter->owner == nullptr, "redundant assignment to node %s%d(#%d)!\n", dst->get_name(), dst->get_size(), dst->get_id());
       selectimpl* const sel = dynamic_cast<selectimpl*>(iter->sel);
       if (iter->owner) {
         assert(proxy && proxy->is_slice());
         // merge existing select value and make sure their undefined regions point to dst
-        lnodeimpl* true_val = sel->get_true().get_impl();
+        lnodeimpl* const true_val = sel->get_true().get_impl();
         proxy->ensureInitialized();
         proxy->replace_undefs(0, true_val, 0, true_val->get_size());
         sel->get_true().reset(src);
       } else {
         if (cond) {
-          lnodeimpl* false_val = sel->get_false().get_impl();
+          lnodeimpl* const false_val = sel->get_false().get_impl();
           if (proxy && proxy->is_slice()) {
             // resolve partial proxy object and make sure their undefined regions point to dst                     
             proxy->ensureInitialized();
@@ -269,13 +315,7 @@ litimpl* context::create_literal(const bitvector& value) {
       return lit;
     }
   }
-  litimpl* const lit = new litimpl(this, value);
-  m_literals.emplace_back(lit);
-  return lit;
-}
-
-void context::register_gtap(ioimpl* node) {
-  m_gtaps.emplace_back(node);  
+  return new litimpl(this, value);
 }
 
 cdomain* context::create_cdomain(const std::vector<clock_event>& sensitivity_list) {
@@ -295,15 +335,13 @@ void context::remove_cdomain(cdomain* cd) {
 }
 
 lnodeimpl* context::bind_input(snodeimpl* bus) {
-  inputimpl* const impl = new inputimpl("input", this, bus->get_size());
+  inputimpl* const impl = new inputimpl(this, bus->get_size());
   impl->bind(bus);
-  m_inputs.emplace_back(impl);
   return impl;
 }
 
 snodeimpl* context::bind_output(lnodeimpl* output) {
-  outputimpl* const impl = new outputimpl("output", output);
-  m_outputs.emplace_back(impl);
+  outputimpl* const impl = new outputimpl(output);
   return impl->get_bus();
 }
 
@@ -317,12 +355,12 @@ void context::register_tap(const std::string& name, lnodeimpl* node) {
       auto iter = std::find_if(m_taps.begin(), m_taps.end(),
         [name](tapimpl* t)->bool { return t->get_tapName() == name; });
       assert(iter != m_taps.end());
-      (*iter)->m_name = fstring("%s_%d", name.c_str(), 0);
+      (*iter)->set_tagName(fstring("%s_%d", name.c_str(), 0));
     }
     full_name = fstring("%s_%d", name.c_str(), instances);
   }
-  // add to list
-  m_taps.emplace_back(new tapimpl(full_name, node));
+  // create tap node
+  new tapimpl(full_name, node);
 }
 
 snodeimpl* context::get_tap(const std::string& name, uint32_t size) {
@@ -333,20 +371,6 @@ snodeimpl* context::get_tap(const std::string& name, uint32_t size) {
     }
   } 
   CHDL_ABORT("couldn't find tab '%s'", name.c_str());
-}
-
-void context::syntax_check() {
-  // check for un-initialized nodes
-  if (m_undefs.size()) {
-    this->dumpAST(std::cerr, 1);    
-    for (auto node : m_undefs) {
-      fprintf(stderr, "error: un-initialized node %s%d(#%d)!\n", node->get_name().c_str(), node->get_size(), node->get_id());
-    }
-    if (m_undefs.size() == 1)
-      CHDL_ABORT("1 node has not been initialized.");
-    else
-      CHDL_ABORT("%zd nodes have not been initialized.", m_undefs.size());
-  }
 }
 
 void context::get_live_nodes(std::set<lnodeimpl*>& live_nodes) {
@@ -411,7 +435,7 @@ void context::dumpAST(std::ostream& out, uint32_t level) {
   }
 }
 
-static void dumpCFG_r(lnodeimpl* node, std::ostream& out, uint32_t level, std::vector<bool>& visits, std::map<uint32_t, tapimpl*>& taps) {
+static void dumpCFG_r(lnodeimpl* node, std::ostream& out, uint32_t level, std::vector<bool>& visits, const std::map<uint32_t, tapimpl*>& taps) {
   visits[node->get_id()] = true;
   node->print(out);
   
@@ -434,13 +458,13 @@ void context::dumpCFG(lnodeimpl* node, std::ostream& out, uint32_t level) {
   std::vector<bool> visits(m_nodeids + 1);
   std::map<uint32_t, tapimpl*> taps;
   
-  for (auto node : m_taps) {
-    taps[node->get_target().get_id()] = node;
+  for (tapimpl* tap : m_taps) {
+    taps[tap->get_target().get_id()] = tap;
   }
   
   visits[node->get_id()] = true;
   
-  tapimpl* tap = dynamic_cast<tapimpl*>(node);
+  tapimpl* const tap = dynamic_cast<tapimpl*>(node);
   if (tap) {
     node = tap->get_target().get_impl();
     node->print(out);
@@ -454,6 +478,61 @@ void context::dumpCFG(lnodeimpl* node, std::ostream& out, uint32_t level) {
       dumpCFG_r(src.get_impl(), out, level, visits, taps);
     }
   }
+}
+
+void context::dump_stats(std::ostream& out) {
+  uint32_t memory_bits = 0;
+  uint32_t register_bits = 0;
+  uint32_t num_memories = 0;
+  uint32_t num_registers = 0;
+  uint32_t num_muxes = 0;
+  uint32_t num_alus = 0;
+  uint32_t num_lits = 0;
+  uint32_t num_proxies = 0;
+  
+  for (lnodeimpl* node : m_nodes) {
+    memimpl* mem = dynamic_cast<memimpl*>(node);
+    if (mem) {
+      ++num_memories;
+      memory_bits += mem->get_total_size();      
+      continue;
+    }
+    regimpl* reg = dynamic_cast<regimpl*>(node);
+    if (reg) {
+      ++num_registers;
+      register_bits += reg->get_size();      
+      continue;
+    }
+    selectimpl* sel = dynamic_cast<selectimpl*>(node);
+    if (sel) {
+      ++num_muxes;
+      continue;
+    }
+    aluimpl* alu = dynamic_cast<aluimpl*>(node);
+    if (alu) {
+      ++num_alus;
+      continue;
+    }
+    litimpl* lit = dynamic_cast<litimpl*>(node);
+    if (lit) {
+      ++num_lits;
+      continue;
+    }
+    proxyimpl* proxy = dynamic_cast<proxyimpl*>(node);
+    if (proxy) {
+      ++num_proxies;
+      continue;
+    }
+  }
+  
+  out << "chdl-stats: total memories = " << num_memories << std::endl;
+  out << "chdl-stats: total memory bits = " << memory_bits << std::endl;
+  out << "chdl-stats: total registers = " << num_registers << std::endl;
+  out << "chdl-stats: total regiters bits = " << register_bits << std::endl;
+  out << "chdl-stats: total muxes = " << num_muxes << std::endl;
+  out << "chdl-stats: total alus = " << num_alus << std::endl;
+  out << "chdl-stats: total literals = " << num_lits << std::endl;
+  out << "chdl-stats: total proxies = " << num_proxies << std::endl;  
 }
 
 ///////////////////////////////////////////////////////////////////////////////

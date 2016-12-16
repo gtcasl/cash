@@ -22,6 +22,10 @@ public:
   
   const bitvector& eval(ch_cycle t) override;  
   void print_vl(std::ostream& out) const;
+  
+  uint32_t get_total_size() const {
+    return m_content.size() * m_content[0].get_size();
+  }
 
 protected:
   

@@ -2,20 +2,29 @@
 TODO list:
 ==========
 
-*** make ch_mem store the enclosed type liek ch_mem<ch_bit32, 10> 
+*** automatic dead code elimination
 *** the branch.owner concept is broken (a nested assignment to global would not prevent outer assignment) - use bitmask intead to check overrides
-*** address the issue why friend member still don't get implicit template constructor (e.g. ch_min, ch_select, ...)
-*** should consider gettng rid of defer initialization once auto dead code elimination is supported (will remove all nasty hacks in code where dst == nullptr is a worry)
+*** add detection of duplicate assignments inside control block and outside (very important for bugs resolution)
+*** investigate alternative proxy implementation based on bitmask for simplicity
+*** subscripts use inside control statement still broken
 *** find a way to fix ch_seq such that it is initialized to itself by default (next -> this)
-*** automatic dead code elimination 
+*** should consider gettng rid of defer initialization once auto dead code elimination is supported (will remove all nasty hacks in code where dst == nullptr is a worry)
+*** address the issue why friend member still don't get implicit template constructor (e.g. ch_min, ch_select, ...)
+
+
+*** handling floating-point delays: (y = a * b) => ch_decoupled<ch_float> object exporting ready/valid signals to be connected
+*** assigning a vector fron memory is broken (and reading the vector inside the branch)
+*** complete float implementation (compare operations) 
+*** make ch_mem store the enclosed type like ch_mem<ch_bit32, 10> 
+
+ 
 *** use callstack api to save source file/line for undefined variables. check out GDB api (https://github.com/brasko/gdbwire) and libcwd (http://libcwd.sourceforge.net/index.html)
-*** move all the math routines into the bitvector class, then accelerate the bitvector class to intel SSE/AVX
-*** CHDL binary shared library libspmv.so
+*** move all the math routines into the bitvector class, then accelerate the bitvector class using intel SSE/AVX intrinsics
 *** add support for ch_seq implace operators ++(), --(), >>=(), <<=(), &=(), |=(), ^=(), +=(), -=(), *=(), \=()
 *** test ch_shuffle
-*** printing struct, union, enum vales using reflection 
+*** printing struct, union, enum values using reflection 
 *** allow ch_print() to use __if and __switch 
-*** investigate alternative proxy implementation based on bitmask for simplicity
+*** handshking valid/ready signals
 
 - implement ch_call(function, args...) using variadic template to generate modules binding 
 - implement ch_bitbase.clone() to enable fork assignments
@@ -153,8 +162,8 @@ constexpr unsigned long long Scale(unsigned long long x, const char* s)
 {
     return (!*s ? x : Scale(10*x + ((unsigned long long)*s)-((unsigned long long)'0'), s+1));
 } 
-constexpr unsigned long long ToScaledBinary
-    (unsigned long long x, unsigned long long scale, const char* s)
+
+constexpr unsigned long long ToScaledBinary(unsigned long long x, unsigned long long scale, const char* s)
 {
     return (!*s 
                 ? x 

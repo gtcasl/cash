@@ -4,48 +4,20 @@
 using namespace std;
 using namespace chdl_internal;
 
-static const char* op_name(ch_operator op) {
+#define CHDL_ALUOP_NAME(n) case alu_op_##n: return op_##n;
+
+static ch_operator to_operator(ch_alu_operator op) {
   switch (op) {
-  case op_inv:    return "inv";
-  case op_and:    return "and";
-  case op_or:     return "or";
-  case op_xor:    return "xor";
-  case op_nand:   return "nand";
-  case op_nor:    return "nor";
-  case op_xnor:   return "xnor";
-  case op_andr:   return "andr";
-  case op_orr:    return "orr";
-  case op_xorr:   return "xorr";
-  case op_sll:    return "sll";
-  case op_slr:    return "slr";
-  case op_rotl:   return "rotl";
-  case op_rotr:   return "rotr";
-  case op_add:    return "add";
-  case op_sub:    return "sub";
-  case op_neg:    return "neg";
-  case op_mult:   return "mult";
-  case op_div:    return "div";
-  case op_mod:    return "mod";
-  case op_eq:     return "eq";
-  case op_ne:     return "ne";
-  case op_lt:     return "lt";
-  case op_gt:     return "gt";
-  case op_le:     return "le";
-  case op_ge:     return "ge";
-  case op_mux:    return "mux";
-  case op_demux:  return "demux";
-  case op_fmult:  return "fmult";
-   default:
-    CHDL_ABORT("invalid operator");
+    CHDL_ALUOP_ENUM(CHDL_ALUOP_NAME)
   }
 }
 
-template <ch_operator op>
+template <ch_alu_operator op>
 static void unaryop(bitvector& dst, const bitvector& a) {
   assert(dst.get_size() == a.get_size());
   
   switch (op) {
-  case op_inv:
+  case alu_op_inv:
     Invert(dst, a);
     break;
   default:
@@ -53,28 +25,28 @@ static void unaryop(bitvector& dst, const bitvector& a) {
   }
 }
 
-template <ch_operator op>
+template <ch_alu_operator op>
 static void binaryop(bitvector& dst, const bitvector& a, const bitvector& b) {
   assert(dst.get_size() == a.get_size());
   assert(a.get_size() == b.get_size());
   
   switch (op) {
-  case op_and:
+  case alu_op_and:
     And(dst, a, b);
     break;
-  case op_or:
+  case alu_op_or:
     Or(dst, a, b);
     break;
-  case op_xor:
+  case alu_op_xor:
     Xor(dst, a, b);
     break;
-  case op_nand:
+  case alu_op_nand:
     Nand(dst, a, b);
     break;
-  case op_nor:
+  case alu_op_nor:
     Nor(dst, a, b);
     break;
-  case op_xnor:
+  case alu_op_xnor:
     Xnor(dst, a, b);
     break;
   default:
@@ -82,23 +54,23 @@ static void binaryop(bitvector& dst, const bitvector& a, const bitvector& b) {
   }
 }
 
-template <ch_operator op>
+template <ch_alu_operator op>
 static void shiftop(bitvector& dst, const bitvector& in, const bitvector& bits) {  
   assert(dst.get_size() == in.get_size());
   CHDL_CHECK(bits.find_last() <= 31, "shift amount out of range!");
   
   uint32_t wbits = bits.get_word(0);
   switch (op) {  
-  case op_sll:
+  case alu_op_shl:
     ShiftLeft(dst, in, wbits);
     break;
-  case op_slr:
+  case alu_op_shr:
     ShiftRight(dst, in, wbits);
     break;
-  case op_rotl:
+  case alu_op_rotl:
     RotateLeft(dst, in, wbits);
     break;
-  case op_rotr:
+  case alu_op_rotr:
     RotateRight(dst, in, wbits);
     break;
   default:
@@ -106,19 +78,19 @@ static void shiftop(bitvector& dst, const bitvector& in, const bitvector& bits) 
   }
 }
 
-template <ch_operator op>
+template <ch_alu_operator op>
 static void reduceop(bitvector& dst, const bitvector& in) {
   assert(dst.get_size() == 1);
   
   bool result;
   switch (op) {
-  case op_andr:
+  case alu_op_andr:
     result = in.andr();
     break;
-  case op_orr:
+  case alu_op_orr:
     result = in.orr();
     break;
-  case op_xorr:
+  case alu_op_xorr:
     result = in.xorr();
     break;
   default:
@@ -127,29 +99,29 @@ static void reduceop(bitvector& dst, const bitvector& in) {
   dst[0] = result;
 }
 
-template <ch_operator op>
+template <ch_alu_operator op>
 static void compareop(bitvector& dst, const bitvector& a, const bitvector& b) {
   assert(dst.get_size() == 1);
   assert(a.get_size() == b.get_size());
   
   bool result;
   switch (op) {
-  case op_eq:
+  case alu_op_eq:
     result = a == b;
     break;
-  case op_ne:
+  case alu_op_ne:
     result = a != b;
     break;
-  case op_lt:
+  case alu_op_lt:
     result = a < b;
     break;
-  case op_gt:
+  case alu_op_gt:
     result = a > b;
     break;
-  case op_le:
+  case alu_op_le:
     result = a <= b;
     break;
-  case op_ge:
+  case alu_op_ge:
     result = a >= b;
     break;
   default:
@@ -187,16 +159,56 @@ static void add(bitvector& dst, const bitvector& a, const bitvector& b, uint32_t
   }
 }
 
+///////////////////////////////////////////////////////////////////////////////
+
+static void fadd(bitvector& dst, const bitvector& a, const bitvector& b) {
+  assert(dst.get_size() == 32);
+  assert(a.get_size() == 32);
+  assert(b.get_size() == 32);  
+  uint32_t a_value = a.get_word(0);
+  uint32_t b_value = b.get_word(0);
+  float a_valuef = *(const float*)&a_value;
+  float b_valuef = *(const float*)&b_value;
+  float resultf = a_valuef + b_valuef;
+  uint32_t result = *(const uint32_t*)&resultf;
+  dst.set_word(0, result);
+}
+
+static void fsub(bitvector& dst, const bitvector& a, const bitvector& b) {
+  assert(dst.get_size() == 32);
+  assert(a.get_size() == 32);
+  assert(b.get_size() == 32);  
+  uint32_t a_value = a.get_word(0);
+  uint32_t b_value = b.get_word(0);
+  float a_valuef = *(const float*)&a_value;
+  float b_valuef = *(const float*)&b_value;
+  float resultf = a_valuef - b_valuef;
+  uint32_t result = *(const uint32_t*)&resultf;
+  dst.set_word(0, result);
+}
+
 static void fmult(bitvector& dst, const bitvector& a, const bitvector& b) {
   assert(dst.get_size() == 32);
   assert(a.get_size() == 32);
-  assert(b.get_size() == 32);
-  
+  assert(b.get_size() == 32);  
   uint32_t a_value = a.get_word(0);
   uint32_t b_value = b.get_word(0);
   float a_valuef = *(const float*)&a_value;
   float b_valuef = *(const float*)&b_value;
   float resultf = a_valuef * b_valuef;
+  uint32_t result = *(const uint32_t*)&resultf;
+  dst.set_word(0, result);
+}
+
+static void fdiv(bitvector& dst, const bitvector& a, const bitvector& b) {
+  assert(dst.get_size() == 32);
+  assert(a.get_size() == 32);
+  assert(b.get_size() == 32);  
+  uint32_t a_value = a.get_word(0);
+  uint32_t b_value = b.get_word(0);
+  float a_valuef = *(const float*)&a_value;
+  float b_valuef = *(const float*)&b_value;
+  float resultf = a_valuef / b_valuef;
   uint32_t result = *(const uint32_t*)&resultf;
   dst.set_word(0, result);
 }
@@ -226,17 +238,17 @@ static void demux(bitvector& dst, const bitvector& in, const bitvector& sel) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-aluimpl::aluimpl(ch_operator op, uint32_t size, lnodeimpl* a, lnodeimpl* b) 
-  : lnodeimpl(op_name(op), a->get_ctx(), size)
-  , m_op(op)
+aluimpl::aluimpl(ch_alu_operator alu_op, uint32_t size, lnodeimpl* a, lnodeimpl* b) 
+  : lnodeimpl(to_operator(alu_op), a->get_ctx(), size)
+  , m_alu_op(alu_op)
   , m_ctime(~0ull) {
   m_srcs.emplace_back(a);
   m_srcs.emplace_back(b);
 }
 
-aluimpl::aluimpl(ch_operator op, uint32_t size, lnodeimpl* a) 
-  : lnodeimpl(op_name(op), a->get_ctx(), size)
-  , m_op(op)
+aluimpl::aluimpl(ch_alu_operator alu_op, uint32_t size, lnodeimpl* a) 
+  : lnodeimpl(to_operator(alu_op), a->get_ctx(), size)
+  , m_alu_op(alu_op)
   , m_ctime(~0ull) {
   m_srcs.emplace_back(a);
 }
@@ -245,94 +257,106 @@ const bitvector& aluimpl::eval(ch_cycle t) {
   if (m_ctime != t) {  
     m_ctime = t;
     
-    switch (m_op) {
-    case op_inv:
-      unaryop<op_inv>(m_value, m_srcs[0].eval(t));  
+    switch (m_alu_op) {
+    case alu_op_inv:
+      unaryop<alu_op_inv>(m_value, m_srcs[0].eval(t));  
       break;
-    case op_and:
-      binaryop<op_and>(m_value, m_srcs[0].eval(t), m_srcs[1].eval(t));  
+    case alu_op_and:
+      binaryop<alu_op_and>(m_value, m_srcs[0].eval(t), m_srcs[1].eval(t));  
       break;
-    case op_or:
-      binaryop<op_or>(m_value, m_srcs[0].eval(t), m_srcs[1].eval(t));        
+    case alu_op_or:
+      binaryop<alu_op_or>(m_value, m_srcs[0].eval(t), m_srcs[1].eval(t));        
       break;
-    case op_xor:
-      binaryop<op_xor>(m_value, m_srcs[0].eval(t), m_srcs[1].eval(t));        
+    case alu_op_xor:
+      binaryop<alu_op_xor>(m_value, m_srcs[0].eval(t), m_srcs[1].eval(t));        
       break;
-    case op_nand:
-      binaryop<op_nand>(m_value, m_srcs[0].eval(t), m_srcs[1].eval(t));  
+    case alu_op_nand:
+      binaryop<alu_op_nand>(m_value, m_srcs[0].eval(t), m_srcs[1].eval(t));  
       break;
-    case op_nor:
-      binaryop<op_nor>(m_value, m_srcs[0].eval(t), m_srcs[1].eval(t));        
+    case alu_op_nor:
+      binaryop<alu_op_nor>(m_value, m_srcs[0].eval(t), m_srcs[1].eval(t));        
       break;
-    case op_xnor:
-      binaryop<op_xnor>(m_value, m_srcs[0].eval(t), m_srcs[1].eval(t));        
+    case alu_op_xnor:
+      binaryop<alu_op_xnor>(m_value, m_srcs[0].eval(t), m_srcs[1].eval(t));        
       break;
     
-    case op_andr:
-      reduceop<op_andr>(m_value, m_srcs[0].eval(t));  
+    case alu_op_andr:
+      reduceop<alu_op_andr>(m_value, m_srcs[0].eval(t));  
       break;
-    case op_orr:
-      reduceop<op_orr>(m_value, m_srcs[0].eval(t));        
+    case alu_op_orr:
+      reduceop<alu_op_orr>(m_value, m_srcs[0].eval(t));        
       break;
-    case op_xorr:
-      reduceop<op_xorr>(m_value, m_srcs[0].eval(t));        
-      break;
-      
-    case op_sll:
-      shiftop<op_sll>(m_value, m_srcs[0].eval(t), m_srcs[1].eval(t));
-      break;
-    case op_slr:
-      shiftop<op_slr>(m_value, m_srcs[0].eval(t), m_srcs[1].eval(t));
-      break;
-    case op_rotl:
-      shiftop<op_rotl>(m_value, m_srcs[0].eval(t), m_srcs[1].eval(t));
-      break;
-    case op_rotr:
-      shiftop<op_rotr>(m_value, m_srcs[0].eval(t), m_srcs[1].eval(t));
+    case alu_op_xorr:
+      reduceop<alu_op_xorr>(m_value, m_srcs[0].eval(t));        
       break;
       
-    case op_add:
+    case alu_op_shl:
+      shiftop<alu_op_shl>(m_value, m_srcs[0].eval(t), m_srcs[1].eval(t));
+      break;
+    case alu_op_shr:
+      shiftop<alu_op_shr>(m_value, m_srcs[0].eval(t), m_srcs[1].eval(t));
+      break;
+    case alu_op_rotl:
+      shiftop<alu_op_rotl>(m_value, m_srcs[0].eval(t), m_srcs[1].eval(t));
+      break;
+    case alu_op_rotr:
+      shiftop<alu_op_rotr>(m_value, m_srcs[0].eval(t), m_srcs[1].eval(t));
+      break;
+      
+    case alu_op_add:
       add(m_value, m_srcs[0].eval(t), m_srcs[1].eval(t));        
       break;
-    case op_sub:{
+    case alu_op_sub:{
         bitvector minus_b(m_value.get_size());
-        unaryop<op_inv>(minus_b, m_srcs[1].eval(t));
+        unaryop<alu_op_inv>(minus_b, m_srcs[1].eval(t));
         add(m_value, m_srcs[0].eval(t), minus_b, 1);        
       } break;
-    case op_mult:
-    case op_div:
-    case op_mod:
+    case alu_op_mult:
+    case alu_op_div:
+    case alu_op_mod:
       TODO("Not yet implemented!");
       break;
       
-    case op_eq:
-      compareop<op_eq>(m_value, m_srcs[0].eval(t), m_srcs[1].eval(t));
+    case alu_op_eq:
+      compareop<alu_op_eq>(m_value, m_srcs[0].eval(t), m_srcs[1].eval(t));
       break;
-    case op_ne:
-      compareop<op_ne>(m_value, m_srcs[0].eval(t), m_srcs[1].eval(t));
+    case alu_op_ne:
+      compareop<alu_op_ne>(m_value, m_srcs[0].eval(t), m_srcs[1].eval(t));
       break;
-    case op_lt:
-      compareop<op_lt>(m_value, m_srcs[0].eval(t), m_srcs[1].eval(t));
+    case alu_op_lt:
+      compareop<alu_op_lt>(m_value, m_srcs[0].eval(t), m_srcs[1].eval(t));
       break;
-    case op_gt:
-      compareop<op_gt>(m_value, m_srcs[0].eval(t), m_srcs[1].eval(t));
+    case alu_op_gt:
+      compareop<alu_op_gt>(m_value, m_srcs[0].eval(t), m_srcs[1].eval(t));
       break;
-    case op_le:
-      compareop<op_le>(m_value, m_srcs[0].eval(t), m_srcs[1].eval(t));  
+    case alu_op_le:
+      compareop<alu_op_le>(m_value, m_srcs[0].eval(t), m_srcs[1].eval(t));  
       break;
-    case op_ge:
-      compareop<op_ge>(m_value, m_srcs[0].eval(t), m_srcs[1].eval(t));
+    case alu_op_ge:
+      compareop<alu_op_ge>(m_value, m_srcs[0].eval(t), m_srcs[1].eval(t));
       break;  
       
-    case op_mux:
+    case alu_op_mux:
       mux(m_value, m_srcs[0].eval(t), m_srcs[1].eval(t));
       break;
-    case op_demux:
+    case alu_op_demux:
       demux(m_value, m_srcs[0].eval(t), m_srcs[1].eval(t));
       break;
       
-    case op_fmult:
+    case alu_op_fadd:
+      fadd(m_value, m_srcs[0].eval(t), m_srcs[1].eval(t));
+      break;
+      
+    case alu_op_fsub:
+      fsub(m_value, m_srcs[0].eval(t), m_srcs[1].eval(t));
+      break;
+      
+    case alu_op_fmult:
       fmult(m_value, m_srcs[0].eval(t), m_srcs[1].eval(t));
+      break;
+      
+    case alu_op_fdiv:
+      fdiv(m_value, m_srcs[0].eval(t), m_srcs[1].eval(t));
       break;
       
     default:
@@ -348,10 +372,10 @@ void aluimpl::print_vl(std::ostream& out) const {
 } 
 //LCOV_EXCL_END
 
-lnodeimpl* chdl_internal::createAluNode(ch_operator op, uint32_t size, lnodeimpl* a, lnodeimpl* b) {
+lnodeimpl* chdl_internal::createAluNode(ch_alu_operator op, uint32_t size, lnodeimpl* a, lnodeimpl* b) {
   return new aluimpl(op, size, a, b); 
 }
 
-lnodeimpl* chdl_internal::createAluNode(ch_operator op, uint32_t size, lnodeimpl* a) {
+lnodeimpl* chdl_internal::createAluNode(ch_alu_operator op, uint32_t size, lnodeimpl* a) {
   return new aluimpl(op, size, a);
 }

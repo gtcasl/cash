@@ -6,7 +6,7 @@ using namespace std;
 using namespace chdl_internal;
 
 memimpl::memimpl(context* ctx, uint32_t data_width, uint32_t addr_width, bool write_enable) 
-  : lnodeimpl("mem", ctx, 0)
+  : lnodeimpl(op_mem, ctx, 0)
   , m_content(1 << addr_width, bitvector(data_width))
   , m_ports_offset(0)
   , m_cd(nullptr) {  
@@ -133,7 +133,7 @@ void memimpl::print_vl(ostream& out) const {
 ///////////////////////////////////////////////////////////////////////////////
 
 memportimpl::memportimpl(memimpl* mem, lnodeimpl* addr)
-    : lnodeimpl("memport", addr->get_ctx(), mem->m_content[0].get_size())
+    : lnodeimpl(op_memport, addr->get_ctx(), mem->m_content[0].get_size())
     , m_a_next(0)
     , m_addr_id(-1)
     , m_wdata_id(-1)

@@ -62,6 +62,18 @@ public:
   
   bool operator>=(const typebase& rhs) const {
     return !(*this < rhs);
+  }  
+  
+  virtual void readBytes(void* out, uint32_t sizeInBytes) const {  
+    assert(sizeInBytes * 8 >= N);
+    this->get_node().readBytes(reinterpret_cast<uint8_t*>(out), sizeInBytes);
+  }
+  
+  virtual void writeBytes(const void* in, uint32_t sizeInBytes) {
+    assert(sizeInBytes * 8 >= N);
+    ch_bus<N> tmp;
+    tmp.writeBytes(reinterpret_cast<const uint8_t*>(in), sizeInBytes);
+    this->operator =(tmp);
   }
   
   virtual snode get_node() const {

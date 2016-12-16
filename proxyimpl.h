@@ -20,14 +20,11 @@ public:
   
   void ensureInitialized() {
     this->ensureInitialized(0, this->get_size());
-  }
-  
+  }  
   
   bool is_slice() const;
   
   bool includes(uint32_t start, uint32_t length) const;
-  
-  void remove_ref(const lnode* node, lnodeimpl* src) override;
   
   void replace_undefs(uint32_t start, lnodeimpl* src, uint32_t offset, uint32_t length) override;
   

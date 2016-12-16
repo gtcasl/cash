@@ -3,7 +3,7 @@
 #include "context.h"
 #include "snodeimpl.h"
 #include "ioimpl.h"
-#include "opt.h"
+#include "compile.h"
 
 using namespace std;
 using namespace chdl_internal;

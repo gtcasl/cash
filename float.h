@@ -21,10 +21,27 @@ public:
     base::operator =(rhs);
     return *this;
   }
+  
+  ch_float& operator=(float rhs) {
+    base::operator =(ch_float(rhs));
+    return *this;
+  }
 };
 
+inline ch_float operator+(const ch_float& lhs, const ch_float& rhs) {
+  return ch_float(createAluNode(alu_op_fadd, 32, lhs.get_node().get_impl(), rhs.get_node().get_impl()));
+}
+
+inline ch_float operator-(const ch_float& lhs, const ch_float& rhs) {
+  return ch_float(createAluNode(alu_op_fsub, 32, lhs.get_node().get_impl(), rhs.get_node().get_impl()));
+}
+
 inline ch_float operator*(const ch_float& lhs, const ch_float& rhs) {
-  return ch_float(createAluNode(op_fmult, 32, lhs.get_node().get_impl(), rhs.get_node().get_impl()));
-} 
+  return ch_float(createAluNode(alu_op_fmult, 32, lhs.get_node().get_impl(), rhs.get_node().get_impl()));
+}
+
+inline ch_float operator/(const ch_float& lhs, const ch_float& rhs) {
+  return ch_float(createAluNode(alu_op_fdiv, 32, lhs.get_node().get_impl(), rhs.get_node().get_impl()));
+}
 
 }

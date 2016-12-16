@@ -31,6 +31,8 @@ public:
   }
   
   void toVerilog(const std::string& module_name, std::ostream& out);  
+  
+  void dump_stats(std::ostream& out);
     
 protected:
   

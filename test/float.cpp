@@ -55,5 +55,17 @@ TEST_CASE("floating points tests", "[float]") {
       z = x * y;
       return z == 0x3f800000;
     });
+    
+    TEST([]()->ch_logic {
+      ch_float x(0.5f), y(1.5f), z;
+      z = x + y;
+      return z == 0x40000000;
+    });
+    
+    TEST([]()->ch_logic {
+      ch_float x(2.5f), y(0.5f), z;
+      z = x - y;
+      return z == 0x40000000;
+    });
   }
 }
