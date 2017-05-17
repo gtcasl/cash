@@ -1,13 +1,13 @@
 #include <iostream>
 #include <fstream>
-#include <chdl.h>
+#include <cash.h>
 
-using namespace chdl::core;
-using namespace chdl::core_literals;
-using namespace chdl::sim;
+using namespace cash::core;
+using namespace cash::core_literals;
+using namespace cash::sim;
 
 template <unsigned ADDR, unsigned WIDTH>
-__ch_out(ch_bit<WIDTH>, ch_logic, ch_logic) FiFo(
+__out(ch_bit<WIDTH>, ch_logic, ch_logic) FiFo(
   const ch_bit<WIDTH>& din,
   const ch_logic& push,
   const ch_logic& pop) {
@@ -35,7 +35,7 @@ __ch_out(ch_bit<WIDTH>, ch_logic, ch_logic) FiFo(
     mem[wr_addr] = din;
   );
   
-  __ch_ret(dout, empty, full);
+  __ret(dout, empty, full);
 }
 
 int main(int argc, char **argv) {
@@ -49,7 +49,7 @@ int main(int argc, char **argv) {
   v_file.close();*/
 
   ch_vcdtracer tracer("fifo.vcd", myDevice);
-  __ch_trace(tracer, din, push, pop, dout, empty, full);
+  __trace(tracer, din, push, pop, dout, empty, full);
   tracer.run([&](ch_cycle time)->bool {
     switch (time) {
     case 0:

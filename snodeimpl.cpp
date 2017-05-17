@@ -3,7 +3,7 @@
 #include "bus.h"
 
 using namespace std;
-using namespace chdl_internal;
+using namespace cash_internal;
 
 static uint32_t generate_id() {
   static uint32_t s_id(0);
@@ -11,45 +11,35 @@ static uint32_t generate_id() {
 }
 
 snodeimpl::snodeimpl(uint32_t size) 
-  : m_id(generate_id())
-  , m_value(size)
-  , m_changeid(0) 
-  , m_owner(nullptr)
+  : id_(generate_id())
+  , value_(size)
+  , changeid_(0) 
+  , owner_(nullptr)
 {}
 
 snodeimpl::snodeimpl(const bitvector& value)
-  : m_id(generate_id())
-  , m_value(value)
-  , m_changeid(1) // m_value has been set
-  , m_owner(nullptr)
+  : id_(generate_id())
+  , value_(value)
+  , changeid_(1) // value_ has been set
+  , owner_(nullptr)
 {}
 
 snodeimpl::~snodeimpl() {
-  assert(m_owner == nullptr);
-  for (auto& src : m_srcs) {
+  assert(owner_ == nullptr);
+  for (auto& src : srcs_) {
     assert(src.node);
     src.node->release();
   }
 }
 
-void snodeimpl::setOwnership(snode* node) {
-  assert(m_owner == nullptr);
-  m_owner = node;
-}
-
-void snodeimpl::clearOwnership(snode* node) {
-  if (m_owner == node)
-    m_owner = nullptr;
-}
-
 void snodeimpl::assign(uint32_t start, snodeimpl* src, uint32_t offset, uint32_t length) {
   assert(src != nullptr && this != src);    
   
-  uint32_t n = m_srcs.size();
+  uint32_t n = srcs_.size();
   if (n > 0) {
     uint32_t i = 0;
     for (; length && i < n; ++i) {
-      source_t& curr = m_srcs[i];
+      source_t& curr = srcs_[i];
       uint32_t src_end  = start + length;
       uint32_t curr_end = curr.start + curr.length;
       
@@ -76,7 +66,7 @@ void snodeimpl::assign(uint32_t start, snodeimpl* src, uint32_t offset, uint32_t
           curr.length -= overlap;
           
           src->acquire();
-          m_srcs.insert(m_srcs.begin() + i, new_src);
+          srcs_.insert(srcs_.begin() + i, new_src);
           ++n;
           
           length = 0;  
@@ -89,7 +79,7 @@ void snodeimpl::assign(uint32_t start, snodeimpl* src, uint32_t offset, uint32_t
           
           ++i;
           src->acquire();
-          m_srcs.insert(m_srcs.begin() + i, new_src); 
+          srcs_.insert(srcs_.begin() + i, new_src); 
           ++n;       
           
           start  += overlap;
@@ -107,23 +97,23 @@ void snodeimpl::assign(uint32_t start, snodeimpl* src, uint32_t offset, uint32_t
           curr.length -= (curr_end - start);
           if (curr.length > 0) {
             ++i;
-            m_srcs.insert(m_srcs.begin() + i, 1, new_src);
+            srcs_.insert(srcs_.begin() + i, 1, new_src);
             ++n;
           } else {
             curr = new_src;
           }          
           
           if (curr_after.length) {                              
-            m_srcs.insert(m_srcs.begin() + (i+1), 1, curr_after); 
+            srcs_.insert(srcs_.begin() + (i+1), 1, curr_after); 
             ++n;
           }         
           length = 0;
         }
-      } else if (i+1 == n || src_end <= m_srcs[i+1].start) {
+      } else if (i+1 == n || src_end <= srcs_[i+1].start) {
         // no overlap with current and next
         i += (curr_end <= start) ? 1 : 0;
         src->acquire();
-        m_srcs.insert(m_srcs.begin() + i, new_src);   
+        srcs_.insert(srcs_.begin() + i, new_src);   
         ++n;
         
         length = 0;
@@ -144,52 +134,52 @@ void snodeimpl::assign(uint32_t start, snodeimpl* src, uint32_t offset, uint32_t
     }
   } else {
     src->acquire();
-    m_srcs.push_back({ src, start, offset, length });       
+    srcs_.push_back({ src, start, offset, length });       
   }
 }
 
 void snodeimpl::merge_left(uint32_t idx) {
   assert(idx > 0);
-  if (m_srcs[idx-1].node == m_srcs[idx].node && 
-      (m_srcs[idx-1].start + m_srcs[idx-1].length) == m_srcs[idx].start &&
-      m_srcs[idx].offset == m_srcs[idx-1].offset + m_srcs[idx-1].length) {
-    m_srcs[idx].node->release();
-    m_srcs[idx-1].length += m_srcs[idx].length;
-    m_srcs.erase(m_srcs.begin() + idx);
+  if (srcs_[idx-1].node == srcs_[idx].node && 
+      (srcs_[idx-1].start + srcs_[idx-1].length) == srcs_[idx].start &&
+      srcs_[idx].offset == srcs_[idx-1].offset + srcs_[idx-1].length) {
+    srcs_[idx].node->release();
+    srcs_[idx-1].length += srcs_[idx].length;
+    srcs_.erase(srcs_.begin() + idx);
   }      
 }
 
 uint64_t snodeimpl::sync_sources() const {
-  if (!m_srcs.empty()) {  
+  if (!srcs_.empty()) {  
     int changed = 0;
-    for (source_t& src : m_srcs) {
+    for (source_t& src : srcs_) {
       uint64_t changeid = src.node->sync_sources();
       if (src.changeid != changeid) {
         src.changeid = changeid;
-        m_value.copy(src.start, src.node->read(), src.offset, src.length);      
+        value_.copy(src.start, src.node->read(), src.offset, src.length);      
         changed = 1;
       }
     }
-    m_changeid += changed;
+    changeid_ += changed;
   }
-  return m_changeid;
+  return changeid_;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-snode::snode(const snode& rhs) : m_impl(nullptr) {
-  this->assign(rhs.m_impl); 
+snode::snode(const snode& rhs) : impl_(nullptr) {
+  this->assign(rhs.impl_); 
 }
 
-snode::snode(snode&& rhs) : m_impl(nullptr) {  
+snode::snode(snode&& rhs) : impl_(nullptr) {  
   this->move(rhs);
 }
 
-snode::snode(snodeimpl* impl) : m_impl(nullptr) {
+snode::snode(snodeimpl* impl) : impl_(nullptr) {
   this->assign(impl);
 }
 
-snode::snode(const bitstream_type& data) : m_impl(nullptr) {
+snode::snode(const bitstream_type& data) : impl_(nullptr) {
   uint32_t dst_offset = 0;
   for (auto& p : data) {
     this->assign(dst_offset, p.data, p.offset, p.length, data.get_size());   
@@ -197,20 +187,20 @@ snode::snode(const bitstream_type& data) : m_impl(nullptr) {
   }
 }
 
-snode::snode(const bitvector& value) : m_impl(nullptr) {
+snode::snode(const bitvector& value) : impl_(nullptr) {
   this->assign(new snodeimpl(value), true);
 }
 
 snode::~snode() {
-  if (m_impl) {
-    m_impl->clearOwnership(this);
-    m_impl->release();
-    m_impl == nullptr;
+  if (impl_) {
+    impl_->set_owner(nullptr);
+    impl_->release();
+    impl_ == nullptr;
   }
 }
 
 snode& snode::operator=(const snode& rhs) {
-  this->assign(rhs.m_impl);
+  this->assign(rhs.impl_);
   return *this;
 }
 
@@ -220,35 +210,35 @@ snode& snode::operator=(snode&& rhs) {
 }
 
 bool snode::operator==(const snode& rhs) const {
-  return (m_impl->get_value() == rhs.m_impl->get_value());
+  return (impl_->get_value() == rhs.impl_->get_value());
 }
 
 bool snode::operator<(const snode& rhs) const {
-  return (m_impl->get_value() < rhs.m_impl->get_value());
+  return (impl_->get_value() < rhs.impl_->get_value());
 }
 
 uint32_t snode::get_size() const {
-  return m_impl ? m_impl->get_size() : 0;
+  return impl_ ? impl_->get_size() : 0;
 }
 
 snodeimpl* snode::get_impl() const {
-  assert(m_impl);
-  return m_impl;
+  assert(impl_);
+  return impl_;
 }
 
 const snode& snode::ensureInitialized(uint32_t size) const {
-  if (m_impl == nullptr) {
-    m_impl = new snodeimpl(size);
-    m_impl->acquire();
+  if (impl_ == nullptr) {
+    impl_ = new snodeimpl(size);
+    impl_->acquire();
   }
-  assert(m_impl->get_size() == size);
+  assert(impl_->get_size() == size);
   return *this;
 }
 
 void snode::move(snode& rhs) {  
-  assert(m_impl != rhs.m_impl);
-  m_impl = rhs.m_impl;
-  rhs.m_impl = nullptr;
+  assert(impl_ != rhs.impl_);
+  impl_ = rhs.impl_;
+  rhs.impl_ = nullptr;
 }
 
 void snode::assign(const bitvector& value) {
@@ -256,43 +246,43 @@ void snode::assign(const bitvector& value) {
 }
 
 void snode::assign(snodeimpl* impl, bool is_owner) {  
-  assert(impl && m_impl != impl);
+  assert(impl && impl_ != impl);
   impl->acquire();
   if (is_owner)
-    impl->setOwnership(this);
-  if (m_impl) {
-    m_impl->clearOwnership(this);
-    m_impl->release();
+    impl->set_owner(this);
+  if (impl_) {
+    impl_->set_owner(nullptr);
+    impl_->release();
   }
-  m_impl = impl;
+  impl_ = impl;
 }
 
 void snode::clone() const {
-  // create a new snodeimpl() with m_impl as source node and make current
-  snodeimpl* const impl = m_impl;
-  m_impl = nullptr;
+  // create a new snodeimpl() with impl_ as source node and make current
+  snodeimpl* const impl = impl_;
+  impl_ = nullptr;
   this->ensureInitialized(impl->get_size());  
-  m_impl->assign(0, impl, 0, impl->get_size());
+  impl_->assign(0, impl, 0, impl->get_size());
   impl->release();
 }
 
 uint32_t snode::read(uint32_t idx) const {
-  assert(m_impl);
-  return m_impl->read(idx);
+  assert(impl_);
+  return impl_->read(idx);
 }
 
 void snode::write(uint32_t idx, uint32_t value) {
-  assert(m_impl);
-  assert(m_impl->isOwner(this));
-  m_impl->write(idx, value);
+  assert(impl_);
+  assert(impl_->get_owner() == this);
+  impl_->write(idx, value);
 }
 
-void snode::readBytes(uint8_t* out, uint32_t sizeInBytes) const {
-  m_impl->readBytes(out, sizeInBytes);
+void snode::read(uint8_t* out, uint32_t sizeInBytes) const {
+  impl_->read(out, sizeInBytes);
 }
 
-void snode::writeBytes(const uint8_t* in, uint32_t sizeInBytes) {
-  m_impl->writeBytes(in, sizeInBytes);
+void snode::write(const uint8_t* in, uint32_t sizeInBytes) {
+  impl_->write(in, sizeInBytes);
 }
 
 void snode::read(bitstream_type& inout, uint32_t offset, uint32_t length, uint32_t size) const {
@@ -326,12 +316,12 @@ void snode::assign(uint32_t dst_offset, const snode& src, uint32_t src_offset, u
   } else {
     // partial assignment
     this->ensureInitialized(size);
-    if (!m_impl->isOwner(this))
+    if (impl_->get_owner() != this)
       this->clone();
-    m_impl->assign(dst_offset, src.get_impl(), src_offset, src_length);
+    impl_->assign(dst_offset, src.get_impl(), src_offset, src_length);
   }  
 }
 
-std::ostream& chdl_internal::operator<<(std::ostream& os, const snode& node) {
+std::ostream& cash_internal::operator<<(std::ostream& os, const snode& node) {
   return os << node.get_impl()->get_value();
 }

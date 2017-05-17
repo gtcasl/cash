@@ -1,8 +1,6 @@
 #include "common.h"
-#include <boost/preprocessor/seq/enum.hpp>
-#include <boost/preprocessor/punctuation/remove_parens.hpp>
 
-using namespace chdl::core_literals;
+using namespace cash::core_literals;
 
 int g_debugbreak = 0;
 

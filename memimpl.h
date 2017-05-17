@@ -3,7 +3,7 @@
 #include "lnodeimpl.h"
 #include "cdomain.h"
 
-namespace chdl_internal {
+namespace cash_internal {
 
 class memportimpl;
 
@@ -24,7 +24,7 @@ public:
   void print_vl(std::ostream& out) const;
   
   uint32_t get_total_size() const {
-    return m_content.size() * m_content[0].get_size();
+    return content_.size() * content_[0].get_size();
   }
 
 protected:
@@ -33,9 +33,9 @@ protected:
   
   memportimpl* get_port(lnodeimpl* addr, bool writing);
   
-  std::vector<bitvector> m_content;
-  uint32_t m_ports_offset;
-  cdomain* m_cd;
+  std::vector<bitvector> content_;
+  uint32_t ports_offset_;
+  cdomain* cd_;
   
   friend class memportimpl;
 };
@@ -45,7 +45,7 @@ public:
   memportimpl(memimpl* mem, lnodeimpl* addr);
   
   lnodeimpl* get_addr() const {
-    return m_srcs[m_addr_id].get_impl();
+    return srcs_[addr_id_].get_impl();
   }
   
   void write(lnodeimpl* data);  
@@ -58,13 +58,13 @@ public:
 
 protected:
     
-  bitvector m_q_next;
-  uint32_t  m_a_next;
+  bitvector q_next_;
+  uint32_t  a_next_;
   
-  int       m_addr_id;
-  int       m_wdata_id;
+  int       addr_id_;
+  int       wdata_id_;
   
-  ch_cycle  m_ctime;
+  ch_cycle  ctime_;
   
   friend class memimpl;
 };

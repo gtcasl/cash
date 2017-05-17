@@ -1,6 +1,6 @@
 #pragma once
 
-namespace chdl_internal {
+namespace cash_internal {
 
 class lnode;
 class snode;
@@ -105,24 +105,24 @@ protected:
   
   lnodeimpl* get_current_conditional(const cond_blocks_t::iterator& iterBlock, lnodeimpl* dst) const;
   
-  std::list<lnodeimpl*>   m_nodes;
-  std::list<undefimpl*>   m_undefs;  
-  std::list<inputimpl*>   m_inputs;
-  std::list<outputimpl*>  m_outputs;
-  std::list<tapimpl*>     m_taps;
-  std::list<ioimpl*>      m_gtaps;
-  std::list<litimpl*>     m_literals;
-  std::list<cdomain*>     m_cdomains;
-  cond_blocks_t           m_cond_blocks;   
-  cond_vals_t             m_cond_vals;
-  std::stack<lnode>       m_clk_stack;
-  std::stack<lnode>       m_reset_stack;
+  std::list<lnodeimpl*>   nodes_;
+  std::list<undefimpl*>   undefs_;  
+  std::list<inputimpl*>   inputs_;
+  std::list<outputimpl*>  outputs_;
+  std::list<tapimpl*>     taps_;
+  std::list<ioimpl*>      gtaps_;
+  std::list<litimpl*>     literals_;
+  std::list<cdomain*>     cdomains_;
+  cond_blocks_t           cond_blocks_;   
+  cond_vals_t             cond_vals_;
+  std::stack<lnode>       clk_stack_;
+  std::stack<lnode>       reset_stack_;
 
-  uint32_t   m_nodeids;
-  inputimpl* m_clk;
-  inputimpl* m_reset;
+  uint32_t   nodeids_;
+  inputimpl* clk_;
+  inputimpl* reset_;
   
-  std::map<std::string, unsigned> m_dup_taps;
+  std::map<std::string, unsigned> dup_taps_;
   
   friend class ch_compiler;
   friend class ch_simulator;

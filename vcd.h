@@ -2,7 +2,7 @@
 
 #include "sim.h"
 
-namespace chdl_internal {
+namespace cash_internal {
 
 class ch_vcdtracer: public ch_tracer {
 public:
@@ -16,7 +16,7 @@ protected:
 
   void ensureInitialize() override;
 
-  std::ofstream m_file;
+  std::ofstream file_;
 
 };
 

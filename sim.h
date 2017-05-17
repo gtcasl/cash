@@ -2,7 +2,7 @@
 
 #include "device.h"
 
-namespace chdl_internal {
+namespace cash_internal {
 
 class inputimpl;
 class tapimpl;
@@ -31,10 +31,10 @@ protected:
   
   virtual void ensureInitialize();
   
-  std::set<context*> m_contexts;  
-  bool m_initialized;
-  snodeimpl* m_clk;
-  snodeimpl* m_reset;
+  std::set<context*> contexts_;
+  bool initialized_;
+  snodeimpl* clk_;
+  snodeimpl* reset_;
 };
 
 class ch_tracer : public ch_simulator {
@@ -72,9 +72,9 @@ protected:
   
   void add_trace(const std::string& name, snodeimpl* bus);
   
-  std::map<std::string, unsigned> m_dup_taps;
-  std::vector<tap_t> m_taps;
-  std::ostream& m_out;
+  std::map<std::string, unsigned> dup_taps_;
+  std::vector<tap_t> taps_;
+  std::ostream& out_;
 };
 
 void register_tap(const std::string& name, lnodeimpl* node);
@@ -91,22 +91,19 @@ void ch_tap(const std::string& name, const ch_bitbase<N>& v) {
 
 }
 
-#define CHDL_MAKE_TRACE(i, x) \
-  __tracer.add_trace(CHDL_STRINGIZE(x), x)
+#define CH_MAKE_TRACE(i, x) \
+  __tracer.add_trace(CH_STRINGIZE(x), x)
 
-#define CHDL_MAKE_TRACE_SEP() ;
+#define CH_MAKE_TRACE_SEP() ;
 
-#define CHDL_TRACE(x, ...) \
+#define CH_TRACE(x, ...) \
   do { \
-    chdl_internal::ch_tracer& __tracer = x; \
-    CHDL_FOR_EACH(CHDL_MAKE_TRACE, CHDL_MAKE_TRACE_SEP, __VA_ARGS__); \
-  } while (false)
+    cash_internal::ch_tracer& __tracer = x; \
+    CH_FOR_EACH(CH_MAKE_TRACE, CH_MAKE_TRACE_SEP, __VA_ARGS__); \
+  } while (0)
 
-#ifdef CHDL_DEBUG
-  #define CHDL_TAP(x) \
-    do {  \
-      ch_tap(#x, x); \
-    } while (false)
+#ifndef NDEBUG
+  #define CH_TAP(x) ch_tap(#x, x)
 #else
-  #define CHDL_TAP(x)
+  #define CH_TAP(x)
 #endif

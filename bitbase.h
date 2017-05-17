@@ -2,7 +2,7 @@
 
 #include "lnode.h"
 
-namespace chdl_internal {
+namespace cash_internal {
 
 template <unsigned N> class ch_bit;
 
@@ -83,21 +83,21 @@ public:
     return this->operator =(ch_bit<N>(value ? 0x1 : 0x0));
   } 
  
-#define CHDL_DEF_AOP(type) \
+#define CH_DEF_AOP(type) \
   typebase& operator=(type value) { \
     return this->operator =(ch_bit<N>(value)); \
   } 
-  CHDL_DEF_AOP(const std::initializer_list<uint32_t>&)
-  CHDL_DEF_AOP(char)
-  CHDL_DEF_AOP(int8_t)
-  CHDL_DEF_AOP(uint8_t)
-  CHDL_DEF_AOP(int16_t)
-  CHDL_DEF_AOP(uint16_t)
-  CHDL_DEF_AOP(int32_t)
-  CHDL_DEF_AOP(uint32_t)
-  CHDL_DEF_AOP(int64_t)
-  CHDL_DEF_AOP(uint64_t)
-#undef CHDL_DEF_AOP
+  CH_DEF_AOP(const std::initializer_list<uint32_t>&)
+  CH_DEF_AOP(char)
+  CH_DEF_AOP(int8_t)
+  CH_DEF_AOP(uint8_t)
+  CH_DEF_AOP(int16_t)
+  CH_DEF_AOP(uint16_t)
+  CH_DEF_AOP(int32_t)
+  CH_DEF_AOP(uint32_t)
+  CH_DEF_AOP(int64_t)
+  CH_DEF_AOP(uint64_t)
+#undef CH_DEF_AOP
   
   virtual lnode get_node() const {
     bitstream_type data(N);

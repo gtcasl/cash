@@ -10,44 +10,44 @@
 #include "context.h"
 
 using namespace std;
-using namespace chdl_internal;
+using namespace cash_internal;
 
 lnodeimpl::lnodeimpl(ch_operator op, context* ctx, uint32_t size) 
-  : m_op(op)
-  , m_ctx(ctx)
-  , m_value(size) {
-  m_id = ctx->add_node(this);  
+  : op_(op)
+  , ctx_(ctx)
+  , value_(size) {
+  id_ = ctx->add_node(this);  
 }
 
 lnodeimpl::~lnodeimpl() {  
-  for (auto iter = m_refs.begin(), iterEnd = m_refs.end(); iter != iterEnd;) {
+  for (auto iter = refs_.begin(), iterEnd = refs_.end(); iter != iterEnd;) {
     (*iter++).node->clear();
   }
-  m_ctx->remove_node(this);  
+  ctx_->remove_node(this);  
 }
 
 void lnodeimpl::add_ref(const lnode* node, const lnode* owner) {
-  m_refs.emplace(node, owner);  
+  refs_.emplace(node, owner);  
 }
 
 void lnodeimpl::remove_ref(const lnode* node) {
-  m_refs.erase(node);
+  refs_.erase(node);
 }
 
 void lnodeimpl::update_ref(const lnode* node, lnodeimpl* impl) {
-  CHDL_ABORT("Not yet implemented");
+  CH_ABORT("Not yet implemented");
 }
 
 const lnode* lnodeimpl::get_ref_owner(const lnode* node) {
-  auto iter = m_refs.find(node);
-  if (iter != m_refs.end()) {
+  auto iter = refs_.find(node);
+  if (iter != refs_.end()) {
     return iter->owner;
   }
   return nullptr;
 }
 
 bool lnodeimpl::ready() const {
-  for (auto& src : m_srcs) {
+  for (auto& src : srcs_) {
     if (!src.ready())
       return false;
   }
@@ -55,7 +55,7 @@ bool lnodeimpl::ready() const {
 }
 
 bool lnodeimpl::valid() const {
-  for (auto& src : m_srcs) {
+  for (auto& src : srcs_) {
     if (!src.valid())
       return false;
   }
@@ -64,20 +64,20 @@ bool lnodeimpl::valid() const {
 
 const char* lnodeimpl::get_name() const {
   static const char* sc_names[] = {
-    CHDL_OPERATOR_ENUM(CHDL_OPERATOR_NAME)
+    CH_OPERATOR_ENUM(CH_OPERATOR_NAME)
   };
-  return sc_names[(int)m_op];
+  return sc_names[(int)op_];
 }
 
 void lnodeimpl::print(std::ostream& out) const {
-  out << "#" << m_id << " <- " << this->get_name() << m_value.get_size();
-  uint32_t n = m_srcs.size();
+  out << "#" << id_ << " <- " << this->get_name() << value_.get_size();
+  uint32_t n = srcs_.size();
   if (n > 0) {
     out << "(";
     for (uint32_t i = 0; i < n; ++i) {
       if (i > 0)
         out << ", ";
-      out << "#" << m_srcs[i].get_id();
+      out << "#" << srcs_[i].get_id();
     }
     out << ")";
   }
@@ -90,8 +90,8 @@ undefimpl::undefimpl(context* ctx, uint32_t size)
 {}
 
 const bitvector& undefimpl::eval(ch_cycle t) {
-  CHDL_ABORT("undefined node: %d!", m_id);
-  return m_value; 
+  CH_ABORT("undefined node: %d!", id_);
+  return value_; 
 }
 
 void undefimpl::print_vl(std::ostream& out) const {
@@ -100,26 +100,26 @@ void undefimpl::print_vl(std::ostream& out) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-lnode::lnode(uint32_t size) : m_impl(nullptr) {
+lnode::lnode(uint32_t size) : impl_(nullptr) {
   // force initialization of nested objects
   if (ctx_curr()->conditional_enabled()) {
     this->ensureInitialized(size);
   }
 }
 
-lnode::lnode(const lnode& rhs) : m_impl(nullptr) { 
-  this->assign(rhs.m_impl, &rhs, true);
+lnode::lnode(const lnode& rhs) : impl_(nullptr) { 
+  this->assign(rhs.impl_, &rhs, true);
 }
 
-lnode::lnode(lnode&& rhs) : m_impl(nullptr) {
+lnode::lnode(lnode&& rhs) : impl_(nullptr) {
   this->move(rhs);
 }
 
-lnode::lnode(lnodeimpl* impl) : m_impl(nullptr) { 
+lnode::lnode(lnodeimpl* impl) : impl_(nullptr) { 
   this->assign(impl, nullptr, true);
 }
 
-lnode::lnode(const bitstream_type& data) : m_impl(nullptr) {
+lnode::lnode(const bitstream_type& data) : impl_(nullptr) {
   uint32_t dst_offset = 0;
   for (auto& p : data) {
     this->assign(dst_offset, p.data, p.offset, p.length, data.get_size(), true);   
@@ -127,7 +127,7 @@ lnode::lnode(const bitstream_type& data) : m_impl(nullptr) {
   }
 }
 
-lnode::lnode(const bitvector& value) : m_impl(nullptr) {
+lnode::lnode(const bitvector& value) : impl_(nullptr) {
   this->assign(ctx_curr()->create_literal(value), nullptr, true);
 }
 
@@ -140,7 +140,7 @@ void lnode::assign(const bitvector& value) {
 }
 
 lnode& lnode::operator=(const lnode& rhs) {
-  this->assign(rhs.m_impl, &rhs);
+  this->assign(rhs.impl_, &rhs);
   return *this;
 }
 
@@ -155,57 +155,57 @@ lnode& lnode::operator=(lnodeimpl* rhs) {
 }
 
 uint32_t lnode::get_id() const {
-  return m_impl ? m_impl->get_id() : 0; 
+  return impl_ ? impl_->get_id() : 0; 
 }
 
 context* lnode::get_ctx() const {
-  assert(m_impl);
-  return m_impl->get_ctx();
+  assert(impl_);
+  return impl_->get_ctx();
 }
 
 uint32_t lnode::get_size() const {
-  return m_impl ? m_impl->get_size() : 0;
+  return impl_ ? impl_->get_size() : 0;
 }
 
 bool lnode::ready() const {
-  return m_impl ? m_impl->ready() : true;
+  return impl_ ? impl_->ready() : true;
 }
 
 bool lnode::valid() const {
-  return m_impl ? m_impl->valid() : true;
+  return impl_ ? impl_->valid() : true;
 }
 
 const bitvector& lnode::eval(ch_cycle t) {
-  assert(m_impl);
-  return m_impl->eval(t);
+  assert(impl_);
+  return impl_->eval(t);
 }
 
 const lnode& lnode::ensureInitialized(uint32_t size) const {
-  if (m_impl == nullptr) {
-    m_impl = new undefimpl(ctx_curr(), size);
+  if (impl_ == nullptr) {
+    impl_ = new undefimpl(ctx_curr(), size);
   }
-  assert(m_impl->get_size() == size);
+  assert(impl_->get_size() == size);
   return *this;
 }
 
 void lnode::clear() const {
-  if (m_impl)
-    m_impl->remove_ref(this);
-  m_impl = nullptr;
+  if (impl_)
+    impl_->remove_ref(this);
+  impl_ = nullptr;
 }
 
 lnodeimpl* lnode::get_impl() const {
-  assert(m_impl);
-  return m_impl;
+  assert(impl_);
+  return impl_;
 }
 
 void lnode::move(lnode& rhs) {
-  assert(rhs.m_impl);
-  assert(rhs.m_impl != m_impl);
-  if (m_impl != rhs.m_impl) {
+  assert(rhs.impl_);
+  assert(rhs.impl_ != impl_);
+  if (impl_ != rhs.impl_) {
     this->clear();
-    m_impl = rhs.m_impl;
-    m_impl->add_ref(this, rhs.m_impl->get_ref_owner(&rhs));
+    impl_ = rhs.impl_;
+    impl_->add_ref(this, rhs.impl_->get_ref_owner(&rhs));
   }
   rhs.clear();
 }
@@ -214,18 +214,18 @@ void lnode::assign(lnodeimpl* impl, const lnode* src, bool initialization) const
   if (impl) {
     if (!initialization) {
       // resolve conditionals if inside a branch
-      impl = impl->get_ctx()->resolve_conditional(m_impl, impl);
-      if (impl == m_impl)
+      impl = impl->get_ctx()->resolve_conditional(impl_, impl);
+      if (impl == impl_)
         return;
     } 
     impl->add_ref(this, src);
   }
-  if (m_impl) {
-    CHDL_CHECK(impl != m_impl, "redundant assignment for node %s%d(#%d)!\n", m_impl->get_name(), m_impl->get_size(), m_impl->get_id());    
-    m_impl->remove_ref(this);
-    m_impl->update_ref(this, impl);
+  if (impl_) {
+    CH_CHECK(impl != impl_, "redundant assignment for node %s%d(#%d)!\n", impl_->get_name(), impl_->get_size(), impl_->get_id());    
+    impl_->remove_ref(this);
+    impl_->update_ref(this, impl);
   }  
-  m_impl = impl;
+  impl_ = impl;
 }
 
 void lnode::read(bitstream_type& inout, uint32_t offset, uint32_t length, uint32_t size) const {

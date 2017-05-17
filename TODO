@@ -62,17 +62,17 @@ X*** Assignment rule: by constructor assignent is ignored during check
 - implement ch_make_device() to use compiler time binding
 - add C++ user defined literals for _b, _h, _d, _o convertion to bitv<N> and bus<N>
 - create ../configure --prefix / make / make install scripts
-- implement chdl namespaces chdl::core, chdl::sim, chdl::stl
+- implement cash namespaces cash::core, cash::sim, cash::stl
 - toVerilog() renaming module arguments
 - investigate using std::bind and variadic functions for device creation
 - add mutex and fifo primitives for TML modelling
 - move memory functions into classes to support onetime initialization: ch_mem<N, W, AsyncR> mem(..); x = mem.read(addr); mem.write(en, addr, val);
 - support ch_device_interface<type> for user to derive and implement emit()
-- enforce type safety in CHDL for explicit size casting
+- enforce type safety in CASH for explicit size casting
 - experiment if/else using lambdas ch_when(a > 1, []{...}).when(b > 1, []{...}).otherwise([]{...})
 - revisit the next() operator concept to make reg implicit
-- check out usefull AVX shuffle api to support in CHDL
-- CHDL conditionals: ch_when(?, :=).when(?, :=).otherwise(:=)
+- check out usefull AVX shuffle api to support in CASH
+- CASH conditionals: ch_when(?, :=).when(?, :=).otherwise(:=)
 - global Reset device->reset() => manually reset all nodes in device to zero.
 - FSM designs integration
 - should generate high-level verilog
@@ -95,7 +95,7 @@ X*** Assignment rule: by constructor assignent is ignored during check
 - implement module functions generation and reuse
 - implement new analysis api
 - implement new netlist export/import
-- implement GCC "#pragma chdl module" to convert native functions to CHDL module
+- implement GCC "#pragma cash module" to convert native functions to CASH module
 - redesign schematic export to use new clock design
 - accelerate simulation using a virtual machine
 - support for high-level custom compoment plugins (with query cycle and gate count)
@@ -107,12 +107,12 @@ Completed:
 - refactor ch_reg class => move to function
 - refactor ch_wire class => all objects operate as wires before first assignment
 - move ch_rom into llmem.h
-- create chdl.h header file
+- create cash.h header file
 - adding native support for integers operations
-- add CHDL_ to all header files #define declarations
-- implement chdl_internal to cleanup api namespace
+- add CASH_ to all header files #define declarations
+- implement cash_internal to cleanup api namespace
 - keep all implementation specific headers private
-- append ch_ to CHDL public types and functions
+- append ch_ to CASH public types and functions
 - runtime assertion support for testing
 - explicit clock implementation
 - explicit clock simulation 
@@ -146,9 +146,9 @@ notes:
 ======
 
 // debugging environment variables
-export CHDL_DEBUG_NODE=32
-export CHDL_DEBUG_LEVEL=2
-export CHDL_DUMP_AST=1
+export CASH_DEBUG_NODE=32
+export CASH_DEBUG_LEVEL=2
+export CASH_DUMP_AST=1
 
 // infering multiple cycles operations
 y = ch_pipeline(x, 2) = ch_reg(ch_reg(x));
@@ -161,22 +161,22 @@ $ valgrind --leak-check=yes <app> <args...>
 $ valgrind --tool=callgrind <app> <args...>
 $ kcachegrind
 
-// Detecting Cycles in CHDL?
+// Detecting Cycles in CASH?
 // cycles only occurs when combinatorial nets eval() function is entered a second time without having exited.
 bool nandimpl::eval(cycle_t t) { 
-  if (m_ctime != t) {    
-	if (m_ctime > t) {
-		CHDL_ABBORT("found cycle");
+  if (ctime_ != t) {
+    if (ctime_ > t) {
+        CASH_ABBORT("found cycle");
 	}
-    m_ctime = t + 1;
-    m_cval = !(m_srcs[0].eval(t) && m_srcs[1].eval(t));
-	m_ctime  = t;
+    ctime_ = t + 1;
+    cval_ = !(srcs_[0].eval(t) && srcs_[1].eval(t));
+    ctime_  = t;
   }
-  return m_cval;
+  return cval_;
 }
 
 //
-// alternative CHDL programming model
+// alternative CASH programming model
 // enable realtime debugging in behavioral mode
 //
 template <unsigned N>

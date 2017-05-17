@@ -1,11 +1,11 @@
 #pragma once
 
 #include <string.h>
-#include <chdl.h>
+#include <cash.h>
 #include "catch.h"
 
-using namespace chdl::core;
-using namespace chdl::sim;
+using namespace cash::core;
+using namespace cash::sim;
 
 bool runtest(const std::function<ch_logic()>& test, ch_cycle cycles = 1);
 

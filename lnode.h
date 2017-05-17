@@ -3,7 +3,7 @@
 #include "typebase.h"
 #include "bitvector.h"
 
-namespace chdl_internal {
+namespace cash_internal {
 
 class lnodeimpl;
 class context;
@@ -15,7 +15,7 @@ public:
   
   using bitstream_type = bitstream<lnode>;
 
-  lnode() : m_impl(nullptr) {}
+  lnode() : impl_(nullptr) {}
   lnode(uint32_t size);  
   lnode(const lnode& rhs);
   lnode(lnode&& rhs);
@@ -63,7 +63,7 @@ protected:
   
   void assign(uint32_t dst_offset, const lnode& src, uint32_t src_offset, uint32_t src_length, uint32_t size, bool initialization = false);
   
-  mutable lnodeimpl* m_impl;
+  mutable lnodeimpl* impl_;
   
   friend class lnodeimpl;
   friend class context; 

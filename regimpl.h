@@ -4,7 +4,7 @@
 #include "tickable.h"
 #include "cdomain.h"
 
-namespace chdl_internal {
+namespace cash_internal {
 
 class regimpl : public tickable, public lnodeimpl {
 public:
@@ -12,7 +12,7 @@ public:
   virtual ~regimpl();
   
   const lnode& get_next() const {
-    return m_srcs[0];
+    return srcs_[0];
   }
   
   const bitvector& eval(ch_cycle t) override;  
@@ -23,8 +23,8 @@ public:
   
 protected:
 
-  cdomain*  m_cd;
-  bitvector m_q_next;
+  cdomain*  cd_;
+  bitvector q_next_;
 };
 
 class latchimpl : public tickable, public lnodeimpl {
@@ -45,7 +45,7 @@ public:
   
 protected:
 
-  cdomain* m_cd;
+  cdomain* cd_;
 };
 
 }

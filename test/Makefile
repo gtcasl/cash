@@ -1,5 +1,5 @@
-CXXFLAGS += -std=c++14 -O0 -g -fmax-errors=5 -DCHDL_DEBUG
-LDFLAGS += -lchdl
+CXXFLAGS += -std=c++14 -O0 -g -fmax-errors=5 -DCASH_DEBUG
+LDFLAGS += -lcash
 
 PROJECT = test.out
 

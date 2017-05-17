@@ -2,7 +2,7 @@
 
 #include "lnodeimpl.h"
 
-namespace chdl_internal {
+namespace cash_internal {
 
 class proxyimpl : public lnodeimpl {
 public:  
@@ -25,8 +25,8 @@ private:
   
   void merge_left(uint32_t idx);
   
-  std::vector<range_t> m_ranges; 
-  ch_cycle m_ctime;
+  std::vector<range_t> ranges_; 
+  ch_cycle ctime_;
 };
 
 }

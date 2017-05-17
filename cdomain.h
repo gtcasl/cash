@@ -3,7 +3,7 @@
 #include "lnodeimpl.h"
 #include "tickable.h"
 
-namespace chdl_internal {
+namespace cash_internal {
 
 enum EDGE_DIR {
   EDGE_POS = 0,
@@ -17,20 +17,20 @@ public:
   ~clock_event();
   
   lnodeimpl* get_signal() const {
-    return m_signal.get_impl();
+    return signal_.get_impl();
   }
   
   EDGE_DIR get_edgedir() const {
-    return m_edgedir;
+    return edgedir_;
   }
   
   bool operator==(lnodeimpl* signal) const {
-    return (m_signal.get_id() == signal->get_id());
+    return (signal_.get_id() == signal->get_id());
   }
   
   bool operator==(const clock_event& e) const {
-    return (m_signal.get_id() == e.m_signal.get_id()) && 
-           (m_edgedir == e.m_edgedir);
+    return (signal_.get_id() == e.signal_.get_id()) && 
+           (edgedir_ == e.edgedir_);
   }
   
   bool eval(ch_cycle t);
@@ -38,9 +38,9 @@ public:
   void print_vl(std::ostream& out) const;
   
 protected:
-  lnode    m_signal;
-  EDGE_DIR m_edgedir;
-  bool     m_cval; 
+  lnode    signal_;
+  EDGE_DIR edgedir_;
+  bool     cval_; 
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -53,11 +53,11 @@ public:
   void remove_use(tickable* reg);
   
   const std::vector<clock_event>& get_sensitivity_list() const {
-    return m_sensitivity_list;
+    return sensitivity_list_;
   }
   
   context* get_ctx() const {
-    return m_ctx;
+    return ctx_;
   }
   
   void tick(ch_cycle t);
@@ -71,9 +71,9 @@ protected:
   
   ~cdomain();
   
-  std::vector<clock_event> m_sensitivity_list;
-  std::list<tickable*> m_regs;
-  context* m_ctx;
+  std::vector<clock_event> sensitivity_list_;
+  std::list<tickable*> regs_;
+  context* ctx_;
 };
 
 }

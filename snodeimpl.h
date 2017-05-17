@@ -2,7 +2,7 @@
 
 #include "snode.h"
 
-namespace chdl_internal {
+namespace cash_internal {
 
 class snodeimpl : public refcounted {
 public:
@@ -11,75 +11,75 @@ public:
   ~snodeimpl();  
   
   uint32_t get_id() const {
-    return m_id;
+    return id_;
   }
   
-  bool isOwner(snode* node) const {
-    return (m_owner == node);
+  snode* get_owner() const {
+    return owner_;
   }
   
-  void setOwnership(snode* node);
-  
-  void clearOwnership(snode* node);
+  void set_owner(snode* node) {
+    owner_ = node;
+  }
   
   void assign(uint32_t start, snodeimpl* src, uint32_t offset, uint32_t length);
 
   bitvector::const_reference operator[](uint32_t idx) const {
     this->sync_sources();
-    return m_value[idx];
+    return value_[idx];
   }
   
   bitvector::reference operator[](uint32_t idx) {
-    ++m_changeid;
+    ++changeid_;
     this->sync_sources();
-    return m_value[idx];
+    return value_[idx];
   }
   
   uint32_t read(uint32_t idx) const {
     this->sync_sources();
-    return m_value.get_word(idx);
+    return value_.get_word(idx);
   }
   
   void write(uint32_t idx, uint32_t value) {
     this->sync_sources();
-    m_value.set_word(idx, value);
-    ++m_changeid;
+    value_.set_word(idx, value);
+    ++changeid_;
   }
   
-  void readBytes(uint8_t* out, uint32_t sizeInBytes) const {
+  void read(uint8_t* out, uint32_t sizeInBytes) const {
     this->sync_sources();
-    m_value.readBytes(out, sizeInBytes);
+    value_.read(out, sizeInBytes);
   }
   
-  void writeBytes(const uint8_t* in, uint32_t sizeInBytes) {
+  void write(const uint8_t* in, uint32_t sizeInBytes) {
     this->sync_sources();
-    m_value.writeBytes(in, sizeInBytes);
-    ++m_changeid;
+    value_.write(in, sizeInBytes);
+    ++changeid_;
   }
   
   const bitvector& read() const {
     this->sync_sources();
-    return m_value;
+    return value_;
   }
   
   void write(const bitvector& value) {
-    assert(m_srcs.size() == 0);
-    m_value = value;
-    ++m_changeid;
+    assert(srcs_.size() == 0);
+    value_ = value;
+    ++changeid_;
   }
   
   uint32_t get_size() const {
-    return m_value.get_size();
+    return value_.get_size();
   }
   
   const bitvector& get_value() const { 
     this->sync_sources();
-    return m_value;
+    return value_;
   }
   
   bitvector& get_value() {
     this->sync_sources();
-    return m_value;
+    return value_;
   }
   
 protected:
@@ -96,11 +96,11 @@ protected:
     uint64_t changeid;
   };
   
-  mutable std::vector<source_t> m_srcs;
-  mutable bitvector m_value;
-  mutable uint64_t  m_changeid;
-  snode* m_owner;
-  uint32_t m_id;
+  mutable std::vector<source_t> srcs_;
+  mutable bitvector value_;
+  mutable uint64_t  changeid_;
+  snode* owner_;
+  uint32_t id_;
 };
 
 }

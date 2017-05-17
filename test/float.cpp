@@ -1,6 +1,6 @@
 #include "common.h"
 
-using namespace chdl::core_literals;
+using namespace cash::core_literals;
 
 TEST_CASE("floating points tests", "[float]") {  
   SECTION("basic test", "[basic]") {

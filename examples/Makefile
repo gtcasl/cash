@@ -1,6 +1,6 @@
 #CXXFLAGS += -std=c++14 -O2 -DNDEBUG
-CXXFLAGS += -std=c++14 -O0 -g -fmax-errors=5 -DCHDL_DEBUG
-LDFLAGS += -lchdl
+CXXFLAGS += -std=c++14 -O0 -g -fmax-errors=5 -DCASH_DEBUG
+LDFLAGS += -lcash
 
 VCS_OPT = -I $(VCS_HOME)/include -full64
 VCS_OPT+= -nc -V -debug_all -work work +librescan +v2k

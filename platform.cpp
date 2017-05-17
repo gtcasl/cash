@@ -2,25 +2,25 @@
 #include "platform.h"
 
 platform::platform()
-  : m_dbg_level(1)  
-  , m_dbg_node(0)
-  , m_dump_ast(0)
-  , m_dump_cfg(0) {
-  const char* dbg_level = std::getenv("CHDL_DEBUG_LEVEL");
+  : dbg_level_(1)  
+  , dbg_node_(0)
+  , dump_ast_(0)
+  , dump_cfg_(0) {
+  const char* dbg_level = std::getenv("CASH_DEBUG_LEVEL");
   if (dbg_level)
-    m_dbg_level = atol(dbg_level);
+    dbg_level_ = atol(dbg_level);
   
-  const char* dbg_node = std::getenv("CHDL_DEBUG_NODE");
+  const char* dbg_node = std::getenv("CASH_DEBUG_NODE");
   if (dbg_node)
-    m_dbg_node = atol(dbg_node);
+    dbg_node_ = atol(dbg_node);
   
-  const char* dump_ast = std::getenv("CHDL_DUMP_AST");
+  const char* dump_ast = std::getenv("CASH_DUMP_AST");
   if (dump_ast)
-    m_dump_ast = atol(dump_ast);  
+    dump_ast_ = atol(dump_ast);  
   
-  const char* dump_cfg = std::getenv("CHDL_DUMP_CFG");
+  const char* dump_cfg = std::getenv("CASH_DUMP_CFG");
   if (dump_cfg)
-    m_dump_cfg = atol(dump_cfg);  
+    dump_cfg_ = atol(dump_cfg);  
 }
 
 const platform& platform::self() {

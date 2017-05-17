@@ -1,10 +1,10 @@
 #include <iostream>
 #include <fstream>
-#include <chdl.h>
+#include <cash.h>
 
-using namespace chdl::core;
-using namespace chdl::core_literals;
-using namespace chdl::sim;
+using namespace cash::core;
+using namespace cash::core_literals;
+using namespace cash::sim;
 
 ch_bit8 FastMul(const ch_bit4& lhs, const ch_bit4& rhs) {
   std::vector<uint32_t> tbl_mult(16 * 16);
@@ -26,7 +26,7 @@ int main(int argc, char **argv) {
   v_file.close();*/
 
   ch_vcdtracer tracer("fastmul.vcd", myDevice);
-  __ch_trace(tracer, lhs, rhs, out);
+  __trace(tracer, lhs, rhs, out);
   tracer.run();
   
   std::cout << "result:" << std::endl;

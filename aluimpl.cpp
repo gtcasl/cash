@@ -2,13 +2,13 @@
 #include "context.h"
 
 using namespace std;
-using namespace chdl_internal;
+using namespace cash_internal;
 
-#define CHDL_ALUOP_NAME(n) case alu_op_##n: return op_##n;
+#define CH_ALUOP_NAME(n) case alu_op_##n: return op_##n;
 
 static ch_operator to_operator(ch_alu_operator op) {
   switch (op) {
-    CHDL_ALUOP_ENUM(CHDL_ALUOP_NAME)
+    CH_ALUOP_ENUM(CH_ALUOP_NAME)
   }
 }
 
@@ -57,7 +57,7 @@ static void binaryop(bitvector& dst, const bitvector& a, const bitvector& b) {
 template <ch_alu_operator op>
 static void shiftop(bitvector& dst, const bitvector& in, const bitvector& bits) {  
   assert(dst.get_size() == in.get_size());
-  CHDL_CHECK(bits.find_last() <= 31, "shift amount out of range!");
+  CH_CHECK(bits.find_last() <= 31, "shift amount out of range!");
   
   uint32_t wbits = bits.get_word(0);
   switch (op) {  
@@ -240,76 +240,76 @@ static void demux(bitvector& dst, const bitvector& in, const bitvector& sel) {
 
 aluimpl::aluimpl(ch_alu_operator alu_op, uint32_t size, lnodeimpl* a, lnodeimpl* b) 
   : lnodeimpl(to_operator(alu_op), a->get_ctx(), size)
-  , m_alu_op(alu_op)
-  , m_ctime(~0ull) {
-  m_srcs.emplace_back(a);
-  m_srcs.emplace_back(b);
+  , alu_op_(alu_op)
+  , ctime_(~0ull) {
+  srcs_.emplace_back(a);
+  srcs_.emplace_back(b);
 }
 
 aluimpl::aluimpl(ch_alu_operator alu_op, uint32_t size, lnodeimpl* a) 
   : lnodeimpl(to_operator(alu_op), a->get_ctx(), size)
-  , m_alu_op(alu_op)
-  , m_ctime(~0ull) {
-  m_srcs.emplace_back(a);
+  , alu_op_(alu_op)
+  , ctime_(~0ull) {
+  srcs_.emplace_back(a);
 }
 
 const bitvector& aluimpl::eval(ch_cycle t) {  
-  if (m_ctime != t) {  
-    m_ctime = t;
+  if (ctime_ != t) {  
+    ctime_ = t;
     
-    switch (m_alu_op) {
+    switch (alu_op_) {
     case alu_op_inv:
-      unaryop<alu_op_inv>(m_value, m_srcs[0].eval(t));  
+      unaryop<alu_op_inv>(value_, srcs_[0].eval(t));  
       break;
     case alu_op_and:
-      binaryop<alu_op_and>(m_value, m_srcs[0].eval(t), m_srcs[1].eval(t));  
+      binaryop<alu_op_and>(value_, srcs_[0].eval(t), srcs_[1].eval(t));  
       break;
     case alu_op_or:
-      binaryop<alu_op_or>(m_value, m_srcs[0].eval(t), m_srcs[1].eval(t));        
+      binaryop<alu_op_or>(value_, srcs_[0].eval(t), srcs_[1].eval(t));        
       break;
     case alu_op_xor:
-      binaryop<alu_op_xor>(m_value, m_srcs[0].eval(t), m_srcs[1].eval(t));        
+      binaryop<alu_op_xor>(value_, srcs_[0].eval(t), srcs_[1].eval(t));        
       break;
     case alu_op_nand:
-      binaryop<alu_op_nand>(m_value, m_srcs[0].eval(t), m_srcs[1].eval(t));  
+      binaryop<alu_op_nand>(value_, srcs_[0].eval(t), srcs_[1].eval(t));  
       break;
     case alu_op_nor:
-      binaryop<alu_op_nor>(m_value, m_srcs[0].eval(t), m_srcs[1].eval(t));        
+      binaryop<alu_op_nor>(value_, srcs_[0].eval(t), srcs_[1].eval(t));        
       break;
     case alu_op_xnor:
-      binaryop<alu_op_xnor>(m_value, m_srcs[0].eval(t), m_srcs[1].eval(t));        
+      binaryop<alu_op_xnor>(value_, srcs_[0].eval(t), srcs_[1].eval(t));        
       break;
     
     case alu_op_andr:
-      reduceop<alu_op_andr>(m_value, m_srcs[0].eval(t));  
+      reduceop<alu_op_andr>(value_, srcs_[0].eval(t));  
       break;
     case alu_op_orr:
-      reduceop<alu_op_orr>(m_value, m_srcs[0].eval(t));        
+      reduceop<alu_op_orr>(value_, srcs_[0].eval(t));        
       break;
     case alu_op_xorr:
-      reduceop<alu_op_xorr>(m_value, m_srcs[0].eval(t));        
+      reduceop<alu_op_xorr>(value_, srcs_[0].eval(t));        
       break;
       
     case alu_op_shl:
-      shiftop<alu_op_shl>(m_value, m_srcs[0].eval(t), m_srcs[1].eval(t));
+      shiftop<alu_op_shl>(value_, srcs_[0].eval(t), srcs_[1].eval(t));
       break;
     case alu_op_shr:
-      shiftop<alu_op_shr>(m_value, m_srcs[0].eval(t), m_srcs[1].eval(t));
+      shiftop<alu_op_shr>(value_, srcs_[0].eval(t), srcs_[1].eval(t));
       break;
     case alu_op_rotl:
-      shiftop<alu_op_rotl>(m_value, m_srcs[0].eval(t), m_srcs[1].eval(t));
+      shiftop<alu_op_rotl>(value_, srcs_[0].eval(t), srcs_[1].eval(t));
       break;
     case alu_op_rotr:
-      shiftop<alu_op_rotr>(m_value, m_srcs[0].eval(t), m_srcs[1].eval(t));
+      shiftop<alu_op_rotr>(value_, srcs_[0].eval(t), srcs_[1].eval(t));
       break;
       
     case alu_op_add:
-      add(m_value, m_srcs[0].eval(t), m_srcs[1].eval(t));        
+      add(value_, srcs_[0].eval(t), srcs_[1].eval(t));        
       break;
     case alu_op_sub:{
-        bitvector minus_b(m_value.get_size());
-        unaryop<alu_op_inv>(minus_b, m_srcs[1].eval(t));
-        add(m_value, m_srcs[0].eval(t), minus_b, 1);        
+        bitvector minus_b(value_.get_size());
+        unaryop<alu_op_inv>(minus_b, srcs_[1].eval(t));
+        add(value_, srcs_[0].eval(t), minus_b, 1);        
       } break;
     case alu_op_mult:
     case alu_op_div:
@@ -318,62 +318,62 @@ const bitvector& aluimpl::eval(ch_cycle t) {
       break;
       
     case alu_op_eq:
-      compareop<alu_op_eq>(m_value, m_srcs[0].eval(t), m_srcs[1].eval(t));
+      compareop<alu_op_eq>(value_, srcs_[0].eval(t), srcs_[1].eval(t));
       break;
     case alu_op_ne:
-      compareop<alu_op_ne>(m_value, m_srcs[0].eval(t), m_srcs[1].eval(t));
+      compareop<alu_op_ne>(value_, srcs_[0].eval(t), srcs_[1].eval(t));
       break;
     case alu_op_lt:
-      compareop<alu_op_lt>(m_value, m_srcs[0].eval(t), m_srcs[1].eval(t));
+      compareop<alu_op_lt>(value_, srcs_[0].eval(t), srcs_[1].eval(t));
       break;
     case alu_op_gt:
-      compareop<alu_op_gt>(m_value, m_srcs[0].eval(t), m_srcs[1].eval(t));
+      compareop<alu_op_gt>(value_, srcs_[0].eval(t), srcs_[1].eval(t));
       break;
     case alu_op_le:
-      compareop<alu_op_le>(m_value, m_srcs[0].eval(t), m_srcs[1].eval(t));  
+      compareop<alu_op_le>(value_, srcs_[0].eval(t), srcs_[1].eval(t));  
       break;
     case alu_op_ge:
-      compareop<alu_op_ge>(m_value, m_srcs[0].eval(t), m_srcs[1].eval(t));
+      compareop<alu_op_ge>(value_, srcs_[0].eval(t), srcs_[1].eval(t));
       break;  
       
     case alu_op_mux:
-      mux(m_value, m_srcs[0].eval(t), m_srcs[1].eval(t));
+      mux(value_, srcs_[0].eval(t), srcs_[1].eval(t));
       break;
     case alu_op_demux:
-      demux(m_value, m_srcs[0].eval(t), m_srcs[1].eval(t));
+      demux(value_, srcs_[0].eval(t), srcs_[1].eval(t));
       break;
       
     case alu_op_fadd:
-      fadd(m_value, m_srcs[0].eval(t), m_srcs[1].eval(t));
+      fadd(value_, srcs_[0].eval(t), srcs_[1].eval(t));
       break;
       
     case alu_op_fsub:
-      fsub(m_value, m_srcs[0].eval(t), m_srcs[1].eval(t));
+      fsub(value_, srcs_[0].eval(t), srcs_[1].eval(t));
       break;
       
     case alu_op_fmult:
-      fmult(m_value, m_srcs[0].eval(t), m_srcs[1].eval(t));
+      fmult(value_, srcs_[0].eval(t), srcs_[1].eval(t));
       break;
       
     case alu_op_fdiv:
-      fdiv(m_value, m_srcs[0].eval(t), m_srcs[1].eval(t));
+      fdiv(value_, srcs_[0].eval(t), srcs_[1].eval(t));
       break;
       
     default:
       TODO("Not yet implemented!");
     }
   }
-  return m_value;
+  return value_;
 }
 
 void aluimpl::print_vl(std::ostream& out) const {
   TODO("Not yet implemented!");
 } 
 
-lnodeimpl* chdl_internal::createAluNode(ch_alu_operator op, uint32_t size, lnodeimpl* a, lnodeimpl* b) {
+lnodeimpl* cash_internal::createAluNode(ch_alu_operator op, uint32_t size, lnodeimpl* a, lnodeimpl* b) {
   return new aluimpl(op, size, a, b); 
 }
 
-lnodeimpl* chdl_internal::createAluNode(ch_alu_operator op, uint32_t size, lnodeimpl* a) {
+lnodeimpl* cash_internal::createAluNode(ch_alu_operator op, uint32_t size, lnodeimpl* a) {
   return new aluimpl(op, size, a);
 }

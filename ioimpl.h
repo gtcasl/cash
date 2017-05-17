@@ -2,7 +2,7 @@
 
 #include "lnodeimpl.h"
 
-namespace chdl_internal {
+namespace cash_internal {
 
 class snodeimpl;
 
@@ -26,7 +26,7 @@ public:
   void print_vl(std::ostream& out) const override {} // LCOV_EXCL_LINE
   
 protected:
-  snodeimpl* m_bus;
+  snodeimpl* bus_;
 };
 
 class outputimpl : public ioimpl {
@@ -44,7 +44,7 @@ public:
   void print_vl(std::ostream& out) const override {} // LCOV_EXCL_LINE
   
 private:
-  snodeimpl* m_bus;
+  snodeimpl* bus_;
 };
 
 class tapimpl : public outputimpl { // LCOV_EXCL_LINE
@@ -52,15 +52,15 @@ public:
   tapimpl(const std::string& name, lnodeimpl* src);
   
   const lnode& get_target() const {
-    return m_srcs[0];
+    return srcs_[0];
   }
   
   void set_tagName(const std::string& tagName) {
-    m_tapName = tagName;
+    tapName_ = tagName;
   }
   
   const std::string& get_tapName() const {
-    return m_tapName;
+    return tapName_;
   }
   
   void print(std::ostream& out) const override;
@@ -68,7 +68,7 @@ public:
   void print_vl(std::ostream& out) const override {} // LCOV_EXCL_LINE 
   
 protected:
-  std::string  m_tapName;
+  std::string  tapName_;
 };
 
 }

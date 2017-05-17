@@ -2,7 +2,7 @@
 
 #include "lnodeimpl.h"
 
-namespace chdl_internal {
+namespace cash_internal {
 
 class tickimpl : public lnodeimpl {
 public:
@@ -12,7 +12,7 @@ public:
   void print_vl(std::ostream& out) const override;
   
 private:
-  ch_cycle m_ctime;
+  ch_cycle ctime_;
 };
 
 }

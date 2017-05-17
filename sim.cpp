@@ -6,74 +6,74 @@
 #include "compile.h"
 
 using namespace std;
-using namespace chdl_internal;
+using namespace cash_internal;
 
 ch_simulator::ch_simulator(const std::initializer_list<const ch_device*>& devices)
-  : m_initialized(false)
-  , m_clk(nullptr)
-  , m_reset(nullptr) {
+  : initialized_(false)
+  , clk_(nullptr)
+  , reset_(nullptr) {
   for (auto device : devices) {
-    context* ctx = device->m_ctx; 
-    auto ret = m_contexts.emplace(ctx);
+    context* ctx = device->ctx_; 
+    auto ret = contexts_.emplace(ctx);
     if (ret.second)
       ctx->acquire();
   }
 }
 
 ch_simulator::~ch_simulator() {
-  if (m_clk)
-    m_clk->release();
-  if (m_reset)
-    m_reset->release();
-  for (auto ctx : m_contexts) {
+  if (clk_)
+    clk_->release();
+  if (reset_)
+    reset_->release();
+  for (auto ctx : contexts_) {
     ctx->release();
   }
 }
 
 void ch_simulator::add_device(const ch_device& device) {
-  context* ctx = device.m_ctx; 
-  auto ret = m_contexts.emplace(ctx);
+  context* ctx = device.ctx_; 
+  auto ret = contexts_.emplace(ctx);
   if (ret.second)
     ctx->acquire();
 }
 
 void ch_simulator::ensureInitialize() {
   // bind context taps
-  for (auto ctx : m_contexts) {
-    if (ctx->m_clk) {
-      if (m_clk == nullptr) {
-        m_clk = new snodeimpl(1);
-        m_clk->write(0, 0x1); // initialize the clock to '1'
-        m_clk->acquire();
+  for (auto ctx : contexts_) {
+    if (ctx->clk_) {
+      if (clk_ == nullptr) {
+        clk_ = new snodeimpl(1);
+        clk_->write(0u, 0x1); // initialize the clock to '1'
+        clk_->acquire();
       }
-      ctx->m_clk->bind(m_clk);
+      ctx->clk_->bind(clk_);
     }
 
-    if (ctx->m_reset) {
-      if (m_reset == nullptr) {
-        m_reset = new snodeimpl(1);
-        m_reset->acquire();
+    if (ctx->reset_) {
+      if (reset_ == nullptr) {
+        reset_ = new snodeimpl(1);
+        reset_->acquire();
       }
-      ctx->m_reset->bind(m_reset);
+      ctx->reset_->bind(reset_);
     }
   }
 }
 
 void ch_simulator::tick(ch_cycle t) { 
   // ensure initialized
-  if (!m_initialized) {
+  if (!initialized_) {
     this->ensureInitialize();
-    m_initialized = true;
+    initialized_ = true;
   }
   
   // evaluate all contexts
-  for (auto ctx : m_contexts) {
+  for (auto ctx : contexts_) {
     ctx->tick(t);
   }
-  for (auto ctx : m_contexts) {
+  for (auto ctx : contexts_) {
     ctx->tick_next(t);
   }
-  for (auto ctx : m_contexts) {
+  for (auto ctx : contexts_) {
     ctx->eval(t);
   }
 }
@@ -94,24 +94,24 @@ void ch_simulator::run(ch_cycle cycles) {
 
 ch_cycle ch_simulator::reset(ch_cycle t) {
   // ensure initialized
-  if (!m_initialized) {
+  if (!initialized_) {
     this->ensureInitialize();
-    m_initialized = true;
+    initialized_ = true;
   }
 
-  if (m_reset) {
-    (*m_reset)[0] = true;    
+  if (reset_) {
+    (*reset_)[0] = true;    
     this->step(t++);
-    (*m_reset)[0] = false;
+    (*reset_)[0] = false;
   }
   
   return t;
 }
 
 void ch_simulator::step(ch_cycle t) {
-  if (m_clk) {
+  if (clk_) {
     for (int i = 0; i < 2; ++i) {
-      (*m_clk)[0] = !(*m_clk)[0];
+      (*clk_)[0] = !(*clk_)[0];
       this->tick(t * 2 + i);      
     }
   } else {
@@ -123,10 +123,10 @@ void ch_simulator::step(ch_cycle t) {
 
 ch_tracer::ch_tracer(std::ostream& out, const std::initializer_list<const ch_device*>& devices) 
   : ch_simulator(devices)
-  , m_out(out) {}
+  , out_(out) {}
 
 ch_tracer::~ch_tracer() {  
-  for (auto& tap : m_taps) {
+  for (auto& tap : taps_) {
     tap.bus->release();
   }
 }
@@ -136,16 +136,16 @@ void ch_tracer::ensureInitialize() {
   ch_simulator::ensureInitialize();
   
   // register clock signals
-  if (m_clk) {
-    this->add_trace("clk", m_clk);
+  if (clk_) {
+    this->add_trace("clk", clk_);
   }
-  if (m_reset) {
-    this->add_trace("reset", m_reset);
+  if (reset_) {
+    this->add_trace("reset", reset_);
   }
 
   // register context taps
-  for (auto ctx : m_contexts) {    
-    for (tapimpl* tap : ctx->m_taps) {
+  for (auto ctx : contexts_) {    
+    for (tapimpl* tap : ctx->taps_) {
       this->add_trace(tap->get_tapName(), tap->get_bus());
     #ifndef NDEBUG
       uint32_t dump_cfg = platform::self().get_dump_cfg();
@@ -159,22 +159,22 @@ void ch_tracer::ensureInitialize() {
 }
 
 void ch_tracer::add_trace(const std::string& name, snodeimpl* bus) {
-  CHDL_CHECK(!m_initialized, "new tap not allowed after simulation has started");
+  CH_CHECK(!initialized_, "new tap not allowed after simulation has started");
   
   // resolve duplicate names  
   string full_name(name);
-  unsigned instances = m_dup_taps[name]++;
+  unsigned instances = dup_taps_[name]++;
   if (instances > 0) {
     if (instances == 1) {
       // rename first instance
-      auto iter = std::find_if(m_taps.begin(), m_taps.end(),
+      auto iter = std::find_if(taps_.begin(), taps_.end(),
         [name](const tap_t& t)->bool { return t.name == name; });
-      assert(iter != m_taps.end());
+      assert(iter != taps_.end());
       iter->name = fstring("%s_%d", name.c_str(), 0);
     }
     full_name = fstring("%s_%d", name.c_str(), instances);
   }
-  m_taps.emplace_back(full_name, bus);
+  taps_.emplace_back(full_name, bus);
   bus->acquire();
 }
 
@@ -187,6 +187,6 @@ void ch_tracer::tick(ch_cycle t) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void chdl_internal::register_tap(const string& name, lnodeimpl* node) {
+void cash_internal::register_tap(const string& name, lnodeimpl* node) {
   node->get_ctx()->register_tap(name, node);
 }

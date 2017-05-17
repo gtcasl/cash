@@ -15,7 +15,7 @@ TEST_CASE("miscellaneous tests", "[miscs]") {
   }
   
   SECTION("test assert", "[assert]") {
-    using namespace chdl::core_literals;
+    using namespace cash::core_literals;
     TEST([]()->ch_logic {
       ch_bit4 a(1100_b);
       ch_bit2 c = a.slice<2>(1) ^ 01_b;
@@ -25,11 +25,11 @@ TEST_CASE("miscellaneous tests", "[miscs]") {
   }
   
   SECTION("test taps", "[tap]") {
-    using namespace chdl::core_literals;
+    using namespace cash::core_literals;
     TEST([]()->ch_logic {
       ch_bit4 a(1100_b);
       ch_bit2 c = a.slice<2>(1) ^ 01_b;
-      __ch_tap(c);
+      __tap(c);
       return (c == 11_b);
     });
   }
@@ -73,13 +73,13 @@ TEST_CASE("miscellaneous tests", "[miscs]") {
     TESTX([]()->bool {          
       ch_bus2 in(2), x, out;       
       auto inverter = [](const ch_bit2& x)->ch_bit2 {
-        __ch_tap(x);
+        __tap(x);
         return ~x;
       };             
       ch_device myDevice(inverter, in, out);     
       x = myDevice.get_tap<2>("x");
       ch_vcdtracer tracer("test.vcd", myDevice);
-      __ch_trace(tracer, in, out);
+      __trace(tracer, in, out);
       tracer.run();
       return (out == 1);
     });

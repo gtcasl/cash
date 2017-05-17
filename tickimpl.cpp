@@ -3,19 +3,19 @@
 #include "bit.h"
 
 using namespace std;
-using namespace chdl_internal;
+using namespace cash_internal;
 
 tickimpl::tickimpl(context* ctx) 
   : lnodeimpl(op_tick, ctx, CHAR_BIT * sizeof(ch_cycle))
-  , m_ctime(~0ull) 
+  , ctime_(~0ull) 
 {}
 
 const bitvector& tickimpl::eval(ch_cycle t) {
-  if (m_ctime != t) {
-    m_ctime = t;
-    m_value = t;
+  if (ctime_ != t) {
+    ctime_ = t;
+    value_ = t;
   }
-  return m_value;
+  return value_;
 }
 
 void tickimpl::print_vl(std::ostream& out) const {
@@ -24,6 +24,6 @@ void tickimpl::print_vl(std::ostream& out) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-ch_bit<64> chdl_internal::ch_tick() {
+ch_bit<64> cash_internal::ch_tick() {
   return ch_bit<64>(new tickimpl(ctx_curr()));
 }

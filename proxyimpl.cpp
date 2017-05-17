@@ -2,34 +2,34 @@
 #include "context.h"
 
 using namespace std;
-using namespace chdl_internal;
+using namespace cash_internal;
 
 proxyimpl::proxyimpl(context* ctx, uint32_t size) 
   : lnodeimpl(op_proxy, ctx, size)
-  , m_ctime(~0ull) 
+  , ctime_(~0ull) 
 {}
 
 void proxyimpl::add_node(uint32_t start, const lnode& src, uint32_t offset, uint32_t length, bool resize) {    
   // add new source
   uint32_t new_srcidx = -1;
-  for (uint32_t i = 0, n = m_srcs.size(); i < n; ++i) {
-    if (m_srcs[i].get_id() == src.get_id()) {
+  for (uint32_t i = 0, n = srcs_.size(); i < n; ++i) {
+    if (srcs_[i].get_id() == src.get_id()) {
       new_srcidx = i;
       break;
     }
   }
   if (new_srcidx == -1) {
-    new_srcidx = m_srcs.size();    
-    m_srcs.emplace_back(src);    
+    new_srcidx = srcs_.size();    
+    srcs_.emplace_back(src);    
   }
   
-  uint32_t n = m_ranges.size();
+  uint32_t n = ranges_.size();
   if (n > 0) {    
     set<uint32_t> deleted;    
     uint32_t i = 0;
     for (; length && i < n; ++i) {
-      range_t& curr = m_ranges[i];      
-      lnodeimpl* curr_impl = m_srcs[curr.srcidx].get_impl();
+      range_t& curr = ranges_[i];      
+      lnodeimpl* curr_impl = srcs_[curr.srcidx].get_impl();
       uint32_t curr_end = curr.start + curr.length;     
       uint32_t src_end  = start + length;
       range_t new_range = { new_srcidx, start, offset, length };
@@ -54,7 +54,7 @@ void proxyimpl::add_node(uint32_t start, const lnode& src, uint32_t offset, uint
           new_range.length = overlap;
           
           ++i; 
-          m_ranges.insert(m_ranges.begin() + i, new_range);
+          ranges_.insert(ranges_.begin() + i, new_range);
           ++n;       
           
           start  += overlap;
@@ -77,22 +77,22 @@ void proxyimpl::add_node(uint32_t start, const lnode& src, uint32_t offset, uint
           
           if (curr.length > 0) {
             ++i;
-            m_ranges.insert(m_ranges.begin() + i, 1, new_range);
+            ranges_.insert(ranges_.begin() + i, 1, new_range);
             ++n;
           } else {
             curr = new_range;
           }          
           
           if (curr_after.length) {                              
-            m_ranges.insert(m_ranges.begin() + (i+1), 1, curr_after); 
+            ranges_.insert(ranges_.begin() + (i+1), 1, curr_after); 
             ++n;
           }         
           length = 0;
         }
-      } else if (i+1 == n || src_end <= m_ranges[i+1].start) {
+      } else if (i+1 == n || src_end <= ranges_[i+1].start) {
         // no overlap with current and next
         i += (curr_end <= start) ? 1 : 0;
-        m_ranges.insert(m_ranges.begin() + i, new_range);       
+        ranges_.insert(ranges_.begin() + i, new_range);       
         ++n;
         
         length = 0;
@@ -116,19 +116,19 @@ void proxyimpl::add_node(uint32_t start, const lnode& src, uint32_t offset, uint
     for (uint32_t srcidx : deleted) {
       bool in_use = false;
       // ensure that it is not in use 
-      for (uint32_t i = 0, n = m_ranges.size(); i < n; ++i) {
-        if (m_ranges[i].srcidx == srcidx) {
+      for (uint32_t i = 0, n = ranges_.size(); i < n; ++i) {
+        if (ranges_[i].srcidx == srcidx) {
           in_use = true;
           break;
         }          
       }      
       if (!in_use) {
         // remove src     
-        m_srcs.erase(m_srcs.begin() + srcidx);
+        srcs_.erase(srcs_.begin() + srcidx);
         
         // update references due to vector resizing
-        for (uint32_t i = 0, n = m_ranges.size(); i < n; ++i) {
-          range_t& r = m_ranges[i];
+        for (uint32_t i = 0, n = ranges_.size(); i < n; ++i) {
+          range_t& r = ranges_[i];
           if (r.srcidx > srcidx) {
             r.srcidx -= 1;
           }
@@ -136,36 +136,36 @@ void proxyimpl::add_node(uint32_t start, const lnode& src, uint32_t offset, uint
       }
     }    
   } else {
-    m_ranges.push_back({ new_srcidx, start, offset, length });
+    ranges_.push_back({ new_srcidx, start, offset, length });
   }
 }
 
 void proxyimpl::merge_left(uint32_t idx) {
   assert(idx > 0);
-  if (m_ranges[idx-1].srcidx == m_ranges[idx].srcidx && 
-      (m_ranges[idx-1].start + m_ranges[idx-1].length) == m_ranges[idx].start &&
-      m_ranges[idx].offset == m_ranges[idx-1].offset + m_ranges[idx-1].length) {
-    m_ranges[idx-1].length += m_ranges[idx].length;
-    m_ranges.erase(m_ranges.begin() + idx);
+  if (ranges_[idx-1].srcidx == ranges_[idx].srcidx && 
+      (ranges_[idx-1].start + ranges_[idx-1].length) == ranges_[idx].start &&
+      ranges_[idx].offset == ranges_[idx-1].offset + ranges_[idx-1].length) {
+    ranges_[idx-1].length += ranges_[idx].length;
+    ranges_.erase(ranges_.begin() + idx);
   }      
 }
 
 const bitvector& proxyimpl::eval(ch_cycle t) {
-  if (m_ctime != t) {  
-    m_ctime = t;    
-    for (const range_t& range : m_ranges) {
-      const bitvector& bits = m_srcs[range.srcidx].eval(t);    
-      m_value.copy(range.start, bits, range.offset, range.length);
+  if (ctime_ != t) {  
+    ctime_ = t;    
+    for (const range_t& range : ranges_) {
+      const bitvector& bits = srcs_[range.srcidx].eval(t);    
+      value_.copy(range.start, bits, range.offset, range.length);
     }
   }  
-  return m_value;
+  return value_;
 }
 
 void proxyimpl::print(std::ostream& out) const {
-  out << "#" << m_id << " <- " << this->get_name() << m_value.get_size();
+  out << "#" << id_ << " <- " << this->get_name() << value_.get_size();
   out << "(";
-  for (uint32_t i = 0, s = 0, n = m_ranges.size(); i < n; ++i) {
-    const range_t& range = m_ranges[i];
+  for (uint32_t i = 0, s = 0, n = ranges_.size(); i < n; ++i) {
+    const range_t& range = ranges_[i];
     if (i > 0)
       out << ", ";
     if (s != range.start) {
@@ -173,7 +173,7 @@ void proxyimpl::print(std::ostream& out) const {
       out << range.start << ":";  
     }
     s += range.length;
-    out << "#" << m_srcs[range.srcidx].get_id() << "{" << range.offset;
+    out << "#" << srcs_[range.srcidx].get_id() << "{" << range.offset;
     if (range.length > 1)
       out << "-" << range.offset + (range.length - 1);
     out << "}";

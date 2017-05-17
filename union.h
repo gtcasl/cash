@@ -3,34 +3,34 @@
 #include "bit.h"
 #include "bus.h"
 
-#define CHDL_UNION_SIZE(i, x) \
-  CHDL_PAIR_L(x)::bit_count
+#define CH_UNION_SIZE(i, x) \
+  CH_PAIR_L(x)::bit_count
 
-#define CHDL_UNION_FIELD(i, x) \
-  chdl_internal::slice_ref<base, CHDL_PAIR_L(x)::bit_count> CHDL_PAIR_R(x)
+#define CH_UNION_FIELD(i, x) \
+  cash_internal::slice_ref<base, CH_PAIR_L(x)::bit_count> CH_PAIR_R(x)
 
-#define CHDL_UNION_CTOR_INIT(i, x) \
-  CHDL_PAIR_R(x)(__m)
+#define CH_UNION_CTOR_INIT(i, x) \
+  CH_PAIR_R(x)(__m)
 
-#define CHDL_UNION_IMPL(name, ...) \
-  class name : public chdl_internal::ch_bitbase<std::max({CHDL_FOR_EACH(CHDL_UNION_SIZE, CHDL_SEP_COMMA, __VA_ARGS__)})> { \
+#define CH_UNION_IMPL(name, ...) \
+  class name : public cash_internal::ch_bitbase<std::max({CH_FOR_EACH(CH_UNION_SIZE, CH_SEP_COMMA, __VA_ARGS__)})> { \
   public:\
-    using base = chdl_internal::ch_bitbase<std::max({CHDL_FOR_EACH(CHDL_UNION_SIZE, CHDL_SEP_COMMA, __VA_ARGS__)})>; \
+    using base = cash_internal::ch_bitbase<std::max({CH_FOR_EACH(CH_UNION_SIZE, CH_SEP_COMMA, __VA_ARGS__)})>; \
     using base::operator=; \
     using bitstream_type = typename base::bitstream_type; \
-    class bus_type : public chdl_internal::ch_busbase<std::max({CHDL_FOR_EACH(CHDL_UNION_SIZE, CHDL_SEP_COMMA, __VA_ARGS__)})> { \
+    class bus_type : public cash_internal::ch_busbase<std::max({CH_FOR_EACH(CH_UNION_SIZE, CH_SEP_COMMA, __VA_ARGS__)})> { \
     public: \
-      using base = chdl_internal::ch_busbase<std::max({CHDL_FOR_EACH(CHDL_UNION_SIZE, CHDL_SEP_COMMA, __VA_ARGS__)})>; \
+      using base = cash_internal::ch_busbase<std::max({CH_FOR_EACH(CH_UNION_SIZE, CH_SEP_COMMA, __VA_ARGS__)})>; \
       using base::operator=; \
       using bitstream_type = typename base::bitstream_type; \
-      bus_type() : CHDL_FOR_EACH(CHDL_UNION_CTOR_INIT, CHDL_SEP_COMMA, __VA_ARGS__) {} \
-      bus_type(const bus_type& rhs) : CHDL_FOR_EACH(CHDL_UNION_CTOR_INIT, CHDL_SEP_COMMA, __VA_ARGS__), __m(rhs.__m) {} \
-      bus_type(const base& rhs) : CHDL_FOR_EACH(CHDL_UNION_CTOR_INIT, CHDL_SEP_COMMA, __VA_ARGS__) { base::operator=(rhs); } \
+      bus_type() : CH_FOR_EACH(CH_UNION_CTOR_INIT, CH_SEP_COMMA, __VA_ARGS__) {} \
+      bus_type(const bus_type& rhs) : CH_FOR_EACH(CH_UNION_CTOR_INIT, CH_SEP_COMMA, __VA_ARGS__), __m(rhs.__m) {} \
+      bus_type(const base& rhs) : CH_FOR_EACH(CH_UNION_CTOR_INIT, CH_SEP_COMMA, __VA_ARGS__) { base::operator=(rhs); } \
       bus_type& operator=(const bus_type& rhs) { \
         __m = rhs.__m; \
         return *this; \
       } \
-      CHDL_FOR_EACH(CHDL_UNION_FIELD, CHDL_SEP_SEMICOLON, __VA_ARGS__); \
+      CH_FOR_EACH(CH_UNION_FIELD, CH_SEP_SEMICOLON, __VA_ARGS__); \
     protected: \
       ch_bus<base::bit_count> __m; \
       void read(bitstream_type& inout, size_t offset, size_t length) const override { \
@@ -40,14 +40,14 @@
         write_data(__m, dst_offset, in, src_offset, src_length); \
       } \
     };\
-    name() : CHDL_FOR_EACH(CHDL_UNION_CTOR_INIT, CHDL_SEP_COMMA, __VA_ARGS__) {} \
-    name(const name& rhs) : CHDL_FOR_EACH(CHDL_UNION_CTOR_INIT, CHDL_SEP_COMMA, __VA_ARGS__), __m(rhs.__m) {} \
-    name(const base& rhs) : CHDL_FOR_EACH(CHDL_UNION_CTOR_INIT, CHDL_SEP_COMMA, __VA_ARGS__) { base::operator=(rhs); } \
+    name() : CH_FOR_EACH(CH_UNION_CTOR_INIT, CH_SEP_COMMA, __VA_ARGS__) {} \
+    name(const name& rhs) : CH_FOR_EACH(CH_UNION_CTOR_INIT, CH_SEP_COMMA, __VA_ARGS__), __m(rhs.__m) {} \
+    name(const base& rhs) : CH_FOR_EACH(CH_UNION_CTOR_INIT, CH_SEP_COMMA, __VA_ARGS__) { base::operator=(rhs); } \
     name& operator=(const name& rhs) { \
       __m = rhs.__m; \
       return *this; \
     } \
-    CHDL_FOR_EACH(CHDL_UNION_FIELD, CHDL_SEP_SEMICOLON, __VA_ARGS__); \
+    CH_FOR_EACH(CH_UNION_FIELD, CH_SEP_SEMICOLON, __VA_ARGS__); \
   protected: \
     ch_bit<base::bit_count> __m; \
     void read(bitstream_type& inout, size_t offset, size_t length) const override { \
@@ -58,4 +58,4 @@
     } \
   public:
 
-#define CHDL_UNION(name, body, ...) CHDL_UNION_IMPL(name, CHDL_REM body) __VA_ARGS__ }
+#define CH_UNION(name, body, ...) CH_UNION_IMPL(name, CH_REM body) __VA_ARGS__ }

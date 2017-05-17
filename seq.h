@@ -2,7 +2,7 @@
 
 #include "reg.h"
 
-namespace chdl_internal {
+namespace cash_internal {
 
 template <typename T>
 class ch_seq : public T {

@@ -1,8 +1,8 @@
-#include <chdl.h>
+#include <cash.h>
 
-using namespace chdl::core;
-using namespace chdl::core_literals;
-using namespace chdl::sim;
+using namespace cash::core;
+using namespace cash::core_literals;
+using namespace cash::sim;
 
 template <unsigned N>
 ch_bit<N> Counter() {
@@ -21,7 +21,7 @@ int main(int argc, char **argv) {
   v_file.close();*/
 
   ch_vcdtracer tracer("counter.vcd", myDevice);
-  __ch_trace(tracer, out);
+  __trace(tracer, out);
   tracer.run(11);
   
   std::cout << "result:" << std::endl;

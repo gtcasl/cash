@@ -2,11 +2,11 @@
 
 #include "lnode.h"
 
-namespace chdl_internal {
+namespace cash_internal {
 
-#define CHDL_OPERATOR_TYPE(t) op_##t,
-#define CHDL_OPERATOR_NAME(n) #n,
-#define CHDL_OPERATOR_ENUM(m) \
+#define CH_OPERATOR_TYPE(t) op_##t,
+#define CH_OPERATOR_NAME(n) #n,
+#define CH_OPERATOR_ENUM(m) \
   m(undef) \
   m(proxy) \
   m(lit) \
@@ -57,7 +57,7 @@ namespace chdl_internal {
   m(fdiv)
   
 enum ch_operator {
-  CHDL_OPERATOR_ENUM(CHDL_OPERATOR_TYPE)
+  CH_OPERATOR_ENUM(CH_OPERATOR_TYPE)
 };
 
 const char* to_string(ch_operator op);
@@ -68,17 +68,17 @@ public:
   virtual ~lnodeimpl();
   
   uint32_t get_id() const {
-    return m_id;
+    return id_;
   }
   
   ch_operator get_op() const {
-    return m_op;
+    return op_;
   }
   
   const char* get_name() const;
   
   context* get_ctx() const {
-    return m_ctx;
+    return ctx_;
   }
 
   void add_ref(const lnode* node, const lnode* source);
@@ -90,31 +90,31 @@ public:
   const lnode* get_ref_owner(const lnode* node);
   
   const std::vector<lnode>& get_srcs() const {
-    return m_srcs;
+    return srcs_;
   }
   
   std::vector<lnode>& get_srcs() {
-    return m_srcs;
+    return srcs_;
   }
   
   lnodeimpl* get_src(unsigned i) const {
-    return m_srcs[i].get_impl();
+    return srcs_[i].get_impl();
   }
   
   lnodeimpl* get_src(unsigned i) {
-    return m_srcs[i].get_impl();
+    return srcs_[i].get_impl();
   }
   
   uint32_t get_size() const {
-    return m_value.get_size();
+    return value_.get_size();
   }
   
   const bitvector& get_value() const { 
-    return m_value;
+    return value_;
   }
   
   bitvector& get_value() { 
-    return m_value;
+    return value_;
   }
   
   virtual bool ready() const;
@@ -143,12 +143,12 @@ protected:
     }
   };
 
-  uint32_t m_id;
-  ch_operator m_op;
-  context* m_ctx;
-  std::set<ref_t> m_refs;
-  std::vector<lnode> m_srcs;  
-  bitvector m_value; 
+  uint32_t id_;
+  ch_operator op_;
+  context* ctx_;
+  std::set<ref_t> refs_;
+  std::vector<lnode> srcs_;  
+  bitvector value_; 
   
   friend class context;
 };

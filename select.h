@@ -2,7 +2,7 @@
 
 #include "bit.h"
 
-namespace chdl_internal {
+namespace cash_internal {
 
 lnodeimpl* createSelectNode(lnodeimpl* cond, lnodeimpl* a, lnodeimpl* b);
 
@@ -16,20 +16,20 @@ protected:
   
   using stmts_t = std::stack<stmt_t>;
   
-  lnodeimpl* m_key;
-  stmts_t* m_stmts;
+  lnodeimpl* key_;
+  stmts_t* stmts_;
     
 public:
   
   ~select_impl() {
-    if (m_stmts)
-      delete m_stmts;
+    if (stmts_)
+      delete stmts_;
   }
   
-  select_impl(lnodeimpl* key = nullptr) : m_key(key), m_stmts(new stmts_t()) {}
+  select_impl(lnodeimpl* key = nullptr) : key_(key), stmts_(new stmts_t()) {}
   
   void push(lnodeimpl* cond, lnodeimpl* value) {
-    m_stmts->push({cond, value});
+    stmts_->push({cond, value});
   }
   
   lnodeimpl* eval(lnodeimpl* value);
@@ -40,30 +40,30 @@ class select_t {
 public:
     
   select_t<N>& operator()(const ch_logicbase& cond, const ch_bitbase<N>& value) {
-    m_impl.push(cond.get_node().get_impl(), value.get_node().get_impl());
+    impl_.push(cond.get_node().get_impl(), value.get_node().get_impl());
     return *this;
   }
   
   select_t<N>& operator()(const ch_logicbase& cond, const ch_bit<N>& value) {
-    m_impl.push(cond.get_node().get_impl(), value.get_node().get_impl());
+    impl_.push(cond.get_node().get_impl(), value.get_node().get_impl());
     return *this;
   }
   
   ch_bit<N> operator()(const ch_bitbase<N>& value) {
-    return ch_bit<N>(m_impl.eval(value.get_node().get_impl()));
+    return ch_bit<N>(impl_.eval(value.get_node().get_impl()));
   }
   
   ch_bit<N> operator()(const ch_bit<N>& value) {
-    return ch_bit<N>(m_impl.eval(value.get_node().get_impl()));
+    return ch_bit<N>(impl_.eval(value.get_node().get_impl()));
   }
   
 protected:
   
   select_t(const ch_logicbase& cond, const ch_bitbase<N>& value) {
-    m_impl.push(cond.get_node().get_impl(), value.get_node().get_impl());
+    impl_.push(cond.get_node().get_impl(), value.get_node().get_impl());
   }
 
-  select_impl m_impl;
+  select_impl impl_;
   
   template <unsigned N_> friend select_t<N_> ch_select(const ch_logicbase& cond, const ch_bitbase<N_>& value);
 };
@@ -76,68 +76,68 @@ public:
   class values_t {
   public:
     
-    values_t(lnodeimpl* key, lnodeimpl* cond, lnodeimpl* value) : m_impl(key) {
-      m_impl.push(cond, value);
+    values_t(lnodeimpl* key, lnodeimpl* cond, lnodeimpl* value) : impl_(key) {
+      impl_.push(cond, value);
     }
     
     values_t& operator()(const ch_bitbase<N>& cond, const ch_bitbase<M>& value) {
-      m_impl.push(cond.get_node().get_impl(), value.get_node().get_impl());
+      impl_.push(cond.get_node().get_impl(), value.get_node().get_impl());
       return *this;
     }
     
     values_t& operator()(const ch_bitbase<N>& cond, const ch_bit<M>& value) {
-      m_impl.push(cond.get_node().get_impl(), value.get_node().get_impl());
+      impl_.push(cond.get_node().get_impl(), value.get_node().get_impl());
       return *this;
     }
     
     values_t& operator()(const ch_bit<N>& cond, const ch_bitbase<M>& value) {
-      m_impl.push(cond.get_node().get_impl(), value.get_node().get_impl());
+      impl_.push(cond.get_node().get_impl(), value.get_node().get_impl());
       return *this;
     }
     
     values_t& operator()(const ch_bit<N>& cond, const ch_bit<M>& value) {
-      m_impl.push(cond.get_node().get_impl(), value.get_node().get_impl());
+      impl_.push(cond.get_node().get_impl(), value.get_node().get_impl());
       return *this;
     }
     
     ch_bit<M> operator()(const ch_bitbase<M>& value) {
-      return ch_bit<M>(m_impl.eval(value.get_node().get_impl()));
+      return ch_bit<M>(impl_.eval(value.get_node().get_impl()));
     }
     
     ch_bit<M> operator()(const ch_bit<M>& value) {
-      return ch_bit<M>(m_impl.eval(value.get_node().get_impl()));
+      return ch_bit<M>(impl_.eval(value.get_node().get_impl()));
     }  
     
   protected:
     
-    select_impl m_impl;
+    select_impl impl_;
   };
 
   template <unsigned M>
   values_t<M> operator()(const ch_bitbase<N>& cond, const ch_bitbase<M>& value) {
-    return values_t<M>(m_key, cond.get_node().get_impl(), value.get_node().get_impl());
+    return values_t<M>(key_, cond.get_node().get_impl(), value.get_node().get_impl());
   }
   
   template <unsigned M>
   values_t<M> operator()(const ch_bitbase<N>& cond, const ch_bit<M>& value) {
-    return values_t<M>(m_key, cond.get_node().get_impl(), value.get_node().get_impl());
+    return values_t<M>(key_, cond.get_node().get_impl(), value.get_node().get_impl());
   }
   
   template <unsigned M>
   values_t<M> operator()(const ch_bit<N>& cond, const ch_bitbase<M>& value) {
-    return values_t<M>(m_key, cond.get_node().get_impl(), value.get_node().get_impl());
+    return values_t<M>(key_, cond.get_node().get_impl(), value.get_node().get_impl());
   }
   
   template <unsigned M>
   values_t<M> operator()(const ch_bit<N>& cond, const ch_bit<M>& value) {
-    return values_t<M>(m_key, cond.get_node().get_impl(), value.get_node().get_impl());
+    return values_t<M>(key_, cond.get_node().get_impl(), value.get_node().get_impl());
   }
   
 protected:
   
-  lnodeimpl* m_key;
+  lnodeimpl* key_;
   
-  select2_t(const ch_bitbase<N>& key) : m_key(key.get_node().get_impl()) {}
+  select2_t(const ch_bitbase<N>& key) : key_(key.get_node().get_impl()) {}
 
   template <unsigned N_> friend select2_t<N_> ch_select(const ch_bitbase<N_>& key);
 };

@@ -3,7 +3,7 @@
 #include "bit.h"
 #include "bus.h"
 
-namespace chdl_internal {
+namespace cash_internal {
 
 class context;
 
@@ -109,7 +109,7 @@ protected:
   template <typename FuncRet, typename ...FuncArgs, typename ...Args>
   void init(const std::function<FuncRet(FuncArgs...)>& func, Args&&... args) {
     static_assert(sizeof...(FuncArgs) + output_size<FuncRet>::value == sizeof...(Args), "number of arguments mismatch");
-    m_ctx = ctx_begin();
+    ctx_ = ctx_begin();
     {
       std::tuple<typename to_value_type<typename std::remove_const<
           typename std::remove_reference<FuncArgs>::type >::type>::value...> func_args;
@@ -154,7 +154,7 @@ protected:
   
   void compile();
   
-  context* m_ctx;
+  context* ctx_;
   
   friend class ch_simulator;
 };

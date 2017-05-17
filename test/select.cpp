@@ -1,6 +1,6 @@
 #include "common.h"
 
-using namespace chdl::core_literals;
+using namespace cash::core_literals;
 
 TEST_CASE("conditionals tests", "[conditionals]") {   
   SECTION("test select", "[select]") {    

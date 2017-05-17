@@ -3,7 +3,7 @@
 #include "bitbase.h"
 #include "vec.h"
 
-namespace chdl_internal {
+namespace cash_internal {
 
 template <unsigned N> class ch_bus;
 using ch_signal = ch_bus<1>;
@@ -21,42 +21,42 @@ public:
   using bitstream_type = typename base::bitstream_type;
   using bus_type = ch_bus<N>;
       
-  ch_bit() : m_node(N) {}
+  ch_bit() : node_(N) {}
   
-  ch_bit(const ch_bit& rhs) : m_node(rhs.m_node.ensureInitialized(N)) {}
+  ch_bit(const ch_bit& rhs) : node_(rhs.node_.ensureInitialized(N)) {}
   
-  ch_bit(const ch_bitbase<N>& rhs) : m_node(rhs.get_node().get_impl()) {}
+  ch_bit(const ch_bitbase<N>& rhs) : node_(rhs.get_node().get_impl()) {}
   
-  ch_bit(const bitvector& rhs) : m_node(rhs) {
+  ch_bit(const bitvector& rhs) : node_(rhs) {
     assert(rhs.get_size() == N);
   }
   
-  ch_bit(bool value) : m_node(bitvector(value ? 0x1 : 0x0, N)) { \
+  ch_bit(bool value) : node_(bitvector(value ? 0x1 : 0x0, N)) { \
     static_assert(N == 1, "bool assignents only allowed on single-bit objects");
   }
     
-#define CHDL_DEF_CTOR(type) \
-    ch_bit(type value) : m_node(bitvector(value, N)) { \
-      assert(m_node.get_size() == N); \
+#define CH_DEF_CTOR(type) \
+    ch_bit(type value) : node_(bitvector(value, N)) { \
+      assert(node_.get_size() == N); \
     }
-  CHDL_DEF_CTOR(const std::initializer_list<uint32_t>&)
-  CHDL_DEF_CTOR(char)
-  CHDL_DEF_CTOR(int8_t)
-  CHDL_DEF_CTOR(uint8_t)
-  CHDL_DEF_CTOR(int16_t)
-  CHDL_DEF_CTOR(uint16_t)
-  CHDL_DEF_CTOR(int32_t)
-  CHDL_DEF_CTOR(uint32_t)
-  CHDL_DEF_CTOR(int64_t)
-  CHDL_DEF_CTOR(uint64_t)
-#undef CHDL_DEF_CTOR
+  CH_DEF_CTOR(const std::initializer_list<uint32_t>&)
+  CH_DEF_CTOR(char)
+  CH_DEF_CTOR(int8_t)
+  CH_DEF_CTOR(uint8_t)
+  CH_DEF_CTOR(int16_t)
+  CH_DEF_CTOR(uint16_t)
+  CH_DEF_CTOR(int32_t)
+  CH_DEF_CTOR(uint32_t)
+  CH_DEF_CTOR(int64_t)
+  CH_DEF_CTOR(uint64_t)
+#undef CH_DEF_CTOR
   
-  explicit ch_bit(lnodeimpl* node) : m_node(node) {
-    assert(m_node.get_size() == N);
+  explicit ch_bit(lnodeimpl* node) : node_(node) {
+    assert(node_.get_size() == N);
   }
   
   ch_bit& operator=(const ch_bit& rhs) {
-    m_node = rhs.m_node.ensureInitialized(N);
+    node_ = rhs.node_.ensureInitialized(N);
     return *this;
   }
   
@@ -67,49 +67,49 @@ public:
   
   ch_bit& operator=(bool value) {
     static_assert(N == 1, "bool assignents only allowed on single-bit objects");
-    m_node.assign(bitvector(value ? 0x1 : 0x0 , N)); \
-    assert(m_node.get_size() == N); \
+    node_.assign(bitvector(value ? 0x1 : 0x0 , N)); \
+    assert(node_.get_size() == N); \
     return *this;
   } 
   
-#define CHDL_DEF_AOP(type) \
+#define CH_DEF_AOP(type) \
   ch_bit& operator=(type value) { \
-    m_node.assign(bitvector(value, N)); \
-    assert(m_node.get_size() == N); \
+    node_.assign(bitvector(value, N)); \
+    assert(node_.get_size() == N); \
     return *this; \
   } 
-  CHDL_DEF_AOP(const std::initializer_list<uint32_t>&)
-  CHDL_DEF_AOP(char)
-  CHDL_DEF_AOP(int8_t)
-  CHDL_DEF_AOP(uint8_t)
-  CHDL_DEF_AOP(int16_t)
-  CHDL_DEF_AOP(uint16_t)
-  CHDL_DEF_AOP(int32_t)
-  CHDL_DEF_AOP(uint32_t)
-  CHDL_DEF_AOP(int64_t)
-  CHDL_DEF_AOP(uint64_t)
-#undef CHDL_DEF_AOP
+  CH_DEF_AOP(const std::initializer_list<uint32_t>&)
+  CH_DEF_AOP(char)
+  CH_DEF_AOP(int8_t)
+  CH_DEF_AOP(uint8_t)
+  CH_DEF_AOP(int16_t)
+  CH_DEF_AOP(uint16_t)
+  CH_DEF_AOP(int32_t)
+  CH_DEF_AOP(uint32_t)
+  CH_DEF_AOP(int64_t)
+  CH_DEF_AOP(uint64_t)
+#undef CH_DEF_AOP
 
   lnode get_node() const override { 
-    return m_node.ensureInitialized(N);
+    return node_.ensureInitialized(N);
   }
   
 protected:
   
   void read(bitstream_type& inout, size_t offset, size_t length) const override {
-    m_node.read(inout, offset, length, N);
+    node_.read(inout, offset, length, N);
   }
   
   void write(size_t dst_offset, const bitstream_type& in, size_t src_offset, size_t src_length) override {
-    m_node.write(dst_offset, in, src_offset, src_length, N);
+    node_.write(dst_offset, in, src_offset, src_length, N);
   }
   
-  lnode m_node;
+  lnode node_;
 };
 
 // concatenation operator
 
-#define CHDL_CONCAT_GEN(cB, cA, B, A) \
+#define CH_CONCAT_GEN(cB, cA, B, A) \
   template <unsigned NB, unsigned NA> auto operator,(cB b, cA a) { return b.template concat(a); } \
   template <unsigned NB, unsigned NA> auto operator,(cB b, A a) { return b.template concat(a); } \
   template <unsigned NB, unsigned NA> auto operator,(B b, cA a) { return b.template concat(a); } \
@@ -119,19 +119,19 @@ protected:
   template <unsigned NB, unsigned NA> auto ch_concat(B b, cA a) { return b.template concat(a); } \
   template <unsigned NB, unsigned NA> auto ch_concat(B b, A a) { return b.template concat(a); }
 
-CHDL_CONCAT_GEN(const const_bitref<NB>&, const const_bitref<NA>&,
+CH_CONCAT_GEN(const const_bitref<NB>&, const const_bitref<NA>&,
                 const bitref<NB>&, const bitref<NA>&)
 
-CHDL_CONCAT_GEN(const const_bitref<NB>&, const ch_bitbase<NA>&,
+CH_CONCAT_GEN(const const_bitref<NB>&, const ch_bitbase<NA>&,
                 const bitref<NB>&, ch_bitbase<NA>&)
 
-CHDL_CONCAT_GEN(const ch_bitbase<NB>&, const const_bitref<NA>&,
+CH_CONCAT_GEN(const ch_bitbase<NB>&, const const_bitref<NA>&,
                 ch_bitbase<NB>&, const bitref<NA>&)
 
-CHDL_CONCAT_GEN(const ch_bitbase<NB>&, const ch_bitbase<NA>&,
+CH_CONCAT_GEN(const ch_bitbase<NB>&, const ch_bitbase<NA>&,
                 ch_bitbase<NB>&, ch_bitbase<NA>&)
 
-#undef CHDL_CONCAT_GEN
+#undef CH_CONCAT_GEN
 
 // slice operators
 

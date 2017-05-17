@@ -6,14 +6,14 @@
 #include "mem.h"
 
 using namespace std;
-using namespace chdl_internal;
+using namespace cash_internal;
 
-ch_compiler::ch_compiler(context* ctx) : m_ctx(ctx) {}
+ch_compiler::ch_compiler(context* ctx) : ctx_(ctx) {}
 
 void ch_compiler::run() {
-  size_t orig_num_nodes = m_ctx->m_nodes.size();
+  size_t orig_num_nodes = ctx_->nodes_.size();
   
-  m_ctx->get_live_nodes(m_live_nodes);
+  ctx_->get_live_nodes(live_nodes_);
   
   this->dead_code_elimination();
   
@@ -23,31 +23,31 @@ void ch_compiler::run() {
   // dump nodes
   uint32_t dump_ast = platform::self().get_dump_ast();
   if (dump_ast) {
-    m_ctx->dumpAST(std::cerr, dump_ast);
+    ctx_->dumpAST(std::cerr, dump_ast);
   }
 #endif
   
   DBG(2, "Before optimization: %lu\n", orig_num_nodes);
-  DBG(2, "After dead code elimination: %lu\n", m_ctx->m_nodes.size());  
+  DBG(2, "After dead code elimination: %lu\n", ctx_->nodes_.size());  
 }
 
 void ch_compiler::syntax_check() {
   // check for un-initialized nodes
-  const auto& undefs = m_ctx->m_undefs;
+  const auto& undefs = ctx_->undefs_;
   if (undefs.size()) {
-    m_ctx->dumpAST(std::cerr, 1);    
+    ctx_->dumpAST(std::cerr, 1);    
     for (auto node : undefs) {
       fprintf(stderr, "error: un-initialized node %s%d(#%d)!\n", node->get_name(), node->get_size(), node->get_id());
     }
     if (undefs.size() == 1)
-      CHDL_ABORT("1 node has not been initialized.");
+      CH_ABORT("1 node has not been initialized.");
     else
-      CHDL_ABORT("%zd nodes have not been initialized.", undefs.size());
+      CH_ABORT("%zd nodes have not been initialized.", undefs.size());
   }
 }
 
 bool ch_compiler::dead_code_elimination() {
-  set<lnodeimpl*> live_nodes = m_live_nodes;    
+  set<lnodeimpl*> live_nodes = live_nodes_;    
   std::list<lnodeimpl*> working_set(live_nodes.begin(), live_nodes.end());
   
   while (!working_set.empty()) {
@@ -66,7 +66,7 @@ bool ch_compiler::dead_code_elimination() {
 
 size_t ch_compiler::remove_dead_nodes(const std::set<lnodeimpl*>& live_nodes) {
   size_t deleted = 0;
-  auto& nodes = m_ctx->m_nodes;
+  auto& nodes = ctx_->nodes_;
   auto iter = nodes.begin();
   while (iter != nodes.end()) {
     auto iterCur = iter++;

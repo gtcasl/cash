@@ -3,23 +3,23 @@
 #include "snodeimpl.h"
 
 using namespace std;
-using namespace chdl_internal;
+using namespace cash_internal;
 
 ch_vcdtracer::ch_vcdtracer(const std::string& filename, const std::initializer_list<const ch_device*>& devices) 
-  : m_file(filename)
-  , ch_tracer(m_file, devices) 
+  : file_(filename)
+  , ch_tracer(file_, devices) 
 {}
 
 void ch_vcdtracer::ensureInitialize() {
   // call parent ensureInitialize()
   ch_tracer::ensureInitialize();
 
-  m_file << "$timescale 1 ns $end" << endl;
-  for (auto& tap : m_taps) {
-    m_file << "$var reg " << tap.bus->get_size() << ' ' << tap.name << ' '
+  file_ << "$timescale 1 ns $end" << endl;
+  for (auto& tap : taps_) {
+    file_ << "$var reg " << tap.bus->get_size() << ' ' << tap.name << ' '
          << tap.name << " $end" << endl;
   }
-  m_file << "$enddefinitions $end" << endl;
+  file_ << "$enddefinitions $end" << endl;
 }
 
 void ch_vcdtracer::tick(ch_cycle t) {
@@ -27,16 +27,16 @@ void ch_vcdtracer::tick(ch_cycle t) {
   ch_simulator::tick(t);
   
   // log net values
-  m_file << '#' << t << endl;  
-  for (auto& tap : m_taps) {
+  file_ << '#' << t << endl;  
+  for (auto& tap : taps_) {
     const snodeimpl& bus = *tap.bus;
     if (bus.get_size() > 1)
-      m_file << 'b';
+      file_ << 'b';
     for (int j = bus.get_size()-1; j >= 0; --j) {
-      m_file << (bus[j] ? '1' : '0');
+      file_ << (bus[j] ? '1' : '0');
     }
     if (bus.get_size() > 1)
-      m_file << ' ';
-    m_file << tap.name << endl;
+      file_ << ' ';
+    file_ << tap.name << endl;
   }  
 }

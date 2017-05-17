@@ -2,7 +2,7 @@
 
 #include "if.h"
 
-namespace chdl_internal {
+namespace cash_internal {
 
 class switch_impl {
 public:
@@ -17,7 +17,7 @@ private:
  
   switch_impl(lnodeimpl* key);
  
-  lnodeimpl* m_key;
+  lnodeimpl* key_;
   
   template <unsigned N> friend class switch_t;
 };
@@ -28,26 +28,26 @@ public:
   
   template <typename Func>
   switch_t& case_(const ch_bitbase<N>& value, const Func& func) {
-    m_impl.eval(value.get_node().get_impl(), to_function(func));
+    impl_.eval(value.get_node().get_impl(), to_function(func));
     return *this;
   }
   
   template <typename Func>
   switch_t& case_(const ch_bit<N>& value, const Func& func) {    
-    m_impl.eval(value.get_node().get_impl(), to_function(func));
+    impl_.eval(value.get_node().get_impl(), to_function(func));
     return *this;
   }
   
   template <typename Func>
   void default_(const Func& func) {
-    m_impl.eval(nullptr, to_function(func));
+    impl_.eval(nullptr, to_function(func));
   }
   
 protected:
   
-  switch_t(lnodeimpl* key) : m_impl(key) {}
+  switch_t(lnodeimpl* key) : impl_(key) {}
   
-  switch_impl m_impl;
+  switch_impl impl_;
     
   template <unsigned N_> 
   friend switch_t<N_> ch_switch(const ch_bitbase<N_>& key);
@@ -58,10 +58,10 @@ switch_t<N> ch_switch(const ch_bitbase<N>& key) {
   return switch_t<N>(key.get_node().get_impl());
 }
 
-#define CHDL_SWITCH_BODY(body)    body
-#define CHDL_SWITCH(key)          ch_switch(key) CHDL_SWITCH_BODY
-#define CHDL_CASE_BODY(value)     value })
-#define CHDL_CASE(cond)           .case_(cond, [&](){ CHDL_CASE_BODY
-#define CHDL_DEFAULT(value)       .default_([&](){ value })
+#define CH_SWITCH_BODY(body)    body
+#define CH_SWITCH(key)          ch_switch(key) CH_SWITCH_BODY
+#define CH_CASE_BODY(value)     value })
+#define CH_CASE(cond)           .case_(cond, [&](){ CH_CASE_BODY
+#define CH_DEFAULT(value)       .default_([&](){ value })
 
 }

@@ -2,7 +2,7 @@
 
 #include "snode.h"
 
-namespace chdl_internal {
+namespace cash_internal {
 
 template <unsigned N> class ch_bus;
 
@@ -24,21 +24,21 @@ public:
     return this->operator =(ch_bus<N>(value ? 0x1 : 0x0));
   } 
   
-#define CHDL_DEF_AOP(type) \
+#define CH_DEF_AOP(type) \
   typebase& operator=(type value) { \
     return this->operator =(ch_bus<N>(value)); \
   } 
-  CHDL_DEF_AOP(const std::initializer_list<uint32_t>&)
-  CHDL_DEF_AOP(char)
-  CHDL_DEF_AOP(int8_t)
-  CHDL_DEF_AOP(uint8_t)
-  CHDL_DEF_AOP(int16_t)
-  CHDL_DEF_AOP(uint16_t)
-  CHDL_DEF_AOP(int32_t)
-  CHDL_DEF_AOP(uint32_t)
-  CHDL_DEF_AOP(int64_t)
-  CHDL_DEF_AOP(uint64_t)
-#undef CHDL_DEF_AOP
+  CH_DEF_AOP(const std::initializer_list<uint32_t>&)
+  CH_DEF_AOP(char)
+  CH_DEF_AOP(int8_t)
+  CH_DEF_AOP(uint8_t)
+  CH_DEF_AOP(int16_t)
+  CH_DEF_AOP(uint16_t)
+  CH_DEF_AOP(int32_t)
+  CH_DEF_AOP(uint32_t)
+  CH_DEF_AOP(int64_t)
+  CH_DEF_AOP(uint64_t)
+#undef CH_DEF_AOP
   
   bool operator==(const typebase& rhs) const {
     return (this->get_node() == rhs.get_node());
@@ -64,15 +64,15 @@ public:
     return !(*this < rhs);
   }  
   
-  virtual void readBytes(void* out, uint32_t sizeInBytes) const {  
+  virtual void read(void* out, uint32_t sizeInBytes) const {  
     assert(sizeInBytes * 8 >= N);
-    this->get_node().readBytes(reinterpret_cast<uint8_t*>(out), sizeInBytes);
+    this->get_node().read(reinterpret_cast<uint8_t*>(out), sizeInBytes);
   }
   
-  virtual void writeBytes(const void* in, uint32_t sizeInBytes) {
+  virtual void write(const void* in, uint32_t sizeInBytes) {
     assert(sizeInBytes * 8 >= N);
     ch_bus<N> tmp;
-    tmp.writeBytes(reinterpret_cast<const uint8_t*>(in), sizeInBytes);
+    tmp.write(reinterpret_cast<const uint8_t*>(in), sizeInBytes);
     this->operator =(tmp);
   }
   
@@ -100,27 +100,27 @@ std::ostream& operator<<(std::ostream& os, const ch_busbase<N>& b) {
   return os << b.get_node();
 }
 
-#define CHDL_DEF_COMP_IMPL(op, type) \
+#define CH_DEF_COMP_IMPL(op, type) \
   template <unsigned N> bool op(const ch_busbase<N>& lhs, type rhs) { return lhs.op(ch_bus<N>(rhs)); } \
   template <unsigned N> bool op(type rhs, const ch_busbase<N>& lhs) { return ch_bus<N>(lhs).op(rhs); }
-#define CHDL_DEF_COMP(type) \
-  CHDL_DEF_COMP_IMPL(operator==, type) \
-  CHDL_DEF_COMP_IMPL(operator!=, type) \
-  CHDL_DEF_COMP_IMPL(operator< , type) \
-  CHDL_DEF_COMP_IMPL(operator> , type) \
-  CHDL_DEF_COMP_IMPL(operator<=, type) \
-  CHDL_DEF_COMP_IMPL(operator>=, type) 
-  CHDL_DEF_COMP(const std::initializer_list<uint32_t>&)
-  CHDL_DEF_COMP(char)
-  CHDL_DEF_COMP(int8_t)
-  CHDL_DEF_COMP(uint8_t)
-  CHDL_DEF_COMP(int16_t)
-  CHDL_DEF_COMP(uint16_t)
-  CHDL_DEF_COMP(int32_t)
-  CHDL_DEF_COMP(uint32_t)
-  CHDL_DEF_COMP(int64_t)
-  CHDL_DEF_COMP(uint64_t)
-#undef CHDL_DEF_COMP
-#undef CHDL_DEF_COMP_IMPL
+#define CH_DEF_COMP(type) \
+  CH_DEF_COMP_IMPL(operator==, type) \
+  CH_DEF_COMP_IMPL(operator!=, type) \
+  CH_DEF_COMP_IMPL(operator< , type) \
+  CH_DEF_COMP_IMPL(operator> , type) \
+  CH_DEF_COMP_IMPL(operator<=, type) \
+  CH_DEF_COMP_IMPL(operator>=, type) 
+  CH_DEF_COMP(const std::initializer_list<uint32_t>&)
+  CH_DEF_COMP(char)
+  CH_DEF_COMP(int8_t)
+  CH_DEF_COMP(uint8_t)
+  CH_DEF_COMP(int16_t)
+  CH_DEF_COMP(uint16_t)
+  CH_DEF_COMP(int32_t)
+  CH_DEF_COMP(uint32_t)
+  CH_DEF_COMP(int64_t)
+  CH_DEF_COMP(uint64_t)
+#undef CH_DEF_COMP
+#undef CH_DEF_COMP_IMPL
 
 }

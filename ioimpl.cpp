@@ -3,34 +3,34 @@
 #include "context.h"
 
 using namespace std;
-using namespace chdl_internal;
+using namespace cash_internal;
 
 inputimpl::inputimpl(ch_operator op, context* ctx, uint32_t size) 
   : ioimpl(op, ctx, size)
-  , m_bus(nullptr)
+  , bus_(nullptr)
 {}
 
 inputimpl::~inputimpl() {
-  if (m_bus)
-    m_bus->release();
+  if (bus_)
+    bus_->release();
 }
 
 void inputimpl::bind(snodeimpl* bus) {
   bus->acquire();
-  if (m_bus)
-    m_bus->release();
-  m_bus = bus;
+  if (bus_)
+    bus_->release();
+  bus_ = bus;
 }
 
 const bitvector& inputimpl::eval(ch_cycle t) {
-  assert(m_bus);
-  return m_bus->read();
+  assert(bus_);
+  return bus_->read();
 }
 
 void inputimpl::print(std::ostream& out) const {
-  out << "#" << m_id << " <- " << this->get_name() << m_value.get_size() << "("; 
-  if (m_bus) {
-    out << "$" << m_bus->get_id();
+  out << "#" << id_ << " <- " << this->get_name() << value_.get_size() << "("; 
+  if (bus_) {
+    out << "$" << bus_->get_id();
   } else {
     out << "?";
   }
@@ -41,46 +41,46 @@ void inputimpl::print(std::ostream& out) const {
 
 outputimpl::outputimpl(ch_operator op, lnodeimpl* src) 
   : ioimpl(op, src->get_ctx(), src->get_size())
-  , m_bus(nullptr) {
-  m_srcs.reserve(1);
-  m_srcs.emplace_back(src);
+  , bus_(nullptr) {
+  srcs_.reserve(1);
+  srcs_.emplace_back(src);
 }
 
 outputimpl::~outputimpl() {
-  if (m_bus)
-    m_bus->release();
+  if (bus_)
+    bus_->release();
 }
 
 const bitvector& outputimpl::eval(ch_cycle t) {
-  const bitvector& bits = m_srcs[0].eval(t);
-  if (m_bus)
-    m_bus->write(bits);
+  const bitvector& bits = srcs_[0].eval(t);
+  if (bus_)
+    bus_->write(bits);
   return bits;
 }
 
 snodeimpl* outputimpl::get_bus() {
-  if (m_bus == nullptr) {
-    m_bus = new snodeimpl(m_value.get_size());
-    m_bus->acquire();
+  if (bus_ == nullptr) {
+    bus_ = new snodeimpl(value_.get_size());
+    bus_->acquire();
   }
-  return m_bus;
+  return bus_;
 }
 
 void outputimpl::print(std::ostream& out) const {
-  out << "#" << m_id << " <- " << this->get_name() << m_value.get_size();
-  out << "(" << "#" << m_srcs[0].get_id() << ")";
+  out << "#" << id_ << " <- " << this->get_name() << value_.get_size();
+  out << "(" << "#" << srcs_[0].get_id() << ")";
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 tapimpl::tapimpl(const std::string& name, lnodeimpl* src) 
   : outputimpl(op_tap, src)
-  , m_tapName(name) {
-  m_srcs.reserve(1);
-  m_srcs.emplace_back(src);
+  , tapName_(name) {
+  srcs_.reserve(1);
+  srcs_.emplace_back(src);
 }
 
 void tapimpl::print(std::ostream& out) const {
-  out << "#" << m_id << " <- " << this->get_name() << m_value.get_size();
-  out << "(#" << m_srcs[0].get_id() << ", '" << m_tapName << "')";
+  out << "#" << id_ << " <- " << this->get_name() << value_.get_size();
+  out << "(#" << srcs_[0].get_id() << ", '" << tapName_ << "')";
 }

@@ -2,7 +2,7 @@
 
 #include "lnode.h"
 
-namespace chdl_internal {
+namespace cash_internal {
 
 class ch_compiler {
 public:  
@@ -18,8 +18,8 @@ protected:
 
   size_t remove_dead_nodes(const std::set<lnodeimpl*>& live_nodes);  
   
-  std::set<lnodeimpl*> m_live_nodes;
-  context* m_ctx;
+  std::set<lnodeimpl*> live_nodes_;
+  context* ctx_;
 };
 
 }

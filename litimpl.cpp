@@ -2,20 +2,20 @@
 #include "context.h"
 
 using namespace std;
-using namespace chdl_internal;
+using namespace cash_internal;
 
 litimpl::litimpl(context* ctx, const bitvector& value) 
   : lnodeimpl(op_lit, ctx, value.get_size()) {
-  m_value = value;
+  value_ = value;
 }
 
 const bitvector& litimpl::eval(ch_cycle) { 
-  return m_value; 
+  return value_; 
 }
 
 void litimpl::print(ostream& out) const {
-  out << "#" << m_id << " <- " << this->get_name() << m_value.get_size() 
-      << "(" << m_value << ")";
+  out << "#" << id_ << " <- " << this->get_name() << value_.get_size() 
+      << "(" << value_ << ")";
 }
 
 void litimpl::print_vl(ostream& out) const {

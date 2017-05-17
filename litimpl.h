@@ -2,7 +2,7 @@
 
 #include "lnodeimpl.h"
 
-namespace chdl_internal {
+namespace cash_internal {
 
 class litimpl : public lnodeimpl {
 public:

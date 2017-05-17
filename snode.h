@@ -3,7 +3,7 @@
 #include "typebase.h"
 #include "bitvector.h"
 
-namespace chdl_internal {
+namespace cash_internal {
 
 class snodeimpl;
 
@@ -12,7 +12,7 @@ public:
   
   using bitstream_type = bitstream<snode>;
   
-  snode() : m_impl(nullptr) {}
+  snode() : impl_(nullptr) {}
   snode(const snode& rhs);
   snode(snode&& rhs);
   explicit snode(snodeimpl* impl);
@@ -39,9 +39,9 @@ public:
   
   void write(uint32_t idx, uint32_t value);
   
-  void readBytes(uint8_t* out, uint32_t sizeInBytes) const;
+  void read(uint8_t* out, uint32_t sizeInBytes) const;
   
-  void writeBytes(const uint8_t* in, uint32_t sizeInBytes);
+  void write(const uint8_t* in, uint32_t sizeInBytes);
   
   void assign(const bitvector& value);
   
@@ -59,7 +59,7 @@ protected:
   
   void clone() const;
     
-  mutable snodeimpl* m_impl;
+  mutable snodeimpl* impl_;
 };
 
 std::ostream& operator<<(std::ostream& os, const snode& node);

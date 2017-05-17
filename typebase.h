@@ -2,12 +2,12 @@
 
 #include "common.h"
 
-namespace chdl_internal {
+namespace cash_internal {
 
 template <typename T>
 class bitstream {
 public:
-  bitstream(uint32_t capacity) : m_capacity(capacity), m_size(0) {}
+  bitstream(uint32_t capacity) : capacity_(capacity), size_(0) {}
   
   struct partition {
     const T& data;
@@ -16,27 +16,27 @@ public:
   };
   
   void push(const partition& p) {
-    m_buffer.emplace_back(p);
-    m_size += p.length;
-    assert(m_size <= m_capacity);
+    buffer_.emplace_back(p);
+    size_ += p.length;
+    assert(size_ <= capacity_);
   }
   
   uint32_t get_size() const {
-    return m_size;
+    return size_;
   }
   
   typename std::vector<partition>::const_iterator begin() const { 
-    return m_buffer.begin(); 
+    return buffer_.begin(); 
   }
   
   typename std::vector<partition>::const_iterator end() const { 
-    return m_buffer.end(); 
+    return buffer_.end(); 
   }
 
 private:
-  std::vector<partition> m_buffer; 
-  uint32_t m_capacity;
-  uint32_t m_size;
+  std::vector<partition> buffer_; 
+  uint32_t capacity_;
+  uint32_t size_;
 };
 
 template <typename T, unsigned N> class const_slice_ref;
@@ -135,20 +135,20 @@ public:
   using container_type = T;
   
   const_slice_ref(const T& container, size_t start = 0)
-    : m_container(container)
-    , m_start(start) {
-    CHDL_CHECK(start + N <= T::bit_count, "invalid slice range");
+    : container_(container)
+    , start_(start) {
+    CH_CHECK(start + N <= T::bit_count, "invalid slice range");
   }
 
 protected:
   
   void read(bitstream_type& inout, size_t offset, size_t length) const override {
-    CHDL_CHECK(offset + length <= N, "invalid slice read range");
-    read_data(m_container, inout, m_start + offset, length);
+    CH_CHECK(offset + length <= N, "invalid slice read range");
+    read_data(container_, inout, start_ + offset, length);
   }
 
-  const T& m_container;
-  size_t m_start;
+  const T& container_;
+  size_t start_;
   
   friend T;
 };
@@ -165,9 +165,9 @@ public:
   using container_type = T;
   
   slice_ref(T& container, size_t start = 0)
-    : m_container(container)
-    , m_start(start) {
-    CHDL_CHECK(start + N <= T::bit_count, "invalid slice range");
+    : container_(container)
+    , start_(start) {
+    CH_CHECK(start + N <= T::bit_count, "invalid slice range");
   }
   
   slice_ref& operator=(const slice_ref& rhs) {
@@ -180,17 +180,17 @@ public:
 protected:
   
   void read(bitstream_type& inout, size_t offset, size_t length) const override {
-    CHDL_CHECK(offset + length <= N, "invalid slice read range");
-    read_data(m_container, inout, m_start + offset, length);
+    CH_CHECK(offset + length <= N, "invalid slice read range");
+    read_data(container_, inout, start_ + offset, length);
   }
 
   void write(size_t dst_offset, const bitstream_type& in, size_t src_offset, size_t src_length) override {
-    CHDL_CHECK(dst_offset + src_length <= N, "invalid slice write range");
-    write_data(m_container, m_start + dst_offset, in, src_offset, src_length);
+    CH_CHECK(dst_offset + src_length <= N, "invalid slice write range");
+    write_data(container_, start_ + dst_offset, in, src_offset, src_length);
   }
 
-  T& m_container;
-  size_t m_start;
+  T& container_;
+  size_t start_;
 
   friend T;
 };
@@ -207,27 +207,27 @@ public:
   using second_container_type = B;
   
   const_concat_ref(const B& b, const A& a)
-    : m_b(b)
-    , m_a(a)
+    : b_(b)
+    , a_(a)
   {}
 
 protected:
 
   void read(bitstream_type& inout, size_t offset, size_t length) const override {
-    CHDL_CHECK(offset + length <= const_concat_ref::bit_count, "invalid concat read range");
+    CH_CHECK(offset + length <= const_concat_ref::bit_count, "invalid concat read range");
     if (offset + length <= A::bit_count)
-      read_data(m_a, inout, offset, length);
+      read_data(a_, inout, offset, length);
     else if (offset >= A::bit_count)
-      read_data(m_b, inout, offset - A::bit_count, length);
+      read_data(b_, inout, offset - A::bit_count, length);
     else {
       size_t len = A::bit_count - offset;
-      read_data(m_a, inout, offset, len);
-      read_data(m_b, inout, 0, length - len);
+      read_data(a_, inout, offset, len);
+      read_data(b_, inout, 0, length - len);
     }
   }
 
-  const A& m_a;
-  const B& m_b;
+  const A& a_;
+  const B& b_;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -243,8 +243,8 @@ public:
   using second_container_type = B;
   
   concat_ref(const B& b, const A& a)
-    : m_b(const_cast<B&>(b))
-    , m_a(const_cast<A&>(a))
+    : b_(const_cast<B&>(b))
+    , a_(const_cast<A&>(a))
   {}
   
   concat_ref& operator=(const concat_ref& rhs) {
@@ -257,33 +257,33 @@ public:
 protected:
   
   void read(bitstream_type& inout, size_t offset, size_t length) const override {
-    CHDL_CHECK(offset + length <= concat_ref::bit_count, "invalid concat read range");
+    CH_CHECK(offset + length <= concat_ref::bit_count, "invalid concat read range");
     if (offset + length <= A::bit_count)
-      read_data(m_a, inout, offset, length);
+      read_data(a_, inout, offset, length);
     else if (offset >= A::bit_count)
-      read_data(m_b, inout, offset - A::bit_count, length);
+      read_data(b_, inout, offset - A::bit_count, length);
     else {
       size_t len = A::bit_count - offset;
-      read_data(m_a, inout, offset, len);
-      read_data(m_b, inout, 0, length - len);
+      read_data(a_, inout, offset, len);
+      read_data(b_, inout, 0, length - len);
     }
   }
   
   void write(size_t dst_offset, const bitstream_type& in, size_t src_offset, size_t src_length) override {
-    CHDL_CHECK(dst_offset + src_length <= concat_ref::bit_count, "invalid concat write range");
+    CH_CHECK(dst_offset + src_length <= concat_ref::bit_count, "invalid concat write range");
     if (dst_offset + src_length <= A::bit_count)
-      write_data(m_a, dst_offset, in, src_offset, src_length);
+      write_data(a_, dst_offset, in, src_offset, src_length);
     else if (dst_offset >= A::bit_count)
-      write_data(m_b, dst_offset - A::bit_count, in, src_offset, src_length);
+      write_data(b_, dst_offset - A::bit_count, in, src_offset, src_length);
     else {
       size_t len = A::bit_count - dst_offset;
-      write_data(m_a, dst_offset, in, src_offset, len);
-      write_data(m_b, 0, in, src_offset + len, src_length - len);
+      write_data(a_, dst_offset, in, src_offset, len);
+      write_data(b_, 0, in, src_offset + len, src_length - len);
     }
   }
 
-  A& m_a;
-  B& m_b;
+  A& a_;
+  B& b_;
 };
 
 }

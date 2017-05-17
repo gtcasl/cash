@@ -3,7 +3,7 @@
 #include "bit.h"
 #include "select.h"
 
-namespace chdl_internal {
+namespace cash_internal {
 
 lnodeimpl* createRegNode(lnodeimpl* next);
 lnodeimpl* createLatchNode(lnodeimpl* next, lnodeimpl* init, lnodeimpl* enable, lnodeimpl* reset);

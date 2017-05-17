@@ -2,7 +2,7 @@
 
 #include "bit.h"
 
-namespace chdl_internal {
+namespace cash_internal {
 
 class if_t {
 public:
@@ -37,9 +37,9 @@ if_t ch_if(const ch_logicbase& cond, const Func& func) {
   return if_t(cond.get_node().get_impl(), to_function(func));
 }
 
-#define CHDL_IF_BODY(value)   value })
-#define CHDL_IF(cond)         ch_if(cond, [&](){ CHDL_IF_BODY
-#define CHDL_ELIF(cond)       .elif_(cond, [&](){ CHDL_IF_BODY
-#define CHDL_ELSE(value)      .else_([&](){ value })
+#define CH_IF_BODY(value)   value })
+#define CH_IF(cond)         ch_if(cond, [&](){ CH_IF_BODY
+#define CH_ELIF(cond)       .elif_(cond, [&](){ CH_IF_BODY
+#define CH_ELSE(value)      .else_([&](){ value })
 
 }

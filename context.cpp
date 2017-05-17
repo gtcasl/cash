@@ -17,106 +17,106 @@
 #include "select.h"
 
 using namespace std;
-using namespace chdl_internal;
+using namespace cash_internal;
 
 thread_local context* tls_ctx = nullptr;
 
 context::context()
-  : m_nodeids(0)
-  , m_clk(nullptr)
-  , m_reset(nullptr) 
+  : nodeids_(0)
+  , clk_(nullptr)
+  , reset_(nullptr) 
 {}
 
 context::~context() {  
   // delete all nodes
-  for (auto iter = m_nodes.begin(), iterEnd = m_nodes.end(); iter != iterEnd;) {
+  for (auto iter = nodes_.begin(), iterEnd = nodes_.end(); iter != iterEnd;) {
     delete *iter++;
   }
-  assert(m_undefs.empty());
-  assert(m_literals.empty());
-  assert(m_inputs.empty());
-  assert(m_outputs.empty());
-  assert(m_taps.empty());
-  assert(m_gtaps.empty());
-  assert(m_clk == nullptr);
-  assert(m_reset == nullptr);
-  assert(m_cdomains.empty());
-  assert(m_cond_blocks.empty());
+  assert(undefs_.empty());
+  assert(literals_.empty());
+  assert(inputs_.empty());
+  assert(outputs_.empty());
+  assert(taps_.empty());
+  assert(gtaps_.empty());
+  assert(clk_ == nullptr);
+  assert(reset_ == nullptr);
+  assert(cdomains_.empty());
+  assert(cond_blocks_.empty());
 }
 
 void context::push_clk(lnodeimpl* clk) {
-  m_clk_stack.emplace(clk);
+  clk_stack_.emplace(clk);
 }
 
 void context::pop_clk() {
-  m_clk_stack.pop();
+  clk_stack_.pop();
 }
 
 void context::push_reset(lnodeimpl* reset) {
-  m_reset_stack.emplace(reset);
+  reset_stack_.emplace(reset);
 }
 
 void context::pop_reset() {
-  m_reset_stack.pop();
+  reset_stack_.pop();
 }
 
 lnodeimpl* context::get_clk() {
-  if (!m_clk_stack.empty())
-    return m_clk_stack.top().get_impl();
-  if (m_clk == nullptr)
-    m_clk = new inputimpl(op_clk, this, 1);
-  return m_clk;
+  if (!clk_stack_.empty())
+    return clk_stack_.top().get_impl();
+  if (clk_ == nullptr)
+    clk_ = new inputimpl(op_clk, this, 1);
+  return clk_;
 }
 
 lnodeimpl* context::get_reset() {
-  if (!m_reset_stack.empty())
-    return m_reset_stack.top().get_impl();
-  if (m_reset == nullptr)
-     m_reset = new inputimpl(op_reset, this, 1);
-  return m_reset;
+  if (!reset_stack_.empty())
+    return reset_stack_.top().get_impl();
+  if (reset_ == nullptr)
+     reset_ = new inputimpl(op_reset, this, 1);
+  return reset_;
 }
 
 uint32_t context::add_node(lnodeimpl* node) {
-  uint32_t nodeid = ++m_nodeids;  
+  uint32_t nodeid = ++nodeids_;  
 #ifndef NDEBUG
   uint32_t dbg_node = platform::self().get_dbg_node();
   if (dbg_node) {
     if (nodeid == dbg_node) {
-      CHDL_ABORT("debugbreak on nodeid %d hit!", nodeid);
+      CH_ABORT("debugbreak on nodeid %d hit!", nodeid);
     }
   }
 #endif
-  m_nodes.emplace_back(node);
+  nodes_.emplace_back(node);
   
   switch (node->get_op()) {
   case op_undef:
-    m_undefs.emplace_back((undefimpl*)node);
+    undefs_.emplace_back((undefimpl*)node);
     break;
   case op_lit:
-    m_literals.emplace_back((litimpl*)node);
+    literals_.emplace_back((litimpl*)node);
     break;
   case op_input:
   case op_clk:
   case op_reset:  
-    m_inputs.emplace_back((inputimpl*)node);
+    inputs_.emplace_back((inputimpl*)node);
     break;  
   case op_output:
-    m_outputs.emplace_back((outputimpl*)node);
+    outputs_.emplace_back((outputimpl*)node);
     break; 
   case op_tap:
-    m_taps.emplace_back((tapimpl*)node);
+    taps_.emplace_back((tapimpl*)node);
     break;
   case op_assert:
   case op_print:
-    m_gtaps.emplace_back((ioimpl*)node);
+    gtaps_.emplace_back((ioimpl*)node);
     break;
   }
   
-  if (!m_cond_blocks.empty()
-   && !m_cond_blocks.front().cases.empty()) {
+  if (!cond_blocks_.empty()
+   && !cond_blocks_.front().cases.empty()) {
     // memory ports have global scope
     if (node->get_op() != op_memport) {
-      m_cond_blocks.front().cases.front().locals.emplace(node);
+      cond_blocks_.front().cases.front().locals.emplace(node);
     }
   }
   return nodeid;  
@@ -125,73 +125,73 @@ uint32_t context::add_node(lnodeimpl* node) {
 void context::remove_node(lnodeimpl* node) {
   DBG(3, "*** deleting node: %s%d(#%d)!\n", node->get_name(), node->get_size(), node->get_id());
   
-  assert(!m_nodes.empty());
-  m_nodes.remove(node);
+  assert(!nodes_.empty());
+  nodes_.remove(node);
   
   switch (node->get_op()) {
   case op_undef:
-    m_undefs.remove((undefimpl*)node);
+    undefs_.remove((undefimpl*)node);
     break;
   case op_lit:
-    m_literals.remove((litimpl*)node);
+    literals_.remove((litimpl*)node);
     break;
   case op_input:
   case op_clk:
   case op_reset:  
-    m_inputs.remove((inputimpl*)node);
+    inputs_.remove((inputimpl*)node);
     break;  
   case op_output:
-    m_outputs.remove((outputimpl*)node);
+    outputs_.remove((outputimpl*)node);
     break; 
   case op_tap:
-    m_taps.remove((tapimpl*)node);
+    taps_.remove((tapimpl*)node);
     break;
   case op_assert:
   case op_print:
-    m_gtaps.remove((ioimpl*)node);
+    gtaps_.remove((ioimpl*)node);
     break;
   }
   
-  if (node == m_clk) {
-    m_clk = nullptr;
+  if (node == clk_) {
+    clk_ = nullptr;
   } else
-  if (node == m_reset) {
-    m_reset = nullptr;
+  if (node == reset_) {
+    reset_ = nullptr;
   }
 }
 
 void context::begin_branch() {
-  m_cond_blocks.push_front(cond_block_t());
+  cond_blocks_.push_front(cond_block_t());
 }
 
 void context::end_branch() {
-  assert(!m_cond_blocks.empty());
-  m_cond_blocks.pop_front();
-  if (m_cond_blocks.empty()) {
-    m_cond_vals.clear();
+  assert(!cond_blocks_.empty());
+  cond_blocks_.pop_front();
+  if (cond_blocks_.empty()) {
+    cond_vals_.clear();
   }
 }
 
 void context::begin_case(lnodeimpl* cond) {
-  assert(!m_cond_blocks.empty());
-  m_cond_blocks.front().cases.emplace_front(cond);
+  assert(!cond_blocks_.empty());
+  cond_blocks_.front().cases.emplace_front(cond);
 }
 
 void context::end_case() {
-  assert(!m_cond_blocks.empty() && !m_cond_blocks.front().cases.empty());
-  const cond_case_t& cc = m_cond_blocks.front().cases.front();
+  assert(!cond_blocks_.empty() && !cond_blocks_.front().cases.empty());
+  const cond_case_t& cc = cond_blocks_.front().cases.front();
   for (uint32_t v : cc.assignments) {
-    if (m_cond_vals[v].owner = cc.cond) {
-      m_cond_vals[v].owner = nullptr;
+    if (cond_vals_[v].owner = cc.cond) {
+      cond_vals_[v].owner = nullptr;
     }
   }
 }
 
 bool context::conditional_enabled(lnodeimpl* node) const {
-  if (m_cond_blocks.empty())
+  if (cond_blocks_.empty())
     return false;
   return (node == nullptr) 
-      || (0 == m_cond_blocks.front().cases.front().locals.count(node));
+      || (0 == cond_blocks_.front().cases.front().locals.count(node));
 }
 
 lnodeimpl* context::get_current_conditional(const cond_blocks_t::iterator& iterBlock, lnodeimpl* dst) const {
@@ -200,7 +200,7 @@ lnodeimpl* context::get_current_conditional(const cond_blocks_t::iterator& iterB
     // recursively compute nested conditional value
     lnodeimpl* parent_cond = nullptr;
     auto iterParentBlock = std::next(iterBlock);
-    if (iterParentBlock != m_cond_blocks.end()) {
+    if (iterParentBlock != cond_blocks_.end()) {
       parent_cond = this->get_current_conditional(iterParentBlock, dst);
     }
 
@@ -235,19 +235,19 @@ lnodeimpl* context::get_current_conditional(const cond_blocks_t::iterator& iterB
 }
 
 lnodeimpl* context::resolve_conditional(lnodeimpl* dst, lnodeimpl* src) {
-  // check if insize conditionall block and the node is not local
-  if (!m_cond_blocks.empty()
-   && !m_cond_blocks.front().cases.empty()
-   && (0 == m_cond_blocks.front().cases.front().locals.count(dst))) {
+  /*// check if insize conditionall block and the node is not local
+  if (!cond_blocks_.empty()
+   && !cond_blocks_.front().cases.empty()
+   && (0 == cond_blocks_.front().cases.front().locals.count(dst))) {
     // get the current conditional value
-    auto iterBlock = m_cond_blocks.begin();
+    auto iterBlock = cond_blocks_.begin();
     cond_case_t& cc = iterBlock->cases.front();
     lnodeimpl* const cond = this->get_current_conditional(iterBlock, dst);
     
     // lookup dst value if already defined
-    auto iter = std::find_if(m_cond_vals.begin(), m_cond_vals.end(),
+    auto iter = std::find_if(cond_vals_.begin(), cond_vals_.end(),
       [dst](const cond_val_t& v)->bool { return v.dst == dst; });
-    if (iter != m_cond_vals.end()) {
+    if (iter != cond_vals_.end()) {
       selectimpl* const sel = dynamic_cast<selectimpl*>(iter->sel);
       if (iter->owner) {
         assert(proxy && proxy->is_slice());
@@ -269,7 +269,7 @@ lnodeimpl* context::resolve_conditional(lnodeimpl* dst, lnodeimpl* src) {
         } else {
           sel->get_false().assign(src, true);
         }
-        cc.assignments.push_back(iter - m_cond_vals.begin()); // save the index        
+        cc.assignments.push_back(iter - cond_vals_.begin()); // save the index        
         iter->sel = src;              
       }     
       src = dst; // return original value
@@ -288,16 +288,16 @@ lnodeimpl* context::resolve_conditional(lnodeimpl* dst, lnodeimpl* src) {
         } else {             
           src = createSelectNode(cond, src, dst);                         
         } 
-        cc.assignments.push_back(m_cond_vals.size());  // save the index       
-        m_cond_vals.push_back({src, src, cond});     
+        cc.assignments.push_back(cond_vals_.size());  // save the index       
+        cond_vals_.push_back({src, src, cond});     
       }
     }
-  }
+  }*/
   return src;
 }
 
 litimpl* context::create_literal(const bitvector& value) {
-  for (litimpl* lit : m_literals) {
+  for (litimpl* lit : literals_) {
     if (lit->get_value() == value) {
       return lit;
     }
@@ -307,18 +307,18 @@ litimpl* context::create_literal(const bitvector& value) {
 
 cdomain* context::create_cdomain(const std::vector<clock_event>& sensitivity_list) {
   // return existing cdomain 
-  for (cdomain* cd : m_cdomains) {
+  for (cdomain* cd : cdomains_) {
     if (*cd == sensitivity_list)
       return cd;
   }  
   // allocate new cdomain
   cdomain* const cd = new cdomain(this, sensitivity_list);
-  m_cdomains.emplace_back(cd);
+  cdomains_.emplace_back(cd);
   return cd;
 }
 
 void context::remove_cdomain(cdomain* cd) {
-  m_cdomains.remove(cd);
+  cdomains_.remove(cd);
 }
 
 lnodeimpl* context::bind_input(snodeimpl* bus) {
@@ -335,13 +335,13 @@ snodeimpl* context::bind_output(lnodeimpl* output) {
 void context::register_tap(const std::string& name, lnodeimpl* node) {
   // resolve duplicate names
   string full_name(name);
-  unsigned instances = m_dup_taps[name]++;
+  unsigned instances = dup_taps_[name]++;
   if (instances > 0) {
     if (instances == 1) {
       // rename first instance
-      auto iter = std::find_if(m_taps.begin(), m_taps.end(),
+      auto iter = std::find_if(taps_.begin(), taps_.end(),
         [name](tapimpl* t)->bool { return t->get_tapName() == name; });
-      assert(iter != m_taps.end());
+      assert(iter != taps_.end());
       (*iter)->set_tagName(fstring("%s_%d", name.c_str(), 0));
     }
     full_name = fstring("%s_%d", name.c_str(), instances);
@@ -351,62 +351,62 @@ void context::register_tap(const std::string& name, lnodeimpl* node) {
 }
 
 snodeimpl* context::get_tap(const std::string& name, uint32_t size) {
-  for (tapimpl* tap : m_taps) {
+  for (tapimpl* tap : taps_) {
     if (tap->get_tapName() == name) {
-      CHDL_CHECK(tap->get_size() == size, "tap bus size mismatch: received %u, expected %u", size, tap->get_size());
+      CH_CHECK(tap->get_size() == size, "tap bus size mismatch: received %u, expected %u", size, tap->get_size());
       return tap->get_bus();
     }
   } 
-  CHDL_ABORT("couldn't find tab '%s'", name.c_str());
+  CH_ABORT("couldn't find tab '%s'", name.c_str());
 }
 
 void context::get_live_nodes(std::set<lnodeimpl*>& live_nodes) {
   // get inputs
-  for (auto node : m_inputs) {
+  for (auto node : inputs_) {
     live_nodes.emplace(node);
   }
 
   // get outputs
-  for (auto node : m_outputs) {
+  for (auto node : outputs_) {
     live_nodes.emplace(node);
   }  
   
   // get debug taps
-  for (auto node : m_taps) {
+  for (auto node : taps_) {
     live_nodes.emplace(node);
   }
 
   // get assert taps
-  for (auto node : m_gtaps) {
+  for (auto node : gtaps_) {
     live_nodes.emplace(node);
   }
 }
 
 void context::tick(ch_cycle t) {
-  for (auto cd : m_cdomains) {
+  for (auto cd : cdomains_) {
     cd->tick(t);
   }  
 }
 
 void context::tick_next(ch_cycle t) {
-  for (auto cd : m_cdomains) {
+  for (auto cd : cdomains_) {
     cd->tick_next(t);
   }  
 }
 
 void context::eval(ch_cycle t) {
   // evaluate outputs
-  for (auto node : m_outputs) {
+  for (auto node : outputs_) {
     node->eval(t);
   }
 
   // evaluate taps
-  for (auto node : m_taps) {
+  for (auto node : taps_) {
     node->eval(t);
   }  
   
   // evaluate asserts
-  for (auto node : m_gtaps) {
+  for (auto node : gtaps_) {
     node->eval(t);
   }
 }
@@ -416,7 +416,7 @@ void context::toVerilog(const std::string& module_name, std::ostream& out) {
 }
 
 void context::dumpAST(std::ostream& out, uint32_t level) {
-  for (lnodeimpl* node : m_nodes) {
+  for (lnodeimpl* node : nodes_) {
     node->print(out);
     out << std::endl;
   }
@@ -442,10 +442,10 @@ static void dumpCFG_r(lnodeimpl* node, std::ostream& out, uint32_t level, std::v
 }
 
 void context::dumpCFG(lnodeimpl* node, std::ostream& out, uint32_t level) {
-  std::vector<bool> visits(m_nodeids + 1);
+  std::vector<bool> visits(nodeids_ + 1);
   std::map<uint32_t, tapimpl*> taps;
   
-  for (tapimpl* tap : m_taps) {
+  for (tapimpl* tap : taps_) {
     taps[tap->get_target().get_id()] = tap;
   }
   
@@ -477,7 +477,7 @@ void context::dump_stats(std::ostream& out) {
   uint32_t num_lits = 0;
   uint32_t num_proxies = 0;
   
-  for (lnodeimpl* node : m_nodes) {
+  for (lnodeimpl* node : nodes_) {
     memimpl* mem = dynamic_cast<memimpl*>(node);
     if (mem) {
       ++num_memories;
@@ -512,30 +512,30 @@ void context::dump_stats(std::ostream& out) {
     }
   }
   
-  out << "chdl-stats: total memories = " << num_memories << std::endl;
-  out << "chdl-stats: total memory bits = " << memory_bits << std::endl;
-  out << "chdl-stats: total registers = " << num_registers << std::endl;
-  out << "chdl-stats: total regiters bits = " << register_bits << std::endl;
-  out << "chdl-stats: total muxes = " << num_muxes << std::endl;
-  out << "chdl-stats: total alus = " << num_alus << std::endl;
-  out << "chdl-stats: total literals = " << num_lits << std::endl;
-  out << "chdl-stats: total proxies = " << num_proxies << std::endl;  
+  out << "cash-stats: total memories = " << num_memories << std::endl;
+  out << "cash-stats: total memory bits = " << memory_bits << std::endl;
+  out << "cash-stats: total registers = " << num_registers << std::endl;
+  out << "cash-stats: total regiters bits = " << register_bits << std::endl;
+  out << "cash-stats: total muxes = " << num_muxes << std::endl;
+  out << "cash-stats: total alus = " << num_alus << std::endl;
+  out << "cash-stats: total literals = " << num_lits << std::endl;
+  out << "cash-stats: total proxies = " << num_proxies << std::endl;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-context* chdl_internal::ctx_begin() {
+context* cash_internal::ctx_begin() {
   context* const ctx = new context();
   tls_ctx = ctx;
   ctx->acquire();
   return ctx;
 }
 
-void chdl_internal::ctx_end() {
+void cash_internal::ctx_end() {
   tls_ctx = nullptr;
 }
 
-context* chdl_internal::ctx_curr() {
-  CHDL_CHECK(tls_ctx, "invalid CHDL context!");
+context* cash_internal::ctx_curr() {
+  CH_CHECK(tls_ctx, "invalid CASH context!");
   return tls_ctx;
 }

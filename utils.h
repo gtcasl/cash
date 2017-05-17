@@ -1,49 +1,44 @@
 #pragma once
 
-namespace chdl_internal {
+namespace cash_internal {
 
 std::string fstring(const char* format, ...);
 
-void DbgPrint(int level, const char *format, ...);
+void dbprint(int level, const char *format, ...);
 
 void dump_stack_trace(FILE* out, unsigned int max_frames = 32);
 
 #ifdef NDEBUG
-  #define CHDL_ABORT(msg, ...) \
+  #define CH_ABORT(msg, ...) \
     do { \
       fprintf(stderr, "error: " msg "\n", ##__VA_ARGS__); \
       std::abort(); \
-    } while (false)
+    } while (0)
+
   #define DBG(level, format, ...)
 #else
-  #define CHDL_ABORT(msg, ...) \
+  #define CH_ABORT(msg, ...) \
     do { \
-      chdl_internal::dump_stack_trace(stdout); \
-      fprintf(stderr, "\nerror: " msg " (%s:%d:%s)\n", ##__VA_ARGS__, __FILE__, __LINE__, __FUNCTION__); \
+      cash_internal::dump_stack_trace(stdout); \
+      fprintf(stderr, "ERROR: " msg " (%s:%d:%s)\n", ##__VA_ARGS__, __FILE__, __LINE__, __FUNCTION__); \
       std::abort(); \
-    } while (false)
+    } while (0)
+
   #define DBG(level, format, ...) \
-    do { \
-      DbgPrint(level, "DBG: " format, ##__VA_ARGS__); \
-    } while (false)
+    dbprint(level, "DBG: " format, ##__VA_ARGS__)
 #endif
 
-#define CHDL_CHECK(x, msg, ...) \
-  do { \
-    if (!(x)) { \
-      CHDL_ABORT(msg, ##__VA_ARGS__); \
-    } \
-  } while (false)
+#define CH_CHECK(x, msg, ...) \
+  if (!(x)) CH_ABORT(msg, ##__VA_ARGS__)
 
-#define TODO(x) \
-  CHDL_ABORT(#x);
+#define TODO(x) CH_ABORT(#x);
 
-#define CHDL_COUNTOF(a) (sizeof(a) / sizeof(a[0]))
-#define CHDL_MAX(a,b) (((a) > (b)) ? (a) : (b))
+#define CH_COUNTOF(a) (sizeof(a) / sizeof(a[0]))
+#define CH_MAX(a,b) (((a) > (b)) ? (a) : (b))
 
-#define CHDL_OUT(...) std::tuple<__VA_ARGS__>
-#define CHDL_RET(...) return std::make_tuple(__VA_ARGS__)
-#define CHDL_TIE(...) std::forward_as_tuple(__VA_ARGS__)
+#define CH_OUT(...) std::tuple<__VA_ARGS__>
+#define CH_RET(...) return std::make_tuple(__VA_ARGS__)
+#define CH_TIE(...) std::forward_as_tuple(__VA_ARGS__)
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -82,27 +77,27 @@ class refcounted {
 public:
   
   void acquire() const {
-    ++m_refcount;
+    ++refcount_;
   }
 
   void release() const {
-    assert(m_refcount > 0);
-    if (--m_refcount <= 0)
+    assert(refcount_ > 0);
+    if (--refcount_ <= 0)
       delete this;
   }
   
   long get_refcount() const {
-    return m_refcount;
+    return refcount_;
   }
   
 protected:
   
-  refcounted() : m_refcount(0) {}
+  refcounted() : refcount_(0) {}
   virtual ~refcounted() {}
   
 private:
   
-  mutable long m_refcount;
+  mutable long refcount_;
   
   template <typename T> friend class refcounted_ptr;
 };
@@ -113,79 +108,79 @@ template <typename T>
 class refcounted_ptr {
 public:
   
-  refcounted_ptr() : m_ptr(nullptr) {}
+  refcounted_ptr() : ptr_(nullptr) {}
   
   ~refcounted_ptr() {
-    if (m_ptr)
-      m_ptr->release();
+    if (ptr_)
+      ptr_->release();
   }
   
-  refcounted_ptr(const refcounted_ptr& rhs) : refcounted_ptr(rhs.m_ptr) {}
+  refcounted_ptr(const refcounted_ptr& rhs) : refcounted_ptr(rhs.ptr_) {}
   
   refcounted_ptr(refcounted_ptr&& rhs) {
-    m_ptr = rhs.m_ptr;
-    rhs.m_ptr == nullptr;
+    ptr_ = rhs.ptr_;
+    rhs.ptr_ == nullptr;
   }
   
   refcounted_ptr& operator=(const refcounted_ptr& rhs) {
-    if (rhs.m_ptr)
-      rhs.m_ptr->acquire();
-    if (m_ptr)
-      m_ptr->release();
-    m_ptr = rhs.m_ptr;
+    if (rhs.ptr_)
+      rhs.ptr_->acquire();
+    if (ptr_)
+      ptr_->release();
+    ptr_ = rhs.ptr_;
     return *this;
   }
   
   refcounted_ptr& operator=(refcounted_ptr&& rhs) {
-    if (rhs.m_ptr)
-      rhs.m_ptr->release();
-    m_ptr = rhs.m_ptr;
-    rhs.m_ptr == nullptr;
+    if (rhs.ptr_)
+      rhs.ptr_->release();
+    ptr_ = rhs.ptr_;
+    rhs.ptr_ == nullptr;
   }
   
   T& operator*() const {
-    return *m_ptr;
+    return *ptr_;
   }
   
   T* operator->() const {
-    return m_ptr;
+    return ptr_;
   }
   
   T* get() const {
-    return m_ptr;
+    return ptr_;
   }
   
   T* release() const {
-    T* ret(m_ptr);
+    T* ret(ptr_);
     if (ret)
      ret->release();    
-    m_ptr = nullptr;
+    ptr_ = nullptr;
     return ret;
   }
   
   bool is_unique() const {
-    return m_ptr ? (m_ptr->get_refcount() == 1) : false;
+    return ptr_ ? (ptr_->get_refcount() == 1) : false;
   }
   
   unsigned get_use_count() const {
-    return m_ptr ? (m_ptr->get_refcount() == 1) : false;
+    return ptr_ ? (ptr_->get_refcount() == 1) : false;
   }
   
   void reset(T* ptr = nullptr) {
     if (ptr)
       ptr->acquire();
-    if (m_ptr)
-      m_ptr->release();
-    m_ptr = ptr;    
+    if (ptr_)
+      ptr_->release();
+    ptr_ = ptr;    
     return *this;
   }
   
   bool operator==(const refcounted_ptr& rhs) const {
-    return (m_ptr == rhs.m_ptr);
+    return (ptr_ == rhs.ptr_);
   }
   
   bool operator==(const T* rhs) const {
-    return (m_ptr == rhs);
+    return (ptr_ == rhs);
   }
   
   operator bool() const {
@@ -194,12 +189,12 @@ public:
   
 protected:    
   
-  refcounted_ptr(refcounted* ptr) : m_ptr(ptr) {
+  refcounted_ptr(refcounted* ptr) : ptr_(ptr) {
     if (ptr)
       ptr->acquire();
   }
   
-  refcounted* m_ptr;
+  refcounted* ptr_;
   
   template <typename T_, typename ...Args>
   friend refcounted_ptr<T_> make_ptr(const Args&... args);
@@ -214,37 +209,37 @@ refcounted_ptr<T> make_ptr(const Args&... args) {
 
 class scope_exit {
 public:
-    scope_exit(const std::function<void()>& f) : m_f(f) {}
-    ~scope_exit() { m_f(); }
+    scope_exit(const std::function<void()>& f) : f_(f) {}
+    ~scope_exit() { f_(); }
     // force stack only allocation!
     static void *operator new   (size_t) = delete;
     static void *operator new[] (size_t) = delete;
 protected:
-    std::function<void()> m_f;
+    std::function<void()> f_;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
 // is power of two number ?
-constexpr bool IS_POW2(unsigned value) { 
+constexpr bool ispow2(unsigned value) { 
   return value && !(value & (value - 1)); 
 }
 
 // return log2
-constexpr unsigned LOG2(unsigned x) {
-  return (x <= 1) ? 0 : (LOG2(x >> 1) + 1);
+constexpr unsigned ilog2(unsigned x) {
+  return (x <= 1) ? 0 : (ilog2(x >> 1) + 1);
 }
 
 // return ceil of log2
-constexpr unsigned CLOG2(unsigned x) {
-  return IS_POW2(x) ? LOG2(x) : (LOG2(x) + 1);
+constexpr unsigned ilog2ceil(unsigned x) {
+  return ispow2(x) ? ilog2(x) : (ilog2(x) + 1);
 }
 
-template <class D, class S>
-D bit_cast(const S& src) {
+template <class Dst, class Src>
+Dst bit_cast(const Src& src) {
   union merged_t {
-    S src;
-    D dst;    
+    Src src;
+    Dst dst;
   };
   merged_t m;
   m.dst = 0;

@@ -2,7 +2,7 @@
 
 #include "typebase.h"
 
-namespace chdl_internal {
+namespace cash_internal {
 
 template <typename T, unsigned N> 
 class ch_vec : public typebase<N * T::bit_count, typename T::bitstream_type> {
@@ -17,7 +17,7 @@ public:
   template <typename U>
   ch_vec(const ch_vec<U, N>& rhs) {
     for (unsigned i = 0; i < N; ++i) {
-      m_items[i] = rhs.m_items[i];
+      items_[i] = rhs.items_[i];
     }
   }
   
@@ -29,16 +29,16 @@ public:
   
   explicit ch_vec(const T& rhs) {
     for (unsigned i = 0; i < N; ++i) {
-      m_items[i] = rhs;
+      items_[i] = rhs;
     }
   }
   
   template <typename U>
   ch_vec(const std::initializer_list<U>& rhs) {
-    CHDL_CHECK(rhs.size() == N, "initializer list size missmatch!");
+    CH_CHECK(rhs.size() == N, "initializer list size missmatch!");
     unsigned i = N;
     for (auto& x : rhs) {
-      m_items[--i] = x;
+      items_[--i] = x;
     }
   }
   
@@ -49,49 +49,49 @@ public:
   template <typename U>
   ch_vec& operator=(const ch_vec<U, N>& rhs) {
     for (unsigned i = 0; i < N; ++i) {
-      m_items[i] = rhs.m_items[i];
+      items_[i] = rhs.items_[i];
     }
     return *this;
   }
   
   template <typename U>
   ch_vec& operator=(const std::initializer_list<U>& rhs) {
-    CHDL_CHECK(rhs.size() == N, "initializer list size missmatch!");
+    CH_CHECK(rhs.size() == N, "initializer list size missmatch!");
     unsigned i = N;
     for (auto& x : rhs) {
-      m_items[--i] = x;
+      items_[--i] = x;
     }
     return *this;
   }
 
   typename std::vector<T>::reference operator[](size_t i) {
-    CHDL_CHECK(i < N, "invalid subscript index");
-    return m_items[i];
+    CH_CHECK(i < N, "invalid subscript index");
+    return items_[i];
   }
 
   typename std::vector<T>::const_reference operator[](size_t i) const {
-    CHDL_CHECK(i < N, "invalid subscript index");
-    return m_items[i];
+    CH_CHECK(i < N, "invalid subscript index");
+    return items_[i];
   }
     
   std::array<T, N>& data() {
-    return m_items;
+    return items_;
   }
   
   const std::array<T, N>& data() const {
-    return m_items;
+    return items_;
   }
 
 protected:
   
-  std::array<T, N> m_items;
+  std::array<T, N> items_;
   
   void read(bitstream_type& out, size_t offset, size_t length) const override {
-    CHDL_CHECK(offset + length <= ch_vec::bit_count, "invalid vector read range");
+    CH_CHECK(offset + length <= ch_vec::bit_count, "invalid vector read range");
     for (unsigned i = 0; length && i < N; ++i) {
       if (offset < T::bit_count) {     
         size_t len = std::min<size_t>(length, T::bit_count - offset);                
-        read_data(m_items[i], out, offset, len);        
+        read_data(items_[i], out, offset, len);        
         length -= len;
         offset = T::bit_count;
       }
@@ -100,11 +100,11 @@ protected:
   }
   
   void write(size_t start, const bitstream_type& data, size_t offset, size_t length) override {
-    CHDL_CHECK(start + length <= ch_vec::bit_count, "invalid vector write range");
+    CH_CHECK(start + length <= ch_vec::bit_count, "invalid vector write range");
     for (unsigned i = 0; length && i < N; ++i) {
       if (start < T::bit_count) {
         size_t len = std::min<size_t>(length, T::bit_count - start);        
-        write_data(m_items[i], start, data, offset, len);
+        write_data(items_[i], start, data, offset, len);
         length -= len;
         offset += len;
         start = T::bit_count;

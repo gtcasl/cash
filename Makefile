@@ -10,29 +10,29 @@ SRCS = utils.cpp platform.cpp bitvector.cpp \
 
 OBJS := $(SRCS:.cpp=.o)
 
-all : libchdl.so
+all : libcash.so
 
-libchdl.so : $(OBJS)
+libcash.so : $(OBJS)
 	$(CXX) $^ $(LDFLAGS) -o $@
 
 %.o : %.cpp
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
-install: libchdl.so
+install: libcash.so
 	if [ ! -e $(PREFIX)/lib ]; then mkdir -p $(PREFIX)/lib; fi
-	cp libchdl.so $(PREFIX)/lib
-	if [ ! -e $(PREFIX)/include/chdl ]; then mkdir -p $(PREFIX)/include/chdl; fi
-	cp *.h $(PREFIX)/include/chdl
+	cp libcash.so $(PREFIX)/lib
+	if [ ! -e $(PREFIX)/include/cash ]; then mkdir -p $(PREFIX)/include/cash; fi
+	cp *.h $(PREFIX)/include/cash
 
 uninstall:
-	rm -rf $(PREFIX)/lib/libchdl.so $(PREFIX)/include/chdl
+	rm -rf $(PREFIX)/lib/libcash.so $(PREFIX)/include/cash
 
 .depend: $(SRCS)
 	$(CXX) $(CXXFLAGS) -MM $^ > .depend;
 
 clean:
-	rm -f libchdl.so $(OBJS) .depend *~ *\#
+	rm -f libcash.so $(OBJS) .depend *~ *\#
 
 ifneq ($(MAKECMDGOALS),clean)
-    -include .depend
+	-include .depend
 endif

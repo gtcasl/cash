@@ -7,14 +7,14 @@ public:
 private:
 };
 
-#define CHDL_INTERFACE_IMPL(name, ...) \
+#define CH_INTERFACE_IMPL(name, ...) \
   class name : public ch_interface { \
   public:\
     name() {} \
   protected: \
   public:
 
-#define CHDL_INTERFACE(name, body, ...) CHDL_INTERFACE_IMPL(name, CHDL_REM body) __VA_ARGS__ }
+#define CH_INTERFACE(name, body, ...) CH_INTERFACE_IMPL(name, CH_REM body) __VA_ARGS__ }
 
 template <typename T>
 class ch_port : public T {};

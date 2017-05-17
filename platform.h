@@ -6,27 +6,27 @@ public:
   platform();
   
   uint32_t get_dbg_level() const {
-    return m_dbg_level;
+    return dbg_level_;
   }
   
   uint32_t get_dbg_node() const {
-    return m_dbg_node;
+    return dbg_node_;
   }
   
   uint32_t get_dump_ast() const {
-    return m_dump_ast;
+    return dump_ast_;
   }
   
   uint32_t get_dump_cfg() const {
-    return m_dump_cfg;
+    return dump_cfg_;
   }
   
   static const platform& self();
   
 private:  
   
-  uint32_t m_dbg_level;
-  uint32_t m_dbg_node;
-  uint32_t m_dump_ast;  
-  uint32_t m_dump_cfg;
+  uint32_t dbg_level_;
+  uint32_t dbg_node_;
+  uint32_t dump_ast_;  
+  uint32_t dump_cfg_;
 };

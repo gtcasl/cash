@@ -2,7 +2,7 @@
 
 #include "ioimpl.h"
 
-namespace chdl_internal {
+namespace cash_internal {
 
 class assertimpl : public ioimpl { // LCOV_EXCL_LINE
 public:
@@ -13,7 +13,7 @@ public:
   void print_vl(std::ostream& out) const override {}  // LCOV_EXCL_LINE
 
 private:
-  std::string m_msg;
+  std::string msg_;
 };
 
 }

@@ -2,7 +2,7 @@
 
 #include "common.h"
 
-namespace chdl_internal {
+namespace cash_internal {
 
 class tickable {
 public:

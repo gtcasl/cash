@@ -1,11 +1,11 @@
-#include <chdl.h>
+#include <cash.h>
 
-using namespace chdl::core;
-using namespace chdl::core_literals;
-using namespace chdl::sim;
+using namespace cash::core;
+using namespace cash::core_literals;
+using namespace cash::sim;
 
 template <unsigned N>
-__ch_out(ch_bit<N>, ch_logic) Adder(
+__out(ch_bit<N>, ch_logic) Adder(
            const ch_bit<N>& lhs,
            const ch_bit<N>& rhs,
            const ch_logic& cin) {
@@ -15,7 +15,7 @@ __ch_out(ch_bit<N>, ch_logic) Adder(
   ch_bit<N+1> sum((0_b, lhs) + rhs + cin);
   cout = sum[N];
   out  = ch_slice<N>(sum);  
-  __ch_ret(out, cout);
+  __ret(out, cout);
 }
 
 int main(int argc, char **argv) {
@@ -29,7 +29,7 @@ int main(int argc, char **argv) {
   v_file.close();*/
 
   ch_vcdtracer tracer("adder.vcd", myDevice);
-  __ch_trace(tracer, lhs, rhs, cin, out, cout);
+  __trace(tracer, lhs, rhs, cin, out, cout);
   tracer.run();
   
   std::cout << "result:" << std::endl;

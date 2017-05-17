@@ -1,18 +1,18 @@
 #include "common.h"
 
-using namespace chdl::sim_literals;
+using namespace cash::sim_literals;
 
- __ch_struct (s2_t,(
+ __struct (s2_t,(
   (ch_bit2) a,
   (ch_bit2) b
 ));
  
- __ch_union (u2_t,(
+ __union (u2_t,(
    (ch_bit2) a,
    (ch_bit2) b
  ));
 
-__ch_enum (my_enum, 4,(
+__enum (my_enum, 4,(
   idle = 0,
   execute,
   stats,
@@ -73,25 +73,25 @@ TEST_CASE("simulation tests", "[sim]") {
     TESTX([]()->bool {          
       ch_bus4 a(4);
       uint8_t x;
-      a.readBytes(&x, sizeof(x));
+      a.read(&x, sizeof(x));
       return (x == 4);
     });
     TESTX([]()->bool {          
       ch_bus4 a(4);
       uint32_t x;
-      a.readBytes(&x, sizeof(x));
+      a.read(&x, sizeof(x));
       return (x == 4);
     });
     TESTX([]()->bool {          
       ch_bus4 a;
       uint8_t x = 4;
-      a.writeBytes(&x, sizeof(x));
+      a.write(&x, sizeof(x));
       return (a == 4);
     });
     TESTX([]()->bool {          
       ch_bus4 a;
       uint32_t x = 4;
-      a.writeBytes(&x, sizeof(x));
+      a.write(&x, sizeof(x));
       return (a == 4);
     });
   }

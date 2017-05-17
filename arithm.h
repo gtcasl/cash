@@ -2,10 +2,10 @@
 
 #include "bit.h"
 
-namespace chdl_internal {
+namespace cash_internal {
 
-#define CHDL_ALUOP_TYPE(t) alu_op_##t,
-#define CHDL_ALUOP_ENUM(m) \
+#define CH_ALUOP_TYPE(t) alu_op_##t,
+#define CH_ALUOP_ENUM(m) \
   m(inv) \
   m(and) \
   m(or) \
@@ -40,133 +40,133 @@ namespace chdl_internal {
   m(fdiv)
 
 enum ch_alu_operator {
-  CHDL_ALUOP_ENUM(CHDL_ALUOP_TYPE)
+  CH_ALUOP_ENUM(CH_ALUOP_TYPE)
 };
 
 lnodeimpl* createAluNode(ch_alu_operator op, uint32_t size, lnodeimpl* a, lnodeimpl* b);
 lnodeimpl* createAluNode(ch_alu_operator op, uint32_t size, lnodeimpl* a);
 
-#define CHDL_BINOP_GEN0(func, type) \
+#define CH_BINOP_GEN0(func, type) \
   template <unsigned N> ch_bit<N> func(const ch_bitbase<N>& a, type b) { return func(a, ch_bit<N>(b)); } \
   template <unsigned N> ch_bit<N> func(type a, const ch_bitbase<N>& b) { return func(ch_bit<N>(a), b); }
   
-#define CHDL_BINOP_GEN1(func) \
-  template <unsigned N, unsigned M> ch_bit<CHDL_MAX(N,M)> func(const ch_bitbase<N>& a, const ch_bitbase<M>& b) { return func(ch_zext<CHDL_MAX(N,M)>(a), ch_zext<CHDL_MAX(N,M)>(b)); } \
-  CHDL_BINOP_GEN0(func, char) \
-  CHDL_BINOP_GEN0(func, int8_t) \
-  CHDL_BINOP_GEN0(func, uint8_t) \
-  CHDL_BINOP_GEN0(func, int16_t) \
-  CHDL_BINOP_GEN0(func, uint16_t) \
-  CHDL_BINOP_GEN0(func, int32_t) \
-  CHDL_BINOP_GEN0(func, uint32_t) \
-  CHDL_BINOP_GEN0(func, int64_t) \
-  CHDL_BINOP_GEN0(func, uint64_t)    
+#define CH_BINOP_GEN1(func) \
+  template <unsigned N, unsigned M> ch_bit<CH_MAX(N,M)> func(const ch_bitbase<N>& a, const ch_bitbase<M>& b) { return func(ch_zext<CH_MAX(N,M)>(a), ch_zext<CH_MAX(N,M)>(b)); } \
+  CH_BINOP_GEN0(func, char) \
+  CH_BINOP_GEN0(func, int8_t) \
+  CH_BINOP_GEN0(func, uint8_t) \
+  CH_BINOP_GEN0(func, int16_t) \
+  CH_BINOP_GEN0(func, uint16_t) \
+  CH_BINOP_GEN0(func, int32_t) \
+  CH_BINOP_GEN0(func, uint32_t) \
+  CH_BINOP_GEN0(func, int64_t) \
+  CH_BINOP_GEN0(func, uint64_t)    
   
-#define CHDL_BINOP_GEN2(func, op) \
-  CHDL_BINOP_GEN1(func) \
-  template <unsigned N, unsigned M> ch_bit<CHDL_MAX(N,M)> op(const ch_bitbase<N>& a, const ch_bitbase<M>& b) { return func(a, b); } \
-  CHDL_BINOP_GEN0(op, char) \
-  CHDL_BINOP_GEN0(op, int8_t) \
-  CHDL_BINOP_GEN0(op, uint8_t) \
-  CHDL_BINOP_GEN0(op, int16_t) \
-  CHDL_BINOP_GEN0(op, uint16_t) \
-  CHDL_BINOP_GEN0(op, int32_t) \
-  CHDL_BINOP_GEN0(op, uint32_t) \
-  CHDL_BINOP_GEN0(op, int64_t) \
-  CHDL_BINOP_GEN0(op, uint64_t)
+#define CH_BINOP_GEN2(func, op) \
+  CH_BINOP_GEN1(func) \
+  template <unsigned N, unsigned M> ch_bit<CH_MAX(N,M)> op(const ch_bitbase<N>& a, const ch_bitbase<M>& b) { return func(a, b); } \
+  CH_BINOP_GEN0(op, char) \
+  CH_BINOP_GEN0(op, int8_t) \
+  CH_BINOP_GEN0(op, uint8_t) \
+  CH_BINOP_GEN0(op, int16_t) \
+  CH_BINOP_GEN0(op, uint16_t) \
+  CH_BINOP_GEN0(op, int32_t) \
+  CH_BINOP_GEN0(op, uint32_t) \
+  CH_BINOP_GEN0(op, int64_t) \
+  CH_BINOP_GEN0(op, uint64_t)
 
-#define CHDL_UNARYOP_GEN(func, op) \
+#define CH_UNARYOP_GEN(func, op) \
   template <unsigned N> ch_bit<N> op(const ch_bitbase<N>& in) { return func(in); }
 
-#define CHDL_COMPAREOP_GEN0(func, op, type) \
+#define CH_COMPAREOP_GEN0(func, op, type) \
   template <unsigned N> ch_logic func(const ch_bitbase<N>& a, type b) { return func(a, ch_bit<N>(b)); } \
   template <unsigned N> ch_logic func(type a, const ch_bitbase<N>& b) { return func(ch_bit<N>(a), b); } \
   template <unsigned N> ch_logic op(const ch_bitbase<N>& a, type b) { return func(a, ch_bit<N>(b)); } \
   template <unsigned N> ch_logic op(type a, const ch_bitbase<N>& b) { return func(ch_bit<N>(a), b); }
   
-#define CHDL_COMPAREOP_GEN1(func, op) \
+#define CH_COMPAREOP_GEN1(func, op) \
   template <unsigned N> ch_logic op(const ch_bitbase<N>& a, const ch_bitbase<N>& b) { return func(a, b); } \
-  CHDL_COMPAREOP_GEN0(func, op, char) \
-  CHDL_COMPAREOP_GEN0(func, op, int8_t) \
-  CHDL_COMPAREOP_GEN0(func, op, uint8_t) \
-  CHDL_COMPAREOP_GEN0(func, op, int16_t) \
-  CHDL_COMPAREOP_GEN0(func, op, uint16_t) \
-  CHDL_COMPAREOP_GEN0(func, op, int32_t) \
-  CHDL_COMPAREOP_GEN0(func, op, uint32_t) \
-  CHDL_COMPAREOP_GEN0(func, op, int64_t) \
-  CHDL_COMPAREOP_GEN0(func, op, uint64_t)
+  CH_COMPAREOP_GEN0(func, op, char) \
+  CH_COMPAREOP_GEN0(func, op, int8_t) \
+  CH_COMPAREOP_GEN0(func, op, uint8_t) \
+  CH_COMPAREOP_GEN0(func, op, int16_t) \
+  CH_COMPAREOP_GEN0(func, op, uint16_t) \
+  CH_COMPAREOP_GEN0(func, op, int32_t) \
+  CH_COMPAREOP_GEN0(func, op, uint32_t) \
+  CH_COMPAREOP_GEN0(func, op, int64_t) \
+  CH_COMPAREOP_GEN0(func, op, uint64_t)
 
-#define CHDL_SHIFTOP_GEN0(func, type) \
+#define CH_SHIFTOP_GEN0(func, type) \
   template <unsigned N> ch_bit<N> func(const ch_bitbase<N>& a, type b) { return func(a, ch_bit<N>(b)); }
   
-#define CHDL_SHIFTOP_GEN1(func) \
-  CHDL_SHIFTOP_GEN0(func, char) \
-  CHDL_SHIFTOP_GEN0(func, int8_t) \
-  CHDL_SHIFTOP_GEN0(func, uint8_t) \
-  CHDL_SHIFTOP_GEN0(func, int16_t) \
-  CHDL_SHIFTOP_GEN0(func, uint16_t) \
-  CHDL_SHIFTOP_GEN0(func, int32_t) \
-  CHDL_SHIFTOP_GEN0(func, uint32_t) \
-  CHDL_SHIFTOP_GEN0(func, int64_t) \
-  CHDL_SHIFTOP_GEN0(func, uint64_t)
+#define CH_SHIFTOP_GEN1(func) \
+  CH_SHIFTOP_GEN0(func, char) \
+  CH_SHIFTOP_GEN0(func, int8_t) \
+  CH_SHIFTOP_GEN0(func, uint8_t) \
+  CH_SHIFTOP_GEN0(func, int16_t) \
+  CH_SHIFTOP_GEN0(func, uint16_t) \
+  CH_SHIFTOP_GEN0(func, int32_t) \
+  CH_SHIFTOP_GEN0(func, uint32_t) \
+  CH_SHIFTOP_GEN0(func, int64_t) \
+  CH_SHIFTOP_GEN0(func, uint64_t)
 
-#define CHDL_SHIFTOP_GEN2(func, op) \
-  CHDL_SHIFTOP_GEN1(func) \
+#define CH_SHIFTOP_GEN2(func, op) \
+  CH_SHIFTOP_GEN1(func) \
   template <unsigned N, unsigned M> ch_bit<N> op(const ch_bitbase<N>& a, const ch_bitbase<M>& b) { return func(a, b); } \
-  CHDL_SHIFTOP_GEN0(op, char) \
-  CHDL_SHIFTOP_GEN0(op, int8_t) \
-  CHDL_SHIFTOP_GEN0(op, uint8_t) \
-  CHDL_SHIFTOP_GEN0(op, int16_t) \
-  CHDL_SHIFTOP_GEN0(op, uint16_t) \
-  CHDL_SHIFTOP_GEN0(op, int32_t) \
-  CHDL_SHIFTOP_GEN0(op, uint32_t) \
-  CHDL_SHIFTOP_GEN0(op, int64_t) \
-  CHDL_SHIFTOP_GEN0(op, uint64_t)
+  CH_SHIFTOP_GEN0(op, char) \
+  CH_SHIFTOP_GEN0(op, int8_t) \
+  CH_SHIFTOP_GEN0(op, uint8_t) \
+  CH_SHIFTOP_GEN0(op, int16_t) \
+  CH_SHIFTOP_GEN0(op, uint16_t) \
+  CH_SHIFTOP_GEN0(op, int32_t) \
+  CH_SHIFTOP_GEN0(op, uint32_t) \
+  CH_SHIFTOP_GEN0(op, int64_t) \
+  CH_SHIFTOP_GEN0(op, uint64_t)
 
 // compare operators
 
-CHDL_COMPAREOP_GEN1(ch_eq, operator==)
-CHDL_COMPAREOP_GEN1(ch_ne, operator!=)
-CHDL_COMPAREOP_GEN1(ch_lt, operator<)
-CHDL_COMPAREOP_GEN1(ch_gt, operator>)
-CHDL_COMPAREOP_GEN1(ch_le, operator<=)
-CHDL_COMPAREOP_GEN1(ch_ge, operator>=)
+CH_COMPAREOP_GEN1(ch_eq, operator==)
+CH_COMPAREOP_GEN1(ch_ne, operator!=)
+CH_COMPAREOP_GEN1(ch_lt, operator<)
+CH_COMPAREOP_GEN1(ch_gt, operator>)
+CH_COMPAREOP_GEN1(ch_le, operator<=)
+CH_COMPAREOP_GEN1(ch_ge, operator>=)
 
 // logic operators
 
-CHDL_BINOP_GEN2(ch_and, operator&)
-CHDL_BINOP_GEN2(ch_or, operator|)
-CHDL_BINOP_GEN2(ch_xor, operator^)
-CHDL_UNARYOP_GEN(ch_inv, operator~)
-CHDL_BINOP_GEN1(ch_nand)
-CHDL_BINOP_GEN1(ch_nor)
-CHDL_BINOP_GEN1(ch_xnor)
+CH_BINOP_GEN2(ch_and, operator&)
+CH_BINOP_GEN2(ch_or, operator|)
+CH_BINOP_GEN2(ch_xor, operator^)
+CH_UNARYOP_GEN(ch_inv, operator~)
+CH_BINOP_GEN1(ch_nand)
+CH_BINOP_GEN1(ch_nor)
+CH_BINOP_GEN1(ch_xnor)
 
 // arithmetic operators
 
-CHDL_UNARYOP_GEN(ch_neg, operator-)
-CHDL_BINOP_GEN2(ch_add, operator+)
-CHDL_BINOP_GEN2(ch_sub, operator-)
-CHDL_BINOP_GEN2(ch_mult, operator*)
-CHDL_BINOP_GEN2(ch_div, operator/)
-CHDL_BINOP_GEN2(ch_mod, operator%)
+CH_UNARYOP_GEN(ch_neg, operator-)
+CH_BINOP_GEN2(ch_add, operator+)
+CH_BINOP_GEN2(ch_sub, operator-)
+CH_BINOP_GEN2(ch_mult, operator*)
+CH_BINOP_GEN2(ch_div, operator/)
+CH_BINOP_GEN2(ch_mod, operator%)
 
 // shift operators
 
-CHDL_SHIFTOP_GEN2(ch_sll, operator<<)
-CHDL_SHIFTOP_GEN2(ch_slr, operator>>)
-CHDL_SHIFTOP_GEN1(ch_rotl)
-CHDL_SHIFTOP_GEN1(ch_rotr)
+CH_SHIFTOP_GEN2(ch_sll, operator<<)
+CH_SHIFTOP_GEN2(ch_slr, operator>>)
+CH_SHIFTOP_GEN1(ch_rotl)
+CH_SHIFTOP_GEN1(ch_rotr)
 
-#undef CHDL_BINOP_GEN0
-#undef CHDL_BINOP_GEN1
-#undef CHDL_BINOP_GEN2
-#undef CHDL_UNARYOP_GEN  
-#undef CHDL_COMPAREOP_GEN0
-#undef CHDL_COMPAREOP_GEN1
-#undef CHDL_SHIFTOP_GEN0
-#undef CHDL_SHIFTOP_GEN1
-#undef CHDL_SHIFTOP_GEN2
+#undef CH_BINOP_GEN0
+#undef CH_BINOP_GEN1
+#undef CH_BINOP_GEN2
+#undef CH_UNARYOP_GEN  
+#undef CH_COMPAREOP_GEN0
+#undef CH_COMPAREOP_GEN1
+#undef CH_SHIFTOP_GEN0
+#undef CH_SHIFTOP_GEN1
+#undef CH_SHIFTOP_GEN2
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -359,17 +359,17 @@ ch_bit<(N << S)> ch_demux(const ch_bitbase<N>& in, const ch_bitbase<S>& sel) {
 ///////////////////////////////////////////////////////////////////////////////
 
 template <unsigned N> 
-ch_bit<CLOG2(N)> ch_log2(const ch_bitbase<N>& a) {
+ch_bit<ilog2ceil(N)> ch_log2(const ch_bitbase<N>& a) {
   TODO("Not yet implemented!");
 }
 
 template <unsigned N> 
-ch_bit<CLOG2(N)> ch_lsb(const ch_bitbase<N>& a) {
+ch_bit<ilog2ceil(N)> ch_lsb(const ch_bitbase<N>& a) {
   TODO("Not yet implemented!");
 }
 
 template <unsigned N> 
-ch_bit<CLOG2(N)> ch_enc(const ch_bitbase<N>& a) {
+ch_bit<ilog2ceil(N)> ch_enc(const ch_bitbase<N>& a) {
   TODO("Not yet implemented!");
 }
 
