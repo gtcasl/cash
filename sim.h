@@ -60,8 +60,10 @@ public:
 protected:
   
   struct tap_t {
-    tap_t(const std::string& name_, snodeimpl* bus_) : name(name_), bus(bus_) {}
-
+    tap_t(const std::string& name_, snodeimpl* bus_)
+      : name(name_)
+      , bus(bus_)
+    {}
     std::string name;
     snodeimpl* bus;
   };
