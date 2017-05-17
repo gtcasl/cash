@@ -8,29 +8,7 @@ class proxyimpl : public lnodeimpl {
 public:  
   proxyimpl(context* ctx, uint32_t size);
   
-  void add_node(uint32_t start, lnodeimpl* src, uint32_t offset, uint32_t length, bool resize = false);
-  
-  void resize(uint32_t start, uint32_t length);
-  
-  void ensureInitialized(uint32_t start, uint32_t length) {
-    if (!includes(start, length)) {
-      this->resize(start, length);
-    }
-  }
-  
-  void ensureInitialized() {
-    this->ensureInitialized(0, this->get_size());
-  }  
-  
-  bool is_slice() const;
-  
-  bool includes(uint32_t start, uint32_t length) const;
-  
-  void replace_undefs(uint32_t start, lnodeimpl* src, uint32_t offset, uint32_t length) override;
-  
-  bool has_undefs() {
-    return true;
-  }
+  void add_node(uint32_t start, const lnode& src, uint32_t offset, uint32_t length, bool resize = false);
   
   const bitvector& eval(ch_cycle t) override;  
   void print(std::ostream& out) const override;

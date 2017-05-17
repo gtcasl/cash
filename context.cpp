@@ -206,29 +206,18 @@ lnodeimpl* context::get_current_conditional(const cond_blocks_t::iterator& iterB
 
     auto iterCase = iterBlock->cases.begin();    
     cond = iterCase->cond;        
-
+  
+    // check if nested conditional
     if (parent_cond) {
+      // check if fallback condition
       if (cond == nullptr) {
         // a default case with parent conditional requires a precise fallback test
+        // default condition = !(cond1 & cond2 ... & condN)
         for (auto iter = ++iterCase, iterEnd = iterBlock->cases.end(); iter != iterEnd; ++iter) {
-          assert(iter->cond);
-          // check if the case already assigned the variable
-          bool assigned = false;
-          for (auto v : iter->assignments) {
-            if (m_cond_vals[v].dst == dst) {
-              lnodeimpl* true_val = dynamic_cast<selectimpl*>(m_cond_vals[v].sel)->get_true().get_impl();
-              proxyimpl* true_proxy = dynamic_cast<proxyimpl*>(true_val);
-              if (true_proxy == nullptr || !true_proxy->has_undefs())
-                assigned = true;
-              break;
-            }
-          }
-          if (!assigned) {
-            if (cond) {
-              cond = createAluNode(alu_op_or, 1, cond, iter->cond);
-            } else {
-              cond = iter->cond;
-            }
+          if (cond) {
+            cond = createAluNode(alu_op_or, 1, cond, iter->cond);
+          } else {
+            cond = iter->cond;
           }
         }  
         if (cond) {
@@ -254,13 +243,11 @@ lnodeimpl* context::resolve_conditional(lnodeimpl* dst, lnodeimpl* src) {
     auto iterBlock = m_cond_blocks.begin();
     cond_case_t& cc = iterBlock->cases.front();
     lnodeimpl* const cond = this->get_current_conditional(iterBlock, dst);
-    proxyimpl* const proxy = dynamic_cast<proxyimpl*>(src);
     
     // lookup dst value if already defined
     auto iter = std::find_if(m_cond_vals.begin(), m_cond_vals.end(),
       [dst](const cond_val_t& v)->bool { return v.dst == dst; });
     if (iter != m_cond_vals.end()) {
-      CHDL_CHECK((proxy && proxy->is_slice()) || iter->owner == nullptr, "redundant assignment to node %s%d(#%d)!\n", dst->get_name(), dst->get_size(), dst->get_id());
       selectimpl* const sel = dynamic_cast<selectimpl*>(iter->sel);
       if (iter->owner) {
         assert(proxy && proxy->is_slice());
@@ -268,7 +255,7 @@ lnodeimpl* context::resolve_conditional(lnodeimpl* dst, lnodeimpl* src) {
         lnodeimpl* const true_val = sel->get_true().get_impl();
         proxy->ensureInitialized();
         proxy->replace_undefs(0, true_val, 0, true_val->get_size());
-        sel->get_true().reset(src);
+        sel->get_true().set_impl(src, false);
       } else {
         if (cond) {
           lnodeimpl* const false_val = sel->get_false().get_impl();
@@ -278,7 +265,7 @@ lnodeimpl* context::resolve_conditional(lnodeimpl* dst, lnodeimpl* src) {
             proxy->replace_undefs(0, false_val, 0, false_val->get_size());
           }
           src = createSelectNode(cond, src, false_val);
-          sel->get_false().reset(src);
+          sel->get_false().set_impl(src, false);
         } else {
           sel->get_false().assign(src, true);
         }

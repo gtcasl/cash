@@ -13,7 +13,7 @@ using ch_cycle = uint64_t;
 class lnode {
 public:
   
-  using bitstream_type = bitstream<lnodeimpl>;
+  using bitstream_type = bitstream<lnode>;
 
   lnode() : m_impl(nullptr) {}
   lnode(uint32_t size);  
@@ -25,11 +25,7 @@ public:
   
   ~lnode();
   
-  const lnode& ensureInitialized(uint32_t size, uint32_t offset, uint32_t length) const;
-  
-  const lnode& ensureInitialized(uint32_t size) const {
-    return this->ensureInitialized(size, 0, size);
-  }
+  const lnode& ensureInitialized(uint32_t size) const;
   
   lnodeimpl* get_impl() const;  
   
@@ -59,13 +55,13 @@ public:
 
 protected:   
    
-  void reset(lnodeimpl* impl = nullptr) const;
+  void clear() const;
 
-  void assign(lnodeimpl* impl, bool initialization = false) const;
+  void assign(lnodeimpl* impl, const lnode* src, bool initialization = false) const;
   
   void move(lnode& rhs);
   
-  void assign(uint32_t dst_offset, lnodeimpl* src, uint32_t src_offset, uint32_t src_length, uint32_t size, bool initialization);
+  void assign(uint32_t dst_offset, const lnode& src, uint32_t src_offset, uint32_t src_length, uint32_t size, bool initialization = false);
   
   mutable lnodeimpl* m_impl;
   

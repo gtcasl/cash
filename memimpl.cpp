@@ -19,7 +19,6 @@ memimpl::memimpl(context* ctx, uint32_t data_width, uint32_t addr_width, bool wr
   }
 }
 
-// LCOV_EXCL_START
 memimpl::memimpl(context* ctx, uint32_t data_width, uint32_t addr_width, bool write_enable, 
                  const std::string& init_file)
   : memimpl(ctx, data_width, addr_width, write_enable) {  
@@ -33,7 +32,6 @@ memimpl::memimpl(context* ctx, uint32_t data_width, uint32_t addr_width, bool wr
   });
   in.close();
 }
-// LCOV_EXCL_END
 
 memimpl::memimpl(context* ctx, uint32_t data_width, uint32_t addr_width, bool write_enable, 
                  const std::vector<uint32_t>& init_data)
@@ -124,11 +122,9 @@ const bitvector& memimpl::eval(ch_cycle t) {
   //--
 }
 
-// LCOV_EXCL_START
 void memimpl::print_vl(ostream& out) const {
   TODO("Not yet implemented!");
 }
-// LCOV_EXCL_END
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -176,12 +172,9 @@ const bitvector& memportimpl::eval(ch_cycle t) {
   return m_value;
 }
 
-// LCOV_EXCL_START
 void memportimpl::print_vl(std::ostream& out) const {
   TODO("Not yet implemented!");
 }
-// LCOV_EXCL_END
-
 ///////////////////////////////////////////////////////////////////////////////
 
 memory::memory(uint32_t data_width, uint32_t addr_width, bool writeEnable) {

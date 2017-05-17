@@ -8,9 +8,7 @@ class snodeimpl;
 
 class ioimpl : public lnodeimpl { // LCOV_EXCL_LINE
 public:
-  // LCOV_EXCL_START
   ioimpl(ch_operator op, context* ctx, uint32_t size) : lnodeimpl(op, ctx, size)  {}
-  // LCOV_EXCL_END
 };
 
 class inputimpl : public ioimpl {

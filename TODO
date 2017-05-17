@@ -2,18 +2,48 @@
 TODO list:
 ==========
 
-*** automatic dead code elimination
+
+
+*** Understanding conditional assignment ***
+ch_bit4 a;
+if (x > 0) {
+	a[0-2] = 0;
+	a[1] = 1; // override a[1]
+	if (y > 0) {
+	  a[0] = 1; // override a[0]
+	  a[3] = 1;
+	}
+} else {
+  a = 0;
+}
+*********************************************
+
+X*** automatic dead code elimination
+X*** add detection of duplicate assignments inside control block and outside (very important for bugs resolution)
+X*** Assignment rule: by constructor assignent is ignored during check
+
+
+*** prevent memory allocation inside conditionals 
+*** fix memport reassignment
+*** assigning a vector fron memory is broken (and reading the vector inside the branch)
 *** the branch.owner concept is broken (a nested assignment to global would not prevent outer assignment) - use bitmask intead to check overrides
-*** add detection of duplicate assignments inside control block and outside (very important for bugs resolution)
-*** investigate alternative proxy implementation based on bitmask for simplicity
 *** subscripts use inside control statement still broken
+
+
+
+
+
+
+
+
+
+*** investigate alternative proxy implementation based on bitmask for simplicity
 *** find a way to fix ch_seq such that it is initialized to itself by default (next -> this)
 *** should consider gettng rid of defer initialization once auto dead code elimination is supported (will remove all nasty hacks in code where dst == nullptr is a worry)
 *** address the issue why friend member still don't get implicit template constructor (e.g. ch_min, ch_select, ...)
 
 
 *** handling floating-point delays: (y = a * b) => ch_decoupled<ch_float> object exporting ready/valid signals to be connected
-*** assigning a vector fron memory is broken (and reading the vector inside the branch)
 *** complete float implementation (compare operations) 
 *** make ch_mem store the enclosed type like ch_mem<ch_bit32, 10> 
 

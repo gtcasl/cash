@@ -10,9 +10,9 @@ class snodeimpl;
 class snode {
 public:
   
-  using bitstream_type = bitstream<snodeimpl>;
+  using bitstream_type = bitstream<snode>;
   
-  snode() : m_impl(nullptr), m_readonly(false) {}
+  snode() : m_impl(nullptr) {}
   snode(const snode& rhs);
   snode(snode&& rhs);
   explicit snode(snodeimpl* impl);
@@ -45,13 +45,13 @@ public:
   
   void assign(const bitvector& value);
   
-  void assign(uint32_t dst_offset, snodeimpl* src, uint32_t src_offset, uint32_t src_length, uint32_t size);
-  
   void read(bitstream_type& inout, uint32_t offset, uint32_t length, uint32_t size) const;
   
   void write(uint32_t dst_offset, const bitstream_type& in, uint32_t src_offset, uint32_t src_length, uint32_t size);
 
 protected:
+  
+  void assign(uint32_t dst_offset, const snode& src, uint32_t src_offset, uint32_t src_length, uint32_t size);
   
   void assign(snodeimpl* impl, bool is_owner = false);
   
@@ -60,7 +60,6 @@ protected:
   void clone() const;
     
   mutable snodeimpl* m_impl;
-  mutable bool m_readonly;
 };
 
 std::ostream& operator<<(std::ostream& os, const snode& node);

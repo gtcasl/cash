@@ -18,8 +18,6 @@ void litimpl::print(ostream& out) const {
       << "(" << m_value << ")";
 }
 
-// LCOV_EXCL_START
 void litimpl::print_vl(ostream& out) const {
   TODO("Not yet implemented!");
 }
-// LCOV_EXCL_END

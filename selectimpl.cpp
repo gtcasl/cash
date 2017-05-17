@@ -23,11 +23,9 @@ const bitvector& selectimpl::eval(ch_cycle t) {
   return m_value;
 }
 
-// LCOV_EXCL_START
 void selectimpl::print_vl(std::ostream& out) const {
   TODO("Not yet implemented!");
 }
-// LCOV_EXCL_END
 
 lnodeimpl* chdl_internal::createSelectNode(lnodeimpl* test, lnodeimpl* a, lnodeimpl* b) {
   return new selectimpl(test, a, b);

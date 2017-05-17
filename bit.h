@@ -51,11 +51,9 @@ public:
   CHDL_DEF_CTOR(uint64_t)
 #undef CHDL_DEF_CTOR
   
-  // LCOV_EXCL_START
   explicit ch_bit(lnodeimpl* node) : m_node(node) {
     assert(m_node.get_size() == N);
   }
-  // LCOV_EXCL_END
   
   ch_bit& operator=(const ch_bit& rhs) {
     m_node = rhs.m_node.ensureInitialized(N);
@@ -91,16 +89,13 @@ public:
   CHDL_DEF_AOP(int64_t)
   CHDL_DEF_AOP(uint64_t)
 #undef CHDL_DEF_AOP
-  
-  // LCOV_EXCL_START
+
   lnode get_node() const override { 
     return m_node.ensureInitialized(N);
   }
-  // LCOV_EXCL_END
   
 protected:
   
-  // LCOV_EXCL_START
   void read(bitstream_type& inout, size_t offset, size_t length) const override {
     m_node.read(inout, offset, length, N);
   }
@@ -108,7 +103,6 @@ protected:
   void write(size_t dst_offset, const bitstream_type& in, size_t src_offset, size_t src_length) override {
     m_node.write(dst_offset, in, src_offset, src_length, N);
   }
-  // LCOV_EXCL_END
   
   lnode m_node;
 };

@@ -14,6 +14,14 @@ public:
     return m_id;
   }
   
+  bool isOwner(snode* node) const {
+    return (m_owner == node);
+  }
+  
+  void setOwnership(snode* node);
+  
+  void clearOwnership(snode* node);
+  
   void assign(uint32_t start, snodeimpl* src, uint32_t offset, uint32_t length);
 
   bitvector::const_reference operator[](uint32_t idx) const {
@@ -91,6 +99,7 @@ protected:
   mutable std::vector<source_t> m_srcs;
   mutable bitvector m_value;
   mutable uint64_t  m_changeid;
+  snode* m_owner;
   uint32_t m_id;
 };
 

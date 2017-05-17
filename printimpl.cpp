@@ -113,11 +113,9 @@ const bitvector& printimpl::eval(ch_cycle t) {
   return m_value;
 }
 
-// LCOV_EXCL_START
 void printimpl::print_vl(std::ostream& out) const {
   TODO("Not yet implemented!");
 }
-// LCOV_EXCL_END
 
 ///////////////////////////////////////////////////////////////////////////////
 

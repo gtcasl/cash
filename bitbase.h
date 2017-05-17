@@ -99,13 +99,11 @@ public:
   CHDL_DEF_AOP(uint64_t)
 #undef CHDL_DEF_AOP
   
- // LCOV_EXCL_START
   virtual lnode get_node() const {
     bitstream_type data(N);
     this->read(data, 0, N);
     return lnode(data);
   }
-// LCOV_EXCL_END
   
 protected:
 

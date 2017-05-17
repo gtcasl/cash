@@ -33,11 +33,9 @@ const bitvector& regimpl::eval(ch_cycle t) {
   return m_value; 
 }
 
-// LCOV_EXCL_START
 void regimpl::print_vl(ostream& out) const {
   TODO("Not yet implemented!");
 }
-// LCOV_EXCL_END
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -79,11 +77,9 @@ const bitvector& latchimpl::eval(ch_cycle t) {
   return m_value; 
 }
 
-// LCOV_EXCL_START
 void latchimpl::print_vl(ostream& out) const {
   TODO("Not yet implemented!");
 }
-// LCOV_EXCL_END
 
 ///////////////////////////////////////////////////////////////////////////////
 

@@ -10,7 +10,7 @@ public:
   bitstream(uint32_t capacity) : m_capacity(capacity), m_size(0) {}
   
   struct partition {
-    T*       data;
+    const T& data;
     uint32_t offset;
     uint32_t length;    
   };

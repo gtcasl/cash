@@ -26,11 +26,9 @@ void ch_device::compile() {
   compiler.run();
 }
 
-// LCOV_EXCL_START
 void ch_device::toVerilog(const std::string& module_name, std::ostream& out) {
   m_ctx->toVerilog(module_name, out);
 }
-// LCOV_EXCL_END
 
 void ch_device::dump_stats(std::ostream& out) {
   m_ctx->dump_stats(out);

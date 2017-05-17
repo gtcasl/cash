@@ -9,11 +9,11 @@ proxyimpl::proxyimpl(context* ctx, uint32_t size)
   , m_ctime(~0ull) 
 {}
 
-void proxyimpl::add_node(uint32_t start, lnodeimpl* src, uint32_t offset, uint32_t length, bool resize) {    
+void proxyimpl::add_node(uint32_t start, const lnode& src, uint32_t offset, uint32_t length, bool resize) {    
   // add new source
   uint32_t new_srcidx = -1;
   for (uint32_t i = 0, n = m_srcs.size(); i < n; ++i) {
-    if (m_srcs[i].get_id() == src->get_id()) {
+    if (m_srcs[i].get_id() == src.get_id()) {
       new_srcidx = i;
       break;
     }
@@ -150,109 +150,9 @@ void proxyimpl::merge_left(uint32_t idx) {
   }      
 }
 
-void proxyimpl::replace_undefs(uint32_t start, lnodeimpl* src, uint32_t offset, uint32_t length) {
-  for (uint32_t i = 0, n = m_ranges.size(); length && i < n; ++i) {
-    const range_t& curr = m_ranges[i];
-    lnodeimpl* curr_impl = m_srcs[curr.srcidx].get_impl();
-    uint32_t curr_end = curr.start + curr.length;     
-    uint32_t src_end  = start + length;    
-    if ((start < curr_end && src_end > curr.start)) {      
-      if (start <= curr.start && src_end >= curr_end) {
-        // source fully overlaps
-        uint32_t delta = curr.start - start;        
-        curr_impl->replace_undefs(curr.offset, src, offset + delta, curr.length);        
-        uint32_t step = curr_end - start;
-        start  += step;        
-        offset += step;        
-        length -= step;        
-      } else if (src_end > curr_end) {
-        // source intersets right
-        uint32_t overlap = curr_end - start;        
-        uint32_t delta = start - curr.start;
-        curr_impl->replace_undefs(curr.offset + delta, src, offset, overlap);        
-        start  += overlap;
-        offset += overlap;
-        length -= overlap;
-      } else {
-        assert(!(start < curr.start)); // left intersections should not exit
-        // source fully included          
-        uint32_t delta = start - curr.start;        
-        curr_impl->replace_undefs(curr.offset + delta, src, offset, length);
-        length = 0;
-      }
-    }
-  }
-}
-
-void proxyimpl::resize(uint32_t start, uint32_t length) {  
-  assert(start + length <= this->get_size());
-  
-  for (uint32_t i = 0, n = m_ranges.size(); length && i < n; ++i) {
-    const range_t& curr = m_ranges[i];
-    uint32_t src_end  = start + length;
-    uint32_t curr_end = curr.start + curr.length;  
-    
-    if ((start < curr_end && src_end > curr.start)) {      
-      if (start < curr.start) {
-        // source extrudes left
-        uint32_t len = curr.start - start;           
-        uint32_t srcidx = m_srcs.size();
-        m_ranges.insert(m_ranges.begin() + i, { srcidx, start, 0, len });
-        m_srcs.emplace_back(new undefimpl(m_ctx, len));
-        ++i;
-        ++n;
-        uint32_t overlap = curr_end - start;
-        start  += overlap;       
-        length -= overlap;    
-      } else if (src_end > curr_end) {
-        // source extrudes right
-        uint32_t overlap = curr_end - start;
-        start  += overlap;    
-        length -= overlap;
-      }
-    }
-  }
-  if (length) {        
-    uint32_t srcidx = m_srcs.size();
-    m_ranges.push_back({ srcidx, start, 0, length });
-    m_srcs.emplace_back(new undefimpl(m_ctx, length));   
-  }
-}
-
-bool proxyimpl::includes(uint32_t start, uint32_t length) const {
-  for (const range_t& curr : m_ranges) {
-    uint32_t src_end  = start + length;
-    uint32_t curr_end = curr.start + curr.length;   
-    if ((start < curr_end && src_end > curr.start)) {      
-      if (start < curr.start) {
-        // source extrudes left
-        return false;
-      } else if (src_end > curr_end) {
-        // source extrudes right
-        uint32_t overlap = curr_end - start;
-        start  += overlap;
-        length -= overlap;
-      } else {
-        // source fully included        
-        return true;
-      }
-    }
-  }
-  return false;
-}
-
-bool proxyimpl::is_slice() const {
-  uint32_t actual_size = 0;
-  for (const range_t& curr : m_ranges) {
-    actual_size += curr.length;
-  }
-  return actual_size != this->get_size(); 
-}
-
 const bitvector& proxyimpl::eval(ch_cycle t) {
   if (m_ctime != t) {  
-    m_ctime = t;
-    
+    m_ctime = t;    
     for (const range_t& range : m_ranges) {
       const bitvector& bits = m_srcs[range.srcidx].eval(t);    
       m_value.copy(range.start, bits, range.offset, range.length);
@@ -281,8 +181,6 @@ void proxyimpl::print(std::ostream& out) const {
   out << ")";
 }
 
-// LCOV_EXCL_START
 void proxyimpl::print_vl(std::ostream& out) const {
   TODO("Not yet implemented!");
 }
-// LCOV_EXCL_END

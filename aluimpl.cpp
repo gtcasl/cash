@@ -366,11 +366,9 @@ const bitvector& aluimpl::eval(ch_cycle t) {
   return m_value;
 }
 
-// LCOV_EXCL_START
 void aluimpl::print_vl(std::ostream& out) const {
   TODO("Not yet implemented!");
 } 
-//LCOV_EXCL_END
 
 lnodeimpl* chdl_internal::createAluNode(ch_alu_operator op, uint32_t size, lnodeimpl* a, lnodeimpl* b) {
   return new aluimpl(op, size, a, b); 

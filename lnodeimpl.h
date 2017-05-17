@@ -81,13 +81,13 @@ public:
     return m_ctx;
   }
 
-  void add_ref(const lnode* node);
+  void add_ref(const lnode* node, const lnode* source);
 
   void remove_ref(const lnode* node);
 
-  void replace_all_refs(lnodeimpl* impl);
+  void update_ref(const lnode* node, lnodeimpl* impl);
   
-  virtual void replace_undefs(uint32_t start, lnodeimpl* impl, uint32_t offset, uint32_t length) {}
+  const lnode* get_ref_owner(const lnode* node);
   
   const std::vector<lnode>& get_srcs() const {
     return m_srcs;
@@ -126,12 +126,27 @@ public:
 
 protected:
   
-  uint32_t count_cycles(const lnode* parent) const;
+  struct ref_t {
+    const lnode* node;
+    const lnode* owner;
+    
+    ref_t(const lnode* node_ = nullptr, const lnode* owner_ = nullptr) 
+      : node(node_), owner(owner_) 
+    {}
+    
+    bool operator ==(const ref_t& rhs) const {
+      return (node == rhs.node);
+    }
+    
+    bool operator <(const ref_t& rhs) const {
+      return (node < rhs.node);
+    }
+  };
 
   uint32_t m_id;
   ch_operator m_op;
   context* m_ctx;
-  std::set<const lnode*> m_refs;
+  std::set<ref_t> m_refs;
   std::vector<lnode> m_srcs;  
   bitvector m_value; 
   
@@ -141,8 +156,6 @@ protected:
 class undefimpl : public lnodeimpl {
 public:
   undefimpl(context* ctx, uint32_t size);
-  
-  void replace_undefs(uint32_t start, lnodeimpl* new_owner, uint32_t offset, uint32_t length) override;
 
   const bitvector& eval(ch_cycle t) override;  
   void print_vl(std::ostream& out) const override;
