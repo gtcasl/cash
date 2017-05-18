@@ -2,7 +2,8 @@
 
 #include "ioimpl.h"
 
-namespace cash_internal {
+namespace cash {
+namespace detail {
 
 class assertimpl : public ioimpl { // LCOV_EXCL_LINE
 public:
@@ -16,4 +17,5 @@ private:
   std::string msg_;
 };
 
+}
 }

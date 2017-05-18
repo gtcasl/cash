@@ -3,7 +3,8 @@
 #include "bitbase.h"
 #include "vec.h"
 
-namespace cash_internal {
+namespace cash {
+namespace detail {
 
 template <unsigned N> class ch_bus;
 using ch_signal = ch_bus<1>;
@@ -18,7 +19,7 @@ template <unsigned N>
 class ch_bit : public ch_bitbase<N> {
 public:
   using base = ch_bitbase<N>;
-  using bitstream_type = typename base::bitstream_type;
+  using data_type = typename base::data_type;
   using bus_type = ch_bus<N>;
       
   ch_bit() : node_(N) {}
@@ -96,11 +97,11 @@ public:
   
 protected:
   
-  void read(bitstream_type& inout, size_t offset, size_t length) const override {
+  void read(data_type& inout, size_t offset, size_t length) const override {
     node_.read(inout, offset, length, N);
   }
   
-  void write(size_t dst_offset, const bitstream_type& in, size_t src_offset, size_t src_length) override {
+  void write(size_t dst_offset, const data_type& in, size_t src_offset, size_t src_length) override {
     node_.write(dst_offset, in, src_offset, src_length, N);
   }
   
@@ -252,4 +253,5 @@ void ch_print(const ch_logic& cond, const std::string& format, const Args& ...ar
   createPrintNode(cond.get_node().get_impl(), format, {args.get_node().get_impl()...});
 }
 
+}
 }

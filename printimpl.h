@@ -2,7 +2,8 @@
 
 #include "ioimpl.h"
 
-namespace cash_internal {
+namespace cash {
+namespace detail {
 
 class printimpl : public ioimpl {
 public:
@@ -18,4 +19,5 @@ public:
   uint32_t args_offset_;
 };
 
+}
 }

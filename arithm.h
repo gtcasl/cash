@@ -2,7 +2,8 @@
 
 #include "bit.h"
 
-namespace cash_internal {
+namespace cash {
+namespace detail {
 
 #define CH_ALUOP_TYPE(t) alu_op_##t,
 #define CH_ALUOP_ENUM(m) \
@@ -39,12 +40,12 @@ namespace cash_internal {
   m(fmult) \
   m(fdiv)
 
-enum ch_alu_operator {
+enum ch_alu_op {
   CH_ALUOP_ENUM(CH_ALUOP_TYPE)
 };
 
-lnodeimpl* createAluNode(ch_alu_operator op, uint32_t size, lnodeimpl* a, lnodeimpl* b);
-lnodeimpl* createAluNode(ch_alu_operator op, uint32_t size, lnodeimpl* a);
+lnodeimpl* createAluNode(ch_alu_op op, uint32_t size, lnodeimpl* a, lnodeimpl* b);
+lnodeimpl* createAluNode(ch_alu_op op, uint32_t size, lnodeimpl* a);
 
 #define CH_BINOP_GEN0(func, type) \
   template <unsigned N> ch_bit<N> func(const ch_bitbase<N>& a, type b) { return func(a, ch_bit<N>(b)); } \
@@ -170,22 +171,22 @@ CH_SHIFTOP_GEN1(ch_rotr)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <ch_alu_operator op, unsigned N, unsigned M>
+template <ch_alu_op op, unsigned N, unsigned M>
 ch_bit<N> OpBinary(const ch_bitbase<N>& a, const ch_bitbase<M>& b) {
   return ch_bit<N>(createAluNode(op, N, a.get_node().get_impl(), b.get_node().get_impl()));
 }
 
-template <ch_alu_operator op, unsigned N>
+template <ch_alu_op op, unsigned N>
 ch_logic OpCompare(const ch_bitbase<N>& a, const ch_bitbase<N>& b) {
   return ch_logic(createAluNode(op, 1, a.get_node().get_impl(), b.get_node().get_impl()));
 }
 
-template <ch_alu_operator op, unsigned N>
+template <ch_alu_op op, unsigned N>
 ch_bit<N> OpUnary(const ch_bitbase<N>& a) {
   return ch_bit<N>(createAluNode(op, N, a.get_node().get_impl()));
 }
 
-template <ch_alu_operator op, unsigned N>
+template <ch_alu_op op, unsigned N>
 ch_logic OpReduce(const ch_bitbase<N>& a) {
   return ch_logic(createAluNode(op, 1, a.get_node().get_impl()));
 }
@@ -378,4 +379,5 @@ ch_bit<(1 << N)> ch_dec(const ch_bitbase<N>& a) {
   TODO("Not yet implemented!");
 }
 
+}
 }

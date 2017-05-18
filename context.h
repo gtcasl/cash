@@ -1,6 +1,7 @@
 #pragma once
 
-namespace cash_internal {
+namespace cash {
+namespace detail {
 
 class lnode;
 class snode;
@@ -133,4 +134,5 @@ context* ctx_begin();
 context* ctx_curr();
 void ctx_end();
 
+}
 }

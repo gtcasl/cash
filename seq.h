@@ -2,14 +2,15 @@
 
 #include "reg.h"
 
-namespace cash_internal {
+namespace cash {
+namespace detail {
 
 template <typename T>
 class ch_seq : public T {
 public:
   using value_type = T;
   using base = ch_bitbase<value_type::bit_count>;
-  using bitstream_type = typename value_type::bitstream_type;
+  using data_type = typename value_type::data_type;
   using bus_type = typename value_type::bus_type;
   
   ch_seq() {
@@ -51,4 +52,5 @@ protected:
   using T::operator=;    
 };
 
+}
 }

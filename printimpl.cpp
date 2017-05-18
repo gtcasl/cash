@@ -3,7 +3,7 @@
 #include "bit.h"
 
 using namespace std;
-using namespace cash_internal;
+using namespace cash::detail;
 
 enum class fmttype {
   Int,
@@ -119,7 +119,7 @@ void printimpl::print_vl(std::ostream& out) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void cash_internal::createPrintNode(lnodeimpl* cond, const std::string& format, 
+void cash::detail::createPrintNode(lnodeimpl* cond, const std::string& format,
                      const std::initializer_list<lnodeimpl*>& args) {
   // printing is only enabled in debug mode
   if (platform::self().get_dbg_level() == 0)

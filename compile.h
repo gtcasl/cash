@@ -2,7 +2,8 @@
 
 #include "lnode.h"
 
-namespace cash_internal {
+namespace cash {
+namespace detail {
 
 class ch_compiler {
 public:  
@@ -22,4 +23,5 @@ protected:
   context* ctx_;
 };
 
+}
 }

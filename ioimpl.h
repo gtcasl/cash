@@ -2,7 +2,8 @@
 
 #include "lnodeimpl.h"
 
-namespace cash_internal {
+namespace cash {
+namespace detail {
 
 class snodeimpl;
 
@@ -71,4 +72,5 @@ protected:
   std::string  tapName_;
 };
 
+}
 }

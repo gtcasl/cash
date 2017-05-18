@@ -2,7 +2,8 @@
 
 #include "lnodeimpl.h"
 
-namespace cash_internal {
+namespace cash {
+namespace detail {
 
 class tickimpl : public lnodeimpl {
 public:
@@ -15,4 +16,5 @@ private:
   ch_cycle ctime_;
 };
 
+}
 }

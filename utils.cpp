@@ -6,9 +6,9 @@
 #include "backward.h"
 
 using namespace std;
-using namespace cash_internal;
+using namespace cash::detail;
 
-string cash_internal::fstring(const char *format, ...) {
+string cash::detail::fstring(const char *format, ...) {
   static const int STACK_BUFFER_SIZE = 256;
 
   std::string result;
@@ -40,7 +40,7 @@ string cash_internal::fstring(const char *format, ...) {
   return result;
 }
 
-void cash_internal::dbprint(int level, const char *format, ...) {
+void cash::detail::dbprint(int level, const char *format, ...) {
   if (level > platform::self().get_dbg_level())
     return;
   va_list args;
@@ -49,7 +49,7 @@ void cash_internal::dbprint(int level, const char *format, ...) {
   va_end(args);
 }
 
-void cash_internal::dump_stack_trace(FILE *out, unsigned int max_frames) {
+void cash::detail::dump_stack_trace(FILE *out, unsigned int max_frames) {
   using namespace backward;
   StackTrace st;
   st.load_here(max_frames);

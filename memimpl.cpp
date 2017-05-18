@@ -3,7 +3,7 @@
 #include "context.h"
 
 using namespace std;
-using namespace cash_internal;
+using namespace cash::detail;
 
 memimpl::memimpl(context* ctx, uint32_t data_width, uint32_t addr_width, bool write_enable) 
   : lnodeimpl(op_mem, ctx, 0)

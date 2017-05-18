@@ -3,7 +3,7 @@
 #include "reg.h"
 
 using namespace std;
-using namespace cash_internal;
+using namespace cash::detail;
 
 regimpl::regimpl(lnodeimpl* next)
   : lnodeimpl(op_reg, next->get_ctx(), next->get_size()) {
@@ -83,45 +83,45 @@ void latchimpl::print_vl(ostream& out) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-ch_logic cash_internal::ch_clock() {
+ch_logic cash::detail::ch_clock() {
   return ch_logic(ctx_curr()->get_clk());
 }
 
-void cash_internal::ch_pushclock(const ch_logicbase& clk) {
+void cash::detail::ch_pushclock(const ch_logicbase& clk) {
   ctx_curr()->push_clk(clk.get_node().get_impl());
 }
 
-void cash_internal::ch_popclock() {
+void cash::detail::ch_popclock() {
   ctx_curr()->pop_clk();
 }
 
-ch_logic cash_internal::ch_reset() {
+ch_logic cash::detail::ch_reset() {
   return ch_logic(ctx_curr()->get_reset());
 }
 
-void cash_internal::ch_pushreset(const ch_logicbase& reset) {
+void cash::detail::ch_pushreset(const ch_logicbase& reset) {
   ctx_curr()->push_reset(reset.get_node().get_impl());
 }
 
-void cash_internal::ch_popreset() {
+void cash::detail::ch_popreset() {
   ctx_curr()->pop_reset();
 }
 
-lnodeimpl* cash_internal::createRegNode(lnodeimpl* next) {
+lnodeimpl* cash::detail::createRegNode(lnodeimpl* next) {
   return new regimpl(next);
 }
 
-lnodeimpl* cash_internal::createLatchNode(lnodeimpl* next, 
+lnodeimpl* cash::detail::createLatchNode(lnodeimpl* next,
                                        lnodeimpl* init, 
                                        lnodeimpl* enable, 
                                        lnodeimpl* reset) {
   return new latchimpl(next, init, enable, reset);
 }
 
-lnodeimpl* cash_internal::createReadyNode(lnodeimpl* node) {
+lnodeimpl* cash::detail::createReadyNode(lnodeimpl* node) {
   TODO("Not yet implemented!");
 }
 
-lnodeimpl* cash_internal::createValidNode(lnodeimpl* node) {
+lnodeimpl* cash::detail::createValidNode(lnodeimpl* node) {
   TODO("Not yet implemented!");
 }

@@ -2,14 +2,15 @@
 
 #include "typebase.h"
 
-namespace cash_internal {
+namespace cash {
+namespace detail {
 
 template <typename T, unsigned N> 
-class ch_vec : public typebase<N * T::bit_count, typename T::bitstream_type> {
+class ch_vec : public typebase<N * T::bit_count, typename T::data_type> {
 public:
-  using base = typebase<N * T::bit_count, typename T::bitstream_type>;
+  using base = typebase<N * T::bit_count, typename T::data_type>;
   using base::operator=;
-  using bitstream_type = typename base::bitstream_type;
+  using data_type = typename base::data_type;
   using bus_type = ch_vec<typename T::bus_type, N>;
   
   ch_vec() {}
@@ -22,7 +23,7 @@ public:
   }
   
   ch_vec(const ch_bitbase<T::bit_count>& rhs) {
-    bitstream_type data(N);
+    data_type data(N);
     rhs.read(data, 0, N);
     this->write(0, data, 0, N);
   }
@@ -64,12 +65,12 @@ public:
     return *this;
   }
 
-  typename std::vector<T>::reference operator[](size_t i) {
+  auto operator[](size_t i) {
     CH_CHECK(i < N, "invalid subscript index");
     return items_[i];
   }
 
-  typename std::vector<T>::const_reference operator[](size_t i) const {
+  auto operator[](size_t i) const {
     CH_CHECK(i < N, "invalid subscript index");
     return items_[i];
   }
@@ -86,12 +87,12 @@ protected:
   
   std::array<T, N> items_;
   
-  void read(bitstream_type& out, size_t offset, size_t length) const override {
+  void read(data_type& out, size_t offset, size_t length) const override {
     CH_CHECK(offset + length <= ch_vec::bit_count, "invalid vector read range");
     for (unsigned i = 0; length && i < N; ++i) {
       if (offset < T::bit_count) {     
-        size_t len = std::min<size_t>(length, T::bit_count - offset);                
-        read_data(items_[i], out, offset, len);        
+        size_t len = std::min<size_t>(length, T::bit_count - offset);
+        items_[i].read(out, offset, len);
         length -= len;
         offset = T::bit_count;
       }
@@ -99,12 +100,12 @@ protected:
     }
   }
   
-  void write(size_t start, const bitstream_type& data, size_t offset, size_t length) override {
+  void write(size_t start, const data_type& data, size_t offset, size_t length) override {
     CH_CHECK(start + length <= ch_vec::bit_count, "invalid vector write range");
     for (unsigned i = 0; length && i < N; ++i) {
       if (start < T::bit_count) {
         size_t len = std::min<size_t>(length, T::bit_count - start);        
-        write_data(items_[i], start, data, offset, len);
+        items_[i].write(start, data, offset, len);
         length -= len;
         offset += len;
         start = T::bit_count;
@@ -114,4 +115,5 @@ protected:
   }
 };
 
+}
 }

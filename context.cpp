@@ -17,7 +17,7 @@
 #include "select.h"
 
 using namespace std;
-using namespace cash_internal;
+using namespace cash::detail;
 
 thread_local context* tls_ctx = nullptr;
 
@@ -524,18 +524,18 @@ void context::dump_stats(std::ostream& out) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-context* cash_internal::ctx_begin() {
+context* cash::detail::ctx_begin() {
   context* const ctx = new context();
   tls_ctx = ctx;
   ctx->acquire();
   return ctx;
 }
 
-void cash_internal::ctx_end() {
+void cash::detail::ctx_end() {
   tls_ctx = nullptr;
 }
 
-context* cash_internal::ctx_curr() {
+context* cash::detail::ctx_curr() {
   CH_CHECK(tls_ctx, "invalid CASH context!");
   return tls_ctx;
 }

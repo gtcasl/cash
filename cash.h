@@ -27,7 +27,7 @@ namespace cash {
 //
 
 namespace utility {
-  using cash_internal::fstring;
+  using cash::detail::fstring;
 }
 
 //
@@ -41,21 +41,21 @@ namespace core {
   // basic types
   //
 
-  using cash_internal::ispow2;
-  using cash_internal::ilog2;
-  using cash_internal::ilog2ceil;
+  using cash::detail::ispow2;
+  using cash::detail::ilog2;
+  using cash::detail::ilog2ceil;
 
-  template<typename T, unsigned N> using ch_vec = cash_internal::ch_vec<T, N>;
+  template<typename T, unsigned N> using ch_vec = cash::detail::ch_vec<T, N>;
 
-  template<unsigned N> using ch_bit = cash_internal::ch_bit<N>;
-  using ch_logic = cash_internal::ch_logic;
+  template<unsigned N> using ch_bit = cash::detail::ch_bit<N>;
+  using ch_logic = cash::detail::ch_logic;
 
-  template<unsigned N> using ch_bitbase = cash_internal::ch_bitbase<N>;
-  using ch_logicbase = cash_internal::ch_logicbase;
+  template<unsigned N> using ch_bitbase = cash::detail::ch_bitbase<N>;
+  using ch_logicbase = cash::detail::ch_logicbase;
 
-  template<typename T> using ch_seq = cash_internal::ch_seq<T>;
+  template<typename T> using ch_seq = cash::detail::ch_seq<T>;
 
-  using ch_float = cash_internal::ch_real;
+  using ch_float = cash::detail::ch_real;
 
   //
   // pre-defined bitv types
@@ -72,107 +72,107 @@ namespace core {
   // subscript operators
   //
 
-  using cash_internal::ch_zext;
-  using cash_internal::ch_sext;
-  using cash_internal::ch_concat;
-  using cash_internal::ch_slice;
-  using cash_internal::ch_aslice;
-  using cash_internal::ch_shuffle;
+  using cash::detail::ch_zext;
+  using cash::detail::ch_sext;
+  using cash::detail::ch_concat;
+  using cash::detail::ch_slice;
+  using cash::detail::ch_aslice;
+  using cash::detail::ch_shuffle;
 
   //
   // conditional operators
   //
 
-  using cash_internal::ch_select;
-  using cash_internal::ch_if;
-  using cash_internal::ch_switch;
+  using cash::detail::ch_select;
+  using cash::detail::ch_if;
+  using cash::detail::ch_switch;
 
   //
   // register functions
   //
 
-  using cash_internal::ch_reg;
-  using cash_internal::ch_latch;
-  using cash_internal::ch_pushclock;
-  using cash_internal::ch_popclock;
-  using cash_internal::ch_pushreset;
-  using cash_internal::ch_popreset;
-  using cash_internal::ch_clock;
-  using cash_internal::ch_reset;
+  using cash::detail::ch_reg;
+  using cash::detail::ch_latch;
+  using cash::detail::ch_pushclock;
+  using cash::detail::ch_popclock;
+  using cash::detail::ch_pushreset;
+  using cash::detail::ch_popreset;
+  using cash::detail::ch_clock;
+  using cash::detail::ch_reset;
 
   //
   // gates functions
   //
 
-  using cash_internal::ch_nand;
-  using cash_internal::ch_inv;
-  using cash_internal::ch_nor;
-  using cash_internal::ch_and;
-  using cash_internal::ch_or;
-  using cash_internal::ch_xor;
-  using cash_internal::ch_xnor;
+  using cash::detail::ch_nand;
+  using cash::detail::ch_inv;
+  using cash::detail::ch_nor;
+  using cash::detail::ch_and;
+  using cash::detail::ch_or;
+  using cash::detail::ch_xor;
+  using cash::detail::ch_xnor;
 
   //
   // compare functions
   //
 
-  using cash_internal::ch_eq;
-  using cash_internal::ch_ne;
-  using cash_internal::ch_lt;
-  using cash_internal::ch_gt;
-  using cash_internal::ch_le;
-  using cash_internal::ch_ge;
+  using cash::detail::ch_eq;
+  using cash::detail::ch_ne;
+  using cash::detail::ch_lt;
+  using cash::detail::ch_gt;
+  using cash::detail::ch_le;
+  using cash::detail::ch_ge;
 
   //
   // reduce functions
   //
 
-  using cash_internal::ch_andr;
-  using cash_internal::ch_orr;
-  using cash_internal::ch_xorr;
+  using cash::detail::ch_andr;
+  using cash::detail::ch_orr;
+  using cash::detail::ch_xorr;
 
   //
   // arithmetic functions
   //
 
-  using cash_internal::ch_add;
-  using cash_internal::ch_sub;
-  using cash_internal::ch_neg;
-  using cash_internal::ch_mult;
-  using cash_internal::ch_div;
-  using cash_internal::ch_sll;
-  using cash_internal::ch_slr;
-  using cash_internal::ch_rotl;
-  using cash_internal::ch_rotr;
+  using cash::detail::ch_add;
+  using cash::detail::ch_sub;
+  using cash::detail::ch_neg;
+  using cash::detail::ch_mult;
+  using cash::detail::ch_div;
+  using cash::detail::ch_sll;
+  using cash::detail::ch_slr;
+  using cash::detail::ch_rotl;
+  using cash::detail::ch_rotr;
 
   //
   // memory functions
   //
 
-  using cash_internal::ch_rom;
-  using cash_internal::ch_mem;
+  using cash::detail::ch_rom;
+  using cash::detail::ch_mem;
 
   //
   // other functions
   //
 
-  using cash_internal::ch_mux;
-  using cash_internal::ch_demux;
-  using cash_internal::ch_log2;
-  using cash_internal::ch_lsb;
-  using cash_internal::ch_enc;
-  using cash_internal::ch_dec;
-  using cash_internal::ch_min;
-  using cash_internal::ch_max;
+  using cash::detail::ch_mux;
+  using cash::detail::ch_demux;
+  using cash::detail::ch_log2;
+  using cash::detail::ch_lsb;
+  using cash::detail::ch_enc;
+  using cash::detail::ch_dec;
+  using cash::detail::ch_min;
+  using cash::detail::ch_max;
 
   //
   // utility functions
   //
 
-  using cash_internal::ch_tick;
-  using cash_internal::ch_assert;
-  using cash_internal::ch_tap;
-  using cash_internal::ch_print;
+  using cash::detail::ch_tick;
+  using cash::detail::ch_assert;
+  using cash::detail::ch_tap;
+  using cash::detail::ch_print;
 }
 
 //
@@ -186,13 +186,13 @@ namespace sim {
   // basic types
   //
 
-  using ch_cycle  = cash_internal::ch_cycle;
+  using ch_cycle  = cash::detail::ch_cycle;
   
-  template<unsigned N> using ch_bus = cash_internal::ch_bus<N>;
-  using ch_signal = cash_internal::ch_signal;
+  template<unsigned N> using ch_bus = cash::detail::ch_bus<N>;
+  using ch_signal = cash::detail::ch_signal;
 
-  template<unsigned N> using ch_busbase = cash_internal::ch_busbase<N>;
-  using ch_signalbase = cash_internal::ch_signalbase;
+  template<unsigned N> using ch_busbase = cash::detail::ch_busbase<N>;
+  using ch_signalbase = cash::detail::ch_signalbase;
 
   //
   // pre-defined bus types
@@ -214,10 +214,10 @@ namespace sim {
   // api objects
   //
 
-  using ch_device     = cash_internal::ch_device;
-  using ch_simulator  = cash_internal::ch_simulator;
-  using ch_tracer     = cash_internal::ch_tracer;
-  using ch_vcdtracer  = cash_internal::ch_vcdtracer;
+  using ch_device     = cash::detail::ch_device;
+  using ch_simulator  = cash::detail::ch_simulator;
+  using ch_tracer     = cash::detail::ch_tracer;
+  using ch_vcdtracer  = cash::detail::ch_vcdtracer;
 }
 
 //
@@ -225,11 +225,11 @@ namespace sim {
 //
 
 inline namespace core_literals { 
-  using namespace cash_internal::core_literals;
+  using namespace cash::detail::core_literals;
 }
 
 inline namespace sim_literals {
-  using namespace cash_internal::sim_literals;
+  using namespace cash::detail::sim_literals;
 }
 
 }

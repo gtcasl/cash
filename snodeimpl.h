@@ -2,7 +2,8 @@
 
 #include "snode.h"
 
-namespace cash_internal {
+namespace cash {
+namespace detail {
 
 class snodeimpl : public refcounted {
 public:
@@ -103,4 +104,5 @@ protected:
   uint32_t id_;
 };
 
+}
 }

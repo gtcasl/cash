@@ -6,7 +6,7 @@
 #include "mem.h"
 
 using namespace std;
-using namespace cash_internal;
+using namespace cash::detail;
 
 ch_compiler::ch_compiler(context* ctx) : ctx_(ctx) {}
 

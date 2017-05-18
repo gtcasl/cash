@@ -3,7 +3,8 @@
 #include "bit.h"
 #include "bus.h"
 
-namespace cash_internal {
+namespace cash {
+namespace detail {
 
 class context;
 
@@ -212,4 +213,5 @@ struct ch_device::bind_outputs_impl2<0> {
   }
 };
 
+}
 }

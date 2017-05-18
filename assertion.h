@@ -2,10 +2,12 @@
 
 #include "bit.h"
 
-namespace cash_internal {
+namespace cash {
+namespace detail {
 
 void ch_assert(const ch_logicbase& l, const std::string& msg);
 
+}
 }
 
 #ifndef NDEBUG

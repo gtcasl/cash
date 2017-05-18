@@ -1,44 +1,13 @@
 #pragma once
 
-namespace cash_internal {
+namespace cash {
+namespace detail {
 
 std::string fstring(const char* format, ...);
 
 void dbprint(int level, const char *format, ...);
 
 void dump_stack_trace(FILE* out, unsigned int max_frames = 32);
-
-#ifdef NDEBUG
-  #define CH_ABORT(msg, ...) \
-    do { \
-      fprintf(stderr, "error: " msg "\n", ##__VA_ARGS__); \
-      std::abort(); \
-    } while (0)
-
-  #define DBG(level, format, ...)
-#else
-  #define CH_ABORT(msg, ...) \
-    do { \
-      cash_internal::dump_stack_trace(stdout); \
-      fprintf(stderr, "ERROR: " msg " (%s:%d:%s)\n", ##__VA_ARGS__, __FILE__, __LINE__, __FUNCTION__); \
-      std::abort(); \
-    } while (0)
-
-  #define DBG(level, format, ...) \
-    dbprint(level, "DBG: " format, ##__VA_ARGS__)
-#endif
-
-#define CH_CHECK(x, msg, ...) \
-  if (!(x)) CH_ABORT(msg, ##__VA_ARGS__)
-
-#define TODO(x) CH_ABORT(#x);
-
-#define CH_COUNTOF(a) (sizeof(a) / sizeof(a[0]))
-#define CH_MAX(a,b) (((a) > (b)) ? (a) : (b))
-
-#define CH_OUT(...) std::tuple<__VA_ARGS__>
-#define CH_RET(...) return std::make_tuple(__VA_ARGS__)
-#define CH_TIE(...) std::forward_as_tuple(__VA_ARGS__)
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -273,3 +242,36 @@ inline uint32_t rotr(uint32_t value, uint32_t shift, uint32_t width) {
 }
 
 }
+}
+
+#ifdef NDEBUG
+  #define CH_ABORT(msg, ...) \
+    do { \
+      fprintf(stderr, "error: " msg "\n", ##__VA_ARGS__); \
+      std::abort(); \
+    } while (0)
+
+  #define DBG(level, format, ...)
+#else
+  #define CH_ABORT(msg, ...) \
+    do { \
+      cash::detail::dump_stack_trace(stdout); \
+      fprintf(stderr, "ERROR: " msg " (%s:%d:%s)\n", ##__VA_ARGS__, __FILE__, __LINE__, __FUNCTION__); \
+      std::abort(); \
+    } while (0)
+
+  #define DBG(level, format, ...) \
+    dbprint(level, "DBG: " format, ##__VA_ARGS__)
+#endif
+
+#define CH_CHECK(x, msg, ...) \
+  if (!(x)) CH_ABORT(msg, ##__VA_ARGS__)
+
+#define TODO(x) CH_ABORT(#x);
+
+#define CH_COUNTOF(a) (sizeof(a) / sizeof(a[0]))
+#define CH_MAX(a,b) (((a) > (b)) ? (a) : (b))
+
+#define CH_OUT(...) std::tuple<__VA_ARGS__>
+#define CH_RET(...) return std::make_tuple(__VA_ARGS__)
+#define CH_TIE(...) std::forward_as_tuple(__VA_ARGS__)

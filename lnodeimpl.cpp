@@ -10,7 +10,7 @@
 #include "context.h"
 
 using namespace std;
-using namespace cash_internal;
+using namespace cash::detail;
 
 lnodeimpl::lnodeimpl(ch_operator op, context* ctx, uint32_t size) 
   : op_(op)
@@ -119,11 +119,11 @@ lnode::lnode(lnodeimpl* impl) : impl_(nullptr) {
   this->assign(impl, nullptr, true);
 }
 
-lnode::lnode(const bitstream_type& data) : impl_(nullptr) {
+lnode::lnode(const data_type& data) : impl_(nullptr) {
   uint32_t dst_offset = 0;
-  for (auto& p : data) {
-    this->assign(dst_offset, p.data, p.offset, p.length, data.get_size(), true);   
-    dst_offset += p.length;
+  for (auto& d : data) {
+    this->assign(dst_offset, d.src, d.offset, d.length, data.get_size(), true);
+    dst_offset += d.length;
   }
 }
 
@@ -228,25 +228,25 @@ void lnode::assign(lnodeimpl* impl, const lnode* src, bool initialization) const
   impl_ = impl;
 }
 
-void lnode::read(bitstream_type& inout, uint32_t offset, uint32_t length, uint32_t size) const {
+void lnode::read(data_type& inout, uint32_t offset, uint32_t length, uint32_t size) const {
   assert((offset + length) <= size);
   this->ensureInitialized(size);
   inout.push({*this, offset, length});
 }
 
-void lnode::write(uint32_t dst_offset, const bitstream_type& in, uint32_t src_offset, uint32_t src_length, uint32_t size) {
+void lnode::write(uint32_t dst_offset, const data_type& in, uint32_t src_offset, uint32_t src_length, uint32_t size) {
   assert((dst_offset + src_length) <= size);
-  for (auto& p : in) {
-    if (src_offset < p.length) {
-      uint32_t len = std::min(p.length - src_offset, src_length);
-      this->assign(dst_offset, p.data, p.offset + src_offset, len, size);         
+  for (auto& d : in) {
+    if (src_offset < d.length) {
+      uint32_t len = std::min(d.length - src_offset, src_length);
+      this->assign(dst_offset, d.src, d.offset + src_offset, len, size);
       src_length -= len;
       if (src_length == 0)
         return;
       dst_offset += len;                
-      src_offset = p.length;
+      src_offset = d.length;
     }
-    src_offset -= p.length;
+    src_offset -= d.length;
   }
 }
 

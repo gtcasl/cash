@@ -2,7 +2,8 @@
 
 #include "lnode.h"
 
-namespace cash_internal {
+namespace cash {
+namespace detail {
 
 #define CH_OPERATOR_TYPE(t) op_##t,
 #define CH_OPERATOR_NAME(n) #n,
@@ -161,4 +162,5 @@ public:
   void print_vl(std::ostream& out) const override;
 };
 
+}
 }

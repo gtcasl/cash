@@ -3,7 +3,8 @@
 #include "lnodeimpl.h"
 #include "tickable.h"
 
-namespace cash_internal {
+namespace cash {
+namespace detail {
 
 enum EDGE_DIR {
   EDGE_POS = 0,
@@ -76,4 +77,5 @@ protected:
   context* ctx_;
 };
 
+}
 }

@@ -3,12 +3,13 @@
 #include "bit.h"
 #include "arithm.h"
 
-namespace cash_internal {
+namespace cash {
+namespace detail {
 
 class ch_real : public ch_bit<32> {
 public:
   using base = ch_bit<32>;
-  using bitstream_type = typename base::bitstream_type;
+  using data_type = typename base::data_type;
   using bus_type = ch_bus<32>;  
   using base::operator=;
   using base::base;
@@ -44,4 +45,5 @@ inline ch_real operator/(const ch_real& lhs, const ch_real& rhs) {
   return ch_real(createAluNode(alu_op_fdiv, 32, lhs.get_node().get_impl(), rhs.get_node().get_impl()));
 }
 
+}
 }

@@ -6,7 +6,7 @@
 #include "arithm.h"
 
 using namespace std;
-using namespace cash_internal;
+using namespace cash::detail;
 
 selectimpl::selectimpl(lnodeimpl* cond, lnodeimpl* true_, lnodeimpl* false_) 
   : lnodeimpl(op_select, true_->get_ctx(), true_->get_size()), ctime_(~0ull) {
@@ -27,7 +27,7 @@ void selectimpl::print_vl(std::ostream& out) const {
   TODO("Not yet implemented!");
 }
 
-lnodeimpl* cash_internal::createSelectNode(lnodeimpl* test, lnodeimpl* a, lnodeimpl* b) {
+lnodeimpl* cash::detail::createSelectNode(lnodeimpl* test, lnodeimpl* a, lnodeimpl* b) {
   return new selectimpl(test, a, b);
 }
 

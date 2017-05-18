@@ -2,17 +2,17 @@
 #include "context.h"
 
 using namespace std;
-using namespace cash_internal;
+using namespace cash::detail;
 
 #define CH_ALUOP_NAME(n) case alu_op_##n: return op_##n;
 
-static ch_operator to_operator(ch_alu_operator op) {
+static ch_operator to_operator(ch_alu_op op) {
   switch (op) {
     CH_ALUOP_ENUM(CH_ALUOP_NAME)
   }
 }
 
-template <ch_alu_operator op>
+template <ch_alu_op op>
 static void unaryop(bitvector& dst, const bitvector& a) {
   assert(dst.get_size() == a.get_size());
   
@@ -25,7 +25,7 @@ static void unaryop(bitvector& dst, const bitvector& a) {
   }
 }
 
-template <ch_alu_operator op>
+template <ch_alu_op op>
 static void binaryop(bitvector& dst, const bitvector& a, const bitvector& b) {
   assert(dst.get_size() == a.get_size());
   assert(a.get_size() == b.get_size());
@@ -54,7 +54,7 @@ static void binaryop(bitvector& dst, const bitvector& a, const bitvector& b) {
   }
 }
 
-template <ch_alu_operator op>
+template <ch_alu_op op>
 static void shiftop(bitvector& dst, const bitvector& in, const bitvector& bits) {  
   assert(dst.get_size() == in.get_size());
   CH_CHECK(bits.find_last() <= 31, "shift amount out of range!");
@@ -78,7 +78,7 @@ static void shiftop(bitvector& dst, const bitvector& in, const bitvector& bits) 
   }
 }
 
-template <ch_alu_operator op>
+template <ch_alu_op op>
 static void reduceop(bitvector& dst, const bitvector& in) {
   assert(dst.get_size() == 1);
   
@@ -99,7 +99,7 @@ static void reduceop(bitvector& dst, const bitvector& in) {
   dst[0] = result;
 }
 
-template <ch_alu_operator op>
+template <ch_alu_op op>
 static void compareop(bitvector& dst, const bitvector& a, const bitvector& b) {
   assert(dst.get_size() == 1);
   assert(a.get_size() == b.get_size());
@@ -238,7 +238,7 @@ static void demux(bitvector& dst, const bitvector& in, const bitvector& sel) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-aluimpl::aluimpl(ch_alu_operator alu_op, uint32_t size, lnodeimpl* a, lnodeimpl* b) 
+aluimpl::aluimpl(ch_alu_op alu_op, uint32_t size, lnodeimpl* a, lnodeimpl* b) 
   : lnodeimpl(to_operator(alu_op), a->get_ctx(), size)
   , alu_op_(alu_op)
   , ctime_(~0ull) {
@@ -246,7 +246,7 @@ aluimpl::aluimpl(ch_alu_operator alu_op, uint32_t size, lnodeimpl* a, lnodeimpl*
   srcs_.emplace_back(b);
 }
 
-aluimpl::aluimpl(ch_alu_operator alu_op, uint32_t size, lnodeimpl* a) 
+aluimpl::aluimpl(ch_alu_op alu_op, uint32_t size, lnodeimpl* a) 
   : lnodeimpl(to_operator(alu_op), a->get_ctx(), size)
   , alu_op_(alu_op)
   , ctime_(~0ull) {
@@ -370,10 +370,10 @@ void aluimpl::print_vl(std::ostream& out) const {
   TODO("Not yet implemented!");
 } 
 
-lnodeimpl* cash_internal::createAluNode(ch_alu_operator op, uint32_t size, lnodeimpl* a, lnodeimpl* b) {
+lnodeimpl* cash::detail::createAluNode(ch_alu_op op, uint32_t size, lnodeimpl* a, lnodeimpl* b) {
   return new aluimpl(op, size, a, b); 
 }
 
-lnodeimpl* cash_internal::createAluNode(ch_alu_operator op, uint32_t size, lnodeimpl* a) {
+lnodeimpl* cash::detail::createAluNode(ch_alu_op op, uint32_t size, lnodeimpl* a) {
   return new aluimpl(op, size, a);
 }

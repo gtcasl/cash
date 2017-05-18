@@ -2,20 +2,21 @@
 
 #include "lnode.h"
 
-namespace cash_internal {
+namespace cash {
+namespace detail {
 
 template <unsigned N> class ch_bit;
 
-template <unsigned N> using const_bitref = const_typeref<N, lnode::bitstream_type>;
-template <unsigned N> using bitref = typeref<N, lnode::bitstream_type>;
-template <unsigned N> using ch_bitbase = typebase<N, lnode::bitstream_type>;
+template <unsigned N> using const_bitref = const_typeref<N, lnode::data_type>;
+template <unsigned N> using bitref = typeref<N, lnode::data_type>;
+template <unsigned N> using ch_bitbase = typebase<N, lnode::data_type>;
 using ch_logicbase = ch_bitbase<1>;
 
 template <unsigned N>
-class typebase<N, lnode::bitstream_type> { // LCOV_EXCL_LINE
+class typebase<N, lnode::data_type> {
 public:   
   static const unsigned bit_count = N;
-  using bitstream_type = lnode::bitstream_type;
+  using data_type = lnode::data_type;
   
   const_slice_ref<typebase, 1> operator[](size_t index) const {
     static_assert(N > 1, "invalid call");
@@ -72,7 +73,7 @@ public:
   }
   
   typebase& operator=(const typebase& rhs) {
-    bitstream_type data(N);
+    data_type data(N);
     rhs.read(data, 0, N);
     this->write(0, data, 0, N);
     return *this;
@@ -100,18 +101,19 @@ public:
 #undef CH_DEF_AOP
   
   virtual lnode get_node() const {
-    bitstream_type data(N);
+    data_type data(N);
     this->read(data, 0, N);
     return lnode(data);
   }
   
 protected:
 
-  virtual void read(bitstream_type& inout, size_t offset, size_t length) const = 0;
-  virtual void write(size_t dst_offset, const bitstream_type& in, size_t src_offset, size_t src_length) = 0;
+  virtual void read(data_type& inout, size_t offset, size_t length) const = 0;
+  virtual void write(size_t dst_offset, const data_type& in, size_t src_offset, size_t src_length) = 0;
   
-  template <typename T_> friend void read_data(const T_& t, typename T_::bitstream_type& inout, size_t offset, size_t length);
-  template <typename T_> friend void write_data(T_& t, size_t dst_offset, const typename T_::bitstream_type& in, size_t src_offset, size_t src_length); 
+  template <typename T_> friend void read_data(const T_& t, typename T_::data_type& inout, size_t offset, size_t length);
+  template <typename T_> friend void write_data(T_& t, size_t dst_offset, const typename T_::data_type& in, size_t src_offset, size_t src_length);
 };
 
+}
 }

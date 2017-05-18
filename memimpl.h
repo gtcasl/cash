@@ -3,7 +3,8 @@
 #include "lnodeimpl.h"
 #include "cdomain.h"
 
-namespace cash_internal {
+namespace cash {
+namespace detail {
 
 class memportimpl;
 
@@ -69,4 +70,5 @@ protected:
   friend class memimpl;
 };
 
+}
 }

@@ -3,7 +3,7 @@
 #include "snodeimpl.h"
 
 using namespace std;
-using namespace cash_internal;
+using namespace cash::detail;
 
 ch_vcdtracer::ch_vcdtracer(const std::string& filename, const std::initializer_list<const ch_device*>& devices) 
   : file_(filename)

@@ -110,7 +110,7 @@ Completed:
 - create cash.h header file
 - adding native support for integers operations
 - add CASH_ to all header files #define declarations
-- implement cash_internal to cleanup api namespace
+- implement cash::detail to cleanup api namespace
 - keep all implementation specific headers private
 - append ch_ to CASH public types and functions
 - runtime assertion support for testing

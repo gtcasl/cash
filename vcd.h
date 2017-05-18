@@ -2,7 +2,8 @@
 
 #include "sim.h"
 
-namespace cash_internal {
+namespace cash {
+namespace detail {
 
 class ch_vcdtracer: public ch_tracer {
 public:
@@ -20,4 +21,5 @@ protected:
 
 };
 
+}
 }

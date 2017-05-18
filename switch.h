@@ -2,7 +2,8 @@
 
 #include "if.h"
 
-namespace cash_internal {
+namespace cash {
+namespace detail {
 
 class switch_impl {
 public:
@@ -58,10 +59,11 @@ switch_t<N> ch_switch(const ch_bitbase<N>& key) {
   return switch_t<N>(key.get_node().get_impl());
 }
 
+}
+}
+
 #define CH_SWITCH_BODY(body)    body
 #define CH_SWITCH(key)          ch_switch(key) CH_SWITCH_BODY
 #define CH_CASE_BODY(value)     value })
 #define CH_CASE(cond)           .case_(cond, [&](){ CH_CASE_BODY
 #define CH_DEFAULT(value)       .default_([&](){ value })
-
-}

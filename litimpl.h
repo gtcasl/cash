@@ -2,7 +2,8 @@
 
 #include "lnodeimpl.h"
 
-namespace cash_internal {
+namespace cash {
+namespace detail {
 
 class litimpl : public lnodeimpl {
 public:
@@ -13,4 +14,5 @@ public:
   void print_vl(std::ostream& out) const override;
 };
 
+}
 }

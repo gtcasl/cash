@@ -1,5 +1,8 @@
 #pragma once
 
+namespace cash {
+namespace detail {
+
 class platform {
 public:
   
@@ -30,3 +33,6 @@ private:
   uint32_t dump_ast_;  
   uint32_t dump_cfg_;
 };
+
+}
+}

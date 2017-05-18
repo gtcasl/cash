@@ -2,7 +2,8 @@
 
 #include "bit.h"
 
-namespace cash_internal {
+namespace cash {
+namespace detail {
 
 class memimpl;
 
@@ -102,4 +103,5 @@ private:
     memory mem_;
 };
 
+}
 }

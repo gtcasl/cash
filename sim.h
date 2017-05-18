@@ -2,7 +2,8 @@
 
 #include "device.h"
 
-namespace cash_internal {
+namespace cash {
+namespace detail {
 
 class inputimpl;
 class tapimpl;
@@ -90,6 +91,7 @@ void ch_tap(const std::string& name, const ch_bitbase<N>& v) {
 }
 
 }
+}
 
 #define CH_MAKE_TRACE(i, x) \
   __tracer.add_trace(CH_STRINGIZE(x), x)
@@ -98,7 +100,7 @@ void ch_tap(const std::string& name, const ch_bitbase<N>& v) {
 
 #define CH_TRACE(x, ...) \
   do { \
-    cash_internal::ch_tracer& __tracer = x; \
+    cash::detail::ch_tracer& __tracer = x; \
     CH_FOR_EACH(CH_MAKE_TRACE, CH_MAKE_TRACE_SEP, __VA_ARGS__); \
   } while (0)
 

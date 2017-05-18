@@ -2,7 +2,7 @@
 #include "bitvector.h"
 
 using namespace std;
-using namespace cash_internal;
+using namespace cash::detail;
 
 bitvector::bitvector(const bitvector& rhs) : words_(nullptr), size_(0) {
   this->resize(rhs.size_, 0x0, false, false);
@@ -344,7 +344,7 @@ void bitvector::write(const uint8_t* in, uint32_t sizeInBytes) {
   memcpy(words_, in, dstBytes);  
 }
 
-void cash_internal::Invert(bitvector& out, const bitvector& in) {
+void cash::detail::Invert(bitvector& out, const bitvector& in) {
   assert(out.size_ == in.size_);
   for (uint32_t i = 0, n = in.get_num_words(); i < n; ++i) {
     out.words_[i] = ~in.words_[i]; 
@@ -352,7 +352,7 @@ void cash_internal::Invert(bitvector& out, const bitvector& in) {
   out.clear_unused_bits();
 }
 
-void cash_internal::And(bitvector& out, const bitvector& lhs, const bitvector& rhs) {
+void cash::detail::And(bitvector& out, const bitvector& lhs, const bitvector& rhs) {
   assert(out.size_ == lhs.size_);
   assert(lhs.size_ == rhs.size_);
   for (int32_t i = 0, n = rhs.get_num_words(); i < n; ++i) {
@@ -360,7 +360,7 @@ void cash_internal::And(bitvector& out, const bitvector& lhs, const bitvector& r
   }
 }
 
-void cash_internal::Or(bitvector& out, const bitvector& lhs, const bitvector& rhs) {
+void cash::detail::Or(bitvector& out, const bitvector& lhs, const bitvector& rhs) {
   assert(out.size_ == lhs.size_);
   assert(lhs.size_ == rhs.size_);
   for (int32_t i = 0, n = rhs.get_num_words(); i < n; ++i) {
@@ -368,7 +368,7 @@ void cash_internal::Or(bitvector& out, const bitvector& lhs, const bitvector& rh
   }
 }
 
-void cash_internal::Xor(bitvector& out, const bitvector& lhs, const bitvector& rhs) {
+void cash::detail::Xor(bitvector& out, const bitvector& lhs, const bitvector& rhs) {
   assert(out.size_ == lhs.size_);
   assert(lhs.size_ == rhs.size_);
   for (int32_t i = 0, n = rhs.get_num_words(); i < n; ++i) {
@@ -376,7 +376,7 @@ void cash_internal::Xor(bitvector& out, const bitvector& lhs, const bitvector& r
   }
 }
 
-void cash_internal::Nand(bitvector& out, const bitvector& lhs, const bitvector& rhs) {
+void cash::detail::Nand(bitvector& out, const bitvector& lhs, const bitvector& rhs) {
   assert(out.size_ == lhs.size_);
   assert(lhs.size_ == rhs.size_);
   for (int32_t i = 0, n = rhs.get_num_words(); i < n; ++i) {
@@ -385,7 +385,7 @@ void cash_internal::Nand(bitvector& out, const bitvector& lhs, const bitvector& 
   out.clear_unused_bits();
 }
 
-void cash_internal::Nor(bitvector& out, const bitvector& lhs, const bitvector& rhs) {
+void cash::detail::Nor(bitvector& out, const bitvector& lhs, const bitvector& rhs) {
   assert(out.size_ == lhs.size_);
   assert(lhs.size_ == rhs.size_);
   for (int32_t i = 0, n = rhs.get_num_words(); i < n; ++i) {
@@ -394,7 +394,7 @@ void cash_internal::Nor(bitvector& out, const bitvector& lhs, const bitvector& r
   out.clear_unused_bits();
 }
 
-void cash_internal::Xnor(bitvector& out, const bitvector& lhs, const bitvector& rhs) {
+void cash::detail::Xnor(bitvector& out, const bitvector& lhs, const bitvector& rhs) {
   assert(out.size_ == lhs.size_);
   assert(lhs.size_ == rhs.size_);
   for (int32_t i = 0, n = rhs.get_num_words(); i < n; ++i) {
@@ -445,7 +445,7 @@ bool bitvector::xorr() const {
   return (result != 0);
 }
 
-void cash_internal::ShiftLeft(bitvector& out, const bitvector& in, uint32_t dist) {
+void cash::detail::ShiftLeft(bitvector& out, const bitvector& in, uint32_t dist) {
   assert(out.size_ == in.size_);  
   uint32_t num_words = in.get_num_words();
   if (num_words == 1) {
@@ -475,7 +475,7 @@ void cash_internal::ShiftLeft(bitvector& out, const bitvector& in, uint32_t dist
   out.clear_unused_bits(); // clear extra bits added by left shift
 }
   
-void cash_internal::RotateLeft(bitvector& out, const bitvector& in, uint32_t dist) {
+void cash::detail::RotateLeft(bitvector& out, const bitvector& in, uint32_t dist) {
   assert(out.size_ == in.size_);  
   if (dist > in.size_)
     dist %= in.size_;
@@ -508,7 +508,7 @@ void cash_internal::RotateLeft(bitvector& out, const bitvector& in, uint32_t dis
   out.clear_unused_bits(); // clear extra bits added by left shift
 }
 
-void cash_internal::ShiftRight(bitvector& out, const bitvector& in, uint32_t dist) {
+void cash::detail::ShiftRight(bitvector& out, const bitvector& in, uint32_t dist) {
   assert(out.size_ == in.size_);  
   uint32_t num_words   = in.get_num_words(); 
   if (num_words == 1) {
@@ -537,7 +537,7 @@ void cash_internal::ShiftRight(bitvector& out, const bitvector& in, uint32_t dis
   }
 }
 
-void cash_internal::RotateRight(bitvector& out, const bitvector& in, uint32_t dist) {
+void cash::detail::RotateRight(bitvector& out, const bitvector& in, uint32_t dist) {
   assert(out.size_ == in.size_);
   if (dist > in.size_)
     dist %= in.size_;
@@ -570,7 +570,7 @@ void cash_internal::RotateRight(bitvector& out, const bitvector& in, uint32_t di
   out.clear_unused_bits(); // clear extra bits added by left shift
 }
 
-std::ostream& cash_internal::operator<<(std::ostream& os, const bitvector& b) {
+std::ostream& cash::detail::operator<<(std::ostream& os, const bitvector& b) {
   auto oldflags = os.flags();
   os.setf(std::ios_base::hex, std::ios_base::basefield);
   os << "0x";

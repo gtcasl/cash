@@ -2,7 +2,8 @@
 
 #include "bit.h"
 
-namespace cash_internal {
+namespace cash {
+namespace detail {
 
 lnodeimpl* createSelectNode(lnodeimpl* cond, lnodeimpl* a, lnodeimpl* b);
 
@@ -217,4 +218,5 @@ ch_bit<N> ch_max(const ch_bit<N>& lhs, const ch_bit<N>& rhs) {
   return ch_select<N>(lhs > rhs, lhs, rhs);
 }
 
+}
 }

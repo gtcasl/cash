@@ -3,7 +3,7 @@
 #include "context.h"
 
 using namespace std;
-using namespace cash_internal;
+using namespace cash::detail;
 
 inputimpl::inputimpl(ch_operator op, context* ctx, uint32_t size) 
   : ioimpl(op, ctx, size)

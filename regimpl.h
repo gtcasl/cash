@@ -4,7 +4,8 @@
 #include "tickable.h"
 #include "cdomain.h"
 
-namespace cash_internal {
+namespace cash {
+namespace detail {
 
 class regimpl : public tickable, public lnodeimpl {
 public:
@@ -48,4 +49,5 @@ protected:
   cdomain* cd_;
 };
 
+}
 }

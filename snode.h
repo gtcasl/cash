@@ -3,20 +3,21 @@
 #include "typebase.h"
 #include "bitvector.h"
 
-namespace cash_internal {
+namespace cash {
+namespace detail {
 
 class snodeimpl;
 
 class snode {
 public:
   
-  using bitstream_type = bitstream<snode>;
+  using data_type = nodeset<snode>;
   
   snode() : impl_(nullptr) {}
   snode(const snode& rhs);
   snode(snode&& rhs);
   explicit snode(snodeimpl* impl);
-  snode(const bitstream_type& data);
+  snode(const data_type& data);
   snode(const bitvector& value);
 
   ~snode();
@@ -45,9 +46,9 @@ public:
   
   void assign(const bitvector& value);
   
-  void read(bitstream_type& inout, uint32_t offset, uint32_t length, uint32_t size) const;
+  void read(data_type& inout, uint32_t offset, uint32_t length, uint32_t size) const;
   
-  void write(uint32_t dst_offset, const bitstream_type& in, uint32_t src_offset, uint32_t src_length, uint32_t size);
+  void write(uint32_t dst_offset, const data_type& in, uint32_t src_offset, uint32_t src_length, uint32_t size);
 
 protected:
   
@@ -64,4 +65,5 @@ protected:
 
 std::ostream& operator<<(std::ostream& os, const snode& node);
 
+}
 }

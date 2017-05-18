@@ -2,7 +2,8 @@
 
 #include "common.h"
 
-namespace cash_internal {
+namespace cash {
+namespace detail {
 
 class tickable {
 public:
@@ -10,4 +11,5 @@ public:
   virtual void tick_next(ch_cycle) = 0; 
 };
 
+}
 }

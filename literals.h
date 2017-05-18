@@ -3,7 +3,8 @@
 #include "bit.h"
 #include "bus.h"
 
-namespace cash_internal {
+namespace cash {
+namespace detail {
 
 //
 // CASH literals format: XXXXXX_(b|o|h)[size] using ' as separator
@@ -222,4 +223,5 @@ namespace sim_literals {
 #undef CH_DEF_LITERALS_IMPL
 #undef CH_SIM_LITERALs
 
+}
 }

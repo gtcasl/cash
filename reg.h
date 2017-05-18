@@ -3,7 +3,8 @@
 #include "bit.h"
 #include "select.h"
 
-namespace cash_internal {
+namespace cash {
+namespace detail {
 
 lnodeimpl* createRegNode(lnodeimpl* next);
 lnodeimpl* createLatchNode(lnodeimpl* next, lnodeimpl* init, lnodeimpl* enable, lnodeimpl* reset);
@@ -102,4 +103,5 @@ ch_bit<N> ch_latch(const ch_bit<N>& next, const ch_logic& enable = 1, const ch_b
                      reinterpret_cast<const ch_bitbase<N>&>(init));
 }
 
+}
 }

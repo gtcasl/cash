@@ -2,7 +2,8 @@
 
 #include "common.h"
 
-namespace cash_internal {
+namespace cash {
+namespace detail {
 
 class bitvector {
 public:
@@ -431,4 +432,5 @@ void RotateRight(bitvector& out, const bitvector& in, uint32_t dist);
 
 std::ostream& operator<<(std::ostream& os, const bitvector& b);
 
+}
 }

@@ -2,7 +2,8 @@
 
 #include "bit.h"
 
-namespace cash_internal {
+namespace cash {
+namespace detail {
 
 class if_t {
 public:
@@ -37,9 +38,10 @@ if_t ch_if(const ch_logicbase& cond, const Func& func) {
   return if_t(cond.get_node().get_impl(), to_function(func));
 }
 
+}
+}
+
 #define CH_IF_BODY(value)   value })
 #define CH_IF(cond)         ch_if(cond, [&](){ CH_IF_BODY
 #define CH_ELIF(cond)       .elif_(cond, [&](){ CH_IF_BODY
 #define CH_ELSE(value)      .else_([&](){ value })
-
-}

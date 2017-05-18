@@ -3,7 +3,7 @@
 #include "compile.h"
 
 using namespace std;
-using namespace cash_internal;
+using namespace cash::detail;
 
 ch_device::~ch_device() {
   ctx_->release();

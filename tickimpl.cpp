@@ -3,7 +3,7 @@
 #include "bit.h"
 
 using namespace std;
-using namespace cash_internal;
+using namespace cash::detail;
 
 tickimpl::tickimpl(context* ctx) 
   : lnodeimpl(op_tick, ctx, CHAR_BIT * sizeof(ch_cycle))
@@ -24,6 +24,6 @@ void tickimpl::print_vl(std::ostream& out) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-ch_bit<64> cash_internal::ch_tick() {
+ch_bit<64> cash::detail::ch_tick() {
   return ch_bit<64>(new tickimpl(ctx_curr()));
 }

@@ -2,13 +2,14 @@
 
 #include "busbase.h"
 
-namespace cash_internal {
+namespace cash {
+namespace detail {
 
 template <unsigned N> 
 class ch_bus : public ch_busbase<N> {
 public:  
   using base = ch_busbase<N>;
-  using bitstream_type = typename base::bitstream_type;
+  using data_type = typename base::data_type;
   using bus_type = ch_bus;
       
   ch_bus() {}
@@ -166,11 +167,11 @@ public:
   
 protected:
   
-  void read(bitstream_type& inout, size_t offset, size_t length) const override {
+  void read(data_type& inout, size_t offset, size_t length) const override {
     node_.read(inout, offset, length, N);
   }
   
-  void write(size_t dst_offset, const bitstream_type& in, size_t src_offset, size_t src_length) override {
+  void write(size_t dst_offset, const data_type& in, size_t src_offset, size_t src_length) override {
     node_.write(dst_offset, in, src_offset, src_length, N);
   }
   
@@ -179,4 +180,5 @@ protected:
   friend class context;
 };
 
+}
 }

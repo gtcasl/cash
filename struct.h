@@ -52,16 +52,16 @@
 
 
 #define CH_STRUCT_IMPL(name, ...) \
-  class name : public cash_internal::ch_bitbase<CH_FOR_EACH(CH_STRUCT_SIZE, CH_SEP_PLUS, __VA_ARGS__)> { \
+  class name : public cash::detail::ch_bitbase<CH_FOR_EACH(CH_STRUCT_SIZE, CH_SEP_PLUS, __VA_ARGS__)> { \
   public:\
-    using base = cash_internal::ch_bitbase<CH_FOR_EACH(CH_STRUCT_SIZE, CH_SEP_PLUS, __VA_ARGS__)>; \
+    using base = cash::detail::ch_bitbase<CH_FOR_EACH(CH_STRUCT_SIZE, CH_SEP_PLUS, __VA_ARGS__)>; \
     using base::operator=; \
-    using bitstream_type = typename base::bitstream_type; \
-    class bus_type : public cash_internal::ch_busbase<CH_FOR_EACH(CH_STRUCT_SIZE, CH_SEP_PLUS, __VA_ARGS__)> { \
+    using data_type = typename base::data_type; \
+    class bus_type : public cash::detail::ch_busbase<CH_FOR_EACH(CH_STRUCT_SIZE, CH_SEP_PLUS, __VA_ARGS__)> { \
     public: \
-      using base = cash_internal::ch_busbase<CH_FOR_EACH(CH_STRUCT_SIZE, CH_SEP_PLUS, __VA_ARGS__)>; \
+      using base = cash::detail::ch_busbase<CH_FOR_EACH(CH_STRUCT_SIZE, CH_SEP_PLUS, __VA_ARGS__)>; \
       using base::operator=; \
-      using bitstream_type = typename base::bitstream_type; \
+      using data_type = typename base::data_type; \
       bus_type() {} \
       bus_type(const bus_type& rhs) : CH_FOR_EACH(CH_STRUCT_CTOR_INIT, CH_SEP_COMMA, __VA_ARGS__) {} \
       bus_type(CH_REVERSE_FOR_EACH(CH_STRUCT_BUS_CTOR_ARG, CH_SEP_COMMA, __VA_ARGS__)) : CH_FOR_EACH(CH_STRUCT_CTOR_ARG_INIT, CH_SEP_COMMA, __VA_ARGS__) {} \
@@ -72,11 +72,11 @@
       } \
       CH_FOR_EACH(CH_STRUCT_BUS_FIELD, CH_SEP_SEMICOLON, __VA_ARGS__); \
     protected: \
-      void read(bitstream_type& inout, size_t offset, size_t length) const override { \
+      void read(data_type& inout, size_t offset, size_t length) const override { \
         CH_FOR_EACH(CH_STRUCT_READ, CH_SEP_SEMICOLON, __VA_ARGS__); \
         CH_ABORT("invalid subscript index"); \
       } \
-      void write(size_t dst_offset, const bitstream_type& in, size_t src_offset, size_t src_length) override { \
+      void write(size_t dst_offset, const data_type& in, size_t src_offset, size_t src_length) override { \
         CH_FOR_EACH(CH_STRUCT_WRITE, CH_SEP_SEMICOLON, __VA_ARGS__); \
         CH_ABORT("invalid subscript index"); \
       } \
@@ -91,11 +91,11 @@
     } \
     CH_FOR_EACH(CH_STRUCT_FIELD, CH_SEP_SEMICOLON, __VA_ARGS__); \
   protected: \
-    void read(bitstream_type& inout, size_t offset, size_t length) const override { \
+    void read(data_type& inout, size_t offset, size_t length) const override { \
       CH_FOR_EACH(CH_STRUCT_READ, CH_SEP_SEMICOLON, __VA_ARGS__); \
       CH_ABORT("invalid subscript index"); \
     } \
-    void write(size_t dst_offset, const bitstream_type& in, size_t src_offset, size_t src_length) override { \
+    void write(size_t dst_offset, const data_type& in, size_t src_offset, size_t src_length) override { \
       CH_FOR_EACH(CH_STRUCT_WRITE, CH_SEP_SEMICOLON, __VA_ARGS__); \
       CH_ABORT("invalid subscript index"); \
     } \

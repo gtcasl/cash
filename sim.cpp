@@ -6,7 +6,7 @@
 #include "compile.h"
 
 using namespace std;
-using namespace cash_internal;
+using namespace cash::detail;
 
 ch_simulator::ch_simulator(const std::initializer_list<const ch_device*>& devices)
   : initialized_(false)
@@ -187,6 +187,6 @@ void ch_tracer::tick(ch_cycle t) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void cash_internal::register_tap(const string& name, lnodeimpl* node) {
+void cash::detail::register_tap(const string& name, lnodeimpl* node) {
   node->get_ctx()->register_tap(name, node);
 }

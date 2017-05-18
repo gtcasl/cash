@@ -2,18 +2,19 @@
 
 #include "snode.h"
 
-namespace cash_internal {
+namespace cash {
+namespace detail {
 
 template <unsigned N> class ch_bus;
 
 template <unsigned N>
-class typebase<N, snode::bitstream_type> {
+class typebase<N, snode::data_type> {
 public:   
   static const unsigned bit_count = N;
-  using bitstream_type = snode::bitstream_type;
+  using data_type = snode::data_type;
   
   typebase& operator=(const typebase& rhs) {
-    bitstream_type data(N);
+    data_type data(N);
     rhs.read(data, 0, N);
     this->write(0, data, 0, N);
     return *this;
@@ -77,22 +78,22 @@ public:
   }
   
   virtual snode get_node() const {
-    bitstream_type data(N);
+    data_type data(N);
     this->read(data, 0, N);
     return snode(data);
   }
   
+  virtual void read(data_type& inout, size_t offset, size_t length) const = 0;
+  virtual void write(size_t dst_offset, const data_type& in, size_t src_offset, size_t src_length) = 0;
+
 protected:
 
-  virtual void read(bitstream_type& inout, size_t offset, size_t length) const = 0;
-  virtual void write(size_t dst_offset, const bitstream_type& in, size_t src_offset, size_t src_length) = 0;
-  
-  template <typename T_> friend void read_data(const T_& t, typename T_::bitstream_type& inout, size_t offset, size_t length);
-  template <typename T_> friend void write_data(T_& t, size_t dst_offset, const typename T_::bitstream_type& in, size_t src_offset, size_t src_length); 
-  template <unsigned N_> friend std::ostream& operator<<(std::ostream& os, const typebase<N_, snode::bitstream_type>& b);
+  template <typename T_> friend void read_data(const T_& t, typename T_::data_type& inout, size_t offset, size_t length);
+  template <typename T_> friend void write_data(T_& t, size_t dst_offset, const typename T_::data_type& in, size_t src_offset, size_t src_length);
+  template <unsigned N_> friend std::ostream& operator<<(std::ostream& os, const typebase<N_, snode::data_type>& b);
 };
 
-template <unsigned N> using ch_busbase = typebase<N, snode::bitstream_type>;
+template <unsigned N> using ch_busbase = typebase<N, snode::data_type>;
 using ch_signalbase = ch_busbase<1>;
 
 template <unsigned N> 
@@ -103,13 +104,14 @@ std::ostream& operator<<(std::ostream& os, const ch_busbase<N>& b) {
 #define CH_DEF_COMP_IMPL(op, type) \
   template <unsigned N> bool op(const ch_busbase<N>& lhs, type rhs) { return lhs.op(ch_bus<N>(rhs)); } \
   template <unsigned N> bool op(type rhs, const ch_busbase<N>& lhs) { return ch_bus<N>(lhs).op(rhs); }
+
 #define CH_DEF_COMP(type) \
   CH_DEF_COMP_IMPL(operator==, type) \
   CH_DEF_COMP_IMPL(operator!=, type) \
   CH_DEF_COMP_IMPL(operator< , type) \
   CH_DEF_COMP_IMPL(operator> , type) \
   CH_DEF_COMP_IMPL(operator<=, type) \
-  CH_DEF_COMP_IMPL(operator>=, type) 
+  CH_DEF_COMP_IMPL(operator>=, type)
   CH_DEF_COMP(const std::initializer_list<uint32_t>&)
   CH_DEF_COMP(char)
   CH_DEF_COMP(int8_t)
@@ -123,4 +125,5 @@ std::ostream& operator<<(std::ostream& os, const ch_busbase<N>& b) {
 #undef CH_DEF_COMP
 #undef CH_DEF_COMP_IMPL
 
+}
 }

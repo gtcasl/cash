@@ -3,7 +3,7 @@
 #include "bus.h"
 
 using namespace std;
-using namespace cash_internal;
+using namespace cash::detail;
 
 static uint32_t generate_id() {
   static uint32_t s_id(0);
@@ -179,11 +179,11 @@ snode::snode(snodeimpl* impl) : impl_(nullptr) {
   this->assign(impl);
 }
 
-snode::snode(const bitstream_type& data) : impl_(nullptr) {
+snode::snode(const data_type& data) : impl_(nullptr) {
   uint32_t dst_offset = 0;
-  for (auto& p : data) {
-    this->assign(dst_offset, p.data, p.offset, p.length, data.get_size());   
-    dst_offset += p.length;
+  for (auto& d : data) {
+    this->assign(dst_offset, d.src, d.offset, d.length, data.get_size());
+    dst_offset += d.length;
   }
 }
 
@@ -285,25 +285,25 @@ void snode::write(const uint8_t* in, uint32_t sizeInBytes) {
   impl_->write(in, sizeInBytes);
 }
 
-void snode::read(bitstream_type& inout, uint32_t offset, uint32_t length, uint32_t size) const {
+void snode::read(data_type& inout, uint32_t offset, uint32_t length, uint32_t size) const {
   assert((offset + length) <= size);
   this->ensureInitialized(size);
   inout.push({*this, offset, length});
 }
 
-void snode::write(uint32_t dst_offset, const bitstream_type& in, uint32_t src_offset, uint32_t src_length, uint32_t size) {
+void snode::write(uint32_t dst_offset, const data_type& in, uint32_t src_offset, uint32_t src_length, uint32_t size) {
   assert((dst_offset + src_length) <= size);
-  for (auto& p : in) {
-    if (src_offset < p.length) {
-      size_t len = std::min(p.length - src_offset, src_length);
-      this->assign(dst_offset, p.data, p.offset + src_offset, len, size);         
+  for (auto& d : in) {
+    if (src_offset < d.length) {
+      size_t len = std::min(d.length - src_offset, src_length);
+      this->assign(dst_offset, d.src, d.offset + src_offset, len, size);
       src_length -= len;
       if (src_length == 0)
         return;
       dst_offset += len;                
-      src_offset = p.length;
+      src_offset = d.length;
     }
-    src_offset -= p.length;
+    src_offset -= d.length;
   }
 }
 
@@ -322,6 +322,6 @@ void snode::assign(uint32_t dst_offset, const snode& src, uint32_t src_offset, u
   }  
 }
 
-std::ostream& cash_internal::operator<<(std::ostream& os, const snode& node) {
+std::ostream& cash::detail::operator<<(std::ostream& os, const snode& node) {
   return os << node.get_impl()->get_value();
 }

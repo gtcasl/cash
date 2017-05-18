@@ -4,7 +4,7 @@
 #include "context.h"
 
 using namespace std;
-using namespace cash_internal;
+using namespace cash::detail;
 
 clock_event::clock_event(lnodeimpl* signal, EDGE_DIR edgedir)
   : signal_(signal)

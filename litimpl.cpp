@@ -2,7 +2,7 @@
 #include "context.h"
 
 using namespace std;
-using namespace cash_internal;
+using namespace cash::detail;
 
 litimpl::litimpl(context* ctx, const bitvector& value) 
   : lnodeimpl(op_lit, ctx, value.get_size()) {
