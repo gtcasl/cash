@@ -32,11 +32,11 @@ public:
     ch_rom(const std::initializer_list<uint32_t>& init_data) : mem_(N, A, false, init_data) {}
     
     ch_bit<N> operator[](const ch_bitbase<A>& addr) const {
-      return ch_bit<N>(mem_.read(addr.get_node().get_impl()));
+      return ch_bit<N>(mem_.read(get_node(addr).get_impl()));
     }
     
     ch_bit<N> operator[](const ch_bit<A>& addr) const {
-      return ch_bit<N>(mem_.read(addr.get_node().get_impl()));
+      return ch_bit<N>(mem_.read(get_node(addr).get_impl()));
     }
     
 private:
@@ -50,19 +50,15 @@ public:
     public:    
       
       void operator=(const ch_bitbase<N>& data) {
-        mem_.write(addr_.get_node().get_impl(), data.get_node().get_impl());
+        mem_.write(get_node(addr_).get_impl(), get_node(data).get_impl());
       }
       
       void operator=(const ch_bit<N>& data) {
-        mem_.write(addr_.get_node().get_impl(), data.get_node().get_impl());
-      }
-      
-      lnode get_node() const { 
-        return this->operator ch_bit<N>().get_node();
+        mem_.write(get_node(addr_).get_impl(), get_node(data).get_impl());
       }
       
       operator ch_bit<N>() const {
-        return ch_bit<N>(mem_.read(addr_.get_node().get_impl()));
+        return ch_bit<N>(mem_.read(get_node(addr_).get_impl()));
       }
       
     protected:
@@ -84,11 +80,11 @@ public:
     ch_mem(const std::initializer_list<uint32_t>& init_data) : mem_(N, A, true, init_data) {}
     
     ch_bit<N> operator[](const ch_bitbase<A>& addr) const {
-      return ch_bit<N>(mem_.read(addr.get_node().get_impl()));
+      return ch_bit<N>(mem_.read(get_node(addr).get_impl()));
     }
     
     ch_bit<N> operator[](const ch_bit<A>& addr) const {
-      return ch_bit<N>(mem_.read(addr.get_node().get_impl()));
+      return ch_bit<N>(mem_.read(get_node(addr).get_impl()));
     }
     
     reference operator[](const ch_bitbase<A>& addr) {

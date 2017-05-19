@@ -74,14 +74,6 @@ public:
     CH_CHECK(i < N, "invalid subscript index");
     return items_[i];
   }
-    
-  std::array<T, N>& data() {
-    return items_;
-  }
-  
-  const std::array<T, N>& data() const {
-    return items_;
-  }
 
 protected:
   
@@ -92,7 +84,7 @@ protected:
     for (unsigned i = 0; length && i < N; ++i) {
       if (offset < T::bit_count) {     
         size_t len = std::min<size_t>(length, T::bit_count - offset);
-        items_[i].read(out, offset, len);
+        read_data(items_[i], out, offset, len);
         length -= len;
         offset = T::bit_count;
       }
@@ -105,7 +97,7 @@ protected:
     for (unsigned i = 0; length && i < N; ++i) {
       if (start < T::bit_count) {
         size_t len = std::min<size_t>(length, T::bit_count - start);        
-        items_[i].write(start, data, offset, len);
+        write_data(items_[i], start, data, offset, len);
         length -= len;
         offset += len;
         start = T::bit_count;

@@ -26,7 +26,7 @@ public:
   
   ch_bit(const ch_bit& rhs) : node_(rhs.node_.ensureInitialized(N)) {}
   
-  ch_bit(const ch_bitbase<N>& rhs) : node_(rhs.get_node().get_impl()) {}
+  ch_bit(const ch_bitbase<N>& rhs) : node_(get_node(rhs).get_impl()) {}
   
   ch_bit(const bitvector& rhs) : node_(rhs) {
     assert(rhs.get_size() == N);
@@ -90,13 +90,9 @@ public:
   CH_DEF_AOP(int64_t)
   CH_DEF_AOP(uint64_t)
 #undef CH_DEF_AOP
-
-  lnode get_node() const override { 
-    return node_.ensureInitialized(N);
-  }
   
 protected:
-  
+
   void read(data_type& inout, size_t offset, size_t length) const override {
     node_.read(inout, offset, length, N);
   }
@@ -106,7 +102,14 @@ protected:
   }
   
   lnode node_;
+
+  template <unsigned N_> friend lnode get_node(const ch_bit<N_>& b);
 };
+
+template <unsigned N>
+lnode get_node(const ch_bit<N>& b) {
+  return b.node_.ensureInitialized(N);
+}
 
 // concatenation operator
 
@@ -240,17 +243,17 @@ ch_bit<64> ch_tick();
 
 template <typename...Args>
 void ch_print(const std::string& format, const Args& ...args) {
-  createPrintNode(nullptr, format, {args.get_node().get_impl()...});
+  createPrintNode(nullptr, format, {get_node(args).get_impl()...});
 }
 
 template <typename...Args>
 void ch_print(const ch_logicbase& cond, const std::string& format, const Args& ...args) {
-  createPrintNode(cond.get_node().get_impl(), format, {args.get_node().get_impl()...});
+  createPrintNode(get_node(cond).get_impl(), format, {get_node(args).get_impl()...});
 }
 
 template <typename...Args>
 void ch_print(const ch_logic& cond, const std::string& format, const Args& ...args) {
-  createPrintNode(cond.get_node().get_impl(), format, {args.get_node().get_impl()...});
+  createPrintNode(get_node(cond).get_impl(), format, {get_node(args).get_impl()...});
 }
 
 }

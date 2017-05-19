@@ -54,13 +54,13 @@ template <unsigned N, typename T>
 class typebase {};
 
 template <typename T>
-void read_data(const T& t, typename T::data_type& inout, size_t offset, size_t length) {
-  reinterpret_cast<const typebase<T::bit_count, typename T::data_type>&>(t).read(inout, offset, length);
+void read_data(const T& b, typename T::data_type& inout, size_t offset, size_t length) {
+  reinterpret_cast<const typebase<T::bit_count, typename T::data_type>&>(b).read(inout, offset, length);
 }
 
 template <typename T>
-void write_data(T& t, size_t dst_offset, const typename T::data_type& in, size_t src_offset, size_t src_length) {
-  reinterpret_cast<typebase<T::bit_count,typename T::data_type>&>(t).write(dst_offset, in, src_offset, src_length);
+void write_data(T& b, size_t dst_offset, const typename T::data_type& in, size_t src_offset, size_t src_length) {
+  reinterpret_cast<typebase<T::bit_count,typename T::data_type>&>(b).write(dst_offset, in, src_offset, src_length);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -2,9 +2,6 @@
 
 #include "lnode.h"
 
-namespace cash {
-namespace detail {
-
 #define CH_OPERATOR_TYPE(t) op_##t,
 #define CH_OPERATOR_NAME(n) #n,
 #define CH_OPERATOR_ENUM(m) \
@@ -56,12 +53,13 @@ namespace detail {
   m(fsub) \
   m(fmult) \
   m(fdiv)
+
+namespace cash {
+namespace detail {
   
 enum ch_operator {
   CH_OPERATOR_ENUM(CH_OPERATOR_TYPE)
 };
-
-const char* to_string(ch_operator op);
 
 class lnodeimpl {
 public:
@@ -76,7 +74,12 @@ public:
     return op_;
   }
   
-  const char* get_name() const;
+  const char* get_name() const {
+    static const char* sc_names[] = {
+      CH_OPERATOR_ENUM(CH_OPERATOR_NAME)
+    };
+    return sc_names[(int)op_];
+  }
   
   context* get_ctx() const {
     return ctx_;
@@ -164,3 +167,7 @@ public:
 
 }
 }
+
+#undef CH_OPERATOR_TYPE
+#undef CH_OPERATOR_NAME
+#undef CH_OPERATOR_ENUM

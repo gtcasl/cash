@@ -6,6 +6,8 @@ namespace cash {
 namespace detail {
 
 template <unsigned N> class ch_bus;
+template <unsigned N> using ch_busbase = typebase<N, snode::data_type>;
+using ch_signalbase = ch_busbase<1>;
 
 template <unsigned N>
 class typebase<N, snode::data_type> {
@@ -42,11 +44,11 @@ public:
 #undef CH_DEF_AOP
   
   bool operator==(const typebase& rhs) const {
-    return (this->get_node() == rhs.get_node());
+    return (get_node(*this) == get_node(rhs));
   }
   
   bool operator<(const typebase& rhs) const {
-    return (this->get_node() < rhs.get_node());
+    return (get_node(*this) < get_node(rhs));
   }
   
   bool operator!=(const typebase& rhs) const {
@@ -63,11 +65,11 @@ public:
   
   bool operator>=(const typebase& rhs) const {
     return !(*this < rhs);
-  }  
+  }
   
   virtual void read(void* out, uint32_t sizeInBytes) const {  
     assert(sizeInBytes * 8 >= N);
-    this->get_node().read(reinterpret_cast<uint8_t*>(out), sizeInBytes);
+    get_node(*this).read(reinterpret_cast<uint8_t*>(out), sizeInBytes);
   }
   
   virtual void write(const void* in, uint32_t sizeInBytes) {
@@ -76,29 +78,27 @@ public:
     tmp.write(reinterpret_cast<const uint8_t*>(in), sizeInBytes);
     this->operator =(tmp);
   }
-  
-  virtual snode get_node() const {
-    data_type data(N);
-    this->read(data, 0, N);
-    return snode(data);
-  }
-  
-  virtual void read(data_type& inout, size_t offset, size_t length) const = 0;
-  virtual void write(size_t dst_offset, const data_type& in, size_t src_offset, size_t src_length) = 0;
 
 protected:
 
-  template <typename T_> friend void read_data(const T_& t, typename T_::data_type& inout, size_t offset, size_t length);
-  template <typename T_> friend void write_data(T_& t, size_t dst_offset, const typename T_::data_type& in, size_t src_offset, size_t src_length);
-  template <unsigned N_> friend std::ostream& operator<<(std::ostream& os, const typebase<N_, snode::data_type>& b);
+  virtual void read(data_type& inout, size_t offset, size_t length) const = 0;
+  virtual void write(size_t dst_offset, const data_type& in, size_t src_offset, size_t src_length) = 0;
+
+  template <unsigned N_> friend snode get_node(const ch_busbase<N_>& b);
+  template <typename T_> friend void read_data(const T_& b, typename T_::data_type& inout, size_t offset, size_t length);
+  template <typename T_> friend void write_data(T_& b, size_t dst_offset, const typename T_::data_type& in, size_t src_offset, size_t src_length);
 };
 
-template <unsigned N> using ch_busbase = typebase<N, snode::data_type>;
-using ch_signalbase = ch_busbase<1>;
+template <unsigned N>
+snode get_node(const ch_busbase<N>& b) {
+  snode::data_type data(N);
+  b.read(data, 0, N);
+  return snode(data);
+}
 
 template <unsigned N> 
 std::ostream& operator<<(std::ostream& os, const ch_busbase<N>& b) {
-  return os << b.get_node();
+  return os << get_node(b);
 }
 
 #define CH_DEF_COMP_IMPL(op, type) \

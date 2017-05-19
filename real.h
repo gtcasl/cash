@@ -16,7 +16,7 @@ public:
   
   ch_real() {}
   ch_real(const ch_real& rhs) : base(rhs) {}
-  ch_real(float rhs) : base(bit_cast<uint32_t, float>(rhs)) {}
+  ch_real(float rhs) : base(bitcast<uint32_t, float>(rhs)) {}
   
   ch_real& operator=(const ch_real& rhs) {
     base::operator =(rhs);
@@ -30,19 +30,19 @@ public:
 };
 
 inline ch_real operator+(const ch_real& lhs, const ch_real& rhs) {
-  return ch_real(createAluNode(alu_op_fadd, 32, lhs.get_node().get_impl(), rhs.get_node().get_impl()));
+  return ch_real(createAluNode(alu_op_fadd, 32, get_node(lhs).get_impl(), get_node(rhs).get_impl()));
 }
 
 inline ch_real operator-(const ch_real& lhs, const ch_real& rhs) {
-  return ch_real(createAluNode(alu_op_fsub, 32, lhs.get_node().get_impl(), rhs.get_node().get_impl()));
+  return ch_real(createAluNode(alu_op_fsub, 32, get_node(lhs).get_impl(), get_node(rhs).get_impl()));
 }
 
 inline ch_real operator*(const ch_real& lhs, const ch_real& rhs) {
-  return ch_real(createAluNode(alu_op_fmult, 32, lhs.get_node().get_impl(), rhs.get_node().get_impl()));
+  return ch_real(createAluNode(alu_op_fmult, 32, get_node(lhs).get_impl(), get_node(rhs).get_impl()));
 }
 
 inline ch_real operator/(const ch_real& lhs, const ch_real& rhs) {
-  return ch_real(createAluNode(alu_op_fdiv, 32, lhs.get_node().get_impl(), rhs.get_node().get_impl()));
+  return ch_real(createAluNode(alu_op_fdiv, 32, get_node(lhs).get_impl(), get_node(rhs).get_impl()));
 }
 
 }

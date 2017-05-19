@@ -2,9 +2,6 @@
 
 #include "bit.h"
 
-namespace cash {
-namespace detail {
-
 #define CH_ALUOP_TYPE(t) alu_op_##t,
 #define CH_ALUOP_ENUM(m) \
   m(inv) \
@@ -40,17 +37,10 @@ namespace detail {
   m(fmult) \
   m(fdiv)
 
-enum ch_alu_op {
-  CH_ALUOP_ENUM(CH_ALUOP_TYPE)
-};
-
-lnodeimpl* createAluNode(ch_alu_op op, uint32_t size, lnodeimpl* a, lnodeimpl* b);
-lnodeimpl* createAluNode(ch_alu_op op, uint32_t size, lnodeimpl* a);
-
 #define CH_BINOP_GEN0(func, type) \
   template <unsigned N> ch_bit<N> func(const ch_bitbase<N>& a, type b) { return func(a, ch_bit<N>(b)); } \
   template <unsigned N> ch_bit<N> func(type a, const ch_bitbase<N>& b) { return func(ch_bit<N>(a), b); }
-  
+
 #define CH_BINOP_GEN1(func) \
   template <unsigned N, unsigned M> ch_bit<CH_MAX(N,M)> func(const ch_bitbase<N>& a, const ch_bitbase<M>& b) { return func(ch_zext<CH_MAX(N,M)>(a), ch_zext<CH_MAX(N,M)>(b)); } \
   CH_BINOP_GEN0(func, char) \
@@ -61,8 +51,8 @@ lnodeimpl* createAluNode(ch_alu_op op, uint32_t size, lnodeimpl* a);
   CH_BINOP_GEN0(func, int32_t) \
   CH_BINOP_GEN0(func, uint32_t) \
   CH_BINOP_GEN0(func, int64_t) \
-  CH_BINOP_GEN0(func, uint64_t)    
-  
+  CH_BINOP_GEN0(func, uint64_t)
+
 #define CH_BINOP_GEN2(func, op) \
   CH_BINOP_GEN1(func) \
   template <unsigned N, unsigned M> ch_bit<CH_MAX(N,M)> op(const ch_bitbase<N>& a, const ch_bitbase<M>& b) { return func(a, b); } \
@@ -84,7 +74,7 @@ lnodeimpl* createAluNode(ch_alu_op op, uint32_t size, lnodeimpl* a);
   template <unsigned N> ch_logic func(type a, const ch_bitbase<N>& b) { return func(ch_bit<N>(a), b); } \
   template <unsigned N> ch_logic op(const ch_bitbase<N>& a, type b) { return func(a, ch_bit<N>(b)); } \
   template <unsigned N> ch_logic op(type a, const ch_bitbase<N>& b) { return func(ch_bit<N>(a), b); }
-  
+
 #define CH_COMPAREOP_GEN1(func, op) \
   template <unsigned N> ch_logic op(const ch_bitbase<N>& a, const ch_bitbase<N>& b) { return func(a, b); } \
   CH_COMPAREOP_GEN0(func, op, char) \
@@ -99,7 +89,7 @@ lnodeimpl* createAluNode(ch_alu_op op, uint32_t size, lnodeimpl* a);
 
 #define CH_SHIFTOP_GEN0(func, type) \
   template <unsigned N> ch_bit<N> func(const ch_bitbase<N>& a, type b) { return func(a, ch_bit<N>(b)); }
-  
+
 #define CH_SHIFTOP_GEN1(func) \
   CH_SHIFTOP_GEN0(func, char) \
   CH_SHIFTOP_GEN0(func, int8_t) \
@@ -123,6 +113,16 @@ lnodeimpl* createAluNode(ch_alu_op op, uint32_t size, lnodeimpl* a);
   CH_SHIFTOP_GEN0(op, uint32_t) \
   CH_SHIFTOP_GEN0(op, int64_t) \
   CH_SHIFTOP_GEN0(op, uint64_t)
+
+namespace cash {
+namespace detail {
+
+enum ch_alu_op {
+  CH_ALUOP_ENUM(CH_ALUOP_TYPE)
+};
+
+lnodeimpl* createAluNode(ch_alu_op op, uint32_t size, lnodeimpl* a, lnodeimpl* b);
+lnodeimpl* createAluNode(ch_alu_op op, uint32_t size, lnodeimpl* a);
 
 // compare operators
 
@@ -159,36 +159,26 @@ CH_SHIFTOP_GEN2(ch_slr, operator>>)
 CH_SHIFTOP_GEN1(ch_rotl)
 CH_SHIFTOP_GEN1(ch_rotr)
 
-#undef CH_BINOP_GEN0
-#undef CH_BINOP_GEN1
-#undef CH_BINOP_GEN2
-#undef CH_UNARYOP_GEN  
-#undef CH_COMPAREOP_GEN0
-#undef CH_COMPAREOP_GEN1
-#undef CH_SHIFTOP_GEN0
-#undef CH_SHIFTOP_GEN1
-#undef CH_SHIFTOP_GEN2
-
 ///////////////////////////////////////////////////////////////////////////////
 
 template <ch_alu_op op, unsigned N, unsigned M>
 ch_bit<N> OpBinary(const ch_bitbase<N>& a, const ch_bitbase<M>& b) {
-  return ch_bit<N>(createAluNode(op, N, a.get_node().get_impl(), b.get_node().get_impl()));
+  return ch_bit<N>(createAluNode(op, N, get_node(a).get_impl(), get_node(b).get_impl()));
 }
 
 template <ch_alu_op op, unsigned N>
 ch_logic OpCompare(const ch_bitbase<N>& a, const ch_bitbase<N>& b) {
-  return ch_logic(createAluNode(op, 1, a.get_node().get_impl(), b.get_node().get_impl()));
+  return ch_logic(createAluNode(op, 1, get_node(a).get_impl(), get_node(b).get_impl()));
 }
 
 template <ch_alu_op op, unsigned N>
 ch_bit<N> OpUnary(const ch_bitbase<N>& a) {
-  return ch_bit<N>(createAluNode(op, N, a.get_node().get_impl()));
+  return ch_bit<N>(createAluNode(op, N, get_node(a).get_impl()));
 }
 
 template <ch_alu_op op, unsigned N>
 ch_logic OpReduce(const ch_bitbase<N>& a) {
-  return ch_logic(createAluNode(op, 1, a.get_node().get_impl()));
+  return ch_logic(createAluNode(op, 1, get_node(a).get_impl()));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -349,12 +339,12 @@ ch_bit<N> ch_mod(const ch_bitbase<N>& a, const ch_bitbase<N>& b) {
 
 template <unsigned N, unsigned S>
 ch_bit<(N >> S)> ch_mux(const ch_bitbase<N>& in, const ch_bitbase<S>& sel) {
-  return ch_bit<(N >> S)>(createAluNode(alu_op_mux, (N >> S), in.get_node().get_impl(), sel.get_node().get_impl()));
+  return ch_bit<(N >> S)>(createAluNode(alu_op_mux, (N >> S), get_node(in).get_impl(), get_node(sel).get_impl()));
 }
 
 template <unsigned N, unsigned S> 
 ch_bit<(N << S)> ch_demux(const ch_bitbase<N>& in, const ch_bitbase<S>& sel) {
-  return ch_bit<(N << S)>(createAluNode(alu_op_mux, (N << S), in.get_node().get_impl(), sel.get_node().get_impl()));
+  return ch_bit<(N << S)>(createAluNode(alu_op_mux, (N << S), get_node(in).get_impl(), get_node(sel).get_impl()));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -381,3 +371,16 @@ ch_bit<(1 << N)> ch_dec(const ch_bitbase<N>& a) {
 
 }
 }
+
+#undef CH_BINOP_GEN0
+#undef CH_BINOP_GEN1
+#undef CH_BINOP_GEN2
+
+#undef CH_UNARYOP_GEN
+
+#undef CH_COMPAREOP_GEN0
+#undef CH_COMPAREOP_GEN1
+
+#undef CH_SHIFTOP_GEN0
+#undef CH_SHIFTOP_GEN1
+#undef CH_SHIFTOP_GEN2

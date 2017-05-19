@@ -230,23 +230,40 @@ public:
   
   bitvector(char value, uint32_t size);
     
-  bitvector(int8_t value, uint32_t size) : bitvector(bit_cast<uint32_t>(value), size) {}
+  bitvector(int8_t value, uint32_t size)
+    : bitvector(bitcast<uint32_t>(value), size)
+  {}
   
-  bitvector(uint8_t value, uint32_t size) : bitvector(bit_cast<uint32_t>(value), size) {}
+  bitvector(uint8_t value, uint32_t size)
+    : bitvector(bitcast<uint32_t>(value), size)
+  {}
   
-  bitvector(int16_t value, uint32_t size) : bitvector(bit_cast<uint32_t>(value), size) {}
+  bitvector(int16_t value, uint32_t size)
+    : bitvector(bitcast<uint32_t>(value), size)
+  {}
   
-  bitvector(uint16_t value, uint32_t size) : bitvector(bit_cast<uint32_t>(value), size) {}
+  bitvector(uint16_t value, uint32_t size)
+    : bitvector(bitcast<uint32_t>(value), size)
+  {}
   
-  bitvector(int32_t value, uint32_t size) : bitvector(bit_cast<uint32_t>(value), size) {}  
+  bitvector(int32_t value, uint32_t size)
+    : bitvector(bitcast<uint32_t>(value), size)
+  {}
   
-  bitvector(int64_t value, uint32_t size) : bitvector({bit_cast<uint32_t>(value >> 32), bit_cast<uint32_t>(value)}, size) {}
+  bitvector(int64_t value, uint32_t size)
+    : bitvector({bitcast<uint32_t>(value >> 32), bitcast<uint32_t>(value)}, size)
+  {}
   
-  bitvector(uint64_t value, uint32_t size) : bitvector({bit_cast<uint32_t>(value >> 32), bit_cast<uint32_t>(value)}, size) {}  
+  bitvector(uint64_t value, uint32_t size)
+    : bitvector({bitcast<uint32_t>(value >> 32), bitcast<uint32_t>(value)}, size)
+  {}
   
   ~bitvector();
   
-  void resize(uint32_t size, uint32_t defaultValue = 0x0, bool initialize = true, bool preserve = true);
+  void resize(uint32_t size,
+              uint32_t defaultValue = 0x0,
+              bool initialize = true,
+              bool preserve = true);
   
   bitvector& operator=(const bitvector& rhs);
   
@@ -260,19 +277,35 @@ public:
   
   bitvector& operator=(char value);
   
-  bitvector& operator=(int8_t value) { return this->operator =(bit_cast<uint32_t>(value)); }
+  bitvector& operator=(int8_t value) {
+    return this->operator =(bitcast<uint32_t>(value));
+  }
   
-  bitvector& operator=(uint8_t value) { return this->operator =(bit_cast<uint32_t>(value)); }
+  bitvector& operator=(uint8_t value) {
+    return this->operator =(bitcast<uint32_t>(value));
+  }
   
-  bitvector& operator=(int16_t value) { return this->operator =(bit_cast<uint32_t>(value)); }
+  bitvector& operator=(int16_t value) {
+    return this->operator =(bitcast<uint32_t>(value));
+  }
   
-  bitvector& operator=(uint16_t value) { return this->operator =(bit_cast<uint32_t>(value)); }
+  bitvector& operator=(uint16_t value) {
+    return this->operator =(bitcast<uint32_t>(value));
+  }
   
-  bitvector& operator=(int32_t value) { return this->operator =(bit_cast<uint32_t>(value)); }
+  bitvector& operator=(int32_t value) {
+    return this->operator =(bitcast<uint32_t>(value));
+  }
   
-  bitvector& operator=(int64_t value) { return this->operator =({bit_cast<uint32_t>(value >> 32), bit_cast<uint32_t>(value)}); }
+  bitvector& operator=(int64_t value) {
+    return this->operator =({bitcast<uint32_t>(value >> 32),
+                             bitcast<uint32_t>(value)});
+  }
   
-  bitvector& operator=(uint64_t value) { return this->operator =({bit_cast<uint32_t>(value >> 32), bit_cast<uint32_t>(value)}); }  
+  bitvector& operator=(uint64_t value) {
+    return this->operator =({bitcast<uint32_t>(value >> 32),
+                             bitcast<uint32_t>(value)});
+  }
   
   const_reference at(uint32_t idx) const {
     assert(idx < size_);
@@ -307,6 +340,14 @@ public:
     assert(widx < this->get_num_words());
     words_[widx] = word;
   }
+
+  const uint32_t* get_words() const {
+    return words_;
+  }
+
+  uint32_t* get_words() {
+    return words_;
+  }
   
   uint32_t get_num_words() const {
     return (size_ + WORD_MASK) >> WORD_SIZE_LOG;;
@@ -315,6 +356,8 @@ public:
   uint32_t get_size() const {
     return size_;
   }
+
+  void clear_unused_bits();
   
   void copy(uint32_t dst_offset, const bitvector& src, uint32_t src_offset, uint32_t src_length);
   
@@ -327,32 +370,6 @@ public:
   int32_t find_last() const;
   
   bool is_empty() const;
-  
-  bool operator==(const bitvector& rhs) const;
-  
-  bool operator<(const bitvector& rhs) const;
-  
-  bool operator!=(const bitvector& rhs) const {
-    return !(*this == rhs);
-  }
-  
-  bool operator>(const bitvector& rhs) const {
-    return (rhs < *this);
-  }
-  
-  bool operator<=(const bitvector& rhs) const {
-    return !(*this > rhs);
-  }
-  
-  bool operator>=(const bitvector& rhs) const {
-    return !(*this < rhs);
-  }
-  
-  bool andr() const;
-  
-  bool orr() const;
-  
-  bool xorr() const;
     
   const_reference front() const {
     return this->at(0);
@@ -385,50 +402,15 @@ public:
   const_iterator end() const {
     return const_iterator(nullptr, size_);
   }
+
+  bool operator==(const bitvector& rhs) const;
+  bool operator<(const bitvector& rhs) const;
   
 protected:
   
-  void clear_unused_bits();
-  
   uint32_t* words_;
   uint32_t  size_;
-  
-  friend void Invert(bitvector& out, const bitvector& in);  
-  friend void And(bitvector& out, const bitvector& lhs, const bitvector& rhs);  
-  friend void Or(bitvector& out, const bitvector& lhs, const bitvector& rhs);  
-  friend void Xor(bitvector& out, const bitvector& lhs, const bitvector& rhs);  
-  friend void Nand(bitvector& out, const bitvector& lhs, const bitvector& rhs);  
-  friend void Nor(bitvector& out, const bitvector& lhs, const bitvector& rhs);  
-  friend void Xnor(bitvector& out, const bitvector& lhs, const bitvector& rhs);  
-  friend void ShiftLeft(bitvector& out, const bitvector& in, uint32_t dist);  
-  friend void ShiftRight(bitvector& out, const bitvector& in, uint32_t dist);    
-  friend void RotateLeft(bitvector& out, const bitvector& in, uint32_t dist);  
-  friend void RotateRight(bitvector& out, const bitvector& in, uint32_t dist);    
-  
-  friend std::ostream& operator<<(std::ostream& os, const bitvector& b);
 };
-
-void Invert(bitvector& out, const bitvector& in);
-
-void And(bitvector& out, const bitvector& lhs, const bitvector& rhs);
-
-void Or(bitvector& out, const bitvector& lhs, const bitvector& rhs);
-
-void Xor(bitvector& out, const bitvector& lhs, const bitvector& rhs);
-
-void Nand(bitvector& out, const bitvector& lhs, const bitvector& rhs);
-
-void Nor(bitvector& out, const bitvector& lhs, const bitvector& rhs);
-
-void Xnor(bitvector& out, const bitvector& lhs, const bitvector& rhs);
-
-void ShiftLeft(bitvector& out, const bitvector& in, uint32_t dist);
-
-void ShiftRight(bitvector& out, const bitvector& in, uint32_t dist);
-  
-void RotateLeft(bitvector& out, const bitvector& in, uint32_t dist);
-
-void RotateRight(bitvector& out, const bitvector& in, uint32_t dist);
 
 std::ostream& operator<<(std::ostream& os, const bitvector& b);
 

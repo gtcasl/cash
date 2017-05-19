@@ -88,7 +88,7 @@ ch_logic cash::detail::ch_clock() {
 }
 
 void cash::detail::ch_pushclock(const ch_logicbase& clk) {
-  ctx_curr()->push_clk(clk.get_node().get_impl());
+  ctx_curr()->push_clk(get_node(clk).get_impl());
 }
 
 void cash::detail::ch_popclock() {
@@ -100,7 +100,7 @@ ch_logic cash::detail::ch_reset() {
 }
 
 void cash::detail::ch_pushreset(const ch_logicbase& reset) {
-  ctx_curr()->push_reset(reset.get_node().get_impl());
+  ctx_curr()->push_reset(get_node(reset).get_impl());
 }
 
 void cash::detail::ch_popreset() {

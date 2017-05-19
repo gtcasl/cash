@@ -139,12 +139,12 @@ protected:
 
   template <unsigned N>
   ch_bit<N> bind_input(const ch_busbase<N>& bus) const {
-    return ch_bit<N>(this->bind_input_(bus.get_node().get_impl()));
+    return ch_bit<N>(this->bind_input_(get_node(bus).get_impl()));
   }
   
   template <unsigned N>
   ch_bus<N> bind_output(const ch_bitbase<N>& output) const {
-    return ch_bus<N>(this->bind_output_(output.get_node().get_impl()));
+    return ch_bus<N>(this->bind_output_(get_node(output).get_impl()));
   }
   
   lnodeimpl* bind_input_(snodeimpl* bus) const;

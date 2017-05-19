@@ -16,7 +16,7 @@ public:
   
   ch_bus(const ch_bus& rhs) : node_(rhs.node_.ensureInitialized(N)) {}
   
-  ch_bus(const ch_busbase<N>& rhs) : node_(rhs.get_node().get_impl()) {}
+  ch_bus(const ch_busbase<N>& rhs) : node_(get_node(rhs).get_impl()) {}
   
   ch_bus(const bitvector& rhs) : node_(rhs) {
     assert(rhs.get_size() == N);
@@ -125,7 +125,7 @@ public:
   explicit operator type() const { \
     static_assert(sizeof(type) * 8 >= N, "invalid ouput data size"); \
     node_.ensureInitialized(N); \
-    return bit_cast<type>(node_.read(0)); \
+    return bitcast<type>(node_.read(0)); \
   } 
   CH_DEF_READ(int8_t)
   CH_DEF_READ(uint8_t)
@@ -161,10 +161,6 @@ public:
     node_.write(reinterpret_cast<const uint8_t*>(in), sizeInBytes);
   }
 
-  snode get_node() const override { 
-    return node_.ensureInitialized(N);
-  }  
-  
 protected:
   
   void read(data_type& inout, size_t offset, size_t length) const override {
@@ -177,8 +173,14 @@ protected:
   
   snode node_;
   
+  template <unsigned N_> friend snode get_node(const ch_bus<N_>& b);
   friend class context;
 };
+
+template <unsigned N>
+snode get_node(const ch_bus<N>& b) {
+  return b.node_.ensureInitialized(N);
+}
 
 }
 }

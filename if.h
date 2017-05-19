@@ -12,7 +12,7 @@ public:
     
   template <typename Func>
   if_t& elif_(const ch_logicbase& cond, const Func& func) {
-    this->eval(cond.get_node().get_impl(), to_function(func));
+    this->eval(get_node(cond).get_impl(), to_function(func));
     return *this; 
   }
   
@@ -35,7 +35,7 @@ protected:
 
 template <typename Func> 
 if_t ch_if(const ch_logicbase& cond, const Func& func) {
-  return if_t(cond.get_node().get_impl(), to_function(func));
+  return if_t(get_node(cond).get_impl(), to_function(func));
 }
 
 }

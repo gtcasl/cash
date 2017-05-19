@@ -22,18 +22,18 @@ void ch_popreset();
 
 template <unsigned N>
 ch_logic ch_ready(const ch_bitbase<N>& x) {
-  return ch_logic(createReadyNode(x.get_node().get_impl()));
+  return ch_logic(createReadyNode(get_node(x).get_impl()));
 }
 
 template <unsigned N>
 ch_logic ch_valid(const ch_bitbase<N>& x) {
-  return ch_logic(createValidNode(x.get_node().get_impl()));
+  return ch_logic(createValidNode(get_node(x).get_impl()));
 }
 
 template <unsigned N>
 ch_bit<N> ch_reg(const ch_bitbase<N>& next, const ch_bitbase<N>& init) {
   ch_bit<N> d(ch_select(ch_reset(), init, next));
-  return ch_bit<N>(createRegNode(d.get_node().get_impl()));
+  return ch_bit<N>(createRegNode(get_node(d).get_impl()));
 }
 
 template <unsigned N>
@@ -56,10 +56,10 @@ template <unsigned N>
 ch_bit<N> ch_latch(const ch_bitbase<N>& next, 
                    const ch_logicbase& enable, 
                    const ch_bitbase<N>& init) {
-  return ch_bit<N>(createLatchNode(next.get_node().get_impl(), 
-                                   init.get_node().get_impl(), 
-                                   enable.get_node().get_impl(), 
-                                   ch_reset().get_node().get_impl()));
+  return ch_bit<N>(createLatchNode(get_node(next).get_impl(),
+                                   get_node(init).get_impl(),
+                                   get_node(enable).get_impl(),
+                                   get_node(ch_reset()).get_impl()));
 }
 
 template <unsigned N>

@@ -251,10 +251,7 @@ bitvector& bitvector::operator=(const std::initializer_list<uint32_t>& value) {
 }
 
 bool bitvector::operator==(const bitvector& rhs) const {
-  assert(size_ > 0);
-  assert(rhs.size_ > 0);
-  if (size_ != rhs.size_)
-    return false;
+  assert(size_ == rhs.size_);
   for (uint32_t i = 0, n = rhs.get_num_words(); i < n; ++i) {
     if (words_[i] != rhs.words_[i])
       return false;
@@ -263,8 +260,6 @@ bool bitvector::operator==(const bitvector& rhs) const {
 }
 
 bool bitvector::operator<(const bitvector& rhs) const {
-  assert(size_ > 0);
-  assert(rhs.size_ > 0);
   assert(size_ == rhs.size_);
   for (int32_t i = rhs.get_num_words() - 1; i >= 0; --i) {
     if (words_[i] < rhs.words_[i])
@@ -296,7 +291,7 @@ int32_t bitvector::find_first() const {
   for (uint32_t i = 0, n = this->get_num_words(); i < n; ++i) {
     uint32_t w = words_[i];
     if (w) {
-      int z = countTrailingZeros(w);
+      int z = ctz(w);
       return z + i * WORD_SIZE;
     }
   }
@@ -307,7 +302,7 @@ int32_t bitvector::find_last() const {
   for (int32_t i = this->get_num_words() - 1; i >= 0; --i) {
     uint32_t w = words_[i];
     if (w) {
-      int z = countLeadingZeros(w);
+      int z = clz(w);
       return (WORD_MASK - z) + i * WORD_SIZE;
     }
   }
@@ -342,232 +337,6 @@ void bitvector::write(const uint8_t* in, uint32_t sizeInBytes) {
     CH_CHECK(0 == in[i], "input value overflow"); 
   }  
   memcpy(words_, in, dstBytes);  
-}
-
-void cash::detail::Invert(bitvector& out, const bitvector& in) {
-  assert(out.size_ == in.size_);
-  for (uint32_t i = 0, n = in.get_num_words(); i < n; ++i) {
-    out.words_[i] = ~in.words_[i]; 
-  }
-  out.clear_unused_bits();
-}
-
-void cash::detail::And(bitvector& out, const bitvector& lhs, const bitvector& rhs) {
-  assert(out.size_ == lhs.size_);
-  assert(lhs.size_ == rhs.size_);
-  for (int32_t i = 0, n = rhs.get_num_words(); i < n; ++i) {
-    out.words_[i] = lhs.words_[i] & rhs.words_[i]; 
-  }
-}
-
-void cash::detail::Or(bitvector& out, const bitvector& lhs, const bitvector& rhs) {
-  assert(out.size_ == lhs.size_);
-  assert(lhs.size_ == rhs.size_);
-  for (int32_t i = 0, n = rhs.get_num_words(); i < n; ++i) {
-    out.words_[i] = lhs.words_[i] | rhs.words_[i]; 
-  }
-}
-
-void cash::detail::Xor(bitvector& out, const bitvector& lhs, const bitvector& rhs) {
-  assert(out.size_ == lhs.size_);
-  assert(lhs.size_ == rhs.size_);
-  for (int32_t i = 0, n = rhs.get_num_words(); i < n; ++i) {
-    out.words_[i] = lhs.words_[i] ^ rhs.words_[i]; 
-  }
-}
-
-void cash::detail::Nand(bitvector& out, const bitvector& lhs, const bitvector& rhs) {
-  assert(out.size_ == lhs.size_);
-  assert(lhs.size_ == rhs.size_);
-  for (int32_t i = 0, n = rhs.get_num_words(); i < n; ++i) {
-    out.words_[i] = ~(lhs.words_[i] & rhs.words_[i]); 
-  }
-  out.clear_unused_bits();
-}
-
-void cash::detail::Nor(bitvector& out, const bitvector& lhs, const bitvector& rhs) {
-  assert(out.size_ == lhs.size_);
-  assert(lhs.size_ == rhs.size_);
-  for (int32_t i = 0, n = rhs.get_num_words(); i < n; ++i) {
-    out.words_[i] = ~(lhs.words_[i] | rhs.words_[i]); 
-  }
-  out.clear_unused_bits();
-}
-
-void cash::detail::Xnor(bitvector& out, const bitvector& lhs, const bitvector& rhs) {
-  assert(out.size_ == lhs.size_);
-  assert(lhs.size_ == rhs.size_);
-  for (int32_t i = 0, n = rhs.get_num_words(); i < n; ++i) {
-    out.words_[i] = ~(lhs.words_[i] ^ rhs.words_[i]); 
-  }
-  out.clear_unused_bits();
-}
-
-bool bitvector::andr() const {
-  assert(size_ > 0);
-  uint32_t in_w = words_[0];
-  uint32_t result = in_w & 0x1;
-  for (uint32_t i = 1, j = 1, n = size_; i < n; ++i) {
-    if (0 == (i % bitvector::WORD_SIZE)) {
-      in_w = words_[j++];
-    }
-    in_w >>= 1;    
-    result &= (in_w & 0x1);    
-  }
-  return (result != 0);
-}
-
-bool bitvector::orr() const {
-  assert(size_ > 0);
-  uint32_t in_w = words_[0];
-  uint32_t result = in_w & 0x1;
-  for (uint32_t i = 1, j = 1, n = size_; i < n; ++i) {
-    if (0 == (i % bitvector::WORD_SIZE)) {
-      in_w = words_[j++];
-    }    
-    in_w >>= 1;
-    result |= (in_w & 0x1);
-  }
-  return (result != 0);
-}
-
-bool bitvector::xorr() const {
-  assert(size_ > 0);
-  uint32_t in_w = words_[0];
-  uint32_t result = in_w & 0x1;
-  for (uint32_t i = 1, j = 1, n = size_; i < n; ++i) {
-    if (0 == (i % bitvector::WORD_SIZE)) {
-      in_w = words_[j++];
-    }    
-    in_w >>= 1;
-    result ^= (in_w & 0x1);
-  }
-  return (result != 0);
-}
-
-void cash::detail::ShiftLeft(bitvector& out, const bitvector& in, uint32_t dist) {
-  assert(out.size_ == in.size_);  
-  uint32_t num_words = in.get_num_words();
-  if (num_words == 1) {
-    out.words_[0] = in.words_[0] << dist;
-  } else {    
-    uint32_t shift_words = dist >> bitvector::WORD_SIZE_LOG;    
-    if (dist < in.size_) {      
-      uint32_t shift_bits = dist & bitvector::WORD_MASK;
-      if (shift_bits) {
-        uint32_t shift_bits_r = bitvector::WORD_SIZE - shift_bits;
-        uint32_t prev = 0;
-        for (uint32_t i = 0, n = num_words - shift_words; i < n; ++i) {
-          uint32_t curr = in.words_[i];
-          out.words_[i + shift_words] = (curr << shift_bits) | (prev >> shift_bits_r);
-          prev = curr;
-        }
-      } else {
-        for (uint32_t i = 0, n = num_words - shift_words; i < n; ++i) {
-          out.words_[i + shift_words] = in.words_[i];
-        }
-      }
-    } else {
-      shift_words = num_words;
-    }
-    std::fill_n(out.words_, shift_words, 0x0);
-  }
-  out.clear_unused_bits(); // clear extra bits added by left shift
-}
-  
-void cash::detail::RotateLeft(bitvector& out, const bitvector& in, uint32_t dist) {
-  assert(out.size_ == in.size_);  
-  if (dist > in.size_)
-    dist %= in.size_;
-  if (dist == 0)
-    return;
-  uint32_t num_words = in.get_num_words();
-  if (num_words == 1) {
-    out.words_[0] = rotl(in.words_[0], dist, in.size_);
-  } else {      
-    uint32_t shift_words = dist >> bitvector::WORD_SIZE_LOG;
-    uint32_t shift_bits = dist & bitvector::WORD_MASK;
-    if (shift_bits) {
-      uint32_t shift_bits_r = bitvector::WORD_SIZE - shift_bits;
-      uint32_t prev = in.words_[num_words - 1];
-      for (uint32_t i = 0, j = shift_words; i < num_words; ++i) {    
-        uint32_t curr = in.words_[i];      
-        out.words_[j] = (curr << shift_bits) | (prev >> shift_bits_r);
-        prev = curr;
-        if (++j == num_words) 
-          j = 0;         
-      }
-    } else {
-      for (uint32_t i = 0, j = shift_words; i < num_words; ++i) {    
-        out.words_[j] = in.words_[i];
-        if (++j == num_words) 
-          j = 0;         
-      }
-    }
-  }
-  out.clear_unused_bits(); // clear extra bits added by left shift
-}
-
-void cash::detail::ShiftRight(bitvector& out, const bitvector& in, uint32_t dist) {
-  assert(out.size_ == in.size_);  
-  uint32_t num_words   = in.get_num_words(); 
-  if (num_words == 1) {
-    out.words_[0] = in.words_[0] >> dist;
-  } else {    
-    uint32_t shift_words = dist >> bitvector::WORD_SIZE_LOG;
-    if (dist < in.size_) {      
-      uint32_t shift_bits = dist & bitvector::WORD_MASK;
-      if (shift_bits) {
-        uint32_t shift_bits_l = bitvector::WORD_SIZE - shift_bits;
-        uint32_t prev = 0;
-        for (int32_t i = num_words - 1 - shift_words; i >= 0; --i) {
-          uint32_t curr = in.words_[i + shift_words];
-          out.words_[i] = (curr >> shift_bits) | (prev << shift_bits_l);
-          prev = curr;
-        }
-      } else {
-        for (int32_t i = num_words - 1 - shift_words; i >= 0; --i) {
-          out.words_[i] = in.words_[i + shift_words];
-        }
-      }
-    } else {
-      shift_words = num_words;
-    }
-    std::fill_n(out.words_ + (num_words - shift_words), shift_words, 0x0);
-  }
-}
-
-void cash::detail::RotateRight(bitvector& out, const bitvector& in, uint32_t dist) {
-  assert(out.size_ == in.size_);
-  if (dist > in.size_)
-    dist %= in.size_;
-  if (dist == 0)
-    return;
-  uint32_t num_words = in.get_num_words();
-  if (num_words == 1) {
-    out.words_[0] = rotr(in.words_[0], dist, in.size_);
-  } else {
-    int32_t shift_words = dist >> bitvector::WORD_SIZE_LOG;
-    int32_t shift_bits = dist & bitvector::WORD_MASK;
-    if (shift_bits) {
-      uint32_t shift_bits_l = bitvector::WORD_SIZE - shift_bits;
-      uint32_t prev = in.words_[0];
-      for (int32_t i = num_words - 1, j = i - shift_words; i >= 0; --i) {
-        uint32_t curr = in.words_[i];
-        out.words_[j] = (curr >> shift_bits) | (prev << shift_bits_l);
-        prev = curr;
-        if (j-- == 0) 
-          j = num_words - 1;         
-      }
-    } else {
-      for (int32_t i = num_words - 1, j = i - shift_words; i >= 0; --i) {
-        out.words_[j] = in.words_[i];
-        if (j-- == 0)
-          j = num_words - 1;         
-      }
-    }
-  }
-  out.clear_unused_bits(); // clear extra bits added by left shift
 }
 
 std::ostream& cash::detail::operator<<(std::ostream& os, const bitvector& b) {

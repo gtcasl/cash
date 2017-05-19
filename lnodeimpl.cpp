@@ -62,13 +62,6 @@ bool lnodeimpl::valid() const {
   return true;
 }
 
-const char* lnodeimpl::get_name() const {
-  static const char* sc_names[] = {
-    CH_OPERATOR_ENUM(CH_OPERATOR_NAME)
-  };
-  return sc_names[(int)op_];
-}
-
 void lnodeimpl::print(std::ostream& out) const {
   out << "#" << id_ << " <- " << this->get_name() << value_.get_size();
   uint32_t n = srcs_.size();

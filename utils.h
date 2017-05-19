@@ -205,7 +205,7 @@ constexpr unsigned ilog2ceil(unsigned x) {
 }
 
 template <class Dst, class Src>
-Dst bit_cast(const Src& src) {
+Dst bitcast(const Src& src) {
   union merged_t {
     Src src;
     Dst dst;
@@ -216,27 +216,20 @@ Dst bit_cast(const Src& src) {
   return m.dst;  
 }
 
-inline uint32_t countLeadingZeros(uint32_t value) {
-  uint32_t count;
-  if (value == 0) return 32; 
-  for (count = 0; ((value & 0x80000000) == 0); ++count, value <<= 1);
-  return count;
+constexpr uint32_t clz(uint32_t value) {
+  return __builtin_clz(value);
 }
 
-inline uint32_t countTrailingZeros(uint32_t value) {
-  uint32_t count;
-  if (value == 0) return 32;
-  value = (value ^ (value - 1)) >> 1;  // Set x's trailing 0s to 1s and zero rest
-  for (count = 0; value; ++count, value >>= 1);
-  return count; 
+constexpr uint32_t ctz(uint32_t value) {
+  return __builtin_ctz(value);
 }
 
-inline uint32_t rotl(uint32_t value, uint32_t shift, uint32_t width) {
+constexpr uint32_t rotl(uint32_t value, uint32_t shift, uint32_t width) {
   assert(shift < width);
   return  (value << shift) | (value >> (width - shift));
 }
 
-inline uint32_t rotr(uint32_t value, uint32_t shift, uint32_t width) {
+constexpr uint32_t rotr(uint32_t value, uint32_t shift, uint32_t width) {
   assert(shift < width);
   return (value >> shift) | (value << (width  - shift));
 }

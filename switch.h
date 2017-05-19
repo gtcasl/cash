@@ -29,13 +29,13 @@ public:
   
   template <typename Func>
   switch_t& case_(const ch_bitbase<N>& value, const Func& func) {
-    impl_.eval(value.get_node().get_impl(), to_function(func));
+    impl_.eval(get_node(value).get_impl(), to_function(func));
     return *this;
   }
   
   template <typename Func>
   switch_t& case_(const ch_bit<N>& value, const Func& func) {    
-    impl_.eval(value.get_node().get_impl(), to_function(func));
+    impl_.eval(get_node(value).get_impl(), to_function(func));
     return *this;
   }
   
@@ -56,7 +56,7 @@ protected:
 
 template <unsigned N> 
 switch_t<N> ch_switch(const ch_bitbase<N>& key) {
-  return switch_t<N>(key.get_node().get_impl());
+  return switch_t<N>(get_node(key).get_impl());
 }
 
 }
