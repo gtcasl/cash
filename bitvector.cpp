@@ -109,9 +109,8 @@ static uint32_t chr2int(char x, int base) {
     if (x >= 'a' && x <= 'f')
       return (x - 'a') + 10;
     break;
-  default:
-    CH_ABORT("invalid literal value");
-  }
+  }  
+  CH_ABORT("invalid literal value");
 }
 
 bitvector& bitvector::operator=(const std::string& value) {  
@@ -144,7 +143,7 @@ bitvector& bitvector::operator=(const std::string& value) {
     char chr = value[i];
     if (chr == '\'') 
       continue; // skip separator character
-    if (size == 0) {
+    if (0 == size) {
        // calculate exact bit coverage for the first non zero character
        uint32_t v = chr2int(chr, base);
        if (v) {
@@ -204,6 +203,8 @@ bitvector& bitvector::operator=(char value) {
   // clear unused words
   uint32_t num_words = (size_ + WORD_MASK) >> WORD_SIZE_LOG;
   std::fill_n(words_ + 1, num_words - 1, 0x0);
+
+  return *this;
 }
 
 bitvector& bitvector::operator=(uint32_t value) {
@@ -220,6 +221,8 @@ bitvector& bitvector::operator=(uint32_t value) {
   
   // clear unused words
   std::fill_n(words_ + 1, num_words - 1, 0x0);
+
+  return *this;
 }
 
 bitvector& bitvector::operator=(const std::initializer_list<uint32_t>& value) {
@@ -248,6 +251,8 @@ bitvector& bitvector::operator=(const std::initializer_list<uint32_t>& value) {
   for (auto iterEnd = value.end(); iterValue != iterEnd; ++iterValue) {
     *dst-- = *iterValue;
   }
+
+  return *this;
 }
 
 bool bitvector::operator==(const bitvector& rhs) const {
@@ -276,7 +281,7 @@ void bitvector::copy(uint32_t dst_offset, const bitvector& src, uint32_t src_off
   assert(src_offset + src_length <= src.size_);
   assert(dst_offset + src_length <= size_);
   if (src_length == size_ && src.size_ == size_) {
-    assert(dst_offset == 0 && src_offset == 0);
+    assert(0 == dst_offset && 0 == src_offset);
     *this = src;
   } else {  
     const_iterator iter_src(src.begin() + src_offset);

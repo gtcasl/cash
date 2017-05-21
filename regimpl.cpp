@@ -22,6 +22,7 @@ regimpl::~regimpl() {
 }
 
 void regimpl::tick(ch_cycle t) { 
+  CH_UNREFERENCED_PARAMETER(t);
   value_ = q_next_;
 }
 
@@ -30,11 +31,13 @@ void regimpl::tick_next(ch_cycle t) {
 }
 
 const bitvector& regimpl::eval(ch_cycle t) {
+  CH_UNREFERENCED_PARAMETER(t);
   return value_; 
 }
 
 void regimpl::print_vl(ostream& out) const {
-  TODO("Not yet implemented!");
+  CH_UNREFERENCED_PARAMETER(out);
+  CH_TODO("Not yet implemented!");
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -62,7 +65,7 @@ latchimpl::~latchimpl() {
 }
 
 void latchimpl::tick(ch_cycle t) { 
-  //--
+  CH_UNREFERENCED_PARAMETER(t);
 }
 
 void latchimpl::tick_next(ch_cycle t) {
@@ -74,11 +77,13 @@ void latchimpl::tick_next(ch_cycle t) {
 }
 
 const bitvector& latchimpl::eval(ch_cycle t) {
+  CH_UNREFERENCED_PARAMETER(t);
   return value_; 
 }
 
 void latchimpl::print_vl(ostream& out) const {
-  TODO("Not yet implemented!");
+  CH_UNREFERENCED_PARAMETER(out);
+  CH_TODO("Not yet implemented!");
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -119,9 +124,11 @@ lnodeimpl* cash::detail::createLatchNode(lnodeimpl* next,
 }
 
 lnodeimpl* cash::detail::createReadyNode(lnodeimpl* node) {
-  TODO("Not yet implemented!");
+  CH_UNREFERENCED_PARAMETER(node);
+  CH_TODO("Not yet implemented!");
 }
 
 lnodeimpl* cash::detail::createValidNode(lnodeimpl* node) {
-  TODO("Not yet implemented!");
+  CH_UNREFERENCED_PARAMETER(node);
+  CH_TODO("Not yet implemented!");
 }

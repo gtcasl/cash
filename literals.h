@@ -134,19 +134,19 @@ struct lit_hex_sizex {
 namespace core_literals {
 
   template< char... Chars>
-  constexpr ch_bit<lit_bin_size<Chars...>::value> operator "" _b() {
+  ch_bit<lit_bin_size<Chars...>::value> operator "" _b() {
     constexpr const char str[] = {Chars..., 'b', '\0'};
     return ch_bit<lit_bin_size<Chars...>::value>(bitvector(str, lit_bin_size<Chars...>::value));
   }
   
   template< char... Chars>
-  constexpr ch_bit<lit_oct_size<Chars...>::value> operator "" _o() {
+  ch_bit<lit_oct_size<Chars...>::value> operator "" _o() {
     constexpr const char str[] = {Chars..., 'o', '\0'};
     return ch_bit<lit_oct_size<Chars...>::value>(bitvector(str, lit_oct_size<Chars...>::value));
   }
   
   template< char... Chars>
-  constexpr ch_bit<lit_hex_size<Chars...>::value> operator "" _h() {
+  ch_bit<lit_hex_size<Chars...>::value> operator "" _h() {
     constexpr const char str[] = {Chars..., 'h', '\0'};
     return ch_bit<lit_hex_size<Chars...>::value>(bitvector(str, lit_hex_size<Chars...>::value));
   }
@@ -154,19 +154,19 @@ namespace core_literals {
 
 #define CH_CORE_LITERALS(i, x) \
   template< char... Chars> \
-  constexpr ch_bit<x> operator "" _b##x() { \
+  ch_bit<x> operator "" _b##x() { \
     static_assert(x >= lit_bin_sizex<Chars...>::value, "literal value overflow"); \
     constexpr const char str[] = {Chars..., 'b', '\0'}; \
     return ch_bit<x>(bitvector(str, x)); \
   } \
   template< char... Chars> \
-  constexpr ch_bit<x> operator "" _o##x() { \
+  ch_bit<x> operator "" _o##x() { \
     static_assert(x >= lit_oct_sizex<Chars...>::value, "literal value overflow"); \
     constexpr const char str[] = {Chars..., 'o', '\0'}; \
     return ch_bit<x>(bitvector(str, x)); \
   } \
   template< char... Chars> \
-  constexpr ch_bit<x> operator "" _h##x() { \
+  ch_bit<x> operator "" _h##x() { \
     static_assert(x >= lit_hex_sizex<Chars...>::value, "literal value overflow"); \
     constexpr const char str[] = {Chars..., 'h', '\0'}; \
     return ch_bit<x>(bitvector(str, x)); \
@@ -179,38 +179,38 @@ namespace core_literals {
 namespace sim_literals {
 
   template< char... Chars>
-  constexpr ch_bus<lit_bin_size<Chars...>::value> operator "" _b() {
+  ch_bus<lit_bin_size<Chars...>::value> operator "" _b() {
     constexpr const char str[] = {Chars..., 'b', '\0'};
     return ch_bus<lit_bin_size<Chars...>::value>(bitvector(str, lit_bin_size<Chars...>::value));
   }
   
   template< char... Chars>
-  constexpr ch_bus<lit_oct_size<Chars...>::value> operator "" _o() {
+  ch_bus<lit_oct_size<Chars...>::value> operator "" _o() {
     constexpr const char str[] = {Chars..., 'o', '\0'};
     return ch_bus<lit_oct_size<Chars...>::value>(bitvector(str, lit_oct_size<Chars...>::value));
   }
   
   template< char... Chars>
-  constexpr ch_bus<lit_hex_size<Chars...>::value> operator "" _h() {
+  ch_bus<lit_hex_size<Chars...>::value> operator "" _h() {
     constexpr const char str[] = {Chars..., 'h', '\0'};
     return ch_bus<lit_hex_size<Chars...>::value>(bitvector(str, lit_hex_size<Chars...>::value));
   }
 
 #define CH_SIM_LITERALS(i, x) \
   template< char... Chars> \
-  constexpr ch_bus<x> operator "" _b##x() { \
+  ch_bus<x> operator "" _b##x() { \
     static_assert(x >= lit_bin_sizex<Chars...>::value, "literal value overflow"); \
     constexpr const char str[] = {Chars..., 'b', '\0'}; \
     return ch_bus<x>(bitvector(str, x)); \
   } \
   template< char... Chars> \
-  constexpr ch_bus<x> operator "" _o##x() { \
+  ch_bus<x> operator "" _o##x() { \
     static_assert(x >= lit_oct_sizex<Chars...>::value, "literal value overflow"); \
     constexpr const char str[] = {Chars..., 'o', '\0'}; \
     return ch_bus<x>(bitvector(str, x)); \
   } \
   template< char... Chars> \
-  constexpr ch_bus<x> operator "" _h##x() { \
+  ch_bus<x> operator "" _h##x() { \
     static_assert(x >= lit_hex_sizex<Chars...>::value, "literal value overflow"); \
     constexpr const char str[] = {Chars..., 'h', '\0'}; \
     return ch_bus<x>(bitvector(str, x)); \

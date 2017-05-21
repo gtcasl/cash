@@ -110,6 +110,8 @@ uint32_t context::add_node(lnodeimpl* node) {
   case op_print:
     gtaps_.emplace_back((ioimpl*)node);
     break;
+  default:
+    break;
   }
   
   if (!cond_blocks_.empty()
@@ -150,6 +152,8 @@ void context::remove_node(lnodeimpl* node) {
   case op_print:
     gtaps_.remove((ioimpl*)node);
     break;
+  default:
+    break;
   }
   
   if (node == clk_) {
@@ -181,7 +185,7 @@ void context::end_case() {
   assert(!cond_blocks_.empty() && !cond_blocks_.front().cases.empty());
   const cond_case_t& cc = cond_blocks_.front().cases.front();
   for (uint32_t v : cc.assignments) {
-    if (cond_vals_[v].owner = cc.cond) {
+    if (cond_vals_[v].owner == cc.cond) {
       cond_vals_[v].owner = nullptr;
     }
   }
@@ -235,6 +239,8 @@ lnodeimpl* context::get_current_conditional(const cond_blocks_t::iterator& iterB
 }
 
 lnodeimpl* context::resolve_conditional(lnodeimpl* dst, lnodeimpl* src) {
+  CH_UNREFERENCED_PARAMETER(dst);
+  CH_UNREFERENCED_PARAMETER(src);
   /*// check if insize conditionall block and the node is not local
   if (!cond_blocks_.empty()
    && !cond_blocks_.front().cases.empty()
@@ -412,10 +418,13 @@ void context::eval(ch_cycle t) {
 }
 
 void context::toVerilog(const std::string& module_name, std::ostream& out) {
-  TODO("Not yet implemented!");
+  CH_UNREFERENCED_PARAMETER(module_name);
+  CH_UNREFERENCED_PARAMETER(out);
+  CH_TODO("Not yet implemented!");
 }
 
 void context::dumpAST(std::ostream& out, uint32_t level) {
+  CH_UNREFERENCED_PARAMETER(level);
   for (lnodeimpl* node : nodes_) {
     node->print(out);
     out << std::endl;

@@ -126,7 +126,7 @@ TEST_CASE("simulation tests", "[sim]") {
   SECTION("test bus enums", "[enum]") {    
     TESTX([]()->bool {          
       my_enum::bus_type a(my_enum::idle);
-      return (a == 0);
+      return (0 == a);
     });
     TEST([]()->bool {
       my_enum::bus_type a;

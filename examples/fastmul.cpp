@@ -16,6 +16,7 @@ ch_bit8 FastMul(const ch_bit4& lhs, const ch_bit4& rhs) {
 }
 
 int main(int argc, char **argv) {
+  std::ofstream vcd_file("fastmul.vcd");
   ch_bus<8> out;
   ch_bus<4> lhs(2), rhs(3);
 
@@ -25,7 +26,7 @@ int main(int argc, char **argv) {
   myDevice.toVerilog("fastmul", v_file);
   v_file.close();*/
 
-  ch_vcdtracer tracer("fastmul.vcd", myDevice);
+  ch_vcdtracer tracer(vcd_file, myDevice);
   __trace(tracer, lhs, rhs, out);
   tracer.run();
   

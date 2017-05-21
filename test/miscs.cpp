@@ -70,7 +70,8 @@ TEST_CASE("miscellaneous tests", "[miscs]") {
   }
   
   SECTION("test vctracer", "[vctracer]") {
-    TESTX([]()->bool {          
+    TESTX([]()->bool {
+      std::ofstream vcd_file("test.vcd");
       ch_bus2 in(2), x, out;       
       auto inverter = [](const ch_bit2& x)->ch_bit2 {
         __tap(x);
@@ -78,7 +79,7 @@ TEST_CASE("miscellaneous tests", "[miscs]") {
       };             
       ch_device myDevice(inverter, in, out);     
       x = myDevice.get_tap<2>("x");
-      ch_vcdtracer tracer("test.vcd", myDevice);
+      ch_vcdtracer tracer(vcd_file, myDevice);
       __trace(tracer, in, out);
       tracer.run();
       return (out == 1);

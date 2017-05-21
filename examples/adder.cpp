@@ -19,6 +19,7 @@ __out(ch_bit<N>, ch_logic) Adder(
 }
 
 int main(int argc, char **argv) {
+  std::ofstream vcd_file("adder.vcd");
   ch_signal cout, cin(1);
   ch_bus<2> out, lhs(1), rhs(3);
   
@@ -28,7 +29,7 @@ int main(int argc, char **argv) {
   myDevice.toVerilog("adder", v_file);
   v_file.close();*/
 
-  ch_vcdtracer tracer("adder.vcd", myDevice);
+  ch_vcdtracer tracer(vcd_file, myDevice);
   __trace(tracer, lhs, rhs, cin, out, cout);
   tracer.run();
   

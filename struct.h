@@ -32,7 +32,7 @@
     size_t len = std::min<size_t>(length, CH_PAIR_L(x)::bit_count - offset); \
     read_data(CH_PAIR_R(x), inout, offset, len); \
     length -= len; \
-    if (length == 0) \
+    if (0 == length) \
       return; \
     offset = CH_PAIR_L(x)::bit_count; \
   } \
@@ -43,7 +43,7 @@
     size_t len = std::min<size_t>(src_length, CH_PAIR_L(x)::bit_count - dst_offset); \
     write_data(CH_PAIR_R(x), dst_offset, in, src_offset, len); \
     src_length -= len; \
-    if (src_length == 0) \
+    if (0 == src_length) \
       return; \
     src_offset += len; \
     dst_offset = CH_PAIR_L(x)::bit_count; \

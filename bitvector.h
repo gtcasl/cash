@@ -27,6 +27,7 @@ public:
         word_ |= mask_;
       else
         word_ &= ~mask_;
+      return *this;
     }
     
     operator bool() const {
@@ -132,8 +133,8 @@ public:
       index_ += delta;
     }
     
-    uint32_t  index_;
     const uint32_t* words_;
+    uint32_t index_;
     
     friend class iterator;
     friend class bitvector;

@@ -14,9 +14,9 @@ public:
   void print_vl(std::ostream& out) const override;
   
   std::string format_;  
-  std::stringstream strbuf_;
-  ch_cycle ctime_;
+  std::stringstream strbuf_;  
   uint32_t args_offset_;
+  ch_cycle ctime_;
 };
 
 }

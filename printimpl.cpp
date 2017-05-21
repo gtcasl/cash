@@ -114,7 +114,8 @@ const bitvector& printimpl::eval(ch_cycle t) {
 }
 
 void printimpl::print_vl(std::ostream& out) const {
-  TODO("Not yet implemented!");
+  CH_UNREFERENCED_PARAMETER(out);
+  CH_TODO("Not yet implemented!");
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -122,7 +123,7 @@ void printimpl::print_vl(std::ostream& out) const {
 void cash::detail::createPrintNode(lnodeimpl* cond, const std::string& format,
                      const std::initializer_list<lnodeimpl*>& args) {
   // printing is only enabled in debug mode
-  if (platform::self().get_dbg_level() == 0)
+  if (0 == platform::self().get_dbg_level())
     return;
   
   // check format

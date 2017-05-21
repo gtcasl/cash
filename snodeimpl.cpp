@@ -43,7 +43,7 @@ void snodeimpl::assign(uint32_t start, snodeimpl* src, uint32_t offset, uint32_t
       uint32_t src_end  = start + length;
       uint32_t curr_end = curr.start + curr.length;
       
-      source_t new_src = { src, start, offset, length };
+      source_t new_src = { src, start, offset, length, 0 };
       
       // do ranges intersect?
       if ((start < curr_end && src_end > curr.start)) {
@@ -127,14 +127,14 @@ void snodeimpl::assign(uint32_t start, snodeimpl* src, uint32_t offset, uint32_t
         this->merge_left(i);
       }       
     } 
-    assert(length == 0);    
+    assert(0 == length);
     if (i < n) {
       // try merging inserted node on the right
       this->merge_left(i);
     }
   } else {
     src->acquire();
-    srcs_.push_back({ src, start, offset, length });       
+    srcs_.push_back({ src, start, offset, length, 0 });
   }
 }
 
@@ -195,7 +195,7 @@ snode::~snode() {
   if (impl_) {
     impl_->set_owner(nullptr);
     impl_->release();
-    impl_ == nullptr;
+    impl_ = nullptr;
   }
 }
 
@@ -298,7 +298,7 @@ void snode::write(uint32_t dst_offset, const data_type& in, uint32_t src_offset,
       size_t len = std::min(d.length - src_offset, src_length);
       this->assign(dst_offset, d.src, d.offset + src_offset, len, size);
       src_length -= len;
-      if (src_length == 0)
+      if (0 == src_length)
         return;
       dst_offset += len;                
       src_offset = d.length;
@@ -311,7 +311,7 @@ void snode::assign(uint32_t dst_offset, const snode& src, uint32_t src_offset, u
   assert((dst_offset + src_length) <= size);
   // check if full replacement
   if (size == src_length && size == src.get_size()) {
-    assert(dst_offset == 0 && src_offset == 0);
+    assert(0 == dst_offset && 0 == src_offset);
     this->assign(src.get_impl());
   } else {
     // partial assignment

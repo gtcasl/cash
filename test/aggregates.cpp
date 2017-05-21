@@ -141,7 +141,7 @@ TEST_CASE("aggregate tests", "[aggregate]") {
   SECTION("test enums", "[enum]") {
     TEST([]()->ch_logic {
       my_enum a(my_enum::idle);
-      return (a == 0);
+      return (0 == a);
     });
     TEST([]()->ch_logic {
       my_enum a;

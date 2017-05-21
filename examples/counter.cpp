@@ -12,6 +12,7 @@ ch_bit<N> Counter() {
 }
 
 int main(int argc, char **argv) {
+  std::ofstream vcd_file("counter.vcd");
   ch_bus<4> out;
 
   ch_device myDevice(Counter<4>, out);
@@ -20,7 +21,7 @@ int main(int argc, char **argv) {
   myDevice.toVerilog("counter", v_file);
   v_file.close();*/
 
-  ch_vcdtracer tracer("counter.vcd", myDevice);
+  ch_vcdtracer tracer(vcd_file, myDevice);
   __trace(tracer, out);
   tracer.run(11);
   

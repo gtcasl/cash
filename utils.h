@@ -260,7 +260,11 @@ constexpr uint32_t rotr(uint32_t value, uint32_t shift, uint32_t width) {
 #define CH_CHECK(x, msg, ...) \
   if (!(x)) CH_ABORT(msg, ##__VA_ARGS__)
 
-#define TODO(x) CH_ABORT(#x);
+template <typename T>
+void __ignore(T &&) {}
+
+#define CH_UNREFERENCED_PARAMETER(p) __ignore(p)
+#define CH_TODO(x) CH_ABORT(#x);
 
 #define CH_COUNTOF(a) (sizeof(a) / sizeof(a[0]))
 #define CH_MAX(a,b) (((a) > (b)) ? (a) : (b))

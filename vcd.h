@@ -8,17 +8,17 @@ namespace detail {
 class ch_vcdtracer: public ch_tracer {
 public:
   template<typename ...Devices>
-  ch_vcdtracer(const std::string& filename, const Devices&... devices) : ch_vcdtracer(filename, {&devices...}) {}
-  ch_vcdtracer(const std::string& filename, const std::initializer_list<const ch_device*>& devices);
+  ch_vcdtracer(std::ostream& out, const Devices&... devices)
+    : ch_vcdtracer(out, {&devices...})
+  {}
+
+  ch_vcdtracer(std::ostream& out, const std::initializer_list<const ch_device*>& devices);
   
-  void tick(ch_cycle t);
+  void tick(ch_cycle t) override;
   
 protected:  
 
   void ensureInitialize() override;
-
-  std::ofstream file_;
-
 };
 
 }

@@ -14,6 +14,7 @@ assertimpl::assertimpl(lnodeimpl* src, const std::string& msg)
 const bitvector& assertimpl::eval(ch_cycle t) {
   const bitvector& bits = srcs_[0].eval(t);
   CH_CHECK(bits[0], "assertion failure at cycle %ld, %s", t, msg_.c_str());  
+  return bits;
 }
 
 void cash::detail::ch_assert(const ch_logicbase& l, const std::string& msg) {

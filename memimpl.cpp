@@ -62,7 +62,7 @@ void memimpl::load_data(const std::function<bool(uint32_t* out)>& getdata) {
     }
     CH_CHECK(a < max_addr && w < num_words, "input value overflow");
     content_[a].set_word(w++, value & mask);
-    if (mask_bits == 0) {
+    if (0 == mask_bits) {
       CH_CHECK((value & ~mask) == 0, "input value overflow");
       mask_bits = data_width;        
       w = 0;
@@ -119,11 +119,13 @@ void memimpl::tick_next(ch_cycle t) {
 }
 
 const bitvector& memimpl::eval(ch_cycle t) {
-  //--
+  CH_UNREFERENCED_PARAMETER(t);
+  abort();
 }
 
 void memimpl::print_vl(ostream& out) const {
-  TODO("Not yet implemented!");
+  CH_UNREFERENCED_PARAMETER(out);
+  CH_TODO("Not yet implemented!");
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -149,6 +151,7 @@ void memportimpl::write(lnodeimpl* data) {
 }
 
 void memportimpl::tick(ch_cycle t) {
+  CH_UNREFERENCED_PARAMETER(t);
   if (wdata_id_ != -1) {
     memimpl* const mem = dynamic_cast<memimpl*>(srcs_[0].get_impl());
     mem->content_[a_next_] = q_next_;
@@ -173,7 +176,8 @@ const bitvector& memportimpl::eval(ch_cycle t) {
 }
 
 void memportimpl::print_vl(std::ostream& out) const {
-  TODO("Not yet implemented!");
+  CH_UNREFERENCED_PARAMETER(out);
+  CH_TODO("Not yet implemented!");
 }
 ///////////////////////////////////////////////////////////////////////////////
 

@@ -11,14 +11,14 @@ proxyimpl::proxyimpl(context* ctx, uint32_t size)
 
 void proxyimpl::add_node(uint32_t start, const lnode& src, uint32_t offset, uint32_t length, bool resize) {    
   // add new source
-  uint32_t new_srcidx = -1;
+  uint32_t new_srcidx = 0xffffffff;
   for (uint32_t i = 0, n = srcs_.size(); i < n; ++i) {
     if (srcs_[i].get_id() == src.get_id()) {
       new_srcidx = i;
       break;
     }
   }
-  if (new_srcidx == -1) {
+  if (0xffffffff == new_srcidx) {
     new_srcidx = srcs_.size();    
     srcs_.emplace_back(src);    
   }
@@ -106,7 +106,7 @@ void proxyimpl::add_node(uint32_t start, const lnode& src, uint32_t offset, uint
         this->merge_left(i);
       }       
     }
-    assert(length == 0);    
+    assert(0 == length);
     if (i < n) {
       // try merging inserted node on the right
       this->merge_left(i);
@@ -182,5 +182,6 @@ void proxyimpl::print(std::ostream& out) const {
 }
 
 void proxyimpl::print_vl(std::ostream& out) const {
-  TODO("Not yet implemented!");
+  CH_UNREFERENCED_PARAMETER(out);
+  CH_TODO("Not yet implemented!");
 }

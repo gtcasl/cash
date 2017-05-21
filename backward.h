@@ -606,7 +606,7 @@ size_t unwind(F f, size_t depth) {
 template <>
 class StackTraceImpl<system_tag::linux_tag>: public StackTraceLinuxImplHolder {
 public:
-	__attribute__ ((noinline)) // TODO use some macro
+    __attribute__ ((noinline)) // CH_TODO use some macro
 	size_t load_here(size_t depth=32) {
 		load_thread_info();
 		if (depth == 0) {
@@ -650,7 +650,7 @@ private:
 template <>
 class StackTraceImpl<system_tag::linux_tag>: public StackTraceLinuxImplHolder {
 public:
-	__attribute__ ((noinline)) // TODO use some macro
+    __attribute__ ((noinline)) // CH_TODO use some macro
 	size_t load_here(size_t depth=32) {
 		load_thread_info();
 		if (depth == 0) {
@@ -1449,7 +1449,7 @@ private:
 		dwarf_formsdata(dwarf_attr(die, DW_AT_call_file, &attr_mem),
 				&file_idx);
 
-		if (file_idx == 0) {
+		if (0 == file_idx) {
 			return 0;
 		}
 

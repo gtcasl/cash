@@ -19,5 +19,6 @@ void litimpl::print(ostream& out) const {
 }
 
 void litimpl::print_vl(ostream& out) const {
-  TODO("Not yet implemented!");
+  CH_UNREFERENCED_PARAMETER(out);
+  CH_TODO("Not yet implemented!");
 }

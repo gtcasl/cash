@@ -33,6 +33,9 @@ void clock_event::print_vl(ostream& out) const {
     break;
   case EDGE_NEG:
     out << "negedge ";
+    break;  
+  case EDGE_ANY:
+    // do nothing
     break;
   }
   out << "__x" << signal_.get_id();

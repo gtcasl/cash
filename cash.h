@@ -204,11 +204,6 @@ namespace sim {
   using ch_bus16  = ch_bus<16>;
   using ch_bus32  = ch_bus<32>;
   using ch_bus64  = ch_bus<64>;
-
-  //
-  // literals
-  //
-  
   
   //
   // api objects

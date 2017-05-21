@@ -6,10 +6,11 @@ using namespace cash::detail;
 
 #define CH_ALUOP_NAME(n) case alu_op_##n: return op_##n;
 
-constexpr ch_operator to_operator(ch_alu_op op) {
+static ch_operator to_operator(ch_alu_op op) {
   switch (op) {
     CH_ALUOP_ENUM(CH_ALUOP_NAME)
   }
+  CH_ABORT("invalid alu_op value");
 }
 
 #undef CH_ALUOP_NAME
@@ -229,13 +230,13 @@ static void RotR(bitvector& out, const bitvector& in, uint32_t dist) {
         uint32_t curr = in.get_word(i);
         out.set_word(j, (curr >> shift_bits) | (prev << shift_bits_l));
         prev = curr;
-        if (j-- == 0)
+        if (0 == j--)
           j = num_words - 1;
       }
     } else {
       for (int32_t i = num_words - 1, j = i - shift_words; i >= 0; --i) {
         out.set_word(j, in.get_word(i));
-        if (j-- == 0)
+        if (0 == j--)
           j = num_words - 1;
       }
     }
@@ -347,10 +348,6 @@ static void Mux(bitvector& dst, const bitvector& in, const bitvector& sel) {
   }
 }
 
-static void Demux(bitvector& dst, const bitvector& in, const bitvector& sel) {
-  TODO("Not yet implemented!");
-}
-
 ///////////////////////////////////////////////////////////////////////////////
 
 template <ch_alu_op op>
@@ -362,7 +359,7 @@ static void unaryop(bitvector& dst, const bitvector& a) {
     Invert(dst, a);
     break;
   default:
-    TODO("Not yet implemented!");
+    CH_TODO("Not yet implemented!");
   }
 }
 
@@ -391,7 +388,7 @@ static void binaryop(bitvector& dst, const bitvector& a, const bitvector& b) {
     Xnor(dst, a, b);
     break;
   default:
-    TODO("Not yet implemented!");
+    CH_TODO("Not yet implemented!");
   }
 }
 
@@ -415,7 +412,7 @@ static void shiftop(bitvector& dst, const bitvector& in, const bitvector& bits) 
     RotR(dst, in, wbits);
     break;
   default:
-    TODO("Not yet implemented!");
+    CH_TODO("Not yet implemented!");
   }
 }
 
@@ -435,7 +432,7 @@ static void reduceop(bitvector& dst, const bitvector& in) {
     result = XorN(in);
     break;
   default:
-    TODO("Not yet implemented!");
+    CH_TODO("Not yet implemented!");
   } 
   dst[0] = result;
 }
@@ -466,7 +463,7 @@ static void compareop(bitvector& dst, const bitvector& a, const bitvector& b) {
     result = !(a < b);
     break;
   default:
-    TODO("Not yet implemented!");
+    CH_TODO("Not yet implemented!");
   }
   dst[0] = result;
 }
@@ -549,7 +546,7 @@ const bitvector& aluimpl::eval(ch_cycle t) {
     case alu_op_mult:
     case alu_op_div:
     case alu_op_mod:
-      TODO("Not yet implemented!");
+      CH_TODO("Not yet implemented!");
       break;
       
     case alu_op_eq:
@@ -575,7 +572,7 @@ const bitvector& aluimpl::eval(ch_cycle t) {
       Mux(value_, srcs_[0].eval(t), srcs_[1].eval(t));
       break;
     case alu_op_demux:
-      Demux(value_, srcs_[0].eval(t), srcs_[1].eval(t));
+      CH_TODO("Not yet implemented!");
       break;
       
     case alu_op_fadd:
@@ -595,14 +592,15 @@ const bitvector& aluimpl::eval(ch_cycle t) {
       break;
       
     default:
-      TODO("Not yet implemented!");
+      CH_TODO("Not yet implemented!");
     }
   }
   return value_;
 }
 
 void aluimpl::print_vl(std::ostream& out) const {
-  TODO("Not yet implemented!");
+  CH_UNREFERENCED_PARAMETER(out);
+  CH_TODO("Not yet implemented!");
 } 
 
 lnodeimpl* cash::detail::createAluNode(ch_alu_op op, uint32_t size, lnodeimpl* a, lnodeimpl* b) {

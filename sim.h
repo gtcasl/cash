@@ -56,7 +56,7 @@ public:
     this->add_trace(name, get_node(bus).get_impl());
   }
   
-  void tick(ch_cycle t);
+  void tick(ch_cycle t) override;
   
 protected:
   

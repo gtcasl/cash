@@ -1,3 +1,4 @@
+#CXX = clang-3.8
 #CXXFLAGS += -std=c++14 -O2 -DNDEBUG
 CXXFLAGS += -std=c++14 -O0 -g -fmax-errors=5 -DCASH_DEBUG
 LDFLAGS += -lcash

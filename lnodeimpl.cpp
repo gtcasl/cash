@@ -35,6 +35,8 @@ void lnodeimpl::remove_ref(const lnode* node) {
 }
 
 void lnodeimpl::update_ref(const lnode* node, lnodeimpl* impl) {
+  CH_UNREFERENCED_PARAMETER(node);
+  CH_UNREFERENCED_PARAMETER(impl);
   CH_ABORT("Not yet implemented");
 }
 
@@ -83,12 +85,14 @@ undefimpl::undefimpl(context* ctx, uint32_t size)
 {}
 
 const bitvector& undefimpl::eval(ch_cycle t) {
+  CH_UNREFERENCED_PARAMETER(t);
   CH_ABORT("undefined node: %d!", id_);
   return value_; 
 }
 
 void undefimpl::print_vl(std::ostream& out) const {
-  TODO("Not yet Implemented!");
+  CH_UNREFERENCED_PARAMETER(out);
+  CH_TODO("Not yet Implemented!");
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -234,7 +238,7 @@ void lnode::write(uint32_t dst_offset, const data_type& in, uint32_t src_offset,
       uint32_t len = std::min(d.length - src_offset, src_length);
       this->assign(dst_offset, d.src, d.offset + src_offset, len, size);
       src_length -= len;
-      if (src_length == 0)
+      if (0 == src_length)
         return;
       dst_offset += len;                
       src_offset = d.length;
@@ -253,7 +257,7 @@ void lnode::assign(uint32_t dst_offset, const lnode& src, uint32_t src_offset, u
   
   // check if full assignment
   if (src_length == size) {
-    assert(dst_offset == 0);
+    assert(0 == dst_offset);
     // check if partial source
     if (src_impl->get_size() > src_length) {
       proxyimpl* const proxy = new proxyimpl(ctx, src_length);

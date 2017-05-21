@@ -7,7 +7,7 @@ namespace detail {
 
 class snodeimpl;
 
-class ioimpl : public lnodeimpl { // LCOV_EXCL_LINE
+class ioimpl : public lnodeimpl {
 public:
   ioimpl(ch_operator op, context* ctx, uint32_t size) : lnodeimpl(op, ctx, size)  {}
 };
@@ -24,7 +24,9 @@ public:
   
   void print(std::ostream& out) const override;
   
-  void print_vl(std::ostream& out) const override {} // LCOV_EXCL_LINE
+  void print_vl(std::ostream& out) const override {
+    CH_UNREFERENCED_PARAMETER(out);
+  }
   
 protected:
   snodeimpl* bus_;
@@ -36,19 +38,21 @@ public:
   outputimpl(lnodeimpl* src) : outputimpl(op_output, src) {}
   ~outputimpl();
   
-  const bitvector& eval(ch_cycle t);
+  const bitvector& eval(ch_cycle t) override;
   
   snodeimpl* get_bus();
   
   void print(std::ostream& out) const override;
   
-  void print_vl(std::ostream& out) const override {} // LCOV_EXCL_LINE
+  void print_vl(std::ostream& out) const override {
+    CH_UNREFERENCED_PARAMETER(out);
+  }
   
 private:
   snodeimpl* bus_;
 };
 
-class tapimpl : public outputimpl { // LCOV_EXCL_LINE
+class tapimpl : public outputimpl {
 public:
   tapimpl(const std::string& name, lnodeimpl* src);
   
@@ -66,7 +70,9 @@ public:
   
   void print(std::ostream& out) const override;
   
-  void print_vl(std::ostream& out) const override {} // LCOV_EXCL_LINE 
+  void print_vl(std::ostream& out) const override {
+    CH_UNREFERENCED_PARAMETER(out);
+  }
   
 protected:
   std::string  tapName_;

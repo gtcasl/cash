@@ -64,7 +64,7 @@ public:
   }
   
   void write(const bitvector& value) {
-    assert(srcs_.size() == 0);
+    assert(0 == srcs_.size());
     value_ = value;
     ++changeid_;
   }
@@ -97,11 +97,11 @@ protected:
     uint64_t changeid;
   };
   
-  mutable std::vector<source_t> srcs_;
+  uint32_t id_;
   mutable bitvector value_;
   mutable uint64_t  changeid_;
-  snode* owner_;
-  uint32_t id_;
+  mutable std::vector<source_t> srcs_;
+  snode* owner_;  
 };
 
 }

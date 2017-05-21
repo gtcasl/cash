@@ -10228,7 +10228,7 @@ namespace Catch {
 
         virtual void testGroupEnded( TestGroupStats const& testGroupStats ) CATCH_OVERRIDE {
             StreamingReporterBase::testGroupEnded( testGroupStats );
-            // TODO: Check testGroupStats.aborting and act accordingly.
+            // CH_TODO: Check testGroupStats.aborting and act accordingly.
             m_xml.scopedElement( "OverallResults" )
                 .writeAttribute( "successes", testGroupStats.totals.assertions.passed )
                 .writeAttribute( "failures", testGroupStats.totals.assertions.failed )

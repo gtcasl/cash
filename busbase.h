@@ -103,7 +103,7 @@ std::ostream& operator<<(std::ostream& os, const ch_busbase<N>& b) {
 
 #define CH_DEF_COMP_IMPL(op, type) \
   template <unsigned N> bool op(const ch_busbase<N>& lhs, type rhs) { return lhs.op(ch_bus<N>(rhs)); } \
-  template <unsigned N> bool op(type rhs, const ch_busbase<N>& lhs) { return ch_bus<N>(lhs).op(rhs); }
+  template <unsigned N> bool op(type lhs, const ch_busbase<N>& rhs) { return ch_bus<N>(lhs).op(rhs); }
 
 #define CH_DEF_COMP(type) \
   CH_DEF_COMP_IMPL(operator==, type) \

@@ -54,5 +54,5 @@ void cash::detail::dump_stack_trace(FILE *out, unsigned int max_frames) {
   StackTrace st;
   st.load_here(max_frames);
   Printer p; 
-  p.print(st);
+  p.print(st, out);
 }

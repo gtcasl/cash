@@ -39,6 +39,7 @@ __out(ch_bit<WIDTH>, ch_logic, ch_logic) FiFo(
 }
 
 int main(int argc, char **argv) {
+  std::ofstream vcd_file("fifo.vcd");
   ch_bus<2> din, dout;
   ch_signal push, pop, empty, full;
 
@@ -48,7 +49,7 @@ int main(int argc, char **argv) {
   myDevice.toVerilog("fifo", v_file);
   v_file.close();*/
 
-  ch_vcdtracer tracer("fifo.vcd", myDevice);
+  ch_vcdtracer tracer(vcd_file, myDevice);
   __trace(tracer, din, push, pop, dout, empty, full);
   tracer.run([&](ch_cycle time)->bool {
     switch (time) {
