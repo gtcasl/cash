@@ -8,6 +8,14 @@
 #define CH_CONCAT_(x, ...) x ## __VA_ARGS__
 #define CH_CONCAT(x, ...) CH_CONCAT_(x, __VA_ARGS__)
 
+// conditional macro
+#define CH_IIF_0(x, y) y
+#define CH_IIF_1(x, y) x
+#define CH_IIF(c) CH_CONCAT(CH_IIF_, c)
+
+#define CH_PAIR_FIRST(a, b) a
+#define CH_PAIR_SECOND(a, b) b
+
 // pair macros
 #define CH_PAIR(x) CH_REM x
 #define CH_PAIR_HEAD_(x, ...) CH_REM x

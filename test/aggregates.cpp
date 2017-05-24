@@ -60,9 +60,9 @@ __union (u3_t,(
   (ch_bit8) b,
   (ch_bit4) c
 ));
- 
+
 __enum (my_enum, 4,(
-  idle = 0,
+  (idle, 0),
   execute,
   stats,
   done

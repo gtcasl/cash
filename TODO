@@ -161,6 +161,9 @@ $ valgrind --leak-check=yes <app> <args...>
 $ valgrind --tool=callgrind <app> <args...>
 $ kcachegrind
 
+// debugging C macros
+g++ -std=c++14 -O0 -g -fmax-errors=5 -DCASH_DEBUG  -E -dD aggregates.cpp > aggregates.log
+
 // Detecting Cycles in CASH?
 // cycles only occurs when combinatorial nets eval() function is entered a second time without having exited.
 bool nandimpl::eval(cycle_t t) { 
