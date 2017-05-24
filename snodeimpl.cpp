@@ -285,13 +285,13 @@ void snode::write(const uint8_t* in, uint32_t sizeInBytes) {
   impl_->write(in, sizeInBytes);
 }
 
-void snode::read(data_type& inout, uint32_t offset, uint32_t length, uint32_t size) const {
+void snode::read_data(data_type& inout, uint32_t offset, uint32_t length, uint32_t size) const {
   assert((offset + length) <= size);
   this->ensureInitialized(size);
   inout.push({*this, offset, length});
 }
 
-void snode::write(uint32_t dst_offset, const data_type& in, uint32_t src_offset, uint32_t src_length, uint32_t size) {
+void snode::write_data(uint32_t dst_offset, const data_type& in, uint32_t src_offset, uint32_t src_length, uint32_t size) {
   assert((dst_offset + src_length) <= size);
   for (auto& d : in) {
     if (src_offset < d.length) {

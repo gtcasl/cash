@@ -58,7 +58,7 @@ namespace core {
   using ch_float = cash::detail::ch_real;
 
   //
-  // pre-defined bitv types
+  // pre-defined bit types
   //
 
   using ch_bit2  = ch_bit<2>;

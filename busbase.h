@@ -17,8 +17,8 @@ public:
   
   typebase& operator=(const typebase& rhs) {
     data_type data(N);
-    rhs.read(data, 0, N);
-    this->write(0, data, 0, N);
+    rhs.read_data(data, 0, N);
+    this->write_data(0, data, 0, N);
     return *this;
   }
   
@@ -81,8 +81,8 @@ public:
 
 protected:
 
-  virtual void read(data_type& inout, size_t offset, size_t length) const = 0;
-  virtual void write(size_t dst_offset, const data_type& in, size_t src_offset, size_t src_length) = 0;
+  virtual void read_data(data_type& inout, size_t offset, size_t length) const = 0;
+  virtual void write_data(size_t dst_offset, const data_type& in, size_t src_offset, size_t src_length) = 0;
 
   template <unsigned N_> friend snode get_node(const ch_busbase<N_>& b);
   template <typename T_> friend void read_data(const T_& b, typename T_::data_type& inout, size_t offset, size_t length);
@@ -92,7 +92,7 @@ protected:
 template <unsigned N>
 snode get_node(const ch_busbase<N>& b) {
   snode::data_type data(N);
-  b.read(data, 0, N);
+  b.read_data(data, 0, N);
   return snode(data);
 }
 

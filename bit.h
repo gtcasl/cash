@@ -93,12 +93,12 @@ public:
   
 protected:
 
-  void read(data_type& inout, size_t offset, size_t length) const override {
-    node_.read(inout, offset, length, N);
+  void read_data(data_type& inout, size_t offset, size_t length) const override {
+    node_.read_data(inout, offset, length, N);
   }
   
-  void write(size_t dst_offset, const data_type& in, size_t src_offset, size_t src_length) override {
-    node_.write(dst_offset, in, src_offset, src_length, N);
+  void write_data(size_t dst_offset, const data_type& in, size_t src_offset, size_t src_length) override {
+    node_.write_data(dst_offset, in, src_offset, src_length, N);
   }
   
   lnode node_;

@@ -224,13 +224,13 @@ void lnode::assign(lnodeimpl* impl, const lnode* src, bool initialization) const
   impl_ = impl;
 }
 
-void lnode::read(data_type& inout, uint32_t offset, uint32_t length, uint32_t size) const {
+void lnode::read_data(data_type& inout, uint32_t offset, uint32_t length, uint32_t size) const {
   assert((offset + length) <= size);
   this->ensureInitialized(size);
   inout.push({*this, offset, length});
 }
 
-void lnode::write(uint32_t dst_offset, const data_type& in, uint32_t src_offset, uint32_t src_length, uint32_t size) {
+void lnode::write_data(uint32_t dst_offset, const data_type& in, uint32_t src_offset, uint32_t src_length, uint32_t size) {
   assert((dst_offset + src_length) <= size);
   for (auto& d : in) {
     if (src_offset < d.length) {

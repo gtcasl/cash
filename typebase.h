@@ -55,12 +55,12 @@ class typebase {};
 
 template <typename T>
 void read_data(const T& b, typename T::data_type& inout, size_t offset, size_t length) {
-  reinterpret_cast<const typebase<T::bit_count, typename T::data_type>&>(b).read(inout, offset, length);
+  reinterpret_cast<const typebase<T::bit_count, typename T::data_type>&>(b).read_data(inout, offset, length);
 }
 
 template <typename T>
 void write_data(T& b, size_t dst_offset, const typename T::data_type& in, size_t src_offset, size_t src_length) {
-  reinterpret_cast<typebase<T::bit_count,typename T::data_type>&>(b).write(dst_offset, in, src_offset, src_length);
+  reinterpret_cast<typebase<T::bit_count,typename T::data_type>&>(b).write_data(dst_offset, in, src_offset, src_length);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -124,7 +124,7 @@ public:
   }
   
 private:
-  void write(size_t dst_offset, const data_type& in, size_t src_offset, size_t src_length) override {
+  void write_data(size_t dst_offset, const data_type& in, size_t src_offset, size_t src_length) override {
     CH_UNUSED(dst_offset, in, src_offset, src_length);
     assert(false); // invalid call
   }
@@ -148,9 +148,9 @@ public:
 
 protected:
 
-  void read(data_type& inout, size_t offset, size_t length) const override {
+  void read_data(data_type& inout, size_t offset, size_t length) const override {
     CH_CHECK(offset + length <= N, "invalid slice read range");
-    read_data(container_, inout, start_ + offset, length);
+    detail::read_data(container_, inout, start_ + offset, length);
   }
 
   const T& container_;
@@ -178,21 +178,21 @@ public:
   
   slice_ref& operator=(const slice_ref& rhs) {
     data_type data(N);
-    rhs.read(data, 0, N);
-    this->write(0, data, 0, N);
+    rhs.read_data(data, 0, N);
+    this->write_data(0, data, 0, N);
     return *this;
   }
 
 protected:
 
-  void read(data_type& inout, size_t offset, size_t length) const override {
+  void read_data(data_type& inout, size_t offset, size_t length) const override {
     CH_CHECK(offset + length <= N, "invalid slice read range");
-    read_data(container_, inout, start_ + offset, length);
+    detail::read_data(container_, inout, start_ + offset, length);
   }
 
-  void write(size_t dst_offset, const data_type& in, size_t src_offset, size_t src_length) override {
+  void write_data(size_t dst_offset, const data_type& in, size_t src_offset, size_t src_length) override {
     CH_CHECK(dst_offset + src_length <= N, "invalid slice write range");
-    write_data(container_, start_ + dst_offset, in, src_offset, src_length);
+    detail::write_data(container_, start_ + dst_offset, in, src_offset, src_length);
   }
 
   T& container_;
@@ -219,16 +219,16 @@ public:
 
 protected:
 
-  void read(data_type& inout, size_t offset, size_t length) const override {
+  void read_data(data_type& inout, size_t offset, size_t length) const override {
     CH_CHECK(offset + length <= const_concat_ref::bit_count, "invalid concat read range");
     if (offset + length <= A::bit_count)
-      read_data(a_, inout, offset, length);
+      detail::read_data(a_, inout, offset, length);
     else if (offset >= A::bit_count)
-      read_data(b_, inout, offset - A::bit_count, length);
+      detail::read_data(b_, inout, offset - A::bit_count, length);
     else {
       size_t len = A::bit_count - offset;
-      read_data(a_, inout, offset, len);
-      read_data(b_, inout, 0, length - len);
+      detail::read_data(a_, inout, offset, len);
+      detail::read_data(b_, inout, 0, length - len);
     }
   }
 
@@ -255,36 +255,36 @@ public:
   
   concat_ref& operator=(const concat_ref& rhs) {
     data_type data(base::bit_count);
-    rhs.read(data, 0, base::bit_count);
-    this->write(0, data, 0, base::bit_count);
+    rhs.read_data(data, 0, base::bit_count);
+    this->write_data(0, data, 0, base::bit_count);
     return *this;
   }
 
 protected:
 
-  void read(data_type& inout, size_t offset, size_t length) const override {
+  void read_data(data_type& inout, size_t offset, size_t length) const override {
     CH_CHECK(offset + length <= concat_ref::bit_count, "invalid concat read range");
     if (offset + length <= A::bit_count)
-      read_data(a_, inout, offset, length);
+      detail::read_data(a_, inout, offset, length);
     else if (offset >= A::bit_count)
-      read_data(b_, inout, offset - A::bit_count, length);
+      detail::read_data(b_, inout, offset - A::bit_count, length);
     else {
       size_t len = A::bit_count - offset;
-      read_data(a_, inout, offset, len);
-      read_data(b_, inout, 0, length - len);
+      detail::read_data(a_, inout, offset, len);
+      detail::read_data(b_, inout, 0, length - len);
     }
   }
   
-  void write(size_t dst_offset, const data_type& in, size_t src_offset, size_t src_length) override {
+  void write_data(size_t dst_offset, const data_type& in, size_t src_offset, size_t src_length) override {
     CH_CHECK(dst_offset + src_length <= concat_ref::bit_count, "invalid concat write range");
     if (dst_offset + src_length <= A::bit_count)
-      write_data(a_, dst_offset, in, src_offset, src_length);
+      detail::write_data(a_, dst_offset, in, src_offset, src_length);
     else if (dst_offset >= A::bit_count)
-      write_data(b_, dst_offset - A::bit_count, in, src_offset, src_length);
+      detail::write_data(b_, dst_offset - A::bit_count, in, src_offset, src_length);
     else {
       size_t len = A::bit_count - dst_offset;
-      write_data(a_, dst_offset, in, src_offset, len);
-      write_data(b_, 0, in, src_offset + len, src_length - len);
+      detail::write_data(a_, dst_offset, in, src_offset, len);
+      detail::write_data(b_, 0, in, src_offset + len, src_length - len);
     }
   }
 

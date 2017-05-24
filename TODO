@@ -60,7 +60,7 @@ X*** Assignment rule: by constructor assignent is ignored during check
 - implement ch_bitbase.clone() to enable fork assignments
 - prevent assignments to yourself (e.g. a = a, a[0] = a[1])
 - implement ch_make_device() to use compiler time binding
-- add C++ user defined literals for _b, _h, _d, _o convertion to bitv<N> and bus<N>
+- add C++ user defined literals for _b, _h, _d, _o convertion to bit<N> and bus<N>
 - create ../configure --prefix / make / make install scripts
 - implement cash namespaces cash::core, cash::sim, cash::stl
 - toVerilog() renaming module arguments
@@ -76,7 +76,7 @@ X*** Assignment rule: by constructor assignent is ignored during check
 - global Reset device->reset() => manually reset all nodes in device to zero.
 - FSM designs integration
 - should generate high-level verilog
-- consider using "typedef ch_bitv<1> ch_logic" to simplify code and reduce compiler issues
+- consider using "typedef ch_bit<1> ch_logic" to simplify code and reduce compiler issues
 - refactor ch_tristate class => move to function
 - implement unit test framework like in MyHDL/chisel
 - fix hierarchy support
@@ -87,7 +87,7 @@ X*** Assignment rule: by constructor assignent is ignored during check
 - extend operators argument to support different bit size
 - refactor ch_llrom
 - add file initialization support to ch_llmem
-- implement __ch_union and __ch_struct as part of aggregate.h
+- implement __union and __struct as part of aggregate.h
 - implement ch_int and ch_unit classes
 - implement plugin interface for attaching other simulators
 - implement default simulator loging
@@ -183,7 +183,7 @@ bool nandimpl::eval(cycle_t t) {
 // enable realtime debugging in behavioral mode
 //
 template <unsigned N>
-void Counter(ch_bitv<N>& out) {
+void Counter(ch_bit<N>& out) {
   ontick([&]() {
     out = out + 0x1;
   });
@@ -209,7 +209,7 @@ std::cout << std::hex << "0x" << 1111111111e16_b << std::endl;
 
 //--
 ch_device my_adder = ch_make_device(Adder<2>);
-__ch_tie(out, cout) = my_adder.bind(lhs, rhs, cin);
+__tie(out, cout) = my_adder.bind(lhs, rhs, cin);
 http://stackoverflow.com/questions/25513380/c-style-callbacks-in-c11
 http://en.cppreference.com/w/cpp/thread/packaged_task
 http://stackoverflow.com/questions/38561242/struct-to-from-stdtuple-conversion

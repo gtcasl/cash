@@ -79,12 +79,12 @@ protected:
   
   std::array<T, N> items_;
   
-  void read(data_type& out, size_t offset, size_t length) const override {
+  void read_data(data_type& out, size_t offset, size_t length) const override {
     CH_CHECK(offset + length <= ch_vec::bit_count, "invalid vector read range");
     for (unsigned i = 0; length && i < N; ++i) {
       if (offset < T::bit_count) {     
         size_t len = std::min<size_t>(length, T::bit_count - offset);
-        read_data(items_[i], out, offset, len);
+        detail::read_data(items_[i], out, offset, len);
         length -= len;
         offset = T::bit_count;
       }
@@ -92,12 +92,12 @@ protected:
     }
   }
   
-  void write(size_t start, const data_type& data, size_t offset, size_t length) override {
+  void write_data(size_t start, const data_type& data, size_t offset, size_t length) override {
     CH_CHECK(start + length <= ch_vec::bit_count, "invalid vector write range");
     for (unsigned i = 0; length && i < N; ++i) {
       if (start < T::bit_count) {
         size_t len = std::min<size_t>(length, T::bit_count - start);        
-        write_data(items_[i], start, data, offset, len);
+        detail::write_data(items_[i], start, data, offset, len);
         length -= len;
         offset += len;
         start = T::bit_count;

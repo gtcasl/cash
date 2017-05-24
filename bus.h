@@ -149,7 +149,7 @@ public:
     return this->operator uint64_t();
   }
   
-  void read(void* out, uint32_t sizeInBytes) const override {  
+  void read(void* out, uint32_t sizeInBytes) const override {
     assert(sizeInBytes * 8 >= N);
     node_.ensureInitialized(N);
     node_.read(reinterpret_cast<uint8_t*>(out), sizeInBytes);
@@ -163,12 +163,12 @@ public:
 
 protected:
   
-  void read(data_type& inout, size_t offset, size_t length) const override {
-    node_.read(inout, offset, length, N);
+  void read_data(data_type& inout, size_t offset, size_t length) const override {
+    node_.read_data(inout, offset, length, N);
   }
   
-  void write(size_t dst_offset, const data_type& in, size_t src_offset, size_t src_length) override {
-    node_.write(dst_offset, in, src_offset, src_length, N);
+  void write_data(size_t dst_offset, const data_type& in, size_t src_offset, size_t src_length) override {
+    node_.write_data(dst_offset, in, src_offset, src_length, N);
   }
   
   snode node_;

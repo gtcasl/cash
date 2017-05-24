@@ -30,7 +30,7 @@
 #define CH_STRUCT_READ(i, x) \
   if (offset < CH_PAIR_L(x)::bit_count) { \
     size_t len = std::min<size_t>(length, CH_PAIR_L(x)::bit_count - offset); \
-    read_data(CH_PAIR_R(x), inout, offset, len); \
+    cash::detail::read_data(CH_PAIR_R(x), inout, offset, len); \
     length -= len; \
     if (0 == length) \
       return; \
@@ -41,7 +41,7 @@
 #define CH_STRUCT_WRITE(i, x) \
   if (dst_offset < CH_PAIR_L(x)::bit_count) { \
     size_t len = std::min<size_t>(src_length, CH_PAIR_L(x)::bit_count - dst_offset); \
-    write_data(CH_PAIR_R(x), dst_offset, in, src_offset, len); \
+    cash::detail::write_data(CH_PAIR_R(x), dst_offset, in, src_offset, len); \
     src_length -= len; \
     if (0 == src_length) \
       return; \
@@ -72,11 +72,11 @@
       } \
       CH_FOR_EACH(CH_STRUCT_BUS_FIELD, CH_SEP_SEMICOLON, __VA_ARGS__); \
     protected: \
-      void read(data_type& inout, size_t offset, size_t length) const override { \
+      void read_data(data_type& inout, size_t offset, size_t length) const override { \
         CH_FOR_EACH(CH_STRUCT_READ, CH_SEP_SEMICOLON, __VA_ARGS__); \
         CH_ABORT("invalid subscript index"); \
       } \
-      void write(size_t dst_offset, const data_type& in, size_t src_offset, size_t src_length) override { \
+      void write_data(size_t dst_offset, const data_type& in, size_t src_offset, size_t src_length) override { \
         CH_FOR_EACH(CH_STRUCT_WRITE, CH_SEP_SEMICOLON, __VA_ARGS__); \
         CH_ABORT("invalid subscript index"); \
       } \
@@ -91,11 +91,11 @@
     } \
     CH_FOR_EACH(CH_STRUCT_FIELD, CH_SEP_SEMICOLON, __VA_ARGS__); \
   protected: \
-    void read(data_type& inout, size_t offset, size_t length) const override { \
+    void read_data(data_type& inout, size_t offset, size_t length) const override { \
       CH_FOR_EACH(CH_STRUCT_READ, CH_SEP_SEMICOLON, __VA_ARGS__); \
       CH_ABORT("invalid subscript index"); \
     } \
-    void write(size_t dst_offset, const data_type& in, size_t src_offset, size_t src_length) override { \
+    void write_data(size_t dst_offset, const data_type& in, size_t src_offset, size_t src_length) override { \
       CH_FOR_EACH(CH_STRUCT_WRITE, CH_SEP_SEMICOLON, __VA_ARGS__); \
       CH_ABORT("invalid subscript index"); \
     } \

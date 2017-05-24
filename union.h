@@ -33,11 +33,11 @@
       CH_FOR_EACH(CH_UNION_FIELD, CH_SEP_SEMICOLON, __VA_ARGS__); \
     protected: \
       ch_bus<base::bit_count> _; \
-      void read(data_type& inout, size_t offset, size_t length) const override { \
-        read_data(_, inout, offset, length); \
+      void read_data(data_type& inout, size_t offset, size_t length) const override { \
+        cash::detail::read_data(_, inout, offset, length); \
       } \
-      void write(size_t dst_offset, const data_type& in, size_t src_offset, size_t src_length) override { \
-        write_data(_, dst_offset, in, src_offset, src_length); \
+      void write_data(size_t dst_offset, const data_type& in, size_t src_offset, size_t src_length) override { \
+        cash::detail::write_data(_, dst_offset, in, src_offset, src_length); \
       } \
     };\
     name() : CH_FOR_EACH(CH_UNION_CTOR_INIT, CH_SEP_COMMA, __VA_ARGS__) {} \
@@ -50,11 +50,11 @@
     CH_FOR_EACH(CH_UNION_FIELD, CH_SEP_SEMICOLON, __VA_ARGS__); \
   protected: \
     ch_bit<base::bit_count> _; \
-    void read(data_type& inout, size_t offset, size_t length) const override { \
-      read_data(_, inout, offset, length); \
+    void read_data(data_type& inout, size_t offset, size_t length) const override { \
+      cash::detail::read_data(_, inout, offset, length); \
     } \
-    void write(size_t dst_offset, const data_type& in, size_t src_offset, size_t src_length) override { \
-      write_data(_, dst_offset, in, src_offset, src_length); \
+    void write_data(size_t dst_offset, const data_type& in, size_t src_offset, size_t src_length) override { \
+      cash::detail::write_data(_, dst_offset, in, src_offset, src_length); \
     } \
   public:
 
