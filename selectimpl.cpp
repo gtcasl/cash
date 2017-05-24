@@ -24,8 +24,8 @@ const bitvector& selectimpl::eval(ch_cycle t) {
 }
 
 void selectimpl::print_vl(std::ostream& out) const {
-  CH_UNREFERENCED_PARAMETER(out);
-  CH_TODO("Not yet implemented!");
+  CH_UNUSED(out);
+  CH_TODO();
 }
 
 lnodeimpl* cash::detail::createSelectNode(lnodeimpl* test, lnodeimpl* a, lnodeimpl* b) {

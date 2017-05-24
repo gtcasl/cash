@@ -35,9 +35,8 @@ void lnodeimpl::remove_ref(const lnode* node) {
 }
 
 void lnodeimpl::update_ref(const lnode* node, lnodeimpl* impl) {
-  CH_UNREFERENCED_PARAMETER(node);
-  CH_UNREFERENCED_PARAMETER(impl);
-  CH_ABORT("Not yet implemented");
+  CH_UNUSED(node, impl);
+  CH_TODO();
 }
 
 const lnode* lnodeimpl::get_ref_owner(const lnode* node) {
@@ -85,14 +84,14 @@ undefimpl::undefimpl(context* ctx, uint32_t size)
 {}
 
 const bitvector& undefimpl::eval(ch_cycle t) {
-  CH_UNREFERENCED_PARAMETER(t);
+  CH_UNUSED(t);
   CH_ABORT("undefined node: %d!", id_);
   return value_; 
 }
 
 void undefimpl::print_vl(std::ostream& out) const {
-  CH_UNREFERENCED_PARAMETER(out);
-  CH_TODO("Not yet Implemented!");
+  CH_UNUSED(out);
+  CH_TODO();
 }
 
 ///////////////////////////////////////////////////////////////////////////////

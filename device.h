@@ -64,9 +64,7 @@ protected:
   struct bind_output_impl<false, I> {
     template <typename ...OutputArgs, typename Arg>
     static void bind(const ch_device& dev, const std::tuple<OutputArgs...>& outputs, Arg&& arg) {
-      CH_UNREFERENCED_PARAMETER(dev);
-      CH_UNREFERENCED_PARAMETER(outputs);
-      CH_UNREFERENCED_PARAMETER(arg);
+      CH_UNUSED(dev, outputs, arg);
       // do nothing!
     }
   };
@@ -167,7 +165,7 @@ template <>
 struct ch_device::bind_inputs_impl<1> {
   template <typename ...InputArgs, typename Arg, typename ...Args>
   static void bind(const ch_device& dev, std::tuple<InputArgs...>& inputs, Arg&& arg, Args&&... args) {
-    CH_UNREFERENCED_PARAMETER(dev);
+    CH_UNUSED(dev);
     std::get<sizeof...(InputArgs)-1>(inputs) = dev.bind_input(std::forward<Arg>(arg));
   }
   

@@ -359,7 +359,7 @@ static void unaryop(bitvector& dst, const bitvector& a) {
     Invert(dst, a);
     break;
   default:
-    CH_TODO("Not yet implemented!");
+    CH_TODO();
   }
 }
 
@@ -388,7 +388,7 @@ static void binaryop(bitvector& dst, const bitvector& a, const bitvector& b) {
     Xnor(dst, a, b);
     break;
   default:
-    CH_TODO("Not yet implemented!");
+    CH_TODO();
   }
 }
 
@@ -412,7 +412,7 @@ static void shiftop(bitvector& dst, const bitvector& in, const bitvector& bits) 
     RotR(dst, in, wbits);
     break;
   default:
-    CH_TODO("Not yet implemented!");
+    CH_TODO();
   }
 }
 
@@ -432,7 +432,7 @@ static void reduceop(bitvector& dst, const bitvector& in) {
     result = XorN(in);
     break;
   default:
-    CH_TODO("Not yet implemented!");
+    CH_TODO();
   } 
   dst[0] = result;
 }
@@ -463,7 +463,7 @@ static void compareop(bitvector& dst, const bitvector& a, const bitvector& b) {
     result = !(a < b);
     break;
   default:
-    CH_TODO("Not yet implemented!");
+    CH_TODO();
   }
   dst[0] = result;
 }
@@ -546,7 +546,7 @@ const bitvector& aluimpl::eval(ch_cycle t) {
     case alu_op_mult:
     case alu_op_div:
     case alu_op_mod:
-      CH_TODO("Not yet implemented!");
+      CH_TODO();
       break;
       
     case alu_op_eq:
@@ -572,7 +572,7 @@ const bitvector& aluimpl::eval(ch_cycle t) {
       Mux(value_, srcs_[0].eval(t), srcs_[1].eval(t));
       break;
     case alu_op_demux:
-      CH_TODO("Not yet implemented!");
+      CH_TODO();
       break;
       
     case alu_op_fadd:
@@ -592,15 +592,15 @@ const bitvector& aluimpl::eval(ch_cycle t) {
       break;
       
     default:
-      CH_TODO("Not yet implemented!");
+      CH_TODO();
     }
   }
   return value_;
 }
 
 void aluimpl::print_vl(std::ostream& out) const {
-  CH_UNREFERENCED_PARAMETER(out);
-  CH_TODO("Not yet implemented!");
+  CH_UNUSED(out);
+  CH_TODO();
 } 
 
 lnodeimpl* cash::detail::createAluNode(ch_alu_op op, uint32_t size, lnodeimpl* a, lnodeimpl* b) {

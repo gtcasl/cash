@@ -239,8 +239,8 @@ lnodeimpl* context::get_current_conditional(const cond_blocks_t::iterator& iterB
 }
 
 lnodeimpl* context::resolve_conditional(lnodeimpl* dst, lnodeimpl* src) {
-  CH_UNREFERENCED_PARAMETER(dst);
-  CH_UNREFERENCED_PARAMETER(src);
+  CH_UNUSED(dst, src);
+  CH_TODO();
   /*// check if insize conditionall block and the node is not local
   if (!cond_blocks_.empty()
    && !cond_blocks_.front().cases.empty()
@@ -418,13 +418,12 @@ void context::eval(ch_cycle t) {
 }
 
 void context::toVerilog(const std::string& module_name, std::ostream& out) {
-  CH_UNREFERENCED_PARAMETER(module_name);
-  CH_UNREFERENCED_PARAMETER(out);
-  CH_TODO("Not yet implemented!");
+  CH_UNUSED(module_name, out);
+  CH_TODO();
 }
 
 void context::dumpAST(std::ostream& out, uint32_t level) {
-  CH_UNREFERENCED_PARAMETER(level);
+  CH_UNUSED(level);
   for (lnodeimpl* node : nodes_) {
     node->print(out);
     out << std::endl;

@@ -32,7 +32,7 @@ uninstall:
 	$(CXX) $(CXXFLAGS) -MM $^ > .depend;
 
 clean:
-	rm -f libcash.so $(OBJS) .depend *~ *\#
+	rm -f libcash.so $(OBJS) *.gcno .depend *~ *\#
 
 ifneq ($(MAKECMDGOALS),clean)
 	-include .depend

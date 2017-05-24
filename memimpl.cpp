@@ -119,13 +119,13 @@ void memimpl::tick_next(ch_cycle t) {
 }
 
 const bitvector& memimpl::eval(ch_cycle t) {
-  CH_UNREFERENCED_PARAMETER(t);
+  CH_UNUSED(t);
   abort();
 }
 
 void memimpl::print_vl(ostream& out) const {
-  CH_UNREFERENCED_PARAMETER(out);
-  CH_TODO("Not yet implemented!");
+  CH_UNUSED(out);
+  CH_TODO();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -151,7 +151,7 @@ void memportimpl::write(lnodeimpl* data) {
 }
 
 void memportimpl::tick(ch_cycle t) {
-  CH_UNREFERENCED_PARAMETER(t);
+  CH_UNUSED(t);
   if (wdata_id_ != -1) {
     memimpl* const mem = dynamic_cast<memimpl*>(srcs_[0].get_impl());
     mem->content_[a_next_] = q_next_;
@@ -176,8 +176,8 @@ const bitvector& memportimpl::eval(ch_cycle t) {
 }
 
 void memportimpl::print_vl(std::ostream& out) const {
-  CH_UNREFERENCED_PARAMETER(out);
-  CH_TODO("Not yet implemented!");
+  CH_UNUSED(out);
+  CH_TODO();
 }
 ///////////////////////////////////////////////////////////////////////////////
 

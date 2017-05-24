@@ -19,6 +19,6 @@ void litimpl::print(ostream& out) const {
 }
 
 void litimpl::print_vl(ostream& out) const {
-  CH_UNREFERENCED_PARAMETER(out);
-  CH_TODO("Not yet implemented!");
+  CH_UNUSED(out);
+  CH_TODO();
 }

@@ -125,10 +125,7 @@ public:
   
 private:
   void write(size_t dst_offset, const data_type& in, size_t src_offset, size_t src_length) override {
-    CH_UNREFERENCED_PARAMETER(dst_offset);
-    CH_UNREFERENCED_PARAMETER(in);
-    CH_UNREFERENCED_PARAMETER(src_offset);
-    CH_UNREFERENCED_PARAMETER(src_length);
+    CH_UNUSED(dst_offset, in, src_offset, src_length);
     assert(false); // invalid call
   }
 };

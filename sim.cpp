@@ -182,7 +182,7 @@ void ch_tracer::tick(ch_cycle t) {
   // advance simulation
   ch_simulator::tick(t);
   
-  CH_TODO("Not yet implemented!");
+  CH_TODO();
 }
 
 ///////////////////////////////////////////////////////////////////////////////

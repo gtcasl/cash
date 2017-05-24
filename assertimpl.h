@@ -12,7 +12,7 @@ public:
   const bitvector& eval(ch_cycle t) override;
   
   void print_vl(std::ostream& out) const override {
-    CH_UNREFERENCED_PARAMETER(out);
+    CH_UNUSED(out);
   }
 
 private:

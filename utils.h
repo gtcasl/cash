@@ -189,6 +189,11 @@ protected:
 
 ///////////////////////////////////////////////////////////////////////////////
 
+template <typename... Args>
+void unused(Args&&...) {}
+
+///////////////////////////////////////////////////////////////////////////////
+
 // is power of two number ?
 constexpr bool ispow2(unsigned value) { 
   return value && !(value & (value - 1)); 
@@ -260,11 +265,9 @@ constexpr uint32_t rotr(uint32_t value, uint32_t shift, uint32_t width) {
 #define CH_CHECK(x, msg, ...) \
   if (!(x)) CH_ABORT(msg, ##__VA_ARGS__)
 
-template <typename T>
-void __ignore(T &&) {}
+#define CH_UNUSED(...) cash::detail::unused(__VA_ARGS__)
 
-#define CH_UNREFERENCED_PARAMETER(p) __ignore(p)
-#define CH_TODO(x) CH_ABORT(#x);
+#define CH_TODO() CH_ABORT("Not yet implemented");
 
 #define CH_COUNTOF(a) (sizeof(a) / sizeof(a[0]))
 #define CH_MAX(a,b) (((a) > (b)) ? (a) : (b))

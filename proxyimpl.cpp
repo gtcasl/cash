@@ -182,6 +182,6 @@ void proxyimpl::print(std::ostream& out) const {
 }
 
 void proxyimpl::print_vl(std::ostream& out) const {
-  CH_UNREFERENCED_PARAMETER(out);
-  CH_TODO("Not yet implemented!");
+  CH_UNUSED(out);
+  CH_TODO();
 }

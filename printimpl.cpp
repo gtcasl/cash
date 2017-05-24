@@ -114,8 +114,8 @@ const bitvector& printimpl::eval(ch_cycle t) {
 }
 
 void printimpl::print_vl(std::ostream& out) const {
-  CH_UNREFERENCED_PARAMETER(out);
-  CH_TODO("Not yet implemented!");
+  CH_UNUSED(out);
+  CH_TODO();
 }
 
 ///////////////////////////////////////////////////////////////////////////////

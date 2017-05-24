@@ -25,7 +25,7 @@ public:
   void print(std::ostream& out) const override;
   
   void print_vl(std::ostream& out) const override {
-    CH_UNREFERENCED_PARAMETER(out);
+    CH_UNUSED(out);
   }
   
 protected:
@@ -45,7 +45,7 @@ public:
   void print(std::ostream& out) const override;
   
   void print_vl(std::ostream& out) const override {
-    CH_UNREFERENCED_PARAMETER(out);
+    CH_UNUSED(out);
   }
   
 private:
@@ -71,7 +71,7 @@ public:
   void print(std::ostream& out) const override;
   
   void print_vl(std::ostream& out) const override {
-    CH_UNREFERENCED_PARAMETER(out);
+    CH_UNUSED(out);
   }
   
 protected:

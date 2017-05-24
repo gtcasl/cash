@@ -351,22 +351,22 @@ ch_bit<(N << S)> ch_demux(const ch_bitbase<N>& in, const ch_bitbase<S>& sel) {
 
 template <unsigned N> 
 ch_bit<ilog2ceil(N)> ch_log2(const ch_bitbase<N>& a) {
-  CH_TODO("Not yet implemented!");
+  CH_TODO();
 }
 
 template <unsigned N> 
 ch_bit<ilog2ceil(N)> ch_lsb(const ch_bitbase<N>& a) {
-  CH_TODO("Not yet implemented!");
+  CH_TODO();
 }
 
 template <unsigned N> 
 ch_bit<ilog2ceil(N)> ch_enc(const ch_bitbase<N>& a) {
-  CH_TODO("Not yet implemented!");
+  CH_TODO();
 }
 
 template <unsigned N> 
 ch_bit<(1 << N)> ch_dec(const ch_bitbase<N>& a) {
-  CH_TODO("Not yet implemented!");
+  CH_TODO();
 }
 
 }

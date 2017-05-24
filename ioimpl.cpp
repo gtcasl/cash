@@ -23,7 +23,7 @@ void inputimpl::bind(snodeimpl* bus) {
 }
 
 const bitvector& inputimpl::eval(ch_cycle t) {
-  CH_UNREFERENCED_PARAMETER(t);
+  CH_UNUSED(t);
   assert(bus_);
   return bus_->read();
 }
