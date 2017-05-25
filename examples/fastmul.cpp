@@ -23,7 +23,7 @@ int main(int argc, char **argv) {
   ch_device myDevice(FastMul, lhs, rhs, out);
 
   /*std::ofstream v_file("fastmul.v");
-  myDevice.toVerilog("fastmul", v_file);
+  myDevice.to_verilog("fastmul", v_file);
   v_file.close();*/
 
   ch_vcdtracer tracer(vcd_file, myDevice);

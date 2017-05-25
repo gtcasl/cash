@@ -26,7 +26,7 @@ int main(int argc, char **argv) {
   ch_device myDevice(Adder<2>, lhs, rhs, cin, out, cout);
 
   /*std::ofstream v_file("adder.v");
-  myDevice.toVerilog("adder", v_file);
+  myDevice.to_verilog("adder", v_file);
   v_file.close();*/
 
   ch_vcdtracer tracer(vcd_file, myDevice);

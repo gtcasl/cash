@@ -63,7 +63,7 @@ X*** Assignment rule: by constructor assignent is ignored during check
 - add C++ user defined literals for _b, _h, _d, _o convertion to bit<N> and bus<N>
 - create ../configure --prefix / make / make install scripts
 - implement cash namespaces cash::core, cash::sim, cash::stl
-- toVerilog() renaming module arguments
+- to_verilog() renaming module arguments
 - investigate using std::bind and variadic functions for device creation
 - add mutex and fifo primitives for TML modelling
 - move memory functions into classes to support onetime initialization: ch_mem<N, W, AsyncR> mem(..); x = mem.read(addr); mem.write(en, addr, val);
@@ -189,15 +189,12 @@ void Counter(ch_bit<N>& out) {
   });
 }
 
-
 // user-defined literals for binary numbers
-constexpr unsigned long long Scale(unsigned long long x, const char* s)
-{
+constexpr unsigned long long Scale(unsigned long long x, const char* s) {
     return (!*s ? x : Scale(10*x + ((unsigned long long)*s)-((unsigned long long)'0'), s+1));
 } 
 
-constexpr unsigned long long ToScaledBinary(unsigned long long x, unsigned long long scale, const char* s)
-{
+constexpr unsigned long long ToScaledBinary(unsigned long long x, unsigned long long scale, const char* s) {
     return (!*s 
                 ? x 
                 : ( *s == 'e' || *s == 'E'  
@@ -208,8 +205,10 @@ std::cout << std::hex << "0x" << 1111111111_b << std::endl;
 std::cout << std::hex << "0x" << 1111111111e16_b << std::endl;
 
 //--
-ch_device my_adder = ch_make_device(Adder<2>);
+ch_device<Adder<2>> my_adder;
 __tie(out, cout) = my_adder.bind(lhs, rhs, cin);
+
+
 http://stackoverflow.com/questions/25513380/c-style-callbacks-in-c11
 http://en.cppreference.com/w/cpp/thread/packaged_task
 http://stackoverflow.com/questions/38561242/struct-to-from-stdtuple-conversion

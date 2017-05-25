@@ -74,11 +74,11 @@ public:
   
   //--
   
-  void toVerilog(const std::string& module_name, std::ostream& out);
+  void to_verilog(const std::string& module_name, std::ostream& out);
   
-  void dumpAST(std::ostream& out, uint32_t level);
+  void dump_ast(std::ostream& out, uint32_t level);
   
-  void dumpCFG(lnodeimpl* node, std::ostream& out, uint32_t level);
+  void dump_cfg(lnodeimpl* node, std::ostream& out, uint32_t level);
   
   void dump_stats(std::ostream& out);
   

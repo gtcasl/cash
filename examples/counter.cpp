@@ -18,7 +18,7 @@ int main(int argc, char **argv) {
   ch_device myDevice(Counter<4>, out);
 
   /*std::ofstream v_file("counter.v");
-  myDevice.toVerilog("counter", v_file);
+  myDevice.to_verilog("counter", v_file);
   v_file.close();*/
 
   ch_vcdtracer tracer(vcd_file, myDevice);

@@ -240,7 +240,6 @@ lnodeimpl* context::get_current_conditional(const cond_blocks_t::iterator& iterB
 
 lnodeimpl* context::resolve_conditional(lnodeimpl* dst, lnodeimpl* src) {
   CH_UNUSED(dst, src);
-  CH_TODO();
   /*// check if insize conditionall block and the node is not local
   if (!cond_blocks_.empty()
    && !cond_blocks_.front().cases.empty()
@@ -417,12 +416,12 @@ void context::eval(ch_cycle t) {
   }
 }
 
-void context::toVerilog(const std::string& module_name, std::ostream& out) {
+void context::to_verilog(const std::string& module_name, std::ostream& out) {
   CH_UNUSED(module_name, out);
   CH_TODO();
 }
 
-void context::dumpAST(std::ostream& out, uint32_t level) {
+void context::dump_ast(std::ostream& out, uint32_t level) {
   CH_UNUSED(level);
   for (lnodeimpl* node : nodes_) {
     node->print(out);
@@ -430,7 +429,7 @@ void context::dumpAST(std::ostream& out, uint32_t level) {
   }
 }
 
-static void dumpCFG_r(lnodeimpl* node, std::ostream& out, uint32_t level, std::vector<bool>& visits, const std::map<uint32_t, tapimpl*>& taps) {
+static void dump_cfg_impl(lnodeimpl* node, std::ostream& out, uint32_t level, std::vector<bool>& visits, const std::map<uint32_t, tapimpl*>& taps) {
   visits[node->get_id()] = true;
   node->print(out);
   
@@ -444,12 +443,12 @@ static void dumpCFG_r(lnodeimpl* node, std::ostream& out, uint32_t level, std::v
   
   for (const lnode& src : node->get_srcs()) {
     if (!visits[src.get_id()]) {
-      dumpCFG_r(src.get_impl(), out, level, visits, taps);
+      dump_cfg_impl(src.get_impl(), out, level, visits, taps);
     }
   }  
 }
 
-void context::dumpCFG(lnodeimpl* node, std::ostream& out, uint32_t level) {
+void context::dump_cfg(lnodeimpl* node, std::ostream& out, uint32_t level) {
   std::vector<bool> visits(nodeids_ + 1);
   std::map<uint32_t, tapimpl*> taps;
   
@@ -470,7 +469,7 @@ void context::dumpCFG(lnodeimpl* node, std::ostream& out, uint32_t level) {
   out << std::endl;    
   for (const lnode& src : node->get_srcs()) {
     if (!visits[src.get_id()]) {
-      dumpCFG_r(src.get_impl(), out, level, visits, taps);
+      dump_cfg_impl(src.get_impl(), out, level, visits, taps);
     }
   }
 }

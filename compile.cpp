@@ -23,7 +23,7 @@ void ch_compiler::run() {
   // dump nodes
   int dump_ast = platform::self().get_dump_ast();
   if (dump_ast) {
-    ctx_->dumpAST(std::cerr, dump_ast);
+    ctx_->dump_ast(std::cerr, dump_ast);
   }
 #endif
   
@@ -35,7 +35,7 @@ void ch_compiler::syntax_check() {
   // check for un-initialized nodes
   const auto& undefs = ctx_->undefs_;
   if (undefs.size()) {
-    ctx_->dumpAST(std::cerr, 1);    
+    ctx_->dump_ast(std::cerr, 1);    
     for (auto node : undefs) {
       fprintf(stderr, "error: un-initialized node %s%d(#%d)!\n", node->get_name(), node->get_size(), node->get_id());
     }

@@ -46,7 +46,7 @@ int main(int argc, char **argv) {
   ch_device myDevice(FiFo<1, 2>, din, push, pop, dout, empty, full);
 
   /*std::ofstream v_file("fifo.v");
-  myDevice.toVerilog("fifo", v_file);
+  myDevice.to_verilog("fifo", v_file);
   v_file.close();*/
 
   ch_vcdtracer tracer(vcd_file, myDevice);

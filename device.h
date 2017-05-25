@@ -31,7 +31,7 @@ public:
     return ch_bus<N>(this->get_tap(name, N));
   }
   
-  void toVerilog(const std::string& module_name, std::ostream& out);  
+  void to_verilog(const std::string& module_name, std::ostream& out);  
   
   void dump_stats(std::ostream& out);
     

@@ -26,8 +26,8 @@ void ch_device::compile() {
   compiler.run();
 }
 
-void ch_device::toVerilog(const std::string& module_name, std::ostream& out) {
-  ctx_->toVerilog(module_name, out);
+void ch_device::to_verilog(const std::string& module_name, std::ostream& out) {
+  ctx_->to_verilog(module_name, out);
 }
 
 void ch_device::dump_stats(std::ostream& out) {
