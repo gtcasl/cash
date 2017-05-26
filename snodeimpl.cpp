@@ -257,7 +257,7 @@ void snode::assign(snodeimpl* impl, bool is_owner) {
   impl_ = impl;
 }
 
-void snode::clone() const {
+void snode::clone() {
   // create a new snodeimpl() with impl_ as source node and make current
   snodeimpl* const impl = impl_;
   impl_ = nullptr;
@@ -288,7 +288,7 @@ void snode::write(const uint8_t* in, uint32_t sizeInBytes) {
 void snode::read_data(data_type& inout, uint32_t offset, uint32_t length, uint32_t size) const {
   assert((offset + length) <= size);
   this->ensureInitialized(size);
-  inout.push({*this, offset, length});
+  inout.push({impl_, offset, length});
 }
 
 void snode::write_data(uint32_t dst_offset, const data_type& in, uint32_t src_offset, uint32_t src_length, uint32_t size) {
@@ -307,18 +307,18 @@ void snode::write_data(uint32_t dst_offset, const data_type& in, uint32_t src_of
   }
 }
 
-void snode::assign(uint32_t dst_offset, const snode& src, uint32_t src_offset, uint32_t src_length, uint32_t size) {
+void snode::assign(uint32_t dst_offset, snodeimpl* src, uint32_t src_offset, uint32_t src_length, uint32_t size) {
   assert((dst_offset + src_length) <= size);
   // check if full replacement
-  if (size == src_length && size == src.get_size()) {
+  if (size == src_length && size == src->get_size()) {
     assert(0 == dst_offset && 0 == src_offset);
-    this->assign(src.get_impl());
+    this->assign(src);
   } else {
     // partial assignment
     this->ensureInitialized(size);
     if (impl_->get_owner() != this)
-      this->clone();
-    impl_->assign(dst_offset, src.get_impl(), src_offset, src_length);
+      this->clone(); // clone the data if not owned
+    impl_->assign(dst_offset, src, src_offset, src_length);
   }  
 }
 

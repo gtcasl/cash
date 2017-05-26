@@ -12,6 +12,8 @@ public:
   using base = ch_bitbase<value_type::bit_count>;
   using data_type = typename value_type::data_type;
   using bus_type = typename value_type::bus_type;
+
+  value_type next;
   
   ch_seq() {
     T::operator =(ch_reg(next));
@@ -20,8 +22,6 @@ public:
   ch_seq(const value_type& init) {
     T::operator =(ch_reg(next, init));
   }
-  
-  value_type next;
   
   const_slice_ref<base, 1> operator[](size_t index) {
     return const_slice_ref<base, 1>(*this, index);

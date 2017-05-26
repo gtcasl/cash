@@ -7,9 +7,9 @@ using namespace cash::detail;
 
 regimpl::regimpl(lnodeimpl* next)
   : lnodeimpl(op_reg, next->get_ctx(), next->get_size()) {
-  context* ctx = next->get_ctx();
-  
-  lnodeimpl* clk = ctx->get_clk();  
+  context* ctx = next->get_ctx();  
+  lnodeimpl* clk = ctx->get_clk();
+
   cd_ = ctx->create_cdomain({clock_event(clk, EDGE_POS)});
   cd_->add_use(this);
 

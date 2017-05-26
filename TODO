@@ -2,17 +2,17 @@
 CH_TODO list:
 ==========
 
-
+*** add support for any datatype for mem/rom template T
 
 *** Understanding conditional assignment ***
 ch_bit4 a;
 if (x > 0) {
-	a[0-2] = 0;
-	a[1] = 1; // override a[1]
-	if (y > 0) {
-	  a[0] = 1; // override a[0]
-	  a[3] = 1;
-	}
+  a[0-2] = 0;
+  a[1] = 1; // override a[1]
+  if (y > 0) {
+    a[0] = 1; // override a[0]
+    a[3] = 1;
+  }
 } else {
   a = 0;
 }

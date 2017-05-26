@@ -14,14 +14,20 @@ using ch_cycle = uint64_t;
 class lnode {
 public:
   
-  using data_type = nodeset<lnode>;
+  using data_type = nodeset<lnodeimpl*>;
 
   lnode() : impl_(nullptr) {}
+
   lnode(uint32_t size);  
+
   lnode(const lnode& rhs);
+
   lnode(lnode&& rhs);
+
   explicit lnode(lnodeimpl* impl);
+
   lnode(const data_type& data);
+
   lnode(const bitvector& value);
   
   ~lnode();
@@ -29,6 +35,8 @@ public:
   const lnode& ensureInitialized(uint32_t size) const;
   
   lnodeimpl* get_impl() const;  
+
+  void set_impl(lnodeimpl* impl);
   
   lnode& operator=(const lnode& rhs);
   
@@ -56,13 +64,13 @@ public:
 
 protected:   
    
-  void clear() const;
+  void clear();
 
-  void assign(lnodeimpl* impl, const lnode* src, bool initialization = false) const;
+  void assign(lnodeimpl* impl, bool initialization = false);
   
   void move(lnode& rhs);
   
-  void assign(uint32_t dst_offset, const lnode& src, uint32_t src_offset, uint32_t src_length, uint32_t size, bool initialization = false);
+  void assign(uint32_t dst_offset, lnodeimpl* src, uint32_t src_offset, uint32_t src_length, uint32_t size, bool initialization = false);
   
   mutable lnodeimpl* impl_;
   

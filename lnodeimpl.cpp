@@ -20,31 +20,32 @@ lnodeimpl::lnodeimpl(ch_operator op, context* ctx, uint32_t size)
 }
 
 lnodeimpl::~lnodeimpl() {  
-  for (auto iter = refs_.begin(), iterEnd = refs_.end(); iter != iterEnd;) {
-    (*iter++).node->clear();
+  for (const lnode* ref : refs_) {
+    const_cast<lnode*>(ref)->clear();
   }
   ctx_->remove_node(this);  
 }
 
-void lnodeimpl::add_ref(const lnode* node, const lnode* owner) {
-  refs_.emplace(node, owner);  
+const char* lnodeimpl::get_name() const {
+  static const char* sc_names[] = {
+    CH_OPERATOR_ENUM(CH_OPERATOR_NAME)
+  };
+  return sc_names[(int)op_];
+}
+
+void lnodeimpl::add_ref(const lnode* node) {
+  refs_.emplace(node);
 }
 
 void lnodeimpl::remove_ref(const lnode* node) {
   refs_.erase(node);
 }
 
-void lnodeimpl::update_ref(const lnode* node, lnodeimpl* impl) {
-  CH_UNUSED(node, impl);
-  CH_TODO();
-}
-
-const lnode* lnodeimpl::get_ref_owner(const lnode* node) {
-  auto iter = refs_.find(node);
-  if (iter != refs_.end()) {
-    return iter->owner;
+void lnodeimpl::update_refs(lnodeimpl* impl) {
+  assert(impl && impl != this);
+  for (const lnode* ref : refs_) {
+    const_cast<lnode*>(ref)->set_impl(impl);
   }
-  return nullptr;
 }
 
 bool lnodeimpl::ready() const {
@@ -104,7 +105,7 @@ lnode::lnode(uint32_t size) : impl_(nullptr) {
 }
 
 lnode::lnode(const lnode& rhs) : impl_(nullptr) { 
-  this->assign(rhs.impl_, &rhs, true);
+  this->assign(rhs.impl_, true);
 }
 
 lnode::lnode(lnode&& rhs) : impl_(nullptr) {
@@ -112,7 +113,7 @@ lnode::lnode(lnode&& rhs) : impl_(nullptr) {
 }
 
 lnode::lnode(lnodeimpl* impl) : impl_(nullptr) { 
-  this->assign(impl, nullptr, true);
+  this->assign(impl, true);
 }
 
 lnode::lnode(const data_type& data) : impl_(nullptr) {
@@ -124,7 +125,7 @@ lnode::lnode(const data_type& data) : impl_(nullptr) {
 }
 
 lnode::lnode(const bitvector& value) : impl_(nullptr) {
-  this->assign(ctx_curr()->create_literal(value), nullptr, true);
+  this->assign(ctx_curr()->create_literal(value), true);
 }
 
 lnode::~lnode() {
@@ -132,7 +133,7 @@ lnode::~lnode() {
 }
 
 void lnode::assign(const bitvector& value) {
-  this->assign(ctx_curr()->create_literal(value), nullptr);
+  this->assign(ctx_curr()->create_literal(value));
 }
 
 lnode& lnode::operator=(const lnode& rhs) {
@@ -146,7 +147,7 @@ lnode& lnode::operator=(lnode&& rhs) {
 }
 
 lnode& lnode::operator=(lnodeimpl* rhs) {
-  this->assign(rhs, nullptr);
+  this->assign(rhs);
   return *this;
 }
 
@@ -184,7 +185,7 @@ const lnode& lnode::ensureInitialized(uint32_t size) const {
   return *this;
 }
 
-void lnode::clear() const {
+void lnode::clear() {
   if (impl_)
     impl_->remove_ref(this);
   impl_ = nullptr;
@@ -195,18 +196,24 @@ lnodeimpl* lnode::get_impl() const {
   return impl_;
 }
 
+void lnode::set_impl(lnodeimpl* impl) {
+  if (impl) {
+    impl->add_ref(this);
+  }
+  if (impl_) {
+    impl_->remove_ref(this);
+  }
+  impl_ = impl;
+}
+
 void lnode::move(lnode& rhs) {
   assert(rhs.impl_);
   assert(rhs.impl_ != impl_);
-  if (impl_ != rhs.impl_) {
-    this->clear();
-    impl_ = rhs.impl_;
-    impl_->add_ref(this, rhs.impl_->get_ref_owner(&rhs));
-  }
+  this->set_impl(rhs.impl_);
   rhs.clear();
 }
 
-void lnode::assign(lnodeimpl* impl, const lnode* src, bool initialization) const {
+void lnode::assign(lnodeimpl* impl, bool initialization) {
   if (impl) {
     if (!initialization) {
       // resolve conditionals if inside a branch
@@ -214,12 +221,12 @@ void lnode::assign(lnodeimpl* impl, const lnode* src, bool initialization) const
       if (impl == impl_)
         return;
     } 
-    impl->add_ref(this, src);
+    impl->add_ref(this);
   }
   if (impl_) {
     CH_CHECK(impl != impl_, "redundant assignment for node %s%d(#%d)!\n", impl_->get_name(), impl_->get_size(), impl_->get_id());    
     impl_->remove_ref(this);
-    impl_->update_ref(this, impl);
+    impl_->update_refs(impl);
   }  
   impl_ = impl;
 }
@@ -227,7 +234,7 @@ void lnode::assign(lnodeimpl* impl, const lnode* src, bool initialization) const
 void lnode::read_data(data_type& inout, uint32_t offset, uint32_t length, uint32_t size) const {
   assert((offset + length) <= size);
   this->ensureInitialized(size);
-  inout.push({*this, offset, length});
+  inout.push({impl_, offset, length});
 }
 
 void lnode::write_data(uint32_t dst_offset, const data_type& in, uint32_t src_offset, uint32_t src_length, uint32_t size) {
@@ -246,34 +253,30 @@ void lnode::write_data(uint32_t dst_offset, const data_type& in, uint32_t src_of
   }
 }
 
-void lnode::assign(uint32_t dst_offset, const lnode& src, uint32_t src_offset, uint32_t src_length, uint32_t size, bool initialization) {
+void lnode::assign(uint32_t dst_offset, lnodeimpl* src, uint32_t src_offset, uint32_t src_length, uint32_t size, bool initialization) {
   assert(size > dst_offset);
   assert(size >= dst_offset + src_length);
   
-  const lnode* src_node = &src;
-  lnodeimpl* src_impl = src_node->get_impl();    
-  context* const ctx = src_impl->get_ctx();
+  context* const ctx = src->get_ctx();
   
   // check if full assignment
   if (src_length == size) {
     assert(0 == dst_offset);
     // check if partial source
-    if (src_impl->get_size() > src_length) {
+    if (src->get_size() > src_length) {
       proxyimpl* const proxy = new proxyimpl(ctx, src_length);
       proxy->add_node(0, src, src_offset, src_length);
-      src_impl = proxy;
-      src_node = nullptr;
+      src = proxy;
     }
   } else {
     // partial assignment using proxy
     assert(src_length < size);    
     proxyimpl* const proxy = new proxyimpl(ctx, size);  
     this->ensureInitialized(size);
-    proxy->add_node(0, *this, 0, size);      
+    proxy->add_node(0, impl_, 0, size);
     proxy->add_node(dst_offset, src, src_offset, src_length);
-    src_impl = proxy;
-    src_node = nullptr;
+    src = proxy;
   }
   
-  this->assign(src_impl, src_node, initialization);
+  this->assign(src, initialization);
 }

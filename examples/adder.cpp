@@ -11,7 +11,6 @@ __out(ch_bit<N>, ch_logic) Adder(
            const ch_logic& cin) {
   ch_bit<N> out;
   ch_logic cout;
-  ch_logic x(1_b);
   ch_bit<N+1> sum((0_b, lhs) + rhs + cin);
   cout = sum[N];
   out  = ch_slice<N>(sum);  

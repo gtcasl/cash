@@ -74,7 +74,7 @@ public:
     ch_mem() : mem_(N, A, true) {}
   
     ch_mem(const std::string& init_file) : mem_(N, A, true, init_file) {}
-    
+
     ch_mem(const std::vector<uint32_t>& init_data) : mem_(N, A, true, init_data) {}
     
     ch_mem(const std::initializer_list<uint32_t>& init_data) : mem_(N, A, true, init_data) {}

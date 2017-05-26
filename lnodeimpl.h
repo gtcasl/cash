@@ -74,24 +74,17 @@ public:
     return op_;
   }
   
-  const char* get_name() const {
-    static const char* sc_names[] = {
-      CH_OPERATOR_ENUM(CH_OPERATOR_NAME)
-    };
-    return sc_names[(int)op_];
-  }
-  
+  const char* get_name() const;
+
   context* get_ctx() const {
     return ctx_;
   }
 
-  void add_ref(const lnode* node, const lnode* source);
+  void add_ref(const lnode* node);
 
   void remove_ref(const lnode* node);
 
-  void update_ref(const lnode* node, lnodeimpl* impl);
-  
-  const lnode* get_ref_owner(const lnode* node);
+  void update_refs(lnodeimpl* impl);
   
   const std::vector<lnode>& get_srcs() const {
     return srcs_;
@@ -130,28 +123,11 @@ public:
 
 protected:
   
-  struct ref_t {
-    const lnode* node;
-    const lnode* owner;
-    
-    ref_t(const lnode* node_ = nullptr, const lnode* owner_ = nullptr) 
-      : node(node_), owner(owner_) 
-    {}
-    
-    bool operator ==(const ref_t& rhs) const {
-      return (node == rhs.node);
-    }
-    
-    bool operator <(const ref_t& rhs) const {
-      return (node < rhs.node);
-    }
-  };
-
   uint32_t id_;
   ch_operator op_;
   context* ctx_;
-  std::set<ref_t> refs_;
-  std::vector<lnode> srcs_;  
+  std::set<const lnode*> refs_;
+  std::vector<lnode> srcs_;
   bitvector value_; 
   
   friend class context;
@@ -167,7 +143,3 @@ public:
 
 }
 }
-
-#undef CH_OPERATOR_TYPE
-#undef CH_OPERATOR_NAME
-#undef CH_OPERATOR_ENUM

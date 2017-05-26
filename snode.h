@@ -11,13 +11,18 @@ class snodeimpl;
 class snode {
 public:
   
-  using data_type = nodeset<snode>;
+  using data_type = nodeset<snodeimpl*>;
   
   snode() : impl_(nullptr) {}
+
   snode(const snode& rhs);
+
   snode(snode&& rhs);
+
   explicit snode(snodeimpl* impl);
+
   snode(const data_type& data);
+
   snode(const bitvector& value);
 
   ~snode();
@@ -52,13 +57,13 @@ public:
 
 protected:
   
-  void assign(uint32_t dst_offset, const snode& src, uint32_t src_offset, uint32_t src_length, uint32_t size);
+  void assign(uint32_t dst_offset, snodeimpl* src, uint32_t src_offset, uint32_t src_length, uint32_t size);
   
   void assign(snodeimpl* impl, bool is_owner = false);
   
   void move(snode& rhs);
   
-  void clone() const;
+  void clone();
     
   mutable snodeimpl* impl_;
 };

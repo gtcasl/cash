@@ -9,15 +9,16 @@ proxyimpl::proxyimpl(context* ctx, uint32_t size)
   , ctime_(~0ull) 
 {}
 
-void proxyimpl::add_node(uint32_t start, const lnode& src, uint32_t offset, uint32_t length, bool resize) {    
+void proxyimpl::add_node(uint32_t start, lnodeimpl* src, uint32_t offset, uint32_t length, bool resize) {
   // add new source
   uint32_t new_srcidx = 0xffffffff;
   for (uint32_t i = 0, n = srcs_.size(); i < n; ++i) {
-    if (srcs_[i].get_id() == src.get_id()) {
+    if (srcs_[i].get_id() == src->get_id()) {
       new_srcidx = i;
       break;
     }
   }
+
   if (0xffffffff == new_srcidx) {
     new_srcidx = srcs_.size();    
     srcs_.emplace_back(src);    
