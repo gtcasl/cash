@@ -136,19 +136,19 @@ namespace core_literals {
   template< char... Chars>
   ch_bit<lit_bin_size<Chars...>::value> operator "" _b() {
     constexpr const char str[] = {Chars..., 'b', '\0'};
-    return ch_bit<lit_bin_size<Chars...>::value>(bitvector(str, lit_bin_size<Chars...>::value));
+    return ch_bit<lit_bin_size<Chars...>::value>(bitvector(lit_bin_size<Chars...>::value, str));
   }
   
   template< char... Chars>
   ch_bit<lit_oct_size<Chars...>::value> operator "" _o() {
     constexpr const char str[] = {Chars..., 'o', '\0'};
-    return ch_bit<lit_oct_size<Chars...>::value>(bitvector(str, lit_oct_size<Chars...>::value));
+    return ch_bit<lit_oct_size<Chars...>::value>(bitvector(lit_oct_size<Chars...>::value, str));
   }
   
   template< char... Chars>
   ch_bit<lit_hex_size<Chars...>::value> operator "" _h() {
     constexpr const char str[] = {Chars..., 'h', '\0'};
-    return ch_bit<lit_hex_size<Chars...>::value>(bitvector(str, lit_hex_size<Chars...>::value));
+    return ch_bit<lit_hex_size<Chars...>::value>(bitvector(lit_hex_size<Chars...>::value, str));
   }
 
 
@@ -157,19 +157,19 @@ namespace core_literals {
   ch_bit<x> operator "" _b##x() { \
     static_assert(x >= lit_bin_sizex<Chars...>::value, "literal value overflow"); \
     constexpr const char str[] = {Chars..., 'b', '\0'}; \
-    return ch_bit<x>(bitvector(str, x)); \
+    return ch_bit<x>(bitvector(x, str)); \
   } \
   template< char... Chars> \
   ch_bit<x> operator "" _o##x() { \
     static_assert(x >= lit_oct_sizex<Chars...>::value, "literal value overflow"); \
     constexpr const char str[] = {Chars..., 'o', '\0'}; \
-    return ch_bit<x>(bitvector(str, x)); \
+    return ch_bit<x>(bitvector(x, str)); \
   } \
   template< char... Chars> \
   ch_bit<x> operator "" _h##x() { \
     static_assert(x >= lit_hex_sizex<Chars...>::value, "literal value overflow"); \
     constexpr const char str[] = {Chars..., 'h', '\0'}; \
-    return ch_bit<x>(bitvector(str, x)); \
+    return ch_bit<x>(bitvector(x, str)); \
   }
   
   CH_DEF_LITERALS(CH_CORE_LITERALS)
@@ -181,19 +181,19 @@ namespace sim_literals {
   template< char... Chars>
   ch_bus<lit_bin_size<Chars...>::value> operator "" _b() {
     constexpr const char str[] = {Chars..., 'b', '\0'};
-    return ch_bus<lit_bin_size<Chars...>::value>(bitvector(str, lit_bin_size<Chars...>::value));
+    return ch_bus<lit_bin_size<Chars...>::value>(bitvector(lit_bin_size<Chars...>::value, str));
   }
   
   template< char... Chars>
   ch_bus<lit_oct_size<Chars...>::value> operator "" _o() {
     constexpr const char str[] = {Chars..., 'o', '\0'};
-    return ch_bus<lit_oct_size<Chars...>::value>(bitvector(str, lit_oct_size<Chars...>::value));
+    return ch_bus<lit_oct_size<Chars...>::value>(bitvector(lit_oct_size<Chars...>::value, str));
   }
   
   template< char... Chars>
   ch_bus<lit_hex_size<Chars...>::value> operator "" _h() {
     constexpr const char str[] = {Chars..., 'h', '\0'};
-    return ch_bus<lit_hex_size<Chars...>::value>(bitvector(str, lit_hex_size<Chars...>::value));
+    return ch_bus<lit_hex_size<Chars...>::value>(bitvector(lit_hex_size<Chars...>::value, str));
   }
 
 #define CH_SIM_LITERALS(i, x) \
@@ -201,19 +201,19 @@ namespace sim_literals {
   ch_bus<x> operator "" _b##x() { \
     static_assert(x >= lit_bin_sizex<Chars...>::value, "literal value overflow"); \
     constexpr const char str[] = {Chars..., 'b', '\0'}; \
-    return ch_bus<x>(bitvector(str, x)); \
+    return ch_bus<x>(bitvector(x, str)); \
   } \
   template< char... Chars> \
   ch_bus<x> operator "" _o##x() { \
     static_assert(x >= lit_oct_sizex<Chars...>::value, "literal value overflow"); \
     constexpr const char str[] = {Chars..., 'o', '\0'}; \
-    return ch_bus<x>(bitvector(str, x)); \
+    return ch_bus<x>(bitvector(x, str)); \
   } \
   template< char... Chars> \
   ch_bus<x> operator "" _h##x() { \
     static_assert(x >= lit_hex_sizex<Chars...>::value, "literal value overflow"); \
     constexpr const char str[] = {Chars..., 'h', '\0'}; \
-    return ch_bus<x>(bitvector(str, x)); \
+    return ch_bus<x>(bitvector(x, str)); \
   }
   
   CH_DEF_LITERALS(CH_SIM_LITERALS)

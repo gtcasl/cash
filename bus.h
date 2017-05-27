@@ -22,12 +22,12 @@ public:
     assert(rhs.get_size() == N);
   }
   
-  explicit ch_bus(bool value) : node_(bitvector(value ? 0x1 : 0x0, N)) { \
+  explicit ch_bus(bool value) : node_(bitvector(N, value ? 0x1 : 0x0)) { \
     static_assert(N == 1, "bool assignents only allowed on single-bit objects");
   }
  
 #define CH_DEF_CTOR(type) \
-  explicit ch_bus(type value) : node_(bitvector(value, N))  { \
+  explicit ch_bus(type value) : node_(bitvector(N, value))  { \
     assert(node_.get_size() == N); \
   }
   CH_DEF_CTOR(const std::initializer_list<uint32_t>&)
@@ -58,14 +58,14 @@ public:
   
   ch_bus& operator=(bool value) {
     static_assert(N == 1, "bool assignents only allowed on single-bit objects");
-    node_.assign(bitvector(value ? 0x1 : 0x0, N)); \
+    node_.assign(bitvector(N, value ? 0x1 : 0x0)); \
     assert(node_.get_size() == N); \
     return *this;
   } 
  
 #define CH_DEF_AOP(type) \
   ch_bus& operator=(type value) { \
-    node_.assign(bitvector(value, N)); \
+    node_.assign(bitvector(N, value)); \
     assert(node_.get_size() == N); \
     return *this; \
   } 

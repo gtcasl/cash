@@ -237,7 +237,12 @@ void lnode::read_data(data_type& inout, uint32_t offset, uint32_t length, uint32
   inout.push({impl_, offset, length});
 }
 
-void lnode::write_data(uint32_t dst_offset, const data_type& in, uint32_t src_offset, uint32_t src_length, uint32_t size) {
+void lnode::write_data(uint32_t dst_offset,
+                       const data_type& in,
+                       uint32_t src_offset,
+                       uint32_t src_length,
+                       uint32_t size) {
+  assert(in.num_nodes() >= 1);
   assert((dst_offset + src_length) <= size);
   for (auto& d : in) {
     if (src_offset < d.length) {
@@ -253,30 +258,51 @@ void lnode::write_data(uint32_t dst_offset, const data_type& in, uint32_t src_of
   }
 }
 
-void lnode::assign(uint32_t dst_offset, lnodeimpl* src, uint32_t src_offset, uint32_t src_length, uint32_t size, bool initialization) {
+void lnode::assign(uint32_t dst_offset,
+                   lnodeimpl* src,
+                   uint32_t src_offset,
+                   uint32_t src_length,
+                   uint32_t size,
+                   bool initialization) {
   assert(size > dst_offset);
   assert(size >= dst_offset + src_length);
   
-  context* const ctx = src->get_ctx();
-  
-  // check if full assignment
-  if (src_length == size) {
-    assert(0 == dst_offset);
-    // check if partial source
+  // check if direct assignment
+  if (size == src_length) {
     if (src->get_size() > src_length) {
+      assert(0 == dst_offset);
       proxyimpl* const proxy = new proxyimpl(ctx, src_length);
       proxy->add_node(0, src, src_offset, src_length);
       src = proxy;
     }
+    this->assign(src, initialization);
   } else {
-    // partial assignment using proxy
-    assert(src_length < size);    
-    proxyimpl* const proxy = new proxyimpl(ctx, size);  
-    this->ensureInitialized(size);
-    proxy->add_node(0, impl_, 0, size);
-    proxy->add_node(dst_offset, src, src_offset, src_length);
-    src = proxy;
+    // check if conditional handling is needed
+    if (!initialization
+     && ctx->conditional_enabled(impl_)) {
+      // TODO:
+      if (src->get_size() > src_length) {
+        assert(0 == dst_offset);
+        proxyimpl* const proxy = new proxyimpl(ctx, src_length);
+        proxy->add_node(0, src, src_offset, src_length);
+        src = proxy;
+      }
+      {
+        proxyimpl* const proxy = new proxyimpl(ctx, src_length);
+        lnodeimpl* const impl = impl_;
+        this->set_impl(proxy);
+        proxy->add_node(0, impl, 0, src_length);
+        this->assign(src, initialization);
+      }
+    } else {
+      proxyimpl* proxy = dynamic_cast<proxyimpl*>(impl_);
+      if (nullptr == proxy) {
+        proxy = new proxyimpl(ctx, size);
+        lnodeimpl* const impl = impl_;
+        this->assign(proxy, initialization);
+        proxy->add_node(0, impl, 0, size);
+      }
+      proxy->add_node(dst_offset, src, src_offset, src_length);
+    }
   }
-  
-  this->assign(src, initialization);
 }

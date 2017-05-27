@@ -20,22 +20,22 @@ bitvector::bitvector(uint32_t size) : words_(nullptr), size_(0) {
   this->resize(size, 0, true, false);
 }
 
-bitvector::bitvector(const std::string& value, uint32_t size) : words_(nullptr), size_(0) {
+bitvector::bitvector(uint32_t size, const std::string& value) : words_(nullptr), size_(0) {
   this->resize(size, 0x0, false, false);
   this->operator =(value);
 }
 
-bitvector::bitvector(char value, uint32_t size) : words_(nullptr), size_(0) {
+bitvector::bitvector(uint32_t size, char value) : words_(nullptr), size_(0) {
   this->resize(size, 0x0, false, false);
   this->operator =(value);
 }
 
-bitvector::bitvector(uint32_t value, uint32_t size) : words_(nullptr), size_(0) {    
+bitvector::bitvector(uint32_t size, uint32_t value) : words_(nullptr), size_(0) {
   this->resize(size, 0x0, false, false);
   this->operator =(value);
 }
 
-bitvector::bitvector(const std::initializer_list<uint32_t>& value, uint32_t size) 
+bitvector::bitvector(uint32_t size, const std::initializer_list<uint32_t>& value)
   : words_(nullptr), size_(0) {  
   this->resize(size, 0x0, false, false);
   this->operator =(value);  
@@ -46,7 +46,7 @@ bitvector::~bitvector() {
     delete [] words_;
 }
 
-void bitvector::resize(uint32_t size, uint32_t defaultValue, bool initialize, bool preserve) {  
+void bitvector::resize(uint32_t size, uint32_t value, bool initialize, bool preserve) {
   uint32_t old_num_words = (size_ + WORD_MASK) >> WORD_SIZE_LOG;
   uint32_t new_num_words = (size + WORD_MASK) >> WORD_SIZE_LOG;
   if (new_num_words != old_num_words) {
@@ -58,13 +58,14 @@ void bitvector::resize(uint32_t size, uint32_t defaultValue, bool initialize, bo
       delete [] words_;
     }
     if (initialize && new_num_words > old_num_words) {
-      std::fill(words + old_num_words, words + new_num_words, defaultValue);
+      std::fill(words + old_num_words, words + new_num_words, value);
     }
     words_ = words;    
   }   
   size_ = size;
-  if (initialize)
+  if (initialize) {
     this->clear_unused_bits();
+  }
 }
 
 void bitvector::clear_unused_bits() {
@@ -256,7 +257,8 @@ bitvector& bitvector::operator=(const std::initializer_list<uint32_t>& value) {
 }
 
 bool bitvector::operator==(const bitvector& rhs) const {
-  assert(size_ == rhs.size_);
+  if (size_ != rhs.size_)
+    return false;
   for (uint32_t i = 0, n = rhs.get_num_words(); i < n; ++i) {
     if (words_[i] != rhs.words_[i])
       return false;

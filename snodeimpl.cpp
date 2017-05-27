@@ -257,15 +257,6 @@ void snode::assign(snodeimpl* impl, bool is_owner) {
   impl_ = impl;
 }
 
-void snode::clone() {
-  // create a new snodeimpl() with impl_ as source node and make current
-  snodeimpl* const impl = impl_;
-  impl_ = nullptr;
-  this->ensureInitialized(impl->get_size());  
-  impl_->assign(0, impl, 0, impl->get_size());
-  impl->release();
-}
-
 uint32_t snode::read(uint32_t idx) const {
   assert(impl_);
   return impl_->read(idx);
@@ -292,6 +283,7 @@ void snode::read_data(data_type& inout, uint32_t offset, uint32_t length, uint32
 }
 
 void snode::write_data(uint32_t dst_offset, const data_type& in, uint32_t src_offset, uint32_t src_length, uint32_t size) {
+  assert(in.num_nodes() >= 1);
   assert((dst_offset + src_length) <= size);
   for (auto& d : in) {
     if (src_offset < d.length) {
@@ -320,6 +312,15 @@ void snode::assign(uint32_t dst_offset, snodeimpl* src, uint32_t src_offset, uin
       this->clone(); // clone the data if not owned
     impl_->assign(dst_offset, src, src_offset, src_length);
   }  
+}
+
+void snode::clone() {
+  // create a new snodeimpl() with impl_ as source node and make current
+  snodeimpl* const impl = impl_;
+  impl_ = nullptr;
+  this->ensureInitialized(impl->get_size());
+  impl_->assign(0, impl, 0, impl->get_size());
+  impl->release();
 }
 
 std::ostream& cash::detail::operator<<(std::ostream& os, const snode& node) {

@@ -221,48 +221,48 @@ public:
   
   bitvector(bitvector&& rhs);
   
-  explicit bitvector(uint32_t size);
+  bitvector(uint32_t size);
   
-  bitvector(const std::string& value, uint32_t size);
+  bitvector(uint32_t size, const std::string& value);
   
-  bitvector(uint32_t value, uint32_t size);
+  bitvector(uint32_t size, uint32_t value);
   
-  bitvector(const std::initializer_list<uint32_t>& value, uint32_t size);
+  bitvector(uint32_t size, const std::initializer_list<uint32_t>& value);
   
-  bitvector(char value, uint32_t size);
+  bitvector(uint32_t size, char value);
     
-  bitvector(int8_t value, uint32_t size)
-    : bitvector(bitcast<uint32_t>(value), size)
+  bitvector(uint32_t size, int8_t value)
+    : bitvector(size, bitcast<uint32_t>(value))
   {}
   
-  bitvector(uint8_t value, uint32_t size)
-    : bitvector(bitcast<uint32_t>(value), size)
+  bitvector(uint32_t size, uint8_t value)
+    : bitvector(size, bitcast<uint32_t>(value))
   {}
   
-  bitvector(int16_t value, uint32_t size)
-    : bitvector(bitcast<uint32_t>(value), size)
+  bitvector(uint32_t size, int16_t value)
+    : bitvector(size, bitcast<uint32_t>(value))
   {}
   
-  bitvector(uint16_t value, uint32_t size)
-    : bitvector(bitcast<uint32_t>(value), size)
+  bitvector(uint32_t size, uint16_t value)
+    : bitvector(size, bitcast<uint32_t>(value))
   {}
   
-  bitvector(int32_t value, uint32_t size)
-    : bitvector(bitcast<uint32_t>(value), size)
+  bitvector(uint32_t size, int32_t value)
+    : bitvector(size, bitcast<uint32_t>(value))
   {}
   
-  bitvector(int64_t value, uint32_t size)
-    : bitvector({bitcast<uint32_t>(value >> 32), bitcast<uint32_t>(value)}, size)
+  bitvector(uint32_t size, int64_t value)
+    : bitvector(size, {bitcast<uint32_t>(value >> 32), bitcast<uint32_t>(value)})
   {}
   
-  bitvector(uint64_t value, uint32_t size)
-    : bitvector({bitcast<uint32_t>(value >> 32), bitcast<uint32_t>(value)}, size)
+  bitvector(uint32_t size, uint64_t value)
+    : bitvector(size, {bitcast<uint32_t>(value >> 32), bitcast<uint32_t>(value)})
   {}
   
   ~bitvector();
   
   void resize(uint32_t size,
-              uint32_t defaultValue = 0x0,
+              uint32_t value = 0,
               bool initialize = true,
               bool preserve = true);
   

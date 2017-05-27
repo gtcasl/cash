@@ -23,6 +23,18 @@ public:
   uint32_t get_max_size() const {
     return max_size_;
   }
+
+  uint32_t num_nodes() const {
+    return buffer_.size();
+  }
+
+  const data_t& get_node(uint32_t index) const {
+    return buffer_[index];
+  }
+
+  data_t& get_node(uint32_t index) {
+    return buffer_[index];
+  }
   
   auto begin() const {
     return buffer_.begin(); 
