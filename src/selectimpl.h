@@ -12,12 +12,24 @@ public:
   const lnode& get_cond() const {
     return srcs_[0];
   }
+
+  lnode& get_cond() {
+    return srcs_[0];
+  }
   
   const lnode& get_true() const {
     return srcs_[1];
   }
+
+  lnode& get_true() {
+    return srcs_[1];
+  }
   
   const lnode& get_false() const {
+    return srcs_[2];
+  }
+
+  lnode& get_false() {
     return srcs_[2];
   }
 

@@ -17,6 +17,7 @@
   m(tick) \
   m(print) \
   m(select) \
+  m(wire) \
   m(reg) \
   m(latch) \
   m(mem) \
@@ -79,12 +80,6 @@ public:
   context* get_ctx() const {
     return ctx_;
   }
-
-  void add_ref(const lnode* node);
-
-  void remove_ref(const lnode* node);
-
-  void update_refs(lnodeimpl* impl);
   
   const std::vector<lnode>& get_srcs() const {
     return srcs_;
@@ -126,7 +121,6 @@ protected:
   uint32_t id_;
   ch_operator op_;
   context* ctx_;
-  std::set<const lnode*> refs_;
   std::vector<lnode> srcs_;
   bitvector value_; 
   

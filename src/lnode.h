@@ -16,9 +16,7 @@ public:
   
   using data_type = nodeset<lnodeimpl*>;
 
-  lnode() : impl_(nullptr) {}
-
-  lnode(uint32_t size);  
+  lnode();
 
   lnode(const lnode& rhs);
 
@@ -32,9 +30,7 @@ public:
   
   ~lnode();
   
-  const lnode& ensureInitialized(uint32_t size) const;
-  
-  lnodeimpl* get_impl() const;  
+  lnodeimpl* get_impl() const;
 
   void set_impl(lnodeimpl* impl);
   
@@ -62,9 +58,7 @@ public:
   
   void write_data(uint32_t dst_offset, const data_type& in, uint32_t src_offset, uint32_t src_length, uint32_t size);
 
-protected:   
-   
-  void clear();
+protected:
 
   void assign(lnodeimpl* impl, bool initialization = false);
   
@@ -72,7 +66,7 @@ protected:
   
   void assign(uint32_t dst_offset, lnodeimpl* src, uint32_t src_offset, uint32_t src_length, uint32_t size, bool initialization = false);
   
-  mutable lnodeimpl* impl_;
+  lnodeimpl* impl_;
   
   friend class lnodeimpl;
   friend class context; 

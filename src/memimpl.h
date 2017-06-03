@@ -45,8 +45,12 @@ class memportimpl : public lnodeimpl {
 public:  
   memportimpl(memimpl* mem, lnodeimpl* addr);
   
-  lnodeimpl* get_addr() const {
-    return srcs_[addr_id_].get_impl();
+  const lnode& get_addr() const {
+    return srcs_[addr_id_];
+  }
+
+  lnode& get_addr() {
+    return srcs_[addr_id_];
   }
   
   void write(lnodeimpl* data);  

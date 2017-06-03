@@ -60,7 +60,7 @@ const bitvector& outputimpl::eval(ch_cycle t) {
 }
 
 snodeimpl* outputimpl::get_bus() {
-  if (bus_ == nullptr) {
+  if (nullptr == bus_) {
     bus_ = new snodeimpl(value_.get_size());
     bus_->acquire();
   }

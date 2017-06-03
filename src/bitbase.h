@@ -18,7 +18,7 @@ public:
   static const unsigned bit_count = N;
   using data_type = lnode::data_type;
   
- const_slice_ref<typebase, 1> operator[](size_t index) const {
+  const_slice_ref<typebase, 1> operator[](size_t index) const {
     static_assert(N > 1, "invalid call");
     return const_slice_ref<typebase, 1>(*this, index);
   }

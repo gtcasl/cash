@@ -47,7 +47,7 @@ cdomain::cdomain(context* ctx, const std::vector<clock_event>& sensitivity_list)
   : ctx_(ctx) {
   sensitivity_list_.reserve(sensitivity_list.size());
   for (const clock_event& e : sensitivity_list) {
-    assert(dynamic_cast<undefimpl*>(e.get_signal()) == nullptr);
+    assert(nullptr == dynamic_cast<undefimpl*>(e.get_signal()));
     // constants are omitted by default
     if (dynamic_cast<litimpl*>(e.get_signal())) {
       continue;

@@ -38,8 +38,8 @@ context::~context() {
   assert(outputs_.empty());
   assert(taps_.empty());
   assert(gtaps_.empty());
-  assert(clk_ == nullptr);
-  assert(reset_ == nullptr);
+  assert(nullptr == clk_);
+  assert(nullptr == reset_);
   assert(cdomains_.empty());
   assert(cond_blocks_.empty());
 }
@@ -63,7 +63,7 @@ void context::pop_reset() {
 lnodeimpl* context::get_clk() {
   if (!clk_stack_.empty())
     return clk_stack_.top().get_impl();
-  if (clk_ == nullptr)
+  if (nullptr == clk_)
     clk_ = new inputimpl(op_clk, this, 1);
   return clk_;
 }
@@ -71,7 +71,7 @@ lnodeimpl* context::get_clk() {
 lnodeimpl* context::get_reset() {
   if (!reset_stack_.empty())
     return reset_stack_.top().get_impl();
-  if (reset_ == nullptr)
+  if (nullptr == reset_)
      reset_ = new inputimpl(op_reset, this, 1);
   return reset_;
 }
@@ -194,7 +194,7 @@ void context::end_case() {
 bool context::conditional_enabled(lnodeimpl* node) const {
   if (cond_blocks_.empty())
     return false;
-  return (node == nullptr) 
+  return (nullptr == node)
       || (0 == cond_blocks_.front().cases.front().locals.count(node));
 }
 
@@ -214,7 +214,7 @@ lnodeimpl* context::get_current_conditional(const cond_blocks_t::iterator& iterB
     // check if nested conditional
     if (parent_cond) {
       // check if fallback condition
-      if (cond == nullptr) {
+      if (nullptr == cond) {
         // a default case with parent conditional requires a precise fallback test
         // default condition = !(cond1 & cond2 ... & condN)
         for (auto iter = ++iterCase, iterEnd = iterBlock->cases.end(); iter != iterEnd; ++iter) {
@@ -239,38 +239,26 @@ lnodeimpl* context::get_current_conditional(const cond_blocks_t::iterator& iterB
 }
 
 lnodeimpl* context::resolve_conditional(lnodeimpl* dst, lnodeimpl* src) {
-  CH_UNUSED(dst, src);
-  /*// check if insize conditionall block and the node is not local
+  // check if inside conditionall block and the node is not local
   if (!cond_blocks_.empty()
    && !cond_blocks_.front().cases.empty()
    && (0 == cond_blocks_.front().cases.front().locals.count(dst))) {
     // get the current conditional value
     auto iterBlock = cond_blocks_.begin();
     cond_case_t& cc = iterBlock->cases.front();
-    lnodeimpl* const cond = this->get_current_conditional(iterBlock, dst);
-    
+    lnodeimpl* const cond = this->get_current_conditional(iterBlock, dst);    
     // lookup dst value if already defined
     auto iter = std::find_if(cond_vals_.begin(), cond_vals_.end(),
       [dst](const cond_val_t& v)->bool { return v.dst == dst; });
     if (iter != cond_vals_.end()) {
       selectimpl* const sel = dynamic_cast<selectimpl*>(iter->sel);
       if (iter->owner) {
-        assert(proxy && proxy->is_slice());
-        // merge existing select value and make sure their undefined regions point to dst
-        lnodeimpl* const true_val = sel->get_true().get_impl();
-        proxy->ensureInitialized();
-        proxy->replace_undefs(0, true_val, 0, true_val->get_size());
-        sel->get_true().set_impl(src, false);
+        sel->get_true().set_impl(src);
       } else {
         if (cond) {
           lnodeimpl* const false_val = sel->get_false().get_impl();
-          if (proxy && proxy->is_slice()) {
-            // resolve partial proxy object and make sure their undefined regions point to dst                     
-            proxy->ensureInitialized();
-            proxy->replace_undefs(0, false_val, 0, false_val->get_size());
-          }
           src = createSelectNode(cond, src, false_val);
-          sel->get_false().set_impl(src, false);
+          sel->get_false().set_impl(src);
         } else {
           sel->get_false().assign(src, true);
         }
@@ -280,14 +268,8 @@ lnodeimpl* context::resolve_conditional(lnodeimpl* dst, lnodeimpl* src) {
       src = dst; // return original value
     } else {
       if (cond) {
-        if (dst == nullptr) {
+        if (nullptr == dst) {
           dst = new undefimpl(this, src->get_size());
-          // resolve partial proxy object
-          // make sure their undefined regions point to dst           
-          if (proxy && proxy->is_slice()) {
-            proxy->ensureInitialized();
-            proxy->replace_undefs(0, dst, 0, dst->get_size());
-          }
           src = createSelectNode(cond, src, dst);                                   
           cc.locals.erase(src); // ensure global scope                       
         } else {             
@@ -297,7 +279,7 @@ lnodeimpl* context::resolve_conditional(lnodeimpl* dst, lnodeimpl* src) {
         cond_vals_.push_back({src, src, cond});     
       }
     }
-  }*/
+  }
   return src;
 }
 

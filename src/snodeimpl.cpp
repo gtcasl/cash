@@ -25,7 +25,7 @@ snodeimpl::snodeimpl(const bitvector& value)
 {}
 
 snodeimpl::~snodeimpl() {
-  assert(owner_ == nullptr);
+  assert(nullptr == owner_);
   for (auto& src : srcs_) {
     assert(src.node);
     src.node->release();
@@ -227,7 +227,7 @@ snodeimpl* snode::get_impl() const {
 }
 
 const snode& snode::ensureInitialized(uint32_t size) const {
-  if (impl_ == nullptr) {
+  if (nullptr == impl_) {
     impl_ = new snodeimpl(size);
     impl_->acquire();
   }

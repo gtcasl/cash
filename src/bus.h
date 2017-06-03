@@ -16,7 +16,7 @@ public:
   
   ch_bus(const ch_bus& rhs) : node_(rhs.node_.ensureInitialized(N)) {}
   
-  ch_bus(const ch_busbase<N>& rhs) : node_(get_node(rhs).get_impl()) {}
+  ch_bus(const ch_busbase<N>& rhs) : node_(get_node(rhs)) {}
   
   ch_bus(const bitvector& rhs) : node_(rhs) {
     assert(rhs.get_size() == N);

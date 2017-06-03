@@ -41,7 +41,7 @@ void ch_simulator::ensureInitialize() {
   // bind context taps
   for (auto ctx : contexts_) {
     if (ctx->clk_) {
-      if (clk_ == nullptr) {
+      if (nullptr == clk_) {
         clk_ = new snodeimpl(1);
         clk_->write(0u, 0x1); // initialize the clock to '1'
         clk_->acquire();
@@ -50,7 +50,7 @@ void ch_simulator::ensureInitialize() {
     }
 
     if (ctx->reset_) {
-      if (reset_ == nullptr) {
+      if (nullptr == reset_) {
         reset_ = new snodeimpl(1);
         reset_->acquire();
       }

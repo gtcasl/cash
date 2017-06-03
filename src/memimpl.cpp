@@ -50,7 +50,9 @@ void memimpl::load_data(const std::function<bool(uint32_t* out)>& getdata) {
   uint32_t num_words  = content_[0].get_num_words();
   uint32_t data_width = content_[0].get_size();
   uint32_t mask_bits  = data_width;
-  uint32_t a = 0, w = 0, value;
+  uint32_t a = 0;
+  uint32_t w = 0;
+  uint32_t value;
   while (getdata(&value)) {
     uint32_t mask;
     if (mask_bits >= 32) {
@@ -90,12 +92,12 @@ memportimpl* memimpl::get_port(lnodeimpl* addr, bool writing) {
   memportimpl* port = nullptr; 
   for (uint32_t i = ports_offset_, n = srcs_.size(); i < n; ++i) {
     memportimpl* const item  = dynamic_cast<memportimpl*>(srcs_[i].get_impl());
-    if (item->get_addr() == addr) {
+    if (item->get_addr().get_impl() == addr) {
       port = item;
       break;
     }
   }
-  if (port == nullptr) {
+  if (nullptr == port) {
     port = new memportimpl(this, addr);
     if (writing) {
       srcs_.emplace_back(port);
@@ -131,11 +133,11 @@ void memimpl::print_vl(ostream& out) const {
 ///////////////////////////////////////////////////////////////////////////////
 
 memportimpl::memportimpl(memimpl* mem, lnodeimpl* addr)
-    : lnodeimpl(op_memport, addr->get_ctx(), mem->content_[0].get_size())
-    , a_next_(0)
-    , addr_id_(-1)
-    , wdata_id_(-1)
-    , ctime_(~0ull) {
+  : lnodeimpl(op_memport, addr->get_ctx(), mem->content_[0].get_size())
+  , a_next_(0)
+  , addr_id_(-1)
+  , wdata_id_(-1)
+  , ctime_(~0ull) {
   srcs_.emplace_back(mem);
   addr_id_ = srcs_.size();
   srcs_.emplace_back(addr);
@@ -146,7 +148,7 @@ void memportimpl::write(lnodeimpl* data) {
   if (wdata_id_ == -1) {
     wdata_id_ = srcs_.size();
     srcs_.emplace_back(this);
-  } 
+  }
   srcs_[wdata_id_] = data;
 }
 
@@ -168,8 +170,8 @@ void memportimpl::tick_next(ch_cycle t) {
 const bitvector& memportimpl::eval(ch_cycle t) {  
   if (ctime_ != t) {
     ctime_ = t;
-    uint32_t addr = srcs_[addr_id_].eval(t).get_word(0);
     memimpl* const mem = dynamic_cast<memimpl*>(srcs_[0].get_impl());
+    uint32_t addr = srcs_[addr_id_].eval(t).get_word(0);    
     value_ = mem->content_[addr];
   }
   return value_;

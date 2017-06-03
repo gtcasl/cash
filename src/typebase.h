@@ -51,6 +51,7 @@ public:
   }
 
 private:
+
   std::vector<data_t> buffer_;
   uint32_t max_size_;
   uint32_t size_;
@@ -102,11 +103,20 @@ public:
   using data_type = T;
   
   const_slice_ref<base, 1> operator[](size_t index) {
-    return const_slice_ref<base, 1>(index);  
+    return const_slice_ref<base, 1>(*this, index);
+  }
+
+  const_slice_ref<base, 1> operator[](size_t index) const {
+    return const_slice_ref<base, 1>(*this, index);
   }
   
   template <unsigned M> 
   const_slice_ref<base, M> slice(size_t index = 0) {
+    return const_slice_ref<base, M>(*this, index);
+  }
+
+  template <unsigned M>
+  const_slice_ref<base, M> slice(size_t index = 0) const {
     return const_slice_ref<base, M>(*this, index);
   }
   
@@ -114,18 +124,23 @@ public:
   const_slice_ref<base, M> aslice(size_t index = 0) {
     return const_slice_ref<base, M>(*this, index * M);
   }
-  
+
   template <unsigned M>
-  const_concat_ref<base, typebase<M, T>> concat(const typebase<M, T>& rhs) const {
-    return const_concat_ref<base, typebase<M, T>>(*this, rhs);
+  const_slice_ref<base, M> aslice(size_t index = 0) const {
+    return const_slice_ref<base, M>(*this, index * M);
   }
   
   template <unsigned M>
   const_concat_ref<base, typebase<M, T>> concat(const typebase<M, T>& rhs) {
     return const_concat_ref<base, typebase<M, T>>(*this, rhs);
   }
+
+  template <unsigned M>
+  const_concat_ref<base, typebase<M, T>> concat(const typebase<M, T>& rhs) const {
+    return const_concat_ref<base, typebase<M, T>>(*this, rhs);
+  }
   
-  template <unsigned M> 
+  template <unsigned M>
   const_concat_ref<base, typebase<M, T>> concat(typebase<M, T>& rhs) {
     return const_concat_ref<base, typebase<M, T>>(*this, rhs);
   }
@@ -136,6 +151,7 @@ public:
   }
   
 private:
+
   void write_data(size_t dst_offset, const data_type& in, size_t src_offset, size_t src_length) override {
     CH_UNUSED(dst_offset, in, src_offset, src_length);
     assert(false); // invalid call

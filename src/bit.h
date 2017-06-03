@@ -22,11 +22,11 @@ public:
   using data_type = typename base::data_type;
   using bus_type = ch_bus<N>;
       
-  ch_bit() : node_(N) {}
+  ch_bit() {}
   
-  ch_bit(const ch_bit& rhs) : node_(rhs.node_.ensureInitialized(N)) {}
-  
-  ch_bit(const ch_bitbase<N>& rhs) : node_(get_node(rhs).get_impl()) {}
+  ch_bit(const ch_bit& rhs) : node_(rhs.node_) {}
+
+  ch_bit(const ch_bitbase<N>& rhs) : node_(get_node(rhs)) {}
   
   ch_bit(const bitvector& rhs) : node_(rhs) {
     assert(rhs.get_size() == N);
@@ -57,7 +57,7 @@ public:
   }
   
   ch_bit& operator=(const ch_bit& rhs) {
-    node_ = rhs.node_.ensureInitialized(N);
+    node_ = rhs.node_;
     return *this;
   }
   
@@ -108,7 +108,7 @@ protected:
 
 template <unsigned N>
 lnode get_node(const ch_bit<N>& b) {
-  return b.node_.ensureInitialized(N);
+  return b.node_;
 }
 
 // concatenation operator
