@@ -18,6 +18,8 @@ public:
 
   lnode();
 
+  lnode(uint32_t size);
+
   lnode(const lnode& rhs);
 
   lnode(lnode&& rhs);
@@ -29,6 +31,8 @@ public:
   lnode(const bitvector& value);
   
   ~lnode();
+
+  const lnode& ensureInitialized(uint32_t size) const;
   
   lnodeimpl* get_impl() const;
 
@@ -60,13 +64,15 @@ public:
 
 protected:
 
+  void clear();
+
   void assign(lnodeimpl* impl, bool initialization = false);
   
   void move(lnode& rhs);
   
   void assign(uint32_t dst_offset, lnodeimpl* src, uint32_t src_offset, uint32_t src_length, uint32_t size, bool initialization = false);
   
-  lnodeimpl* impl_;
+  mutable lnodeimpl* impl_;
   
   friend class lnodeimpl;
   friend class context; 

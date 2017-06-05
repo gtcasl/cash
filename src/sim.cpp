@@ -75,6 +75,14 @@ void ch_simulator::tick(ch_cycle t) {
   }
   for (auto ctx : contexts_) {
     ctx->eval(t);
+
+  #ifndef NDEBUG
+    int dump_ast_level = platform::self().get_dump_ast();
+    if (2 == dump_ast_level) {
+      std::cerr << "cycle " << t << ":" << endl;
+      ctx->dump_ast(std::cerr, 2);
+    }
+  #endif
   }
 }
 
@@ -148,10 +156,10 @@ void ch_tracer::ensureInitialize() {
     for (tapimpl* tap : ctx->taps_) {
       this->add_trace(tap->get_tapName(), tap->get_bus());
     #ifndef NDEBUG
-      int dump_cfg = platform::self().get_dump_cfg();
-      if (dump_cfg) {
+      int dump_cfg_level = platform::self().get_dump_cfg();
+      if (dump_cfg_level) {
         std::cout << "CFG dump for tap variable: " << tap->get_tapName() << std::endl;
-        ctx->dump_cfg(tap, std::cout, platform::self().get_dbg_level());
+        ctx->dump_cfg(tap, std::cout, dump_cfg_level);
       }
     #endif
     }

@@ -603,10 +603,15 @@ void aluimpl::print_vl(std::ostream& out) const {
   CH_TODO();
 } 
 
-lnodeimpl* cash::detail::createAluNode(ch_alu_op op, uint32_t size, lnodeimpl* a, lnodeimpl* b) {
+lnodeimpl* cash::detail::createAluNode(ch_alu_op op,
+                                       uint32_t size,
+                                       lnodeimpl* a,
+                                       lnodeimpl* b) {
   return new aluimpl(op, size, a, b); 
 }
 
-lnodeimpl* cash::detail::createAluNode(ch_alu_op op, uint32_t size, lnodeimpl* a) {
+lnodeimpl* cash::detail::createAluNode(ch_alu_op op,
+                                       uint32_t size,
+                                       lnodeimpl* a) {
   return new aluimpl(op, size, a);
 }

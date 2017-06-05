@@ -21,9 +21,9 @@ void ch_compiler::run() {
   
 #ifndef NDEBUG
   // dump nodes
-  int dump_ast = platform::self().get_dump_ast();
-  if (dump_ast) {
-    ctx_->dump_ast(std::cerr, dump_ast);
+  int dump_ast_level = platform::self().get_dump_ast();
+  if (dump_ast_level) {
+    ctx_->dump_ast(std::cerr, dump_ast_level);
   }
 #endif
   

@@ -10,7 +10,7 @@ public:
   litimpl(context* ctx, const bitvector& value);
 
   const bitvector& eval(ch_cycle t) override;
-  void print(std::ostream& out) const override;
+  void print(std::ostream& out, uint32_t level) const override;
   void print_vl(std::ostream& out) const override;
 };
 

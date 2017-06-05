@@ -76,9 +76,6 @@ src/utils.h
 src/vcd.cpp
 src/vcd.h
 src/vec.h
-src/wire.h
-src/wireimpl.cpp
-src/wireimpl.h
 test/aggregates.cpp
 test/arithm.cpp
 test/catch.h

@@ -15,12 +15,13 @@ public:
     return id_;
   }
   
-  snode* get_owner() const {
+  const snode* get_owner() const {
     return owner_;
   }
   
-  void set_owner(snode* node) {
-    owner_ = node;
+  void set_owner(const snode* owner) {
+    assert(nullptr == owner || nullptr == owner_);
+    owner_ = owner;
   }
   
   void assign(uint32_t start, snodeimpl* src, uint32_t offset, uint32_t length);
@@ -68,23 +69,18 @@ public:
     value_ = value;
     ++changeid_;
   }
-  
+
+  const bitvector& get_value() const {
+    this->sync_sources();
+    return value_;
+  }
+
   uint32_t get_size() const {
     return value_.get_size();
   }
   
-  const bitvector& get_value() const { 
-    this->sync_sources();
-    return value_;
-  }
-  
-  bitvector& get_value() {
-    this->sync_sources();
-    return value_;
-  }
-  
 protected:
-  
+
   uint64_t sync_sources() const;
   
   void merge_left(uint32_t idx);
@@ -94,14 +90,14 @@ protected:
     uint32_t start;    
     uint32_t offset;    
     uint32_t length;
-    uint64_t changeid;
+    mutable uint64_t changeid;
   };
   
   uint32_t id_;
+  const snode* owner_;
+  std::vector<source_t> srcs_;
   mutable bitvector value_;
-  mutable uint64_t  changeid_;
-  mutable std::vector<source_t> srcs_;
-  snode* owner_;  
+  mutable uint64_t  changeid_;  
 };
 
 }

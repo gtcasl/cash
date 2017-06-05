@@ -20,6 +20,9 @@ lnodeimpl::lnodeimpl(ch_operator op, context* ctx, uint32_t size)
 }
 
 lnodeimpl::~lnodeimpl() {
+  for (const lnode* ref : refs_) {
+    const_cast<lnode*>(ref)->clear();
+  }
   ctx_->remove_node(this);  
 }
 
@@ -28,6 +31,21 @@ const char* lnodeimpl::get_name() const {
     CH_OPERATOR_ENUM(CH_OPERATOR_NAME)
   };
   return sc_names[(int)op_];
+}
+
+void lnodeimpl::add_ref(const lnode* node) {
+  refs_.emplace(node);
+}
+
+void lnodeimpl::remove_ref(const lnode* node) {
+  refs_.erase(node);
+}
+
+void lnodeimpl::update_refs(lnodeimpl* impl) {
+  assert(impl && impl != this);
+  for (const lnode* ref : refs_) {
+    const_cast<lnode*>(ref)->set_impl(impl);
+  }
 }
 
 bool lnodeimpl::ready() const {
@@ -46,7 +64,7 @@ bool lnodeimpl::valid() const {
   return true;
 }
 
-void lnodeimpl::print(std::ostream& out) const {
+void lnodeimpl::print(std::ostream& out, uint32_t level) const {
   out << "#" << id_ << " <- " << this->get_name() << value_.get_size();
   uint32_t n = srcs_.size();
   if (n > 0) {
@@ -57,6 +75,10 @@ void lnodeimpl::print(std::ostream& out) const {
       out << "#" << srcs_[i].get_id();
     }
     out << ")";
+  }
+
+  if (level == 2) {
+    out << " = " << value_;
   }
 }
 
@@ -81,19 +103,26 @@ void undefimpl::print_vl(std::ostream& out) const {
 
 lnode::lnode() : impl_(nullptr) {}
 
-lnode::lnode(const lnode& rhs) : impl_(nullptr) {
+lnode::lnode(uint32_t size) : lnode() {
+  // force initialization of nested objects
+  if (ctx_curr()->conditional_enabled()) {
+    this->ensureInitialized(size);
+  }
+}
+
+lnode::lnode(const lnode& rhs) : lnode() {
   this->assign(rhs.impl_, true);
 }
 
-lnode::lnode(lnode&& rhs) : impl_(nullptr) {
+lnode::lnode(lnode&& rhs) : lnode() {
   this->move(rhs);
 }
 
-lnode::lnode(lnodeimpl* impl) : impl_(nullptr) { 
+lnode::lnode(lnodeimpl* impl) : lnode() {
   this->assign(impl, true);
 }
 
-lnode::lnode(const data_type& data) : impl_(nullptr) {
+lnode::lnode(const data_type& data) : lnode() {
   uint32_t dst_offset = 0;
   for (auto& d : data) {
     this->assign(dst_offset, d.src, d.offset, d.length, data.get_size(), true);
@@ -101,12 +130,12 @@ lnode::lnode(const data_type& data) : impl_(nullptr) {
   }
 }
 
-lnode::lnode(const bitvector& value) : impl_(nullptr) {
+lnode::lnode(const bitvector& value) : lnode() {
   this->assign(ctx_curr()->create_literal(value), true);
 }
 
 lnode::~lnode() {
-  impl_ = nullptr;
+  this->clear();
 }
 
 void lnode::assign(const bitvector& value) {
@@ -149,22 +178,46 @@ bool lnode::valid() const {
   return impl_ ? impl_->valid() : true;
 }
 
+const lnode& lnode::ensureInitialized(uint32_t size) const {
+  if (impl_ == nullptr) {
+    impl_ = new undefimpl(ctx_curr(), size);
+  }
+  assert(impl_->get_size() == size);
+  return *this;
+}
+
+void lnode::clear() {
+  if (impl_) {
+    impl_->remove_ref(this);
+  }
+  impl_ = nullptr;
+}
+
 const bitvector& lnode::eval(ch_cycle t) {
   assert(impl_);
   return impl_->eval(t);
 }
 
 lnodeimpl* lnode::get_impl() const {
+  assert(impl_);
   return impl_;
 }
 
 void lnode::set_impl(lnodeimpl* impl) {
+  if (impl) {
+    impl->add_ref(this);
+  }
+  if (impl_) {
+    impl_->remove_ref(this);
+  }
   impl_ = impl;
 }
 
 void lnode::move(lnode& rhs) {
-  impl_ = rhs.impl_;
-  rhs.impl_ = nullptr;
+  assert(rhs.impl_);
+  assert(rhs.impl_ != impl_);
+  this->set_impl(rhs.impl_);
+  rhs.clear();
 }
 
 void lnode::assign(lnodeimpl* impl, bool initialization) {
@@ -173,14 +226,24 @@ void lnode::assign(lnodeimpl* impl, bool initialization) {
       // resolve conditionals if inside a branch
       impl = impl->get_ctx()->resolve_conditional(impl_, impl);
       if (impl == impl_)
-        return;
+        return;      
     }
+    impl->add_ref(this);
+  }
+  if (impl_) {
+    CH_CHECK(impl != impl_, "redundant assignment for node %s%d(#%d)!\n", impl_->get_name(), impl_->get_size(), impl_->get_id());
+    impl_->remove_ref(this);
+    impl_->update_refs(impl);
   }
   impl_ = impl;
 }
 
-void lnode::read_data(data_type& inout, uint32_t offset, uint32_t length, uint32_t size) const {
+void lnode::read_data(data_type& inout,
+                      uint32_t offset,
+                      uint32_t length,
+                      uint32_t size) const {
   assert((offset + length) <= size);
+  this->ensureInitialized(size);
   inout.push({impl_, offset, length});
 }
 

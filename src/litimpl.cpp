@@ -13,7 +13,8 @@ const bitvector& litimpl::eval(ch_cycle) {
   return value_; 
 }
 
-void litimpl::print(ostream& out) const {
+void litimpl::print(ostream& out, uint32_t level) const {
+  CH_UNUSED(level);
   out << "#" << id_ << " <- " << this->get_name() << value_.get_size() 
       << "(" << value_ << ")";
 }

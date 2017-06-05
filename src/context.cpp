@@ -79,9 +79,9 @@ lnodeimpl* context::get_reset() {
 uint32_t context::add_node(lnodeimpl* node) {
   uint32_t nodeid = ++nodeids_;  
 #ifndef NDEBUG
-  uint32_t dbg_node = platform::self().get_dbg_node();
-  if (dbg_node) {
-    if (nodeid == dbg_node) {
+  uint32_t dbg_nodeid = platform::self().get_dbg_node();
+  if (dbg_nodeid) {
+    if (nodeid == dbg_nodeid) {
       CH_ABORT("debugbreak on nodeid %d hit!", nodeid);
     }
   }
@@ -404,16 +404,15 @@ void context::to_verilog(const std::string& module_name, std::ostream& out) {
 }
 
 void context::dump_ast(std::ostream& out, uint32_t level) {
-  CH_UNUSED(level);
   for (lnodeimpl* node : nodes_) {
-    node->print(out);
+    node->print(out, level);
     out << std::endl;
   }
 }
 
 static void dump_cfg_impl(lnodeimpl* node, std::ostream& out, uint32_t level, std::vector<bool>& visits, const std::map<uint32_t, tapimpl*>& taps) {
   visits[node->get_id()] = true;
-  node->print(out);
+  node->print(out, level);
   
   auto iter = taps.find(node->get_id());
   if (iter != taps.end()) {
@@ -443,10 +442,10 @@ void context::dump_cfg(lnodeimpl* node, std::ostream& out, uint32_t level) {
   tapimpl* const tap = dynamic_cast<tapimpl*>(node);
   if (tap) {
     node = tap->get_target().get_impl();
-    node->print(out);
+    node->print(out, level);
     out << " // " << tap->get_tapName();        
   } else {  
-    node->print(out);
+    node->print(out, level);
   }
   out << std::endl;    
   for (const lnode& src : node->get_srcs()) {

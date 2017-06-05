@@ -9,7 +9,11 @@ proxyimpl::proxyimpl(context* ctx, uint32_t size)
   , ctime_(~0ull) 
 {}
 
-void proxyimpl::add_node(uint32_t start, lnodeimpl* src, uint32_t offset, uint32_t length, bool resize) {
+void proxyimpl::add_node(uint32_t start,
+                         lnodeimpl* src,
+                         uint32_t offset,
+                         uint32_t length,
+                         bool resize) {
   // add new source
   uint32_t new_srcidx = 0xffffffff;
   for (uint32_t i = 0, n = srcs_.size(); i < n; ++i) {
@@ -162,7 +166,7 @@ const bitvector& proxyimpl::eval(ch_cycle t) {
   return value_;
 }
 
-void proxyimpl::print(std::ostream& out) const {
+void proxyimpl::print(std::ostream& out, uint32_t level) const {
   out << "#" << id_ << " <- " << this->get_name() << value_.get_size();
   out << "(";
   for (uint32_t i = 0, s = 0, n = ranges_.size(); i < n; ++i) {
@@ -180,6 +184,10 @@ void proxyimpl::print(std::ostream& out) const {
     out << "}";
   }
   out << ")";
+
+  if (level == 2) {
+    out << " = " << value_;
+  }
 }
 
 void proxyimpl::print_vl(std::ostream& out) const {

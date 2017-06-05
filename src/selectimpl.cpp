@@ -29,7 +29,9 @@ void selectimpl::print_vl(std::ostream& out) const {
   CH_TODO();
 }
 
-lnodeimpl* cash::detail::createSelectNode(lnodeimpl* test, lnodeimpl* a, lnodeimpl* b) {
+lnodeimpl* cash::detail::createSelectNode(lnodeimpl* test,
+                                          lnodeimpl* a,
+                                          lnodeimpl* b) {
   return new selectimpl(test, a, b);
 }
 
@@ -41,7 +43,8 @@ lnodeimpl* select_impl::eval(lnodeimpl* value) {
   if (key_) {
     while (!stmts->empty()) {
       const stmt_t& stmt = stmts->top();
-      curr = createSelectNode(createAluNode(alu_op_eq, 1, key_, stmt.cond), stmt.value, curr);
+      lnodeimpl* cond = createAluNode(alu_op_eq, 1, key_, stmt.cond);
+      curr = createSelectNode(cond, stmt.value, curr);
       stmts->pop();
     } 
   } else {

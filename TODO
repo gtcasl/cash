@@ -155,7 +155,7 @@ y = ch_pipeline(x, 2) = ch_reg(ch_reg(x));
 z = ch_pipeline(x * y, 2); => z = ch_reg(mult1(x,y,ch_reg(mult0(x,y)));
 
 // Detecting leaks using valgrind
-$ valgrind --leak-check=yes <app> <args...>
+$ valgrind --leak-check=yes <app> <args...> > valgrind.log 2>&1
 
 // CPU Profiler
 $ valgrind --tool=callgrind <app> <args...>

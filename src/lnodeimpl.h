@@ -17,7 +17,6 @@
   m(tick) \
   m(print) \
   m(select) \
-  m(wire) \
   m(reg) \
   m(latch) \
   m(mem) \
@@ -80,6 +79,12 @@ public:
   context* get_ctx() const {
     return ctx_;
   }
+
+  void add_ref(const lnode* node);
+
+  void remove_ref(const lnode* node);
+
+  void update_refs(lnodeimpl* impl);
   
   const std::vector<lnode>& get_srcs() const {
     return srcs_;
@@ -113,7 +118,7 @@ public:
   virtual bool valid() const;  
   virtual const bitvector& eval(ch_cycle t) = 0;
   
-  virtual void print(std::ostream& out) const;
+  virtual void print(std::ostream& out, uint32_t level) const;
   virtual void print_vl(std::ostream& out) const = 0;
 
 protected:
@@ -121,6 +126,7 @@ protected:
   uint32_t id_;
   ch_operator op_;
   context* ctx_;
+  std::set<const lnode*> refs_;
   std::vector<lnode> srcs_;
   bitvector value_; 
   

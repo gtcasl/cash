@@ -8,7 +8,6 @@
 #include "switch.h"
 #include "reg.h"
 #include "seq.h"
-#include "wire.h"
 #include "real.h"
 #include "mem.h"
 #include "arithm.h"

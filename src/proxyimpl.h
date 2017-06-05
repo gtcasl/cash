@@ -9,10 +9,14 @@ class proxyimpl : public lnodeimpl {
 public:  
   proxyimpl(context* ctx, uint32_t size);
   
-  void add_node(uint32_t start, lnodeimpl* src, uint32_t offset, uint32_t length, bool resize = false);
+  void add_node(uint32_t start,
+                lnodeimpl* src,
+                uint32_t offset,
+                uint32_t length,
+                bool resize = false);
   
   const bitvector& eval(ch_cycle t) override;  
-  void print(std::ostream& out) const override;
+  void print(std::ostream& out, uint32_t level) const override;
   void print_vl(std::ostream& out) const override;
   
 private:

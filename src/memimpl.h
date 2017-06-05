@@ -22,6 +22,7 @@ public:
   void tick_next(ch_cycle t) override;
   
   const bitvector& eval(ch_cycle t) override;  
+  void print(std::ostream& out, uint32_t level) const override;
   void print_vl(std::ostream& out) const override;
   
   uint32_t get_total_size() const {

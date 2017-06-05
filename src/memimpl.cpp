@@ -125,6 +125,20 @@ const bitvector& memimpl::eval(ch_cycle t) {
   abort();
 }
 
+void memimpl::print(std::ostream& out, uint32_t level) const {
+  CH_UNUSED(level);
+  out << "#" << id_ << " <- " << this->get_name() << value_.get_size();
+  uint32_t n = srcs_.size();
+  if (n > 0) {
+    out << "(";
+    for (uint32_t i = 0; i < n; ++i) {
+      if (i > 0)
+        out << ", ";
+      out << "#" << srcs_[i].get_id();
+    }
+    out << ")";
+  }
+}
 void memimpl::print_vl(ostream& out) const {
   CH_UNUSED(out);
   CH_TODO();
@@ -147,9 +161,14 @@ void memportimpl::write(lnodeimpl* data) {
   // use explicit assignment to force conditionals resolution
   if (wdata_id_ == -1) {
     wdata_id_ = srcs_.size();
-    srcs_.emplace_back(this);
+    if (ctx_->conditional_enabled(this)) {
+      srcs_.emplace_back(ctx_->resolve_conditional(this, data));
+    } else {
+      srcs_.emplace_back(data);
+    }
+  } else {
+    srcs_[wdata_id_] = data;
   }
-  srcs_[wdata_id_] = data;
 }
 
 void memportimpl::tick(ch_cycle t) {

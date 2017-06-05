@@ -13,7 +13,7 @@ public:
   
   using data_type = nodeset<snodeimpl*>;
   
-  snode() : impl_(nullptr) {}
+  snode();
 
   snode(const snode& rhs);
 
@@ -56,6 +56,8 @@ public:
   void write_data(uint32_t dst_offset, const data_type& in, uint32_t src_offset, uint32_t src_length, uint32_t size);
 
 protected:
+
+  void clear();
   
   void assign(uint32_t dst_offset, snodeimpl* src, uint32_t src_offset, uint32_t src_length, uint32_t size);
   

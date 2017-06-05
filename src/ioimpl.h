@@ -9,20 +9,25 @@ class snodeimpl;
 
 class ioimpl : public lnodeimpl {
 public:
-  ioimpl(ch_operator op, context* ctx, uint32_t size) : lnodeimpl(op, ctx, size)  {}
+  ioimpl(ch_operator op, context* ctx, uint32_t size)
+    : lnodeimpl(op, ctx, size)
+  {}
 };
 
 class inputimpl : public ioimpl {
 public:
   inputimpl(ch_operator op, context* ctx, uint32_t size);
-  inputimpl(context* ctx, uint32_t size) : inputimpl(op_input, ctx, size) {}
+  inputimpl(context* ctx, uint32_t size)
+    : inputimpl(op_input, ctx, size)
+  {}
+
   ~inputimpl();
   
   void bind(snodeimpl* bus);
 
   const bitvector& eval(ch_cycle t) override;
   
-  void print(std::ostream& out) const override;
+  void print(std::ostream& out, uint32_t level) const override;
   
   void print_vl(std::ostream& out) const override {
     CH_UNUSED(out);
@@ -30,19 +35,23 @@ public:
   
 protected:
   snodeimpl* bus_;
+  ch_cycle ctime_;
 };
 
 class outputimpl : public ioimpl {
 public:
   outputimpl(ch_operator op, lnodeimpl* src);
-  outputimpl(lnodeimpl* src) : outputimpl(op_output, src) {}
+  outputimpl(lnodeimpl* src)
+    : outputimpl(op_output, src)
+  {}
+
   ~outputimpl();
   
   const bitvector& eval(ch_cycle t) override;
   
   snodeimpl* get_bus();
   
-  void print(std::ostream& out) const override;
+  void print(std::ostream& out, uint32_t level) const override;
   
   void print_vl(std::ostream& out) const override {
     CH_UNUSED(out);
@@ -50,6 +59,7 @@ public:
   
 private:
   snodeimpl* bus_;
+  ch_cycle ctime_;
 };
 
 class tapimpl : public outputimpl {
@@ -68,7 +78,7 @@ public:
     return tapName_;
   }
   
-  void print(std::ostream& out) const override;
+  void print(std::ostream& out, uint32_t level) const override;
   
   void print_vl(std::ostream& out) const override {
     CH_UNUSED(out);
