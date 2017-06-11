@@ -44,11 +44,11 @@ public:
 #undef CH_DEF_AOP
   
   bool operator==(const typebase& rhs) const {
-    return (get_node(*this) == get_node(rhs));
+    return get_node(*this).is_equal(get_node(rhs), N);
   }
   
   bool operator<(const typebase& rhs) const {
-    return (get_node(*this) < get_node(rhs));
+    return get_node(*this).is_less(get_node(rhs), N);
   }
   
   bool operator!=(const typebase& rhs) const {
@@ -67,15 +67,13 @@ public:
     return !(*this < rhs);
   }
   
-  virtual void read(void* out, uint32_t sizeInBytes) const {  
-    assert(sizeInBytes * 8 >= N);
-    get_node(*this).read(reinterpret_cast<uint8_t*>(out), sizeInBytes);
+  virtual void read(void* out, uint32_t offset, uint32_t length) const {
+    get_node(*this).read(reinterpret_cast<uint8_t*>(out), offset, length, N);
   }
   
-  virtual void write(const void* in, uint32_t sizeInBytes) {
-    assert(sizeInBytes * 8 >= N);
+  virtual void write(const void* in, uint32_t offset, uint32_t length) {
     ch_bus<N> tmp;
-    tmp.write(reinterpret_cast<const uint8_t*>(in), sizeInBytes);
+    tmp.write(reinterpret_cast<const uint8_t*>(in), offset, length), N;
     this->operator =(tmp);
   }
 

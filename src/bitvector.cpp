@@ -324,26 +324,74 @@ bool bitvector::is_empty() const {
   return true;
 }
 
-void bitvector::read(uint8_t* out, uint32_t sizeInBytes) const {
-  assert(size_ > 0);
-  assert(sizeInBytes * 8 >= size_);
-  uint32_t srcBytes = (size_ + 7) / 8;
-  memcpy(out, words_, srcBytes);
-  if (sizeInBytes > srcBytes) {
-    memset(out + srcBytes, 0, sizeInBytes - srcBytes);
+void bitvector::read(uint8_t* out, uint32_t offset, uint32_t size) const {
+  assert(offset + size <= size_);
+  uint32_t m_offset = offset & 0xff;
+  uint8_t last_mask = (offset + size) & 0xff;
+  if (m_offset) {
+    uint8_t tmp = 0;
+    const_iterator iter = this->begin() + offset;
+    for (uint32_t i = 0; i < size; ++i) {
+      uint32_t shift = i & 0x7;
+      tmp |= (*iter++) << shift;
+      if (shift == 0x7) {
+        *out++ = tmp;
+        tmp = 0;
+      }
+    }
+    if (tmp) {
+      if (last_mask) {
+        *out = CH_BLEND(last_mask, *out, tmp);
+      } else {
+        *out = tmp;
+      }
+    }
+  } else {
+    // byte-aligned offset
+    uint32_t offset_in_bytes = offset / 8;
+    uint32_t size_in_bytes = CH_CEILDIV(size, 8);
+    uint8_t* src = reinterpret_cast<uint8_t*>(words_) + offset_in_bytes;
+    if (last_mask) {
+      // copy all bytes except the last one
+      memcpy(out, src, size_in_bytes - 1);
+      // only update set bits from source in the last byte
+      out[size_in_bytes - 1] =
+          CH_BLEND(last_mask, out[size_in_bytes - 1], src[size_in_bytes - 1]);
+    } else {
+      memcpy(out, src, size_in_bytes);
+    }
   }
 }
 
-void bitvector::write(const uint8_t* in, uint32_t sizeInBytes) {
-  assert(size_ > 0);
-  assert(sizeInBytes * 8 >= size_);
-  uint32_t dstBytes = (size_ + 7) / 8;
-  // check for overflow
-  CH_CHECK(0 == (size_ % 8) || 0 ==(in[dstBytes-1] & ~((1 << (size_ % 8))-1)), "input value overflow");
-  for (uint32_t i = dstBytes; i < sizeInBytes; ++i) {
-    CH_CHECK(0 == in[i], "input value overflow"); 
-  }  
-  memcpy(words_, in, dstBytes);  
+void bitvector::write(const uint8_t* in, uint32_t offset, uint32_t size) {
+  assert(offset + size <= size_);
+  uint32_t m_offset = offset & 0xff;
+  if (m_offset) {
+    uint8_t tmp;
+    iterator iter = this->begin() + offset;
+    for (uint32_t i = 0; i < size; ++i) {
+      uint32_t shift = i & 0x7;
+      if (0 == shift) {
+        tmp = *in++;
+      }
+      *iter++ = (tmp >> shift) & 0x1;
+    }
+  } else {
+    // byte-aligned offset
+    uint32_t offset_in_bytes = offset / 8;
+    uint32_t size_in_bytes = CH_CEILDIV(size, 8);
+    uint8_t last_mask = (offset + size) & 0xff;
+    uint8_t* dst = reinterpret_cast<uint8_t*>(words_) + offset_in_bytes;
+    if (last_mask) {
+      // copy all bytes except the last one
+      memcpy(dst, in, size_in_bytes - 1);
+      // only update set bits from source in the last byte
+      dst[size_in_bytes - 1] =
+          CH_BLEND(last_mask, dst[size_in_bytes - 1], in[size_in_bytes - 1]);
+    } else {
+      memcpy(dst, in, size_in_bytes);
+    }
+  }
 }
 
 std::ostream& cash::detail::operator<<(std::ostream& os, const bitvector& b) {

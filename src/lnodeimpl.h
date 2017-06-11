@@ -84,8 +84,19 @@ public:
 
   void remove_ref(const lnode* node);
 
-  void update_refs(lnodeimpl* impl);
+  void replace_all_refs(lnodeimpl* impl);
+
+  int find_ref(const lnode* node) const;
+
+  virtual void assign(uint32_t dst_offset,
+                      lnodeimpl* src,
+                      uint32_t src_offset,
+                      uint32_t src_length);
   
+  uint32_t get_num_srcs() const {
+    return srcs_.size();
+  }
+
   const std::vector<lnode>& get_srcs() const {
     return srcs_;
   }
@@ -100,6 +111,18 @@ public:
   
   lnodeimpl* get_src(unsigned i) {
     return srcs_[i].get_impl();
+  }
+
+  uint32_t get_num_refs() const {
+    return refs_.size();
+  }
+
+  const std::set<const lnode*>& get_refs() const {
+    return refs_;
+  }
+
+  std::set<const lnode*>& get_refs() {
+    return refs_;
   }
   
   uint32_t get_size() const {

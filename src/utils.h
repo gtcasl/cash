@@ -271,6 +271,8 @@ constexpr uint32_t rotr(uint32_t value, uint32_t shift, uint32_t width) {
 
 #define CH_COUNTOF(a) (sizeof(a) / sizeof(a[0]))
 #define CH_MAX(a,b) (((a) > (b)) ? (a) : (b))
+#define CH_CEILDIV(a, b) (((a) + (b) - 1) / b)
+#define CH_BLEND(mask, a, b)  (a) ^ (((a) ^ (b)) & (mask))
 
 #define CH_OUT(...) std::tuple<__VA_ARGS__>
 #define CH_RET(...) return std::make_tuple(__VA_ARGS__)

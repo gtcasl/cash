@@ -12,7 +12,8 @@ using ch_signal = ch_bus<1>;
 template <unsigned N> class ch_bit;
 using ch_logic = ch_bit<1>;
 
-void createPrintNode(lnodeimpl* cond, const std::string& format, 
+void createPrintNode(lnodeimpl* cond,
+                     const std::string& format,
                      const std::initializer_list<lnodeimpl*>& args);
 
 template <unsigned N> 
@@ -24,9 +25,9 @@ public:
       
   ch_bit() : node_(N) {}
   
-  ch_bit(const ch_bit& rhs) : node_(rhs.node_.ensureInitialized(N)) {}
+  ch_bit(const ch_bit& rhs) : node_(N, rhs.node_) {}
 
-  ch_bit(const ch_bitbase<N>& rhs) : node_(get_node(rhs)) {}
+  ch_bit(const ch_bitbase<N>& rhs) : node_(N, get_node(rhs)) {}
   
   ch_bit(const bitvector& rhs) : node_(rhs) {
     assert(rhs.get_size() == N);
@@ -38,7 +39,6 @@ public:
     
 #define CH_DEF_CTOR(type) \
     ch_bit(type value) : node_(bitvector(N, value)) { \
-      assert(node_.get_size() == N); \
     }
   CH_DEF_CTOR(const std::initializer_list<uint32_t>&)
   CH_DEF_CTOR(char)
@@ -57,26 +57,24 @@ public:
   }
   
   ch_bit& operator=(const ch_bit& rhs) {
-    node_ = rhs.node_.ensureInitialized(N);
+    node_.assign(N, rhs.node_);
     return *this;
   }
   
   ch_bit& operator=(const ch_bitbase<N>& rhs) {
-    base::operator =(rhs);
+    base::operator=(rhs);
     return *this;
   }
   
   ch_bit& operator=(bool value) {
     static_assert(N == 1, "bool assignents only allowed on single-bit objects");
     node_.assign(bitvector(N, value ? 0x1 : 0x0)); \
-    assert(node_.get_size() == N); \
     return *this;
   } 
   
 #define CH_DEF_AOP(type) \
   ch_bit& operator=(type value) { \
     node_.assign(bitvector(N, value)); \
-    assert(node_.get_size() == N); \
     return *this; \
   } 
   CH_DEF_AOP(const std::initializer_list<uint32_t>&)
@@ -93,11 +91,16 @@ public:
   
 protected:
 
-  void read_data(data_type& inout, size_t offset, size_t length) const override {
+  void read_data(data_type& inout,
+                 size_t offset,
+                 size_t length) const override {
     node_.read_data(inout, offset, length, N);
   }
   
-  void write_data(size_t dst_offset, const data_type& in, size_t src_offset, size_t src_length) override {
+  void write_data(size_t dst_offset,
+                  const data_type& in,
+                  size_t src_offset,
+                  size_t src_length) override {
     node_.write_data(dst_offset, in, src_offset, src_length, N);
   }
   
@@ -108,7 +111,7 @@ protected:
 
 template <unsigned N>
 lnode get_node(const ch_bit<N>& b) {
-  return b.node_.ensureInitialized(N);
+  return lnode(N, b.node_);
 }
 
 // concatenation operator
@@ -123,17 +126,25 @@ lnode get_node(const ch_bit<N>& b) {
   template <unsigned NB, unsigned NA> auto ch_concat(B b, cA a) { return b.template concat(a); } \
   template <unsigned NB, unsigned NA> auto ch_concat(B b, A a) { return b.template concat(a); }
 
-CH_CONCAT_GEN(const const_bitref<NB>&, const const_bitref<NA>&,
-                const bitref<NB>&, const bitref<NA>&)
+CH_CONCAT_GEN(const const_bitref<NB>&,
+              const const_bitref<NA>&,
+              const bitref<NB>&,
+              const bitref<NA>&)
 
-CH_CONCAT_GEN(const const_bitref<NB>&, const ch_bitbase<NA>&,
-                const bitref<NB>&, ch_bitbase<NA>&)
+CH_CONCAT_GEN(const const_bitref<NB>&,
+              const ch_bitbase<NA>&,
+              const bitref<NB>&,
+              ch_bitbase<NA>&)
 
-CH_CONCAT_GEN(const ch_bitbase<NB>&, const const_bitref<NA>&,
-                ch_bitbase<NB>&, const bitref<NA>&)
+CH_CONCAT_GEN(const ch_bitbase<NB>&,
+              const const_bitref<NA>&,
+              ch_bitbase<NB>&,
+              const bitref<NA>&)
 
-CH_CONCAT_GEN(const ch_bitbase<NB>&, const ch_bitbase<NA>&,
-                ch_bitbase<NB>&, ch_bitbase<NA>&)
+CH_CONCAT_GEN(const ch_bitbase<NB>&,
+              const ch_bitbase<NA>&,
+              ch_bitbase<NB>&,
+              ch_bitbase<NA>&)
 
 #undef CH_CONCAT_GEN
 
@@ -228,7 +239,8 @@ ch_bit<N> ch_sext(const ch_bitbase<M>& in) {
 // shuffle operators
 
 template <unsigned N, unsigned I>
-ch_bit<N> ch_shuffle(const ch_bitbase<N>& in, const std::array<uint32_t, I>& indices) {
+ch_bit<N> ch_shuffle(const ch_bitbase<N>& in,
+                     const std::array<uint32_t, I>& indices) {
   static_assert((I % N) == 0, "invalid indices size");
   ch_bit<N> ret;
   for (unsigned i = 0; i < I; ++i) {
@@ -247,13 +259,21 @@ void ch_print(const std::string& format, const Args& ...args) {
 }
 
 template <typename...Args>
-void ch_print(const ch_logicbase& cond, const std::string& format, const Args& ...args) {
-  createPrintNode(get_node(cond).get_impl(), format, {get_node(args).get_impl()...});
+void ch_print(const ch_logicbase& cond,
+              const std::string& format,
+              const Args& ...args) {
+  createPrintNode(get_node(cond).get_impl(),
+                  format,
+                  {get_node(args).get_impl()...});
 }
 
 template <typename...Args>
-void ch_print(const ch_logic& cond, const std::string& format, const Args& ...args) {
-  createPrintNode(get_node(cond).get_impl(), format, {get_node(args).get_impl()...});
+void ch_print(const ch_logic& cond,
+              const std::string& format,
+              const Args& ...args) {
+  createPrintNode(get_node(cond).get_impl(),
+                  format,
+                  {get_node(args).get_impl()...});
 }
 
 }

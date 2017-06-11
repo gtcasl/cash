@@ -23,8 +23,13 @@ public:
     assert(nullptr == owner || nullptr == owner_);
     owner_ = owner;
   }
-  
-  void assign(uint32_t start, snodeimpl* src, uint32_t offset, uint32_t length);
+
+  void add_source(uint32_t dst_offset,
+                  snodeimpl* src,
+                  uint32_t src_offset,
+                  uint32_t src_length);
+
+  void clear_sources(uint32_t offset, uint32_t length);
 
   bitvector::const_reference operator[](uint32_t idx) const {
     this->sync_sources();
@@ -48,14 +53,14 @@ public:
     ++changeid_;
   }
   
-  void read(uint8_t* out, uint32_t sizeInBytes) const {
+  void read(uint8_t* out, uint32_t offset, uint32_t size) const {
     this->sync_sources();
-    value_.read(out, sizeInBytes);
+    value_.read(out, offset, size);
   }
   
-  void write(const uint8_t* in, uint32_t sizeInBytes) {
+  void write(const uint8_t* in, uint32_t offset, uint32_t size) {
     this->sync_sources();
-    value_.write(in, sizeInBytes);
+    value_.write(in, offset, size);
     ++changeid_;
   }
   

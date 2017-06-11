@@ -14,7 +14,7 @@ public:
       
   ch_bus() {}
   
-  ch_bus(const ch_bus& rhs) : node_(rhs.node_.ensureInitialized(N)) {}
+  ch_bus(const ch_bus& rhs) : node_(N, rhs.node_) {}
   
   ch_bus(const ch_busbase<N>& rhs) : node_(get_node(rhs)) {}
   
@@ -27,9 +27,7 @@ public:
   }
  
 #define CH_DEF_CTOR(type) \
-  explicit ch_bus(type value) : node_(bitvector(N, value))  { \
-    assert(node_.get_size() == N); \
-  }
+  explicit ch_bus(type value) : node_(bitvector(N, value)) {}
   CH_DEF_CTOR(const std::initializer_list<uint32_t>&)
   CH_DEF_CTOR(char)
   CH_DEF_CTOR(int8_t)
@@ -47,7 +45,7 @@ public:
   }
   
   ch_bus& operator=(const ch_bus& rhs) {
-    node_ = rhs.node_.ensureInitialized(N);
+    node_.assign(N, rhs.node_);
     return *this;
   }
   
@@ -59,14 +57,12 @@ public:
   ch_bus& operator=(bool value) {
     static_assert(N == 1, "bool assignents only allowed on single-bit objects");
     node_.assign(bitvector(N, value ? 0x1 : 0x0)); \
-    assert(node_.get_size() == N); \
     return *this;
   } 
  
 #define CH_DEF_AOP(type) \
   ch_bus& operator=(type value) { \
     node_.assign(bitvector(N, value)); \
-    assert(node_.get_size() == N); \
     return *this; \
   } 
   CH_DEF_AOP(const std::initializer_list<uint32_t>&)
@@ -82,15 +78,11 @@ public:
 #undef CH_DEF_AOP
   
   bool operator==(const ch_bus& rhs) const {
-    node_.ensureInitialized(N);
-    rhs.node_.ensureInitialized(N);
-    return (node_ == rhs.node_);
+    return node_.is_equal(rhs.node_, N);
   }
   
   bool operator<(const ch_bus& rhs) const {
-    node_.ensureInitialized(N);
-    rhs.node_.ensureInitialized(N);
-    return (node_ < rhs.node_);
+    return node_.is_less(rhs.node_, N);
   } 
   
   bool operator!=(const ch_bus& rhs) const {
@@ -111,21 +103,18 @@ public:
     
   explicit operator bool() const {     
     static_assert(N == 1, "bool assignents only allowed on single-bit objects");
-    node_.ensureInitialized(N);
-    return node_.read(0) != 0;
+    return node_.read(0, N) != 0;
   }
   
   explicit operator char() const {
     static_assert(sizeof(char) * 8 >= N, "invalid ouput data size");
-    node_.ensureInitialized(N);
-    return node_.read(0) ? '1' : '0';
+    return node_.read(0, N) ? '1' : '0';
   }
   
   #define CH_DEF_READ(type) \
   explicit operator type() const { \
     static_assert(sizeof(type) * 8 >= N, "invalid ouput data size"); \
-    node_.ensureInitialized(N); \
-    return bitcast<type>(node_.read(0)); \
+    return bitcast<type>(node_.read(0, N)); \
   } 
   CH_DEF_READ(int8_t)
   CH_DEF_READ(uint8_t)
@@ -137,10 +126,9 @@ public:
   
   explicit operator uint64_t() const {
     static_assert(sizeof(uint64_t) * 8 >= N, "invalid ouput data size");
-    node_.ensureInitialized(N);
-    uint64_t value = node_.read(0);
+    uint64_t value = node_.read(0, N);
     if (N > 32) {
-      value = ((uint64_t)node_.read(1) << 32) | value;  
+      value = ((uint64_t)node_.read(1, N) << 32) | value;
     }
     return value;
   }
@@ -149,16 +137,14 @@ public:
     return this->operator uint64_t();
   }
   
-  void read(void* out, uint32_t sizeInBytes) const override {
-    assert(sizeInBytes * 8 >= N);
-    node_.ensureInitialized(N);
-    node_.read(reinterpret_cast<uint8_t*>(out), sizeInBytes);
+  void read(void* out, uint32_t offset, uint32_t length) const override {
+    assert(offset + length <= N);
+    node_.read(reinterpret_cast<uint8_t*>(out), offset, length, N);
   }
   
-  void write(const void* in, uint32_t sizeInBytes) override {
-    assert(sizeInBytes * 8 >= N);
-    node_.ensureInitialized(N);
-    node_.write(reinterpret_cast<const uint8_t*>(in), sizeInBytes);
+  void write(const void* in, uint32_t offset, uint32_t length) override {
+    assert(offset + length <= N);
+    node_.write(reinterpret_cast<const uint8_t*>(in), offset, length, N);
   }
 
 protected:
@@ -179,7 +165,7 @@ protected:
 
 template <unsigned N>
 snode get_node(const ch_bus<N>& b) {
-  return b.node_.ensureInitialized(N);
+  return snode(N, b.node_);
 }
 
 }

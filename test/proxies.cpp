@@ -76,7 +76,7 @@ TEST_CASE("proxies tests", "[proxies]") {
       a.slice<2>(1) = '0';     
       x = '1';
       y = '1';
-      return a == 0001_b;
+      return a == 0101_b;
     });
     TEST([]()->ch_logic {         
       ch_bit4 a, b(1);

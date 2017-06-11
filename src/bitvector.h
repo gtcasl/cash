@@ -36,7 +36,8 @@ public:
     
   protected:
     
-    reference(uint32_t& word, uint32_t mask) : word_(word), mask_(mask) {}
+    reference(uint32_t& word, uint32_t mask)
+      : word_(word), mask_(mask) {}
     
     uint32_t& word_;
     uint32_t  mask_;
@@ -210,7 +211,8 @@ public:
     
   protected:  
     
-    iterator(uint32_t* words, uint32_t index) : const_iterator(words, index) {}
+    iterator(uint32_t* words, uint32_t index)
+      : const_iterator(words, index) {}
     
     friend class bitvector;
   };
@@ -360,11 +362,14 @@ public:
 
   void clear_unused_bits();
   
-  void copy(uint32_t dst_offset, const bitvector& src, uint32_t src_offset, uint32_t src_length);
+  void copy(uint32_t dst_offset,
+            const bitvector& src,
+            uint32_t src_offset,
+            uint32_t src_length);
   
-  void read(uint8_t* out, uint32_t sizeInBytes) const;
+  void read(uint8_t* out, uint32_t offset, uint32_t size) const;
   
-  void write(const uint8_t* in, uint32_t sizeInBytes);
+  void write(const uint8_t* in, uint32_t offset, uint32_t size);
   
   int32_t find_first() const;
   

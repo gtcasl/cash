@@ -6,6 +6,11 @@
 using namespace std;
 using namespace cash::detail;
 
+clock_event::clock_event()
+  : edgedir_(EDGE_POS)
+  , cval_(false)
+{}
+
 clock_event::clock_event(lnodeimpl* signal, EDGE_DIR edgedir)
   : signal_(signal)
   , edgedir_(edgedir)

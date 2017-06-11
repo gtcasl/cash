@@ -9,11 +9,11 @@ proxyimpl::proxyimpl(context* ctx, uint32_t size)
   , ctime_(~0ull) 
 {}
 
-void proxyimpl::add_node(uint32_t start,
-                         lnodeimpl* src,
-                         uint32_t offset,
-                         uint32_t length,
-                         bool resize) {
+void proxyimpl::add_source(uint32_t dst_offset,
+                           lnodeimpl* src,
+                           uint32_t src_offset,
+                           uint32_t src_length,
+                           bool resize) {
   // add new source
   uint32_t new_srcidx = 0xffffffff;
   for (uint32_t i = 0, n = srcs_.size(); i < n; ++i) {
@@ -29,78 +29,90 @@ void proxyimpl::add_node(uint32_t start,
   }
   
   uint32_t n = ranges_.size();
-  if (n > 0) {    
+  if (0 == n) {
+    // insert the first entry
+    ranges_.push_back({ new_srcidx, dst_offset, src_offset, src_length });
+  } else {
+    // find the slot to insert source node,
+    // split existing nodes if needed
     set<uint32_t> deleted;    
     uint32_t i = 0;
-    for (; length && i < n; ++i) {
+    for (; src_length && i < n; ++i) {
       range_t& curr = ranges_[i];      
       lnodeimpl* curr_impl = srcs_[curr.srcidx].get_impl();
       uint32_t curr_end = curr.start + curr.length;     
-      uint32_t src_end  = start + length;
-      range_t new_range = { new_srcidx, start, offset, length };
+      uint32_t src_end  = dst_offset + src_length;
+      range_t new_range = { new_srcidx, dst_offset, src_offset, src_length };
       
       // do ranges intersect?
-      if ((start < curr_end && src_end > curr.start)) {
-        if (start <= curr.start && src_end >= curr_end) {
-          // source fully overlaps
+      if ((dst_offset < curr_end && src_end > curr.start)) {
+        if (dst_offset <= curr.start && src_end >= curr_end) {
+          // source fully overlaps, replace current node
           deleted.emplace(curr.srcidx);                  
-          uint32_t len = curr_end - start;                    
-          new_range.length = len; 
+          uint32_t delta = curr_end - dst_offset;
+          new_range.length = delta;
           curr = new_range;           
-          start  += len;        
-          offset += len;        
-          length -= len;        
+          dst_offset += delta;
+          src_offset += delta;
+          src_length -= delta;
         } else if (src_end > curr_end) {
-          assert(!resize); // should not hit
-          // source intersets right
-          uint32_t overlap = curr_end - start;
-          curr.length -= overlap;          
+          // source intersets on the right,
+          // replace right size of the current node
+          uint32_t delta = curr_end - dst_offset;
+          curr.length -= delta;
           
-          new_range.length = overlap;
+          new_range.length = delta;
           
           ++i; 
           ranges_.insert(ranges_.begin() + i, new_range);
           ++n;       
           
-          start  += overlap;
-          offset += overlap;
-          length -= overlap;
+          dst_offset += delta;
+          src_offset += delta;
+          src_length -= delta;
         } else {
-          assert(!(start < curr.start)); // left intersections should not exit
-          // source fully included          
+          assert(dst_offset >= curr.start); // left intersections should not exit
+          // source fully included,
+          // we need to split current node into two chunks
           uint32_t delta = src_end - curr.start;
           range_t curr_after(curr);          
           curr_after.length -= delta;
           curr_after.start  += delta;
           curr_after.offset += delta;          
-          curr.length -= (curr_end - start);
-          
+          curr.length -= (curr_end - dst_offset);
+          assert(curr.length || curr_after.length);
+
           if (resize) {
+            // shrink down the physical size of the current node
+            // assumming replaced bits will not be used
             curr_impl->get_value().resize(curr.length + curr_after.length);
             curr_after.offset = curr.length;            
           }
-          
-          if (curr.length > 0) {
+
+          if (0 == curr.length) {
+            // replace first chunk
+            curr = new_range;
+          } else {
+            // insert source after first chunk
             ++i;
             ranges_.insert(ranges_.begin() + i, 1, new_range);
             ++n;
-          } else {
-            curr = new_range;
-          }          
+          }
           
-          if (curr_after.length) {                              
+          if (curr_after.length) {
+            // insert second chunk after source
             ranges_.insert(ranges_.begin() + (i+1), 1, curr_after); 
             ++n;
           }         
-          length = 0;
+          src_length = 0;
         }
       } else if (i+1 == n || src_end <= ranges_[i+1].start) {
         // no overlap with current and next
-        i += (curr_end <= start) ? 1 : 0;
+        i += (curr_end <= dst_offset) ? 1 : 0;
         ranges_.insert(ranges_.begin() + i, new_range);       
         ++n;
         
-        length = 0;
+        src_length = 0;
       } else {
         // no overlap with current, skip merge if no update took place
         continue;
@@ -111,38 +123,49 @@ void proxyimpl::add_node(uint32_t start,
         this->merge_left(i);
       }       
     }
-    assert(0 == length);
+
+    assert(0 == src_length);
     if (i < n) {
       // try merging inserted node on the right
       this->merge_left(i);
     }
     
     // cleanup deleted nodes
-    for (uint32_t srcidx : deleted) {
+    for (uint32_t idx : deleted) {
       bool in_use = false;
-      // ensure that it is not in use 
-      for (uint32_t i = 0, n = ranges_.size(); i < n; ++i) {
-        if (ranges_[i].srcidx == srcidx) {
+      // ensure that it is not in use
+      for (const range_t& r : ranges_) {
+        if (r.srcidx == idx) {
           in_use = true;
           break;
-        }          
-      }      
-      if (!in_use) {
-        // remove src     
-        srcs_.erase(srcs_.begin() + srcidx);
-        
-        // update references due to vector resizing
-        for (uint32_t i = 0, n = ranges_.size(); i < n; ++i) {
-          range_t& r = ranges_[i];
-          if (r.srcidx > srcidx) {
-            r.srcidx -= 1;
-          }
         }
       }
+      if (!in_use) {
+        this->erase_source(srcs_.begin() + idx);
+      }
     }    
-  } else {
-    ranges_.push_back({ new_srcidx, start, offset, length });
   }
+}
+
+std::vector<lnode>::iterator
+proxyimpl::erase_source(std::vector<lnode>::iterator iter) {
+  // remove src
+  auto next = srcs_.erase(iter);
+
+  // update ranges
+  uint32_t idx = iter - srcs_.begin();
+  for (uint32_t i = 0, n = ranges_.size(); i < n; ++i) {
+    if (ranges_[i].srcidx == idx) {
+      ranges_.erase(ranges_.begin() + i);
+      --i;
+      --n;
+    } else
+    if (ranges_[i].srcidx > idx) {
+      ranges_[i].srcidx -= 1;
+    }
+  }
+
+  return next;
 }
 
 void proxyimpl::merge_left(uint32_t idx) {
@@ -153,6 +176,61 @@ void proxyimpl::merge_left(uint32_t idx) {
     ranges_[idx-1].length += ranges_[idx].length;
     ranges_.erase(ranges_.begin() + idx);
   }      
+}
+
+void proxyimpl::assign(uint32_t dst_offset,
+                       lnodeimpl* src,
+                       uint32_t src_offset,
+                       uint32_t src_length) {
+  // proxy object is expected to be fully allocated (no emty ranges)
+  // this simplifies the possible assignment cases
+  for (uint32_t i = 0, n = ranges_.size(); src_length && i < n; ++i) {
+    const range_t& curr = ranges_[i];
+    lnodeimpl* curr_impl = srcs_[curr.srcidx].get_impl();
+    uint32_t curr_end = curr.start + curr.length;
+    uint32_t src_end  = dst_offset + src_length;
+    if ((dst_offset < curr_end && src_end > curr.start)) {
+      if (dst_offset <= curr.start && src_end >= curr_end) {
+        // source fully overlaps
+        uint32_t delta = curr_end - dst_offset;
+        if (1 == curr_impl->get_num_refs()) {
+          this->add_source(dst_offset, src, src_offset, delta);
+          n = ranges_.size();
+          --i;
+        } else {
+          uint32_t offset = curr.start - dst_offset;
+          curr_impl->assign(curr.offset, src, src_offset + offset, curr.length);
+        }
+        dst_offset += delta;
+        src_offset += delta;
+        src_length -= delta;
+      } else if (src_end > curr_end) {
+        // source intersets on the right
+        uint32_t delta = curr_end - dst_offset;
+        if (1 == curr_impl->get_num_refs()) {
+          this->add_source(dst_offset, src, src_offset, delta);
+          n = ranges_.size();
+          --i;
+        } else {
+          uint32_t offset = dst_offset - curr.start;
+          curr_impl->assign(curr.offset + offset, src, src_offset, delta);
+        }
+        dst_offset += delta;
+        src_offset += delta;
+        src_length -= delta;
+      } else {
+        assert(dst_offset >= curr.start); // left intersections should not exit
+        // source fully included        
+        if (1 == curr_impl->get_num_refs()) {
+          this->add_source(dst_offset, src, src_offset, src_length);
+        } else {
+          uint32_t offset = dst_offset - curr.start;
+          curr_impl->assign(curr.offset + offset, src, src_offset, src_length);
+        }
+        src_length = 0;
+      }
+    }
+  }
 }
 
 const bitvector& proxyimpl::eval(ch_cycle t) {

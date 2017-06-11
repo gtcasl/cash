@@ -48,7 +48,7 @@ latchimpl::latchimpl(lnodeimpl* next,
                      lnodeimpl* reset)
   : lnodeimpl(op_latch, next->get_ctx(), next->get_size()) {
   context* ctx = next->get_ctx();
-  
+
   cd_ = ctx->create_cdomain(
     {clock_event(enable, EDGE_ANY), clock_event(next, EDGE_ANY),
      clock_event(reset, EDGE_ANY), clock_event(init, EDGE_ANY)});

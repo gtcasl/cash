@@ -15,13 +15,11 @@ public:
 
   T next;
 
-  ch_seq() {
-    T::operator=(ch_reg(next));
-  }
+  ch_seq() : T(ch_reg(next)), next(*this)
+  {}
   
-  ch_seq(const T& init) {
-    T::operator=(ch_reg(next, init));
-  }
+  ch_seq(const T& init) : T(ch_reg(next, init)), next(*this)
+  {}
 
   const_slice_ref<base, 1> operator[](size_t index) {
     return const_slice_ref<base, 1>(*this, index);

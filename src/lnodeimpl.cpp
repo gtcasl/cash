@@ -33,6 +33,16 @@ const char* lnodeimpl::get_name() const {
   return sc_names[(int)op_];
 }
 
+int lnodeimpl::find_ref(const lnode* node) const {
+  int index = 0;
+  for (const lnode* ref : refs_) {
+    if (ref == node)
+      return index;
+    ++index;
+  }
+  return -1;
+}
+
 void lnodeimpl::add_ref(const lnode* node) {
   refs_.emplace(node);
 }
@@ -41,11 +51,38 @@ void lnodeimpl::remove_ref(const lnode* node) {
   refs_.erase(node);
 }
 
-void lnodeimpl::update_refs(lnodeimpl* impl) {
+void lnodeimpl::replace_all_refs(lnodeimpl* impl) {
   assert(impl && impl != this);
   for (const lnode* ref : refs_) {
+    assert(ref->get_impl() == this);
     const_cast<lnode*>(ref)->set_impl(impl);
   }
+}
+
+void lnodeimpl::assign(uint32_t dst_offset,
+                       lnodeimpl* src,
+                       uint32_t src_offset,
+                       uint32_t src_length) {
+  uint32_t dst_size = this->get_size();
+  uint32_t src_size = src->get_size();
+  assert(src_length <= src_size);
+  assert(src_length <= dst_size);
+  if (src_length < dst_size) {
+    // copy region smaller than dst buffer
+    proxyimpl* const proxy = new proxyimpl(ctx_, dst_size);
+    this->replace_all_refs(proxy);
+    proxy->add_source(0, this, 0, dst_size);
+    proxy->add_source(dst_offset, src, src_offset, src_length, true);
+  } else {
+    assert(src_length == dst_size);
+    if (src_length < src_size) {
+      // copy region smaller than src buffer
+      proxyimpl* const proxy = new proxyimpl(ctx_, src_length);
+      proxy->add_source(0, src, src_offset, src_length);
+      src = proxy;
+    }
+    this->replace_all_refs(src);
+  }  
 }
 
 bool lnodeimpl::ready() const {
@@ -103,6 +140,15 @@ void undefimpl::print_vl(std::ostream& out) const {
 
 lnode::lnode() : impl_(nullptr) {}
 
+lnode::lnode(const lnode& rhs) : lnode() {
+  assert(rhs.impl_);
+  this->assign(rhs.impl_, true);
+}
+
+lnode::lnode(lnode&& rhs) : lnode() {
+  this->move(rhs);
+}
+
 lnode::lnode(uint32_t size) : lnode() {
   // force initialization of nested objects
   if (ctx_curr()->conditional_enabled()) {
@@ -110,12 +156,9 @@ lnode::lnode(uint32_t size) : lnode() {
   }
 }
 
-lnode::lnode(const lnode& rhs) : lnode() {
+lnode::lnode(uint32_t size, const lnode& rhs) : lnode() {
+  rhs.ensureInitialized(size);
   this->assign(rhs.impl_, true);
-}
-
-lnode::lnode(lnode&& rhs) : lnode() {
-  this->move(rhs);
 }
 
 lnode::lnode(lnodeimpl* impl) : lnode() {
@@ -138,12 +181,9 @@ lnode::~lnode() {
   this->clear();
 }
 
-void lnode::assign(const bitvector& value) {
-  this->assign(ctx_curr()->create_literal(value));
-}
-
 lnode& lnode::operator=(const lnode& rhs) {
-  this->assign(rhs.impl_);
+  assert(rhs.impl_);
+  this->assign(rhs.impl_, false);
   return *this;
 }
 
@@ -153,8 +193,17 @@ lnode& lnode::operator=(lnode&& rhs) {
 }
 
 lnode& lnode::operator=(lnodeimpl* rhs) {
-  this->assign(rhs);
+  this->assign(rhs, false);
   return *this;
+}
+
+void lnode::assign(uint32_t size, const lnode& rhs) {
+  rhs.ensureInitialized(size);
+  this->assign(rhs.impl_, false);
+}
+
+void lnode::assign(const bitvector& value) {
+  this->assign(ctx_curr()->create_literal(value), false);
 }
 
 uint32_t lnode::get_id() const {
@@ -178,12 +227,12 @@ bool lnode::valid() const {
   return impl_ ? impl_->valid() : true;
 }
 
-const lnode& lnode::ensureInitialized(uint32_t size) const {
-  if (impl_ == nullptr) {
+void lnode::ensureInitialized(uint32_t size) const {
+  if (nullptr == impl_) {
     impl_ = new undefimpl(ctx_curr(), size);
+    impl_->add_ref(this);
   }
   assert(impl_->get_size() == size);
-  return *this;
 }
 
 void lnode::clear() {
@@ -221,21 +270,18 @@ void lnode::move(lnode& rhs) {
 }
 
 void lnode::assign(lnodeimpl* impl, bool initialization) {
-  if (impl) {
-    if (!initialization) {
-      // resolve conditionals if inside a branch
-      impl = impl->get_ctx()->resolve_conditional(impl_, impl);
-      if (impl == impl_)
-        return;      
-    }
-    impl->add_ref(this);
+  if (impl && !initialization) {
+    // resolve conditionals if inside a branch
+    impl = impl->get_ctx()->resolve_conditional(impl_, impl);
+    if (impl == impl_)
+      return;
   }
   if (impl_) {
-    CH_CHECK(impl != impl_, "redundant assignment for node %s%d(#%d)!\n", impl_->get_name(), impl_->get_size(), impl_->get_id());
-    impl_->remove_ref(this);
-    impl_->update_refs(impl);
+    assert(impl_->find_ref(this) != -1);
+    impl_->assign(0, impl, 0, impl->get_size());    
+  } else {
+    this->set_impl(impl);
   }
-  impl_ = impl;
 }
 
 void lnode::read_data(data_type& inout,
@@ -281,7 +327,7 @@ void lnode::assign(uint32_t dst_offset,
     if (src->get_size() > src_length) {
       assert(0 == dst_offset);
       proxyimpl* const proxy = new proxyimpl(ctx, src_length);
-      proxy->add_node(0, src, src_offset, src_length);
+      proxy->add_source(0, src, src_offset, src_length);
       src = proxy;
     }
     this->assign(src, initialization);
@@ -289,11 +335,12 @@ void lnode::assign(uint32_t dst_offset,
     assert(src_length < size);
     if (impl_) {
       // check if conditional handling is needed
+      assert(impl_->find_ref(this) != -1);
       if (!initialization
        && ctx->conditional_enabled(impl_)) {
         if (src->get_size() > src_length) {
           proxyimpl* const proxy = new proxyimpl(ctx, src_length);
-          proxy->add_node(dst_offset, src, src_offset, src_length);
+          proxy->add_source(dst_offset, src, src_offset, src_length);
           src = proxy;
         }
 
@@ -302,27 +349,27 @@ void lnode::assign(uint32_t dst_offset,
         if (nullptr == proxy) {
           proxy = new proxyimpl(ctx, size);
           this->assign(proxy, true);
-          proxy->add_node(0, impl, 0, size);
+          proxy->add_source(0, impl, 0, size);
         }
 
         proxyimpl* const proxy_sub = new proxyimpl(ctx, src_length);
-        proxy_sub->add_node(0, impl, dst_offset, src_length);
+        proxy_sub->add_source(0, impl, dst_offset, src_length);
         src = ctx->resolve_conditional(proxy_sub, src);
 
-        proxy->add_node(dst_offset, proxy_sub, src_offset, src_length);
+        proxy->add_source(dst_offset, proxy_sub, src_offset, src_length);
       } else {
         proxyimpl* proxy = dynamic_cast<proxyimpl*>(impl_);
         if (nullptr == proxy) {
           proxy = new proxyimpl(ctx, size);
           lnodeimpl* const impl = impl_;
           this->assign(proxy, initialization);
-          proxy->add_node(0, impl, 0, size);
+          proxy->add_source(0, impl, 0, size);
         }
-        proxy->add_node(dst_offset, src, src_offset, src_length);
+        proxy->add_source(dst_offset, src, src_offset, src_length);
       }
     } else {
       proxyimpl* const proxy = new proxyimpl(ctx, size);
-      proxy->add_node(dst_offset, src, src_offset, src_length);
+      proxy->add_source(dst_offset, src, src_offset, src_length);
       this->assign(proxy, initialization);
     }
   }

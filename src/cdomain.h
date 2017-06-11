@@ -14,6 +14,7 @@ enum EDGE_DIR {
 
 class clock_event {
 public:  
+  clock_event();
   clock_event(lnodeimpl* signal, EDGE_DIR edgedir);
   ~clock_event();
   
