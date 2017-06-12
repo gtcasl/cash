@@ -12,8 +12,7 @@ proxyimpl::proxyimpl(context* ctx, uint32_t size)
 void proxyimpl::add_source(uint32_t dst_offset,
                            lnodeimpl* src,
                            uint32_t src_offset,
-                           uint32_t src_length,
-                           bool resize) {
+                           uint32_t src_length) {
   // add new source
   uint32_t new_srcidx = 0xffffffff;
   for (uint32_t i = 0, n = srcs_.size(); i < n; ++i) {
@@ -38,8 +37,7 @@ void proxyimpl::add_source(uint32_t dst_offset,
     set<uint32_t> deleted;    
     uint32_t i = 0;
     for (; src_length && i < n; ++i) {
-      range_t& curr = ranges_[i];      
-      lnodeimpl* curr_impl = srcs_[curr.srcidx].get_impl();
+      range_t& curr = ranges_[i];
       uint32_t curr_end = curr.start + curr.length;     
       uint32_t src_end  = dst_offset + src_length;
       range_t new_range = { new_srcidx, dst_offset, src_offset, src_length };
@@ -81,13 +79,6 @@ void proxyimpl::add_source(uint32_t dst_offset,
           curr_after.offset += delta;          
           curr.length -= (curr_end - dst_offset);
           assert(curr.length || curr_after.length);
-
-          if (resize) {
-            // shrink down the physical size of the current node
-            // assumming replaced bits will not be used
-            curr_impl->get_value().resize(curr.length + curr_after.length);
-            curr_after.offset = curr.length;            
-          }
 
           if (0 == curr.length) {
             // replace first chunk

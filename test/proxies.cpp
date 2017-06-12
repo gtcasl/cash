@@ -84,11 +84,11 @@ TEST_CASE("proxies tests", "[proxies]") {
       ch_bit2 x = a.slice<2>(0);
       ch_bit2 y = a.slice<2>(1);
       ch_bit2 z = a.slice<2>(2);
-      x[1] = 1; // x[1] and a[1] should change
-      x = 0;    // x[0] and a[0] should change    
-      z = 1;    // z and a[3] should change
-      y = 0;    // y only should change
-      return (c == 0111_b);
+      x[1] = 1; // a[1] = 1
+      x = 0;    // a[0-1] = 00
+      z = 1;    // a[2-3] = 01
+      y = 0;    // a[1-2] = 0
+      return (c == 0001_b);
     });
     TEST([]()->ch_logic {
      ch_bit4 a;
@@ -110,7 +110,7 @@ TEST_CASE("proxies tests", "[proxies]") {
      y = 1_b;     
      z = 001_b;
      w = 1_b;
-     return (a == 1010_b && a.slice<2>(1) == 01_b);
+     return (a == 1001_b);
     });
   }
   

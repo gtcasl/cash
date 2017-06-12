@@ -266,9 +266,9 @@ snode::snode(snodeimpl* impl) : snode() {
   this->assign(impl, true);
 }
 
-snode::snode(uint32_t size, const snode& rhs) {
+snode::snode(uint32_t size, const snode& rhs) : snode() {
   rhs.ensureInitialized(size);
-  this->assign(rhs.impl_, true);
+  this->assign(rhs.impl_, false);
 }
 
 snode::snode(const data_type& data) : snode() {

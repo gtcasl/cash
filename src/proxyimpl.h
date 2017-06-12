@@ -12,8 +12,7 @@ public:
   void add_source(uint32_t dst_offset,
                   lnodeimpl* src,
                   uint32_t src_offset,
-                  uint32_t src_length,
-                  bool resize = false);
+                  uint32_t src_length);
 
   std::vector<lnode>::iterator erase_source(std::vector<lnode>::iterator iter);
 

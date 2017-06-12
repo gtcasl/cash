@@ -72,7 +72,7 @@ void lnodeimpl::assign(uint32_t dst_offset,
     proxyimpl* const proxy = new proxyimpl(ctx_, dst_size);
     this->replace_all_refs(proxy);
     proxy->add_source(0, this, 0, dst_size);
-    proxy->add_source(dst_offset, src, src_offset, src_length, true);
+    proxy->add_source(dst_offset, src, src_offset, src_length);
   } else {
     assert(src_length == dst_size);
     if (src_length < src_size) {
