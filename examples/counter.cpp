@@ -13,7 +13,7 @@ ch_bit<N> Counter() {
 
 int main(int argc, char **argv) {
   std::ofstream vcd_file("counter.vcd");
-  ch_bus<4> out;
+  ch_bus4 out;
 
   ch_device myDevice(Counter<4>, out);
 

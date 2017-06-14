@@ -86,10 +86,10 @@ TEST_CASE("conditionals tests", "[conditionals]") {
       return (c == 4 && b == 0);
     });
     TEST([]()->ch_bit1 {
-      ch_bit<2> a;
+      ch_bit2 a;
       ch_bit1 x(1), y(0);
       __if (x) (
-        ch_bit<2> b;
+        ch_bit2 b;
         __if (y) (
           b = 1;
         )
