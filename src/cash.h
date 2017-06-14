@@ -48,10 +48,8 @@ namespace core {
   template<typename T, unsigned N> using ch_vec = cash::detail::ch_vec<T, N>;
 
   template<unsigned N> using ch_bit = cash::detail::ch_bit<N>;
-  using ch_logic = cash::detail::ch_logic;
 
   template<unsigned N> using ch_bitbase = cash::detail::ch_bitbase<N>;
-  using ch_logicbase = cash::detail::ch_logicbase;
 
   template<typename T> using ch_seq = cash::detail::ch_seq<T>;
 
@@ -61,6 +59,7 @@ namespace core {
   // pre-defined bit types
   //
 
+  using ch_bit1  = ch_bit<1>;
   using ch_bit2  = ch_bit<2>;
   using ch_bit4  = ch_bit<4>;
   using ch_bit8  = ch_bit<8>;
@@ -189,30 +188,29 @@ namespace sim {
   using ch_cycle  = cash::detail::ch_cycle;
   
   template<unsigned N> using ch_bus = cash::detail::ch_bus<N>;
-  using ch_signal = cash::detail::ch_signal;
 
   template<unsigned N> using ch_busbase = cash::detail::ch_busbase<N>;
-  using ch_signalbase = cash::detail::ch_signalbase;
 
   //
   // pre-defined bus types
   //
 
-  using ch_bus2   = ch_bus<2>;
-  using ch_bus4   = ch_bus<4>;
-  using ch_bus8   = ch_bus<8>;
-  using ch_bus16  = ch_bus<16>;
-  using ch_bus32  = ch_bus<32>;
-  using ch_bus64  = ch_bus<64>;
+  using ch_bus1  = ch_bus<1>;
+  using ch_bus2  = ch_bus<2>;
+  using ch_bus4  = ch_bus<4>;
+  using ch_bus8  = ch_bus<8>;
+  using ch_bus16 = ch_bus<16>;
+  using ch_bus32 = ch_bus<32>;
+  using ch_bus64 = ch_bus<64>;
   
   //
   // api objects
   //
 
-  using ch_device     = cash::detail::ch_device;
-  using ch_simulator  = cash::detail::ch_simulator;
-  using ch_tracer     = cash::detail::ch_tracer;
-  using ch_vcdtracer  = cash::detail::ch_vcdtracer;
+  using ch_device    = cash::detail::ch_device;
+  using ch_simulator = cash::detail::ch_simulator;
+  using ch_tracer    = cash::detail::ch_tracer;
+  using ch_vcdtracer = cash::detail::ch_vcdtracer;
 }
 
 //

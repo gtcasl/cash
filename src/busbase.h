@@ -7,7 +7,6 @@ namespace detail {
 
 template <unsigned N> class ch_bus;
 template <unsigned N> using ch_busbase = typebase<N, snode::data_type>;
-using ch_signalbase = ch_busbase<1>;
 
 template <unsigned N>
 class typebase<N, snode::data_type> {

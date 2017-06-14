@@ -4,7 +4,7 @@ using namespace cash::core_literals;
 
 TEST_CASE("memory tests", "[memory]") {    
   SECTION("test rom", "[rom]") {
-    TEST([]()->ch_logic {
+    TEST([]()->ch_bit1 {
       ch_bit2 a;
       ch_bit4 q;
       ch_rom<4, 2> rom({0xA, 0xB, 0xC, 0xD});
@@ -20,7 +20,7 @@ TEST_CASE("memory tests", "[memory]") {
       //ch_print("t={0}, a={1}, q={2}", ch_tick(), a, q);
       return (e == q);
     }, 6);
-    TEST([]()->ch_logic {
+    TEST([]()->ch_bit1 {
       ch_bit2 a;
       ch_bit4 q;
       ch_rom<4, 2> rom({0xA, 0xB, 0xC, 0xD});
@@ -39,10 +39,10 @@ TEST_CASE("memory tests", "[memory]") {
   }
   
   SECTION("test mem", "[mem]") {
-    TEST([]()->ch_logic {
+    TEST([]()->ch_bit1 {
       ch_bit2 a;
       ch_bit4 d, q;
-      ch_logic en;
+      ch_bit1 en;
       ch_mem<4, 2> mem({0xA, 0xB, 0xC, 0xD});
       q = mem[a];
       __if (en) ( 
@@ -66,10 +66,10 @@ TEST_CASE("memory tests", "[memory]") {
       return (q == e);
     }, 6);
     
-    TEST([]()->ch_logic {
+    TEST([]()->ch_bit1 {
       ch_bit2 a;
       ch_bit4 d, q;
-      ch_logic en;
+      ch_bit1 en;
       ch_mem<4, 2> mem({0xA, 0xB, 0xC, 0xD});
       q = ch_reg<4>(mem[a]); 
       __if (en) (

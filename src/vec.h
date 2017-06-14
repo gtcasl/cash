@@ -65,12 +65,12 @@ public:
     return *this;
   }
 
-  auto operator[](size_t i) {
+  T& operator[](size_t i) {
     CH_CHECK(i < N, "invalid subscript index");
     return items_[i];
   }
 
-  auto operator[](size_t i) const {
+  const T& operator[](size_t i) const {
     CH_CHECK(i < N, "invalid subscript index");
     return items_[i];
   }

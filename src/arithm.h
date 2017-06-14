@@ -70,13 +70,13 @@
   template <unsigned N> ch_bit<N> op(const ch_bitbase<N>& in) { return func(in); }
 
 #define CH_COMPAREOP_GEN0(func, op, type) \
-  template <unsigned N> ch_logic func(const ch_bitbase<N>& a, type b) { return func(a, ch_bit<N>(b)); } \
-  template <unsigned N> ch_logic func(type a, const ch_bitbase<N>& b) { return func(ch_bit<N>(a), b); } \
-  template <unsigned N> ch_logic op(const ch_bitbase<N>& a, type b) { return func(a, ch_bit<N>(b)); } \
-  template <unsigned N> ch_logic op(type a, const ch_bitbase<N>& b) { return func(ch_bit<N>(a), b); }
+  template <unsigned N> ch_bit<1> func(const ch_bitbase<N>& a, type b) { return func(a, ch_bit<N>(b)); } \
+  template <unsigned N> ch_bit<1> func(type a, const ch_bitbase<N>& b) { return func(ch_bit<N>(a), b); } \
+  template <unsigned N> ch_bit<1> op(const ch_bitbase<N>& a, type b) { return func(a, ch_bit<N>(b)); } \
+  template <unsigned N> ch_bit<1> op(type a, const ch_bitbase<N>& b) { return func(ch_bit<N>(a), b); }
 
 #define CH_COMPAREOP_GEN1(func, op) \
-  template <unsigned N> ch_logic op(const ch_bitbase<N>& a, const ch_bitbase<N>& b) { return func(a, b); } \
+  template <unsigned N> ch_bit<1> op(const ch_bitbase<N>& a, const ch_bitbase<N>& b) { return func(a, b); } \
   CH_COMPAREOP_GEN0(func, op, char) \
   CH_COMPAREOP_GEN0(func, op, int8_t) \
   CH_COMPAREOP_GEN0(func, op, uint8_t) \
@@ -167,8 +167,8 @@ ch_bit<N> OpBinary(const ch_bitbase<N>& a, const ch_bitbase<M>& b) {
 }
 
 template <ch_alu_op op, unsigned N>
-ch_logic OpCompare(const ch_bitbase<N>& a, const ch_bitbase<N>& b) {
-  return ch_logic(createAluNode(op, 1, get_node(a).get_impl(), get_node(b).get_impl()));
+ch_bit<1> OpCompare(const ch_bitbase<N>& a, const ch_bitbase<N>& b) {
+  return ch_bit<1>(createAluNode(op, 1, get_node(a).get_impl(), get_node(b).get_impl()));
 }
 
 template <ch_alu_op op, unsigned N>
@@ -177,8 +177,8 @@ ch_bit<N> OpUnary(const ch_bitbase<N>& a) {
 }
 
 template <ch_alu_op op, unsigned N>
-ch_logic OpReduce(const ch_bitbase<N>& a) {
-  return ch_logic(createAluNode(op, 1, get_node(a).get_impl()));
+ch_bit<1> OpReduce(const ch_bitbase<N>& a) {
+  return ch_bit<1>(createAluNode(op, 1, get_node(a).get_impl()));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -221,63 +221,63 @@ ch_bit<N> ch_xnor(const ch_bitbase<N>& a, const ch_bitbase<N>& b) {
 ///////////////////////////////////////////////////////////////////////////////
 
 template <unsigned N> 
-ch_logic ch_andr(const ch_bitbase<N>& a) {
+ch_bit<1> ch_andr(const ch_bitbase<N>& a) {
   return OpReduce<alu_op_andr>(a);
 }
 
 template <unsigned N> 
-ch_logic ch_orr(const ch_bitbase<N>& a) {
+ch_bit<1> ch_orr(const ch_bitbase<N>& a) {
   return OpReduce<alu_op_orr>(a);
 }
 
 template <unsigned N> 
-ch_logic ch_xorr(const ch_bitbase<N>& a) {
+ch_bit<1> ch_xorr(const ch_bitbase<N>& a) {
   return OpReduce<alu_op_xorr>(a);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-inline ch_logic operator! (const ch_logicbase& a) {
+inline ch_bit<1> operator! (const ch_bitbase<1>& a) {
   return ch_inv(a);         
 }
 
-inline ch_logic operator&& (const ch_logicbase& a, const ch_logicbase& b) {
+inline ch_bit<1> operator&& (const ch_bitbase<1>& a, const ch_bitbase<1>& b) {
   return ch_and(a, b);      
 }
 
-inline ch_logic operator|| (const ch_logicbase& a, const ch_logicbase& b) {
+inline ch_bit<1> operator|| (const ch_bitbase<1>& a, const ch_bitbase<1>& b) {
   return ch_or(a, b);      
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 template <unsigned N> 
-ch_logic ch_eq(const ch_bitbase<N>& a, const ch_bitbase<N>& b) {
+ch_bit<1> ch_eq(const ch_bitbase<N>& a, const ch_bitbase<N>& b) {
   return OpCompare<alu_op_eq>(a, b);
 }
 
 template <unsigned N> 
-ch_logic ch_ne(const ch_bitbase<N>& a, const ch_bitbase<N>& b) {
+ch_bit<1> ch_ne(const ch_bitbase<N>& a, const ch_bitbase<N>& b) {
   return OpCompare<alu_op_ne>(a, b);
 }
 
 template <unsigned N>
-ch_logic ch_lt(const ch_bitbase<N>& a, const ch_bitbase<N>& b) {
+ch_bit<1> ch_lt(const ch_bitbase<N>& a, const ch_bitbase<N>& b) {
   return OpCompare<alu_op_lt>(a, b);
 }
 
 template <unsigned N>
-ch_logic ch_gt(const ch_bitbase<N>& a, const ch_bitbase<N>& b) {
+ch_bit<1> ch_gt(const ch_bitbase<N>& a, const ch_bitbase<N>& b) {
   return OpCompare<alu_op_gt>(a, b);
 }
 
 template <unsigned N>
-ch_logic ch_ge(const ch_bitbase<N>& a, const ch_bitbase<N>& b) {
+ch_bit<1> ch_ge(const ch_bitbase<N>& a, const ch_bitbase<N>& b) {
   return OpCompare<alu_op_ge>(a, b);
 }
 
 template <unsigned N>
-ch_logic ch_le(const ch_bitbase<N>& a, const ch_bitbase<N>& b) {
+ch_bit<1> ch_le(const ch_bitbase<N>& a, const ch_bitbase<N>& b) {
   return OpCompare<alu_op_le>(a, b);
 }  
 

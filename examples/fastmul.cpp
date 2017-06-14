@@ -19,8 +19,8 @@ ch_bit8 FastMul(const ch_bit4& lhs, const ch_bit4& rhs) {
 
 int main(int argc, char **argv) {
   std::ofstream vcd_file("fastmul.vcd");
-  ch_bus<8> out;
-  ch_bus<4> lhs(2), rhs(3);
+  ch_bus8 out;
+  ch_bus4 lhs(2), rhs(3);
 
   ch_device myDevice(FastMul, lhs, rhs, out);
 

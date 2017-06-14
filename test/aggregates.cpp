@@ -5,10 +5,10 @@ using namespace cash::core_literals;
 __struct (s1_t,(
   (ch_bit4) a
 ),
-ch_logic get_LSB() const {
+ch_bit1 get_LSB() const {
   return a[0];
 }
-ch_logic get_MSB() const {
+ch_bit1 get_MSB() const {
   return a[3];
 }
 );
@@ -48,10 +48,10 @@ __union (u2_t,(
   (ch_bit4) a,
   (ch_bit4) b
 ),
-ch_logic get_LSB() const {
+ch_bit1 get_LSB() const {
   return a[0];
 }
-ch_logic get_MSB() const {
+ch_bit1 get_MSB() const {
   return b[3];
 });
  
@@ -70,7 +70,7 @@ __enum (my_enum, 4,(
  
 TEST_CASE("aggregate tests", "[aggregate]") {  
   SECTION("test structs", "[struct]") {   
-    TEST([]()->ch_logic {
+    TEST([]()->ch_bit1 {
       s1_t s1;
       s2_t s2;
       s3_t s3;
@@ -87,48 +87,48 @@ TEST_CASE("aggregate tests", "[aggregate]") {
            
       return (s1, s4) == (s3, s2);
     });
-    TEST([]()->ch_logic {
+    TEST([]()->ch_bit1 {
       s1_t s1(1010_b);
       return (s1.get_LSB() != s1.get_MSB());
     });
-    TEST([]()->ch_logic {
+    TEST([]()->ch_bit1 {
       s2_t s2(1_b4, 0_b4);
       return (s2 == 10000_b8);
     });
   } 
   
   SECTION("test unions", "[union]") {
-    TEST([]()->ch_logic {
+    TEST([]()->ch_bit1 {
       u2_t u2;
       u2.a = 1;
       return (u2.b == 1);
     });
-    TEST([]()->ch_logic {
+    TEST([]()->ch_bit1 {
       u2_t u2;
       u2.b = 1;
       return (u2.a == 1);
     });
-    TEST([]()->ch_logic {
+    TEST([]()->ch_bit1 {
       u3_t u3;
       u3.b = 01010101_b;
       u3.a = 11_b;
       u3.c.slice<2>(2) = 00_b;
       return (u3 == 01010011_b);
     });
-    TEST([]()->ch_logic {
+    TEST([]()->ch_bit1 {
       u2_t u2(1010_b);
       return (u2.get_LSB() != u2.get_MSB());
     });
   }
   
   SECTION("test vectors", "[vector]") {
-    TEST([]()->ch_logic {
+    TEST([]()->ch_bit1 {
       ch_vec<ch_bit2, 2> a(0);
       a[0][1] = 1;
       return (a == 0010_b);
     });
     
-    TEST([]()->ch_logic {
+    TEST([]()->ch_bit1 {
       ch_vec<ch_bit2, 2> a(0101_b), b;
       b[0][0] = a[1][1];
       b[0][1] = a[1][0];
@@ -139,11 +139,11 @@ TEST_CASE("aggregate tests", "[aggregate]") {
   }
   
   SECTION("test enums", "[enum]") {
-    TEST([]()->ch_logic {
+    TEST([]()->ch_bit1 {
       my_enum a(my_enum::idle);
       return (0 == a);
     });
-    TEST([]()->ch_logic {
+    TEST([]()->ch_bit1 {
       my_enum a;
       a = my_enum::execute;
       return (a == 1);

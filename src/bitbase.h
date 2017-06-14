@@ -10,7 +10,6 @@ template <unsigned N> class ch_bit;
 template <unsigned N> using const_bitref = const_typeref<N, lnode::data_type>;
 template <unsigned N> using bitref = typeref<N, lnode::data_type>;
 template <unsigned N> using ch_bitbase = typebase<N, lnode::data_type>;
-using ch_logicbase = ch_bitbase<1>;
 
 template <unsigned N>
 class typebase<N, lnode::data_type> {

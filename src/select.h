@@ -40,12 +40,12 @@ template <unsigned N>
 class select_t {
 public:
     
-  select_t<N>& operator()(const ch_logicbase& cond, const ch_bitbase<N>& value) {
+  select_t<N>& operator()(const ch_bitbase<1>& cond, const ch_bitbase<N>& value) {
     impl_.push(get_node(cond).get_impl(), get_node(value).get_impl());
     return *this;
   }
   
-  select_t<N>& operator()(const ch_logicbase& cond, const ch_bit<N>& value) {
+  select_t<N>& operator()(const ch_bitbase<1>& cond, const ch_bit<N>& value) {
     impl_.push(get_node(cond).get_impl(), get_node(value).get_impl());
     return *this;
   }
@@ -60,13 +60,13 @@ public:
   
 protected:
   
-  select_t(const ch_logicbase& cond, const ch_bitbase<N>& value) {
+  select_t(const ch_bitbase<1>& cond, const ch_bitbase<N>& value) {
     impl_.push(get_node(cond).get_impl(), get_node(value).get_impl());
   }
 
   select_impl impl_;
   
-  template <unsigned N_> friend select_t<N_> ch_select(const ch_logicbase& cond, const ch_bitbase<N_>& value);
+  template <unsigned N_> friend select_t<N_> ch_select(const ch_bitbase<1>& cond, const ch_bitbase<N_>& value);
 };
 
 template <unsigned N> 
@@ -149,32 +149,32 @@ select2_t<N> ch_select(const ch_bitbase<N>& key) {
 }
 
 template <unsigned N> 
-select_t<N> ch_select(const ch_logicbase& cond, const ch_bitbase<N>& value) {
+select_t<N> ch_select(const ch_bitbase<1>& cond, const ch_bitbase<N>& value) {
   return select_t<N>(cond, value);
 }
 
 template <unsigned N> 
-select_t<N> ch_select(const ch_logicbase& cond, const ch_bit<N>& value) {
+select_t<N> ch_select(const ch_bitbase<1>& cond, const ch_bit<N>& value) {
   return ch_select(cond, reinterpret_cast<const ch_bitbase<N>&>(value));
 }
 
 template <unsigned N>
-ch_bit<N> ch_select(const ch_logicbase& cond, const ch_bitbase<N>& True, const ch_bitbase<N>& False) {
+ch_bit<N> ch_select(const ch_bitbase<1>& cond, const ch_bitbase<N>& True, const ch_bitbase<N>& False) {
   return ch_bit<N>(createSelectNode(get_node(cond).get_impl(), get_node(True).get_impl(), get_node(False).get_impl()));
 }
 
 template <unsigned N>
-ch_bit<N> ch_select(const ch_logicbase& cond, const ch_bitbase<N>& True, const ch_bit<N>& False) {
+ch_bit<N> ch_select(const ch_bitbase<1>& cond, const ch_bitbase<N>& True, const ch_bit<N>& False) {
   return ch_bit<N>(createSelectNode(get_node(cond).get_impl(), get_node(True).get_impl(), get_node(False).get_impl()));
 }
 
 template <unsigned N>
-ch_bit<N> ch_select(const ch_logicbase& cond, const ch_bit<N>& True, const ch_bitbase<N>& False) {
+ch_bit<N> ch_select(const ch_bitbase<1>& cond, const ch_bit<N>& True, const ch_bitbase<N>& False) {
   return ch_bit<N>(createSelectNode(get_node(cond).get_impl(), get_node(True).get_impl(), get_node(False).get_impl()));
 }
 
 template <unsigned N>
-ch_bit<N> ch_select(const ch_logicbase& cond, const ch_bit<N>& True, const ch_bit<N>& False) {
+ch_bit<N> ch_select(const ch_bitbase<1>& cond, const ch_bit<N>& True, const ch_bit<N>& False) {
   return ch_bit<N>(createSelectNode(get_node(cond).get_impl(), get_node(True).get_impl(), get_node(False).get_impl()));
 }
 

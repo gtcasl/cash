@@ -7,22 +7,22 @@ using namespace cash::core_literals;
 using namespace cash::sim;
 
 template <unsigned ADDR, unsigned WIDTH>
-__out(ch_bit<WIDTH>, ch_logic, ch_logic) FiFo(
+__out(ch_bit<WIDTH>, ch_bit1, ch_bit1) FiFo(
   const ch_bit<WIDTH>& din,
-  const ch_logic& push,
-  const ch_logic& pop) {
+  const ch_bit1& push,
+  const ch_bit1& pop) {
   
   ch_bit<WIDTH> dout;
-  ch_logic empty;
-  ch_logic full;
+  ch_bit1 empty;
+  ch_bit1 full;
   
   ch_mem<WIDTH, ADDR> mem;
   ch_seq<ch_bit<ADDR+1>> rd_ptr, wr_ptr;
   ch_bit<ADDR> rd_addr(ch_slice<ADDR>(rd_ptr));
   ch_bit<ADDR> wr_addr(ch_slice<ADDR>(wr_ptr));
 
-  ch_logic reading(pop && !empty);
-  ch_logic writing(push && !full);  
+  ch_bit1 reading(pop && !empty);
+  ch_bit1 writing(push && !full);
   
   rd_ptr.next = ch_select(reading, rd_ptr + 1, rd_ptr);
   wr_ptr.next = ch_select(writing, wr_ptr + 1, wr_ptr);
@@ -40,8 +40,8 @@ __out(ch_bit<WIDTH>, ch_logic, ch_logic) FiFo(
 
 int main(int argc, char **argv) {
   std::ofstream vcd_file("fifo.vcd");
-  ch_bus<2> din, dout;
-  ch_signal push, pop, empty, full;
+  ch_bus2 din, dout;
+  ch_bus1 push, pop, empty, full;
 
   ch_device myDevice(FiFo<1, 2>, din, push, pop, dout, empty, full);
 

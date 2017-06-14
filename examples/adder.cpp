@@ -5,12 +5,12 @@ using namespace cash::core_literals;
 using namespace cash::sim;
 
 template <unsigned N>
-__out(ch_bit<N>, ch_logic) Adder(
+__out(ch_bit<N>, ch_bit1) Adder(
            const ch_bit<N>& lhs,
            const ch_bit<N>& rhs,
-           const ch_logic& cin) {
+           const ch_bit1& cin) {
   ch_bit<N> out;
-  ch_logic cout;
+  ch_bit1 cout;
   ch_bit<N+1> sum((0_b, lhs) + rhs + cin);
   cout = sum[N];
   out  = ch_slice<N>(sum);  
@@ -19,8 +19,8 @@ __out(ch_bit<N>, ch_logic) Adder(
 
 int main(int argc, char **argv) {
   std::ofstream vcd_file("adder.vcd");
-  ch_signal cout, cin(1);
-  ch_bus<2> out, lhs(1), rhs(3);
+  ch_bus1 cout, cin(1);
+  ch_bus2 out, lhs(1), rhs(3);
   
   ch_device myDevice(Adder<2>, lhs, rhs, cin, out, cout);
 

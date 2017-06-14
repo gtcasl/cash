@@ -76,8 +76,7 @@ X*** Assignment rule: by constructor assignent is ignored during check
 - global Reset device->reset() => manually reset all nodes in device to zero.
 - FSM designs integration
 - should generate high-level verilog
-- consider using "typedef ch_bit<1> ch_logic" to simplify code and reduce compiler issues
-- refactor ch_tristate class => move to function
+- refactor ch_tristate class => movech_bit<1>tion
 - implement unit test framework like in MyHDL/chisel
 - fix hierarchy support
 - implement netlist export/import

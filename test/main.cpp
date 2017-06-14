@@ -6,10 +6,10 @@ static void begin_test() {
   std::cout << "running test #" << test_number++ << " ..." << std::endl;
 }
 
-bool runtest(const std::function<ch_logic()>& test, ch_cycle cycles) {
+bool runtest(const std::function<ch_bit<1>()>& test, ch_cycle cycles) {
   begin_test();
   
-  ch_signal ret;
+  ch_bus1 ret;
   ch_device dev(test, ret);
   ch_simulator sim(dev);
   sim.run([&](ch_cycle cycle)->bool {    

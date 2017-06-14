@@ -16,7 +16,7 @@ TEST_CASE("miscellaneous tests", "[miscs]") {
   
   SECTION("test assert", "[assert]") {
     using namespace cash::core_literals;
-    TEST([]()->ch_logic {
+    TEST([]()->ch_bit1 {
       ch_bit4 a(1100_b);
       ch_bit2 c = a.slice<2>(1) ^ 01_b;
       ch_assert(c == 11_b, "assertion failed!");
@@ -26,7 +26,7 @@ TEST_CASE("miscellaneous tests", "[miscs]") {
   
   SECTION("test taps", "[tap]") {
     using namespace cash::core_literals;
-    TEST([]()->ch_logic {
+    TEST([]()->ch_bit1 {
       ch_bit4 a(1100_b);
       ch_bit2 c = a.slice<2>(1) ^ 01_b;
       __tap(c);
@@ -35,34 +35,34 @@ TEST_CASE("miscellaneous tests", "[miscs]") {
   }
   
   SECTION("test tick", "[tick]") {
-    TEST([]()->ch_logic {
+    TEST([]()->ch_bit1 {
       ch_print("tick={0}", ch_tick());
       return '1';
     }, 5);
   }
   
   SECTION("test print", "[print]") {
-    TEST([]()->ch_logic {
+    TEST([]()->ch_bit1 {
       ch_print("hello world");
       return '1';
     });
-    TEST([]()->ch_logic {
+    TEST([]()->ch_bit1 {
       ch_bit8 a(255);
       ch_print("a={0}", a);
       return '1';
     });    
-    TEST([]()->ch_logic {
+    TEST([]()->ch_bit1 {
       ch_bit8 a(255), b(0);
       ch_print("a={0}, b={1}", a, b);
       return '1';
     });  
-    TEST([]()->ch_logic {
+    TEST([]()->ch_bit1 {
       ch_bit8 a(255);
-      ch_logic b(1);
+      ch_bit1 b(1);
       ch_print(b, "a={0}", a);
       return '1';
     });
-    TEST([]()->ch_logic {
+    TEST([]()->ch_bit1 {
       ch_float a(0.1f);
       ch_print("a={0:f}", a);
       return '1';

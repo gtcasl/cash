@@ -88,11 +88,11 @@ void latchimpl::print_vl(ostream& out) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-ch_logic cash::detail::ch_clock() {
-  return ch_logic(ctx_curr()->get_clk());
+ch_bit<1> cash::detail::ch_clock() {
+  return ch_bit<1>(ctx_curr()->get_clk());
 }
 
-void cash::detail::ch_pushclock(const ch_logicbase& clk) {
+void cash::detail::ch_pushclock(const ch_bitbase<1>& clk) {
   ctx_curr()->push_clk(get_node(clk).get_impl());
 }
 
@@ -100,11 +100,11 @@ void cash::detail::ch_popclock() {
   ctx_curr()->pop_clk();
 }
 
-ch_logic cash::detail::ch_reset() {
-  return ch_logic(ctx_curr()->get_reset());
+ch_bit<1> cash::detail::ch_reset() {
+  return ch_bit<1>(ctx_curr()->get_reset());
 }
 
-void cash::detail::ch_pushreset(const ch_logicbase& reset) {
+void cash::detail::ch_pushreset(const ch_bitbase<1>& reset) {
   ctx_curr()->push_reset(get_node(reset).get_impl());
 }
 

@@ -5,7 +5,7 @@
 namespace cash {
 namespace detail {
 
-void ch_assert(const ch_logicbase& l, const std::string& msg);
+void ch_assert(const ch_bitbase<1>& l, const std::string& msg);
 
 }
 }

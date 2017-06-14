@@ -6,17 +6,13 @@
 namespace cash {
 namespace detail {
 
-template <unsigned N> class ch_bus;
-using ch_signal = ch_bus<1>;
-
-template <unsigned N> class ch_bit;
-using ch_logic = ch_bit<1>;
-
 void createPrintNode(lnodeimpl* cond,
                      const std::string& format,
                      const std::initializer_list<lnodeimpl*>& args);
 
-template <unsigned N> 
+template <unsigned N> class ch_bus;
+
+template <unsigned N>
 class ch_bit : public ch_bitbase<N> {
 public:
   using base = ch_bitbase<N>;
@@ -201,7 +197,7 @@ public:
 template <unsigned D>
 class sext_pad<1, D> {
 public:
-    ch_bit<(1+D)> operator() (const ch_logicbase& in) {
+    ch_bit<(1+D)> operator() (const ch_bitbase<1>& in) {
       return (in, ch_bit<D>(0x0));
     }
 };
@@ -259,7 +255,7 @@ void ch_print(const std::string& format, const Args& ...args) {
 }
 
 template <typename...Args>
-void ch_print(const ch_logicbase& cond,
+void ch_print(const ch_bitbase<1>& cond,
               const std::string& format,
               const Args& ...args) {
   createPrintNode(get_node(cond).get_impl(),
@@ -268,7 +264,7 @@ void ch_print(const ch_logicbase& cond,
 }
 
 template <typename...Args>
-void ch_print(const ch_logic& cond,
+void ch_print(const ch_bit<1>& cond,
               const std::string& format,
               const Args& ...args) {
   createPrintNode(get_node(cond).get_impl(),

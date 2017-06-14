@@ -17,6 +17,6 @@ const bitvector& assertimpl::eval(ch_cycle t) {
   return bits;
 }
 
-void cash::detail::ch_assert(const ch_logicbase& l, const std::string& msg) {
+void cash::detail::ch_assert(const ch_bitbase<1>& l, const std::string& msg) {
   new assertimpl(get_node(l).get_impl(), msg);
 }
