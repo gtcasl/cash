@@ -16,37 +16,23 @@ public:
   ch_vec() {}
   
   template <typename U>
-  ch_vec(const ch_vec<U, N>& rhs) {
-    for (unsigned i = 0; i < N; ++i) {
-      items_[i] = rhs.items_[i];
-    }
-  }
+  ch_vec(const ch_vec<U, N>& rhs) : items_(rhs.items_) {}
   
-  ch_vec(const ch_bitbase<T::bit_count>& rhs) {
+  explicit ch_vec(const T& rhs) : items_(N, rhs) {}
+
+  explicit ch_vec(const ch_bitbase<T::bit_count>& rhs) : items_(N, rhs) {}
+
+  explicit ch_vec(const bitvector& rhs) : items_(N, rhs) {}
+  
+  template <typename U>
+  ch_vec(const std::initializer_list<U>& rhs) : items_(rhs) {}
+  
+  explicit ch_vec(const base& rhs) {
     data_type data(N);
     rhs.read(data, 0, N);
     this->write(0, data, 0, N);
   }
-  
-  explicit ch_vec(const T& rhs) {
-    for (unsigned i = 0; i < N; ++i) {
-      items_[i] = rhs;
-    }
-  }
-  
-  template <typename U>
-  ch_vec(const std::initializer_list<U>& rhs) {
-    CH_CHECK(rhs.size() == N, "initializer list size missmatch!");
-    unsigned i = N;
-    for (auto& x : rhs) {
-      items_[--i] = x;
-    }
-  }
-  
-  ch_vec(const base& rhs) {
-    this->operator =(rhs);
-  }
-  
+
   template <typename U>
   ch_vec& operator=(const ch_vec<U, N>& rhs) {
     for (unsigned i = 0; i < N; ++i) {
@@ -77,7 +63,7 @@ public:
 
 protected:
   
-  std::array<T, N> items_;
+  std::vector<T> items_;
   
   void read_data(data_type& out, size_t offset, size_t length) const override {
     CH_CHECK(offset + length <= ch_vec::bit_count, "invalid vector read range");

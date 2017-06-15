@@ -13,7 +13,7 @@ ch_compiler::ch_compiler(context* ctx) : ctx_(ctx) {}
 
 void ch_compiler::run() {
   size_t orig_num_nodes = ctx_->nodes_.size();
-  
+
   ctx_->get_live_nodes(live_nodes_);
   
   this->dead_code_elimination();

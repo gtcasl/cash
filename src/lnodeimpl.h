@@ -6,6 +6,7 @@
 #define CH_OPERATOR_NAME(n) #n,
 #define CH_OPERATOR_ENUM(m) \
   m(undef) \
+  m(wire) \
   m(proxy) \
   m(lit) \
   m(input) \
