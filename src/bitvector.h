@@ -225,13 +225,13 @@ public:
   
   bitvector(uint32_t size);
   
-  bitvector(uint32_t size, const std::string& value);
-  
-  bitvector(uint32_t size, uint32_t value);
-  
-  bitvector(uint32_t size, const std::initializer_list<uint32_t>& value);
-  
+  bitvector(uint32_t size, bool value)
+    : bitvector(size, value ? '1' : '0')
+  {}
+
   bitvector(uint32_t size, char value);
+
+  bitvector(uint32_t size, const char* value);
     
   bitvector(uint32_t size, int8_t value)
     : bitvector(size, bitcast<uint32_t>(value))
@@ -252,6 +252,8 @@ public:
   bitvector(uint32_t size, int32_t value)
     : bitvector(size, bitcast<uint32_t>(value))
   {}
+
+  bitvector(uint32_t size, uint32_t value);
   
   bitvector(uint32_t size, int64_t value)
     : bitvector(size, {bitcast<uint32_t>(value >> 32), bitcast<uint32_t>(value)})
@@ -260,6 +262,8 @@ public:
   bitvector(uint32_t size, uint64_t value)
     : bitvector(size, {bitcast<uint32_t>(value >> 32), bitcast<uint32_t>(value)})
   {}
+
+  bitvector(uint32_t size, const std::initializer_list<uint32_t>& value);
   
   ~bitvector();
   
@@ -271,14 +275,18 @@ public:
   bitvector& operator=(const bitvector& rhs);
   
   bitvector& operator=(bitvector&& rhs);
+
+  bitvector& operator=(bool value) {
+    return this->operator =(value ? '1' : '0');
+  }
+
+  bitvector& operator=(char value);
   
-  bitvector& operator=(const std::string& value);
+  bitvector& operator=(const char* value);
   
   bitvector& operator=(uint32_t value);
   
   bitvector& operator=(const std::initializer_list<uint32_t>& value);
-  
-  bitvector& operator=(char value);
   
   bitvector& operator=(int8_t value) {
     return this->operator =(bitcast<uint32_t>(value));

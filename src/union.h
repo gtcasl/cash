@@ -7,7 +7,7 @@
   CH_PAIR_L(x)::bit_count
 
 #define CH_UNION_FIELD(i, x) \
-  cash::detail::slice_ref<base, CH_PAIR_L(x)::bit_count> CH_PAIR_R(x)
+  cash::detail::sliceref<base, CH_PAIR_L(x)::bit_count> CH_PAIR_R(x)
 
 #define CH_UNION_CTOR_INIT(i, x) \
   CH_PAIR_R(x)(_)
@@ -25,7 +25,7 @@
       using data_type = typename base::data_type; \
       bus_type() : CH_FOR_EACH(CH_UNION_CTOR_INIT, CH_SEP_COMMA, __VA_ARGS__) {} \
       bus_type(const bus_type& rhs) : CH_FOR_EACH(CH_UNION_CTOR_INIT, CH_SEP_COMMA, __VA_ARGS__), _(rhs._) {} \
-      bus_type(const base& rhs) : CH_FOR_EACH(CH_UNION_CTOR_INIT, CH_SEP_COMMA, __VA_ARGS__) { base::operator=(rhs); } \
+      bus_type(const base& rhs) : CH_FOR_EACH(CH_UNION_CTOR_INIT, CH_SEP_COMMA, __VA_ARGS__), _(rhs) {} \
       bus_type& operator=(const bus_type& rhs) { \
         _ = rhs._; \
         return *this; \
@@ -42,7 +42,7 @@
     };\
     name() : CH_FOR_EACH(CH_UNION_CTOR_INIT, CH_SEP_COMMA, __VA_ARGS__) {} \
     name(const name& rhs) : CH_FOR_EACH(CH_UNION_CTOR_INIT, CH_SEP_COMMA, __VA_ARGS__), _(rhs._) {} \
-    name(const base& rhs) : CH_FOR_EACH(CH_UNION_CTOR_INIT, CH_SEP_COMMA, __VA_ARGS__) { base::operator=(rhs); } \
+    name(const base& rhs) : CH_FOR_EACH(CH_UNION_CTOR_INIT, CH_SEP_COMMA, __VA_ARGS__), _(rhs) {} \
     name& operator=(const name& rhs) { \
       _ = rhs._; \
       return *this; \

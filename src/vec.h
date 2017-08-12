@@ -13,7 +13,7 @@ public:
   using data_type = typename base::data_type;
   using bus_type = ch_vec<typename T::bus_type, N>;
   
-  ch_vec() {}
+  ch_vec() : items_(N) {}
   
   template <typename U>
   ch_vec(const ch_vec<U, N>& rhs) : items_(rhs.items_) {}
@@ -22,15 +22,13 @@ public:
 
   explicit ch_vec(const ch_bitbase<T::bit_count>& rhs) : items_(N, rhs) {}
 
-  explicit ch_vec(const bitvector& rhs) : items_(N, rhs) {}
-  
   template <typename U>
   ch_vec(const std::initializer_list<U>& rhs) : items_(rhs) {}
   
-  explicit ch_vec(const base& rhs) {
-    data_type data(N);
-    rhs.read(data, 0, N);
-    this->write(0, data, 0, N);
+  explicit ch_vec(const base& rhs) : items_(N) {
+    data_type data(base::bit_count);
+    detail::read_data(rhs, data, 0, base::bit_count);
+    this->write_data(0, data, 0, base::bit_count);
   }
 
   template <typename U>

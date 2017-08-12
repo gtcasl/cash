@@ -11,13 +11,13 @@ class snodeimpl;
 class snode {
 public:
   
-  using data_type = nodeset<snodeimpl*>;
+  using data_type = nodebuf<snodeimpl*>;
   
   snode();
 
   snode(const snode& rhs);
 
-  snode(uint32_t size, const snode& rhs);
+  snode(const snode& rhs, uint32_t size);
 
   snode(snode&& rhs);
 
@@ -25,13 +25,15 @@ public:
 
   snode(const data_type& data);
 
-  snode(const bitvector& value);
+  snode(const bitvector& value, uint32_t size);
 
   ~snode();
   
   snodeimpl* get_impl() const;
   
   snode& operator=(const snode& rhs);
+
+  snode& operator=(snodeimpl* rhs);
   
   snode& operator=(snode&& rhs);
   
@@ -55,20 +57,18 @@ public:
              uint32_t length,
              uint32_t size);
 
-  void assign(uint32_t size, const snode& rhs);
+  void assign(const snode& rhs, uint32_t size);
 
-  void assign(const bitvector& value);
+  void assign(const bitvector& rhs, uint32_t size);
 
   void read_data(data_type& inout,
                  uint32_t offset,
-                 uint32_t length,
-                 uint32_t size) const;
+                 uint32_t length) const;
   
   void write_data(uint32_t dst_offset,
                   const data_type& in,
                   uint32_t src_offset,
-                  uint32_t src_length,
-                  uint32_t size);
+                  uint32_t src_length);
 
 protected:
 
@@ -80,7 +80,8 @@ protected:
               snodeimpl* src,
               uint32_t src_offset,
               uint32_t src_length,
-              uint32_t size);
+              uint32_t size,
+              bool is_owner);
   
   void assign(snodeimpl* impl, bool is_owner);
   

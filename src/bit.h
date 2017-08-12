@@ -21,22 +21,17 @@ public:
       
   ch_bit() : node_(N) {}
   
-  ch_bit(const ch_bit& rhs) : node_(N, rhs.node_) {}
+  ch_bit(const ch_bit& rhs) : node_(rhs.node_, N) {}
 
-  ch_bit(const ch_bitbase<N>& rhs) : node_(N, get_node(rhs)) {}
+  ch_bit(const ch_bitbase<N>& rhs) : node_(get_node(rhs), N) {}
   
-  ch_bit(const bitvector& rhs) : node_(rhs) {
-    assert(rhs.get_size() == N);
-  }
-  
-  ch_bit(bool value) : node_(bitvector(N, value ? 0x1 : 0x0)) { \
-    static_assert(N == 1, "bool assignents only allowed on single-bit objects");
-  }
+  ch_bit(const bitvector& rhs) : node_(rhs, N) {}
     
 #define CH_DEF_CTOR(type) \
-    ch_bit(type value) : node_(bitvector(N, value)) { \
+    ch_bit(type value) : node_(bitvector(N, value), N) { \
     }
   CH_DEF_CTOR(const std::initializer_list<uint32_t>&)
+  CH_DEF_CTOR(bool)
   CH_DEF_CTOR(char)
   CH_DEF_CTOR(int8_t)
   CH_DEF_CTOR(uint8_t)
@@ -53,27 +48,34 @@ public:
   }
   
   ch_bit& operator=(const ch_bit& rhs) {
-    node_.assign(N, rhs.node_);
+    node_.assign(rhs.node_, N);
     return *this;
   }
   
+  ch_bit& operator=(const bitvector& rhs) {
+    node_.assign(rhs, N);
+    return *this;
+  }
+
+  ch_bit& operator=(lnodeimpl* rhs) {
+    node_ = rhs;
+    return *this;
+  }
+
   ch_bit& operator=(const ch_bitbase<N>& rhs) {
-    base::operator=(rhs);
+    data_type data(N);
+    rhs.read_data(data, 0, N);
+    this->write_data(0, data, 0, N);
     return *this;
   }
-  
-  ch_bit& operator=(bool value) {
-    static_assert(N == 1, "bool assignents only allowed on single-bit objects");
-    node_.assign(bitvector(N, value ? 0x1 : 0x0)); \
-    return *this;
-  } 
   
 #define CH_DEF_AOP(type) \
   ch_bit& operator=(type value) { \
-    node_.assign(bitvector(N, value)); \
+    node_.assign(bitvector(N, value), N); \
     return *this; \
   } 
   CH_DEF_AOP(const std::initializer_list<uint32_t>&)
+  CH_DEF_AOP(bool)
   CH_DEF_AOP(char)
   CH_DEF_AOP(int8_t)
   CH_DEF_AOP(uint8_t)
@@ -90,25 +92,20 @@ protected:
   void read_data(data_type& inout,
                  size_t offset,
                  size_t length) const override {
-    node_.read_data(inout, offset, length, N);
+    assert(inout.capacity() == N);
+    node_.read_data(inout, offset, length);
   }
   
   void write_data(size_t dst_offset,
                   const data_type& in,
                   size_t src_offset,
                   size_t src_length) override {
-    node_.write_data(dst_offset, in, src_offset, src_length, N);
+    assert(in.capacity() == N);
+    node_.write_data(dst_offset, in, src_offset, src_length);
   }
   
   lnode node_;
-
-  template <unsigned N_> friend lnode get_node(const ch_bit<N_>& b);
 };
-
-template <unsigned N>
-lnode get_node(const ch_bit<N>& b) {
-  return lnode(N, b.node_);
-}
 
 // concatenation operator
 

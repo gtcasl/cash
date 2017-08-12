@@ -2,7 +2,7 @@
 
 using namespace cash::sim_literals;
 
- __struct (s2_t,(
+__struct (s2_t,(
   (ch_bit2) a,
   (ch_bit2) b
 ));

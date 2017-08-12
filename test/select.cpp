@@ -103,6 +103,60 @@ TEST_CASE("conditionals tests", "[conditionals]") {
       );
       return (a == 2);
     });
+    TEST([]()->ch_bit1 {
+      ch_bit4 a(0), b;
+       b = 1;
+       __if (a == 1) (
+         b = 0;
+       );
+      return (b == 1);
+    });
+    TEST([]()->ch_bit1 {
+      ch_bit4 a(1), b;
+       b = 1;
+       __if (a == 1) (
+         b = 0;
+         b = 2;
+       );
+      return (b == 2);
+    });
+    TEST([]()->ch_bit1 {
+      ch_bit4 a(0), b;
+       b = 1;
+       __if (a == 1) (
+         b = 0;
+       )__else(
+         b = 2;
+       );
+      return (b == 2);
+    });
+    TEST([]()->ch_bit1 {
+      ch_bit4 a(1), b(0), c;
+       __if (a == 1) (
+         c = 0;
+         __if (b == 1) (
+           c = 1;
+         );
+       )__else(
+        c = 2;
+       );
+      ch_print("c={0}", c);
+      return (c == 0);
+    });
+    TEST([]()->ch_bit1 {
+      ch_bit4 a(1), b(0), c;
+       __if (a == 1) (
+         c = 0;
+         __if (b == 1) (
+           c = 1;
+         )__else(
+           c = 3;
+         );
+       )__else(
+        c = 2;
+       );
+      return (c == 3);
+    });
   }
   SECTION("test switch", "[switch]") {
     TEST([]()->ch_bit1 {

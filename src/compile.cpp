@@ -58,7 +58,7 @@ bool ch_compiler::dead_code_elimination() {
       auto iterCur = iter++;
       auto& src = *iterCur;
       lnodeimpl* const src_impl = src.get_impl();
-      undefimpl* const undef = dynamic_cast<undefimpl*>(src_impl);
+      /*undefimpl* const undef = dynamic_cast<undefimpl*>(src_impl);
       if (undef && 1 == undef->get_num_refs()) {
         proxyimpl* const proxy = dynamic_cast<proxyimpl*>(node);
         if (proxy) {
@@ -67,7 +67,7 @@ bool ch_compiler::dead_code_elimination() {
           iterEnd = srcs.end();
           continue;
         }
-      }
+      }*/
       auto ret = live_nodes.emplace(src_impl);
       if (ret.second) {
         // we have a new live node, add it to working set

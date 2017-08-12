@@ -43,7 +43,7 @@ protected:
   };
   
   template <unsigned N>
-  struct to_value_type< ch_bitbase<N> > {
+  struct to_value_type<ch_bitbase<N>> {
     using value = ch_bit<N>;
   };
   
@@ -53,7 +53,7 @@ protected:
   };
   
   template <typename ...OutputArgs>
-  struct output_size< std::tuple<OutputArgs...> > {
+  struct output_size<std::tuple<OutputArgs...>> {
     static const size_t value = sizeof...(OutputArgs);
   };
   
@@ -114,7 +114,7 @@ protected:
     ctx_ = ctx_begin();
     {
       std::tuple<typename to_value_type<typename std::remove_const<
-          typename std::remove_reference<FuncArgs>::type >::type>::value...> func_args;
+          typename std::remove_reference<FuncArgs>::type>::type>::value...> func_args;
       this->bind_inputs(func_args, args...);
       FuncRet ret(this->load_impl(func, func_args, make_index_sequence<sizeof...(FuncArgs)>()));
       this->bind_outputs(ret, args...);
@@ -139,13 +139,13 @@ protected:
   }
 
   template <unsigned N>
-  ch_bit<N> bind_input(const ch_busbase<N>& bus) const {
-    return ch_bit<N>(this->bind_input_(get_node(bus).get_impl()));
+  lnodeimpl* bind_input(const ch_busbase<N>& bus) const {
+    return this->bind_input_(get_node(bus).get_impl());
   }
   
   template <unsigned N>
-  ch_bus<N> bind_output(const ch_bitbase<N>& output) const {
-    return ch_bus<N>(this->bind_output_(get_node(output).get_impl()));
+  snodeimpl* bind_output(const ch_bitbase<N>& output) const {
+    return this->bind_output_(get_node(output).get_impl());
   }
   
   lnodeimpl* bind_input_(snodeimpl* bus) const;
@@ -165,7 +165,6 @@ template <>
 struct ch_device::bind_inputs_impl<1> {
   template <typename ...InputArgs, typename Arg, typename ...Args>
   static void bind(const ch_device& dev, std::tuple<InputArgs...>& inputs, Arg&& arg, Args&&... args) {
-    CH_UNUSED(dev);
     std::get<sizeof...(InputArgs)-1>(inputs) = dev.bind_input(std::forward<Arg>(arg));
   }
   

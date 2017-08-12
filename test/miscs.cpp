@@ -1,5 +1,7 @@
 #include "common.h"
 
+using namespace cash::core_literals;
+
 TEST_CASE("miscellaneous tests", "[miscs]") {   
   SECTION("test utils", "[utils]") {
     TESTX([]()->bool {

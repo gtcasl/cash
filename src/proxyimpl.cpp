@@ -9,6 +9,12 @@ proxyimpl::proxyimpl(context* ctx, uint32_t size)
   , ctime_(~0ull) 
 {}
 
+proxyimpl::proxyimpl(lnodeimpl* src)
+  : lnodeimpl(op_proxy, src->get_ctx(), src->get_size())
+  , ctime_(~0ull)  {
+  this->add_source(0, src, 0, src->get_size());
+}
+
 void proxyimpl::add_source(uint32_t dst_offset,
                            lnodeimpl* src,
                            uint32_t src_offset,
@@ -115,14 +121,24 @@ void proxyimpl::add_source(uint32_t dst_offset,
       }       
     }
 
-    assert(0 == src_length);
+    if (src_length) {
+      // insert the remaining
+      ranges_.push_back({ new_srcidx, dst_offset, src_offset, src_length });
+      n = ranges_.size();
+      i = n - 1;
+    }
+
     if (i < n) {
       // try merging inserted node on the right
       this->merge_left(i);
     }
     
     // cleanup deleted nodes
-    for (uint32_t idx : deleted) {
+    // tranverse the set in reverse order
+    // to process high indices first
+    for (auto iter = deleted.rbegin(), iterEnd = deleted.rend();
+         iter != iterEnd; ++iter) {
+      uint32_t idx = *iter;
       bool in_use = false;
       // ensure that it is not in use
       for (const range_t& r : ranges_) {
@@ -169,59 +185,21 @@ void proxyimpl::merge_left(uint32_t idx) {
   }      
 }
 
-void proxyimpl::assign(uint32_t dst_offset,
-                       lnodeimpl* src,
-                       uint32_t src_offset,
-                       uint32_t src_length) {
-  // proxy object is expected to be fully allocated (no emty ranges)
-  // this simplifies the possible assignment cases
-  for (uint32_t i = 0, n = ranges_.size(); src_length && i < n; ++i) {
-    const range_t& curr = ranges_[i];
-    lnodeimpl* curr_impl = srcs_[curr.srcidx].get_impl();
-    uint32_t curr_end = curr.start + curr.length;
-    uint32_t src_end  = dst_offset + src_length;
-    if ((dst_offset < curr_end && src_end > curr.start)) {
-      if (dst_offset <= curr.start && src_end >= curr_end) {
-        // source fully overlaps
-        uint32_t delta = curr_end - dst_offset;
-        if (1 == curr_impl->get_num_refs()) {
-          this->add_source(dst_offset, src, src_offset, delta);
-          n = ranges_.size();
-          --i;
-        } else {
-          uint32_t offset = curr.start - dst_offset;
-          curr_impl->assign(curr.offset, src, src_offset + offset, curr.length);
-        }
-        dst_offset += delta;
-        src_offset += delta;
-        src_length -= delta;
-      } else if (src_end > curr_end) {
-        // source intersets on the right
-        uint32_t delta = curr_end - dst_offset;
-        if (1 == curr_impl->get_num_refs()) {
-          this->add_source(dst_offset, src, src_offset, delta);
-          n = ranges_.size();
-          --i;
-        } else {
-          uint32_t offset = dst_offset - curr.start;
-          curr_impl->assign(curr.offset + offset, src, src_offset, delta);
-        }
-        dst_offset += delta;
-        src_offset += delta;
-        src_length -= delta;
-      } else {
-        assert(dst_offset >= curr.start); // left intersections should not exit
-        // source fully included        
-        if (1 == curr_impl->get_num_refs()) {
-          this->add_source(dst_offset, src, src_offset, src_length);
-        } else {
-          uint32_t offset = dst_offset - curr.start;
-          curr_impl->assign(curr.offset + offset, src, src_offset, src_length);
-        }
-        src_length = 0;
-      }
+lnodeimpl* proxyimpl::get_slice(uint32_t offset, uint32_t length) {
+  // check if empty
+  if (0 == ranges_.size()) {
+    return new proxyimpl(ctx_, length);
+  }
+  // check for matching source
+  for (const range_t& r : ranges_) {
+    if (r.start == offset && r.length == length) {
+      return srcs_[r.srcidx].get_impl();
     }
   }
+  // return new slice
+  proxyimpl* slice = new proxyimpl(ctx_, length);
+  slice->add_source(0, this, offset, length);
+  return slice;
 }
 
 const bitvector& proxyimpl::eval(ch_cycle t) {

@@ -4,16 +4,17 @@ namespace cash {
 namespace detail {
 
 class lnode;
-class snode;
 class lnodeimpl;
-class snodeimpl;
-class undefimpl;
+class proxyimpl;
 class litimpl;
 class ioimpl;
 class inputimpl;
 class outputimpl;
+class selectimpl;
 class tapimpl;
 class assertimpl;
+class snode;
+class snodeimpl;
 class clock_event;
 class cdomain;
 
@@ -39,13 +40,13 @@ public:
   
   void begin_branch();
   void end_branch();
-  
-  void begin_case(lnodeimpl* cond);
-  void end_case();
+  void begin_block(lnodeimpl* cond);
+  void end_block();
   bool conditional_enabled(lnodeimpl* node = nullptr) const;
   lnodeimpl* resolve_conditional(lnodeimpl* dst, lnodeimpl* src);
+  void move_block_local(lnodeimpl* dst, lnodeimpl* src);
   
-  litimpl* create_literal(const bitvector& value);
+  lnodeimpl* create_literal(const bitvector& value);
   
   cdomain* create_cdomain(const std::vector<clock_event>& sensitivity_list);
   void remove_cdomain(cdomain* cd);
@@ -83,43 +84,60 @@ public:
   void dump_stats(std::ostream& out);
   
 protected:
-  
-  struct cond_val_t {
-    lnodeimpl* dst;
-    lnodeimpl* sel;
-    lnodeimpl* owner;
+
+  struct cond_upd_t {
+    cond_upd_t(selectimpl* sel_, uint32_t block_id_)
+      : sel(sel_)
+      , block_id(block_id_)
+    {}
+    selectimpl* sel;
+    uint32_t block_id;
   };
   
-  struct cond_case_t {
+  struct cond_var_t {
+    cond_var_t(selectimpl* sel, uint32_t block_id) {
+      updates.emplace_front(sel, block_id);
+    }
+    std::list<cond_upd_t> updates;
+  };
+
+  typedef std::vector<cond_var_t> cond_vars_t;
+
+  struct cond_block_t {
+    cond_block_t(uint32_t id_, lnodeimpl* cond_)
+      : id(id_)
+      , cond(cond_)
+    {}
+    uint32_t id;
     lnodeimpl* cond;
     std::set<lnodeimpl*> locals;
-    std::vector<uint32_t> assignments; 
-    cond_case_t(lnodeimpl* cond_) : cond(cond_) {}
   };
-  
-  struct cond_block_t {
-    std::list<cond_case_t> cases;
-  };
-  
-  typedef std::vector<cond_val_t> cond_vals_t;
+
   typedef std::list<cond_block_t> cond_blocks_t;
-  
-  lnodeimpl* get_current_conditional(const cond_blocks_t::iterator& iterBlock, lnodeimpl* dst) const;
+
+  struct cond_branch_t {
+    std::vector<lnodeimpl*> conds;
+  };
+
+  typedef std::list<cond_branch_t> cond_branches_t;
   
   std::list<lnodeimpl*>   nodes_;
-  std::list<undefimpl*>   undefs_;  
+  std::list<undefimpl*>   undefs_;
+  std::list<proxyimpl*>   proxies_;
   std::list<inputimpl*>   inputs_;
   std::list<outputimpl*>  outputs_;
   std::list<tapimpl*>     taps_;
   std::list<ioimpl*>      gtaps_;
   std::list<litimpl*>     literals_;
-  std::list<cdomain*>     cdomains_;
-  cond_blocks_t           cond_blocks_;   
-  cond_vals_t             cond_vals_;
+  std::list<cdomain*>     cdomains_;  
+  cond_vars_t             cond_vars_;
+  cond_blocks_t           cond_blocks_;
+  cond_branches_t         cond_branches_;
   std::stack<lnode>       clk_stack_;
   std::stack<lnode>       reset_stack_;
 
-  uint32_t   nodeids_;
+  uint32_t   node_ids_;
+  uint32_t   block_ids_;
   inputimpl* clk_;
   inputimpl* reset_;
   

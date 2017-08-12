@@ -5,7 +5,7 @@ CXXFLAGS += -fPIC -std=c++14 -O0 -g --coverage -Wall -Wextra -Werror -fmax-error
 LDFLAGS += -shared --coverage -lbfd
 
 SRCS = utils.cpp platform.cpp bitvector.cpp \
-       lnodeimpl.cpp wireimpl.cpp proxyimpl.cpp litimpl.cpp selectimpl.cpp regimpl.cpp \
+       lnodeimpl.cpp proxyimpl.cpp litimpl.cpp selectimpl.cpp regimpl.cpp \
        aluimpl.cpp ioimpl.cpp memimpl.cpp assertimpl.cpp tickimpl.cpp printimpl.cpp \
        snodeimpl.cpp cdomain.cpp context.cpp device.cpp compile.cpp sim.cpp vcd.cpp
 

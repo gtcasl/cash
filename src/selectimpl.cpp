@@ -9,7 +9,7 @@ using namespace std;
 using namespace cash::detail;
 
 selectimpl::selectimpl(lnodeimpl* cond, lnodeimpl* true_, lnodeimpl* false_) 
-  : lnodeimpl(op_select, true_->get_ctx(), true_->get_size())
+  : lnodeimpl(op_select, cond->get_ctx(), true_->get_size())
   , ctime_(~0ull) {
   srcs_.emplace_back(cond);
   srcs_.emplace_back(true_);
@@ -59,8 +59,8 @@ lnodeimpl* select_impl::eval(lnodeimpl* value) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-if_t::if_t(lnodeimpl* cond, func_t func) {  
-  cond->get_ctx()->begin_branch();
+if_t::if_t(lnodeimpl* cond, func_t func) {
+  ctx_curr()->begin_branch();
   this->eval(cond, func);
 }
 
@@ -70,24 +70,24 @@ if_t::~if_t() {
 
 void if_t::eval(lnodeimpl* cond, func_t func) {
   context* const ctx = ctx_curr();
-  ctx->begin_case(cond);
+  ctx->begin_block(cond);
   func();
-  ctx->end_case();
+  ctx->end_block();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 switch_impl::switch_impl(lnodeimpl* key) : key_(key) {
-  key_->get_ctx()->begin_branch();
+  ctx_curr()->begin_branch();
 }
 
 switch_impl::~switch_impl() {
-  key_->get_ctx()->end_branch();
+  ctx_curr()->end_branch();
 }
 
 void switch_impl::eval(lnodeimpl* cond, func_t func) {
   context* const ctx = key_->get_ctx();
-  ctx->begin_case(cond ? createAluNode(alu_op_eq, 1, key_, cond) : nullptr);
+  ctx->begin_block(cond ? createAluNode(alu_op_eq, 1, key_, cond) : nullptr);
   func();
-  ctx->end_case();
+  ctx->end_block();
 }

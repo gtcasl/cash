@@ -6,7 +6,6 @@
 #define CH_OPERATOR_NAME(n) #n,
 #define CH_OPERATOR_ENUM(m) \
   m(undef) \
-  m(wire) \
   m(proxy) \
   m(lit) \
   m(input) \
@@ -80,19 +79,6 @@ public:
   context* get_ctx() const {
     return ctx_;
   }
-
-  void add_ref(const lnode* node);
-
-  void remove_ref(const lnode* node);
-
-  void replace_all_refs(lnodeimpl* impl);
-
-  int find_ref(const lnode* node) const;
-
-  virtual void assign(uint32_t dst_offset,
-                      lnodeimpl* src,
-                      uint32_t src_offset,
-                      uint32_t src_length);
   
   uint32_t get_num_srcs() const {
     return srcs_.size();
@@ -112,18 +98,6 @@ public:
   
   lnodeimpl* get_src(unsigned i) {
     return srcs_[i].get_impl();
-  }
-
-  uint32_t get_num_refs() const {
-    return refs_.size();
-  }
-
-  const std::set<const lnode*>& get_refs() const {
-    return refs_;
-  }
-
-  std::set<const lnode*>& get_refs() {
-    return refs_;
   }
   
   uint32_t get_size() const {
@@ -150,7 +124,6 @@ protected:
   uint32_t id_;
   ch_operator op_;
   context* ctx_;
-  std::set<const lnode*> refs_;
   std::vector<lnode> srcs_;
   bitvector value_; 
   
@@ -161,7 +134,7 @@ class undefimpl : public lnodeimpl {
 public:
   undefimpl(context* ctx, uint32_t size);
 
-  const bitvector& eval(ch_cycle t) override;  
+  const bitvector& eval(ch_cycle t) override;
   void print_vl(std::ostream& out) const override;
 };
 

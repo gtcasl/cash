@@ -1,6 +1,7 @@
 #include "regimpl.h"
 #include "context.h"
 #include "reg.h"
+#include "select.h"
 
 using namespace std;
 using namespace cash::detail;
@@ -112,8 +113,11 @@ void cash::detail::ch_popreset() {
   ctx_curr()->pop_reset();
 }
 
-lnodeimpl* cash::detail::createRegNode(lnodeimpl* next) {
-  return new regimpl(next);
+lnodeimpl* cash::detail::createRegNode(lnodeimpl* next, lnodeimpl* init) {
+  context* const ctx = ctx_curr();
+  if (nullptr == init)
+    init = ctx->create_literal(bitvector(next->get_size(), 0));
+  return new regimpl(createSelectNode(ctx->get_reset(), init, next));
 }
 
 lnodeimpl* cash::detail::createLatchNode(lnodeimpl* next,

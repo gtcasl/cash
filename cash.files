@@ -2,6 +2,7 @@ LICENSE
 TODO
 VERSION
 env.sh
+examples/Makefile
 examples/adder.cpp
 examples/counter.cpp
 examples/fastmul.cpp
@@ -76,8 +77,7 @@ src/utils.h
 src/vcd.cpp
 src/vcd.h
 src/vec.h
-src/wireimpl.cpp
-src/wireimpl.h
+test/Makefile
 test/aggregates.cpp
 test/arithm.cpp
 test/catch.h

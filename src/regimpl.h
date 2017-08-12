@@ -12,8 +12,8 @@ public:
   regimpl(lnodeimpl* next);
   virtual ~regimpl();
   
-  const lnode& get_next() const {
-    return srcs_[0];
+  lnodeimpl* get_next() const {
+    return srcs_[0].get_impl();
   }
   
   const bitvector& eval(ch_cycle t) override;  

@@ -20,7 +20,7 @@ bitvector::bitvector(uint32_t size) : words_(nullptr), size_(0) {
   this->resize(size, 0, true, false);
 }
 
-bitvector::bitvector(uint32_t size, const std::string& value) : words_(nullptr), size_(0) {
+bitvector::bitvector(uint32_t size, const char* value) : words_(nullptr), size_(0) {
   this->resize(size, 0x0, false, false);
   this->operator =(value);
 }
@@ -42,8 +42,9 @@ bitvector::bitvector(uint32_t size, const std::initializer_list<uint32_t>& value
 }
 
 bitvector::~bitvector() {
-  if (words_)
+  if (words_) {
     delete [] words_;
+  }
 }
 
 void bitvector::resize(uint32_t size, uint32_t value, bool initialize, bool preserve) {
@@ -114,11 +115,13 @@ static uint32_t chr2int(char x, int base) {
   CH_ABORT("invalid literal value");
 }
 
-bitvector& bitvector::operator=(const std::string& value) {  
+bitvector& bitvector::operator=(const char* value) {
   int base = 0;
   int start = 0;
+
+  size_t len = strlen(value);
   
-  switch (value.back()) {
+  switch (value[len-1]) {
   case 'b':
     base = 2;
     break;
@@ -127,7 +130,7 @@ bitvector& bitvector::operator=(const std::string& value) {
     break;
   case 'h':
     base = 16;
-    if (value.size() > 1 && (value[1] == 'x' || value[1] == 'X')) {
+    if (len > 1 && (value[1] == 'x' || value[1] == 'X')) {
       start = 2;
     }
     break;
@@ -136,7 +139,7 @@ bitvector& bitvector::operator=(const std::string& value) {
   }
   
   uint32_t log_base = ilog2ceil(base);
-  uint32_t len = value.size() - 1; // remove type character
+  --len; // remove type character
   
   // calculate binary size
   uint32_t size = 0;  
@@ -277,7 +280,10 @@ bool bitvector::operator<(const bitvector& rhs) const {
   return false;
 }
 
-void bitvector::copy(uint32_t dst_offset, const bitvector& src, uint32_t src_offset, uint32_t src_length) {
+void bitvector::copy(uint32_t dst_offset,
+                     const bitvector& src,
+                     uint32_t src_offset,
+                     uint32_t src_length) {
   assert(size_ > 0);
   assert(src.size_ > 0);
   assert(src_offset + src_length <= src.size_);
@@ -327,7 +333,7 @@ bool bitvector::is_empty() const {
 void bitvector::read(uint8_t* out, uint32_t offset, uint32_t size) const {
   assert(offset + size <= size_);
   uint32_t m_offset = offset & 0xff;
-  uint8_t last_mask = (offset + size) & 0xff;
+  uint8_t rem_bits = (offset + size) & 0xff;
   if (m_offset) {
     uint8_t tmp = 0;
     const_iterator iter = this->begin() + offset;
@@ -340,8 +346,9 @@ void bitvector::read(uint8_t* out, uint32_t offset, uint32_t size) const {
       }
     }
     if (tmp) {
-      if (last_mask) {
-        *out = CH_BLEND(last_mask, *out, tmp);
+      if (rem_bits) {
+        uint32_t sel_mask = ~(~0UL << rem_bits);
+        *out = CH_BLEND(sel_mask, tmp, *out);
       } else {
         *out = tmp;
       }
@@ -351,12 +358,13 @@ void bitvector::read(uint8_t* out, uint32_t offset, uint32_t size) const {
     uint32_t offset_in_bytes = offset / 8;
     uint32_t size_in_bytes = CH_CEILDIV(size, 8);
     uint8_t* src = reinterpret_cast<uint8_t*>(words_) + offset_in_bytes;
-    if (last_mask) {
+    if (rem_bits) {
       // copy all bytes except the last one
       memcpy(out, src, size_in_bytes - 1);
       // only update set bits from source in the last byte
+      uint32_t sel_mask = ~(~0UL << rem_bits);
       out[size_in_bytes - 1] =
-          CH_BLEND(last_mask, out[size_in_bytes - 1], src[size_in_bytes - 1]);
+          CH_BLEND(sel_mask, src[size_in_bytes - 1], out[size_in_bytes - 1]);
     } else {
       memcpy(out, src, size_in_bytes);
     }
@@ -380,14 +388,15 @@ void bitvector::write(const uint8_t* in, uint32_t offset, uint32_t size) {
     // byte-aligned offset
     uint32_t offset_in_bytes = offset / 8;
     uint32_t size_in_bytes = CH_CEILDIV(size, 8);
-    uint8_t last_mask = (offset + size) & 0xff;
+    uint8_t rem_bits = (offset + size) & 0xff;
     uint8_t* dst = reinterpret_cast<uint8_t*>(words_) + offset_in_bytes;
-    if (last_mask) {
+    if (rem_bits) {
       // copy all bytes except the last one
       memcpy(dst, in, size_in_bytes - 1);
       // only update set bits from source in the last byte
+      uint32_t sel_mask = ~(~0UL << rem_bits);
       dst[size_in_bytes - 1] =
-          CH_BLEND(last_mask, dst[size_in_bytes - 1], in[size_in_bytes - 1]);
+          CH_BLEND(sel_mask, in[size_in_bytes - 1], dst[size_in_bytes - 1]);
     } else {
       memcpy(dst, in, size_in_bytes);
     }
@@ -401,8 +410,9 @@ std::ostream& cash::detail::operator<<(std::ostream& os, const bitvector& b) {
   for (int32_t i = b.get_num_words() - 1; i >= 0; --i) {
     uint32_t word = b.get_word(i);
     os << word;
-    if (i != 0) 
+    if (i != 0) {
       os << "_";
+    }
   }
   os.flags(oldflags);
   return os;

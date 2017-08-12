@@ -4,13 +4,13 @@ using namespace cash::core_literals;
 
 __struct (s1_t,(
   (ch_bit4) a
-),
-ch_bit1 get_LSB() const {
-  return a[0];
-}
-ch_bit1 get_MSB() const {
-  return a[3];
-}
+  ),
+  ch_bit1 get_LSB() const {
+    return a[0];
+  }
+  ch_bit1 get_MSB() const {
+    return a[3];
+  }
 );
 
 __struct (s2_t,(
@@ -47,13 +47,14 @@ using st4_t = st_t<4>;
 __union (u2_t,(
   (ch_bit4) a,
   (ch_bit4) b
-),
-ch_bit1 get_LSB() const {
-  return a[0];
-}
-ch_bit1 get_MSB() const {
-  return b[3];
-});
+  ),
+  ch_bit1 get_LSB() const {
+    return a[0];
+  }
+  ch_bit1 get_MSB() const {
+    return b[3];
+  }
+);
  
 __union (u3_t,(
   (ch_bit2) a,
@@ -126,6 +127,11 @@ TEST_CASE("aggregate tests", "[aggregate]") {
       ch_vec<ch_bit2, 2> a(0);
       a[0][1] = 1;
       return (a == 0010_b);
+    });
+
+    TEST([]()->ch_bit1 {
+      ch_vec<ch_bit2, 2> a({01_b, 10_b});
+      return (a[0] == 01_b && a[1] == 10_b);
     });
     
     TEST([]()->ch_bit1 {

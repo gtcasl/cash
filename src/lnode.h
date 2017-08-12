@@ -14,24 +14,24 @@ using ch_cycle = uint64_t;
 class lnode {
 public:
   
-  using data_type = nodeset<lnodeimpl*>;
+  using data_type = nodebuf<lnodeimpl*>;
 
   lnode();
 
-  lnode(const lnode& rhs);
-
   lnode(uint32_t size);
-
-  lnode(uint32_t size, const lnode& rhs);
-
-  lnode(lnode&& rhs);
 
   explicit lnode(lnodeimpl* impl);
 
-  lnode(const data_type& data);
+  explicit lnode(const bitvector& value, uint32_t size);
 
-  lnode(const bitvector& value);
-  
+  explicit lnode(const data_type& data);
+
+  lnode(const lnode& rhs);
+
+  lnode(const lnode& rhs, uint32_t size);
+
+  lnode(lnode&& rhs);
+
   ~lnode();
 
   lnodeimpl* get_impl() const;
@@ -56,37 +56,40 @@ public:
  
   const bitvector& eval(ch_cycle t);  
 
-  void assign(uint32_t size, const lnode& rhs);
-  
-  void assign(const bitvector& value);
+  void assign(const lnode& rhs, uint32_t size);
+
+  void assign(const bitvector& value, uint32_t size);
   
   void read_data(data_type& inout,
                  uint32_t offset,
-                 uint32_t length,
-                 uint32_t size) const;
+                 uint32_t length) const;
   
   void write_data(uint32_t dst_offset,
                   const data_type& in,
                   uint32_t src_offset,
-                  uint32_t src_length,
-                  uint32_t size);
+                  uint32_t src_length);
 
 protected:
 
   void ensureInitialized(uint32_t size) const;
 
   void clear();
-
-  void assign(lnodeimpl* impl, bool initialization);
   
   void move(lnode& rhs);
   
+  void init(uint32_t dst_offset,
+            lnodeimpl* src,
+            uint32_t src_offset,
+            uint32_t src_length,
+            uint32_t size,
+            bool readonly);
+
   void assign(uint32_t dst_offset,
               lnodeimpl* src,
               uint32_t src_offset,
               uint32_t src_length,
               uint32_t size,
-              bool initialization = false);
+              bool readonly);
   
   mutable lnodeimpl* impl_;
   

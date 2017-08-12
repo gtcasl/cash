@@ -6,7 +6,7 @@
 namespace cash {
 namespace detail {
 
-lnodeimpl* createRegNode(lnodeimpl* next);
+lnodeimpl* createRegNode(lnodeimpl* next, lnodeimpl* init);
 lnodeimpl* createLatchNode(lnodeimpl* next, lnodeimpl* init, lnodeimpl* enable, lnodeimpl* reset);
 
 lnodeimpl* createReadyNode(lnodeimpl* node);
@@ -32,8 +32,7 @@ ch_bit<1> ch_valid(const ch_bitbase<N>& x) {
 
 template <unsigned N>
 ch_bit<N> ch_reg(const ch_bitbase<N>& next, const ch_bitbase<N>& init) {
-  ch_bit<N> d(ch_select(ch_reset(), init, next));
-  return ch_bit<N>(createRegNode(get_node(d).get_impl()));
+  return ch_bit<N>(createRegNode(get_node(next).get_impl(), get_node(init).get_impl()));
 }
 
 template <unsigned N>

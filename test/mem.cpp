@@ -43,7 +43,7 @@ TEST_CASE("memory tests", "[memory]") {
       ch_bit2 a;
       ch_bit4 d, q;
       ch_bit1 en;
-      ch_mem<4, 2> mem({0xA, 0xB, 0xC, 0xD});
+      ch_ram<4, 2> mem({0xA, 0xB, 0xC, 0xD});
       q = mem[a];
       __if (en) ( 
         mem[a] = d;
@@ -70,7 +70,7 @@ TEST_CASE("memory tests", "[memory]") {
       ch_bit2 a;
       ch_bit4 d, q;
       ch_bit1 en;
-      ch_mem<4, 2> mem({0xA, 0xB, 0xC, 0xD});
+      ch_ram<4, 2> mem({0xA, 0xB, 0xC, 0xD});
       q = ch_reg<4>(mem[a]); 
       __if (en) (
         mem[a] = d;

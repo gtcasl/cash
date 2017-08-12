@@ -68,7 +68,8 @@ struct lit_oct {
     return (c - '0');
   }
   static constexpr unsigned sizex(char c, unsigned N) {
-    return is_escape(c) ? N : (N ? (N + 3) : (chr2int(c) ? (ilog2(chr2int(c)) + 1) : 0));
+    return is_escape(c) ? N :
+           (N ? (N + 3) : (chr2int(c) ? (ilog2(chr2int(c)) + 1) : 0));
   }   
 };
 
@@ -88,7 +89,9 @@ struct lit_hex {
           ((c >= 'a' && c <= 'f') ? (c - 'a' + 10) : 0));
   }
   static constexpr unsigned sizex(char c, unsigned N) {
-    return (c == 'x' || c == 'X') ? 0 : (is_escape(c) ? N : (N ? (N + 4) : (chr2int(c) ? (ilog2(chr2int(c)) + 1) : 0)));
+    return (c == 'x' || c == 'X') ? 0 :
+           (is_escape(c) ? N :
+           (N ? (N + 4) : (chr2int(c) ? (ilog2(chr2int(c)) + 1) : 0)));
   }
 };
 
@@ -130,7 +133,7 @@ struct lit_hex_sizex {
   CH_DEF_LITERALS_IMPL(x, 33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64) \
   CH_DEF_LITERALS_IMPL(x, 65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92) \
   CH_DEF_LITERALS_IMPL(x, 93,94,95,96,97,98,99,100,101,102,103,104,105,106,107,108,109,110,111,112,113,114,115,116,117,118,119,120,121,122,123,124,125,126,127,128)
-  
+
 namespace core_literals {
 
   template< char... Chars>
@@ -138,13 +141,13 @@ namespace core_literals {
     constexpr const char str[] = {Chars..., 'b', '\0'};
     return ch_bit<lit_bin_size<Chars...>::value>(bitvector(lit_bin_size<Chars...>::value, str));
   }
-  
+
   template< char... Chars>
   ch_bit<lit_oct_size<Chars...>::value> operator "" _o() {
     constexpr const char str[] = {Chars..., 'o', '\0'};
     return ch_bit<lit_oct_size<Chars...>::value>(bitvector(lit_oct_size<Chars...>::value, str));
   }
-  
+
   template< char... Chars>
   ch_bit<lit_hex_size<Chars...>::value> operator "" _h() {
     constexpr const char str[] = {Chars..., 'h', '\0'};
@@ -171,7 +174,7 @@ namespace core_literals {
     constexpr const char str[] = {Chars..., 'h', '\0'}; \
     return ch_bit<x>(bitvector(x, str)); \
   }
-  
+
   CH_DEF_LITERALS(CH_CORE_LITERALS)
 #undef CH_CORE_LITERALs
 }
@@ -183,13 +186,13 @@ namespace sim_literals {
     constexpr const char str[] = {Chars..., 'b', '\0'};
     return ch_bus<lit_bin_size<Chars...>::value>(bitvector(lit_bin_size<Chars...>::value, str));
   }
-  
+
   template< char... Chars>
   ch_bus<lit_oct_size<Chars...>::value> operator "" _o() {
     constexpr const char str[] = {Chars..., 'o', '\0'};
     return ch_bus<lit_oct_size<Chars...>::value>(bitvector(lit_oct_size<Chars...>::value, str));
   }
-  
+
   template< char... Chars>
   ch_bus<lit_hex_size<Chars...>::value> operator "" _h() {
     constexpr const char str[] = {Chars..., 'h', '\0'};
@@ -215,7 +218,7 @@ namespace sim_literals {
     constexpr const char str[] = {Chars..., 'h', '\0'}; \
     return ch_bus<x>(bitvector(x, str)); \
   }
-  
+
   CH_DEF_LITERALS(CH_SIM_LITERALS)
 #undef CH_SIM_LITERALs
 }

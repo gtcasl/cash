@@ -393,7 +393,7 @@ static void binaryop(bitvector& dst, const bitvector& a, const bitvector& b) {
 }
 
 template <ch_alu_op op>
-static void shiftop(bitvector& dst, const bitvector& in, const bitvector& bits) {  
+static void shiftop(bitvector& dst, const bitvector& in, const bitvector& bits) {
   assert(dst.get_size() == in.get_size());
   CH_CHECK(bits.find_last() <= 31, "shift amount out of range!");
   
@@ -603,15 +603,12 @@ void aluimpl::print_vl(std::ostream& out) const {
   CH_TODO();
 } 
 
-lnodeimpl* cash::detail::createAluNode(ch_alu_op op,
-                                       uint32_t size,
-                                       lnodeimpl* a,
-                                       lnodeimpl* b) {
+lnodeimpl* cash::detail::createAluNode(
+    ch_alu_op op, uint32_t size, lnodeimpl* a, lnodeimpl* b) {
   return new aluimpl(op, size, a, b); 
 }
 
-lnodeimpl* cash::detail::createAluNode(ch_alu_op op,
-                                       uint32_t size,
-                                       lnodeimpl* a) {
+lnodeimpl* cash::detail::createAluNode(
+    ch_alu_op op, uint32_t size, lnodeimpl* a) {
   return new aluimpl(op, size, a);
 }

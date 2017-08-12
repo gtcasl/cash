@@ -16,7 +16,7 @@ __out(ch_bit<WIDTH>, ch_bit1, ch_bit1) FiFo(
   ch_bit1 empty;
   ch_bit1 full;
   
-  ch_mem<WIDTH, ADDR> mem;
+  ch_ram<WIDTH, ADDR> mem;
   ch_seq<ch_bit<ADDR+1>> rd_ptr, wr_ptr;
   ch_bit<ADDR> rd_addr(ch_slice<ADDR>(rd_ptr));
   ch_bit<ADDR> wr_addr(ch_slice<ADDR>(wr_ptr));

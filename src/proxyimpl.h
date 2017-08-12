@@ -8,6 +8,7 @@ namespace detail {
 class proxyimpl : public lnodeimpl {
 public:  
   proxyimpl(context* ctx, uint32_t size);
+  proxyimpl(lnodeimpl* src);
   
   void add_source(uint32_t dst_offset,
                   lnodeimpl* src,
@@ -16,12 +17,9 @@ public:
 
   std::vector<lnode>::iterator erase_source(std::vector<lnode>::iterator iter);
 
-  void assign(uint32_t dst_offset,
-              lnodeimpl* src,
-              uint32_t src_offset,
-              uint32_t src_length) override;
-  
-  const bitvector& eval(ch_cycle t) override;  
+  lnodeimpl* get_slice(uint32_t offset, uint32_t length);
+
+  const bitvector& eval(ch_cycle t) override;
   void print(std::ostream& out, uint32_t level) const override;
   void print_vl(std::ostream& out) const override;
   

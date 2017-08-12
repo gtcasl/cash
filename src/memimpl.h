@@ -11,9 +11,10 @@ class memportimpl;
 class memimpl : public tickable, public lnodeimpl {
 public:  
   memimpl(context* ctx, uint32_t data_width, uint32_t addr_width, bool write_enable);  
-  memimpl(context* ctx, uint32_t data_width, uint32_t addr_width, bool write_enable, const std::string& init_file);  
-  memimpl(context* ctx, uint32_t data_width, uint32_t addr_width, bool write_enable, const std::vector<uint32_t>& init_data);
   ~memimpl();
+
+  void load(const std::string& file);
+  void load(const std::vector<uint8_t>& data);
   
   memportimpl* read(lnodeimpl* addr);
   void write(lnodeimpl* addr, lnodeimpl* data);  
@@ -26,16 +27,17 @@ public:
   void print_vl(std::ostream& out) const override;
   
   uint32_t get_total_size() const {
-    return content_.size() * content_[0].get_size();
+    return value_.get_size();
   }
 
 protected:
   
-  void load_data(const std::function<bool(uint32_t* out)>& getdata);
+  void load_data(const std::function<bool(uint8_t* out)>& getdata);
   
   memportimpl* get_port(lnodeimpl* addr, bool writing);
   
-  std::vector<bitvector> content_;
+  uint32_t data_width_;
+  uint32_t addr_width_;
   uint32_t ports_offset_;
   cdomain* cd_;
   
@@ -46,12 +48,8 @@ class memportimpl : public lnodeimpl {
 public:  
   memportimpl(memimpl* mem, lnodeimpl* addr);
   
-  const lnode& get_addr() const {
-    return srcs_[addr_id_];
-  }
-
-  lnode& get_addr() {
-    return srcs_[addr_id_];
+  lnodeimpl* get_addr() const {
+    return srcs_[addr_id_].get_impl();
   }
   
   void write(lnodeimpl* data);  

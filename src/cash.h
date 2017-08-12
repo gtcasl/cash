@@ -149,7 +149,7 @@ namespace core {
   //
 
   using cash::detail::ch_rom;
-  using cash::detail::ch_mem;
+  using cash::detail::ch_ram;
 
   //
   // other functions
@@ -217,7 +217,7 @@ namespace sim {
 // literals
 //
 
-inline namespace core_literals { 
+inline namespace core_literals {
   using namespace cash::detail::core_literals;
 }
 

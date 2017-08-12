@@ -7,7 +7,7 @@ using namespace cash::core_literals;
 using namespace cash::sim;
 
 ch_bit8 FastMul(const ch_bit4& lhs, const ch_bit4& rhs) {
-  std::vector<uint32_t> tbl_mult(256);
+  std::vector<uint8_t> tbl_mult(256);
   for (int j = 0; j < 16; ++j) {
     for (int i = 0; i < 16; ++i) {
       tbl_mult[j * 16 + i] = i * j;

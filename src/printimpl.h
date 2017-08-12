@@ -7,7 +7,9 @@ namespace detail {
 
 class printimpl : public ioimpl {
 public:
-  printimpl(context* ctx, lnodeimpl* cond, const std::string& format, 
+  printimpl(context* ctx,
+            lnodeimpl* cond,
+            const std::string& format,
             const std::initializer_list<lnodeimpl*>& args);
 
   const bitvector& eval(ch_cycle t) override;  

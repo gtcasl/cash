@@ -55,6 +55,6 @@ TEST_CASE("registers tests", "[registers]") {
   }
   
   SECTION("test latches", "[latch]") {
-    
+    // TODO
   }
 }
