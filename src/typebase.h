@@ -1,6 +1,7 @@
 #pragma once
 
 #include "common.h"
+#include "bitvector.h"
 
 namespace cash {
 namespace detail {
@@ -8,17 +9,23 @@ namespace detail {
 template <typename T>
 class nodebuf {
 public:
-  nodebuf(uint32_t capacity, bool readonly = false)
-    : capacity_(capacity)
-    , size_(0)
-    , readonly_(readonly)
-  {}
-  
+
   struct entry_t {
     const T& src;
     uint32_t offset;
-    uint32_t length;    
+    uint32_t length;
   };
+
+  nodebuf(uint32_t capacity)
+    : capacity_(capacity)
+    , size_(0)
+  {}
+
+  nodebuf(const T& src, uint32_t offset, uint32_t length)
+    : capacity_(length)
+    , size_(length) {
+    buffer_.emplace_back(entry_t{src, offset, length});
+  }
   
   uint32_t size() const {
     return size_;
@@ -28,16 +35,12 @@ public:
     return capacity_;
   }
 
-  bool is_readonly() const {
-    return readonly_;
-  }
-  
   auto begin() const {
-    return buffer_.begin(); 
+    return buffer_.begin();
   }
-  
+
   auto end() const {
-    return buffer_.end(); 
+    return buffer_.end();
   }
 
   void push_back(const entry_t& data) {
@@ -51,13 +54,11 @@ private:
   std::vector<entry_t> buffer_;
   uint32_t capacity_;
   uint32_t size_;
-  bool readonly_;
 };
 
 template <typename T>
 class typebase_itf {
 public:
-
   virtual void read_data(T& inout, size_t offset, size_t length) const = 0;
   virtual void write_data(size_t dst_offset, const T& in, size_t src_offset, size_t src_length) = 0;
 };

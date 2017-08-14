@@ -22,8 +22,10 @@ public:
   }
   
 #define CH_DEF_AOP(type) \
-  typebase& operator=(type value) { \
-    return this->operator =(ch_bus<N>(value)); \
+  typebase& operator=(type rhs) { \
+    snode node(bitvector(N, rhs)); \
+    this->write_data(0, {node, 0 , N}, 0, N); \
+    return *this; \
   } 
   CH_DEF_AOP(const std::initializer_list<uint32_t>&)
   CH_DEF_AOP(bool)
@@ -37,27 +39,27 @@ public:
   CH_DEF_AOP(int64_t)
   CH_DEF_AOP(uint64_t)
 #undef CH_DEF_AOP
-  
+
   bool operator==(const typebase& rhs) const {
     return get_node(*this).is_equal(get_node(rhs), N);
   }
-  
+
   bool operator<(const typebase& rhs) const {
     return get_node(*this).is_less(get_node(rhs), N);
   }
-  
+
   bool operator!=(const typebase& rhs) const {
     return !(*this == rhs);
   }
-  
+
   bool operator>(const typebase& rhs) const {
     return (rhs < *this);
   }
-  
+
   bool operator<=(const typebase& rhs) const {
     return !(*this > rhs);
   }
-  
+
   bool operator>=(const typebase& rhs) const {
     return !(*this < rhs);
   }
@@ -93,30 +95,6 @@ template <unsigned N>
 std::ostream& operator<<(std::ostream& os, const ch_busbase<N>& b) {
   return os << get_node(b);
 }
-
-#define CH_DEF_COMP_IMPL(op, type) \
-  template <unsigned N> bool op(const ch_busbase<N>& lhs, type rhs) { return lhs.op(ch_bus<N>(rhs)); } \
-  template <unsigned N> bool op(type lhs, const ch_busbase<N>& rhs) { return ch_bus<N>(lhs).op(rhs); }
-
-#define CH_DEF_COMP(type) \
-  CH_DEF_COMP_IMPL(operator==, type) \
-  CH_DEF_COMP_IMPL(operator!=, type) \
-  CH_DEF_COMP_IMPL(operator< , type) \
-  CH_DEF_COMP_IMPL(operator> , type) \
-  CH_DEF_COMP_IMPL(operator<=, type) \
-  CH_DEF_COMP_IMPL(operator>=, type)
-  CH_DEF_COMP(const std::initializer_list<uint32_t>&)
-  CH_DEF_COMP(char)
-  CH_DEF_COMP(int8_t)
-  CH_DEF_COMP(uint8_t)
-  CH_DEF_COMP(int16_t)
-  CH_DEF_COMP(uint16_t)
-  CH_DEF_COMP(int32_t)
-  CH_DEF_COMP(uint32_t)
-  CH_DEF_COMP(int64_t)
-  CH_DEF_COMP(uint64_t)
-#undef CH_DEF_COMP
-#undef CH_DEF_COMP_IMPL
 
 }
 }

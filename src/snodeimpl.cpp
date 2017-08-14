@@ -280,9 +280,8 @@ snode::snode(const data_type& data) : snode() {
   }
 }
 
-snode::snode(const bitvector& value, uint32_t size) : snode() {
-  assert(value.get_size() == size);
-  this->assign(value, size);
+snode::snode(const bitvector& value) : snode() {
+  this->assign(value, value.get_size());
 }
 
 snode::~snode() {
@@ -337,6 +336,7 @@ snodeimpl* snode::get_impl() const {
 void snode::move(snode& rhs) {  
   assert(impl_ != rhs.impl_);
   impl_ = rhs.impl_;
+  // acquire ownership
   if (impl_->get_owner() == &rhs)
     impl_->set_owner(this);
   rhs.impl_ = nullptr;
@@ -367,15 +367,14 @@ void snode::assign(const snode& rhs, uint32_t size) {
   this->assign(rhs.impl_, false);
 }
 
-void snode::assign(const bitvector& value, uint32_t size) {
-  assert(value.get_size() == size);
-  if (nullptr== impl_) {
-    this->ensureInitialized(size);
+void snode::assign(const bitvector& value) {
+  if (nullptr == impl_) {
+    this->ensureInitialized(value.get_size());
   } else {
     if (impl_->get_owner() != this) {
       this->clone(false);
     } else {
-      impl_->clear_sources(0, size);
+      impl_->clear_sources(0, value.get_size());
     }
   }
   impl_->write(value);
@@ -399,22 +398,22 @@ void snode::assign(snodeimpl* impl, bool is_owner) {
 }
 
 void snode::assign(uint32_t dst_offset,
-                    snodeimpl* src,
-                    uint32_t src_offset,
-                    uint32_t src_length,
-                    uint32_t size,
-                    bool is_owner) {
+                   const snode& src,
+                   uint32_t src_offset,
+                   uint32_t src_length,
+                   uint32_t size,
+                   bool is_owner) {
    assert((dst_offset + src_length) <= size);
    // check if full replacement
-   if (size == src_length && size == src->get_size()) {
+   if (size == src_length && size == src.get_size()) {
      assert(0 == dst_offset && 0 == src_offset);
-     this->assign(src, is_owner);
+     this->assign(src.impl_, is_owner);
    } else {
      // partial assignment
      this->ensureInitialized(size);
      if (impl_->get_owner() != this)
        this->clone(true);
-     impl_->add_source(dst_offset, src, src_offset, src_length);
+     impl_->add_source(dst_offset, src.impl_, src_offset, src_length);
    }
  }
 
@@ -455,7 +454,7 @@ void snode::read_data(data_type& inout,
                       uint32_t length) const {
   assert((offset + length) <= inout.capacity());
   this->ensureInitialized(inout.capacity());
-  inout.push_back({impl_, offset, length});
+  inout.push_back({*this, offset, length});
 }
 
 void snode::write_data(uint32_t dst_offset,

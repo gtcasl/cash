@@ -65,6 +65,7 @@
       bus_type() {} \
       bus_type(const bus_type& rhs) : CH_FOR_EACH(CH_STRUCT_CTOR_INIT, CH_SEP_COMMA, __VA_ARGS__) {} \
       bus_type(CH_REVERSE_FOR_EACH(CH_STRUCT_BUS_CTOR_ARG, CH_SEP_COMMA, __VA_ARGS__)) : CH_FOR_EACH(CH_STRUCT_CTOR_ARG_INIT, CH_SEP_COMMA, __VA_ARGS__) {} \
+      bus_type(const base& rhs) { base::operator=(rhs); } \
       bus_type& operator=(const bus_type& rhs) { \
         CH_FOR_EACH(CH_STRUCT_ASSIGN, CH_SEP_SEMICOLON, __VA_ARGS__); \
         return *this; \
@@ -83,6 +84,7 @@
     name() {} \
     name(const name& rhs) : CH_FOR_EACH(CH_STRUCT_CTOR_INIT, CH_SEP_COMMA, __VA_ARGS__) {} \
     name(CH_REVERSE_FOR_EACH(CH_STRUCT_CTOR_ARG, CH_SEP_COMMA, __VA_ARGS__)) : CH_FOR_EACH(CH_STRUCT_CTOR_ARG_INIT, CH_SEP_COMMA, __VA_ARGS__) {} \
+    name(const base& rhs) { base::operator=(rhs); } \
     name& operator=(const name& rhs) { \
       CH_FOR_EACH(CH_STRUCT_ASSIGN, CH_SEP_SEMICOLON, __VA_ARGS__); \
       return *this; \

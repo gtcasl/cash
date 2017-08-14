@@ -79,6 +79,14 @@ public:
   context* get_ctx() const {
     return ctx_;
   }
+
+  void add_ref(const lnode* node, const lnode* src);
+
+  void remove_ref(const lnode* node);
+
+  void update_refs(const lnode* node);
+
+  void replace_refs(const lnode* old_node, const lnode* new_node);
   
   uint32_t get_num_srcs() const {
     return srcs_.size();
@@ -120,10 +128,28 @@ public:
   virtual void print_vl(std::ostream& out) const = 0;
 
 protected:
+
+  struct ref_t {
+    const lnode* node;
+    const lnode* src;
+
+    ref_t(const lnode* p_node = nullptr, const lnode* p_src = nullptr)
+      : node(p_node), src(p_src)
+    {}
+
+    bool operator ==(const ref_t& rhs) const {
+      return (node == rhs.node);
+    }
+
+    bool operator <(const ref_t& rhs) const {
+      return (node < rhs.node);
+    }
+  };
   
   uint32_t id_;
   ch_operator op_;
   context* ctx_;
+  std::list<ref_t> refs_;
   std::vector<lnode> srcs_;
   bitvector value_; 
   

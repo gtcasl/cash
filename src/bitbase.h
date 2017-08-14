@@ -5,8 +5,6 @@
 namespace cash {
 namespace detail {
 
-template <unsigned N> class ch_bit;
-
 template <unsigned N> using const_bitref = const_typeref<N, lnode::data_type>;
 template <unsigned N> using bitref = typeref<N, lnode::data_type>;
 template <unsigned N> using ch_bitbase = typebase<N, lnode::data_type>;
@@ -80,10 +78,8 @@ public:
  
 #define CH_DEF_AOP(type) \
   typebase& operator=(type rhs) { \
-    ch_bit<N> b(rhs); \
-    data_type data(N, true); \
-    detail::read_data(b, data, 0, N); \
-    this->write_data(0, data, 0, N); \
+    lnode node(bitvector(N, rhs)); \
+    this->write_data(0, {node, 0 , N}, 0, N); \
     return *this; \
   } 
   CH_DEF_AOP(const std::initializer_list<uint32_t>&)
@@ -102,11 +98,10 @@ public:
 
 template <unsigned N>
 lnode get_node(const ch_bitbase<N>& b) {
-  lnode::data_type data(N, true);
+  lnode::data_type data(N);
   b.read_data(data, 0, N);
   return lnode(data);
 }
-
 
 }
 }

@@ -16,11 +16,11 @@ public:
   T next;
 
   ch_seq() : next(*this) {
-    T::operator=(createRegNode(get_node(next).get_impl(), nullptr));
+    T::operator=(ch_reg(next));
   }
   
   ch_seq(const T& init) : next(*this) {
-    T::operator=(createRegNode(get_node(next).get_impl(), get_node(init).get_impl()));
+    T::operator=(ch_reg(next, init));
   }
 
   const_sliceref<base, 1> operator[](size_t index) {

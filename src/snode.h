@@ -1,7 +1,6 @@
 #pragma once
 
 #include "typebase.h"
-#include "bitvector.h"
 
 namespace cash {
 namespace detail {
@@ -11,7 +10,7 @@ class snodeimpl;
 class snode {
 public:
   
-  using data_type = nodebuf<snodeimpl*>;
+  using data_type = nodebuf<snode>;
   
   snode();
 
@@ -25,7 +24,7 @@ public:
 
   snode(const data_type& data);
 
-  snode(const bitvector& value, uint32_t size);
+  snode(const bitvector& value);
 
   ~snode();
   
@@ -59,7 +58,7 @@ public:
 
   void assign(const snode& rhs, uint32_t size);
 
-  void assign(const bitvector& rhs, uint32_t size);
+  void assign(const bitvector& rhs);
 
   void read_data(data_type& inout,
                  uint32_t offset,
@@ -77,7 +76,7 @@ protected:
   void clear();
   
   void assign(uint32_t dst_offset,
-              snodeimpl* src,
+              const snode& src,
               uint32_t src_offset,
               uint32_t src_length,
               uint32_t size,

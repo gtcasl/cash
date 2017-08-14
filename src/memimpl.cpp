@@ -137,7 +137,7 @@ void memportimpl::write(lnodeimpl* data) {
   if (wdata_id_ == -1) {
     wdata_id_ = srcs_.size();
     if (ctx_->conditional_enabled(this)) {
-      srcs_.emplace_back(ctx_->resolve_conditional(this, data));
+      srcs_.emplace_back(ctx_->resolve_conditional(data, this));
     } else {
       srcs_.emplace_back(data);
     }

@@ -23,12 +23,14 @@ public:
   
   ch_bit(const ch_bit& rhs) : node_(rhs.node_, N) {}
 
+  ch_bit(ch_bit&& rhs) : node_(std::move(rhs.node_)) {}
+
   ch_bit(const ch_bitbase<N>& rhs) : node_(get_node(rhs), N) {}
   
-  ch_bit(const bitvector& rhs) : node_(rhs, N) {}
+  ch_bit(const bitvector& rhs) : node_(rhs) {}
     
 #define CH_DEF_CTOR(type) \
-    ch_bit(type value) : node_(bitvector(N, value), N) { \
+    ch_bit(type value) : node_(bitvector(N, value)) { \
     }
   CH_DEF_CTOR(const std::initializer_list<uint32_t>&)
   CH_DEF_CTOR(bool)
@@ -51,9 +53,14 @@ public:
     node_.assign(rhs.node_, N);
     return *this;
   }
+
+  ch_bit& operator=(ch_bit&& rhs) {
+    node_ = std::move(rhs.node_);
+    return *this;
+  }
   
   ch_bit& operator=(const bitvector& rhs) {
-    node_.assign(rhs, N);
+    node_.assign(rhs);
     return *this;
   }
 
@@ -71,7 +78,7 @@ public:
   
 #define CH_DEF_AOP(type) \
   ch_bit& operator=(type value) { \
-    node_.assign(bitvector(N, value), N); \
+    node_.assign(bitvector(N, value)); \
     return *this; \
   } 
   CH_DEF_AOP(const std::initializer_list<uint32_t>&)

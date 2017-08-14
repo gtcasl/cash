@@ -225,7 +225,7 @@ bool context::conditional_enabled(lnodeimpl* node) const {
        && 0 == cond_blocks_.front().locals.count(node));
 }
 
-void context::move_block_local(lnodeimpl* dst, lnodeimpl* src) {
+void context::erase_block_local(lnodeimpl* src, lnodeimpl* dst) {
   if (cond_blocks_.empty())
     return;
   cond_block_t& block = cond_blocks_.front();
@@ -243,7 +243,7 @@ void context::move_block_local(lnodeimpl* dst, lnodeimpl* src) {
   }
 }
 
-lnodeimpl* context::resolve_conditional(lnodeimpl* dst, lnodeimpl* src) {
+lnodeimpl* context::resolve_conditional(lnodeimpl* src, lnodeimpl* dst) {
   assert(dst && src);
   // check if node conditionally assigned
   if (!this->conditional_enabled(dst))

@@ -1,7 +1,6 @@
 #pragma once
 
 #include "typebase.h"
-#include "bitvector.h"
 
 namespace cash {
 namespace detail {
@@ -14,7 +13,7 @@ using ch_cycle = uint64_t;
 class lnode {
 public:
   
-  using data_type = nodebuf<lnodeimpl*>;
+  using data_type = nodebuf<lnode>;
 
   lnode();
 
@@ -22,7 +21,7 @@ public:
 
   explicit lnode(lnodeimpl* impl);
 
-  explicit lnode(const bitvector& value, uint32_t size);
+  explicit lnode(const bitvector& value);
 
   explicit lnode(const data_type& data);
 
@@ -58,7 +57,7 @@ public:
 
   void assign(const lnode& rhs, uint32_t size);
 
-  void assign(const bitvector& value, uint32_t size);
+  void assign(const bitvector& value);
   
   void read_data(data_type& inout,
                  uint32_t offset,
@@ -78,18 +77,18 @@ protected:
   void move(lnode& rhs);
   
   void init(uint32_t dst_offset,
-            lnodeimpl* src,
+            lnodeimpl* src_impl,
+            const lnode* src_node,
             uint32_t src_offset,
             uint32_t src_length,
-            uint32_t size,
-            bool readonly);
+            uint32_t size);
 
   void assign(uint32_t dst_offset,
-              lnodeimpl* src,
+              lnodeimpl* src_impl,
+              const lnode* src_node,
               uint32_t src_offset,
               uint32_t src_length,
-              uint32_t size,
-              bool readonly);
+              uint32_t size);
   
   mutable lnodeimpl* impl_;
   

@@ -5,6 +5,7 @@ namespace detail {
 
 class lnode;
 class lnodeimpl;
+class undefimpl;
 class proxyimpl;
 class litimpl;
 class ioimpl;
@@ -43,8 +44,8 @@ public:
   void begin_block(lnodeimpl* cond);
   void end_block();
   bool conditional_enabled(lnodeimpl* node = nullptr) const;
-  lnodeimpl* resolve_conditional(lnodeimpl* dst, lnodeimpl* src);
-  void move_block_local(lnodeimpl* dst, lnodeimpl* src);
+  lnodeimpl* resolve_conditional(lnodeimpl* src, lnodeimpl* dst);
+  void erase_block_local(lnodeimpl* src, lnodeimpl* dst);
   
   lnodeimpl* create_literal(const bitvector& value);
   

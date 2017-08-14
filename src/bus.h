@@ -15,10 +15,12 @@ public:
   ch_bus() {}
   
   ch_bus(const ch_bus& rhs) : node_(rhs.node_, N) {}
+
+  ch_bus(ch_bus&& rhs) : node_(std::move(rhs.node_)) {}
   
   ch_bus(const ch_busbase<N>& rhs) : node_(get_node(rhs)) {}
   
-  explicit ch_bus(const bitvector& rhs) : node_(rhs, N) {}
+  explicit ch_bus(const bitvector& rhs) : node_(rhs) {}
  
 #define CH_DEF_CTOR(type) \
   explicit ch_bus(type value) : node_(bitvector(N, value), N) {}
@@ -44,8 +46,13 @@ public:
     return *this;
   }
 
+  ch_bus& operator=(ch_bus&& rhs) {
+    node_ = std::move(rhs.node_);
+    return *this;
+  }
+
   ch_bus& operator=(const bitvector& rhs) {
-    node_.assign(rhs, N);
+    node_.assign(rhs);
     return *this;
   }
 
@@ -76,27 +83,27 @@ public:
   CH_DEF_AOP(int64_t)
   CH_DEF_AOP(uint64_t)
 #undef CH_DEF_AOP
-  
+
   bool operator==(const ch_bus& rhs) const {
     return node_.is_equal(rhs.node_, N);
   }
-  
+
   bool operator<(const ch_bus& rhs) const {
     return node_.is_less(rhs.node_, N);
-  } 
-  
+  }
+
   bool operator!=(const ch_bus& rhs) const {
     return !(*this == rhs);
   }
-  
+
   bool operator>(const ch_bus& rhs) const {
     return (rhs < *this);
   }
-  
+
   bool operator<=(const ch_bus& rhs) const {
     return !(*this > rhs);
   }
-  
+
   bool operator>=(const ch_bus& rhs) const {
     return !(*this < rhs);
   }
@@ -155,6 +162,34 @@ protected:
 
   friend class context;
 };
+
+#define CH_DEF_COMP_IMPL(op, type) \
+  template <unsigned N> bool op(const ch_busbase<N>& lhs, type rhs) { \
+    return lhs.op(ch_bus<N>(rhs)); \
+  } \
+  template <unsigned N> bool op(type lhs, const ch_busbase<N>& rhs) { \
+    return ch_bus<N>(lhs).op(rhs); \
+  }
+
+#define CH_DEF_COMP(type) \
+  CH_DEF_COMP_IMPL(operator==, type) \
+  CH_DEF_COMP_IMPL(operator!=, type) \
+  CH_DEF_COMP_IMPL(operator< , type) \
+  CH_DEF_COMP_IMPL(operator> , type) \
+  CH_DEF_COMP_IMPL(operator<=, type) \
+  CH_DEF_COMP_IMPL(operator>=, type)
+  CH_DEF_COMP(const std::initializer_list<uint32_t>&)
+  CH_DEF_COMP(char)
+  CH_DEF_COMP(int8_t)
+  CH_DEF_COMP(uint8_t)
+  CH_DEF_COMP(int16_t)
+  CH_DEF_COMP(uint16_t)
+  CH_DEF_COMP(int32_t)
+  CH_DEF_COMP(uint32_t)
+  CH_DEF_COMP(int64_t)
+  CH_DEF_COMP(uint64_t)
+#undef CH_DEF_COMP
+#undef CH_DEF_COMP_IMPL
 
 }
 }
