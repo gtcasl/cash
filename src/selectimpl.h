@@ -14,7 +14,7 @@ public:
   }
 
   void set_cond(lnodeimpl* impl) {
-    srcs_[0] = impl;
+    srcs_[0].set_impl(impl);
   }
   
   lnodeimpl* get_true() const {
@@ -22,7 +22,7 @@ public:
   }
 
   void set_true(lnodeimpl* impl) {
-    srcs_[1] = impl;
+    srcs_[1].set_impl(impl);
   }
   
   lnodeimpl* get_false() const {
@@ -30,7 +30,7 @@ public:
   }
 
   void set_false(lnodeimpl* impl) {
-    srcs_[2] = impl;
+    srcs_[2].set_impl(impl);
   }
 
   const bitvector& eval(ch_cycle t) override;  

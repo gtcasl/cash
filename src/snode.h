@@ -14,31 +14,29 @@ public:
   
   snode();
 
+  explicit snode(snodeimpl* impl);
+
+  explicit snode(const data_type& data);
+
+  explicit snode(const bitvector& value);
+
   snode(const snode& rhs);
 
   snode(const snode& rhs, uint32_t size);
 
   snode(snode&& rhs);
 
-  explicit snode(snodeimpl* impl);
-
-  snode(const data_type& data);
-
-  snode(const bitvector& value);
-
   ~snode();
   
-  snodeimpl* get_impl() const;
-  
   snode& operator=(const snode& rhs);
-
-  snode& operator=(snodeimpl* rhs);
   
   snode& operator=(snode&& rhs);
   
   bool is_equal(const snode& rhs, uint32_t size) const;
   
   bool is_less(const snode& rhs, uint32_t size) const;
+
+  snodeimpl* get_impl() const;
   
   uint32_t get_size() const;
   
@@ -62,12 +60,14 @@ public:
 
   void read_data(data_type& inout,
                  uint32_t offset,
-                 uint32_t length) const;
+                 uint32_t length,
+                 uint32_t size) const;
   
   void write_data(uint32_t dst_offset,
                   const data_type& in,
                   uint32_t src_offset,
-                  uint32_t src_length);
+                  uint32_t src_length,
+                  uint32_t size);
 
 protected:
 

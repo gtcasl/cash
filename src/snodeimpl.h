@@ -7,8 +7,8 @@ namespace detail {
 
 class snodeimpl : public refcounted {
 public:
-  snodeimpl(uint32_t size);
-  snodeimpl(const bitvector& value);
+  explicit snodeimpl(uint32_t size);
+  explicit snodeimpl(const bitvector& value);
   ~snodeimpl();  
   
   uint32_t get_id() const {

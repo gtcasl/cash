@@ -142,7 +142,7 @@ void memportimpl::write(lnodeimpl* data) {
       srcs_.emplace_back(data);
     }
   } else {
-    srcs_[wdata_id_] = data;
+    srcs_[wdata_id_].assign(data);
   }
 }
 

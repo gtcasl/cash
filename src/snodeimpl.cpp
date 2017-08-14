@@ -275,13 +275,13 @@ snode::snode(const snode& rhs, uint32_t size) : snode() {
 snode::snode(const data_type& data) : snode() {
   uint32_t dst_offset = 0;
   for (auto& d : data) {
-    this->assign(dst_offset, d.src, d.offset, d.length, data.capacity(), true);
+    this->assign(dst_offset, d.src, d.offset, d.length, data.capacity(), false);
     dst_offset += d.length;
   }
 }
 
 snode::snode(const bitvector& value) : snode() {
-  this->assign(value, value.get_size());
+  this->assign(value);
 }
 
 snode::~snode() {
@@ -304,11 +304,6 @@ snode& snode::operator=(const snode& rhs) {
 
 snode& snode::operator=(snode&& rhs) {
   this->move(rhs);
-  return *this;
-}
-
-snode& snode::operator=(snodeimpl* rhs) {
-  this->assign(rhs, true);
   return *this;
 }
 
@@ -451,21 +446,23 @@ void snode::write(const uint8_t* in,
 
 void snode::read_data(data_type& inout,
                       uint32_t offset,
-                      uint32_t length) const {
-  assert((offset + length) <= inout.capacity());
-  this->ensureInitialized(inout.capacity());
+                      uint32_t length,
+                      uint32_t size) const {
+  assert((offset + length) <= size);
+  this->ensureInitialized(size);
   inout.push_back({*this, offset, length});
 }
 
 void snode::write_data(uint32_t dst_offset,
                        const data_type& in,
                        uint32_t src_offset,
-                       uint32_t src_length) {
-  assert((dst_offset + src_length) <= in.capacity());
+                       uint32_t src_length,
+                       uint32_t size) {
+  assert((dst_offset + src_length) <= size);
   for (auto& d : in) {
     if (src_offset < d.length) {
       size_t len = std::min(d.length - src_offset, src_length);
-      this->assign(dst_offset, d.src, d.offset + src_offset, len, in.capacity(), false);
+      this->assign(dst_offset, d.src, d.offset + src_offset, len, size, false);
       src_length -= len;
       if (0 == src_length)
         return;

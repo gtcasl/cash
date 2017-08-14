@@ -64,11 +64,6 @@ public:
     return *this;
   }
 
-  ch_bit& operator=(lnodeimpl* rhs) {
-    node_ = rhs;
-    return *this;
-  }
-
   ch_bit& operator=(const ch_bitbase<N>& rhs) {
     data_type data(N);
     rhs.read_data(data, 0, N);
@@ -99,16 +94,14 @@ protected:
   void read_data(data_type& inout,
                  size_t offset,
                  size_t length) const override {
-    assert(inout.capacity() == N);
-    node_.read_data(inout, offset, length);
+    node_.read_data(inout, offset, length, N);
   }
   
   void write_data(size_t dst_offset,
                   const data_type& in,
                   size_t src_offset,
                   size_t src_length) override {
-    assert(in.capacity() == N);
-    node_.write_data(dst_offset, in, src_offset, src_length);
+    node_.write_data(dst_offset, in, src_offset, src_length, N);
   }
   
   lnode node_;

@@ -17,7 +17,7 @@ public:
 
   lnode();
 
-  lnode(uint32_t size);
+  explicit lnode(uint32_t size);
 
   explicit lnode(lnodeimpl* impl);
 
@@ -33,15 +33,13 @@ public:
 
   ~lnode();
 
-  lnodeimpl* get_impl() const;
-
-  void set_impl(lnodeimpl* impl);
-
   lnode& operator=(const lnode& rhs);
 
   lnode& operator=(lnode&& rhs);
 
-  lnode& operator=(lnodeimpl* impl);
+  lnodeimpl* get_impl() const;
+
+  void set_impl(lnodeimpl* impl);
   
   uint32_t get_id() const;
   
@@ -57,16 +55,20 @@ public:
 
   void assign(const lnode& rhs, uint32_t size);
 
+  void assign(lnodeimpl* impl);
+
   void assign(const bitvector& value);
-  
+
   void read_data(data_type& inout,
                  uint32_t offset,
-                 uint32_t length) const;
+                 uint32_t length,
+                 uint32_t size) const;
   
   void write_data(uint32_t dst_offset,
                   const data_type& in,
                   uint32_t src_offset,
-                  uint32_t src_length);
+                  uint32_t src_length,
+                  uint32_t size);
 
 protected:
 

@@ -23,7 +23,7 @@ public:
   explicit ch_bus(const bitvector& rhs) : node_(rhs) {}
  
 #define CH_DEF_CTOR(type) \
-  explicit ch_bus(type value) : node_(bitvector(N, value), N) {}
+  explicit ch_bus(type value) : node_(bitvector(N, value)) {}
   CH_DEF_CTOR(const std::initializer_list<uint32_t>&)
   CH_DEF_CTOR(bool)
   CH_DEF_CTOR(char)
@@ -55,11 +55,6 @@ public:
     node_.assign(rhs);
     return *this;
   }
-
-  ch_bus& operator=(snodeimpl* rhs) {
-    node_ = rhs;
-    return *this;
-  }
   
   ch_bus& operator=(const ch_busbase<N>& rhs) {
     base::operator =(rhs);
@@ -68,7 +63,7 @@ public:
 
 #define CH_DEF_AOP(type) \
   ch_bus& operator=(type value) { \
-    node_.assign(bitvector(N, value), N); \
+    node_.assign(bitvector(N, value)); \
     return *this; \
   } 
   CH_DEF_AOP(const std::initializer_list<uint32_t>&)
@@ -149,13 +144,11 @@ public:
 protected:
   
   void read_data(data_type& inout, size_t offset, size_t length) const override {
-    assert(inout.capacity() == N);
-    node_.read_data(inout, offset, length);
+    node_.read_data(inout, offset, length, N);
   }
   
   void write_data(size_t dst_offset, const data_type& in, size_t src_offset, size_t src_length) override {
-    assert(in.capacity() == N);
-    node_.write_data(dst_offset, in, src_offset, src_length);
+    node_.write_data(dst_offset, in, src_offset, src_length, N);
   }
   
   snode node_;
