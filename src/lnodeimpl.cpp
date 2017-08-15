@@ -26,7 +26,7 @@ lnodeimpl::~lnodeimpl() {
 void lnodeimpl::add_ref(const lnode* node, const lnode* src) {
   auto it = std::find(refs_.begin(), refs_.end(), node);
   if (it != refs_.end()) {
-      it->src = src;
+    it->src = src;
   } else {
     refs_.emplace_back(node, src);
   }
@@ -34,15 +34,18 @@ void lnodeimpl::add_ref(const lnode* node, const lnode* src) {
 
 void lnodeimpl::remove_ref(const lnode* node) {
   auto it = std::find(refs_.begin(), refs_.end(), node);
+  const lnode* src = nullptr;
   if (it != refs_.end()) {
-    this->replace_refs(it->node, it->src);
+    src = it->src;
     refs_.erase(it);
   }
+  this->replace_refs(node, src);
 }
 
 void lnodeimpl::update_refs(const lnode* node) {
   for (auto& ref: refs_) {
     if (ref.src == node) {
+      this->update_refs(ref.node, this);
       const_cast<lnode*>(ref.src)->set_impl(this);
     }
   }
@@ -169,6 +172,13 @@ lnode& lnode::operator=(lnode&& rhs) {
   return *this;
 }
 
+void lnode::clear() {
+  if (impl_) {
+    impl_->remove_ref(this);
+  }
+  impl_ = nullptr;
+}
+
 void lnode::assign(const lnode& rhs, uint32_t size) {
   rhs.ensureInitialized(size);
   this->assign(0, rhs.impl_, &rhs, 0, size, size);
@@ -203,13 +213,6 @@ bool lnode::ready() const {
 
 bool lnode::valid() const {
   return impl_ ? impl_->valid() : true;
-}
-
-void lnode::clear() {
-  if (impl_) {
-    impl_->remove_ref(this);
-  }
-  impl_ = nullptr;
 }
 
 const bitvector& lnode::eval(ch_cycle t) {
@@ -255,7 +258,10 @@ void lnode::init(uint32_t dst_offset,
   context* ctx = src_impl->get_ctx();
 
   if (src_length == size) {
-    impl_ = src_impl;
+    impl_ = src_impl;    
+    if (src_node) {
+      impl_->add_ref(this, src_node);
+    }
   } else {
     auto proxy = dynamic_cast<proxyimpl*>(impl_);
     if (nullptr == proxy) {
@@ -266,9 +272,6 @@ void lnode::init(uint32_t dst_offset,
       impl_ = proxy;
     }
     proxy->add_source(dst_offset, src_impl, src_offset, src_length);
-  }
-  if (src_node) {
-    impl_->add_ref(this, src_node);
   }
 }
 
@@ -307,9 +310,6 @@ void lnode::assign(uint32_t dst_offset,
       if (src_impl == dst)
         return;
       proxy->add_source(dst_offset, src_impl, src_offset, src_length);
-      if (src_node) {
-        impl_->add_ref(this, src_node);
-      }
     } else {
       lnodeimpl* dst = impl_;
       if (nullptr == dst) {
@@ -322,10 +322,10 @@ void lnode::assign(uint32_t dst_offset,
       impl_ = src_impl;
     }
   } else {
-    this->init(dst_offset, src_impl, src_node, src_offset, src_length, size);
-  }  
-  if (src_node) {
-    impl_->update_refs(this);
+    this->init(dst_offset, src_impl, src_node, src_offset, src_length, size);    
+    if (src_node && impl_ && src_length == size) {
+      impl_->update_refs(this);
+    }
   }
 }
 
