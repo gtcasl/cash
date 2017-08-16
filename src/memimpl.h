@@ -16,8 +16,8 @@ public:
   void load(const std::string& file);
   void load(const std::vector<uint8_t>& data);
   
-  memportimpl* read(lnodeimpl* addr);
-  void write(lnodeimpl* addr, lnodeimpl* data);  
+  memportimpl* read(const lnode& addr);
+  void write(const lnode& addr, const lnode& data);
   
   void tick(ch_cycle t) override;
   void tick_next(ch_cycle t) override;
@@ -34,7 +34,7 @@ protected:
   
   void load_data(const std::function<bool(uint8_t* out)>& getdata);
   
-  memportimpl* get_port(lnodeimpl* addr, bool writing);
+  memportimpl* get_port(const lnode& addr, bool writing);
   
   uint32_t data_width_;
   uint32_t addr_width_;
@@ -46,13 +46,13 @@ protected:
 
 class memportimpl : public lnodeimpl {
 public:  
-  memportimpl(memimpl* mem, lnodeimpl* addr);
+  memportimpl(memimpl* mem, const lnode& addr);
   
-  lnodeimpl* get_addr() const {
+  const lnode& get_addr() const {
     return srcs_[addr_id_].get_impl();
   }
   
-  void write(lnodeimpl* data);  
+  void write(const lnode& data);
   
   void tick(ch_cycle t);
   void tick_next(ch_cycle t);

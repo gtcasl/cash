@@ -8,8 +8,8 @@ namespace detail {
 
 class aluimpl : public lnodeimpl {
 public:
-  aluimpl(ch_alu_op alu_op, uint32_t size, lnodeimpl* a, lnodeimpl* b);
-  aluimpl(ch_alu_op alu_op, uint32_t size, lnodeimpl* a);
+  aluimpl(ch_alu_op alu_op, uint32_t size, const lnode& a, const lnode& b);
+  aluimpl(ch_alu_op alu_op, uint32_t size, const lnode& a);
   
   ch_alu_op get_alu_op() const {
     return alu_op_;

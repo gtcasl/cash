@@ -7,7 +7,7 @@ namespace detail {
 
 class selectimpl : public lnodeimpl {
 public:
-  selectimpl(lnodeimpl* cond, lnodeimpl* true_, lnodeimpl* false_);
+  selectimpl(const lnode& cond, const lnode& true_, const lnode& false_);
   
   lnodeimpl* get_cond() const {
     return srcs_[0].get_impl();

@@ -8,7 +8,7 @@
 using namespace std;
 using namespace cash::detail;
 
-selectimpl::selectimpl(lnodeimpl* cond, lnodeimpl* true_, lnodeimpl* false_) 
+selectimpl::selectimpl(const lnode& cond, const lnode& true_, const lnode& false_)
   : lnodeimpl(op_select, cond->get_ctx(), true_->get_size())
   , ctime_(~0ull) {
   srcs_.emplace_back(cond);

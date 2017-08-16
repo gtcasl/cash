@@ -54,16 +54,16 @@ void memimpl::load(const std::string& file) {
   in.close();
 }
 
-memportimpl* memimpl::read(lnodeimpl* addr) {
+memportimpl* memimpl::read(const lnode& addr) {
   return this->get_port(addr, false);
 }
 
-void memimpl::write(lnodeimpl* addr, lnodeimpl* data) {
+void memimpl::write(const lnode& addr, const lnode& data) {
   memportimpl* port = this->get_port(addr, true);
   port->write(data);  
 }
 
-memportimpl* memimpl::get_port(lnodeimpl* addr, bool writing) {
+memportimpl* memimpl::get_port(const lnode& addr, bool writing) {
   memportimpl* port = nullptr; 
   for (uint32_t i = ports_offset_, n = srcs_.size(); i < n; ++i) {
     memportimpl* const item  = dynamic_cast<memportimpl*>(srcs_[i].get_impl());
@@ -121,7 +121,7 @@ void memimpl::print_vl(ostream& out) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-memportimpl::memportimpl(memimpl* mem, lnodeimpl* addr)
+memportimpl::memportimpl(memimpl* mem, const lnode& addr)
   : lnodeimpl(op_memport, addr->get_ctx(), mem->data_width_)
   , a_next_(0)
   , addr_id_(-1)
@@ -132,7 +132,7 @@ memportimpl::memportimpl(memimpl* mem, lnodeimpl* addr)
   srcs_.emplace_back(addr);
 }
 
-void memportimpl::write(lnodeimpl* data) {
+void memportimpl::write(const lnode& data) {
   // use explicit assignment to force conditionals resolution
   if (wdata_id_ == -1) {
     wdata_id_ = srcs_.size();
@@ -193,10 +193,10 @@ void memory::load(const std::string& file) {
   impl_->load(file);
 }
 
-lnodeimpl* memory::read(lnodeimpl* addr) const {
+lnodeimpl* memory::read(const lnode& addr) const {
   return impl_->read(addr);
 }
 
-void memory::write(lnodeimpl* addr, lnodeimpl* data) {
+void memory::write(const lnode& addr, const lnode& data) {
   impl_->write(addr, data);
 }

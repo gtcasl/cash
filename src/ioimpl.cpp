@@ -49,7 +49,7 @@ void inputimpl::print(std::ostream& out, uint32_t level) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-outputimpl::outputimpl(ch_operator op, lnodeimpl* src) 
+outputimpl::outputimpl(ch_operator op, const lnode& src)
   : ioimpl(op, src->get_ctx(), src->get_size())
   , bus_(nullptr)
   , ctime_(~0ull) {
@@ -91,7 +91,7 @@ void outputimpl::print(std::ostream& out, uint32_t level) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-tapimpl::tapimpl(const std::string& name, lnodeimpl* src) 
+tapimpl::tapimpl(const std::string& name, const lnode& src)
   : outputimpl(op_tap, src)
   , tapName_(name) {
   srcs_.reserve(1);

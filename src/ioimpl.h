@@ -40,8 +40,8 @@ protected:
 
 class outputimpl : public ioimpl {
 public:
-  outputimpl(ch_operator op, lnodeimpl* src);
-  outputimpl(lnodeimpl* src)
+  outputimpl(ch_operator op, const lnode& src);
+  outputimpl(const lnode& src)
     : outputimpl(op_output, src)
   {}
 
@@ -64,7 +64,7 @@ private:
 
 class tapimpl : public outputimpl {
 public:
-  tapimpl(const std::string& name, lnodeimpl* src);
+  tapimpl(const std::string& name, const lnode& src);
   
   const lnode& get_target() const {
     return srcs_[0];

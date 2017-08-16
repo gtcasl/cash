@@ -470,7 +470,7 @@ static void compareop(bitvector& dst, const bitvector& a, const bitvector& b) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-aluimpl::aluimpl(ch_alu_op alu_op, uint32_t size, lnodeimpl* a, lnodeimpl* b) 
+aluimpl::aluimpl(ch_alu_op alu_op, uint32_t size, const lnode& a, const lnode& b)
   : lnodeimpl(to_operator(alu_op), a->get_ctx(), size)
   , alu_op_(alu_op)
   , ctime_(~0ull) {
@@ -478,7 +478,7 @@ aluimpl::aluimpl(ch_alu_op alu_op, uint32_t size, lnodeimpl* a, lnodeimpl* b)
   srcs_.emplace_back(b);
 }
 
-aluimpl::aluimpl(ch_alu_op alu_op, uint32_t size, lnodeimpl* a) 
+aluimpl::aluimpl(ch_alu_op alu_op, uint32_t size, const lnode& a)
   : lnodeimpl(to_operator(alu_op), a->get_ctx(), size)
   , alu_op_(alu_op)
   , ctime_(~0ull) {

@@ -9,14 +9,14 @@ proxyimpl::proxyimpl(context* ctx, uint32_t size)
   , ctime_(~0ull) 
 {}
 
-proxyimpl::proxyimpl(lnodeimpl* src)
+proxyimpl::proxyimpl(const lnode& src)
   : lnodeimpl(op_proxy, src->get_ctx(), src->get_size())
   , ctime_(~0ull)  {
   this->add_source(0, src, 0, src->get_size());
 }
 
 void proxyimpl::add_source(uint32_t dst_offset,
-                           lnodeimpl* src,
+                           const lnode& src,
                            uint32_t src_offset,
                            uint32_t src_length) {
   // add new source

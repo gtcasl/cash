@@ -55,8 +55,6 @@ public:
 
   void assign(const lnode& rhs, uint32_t size);
 
-  void assign(lnodeimpl* impl);
-
   void assign(const bitvector& value);
 
   void read_data(data_type& inout,
@@ -79,15 +77,13 @@ protected:
   void move(lnode& rhs);
   
   void init(uint32_t dst_offset,
-            lnodeimpl* src_impl,
-            const lnode* src_node,
+            const lnode& src,
             uint32_t src_offset,
             uint32_t src_length,
             uint32_t size);
 
   void assign(uint32_t dst_offset,
-              lnodeimpl* src_impl,
-              const lnode* src_node,
+              const lnode& src,
               uint32_t src_offset,
               uint32_t src_length,
               uint32_t size);

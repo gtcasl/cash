@@ -184,11 +184,6 @@ void lnode::assign(const lnode& rhs, uint32_t size) {
   this->assign(0, rhs.impl_, &rhs, 0, size, size);
 }
 
-void lnode::assign(lnodeimpl* impl) {
-  assert(impl);
-  this->assign(0, impl, nullptr, 0, impl->get_size(), impl->get_size());
-}
-
 void lnode::assign(const bitvector& value) {
   auto impl = ctx_curr()->create_literal(value);
   this->assign(0, impl, nullptr, 0, value.get_size(), value.get_size());
@@ -247,8 +242,7 @@ void lnode::ensureInitialized(uint32_t size) const {
 }
 
 void lnode::init(uint32_t dst_offset,
-                 lnodeimpl* src_impl,
-                 const lnode* src_node,
+                 lnodeimpl* src,
                  uint32_t src_offset,
                  uint32_t src_length,
                  uint32_t size) {
@@ -276,8 +270,7 @@ void lnode::init(uint32_t dst_offset,
 }
 
 void lnode::assign(uint32_t dst_offset,
-                   lnodeimpl* src_impl,
-                   const lnode* src_node,
+                   lnodeimpl* src,
                    uint32_t src_offset,
                    uint32_t src_length,
                    uint32_t size) {

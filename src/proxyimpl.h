@@ -8,10 +8,10 @@ namespace detail {
 class proxyimpl : public lnodeimpl {
 public:  
   proxyimpl(context* ctx, uint32_t size);
-  proxyimpl(lnodeimpl* src);
+  proxyimpl(const lnode& src);
   
   void add_source(uint32_t dst_offset,
-                  lnodeimpl* src,
+                  const lnode& src,
                   uint32_t src_offset,
                   uint32_t src_length);
 
