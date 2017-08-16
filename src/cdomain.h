@@ -15,19 +15,19 @@ enum EDGE_DIR {
 class clock_event {
 public:  
   clock_event();
-  clock_event(lnodeimpl* signal, EDGE_DIR edgedir);
+  clock_event(const lnode& signal, EDGE_DIR edgedir);
   ~clock_event();
   
-  lnodeimpl* get_signal() const {
-    return signal_.get_impl();
+  const lnode& get_signal() const {
+    return signal_;
   }
   
   EDGE_DIR get_edgedir() const {
     return edgedir_;
   }
   
-  bool operator==(lnodeimpl* signal) const {
-    return (signal_.get_id() == signal->get_id());
+  bool operator==(const lnode& signal) const {
+    return (signal_.get_id() == signal.get_id());
   }
   
   bool operator==(const clock_event& e) const {

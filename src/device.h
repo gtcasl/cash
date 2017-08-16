@@ -140,12 +140,12 @@ protected:
 
   template <unsigned N>
   lnodeimpl* bind_input(const ch_busbase<N>& bus) const {
-    return this->bind_input_(get_node(bus).get_impl());
+    return this->bind_input_(get_node(bus));
   }
   
   template <unsigned N>
   snodeimpl* bind_output(const ch_bitbase<N>& output) const {
-    return this->bind_output_(get_node(output).get_impl());
+    return this->bind_output_(get_node(output));
   }
   
   lnodeimpl* bind_input_(snodeimpl* bus) const;

@@ -195,6 +195,6 @@ void ch_tracer::tick(ch_cycle t) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void cash::detail::register_tap(const string& name, lnodeimpl* node) {
+void cash::detail::register_tap(const string& name, const lnode& node) {
   node->get_ctx()->register_tap(name, node);
 }

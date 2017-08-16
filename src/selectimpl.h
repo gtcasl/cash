@@ -9,28 +9,28 @@ class selectimpl : public lnodeimpl {
 public:
   selectimpl(const lnode& cond, const lnode& true_, const lnode& false_);
   
-  lnodeimpl* get_cond() const {
-    return srcs_[0].get_impl();
+ const lnode& get_cond() const {
+    return srcs_[0];
   }
 
-  void set_cond(lnodeimpl* impl) {
-    srcs_[0].set_impl(impl);
+  void set_cond(const lnode& node) {
+    srcs_[0] = node;
   }
   
-  lnodeimpl* get_true() const {
-    return srcs_[1].get_impl();
+  const lnode& get_true() const {
+    return srcs_[1];
   }
 
-  void set_true(lnodeimpl* impl) {
-    srcs_[1].set_impl(impl);
+  void set_true(const lnode& node) {
+    srcs_[1] = node;
   }
   
-  lnodeimpl* get_false() const {
-    return srcs_[2].get_impl();
+  const lnode& get_false() const {
+    return srcs_[2];
   }
 
-  void set_false(lnodeimpl* impl) {
-    srcs_[2].set_impl(impl);
+  void set_false(const lnode& node) {
+    srcs_[2] = node;
   }
 
   const bitvector& eval(ch_cycle t) override;  

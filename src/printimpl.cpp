@@ -64,8 +64,8 @@ static const char* parse_format_index(fmtinfo_t* out, const char* str) {
   return str;
 }
 
-printimpl::printimpl(context* ctx, lnodeimpl* cond, const std::string& format, 
-                     const std::initializer_list<lnodeimpl*>& args) 
+printimpl::printimpl(context* ctx, const lnode& cond, const std::string& format,
+                     const std::initializer_list<const lnode&>& args)
   : ioimpl(op_print, ctx, 0)
   , format_(format)
   , args_offset_(0)
@@ -120,8 +120,8 @@ void printimpl::print_vl(std::ostream& out) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void cash::detail::createPrintNode(lnodeimpl* cond, const std::string& format,
-                     const std::initializer_list<lnodeimpl*>& args) {
+void cash::detail::createPrintNode(const lnode& cond, const std::string& format,
+                     const std::initializer_list<const lnode&>& args) {
   // printing is only enabled in debug mode
   if (0 == platform::self().get_dbg_level())
     return;

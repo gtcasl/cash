@@ -48,12 +48,12 @@ public:
     
   template <unsigned N> 
   void add_trace(const std::string& name, const ch_bus<N>& bus) {
-    this->add_trace(name, get_node(bus).get_impl());
+    this->add_trace(name, get_node(bus));
   }  
   
   template <unsigned N> 
   void add_trace(const std::string& name, const ch_busbase<N>& bus) {
-    this->add_trace(name, get_node(bus).get_impl());
+    this->add_trace(name, get_node(bus));
   }
   
   void tick(ch_cycle t) override;
@@ -78,16 +78,16 @@ protected:
   std::ostream& out_;
 };
 
-void register_tap(const std::string& name, lnodeimpl* node);
+void register_tap(const std::string& name, const lnode& node);
 
 template <unsigned N> 
 void ch_tap(const std::string& name, const ch_bit<N>& v) { 
-  register_tap(name, get_node(v).get_impl());
+  register_tap(name, get_node(v));
 }
 
 template <unsigned N> 
 void ch_tap(const std::string& name, const ch_bitbase<N>& v) { 
-  register_tap(name, get_node(v).get_impl());
+  register_tap(name, get_node(v));
 }
 
 }

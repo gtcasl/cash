@@ -7,7 +7,7 @@ namespace detail {
 
 class assertimpl : public ioimpl {
 public:
-  assertimpl(lnodeimpl* src, const std::string& msg);
+  assertimpl(const lnode& src, const std::string& msg);
   
   const bitvector& eval(ch_cycle t) override;
   

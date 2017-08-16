@@ -9,11 +9,11 @@ namespace detail {
 
 class regimpl : public tickable, public lnodeimpl {
 public:
-  regimpl(lnodeimpl* next);
+  regimpl(const lnode& next);
   virtual ~regimpl();
   
-  lnodeimpl* get_next() const {
-    return srcs_[0].get_impl();
+  const lnode& get_next() const {
+    return srcs_[0];
   }
   
   const bitvector& eval(ch_cycle t) override;  
@@ -31,10 +31,10 @@ protected:
 class latchimpl : public tickable, public lnodeimpl {
 public:
   latchimpl(
-      lnodeimpl* next,
-      lnodeimpl* init,
-      lnodeimpl* enable,      
-      lnodeimpl* reset
+      const lnode& next,
+      const lnode& init,
+      const lnode& enable,
+      const lnode& reset
   );
   virtual ~latchimpl();
   

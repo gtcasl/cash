@@ -12,7 +12,7 @@ public:
     
   template <typename Func>
   if_t& elif_(const ch_bitbase<1>& cond, const Func& func) {
-    this->eval(get_node(cond).get_impl(), to_function(func));
+    this->eval(get_node(cond), to_function(func));
     return *this; 
   }
   
@@ -25,9 +25,9 @@ protected:
   
   using func_t = std::function<void ()>;
   
-  if_t(lnodeimpl* cond, func_t func);
+  if_t(const lnode& cond, func_t func);
   
-  void eval(lnodeimpl* cond, func_t func);
+  void eval(const lnode& cond, func_t func);
   
   template <typename Func> 
   friend if_t ch_if(const ch_bitbase<1>& cond, const Func& func);
@@ -35,7 +35,7 @@ protected:
 
 template <typename Func> 
 if_t ch_if(const ch_bitbase<1>& cond, const Func& func) {
-  return if_t(get_node(cond).get_impl(), to_function(func));
+  return if_t(get_node(cond), to_function(func));
 }
 
 }

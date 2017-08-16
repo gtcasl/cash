@@ -121,8 +121,8 @@ enum ch_alu_op {
   CH_ALUOP_ENUM(CH_ALUOP_TYPE)
 };
 
-lnodeimpl* createAluNode(ch_alu_op op, uint32_t size, lnodeimpl* a, lnodeimpl* b);
-lnodeimpl* createAluNode(ch_alu_op op, uint32_t size, lnodeimpl* a);
+lnodeimpl* createAluNode(ch_alu_op op, uint32_t size, const lnode& a, const lnode& b);
+lnodeimpl* createAluNode(ch_alu_op op, uint32_t size, const lnode& a);
 
 // compare operators
 
@@ -163,22 +163,22 @@ CH_SHIFTOP_GEN1(ch_rotr)
 
 template <ch_alu_op op, unsigned N, unsigned M>
 ch_bit<N> OpBinary(const ch_bitbase<N>& a, const ch_bitbase<M>& b) {
-  return ch_bit<N>(createAluNode(op, N, get_node(a).get_impl(), get_node(b).get_impl()));
+  return ch_bit<N>(createAluNode(op, N, get_node(a), get_node(b)));
 }
 
 template <ch_alu_op op, unsigned N>
 ch_bit<1> OpCompare(const ch_bitbase<N>& a, const ch_bitbase<N>& b) {
-  return ch_bit<1>(createAluNode(op, 1, get_node(a).get_impl(), get_node(b).get_impl()));
+  return ch_bit<1>(createAluNode(op, 1, get_node(a), get_node(b)));
 }
 
 template <ch_alu_op op, unsigned N>
 ch_bit<N> OpUnary(const ch_bitbase<N>& a) {
-  return ch_bit<N>(createAluNode(op, N, get_node(a).get_impl()));
+  return ch_bit<N>(createAluNode(op, N, get_node(a)));
 }
 
 template <ch_alu_op op, unsigned N>
 ch_bit<1> OpReduce(const ch_bitbase<N>& a) {
-  return ch_bit<1>(createAluNode(op, 1, get_node(a).get_impl()));
+  return ch_bit<1>(createAluNode(op, 1, get_node(a)));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -339,12 +339,12 @@ ch_bit<N> ch_mod(const ch_bitbase<N>& a, const ch_bitbase<N>& b) {
 
 template <unsigned N, unsigned S>
 ch_bit<(N >> S)> ch_mux(const ch_bitbase<N>& in, const ch_bitbase<S>& sel) {
-  return ch_bit<(N >> S)>(createAluNode(alu_op_mux, (N >> S), get_node(in).get_impl(), get_node(sel).get_impl()));
+  return ch_bit<(N >> S)>(createAluNode(alu_op_mux, (N >> S), get_node(in), get_node(sel)));
 }
 
 template <unsigned N, unsigned S> 
 ch_bit<(N << S)> ch_demux(const ch_bitbase<N>& in, const ch_bitbase<S>& sel) {
-  return ch_bit<(N << S)>(createAluNode(alu_op_mux, (N << S), get_node(in).get_impl(), get_node(sel).get_impl()));
+  return ch_bit<(N << S)>(createAluNode(alu_op_mux, (N << S), get_node(in), get_node(sel)));
 }
 
 ///////////////////////////////////////////////////////////////////////////////

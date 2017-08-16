@@ -6,10 +6,10 @@
 using namespace std;
 using namespace cash::detail;
 
-regimpl::regimpl(lnodeimpl* next)
-  : lnodeimpl(op_reg, next->get_ctx(), next->get_size()) {
-  context* ctx = next->get_ctx();  
-  lnodeimpl* clk = ctx->get_clk();
+regimpl::regimpl(const lnode& next)
+  : lnodeimpl(op_reg, next.get_ctx(), next.get_size()) {
+  context* ctx = next.get_ctx();
+  const lnode& clk = ctx->get_clk();
 
   cd_ = ctx->create_cdomain({clock_event(clk, EDGE_POS)});
   cd_->add_use(this);
@@ -43,12 +43,12 @@ void regimpl::print_vl(ostream& out) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-latchimpl::latchimpl(lnodeimpl* next,
-                     lnodeimpl* init,
-                     lnodeimpl* enable,                 
-                     lnodeimpl* reset)
-  : lnodeimpl(op_latch, next->get_ctx(), next->get_size()) {
-  context* ctx = next->get_ctx();
+latchimpl::latchimpl(const lnode& next,
+                     const lnode& init,
+                     const lnode& enable,
+                     const lnode& reset)
+  : lnodeimpl(op_latch, next.get_ctx(), next.get_size()) {
+  context* ctx = next.get_ctx();
 
   cd_ = ctx->create_cdomain(
     {clock_event(enable, EDGE_ANY), clock_event(next, EDGE_ANY),
@@ -94,7 +94,7 @@ ch_bit<1> cash::detail::ch_clock() {
 }
 
 void cash::detail::ch_pushclock(const ch_bitbase<1>& clk) {
-  ctx_curr()->push_clk(get_node(clk).get_impl());
+  ctx_curr()->push_clk(get_node(clk));
 }
 
 void cash::detail::ch_popclock() {
@@ -106,33 +106,34 @@ ch_bit<1> cash::detail::ch_reset() {
 }
 
 void cash::detail::ch_pushreset(const ch_bitbase<1>& reset) {
-  ctx_curr()->push_reset(get_node(reset).get_impl());
+  ctx_curr()->push_reset(get_node(reset));
 }
 
 void cash::detail::ch_popreset() {
   ctx_curr()->pop_reset();
 }
 
-lnodeimpl* cash::detail::createRegNode(lnodeimpl* next, lnodeimpl* init) {
+lnodeimpl* cash::detail::createRegNode(const lnode& next, const lnode& init) {
   context* const ctx = ctx_curr();
   if (nullptr == init)
     init = ctx->create_literal(bitvector(next->get_size(), 0));
   return new regimpl(createSelectNode(ctx->get_reset(), init, next));
 }
 
-lnodeimpl* cash::detail::createLatchNode(lnodeimpl* next,
-                                       lnodeimpl* init, 
-                                       lnodeimpl* enable, 
-                                       lnodeimpl* reset) {
+lnodeimpl* cash::detail::createLatchNode(
+    const lnode& next,
+    const lnode& init,
+    const lnode& enable,
+    const lnode& reset) {
   return new latchimpl(next, init, enable, reset);
 }
 
-lnodeimpl* cash::detail::createReadyNode(lnodeimpl* node) {
+lnodeimpl* cash::detail::createReadyNode(const lnode& node) {
   CH_UNUSED(node);
   CH_TODO();
 }
 
-lnodeimpl* cash::detail::createValidNode(lnodeimpl* node) {
+lnodeimpl* cash::detail::createValidNode(const lnode& node) {
   CH_UNUSED(node);
   CH_TODO();
 }

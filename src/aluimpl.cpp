@@ -604,11 +604,16 @@ void aluimpl::print_vl(std::ostream& out) const {
 } 
 
 lnodeimpl* cash::detail::createAluNode(
-    ch_alu_op op, uint32_t size, lnodeimpl* a, lnodeimpl* b) {
+    ch_alu_op op,
+    uint32_t size,
+    lconst lnode& a,
+    const lnode& b) {
   return new aluimpl(op, size, a, b); 
 }
 
 lnodeimpl* cash::detail::createAluNode(
-    ch_alu_op op, uint32_t size, lnodeimpl* a) {
+    ch_alu_op op,
+    uint32_t size,
+    const lnode& a) {
   return new aluimpl(op, size, a);
 }

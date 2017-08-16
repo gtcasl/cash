@@ -11,7 +11,7 @@ clock_event::clock_event()
   , cval_(false)
 {}
 
-clock_event::clock_event(lnodeimpl* signal, EDGE_DIR edgedir)
+clock_event::clock_event(const lnode& signal, EDGE_DIR edgedir)
   : signal_(signal)
   , edgedir_(edgedir)
   , cval_(false) 

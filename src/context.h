@@ -26,13 +26,13 @@ public:
 
   //--
 
-  void push_clk(lnodeimpl* clk);
+  void push_clk(const lnode& clk);
   void pop_clk();
-  lnodeimpl* get_clk();
+  const lnode& get_clk();
 
-  void push_reset(lnodeimpl* reset);
+  void push_reset(const lnode& reset);
   void pop_reset();
-  lnodeimpl* get_reset();
+  const lnode& get_reset();
 
   //--
   
@@ -57,7 +57,7 @@ public:
   lnodeimpl* bind_input(snodeimpl* bus);  
   snodeimpl* bind_output(lnodeimpl* output);
   
-  void register_tap(const std::string& name, lnodeimpl* lnode);
+  void register_tap(const std::string& name, const lnode& lnode);
   snodeimpl* get_tap(const std::string& name, uint32_t size);
   
   //--

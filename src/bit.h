@@ -6,9 +6,9 @@
 namespace cash {
 namespace detail {
 
-void createPrintNode(lnodeimpl* cond,
+void createPrintNode(const lnode& cond,
                      const std::string& format,
-                     const std::initializer_list<lnodeimpl*>& args);
+                     const std::initializer_list<const lnode&>& args);
 
 template <unsigned N> class ch_bus;
 
@@ -248,25 +248,25 @@ ch_bit<64> ch_tick();
 
 template <typename...Args>
 void ch_print(const std::string& format, const Args& ...args) {
-  createPrintNode(nullptr, format, {get_node(args).get_impl()...});
+  createPrintNode(nullptr, format, {get_node(args)...});
 }
 
 template <typename...Args>
 void ch_print(const ch_bitbase<1>& cond,
               const std::string& format,
               const Args& ...args) {
-  createPrintNode(get_node(cond).get_impl(),
+  createPrintNode(get_node(cond),
                   format,
-                  {get_node(args).get_impl()...});
+                  {get_node(args)...});
 }
 
 template <typename...Args>
 void ch_print(const ch_bit<1>& cond,
               const std::string& format,
               const Args& ...args) {
-  createPrintNode(get_node(cond).get_impl(),
+  createPrintNode(get_node(cond),
                   format,
-                  {get_node(args).get_impl()...});
+                  {get_node(args)...});
 }
 
 }

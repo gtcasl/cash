@@ -49,7 +49,7 @@ public:
   memportimpl(memimpl* mem, const lnode& addr);
   
   const lnode& get_addr() const {
-    return srcs_[addr_id_].get_impl();
+    return srcs_[addr_id_];
   }
   
   void write(const lnode& data);

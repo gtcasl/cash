@@ -46,7 +46,7 @@ context::~context() {
   assert(cond_blocks_.empty());
 }
 
-void context::push_clk(lnodeimpl* clk) {
+void context::push_clk(const lnode& clk) {
   clk_stack_.emplace(clk);
 }
 
@@ -54,7 +54,7 @@ void context::pop_clk() {
   clk_stack_.pop();
 }
 
-void context::push_reset(lnodeimpl* reset) {
+void context::push_reset(const lnode& reset) {
   reset_stack_.emplace(reset);
 }
 
@@ -62,17 +62,17 @@ void context::pop_reset() {
   reset_stack_.pop();
 }
 
-lnodeimpl* context::get_clk() {
+const lnode& context::get_clk() {
   if (!clk_stack_.empty())
-    return clk_stack_.top().get_impl();
+    return clk_stack_.top();
   if (nullptr == clk_)
     clk_ = new inputimpl(op_clk, this, 1);
   return clk_;
 }
 
-lnodeimpl* context::get_reset() {
+const lnode& context::get_reset() {
   if (!reset_stack_.empty())
-    return reset_stack_.top().get_impl();
+    return reset_stack_.top();
   if (nullptr == reset_)
      reset_ = new inputimpl(op_reset, this, 1);
   return reset_;
@@ -243,7 +243,7 @@ void context::erase_block_local(lnodeimpl* src, lnodeimpl* dst) {
   }
 }
 
-lnodeimpl* context::resolve_conditional(lnodeimpl* src, lnodeimpl* dst) {
+lnodeimpl* context::resolve_conditional(const lnode& src, const lnode& dst) {
   assert(dst && src);
   // check if node conditionally assigned
   if (!this->conditional_enabled(dst))

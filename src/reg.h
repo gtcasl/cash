@@ -6,11 +6,11 @@
 namespace cash {
 namespace detail {
 
-lnodeimpl* createRegNode(lnodeimpl* next, lnodeimpl* init);
-lnodeimpl* createLatchNode(lnodeimpl* next, lnodeimpl* init, lnodeimpl* enable, lnodeimpl* reset);
+lnodeimpl* createRegNode(const lnode& next, const lnode& init);
+lnodeimpl* createLatchNode(const lnode& next, const lnode& init, const lnode& enable, const lnode& reset);
 
-lnodeimpl* createReadyNode(lnodeimpl* node);
-lnodeimpl* createValidNode(lnodeimpl* node);
+lnodeimpl* createReadyNode(const lnode& node);
+lnodeimpl* createValidNode(const lnode& node);
 
 ch_bit<1> ch_clock();
 void ch_pushclock(const ch_bitbase<1>& clk);
@@ -22,17 +22,17 @@ void ch_popreset();
 
 template <unsigned N>
 ch_bit<1> ch_ready(const ch_bitbase<N>& x) {
-  return ch_bit<1>(createReadyNode(get_node(x).get_impl()));
+  return ch_bit<1>(createReadyNode(get_node(x)));
 }
 
 template <unsigned N>
 ch_bit<1> ch_valid(const ch_bitbase<N>& x) {
-  return ch_bit<1>(createValidNode(get_node(x).get_impl()));
+  return ch_bit<1>(createValidNode(get_node(x)));
 }
 
 template <unsigned N>
 ch_bit<N> ch_reg(const ch_bitbase<N>& next, const ch_bitbase<N>& init) {
-  return ch_bit<N>(createRegNode(get_node(next).get_impl(), get_node(init).get_impl()));
+  return ch_bit<N>(createRegNode(get_node(next), get_node(init)));
 }
 
 template <unsigned N>
@@ -55,10 +55,10 @@ template <unsigned N>
 ch_bit<N> ch_latch(const ch_bitbase<N>& next, 
                    const ch_bitbase<1>& enable,
                    const ch_bitbase<N>& init) {
-  return ch_bit<N>(createLatchNode(get_node(next).get_impl(),
-                                   get_node(init).get_impl(),
-                                   get_node(enable).get_impl(),
-                                   get_node(ch_reset()).get_impl()));
+  return ch_bit<N>(createLatchNode(get_node(next),
+                                   get_node(init),
+                                   get_node(enable),
+                                   get_node(ch_reset())));
 }
 
 template <unsigned N>

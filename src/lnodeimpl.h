@@ -100,12 +100,12 @@ public:
     return srcs_;
   }
   
-  lnodeimpl* get_src(unsigned i) const {
-    return srcs_[i].get_impl();
+  const lnode& get_src(unsigned i) const {
+    return srcs_[i];
   }
   
-  lnodeimpl* get_src(unsigned i) {
-    return srcs_[i].get_impl();
+  const lnode& get_src(unsigned i) {
+    return srcs_[i];
   }
   
   uint32_t get_size() const {
