@@ -25,13 +25,13 @@ context::context()
   : node_ids_(0)
   , block_ids_(0)
   , clk_(nullptr)
-  , reset_(nullptr) 
+  , reset_(nullptr)
 {}
 
 context::~context() {  
   // delete all nodes
-  for (auto iter = nodes_.begin(), iterEnd = nodes_.end(); iter != iterEnd;) {
-    delete *iter++;
+  for (auto node : nodes_) {
+    delete node;
   }
   assert(undefs_.empty());
   assert(proxies_.empty());
@@ -40,39 +40,40 @@ context::~context() {
   assert(outputs_.empty());
   assert(taps_.empty());
   assert(gtaps_.empty());
-  assert(nullptr == clk_);
-  assert(nullptr == reset_);
   assert(cdomains_.empty());
   assert(cond_blocks_.empty());
+
+  assert(nullptr == clk_);
+  assert(nullptr == reset_);
 }
 
 void context::push_clk(const lnode& clk) {
-  clk_stack_.emplace(clk);
+  user_clks_.emplace(clk);
 }
 
 void context::pop_clk() {
-  clk_stack_.pop();
+  user_clks_.pop();
 }
 
 void context::push_reset(const lnode& reset) {
-  reset_stack_.emplace(reset);
+  user_resets_.emplace(reset);
 }
 
 void context::pop_reset() {
-  reset_stack_.pop();
+  user_resets_.pop();
 }
 
-const lnode& context::get_clk() {
-  if (!clk_stack_.empty())
-    return clk_stack_.top();
+lnodeimpl* context::get_clk() {
+  if (!user_clks_.empty())
+    return user_clks_.top().get_impl();
   if (nullptr == clk_)
     clk_ = new inputimpl(op_clk, this, 1);
   return clk_;
 }
 
-const lnode& context::get_reset() {
-  if (!reset_stack_.empty())
-    return reset_stack_.top();
+lnodeimpl* context::get_reset() {
+  if (!user_resets_.empty())
+    return user_resets_.top().get_impl();
   if (nullptr == reset_)
      reset_ = new inputimpl(op_reset, this, 1);
   return reset_;
@@ -164,7 +165,7 @@ void context::remove_node(lnodeimpl* node) {
   default:
     break;
   }
-  
+
   if (node == clk_) {
     clk_ = nullptr;
   } else
@@ -192,12 +193,12 @@ void context::begin_block(lnodeimpl* cond) {
   if (nullptr == cond_u) {
     for (auto c : branch.conds) {
       if (cond_u) {
-        cond_u = createAluNode(alu_op_or, 1, c, cond_u);
+        cond_u = createAluNode(alu_op_or, c, cond_u);
       } else {
         cond_u = c;
       }
     }
-    cond_u = createAluNode(alu_op_inv, 1, cond_u);
+    cond_u = createAluNode(alu_op_inv, cond_u);
   }
   branch.conds.emplace_back(cond_u);
 
@@ -208,7 +209,7 @@ void context::begin_block(lnodeimpl* cond) {
       auto parent_branch = std::next(cond_branches_.begin());
       parent_cond = parent_branch->conds.back();
     }
-    cond = createAluNode(alu_op_and, 1, parent_cond, cond_u);
+    cond = createAluNode(alu_op_and, parent_cond, cond_u);
   }
 
   cond_blocks_.emplace_front(block_ids_++, cond);
@@ -225,31 +226,22 @@ bool context::conditional_enabled(lnodeimpl* node) const {
        && 0 == cond_blocks_.front().locals.count(node));
 }
 
-void context::erase_block_local(lnodeimpl* src, lnodeimpl* dst) {
-  if (cond_blocks_.empty())
-    return;
-  cond_block_t& block = cond_blocks_.front();
-  if (block.locals.count(src)
-   && 0 == block.locals.count(dst)) {
-    block.locals.erase(src); // remove from local scope
-    if (dst) {
-      for (auto& b : cond_blocks_) {
-        if (b.locals.count(dst)) {
-          b.locals.insert(src);
-          return;
-        }
-      }
-    }
-  }
+void context::conditional_split(lnode& dst, uint32_t offset, uint32_t length) {
+  CH_UNUSED(dst, offset, length);
+  CH_TODO();
 }
 
-lnodeimpl* context::resolve_conditional(const lnode& src, const lnode& dst) {
-  assert(dst && src);
-  // check if node conditionally assigned
-  if (!this->conditional_enabled(dst))
-    return src;
+void context::conditional_assign(
+    lnode& dst,
+    const lnode& src,
+    uint32_t offset,
+    uint32_t length) {
+  assert(this->conditional_enabled(dst.get_impl()));
 
-  // get the current conditional value
+  CH_UNUSED(dst, src, offset, length);
+  CH_TODO();
+
+  /*// get the current conditional block
   cond_block_t& block = cond_blocks_.front();
 
   // lookup for last conditional assignment to dst
@@ -285,11 +277,11 @@ lnodeimpl* context::resolve_conditional(const lnode& src, const lnode& dst) {
           );
         var_iter->updates.emplace_front(sel, block.id);
       } else {
-        // last 'default' assignment
+        // 'default' last assignment
         var_iter->updates.back().sel->set_false(src);
       }
     } else {
-      // last assignment happened in current block
+      // reassignment in current block
       assert(block.id == last_upd.block_id && block.cond);
       last_upd.sel->set_true(src);
     }
@@ -308,7 +300,25 @@ lnodeimpl* context::resolve_conditional(const lnode& src, const lnode& dst) {
     dst = sel;
   }
 
-  return dst;
+  return dst;*/
+}
+
+void context::erase_block_local(lnodeimpl* src, lnodeimpl* dst) {
+  if (cond_blocks_.empty())
+    return;
+  cond_block_t& block = cond_blocks_.front();
+  if (block.locals.count(src)
+   && 0 == block.locals.count(dst)) {
+    block.locals.erase(src); // remove from local scope
+    if (dst) {
+      for (auto& b : cond_blocks_) {
+        if (b.locals.count(dst)) {
+          b.locals.insert(src);
+          return;
+        }
+      }
+    }
+  }
 }
 
 lnodeimpl* context::create_literal(const bitvector& value) {
@@ -320,14 +330,15 @@ lnodeimpl* context::create_literal(const bitvector& value) {
   return new litimpl(this, value);
 }
 
-cdomain* context::create_cdomain(const std::vector<clock_event>& sensitivity_list) {
+cdomain* context::create_cdomain(
+    const std::vector<clock_event>& sensitivity_list) {
   // return existing cdomain 
   for (cdomain* cd : cdomains_) {
     if (*cd == sensitivity_list)
       return cd;
   }  
   // allocate new cdomain
-  cdomain* const cd = new cdomain(this, sensitivity_list);
+  cdomain* cd = new cdomain(this, sensitivity_list);
   cdomains_.emplace_back(cd);
   return cd;
 }
@@ -336,18 +347,18 @@ void context::remove_cdomain(cdomain* cd) {
   cdomains_.remove(cd);
 }
 
-lnodeimpl* context::bind_input(snodeimpl* bus) {
-  inputimpl* const impl = new inputimpl(this, bus->get_size());
+lnodeimpl* context::bind_input(const snode& bus) {
+  inputimpl* impl = new inputimpl(this, bus.get_size());
   impl->bind(bus);
   return impl;
 }
 
-snodeimpl* context::bind_output(lnodeimpl* output) {
-  outputimpl* const impl = new outputimpl(output);
+snodeimpl* context::bind_output(const lnode& output) {
+  outputimpl* impl = new outputimpl(output);
   return impl->get_bus();
 }
 
-void context::register_tap(const std::string& name, lnodeimpl* node) {
+void context::register_tap(const std::string& name, const lnode& node) {
   // resolve duplicate names
   string full_name(name);
   unsigned instances = dup_taps_[name]++;
@@ -438,7 +449,12 @@ void context::dump_ast(std::ostream& out, uint32_t level) {
   }
 }
 
-static void dump_cfg_impl(lnodeimpl* node, std::ostream& out, uint32_t level, std::vector<bool>& visits, const std::map<uint32_t, tapimpl*>& taps) {
+static void dump_cfg_impl(
+    lnodeimpl* node,
+    std::ostream& out,
+    uint32_t level,
+    std::vector<bool>& visits,
+    const std::map<uint32_t, tapimpl*>& taps) {
   visits[node->get_id()] = true;
   node->print(out, level);
   
@@ -541,7 +557,7 @@ void context::dump_stats(std::ostream& out) {
 ///////////////////////////////////////////////////////////////////////////////
 
 context* cash::detail::ctx_begin() {
-  context* const ctx = new context();
+  auto ctx = new context();
   tls_ctx = ctx;
   ctx->acquire();
   return ctx;

@@ -8,7 +8,7 @@ namespace detail {
 
 void createPrintNode(const lnode& cond,
                      const std::string& format,
-                     const std::initializer_list<const lnode&>& args);
+                     const std::initializer_list<lnode>& args);
 
 template <unsigned N> class ch_bus;
 
@@ -30,8 +30,7 @@ public:
   ch_bit(const bitvector& rhs) : node_(rhs) {}
     
 #define CH_DEF_CTOR(type) \
-    ch_bit(type value) : node_(bitvector(N, value)) { \
-    }
+    ch_bit(type value) : node_(bitvector(N, value)) {}
   CH_DEF_CTOR(const std::initializer_list<uint32_t>&)
   CH_DEF_CTOR(bool)
   CH_DEF_CTOR(char)
@@ -44,7 +43,7 @@ public:
   CH_DEF_CTOR(int64_t)
   CH_DEF_CTOR(uint64_t)
 #undef CH_DEF_CTOR
-  
+
   explicit ch_bit(lnodeimpl* node) : node_(node) {
     assert(node_.get_size() == N);
   }
@@ -110,14 +109,38 @@ protected:
 // concatenation operator
 
 #define CH_CONCAT_GEN(cB, cA, B, A) \
-  template <unsigned NB, unsigned NA> auto operator,(cB b, cA a) { return b.template concat(a); } \
-  template <unsigned NB, unsigned NA> auto operator,(cB b, A a) { return b.template concat(a); } \
-  template <unsigned NB, unsigned NA> auto operator,(B b, cA a) { return b.template concat(a); } \
-  template <unsigned NB, unsigned NA> auto operator,(B b, A a) { return b.template concat(a); } \
-  template <unsigned NB, unsigned NA> auto ch_concat(cB b, cA a) { return b.template concat(a); } \
-  template <unsigned NB, unsigned NA> auto ch_concat(cB b, A a) { return b.template concat(a); } \
-  template <unsigned NB, unsigned NA> auto ch_concat(B b, cA a) { return b.template concat(a); } \
-  template <unsigned NB, unsigned NA> auto ch_concat(B b, A a) { return b.template concat(a); }
+  template <unsigned NB, unsigned NA> \
+  auto operator,(cB b, cA a) { \
+    return b.template concat(a); \
+  } \
+  template <unsigned NB, unsigned NA> \
+  auto operator,(cB b, A a) { \
+    return b.template concat(a); \
+  } \
+  template <unsigned NB, unsigned NA> \
+  auto operator,(B b, cA a) { \
+    return b.template concat(a); \
+  } \
+  template <unsigned NB, unsigned NA> \
+  auto operator,(B b, A a) { \
+    return b.template concat(a); \
+  } \
+  template <unsigned NB, unsigned NA> \
+  auto ch_concat(cB b, cA a) { \
+    return b.template concat(a); \
+  } \
+  template <unsigned NB, unsigned NA> \
+  auto ch_concat(cB b, A a) { \
+    return b.template concat(a); \
+  } \
+  template <unsigned NB, unsigned NA> \
+  auto ch_concat(B b, cA a) { \
+    return b.template concat(a); \
+  } \
+  template <unsigned NB, unsigned NA> \
+  auto ch_concat(B b, A a) { \
+    return b.template concat(a); \
+  }
 
 CH_CONCAT_GEN(const const_bitref<NB>&,
               const const_bitref<NA>&,
@@ -255,18 +278,14 @@ template <typename...Args>
 void ch_print(const ch_bitbase<1>& cond,
               const std::string& format,
               const Args& ...args) {
-  createPrintNode(get_node(cond),
-                  format,
-                  {get_node(args)...});
+  createPrintNode(get_node(cond), format, {get_node(args)...});
 }
 
 template <typename...Args>
 void ch_print(const ch_bit<1>& cond,
               const std::string& format,
               const Args& ...args) {
-  createPrintNode(get_node(cond),
-                  format,
-                  {get_node(args)...});
+  createPrintNode(get_node(cond), format, {get_node(args)...});
 }
 
 }

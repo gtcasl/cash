@@ -9,7 +9,7 @@ using namespace cash::detail;
 regimpl::regimpl(const lnode& next)
   : lnodeimpl(op_reg, next.get_ctx(), next.get_size()) {
   context* ctx = next.get_ctx();
-  const lnode& clk = ctx->get_clk();
+  lnodeimpl* clk = ctx->get_clk();
 
   cd_ = ctx->create_cdomain({clock_event(clk, EDGE_POS)});
   cd_->add_use(this);
@@ -93,11 +93,11 @@ ch_bit<1> cash::detail::ch_clock() {
   return ch_bit<1>(ctx_curr()->get_clk());
 }
 
-void cash::detail::ch_pushclock(const ch_bitbase<1>& clk) {
+void cash::detail::ch_push_clock(const ch_bitbase<1>& clk) {
   ctx_curr()->push_clk(get_node(clk));
 }
 
-void cash::detail::ch_popclock() {
+void cash::detail::ch_pop_clock() {
   ctx_curr()->pop_clk();
 }
 
@@ -105,19 +105,17 @@ ch_bit<1> cash::detail::ch_reset() {
   return ch_bit<1>(ctx_curr()->get_reset());
 }
 
-void cash::detail::ch_pushreset(const ch_bitbase<1>& reset) {
+void cash::detail::ch_push_reset(const ch_bitbase<1>& reset) {
   ctx_curr()->push_reset(get_node(reset));
 }
 
-void cash::detail::ch_popreset() {
+void cash::detail::ch_pop_reset() {
   ctx_curr()->pop_reset();
 }
 
-lnodeimpl* cash::detail::createRegNode(const lnode& next, const lnode& init) {
-  context* const ctx = ctx_curr();
-  if (nullptr == init)
-    init = ctx->create_literal(bitvector(next->get_size(), 0));
-  return new regimpl(createSelectNode(ctx->get_reset(), init, next));
+lnodeimpl* cash::detail:: createRegNode(const lnode& next, const lnode& init) {
+  lnodeimpl* reset = ctx_curr()->get_reset();
+  return new regimpl(createSelectNode(reset, init, next));
 }
 
 lnodeimpl* cash::detail::createLatchNode(

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "lnodeimpl.h"
+#include "snode.h"
 
 namespace cash {
 namespace detail {
@@ -23,19 +24,17 @@ public:
 
   ~inputimpl();
   
-  void bind(snodeimpl* bus);
+  void bind(const snode& bus);
 
   const bitvector& eval(ch_cycle t) override;
   
   void print(std::ostream& out, uint32_t level) const override;
   
-  void print_vl(std::ostream& out) const override {
-    CH_UNUSED(out);
-  }
+  void print_vl(std::ostream& out) const override;
   
 protected:
-  snodeimpl* bus_;
-  ch_cycle ctime_;
+  snode bus_;
+  ch_cycle   ctime_;
 };
 
 class outputimpl : public ioimpl {
@@ -47,15 +46,13 @@ public:
 
   ~outputimpl();
   
-  const bitvector& eval(ch_cycle t) override;
-  
   snodeimpl* get_bus();
+
+  const bitvector& eval(ch_cycle t) override;
   
   void print(std::ostream& out, uint32_t level) const override;
   
-  void print_vl(std::ostream& out) const override {
-    CH_UNUSED(out);
-  }
+  void print_vl(std::ostream& out) const override;
   
 private:
   snodeimpl* bus_;
@@ -80,9 +77,7 @@ public:
   
   void print(std::ostream& out, uint32_t level) const override;
   
-  void print_vl(std::ostream& out) const override {
-    CH_UNUSED(out);
-  }
+  void print_vl(std::ostream& out) const override;
   
 protected:
   std::string  tapName_;

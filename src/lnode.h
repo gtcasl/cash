@@ -6,6 +6,7 @@ namespace cash {
 namespace detail {
 
 class lnodeimpl;
+class proxyimpl;
 class context;
 
 using ch_cycle = uint64_t;
@@ -17,13 +18,7 @@ public:
 
   lnode();
 
-  explicit lnode(uint32_t size);
-
-  explicit lnode(lnodeimpl* impl);
-
-  explicit lnode(const bitvector& value);
-
-  explicit lnode(const data_type& data);
+  ~lnode();
 
   lnode(const lnode& rhs);
 
@@ -31,15 +26,27 @@ public:
 
   lnode(lnode&& rhs);
 
-  ~lnode();
+  explicit lnode(uint32_t size);
+
+  lnode(lnodeimpl* impl);
+
+  lnode(const bitvector& value);
+
+  lnode(const data_type& data);
 
   lnode& operator=(const lnode& rhs);
 
   lnode& operator=(lnode&& rhs);
 
-  lnodeimpl* get_impl() const;
+  bool operator==(const lnode& rhs) const;
+
+  bool operator<(const lnode& rhs) const;
+
+  bool is_empty() const;
 
   void set_impl(lnodeimpl* impl);
+
+  lnodeimpl* get_impl() const;
   
   uint32_t get_id() const;
   
@@ -71,6 +78,8 @@ public:
 protected:
 
   void ensureInitialized(uint32_t size) const;
+
+  proxyimpl* ensureProxyNode(context* ctx, uint32_t size, bool initialize) const;
 
   void clear();
   

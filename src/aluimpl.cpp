@@ -468,19 +468,65 @@ static void compareop(bitvector& dst, const bitvector& a, const bitvector& b) {
   dst[0] = result;
 }
 
+static uint32_t get_output_size(ch_alu_op op, const lnode& a, const lnode& b) {
+  switch (op) {
+  case alu_op_and: return a.get_size();
+  case alu_op_or: return a.get_size();
+  case alu_op_xor: return a.get_size();
+  case alu_op_nand: return a.get_size();
+  case alu_op_nor: return a.get_size();
+  case alu_op_xnor: return a.get_size();
+  case alu_op_andr: return a.get_size();
+  case alu_op_orr: return a.get_size();
+  case alu_op_xorr: return a.get_size();
+  case alu_op_shl: return a.get_size();
+  case alu_op_shr: return a.get_size();
+  case alu_op_rotl: return a.get_size();
+  case alu_op_rotr: return a.get_size();
+  case alu_op_add: return a.get_size();
+  case alu_op_sub: return a.get_size();
+  case alu_op_mult: return a.get_size();
+  case alu_op_div: return a.get_size();
+  case alu_op_mod: return a.get_size();
+  case alu_op_eq: return 1;
+  case alu_op_ne: return 1;
+  case alu_op_lt: return 1;
+  case alu_op_gt: return 1;
+  case alu_op_le: return 1;
+  case alu_op_ge: return 1;
+  case alu_op_mux: return a.get_size() >> b.get_size();
+  case alu_op_demux: return a.get_size() << b.get_size();
+  case alu_op_fadd: return a.get_size();
+  case alu_op_fsub: return a.get_size();
+  case alu_op_fmult: return a.get_size();
+  case alu_op_fdiv: return a.get_size();
+  default:
+    CH_ABORT("invalid alu operation");
+  }
+}
+
+static uint32_t get_output_size(ch_alu_op op, const lnode& a) {
+  switch (op) {
+  case alu_op_inv: return a.get_size();
+  case alu_op_neg: return a.get_size();
+  default:
+    CH_ABORT("invalid alu operation");
+  }
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
-aluimpl::aluimpl(ch_alu_op alu_op, uint32_t size, const lnode& a, const lnode& b)
-  : lnodeimpl(to_operator(alu_op), a->get_ctx(), size)
-  , alu_op_(alu_op)
+aluimpl::aluimpl(ch_alu_op op, const lnode& a, const lnode& b)
+  : lnodeimpl(to_operator(op), a.get_ctx(), get_output_size(op, a, b))
+  , alu_op_(op)
   , ctime_(~0ull) {
   srcs_.emplace_back(a);
   srcs_.emplace_back(b);
 }
 
-aluimpl::aluimpl(ch_alu_op alu_op, uint32_t size, const lnode& a)
-  : lnodeimpl(to_operator(alu_op), a->get_ctx(), size)
-  , alu_op_(alu_op)
+aluimpl::aluimpl(ch_alu_op op, const lnode& a)
+  : lnodeimpl(to_operator(op), a.get_ctx(), get_output_size(op, a))
+  , alu_op_(op)
   , ctime_(~0ull) {
   srcs_.emplace_back(a);
 }
@@ -605,15 +651,11 @@ void aluimpl::print_vl(std::ostream& out) const {
 
 lnodeimpl* cash::detail::createAluNode(
     ch_alu_op op,
-    uint32_t size,
-    lconst lnode& a,
+    const lnode& a,
     const lnode& b) {
-  return new aluimpl(op, size, a, b); 
+  return new aluimpl(op, a, b);
 }
 
-lnodeimpl* cash::detail::createAluNode(
-    ch_alu_op op,
-    uint32_t size,
-    const lnode& a) {
-  return new aluimpl(op, size, a);
+lnodeimpl* cash::detail::createAluNode(ch_alu_op op, const lnode& a) {
+  return new aluimpl(op, a);
 }

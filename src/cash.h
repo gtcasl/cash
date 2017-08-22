@@ -92,10 +92,10 @@ namespace core {
 
   using cash::detail::ch_reg;
   using cash::detail::ch_latch;
-  using cash::detail::ch_pushclock;
-  using cash::detail::ch_popclock;
-  using cash::detail::ch_pushreset;
-  using cash::detail::ch_popreset;
+  using cash::detail::ch_push_clock;
+  using cash::detail::ch_pop_clock;
+  using cash::detail::ch_push_reset;
+  using cash::detail::ch_pop_reset;
   using cash::detail::ch_clock;
   using cash::detail::ch_reset;
 

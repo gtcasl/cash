@@ -47,13 +47,13 @@ public:
   ~ch_tracer();
     
   template <unsigned N> 
-  void add_trace(const std::string& name, const ch_bus<N>& bus) {
-    this->add_trace(name, get_node(bus));
+  void add_trace(const std::string& name, const ch_bus<N>& value) {
+    this->add_trace(name, get_node(value));
   }  
   
   template <unsigned N> 
-  void add_trace(const std::string& name, const ch_busbase<N>& bus) {
-    this->add_trace(name, get_node(bus));
+  void add_trace(const std::string& name, const ch_busbase<N>& value) {
+    this->add_trace(name, get_node(value));
   }
   
   void tick(ch_cycle t) override;
@@ -61,17 +61,17 @@ public:
 protected:
   
   struct tap_t {
-    tap_t(const std::string& name_, snodeimpl* bus_)
-      : name(name_)
-      , bus(bus_)
+    tap_t(const std::string& p_name, const snode& p_bus)
+      : name(p_name)
+      , bus(p_bus)
     {}
     std::string name;
-    snodeimpl* bus;
+    snode bus;
   };
   
   void ensureInitialize() override;  
   
-  void add_trace(const std::string& name, snodeimpl* bus);
+  void add_trace(const std::string& name, const snode& value);
   
   std::map<std::string, unsigned> dup_taps_;
   std::vector<tap_t> taps_;
@@ -81,13 +81,13 @@ protected:
 void register_tap(const std::string& name, const lnode& node);
 
 template <unsigned N> 
-void ch_tap(const std::string& name, const ch_bit<N>& v) { 
-  register_tap(name, get_node(v));
+void ch_tap(const std::string& name, const ch_bit<N>& value) {
+  register_tap(name, get_node(value));
 }
 
 template <unsigned N> 
-void ch_tap(const std::string& name, const ch_bitbase<N>& v) { 
-  register_tap(name, get_node(v));
+void ch_tap(const std::string& name, const ch_bitbase<N>& value) {
+  register_tap(name, get_node(value));
 }
 
 }

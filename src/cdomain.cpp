@@ -51,14 +51,10 @@ void clock_event::print_vl(ostream& out) const {
 cdomain::cdomain(context* ctx, const std::vector<clock_event>& sensitivity_list)
   : ctx_(ctx) {
   sensitivity_list_.reserve(sensitivity_list.size());
-  for (const clock_event& e : sensitivity_list) {
-    // constants are omitted by default
-    if (dynamic_cast<litimpl*>(e.get_signal())) {
-      continue;
-    }
+  for (auto& e : sensitivity_list) {
     // ensure unique signals
     auto it = std::find(sensitivity_list_.begin(), sensitivity_list_.end(), e.get_signal());
-    CH_CHECK(it == sensitivity_list_.end(), "a duplicate signal event provided");    
+    CH_CHECK(it == sensitivity_list_.end(), "a duplicate clock event provided");
     sensitivity_list_.emplace_back(e);
   }
 } 
@@ -80,9 +76,9 @@ void cdomain::remove_use(tickable* reg) {
 bool cdomain::operator==(const std::vector<clock_event>& events) const {
   if (events.size() != sensitivity_list_.size())
     return false;
-  for (const clock_event& e1 : sensitivity_list_) {
+  for (auto& e1 : sensitivity_list_) {
     bool found = false;
-    for (const clock_event& e2 : events) {
+    for (auto& e2 : events) {
       if (e1 == e2) {
         found = true;
         break;
@@ -97,8 +93,9 @@ bool cdomain::operator==(const std::vector<clock_event>& events) const {
 void cdomain::tick(ch_cycle t) {
   for (clock_event& event : sensitivity_list_) {
     if (event.eval(t)) {
-      for (tickable* reg : regs_)
+      for (tickable* reg : regs_) {
         reg->tick(t);
+      }
       return;
     }
   }
@@ -112,11 +109,12 @@ void cdomain::tick_next(ch_cycle t) {
 
 void cdomain::print_vl(ostream& out) const {
   bool first_event = true;
-  for (const clock_event& event : sensitivity_list_) {
-    if (first_event)
+  for (auto& event : sensitivity_list_) {
+    if (first_event) {
       first_event = false;
-    else
+    } else {
       out << ", ";
+    }
     event.print_vl(out);
   }
 }

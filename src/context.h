@@ -28,11 +28,11 @@ public:
 
   void push_clk(const lnode& clk);
   void pop_clk();
-  const lnode& get_clk();
+  lnodeimpl* get_clk();
 
   void push_reset(const lnode& reset);
   void pop_reset();
-  const lnode& get_reset();
+  lnodeimpl* get_reset();
 
   //--
   
@@ -44,7 +44,8 @@ public:
   void begin_block(lnodeimpl* cond);
   void end_block();
   bool conditional_enabled(lnodeimpl* node = nullptr) const;
-  lnodeimpl* resolve_conditional(lnodeimpl* src, lnodeimpl* dst);
+  void conditional_split(lnode& dst, uint32_t offset, uint32_t length);
+  void conditional_assign(lnode& dst, const lnode& src, uint32_t offset, uint32_t length);  
   void erase_block_local(lnodeimpl* src, lnodeimpl* dst);
   
   lnodeimpl* create_literal(const bitvector& value);
@@ -54,8 +55,8 @@ public:
     
   //-- 
 
-  lnodeimpl* bind_input(snodeimpl* bus);  
-  snodeimpl* bind_output(lnodeimpl* output);
+  lnodeimpl* bind_input(const snode& bus);
+  snodeimpl* bind_output(const lnode& output);
   
   void register_tap(const std::string& name, const lnode& lnode);
   snodeimpl* get_tap(const std::string& name, uint32_t size);
@@ -87,38 +88,38 @@ public:
 protected:
 
   struct cond_upd_t {
-    cond_upd_t(selectimpl* sel_, uint32_t block_id_)
-      : sel(sel_)
-      , block_id(block_id_)
+    cond_upd_t(selectimpl* p_sel, uint32_t p_block_id)
+      : sel(p_sel)
+      , block_id(p_block_id)
     {}
     selectimpl* sel;
     uint32_t block_id;
   };
   
   struct cond_var_t {
-    cond_var_t(selectimpl* sel, uint32_t block_id) {
-      updates.emplace_front(sel, block_id);
+    cond_var_t(selectimpl* p_sel, uint32_t p_block_id) {
+      updates.emplace_front(p_sel, p_block_id);
     }
     std::list<cond_upd_t> updates;
   };
 
-  typedef std::vector<cond_var_t> cond_vars_t;
-
   struct cond_block_t {
-    cond_block_t(uint32_t id_, lnodeimpl* cond_)
-      : id(id_)
-      , cond(cond_)
+    cond_block_t(uint32_t p_id, lnodeimpl* p_cond)
+      : id(p_id)
+      , cond(p_cond)
     {}
     uint32_t id;
     lnodeimpl* cond;
     std::set<lnodeimpl*> locals;
   };
 
-  typedef std::list<cond_block_t> cond_blocks_t;
-
   struct cond_branch_t {
     std::vector<lnodeimpl*> conds;
   };
+
+  typedef std::map<uint32_t, std::list<cond_var_t>> cond_vars_t;
+
+  typedef std::list<cond_block_t> cond_blocks_t;
 
   typedef std::list<cond_branch_t> cond_branches_t;
   
@@ -134,13 +135,13 @@ protected:
   cond_vars_t             cond_vars_;
   cond_blocks_t           cond_blocks_;
   cond_branches_t         cond_branches_;
-  std::stack<lnode>       clk_stack_;
-  std::stack<lnode>       reset_stack_;
+  std::stack<lnode>       user_clks_;
+  std::stack<lnode>       user_resets_;
 
-  uint32_t   node_ids_;
-  uint32_t   block_ids_;
-  inputimpl* clk_;
-  inputimpl* reset_;
+  uint32_t    node_ids_;
+  uint32_t    block_ids_;
+  inputimpl*  clk_;
+  inputimpl*  reset_;
   
   std::map<std::string, unsigned> dup_taps_;
   

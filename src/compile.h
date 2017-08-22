@@ -11,7 +11,7 @@ public:
   
   void run();
   
-protected:  
+protected:
   
   bool dead_code_elimination();
   

@@ -9,11 +9,11 @@ ch_device::~ch_device() {
   ctx_->release();
 }
 
-lnodeimpl* ch_device::bind_input_(snodeimpl* bus) const {
+lnodeimpl* ch_device::bind_input_(const snode& bus) const {
   return ctx_->bind_input(bus);
 }
 
-snodeimpl* ch_device::bind_output_(lnodeimpl* output) const {
+snodeimpl* ch_device::bind_output_(const lnode& output) const {
   return ctx_->bind_output(output);
 }
 

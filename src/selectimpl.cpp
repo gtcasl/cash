@@ -48,7 +48,7 @@ if_t::~if_t() {
 }
 
 void if_t::eval(const lnode& cond, func_t func) {
-  context* const ctx = ctx_curr();
+  auto ctx = ctx_curr();
   ctx->begin_block(cond.get_impl());
   func();
   ctx->end_block();
@@ -65,14 +65,14 @@ switch_impl::~switch_impl() {
 }
 
 void switch_impl::eval(const lnode& cond, func_t func) {
-  context* const ctx = key_.get_ctx();
-  ctx->begin_block(createAluNode(alu_op_eq, 1, key_, cond));
+  auto ctx = key_.get_ctx();
+  ctx->begin_block(createAluNode(alu_op_eq, key_, cond));
   func();
   ctx->end_block();
 }
 
 void switch_impl::eval(func_t func) {
-  context* const ctx = key_.get_ctx();
+  auto ctx = key_.get_ctx();
   ctx->begin_block(nullptr);
   func();
   ctx->end_block();

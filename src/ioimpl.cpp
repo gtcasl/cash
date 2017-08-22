@@ -11,37 +11,32 @@ inputimpl::inputimpl(ch_operator op, context* ctx, uint32_t size)
   , ctime_(~0ull)
 {}
 
-inputimpl::~inputimpl() {
-  if (bus_)
-    bus_->release();
-}
+inputimpl::~inputimpl() {}
 
-void inputimpl::bind(snodeimpl* bus) {
-  assert(bus);
-  bus->acquire();
-  if (bus_)
-    bus_->release();
+void inputimpl::bind(const snode& bus) {
   bus_ = bus;
 }
 
 const bitvector& inputimpl::eval(ch_cycle t) {
-  assert(bus_);
   if (ctime_ != t) {
     ctime_ = t;
-    value_ = bus_->read();
+    value_ = bus_.get_value();
   }
   return value_;
 }
 
+void inputimpl::print_vl(std::ostream& out) const {
+  CH_UNUSED(out);
+}
+
 void inputimpl::print(std::ostream& out, uint32_t level) const {
   out << "#" << id_ << " <- " << this->get_name() << value_.get_size() << "("; 
-  if (bus_) {
-    out << "$" << bus_->get_id();
+  if (!bus_.is_empty()) {
+    out << "$" << bus_.get_id();
   } else {
     out << "?";
   }
   out << ")";
-
   if (level == 2) {
     out << " = " << value_;
   }
@@ -50,10 +45,9 @@ void inputimpl::print(std::ostream& out, uint32_t level) const {
 ///////////////////////////////////////////////////////////////////////////////
 
 outputimpl::outputimpl(ch_operator op, const lnode& src)
-  : ioimpl(op, src->get_ctx(), src->get_size())
+  : ioimpl(op, src.get_ctx(), src.get_size())
   , bus_(nullptr)
   , ctime_(~0ull) {
-  srcs_.reserve(1);
   srcs_.emplace_back(src);
 }
 
@@ -67,7 +61,7 @@ const bitvector& outputimpl::eval(ch_cycle t) {
     ctime_ = t;
     value_ = srcs_[0].eval(t);
     if (bus_)
-      bus_->write(value_);
+      bus_->set_value(value_);
   }
   return value_;
 }
@@ -80,10 +74,13 @@ snodeimpl* outputimpl::get_bus() {
   return bus_;
 }
 
+void outputimpl::print_vl(std::ostream& out) const {
+  CH_UNUSED(out);
+}
+
 void outputimpl::print(std::ostream& out, uint32_t level) const {
   out << "#" << id_ << " <- " << this->get_name() << value_.get_size();
   out << "(" << "#" << srcs_[0].get_id() << ")";
-
   if (level == 2) {
     out << " = " << value_;
   }
@@ -94,15 +91,17 @@ void outputimpl::print(std::ostream& out, uint32_t level) const {
 tapimpl::tapimpl(const std::string& name, const lnode& src)
   : outputimpl(op_tap, src)
   , tapName_(name) {
-  srcs_.reserve(1);
   srcs_.emplace_back(src);
 }
 
 void tapimpl::print(std::ostream& out, uint32_t level) const {
   out << "#" << id_ << " <- " << this->get_name() << value_.get_size();
   out << "(#" << srcs_[0].get_id() << ", '" << tapName_ << "')";
-
   if (level == 2) {
     out << " = " << value_;
   }
+}
+
+void tapimpl::print_vl(std::ostream& out) const {
+  CH_UNUSED(out);
 }

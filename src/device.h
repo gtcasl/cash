@@ -148,9 +148,9 @@ protected:
     return this->bind_output_(get_node(output));
   }
   
-  lnodeimpl* bind_input_(snodeimpl* bus) const;
+  lnodeimpl* bind_input_(const snode& bus) const;
   
-  snodeimpl* bind_output_(lnodeimpl* output) const;
+  snodeimpl* bind_output_(const lnode& output) const;
   
   snodeimpl* get_tap(const std::string& name, uint32_t size) const;
   

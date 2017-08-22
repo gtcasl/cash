@@ -63,21 +63,16 @@ public:
     value_.write(in, offset, size);
     ++changeid_;
   }
-  
-  const bitvector& read() const {
-    this->sync_sources();
-    return value_;
-  }
-  
-  void write(const bitvector& value) {
-    assert(0 == srcs_.size());
-    value_ = value;
-    ++changeid_;
-  }
 
   const bitvector& get_value() const {
     this->sync_sources();
     return value_;
+  }
+
+  void set_value(const bitvector& value) {
+    assert(0 == srcs_.size());
+    value_ = value;
+    ++changeid_;
   }
 
   uint32_t get_size() const {

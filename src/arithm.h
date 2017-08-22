@@ -38,11 +38,20 @@
   m(fdiv)
 
 #define CH_BINOP_GEN0(func, type) \
-  template <unsigned N> ch_bit<N> func(const ch_bitbase<N>& a, type b) { return func(a, ch_bit<N>(b)); } \
-  template <unsigned N> ch_bit<N> func(type a, const ch_bitbase<N>& b) { return func(ch_bit<N>(a), b); }
+  template <unsigned N> \
+  ch_bit<N> func(const ch_bitbase<N>& a, type b) { \
+  return func(a, ch_bit<N>(b));\
+  } \
+  template <unsigned N> \
+  ch_bit<N> func(type a, const ch_bitbase<N>& b) { \
+  return func(ch_bit<N>(a), b); \
+  }
 
 #define CH_BINOP_GEN1(func) \
-  template <unsigned N, unsigned M> ch_bit<CH_MAX(N,M)> func(const ch_bitbase<N>& a, const ch_bitbase<M>& b) { return func(ch_zext<CH_MAX(N,M)>(a), ch_zext<CH_MAX(N,M)>(b)); } \
+  template <unsigned N, unsigned M> \
+  ch_bit<CH_MAX(N,M)> func(const ch_bitbase<N>& a, const ch_bitbase<M>& b) { \
+    return func(ch_zext<CH_MAX(N,M)>(a), ch_zext<CH_MAX(N,M)>(b)); \
+  } \
   CH_BINOP_GEN0(func, char) \
   CH_BINOP_GEN0(func, int8_t) \
   CH_BINOP_GEN0(func, uint8_t) \
@@ -55,7 +64,10 @@
 
 #define CH_BINOP_GEN2(func, op) \
   CH_BINOP_GEN1(func) \
-  template <unsigned N, unsigned M> ch_bit<CH_MAX(N,M)> op(const ch_bitbase<N>& a, const ch_bitbase<M>& b) { return func(a, b); } \
+  template <unsigned N, unsigned M> \
+  ch_bit<CH_MAX(N,M)> op(const ch_bitbase<N>& a, const ch_bitbase<M>& b) { \
+    return func(a, b); \
+  } \
   CH_BINOP_GEN0(op, char) \
   CH_BINOP_GEN0(op, int8_t) \
   CH_BINOP_GEN0(op, uint8_t) \
@@ -67,16 +79,34 @@
   CH_BINOP_GEN0(op, uint64_t)
 
 #define CH_UNARYOP_GEN(func, op) \
-  template <unsigned N> ch_bit<N> op(const ch_bitbase<N>& in) { return func(in); }
+  template <unsigned N> \
+  ch_bit<N> op(const ch_bitbase<N>& in) { \
+    return func(in); \
+  }
 
 #define CH_COMPAREOP_GEN0(func, op, type) \
-  template <unsigned N> ch_bit<1> func(const ch_bitbase<N>& a, type b) { return func(a, ch_bit<N>(b)); } \
-  template <unsigned N> ch_bit<1> func(type a, const ch_bitbase<N>& b) { return func(ch_bit<N>(a), b); } \
-  template <unsigned N> ch_bit<1> op(const ch_bitbase<N>& a, type b) { return func(a, ch_bit<N>(b)); } \
-  template <unsigned N> ch_bit<1> op(type a, const ch_bitbase<N>& b) { return func(ch_bit<N>(a), b); }
+  template <unsigned N> \
+  ch_bit<1> func(const ch_bitbase<N>& a, type b) { \
+    return func(a, ch_bit<N>(b)); \
+  } \
+  template <unsigned N> \
+  ch_bit<1> func(type a, const ch_bitbase<N>& b) { \
+    return func(ch_bit<N>(a), b); \
+  } \
+  template <unsigned N> \
+  ch_bit<1> op(const ch_bitbase<N>& a, type b) { \
+    return func(a, ch_bit<N>(b)); \
+  } \
+  template <unsigned N> \
+  ch_bit<1> op(type a, const ch_bitbase<N>& b) { \
+    return func(ch_bit<N>(a), b); \
+  }
 
 #define CH_COMPAREOP_GEN1(func, op) \
-  template <unsigned N> ch_bit<1> op(const ch_bitbase<N>& a, const ch_bitbase<N>& b) { return func(a, b); } \
+  template <unsigned N> \
+  ch_bit<1> op(const ch_bitbase<N>& a, const ch_bitbase<N>& b) { \
+    return func(a, b); \
+  } \
   CH_COMPAREOP_GEN0(func, op, char) \
   CH_COMPAREOP_GEN0(func, op, int8_t) \
   CH_COMPAREOP_GEN0(func, op, uint8_t) \
@@ -88,7 +118,10 @@
   CH_COMPAREOP_GEN0(func, op, uint64_t)
 
 #define CH_SHIFTOP_GEN0(func, type) \
-  template <unsigned N> ch_bit<N> func(const ch_bitbase<N>& a, type b) { return func(a, ch_bit<N>(b)); }
+  template <unsigned N> \
+  ch_bit<N> func(const ch_bitbase<N>& a, type b) { \
+    return func(a, ch_bit<N>(b)); \
+  }
 
 #define CH_SHIFTOP_GEN1(func) \
   CH_SHIFTOP_GEN0(func, char) \
@@ -103,7 +136,10 @@
 
 #define CH_SHIFTOP_GEN2(func, op) \
   CH_SHIFTOP_GEN1(func) \
-  template <unsigned N, unsigned M> ch_bit<N> op(const ch_bitbase<N>& a, const ch_bitbase<M>& b) { return func(a, b); } \
+  template <unsigned N, unsigned M> \
+  ch_bit<N> op(const ch_bitbase<N>& a, const ch_bitbase<M>& b) { \
+    return func(a, b); \
+  } \
   CH_SHIFTOP_GEN0(op, char) \
   CH_SHIFTOP_GEN0(op, int8_t) \
   CH_SHIFTOP_GEN0(op, uint8_t) \
@@ -121,8 +157,8 @@ enum ch_alu_op {
   CH_ALUOP_ENUM(CH_ALUOP_TYPE)
 };
 
-lnodeimpl* createAluNode(ch_alu_op op, uint32_t size, const lnode& a, const lnode& b);
-lnodeimpl* createAluNode(ch_alu_op op, uint32_t size, const lnode& a);
+lnodeimpl* createAluNode(ch_alu_op op, const lnode& a, const lnode& b);
+lnodeimpl* createAluNode(ch_alu_op op, const lnode& a);
 
 // compare operators
 
@@ -163,22 +199,22 @@ CH_SHIFTOP_GEN1(ch_rotr)
 
 template <ch_alu_op op, unsigned N, unsigned M>
 ch_bit<N> OpBinary(const ch_bitbase<N>& a, const ch_bitbase<M>& b) {
-  return ch_bit<N>(createAluNode(op, N, get_node(a), get_node(b)));
+  return ch_bit<N>(createAluNode(op, get_node(a), get_node(b)));
 }
 
 template <ch_alu_op op, unsigned N>
 ch_bit<1> OpCompare(const ch_bitbase<N>& a, const ch_bitbase<N>& b) {
-  return ch_bit<1>(createAluNode(op, 1, get_node(a), get_node(b)));
+  return ch_bit<1>(createAluNode(op, get_node(a), get_node(b)));
 }
 
 template <ch_alu_op op, unsigned N>
 ch_bit<N> OpUnary(const ch_bitbase<N>& a) {
-  return ch_bit<N>(createAluNode(op, N, get_node(a)));
+  return ch_bit<N>(createAluNode(op, get_node(a)));
 }
 
 template <ch_alu_op op, unsigned N>
 ch_bit<1> OpReduce(const ch_bitbase<N>& a) {
-  return ch_bit<1>(createAluNode(op, 1, get_node(a)));
+  return ch_bit<1>(createAluNode(op, get_node(a)));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -339,12 +375,12 @@ ch_bit<N> ch_mod(const ch_bitbase<N>& a, const ch_bitbase<N>& b) {
 
 template <unsigned N, unsigned S>
 ch_bit<(N >> S)> ch_mux(const ch_bitbase<N>& in, const ch_bitbase<S>& sel) {
-  return ch_bit<(N >> S)>(createAluNode(alu_op_mux, (N >> S), get_node(in), get_node(sel)));
+  return ch_bit<(N >> S)>(createAluNode(alu_op_mux, get_node(in), get_node(sel)));
 }
 
 template <unsigned N, unsigned S> 
 ch_bit<(N << S)> ch_demux(const ch_bitbase<N>& in, const ch_bitbase<S>& sel) {
-  return ch_bit<(N << S)>(createAluNode(alu_op_mux, (N << S), get_node(in), get_node(sel)));
+  return ch_bit<(N << S)>(createAluNode(alu_op_mux, get_node(in), get_node(sel)));
 }
 
 ///////////////////////////////////////////////////////////////////////////////

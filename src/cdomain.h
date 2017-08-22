@@ -31,8 +31,8 @@ public:
   }
   
   bool operator==(const clock_event& e) const {
-    return (signal_.get_id() == e.signal_.get_id()) && 
-           (edgedir_ == e.edgedir_);
+    return (signal_.get_id() == e.signal_.get_id())
+        && (edgedir_ == e.edgedir_);
   }
   
   bool eval(ch_cycle t);
@@ -61,11 +61,12 @@ public:
   context* get_ctx() const {
     return ctx_;
   }
+
+  bool operator==(const std::vector<clock_event>& events) const;
   
   void tick(ch_cycle t);
+
   void tick_next(ch_cycle t);
-  
-  bool operator==(const std::vector<clock_event>& events) const;
   
   void print_vl(std::ostream& out) const;
 

@@ -255,24 +255,24 @@ uint64_t snodeimpl::sync_sources() const {
 snode::snode() : impl_(nullptr)
 {}
 
-snode::snode(const snode& rhs) : snode()  {
+snode::snode(const snode& rhs) : impl_(nullptr)  {
   this->assign(rhs.impl_, false);
 }
 
-snode::snode(snode&& rhs) : snode() {
+snode::snode(snode&& rhs) {
   this->move(rhs);
 }
 
-snode::snode(snodeimpl* impl) : snode() {
+snode::snode(snodeimpl* impl) : impl_(nullptr) {
   this->assign(impl, true);
 }
 
-snode::snode(const snode& rhs, uint32_t size) : snode() {
+snode::snode(const snode& rhs, uint32_t size) : impl_(nullptr) {
   rhs.ensureInitialized(size);
   this->assign(rhs.impl_, false);
 }
 
-snode::snode(const data_type& data) : snode() {
+snode::snode(const data_type& data) : impl_(nullptr) {
   uint32_t dst_offset = 0;
   for (auto& d : data) {
     this->assign(dst_offset, d.src, d.offset, d.length, data.capacity(), false);
@@ -280,7 +280,7 @@ snode::snode(const data_type& data) : snode() {
   }
 }
 
-snode::snode(const bitvector& value) : snode() {
+snode::snode(const bitvector& value) : impl_(nullptr) {
   this->assign(value);
 }
 
@@ -307,6 +307,10 @@ snode& snode::operator=(snode&& rhs) {
   return *this;
 }
 
+bool snode::is_empty() const {
+  return (impl_ != nullptr);
+}
+
 bool snode::is_equal(const snode& rhs, uint32_t size) const {
   rhs.ensureInitialized(size);
   this->ensureInitialized(size);
@@ -323,17 +327,34 @@ uint32_t snode::get_size() const {
   return impl_ ? impl_->get_size() : 0;
 }
 
+uint32_t snode::get_id() const {
+  return impl_ ? impl_->get_id() : 0;
+}
+
 snodeimpl* snode::get_impl() const {
   assert(impl_);
   return impl_;
 }
 
-void snode::move(snode& rhs) {  
-  assert(impl_ != rhs.impl_);
+const bitvector& snode::get_value() const {
+  assert(impl_);
+  return impl_->get_value();
+}
+
+bitvector::const_reference snode::operator[](uint32_t idx) const {
+  assert(impl_);
+  return impl_->operator [](idx);
+}
+
+bitvector::reference snode::operator[](uint32_t idx) {
+  assert(impl_);
+  return impl_->operator [](idx);
+}
+
+void snode::move(snode& rhs) {
   impl_ = rhs.impl_;
-  // acquire ownership
   if (impl_->get_owner() == &rhs)
-    impl_->set_owner(this);
+    impl_->set_owner(this); // transfer ownership
   rhs.impl_ = nullptr;
 }
 
@@ -372,7 +393,7 @@ void snode::assign(const bitvector& value) {
       impl_->clear_sources(0, value.get_size());
     }
   }
-  impl_->write(value);
+  impl_->set_value(value);
 }
 
 void snode::assign(snodeimpl* impl, bool is_owner) {  
@@ -474,5 +495,5 @@ void snode::write_data(uint32_t dst_offset,
 }
 
 std::ostream& cash::detail::operator<<(std::ostream& os, const snode& node) {
-  return os << node.get_impl()->get_value();
+  return os << node.get_value();
 }

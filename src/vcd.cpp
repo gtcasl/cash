@@ -17,7 +17,7 @@ void ch_vcdtracer::ensureInitialize() {
 
   out_ << "$timescale 1 ns $end" << endl;
   for (auto& tap : taps_) {
-    out_ << "$var reg " << tap.bus->get_size() << ' ' << tap.name << ' '
+    out_ << "$var reg " << tap.bus.get_size() << ' ' << tap.name << ' '
          << tap.name << " $end" << endl;
   }
   out_ << "$enddefinitions $end" << endl;
@@ -30,7 +30,7 @@ void ch_vcdtracer::tick(ch_cycle t) {
   // log net values
   out_ << '#' << t << endl;
   for (auto& tap : taps_) {
-    const snodeimpl& bus = *tap.bus;
+    const snode& bus = tap.bus;
     if (bus.get_size() > 1)
       out_ << 'b';
     for (int j = bus.get_size()-1; j >= 0; --j) {

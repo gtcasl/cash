@@ -185,8 +185,12 @@ void proxyimpl::merge_left(uint32_t idx) {
   }      
 }
 
-lnodeimpl* proxyimpl::get_slice(uint32_t offset, uint32_t length) {
-  // check if empty
+std::vector<std::pair<uint32_t, uint32_t>>
+proxyimpl::get_slices(uint32_t offset, uint32_t length) {
+  std::vector<std::pair<uint32_t, uint32_t>> ret;
+  CH_UNUSED(offset, length);
+  CH_TODO();
+  /*// check if empty
   if (0 == ranges_.size()) {
     return new proxyimpl(ctx_, length);
   }
@@ -198,8 +202,9 @@ lnodeimpl* proxyimpl::get_slice(uint32_t offset, uint32_t length) {
   }
   // return new slice
   proxyimpl* slice = new proxyimpl(ctx_, length);
-  slice->add_source(0, lnode(this), offset, length);
-  return slice;
+  slice->add_source(0, this, offset, length);
+  return slice;*/
+  return ret;
 }
 
 const bitvector& proxyimpl::eval(ch_cycle t) {

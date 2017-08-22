@@ -11,9 +11,7 @@ public:
   
   const bitvector& eval(ch_cycle t) override;
   
-  void print_vl(std::ostream& out) const override {
-    CH_UNUSED(out);
-  }
+  void print_vl(std::ostream& out) const override;
 
 private:
   std::string msg_;

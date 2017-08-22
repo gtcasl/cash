@@ -43,8 +43,8 @@ void ch_simulator::ensureInitialize() {
     if (ctx->clk_) {
       if (nullptr == clk_) {
         clk_ = new snodeimpl(1);
-        clk_->write(0u, 0x1); // initialize the clock to '1'
         clk_->acquire();
+        clk_->write(0u, 0x1); // initialize the clock to '1'        
       }
       ctx->clk_->bind(clk_);
     }
@@ -133,11 +133,7 @@ ch_tracer::ch_tracer(std::ostream& out, const std::initializer_list<const ch_dev
   : ch_simulator(devices)
   , out_(out) {}
 
-ch_tracer::~ch_tracer() {  
-  for (auto& tap : taps_) {
-    tap.bus->release();
-  }
-}
+ch_tracer::~ch_tracer() {}
 
 void ch_tracer::ensureInitialize() {
   // call parent ensureInitialize()
@@ -166,7 +162,7 @@ void ch_tracer::ensureInitialize() {
   }
 }
 
-void ch_tracer::add_trace(const std::string& name, snodeimpl* bus) {
+void ch_tracer::add_trace(const std::string& name, const snode& value) {
   CH_CHECK(!initialized_, "new tap not allowed after simulation has started");
   
   // resolve duplicate names  
@@ -182,8 +178,7 @@ void ch_tracer::add_trace(const std::string& name, snodeimpl* bus) {
     }
     full_name = fstring("%s_%d", name.c_str(), instances);
   }
-  taps_.emplace_back(full_name, bus);
-  bus->acquire();
+  taps_.emplace_back(full_name, value);
 }
 
 void ch_tracer::tick(ch_cycle t) {
@@ -196,5 +191,5 @@ void ch_tracer::tick(ch_cycle t) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void cash::detail::register_tap(const string& name, const lnode& node) {
-  node->get_ctx()->register_tap(name, node);
+  node.get_ctx()->register_tap(name, node);
 }

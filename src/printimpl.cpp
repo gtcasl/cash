@@ -64,16 +64,27 @@ static const char* parse_format_index(fmtinfo_t* out, const char* str) {
   return str;
 }
 
-printimpl::printimpl(context* ctx, const lnode& cond, const std::string& format,
-                     const std::initializer_list<const lnode&>& args)
+printimpl::printimpl(context* ctx,
+                     const std::string& format,
+                     const std::initializer_list<lnode>& args)
   : ioimpl(op_print, ctx, 0)
   , format_(format)
   , args_offset_(0)
   , ctime_(~0ull) {
-  if (cond) {
-    srcs_.emplace_back(cond);
-    args_offset_ = 1;
+  for (auto arg : args) {
+    srcs_.emplace_back(arg);
   }
+}
+
+printimpl::printimpl(context* ctx,
+                     const lnode& cond,
+                     const std::string& format,
+                     const std::initializer_list<lnode>& args)
+  : ioimpl(op_print, ctx, 0)
+  , format_(format)
+  , args_offset_(1)
+  , ctime_(~0ull) {
+  srcs_.emplace_back(cond);
   for (auto arg : args) {
     srcs_.emplace_back(arg);
   }
@@ -120,8 +131,10 @@ void printimpl::print_vl(std::ostream& out) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void cash::detail::createPrintNode(const lnode& cond, const std::string& format,
-                     const std::initializer_list<const lnode&>& args) {
+void cash::detail::createPrintNode(
+    const lnode& cond,
+    const std::string& format,
+    const std::initializer_list<lnode>& args) {
   // printing is only enabled in debug mode
   if (0 == platform::self().get_dbg_level())
     return;

@@ -6,7 +6,7 @@ namespace cash {
 namespace detail {
 
 class proxyimpl : public lnodeimpl {
-public:  
+public:
   proxyimpl(context* ctx, uint32_t size);
   proxyimpl(const lnode& src);
   
@@ -17,18 +17,18 @@ public:
 
   std::vector<lnode>::iterator erase_source(std::vector<lnode>::iterator iter);
 
-  lnodeimpl* get_slice(uint32_t offset, uint32_t length);
+  std::vector<std::pair<uint32_t, uint32_t>> get_slices(uint32_t offset, uint32_t length);
 
   const bitvector& eval(ch_cycle t) override;
   void print(std::ostream& out, uint32_t level) const override;
   void print_vl(std::ostream& out) const override;
   
 private:
-  
+
   struct range_t {
     uint32_t srcidx;
     uint32_t start;
-    uint32_t offset;    
+    uint32_t offset;
     uint32_t length;
   };
   

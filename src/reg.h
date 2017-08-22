@@ -7,18 +7,21 @@ namespace cash {
 namespace detail {
 
 lnodeimpl* createRegNode(const lnode& next, const lnode& init);
-lnodeimpl* createLatchNode(const lnode& next, const lnode& init, const lnode& enable, const lnode& reset);
+lnodeimpl* createLatchNode(const lnode& next,
+                           const lnode& init,
+                           const lnode& enable,
+                           const lnode& reset);
 
 lnodeimpl* createReadyNode(const lnode& node);
 lnodeimpl* createValidNode(const lnode& node);
 
 ch_bit<1> ch_clock();
-void ch_pushclock(const ch_bitbase<1>& clk);
-void ch_popclock();
+void ch_push_clock(const ch_bitbase<1>& clk);
+void ch_pop_clock();
 
 ch_bit<1> ch_reset();
-void ch_pushreset(const ch_bitbase<1>& reset);
-void ch_popreset();
+void ch_push_reset(const ch_bitbase<1>& reset);
+void ch_pop_reset();
 
 template <unsigned N>
 ch_bit<1> ch_ready(const ch_bitbase<N>& x) {
@@ -48,7 +51,7 @@ ch_bit<N> ch_reg(const ch_bit<N>& next, const ch_bitbase<N>& init) {
 template <unsigned N>
 ch_bit<N> ch_reg(const ch_bit<N>& next, const ch_bit<N>& init) {
   return ch_reg<N>(reinterpret_cast<const ch_bitbase<N>&>(next), 
-                reinterpret_cast<const ch_bitbase<N>&>(init));
+                   reinterpret_cast<const ch_bitbase<N>&>(init));
 }
 
 template <unsigned N>
@@ -62,41 +65,63 @@ ch_bit<N> ch_latch(const ch_bitbase<N>& next,
 }
 
 template <unsigned N>
-ch_bit<N> ch_latch(const ch_bitbase<N>& next, const ch_bitbase<1>& enable, const ch_bit<N>& init = 0) {
-  return ch_latch<N>(next, enable, reinterpret_cast<const ch_bitbase<N>&>(init));
+ch_bit<N> ch_latch(const ch_bitbase<N>& next,
+                   const ch_bitbase<1>& enable,
+                   const ch_bit<N>& init = 0) {
+  return ch_latch<N>(next,
+                     enable,
+                     reinterpret_cast<const ch_bitbase<N>&>(init));
 }
 
 template <unsigned N>
-ch_bit<N> ch_latch(const ch_bitbase<N>& next, const ch_bit<1>& enable, const ch_bitbase<N>& init) {
-  return ch_latch<N>(next, reinterpret_cast<const ch_bitbase<1>&>(enable), init);
+ch_bit<N> ch_latch(const ch_bitbase<N>& next,
+                   const ch_bit<1>& enable,
+                   const ch_bitbase<N>& init) {
+  return ch_latch<N>(next,
+                     reinterpret_cast<const ch_bitbase<1>&>(enable),
+                     init);
 }
 
 template <unsigned N>
-ch_bit<N> ch_latch(const ch_bitbase<N>& next, const ch_bit<1>& enable = 1, const ch_bit<N>& init = 0) {
-  return ch_latch<N>(next, reinterpret_cast<const ch_bitbase<1>&>(enable),
-                           reinterpret_cast<const ch_bitbase<N>&>(init));
+ch_bit<N> ch_latch(const ch_bitbase<N>& next,
+                   const ch_bit<1>& enable = 1,
+                   const ch_bit<N>& init = 0) {
+  return ch_latch<N>(next,
+                     reinterpret_cast<const ch_bitbase<1>&>(enable),
+                     reinterpret_cast<const ch_bitbase<N>&>(init));
 }
 
 template <unsigned N>
-ch_bit<N> ch_latch(const ch_bit<N>& next, const ch_bitbase<1>& enable, const ch_bitbase<N>& init) {
-  return ch_latch<N>(reinterpret_cast<const ch_bitbase<N>&>(next), enable, init);
+ch_bit<N> ch_latch(const ch_bit<N>& next,
+                   const ch_bitbase<1>& enable,
+                   const ch_bitbase<N>& init) {
+  return ch_latch<N>(reinterpret_cast<const ch_bitbase<N>&>(next),
+                     enable,
+                     init);
 }
 
 template <unsigned N>
-ch_bit<N> ch_latch(const ch_bit<N>& next, const ch_bitbase<1>& enable, const ch_bit<N>& init = 0) {
+ch_bit<N> ch_latch(const ch_bit<N>& next,
+                   const ch_bitbase<1>& enable,
+                   const ch_bit<N>& init = 0) {
   return ch_latch<N>(reinterpret_cast<const ch_bitbase<N>&>(next), 
                      enable, 
                      reinterpret_cast<const ch_bitbase<N>&>(init));
 }
 
 template <unsigned N>
-ch_bit<N> ch_latch(const ch_bit<N>& next, const ch_bit<1>& enable, const ch_bitbase<N>& init) {
+ch_bit<N> ch_latch(const ch_bit<N>& next,
+                   const ch_bit<1>& enable,
+                   const ch_bitbase<N>& init) {
   return ch_latch<N>(reinterpret_cast<const ch_bitbase<N>&>(next), 
-                     reinterpret_cast<const ch_bitbase<1>&>(enable), init);
+                     reinterpret_cast<const ch_bitbase<1>&>(enable),
+                     init);
 }
 
 template <unsigned N>
-ch_bit<N> ch_latch(const ch_bit<N>& next, const ch_bit<1>& enable = 1, const ch_bit<N>& init = 0) {
+ch_bit<N> ch_latch(const ch_bit<N>& next,
+                   const ch_bit<1>& enable = 1,
+                   const ch_bit<N>& init = 0) {
   return ch_latch<N>(reinterpret_cast<const ch_bitbase<N>&>(next), 
                      reinterpret_cast<const ch_bitbase<1>&>(enable),
                      reinterpret_cast<const ch_bitbase<N>&>(init));

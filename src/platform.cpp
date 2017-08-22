@@ -5,7 +5,7 @@ using namespace std;
 using namespace cash::detail;
 
 platform::platform()
-  : dbg_level_(1)  
+  : dbg_level_(0)
   , dbg_node_(0)
   , dump_ast_(0)
   , dump_cfg_(0) {
