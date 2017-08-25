@@ -291,7 +291,11 @@ void context::conditional_assign(
     }
   }
 
+  selectimpl* sel_old = nullptr;
+  selectimpl* sel;
   if (it_upds != cond_upds_.end()) {
+    sel_old = it_upds->second.front().sel;
+    sel = sel_old;
     cond_upd_t& last_upd = it_upds->second.front();
     if (block.id > last_upd.block_id) {
       // last assignment took place in parent or sibling blocks
@@ -315,12 +319,18 @@ void context::conditional_assign(
       cond_branch_t& branch = cond_branches_.front();
       cond = branch.conds.back();
     }
-    auto sel = dynamic_cast<selectimpl*>(createSelectNode(cond, src, dst));
+    sel = dynamic_cast<selectimpl*>(createSelectNode(cond, src, dst));
     cond_upds_[range].emplace_front(sel, block.id);
-    it_upds = cond_upds_.find(range);
   }
-  auto proxy = dynamic_cast<proxyimpl*>(dst.get_impl());
-  proxy->add_source(offset, it_upds->second.front().sel, 0, length);
+
+  if (sel != sel_old) {
+    auto proxy = dynamic_cast<proxyimpl*>(dst.get_impl());
+    if (proxy) {
+      proxy->add_source(offset, sel, 0, length);
+    } else {
+      dst.set_impl(sel);
+    }
+  }
 }
 
 void context::clone_conditional_assignment(

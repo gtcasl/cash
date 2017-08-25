@@ -34,20 +34,21 @@ public:
     , size_(length) {
     buffer_.emplace_back(entry_t{src, offset, length});
   }
-
-  uint32_t num_slices() const {
+  
+  uint32_t get_num_slices() const {
     return buffer_.size();
   }
-  
-  uint32_t size() const {
+
+  uint32_t get_size() const {
     return size_;
   }
 
-  uint32_t capacity() const {
+  uint32_t get_capacity() const {
     return capacity_;
   }
 
   auto begin() const {
+    assert(size_ == capacity_);
     return buffer_.begin();
   }
 
@@ -59,6 +60,10 @@ public:
     buffer_.emplace_back(data);
     size_ += data.length;
     assert(size_ <= capacity_);
+  }
+
+  bool is_srccopy() const {
+    return (1 == buffer_.size()) && (buffer_[0].src.get_size() == size_);
   }
 
 private:

@@ -139,8 +139,8 @@ protected:
   }
 
   template <unsigned N>
-  lnodeimpl* bind_input(const ch_busbase<N>& bus) const {
-    return this->bind_input_(get_node(bus));
+  ch_bit<N> bind_input(const ch_busbase<N>& bus) const {
+    return make_bit<N>(this->bind_input_(get_node(bus)));
   }
   
   template <unsigned N>

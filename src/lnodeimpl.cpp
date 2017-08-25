@@ -99,19 +99,16 @@ lnode::lnode(const bitvector& value) {
 }
 
 lnode::lnode(const data_type& data) : impl_(nullptr) {    
-  if (data.num_slices() > 1) {
+  if (data.is_srccopy())  {
+    impl_ = data.begin()->src.get_impl();
+  } else {
     uint32_t dst_offset = 0;
-    this->ensureInitialized(data.capacity(), false);
+    this->ensureInitialized(data.get_size(), false);
     auto proxy = dynamic_cast<proxyimpl*>(impl_);
-    for (auto& slice : data) {
+    for (const auto& slice : data) {
       proxy->add_source(dst_offset, slice.src, slice.offset, slice.length);
       dst_offset += slice.length;
     }
-  } else {
-    const auto& slice = *data.begin();
-    assert(slice.offset == 0);
-    assert(slice.length == data.capacity());
-    impl_ = slice.src.get_impl();
   }
 }
 

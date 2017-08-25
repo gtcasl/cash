@@ -279,7 +279,7 @@ snode::snode(const snode& rhs, uint32_t size) : impl_(nullptr) {
 snode::snode(const data_type& data) : impl_(nullptr) {
   uint32_t dst_offset = 0;
   for (auto& d : data) {
-    this->assign(dst_offset, d.src, d.offset, d.length, data.capacity(), false);
+    this->assign(dst_offset, d.src, d.offset, d.length, data.get_size(), false);
     dst_offset += d.length;
   }
 }
