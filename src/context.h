@@ -41,11 +41,12 @@ public:
   
   void begin_branch();
   void end_branch();
+
   void begin_block(lnodeimpl* cond);
   void end_block();
+
   bool conditional_enabled(lnodeimpl* node = nullptr) const;
-  void conditional_split(lnode& dst, uint32_t offset, uint32_t length);
-  void conditional_assign(lnode& dst, const lnode& src, uint32_t offset, uint32_t length);  
+  void conditional_assign(lnode& dst, const lnode& src, uint32_t offset, uint32_t length);
   void erase_block_local(lnodeimpl* src, lnodeimpl* dst);
   
   lnodeimpl* create_literal(const bitvector& value);
@@ -95,13 +96,6 @@ protected:
     selectimpl* sel;
     uint32_t block_id;
   };
-  
-  struct cond_var_t {
-    cond_var_t(selectimpl* p_sel, uint32_t p_block_id) {
-      updates.emplace_front(p_sel, p_block_id);
-    }
-    std::list<cond_upd_t> updates;
-  };
 
   struct cond_block_t {
     cond_block_t(uint32_t p_id, lnodeimpl* p_cond)
@@ -117,11 +111,33 @@ protected:
     std::vector<lnodeimpl*> conds;
   };
 
-  typedef std::map<uint32_t, std::list<cond_var_t>> cond_vars_t;
+  struct cond_range_t {
+    uint32_t nodeid;
+    uint32_t offset;
+    uint32_t length;
 
+    bool operator==(const cond_range_t& range) const {
+      return this->nodeid == range.nodeid
+          && this->offset == range.offset
+          && this->length == range.length;
+    }
+
+    bool operator!=(const cond_range_t& range) const {
+      return !(*this == range);
+    }
+
+    bool operator<(const cond_range_t& range) const {
+      return this->nodeid < range.nodeid
+          || this->offset < range.offset
+          || this->length < range.length;
+    }
+  };
+
+  typedef std::map<cond_range_t, std::list<cond_upd_t>> cond_upds_t;
   typedef std::list<cond_block_t> cond_blocks_t;
-
   typedef std::list<cond_branch_t> cond_branches_t;
+
+  void clone_conditional_assignment(lnode& dst, const cond_range_t& range, uint32_t offset, uint32_t length);
   
   std::list<lnodeimpl*>   nodes_;
   std::list<undefimpl*>   undefs_;
@@ -132,7 +148,7 @@ protected:
   std::list<ioimpl*>      gtaps_;
   std::list<litimpl*>     literals_;
   std::list<cdomain*>     cdomains_;  
-  cond_vars_t             cond_vars_;
+  cond_upds_t             cond_upds_;
   cond_blocks_t           cond_blocks_;
   cond_branches_t         cond_branches_;
   std::stack<lnode>       user_clks_;

@@ -5,7 +5,6 @@
 namespace cash {
 namespace detail {
 
-template <unsigned N> class ch_bus;
 template <unsigned N> using ch_busbase = typebase<N, snode::data_type>;
 
 template <unsigned N>
@@ -64,14 +63,14 @@ public:
     return !(*this < rhs);
   }
   
-  virtual void read(void* out, uint32_t offset, uint32_t length) const {
+  void read(void* out, uint32_t offset, uint32_t length) const {
+    assert(offset + length <= N);
     get_node(*this).read(reinterpret_cast<uint8_t*>(out), offset, length, N);
   }
   
-  virtual void write(const void* in, uint32_t offset, uint32_t length) {
-    ch_bus<N> tmp;
-    tmp.write(reinterpret_cast<const uint8_t*>(in), offset, length), N;
-    this->operator =(tmp);
+  void write(const void* in, uint32_t offset, uint32_t length) {
+    assert(offset + length <= N);
+    get_node(*this).write(reinterpret_cast<const uint8_t*>(in), offset, length, N);
   }
 
 protected:

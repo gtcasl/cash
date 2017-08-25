@@ -66,11 +66,11 @@ public:
     }
     
     ch_bit<W> operator[](const ch_bitbase<A>& addr) const {
-      return ch_bit<W>(mem_.read(get_node(addr)));
+      return make_bit<W>(mem_.read(get_node(addr)));
     }
     
     ch_bit<W> operator[](const ch_bit<A>& addr) const {
-      return ch_bit<W>(mem_.read(get_node(addr)));
+      return make_bit<W>(mem_.read(get_node(addr)));
     }
     
 private:
@@ -92,7 +92,7 @@ public:
       }
       
       operator ch_bit<W>() const {
-        return ch_bit<W>(mem_.read(get_node(addr_)));
+        return make_bit<W>(mem_.read(get_node(addr_)));
       }
       
     protected:
@@ -125,11 +125,11 @@ public:
     }
     
     ch_bit<W> operator[](const ch_bitbase<A>& addr) const {
-      return ch_bit<W>(mem_.read(get_node(addr)));
+      return make_bit<W>(mem_.read(get_node(addr)));
     }
     
     ch_bit<W> operator[](const ch_bit<A>& addr) const {
-      return ch_bit<W>(mem_.read(get_node(addr)));
+      return make_bit<W>(mem_.read(get_node(addr)));
     }
     
     reference operator[](const ch_bitbase<A>& addr) {

@@ -42,7 +42,7 @@ void snodeimpl::add_source(uint32_t dst_offset,
   if (0 == n) {
     // insert the first entry
     src->acquire();
-    srcs_.push_back({ src, dst_offset, src_offset, src_length, 0 });
+    srcs_.push_back({src, dst_offset, src_offset, src_length, 0});
   } else {
     // find the slot to insert source node,
     // split existing nodes if needed
@@ -50,29 +50,30 @@ void snodeimpl::add_source(uint32_t dst_offset,
     for (; src_length && i < n; ++i) {
       source_t& curr = srcs_[i];
       uint32_t src_end  = dst_offset + src_length;
-      uint32_t curr_end = curr.start + curr.length;      
-      source_t new_src = { src, dst_offset, src_offset, src_length, 0 };
+      uint32_t curr_end = curr.dst_offset + curr.src_length;
+      source_t new_src{src, dst_offset, src_offset, src_length, 0};
       
-      // do ranges intersect?
-      if ((dst_offset < curr_end && src_end > curr.start)) {
-        if (dst_offset <= curr.start && src_end >= curr_end) {
-          // source fully overlaps, replace current node
+      // do ranges overlap?
+      if (dst_offset < curr_end && src_end > curr.dst_offset) {
+        if (dst_offset <= curr.dst_offset && src_end >= curr_end) {
+          // source fully overlaps, replace current node          
           uint32_t delta = curr_end - dst_offset;
-          new_src.length = delta;
-          src->acquire();
-          curr.node->release();          
-          curr = new_src;
-          
+          new_src.src_length = delta;
+          if (new_src != curr) {
+            src->acquire();
+            curr.node->release();
+            curr = new_src;
+          }
           dst_offset += delta;
           src_offset += delta;
           src_length -= delta;
-        } else if (dst_offset < curr.start) {
-          // source intersets on the left,
+        } else if (dst_offset < curr.dst_offset) {
+          // source overlaps on the left,
           // replace left size of the current node
-          uint32_t delta = src_end - curr.start;
-          curr.start  += delta;
-          curr.offset += delta;
-          curr.length -= delta;
+          uint32_t delta = src_end - curr.dst_offset;
+          curr.dst_offset += delta;
+          curr.src_offset += delta;
+          curr.src_length -= delta;
           
           src->acquire();
           srcs_.insert(srcs_.begin() + i, new_src);
@@ -80,12 +81,12 @@ void snodeimpl::add_source(uint32_t dst_offset,
           
           src_length = 0;
         } else if (src_end > curr_end) {
-          // source intersets on the right,
+          // source overlaps on the right,
           // replace right size of the current node
           uint32_t delta = curr_end - dst_offset;
-          curr.length -= delta;
+          curr.src_length -= delta;
           
-          new_src.length = delta;
+          new_src.src_length = delta;
           
           ++i;
           src->acquire();
@@ -98,16 +99,16 @@ void snodeimpl::add_source(uint32_t dst_offset,
         } else {
           // source fully included,
           // we need to split current node into two chunks
-          uint32_t delta = src_end - curr.start;
+          uint32_t delta = src_end - curr.dst_offset;
           source_t curr_after(curr);          
-          curr_after.length -= delta;
-          curr_after.start  += delta;
-          curr_after.offset += delta;
-          curr.length -= (curr_end - dst_offset);
-          assert(curr.length || curr_after.length);
+          curr_after.src_length -= delta;
+          curr_after.dst_offset += delta;
+          curr_after.src_offset += delta;
+          curr.src_length -= (curr_end - dst_offset);
+          assert(curr.src_length || curr_after.src_length);
           
           src->acquire();          
-          if (0 == curr.length) {
+          if (0 == curr.src_length) {
             // replace first chunk
             curr = new_src;
           } else {
@@ -117,16 +118,16 @@ void snodeimpl::add_source(uint32_t dst_offset,
             ++n;
           }
           
-          if (curr_after.length != 0) {
+          if (curr_after.src_length != 0) {
             // insert second chunk after source
-            if (curr.length != 0)
+            if (curr.src_length != 0)
               curr_after.node->acquire();
             srcs_.insert(srcs_.begin() + (i+1), 1, curr_after); 
             ++n;
           }         
           src_length = 0;
         }
-      } else if (i+1 == n || src_end <= srcs_[i+1].start) {
+      } else if (i+1 == n || src_end <= srcs_[i+1].dst_offset) {
         // no overlap with current and next
         i += (curr_end <= dst_offset) ? 1 : 0;
         src->acquire();
@@ -144,6 +145,7 @@ void snodeimpl::add_source(uint32_t dst_offset,
         this->merge_left(i);
       }       
     } 
+
     assert(0 == src_length);
     if (i < n) {
       // try merging inserted node on the right
@@ -167,53 +169,56 @@ void snodeimpl::clear_sources(uint32_t offset, uint32_t length) {
   for (uint32_t i = 0, n = srcs_.size(); length && i < n; ++i) {
     source_t& curr = srcs_[i];
     uint32_t src_end  = offset + length;
-    uint32_t curr_end = curr.start + curr.length;
-    // do ranges intersect?
-    if ((offset < curr_end && src_end > curr.start)) {
-      if (offset <= curr.start && src_end >= curr_end) {
-        // source fully overlaps, remove current source
+    uint32_t curr_end = curr.dst_offset + curr.src_length;
+    // do ranges overlap?
+    if (offset < curr_end && src_end > curr.dst_offset) {
+      if (offset <= curr.dst_offset && src_end >= curr_end) {
+        // source fully overlaps,
+        // remove current source
         uint32_t delta = curr_end - offset;
         curr.node->release();
         srcs_.erase(srcs_.begin() + i);
         --n;
         offset += delta;
         length -= delta;
-      } else if (offset < curr.start) {
-        // source intersets on the left, cut-off left size of current source
-        uint32_t delta = src_end - curr.start;
-        curr.start  += delta;
-        curr.offset += delta;
-        curr.length -= delta;
+      } else if (offset < curr.dst_offset) {
+        // source overlaps on the left,
+        // cut-off left size of current source
+        uint32_t delta = src_end - curr.dst_offset;
+        curr.dst_offset += delta;
+        curr.src_offset += delta;
+        curr.src_length -= delta;
         length = 0;
       } else if (src_end > curr_end) {
-        // source intersets on the right, cut-off right size of current source
+        // source overlaps on the right,
+        // cut-off right size of current source
         uint32_t delta = curr_end - offset;
-        curr.length -= delta;
+        curr.src_length -= delta;
         offset += delta;
         length -= delta;
       } else {
         // source fully included,
         // we need to split current source into two chunks
-        uint32_t delta = src_end - curr.start;
+        uint32_t delta = src_end - curr.dst_offset;
         source_t curr_after(curr);
-        curr_after.length -= delta;
-        curr_after.start  += delta;
-        curr_after.offset += delta;
-        curr.length -= (curr_end - offset);
-        assert(curr.length || curr_after.length);
+        curr_after.src_length -= delta;
+        curr_after.dst_offset += delta;
+        curr_after.src_offset += delta;
+        curr.src_length -= (curr_end - offset);
+        assert(curr.src_length || curr_after.src_length);
 
-        if (0 == curr.length) {
-          assert(curr_after.length != 0);
+        if (0 == curr.src_length) {
+          assert(curr_after.src_length != 0);
           curr = curr_after;
         } else {
-          if (curr_after.length != 0) {
+          if (curr_after.src_length != 0) {
             srcs_.insert(srcs_.begin() + (i+1), 1, curr_after);
             ++n;
           }
         }
         length = 0;
       }
-    } else if (i+1 == n || src_end <= srcs_[i+1].start) {
+    } else if (i+1 == n || src_end <= srcs_[i+1].dst_offset) {
       // no overlap with current and next
       length = 0;
     } else {
@@ -225,11 +230,11 @@ void snodeimpl::clear_sources(uint32_t offset, uint32_t length) {
 
 void snodeimpl::merge_left(uint32_t idx) {
   assert(idx > 0);
-  if (srcs_[idx-1].node == srcs_[idx].node &&
-      (srcs_[idx-1].start + srcs_[idx-1].length) == srcs_[idx].start &&
-      srcs_[idx].offset == srcs_[idx-1].offset + srcs_[idx-1].length) {
+  if (srcs_[idx-1].node == srcs_[idx].node
+   && (srcs_[idx-1].dst_offset + srcs_[idx-1].src_length) == srcs_[idx].dst_offset
+   && srcs_[idx].src_offset == srcs_[idx-1].src_offset + srcs_[idx-1].src_length) {
     srcs_[idx].node->release();
-    srcs_[idx-1].length += srcs_[idx].length;
+    srcs_[idx-1].src_length += srcs_[idx].src_length;
     srcs_.erase(srcs_.begin() + idx);
   }
 }
@@ -241,7 +246,7 @@ uint64_t snodeimpl::sync_sources() const {
       uint64_t changeid = src.node->sync_sources();
       if (src.changeid != changeid) {
         src.changeid = changeid;
-        value_.copy(src.start, src.node->value_, src.offset, src.length);
+        value_.copy(src.dst_offset, src.node->value_, src.src_offset, src.src_length);
         changed = 1;
       }
     }
@@ -252,8 +257,7 @@ uint64_t snodeimpl::sync_sources() const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-snode::snode() : impl_(nullptr)
-{}
+snode::snode() : impl_(nullptr) {}
 
 snode::snode(const snode& rhs) : impl_(nullptr)  {
   this->assign(rhs.impl_, false);
@@ -308,7 +312,7 @@ snode& snode::operator=(snode&& rhs) {
 }
 
 bool snode::is_empty() const {
-  return (impl_ != nullptr);
+  return (nullptr == impl_);
 }
 
 bool snode::is_equal(const snode& rhs, uint32_t size) const {
@@ -341,32 +345,18 @@ const bitvector& snode::get_value() const {
   return impl_->get_value();
 }
 
-bitvector::const_reference snode::operator[](uint32_t idx) const {
+bool snode::operator[](uint32_t idx) const {
   assert(impl_);
-  return impl_->operator [](idx);
-}
-
-bitvector::reference snode::operator[](uint32_t idx) {
-  assert(impl_);
-  return impl_->operator [](idx);
+  return impl_->get_bit(idx);
 }
 
 void snode::move(snode& rhs) {
+  assert(this != &rhs);
   impl_ = rhs.impl_;
-  if (impl_->get_owner() == &rhs)
-    impl_->set_owner(this); // transfer ownership
   rhs.impl_ = nullptr;
-}
-
-void snode::clone(bool keep_data) {
-  // create a new snodeimpl() with impl_ as source node and make current
-  snodeimpl* const impl = impl_;
-  impl_ = nullptr;
-  this->ensureInitialized(impl->get_size());
-  if (keep_data) {
-    impl_->add_source(0, impl, 0, impl->get_size());
-  }
-  impl->release();
+  // transfer ownership
+  if (impl_->get_owner() == &rhs)
+    impl_->set_owner(this);
 }
 
 void snode::ensureInitialized(uint32_t size) const {
@@ -376,6 +366,18 @@ void snode::ensureInitialized(uint32_t size) const {
     impl_->set_owner(this);
   }
   assert(impl_->get_size() == size);
+}
+
+void snode::clone(bool keep_data) {
+  // assign a new implementation to the node
+  // add make old version as a source if requested
+  snodeimpl* const impl = impl_;
+  impl_ = nullptr;
+  this->ensureInitialized(impl->get_size());
+  if (keep_data) {
+    impl_->add_source(0, impl, 0, impl->get_size());
+  }
+  impl->release();
 }
 
 void snode::assign(const snode& rhs, uint32_t size) {
@@ -419,31 +421,32 @@ void snode::assign(uint32_t dst_offset,
                    uint32_t src_length,
                    uint32_t size,
                    bool is_owner) {
-   assert((dst_offset + src_length) <= size);
-   // check if full replacement
-   if (size == src_length && size == src.get_size()) {
+  assert((dst_offset + src_length) <= size);
+  // check if full replacement
+  if (size == src_length && size == src.get_size()) {
      assert(0 == dst_offset && 0 == src_offset);
      this->assign(src.impl_, is_owner);
-   } else {
-     // partial assignment
-     this->ensureInitialized(size);
-     if (impl_->get_owner() != this)
-       this->clone(true);
-     impl_->add_source(dst_offset, src.impl_, src_offset, src_length);
-   }
- }
-
-uint32_t snode::read(uint32_t idx, uint32_t size) const {
-  this->ensureInitialized(size);
-  return impl_->read(idx);
+  } else {
+    // partial assignment
+    this->ensureInitialized(size);
+    if (impl_->get_owner() != this)
+      this->clone(true);
+    impl_->add_source(dst_offset, src.impl_, src_offset, src_length);
+  }
 }
 
-void snode::write(uint32_t idx, uint32_t value, uint32_t size) {
+
+uint32_t snode::get_word(uint32_t idx, uint32_t size) const {
+  this->ensureInitialized(size);
+  return impl_->get_word(idx);
+}
+
+void snode::set_word(uint32_t idx, uint32_t value, uint32_t size) {
   this->ensureInitialized(size);
   if (impl_->get_owner() != this)
     this->clone(true);
   impl_->clear_sources(idx * 32, 32);
-  impl_->write(idx, value);
+  impl_->set_word(idx, value);
 }
 
 void snode::read(uint8_t* out,

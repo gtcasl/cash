@@ -20,7 +20,7 @@ public:
   
   ch_bus(const ch_busbase<N>& rhs) : node_(get_node(rhs)) {}
   
-  explicit ch_bus(const bitvector& rhs) : node_(rhs) {}
+  ch_bus(const bitvector& rhs) : node_(rhs) {}
  
 #define CH_DEF_CTOR(type) \
   explicit ch_bus(type value) : node_(bitvector(N, value)) {}
@@ -37,10 +37,6 @@ public:
   CH_DEF_CTOR(uint64_t)
 #undef CH_DEF_CTOR
    
-  explicit ch_bus(snodeimpl* node) : node_(node) {
-    assert(node_.get_size() == N);
-  }
-  
   ch_bus& operator=(const ch_bus& rhs) {
     node_.assign(rhs.node_, N);
     return *this;
@@ -103,45 +99,37 @@ public:
     return !(*this < rhs);
   }
   
-  #define CH_DEF_READ(type) \
+#define CH_DEF_CAST(type) \
   explicit operator type() const { \
-    static_assert(sizeof(type) * 8 >= N, "invalid ouput data size"); \
-    return bitcast<type>(node_.read(0, N)); \
+    return static_cast<type>(node_.get_value()); \
   } 
-  CH_DEF_READ(bool)
-  CH_DEF_READ(char)
-  CH_DEF_READ(int8_t)
-  CH_DEF_READ(uint8_t)
-  CH_DEF_READ(int16_t)
-  CH_DEF_READ(uint16_t)
-  CH_DEF_READ(int32_t)
-  CH_DEF_READ(uint32_t)
-  #undef CH_DEF_READ
+  CH_DEF_CAST(bool)
+  CH_DEF_CAST(char)
+  CH_DEF_CAST(int8_t)
+  CH_DEF_CAST(uint8_t)
+  CH_DEF_CAST(int16_t)
+  CH_DEF_CAST(uint16_t)
+  CH_DEF_CAST(int32_t)
+  CH_DEF_CAST(uint32_t)
+  CH_DEF_CAST(int64_t)
+  CH_DEF_CAST(uint64_t)
+#undef CH_DEF_CAST
   
-  explicit operator uint64_t() const {
-    static_assert(sizeof(uint64_t) * 8 >= N, "invalid ouput data size");
-    uint64_t value = node_.read(0, N);
-    if (N > 32) {
-      value = ((uint64_t)node_.read(1, N) << 32) | value;
-    }
-    return value;
-  }
-  
-  explicit operator int64_t() const {
-    return this->operator uint64_t();
-  }
-  
-  void read(void* out, uint32_t offset, uint32_t length) const override {
+  void read(void* out, uint32_t offset, uint32_t length) const {
     assert(offset + length <= N);
     node_.read(reinterpret_cast<uint8_t*>(out), offset, length, N);
   }
   
-  void write(const void* in, uint32_t offset, uint32_t length) override {
+  void write(const void* in, uint32_t offset, uint32_t length) {
     assert(offset + length <= N);
     node_.write(reinterpret_cast<const uint8_t*>(in), offset, length, N);
   }
 
 protected:
+
+  ch_bus(snodeimpl* node) : node_(node) {
+    assert(node_.get_size() == N);
+  }
   
   void read_data(data_type& inout, size_t offset, size_t length) const override {
     node_.read_data(inout, offset, length, N);
@@ -153,8 +141,13 @@ protected:
   
   snode node_;
 
-  friend class context;
+  template <unsigned M> friend ch_bus<M> make_bus(snodeimpl* node);
 };
+
+template <unsigned N>
+ch_bus<N> make_bus(snodeimpl* node) {
+  return ch_bus<N>(node);
+}
 
 #define CH_DEF_COMP_IMPL(op, type) \
   template <unsigned N> \

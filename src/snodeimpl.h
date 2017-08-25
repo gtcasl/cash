@@ -20,7 +20,6 @@ public:
   }
   
   void set_owner(const snode* owner) {
-    assert(nullptr == owner || nullptr == owner_);
     owner_ = owner;
   }
 
@@ -31,23 +30,23 @@ public:
 
   void clear_sources(uint32_t offset, uint32_t length);
 
-  bitvector::const_reference operator[](uint32_t idx) const {
+  bool get_bit(uint32_t idx) const {
     this->sync_sources();
     return value_[idx];
   }
   
-  bitvector::reference operator[](uint32_t idx) {
+  void set_bit(uint32_t idx, bool value) {
+    this->sync_sources();
+    value_[idx] = value;
     ++changeid_;
-    this->sync_sources();
-    return value_[idx];
   }
   
-  uint32_t read(uint32_t idx) const {
+  uint32_t get_word(uint32_t idx) const {
     this->sync_sources();
     return value_.get_word(idx);
   }
   
-  void write(uint32_t idx, uint32_t value) {
+  void set_word(uint32_t idx, uint32_t value) {
     this->sync_sources();
     value_.set_word(idx, value);
     ++changeid_;
@@ -87,10 +86,21 @@ protected:
   
   struct source_t {
     snodeimpl* node;
-    uint32_t start;    
-    uint32_t offset;    
-    uint32_t length;
+    uint32_t dst_offset;
+    uint32_t src_offset;
+    uint32_t src_length;
     mutable uint64_t changeid;
+
+    bool operator==(const source_t& rhs) const {
+      return this->node == rhs.node
+          && this->dst_offset == rhs.dst_offset
+          && this->src_offset == rhs.src_offset
+          && this->src_length == rhs.src_length;
+    }
+
+    bool operator!=(const source_t& rhs) const {
+      return !(*this == rhs);
+    }
   };
   
   uint32_t id_;

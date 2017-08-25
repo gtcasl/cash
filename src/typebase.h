@@ -6,6 +6,14 @@
 namespace cash {
 namespace detail {
 
+template <unsigned N>
+class ch_literal {
+public:
+  ch_literal(const bitvector& value) : value_(value) {}
+private:
+  bitvector value_;
+};
+
 template <typename T>
 class nodebuf {
 public:
@@ -25,6 +33,10 @@ public:
     : capacity_(length)
     , size_(length) {
     buffer_.emplace_back(entry_t{src, offset, length});
+  }
+
+  uint32_t num_slices() const {
+    return buffer_.size();
   }
   
   uint32_t size() const {

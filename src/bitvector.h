@@ -223,7 +223,7 @@ public:
   
   bitvector(bitvector&& rhs);
   
-  bitvector(uint32_t size);
+  explicit bitvector(uint32_t size);
   
   bitvector(uint32_t size, bool value)
     : bitvector(size, value ? '1' : '0')
@@ -289,33 +289,35 @@ public:
   bitvector& operator=(const std::initializer_list<uint32_t>& value);
   
   bitvector& operator=(int8_t value) {
-    return this->operator =(bitcast<uint32_t>(value));
+    return this->operator=(bitcast<uint32_t>(value));
   }
   
   bitvector& operator=(uint8_t value) {
-    return this->operator =(bitcast<uint32_t>(value));
+    return this->operator=(bitcast<uint32_t>(value));
   }
   
   bitvector& operator=(int16_t value) {
-    return this->operator =(bitcast<uint32_t>(value));
+    return this->operator=(bitcast<uint32_t>(value));
   }
   
   bitvector& operator=(uint16_t value) {
-    return this->operator =(bitcast<uint32_t>(value));
+    return this->operator=(bitcast<uint32_t>(value));
   }
   
   bitvector& operator=(int32_t value) {
-    return this->operator =(bitcast<uint32_t>(value));
+    return this->operator=(bitcast<uint32_t>(value));
   }
   
   bitvector& operator=(int64_t value) {
-    return this->operator =({bitcast<uint32_t>(value >> 32),
-                             bitcast<uint32_t>(value)});
+    return this->operator=(
+      {bitcast<uint32_t>(value >> 32), bitcast<uint32_t>(value)}
+    );
   }
   
   bitvector& operator=(uint64_t value) {
-    return this->operator =({bitcast<uint32_t>(value >> 32),
-                             bitcast<uint32_t>(value)});
+    return this->operator=(
+      {bitcast<uint32_t>(value >> 32), bitcast<uint32_t>(value)}
+    );
   }
   
   const_reference at(uint32_t idx) const {
@@ -418,7 +420,32 @@ public:
   }
 
   bool operator==(const bitvector& rhs) const;
+
   bool operator<(const bitvector& rhs) const;
+
+#define CH_DEF_CAST(type) \
+  explicit operator type() const { \
+    CH_CHECK(sizeof(type) * 8 >= size_, "invalid cast, cannot cast %d-bit vector to %ld-bit value", size_, sizeof(type) * 8); \
+    return bitcast<type>(words_[0]); \
+  }
+  CH_DEF_CAST(bool)
+  CH_DEF_CAST(char)
+  CH_DEF_CAST(int8_t)
+  CH_DEF_CAST(uint8_t)
+  CH_DEF_CAST(int16_t)
+  CH_DEF_CAST(uint16_t)
+  CH_DEF_CAST(int32_t)
+  CH_DEF_CAST(uint32_t)
+#undef CH_DEF_CAST
+
+  explicit operator uint64_t() const {
+    CH_CHECK(sizeof(uint64_t) * 8 >= size_, "invalid cast, cannot cast %d-bit vector to 64-bit value", size_);
+    return (static_cast<uint64_t>((size_ > 32) ? words_[1] : 0) << 32) | words_[0];
+  }
+
+  explicit operator int64_t() const {
+    return this->operator uint64_t();
+  }
   
 protected:
   

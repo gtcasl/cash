@@ -65,7 +65,7 @@ void memimpl::write(const lnode& addr, const lnode& data) {
 
 memportimpl* memimpl::get_port(const lnode& addr, bool writing) {
   for (uint32_t i = ports_offset_, n = srcs_.size(); i < n; ++i) {
-    memportimpl* item  = dynamic_cast<memportimpl*>(srcs_[i].get_impl());
+    auto item  = dynamic_cast<memportimpl*>(srcs_[i].get_impl());
     if (item->get_addr() == addr)
       return item;
   }
@@ -78,14 +78,14 @@ memportimpl* memimpl::get_port(const lnode& addr, bool writing) {
 
 void memimpl::tick(ch_cycle t) {    
   for (uint32_t i = ports_offset_, n = srcs_.size(); i < n; ++i) {
-    memportimpl* port = dynamic_cast<memportimpl*>(srcs_[i].get_impl());
+    auto port = dynamic_cast<memportimpl*>(srcs_[i].get_impl());
     port->tick(t);
   }
 }
 
 void memimpl::tick_next(ch_cycle t) {
   for (uint32_t i = ports_offset_, n = srcs_.size(); i < n; ++i) {
-    memportimpl* port = dynamic_cast<memportimpl*>(srcs_[i].get_impl());
+    auto port = dynamic_cast<memportimpl*>(srcs_[i].get_impl());
     port->tick_next(t);
   }
 }

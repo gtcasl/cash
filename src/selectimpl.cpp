@@ -1,19 +1,21 @@
 #include "selectimpl.h"
+#include "arithm.h"
 #include "select.h"
 #include "if.h"
 #include "switch.h"
 #include "context.h"
-#include "arithm.h"
 
 using namespace std;
 using namespace cash::detail;
 
-selectimpl::selectimpl(const lnode& cond, const lnode& true_, const lnode& false_)
-  : lnodeimpl(op_select, cond.get_ctx(), true_.get_size())
+selectimpl::selectimpl(const lnode& cond, const lnode& _true, const lnode& _false)
+  : lnodeimpl(op_select, cond.get_ctx(), _true.get_size())
   , ctime_(~0ull) {
+  assert(cond.get_size() == 1);
+  assert(_true.get_size() == _false.get_size());
   srcs_.emplace_back(cond);
-  srcs_.emplace_back(true_);
-  srcs_.emplace_back(false_);
+  srcs_.emplace_back(_true);
+  srcs_.emplace_back(_false);
 }
 
 const bitvector& selectimpl::eval(ch_cycle t) {
@@ -34,6 +36,28 @@ lnodeimpl* cash::detail::createSelectNode(
     const lnode& a,
     const lnode& b) {
   return new selectimpl(test, a, b);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+lnodeimpl* select_impl::eval(const lnode& value) {
+  lnodeimpl* curr = nullptr;
+  auto& stmts = stmts_;
+  if (key_.is_empty()) {
+    while (!stmts.empty()) {
+      const auto& stmt = stmts.top();
+      auto cond = createAluNode(alu_op_eq, key_, stmt.cond);
+      curr = createSelectNode(cond, stmt.value, curr ? lnode(curr) : value);
+      stmts.pop();
+    }
+  } else {
+    while (!stmts.empty()) {
+      const auto& stmt = stmts.top();
+      curr = createSelectNode(stmt.cond, stmt.value, curr ? lnode(curr) : value);
+      stmts.pop();
+    }
+  }
+  return curr;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

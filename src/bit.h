@@ -23,14 +23,16 @@ public:
   
   ch_bit(const ch_bit& rhs) : node_(rhs.node_, N) {}
 
-  ch_bit(ch_bit&& rhs) : node_(std::move(rhs.node_)) {}
+  ch_bit(ch_bit&& rhs) : node_(std::move(rhs.node_), N) {}
 
   ch_bit(const ch_bitbase<N>& rhs) : node_(get_node(rhs), N) {}
   
   ch_bit(const bitvector& rhs) : node_(rhs) {}
+
+  ch_bit(const ch_literal<N>& rhs) : node_(rhs.value_) {}
     
 #define CH_DEF_CTOR(type) \
-    ch_bit(type value) : node_(bitvector(N, value)) {}
+  ch_bit(type value) : node_(bitvector(N, value)) {}
   CH_DEF_CTOR(const std::initializer_list<uint32_t>&)
   CH_DEF_CTOR(bool)
   CH_DEF_CTOR(char)
@@ -43,10 +45,6 @@ public:
   CH_DEF_CTOR(int64_t)
   CH_DEF_CTOR(uint64_t)
 #undef CH_DEF_CTOR
-
-  explicit ch_bit(lnodeimpl* node) : node_(node) {
-    assert(node_.get_size() == N);
-  }
   
   ch_bit& operator=(const ch_bit& rhs) {
     node_.assign(rhs.node_, N);
@@ -54,7 +52,7 @@ public:
   }
 
   ch_bit& operator=(ch_bit&& rhs) {
-    node_ = std::move(rhs.node_);
+    node_.move(rhs.node_, N);
     return *this;
   }
   
@@ -90,6 +88,10 @@ public:
   
 protected:
 
+  ch_bit(lnodeimpl* node) : node_(node) {
+    assert(node_.get_size() == N);
+  }
+
   void read_data(data_type& inout,
                  size_t offset,
                  size_t length) const override {
@@ -102,9 +104,16 @@ protected:
                   size_t src_length) override {
     node_.write_data(dst_offset, in, src_offset, src_length, N);
   }
-  
+
   lnode node_;
+
+  template <unsigned M> friend ch_bit<M> make_bit(lnodeimpl* node);
 };
+
+template <unsigned N>
+ch_bit<N> make_bit(lnodeimpl* node) {
+  return ch_bit<N>(node);
+}
 
 // concatenation operator
 

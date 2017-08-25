@@ -40,6 +40,7 @@ public:
   void print_vl(std::ostream& out) const;
   
 protected:
+
   lnode    signal_;
   EDGE_DIR edgedir_;
   bool     cval_; 

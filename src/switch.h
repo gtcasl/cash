@@ -20,7 +20,7 @@ private:
  
   switch_impl(const lnode& key);
  
-  const lnode& key_;
+  lnode key_;
   
   template <unsigned N> friend class switch_t;
 };

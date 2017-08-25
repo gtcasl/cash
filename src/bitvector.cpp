@@ -191,24 +191,14 @@ bitvector& bitvector::operator=(const char* value) {
 }
 
 bitvector& bitvector::operator=(char value) {
-  assert(size_);
-  
-  uint32_t value_;
+  uint32_t _value;
   if (value == '0')
-    value_ = 0x0;
+    _value = 0x0;
   else if (value == '1')
-    value_ = 0x1;
+    _value = 0x1;
   else
-    CH_ABORT("invalid character value");  
-  
-  // write the value
-  words_[0] = value_;
-  
-  // clear unused words
-  uint32_t num_words = (size_ + WORD_MASK) >> WORD_SIZE_LOG;
-  std::fill_n(words_ + 1, num_words - 1, 0x0);
-
-  return *this;
+    CH_ABORT("invalid character value");
+  return this->operator=(_value);
 }
 
 bitvector& bitvector::operator=(uint32_t value) {
@@ -216,10 +206,11 @@ bitvector& bitvector::operator=(uint32_t value) {
   
   // check for extra bits
   uint32_t num_words = (size_ + WORD_MASK) >> WORD_SIZE_LOG;  
-  CH_CHECK((1 < num_words) || 
-                  ((1 == num_words) && 
-                    (0 == (size_ & WORD_MASK) || 
-                      (0 == (value >> (size_ & WORD_MASK))))), "input value overflow");  
+  CH_CHECK((1 < num_words)
+        || ((1 == num_words)
+         && (0 == (size_ & WORD_MASK)
+          || (0 == (value >> (size_ & WORD_MASK))))), "input value overflow");
+
   // write the value
   words_[0] = value;
   

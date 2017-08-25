@@ -26,5 +26,5 @@ void tickimpl::print_vl(std::ostream& out) const {
 ///////////////////////////////////////////////////////////////////////////////
 
 ch_bit<64> cash::detail::ch_tick() {
-  return ch_bit<64>(new tickimpl(ctx_curr()));
+  return make_bit<64>(new tickimpl(ctx_curr()));
 }

@@ -7,7 +7,6 @@ using namespace cash::detail;
 
 inputimpl::inputimpl(ch_operator op, context* ctx, uint32_t size) 
   : ioimpl(op, ctx, size)
-  , bus_(nullptr)
   , ctime_(~0ull)
 {}
 
@@ -59,9 +58,9 @@ outputimpl::~outputimpl() {
 const bitvector& outputimpl::eval(ch_cycle t) {  
   if (ctime_ != t) {
     ctime_ = t;
-    value_ = srcs_[0].eval(t);
-    if (bus_)
-      bus_->set_value(value_);
+    if (bus_) {
+      bus_->set_value(srcs_[0].eval(t));
+    }
   }
   return value_;
 }

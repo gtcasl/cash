@@ -28,7 +28,7 @@ public:
   
   template <unsigned N> 
   ch_bus<N> get_tap(const std::string& name) {
-    return ch_bus<N>(this->get_tap(name, N));
+    return make_bus<N>(this->get_tap(name, N));
   }
   
   void to_verilog(const std::string& module_name, std::ostream& out);  
@@ -144,8 +144,8 @@ protected:
   }
   
   template <unsigned N>
-  snodeimpl* bind_output(const ch_bitbase<N>& output) const {
-    return this->bind_output_(get_node(output));
+  ch_bus<N> bind_output(const ch_bitbase<N>& output) const {
+    return make_bus<N>(this->bind_output_(get_node(output)));
   }
   
   lnodeimpl* bind_input_(const snode& bus) const;

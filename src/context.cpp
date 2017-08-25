@@ -30,8 +30,8 @@ context::context()
 
 context::~context() {  
   // delete all nodes
-  for (auto node : nodes_) {
-    delete node;
+  for (auto it = nodes_.begin(), end = nodes_.end(); it != end;) {
+    delete *it++;
   }
   assert(undefs_.empty());
   assert(proxies_.empty());
@@ -182,7 +182,7 @@ void context::end_branch() {
   assert(!cond_branches_.empty());
   cond_branches_.pop_front();
   if (cond_branches_.empty()) {
-    cond_vars_.clear();
+    cond_upds_.clear();
     block_ids_ = 0;
   }
 }
@@ -226,66 +226,88 @@ bool context::conditional_enabled(lnodeimpl* node) const {
        && 0 == cond_blocks_.front().locals.count(node));
 }
 
-void context::conditional_split(lnode& dst, uint32_t offset, uint32_t length) {
-  CH_UNUSED(dst, offset, length);
-  CH_TODO();
-}
-
 void context::conditional_assign(
     lnode& dst,
     const lnode& src,
     uint32_t offset,
     uint32_t length) {
   assert(this->conditional_enabled(dst.get_impl()));
+  cond_range_t range{dst.get_id(), offset, length};
 
-  CH_UNUSED(dst, src, offset, length);
-  CH_TODO();
+  // split overlapping assignment to same node
+  auto it_upds = std::find_if(cond_upds_.begin(), cond_upds_.end(),
+    [&range](const cond_upds_t::value_type& v)->bool {
+      return (v.first.nodeid == range.nodeid) && (v.first != range);
+    });
+  if (it_upds != cond_upds_.end()) {
+    const auto& curr = it_upds->first;
+    uint32_t curr_end = curr.offset + curr.length;
+    uint32_t src_end  = range.offset + range.length;
+    // overlaps exist?
+    if (range.offset < curr_end && src_end > curr.offset) {
+      if (range.offset <= curr.offset && src_end >= curr_end) {
+        // source fully overlaps
+        assert(false);
+      } else if (range.offset < curr.offset) {
+        // source overlaps on the left
+        this->clone_conditional_assignment(dst, curr, curr.offset, src_end - curr.offset);
+        this->clone_conditional_assignment(dst, curr, src_end, curr_end - src_end);
+      } else if (src_end > curr_end) {
+        // source overlaps on the right
+        this->clone_conditional_assignment(dst, curr, curr.offset, range.offset - curr.offset);
+        this->clone_conditional_assignment(dst, curr, range.offset, curr_end - range.offset);
+      } else {
+        // source fully included
+        this->clone_conditional_assignment(dst, curr, curr.offset, range.offset - curr.offset);
+        this->clone_conditional_assignment(dst, curr, range.offset, curr_end - range.offset);
+        this->clone_conditional_assignment(dst, curr, src_end, curr_end - src_end);
+      }
+      // remove entry
+      cond_upds_.erase(it_upds);
+    }
+  }
 
-  /*// get the current conditional block
+  // get the current conditional block
   cond_block_t& block = cond_blocks_.front();
 
-  // lookup for last conditional assignment to dst
-  auto var_iter = std::find_if(cond_vars_.begin(), cond_vars_.end(),
-    [dst](const cond_var_t& v)->bool { return v.updates.front().sel == dst; });
-  if (var_iter != cond_vars_.end()) {
+  // lookup for dst assignment history  
+  it_upds = cond_upds_.find(range);
+  if (it_upds != cond_upds_.end()) {
     // check if last assignment took place in nested blocks
-    auto upd_iter = var_iter->updates.begin();
-    if (block.id < upd_iter->block_id) {
+    auto it_upd = it_upds->second.begin();
+    if (block.id < it_upd->block_id) {
       // erase all nested assignments
-      auto upd_iterEnd = var_iter->updates.end();
-      for (; upd_iter != upd_iterEnd;) {
-        if (upd_iter->block_id <= block.id)
+      auto it_upd_end = it_upds->second.end();
+      for (;it_upd != it_upd_end;) {
+        if (it_upd->block_id <= block.id)
           break;
-        upd_iter = var_iter->updates.erase(upd_iter);
+        it_upd = it_upds->second.erase(it_upd);
       }
       // remove variable if no more assignment exist
-      if (upd_iter != upd_iterEnd) {
-        cond_vars_.erase(var_iter);
-        var_iter = cond_vars_.end();
+      if (it_upd != it_upd_end) {
+        cond_upds_.erase(it_upds);
+        it_upds = cond_upds_.end();
       }
     }
   }
 
-  if (var_iter != cond_vars_.end()) {
-    cond_upd_t& last_upd = var_iter->updates.front();
+  if (it_upds != cond_upds_.end()) {
+    cond_upd_t& last_upd = it_upds->second.front();
     if (block.id > last_upd.block_id) {
       // last assignment took place in parent or sibling blocks
       if (block.cond) {
         // new conditional assignment
-        selectimpl* sel = dynamic_cast<selectimpl*>(
-            createSelectNode(block.cond, src, last_upd.sel)
-          );
-        var_iter->updates.emplace_front(sel, block.id);
+        auto sel = dynamic_cast<selectimpl*>(createSelectNode(block.cond, src, last_upd.sel));
+        it_upds->second.emplace_front(sel, block.id);
       } else {
         // 'default' last assignment
-        var_iter->updates.back().sel->set_false(src);
+        it_upds->second.back().sel->set_false(src);
       }
     } else {
       // reassignment in current block
       assert(block.id == last_upd.block_id && block.cond);
       last_upd.sel->set_true(src);
     }
-    dst = var_iter->updates.front().sel;
   } else {
     // new variable conditional assignment
     lnodeimpl* cond = block.cond;
@@ -293,14 +315,36 @@ void context::conditional_assign(
       cond_branch_t& branch = cond_branches_.front();
       cond = branch.conds.back();
     }
-    selectimpl* sel = dynamic_cast<selectimpl*>(
-        createSelectNode(cond, src, dst)
-      );
-    cond_vars_.emplace_back(sel, block.id);
-    dst = sel;
+    auto sel = dynamic_cast<selectimpl*>(createSelectNode(cond, src, dst));
+    cond_upds_[range].emplace_front(sel, block.id);
+    it_upds = cond_upds_.find(range);
   }
+  auto proxy = dynamic_cast<proxyimpl*>(dst.get_impl());
+  proxy->add_source(offset, it_upds->second.front().sel, 0, length);
+}
 
-  return dst;*/
+void context::clone_conditional_assignment(
+    lnode& dst,
+    const cond_range_t& range,
+    uint32_t offset,
+    uint32_t length) {
+  lnodeimpl* prev_sel_old = nullptr;
+  lnodeimpl* prev_sel_new = nullptr;
+  // tranverse assignment history in reverse order, from oldest to latest
+  const auto& cond_upds = cond_upds_.at(range);  
+  for (auto it_upd = cond_upds.rbegin(), it_upd_end = cond_upds.rend();
+       it_upd != it_upd_end; ++it_upd) {
+    auto _true = (it_upd->sel->get_true() == prev_sel_old) ?
+          prev_sel_new : new proxyimpl(it_upd->sel->get_true(), offset, length);
+    auto _false = (it_upd->sel->get_false() == prev_sel_old) ?
+          prev_sel_new : new proxyimpl(it_upd->sel->get_false(), offset, length);
+    auto sel = dynamic_cast<selectimpl*>(createSelectNode(it_upd->sel->get_cond(), _true, _false));
+    cond_upds_[range].emplace_front(sel, it_upd->block_id);
+    prev_sel_old = it_upd->sel;
+    prev_sel_new = sel;
+  }
+  auto proxy = dynamic_cast<proxyimpl*>(dst.get_impl());
+  proxy->add_source(offset, prev_sel_new, 0, length);
 }
 
 void context::erase_block_local(lnodeimpl* src, lnodeimpl* dst) {
@@ -323,9 +367,8 @@ void context::erase_block_local(lnodeimpl* src, lnodeimpl* dst) {
 
 lnodeimpl* context::create_literal(const bitvector& value) {
   for (litimpl* lit : literals_) {
-    if (lit->get_value() == value) {
+    if (lit->get_value() == value)
       return lit;
-    }
   }
   return new litimpl(this, value);
 }
@@ -483,7 +526,7 @@ void context::dump_cfg(lnodeimpl* node, std::ostream& out, uint32_t level) {
   
   visits[node->get_id()] = true;
   
-  tapimpl* const tap = dynamic_cast<tapimpl*>(node);
+  auto tap = dynamic_cast<tapimpl*>(node);
   if (tap) {
     node = tap->get_target().get_impl();
     node->print(out, level);
@@ -510,34 +553,34 @@ void context::dump_stats(std::ostream& out) {
   uint32_t num_proxies = 0;
   
   for (lnodeimpl* node : nodes_) {
-    memimpl* mem = dynamic_cast<memimpl*>(node);
+    auto* mem = dynamic_cast<memimpl*>(node);
     if (mem) {
       ++num_memories;
       memory_bits += mem->get_total_size();      
       continue;
     }
-    regimpl* reg = dynamic_cast<regimpl*>(node);
+    auto* reg = dynamic_cast<regimpl*>(node);
     if (reg) {
       ++num_registers;
       register_bits += reg->get_size();      
       continue;
     }
-    selectimpl* sel = dynamic_cast<selectimpl*>(node);
+    auto* sel = dynamic_cast<selectimpl*>(node);
     if (sel) {
       ++num_muxes;
       continue;
     }
-    aluimpl* alu = dynamic_cast<aluimpl*>(node);
+    auto* alu = dynamic_cast<aluimpl*>(node);
     if (alu) {
       ++num_alus;
       continue;
     }
-    litimpl* lit = dynamic_cast<litimpl*>(node);
+    auto* lit = dynamic_cast<litimpl*>(node);
     if (lit) {
       ++num_lits;
       continue;
     }
-    proxyimpl* proxy = dynamic_cast<proxyimpl*>(node);
+    auto* proxy = dynamic_cast<proxyimpl*>(node);
     if (proxy) {
       ++num_proxies;
       continue;

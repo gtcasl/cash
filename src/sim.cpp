@@ -44,7 +44,7 @@ void ch_simulator::ensureInitialize() {
       if (nullptr == clk_) {
         clk_ = new snodeimpl(1);
         clk_->acquire();
-        clk_->write(0u, 0x1); // initialize the clock to '1'        
+        clk_->set_bit(0, true); // set 'high' by default
       }
       ctx->clk_->bind(clk_);
     }
@@ -108,9 +108,9 @@ ch_cycle ch_simulator::reset(ch_cycle t) {
   }
 
   if (reset_) {
-    (*reset_)[0] = true;    
+    reset_->set_bit(0, true);
     this->step(t++);
-    (*reset_)[0] = false;
+    reset_->set_bit(0, false);
   }
   
   return t;
@@ -119,7 +119,7 @@ ch_cycle ch_simulator::reset(ch_cycle t) {
 void ch_simulator::step(ch_cycle t) {
   if (clk_) {
     for (int i = 0; i < 2; ++i) {
-      (*clk_)[0] = !(*clk_)[0];
+      clk_->set_bit(0, !clk_->get_bit(0));
       this->tick(t * 2 + i);      
     }
   } else {
@@ -131,7 +131,8 @@ void ch_simulator::step(ch_cycle t) {
 
 ch_tracer::ch_tracer(std::ostream& out, const std::initializer_list<const ch_device*>& devices) 
   : ch_simulator(devices)
-  , out_(out) {}
+  , out_(out)
+{}
 
 ch_tracer::~ch_tracer() {}
 

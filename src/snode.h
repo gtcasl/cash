@@ -29,7 +29,7 @@ public:
   ~snode();
   
   snode& operator=(const snode& rhs);
-  
+
   snode& operator=(snode&& rhs);
 
   bool is_empty() const;
@@ -46,17 +46,15 @@ public:
 
   const bitvector& get_value() const;
 
-  bitvector::const_reference operator[](uint32_t idx) const;
-
-  bitvector::reference operator[](uint32_t idx);
+  bool operator[](uint32_t idx) const;
 
   void assign(const snode& rhs, uint32_t size);
 
   void assign(const bitvector& rhs);
   
-  uint32_t read(uint32_t idx, uint32_t size) const;
+  uint32_t get_word(uint32_t idx, uint32_t size) const;
   
-  void write(uint32_t idx, uint32_t value, uint32_t size);
+  void set_word(uint32_t idx, uint32_t value, uint32_t size);
   
   void read(uint8_t* out,
             uint32_t offset,

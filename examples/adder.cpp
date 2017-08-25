@@ -13,10 +13,7 @@ __out(ch_bit<N>, ch_bit1) Adder(
   ch_bit1 cout;
   ch_bit<N+1> sum((0_b, lhs) + rhs + cin);
   cout = sum[N];
-  out  = ch_slice<N>(sum);  
-
-  //auto x = std::make_tuple<ch_bit<N>, ch_bit1>(out, cout);
-  //auto y = std::tuple<ch_bit<N>, ch_bit1>(x);
+  out  = ch_slice<N>(sum);
 
   __ret(out, cout);
 }

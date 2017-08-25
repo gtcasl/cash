@@ -6,8 +6,6 @@
 namespace cash {
 namespace detail {
 
-class snodeimpl;
-
 class ioimpl : public lnodeimpl {
 public:
   ioimpl(ch_operator op, context* ctx, uint32_t size)
@@ -33,8 +31,8 @@ public:
   void print_vl(std::ostream& out) const override;
   
 protected:
-  snode bus_;
-  ch_cycle   ctime_;
+  snode    bus_;
+  ch_cycle ctime_;
 };
 
 class outputimpl : public ioimpl {

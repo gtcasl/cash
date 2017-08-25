@@ -37,6 +37,8 @@ namespace core {
 
   using namespace cash::utility;
 
+  using cash::detail::ch_literal;
+
   //
   // basic types
   //

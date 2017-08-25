@@ -40,11 +40,11 @@
 #define CH_BINOP_GEN0(func, type) \
   template <unsigned N> \
   ch_bit<N> func(const ch_bitbase<N>& a, type b) { \
-  return func(a, ch_bit<N>(b));\
+    return func(a, ch_bit<N>(b));\
   } \
   template <unsigned N> \
   ch_bit<N> func(type a, const ch_bitbase<N>& b) { \
-  return func(ch_bit<N>(a), b); \
+    return func(ch_bit<N>(a), b); \
   }
 
 #define CH_BINOP_GEN1(func) \
@@ -199,22 +199,22 @@ CH_SHIFTOP_GEN1(ch_rotr)
 
 template <ch_alu_op op, unsigned N, unsigned M>
 ch_bit<N> OpBinary(const ch_bitbase<N>& a, const ch_bitbase<M>& b) {
-  return ch_bit<N>(createAluNode(op, get_node(a), get_node(b)));
+  return make_bit<N>(createAluNode(op, get_node(a), get_node(b)));
 }
 
 template <ch_alu_op op, unsigned N>
 ch_bit<1> OpCompare(const ch_bitbase<N>& a, const ch_bitbase<N>& b) {
-  return ch_bit<1>(createAluNode(op, get_node(a), get_node(b)));
+  return make_bit<1>(createAluNode(op, get_node(a), get_node(b)));
 }
 
 template <ch_alu_op op, unsigned N>
 ch_bit<N> OpUnary(const ch_bitbase<N>& a) {
-  return ch_bit<N>(createAluNode(op, get_node(a)));
+  return make_bit<N>(createAluNode(op, get_node(a)));
 }
 
 template <ch_alu_op op, unsigned N>
 ch_bit<1> OpReduce(const ch_bitbase<N>& a) {
-  return ch_bit<1>(createAluNode(op, get_node(a)));
+  return make_bit<1>(createAluNode(op, get_node(a)));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -375,12 +375,12 @@ ch_bit<N> ch_mod(const ch_bitbase<N>& a, const ch_bitbase<N>& b) {
 
 template <unsigned N, unsigned S>
 ch_bit<(N >> S)> ch_mux(const ch_bitbase<N>& in, const ch_bitbase<S>& sel) {
-  return ch_bit<(N >> S)>(createAluNode(alu_op_mux, get_node(in), get_node(sel)));
+  return make_bit<(N >> S)>(createAluNode(alu_op_mux, get_node(in), get_node(sel)));
 }
 
 template <unsigned N, unsigned S> 
 ch_bit<(N << S)> ch_demux(const ch_bitbase<N>& in, const ch_bitbase<S>& sel) {
-  return ch_bit<(N << S)>(createAluNode(alu_op_mux, get_node(in), get_node(sel)));
+  return make_bit<(N << S)>(createAluNode(alu_op_mux, get_node(in), get_node(sel)));
 }
 
 ///////////////////////////////////////////////////////////////////////////////

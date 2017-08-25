@@ -24,7 +24,7 @@ public:
 
   lnode(const lnode& rhs, uint32_t size);
 
-  lnode(lnode&& rhs);
+  lnode(lnode&& rhs, uint32_t size);
 
   explicit lnode(uint32_t size);
 
@@ -35,8 +35,6 @@ public:
   lnode(const data_type& data);
 
   lnode& operator=(const lnode& rhs);
-
-  lnode& operator=(lnode&& rhs);
 
   bool operator==(const lnode& rhs) const;
 
@@ -64,6 +62,8 @@ public:
 
   void assign(const bitvector& value);
 
+  void move(lnode& rhs, uint32_t size);
+
   void read_data(data_type& inout,
                  uint32_t offset,
                  uint32_t length,
@@ -77,14 +77,8 @@ public:
 
 protected:
 
-  void ensureInitialized(uint32_t size) const;
+  void ensureInitialized(uint32_t size, bool initialize) const;
 
-  proxyimpl* ensureProxyNode(context* ctx, uint32_t size, bool initialize) const;
-
-  void clear();
-  
-  void move(lnode& rhs);
-  
   void init(uint32_t dst_offset,
             const lnode& src,
             uint32_t src_offset,

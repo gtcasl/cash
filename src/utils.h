@@ -245,25 +245,29 @@ constexpr uint32_t rotr(uint32_t value, uint32_t shift, uint32_t width) {
 #ifdef NDEBUG
   #define CH_ABORT(msg, ...) \
     do { \
-      fprintf(stderr, "error: " msg "\n", ##__VA_ARGS__); \
+      fprintf(stderr, "ERROR: " msg "\n", ##__VA_ARGS__); \
       std::abort(); \
-    } while (0)
+    } while (false)
 
   #define DBG(level, format, ...)
 #else
   #define CH_ABORT(msg, ...) \
     do { \
       cash::detail::dump_stack_trace(stdout); \
-      fprintf(stderr, "ERROR: " msg " (%s:%d:%s)\n", ##__VA_ARGS__, __FILE__, __LINE__, __FUNCTION__); \
+      fprintf(stderr, "ERROR: " msg " (" __FILE__ ":" CH_STRINGIZE(__LINE__) ")\n", ##__VA_ARGS__); \
       std::abort(); \
-    } while (0)
+    } while (false)
 
   #define DBG(level, format, ...) \
     dbprint(level, "DBG: " format, ##__VA_ARGS__)
 #endif
 
 #define CH_CHECK(x, msg, ...) \
-  if (!(x)) CH_ABORT(msg, ##__VA_ARGS__)
+  do { \
+    if (!(x)) { \
+      CH_ABORT("assertion (" CH_STRINGIZE(x) ") failed, " msg, ##__VA_ARGS__); \
+    } \
+  } while (false)
 
 #define CH_UNUSED(...) cash::detail::unused(__VA_ARGS__)
 

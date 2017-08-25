@@ -1,7 +1,7 @@
 #include "regimpl.h"
+#include "select.h"
 #include "context.h"
 #include "reg.h"
-#include "select.h"
 
 using namespace std;
 using namespace cash::detail;
@@ -48,6 +48,9 @@ latchimpl::latchimpl(const lnode& next,
                      const lnode& enable,
                      const lnode& reset)
   : lnodeimpl(op_latch, next.get_ctx(), next.get_size()) {
+  assert(next.get_size() == init.get_size());
+  assert(enable.get_size() == 1);
+  assert(reset.get_size() == 1);
   context* ctx = next.get_ctx();
 
   cd_ = ctx->create_cdomain(
@@ -90,7 +93,7 @@ void latchimpl::print_vl(ostream& out) const {
 ///////////////////////////////////////////////////////////////////////////////
 
 ch_bit<1> cash::detail::ch_clock() {
-  return ch_bit<1>(ctx_curr()->get_clk());
+  return make_bit<1>(ctx_curr()->get_clk());
 }
 
 void cash::detail::ch_push_clock(const ch_bitbase<1>& clk) {
@@ -102,7 +105,7 @@ void cash::detail::ch_pop_clock() {
 }
 
 ch_bit<1> cash::detail::ch_reset() {
-  return ch_bit<1>(ctx_curr()->get_reset());
+  return make_bit<1>(ctx_curr()->get_reset());
 }
 
 void cash::detail::ch_push_reset(const ch_bitbase<1>& reset) {
@@ -113,7 +116,7 @@ void cash::detail::ch_pop_reset() {
   ctx_curr()->pop_reset();
 }
 
-lnodeimpl* cash::detail:: createRegNode(const lnode& next, const lnode& init) {
+lnodeimpl* cash::detail::createRegNode(const lnode& next, const lnode& init) {
   lnodeimpl* reset = ctx_curr()->get_reset();
   return new regimpl(createSelectNode(reset, init, next));
 }
