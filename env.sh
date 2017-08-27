@@ -4,6 +4,8 @@
 
 CURDIR=`pwd`
 
+export CASH_PATH=$CURDIR/src
+
 export CPATH=$CURDIR/src:$CPATH
 
 export LIBRARY_PATH=$CURDIR/src:$LIBRARY_PATH
