@@ -9,7 +9,6 @@
 #include "snodeimpl.h"
 #include "context.h"
 
-using namespace std;
 using namespace cash::detail;
 
 lnodeimpl::lnodeimpl(ch_operator op, context* ctx, uint32_t size) 
@@ -44,6 +43,13 @@ bool lnodeimpl::valid() const {
       return false;
   }
   return true;
+}
+
+lnodeimpl* lnodeimpl::get_slice(uint32_t offset, uint32_t length) {
+  assert(length <= value_.get_size());
+  if (value_.get_size() == length)
+    return this;
+  return new proxyimpl(this, offset, length);
 }
 
 void lnodeimpl::print(std::ostream& out, uint32_t level) const {
@@ -84,7 +90,7 @@ void undefimpl::print_vl(std::ostream&) const {
 lnode::lnode() : impl_(nullptr) {}
 
 lnode::lnode(uint32_t size) : impl_(nullptr) {
-  // force initialization of objects inside control blocks
+  // force initialization inside conditional blocks
   if (ctx_curr()->conditional_enabled()) {
     this->ensureInitialized(size, true);
   }
@@ -95,7 +101,7 @@ lnode::lnode(lnodeimpl* impl) : impl_(impl) {
 }
 
 lnode::lnode(const bitvector& value) {
-  impl_ = ctx_curr()->create_literal(value);
+  impl_ = ctx_curr()->createLiteralNode(value);
 }
 
 lnode::lnode(const data_type& data) : impl_(nullptr) {    
@@ -117,8 +123,10 @@ lnode::lnode(const lnode& rhs, uint32_t size) : impl_(nullptr) {
   this->init(0, rhs, 0, size, size);
 }
 
-lnode::lnode(lnode&& rhs, uint32_t size) : impl_(nullptr) {
-  this->move(rhs, size);
+lnode::lnode(lnode&& rhs, uint32_t size) {
+  rhs.ensureInitialized(size, true);
+  impl_ = rhs.impl_;
+  rhs.impl_ = nullptr;
 }
 
 lnode::lnode(const lnode& rhs) : impl_(rhs.impl_) {}
@@ -138,18 +146,22 @@ void lnode::assign(const lnode& rhs, uint32_t size) {
 }
 
 void lnode::assign(const bitvector& value) {
-  auto impl = ctx_curr()->create_literal(value);
+  auto impl = ctx_curr()->createLiteralNode(value);
   this->assign(0, impl, 0, value.get_size(), value.get_size());
 }
 
 void lnode::move(lnode& rhs, uint32_t size) {
   assert(this != &rhs);
   rhs.ensureInitialized(size, true);
-  auto proxy = dynamic_cast<proxyimpl*>(impl_);
-  if (proxy) {
-    proxy->add_source(0, rhs, 0, size);
+  if (ctx_curr()->conditional_enabled(impl_)) {
+    this->assign(0, rhs, 0, size, size);
   } else {
-    impl_ = rhs.impl_;
+    auto proxy = dynamic_cast<proxyimpl*>(impl_);
+    if (proxy) {
+      proxy->add_source(0, rhs, 0, size);
+    } else {
+      impl_ = rhs.impl_;
+    }
   }
   rhs.impl_ = nullptr;
 }
@@ -232,21 +244,33 @@ void lnode::assign(uint32_t dst_offset,
                    uint32_t size) {
   assert(size > dst_offset);
   assert(size >= dst_offset + src_length);
-  context* ctx = src.get_ctx();
-  if (ctx->conditional_enabled(impl_)) {    
-    this->ensureInitialized(size, true);
-    auto proxy = dynamic_cast<proxyimpl*>(impl_);
+  context* ctx = src.get_ctx();  
+
+  auto proxy = dynamic_cast<proxyimpl*>(impl_);
+  if (nullptr == proxy) {
+    lnodeimpl* impl = nullptr;
+    std::swap<lnodeimpl*>(impl, impl_);
+    this->ensureInitialized(size, nullptr == impl);
+    proxy = dynamic_cast<proxyimpl*>(impl_);
+    if (impl) {
+      proxy->add_source(0, impl, 0, size);
+    }
+    ctx->remove_from_locals(impl_);
+  }
+
+  if (ctx->conditional_enabled(impl_)) {
     const auto& slices = proxy->get_update_slices(dst_offset, src_length);
     for (const auto& slice : slices) {
-      proxyimpl* proxy_src = nullptr;
-      if (slice.second != size) {
-        proxy_src = new proxyimpl(ctx, slice.second);
-        proxy_src->add_source(0, src, src_offset + (slice.first - dst_offset), slice.second);
+      lnodeimpl* src_impl = src.get_impl();
+      if (slice.second != src.get_size()) {
+        assert(slice.first >= dst_offset);
+        uint32_t offset = src_offset + (slice.first - dst_offset);
+        src_impl = new proxyimpl(src, offset, slice.second);
       }
-      ctx->conditional_assign(*this, (proxy_src ? lnode(proxy_src) : src), slice.first, slice.second);
+      ctx->conditional_assign(*this, src_impl, slice.first, slice.second);
     }
   } else {
-    this->init(dst_offset, src, src_offset, src_length, size);
+    proxy->add_source(dst_offset, src, src_offset, src_length);
   }
 }
 

@@ -32,7 +32,7 @@ protected:
   
   virtual void ensureInitialize();
   
-  std::set<context*> contexts_;
+  std::unordered_set<context*> contexts_;
   bool initialized_;
   snodeimpl* clk_;
   snodeimpl* reset_;
@@ -73,7 +73,7 @@ protected:
   
   void add_trace(const std::string& name, const snode& value);
   
-  std::map<std::string, unsigned> dup_taps_;
+  std::unordered_map<std::string, unsigned> dup_taps_;
   std::vector<tap_t> taps_;
   std::ostream& out_;
 };

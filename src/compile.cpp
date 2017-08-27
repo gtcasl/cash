@@ -48,16 +48,57 @@ void ch_compiler::syntax_check() {
 }
 
 bool ch_compiler::dead_code_elimination() {
-  set<lnodeimpl*> live_nodes = live_nodes_;    
+  std::unordered_map<proxyimpl*, std::unordered_set<uint32_t>> proxy_used_sources;
+  std::unordered_set<lnodeimpl*> live_nodes = live_nodes_;
   std::list<lnodeimpl*> working_set(live_nodes.begin(), live_nodes.end());
   
   while (!working_set.empty()) {
-    lnodeimpl* const node = working_set.front();
+    lnodeimpl* node = working_set.front();
     auto& srcs = node->get_srcs();
-    for (auto iter = srcs.begin(), iterEnd = srcs.end(); iter != iterEnd;) {
-      auto iterCur = iter++;
-      auto& src = *iterCur;
-      lnodeimpl* const src_impl = src.get_impl();
+
+    // delete unused proxy sources
+    auto proxy = dynamic_cast<proxyimpl*>(node);
+    if (proxy) {
+      if (proxy_used_sources.count(proxy)) {
+        auto& uses = proxy_used_sources.at(proxy);
+        uint32_t i = 0;
+        for (auto it = srcs.begin(); it != srcs.end();) {
+          if (0 == uses.count(i++)) {
+            it = proxy->erase_source(it);
+          } else {
+            ++it;
+          }
+        }
+      }
+    }
+
+    for (uint32_t i = 0, n = srcs.size(); i < n; ++i) {
+      lnodeimpl* src_impl = srcs[i].get_impl();
+
+      // special handling for proxy nodes
+      auto src_proxy = dynamic_cast<proxyimpl*>(src_impl);
+      if (src_proxy) {
+        auto& uses = proxy_used_sources[src_proxy];
+        if (proxy) {
+          for (auto& curr : src_proxy->get_ranges()) {
+            uint32_t curr_end = curr.dst_offset + curr.src_length;
+            for (auto& range : proxy->get_ranges()) {
+              if (range.src_idx == i) {
+                uint32_t src_end = range.src_offset + range.src_length;
+                // do ranges overlap?
+                if (range.src_offset < curr_end && src_end > curr.dst_offset) {
+                  uses.insert(curr.src_idx);
+                }
+              }
+            }
+          }
+        } else {
+          for (auto& curr : src_proxy->get_ranges()) {
+            uses.insert(curr.src_idx);
+          }
+        }
+      }
+
       auto ret = live_nodes.emplace(src_impl);
       if (ret.second) {
         // we have a new live node, add it to working set
@@ -70,7 +111,7 @@ bool ch_compiler::dead_code_elimination() {
   return (this->remove_dead_nodes(live_nodes) != 0);
 }
 
-size_t ch_compiler::remove_dead_nodes(const std::set<lnodeimpl*>& live_nodes) {
+size_t ch_compiler::remove_dead_nodes(const std::unordered_set<lnodeimpl*>& live_nodes) {
   size_t deleted = 0;
   for (auto iter = ctx_->nodes_.begin(),
        iterEnd = ctx_->nodes_.end(); iter != iterEnd;) {

@@ -2,8 +2,8 @@
 
 using namespace cash::core_literals;
 
-TEST_CASE("memory tests", "[memory]") {    
-  SECTION("test rom", "[rom]") {
+TEST_CASE("memory", "[memory]") {
+  SECTION("rom", "[rom]") {
     TEST([]()->ch_bit1 {
       ch_bit2 a;
       ch_bit4 q;
@@ -38,7 +38,7 @@ TEST_CASE("memory tests", "[memory]") {
     }, 5);
   }
   
-  SECTION("test mem", "[mem]") {
+  SECTION("mem", "[mem]") {
     TEST([]()->ch_bit1 {
       ch_bit2 a;
       ch_bit4 d, q;

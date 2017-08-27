@@ -74,30 +74,6 @@ public:
   CH_DEF_AOP(int64_t)
   CH_DEF_AOP(uint64_t)
 #undef CH_DEF_AOP
-
-  bool operator==(const ch_bus& rhs) const {
-    return node_.is_equal(rhs.node_, N);
-  }
-
-  bool operator<(const ch_bus& rhs) const {
-    return node_.is_less(rhs.node_, N);
-  }
-
-  bool operator!=(const ch_bus& rhs) const {
-    return !(*this == rhs);
-  }
-
-  bool operator>(const ch_bus& rhs) const {
-    return (rhs < *this);
-  }
-
-  bool operator<=(const ch_bus& rhs) const {
-    return !(*this > rhs);
-  }
-
-  bool operator>=(const ch_bus& rhs) const {
-    return !(*this < rhs);
-  }
   
 #define CH_DEF_CAST(type) \
   explicit operator type() const { \
@@ -152,11 +128,11 @@ ch_bus<N> make_bus(snodeimpl* node) {
 #define CH_DEF_COMP_IMPL(op, type) \
   template <unsigned N> \
   bool op(const ch_busbase<N>& lhs, type rhs) { \
-    return lhs.op(ch_bus<N>(rhs)); \
+    return op(lhs, ch_bus<N>(rhs)); \
   } \
   template <unsigned N> \
   bool op(type lhs, const ch_busbase<N>& rhs) { \
-    return ch_bus<N>(lhs).op(rhs); \
+    return op(ch_bus<N>(lhs), rhs); \
   }
 #define CH_DEF_COMP(type) \
   CH_DEF_COMP_IMPL(operator==, type) \

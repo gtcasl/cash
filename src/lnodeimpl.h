@@ -93,10 +93,12 @@ public:
   }
   
   const lnode& get_src(unsigned i) const {
+    assert(i < srcs_.size());
     return srcs_[i];
   }
   
   const lnode& get_src(unsigned i) {
+    assert(i < srcs_.size());
     return srcs_[i];
   }
   
@@ -111,6 +113,8 @@ public:
   bitvector& get_value() { 
     return value_;
   }
+
+  virtual lnodeimpl* get_slice(uint32_t offset, uint32_t length);
   
   virtual bool ready() const;
   virtual bool valid() const;  

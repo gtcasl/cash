@@ -1,7 +1,6 @@
 #include "litimpl.h"
 #include "context.h"
 
-using namespace std;
 using namespace cash::detail;
 
 litimpl::litimpl(context* ctx, const bitvector& value) 
@@ -13,13 +12,13 @@ const bitvector& litimpl::eval(ch_cycle) {
   return value_; 
 }
 
-void litimpl::print(ostream& out, uint32_t level) const {
+void litimpl::print(std::ostream& out, uint32_t level) const {
   CH_UNUSED(level);
   out << "#" << id_ << " <- " << this->get_name() << value_.get_size() 
       << "(" << value_ << ")";
 }
 
-void litimpl::print_vl(ostream& out) const {
+void litimpl::print_vl(std::ostream& out) const {
   CH_UNUSED(out);
   CH_TODO();
 }

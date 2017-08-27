@@ -1,7 +1,6 @@
 #include "common.h"
 #include "platform.h"
 
-using namespace std;
 using namespace cash::detail;
 
 platform::platform()

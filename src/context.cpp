@@ -16,7 +16,6 @@
 #include "arithm.h"
 #include "select.h"
 
-using namespace std;
 using namespace cash::detail;
 
 thread_local context* tls_ctx = nullptr;
@@ -187,10 +186,12 @@ void context::end_branch() {
   }
 }
 
-void context::begin_block(lnodeimpl* cond) {
+void context::begin_block(lnodeimpl* cond) {  
   lnodeimpl* cond_u = cond;
   cond_branch_t& branch = cond_branches_.front();
+  // build aggregate conditional predicate
   if (nullptr == cond_u) {
+    // 'default' predicate
     for (auto c : branch.conds) {
       if (cond_u) {
         cond_u = createAluNode(alu_op_or, c, cond_u);
@@ -202,6 +203,7 @@ void context::begin_block(lnodeimpl* cond) {
   }
   branch.conds.emplace_back(cond_u);
 
+  // add parent blocks predicates
   auto parent_iter = cond_blocks_.begin();
   if (parent_iter != cond_blocks_.end()) {
     lnodeimpl* parent_cond = parent_iter->cond;
@@ -212,6 +214,7 @@ void context::begin_block(lnodeimpl* cond) {
     cond = createAluNode(alu_op_and, parent_cond, cond_u);
   }
 
+  // insert new conditional block
   cond_blocks_.emplace_front(block_ids_++, cond);
 }
 
@@ -236,31 +239,40 @@ void context::conditional_assign(
 
   // split overlapping assignment to same node
   auto it_upds = std::find_if(cond_upds_.begin(), cond_upds_.end(),
-    [&range](const cond_upds_t::value_type& v)->bool {
-      return (v.first.nodeid == range.nodeid) && (v.first != range);
+    [&](const cond_upds_t::value_type& v)->bool {
+      const auto& curr = v.first;
+      uint32_t curr_end = curr.offset + curr.length;
+      uint32_t src_end = offset + length;
+      return (curr != range)
+          && (curr.nodeid == range.nodeid)
+          && (offset < curr_end && src_end > curr.offset);
     });
   if (it_upds != cond_upds_.end()) {
     const auto& curr = it_upds->first;
     uint32_t curr_end = curr.offset + curr.length;
-    uint32_t src_end  = range.offset + range.length;
+    uint32_t src_end = offset + length;
     // overlaps exist?
-    if (range.offset < curr_end && src_end > curr.offset) {
-      if (range.offset <= curr.offset && src_end >= curr_end) {
+    if (offset < curr_end && src_end > curr.offset) {
+      if (offset <= curr.offset && src_end >= curr_end) {
         // source fully overlaps
         assert(false);
-      } else if (range.offset < curr.offset) {
+      } else if (offset < curr.offset) {
         // source overlaps on the left
         this->clone_conditional_assignment(dst, curr, curr.offset, src_end - curr.offset);
         this->clone_conditional_assignment(dst, curr, src_end, curr_end - src_end);
       } else if (src_end > curr_end) {
         // source overlaps on the right
-        this->clone_conditional_assignment(dst, curr, curr.offset, range.offset - curr.offset);
-        this->clone_conditional_assignment(dst, curr, range.offset, curr_end - range.offset);
+        this->clone_conditional_assignment(dst, curr, curr.offset, offset - curr.offset);
+        this->clone_conditional_assignment(dst, curr, offset, curr_end - offset);
       } else {
         // source fully included
-        this->clone_conditional_assignment(dst, curr, curr.offset, range.offset - curr.offset);
-        this->clone_conditional_assignment(dst, curr, range.offset, curr_end - range.offset);
-        this->clone_conditional_assignment(dst, curr, src_end, curr_end - src_end);
+        if (offset != curr.offset) {
+          this->clone_conditional_assignment(dst, curr, curr.offset, offset - curr.offset);
+        }
+        this->clone_conditional_assignment(dst, curr, offset, src_end - offset);
+        if (src_end != curr_end) {
+          this->clone_conditional_assignment(dst, curr, src_end, curr_end - src_end);
+        }
       }
       // remove entry
       cond_upds_.erase(it_upds);
@@ -301,7 +313,7 @@ void context::conditional_assign(
       // last assignment took place in parent or sibling blocks
       if (block.cond) {
         // new conditional assignment
-        auto sel = dynamic_cast<selectimpl*>(createSelectNode(block.cond, src, last_upd.sel));
+        sel = dynamic_cast<selectimpl*>(createSelectNode(block.cond, src, last_upd.sel));
         it_upds->second.emplace_front(sel, block.id);
       } else {
         // 'default' last assignment
@@ -319,7 +331,8 @@ void context::conditional_assign(
       cond_branch_t& branch = cond_branches_.front();
       cond = branch.conds.back();
     }
-    sel = dynamic_cast<selectimpl*>(createSelectNode(cond, src, dst));
+    auto _false = dst.get_impl()->get_slice(offset, length);
+    sel = dynamic_cast<selectimpl*>(createSelectNode(cond, src, _false));
     cond_upds_[range].emplace_front(sel, block.id);
   }
 
@@ -340,42 +353,34 @@ void context::clone_conditional_assignment(
     uint32_t length) {
   lnodeimpl* prev_sel_old = nullptr;
   lnodeimpl* prev_sel_new = nullptr;
-  // tranverse assignment history in reverse order, from oldest to latest
+  cond_range_t new_range{dst.get_id(), offset, length};
+  // traverse assignment history in reverse order, from oldest to latest
   const auto& cond_upds = cond_upds_.at(range);  
   for (auto it_upd = cond_upds.rbegin(), it_upd_end = cond_upds.rend();
        it_upd != it_upd_end; ++it_upd) {
-    auto _true = (it_upd->sel->get_true() == prev_sel_old) ?
-          prev_sel_new : new proxyimpl(it_upd->sel->get_true(), offset, length);
-    auto _false = (it_upd->sel->get_false() == prev_sel_old) ?
-          prev_sel_new : new proxyimpl(it_upd->sel->get_false(), offset, length);
-    auto sel = dynamic_cast<selectimpl*>(createSelectNode(it_upd->sel->get_cond(), _true, _false));
-    cond_upds_[range].emplace_front(sel, it_upd->block_id);
-    prev_sel_old = it_upd->sel;
-    prev_sel_new = sel;
+    auto sel_old = it_upd->sel;
+    auto _true = (sel_old->get_true().get_impl() == prev_sel_old) ?
+          prev_sel_new : new proxyimpl(sel_old->get_true(), offset - range.offset, length);
+    auto _false = (sel_old->get_false().get_impl() == prev_sel_old) ?
+          prev_sel_new : new proxyimpl(sel_old->get_false(), offset - range.offset, length);
+    auto sel_new = dynamic_cast<selectimpl*>(createSelectNode(sel_old->get_cond(), _true, _false));
+    cond_upds_[new_range].emplace_front(sel_new, it_upd->block_id);
+    prev_sel_old = sel_old;
+    prev_sel_new = sel_new;
   }
   auto proxy = dynamic_cast<proxyimpl*>(dst.get_impl());
   proxy->add_source(offset, prev_sel_new, 0, length);
 }
 
-void context::erase_block_local(lnodeimpl* src, lnodeimpl* dst) {
+void context::remove_from_locals(lnodeimpl* node) {
   if (cond_blocks_.empty())
     return;
+  // remove from local scope
   cond_block_t& block = cond_blocks_.front();
-  if (block.locals.count(src)
-   && 0 == block.locals.count(dst)) {
-    block.locals.erase(src); // remove from local scope
-    if (dst) {
-      for (auto& b : cond_blocks_) {
-        if (b.locals.count(dst)) {
-          b.locals.insert(src);
-          return;
-        }
-      }
-    }
-  }
+  block.locals.erase(node);
 }
 
-lnodeimpl* context::create_literal(const bitvector& value) {
+lnodeimpl* context::createLiteralNode(const bitvector& value) {
   for (litimpl* lit : literals_) {
     if (lit->get_value() == value)
       return lit;
@@ -413,7 +418,7 @@ snodeimpl* context::bind_output(const lnode& output) {
 
 void context::register_tap(const std::string& name, const lnode& node) {
   // resolve duplicate names
-  string full_name(name);
+  std::string full_name(name);
   unsigned instances = dup_taps_[name]++;
   if (instances > 0) {
     if (instances == 1) {
@@ -439,7 +444,7 @@ snodeimpl* context::get_tap(const std::string& name, uint32_t size) {
   CH_ABORT("couldn't find tab '%s'", name.c_str());
 }
 
-void context::get_live_nodes(std::set<lnodeimpl*>& live_nodes) {
+void context::get_live_nodes(std::unordered_set<lnodeimpl*>& live_nodes) {
   // get inputs
   for (auto node : inputs_) {
     live_nodes.emplace(node);
@@ -507,7 +512,7 @@ static void dump_cfg_impl(
     std::ostream& out,
     uint32_t level,
     std::vector<bool>& visits,
-    const std::map<uint32_t, tapimpl*>& taps) {
+    const std::unordered_map<uint32_t, tapimpl*>& taps) {
   visits[node->get_id()] = true;
   node->print(out, level);
   
@@ -528,7 +533,7 @@ static void dump_cfg_impl(
 
 void context::dump_cfg(lnodeimpl* node, std::ostream& out, uint32_t level) {
   std::vector<bool> visits(node_ids_ + 1);
-  std::map<uint32_t, tapimpl*> taps;
+  std::unordered_map<uint32_t, tapimpl*> taps;
   
   for (tapimpl* tap : taps_) {
     taps[tap->get_target().get_id()] = tap;

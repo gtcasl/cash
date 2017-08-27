@@ -82,8 +82,6 @@ protected:
 
   uint64_t sync_sources() const;
   
-  void merge_left(uint32_t idx);
-  
   struct source_t {
     snodeimpl* node;
     uint32_t dst_offset;

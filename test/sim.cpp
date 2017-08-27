@@ -19,8 +19,8 @@ __enum (my_enum, 4,(
   done
 )); 
 
-TEST_CASE("simulation tests", "[sim]") {  
-  SECTION("test buses", "[bus][signal]") {
+TEST_CASE("simulation", "[sim]") {
+  SECTION("bus", "[bus]") {
     TESTX([]()->bool {          
       ch_bus4 a(1), b(2), c;
       c = (uint8_t)a + (uint8_t)b;
@@ -95,7 +95,7 @@ TEST_CASE("simulation tests", "[sim]") {
       return (a == 4);
     });
   }
-  SECTION("test bus structs", "[struct]") {    
+  SECTION("structs", "[struct]") {
     TESTX([]()->bool {          
       s2_t::bus_type s2;
       s2.a = 01_b;
@@ -115,7 +115,7 @@ TEST_CASE("simulation tests", "[sim]") {
       return (s2 == 1001_b);
     });
   }  
-  SECTION("test bus unions", "[union]") {    
+  SECTION("unions", "[union]") {
     TESTX([]()->bool {          
       u2_t::bus_type u2;
       u2.a = 01_b;
@@ -123,7 +123,7 @@ TEST_CASE("simulation tests", "[sim]") {
       return (u2 == 10_b);
     });
   }  
-  SECTION("test bus enums", "[enum]") {    
+  SECTION("enums", "[enum]") {
     TESTX([]()->bool {          
       my_enum::bus_type a(my_enum::idle);
       return (0 == a);

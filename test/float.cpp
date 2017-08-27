@@ -2,8 +2,8 @@
 
 using namespace cash::core_literals;
 
-TEST_CASE("floating points tests", "[float]") {  
-  SECTION("basic test", "[basic]") {
+TEST_CASE("floats", "[floats]") {
+  SECTION("basic", "[basic]") {
     TEST([]()->ch_bit1 {
       ch_float x(0.0f);
       ch_bit32 y(0);

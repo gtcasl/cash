@@ -6,6 +6,9 @@
 namespace cash {
 namespace detail {
 
+void createPrintNode(const std::string& format,
+                     const std::initializer_list<lnode>& args);
+
 void createPrintNode(const lnode& cond,
                      const std::string& format,
                      const std::initializer_list<lnode>& args);
@@ -280,7 +283,7 @@ ch_bit<64> ch_tick();
 
 template <typename...Args>
 void ch_print(const std::string& format, const Args& ...args) {
-  createPrintNode(nullptr, format, {get_node(args)...});
+  createPrintNode(format, {get_node(args)...});
 }
 
 template <typename...Args>

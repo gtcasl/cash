@@ -2,7 +2,6 @@
 #include "context.h"
 #include "compile.h"
 
-using namespace std;
 using namespace cash::detail;
 
 ch_device::~ch_device() {

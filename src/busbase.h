@@ -38,30 +38,6 @@ public:
   CH_DEF_AOP(int64_t)
   CH_DEF_AOP(uint64_t)
 #undef CH_DEF_AOP
-
-  bool operator==(const typebase& rhs) const {
-    return get_node(*this).is_equal(get_node(rhs), N);
-  }
-
-  bool operator<(const typebase& rhs) const {
-    return get_node(*this).is_less(get_node(rhs), N);
-  }
-
-  bool operator!=(const typebase& rhs) const {
-    return !(*this == rhs);
-  }
-
-  bool operator>(const typebase& rhs) const {
-    return (rhs < *this);
-  }
-
-  bool operator<=(const typebase& rhs) const {
-    return !(*this > rhs);
-  }
-
-  bool operator>=(const typebase& rhs) const {
-    return !(*this < rhs);
-  }
   
   void read(void* out, uint32_t offset, uint32_t length) const {
     assert(offset + length <= N);
@@ -72,15 +48,6 @@ public:
     assert(offset + length <= N);
     get_node(*this).write(reinterpret_cast<const uint8_t*>(in), offset, length, N);
   }
-
-protected:
-
-  virtual void read_data(data_type& inout, size_t offset, size_t length) const = 0;
-  virtual void write_data(size_t dst_offset, const data_type& in, size_t src_offset, size_t src_length) = 0;
-
-  template <unsigned N_> friend snode get_node(const ch_busbase<N_>& b);
-  template <typename T_> friend void read_data(const T_& b, typename T_::data_type& inout, size_t offset, size_t length);
-  template <typename T_> friend void write_data(T_& b, size_t dst_offset, const typename T_::data_type& in, size_t src_offset, size_t src_length);
 };
 
 template <unsigned N>
@@ -93,6 +60,36 @@ snode get_node(const ch_busbase<N>& b) {
 template <unsigned N> 
 std::ostream& operator<<(std::ostream& os, const ch_busbase<N>& b) {
   return os << get_node(b);
+}
+
+template <unsigned N>
+bool operator==(const ch_busbase<N>& lhs, const ch_busbase<N>& rhs) {
+  return get_node(lhs).is_equal(get_node(rhs), N);
+}
+
+template <unsigned N>
+bool operator<(const ch_busbase<N>& lhs, const ch_busbase<N>& rhs) {
+  return get_node(lhs).is_less(get_node(rhs), N);
+}
+
+template <unsigned N>
+bool operator!=(const ch_busbase<N>& lhs, const ch_busbase<N>& rhs) {
+  return !(lhs == rhs);
+}
+
+template <unsigned N>
+bool operator>(const ch_busbase<N>& lhs, const ch_busbase<N>& rhs) {
+  return (rhs < lhs);
+}
+
+template <unsigned N>
+bool operator<=(const ch_busbase<N>& lhs, const ch_busbase<N>& rhs) {
+  return !(lhs > rhs);
+}
+
+template <unsigned N>
+bool operator>=(const ch_busbase<N>& lhs, const ch_busbase<N>& rhs) {
+  return !(lhs < rhs);
 }
 
 }

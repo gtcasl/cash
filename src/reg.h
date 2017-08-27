@@ -6,6 +6,9 @@
 namespace cash {
 namespace detail {
 
+class regimpl;
+class latchimpl;
+
 lnodeimpl* createRegNode(const lnode& next, const lnode& init);
 lnodeimpl* createLatchNode(const lnode& next,
                            const lnode& init,

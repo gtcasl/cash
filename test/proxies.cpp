@@ -2,8 +2,8 @@
 
 using namespace cash::core_literals;
 
-TEST_CASE("proxies tests", "[proxies]") {   
-  SECTION("test subscript", "[subscript]") {
+TEST_CASE("proxies", "[proxies]") {
+  SECTION("subscript", "[subscript]") {
     TEST([]()->ch_bit1 {
       ch_bit4 a(1010_b);
       return (a[0] == a[2] && a[1] == a[3]);
@@ -15,7 +15,7 @@ TEST_CASE("proxies tests", "[proxies]") {
     TEST([]()->ch_bit1 {
        ch_bit4 a(0110_b);
        return (a[0] == a[3] && a[1] == a[2]);
-    });    
+    });
     TEST([]()->ch_bit1 {
       ch_bit4 a;
       ch_bit1 x, y;
@@ -27,7 +27,7 @@ TEST_CASE("proxies tests", "[proxies]") {
     });
   }
   
-  SECTION("test slice", "[slice]") {
+  SECTION("slice", "[slice]") {
     TEST([]()->ch_bit1 {
       ch_bit4 a(1100_b);
       ch_bit2 c = a.slice<2>(1) ^ 01_b;
@@ -83,28 +83,26 @@ TEST_CASE("proxies tests", "[proxies]") {
     TEST([]()->ch_bit1 {
       ch_bit4 a, b(1);
       ch_bit4 c = a + b;
-      ch_bit2 x = a.slice<2>(0);
-      ch_bit2 y = a.slice<2>(1);
-      ch_bit2 z = a.slice<2>(2);
-      x[1] = 1; // a[1] = 1
-      x = 0;    // a[0-1] = 00
-      z = 1;    // a[2-3] = 01
-      y = 0;    // a[1-2] = 0
-      return (c == 0001_b);
+      a.slice<2>(0) = 1; // a = 0001
+      a.slice<2>(1) = 1; // a = 0011
+      a.slice<2>(2) = 1; // a = 0111
+      ch_print("c={0}", c);
+      return (c == 1000_b);
     });
     TEST([]()->ch_bit1 {
       ch_bit4 a;
       ch_bit1 x;
       ch_bit2 y;
-      ch_bit1 z;
+      ch_bit2 z;
 
       a[0] = x;
-      a.slice<2>(2) = y;
-      y[0] = z;
+      a.slice<2>(1) = y;
+      a[3] = x;
+      y = z;
 
       x = 1_b;
-      z = 0_b;
-      return (a[2] == 0_b && a[0] == 1_b);
+      z = 10_b;
+      return (a == 1101_b);
     });
     TEST([]()->ch_bit1 {
      ch_bit4 a;
@@ -130,7 +128,7 @@ TEST_CASE("proxies tests", "[proxies]") {
     });
   }
   
-  SECTION("test concat", "[concat]") {
+  SECTION("concat", "[concat]") {
     TEST([]()->ch_bit1 {
       ch_bit4 a(1100_b);
       ch_bit<5> c = (a, 1_b);

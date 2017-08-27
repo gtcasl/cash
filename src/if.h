@@ -18,7 +18,7 @@ public:
   
   template <typename Func>
   void else_(const Func& func) {
-    this->eval(nullptr, to_function(func));
+    this->eval(to_function(func));
   }
   
 protected:
@@ -28,6 +28,8 @@ protected:
   if_t(const lnode& cond, func_t func);
   
   void eval(const lnode& cond, func_t func);
+
+  void eval(func_t func);
   
   template <typename Func> 
   friend if_t ch_if(const ch_bitbase<1>& cond, const Func& func);

@@ -2,7 +2,6 @@
 #include "assertion.h"
 #include "context.h"
 
-using namespace std;
 using namespace cash::detail;
 
 assertimpl::assertimpl(const lnode& src, const std::string& msg)

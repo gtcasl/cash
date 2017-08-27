@@ -2,7 +2,6 @@
 #include "context.h"
 #include "bit.h"
 
-using namespace std;
 using namespace cash::detail;
 
 tickimpl::tickimpl(context* ctx) 

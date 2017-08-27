@@ -5,7 +5,6 @@
 #include "ioimpl.h"
 #include "compile.h"
 
-using namespace std;
 using namespace cash::detail;
 
 ch_simulator::ch_simulator(const std::initializer_list<const ch_device*>& devices)
@@ -79,7 +78,7 @@ void ch_simulator::tick(ch_cycle t) {
   #ifndef NDEBUG
     int dump_ast_level = platform::self().get_dump_ast();
     if (2 == dump_ast_level) {
-      std::cerr << "cycle " << t << ":" << endl;
+      std::cerr << "cycle " << t << ":" << std::endl;
       ctx->dump_ast(std::cerr, 2);
     }
   #endif
@@ -167,7 +166,7 @@ void ch_tracer::add_trace(const std::string& name, const snode& value) {
   CH_CHECK(!initialized_, "new tap not allowed after simulation has started");
   
   // resolve duplicate names  
-  string full_name(name);
+  std::string full_name(name);
   unsigned instances = dup_taps_[name]++;
   if (instances > 0) {
     if (instances == 1) {
@@ -191,6 +190,6 @@ void ch_tracer::tick(ch_cycle t) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void cash::detail::register_tap(const string& name, const lnode& node) {
+void cash::detail::register_tap(const std::string& name, const lnode& node) {
   node.get_ctx()->register_tap(name, node);
 }

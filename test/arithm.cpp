@@ -2,8 +2,8 @@
 
 using namespace cash::core_literals;
 
-TEST_CASE("arithmetic tests", "[arithmetic]") {      
-  SECTION("test logic", "[logic]") {
+TEST_CASE("arithmetic", "[arithmetic]") {
+  SECTION("logic", "[logic]") {
     TEST([]()->ch_bit1 {
       ch_bit4 a(1100_b);
       ch_bit4 c = ~a;
@@ -41,7 +41,7 @@ TEST_CASE("arithmetic tests", "[arithmetic]") {
     });
   }
   
-  SECTION("test reduce", "[reduce]") {
+  SECTION("reduce", "[reduce]") {
     TEST([]()->ch_bit1 {
       ch_bit4 a(1010_b);
       return (ch_andr(a) == 0_b);
@@ -68,7 +68,7 @@ TEST_CASE("arithmetic tests", "[arithmetic]") {
     });
   }
   
-  SECTION("test compare", "[compare]") {
+  SECTION("compare", "[compare]") {
     TEST([]()->ch_bit1 {
       return (0100_b == 0100_b);
     });
@@ -92,7 +92,7 @@ TEST_CASE("arithmetic tests", "[arithmetic]") {
     });
   }
   
-  SECTION("test shift", "[shift]") {
+  SECTION("shift", "[shift]") {
     TEST([]()->ch_bit1 {
       ch_bit4 a(1010_b);
       ch_bit4 c = a << 2;
@@ -190,7 +190,7 @@ TEST_CASE("arithmetic tests", "[arithmetic]") {
     });
   }
   
-  SECTION("test arithmetic", "[math]") {
+  SECTION("arithmetic", "[math]") {
     TEST([]()->ch_bit1 {
       ch_bit4 a(0x1), b(0x2);
       ch_bit4 c = a + b;

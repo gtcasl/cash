@@ -1,7 +1,6 @@
 #include "aluimpl.h"
 #include "context.h"
 
-using namespace std;
 using namespace cash::detail;
 
 #define CH_ALUOP_NAME(n) case alu_op_##n: return op_##n;
@@ -470,36 +469,49 @@ static void compareop(bitvector& dst, const bitvector& a, const bitvector& b) {
 
 static uint32_t get_output_size(ch_alu_op op, const lnode& a, const lnode& b) {
   switch (op) {
-  case alu_op_and: return a.get_size();
-  case alu_op_or: return a.get_size();
-  case alu_op_xor: return a.get_size();
-  case alu_op_nand: return a.get_size();
-  case alu_op_nor: return a.get_size();
-  case alu_op_xnor: return a.get_size();
-  case alu_op_andr: return a.get_size();
-  case alu_op_orr: return a.get_size();
-  case alu_op_xorr: return a.get_size();
-  case alu_op_shl: return a.get_size();
-  case alu_op_shr: return a.get_size();
-  case alu_op_rotl: return a.get_size();
-  case alu_op_rotr: return a.get_size();
-  case alu_op_add: return a.get_size();
-  case alu_op_sub: return a.get_size();
-  case alu_op_mult: return a.get_size();
-  case alu_op_div: return a.get_size();
-  case alu_op_mod: return a.get_size();
-  case alu_op_eq: return 1;
-  case alu_op_ne: return 1;
-  case alu_op_lt: return 1;
-  case alu_op_gt: return 1;
-  case alu_op_le: return 1;
-  case alu_op_ge: return 1;
-  case alu_op_mux: return a.get_size() >> b.get_size();
-  case alu_op_demux: return a.get_size() << b.get_size();
-  case alu_op_fadd: return a.get_size();
-  case alu_op_fsub: return a.get_size();
-  case alu_op_fmult: return a.get_size();
-  case alu_op_fdiv: return a.get_size();
+  case alu_op_and:
+  case alu_op_or:
+  case alu_op_xor:
+  case alu_op_nand:
+  case alu_op_nor:
+  case alu_op_xnor:
+  case alu_op_andr:
+  case alu_op_orr:
+  case alu_op_xorr:
+  case alu_op_shl:
+  case alu_op_shr:
+  case alu_op_rotl:
+  case alu_op_rotr:
+  case alu_op_add:
+  case alu_op_sub:
+  case alu_op_mult:
+  case alu_op_div:
+  case alu_op_mod:
+    assert(a.get_size() == b.get_size());
+    return a.get_size();
+
+  case alu_op_mux:
+    return a.get_size() >> b.get_size();
+
+  case alu_op_demux:
+    return a.get_size() << b.get_size();
+
+  case alu_op_eq:
+  case alu_op_ne:
+  case alu_op_lt:
+  case alu_op_gt:
+  case alu_op_le:
+  case alu_op_ge:
+    assert(a.get_size() == b.get_size());
+    return 1;
+
+  case alu_op_fadd:
+  case alu_op_fsub:
+  case alu_op_fmult:
+  case alu_op_fdiv:
+    assert(a.get_size() == b.get_size());
+    return a.get_size();
+
   default:
     CH_ABORT("invalid alu operation");
   }

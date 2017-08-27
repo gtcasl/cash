@@ -2,7 +2,6 @@
 #include "context.h"
 #include "bit.h"
 
-using namespace std;
 using namespace cash::detail;
 
 enum class fmttype {
@@ -131,6 +130,19 @@ void printimpl::print_vl(std::ostream& out) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+
+static int getFormatMaxIndex(const std::string& format) {
+  int max_index = -1;
+  for (const char *str = format.c_str(); *str != '\0'; ++str) {
+    if (*str == '{') {
+      fmtinfo_t fmt;
+      str = parse_format_index(&fmt, str);
+      max_index = std::max(fmt.index, max_index);
+    }
+  }
+  return max_index;
+}
+
 void cash::detail::createPrintNode(
     const lnode& cond,
     const std::string& format,
@@ -140,15 +152,24 @@ void cash::detail::createPrintNode(
     return;
   
   // check format
-  int max_index = -1;
-  for (const char *str = format.c_str(); *str != '\0'; ++str) {
-    if (*str == '{') {
-      fmtinfo_t fmt;
-      str = parse_format_index(&fmt, str);
-      max_index = max(fmt.index, max_index);      
-    }
-  }
+  auto max_index = getFormatMaxIndex(format);
   CH_CHECK(max_index < (int)args.size(), "print format index out of range");
+
   context* ctx = ctx_curr();
   new printimpl(ctx, cond, format, args);
+}
+
+void cash::detail::createPrintNode(
+    const std::string& format,
+    const std::initializer_list<lnode>& args) {
+  // printing is only enabled in debug mode
+  if (0 == platform::self().get_dbg_level())
+    return;
+
+  // check format
+  auto max_index = getFormatMaxIndex(format);
+  CH_CHECK(max_index < (int)args.size(), "print format index out of range");
+
+  context* ctx = ctx_curr();
+  new printimpl(ctx, format, args);
 }

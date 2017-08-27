@@ -17,9 +17,9 @@ protected:
   
   void syntax_check();
 
-  size_t remove_dead_nodes(const std::set<lnodeimpl*>& live_nodes);  
+  size_t remove_dead_nodes(const std::unordered_set<lnodeimpl*>& live_nodes);
 
-  std::set<lnodeimpl*> live_nodes_;
+  std::unordered_set<lnodeimpl*> live_nodes_;
   context* ctx_;
 };
 

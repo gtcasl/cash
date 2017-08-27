@@ -5,10 +5,9 @@
 #define BACKWARD_HAS_BFD 1
 #include "backward.h"
 
-using namespace std;
 using namespace cash::detail;
 
-string cash::detail::fstring(const char *format, ...) {
+std::string cash::detail::fstring(const char *format, ...) {
   static const int STACK_BUFFER_SIZE = 256;
 
   std::string result;

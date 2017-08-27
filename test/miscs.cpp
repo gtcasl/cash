@@ -2,8 +2,8 @@
 
 using namespace cash::core_literals;
 
-TEST_CASE("miscellaneous tests", "[miscs]") {   
-  SECTION("test utils", "[utils]") {
+TEST_CASE("miscs", "[miscs]") {
+  SECTION("utils", "[utils]") {
     TESTX([]()->bool {
       char bigs[258];
       memset(bigs, ' ', sizeof(bigs));
@@ -16,7 +16,7 @@ TEST_CASE("miscellaneous tests", "[miscs]") {
     });
   }
   
-  SECTION("test assert", "[assert]") {
+  SECTION("assert", "[assert]") {
     using namespace cash::core_literals;
     TEST([]()->ch_bit1 {
       ch_bit4 a(1100_b);
@@ -26,7 +26,7 @@ TEST_CASE("miscellaneous tests", "[miscs]") {
     });
   }
   
-  SECTION("test taps", "[tap]") {
+  SECTION("taps", "[tap]") {
     using namespace cash::core_literals;
     TEST([]()->ch_bit1 {
       ch_bit4 a(1100_b);
@@ -36,14 +36,14 @@ TEST_CASE("miscellaneous tests", "[miscs]") {
     });
   }
   
-  SECTION("test tick", "[tick]") {
+  SECTION("tick", "[tick]") {
     TEST([]()->ch_bit1 {
       ch_print("tick={0}", ch_tick());
       return '1';
     }, 5);
   }
   
-  SECTION("test print", "[print]") {
+  SECTION("print", "[print]") {
     TEST([]()->ch_bit1 {
       ch_print("hello world");
       return '1';
@@ -71,7 +71,7 @@ TEST_CASE("miscellaneous tests", "[miscs]") {
     });
   }
   
-  SECTION("test vctracer", "[vctracer]") {
+  SECTION("vctracer", "[vctracer]") {
     TESTX([]()->bool {
       std::ofstream vcd_file("test.vcd");
       ch_bus2 in(2), x, out;       

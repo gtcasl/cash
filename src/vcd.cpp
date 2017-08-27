@@ -2,7 +2,6 @@
 #include "vcd.h"
 #include "snodeimpl.h"
 
-using namespace std;
 using namespace cash::detail;
 
 ch_vcdtracer::ch_vcdtracer(
@@ -15,12 +14,12 @@ void ch_vcdtracer::ensureInitialize() {
   // call parent ensureInitialize()
   ch_tracer::ensureInitialize();
 
-  out_ << "$timescale 1 ns $end" << endl;
+  out_ << "$timescale 1 ns $end" << std::endl;
   for (auto& tap : taps_) {
     out_ << "$var reg " << tap.bus.get_size() << ' ' << tap.name << ' '
-         << tap.name << " $end" << endl;
+         << tap.name << " $end" << std::endl;
   }
-  out_ << "$enddefinitions $end" << endl;
+  out_ << "$enddefinitions $end" << std::endl;
 }
 
 void ch_vcdtracer::tick(ch_cycle t) {
@@ -28,7 +27,7 @@ void ch_vcdtracer::tick(ch_cycle t) {
   ch_simulator::tick(t);
   
   // log net values
-  out_ << '#' << t << endl;
+  out_ << '#' << t << std::endl;
   for (auto& tap : taps_) {
     const snode& bus = tap.bus;
     if (bus.get_size() > 1)
@@ -38,6 +37,6 @@ void ch_vcdtracer::tick(ch_cycle t) {
     }
     if (bus.get_size() > 1)
       out_ << ' ';
-    out_ << tap.name << endl;
+    out_ << tap.name << std::endl;
   }  
 }

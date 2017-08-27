@@ -2,8 +2,8 @@
 
 using namespace cash::core_literals;
 
-TEST_CASE("conditionals tests", "[conditionals]") {   
-  SECTION("test select", "[select]") {    
+TEST_CASE("conditionals", "[conditionals]") {
+  SECTION("select", "[select]") {
     TEST([]()->ch_bit1 {
       ch_bit4 a(0), b(1), c;
       c = ch_select(a < b, a, b);
@@ -36,7 +36,7 @@ TEST_CASE("conditionals tests", "[conditionals]") {
     });
   }
   
-  SECTION("test if", "[if]") {
+  SECTION("if", "[if]") {
     TEST([]()->ch_bit1 {
       ch_bit4 a(5), b(1), c(0);
       __if (a > b) (  
@@ -157,8 +157,101 @@ TEST_CASE("conditionals tests", "[conditionals]") {
        );
       return (c == 3);
     });
+    TEST([]()->ch_bit1 {
+      ch_bit8 a(1), b(1), x;
+      __if (a == 1) (
+         x = 0;
+         __if (b == 0) (
+           x = 1;
+         )
+         __elif (b == 1) (
+           x = 2;
+         )
+         __else (
+           x = 3;
+         );
+      )
+      __else(
+         x = 4;
+      );
+      ch_print("x={0}", x);
+      return (x == 2);
+    });
+    TEST([]()->ch_bit1 {
+      ch_bit8 a(1), b(2), x;
+      __if (a == 1) (
+         x = 0;
+         __if (b == 0) (
+           x = 1;
+         )
+         __elif (b == 1) (
+           x = 2;
+         )
+         __else (
+           x = 3;
+         );
+      )
+      __else(
+         x = 4;
+      );
+      ch_print("x={0}", x);
+      return (x == 3);
+    });
+    TEST([]()->ch_bit1 {
+      ch_bit8 a(1), b(2), x;
+      __if (a == 1) (
+         x = 0;
+         __if (b == 0) (
+           x = 1;
+         )
+         __elif (b == 1) (
+           x = 2;
+         );
+      )
+      __else (
+         x = 4;
+      );
+      ch_print("x={0}", x);
+      return (x == 0);
+    });
+    TEST([]()->ch_bit1 {
+      ch_bit8 a(1), b(1), x;
+      __if (a == 1) (
+         x = 0;
+         __if (b == 0) (
+           x = 1;
+         )
+         __elif (b == 1) (
+           x = 2;
+         );
+         x = 3;
+      )
+      __else (
+         x = 4;
+      );
+      ch_print("x={0}", x);
+      return (x == 3);
+    });
+    TEST([]()->ch_bit1 {
+        ch_bit8 a(1), b(1), x, y;
+        __if (a == 1) (
+           (y, x) = 1;
+           __if (b == 0) (
+             x = 1;
+           )
+           __elif (b == 1) (
+             y = 1;
+           );
+        )
+        __else (
+           x = 4;
+           y = 5;
+        );
+        ch_print("x={0}, y={1}", x, y);
+        return (x == 1 && y == 1);
+      });
   }
-  SECTION("test switch", "[switch]") {
+  SECTION("switch", "[switch]") {
     TEST([]()->ch_bit1 {
       ch_bit4 a(5), b(1), c(0);
       __switch (a) (

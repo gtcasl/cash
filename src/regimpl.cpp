@@ -3,7 +3,6 @@
 #include "context.h"
 #include "reg.h"
 
-using namespace std;
 using namespace cash::detail;
 
 regimpl::regimpl(const lnode& next)
@@ -36,7 +35,7 @@ const bitvector& regimpl::eval(ch_cycle t) {
   return value_; 
 }
 
-void regimpl::print_vl(ostream& out) const {
+void regimpl::print_vl(std::ostream& out) const {
   CH_UNUSED(out);
   CH_TODO();
 }
@@ -85,7 +84,7 @@ const bitvector& latchimpl::eval(ch_cycle t) {
   return value_; 
 }
 
-void latchimpl::print_vl(ostream& out) const {
+void latchimpl::print_vl(std::ostream& out) const {
   CH_UNUSED(out);
   CH_TODO();
 }

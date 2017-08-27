@@ -1,7 +1,6 @@
 #include "proxyimpl.h"
 #include "context.h"
 
-using namespace std;
 using namespace cash::detail;
 
 proxyimpl::proxyimpl(context* ctx, uint32_t size) 
@@ -25,6 +24,11 @@ void proxyimpl::add_source(uint32_t dst_offset,
                            const lnode& src,
                            uint32_t src_offset,
                            uint32_t src_length) {
+  assert(this != src.get_impl());
+  assert(src_length != 0);
+  assert(dst_offset + src_length <= value_.get_size());
+  assert(src_offset + src_length <= src.get_size());
+
   // add new source
   uint32_t new_srcidx = 0xffffffff;
   for (uint32_t i = 0, n = srcs_.size(); i < n; ++i) {
@@ -39,6 +43,18 @@ void proxyimpl::add_source(uint32_t dst_offset,
     srcs_.emplace_back(src);    
   }
   
+  auto merge_prev_range = [&](uint32_t idx)->bool {
+    assert(idx > 0);
+    if (ranges_[idx-1].src_idx == ranges_[idx].src_idx
+     && (ranges_[idx-1].dst_offset + ranges_[idx-1].src_length) == ranges_[idx].dst_offset
+     && ranges_[idx].src_offset == ranges_[idx-1].src_offset + ranges_[idx-1].src_length) {
+      ranges_[idx-1].src_length += ranges_[idx].src_length;
+      ranges_.erase(ranges_.begin() + idx);
+      return true;
+    }
+    return false;
+  };
+
   uint32_t n = ranges_.size();
   if (0 == n) {
     // insert the first entry
@@ -46,7 +62,7 @@ void proxyimpl::add_source(uint32_t dst_offset,
   } else {
     // find the slot to insert source node,
     // split existing nodes if needed
-    set<uint32_t> deleted;    
+    std::set<uint32_t> deleted;
     uint32_t i = 0;
     for (; src_length && i < n; ++i) {
       range_t& curr = ranges_[i];
@@ -100,7 +116,7 @@ void proxyimpl::add_source(uint32_t dst_offset,
           uint32_t delta = src_end - curr.dst_offset;
           range_t curr_after(curr);          
           curr_after.src_length -= delta;
-          curr_after.dst_offset  += delta;
+          curr_after.dst_offset += delta;
           curr_after.src_offset += delta;
           curr.src_length -= (curr_end - dst_offset);
           assert(curr.src_length || curr_after.src_length);
@@ -130,27 +146,30 @@ void proxyimpl::add_source(uint32_t dst_offset,
         
         src_length = 0;
       } else {
-        // no overlap with current, skip merge if no update took place
+        // no overlap with current,
+        // skip merge if no update took place
         continue;
       } 
       
       if (i > 0) {
-        // try merging inserted node on the left
-        this->merge_left(i);
+        // try merging with previous range
+        if (merge_prev_range(i)) {
+          --i;
+          --n;
+        }
       }       
     }
 
     assert(0 == src_length);
     if (i < n) {
-      // try merging inserted node on the right
-      this->merge_left(i);
+      // try merging with previous range
+      merge_prev_range(i);
     }
     
     // cleanup deleted nodes
     // tranverse the set in reverse order to process higher indices first
-    for (auto iter = deleted.rbegin(), iterEnd = deleted.rend();
-         iter != iterEnd; ++iter) {
-      uint32_t idx = *iter;
+    for (auto it = deleted.rbegin(), end = deleted.rend(); it != end; ++it) {
+      uint32_t idx = *it;
       bool in_use = false;
       // ensure that it is not in use
       for (const range_t& r : ranges_) {
@@ -187,14 +206,34 @@ proxyimpl::erase_source(std::vector<lnode>::iterator iter) {
   return next;
 }
 
-void proxyimpl::merge_left(uint32_t idx) {
-  assert(idx > 0);
-  if (ranges_[idx-1].src_idx == ranges_[idx].src_idx
-   && (ranges_[idx-1].dst_offset + ranges_[idx-1].src_length) == ranges_[idx].dst_offset
-   && ranges_[idx].src_offset == ranges_[idx-1].src_offset + ranges_[idx-1].src_length) {
-    ranges_[idx-1].src_length += ranges_[idx].src_length;
-    ranges_.erase(ranges_.begin() + idx);
-  }      
+lnodeimpl* proxyimpl::get_slice(uint32_t offset, uint32_t length) {
+  assert(length <= value_.get_size());
+
+  // check for matching source
+  for (const range_t& r : ranges_) {
+    if (r.dst_offset == offset
+     && r.src_length == length
+     && r.src_offset == 0
+     && srcs_[r.src_idx].get_size() == length) {
+      return srcs_[r.src_idx].get_impl();
+    }
+  }
+
+  // return new slice
+  auto proxy = new proxyimpl(ctx_, length);
+  for (auto& r : ranges_) {
+    uint32_t r_end = r.dst_offset + r.src_length;
+    uint32_t src_end = offset + length;
+    if (offset < r_end && src_end > r.dst_offset) {
+      uint32_t sub_start = std::max(offset, r.dst_offset);
+      uint32_t sub_end = std::min(src_end, r_end);
+      uint32_t dst_offset = sub_start - r.dst_offset;
+      uint32_t src_offset = r.src_offset + (sub_start - r.dst_offset);
+      proxy->add_source(dst_offset, srcs_[r.src_idx], src_offset, sub_end - sub_start);
+    }
+  }
+
+  return proxy;
 }
 
 std::vector<std::pair<uint32_t, uint32_t>>

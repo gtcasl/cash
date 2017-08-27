@@ -29,6 +29,10 @@ public:
   proxyimpl(context* ctx, uint32_t size);
   proxyimpl(const lnode& src);
   proxyimpl(const lnode& src, uint32_t offset, uint32_t length);
+
+  const std::vector<range_t>& get_ranges() const {
+    return ranges_;
+  }
   
   void add_source(uint32_t dst_offset,
                   const lnode& src,
@@ -37,6 +41,8 @@ public:
 
   std::vector<lnode>::iterator erase_source(std::vector<lnode>::iterator iter);
 
+  lnodeimpl* get_slice(uint32_t offset, uint32_t length);
+
   std::vector<std::pair<uint32_t, uint32_t>> get_update_slices(uint32_t offset, uint32_t length);
 
   const bitvector& eval(ch_cycle t) override;
@@ -44,9 +50,7 @@ public:
   void print_vl(std::ostream& out) const override;
   
 private:
-  
-  void merge_left(uint32_t idx);
-  
+
   std::vector<range_t> ranges_; 
   ch_cycle ctime_;
 };

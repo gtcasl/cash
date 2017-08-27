@@ -1,3 +1,4 @@
+test/smoke.cpp
 examples/adder.cpp
 examples/counter.cpp
 examples/fastmul.cpp
@@ -70,6 +71,7 @@ src/utils.h
 src/vcd.cpp
 src/vcd.h
 src/vec.h
+test/Makefile
 test/aggregates.cpp
 test/arithm.cpp
 test/catch.h

@@ -2,8 +2,8 @@
 
 using namespace cash::core_literals;
 
-TEST_CASE("literals tests", "[literals]") {   
-  SECTION("test binary literals", "[binary]") {
+TEST_CASE("literals", "[literals]") {
+  SECTION("binary", "[binary]") {
     TEST([]()->ch_bit1 {
       ch_bit4 a(0x5);
       return (a == 0101_b);
@@ -17,7 +17,7 @@ TEST_CASE("literals tests", "[literals]") {
       return (a == 0x7_h3);
     });
   }
-  SECTION("test octal literals", "[octal]") {
+  SECTION("octal", "[octal]") {
     TEST([]()->ch_bit1 {
       ch_bit<3> a(0x5);
       return (a == 5_o);
@@ -26,7 +26,7 @@ TEST_CASE("literals tests", "[literals]") {
       return (0x1c0000000_h64 == 070000000000_o64);
     });
   }
-  SECTION("test hexadecimal literals", "[hexadecimal]") {
+  SECTION("hexadecimal", "[hexadecimal]") {
     TEST([]()->ch_bit1 {
       ch_bit4 a(0x5);
       return (a == 0x5_h);

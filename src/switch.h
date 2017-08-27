@@ -43,7 +43,7 @@ public:
   
   template <typename Func>
   void default_(const Func& func) {
-    impl_.eval(nullptr, to_function(func));
+    impl_.eval(to_function(func));
   }
   
 protected:

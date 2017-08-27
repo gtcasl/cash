@@ -1,7 +1,6 @@
 #include <cstring>
 #include "bitvector.h"
 
-using namespace std;
 using namespace cash::detail;
 
 bitvector::bitvector(const bitvector& rhs) : words_(nullptr), size_(0) {

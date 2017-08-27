@@ -69,8 +69,8 @@ __enum (my_enum, 4,(
   done
 )); 
  
-TEST_CASE("aggregate tests", "[aggregate]") {  
-  SECTION("test structs", "[struct]") {   
+TEST_CASE("aggregates", "[aggregates]") {
+  SECTION("structs", "[struct]") {
     TEST([]()->ch_bit1 {
       s1_t s1;
       s2_t s2;
@@ -98,7 +98,7 @@ TEST_CASE("aggregate tests", "[aggregate]") {
     });
   } 
   
-  SECTION("test unions", "[union]") {
+  SECTION("unions", "[union]") {
     TEST([]()->ch_bit1 {
       u2_t u2;
       u2.a = 1;
@@ -122,7 +122,7 @@ TEST_CASE("aggregate tests", "[aggregate]") {
     });
   }
   
-  SECTION("test vectors", "[vector]") {
+  SECTION("vectors", "[vector]") {
     TEST([]()->ch_bit1 {
       ch_vec<ch_bit2, 2> a(0);
       a[0][1] = 1;
@@ -144,7 +144,7 @@ TEST_CASE("aggregate tests", "[aggregate]") {
     });
   }
   
-  SECTION("test enums", "[enum]") {
+  SECTION("enums", "[enum]") {
     TEST([]()->ch_bit1 {
       my_enum a(my_enum::idle);
       return (0 == a);

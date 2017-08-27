@@ -2,7 +2,6 @@
 #include "mem.h"
 #include "context.h"
 
-using namespace std;
 using namespace cash::detail;
 
 memimpl::memimpl(context* ctx, uint32_t data_width, uint32_t addr_width, bool write_enable) 
@@ -32,7 +31,7 @@ void memimpl::load(const std::vector<uint8_t>& data) {
 }
 
 void memimpl::load(const std::string& file) {
-  ifstream in(file.c_str(), std::ios::binary);
+  std::ifstream in(file.c_str(), std::ios::binary);
   uint32_t size = value_.get_size();
   uint32_t offset = 0;
 
@@ -109,7 +108,7 @@ void memimpl::print(std::ostream& out, uint32_t level) const {
     out << ")";
   }
 }
-void memimpl::print_vl(ostream& out) const {
+void memimpl::print_vl(std::ostream& out) const {
   CH_UNUSED(out);
   CH_TODO();
 }

@@ -2,8 +2,8 @@
 
 using namespace cash::core_literals;
 
-TEST_CASE("registers tests", "[registers]") {  
-  SECTION("test registers", "[reg][register]") {
+TEST_CASE("registers", "[registers]") {
+  SECTION("registers", "[register]") {
     TEST([]()->ch_bit1 {
       ch_bit2 a;
       a = ch_reg(a + 1);
@@ -54,7 +54,7 @@ TEST_CASE("registers tests", "[registers]") {
     }, 5);
   }
   
-  SECTION("test latches", "[latch]") {
+  SECTION("latches", "[latch]") {
     // TODO
   }
 }

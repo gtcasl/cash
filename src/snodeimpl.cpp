@@ -2,7 +2,6 @@
 #include "ioimpl.h"
 #include "bus.h"
 
-using namespace std;
 using namespace cash::detail;
 
 static uint32_t generate_id() {
@@ -37,6 +36,22 @@ void snodeimpl::add_source(uint32_t dst_offset,
                            uint32_t src_offset,
                            uint32_t src_length) {
   assert(src != nullptr && this != src);    
+  assert(src_length != 0);
+  assert(dst_offset + src_length <= value_.get_size());
+  assert(src_offset + src_length <= src->get_size());
+
+  auto merge_prev_range = [&](uint32_t idx)->bool {
+    assert(idx > 0);
+    if (srcs_[idx-1].node == srcs_[idx].node
+     && (srcs_[idx-1].dst_offset + srcs_[idx-1].src_length) == srcs_[idx].dst_offset
+     && srcs_[idx].src_offset == srcs_[idx-1].src_offset + srcs_[idx-1].src_length) {
+      srcs_[idx-1].src_length += srcs_[idx].src_length;
+      srcs_.erase(srcs_.begin() + idx);
+      return true;
+    }
+    return false;
+  };
+
   
   uint32_t n = srcs_.size();
   if (0 == n) {
@@ -142,14 +157,17 @@ void snodeimpl::add_source(uint32_t dst_offset,
       
       if (i > 0) {
         // try merging inserted node on the left
-        this->merge_left(i);
+        if (merge_prev_range(i)) {
+          --i;
+          --n;
+        }
       }       
     } 
 
     assert(0 == src_length);
     if (i < n) {
       // try merging inserted node on the right
-      this->merge_left(i);
+      merge_prev_range(i);
     }
   }
 }
@@ -225,17 +243,6 @@ void snodeimpl::clear_sources(uint32_t offset, uint32_t length) {
       // no overlap with current
       continue;
     }
-  }
-}
-
-void snodeimpl::merge_left(uint32_t idx) {
-  assert(idx > 0);
-  if (srcs_[idx-1].node == srcs_[idx].node
-   && (srcs_[idx-1].dst_offset + srcs_[idx-1].src_length) == srcs_[idx].dst_offset
-   && srcs_[idx].src_offset == srcs_[idx-1].src_offset + srcs_[idx-1].src_length) {
-    srcs_[idx].node->release();
-    srcs_[idx-1].src_length += srcs_[idx].src_length;
-    srcs_.erase(srcs_.begin() + idx);
   }
 }
 

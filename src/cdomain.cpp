@@ -3,7 +3,6 @@
 #include "litimpl.h"
 #include "context.h"
 
-using namespace std;
 using namespace cash::detail;
 
 clock_event::clock_event()
@@ -31,7 +30,7 @@ bool clock_event::eval(ch_cycle t) {
   return false;
 }
 
-void clock_event::print_vl(ostream& out) const {
+void clock_event::print_vl(std::ostream& out) const {
   switch (edgedir_) {
   case EDGE_POS:
     out << "posedge ";
@@ -107,7 +106,7 @@ void cdomain::tick_next(ch_cycle t) {
   }
 }
 
-void cdomain::print_vl(ostream& out) const {
+void cdomain::print_vl(std::ostream& out) const {
   bool first_event = true;
   for (auto& event : sensitivity_list_) {
     if (first_event) {

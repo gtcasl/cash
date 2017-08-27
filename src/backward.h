@@ -1492,7 +1492,6 @@ public:
 	bool is_open() const { return _file->is_open(); }
 
 	lines_t& get_lines(unsigned line_start, unsigned line_count, lines_t& lines) {
-		using namespace std;
 		// This function make uses of the dumbest algo ever:
 		//	1) seek(0)
 		//	2) read lines one by one and discard until line_start
@@ -1504,7 +1503,7 @@ public:
 
 		_file->clear();
 		_file->seekg(0);
-		string line;
+		std::string line;
 		unsigned line_idx;
 
 		for (line_idx = 1; line_idx < line_start; ++line_idx) {
@@ -1823,7 +1822,6 @@ private:
 			Colorize& colorize, Color::type color_code,
 			int context_size)
 	{
-		using namespace std;
 		typedef SnippetFactory::lines_t lines_t;
 
 		lines_t lines = _snippets.get_snippet(source_loc.filename,

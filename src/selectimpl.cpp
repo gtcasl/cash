@@ -5,7 +5,6 @@
 #include "switch.h"
 #include "context.h"
 
-using namespace std;
 using namespace cash::detail;
 
 selectimpl::selectimpl(const lnode& cond, const lnode& _true, const lnode& _false)
@@ -43,7 +42,7 @@ lnodeimpl* cash::detail::createSelectNode(
 lnodeimpl* select_impl::eval(const lnode& value) {
   lnodeimpl* curr = nullptr;
   auto& stmts = stmts_;
-  if (key_.is_empty()) {
+  if (!key_.is_empty()) {
     while (!stmts.empty()) {
       const auto& stmt = stmts.top();
       auto cond = createAluNode(alu_op_eq, key_, stmt.cond);
@@ -78,6 +77,13 @@ void if_t::eval(const lnode& cond, func_t func) {
   ctx->end_block();
 }
 
+void if_t::eval(func_t func) {
+  auto ctx = ctx_curr();
+  ctx->begin_block();
+  func();
+  ctx->end_block();
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 switch_impl::switch_impl(const lnode& key) : key_(key) {
@@ -97,7 +103,7 @@ void switch_impl::eval(const lnode& cond, func_t func) {
 
 void switch_impl::eval(func_t func) {
   auto ctx = key_.get_ctx();
-  ctx->begin_block(nullptr);
+  ctx->begin_block();
   func();
   ctx->end_block();
 }

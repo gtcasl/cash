@@ -42,15 +42,15 @@ public:
   void begin_branch();
   void end_branch();
 
-  void begin_block(lnodeimpl* cond);
+  void begin_block(lnodeimpl* cond = nullptr);
   void end_block();
 
   bool conditional_enabled(lnodeimpl* node = nullptr) const;
   void conditional_assign(lnode& dst, const lnode& src, uint32_t offset, uint32_t length);
-  void erase_block_local(lnodeimpl* src, lnodeimpl* dst);
+  void remove_from_locals(lnodeimpl* node);
   
-  lnodeimpl* create_literal(const bitvector& value);
-  
+  lnodeimpl* createLiteralNode(const bitvector& value);
+
   cdomain* create_cdomain(const std::vector<clock_event>& sensitivity_list);
   void remove_cdomain(cdomain* cd);
     
@@ -68,7 +68,7 @@ public:
     
   //--
   
-  void get_live_nodes(std::set<lnodeimpl*>& live_nodes);
+  void get_live_nodes(std::unordered_set<lnodeimpl*>& live_nodes);
   
   //--
   
@@ -104,7 +104,8 @@ protected:
     {}
     uint32_t id;
     lnodeimpl* cond;
-    std::set<lnodeimpl*> locals;
+    std::unordered_map<uint32_t, lnodeimpl*> aggregate_conds;
+    std::unordered_set<lnodeimpl*> locals;
   };
 
   struct cond_branch_t {
@@ -127,9 +128,13 @@ protected:
     }
 
     bool operator<(const cond_range_t& range) const {
-      return this->nodeid < range.nodeid
-          || this->offset < range.offset
-          || this->length < range.length;
+      if (this->nodeid != range.nodeid)
+        return (this->nodeid < range.nodeid);
+      if (this->offset != range.offset)
+        return (this->offset < range.offset);
+      if (this->length != range.length)
+        return (this->length < range.length);
+      return false;
     }
   };
 
@@ -159,7 +164,7 @@ protected:
   inputimpl*  clk_;
   inputimpl*  reset_;
   
-  std::map<std::string, unsigned> dup_taps_;
+  std::unordered_map<std::string, unsigned> dup_taps_;
   
   friend class ch_compiler;
   friend class ch_simulator;
