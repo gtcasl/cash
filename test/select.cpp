@@ -335,7 +335,8 @@ TEST_CASE("conditionals", "[conditionals]") {
       return (b == 1101_b);
     });
     TEST([]()->ch_bit1 {
-      ch_bit4 a(0), b;
+      ch_bit4 a(0), b;           
+      b[3] = 1;
       __switch (a) (
       __case (0) ( 
         b[0] = 1;
@@ -343,7 +344,7 @@ TEST_CASE("conditionals", "[conditionals]") {
         b[2] = 1;
       ) 
       __case (1) (
-        b[1] = 1; 
+        b[1] = 0;
       )
       __default(
         b = 1000_b;

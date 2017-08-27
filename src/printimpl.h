@@ -12,7 +12,7 @@ public:
             const std::initializer_list<lnode>& args);
 
   printimpl(context* ctx,
-            const lnode& cond,
+            const lnode& pred,
             const std::string& format,
             const std::initializer_list<lnode>& args);
 

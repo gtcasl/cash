@@ -12,7 +12,7 @@ public:
   
   using func_t = std::function<void ()>;
   
-  void eval(const lnode& cond, func_t func);
+  void eval(const lnode& pred, func_t func);
 
   void eval(func_t func);
  
@@ -67,5 +67,5 @@ switch_t<N> ch_switch(const ch_bitbase<N>& key) {
 #define CH_SWITCH_BODY(body)    body
 #define CH_SWITCH(key)          ch_switch(key) CH_SWITCH_BODY
 #define CH_CASE_BODY(value)     value })
-#define CH_CASE(cond)           .case_(cond, [&](){ CH_CASE_BODY
+#define CH_CASE(pred)           .case_(pred, [&](){ CH_CASE_BODY
 #define CH_DEFAULT(value)       .default_([&](){ value })

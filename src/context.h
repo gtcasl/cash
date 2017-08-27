@@ -42,7 +42,7 @@ public:
   void begin_branch();
   void end_branch();
 
-  void begin_block(lnodeimpl* cond = nullptr);
+  void begin_block(lnodeimpl* pred = nullptr);
   void end_block();
 
   bool conditional_enabled(lnodeimpl* node = nullptr) const;
@@ -87,7 +87,6 @@ public:
   void dump_stats(std::ostream& out);
   
 protected:
-
   struct cond_upd_t {
     cond_upd_t(selectimpl* p_sel, uint32_t p_block_id)
       : sel(p_sel)
@@ -95,21 +94,6 @@ protected:
     {}
     selectimpl* sel;
     uint32_t block_id;
-  };
-
-  struct cond_block_t {
-    cond_block_t(uint32_t p_id, lnodeimpl* p_cond)
-      : id(p_id)
-      , cond(p_cond)
-    {}
-    uint32_t id;
-    lnodeimpl* cond;
-    std::unordered_map<uint32_t, lnodeimpl*> aggregate_conds;
-    std::unordered_set<lnodeimpl*> locals;
-  };
-
-  struct cond_branch_t {
-    std::vector<lnodeimpl*> conds;
   };
 
   struct cond_range_t {
@@ -138,11 +122,38 @@ protected:
     }
   };
 
-  typedef std::map<cond_range_t, std::list<cond_upd_t>> cond_upds_t;
-  typedef std::list<cond_block_t> cond_blocks_t;
+  struct cond_branch_t {
+    lnodeimpl* else_pred;
+  };
+
   typedef std::list<cond_branch_t> cond_branches_t;
 
-  void clone_conditional_assignment(lnode& dst, const cond_range_t& range, uint32_t offset, uint32_t length);
+  struct cond_block_t {
+    cond_block_t(uint32_t p_id, lnodeimpl* p_pred, cond_branches_t::iterator p_branch)
+      : id(p_id)
+      , pred(p_pred)
+      , branch(p_branch)
+    {}
+    uint32_t id;
+    lnodeimpl* pred;
+    cond_branches_t::iterator branch;
+    std::unordered_map<uint32_t, lnodeimpl*> agg_preds;
+    std::unordered_set<lnodeimpl*> locals;
+  };
+
+  typedef std::list<cond_block_t> cond_blocks_t;
+
+  typedef std::map<cond_range_t, std::list<cond_upd_t>> cond_upds_t;
+
+  lnodeimpl* build_aggregate_predicate(
+      cond_blocks_t::iterator def_block,
+      cond_blocks_t::iterator use_block);
+
+  void clone_conditional_assignment(
+      lnode& dst,
+      const cond_range_t& range,
+      uint32_t offset,
+      uint32_t length);
   
   std::list<lnodeimpl*>   nodes_;
   std::list<undefimpl*>   undefs_;

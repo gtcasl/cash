@@ -475,9 +475,6 @@ static uint32_t get_output_size(ch_alu_op op, const lnode& a, const lnode& b) {
   case alu_op_nand:
   case alu_op_nor:
   case alu_op_xnor:
-  case alu_op_andr:
-  case alu_op_orr:
-  case alu_op_xorr:
   case alu_op_shl:
   case alu_op_shr:
   case alu_op_rotl:
@@ -519,8 +516,14 @@ static uint32_t get_output_size(ch_alu_op op, const lnode& a, const lnode& b) {
 
 static uint32_t get_output_size(ch_alu_op op, const lnode& a) {
   switch (op) {
-  case alu_op_inv: return a.get_size();
-  case alu_op_neg: return a.get_size();
+  case alu_op_inv:
+  case alu_op_neg:
+    return a.get_size();
+
+  case alu_op_andr:
+  case alu_op_orr:
+  case alu_op_xorr:
+    return 1;
   default:
     CH_ABORT("invalid alu operation");
   }

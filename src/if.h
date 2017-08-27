@@ -11,8 +11,8 @@ public:
   ~if_t();
     
   template <typename Func>
-  if_t& elif_(const ch_bitbase<1>& cond, const Func& func) {
-    this->eval(get_node(cond), to_function(func));
+  if_t& elif_(const ch_bitbase<1>& pred, const Func& func) {
+    this->eval(get_node(pred), to_function(func));
     return *this; 
   }
   
@@ -25,25 +25,25 @@ protected:
   
   using func_t = std::function<void ()>;
   
-  if_t(const lnode& cond, func_t func);
+  if_t(const lnode& pred, func_t func);
   
-  void eval(const lnode& cond, func_t func);
+  void eval(const lnode& pred, func_t func);
 
   void eval(func_t func);
   
   template <typename Func> 
-  friend if_t ch_if(const ch_bitbase<1>& cond, const Func& func);
+  friend if_t ch_if(const ch_bitbase<1>& pred, const Func& func);
 };
 
 template <typename Func> 
-if_t ch_if(const ch_bitbase<1>& cond, const Func& func) {
-  return if_t(get_node(cond), to_function(func));
+if_t ch_if(const ch_bitbase<1>& pred, const Func& func) {
+  return if_t(get_node(pred), to_function(func));
 }
 
 }
 }
 
 #define CH_IF_BODY(value)   value })
-#define CH_IF(cond)         ch_if(cond, [&](){ CH_IF_BODY
-#define CH_ELIF(cond)       .elif_(cond, [&](){ CH_IF_BODY
+#define CH_IF(pred)         ch_if(pred, [&](){ CH_IF_BODY
+#define CH_ELIF(pred)       .elif_(pred, [&](){ CH_IF_BODY
 #define CH_ELSE(value)      .else_([&](){ value })

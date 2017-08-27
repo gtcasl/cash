@@ -7,13 +7,13 @@ namespace detail {
 
 class selectimpl : public lnodeimpl {
 public:
-  selectimpl(const lnode& cond, const lnode& _true, const lnode& _false);
+  selectimpl(const lnode& pred, const lnode& _true, const lnode& _false);
   
- const lnode& get_cond() const {
+ const lnode& get_pred() const {
     return srcs_[0];
   }
 
-  void set_cond(const lnode& node) {
+  void set_pred(const lnode& node) {
     srcs_[0] = node;
   }
   

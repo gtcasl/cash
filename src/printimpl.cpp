@@ -76,14 +76,14 @@ printimpl::printimpl(context* ctx,
 }
 
 printimpl::printimpl(context* ctx,
-                     const lnode& cond,
+                     const lnode& pred,
                      const std::string& format,
                      const std::initializer_list<lnode>& args)
   : ioimpl(op_print, ctx, 0)
   , format_(format)
   , args_offset_(1)
   , ctime_(~0ull) {
-  srcs_.emplace_back(cond);
+  srcs_.emplace_back(pred);
   for (auto arg : args) {
     srcs_.emplace_back(arg);
   }
@@ -144,7 +144,7 @@ static int getFormatMaxIndex(const std::string& format) {
 }
 
 void cash::detail::createPrintNode(
-    const lnode& cond,
+    const lnode& pred,
     const std::string& format,
     const std::initializer_list<lnode>& args) {
   // printing is only enabled in debug mode
@@ -156,7 +156,7 @@ void cash::detail::createPrintNode(
   CH_CHECK(max_index < (int)args.size(), "print format index out of range");
 
   context* ctx = ctx_curr();
-  new printimpl(ctx, cond, format, args);
+  new printimpl(ctx, pred, format, args);
 }
 
 void cash::detail::createPrintNode(

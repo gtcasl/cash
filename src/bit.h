@@ -9,7 +9,7 @@ namespace detail {
 void createPrintNode(const std::string& format,
                      const std::initializer_list<lnode>& args);
 
-void createPrintNode(const lnode& cond,
+void createPrintNode(const lnode& pred,
                      const std::string& format,
                      const std::initializer_list<lnode>& args);
 
@@ -287,17 +287,17 @@ void ch_print(const std::string& format, const Args& ...args) {
 }
 
 template <typename...Args>
-void ch_print(const ch_bitbase<1>& cond,
+void ch_print(const ch_bitbase<1>& pred,
               const std::string& format,
               const Args& ...args) {
-  createPrintNode(get_node(cond), format, {get_node(args)...});
+  createPrintNode(get_node(pred), format, {get_node(args)...});
 }
 
 template <typename...Args>
-void ch_print(const ch_bit<1>& cond,
+void ch_print(const ch_bit<1>& pred,
               const std::string& format,
               const Args& ...args) {
-  createPrintNode(get_node(cond), format, {get_node(args)...});
+  createPrintNode(get_node(pred), format, {get_node(args)...});
 }
 
 }
