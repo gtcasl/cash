@@ -18,7 +18,9 @@ bool runtest(const std::function<ch_bit<1>()>& test, ch_cycle cycles) {
       return false;    
     return (cycle < cycles);
   });
-  return static_cast<bool>(ret);
+  bool bRet = static_cast<bool>(ret);
+  assert(bRet);
+  return bRet;
 }
 
 bool runtestx(const std::function<bool()>& test) {

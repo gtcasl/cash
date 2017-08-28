@@ -4,6 +4,13 @@
 
 using namespace cash::detail;
 
+static std::string fixup_name(std::string name) {
+  std::string ret(name);
+  ret.erase(std::remove(ret.begin(), ret.end(), '['), ret.end());
+  ret.erase(std::remove(ret.begin(), ret.end(), ']'), ret.end());
+  return ret;
+}
+
 ch_vcdtracer::ch_vcdtracer(
     std::ostream& out,
     const std::initializer_list<const ch_device*>& devices)
@@ -16,8 +23,9 @@ void ch_vcdtracer::ensureInitialize() {
 
   out_ << "$timescale 1 ns $end" << std::endl;
   for (auto& tap : taps_) {
-    out_ << "$var reg " << tap.bus.get_size() << ' ' << tap.name << ' '
-         << tap.name << " $end" << std::endl;
+    auto name = fixup_name(tap.name);
+    out_ << "$var reg " << tap.bus.get_size() << ' ' << name << ' '
+         << name << " $end" << std::endl;
   }
   out_ << "$enddefinitions $end" << std::endl;
 }
@@ -37,6 +45,7 @@ void ch_vcdtracer::tick(ch_cycle t) {
     }
     if (bus.get_size() > 1)
       out_ << ' ';
-    out_ << tap.name << std::endl;
+    // remove [] from tap name
+    out_ << fixup_name(tap.name) << std::endl;
   }  
 }

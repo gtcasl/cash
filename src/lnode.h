@@ -75,6 +75,8 @@ public:
                   uint32_t src_length,
                   uint32_t size);
 
+  lnodeimpl* clone(uint32_t size) const;
+
 protected:
 
   void ensureInitialized(uint32_t size, bool initialize) const;

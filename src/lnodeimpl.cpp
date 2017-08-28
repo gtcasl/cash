@@ -302,3 +302,7 @@ void lnode::write_data(uint32_t dst_offset,
     src_offset -= d.length;
   }
 }
+
+lnodeimpl* lnode::clone(uint32_t size) const {
+  return impl_ ? impl_->get_slice(0, size) : nullptr;
+}

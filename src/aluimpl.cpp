@@ -474,17 +474,19 @@ static uint32_t get_output_size(ch_alu_op op, const lnode& a, const lnode& b) {
   case alu_op_xor:
   case alu_op_nand:
   case alu_op_nor:
-  case alu_op_xnor:
-  case alu_op_shl:
-  case alu_op_shr:
-  case alu_op_rotl:
-  case alu_op_rotr:
+  case alu_op_xnor:  
   case alu_op_add:
   case alu_op_sub:
   case alu_op_mult:
   case alu_op_div:
   case alu_op_mod:
     assert(a.get_size() == b.get_size());
+    return a.get_size();
+
+  case alu_op_shl:
+  case alu_op_shr:
+  case alu_op_rotl:
+  case alu_op_rotr:
     return a.get_size();
 
   case alu_op_mux:

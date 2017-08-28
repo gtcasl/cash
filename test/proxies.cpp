@@ -17,13 +17,13 @@ TEST_CASE("proxies", "[proxies]") {
        return (a[0] == a[3] && a[1] == a[2]);
     });
     TEST([]()->ch_bit1 {
-      ch_bit4 a;
+      ch_bit2 a;
       ch_bit1 x, y;
-      a[3] = x;
-      a[2] = y;
+      a[0] = x;
+      a[1] = y;
       x = 1_b;
       y = 0_b;
-      return (a[2] == 0_b && a[3] == 1_b);
+      return (a[0] == 1_b && a[1] == 0_b);
     });
   }
   

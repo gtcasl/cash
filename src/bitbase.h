@@ -75,7 +75,7 @@ public:
     this->write_data(0, data, 0, N);
     return *this;
   }
- 
+
 #define CH_DEF_AOP(type) \
   typebase& operator=(type rhs) { \
     lnode node(bitvector(N, rhs)); \

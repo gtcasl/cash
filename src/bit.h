@@ -88,6 +88,10 @@ public:
   CH_DEF_AOP(int64_t)
   CH_DEF_AOP(uint64_t)
 #undef CH_DEF_AOP
+
+  ch_bit clone() const {
+    return node_.clone(N);
+  }
   
 protected:
 

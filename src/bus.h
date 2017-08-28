@@ -91,12 +91,12 @@ public:
   CH_DEF_CAST(uint64_t)
 #undef CH_DEF_CAST
   
-  void read(void* out, uint32_t offset, uint32_t length) const {
+  void read(void* out, uint32_t offset = 0, uint32_t length = N) const {
     assert(offset + length <= N);
     node_.read(reinterpret_cast<uint8_t*>(out), offset, length, N);
   }
   
-  void write(const void* in, uint32_t offset, uint32_t length) {
+  void write(const void* in, uint32_t offset = 0, uint32_t length = N) {
     assert(offset + length <= N);
     node_.write(reinterpret_cast<const uint8_t*>(in), offset, length, N);
   }

@@ -210,12 +210,13 @@ lnodeimpl* proxyimpl::get_slice(uint32_t offset, uint32_t length) {
   assert(length <= value_.get_size());
 
   // check for matching source
-  for (const range_t& r : ranges_) {
-    if (r.dst_offset == offset
-     && r.src_length == length
-     && r.src_offset == 0
-     && srcs_[r.src_idx].get_size() == length) {
-      return srcs_[r.src_idx].get_impl();
+  if (1 == ranges_.size()) {
+    auto& range = ranges_[0];
+    if (range.src_length == length
+     && range.src_offset == 0
+     && range.dst_offset == offset
+     && srcs_[range.src_idx].get_size() == length) {
+      return srcs_[range.src_idx].get_impl();
     }
   }
 
@@ -227,7 +228,7 @@ lnodeimpl* proxyimpl::get_slice(uint32_t offset, uint32_t length) {
     if (offset < r_end && src_end > r.dst_offset) {
       uint32_t sub_start = std::max(offset, r.dst_offset);
       uint32_t sub_end = std::min(src_end, r_end);
-      uint32_t dst_offset = sub_start - r.dst_offset;
+      uint32_t dst_offset = sub_start - offset;
       uint32_t src_offset = r.src_offset + (sub_start - r.dst_offset);
       proxy->add_source(dst_offset, srcs_[r.src_idx], src_offset, sub_end - sub_start);
     }
