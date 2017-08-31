@@ -3,7 +3,7 @@
 #include "device.h"
 
 namespace cash {
-namespace detail {
+namespace internal {
 
 class inputimpl;
 class tapimpl;
@@ -100,7 +100,7 @@ void ch_tap(const std::string& name, const ch_bitbase<N>& value) {
 
 #define CH_TRACE(x, ...) \
   do { \
-    cash::detail::ch_tracer& __tracer = x; \
+    cash::internal::ch_tracer& __tracer = x; \
     CH_FOR_EACH(CH_MAKE_TRACE, CH_MAKE_TRACE_SEP, __VA_ARGS__); \
   } while (0)
 

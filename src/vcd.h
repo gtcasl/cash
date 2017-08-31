@@ -3,7 +3,7 @@
 #include "sim.h"
 
 namespace cash {
-namespace detail {
+namespace internal {
 
 class ch_vcdtracer: public ch_tracer {
 public:

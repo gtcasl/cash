@@ -3,7 +3,7 @@
 #include "typebase.h"
 
 namespace cash {
-namespace detail {
+namespace internal {
 
 class snodeimpl;
 
@@ -57,11 +57,13 @@ public:
   void set_word(uint32_t idx, uint32_t value, uint32_t size);
   
   void read(uint8_t* out,
+            uint32_t sizeInBytes,
             uint32_t offset,
             uint32_t length,
             uint32_t size) const;
   
   void write(const uint8_t* in,
+             uint32_t sizeInBytes,
              uint32_t offset,
              uint32_t length,
              uint32_t size);

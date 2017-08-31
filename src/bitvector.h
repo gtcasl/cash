@@ -3,7 +3,7 @@
 #include "common.h"
 
 namespace cash {
-namespace detail {
+namespace internal {
 
 class bitvector {
 public:
@@ -38,6 +38,9 @@ public:
     
     reference(uint32_t& word, uint32_t mask)
       : word_(word), mask_(mask) {}
+
+    reference(reference&&) = default;
+    reference& operator=(reference&&) = default;
     
     uint32_t& word_;
     uint32_t  mask_;
@@ -377,9 +380,9 @@ public:
             uint32_t src_offset,
             uint32_t src_length);
   
-  void read(uint8_t* out, uint32_t offset, uint32_t size) const;
+  void read(uint8_t* out, uint32_t sizeInBytes, uint32_t offset, uint32_t length) const;
   
-  void write(const uint8_t* in, uint32_t offset, uint32_t size);
+  void write(const uint8_t* in, uint32_t sizeInBytes, uint32_t offset, uint32_t length);
   
   int32_t find_first() const;
   

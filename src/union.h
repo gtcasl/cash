@@ -4,23 +4,23 @@
 #include "bus.h"
 
 #define CH_UNION_SIZE(i, x) \
-  CH_PAIR_L(x)::bit_count
+  CH_PAIR_L(x)::bitcount
 
 #define CH_UNION_FIELD(i, x) \
-  cash::detail::sliceref<base, CH_PAIR_L(x)::bit_count> CH_PAIR_R(x)
+  cash::internal::sliceref<base, CH_PAIR_L(x)::bitcount> CH_PAIR_R(x)
 
 #define CH_UNION_CTOR_INIT(i, x) \
   CH_PAIR_R(x)(_)
 
 #define CH_UNION_IMPL(name, ...) \
-  class name : public cash::detail::ch_bitbase<std::max({CH_FOR_EACH(CH_UNION_SIZE, CH_SEP_COMMA, __VA_ARGS__)})> { \
+  class name : public cash::internal::ch_bitbase<std::max({CH_FOR_EACH(CH_UNION_SIZE, CH_SEP_COMMA, __VA_ARGS__)})> { \
   public:\
-    using base = cash::detail::ch_bitbase<std::max({CH_FOR_EACH(CH_UNION_SIZE, CH_SEP_COMMA, __VA_ARGS__)})>; \
+    using base = cash::internal::ch_bitbase<std::max({CH_FOR_EACH(CH_UNION_SIZE, CH_SEP_COMMA, __VA_ARGS__)})>; \
     using base::operator=; \
     using data_type = typename base::data_type; \
-    class bus_type : public cash::detail::ch_busbase<std::max({CH_FOR_EACH(CH_UNION_SIZE, CH_SEP_COMMA, __VA_ARGS__)})> { \
+    class bus_type : public cash::internal::ch_busbase<std::max({CH_FOR_EACH(CH_UNION_SIZE, CH_SEP_COMMA, __VA_ARGS__)})> { \
     public: \
-      using base = cash::detail::ch_busbase<std::max({CH_FOR_EACH(CH_UNION_SIZE, CH_SEP_COMMA, __VA_ARGS__)})>; \
+      using base = cash::internal::ch_busbase<std::max({CH_FOR_EACH(CH_UNION_SIZE, CH_SEP_COMMA, __VA_ARGS__)})>; \
       using base::operator=; \
       using data_type = typename base::data_type; \
       bus_type() : CH_FOR_EACH(CH_UNION_CTOR_INIT, CH_SEP_COMMA, __VA_ARGS__) {} \
@@ -32,12 +32,12 @@
       } \
       CH_FOR_EACH(CH_UNION_FIELD, CH_SEP_SEMICOLON, __VA_ARGS__); \
     protected: \
-      ch_bus<base::bit_count> _; \
+      ch_bus<base::bitcount> _; \
       void read_data(data_type& inout, size_t offset, size_t length) const override { \
-        cash::detail::read_data(_, inout, offset, length); \
+        cash::internal::read_data(_, inout, offset, length); \
       } \
       void write_data(size_t dst_offset, const data_type& in, size_t src_offset, size_t src_length) override { \
-        cash::detail::write_data(_, dst_offset, in, src_offset, src_length); \
+        cash::internal::write_data(_, dst_offset, in, src_offset, src_length); \
       } \
     };\
     name() : CH_FOR_EACH(CH_UNION_CTOR_INIT, CH_SEP_COMMA, __VA_ARGS__) {} \
@@ -48,13 +48,16 @@
       return *this; \
     } \
     CH_FOR_EACH(CH_UNION_FIELD, CH_SEP_SEMICOLON, __VA_ARGS__); \
+    name clone() const { \
+      return name(_.clone()); \
+    } \
   protected: \
-    ch_bit<base::bit_count> _; \
+    ch_bit<base::bitcount> _; \
     void read_data(data_type& inout, size_t offset, size_t length) const override { \
-      cash::detail::read_data(_, inout, offset, length); \
+      cash::internal::read_data(_, inout, offset, length); \
     } \
     void write_data(size_t dst_offset, const data_type& in, size_t src_offset, size_t src_length) override { \
-      cash::detail::write_data(_, dst_offset, in, src_offset, src_length); \
+      cash::internal::write_data(_, dst_offset, in, src_offset, src_length); \
     } \
   public:
 

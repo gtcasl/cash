@@ -2,7 +2,7 @@
 #include "ioimpl.h"
 #include "bus.h"
 
-using namespace cash::detail;
+using namespace cash::internal;
 
 static uint32_t generate_id() {
   static uint32_t s_id(0);
@@ -181,6 +181,7 @@ void snodeimpl::clear_sources(uint32_t offset, uint32_t length) {
       assert(src.node);
       src.node->release();
     }
+    srcs_.clear();
     return;
   }
 
@@ -457,14 +458,16 @@ void snode::set_word(uint32_t idx, uint32_t value, uint32_t size) {
 }
 
 void snode::read(uint8_t* out,
+                 uint32_t sizeInBytes,
                  uint32_t offset,
                  uint32_t length,
                  uint32_t size) const {
   this->ensureInitialized(size);
-  impl_->read(out, offset, length);
+  impl_->read(out, sizeInBytes, offset, length);
 }
 
 void snode::write(const uint8_t* in,
+                  uint32_t sizeInBytes,
                   uint32_t offset,
                   uint32_t length,
                   uint32_t size) {
@@ -472,7 +475,7 @@ void snode::write(const uint8_t* in,
   if (impl_->get_owner() != this)
     this->clone(true);
   impl_->clear_sources(offset, length);
-  impl_->write(in, offset, length);
+  impl_->write(in, sizeInBytes, offset, length);
 }
 
 void snode::read_data(data_type& inout,
@@ -504,6 +507,6 @@ void snode::write_data(uint32_t dst_offset,
   }
 }
 
-std::ostream& cash::detail::operator<<(std::ostream& os, const snode& node) {
+std::ostream& cash::internal::operator<<(std::ostream& os, const snode& node) {
   return os << node.get_value();
 }

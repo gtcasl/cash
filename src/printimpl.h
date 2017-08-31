@@ -3,7 +3,7 @@
 #include "ioimpl.h"
 
 namespace cash {
-namespace detail {
+namespace internal {
 
 class printimpl : public ioimpl {
 public:

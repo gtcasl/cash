@@ -9,7 +9,7 @@
 #include "snodeimpl.h"
 #include "context.h"
 
-using namespace cash::detail;
+using namespace cash::internal;
 
 lnodeimpl::lnodeimpl(ch_operator op, context* ctx, uint32_t size) 
   : op_(op)
@@ -221,7 +221,7 @@ void lnode::ensureInitialized(uint32_t size, bool initialize) const {
     } else {
       impl_ = new proxyimpl(ctx_curr(), size);
     }
-  }  
+  }
   assert(impl_->get_size() == size);
 }
 

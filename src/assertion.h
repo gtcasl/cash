@@ -3,7 +3,7 @@
 #include "bit.h"
 
 namespace cash {
-namespace detail {
+namespace internal {
 
 void ch_assert(const ch_bitbase<1>& l, const std::string& msg);
 

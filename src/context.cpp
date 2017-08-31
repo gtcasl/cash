@@ -16,7 +16,7 @@
 #include "arithm.h"
 #include "select.h"
 
-using namespace cash::detail;
+using namespace cash::internal;
 
 thread_local context* tls_ctx = nullptr;
 
@@ -635,18 +635,18 @@ void context::dump_stats(std::ostream& out) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-context* cash::detail::ctx_begin() {
+context* cash::internal::ctx_begin() {
   auto ctx = new context();
   tls_ctx = ctx;
   ctx->acquire();
   return ctx;
 }
 
-void cash::detail::ctx_end() {
+void cash::internal::ctx_end() {
   tls_ctx = nullptr;
 }
 
-context* cash::detail::ctx_curr() {
+context* cash::internal::ctx_curr() {
   CH_CHECK(tls_ctx, "invalid CASH context!");
   return tls_ctx;
 }

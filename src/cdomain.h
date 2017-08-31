@@ -4,7 +4,7 @@
 #include "tickable.h"
 
 namespace cash {
-namespace detail {
+namespace internal {
 
 enum EDGE_DIR {
   EDGE_POS = 0,

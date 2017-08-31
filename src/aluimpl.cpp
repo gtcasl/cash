@@ -1,7 +1,7 @@
 #include "aluimpl.h"
 #include "context.h"
 
-using namespace cash::detail;
+using namespace cash::internal;
 
 #define CH_ALUOP_NAME(n) case alu_op_##n: return op_##n;
 
@@ -666,13 +666,13 @@ void aluimpl::print_vl(std::ostream& out) const {
   CH_TODO();
 } 
 
-lnodeimpl* cash::detail::createAluNode(
+lnodeimpl* cash::internal::createAluNode(
     ch_alu_op op,
     const lnode& a,
     const lnode& b) {
   return new aluimpl(op, a, b);
 }
 
-lnodeimpl* cash::detail::createAluNode(ch_alu_op op, const lnode& a) {
+lnodeimpl* cash::internal::createAluNode(ch_alu_op op, const lnode& a) {
   return new aluimpl(op, a);
 }

@@ -73,25 +73,25 @@ TEST_CASE("simulation", "[sim]") {
     TESTX([]()->bool {          
       ch_bus4 a(4);
       uint8_t x;
-      a.read(&x, 0, 4);
+      a.read(&x, sizeof(x), 0, 4);
       return (x == 4);
     });
     TESTX([]()->bool {          
       ch_bus4 a(4);
       uint32_t x;
-      a.read(&x, 0, 4);
+      a.read(&x, sizeof(x), 0, 4);
       return (x == 4);
     });
     TESTX([]()->bool {          
       ch_bus4 a;
       uint8_t x = 4;
-      a.write(&x, 0, 4);
+      a.write(&x, sizeof(x), 0, 4);
       return (a == 4);
     });
     TESTX([]()->bool {          
       ch_bus4 a;
       uint32_t x = 4;
-      a.write(&x, 0, 4);
+      a.write(&x, sizeof(x), 0, 4);
       return (a == 4);
     });
   }

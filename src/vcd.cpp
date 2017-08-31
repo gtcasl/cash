@@ -2,7 +2,7 @@
 #include "vcd.h"
 #include "snodeimpl.h"
 
-using namespace cash::detail;
+using namespace cash::internal;
 
 static std::string fixup_name(std::string name) {
   std::string ret(name);

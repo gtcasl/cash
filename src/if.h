@@ -3,7 +3,7 @@
 #include "bit.h"
 
 namespace cash {
-namespace detail {
+namespace internal {
 
 class if_t {
 public:

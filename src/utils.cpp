@@ -5,9 +5,9 @@
 #define BACKWARD_HAS_BFD 1
 #include "backward.h"
 
-using namespace cash::detail;
+using namespace cash::internal;
 
-std::string cash::detail::fstring(const char *format, ...) {
+std::string cash::internal::fstring(const char *format, ...) {
   static const int STACK_BUFFER_SIZE = 256;
 
   std::string result;
@@ -39,7 +39,7 @@ std::string cash::detail::fstring(const char *format, ...) {
   return result;
 }
 
-void cash::detail::dbprint(int level, const char *format, ...) {
+void cash::internal::dbprint(int level, const char *format, ...) {
   if (level > platform::self().get_dbg_level())
     return;
   va_list args;
@@ -48,7 +48,7 @@ void cash::detail::dbprint(int level, const char *format, ...) {
   va_end(args);
 }
 
-void cash::detail::dump_stack_trace(FILE *out, unsigned int max_frames) {
+void cash::internal::dump_stack_trace(FILE *out, unsigned int max_frames) {
   using namespace backward;
   StackTrace st;
   st.load_here(max_frames);

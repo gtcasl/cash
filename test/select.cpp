@@ -235,7 +235,7 @@ TEST_CASE("conditionals", "[conditionals]") {
     TEST([]()->ch_bit1 {
         ch_bit8 a(1), b(1), x, y;
         __if (a == 1) (
-           (y, x) = 1;
+           ch_tie(y, x) = 1;
            __if (b == 0) (
              x = 1;
            )

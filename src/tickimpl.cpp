@@ -2,7 +2,7 @@
 #include "context.h"
 #include "bit.h"
 
-using namespace cash::detail;
+using namespace cash::internal;
 
 tickimpl::tickimpl(context* ctx) 
   : lnodeimpl(op_tick, ctx, CHAR_BIT * sizeof(ch_cycle))
@@ -24,6 +24,6 @@ void tickimpl::print_vl(std::ostream& out) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-ch_bit<64> cash::detail::ch_tick() {
+const ch_bit<64> cash::internal::ch_tick() {
   return make_bit<64>(new tickimpl(ctx_curr()));
 }

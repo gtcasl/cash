@@ -401,7 +401,7 @@ struct demangler_impl<system_tag::current_tag> {
 	demangler_impl(): _demangle_buffer_length(0) {}
 
 	std::string demangle(const char* funcname) {
-		using namespace details;
+	    using namespace details;
 		_demangle_buffer.reset(
 				abi::__cxa_demangle(funcname, _demangle_buffer.release(),
 					&_demangle_buffer_length, 0)
@@ -728,7 +728,7 @@ class TraceResolverLinuxImpl<trace_resolver_tag::backtrace_symbol>:
 public:
 	template <class ST>
 		void load_stacktrace(ST& st) {
-			using namespace details;
+		    using namespace details;
 			if (st.size() == 0) {
 				return;
 			}
@@ -943,10 +943,10 @@ private:
 	fobj_bfd_map_t      _fobj_bfd_map;
 
 	bfd_fileobject& load_object_with_bfd(const std::string& filename_object) {
-		using namespace details;
+	    using namespace details;
 
 		if (!_bfd_loaded) {
-			using namespace details;
+		    using namespace details;
 			bfd_init();
 			_bfd_loaded = true;
 		}
@@ -1147,7 +1147,7 @@ public:
 		void load_stacktrace(ST&) {}
 
 	ResolvedTrace resolve(ResolvedTrace trace) {
-		using namespace details;
+	    using namespace details;
 
 		Dwarf_Addr trace_addr = (Dwarf_Addr) trace.addr;
 

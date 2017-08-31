@@ -4,7 +4,7 @@
 #include "snode.h"
 
 namespace cash {
-namespace detail {
+namespace internal {
 
 class ioimpl : public lnodeimpl {
 public:

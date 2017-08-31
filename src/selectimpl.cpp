@@ -5,7 +5,7 @@
 #include "switch.h"
 #include "context.h"
 
-using namespace cash::detail;
+using namespace cash::internal;
 
 selectimpl::selectimpl(const lnode& pred, const lnode& _true, const lnode& _false)
   : lnodeimpl(op_select, pred.get_ctx(), _true.get_size())
@@ -30,11 +30,11 @@ void selectimpl::print_vl(std::ostream& out) const {
   CH_TODO();
 }
 
-lnodeimpl* cash::detail::createSelectNode(
-    const lnode& test,
-    const lnode& a,
-    const lnode& b) {
-  return new selectimpl(test, a, b);
+lnodeimpl* cash::internal::createSelectNode(
+    const lnode& pred,
+    const lnode& _true,
+    const lnode& _false) {
+  return new selectimpl(pred, _true, _false);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

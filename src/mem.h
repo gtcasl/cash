@@ -3,7 +3,7 @@
 #include "bit.h"
 
 namespace cash {
-namespace detail {
+namespace internal {
 
 class memimpl;
 
@@ -37,6 +37,7 @@ public:
   }
 
   lnodeimpl* read(const lnode& addr) const;
+
   void write(const lnode& addr, const lnode& data);
   
 private:
@@ -65,11 +66,11 @@ public:
       mem_.load<T>(init_data, W, 1 << A);
     }
     
-    ch_bit<W> operator[](const ch_bitbase<A>& addr) const {
+    const auto operator[](const ch_bitbase<A>& addr) const {
       return make_bit<W>(mem_.read(get_node(addr)));
     }
     
-    ch_bit<W> operator[](const ch_bit<A>& addr) const {
+    const auto operator[](const ch_bit<A>& addr) const {
       return make_bit<W>(mem_.read(get_node(addr)));
     }
     
@@ -91,7 +92,7 @@ public:
         mem_.write(get_node(addr_), get_node(data));
       }
       
-      operator ch_bit<W>() const {
+      operator const ch_bit<W>() const {
         return make_bit<W>(mem_.read(get_node(addr_)));
       }
       
@@ -124,11 +125,11 @@ public:
       mem_.load<T>(init_data, W, 1 << A);
     }
     
-    ch_bit<W> operator[](const ch_bitbase<A>& addr) const {
+    const auto operator[](const ch_bitbase<A>& addr) const {
       return make_bit<W>(mem_.read(get_node(addr)));
     }
     
-    ch_bit<W> operator[](const ch_bit<A>& addr) const {
+    const auto operator[](const ch_bit<A>& addr) const {
       return make_bit<W>(mem_.read(get_node(addr)));
     }
     

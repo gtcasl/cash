@@ -3,13 +3,13 @@
 #include "reg.h"
 
 namespace cash {
-namespace detail {
+namespace internal {
 
 template <typename T>
 class ch_seq : public T {
 public:
   using value_type = T;
-  using base = ch_bitbase<T::bit_count>;
+  using base = ch_bitbase<T::bitcount>;
   using data_type = typename T::data_type;
   using bus_type = typename T::bus_type;
 
@@ -23,30 +23,6 @@ public:
   ch_seq(const T& init) {
     T::operator=(ch_reg(next, init));
     next = *this;
-  }
-
-  const_sliceref<base, 1> operator[](size_t index) {
-    return const_sliceref<base, 1>(*this, index);
-  }
-
-  template <unsigned M>
-  const_sliceref<base, M> slice(size_t index = 0) {
-    return const_sliceref<base, M>(*this, index);
-  }
-
-  template <unsigned M>
-  const_sliceref<base, M> aslice(size_t index = 0) {
-    return const_sliceref<base, M>(*this, index * M);
-  }
-
-  template <unsigned M>
-  const_concatref<base, ch_bitbase<M>> concat(ch_bitbase<M>& rhs) {
-    return const_concatref<base, ch_bitbase<M>>(*this, rhs);
-  }
-
-  template <unsigned M>
-  const_concatref<base, ch_bitbase<M>> concat(const bitref<M>& rhs) {
-    return const_concatref<base, ch_bitbase<M>>(*this, rhs);
   }
 
 protected:

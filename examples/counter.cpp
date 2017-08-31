@@ -24,7 +24,7 @@ int main(int argc, char **argv) {
   ch_vcdtracer tracer(vcd_file, myDevice);
   __trace(tracer, out);
   tracer.run(11);
-  
+
   std::cout << "result:" << std::endl;
   std::cout << "out = " << out << std::endl;
   assert(out == 10);

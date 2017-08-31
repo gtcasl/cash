@@ -3,14 +3,14 @@
 #include "snode.h"
 
 namespace cash {
-namespace detail {
+namespace internal {
 
 template <unsigned N> using ch_busbase = typebase<N, snode::data_type>;
 
 template <unsigned N>
 class typebase<N, snode::data_type> : public typebase_itf<snode::data_type> {
 public:   
-  static const unsigned bit_count = N;
+  static const unsigned bitcount = N;
   using data_type = snode::data_type;
   
   typebase& operator=(const typebase& rhs) {
@@ -39,27 +39,29 @@ public:
   CH_DEF_AOP(uint64_t)
 #undef CH_DEF_AOP
   
-  void read(void* out, uint32_t offset, uint32_t length) const {
+  virtual void read(void* out, uint32_t sizeInBytes, uint32_t offset = 0, uint32_t length = N) const {
     assert(offset + length <= N);
-    get_node(*this).read(reinterpret_cast<uint8_t*>(out), offset, length, N);
+    assert(length <= sizeInBytes * 8);
+    get_node(*this).read(reinterpret_cast<uint8_t*>(out), sizeInBytes, offset, length, N);
   }
   
-  void write(const void* in, uint32_t offset, uint32_t length) {
+  virtual void write(const void* in, uint32_t sizeInBytes, uint32_t offset = 0, uint32_t length = N) {
     assert(offset + length <= N);
-    get_node(*this).write(reinterpret_cast<const uint8_t*>(in), offset, length, N);
+    assert(length <= sizeInBytes * 8);
+    get_node(*this).write(reinterpret_cast<const uint8_t*>(in), sizeInBytes, offset, length, N);
   }
 };
 
 template <unsigned N>
-snode get_node(const ch_busbase<N>& b) {
+snode get_node(const ch_busbase<N>& rhs) {
   snode::data_type data(N);
-  b.read_data(data, 0, N);
+  rhs.read_data(data, 0, N);
   return snode(data);
 }
 
 template <unsigned N> 
-std::ostream& operator<<(std::ostream& os, const ch_busbase<N>& b) {
-  return os << get_node(b);
+std::ostream& operator<<(std::ostream& os, const ch_busbase<N>& bus) {
+  return os << get_node(bus);
 }
 
 template <unsigned N>

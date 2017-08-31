@@ -1,7 +1,7 @@
 #include "proxyimpl.h"
 #include "context.h"
 
-using namespace cash::detail;
+using namespace cash::internal;
 
 proxyimpl::proxyimpl(context* ctx, uint32_t size) 
   : lnodeimpl(op_proxy, ctx, size)

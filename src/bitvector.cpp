@@ -1,7 +1,7 @@
 #include <cstring>
 #include "bitvector.h"
 
-using namespace cash::detail;
+using namespace cash::internal;
 
 bitvector::bitvector(const bitvector& rhs) : words_(nullptr), size_(0) {
   this->resize(rhs.size_, 0x0, false, false);
@@ -320,14 +320,15 @@ bool bitvector::is_empty() const {
   return true;
 }
 
-void bitvector::read(uint8_t* out, uint32_t offset, uint32_t size) const {
-  assert(offset + size <= size_);
+void bitvector::read(uint8_t* out, uint32_t sizeInBytes, uint32_t offset, uint32_t length) const {
+  CH_CHECK(offset + length <= size_, "out of bound access");
+  CH_CHECK(length <= sizeInBytes * 8, "out of bound access");
   uint32_t m_offset = offset & 0xff;
-  uint8_t rem_bits = (offset + size) & 0xff;
+  uint8_t rem_bits = (offset + length) & 0xff;
   if (m_offset) {
     uint8_t tmp = 0;
     const_iterator iter = this->begin() + offset;
-    for (uint32_t i = 0; i < size; ++i) {
+    for (uint32_t i = 0; i < length; ++i) {
       uint32_t shift = i & 0x7;
       tmp |= (*iter++) << shift;
       if (shift == 0x7) {
@@ -346,7 +347,7 @@ void bitvector::read(uint8_t* out, uint32_t offset, uint32_t size) const {
   } else {
     // byte-aligned offset
     uint32_t offset_in_bytes = offset / 8;
-    uint32_t size_in_bytes = CH_CEILDIV(size, 8);
+    uint32_t size_in_bytes = CH_CEILDIV(length, 8);
     uint8_t* src = reinterpret_cast<uint8_t*>(words_) + offset_in_bytes;
     if (rem_bits) {
       // copy all bytes except the last one
@@ -361,13 +362,14 @@ void bitvector::read(uint8_t* out, uint32_t offset, uint32_t size) const {
   }
 }
 
-void bitvector::write(const uint8_t* in, uint32_t offset, uint32_t size) {
-  assert(offset + size <= size_);
+void bitvector::write(const uint8_t* in, uint32_t sizeInBytes, uint32_t offset, uint32_t length) {
+  CH_CHECK(offset + length <= size_, "out of bound access");
+  CH_CHECK(length <= sizeInBytes * 8, "out of bound access");
   uint32_t m_offset = offset & 0xff;
   if (m_offset) {
     uint8_t tmp;
     iterator iter = this->begin() + offset;
-    for (uint32_t i = 0; i < size; ++i) {
+    for (uint32_t i = 0; i < length; ++i) {
       uint32_t shift = i & 0x7;
       if (0 == shift) {
         tmp = *in++;
@@ -377,8 +379,8 @@ void bitvector::write(const uint8_t* in, uint32_t offset, uint32_t size) {
   } else {
     // byte-aligned offset
     uint32_t offset_in_bytes = offset / 8;
-    uint32_t size_in_bytes = CH_CEILDIV(size, 8);
-    uint8_t rem_bits = (offset + size) & 0xff;
+    uint32_t size_in_bytes = CH_CEILDIV(length, 8);
+    uint8_t rem_bits = (offset + length) & 0xff;
     uint8_t* dst = reinterpret_cast<uint8_t*>(words_) + offset_in_bytes;
     if (rem_bits) {
       // copy all bytes except the last one
@@ -393,7 +395,7 @@ void bitvector::write(const uint8_t* in, uint32_t offset, uint32_t size) {
   }
 }
 
-std::ostream& cash::detail::operator<<(std::ostream& os, const bitvector& b) {
+std::ostream& cash::internal::operator<<(std::ostream& os, const bitvector& b) {
   auto oldflags = os.flags();
   os.setf(std::ios_base::hex, std::ios_base::basefield);
   os << "0x";

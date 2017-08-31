@@ -2,7 +2,7 @@
 #include "context.h"
 #include "compile.h"
 
-using namespace cash::detail;
+using namespace cash::internal;
 
 ch_device::~ch_device() {
   ctx_->release();

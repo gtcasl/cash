@@ -3,70 +3,52 @@
 #include "lnode.h"
 
 namespace cash {
-namespace detail {
+namespace internal {
 
-template <unsigned N> using const_bitref = const_typeref<N, lnode::data_type>;
-template <unsigned N> using bitref = typeref<N, lnode::data_type>;
+template <unsigned N> class ch_bit;
+
+template <unsigned N> const ch_bit<N> make_bit(const lnode& node);
+
 template <unsigned N> using ch_bitbase = typebase<N, lnode::data_type>;
 
 template <unsigned N>
 class typebase<N, lnode::data_type> : public typebase_itf<lnode::data_type> {
 public:   
-  static const unsigned bit_count = N;
+  static const unsigned bitcount = N;
   using data_type = lnode::data_type;
   
-  const_sliceref<typebase, 1> operator[](size_t index) const {
-    static_assert(N > 1, "invalid call");
-    return const_sliceref<typebase, 1>(*this, index);
+  const auto operator[](size_t index) const {
+    const auto node(get_node(*this));
+    lnode::data_type data(node, index, 1);
+    return make_bit<1>(data);
   }
 
-  sliceref<typebase, 1> operator[](size_t index) {
-    static_assert(N > 1, "invalid call");
+  auto operator[](size_t index) {
     return sliceref<typebase, 1>(*this, index);
   }
 
   template <unsigned M>
-  const_sliceref<typebase, M> slice(size_t index = 0) const {
-    static_assert(N > 1, "invalid call");
-    return const_sliceref<typebase, M>(*this, index);
+  const auto slice(size_t index = 0) const {
+    const auto node(get_node(*this));
+    lnode::data_type data(node, index, M);
+    return make_bit<M>(data);
   }
 
   template <unsigned M>
-  sliceref<typebase, M> slice(size_t index = 0) {
-    static_assert(N > 1, "invalid call");
+  auto slice(size_t index = 0) {
     return sliceref<typebase, M>(*this, index);
   }
 
   template <unsigned M>
-  const_sliceref<typebase, M> aslice(size_t index = 0) const {
-    static_assert(N > 1, "invalid call");
-    return const_sliceref<typebase, M>(*this, index * M);
+  const auto aslice(size_t index = 0) const {
+    const auto node(get_node(*this));
+    lnode::data_type data(node, index * M, M);
+    return make_bit<M>(data);
   }
 
   template <unsigned M>
-  sliceref<typebase, M> aslice(size_t index = 0) {
-    static_assert(N > 1, "invalid call");
+  auto aslice(size_t index = 0) {
     return sliceref<typebase, M>(*this, index * M);
-  }
-
-  template <unsigned M>
-  const_concatref<typebase, ch_bitbase<M>> concat(const ch_bitbase<M>& rhs) const {
-    return const_concatref<typebase, ch_bitbase<M>>(*this, rhs);
-  }
-
-  template <unsigned M>
-  const_concatref<typebase, ch_bitbase<M>> concat(const ch_bitbase<M>& rhs) {
-    return const_concatref<typebase, ch_bitbase<M>>(*this, rhs);
-  }
-
-  template <unsigned M>
-  concatref<typebase, ch_bitbase<M>> concat(ch_bitbase<M>& rhs) {
-    return concatref<typebase, ch_bitbase<M>>(*this, rhs);
-  }
-
-  template <unsigned M>
-  concatref<typebase, ch_bitbase<M>> concat(const bitref<M>& rhs) {
-    return concatref<typebase, ch_bitbase<M>>(*this, rhs);
   }
   
   typebase& operator=(const typebase& rhs) {
@@ -78,7 +60,7 @@ public:
 
 #define CH_DEF_AOP(type) \
   typebase& operator=(type rhs) { \
-    lnode node(bitvector(N, rhs)); \
+    const lnode node(bitvector(N, rhs)); \
     this->write_data(0, {node, 0 , N}, 0, N); \
     return *this; \
   } 
@@ -97,9 +79,9 @@ public:
 };
 
 template <unsigned N>
-lnode get_node(const ch_bitbase<N>& b) {
+lnode get_node(const ch_bitbase<N>& rhs) {
   lnode::data_type data(N);
-  b.read_data(data, 0, N);
+  rhs.read_data(data, 0, N);
   return lnode(data);
 }
 

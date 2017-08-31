@@ -4,7 +4,7 @@
 #include "arithm.h"
 
 namespace cash {
-namespace detail {
+namespace internal {
 
 class aluimpl : public lnodeimpl {
 public:

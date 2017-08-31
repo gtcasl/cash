@@ -48,7 +48,7 @@ TEST_CASE("memory", "[memory]") {
       __if (en) ( 
         mem[a] = d;
       );
-      (a, d, en) = ch_reg(ch_select(ch_tick())
+      ch_tie(a, d, en) = ch_reg(ch_select(ch_tick())
           (2, (01_b, 0x0_h, 0_b))
           (4, (00_b, 0xE_h, 1_b))
           (6, (10_b, 0x0_h, 0_b))
@@ -75,7 +75,7 @@ TEST_CASE("memory", "[memory]") {
       __if (en) (
         mem[a] = d;
       );
-      (a, d, en) = ch_reg(ch_select(ch_tick())
+      ch_tie(a, d, en) = ch_reg(ch_select(ch_tick())
           (2, (01_b, 0x0_h, 0_b))
           (4, (00_b, 0xE_h, 1_b))
           (6, (10_b, 0x0_h, 0_b))

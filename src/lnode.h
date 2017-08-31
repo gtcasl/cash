@@ -3,7 +3,7 @@
 #include "typebase.h"
 
 namespace cash {
-namespace detail {
+namespace internal {
 
 class lnodeimpl;
 class proxyimpl;

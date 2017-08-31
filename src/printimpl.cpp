@@ -2,7 +2,7 @@
 #include "context.h"
 #include "bit.h"
 
-using namespace cash::detail;
+using namespace cash::internal;
 
 enum class fmttype {
   Int,
@@ -143,7 +143,7 @@ static int getFormatMaxIndex(const std::string& format) {
   return max_index;
 }
 
-void cash::detail::createPrintNode(
+void cash::internal::createPrintNode(
     const lnode& pred,
     const std::string& format,
     const std::initializer_list<lnode>& args) {
@@ -159,7 +159,7 @@ void cash::detail::createPrintNode(
   new printimpl(ctx, pred, format, args);
 }
 
-void cash::detail::createPrintNode(
+void cash::internal::createPrintNode(
     const std::string& format,
     const std::initializer_list<lnode>& args) {
   // printing is only enabled in debug mode

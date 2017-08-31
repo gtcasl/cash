@@ -4,7 +4,7 @@
 #include "arithm.h"
 
 namespace cash {
-namespace detail {
+namespace internal {
 
 class ch_real : public ch_bit<32> {
 public:

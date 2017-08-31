@@ -6,20 +6,17 @@ using namespace cash::core;
 using namespace cash::core_literals;
 using namespace cash::sim;
 
-template <unsigned ADDR, unsigned WIDTH>
-__out(ch_bit<WIDTH>, ch_bit1, ch_bit1) FiFo(
-  const ch_bit<WIDTH>& din,
-  const ch_bit1& push,
-  const ch_bit1& pop) {
-  
-  ch_bit<WIDTH> dout;
-  ch_bit1 empty;
-  ch_bit1 full;
-  
-  ch_ram<WIDTH, ADDR> mem;
-  ch_seq<ch_bit<ADDR+1>> rd_ptr, wr_ptr;
-  ch_bit<ADDR> rd_addr(ch_slice<ADDR>(rd_ptr));
-  ch_bit<ADDR> wr_addr(ch_slice<ADDR>(wr_ptr));
+template <unsigned A, unsigned W>
+__out(ch_bit<W>, ch_bit1, ch_bit1) FiFo(
+      const ch_bit<W>& din,
+      const ch_bit1& push,
+      const ch_bit1& pop) {
+  ch_ram<W, A> mem;
+  ch_seq<ch_bit<A+1>> rd_ptr, wr_ptr;
+  ch_bit1 empty, full;
+
+  ch_bit<A> rd_A(ch_slice<A>(rd_ptr));
+  ch_bit<A> wr_A(ch_slice<A>(wr_ptr));
 
   ch_bit1 reading(pop && !empty);
   ch_bit1 writing(push && !full);
@@ -28,11 +25,11 @@ __out(ch_bit<WIDTH>, ch_bit1, ch_bit1) FiFo(
   wr_ptr.next = ch_select(writing, wr_ptr + 1, wr_ptr);
   
   empty = (wr_ptr == rd_ptr);
-  full  = (wr_addr == rd_addr) && (wr_ptr[ADDR] != rd_ptr[ADDR]);
+  full  = (wr_A == rd_A) && (wr_ptr[A] != rd_ptr[A]);
   
-  dout = mem[rd_addr];
+  auto dout = mem[rd_A];
   __if (writing) (
-    mem[wr_addr] = din;
+    mem[wr_A] = din;
   );
   
   __ret(dout, empty, full);

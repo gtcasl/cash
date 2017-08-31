@@ -3,7 +3,7 @@
 #include "context.h"
 #include "reg.h"
 
-using namespace cash::detail;
+using namespace cash::internal;
 
 regimpl::regimpl(const lnode& next)
   : lnodeimpl(op_reg, next.get_ctx(), next.get_size()) {
@@ -91,36 +91,36 @@ void latchimpl::print_vl(std::ostream& out) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-ch_bit<1> cash::detail::ch_clock() {
+const ch_bit<1> cash::internal::ch_clock() {
   return make_bit<1>(ctx_curr()->get_clk());
 }
 
-void cash::detail::ch_push_clock(const ch_bitbase<1>& clk) {
+void cash::internal::ch_push_clock(const ch_bitbase<1>& clk) {
   ctx_curr()->push_clk(get_node(clk));
 }
 
-void cash::detail::ch_pop_clock() {
+void cash::internal::ch_pop_clock() {
   ctx_curr()->pop_clk();
 }
 
-ch_bit<1> cash::detail::ch_reset() {
+const ch_bit<1> cash::internal::ch_reset() {
   return make_bit<1>(ctx_curr()->get_reset());
 }
 
-void cash::detail::ch_push_reset(const ch_bitbase<1>& reset) {
+void cash::internal::ch_push_reset(const ch_bitbase<1>& reset) {
   ctx_curr()->push_reset(get_node(reset));
 }
 
-void cash::detail::ch_pop_reset() {
+void cash::internal::ch_pop_reset() {
   ctx_curr()->pop_reset();
 }
 
-lnodeimpl* cash::detail::createRegNode(const lnode& next, const lnode& init) {
+lnodeimpl* cash::internal::createRegNode(const lnode& next, const lnode& init) {
   lnodeimpl* reset = ctx_curr()->get_reset();
   return new regimpl(createSelectNode(reset, init, next));
 }
 
-lnodeimpl* cash::detail::createLatchNode(
+lnodeimpl* cash::internal::createLatchNode(
     const lnode& next,
     const lnode& init,
     const lnode& enable,
@@ -128,12 +128,12 @@ lnodeimpl* cash::detail::createLatchNode(
   return new latchimpl(next, init, enable, reset);
 }
 
-lnodeimpl* cash::detail::createReadyNode(const lnode& node) {
+lnodeimpl* cash::internal::createReadyNode(const lnode& node) {
   CH_UNUSED(node);
   CH_TODO();
 }
 
-lnodeimpl* cash::detail::createValidNode(const lnode& node) {
+lnodeimpl* cash::internal::createValidNode(const lnode& node) {
   CH_UNUSED(node);
   CH_TODO();
 }

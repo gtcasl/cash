@@ -55,7 +55,7 @@
   m(fdiv)
 
 namespace cash {
-namespace detail {
+namespace internal {
   
 enum ch_operator {
   CH_OPERATOR_ENUM(CH_OPERATOR_TYPE)

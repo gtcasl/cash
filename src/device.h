@@ -4,7 +4,7 @@
 #include "bus.h"
 
 namespace cash {
-namespace detail {
+namespace internal {
 
 class context;
 
@@ -27,7 +27,7 @@ public:
   ~ch_device();
   
   template <unsigned N> 
-  ch_bus<N> get_tap(const std::string& name) {
+  const auto get_tap(const std::string& name) {
     return make_bus<N>(this->get_tap(name, N));
   }
   
@@ -104,7 +104,7 @@ protected:
   };
   
   template<typename FuncRet, typename ...FuncArgs, typename ...Args, size_t ...I>
-  FuncRet load_impl(std::function<FuncRet(FuncArgs...)> func, std::tuple<Args...>& args, index_sequence<I...>) {
+  FuncRet load_impl(std::function<FuncRet(FuncArgs...)> func, std::tuple<Args...>& args, std::index_sequence<I...>) {
     return func(std::get<I>(args)...);
   }
   
@@ -116,7 +116,7 @@ protected:
       std::tuple<typename to_value_type<typename std::remove_const<
           typename std::remove_reference<FuncArgs>::type>::type>::value...> func_args;
       this->bind_inputs(func_args, args...);
-      FuncRet ret(this->load_impl(func, func_args, make_index_sequence<sizeof...(FuncArgs)>()));
+      FuncRet ret(this->load_impl(func, func_args, std::index_sequence_for<FuncArgs...>()));
       this->bind_outputs(ret, args...);
     }    
     this->compile();
@@ -139,12 +139,12 @@ protected:
   }
 
   template <unsigned N>
-  ch_bit<N> bind_input(const ch_busbase<N>& bus) const {
+  const auto bind_input(const ch_busbase<N>& bus) const {
     return make_bit<N>(this->bind_input_(get_node(bus)));
   }
   
   template <unsigned N>
-  ch_bus<N> bind_output(const ch_bitbase<N>& output) const {
+  const auto bind_output(const ch_bitbase<N>& output) const {
     return make_bus<N>(this->bind_output_(get_node(output)));
   }
   

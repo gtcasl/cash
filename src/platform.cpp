@@ -1,7 +1,7 @@
 #include "common.h"
 #include "platform.h"
 
-using namespace cash::detail;
+using namespace cash::internal;
 
 platform::platform()
   : dbg_level_(0)

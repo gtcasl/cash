@@ -3,7 +3,7 @@
 #include "busbase.h"
 
 namespace cash {
-namespace detail {
+namespace internal {
 
 template <unsigned N> 
 class ch_bus : public ch_busbase<N> {
@@ -91,19 +91,21 @@ public:
   CH_DEF_CAST(uint64_t)
 #undef CH_DEF_CAST
   
-  void read(void* out, uint32_t offset = 0, uint32_t length = N) const {
+  void read(void* out, uint32_t sizeInBytes, uint32_t offset = 0, uint32_t length = N) const override {
     assert(offset + length <= N);
-    node_.read(reinterpret_cast<uint8_t*>(out), offset, length, N);
+    assert(length <= sizeInBytes * 8);
+    node_.read(reinterpret_cast<uint8_t*>(out), sizeInBytes, offset, length, N);
   }
   
-  void write(const void* in, uint32_t offset = 0, uint32_t length = N) {
+  void write(const void* in, uint32_t sizeInBytes, uint32_t offset = 0, uint32_t length = N) override {
     assert(offset + length <= N);
-    node_.write(reinterpret_cast<const uint8_t*>(in), offset, length, N);
+    assert(length <= sizeInBytes * 8);
+    node_.write(reinterpret_cast<const uint8_t*>(in), sizeInBytes, offset, length, N);
   }
 
 protected:
 
-  ch_bus(snodeimpl* node) : node_(node) {
+  ch_bus(const snode& node) : node_(node) {
     assert(node_.get_size() == N);
   }
   
@@ -117,11 +119,11 @@ protected:
   
   snode node_;
 
-  template <unsigned M> friend ch_bus<M> make_bus(snodeimpl* node);
+  template <unsigned M> friend const ch_bus<M> make_bus(const snode& node);
 };
 
 template <unsigned N>
-ch_bus<N> make_bus(snodeimpl* node) {
+const ch_bus<N> make_bus(const snode& node) {
   return ch_bus<N>(node);
 }
 

@@ -4,7 +4,7 @@
 #include "vec.h"
 
 namespace cash {
-namespace detail {
+namespace internal {
 
 void createPrintNode(const std::string& format,
                      const std::initializer_list<lnode>& args);
@@ -89,13 +89,13 @@ public:
   CH_DEF_AOP(uint64_t)
 #undef CH_DEF_AOP
 
-  ch_bit clone() const {
-    return node_.clone(N);
+  const auto clone() const {
+    return make_bit<N>(node_.clone(N));
   }
   
 protected:
 
-  ch_bit(lnodeimpl* node) : node_(node) {
+  ch_bit(const lnode& node) : node_(node) {
     assert(node_.get_size() == N);
   }
 
@@ -114,91 +114,45 @@ protected:
 
   lnode node_;
 
-  template <unsigned M> friend ch_bit<M> make_bit(lnodeimpl* node);
+  template <unsigned M> friend const ch_bit<M> make_bit(const lnode& node);
 };
 
 template <unsigned N>
-ch_bit<N> make_bit(lnodeimpl* node) {
+const ch_bit<N> make_bit(const lnode& node) {
   return ch_bit<N>(node);
 }
 
 // concatenation operator
 
-#define CH_CONCAT_GEN(cB, cA, B, A) \
-  template <unsigned NB, unsigned NA> \
-  auto operator,(cB b, cA a) { \
-    return b.template concat(a); \
-  } \
-  template <unsigned NB, unsigned NA> \
-  auto operator,(cB b, A a) { \
-    return b.template concat(a); \
-  } \
-  template <unsigned NB, unsigned NA> \
-  auto operator,(B b, cA a) { \
-    return b.template concat(a); \
-  } \
-  template <unsigned NB, unsigned NA> \
-  auto operator,(B b, A a) { \
-    return b.template concat(a); \
-  } \
-  template <unsigned NB, unsigned NA> \
-  auto ch_concat(cB b, cA a) { \
-    return b.template concat(a); \
-  } \
-  template <unsigned NB, unsigned NA> \
-  auto ch_concat(cB b, A a) { \
-    return b.template concat(a); \
-  } \
-  template <unsigned NB, unsigned NA> \
-  auto ch_concat(B b, cA a) { \
-    return b.template concat(a); \
-  } \
-  template <unsigned NB, unsigned NA> \
-  auto ch_concat(B b, A a) { \
-    return b.template concat(a); \
-  }
+template <unsigned NB, unsigned NA>
+const auto ch_concat(const ch_bitbase<NB>& b, const ch_bitbase<NA>& a) {
+  const auto na(get_node(a));
+  const auto nb(get_node(b));
+  lnode::data_type data(NA+NB);
+  data.push_back({na, 0, NA});
+  data.push_back({nb, 0, NB});
+  return make_bit<NA+NB>(data);
+}
 
-CH_CONCAT_GEN(const const_bitref<NB>&,
-              const const_bitref<NA>&,
-              const bitref<NB>&,
-              const bitref<NA>&)
+template <unsigned NB, unsigned NA>
+const auto operator,(const ch_bitbase<NB>& b, const ch_bitbase<NA>& a) {
+  return ch_concat(b, a);
+}
 
-CH_CONCAT_GEN(const const_bitref<NB>&,
-              const ch_bitbase<NA>&,
-              const bitref<NB>&,
-              ch_bitbase<NA>&)
-
-CH_CONCAT_GEN(const ch_bitbase<NB>&,
-              const const_bitref<NA>&,
-              ch_bitbase<NB>&,
-              const bitref<NA>&)
-
-CH_CONCAT_GEN(const ch_bitbase<NB>&,
-              const ch_bitbase<NA>&,
-              ch_bitbase<NB>&,
-              ch_bitbase<NA>&)
-
-#undef CH_CONCAT_GEN
+template<class... Args>
+concatref<Args...> ch_tie(Args&... args) {
+  return concatref<Args...>(args...);
+}
 
 // slice operators
 
 template <unsigned N, unsigned M>
-auto ch_slice(const ch_bitbase<M>& in, size_t index = 0) {
+const auto ch_slice(const ch_bitbase<M>& in, size_t index = 0) {
   return in.template slice<N>(index);
 }
 
 template <unsigned N, unsigned M>
-auto ch_slice(ch_bitbase<M>& in, size_t index = 0) {
-  return in.template slice<N>(index);
-}
-
-template <unsigned N, unsigned M>
-auto ch_aslice(const ch_bitbase<M>& in, size_t index = 0) {
-  return in.template aslice<N>(index);
-}
-
-template <unsigned N, unsigned M>
-auto ch_aslice(ch_bitbase<M>& in, size_t index = 0) {
+const auto ch_aslice(const ch_bitbase<M>& in, size_t index = 0) {
   return in.template aslice<N>(index);
 }
 
@@ -208,7 +162,7 @@ template <unsigned D>
 class zext_select {
 public:
     template <unsigned M>
-    ch_bit<(M+D)> operator() (const ch_bitbase<M>& in) {
+    const auto operator() (const ch_bitbase<M>& in) {
       return (ch_bit<D>(0x0), in);
     }
 };
@@ -217,7 +171,7 @@ template <>
 class zext_select<0> {
 public:
     template <unsigned M>
-    ch_bit<M> operator() (const ch_bitbase<M>& in) {
+    const ch_bit<M> operator() (const ch_bitbase<M>& in) {
       return in;
     }
 };
@@ -225,7 +179,7 @@ public:
 template <unsigned M, unsigned D>
 class sext_pad {
 public:
-    ch_bit<(M+D)> operator() (const ch_bitbase<M>& in) {
+   const auto operator() (const ch_bitbase<M>& in) {
       return (in[M-1], ch_bit<D>(0x0), ch_slice<M-1>(in, 1));
     }    
 };
@@ -233,7 +187,7 @@ public:
 template <unsigned D>
 class sext_pad<1, D> {
 public:
-    ch_bit<(1+D)> operator() (const ch_bitbase<1>& in) {
+    const auto operator() (const ch_bitbase<1>& in) {
       return (in, ch_bit<D>(0x0));
     }
 };
@@ -242,7 +196,7 @@ template <unsigned D>
 class sext_select {
 public:
     template <unsigned M>
-    ch_bit<(M+D)> operator() (const ch_bitbase<M>& in) {
+    const auto operator() (const ch_bitbase<M>& in) {
       return sext_pad<M, D>()(in);
     }
 };
@@ -251,19 +205,19 @@ template <>
 class sext_select<0> {
 public:
     template <unsigned M>
-    ch_bit<M> operator() (const ch_bitbase<M>& in) {
+   const ch_bit<M> operator() (const ch_bitbase<M>& in) {
       return in;
     }
 };
 
 template <unsigned N, unsigned M>
-ch_bit<N> ch_zext(const ch_bitbase<M>& in) {
+const auto ch_zext(const ch_bitbase<M>& in) {
   static_assert(N >= M, "invalid extend size");
   return zext_select<(N-M)>()(in);
 }
 
 template <unsigned N, unsigned M>
-ch_bit<N> ch_sext(const ch_bitbase<M>& in) {
+const auto ch_sext(const ch_bitbase<M>& in) {
   static_assert(N >= M, "invalid extend size");
   return sext_select<(N-M)>()(in);
 }
@@ -271,7 +225,7 @@ ch_bit<N> ch_sext(const ch_bitbase<M>& in) {
 // shuffle operators
 
 template <unsigned N, unsigned I>
-ch_bit<N> ch_shuffle(const ch_bitbase<N>& in,
+const auto ch_shuffle(const ch_bitbase<N>& in,
                      const std::array<uint32_t, I>& indices) {
   static_assert((I % N) == 0, "invalid indices size");
   ch_bit<N> ret;
@@ -283,7 +237,7 @@ ch_bit<N> ch_shuffle(const ch_bitbase<N>& in,
 
 // utility functions
 
-ch_bit<64> ch_tick();
+const ch_bit<64> ch_tick();
 
 template <typename...Args>
 void ch_print(const std::string& format, const Args& ...args) {

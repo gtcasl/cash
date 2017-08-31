@@ -142,6 +142,12 @@ TEST_CASE("aggregates", "[aggregates]") {
       b[1][1] = a[0][0];
       return (b == 1010_b);
     });
+
+    TEST([]()->ch_bit1 {
+      ch_vec<ch_bit2, 2> a(1100_b), b(0011_b);
+      auto c = ch_orr(a[0] & b[0]);
+      return (c == 0);
+    });
   }
   
   SECTION("enums", "[enum]") {

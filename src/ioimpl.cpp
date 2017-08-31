@@ -2,7 +2,7 @@
 #include "snodeimpl.h"
 #include "context.h"
 
-using namespace cash::detail;
+using namespace cash::internal;
 
 inputimpl::inputimpl(ch_operator op, context* ctx, uint32_t size) 
   : ioimpl(op, ctx, size)

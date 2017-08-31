@@ -1,7 +1,7 @@
 #pragma once
 
 namespace cash {
-namespace detail {
+namespace internal {
 
 class platform {
 public:

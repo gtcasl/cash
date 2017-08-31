@@ -4,7 +4,7 @@
 #include "bus.h"
 
 namespace cash {
-namespace detail {
+namespace internal {
 
 //
 // CASH literals format: XXXXXX_(b|o|h)[size] using ' as separator

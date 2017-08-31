@@ -3,7 +3,7 @@
 #include "snode.h"
 
 namespace cash {
-namespace detail {
+namespace internal {
 
 class snodeimpl : public refcounted {
 public:
@@ -52,14 +52,14 @@ public:
     ++changeid_;
   }
   
-  void read(uint8_t* out, uint32_t offset, uint32_t size) const {
+  void read(uint8_t* out, uint32_t sizeInBytes, uint32_t offset, uint32_t size) const {
     this->sync_sources();
-    value_.read(out, offset, size);
+    value_.read(out, sizeInBytes, offset, size);
   }
   
-  void write(const uint8_t* in, uint32_t offset, uint32_t size) {
+  void write(const uint8_t* in, uint32_t sizeInBytes, uint32_t offset, uint32_t size) {
     this->sync_sources();
-    value_.write(in, offset, size);
+    value_.write(in, sizeInBytes, offset, size);
     ++changeid_;
   }
 

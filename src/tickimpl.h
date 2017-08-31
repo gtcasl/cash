@@ -3,7 +3,7 @@
 #include "lnodeimpl.h"
 
 namespace cash {
-namespace detail {
+namespace internal {
 
 class tickimpl : public lnodeimpl {
 public:

@@ -3,7 +3,7 @@
 #include "bit.h"
 
 namespace cash {
-namespace detail {
+namespace internal {
 
 lnodeimpl* createSelectNode(const lnode& pred, const lnode& a, const lnode& b);
 
@@ -49,11 +49,11 @@ public:
     return *this;
   }
   
-  ch_bit<N> operator()(const ch_bitbase<N>& value) {
+  const auto operator()(const ch_bitbase<N>& value) {
     return make_bit<N>(impl_.eval(get_node(value)));
   }
   
-  ch_bit<N> operator()(const ch_bit<N>& value) {
+  const auto operator()(const ch_bit<N>& value) {
     return make_bit<N>(impl_.eval(get_node(value)));
   }
   
@@ -101,11 +101,11 @@ public:
       return *this;
     }
     
-    ch_bit<M> operator()(const ch_bitbase<M>& value) {
+    const auto operator()(const ch_bitbase<M>& value) {
       return make_bit<M>(impl_.eval(get_node(value)));
     }
     
-    ch_bit<M> operator()(const ch_bit<M>& value) {
+    const auto operator()(const ch_bit<M>& value) {
       return make_bit<M>(impl_.eval(get_node(value)));
     }  
     
@@ -160,7 +160,7 @@ select_t<N> ch_select(const ch_bitbase<1>& pred, const ch_bit<N>& value) {
 }
 
 template <unsigned N>
-ch_bit<N> ch_select(const ch_bitbase<1>& pred,
+const auto ch_select(const ch_bitbase<1>& pred,
                     const ch_bitbase<N>& _true,
                     const ch_bitbase<N>& _false) {
   return make_bit<N>(createSelectNode(get_node(pred),
@@ -169,7 +169,7 @@ ch_bit<N> ch_select(const ch_bitbase<1>& pred,
 }
 
 template <unsigned N>
-ch_bit<N> ch_select(const ch_bitbase<1>& pred,
+const auto ch_select(const ch_bitbase<1>& pred,
                     const ch_bitbase<N>& _true,
                     const ch_bit<N>& _false) {
   return make_bit<N>(createSelectNode(get_node(pred),
@@ -178,7 +178,7 @@ ch_bit<N> ch_select(const ch_bitbase<1>& pred,
 }
 
 template <unsigned N>
-ch_bit<N> ch_select(const ch_bitbase<1>& pred,
+const auto ch_select(const ch_bitbase<1>& pred,
                     const ch_bit<N>& _true,
                     const ch_bitbase<N>& _false) {
   return make_bit<N>(createSelectNode(get_node(pred),
@@ -187,7 +187,7 @@ ch_bit<N> ch_select(const ch_bitbase<1>& pred,
 }
 
 template <unsigned N>
-ch_bit<N> ch_select(const ch_bitbase<1>& pred,
+const auto ch_select(const ch_bitbase<1>& pred,
                     const ch_bit<N>& _true,
                     const ch_bit<N>& _false) {
   return make_bit<N>(createSelectNode(get_node(pred),
@@ -196,42 +196,42 @@ ch_bit<N> ch_select(const ch_bitbase<1>& pred,
 }
 
 template <unsigned N> 
-ch_bit<N> ch_min(const ch_bitbase<N>& lhs, const ch_bitbase<N>& rhs) {
+const auto ch_min(const ch_bitbase<N>& lhs, const ch_bitbase<N>& rhs) {
   return ch_select<N>(lhs < rhs, lhs, rhs);
 }
 
 template <unsigned N> 
-ch_bit<N> ch_min(const ch_bitbase<N>& lhs, const ch_bit<N>& rhs) {
+const auto ch_min(const ch_bitbase<N>& lhs, const ch_bit<N>& rhs) {
   return ch_select<N>(lhs < rhs, lhs, rhs);
 }
 
 template <unsigned N> 
-ch_bit<N> ch_min(const ch_bit<N>& lhs, const ch_bitbase<N>& rhs) {
+const auto ch_min(const ch_bit<N>& lhs, const ch_bitbase<N>& rhs) {
   return ch_select<N>(lhs < rhs, lhs, rhs);
 }
 
 template <unsigned N> 
-ch_bit<N> ch_min(const ch_bit<N>& lhs, const ch_bit<N>& rhs) {
+const auto ch_min(const ch_bit<N>& lhs, const ch_bit<N>& rhs) {
   return ch_select<N>(lhs < rhs, lhs, rhs);
 }
 
 template <unsigned N> 
-ch_bit<N> ch_max(const ch_bitbase<N>& lhs, const ch_bitbase<N>& rhs) {
+const auto ch_max(const ch_bitbase<N>& lhs, const ch_bitbase<N>& rhs) {
   return ch_select<N>(lhs > rhs, lhs, rhs);
 }
 
 template <unsigned N> 
-ch_bit<N> ch_max(const ch_bitbase<N>& lhs, const ch_bit<N>& rhs) {
+const auto ch_max(const ch_bitbase<N>& lhs, const ch_bit<N>& rhs) {
   return ch_select<N>(lhs > rhs, lhs, rhs);
 }
 
 template <unsigned N> 
-ch_bit<N> ch_max(const ch_bit<N>& lhs, const ch_bitbase<N>& rhs) {
+const auto ch_max(const ch_bit<N>& lhs, const ch_bitbase<N>& rhs) {
   return ch_select<N>(lhs > rhs, lhs, rhs);
 }
 
 template <unsigned N> 
-ch_bit<N> ch_max(const ch_bit<N>& lhs, const ch_bit<N>& rhs) {
+const auto ch_max(const ch_bit<N>& lhs, const ch_bit<N>& rhs) {
   return ch_select<N>(lhs > rhs, lhs, rhs);
 }
 

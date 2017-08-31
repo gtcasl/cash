@@ -2,7 +2,7 @@
 #include "assertion.h"
 #include "context.h"
 
-using namespace cash::detail;
+using namespace cash::internal;
 
 assertimpl::assertimpl(const lnode& src, const std::string& msg)
   : ioimpl(op_assert, src.get_ctx(), 1)
@@ -20,6 +20,6 @@ void assertimpl::print_vl(std::ostream& out) const {
   CH_UNUSED(out);
 }
 
-void cash::detail::ch_assert(const ch_bitbase<1>& l, const std::string& msg) {
+void cash::internal::ch_assert(const ch_bitbase<1>& l, const std::string& msg) {
   new assertimpl(get_node(l), msg);
 }

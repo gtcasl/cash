@@ -4,7 +4,7 @@
 #include "bitvector.h"
 
 namespace cash {
-namespace detail {
+namespace internal {
 
 template <unsigned N>
 class ch_literal {
@@ -80,155 +80,49 @@ public:
   virtual void write_data(size_t dst_offset, const T& in, size_t src_offset, size_t src_length) = 0;
 };
 
-template <typename T, unsigned N> class const_sliceref;
-template <typename T, unsigned N> class sliceref;
-
-template <typename B, typename A> class const_concatref;
-template <typename B, typename A> class concatref;
-
-template <unsigned N, typename T>
-class typebase;
+template <unsigned N, typename T> class typebase;
 
 template <typename T>
-void read_data(const T& b, typename T::data_type& inout, size_t offset, size_t length) {
-  reinterpret_cast<const typebase<T::bit_count, typename T::data_type>&>(b).read_data(inout, offset, length);
+void read_data(const T& node, typename T::data_type& inout, size_t offset, size_t length) {
+  reinterpret_cast<const typebase<T::bitcount, typename T::data_type>&>(node).read_data(inout, offset, length);
 }
 
 template <typename T>
-void write_data(T& b, size_t dst_offset, const typename T::data_type& in, size_t src_offset, size_t src_length) {
-  reinterpret_cast<typebase<T::bit_count,typename T::data_type>&>(b).write_data(dst_offset, in, src_offset, src_length);
+void write_data(T& node, size_t dst_offset, const typename T::data_type& in, size_t src_offset, size_t src_length) {
+  reinterpret_cast<typebase<T::bitcount,typename T::data_type>&>(node).write_data(dst_offset, in, src_offset, src_length);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <unsigned N, typename T>
-class  typeref: public typebase<N, T> {
-public:   
-  using base = typebase<N, T>;
-  using base::operator=;
-  using data_type = T;
-  
-  template <unsigned M>
-  concatref<base, typebase<M, T>> concat(typebase<M, T>& rhs) const {
-    return concatref<base, typebase<M, T>>(*this, rhs);
-  }
-  
-  template <unsigned M>
-  concatref<base, typebase<M, T>> concat(const typeref<M, T>& rhs) const {
-    return concatref<base, typebase<M, T>>(*this, rhs);
-  }
-};
-
-template <unsigned N, typename T>
-class const_typeref: public typebase<N, T> {
-public:   
-  using base = typebase<N, T>;
-  using data_type = T;
-  
-  const_sliceref<base, 1> operator[](size_t index) {
-    return const_sliceref<base, 1>(*this, index);
-  }
-
-  const_sliceref<base, 1> operator[](size_t index) const {
-    return const_sliceref<base, 1>(*this, index);
-  }
-  
-  template <unsigned M>
-  const_sliceref<base, M> slice(size_t index = 0) {
-    return const_sliceref<base, M>(*this, index);
-  }
-
-  template <unsigned M>
-  const_sliceref<base, M> slice(size_t index = 0) const {
-    return const_sliceref<base, M>(*this, index);
-  }
-  
-  template <unsigned M>
-  const_sliceref<base, M> aslice(size_t index = 0) {
-    return const_sliceref<base, M>(*this, index * M);
-  }
-
-  template <unsigned M>
-  const_sliceref<base, M> aslice(size_t index = 0) const {
-    return const_sliceref<base, M>(*this, index * M);
-  }
-  
-  template <unsigned M>
-  const_concatref<base, typebase<M, T>> concat(const typebase<M, T>& rhs) {
-    return const_concatref<base, typebase<M, T>>(*this, rhs);
-  }
-
-  template <unsigned M>
-  const_concatref<base, typebase<M, T>> concat(const typebase<M, T>& rhs) const {
-    return const_concatref<base, typebase<M, T>>(*this, rhs);
-  }
-  
-  template <unsigned M>
-  const_concatref<base, typebase<M, T>> concat(typebase<M, T>& rhs) {
-    return const_concatref<base, typebase<M, T>>(*this, rhs);
-  }
-  
-  template <unsigned M>
-  const_concatref<base, typebase<M, T>> concat(const typeref<M, T>& rhs) {
-    return const_concatref<base, typebase<M, T>>(*this, rhs);
-  }
-  
-private:
-
-  void write_data(size_t dst_offset,
-                  const data_type& in,
-                  size_t src_offset, size_t src_length) override {
-    CH_UNUSED(dst_offset, in, src_offset, src_length);
-    assert(false); // invalid call
-  }
-};
-
-///////////////////////////////////////////////////////////////////////////////
-
 template <typename T, unsigned N>
-class const_sliceref : public const_typeref<N, typename T::data_type> {
+class sliceref : public typebase<N, typename T::data_type> {
 public:
-  static_assert(N <= T::bit_count, "invalid slice size");
-  using base = const_typeref<N, typename T::data_type>;
-  using data_type = typename base::data_type;
-  using container_type = T;
-  
-  const_sliceref(const T& container, size_t start = 0)
-    : container_(container)
-    , start_(start) {
-    CH_CHECK(start + N <= T::bit_count, "invalid slice range");
-  }
-
-protected:
-
-  void read_data(data_type& inout, size_t offset, size_t length) const override {
-    CH_CHECK(offset + length <= N, "invalid slice read range");
-    detail::read_data(container_, inout, start_ + offset, length);
-  }
-
-  const T& container_;
-  size_t start_;
-  
-  friend T;
-};
-
-///////////////////////////////////////////////////////////////////////////////
-
-template <typename T, unsigned N>
-class sliceref : public typeref<N, typename T::data_type> {
-public:
-  static_assert(N <= T::bit_count, "invalid slice size");
-  using base = typeref<N, typename T::data_type>;
+  static_assert(N <= T::bitcount, "invalid slice size");
+  using base = typebase<N, typename T::data_type>;
   using base::operator=;
   using data_type = typename base::data_type;
   using container_type = T;
-  
+
   sliceref(T& container, size_t start = 0)
     : container_(container)
     , start_(start) {
-    CH_CHECK(start + N <= T::bit_count, "invalid slice range");
+    CH_CHECK(start + N <= T::bitcount, "invalid slice range");
   }
-  
+
+  auto operator[](size_t index) const {
+    return sliceref<base, 1>(const_cast<sliceref&>(*this), index);
+  }
+
+  template <unsigned M>
+  auto slice(size_t index = 0) const {
+    return sliceref<base, M>(const_cast<sliceref&>(*this), index);
+  }
+
+  template <unsigned M>
+  auto aslice(size_t index = 0) const {
+    return sliceref<base, M>(const_cast<sliceref&>(*this), index * M);
+  }
+
   sliceref& operator=(const sliceref& rhs) {
     data_type data(N);
     rhs.read_data(data, 0, N);
@@ -238,111 +132,127 @@ public:
 
 protected:
 
+  sliceref(sliceref&&) = default;
+  sliceref& operator=(sliceref&&) = default;
+
   void read_data(data_type& inout, size_t offset, size_t length) const override {
-    CH_CHECK(offset + length <= N, "invalid slice read range");
-    detail::read_data(container_, inout, start_ + offset, length);
+    CH_CHECK(offset + length <= N, "invalid read range");
+    cash::internal::read_data(container_, inout, start_ + offset, length);
   }
 
   void write_data(size_t dst_offset, const data_type& in, size_t src_offset, size_t src_length) override {
-    CH_CHECK(dst_offset + src_length <= N, "invalid slice write range");
-    detail::write_data(container_, start_ + dst_offset, in, src_offset, src_length);
+    CH_CHECK(dst_offset + src_length <= N, "invalid write range");
+    cash::internal::write_data(container_, start_ + dst_offset, in, src_offset, src_length);
   }
 
   T& container_;
   size_t start_;
 
-  friend T;
+  template <unsigned M, typename Q> friend class typebase;
+  template <typename Q, unsigned M> friend class sliceref;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename B, typename A>
-class const_concatref : public const_typeref<B::bit_count + A::bit_count, typename A::data_type> {
-public:
-  static_assert(std::is_same<typename A::data_type, typename B::data_type>::value, "data type mismatch");
-  using base = const_typeref<B::bit_count + A::bit_count, typename A::data_type>;
-  using data_type = typename A::data_type;
-  using first_container_type = A;
-  using second_container_type = B;
-  
-  const_concatref(const B& b, const A& a)
-    : b_(b)
-    , a_(a)
-  {}
+template <typename... Args>
+struct concat_info;
 
-protected:
-
-  void read_data(data_type& inout, size_t offset, size_t length) const override {
-    CH_CHECK(offset + length <= const_concatref::bit_count, "invalid concat read range");
-    if (offset + length <= A::bit_count) {
-      detail::read_data(a_, inout, offset, length);
-    } else if (offset >= A::bit_count) {
-      detail::read_data(b_, inout, offset - A::bit_count, length);
-    } else {
-      size_t len = A::bit_count - offset;
-      detail::read_data(a_, inout, offset, len);
-      detail::read_data(b_, inout, 0, length - len);
-    }
-  }
-
-  const B& b_;
-  const A& a_;
+template <typename Arg>
+struct concat_info<Arg> {
+  const static unsigned bitcount = Arg::bitcount;
+  using data_type = typename Arg::data_type;
 };
 
-///////////////////////////////////////////////////////////////////////////////
+template <typename Arg0, typename... Args>
+struct concat_info<Arg0, Args...> {
+    const static unsigned bitcount = Arg0::bitcount + concat_info<Args...>::bitcount;
+    using data_type = typename Arg0::data_type;
+};
 
-template <typename B, typename A>
-class concatref : public typeref<B::bit_count + A::bit_count, typename A::data_type> {
+template<typename... Args>
+class concatref : protected typebase<concat_info<Args...>::bitcount, typename concat_info<Args...>::data_type> {
 public:
-  static_assert(std::is_same<typename A::data_type, typename B::data_type>::value, "data type mismatch");
-  using base = typeref<B::bit_count + A::bit_count, typename A::data_type>;
+  using base = typebase<concat_info<Args...>::bitcount, typename concat_info<Args...>::data_type>;
   using base::operator=;
-  using data_type = typename A::data_type;
-  using first_container_type = A;
-  using second_container_type = B;
-  
-  concatref(const B& b, const A& a)
-    : b_(const_cast<B&>(b))
-    , a_(const_cast<A&>(a))
-  {}
-  
+  using data_type = typename base::data_type;
+
+  concatref(Args&... args) : args_(args...) {}
+
   concatref& operator=(const concatref& rhs) {
-    data_type data(base::bit_count);
-    rhs.read_data(data, 0, base::bit_count);
-    this->write_data(0, data, 0, base::bit_count);
+    data_type data(base::bitcount);
+    rhs.read_data(data, 0, base::bitcount);
+    this->write_data(0, data, 0, base::bitcount);
     return *this;
   }
 
 protected:
 
+  concatref(concatref&&) = default;
+  concatref& operator=(concatref&&) = default;
+
   void read_data(data_type& inout, size_t offset, size_t length) const override {
-    CH_CHECK(offset + length <= concatref::bit_count, "invalid concat read range");
-    if (offset + length <= A::bit_count) {
-      detail::read_data(a_, inout, offset, length);
-    } else if (offset >= A::bit_count) {
-      detail::read_data(b_, inout, offset - A::bit_count, length);
-    } else {
-      size_t len = A::bit_count - offset;
-      detail::read_data(a_, inout, offset, len);
-      detail::read_data(b_, inout, 0, length - len);
-    }
+    CH_CHECK(offset + length <= base::bitcount, "invalid read range");
+    this->read_data(inout, offset, length, args_, std::index_sequence_for<Args...>());
   }
-  
+
   void write_data(size_t dst_offset, const data_type& in, size_t src_offset, size_t src_length) override {
-    CH_CHECK(dst_offset + src_length <= concatref::bit_count, "invalid concat write range");
-    if (dst_offset + src_length <= A::bit_count) {
-      detail::write_data(a_, dst_offset, in, src_offset, src_length);
-    } else if (dst_offset >= A::bit_count) {
-      detail::write_data(b_, dst_offset - A::bit_count, in, src_offset, src_length);
-    } else {
-      size_t len = A::bit_count - dst_offset;
-      detail::write_data(a_, dst_offset, in, src_offset, len);
-      detail::write_data(b_, 0, in, src_offset + len, src_length - len);
+    CH_CHECK(dst_offset + src_length <= base::bitcount, "invalid write range");
+    this->write_data(dst_offset, in, src_offset, src_length, args_, std::index_sequence_for<Args...>());
+  }
+
+  template <size_t ...I>
+  void read_data(data_type& inout, size_t offset, size_t length, const std::tuple<Args&...>& args, std::index_sequence<I...>) const {
+    this->read_data(inout, offset, length, std::get<sizeof...(Args) - 1 - I>(args)...);
+  }
+
+  template <size_t ...I>
+  void write_data(size_t dst_offset, const data_type& in, size_t src_offset, size_t src_length, std::tuple<Args&...>& args, std::index_sequence<I...>) {
+    this->write_data(dst_offset, in, src_offset, src_length, std::get<sizeof...(Args) - 1 - I>(args)...);
+  }
+
+  template <typename T0, typename... Ts>
+  void read_data(data_type& inout, size_t offset, size_t length, T0& arg0, Ts&... args) const {
+    if (offset < T0::bitcount) {
+      size_t len = std::min<size_t>(length, T0::bitcount);
+      cash::internal::read_data(arg0, inout, offset, len);
+      offset += len;
+      length -= len;
+    }
+    if (length > 0) {
+      this->read_data(inout, offset - T0::bitcount, length, args...);
     }
   }
 
-  B& b_;
-  A& a_;
+  template <typename T>
+  void read_data(data_type& inout, size_t offset, size_t length, T& arg) const {
+    size_t len = std::min<size_t>(length, T::bitcount);
+    cash::internal::read_data(arg, inout, offset, len);
+  }
+
+  template <typename T0, typename... Ts>
+  void write_data(size_t dst_offset, const data_type& in, size_t src_offset, size_t src_length, T0& arg0, Ts&... args) {
+    if (dst_offset < T0::bitcount) {
+      size_t len = std::min<size_t>(src_length, T0::bitcount);
+      cash::internal::write_data(arg0, dst_offset, in, src_offset, len);
+      dst_offset += len;
+      src_offset += len;
+      src_length -= len;
+    }
+    if (src_length > 0) {
+      this->write_data(dst_offset - T0::bitcount, in, src_offset, src_length, args...);
+    }
+  }
+
+  template <typename T>
+  void write_data(size_t dst_offset, const data_type& in, size_t src_offset, size_t src_length, T& arg) {
+    size_t len = std::min<size_t>(src_length, T::bitcount);
+    cash::internal::write_data(arg, dst_offset, in, src_offset, len);
+  }
+
+  std::tuple<Args&...> args_;
+
+  template <unsigned M, typename Q> friend class typebase;
+  template<class... Args2> friend concatref<Args2...> ch_tie(Args2&... args);
 };
 
 }

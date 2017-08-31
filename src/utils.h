@@ -1,7 +1,7 @@
 #pragma once
 
 namespace cash {
-namespace detail {
+namespace internal {
 
 std::string fstring(const char* format, ...);
 
@@ -19,6 +19,8 @@ struct make_index_sequence : public make_index_sequence<N - 1, N - 1, I...> {};
 
 template <size_t ...I>
 struct make_index_sequence<0, I...> : public index_sequence<I...> {};
+
+///////////////////////////////////////////////////////////////////////////////
 
 template <typename T>
 struct identity {
@@ -253,7 +255,7 @@ constexpr uint32_t rotr(uint32_t value, uint32_t shift, uint32_t width) {
 #else
   #define CH_ABORT(msg, ...) \
     do { \
-      cash::detail::dump_stack_trace(stdout); \
+      cash::internal::dump_stack_trace(stdout); \
       fprintf(stderr, "ERROR: " msg " (" __FILE__ ":" CH_STRINGIZE(__LINE__) ")\n", ##__VA_ARGS__); \
       std::abort(); \
     } while (false)
@@ -269,7 +271,7 @@ constexpr uint32_t rotr(uint32_t value, uint32_t shift, uint32_t width) {
     } \
   } while (false)
 
-#define CH_UNUSED(...) cash::detail::unused(__VA_ARGS__)
+#define CH_UNUSED(...) cash::internal::unused(__VA_ARGS__)
 
 #define CH_TODO() CH_ABORT("Not yet implemented");
 
@@ -282,5 +284,4 @@ constexpr uint32_t rotr(uint32_t value, uint32_t shift, uint32_t width) {
 
 #define CH_RET_MOVE_ARG(i, x) std::move(x)
 #define CH_RET(...) return std::make_tuple(CH_FOR_EACH(CH_RET_MOVE_ARG, CH_SEP_COMMA, __VA_ARGS__))
-
 #define CH_TIE(...) std::forward_as_tuple(__VA_ARGS__)

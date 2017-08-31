@@ -3,7 +3,7 @@
 #include "lnode.h"
 
 namespace cash {
-namespace detail {
+namespace internal {
 
 class ch_compiler {
 public:  

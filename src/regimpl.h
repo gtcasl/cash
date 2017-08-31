@@ -5,7 +5,7 @@
 #include "cdomain.h"
 
 namespace cash {
-namespace detail {
+namespace internal {
 
 class regimpl : public tickable, public lnodeimpl {
 public:

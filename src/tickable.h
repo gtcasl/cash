@@ -3,7 +3,7 @@
 #include "common.h"
 
 namespace cash {
-namespace detail {
+namespace internal {
 
 class tickable {
 public:
