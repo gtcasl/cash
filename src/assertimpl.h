@@ -15,6 +15,7 @@ public:
 
 private:
   std::string msg_;
+  bool predicated_;
 };
 
 }

@@ -17,7 +17,7 @@ TEST_CASE("memory", "[memory]") {
           (8, 0xD_h)
           (10,0xA_h)
              (q);
-      //ch_print("t={0}, a={1}, q={2}", ch_tick(), a, q);
+      ch_print("t={0}, a={1}, q={2}", ch_tick(), a, q);
       return (e == q);
     }, 6);
     TEST([]()->ch_bit1 {
@@ -35,7 +35,7 @@ TEST_CASE("memory", "[memory]") {
             (q);
       //ch_print("t={0}, a={1}, q={2}", ch_tick(), a, q);
       return (e == q);
-    }, 5);
+    }, 6);
   }
   
   SECTION("mem", "[mem]") {
@@ -62,7 +62,7 @@ TEST_CASE("memory", "[memory]") {
           (9, 0xE_h)
           (11,0xD_h)
              (q);
-      //ch_print("t={0}, a={1}, d={2}, en={3}, q={4}, e={5}", ch_tick(), a, d, en, q, e);
+      ch_print("t={0}, clk={1}, a={2}, d={3}, en={4}, q={5}, e={6}", ch_tick(), ch_clock(), a, d, en, q, e);
       return (q == e);
     }, 6);
     

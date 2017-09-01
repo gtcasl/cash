@@ -7,17 +7,20 @@ static void begin_test() {
 }
 
 bool runtest(const std::function<ch_bit<1>()>& test, ch_cycle cycles) {
+  assert(cycles > 0);
   begin_test();
   
   ch_bus1 ret;
   ch_device dev(test, ret);
   ch_simulator sim(dev);
+
   sim.run([&](ch_cycle cycle)->bool {    
-    //std::cout << "t" << cycle << ": ret=" << ret << std::endl; 
+    // std::cout << "t" << cycle << ": ret=" << ret << std::endl;
     if (cycle > 0 && !static_cast<bool>(ret))
-      return false;    
+      return false;
     return (cycle < cycles);
   });
+
   bool bRet = static_cast<bool>(ret);
   assert(bRet);
   return bRet;

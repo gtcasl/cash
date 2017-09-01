@@ -1,6 +1,6 @@
 #pragma once
 
-#include "lnodeimpl.h"
+#include "ioimpl.h"
 #include "cdomain.h"
 
 namespace cash {
@@ -8,7 +8,7 @@ namespace internal {
 
 class memportimpl;
 
-class memimpl : public tickable, public lnodeimpl {
+class memimpl : public tickable, public ioimpl {
 public:  
   memimpl(context* ctx, uint32_t data_width, uint32_t addr_width, bool write_enable);  
   ~memimpl();
@@ -44,7 +44,7 @@ protected:
   friend class memportimpl;
 };
 
-class memportimpl : public lnodeimpl {
+class memportimpl : public ioimpl {
 public:  
   memportimpl(memimpl* mem, const lnode& addr);
   

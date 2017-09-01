@@ -69,87 +69,129 @@ protected:
   friend select_t<N_> ch_select(const ch_bitbase<1>& pred, const ch_bitbase<N_>& value);
 };
 
-template <unsigned N> 
-class select2_t {
+template <unsigned K>
+class select_key_t {
 public:
 
-  template <unsigned M>  
-  class values_t {
+  template <unsigned N>
+  class case_t {
   public:
     
-    values_t(const lnode& key, const lnode& pred, const lnode& value) : impl_(key) {
+    case_t(const lnode& key, const lnode& pred, const lnode& value) : impl_(key) {
       impl_.push(pred, value);
     }
     
-    values_t& operator()(const ch_bitbase<N>& pred, const ch_bitbase<M>& value) {
+    case_t& operator()(const ch_bitbase<K>& pred, const ch_bitbase<N>& value) {
       impl_.push(get_node(pred), get_node(value));
       return *this;
     }
     
-    values_t& operator()(const ch_bitbase<N>& pred, const ch_bit<M>& value) {
+    case_t& operator()(const ch_bitbase<K>& pred, const ch_bit<N>& value) {
       impl_.push(get_node(pred), get_node(value));
       return *this;
     }
     
-    values_t& operator()(const ch_bit<N>& pred, const ch_bitbase<M>& value) {
+    case_t& operator()(const ch_bit<K>& pred, const ch_bitbase<N>& value) {
       impl_.push(get_node(pred), get_node(value));
       return *this;
     }
     
-    values_t& operator()(const ch_bit<N>& pred, const ch_bit<M>& value) {
+    case_t& operator()(const ch_bit<K>& pred, const ch_bit<N>& value) {
       impl_.push(get_node(pred), get_node(value));
       return *this;
     }
     
-    const auto operator()(const ch_bitbase<M>& value) {
-      return make_bit<M>(impl_.eval(get_node(value)));
+    const auto operator()(const ch_bitbase<N>& value) {
+      return make_bit<N>(impl_.eval(get_node(value)));
     }
     
-    const auto operator()(const ch_bit<M>& value) {
-      return make_bit<M>(impl_.eval(get_node(value)));
-    }  
+    const auto operator()(const ch_bit<N>& value) {
+      return make_bit<N>(impl_.eval(get_node(value)));
+    }
+
+    case_t& when(const ch_bitbase<K>& pred, const ch_bitbase<N>& value) {
+      impl_.push(get_node(pred), get_node(value));
+      return *this;
+    }
+
+    case_t& when(const ch_bitbase<K>& pred, const ch_bit<N>& value) {
+      impl_.push(get_node(pred), get_node(value));
+      return *this;
+    }
+
+    case_t& when(const ch_bit<K>& pred, const ch_bitbase<N>& value) {
+      impl_.push(get_node(pred), get_node(value));
+      return *this;
+    }
+
+    case_t& when(const ch_bit<K>& pred, const ch_bit<N>& value) {
+      impl_.push(get_node(pred), get_node(value));
+      return *this;
+    }
+
+    const auto when(const ch_bitbase<N>& value) {
+      return make_bit<N>(impl_.eval(get_node(value)));
+    }
+
+    const auto when(const ch_bit<N>& value) {
+      return make_bit<N>(impl_.eval(get_node(value)));
+    }
     
   protected:
     
     select_impl impl_;
   };
 
-  template <unsigned M>
-  values_t<M> operator()(const ch_bitbase<N>& pred, const ch_bitbase<M>& value) {
-    return values_t<M>(key_, get_node(pred), get_node(value));
+  template <unsigned N>
+  auto operator()(const ch_bitbase<K>& pred, const ch_bitbase<N>& value) {
+    return case_t<N>(key_, get_node(pred), get_node(value));
   }
   
-  template <unsigned M>
-  values_t<M> operator()(const ch_bitbase<N>& pred, const ch_bit<M>& value) {
-    return values_t<M>(key_, get_node(pred), get_node(value));
+  template <unsigned N>
+  auto operator()(const ch_bitbase<K>& pred, const ch_bit<N>& value) {
+    return case_t<N>(key_, get_node(pred), get_node(value));
   }
   
-  template <unsigned M>
-  values_t<M> operator()(const ch_bit<N>& pred, const ch_bitbase<M>& value) {
-    return values_t<M>(key_, get_node(pred), get_node(value));
+  template <unsigned N>
+  auto operator()(const ch_bit<K>& pred, const ch_bitbase<N>& value) {
+    return case_t<N>(key_, get_node(pred), get_node(value));
   }
   
-  template <unsigned M>
-  values_t<M> operator()(const ch_bit<N>& pred, const ch_bit<M>& value) {
-    return values_t<M>(key_, get_node(pred), get_node(value));
+  template <unsigned N>
+  auto operator()(const ch_bit<K>& pred, const ch_bit<N>& value) {
+    return case_t<N>(key_, get_node(pred), get_node(value));
+  }
+
+  template <unsigned N>
+  auto when(const ch_bitbase<K>& pred, const ch_bitbase<N>& value) {
+    return case_t<N>(key_, get_node(pred), get_node(value));
+  }
+
+  template <unsigned N>
+  auto when(const ch_bitbase<K>& pred, const ch_bit<N>& value) {
+    return case_t<N>(key_, get_node(pred), get_node(value));
+  }
+
+  template <unsigned N>
+  auto when(const ch_bit<K>& pred, const ch_bitbase<N>& value) {
+    return case_t<N>(key_, get_node(pred), get_node(value));
+  }
+
+  template <unsigned N>
+  auto when(const ch_bit<K>& pred, const ch_bit<N>& value) {
+    return case_t<N>(key_, get_node(pred), get_node(value));
   }
   
 protected:
   
   lnode key_;
   
-  select2_t(const ch_bitbase<N>& key) : key_(get_node(key)) {}
+  select_key_t(const ch_bitbase<K>& key) : key_(get_node(key)) {}
 
-  template <unsigned N_>
-  friend select2_t<N_> ch_select(const ch_bitbase<N_>& key);
+  template <unsigned K_> friend select_key_t<K_> ch_select(const ch_bitbase<K_>& key);
 };
 
-template <unsigned N> 
-select2_t<N> ch_select(const ch_bitbase<N>& key) {
-  return select2_t<N>(key);
-}
-
-template <unsigned N> 
+template <unsigned N>
 select_t<N> ch_select(const ch_bitbase<1>& pred, const ch_bitbase<N>& value) {
   return select_t<N>(pred, value);
 }
@@ -159,13 +201,18 @@ select_t<N> ch_select(const ch_bitbase<1>& pred, const ch_bit<N>& value) {
   return ch_select(pred, reinterpret_cast<const ch_bitbase<N>&>(value));
 }
 
+template <unsigned K>
+select_key_t<K> ch_select(const ch_bitbase<K>& key) {
+  return select_key_t<K>(key);
+}
+
 template <unsigned N>
 const auto ch_select(const ch_bitbase<1>& pred,
-                    const ch_bitbase<N>& _true,
-                    const ch_bitbase<N>& _false) {
+                     const ch_bitbase<N>& _true,
+                     const ch_bitbase<N>& _false) {
   return make_bit<N>(createSelectNode(get_node(pred),
-                                    get_node(_true),
-                                    get_node(_false)));
+                                      get_node(_true),
+                                      get_node(_false)));
 }
 
 template <unsigned N>
@@ -173,8 +220,8 @@ const auto ch_select(const ch_bitbase<1>& pred,
                     const ch_bitbase<N>& _true,
                     const ch_bit<N>& _false) {
   return make_bit<N>(createSelectNode(get_node(pred),
-                                    get_node(_true),
-                                    get_node(_false)));
+                                      get_node(_true),
+                                      get_node(_false)));
 }
 
 template <unsigned N>
@@ -182,8 +229,8 @@ const auto ch_select(const ch_bitbase<1>& pred,
                     const ch_bit<N>& _true,
                     const ch_bitbase<N>& _false) {
   return make_bit<N>(createSelectNode(get_node(pred),
-                                    get_node(_true),
-                                    get_node(_false)));
+                                      get_node(_true),
+                                      get_node(_false)));
 }
 
 template <unsigned N>

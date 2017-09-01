@@ -1,15 +1,26 @@
-CXXFLAGS += -std=c++14 -O0 -g -fmax-errors=5 -DCASH_DEBUG
+CXXFLAGS += -std=c++14 -O0 -g -fmax-errors=5
 LDFLAGS += -lcash
+
+SRCS = main.cpp dogfood.cpp smoke.cpp literals.cpp proxies.cpp aggregates.cpp select.cpp arithm.cpp reg.cpp mem.cpp sim.cpp miscs.cpp float.cpp
+
+OBJS = $(SRCS:.cpp=.o)
 
 PROJECT = test.out
 
 all: $(PROJECT)
 
-$(PROJECT) : main.o dogfood.o smoke.o literals.o proxies.o aggregates.o select.o arithm.o reg.o mem.o sim.o miscs.o float.o
+$(PROJECT) : $(OBJS)
 	$(CXX) $(CXXFLAGS) $^ $(LDFLAGS) -o $@
+
+.depend: $(SRCS)
+	$(CXX) $(CXXFLAGS) -MM $^ > .depend;
 
 view: $(PROJECT).vcd
 	gtkwave $^ &
 
 clean:
-	rm -f *.out *.vcd *.o simv *~ *\#
+	rm -f *.out *.o *.v *.vcd .depend *~ *\#
+
+ifneq ($(MAKECMDGOALS),clean)
+    -include .depend
+endif

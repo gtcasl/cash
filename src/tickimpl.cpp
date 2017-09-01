@@ -5,7 +5,7 @@
 using namespace cash::internal;
 
 tickimpl::tickimpl(context* ctx) 
-  : lnodeimpl(op_tick, ctx, CHAR_BIT * sizeof(ch_cycle))
+  : ioimpl(op_tick, ctx, CHAR_BIT * sizeof(ch_cycle))
   , ctime_(~0ull) 
 {}
 
@@ -25,5 +25,5 @@ void tickimpl::print_vl(std::ostream& out) const {
 ///////////////////////////////////////////////////////////////////////////////
 
 const ch_bit<64> cash::internal::ch_tick() {
-  return make_bit<64>(new tickimpl(ctx_curr()));
+  return make_bit<64>(ctx_curr()->get_tick());
 }

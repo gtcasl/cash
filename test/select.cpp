@@ -233,23 +233,67 @@ TEST_CASE("conditionals", "[conditionals]") {
       return (x == 3);
     });
     TEST([]()->ch_bit1 {
-        ch_bit8 a(1), b(1), x, y;
-        __if (a == 1) (
-           ch_tie(y, x) = 1;
-           __if (b == 0) (
-             x = 1;
-           )
-           __elif (b == 1) (
-             y = 1;
-           );
-        )
-        __else (
-           x = 4;
-           y = 5;
-        );
-        ch_print("x={0}, y={1}", x, y);
-        return (x == 1 && y == 1);
-      });
+      ch_bit8 a(1), b(1), x, y;
+      __if (a == 1) (
+         ch_tie(y, x) = 1;
+         __if (b == 0) (
+           x = 1;
+         )
+         __elif (b == 1) (
+           y = 1;
+         );
+      )
+      __else (
+         x = 4;
+         y = 5;
+      );
+      ch_print("x={0}, y={1}", x, y);
+      return (x == 1 && y == 1);
+    });
+
+    TEST([]()->ch_bit1 {
+      ch_bit4 a(5), b(1), c(0);
+      __if (a > b) (
+          c = 1;
+          c = a;
+      );
+      return (c == a);
+    });
+    TEST([]()->ch_bit1 {
+      ch_bit4 a(0), b;
+       b = 1;
+       __if (a == 1) (
+         b = 0;
+       )__else (
+         b = 1;
+         b = 2;
+       );
+      return (b == 2);
+    });
+    TEST([]()->ch_bit1 {
+      ch_bit4 a(0), b, c(0);
+       b = 1;
+       __if (a == 1) (
+         b = 0;
+       )__else (
+         b = 2;
+         c = 2;
+       );
+      return (b == 2 && c == 2);
+    });
+    TEST([]()->ch_bit1 {
+      ch_bit4 a(0), b, c(0);
+       b = 1;
+       __if (a == 1) (
+         b = 0;
+       )__else (
+         b = 2;
+         c = 1;
+         c = 2;
+       );
+      ch_print("b={0}, c={1}", b, c);
+      return (b == 2 && c == 2);
+    });
   }
   SECTION("switch", "[switch]") {
     TEST([]()->ch_bit1 {

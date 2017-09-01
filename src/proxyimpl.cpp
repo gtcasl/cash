@@ -62,7 +62,7 @@ void proxyimpl::add_source(uint32_t dst_offset,
   } else {
     // find the slot to insert source node,
     // split existing nodes if needed
-    std::set<uint32_t> deleted;
+    std::set<uint32_t> deleted; // use ordered set for index ordering
     uint32_t i = 0;
     for (; src_length && i < n; ++i) {
       range_t& curr = ranges_[i];

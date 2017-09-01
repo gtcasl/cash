@@ -68,22 +68,15 @@ printimpl::printimpl(context* ctx,
                      const std::initializer_list<lnode>& args)
   : ioimpl(op_print, ctx, 0)
   , format_(format)
-  , args_offset_(0)
+  , predicated_(false)
   , ctime_(~0ull) {
-  for (auto arg : args) {
-    srcs_.emplace_back(arg);
+  if (ctx_->conditional_enabled(this)) {
+    auto pred = ctx_->get_predicate(this, 0, 0);
+    if (pred) {
+      srcs_.emplace_back(pred);
+      predicated_ = true;
+    }
   }
-}
-
-printimpl::printimpl(context* ctx,
-                     const lnode& pred,
-                     const std::string& format,
-                     const std::initializer_list<lnode>& args)
-  : ioimpl(op_print, ctx, 0)
-  , format_(format)
-  , args_offset_(1)
-  , ctime_(~0ull) {
-  srcs_.emplace_back(pred);
   for (auto arg : args) {
     srcs_.emplace_back(arg);
   }
@@ -92,14 +85,14 @@ printimpl::printimpl(context* ctx,
 const bitvector& printimpl::eval(ch_cycle t) {
   if (ctime_ != t) {
     ctime_ = t;    
-    if (args_offset_ == 0 
-     || srcs_[0].eval(t)[0]) {
+    if (!predicated_ || srcs_[0].eval(t)[0]) {
       if (format_ != "") {
         strbuf_.clear();
         for (const char *str = format_.c_str(); *str != '\0'; ++str) {
           if (*str == '{') {
             fmtinfo_t fmt;
             str = parse_format_index(&fmt, str);      
+            uint32_t args_offset_ = predicated_ ? 1 : 0;
             switch (fmt.type) {
             case fmttype::Int:
               strbuf_ << srcs_[args_offset_ + fmt.index].eval(t);
@@ -141,22 +134,6 @@ static int getFormatMaxIndex(const std::string& format) {
     }
   }
   return max_index;
-}
-
-void cash::internal::createPrintNode(
-    const lnode& pred,
-    const std::string& format,
-    const std::initializer_list<lnode>& args) {
-  // printing is only enabled in debug mode
-  if (0 == platform::self().get_dbg_level())
-    return;
-  
-  // check format
-  auto max_index = getFormatMaxIndex(format);
-  CH_CHECK(max_index < (int)args.size(), "print format index out of range");
-
-  context* ctx = ctx_curr();
-  new printimpl(ctx, pred, format, args);
 }
 
 void cash::internal::createPrintNode(

@@ -11,11 +11,6 @@ public:
             const std::string& format,
             const std::initializer_list<lnode>& args);
 
-  printimpl(context* ctx,
-            const lnode& pred,
-            const std::string& format,
-            const std::initializer_list<lnode>& args);
-
   const bitvector& eval(ch_cycle t) override;  
 
   void print_vl(std::ostream& out) const override;
@@ -23,7 +18,7 @@ public:
 private:
   std::string format_;  
   std::stringstream strbuf_;  
-  uint32_t args_offset_;
+  bool predicated_;
   ch_cycle ctime_;
 };
 

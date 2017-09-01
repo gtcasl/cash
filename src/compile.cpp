@@ -70,6 +70,7 @@ bool ch_compiler::dead_code_elimination() {
       }
 
       // gather used proxy sources
+      bool new_proxy_source = false;
       auto src_proxy = dynamic_cast<proxyimpl*>(src_impl);
       if (src_proxy) {
         auto& uses = used_proxy_sources[src_proxy];
@@ -81,7 +82,10 @@ bool ch_compiler::dead_code_elimination() {
                 // do ranges overlap?
                 uint32_t src_end = range.src_offset + range.src_length;
                 if (range.src_offset < curr_end && src_end > curr.dst_offset) {
-                  uses.insert(curr.src_idx);
+                  auto ret = uses.insert(curr.src_idx);
+                  if (ret.second) {
+                    new_proxy_source = true;
+                  }
                 }
               }
             }
@@ -94,7 +98,7 @@ bool ch_compiler::dead_code_elimination() {
       }
 
       auto ret = live_nodes.emplace(src_impl);
-      if (ret.second) {
+      if (ret.second || new_proxy_source) {
         // we have a new live node, add it to working set
         working_set.emplace_back(src_impl);
       }
@@ -104,14 +108,12 @@ bool ch_compiler::dead_code_elimination() {
 
   // remove unused proxy sources
   for (auto p : used_proxy_sources) {
-    uint32_t i = 0;
     auto proxy = dynamic_cast<proxyimpl*>(p.first);
     auto& srcs = proxy->get_srcs();
-    for (auto it = srcs.begin(); it != srcs.end();) {
-      if (0 == p.second.count(i++)) {
-        it = proxy->erase_source(it);
-      } else {
-        ++it;
+    // traverse the sources in reverse order
+    for (int i = srcs.size() - 1; i >= 0; --i) {
+      if (0 == p.second.count(i)) {
+        proxy->erase_source(srcs.begin() + i);
       }
     }
   }

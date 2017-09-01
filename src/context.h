@@ -16,6 +16,7 @@ class tapimpl;
 class assertimpl;
 class snode;
 class snodeimpl;
+class tickimpl;
 class clock_event;
 class cdomain;
 
@@ -35,6 +36,10 @@ public:
   lnodeimpl* get_reset();
 
   //--
+
+  lnodeimpl* get_tick();
+
+  //--
   
   uint32_t add_node(lnodeimpl* node);  
   void remove_node(lnodeimpl* node);
@@ -47,6 +52,7 @@ public:
 
   bool conditional_enabled(lnodeimpl* node = nullptr) const;
   void conditional_assign(lnode& dst, const lnode& src, uint32_t offset, uint32_t length);
+  lnodeimpl* get_predicate(lnodeimpl* node, uint32_t offset, uint32_t length);
   void remove_from_locals(lnodeimpl* node);
   
   lnodeimpl* createLiteralNode(const bitvector& value);
@@ -87,6 +93,7 @@ public:
   void dump_stats(std::ostream& out);
   
 protected:
+
   struct cond_upd_t {
     cond_upd_t(selectimpl* p_sel, uint32_t p_block_id)
       : sel(p_sel)
@@ -174,6 +181,7 @@ protected:
   uint32_t    block_ids_;
   inputimpl*  clk_;
   inputimpl*  reset_;
+  tickimpl*   tick_;
   
   std::unordered_map<std::string, unsigned> dup_taps_;
   

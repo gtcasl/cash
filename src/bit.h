@@ -244,19 +244,5 @@ void ch_print(const std::string& format, const Args& ...args) {
   createPrintNode(format, {get_node(args)...});
 }
 
-template <typename...Args>
-void ch_print(const ch_bitbase<1>& pred,
-              const std::string& format,
-              const Args& ...args) {
-  createPrintNode(get_node(pred), format, {get_node(args)...});
-}
-
-template <typename...Args>
-void ch_print(const ch_bit<1>& pred,
-              const std::string& format,
-              const Args& ...args) {
-  createPrintNode(get_node(pred), format, {get_node(args)...});
-}
-
 }
 }

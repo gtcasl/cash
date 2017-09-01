@@ -5,7 +5,7 @@
 using namespace cash::internal;
 
 memimpl::memimpl(context* ctx, uint32_t data_width, uint32_t addr_width, bool write_enable) 
-  : lnodeimpl(op_mem, ctx, data_width << addr_width)
+  : ioimpl(op_mem, ctx, data_width << addr_width)
   , data_width_(data_width)
   , addr_width_(addr_width)
   , ports_offset_(0)
@@ -116,7 +116,7 @@ void memimpl::print_vl(std::ostream& out) const {
 ///////////////////////////////////////////////////////////////////////////////
 
 memportimpl::memportimpl(memimpl* mem, const lnode& addr)
-  : lnodeimpl(op_memport, addr.get_ctx(), mem->data_width_)
+  : ioimpl(op_memport, mem->get_ctx(), mem->data_width_)
   , a_next_(0)
   , addr_id_(1)
   , wdata_id_(-1)

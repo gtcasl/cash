@@ -1,11 +1,11 @@
 #pragma once
 
-#include "lnodeimpl.h"
+#include "ioimpl.h"
 
 namespace cash {
 namespace internal {
 
-class tickimpl : public lnodeimpl {
+class tickimpl : public ioimpl {
 public:
   tickimpl(context* ctx);
 

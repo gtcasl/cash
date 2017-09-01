@@ -10,6 +10,7 @@
 #include "memimpl.h"
 #include "aluimpl.h"
 #include "assertimpl.h"
+#include "tickimpl.h"
 #include "cdomain.h"
 #include "device.h"
 #include "context.h"
@@ -25,6 +26,7 @@ context::context()
   , block_ids_(0)
   , clk_(nullptr)
   , reset_(nullptr)
+  , tick_(nullptr)
 {}
 
 context::~context() {  
@@ -44,6 +46,7 @@ context::~context() {
 
   assert(nullptr == clk_);
   assert(nullptr == reset_);
+  assert(nullptr == tick_);
 }
 
 void context::push_clk(const lnode& clk) {
@@ -78,6 +81,12 @@ lnodeimpl* context::get_reset() {
   return reset_;
 }
 
+lnodeimpl* context::get_tick() {
+  if (nullptr == tick_)
+    tick_ = new tickimpl(this);
+  return tick_;
+}
+
 uint32_t context::add_node(lnodeimpl* node) {
   uint32_t nodeid = ++node_ids_;
 #ifndef NDEBUG
@@ -90,6 +99,8 @@ uint32_t context::add_node(lnodeimpl* node) {
 #endif
   nodes_.emplace_back(node);
   
+  bool is_ionode = false;
+
   switch (node->get_op()) {
   case op_undef:
     undefs_.emplace_back((undefimpl*)node);
@@ -104,27 +115,34 @@ uint32_t context::add_node(lnodeimpl* node) {
   case op_clk:
   case op_reset:  
     inputs_.emplace_back((inputimpl*)node);
+    is_ionode = true;
     break;  
   case op_output:
     outputs_.emplace_back((outputimpl*)node);
+    is_ionode = true;
     break; 
   case op_tap:
     taps_.emplace_back((tapimpl*)node);
+    is_ionode = true;
     break;
   case op_assert:
   case op_print:
     gtaps_.emplace_back((ioimpl*)node);
+    is_ionode = true;
+    break;
+  case op_mem:
+  case op_memport:
+  case op_tick:
+    is_ionode = true;
     break;
   default:
     break;
   }
-  
+
   // register local nodes
-  if (!cond_blocks_.empty()) {
-    // memory ports have global scope, skip them
-    if (node->get_op() != op_memport) {
-      cond_blocks_.front().locals.emplace(node);
-    }
+  // io objects have global scope
+  if (!cond_blocks_.empty() && !is_ionode) {
+    cond_blocks_.front().locals.emplace(node);
   }
 
   return nodeid;  
@@ -148,7 +166,13 @@ void context::remove_node(lnodeimpl* node) {
     break;
   case op_input:
   case op_clk:
-  case op_reset:  
+  case op_reset:
+    if (node == clk_) {
+      clk_ = nullptr;
+    } else
+    if (node == reset_) {
+      reset_ = nullptr;
+    }
     inputs_.remove((inputimpl*)node);
     break;  
   case op_output:
@@ -161,15 +185,13 @@ void context::remove_node(lnodeimpl* node) {
   case op_print:
     gtaps_.remove((ioimpl*)node);
     break;
+  case op_tick:
+    if (node == tick_) {
+      tick_ = nullptr;
+    }
+    break;
   default:
     break;
-  }
-
-  if (node == clk_) {
-    clk_ = nullptr;
-  } else
-  if (node == reset_) {
-    reset_ = nullptr;
   }
 }
 
@@ -231,6 +253,26 @@ lnodeimpl* context::build_aggregate_predicate(
     pred = createAluNode(alu_op_and, parent_pred, pred);
   }
   use_block->agg_preds[def_block_id] = pred;
+
+  return pred;
+}
+
+lnodeimpl* context::get_predicate(lnodeimpl* node, uint32_t offset, uint32_t length) {
+  // get variable decl block
+  auto def_block = std::find_if(cond_blocks_.begin(), cond_blocks_.end(),
+    [&](const cond_block_t& cond_block)->bool {
+      return cond_block.locals.count(node) != 0;
+    });
+
+  auto pred = this->build_aggregate_predicate(def_block, cond_blocks_.begin());
+  if (nullptr == pred) {
+    // use the 'else' aggregate predicate if first assignment
+    cond_range_t range{node->get_id(), offset, length};
+    if (cond_upds_.find(range) == cond_upds_.end()) {
+      cond_branch_t& branch = cond_branches_.front();
+      pred = branch.else_pred;
+    }
+  }
 
   return pred;
 }
@@ -315,18 +357,11 @@ void context::conditional_assign(
     }
   }
 
-  lnodeimpl* pred;
-  {
-    // get variable decl block
-    auto def_block = std::find_if(cond_blocks_.begin(), cond_blocks_.end(),
-      [&](const cond_block_t& cond_block)->bool {
-        return cond_block.locals.count(dst.get_impl()) != 0;
-      });
-    pred = this->build_aggregate_predicate(def_block, cond_blocks_.begin());
-  }
-
-  selectimpl* sel_old = nullptr;
   selectimpl* sel;
+  selectimpl* sel_old = nullptr;
+
+  lnodeimpl* pred = this->get_predicate(dst.get_impl(), offset, length);
+
   if (it_upds != cond_upds_.end()) {
     sel_old = it_upds->second.front().sel;
     sel = sel_old;
@@ -343,15 +378,12 @@ void context::conditional_assign(
       }
     } else {
       // reassignment in current block
-      assert(block.id == last_upd.block_id && pred);
+      assert(block.id == last_upd.block_id);
       last_upd.sel->set_true(src);
     }
   } else {
     // new variable conditional assignment
-    if (nullptr == pred) {
-      cond_branch_t& branch = cond_branches_.front();
-      pred = branch.else_pred;
-    }
+    assert(pred);
     auto _false = dst.get_impl()->get_slice(offset, length);
     sel = dynamic_cast<selectimpl*>(createSelectNode(pred, src, _false));
     cond_upds_[range].emplace_front(sel, block.id);
