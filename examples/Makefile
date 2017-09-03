@@ -10,6 +10,7 @@ VCS_OPT+= -LDFLAGS="-m64"
 VCS_OPT+= +vcs+lic+wait
 
 SRCS = adder.cpp counter.cpp fastmul.cpp fifo.cpp
+
 PROJECTS = $(SRCS:.cpp=.out)
 
 all: $(PROJECTS)
@@ -35,7 +36,7 @@ view: testbench.vcd
 	gtkwave $^ &
 
 clean:
-	rm -f *.out *.o *.v *.vcd .depend *~ *\#
+	rm -f *.out *.o *.v *.vcd .depend simv *~ *\#
 
 ifneq ($(MAKECMDGOALS),clean)
     -include .depend

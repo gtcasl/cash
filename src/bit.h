@@ -95,7 +95,7 @@ public:
   
 protected:
 
-  ch_bit(const lnode& node) : node_(node) {
+  ch_bit(const lnode& node) : node_(std::move(node)) {
     assert(node_.get_size() == N);
   }
 
@@ -108,8 +108,8 @@ protected:
   void write_data(size_t dst_offset,
                   const data_type& in,
                   size_t src_offset,
-                  size_t src_length) override {
-    node_.write_data(dst_offset, in, src_offset, src_length, N);
+                  size_t length) override {
+    node_.write_data(dst_offset, in, src_offset, length, N);
   }
 
   lnode node_;
@@ -125,7 +125,7 @@ const ch_bit<N> make_bit(const lnode& node) {
 // concatenation operator
 
 template <unsigned NB, unsigned NA>
-const auto ch_concat(const ch_bitbase<NB>& b, const ch_bitbase<NA>& a) {
+const auto ch_cat(const ch_bitbase<NB>& b, const ch_bitbase<NA>& a) {
   const auto na(get_node(a));
   const auto nb(get_node(b));
   lnode::data_type data(NA+NB);
@@ -136,7 +136,7 @@ const auto ch_concat(const ch_bitbase<NB>& b, const ch_bitbase<NA>& a) {
 
 template <unsigned NB, unsigned NA>
 const auto operator,(const ch_bitbase<NB>& b, const ch_bitbase<NA>& a) {
-  return ch_concat(b, a);
+  return ch_cat(b, a);
 }
 
 template<class... Args>

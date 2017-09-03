@@ -13,6 +13,10 @@ public:
   memimpl(context* ctx, uint32_t data_width, uint32_t addr_width, bool write_enable);  
   ~memimpl();
 
+  uint32_t get_total_size() const {
+    return value_.get_size();
+  }
+
   void load(const std::string& file);
   void load(const std::vector<uint8_t>& data);
   
@@ -25,13 +29,9 @@ public:
   const bitvector& eval(ch_cycle t) override;  
   void print(std::ostream& out, uint32_t level) const override;
   void print_vl(std::ostream& out) const override;
-  
-  uint32_t get_total_size() const {
-    return value_.get_size();
-  }
 
 protected:
-  
+
   void load_data(const std::function<bool(uint8_t* out)>& getdata);
   
   memportimpl* get_port(const lnode& addr, bool writing);
@@ -47,7 +47,7 @@ protected:
 class memportimpl : public ioimpl {
 public:  
   memportimpl(memimpl* mem, const lnode& addr);
-  
+
   const lnode& get_addr() const {
     return srcs_[addr_id_];
   }

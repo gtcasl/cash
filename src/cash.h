@@ -75,7 +75,7 @@ namespace core {
 
   using cash::internal::ch_zext;
   using cash::internal::ch_sext;
-  using cash::internal::ch_concat;
+  using cash::internal::ch_cat;
   using cash::internal::ch_slice;
   using cash::internal::ch_aslice;
   using cash::internal::ch_shuffle;

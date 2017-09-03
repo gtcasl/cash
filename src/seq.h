@@ -16,19 +16,31 @@ public:
   T next;
 
   ch_seq() {
-    T::operator=(ch_reg(next));
+    auto reg = ch_reg(next);
+    T::operator=(std::move(reg));
     next = *this;
   }
   
   ch_seq(const T& init) {
-    T::operator=(ch_reg(next, init));
+    auto reg = ch_reg(next, init);
+    T::operator=(std::move(reg));
     next = *this;
+  }
+
+  ch_seq(ch_seq&& rhs) {
+    reinterpret_cast<T&>(*this) = std::move(reinterpret_cast<T&>(rhs));
+    next = std::move(rhs.next);
+  }
+
+  ch_seq& operator=(ch_seq&& rhs) {
+    reinterpret_cast<T&>(*this) = std::move(reinterpret_cast<T&>(rhs));
+    next = std::move(rhs.next);
   }
 
 protected:
 
-  // disable assigment operator
-  using T::operator=;
+  // for readonly access
+  ch_seq& operator=(const ch_seq&) = delete;
 };
 
 }

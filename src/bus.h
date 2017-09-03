@@ -90,18 +90,6 @@ public:
   CH_DEF_CAST(int64_t)
   CH_DEF_CAST(uint64_t)
 #undef CH_DEF_CAST
-  
-  void read(void* out, uint32_t sizeInBytes, uint32_t offset = 0, uint32_t length = N) const override {
-    assert(offset + length <= N);
-    assert(length <= sizeInBytes * 8);
-    node_.read(reinterpret_cast<uint8_t*>(out), sizeInBytes, offset, length, N);
-  }
-  
-  void write(const void* in, uint32_t sizeInBytes, uint32_t offset = 0, uint32_t length = N) override {
-    assert(offset + length <= N);
-    assert(length <= sizeInBytes * 8);
-    node_.write(reinterpret_cast<const uint8_t*>(in), sizeInBytes, offset, length, N);
-  }
 
 protected:
 
@@ -113,8 +101,8 @@ protected:
     node_.read_data(inout, offset, length, N);
   }
   
-  void write_data(size_t dst_offset, const data_type& in, size_t src_offset, size_t src_length) override {
-    node_.write_data(dst_offset, in, src_offset, src_length, N);
+  void write_data(size_t dst_offset, const data_type& in, size_t src_offset, size_t length) override {
+    node_.write_data(dst_offset, in, src_offset, length, N);
   }
   
   snode node_;

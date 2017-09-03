@@ -228,22 +228,22 @@ void lnode::ensureInitialized(uint32_t size, bool initialize) const {
 void lnode::init(uint32_t dst_offset,
                  const lnode& src,
                  uint32_t src_offset,
-                 uint32_t src_length,
+                 uint32_t length,
                  uint32_t size) {
   assert(size > dst_offset);
-  assert(size >= dst_offset + src_length);
-  this->ensureInitialized(size, src_length != size);
+  assert(size >= dst_offset + length);
+  this->ensureInitialized(size, length != size);
   auto proxy = dynamic_cast<proxyimpl*>(impl_);
-  proxy->add_source(dst_offset, src, src_offset, src_length);
+  proxy->add_source(dst_offset, src, src_offset, length);
 }
 
 void lnode::assign(uint32_t dst_offset,
                    const lnode& src,
                    uint32_t src_offset,
-                   uint32_t src_length,
+                   uint32_t length,
                    uint32_t size) {
   assert(size > dst_offset);
-  assert(size >= dst_offset + src_length);
+  assert(size >= dst_offset + length);
   context* ctx = src.get_ctx();  
 
   auto proxy = dynamic_cast<proxyimpl*>(impl_);
@@ -259,7 +259,7 @@ void lnode::assign(uint32_t dst_offset,
   }
 
   if (ctx->conditional_enabled(impl_)) {
-    const auto& slices = proxy->get_update_slices(dst_offset, src_length);
+    const auto& slices = proxy->get_update_slices(dst_offset, length);
     for (const auto& slice : slices) {
       lnodeimpl* src_impl = src.get_impl();
       if (slice.second != src.get_size()) {
@@ -270,7 +270,7 @@ void lnode::assign(uint32_t dst_offset,
       ctx->conditional_assign(*this, src_impl, slice.first, slice.second);
     }
   } else {
-    proxy->add_source(dst_offset, src, src_offset, src_length);
+    proxy->add_source(dst_offset, src, src_offset, length);
   }
 }
 
@@ -279,22 +279,22 @@ void lnode::read_data(data_type& inout,
                       uint32_t length,
                       uint32_t size) const {
   assert((offset + length) <= size);
-  this->ensureInitialized(size, true);
+  const_cast<lnode*>(this)->ensureInitialized(size, true);
   inout.push_back({*this, offset, length});
 }
 
 void lnode::write_data(uint32_t dst_offset,
                        const data_type& in,
                        uint32_t src_offset,
-                       uint32_t src_length,
+                       uint32_t length,
                        uint32_t size) {
-  assert((dst_offset + src_length) <= size);
+  assert((dst_offset + length) <= size);
   for (const auto& d : in) {
     if (src_offset < d.length) {
-      uint32_t len = std::min(d.length - src_offset, src_length);
+      uint32_t len = std::min(d.length - src_offset, length);
       this->assign(dst_offset, d.src, d.offset + src_offset, len, size);
-      src_length -= len;
-      if (0 == src_length)
+      length -= len;
+      if (0 == length)
         return;
       dst_offset += len;                
       src_offset = d.length;

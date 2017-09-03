@@ -76,11 +76,11 @@ bool ch_compiler::dead_code_elimination() {
         auto& uses = used_proxy_sources[src_proxy];
         if (proxy) {
           for (auto& curr : src_proxy->get_ranges()) {
-            uint32_t curr_end = curr.dst_offset + curr.src_length;
+            uint32_t curr_end = curr.dst_offset + curr.length;
             for (auto& range : proxy->get_ranges()) {
               if (range.src_idx == i) {
                 // do ranges overlap?
-                uint32_t src_end = range.src_offset + range.src_length;
+                uint32_t src_end = range.src_offset + range.length;
                 if (range.src_offset < curr_end && src_end > curr.dst_offset) {
                   auto ret = uses.insert(curr.src_idx);
                   if (ret.second) {

@@ -273,18 +273,18 @@ bool bitvector::operator<(const bitvector& rhs) const {
 void bitvector::copy(uint32_t dst_offset,
                      const bitvector& src,
                      uint32_t src_offset,
-                     uint32_t src_length) {
+                     uint32_t length) {
   assert(size_ > 0);
   assert(src.size_ > 0);
-  assert(src_offset + src_length <= src.size_);
-  assert(dst_offset + src_length <= size_);
-  if (src_length == size_ && src.size_ == size_) {
+  assert(src_offset + length <= src.size_);
+  assert(dst_offset + length <= size_);
+  if (length == size_ && src.size_ == size_) {
     assert(0 == dst_offset && 0 == src_offset);
     *this = src;
   } else {  
     const_iterator iter_src(src.begin() + src_offset);
     iterator iter_dst(this->begin() + dst_offset);
-    while (src_length--) {
+    while (length--) {
       *iter_dst++ = *iter_src++;
     }
   }
@@ -320,77 +320,101 @@ bool bitvector::is_empty() const {
   return true;
 }
 
-void bitvector::read(uint8_t* out, uint32_t sizeInBytes, uint32_t offset, uint32_t length) const {
-  CH_CHECK(offset + length <= size_, "out of bound access");
-  CH_CHECK(length <= sizeInBytes * 8, "out of bound access");
-  uint32_t m_offset = offset & 0xff;
-  uint8_t rem_bits = (offset + length) & 0xff;
-  if (m_offset) {
+void bitvector::read(
+    uint32_t dst_offset,
+    void* out,
+    uint32_t sizeInBytes,
+    uint32_t src_offset,
+    uint32_t length) const {
+  CH_CHECK(src_offset + length <= size_, "out of bound access");
+  CH_CHECK(dst_offset + length <= sizeInBytes * 8, "out of bound access");
+
+  uint32_t b_dst_offset = dst_offset / 8;
+  uint8_t* b_out = reinterpret_cast<uint8_t*>(out) + b_dst_offset;
+  uint32_t dst_rem = dst_offset & 0x7;
+  uint32_t src_rem = src_offset & 0x7;
+  uint32_t end_rem = (dst_offset + length) & 0x7;
+
+  if (0 == src_rem
+   && 0 == dst_rem) {
+    // byte-aligned offsets
+    uint32_t b_length = CH_CEILDIV(length, 8);
+    uint32_t b_src_offset = src_offset / 8;
+    uint8_t* b_src = reinterpret_cast<uint8_t*>(words_) + b_src_offset;
+    if (0 == end_rem) {
+      memcpy(b_out, b_src, b_length);
+    } else {
+      // copy all bytes except the last one
+      uint32_t end = b_length - 1;
+      memcpy(b_out, b_src, end);
+      // only update set bits from source in the last byte
+      uint32_t sel_mask = (~0UL << end_rem);
+      b_out[end] = CH_BLEND(sel_mask, b_src[end], b_out[end]);
+    }
+  } else {
     uint8_t tmp = 0;
-    const_iterator iter = this->begin() + offset;
-    for (uint32_t i = 0; i < length; ++i) {
+    const_iterator iter = this->begin() + src_offset;
+    if (dst_rem) {
+      tmp = *b_out & ~(~0UL << dst_rem);
+    }
+    for (uint32_t i = dst_offset, end = dst_offset + length; i < end; ++i) {
       uint32_t shift = i & 0x7;
       tmp |= (*iter++) << shift;
       if (shift == 0x7) {
-        *out++ = tmp;
+        *b_out++ = tmp;
         tmp = 0;
       }
     }
     if (tmp) {
-      if (rem_bits) {
-        uint32_t sel_mask = ~(~0UL << rem_bits);
-        *out = CH_BLEND(sel_mask, tmp, *out);
-      } else {
-        *out = tmp;
-      }
-    }
-  } else {
-    // byte-aligned offset
-    uint32_t offset_in_bytes = offset / 8;
-    uint32_t size_in_bytes = CH_CEILDIV(length, 8);
-    uint8_t* src = reinterpret_cast<uint8_t*>(words_) + offset_in_bytes;
-    if (rem_bits) {
-      // copy all bytes except the last one
-      memcpy(out, src, size_in_bytes - 1);
-      // only update set bits from source in the last byte
-      uint32_t sel_mask = ~(~0UL << rem_bits);
-      out[size_in_bytes - 1] =
-          CH_BLEND(sel_mask, src[size_in_bytes - 1], out[size_in_bytes - 1]);
-    } else {
-      memcpy(out, src, size_in_bytes);
+      uint32_t sel_mask = (~0UL << end_rem);
+      *b_out = CH_BLEND(sel_mask, tmp, *b_out);
     }
   }
 }
 
-void bitvector::write(const uint8_t* in, uint32_t sizeInBytes, uint32_t offset, uint32_t length) {
-  CH_CHECK(offset + length <= size_, "out of bound access");
-  CH_CHECK(length <= sizeInBytes * 8, "out of bound access");
-  uint32_t m_offset = offset & 0xff;
-  if (m_offset) {
-    uint8_t tmp;
-    iterator iter = this->begin() + offset;
-    for (uint32_t i = 0; i < length; ++i) {
-      uint32_t shift = i & 0x7;
-      if (0 == shift) {
-        tmp = *in++;
-      }
-      *iter++ = (tmp >> shift) & 0x1;
+void bitvector::write(
+    uint32_t dst_offset,
+    const void* in,
+    uint32_t sizeInBytes,
+    uint32_t src_offset,
+    uint32_t length) {
+  CH_CHECK(dst_offset + length <= size_, "out of bound access");
+  CH_CHECK(src_offset + length <= sizeInBytes * 8, "out of bound access");
+
+  uint32_t b_src_offset = src_offset / 8;
+  const uint8_t* b_in = reinterpret_cast<const uint8_t*>(in) + b_src_offset;
+  uint32_t dst_rem = dst_offset & 0x7;
+  uint32_t src_rem = src_offset & 0x7;
+
+  if (0 == dst_rem
+   && 0 == src_rem) {
+    // byte-aligned offsets
+    uint32_t b_length = CH_CEILDIV(length, 8);
+    uint32_t b_dst_offset = dst_offset / 8;
+    uint8_t* b_dst = reinterpret_cast<uint8_t*>(words_) + b_dst_offset;
+    uint32_t end_rem = (src_offset + length) & 0x7;
+    if (0 == end_rem) {
+      memcpy(b_dst, b_in, b_length);
+    } else {
+      // copy all bytes except the last one
+      uint32_t end = b_length - 1;
+      memcpy(b_dst, b_in, end);
+      // only update set bits from source in the last byte
+      uint32_t sel_mask = (~0UL << end_rem);
+      b_dst[end] = CH_BLEND(sel_mask, b_in[end], b_dst[end]);
     }
   } else {
-    // byte-aligned offset
-    uint32_t offset_in_bytes = offset / 8;
-    uint32_t size_in_bytes = CH_CEILDIV(length, 8);
-    uint8_t rem_bits = (offset + length) & 0xff;
-    uint8_t* dst = reinterpret_cast<uint8_t*>(words_) + offset_in_bytes;
-    if (rem_bits) {
-      // copy all bytes except the last one
-      memcpy(dst, in, size_in_bytes - 1);
-      // only update set bits from source in the last byte
-      uint32_t sel_mask = ~(~0UL << rem_bits);
-      dst[size_in_bytes - 1] =
-          CH_BLEND(sel_mask, in[size_in_bytes - 1], dst[size_in_bytes - 1]);
-    } else {
-      memcpy(dst, in, size_in_bytes);
+    iterator iter = this->begin() + dst_offset;
+    uint8_t tmp;
+    if (src_offset) {
+      tmp = *b_in++;
+    }
+    for (uint32_t i = src_offset, end = src_offset + length; i < end; ++i) {
+      uint32_t shift = i & 0x7;
+      if (0 == shift) {
+        tmp = *b_in++;
+      }
+      *iter++ = (tmp >> shift) & 0x1;
     }
   }
 }

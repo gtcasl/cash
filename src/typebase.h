@@ -18,7 +18,7 @@ template <typename T>
 class nodebuf {
 public:
 
-  struct entry_t {
+  struct slice_t {
     const T& src;
     uint32_t offset;
     uint32_t length;
@@ -29,47 +29,47 @@ public:
     , size_(0)
   {}
 
-  nodebuf(const T& src, uint32_t offset, uint32_t length)
-    : capacity_(length)
+  nodebuf(uint32_t capacity, const T& src, uint32_t offset, uint32_t length)
+    : capacity_(capacity)
     , size_(length) {
-    buffer_.emplace_back(entry_t{src, offset, length});
-  }
-  
-  uint32_t get_num_slices() const {
-    return buffer_.size();
-  }
-
-  uint32_t get_size() const {
-    return size_;
+    slices_.push_back({src, offset, length});
   }
 
   uint32_t get_capacity() const {
     return capacity_;
   }
 
-  auto begin() const {
-    assert(size_ == capacity_);
-    return buffer_.begin();
+  uint32_t get_size() const {
+    return size_;
   }
 
-  auto end() const {
-    return buffer_.end();
+  uint32_t get_num_slices() const {
+    return slices_.size();
   }
 
-  void push_back(const entry_t& data) {
-    buffer_.emplace_back(data);
+  bool is_srccopy() const {
+    return (1 == slices_.size()) && (slices_[0].src.get_size() == size_);
+  }
+
+  void push_back(const slice_t& data) {
+    slices_.emplace_back(data);
     size_ += data.length;
     assert(size_ <= capacity_);
   }
 
-  bool is_srccopy() const {
-    return (1 == buffer_.size()) && (buffer_[0].src.get_size() == size_);
+  auto begin() const {
+    assert(size_ == capacity_);
+    return slices_.begin();
+  }
+
+  auto end() const {
+    return slices_.end();
   }
 
 private:
 
-  std::vector<entry_t> buffer_;
-  uint32_t capacity_;
+  std::vector<slice_t> slices_;
+  uint32_t capacity_;    
   uint32_t size_;
 };
 
@@ -77,7 +77,7 @@ template <typename T>
 class typebase_itf {
 public:
   virtual void read_data(T& inout, size_t offset, size_t length) const = 0;
-  virtual void write_data(size_t dst_offset, const T& in, size_t src_offset, size_t src_length) = 0;
+  virtual void write_data(size_t dst_offset, const T& in, size_t src_offset, size_t length) = 0;
 };
 
 template <unsigned N, typename T> class typebase;
@@ -88,8 +88,8 @@ void read_data(const T& node, typename T::data_type& inout, size_t offset, size_
 }
 
 template <typename T>
-void write_data(T& node, size_t dst_offset, const typename T::data_type& in, size_t src_offset, size_t src_length) {
-  reinterpret_cast<typebase<T::bitcount,typename T::data_type>&>(node).write_data(dst_offset, in, src_offset, src_length);
+void write_data(T& node, size_t dst_offset, const typename T::data_type& in, size_t src_offset, size_t length) {
+  reinterpret_cast<typebase<T::bitcount,typename T::data_type>&>(node).write_data(dst_offset, in, src_offset, length);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -140,9 +140,9 @@ protected:
     cash::internal::read_data(container_, inout, start_ + offset, length);
   }
 
-  void write_data(size_t dst_offset, const data_type& in, size_t src_offset, size_t src_length) override {
-    CH_CHECK(dst_offset + src_length <= N, "invalid write range");
-    cash::internal::write_data(container_, start_ + dst_offset, in, src_offset, src_length);
+  void write_data(size_t dst_offset, const data_type& in, size_t src_offset, size_t length) override {
+    CH_CHECK(dst_offset + length <= N, "invalid write range");
+    cash::internal::write_data(container_, start_ + dst_offset, in, src_offset, length);
   }
 
   T& container_;
@@ -195,9 +195,9 @@ protected:
     this->read_data(inout, offset, length, args_, std::index_sequence_for<Args...>());
   }
 
-  void write_data(size_t dst_offset, const data_type& in, size_t src_offset, size_t src_length) override {
-    CH_CHECK(dst_offset + src_length <= base::bitcount, "invalid write range");
-    this->write_data(dst_offset, in, src_offset, src_length, args_, std::index_sequence_for<Args...>());
+  void write_data(size_t dst_offset, const data_type& in, size_t src_offset, size_t length) override {
+    CH_CHECK(dst_offset + length <= base::bitcount, "invalid write range");
+    this->write_data(dst_offset, in, src_offset, length, args_, std::index_sequence_for<Args...>());
   }
 
   template <size_t ...I>
@@ -206,8 +206,8 @@ protected:
   }
 
   template <size_t ...I>
-  void write_data(size_t dst_offset, const data_type& in, size_t src_offset, size_t src_length, std::tuple<Args&...>& args, std::index_sequence<I...>) {
-    this->write_data(dst_offset, in, src_offset, src_length, std::get<sizeof...(Args) - 1 - I>(args)...);
+  void write_data(size_t dst_offset, const data_type& in, size_t src_offset, size_t length, std::tuple<Args&...>& args, std::index_sequence<I...>) {
+    this->write_data(dst_offset, in, src_offset, length, std::get<sizeof...(Args) - 1 - I>(args)...);
   }
 
   template <typename T0, typename... Ts>
@@ -230,22 +230,22 @@ protected:
   }
 
   template <typename T0, typename... Ts>
-  void write_data(size_t dst_offset, const data_type& in, size_t src_offset, size_t src_length, T0& arg0, Ts&... args) {
+  void write_data(size_t dst_offset, const data_type& in, size_t src_offset, size_t length, T0& arg0, Ts&... args) {
     if (dst_offset < T0::bitcount) {
-      size_t len = std::min<size_t>(src_length, T0::bitcount);
+      size_t len = std::min<size_t>(length, T0::bitcount);
       cash::internal::write_data(arg0, dst_offset, in, src_offset, len);
       dst_offset += len;
       src_offset += len;
-      src_length -= len;
+      length -= len;
     }
-    if (src_length > 0) {
-      this->write_data(dst_offset - T0::bitcount, in, src_offset, src_length, args...);
+    if (length > 0) {
+      this->write_data(dst_offset - T0::bitcount, in, src_offset, length, args...);
     }
   }
 
   template <typename T>
-  void write_data(size_t dst_offset, const data_type& in, size_t src_offset, size_t src_length, T& arg) {
-    size_t len = std::min<size_t>(src_length, T::bitcount);
+  void write_data(size_t dst_offset, const data_type& in, size_t src_offset, size_t length, T& arg) {
+    size_t len = std::min<size_t>(length, T::bitcount);
     cash::internal::write_data(arg, dst_offset, in, src_offset, len);
   }
 

@@ -6,6 +6,15 @@ __struct (s2_t,(
   (ch_bit2) a,
   (ch_bit2) b
 ));
+
+__struct (s32_t,(
+  (ch_bit1)  a,
+  (ch_bit2)  b,
+  (ch_bit4)  c,
+  (ch_bit8)  d,
+  (ch_bit1)  e,
+  (ch_bit16) f
+));
  
  __union (u2_t,(
    (ch_bit2) a,
@@ -73,25 +82,25 @@ TEST_CASE("simulation", "[sim]") {
     TESTX([]()->bool {          
       ch_bus4 a(4);
       uint8_t x;
-      a.read(&x, sizeof(x), 0, 4);
+      a.read(0, &x, sizeof(x), 0, 4);
       return (x == 4);
     });
     TESTX([]()->bool {          
       ch_bus4 a(4);
       uint32_t x;
-      a.read(&x, sizeof(x), 0, 4);
+      a.read(0, &x, sizeof(x), 0, 4);
       return (x == 4);
     });
     TESTX([]()->bool {          
       ch_bus4 a;
       uint8_t x = 4;
-      a.write(&x, sizeof(x), 0, 4);
+      a.write(0, &x, sizeof(x), 0, 4);
       return (a == 4);
     });
     TESTX([]()->bool {          
       ch_bus4 a;
       uint32_t x = 4;
-      a.write(&x, sizeof(x), 0, 4);
+      a.write(0, &x, sizeof(x), 0, 4);
       return (a == 4);
     });
   }
@@ -113,6 +122,42 @@ TEST_CASE("simulation", "[sim]") {
       s2 = s1;      
       s2 = 1001_b;
       return (s2 == 1001_b);
+    });
+    TESTX([]()->bool {
+      s32_t::bus_type a(0);
+      uint32_t v = 0xABCD71E3;
+      a.write(0, &v, sizeof(v));
+      return (a == 0xABCD71E3);
+    });
+    TESTX([]()->bool {
+      s32_t::bus_type a(0);
+      uint32_t v = 0xABCD71E3;
+      a.write(0, &v, sizeof(v), 4, 28);
+      return (a == (0xABCD71E3 >> 4));
+    });
+    TESTX([]()->bool {
+      s32_t::bus_type a(0);
+      uint32_t v = 0xABCD71E3;
+      a.write(4, &v, sizeof(v), 0, 28);
+      return (a == (0xABCD71E3 << 4));
+    });
+    TESTX([]()->bool {
+      s32_t::bus_type a(0xABCD71E3);
+      uint32_t v = 0;
+      a.read(0, &v, sizeof(v));
+      return (v == 0xABCD71E3);
+    });
+    TESTX([]()->bool {
+      s32_t::bus_type a(0xABCD71E3);
+      uint32_t v = 0;
+      a.read(0, &v, sizeof(v), 4, 28);
+      return (v == (0xABCD71E3 >> 4));
+    });
+    TESTX([]()->bool {
+      s32_t::bus_type a(0xABCD71E3);
+      uint32_t v = 0;
+      a.read(4, &v, sizeof(v), 0, 28);
+      return (v == (0xABCD71E3 << 4));
     });
   }  
   SECTION("unions", "[union]") {

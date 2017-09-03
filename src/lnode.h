@@ -6,7 +6,6 @@ namespace cash {
 namespace internal {
 
 class lnodeimpl;
-class proxyimpl;
 class context;
 
 using ch_cycle = uint64_t;
@@ -72,7 +71,7 @@ public:
   void write_data(uint32_t dst_offset,
                   const data_type& in,
                   uint32_t src_offset,
-                  uint32_t src_length,
+                  uint32_t length,
                   uint32_t size);
 
   lnodeimpl* clone(uint32_t size) const;
@@ -84,13 +83,13 @@ protected:
   void init(uint32_t dst_offset,
             const lnode& src,
             uint32_t src_offset,
-            uint32_t src_length,
+            uint32_t length,
             uint32_t size);
 
   void assign(uint32_t dst_offset,
               const lnode& src,
               uint32_t src_offset,
-              uint32_t src_length,
+              uint32_t length,
               uint32_t size);
   
   mutable lnodeimpl* impl_;

@@ -23,7 +23,7 @@ public:
 #define CH_DEF_AOP(type) \
   typebase& operator=(type rhs) { \
     snode node(bitvector(N, rhs)); \
-    this->write_data(0, {node, 0 , N}, 0, N); \
+    this->write_data(0, {N, node, 0 , N}, 0, N); \
     return *this; \
   } 
   CH_DEF_AOP(const std::initializer_list<uint32_t>&)
@@ -39,16 +39,26 @@ public:
   CH_DEF_AOP(uint64_t)
 #undef CH_DEF_AOP
   
-  virtual void read(void* out, uint32_t sizeInBytes, uint32_t offset = 0, uint32_t length = N) const {
-    assert(offset + length <= N);
-    assert(length <= sizeInBytes * 8);
-    get_node(*this).read(reinterpret_cast<uint8_t*>(out), sizeInBytes, offset, length, N);
+  void read(uint32_t dst_offset, void* out, uint32_t sizeInBytes, uint32_t src_offset = 0, uint32_t length = N) const {
+    assert(src_offset + length <= N);
+    assert(dst_offset + length <= sizeInBytes * 8);
+    data_type data(length);
+    this->read_data(data, src_offset, length);
+    for (auto& slice : data) {
+      slice.src.read(dst_offset, out, sizeInBytes, slice.offset, slice.length, slice.src.get_size());
+      dst_offset += slice.length;
+    }
   }
   
-  virtual void write(const void* in, uint32_t sizeInBytes, uint32_t offset = 0, uint32_t length = N) {
-    assert(offset + length <= N);
-    assert(length <= sizeInBytes * 8);
-    get_node(*this).write(reinterpret_cast<const uint8_t*>(in), sizeInBytes, offset, length, N);
+  void write(uint32_t dst_offset, const void* in, uint32_t sizeInBytes, uint32_t src_offset = 0, uint32_t length = N) {
+    assert(dst_offset + length <= N);
+    assert(src_offset + length <= sizeInBytes * 8);
+    data_type data(length);
+    this->read_data(data, dst_offset, length);
+    for (auto& slice : data) {
+      const_cast<snode&>(slice.src).write(slice.offset, in, sizeInBytes, src_offset, slice.length, slice.src.get_size());
+      src_offset += slice.length;
+    }
   }
 };
 

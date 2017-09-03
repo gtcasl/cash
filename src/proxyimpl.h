@@ -12,13 +12,13 @@ public:
     uint32_t src_idx;
     uint32_t dst_offset;
     uint32_t src_offset;
-    uint32_t src_length;
+    uint32_t length;
 
     bool operator==(const range_t& rhs) const {
       return this->src_idx == rhs.src_idx
           && this->dst_offset == rhs.dst_offset
           && this->src_offset == rhs.src_offset
-          && this->src_length == rhs.src_length;
+          && this->length == rhs.length;
     }
 
     bool operator!=(const range_t& rhs) const {
@@ -37,7 +37,7 @@ public:
   void add_source(uint32_t dst_offset,
                   const lnode& src,
                   uint32_t src_offset,
-                  uint32_t src_length);
+                  uint32_t length);
 
   std::vector<lnode>::iterator erase_source(std::vector<lnode>::iterator iter);
 

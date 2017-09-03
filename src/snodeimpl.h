@@ -26,12 +26,12 @@ public:
   void add_source(uint32_t dst_offset,
                   snodeimpl* src,
                   uint32_t src_offset,
-                  uint32_t src_length);
+                  uint32_t length);
 
   void clear_sources(uint32_t offset, uint32_t length);
 
   bool get_bit(uint32_t idx) const {
-    this->sync_sources();
+    const_cast<snodeimpl*>(this)->sync_sources();
     return value_[idx];
   }
   
@@ -42,7 +42,7 @@ public:
   }
   
   uint32_t get_word(uint32_t idx) const {
-    this->sync_sources();
+    const_cast<snodeimpl*>(this)->sync_sources();
     return value_.get_word(idx);
   }
   
@@ -52,24 +52,24 @@ public:
     ++changeid_;
   }
   
-  void read(uint8_t* out, uint32_t sizeInBytes, uint32_t offset, uint32_t size) const {
-    this->sync_sources();
-    value_.read(out, sizeInBytes, offset, size);
+  void read(uint32_t dst_offset, void* out, uint32_t sizeInBytes, uint32_t src_offset, uint32_t size) const {
+    const_cast<snodeimpl*>(this)->sync_sources();
+    value_.read(dst_offset, out, sizeInBytes, src_offset, size);
   }
   
-  void write(const uint8_t* in, uint32_t sizeInBytes, uint32_t offset, uint32_t size) {
+  void write(uint32_t dst_offset, const void* in, uint32_t sizeInBytes, uint32_t src_offset, uint32_t size) {
     this->sync_sources();
-    value_.write(in, sizeInBytes, offset, size);
+    value_.write(dst_offset, in, sizeInBytes, src_offset, size);
     ++changeid_;
   }
 
   const bitvector& get_value() const {
-    this->sync_sources();
+    const_cast<snodeimpl*>(this)->sync_sources();
     return value_;
   }
 
   void set_value(const bitvector& value) {
-    assert(0 == srcs_.size());
+    // this->sync_sources(); - fully overwritten
     value_ = value;
     ++changeid_;
   }
@@ -80,20 +80,20 @@ public:
   
 protected:
 
-  uint64_t sync_sources() const;
+  uint64_t sync_sources();
   
   struct source_t {
     snodeimpl* node;
     uint32_t dst_offset;
     uint32_t src_offset;
-    uint32_t src_length;
-    mutable uint64_t changeid;
+    uint32_t length;
+    uint64_t changeid;
 
     bool operator==(const source_t& rhs) const {
       return this->node == rhs.node
           && this->dst_offset == rhs.dst_offset
           && this->src_offset == rhs.src_offset
-          && this->src_length == rhs.src_length;
+          && this->length == rhs.length;
     }
 
     bool operator!=(const source_t& rhs) const {
@@ -104,8 +104,8 @@ protected:
   uint32_t id_;
   const snode* owner_;
   std::vector<source_t> srcs_;
-  mutable bitvector value_;
-  mutable uint64_t  changeid_;  
+  bitvector value_;
+  uint64_t  changeid_;
 };
 
 }

@@ -12,4 +12,12 @@ TEST_CASE("smoke", "[smoke]") {
     b = 0;
     return (c == 1);
   });
+
+  TEST([]()->ch_bit1 {
+    ch_bit2 a, b;
+    a = 0;
+    b = a;
+    a = 1;
+    return (b == 1);
+  });
 }

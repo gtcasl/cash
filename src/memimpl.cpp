@@ -27,7 +27,7 @@ memimpl::~memimpl() {
 
 void memimpl::load(const std::vector<uint8_t>& data) {
   assert(8 * data.size() >= value_.get_size());
-  value_.write(data.data(), data.size(), 0, value_.get_size());
+  value_.write(0, data.data(), data.size(), 0, value_.get_size());
 }
 
 void memimpl::load(const std::string& file) {
@@ -38,7 +38,7 @@ void memimpl::load(const std::string& file) {
   while ((size - offset) >= 64) {
     uint64_t x;
     in >> x;
-    value_.write((uint8_t*)&x, sizeof(x), offset, 64);
+    value_.write(offset, &x, sizeof(x), 0, 64);
     offset += 64;
   }
 
@@ -46,7 +46,7 @@ void memimpl::load(const std::string& file) {
     uint8_t x;
     in >> x;
     int len = std::min<int>(size - offset, 8);
-    value_.write(&x, sizeof(x), offset, len);
+    value_.write(offset, &x, sizeof(x), 0, len);
     offset += len;
   }
 
@@ -144,9 +144,10 @@ void memportimpl::tick(ch_cycle t) {
   CH_UNUSED(t);
   if (wdata_id_ != -1) {
     auto mem = dynamic_cast<memimpl*>(srcs_[0].get_impl());
-    mem->value_.write((uint8_t*)q_next_.get_words(),
+    mem->value_.write(a_next_ * mem->data_width_,
+                      q_next_.get_words(),
                       CH_CEILDIV(q_next_.get_size(), 8),
-                      a_next_ * mem->data_width_,
+                      0,
                       mem->data_width_);
   }  
 }
@@ -163,7 +164,8 @@ const bitvector& memportimpl::eval(ch_cycle t) {
     ctime_ = t;
     auto mem = dynamic_cast<memimpl*>(srcs_[0].get_impl());
     uint32_t addr = srcs_[addr_id_].eval(t).get_word(0);    
-    mem->value_.read((uint8_t*)value_.get_words(),
+    mem->value_.read(0,
+                     value_.get_words(),
                      CH_CEILDIV(value_.get_size(), 8),
                      addr * mem->data_width_,
                      mem->data_width_);

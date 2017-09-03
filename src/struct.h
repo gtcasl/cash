@@ -43,10 +43,10 @@
           
 #define CH_STRUCT_WRITE(i, x) \
   if (dst_offset < CH_PAIR_L(x)::bitcount) { \
-    size_t len = std::min<size_t>(src_length, CH_PAIR_L(x)::bitcount - dst_offset); \
+    size_t len = std::min<size_t>(length, CH_PAIR_L(x)::bitcount - dst_offset); \
     cash::internal::write_data(CH_PAIR_R(x), dst_offset, in, src_offset, len); \
-    src_length -= len; \
-    if (0 == src_length) \
+    length -= len; \
+    if (0 == length) \
       return; \
     src_offset += len; \
     dst_offset = CH_PAIR_L(x)::bitcount; \
@@ -69,6 +69,17 @@
       bus_type(CH_REVERSE_FOR_EACH(CH_STRUCT_BUS_CTOR_ARG, CH_SEP_COMMA, __VA_ARGS__)) \
         : CH_FOR_EACH(CH_STRUCT_CTOR_ARG_INIT, CH_SEP_COMMA, __VA_ARGS__) {} \
       bus_type(const base& rhs) { base::operator=(rhs); } \
+      explicit bus_type(const std::initializer_list<uint32_t>& rhs) { base::operator=(rhs); } \
+      explicit bus_type(bool rhs) { base::operator=(rhs); } \
+      explicit bus_type(char rhs) { base::operator=(rhs); } \
+      explicit bus_type(int8_t rhs) { base::operator=(rhs); } \
+      explicit bus_type(uint8_t rhs) { base::operator=(rhs); } \
+      explicit bus_type(int16_t rhs) { base::operator=(rhs); } \
+      explicit bus_type(uint16_t rhs) { base::operator=(rhs); } \
+      explicit bus_type(int32_t rhs) { base::operator=(rhs); } \
+      explicit bus_type(uint32_t rhs) { base::operator=(rhs); } \
+      explicit bus_type(int64_t rhs) { base::operator=(rhs); } \
+      explicit bus_type(uint64_t rhs) { base::operator=(rhs); } \
       bus_type& operator=(const bus_type& rhs) { \
         CH_FOR_EACH(CH_STRUCT_ASSIGN, CH_SEP_SEMICOLON, __VA_ARGS__); \
         return *this; \
@@ -79,7 +90,7 @@
         CH_FOR_EACH(CH_STRUCT_READ, CH_SEP_SEMICOLON, __VA_ARGS__); \
         CH_ABORT("invalid subscript index"); \
       } \
-      void write_data(size_t dst_offset, const data_type& in, size_t src_offset, size_t src_length) override { \
+      void write_data(size_t dst_offset, const data_type& in, size_t src_offset, size_t length) override { \
         CH_FOR_EACH(CH_STRUCT_WRITE, CH_SEP_SEMICOLON, __VA_ARGS__); \
         CH_ABORT("invalid subscript index"); \
       } \
@@ -89,6 +100,17 @@
     name(CH_REVERSE_FOR_EACH(CH_STRUCT_CTOR_ARG, CH_SEP_COMMA, __VA_ARGS__)) \
       : CH_FOR_EACH(CH_STRUCT_CTOR_ARG_INIT, CH_SEP_COMMA, __VA_ARGS__) {} \
     name(const base& rhs) { base::operator=(rhs); } \
+    explicit name(const std::initializer_list<uint32_t>& rhs) { base::operator=(rhs); } \
+    explicit name(bool rhs) { base::operator=(rhs); } \
+    explicit name(char rhs) { base::operator=(rhs); } \
+    explicit name(int8_t rhs) { base::operator=(rhs); } \
+    explicit name(uint8_t rhs) { base::operator=(rhs); } \
+    explicit name(int16_t rhs) { base::operator=(rhs); } \
+    explicit name(uint16_t rhs) { base::operator=(rhs); } \
+    explicit name(int32_t rhs) { base::operator=(rhs); } \
+    explicit name(uint32_t rhs) { base::operator=(rhs); } \
+    explicit name(int64_t rhs) { base::operator=(rhs); } \
+    explicit name(uint64_t rhs) { base::operator=(rhs); } \
     name& operator=(const name& rhs) { \
       CH_FOR_EACH(CH_STRUCT_ASSIGN, CH_SEP_SEMICOLON, __VA_ARGS__); \
       return *this; \
@@ -102,7 +124,7 @@
       CH_FOR_EACH(CH_STRUCT_READ, CH_SEP_SEMICOLON, __VA_ARGS__); \
       CH_ABORT("invalid subscript index"); \
     } \
-    void write_data(size_t dst_offset, const data_type& in, size_t src_offset, size_t src_length) override { \
+    void write_data(size_t dst_offset, const data_type& in, size_t src_offset, size_t length) override { \
       CH_FOR_EACH(CH_STRUCT_WRITE, CH_SEP_SEMICOLON, __VA_ARGS__); \
       CH_ABORT("invalid subscript index"); \
     } \

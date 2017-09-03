@@ -56,15 +56,17 @@ public:
   
   void set_word(uint32_t idx, uint32_t value, uint32_t size);
   
-  void read(uint8_t* out,
+  void read(uint32_t dst_offset,
+            void* out,
             uint32_t sizeInBytes,
-            uint32_t offset,
+            uint32_t src_offset,
             uint32_t length,
             uint32_t size) const;
   
-  void write(const uint8_t* in,
+  void write(uint32_t dst_offset,
+             const void* in,
              uint32_t sizeInBytes,
-             uint32_t offset,
+             uint32_t src_offset,
              uint32_t length,
              uint32_t size);
 
@@ -76,7 +78,7 @@ public:
   void write_data(uint32_t dst_offset,
                   const data_type& in,
                   uint32_t src_offset,
-                  uint32_t src_length,
+                  uint32_t length,
                   uint32_t size);
 
 protected:
@@ -88,7 +90,7 @@ protected:
   void assign(uint32_t dst_offset,
               const snode& src,
               uint32_t src_offset,
-              uint32_t src_length,
+              uint32_t length,
               uint32_t size,
               bool is_owner);
   

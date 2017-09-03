@@ -2,6 +2,11 @@
 
 using namespace cash::core_literals;
 
+__struct(X,(
+(ch_bit2) q,
+(ch_bit2) p
+));
+
 TEST_CASE("registers", "[registers]") {
   SECTION("registers", "[register]") {
     TEST([]()->ch_bit1 {
@@ -89,8 +94,8 @@ TEST_CASE("registers", "[registers]") {
 
     TEST([]()->ch_bit1 {
       ch_seq<ch_bit2> a, e;
-      auto b = ch_select(ch_tick()).when<2>(8, 3)(6, 0)(4, 2)(2, 1)(0);
-      e.next = ch_select(ch_tick()).when<2>(8, 1)(6, 1)(4, 0)(2, 2)(0);
+      auto b = ch_select(ch_tick()).when<2>(10, 3)(8, 3)(6, 0)(4, 2)(2, 1)(0);
+      e.next = ch_select(ch_tick()).when<2>(10, 1)(8, 1)(6, 1)(4, 0)(2, 2)(0);
 
       __if (b == 1) (
         a.next = 2;
@@ -105,9 +110,9 @@ TEST_CASE("registers", "[registers]") {
         a.next = a;
       );
 
-      //ch_print("t={0}, clk={1}, a={2}, b={3}, e={4}", ch_tick(), ch_clock(), a, b, e);
+      ch_print("t={0}, clk={1}, a={2}, b={3}, e={4}", ch_tick(), ch_clock(), a, b, e);
       return (a == e);
-    }, 4);
+    }, 5);
 
     TEST([]()->ch_bit1 {
       ch_seq<ch_bit2> a, e;
@@ -154,6 +159,50 @@ TEST_CASE("registers", "[registers]") {
 
       //ch_print("t={0}, clk={1}, a={2}, b={3}, e={4}", ch_tick(), ch_clock(), a, b, e);
       return (a == e);
+    }, 4);
+
+    TEST([]()->ch_bit1 {
+      std::vector<ch_seq<ch_bit2>> x(2);
+      ch_bit2 a;
+      ch_seq<ch_bit2> e;
+
+      x[0].next = a;
+      x[1].next = ~a;
+
+      a = ch_select(ch_tick()).when<2>(8, 0)(6, 2)(4, 3)(2, 1)(0);
+      e.next = a;
+      ch_print("t={0}, clk={1}, x0={2}, x1={3}, e={4}", ch_tick(), ch_clock(), x[0], x[1], e);
+      return x[0] == e && x[1] == ~e;
+    }, 4);
+
+    TEST([]()->ch_bit1 {
+      ch_seq<ch_bit2> x;
+      ch_seq<ch_bit2> y(std::move(x));
+      ch_seq<ch_bit2> e;
+
+      auto  a = ch_select(ch_tick()).when<2>(8, 0)(6, 2)(4, 3)(2, 1)(0);
+
+      y.next = a;
+      e.next = a;
+
+      ch_print("t={0}, clk={1}, y={2}, e={3}", ch_tick(), ch_clock(), y, e);
+
+      return y == e;
+    }, 4);
+
+    TEST([]()->ch_bit1 {
+      ch_seq<X> x;
+      ch_seq<ch_bit2> e;
+
+      auto  a = ch_select(ch_tick()).when<2>(8, 0)(6, 2)(4, 3)(2, 1)(0);
+
+      x.next.q = a;
+      x.next.p = ~a;
+      e.next = a;
+
+      ch_print("t={0}, clk={1}, x.p={2}, x.q={3}, e={4}", ch_tick(), ch_clock(), x.p, x.q, e);
+
+      return x.q == e && x.p == ~e;
     }, 4);
   }
   

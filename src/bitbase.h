@@ -19,7 +19,7 @@ public:
   
   const auto operator[](size_t index) const {
     const auto node(get_node(*this));
-    lnode::data_type data(node, index, 1);
+    lnode::data_type data(1, node, index, 1);
     return make_bit<1>(data);
   }
 
@@ -30,7 +30,7 @@ public:
   template <unsigned M>
   const auto slice(size_t index = 0) const {
     const auto node(get_node(*this));
-    lnode::data_type data(node, index, M);
+    lnode::data_type data(M, node, index, M);
     return make_bit<M>(data);
   }
 
@@ -42,7 +42,7 @@ public:
   template <unsigned M>
   const auto aslice(size_t index = 0) const {
     const auto node(get_node(*this));
-    lnode::data_type data(node, index * M, M);
+    lnode::data_type data(M, node, index * M, M);
     return make_bit<M>(data);
   }
 
@@ -61,7 +61,7 @@ public:
 #define CH_DEF_AOP(type) \
   typebase& operator=(type rhs) { \
     const lnode node(bitvector(N, rhs)); \
-    this->write_data(0, {node, 0 , N}, 0, N); \
+    this->write_data(0, {N, node, 0 , N}, 0, N); \
     return *this; \
   } 
   CH_DEF_AOP(const std::initializer_list<uint32_t>&)
