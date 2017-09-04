@@ -4,6 +4,8 @@ using namespace cash::core;
 using namespace cash::core_literals;
 using namespace cash::sim;
 
+#define CHECK(x) if (!(x)) { assert(false); exit(1); }
+
 template <unsigned N>
 __out(ch_bit<N>, ch_bit1) Adder(
     const ch_bit<N>& lhs,
@@ -33,7 +35,8 @@ int main(int argc, char **argv) {
   std::cout << "result:" << std::endl;
   std::cout << "cout = " << cout << std::endl;
   std::cout << "out = " << out << std::endl;
-  assert(cout == 1 && out == 1);
+
+  CHECK(cout == 1 && out == 1);
 
   return 0;
 }

@@ -6,6 +6,8 @@ using namespace cash::core;
 using namespace cash::core_literals;
 using namespace cash::sim;
 
+#define CHECK(x) if (!(x)) { assert(false); exit(1); }
+
 template <unsigned A, unsigned W>
 __out(ch_bit<W>, ch_bit1, ch_bit1) FiFo(
       const ch_bit<W>& din,
@@ -51,41 +53,41 @@ int main(int argc, char **argv) {
   tracer.run([&](ch_tick t)->bool {
     switch (t) {
     case 0:
-      assert(empty);
-      assert(!full);
+      CHECK(empty);
+      CHECK(!full);
       din  = 1;
       push = 1;      
       break;      
     case 2:
-      assert(!empty);
-      assert(!full);
-      assert(dout == 1);      
+      CHECK(!empty);
+      CHECK(!full);
+      CHECK(dout == 1);
       din  = 2;
       push = 1;
       break;
     case 4:
-      assert(!empty);
-      assert(full);
-      assert(dout == 1);
+      CHECK(!empty);
+      CHECK(full);
+      CHECK(dout == 1);
       din  = 0;
       push = 0;
       break;
     case 6:
-      assert(!empty);
-      assert(full);
-      assert(dout == 1);
+      CHECK(!empty);
+      CHECK(full);
+      CHECK(dout == 1);
       pop = 1;
       break;
     case 8:
-      assert(!empty);
-      assert(!full);
-      assert(dout == 2);
+      CHECK(!empty);
+      CHECK(!full);
+      CHECK(dout == 2);
       pop = 1;
       break;
     case 10:
-      assert(empty);
-      assert(!full);
-      assert(dout == 1);
+      CHECK(empty);
+      CHECK(!full);
+      CHECK(dout == 1);
       pop = 0;
       break;
     }

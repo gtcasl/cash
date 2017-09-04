@@ -18,8 +18,8 @@ public:
   using data_type = lnode::data_type;
   
   const auto operator[](size_t index) const {
-    const auto node(get_node(*this));
-    lnode::data_type data(1, node, index, 1);
+    lnode::data_type data(1);
+    this->read_data(data, index, 1);
     return make_bit<1>(data);
   }
 
@@ -29,8 +29,8 @@ public:
 
   template <unsigned M>
   const auto slice(size_t index = 0) const {
-    const auto node(get_node(*this));
-    lnode::data_type data(M, node, index, M);
+    lnode::data_type data(M);
+    this->read_data(data, index, M);
     return make_bit<M>(data);
   }
 
@@ -41,8 +41,8 @@ public:
 
   template <unsigned M>
   const auto aslice(size_t index = 0) const {
-    const auto node(get_node(*this));
-    lnode::data_type data(M, node, index * M, M);
+    lnode::data_type data(M);
+    this->read_data(data, index * M, M);
     return make_bit<M>(data);
   }
 

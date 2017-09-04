@@ -6,6 +6,8 @@ using namespace cash::core;
 using namespace cash::core_literals;
 using namespace cash::sim;
 
+#define CHECK(x) if (!(x)) { assert(false); exit(1); }
+
 ch_bit8 FastMul(const ch_bit4& lhs, const ch_bit4& rhs) {
   std::vector<uint8_t> tbl_mult(256);
   for (int j = 0; j < 16; ++j) {
@@ -36,7 +38,8 @@ int main(int argc, char **argv) {
   std::cout << "lhs = " << lhs << std::endl;
   std::cout << "rhs = " << rhs << std::endl;
   std::cout << "out = " << out << std::endl;
-  assert(out == 6);
+
+  CHECK(out == 6);
 
   return 0;
 }

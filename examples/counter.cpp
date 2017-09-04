@@ -4,6 +4,8 @@ using namespace cash::core;
 using namespace cash::core_literals;
 using namespace cash::sim;
 
+#define CHECK(x) if (!(x)) { assert(false); exit(1); }
+
 template <unsigned N>
 ch_bit<N> Counter() {
   ch_seq<ch_bit<N>> out;
@@ -23,11 +25,12 @@ int main(int argc, char **argv) {
 
   ch_vcdtracer tracer(vcd_file, myDevice);
   __trace(tracer, out);
-  tracer.run(11);
+  tracer.run(22);
 
   std::cout << "result:" << std::endl;
   std::cout << "out = " << out << std::endl;
-  assert(out == 10);
+
+  CHECK(out == 10);
 
   return 0;
 }

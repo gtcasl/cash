@@ -2,6 +2,10 @@
 
 using namespace cash::core_literals;
 
-TEST_CASE("dogfood", "[dogfood]") {
+void experimental() {
   //--
+}
+
+TEST_CASE("dogfood", "[dogfood]") {
+  experimental();
 }

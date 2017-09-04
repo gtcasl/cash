@@ -7,7 +7,6 @@ examples/adder.cpp
 examples/counter.cpp
 examples/fastmul.cpp
 examples/fifo.cpp
-examples/runall.sh
 src/deviceimpl.cpp
 src/deviceimpl.h
 src/simulator.h

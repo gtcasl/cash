@@ -29,7 +29,7 @@ public:
     , size_(0)
   {}
 
-  nodebuf(uint32_t capacity, T src, uint32_t offset, uint32_t length)
+  nodebuf(uint32_t capacity, const T& src, uint32_t offset, uint32_t length)
     : capacity_(capacity)
     , size_(length) {
     slices_.push_back({src, offset, length});
