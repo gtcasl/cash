@@ -1,8 +1,8 @@
 #include "selectimpl.h"
-#include "arithm.h"
 #include "select.h"
 #include "if.h"
 #include "switch.h"
+#include "arithm.h"
 #include "context.h"
 
 using namespace cash::internal;

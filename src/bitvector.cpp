@@ -1,5 +1,5 @@
-#include <cstring>
 #include "bitvector.h"
+#include <cstring>
 
 using namespace cash::internal;
 

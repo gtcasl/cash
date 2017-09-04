@@ -1,5 +1,6 @@
+#include "vcdtracerimpl.h"
+#include "vcdtracer.h"
 #include <fstream>
-#include "vcd.h"
 #include "snodeimpl.h"
 
 using namespace cash::internal;
@@ -11,15 +12,9 @@ static std::string fixup_name(std::string name) {
   return ret;
 }
 
-ch_vcdtracer::ch_vcdtracer(
-    std::ostream& out,
-    const std::initializer_list<const ch_device*>& devices)
-  : ch_tracer(out, devices)
-{}
-
-void ch_vcdtracer::ensureInitialize() {
+void vcdtracerimpl::ensureInitialize() {
   // call parent ensureInitialize()
-  ch_tracer::ensureInitialize();
+  tracerimpl::ensureInitialize();
 
   out_ << "$timescale 1 ns $end" << std::endl;
   for (auto& tap : taps_) {
@@ -30,9 +25,9 @@ void ch_vcdtracer::ensureInitialize() {
   out_ << "$enddefinitions $end" << std::endl;
 }
 
-void ch_vcdtracer::tick(ch_cycle t) {
+void vcdtracerimpl::tick(ch_cycle t) {
   // call default tick()
-  ch_simulator::tick(t);
+  simulatorimpl::tick(t);
   
   // log net values
   out_ << '#' << t << std::endl;
@@ -49,3 +44,12 @@ void ch_vcdtracer::tick(ch_cycle t) {
     out_ << fixup_name(tap.name) << std::endl;
   }  
 }
+
+///////////////////////////////////////////////////////////////////////////////
+
+ch_vcdtracer::ch_vcdtracer(std::ostream& out,
+                           const std::initializer_list<const ch_device*>& devices)
+  : ch_tracer(new vcdtracerimpl(out, devices))
+{}
+
+ch_vcdtracer::~ch_vcdtracer() {}

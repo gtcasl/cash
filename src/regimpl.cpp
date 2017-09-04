@@ -1,7 +1,7 @@
 #include "regimpl.h"
+#include "reg.h"
 #include "select.h"
 #include "context.h"
-#include "reg.h"
 
 using namespace cash::internal;
 

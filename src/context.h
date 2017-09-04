@@ -1,8 +1,11 @@
 #pragma once
 
+#include "common.h"
+
 namespace cash {
 namespace internal {
 
+class bitvector;
 class lnode;
 class lnodeimpl;
 class undefimpl;
@@ -19,6 +22,8 @@ class snodeimpl;
 class tickimpl;
 class clock_event;
 class cdomain;
+
+using ch_cycle = uint64_t;
 
 class context : public refcounted {
 public:
@@ -186,13 +191,13 @@ protected:
   std::unordered_map<std::string, unsigned> dup_taps_;
   
   friend class ch_compiler;
-  friend class ch_simulator;
-  friend class ch_tracer;
+  friend class simulatorimpl;
+  friend class tracerimpl;
 };
 
-context* ctx_begin();
+context* ctx_create();
+void ctx_set(context* ctx);
 context* ctx_curr();
-void ctx_end();
 
 }
 }

@@ -1,5 +1,9 @@
 #pragma once
 
+#include <string>
+#include <functional>
+#include <assert.h>
+
 namespace cash {
 namespace internal {
 
@@ -11,14 +15,12 @@ void dump_stack_trace(FILE* out, unsigned int max_frames = 32);
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <size_t ...I>
-struct index_sequence {};
+template <bool... B> struct bool_pack;
+template <bool... Bs>
+using all_true = std::is_same<bool_pack<Bs..., true>, bool_pack<true, Bs...>>;
 
-template <size_t N, size_t ...I>
-struct make_index_sequence : public make_index_sequence<N - 1, N - 1, I...> {};
-
-template <size_t ...I>
-struct make_index_sequence<0, I...> : public index_sequence<I...> {};
+template<class R, class... Ts>
+using are_all_convertible = all_true<std::is_convertible<Ts, R>::value...>;
 
 ///////////////////////////////////////////////////////////////////////////////
 

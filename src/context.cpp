@@ -1,3 +1,4 @@
+#include "context.h"
 #include <thread>
 #include "lnode.h"
 #include "litimpl.h"
@@ -13,7 +14,6 @@
 #include "tickimpl.h"
 #include "cdomain.h"
 #include "device.h"
-#include "context.h"
 #include "arithm.h"
 #include "select.h"
 
@@ -667,18 +667,17 @@ void context::dump_stats(std::ostream& out) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-context* cash::internal::ctx_begin() {
-  auto ctx = new context();
-  tls_ctx = ctx;
-  ctx->acquire();
+context* cash::internal::ctx_create() {
+  auto ctx = new context();  
+  ctx->acquire();  
   return ctx;
 }
 
-void cash::internal::ctx_end() {
-  tls_ctx = nullptr;
+void cash::internal::ctx_set(context* ctx) {
+  tls_ctx = ctx;
 }
 
 context* cash::internal::ctx_curr() {
-  CH_CHECK(tls_ctx, "invalid CASH context!");
+  CH_CHECK(tls_ctx, "unitialized context!");
   return tls_ctx;
 }

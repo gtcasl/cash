@@ -1,5 +1,5 @@
-#include "bit.h"
 #include "lnodeimpl.h"
+#include "bit.h"
 #include "ioimpl.h"
 #include "proxyimpl.h"
 #include "litimpl.h"

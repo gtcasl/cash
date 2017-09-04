@@ -1,6 +1,6 @@
-#include <stdarg.h>
-#include "common.h"
 #include "utils.h"
+#include "common.h"
+#include <stdarg.h>
 
 #define BACKWARD_HAS_BFD 1
 #include "backward.h"

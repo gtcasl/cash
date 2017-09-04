@@ -112,6 +112,7 @@ protected:
 
 template <unsigned N>
 const ch_bus<N> make_bus(const snode& node) {
+  assert(node.get_size() == N);
   return ch_bus<N>(node);
 }
 

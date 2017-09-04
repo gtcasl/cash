@@ -93,9 +93,6 @@ protected:
               uint32_t size);
   
   mutable lnodeimpl* impl_;
-  
-  friend class lnodeimpl;
-  friend class context; 
 };
 
 inline std::ostream& operator<<(std::ostream& out, const lnode& rhs) {

@@ -100,4 +100,17 @@ TEST_CASE("miscs", "[miscs]") {
       return (out == 1);
     });
   }
+
+  SECTION("stats", "[stats]") {
+    TESTX([]()->bool {
+      auto inverter = [](const ch_bit2& x)->ch_bit2 {
+        ch_bit2 a(0), b(1);
+        return ~x;
+      };
+      ch_bus2 in(0), out;
+      ch_device device(inverter, in, out);
+      device.dump_stats(std::cout);
+      return '1';
+    });
+  }
 }

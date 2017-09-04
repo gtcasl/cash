@@ -1,5 +1,7 @@
 #pragma once
 
+#include "common.h"
+
 namespace cash {
 namespace internal {
 
@@ -26,7 +28,9 @@ public:
   
   static const platform& self();
   
-private:  
+private:
+
+  class Impl;
   
   int dbg_level_;
   int dbg_node_;

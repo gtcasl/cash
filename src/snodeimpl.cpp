@@ -1,6 +1,6 @@
 #include "snodeimpl.h"
-#include "ioimpl.h"
 #include "bus.h"
+#include "ioimpl.h"
 
 using namespace cash::internal;
 

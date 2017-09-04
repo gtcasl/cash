@@ -8,6 +8,17 @@ examples/counter.cpp
 examples/fastmul.cpp
 examples/fifo.cpp
 examples/runall.sh
+src/deviceimpl.cpp
+src/deviceimpl.h
+src/simulator.h
+src/simulatorimpl.cpp
+src/simulatorimpl.h
+src/tracer.h
+src/tracerimpl.cpp
+src/tracerimpl.h
+src/vcdtracer.h
+src/vcdtracerimpl.cpp
+src/vcdtracerimpl.h
 test/smoke.cpp
 env.sh
 examples/adder.cpp
@@ -59,7 +70,6 @@ src/context.h
 src/context.h
 src/dbginfo.cpp
 src/device.cpp
-src/device.cpp
 src/device.h
 src/device.h
 src/enum.h
@@ -119,8 +129,6 @@ src/selectimpl.h
 src/seq.h
 src/seq.h
 src/sim.cpp
-src/sim.cpp
-src/sim.h
 src/sim.h
 src/snode.h
 src/snode.h
@@ -147,8 +155,6 @@ src/utils.cpp
 src/utils.h
 src/utils.h
 src/vcd.cpp
-src/vcd.cpp
-src/vcd.h
 src/vcd.h
 src/vec.h
 src/vec.h

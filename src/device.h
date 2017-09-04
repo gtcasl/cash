@@ -6,21 +6,18 @@
 namespace cash {
 namespace internal {
 
-class context;
-
-context* ctx_begin();
-void ctx_end();
+class deviceimpl;
 
 class ch_device {
 public:
   
   template <typename Function, typename ...Args>  
-  ch_device(const Function& func, Args&&... args) {    
+  ch_device(const Function& func, Args&&... args) : ch_device() {
     this->init(to_function(func), args...);   
   }
   
   template <typename FuncRet, typename ...FuncArgs, typename ...Args>  
-  ch_device(FuncRet (*func)(FuncArgs...), Args&&... args) {
+  ch_device(FuncRet (*func)(FuncArgs...), Args&&... args) : ch_device() {
     this->init(std::function<FuncRet(FuncArgs...)>(func), args...);
   }
   
@@ -109,18 +106,17 @@ protected:
   }
   
   template <typename FuncRet, typename ...FuncArgs, typename ...Args>
-  void init(const std::function<FuncRet(FuncArgs...)>& func, Args&&... args) {
+  void init(const std::function<FuncRet(FuncArgs...)>& func, Args&&... args) {    
     static_assert(sizeof...(FuncArgs) + output_size<FuncRet>::value == sizeof...(Args), "number of arguments mismatch");
-    ctx_ = ctx_begin();
+    this->begin_context();
     {
       std::tuple<typename to_value_type<typename std::remove_const<
           typename std::remove_reference<FuncArgs>::type>::type>::value...> func_args;
       this->bind_inputs(func_args, args...);
       FuncRet ret(this->load_impl(func, func_args, std::index_sequence_for<FuncArgs...>()));
       this->bind_outputs(ret, args...);
-    }    
-    this->compile();
-    ctx_end();
+    }
+    this->end_context();
   }
   
   template <typename ...InputArgs, typename ...Args>
@@ -140,25 +136,29 @@ protected:
 
   template <unsigned N>
   const auto bind_input(const ch_busbase<N>& bus) const {
-    return make_bit<N>(this->bind_input_(get_node(bus)));
+    return make_bit<N>(this->bind_input(get_node(bus)));
   }
   
   template <unsigned N>
   const auto bind_output(const ch_bitbase<N>& output) const {
-    return make_bus<N>(this->bind_output_(get_node(output)));
+    return make_bus<N>(this->bind_output(get_node(output)));
   }
+
+  ch_device();
+
+  void begin_context();
+
+  void end_context();
   
-  lnodeimpl* bind_input_(const snode& bus) const;
+  lnodeimpl* bind_input(const snode& bus) const;
   
-  snodeimpl* bind_output_(const lnode& output) const;
+  snodeimpl* bind_output(const lnode& output) const;
   
   snodeimpl* get_tap(const std::string& name, uint32_t size) const;
-  
-  void compile();
-  
-  context* ctx_;
-  
-  friend class ch_simulator;
+
+  deviceimpl* impl_;
+
+  friend class simulatorimpl;
 };
 
 template <>

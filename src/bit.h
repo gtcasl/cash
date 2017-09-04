@@ -119,6 +119,7 @@ protected:
 
 template <unsigned N>
 const ch_bit<N> make_bit(const lnode& node) {
+  assert(node.get_size() == N);
   return ch_bit<N>(node);
 }
 

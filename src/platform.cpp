@@ -1,4 +1,3 @@
-#include "common.h"
 #include "platform.h"
 
 using namespace cash::internal;
