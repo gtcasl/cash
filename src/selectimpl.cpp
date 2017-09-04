@@ -9,7 +9,7 @@ using namespace cash::internal;
 
 selectimpl::selectimpl(const lnode& pred, const lnode& _true, const lnode& _false)
   : lnodeimpl(op_select, pred.get_ctx(), _true.get_size())
-  , ctime_(~0ull) {
+  , tick_(~0ull) {
   assert(pred.get_size() == 1);
   assert(_true.get_size() == _false.get_size());
   srcs_.emplace_back(pred);
@@ -17,9 +17,9 @@ selectimpl::selectimpl(const lnode& pred, const lnode& _true, const lnode& _fals
   srcs_.emplace_back(_false);
 }
 
-const bitvector& selectimpl::eval(ch_cycle t) {
-  if (ctime_ != t) {
-    ctime_ = t;
+const bitvector& selectimpl::eval(ch_tick t) {
+  if (tick_ != t) {
+    tick_ = t;
     value_ = srcs_[0].eval(t)[0] ? srcs_[1].eval(t) : srcs_[2].eval(t);
   }
   return value_;

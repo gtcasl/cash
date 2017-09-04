@@ -8,7 +8,7 @@ namespace internal {
 class lnodeimpl;
 class context;
 
-using ch_cycle = uint64_t;
+using ch_tick = uint64_t;
 
 class lnode {
 public:
@@ -55,7 +55,7 @@ public:
   
   bool valid() const;
  
-  const bitvector& eval(ch_cycle t);  
+  const bitvector& eval(ch_tick t);  
 
   void assign(const lnode& rhs, uint32_t size);
 

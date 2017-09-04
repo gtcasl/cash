@@ -23,10 +23,10 @@ public:
   memportimpl* read(const lnode& addr);
   void write(const lnode& addr, const lnode& data);
   
-  void tick(ch_cycle t) override;
-  void tick_next(ch_cycle t) override;
+  void tick(ch_tick t) override;
+  void tick_next(ch_tick t) override;
   
-  const bitvector& eval(ch_cycle t) override;  
+  const bitvector& eval(ch_tick t) override;  
   void print(std::ostream& out, uint32_t level) const override;
   void print_vl(std::ostream& out) const override;
 
@@ -54,10 +54,10 @@ public:
   
   void write(const lnode& data);
   
-  void tick(ch_cycle t);
-  void tick_next(ch_cycle t);
+  void tick(ch_tick t);
+  void tick_next(ch_tick t);
   
-  const bitvector& eval(ch_cycle t) override;
+  const bitvector& eval(ch_tick t) override;
   void print_vl(std::ostream& out) const override;
 
 protected:
@@ -68,7 +68,7 @@ protected:
   int       addr_id_;
   int       wdata_id_;
   
-  ch_cycle  ctime_;
+  ch_tick  tick_;
   
   friend class memimpl;
 };

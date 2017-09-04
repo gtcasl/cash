@@ -10,8 +10,8 @@ public:
   tickable() {}
   virtual ~tickable() {}
 
-  virtual void tick(ch_cycle) = 0;
-  virtual void tick_next(ch_cycle) = 0; 
+  virtual void tick(ch_tick) = 0;
+  virtual void tick_next(ch_tick) = 0; 
 };
 
 }

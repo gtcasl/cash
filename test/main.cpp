@@ -6,19 +6,19 @@ static void begin_test() {
   std::cout << "running test #" << test_number++ << " ..." << std::endl;
 }
 
-bool runtest(const std::function<ch_bit<1>()>& test, ch_cycle cycles) {
-  assert(cycles > 0);
+bool runtest(const std::function<ch_bit<1>()>& test, ch_tick ticks) {
+  assert(ticks > 0);
   begin_test();
   
   ch_bus1 ret;
   ch_device dev(test, ret);
   ch_simulator sim(dev);
 
-  sim.run([&](ch_cycle cycle)->bool {    
-    // std::cout << "t" << cycle << ": ret=" << ret << std::endl;
-    if (cycle > 0 && !static_cast<bool>(ret))
+  sim.run([&](ch_tick t)->bool {
+    // std::cout << "t" << tick << ": ret=" << ret << std::endl;
+    if (t > 0 && !static_cast<bool>(ret))
       return false;
-    return (cycle < cycles);
+    return (t < ticks);
   });
 
   bool bRet = static_cast<bool>(ret);

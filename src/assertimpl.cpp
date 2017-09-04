@@ -18,10 +18,10 @@ assertimpl::assertimpl(const lnode& src, const std::string& msg)
   srcs_.emplace_back(src);
 }
 
-const bitvector& assertimpl::eval(ch_cycle t) {
+const bitvector& assertimpl::eval(ch_tick t) {
   if (!predicated_ || srcs_[0].eval(t)[0]) {
     const bitvector& cond = srcs_[predicated_ ? 1: 0].eval(t);
-    CH_CHECK(cond[0], "assertion failure at cycle %ld, %s", t, msg_.c_str());
+    CH_CHECK(cond[0], "assertion failure at tick %ld, %s", t, msg_.c_str());
   }
   return value_;
 }

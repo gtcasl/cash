@@ -15,12 +15,20 @@ void dump_stack_trace(FILE* out, unsigned int max_frames = 32);
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <bool... B> struct bool_pack;
-template <bool... Bs>
-using all_true = std::is_same<bool_pack<Bs..., true>, bool_pack<true, Bs...>>;
+template <bool... B>
+struct conjunction {};
+
+template <bool Head, bool... Tail>
+struct conjunction<Head, Tail...>
+    : std::integral_constant<bool, Head && conjunction<Tail...>::value>{};
+
+template <bool B>
+struct conjunction<B> : std::integral_constant<bool, B> {};
+
+///////////////////////////////////////////////////////////////////////////////
 
 template<class R, class... Ts>
-using are_all_convertible = all_true<std::is_convertible<Ts, R>::value...>;
+using are_all_convertible = conjunction<std::is_convertible<Ts, R>::value...>;
 
 ///////////////////////////////////////////////////////////////////////////////
 

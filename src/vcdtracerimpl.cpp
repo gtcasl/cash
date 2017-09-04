@@ -25,7 +25,7 @@ void vcdtracerimpl::ensureInitialize() {
   out_ << "$enddefinitions $end" << std::endl;
 }
 
-void vcdtracerimpl::tick(ch_cycle t) {
+void vcdtracerimpl::tick(ch_tick t) {
   // call default tick()
   simulatorimpl::tick(t);
   

@@ -35,7 +35,7 @@ public:
         && (edgedir_ == e.edgedir_);
   }
   
-  bool eval(ch_cycle t);
+  bool eval(ch_tick t);
   
   void print_vl(std::ostream& out) const;
   
@@ -65,9 +65,9 @@ public:
 
   bool operator==(const std::vector<clock_event>& events) const;
   
-  void tick(ch_cycle t);
+  void tick(ch_tick t);
 
-  void tick_next(ch_cycle t);
+  void tick_next(ch_tick t);
   
   void print_vl(std::ostream& out) const;
 

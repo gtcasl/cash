@@ -11,7 +11,7 @@ public:
             const std::string& format,
             const std::initializer_list<lnode>& args);
 
-  const bitvector& eval(ch_cycle t) override;  
+  const bitvector& eval(ch_tick t) override;  
 
   void print_vl(std::ostream& out) const override;
 
@@ -19,7 +19,7 @@ private:
   std::string format_;  
   std::stringstream strbuf_;  
   bool predicated_;
-  ch_cycle ctime_;
+  ch_tick tick_;
 };
 
 }

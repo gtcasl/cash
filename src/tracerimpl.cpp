@@ -50,7 +50,7 @@ void tracerimpl::add_trace(const std::string& name, const snode& value) {
   taps_.emplace_back(full_name, value);
 }
 
-void tracerimpl::tick(ch_cycle t) {
+void tracerimpl::tick(ch_tick t) {
   // advance simulation
   simulatorimpl::tick(t);
 

@@ -16,11 +16,11 @@ public:
     return srcs_[0];
   }
   
-  const bitvector& eval(ch_cycle t) override;  
+  const bitvector& eval(ch_tick t) override;  
   void print_vl(std::ostream& out) const override;
 
-  void tick(ch_cycle t) override;
-  void tick_next(ch_cycle t) override;
+  void tick(ch_tick t) override;
+  void tick_next(ch_tick t) override;
   
 protected:
 
@@ -38,11 +38,11 @@ public:
   );
   virtual ~latchimpl();
   
-  const bitvector& eval(ch_cycle t) override;  
+  const bitvector& eval(ch_tick t) override;  
   void print_vl(std::ostream& out) const override;
 
-  void tick(ch_cycle t) override;
-  void tick_next(ch_cycle t) override;
+  void tick(ch_tick t) override;
+  void tick_next(ch_tick t) override;
   
 protected:
 

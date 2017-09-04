@@ -20,7 +20,7 @@ clock_event::~clock_event() {
   //--
 }
 
-bool clock_event::eval(ch_cycle t) {
+bool clock_event::eval(ch_tick t) {
   bool value = signal_.eval(t)[0];
   if (cval_ != value) {
     cval_ = value;
@@ -89,7 +89,7 @@ bool cdomain::operator==(const std::vector<clock_event>& events) const {
   return true;
 }
 
-void cdomain::tick(ch_cycle t) {
+void cdomain::tick(ch_tick t) {
   for (clock_event& event : sensitivity_list_) {
     if (event.eval(t)) {
       for (tickable* reg : regs_) {
@@ -100,7 +100,7 @@ void cdomain::tick(ch_cycle t) {
   }
 }
 
-void cdomain::tick_next(ch_cycle t) {
+void cdomain::tick_next(ch_tick t) {
   for (auto reg : regs_) {
     reg->tick_next(t);
   }

@@ -13,6 +13,8 @@ public:
     : ch_tracer(out, {&device, &more...})
   {}
 
+  ch_tracer(std::ostream& out) : ch_tracer(out, {}) {}
+
   ~ch_tracer();
 
   template <unsigned N>

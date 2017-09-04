@@ -108,34 +108,6 @@ public:
     const auto operator()(const ch_bit<N>& value) {
       return make_bit<N>(impl_.eval(get_node(value)));
     }
-
-    case_t& when(const ch_bitbase<K>& pred, const ch_bitbase<N>& value) {
-      impl_.push(get_node(pred), get_node(value));
-      return *this;
-    }
-
-    case_t& when(const ch_bitbase<K>& pred, const ch_bit<N>& value) {
-      impl_.push(get_node(pred), get_node(value));
-      return *this;
-    }
-
-    case_t& when(const ch_bit<K>& pred, const ch_bitbase<N>& value) {
-      impl_.push(get_node(pred), get_node(value));
-      return *this;
-    }
-
-    case_t& when(const ch_bit<K>& pred, const ch_bit<N>& value) {
-      impl_.push(get_node(pred), get_node(value));
-      return *this;
-    }
-
-    const auto when(const ch_bitbase<N>& value) {
-      return make_bit<N>(impl_.eval(get_node(value)));
-    }
-
-    const auto when(const ch_bit<N>& value) {
-      return make_bit<N>(impl_.eval(get_node(value)));
-    }
     
   protected:
     
@@ -159,26 +131,6 @@ public:
   
   template <unsigned N>
   auto operator()(const ch_bit<K>& pred, const ch_bit<N>& value) {
-    return case_t<N>(key_, get_node(pred), get_node(value));
-  }
-
-  template <unsigned N>
-  auto when(const ch_bitbase<K>& pred, const ch_bitbase<N>& value) {
-    return case_t<N>(key_, get_node(pred), get_node(value));
-  }
-
-  template <unsigned N>
-  auto when(const ch_bitbase<K>& pred, const ch_bit<N>& value) {
-    return case_t<N>(key_, get_node(pred), get_node(value));
-  }
-
-  template <unsigned N>
-  auto when(const ch_bit<K>& pred, const ch_bitbase<N>& value) {
-    return case_t<N>(key_, get_node(pred), get_node(value));
-  }
-
-  template <unsigned N>
-  auto when(const ch_bit<K>& pred, const ch_bit<N>& value) {
     return case_t<N>(key_, get_node(pred), get_node(value));
   }
   

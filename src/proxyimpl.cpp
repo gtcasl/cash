@@ -5,18 +5,18 @@ using namespace cash::internal;
 
 proxyimpl::proxyimpl(context* ctx, uint32_t size) 
   : lnodeimpl(op_proxy, ctx, size)
-  , ctime_(~0ull) 
+  , tick_(~0ull) 
 {}
 
 proxyimpl::proxyimpl(const lnode& src)
   : lnodeimpl(op_proxy, src.get_ctx(), src.get_size())
-  , ctime_(~0ull)  {
+  , tick_(~0ull)  {
   this->add_source(0, src, 0, src.get_size());
 }
 
 proxyimpl::proxyimpl(const lnode& src, uint32_t offset, uint32_t length)
   : lnodeimpl(op_proxy, src.get_ctx(), length)
-  , ctime_(~0ull)  {
+  , tick_(~0ull)  {
   this->add_source(0, src, offset, length);
 }
 
@@ -291,9 +291,9 @@ proxyimpl::get_update_slices(uint32_t offset, uint32_t length) {
   return ret;
 }
 
-const bitvector& proxyimpl::eval(ch_cycle t) {
-  if (ctime_ != t) {  
-    ctime_ = t;    
+const bitvector& proxyimpl::eval(ch_tick t) {
+  if (tick_ != t) {  
+    tick_ = t;    
     for (const range_t& range : ranges_) {
       const bitvector& bits = srcs_[range.src_idx].eval(t);
       value_.copy(range.dst_offset, bits, range.src_offset, range.length);

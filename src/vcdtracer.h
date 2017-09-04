@@ -12,6 +12,8 @@ public:
     : ch_vcdtracer(out, {&device, &more...})
   {}
 
+  ch_vcdtracer(std::ostream& out) : ch_vcdtracer(out, {}) {}
+
   ~ch_vcdtracer();
 
 protected:

@@ -9,7 +9,7 @@ class assertimpl : public ioimpl {
 public:
   assertimpl(const lnode& src, const std::string& msg);
   
-  const bitvector& eval(ch_cycle t) override;
+  const bitvector& eval(ch_tick t) override;
   
   void print_vl(std::ostream& out) const override;
 

@@ -6,7 +6,7 @@ using namespace cash::internal;
 
 inputimpl::inputimpl(ch_operator op, context* ctx, uint32_t size) 
   : ioimpl(op, ctx, size)
-  , ctime_(~0ull)
+  , tick_(~0ull)
 {}
 
 inputimpl::~inputimpl() {}
@@ -15,9 +15,9 @@ void inputimpl::bind(const snode& bus) {
   bus_ = bus;
 }
 
-const bitvector& inputimpl::eval(ch_cycle t) {
-  if (ctime_ != t) {
-    ctime_ = t;
+const bitvector& inputimpl::eval(ch_tick t) {
+  if (tick_ != t) {
+    tick_ = t;
     value_ = bus_.get_value();
   }
   return value_;
@@ -45,7 +45,7 @@ void inputimpl::print(std::ostream& out, uint32_t level) const {
 outputimpl::outputimpl(ch_operator op, const lnode& src)
   : ioimpl(op, src.get_ctx(), src.get_size())
   , bus_(nullptr)
-  , ctime_(~0ull) {
+  , tick_(~0ull) {
   srcs_.emplace_back(src);
 }
 
@@ -54,9 +54,9 @@ outputimpl::~outputimpl() {
     bus_->release();
 }
 
-const bitvector& outputimpl::eval(ch_cycle t) {  
-  if (ctime_ != t) {
-    ctime_ = t;
+const bitvector& outputimpl::eval(ch_tick t) {  
+  if (tick_ != t) {
+    tick_ = t;
     if (bus_) {
       bus_->set_value(srcs_[0].eval(t));
     }

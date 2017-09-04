@@ -9,11 +9,11 @@ class tickimpl : public ioimpl {
 public:
   tickimpl(context* ctx);
 
-  const bitvector& eval(ch_cycle t) override;  
+  const bitvector& eval(ch_tick t) override;  
   void print_vl(std::ostream& out) const override;
   
 private:
-  ch_cycle ctime_;
+  ch_tick tick_;
 };
 
 }

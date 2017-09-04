@@ -519,19 +519,19 @@ void context::get_live_nodes(std::unordered_set<lnodeimpl*>& live_nodes) {
   }
 }
 
-void context::tick(ch_cycle t) {
+void context::tick(ch_tick t) {
   for (auto cd : cdomains_) {
     cd->tick(t);
   }  
 }
 
-void context::tick_next(ch_cycle t) {
+void context::tick_next(ch_tick t) {
   for (auto cd : cdomains_) {
     cd->tick_next(t);
   }  
 }
 
-void context::eval(ch_cycle t) {
+void context::eval(ch_tick t) {
   // evaluate outputs
   for (auto node : outputs_) {
     node->eval(t);

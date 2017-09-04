@@ -18,13 +18,13 @@ lnodeimpl* createLatchNode(const lnode& next,
 lnodeimpl* createReadyNode(const lnode& node);
 lnodeimpl* createValidNode(const lnode& node);
 
-const ch_bit<1> ch_clock();
-void ch_push_clock(const ch_bitbase<1>& clk);
-void ch_pop_clock();
+const ch_bit<1> ch_getClock();
+void ch_pushClock(const ch_bitbase<1>& clk);
+void ch_popClock();
 
-const ch_bit<1> ch_reset();
-void ch_push_reset(const ch_bitbase<1>& reset);
-void ch_pop_reset();
+const ch_bit<1> ch_getReset();
+void ch_pushReset(const ch_bitbase<1>& reset);
+void ch_popReset();
 
 template <unsigned N>
 const auto ch_ready(const ch_bitbase<N>& x) {
@@ -64,7 +64,7 @@ const auto ch_latch(const ch_bitbase<N>& next,
   return make_bit<N>(createLatchNode(get_node(next),
                                      get_node(init),
                                      get_node(enable),
-                                     get_node(ch_reset())));
+                                     get_node(ch_getReset())));
 }
 
 template <unsigned N>

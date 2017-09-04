@@ -191,14 +191,14 @@ g++ -std=c++14 -O0 -g -fmax-errors=5 -E -dD aggregates.cpp > aggregates.log
 
 // Detecting Cycles in CASH?
 // cycles only occurs when combinatorial nets eval() function is entered a second time without having exited.
-bool nandimpl::eval(cycle_t t) { 
-  if (ctime_ != t) {
-    if (ctime_ > t) {
+bool nandimpl::eval(ch_tick t) {
+  if (tick_ != t) {
+    if (tick_ > t) {
         CASH_ABBORT("found cycle");
 	}
-    ctime_ = t + 1;
+    tick_ = t + 1;
     cval_ = !(srcs_[0].eval(t) && srcs_[1].eval(t));
-    ctime_  = t;
+    tick_  = t;
   }
   return cval_;
 }

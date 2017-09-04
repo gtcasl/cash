@@ -15,7 +15,7 @@ public:
 
   void ensureInitialize() override;
 
-  void tick(ch_cycle t) override;
+  void tick(ch_tick t) override;
 };
 
 }

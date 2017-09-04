@@ -21,16 +21,16 @@ regimpl::~regimpl() {
   cd_->remove_use(this);
 }
 
-void regimpl::tick(ch_cycle t) { 
+void regimpl::tick(ch_tick t) { 
   CH_UNUSED(t);
   value_ = q_next_;
 }
 
-void regimpl::tick_next(ch_cycle t) {
+void regimpl::tick_next(ch_tick t) {
   q_next_ = srcs_[0].eval(t);
 }
 
-const bitvector& regimpl::eval(ch_cycle t) {
+const bitvector& regimpl::eval(ch_tick t) {
   CH_UNUSED(t);
   return value_; 
 }
@@ -67,11 +67,11 @@ latchimpl::~latchimpl() {
   cd_->remove_use(this);
 }
 
-void latchimpl::tick(ch_cycle t) { 
+void latchimpl::tick(ch_tick t) { 
   CH_UNUSED(t);
 }
 
-void latchimpl::tick_next(ch_cycle t) {
+void latchimpl::tick_next(ch_tick t) {
   if (srcs_[3].eval(t)[0]) {
     value_ = srcs_[1].eval(t);
   } else if (srcs_[2].eval(t)[0]) {
@@ -79,7 +79,7 @@ void latchimpl::tick_next(ch_cycle t) {
   }
 }
 
-const bitvector& latchimpl::eval(ch_cycle t) {
+const bitvector& latchimpl::eval(ch_tick t) {
   CH_UNUSED(t);
   return value_; 
 }
@@ -91,27 +91,27 @@ void latchimpl::print_vl(std::ostream& out) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-const ch_bit<1> cash::internal::ch_clock() {
+const ch_bit<1> cash::internal::ch_getClock() {
   return make_bit<1>(ctx_curr()->get_clk());
 }
 
-void cash::internal::ch_push_clock(const ch_bitbase<1>& clk) {
+void cash::internal::ch_pushClock(const ch_bitbase<1>& clk) {
   ctx_curr()->push_clk(get_node(clk));
 }
 
-void cash::internal::ch_pop_clock() {
+void cash::internal::ch_popClock() {
   ctx_curr()->pop_clk();
 }
 
-const ch_bit<1> cash::internal::ch_reset() {
+const ch_bit<1> cash::internal::ch_getReset() {
   return make_bit<1>(ctx_curr()->get_reset());
 }
 
-void cash::internal::ch_push_reset(const ch_bitbase<1>& reset) {
+void cash::internal::ch_pushReset(const ch_bitbase<1>& reset) {
   ctx_curr()->push_reset(get_node(reset));
 }
 
-void cash::internal::ch_pop_reset() {
+void cash::internal::ch_popReset() {
   ctx_curr()->pop_reset();
 }
 

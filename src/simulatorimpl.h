@@ -14,15 +14,15 @@ public:
 
   void add_device(const ch_device& device);
 
-  virtual void tick(ch_cycle t);
+  virtual void tick(ch_tick t);
 
-  void run(const std::function<bool(ch_cycle time)>& callback);
+  void run(const std::function<bool(ch_tick t)>& callback);
 
-  void run(ch_cycle cycles);
+  void run(ch_tick ticks);
 
-  ch_cycle reset(ch_cycle t);
+  ch_tick reset(ch_tick t);
 
-  void step(ch_cycle t);
+  ch_tick step(ch_tick t);
 
 protected:
 

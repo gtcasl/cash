@@ -49,9 +49,9 @@ TEST_CASE("miscs", "[miscs]") {
   
   SECTION("tick", "[tick]") {
     TEST([]()->ch_bit1 {
-      ch_print("tick={0}", ch_tick());
+      ch_print("tick={0}", ch_getTick());
       return '1';
-    }, 5);
+    });
   }
   
   SECTION("print", "[print]") {

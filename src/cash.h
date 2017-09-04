@@ -94,12 +94,13 @@ namespace core {
 
   using cash::internal::ch_reg;
   using cash::internal::ch_latch;
-  using cash::internal::ch_push_clock;
-  using cash::internal::ch_pop_clock;
-  using cash::internal::ch_push_reset;
-  using cash::internal::ch_pop_reset;
-  using cash::internal::ch_clock;
-  using cash::internal::ch_reset;
+  using cash::internal::ch_pushClock;
+  using cash::internal::ch_popClock;
+  using cash::internal::ch_pushReset;
+  using cash::internal::ch_popReset;
+  using cash::internal::ch_getClock;
+  using cash::internal::ch_getReset;
+  using cash::internal::ch_getTick;
 
   //
   // gates functions
@@ -171,7 +172,6 @@ namespace core {
   //
 
   using cash::internal::ch_tie;
-  using cash::internal::ch_tick;
   using cash::internal::ch_assert;
   using cash::internal::ch_tap;
   using cash::internal::ch_print;
@@ -188,7 +188,7 @@ namespace sim {
   // basic types
   //
 
-  using ch_cycle  = cash::internal::ch_cycle;
+  using ch_tick  = cash::internal::ch_tick;
   
   template<unsigned N> using ch_bus = cash::internal::ch_bus<N>;
 

@@ -118,7 +118,7 @@ public:
   
   virtual bool ready() const;
   virtual bool valid() const;  
-  virtual const bitvector& eval(ch_cycle t) = 0;
+  virtual const bitvector& eval(ch_tick t) = 0;
   
   virtual void print(std::ostream& out, uint32_t level) const;
   virtual void print_vl(std::ostream& out) const = 0;
@@ -138,7 +138,7 @@ class undefimpl : public lnodeimpl {
 public:
   undefimpl(context* ctx, uint32_t size);
 
-  const bitvector& eval(ch_cycle t) override;
+  const bitvector& eval(ch_tick t) override;
   void print_vl(std::ostream& out) const override;
 };
 

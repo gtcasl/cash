@@ -8,7 +8,7 @@ litimpl::litimpl(context* ctx, const bitvector& value)
   value_ = value;
 }
 
-const bitvector& litimpl::eval(ch_cycle) { 
+const bitvector& litimpl::eval(ch_tick) { 
   return value_; 
 }
 

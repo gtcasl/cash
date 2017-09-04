@@ -9,7 +9,7 @@ class litimpl : public lnodeimpl {
 public:
   litimpl(context* ctx, const bitvector& value);
 
-  const bitvector& eval(ch_cycle t) override;
+  const bitvector& eval(ch_tick t) override;
   void print(std::ostream& out, uint32_t level) const override;
   void print_vl(std::ostream& out) const override;
 };

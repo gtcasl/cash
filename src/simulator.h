@@ -15,19 +15,21 @@ public:
     : ch_simulator({&device, &more...})
   {}
 
+  ch_simulator() : ch_simulator({}) {}
+
   virtual ~ch_simulator();
   
   void add_device(const ch_device& device);
 
-  void step(ch_cycle t);
+  ch_tick step(ch_tick t);
   
-  void run(const std::function<bool(ch_cycle time)>& callback);
+  void run(const std::function<bool(ch_tick t)>& callback);
   
-  void run(ch_cycle cycles = 20);
+  void run(ch_tick ticks = 20);
 
-  ch_cycle reset(ch_cycle t);
+  ch_tick reset(ch_tick t);
 
-  void tick(ch_cycle t);
+  void tick(ch_tick t);
 
 protected:
 

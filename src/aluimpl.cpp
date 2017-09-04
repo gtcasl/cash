@@ -536,7 +536,7 @@ static uint32_t get_output_size(ch_alu_op op, const lnode& a) {
 aluimpl::aluimpl(ch_alu_op op, const lnode& a, const lnode& b)
   : lnodeimpl(to_operator(op), a.get_ctx(), get_output_size(op, a, b))
   , alu_op_(op)
-  , ctime_(~0ull) {
+  , tick_(~0ull) {
   srcs_.emplace_back(a);
   srcs_.emplace_back(b);
 }
@@ -544,13 +544,13 @@ aluimpl::aluimpl(ch_alu_op op, const lnode& a, const lnode& b)
 aluimpl::aluimpl(ch_alu_op op, const lnode& a)
   : lnodeimpl(to_operator(op), a.get_ctx(), get_output_size(op, a))
   , alu_op_(op)
-  , ctime_(~0ull) {
+  , tick_(~0ull) {
   srcs_.emplace_back(a);
 }
 
-const bitvector& aluimpl::eval(ch_cycle t) {  
-  if (ctime_ != t) {  
-    ctime_ = t;
+const bitvector& aluimpl::eval(ch_tick t) {  
+  if (tick_ != t) {  
+    tick_ = t;
     
     switch (alu_op_) {
     case alu_op_inv:

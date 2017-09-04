@@ -48,49 +48,49 @@ int main(int argc, char **argv) {
 
   ch_vcdtracer tracer(vcd_file, myDevice);
   __trace(tracer, din, push, pop, dout, empty, full);
-  tracer.run([&](ch_cycle time)->bool {
-    switch (time) {
+  tracer.run([&](ch_tick t)->bool {
+    switch (t) {
     case 0:
       assert(empty);
       assert(!full);
       din  = 1;
       push = 1;      
       break;      
-    case 1:
+    case 2:
       assert(!empty);
       assert(!full);
       assert(dout == 1);      
       din  = 2;
       push = 1;
       break;
-    case 2:
+    case 4:
       assert(!empty);
       assert(full);
       assert(dout == 1);
       din  = 0;
       push = 0;
       break;
-    case 3:
+    case 6:
       assert(!empty);
       assert(full);
       assert(dout == 1);
       pop = 1;
       break;
-    case 4:
+    case 8:
       assert(!empty);
       assert(!full);
       assert(dout == 2);
       pop = 1;
       break;
-    case 5:
+    case 10:
       assert(empty);
       assert(!full);
       assert(dout == 1);
       pop = 0;
       break;
     }
-    std::cout << "t" << time << ": din=" << din << ", push=" << push << ", pop=" << pop << ", dout=" << dout << ", empty=" << empty << ", full=" << full << std::endl;
-    return (time < 6);
+    std::cout << "t" << t << ": din=" << din << ", push=" << push << ", pop=" << pop << ", dout=" << dout << ", empty=" << empty << ", full=" << full << std::endl;
+    return (t <= 10);
   });
 
   return 0;

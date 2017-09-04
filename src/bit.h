@@ -238,7 +238,7 @@ const auto ch_shuffle(const ch_bitbase<N>& in,
 
 // utility functions
 
-const ch_bit<64> ch_tick();
+const ch_bit<64> ch_getTick();
 
 template <typename...Args>
 void ch_print(const std::string& format, const Args& ...args) {

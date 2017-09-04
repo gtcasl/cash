@@ -45,14 +45,14 @@ public:
 
   std::vector<std::pair<uint32_t, uint32_t>> get_update_slices(uint32_t offset, uint32_t length);
 
-  const bitvector& eval(ch_cycle t) override;
+  const bitvector& eval(ch_tick t) override;
   void print(std::ostream& out, uint32_t level) const override;
   void print_vl(std::ostream& out) const override;
   
 private:
 
   std::vector<range_t> ranges_; 
-  ch_cycle ctime_;
+  ch_tick tick_;
 };
 
 }

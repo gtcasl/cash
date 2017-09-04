@@ -76,7 +76,7 @@ undefimpl::undefimpl(context* ctx, uint32_t size)
   : lnodeimpl(op_undef, ctx, size)
 {}
 
-const bitvector& undefimpl::eval(ch_cycle) {
+const bitvector& undefimpl::eval(ch_tick) {
   CH_ABORT("undefined node: %d!", id_);
   return value_;
 }
@@ -191,7 +191,7 @@ bool lnode::valid() const {
   return impl_ ? impl_->valid() : true;
 }
 
-const bitvector& lnode::eval(ch_cycle t) {
+const bitvector& lnode::eval(ch_tick t) {
   assert(impl_);
   return impl_->eval(t);
 }

@@ -24,7 +24,7 @@ public:
   
   void bind(const snode& bus);
 
-  const bitvector& eval(ch_cycle t) override;
+  const bitvector& eval(ch_tick t) override;
   
   void print(std::ostream& out, uint32_t level) const override;
   
@@ -32,7 +32,7 @@ public:
   
 protected:
   snode    bus_;
-  ch_cycle ctime_;
+  ch_tick tick_;
 };
 
 class outputimpl : public ioimpl {
@@ -46,7 +46,7 @@ public:
   
   snodeimpl* get_bus();
 
-  const bitvector& eval(ch_cycle t) override;
+  const bitvector& eval(ch_tick t) override;
   
   void print(std::ostream& out, uint32_t level) const override;
   
@@ -54,7 +54,7 @@ public:
   
 private:
   snodeimpl* bus_;
-  ch_cycle ctime_;
+  ch_tick tick_;
 };
 
 class tapimpl : public outputimpl {

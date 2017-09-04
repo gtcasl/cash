@@ -30,8 +30,9 @@ simulatorimpl::~simulatorimpl() {
 void simulatorimpl::add_device(const ch_device& device) {
   context* ctx = device.impl_->get_ctx();
   auto ret = contexts_.emplace(ctx);
-  if (ret.second)
+  if (ret.second) {
     ctx->acquire();
+  }
 }
 
 void simulatorimpl::ensureInitialize() {
@@ -56,7 +57,7 @@ void simulatorimpl::ensureInitialize() {
   }
 }
 
-void simulatorimpl::tick(ch_cycle t) {
+void simulatorimpl::tick(ch_tick t) {
   // ensure initialized
   if (!initialized_) {
     this->ensureInitialize();
@@ -76,28 +77,28 @@ void simulatorimpl::tick(ch_cycle t) {
   #ifndef NDEBUG
     int dump_ast_level = platform::self().get_dump_ast();
     if (2 == dump_ast_level) {
-      std::cerr << "cycle " << t << ":" << std::endl;
+      std::cerr << "tick " << t << ":" << std::endl;
       ctx->dump_ast(std::cerr, 2);
     }
   #endif
   }
 }
 
-void simulatorimpl::run(const std::function<bool(ch_cycle time)>& callback) {
-  ch_cycle start = this->reset(0);
-  for (ch_cycle time = start; callback(time - start); ++time) {
-    this->step(time);
+void simulatorimpl::run(const std::function<bool(ch_tick t)>& callback) {
+  ch_tick start = this->reset(0);
+  for (ch_tick t = start; callback(t - start);) {
+    t = this->step(t);
   }
 }
 
-void simulatorimpl::run(ch_cycle cycles) {
-  ch_cycle time = this->reset(0);
-  for (; time < cycles; ++time) {
-    this->step(time);
+void simulatorimpl::run(ch_tick ticks) {
+  ch_tick t = this->reset(0);
+  for (; t < ticks;) {
+    t = this->step(t);
   }
 }
 
-ch_cycle simulatorimpl::reset(ch_cycle t) {
+ch_tick simulatorimpl::reset(ch_tick t) {
   // ensure initialized
   if (!initialized_) {
     this->ensureInitialize();
@@ -106,22 +107,23 @@ ch_cycle simulatorimpl::reset(ch_cycle t) {
 
   if (reset_) {
     reset_->set_bit(0, true);
-    this->step(t++);
+    t = this->step(t);
     reset_->set_bit(0, false);
   }
 
   return t;
 }
 
-void simulatorimpl::step(ch_cycle t) {
+ch_tick simulatorimpl::step(ch_tick t) {
   if (clk_) {
     for (int i = 0; i < 2; ++i) {
       clk_->set_bit(0, !clk_->get_bit(0));
-      this->tick(t * 2 + i);
+      this->tick(t++);
     }
   } else {
-    this->tick(t);
+    this->tick(t++);
   }
+  return t;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -140,22 +142,22 @@ void ch_simulator::add_device(const ch_device& device) {
   impl_->add_device(device);
 }
 
-void ch_simulator::tick(ch_cycle t) { 
+void ch_simulator::tick(ch_tick t) { 
   impl_->tick(t);
 }
 
-void ch_simulator::run(const std::function<bool(ch_cycle time)>& callback) {
+void ch_simulator::run(const std::function<bool(ch_tick t)>& callback) {
   impl_->run(callback);
 }
 
-void ch_simulator::run(ch_cycle cycles) {
-  impl_->run(cycles);
+void ch_simulator::run(ch_tick ticks) {
+  impl_->run(ticks);
 }
 
-ch_cycle ch_simulator::reset(ch_cycle t) {
+ch_tick ch_simulator::reset(ch_tick t) {
   return impl_->reset(t);
 }
 
-void ch_simulator::step(ch_cycle t) {
-  impl_->step(t);
+ch_tick ch_simulator::step(ch_tick t) {
+  return impl_->step(t);
 }

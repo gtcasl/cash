@@ -75,21 +75,21 @@ memportimpl* memimpl::get_port(const lnode& addr, bool writing) {
   return port;
 }
 
-void memimpl::tick(ch_cycle t) {    
+void memimpl::tick(ch_tick t) {    
   for (uint32_t i = ports_offset_, n = srcs_.size(); i < n; ++i) {
     auto port = dynamic_cast<memportimpl*>(srcs_[i].get_impl());
     port->tick(t);
   }
 }
 
-void memimpl::tick_next(ch_cycle t) {
+void memimpl::tick_next(ch_tick t) {
   for (uint32_t i = ports_offset_, n = srcs_.size(); i < n; ++i) {
     auto port = dynamic_cast<memportimpl*>(srcs_[i].get_impl());
     port->tick_next(t);
   }
 }
 
-const bitvector& memimpl::eval(ch_cycle t) {
+const bitvector& memimpl::eval(ch_tick t) {
   CH_UNUSED(t);
   abort();
 }
@@ -120,7 +120,7 @@ memportimpl::memportimpl(memimpl* mem, const lnode& addr)
   , a_next_(0)
   , addr_id_(1)
   , wdata_id_(-1)
-  , ctime_(~0ull) {
+  , tick_(~0ull) {
   srcs_.emplace_back(mem);
   srcs_.emplace_back(addr);
 }
@@ -140,7 +140,7 @@ void memportimpl::write(const lnode& data) {
   }
 }
 
-void memportimpl::tick(ch_cycle t) {
+void memportimpl::tick(ch_tick t) {
   CH_UNUSED(t);
   if (wdata_id_ != -1) {
     auto mem = dynamic_cast<memimpl*>(srcs_[0].get_impl());
@@ -152,16 +152,16 @@ void memportimpl::tick(ch_cycle t) {
   }  
 }
 
-void memportimpl::tick_next(ch_cycle t) {
+void memportimpl::tick_next(ch_tick t) {
   if (wdata_id_ != -1) {
     a_next_ = srcs_[addr_id_].eval(t).get_word(0);
     q_next_ = srcs_[wdata_id_].eval(t);
   }
 }
 
-const bitvector& memportimpl::eval(ch_cycle t) {  
-  if (ctime_ != t) {
-    ctime_ = t;
+const bitvector& memportimpl::eval(ch_tick t) {  
+  if (tick_ != t) {
+    tick_ = t;
     auto mem = dynamic_cast<memimpl*>(srcs_[0].get_impl());
     uint32_t addr = srcs_[addr_id_].eval(t).get_word(0);    
     mem->value_.read(0,

@@ -15,12 +15,12 @@ public:
     return alu_op_;
   }  
 
-  const bitvector& eval(ch_cycle t) override;  
+  const bitvector& eval(ch_tick t) override;  
   void print_vl(std::ostream& out) const override;
   
 protected:
   ch_alu_op alu_op_;
-  ch_cycle ctime_;
+  ch_tick tick_;
 };
 
 }

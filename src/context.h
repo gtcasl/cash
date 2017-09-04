@@ -23,7 +23,7 @@ class tickimpl;
 class clock_event;
 class cdomain;
 
-using ch_cycle = uint64_t;
+using ch_tick = uint64_t;
 
 class context : public refcounted {
 public:
@@ -83,9 +83,9 @@ public:
   
   //--
   
-  void tick(ch_cycle t);  
-  void tick_next(ch_cycle t);
-  void eval(ch_cycle t);
+  void tick(ch_tick t);  
+  void tick_next(ch_tick t);
+  void eval(ch_tick t);
   
   //--
   

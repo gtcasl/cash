@@ -16,7 +16,7 @@ public:
 
   void add_trace(const std::string& name, const snode& value);
 
-  void tick(ch_cycle t) override;
+  void tick(ch_tick t) override;
 
 protected:
 

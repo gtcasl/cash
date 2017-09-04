@@ -69,7 +69,7 @@ printimpl::printimpl(context* ctx,
   : ioimpl(op_print, ctx, 0)
   , format_(format)
   , predicated_(false)
-  , ctime_(~0ull) {
+  , tick_(~0ull) {
   if (ctx_->conditional_enabled(this)) {
     auto pred = ctx_->get_predicate(this, 0, 0);
     if (pred) {
@@ -82,9 +82,9 @@ printimpl::printimpl(context* ctx,
   }
 }
 
-const bitvector& printimpl::eval(ch_cycle t) {
-  if (ctime_ != t) {
-    ctime_ = t;    
+const bitvector& printimpl::eval(ch_tick t) {
+  if (tick_ != t) {
+    tick_ = t;    
     if (!predicated_ || srcs_[0].eval(t)[0]) {
       if (format_ != "") {
         strbuf_.clear();
