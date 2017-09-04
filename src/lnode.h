@@ -13,7 +13,7 @@ using ch_tick = uint64_t;
 class lnode {
 public:
   
-  using data_type = nodebuf<lnode>;
+  using data_type = nodebuf<const lnode&>;
 
   lnode();
 

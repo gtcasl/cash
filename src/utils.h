@@ -27,7 +27,7 @@ struct conjunction<B> : std::integral_constant<bool, B> {};
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template<class R, class... Ts>
+template<typename R, typename... Ts>
 using are_all_convertible = conjunction<std::is_convertible<Ts, R>::value...>;
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -119,20 +119,28 @@ protected:
 
 template <unsigned N>
 const ch_bit<N> make_bit(const lnode& node) {
-  assert(node.get_size() == N);
+  assert(N == node.get_size());
   return ch_bit<N>(node);
 }
 
 // concatenation operator
 
-template <unsigned NB, unsigned NA>
-const auto ch_cat(const ch_bitbase<NB>& b, const ch_bitbase<NA>& a) {
-  const auto na(get_node(a));
-  const auto nb(get_node(b));
-  lnode::data_type data(NA+NB);
-  data.push_back({na, 0, NA});
-  data.push_back({nb, 0, NB});
-  return make_bit<NA+NB>(data);
+template<typename Arg>
+void concat(lnode::data_type& data, const Arg& arg) {
+  read_data(arg, data, 0, Arg::bitcount);
+}
+
+template<typename Arg0, typename... Args>
+void concat(lnode::data_type& data, const Arg0& arg0, const Args&... args) {
+  concat(data, args...);
+  read_data(arg0, data, 0, Arg0::bitcount);
+}
+
+template<typename... Args>
+const auto ch_cat(const Args&... args) {
+  lnode::data_type data(concat_info<Args...>::bitcount);
+  concat(data, args...);
+  return make_bit<concat_info<Args...>::bitcount>(data);
 }
 
 template <unsigned NB, unsigned NA>
@@ -140,7 +148,7 @@ const auto operator,(const ch_bitbase<NB>& b, const ch_bitbase<NA>& a) {
   return ch_cat(b, a);
 }
 
-template<class... Args>
+template<typename... Args>
 concatref<Args...> ch_tie(Args&... args) {
   return concatref<Args...>(args...);
 }

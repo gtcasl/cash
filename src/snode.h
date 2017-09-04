@@ -10,7 +10,7 @@ class snodeimpl;
 class snode {
 public:
   
-  using data_type = nodebuf<snode>;
+  using data_type = nodebuf<const snode&>;
   
   snode();
 

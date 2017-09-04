@@ -19,7 +19,7 @@ class nodebuf {
 public:
 
   struct slice_t {
-    const T& src;
+    T src;
     uint32_t offset;
     uint32_t length;
   };
@@ -29,7 +29,7 @@ public:
     , size_(0)
   {}
 
-  nodebuf(uint32_t capacity, const T& src, uint32_t offset, uint32_t length)
+  nodebuf(uint32_t capacity, T src, uint32_t offset, uint32_t length)
     : capacity_(capacity)
     , size_(length) {
     slices_.push_back({src, offset, length});
@@ -252,7 +252,7 @@ protected:
   std::tuple<Args&...> args_;
 
   template <unsigned M, typename Q> friend class typebase;
-  template<class... Args2> friend concatref<Args2...> ch_tie(Args2&... args);
+  template<typename... Args2> friend concatref<Args2...> ch_tie(Args2&... args);
 };
 
 }
