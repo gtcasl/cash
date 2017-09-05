@@ -23,7 +23,7 @@ public:
   ch_bus(const bitvector& rhs) : node_(rhs) {}
  
 #define CH_DEF_CTOR(type) \
-  explicit ch_bus(type value) : node_(bitvector(N, value)) {}
+  ch_bus(type value) : node_(bitvector(N, value)) {}
   CH_DEF_CTOR(const std::initializer_list<uint32_t>&)
   CH_DEF_CTOR(bool)
   CH_DEF_CTOR(char)
@@ -76,7 +76,7 @@ public:
 #undef CH_DEF_AOP
   
 #define CH_DEF_CAST(type) \
-  explicit operator type() const { \
+  operator type() const { \
     return static_cast<type>(node_.get_value()); \
   } 
   CH_DEF_CAST(bool)
