@@ -37,7 +37,9 @@ namespace core {
 
   using namespace cash::utility;
 
-  using cash::internal::ch_literal;
+  using namespace cash::internal::literals;
+
+  template<unsigned N> using ch_lit = cash::internal::ch_literal<N>;
 
   //
   // basic types
@@ -214,18 +216,6 @@ namespace sim {
   using ch_simulator = cash::internal::ch_simulator;
   using ch_tracer    = cash::internal::ch_tracer;
   using ch_vcdtracer = cash::internal::ch_vcdtracer;
-}
-
-//
-// literals
-//
-
-inline namespace core_literals {
-  using namespace cash::internal::core_literals;
-}
-
-inline namespace sim_literals {
-  using namespace cash::internal::sim_literals;
 }
 
 }

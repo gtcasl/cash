@@ -28,14 +28,12 @@ public:
 
   ch_bit(ch_bit&& rhs) : node_(std::move(rhs.node_), N) {}
 
-  ch_bit(const ch_bitbase<N>& rhs) : node_(get_node(rhs), N) {}
-  
-  ch_bit(const bitvector& rhs) : node_(rhs) {}
+  explicit ch_bit(const ch_bitbase<N>& rhs) : node_(get_node(rhs), N) {}
 
-  ch_bit(const ch_literal<N>& rhs) : node_(rhs.value_) {}
+  explicit ch_bit(const ch_literal<N>& rhs) : node_(rhs) {}
     
 #define CH_DEF_CTOR(type) \
-  ch_bit(type value) : node_(bitvector(N, value)) {}
+  explicit ch_bit(type value) : node_(bitvector(N, value)) {}
   CH_DEF_CTOR(const std::initializer_list<uint32_t>&)
   CH_DEF_CTOR(bool)
   CH_DEF_CTOR(char)
@@ -59,7 +57,7 @@ public:
     return *this;
   }
   
-  ch_bit& operator=(const bitvector& rhs) {
+  ch_bit& operator=(const ch_literal<N>& rhs) {
     node_.assign(rhs);
     return *this;
   }
@@ -123,37 +121,80 @@ const ch_bit<N> make_bit(const lnode& node) {
   return ch_bit<N>(node);
 }
 
-// concatenation operator
+template<typename... Ts>
+struct ch_bit_all_convertible;
 
-template<typename Arg>
-void concat(lnode::data_type& data, const Arg& arg) {
-  read_data(arg, data, 0, Arg::bitcount);
+template<typename T>
+struct ch_bit_all_convertible<T> {
+  static const bool value = is_explicitly_convertible<T, ch_bit<T::bitcount>>::value;
+};
+
+template<typename T0, typename... Ts>
+struct ch_bit_all_convertible<T0, Ts...> {
+  static const bool value = is_explicitly_convertible<T0, ch_bit<T0::bitcount>>::value && ch_bit_all_convertible<Ts...>::value;
+};
+
+template<typename... Ts>
+using ch_bit_if_all_convertible = std::enable_if<ch_bit_all_convertible<Ts...>::value>;
+
+template <typename T, unsigned N>
+struct ch_bit_cast {
+  using type = ch_bit<N>;
+};
+
+template <unsigned N>
+struct ch_bit_cast<ch_bitbase<N>, N> {
+  using type = const ch_bitbase<N>&;
+};
+
+template <unsigned N>
+struct ch_bit_cast<ch_bit<N>, N> {
+  using type = const ch_bit<N>&;
+};
+
+template <typename T, unsigned N = T::bitcount,
+          typename = typename if_convertible<T, ch_bit<N>>::type>
+lnode get_node(const T& rhs) {
+  lnode::data_type data(N);
+  read_data(static_cast<typename ch_bit_cast<T, N>::type>(rhs), data, 0, N);
+  return lnode(data);
 }
 
-template<typename Arg0, typename... Args>
-void concat(lnode::data_type& data, const Arg0& arg0, const Args&... args) {
-  concat(data, args...);
-  read_data(arg0, data, 0, Arg0::bitcount);
+// concatenation functions
+
+template<typename T>
+void ch_cat_helper(lnode::data_type& data, const T& arg) {
+  read_data((typename ch_bit_cast<T, T::bitcount>::type)arg, data, 0, T::bitcount);
 }
 
-template<typename... Args>
-const auto ch_cat(const Args&... args) {
-  lnode::data_type data(concat_info<Args...>::bitcount);
-  concat(data, args...);
-  return make_bit<concat_info<Args...>::bitcount>(data);
+template<typename T0, typename... Ts>
+void ch_cat_helper(lnode::data_type& data, const T0& arg0, const Ts&... args) {
+  ch_cat_helper(data, args...);
+  read_data((typename ch_bit_cast<T0, T0::bitcount>::type)arg0, data, 0, T0::bitcount);
 }
 
-template <unsigned NB, unsigned NA>
-const auto operator,(const ch_bitbase<NB>& b, const ch_bitbase<NA>& a) {
+template<typename... Ts,
+         typename = typename ch_bit_if_all_convertible<Ts...>::type>
+const auto ch_cat(const Ts&... args) {
+  lnode::data_type data(concat_size<Ts...>::value);
+  ch_cat_helper(data, args...);
+  return make_bit<concat_size<Ts...>::value>(data);
+}
+
+template <typename U, typename V,
+          typename = typename if_convertible<U, ch_bit<U::bitcount>>::type,
+          typename = typename if_convertible<V, ch_bit<V::bitcount>>::type>
+const auto operator,(const U& b, const V& a) {
   return ch_cat(b, a);
 }
 
-template<typename... Args>
-concatref<Args...> ch_tie(Args&... args) {
-  return concatref<Args...>(args...);
+template<typename... Ts,
+         typename = typename ch_bit_if_all_convertible<Ts...>::type>
+concatref<Ts...> ch_tie(Ts&... args) {
+  return concatref<Ts...>(args...);
 }
 
-// slice operators
+// slice functions
 
 template <unsigned N, unsigned M>
 const auto ch_slice(const ch_bitbase<M>& in, size_t index = 0) {
@@ -165,7 +206,7 @@ const auto ch_aslice(const ch_bitbase<M>& in, size_t index = 0) {
   return in.template aslice<N>(index);
 }
 
-// extend operators
+// extend functions
 
 template <unsigned D>
 class zext_select {
@@ -231,7 +272,7 @@ const auto ch_sext(const ch_bitbase<M>& in) {
   return sext_select<(N-M)>()(in);
 }
 
-// shuffle operators
+// shuffle functions
 
 template <unsigned N, unsigned I>
 const auto ch_shuffle(const ch_bitbase<N>& in,
@@ -244,11 +285,12 @@ const auto ch_shuffle(const ch_bitbase<N>& in,
   return ret;
 }
 
-// utility functions
+// print functions
 
 const ch_bit<64> ch_getTick();
 
-template <typename...Args>
+template <typename...Args,
+          typename = typename ch_bit_if_all_convertible<Args...>::type>
 void ch_print(const std::string& format, const Args& ...args) {
   createPrintNode(format, {get_node(args)...});
 }

@@ -58,6 +58,12 @@ public:
     return *this;
   }
 
+  typebase& operator=(const ch_literal<N>& rhs) {
+    const lnode node(rhs);
+    this->write_data(0, {N, node, 0 , N}, 0, N);
+    return *this;
+  }
+
 #define CH_DEF_AOP(type) \
   typebase& operator=(type rhs) { \
     const lnode node(bitvector(N, rhs)); \
@@ -77,13 +83,6 @@ public:
   CH_DEF_AOP(uint64_t)
 #undef CH_DEF_AOP
 };
-
-template <unsigned N>
-lnode get_node(const ch_bitbase<N>& rhs) {
-  lnode::data_type data(N);
-  rhs.read_data(data, 0, N);
-  return lnode(data);
-}
 
 }
 }

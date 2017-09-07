@@ -18,12 +18,12 @@ public:
 
   ch_bus(ch_bus&& rhs) : node_(std::move(rhs.node_)) {}
   
-  ch_bus(const ch_busbase<N>& rhs) : node_(get_node(rhs)) {}
+  explicit ch_bus(const ch_busbase<N>& rhs) : node_(get_node(rhs)) {}
   
-  ch_bus(const bitvector& rhs) : node_(rhs) {}
+  explicit ch_bus(const ch_literal<N>& rhs) : node_(rhs) {}
  
 #define CH_DEF_CTOR(type) \
-  ch_bus(type value) : node_(bitvector(N, value)) {}
+  explicit ch_bus(type value) : node_(bitvector(N, value)) {}
   CH_DEF_CTOR(const std::initializer_list<uint32_t>&)
   CH_DEF_CTOR(bool)
   CH_DEF_CTOR(char)
@@ -47,7 +47,7 @@ public:
     return *this;
   }
 
-  ch_bus& operator=(const bitvector& rhs) {
+  ch_bus& operator=(const ch_literal<N>& rhs) {
     node_.assign(rhs);
     return *this;
   }

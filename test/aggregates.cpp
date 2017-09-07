@@ -1,7 +1,5 @@
 #include "common.h"
 
-using namespace cash::core_literals;
-
 __struct (s1_t,(
   (ch_bit4) a
   ),

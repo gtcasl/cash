@@ -1,7 +1,5 @@
 #include "common.h"
 
-using namespace cash::core_literals;
-
 TEST_CASE("memory", "[memory]") {
   SECTION("rom", "[rom]") {
     TEST([]()->ch_bit1 {

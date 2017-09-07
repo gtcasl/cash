@@ -19,6 +19,12 @@ public:
     this->write_data(0, data, 0, N);
     return *this;
   }
+
+  typebase& operator=(const ch_literal<N>& rhs) {
+    const snode node(rhs);
+    this->write_data(0, {N, node, 0 , N}, 0, N);
+    return *this;
+  }
   
 #define CH_DEF_AOP(type) \
   typebase& operator=(type rhs) { \

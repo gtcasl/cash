@@ -10,11 +10,11 @@ lnodeimpl* createSelectNode(const lnode& pred, const lnode& a, const lnode& b);
 class select_impl {
 public:
   
-  ~select_impl() {}
-
   select_impl() {}
 
   select_impl(const lnode& key) : key_(key) {}
+
+  ~select_impl() {}
   
   void push(const lnode& pred, const lnode& value) {
     stmts_.push({pred, value});
@@ -39,34 +39,27 @@ template <unsigned N>
 class select_t {
 public:
     
-  select_t<N>& operator()(const ch_bitbase<1>& pred, const ch_bitbase<N>& value) {
+  select_t(const ch_bitbase<1>& pred, const ch_bitbase<N>& value) {
+    impl_.push(get_node(pred), get_node(value));
+  }
+
+  template <typename P, typename V,
+            typename = typename if_convertible<P, ch_bit<1>>::type,
+            typename = typename if_convertible<V, ch_bit<N>>::type>
+  select_t<N>& operator()(const P& pred, const V& value) {
     impl_.push(get_node(pred), get_node(value));
     return *this;
   }
   
-  select_t<N>& operator()(const ch_bitbase<1>& pred, const ch_bit<N>& value) {
-    impl_.push(get_node(pred), get_node(value));
-    return *this;
-  }
-  
-  const auto operator()(const ch_bitbase<N>& value) {
-    return make_bit<N>(impl_.eval(get_node(value)));
-  }
-  
-  const auto operator()(const ch_bit<N>& value) {
+  template <typename V,
+            typename = typename if_convertible<V, ch_bit<N>>::type>
+  const auto operator()(const V& value) {
     return make_bit<N>(impl_.eval(get_node(value)));
   }
   
 protected:
   
-  select_t(const ch_bitbase<1>& pred, const ch_bitbase<N>& value) {
-    impl_.push(get_node(pred), get_node(value));
-  }
-
   select_impl impl_;
-  
-  template <unsigned N_>
-  friend select_t<N_> ch_select(const ch_bitbase<1>& pred, const ch_bitbase<N_>& value);
 };
 
 template <unsigned K>
@@ -81,31 +74,17 @@ public:
       impl_.push(pred, value);
     }
     
-    case_t& operator()(const ch_bitbase<K>& pred, const ch_bitbase<N>& value) {
+    template <typename P, typename V,
+              typename = typename if_convertible<P, ch_bit<K>>::type,
+              typename = typename if_convertible<V, ch_bit<N>>::type>
+    case_t& operator()(const P& pred, const V& value) {
       impl_.push(get_node(pred), get_node(value));
       return *this;
     }
     
-    case_t& operator()(const ch_bitbase<K>& pred, const ch_bit<N>& value) {
-      impl_.push(get_node(pred), get_node(value));
-      return *this;
-    }
-    
-    case_t& operator()(const ch_bit<K>& pred, const ch_bitbase<N>& value) {
-      impl_.push(get_node(pred), get_node(value));
-      return *this;
-    }
-    
-    case_t& operator()(const ch_bit<K>& pred, const ch_bit<N>& value) {
-      impl_.push(get_node(pred), get_node(value));
-      return *this;
-    }
-    
-    const auto operator()(const ch_bitbase<N>& value) {
-      return make_bit<N>(impl_.eval(get_node(value)));
-    }
-    
-    const auto operator()(const ch_bit<N>& value) {
+    template <typename V,
+              typename = typename if_convertible<V, ch_bit<N>>::type>
+    const auto operator()(const V& value) {
       return make_bit<N>(impl_.eval(get_node(value)));
     }
     
@@ -114,124 +93,60 @@ public:
     select_impl impl_;
   };
 
-  template <unsigned N>
-  auto operator()(const ch_bitbase<K>& pred, const ch_bitbase<N>& value) {
-    return case_t<N>(key_, get_node(pred), get_node(value));
-  }
-  
-  template <unsigned N>
-  auto operator()(const ch_bitbase<K>& pred, const ch_bit<N>& value) {
-    return case_t<N>(key_, get_node(pred), get_node(value));
-  }
-  
-  template <unsigned N>
-  auto operator()(const ch_bit<K>& pred, const ch_bitbase<N>& value) {
-    return case_t<N>(key_, get_node(pred), get_node(value));
-  }
-  
-  template <unsigned N>
-  auto operator()(const ch_bit<K>& pred, const ch_bit<N>& value) {
-    return case_t<N>(key_, get_node(pred), get_node(value));
+  select_key_t(const ch_bitbase<K>& key) : key_(get_node(key)) {}
+
+  template <typename P, typename V,
+            typename = typename if_convertible<P, ch_bit<K>>::type,
+            typename = typename if_convertible<V, ch_bit<V::bitcount>>::type>
+  auto operator()(const P& pred, const V& value) {
+    return case_t<V::bitcount>(key_, get_node(pred), get_node(value));
   }
   
 protected:
   
   lnode key_;
-  
-  select_key_t(const ch_bitbase<K>& key) : key_(get_node(key)) {}
-
-  template <unsigned K_> friend select_key_t<K_> ch_select(const ch_bitbase<K_>& key);
 };
 
-template <unsigned N>
-select_t<N> ch_select(const ch_bitbase<1>& pred, const ch_bitbase<N>& value) {
-  return select_t<N>(pred, value);
+template <typename P, typename V,
+          typename = typename if_convertible<P, ch_bit<1>>::type,
+          typename = typename if_convertible<V, ch_bit<V::bitcount>>::type>
+auto ch_select(const P& pred, const V& value) {
+  return select_t<V::bitcount>((typename ch_bit_cast<P, 1>::type)pred,
+                               (typename ch_bit_cast<V, V::bitcount>::type)value);
 }
 
-template <unsigned N> 
-select_t<N> ch_select(const ch_bitbase<1>& pred, const ch_bit<N>& value) {
-  return ch_select(pred, reinterpret_cast<const ch_bitbase<N>&>(value));
+template <typename K,
+          typename = typename if_convertible<K, ch_bit<K::bitcount>>::type>
+auto ch_select(const K& key) {
+  return select_key_t<K::bitcount>((typename ch_bit_cast<K, K::bitcount>::type)key);
 }
 
-template <unsigned K>
-select_key_t<K> ch_select(const ch_bitbase<K>& key) {
-  return select_key_t<K>(key);
+template <typename P, typename U, typename V,
+          typename = typename if_convertible<P, ch_bit<1>>::type,
+          typename = typename std::enable_if<(deduce_bitcount<U, V>::value != 0)>::type,
+          typename = typename if_convertible<U, ch_bit<deduce_bitcount<U, V>::value>>::type,
+          typename = typename if_convertible<V, ch_bit<deduce_bitcount<U, V>::value>>::type>
+const auto ch_select(const P& pred, const U& _true, const V& _false) {
+  return make_bit<deduce_bitcount<U, V>::value>(
+        createSelectNode(get_node(pred),
+                         get_node<U, deduce_bitcount<U, V>::value>(_true),
+                         get_node<V, deduce_bitcount<U, V>::value>(_false)));
 }
 
-template <unsigned N>
-const auto ch_select(const ch_bitbase<1>& pred,
-                     const ch_bitbase<N>& _true,
-                     const ch_bitbase<N>& _false) {
-  return make_bit<N>(createSelectNode(get_node(pred),
-                                      get_node(_true),
-                                      get_node(_false)));
+template <typename U, typename V,
+          typename = typename std::enable_if<(deduce_bitcount<U, V>::value != 0)>::type,
+          typename = typename if_convertible<U, ch_bit<deduce_bitcount<U, V>::value>>::type,
+          typename = typename if_convertible<V, ch_bit<deduce_bitcount<U, V>::value>>::type>
+const auto ch_min(const U& lhs, const V& rhs) {
+  return ch_select(lhs < rhs, lhs, rhs);
 }
 
-template <unsigned N>
-const auto ch_select(const ch_bitbase<1>& pred,
-                    const ch_bitbase<N>& _true,
-                    const ch_bit<N>& _false) {
-  return make_bit<N>(createSelectNode(get_node(pred),
-                                      get_node(_true),
-                                      get_node(_false)));
-}
-
-template <unsigned N>
-const auto ch_select(const ch_bitbase<1>& pred,
-                    const ch_bit<N>& _true,
-                    const ch_bitbase<N>& _false) {
-  return make_bit<N>(createSelectNode(get_node(pred),
-                                      get_node(_true),
-                                      get_node(_false)));
-}
-
-template <unsigned N>
-const auto ch_select(const ch_bitbase<1>& pred,
-                    const ch_bit<N>& _true,
-                    const ch_bit<N>& _false) {
-  return make_bit<N>(createSelectNode(get_node(pred),
-                                    get_node(_true),
-                                    get_node(_false)));
-}
-
-template <unsigned N> 
-const auto ch_min(const ch_bitbase<N>& lhs, const ch_bitbase<N>& rhs) {
-  return ch_select<N>(lhs < rhs, lhs, rhs);
-}
-
-template <unsigned N> 
-const auto ch_min(const ch_bitbase<N>& lhs, const ch_bit<N>& rhs) {
-  return ch_select<N>(lhs < rhs, lhs, rhs);
-}
-
-template <unsigned N> 
-const auto ch_min(const ch_bit<N>& lhs, const ch_bitbase<N>& rhs) {
-  return ch_select<N>(lhs < rhs, lhs, rhs);
-}
-
-template <unsigned N> 
-const auto ch_min(const ch_bit<N>& lhs, const ch_bit<N>& rhs) {
-  return ch_select<N>(lhs < rhs, lhs, rhs);
-}
-
-template <unsigned N> 
-const auto ch_max(const ch_bitbase<N>& lhs, const ch_bitbase<N>& rhs) {
-  return ch_select<N>(lhs > rhs, lhs, rhs);
-}
-
-template <unsigned N> 
-const auto ch_max(const ch_bitbase<N>& lhs, const ch_bit<N>& rhs) {
-  return ch_select<N>(lhs > rhs, lhs, rhs);
-}
-
-template <unsigned N> 
-const auto ch_max(const ch_bit<N>& lhs, const ch_bitbase<N>& rhs) {
-  return ch_select<N>(lhs > rhs, lhs, rhs);
-}
-
-template <unsigned N> 
-const auto ch_max(const ch_bit<N>& lhs, const ch_bit<N>& rhs) {
-  return ch_select<N>(lhs > rhs, lhs, rhs);
+template <typename U, typename V,
+          typename = typename std::enable_if<(deduce_bitcount<U, V>::value != 0)>::type,
+          typename = typename if_convertible<U, ch_bit<deduce_bitcount<U, V>::value>>::type,
+          typename = typename if_convertible<V, ch_bit<deduce_bitcount<U, V>::value>>::type>
+const auto ch_max(const U& lhs, const V& rhs) {
+  return ch_select(lhs > rhs, lhs, rhs);
 }
 
 }

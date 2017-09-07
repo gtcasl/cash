@@ -1,7 +1,6 @@
 #include <cash.h>
 
 using namespace cash::core;
-using namespace cash::core_literals;
 using namespace cash::sim;
 
 #define CHECK(x) if (!(x)) { assert(false); exit(1); }
@@ -11,7 +10,7 @@ __out(ch_bit<N>, ch_bit1) Adder(
     const ch_bit<N>& lhs,
     const ch_bit<N>& rhs,
     const ch_bit1& cin) {
-  ch_bit<N+1> sum((0_b, lhs) + rhs + cin);
+  ch_bit<N+1> sum((0_b, lhs) + ch_zext<N+1>(rhs) + ch_zext<N+1>(cin));
   ch_bit<N> out(ch_slice<N>(sum));
   ch_bit1 cout(sum[N]);
   __ret(out, cout);

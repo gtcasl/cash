@@ -27,8 +27,19 @@ struct conjunction<B> : std::integral_constant<bool, B> {};
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template<typename R, typename... Ts>
-using are_all_convertible = conjunction<std::is_convertible<Ts, R>::value...>;
+template<typename From, typename To>
+using is_explicitly_convertible = std::is_constructible<To, From>;
+
+///////////////////////////////////////////////////////////////////////////////
+
+template<typename To, typename... Froms>
+using are_all_convertible = conjunction<is_explicitly_convertible<Froms, To>::value...>;
+
+template<typename To, typename... Froms>
+using if_all_convertible = std::enable_if<are_all_convertible<To, Froms...>::value>;
+
+template<typename From, typename To>
+using if_convertible = std::enable_if<is_explicitly_convertible<From, To>::value>;
 
 ///////////////////////////////////////////////////////////////////////////////
 

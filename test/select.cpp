@@ -1,7 +1,5 @@
 #include "common.h"
 
-using namespace cash::core_literals;
-
 TEST_CASE("conditionals", "[conditionals]") {
   SECTION("select", "[select]") {
     TEST([]()->ch_bit1 {
@@ -21,18 +19,28 @@ TEST_CASE("conditionals", "[conditionals]") {
     });
     TEST([]()->ch_bit1 {
       ch_bit4 a(0), b(1), c;
-      c = ch_select<4>(a > b, a, 8);
+      c = ch_select(a > b, a, 8);
       return (c == 8);
     });
     TEST([]()->ch_bit1 {
       ch_bit4 a(0), b(1), c;
-      c = ch_select<4>(a < b, 7, b);
+      c = ch_select(a < b, 7, b);
       return (c == 7);
     });
     TEST([]()->ch_bit1 {
       ch_bit4 a(0), b(1), c;
-      c = ch_select<4>(a < b, 3, 5);
+      c = ch_select(a < b, 3_h4, 5_h4);
       return (c == 3);
+    });
+    TEST([]()->ch_bit1 {
+      ch_bit4 a(0), b(1);
+      auto c = ch_min(a, b);
+      return (c == 0);
+    });
+    TEST([]()->ch_bit1 {
+      ch_bit4 a(0), b(1);
+      auto c = ch_max(a, b);
+      return (c == 1);
     });
   }
   

@@ -1,7 +1,5 @@
 #include "common.h"
 
-using namespace cash::core_literals;
-
 TEST_CASE("proxies", "[proxies]") {
   SECTION("subscript", "[subscript]") {
     TEST([]()->ch_bit1 {
@@ -208,7 +206,7 @@ TEST_CASE("proxies", "[proxies]") {
     });
 
     TEST([]()->ch_bit1 {
-      auto k = 0x00fa2eb1_h;
+      ch_bit32 k(0x00fa2eb1_h);
       ch_bit4 x, y;
       ch_bit8 z, w;
       auto a = (ch_slice<4>(k, 4), ch_slice<4>(k, 0));

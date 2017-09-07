@@ -1,7 +1,5 @@
 #include "common.h"
 
-using namespace cash::core_literals;
-
 TEST_CASE("miscs", "[miscs]") {
   SECTION("utils", "[utils]") {
     TESTX([]()->bool {
@@ -17,7 +15,6 @@ TEST_CASE("miscs", "[miscs]") {
   }
   
   SECTION("assert", "[assert]") {
-    using namespace cash::core_literals;
     TEST([]()->ch_bit1 {
       ch_bit4 a(1100_b);
       ch_bit2 c = a.slice<2>(1) ^ 01_b;
@@ -38,7 +35,6 @@ TEST_CASE("miscs", "[miscs]") {
   }
   
   SECTION("taps", "[tap]") {
-    using namespace cash::core_literals;
     TEST([]()->ch_bit1 {
       ch_bit4 a(1100_b);
       ch_bit2 c = a.slice<2>(1) ^ 01_b;

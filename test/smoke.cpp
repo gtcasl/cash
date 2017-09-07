@@ -1,8 +1,6 @@
 
 #include "common.h"
 
-using namespace cash::core_literals;
-
 TEST_CASE("smoke", "[smoke]") {
   TEST([]()->ch_bit1 {
     ch_bit4 a, b, c;

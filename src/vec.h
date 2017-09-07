@@ -13,22 +13,30 @@ public:
   using data_type = typename base::data_type;
   using bus_type = ch_vec<typename T::bus_type, N>;
   
-  ch_vec() : items_(N) {}
+  ch_vec() {}
+
+  ch_vec(const ch_vec& rhs) : items_(rhs.items_) {}
+
+  ch_vec(ch_vec&& rhs) : items_(std::move(rhs.items_)) {}
   
   template <typename U>
-  ch_vec(const ch_vec<U, N>& rhs) : items_(rhs.items_) {}
-  
-  explicit ch_vec(const T& rhs) : items_(N, rhs) {}
+  explicit ch_vec(const ch_vec<U, N>& rhs) : items_(rhs.items_) {}
 
-  explicit ch_vec(const ch_bitbase<T::bitcount>& rhs) : items_(N, rhs) {}
+  template<typename... Vs,
+           typename = typename std::enable_if<N == sizeof...(Vs)>::type,
+           typename = typename if_all_convertible<T, Vs...>::type>
+  explicit ch_vec(const Vs&... values) {
+    this->init(values...);
+  }
 
-  template <typename U>
-  ch_vec(const std::initializer_list<U>& rhs) : items_(rhs) {}
-  
-  explicit ch_vec(const base& rhs) : items_(N) {
-    data_type data(base::bitcount);
-    cash::internal::read_data(rhs, data, 0, base::bitcount);
-    this->write_data(0, data, 0, base::bitcount);
+  ch_vec& operator=(const ch_vec& rhs) {
+    items_ = rhs.items_;
+    return *this;
+  }
+
+  ch_vec& operator=(ch_vec&& rhs) {
+    items_ = std::move(rhs.items_);
+    return *this;
   }
 
   template <typename U>
@@ -41,7 +49,7 @@ public:
   
   template <typename U>
   ch_vec& operator=(const std::initializer_list<U>& rhs) {
-    CH_CHECK(rhs.size() == N, "initializer list size missmatch!");
+    static_assert(N == rhs.size(), "initializer list size missmatch!");
     unsigned i = N;
     for (auto& x : rhs) {
       items_[--i] = x;
@@ -61,7 +69,18 @@ public:
 
 protected:
   
-  std::vector<T> items_;
+  std::array<T, N> items_;
+
+  template <typename V>
+  void init(const V& value) {
+    items_[N-1] = value;
+  }
+
+  template <typename V0, typename... Vs>
+  void init(const V0& value0, const Vs&... values) {
+    items_[N - sizeof...(Vs)] = value0;
+    this->init(values...);
+  }
   
   void read_data(data_type& out, size_t offset, size_t length) const override {
     CH_CHECK(offset + length <= ch_vec::bitcount, "invalid vector read range");

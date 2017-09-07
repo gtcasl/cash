@@ -1,7 +1,5 @@
 #include "common.h"
 
-using namespace cash::core_literals;
-
 TEST_CASE("literals", "[literals]") {
   SECTION("binary", "[binary]") {
     TEST([]()->ch_bit1 {

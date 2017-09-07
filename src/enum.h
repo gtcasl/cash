@@ -18,17 +18,35 @@
     , __max_value__ \
     }; \
     static_assert(ilog2(__max_value__) <= base::bitcount, "enum size mismatch"); \
-    name() {} \
-    name(const name& e) : base(e) {} \
-    name(enum_type e) : base(e) {} \
     class bus_type : public cash::internal::ch_bus<base::bitcount> { \
       public: \
-        using base = cash::internal::ch_bus<base::bitcount>; \
+        using base = cash::internal::ch_bus<name::base::bitcount>; \
         using data_type = typename base::data_type; \
         bus_type() {} \
         bus_type(const bus_type& e) : base(e) {} \
+        bus_type(bus_type&& e) : base(std::move(e)) {} \
         bus_type(enum_type e) : base(e) {} \
+        bus_type& operator=(const bus_type& e) { \
+          base::operator=(e); \
+          return *this; \
+        } \
+        bus_type& operator=(bus_type&& e) { \
+          base::operator=(std::move(e)); \
+          return *this; \
+        } \
     }; \
+    name() {} \
+    name(const name& e) : base(e) {} \
+    name(name&& e) : base(std::move(e)) {} \
+    name(enum_type e) : base(e) {} \
+    name& operator=(const name& e) { \
+      base::operator=(e); \
+      return *this; \
+    } \
+    name& operator=(name&& e) { \
+      base::operator=(std::move(e)); \
+      return *this; \
+    } \
     name clone() const { \
       return this->clone(); \
     } \

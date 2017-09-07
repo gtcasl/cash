@@ -233,6 +233,47 @@ std::cout << std::hex << "0x" << 1111111111e16_b << std::endl;
 ch_device<Adder<2>> my_adder;
 __tie(out, cout) = my_adder.bind(lhs, rhs, cin);
 
+template<typename From, typename To>
+class is_explicitly_convertible {
+private:
+  template <size_t N>
+  struct dummy_t {};
+
+  template<typename F, typename T>
+  static std::true_type check(dummy_t<sizeof(static_cast<T>(std::declval<F>()))>*);
+
+  template<typename F, typename T>
+  static std::false_type check(...);
+
+public:
+  static const bool value = decltype(check<From, To>(nullptr))::value;
+};
+
+#include <iostream>
+using namespace std;
+
+template <typename Child>
+struct Base
+{
+    void interface()
+    {
+        static_cast<Child*>(this)->implementation();
+    }
+};
+
+struct Derived : Base<Derived>
+{
+    void implementation()
+    {
+        cerr << "Derived implementation\n";
+    }
+};
+
+int main()
+{
+    Derived d;
+    d.interface();  // Prints "Derived implementation"
+}
 
 http://stackoverflow.com/questions/25513380/c-style-callbacks-in-c11
 http://en.cppreference.com/w/cpp/thread/packaged_task

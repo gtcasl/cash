@@ -3,7 +3,6 @@
 #include <cash.h>
 
 using namespace cash::core;
-using namespace cash::core_literals;
 using namespace cash::sim;
 
 #define CHECK(x) if (!(x)) { assert(false); exit(1); }
@@ -16,7 +15,7 @@ ch_bit8 FastMul(const ch_bit4& lhs, const ch_bit4& rhs) {
     }
   }
   ch_rom<8, 8> mem(tbl_mult);
-  return mem[(ch_zext<8>(lhs) << 4) | rhs];
+  return mem[(ch_zext<8>(lhs) << 4) | ch_zext<8>(rhs)];
 }
 
 int main(int argc, char **argv) {
