@@ -28,9 +28,9 @@ public:
 
   ch_bit(ch_bit&& rhs) : node_(std::move(rhs.node_), N) {}
 
-  explicit ch_bit(const ch_bitbase<N>& rhs) : node_(get_node(rhs), N) {}
+  ch_bit(const ch_bitbase<N>& rhs) : node_(get_lnode(rhs), N) {}
 
-  explicit ch_bit(const ch_literal<N>& rhs) : node_(rhs) {}
+  ch_bit(const ch_literal<N>& rhs) : node_(rhs) {}
     
 #define CH_DEF_CTOR(type) \
   explicit ch_bit(type value) : node_(bitvector(N, value)) {}
@@ -74,7 +74,6 @@ public:
     node_.assign(bitvector(N, value)); \
     return *this; \
   } 
-  CH_DEF_AOP(const std::initializer_list<uint32_t>&)
   CH_DEF_AOP(bool)
   CH_DEF_AOP(char)
   CH_DEF_AOP(int8_t)
@@ -122,22 +121,19 @@ const ch_bit<N> make_bit(const lnode& node) {
 }
 
 template<typename... Ts>
-struct ch_bit_all_convertible;
+struct is_bit_convertible;
 
 template<typename T>
-struct ch_bit_all_convertible<T> {
-  static const bool value = is_explicitly_convertible<T, ch_bit<T::bitcount>>::value;
+struct is_bit_convertible<T> {
+  static const bool value = is_weak_convertible<T, ch_bit<T::bitcount>>::value;
 };
 
 template<typename T0, typename... Ts>
-struct ch_bit_all_convertible<T0, Ts...> {
-  static const bool value = is_explicitly_convertible<T0, ch_bit<T0::bitcount>>::value && ch_bit_all_convertible<Ts...>::value;
+struct is_bit_convertible<T0, Ts...> {
+  static const bool value = is_weak_convertible<T0, ch_bit<T0::bitcount>>::value && is_bit_convertible<Ts...>::value;
 };
 
-template<typename... Ts>
-using ch_bit_if_all_convertible = std::enable_if<ch_bit_all_convertible<Ts...>::value>;
-
-template <typename T, unsigned N>
+template <typename T, unsigned N = T::bitcount>
 struct ch_bit_cast {
   using type = ch_bit<N>;
 };
@@ -153,10 +149,11 @@ struct ch_bit_cast<ch_bit<N>, N> {
 };
 
 template <typename T, unsigned N = T::bitcount,
-          typename = typename if_convertible<T, ch_bit<N>>::type>
-lnode get_node(const T& rhs) {
+          CH_REQUIRES(is_weak_convertible<T, ch_bit<N>>::value)>
+lnode get_lnode(const T& rhs) {
   lnode::data_type data(N);
-  read_data(static_cast<typename ch_bit_cast<T, N>::type>(rhs), data, 0, N);
+  typename ch_bit_cast<T, N>::type x(rhs);
+  read_data(x, data, 0, N);
   return lnode(data);
 }
 
@@ -164,17 +161,18 @@ lnode get_node(const T& rhs) {
 
 template<typename T>
 void ch_cat_helper(lnode::data_type& data, const T& arg) {
-  read_data((typename ch_bit_cast<T, T::bitcount>::type)arg, data, 0, T::bitcount);
+  typename ch_bit_cast<T>::type x(arg);
+  read_data(x, data, 0, T::bitcount);
 }
 
 template<typename T0, typename... Ts>
 void ch_cat_helper(lnode::data_type& data, const T0& arg0, const Ts&... args) {
   ch_cat_helper(data, args...);
-  read_data((typename ch_bit_cast<T0, T0::bitcount>::type)arg0, data, 0, T0::bitcount);
+  read_data(static_cast<typename ch_bit_cast<T0>::type>(arg0), data, 0, T0::bitcount);
 }
 
 template<typename... Ts,
-         typename = typename ch_bit_if_all_convertible<Ts...>::type>
+         CH_REQUIRES(is_bit_convertible<Ts...>::value)>
 const auto ch_cat(const Ts&... args) {
   lnode::data_type data(concat_size<Ts...>::value);
   ch_cat_helper(data, args...);
@@ -182,14 +180,14 @@ const auto ch_cat(const Ts&... args) {
 }
 
 template <typename U, typename V,
-          typename = typename if_convertible<U, ch_bit<U::bitcount>>::type,
-          typename = typename if_convertible<V, ch_bit<V::bitcount>>::type>
+          CH_REQUIRES(is_weak_convertible<U, ch_bit<U::bitcount>>::value),
+          CH_REQUIRES(is_weak_convertible<V, ch_bit<V::bitcount>>::value)>
 const auto operator,(const U& b, const V& a) {
   return ch_cat(b, a);
 }
 
 template<typename... Ts,
-         typename = typename ch_bit_if_all_convertible<Ts...>::type>
+         CH_REQUIRES(is_bit_convertible<Ts...>::value)>
 concatref<Ts...> ch_tie(Ts&... args) {
   return concatref<Ts...>(args...);
 }
@@ -290,9 +288,9 @@ const auto ch_shuffle(const ch_bitbase<N>& in,
 const ch_bit<64> ch_getTick();
 
 template <typename...Args,
-          typename = typename ch_bit_if_all_convertible<Args...>::type>
+          CH_REQUIRES(is_bit_convertible<Args...>::value)>
 void ch_print(const std::string& format, const Args& ...args) {
-  createPrintNode(format, {get_node(args)...});
+  createPrintNode(format, {get_lnode(args)...});
 }
 
 }

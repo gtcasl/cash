@@ -34,6 +34,6 @@ TEST_CASE("dogfood", "[dogfood]") {
 
     //auto x = a.slice<2>(0);
     //auto c = (a.slice<2>(0), b.slice<2>(2));*/
-    return '1';
+    return 1_b;
   });
 }

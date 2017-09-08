@@ -12,7 +12,7 @@ public:
     
   template <typename Func>
   if_t& elif_(const ch_bitbase<1>& pred, const Func& func) {
-    this->eval(get_node(pred), to_function(func));
+    this->eval(get_lnode(pred), to_function(func));
     return *this; 
   }
   
@@ -37,7 +37,7 @@ protected:
 
 template <typename Func> 
 if_t ch_if(const ch_bitbase<1>& pred, const Func& func) {
-  return if_t(get_node(pred), to_function(func));
+  return if_t(get_lnode(pred), to_function(func));
 }
 
 }

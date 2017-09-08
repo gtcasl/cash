@@ -15,20 +15,26 @@
 #define CH_STRUCT_CTOR_INIT(i, x) \
   CH_PAIR_R(x)(rhs.CH_PAIR_R(x))
 
-#define CH_STRUCT_CTOR_ARG(i, x) \
-  const CH_PAIR_L(x)& CH_CONCAT(_,CH_PAIR_R(x))
+#define CH_STRUCT_FIELD_TMPL(i, x) \
+  typename _T##i
 
-#define CH_STRUCT_CLONE_ARG(i, x) \
-  CH_PAIR_R(x).clone()
+#define CH_STRUCT_FIELD_REQUIRES(i, x) \
+  CH_REQUIRES(cash::internal::is_weak_convertible<_T##i, ch_bit<CH_PAIR_L(x)::bitcount>>::value)
 
-#define CH_STRUCT_BUS_CTOR_ARG(i, x) \
-  const typename CH_PAIR_L(x)::bus_type& CH_CONCAT(_,CH_PAIR_R(x))
+#define CH_STRUCT_CTOR_FIELD(i, x) \
+  const _T##i& CH_CONCAT(_,CH_PAIR_R(x))
 
-#define CH_STRUCT_CTOR_ARG_INIT(i, x) \
-  CH_PAIR_R(x)(CH_CONCAT(_,CH_PAIR_R(x)))
+#define CH_STRUCT_CTOR_FIELD_INIT(i, x) \
+  CH_PAIR_R(x)(static_cast<typename cash::internal::ch_bit_cast<_T##i, CH_PAIR_L(x)::bitcount>::type>(CH_CONCAT(_,CH_PAIR_R(x))))
+
+#define CH_STRUCT_BUS_CTOR_FIELD_INIT(i, x) \
+  CH_PAIR_R(x)(static_cast<typename cash::internal::ch_bus_cast<_T##i, CH_PAIR_L(x)::bitcount>::type>(CH_CONCAT(_,CH_PAIR_R(x))))
 
 #define CH_STRUCT_ASSIGN(i, x) \
   this->CH_PAIR_R(x) = rhs.CH_PAIR_R(x)
+
+#define CH_STRUCT_CLONE(i, x) \
+  CH_PAIR_R(x).clone()
 
 #define CH_STRUCT_READ(i, x) \
   if (offset < CH_PAIR_L(x)::bitcount) { \
@@ -66,8 +72,11 @@
       using data_type = typename base::data_type; \
       bus_type() {} \
       bus_type(const bus_type& rhs) : CH_FOR_EACH(CH_STRUCT_CTOR_INIT, CH_SEP_COMMA, __VA_ARGS__) {} \
-      bus_type(CH_REVERSE_FOR_EACH(CH_STRUCT_BUS_CTOR_ARG, CH_SEP_COMMA, __VA_ARGS__)) \
-        : CH_FOR_EACH(CH_STRUCT_CTOR_ARG_INIT, CH_SEP_COMMA, __VA_ARGS__) {} \
+      bus_type(const base& rhs) { base::operator=(rhs); } \
+      template <CH_REVERSE_FOR_EACH(CH_STRUCT_FIELD_TMPL, CH_SEP_COMMA, __VA_ARGS__), \
+                CH_REVERSE_FOR_EACH(CH_STRUCT_FIELD_REQUIRES, CH_SEP_COMMA, __VA_ARGS__)> \
+      explicit bus_type(CH_REVERSE_FOR_EACH(CH_STRUCT_CTOR_FIELD, CH_SEP_COMMA, __VA_ARGS__)) \
+        : CH_FOR_EACH(CH_STRUCT_BUS_CTOR_FIELD_INIT, CH_SEP_COMMA, __VA_ARGS__) {} \
       bus_type& operator=(const bus_type& rhs) { \
         CH_FOR_EACH(CH_STRUCT_ASSIGN, CH_SEP_SEMICOLON, __VA_ARGS__); \
         return *this; \
@@ -85,15 +94,18 @@
     };\
     name() {} \
     name(const name& rhs) : CH_FOR_EACH(CH_STRUCT_CTOR_INIT, CH_SEP_COMMA, __VA_ARGS__) {} \
-    name(CH_REVERSE_FOR_EACH(CH_STRUCT_CTOR_ARG, CH_SEP_COMMA, __VA_ARGS__)) \
-      : CH_FOR_EACH(CH_STRUCT_CTOR_ARG_INIT, CH_SEP_COMMA, __VA_ARGS__) {} \
+    name(const base& rhs) { base::operator=(rhs); } \
+    template <CH_REVERSE_FOR_EACH(CH_STRUCT_FIELD_TMPL, CH_SEP_COMMA, __VA_ARGS__), \
+              CH_REVERSE_FOR_EACH(CH_STRUCT_FIELD_REQUIRES, CH_SEP_COMMA, __VA_ARGS__)> \
+    explicit name(CH_REVERSE_FOR_EACH(CH_STRUCT_CTOR_FIELD, CH_SEP_COMMA, __VA_ARGS__)) \
+      : CH_FOR_EACH(CH_STRUCT_CTOR_FIELD_INIT, CH_SEP_COMMA, __VA_ARGS__) {} \
     name& operator=(const name& rhs) { \
       CH_FOR_EACH(CH_STRUCT_ASSIGN, CH_SEP_SEMICOLON, __VA_ARGS__); \
       return *this; \
     } \
     CH_FOR_EACH(CH_STRUCT_FIELD, CH_SEP_SEMICOLON, __VA_ARGS__); \
     name clone() const { \
-      return name(CH_REVERSE_FOR_EACH(CH_STRUCT_CLONE_ARG, CH_SEP_COMMA, __VA_ARGS__)); \
+      return name(CH_REVERSE_FOR_EACH(CH_STRUCT_CLONE, CH_SEP_COMMA, __VA_ARGS__)); \
     } \
   protected: \
     void read_data(data_type& inout, size_t offset, size_t length) const override { \

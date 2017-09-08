@@ -50,15 +50,6 @@
     name clone() const { \
       return this->clone(); \
     } \
-  private: \
-    name(const base& b) : base(b) {} \
-    friend name ch_reg(const name& next, const name& init) { \
-      return cash::internal::ch_reg<size>(reinterpret_cast<const cash::internal::ch_bitbase<size>&>(next), \
-                    reinterpret_cast<const cash::internal::ch_bitbase<size>&>(init)); \
-    } \
-    friend name ch_reg(const name& next) { \
-      return cash::internal::ch_reg<size>(reinterpret_cast<const cash::internal::ch_bitbase<size>&>(next)); \
-    } \
   public:
   
 #define CH_ENUM(name, size, body, ...) \

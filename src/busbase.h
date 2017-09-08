@@ -31,8 +31,7 @@ public:
     snode node(bitvector(N, rhs)); \
     this->write_data(0, {N, node, 0 , N}, 0, N); \
     return *this; \
-  } 
-  CH_DEF_AOP(const std::initializer_list<uint32_t>&)
+  }
   CH_DEF_AOP(bool)
   CH_DEF_AOP(char)
   CH_DEF_AOP(int8_t)
@@ -67,48 +66,6 @@ public:
     }
   }
 };
-
-template <unsigned N>
-snode get_node(const ch_busbase<N>& rhs) {
-  snode::data_type data(N);
-  rhs.read_data(data, 0, N);
-  return snode(data);
-}
-
-template <unsigned N> 
-std::ostream& operator<<(std::ostream& os, const ch_busbase<N>& bus) {
-  return os << get_node(bus);
-}
-
-template <unsigned N>
-bool operator==(const ch_busbase<N>& lhs, const ch_busbase<N>& rhs) {
-  return get_node(lhs).is_equal(get_node(rhs), N);
-}
-
-template <unsigned N>
-bool operator<(const ch_busbase<N>& lhs, const ch_busbase<N>& rhs) {
-  return get_node(lhs).is_less(get_node(rhs), N);
-}
-
-template <unsigned N>
-bool operator!=(const ch_busbase<N>& lhs, const ch_busbase<N>& rhs) {
-  return !(lhs == rhs);
-}
-
-template <unsigned N>
-bool operator>(const ch_busbase<N>& lhs, const ch_busbase<N>& rhs) {
-  return (rhs < lhs);
-}
-
-template <unsigned N>
-bool operator<=(const ch_busbase<N>& lhs, const ch_busbase<N>& rhs) {
-  return !(lhs > rhs);
-}
-
-template <unsigned N>
-bool operator>=(const ch_busbase<N>& lhs, const ch_busbase<N>& rhs) {
-  return !(lhs < rhs);
-}
 
 }
 }

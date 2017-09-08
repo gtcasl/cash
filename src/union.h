@@ -25,6 +25,9 @@
       using data_type = typename base::data_type; \
       bus_type() : CH_FOR_EACH(CH_UNION_CTOR_INIT, CH_SEP_COMMA, __VA_ARGS__) {} \
       bus_type(const bus_type& rhs) : CH_FOR_EACH(CH_UNION_CTOR_INIT, CH_SEP_COMMA, __VA_ARGS__), _(rhs._) {} \
+      bus_type(const base& rhs) : CH_FOR_EACH(CH_UNION_CTOR_INIT, CH_SEP_COMMA, __VA_ARGS__), _(rhs) {} \
+      template <typename T, CH_REQUIRES(cash::internal::is_weak_convertible<T, ch_bit<base::bitcount>>::value)> \
+      explicit bus_type(const T& value) : CH_FOR_EACH(CH_UNION_CTOR_INIT, CH_SEP_COMMA, __VA_ARGS__), _(static_cast<typename cash::internal::ch_bus_cast<T, base::bitcount>::type>(value)) {} \
       bus_type& operator=(const bus_type& rhs) { \
         _ = rhs._; \
         return *this; \
@@ -41,6 +44,9 @@
     };\
     name() : CH_FOR_EACH(CH_UNION_CTOR_INIT, CH_SEP_COMMA, __VA_ARGS__) {} \
     name(const name& rhs) : CH_FOR_EACH(CH_UNION_CTOR_INIT, CH_SEP_COMMA, __VA_ARGS__), _(rhs._) {} \
+    name(const base& rhs) : CH_FOR_EACH(CH_UNION_CTOR_INIT, CH_SEP_COMMA, __VA_ARGS__), _(rhs) {} \
+    template <typename T, CH_REQUIRES(cash::internal::is_weak_convertible<T, ch_bit<base::bitcount>>::value)> \
+    explicit name(const T& value) : CH_FOR_EACH(CH_UNION_CTOR_INIT, CH_SEP_COMMA, __VA_ARGS__), _(static_cast<typename cash::internal::ch_bit_cast<T, base::bitcount>::type>(value)) {} \
     name& operator=(const name& rhs) { \
       _ = rhs._; \
       return *this; \

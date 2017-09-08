@@ -31,5 +31,5 @@ void assertimpl::print_vl(std::ostream& out) const {
 }
 
 void cash::internal::ch_assert(const ch_bitbase<1>& l, const std::string& msg) {
-  new assertimpl(get_node(l), msg);
+  new assertimpl(get_lnode(l), msg);
 }

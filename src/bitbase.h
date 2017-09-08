@@ -69,8 +69,7 @@ public:
     const lnode node(bitvector(N, rhs)); \
     this->write_data(0, {N, node, 0 , N}, 0, N); \
     return *this; \
-  } 
-  CH_DEF_AOP(const std::initializer_list<uint32_t>&)
+  }
   CH_DEF_AOP(bool)
   CH_DEF_AOP(char)
   CH_DEF_AOP(int8_t)

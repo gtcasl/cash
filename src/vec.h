@@ -18,13 +18,21 @@ public:
   ch_vec(const ch_vec& rhs) : items_(rhs.items_) {}
 
   ch_vec(ch_vec&& rhs) : items_(std::move(rhs.items_)) {}
-  
+
   template <typename U>
-  explicit ch_vec(const ch_vec<U, N>& rhs) : items_(rhs.items_) {}
+  ch_vec(const ch_vec<U, N>& rhs) {
+    this->operator =(rhs);
+  }
+
+  ch_vec(const base& rhs) {
+    data_type data(base::bitcount);
+    cash::internal::read_data(rhs, data, 0, base::bitcount);
+    this->write_data(0, data, 0, base::bitcount);
+  }
 
   template<typename... Vs,
-           typename = typename std::enable_if<N == sizeof...(Vs)>::type,
-           typename = typename if_all_convertible<T, Vs...>::type>
+           CH_REQUIRES(N == sizeof...(Vs)),
+           CH_REQUIRES(are_all_weak_convertible<T, Vs...>::value)>
   explicit ch_vec(const Vs&... values) {
     this->init(values...);
   }
@@ -43,16 +51,6 @@ public:
   ch_vec& operator=(const ch_vec<U, N>& rhs) {
     for (unsigned i = 0; i < N; ++i) {
       items_[i] = rhs.items_[i];
-    }
-    return *this;
-  }
-  
-  template <typename U>
-  ch_vec& operator=(const std::initializer_list<U>& rhs) {
-    static_assert(N == rhs.size(), "initializer list size missmatch!");
-    unsigned i = N;
-    for (auto& x : rhs) {
-      items_[--i] = x;
     }
     return *this;
   }

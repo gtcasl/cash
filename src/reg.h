@@ -6,9 +6,6 @@
 namespace cash {
 namespace internal {
 
-class regimpl;
-class latchimpl;
-
 lnodeimpl* createRegNode(const lnode& next, const lnode& init);
 lnodeimpl* createLatchNode(const lnode& next,
                            const lnode& init,
@@ -28,106 +25,66 @@ void ch_popReset();
 
 template <unsigned N>
 const auto ch_ready(const ch_bitbase<N>& x) {
-  return make_bit<1>(createReadyNode(get_node(x)));
+  return make_bit<1>(createReadyNode(get_lnode(x)));
 }
 
 template <unsigned N>
 const auto ch_valid(const ch_bitbase<N>& x) {
-  return make_bit<1>(createValidNode(get_node(x)));
+  return make_bit<1>(createValidNode(get_lnode(x)));
 }
 
-template <unsigned N>
-const auto ch_reg(const ch_bitbase<N>& next, const ch_bitbase<N>& init) {
-  return make_bit<N>(createRegNode(get_node(next), get_node(init)));
+template <typename N, typename I,
+          CH_REQUIRES(deduce_bitcount<N, I>::value != 0),
+          CH_REQUIRES(is_weak_convertible<N, ch_bit<deduce_bitcount<N, I>::value>>::value),
+          CH_REQUIRES(is_weak_convertible<I, ch_bit<deduce_bitcount<N, I>::value>>::value)>
+const auto ch_reg(const N& next, const I& init) {
+  return make_bit<deduce_bitcount<N, I>::value>(
+    createRegNode(get_lnode(next), get_lnode(init)));
 }
 
-template <unsigned N>
-const auto ch_reg(const ch_bitbase<N>& next, const ch_bit<N>& init = false) {
-  return ch_reg<N>(next, reinterpret_cast<const ch_bitbase<N>&>(init));
+template <typename N,
+          CH_REQUIRES(is_weak_convertible<N, ch_bit<N::bitcount>>::value)>
+const auto ch_reg(const N& next) {
+  return make_bit<N::bitcount>(
+    createRegNode(get_lnode(next), get_lnode(ch_bit<N::bitcount>(0))));
 }
 
-template <unsigned N>
-const auto ch_reg(const ch_bit<N>& next, const ch_bitbase<N>& init) {
-  return ch_reg<N>(reinterpret_cast<const ch_bitbase<N>&>(next), init);
+template <typename N, typename E, typename I, typename R,
+          CH_REQUIRES(deduce_bitcount<N, I>::value != 0),
+          CH_REQUIRES(is_weak_convertible<N, ch_bit<deduce_bitcount<N, I>::value>>::value),
+          CH_REQUIRES(is_weak_convertible<E, ch_bit<1>>::value),
+          CH_REQUIRES(is_weak_convertible<I, ch_bit<deduce_bitcount<N, I>::value>>::value),
+          CH_REQUIRES(is_weak_convertible<R, ch_bit<1>>::value)>
+const auto ch_latch(const N& next, const E& enable, const I& init, const R& reset) {
+  return make_bit<deduce_bitcount<N, I>::value>(
+    createLatchNode(get_lnode(next),
+                    get_lnode(init),
+                    get_lnode(enable),
+                    get_lnode(reset)));
 }
 
-template <unsigned N>
-const auto ch_reg(const ch_bit<N>& next, const ch_bit<N>& init) {
-  return ch_reg<N>(reinterpret_cast<const ch_bitbase<N>&>(next), 
-                   reinterpret_cast<const ch_bitbase<N>&>(init));
+template <typename N, typename E, typename I,
+          CH_REQUIRES(deduce_bitcount<N, I>::value != 0),
+          CH_REQUIRES(is_weak_convertible<N, ch_bit<deduce_bitcount<N, I>::value>>::value),
+          CH_REQUIRES(is_weak_convertible<E, ch_bit<1>>::value),
+          CH_REQUIRES(is_weak_convertible<I, ch_bit<deduce_bitcount<N, I>::value>>::value)>
+const auto ch_latch(const N& next, const E& enable, const I& init) {
+  return make_bit<deduce_bitcount<N, I>::value>(
+    createLatchNode(get_lnode(next),
+                    get_lnode(init),
+                    get_lnode(enable),
+                    get_lnode(ch_getReset())));
 }
 
-template <unsigned N>
-const auto ch_latch(const ch_bitbase<N>& next,
-                    const ch_bitbase<1>& enable,
-                    const ch_bitbase<N>& init) {
-  return make_bit<N>(createLatchNode(get_node(next),
-                                     get_node(init),
-                                     get_node(enable),
-                                     get_node(ch_getReset())));
-}
-
-template <unsigned N>
-const auto ch_latch(const ch_bitbase<N>& next,
-                    const ch_bitbase<1>& enable,
-                    const ch_bit<N>& init = false) {
-  return ch_latch<N>(next,
-                     enable,
-                     reinterpret_cast<const ch_bitbase<N>&>(init));
-}
-
-template <unsigned N>
-const auto ch_latch(const ch_bitbase<N>& next,
-                    const ch_bit<1>& enable,
-                    const ch_bitbase<N>& init) {
-  return ch_latch<N>(next,
-                     reinterpret_cast<const ch_bitbase<1>&>(enable),
-                     init);
-}
-
-template <unsigned N>
-const auto ch_latch(const ch_bitbase<N>& next,
-                    const ch_bit<1>& enable = true,
-                    const ch_bit<N>& init = false) {
-  return ch_latch<N>(next,
-                     reinterpret_cast<const ch_bitbase<1>&>(enable),
-                     reinterpret_cast<const ch_bitbase<N>&>(init));
-}
-
-template <unsigned N>
-const auto ch_latch(const ch_bit<N>& next,
-                    const ch_bitbase<1>& enable,
-                    const ch_bitbase<N>& init) {
-  return ch_latch<N>(reinterpret_cast<const ch_bitbase<N>&>(next),
-                     enable,
-                     init);
-}
-
-template <unsigned N>
-const auto ch_latch(const ch_bit<N>& next,
-                    const ch_bitbase<1>& enable,
-                    const ch_bit<N>& init = false) {
-  return ch_latch<N>(reinterpret_cast<const ch_bitbase<N>&>(next), 
-                     enable, 
-                     reinterpret_cast<const ch_bitbase<N>&>(init));
-}
-
-template <unsigned N>
-const auto ch_latch(const ch_bit<N>& next,
-                    const ch_bit<1>& enable,
-                    const ch_bitbase<N>& init) {
-  return ch_latch<N>(reinterpret_cast<const ch_bitbase<N>&>(next), 
-                     reinterpret_cast<const ch_bitbase<1>&>(enable),
-                     init);
-}
-
-template <unsigned N>
-const auto ch_latch(const ch_bit<N>& next,
-                    const ch_bit<1>& enable = true,
-                    const ch_bit<N>& init = false) {
-  return ch_latch<N>(reinterpret_cast<const ch_bitbase<N>&>(next), 
-                     reinterpret_cast<const ch_bitbase<1>&>(enable),
-                     reinterpret_cast<const ch_bitbase<N>&>(init));
+template <typename N, typename E,
+          CH_REQUIRES(is_weak_convertible<N, ch_bit<N::bitcount>>::value),
+          CH_REQUIRES(is_weak_convertible<E, ch_bit<1>>::value)>
+const auto ch_latch(const N& next, const E& enable) {
+  return make_bit<N::bitcount>(
+    createLatchNode(get_lnode(next),
+                    get_lnode(ch_bit<N::bitcount>(0)),
+                    get_lnode(enable),
+                    get_lnode(ch_getReset())));
 }
 
 }

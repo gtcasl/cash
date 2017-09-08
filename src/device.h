@@ -136,12 +136,12 @@ protected:
 
   template <unsigned N>
   const auto bind_input(const ch_busbase<N>& bus) const {
-    return make_bit<N>(this->bind_input(get_node(bus)));
+    return make_bit<N>(this->bind_input(get_snode(bus)));
   }
   
   template <unsigned N>
   const auto bind_output(const ch_bitbase<N>& output) const {
-    return make_bus<N>(this->bind_output(get_node(output)));
+    return make_bus<N>(this->bind_output(get_lnode(output)));
   }
 
   ch_device();

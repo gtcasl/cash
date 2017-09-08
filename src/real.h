@@ -31,19 +31,19 @@ public:
 };
 
 inline ch_real operator+(const ch_real& lhs, const ch_real& rhs) {
-  return ch_real(make_bit<32>(createAluNode(alu_op_fadd, get_node(lhs), get_node(rhs))));
+  return ch_real(make_bit<32>(createAluNode(alu_op_fadd, get_lnode(lhs), get_lnode(rhs))));
 }
 
 inline ch_real operator-(const ch_real& lhs, const ch_real& rhs) {
-  return ch_real(make_bit<32>(createAluNode(alu_op_fsub, get_node(lhs), get_node(rhs))));
+  return ch_real(make_bit<32>(createAluNode(alu_op_fsub, get_lnode(lhs), get_lnode(rhs))));
 }
 
 inline ch_real operator*(const ch_real& lhs, const ch_real& rhs) {
-  return ch_real(make_bit<32>(createAluNode(alu_op_fmult, get_node(lhs), get_node(rhs))));
+  return ch_real(make_bit<32>(createAluNode(alu_op_fmult, get_lnode(lhs), get_lnode(rhs))));
 }
 
 inline ch_real operator/(const ch_real& lhs, const ch_real& rhs) {
-  return ch_real(make_bit<32>(createAluNode(alu_op_fdiv, get_node(lhs), get_node(rhs))));
+  return ch_real(make_bit<32>(createAluNode(alu_op_fdiv, get_lnode(lhs), get_lnode(rhs))));
 }
 
 }

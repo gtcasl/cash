@@ -19,12 +19,12 @@ public:
 
   template <unsigned N>
   void add_trace(const std::string& name, const ch_bus<N>& value) {
-    this->add_trace(name, get_node(value));
+    this->add_trace(name, get_snode(value));
   }
 
   template <unsigned N>
   void add_trace(const std::string& name, const ch_busbase<N>& value) {
-    this->add_trace(name, get_node(value));
+    this->add_trace(name, get_snode(value));
   }
 
 protected:
@@ -40,12 +40,12 @@ void register_tap(const std::string& name, const lnode& node);
 
 template <unsigned N>
 void ch_tap(const std::string& name, const ch_bit<N>& value) {
-  register_tap(name, get_node(value));
+  register_tap(name, get_snode(value));
 }
 
 template <unsigned N>
 void ch_tap(const std::string& name, const ch_bitbase<N>& value) {
-  register_tap(name, get_node(value));
+  register_tap(name, get_snode(value));
 }
 
 }

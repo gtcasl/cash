@@ -18,13 +18,12 @@ public:
 
   ch_bus(ch_bus&& rhs) : node_(std::move(rhs.node_)) {}
   
-  explicit ch_bus(const ch_busbase<N>& rhs) : node_(get_node(rhs)) {}
+  ch_bus(const ch_busbase<N>& rhs) : node_(get_snode(rhs)) {}
   
-  explicit ch_bus(const ch_literal<N>& rhs) : node_(rhs) {}
+  ch_bus(const ch_literal<N>& rhs) : node_(rhs) {}
  
 #define CH_DEF_CTOR(type) \
   explicit ch_bus(type value) : node_(bitvector(N, value)) {}
-  CH_DEF_CTOR(const std::initializer_list<uint32_t>&)
   CH_DEF_CTOR(bool)
   CH_DEF_CTOR(char)
   CH_DEF_CTOR(int8_t)
@@ -53,7 +52,7 @@ public:
   }
   
   ch_bus& operator=(const ch_busbase<N>& rhs) {
-    node_.assign(get_node(rhs), N);
+    node_.assign(get_snode(rhs), N);
     return *this;
   }
 
@@ -114,6 +113,78 @@ template <unsigned N>
 const ch_bus<N> make_bus(const snode& node) {
   assert(node.get_size() == N);
   return ch_bus<N>(node);
+}
+
+template<typename... Ts>
+struct is_bus_convertible;
+
+template<typename T>
+struct is_bus_convertible<T> {
+  static const bool value = is_weak_convertible<T, ch_bus<T::bitcount>>::value;
+};
+
+template<typename T0, typename... Ts>
+struct is_bus_convertible<T0, Ts...> {
+  static const bool value = is_weak_convertible<T0, ch_bus<T0::bitcount>>::value && is_bus_convertible<Ts...>::value;
+};
+
+template <typename T, unsigned N = T::bitcount>
+struct ch_bus_cast {
+  using type = ch_bus<N>;
+};
+
+template <unsigned N>
+struct ch_bus_cast<ch_busbase<N>, N> {
+  using type = const ch_busbase<N>&;
+};
+
+template <unsigned N>
+struct ch_bus_cast<ch_bus<N>, N> {
+  using type = const ch_bus<N>&;
+};
+
+template <typename T, unsigned N = T::bitcount,
+          CH_REQUIRES(is_weak_convertible<T, ch_bus<N>>::value)>
+snode get_snode(const T& rhs) {
+  snode::data_type data(N);
+  typename ch_bus_cast<T, N>::type x(rhs);
+  read_data(x, data, 0, N);
+  return snode(data);
+}
+
+template <unsigned N>
+std::ostream& operator<<(std::ostream& os, const ch_busbase<N>& bus) {
+  return os << get_snode(bus);
+}
+
+template <unsigned N>
+bool operator==(const ch_busbase<N>& lhs, const ch_busbase<N>& rhs) {
+  return get_snode(lhs).is_equal(get_snode(rhs), N);
+}
+
+template <unsigned N>
+bool operator<(const ch_busbase<N>& lhs, const ch_busbase<N>& rhs) {
+  return get_snode(lhs).is_less(get_snode(rhs), N);
+}
+
+template <unsigned N>
+bool operator!=(const ch_busbase<N>& lhs, const ch_busbase<N>& rhs) {
+  return !(lhs == rhs);
+}
+
+template <unsigned N>
+bool operator>(const ch_busbase<N>& lhs, const ch_busbase<N>& rhs) {
+  return (rhs < lhs);
+}
+
+template <unsigned N>
+bool operator<=(const ch_busbase<N>& lhs, const ch_busbase<N>& rhs) {
+  return !(lhs > rhs);
+}
+
+template <unsigned N>
+bool operator>=(const ch_busbase<N>& lhs, const ch_busbase<N>& rhs) {
+  return !(lhs < rhs);
 }
 
 #define CH_DEF_COMP_IMPL(op, type) \

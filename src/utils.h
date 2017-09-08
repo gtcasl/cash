@@ -28,18 +28,12 @@ struct conjunction<B> : std::integral_constant<bool, B> {};
 ///////////////////////////////////////////////////////////////////////////////
 
 template<typename From, typename To>
-using is_explicitly_convertible = std::is_constructible<To, From>;
+using is_weak_convertible = std::is_constructible<To, From>;
 
 ///////////////////////////////////////////////////////////////////////////////
 
 template<typename To, typename... Froms>
-using are_all_convertible = conjunction<is_explicitly_convertible<Froms, To>::value...>;
-
-template<typename To, typename... Froms>
-using if_all_convertible = std::enable_if<are_all_convertible<To, Froms...>::value>;
-
-template<typename From, typename To>
-using if_convertible = std::enable_if<is_explicitly_convertible<From, To>::value>;
+using are_all_weak_convertible = conjunction<is_weak_convertible<Froms, To>::value...>;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -291,6 +285,8 @@ constexpr uint32_t rotr(uint32_t value, uint32_t shift, uint32_t width) {
       CH_ABORT("assertion `" CH_STRINGIZE(x) "' failed, " msg, ##__VA_ARGS__); \
     } \
   } while (false)
+
+#define CH_REQUIRES(...) typename = typename std::enable_if<(__VA_ARGS__)>::type
 
 #define CH_UNUSED(...) cash::internal::unused(__VA_ARGS__)
 

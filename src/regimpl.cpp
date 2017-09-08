@@ -52,9 +52,11 @@ latchimpl::latchimpl(const lnode& next,
   assert(reset.get_size() == 1);
   context* ctx = next.get_ctx();
 
-  cd_ = ctx->create_cdomain(
-    {clock_event(enable, EDGE_ANY), clock_event(next, EDGE_ANY),
-     clock_event(reset, EDGE_ANY), clock_event(init, EDGE_ANY)});
+  cd_ = ctx->create_cdomain({
+     clock_event(enable, EDGE_ANY),
+     clock_event(next, EDGE_ANY),
+     clock_event(reset, EDGE_ANY),
+     clock_event(init, EDGE_ANY)});
   cd_->add_use(this);
 
   srcs_.emplace_back(next);
@@ -96,7 +98,7 @@ const ch_bit<1> cash::internal::ch_getClock() {
 }
 
 void cash::internal::ch_pushClock(const ch_bitbase<1>& clk) {
-  ctx_curr()->push_clk(get_node(clk));
+  ctx_curr()->push_clk(get_lnode(clk));
 }
 
 void cash::internal::ch_popClock() {
@@ -108,7 +110,7 @@ const ch_bit<1> cash::internal::ch_getReset() {
 }
 
 void cash::internal::ch_pushReset(const ch_bitbase<1>& reset) {
-  ctx_curr()->push_reset(get_node(reset));
+  ctx_curr()->push_reset(get_lnode(reset));
 }
 
 void cash::internal::ch_popReset() {
