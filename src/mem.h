@@ -81,27 +81,48 @@ private:
 template <unsigned W, unsigned A>
 class ch_ram {
 public:    
-    class reference {
-    public:    
-      
-      void operator=(const ch_bitbase<W>& data) {
-        mem_.write(get_lnode(addr_), get_lnode(data));
-      }
-      
-      void operator=(const ch_bit<W>& data) {
-        mem_.write(get_lnode(addr_), get_lnode(data));
-      }
-      
-      operator const ch_bit<W>() const {
-        return make_bit<W>(mem_.read(get_lnode(addr_)));
-      }
-      
+    template <unsigned N>
+    class reference : public ch_bitbase<N> {
+    public:
+      using base = ch_bitbase<N>;
+      using base::operator=;
+      using data_type = typename base::data_type;
+
     protected:
-      
+
       reference(memory& mem, const ch_bitbase<A>& addr)
         : mem_(mem)
         , addr_(addr)
       {}
+
+      reference(reference&&) = default;
+      reference& operator=(reference&&) = default;
+
+      void read_data(data_type& inout, size_t offset, size_t length) const override {
+        CH_CHECK(offset + length <= N, "invalid read range");
+        inout.push(mem_.read(get_lnode(addr_)), offset, length);
+      }
+
+      void write_data(size_t dst_offset, const data_type& in, size_t src_offset, size_t length) override {
+        CH_CHECK(dst_offset != 0 || length != N, "partial update not supported!");
+        if (0 == src_offset) {
+          mem_.write(get_lnode(addr_), lnode(in));
+        } else {
+          data_type in2(length);
+          for (auto slice : in) {
+            if (src_offset < slice.length) {
+              uint32_t len = std::min(slice.length - src_offset, length);
+              in2.push(slice.src, slice.offset + src_offset, len);
+              length -= len;
+              if (0 == length)
+                break;
+              src_offset = slice.length;
+            }
+            src_offset -= slice.length;
+          }
+          mem_.write(get_lnode(addr_), lnode(in2));
+        }
+      }
       
       memory& mem_;
       const ch_bitbase<A>& addr_;
@@ -133,12 +154,12 @@ public:
       return make_bit<W>(mem_.read(get_lnode(addr)));
     }
     
-    reference operator[](const ch_bitbase<A>& addr) {
-      return reference(mem_, addr);
+    reference<W> operator[](const ch_bitbase<A>& addr) {
+      return reference<W>(mem_, addr);
     }
     
-    reference operator[](const ch_bit<A>& addr) {
-      return reference(mem_, addr);
+    reference<W> operator[](const ch_bit<A>& addr) {
+      return reference<W>(mem_, addr);
     }
     
 private:    

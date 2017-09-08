@@ -39,7 +39,8 @@ template <typename N, typename I,
           CH_REQUIRES(is_weak_convertible<I, ch_bit<deduce_bitcount<N, I>::value>>::value)>
 const auto ch_reg(const N& next, const I& init) {
   return make_bit<deduce_bitcount<N, I>::value>(
-    createRegNode(get_lnode(next), get_lnode(init)));
+    createRegNode(get_lnode<N, deduce_bitcount<N, I>::value>(next),
+                  get_lnode<I, deduce_bitcount<N, I>::value>(init)));
 }
 
 template <typename N,
@@ -57,10 +58,10 @@ template <typename N, typename E, typename I, typename R,
           CH_REQUIRES(is_weak_convertible<R, ch_bit<1>>::value)>
 const auto ch_latch(const N& next, const E& enable, const I& init, const R& reset) {
   return make_bit<deduce_bitcount<N, I>::value>(
-    createLatchNode(get_lnode(next),
-                    get_lnode(init),
-                    get_lnode(enable),
-                    get_lnode(reset)));
+    createLatchNode(get_lnode<N, deduce_bitcount<N, I>::value>(next),
+                    get_lnode<I, deduce_bitcount<N, I>::value>(init),
+                    get_lnode<E, 1>(enable),
+                    get_lnode<R, 1>(reset)));
 }
 
 template <typename N, typename E, typename I,
@@ -70,9 +71,9 @@ template <typename N, typename E, typename I,
           CH_REQUIRES(is_weak_convertible<I, ch_bit<deduce_bitcount<N, I>::value>>::value)>
 const auto ch_latch(const N& next, const E& enable, const I& init) {
   return make_bit<deduce_bitcount<N, I>::value>(
-    createLatchNode(get_lnode(next),
-                    get_lnode(init),
-                    get_lnode(enable),
+    createLatchNode(get_lnode<N, deduce_bitcount<N, I>::value>(next),
+                    get_lnode<I, deduce_bitcount<N, I>::value>(init),
+                    get_lnode<E, 1>(enable),
                     get_lnode(ch_getReset())));
 }
 
@@ -83,7 +84,7 @@ const auto ch_latch(const N& next, const E& enable) {
   return make_bit<N::bitcount>(
     createLatchNode(get_lnode(next),
                     get_lnode(ch_bit<N::bitcount>(0)),
-                    get_lnode(enable),
+                    get_lnode<E, 1>(enable),
                     get_lnode(ch_getReset())));
 }
 

@@ -21,7 +21,8 @@ TEST_CASE("literals", "[literals]") {
       return (a == 5_o);
     });
     TEST([]()->ch_bit1 {
-      return (0x1c0000000_h64 == 070000000000_o64);
+      ch_bit64 x(0x1c0000000_h64);
+      return (x == 070000000000_o64);
     });
   }
   SECTION("hexadecimal", "[hexadecimal]") {

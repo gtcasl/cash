@@ -68,25 +68,32 @@ TEST_CASE("arithmetic", "[arithmetic]") {
   
   SECTION("compare", "[compare]") {
     TEST([]()->ch_bit1 {
-      return (0100_b == 0100_b);
+      ch_bit4 x(0100_b);
+      return (x == 0100_b);
     });
     TEST([]()->ch_bit1 {
-      return (0101_b != 0100_b);
+      ch_bit4 x(0101_b);
+      return (x != 0100_b);
     });
     TEST([]()->ch_bit1 {
-      return (0001_b < 0100_b);
+      ch_bit4 x(0001_b);
+      return (x < 0100_b);
     });
     TEST([]()->ch_bit1 {
-      return (0100_b > 0010_b);
+      ch_bit4 x(0100_b);
+      return (x > 0010_b);
     });
     TEST([]()->ch_bit1 {
-      return (0100_b <= 1100_b);
+      ch_bit4 x(0100_b);
+      return (x <= 1100_b);
     });
     TEST([]()->ch_bit1 {
-      return (0100_b >= 0100_b);
+      ch_bit4 x(0100_b);
+      return (x >= 0100_b);
     });
     TEST([]()->ch_bit1 {
-      return (1100_b >= 0100_b);
+      ch_bit4 x(1100_b);
+      return (x >= 0100_b);
     });
   }
   

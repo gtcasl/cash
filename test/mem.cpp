@@ -22,7 +22,7 @@ TEST_CASE("memory", "[memory]") {
       ch_bit2 a;
       ch_bit4 q;
       ch_rom<4, 2> rom({0xA, 0xB, 0xC, 0xD});
-      q = ch_reg<4>(rom[a]);  
+      q = ch_reg(rom[a]);
       a = ch_reg(a + 1);
       ch_bit4 e = ch_select(ch_getTick())
          (3, 0xA_h)
@@ -69,7 +69,7 @@ TEST_CASE("memory", "[memory]") {
       ch_bit4 d, q;
       ch_bit1 en;
       ch_ram<4, 2> mem({0xA, 0xB, 0xC, 0xD});
-      q = ch_reg<4>(mem[a]); 
+      q = ch_reg(mem[a]);
       __if (en) (
         mem[a] = d;
       );

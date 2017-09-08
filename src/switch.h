@@ -29,15 +29,10 @@ template <unsigned N>
 class switch_t {
 public:
   
-  template <typename Func>
-  switch_t& case_(const ch_bitbase<N>& value, const Func& func) {
-    impl_.eval(get_lnode(value), to_function(func));
-    return *this;
-  }
-  
-  template <typename Func>
-  switch_t& case_(const ch_bit<N>& value, const Func& func) {    
-    impl_.eval(get_lnode(value), to_function(func));
+  template <typename T, typename Func,
+            CH_REQUIRES(is_weak_convertible<T, ch_bit<N>>::value)>
+  switch_t& case_(const T& value, const Func& func) {
+    impl_.eval(get_lnode<T, N>(value), to_function(func));
     return *this;
   }
   

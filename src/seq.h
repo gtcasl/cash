@@ -21,8 +21,10 @@ public:
     next = *this;
   }
   
-  ch_seq(const T& init) {
-    auto reg = ch_reg(next, init);
+  template <typename U,
+            CH_REQUIRES(is_weak_convertible<U, T>::value)>
+  ch_seq(const U& init) {
+    auto reg = ch_reg(next, static_cast<typename reference_cast<U, T>::type>(init));
     T::operator=(std::move(reg));
     next = *this;
   }

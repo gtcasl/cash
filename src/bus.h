@@ -60,8 +60,7 @@ public:
   ch_bus& operator=(type value) { \
     node_.assign(bitvector(N, value)); \
     return *this; \
-  } 
-  CH_DEF_AOP(const std::initializer_list<uint32_t>&)
+  }
   CH_DEF_AOP(bool)
   CH_DEF_AOP(char)
   CH_DEF_AOP(int8_t)
@@ -156,64 +155,55 @@ std::ostream& operator<<(std::ostream& os, const ch_busbase<N>& bus) {
   return os << get_snode(bus);
 }
 
-template <unsigned N>
-bool operator==(const ch_busbase<N>& lhs, const ch_busbase<N>& rhs) {
-  return get_snode(lhs).is_equal(get_snode(rhs), N);
+template <typename A, typename B,
+          CH_REQUIRES(deduce_bitcount<A, B>::value != 0),
+          CH_REQUIRES(is_weak_convertible<A, ch_bus<deduce_bitcount<A, B>::value>>::value),
+          CH_REQUIRES(is_weak_convertible<B, ch_bus<deduce_bitcount<A, B>::value>>::value)>
+bool operator==(const A& a, const B& b) {
+  return get_snode<A, deduce_bitcount<A, B>::value>(a).is_equal(
+        get_snode<B, deduce_bitcount<A, B>::value>(b), deduce_bitcount<A, B>::value);
 }
 
-template <unsigned N>
-bool operator<(const ch_busbase<N>& lhs, const ch_busbase<N>& rhs) {
-  return get_snode(lhs).is_less(get_snode(rhs), N);
+template <typename A, typename B,
+          CH_REQUIRES(deduce_bitcount<A, B>::value != 0),
+          CH_REQUIRES(is_weak_convertible<A, ch_bus<deduce_bitcount<A, B>::value>>::value),
+          CH_REQUIRES(is_weak_convertible<B, ch_bus<deduce_bitcount<A, B>::value>>::value)>
+bool operator<(const A& a, const B& b) {
+  return get_snode<A, deduce_bitcount<A, B>::value>(a).is_less(
+        get_snode<B, deduce_bitcount<A, B>::value>(b), deduce_bitcount<A, B>::value);
 }
 
-template <unsigned N>
-bool operator!=(const ch_busbase<N>& lhs, const ch_busbase<N>& rhs) {
-  return !(lhs == rhs);
+template <typename A, typename B,
+          CH_REQUIRES(deduce_bitcount<A, B>::value != 0),
+          CH_REQUIRES(is_weak_convertible<A, ch_bus<deduce_bitcount<A, B>::value>>::value),
+          CH_REQUIRES(is_weak_convertible<B, ch_bus<deduce_bitcount<A, B>::value>>::value)>
+bool operator!=(const A& a, const B& b) {
+  return !(a == b);
 }
 
-template <unsigned N>
-bool operator>(const ch_busbase<N>& lhs, const ch_busbase<N>& rhs) {
-  return (rhs < lhs);
+template <typename A, typename B,
+          CH_REQUIRES(deduce_bitcount<A, B>::value != 0),
+          CH_REQUIRES(is_weak_convertible<A, ch_bus<deduce_bitcount<A, B>::value>>::value),
+          CH_REQUIRES(is_weak_convertible<B, ch_bus<deduce_bitcount<A, B>::value>>::value)>
+bool operator>(const A& a, const B& b) {
+  return (b < a);
 }
 
-template <unsigned N>
-bool operator<=(const ch_busbase<N>& lhs, const ch_busbase<N>& rhs) {
-  return !(lhs > rhs);
+template <typename A, typename B,
+          CH_REQUIRES(deduce_bitcount<A, B>::value != 0),
+          CH_REQUIRES(is_weak_convertible<A, ch_bus<deduce_bitcount<A, B>::value>>::value),
+          CH_REQUIRES(is_weak_convertible<B, ch_bus<deduce_bitcount<A, B>::value>>::value)>
+bool operator<=(const A& a, const B& b) {
+  return !(a > b);
 }
 
-template <unsigned N>
-bool operator>=(const ch_busbase<N>& lhs, const ch_busbase<N>& rhs) {
-  return !(lhs < rhs);
+template <typename A, typename B,
+          CH_REQUIRES(deduce_bitcount<A, B>::value != 0),
+          CH_REQUIRES(is_weak_convertible<A, ch_bus<deduce_bitcount<A, B>::value>>::value),
+          CH_REQUIRES(is_weak_convertible<B, ch_bus<deduce_bitcount<A, B>::value>>::value)>
+bool operator>=(const A& a, const B& b) {
+  return !(a < b);
 }
-
-#define CH_DEF_COMP_IMPL(op, type) \
-  template <unsigned N> \
-  bool op(const ch_busbase<N>& lhs, type rhs) { \
-    return op(lhs, ch_bus<N>(rhs)); \
-  } \
-  template <unsigned N> \
-  bool op(type lhs, const ch_busbase<N>& rhs) { \
-    return op(ch_bus<N>(lhs), rhs); \
-  }
-#define CH_DEF_COMP(type) \
-  CH_DEF_COMP_IMPL(operator==, type) \
-  CH_DEF_COMP_IMPL(operator!=, type) \
-  CH_DEF_COMP_IMPL(operator< , type) \
-  CH_DEF_COMP_IMPL(operator> , type) \
-  CH_DEF_COMP_IMPL(operator<=, type) \
-  CH_DEF_COMP_IMPL(operator>=, type)
-  CH_DEF_COMP(const std::initializer_list<uint32_t>&)
-  CH_DEF_COMP(char)
-  CH_DEF_COMP(int8_t)
-  CH_DEF_COMP(uint8_t)
-  CH_DEF_COMP(int16_t)
-  CH_DEF_COMP(uint16_t)
-  CH_DEF_COMP(int32_t)
-  CH_DEF_COMP(uint32_t)
-  CH_DEF_COMP(int64_t)
-  CH_DEF_COMP(uint64_t)
-#undef CH_DEF_COMP
-#undef CH_DEF_COMP_IMPL
 
 }
 }

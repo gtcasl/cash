@@ -21,7 +21,7 @@ TEST_CASE("registers", "[registers]") {
     }, 10);
     TEST([]()->ch_bit1 {
       ch_bit2 a;
-      a = ch_reg<2>(a + 1, 1);
+      a = ch_reg(a + 1, 1);
       ch_bit2 e = ch_select(ch_getTick())
            (3, 10_b)
            (5, 11_b)

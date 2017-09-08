@@ -47,14 +47,14 @@ public:
             CH_REQUIRES(is_weak_convertible<P, ch_bit<1>>::value),
             CH_REQUIRES(is_weak_convertible<V, ch_bit<N>>::value)>
   select_t<N>& operator()(const P& pred, const V& value) {
-    impl_.push(get_lnode(pred), get_lnode(value));
+    impl_.push(get_lnode<P, 1>(pred), get_lnode<V, N>(value));
     return *this;
   }
   
   template <typename V,
             CH_REQUIRES(is_weak_convertible<V, ch_bit<N>>::value)>
   const auto operator()(const V& value) {
-    return make_bit<N>(impl_.eval(get_lnode(value)));
+    return make_bit<N>(impl_.eval(get_lnode<V, N>(value)));
   }
   
 protected:
@@ -78,14 +78,14 @@ public:
               CH_REQUIRES(is_weak_convertible<P, ch_bit<K>>::value),
               CH_REQUIRES(is_weak_convertible<V, ch_bit<N>>::value)>
     case_t& operator()(const P& pred, const V& value) {
-      impl_.push(get_lnode(pred), get_lnode(value));
+      impl_.push(get_lnode<P, K>(pred), get_lnode<V, N>(value));
       return *this;
     }
     
     template <typename V,
               CH_REQUIRES(is_weak_convertible<V, ch_bit<N>>::value)>
     const auto operator()(const V& value) {
-      return make_bit<N>(impl_.eval(get_lnode(value)));
+      return make_bit<N>(impl_.eval(get_lnode<V, N>(value)));
     }
     
   protected:
@@ -99,7 +99,7 @@ public:
             CH_REQUIRES(is_weak_convertible<P, ch_bit<K>>::value),
             CH_REQUIRES(is_weak_convertible<V, ch_bit<V::bitcount>>::value)>
   auto operator()(const P& pred, const V& value) {
-    return case_t<V::bitcount>(key_, get_lnode(pred), get_lnode(value));
+    return case_t<V::bitcount>(key_, get_lnode<P, K>(pred), get_lnode(value));
   }
   
 protected:
@@ -111,7 +111,7 @@ template <typename P, typename V,
           CH_REQUIRES(is_weak_convertible<P, ch_bit<1>>::value),
           CH_REQUIRES(is_weak_convertible<V, ch_bit<V::bitcount>>::value)>
 auto ch_select(const P& pred, const V& value) {
-  return select_t<V::bitcount>(get_lnode(pred), get_lnode(value));
+  return select_t<V::bitcount>(get_lnode<P, 1>(pred), get_lnode(value));
 }
 
 template <typename K,
@@ -127,7 +127,7 @@ template <typename P, typename U, typename V,
           CH_REQUIRES(is_weak_convertible<V, ch_bit<deduce_bitcount<U, V>::value>>::value)>
 const auto ch_select(const P& pred, const U& _true, const V& _false) {
   return make_bit<deduce_bitcount<U, V>::value>(
-        createSelectNode(get_lnode(pred),
+        createSelectNode(get_lnode<P, 1>(pred),
                          get_lnode<U, deduce_bitcount<U, V>::value>(_true),
                          get_lnode<V, deduce_bitcount<U, V>::value>(_false)));
 }

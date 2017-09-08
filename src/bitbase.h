@@ -63,14 +63,14 @@ public:
 
   typebase& operator=(const ch_literal<N>& rhs) {
     const lnode node(rhs);
-    this->write_data(0, {N, node, 0 , N}, 0, N);
+    this->write_data(0, {N, node.get_impl(), 0 , N}, 0, N);
     return *this;
   }
 
 #define CH_DEF_AOP(type) \
   typebase& operator=(type rhs) { \
     const lnode node(bitvector(N, rhs)); \
-    this->write_data(0, {N, node, 0 , N}, 0, N); \
+    this->write_data(0, {N, node.get_impl(), 0 , N}, 0, N); \
     return *this; \
   }
   CH_DEF_AOP(bool)

@@ -46,24 +46,24 @@ TEST_CASE("miscs", "[miscs]") {
   SECTION("tick", "[tick]") {
     TEST([]()->ch_bit1 {
       ch_print("tick={0}", ch_getTick());
-      return '1';
+      return 1_b;
     });
   }
   
   SECTION("print", "[print]") {
     TEST([]()->ch_bit1 {
       ch_print("hello world");
-      return '1';
+      return 1_b;
     });
     TEST([]()->ch_bit1 {
       ch_bit8 a(255);
       ch_print("a={0}", a);
-      return '1';
+      return 1_b;
     });    
     TEST([]()->ch_bit1 {
       ch_bit8 a(255), b(0);
       ch_print("a={0}, b={1}", a, b);
-      return '1';
+      return 1_b;
     });  
     TEST([]()->ch_bit1 {
       ch_bit8 a(255);
@@ -71,12 +71,12 @@ TEST_CASE("miscs", "[miscs]") {
       __if (b) (
         ch_print("a={0}", a);
       );
-      return '1';
+      return 1_b;
     });
     TEST([]()->ch_bit1 {
       ch_float a(0.1f);
       ch_print("a={0:f}", a);
-      return '1';
+      return 1_b;
     });
   }
   
@@ -106,7 +106,7 @@ TEST_CASE("miscs", "[miscs]") {
       ch_bus2 in(0), out;
       ch_device device(inverter, in, out);
       device.dump_stats(std::cout);
-      return '1';
+      return true;
     });
   }
 }

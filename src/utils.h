@@ -59,6 +59,18 @@ typename function_traits<Function>::function to_function(const Function& func) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+template <typename From, typename To>
+struct reference_cast {
+  using type = To;
+};
+
+template <typename To>
+struct reference_cast<To, To> {
+  using type = const To&;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
 class refcounted {
 public:
   

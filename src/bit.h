@@ -9,10 +9,6 @@ namespace internal {
 void createPrintNode(const std::string& format,
                      const std::initializer_list<lnode>& args);
 
-void createPrintNode(const lnode& pred,
-                     const std::string& format,
-                     const std::initializer_list<lnode>& args);
-
 template <unsigned N> class ch_bus;
 
 template <unsigned N>
@@ -287,6 +283,10 @@ const auto ch_shuffle(const ch_bitbase<N>& in,
 // print functions
 
 const ch_bit<64> ch_getTick();
+
+inline void ch_print(const std::string& format) {
+  createPrintNode(format, {});
+}
 
 template <typename...Args,
           CH_REQUIRES(is_bit_convertible<Args...>::value)>

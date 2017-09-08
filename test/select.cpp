@@ -407,10 +407,10 @@ TEST_CASE("conditionals", "[conditionals]") {
       ch_bit4 a(0), b;
       __switch (a) (
       __case (0) ( 
-        b = ch_zext<4>(10_b);
+        b = 0010_b;
       ) 
       __case (1) (
-        b = ch_zext<4>(01_b);
+        b = 0001_b;
       )
       __default (
         b = 1000_b;
