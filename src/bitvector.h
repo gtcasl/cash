@@ -38,9 +38,6 @@ public:
     
     reference(uint32_t& word, uint32_t mask)
       : word_(word), mask_(mask) {}
-
-    reference(reference&&) = default;
-    reference& operator=(reference&&) = default;
     
     uint32_t& word_;
     uint32_t  mask_;

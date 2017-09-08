@@ -195,6 +195,23 @@ lnodeimpl* memory::read(const lnode& addr) const {
   return impl_->read(addr);
 }
 
-void memory::write(const lnode& addr, const lnode& data) {
-  impl_->write(addr, data);
+void memory::write(const lnode& addr, size_t dst_offset, const lnode::data_type& in, size_t src_offset, size_t length) {
+  assert(0 == dst_offset);
+  if (0 == src_offset) {
+    impl_->write(addr, lnode(in));
+  } else {
+    lnode::data_type in2(length);
+    for (auto slice : in) {
+      if (src_offset < slice.length) {
+        uint32_t len = std::min(slice.length - src_offset, length);
+        in2.push(slice.src, slice.offset + src_offset, len);
+        length -= len;
+        if (0 == length)
+          break;
+        src_offset = slice.length;
+      }
+      src_offset -= slice.length;
+    }
+    impl_->write(addr, lnode(in2));
+  }
 }

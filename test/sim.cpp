@@ -122,26 +122,25 @@ TEST_CASE("simulation", "[sim]") {
       return (s2 == 1001_b);
     });
     TESTX([]()->bool {
-      s32_t::bus_type a{0, 0, 0, 0, 0, 0};
+      s32_t::bus_type a(0);
       uint32_t v = 0xABCD71E3;
       a.write(0, &v, sizeof(v));
       return (a == 0xABCD71E3);
     });
     TESTX([]()->bool {
-      s32_t::bus_type a{0, 0, 0, 0, 0, 0};
+      s32_t::bus_type a(0);
       uint32_t v = 0xABCD71E3;
       a.write(0, &v, sizeof(v), 4, 28);
       return (a == (0xABCD71E3 >> 4));
     });
     TESTX([]()->bool {
-      s32_t::bus_type a{0, 0, 0, 0, 0, 0};
+      s32_t::bus_type a(0);
       uint32_t v = 0xABCD71E3;
       a.write(4, &v, sizeof(v), 0, 28);
       return (a == (0xABCD71E3 << 4));
     });
     TESTX([]()->bool {
-      s32_t::bus_type a;
-      a = 0xABCD71E3;
+      s32_t::bus_type a(0xABCD71E3);
       uint32_t v = 0;
       a.read(0, &v, sizeof(v));
       return (v == 0xABCD71E3);
@@ -154,8 +153,7 @@ TEST_CASE("simulation", "[sim]") {
       return (v == (0xABCD71E3 >> 4));
     });
     TESTX([]()->bool {
-      s32_t::bus_type a;
-      a = 0xABCD71E3;
+      s32_t::bus_type a(0xABCD71E3);
       uint32_t v = 0;
       a.read(4, &v, sizeof(v), 0, 28);
       return (v == (0xABCD71E3 << 4));

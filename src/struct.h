@@ -77,6 +77,17 @@
                 CH_REVERSE_FOR_EACH(CH_STRUCT_FIELD_REQUIRES, CH_SEP_COMMA, __VA_ARGS__)> \
       explicit bus_type(CH_REVERSE_FOR_EACH(CH_STRUCT_CTOR_FIELD, CH_SEP_COMMA, __VA_ARGS__)) \
         : CH_FOR_EACH(CH_STRUCT_BUS_CTOR_FIELD_INIT, CH_SEP_COMMA, __VA_ARGS__) {} \
+      explicit bus_type(const cash::internal::ch_literal<base::bitcount>& rhs) { base::operator=(rhs); } \
+      explicit bus_type(bool rhs) { base::operator=(rhs); } \
+      explicit bus_type(char rhs) { base::operator=(rhs); } \
+      explicit bus_type(int8_t rhs) { base::operator=(rhs); } \
+      explicit bus_type(uint8_t rhs) { base::operator=(rhs); } \
+      explicit bus_type(int16_t rhs) { base::operator=(rhs); } \
+      explicit bus_type(uint16_t rhs) { base::operator=(rhs); } \
+      explicit bus_type(int32_t rhs) { base::operator=(rhs); } \
+      explicit bus_type(uint32_t rhs) { base::operator=(rhs); } \
+      explicit bus_type(int64_t rhs) { base::operator=(rhs); } \
+      explicit bus_type(uint64_t rhs) { base::operator=(rhs); } \
       bus_type& operator=(const bus_type& rhs) { \
         CH_FOR_EACH(CH_STRUCT_ASSIGN, CH_SEP_SEMICOLON, __VA_ARGS__); \
         return *this; \
@@ -99,6 +110,17 @@
               CH_REVERSE_FOR_EACH(CH_STRUCT_FIELD_REQUIRES, CH_SEP_COMMA, __VA_ARGS__)> \
     explicit name(CH_REVERSE_FOR_EACH(CH_STRUCT_CTOR_FIELD, CH_SEP_COMMA, __VA_ARGS__)) \
       : CH_FOR_EACH(CH_STRUCT_CTOR_FIELD_INIT, CH_SEP_COMMA, __VA_ARGS__) {} \
+    explicit name(const cash::internal::ch_literal<base::bitcount>& rhs) { base::operator=(rhs); } \
+    explicit name(bool rhs) { base::operator=(rhs); } \
+    explicit name(char rhs) { base::operator=(rhs); } \
+    explicit name(int8_t rhs) { base::operator=(rhs); } \
+    explicit name(uint8_t rhs) { base::operator=(rhs); } \
+    explicit name(int16_t rhs) { base::operator=(rhs); } \
+    explicit name(uint16_t rhs) { base::operator=(rhs); } \
+    explicit name(int32_t rhs) { base::operator=(rhs); } \
+    explicit name(uint32_t rhs) { base::operator=(rhs); } \
+    explicit name(int64_t rhs) { base::operator=(rhs); } \
+    explicit name(uint64_t rhs) { base::operator=(rhs); } \
     name& operator=(const name& rhs) { \
       CH_FOR_EACH(CH_STRUCT_ASSIGN, CH_SEP_SEMICOLON, __VA_ARGS__); \
       return *this; \

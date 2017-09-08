@@ -38,13 +38,48 @@ public:
 
   lnodeimpl* read(const lnode& addr) const;
 
-  void write(const lnode& addr, const lnode& data);
+  void write(const lnode& addr,
+             size_t dst_offset,
+             const lnode::data_type& in,
+             size_t src_offset,
+             size_t length);
   
 private:
 
   void load(const std::vector<uint8_t>& data);
 
   memimpl* impl_;
+};
+
+
+template <unsigned N>
+class memport_ref : public ch_bitbase<N> {
+public:
+  using base = ch_bitbase<N>;
+  using base::operator=;
+  using data_type = typename base::data_type;
+
+protected:
+
+  memport_ref(memory& mem, const lnode& addr)
+    : mem_(mem)
+    , addr_(addr)
+  {}
+
+  void read_data(data_type& inout, size_t offset, size_t length) const override {
+    CH_CHECK(offset + length <= N, "invalid read range");
+    inout.push(mem_.read(addr_), offset, length);
+  }
+
+  void write_data(size_t dst_offset, const data_type& in, size_t src_offset, size_t length) override {
+    CH_CHECK(0 == dst_offset || N == length, "partial update not supported!");
+    mem_.write(addr_, dst_offset, in, src_offset, length);
+  }
+
+  memory& mem_;
+  lnode addr_;
+
+  template <unsigned W, unsigned A> friend class ch_ram;
 };
 
 template <unsigned W, unsigned A>
@@ -66,12 +101,10 @@ public:
       mem_.load<T>(init_data, W, 1 << A);
     }
     
-    const auto operator[](const ch_bitbase<A>& addr) const {
-      return make_bit<W>(mem_.read(get_lnode(addr)));
-    }
-    
-    const auto operator[](const ch_bit<A>& addr) const {
-      return make_bit<W>(mem_.read(get_lnode(addr)));
+    template <typename T,
+              CH_REQUIRES(is_weak_convertible<T, ch_bit<A>>::value)>
+    const auto operator[](const T& addr) const {
+      return make_bit<W>(mem_.read(get_lnode<T, A>(addr)));
     }
     
 private:
@@ -80,56 +113,7 @@ private:
 
 template <unsigned W, unsigned A>
 class ch_ram {
-public:    
-    template <unsigned N>
-    class reference : public ch_bitbase<N> {
-    public:
-      using base = ch_bitbase<N>;
-      using base::operator=;
-      using data_type = typename base::data_type;
-
-    protected:
-
-      reference(memory& mem, const ch_bitbase<A>& addr)
-        : mem_(mem)
-        , addr_(addr)
-      {}
-
-      reference(reference&&) = default;
-      reference& operator=(reference&&) = default;
-
-      void read_data(data_type& inout, size_t offset, size_t length) const override {
-        CH_CHECK(offset + length <= N, "invalid read range");
-        inout.push(mem_.read(get_lnode(addr_)), offset, length);
-      }
-
-      void write_data(size_t dst_offset, const data_type& in, size_t src_offset, size_t length) override {
-        CH_CHECK(dst_offset != 0 || length != N, "partial update not supported!");
-        if (0 == src_offset) {
-          mem_.write(get_lnode(addr_), lnode(in));
-        } else {
-          data_type in2(length);
-          for (auto slice : in) {
-            if (src_offset < slice.length) {
-              uint32_t len = std::min(slice.length - src_offset, length);
-              in2.push(slice.src, slice.offset + src_offset, len);
-              length -= len;
-              if (0 == length)
-                break;
-              src_offset = slice.length;
-            }
-            src_offset -= slice.length;
-          }
-          mem_.write(get_lnode(addr_), lnode(in2));
-        }
-      }
-      
-      memory& mem_;
-      const ch_bitbase<A>& addr_;
-      
-      friend class ch_ram;
-    };  
-  
+public:
     ch_ram() : mem_(W, A, true) {}
   
     ch_ram(const std::string& init_file) : mem_(W, A, true) {
@@ -146,20 +130,16 @@ public:
       mem_.load<T>(init_data, W, 1 << A);
     }
     
-    const auto operator[](const ch_bitbase<A>& addr) const {
-      return make_bit<W>(mem_.read(get_lnode(addr)));
+    template <typename T,
+              CH_REQUIRES(is_weak_convertible<T, ch_bit<A>>::value)>
+    const auto operator[](const T& addr) const {
+      return make_bit<W>(mem_.read(get_lnode<T, A>(addr)));
     }
     
-    const auto operator[](const ch_bit<A>& addr) const {
-      return make_bit<W>(mem_.read(get_lnode(addr)));
-    }
-    
-    reference<W> operator[](const ch_bitbase<A>& addr) {
-      return reference<W>(mem_, addr);
-    }
-    
-    reference<W> operator[](const ch_bit<A>& addr) {
-      return reference<W>(mem_, addr);
+    template <typename T,
+              CH_REQUIRES(is_weak_convertible<T, ch_bit<A>>::value)>
+    memport_ref<W> operator[](const T& addr) {
+      return memport_ref<W>(mem_, get_lnode<T, A>(addr));
     }
     
 private:    

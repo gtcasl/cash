@@ -30,6 +30,13 @@ public:
     this->write_data(0, data, 0, base::bitcount);
   }
 
+  template<typename V,
+           CH_REQUIRES(N > 1),
+           CH_REQUIRES(std::is_assignable<ch_vec, V>::value)>
+  explicit ch_vec(const V& value) {
+    this->operator =(value);
+  }
+
   template<typename... Vs,
            CH_REQUIRES(N == sizeof...(Vs)),
            CH_REQUIRES(are_all_weak_convertible<T, Vs...>::value)>
