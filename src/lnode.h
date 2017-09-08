@@ -13,7 +13,7 @@ using ch_tick = uint64_t;
 class lnode {
 public:
   
-  using data_type = nodebuf<const lnode&>;
+  using data_type = nodebuf<lnodeimpl*>;
 
   lnode();
 
@@ -27,11 +27,11 @@ public:
 
   explicit lnode(uint32_t size);
 
-  lnode(lnodeimpl* impl);
+  explicit lnode(lnodeimpl* impl);
 
-  lnode(const bitvector& value);
+  explicit lnode(const bitvector& value);
 
-  lnode(const data_type& data);
+  explicit lnode(const data_type& data);
 
   lnode& operator=(const lnode& rhs);
 

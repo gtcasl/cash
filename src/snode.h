@@ -10,7 +10,7 @@ class snodeimpl;
 class snode {
 public:
   
-  using data_type = nodebuf<const snode&>;
+  using data_type = nodebuf<snodeimpl*>;
   
   snode();
 
@@ -20,11 +20,11 @@ public:
 
   snode(snode&& rhs);
 
-  snode(snodeimpl* impl);
+  explicit snode(snodeimpl* impl);
 
-  snode(const data_type& data);
+  explicit snode(const data_type& data);
 
-  snode(const bitvector& value);
+  explicit snode(const bitvector& value);
 
   ~snode();
   

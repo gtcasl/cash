@@ -88,6 +88,12 @@ private:
   template <typename T> friend class refcounted_ptr;
 };
 
+template <typename T>
+void acquire(T& x);
+
+template <typename T>
+void release(T& x);
+
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T>

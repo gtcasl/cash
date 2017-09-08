@@ -279,8 +279,8 @@ void lnode::read_data(data_type& inout,
                       uint32_t length,
                       uint32_t size) const {
   assert((offset + length) <= size);
-  const_cast<lnode*>(this)->ensureInitialized(size, true);
-  inout.push_back({*this, offset, length});
+  this->ensureInitialized(size, true);
+  inout.push_back({impl_, offset, length});
 }
 
 void lnode::write_data(uint32_t dst_offset,

@@ -486,7 +486,8 @@ void snode::read_data(data_type& inout,
                       uint32_t size) const {
   assert((offset + length) <= size);
   this->ensureInitialized(size);
-  inout.push_back({*this, offset, length});
+  impl_->acquire();
+  inout.push_back({impl_, offset, length});
 }
 
 void snode::write_data(uint32_t dst_offset,

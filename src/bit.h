@@ -168,7 +168,8 @@ void ch_cat_helper(lnode::data_type& data, const T& arg) {
 template<typename T0, typename... Ts>
 void ch_cat_helper(lnode::data_type& data, const T0& arg0, const Ts&... args) {
   ch_cat_helper(data, args...);
-  read_data(static_cast<typename ch_bit_cast<T0>::type>(arg0), data, 0, T0::bitcount);
+  typename ch_bit_cast<T0>::type x(arg0);
+  read_data(x, data, 0, T0::bitcount);
 }
 
 template<typename... Ts,

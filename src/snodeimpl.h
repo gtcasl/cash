@@ -108,5 +108,15 @@ protected:
   uint64_t  changeid_;
 };
 
+template <>
+void acquire<snodeimpl*>(snodeimpl* x) {
+  x->acquire();
+}
+
+template <T>
+void release<snodeimpl*>(snodeimpl* x) {
+  x->release();
+}
+
 }
 }
