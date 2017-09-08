@@ -92,8 +92,8 @@ public:
   
 protected:
 
-  ch_bit(const lnode& node) : node_(std::move(node)) {
-    assert(node_.get_size() == N);
+  ch_bit(lnodeimpl* node) : node_(node) {
+    assert(N == node_.get_size());
   }
 
   void read_data(data_type& inout,
@@ -111,12 +111,11 @@ protected:
 
   lnode node_;
 
-  template <unsigned M> friend const ch_bit<M> make_bit(const lnode& node);
+  template <unsigned M> friend const ch_bit<M> make_bit(lnodeimpl* node);
 };
 
 template <unsigned N>
-const ch_bit<N> make_bit(const lnode& node) {
-  assert(N == node.get_size());
+const ch_bit<N> make_bit(lnodeimpl* node) {
   return ch_bit<N>(node);
 }
 
@@ -177,7 +176,8 @@ template<typename... Ts,
 const auto ch_cat(const Ts&... args) {
   lnode::data_type data(concat_size<Ts...>::value);
   ch_cat_helper(data, args...);
-  return make_bit<concat_size<Ts...>::value>(data);
+  lnode node(data);
+  return make_bit<concat_size<Ts...>::value>(node.get_impl());
 }
 
 template <typename U, typename V,

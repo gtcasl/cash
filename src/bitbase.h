@@ -7,7 +7,7 @@ namespace internal {
 
 template <unsigned N> class ch_bit;
 
-template <unsigned N> const ch_bit<N> make_bit(const lnode& node);
+template <unsigned N> const ch_bit<N> make_bit(lnodeimpl* node);
 
 template <unsigned N> using ch_bitbase = typebase<N, lnode::data_type>;
 
@@ -20,7 +20,8 @@ public:
   const auto operator[](size_t index) const {
     lnode::data_type data(1);
     this->read_data(data, index, 1);
-    return make_bit<1>(data);
+    lnode node(data);
+    return make_bit<1>(node.get_impl());
   }
 
   auto operator[](size_t index) {
@@ -31,7 +32,8 @@ public:
   const auto slice(size_t index = 0) const {
     lnode::data_type data(M);
     this->read_data(data, index, M);
-    return make_bit<M>(data);
+    lnode node(data);
+    return make_bit<M>(node.get_impl());
   }
 
   template <unsigned M>
@@ -43,7 +45,8 @@ public:
   const auto aslice(size_t index = 0) const {
     lnode::data_type data(M);
     this->read_data(data, index * M, M);
-    return make_bit<M>(data);
+    lnode node(data);
+    return make_bit<M>(node.get_impl());
   }
 
   template <unsigned M>

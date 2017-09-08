@@ -88,22 +88,21 @@ struct second_bitcount {
 template <typename T>
 class nodebuf {
 public:
-
-  struct slice_t {
-    T src;
-    uint32_t offset;
-    uint32_t length;
-  };
-
   nodebuf(uint32_t capacity)
     : capacity_(capacity)
     , size_(0)
   {}
 
-  nodebuf(uint32_t capacity, const T& src, uint32_t offset, uint32_t length)
-    : capacity_(capacity)
-    , size_(length) {
-    slices_.push_back({src, offset, length});
+  nodebuf(uint32_t capacity, T src, uint32_t offset, uint32_t length)
+    : nodebuf(capacity) {
+    this->push(src, offset, length);
+  }
+
+  ~nodebuf() {
+    for (auto& slice : slices_) {
+      release(slice.src);
+    }
+    slices_.clear();
   }
 
   uint32_t get_capacity() const {
@@ -119,12 +118,13 @@ public:
   }
 
   bool is_srccopy() const {
-    return (1 == slices_.size()) && (slices_[0].src.get_size() == size_);
+    return (1 == slices_.size()) && (slices_[0].src->get_size() == size_);
   }
 
-  void push_back(const slice_t& data) {
-    slices_.emplace_back(data);
-    size_ += data.length;
+  void push(T src, uint32_t offset, uint32_t length) {
+    acquire(src);
+    slices_.emplace_back(slice_t{src, offset, length});
+    size_ += length;
     assert(size_ <= capacity_);
   }
 
@@ -138,6 +138,12 @@ public:
   }
 
 private:
+
+  struct slice_t {
+    T src;
+    uint32_t offset;
+    uint32_t length;
+  };
 
   std::vector<slice_t> slices_;
   uint32_t capacity_;    

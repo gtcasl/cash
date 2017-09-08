@@ -287,7 +287,8 @@ snode::snode(const snode& rhs, uint32_t size) : impl_(nullptr) {
 snode::snode(const data_type& data) : impl_(nullptr) {
   uint32_t dst_offset = 0;
   for (auto& d : data) {
-    this->assign(dst_offset, d.src, d.offset, d.length, data.get_size(), false);
+    d.src->acquire();
+    this->assign(dst_offset, snode(d.src), d.offset, d.length, data.get_size(), false);
     dst_offset += d.length;
   }
 }
@@ -346,6 +347,11 @@ uint32_t snode::get_id() const {
 snodeimpl* snode::get_impl() const {
   assert(impl_);
   return impl_;
+}
+
+void snode::set_value(const bitvector& value) {
+  assert(impl_);
+  return impl_->set_value(value);
 }
 
 const bitvector& snode::get_value() const {
@@ -487,7 +493,7 @@ void snode::read_data(data_type& inout,
   assert((offset + length) <= size);
   this->ensureInitialized(size);
   impl_->acquire();
-  inout.push_back({impl_, offset, length});
+  inout.push(impl_, offset, length);
 }
 
 void snode::write_data(uint32_t dst_offset,
@@ -499,7 +505,8 @@ void snode::write_data(uint32_t dst_offset,
   for (auto& d : in) {
     if (src_offset < d.length) {
       size_t len = std::min(d.length - src_offset, length);
-      this->assign(dst_offset, d.src, d.offset + src_offset, len, size, false);
+      d.src->acquire();
+      this->assign(dst_offset, snode(d.src), d.offset + src_offset, len, size, false);
       length -= len;
       if (0 == length)
         return;
@@ -508,6 +515,18 @@ void snode::write_data(uint32_t dst_offset,
     }
     src_offset -= d.length;
   }
+}
+
+template <>
+void cash::internal::acquire<snodeimpl*>(snodeimpl* x) {
+  assert(x);
+  x->acquire();
+}
+
+template <>
+void cash::internal::release<snodeimpl*>(snodeimpl* x) {
+  assert(x);
+  x->release();
 }
 
 std::ostream& cash::internal::operator<<(std::ostream& os, const snode& node) {

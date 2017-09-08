@@ -45,7 +45,7 @@ lnodeimpl* select_impl::eval(const lnode& value) {
   if (!key_.is_empty()) {
     while (!stmts.empty()) {
       const auto& stmt = stmts.top();
-      auto pred = createAluNode(alu_op_eq, key_, stmt.pred);
+      lnode pred(createAluNode(alu_op_eq, key_, stmt.pred));
       curr = createSelectNode(pred, stmt.value, curr ? lnode(curr) : value);
       stmts.pop();
     }

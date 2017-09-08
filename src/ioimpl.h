@@ -19,8 +19,6 @@ public:
   inputimpl(context* ctx, uint32_t size)
     : inputimpl(op_input, ctx, size)
   {}
-
-  ~inputimpl();
   
   void bind(const snode& bus);
 
@@ -41,10 +39,10 @@ public:
   outputimpl(const lnode& src)
     : outputimpl(op_output, src)
   {}
-
-  ~outputimpl();
   
-  snodeimpl* get_bus();
+  const snode& get_bus() const {
+    return bus_;
+  }
 
   const bitvector& eval(ch_tick t) override;
   
@@ -53,7 +51,7 @@ public:
   void print_vl(std::ostream& out) const override;
   
 private:
-  snodeimpl* bus_;
+  snode bus_;
   ch_tick tick_;
 };
 

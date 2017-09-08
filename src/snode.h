@@ -44,6 +44,8 @@ public:
   
   uint32_t get_size() const;
 
+  void set_value(const bitvector& value);
+
   const bitvector& get_value() const;
 
   bool operator[](uint32_t idx) const;
@@ -102,6 +104,12 @@ protected:
     
   mutable snodeimpl* impl_;
 };
+
+template <>
+void acquire<snodeimpl*>(snodeimpl* x);
+
+template <>
+void release<snodeimpl*>(snodeimpl* x);
 
 std::ostream& operator<<(std::ostream& os, const snode& node);
 

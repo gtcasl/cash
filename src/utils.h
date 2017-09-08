@@ -89,10 +89,10 @@ private:
 };
 
 template <typename T>
-void acquire(T& x);
+void acquire(T);
 
 template <typename T>
-void release(T& x);
+void release(T);
 
 ///////////////////////////////////////////////////////////////////////////////
 

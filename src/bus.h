@@ -92,8 +92,8 @@ public:
 
 protected:
 
-  ch_bus(const snode& node) : node_(node) {
-    assert(node_.get_size() == N);
+  ch_bus(snodeimpl* node) : node_(node) {
+    assert(N == node_.get_size());
   }
   
   void read_data(data_type& inout, size_t offset, size_t length) const override {
@@ -106,12 +106,11 @@ protected:
   
   snode node_;
 
-  template <unsigned M> friend const ch_bus<M> make_bus(const snode& node);
+  template <unsigned M> friend const ch_bus<M> make_bus(snodeimpl* node);
 };
 
 template <unsigned N>
-const ch_bus<N> make_bus(const snode& node) {
-  assert(node.get_size() == N);
+const ch_bus<N> make_bus(snodeimpl* node) {
   return ch_bus<N>(node);
 }
 

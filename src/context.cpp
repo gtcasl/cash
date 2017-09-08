@@ -215,9 +215,9 @@ void context::begin_block(lnodeimpl* pred) {
     branch->else_pred = pred;
   } else {
     if (pred) {
-      branch->else_pred = createAluNode(alu_op_or, branch->else_pred, pred);
+      branch->else_pred = createAluNode(alu_op_or, lnode(branch->else_pred), lnode(pred));
     } else {
-      branch->else_pred = createAluNode(alu_op_inv, branch->else_pred);
+      branch->else_pred = createAluNode(alu_op_inv, lnode(branch->else_pred));
     }
   }
   // insert new conditional block
@@ -250,7 +250,7 @@ lnodeimpl* context::build_aggregate_predicate(
     if (nullptr == parent_pred) {
       parent_pred = parent_block->branch->else_pred;
     }
-    pred = createAluNode(alu_op_and, parent_pred, pred);
+    pred = createAluNode(alu_op_and, lnode(parent_pred), lnode(pred));
   }
   use_block->agg_preds[def_block_id] = pred;
 
@@ -370,7 +370,7 @@ void context::conditional_assign(
       // last assignment took place in parent or sibling blocks
       if (pred) {
         // new conditional assignment
-        sel = dynamic_cast<selectimpl*>(createSelectNode(pred, src, last_upd.sel));
+        sel = dynamic_cast<selectimpl*>(createSelectNode(lnode(pred), src, lnode(last_upd.sel)));
         it_upds->second.emplace_front(sel, block.id);
       } else {
         // 'default' last assignment
@@ -384,15 +384,15 @@ void context::conditional_assign(
   } else {
     // new variable conditional assignment
     assert(pred);
-    auto _false = dst.get_impl()->get_slice(offset, length);
-    sel = dynamic_cast<selectimpl*>(createSelectNode(pred, src, _false));
+    lnode _false(dst.get_impl()->get_slice(offset, length));
+    sel = dynamic_cast<selectimpl*>(createSelectNode(lnode(pred), src, _false));
     cond_upds_[range].emplace_front(sel, block.id);
   }
 
   if (sel != sel_old) {
     auto proxy = dynamic_cast<proxyimpl*>(dst.get_impl());
     if (proxy) {
-      proxy->add_source(offset, sel, 0, length);
+      proxy->add_source(offset, lnode(sel), 0, length);
     } else {
       dst.set_impl(sel);
     }
@@ -412,17 +412,17 @@ void context::clone_conditional_assignment(
   for (auto it_upd = cond_upds.rbegin(), it_upd_end = cond_upds.rend();
        it_upd != it_upd_end; ++it_upd) {
     auto sel_old = it_upd->sel;
-    auto _true = (sel_old->get_true().get_impl() == prev_sel_old) ?
-          prev_sel_new : new proxyimpl(sel_old->get_true(), offset - range.offset, length);
-    auto _false = (sel_old->get_false().get_impl() == prev_sel_old) ?
-          prev_sel_new : new proxyimpl(sel_old->get_false(), offset - range.offset, length);
-    auto sel_new = dynamic_cast<selectimpl*>(createSelectNode(sel_old->get_pred(), _true, _false));
+    lnode _true((sel_old->get_true().get_impl() == prev_sel_old) ?
+          prev_sel_new : new proxyimpl(sel_old->get_true(), offset - range.offset, length));
+    lnode _false((sel_old->get_false().get_impl() == prev_sel_old) ?
+          prev_sel_new : new proxyimpl(sel_old->get_false(), offset - range.offset, length));
+    auto sel_new = dynamic_cast<selectimpl*>(createSelectNode(lnode(sel_old->get_pred()), _true, _false));
     cond_upds_[new_range].emplace_front(sel_new, it_upd->block_id);
     prev_sel_old = sel_old;
     prev_sel_new = sel_new;
   }
   auto proxy = dynamic_cast<proxyimpl*>(dst.get_impl());
-  proxy->add_source(offset, prev_sel_new, 0, length);
+  proxy->add_source(offset, lnode(prev_sel_new), 0, length);
 }
 
 void context::remove_from_locals(lnodeimpl* node) {
@@ -433,7 +433,7 @@ void context::remove_from_locals(lnodeimpl* node) {
   block.locals.erase(node);
 }
 
-lnodeimpl* context::createLiteralNode(const bitvector& value) {
+lnodeimpl* context::get_literal(const bitvector& value) {
   for (litimpl* lit : literals_) {
     if (lit->get_value() == value)
       return lit;
@@ -466,7 +466,7 @@ lnodeimpl* context::bind_input(const snode& bus) {
 
 snodeimpl* context::bind_output(const lnode& output) {
   outputimpl* impl = new outputimpl(output);
-  return impl->get_bus();
+  return impl->get_bus().get_impl();
 }
 
 void context::register_tap(const std::string& name, const lnode& node) {
@@ -491,7 +491,7 @@ snodeimpl* context::get_tap(const std::string& name, uint32_t size) {
   for (tapimpl* tap : taps_) {
     if (tap->get_tapName() == name) {
       CH_CHECK(tap->get_size() == size, "tap bus size mismatch: received %u, expected %u", size, tap->get_size());
-      return tap->get_bus();
+      return tap->get_bus().get_impl();
     }
   } 
   CH_ABORT("couldn't find tab '%s'", name.c_str());

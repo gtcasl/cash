@@ -58,7 +58,7 @@ int main(int argc, char **argv) {
       push = 1;      
       break;      
     case 2:
-      CHECK(!empty);
+      gitkggCHECK(!empty);
       CHECK(!full);
       CHECK(dout == 1);
       din  = 2;

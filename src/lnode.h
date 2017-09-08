@@ -95,10 +95,13 @@ protected:
   mutable lnodeimpl* impl_;
 };
 
-inline std::ostream& operator<<(std::ostream& out, const lnode& rhs) {
-  out << rhs.get_id();
-  return out;
-}
+template <>
+void acquire<lnodeimpl*>(lnodeimpl*);
+
+template <>
+void release<lnodeimpl*>(lnodeimpl*);
+
+std::ostream& operator<<(std::ostream& out, const lnode& rhs);
 
 }
 }

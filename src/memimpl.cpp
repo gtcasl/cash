@@ -11,7 +11,7 @@ memimpl::memimpl(context* ctx, uint32_t data_width, uint32_t addr_width, bool wr
   , ports_offset_(0)
   , cd_(nullptr) {  
   if (write_enable) {
-    lnodeimpl* clk = ctx->get_clk();
+    lnode clk(ctx->get_clk());
     cd_ = ctx->create_cdomain({clock_event(clk, EDGE_POS)});
     cd_->add_use(this);
     srcs_.emplace_back(clk);

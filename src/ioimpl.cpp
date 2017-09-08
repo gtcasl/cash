@@ -9,8 +9,6 @@ inputimpl::inputimpl(ch_operator op, context* ctx, uint32_t size)
   , tick_(~0ull)
 {}
 
-inputimpl::~inputimpl() {}
-
 void inputimpl::bind(const snode& bus) {
   bus_ = bus;
 }
@@ -44,32 +42,17 @@ void inputimpl::print(std::ostream& out, uint32_t level) const {
 
 outputimpl::outputimpl(ch_operator op, const lnode& src)
   : ioimpl(op, src.get_ctx(), src.get_size())
-  , bus_(nullptr)
+  , bus_(new snodeimpl(src.get_size()))
   , tick_(~0ull) {
   srcs_.emplace_back(src);
-}
-
-outputimpl::~outputimpl() {
-  if (bus_)
-    bus_->release();
 }
 
 const bitvector& outputimpl::eval(ch_tick t) {  
   if (tick_ != t) {
     tick_ = t;
-    if (bus_) {
-      bus_->set_value(srcs_[0].eval(t));
-    }
+    bus_.set_value(srcs_[0].eval(t));
   }
   return value_;
-}
-
-snodeimpl* outputimpl::get_bus() {
-  if (nullptr == bus_) {
-    bus_ = new snodeimpl(value_.get_size());
-    bus_->acquire();
-  }
-  return bus_;
 }
 
 void outputimpl::print_vl(std::ostream& out) const {

@@ -134,12 +134,6 @@ protected:
   friend class context;
 };
 
-template <>
-void acquire<lnodeimpl*>(lnodeimpl* x) {}
-
-template <T>
-void release<lnodeimpl*>(lnodeimpl* x) {}
-
 class undefimpl : public lnodeimpl {
 public:
   undefimpl(context* ctx, uint32_t size);

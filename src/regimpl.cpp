@@ -8,7 +8,7 @@ using namespace cash::internal;
 regimpl::regimpl(const lnode& next)
   : lnodeimpl(op_reg, next.get_ctx(), next.get_size()) {
   context* ctx = next.get_ctx();
-  lnodeimpl* clk = ctx->get_clk();
+  lnode clk(ctx->get_clk());
 
   cd_ = ctx->create_cdomain({clock_event(clk, EDGE_POS)});
   cd_->add_use(this);
@@ -118,8 +118,9 @@ void cash::internal::ch_popReset() {
 }
 
 lnodeimpl* cash::internal::createRegNode(const lnode& next, const lnode& init) {
-  lnodeimpl* reset = ctx_curr()->get_reset();
-  return new regimpl(createSelectNode(reset, init, next));
+  lnode reset(ctx_curr()->get_reset());
+  lnode _next(createSelectNode(reset, init, next));
+  return new regimpl(_next);
 }
 
 lnodeimpl* cash::internal::createLatchNode(

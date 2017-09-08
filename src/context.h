@@ -60,7 +60,7 @@ public:
   lnodeimpl* get_predicate(lnodeimpl* node, uint32_t offset, uint32_t length);
   void remove_from_locals(lnodeimpl* node);
   
-  lnodeimpl* createLiteralNode(const bitvector& value);
+  lnodeimpl* get_literal(const bitvector& value);
 
   cdomain* create_cdomain(const std::vector<clock_event>& sensitivity_list);
   void remove_cdomain(cdomain* cd);
