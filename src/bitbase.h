@@ -7,7 +7,7 @@ namespace internal {
 
 template <unsigned N> class ch_bit;
 
-template <unsigned N> const ch_bit<N> make_bit(lnodeimpl* node);
+template <unsigned N> const ch_bit<N> make_bit(const lnode& node);
 
 template <unsigned N> using ch_bitbase = typebase<N, lnode::data_type>;
 
@@ -20,8 +20,7 @@ public:
   const auto operator[](size_t index) const {
     lnode::data_type data(1);
     this->read_data(data, index, 1);
-    lnode node(data);
-    return make_bit<1>(node.get_impl());
+    return make_bit<1>(lnode(data));
   }
 
   auto operator[](size_t index) {
@@ -32,8 +31,7 @@ public:
   const auto slice(size_t index = 0) const {
     lnode::data_type data(M);
     this->read_data(data, index, M);
-    lnode node(data);
-    return make_bit<M>(node.get_impl());
+    return make_bit<M>(lnode(data));
   }
 
   template <unsigned M>
@@ -45,8 +43,7 @@ public:
   const auto aslice(size_t index = 0) const {
     lnode::data_type data(M);
     this->read_data(data, index * M, M);
-    lnode node(data);
-    return make_bit<M>(node.get_impl());
+    return make_bit<M>(lnode(data));
   }
 
   template <unsigned M>
@@ -61,16 +58,10 @@ public:
     return *this;
   }
 
-  typebase& operator=(const ch_literal<N>& rhs) {
-    const lnode node(rhs);
-    this->write_data(0, {N, node.get_impl(), 0 , N}, 0, N);
-    return *this;
-  }
-
 #define CH_DEF_AOP(type) \
   typebase& operator=(type rhs) { \
     const lnode node(bitvector(N, rhs)); \
-    this->write_data(0, {N, node.get_impl(), 0 , N}, 0, N); \
+    this->write_data(0, {N, node, 0 , N}, 0, N); \
     return *this; \
   }
   CH_DEF_AOP(bool)

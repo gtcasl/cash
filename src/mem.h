@@ -36,7 +36,7 @@ public:
     this->load(packed);
   }
 
-  lnodeimpl* read(const lnode& addr) const;
+  lnode& read(const lnode& addr) const;
 
   void write(const lnode& addr,
              size_t dst_offset,

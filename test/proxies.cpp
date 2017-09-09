@@ -1,5 +1,7 @@
 #include "common.h"
 
+using namespace cash::core_literals;
+
 TEST_CASE("proxies", "[proxies]") {
   SECTION("subscript", "[subscript]") {
     TEST([]()->ch_bit1 {

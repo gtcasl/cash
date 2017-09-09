@@ -74,14 +74,15 @@ struct reference_cast<To, To> {
 class refcounted {
 public:
   
-  void acquire() const {
-    ++refcount_;
+  long acquire() const {
+    return ++refcount_;
   }
 
-  void release() const {
+  long release() const {
     assert(refcount_ > 0);
-    if (--refcount_ <= 0)
+    if (0 == --refcount_)
       delete this;
+    return refcount_;
   }
   
   long get_refcount() const {
@@ -99,12 +100,6 @@ private:
   
   template <typename T> friend class refcounted_ptr;
 };
-
-template <typename T>
-void acquire(T);
-
-template <typename T>
-void release(T);
 
 ///////////////////////////////////////////////////////////////////////////////
 

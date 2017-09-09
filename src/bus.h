@@ -19,9 +19,7 @@ public:
   ch_bus(ch_bus&& rhs) : node_(std::move(rhs.node_)) {}
   
   ch_bus(const ch_busbase<N>& rhs) : node_(get_snode(rhs)) {}
-  
-  ch_bus(const ch_literal<N>& rhs) : node_(rhs) {}
- 
+
 #define CH_DEF_CTOR(type) \
   explicit ch_bus(type value) : node_(bitvector(N, value)) {}
   CH_DEF_CTOR(bool)
@@ -43,11 +41,6 @@ public:
 
   ch_bus& operator=(ch_bus&& rhs) {
     node_ = std::move(rhs.node_);
-    return *this;
-  }
-
-  ch_bus& operator=(const ch_literal<N>& rhs) {
-    node_.assign(rhs);
     return *this;
   }
   
@@ -91,7 +84,7 @@ public:
 
 protected:
 
-  ch_bus(snodeimpl* node) : node_(node) {
+  ch_bus(const snode& node) : node_(node) {
     assert(N == node_.get_size());
   }
   
@@ -105,11 +98,11 @@ protected:
   
   snode node_;
 
-  template <unsigned M> friend const ch_bus<M> make_bus(snodeimpl* node);
+  template <unsigned M> friend const ch_bus<M> make_bus(const snode& node);
 };
 
 template <unsigned N>
-const ch_bus<N> make_bus(snodeimpl* node) {
+const ch_bus<N> make_bus(const snode& node) {
   return ch_bus<N>(node);
 }
 

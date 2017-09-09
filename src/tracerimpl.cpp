@@ -10,10 +10,10 @@ void tracerimpl::ensureInitialize() {
 
   // register clock signals
   if (clk_) {
-    this->add_trace("clk", snode(clk_));
+    this->add_trace("clk", clk_);
   }
   if (reset_) {
-    this->add_trace("reset", snode(reset_));
+    this->add_trace("reset", reset_);
   }
 
   // register context taps

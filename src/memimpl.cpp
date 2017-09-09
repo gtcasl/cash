@@ -4,18 +4,21 @@
 
 using namespace cash::internal;
 
-memimpl::memimpl(context* ctx, uint32_t data_width, uint32_t addr_width, bool write_enable) 
+memimpl::memimpl(context* ctx,
+                 uint32_t data_width,
+                 uint32_t addr_width,
+                 bool write_enable)
   : ioimpl(op_mem, ctx, data_width << addr_width)
   , data_width_(data_width)
   , addr_width_(addr_width)
-  , ports_offset_(0)
+  , wr_ports_offset_(0)
   , cd_(nullptr) {  
   if (write_enable) {
     lnode clk(ctx->get_clk());
     cd_ = ctx->create_cdomain({clock_event(clk, EDGE_POS)});
     cd_->add_use(this);
     srcs_.emplace_back(clk);
-    ports_offset_ = 1;
+    wr_ports_offset_ = 1;
   }
 }
 
@@ -53,37 +56,44 @@ void memimpl::load(const std::string& file) {
   in.close();
 }
 
-memportimpl* memimpl::read(const lnode& addr) {
+lnode& memimpl::read(const lnode& addr) {
   return this->get_port(addr, false);
 }
 
 void memimpl::write(const lnode& addr, const lnode& data) {
-  memportimpl* port = this->get_port(addr, true);
-  port->write(data);  
+  auto& port = this->get_port(addr, true);
+  auto impl = dynamic_cast<memportimpl*>(port.get_impl());
+  impl->write(data);
 }
 
-memportimpl* memimpl::get_port(const lnode& addr, bool writing) {
-  for (uint32_t i = ports_offset_, n = srcs_.size(); i < n; ++i) {
-    auto item  = dynamic_cast<memportimpl*>(srcs_[i].get_impl());
-    if (item->get_addr() == addr)
-      return item;
+lnode& memimpl::get_port(const lnode& addr, bool writable) {
+  for (auto& port : ports_) {
+    auto impl = dynamic_cast<memportimpl*>(port.get_impl());
+    if (impl->get_addr() == addr) {
+      if (writable && !impl->is_writable()) {
+        impl->set_writable(true);
+        srcs_.emplace_back(impl);
+      }
+      return port;
+    }
   }
-  auto port = new memportimpl(this, addr);
-  if (writing) {
-    srcs_.emplace_back(port);
+  auto impl = new memportimpl(this, addr, writable);
+  ports_.emplace_back(impl);
+  if (writable) {
+    srcs_.emplace_back(impl);
   }
-  return port;
+  return ports_.back();
 }
 
 void memimpl::tick(ch_tick t) {    
-  for (uint32_t i = ports_offset_, n = srcs_.size(); i < n; ++i) {
+  for (uint32_t i = wr_ports_offset_, n = srcs_.size(); i < n; ++i) {
     auto port = dynamic_cast<memportimpl*>(srcs_[i].get_impl());
     port->tick(t);
   }
 }
 
 void memimpl::tick_next(ch_tick t) {
-  for (uint32_t i = ports_offset_, n = srcs_.size(); i < n; ++i) {
+  for (uint32_t i = wr_ports_offset_, n = srcs_.size(); i < n; ++i) {
     auto port = dynamic_cast<memportimpl*>(srcs_[i].get_impl());
     port->tick_next(t);
   }
@@ -115,20 +125,22 @@ void memimpl::print_vl(std::ostream& out) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-memportimpl::memportimpl(memimpl* mem, const lnode& addr)
+memportimpl::memportimpl(memimpl* mem, const lnode& addr, bool writable)
   : ioimpl(op_memport, mem->get_ctx(), mem->data_width_)
   , a_next_(0)
   , addr_id_(1)
   , wdata_id_(-1)
+  , writable_(writable)
   , tick_(~0ull) {
   srcs_.emplace_back(mem);
   srcs_.emplace_back(addr);
 }
 
-void memportimpl::write(const lnode& data) {
-  // use explicit assignment to force conditionals resolution
+void memportimpl::write(const lnode& data) {  
+  assert(writable_);
   if (wdata_id_ == -1) {
     wdata_id_ = srcs_.size();
+    // use explicit assignment to force conditionals resolution
     if (ctx_->conditional_enabled(this)) {
       srcs_.emplace_back(this);
       ctx_->conditional_assign(srcs_[wdata_id_], data, 0, data.get_size());
@@ -191,11 +203,15 @@ void memory::load(const std::string& file) {
   impl_->load(file);
 }
 
-lnodeimpl* memory::read(const lnode& addr) const {
+lnode& memory::read(const lnode& addr) const {
   return impl_->read(addr);
 }
 
-void memory::write(const lnode& addr, size_t dst_offset, const lnode::data_type& in, size_t src_offset, size_t length) {
+void memory::write(const lnode& addr,
+                   size_t dst_offset,
+                   const lnode::data_type& in,
+                   size_t src_offset,
+                   size_t length) {
   assert(0 == dst_offset);
   if (0 == src_offset) {
     impl_->write(addr, lnode(in));

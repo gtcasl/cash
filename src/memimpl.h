@@ -10,7 +10,10 @@ class memportimpl;
 
 class memimpl : public tickable, public ioimpl {
 public:  
-  memimpl(context* ctx, uint32_t data_width, uint32_t addr_width, bool write_enable);  
+  memimpl(context* ctx,
+          uint32_t data_width,
+          uint32_t addr_width,
+          bool write_enable);
   ~memimpl();
 
   uint32_t get_total_size() const {
@@ -20,7 +23,7 @@ public:
   void load(const std::string& file);
   void load(const std::vector<uint8_t>& data);
   
-  memportimpl* read(const lnode& addr);
+  lnode& read(const lnode& addr);
   void write(const lnode& addr, const lnode& data);
   
   void tick(ch_tick t) override;
@@ -34,11 +37,12 @@ protected:
 
   void load_data(const std::function<bool(uint8_t* out)>& getdata);
   
-  memportimpl* get_port(const lnode& addr, bool writing);
+  lnode& get_port(const lnode& addr, bool writable);
   
+  std::vector<lnode> ports_;
   uint32_t data_width_;
   uint32_t addr_width_;
-  uint32_t ports_offset_;
+  uint32_t wr_ports_offset_;
   cdomain* cd_;
   
   friend class memportimpl;
@@ -46,10 +50,18 @@ protected:
 
 class memportimpl : public ioimpl {
 public:  
-  memportimpl(memimpl* mem, const lnode& addr);
+  memportimpl(memimpl* mem, const lnode& addr, bool writable);
 
   const lnode& get_addr() const {
     return srcs_[addr_id_];
+  }
+
+  bool is_writable() const {
+    return writable_;
+  }
+
+  void set_writable(bool writable) {
+    writable_ = writable;
   }
   
   void write(const lnode& data);
@@ -65,10 +77,11 @@ protected:
   bitvector q_next_;
   uint32_t  a_next_;
   
-  int       addr_id_;
-  int       wdata_id_;
+  int addr_id_;
+  int wdata_id_;
+  bool writable_;
   
-  ch_tick  tick_;
+  ch_tick tick_;
   
   friend class memimpl;
 };

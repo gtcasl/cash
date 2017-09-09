@@ -28,5 +28,7 @@ bool runtest(const std::function<ch_bit<1>()>& test, ch_tick ticks) {
 
 bool runtestx(const std::function<bool()>& test) {
   begin_test();
-  return test();
+  bool bRet = test();
+  assert(bRet);
+  return bRet;
 }

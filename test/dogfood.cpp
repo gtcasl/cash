@@ -1,5 +1,7 @@
 #include "common.h"
 
+using namespace cash::core_literals;
+
 void experimental() {
   //--
 }
@@ -11,6 +13,13 @@ const auto foo(ch_bitbase<N>& x, const ch_bitbase<N>& y) {
 
 TEST_CASE("dogfood", "[dogfood]") {
   experimental();
+
+  TESTX([]()->bool {
+    ch_bus4 a;
+    uint8_t x = 4;
+    a.write(0, &x, sizeof(x), 0, 4);
+    return (a == 4);
+  });
 
   TEST([]()->ch_bit1 {
     /*ch_bit4 a(1101_b), b(0100);

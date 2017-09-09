@@ -10,7 +10,7 @@ class snodeimpl;
 class snode {
 public:
   
-  using data_type = nodebuf<snodeimpl*>;
+  using data_type = nodebuf<const snode&>;
   
   snode();
 
@@ -20,7 +20,7 @@ public:
 
   snode(snode&& rhs);
 
-  explicit snode(snodeimpl* impl);
+  snode(snodeimpl* impl);
 
   explicit snode(const data_type& data);
 
@@ -93,10 +93,9 @@ protected:
               const snode& src,
               uint32_t src_offset,
               uint32_t length,
-              uint32_t size,
-              bool is_owner);
+              uint32_t size);
   
-  void assign(snodeimpl* impl, bool is_owner);
+  void assign(snodeimpl* impl);
   
   void move(snode& rhs);
   
@@ -104,12 +103,6 @@ protected:
     
   mutable snodeimpl* impl_;
 };
-
-template <>
-void acquire<snodeimpl*>(snodeimpl* x);
-
-template <>
-void release<snodeimpl*>(snodeimpl* x);
 
 std::ostream& operator<<(std::ostream& os, const snode& node);
 

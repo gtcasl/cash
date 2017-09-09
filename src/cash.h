@@ -37,10 +37,6 @@ namespace core {
 
   using namespace cash::utility;
 
-  using namespace cash::internal::literals;
-
-  template<unsigned N> using ch_lit = cash::internal::ch_literal<N>;
-
   //
   // basic types
   //
@@ -63,13 +59,14 @@ namespace core {
   // pre-defined bit types
   //
 
-  using ch_bit1  = ch_bit<1>;
-  using ch_bit2  = ch_bit<2>;
-  using ch_bit4  = ch_bit<4>;
-  using ch_bit8  = ch_bit<8>;
-  using ch_bit16 = ch_bit<16>;
-  using ch_bit32 = ch_bit<32>;
-  using ch_bit64 = ch_bit<64>;
+  using ch_bit1   = ch_bit<1>;
+  using ch_bit2   = ch_bit<2>;
+  using ch_bit4   = ch_bit<4>;
+  using ch_bit8   = ch_bit<8>;
+  using ch_bit16  = ch_bit<16>;
+  using ch_bit32  = ch_bit<32>;
+  using ch_bit64  = ch_bit<64>;
+  using ch_bit128 = ch_bit<128>;
 
   //
   // subscript operators
@@ -200,13 +197,14 @@ namespace sim {
   // pre-defined bus types
   //
 
-  using ch_bus1  = ch_bus<1>;
-  using ch_bus2  = ch_bus<2>;
-  using ch_bus4  = ch_bus<4>;
-  using ch_bus8  = ch_bus<8>;
-  using ch_bus16 = ch_bus<16>;
-  using ch_bus32 = ch_bus<32>;
-  using ch_bus64 = ch_bus<64>;
+  using ch_bus1   = ch_bus<1>;
+  using ch_bus2   = ch_bus<2>;
+  using ch_bus4   = ch_bus<4>;
+  using ch_bus8   = ch_bus<8>;
+  using ch_bus16  = ch_bus<16>;
+  using ch_bus32  = ch_bus<32>;
+  using ch_bus64  = ch_bus<64>;
+  using ch_bus128 = ch_bus<128>;
   
   //
   // api objects
@@ -216,6 +214,18 @@ namespace sim {
   using ch_simulator = cash::internal::ch_simulator;
   using ch_tracer    = cash::internal::ch_tracer;
   using ch_vcdtracer = cash::internal::ch_vcdtracer;
+}
+
+//
+// literals
+//
+
+inline namespace core_literals {
+  using namespace cash::internal::core_literals;
+}
+
+inline namespace sim_literals {
+  using namespace cash::internal::sim_literals;
 }
 
 }

@@ -215,9 +215,9 @@ void context::begin_block(lnodeimpl* pred) {
     branch->else_pred = pred;
   } else {
     if (pred) {
-      branch->else_pred = createAluNode(alu_op_or, lnode(branch->else_pred), lnode(pred));
+      branch->else_pred = createAluNode(alu_op_or, branch->else_pred, pred);
     } else {
-      branch->else_pred = createAluNode(alu_op_inv, lnode(branch->else_pred));
+      branch->else_pred = createAluNode(alu_op_inv, branch->else_pred);
     }
   }
   // insert new conditional block
@@ -250,7 +250,7 @@ lnodeimpl* context::build_aggregate_predicate(
     if (nullptr == parent_pred) {
       parent_pred = parent_block->branch->else_pred;
     }
-    pred = createAluNode(alu_op_and, lnode(parent_pred), lnode(pred));
+    pred = createAluNode(alu_op_and, parent_pred, pred);
   }
   use_block->agg_preds[def_block_id] = pred;
 
@@ -370,7 +370,7 @@ void context::conditional_assign(
       // last assignment took place in parent or sibling blocks
       if (pred) {
         // new conditional assignment
-        sel = dynamic_cast<selectimpl*>(createSelectNode(lnode(pred), src, lnode(last_upd.sel)));
+        sel = dynamic_cast<selectimpl*>(createSelectNode(pred, src, last_upd.sel));
         it_upds->second.emplace_front(sel, block.id);
       } else {
         // 'default' last assignment
@@ -385,14 +385,14 @@ void context::conditional_assign(
     // new variable conditional assignment
     assert(pred);
     lnode _false(dst.get_impl()->get_slice(offset, length));
-    sel = dynamic_cast<selectimpl*>(createSelectNode(lnode(pred), src, _false));
+    sel = dynamic_cast<selectimpl*>(createSelectNode(pred, src, _false));
     cond_upds_[range].emplace_front(sel, block.id);
   }
 
   if (sel != sel_old) {
     auto proxy = dynamic_cast<proxyimpl*>(dst.get_impl());
     if (proxy) {
-      proxy->add_source(offset, lnode(sel), 0, length);
+      proxy->add_source(offset, sel, 0, length);
     } else {
       dst.set_impl(sel);
     }
@@ -416,13 +416,13 @@ void context::clone_conditional_assignment(
           prev_sel_new : new proxyimpl(sel_old->get_true(), offset - range.offset, length));
     lnode _false((sel_old->get_false().get_impl() == prev_sel_old) ?
           prev_sel_new : new proxyimpl(sel_old->get_false(), offset - range.offset, length));
-    auto sel_new = dynamic_cast<selectimpl*>(createSelectNode(lnode(sel_old->get_pred()), _true, _false));
+    auto sel_new = dynamic_cast<selectimpl*>(createSelectNode(sel_old->get_pred(), _true, _false));
     cond_upds_[new_range].emplace_front(sel_new, it_upd->block_id);
     prev_sel_old = sel_old;
     prev_sel_new = sel_new;
   }
   auto proxy = dynamic_cast<proxyimpl*>(dst.get_impl());
-  proxy->add_source(offset, lnode(prev_sel_new), 0, length);
+  proxy->add_source(offset, prev_sel_new, 0, length);
 }
 
 void context::remove_from_locals(lnodeimpl* node) {

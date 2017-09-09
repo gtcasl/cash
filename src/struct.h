@@ -77,7 +77,6 @@
                 CH_REVERSE_FOR_EACH(CH_STRUCT_FIELD_REQUIRES, CH_SEP_COMMA, __VA_ARGS__)> \
       explicit bus_type(CH_REVERSE_FOR_EACH(CH_STRUCT_CTOR_FIELD, CH_SEP_COMMA, __VA_ARGS__)) \
         : CH_FOR_EACH(CH_STRUCT_BUS_CTOR_FIELD_INIT, CH_SEP_COMMA, __VA_ARGS__) {} \
-      explicit bus_type(const cash::internal::ch_literal<base::bitcount>& rhs) { base::operator=(rhs); } \
       explicit bus_type(bool rhs) { base::operator=(rhs); } \
       explicit bus_type(char rhs) { base::operator=(rhs); } \
       explicit bus_type(int8_t rhs) { base::operator=(rhs); } \
@@ -110,7 +109,6 @@
               CH_REVERSE_FOR_EACH(CH_STRUCT_FIELD_REQUIRES, CH_SEP_COMMA, __VA_ARGS__)> \
     explicit name(CH_REVERSE_FOR_EACH(CH_STRUCT_CTOR_FIELD, CH_SEP_COMMA, __VA_ARGS__)) \
       : CH_FOR_EACH(CH_STRUCT_CTOR_FIELD_INIT, CH_SEP_COMMA, __VA_ARGS__) {} \
-    explicit name(const cash::internal::ch_literal<base::bitcount>& rhs) { base::operator=(rhs); } \
     explicit name(bool rhs) { base::operator=(rhs); } \
     explicit name(char rhs) { base::operator=(rhs); } \
     explicit name(int8_t rhs) { base::operator=(rhs); } \

@@ -1,5 +1,7 @@
 #include "common.h"
 
+using namespace cash::core_literals;
+
 __struct (s1_t,(
   (ch_bit4) a
   ),
@@ -94,6 +96,10 @@ TEST_CASE("aggregates", "[aggregates]") {
       s2_t s2(1_b4, 0_b4);
       return (s2 == 10000_b8);
     });
+    TEST([]()->ch_bit1 {
+      s3_t s3{3, 2, 1};
+      return (s3 == 0x321_h12);
+    });
   } 
   
   SECTION("unions", "[union]") {
@@ -128,8 +134,13 @@ TEST_CASE("aggregates", "[aggregates]") {
     });
 
     TEST([]()->ch_bit1 {
+      ch_vec<ch_bit2, 3> a{3, 2, 1};
+      return (a == 111001_b);
+    });
+
+    TEST([]()->ch_bit1 {
       ch_vec<ch_bit2, 2> a{01_b, 10_b};
-      return (a[0] == 01_b && a[1] == 10_b);
+      return (a[0] == 10_b && a[1] == 01_b);
     });
     
     TEST([]()->ch_bit1 {

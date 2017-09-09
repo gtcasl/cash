@@ -15,6 +15,7 @@ TEST_CASE("miscs", "[miscs]") {
   }
   
   SECTION("assert", "[assert]") {
+    using namespace cash::core_literals;
     TEST([]()->ch_bit1 {
       ch_bit4 a(1100_b);
       ch_bit2 c = a.slice<2>(1) ^ 01_b;
@@ -35,6 +36,7 @@ TEST_CASE("miscs", "[miscs]") {
   }
   
   SECTION("taps", "[tap]") {
+    using namespace cash::core_literals;
     TEST([]()->ch_bit1 {
       ch_bit4 a(1100_b);
       ch_bit2 c = a.slice<2>(1) ^ 01_b;
@@ -44,6 +46,7 @@ TEST_CASE("miscs", "[miscs]") {
   }
   
   SECTION("tick", "[tick]") {
+    using namespace cash::core_literals;
     TEST([]()->ch_bit1 {
       ch_print("tick={0}", ch_getTick());
       return 1_b;
@@ -51,6 +54,7 @@ TEST_CASE("miscs", "[miscs]") {
   }
   
   SECTION("print", "[print]") {
+    using namespace cash::core_literals;
     TEST([]()->ch_bit1 {
       ch_print("hello world");
       return 1_b;
@@ -81,6 +85,7 @@ TEST_CASE("miscs", "[miscs]") {
   }
   
   SECTION("vctracer", "[vctracer]") {
+    using namespace cash::sim_literals;
     TESTX([]()->bool {
       std::ofstream vcd_file("test.vcd");
       ch_bus2 in(2), x, out;       
@@ -98,6 +103,7 @@ TEST_CASE("miscs", "[miscs]") {
   }
 
   SECTION("stats", "[stats]") {
+    using namespace cash::sim_literals;
     TESTX([]()->bool {
       auto inverter = [](const ch_bit2& x)->ch_bit2 {
         ch_bit2 a(0), b(1);

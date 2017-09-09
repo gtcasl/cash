@@ -44,7 +44,7 @@ void simulatorimpl::ensureInitialize() {
         clk_->acquire();
         clk_->set_bit(0, true); // set 'high' by default
       }
-      ctx->clk_->bind(snode(clk_));
+      ctx->clk_->bind(clk_);
     }
 
     if (ctx->reset_) {
@@ -52,7 +52,7 @@ void simulatorimpl::ensureInitialize() {
         reset_ = new snodeimpl(1);
         reset_->acquire();
       }
-      ctx->reset_->bind(snode(reset_));
+      ctx->reset_->bind(reset_);
     }
   }
 }

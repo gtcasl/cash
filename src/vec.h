@@ -78,12 +78,12 @@ protected:
 
   template <typename V>
   void init(const V& value) {
-    items_[N-1] = value;
+    items_[0] = value;
   }
 
   template <typename V0, typename... Vs>
   void init(const V0& value0, const Vs&... values) {
-    items_[N - sizeof...(Vs)] = value0;
+    items_[sizeof...(Vs)] = value0;
     this->init(values...);
   }
   

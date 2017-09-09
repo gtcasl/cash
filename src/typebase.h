@@ -98,13 +98,6 @@ public:
     this->push(src, offset, length);
   }
 
-  ~nodebuf() {
-    for (auto& slice : slices_) {
-      release(slice.src);
-    }
-    slices_.clear();
-  }
-
   uint32_t get_capacity() const {
     return capacity_;
   }
@@ -118,11 +111,10 @@ public:
   }
 
   bool is_srccopy() const {
-    return (1 == slices_.size()) && (slices_[0].src->get_size() == size_);
+    return (1 == slices_.size()) && (slices_[0].src.get_size() == size_);
   }
 
   void push(T src, uint32_t offset, uint32_t length) {
-    acquire(src);
     slices_.emplace_back(slice_t{src, offset, length});
     size_ += length;
     assert(size_ <= capacity_);
@@ -170,15 +162,6 @@ template <typename T>
 void write_data(T& node, size_t dst_offset, const typename T::data_type& in, size_t src_offset, size_t length) {
   reinterpret_cast<typebase<T::bitcount,typename T::data_type>&>(node).write_data(dst_offset, in, src_offset, length);
 }
-
-///////////////////////////////////////////////////////////////////////////////
-
-template <unsigned N>
-class ch_literal : public bitvector {
-public:
-  static const unsigned bitcount = N;
-  explicit ch_literal(const char* value) : bitvector(N, value) {}
-};
 
 ///////////////////////////////////////////////////////////////////////////////
 

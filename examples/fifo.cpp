@@ -3,6 +3,7 @@
 #include <cash.h>
 
 using namespace cash::core;
+using namespace cash::core_literals;
 using namespace cash::sim;
 
 #define CHECK(x) if (!(x)) { assert(false); exit(1); }
@@ -50,6 +51,7 @@ int main(int argc, char **argv) {
   ch_vcdtracer tracer(vcd_file, myDevice);
   __trace(tracer, din, push, pop, dout, empty, full);
   tracer.run([&](ch_tick t)->bool {
+    std::cout << "t" << t << ": din=" << din << ", push=" << push << ", pop=" << pop << ", dout=" << dout << ", empty=" << empty << ", full=" << full << std::endl;
     switch (t) {
     case 0:
       CHECK(empty);
@@ -90,7 +92,6 @@ int main(int argc, char **argv) {
       pop = 0;
       break;
     }
-    std::cout << "t" << t << ": din=" << din << ", push=" << push << ", pop=" << pop << ", dout=" << dout << ", empty=" << empty << ", full=" << full << std::endl;
     return (t <= 10);
   });
 

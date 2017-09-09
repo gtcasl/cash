@@ -1,5 +1,7 @@
 #include "common.h"
 
+using namespace cash::core_literals;
+
 __struct(X,(
 (ch_bit2) q,
 (ch_bit2) p

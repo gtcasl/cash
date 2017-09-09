@@ -13,7 +13,7 @@ using ch_tick = uint64_t;
 class lnode {
 public:
   
-  using data_type = nodebuf<lnodeimpl*>;
+  using data_type = nodebuf<const lnode&>;
 
   lnode();
 
@@ -27,7 +27,7 @@ public:
 
   explicit lnode(uint32_t size);
 
-  explicit lnode(lnodeimpl* impl);
+  lnode(lnodeimpl* impl);
 
   explicit lnode(const bitvector& value);
 
@@ -94,12 +94,6 @@ protected:
   
   mutable lnodeimpl* impl_;
 };
-
-template <>
-void acquire<lnodeimpl*>(lnodeimpl*);
-
-template <>
-void release<lnodeimpl*>(lnodeimpl*);
 
 std::ostream& operator<<(std::ostream& out, const lnode& rhs);
 

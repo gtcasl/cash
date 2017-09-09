@@ -20,16 +20,10 @@ public:
     return *this;
   }
 
-  typebase& operator=(const ch_literal<N>& rhs) {
-    const snode node(rhs);
-    this->write_data(0, {N, node.get_impl(), 0 , N}, 0, N);
-    return *this;
-  }
-  
 #define CH_DEF_AOP(type) \
   typebase& operator=(type rhs) { \
     snode node(bitvector(N, rhs)); \
-    this->write_data(0, {N, node.get_impl(), 0 , N}, 0, N); \
+    this->write_data(0, {N, node, 0 , N}, 0, N); \
     return *this; \
   }
   CH_DEF_AOP(bool)
@@ -50,8 +44,7 @@ public:
     data_type data(length);
     this->read_data(data, src_offset, length);
     for (auto& slice : data) {
-      snode node(slice.src);
-      node.read(dst_offset, out, sizeInBytes, slice.offset, slice.length, node.get_size());
+      slice.src.read(dst_offset, out, sizeInBytes, slice.offset, slice.length, slice.src.get_size());
       dst_offset += slice.length;
     }
   }
@@ -62,8 +55,7 @@ public:
     data_type data(length);
     this->read_data(data, dst_offset, length);
     for (auto& slice : data) {
-      snode node(slice.src);
-      node.write(slice.offset, in, sizeInBytes, src_offset, slice.length, node.get_size());
+      const_cast<snode&>(slice.src).write(slice.offset, in, sizeInBytes, src_offset, slice.length, slice.src.get_size());
       src_offset += slice.length;
     }
   }

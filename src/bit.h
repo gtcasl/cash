@@ -25,8 +25,6 @@ public:
   ch_bit(ch_bit&& rhs) : node_(std::move(rhs.node_), N) {}
 
   ch_bit(const ch_bitbase<N>& rhs) : node_(get_lnode(rhs), N) {}
-
-  ch_bit(const ch_literal<N>& rhs) : node_(rhs) {}
     
 #define CH_DEF_CTOR(type) \
   explicit ch_bit(type value) : node_(bitvector(N, value)) {}
@@ -50,11 +48,6 @@ public:
 
   ch_bit& operator=(ch_bit&& rhs) {
     node_.move(rhs.node_, N);
-    return *this;
-  }
-  
-  ch_bit& operator=(const ch_literal<N>& rhs) {
-    node_.assign(rhs);
     return *this;
   }
 
@@ -88,7 +81,7 @@ public:
   
 protected:
 
-  ch_bit(lnodeimpl* node) : node_(node) {
+  ch_bit(const lnode& node) : node_(node) {
     assert(N == node_.get_size());
   }
 
@@ -107,11 +100,11 @@ protected:
 
   lnode node_;
 
-  template <unsigned M> friend const ch_bit<M> make_bit(lnodeimpl* node);
+  template <unsigned M> friend const ch_bit<M> make_bit(const lnode& node);
 };
 
 template <unsigned N>
-const ch_bit<N> make_bit(lnodeimpl* node) {
+const ch_bit<N> make_bit(const lnode& node) {
   return ch_bit<N>(node);
 }
 
@@ -156,24 +149,26 @@ lnode get_lnode(const T& rhs) {
 
 template<typename T>
 void ch_cat_helper(lnode::data_type& data, const T& arg) {
-  typename ch_bit_cast<T>::type x(arg);
-  read_data(x, data, 0, T::bitcount);
+  read_data(arg, data, 0, T::bitcount);
 }
 
 template<typename T0, typename... Ts>
 void ch_cat_helper(lnode::data_type& data, const T0& arg0, const Ts&... args) {
   ch_cat_helper(data, args...);
-  typename ch_bit_cast<T0>::type x(arg0);
-  read_data(x, data, 0, T0::bitcount);
+  read_data(arg0, data, 0, T0::bitcount);
+}
+
+template<typename... Ts>
+const auto cat_impl(const Ts&... args) {
+  lnode::data_type data(concat_size<Ts...>::value);
+  ch_cat_helper(data, args...);
+  return make_bit<concat_size<Ts...>::value>(lnode(data));
 }
 
 template<typename... Ts,
          CH_REQUIRES(is_bit_convertible<Ts...>::value)>
 const auto ch_cat(const Ts&... args) {
-  lnode::data_type data(concat_size<Ts...>::value);
-  ch_cat_helper(data, args...);
-  lnode node(data);
-  return make_bit<concat_size<Ts...>::value>(node.get_impl());
+  return cat_impl(static_cast<typename ch_bit_cast<Ts>::type>(args)...);
 }
 
 template <typename U, typename V,

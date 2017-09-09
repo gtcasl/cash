@@ -268,7 +268,7 @@ uint64_t snodeimpl::sync_sources() {
 snode::snode() : impl_(nullptr) {}
 
 snode::snode(const snode& rhs) : impl_(nullptr)  {
-  this->assign(rhs.impl_, false);
+  this->assign(rhs.impl_);
 }
 
 snode::snode(snode&& rhs) {
@@ -276,19 +276,18 @@ snode::snode(snode&& rhs) {
 }
 
 snode::snode(snodeimpl* impl) : impl_(nullptr) {
-  this->assign(impl, true);
+  this->assign(impl);
 }
 
 snode::snode(const snode& rhs, uint32_t size) : impl_(nullptr) {
   rhs.ensureInitialized(size);
-  this->assign(rhs.impl_, false);
+  this->assign(rhs.impl_);
 }
 
 snode::snode(const data_type& data) : impl_(nullptr) {
   uint32_t dst_offset = 0;
   for (auto& d : data) {
-    d.src->acquire();
-    this->assign(dst_offset, snode(d.src), d.offset, d.length, data.get_size(), false);
+    this->assign(dst_offset, d.src, d.offset, d.length, data.get_size());
     dst_offset += d.length;
   }
 }
@@ -311,7 +310,7 @@ void snode::clear() {
 }
 
 snode& snode::operator=(const snode& rhs) {
-  this->assign(rhs.impl_, false);
+  this->assign(rhs.impl_);
   return *this;
 }
 
@@ -396,7 +395,7 @@ void snode::clone(bool keep_data) {
 
 void snode::assign(const snode& rhs, uint32_t size) {
   rhs.ensureInitialized(size);
-  this->assign(rhs.impl_, false);
+  this->assign(rhs.impl_);
 }
 
 void snode::assign(const bitvector& value) {
@@ -412,7 +411,7 @@ void snode::assign(const bitvector& value) {
   impl_->set_value(value);
 }
 
-void snode::assign(snodeimpl* impl, bool is_owner) {  
+void snode::assign(snodeimpl* impl) {
   assert(impl && impl_ != impl);
   // add redirection if my implementation is shared
   if (impl_
@@ -420,11 +419,12 @@ void snode::assign(snodeimpl* impl, bool is_owner) {
    && impl_->get_refcount() > 1) {
     impl_->add_source(0, impl, 0, impl->get_size());
   } else {
-    impl->acquire();
-    if (is_owner)
+    if (1 == impl->acquire()) {
       impl->set_owner(this);
-    if (impl_)
+    }
+    if (impl_) {
       this->clear();
+    }
     impl_ = impl;
   }
 }
@@ -433,13 +433,12 @@ void snode::assign(uint32_t dst_offset,
                    const snode& src,
                    uint32_t src_offset,
                    uint32_t length,
-                   uint32_t size,
-                   bool is_owner) {
+                   uint32_t size) {
   assert((dst_offset + length) <= size);
   // check if full replacement
   if (size == length && size == src.get_size()) {
      assert(0 == dst_offset && 0 == src_offset);
-     this->assign(src.impl_, is_owner);
+     this->assign(src.impl_);
   } else {
     // partial assignment
     this->ensureInitialized(size);
@@ -492,8 +491,7 @@ void snode::read_data(data_type& inout,
                       uint32_t size) const {
   assert((offset + length) <= size);
   this->ensureInitialized(size);
-  impl_->acquire();
-  inout.push(impl_, offset, length);
+  inout.push(*this, offset, length);
 }
 
 void snode::write_data(uint32_t dst_offset,
@@ -505,8 +503,7 @@ void snode::write_data(uint32_t dst_offset,
   for (auto& d : in) {
     if (src_offset < d.length) {
       size_t len = std::min(d.length - src_offset, length);
-      d.src->acquire();
-      this->assign(dst_offset, snode(d.src), d.offset + src_offset, len, size, false);
+      this->assign(dst_offset, d.src, d.offset + src_offset, len, size);
       length -= len;
       if (0 == length)
         return;
@@ -515,18 +512,6 @@ void snode::write_data(uint32_t dst_offset,
     }
     src_offset -= d.length;
   }
-}
-
-template <>
-void cash::internal::acquire<snodeimpl*>(snodeimpl* x) {
-  assert(x);
-  x->acquire();
-}
-
-template <>
-void cash::internal::release<snodeimpl*>(snodeimpl* x) {
-  assert(x);
-  x->release();
 }
 
 std::ostream& cash::internal::operator<<(std::ostream& os, const snode& node) {
