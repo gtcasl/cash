@@ -25,9 +25,11 @@ public:
   ch_bit(ch_bit&& rhs) : node_(std::move(rhs.node_), N) {}
 
   ch_bit(const ch_bitbase<N>& rhs) : node_(get_lnode(rhs), N) {}
+
+  ch_bit(const ch_boolean& rhs) : node_(bitvector(N, (int)rhs)) {}
     
 #define CH_DEF_CTOR(type) \
-  explicit ch_bit(type value) : node_(bitvector(N, value)) {}
+  explicit ch_bit(type rhs) : node_(bitvector(N, rhs)) {}
   CH_DEF_CTOR(const std::initializer_list<uint32_t>&)
   CH_DEF_CTOR(bool)
   CH_DEF_CTOR(char)
@@ -59,8 +61,8 @@ public:
   }
   
 #define CH_DEF_AOP(type) \
-  ch_bit& operator=(type value) { \
-    node_.assign(bitvector(N, value)); \
+  ch_bit& operator=(type rhs) { \
+    node_.assign(bitvector(N, rhs)); \
     return *this; \
   } 
   CH_DEF_AOP(bool)

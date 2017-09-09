@@ -10,13 +10,12 @@ class ch_real : public ch_bit<32> {
 public:
   using base = ch_bit<32>;
   using data_type = typename base::data_type;
-  using bus_type = ch_bus<32>;  
-  using base::operator=;
+  using bus_type = ch_bus<32>;
   using base::base;
   
   ch_real() {}
   ch_real(const ch_real& rhs) : base(rhs) {}
-  explicit ch_real(const base& rhs) : base(rhs) {}
+  ch_real(const base& rhs) : base(rhs) {}
   explicit ch_real(float rhs) : base(bitcast<uint32_t, float>(rhs)) {}
   
   ch_real& operator=(const ch_real& rhs) {

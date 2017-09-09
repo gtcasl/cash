@@ -23,6 +23,8 @@ public:
     owner_ = owner;
   }
 
+  bool get_ownership(const snode* owner);
+
   void add_source(uint32_t dst_offset,
                   snodeimpl* src,
                   uint32_t src_offset,

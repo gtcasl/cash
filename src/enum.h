@@ -50,6 +50,14 @@
     name clone() const { \
       return this->clone(); \
     } \
+  private: \
+    name(const base& b) : base(b) {} \
+    friend name ch_reg(const name& next, const name& init) { \
+      return cash::internal::ch_reg(next, init); \
+    } \
+    friend name ch_reg(const name& next) { \
+      return cash::internal::ch_reg(next); \
+    } \
   public:
   
 #define CH_ENUM(name, size, body, ...) \

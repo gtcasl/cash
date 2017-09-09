@@ -54,32 +54,12 @@ struct deduce_bitcount {
 };
 
 template <typename T0, typename T1>
-struct max_bitcount {
-  using D0 = typename std::decay<T0>::type;
-  using D1 = typename std::decay<T1>::type;
-  using U0 = typename std::conditional<has_bitcount<D0>::value, D0, zero_bitcount>::type;
-  using U1 = typename std::conditional<has_bitcount<D1>::value, D1, zero_bitcount>::type;
-  using type = typename std::conditional<(U0::bitcount > U1::bitcount), U0, U1>::type;
-  static const unsigned value = type::bitcount;
-};
-
-template <typename T0, typename T1>
 struct first_bitcount {
   using D0 = typename std::decay<T0>::type;
   using D1 = typename std::decay<T1>::type;
   using U0 = typename std::conditional<has_bitcount<D0>::value, D0, zero_bitcount>::type;
   using U1 = typename std::conditional<has_bitcount<D1>::value, D1, zero_bitcount>::type;
   using type = typename std::conditional<(U0::bitcount != 0), U0, U1>::type;
-  static const unsigned value = type::bitcount;
-};
-
-template <typename T0, typename T1>
-struct second_bitcount {
-  using D0 = typename std::decay<T0>::type;
-  using D1 = typename std::decay<T1>::type;
-  using U0 = typename std::conditional<has_bitcount<D0>::value, D0, zero_bitcount>::type;
-  using U1 = typename std::conditional<has_bitcount<D1>::value, D1, zero_bitcount>::type;
-  using type = typename std::conditional<(U1::bitcount != 0), U1, U0>::type;
   static const unsigned value = type::bitcount;
 };
 

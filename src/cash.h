@@ -56,7 +56,7 @@ namespace core {
   using ch_float = cash::internal::ch_real;
 
   //
-  // pre-defined bit types
+  // bit types
   //
 
   using ch_bit1   = ch_bit<1>;
@@ -67,6 +67,13 @@ namespace core {
   using ch_bit32  = ch_bit<32>;
   using ch_bit64  = ch_bit<64>;
   using ch_bit128 = ch_bit<128>;
+
+  //
+  // boolean types
+  //
+
+  using cash::internal::ch_true;
+  using cash::internal::ch_false;
 
   //
   // subscript operators
@@ -194,7 +201,7 @@ namespace sim {
   template<unsigned N> using ch_busbase = cash::internal::ch_busbase<N>;
 
   //
-  // pre-defined bus types
+  // bus types
   //
 
   using ch_bus1   = ch_bus<1>;

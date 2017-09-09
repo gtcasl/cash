@@ -19,11 +19,6 @@ bitvector::bitvector(uint32_t size) : words_(nullptr), size_(0) {
   this->resize(size, 0, true, false);
 }
 
-bitvector::bitvector(uint32_t size, const char* value) : words_(nullptr), size_(0) {
-  this->resize(size, 0x0, false, false);
-  this->operator =(value);
-}
-
 bitvector::bitvector(uint32_t size, char value) : words_(nullptr), size_(0) {
   this->resize(size, 0x0, false, false);
   this->operator =(value);
@@ -38,6 +33,11 @@ bitvector::bitvector(uint32_t size, const std::initializer_list<uint32_t>& value
   : words_(nullptr), size_(0) {  
   this->resize(size, 0x0, false, false);
   this->operator =(value);  
+}
+
+bitvector::bitvector(uint32_t size, const char* value) : words_(nullptr), size_(0) {
+  this->resize(size, 0x0, false, false);
+  this->operator =(value);
 }
 
 bitvector::~bitvector() {

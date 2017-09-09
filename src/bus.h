@@ -21,7 +21,7 @@ public:
   ch_bus(const ch_busbase<N>& rhs) : node_(get_snode(rhs)) {}
 
 #define CH_DEF_CTOR(type) \
-  explicit ch_bus(type value) : node_(bitvector(N, value)) {}
+  explicit ch_bus(type rhs) : node_(bitvector(N, rhs)) {}
   CH_DEF_CTOR(bool)
   CH_DEF_CTOR(char)
   CH_DEF_CTOR(int8_t)
@@ -50,8 +50,8 @@ public:
   }
 
 #define CH_DEF_AOP(type) \
-  ch_bus& operator=(type value) { \
-    node_.assign(bitvector(N, value)); \
+  ch_bus& operator=(type rhs) { \
+    node_.assign(bitvector(N, rhs)); \
     return *this; \
   }
   CH_DEF_AOP(bool)

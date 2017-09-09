@@ -7,11 +7,19 @@ __struct(X,(
 (ch_bit2) p
 ));
 
+__enum(E,2,(
+  a,
+  b,
+  c,
+  d
+));
+
 TEST_CASE("registers", "[registers]") {
   SECTION("registers", "[register]") {
     TEST([]()->ch_bit1 {
-      ch_bit2 a;
+      ch_bit2 a, b;
       a = ch_reg(a + 1);
+      b = ch_reg<2>(b + 1);
       ch_bit2 e = ch_select(ch_getTick())
            (3, 01_b)
            (5, 10_b)
@@ -19,11 +27,12 @@ TEST_CASE("registers", "[registers]") {
            (9, 00_b)
               (a);
       //ch_print("t={0}, a={1}, e={2}", ch_getTick(), a, e);
-      return (e == a);
+      return (e == a) && (e == b);
     }, 10);
     TEST([]()->ch_bit1 {
-      ch_bit2 a;
+      ch_bit2 a, b;
       a = ch_reg(a + 1, 1);
+      b = ch_reg<2>(b + 1, 1);
       ch_bit2 e = ch_select(ch_getTick())
            (3, 10_b)
            (5, 11_b)
@@ -31,7 +40,15 @@ TEST_CASE("registers", "[registers]") {
            (9, 01_b)
               (a);
       //ch_print("t={0}, a={1}", ch_getTick(), a);
-      return (e == a);
+      return (e == a) && (e == b);
+    }, 10);
+
+    TEST([]()->ch_bit1 {
+      E x(ch_reg(E::c, E::a));
+      ch_bit2 e = ch_select<2>(ch_getTick())
+           (3, E::c)
+           (x);
+      return (x == e);
     }, 10);
   }
 

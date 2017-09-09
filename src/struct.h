@@ -19,16 +19,13 @@
   typename _T##i
 
 #define CH_STRUCT_FIELD_REQUIRES(i, x) \
-  CH_REQUIRES(cash::internal::is_weak_convertible<_T##i, ch_bit<CH_PAIR_L(x)::bitcount>>::value)
+  CH_REQUIRES(cash::internal::is_weak_convertible<_T##i, CH_PAIR_L(x)>::value)
 
 #define CH_STRUCT_CTOR_FIELD(i, x) \
   const _T##i& CH_CONCAT(_,CH_PAIR_R(x))
 
 #define CH_STRUCT_CTOR_FIELD_INIT(i, x) \
-  CH_PAIR_R(x)(static_cast<typename cash::internal::ch_bit_cast<_T##i, CH_PAIR_L(x)::bitcount>::type>(CH_CONCAT(_,CH_PAIR_R(x))))
-
-#define CH_STRUCT_BUS_CTOR_FIELD_INIT(i, x) \
-  CH_PAIR_R(x)(static_cast<typename cash::internal::ch_bus_cast<_T##i, CH_PAIR_L(x)::bitcount>::type>(CH_CONCAT(_,CH_PAIR_R(x))))
+  CH_PAIR_R(x)(CH_CONCAT(_,CH_PAIR_R(x)))
 
 #define CH_STRUCT_ASSIGN(i, x) \
   this->CH_PAIR_R(x) = rhs.CH_PAIR_R(x)
@@ -76,7 +73,7 @@
       template <CH_REVERSE_FOR_EACH(CH_STRUCT_FIELD_TMPL, CH_SEP_COMMA, __VA_ARGS__), \
                 CH_REVERSE_FOR_EACH(CH_STRUCT_FIELD_REQUIRES, CH_SEP_COMMA, __VA_ARGS__)> \
       explicit bus_type(CH_REVERSE_FOR_EACH(CH_STRUCT_CTOR_FIELD, CH_SEP_COMMA, __VA_ARGS__)) \
-        : CH_FOR_EACH(CH_STRUCT_BUS_CTOR_FIELD_INIT, CH_SEP_COMMA, __VA_ARGS__) {} \
+        : CH_FOR_EACH(CH_STRUCT_CTOR_FIELD_INIT, CH_SEP_COMMA, __VA_ARGS__) {} \
       explicit bus_type(bool rhs) { base::operator=(rhs); } \
       explicit bus_type(char rhs) { base::operator=(rhs); } \
       explicit bus_type(int8_t rhs) { base::operator=(rhs); } \

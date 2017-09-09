@@ -68,6 +68,14 @@ __enum (my_enum, 4,(
   stats,
   done
 )); 
+
+__enum (O_t, 1, (
+  a
+));
+
+__struct (U_t, (
+  (O_t) a
+));
  
 TEST_CASE("aggregates", "[aggregates]") {
   SECTION("structs", "[struct]") {

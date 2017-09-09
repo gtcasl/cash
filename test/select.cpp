@@ -16,6 +16,11 @@ TEST_CASE("conditionals", "[conditionals]") {
     });
     TEST([]()->ch_bit1 {
       ch_bit4 a(0), b(1), c;
+      c = ch_select<4>(a > b, 3, 2);
+      return (c == 2);
+    });
+    TEST([]()->ch_bit1 {
+      ch_bit4 a(0), b(1), c;
       c = ch_select(a > b, a)(a == 0, 0)(b);
       return (c == 0);
     });

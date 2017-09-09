@@ -103,6 +103,28 @@ TEST_CASE("simulation", "[sim]") {
       a.write(0, &x, sizeof(x), 0, 4);
       return (a == 4);
     });
+    TESTX([]()->bool {
+      ch_bus4 in, out;
+      auto foo = [](const ch_bit4& x)->ch_bit4 {
+        return x + 1;
+      };
+      ch_device myDevice(foo, in, out);
+      ch_simulator sim(myDevice);
+      in = 7;
+      sim.run(1);
+      return (out == 8);
+    });
+    TESTX([]()->bool {
+      ch_bus4 in, out;
+      auto foo = [](const ch_bit4& x)->ch_bit4 {
+        return x + 1;
+      };
+      ch_device myDevice(foo, in, out);
+      ch_simulator sim(myDevice);
+      in = 0x7_h4;
+      sim.run(1);
+      return (out == 8);
+    });
   }
   SECTION("structs", "[struct]") {
     TESTX([]()->bool {          

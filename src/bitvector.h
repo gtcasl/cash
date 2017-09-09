@@ -231,8 +231,6 @@ public:
 
   bitvector(uint32_t size, char value);
 
-  bitvector(uint32_t size, const char* value);
-    
   bitvector(uint32_t size, int8_t value)
     : bitvector(size, bitcast<uint32_t>(value))
   {}
@@ -264,6 +262,8 @@ public:
   {}
 
   bitvector(uint32_t size, const std::initializer_list<uint32_t>& value);
+
+  bitvector(uint32_t size, const char* value);
   
   ~bitvector();
   

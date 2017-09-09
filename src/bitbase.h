@@ -11,6 +11,11 @@ template <unsigned N> const ch_bit<N> make_bit(const lnode& node);
 
 template <unsigned N> using ch_bitbase = typebase<N, lnode::data_type>;
 
+enum ch_boolean {
+  ch_false = 0,
+  ch_true = 1
+};
+
 template <unsigned N>
 class typebase<N, lnode::data_type> : public typebase_itf<lnode::data_type> {
 public:   
@@ -55,6 +60,12 @@ public:
     data_type data(N);
     rhs.read_data(data, 0, N);
     this->write_data(0, data, 0, N);
+    return *this;
+  }
+
+  typebase& operator=(const ch_boolean& rhs) {
+    const lnode node(bitvector(N, (int)rhs)); \
+    this->write_data(0, {N, node, 0 , N}, 0, N); \
     return *this;
   }
 

@@ -63,7 +63,7 @@
 
 #define CH_SHIFTOP_GEN(func, op) \
   template <typename A, typename B, \
-            CH_REQUIRES(max_bitcount<A, B>::value != 0), \
+            CH_REQUIRES(first_bitcount<A, B>::value != 0), \
             CH_REQUIRES(is_weak_convertible<A, ch_bit<first_bitcount<A, B>::value>>::value), \
             CH_REQUIRES(is_weak_convertible<B, ch_bit<first_bitcount<B, A>::value>>::value)> \
   const auto op(const A& a, const B& b) { \
@@ -115,6 +115,11 @@ CH_SHIFTOP_GEN(ch_slr, operator>>)
 template <ch_alu_op op, unsigned N, typename A, typename B>
 const auto OpBinary(const A& a, const B& b) {
   return make_bit<N>(createAluNode(op, get_lnode<A, N>(a), get_lnode<B, N>(b)));
+}
+
+template <ch_alu_op op, unsigned N, unsigned M, typename A, typename B>
+const auto OpShift(const A& a, const B& b) {
+  return make_bit<N>(createAluNode(op, get_lnode<A, N>(a), get_lnode<B, M>(b)));
 }
 
 template <ch_alu_op op, unsigned N, typename A, typename B>
@@ -271,35 +276,35 @@ const auto ch_le(const A& a, const B& b) {
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename A, typename B,
-          CH_REQUIRES(max_bitcount<A, B>::value != 0),
+          CH_REQUIRES(first_bitcount<A, B>::value != 0),
           CH_REQUIRES(is_weak_convertible<A, ch_bit<first_bitcount<A, B>::value>>::value),
           CH_REQUIRES(is_weak_convertible<B, ch_bit<first_bitcount<B, A>::value>>::value)>
 const auto ch_sll(const A& a, const B& b) {
-  return OpBinary<alu_op_shl, first_bitcount<A, B>::value>(a, b);
+  return OpShift<alu_op_shl, first_bitcount<A, B>::value, first_bitcount<B, A>::value>(a, b);
 }
 
 template <typename A, typename B,
-          CH_REQUIRES(max_bitcount<A, B>::value != 0),
+          CH_REQUIRES(first_bitcount<A, B>::value != 0),
           CH_REQUIRES(is_weak_convertible<A, ch_bit<first_bitcount<A, B>::value>>::value),
           CH_REQUIRES(is_weak_convertible<B, ch_bit<first_bitcount<B, A>::value>>::value)>
 const auto ch_slr(const A& a, const B& b) {
-  return OpBinary<alu_op_shr, first_bitcount<A, B>::value>(a, b);
+  return OpShift<alu_op_shr, first_bitcount<A, B>::value, first_bitcount<B, A>::value>(a, b);
 }  
 
 template <typename A, typename B,
-          CH_REQUIRES(max_bitcount<A, B>::value != 0),
+          CH_REQUIRES(first_bitcount<A, B>::value != 0),
           CH_REQUIRES(is_weak_convertible<A, ch_bit<first_bitcount<A, B>::value>>::value),
           CH_REQUIRES(is_weak_convertible<B, ch_bit<first_bitcount<B, A>::value>>::value)>
 const auto ch_rotl(const A& a, const B& b) {
-  return OpBinary<alu_op_rotl, first_bitcount<A, B>::value>(a, b);
+  return OpShift<alu_op_rotl, first_bitcount<A, B>::value, first_bitcount<B, A>::value>(a, b);
 }
 
 template <typename A, typename B,
-          CH_REQUIRES(max_bitcount<A, B>::value != 0),
+          CH_REQUIRES(first_bitcount<A, B>::value != 0),
           CH_REQUIRES(is_weak_convertible<A, ch_bit<first_bitcount<A, B>::value>>::value),
           CH_REQUIRES(is_weak_convertible<B, ch_bit<first_bitcount<B, A>::value>>::value)>
 const auto ch_rotr(const A& a, const B& b) {
-  return OpBinary<alu_op_rotr, first_bitcount<A, B>::value>(a, b);
+  return OpShift<alu_op_rotr, first_bitcount<A, B>::value, first_bitcount<B, A>::value>(a, b);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

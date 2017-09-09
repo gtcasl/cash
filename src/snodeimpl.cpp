@@ -31,6 +31,13 @@ snodeimpl::~snodeimpl() {
   }
 }
 
+bool snodeimpl::get_ownership(const snode* owner) {
+  if (owner_ != owner && owner_ != nullptr)
+    return false;
+  owner_ = owner;
+  return true;
+}
+
 void snodeimpl::add_source(uint32_t dst_offset,
                            snodeimpl* src,
                            uint32_t src_offset,
@@ -365,11 +372,19 @@ bool snode::operator[](uint32_t idx) const {
 
 void snode::move(snode& rhs) {
   assert(this != &rhs);
-  impl_ = rhs.impl_;
-  rhs.impl_ = nullptr;
-  // transfer ownership
-  if (impl_->get_owner() == &rhs)
-    impl_->set_owner(this);
+  // use redirection if impl is shared
+  if (impl_
+   && impl_->get_ownership(this)
+   && impl_->get_refcount() > 1) {
+    impl_->add_source(0, rhs.impl_, 0, rhs.impl_->get_size());
+  } else {
+    impl_ = rhs.impl_;
+    rhs.impl_ = nullptr;
+    // transfer ownership
+    if (impl_->get_ownership(&rhs)) {
+      impl_->set_owner(this);
+    }
+  }
 }
 
 void snode::ensureInitialized(uint32_t size) const {
@@ -402,7 +417,7 @@ void snode::assign(const bitvector& value) {
   if (nullptr == impl_) {
     this->ensureInitialized(value.get_size());
   } else {
-    if (impl_->get_owner() != this) {
+    if (!impl_->get_ownership(this)) {
       this->clone(false);
     } else {
       impl_->clear_sources(0, value.get_size());
@@ -413,9 +428,9 @@ void snode::assign(const bitvector& value) {
 
 void snode::assign(snodeimpl* impl) {
   assert(impl && impl_ != impl);
-  // add redirection if my implementation is shared
+  // use redirection if impl is shared
   if (impl_
-   && impl_->get_owner() == this
+   && impl_->get_ownership(this)
    && impl_->get_refcount() > 1) {
     impl_->add_source(0, impl, 0, impl->get_size());
   } else {
@@ -442,8 +457,9 @@ void snode::assign(uint32_t dst_offset,
   } else {
     // partial assignment
     this->ensureInitialized(size);
-    if (impl_->get_owner() != this)
+    if (!impl_->get_ownership(this)) {
       this->clone(true);
+    }
     impl_->add_source(dst_offset, src.impl_, src_offset, length);
   }
 }
@@ -456,8 +472,9 @@ uint32_t snode::get_word(uint32_t idx, uint32_t size) const {
 
 void snode::set_word(uint32_t idx, uint32_t value, uint32_t size) {
   this->ensureInitialized(size);
-  if (impl_->get_owner() != this)
+  if (!impl_->get_ownership(this)) {
     this->clone(true);
+  }
   impl_->clear_sources(idx * 32, 32);
   impl_->set_word(idx, value);
 }
@@ -479,8 +496,9 @@ void snode::write(uint32_t dst_offset,
                   uint32_t length,
                   uint32_t size) {
   this->ensureInitialized(size);
-  if (impl_->get_owner() != this)
+  if (!impl_->get_ownership(this)) {
     this->clone(true);
+  }
   impl_->clear_sources(dst_offset, length);
   impl_->write(dst_offset, in, sizeInBytes, src_offset, length);
 }
