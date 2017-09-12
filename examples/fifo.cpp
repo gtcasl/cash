@@ -17,11 +17,11 @@ __out(ch_bit<W>, ch_bit1, ch_bit1) FiFo(
   ch_seq<ch_bit<A+1>> rd_ptr, wr_ptr;
   ch_bit1 empty, full;
 
-  ch_bit<A> rd_A(ch_slice<A>(rd_ptr));
-  ch_bit<A> wr_A(ch_slice<A>(wr_ptr));
+  auto rd_A = ch_slice<A>(rd_ptr);
+  auto wr_A = ch_slice<A>(wr_ptr);
 
-  ch_bit1 reading(pop && !empty);
-  ch_bit1 writing(push && !full);
+  auto reading = pop && !empty;
+  auto writing = push && !full;
   
   rd_ptr.next = ch_select(reading, rd_ptr + 1, rd_ptr);
   wr_ptr.next = ch_select(writing, wr_ptr + 1, wr_ptr);
@@ -29,7 +29,7 @@ __out(ch_bit<W>, ch_bit1, ch_bit1) FiFo(
   empty = (wr_ptr == rd_ptr);
   full  = (wr_A == rd_A) && (wr_ptr[A] != rd_ptr[A]);
   
-  ch_bit<W> dout = mem[rd_A];
+  auto dout = mem[rd_A];
   __if (writing) (
     mem[wr_A] = din;
   );

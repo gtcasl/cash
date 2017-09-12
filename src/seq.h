@@ -7,10 +7,10 @@ namespace internal {
 
 template <typename T>
 class ch_seq : public T {
-public:
-  using value_type = T;
+public:  
   using base = ch_bitbase<T::bitcount>;
   using data_type = typename T::data_type;
+  using value_type = T;
   using bus_type = typename T::bus_type;
 
   T next;
@@ -22,7 +22,7 @@ public:
   }
   
   template <typename U,
-            CH_REQUIRES(is_weak_convertible<U, T>::value)>
+            CH_REQUIRES(is_cast_convertible<U, T>::value)>
   ch_seq(const U& init) {
     auto reg = ch_reg(next, static_cast<typename reference_cast<U, T>::type>(init));
     T::operator=(std::move(reg));

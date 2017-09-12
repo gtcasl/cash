@@ -12,6 +12,8 @@
 #include "mem.h"
 #include "arithm.h"
 #include "bus.h"
+#include "port.h"
+#include "module.h"
 #include "device.h"
 #include "simulator.h"
 #include "vcdtracer.h"
@@ -45,15 +47,19 @@ namespace core {
   using cash::internal::ilog2;
   using cash::internal::ilog2ceil;
 
-  template<typename T, unsigned N> using ch_vec = cash::internal::ch_vec<T, N>;
+  template <typename T, unsigned N> using ch_vec = cash::internal::ch_vec<T, N>;
 
-  template<unsigned N> using ch_bit = cash::internal::ch_bit<N>;
+  template <unsigned N> using ch_bit = cash::internal::ch_bit<N>;
 
-  template<unsigned N> using ch_bitbase = cash::internal::ch_bitbase<N>;
+  template <unsigned N> using ch_bitbase = cash::internal::ch_bitbase<N>;
 
-  template<typename T> using ch_seq = cash::internal::ch_seq<T>;
+  template <typename T> using ch_seq = cash::internal::ch_seq<T>;
 
   using ch_float = cash::internal::ch_real;
+
+  template <typename T> using ch_in = cash::internal::ch_in<T>;
+  template <typename T> using ch_out = cash::internal::ch_out<T>;
+  template <typename T> using ch_module = cash::internal::ch_module<T>;
 
   //
   // bit types
@@ -196,9 +202,9 @@ namespace sim {
 
   using ch_tick  = cash::internal::ch_tick;
   
-  template<unsigned N> using ch_bus = cash::internal::ch_bus<N>;
+  template <unsigned N> using ch_bus = cash::internal::ch_bus<N>;
 
-  template<unsigned N> using ch_busbase = cash::internal::ch_busbase<N>;
+  template <unsigned N> using ch_busbase = cash::internal::ch_busbase<N>;
 
   //
   // bus types
@@ -256,6 +262,9 @@ inline namespace sim_literals {
 #define __struct   CH_STRUCT
 #define __union    CH_UNION
 #define __enum     CH_ENUM
+
+#define __inout    CH_INOUT
+#define __io       CH_IO
 
 #define __out      CH_OUT
 #define __ret      CH_RET

@@ -3,16 +3,19 @@ LDFLAGS += -lcash
 
 PROJECT = test.out
 
-SRCS = main.cpp dogfood.cpp smoke.cpp literals.cpp proxies.cpp aggregates.cpp select.cpp arithm.cpp reg.cpp mem.cpp sim.cpp miscs.cpp float.cpp
+SRCS = common.cpp literals.cpp proxies.cpp aggregates.cpp select.cpp arithm.cpp reg.cpp mem.cpp sim.cpp miscs.cpp float.cpp main.cpp
 
 OBJS = $(SRCS:.cpp=.o)
 
-all: $(PROJECT)
+all: $(PROJECT) dogfood.out
 
 $(PROJECT) : $(OBJS)
 	$(CXX) $(CXXFLAGS) $^ $(LDFLAGS) -o $@
 
-.depend: $(SRCS)
+dogfood.out : dogfood.o
+	$(CXX) $(CXXFLAGS) $^ $(LDFLAGS) -o $@
+
+.depend: $(SRCS) dogfood.cpp
 	$(CXX) $(CXXFLAGS) -MM $^ > .depend;
 
 clean:

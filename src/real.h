@@ -10,8 +10,8 @@ class ch_real : public ch_bit<32> {
 public:
   using base = ch_bit<32>;
   using data_type = typename base::data_type;
+  using value_type = ch_real;
   using bus_type = ch_bus<32>;
-  using base::base;
   
   ch_real() {}
   ch_real(const ch_real& rhs) : base(rhs) {}

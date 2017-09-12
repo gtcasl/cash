@@ -11,7 +11,8 @@ public:
   using base = typebase<N * T::bitcount, typename T::data_type>;
   using base::operator=;
   using data_type = typename base::data_type;
-  using bus_type = ch_vec<typename T::bus_type, N>;
+  using value_type = ch_vec;
+  using bus_type = typename std::conditional<std::is_class<typename T::bus_type>::value, typename T::bus_type, value_type>::type;
   
   ch_vec() {}
 
@@ -30,16 +31,16 @@ public:
     this->write_data(0, data, 0, base::bitcount);
   }
 
-  template<typename V,
+  template <typename V,
            CH_REQUIRES(N > 1),
            CH_REQUIRES(std::is_assignable<ch_vec, V>::value)>
   explicit ch_vec(const V& value) {
     this->operator =(value);
   }
 
-  template<typename... Vs,
+  template <typename... Vs,
            CH_REQUIRES(N == sizeof...(Vs)),
-           CH_REQUIRES(are_all_weak_convertible<T, Vs...>::value)>
+           CH_REQUIRES(are_all_cast_convertible<T, Vs...>::value)>
   explicit ch_vec(const Vs&... values) {
     this->init(values...);
   }

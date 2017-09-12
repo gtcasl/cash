@@ -10,7 +10,7 @@ class ch_bus : public ch_busbase<N> {
 public:  
   using base = ch_busbase<N>;
   using data_type = typename base::data_type;
-  using bus_type = ch_bus;
+  using value_type = ch_bus;
       
   ch_bus() {}
   
@@ -106,17 +106,17 @@ const ch_bus<N> make_bus(const snode& node) {
   return ch_bus<N>(node);
 }
 
-template<typename... Ts>
+template <typename... Ts>
 struct is_bus_convertible;
 
-template<typename T>
+template <typename T>
 struct is_bus_convertible<T> {
-  static const bool value = is_weak_convertible<T, ch_bus<T::bitcount>>::value;
+  static const bool value = is_cast_convertible<T, ch_bus<T::bitcount>>::value;
 };
 
-template<typename T0, typename... Ts>
+template <typename T0, typename... Ts>
 struct is_bus_convertible<T0, Ts...> {
-  static const bool value = is_weak_convertible<T0, ch_bus<T0::bitcount>>::value && is_bus_convertible<Ts...>::value;
+  static const bool value = is_cast_convertible<T0, ch_bus<T0::bitcount>>::value && is_bus_convertible<Ts...>::value;
 };
 
 template <typename T, unsigned N = T::bitcount>
@@ -135,7 +135,7 @@ struct ch_bus_cast<ch_bus<N>, N> {
 };
 
 template <typename T, unsigned N = T::bitcount,
-          CH_REQUIRES(is_weak_convertible<T, ch_bus<N>>::value)>
+          CH_REQUIRES(is_cast_convertible<T, ch_bus<N>>::value)>
 snode get_snode(const T& rhs) {
   snode::data_type data(N);
   typename ch_bus_cast<T, N>::type x(rhs);
@@ -150,8 +150,8 @@ std::ostream& operator<<(std::ostream& os, const ch_busbase<N>& bus) {
 
 template <typename A, typename B,
           CH_REQUIRES(deduce_bitcount<A, B>::value != 0),
-          CH_REQUIRES(is_weak_convertible<A, ch_bus<deduce_bitcount<A, B>::value>>::value),
-          CH_REQUIRES(is_weak_convertible<B, ch_bus<deduce_bitcount<A, B>::value>>::value)>
+          CH_REQUIRES(is_cast_convertible<A, ch_bus<deduce_bitcount<A, B>::value>>::value),
+          CH_REQUIRES(is_cast_convertible<B, ch_bus<deduce_bitcount<A, B>::value>>::value)>
 bool operator==(const A& a, const B& b) {
   return get_snode<A, deduce_bitcount<A, B>::value>(a).is_equal(
         get_snode<B, deduce_bitcount<A, B>::value>(b), deduce_bitcount<A, B>::value);
@@ -159,8 +159,8 @@ bool operator==(const A& a, const B& b) {
 
 template <typename A, typename B,
           CH_REQUIRES(deduce_bitcount<A, B>::value != 0),
-          CH_REQUIRES(is_weak_convertible<A, ch_bus<deduce_bitcount<A, B>::value>>::value),
-          CH_REQUIRES(is_weak_convertible<B, ch_bus<deduce_bitcount<A, B>::value>>::value)>
+          CH_REQUIRES(is_cast_convertible<A, ch_bus<deduce_bitcount<A, B>::value>>::value),
+          CH_REQUIRES(is_cast_convertible<B, ch_bus<deduce_bitcount<A, B>::value>>::value)>
 bool operator<(const A& a, const B& b) {
   return get_snode<A, deduce_bitcount<A, B>::value>(a).is_less(
         get_snode<B, deduce_bitcount<A, B>::value>(b), deduce_bitcount<A, B>::value);
@@ -168,32 +168,32 @@ bool operator<(const A& a, const B& b) {
 
 template <typename A, typename B,
           CH_REQUIRES(deduce_bitcount<A, B>::value != 0),
-          CH_REQUIRES(is_weak_convertible<A, ch_bus<deduce_bitcount<A, B>::value>>::value),
-          CH_REQUIRES(is_weak_convertible<B, ch_bus<deduce_bitcount<A, B>::value>>::value)>
+          CH_REQUIRES(is_cast_convertible<A, ch_bus<deduce_bitcount<A, B>::value>>::value),
+          CH_REQUIRES(is_cast_convertible<B, ch_bus<deduce_bitcount<A, B>::value>>::value)>
 bool operator!=(const A& a, const B& b) {
   return !(a == b);
 }
 
 template <typename A, typename B,
           CH_REQUIRES(deduce_bitcount<A, B>::value != 0),
-          CH_REQUIRES(is_weak_convertible<A, ch_bus<deduce_bitcount<A, B>::value>>::value),
-          CH_REQUIRES(is_weak_convertible<B, ch_bus<deduce_bitcount<A, B>::value>>::value)>
+          CH_REQUIRES(is_cast_convertible<A, ch_bus<deduce_bitcount<A, B>::value>>::value),
+          CH_REQUIRES(is_cast_convertible<B, ch_bus<deduce_bitcount<A, B>::value>>::value)>
 bool operator>(const A& a, const B& b) {
   return (b < a);
 }
 
 template <typename A, typename B,
           CH_REQUIRES(deduce_bitcount<A, B>::value != 0),
-          CH_REQUIRES(is_weak_convertible<A, ch_bus<deduce_bitcount<A, B>::value>>::value),
-          CH_REQUIRES(is_weak_convertible<B, ch_bus<deduce_bitcount<A, B>::value>>::value)>
+          CH_REQUIRES(is_cast_convertible<A, ch_bus<deduce_bitcount<A, B>::value>>::value),
+          CH_REQUIRES(is_cast_convertible<B, ch_bus<deduce_bitcount<A, B>::value>>::value)>
 bool operator<=(const A& a, const B& b) {
   return !(a > b);
 }
 
 template <typename A, typename B,
           CH_REQUIRES(deduce_bitcount<A, B>::value != 0),
-          CH_REQUIRES(is_weak_convertible<A, ch_bus<deduce_bitcount<A, B>::value>>::value),
-          CH_REQUIRES(is_weak_convertible<B, ch_bus<deduce_bitcount<A, B>::value>>::value)>
+          CH_REQUIRES(is_cast_convertible<A, ch_bus<deduce_bitcount<A, B>::value>>::value),
+          CH_REQUIRES(is_cast_convertible<B, ch_bus<deduce_bitcount<A, B>::value>>::value)>
 bool operator>=(const A& a, const B& b) {
   return !(a < b);
 }

@@ -5,13 +5,17 @@
 namespace cash {
 namespace internal {
 
+  template <unsigned N> class ch_bus;
+
 template <unsigned N> using ch_busbase = typebase<N, snode::data_type>;
 
 template <unsigned N>
 class typebase<N, snode::data_type> : public typebase_itf<snode::data_type> {
 public:   
   static const unsigned bitcount = N;
+  using base = typebase;
   using data_type = snode::data_type;
+  using device_type = ch_bus<N>;
   
   typebase& operator=(const typebase& rhs) {
     data_type data(N);

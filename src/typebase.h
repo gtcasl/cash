@@ -9,7 +9,7 @@ namespace internal {
 template <typename T>
 class has_bitcount {
 private:
-    template<typename U, typename = typename std::enable_if<!std::is_member_pointer<decltype(&U::bitcount)>::value>::type>
+    template <typename U, typename = typename std::enable_if<!std::is_member_pointer<decltype(&U::bitcount)>::value>::type>
     static std::true_type check(int);
 
     template <typename>
@@ -68,6 +68,8 @@ struct first_bitcount {
 template <typename T>
 class nodebuf {
 public:
+  using value_type = T;
+
   nodebuf(uint32_t capacity)
     : capacity_(capacity)
     , size_(0)
@@ -146,32 +148,84 @@ void write_data(T& node, size_t dst_offset, const typename T::data_type& in, siz
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T, unsigned N>
+class const_sliceref : public typebase<N, typename T::data_type> {
+public:
+  static_assert(N <= T::bitcount, "invalid slice size");
+  using base = typebase<N, typename T::data_type>;
+  using data_type = typename base::data_type;
+  using value_type = const_sliceref;
+
+  const_sliceref(const T& container, size_t start = 0)
+    : container_(container)
+    , start_(start) {
+    CH_CHECK(start + N <= T::bitcount, "invalid slice range");
+  }
+
+  const_sliceref(const T&& container, size_t start = 0)
+    : container_(std::move(const_cast<T&&>(container)))
+    , start_(start) {
+    CH_CHECK(start + N <= T::bitcount, "invalid slice range");
+  }
+
+  const auto operator[](size_t index) const & {
+    return const_sliceref<T, 1>(container_, start_ + index);
+  }
+
+  const auto operator[](size_t index) const && {
+    return const_sliceref<T, 1>(std::move(container_), start_ + index);
+  }
+
+  template <unsigned M>
+  const auto slice(size_t index = 0) const & {
+    return const_sliceref<T, M>(container_, start_ + index);
+  }
+
+  template <unsigned M>
+  const auto slice(size_t index = 0) const && {
+    return const_sliceref<T, M>(std::move(container_), start_ + index);
+  }
+
+  template <unsigned M>
+  const auto aslice(size_t index = 0) const & {
+    return const_sliceref<T, M>(container_, start_ + index * M);
+  }
+
+  template <unsigned M>
+  const auto aslice(size_t index = 0) const && {
+    return const_sliceref<T, M>(std::move(container_), start_ + index * M);
+  }
+
+protected:
+
+  void read_data(data_type& inout, size_t offset, size_t length) const override {
+    CH_CHECK(offset + length <= N, "invalid read range");
+    cash::internal::read_data(container_, inout, start_ + offset, length);
+  }
+
+  void write_data(size_t dst_offset, const data_type& in, size_t src_offset, size_t length) override {
+    CH_CHECK(dst_offset + length <= N, "invalid write range");
+    cash::internal::write_data(container_, start_ + dst_offset, in, src_offset, length);
+  }
+
+  T container_;
+  size_t start_;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+template <typename T, unsigned N>
 class sliceref : public typebase<N, typename T::data_type> {
 public:
   static_assert(N <= T::bitcount, "invalid slice size");
   using base = typebase<N, typename T::data_type>;
   using base::operator=;
   using data_type = typename base::data_type;
-  using container_type = T;
+  using value_type = sliceref;
 
-  sliceref(T& container, size_t start = 0)
-    : container_(container)
+  sliceref(const T& container, size_t start = 0)
+    : container_(const_cast<T&>(container))
     , start_(start) {
     CH_CHECK(start + N <= T::bitcount, "invalid slice range");
-  }
-
-  auto operator[](size_t index) const {
-    return sliceref<base, 1>(const_cast<sliceref&>(*this), index);
-  }
-
-  template <unsigned M>
-  auto slice(size_t index = 0) const {
-    return sliceref<base, M>(const_cast<sliceref&>(*this), index);
-  }
-
-  template <unsigned M>
-  auto aslice(size_t index = 0) const {
-    return sliceref<base, M>(const_cast<sliceref&>(*this), index * M);
   }
 
   sliceref& operator=(const sliceref& rhs) {
@@ -181,10 +235,35 @@ public:
     return *this;
   }
 
-protected:
+  const auto operator[](size_t index) const {
+    return sliceref<T, 1>(container_, start_ + index);
+  }
 
-  sliceref(sliceref&&) = default;
-  sliceref& operator=(sliceref&&) = default;
+  auto operator[](size_t index) {
+    return sliceref<T, 1>(container_, start_ + index);
+  }
+
+  template <unsigned M>
+  const auto slice(size_t index = 0) const {
+    return sliceref<T, M>(container_, start_ + index);
+  }
+
+  template <unsigned M>
+  auto slice(size_t index = 0) {
+    return sliceref<T, M>(container_, start_ + index);
+  }
+
+  template <unsigned M>
+  const auto aslice(size_t index = 0) const {
+    return sliceref<T, M>(container_, start_ + index * M);
+  }
+
+  template <unsigned M>
+  auto aslice(size_t index = 0) {
+    return sliceref<T, M>(container_, start_ + index * M);
+  }
+
+protected:
 
   void read_data(data_type& inout, size_t offset, size_t length) const override {
     CH_CHECK(offset + length <= N, "invalid read range");
@@ -198,9 +277,6 @@ protected:
 
   T& container_;
   size_t start_;
-
-  template <unsigned M, typename Q> friend class typebase;
-  template <typename Q, unsigned M> friend class sliceref;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -231,12 +307,13 @@ struct concat_type<T0, Ts...> {
     using type = typename T0::data_type;
 };
 
-template<typename... Ts>
+template <typename... Ts>
 class concatref : protected typebase<concat_size<Ts...>::value, typename concat_type<Ts...>::type> {
 public:
   using base = typebase<concat_size<Ts...>::value, typename concat_type<Ts...>::type>;
   using base::operator=;
   using data_type = typename base::data_type;
+  using value_type = concatref;
 
   concatref(Ts&... args) : args_(args...) {}
 
@@ -314,7 +391,7 @@ protected:
   std::tuple<Ts&...> args_;
 
   template <unsigned M, typename Q> friend class typebase;
-  template<typename... Ts2, typename> friend concatref<Ts2...> ch_tie(Ts2&... args);
+  template <typename... Ts2, typename> friend concatref<Ts2...> ch_tie(Ts2&... args);
 };
 
 }

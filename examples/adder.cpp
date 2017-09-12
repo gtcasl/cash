@@ -11,7 +11,7 @@ __out(ch_bit<N>, ch_bit1) Adder(
     const ch_bit<N>& lhs,
     const ch_bit<N>& rhs,
     const ch_bit1& cin) {
-  ch_bit<N+1> sum = (0_b, lhs) + ch_zext<N+1>(rhs) + ch_zext<N+1>(cin);
+  auto sum = (0_b, lhs) + ch_zext<N+1>(rhs) + ch_zext<N+1>(cin);
   ch_bit<N> out = sum.template slice<N>();
   ch_bit1 cout = sum[N];
   __ret(out, cout);

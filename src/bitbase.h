@@ -20,41 +20,9 @@ template <unsigned N>
 class typebase<N, lnode::data_type> : public typebase_itf<lnode::data_type> {
 public:   
   static const unsigned bitcount = N;
+  using base = typebase;
   using data_type = lnode::data_type;
-  
-  const auto operator[](size_t index) const {
-    lnode::data_type data(1);
-    this->read_data(data, index, 1);
-    return make_bit<1>(lnode(data));
-  }
-
-  auto operator[](size_t index) {
-    return sliceref<typebase, 1>(*this, index);
-  }
-
-  template <unsigned M>
-  const auto slice(size_t index = 0) const {
-    lnode::data_type data(M);
-    this->read_data(data, index, M);
-    return make_bit<M>(lnode(data));
-  }
-
-  template <unsigned M>
-  auto slice(size_t index = 0) {
-    return sliceref<typebase, M>(*this, index);
-  }
-
-  template <unsigned M>
-  const auto aslice(size_t index = 0) const {
-    lnode::data_type data(M);
-    this->read_data(data, index * M, M);
-    return make_bit<M>(lnode(data));
-  }
-
-  template <unsigned M>
-  auto aslice(size_t index = 0) {
-    return sliceref<typebase, M>(*this, index * M);
-  }
+  using device_type = ch_bit<N>;
   
   typebase& operator=(const typebase& rhs) {
     data_type data(N);
@@ -86,6 +54,34 @@ public:
   CH_DEF_AOP(int64_t)
   CH_DEF_AOP(uint64_t)
 #undef CH_DEF_AOP
+
+  const auto operator[](size_t index) const {
+    return const_sliceref<device_type, 1>(*this, index);
+  }
+
+  auto operator[](size_t index) {
+    return sliceref<typebase, 1>(*this, index);
+  }
+
+  template <unsigned M>
+  const auto slice(size_t index = 0) const {
+    return const_sliceref<device_type, M>(*this, index);
+  }
+
+  template <unsigned M>
+  auto slice(size_t index = 0) {
+    return sliceref<typebase, M>(*this, index);
+  }
+
+  template <unsigned M>
+  const auto aslice(size_t index = 0) const {
+    return const_sliceref<device_type, M>(*this, index * M);
+  }
+
+  template <unsigned M>
+  auto aslice(size_t index = 0) {
+    return sliceref<typebase, M>(*this, index * M);
+  }
 };
 
 }

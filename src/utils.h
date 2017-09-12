@@ -27,13 +27,13 @@ struct conjunction<B> : std::integral_constant<bool, B> {};
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template<typename From, typename To>
-using is_weak_convertible = std::is_constructible<To, From>;
+template <typename From, typename To>
+using is_cast_convertible = std::is_constructible<To, From>;
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template<typename To, typename... Froms>
-using are_all_weak_convertible = conjunction<is_weak_convertible<Froms, To>::value...>;
+template <typename To, typename... Froms>
+using are_all_cast_convertible = conjunction<is_cast_convertible<Froms, To>::value...>;
 
 ///////////////////////////////////////////////////////////////////////////////
 

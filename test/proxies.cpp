@@ -39,8 +39,16 @@ TEST_CASE("proxies", "[proxies]") {
       return (c == 11_b);
     });
     TEST([]()->ch_bit1 {
+      ch_bit2 c = ch_slice<2>(1100_b, 1) ^ 01_b;
+      return (c == 11_b);
+    });
+    TEST([]()->ch_bit1 {
       ch_bit4 a(1100_b);
       ch_bit2 c = a.aslice<2>(1) ^ 01_b;
+      return (c == 10_b);
+    });
+    TEST([]()->ch_bit1 {
+      ch_bit2 c = ch_aslice<2>(1100_b, 1) ^ 01_b;
       return (c == 10_b);
     });
     TEST([]()->ch_bit1 {
@@ -198,6 +206,18 @@ TEST_CASE("proxies", "[proxies]") {
       ch_bit2 x(01_b), y(10_b);
       auto w = (y, x).slice<2>(1);
       return (w == 0);
+    });
+    TEST([]()->ch_bit1 {
+      ch_bit16 a(0xabcd_h);
+      auto b = a.slice<12>().slice<8>().aslice<4>(1);
+      return b == 0xc_h;
+    });
+     TEST([]()->ch_bit1 {
+      ch_bit16 x(0xabcd_h);
+      auto a = (x + 0).slice<12>();
+      auto b = a.slice<8>().aslice<4>(1);
+      auto c = a.slice<8>(4).aslice<4>(1);
+      return (b == 0xC_h && c == 0xB_h);
     });
     TEST([]()->ch_bit1 {
       ch_bit4 x, y;

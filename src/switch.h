@@ -30,7 +30,7 @@ class switch_t {
 public:
   
   template <typename T, typename Func,
-            CH_REQUIRES(is_weak_convertible<T, ch_bit<N>>::value)>
+            CH_REQUIRES(is_cast_convertible<T, ch_bit<N>>::value)>
   switch_t& case_(const T& value, const Func& func) {
     impl_.eval(get_lnode<T, N>(value), to_function(func));
     return *this;

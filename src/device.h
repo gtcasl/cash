@@ -100,7 +100,7 @@ protected:
     }
   };
   
-  template<typename FuncRet, typename ...FuncArgs, typename ...Args, size_t ...I>
+  template <typename FuncRet, typename ...FuncArgs, typename ...Args, size_t ...I>
   FuncRet load_impl(std::function<FuncRet(FuncArgs...)> func, std::tuple<Args...>& args, std::index_sequence<I...>) {
     return func(std::get<I>(args)...);
   }

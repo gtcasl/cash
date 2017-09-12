@@ -9,6 +9,8 @@ examples/fastmul.cpp
 examples/fifo.cpp
 src/deviceimpl.cpp
 src/deviceimpl.h
+src/module.h
+src/port.h
 src/simulator.h
 src/simulatorimpl.cpp
 src/simulatorimpl.h
@@ -18,7 +20,7 @@ src/tracerimpl.h
 src/vcdtracer.h
 src/vcdtracerimpl.cpp
 src/vcdtracerimpl.h
-test/smoke.cpp
+test/common.cpp
 env.sh
 examples/adder.cpp
 examples/counter.cpp

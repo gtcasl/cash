@@ -8,7 +8,7 @@ namespace internal {
 class ch_tracer : public ch_simulator {
 public:
 
-  template<typename ...Devices>
+  template <typename ...Devices>
   ch_tracer(std::ostream& out, const ch_device& device, const Devices&... more)
     : ch_tracer(out, {&device, &more...})
   {}

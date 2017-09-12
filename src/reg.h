@@ -35,8 +35,8 @@ const auto ch_valid(const ch_bitbase<N>& x) {
 
 template <typename T, typename I,
           CH_REQUIRES(deduce_bitcount<T, I>::value != 0),
-          CH_REQUIRES(is_weak_convertible<T, ch_bit<deduce_bitcount<T, I>::value>>::value),
-          CH_REQUIRES(is_weak_convertible<I, ch_bit<deduce_bitcount<T, I>::value>>::value)>
+          CH_REQUIRES(is_cast_convertible<T, ch_bit<deduce_bitcount<T, I>::value>>::value),
+          CH_REQUIRES(is_cast_convertible<I, ch_bit<deduce_bitcount<T, I>::value>>::value)>
 const auto ch_reg(const T& next, const I& init) {
   return make_bit<deduce_bitcount<T, I>::value>(
     createRegNode(get_lnode<T, deduce_bitcount<T, I>::value>(next),
@@ -44,8 +44,8 @@ const auto ch_reg(const T& next, const I& init) {
 }
 
 template <unsigned N, typename T, typename I,
-          CH_REQUIRES(is_weak_convertible<T, ch_bit<N>>::value),
-          CH_REQUIRES(is_weak_convertible<I, ch_bit<N>>::value)>
+          CH_REQUIRES(is_cast_convertible<T, ch_bit<N>>::value),
+          CH_REQUIRES(is_cast_convertible<I, ch_bit<N>>::value)>
 const auto ch_reg(const T& next, const I& init) {
   return make_bit<N>(
     createRegNode(get_lnode<T, N>(next),
@@ -53,14 +53,14 @@ const auto ch_reg(const T& next, const I& init) {
 }
 
 template <typename T,
-          CH_REQUIRES(is_weak_convertible<T, ch_bit<T::bitcount>>::value)>
+          CH_REQUIRES(is_cast_convertible<T, ch_bit<T::bitcount>>::value)>
 const auto ch_reg(const T& next) {
   return make_bit<T::bitcount>(
     createRegNode(get_lnode(next), get_lnode(ch_bit<T::bitcount>(0))));
 }
 
 template <unsigned N, typename T,
-          CH_REQUIRES(is_weak_convertible<T, ch_bit<N>>::value)>
+          CH_REQUIRES(is_cast_convertible<T, ch_bit<N>>::value)>
 const auto ch_reg(const T& next) {
   return make_bit<N>(
     createRegNode(get_lnode(next), get_lnode(ch_bit<N>(0))));
@@ -68,10 +68,10 @@ const auto ch_reg(const T& next) {
 
 template <typename T, typename E, typename I, typename R,
           CH_REQUIRES(deduce_bitcount<T, I>::value != 0),
-          CH_REQUIRES(is_weak_convertible<T, ch_bit<deduce_bitcount<T, I>::value>>::value),
-          CH_REQUIRES(is_weak_convertible<E, ch_bit<1>>::value),
-          CH_REQUIRES(is_weak_convertible<I, ch_bit<deduce_bitcount<T, I>::value>>::value),
-          CH_REQUIRES(is_weak_convertible<R, ch_bit<1>>::value)>
+          CH_REQUIRES(is_cast_convertible<T, ch_bit<deduce_bitcount<T, I>::value>>::value),
+          CH_REQUIRES(is_cast_convertible<E, ch_bit<1>>::value),
+          CH_REQUIRES(is_cast_convertible<I, ch_bit<deduce_bitcount<T, I>::value>>::value),
+          CH_REQUIRES(is_cast_convertible<R, ch_bit<1>>::value)>
 const auto ch_latch(const T& next, const E& enable, const I& init, const R& reset) {
   return make_bit<deduce_bitcount<T, I>::value>(
     createLatchNode(get_lnode<T, deduce_bitcount<T, I>::value>(next),
@@ -81,10 +81,10 @@ const auto ch_latch(const T& next, const E& enable, const I& init, const R& rese
 }
 
 template <unsigned N, typename T, typename E, typename I, typename R,
-          CH_REQUIRES(is_weak_convertible<T, ch_bit<N>>::value),
-          CH_REQUIRES(is_weak_convertible<E, ch_bit<1>>::value),
-          CH_REQUIRES(is_weak_convertible<I, ch_bit<N>>::value),
-          CH_REQUIRES(is_weak_convertible<R, ch_bit<1>>::value)>
+          CH_REQUIRES(is_cast_convertible<T, ch_bit<N>>::value),
+          CH_REQUIRES(is_cast_convertible<E, ch_bit<1>>::value),
+          CH_REQUIRES(is_cast_convertible<I, ch_bit<N>>::value),
+          CH_REQUIRES(is_cast_convertible<R, ch_bit<1>>::value)>
 const auto ch_latch(const T& next, const E& enable, const I& init, const R& reset) {
   return make_bit<N>(
     createLatchNode(get_lnode<T, N>(next),
@@ -95,9 +95,9 @@ const auto ch_latch(const T& next, const E& enable, const I& init, const R& rese
 
 template <typename T, typename E, typename I,
           CH_REQUIRES(deduce_bitcount<T, I>::value != 0),
-          CH_REQUIRES(is_weak_convertible<T, ch_bit<deduce_bitcount<T, I>::value>>::value),
-          CH_REQUIRES(is_weak_convertible<E, ch_bit<1>>::value),
-          CH_REQUIRES(is_weak_convertible<I, ch_bit<deduce_bitcount<T, I>::value>>::value)>
+          CH_REQUIRES(is_cast_convertible<T, ch_bit<deduce_bitcount<T, I>::value>>::value),
+          CH_REQUIRES(is_cast_convertible<E, ch_bit<1>>::value),
+          CH_REQUIRES(is_cast_convertible<I, ch_bit<deduce_bitcount<T, I>::value>>::value)>
 const auto ch_latch(const T& next, const E& enable, const I& init) {
   return make_bit<deduce_bitcount<T, I>::value>(
     createLatchNode(get_lnode<T, deduce_bitcount<T, I>::value>(next),
@@ -107,9 +107,9 @@ const auto ch_latch(const T& next, const E& enable, const I& init) {
 }
 
 template <unsigned N, typename T, typename E, typename I,
-          CH_REQUIRES(is_weak_convertible<T, ch_bit<N>>::value),
-          CH_REQUIRES(is_weak_convertible<E, ch_bit<1>>::value),
-          CH_REQUIRES(is_weak_convertible<I, ch_bit<N>>::value)>
+          CH_REQUIRES(is_cast_convertible<T, ch_bit<N>>::value),
+          CH_REQUIRES(is_cast_convertible<E, ch_bit<1>>::value),
+          CH_REQUIRES(is_cast_convertible<I, ch_bit<N>>::value)>
 const auto ch_latch(const T& next, const E& enable, const I& init) {
   return make_bit<N>(
     createLatchNode(get_lnode<T, N>(next),
@@ -119,8 +119,8 @@ const auto ch_latch(const T& next, const E& enable, const I& init) {
 }
 
 template <typename T, typename E,
-          CH_REQUIRES(is_weak_convertible<T, ch_bit<T::bitcount>>::value),
-          CH_REQUIRES(is_weak_convertible<E, ch_bit<1>>::value)>
+          CH_REQUIRES(is_cast_convertible<T, ch_bit<T::bitcount>>::value),
+          CH_REQUIRES(is_cast_convertible<E, ch_bit<1>>::value)>
 const auto ch_latch(const T& next, const E& enable) {
   return make_bit<T::bitcount>(
     createLatchNode(get_lnode(next),
@@ -130,8 +130,8 @@ const auto ch_latch(const T& next, const E& enable) {
 }
 
 template <unsigned N, typename T, typename E,
-          CH_REQUIRES(is_weak_convertible<T, ch_bit<N>>::value),
-          CH_REQUIRES(is_weak_convertible<E, ch_bit<1>>::value)>
+          CH_REQUIRES(is_cast_convertible<T, ch_bit<N>>::value),
+          CH_REQUIRES(is_cast_convertible<E, ch_bit<1>>::value)>
 const auto ch_latch(const T& next, const E& enable) {
   return make_bit<N>(
     createLatchNode(get_lnode(next),

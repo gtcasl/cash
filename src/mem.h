@@ -58,6 +58,7 @@ public:
   using base = ch_bitbase<N>;
   using base::operator=;
   using data_type = typename base::data_type;
+  using value_type = memport_ref;
 
 protected:
 
@@ -102,7 +103,7 @@ public:
     }
     
     template <typename T,
-              CH_REQUIRES(is_weak_convertible<T, ch_bit<A>>::value)>
+              CH_REQUIRES(is_cast_convertible<T, ch_bit<A>>::value)>
     const auto operator[](const T& addr) const {
       return make_bit<W>(mem_.read(get_lnode<T, A>(addr)));
     }
@@ -131,13 +132,13 @@ public:
     }
     
     template <typename T,
-              CH_REQUIRES(is_weak_convertible<T, ch_bit<A>>::value)>
+              CH_REQUIRES(is_cast_convertible<T, ch_bit<A>>::value)>
     const auto operator[](const T& addr) const {
       return make_bit<W>(mem_.read(get_lnode<T, A>(addr)));
     }
     
     template <typename T,
-              CH_REQUIRES(is_weak_convertible<T, ch_bit<A>>::value)>
+              CH_REQUIRES(is_cast_convertible<T, ch_bit<A>>::value)>
     memport_ref<W> operator[](const T& addr) {
       return memport_ref<W>(mem_, get_lnode<T, A>(addr));
     }

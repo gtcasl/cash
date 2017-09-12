@@ -13,15 +13,17 @@
   public: \
     using base = cash::internal::ch_bit<size>; \
     using data_type = typename base::data_type; \
+    using value_type = name; \
     enum enum_type { \
     CH_FOR_EACH(CH_ENUM_FIELD, CH_SEP_COMMA, __VA_ARGS__) \
-    , __max_value__ \
+    , __MAX_VALUE__ \
     }; \
-    static_assert(ilog2(__max_value__) <= base::bitcount, "enum size mismatch"); \
+    static_assert(ilog2(__MAX_VALUE__) <= base::bitcount, "enum size mismatch"); \
     class bus_type : public cash::internal::ch_bus<base::bitcount> { \
       public: \
         using base = cash::internal::ch_bus<name::base::bitcount>; \
         using data_type = typename base::data_type; \
+        using value_type = bus_type; \
         bus_type() {} \
         bus_type(const bus_type& e) : base(e) {} \
         bus_type(bus_type&& e) : base(std::move(e)) {} \
