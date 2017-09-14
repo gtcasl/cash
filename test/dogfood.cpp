@@ -27,6 +27,7 @@ struct Adder {
   Adder() {
     Q1 x;
     Q2 y;
+    x = 0;
     x.next = 0;
     y.p1 = 0;
     y.next.p1 = 0;
@@ -49,6 +50,7 @@ A a{x, y};
 ch_bit1 dogfood(const ch_bit2& w) {
   Q1 x;
   Q2 y;
+  x = 1;
   x.next = 0;
   y.p1 = 0;
   y.next.p1 = 0;
@@ -56,6 +58,10 @@ ch_bit1 dogfood(const ch_bit2& w) {
   auto adder = Adder();
   adder.io(a, b, c);
   return (c == 3);
+}
+
+void dogfood_void() {
+  // oops!
 }
 
 int main(int argc, char **argv) {
@@ -72,6 +78,9 @@ int main(int argc, char **argv) {
       return (c == 3);
     });
   out2 = f2();
+
+  auto f3 = ch_function(dogfood_void);
+  f3.operator()();
 
   ch_bus2 in1, in2, out3;
   auto m1 = ch_module<Adder>();

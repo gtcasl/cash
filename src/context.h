@@ -64,12 +64,7 @@ public:
 
   cdomain* create_cdomain(const std::vector<clock_event>& sensitivity_list);
   void remove_cdomain(cdomain* cd);
-    
-  //-- 
 
-  lnodeimpl* bind_input(const snode& bus);
-  snodeimpl* bind_output(const lnode& output);
-  
   void register_tap(const std::string& name, const lnode& lnode);
   snodeimpl* get_tap(const std::string& name, uint32_t size);
   

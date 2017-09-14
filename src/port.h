@@ -5,6 +5,20 @@
 namespace cash {
 namespace internal {
 
+lnodeimpl* createInputNode(const snode& in);
+
+snodeimpl* createOutputNode(const lnode& out);
+
+template <typename T, unsigned N = T::bitcount>
+auto ch_input(const T& in) {
+  return make_bit<N>(createInputNode(get_snode<T, N>(in)));
+}
+
+template <typename T, unsigned N = T::bitcount>
+auto ch_output(const T& out) {
+  return make_bus<N>(createOutputNode(get_lnode<T, N>(out)));
+}
+
 template <typename T>
 class ch_port {
 public:
@@ -31,10 +45,6 @@ public:
 
   template <typename U,
             CH_REQUIRES(is_cast_convertible<U, T>::value)>
-  explicit ch_in(const U& value) : value_(value) {}
-
-  template <typename U,
-            CH_REQUIRES(is_cast_convertible<U, T>::value)>
   void operator()(const ch_in<U>& in) {
     value_ = in.value_;
   }
@@ -49,6 +59,10 @@ public:
             CH_REQUIRES(is_cast_convertible<U, T>::value)>
   void operator()(const U& value) {
     value_ = value;
+  }
+
+  void operator()(const ch_busbase<T::bitcount>& value) {
+    value_ = ch_input(value);
   }
 
   const T& operator*() const {
@@ -95,6 +109,10 @@ public:
 
   void operator()(T& value) {
     value = value_;
+  }
+
+  void operator()(ch_bus<T::bitcount>& value) {
+    value = ch_output(value_);
   }
 
   T& operator*() {

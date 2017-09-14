@@ -16,11 +16,10 @@ public:
 class inputimpl : public ioimpl {
 public:
   inputimpl(ch_operator op, context* ctx, uint32_t size);
-  inputimpl(context* ctx, uint32_t size)
-    : inputimpl(op_input, ctx, size)
-  {}
+
+  inputimpl(context* ctx, const snode& node);
   
-  void bind(const snode& bus);
+  void bind(const snode& node);
 
   const bitvector& eval(ch_tick t) override;
   
@@ -36,6 +35,7 @@ protected:
 class outputimpl : public ioimpl {
 public:
   outputimpl(ch_operator op, const lnode& src);
+
   outputimpl(const lnode& src)
     : outputimpl(op_output, src)
   {}

@@ -9,8 +9,14 @@ inputimpl::inputimpl(ch_operator op, context* ctx, uint32_t size)
   , tick_(~0ull)
 {}
 
-void inputimpl::bind(const snode& bus) {
-  bus_ = bus;
+inputimpl::inputimpl(context* ctx, const snode& node)
+  : ioimpl(op_input, ctx, node.get_size())
+  , tick_(~0ull) {
+  this->bind(node);
+}
+
+void inputimpl::bind(const snode& node) {
+  bus_ = node;
 }
 
 const bitvector& inputimpl::eval(ch_tick t) {

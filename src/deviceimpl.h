@@ -21,14 +21,6 @@ public:
     return ctx_;
   }
 
-  lnodeimpl* bind_input(const snode& bus) const {
-    return ctx_->bind_input(bus);
-  }
-
-  snodeimpl* bind_output(const lnode& output) const {
-    return ctx_->bind_output(output);
-  }
-
   snodeimpl* get_tap(const std::string& name, uint32_t size) const {
     return ctx_->get_tap(name, size);
   }

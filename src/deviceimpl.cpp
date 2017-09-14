@@ -2,6 +2,7 @@
 #include "device.h"
 #include "context.h"
 #include "compile.h"
+#include "ioimpl.h"
 
 using namespace cash::internal;
 
@@ -49,14 +50,6 @@ void ch_device::compile() {
   impl_->compile();
 }
 
-lnodeimpl* ch_device::bind_input(const snode& bus) const {
-  return impl_->bind_input(bus);
-}
-
-snodeimpl* ch_device::bind_output(const lnode& output) const {
-  return impl_->bind_output(output);
-}
-
 snodeimpl* ch_device::get_tap(const std::string& name, uint32_t size) const {
   return impl_->get_tap(name, size);
 }
@@ -67,4 +60,15 @@ void ch_device::to_verilog(const std::string& module_name, std::ostream& out) {
 
 void ch_device::dump_stats(std::ostream& out) {
   impl_->dump_stats(out);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+lnodeimpl* cash::internal::createInputNode(const snode& in) {
+  return new inputimpl(ctx_curr(), in);
+}
+
+snodeimpl* cash::internal::createOutputNode(const lnode& out) {
+  outputimpl* impl = new outputimpl(out);
+  return impl->get_bus().get_impl();
 }

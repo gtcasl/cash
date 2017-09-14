@@ -112,12 +112,12 @@ struct is_bus_convertible;
 
 template <typename T>
 struct is_bus_convertible<T> {
-  static const bool value = is_cast_convertible<T, ch_bus<T::bitcount>>::value;
+  static const bool value = is_cast_convertible<T, ch_bus<std::decay<T>::type::bitcount>>::value;
 };
 
 template <typename T0, typename... Ts>
 struct is_bus_convertible<T0, Ts...> {
-  static const bool value = is_cast_convertible<T0, ch_bus<T0::bitcount>>::value && is_bus_convertible<Ts...>::value;
+  static const bool value = is_cast_convertible<T0, ch_bus<std::decay<T0>::type::bitcount>>::value && is_bus_convertible<Ts...>::value;
 };
 
 template <typename T, unsigned N = T::bitcount>

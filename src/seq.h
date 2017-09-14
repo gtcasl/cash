@@ -24,7 +24,7 @@ public:
   
   template <typename U,
             CH_REQUIRES(is_cast_convertible<U, T>::value)>
-  ch_seq(const U& init) {
+  explicit ch_seq(const U& init) {
     auto reg = ch_reg(next, static_cast<typename reference_cast<U, T>::type>(init));
     T::operator=(std::move(reg));
     next = *this;

@@ -458,17 +458,6 @@ void context::remove_cdomain(cdomain* cd) {
   cdomains_.remove(cd);
 }
 
-lnodeimpl* context::bind_input(const snode& bus) {
-  inputimpl* impl = new inputimpl(this, bus.get_size());
-  impl->bind(bus);
-  return impl;
-}
-
-snodeimpl* context::bind_output(const lnode& output) {
-  outputimpl* impl = new outputimpl(output);
-  return impl->get_bus().get_impl();
-}
-
 void context::register_tap(const std::string& name, const lnode& node) {
   // resolve duplicate names
   std::string full_name(name);

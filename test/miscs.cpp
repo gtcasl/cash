@@ -93,9 +93,10 @@ TEST_CASE("miscs", "[miscs]") {
         __tap(x);
         return ~x;
       };             
-      ch_device myDevice(inverter, in, out);     
-      x = myDevice.get_tap<2>("x");
-      ch_vcdtracer tracer(vcd_file, myDevice);
+      auto func = ch_function(inverter);
+      out = func(in);
+      x = func.get_tap<2>("x");
+      ch_vcdtracer tracer(vcd_file, func);
       __trace(tracer, in, out);
       tracer.run();
       return (out == 1);
@@ -110,8 +111,9 @@ TEST_CASE("miscs", "[miscs]") {
         return ~x;
       };
       ch_bus2 in(0), out;
-      ch_device device(inverter, in, out);
-      device.dump_stats(std::cout);
+      auto func = ch_function(inverter);
+      out = func(in);
+      func.dump_stats(std::cout);
       return true;
     });
   }
