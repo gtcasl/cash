@@ -22,13 +22,14 @@ int main(int argc, char **argv) {
   ch_bus1 cout, cin(1);
   ch_bus2 out, lhs(1), rhs(3);
   
-  ch_device myDevice(Adder<2>, lhs, rhs, cin, out, cout);
+  auto adder = ch_function(Adder<2>);
+  std::tie(out, cout) = adder(lhs, rhs, cin);
 
   /*std::ofstream v_file("adder.v");
-  myDevice.to_verilog("adder", v_file);
+  adder.to_verilog("adder", v_file);
   v_file.close();*/
 
-  ch_vcdtracer tracer(vcd_file, myDevice);
+  ch_vcdtracer tracer(vcd_file, adder);
   __trace(tracer, lhs, rhs, cin, out, cout);
   tracer.run();
   

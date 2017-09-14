@@ -17,6 +17,7 @@ public:
   using base = ch_bitbase<N>;
   using data_type = typename base::data_type;
   using value_type = ch_bit;
+  using const_type = const ch_bit;
   using bus_type = ch_bus<N>;
       
   ch_bit() : node_(N) {}
@@ -271,35 +272,35 @@ public:
 template <unsigned M, unsigned D>
 class sext_pad {
 public:
-   const auto operator() (const ch_bitbase<M>& in) {
-      return (in[M-1], ch_bit<D>(0x0), ch_slice<M-1>(in, 1));
-    }    
+  const auto operator() (const ch_bitbase<M>& in) {
+    return (in[M-1], ch_bit<D>(0x0), ch_slice<M-1>(in, 1));
+  }
 };
 
 template <unsigned D>
 class sext_pad<1, D> {
 public:
-    const auto operator() (const ch_bitbase<1>& in) {
-      return (in, ch_bit<D>(0x0));
-    }
+  const auto operator() (const ch_bitbase<1>& in) {
+    return (in, ch_bit<D>(0x0));
+  }
 };
 
 template <unsigned D>
 class sext_select {
 public:
-    template <unsigned M>
-    const auto operator() (const ch_bitbase<M>& in) {
-      return sext_pad<M, D>()(in);
-    }
+  template <unsigned M>
+  const auto operator() (const ch_bitbase<M>& in) {
+    return sext_pad<M, D>()(in);
+  }
 };
 
 template <>
 class sext_select<0> {
 public:
-    template <unsigned M>
-   const ch_bit<M> operator() (const ch_bitbase<M>& in) {
-      return in;
-    }
+  template <unsigned M>
+  const ch_bit<M> operator() (const ch_bitbase<M>& in) {
+    return in;
+  }
 };
 
 template <unsigned N, unsigned M>

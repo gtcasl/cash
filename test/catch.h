@@ -1736,7 +1736,7 @@ namespace TupleDetail {
 
 }
 
-template<typename ...Types>
+template<typename... Types>
 struct StringMaker<std::tuple<Types...>> {
 
     static std::string convert( const std::tuple<Types...>& tuple )

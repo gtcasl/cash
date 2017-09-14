@@ -17,13 +17,14 @@ int main(int argc, char **argv) {
   std::ofstream vcd_file("counter.vcd");
   ch_bus4 out;
 
-  ch_device myDevice(Counter<4>, out);
+  auto counter = ch_function(Counter<4>);
+  out = counter();
 
   /*std::ofstream v_file("counter.v");
-  myDevice.to_verilog("counter", v_file);
+  counter.to_verilog("counter", v_file);
   v_file.close();*/
 
-  ch_vcdtracer tracer(vcd_file, myDevice);
+  ch_vcdtracer tracer(vcd_file, counter);
   __trace(tracer, out);
   tracer.run(22);
 

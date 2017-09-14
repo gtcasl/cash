@@ -7,20 +7,15 @@ namespace internal {
 
 class deviceimpl {
 public:
-  deviceimpl() {
-    ctx_ = ctx_create();
-  }
+  deviceimpl();
 
-  ~deviceimpl() {
-    ctx_->release();
-    ctx_ = nullptr;
-  }
+  ~deviceimpl();
 
-  void begin_context() {
-    ctx_set(ctx_);
-  }
+  void begin_context();
 
   void end_context();
+
+  void compile();
 
   context* get_ctx() const {
     return ctx_;
@@ -48,6 +43,7 @@ public:
 
 private:
   context* ctx_;
+  context* old_ctx_;
 };
 
 }

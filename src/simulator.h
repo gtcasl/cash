@@ -10,7 +10,7 @@ class simulatorimpl;
 class ch_simulator {
 public:  
   
-  template <typename ...Devices>
+  template <typename... Devices>
   ch_simulator(const ch_device& device, const Devices&... more)
     : ch_simulator({&device, &more...})
   {}

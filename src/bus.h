@@ -11,6 +11,7 @@ public:
   using base = ch_busbase<N>;
   using data_type = typename base::data_type;
   using value_type = ch_bus;
+  using const_type = const ch_bus;
       
   ch_bus() {}
   

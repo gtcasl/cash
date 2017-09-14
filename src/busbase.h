@@ -5,7 +5,7 @@
 namespace cash {
 namespace internal {
 
-  template <unsigned N> class ch_bus;
+template <unsigned N> class ch_bus;
 
 template <unsigned N> using ch_busbase = typebase<N, snode::data_type>;
 

@@ -12,6 +12,7 @@ public:
   using base::operator=;
   using data_type = typename base::data_type;
   using value_type = ch_vec;
+  using const_type = const ch_vec;
   using bus_type = typename std::conditional<std::is_class<typename T::bus_type>::value, typename T::bus_type, value_type>::type;
   
   ch_vec() {}

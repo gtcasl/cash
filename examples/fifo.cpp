@@ -42,13 +42,14 @@ int main(int argc, char **argv) {
   ch_bus2 din, dout;
   ch_bus1 push, pop, empty, full;
 
-  ch_device myDevice(FiFo<1, 2>, din, push, pop, dout, empty, full);
+  auto fifo = ch_function(FiFo<1, 2>);
+  std::tie(dout, empty, full) = fifo(din, push, pop);
 
   /*std::ofstream v_file("fifo.v");
-  myDevice.to_verilog("fifo", v_file);
+  fifo.to_verilog("fifo", v_file);
   v_file.close();*/
 
-  ch_vcdtracer tracer(vcd_file, myDevice);
+  ch_vcdtracer tracer(vcd_file, fifo);
   __trace(tracer, din, push, pop, dout, empty, full);
   tracer.run([&](ch_tick t)->bool {
     std::cout << "t" << t << ": din=" << din << ", push=" << push << ", pop=" << pop << ", dout=" << dout << ", empty=" << empty << ", full=" << full << std::endl;

@@ -6,11 +6,12 @@ namespace cash {
 namespace internal {
 
 template <typename T>
-class ch_seq : public T {
+class ch_seq : public T::const_type {
 public:  
   using base = ch_bitbase<T::bitcount>;
   using data_type = typename T::data_type;
   using value_type = T;
+  using const_type = typename T::const_type;
   using bus_type = typename T::bus_type;
 
   T next;

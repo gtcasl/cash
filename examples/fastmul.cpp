@@ -24,13 +24,14 @@ int main(int argc, char **argv) {
   ch_bus8 out;
   ch_bus4 lhs(2), rhs(3);
 
-  ch_device myDevice(FastMul, lhs, rhs, out);
+  auto fastMul = ch_function(FastMul);
+  out = fastMul(lhs, rhs);
 
   /*std::ofstream v_file("fastmul.v");
   myDevice.to_verilog("fastmul", v_file);
   v_file.close();*/
 
-  ch_vcdtracer tracer(vcd_file, myDevice);
+  ch_vcdtracer tracer(vcd_file, fastMul);
   __trace(tracer, lhs, rhs, out);
   tracer.run();
   

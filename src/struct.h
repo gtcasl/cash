@@ -63,12 +63,14 @@
     using base::operator=; \
     using data_type = typename base::data_type; \
     using value_type = name; \
+    using const_type = const name; \
     class bus_type : public cash::internal::ch_busbase<base::bitcount> { \
     public: \
       using base = cash::internal::ch_busbase<name::base::bitcount>; \
       using base::operator=; \
       using data_type = typename base::data_type; \
       using value_type = bus_type; \
+      using const_type = const bus_type; \
       bus_type() {} \
       bus_type(const bus_type& __rhs__) : CH_FOR_EACH(CH_STRUCT_COPY_CTOR_APPLY, CH_SEP_COMMA, __VA_ARGS__) {} \
       bus_type(const base& __rhs__) { base::operator=(__rhs__); } \

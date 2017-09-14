@@ -196,7 +196,7 @@ protected:
 };
 
 context* ctx_create();
-void ctx_set(context* ctx);
+context* ctx_swap(context* ctx);
 context* ctx_curr();
 
 }

@@ -14,6 +14,7 @@
     using base = cash::internal::ch_bit<size>; \
     using data_type = typename base::data_type; \
     using value_type = name; \
+    using const_type = const name; \
     enum enum_type { \
     CH_FOR_EACH(CH_ENUM_FIELD, CH_SEP_COMMA, __VA_ARGS__) \
     , __MAX_VALUE__ \
@@ -24,6 +25,7 @@
         using base = cash::internal::ch_bus<name::base::bitcount>; \
         using data_type = typename base::data_type; \
         using value_type = bus_type; \
+        using const_type = const bus_type; \
         bus_type() {} \
         bus_type(const bus_type& e) : base(e) {} \
         bus_type(bus_type&& e) : base(std::move(e)) {} \

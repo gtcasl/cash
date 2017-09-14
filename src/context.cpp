@@ -673,8 +673,10 @@ context* cash::internal::ctx_create() {
   return ctx;
 }
 
-void cash::internal::ctx_set(context* ctx) {
+context* cash::internal::ctx_swap(context* ctx) {
+  context* old = tls_ctx;
   tls_ctx = ctx;
+  return old;
 }
 
 context* cash::internal::ctx_curr() {

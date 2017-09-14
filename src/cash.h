@@ -13,7 +13,6 @@
 #include "arithm.h"
 #include "bus.h"
 #include "port.h"
-#include "module.h"
 #include "device.h"
 #include "simulator.h"
 #include "vcdtracer.h"
@@ -59,7 +58,6 @@ namespace core {
 
   template <typename T> using ch_in = cash::internal::ch_in<T>;
   template <typename T> using ch_out = cash::internal::ch_out<T>;
-  template <typename T> using ch_module = cash::internal::ch_module<T>;
 
   //
   // bit types
@@ -220,13 +218,20 @@ namespace sim {
   using ch_bus128 = ch_bus<128>;
   
   //
-  // api objects
+  // objects
   //
 
   using ch_device    = cash::internal::ch_device;
   using ch_simulator = cash::internal::ch_simulator;
   using ch_tracer    = cash::internal::ch_tracer;
   using ch_vcdtracer = cash::internal::ch_vcdtracer;
+
+  //
+  // functions
+  //
+  using cash::internal::ch_function;
+  using cash::internal::ch_module;
+
 }
 
 //
@@ -265,6 +270,7 @@ inline namespace sim_literals {
 
 #define __inout    CH_INOUT
 #define __io       CH_IO
+#define __module   CH_MODULE
 
 #define __out      CH_OUT
 #define __ret      CH_RET

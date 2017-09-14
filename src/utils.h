@@ -47,14 +47,14 @@ struct identity {
 template <typename Function>
 struct function_traits : public function_traits<decltype(&Function::operator())> {};
 
-template <typename Class, typename Ret, typename ...Args>
+template <typename Class, typename Ret, typename... Args>
 struct function_traits<Ret(Class::*)(Args...) const> {
-    using function = const std::function<Ret(Args...)>;
+using type = const std::function<Ret(Args...)>;
 };
 
 template <typename Function>
-typename function_traits<Function>::function to_function(const Function& func) {
-    return static_cast<typename function_traits<Function>::function>(func);
+typename function_traits<Function>::type to_function(const Function& func) {
+  return static_cast<typename function_traits<Function>::type>(func);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -195,11 +195,11 @@ protected:
   
   refcounted* ptr_;
   
-  template <typename T_, typename ...Args>
+  template <typename T_, typename... Args>
   friend refcounted_ptr<T_> make_ptr(const Args&... args);
 };
 
-template <typename T, typename ...Args>
+template <typename T, typename... Args>
 refcounted_ptr<T> make_ptr(const Args&... args) {
   return refcounted_ptr<T>(new T(args...));
 } 

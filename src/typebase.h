@@ -339,12 +339,12 @@ protected:
     this->write_data(dst_offset, in, src_offset, length, args_, std::index_sequence_for<Ts...>());
   }
 
-  template <size_t ...I>
+  template <size_t... I>
   void read_data(data_type& inout, size_t offset, size_t length, const std::tuple<Ts&...>& args, std::index_sequence<I...>) const {
     this->read_data(inout, offset, length, std::get<sizeof...(Ts) - 1 - I>(args)...);
   }
 
-  template <size_t ...I>
+  template <size_t... I>
   void write_data(size_t dst_offset, const data_type& in, size_t src_offset, size_t length, std::tuple<Ts&...>& args, std::index_sequence<I...>) {
     this->write_data(dst_offset, in, src_offset, length, std::get<sizeof...(Ts) - 1 - I>(args)...);
   }

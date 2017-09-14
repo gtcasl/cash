@@ -1,7 +1,6 @@
 ﻿#pragma once
 
-#include "bit.h"
-#include "bus.h"
+#include "port.h"
 
 namespace cash {
 namespace internal {
@@ -10,16 +9,6 @@ class deviceimpl;
 
 class ch_device {
 public:
-  
-  template <typename Function, typename ...Args>  
-  ch_device(const Function& func, Args&&... args) : ch_device() {
-    this->init(to_function(func), args...);   
-  }
-  
-  template <typename FuncRet, typename ...FuncArgs, typename ...Args>  
-  ch_device(FuncRet (*func)(FuncArgs...), Args&&... args) : ch_device() {
-    this->init(std::function<FuncRet(FuncArgs...)>(func), args...);
-  }
   
   ~ch_device();
   
@@ -33,112 +22,12 @@ public:
   void dump_stats(std::ostream& out);
     
 protected:
-  
-  template <typename T>
-  struct to_value_type {
-    using value = T;
-  };
-  
-  template <unsigned N>
-  struct to_value_type<ch_bitbase<N>> {
-    using value = ch_bit<N>;
-  };
-  
-  template <typename T>
-  struct output_size {
-    static const size_t value = 1;
-  };
-  
-  template <typename ...OutputArgs>
-  struct output_size<std::tuple<OutputArgs...>> {
-    static const size_t value = sizeof...(OutputArgs);
-  };
-  
-  template <bool Enable, size_t I>
-  struct bind_output_impl {};
-  
-  template <size_t I>
-  struct bind_output_impl<false, I> {
-    template <typename ...OutputArgs, typename Arg>
-    static void bind(const ch_device& dev, const std::tuple<OutputArgs...>& outputs, Arg&& arg) {
-      CH_UNUSED(dev, outputs, arg);
-      // do nothing!
-    }
-  };
-  
-  template <size_t I>
-  struct bind_output_impl<true, I> {
-    template <typename ...OutputArgs, typename Arg>
-    static void bind(const ch_device& dev, const std::tuple<OutputArgs...>& outputs, Arg&& arg) {
-      std::forward<Arg>(arg) = dev.bind_output(std::get<sizeof...(OutputArgs)-I>(outputs));
-    }
-  };
-  
-  template <size_t I>
-  struct bind_outputs_impl {
-    template <typename ...OutputArgs, typename Arg, typename ...Args>
-    static void bind(const ch_device& dev, const std::tuple<OutputArgs...>& outputs, Arg&& arg, Args&&... args) {
-      bind_output_impl<(I <= sizeof...(OutputArgs)), I>::bind(dev, outputs, arg);
-      bind_outputs_impl<I-1>::bind(dev, outputs, args...);
-    }
-  };
-  
-  template <size_t I>
-  struct bind_outputs_impl2 {
-    template <typename Ret, typename Arg, typename ...Args>
-    static void bind(const ch_device& dev, const Ret& output, Arg&& arg, Args&&... args) {
-      bind_outputs_impl2<I-1>::bind(dev, output, args...);
-    }
-  };
-  
-  template <size_t I>
-  struct bind_inputs_impl {
-    template <typename ...InputArgs, typename Arg, typename ...Args>
-    static void bind(const ch_device& dev, std::tuple<InputArgs...>& inputs, Arg&& arg, Args&&... args) {
-      std::get<sizeof...(InputArgs)-I>(inputs) = dev.bind_input(std::forward<Arg>(arg));
-      bind_inputs_impl<I-1>::bind(dev, inputs, args...);
-    }
-  };
-  
-  template <typename FuncRet, typename ...FuncArgs, typename ...Args, size_t ...I>
-  FuncRet load_impl(std::function<FuncRet(FuncArgs...)> func, std::tuple<Args...>& args, std::index_sequence<I...>) {
-    return func(std::get<I>(args)...);
-  }
-  
-  template <typename FuncRet, typename ...FuncArgs, typename ...Args>
-  void init(const std::function<FuncRet(FuncArgs...)>& func, Args&&... args) {    
-    static_assert(sizeof...(FuncArgs) + output_size<FuncRet>::value == sizeof...(Args), "number of arguments mismatch");
-    this->begin_context();
-    {
-      std::tuple<typename to_value_type<typename std::remove_const<
-          typename std::remove_reference<FuncArgs>::type>::type>::value...> func_args;
-      this->bind_inputs(func_args, args...);
-      FuncRet ret(this->load_impl(func, func_args, std::index_sequence_for<FuncArgs...>()));
-      this->bind_outputs(ret, args...);
-    }
-    this->end_context();
-  }
-  
-  template <typename ...InputArgs, typename ...Args>
-  void bind_inputs(std::tuple<InputArgs...>& inputs, Args&&... args) {
-    bind_inputs_impl<sizeof...(InputArgs)>::bind(*this, inputs, args...);
-  }
-  
-  template <typename ...OutputArgs, typename ...Args>
-  void bind_outputs(const std::tuple<OutputArgs...>& outputs, Args&&... args) {
-    bind_outputs_impl<sizeof...(Args)>::bind(*this, outputs, args...);
-  }
-  
-  template <typename Ret, typename ...Args>
-  void bind_outputs(const Ret& output, Args&&... args) {
-    bind_outputs_impl2<sizeof...(Args)>::bind(*this, output, args...);
-  }
 
   template <unsigned N>
   const auto bind_input(const ch_busbase<N>& bus) const {
     return make_bit<N>(this->bind_input(get_snode(bus)));
   }
-  
+
   template <unsigned N>
   const auto bind_output(const ch_bitbase<N>& output) const {
     return make_bus<N>(this->bind_output(get_lnode(output)));
@@ -149,6 +38,8 @@ protected:
   void begin_context();
 
   void end_context();
+
+  void compile();
   
   lnodeimpl* bind_input(const snode& bus) const;
   
@@ -161,58 +52,172 @@ protected:
   friend class simulatorimpl;
 };
 
-template <>
-struct ch_device::bind_inputs_impl<1> {
-  template <typename ...InputArgs, typename Arg, typename ...Args>
-  static void bind(const ch_device& dev, std::tuple<InputArgs...>& inputs, Arg&& arg, Args&&... args) {
-    std::get<sizeof...(InputArgs)-1>(inputs) = dev.bind_input(std::forward<Arg>(arg));
+///////////////////////////////////////////////////////////////////////////////
+
+template <typename Function>
+class function_device : public ch_device {
+public:
+
+  function_device(const Function& func) : function_(func) {}
+
+  auto operator()() {
+    return this->bind();
   }
-  
-  template <typename ...InputArgs, typename Arg>
-  static void bind(const ch_device& dev, std::tuple<InputArgs...>& inputs, Arg&& arg) {
-    std::get<sizeof...(InputArgs)-1>(inputs) = dev.bind_input(std::forward<Arg>(arg));
+
+  template <typename Arg0, typename... Args,
+            CH_REQUIRES(is_bus_convertible<Arg0, Args...>::value)>
+  auto operator()(const Arg0& arg0, const Args&... args) {
+    return this->bind(arg0, args...);
   }
+
+  ~function_device() {}
+
+protected:
+
+  template <typename T>
+  struct to_bus_type {
+    using type = ch_bus<T::bitcount>;
+  };
+
+  template <typename... Ts>
+  struct to_bus_type<std::tuple<Ts...>> {
+    using type = std::tuple<ch_bus<Ts::bitcount>...>;
+  };
+
+  template <typename... Args>
+  auto bind(const Args&... args) {
+    typename to_bus_type<typename Function::result_type>::type ret;
+    this->begin_context();
+    {
+      std::tuple<ch_bit<std::decay<Args>::type::bitcount>...> func_args;
+      this->bind_inputs(func_args, args...);
+      auto func_ret = this->invoke(func_args, std::index_sequence_for<Args...>());
+      this->bind_outputs(func_ret, ret);
+      this->compile();
+    }
+    this->end_context();
+    return ret;
+  }
+
+  template<typename... Args, size_t... I>
+  auto invoke(const std::tuple<Args...>& args, std::index_sequence<I...>) {
+    return function_(std::get<I>(args)...);
+  }
+
+  template <typename... FuncArgs, typename Arg, typename... Args>
+  void bind_inputs(std::tuple<FuncArgs...>& funcArgs, const Arg& arg, const Args&... args) {
+    std::get<(sizeof...(FuncArgs) - 1 - sizeof...(Args))>(funcArgs) = this->bind_input(arg);
+    this->bind_inputs(funcArgs, args...);
+  }
+
+  template <typename... FuncArgs, typename Arg>
+  void bind_inputs(std::tuple<FuncArgs...>& funcArgs, const Arg& arg) {
+    std::get<(sizeof...(FuncArgs) - 1)>(funcArgs) = this->bind_input(arg);
+  }
+
+  template <typename... FuncArgs>
+  void bind_inputs(std::tuple<FuncArgs...>& funcArgs) {
+    CH_UNUSED(funcArgs);
+    // function has no input argument
+  }
+
+  template <typename... FuncRets, typename... Rets>
+  void bind_outputs(const std::tuple<FuncRets...>& funcRets, std::tuple<Rets...>& rets) {
+    this->bind_outputs(funcRets, rets, std::index_sequence_for<Rets...>());
+  }
+
+  template <typename FuncRet, typename Ret>
+  void bind_outputs(const FuncRet& funcRet, Ret& ret) {
+    ret = this->bind_output(funcRet);
+  }
+
+  template <typename... FuncRets, typename... Rets, size_t... I>
+  void bind_outputs(const std::tuple<FuncRets...>& funcRets,
+                    std::tuple<Rets...>& rets,
+                    std::index_sequence<I...>) {
+    this->bind_outputs(funcRets, std::get<I>(rets)...);
+  }
+
+  template <typename... FuncRets, typename Ret>
+  void bind_outputs(const std::tuple<FuncRets...>& funcRets, Ret& ret) {
+    ret = this->bind_output(std::get<(sizeof...(FuncRets) - 1)>(funcRets));
+  }
+
+  template <typename... FuncRets, typename Ret, typename... Rets>
+  void bind_outputs(const std::tuple<FuncRets...>& funcRets, Ret& ret, Rets&... rets) {
+    ret = this->bind_output(std::get<(sizeof...(FuncRets) - 1 - sizeof...(Rets))>(funcRets));
+    this->bind_outputs(funcRets, rets...);
+  }
+
+  Function function_;
 };
 
-template <>
-struct ch_device::bind_inputs_impl<0> {
-  template <typename ...InputArgs, typename ...Args>
-  static void bind(const ch_device& dev, std::tuple<InputArgs...>& inputs, Args&&... args) {
-    // no inputs!
+template <typename T>
+class module_device : public ch_device {
+public:
+
+  template <typename... Args>
+  module_device(const Args&... args) {
+    this->begin_context();
+    module_ = new T(args...);
+    this->end_context();
   }
+
+  ~module_device() {
+    delete module_;
+  }
+
+  auto operator()() {
+    return this->bind();
+  }
+
+  template <typename Arg0, typename... Args,
+            CH_REQUIRES(is_bus_convertible<Arg0, Args...>::value)>
+  auto operator()(const Arg0&& arg0, const Args&&... args) {
+    return this->bind(std::forward<Arg0>(arg0), std::forward<Args>(args)...);
+  }
+
+protected:
+
+  template <typename... Args>
+  void bind(const Args&... args) {
+    this->begin_context();
+    {
+      std::tuple<ch_bit<std::decay<Args>::type::bitcount>...> func_args;
+      this->invoke(func_args, std::index_sequence_for<Args...>());
+      this->bind_io(func_args, std::forward<Args>(args)...);
+      this->compile();
+    }
+    this->end_context();
+  }
+
+  template<typename... Args, size_t... I>
+  void invoke(std::tuple<Args...>& args, std::index_sequence<I...>) {
+    module_->io(std::get<I>(args)...);
+  }
+
+  template <typename... FuncArgs, typename... Args>
+  void bind_io(std::tuple<FuncArgs...>& func_args, Args&&... args) {
+    //--
+  }
+
+  T* module_;
 };
 
-template <>
-struct ch_device::bind_outputs_impl<1> {  
-  template <typename ...OutputArgs, typename Arg>
-  static void bind(const ch_device& dev, const std::tuple<OutputArgs...>& outputs, Arg&& arg) {
-    bind_output_impl<true, 1>::bind(dev, outputs, arg);
-  }
-};
+template <typename Function>
+auto ch_function(const Function& func) {
+  return function_device<typename function_traits<Function>::type>(func);
+}
 
-template <>
-struct ch_device::bind_outputs_impl<0> {
-  template <typename ...OutputArgs, typename Arg, typename ...Args>
-  static void bind(const ch_device& dev, const std::tuple<OutputArgs...>& outputs, Args&&... args) {
-    // no inputs!
-  }
-};
+template <typename Ret, typename... Args>
+auto ch_function(Ret (*func)(Args...)) {
+  return function_device<std::function<Ret(Args...)>>(std::function<Ret(Args...)>(func));
+}
 
-template <>
-struct ch_device::bind_outputs_impl2<1> {
-  template <typename Ret, typename Arg, typename ...Args>
-  static void bind(const ch_device& dev, const Ret& output, Arg&& arg) {
-    std::forward<Arg>(arg) = dev.bind_output(output);
-  }
-};
-
-template <>
-struct ch_device::bind_outputs_impl2<0> {
-  template <typename Ret, typename Arg, typename ...Args>
-  static void bind(const ch_device& dev, const Ret& output, Args&&... args) {
-    // no inputs!
-  }
-};
+template <typename Class, typename... Args>
+auto ch_module(Args&&... args) {
+  return module_device<Class>(args...);
+}
 
 }
 }

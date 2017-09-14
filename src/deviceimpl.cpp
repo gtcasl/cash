@@ -5,12 +5,25 @@
 
 using namespace cash::internal;
 
+deviceimpl::deviceimpl() {
+  ctx_ = ctx_create();
+}
+
+deviceimpl::~deviceimpl() {
+  ctx_->release();
+}
+
+void deviceimpl::begin_context() {
+  old_ctx_ = ctx_swap(ctx_);
+}
+
 void deviceimpl::end_context() {
-  {
-    ch_compiler compiler(ctx_);
-    compiler.run();
-  }
-  ctx_set(nullptr);
+  ctx_swap(old_ctx_);
+}
+
+void deviceimpl::compile() {
+  ch_compiler compiler(ctx_);
+  compiler.run();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -30,6 +43,10 @@ void ch_device::begin_context() {
 
 void ch_device::end_context() {
   impl_->end_context();
+}
+
+void ch_device::compile() {
+  impl_->compile();
 }
 
 lnodeimpl* ch_device::bind_input(const snode& bus) const {

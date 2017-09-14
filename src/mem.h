@@ -59,6 +59,7 @@ public:
   using base::operator=;
   using data_type = typename base::data_type;
   using value_type = memport_ref;
+  using const_type = const memport_ref;
 
 protected:
 
