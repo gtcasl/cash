@@ -169,6 +169,7 @@ test/literals.cpp
 test/main.cpp
 test/mem.cpp
 test/miscs.cpp
+test/procedure.cpp
 test/proxies.cpp
 test/reg.cpp
 test/select.cpp

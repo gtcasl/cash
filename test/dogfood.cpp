@@ -27,7 +27,6 @@ struct Adder {
   Adder() {
     Q1 x;
     Q2 y;
-    x = 0;
     x.next = 0;
     y.p1 = 0;
     y.next.p1 = 0;
@@ -50,7 +49,6 @@ A a{x, y};
 ch_bit1 dogfood(const ch_bit2& w) {
   Q1 x;
   Q2 y;
-  x = 1;
   x.next = 0;
   y.p1 = 0;
   y.next.p1 = 0;

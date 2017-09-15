@@ -342,5 +342,30 @@ void ch_print(const std::string& format, const Args& ...args) {
   createPrintNode(format, {get_lnode(args)...});
 }
 
+// utils functions
+
+template <typename... Ts>
+struct return_type {
+  using type = std::tuple<Ts...>;
+};
+
+template <typename T>
+struct return_type<T> {
+  using type = T;
+};
+
+template <typename T>
+auto make_return(const T& x) {
+  return x;
+}
+
+template <typename... Ts>
+auto make_return(const Ts&... args) {
+  return typename return_type<Ts...>::type(args...);
+}
+
 }
 }
+
+#define CH_OUT(...) typename cash::internal::return_type<__VA_ARGS__>::type
+#define CH_RET(...) return cash::internal::make_return(__VA_ARGS__)
