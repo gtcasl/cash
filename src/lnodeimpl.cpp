@@ -104,7 +104,7 @@ lnode::lnode(const bitvector& value) {
   impl_ = ctx_curr()->get_literal(value);
 }
 
-lnode::lnode(const data_type& data) : impl_(nullptr) {
+lnode::lnode(const nodelist<lnode>& data) : impl_(nullptr) {
   if (data.is_srccopy())  {
     impl_ = data.begin()->src.get_impl();
   } else {
@@ -274,7 +274,7 @@ void lnode::assign(uint32_t dst_offset,
   }
 }
 
-void lnode::read_data(data_type& inout,
+void lnode::read_data(nodelist<lnode>& inout,
                       uint32_t offset,
                       uint32_t length,
                       uint32_t size) const {
@@ -284,7 +284,7 @@ void lnode::read_data(data_type& inout,
 }
 
 void lnode::write_data(uint32_t dst_offset,
-                       const data_type& in,
+                       const nodelist<lnode>& in,
                        uint32_t src_offset,
                        uint32_t length,
                        uint32_t size) {

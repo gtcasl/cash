@@ -6,7 +6,6 @@
 #include "context.h"
 #include "mem.h"
 
-using namespace std;
 using namespace cash::internal;
 
 ch_compiler::ch_compiler(context* ctx) : ctx_(ctx) {}

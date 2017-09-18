@@ -9,79 +9,70 @@ lnodeimpl* createInputNode(const snode& in);
 
 snodeimpl* createOutputNode(const lnode& out);
 
-template <typename T, unsigned N = T::bitcount>
+template <typename T, unsigned N = traits<T>::bitcount>
 auto ch_input(const T& in) {
   return make_bit<N>(createInputNode(get_snode<T, N>(in)));
 }
 
-template <typename T, unsigned N = T::bitcount>
+template <typename T, unsigned N = traits<T>::bitcount>
 auto ch_output(const T& out) {
   return make_bus<N>(createOutputNode(get_lnode<T, N>(out)));
 }
 
 template <typename T>
-class ch_port {
+class ch_port : public T {
 public:
-  static const unsigned bitcount = T::bitcount;
-  using value_type = T;
+  ~ch_port() {}
 
-private:
-  //--
+protected:
+  ch_port() {}
+  ch_port(const ch_port& p) : T(p) {}
 };
+
+template <typename T>
+class ch_in;
 
 template <typename T>
 class ch_out;
 
 template <typename T>
-class ch_in : public ch_port<T> {
+class ch_in : public ch_port<typename traits<T>::const_type> {
 public:
-  static_assert(std::is_base_of<ch_bitbase<T::bitcount>, T>::value, "invalid object type");
   using base = ch_port<T>;
   using value_type = T;
   using flip_type = ch_out<T>;
 
   ch_in() {}
-  ch_in(const ch_in& in) : value_(in.value_) {}
+  ch_in(const ch_in& in) : base(in) {}
 
   template <typename U,
             CH_REQUIRES(is_cast_convertible<U, T>::value)>
   void operator()(const ch_in<U>& in) {
-    value_ = in.value_;
+    this->assign(in);
   }
 
   template <typename U,
             CH_REQUIRES(is_cast_convertible<U, T>::value)>
   void operator()(const ch_out<U>& out) {
-    value_ = out.value_;
+    this->assign(out);
   }
 
   template <typename U,
             CH_REQUIRES(is_cast_convertible<U, T>::value)>
   void operator()(const U& value) {
-    value_ = value;
+    this->assign(value);
   }
 
-  void operator()(const ch_busbase<T::bitcount>& value) {
-    value_ = ch_input(value);
+  template <typename U,
+            CH_REQUIRES(traits<U>::bitcount == traits<T>::bitcount)>
+  void operator()(const ch_busbase<U>& value) {
+    this->assign(ch_input(value));
   }
-
-  const T& operator*() const {
-    return value_;
-  }
-
-  const T* operator->() const {
-    return &value_;
-  }
-
-private:
-  ch_in& operator=(const ch_in&) = delete;
-  T value_;
 };
 
 template <typename T>
 class ch_out : public ch_port<T> {
 public:
-  static_assert(std::is_base_of<ch_bitbase<T::bitcount>, T>::value, "invalid object type");
   using base = ch_port<T>;
   using value_type = T;
   using flip_type = ch_in<T>;
@@ -111,7 +102,7 @@ public:
     value = value_;
   }
 
-  void operator()(ch_bus<T::bitcount>& value) {
+  void operator()(ch_bus<traits<T>::bitcount>& value) {
     value = ch_output(value_);
   }
 
@@ -154,7 +145,7 @@ private:
       __flip_type__& operator=(const __flip_type__&) = delete; \
     public: \
       using base = cash::internal::ch_port<__flip_type__>; \
-      static const unsigned bitcount = __value_type__::bitcount; \
+      static constexpr unsigned bitcount = __value_type__::bitcount; \
       using value_type = __value_type__; \
       using flip_type = name; \
       __flip_type__() {} \
@@ -174,7 +165,7 @@ private:
     name& operator=(const name&) = delete; \
   public: \
     using base = cash::internal::ch_port<name>; \
-    static const unsigned bitcount = __value_type__::bitcount; \
+    static constexpr unsigned bitcount = __value_type__::bitcount; \
     using value_type = __value_type__; \
     using flip_type  = __flip_type__; \
     name() {} \

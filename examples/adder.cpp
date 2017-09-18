@@ -6,6 +6,44 @@ using namespace cash::sim;
 
 #define CHECK(x) if (!(x)) { assert(false); exit(1); }
 
+
+template <typename D, typename T>
+struct Base0 {
+  D* self() { return (D*)this; }
+  int foo(T x) {
+    return x + D::size;
+  }
+};
+
+template <typename D>
+struct Base1 : public Base0<D, int> {
+  void bar() {}
+};
+
+template <typename D>
+struct Base1_R : public Base1<D> {
+  void read() {}
+};
+
+template <typename D>
+struct Base1_W : public Base1<D> {
+  void write() {}
+};
+
+template <int N>
+class ObjR : Base1_R< ObjR<N> > {
+private:
+  struct __Y { int m; };
+public:
+  using Y = __Y;
+  static constexpr int size = N;
+};
+
+template <int N>
+struct ObjW : Base1_R< ObjW<N> > {
+  static constexpr int size = N;
+};
+
 template <unsigned N>
 __out(ch_bit<N>, ch_bit1) Adder(
     const ch_bit<N>& lhs,
@@ -18,6 +56,12 @@ __out(ch_bit<N>, ch_bit1) Adder(
 }
 
 int main(int argc, char **argv) {
+
+  ObjR<3> r;
+  ObjR<3>::Y q;
+  ObjW<5> w;
+
+
   std::ofstream vcd_file("adder.vcd");
   ch_bus1 cout, cin(1);
   ch_bus2 out, lhs(1), rhs(3);

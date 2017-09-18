@@ -5,83 +5,144 @@
 namespace cash {
 namespace internal {
 
+enum ch_boolean {
+  ch_false = 0,
+  ch_true  = 1
+};
+
+template <typename Derived>
+class ch_bitbase;
+
 template <unsigned N> class ch_bit;
 
 template <unsigned N> const ch_bit<N> make_bit(const lnode& node);
 
-template <unsigned N> using ch_bitbase = typebase<N, lnode::data_type>;
+template <>
+struct data_traits <lnode> {
+  template <typename T> using base_type = ch_bitbase<T>;
 
-enum ch_boolean {
-  ch_false = 0,
-  ch_true = 1
+  template <typename T> static const T make_type(const lnode& node) {
+    return T(std::move(make_bit<traits<T>::bitcount>(node)));
+  }
 };
 
-template <unsigned N>
-class typebase<N, lnode::data_type> : public typebase_itf<lnode::data_type> {
-public:   
-  static const unsigned bitcount = N;
-  using base = typebase;
-  using data_type = lnode::data_type;
-  using device_type = ch_bit<N>;
+template <typename Derived>
+struct traits < ch_bitbase<Derived> > {
+  static constexpr unsigned bitcount = traits<Derived>::bitcount;
+};
+
+template <typename Derived, bool readonly>
+class bitbaseimpl;
+
+template <typename Derived>
+class bitbaseimpl<Derived, false> : public typebase<Derived> {
+public:
+  using base = typebase<Derived>;
+  using base::self;
+
+  static_assert(std::is_same<typename traits<Derived>::data_type, lnode>::value, "data type mismatch");
+
+  template <typename OtherDerived,
+            CH_REQUIRES(traits<OtherDerived>::bitcount == traits<Derived>::bitcount)>
+  Derived& operator=(const ch_bitbase<OtherDerived>& rhs) {
+    return this->assign(rhs);
+  }
+
+  template <typename T,
+            CH_REQUIRES(is_scalar<T>::value)>
+  Derived& operator=(const T& rhs) {
+    return this->assign(rhs);
+  }
   
-  typebase& operator=(const typebase& rhs) {
-    data_type data(N);
-    rhs.read_data(data, 0, N);
-    this->write_data(0, data, 0, N);
-    return *this;
+  Derived& operator=(const ch_boolean& rhs) {
+    return this->assign((int)rhs);
   }
 
-  typebase& operator=(const ch_boolean& rhs) {
-    const lnode node(bitvector(N, (int)rhs)); \
-    this->write_data(0, {N, node, 0 , N}, 0, N); \
-    return *this;
+  auto operator[](size_t index) & {
+    return sliceref<Derived, 1>(*self(), index);
   }
 
-#define CH_DEF_AOP(type) \
-  typebase& operator=(type rhs) { \
-    const lnode node(bitvector(N, rhs)); \
-    this->write_data(0, {N, node, 0 , N}, 0, N); \
-    return *this; \
-  }
-  CH_DEF_AOP(bool)
-  CH_DEF_AOP(char)
-  CH_DEF_AOP(int8_t)
-  CH_DEF_AOP(uint8_t)
-  CH_DEF_AOP(int16_t)
-  CH_DEF_AOP(uint16_t)
-  CH_DEF_AOP(int32_t)
-  CH_DEF_AOP(uint32_t)
-  CH_DEF_AOP(int64_t)
-  CH_DEF_AOP(uint64_t)
-#undef CH_DEF_AOP
-
-  const auto operator[](size_t index) const {
-    return const_sliceref<device_type, 1>(*this, index);
+  const auto operator[](size_t index) const & {
+    return const_sliceref<ch_bit<1>, 1>(*self(), index);
   }
 
-  auto operator[](size_t index) {
-    return sliceref<typebase, 1>(*this, index);
+  const auto operator[](size_t index) const && {
+    return const_sliceref<Derived, 1>(std::move(*self()), index);
   }
 
   template <unsigned M>
-  const auto slice(size_t index = 0) const {
-    return const_sliceref<device_type, M>(*this, index);
+  auto slice(size_t index = 0) & {
+    return sliceref<Derived, M>(*self(), index);
   }
 
   template <unsigned M>
-  auto slice(size_t index = 0) {
-    return sliceref<typebase, M>(*this, index);
+  const auto slice(size_t index = 0) const & {
+    return const_sliceref<ch_bit<M>, M>(*self(), index);
   }
 
   template <unsigned M>
-  const auto aslice(size_t index = 0) const {
-    return const_sliceref<device_type, M>(*this, index * M);
+  const auto slice(size_t index = 0) const && {
+    return const_sliceref<Derived, M>(std::move(*self()), index);
   }
 
   template <unsigned M>
-  auto aslice(size_t index = 0) {
-    return sliceref<typebase, M>(*this, index * M);
+  auto aslice(size_t index = 0) & {
+    return sliceref<Derived, M>(*self(), index * M);
   }
+
+  template <unsigned M>
+  const auto aslice(size_t index = 0) const & {
+    return const_sliceref<ch_bit<M>, M>(*self(), index * M);
+  }
+
+  template <unsigned M>
+  const auto aslice(size_t index = 0) const && {
+    return const_sliceref<Derived, M>(std::move(*self()), index * M);
+  }
+};
+
+template <typename Derived>
+class bitbaseimpl<Derived, true> : public typebase<Derived> {
+public:
+  using base = typebase<Derived>;
+  using base::self;
+
+  static_assert(std::is_same<typename traits<Derived>::data_type, lnode>::value, "data type mismatch");
+
+  const auto operator[](size_t index) const & {
+    return const_sliceref<ch_bit<1>, 1>(*self(), index);
+  }
+
+  const auto operator[](size_t index) const && {
+    return const_sliceref<Derived, 1>(std::move(*self()), index);
+  }
+
+  template <unsigned M>
+  const auto slice(size_t index = 0) const & {
+    return const_sliceref<ch_bit<M>, M>(*self(), index);
+  }
+
+  template <unsigned M>
+  const auto slice(size_t index = 0) const && {
+    return const_sliceref<Derived, M>(std::move(*self()), index);
+  }
+
+  template <unsigned M>
+  const auto aslice(size_t index = 0) const & {
+    return const_sliceref<ch_bit<M>, M>(*self(), index * M);
+  }
+
+  template <unsigned M>
+  const auto aslice(size_t index = 0) const && {
+    return const_sliceref<Derived, M>(std::move(*self()), index * M);
+  }
+};
+
+template <typename Derived>
+class ch_bitbase : public bitbaseimpl<Derived, traits<Derived>::readonly> {
+public:
+  using base = bitbaseimpl<Derived, traits<Derived>::readonly>;
+  using base::operator=;
 };
 
 }

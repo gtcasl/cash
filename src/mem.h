@@ -40,7 +40,7 @@ public:
 
   void write(const lnode& addr,
              size_t dst_offset,
-             const lnode::data_type& in,
+             const nodelist<lnode>& in,
              size_t src_offset,
              size_t length);
   
@@ -51,15 +51,21 @@ private:
   memimpl* impl_;
 };
 
+template <unsigned N>
+class memport_ref;
 
 template <unsigned N>
-class memport_ref : public ch_bitbase<N> {
+struct traits < memport_ref<N> > {
+  static constexpr unsigned bitcount = N;
+  static constexpr bool readonly = false;
+  using data_type  = lnode;
+};
+
+template <unsigned N>
+class memport_ref : public ch_bitbase< memport_ref<N> > {
 public:
-  using base = ch_bitbase<N>;
+  using base = ch_bitbase< memport_ref<N> >;
   using base::operator=;
-  using data_type = typename base::data_type;
-  using value_type = memport_ref;
-  using const_type = const memport_ref;
 
 protected:
 
@@ -68,18 +74,20 @@ protected:
     , addr_(addr)
   {}
 
-  void read_data(data_type& inout, size_t offset, size_t length) const override {
+  void read_data(nodelist<lnode>& inout, size_t offset, size_t length) const {
     CH_CHECK(offset + length <= N, "invalid read range");
     inout.push(mem_.read(addr_), offset, length);
   }
 
-  void write_data(size_t dst_offset, const data_type& in, size_t src_offset, size_t length) override {
+  void write_data(size_t dst_offset, const nodelist<lnode>& in, size_t src_offset, size_t length) {
     CH_CHECK(0 == dst_offset || N == length, "partial update not supported!");
     mem_.write(addr_, dst_offset, in, src_offset, length);
   }
 
   memory& mem_;
   lnode addr_;
+
+  template <typename T> friend class typebase;
 
   template <unsigned W, unsigned A> friend class ch_ram;
 };
@@ -104,7 +112,7 @@ public:
     }
     
     template <typename T,
-              CH_REQUIRES(is_cast_convertible<T, ch_bit<A>>::value)>
+              CH_REQUIRES(is_bit_convertible<T, A>::value)>
     const auto operator[](const T& addr) const {
       return make_bit<W>(mem_.read(get_lnode<T, A>(addr)));
     }
@@ -133,13 +141,13 @@ public:
     }
     
     template <typename T,
-              CH_REQUIRES(is_cast_convertible<T, ch_bit<A>>::value)>
+              CH_REQUIRES(is_bit_convertible<T, A>::value)>
     const auto operator[](const T& addr) const {
       return make_bit<W>(mem_.read(get_lnode<T, A>(addr)));
     }
     
     template <typename T,
-              CH_REQUIRES(is_cast_convertible<T, ch_bit<A>>::value)>
+              CH_REQUIRES(is_bit_convertible<T, A>::value)>
     memport_ref<W> operator[](const T& addr) {
       return memport_ref<W>(mem_, get_lnode<T, A>(addr));
     }

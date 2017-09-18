@@ -12,8 +12,6 @@ using ch_tick = uint64_t;
 
 class lnode {
 public:
-  
-  using data_type = nodebuf<const lnode&>;
 
   lnode();
 
@@ -29,9 +27,9 @@ public:
 
   lnode(lnodeimpl* impl);
 
-  explicit lnode(const bitvector& value);
+  lnode(const bitvector& value);
 
-  explicit lnode(const data_type& data);
+  lnode(const nodelist<lnode>& data);
 
   lnode& operator=(const lnode& rhs);
 
@@ -63,13 +61,13 @@ public:
 
   void move(lnode& rhs, uint32_t size);
 
-  void read_data(data_type& inout,
+  void read_data(nodelist<lnode>& inout,
                  uint32_t offset,
                  uint32_t length,
                  uint32_t size) const;
   
   void write_data(uint32_t dst_offset,
-                  const data_type& in,
+                  const nodelist<lnode>& in,
                   uint32_t src_offset,
                   uint32_t length,
                   uint32_t size);

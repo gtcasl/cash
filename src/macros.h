@@ -33,6 +33,7 @@
 
 // MAKE_UNIQUE macro
 #define CH_MAKE_UNIQUE(x) CH_CONCAT(x, __COUNTER__)
+#define CH_UNAME(n1, n2) CH_CONCAT(__, CH_CONCAT(n1, CH_CONCAT(_, CH_CONCAT(n2, __))))
 
 // NARG macro
 #define CH_NARG_N(_1, _2, _3, _4, _5, _6, _7, _8, _9,_10,_11,_12,_13,_14,_15,_16, \

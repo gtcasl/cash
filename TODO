@@ -246,11 +246,10 @@ private:
   static std::false_type check(...);
 
 public:
-  static const bool value = decltype(check<From, To>(nullptr))::value;
+  static constexpr bool value = decltype(check<From, To>(nullptr))::value;
 };
 
 #include <iostream>
-using namespace std;
 
 template <typename Child>
 struct Base

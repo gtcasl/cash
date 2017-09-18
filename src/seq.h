@@ -6,19 +6,24 @@ namespace cash {
 namespace internal {
 
 template <typename T>
-class ch_seq : public T::const_type {
-public:  
-  using base = ch_bitbase<T::bitcount>;
-  using data_type = typename T::data_type;
+class ch_seq;
+
+template <typename T>
+struct traits < ch_seq<T> > {
+  static constexpr unsigned bitcount = traits<T>::bitcount;
+};
+
+template <typename T>
+class ch_seq : public traits<T>::const_type {
+public:
+  using base = typename traits<T>::const_type;
   using value_type = T;
-  using const_type = typename T::const_type;
-  using bus_type = typename T::bus_type;
 
   T next;
 
   ch_seq() {
     auto reg = ch_reg(next);
-    T::operator=(std::move(reg));
+    base::operator=(std::move(reg));
     next = *this;
   }
   
@@ -26,17 +31,17 @@ public:
             CH_REQUIRES(is_cast_convertible<U, T>::value)>
   explicit ch_seq(const U& init) {
     auto reg = ch_reg(next, static_cast<typename reference_cast<U, T>::type>(init));
-    T::operator=(std::move(reg));
+    base::operator=(std::move(reg));
     next = *this;
   }
 
   ch_seq(ch_seq&& rhs) {
-    reinterpret_cast<T&>(*this) = std::move(reinterpret_cast<T&>(rhs));
+    reinterpret_cast<base&>(*this) = std::move(reinterpret_cast<T&>(rhs));
     next = std::move(rhs.next);
   }
 
   ch_seq& operator=(ch_seq&& rhs) {
-    reinterpret_cast<T&>(*this) = std::move(reinterpret_cast<T&>(rhs));
+    reinterpret_cast<base&>(*this) = std::move(reinterpret_cast<T&>(rhs));
     next = std::move(rhs.next);
   }
 

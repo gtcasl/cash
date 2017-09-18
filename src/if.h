@@ -5,13 +5,24 @@
 namespace cash {
 namespace internal {
 
-class if_t {
+class if_t {  
+protected:
+
+  using func_t = std::function<void ()>;
+
+  void eval(const lnode& pred, func_t func);
+
+  void eval(func_t func);
+
 public:
+
+  if_t(const lnode& pred, func_t func);
   
   ~if_t();
     
-  template <typename Func>
-  if_t& elif_(const ch_bitbase<1>& pred, const Func& func) {
+  template <typename P, typename Func,
+            CH_REQUIRES(traits<P>::bitcount == 1)>
+  if_t& elif_(const ch_bitbase<P>& pred, const Func& func) {
     this->eval(get_lnode(pred), to_function(func));
     return *this; 
   }
@@ -20,23 +31,11 @@ public:
   void else_(const Func& func) {
     this->eval(to_function(func));
   }
-  
-protected:
-  
-  using func_t = std::function<void ()>;
-  
-  if_t(const lnode& pred, func_t func);
-  
-  void eval(const lnode& pred, func_t func);
-
-  void eval(func_t func);
-  
-  template <typename Func> 
-  friend if_t ch_if(const ch_bitbase<1>& pred, const Func& func);
 };
 
-template <typename Func> 
-if_t ch_if(const ch_bitbase<1>& pred, const Func& func) {
+template <typename P, typename Func,
+          CH_REQUIRES(traits<P>::bitcount == 1)>
+if_t ch_if(const ch_bitbase<P>& pred, const Func& func) {
   return if_t(get_lnode(pred), func);
 }
 

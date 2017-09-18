@@ -209,14 +209,14 @@ lnode& memory::read(const lnode& addr) const {
 
 void memory::write(const lnode& addr,
                    size_t dst_offset,
-                   const lnode::data_type& in,
+                   const nodelist<lnode>& in,
                    size_t src_offset,
                    size_t length) {
   assert(0 == dst_offset);
   if (0 == src_offset) {
     impl_->write(addr, lnode(in));
   } else {
-    lnode::data_type in2(length);
+    nodelist<lnode> in2(length);
     for (auto slice : in) {
       if (src_offset < slice.length) {
         uint32_t len = std::min(slice.length - src_offset, length);

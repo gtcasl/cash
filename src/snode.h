@@ -10,8 +10,6 @@ class snodeimpl;
 class snode {
 public:
   
-  using data_type = nodebuf<const snode&>;
-  
   snode();
 
   snode(const snode& rhs);
@@ -22,9 +20,9 @@ public:
 
   snode(snodeimpl* impl);
 
-  explicit snode(const data_type& data);
+  snode(const nodelist<snode>& data);
 
-  explicit snode(const bitvector& value);
+  snode(const bitvector& value);
 
   ~snode();
   
@@ -72,13 +70,13 @@ public:
              uint32_t length,
              uint32_t size);
 
-  void read_data(data_type& inout,
+  void read_data(nodelist<snode>& inout,
                  uint32_t offset,
                  uint32_t length,
                  uint32_t size) const;
   
   void write_data(uint32_t dst_offset,
-                  const data_type& in,
+                  const nodelist<snode>& in,
                   uint32_t src_offset,
                   uint32_t length,
                   uint32_t size);

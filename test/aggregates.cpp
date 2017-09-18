@@ -2,75 +2,61 @@
 
 using namespace cash::core_literals;
 
-__struct (s1_t,(
-  (ch_bit4) a
-  ),
-  ch_bit1 get_LSB() const {
-    return a[0];
-  }
-  ch_bit1 get_MSB() const {
-    return a[3];
-  }
-);
+__enum (my_enum, 4, (
+  (idle, 0),
+  execute,
+  stats,
+  done
+));
 
-__struct (s2_t,(
+__enum (O_t, 1, (
+  a
+));
+
+__struct (s1_t, (
+  (ch_bit4) a
+  ));
+
+__struct (s2_t, (
   (ch_bit4) a,
   (ch_bit4) b
 ));
 
-__struct (s3_t,(
-    (ch_bit4) a,
-    (ch_bit4) b,
-    (ch_bit4) c
+__struct (s3_t, (
+  (ch_bit4) a,
+  (ch_bit4) b,
+  (ch_bit4) c
 ));
 
-__struct (s4_t,(
-    (ch_bit4) a,
-    (ch_bit4) b,
-    (ch_bit4) c,
-    (ch_bit4) d
+__struct (s4_t, (
+  (ch_bit4) a,
+  (ch_bit4) b,
+  (ch_bit4) c,
+  (ch_bit4) d
 ));
 
-__struct (ss_t,(
-    (s1_t) a,
-    (s1_t) b
+__struct (ss_t, (
+  (s1_t) a,
+  (s1_t) b
 ));
 
 template <unsigned N> 
-__struct (st_t,(
+__struct (st_t, (
   (ch_bit<N>) a,
   (ch_bit<N>) b
 ));
 
 using st4_t = st_t<4>;
  
-__union (u2_t,(
+__union (u2_t, (
   (ch_bit4) a,
   (ch_bit4) b
-  ),
-  ch_bit1 get_LSB() const {
-    return a[0];
-  }
-  ch_bit1 get_MSB() const {
-    return b[3];
-  }
-);
+  ));
  
-__union (u3_t,(
+__union (u3_t, (
   (ch_bit2) a,
   (ch_bit8) b,
   (ch_bit4) c
-));
-
-__enum (my_enum, 4,(
-  (idle, 0),
-  execute,
-  stats,
-  done
-)); 
-
-__enum (O_t, 1, (
-  a
 ));
 
 __struct (U_t, (

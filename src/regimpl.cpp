@@ -97,8 +97,8 @@ const ch_bit<1> cash::internal::ch_getClock() {
   return make_bit<1>(ctx_curr()->get_clk());
 }
 
-void cash::internal::ch_pushClock(const ch_bitbase<1>& clk) {
-  ctx_curr()->push_clk(get_lnode(clk));
+void cash::internal::pushClock(const lnode& clk) {
+  ctx_curr()->push_clk(clk);
 }
 
 void cash::internal::ch_popClock() {
@@ -109,8 +109,8 @@ const ch_bit<1> cash::internal::ch_getReset() {
   return make_bit<1>(ctx_curr()->get_reset());
 }
 
-void cash::internal::ch_pushReset(const ch_bitbase<1>& reset) {
-  ctx_curr()->push_reset(get_lnode(reset));
+void cash::internal::pushReset(const lnode& reset) {
+  ctx_curr()->push_reset(reset);
 }
 
 void cash::internal::ch_popReset() {

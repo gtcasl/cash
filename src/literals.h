@@ -16,24 +16,24 @@ struct lit_size;
 template <typename T, unsigned N, char... Chars>
 struct lit_size<false, T, N, Chars...> {
   static_assert(N > 0, "invalid literal size");
-  static const unsigned value = N;
+  static constexpr unsigned value = N;
 };
 
 template <typename T, unsigned N, char Char, char... Chars>
 struct lit_size<false, T, N, Char, Chars...> {
   static_assert(T::is_digit(Char) || T::is_escape(Char), "invalid literal value");
-  static const unsigned value = lit_size<false, T, T::size(Char, N), Chars...>::value;
+  static constexpr unsigned value = lit_size<false, T, T::size(Char, N), Chars...>::value;
 };
 
 template <typename T, unsigned N, char... Chars>
 struct lit_size<true, T, N, Chars...> {
-  static const unsigned value = N;
+  static constexpr unsigned value = N;
 };
 
 template <typename T, unsigned N, char Char, char... Chars>
 struct lit_size<true, T, N, Char, Chars...> {
   static_assert(T::is_digit(Char) || T::is_escape(Char), "invalid literal value");
-  static const unsigned value = lit_size<true, T, T::sizex(Char, N), Chars...>::value;
+  static constexpr unsigned value = lit_size<true, T, T::sizex(Char, N), Chars...>::value;
 };
 
 struct lit_bin {
@@ -97,32 +97,32 @@ struct lit_hex {
 
 template <char... Chars>
 struct lit_bin_size {
-  static const unsigned value = lit_size<false, lit_bin, 0, Chars...>::value;
+  static constexpr unsigned value = lit_size<false, lit_bin, 0, Chars...>::value;
 };
 
 template <char... Chars>
 struct lit_oct_size {
-  static const unsigned value = lit_size<false, lit_oct, 0, Chars...>::value;
+  static constexpr unsigned value = lit_size<false, lit_oct, 0, Chars...>::value;
 };
 
 template <char... Chars>
 struct lit_hex_size {
-  static const unsigned value = lit_size<false, lit_hex, 0, Chars...>::value;
+  static constexpr unsigned value = lit_size<false, lit_hex, 0, Chars...>::value;
 };
 
 template <char... Chars>
 struct lit_bin_sizex {
-  static const unsigned value = lit_size<true, lit_bin, 0, Chars...>::value;
+  static constexpr unsigned value = lit_size<true, lit_bin, 0, Chars...>::value;
 };
 
 template <char... Chars>
 struct lit_oct_sizex {
-  static const unsigned value = lit_size<true, lit_oct, 0, Chars...>::value;
+  static constexpr unsigned value = lit_size<true, lit_oct, 0, Chars...>::value;
 };
 
 template <char... Chars>
 struct lit_hex_sizex {
-  static const unsigned value = lit_size<true, lit_hex, 0, Chars...>::value;
+  static constexpr unsigned value = lit_size<true, lit_hex, 0, Chars...>::value;
 };
 
 #define CH_DEF_LITERALS_IMPL(x, ...) \

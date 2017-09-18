@@ -6,16 +6,29 @@
 namespace cash {
 namespace internal {
 
+class ch_real;
+class const_real;
+
+template <>
+struct traits < ch_real > {
+  static constexpr unsigned bitcount = 32;
+  static constexpr bool readonly = false;
+  using data_type  = lnode;
+  using value_type = ch_real;
+  using const_type = const_real;
+  using bus_type   = ch_bus<32>;
+};
+
 class ch_real : public ch_bit<32> {
 public:
   using base = ch_bit<32>;
-  using data_type = typename base::data_type;
-  using value_type = ch_real;
-  using bus_type = ch_bus<32>;
   
   ch_real() {}
+
   ch_real(const ch_real& rhs) : base(rhs) {}
+
   ch_real(const base& rhs) : base(rhs) {}
+
   explicit ch_real(float rhs) : base(bitcast<uint32_t, float>(rhs)) {}
   
   ch_real& operator=(const ch_real& rhs) {

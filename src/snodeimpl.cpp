@@ -291,7 +291,7 @@ snode::snode(const snode& rhs, uint32_t size) : impl_(nullptr) {
   this->assign(rhs.impl_);
 }
 
-snode::snode(const data_type& data) : impl_(nullptr) {
+snode::snode(const nodelist<snode>& data) : impl_(nullptr) {
   uint32_t dst_offset = 0;
   for (auto& d : data) {
     this->assign(dst_offset, d.src, d.offset, d.length, data.get_size());
@@ -503,7 +503,7 @@ void snode::write(uint32_t dst_offset,
   impl_->write(dst_offset, in, sizeInBytes, src_offset, length);
 }
 
-void snode::read_data(data_type& inout,
+void snode::read_data(nodelist<snode>& inout,
                       uint32_t offset,
                       uint32_t length,
                       uint32_t size) const {
@@ -513,7 +513,7 @@ void snode::read_data(data_type& inout,
 }
 
 void snode::write_data(uint32_t dst_offset,
-                       const data_type& in,
+                       const nodelist<snode>& in,
                        uint32_t src_offset,
                        uint32_t length,
                        uint32_t size) {

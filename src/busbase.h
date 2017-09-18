@@ -5,44 +5,48 @@
 namespace cash {
 namespace internal {
 
-template <unsigned N> class ch_bus;
-
-template <unsigned N> using ch_busbase = typebase<N, snode::data_type>;
+template <typename Derived>
+class ch_busbase;
 
 template <unsigned N>
-class typebase<N, snode::data_type> : public typebase_itf<snode::data_type> {
-public:   
-  static const unsigned bitcount = N;
-  using base = typebase;
-  using data_type = snode::data_type;
-  using device_type = ch_bus<N>;
-  
-  typebase& operator=(const typebase& rhs) {
-    data_type data(N);
-    rhs.read_data(data, 0, N);
-    this->write_data(0, data, 0, N);
-    return *this;
+class ch_bus;
+
+template <unsigned N> const ch_bus<N> make_bus(const snode& node);
+
+template <>
+struct data_traits <snode> {
+  template <typename T> using base_type = ch_busbase<T>;
+
+  template <typename T> static const T make_type(const snode& node) {
+    return T(std::move(make_bus<traits<T>::bitcount>(node)));
+  }
+};
+
+template <typename Derived>
+struct traits < ch_busbase<Derived> > {
+  static constexpr unsigned bitcount = traits<Derived>::bitcount;
+};
+
+template <typename Derived>
+class ch_busbase : public typebase<Derived> {
+public:
+  static_assert(std::is_same<typename traits<Derived>::data_type, snode>::value, "data type mismatch");
+
+  template <typename OtherDerived,
+            CH_REQUIRES(traits<OtherDerived>::bitcount == traits<Derived>::bitcount),
+            CH_REQUIRES(!traits<Derived>::readonly)>
+  Derived& operator=(const ch_busbase<OtherDerived>& rhs) {
+    return this->assign(rhs);
   }
 
-#define CH_DEF_AOP(type) \
-  typebase& operator=(type rhs) { \
-    snode node(bitvector(N, rhs)); \
-    this->write_data(0, {N, node, 0 , N}, 0, N); \
-    return *this; \
+  template <typename T,
+            CH_REQUIRES(is_scalar<T>::value),
+            CH_REQUIRES(!traits<Derived>::readonly)>
+  Derived& operator=(const T& rhs) { \
+    return this->assign(rhs);
   }
-  CH_DEF_AOP(bool)
-  CH_DEF_AOP(char)
-  CH_DEF_AOP(int8_t)
-  CH_DEF_AOP(uint8_t)
-  CH_DEF_AOP(int16_t)
-  CH_DEF_AOP(uint16_t)
-  CH_DEF_AOP(int32_t)
-  CH_DEF_AOP(uint32_t)
-  CH_DEF_AOP(int64_t)
-  CH_DEF_AOP(uint64_t)
-#undef CH_DEF_AOP
 
-  void read(uint32_t dst_offset, void* out, uint32_t sizeInBytes, uint32_t src_offset = 0, uint32_t length = N) const {
+  /*void read(uint32_t dst_offset, void* out, uint32_t sizeInBytes, uint32_t src_offset = 0, uint32_t length = N) const {
     assert(src_offset + length <= N);
     assert(dst_offset + length <= sizeInBytes * 8);
     data_type data(length);
@@ -62,7 +66,7 @@ public:
       const_cast<snode&>(slice.src).write(slice.offset, in, sizeInBytes, src_offset, slice.length, slice.src.get_size());
       src_offset += slice.length;
     }
-  }
+  }*/
 };
 
 }

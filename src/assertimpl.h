@@ -7,7 +7,7 @@ namespace internal {
 
 class assertimpl : public ioimpl {
 public:
-  assertimpl(const lnode& src, const std::string& msg);
+  assertimpl(const lnode& pred, const std::string& msg);
   
   const bitvector& eval(ch_tick t) override;
   

@@ -29,7 +29,7 @@ __out(ch_bit<W>, ch_bit1, ch_bit1) FiFo(
   empty = (wr_ptr == rd_ptr);
   full  = (wr_A == rd_A) && (wr_ptr[A] != rd_ptr[A]);
   
-  auto dout = mem[rd_A];
+  ch_bit<W> dout = mem[rd_A];
   __if (writing) (
     mem[wr_A] = din;
   );
