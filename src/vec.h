@@ -12,31 +12,14 @@ template <typename T, unsigned N>
 class const_vec;
 
 template <typename T, unsigned N>
-struct traits < ch_vec<T, N> > {
-  static constexpr unsigned bitcount = N * traits<T>::bitcount;
-  static constexpr bool readonly = false;
-  using data_type  = typename traits<T>::data_type;
-  using value_type = ch_vec<T, N>;
-  using const_type = const_vec<T, N>;
-  using bus_type   = ch_vec<typename traits<T>::bus_type, N>;
-};
-
-template <typename T, unsigned N>
-struct traits < const_vec<T, N> > {
-  static constexpr unsigned bitcount = N * traits<T>::bitcount;
-  static constexpr bool readonly = true;
-  using data_type  = typename traits<T>::data_type;
-  using value_type = const_vec<T, N>;
-  using const_type = const_vec<T, N>;
-  using bus_type   = ch_vec<typename traits<T>::bus_type, N>;
-};
-
-template <typename T, unsigned N>
-class ch_vec : public data_traits< typename traits<T>::data_type >:: template base_type< ch_vec<T, N> > {
+class ch_vec : public data_traits<typename T::data_t>::template base_t< ch_vec<T, N> > {
 public:
-  using base = typename data_traits< typename traits<T>::data_type >:: template base_type< ch_vec<T, N> >;
+  using base = typename data_traits<typename T::data_t>::template base_t< ch_vec<T, N> >;
   using base::operator=;
-  using data_type = typename base::data_type;
+  using data_t  = typename base::data_t;
+  using value_t = ch_vec<T, N>;
+  using const_t = const_vec<T, N>;
+  using bus_t   = ch_vec<typename T::bus_t, N>;
   
   ch_vec() {}
 
@@ -50,7 +33,7 @@ public:
   }
 
   ch_vec(const base& rhs) {
-    data_type data(base::bitcount);
+    data_t data(base::bitcount);
     cash::internal::read_data(rhs, data, 0, base::bitcount);
     this->write_data(0, data, 0, base::bitcount);
   }
@@ -112,7 +95,7 @@ protected:
     this->init(values...);
   }
   
-  void read_data(data_type& out, size_t offset, size_t length) const {
+  void read_data(data_t& out, size_t offset, size_t length) const {
     CH_CHECK(offset + length <= ch_vec::bitcount, "invalid vector read range");
     for (unsigned i = 0; length && i < N; ++i) {
       if (offset < T::bitcount) {
@@ -125,7 +108,7 @@ protected:
     }
   }
   
-  void write_data(size_t dst_offset, const data_type& data, size_t src_offset, size_t length) {
+  void write_data(size_t dst_offset, const data_t& data, size_t src_offset, size_t length) {
     CH_CHECK(dst_offset + length <= ch_vec::bitcount, "invalid vector write range");
     for (unsigned i = 0; length && i < N; ++i) {
       if (dst_offset < T::bitcount) {

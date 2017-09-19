@@ -44,7 +44,7 @@ public:
   }
 
   template <typename P, typename V,
-            CH_REQUIRES(traits<P>::bitcount == 1),
+            CH_REQUIRES(P::bitcount == 1),
             CH_REQUIRES(is_bit_convertible<V, N>::value)>
   select_t<N>& operator()(const ch_bitbase<P>& pred, const V& value) {
     impl_.push(get_lnode(pred), get_lnode<V, N>(value));
@@ -99,7 +99,7 @@ public:
             CH_REQUIRES(is_bit_convertible<P, K>::value),
             CH_REQUIRES(is_bit_convertible<V>::value)>
   auto operator()(const P& pred, const V& value) {
-    return select_case_t<K, traits<V>::bitcount>(key_, get_lnode<P, K>(pred), get_lnode(value));
+    return select_case_t<K, V::bitcount>(key_, get_lnode<P, K>(pred), get_lnode(value));
   }
   
 protected:
@@ -126,14 +126,14 @@ protected:
 };
 
 template <typename P, typename V,
-          CH_REQUIRES(traits<P>::bitcount == 1),
+          CH_REQUIRES(P::bitcount == 1),
           CH_REQUIRES(is_bit_convertible<V, V::bitcount>::value)>
 auto ch_select(const ch_bitbase<P>& pred, const V& value) {
   return select_t<V::bitcount>(get_lnode(pred), get_lnode(value));
 }
 
 template <unsigned N, typename P, typename V,
-          CH_REQUIRES(traits<P>::bitcount == 1),
+          CH_REQUIRES(P::bitcount == 1),
           CH_REQUIRES(is_bit_convertible<V, N>::value)>
 auto ch_select(const ch_bitbase<P>& pred, const V& value) {
   return select_t<N>(get_lnode(pred), get_lnode<V, N>(value));
@@ -152,7 +152,7 @@ auto ch_select(const K& key) {
 }
 
 template <typename P, typename U, typename V,
-          CH_REQUIRES(traits<P>::bitcount == 1),
+          CH_REQUIRES(P::bitcount == 1),
           CH_REQUIRES(deduce_type<U, V>::bitcount != 0),
           CH_REQUIRES(is_bit_convertible<U, deduce_type<U, V>::bitcount>::value),
           CH_REQUIRES(is_bit_convertible<V, deduce_type<U, V>::bitcount>::value)>
@@ -164,7 +164,7 @@ const auto ch_select(const ch_bitbase<P>& pred, const U& _true, const V& _false)
 }
 
 template <unsigned N, typename P, typename U, typename V,
-          CH_REQUIRES(traits<P>::bitcount == 1),
+          CH_REQUIRES(P::bitcount == 1),
           CH_REQUIRES(is_bit_convertible<U, N>::value),
           CH_REQUIRES(is_bit_convertible<V, N>::value)>
 const auto ch_select(const ch_bitbase<P>& pred, const U& _true, const V& _false) {

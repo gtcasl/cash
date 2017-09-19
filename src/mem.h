@@ -52,19 +52,9 @@ private:
 };
 
 template <unsigned N>
-class memport_ref;
-
-template <unsigned N>
-struct traits < memport_ref<N> > {
-  static constexpr unsigned bitcount = N;
-  static constexpr bool readonly = false;
-  using data_type  = lnode;
-};
-
-template <unsigned N>
-class memport_ref : public ch_bitbase< memport_ref<N> > {
+class memport_ref : public ch_bitbase< memport_ref<N>, N, false > {
 public:
-  using base = ch_bitbase< memport_ref<N> >;
+  using base = ch_bitbase< memport_ref<N>, N, false >;
   using base::operator=;
 
 protected:
@@ -87,8 +77,7 @@ protected:
   memory& mem_;
   lnode addr_;
 
-  template <typename T> friend class typebase;
-
+  template <typename _T, typename _D, unsigned _N, bool _R> friend class typebase;
   template <unsigned W, unsigned A> friend class ch_ram;
 };
 

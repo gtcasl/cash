@@ -50,7 +50,7 @@ protected:
 
 template <typename T>
 auto ch_switch(const ch_bitbase<T>& key) {
-  return switch_t<traits<T>::bitcount>(get_lnode(key));
+  return switch_t<T::bitcount>(get_lnode(key));
 }
 
 }

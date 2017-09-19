@@ -129,7 +129,7 @@ const auto OpCompare(const A& a, const B& b) {
 
 template <ch_alu_op op, typename T>
 const auto OpUnary(const ch_bitbase<T>& a) {
-  return make_bit<traits<T>::bitcount>(createAluNode(op, get_lnode(a)));
+  return make_bit<T::bitcount>(createAluNode(op, get_lnode(a)));
 }
 
 template <ch_alu_op op, typename T>
@@ -212,21 +212,21 @@ const auto ch_xorr(const ch_bitbase<T>& a) {
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T,
-          CH_REQUIRES(traits<T>::bitcount == 1)>
+          CH_REQUIRES(T::bitcount == 1)>
 inline const auto operator! (const ch_bitbase<T>& a) {
   return ch_inv(a);         
 }
 
 template <typename A, typename B,
-          CH_REQUIRES(traits<A>::bitcount == 1),
-          CH_REQUIRES(traits<B>::bitcount == 1)>
+          CH_REQUIRES(A::bitcount == 1),
+          CH_REQUIRES(B::bitcount == 1)>
 inline const auto operator&& (const ch_bitbase<A>& a, const ch_bitbase<B>& b) {
   return ch_and(a, b);      
 }
 
 template <typename A, typename B,
-          CH_REQUIRES(traits<A>::bitcount == 1),
-          CH_REQUIRES(traits<B>::bitcount == 1)>
+          CH_REQUIRES(A::bitcount == 1),
+          CH_REQUIRES(B::bitcount == 1)>
 inline const auto operator|| (const ch_bitbase<A>& a, const ch_bitbase<B>& b) {
   return ch_or(a, b);      
 }
@@ -368,7 +368,7 @@ template <typename I, typename S,
           CH_REQUIRES(is_bit_convertible<I>::value),
           CH_REQUIRES(is_bit_convertible<S>::value)>
 const auto ch_mux(const I& in, const S& sel) {
-  return make_bit<(traits<I>::bitcount >> traits<S>::bitcount)>(
+  return make_bit<(I::bitcount >> S::bitcount)>(
         createAluNode(alu_op_mux, get_lnode(in), get_lnode(sel)));
 }
 
@@ -376,7 +376,7 @@ template <typename I, typename S,
           CH_REQUIRES(is_bit_convertible<I>::value),
           CH_REQUIRES(is_bit_convertible<S>::value)>
 const auto ch_demux(const I& in, const S& sel) {
-  return make_bit<(traits<I>::bitcount << traits<S>::bitcount)>(
+  return make_bit<(I::bitcount << S::bitcount)>(
         createAluNode(alu_op_mux, get_lnode(in), get_lnode(sel)));
 }
 

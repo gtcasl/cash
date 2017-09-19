@@ -21,7 +21,7 @@ void pushReset(const lnode& node);
 const ch_bit<1> ch_getClock();
 
 template <typename T,
-          CH_REQUIRES(traits<T>::bitcount == 1)>
+          CH_REQUIRES(T::bitcount == 1)>
 void ch_pushClock(const ch_bitbase<T>& clk) {
   pushClock(get_lnode(clk));
 }
@@ -31,7 +31,7 @@ void ch_popClock();
 const ch_bit<1> ch_getReset();
 
 template <typename T,
-          CH_REQUIRES(traits<T>::bitcount == 1)>
+          CH_REQUIRES(T::bitcount == 1)>
 void ch_pushReset(const ch_bitbase<T>& reset) {
   pushReset(get_lnode(reset));
 }
@@ -71,7 +71,7 @@ template <typename T,
           CH_REQUIRES(is_bit_convertible<T>::value)>
 const auto ch_reg(const T& next) {
   return data_traits<lnode>::make_type<T>(
-    createRegNode(get_lnode(next), get_lnode(ch_bit<traits<T>::bitcount>(0))));
+    createRegNode(get_lnode(next), get_lnode(ch_bit<T::bitcount>(0))));
 }
 
 template <unsigned N, typename T,
@@ -139,7 +139,7 @@ template <typename T, typename E,
 const auto ch_latch(const T& next, const E& enable) {
   return data_traits<lnode>::make_type<T>(
     createLatchNode(get_lnode(next),
-                    get_lnode(ch_bit<traits<T>::bitcount>(0)),
+                    get_lnode(ch_bit<T::bitcount>(0)),
                     get_lnode<E, 1>(enable),
                     get_lnode(ch_getReset())));
 }

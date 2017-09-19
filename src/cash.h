@@ -1,25 +1,25 @@
 #pragma once
 
 #include "bit.h"
-#include "bus.h"
 #include "literals.h"
 #include "select.h"
 #include "if.h"
 #include "switch.h"
 #include "reg.h"
-#include "seq.h"
-#include "real.h"
 #include "mem.h"
 #include "arithm.h"
+#include "assertion.h"
+#include "vec.h"
+#include "enum.h"
+#include "struct.h"
+#include "union.h"
+#include "real.h"
+#include "seq.h"
 #include "bus.h"
 #include "port.h"
 #include "device.h"
 #include "simulator.h"
 #include "vcdtracer.h"
-#include "assertion.h"
-#include "struct.h"
-#include "union.h"
-#include "enum.h"
 
 namespace cash {
 

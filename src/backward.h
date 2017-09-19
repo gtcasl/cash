@@ -1559,7 +1559,7 @@ public:
 	// and define this one here because C++98 is not happy with local defined
 	// struct passed to template functions, fuuuu.
 	struct not_isempty {
-		bool operator()(const lines_t::value_type& p) {
+	    bool operator()(const lines_t::value_type& p) {
 			return !(std::find_if(p.second.begin(), p.second.end(),
 						not_isspace()) == p.second.end());
 		}

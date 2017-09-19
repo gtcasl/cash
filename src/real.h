@@ -9,20 +9,14 @@ namespace internal {
 class ch_real;
 class const_real;
 
-template <>
-struct traits < ch_real > {
-  static constexpr unsigned bitcount = 32;
-  static constexpr bool readonly = false;
-  using data_type  = lnode;
-  using value_type = ch_real;
-  using const_type = const_real;
-  using bus_type   = ch_bus<32>;
-};
-
 class ch_real : public ch_bit<32> {
 public:
-  using base = ch_bit<32>;
-  
+  using base    = ch_bit<32>;
+  using data_t  = base::data_t;
+  using value_t = ch_real;
+  using const_t = const_real;
+  using bus_t   = base::bus_t;
+
   ch_real() {}
 
   ch_real(const ch_real& rhs) : base(rhs) {}

@@ -5,23 +5,12 @@
 namespace cash {
 namespace internal {
 
-template <unsigned N>
-class ch_bus;
-
-template <unsigned N>
-struct traits < ch_bus<N> > {
-  static constexpr unsigned bitcount = N;
-  static constexpr bool readonly = false;
-  using data_type  = snode;
-  using value_type = ch_bus<N>;
-  using bus_type   = ch_bus<N>;
-};
-
 template <unsigned N> 
-class ch_bus : public ch_busbase< ch_bus<N> > {
+class ch_bus : public ch_busbase< ch_bus<N>, N > {
 public:
-  using base = ch_busbase< ch_bus<N> >;
+  using base = ch_busbase< ch_bus<N>, N >;
   using base::operator=;
+  using data_t = snode;
 
   ch_bus() {}
   
@@ -30,7 +19,7 @@ public:
   ch_bus(ch_bus&& rhs) : node_(std::move(rhs.node_)) {}
   
   template <typename OtherDerived,
-            CH_REQUIRES(traits<OtherDerived>::bitcount == N)>
+            CH_REQUIRES(OtherDerived::bitcount == N)>
   ch_bus(const ch_busbase<OtherDerived>& rhs) : node_(get_snode(rhs), N) {}
 
   template <typename T,
@@ -69,7 +58,7 @@ protected:
   
   snode node_;
 
-  template <typename T> friend class typebase;
+  template <typename _T, typename _D, unsigned _N, bool _R> friend class typebase;
 
   template <unsigned M> friend const ch_bus<M> make_bus(const snode& node);
 };
@@ -79,7 +68,7 @@ const ch_bus<N> make_bus(const snode& node) {
   return ch_bus<N>(node);
 }
 
-template <typename T, unsigned N = traits<typename std::decay<T>::type>::bitcount>
+template <typename T, unsigned N = std::decay<T>::type::bitcount>
 struct is_bus_convertible {
   static constexpr bool value = is_cast_convertible<T, ch_bus<N>>::value;
 };
@@ -89,34 +78,29 @@ struct are_bus_convertible;
 
 template <typename T>
 struct are_bus_convertible<T> {
-  static constexpr bool value = is_cast_convertible<T, ch_bus<traits<typename std::decay<T>::type>::bitcount>>::value;
+  static constexpr bool value = is_cast_convertible<T, ch_bus<std::decay<T>::type::bitcount>>::value;
 };
 
 template <typename T0, typename... Ts>
 struct are_bus_convertible<T0, Ts...> {
-  static constexpr bool value = is_cast_convertible<T0, ch_bus<traits<typename std::decay<T0>::type>::bitcount>>::value && are_bus_convertible<Ts...>::value;
+  static constexpr bool value = is_cast_convertible<T0, ch_bus<std::decay<T0>::type::bitcount>>::value && are_bus_convertible<Ts...>::value;
 };
 
-template <typename T, unsigned N = traits<T>::bitcount>
-struct ch_bus_cast {
-  using type = ch_bus<N>;
-};
+template <typename T, unsigned N = T::bitcount>
+using bus_cast = std::conditional<
+  std::is_base_of< typebase<T, snode, N, false>, T >::value,
+  const typebase<T, snode, N, false>&,
+  typename std::conditional<
+    std::is_base_of< typebase<T, snode, N, true>, T >::value,
+    const typebase<T, snode, N, true>&,
+    ch_bus<N>>::type
+  >;
 
-template <typename T>
-struct ch_bus_cast<ch_busbase<T>, 0> {
-  using type = const ch_busbase<T>&;
-};
-
-template <unsigned N>
-struct ch_bus_cast<ch_bus<N>, 0> {
-  using type = const ch_bus<N>&;
-};
-
-template <typename T, unsigned N = traits<T>::bitcount,
+template <typename T, unsigned N = T::bitcount,
           CH_REQUIRES(is_bus_convertible<T, N>::value)>
 snode get_snode(const T& rhs) {
   nodelist<snode> data(N);
-  typename ch_bus_cast<T, N>::type x(rhs);
+  typename bus_cast<T, N>::type x(rhs);
   read_data(x, data, 0, N);
   return snode(data);
 }

@@ -9,12 +9,12 @@ lnodeimpl* createInputNode(const snode& in);
 
 snodeimpl* createOutputNode(const lnode& out);
 
-template <typename T, unsigned N = traits<T>::bitcount>
+template <typename T, unsigned N = T::bitcount>
 auto ch_input(const T& in) {
   return make_bit<N>(createInputNode(get_snode<T, N>(in)));
 }
 
-template <typename T, unsigned N = traits<T>::bitcount>
+template <typename T, unsigned N = T::bitcount>
 auto ch_output(const T& out) {
   return make_bus<N>(createOutputNode(get_lnode<T, N>(out)));
 }
@@ -36,10 +36,10 @@ template <typename T>
 class ch_out;
 
 template <typename T>
-class ch_in : public ch_port<typename traits<T>::const_type> {
+class ch_in : public ch_port<typename T::const_t> {
 public:
   using base = ch_port<T>;
-  using value_type = T;
+  using value_t = T;
   using flip_type = ch_out<T>;
 
   ch_in() {}
@@ -64,7 +64,7 @@ public:
   }
 
   template <typename U,
-            CH_REQUIRES(traits<U>::bitcount == traits<T>::bitcount)>
+            CH_REQUIRES(U::bitcount == T::bitcount)>
   void operator()(const ch_busbase<U>& value) {
     this->assign(ch_input(value));
   }
@@ -74,7 +74,7 @@ template <typename T>
 class ch_out : public ch_port<T> {
 public:
   using base = ch_port<T>;
-  using value_type = T;
+  using value_t = T;
   using flip_type = ch_in<T>;
 
   ch_out() {}
@@ -102,7 +102,7 @@ public:
     value = value_;
   }
 
-  void operator()(ch_bus<traits<T>::bitcount>& value) {
+  void operator()(ch_bus<T::bitcount>& value) {
     value = ch_output(value_);
   }
 
@@ -145,15 +145,14 @@ private:
       __flip_type__& operator=(const __flip_type__&) = delete; \
     public: \
       using base = cash::internal::ch_port<__flip_type__>; \
-      static constexpr unsigned bitcount = __value_type__::bitcount; \
-      using value_type = __value_type__; \
+      using value_t = __value_type__; \
       using flip_type = name; \
       __flip_type__() {} \
       __flip_type__(const __flip_type__& __rhs__) : CH_FOR_EACH(CH_STRUCT_COPY_CTOR_APPLY, CH_SEP_COMMA, __VA_ARGS__) {} \
       void operator()(__flip_type__& __rhs__) { \
         CH_FOR_EACH(CH_INOUT_BIND_APPLY, CH_SEP_SEMICOLON, __VA_ARGS__); \
       } \
-      void operator()(value_type& __rhs__) { \
+      void operator()(value_t& __rhs__) { \
         CH_FOR_EACH(CH_INOUT_BIND_APPLY, CH_SEP_SEMICOLON, __VA_ARGS__); \
       } \
       template <CH_REVERSE_FOR_EACH(CH_STRUCT_FIELD_CTOR_TMPL, CH_SEP_COMMA, __VA_ARGS__)> \
@@ -165,15 +164,14 @@ private:
     name& operator=(const name&) = delete; \
   public: \
     using base = cash::internal::ch_port<name>; \
-    static constexpr unsigned bitcount = __value_type__::bitcount; \
-    using value_type = __value_type__; \
+    using value_t = __value_type__; \
     using flip_type  = __flip_type__; \
     name() {} \
     name(const name& __rhs__) : CH_FOR_EACH(CH_STRUCT_COPY_CTOR_APPLY, CH_SEP_COMMA, __VA_ARGS__) {} \
     void operator()(name& __rhs__) { \
       CH_FOR_EACH(CH_INOUT_BIND_APPLY, CH_SEP_SEMICOLON, __VA_ARGS__); \
     } \
-    void operator()(value_type& __rhs__) { \
+    void operator()(value_t& __rhs__) { \
       CH_FOR_EACH(CH_INOUT_BIND_APPLY, CH_SEP_SEMICOLON, __VA_ARGS__); \
     } \
     template <CH_REVERSE_FOR_EACH(CH_STRUCT_FIELD_CTOR_TMPL, CH_SEP_COMMA, __VA_ARGS__)> \

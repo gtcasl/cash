@@ -10,56 +10,53 @@ enum ch_boolean {
   ch_true  = 1
 };
 
-template <typename Derived>
-class ch_bitbase;
-
 template <unsigned N> class ch_bit;
 
 template <unsigned N> const ch_bit<N> make_bit(const lnode& node);
 
-template <>
-struct data_traits <lnode> {
-  template <typename T> using base_type = ch_bitbase<T>;
-
-  template <typename T> static const T make_type(const lnode& node) {
-    return T(std::move(make_bit<traits<T>::bitcount>(node)));
-  }
-};
-
-template <typename Derived>
-struct traits < ch_bitbase<Derived> > {
-  static constexpr unsigned bitcount = traits<Derived>::bitcount;
-};
-
-template <typename Derived, bool readonly>
+template <typename T, unsigned N, bool R>
 class bitbaseimpl;
 
-template <typename Derived>
-class bitbaseimpl<Derived, false> : public typebase<Derived> {
+template <typename T, unsigned N = T::bitcount, bool R = T::readonly>
+class ch_bitbase : public bitbaseimpl<T, N, R> {
 public:
-  using base = typebase<Derived>;
+  using base = bitbaseimpl<T, N, R>;
+  using base::operator=;
+};
+
+template <>
+struct data_traits <lnode> {
+  template <typename T, unsigned N = T::bitcount, bool R = T::readonly> using base_t = ch_bitbase<T, N, R>;
+
+  template <typename T> static const T make_type(const lnode& node) {
+    return T(std::move(make_bit<T::bitcount>(node)));
+  }
+};
+
+template <typename T, unsigned N>
+class bitbaseimpl<T, N, false> : public typebase<T, lnode, N, false> {
+public:
+  using base = typebase<T, lnode, N, false>;
   using base::self;
 
-  static_assert(std::is_same<typename traits<Derived>::data_type, lnode>::value, "data type mismatch");
-
-  template <typename OtherDerived,
-            CH_REQUIRES(traits<OtherDerived>::bitcount == traits<Derived>::bitcount)>
-  Derived& operator=(const ch_bitbase<OtherDerived>& rhs) {
+  template <typename U>
+  T& operator=(const ch_bitbase<U>& rhs) {
+    static_assert(U::bitcount == N, "size mismatch");
     return this->assign(rhs);
   }
 
-  template <typename T,
-            CH_REQUIRES(is_scalar<T>::value)>
-  Derived& operator=(const T& rhs) {
+  template <typename U,
+            CH_REQUIRES(is_scalar<U>::value)>
+  T& operator=(U rhs) {
     return this->assign(rhs);
   }
-  
-  Derived& operator=(const ch_boolean& rhs) {
+
+  T& operator=(const ch_boolean& rhs) {
     return this->assign((int)rhs);
   }
 
   auto operator[](size_t index) & {
-    return sliceref<Derived, 1>(*self(), index);
+    return sliceref<T, 1>(*self(), index);
   }
 
   const auto operator[](size_t index) const & {
@@ -67,12 +64,12 @@ public:
   }
 
   const auto operator[](size_t index) const && {
-    return const_sliceref<Derived, 1>(std::move(*self()), index);
+    return const_sliceref<T, 1>(std::move(*self()), index);
   }
 
   template <unsigned M>
   auto slice(size_t index = 0) & {
-    return sliceref<Derived, M>(*self(), index);
+    return sliceref<T, M>(*self(), index);
   }
 
   template <unsigned M>
@@ -82,12 +79,12 @@ public:
 
   template <unsigned M>
   const auto slice(size_t index = 0) const && {
-    return const_sliceref<Derived, M>(std::move(*self()), index);
+    return const_sliceref<T, M>(std::move(*self()), index);
   }
 
   template <unsigned M>
   auto aslice(size_t index = 0) & {
-    return sliceref<Derived, M>(*self(), index * M);
+    return sliceref<T, M>(*self(), index * M);
   }
 
   template <unsigned M>
@@ -97,24 +94,22 @@ public:
 
   template <unsigned M>
   const auto aslice(size_t index = 0) const && {
-    return const_sliceref<Derived, M>(std::move(*self()), index * M);
+    return const_sliceref<T, M>(std::move(*self()), index * M);
   }
 };
 
-template <typename Derived>
-class bitbaseimpl<Derived, true> : public typebase<Derived> {
+template <typename T, unsigned N>
+class bitbaseimpl<T, N, true> : public typebase<T, lnode, N, true> {
 public:
-  using base = typebase<Derived>;
+  using base = typebase<T, lnode, N, true>;
   using base::self;
-
-  static_assert(std::is_same<typename traits<Derived>::data_type, lnode>::value, "data type mismatch");
 
   const auto operator[](size_t index) const & {
     return const_sliceref<ch_bit<1>, 1>(*self(), index);
   }
 
   const auto operator[](size_t index) const && {
-    return const_sliceref<Derived, 1>(std::move(*self()), index);
+    return const_sliceref<T, 1>(std::move(*self()), index);
   }
 
   template <unsigned M>
@@ -124,7 +119,7 @@ public:
 
   template <unsigned M>
   const auto slice(size_t index = 0) const && {
-    return const_sliceref<Derived, M>(std::move(*self()), index);
+    return const_sliceref<T, M>(std::move(*self()), index);
   }
 
   template <unsigned M>
@@ -134,15 +129,8 @@ public:
 
   template <unsigned M>
   const auto aslice(size_t index = 0) const && {
-    return const_sliceref<Derived, M>(std::move(*self()), index * M);
+    return const_sliceref<T, M>(std::move(*self()), index * M);
   }
-};
-
-template <typename Derived>
-class ch_bitbase : public bitbaseimpl<Derived, traits<Derived>::readonly> {
-public:
-  using base = bitbaseimpl<Derived, traits<Derived>::readonly>;
-  using base::operator=;
 };
 
 }

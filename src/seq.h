@@ -6,18 +6,10 @@ namespace cash {
 namespace internal {
 
 template <typename T>
-class ch_seq;
-
-template <typename T>
-struct traits < ch_seq<T> > {
-  static constexpr unsigned bitcount = traits<T>::bitcount;
-};
-
-template <typename T>
-class ch_seq : public traits<T>::const_type {
+class ch_seq : public T::const_t {
 public:
-  using base = typename traits<T>::const_type;
-  using value_type = T;
+  using base = typename T::const_t;
+  using value_t = T;
 
   T next;
 

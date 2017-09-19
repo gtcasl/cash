@@ -44,10 +44,10 @@ template <typename Ret>
 struct function_device_impl {
   template <typename Device, typename... Args>
   static auto bind(Device* dev, const Args&... args) {
-    ch_bus<traits<Ret>::bitcount> ret;
+    ch_bus<Ret::bitcount> ret;
     dev->begin_context();
     {
-      std::tuple<ch_bit<traits<typename std::decay<Args>::type>::bitcount>...> func_args;
+      std::tuple<ch_bit<std::decay<Args>::type::bitcount>...> func_args;
       dev->bind_inputs(func_args, args...);
       auto func_ret = dev->invoke(func_args, std::index_sequence_for<Args...>());
       dev->bind_outputs(func_ret, ret);
@@ -62,10 +62,10 @@ template <typename... Rets>
 struct function_device_impl< std::tuple<Rets...> > {
   template <typename Device, typename... Args>
   static auto bind(Device* dev, const Args&... args) {
-    std::tuple<ch_bus<traits<Rets>::bitcount>...> ret;
+    std::tuple<ch_bus<Rets::bitcount>...> ret;
     dev->begin_context();
     {
-      std::tuple<ch_bit<traits<typename std::decay<Args>::type>::bitcount>...> func_args;
+      std::tuple<ch_bit<std::decay<Args>::type::bitcount>...> func_args;
       dev->bind_inputs(func_args, args...);
       auto func_ret = dev->invoke(func_args, std::index_sequence_for<Args...>());
       dev->bind_outputs(func_ret, ret);
@@ -82,7 +82,7 @@ struct function_device_impl<void> {
   static void bind(Device* dev, const Args&... args) {
     dev->begin_context();
     {
-      std::tuple<ch_bit<traits<typename std::decay<Args>::type>::bitcount>...> func_args;
+      std::tuple<ch_bit<std::decay<Args>::type::bitcount>...> func_args;
       dev->bind_inputs(func_args, args...);
       dev->invoke(func_args, std::index_sequence_for<Args...>());
       dev->compile();
