@@ -52,10 +52,16 @@ private:
 };
 
 template <unsigned N>
-class memport_ref : public ch_bitbase< memport_ref<N>, N, false > {
+class memport_ref : public ch_bitbase<N> {
 public:
-  using base = ch_bitbase< memport_ref<N>, N, false >;
-  using base::operator=;
+  using base = ch_bitbase<N>;
+  using data_t  = typename base::data_t;
+  using value_t = typename data_traits<data_t>:: template device_t<base::bitcount>;
+
+  memport_ref& operator=(const ch_bitbase<N>& rhs) {
+    this->assign(rhs);
+    return *this;
+  }
 
 protected:
 
@@ -64,12 +70,12 @@ protected:
     , addr_(addr)
   {}
 
-  void read_data(nodelist<lnode>& inout, size_t offset, size_t length) const {
+  void read_data(nodelist<lnode>& inout, size_t offset, size_t length) const override {
     CH_CHECK(offset + length <= N, "invalid read range");
     inout.push(mem_.read(addr_), offset, length);
   }
 
-  void write_data(size_t dst_offset, const nodelist<lnode>& in, size_t src_offset, size_t length) {
+  void write_data(size_t dst_offset, const nodelist<lnode>& in, size_t src_offset, size_t length) override {
     CH_CHECK(0 == dst_offset || N == length, "partial update not supported!");
     mem_.write(addr_, dst_offset, in, src_offset, length);
   }
@@ -77,7 +83,6 @@ protected:
   memory& mem_;
   lnode addr_;
 
-  template <typename _T, typename _D, unsigned _N, bool _R> friend class typebase;
   template <unsigned W, unsigned A> friend class ch_ram;
 };
 

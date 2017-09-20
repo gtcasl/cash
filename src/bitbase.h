@@ -5,131 +5,57 @@
 namespace cash {
 namespace internal {
 
-enum ch_boolean {
-  ch_false = 0,
-  ch_true  = 1
-};
-
 template <unsigned N> class ch_bit;
 
 template <unsigned N> const ch_bit<N> make_bit(const lnode& node);
 
-template <typename T, unsigned N, bool R>
-class bitbaseimpl;
-
-template <typename T, unsigned N = T::bitcount, bool R = T::readonly>
-class ch_bitbase : public bitbaseimpl<T, N, R> {
-public:
-  using base = bitbaseimpl<T, N, R>;
-  using base::operator=;
+template <typename T> const auto make_type(const lnode& node) {
+  typename T::value_t ret;
+  write_data(ret, 0, {node, 0 , T::bitcount}, 0, T::bitcount);
+  return ret;
 };
+
+template <unsigned N> using ch_bitbase = typebase<N, lnode>;
 
 template <>
-struct data_traits <lnode> {
-  template <typename T, unsigned N = T::bitcount, bool R = T::readonly> using base_t = ch_bitbase<T, N, R>;
-
-  template <typename T> static const T make_type(const lnode& node) {
-    return T(std::move(make_bit<T::bitcount>(node)));
-  }
+struct data_traits<lnode> {
+  template <unsigned N> using device_t = ch_bit<N>;
 };
 
-template <typename T, unsigned N>
-class bitbaseimpl<T, N, false> : public typebase<T, lnode, N, false> {
+template <unsigned N>
+class typebase<N, lnode> : public typebase_itf<lnode> {
 public:
-  using base = typebase<T, lnode, N, false>;
-  using base::self;
+  static constexpr unsigned bitcount = N;
+  using base = typebase_itf<lnode>;
+  using data_t = lnode;
 
-  template <typename U>
-  T& operator=(const ch_bitbase<U>& rhs) {
-    static_assert(U::bitcount == N, "size mismatch");
-    return this->assign(rhs);
+  const auto operator[](size_t index) const {
+    return const_sliceref<refproxy<typebase>, 1>(*this, index);
+  }
+
+  template <unsigned M>
+  const auto slice(size_t index = 0) const {
+    return const_sliceref<refproxy<typebase>, M>(*this, index);
+  }
+
+  template <unsigned M>
+  const auto aslice(size_t index = 0) const {
+    return const_sliceref<refproxy<typebase>, M>(*this, index * M);
+  }
+
+protected:
+
+  void assign(const typebase& rhs) {
+    nodelist<lnode> data(N);
+    cash::internal::read_data(rhs, data, 0, N);
+    this->write_data(0, data, 0, N);
   }
 
   template <typename U,
-            CH_REQUIRES(is_scalar<U>::value)>
-  T& operator=(U rhs) {
-    return this->assign(rhs);
-  }
-
-  T& operator=(const ch_boolean& rhs) {
-    return this->assign((int)rhs);
-  }
-
-  auto operator[](size_t index) & {
-    return sliceref<T, 1>(*self(), index);
-  }
-
-  const auto operator[](size_t index) const & {
-    return const_sliceref<ch_bit<1>, 1>(*self(), index);
-  }
-
-  const auto operator[](size_t index) const && {
-    return const_sliceref<T, 1>(std::move(*self()), index);
-  }
-
-  template <unsigned M>
-  auto slice(size_t index = 0) & {
-    return sliceref<T, M>(*self(), index);
-  }
-
-  template <unsigned M>
-  const auto slice(size_t index = 0) const & {
-    return const_sliceref<ch_bit<M>, M>(*self(), index);
-  }
-
-  template <unsigned M>
-  const auto slice(size_t index = 0) const && {
-    return const_sliceref<T, M>(std::move(*self()), index);
-  }
-
-  template <unsigned M>
-  auto aslice(size_t index = 0) & {
-    return sliceref<T, M>(*self(), index * M);
-  }
-
-  template <unsigned M>
-  const auto aslice(size_t index = 0) const & {
-    return const_sliceref<ch_bit<M>, M>(*self(), index * M);
-  }
-
-  template <unsigned M>
-  const auto aslice(size_t index = 0) const && {
-    return const_sliceref<T, M>(std::move(*self()), index * M);
-  }
-};
-
-template <typename T, unsigned N>
-class bitbaseimpl<T, N, true> : public typebase<T, lnode, N, true> {
-public:
-  using base = typebase<T, lnode, N, true>;
-  using base::self;
-
-  const auto operator[](size_t index) const & {
-    return const_sliceref<ch_bit<1>, 1>(*self(), index);
-  }
-
-  const auto operator[](size_t index) const && {
-    return const_sliceref<T, 1>(std::move(*self()), index);
-  }
-
-  template <unsigned M>
-  const auto slice(size_t index = 0) const & {
-    return const_sliceref<ch_bit<M>, M>(*self(), index);
-  }
-
-  template <unsigned M>
-  const auto slice(size_t index = 0) const && {
-    return const_sliceref<T, M>(std::move(*self()), index);
-  }
-
-  template <unsigned M>
-  const auto aslice(size_t index = 0) const & {
-    return const_sliceref<ch_bit<M>, M>(*self(), index * M);
-  }
-
-  template <unsigned M>
-  const auto aslice(size_t index = 0) const && {
-    return const_sliceref<T, M>(std::move(*self()), index * M);
+            CH_REQUIRES(is_bit_scalar<U>::value)>
+  void assign(U rhs) {
+    lnode node(bitvector(N, rhs));
+    this->write_data(0, {node, 0 , N}, 0, N);
   }
 };
 

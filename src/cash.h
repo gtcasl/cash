@@ -50,7 +50,7 @@ namespace core {
 
   template <unsigned N> using ch_bit = cash::internal::ch_bit<N>;
 
-  template <typename T> using ch_bitbase = cash::internal::ch_bitbase<T>;
+  template <unsigned N> using ch_bitbase = cash::internal::ch_bitbase<N>;
 
   template <typename T> using ch_seq = cash::internal::ch_seq<T>;
 
@@ -71,13 +71,6 @@ namespace core {
   using ch_bit32  = ch_bit<32>;
   using ch_bit64  = ch_bit<64>;
   using ch_bit128 = ch_bit<128>;
-
-  //
-  // boolean types
-  //
-
-  using cash::internal::ch_true;
-  using cash::internal::ch_false;
 
   //
   // subscript operators
@@ -201,7 +194,7 @@ namespace sim {
   
   template <unsigned N> using ch_bus = cash::internal::ch_bus<N>;
 
-  template <typename T> using ch_busbase = cash::internal::ch_busbase<T>;
+  template <unsigned N> using ch_busbase = cash::internal::ch_busbase<N>;
 
   //
   // bus types

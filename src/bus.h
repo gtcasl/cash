@@ -5,11 +5,21 @@
 namespace cash {
 namespace internal {
 
+#define CH_BUS_INTERFACE(type) \
+  type& operator=(const ch_busbase<type::bitcount>& rhs) { \
+    this->assign(rhs); \
+    return *this; \
+  } \
+  template <typename U, CH_REQUIRES(cash::internal::is_bit_scalar<U>::value)> \
+  type& operator=(U rhs) { \
+    this->assign(rhs); \
+    return *this; \
+  } \
+
 template <unsigned N> 
-class ch_bus : public ch_busbase< ch_bus<N>, N > {
+class ch_bus : public ch_busbase<N> {
 public:
-  using base = ch_busbase< ch_bus<N>, N >;
-  using base::operator=;
+  using base = ch_busbase<N>;
   using data_t = snode;
 
   ch_bus() {}
@@ -18,13 +28,11 @@ public:
 
   ch_bus(ch_bus&& rhs) : node_(std::move(rhs.node_)) {}
   
-  template <typename OtherDerived,
-            CH_REQUIRES(OtherDerived::bitcount == N)>
-  ch_bus(const ch_busbase<OtherDerived>& rhs) : node_(get_snode(rhs), N) {}
+  ch_bus(const ch_busbase<N>& rhs) : node_(get_snode(rhs), N) {}
 
-  template <typename T,
-            CH_REQUIRES(is_scalar<T>::value)>
-  explicit ch_bus(T rhs) : node_(bitvector(N, rhs)) {}
+  template <typename U,
+            CH_REQUIRES(is_bit_scalar<U>::value)>
+  explicit ch_bus(U rhs) : node_(bitvector(N, rhs)) {}
    
   ch_bus& operator=(const ch_bus& rhs) {
     node_.assign(rhs.node_, N);
@@ -35,11 +43,19 @@ public:
     node_ = std::move(rhs.node_);
     return *this;
   }
+
+  CH_BUS_INTERFACE(ch_bus)
   
-  template <typename T,
-            CH_REQUIRES(is_scalar<T>::value)>
-  operator T() const { \
-    return static_cast<T>(node_.get_value()); \
+  template <typename U,
+            CH_REQUIRES(is_bit_scalar<U>::value)>
+  operator U() const {
+    return static_cast<U>(node_.get_value()); \
+  }
+
+  void write(uint32_t dst_offset, const void* in, uint32_t sizeInBytes, uint32_t src_offset = 0, uint32_t length = N) {
+    assert(dst_offset + length <= N);
+    assert(src_offset + length <= sizeInBytes * 8);
+    node_.write(dst_offset, in, sizeInBytes, src_offset, length, N);
   }
 
 protected:
@@ -48,17 +64,15 @@ protected:
     assert(N == node_.get_size());
   }
   
-  void read_data(nodelist<snode>& inout, size_t offset, size_t length) const {
+  void read_data(nodelist<snode>& inout, size_t offset, size_t length) const override {
     node_.read_data(inout, offset, length, N);
   }
   
-  void write_data(size_t dst_offset, const nodelist<snode>& in, size_t src_offset, size_t length) {
+  void write_data(size_t dst_offset, const nodelist<snode>& in, size_t src_offset, size_t length) override {
     node_.write_data(dst_offset, in, src_offset, length, N);
   }
   
   snode node_;
-
-  template <typename _T, typename _D, unsigned _N, bool _R> friend class typebase;
 
   template <unsigned M> friend const ch_bus<M> make_bus(const snode& node);
 };
@@ -88,13 +102,9 @@ struct are_bus_convertible<T0, Ts...> {
 
 template <typename T, unsigned N = T::bitcount>
 using bus_cast = std::conditional<
-  std::is_base_of< typebase<T, snode, N, false>, T >::value,
-  const typebase<T, snode, N, false>&,
-  typename std::conditional<
-    std::is_base_of< typebase<T, snode, N, true>, T >::value,
-    const typebase<T, snode, N, true>&,
-    ch_bus<N>>::type
-  >;
+  std::is_base_of<ch_busbase<N>, T>::value,
+  const ch_busbase<N>&,
+  ch_bus<N>>;
 
 template <typename T, unsigned N = T::bitcount,
           CH_REQUIRES(is_bus_convertible<T, N>::value)>
@@ -105,8 +115,8 @@ snode get_snode(const T& rhs) {
   return snode(data);
 }
 
-template <typename T>
-std::ostream& operator<<(std::ostream& os, const ch_busbase<T>& bus) {
+template <unsigned N>
+std::ostream& operator<<(std::ostream& os, const ch_busbase<N>& bus) {
   return os << get_snode(bus);
 }
 

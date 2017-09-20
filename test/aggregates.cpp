@@ -83,10 +83,6 @@ TEST_CASE("aggregates", "[aggregates]") {
       return (s1, s4) == (s3, s2);
     });
     TEST([]()->ch_bit1 {
-      s1_t s1(1010_b);
-      return (s1.get_LSB() != s1.get_MSB());
-    });
-    TEST([]()->ch_bit1 {
       s2_t s2(1_b4, 0_b4);
       return (s2 == 10000_b8);
     });
@@ -113,10 +109,6 @@ TEST_CASE("aggregates", "[aggregates]") {
       u3.a = 11_b;
       u3.c.slice<2>(2) = 00_b;
       return (u3 == 01010011_b);
-    });
-    TEST([]()->ch_bit1 {
-      u2_t u2(1010_b);
-      return (u2.get_LSB() != u2.get_MSB());
     });
   }
   

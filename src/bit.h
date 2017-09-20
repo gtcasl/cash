@@ -10,35 +10,140 @@ void createPrintNode(const std::string& format,
 
 template <unsigned N> class ch_bus;
 
-template <unsigned N> class ch_bit;
+#define CH_BIT_READONLY_INTERFACE(type) \
+  const auto operator[](size_t index) const & { \
+    return cash::internal::const_sliceref<cash::internal::refproxy<type>, 1>(*this, index); \
+  } \
+  const auto operator[](size_t index) const && { \
+    return cash::internal::const_sliceref<type, 1>(std::move(*this), index); \
+  } \
+  template <unsigned M> \
+  const auto slice(size_t index = 0) const & { \
+    return cash::internal::const_sliceref<cash::internal::refproxy<type>, M>(*this, index); \
+  } \
+  template <unsigned M> \
+  const auto slice(size_t index = 0) const && { \
+    return cash::internal::const_sliceref<type, M>(std::move(*this), index); \
+  } \
+  template <unsigned M> \
+  const auto aslice(size_t index = 0) const & { \
+    return cash::internal::const_sliceref<cash::internal::refproxy<type>, M>(*this, index * M); \
+  } \
+  template <unsigned M> \
+  const auto aslice(size_t index = 0) const && { \
+    return cash::internal::const_sliceref<type, M>(std::move(*this), index * M); \
+  }
 
-template <unsigned N> class const_bit;
+#define CH_BIT_WRITABLE_INTERFACE(type) \
+  type& operator=(const ch_bitbase<type::bitcount>& rhs) { \
+    this->assign(rhs); \
+    return *this; \
+  } \
+  template <typename U, CH_REQUIRES(cash::internal::is_bit_scalar<U>::value)> \
+  type& operator=(U rhs) { \
+    this->assign(rhs); \
+    return *this; \
+  } \
+  auto operator[](size_t index) & { \
+    return cash::internal::sliceref<type, 1>(*this, index); \
+  } \
+  const auto operator[](size_t index) const & { \
+    return cash::internal::const_sliceref<cash::internal::refproxy<type>, 1>(*this, index); \
+  } \
+  const auto operator[](size_t index) const && { \
+    return cash::internal::const_sliceref<type, 1>(std::move(*this), index); \
+  } \
+  template <unsigned M> \
+  auto slice(size_t index = 0) & { \
+    return cash::internal::sliceref<type, M>(*this, index); \
+  } \
+  template <unsigned M> \
+  const auto slice(size_t index = 0) const & { \
+    return cash::internal::const_sliceref<cash::internal::refproxy<type>, M>(*this, index); \
+  } \
+  template <unsigned M> \
+  const auto slice(size_t index = 0) const && { \
+    return cash::internal::const_sliceref<type, M>(std::move(*this), index); \
+  } \
+  template <unsigned M> \
+  auto aslice(size_t index = 0) & { \
+    return cash::internal::sliceref<type, M>(*this, index * M); \
+  } \
+  template <unsigned M> \
+  const auto aslice(size_t index = 0) const & { \
+    return cash::internal::const_sliceref<cash::internal::refproxy<type>, M>(*this, index * M); \
+  } \
+  template <unsigned M> \
+  const auto aslice(size_t index = 0) const && { \
+    return cash::internal::const_sliceref<type, M>(std::move(*this), index * M); \
+  }
 
 template <unsigned N>
-class ch_bit : public ch_bitbase< ch_bit<N>, N, false > {
+class const_bit : public ch_bitbase<N> {
 public:
-  using base = ch_bitbase< ch_bit<N>, N, false >;
-  using base::operator=;
+  using base    = ch_bitbase<N>;
   using data_t  = lnode;
   using value_t = ch_bit<N>;
   using const_t = const_bit<N>;
   using bus_t   = ch_bus<N>;
-      
-  ch_bit() : node_(N) {}
-  
-  ch_bit(const ch_bit& rhs) : node_(rhs.node_, N) {}
 
-  ch_bit(ch_bit&& rhs) : node_(std::move(rhs.node_), N) {}
+  const_bit() : node_(N) {}
+
+  const_bit(const const_bit& rhs) : node_(rhs.node_, N) {}
+
+  const_bit(const_bit&& rhs) : node_(std::move(rhs.node_), N) {}
+
+  const_bit(const ch_bitbase<N>& rhs) : node_(get_lnode(rhs), N) {}
 
   template <typename U,
-            CH_REQUIRES(U::bitcount == N)>
-  ch_bit(const ch_bitbase<U>& rhs) : node_(get_lnode(rhs), N) {}
+            CH_REQUIRES(is_bit_scalar<U>::value)>
+  explicit const_bit(U rhs) : node_(bitvector(N, rhs)) {}
 
-  ch_bit(const ch_boolean& rhs) : node_(bitvector(N, (int)rhs)) {}
+  const auto clone() const {
+    return make_bit<N>(node_.clone(N));
+  }
+
+  CH_BIT_READONLY_INTERFACE(const_bit)
+
+protected:
+
+  const_bit(const lnode& node) : node_(node) {
+    assert(N == node_.get_size());
+  }
+
+  void read_data(nodelist<lnode>& inout, size_t offset, size_t length) const override {
+    node_.read_data(inout, offset, length, N);
+  }
+
+  void write_data(size_t dst_offset, const nodelist<lnode>& in, size_t src_offset, size_t length) override {
+    node_.write_data(dst_offset, in, src_offset, length, N);
+  }
+
+  lnode node_;
+};
+
+template <unsigned N>
+class ch_bit : public const_bit<N> {
+public:
+  using base    = const_bit<N>;
+  using data_t  = lnode;
+  using value_t = ch_bit<N>;
+  using const_t = const_bit<N>;
+  using bus_t   = ch_bus<N>;
+
+  using base::node_;
+      
+  ch_bit() {}
+  
+  ch_bit(const ch_bit& rhs) : base(rhs) {}
+
+  ch_bit(ch_bit&& rhs) : base(std::move(rhs)) {}
+
+  ch_bit(const ch_bitbase<N>& rhs) : base(rhs) {}
     
   template <typename U,
-            CH_REQUIRES(is_scalar<U>::value)>
-  explicit ch_bit(U rhs) : node_(bitvector(N, rhs)) {}
+            CH_REQUIRES(is_bit_scalar<U>::value)>
+  explicit ch_bit(U rhs) : base(rhs) {}
 
   ch_bit& operator=(const ch_bit& rhs) {
     node_.assign(rhs.node_, N);
@@ -50,87 +155,13 @@ public:
     return *this;
   }
 
-  const auto clone() const {
-    return ch_bit<N>(node_.clone(N));
-  }
+  CH_BIT_WRITABLE_INTERFACE(ch_bit)
   
 protected:
 
-  ch_bit(const lnode& node) : node_(node) {
-    assert(N == node_.get_size());
-  }
-
-  void read_data(nodelist<lnode>& inout, size_t offset, size_t length) const {
-    node_.read_data(inout, offset, length, N);
-  }
-  
-  void write_data(size_t dst_offset, const nodelist<lnode>& in, size_t src_offset, size_t length) {
-    node_.write_data(dst_offset, in, src_offset, length, N);
-  }
-
-  lnode node_;
+  ch_bit(const lnode& node) : base(node) {}
 
   template <unsigned M> friend const ch_bit<M> make_bit(const lnode& node);
-
-  template <typename _T, typename _D, unsigned _N, bool _R> friend class typebase;
-};
-
-template <unsigned N>
-class const_bit : public ch_bitbase< const_bit<N>, N, true > {
-public:
-  using base = ch_bitbase< const_bit<N>, N, true >;
-  using data_t  = lnode;
-  using value_t = const_bit<N>;
-  using const_t = const_bit<N>;
-  using bus_t   = ch_bus<N>;
-
-  const_bit() : node_(N) {}
-
-  const_bit(const const_bit& rhs) : node_(rhs.node_, N) {}
-
-  const_bit(const_bit&& rhs) : node_(std::move(rhs.node_), N) {}
-
-  template <typename U,
-            CH_REQUIRES(U::bitcount == N)>
-  const_bit(const ch_bitbase<U>& rhs) : node_(get_lnode(rhs), N) {}
-
-  const_bit(const ch_boolean& rhs) : node_(bitvector(N, (int)rhs)) {}
-
-  template <typename U,
-            CH_REQUIRES(is_scalar<U>::value)>
-  explicit const_bit(U rhs) : node_(bitvector(N, rhs)) {}
-
-  const auto clone() const {
-    return const_bit<N>(node_.clone(N));
-  }
-
-protected:
-
-  const_bit(const lnode& node) : node_(node) {
-    assert(N == node_.get_size());
-  }
-
-  const_bit& operator=(const const_bit& rhs) {
-    node_.assign(rhs.node_, N);
-    return *this;
-  }
-
-  const_bit& operator=(const_bit&& rhs) {
-    node_.move(rhs.node_, N);
-    return *this;
-  }
-
-  void read_data(nodelist<lnode>& inout, size_t offset, size_t length) const {
-    node_.read_data(inout, offset, length, N);
-  }
-
-  void write_data(size_t dst_offset, const nodelist<lnode>& in, size_t src_offset, size_t length) {
-    node_.write_data(dst_offset, in, src_offset, length, N);
-  }
-
-  lnode node_;
-
-  template <typename _T, typename _D, unsigned _N, bool _R> friend class typebase;
 };
 
 template <unsigned N>
@@ -158,13 +189,9 @@ struct are_bit_convertible<T0, Ts...> {
 
 template <typename T, unsigned N = T::bitcount>
 using bit_cast = std::conditional<
-  std::is_base_of< typebase<T, lnode, N, false>, T >::value,
-  const typebase<T, lnode, N, false>&,
-  typename std::conditional<
-    std::is_base_of< typebase<T, lnode, N, true>, T >::value,
-    const typebase<T, lnode, N, true>&,
-    ch_bit<N>
-  >::type>;
+  std::is_base_of<ch_bitbase<N>, T>::value,
+  const ch_bitbase<N>&,
+  ch_bit<N>>;
 
 template <typename T, unsigned N = T::bitcount,
           CH_REQUIRES(is_bit_convertible<T, N>::value)>
@@ -201,7 +228,7 @@ const auto ch_cat(const Ts&... args) {
   return cat_impl(static_cast<typename bit_cast<Ts>::type>(args)...);
 }
 
-template <typename B, typename A>
+template <unsigned B, unsigned A>
 const auto operator,(const ch_bitbase<B>& b, const ch_bitbase<A>& a) {
   return ch_cat(b, a);
 }
@@ -214,23 +241,25 @@ concatref<Ts...> ch_tie(Ts&... args) {
 
 // slice functions
 
-template <unsigned N, unsigned M>
-const auto ch_slice(const ch_bit<M>&& in, size_t index = 0) {
+template <unsigned N, typename T,
+          CH_REQUIRES(is_bit_convertible<T>::value)>
+const auto ch_slice(const T&& in, size_t index = 0) {
   return std::move(in).template slice<N>(index);
 }
 
-template <unsigned N, unsigned M>
-const auto ch_aslice(const ch_bit<M>&& in, size_t index = 0) {
+template <unsigned N, typename T,
+          CH_REQUIRES(is_bit_convertible<T>::value)>
+const auto ch_aslice(const T&& in, size_t index = 0) {
   return std::move(in).template aslice<N>(index);
 }
 
-template <unsigned N, typename T>
-const auto ch_slice(const ch_bitbase<T>& in, size_t index = 0) {
+template <unsigned N, unsigned M>
+const auto ch_slice(const ch_bitbase<M>& in, size_t index = 0) {
   return in.template slice<N>(index);
 }
 
-template <unsigned N, typename T>
-const auto ch_aslice(const ch_bitbase<T>& in, size_t index = 0) {
+template <unsigned N, unsigned M>
+const auto ch_aslice(const ch_bitbase<M>& in, size_t index = 0) {
   return in.template aslice<N>(index);
 }
 
@@ -239,8 +268,8 @@ const auto ch_aslice(const ch_bitbase<T>& in, size_t index = 0) {
 template <unsigned D>
 class zext_select {
 public:
-    template <typename T>
-    const auto operator() (const ch_bitbase<T>& in) {
+    template <unsigned N>
+    const auto operator() (const ch_bitbase<N>& in) {
       return ch_cat(ch_bit<D>(0x0), in);
     }
 };
@@ -248,17 +277,17 @@ public:
 template <>
 class zext_select<0> {
 public:
-    template <typename T>
-    const auto operator() (const ch_bitbase<T>& in) {
-      return ch_bit<T::bitcount>(in);
+    template <unsigned N>
+    const auto operator() (const ch_bitbase<N>& in) {
+      return ch_bit<N>(in);
     }
 };
 
 template <unsigned M, unsigned D>
 class sext_pad {
 public:
-  template <typename T>
-  const auto operator() (const ch_bitbase<T>& in) {
+  template <unsigned N>
+  const auto operator() (const ch_bitbase<N>& in) {
     return ch_cat(in[M-1], ch_bit<D>(0x0), ch_slice<M-1>(in, 1));
   }
 };
@@ -266,8 +295,8 @@ public:
 template <unsigned D>
 class sext_pad<1, D> {
 public:
-  template <typename T>
-  const auto operator() (const ch_bitbase<T>& in) {
+  template <unsigned N>
+  const auto operator() (const ch_bitbase<N>& in) {
     return ch_cat(in, ch_bit<D>(0x0));
   }
 };
@@ -275,42 +304,42 @@ public:
 template <unsigned D>
 class sext_select {
 public:
-  template <typename T>
-  const auto operator() (const ch_bitbase<T>& in) {
-    return sext_pad<T::bitcount, D>()(in);
+  template <unsigned N>
+  const auto operator() (const ch_bitbase<N>& in) {
+    return sext_pad<N, D>()(in);
   }
 };
 
 template <>
 class sext_select<0> {
 public:
-  template <typename T>
-  const auto operator() (const ch_bitbase<T>& in) {
-    return ch_bit<T::bitcount>(in);
+  template <unsigned N>
+  const auto operator() (const ch_bitbase<N>& in) {
+    return ch_bit<N>(in);
   }
 };
 
-template <unsigned N, typename T>
-const auto ch_zext(const ch_bitbase<T>& in) {
-  static_assert(N >= T::bitcount, "invalid extend size");
-  return zext_select<(N-T::bitcount)>()(in);
+template <unsigned N, unsigned M>
+const auto ch_zext(const ch_bitbase<M>& in) {
+  static_assert(N >= M, "invalid extend size");
+  return zext_select<(N-M)>()(in);
 }
 
-template <unsigned N, typename T>
-const auto ch_sext(const ch_bitbase<T>& in) {
-  static_assert(N >= T::bitcount, "invalid extend size");
-  return sext_select<(N-T::bitcount)>()(in);
+template <unsigned N, unsigned M>
+const auto ch_sext(const ch_bitbase<M>& in) {
+  static_assert(N >= M, "invalid extend size");
+  return sext_select<(N-M)>()(in);
 }
 
 // shuffle functions
 
-template <typename T, unsigned I>
-const auto ch_shuffle(const ch_bitbase<T>& in,
+template <unsigned N, unsigned I>
+const auto ch_shuffle(const ch_bitbase<N>& in,
                      const std::array<uint32_t, I>& indices) {  
-  static_assert((I % T::bitcount) == 0, "invalid indices size");
-  ch_bit< T::bitcount > ret;
+  static_assert((I % N) == 0, "invalid indices size");
+  ch_bit<N> ret;
   for (unsigned i = 0; i < I; ++i) {
-    ret.template aslice<<(T::bitcount / I)>(i) = in.template aslice<(T::bitcount / I)>(indices[i]);
+    ret.template aslice<<(N / I)>(i) = in.template aslice<(N / I)>(indices[i]);
   }
   return ret;
 }
@@ -333,22 +362,25 @@ void ch_print(const std::string& format, const Args& ...args) {
 
 template <typename... Ts>
 struct return_type {
-  using type = std::tuple<ch_bitbase<Ts>...>;
+  using type = std::tuple<typename Ts::value_t...>;
 };
 
-template <typename T>
-struct return_type< ch_bitbase<T> > {
-  using type = T;
+template <typename U>
+struct return_type<U> {
+  using type = typename U::value_t;
 };
 
-template <typename T>
-const auto make_return(const ch_bitbase<T>& x) {
-  return x;
+template <typename T,
+          CH_REQUIRES(is_bit_convertible<T>::value)>
+const typename T::value_t make_return(const T& arg) {
+  return arg;
 }
 
-template <typename... Ts>
-const auto make_return(const ch_bitbase<Ts>&... args) {
-  return typename return_type<Ts...>::type(args...);
+template <typename T0, typename... Ts,
+          CH_REQUIRES(is_bit_convertible<T0>::value),
+          CH_REQUIRES(are_bit_convertible<Ts...>::value)>
+const auto make_return(const T0& arg0, const Ts&... args) {
+  return typename std::tuple<typename T0::value_t, typename Ts::value_t...>(arg0, args...);
 }
 
 }

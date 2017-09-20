@@ -212,7 +212,7 @@ TEST_CASE("proxies", "[proxies]") {
       auto b = a.slice<12>().slice<8>().aslice<4>(1);
       return b == 0xc_h;
     });
-     TEST([]()->ch_bit1 {
+    TEST([]()->ch_bit1 {
       ch_bit16 x(0xabcd_h);
       auto a = (x + 0).slice<12>();
       auto b = a.slice<8>().aslice<4>(1);

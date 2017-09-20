@@ -48,9 +48,9 @@ protected:
   switch_impl impl_;
 };
 
-template <typename T>
-auto ch_switch(const ch_bitbase<T>& key) {
-  return switch_t<T::bitcount>(get_lnode(key));
+template <unsigned N>
+auto ch_switch(const ch_bitbase<N>& key) {
+  return switch_t<N>(get_lnode(key));
 }
 
 }

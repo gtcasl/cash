@@ -44,7 +44,7 @@ TEST_CASE("registers", "[registers]") {
     }, 10);
 
     TEST([]()->ch_bit1 {
-      E x(ch_reg(E::c, E::a));
+      E x = ch_reg(E::c, E::a);
       ch_bit2 e = ch_select<2>(ch_getTick())
            (3, E::c)
            (x);
@@ -190,21 +190,6 @@ TEST_CASE("registers", "[registers]") {
       e.next = a;
       ch_print("t={0}, clk={1}, x0={2}, x1={3}, e={4}", ch_getTick(), ch_getClock(), x[0], x[1], e);
       return x[0] == e && x[1] == ~e;
-    }, 8);
-
-    TEST([]()->ch_bit1 {
-      ch_seq<ch_bit2> x;
-      ch_seq<ch_bit2> y(std::move(x));
-      ch_seq<ch_bit2> e;
-
-      auto  a = ch_select(ch_getTick())(8, 00_b)(6, 2)(4, 3)(2, 1)(0);
-
-      y.next = a;
-      e.next = a;
-
-      ch_print("t={0}, clk={1}, y={2}, e={3}", ch_getTick(), ch_getClock(), y, e);
-
-      return y == e;
     }, 8);
 
     TEST([]()->ch_bit1 {

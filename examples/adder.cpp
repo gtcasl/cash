@@ -7,15 +7,15 @@ using namespace cash::sim;
 #define CHECK(x) if (!(x)) { assert(false); exit(1); }
 
 template <unsigned N>
-__out(ch_bit<N>, ch_bit1) Adder(
+auto Adder = [](
     const ch_bit<N>& lhs,
     const ch_bit<N>& rhs,
     const ch_bit1& cin) {
   auto sum = (0_b, lhs) + ch_zext<N+1>(rhs) + ch_zext<N+1>(cin);
-  ch_bit<N> out = sum.template slice<N>();
-  ch_bit1 cout = sum[N];
+  auto out = sum.template slice<N>();
+  auto cout = sum[N];
   __ret(out, cout);
-}
+};
 
 int main(int argc, char **argv) {
   std::ofstream vcd_file("adder.vcd");
@@ -25,9 +25,9 @@ int main(int argc, char **argv) {
   auto adder = ch_function(Adder<2>);
   std::tie(out, cout) = adder(lhs, rhs, cin);
 
-  /*std::ofstream v_file("adder.v");
-  adder.to_verilog("adder", v_file);
-  v_file.close();*/
+  //std::ofstream v_file("adder.v");
+  //adder.to_verilog("adder", v_file);
+  //v_file.close();
 
   ch_vcdtracer tracer(vcd_file, adder);
   __trace(tracer, lhs, rhs, cin, out, cout);

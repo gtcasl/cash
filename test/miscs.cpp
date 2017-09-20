@@ -1,5 +1,48 @@
 #include "common.h"
 
+__inout (RouterIO, (
+  (ch_in<ch_bit2>)  in,
+  (ch_out<ch_bit2>) out
+));
+
+__struct (Q_t, (
+  (ch_bit2) p1,
+  (ch_bit2) p2
+));
+
+using Q1 = ch_seq<ch_bit2>;
+using Q2 = ch_seq<Q_t>;
+
+struct Toto {
+  __io (
+    (RouterIO)   router,
+    (ch_in<Q_t>) qt
+  );
+  Toto() {
+    //--
+  }
+};
+
+struct Adder {
+  __io (
+    (ch_in<ch_bit2>)  in1,
+    (ch_in<ch_bit2>)  in2,
+    (ch_out<ch_bit2>) out
+  );
+  Adder() {
+    io.out = io.in1 + io.in2;
+  }
+};
+
+void dogfood_void() {}
+
+auto dogfood = [](const ch_bit2& w) {
+  ch_bit2 a(1), b(w), c;
+  auto adder = Adder();
+  adder.io(a, b, c);
+  return (c == a + b);
+};
+
 TEST_CASE("miscs", "[miscs]") {
   SECTION("utils", "[utils]") {
     TESTX([]()->bool {
@@ -135,6 +178,50 @@ TEST_CASE("miscs", "[miscs]") {
       b = a;
       a = 1;
       return (b == 1);
+    });
+  }
+
+  SECTION("callable", "callable") {
+    TESTX([]()->bool {
+      ch_bus1 out;
+      ch_bus2 w(2);
+      auto f = ch_function(dogfood);
+      out = f.operator()(w);
+      ch_simulator sim(f);
+      sim.run(1);
+      std::cout << "out = " << out << std::endl;
+      return (out == 1);
+    });
+
+    TESTX([]()->bool {
+      ch_bus1 out;
+      auto f = ch_function([&]()->ch_bit1 {
+          ch_bit2 a(1), b(2), c;
+          auto adder = Adder();
+          adder.io(a, b, c);
+          return (c == 3);
+        });
+      out = f();
+      ch_simulator sim(f);
+      sim.run(1);
+      std::cout << "out = " << out << std::endl;
+      return (out == 1);
+    });
+
+    TESTX([]()->bool {
+      auto f3 = ch_function(dogfood_void);
+      f3.operator()();
+      return true;
+    });
+
+    TESTX([]()->bool {
+      ch_bus2 a(1), b(2), out;
+      auto m = ch_module<Adder>();
+      m(a, b, out);
+      ch_simulator sim(m);
+      sim.run(1);
+      std::cout << "out = " << out << std::endl;
+      return (out == 3);
     });
   }
 }

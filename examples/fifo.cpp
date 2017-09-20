@@ -9,10 +9,10 @@ using namespace cash::sim;
 #define CHECK(x) if (!(x)) { assert(false); exit(1); }
 
 template <unsigned A, unsigned W>
-__out(ch_bit<W>, ch_bit1, ch_bit1) FiFo(
-      const ch_bit<W>& din,
-      const ch_bit1& push,
-      const ch_bit1& pop) {
+auto FiFo = [](
+    const ch_bit<W>& din,
+    const ch_bit1& push,
+    const ch_bit1& pop) {
   ch_ram<W, A> mem;
   ch_seq<ch_bit<A+1>> rd_ptr, wr_ptr;
   ch_bit1 empty, full;
@@ -29,13 +29,13 @@ __out(ch_bit<W>, ch_bit1, ch_bit1) FiFo(
   empty = (wr_ptr == rd_ptr);
   full  = (wr_A == rd_A) && (wr_ptr[A] != rd_ptr[A]);
   
-  ch_bit<W> dout = mem[rd_A];
+  auto dout = mem[rd_A];
   __if (writing) (
     mem[wr_A] = din;
   );
   
   __ret(dout, empty, full);
-}
+};
 
 int main(int argc, char **argv) {
   std::ofstream vcd_file("fifo.vcd");
@@ -45,9 +45,9 @@ int main(int argc, char **argv) {
   auto fifo = ch_function(FiFo<1, 2>);
   std::tie(dout, empty, full) = fifo(din, push, pop);
 
-  /*std::ofstream v_file("fifo.v");
-  fifo.to_verilog("fifo", v_file);
-  v_file.close();*/
+  //std::ofstream v_file("fifo.v");
+  //fifo.to_verilog("fifo", v_file);
+  //v_file.close();
 
   ch_vcdtracer tracer(vcd_file, fifo);
   __trace(tracer, din, push, pop, dout, empty, full);

@@ -20,9 +20,7 @@ void pushReset(const lnode& node);
 
 const ch_bit<1> ch_getClock();
 
-template <typename T,
-          CH_REQUIRES(T::bitcount == 1)>
-void ch_pushClock(const ch_bitbase<T>& clk) {
+inline void ch_pushClock(const ch_bitbase<1>& clk) {
   pushClock(get_lnode(clk));
 }
 
@@ -30,21 +28,19 @@ void ch_popClock();
 
 const ch_bit<1> ch_getReset();
 
-template <typename T,
-          CH_REQUIRES(T::bitcount == 1)>
-void ch_pushReset(const ch_bitbase<T>& reset) {
+inline void ch_pushReset(const ch_bitbase<1>& reset) {
   pushReset(get_lnode(reset));
 }
 
 void ch_popReset();
 
-template <typename T>
-const auto ch_ready(const ch_bitbase<T>& x) {
+template <unsigned N>
+const auto ch_ready(const ch_bitbase<N>& x) {
   return make_bit<1>(createReadyNode(get_lnode(x)));
 }
 
-template <typename T>
-const auto ch_valid(const ch_bitbase<T>& x) {
+template <unsigned N>
+const auto ch_valid(const ch_bitbase<N>& x) {
   return make_bit<1>(createValidNode(get_lnode(x)));
 }
 
@@ -53,7 +49,7 @@ template <typename T, typename I,
           CH_REQUIRES(is_bit_convertible<T, deduce_type<T, I>::bitcount>::value),
           CH_REQUIRES(is_bit_convertible<I, deduce_type<T, I>::bitcount>::value)>
 const auto ch_reg(const T& next, const I& init) {
-  return data_traits<lnode>::make_type<typename deduce_first_type<T, I>::type>(
+  return make_type<typename deduce_first_type<T, I>::type>(
     createRegNode(get_lnode<T, deduce_type<T, I>::bitcount>(next),
                   get_lnode<I, deduce_type<T, I>::bitcount>(init)));
 }
@@ -70,7 +66,7 @@ const auto ch_reg(const T& next, const I& init) {
 template <typename T,
           CH_REQUIRES(is_bit_convertible<T>::value)>
 const auto ch_reg(const T& next) {
-  return data_traits<lnode>::make_type<T>(
+  return make_type<T>(
     createRegNode(get_lnode(next), get_lnode(ch_bit<T::bitcount>(0))));
 }
 
@@ -88,7 +84,7 @@ template <typename T, typename E, typename I, typename R,
           CH_REQUIRES(is_bit_convertible<I, deduce_type<T, I>::bitcount>::value),
           CH_REQUIRES(is_bit_convertible<R, 1>::value)>
 const auto ch_latch(const T& next, const E& enable, const I& init, const R& reset) {
-  return data_traits<lnode>::make_type<typename deduce_first_type<T, I>::type>(
+  return make_type<typename deduce_first_type<T, I>::type>(
     createLatchNode(get_lnode<T, deduce_type<T, I>::bitcount>(next),
                     get_lnode<I, deduce_type<T, I>::bitcount>(init),
                     get_lnode<E, 1>(enable),
@@ -114,7 +110,7 @@ template <typename T, typename E, typename I,
           CH_REQUIRES(is_bit_convertible<E, 1>::value),
           CH_REQUIRES(is_bit_convertible<I, deduce_type<T, I>::bitcount>::value)>
 const auto ch_latch(const T& next, const E& enable, const I& init) {
-  return data_traits<lnode>::make_type<typename deduce_first_type<T, I>::type>(
+  return make_type<typename deduce_first_type<T, I>::type>(
     createLatchNode(get_lnode<T, deduce_type<T, I>::bitcount>(next),
                     get_lnode<I, deduce_type<T, I>::bitcount>(init),
                     get_lnode<E, 1>(enable),
@@ -137,7 +133,7 @@ template <typename T, typename E,
           CH_REQUIRES(is_bit_convertible<T>::value),
           CH_REQUIRES(is_bit_convertible<E, 1>::value)>
 const auto ch_latch(const T& next, const E& enable) {
-  return data_traits<lnode>::make_type<T>(
+  return make_type<T>(
     createLatchNode(get_lnode(next),
                     get_lnode(ch_bit<T::bitcount>(0)),
                     get_lnode<E, 1>(enable),

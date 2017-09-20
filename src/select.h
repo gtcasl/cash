@@ -43,10 +43,9 @@ public:
     impl_.push(pred, value);
   }
 
-  template <typename P, typename V,
-            CH_REQUIRES(P::bitcount == 1),
+  template <typename V,
             CH_REQUIRES(is_bit_convertible<V, N>::value)>
-  select_t<N>& operator()(const ch_bitbase<P>& pred, const V& value) {
+  select_t<N>& operator()(const ch_bitbase<1>& pred, const V& value) {
     impl_.push(get_lnode(pred), get_lnode<V, N>(value));
     return *this;
   }
@@ -125,17 +124,15 @@ protected:
   lnode key_;
 };
 
-template <typename P, typename V,
-          CH_REQUIRES(P::bitcount == 1),
+template <typename V,
           CH_REQUIRES(is_bit_convertible<V, V::bitcount>::value)>
-auto ch_select(const ch_bitbase<P>& pred, const V& value) {
+auto ch_select(const ch_bitbase<1>& pred, const V& value) {
   return select_t<V::bitcount>(get_lnode(pred), get_lnode(value));
 }
 
-template <unsigned N, typename P, typename V,
-          CH_REQUIRES(P::bitcount == 1),
+template <unsigned N, typename V,
           CH_REQUIRES(is_bit_convertible<V, N>::value)>
-auto ch_select(const ch_bitbase<P>& pred, const V& value) {
+auto ch_select(const ch_bitbase<1>& pred, const V& value) {
   return select_t<N>(get_lnode(pred), get_lnode<V, N>(value));
 }
 
@@ -151,23 +148,21 @@ auto ch_select(const K& key) {
   return select_key2_t<K::bitcount, N>(get_lnode(key));
 }
 
-template <typename P, typename U, typename V,
-          CH_REQUIRES(P::bitcount == 1),
+template <typename U, typename V,
           CH_REQUIRES(deduce_type<U, V>::bitcount != 0),
           CH_REQUIRES(is_bit_convertible<U, deduce_type<U, V>::bitcount>::value),
           CH_REQUIRES(is_bit_convertible<V, deduce_type<U, V>::bitcount>::value)>
-const auto ch_select(const ch_bitbase<P>& pred, const U& _true, const V& _false) {
+const auto ch_select(const ch_bitbase<1>& pred, const U& _true, const V& _false) {
   return make_bit<deduce_type<U, V>::bitcount>(
         createSelectNode(get_lnode(pred),
                          get_lnode<U, deduce_type<U, V>::bitcount>(_true),
                          get_lnode<V, deduce_type<U, V>::bitcount>(_false)));
 }
 
-template <unsigned N, typename P, typename U, typename V,
-          CH_REQUIRES(P::bitcount == 1),
+template <unsigned N, typename U, typename V,
           CH_REQUIRES(is_bit_convertible<U, N>::value),
           CH_REQUIRES(is_bit_convertible<V, N>::value)>
-const auto ch_select(const ch_bitbase<P>& pred, const U& _true, const V& _false) {
+const auto ch_select(const ch_bitbase<1>& pred, const U& _true, const V& _false) {
   return make_bit<N>(
         createSelectNode(get_lnode(pred),
                          get_lnode<U, N>(_true),

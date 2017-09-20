@@ -8,7 +8,7 @@ using namespace cash::sim;
 
 #define CHECK(x) if (!(x)) { assert(false); exit(1); }
 
-ch_bit8 FastMul(const ch_bit4& lhs, const ch_bit4& rhs) {
+auto FastMul = [](const ch_bit4& lhs, const ch_bit4& rhs) {
   std::vector<uint8_t> tbl_mult(256);
   for (int j = 0; j < 16; ++j) {
     for (int i = 0; i < 16; ++i) {
@@ -16,8 +16,9 @@ ch_bit8 FastMul(const ch_bit4& lhs, const ch_bit4& rhs) {
     }
   }
   ch_rom<8, 8> mem(tbl_mult);
-  return mem[(ch_zext<8>(lhs) << 4) | ch_zext<8>(rhs)];
-}
+  auto result = mem[(ch_zext<8>(lhs) << 4) | ch_zext<8>(rhs)];
+  __ret(result);
+};
 
 int main(int argc, char **argv) {
   std::ofstream vcd_file("fastmul.vcd");
@@ -27,9 +28,9 @@ int main(int argc, char **argv) {
   auto fastMul = ch_function(FastMul);
   out = fastMul(lhs, rhs);
 
-  /*std::ofstream v_file("fastmul.v");
-  myDevice.to_verilog("fastmul", v_file);
-  v_file.close();*/
+  //std::ofstream v_file("fastmul.v");
+  //myDevice.to_verilog("fastmul", v_file);
+  //v_file.close();
 
   ch_vcdtracer tracer(vcd_file, fastMul);
   __trace(tracer, lhs, rhs, out);

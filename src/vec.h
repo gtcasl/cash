@@ -12,10 +12,9 @@ template <typename T, unsigned N>
 class const_vec;
 
 template <typename T, unsigned N>
-class ch_vec : public data_traits<typename T::data_t>::template base_t< ch_vec<T, N> > {
+class ch_vec : public typebase<N * T::bitcount, typename T::data_t> {
 public:
-  using base = typename data_traits<typename T::data_t>::template base_t< ch_vec<T, N> >;
-  using base::operator=;
+  using base = typebase<N * T::bitcount, typename T::data_t>;
   using data_t  = typename base::data_t;
   using value_t = ch_vec<T, N>;
   using const_t = const_vec<T, N>;
@@ -33,7 +32,7 @@ public:
   }
 
   ch_vec(const base& rhs) {
-    data_t data(base::bitcount);
+    nodelist<data_t> data(base::bitcount);
     cash::internal::read_data(rhs, data, 0, base::bitcount);
     this->write_data(0, data, 0, base::bitcount);
   }
@@ -42,7 +41,10 @@ public:
            CH_REQUIRES(N > 1),
            CH_REQUIRES(std::is_assignable<ch_vec, V>::value)>
   explicit ch_vec(const V& value) {
-    this->operator =(value);
+    nodelist<data_t> data(base::bitcount);
+    typename bit_cast<V>::type x(value);
+    cash::internal::read_data(x, data, 0, N);
+    this->write_data(0, data, 0, N);
   }
 
   template <typename... Vs,
@@ -95,7 +97,7 @@ protected:
     this->init(values...);
   }
   
-  void read_data(data_t& out, size_t offset, size_t length) const {
+  void read_data(nodelist<data_t>& out, size_t offset, size_t length) const override {
     CH_CHECK(offset + length <= ch_vec::bitcount, "invalid vector read range");
     for (unsigned i = 0; length && i < N; ++i) {
       if (offset < T::bitcount) {
@@ -108,7 +110,7 @@ protected:
     }
   }
   
-  void write_data(size_t dst_offset, const data_t& data, size_t src_offset, size_t length) {
+  void write_data(size_t dst_offset, const nodelist<data_t>& data, size_t src_offset, size_t length) override {
     CH_CHECK(dst_offset + length <= ch_vec::bitcount, "invalid vector write range");
     for (unsigned i = 0; length && i < N; ++i) {
       if (dst_offset < T::bitcount) {

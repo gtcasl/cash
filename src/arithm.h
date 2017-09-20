@@ -47,8 +47,8 @@
   }
 
 #define CH_UNARYOP_GEN(func, op) \
-  template <typename T> \
-  const auto op(const ch_bitbase<T>& in) { \
+  template <unsigned N> \
+  const auto op(const ch_bitbase<N>& in) { \
     return func(in); \
   }
 
@@ -127,20 +127,20 @@ const auto OpCompare(const A& a, const B& b) {
   return make_bit<1>(createAluNode(op, get_lnode<A, N>(a), get_lnode<B, N>(b)));
 }
 
-template <ch_alu_op op, typename T>
-const auto OpUnary(const ch_bitbase<T>& a) {
-  return make_bit<T::bitcount>(createAluNode(op, get_lnode(a)));
+template <ch_alu_op op, unsigned N>
+const auto OpUnary(const ch_bitbase<N>& a) {
+  return make_bit<N>(createAluNode(op, get_lnode(a)));
 }
 
-template <ch_alu_op op, typename T>
-const auto OpReduce(const ch_bitbase<T>& a) {
+template <ch_alu_op op, unsigned N>
+const auto OpReduce(const ch_bitbase<N>& a) {
   return make_bit<1>(createAluNode(op, get_lnode(a)));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T>
-const auto ch_inv(const ch_bitbase<T>& a) {
+template <unsigned N>
+const auto ch_inv(const ch_bitbase<N>& a) {
   return OpUnary<alu_op_inv>(a);
 }
 
@@ -194,40 +194,32 @@ const auto ch_xnor(const A& a, const B& b) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T>
-const auto ch_andr(const ch_bitbase<T>& a) {
+template <unsigned N>
+const auto ch_andr(const ch_bitbase<N>& a) {
   return OpReduce<alu_op_andr>(a);
 }
 
-template <typename T>
-const auto ch_orr(const ch_bitbase<T>& a) {
+template <unsigned N>
+const auto ch_orr(const ch_bitbase<N>& a) {
   return OpReduce<alu_op_orr>(a);
 }
 
-template <typename T>
-const auto ch_xorr(const ch_bitbase<T>& a) {
+template <unsigned N>
+const auto ch_xorr(const ch_bitbase<N>& a) {
   return OpReduce<alu_op_xorr>(a);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T,
-          CH_REQUIRES(T::bitcount == 1)>
-inline const auto operator! (const ch_bitbase<T>& a) {
+inline const auto operator! (const ch_bitbase<1>& a) {
   return ch_inv(a);         
 }
 
-template <typename A, typename B,
-          CH_REQUIRES(A::bitcount == 1),
-          CH_REQUIRES(B::bitcount == 1)>
-inline const auto operator&& (const ch_bitbase<A>& a, const ch_bitbase<B>& b) {
+inline const auto operator&& (const ch_bitbase<1>& a, const ch_bitbase<1>& b) {
   return ch_and(a, b);      
 }
 
-template <typename A, typename B,
-          CH_REQUIRES(A::bitcount == 1),
-          CH_REQUIRES(B::bitcount == 1)>
-inline const auto operator|| (const ch_bitbase<A>& a, const ch_bitbase<B>& b) {
+inline const auto operator|| (const ch_bitbase<1>& a, const ch_bitbase<1>& b) {
   return ch_or(a, b);      
 }
 
@@ -301,8 +293,8 @@ const auto ch_slr(const A& a, const B& b) {
 
 template <typename A, typename B,
           CH_REQUIRES(deduce_first_type<A, B>::bitcount != 0),
-          CH_REQUIRES(is_bit_convertible<A, deduce_first_type<A, B>::value>::bitcount),
-          CH_REQUIRES(is_bit_convertible<B, deduce_first_type<B, A>::value>::bitcount)>
+          CH_REQUIRES(is_bit_convertible<A, deduce_first_type<A, B>::bitcount>::value),
+          CH_REQUIRES(is_bit_convertible<B, deduce_first_type<B, A>::bitcount>::value)>
 const auto ch_rotl(const A& a, const B& b) {
   return OpShift<alu_op_rotl, deduce_first_type<A, B>::bitcount, deduce_first_type<B, A>::bitcount>(a, b);
 }
@@ -317,8 +309,8 @@ const auto ch_rotr(const A& a, const B& b) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T>
-const auto ch_neg(const ch_bitbase<T>& a) {
+template <unsigned N>
+const auto ch_neg(const ch_bitbase<N>& a) {
   return OpUnary<alu_op_neg>(a);
 }
 
@@ -382,23 +374,23 @@ const auto ch_demux(const I& in, const S& sel) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T>
-const auto ch_log2(const ch_bitbase<T>& a) {
+template <unsigned N>
+const auto ch_log2(const ch_bitbase<N>& a) {
   CH_TODO();
 }
 
-template <typename T>
-const auto ch_lsb(const ch_bitbase<T>& a) {
+template <unsigned N>
+const auto ch_lsb(const ch_bitbase<N>& a) {
   CH_TODO();
 }
 
-template <typename T>
-const auto ch_enc(const ch_bitbase<T>& a) {
+template <unsigned N>
+const auto ch_enc(const ch_bitbase<N>& a) {
   CH_TODO();
 }
 
-template <typename T>
-const auto ch_dec(const ch_bitbase<T>& a) {
+template <unsigned N>
+const auto ch_dec(const ch_bitbase<N>& a) {
   CH_TODO();
 }
 

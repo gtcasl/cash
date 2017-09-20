@@ -7,10 +7,8 @@ namespace internal {
 
 void createAssertNode(const lnode& pred, const std::string& msg);
 
-template <typename P,
-          CH_REQUIRES(P::bitcount == 1)>
-void ch_assert(const ch_bitbase<P>& pred, const std::string& msg) {
-  createAssertNode(get_node(pred), msg);
+inline void ch_assert(const ch_bitbase<1>& pred, const std::string& msg) {
+  createAssertNode(get_lnode(pred), msg);
 }
 
 }

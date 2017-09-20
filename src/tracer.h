@@ -17,8 +17,8 @@ public:
 
   ~ch_tracer();
 
-  template <typename T>
-  void add_trace(const std::string& name, const ch_busbase<T>& value) {
+  template <unsigned N>
+  void add_trace(const std::string& name, const ch_busbase<N>& value) {
     this->add_trace(name, get_snode(value));
   }
 
@@ -33,8 +33,8 @@ protected:
 
 void register_tap(const std::string& name, const lnode& node);
 
-template <typename T>
-void ch_tap(const std::string& name, const ch_bitbase<T>& value) {
+template <unsigned N>
+void ch_tap(const std::string& name, const ch_bitbase<N>& value) {
   register_tap(name, get_lnode(value));
 }
 

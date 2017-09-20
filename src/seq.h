@@ -14,33 +14,22 @@ public:
   T next;
 
   ch_seq() {
-    auto reg = ch_reg(next);
-    base::operator=(std::move(reg));
+    this->assign(ch_reg(next));
     next = *this;
   }
   
   template <typename U,
             CH_REQUIRES(is_cast_convertible<U, T>::value)>
   explicit ch_seq(const U& init) {
-    auto reg = ch_reg(next, static_cast<typename reference_cast<U, T>::type>(init));
-    base::operator=(std::move(reg));
+    this->assign(ch_reg(next, init));
     next = *this;
-  }
-
-  ch_seq(ch_seq&& rhs) {
-    reinterpret_cast<base&>(*this) = std::move(reinterpret_cast<T&>(rhs));
-    next = std::move(rhs.next);
-  }
-
-  ch_seq& operator=(ch_seq&& rhs) {
-    reinterpret_cast<base&>(*this) = std::move(reinterpret_cast<T&>(rhs));
-    next = std::move(rhs.next);
   }
 
 protected:
 
-  // for readonly access
+  ch_seq(ch_seq&&) = delete;
   ch_seq& operator=(const ch_seq&) = delete;
+  ch_seq& operator=(ch_seq&&) = delete;
 };
 
 }
