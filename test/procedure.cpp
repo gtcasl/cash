@@ -20,7 +20,7 @@ TEST_CASE("procedure", "[procedure]") {
     TEST([]()->ch_bit1 {
       ch_bit1 a;
       ch_bit2 b(3), c;
-      std::tie(a, c)= foo2(b);
+      __tie(a, c)= foo2(b);
       return (a == 0 && c == b);
     });
   }

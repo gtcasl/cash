@@ -20,7 +20,8 @@ template <unsigned N> using ch_busbase = typebase<N, snode>;
 
 template <>
 struct data_traits<snode> {
-  template <unsigned N> using device_t = ch_bus<N>;
+  template <unsigned N> using device_type = ch_bus<N>;
+  template <typename T> using bus_type = T;
 };
 
 template <unsigned N>
@@ -28,12 +29,12 @@ class typebase<N, snode> : public typebase_itf<snode> {
 public:  
   static constexpr unsigned bitcount = N;
   using base = typebase_itf<snode>;
-  using data_t = snode;
+  using data_type = snode;
 
   void read(uint32_t dst_offset, void* out, uint32_t sizeInBytes, uint32_t src_offset = 0, uint32_t length = N) const {
     assert(src_offset + length <= N);
     assert(dst_offset + length <= sizeInBytes * 8);
-    nodelist<data_t> data(length);
+    nodelist<data_type> data(length);
     this->read_data(data, src_offset, length);
     for (auto& slice : data) {
       slice.src.read(dst_offset, out, sizeInBytes, slice.offset, slice.length, slice.src.get_size());
@@ -42,6 +43,7 @@ public:
   }
 
 protected:
+
   void assign(const typebase& rhs) {
     nodelist<snode> data(N);
     cash::internal::read_data(rhs, data, 0, N);

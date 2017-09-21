@@ -55,8 +55,8 @@ template <unsigned N>
 class memport_ref : public ch_bitbase<N> {
 public:
   using base = ch_bitbase<N>;
-  using data_t  = typename base::data_t;
-  using value_t = typename data_traits<data_t>:: template device_t<base::bitcount>;
+  using data_type  = typename base::data_type;
+  using value_type = typename data_traits<data_type>:: template device_type<base::bitcount>;
 
   memport_ref& operator=(const ch_bitbase<N>& rhs) {
     this->assign(rhs);

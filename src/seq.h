@@ -6,10 +6,10 @@ namespace cash {
 namespace internal {
 
 template <typename T>
-class ch_seq : public T::const_t {
+class ch_seq : public T::const_type {
 public:
-  using base = typename T::const_t;
-  using value_t = T;
+  using base = typename T::const_type;
+  using value_type = T;
 
   T next;
 

@@ -9,47 +9,96 @@ namespace internal {
 class ch_real;
 class const_real;
 
-class ch_real : public ch_bit<32> {
+class const_real : public const_bit<32> {
 public:
-  using base    = ch_bit<32>;
-  using data_t  = base::data_t;
-  using value_t = ch_real;
-  using const_t = const_real;
-  using bus_t   = base::bus_t;
+  using base = const_bit<32>;
+  using data_type  = base::data_type;
+  using value_type = ch_real;
+  using const_type = const_real;
+  using bus_type   = base::bus_type;
+
+  const_real() {}
+
+  const_real(const const_real& rhs) : base(rhs) {}
+
+  const_real(const_real&& rhs) : base(std::move(rhs)) {}
+
+  const_real(const ch_bitbase<32>& rhs) : base(rhs) {}
+
+  explicit const_real(float rhs) : base(bitcast<uint32_t, float>(rhs)) {}
+};
+
+class ch_real : public const_real {
+public:
+  using base = const_real;
+  using data_type  = base::data_type;
+  using value_type = ch_real;
+  using const_type = const_real;
+  using bus_type   = base::bus_type;
 
   ch_real() {}
 
   ch_real(const ch_real& rhs) : base(rhs) {}
 
-  ch_real(const base& rhs) : base(rhs) {}
+  ch_real(const const_real& rhs) : base(rhs) {}
 
-  explicit ch_real(float rhs) : base(bitcast<uint32_t, float>(rhs)) {}
-  
+  ch_real(ch_real&& rhs) : base(rhs) {}
+
+  ch_real(const ch_bitbase<32>& rhs) : base(rhs) {}
+
+  explicit ch_real(float rhs) : base(rhs) {}
+
   ch_real& operator=(const ch_real& rhs) {
-    base::operator =(rhs);
+    this->assign(rhs);
     return *this;
   }
-  
+
+  ch_real& operator=(ch_real&& rhs) {
+    node_.move(rhs.node_, bitcount);
+    return *this;
+  }
+
+  ch_real& operator=(const ch_bitbase<32>& rhs) {
+    this->assign(rhs);
+    return *this;
+  }
+
   ch_real& operator=(float rhs) {
-    base::operator =(ch_real(rhs));
+    this->assign(ch_real(rhs));
     return *this;
   }
 };
 
-inline ch_real operator+(const ch_real& lhs, const ch_real& rhs) {
-  return ch_real(make_bit<32>(createAluNode(alu_op_fadd, get_lnode(lhs), get_lnode(rhs))));
+inline const auto operator+(const const_real& lhs, const const_real& rhs) {
+  return make_type<ch_real>(createAluNode(alu_op_fadd, get_lnode(lhs), get_lnode(rhs)));
 }
 
-inline ch_real operator-(const ch_real& lhs, const ch_real& rhs) {
-  return ch_real(make_bit<32>(createAluNode(alu_op_fsub, get_lnode(lhs), get_lnode(rhs))));
+inline const auto operator-(const const_real& lhs, const const_real& rhs) {
+  return make_type<ch_real>(createAluNode(alu_op_fsub, get_lnode(lhs), get_lnode(rhs)));
 }
 
-inline ch_real operator*(const ch_real& lhs, const ch_real& rhs) {
-  return ch_real(make_bit<32>(createAluNode(alu_op_fmult, get_lnode(lhs), get_lnode(rhs))));
+inline const auto operator*(const const_real& lhs, const const_real& rhs) {
+  return make_type<ch_real>(createAluNode(alu_op_fmult, get_lnode(lhs), get_lnode(rhs)));
 }
 
-inline ch_real operator/(const ch_real& lhs, const ch_real& rhs) {
-  return ch_real(make_bit<32>(createAluNode(alu_op_fdiv, get_lnode(lhs), get_lnode(rhs))));
+inline const auto operator/(const const_real& lhs, const const_real& rhs) {
+  return make_type<ch_real>(createAluNode(alu_op_fdiv, get_lnode(lhs), get_lnode(rhs)));
+}
+
+inline const auto operator+(const ch_real& lhs, const ch_real& rhs) {
+  return make_type<ch_real>(createAluNode(alu_op_fadd, get_lnode(lhs), get_lnode(rhs)));
+}
+
+inline const auto operator-(const ch_real& lhs, const ch_real& rhs) {
+  return make_type<ch_real>(createAluNode(alu_op_fsub, get_lnode(lhs), get_lnode(rhs)));
+}
+
+inline const auto operator*(const ch_real& lhs, const ch_real& rhs) {
+  return make_type<ch_real>(createAluNode(alu_op_fmult, get_lnode(lhs), get_lnode(rhs)));
+}
+
+inline const auto operator/(const ch_real& lhs, const ch_real& rhs) {
+  return make_type<ch_real>(createAluNode(alu_op_fdiv, get_lnode(lhs), get_lnode(rhs)));
 }
 
 }

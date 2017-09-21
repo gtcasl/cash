@@ -17,7 +17,11 @@ public:
 
   ch_simulator() : ch_simulator({}) {}
 
+  ch_simulator(const ch_simulator& simulator);
+
   virtual ~ch_simulator();
+
+  ch_simulator& operator=(const ch_simulator& simulator);
   
   void add_device(const ch_device& device);
 

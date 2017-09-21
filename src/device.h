@@ -9,8 +9,13 @@ class deviceimpl;
 
 class ch_device {
 public:
-  
-  ~ch_device();
+
+  ch_device();
+  virtual ~ch_device();
+
+  ch_device(const ch_device& device);
+
+  ch_device& operator=(const ch_device& device);
   
   template <unsigned N> 
   const auto get_tap(const std::string& name) {
@@ -22,8 +27,6 @@ public:
   void dump_stats(std::ostream& out);
     
 protected:
-
-  ch_device();
 
   void begin_context();
 
@@ -91,29 +94,35 @@ struct function_device_impl<void> {
   }
 };
 
-template <typename Function>
+template <typename F>
 class function_device : public ch_device {
 public:
 
-  function_device(const Function& func) : function_(func) {}
+  function_device() : function_(nullptr) {}
+
+  function_device(const F& function) {
+    function_ = new F(function);
+  }
+
+  ~function_device() {
+    delete function_;
+  }
 
   auto operator()() {
-    return function_device_impl<typename Function::result_type>::bind(this);
+    return function_device_impl<typename F::result_type>::bind(this);
   }
 
   template <typename Arg0, typename... Args,
             CH_REQUIRES(are_bus_convertible<Arg0, Args...>::value)>
   auto operator()(const Arg0& arg0, const Args&... args) {
-    return function_device_impl<typename Function::result_type>::bind(this, arg0, args...);
+    return function_device_impl<typename F::result_type>::bind(this, arg0, args...);
   }
-
-  ~function_device() {}
 
 protected:
 
   template<typename... Args, size_t... I>
   auto invoke(const std::tuple<Args...>& args, std::index_sequence<I...>) {
-    return function_(std::get<I>(args)...);
+    return (*function_)(std::get<I>(args)...);
   }
 
   template <typename... FuncArgs, typename Arg, typename... Args>
@@ -161,19 +170,57 @@ protected:
     this->bind_outputs(funcRets, rets...);
   }
 
-  Function function_;
+  F* function_;
 
   template <typename Ret> friend struct function_device_impl;
 };
 
-template <typename T>
+template <typename F>
+class Callable {
+public:
+  using function_type = typename function_traits<F>::type;
+  using result_type = typename function_type::result_type;
+
+  template <typename... Ts>
+  Callable(const Ts&... args) {
+    functor_ = new F(args...);
+  }
+
+  template <typename... Ts>
+  result_type operator()(Ts&& ...args) const {
+    return functor_->operator()(std::forward<Ts>(args)...);
+  }
+
+  ~Callable() {
+    delete functor_;
+  }
+
+protected:
+  F* functor_;
+};
+
+template <typename F>
+class functor_device : public function_device<Callable<F>> {
+public:
+  using base = function_device<Callable<F>>;
+  using base::function_;
+
+  template <typename... Ts>
+  functor_device(const Ts&... args) {
+    this->begin_context();
+    function_ = new Callable<F>(args...);
+    this->end_context();
+  }
+};
+
+template <typename M>
 class module_device : public ch_device {
 public:
 
-  template <typename... Args>
-  module_device(const Args&... args) {
+  template <typename... Ts>
+  module_device(const Ts&... args) {
     this->begin_context();
-    module_ = new T(args...);
+    module_ = new M(args...);
     this->end_context();
   }
 
@@ -208,22 +255,28 @@ protected:
     this->end_context();
   }
 
-  T* module_;
+  M* module_;
 };
 
-template <typename Function>
-auto ch_function(const Function& func) {
-  return function_device<typename function_traits<Function>::type>(func);
+template <typename F, typename... Ts>
+auto ch_function(Ts&&... args) {
+  return functor_device<F>(args...);
 }
 
-template <typename Ret, typename... Args>
-auto ch_function(Ret (*func)(Args...)) {
-  return function_device<std::function<Ret(Args...)>>(std::function<Ret(Args...)>(func));
+template <typename F>
+auto ch_function(const F& func) {
+  return function_device<typename function_traits<F>::type>(func);
 }
 
-template <typename Class, typename... Args>
-auto ch_module(Args&&... args) {
-  return module_device<Class>(args...);
+template <typename Ret, typename... Ts>
+auto ch_function(Ret (*func)(Ts...)) {
+  return function_device<std::function<Ret(Ts...)>>(std::function<Ret(Ts...)>(func));
+}
+
+template <typename C, typename... Ts,
+          CH_REQUIRES(std::is_class<C>::value)>
+auto ch_module(Ts&&... args) {
+  return module_device<C>(args...);
 }
 
 }

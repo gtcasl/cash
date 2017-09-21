@@ -10,13 +10,13 @@
   CH_FOR_EACH(CH_STRUCT_SIZE_EACH, CH_SEP_PLUS, __VA_ARGS__)
 
 #define CH_STRUCT_FIELD(i, x) \
-  typename CH_PAIR_L(x)::value_t CH_PAIR_R(x)
+  typename CH_PAIR_L(x)::value_type CH_PAIR_R(x)
 
 #define CH_STRUCT_CONST_FIELD(i, x) \
-  typename CH_PAIR_L(x)::const_t CH_PAIR_R(x)
+  typename CH_PAIR_L(x)::const_type CH_PAIR_R(x)
 
 #define CH_STRUCT_BUS_FIELD(i, x) \
-  typename CH_PAIR_L(x)::bus_t CH_PAIR_R(x)
+  typename CH_PAIR_L(x)::bus_type CH_PAIR_R(x)
 
 #define CH_STRUCT_COPY_CTOR_APPLY(i, x) \
   CH_PAIR_R(x)(__rhs__.CH_PAIR_R(x))
@@ -28,7 +28,7 @@
   typename __T##i
 
 #define CH_STRUCT_FIELD_CTOR_REQUIRES(i, x) \
-  CH_REQUIRES(cash::internal::is_cast_convertible<__T##i, typename CH_PAIR_L(x)::value_t>::value)
+  CH_REQUIRES(cash::internal::is_cast_convertible<__T##i, typename CH_PAIR_L(x)::value_type>::value)
 
 #define CH_STRUCT_FIELD_CTOR_ARGS(i, x) \
   const __T##i& CH_CONCAT(_,CH_PAIR_R(x))
@@ -81,7 +81,7 @@
   class name : public cash::internal::ch_busbase<CH_STRUCT_SIZE(__VA_ARGS__)> { \
   public: \
     using base = cash::internal::ch_busbase<CH_STRUCT_SIZE(__VA_ARGS__)>; \
-    using data_t = typename base::data_t; \
+    using data_type = typename base::data_type; \
     name() {} \
     name(const name& __rhs__) : CH_FOR_EACH(CH_STRUCT_COPY_CTOR_APPLY, CH_SEP_COMMA, __VA_ARGS__) {} \
     name(name&& __rhs__) : CH_FOR_EACH(CH_STRUCT_MOVE_CTOR_APPLY, CH_SEP_COMMA, __VA_ARGS__) {} \
@@ -108,10 +108,10 @@
     } \
     CH_FOR_EACH(CH_STRUCT_BUS_FIELD, CH_SEP_SEMICOLON, __VA_ARGS__); \
   protected: \
-    void read_data(cash::internal::nodelist<data_t>& __inout__, size_t __offset__, size_t __length__) const override { \
+    void read_data(cash::internal::nodelist<data_type>& __inout__, size_t __offset__, size_t __length__) const override { \
       CH_FOR_EACH(CH_STRUCT_READ_DATA, CH_SEP_SEMICOLON, __VA_ARGS__); \
     } \
-    void write_data(size_t __dst_offset__, const cash::internal::nodelist<data_t>& __in__, size_t __src_offset__, size_t __length__) override { \
+    void write_data(size_t __dst_offset__, const cash::internal::nodelist<data_type>& __in__, size_t __src_offset__, size_t __length__) override { \
       CH_FOR_EACH(CH_STRUCT_WRITE_DATA, CH_SEP_SEMICOLON, __VA_ARGS__); \
     } \
   }
@@ -119,10 +119,10 @@
 #define CH_STRUCT_BODY_IMPL(name, value_name, const_name, bus_name, assignment_body, field_body, ...) \
   public:\
     using base = typename cash::internal::ch_bitbase<CH_STRUCT_SIZE(__VA_ARGS__)>; \
-    using data_t  = typename base::data_t; \
-    using value_t = value_name; \
-    using const_t = const_name; \
-    using bus_t   = bus_name; \
+    using data_type  = typename base::data_type; \
+    using value_type = value_name; \
+    using const_type = const_name; \
+    using bus_type   = bus_name; \
     name() {} \
     name(const name& __rhs__) : CH_FOR_EACH(CH_STRUCT_COPY_CTOR_APPLY, CH_SEP_COMMA, __VA_ARGS__) {} \
     name(name&& __rhs__) : CH_FOR_EACH(CH_STRUCT_MOVE_CTOR_APPLY, CH_SEP_COMMA, __VA_ARGS__) {} \
@@ -135,14 +135,14 @@
     explicit name(__T__ __rhs__) { this->assign(__rhs__); } \
     assignment_body(name, __VA_ARGS__) \
     const auto clone() const { \
-      return value_t(CH_REVERSE_FOR_EACH(CH_STRUCT_CLONE, CH_SEP_COMMA, __VA_ARGS__)); \
+      return value_type(CH_REVERSE_FOR_EACH(CH_STRUCT_CLONE, CH_SEP_COMMA, __VA_ARGS__)); \
     } \
     CH_FOR_EACH(field_body, CH_SEP_SEMICOLON, __VA_ARGS__); \
   protected: \
-    void read_data(cash::internal::nodelist<data_t>& __inout__, size_t __offset__, size_t __length__) const { \
+    void read_data(cash::internal::nodelist<data_type>& __inout__, size_t __offset__, size_t __length__) const { \
       CH_FOR_EACH(CH_STRUCT_READ_DATA, CH_SEP_SEMICOLON, __VA_ARGS__); \
     } \
-    void write_data(size_t __dst_offset__, const cash::internal::nodelist<data_t>& __in__, size_t __src_offset__, size_t __length__) { \
+    void write_data(size_t __dst_offset__, const cash::internal::nodelist<data_type>& __in__, size_t __src_offset__, size_t __length__) { \
       CH_FOR_EACH(CH_STRUCT_WRITE_DATA, CH_SEP_SEMICOLON, __VA_ARGS__); \
     }
 
@@ -150,6 +150,7 @@
   CH_BIT_READONLY_INTERFACE(name) \
 
 #define CH_STRUCT_WRITABLE_IMPL(name, ...) \
+  name(const const_type& __rhs__) : name(reinterpret_cast<const base&>(__rhs__)) {} \
   name& operator=(const name& __rhs__) { \
     this->assign(__rhs__); \
     return *this; \

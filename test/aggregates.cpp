@@ -28,6 +28,15 @@ __struct (s3_t, (
   (ch_bit4) c
 ));
 
+struct Q_t {
+  __struct (value_t, (
+    (ch_bit4) a,
+    (ch_bit4) b,
+    (ch_bit4) c
+  ));
+  value_t value;
+};
+
 __struct (s4_t, (
   (ch_bit4) a,
   (ch_bit4) b,

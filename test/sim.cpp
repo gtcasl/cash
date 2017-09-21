@@ -130,56 +130,56 @@ TEST_CASE("simulation", "[sim]") {
   }
   SECTION("structs", "[struct]") {
     TESTX([]()->bool {          
-      s2_t::bus_t s2;
+      s2_t::bus_type s2;
       s2.a = 01_b;
       s2.b = 10_b;
       return (s2 == 1001_b);
     });    
     TESTX([]()->bool {          
-      s2_t::bus_t s2;
+      s2_t::bus_type s2;
       s2 = 1001_b;
       return (s2 == 1001_b);
     });
     TESTX([]()->bool {          
-      s2_t::bus_t s1, s2;
+      s2_t::bus_type s1, s2;
       s1 = 0;
       s2 = s1;      
       s2 = 1001_b;
       return (s2 == 1001_b);
     });
     TESTX([]()->bool {
-      s32_t::bus_t a(0);
+      s32_t::bus_type a(0);
       uint32_t v = 0xABCD71E3;
       a.write(0, &v, sizeof(v));
       return (a == 0xABCD71E3);
     });
     TESTX([]()->bool {
-      s32_t::bus_t a(0);
+      s32_t::bus_type a(0);
       uint32_t v = 0xABCD71E3;
       a.write(0, &v, sizeof(v), 4, 28);
       return (a == (0xABCD71E3 >> 4));
     });
     TESTX([]()->bool {
-      s32_t::bus_t a(0);
+      s32_t::bus_type a(0);
       uint32_t v = 0xABCD71E3;
       a.write(4, &v, sizeof(v), 0, 28);
       return (a == (0xABCD71E3 << 4));
     });
     TESTX([]()->bool {
-      s32_t::bus_t a(0xABCD71E3);
+      s32_t::bus_type a(0xABCD71E3);
       uint32_t v = 0;
       a.read(0, &v, sizeof(v));
       return (v == 0xABCD71E3);
     });
     TESTX([]()->bool {
-      s32_t::bus_t a;
+      s32_t::bus_type a;
       a = 0xABCD71E3;
       uint32_t v = 0;
       a.read(0, &v, sizeof(v), 4, 28);
       return (v == (0xABCD71E3 >> 4));
     });
     TESTX([]()->bool {
-      s32_t::bus_t a(0xABCD71E3);
+      s32_t::bus_type a(0xABCD71E3);
       uint32_t v = 0;
       a.read(4, &v, sizeof(v), 0, 28);
       return (v == (0xABCD71E3 << 4));
@@ -187,7 +187,7 @@ TEST_CASE("simulation", "[sim]") {
   }  
   SECTION("unions", "[union]") {
     TESTX([]()->bool {          
-      u2_t::bus_t u2;
+      u2_t::bus_type u2;
       u2.a = 01_b;
       u2.b = 10_b;
       return (u2 == 10_b);
@@ -195,11 +195,11 @@ TEST_CASE("simulation", "[sim]") {
   }  
   SECTION("enums", "[enum]") {
     TESTX([]()->bool {          
-      my_enum::bus_t a(my_enum::idle);
+      my_enum::bus_type a(my_enum::idle);
       return (0 == a);
     });
     TESTX([]()->bool {
-      my_enum::bus_t a;
+      my_enum::bus_type a;
       a = my_enum::execute;
       return (a == 1);
     });

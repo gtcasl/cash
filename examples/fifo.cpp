@@ -43,7 +43,7 @@ int main(int argc, char **argv) {
   ch_bus1 push, pop, empty, full;
 
   auto fifo = ch_function(FiFo<1, 2>);
-  std::tie(dout, empty, full) = fifo(din, push, pop);
+  __tie(dout, empty, full) = fifo(din, push, pop);
 
   //std::ofstream v_file("fifo.v");
   //fifo.to_verilog("fifo", v_file);

@@ -11,8 +11,8 @@
 #define CH_ENUM_BUS_IMPL(name, size) \
   class name : public cash::internal::ch_bus<size> { \
     public: \
-      using base   = cash::internal::ch_bus<size>; \
-      using data_t = typename base::data_t; \
+      using base = cash::internal::ch_bus<size>; \
+      using data_type = typename base::data_type; \
       name() {} \
       name(const name& __rhs__) : base(__rhs__) {} \
       name(name&& __rhs__) : base(std::move(__rhs__)) {} \
@@ -34,25 +34,25 @@
 #define CH_ENUM_BODY_IMPL(name, value_name, const_name, bus_name, base_name, size, assignment_body) \
   public: \
     using base = cash::internal::base_name<size>; \
-    using data_t  = typename base::data_t; \
-    using value_t = value_name; \
-    using const_t = const_name; \
-    using bus_t   = bus_name; \
+    using data_type  = typename base::data_type; \
+    using value_type = value_name; \
+    using const_type = const_name; \
+    using bus_type   = bus_name; \
     name() {} \
     name(const name& __rhs__) : base(__rhs__) {} \
     name(name&& __rhs__) : base(std::move(__rhs__)) {} \
     name(enum_type __rhs__) : base(__rhs__) {} \
     assignment_body(name) \
     const auto clone() const { \
-      return value_t(base::clone()); \
+      return value_type(base::clone()); \
     } \
   protected: \
     name(const base& __rhs__) : base(__rhs__) {} \
     template <typename __T__> friend const auto cash::internal::make_type(const cash::internal::lnode&); \
-    friend name ch_reg(const name& next, const name& init) { \
+    friend const auto ch_reg(const name& next, const name& init) { \
       return cash::internal::ch_reg(next, init); \
     } \
-    friend name ch_reg(const name& next) { \
+    friend const auto ch_reg(const name& next) { \
       return cash::internal::ch_reg(next); \
     }
 
@@ -60,6 +60,7 @@
   CH_BIT_READONLY_INTERFACE(name)
 
 #define CH_ENUM_WRITABLE_IMPL(name) \
+  name(const const_type& __rhs__) : name(reinterpret_cast<const base&>(__rhs__)) {} \
   name& operator=(const name& __rhs__) { \
     base::operator=(__rhs__); \
     return *this; \

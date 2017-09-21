@@ -266,3 +266,4 @@ inline namespace sim_literals {
 
 #define __out      CH_OUT
 #define __ret      CH_RET
+#define __tie      CH_TIE

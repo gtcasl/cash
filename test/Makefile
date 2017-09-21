@@ -26,6 +26,7 @@ run: $(PROJECT)
 
 cov: $(PROJECT)
 	./covgen.sh
+	start ./lcov_html/index.html
 
 ifneq ($(MAKECMDGOALS),clean)
     -include .depend

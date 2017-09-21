@@ -37,11 +37,11 @@ template <typename T>
 class ch_out;
 
 template <typename T>
-class ch_in : public T::const_t, public ch_port<true, false> {
+class ch_in : public T::const_type, public ch_port<true, false> {
 public:
-  using base = typename T::const_t;
-  using value_t = T;
-  using const_t = typename T::const_t;
+  using base = typename T::const_type;
+  using value_type = T;
+  using const_type = typename T::const_type;
   using flip_type = ch_out<T>;
 
   ch_in() {}
@@ -81,8 +81,8 @@ class ch_out : public T, public ch_port<false, true> {
 public:
   using base = T;
   using base::operator=;
-  using value_t = T;
-  using const_t = typename T::const_t;
+  using value_type = T;
+  using const_type = typename T::const_type;
   using flip_type = ch_in<T>;
 
   ch_out() {}
@@ -144,8 +144,8 @@ protected:
     public: \
       static constexpr unsigned bitcount = __value_type__::bitcount; \
       using base = cash::internal::ch_port<true, true>; \
-      using value_t = __value_type__; \
-      using const_t = __value_type__::const_t; \
+      using value_type = __value_type__; \
+      using const_type = __value_type__::const_type; \
       using flip_type = name; \
       __flip_type__() {} \
       __flip_type__(const __flip_type__& __rhs__) : CH_FOR_EACH(CH_STRUCT_COPY_CTOR_APPLY, CH_SEP_COMMA, __VA_ARGS__) {} \
@@ -153,7 +153,7 @@ protected:
       void operator()(__flip_type__& __rhs__) { \
         CH_FOR_EACH(CH_INOUT_BIND_APPLY, CH_SEP_SEMICOLON, __VA_ARGS__); \
       } \
-      void operator()(value_t& __rhs__) { \
+      void operator()(value_type& __rhs__) { \
         CH_FOR_EACH(CH_INOUT_BIND_APPLY, CH_SEP_SEMICOLON, __VA_ARGS__); \
       } \
       template <CH_REVERSE_FOR_EACH(CH_STRUCT_FIELD_CTOR_TMPL, CH_SEP_COMMA, __VA_ARGS__)> \
@@ -166,9 +166,9 @@ protected:
   public: \
     static constexpr unsigned bitcount = __value_type__::bitcount; \
     using base = cash::internal::ch_port<true, true>; \
-    using value_t = __value_type__; \
-    using const_t = __value_type__::const_t; \
-    using bus_t = value_t::bus_t; \
+    using value_type = __value_type__; \
+    using const_type = __value_type__::const_type; \
+    using bus_type = value_type::bus_type; \
     using flip_type  = __flip_type__; \
     name() {} \
     name(const name& __rhs__) : CH_FOR_EACH(CH_STRUCT_COPY_CTOR_APPLY, CH_SEP_COMMA, __VA_ARGS__) {} \
@@ -176,7 +176,7 @@ protected:
     void operator()(name& __rhs__) { \
       CH_FOR_EACH(CH_INOUT_BIND_APPLY, CH_SEP_SEMICOLON, __VA_ARGS__); \
     } \
-    void operator()(value_t& __rhs__) { \
+    void operator()(value_type& __rhs__) { \
       CH_FOR_EACH(CH_INOUT_BIND_APPLY, CH_SEP_SEMICOLON, __VA_ARGS__); \
     } \
     template <CH_REVERSE_FOR_EACH(CH_STRUCT_FIELD_CTOR_TMPL, CH_SEP_COMMA, __VA_ARGS__)> \

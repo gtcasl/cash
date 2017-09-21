@@ -22,8 +22,8 @@
   class name : public cash::internal::ch_busbase<CH_UNION_SIZE(__VA_ARGS__)> { \
   public: \
     using base = cash::internal::ch_busbase<CH_UNION_SIZE(__VA_ARGS__)>; \
-    using data_t = typename base::data_t; \
-    using value_t = name; \
+    using data_type = typename base::data_type; \
+    using value_type = name; \
     name() : CH_FOR_EACH(CH_UNION_COPY_CTOR_APPLY, CH_SEP_COMMA, __VA_ARGS__) {} \
     name(const name& __rhs__) : CH_FOR_EACH(CH_UNION_COPY_CTOR_APPLY, CH_SEP_COMMA, __VA_ARGS__), _(__rhs__._) {} \
     name(name&& __rhs__) : CH_FOR_EACH(CH_UNION_COPY_CTOR_APPLY, CH_SEP_COMMA, __VA_ARGS__), _(std::move(__rhs__._)) {} \
@@ -47,10 +47,10 @@
     CH_FOR_EACH(CH_UNION_FIELD, CH_SEP_SEMICOLON, __VA_ARGS__); \
   protected: \
     ch_bus<base::bitcount> _; \
-    void read_data(cash::internal::nodelist<data_t>& __inout__, size_t __offset__, size_t __length__) const override { \
+    void read_data(cash::internal::nodelist<data_type>& __inout__, size_t __offset__, size_t __length__) const override { \
       cash::internal::read_data(_, __inout__, __offset__, __length__); \
     } \
-    void write_data(size_t __dst_offset__, const cash::internal::nodelist<data_t>& __in__, size_t __src_offset__, size_t __length__) override { \
+    void write_data(size_t __dst_offset__, const cash::internal::nodelist<data_type>& __in__, size_t __src_offset__, size_t __length__) override { \
       cash::internal::write_data(_, __dst_offset__, __in__, __src_offset__, __length__); \
     } \
   }
@@ -58,10 +58,10 @@
 #define CH_UNION_BODY_IMPL(name, value_name, const_name, bus_name, assignment_body, field_body, ...) \
   public: \
     using base = cash::internal::ch_bitbase<CH_UNION_SIZE(__VA_ARGS__)>; \
-    using data_t  = typename base::data_t; \
-    using value_t = value_name; \
-    using const_t = const_name; \
-    using bus_t   = bus_name; \
+    using data_type  = typename base::data_type; \
+    using value_type = value_name; \
+    using const_type = const_name; \
+    using bus_type   = bus_name; \
     name() : CH_FOR_EACH(CH_UNION_COPY_CTOR_APPLY, CH_SEP_COMMA, __VA_ARGS__) {} \
     name(const name& __rhs__) : CH_FOR_EACH(CH_UNION_COPY_CTOR_APPLY, CH_SEP_COMMA, __VA_ARGS__), _(__rhs__._) {} \
     name(name&& __rhs__) : CH_FOR_EACH(CH_UNION_COPY_CTOR_APPLY, CH_SEP_COMMA, __VA_ARGS__), _(std::move(__rhs__._)) {} \
@@ -72,15 +72,15 @@
       _(static_cast<typename cash::internal::bit_cast<T, base::bitcount>::type>(__rhs__)) {} \
     assignment_body(name, __VA_ARGS__) \
     const auto clone() const { \
-      return value_t(_.clone()); \
+      return value_type(_.clone()); \
     } \
     CH_FOR_EACH(field_body, CH_SEP_SEMICOLON, __VA_ARGS__); \
   protected: \
     ch_bit<base::bitcount> _; \
-    void read_data(cash::internal::nodelist<data_t>& __inout__, size_t __offset__, size_t __length__) const override { \
+    void read_data(cash::internal::nodelist<data_type>& __inout__, size_t __offset__, size_t __length__) const override { \
       cash::internal::read_data(_, __inout__, __offset__, __length__); \
     } \
-    void write_data(size_t __dst_offset__, const cash::internal::nodelist<data_t>& __in__, size_t __src_offset__, size_t __length__) override { \
+    void write_data(size_t __dst_offset__, const cash::internal::nodelist<data_type>& __in__, size_t __src_offset__, size_t __length__) override { \
       cash::internal::write_data(_, __dst_offset__, __in__, __src_offset__, __length__); \
     }
 
@@ -89,6 +89,7 @@
   CH_BIT_READONLY_INTERFACE(name)
 
 #define CH_UNION_WRITABLE_IMPL(name, ...) \
+  name(const const_type& __rhs__) : name(reinterpret_cast<const base&>(__rhs__)) {} \
   name& operator=(const name& __rhs__) { \
     this->assign(__rhs__); \
     return *this; \

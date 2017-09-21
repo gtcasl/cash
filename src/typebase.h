@@ -79,7 +79,7 @@ struct deduce_first_type {
 template <typename T>
 class nodelist {
 public:
-  using data_t = T;
+  using data_type = T;
 
   nodelist(uint32_t capacity) : capacity_(capacity), size_(0) {}
 
@@ -160,22 +160,22 @@ template <unsigned N, typename T> class typebase;
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T>
-class refproxy : public typebase_itf<typename T::data_t> {
+class refproxy : public typebase_itf<typename T::data_type> {
 public:
   static constexpr unsigned bitcount = T::bitcount;
-  using data_t = typename T::data_t;
+  using data_type = typename T::data_type;
 
   refproxy() {}
   refproxy(const T& value) : value_(value) {}
 
 protected:
 
-  void read_data(nodelist<data_t>& inout, size_t offset, size_t length) const override {
+  void read_data(nodelist<data_type>& inout, size_t offset, size_t length) const override {
     CH_CHECK(offset + length <= bitcount, "invalid read range");
     cash::internal::read_data(value_, inout, offset, length);
   }
 
-  void write_data(size_t dst_offset, const nodelist<data_t>& in, size_t src_offset, size_t length) override {
+  void write_data(size_t dst_offset, const nodelist<data_type>& in, size_t src_offset, size_t length) override {
     CH_UNUSED(dst_offset, in, src_offset, length);
     CH_ABORT("invalid call");
   }
@@ -186,12 +186,12 @@ protected:
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T, unsigned N>
-class const_sliceref : public typebase<N, typename T::data_t> {
+class const_sliceref : public typebase<N, typename T::data_type> {
 public:
   static_assert(N <= T::bitcount, "invalid slice size");
-  using base = typebase<N, typename T::data_t>;
-  using data_t  = typename base::data_t;
-  using value_t = typename data_traits<data_t>:: template device_t<base::bitcount>;
+  using base = typebase<N, typename T::data_type>;
+  using data_type  = typename base::data_type;
+  using value_type = typename data_traits<data_type>:: template device_type<base::bitcount>;
 
   const_sliceref(const T& container, size_t start = 0)
     : container_(container)
@@ -235,12 +235,12 @@ public:
 
 protected:
 
-  void read_data(nodelist<data_t>& inout, size_t offset, size_t length) const override {
+  void read_data(nodelist<data_type>& inout, size_t offset, size_t length) const override {
     CH_CHECK(offset + length <= N, "invalid read range");
     cash::internal::read_data(container_, inout, start_ + offset, length);
   }
 
-  void write_data(size_t dst_offset, const nodelist<data_t>& in, size_t src_offset, size_t length) override {
+  void write_data(size_t dst_offset, const nodelist<data_type>& in, size_t src_offset, size_t length) override {
     CH_CHECK(dst_offset + length <= N, "invalid write range");
     cash::internal::write_data(container_, start_ + dst_offset, in, src_offset, length);
   }
@@ -252,12 +252,12 @@ protected:
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T, unsigned N>
-class sliceref : public typebase<N, typename T::data_t> {
+class sliceref : public typebase<N, typename T::data_type> {
 public:
   static_assert(N <= T::bitcount, "invalid slice size");
-  using base = typebase<N, typename T::data_t>;
-  using data_t  = typename base::data_t;
-  using value_t = typename data_traits<data_t>:: template device_t<base::bitcount>;
+  using base = typebase<N, typename T::data_type>;
+  using data_type  = typename base::data_type;
+  using value_type = typename data_traits<data_type>:: template device_type<base::bitcount>;
 
   sliceref(T& container, size_t start = 0)
     : container_(container)
@@ -311,12 +311,12 @@ public:
 
 protected:
 
-  void read_data(nodelist<data_t>& inout, size_t offset, size_t length) const override {
+  void read_data(nodelist<data_type>& inout, size_t offset, size_t length) const override {
     CH_CHECK(offset + length <= N, "invalid read range");
     cash::internal::read_data(container_, inout, start_ + offset, length);
   }
 
-  void write_data(size_t dst_offset, const nodelist<data_t>& in, size_t src_offset, size_t length) override {
+  void write_data(size_t dst_offset, const nodelist<data_type>& in, size_t src_offset, size_t length) override {
     CH_CHECK(dst_offset + length <= N, "invalid write range");
     cash::internal::write_data(container_, start_ + dst_offset, in, src_offset, length);
   }
@@ -333,24 +333,24 @@ struct concat_info;
 template <typename T>
 struct concat_info<T> {
   static constexpr unsigned bitcount = T::bitcount;
-  using data_t = typename T::data_t;
+  using data_type = typename T::data_type;
 };
 
 template <typename T0, typename... Ts>
 struct concat_info<T0, Ts...> {
     static constexpr unsigned bitcount = T0::bitcount + concat_info<Ts...>::bitcount;
-    using data_t = typename T0::data_t;
+    using data_type = typename T0::data_type;
 };
 
 template <typename... Ts>
 class concatref;
 
 template <typename... Ts>
-class concatref : public typebase<concat_info<Ts...>::bitcount, typename concat_info<Ts...>::data_t> {
+class concatref : public typebase<concat_info<Ts...>::bitcount, typename concat_info<Ts...>::data_type> {
 public:
-  using base = typebase<concat_info<Ts...>::bitcount, typename concat_info<Ts...>::data_t>;
-  using data_t  = typename base::data_t;
-  using value_t = typename data_traits<data_t>:: template device_t<base::bitcount>;
+  using base = typebase<concat_info<Ts...>::bitcount, typename concat_info<Ts...>::data_type>;
+  using data_type  = typename base::data_type;
+  using value_type = typename data_traits<data_type>:: template device_type<base::bitcount>;
 
   concatref(Ts&... args) : args_(args...) {}
 
@@ -375,34 +375,34 @@ protected:
   concatref(concatref&&) = default;
   concatref& operator=(concatref&&) = default;
 
-  void read_data(nodelist<data_t>& inout, size_t offset, size_t length) const override {
+  void read_data(nodelist<data_type>& inout, size_t offset, size_t length) const override {
     CH_CHECK(offset + length <= base::bitcount, "invalid read range");
     this->read_data(inout, offset, length, args_, std::index_sequence_for<Ts...>());
   }
 
-  void write_data(size_t dst_offset, const nodelist<data_t>& in, size_t src_offset, size_t length) override {
+  void write_data(size_t dst_offset, const nodelist<data_type>& in, size_t src_offset, size_t length) override {
     CH_CHECK(dst_offset + length <= base::bitcount, "invalid write range");
     this->write_data(dst_offset, in, src_offset, length, args_, std::index_sequence_for<Ts...>());
   }
 
   template <size_t... I>
-  void read_data(nodelist<data_t>& inout, size_t offset, size_t length, const std::tuple<Ts&...>& args, std::index_sequence<I...>) const {
+  void read_data(nodelist<data_type>& inout, size_t offset, size_t length, const std::tuple<Ts&...>& args, std::index_sequence<I...>) const {
     this->read_data(inout, offset, length, std::get<sizeof...(Ts) - 1 - I>(args)...);
   }
 
   template <size_t... I>
-  void write_data(size_t dst_offset, const nodelist<data_t>& in, size_t src_offset, size_t length, std::tuple<Ts&...>& args, std::index_sequence<I...>) {
+  void write_data(size_t dst_offset, const nodelist<data_type>& in, size_t src_offset, size_t length, std::tuple<Ts&...>& args, std::index_sequence<I...>) {
     this->write_data(dst_offset, in, src_offset, length, std::get<sizeof...(Ts) - 1 - I>(args)...);
   }
 
   template <typename U>
-  void read_data(nodelist<data_t>& inout, size_t offset, size_t length, U& arg) const {
+  void read_data(nodelist<data_type>& inout, size_t offset, size_t length, U& arg) const {
     size_t len = std::min<size_t>(length, U::bitcount);
     cash::internal::read_data(arg, inout, offset, len);
   }
 
   template <typename U0, typename... Us>
-  void read_data(nodelist<data_t>& inout, size_t offset, size_t length, U0& arg0, Us&... args) const {
+  void read_data(nodelist<data_type>& inout, size_t offset, size_t length, U0& arg0, Us&... args) const {
     if (offset < U0::bitcount) {
       size_t len = std::min<size_t>(length, U0::bitcount);
       cash::internal::read_data(arg0, inout, offset, len);
@@ -415,13 +415,13 @@ protected:
   }
 
   template <typename U>
-  void write_data(size_t dst_offset, const nodelist<data_t>& in, size_t src_offset, size_t length, U& arg) {
+  void write_data(size_t dst_offset, const nodelist<data_type>& in, size_t src_offset, size_t length, U& arg) {
     size_t len = std::min<size_t>(length, U::bitcount);
     cash::internal::write_data(arg, dst_offset, in, src_offset, len);
   }
 
   template <typename U0, typename... Us>
-  void write_data(size_t dst_offset, const nodelist<data_t>& in, size_t src_offset, size_t length, U0& arg0, Us&... args) {
+  void write_data(size_t dst_offset, const nodelist<data_type>& in, size_t src_offset, size_t length, U0& arg0, Us&... args) {
     if (dst_offset < U0::bitcount) {
       size_t len = std::min<size_t>(length, U0::bitcount);
       cash::internal::write_data(arg0, dst_offset, in, src_offset, len);

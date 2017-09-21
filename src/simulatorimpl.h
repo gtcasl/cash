@@ -7,7 +7,7 @@
 namespace cash {
 namespace internal {
 
-class simulatorimpl {
+class simulatorimpl : public refcounted {
 public:
   simulatorimpl(const std::initializer_list<const ch_device*>& devices);
   virtual ~simulatorimpl();

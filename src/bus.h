@@ -6,7 +6,7 @@ namespace cash {
 namespace internal {
 
 #define CH_BUS_INTERFACE(type) \
-  type& operator=(const ch_busbase<type::bitcount>& rhs) { \
+  type& operator=(const cash::internal::ch_busbase<type::bitcount>& rhs) { \
     this->assign(rhs); \
     return *this; \
   } \
@@ -20,7 +20,7 @@ template <unsigned N>
 class ch_bus : public ch_busbase<N> {
 public:
   using base = ch_busbase<N>;
-  using data_t = snode;
+  using data_type = snode;
 
   ch_bus() {}
   

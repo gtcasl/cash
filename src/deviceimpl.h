@@ -5,7 +5,7 @@
 namespace cash {
 namespace internal {
 
-class deviceimpl {
+class deviceimpl : public refcounted {
 public:
   deviceimpl();
 

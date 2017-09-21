@@ -23,7 +23,7 @@ int main(int argc, char **argv) {
   ch_bus2 out, lhs(1), rhs(3);
   
   auto adder = ch_function(Adder<2>);
-  std::tie(out, cout) = adder(lhs, rhs, cin);
+  __tie(out, cout) = adder(lhs, rhs, cin);
 
   //std::ofstream v_file("adder.v");
   //adder.to_verilog("adder", v_file);

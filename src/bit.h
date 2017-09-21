@@ -81,11 +81,11 @@ template <unsigned N> class ch_bus;
 template <unsigned N>
 class const_bit : public ch_bitbase<N> {
 public:
-  using base    = ch_bitbase<N>;
-  using data_t  = lnode;
-  using value_t = ch_bit<N>;
-  using const_t = const_bit<N>;
-  using bus_t   = ch_bus<N>;
+  using base = ch_bitbase<N>;
+  using data_type  = lnode;
+  using value_type = ch_bit<N>;
+  using const_type = const_bit<N>;
+  using bus_type   = ch_bus<N>;
 
   const_bit() : node_(N) {}
 
@@ -125,17 +125,19 @@ protected:
 template <unsigned N>
 class ch_bit : public const_bit<N> {
 public:
-  using base    = const_bit<N>;
-  using data_t  = lnode;
-  using value_t = ch_bit<N>;
-  using const_t = const_bit<N>;
-  using bus_t   = ch_bus<N>;
+  using base = const_bit<N>;
+  using data_type  = lnode;
+  using value_type = ch_bit<N>;
+  using const_type = const_bit<N>;
+  using bus_type   = ch_bus<N>;
 
   using base::node_;
       
   ch_bit() {}
   
   ch_bit(const ch_bit& rhs) : base(rhs) {}
+
+  ch_bit(const const_bit<N>& rhs) : base(rhs) {}
 
   ch_bit(ch_bit&& rhs) : base(std::move(rhs)) {}
 
@@ -362,17 +364,17 @@ void ch_print(const std::string& format, const Args& ...args) {
 
 template <typename... Ts>
 struct return_type {
-  using type = std::tuple<typename Ts::value_t...>;
+  using type = std::tuple<typename Ts::value_type...>;
 };
 
 template <typename U>
 struct return_type<U> {
-  using type = typename U::value_t;
+  using type = typename U::value_type;
 };
 
 template <typename T,
           CH_REQUIRES(is_bit_convertible<T>::value)>
-const typename T::value_t make_return(const T& arg) {
+const typename T::value_type make_return(const T& arg) {
   return arg;
 }
 
@@ -380,7 +382,7 @@ template <typename T0, typename... Ts,
           CH_REQUIRES(is_bit_convertible<T0>::value),
           CH_REQUIRES(are_bit_convertible<Ts...>::value)>
 const auto make_return(const T0& arg0, const Ts&... args) {
-  return typename std::tuple<typename T0::value_t, typename Ts::value_t...>(arg0, args...);
+  return typename std::tuple<typename T0::value_type, typename Ts::value_type...>(arg0, args...);
 }
 
 }
@@ -388,3 +390,4 @@ const auto make_return(const T0& arg0, const Ts&... args) {
 
 #define CH_OUT(...) typename cash::internal::return_type<__VA_ARGS__>::type
 #define CH_RET(...) return cash::internal::make_return(__VA_ARGS__)
+#define CH_TIE(...) std::forward_as_tuple(__VA_ARGS__)

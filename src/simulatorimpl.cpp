@@ -130,12 +130,31 @@ ch_tick simulatorimpl::step(ch_tick t) {
 
 ch_simulator::ch_simulator(const std::initializer_list<const ch_device*>& devices) {
   impl_ = new simulatorimpl(devices);
+  impl_->acquire();
 }
 
-ch_simulator::ch_simulator(simulatorimpl* impl): impl_(impl) {}
+ch_simulator::ch_simulator(simulatorimpl* impl) : impl_(impl) {
+  if (impl)
+    impl->acquire();
+}
+
+ch_simulator::ch_simulator(const ch_simulator& simulator) : impl_(simulator.impl_) {
+  if (impl_)
+    impl_->acquire();
+}
 
 ch_simulator::~ch_simulator() {
-  delete impl_;
+  if (impl_)
+    impl_->release();
+}
+
+ch_simulator& ch_simulator::operator=(const ch_simulator& simulator) {
+  if (simulator.impl_)
+    simulator.impl_->acquire();
+  if (impl_)
+    impl_->release();
+  impl_ = simulator.impl_;
+  return *this;
 }
 
 void ch_simulator::add_device(const ch_device& device) {
