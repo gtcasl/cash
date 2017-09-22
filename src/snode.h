@@ -52,10 +52,6 @@ public:
 
   void assign(const bitvector& rhs);
   
-  uint32_t get_word(uint32_t idx, uint32_t size) const;
-  
-  void set_word(uint32_t idx, uint32_t value, uint32_t size);
-  
   void read(uint32_t dst_offset,
             void* out,
             uint32_t sizeInBytes,

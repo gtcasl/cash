@@ -21,7 +21,7 @@ public:
 
   const_real(const const_real& rhs) : base(rhs) {}
 
-  const_real(const_real&& rhs) : base(std::move(rhs)) {}
+  const_real(const_real&& rhs) : base(rhs) {}
 
   const_real(const ch_bitbase<32>& rhs) : base(rhs) {}
 

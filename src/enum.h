@@ -48,7 +48,6 @@
     } \
   protected: \
     name(const base& __rhs__) : base(__rhs__) {} \
-    template <typename __T__> friend const auto cash::internal::make_type(const cash::internal::lnode&); \
     friend const auto ch_reg(const name& next, const name& init) { \
       return cash::internal::ch_reg(next, init); \
     } \

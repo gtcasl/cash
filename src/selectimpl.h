@@ -16,7 +16,7 @@ public:
   void set_pred(const lnode& node) {
     srcs_[0] = node;
   }
-  
+
   const lnode& get_true() const {
     return srcs_[1];
   }
@@ -24,7 +24,7 @@ public:
   void set_true(const lnode& node) {
     srcs_[1] = node;
   }
-  
+
   const lnode& get_false() const {
     return srcs_[2];
   }

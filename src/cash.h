@@ -73,6 +73,13 @@ namespace core {
   using ch_bit128 = ch_bit<128>;
 
   //
+  // constants
+  //
+
+  //const ch_constant<ch_bit1> ch_false(0);
+  //const ch_constant<ch_bit1> ch_true(1);
+
+  //
   // subscript operators
   //
 

@@ -224,6 +224,11 @@ void unused(Args&&...) {}
 
 ///////////////////////////////////////////////////////////////////////////////
 
+template<typename T> struct static_print;
+// usage: static_print<type>();
+
+///////////////////////////////////////////////////////////////////////////////
+
 // is power of two number ?
 constexpr bool ispow2(unsigned value) { 
   return value && !(value & (value - 1)); 

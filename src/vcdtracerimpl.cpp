@@ -29,7 +29,7 @@ void vcdtracerimpl::tick(ch_tick t) {
   // call default tick()
   simulatorimpl::tick(t);
   
-  // log net values
+  // log tap values
   out_ << '#' << t << std::endl;
   for (auto& tap : taps_) {
     const snode& bus = tap.bus;

@@ -128,6 +128,47 @@ TEST_CASE("simulation", "[sim]") {
       return (out == 8);
     });
   }
+  SECTION("devices", "[device]") {
+    TESTX([]()->bool {
+      ch_bus4 in, out;
+      auto foo = [](const ch_bit4& x)->ch_bit4 {
+        return x + 1;
+      };
+      auto func = ch_function(foo);
+      out = func(in);
+      ch_device x(func), y;
+      y = x;
+      ch_simulator sim(y);
+      in = 0x7_h4;
+      sim.run(1);
+      return (out == 8);
+    });
+  }
+  SECTION("simulators", "[simulator]") {
+    TESTX([]()->bool {
+      ch_bus4 in, out;
+      auto foo = [](const ch_bit4& x)->ch_bit4 {
+        return x + 1;
+      };
+      auto func = ch_function(foo);
+      out = func(in);
+      ch_simulator sim;
+      sim.add_device(func);
+      ch_simulator x(sim), y;
+      y = x;
+      in = 0x7_h4;
+      x.run(1);
+      return (out == 8);
+    });
+  }
+  SECTION("vectors", "[vector]") {
+    TESTX([]()->bool {
+      ch_vec<ch_bit2, 2>::bus_type v2;
+      v2[0] = 01_b;
+      v2[1] = 10_b;
+      return (v2 == 1001_b);
+    });
+  }
   SECTION("structs", "[struct]") {
     TESTX([]()->bool {          
       s2_t::bus_type s2;

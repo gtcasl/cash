@@ -134,6 +134,11 @@ TEST_CASE("aggregates", "[aggregates]") {
     });
 
     TEST([]()->ch_bit1 {
+      ch_vec<ch_bit2, 1> a{3};
+      return (a[0] == 11_b);
+    });
+
+    TEST([]()->ch_bit1 {
       ch_vec<ch_bit2, 2> a{01_b, 10_b};
       return (a[0] == 10_b && a[1] == 01_b);
     });

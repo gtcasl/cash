@@ -309,6 +309,32 @@ TEST_CASE("conditionals", "[conditionals]") {
       ch_print("b={0}, c={1}", b, c);
       return (b == 2 && c == 2);
     });
+    TEST([]()->ch_bit1 {
+      ch_bit4 a(0), b;
+       __if (a == 1) (
+         b = 1;
+       )__elif (a == 0) (
+         b[1] = 1;
+       )__else (
+         b = 1000_b;
+       );
+      ch_print("b={0}", b);
+      return (b == 1010_b);
+    });
+    TEST([]()->ch_bit1 {
+      ch_bit4 a(3), b;
+       __if (a == 1) (
+         b = 1;
+       )__elif (a == 2) (
+           b.slice<3>() = 1;
+       )__elif (a == 3) (
+         b.slice<2>(2) = 1;
+       )__else (
+         b = 1000_b;
+       );
+      ch_print("b={0}", b);
+      return (b == 0100_b);
+    });
   }
   SECTION("switch", "[switch]") {
     TEST([]()->ch_bit1 {

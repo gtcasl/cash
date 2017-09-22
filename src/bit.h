@@ -139,7 +139,7 @@ public:
 
   ch_bit(const const_bit<N>& rhs) : base(rhs) {}
 
-  ch_bit(ch_bit&& rhs) : base(std::move(rhs)) {}
+  ch_bit(ch_bit&& rhs) : base(rhs) {}
 
   ch_bit(const ch_bitbase<N>& rhs) : base(rhs) {}
     

@@ -2,12 +2,19 @@
 
 using namespace cash::core_literals;
 
-__struct(X,(
+__struct(X, (
 (ch_bit2) q,
 (ch_bit2) p
 ));
 
-__enum(E,2,(
+__union(U, (
+(ch_bit2) q,
+(ch_bit2) p
+));
+
+using V2 = ch_vec<ch_bit2, 2>;
+
+__enum(E, 2, (
   a,
   b,
   c,
@@ -29,6 +36,43 @@ TEST_CASE("registers", "[registers]") {
       //ch_print("t={0}, a={1}, e={2}", ch_getTick(), a, e);
       return (e == a) && (e == b);
     }, 10);
+
+    TEST([]()->ch_bit1 {
+      V2 a = ch_reg(V2{3, 1});
+      auto e = ch_select(ch_getTick())
+           (3, 1101_b)
+              (a);
+      ch_print("t={0}, a={1}, e={2}", ch_getTick(), a, e);
+      return (a == e);
+    }, 3);
+
+    TEST([]()->ch_bit1 {
+      X a = ch_reg(X{3, 1});
+      auto e = ch_select(ch_getTick())
+           (3, 1101_b)
+              (a);
+      ch_print("t={0}, a={1}, e={2}", ch_getTick(), a, e);
+      return (a == e);
+    }, 3);
+
+    TEST([]()->ch_bit1 {
+      U a = ch_reg(U{2});
+      auto e = ch_select(ch_getTick())
+           (3, 10_b)
+              (a);
+      ch_print("t={0}, a={1}, e={2}", ch_getTick(), a, e);
+      return (a == e);
+    }, 3);
+
+    TEST([]()->ch_bit1 {
+      E a = ch_reg(E::c);
+      auto e = ch_select(ch_getTick())
+           .operator()<E>(3, E::c)
+              (a);
+      ch_print("t={0}, a={1}, e={2}", ch_getTick(), a, e);
+      return (a == e);
+    }, 3);
+
     TEST([]()->ch_bit1 {
       ch_bit2 a, b;
       a = ch_reg(a + 1, 1);
@@ -65,6 +109,47 @@ TEST_CASE("registers", "[registers]") {
       //ch_print("t={0}, a={1}", ch_getTick(), a);
       return (e == a);
     }, 10);
+
+    TEST([]()->ch_bit1 {
+      ch_seq<V2> a;
+      a.next = V2{3, 1};
+      auto e = ch_select(ch_getTick())
+           (3, 1101_b)
+              (a);
+      ch_print("t={0}, a={1}, e={2}", ch_getTick(), a, e);
+      return (a == e);
+    }, 3);
+
+    TEST([]()->ch_bit1 {
+      ch_seq<X> a;
+      a.next = X{3, 1};
+      auto e = ch_select(ch_getTick())
+           (3, 1101_b)
+              (a);
+      ch_print("t={0}, a={1}, e={2}", ch_getTick(), a, e);
+      return (a == e);
+    }, 3);
+
+    TEST([]()->ch_bit1 {
+      ch_seq<U> a;
+      a.next = U{2};
+      auto e = ch_select(ch_getTick())
+           (3, 10_b)
+              (a);
+      ch_print("t={0}, a={1}, e={2}", ch_getTick(), a, e);
+      return (a == e);
+    }, 3);
+
+    TEST([]()->ch_bit1 {
+      ch_seq<E> a;
+      a.next = E::c;
+      auto e = ch_select(ch_getTick())
+           .operator()<E>(3, E::c)
+              (a);
+      ch_print("t={0}, a={1}, e={2}", ch_getTick(), a, e);
+      return (a == e);
+    }, 3);
+
     TEST([]()->ch_bit1 {
       ch_seq<ch_bit2> a(1);
       a.next = a + 1;

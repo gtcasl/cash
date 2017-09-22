@@ -464,21 +464,6 @@ void snode::assign(uint32_t dst_offset,
   }
 }
 
-
-uint32_t snode::get_word(uint32_t idx, uint32_t size) const {
-  this->ensureInitialized(size);
-  return impl_->get_word(idx);
-}
-
-void snode::set_word(uint32_t idx, uint32_t value, uint32_t size) {
-  this->ensureInitialized(size);
-  if (!impl_->get_ownership(this)) {
-    this->clone(true);
-  }
-  impl_->clear_sources(idx * 32, 32);
-  impl_->set_word(idx, value);
-}
-
 void snode::read(uint32_t dst_offset,
                  void* out,
                  uint32_t sizeInBytes,

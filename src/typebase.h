@@ -175,10 +175,12 @@ protected:
     cash::internal::read_data(value_, inout, offset, length);
   }
 
+  // LCOV_EXCL_START
   void write_data(size_t dst_offset, const nodelist<data_type>& in, size_t src_offset, size_t length) override {
     CH_UNUSED(dst_offset, in, src_offset, length);
     CH_ABORT("invalid call");
   }
+  // LCOV_EXCL_STOP
 
   const T& value_;
 };
@@ -240,10 +242,12 @@ protected:
     cash::internal::read_data(container_, inout, start_ + offset, length);
   }
 
+  // LCOV_EXCL_START
   void write_data(size_t dst_offset, const nodelist<data_type>& in, size_t src_offset, size_t length) override {
-    CH_CHECK(dst_offset + length <= N, "invalid write range");
-    cash::internal::write_data(container_, start_ + dst_offset, in, src_offset, length);
+    CH_UNUSED(dst_offset, in, src_offset, length);
+    CH_ABORT("invalid call");
   }
+  // LCOV_EXCL_STOP
 
   T container_;
   size_t start_;
@@ -375,24 +379,15 @@ protected:
   concatref(concatref&&) = default;
   concatref& operator=(concatref&&) = default;
 
+  // LCOV_EXCL_START
   void read_data(nodelist<data_type>& inout, size_t offset, size_t length) const override {
     CH_CHECK(offset + length <= base::bitcount, "invalid read range");
     this->read_data(inout, offset, length, args_, std::index_sequence_for<Ts...>());
   }
 
-  void write_data(size_t dst_offset, const nodelist<data_type>& in, size_t src_offset, size_t length) override {
-    CH_CHECK(dst_offset + length <= base::bitcount, "invalid write range");
-    this->write_data(dst_offset, in, src_offset, length, args_, std::index_sequence_for<Ts...>());
-  }
-
   template <size_t... I>
   void read_data(nodelist<data_type>& inout, size_t offset, size_t length, const std::tuple<Ts&...>& args, std::index_sequence<I...>) const {
     this->read_data(inout, offset, length, std::get<sizeof...(Ts) - 1 - I>(args)...);
-  }
-
-  template <size_t... I>
-  void write_data(size_t dst_offset, const nodelist<data_type>& in, size_t src_offset, size_t length, std::tuple<Ts&...>& args, std::index_sequence<I...>) {
-    this->write_data(dst_offset, in, src_offset, length, std::get<sizeof...(Ts) - 1 - I>(args)...);
   }
 
   template <typename U>
@@ -412,6 +407,17 @@ protected:
     if (length > 0) {
       this->read_data(inout, offset - U0::bitcount, length, args...);
     }
+  }
+  // LCOV_EXCL_STOP
+
+  void write_data(size_t dst_offset, const nodelist<data_type>& in, size_t src_offset, size_t length) override {
+    CH_CHECK(dst_offset + length <= base::bitcount, "invalid write range");
+    this->write_data(dst_offset, in, src_offset, length, args_, std::index_sequence_for<Ts...>());
+  }
+
+  template <size_t... I>
+  void write_data(size_t dst_offset, const nodelist<data_type>& in, size_t src_offset, size_t length, std::tuple<Ts&...>& args, std::index_sequence<I...>) {
+    this->write_data(dst_offset, in, src_offset, length, std::get<sizeof...(Ts) - 1 - I>(args)...);
   }
 
   template <typename U>

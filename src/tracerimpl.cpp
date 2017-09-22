@@ -54,7 +54,10 @@ void tracerimpl::tick(ch_tick t) {
   // advance simulation
   simulatorimpl::tick(t);
 
-  CH_TODO();
+  // log tap values
+  for (auto& tap : taps_) {
+    out_ << tap.name << " = " << tap.bus << std::endl;
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////

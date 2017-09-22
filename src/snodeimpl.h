@@ -43,17 +43,6 @@ public:
     ++changeid_;
   }
   
-  uint32_t get_word(uint32_t idx) const {
-    const_cast<snodeimpl*>(this)->sync_sources();
-    return value_.get_word(idx);
-  }
-  
-  void set_word(uint32_t idx, uint32_t value) {
-    this->sync_sources();
-    value_.set_word(idx, value);
-    ++changeid_;
-  }
-  
   void read(uint32_t dst_offset, void* out, uint32_t sizeInBytes, uint32_t src_offset, uint32_t size) const {
     const_cast<snodeimpl*>(this)->sync_sources();
     value_.read(dst_offset, out, sizeInBytes, src_offset, size);

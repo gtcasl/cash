@@ -27,7 +27,7 @@
     name() : CH_FOR_EACH(CH_UNION_COPY_CTOR_APPLY, CH_SEP_COMMA, __VA_ARGS__) {} \
     name(const name& __rhs__) : CH_FOR_EACH(CH_UNION_COPY_CTOR_APPLY, CH_SEP_COMMA, __VA_ARGS__), _(__rhs__._) {} \
     name(name&& __rhs__) : CH_FOR_EACH(CH_UNION_COPY_CTOR_APPLY, CH_SEP_COMMA, __VA_ARGS__), _(std::move(__rhs__._)) {} \
-    name(const base& __rhs__) : CH_FOR_EACH(CH_UNION_COPY_CTOR_APPLY, CH_SEP_COMMA, __VA_ARGS__), _(__rhs__) {} \
+    name(const ch_busbase<name::bitcount>& __rhs__) : CH_FOR_EACH(CH_UNION_COPY_CTOR_APPLY, CH_SEP_COMMA, __VA_ARGS__), _(__rhs__) {} \
     template <typename T, CH_REQUIRES(cash::internal::is_bus_convertible<T, base::bitcount>::value)> \
     explicit name(const T& __rhs__) \
       : CH_FOR_EACH(CH_UNION_COPY_CTOR_APPLY, CH_SEP_COMMA, __VA_ARGS__), \
@@ -65,7 +65,7 @@
     name() : CH_FOR_EACH(CH_UNION_COPY_CTOR_APPLY, CH_SEP_COMMA, __VA_ARGS__) {} \
     name(const name& __rhs__) : CH_FOR_EACH(CH_UNION_COPY_CTOR_APPLY, CH_SEP_COMMA, __VA_ARGS__), _(__rhs__._) {} \
     name(name&& __rhs__) : CH_FOR_EACH(CH_UNION_COPY_CTOR_APPLY, CH_SEP_COMMA, __VA_ARGS__), _(std::move(__rhs__._)) {} \
-    name(const base& __rhs__) : CH_FOR_EACH(CH_UNION_COPY_CTOR_APPLY, CH_SEP_COMMA, __VA_ARGS__), _(__rhs__) {} \
+    name(const ch_bitbase<name::bitcount>& __rhs__) : CH_FOR_EACH(CH_UNION_COPY_CTOR_APPLY, CH_SEP_COMMA, __VA_ARGS__), _(__rhs__) {} \
     template <typename T, CH_REQUIRES(cash::internal::is_bit_convertible<T, base::bitcount>::value)> \
     explicit name(const T& __rhs__) \
       : CH_FOR_EACH(CH_UNION_COPY_CTOR_APPLY, CH_SEP_COMMA, __VA_ARGS__), \
