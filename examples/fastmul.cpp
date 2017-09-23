@@ -28,9 +28,9 @@ int main(int argc, char **argv) {
   auto fastMul = ch_function(FastMul);
   out = fastMul(lhs, rhs);
 
-  //std::ofstream v_file("fastmul.v");
-  //myDevice.to_verilog("fastmul", v_file);
-  //v_file.close();
+  std::ofstream v_file("fastmul.v");
+  fastMul.to_verilog("fastmul", v_file);
+  v_file.close();
 
   ch_vcdtracer tracer(vcd_file, fastMul);
   __trace(tracer, lhs, rhs, out);

@@ -208,14 +208,47 @@ refcounted_ptr<T> make_ptr(const Args&... args) {
 
 class scope_exit {
 public:
-    scope_exit(const std::function<void()>& f) : f_(f) {}
-    ~scope_exit() { f_(); }
-    // force stack only allocation!
-    static void *operator new   (size_t) = delete;
-    static void *operator new[] (size_t) = delete;
+  scope_exit(const std::function<void()>& f) : f_(f) {}
+  ~scope_exit() { f_(); }
+  // force stack only allocation!
+  static void *operator new   (size_t) = delete;
+  static void *operator new[] (size_t) = delete;
 protected:
-    std::function<void()> f_;
+  std::function<void()> f_;
 };
+
+///////////////////////////////////////////////////////////////////////////////
+
+template <class CharT, class Traits = std::char_traits<CharT>>
+class basic_auto_indent : public std::basic_streambuf<CharT, Traits> {
+public:
+  explicit basic_auto_indent(std::basic_ostream<CharT, Traits>& out, int indent = 4)
+    : out_(out)
+    , indent_(indent)
+    , add_indent_(true) {
+    buf_ = out.rdbuf();
+    out.rdbuf(this);
+  }
+  ~basic_auto_indent() {
+    out_.rdbuf(buf_);
+  }
+protected:
+  virtual int overflow(int ch) override {
+    if (add_indent_ && ch != '\n') {
+      for (int n = indent_; n--;) {
+        buf_->sputc(' ');
+      }
+    }
+    add_indent_ = (ch == '\n');
+    return buf_->sputc(ch);
+  }
+  std::basic_ostream<CharT, Traits>&   out_;
+  int indent_;
+  std::basic_streambuf<CharT, Traits>* buf_;
+  bool add_indent_;
+};
+
+using auto_indent = basic_auto_indent<char>;
 
 ///////////////////////////////////////////////////////////////////////////////
 

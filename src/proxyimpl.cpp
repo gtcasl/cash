@@ -325,8 +325,3 @@ void proxyimpl::print(std::ostream& out, uint32_t level) const {
     out << " = " << value_;
   }
 }
-
-void proxyimpl::print_vl(std::ostream& out) const {
-  CH_UNUSED(out);
-  CH_TODO();
-}

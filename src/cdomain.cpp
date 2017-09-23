@@ -24,25 +24,10 @@ bool clock_event::eval(ch_tick t) {
   bool value = signal_.eval(t)[0];
   if (cval_ != value) {
     cval_ = value;
-    return (value  && (edgedir_ == EDGE_POS || edgedir_ == EDGE_ANY)) ||
-           (!value && (edgedir_ == EDGE_NEG || edgedir_ == EDGE_ANY));
+    return (value  && (edgedir_ == EDGE_POS || edgedir_ == EDGE_ANY))
+        || (!value && (edgedir_ == EDGE_NEG || edgedir_ == EDGE_ANY));
   }
   return false;
-}
-
-void clock_event::print_vl(std::ostream& out) const {
-  switch (edgedir_) {
-  case EDGE_POS:
-    out << "posedge ";
-    break;
-  case EDGE_NEG:
-    out << "negedge ";
-    break;  
-  case EDGE_ANY:
-    // do nothing
-    break;
-  }
-  out << "__x" << signal_.get_id();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -62,14 +47,13 @@ cdomain::~cdomain() {
   ctx_->remove_cdomain(this);
 }
 
-void cdomain::add_use(tickable* reg) {
-  regs_.emplace_back(reg);
-  this->acquire();
-}
-
-void cdomain::remove_use(tickable* reg) {
-  regs_.remove(reg);
-  this->release();
+bool cdomain::is_asynchronous(const lnode& signal) const {
+  for (auto& e : sensitivity_list_) {
+    if (e.get_signal().get_id() == signal.get_id()
+     && e.get_edgedir() == EDGE_ANY)
+        return true;
+  }
+  return false;
 }
 
 bool cdomain::operator==(const std::vector<clock_event>& events) const {
@@ -89,6 +73,16 @@ bool cdomain::operator==(const std::vector<clock_event>& events) const {
   return true;
 }
 
+void cdomain::add_use(tickable* reg) {
+  regs_.emplace_back(reg);
+  this->acquire();
+}
+
+void cdomain::remove_use(tickable* reg) {
+  regs_.remove(reg);
+  this->release();
+}
+
 void cdomain::tick(ch_tick t) {
   for (clock_event& event : sensitivity_list_) {
     if (event.eval(t)) {
@@ -103,17 +97,5 @@ void cdomain::tick(ch_tick t) {
 void cdomain::tick_next(ch_tick t) {
   for (auto reg : regs_) {
     reg->tick_next(t);
-  }
-}
-
-void cdomain::print_vl(std::ostream& out) const {
-  bool first_event = true;
-  for (auto& event : sensitivity_list_) {
-    if (first_event) {
-      first_event = false;
-    } else {
-      out << ", ";
-    }
-    event.print_vl(out);
   }
 }

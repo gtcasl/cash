@@ -12,47 +12,15 @@
   m(output) \
   m(clk) \
   m(reset) \
+  m(alu) \
+  m(select) \
+  m(reg) \
+  m(mem) \
+  m(memport) \
   m(tap) \
   m(assert) \
   m(tick) \
-  m(print) \
-  m(select) \
-  m(reg) \
-  m(latch) \
-  m(mem) \
-  m(memport) \
-  m(inv) \
-  m(and) \
-  m(or) \
-  m(xor) \
-  m(nand) \
-  m(nor) \
-  m(xnor) \
-  m(andr) \
-  m(orr) \
-  m(xorr) \
-  m(shl) \
-  m(shr) \
-  m(rotl) \
-  m(rotr) \
-  m(add) \
-  m(sub) \
-  m(neg) \
-  m(mult) \
-  m(div) \
-  m(mod) \
-  m(eq) \
-  m(ne) \
-  m(lt) \
-  m(gt) \
-  m(le) \
-  m(ge) \
-  m(mux) \
-  m(demux) \
-  m(fadd) \
-  m(fsub) \
-  m(fmult) \
-  m(fdiv)
+  m(print)
 
 namespace cash {
 namespace internal {
@@ -121,7 +89,6 @@ public:
   virtual const bitvector& eval(ch_tick t) = 0;
   
   virtual void print(std::ostream& out, uint32_t level) const;
-  virtual void print_vl(std::ostream& out) const = 0;
 
 protected:
   
@@ -139,7 +106,6 @@ public:
   undefimpl(context* ctx, uint32_t size);
 
   const bitvector& eval(ch_tick t) override;
-  void print_vl(std::ostream& out) const override;
 };
 
 }

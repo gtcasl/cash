@@ -25,11 +25,6 @@ const bitvector& selectimpl::eval(ch_tick t) {
   return value_;
 }
 
-void selectimpl::print_vl(std::ostream& out) const {
-  CH_UNUSED(out);
-  CH_TODO();
-}
-
 lnodeimpl* cash::internal::createSelectNode(
     const lnode& pred,
     const lnode& _true,

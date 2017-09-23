@@ -98,7 +98,7 @@ protected:
   mutable snodeimpl* impl_;
 };
 
-std::ostream& operator<<(std::ostream& os, const snode& node);
+std::ostream& operator<<(std::ostream& out, const snode& node);
 
 }
 }

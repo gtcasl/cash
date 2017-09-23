@@ -38,21 +38,23 @@ void simulatorimpl::add_device(const ch_device& device) {
 void simulatorimpl::ensureInitialize() {
   // bind context taps
   for (auto ctx : contexts_) {
-    if (ctx->clk_) {
+    auto default_clk = ctx->get_default_clk();
+    if (default_clk) {
       if (nullptr == clk_) {
         clk_ = new snodeimpl(1);
         clk_->acquire();
         clk_->set_bit(0, true); // set 'high' by default
       }
-      ctx->clk_->bind(clk_);
+      default_clk->bind(clk_);
     }
 
-    if (ctx->reset_) {
+    auto default_reset = ctx->get_default_reset();
+    if (default_reset) {
       if (nullptr == reset_) {
         reset_ = new snodeimpl(1);
         reset_->acquire();
       }
-      ctx->reset_->bind(reset_);
+      default_reset->bind(reset_);
     }
   }
 }

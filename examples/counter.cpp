@@ -20,9 +20,9 @@ int main(int argc, char **argv) {
   auto counter = ch_function(Counter<4>);
   out = counter();
 
-  //std::ofstream v_file("counter.v");
-  //counter.to_verilog("counter", v_file);
-  //v_file.close();
+  std::ofstream v_file("counter.v");
+  counter.to_verilog("counter", v_file);
+  v_file.close();
 
   ch_vcdtracer tracer(vcd_file, counter);
   __trace(tracer, out);

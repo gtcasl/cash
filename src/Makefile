@@ -9,7 +9,9 @@ PROJECT = libcash
 SRCS = cash.cpp utils.cpp platform.cpp bitvector.cpp \
        lnodeimpl.cpp proxyimpl.cpp litimpl.cpp selectimpl.cpp regimpl.cpp \
        aluimpl.cpp ioimpl.cpp memimpl.cpp assertimpl.cpp tickimpl.cpp printimpl.cpp \
-       snodeimpl.cpp cdomain.cpp context.cpp compile.cpp deviceimpl.cpp simulatorimpl.cpp tracerimpl.cpp vcdtracerimpl.cpp
+       snodeimpl.cpp cdomain.cpp context.cpp compile.cpp deviceimpl.cpp \
+       simulatorimpl.cpp tracerimpl.cpp vcdtracerimpl.cpp \
+       verilogwriter.cpp
 
 OBJS := $(SRCS:.cpp=.o)
 

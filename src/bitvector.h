@@ -216,6 +216,177 @@ public:
     
     friend class bitvector;
   };
+
+  class const_reverse_iterator {
+  public:
+    const_reverse_iterator(const const_reverse_iterator& rhs)
+      : words_(rhs.words_)
+      , index_(rhs.index_)
+    {}
+
+    const_reverse_iterator& operator=(const const_reverse_iterator& rhs) {
+      words_ = rhs.words_;
+      index_ = rhs.index_;
+      return *this;
+    }
+
+    const_reference operator*() const {
+      return (*words_ & (1 << (index_ & WORD_MASK))) != 0;
+    }
+
+    bool operator==(const const_reverse_iterator& rhs) const {
+      return index_ == rhs.index_;
+    }
+
+    bool operator!=(const const_reverse_iterator& rhs) const {
+      return !(*this == rhs);
+    }
+
+    const_reverse_iterator& operator++() {
+      if (0 == (index_-- & WORD_MASK))
+          --words_;
+      return *this;
+    }
+
+    const_reverse_iterator& operator--() {
+      if (0 == (++index_ & WORD_MASK))
+          ++words_;
+      return *this;
+    }
+
+    const_reverse_iterator operator++(int) {
+      const_reverse_iterator ret(*this);
+      this->operator++();
+      return ret;
+    }
+
+    const_reverse_iterator operator--(int) {
+      const_reverse_iterator ret(*this);
+      this->operator--();
+      return ret;
+    }
+
+    const_reverse_iterator& operator+=(int dec) {
+      this->advance(-dec);
+      return *this;
+    }
+
+    const_reverse_iterator& operator-=(int incr) {
+      this->advance(incr);
+      return *this;
+    }
+
+    const_reverse_iterator operator+(int dec) const {
+      const_reverse_iterator ret(*this);
+      ret -= dec;
+      return ret;
+    }
+
+    const_reverse_iterator operator-(int incr) const {
+      const_reverse_iterator ret(*this);
+      ret += incr;
+      return ret;
+    }
+
+  protected:
+
+    const_reverse_iterator(const uint32_t* words, uint32_t index)
+      : words_(words)
+      , index_(index)
+    {}
+
+    void advance(int delta) {
+      int offset = (index_ & WORD_MASK) + delta;
+      if (offset >= 0) {
+        words_ += (offset >> WORD_SIZE_LOG);
+      } else {
+        words_ -= ((WORD_MASK - offset) >> WORD_SIZE_LOG);
+      }
+      index_ += delta;
+    }
+
+    const uint32_t* words_;
+    uint32_t index_;
+
+    friend class reverse_iterator;
+    friend class bitvector;
+  };
+
+  class reverse_iterator : public const_reverse_iterator {
+  public:
+    using base = const_reverse_iterator;
+    using base::words_;
+    using base::index_;
+
+    reverse_iterator(const reverse_iterator& rhs) : base(rhs) {}
+
+    reverse_iterator(const const_reverse_iterator& rhs) : base(rhs) {}
+
+    reference operator*() const {
+      return reference(const_cast<uint32_t&>(*words_), 1 << (index_ & WORD_MASK));
+    }
+
+    bool operator==(const reverse_iterator& rhs) const {
+      return base::operator ==(rhs);
+    }
+
+    bool operator!=(const reverse_iterator& rhs) const {
+      return base::operator !=(rhs);
+    }
+
+    reverse_iterator& operator++() {
+      if (0 == (index_-- & WORD_MASK))
+          --words_;
+      return *this;
+    }
+
+    reverse_iterator& operator--() {
+      if (0 == (++index_ & WORD_MASK))
+          ++words_;
+      return *this;
+    }
+
+    reverse_iterator operator++(int) {
+      reverse_iterator ret(*this);
+      this->operator++();
+      return ret;
+    }
+
+    reverse_iterator operator--(int) {
+      reverse_iterator ret(*this);
+      this->operator--();
+      return ret;
+    }
+
+    reverse_iterator& operator+=(int dec) {
+      this->advance(-dec);
+      return *this;
+    }
+
+    reverse_iterator& operator-=(int incr) {
+      this->advance(incr);
+      return *this;
+    }
+
+    reverse_iterator operator+(int dec) const {
+      reverse_iterator ret(*this);
+      ret -= dec;
+      return ret;
+    }
+
+    reverse_iterator operator-(int incr) const {
+      reverse_iterator ret(*this);
+      ret += incr;
+      return ret;
+    }
+
+  protected:
+
+    reverse_iterator(uint32_t* words, uint32_t index)
+      : const_reverse_iterator(words, index) {}
+
+    friend class bitvector;
+  };
   
   bitvector() : words_(nullptr), size_(0) {}
   
@@ -403,20 +574,36 @@ public:
     return this->at(size_ - 1);
   }
   
-  iterator begin() {
+  auto begin() {
     return iterator(words_, 0);
   }
   
-  iterator end() {
+  auto end() {
     return iterator(nullptr, size_);
   }
   
-  const_iterator begin() const {
+  auto begin() const {
     return const_iterator(words_, 0);
   }
   
-  const_iterator end() const {
+  auto end() const {
     return const_iterator(nullptr, size_);
+  }
+
+  auto rbegin() {
+    return reverse_iterator(words_, size_ - 1);
+  }
+
+  auto rend() {
+    return reverse_iterator(nullptr, -1);
+  }
+
+  auto rbegin() const {
+    return const_reverse_iterator(words_, size_ - 1);
+  }
+
+  auto rend() const {
+    return const_reverse_iterator(nullptr, -1);
   }
 
   bool operator==(const bitvector& rhs) const;
@@ -453,7 +640,7 @@ protected:
   uint32_t  size_;
 };
 
-std::ostream& operator<<(std::ostream& os, const bitvector& b);
+std::ostream& operator<<(std::ostream& out, const bitvector& b);
 
 }
 }

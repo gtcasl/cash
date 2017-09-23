@@ -3,19 +3,6 @@
 
 using namespace cash::internal;
 
-#define CH_ALUOP_NAME(n) case alu_op_##n: return op_##n;
-
-static ch_operator to_operator(ch_alu_op op) {
-  switch (op) {
-    CH_ALUOP_ENUM(CH_ALUOP_NAME)
-  }
-  CH_ABORT("invalid alu_op value");
-}
-
-#undef CH_ALUOP_NAME
-
-///////////////////////////////////////////////////////////////////////////////
-
 static void Invert(bitvector& out, const bitvector& in) {
   assert(out.get_size() == in.get_size());
   for (uint32_t i = 0, n = in.get_num_words(); i < n; ++i) {
@@ -534,7 +521,7 @@ static uint32_t get_output_size(ch_alu_op op, const lnode& a) {
 ///////////////////////////////////////////////////////////////////////////////
 
 aluimpl::aluimpl(ch_alu_op op, const lnode& a, const lnode& b)
-  : lnodeimpl(to_operator(op), a.get_ctx(), get_output_size(op, a, b))
+  : lnodeimpl(op_alu, a.get_ctx(), get_output_size(op, a, b))
   , alu_op_(op)
   , tick_(~0ull) {
   srcs_.emplace_back(a);
@@ -542,7 +529,7 @@ aluimpl::aluimpl(ch_alu_op op, const lnode& a, const lnode& b)
 }
 
 aluimpl::aluimpl(ch_alu_op op, const lnode& a)
-  : lnodeimpl(to_operator(op), a.get_ctx(), get_output_size(op, a))
+  : lnodeimpl(op_alu, a.get_ctx(), get_output_size(op, a))
   , alu_op_(op)
   , tick_(~0ull) {
   srcs_.emplace_back(a);
@@ -660,11 +647,6 @@ const bitvector& aluimpl::eval(ch_tick t) {
   }
   return value_;
 }
-
-void aluimpl::print_vl(std::ostream& out) const {
-  CH_UNUSED(out);
-  CH_TODO();
-} 
 
 lnodeimpl* cash::internal::createAluNode(
     ch_alu_op op,

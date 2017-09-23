@@ -25,10 +25,8 @@ public:
   
   void print(std::ostream& out, uint32_t level) const override;
   
-  void print_vl(std::ostream& out) const override;
-  
 protected:
-  snode    bus_;
+  snode bus_;
   ch_tick tick_;
 };
 
@@ -47,8 +45,6 @@ public:
   const bitvector& eval(ch_tick t) override;
   
   void print(std::ostream& out, uint32_t level) const override;
-  
-  void print_vl(std::ostream& out) const override;
   
 private:
   snode bus_;
@@ -72,8 +68,6 @@ public:
   }
   
   void print(std::ostream& out, uint32_t level) const override;
-  
-  void print_vl(std::ostream& out) const override;
   
 protected:
   std::string  tapName_;

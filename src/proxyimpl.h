@@ -47,7 +47,6 @@ public:
 
   const bitvector& eval(ch_tick t) override;
   void print(std::ostream& out, uint32_t level) const override;
-  void print_vl(std::ostream& out) const override;
   
 private:
 

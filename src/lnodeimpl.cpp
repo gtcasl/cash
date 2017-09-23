@@ -81,10 +81,6 @@ const bitvector& undefimpl::eval(ch_tick) {
   return value_;
 }
 
-void undefimpl::print_vl(std::ostream&) const {
-  CH_TODO();
-}
-
 ///////////////////////////////////////////////////////////////////////////////
 
 lnode::lnode() : impl_(nullptr) {}

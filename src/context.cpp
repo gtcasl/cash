@@ -99,6 +99,9 @@ uint32_t context::add_node(lnodeimpl* node) {
 #endif
   nodes_.emplace_back(node);
   
+  // Note: we have to explicitly select io nodes here
+  // because using dynamic_cast<ioimpl*> doesn't work during the object construction
+  // and add_node() is called inside lnodeimpl constructor.
   bool is_ionode = false;
 
   switch (node->get_op()) {
@@ -537,11 +540,6 @@ void context::eval(ch_tick t) {
   }
 }
 
-void context::to_verilog(const std::string& module_name, std::ostream& out) {
-  CH_UNUSED(module_name, out);
-  CH_TODO();
-}
-
 void context::dump_ast(std::ostream& out, uint32_t level) {
   for (lnodeimpl* node : nodes_) {
     node->print(out, level);
@@ -652,6 +650,12 @@ void context::dump_stats(std::ostream& out) {
   out << "cash-stats: total alus = " << num_alus << std::endl;
   out << "cash-stats: total literals = " << num_lits << std::endl;
   out << "cash-stats: total proxies = " << num_proxies << std::endl;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void cash::internal::register_tap(const std::string& name, const lnode& node) {
+  node.get_ctx()->register_tap(name, node);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

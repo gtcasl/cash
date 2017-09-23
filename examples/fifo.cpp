@@ -45,9 +45,9 @@ int main(int argc, char **argv) {
   auto fifo = ch_function(FiFo<1, 2>);
   __tie(dout, empty, full) = fifo(din, push, pop);
 
-  //std::ofstream v_file("fifo.v");
-  //fifo.to_verilog("fifo", v_file);
-  //v_file.close();
+  std::ofstream v_file("fifo.v");
+  fifo.to_verilog("fifo", v_file);
+  v_file.close();
 
   ch_vcdtracer tracer(vcd_file, fifo);
   __trace(tracer, din, push, pop, dout, empty, full);

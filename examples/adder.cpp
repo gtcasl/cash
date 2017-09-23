@@ -25,9 +25,9 @@ int main(int argc, char **argv) {
   auto adder = ch_function(Adder<2>);
   __tie(out, cout) = adder(lhs, rhs, cin);
 
-  //std::ofstream v_file("adder.v");
-  //adder.to_verilog("adder", v_file);
-  //v_file.close();
+  std::ofstream v_file("adder.v");
+  adder.to_verilog("adder", v_file);
+  v_file.close();
 
   ch_vcdtracer tracer(vcd_file, adder);
   __trace(tracer, lhs, rhs, cin, out, cout);

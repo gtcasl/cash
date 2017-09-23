@@ -419,17 +419,17 @@ void bitvector::write(
   }
 }
 
-std::ostream& cash::internal::operator<<(std::ostream& os, const bitvector& b) {
-  auto oldflags = os.flags();
-  os.setf(std::ios_base::hex, std::ios_base::basefield);
-  os << "0x";
+std::ostream& cash::internal::operator<<(std::ostream& out, const bitvector& b) {
+  auto oldflags = out.flags();
+  out.setf(std::ios_base::hex, std::ios_base::basefield);
+  out << "0x";
   for (int32_t i = b.get_num_words() - 1; i >= 0; --i) {
     uint32_t word = b.get_word(i);
-    os << word;
+    out << word;
     if (i != 0) {
-      os << "_";
+      out << "_";
     }
   }
-  os.flags(oldflags);
-  return os;
+  out.flags(oldflags);
+  return out;
 }

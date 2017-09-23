@@ -17,8 +17,3 @@ void litimpl::print(std::ostream& out, uint32_t level) const {
   out << "#" << id_ << " <- " << this->get_name() << value_.get_size() 
       << "(" << value_ << ")";
 }
-
-void litimpl::print_vl(std::ostream& out) const {
-  CH_UNUSED(out);
-  CH_TODO();
-}

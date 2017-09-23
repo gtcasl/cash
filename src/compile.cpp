@@ -11,7 +11,7 @@ using namespace cash::internal;
 ch_compiler::ch_compiler(context* ctx) : ctx_(ctx) {}
 
 void ch_compiler::run() {
-  size_t orig_num_nodes = ctx_->nodes_.size();
+  size_t orig_num_nodes = ctx_->get_nodes().size();
 
   ctx_->get_live_nodes(live_nodes_);
   
@@ -28,12 +28,12 @@ void ch_compiler::run() {
 #endif
   
   DBG(2, "Before optimization: %lu\n", orig_num_nodes);
-  DBG(2, "After dead code elimination: %lu\n", ctx_->nodes_.size());  
+  DBG(2, "After dead code elimination: %lu\n", ctx_->get_nodes().size());
 }
 
 void ch_compiler::syntax_check() {
   // check for un-initialized nodes
-  const auto& undefs = ctx_->undefs_;
+  const auto& undefs = ctx_->get_undefs();
   if (undefs.size()) {
     ctx_->dump_ast(std::cerr, 1);    
     for (auto node : undefs) {
@@ -122,8 +122,8 @@ bool ch_compiler::dead_code_elimination() {
 
 size_t ch_compiler::remove_dead_nodes(const std::unordered_set<lnodeimpl*>& live_nodes) {
   size_t deleted = 0;
-  for (auto iter = ctx_->nodes_.begin(),
-       iterEnd = ctx_->nodes_.end(); iter != iterEnd;) {
+  for (auto iter = ctx_->get_nodes().begin(),
+       iterEnd = ctx_->get_nodes().end(); iter != iterEnd;) {
     lnodeimpl* const node = *iter++;
     if (0 == live_nodes.count(node)) {            
       delete node;

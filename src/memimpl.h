@@ -20,6 +20,14 @@ public:
     return value_.get_size();
   }
 
+  uint32_t get_data_width() const {
+    return data_width_;
+  }
+
+  uint32_t get_addr_width() {
+    return addr_width_;
+  }
+
   void load(const std::string& file);
   void load(const std::vector<uint8_t>& data);
   
@@ -31,7 +39,6 @@ public:
   
   const bitvector& eval(ch_tick t) override;  
   void print(std::ostream& out, uint32_t level) const override;
-  void print_vl(std::ostream& out) const override;
 
 protected:
 
@@ -70,7 +77,6 @@ public:
   void tick_next(ch_tick t);
   
   const bitvector& eval(ch_tick t) override;
-  void print_vl(std::ostream& out) const override;
 
 protected:
     

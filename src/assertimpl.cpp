@@ -26,10 +26,6 @@ const bitvector& assertimpl::eval(ch_tick t) {
   return value_;
 }
 
-void assertimpl::print_vl(std::ostream& out) const {
-  CH_UNUSED(out);
-}
-
 void cash::internal::createAssertNode(const lnode& pred, const std::string& msg) {
   new assertimpl(pred, msg);
 }

@@ -1,9 +1,12 @@
 #pragma once
 
-#include "context.h"
+#include "common.h"
 
 namespace cash {
 namespace internal {
+
+class context;
+class snodeimpl;
 
 class deviceimpl : public refcounted {
 public:
@@ -21,17 +24,11 @@ public:
     return ctx_;
   }
 
-  snodeimpl* get_tap(const std::string& name, uint32_t size) const {
-    return ctx_->get_tap(name, size);
-  }
+  snodeimpl* get_tap(const std::string& name, uint32_t size) const;
 
-  void to_verilog(const std::string& module_name, std::ostream& out) {
-    ctx_->to_verilog(module_name, out);
-  }
+  void to_verilog(const std::string& module_name, std::ostream& out);
 
-  void dump_stats(std::ostream& out) {
-    ctx_->dump_stats(out);
-  }
+  void dump_stats(std::ostream& out);
 
 private:
   context* ctx_;

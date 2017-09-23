@@ -3,6 +3,7 @@
 #include "context.h"
 #include "compile.h"
 #include "ioimpl.h"
+#include "verilogwriter.h"
 
 using namespace cash::internal;
 
@@ -25,6 +26,19 @@ void deviceimpl::end_context() {
 void deviceimpl::compile() {
   ch_compiler compiler(ctx_);
   compiler.run();
+}
+
+snodeimpl* deviceimpl::get_tap(const std::string& name, uint32_t size) const {
+  return ctx_->get_tap(name, size);
+}
+
+void deviceimpl::to_verilog(const std::string& module_name, std::ostream& out) {
+  verilogwriter writer(out);
+  writer.print(ctx_, module_name);
+}
+
+void deviceimpl::dump_stats(std::ostream& out) {
+  ctx_->dump_stats(out);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

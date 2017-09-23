@@ -21,6 +21,8 @@ src/tracerimpl.h
 src/vcdtracer.h
 src/vcdtracerimpl.cpp
 src/vcdtracerimpl.h
+src/verilogwriter.cpp
+src/verilogwriter.h
 test/common.cpp
 env.sh
 examples/adder.cpp

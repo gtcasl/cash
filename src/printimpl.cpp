@@ -116,13 +116,7 @@ const bitvector& printimpl::eval(ch_tick t) {
   return value_;
 }
 
-void printimpl::print_vl(std::ostream& out) const {
-  CH_UNUSED(out);
-  CH_TODO();
-}
-
 ///////////////////////////////////////////////////////////////////////////////
-
 
 static int getFormatMaxIndex(const std::string& format) {
   int max_index = -1;

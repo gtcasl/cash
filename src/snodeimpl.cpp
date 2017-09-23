@@ -517,6 +517,6 @@ void snode::write_data(uint32_t dst_offset,
   }
 }
 
-std::ostream& cash::internal::operator<<(std::ostream& os, const snode& node) {
-  return os << node.get_value();
+std::ostream& cash::internal::operator<<(std::ostream& out, const snode& node) {
+  return out << node.get_value();
 }

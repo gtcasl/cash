@@ -10,8 +10,6 @@ public:
   assertimpl(const lnode& pred, const std::string& msg);
   
   const bitvector& eval(ch_tick t) override;
-  
-  void print_vl(std::ostream& out) const override;
 
 private:
   std::string msg_;

@@ -120,10 +120,6 @@ void memimpl::print(std::ostream& out, uint32_t level) const {
     out << ")";
   }
 }
-void memimpl::print_vl(std::ostream& out) const {
-  CH_UNUSED(out);
-  CH_TODO();
-}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -187,10 +183,6 @@ const bitvector& memportimpl::eval(ch_tick t) {
   return value_;
 }
 
-void memportimpl::print_vl(std::ostream& out) const {
-  CH_UNUSED(out);
-  CH_TODO();
-}
 ///////////////////////////////////////////////////////////////////////////////
 
 memory::memory(uint32_t data_width, uint32_t addr_width, bool writeEnable) {

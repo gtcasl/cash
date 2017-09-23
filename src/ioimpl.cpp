@@ -27,10 +27,6 @@ const bitvector& inputimpl::eval(ch_tick t) {
   return value_;
 }
 
-void inputimpl::print_vl(std::ostream& out) const {
-  CH_UNUSED(out);
-}
-
 void inputimpl::print(std::ostream& out, uint32_t level) const {
   out << "#" << id_ << " <- " << this->get_name() << value_.get_size() << "("; 
   if (!bus_.is_empty()) {
@@ -61,10 +57,6 @@ const bitvector& outputimpl::eval(ch_tick t) {
   return value_;
 }
 
-void outputimpl::print_vl(std::ostream& out) const {
-  CH_UNUSED(out);
-}
-
 void outputimpl::print(std::ostream& out, uint32_t level) const {
   out << "#" << id_ << " <- " << this->get_name() << value_.get_size();
   out << "(" << "#" << srcs_[0].get_id() << ")";
@@ -87,8 +79,4 @@ void tapimpl::print(std::ostream& out, uint32_t level) const {
   if (level == 2) {
     out << " = " << value_;
   }
-}
-
-void tapimpl::print_vl(std::ostream& out) const {
-  CH_UNUSED(out);
 }

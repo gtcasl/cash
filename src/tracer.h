@@ -31,13 +31,6 @@ protected:
   void add_trace(const std::string& name, const snode& value);
 };
 
-void register_tap(const std::string& name, const lnode& node);
-
-template <unsigned N>
-void ch_tap(const std::string& name, const ch_bitbase<N>& value) {
-  register_tap(name, get_lnode(value));
-}
-
 }
 }
 

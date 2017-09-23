@@ -17,11 +17,6 @@ const bitvector& tickimpl::eval(ch_tick t) {
   return value_;
 }
 
-void tickimpl::print_vl(std::ostream& out) const {
-  CH_UNUSED(out);
-  CH_TODO();
-}
-
 ///////////////////////////////////////////////////////////////////////////////
 
 const ch_bit<64> cash::internal::ch_getTick() {

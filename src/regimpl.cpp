@@ -5,16 +5,73 @@
 
 using namespace cash::internal;
 
-regimpl::regimpl(const lnode& next)
-  : lnodeimpl(op_reg, next.get_ctx(), next.get_size()) {
-  context* ctx = next.get_ctx();
-  lnode clk(ctx->get_clk());
-
-  cd_ = ctx->create_cdomain({clock_event(clk, EDGE_POS)});
+regimpl::regimpl(cdomain* cd,
+                 const lnode& next,
+                 const lnode& init,
+                 const lnode& reset)
+  : lnodeimpl(op_reg, next.get_ctx(), next.get_size())
+  , cd_(cd)
+  , next_id_(-1)
+  , init_id_(-1)
+  , reset_id_(-1)
+  , enable_id_(-1) {
   cd_->add_use(this);
 
+  next_id_ = srcs_.size();
   srcs_.emplace_back(next);
-  srcs_.emplace_back(clk);
+
+  init_id_ = srcs_.size();
+  srcs_.emplace_back(init);
+
+  reset_id_ = srcs_.size();
+  srcs_.emplace_back(reset);
+
+  this->get_signals(cd);
+}
+
+regimpl::regimpl(cdomain* cd,
+                 const lnode& next,
+                 const lnode& init,
+                 const lnode& reset,
+                 const lnode& enable)
+  : lnodeimpl(op_reg, next.get_ctx(), next.get_size())
+  , cd_(cd)
+  , next_id_(-1)
+  , init_id_(-1)
+  , reset_id_(-1)
+  , enable_id_(-1) {
+  cd_->add_use(this);
+
+  next_id_ = srcs_.size();
+  srcs_.emplace_back(next);
+
+  init_id_ = srcs_.size();
+  srcs_.emplace_back(init);
+
+  reset_id_ = srcs_.size();
+  srcs_.emplace_back(reset);
+
+  enable_id_ = srcs_.size();
+  srcs_.emplace_back(enable);
+
+  this->get_signals(cd);
+}
+
+void regimpl::get_signals(cdomain* cd) {
+  auto& sensitivity_list = cd->get_sensitivity_list();
+  for (auto& e : sensitivity_list) {
+    const auto& signal = e.get_signal();
+    bool already_added = false;
+    for (auto& src : srcs_) {
+      if (src.get_id() == signal.get_id()) {
+        already_added = true;
+        break;
+      }
+    }
+    if (!already_added) {
+      srcs_.emplace_back(signal);
+    }
+  }
 }
 
 regimpl::~regimpl() {
@@ -27,68 +84,24 @@ void regimpl::tick(ch_tick t) {
 }
 
 void regimpl::tick_next(ch_tick t) {
-  q_next_ = srcs_[0].eval(t);
+  if (reset_id_ != -1 && srcs_[reset_id_].eval(t)[0]) {
+    q_next_ = srcs_[init_id_].eval(t);
+    if (cd_->is_asynchronous(srcs_[reset_id_]))
+      value_ = q_next_;
+  } else if (enable_id_ != -1) {
+    if (srcs_[enable_id_].eval(t)[0]) {
+      q_next_ = srcs_[next_id_].eval(t);
+      if (cd_->is_asynchronous(srcs_[enable_id_]))
+        value_ = q_next_;
+    }
+  } else {
+    q_next_ = srcs_[next_id_].eval(t);
+  }
 }
 
 const bitvector& regimpl::eval(ch_tick t) {
   CH_UNUSED(t);
   return value_; 
-}
-
-void regimpl::print_vl(std::ostream& out) const {
-  CH_UNUSED(out);
-  CH_TODO();
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-latchimpl::latchimpl(const lnode& next,
-                     const lnode& init,
-                     const lnode& enable,
-                     const lnode& reset)
-  : lnodeimpl(op_latch, next.get_ctx(), next.get_size()) {
-  assert(next.get_size() == init.get_size());
-  assert(enable.get_size() == 1);
-  assert(reset.get_size() == 1);
-  context* ctx = next.get_ctx();
-
-  cd_ = ctx->create_cdomain({
-     clock_event(enable, EDGE_ANY),
-     clock_event(next, EDGE_ANY),
-     clock_event(reset, EDGE_ANY),
-     clock_event(init, EDGE_ANY)});
-  cd_->add_use(this);
-
-  srcs_.emplace_back(next);
-  srcs_.emplace_back(init);
-  srcs_.emplace_back(enable);
-  srcs_.emplace_back(reset);  
-}
-
-latchimpl::~latchimpl() {
-  cd_->remove_use(this);
-}
-
-void latchimpl::tick(ch_tick t) { 
-  CH_UNUSED(t);
-}
-
-void latchimpl::tick_next(ch_tick t) {
-  if (srcs_[3].eval(t)[0]) {
-    value_ = srcs_[1].eval(t);
-  } else if (srcs_[2].eval(t)[0]) {
-    value_ = srcs_[0].eval(t);
-  }
-}
-
-const bitvector& latchimpl::eval(ch_tick t) {
-  CH_UNUSED(t);
-  return value_; 
-}
-
-void latchimpl::print_vl(std::ostream& out) const {
-  CH_UNUSED(out);
-  CH_TODO();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -118,9 +131,9 @@ void cash::internal::ch_popReset() {
 }
 
 lnodeimpl* cash::internal::createRegNode(const lnode& next, const lnode& init) {
-  lnode reset(ctx_curr()->get_reset());
-  lnode _next(createSelectNode(reset, init, next));
-  return new regimpl(_next);
+  auto ctx = next.get_ctx();
+  auto cd = ctx->create_cdomain({clock_event(ctx->get_clk(), EDGE_POS)});
+  return new regimpl(cd, next, init, ctx_curr()->get_reset());
 }
 
 lnodeimpl* cash::internal::createLatchNode(
@@ -128,7 +141,12 @@ lnodeimpl* cash::internal::createLatchNode(
     const lnode& init,
     const lnode& enable,
     const lnode& reset) {
-  return new latchimpl(next, init, enable, reset);
+  auto cd = next.get_ctx()->create_cdomain({
+    clock_event(enable, EDGE_ANY),
+    clock_event(next, EDGE_ANY),
+    clock_event(reset, EDGE_ANY),
+    clock_event(init, EDGE_ANY)});
+  return new regimpl(cd, next, init, reset, enable);
 }
 
 lnodeimpl* cash::internal::createReadyNode(const lnode& node) {

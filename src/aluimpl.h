@@ -15,8 +15,7 @@ public:
     return alu_op_;
   }  
 
-  const bitvector& eval(ch_tick t) override;  
-  void print_vl(std::ostream& out) const override;
+  const bitvector& eval(ch_tick t) override;
   
 protected:
   ch_alu_op alu_op_;

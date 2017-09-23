@@ -18,7 +18,7 @@ void tracerimpl::ensureInitialize() {
 
   // register context taps
   for (auto ctx : contexts_) {
-    for (tapimpl* tap : ctx->taps_) {
+    for (tapimpl* tap : ctx->get_taps()){
       this->add_trace(tap->get_tapName(), tap->get_bus());
     #ifndef NDEBUG
       int dump_cfg_level = platform::self().get_dump_cfg();
@@ -73,10 +73,4 @@ ch_tracer::~ch_tracer() {}
 
 void ch_tracer::add_trace(const std::string& name, const snode& value) {
   dynamic_cast<tracerimpl*>(impl_)->add_trace(name, value);
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-void cash::internal::register_tap(const std::string& name, const lnode& node) {
-  node.get_ctx()->register_tap(name, node);
 }

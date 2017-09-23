@@ -32,6 +32,48 @@ public:
 
   //--
 
+  const auto& get_nodes() const {
+    return nodes_;
+  }
+
+  const auto& get_undefs() const {
+    return undefs_;
+  }
+
+  const auto& get_proxies() const {
+    return proxies_;
+  }
+
+  const auto& get_inputs() const {
+    return inputs_;
+  }
+
+  const auto& get_outputs() const {
+    return outputs_;
+  }
+
+  const auto& get_taps() const {
+    return taps_;
+  }
+
+  const auto& get_gtaps() const {
+    return gtaps_;
+  }
+
+  const auto& get_literals() const {
+    return literals_;
+  }
+
+  inputimpl* get_default_clk() const {
+    return clk_;
+  }
+
+  inputimpl* get_default_reset() const {
+    return reset_;
+  }
+
+  //--
+
   void push_clk(const lnode& clk);
   void pop_clk();
   lnodeimpl* get_clk();
@@ -83,8 +125,6 @@ public:
   void eval(ch_tick t);
   
   //--
-  
-  void to_verilog(const std::string& module_name, std::ostream& out);
   
   void dump_ast(std::ostream& out, uint32_t level);
   
@@ -184,10 +224,6 @@ protected:
   tickimpl*   tick_;
   
   std::unordered_map<std::string, unsigned> dup_taps_;
-  
-  friend class ch_compiler;
-  friend class simulatorimpl;
-  friend class tracerimpl;
 };
 
 context* ctx_create();

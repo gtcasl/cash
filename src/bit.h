@@ -5,6 +5,8 @@
 namespace cash {
 namespace internal {
 
+void register_tap(const std::string& name, const lnode& node);
+
 void createPrintNode(const std::string& format,
                      const std::initializer_list<lnode>& args);
 
@@ -346,7 +348,12 @@ const auto ch_shuffle(const ch_bitbase<N>& in,
   return ret;
 }
 
-// print functions
+// utils functions
+
+template <unsigned N>
+void ch_tap(const std::string& name, const ch_bitbase<N>& value) {
+  register_tap(name, get_lnode(value));
+}
 
 const ch_bit<64> ch_getTick();
 
@@ -359,8 +366,6 @@ template <typename...Args,
 void ch_print(const std::string& format, const Args& ...args) {
   createPrintNode(format, {get_lnode(args)...});
 }
-
-// utils functions
 
 template <typename... Ts>
 struct return_type {

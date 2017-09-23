@@ -37,8 +37,6 @@ public:
   
   bool eval(ch_tick t);
   
-  void print_vl(std::ostream& out) const;
-  
 protected:
 
   lnode    signal_;
@@ -51,10 +49,9 @@ protected:
 class cdomain : public refcounted {
 public:
   cdomain(context* ctx, const std::vector<clock_event>& sensitivity_list);
-  
-  void add_use(tickable* reg);
-  void remove_use(tickable* reg);
-  
+
+  bool is_asynchronous(const lnode& signal) const;
+
   const std::vector<clock_event>& get_sensitivity_list() const {
     return sensitivity_list_;
   }
@@ -64,12 +61,14 @@ public:
   }
 
   bool operator==(const std::vector<clock_event>& events) const;
+
+  void add_use(tickable* reg);
+
+  void remove_use(tickable* reg);
   
   void tick(ch_tick t);
 
   void tick_next(ch_tick t);
-  
-  void print_vl(std::ostream& out) const;
 
 protected:
   

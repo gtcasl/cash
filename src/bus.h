@@ -116,8 +116,8 @@ snode get_snode(const T& rhs) {
 }
 
 template <unsigned N>
-std::ostream& operator<<(std::ostream& os, const ch_busbase<N>& bus) {
-  return os << get_snode(bus);
+std::ostream& operator<<(std::ostream& out, const ch_busbase<N>& bus) {
+  return out << get_snode(bus);
 }
 
 template <typename A, typename B,
