@@ -42,8 +42,7 @@ public:
              size_t dst_offset,
              const nodelist<lnode>& in,
              size_t src_offset,
-             size_t length);
-  
+             size_t length);  
 private:
 
   void load(const std::vector<uint8_t>& data);

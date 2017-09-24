@@ -169,11 +169,6 @@ namespace core {
   //
 
   using cash::internal::ch_mux;
-  using cash::internal::ch_demux;
-  using cash::internal::ch_log2;
-  using cash::internal::ch_lsb;
-  using cash::internal::ch_enc;
-  using cash::internal::ch_dec;
   using cash::internal::ch_min;
   using cash::internal::ch_max;
 

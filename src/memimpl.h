@@ -28,6 +28,18 @@ public:
     return addr_width_;
   }
 
+  bool is_initialized() const {
+    return initialized_;
+  }
+
+  const std::vector<lnode>& get_ports() const {
+    return ports_;
+  }
+
+  cdomain* get_cd() const {
+    return cd_;
+  }
+
   void load(const std::string& file);
   void load(const std::vector<uint8_t>& data);
   
@@ -51,6 +63,7 @@ protected:
   uint32_t addr_width_;
   uint32_t wr_ports_offset_;
   cdomain* cd_;
+  bool initialized_;
   
   friend class memportimpl;
 };
@@ -59,8 +72,16 @@ class memportimpl : public ioimpl {
 public:  
   memportimpl(memimpl* mem, const lnode& addr, bool writable);
 
+  const lnode& get_mem() const {
+    return srcs_[mem_id_];
+  }
+
   const lnode& get_addr() const {
     return srcs_[addr_id_];
+  }
+
+  const lnode& get_wdata() const {
+    return srcs_[wdata_id_];
   }
 
   bool is_writable() const {
@@ -83,6 +104,7 @@ protected:
   bitvector q_next_;
   uint32_t  a_next_;
   
+  int mem_id_;
   int addr_id_;
   int wdata_id_;
   bool writable_;

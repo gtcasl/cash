@@ -348,6 +348,26 @@ const auto ch_shuffle(const ch_bitbase<N>& in,
   return ret;
 }
 
+// rotate functions
+
+template <typename A, typename B,
+          CH_REQUIRES(deduce_first_type<A, B>::bitcount != 0),
+          CH_REQUIRES(is_bit_convertible<A, deduce_first_type<A, B>::bitcount>::value),
+          CH_REQUIRES(is_bit_convertible<B, deduce_first_type<B, A>::bitcount>::value)>
+const auto ch_rotl(const A& a, const B& b) {
+  //return OpShift<alu_op_rotl, deduce_first_type<A, B>::bitcount, deduce_first_type<B, A>::bitcount>(a, b);
+  CH_TODO();
+}
+
+template <typename A, typename B,
+          CH_REQUIRES(deduce_first_type<A, B>::bitcount != 0),
+          CH_REQUIRES(is_bit_convertible<A, deduce_first_type<A, B>::bitcount>::value),
+          CH_REQUIRES(is_bit_convertible<B, deduce_first_type<B, A>::bitcount>::value)>
+const auto ch_rotr(const A& a, const B& b) {
+  //return OpShift<alu_op_rotr, deduce_first_type<A, B>::bitcount, deduce_first_type<B, A>::bitcount>(a, b);
+  CH_TODO();
+}
+
 // utils functions
 
 template <unsigned N>

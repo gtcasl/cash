@@ -12,7 +12,8 @@ memimpl::memimpl(context* ctx,
   , data_width_(data_width)
   , addr_width_(addr_width)
   , wr_ports_offset_(0)
-  , cd_(nullptr) {  
+  , cd_(nullptr)
+  , initialized_(false) {
   if (write_enable) {
     lnode clk(ctx->get_clk());
     cd_ = ctx->create_cdomain({clock_event(clk, EDGE_POS)});
@@ -31,6 +32,7 @@ memimpl::~memimpl() {
 void memimpl::load(const std::vector<uint8_t>& data) {
   assert(8 * data.size() >= value_.get_size());
   value_.write(0, data.data(), data.size(), 0, value_.get_size());
+  initialized_ = true;
 }
 
 void memimpl::load(const std::string& file) {
@@ -54,6 +56,7 @@ void memimpl::load(const std::string& file) {
   }
 
   in.close();
+  initialized_ = true;
 }
 
 lnode& memimpl::read(const lnode& addr) {
@@ -126,11 +129,15 @@ void memimpl::print(std::ostream& out, uint32_t level) const {
 memportimpl::memportimpl(memimpl* mem, const lnode& addr, bool writable)
   : ioimpl(op_memport, mem->get_ctx(), mem->data_width_)
   , a_next_(0)
-  , addr_id_(1)
+  , mem_id_(-1)
+  , addr_id_(-1)
   , wdata_id_(-1)
   , writable_(writable)
   , tick_(~0ull) {
+  mem_id_ = srcs_.size();
   srcs_.emplace_back(mem);
+
+  addr_id_ = srcs_.size();
   srcs_.emplace_back(addr);
 }
 
@@ -153,7 +160,7 @@ void memportimpl::write(const lnode& data) {
 void memportimpl::tick(ch_tick t) {
   CH_UNUSED(t);
   if (wdata_id_ != -1) {
-    auto mem = dynamic_cast<memimpl*>(srcs_[0].get_impl());
+    auto mem = dynamic_cast<memimpl*>(srcs_[mem_id_].get_impl());
     mem->value_.write(a_next_ * mem->data_width_,
                       q_next_.get_words(),
                       CH_CEILDIV(q_next_.get_size(), 8),
@@ -172,7 +179,7 @@ void memportimpl::tick_next(ch_tick t) {
 const bitvector& memportimpl::eval(ch_tick t) {  
   if (tick_ != t) {
     tick_ = t;
-    auto mem = dynamic_cast<memimpl*>(srcs_[0].get_impl());
+    auto mem = dynamic_cast<memimpl*>(srcs_[mem_id_].get_impl());
     uint32_t addr = srcs_[addr_id_].eval(t).get_word(0);    
     mem->value_.read(0,
                      value_.get_words(),
@@ -186,6 +193,7 @@ const bitvector& memportimpl::eval(ch_tick t) {
 ///////////////////////////////////////////////////////////////////////////////
 
 memory::memory(uint32_t data_width, uint32_t addr_width, bool writeEnable) {
+  CH_CHECK(!ctx_curr()->conditional_enabled(), "memory objects cannot be nested inside a conditional block");
   impl_ = new memimpl(ctx_curr(), data_width, addr_width, writeEnable);
 }
 

@@ -3,58 +3,57 @@
 #include "bit.h"
 
 enum alu_flags {
-  alu_unary  = 0 << 8,
-  alu_binary = 1 << 8,
-  alu_tenary = 2 << 8,
-  alu_nary   = 3 << 8,
+  alu_unary   = 0 << 8,
+  alu_binary  = 1 << 8,
+  alu_tenary  = 2 << 8,
+  alu_nary    = 3 << 8,
 
-  alu_bitwise= 1 << 10,
-  alu_compare= 2 << 10,
-  alu_shift  = 3 << 10,
-  alu_arithm = 4 << 10,
-  alu_reduce = 5 << 10,
-  alu_misc   = 6 << 11,
+  alu_bitwise = 1 << 10,
+  alu_compare = 2 << 10,
+  alu_shift   = 3 << 10,
+  alu_arithm  = 4 << 10,
+  alu_reduce  = 5 << 10,
+  alu_misc    = 6 << 10,
 
-  alu_int32  = 1 << 13,
-  alu_fixed  = 2 << 13,
-  alu_float  = 3 << 13,
-  alu_double = 4 << 13,
+  alu_integer = 1 << 13,
+  alu_fixed   = 2 << 13,
+  alu_float   = 3 << 13,
+  alu_double  = 4 << 13,
 };
 
 #define CH_ALUOP_TYPE(e, v) alu_op_##e = v,
 #define CH_ALUOP_ENUM(m) \
-  m(inv, 0 | alu_unary | alu_bitwise | alu_int32) \
-  m(and, 1 | alu_binary | alu_bitwise | alu_int32) \
-  m(or, 2 | alu_binary | alu_bitwise | alu_int32) \
-  m(xor, 3 | alu_binary | alu_bitwise | alu_int32) \
-  m(nand, 4 | alu_binary | alu_bitwise | alu_int32) \
-  m(nor, 5 | alu_binary | alu_bitwise | alu_int32) \
-  m(xnor, 6 | alu_binary | alu_bitwise | alu_int32) \
-  m(andr, 7 | alu_unary | alu_reduce | alu_int32) \
-  m(orr, 8 | alu_unary | alu_reduce | alu_int32) \
-  m(xorr, 9 | alu_unary | alu_reduce | alu_int32) \
-  m(shl, 10 | alu_binary | alu_shift | alu_int32) \
-  m(shr, 11 | alu_binary | alu_shift | alu_int32) \
-  m(rotl, 12 | alu_binary | alu_shift | alu_int32) \
-  m(rotr, 13 | alu_binary | alu_shift | alu_int32) \
-  m(add, 14 | alu_binary | alu_arithm | alu_int32) \
-  m(sub, 15 | alu_binary | alu_arithm | alu_int32) \
-  m(neg, 16 | alu_binary | alu_arithm | alu_int32) \
-  m(mult, 17 | alu_binary | alu_arithm | alu_int32) \
-  m(div, 18 | alu_binary | alu_arithm | alu_int32) \
-  m(mod, 19 | alu_binary | alu_arithm | alu_int32) \
-  m(eq, 20 | alu_binary | alu_compare | alu_int32) \
-  m(ne, 21 | alu_binary | alu_compare | alu_int32) \
-  m(lt, 22 | alu_binary | alu_compare | alu_int32) \
-  m(gt, 23 | alu_binary | alu_compare | alu_int32) \
-  m(le, 24 | alu_binary | alu_compare | alu_int32) \
-  m(ge, 25 | alu_binary | alu_compare | alu_int32) \
-  m(mux, 26 | alu_binary | alu_misc | alu_int32) \
-  m(demux, 27 | alu_binary | alu_misc | alu_int32) \
-  m(fadd, 28 | alu_binary | alu_arithm | alu_float) \
-  m(fsub, 29 | alu_binary | alu_arithm | alu_float) \
-  m(fmult, 30 | alu_binary | alu_arithm | alu_float) \
-  m(fdiv, 31 | alu_binary | alu_arithm | alu_float)
+  m(inv, 0 | alu_unary | alu_bitwise | alu_integer) \
+  m(and, 1 | alu_binary | alu_bitwise | alu_integer) \
+  m(or, 2 | alu_binary | alu_bitwise | alu_integer) \
+  m(xor, 3 | alu_binary | alu_bitwise | alu_integer) \
+  m(nand, 4 | alu_binary | alu_bitwise | alu_integer) \
+  m(nor, 5 | alu_binary | alu_bitwise | alu_integer) \
+  m(xnor, 6 | alu_binary | alu_bitwise | alu_integer) \
+  m(andr, 7 | alu_unary | alu_reduce | alu_integer) \
+  m(orr, 8 | alu_unary | alu_reduce | alu_integer) \
+  m(xorr, 9 | alu_unary | alu_reduce | alu_integer) \
+  m(nandr, 10 | alu_unary | alu_reduce | alu_integer) \
+  m(norr, 11 | alu_unary | alu_reduce | alu_integer) \
+  m(xnorr, 12 | alu_unary | alu_reduce | alu_integer) \
+  m(shl, 13 | alu_binary | alu_shift | alu_integer) \
+  m(shr, 14 | alu_binary | alu_shift | alu_integer) \
+  m(add, 15 | alu_binary | alu_arithm | alu_integer) \
+  m(sub, 16 | alu_binary | alu_arithm | alu_integer) \
+  m(neg, 17 | alu_unary | alu_arithm | alu_integer) \
+  m(mult, 18 | alu_binary | alu_arithm | alu_integer) \
+  m(div, 19 | alu_binary | alu_arithm | alu_integer) \
+  m(mod, 20 | alu_binary | alu_arithm | alu_integer) \
+  m(eq, 21 | alu_binary | alu_compare | alu_integer) \
+  m(ne, 22 | alu_binary | alu_compare | alu_integer) \
+  m(lt, 23 | alu_binary | alu_compare | alu_integer) \
+  m(gt, 24 | alu_binary | alu_compare | alu_integer) \
+  m(le, 25 | alu_binary | alu_compare | alu_integer) \
+  m(ge, 26 | alu_binary | alu_compare | alu_integer) \
+  m(fadd, 27 | alu_binary | alu_arithm | alu_float) \
+  m(fsub, 28 | alu_binary | alu_arithm | alu_float) \
+  m(fmult, 29 | alu_binary | alu_arithm | alu_float) \
+  m(fdiv, 30 | alu_binary | alu_arithm | alu_float)
 
 #define CH_BINOP_GEN(func, op) \
   template <typename A, typename B, \
@@ -96,8 +95,8 @@ enum ch_alu_op {
   CH_ALUOP_ENUM(CH_ALUOP_TYPE)
 };
 
-lnodeimpl* createAluNode(ch_alu_op op, const lnode& a, const lnode& b);
-lnodeimpl* createAluNode(ch_alu_op op, const lnode& a);
+lnodeimpl* createAluNode(ch_alu_op op, const lnode& lhs, const lnode& rhs);
+lnodeimpl* createAluNode(ch_alu_op op, const lnode& in);
 
 // compare operators
 
@@ -228,6 +227,21 @@ const auto ch_xorr(const ch_bitbase<N>& a) {
   return OpReduce<alu_op_xorr>(a);
 }
 
+template <unsigned N>
+const auto ch_nandr(const ch_bitbase<N>& a) {
+  return OpReduce<alu_op_nandr>(a);
+}
+
+template <unsigned N>
+const auto ch_norr(const ch_bitbase<N>& a) {
+  return OpReduce<alu_op_norr>(a);
+}
+
+template <unsigned N>
+const auto ch_xnorr(const ch_bitbase<N>& a) {
+  return OpReduce<alu_op_xnorr>(a);
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 inline const auto operator! (const ch_bitbase<1>& a) {
@@ -310,22 +324,6 @@ const auto ch_slr(const A& a, const B& b) {
   return OpShift<alu_op_shr, deduce_first_type<A, B>::bitcount, deduce_first_type<B, A>::bitcount>(a, b);
 }  
 
-template <typename A, typename B,
-          CH_REQUIRES(deduce_first_type<A, B>::bitcount != 0),
-          CH_REQUIRES(is_bit_convertible<A, deduce_first_type<A, B>::bitcount>::value),
-          CH_REQUIRES(is_bit_convertible<B, deduce_first_type<B, A>::bitcount>::value)>
-const auto ch_rotl(const A& a, const B& b) {
-  return OpShift<alu_op_rotl, deduce_first_type<A, B>::bitcount, deduce_first_type<B, A>::bitcount>(a, b);
-}
-
-template <typename A, typename B,
-          CH_REQUIRES(deduce_first_type<A, B>::bitcount != 0),
-          CH_REQUIRES(is_bit_convertible<A, deduce_first_type<A, B>::bitcount>::value),
-          CH_REQUIRES(is_bit_convertible<B, deduce_first_type<B, A>::bitcount>::value)>
-const auto ch_rotr(const A& a, const B& b) {
-  return OpShift<alu_op_rotr, deduce_first_type<A, B>::bitcount, deduce_first_type<B, A>::bitcount>(a, b);
-}
-
 ///////////////////////////////////////////////////////////////////////////////
 
 template <unsigned N>
@@ -379,37 +377,8 @@ template <typename I, typename S,
           CH_REQUIRES(is_bit_convertible<I>::value),
           CH_REQUIRES(is_bit_convertible<S>::value)>
 const auto ch_mux(const I& in, const S& sel) {
-  return make_bit<(I::bitcount >> S::bitcount)>(
-        createAluNode(alu_op_mux, get_lnode(in), get_lnode(sel)));
-}
-
-template <typename I, typename S,
-          CH_REQUIRES(is_bit_convertible<I>::value),
-          CH_REQUIRES(is_bit_convertible<S>::value)>
-const auto ch_demux(const I& in, const S& sel) {
-  return make_bit<(I::bitcount << S::bitcount)>(
-        createAluNode(alu_op_mux, get_lnode(in), get_lnode(sel)));
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-template <unsigned N>
-const auto ch_log2(const ch_bitbase<N>& a) {
-  CH_TODO();
-}
-
-template <unsigned N>
-const auto ch_lsb(const ch_bitbase<N>& a) {
-  CH_TODO();
-}
-
-template <unsigned N>
-const auto ch_enc(const ch_bitbase<N>& a) {
-  CH_TODO();
-}
-
-template <unsigned N>
-const auto ch_dec(const ch_bitbase<N>& a) {
+  //return make_bit<(I::bitcount >> S::bitcount)>(
+  //      createAluNode(alu_op_mux, get_lnode(in), get_lnode(sel)));
   CH_TODO();
 }
 

@@ -47,24 +47,48 @@ TEST_CASE("arithmetic", "[arithmetic]") {
       return (ch_andr(a) == 0_b);
     });
     TEST([]()->ch_bit1 {
+      ch_bit4 a(1010_b);
+      return (ch_nandr(a) == 0_b);
+    });
+    TEST([]()->ch_bit1 {
       ch_bit4 a(1111_b);
       return (ch_andr(a) == 1_b);
     });
     TEST([]()->ch_bit1 {
+      ch_bit4 a(1111_b);
+      return (ch_nandr(a) == 0_b);
+    });
+    TEST([]()->ch_bit1 {
       ch_bit4 a(1100_b);
       return (ch_orr(a) == 1_b);
     });
     TEST([]()->ch_bit1 {
       ch_bit4 a(1100_b);
-      return (ch_orr(a) == 1_b);
+      return (ch_norr(a) == 1_b);
+    });
+    TEST([]()->ch_bit1 {
+      ch_bit4 a(0000_b);
+      return (ch_orr(a) == 0_b);
+    });
+    TEST([]()->ch_bit1 {
+      ch_bit4 a(0000_b);
+      return (ch_norr(a) == 1_b);
     });
     TEST([]()->ch_bit1 {
       ch_bit4 a(1100_b);
       return (ch_xorr(a) == 0_b);
     });
     TEST([]()->ch_bit1 {
+      ch_bit4 a(1100_b);
+      return (ch_xnorr(a) == 0_b);
+    });
+    TEST([]()->ch_bit1 {
       ch_bit4 a(1000_b);
       return (ch_xorr(a) == 1_b);
+    });
+    TEST([]()->ch_bit1 {
+      ch_bit4 a(1000_b);
+      return (ch_xnorr(a) == 0_b);
     });
   }
   
@@ -217,6 +241,11 @@ TEST_CASE("arithmetic", "[arithmetic]") {
       ch_bit4 a(0x1), b(0x2);
       ch_bit4 c = a - b;
       return (c == 0xf);
+    });
+    TEST([]()->ch_bit1 {
+      ch_bit4 a(1);
+      ch_bit4 b = -a;
+      return (b == 0xf);
     });
   }
 }
