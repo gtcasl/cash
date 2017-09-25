@@ -101,7 +101,7 @@ struct are_bus_convertible<T0, Ts...> {
 };
 
 template <typename T, unsigned N = T::bitcount>
-using bus_cast = std::conditional<
+using busbase_cast = std::conditional<
   std::is_base_of<ch_busbase<N>, T>::value,
   const ch_busbase<N>&,
   ch_bus<N>>;
@@ -110,7 +110,7 @@ template <typename T, unsigned N = T::bitcount,
           CH_REQUIRES(is_bus_convertible<T, N>::value)>
 snode get_snode(const T& rhs) {
   nodelist<snode> data(N);
-  typename bus_cast<T, N>::type x(rhs);
+  typename busbase_cast<T, N>::type x(rhs);
   read_data(x, data, 0, N);
   return snode(data);
 }

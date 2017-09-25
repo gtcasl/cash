@@ -37,6 +37,19 @@ using are_all_cast_convertible = conjunction<is_cast_convertible<Froms, To>::val
 
 ///////////////////////////////////////////////////////////////////////////////
 
+template<typename A, typename B = A, typename = void>
+struct is_equality_comparable : std::false_type {};
+
+template<typename A, typename B>
+struct is_equality_comparable<A, B,
+    typename std::enable_if<
+        true,
+        decltype(std::declval<A&>() == std::declval<B&>(), (void)0)
+        >::type
+    > : std::true_type {};
+
+///////////////////////////////////////////////////////////////////////////////
+
 template <typename T>
 struct identity {
   using type = T;
@@ -267,13 +280,13 @@ constexpr bool ispow2(unsigned value) {
   return value && !(value & (value - 1)); 
 }
 
-// return log2
+// return ilog2
 constexpr unsigned ilog2(unsigned x) {
   return (x <= 1) ? 0 : (ilog2(x >> 1) + 1);
 }
 
 // return ceil of log2
-constexpr unsigned ilog2ceil(unsigned x) {
+constexpr unsigned log2ceil(unsigned x) {
   return ispow2(x) ? ilog2(x) : (ilog2(x) + 1);
 }
 

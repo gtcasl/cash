@@ -36,24 +36,25 @@ enum alu_flags {
   m(nandr, 10 | alu_unary | alu_reduce | alu_integer) \
   m(norr, 11 | alu_unary | alu_reduce | alu_integer) \
   m(xnorr, 12 | alu_unary | alu_reduce | alu_integer) \
-  m(shl, 13 | alu_binary | alu_shift | alu_integer) \
-  m(shr, 14 | alu_binary | alu_shift | alu_integer) \
-  m(add, 15 | alu_binary | alu_arithm | alu_integer) \
-  m(sub, 16 | alu_binary | alu_arithm | alu_integer) \
-  m(neg, 17 | alu_unary | alu_arithm | alu_integer) \
-  m(mult, 18 | alu_binary | alu_arithm | alu_integer) \
-  m(div, 19 | alu_binary | alu_arithm | alu_integer) \
-  m(mod, 20 | alu_binary | alu_arithm | alu_integer) \
-  m(eq, 21 | alu_binary | alu_compare | alu_integer) \
-  m(ne, 22 | alu_binary | alu_compare | alu_integer) \
-  m(lt, 23 | alu_binary | alu_compare | alu_integer) \
-  m(gt, 24 | alu_binary | alu_compare | alu_integer) \
-  m(le, 25 | alu_binary | alu_compare | alu_integer) \
-  m(ge, 26 | alu_binary | alu_compare | alu_integer) \
-  m(fadd, 27 | alu_binary | alu_arithm | alu_float) \
-  m(fsub, 28 | alu_binary | alu_arithm | alu_float) \
-  m(fmult, 29 | alu_binary | alu_arithm | alu_float) \
-  m(fdiv, 30 | alu_binary | alu_arithm | alu_float)
+  m(sll, 13 | alu_binary | alu_shift | alu_integer) \
+  m(srl, 14 | alu_binary | alu_shift | alu_integer) \
+  m(sra, 15 | alu_binary | alu_shift | alu_integer) \
+  m(add, 16 | alu_binary | alu_arithm | alu_integer) \
+  m(sub, 17 | alu_binary | alu_arithm | alu_integer) \
+  m(neg, 18 | alu_unary | alu_arithm | alu_integer) \
+  m(mult, 19 | alu_binary | alu_arithm | alu_integer) \
+  m(div, 20 | alu_binary | alu_arithm | alu_integer) \
+  m(mod, 21 | alu_binary | alu_arithm | alu_integer) \
+  m(eq, 22 | alu_binary | alu_compare | alu_integer) \
+  m(ne, 23 | alu_binary | alu_compare | alu_integer) \
+  m(lt, 24 | alu_binary | alu_compare | alu_integer) \
+  m(gt, 25 | alu_binary | alu_compare | alu_integer) \
+  m(le, 26 | alu_binary | alu_compare | alu_integer) \
+  m(ge, 27 | alu_binary | alu_compare | alu_integer) \
+  m(fadd, 28 | alu_binary | alu_arithm | alu_float) \
+  m(fsub, 29 | alu_binary | alu_arithm | alu_float) \
+  m(fmult, 30 | alu_binary | alu_arithm | alu_float) \
+  m(fdiv, 31 | alu_binary | alu_arithm | alu_float)
 
 #define CH_BINOP_GEN(func, op) \
   template <typename A, typename B, \
@@ -126,7 +127,7 @@ CH_BINOP_GEN(ch_mod, operator%)
 // shift operators
 
 CH_SHIFTOP_GEN(ch_sll, operator<<)
-CH_SHIFTOP_GEN(ch_slr, operator>>)
+CH_SHIFTOP_GEN(ch_srl, operator>>)
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -313,16 +314,62 @@ template <typename A, typename B,
           CH_REQUIRES(is_bit_convertible<A, deduce_first_type<A, B>::bitcount>::value),
           CH_REQUIRES(is_bit_convertible<B, deduce_first_type<B, A>::bitcount>::value)>
 const auto ch_sll(const A& a, const B& b) {
-  return OpShift<alu_op_shl, deduce_first_type<A, B>::bitcount, deduce_first_type<B, A>::bitcount>(a, b);
+  return OpShift<alu_op_sll, deduce_first_type<A, B>::bitcount, deduce_first_type<B, A>::bitcount>(a, b);
 }
 
 template <typename A, typename B,
           CH_REQUIRES(deduce_first_type<A, B>::bitcount != 0),
           CH_REQUIRES(is_bit_convertible<A, deduce_first_type<A, B>::bitcount>::value),
           CH_REQUIRES(is_bit_convertible<B, deduce_first_type<B, A>::bitcount>::value)>
-const auto ch_slr(const A& a, const B& b) {
-  return OpShift<alu_op_shr, deduce_first_type<A, B>::bitcount, deduce_first_type<B, A>::bitcount>(a, b);
+const auto ch_srl(const A& a, const B& b) {
+  return OpShift<alu_op_srl, deduce_first_type<A, B>::bitcount, deduce_first_type<B, A>::bitcount>(a, b);
 }  
+
+template <typename A, typename B,
+          CH_REQUIRES(deduce_first_type<A, B>::bitcount != 0),
+          CH_REQUIRES(is_bit_convertible<A, deduce_first_type<A, B>::bitcount>::value),
+          CH_REQUIRES(is_bit_convertible<B, deduce_first_type<B, A>::bitcount>::value)>
+const auto ch_sra(const A& a, const B& b) {
+  return OpShift<alu_op_sra, deduce_first_type<A, B>::bitcount, deduce_first_type<B, A>::bitcount>(a, b);
+}
+
+template <typename A, typename B,
+          CH_REQUIRES(deduce_first_type<A, B>::bitcount != 0),
+          CH_REQUIRES(is_bit_convertible<A, deduce_first_type<A, B>::bitcount>::value),
+          CH_REQUIRES(is_bit_convertible<B, deduce_first_type<B, A>::bitcount>::value)>
+const auto ch_rotl(const A& a, const B& b) {
+  static const unsigned NA = deduce_first_type<A, B>::bitcount;
+  static const unsigned NB = deduce_first_type<B, A>::bitcount;
+  typename bitbase_cast<B, NB>::type _b(b);
+  ch_bit<NA> ret(a);
+  for (unsigned i = 0, n = std::min(NB, log2ceil(NA)); i < n; ++i) {
+    ch_bit<NA> shifted, in(ret.clone());
+    for (unsigned j = 0, s = (1 << i); j < NA; ++j) {
+      shifted[(j + s) % NA] = in[j];
+    }
+    ret = ch_select(_b[i], shifted, in);
+  }
+  return ret;
+}
+
+template <typename A, typename B,
+          CH_REQUIRES(deduce_first_type<A, B>::bitcount != 0),
+          CH_REQUIRES(is_bit_convertible<A, deduce_first_type<A, B>::bitcount>::value),
+          CH_REQUIRES(is_bit_convertible<B, deduce_first_type<B, A>::bitcount>::value)>
+const auto ch_rotr(const A& a, const B& b) {
+  static const unsigned NA = deduce_first_type<A, B>::bitcount;
+  static const unsigned NB = deduce_first_type<B, A>::bitcount;
+  typename bitbase_cast<B, NB>::type _b(b);
+  ch_bit<NA> ret(a);
+  for (unsigned i = 0, n = std::min(NB, log2ceil(NA)); i < n; ++i) {
+    ch_bit<NA> shifted, in(ret.clone());
+    for (unsigned j = 0, s = (1 << i); j < NA; ++j) {
+      shifted[j] = in[(j + s) % NA];
+    }
+    ret = ch_select(_b[i], shifted, in);
+  }
+  return ret;
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -373,13 +420,16 @@ const auto ch_mod(const A& a, const B& b) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename I, typename S,
-          CH_REQUIRES(is_bit_convertible<I>::value),
-          CH_REQUIRES(is_bit_convertible<S>::value)>
-const auto ch_mux(const I& in, const S& sel) {
-  //return make_bit<(I::bitcount >> S::bitcount)>(
-  //      createAluNode(alu_op_mux, get_lnode(in), get_lnode(sel)));
-  CH_TODO();
+template <unsigned I, unsigned S>
+const auto ch_mux(const ch_bitbase<I>& in, const ch_bitbase<S>& sel) {
+  static const unsigned R = (I >> S);
+  static_assert(I == (R << S), "input size mismatch");
+  auto cs = ch_case(sel, 0, in.template aslice<R>(0));
+  uint32_t last_addr = (1 << S) - 1;
+  for (uint32_t a = 1; a < last_addr; ++a) {
+    cs(a, in.template aslice<R>(a));
+  }
+  return cs(in.template aslice<R>(last_addr));
 }
 
 }

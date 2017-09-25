@@ -31,7 +31,7 @@
     template <typename T, CH_REQUIRES(cash::internal::is_bus_convertible<T, base::bitcount>::value)> \
     explicit name(const T& __rhs__) \
       : CH_FOR_EACH(CH_UNION_COPY_CTOR_APPLY, CH_SEP_COMMA, __VA_ARGS__), \
-      _(static_cast<typename cash::internal::bus_cast<T, base::bitcount>::type>(__rhs__)) {} \
+      _(static_cast<typename cash::internal::busbase_cast<T, base::bitcount>::type>(__rhs__)) {} \
     name& operator=(const name& __rhs__) { \
       this->assign(__rhs__); \
       return *this; \
@@ -69,7 +69,7 @@
     template <typename T, CH_REQUIRES(cash::internal::is_bit_convertible<T, base::bitcount>::value)> \
     explicit name(const T& __rhs__) \
       : CH_FOR_EACH(CH_UNION_COPY_CTOR_APPLY, CH_SEP_COMMA, __VA_ARGS__), \
-      _(static_cast<typename cash::internal::bit_cast<T, base::bitcount>::type>(__rhs__)) {} \
+      _(static_cast<typename cash::internal::bitbase_cast<T, base::bitcount>::type>(__rhs__)) {} \
     assignment_body(name, __VA_ARGS__) \
     const auto clone() const { \
       return value_type(_.clone()); \

@@ -44,7 +44,7 @@ namespace core {
 
   using cash::internal::ispow2;
   using cash::internal::ilog2;
-  using cash::internal::ilog2ceil;
+  using cash::internal::log2ceil;
 
   template <typename T, unsigned N> using ch_vec = cash::internal::ch_vec<T, N>;
 
@@ -95,6 +95,7 @@ namespace core {
   //
 
   using cash::internal::ch_select;
+  using cash::internal::ch_case;
   using cash::internal::ch_if;
   using cash::internal::ch_switch;
 
@@ -153,7 +154,8 @@ namespace core {
   using cash::internal::ch_mult;
   using cash::internal::ch_div;
   using cash::internal::ch_sll;
-  using cash::internal::ch_slr;
+  using cash::internal::ch_srl;
+  using cash::internal::ch_sra;
   using cash::internal::ch_rotl;
   using cash::internal::ch_rotr;
 

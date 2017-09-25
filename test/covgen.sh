@@ -6,7 +6,7 @@ COV_PATH=../
 
 lcov -c -i -d $COV_PATH -o /tmp/lcov_base.log
 
-./test.out
+make run
 
 lcov -c -d $COV_PATH -o /tmp/lcov_test.log
 

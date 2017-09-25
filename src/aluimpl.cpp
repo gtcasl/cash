@@ -140,7 +140,7 @@ static bool XnorR(const bitvector& in) {
   return (result != 0);
 }
 
-static void ShL(bitvector& out, const bitvector& in, uint32_t dist) {
+static void SLL(bitvector& out, const bitvector& in, uint32_t dist) {
   assert(out.get_size() == in.get_size());
   uint32_t num_words = in.get_num_words();
   if (num_words == 1) {
@@ -170,7 +170,7 @@ static void ShL(bitvector& out, const bitvector& in, uint32_t dist) {
   out.clear_unused_bits(); // clear extra bits added by left shift
 }
 
-static void ShR(bitvector& out, const bitvector& in, uint32_t dist) {
+static void SRL(bitvector& out, const bitvector& in, uint32_t dist) {
   assert(out.get_size() == in.get_size());
   uint32_t num_words   = in.get_num_words();
   if (num_words == 1) {
@@ -309,7 +309,7 @@ static void unaryop(bitvector& out, const bitvector& in) {
     Negate(out, in);
     break;
   default:
-    CH_TODO();
+    CH_ABORT("invalid alu operation");
   }
 }
 
@@ -338,7 +338,7 @@ static void binaryop(bitvector& out, const bitvector& lhs, const bitvector& rhs)
     Xnor(out, lhs, rhs);
     break;
   default:
-    CH_TODO();
+    CH_ABORT("invalid alu operation");
   }
 }
 
@@ -349,14 +349,17 @@ static void shiftop(bitvector& out, const bitvector& in, const bitvector& bits) 
   
   uint32_t wbits = bits.get_word(0);
   switch (op) {  
-  case alu_op_shl:
-    ShL(out, in, wbits);
+  case alu_op_sll:
+    SLL(out, in, wbits);
     break;
-  case alu_op_shr:
-    ShR(out, in, wbits);
+  case alu_op_srl:
+    SRL(out, in, wbits);
+    break;
+  case alu_op_sra:
+    CH_TODO();
     break;
   default:
-    CH_TODO();
+    CH_ABORT("invalid alu operation");
   }
 }
 
@@ -385,7 +388,7 @@ static void reduceop(bitvector& out, const bitvector& in) {
     result = XnorR(in);
     break;
   default:
-    CH_TODO();
+    CH_ABORT("invalid alu operation");
   } 
   out[0] = result;
 }
@@ -416,7 +419,7 @@ static void compareop(bitvector& out, const bitvector& lhs, const bitvector& rhs
     result = !(lhs < rhs);
     break;
   default:
-    CH_TODO();
+    CH_ABORT("invalid alu operation");
   }
   out[0] = result;
 }
@@ -437,8 +440,8 @@ static uint32_t get_output_size(ch_alu_op op, const lnode& lhs, const lnode& rhs
     assert(lhs.get_size() == rhs.get_size());
     return lhs.get_size();
 
-  case alu_op_shl:
-  case alu_op_shr:
+  case alu_op_sll:
+  case alu_op_srl:
     return lhs.get_size();
 
   case alu_op_eq:
@@ -533,13 +536,25 @@ const bitvector& aluimpl::eval(ch_tick t) {
     case alu_op_xorr:
       reduceop<alu_op_xorr>(value_, srcs_[0].eval(t));        
       break;
-      
-    case alu_op_shl:
-      shiftop<alu_op_shl>(value_, srcs_[0].eval(t), srcs_[1].eval(t));
+    case alu_op_nandr:
+      reduceop<alu_op_nandr>(value_, srcs_[0].eval(t));
       break;
-    case alu_op_shr:
-      shiftop<alu_op_shr>(value_, srcs_[0].eval(t), srcs_[1].eval(t));
-      break;      
+    case alu_op_norr:
+      reduceop<alu_op_norr>(value_, srcs_[0].eval(t));
+      break;
+    case alu_op_xnorr:
+      reduceop<alu_op_xnorr>(value_, srcs_[0].eval(t));
+      break;
+      
+    case alu_op_sll:
+      shiftop<alu_op_sll>(value_, srcs_[0].eval(t), srcs_[1].eval(t));
+      break;
+    case alu_op_srl:
+      shiftop<alu_op_srl>(value_, srcs_[0].eval(t), srcs_[1].eval(t));
+      break;
+    case alu_op_sra:
+      shiftop<alu_op_sra>(value_, srcs_[0].eval(t), srcs_[1].eval(t));
+      break;
 
     case alu_op_add:
       Add(value_, srcs_[0].eval(t), srcs_[1].eval(t));
@@ -589,7 +604,7 @@ const bitvector& aluimpl::eval(ch_tick t) {
       break;
       
     default:
-      CH_TODO();
+      CH_ABORT("invalid alu operation");
     }
   }
   return value_;

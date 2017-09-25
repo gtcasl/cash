@@ -54,100 +54,92 @@ const auto ch_reg(const T& next, const I& init) {
                   get_lnode<I, deduce_type<T, I>::bitcount>(init)));
 }
 
-template <unsigned N, typename T, typename I,
-          CH_REQUIRES(is_bit_convertible<T, N>::value),
-          CH_REQUIRES(is_bit_convertible<I, N>::value)>
+template <typename R, typename T, typename I,
+          CH_REQUIRES(is_cast_convertible<T, R>::value),
+          CH_REQUIRES(is_cast_convertible<I, R>::value)>
 const auto ch_reg(const T& next, const I& init) {
-  return make_bit<N>(
-    createRegNode(get_lnode<T, N>(next),
-                  get_lnode<I, N>(init)));
+  return make_type<R>(
+    createRegNode(get_lnode<T, R::bitcount>(next),
+                  get_lnode<I, R::bitcount>(init)));
 }
 
 template <typename T,
           CH_REQUIRES(is_bit_convertible<T>::value)>
 const auto ch_reg(const T& next) {
   return make_type<T>(
-    createRegNode(get_lnode(next), get_lnode(ch_bit<T::bitcount>(0))));
+    createRegNode(get_lnode(next), get_lnode<int, T::bitcount>(0)));
 }
 
-template <unsigned N, typename T,
-          CH_REQUIRES(is_bit_convertible<T, N>::value)>
+template <typename R, typename T,
+          CH_REQUIRES(is_cast_convertible<T, R>::value)>
 const auto ch_reg(const T& next) {
-  return make_bit<N>(
-    createRegNode(get_lnode(next), get_lnode(ch_bit<N>(0))));
+  return make_type<R>(
+    createRegNode(get_lnode<T, R::bitcount>(next), get_lnode<int, R::bitcount>(0)));
 }
 
-template <typename T, typename E, typename I, typename R,
+template <typename T, typename I,
           CH_REQUIRES(deduce_type<T, I>::bitcount != 0),
           CH_REQUIRES(is_bit_convertible<T, deduce_type<T, I>::bitcount>::value),
-          CH_REQUIRES(is_bit_convertible<E, 1>::value),
-          CH_REQUIRES(is_bit_convertible<I, deduce_type<T, I>::bitcount>::value),
-          CH_REQUIRES(is_bit_convertible<R, 1>::value)>
-const auto ch_latch(const T& next, const E& enable, const I& init, const R& reset) {
-  return make_type<typename deduce_first_type<T, I>::type>(
-    createLatchNode(get_lnode<T, deduce_type<T, I>::bitcount>(next),
-                    get_lnode<I, deduce_type<T, I>::bitcount>(init),
-                    get_lnode<E, 1>(enable),
-                    get_lnode<R, 1>(reset)));
-}
-
-template <unsigned N, typename T, typename E, typename I, typename R,
-          CH_REQUIRES(is_bit_convertible<T, N>::value),
-          CH_REQUIRES(is_bit_convertible<E, 1>::value),
-          CH_REQUIRES(is_bit_convertible<I, N>::value),
-          CH_REQUIRES(is_bit_convertible<R, 1>::value)>
-const auto ch_latch(const T& next, const E& enable, const I& init, const R& reset) {
-  return make_bit<N>(
-    createLatchNode(get_lnode<T, N>(next),
-                    get_lnode<I, N>(init),
-                    get_lnode<E, 1>(enable),
-                    get_lnode<R, 1>(reset)));
-}
-
-template <typename T, typename E, typename I,
-          CH_REQUIRES(deduce_type<T, I>::bitcount != 0),
-          CH_REQUIRES(is_bit_convertible<T, deduce_type<T, I>::bitcount>::value),
-          CH_REQUIRES(is_bit_convertible<E, 1>::value),
           CH_REQUIRES(is_bit_convertible<I, deduce_type<T, I>::bitcount>::value)>
-const auto ch_latch(const T& next, const E& enable, const I& init) {
+const auto ch_latch(const T& next, const ch_bitbase<1>& enable, const I& init, const ch_bitbase<1>& reset) {
   return make_type<typename deduce_first_type<T, I>::type>(
     createLatchNode(get_lnode<T, deduce_type<T, I>::bitcount>(next),
                     get_lnode<I, deduce_type<T, I>::bitcount>(init),
-                    get_lnode<E, 1>(enable),
+                    get_lnode(enable),
+                    get_lnode(reset)));
+}
+
+template <typename R, typename T, typename I,
+          CH_REQUIRES(is_cast_convertible<T, R>::value),
+          CH_REQUIRES(is_cast_convertible<I, R>::value)>
+const auto ch_latch(const T& next, const ch_bitbase<1>& enable, const I& init, const ch_bitbase<1>& reset) {
+  return make_type<R>(
+    createLatchNode(get_lnode<T, R::bitcount>(next),
+                    get_lnode<I, R::bitcount>(init),
+                    get_lnode(enable),
+                    get_lnode(reset)));
+}
+
+template <typename T, typename I,
+          CH_REQUIRES(deduce_type<T, I>::bitcount != 0),
+          CH_REQUIRES(is_bit_convertible<T, deduce_type<T, I>::bitcount>::value),
+          CH_REQUIRES(is_bit_convertible<I, deduce_type<T, I>::bitcount>::value)>
+const auto ch_latch(const T& next, const ch_bitbase<1>& enable, const I& init) {
+  return make_type<typename deduce_first_type<T, I>::type>(
+    createLatchNode(get_lnode<T, deduce_type<T, I>::bitcount>(next),
+                    get_lnode<I, deduce_type<T, I>::bitcount>(init),
+                    get_lnode(enable),
                     get_lnode(ch_getReset())));
 }
 
-template <unsigned N, typename T, typename E, typename I,
-          CH_REQUIRES(is_bit_convertible<T, N>::value),
-          CH_REQUIRES(is_bit_convertible<E, 1>::value),
-          CH_REQUIRES(is_bit_convertible<I, N>::value)>
-const auto ch_latch(const T& next, const E& enable, const I& init) {
-  return make_bit<N>(
-    createLatchNode(get_lnode<T, N>(next),
-                    get_lnode<I, N>(init),
-                    get_lnode<E, 1>(enable),
+template <typename R, typename T, typename I,
+          CH_REQUIRES(is_cast_convertible<T, R>::value),
+          CH_REQUIRES(is_cast_convertible<I, R>::value)>
+const auto ch_latch(const T& next, const ch_bitbase<1>& enable, const I& init) {
+  return make_type<R>(
+    createLatchNode(get_lnode<T, R::bitcount>(next),
+                    get_lnode<I, R::bitcount>(init),
+                    get_lnode(enable),
                     get_lnode(ch_getReset())));
 }
 
-template <typename T, typename E,
-          CH_REQUIRES(is_bit_convertible<T>::value),
-          CH_REQUIRES(is_bit_convertible<E, 1>::value)>
-const auto ch_latch(const T& next, const E& enable) {
+template <typename T,
+          CH_REQUIRES(is_bit_convertible<T>::value)>
+const auto ch_latch(const T& next, const ch_bitbase<1>& enable) {
   return make_type<T>(
     createLatchNode(get_lnode(next),
-                    get_lnode(ch_bit<T::bitcount>(0)),
-                    get_lnode<E, 1>(enable),
+                    get_lnode<int, T::bitcount>(0),
+                    get_lnode(enable),
                     get_lnode(ch_getReset())));
 }
 
-template <unsigned N, typename T, typename E,
-          CH_REQUIRES(is_bit_convertible<T, N>::value),
-          CH_REQUIRES(is_bit_convertible<E, 1>::value)>
-const auto ch_latch(const T& next, const E& enable) {
-  return make_bit<N>(
-    createLatchNode(get_lnode(next),
-                    get_lnode(ch_bit<N>(0)),
-                    get_lnode<E, 1>(enable),
+template <typename R, typename T,
+          CH_REQUIRES(is_cast_convertible<T, R>::value)>
+const auto ch_latch(const T& next, const ch_bitbase<1>& enable) {
+  return make_type<R>(
+    createLatchNode(get_lnode<T, R::bitcount>(next),
+                    get_lnode<int, R::bitcount>(0),
+                    get_lnode(enable),
                     get_lnode(ch_getReset())));
 }
 

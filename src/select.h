@@ -61,144 +61,62 @@ protected:
   select_impl impl_;
 };
 
-template <unsigned N>
-class select2_t {
+template <typename K, typename V>
+class case_t {
 public:
 
-  select2_t(const lnode& pred, const lnode& value) {
+  case_t(const lnode& key, const lnode& pred, const lnode& value) : impl_(key) {
     impl_.push(pred, value);
   }
 
-  template <typename V,
-            CH_REQUIRES(is_bit_convertible<V, N>::value)>
-  select2_t& operator()(const ch_bitbase<1>& pred, const V& value) {
-    impl_.push(get_lnode(pred), get_lnode<V, N>(value));
+  template <typename P, typename T,
+            CH_REQUIRES(is_equality_comparable<P, K>::value),
+            CH_REQUIRES(is_cast_convertible<T, V>::value)>
+  case_t& operator()(const P& pred, const T& value) {
+    impl_.push(get_lnode<P, K::bitcount>(pred), get_lnode<T, V::bitcount>(value));
     return *this;
   }
 
-  template <typename V,
-            CH_REQUIRES(is_bit_convertible<V, N>::value)>
-  const auto operator()(const V& value) {
-    return make_bit<N>(impl_.eval(get_lnode<V, N>(value)));
-  }
-
-protected:
-
-  select_impl impl_;
-};
-
-template <unsigned K, typename T>
-class select_case_t {
-public:
-
-  select_case_t(const lnode& key, const lnode& pred, const lnode& value) : impl_(key) {
-    impl_.push(pred, value);
-  }
-
-  template <typename V, typename P,
-            CH_REQUIRES(is_cast_convertible<V, T>::value),
-            CH_REQUIRES(is_bit_convertible<P, K>::value)>
-  select_case_t& operator()(const P& pred, const V& value) {
-    impl_.push(get_lnode<P, K>(pred), get_lnode<V, T::bitcount>(value));
-    return *this;
-  }
-
-  template <typename V,
-            CH_REQUIRES(is_cast_convertible<V, T>::value)>
-  const auto operator()(const V& value) {
-    return make_type<T>(impl_.eval(get_lnode<V, T::bitcount>(value)));
-  }
-
-protected:
-
-  select_impl impl_;
-};
-
-template <unsigned K, unsigned N>
-class select_case2_t {
-public:
-
-  select_case2_t(const lnode& key, const lnode& pred, const lnode& value) : impl_(key) {
-    impl_.push(pred, value);
-  }
-
-  template <typename V, typename P,
-            CH_REQUIRES(is_bit_convertible<V, N>::value),
-            CH_REQUIRES(is_bit_convertible<P, K>::value)>
-  select_case2_t& operator()(const P& pred, const V& value) {
-    impl_.push(get_lnode<P, K>(pred), get_lnode<V, N>(value));
-    return *this;
-  }
-
-  template <typename V,
-            CH_REQUIRES(is_bit_convertible<V, N>::value)>
-  const auto operator()(const V& value) {
-    return make_bit<N>(impl_.eval(get_lnode<V, N>(value)));
-  }
-
-protected:
-
-  select_impl impl_;
-};
-
-template <unsigned K>
-class select_key_t {
-public:
-
-  select_key_t(const lnode& key) : key_(key) {}
-
-  template <typename V, typename P,
-            CH_REQUIRES(is_bit_convertible<V>::value),
-            CH_REQUIRES(is_bit_convertible<P, K>::value)>
-  auto operator()(const P& pred, const V& value) {
-    return select_case_t<K, V>(key_, get_lnode<P, K>(pred), get_lnode(value));
+  template <typename T,
+            CH_REQUIRES(is_cast_convertible<T, V>::value)>
+  const auto operator()(const T& value) {
+    return make_type<V>(impl_.eval(get_lnode<T, V::bitcount>(value)));
   }
   
 protected:
   
-  lnode key_;
-};
-
-template <unsigned K, unsigned N>
-class select_key2_t {
-public:
-
-  select_key2_t(const lnode& key) : key_(key) {}
-
-  template <typename P, typename V,
-            CH_REQUIRES(is_bit_convertible<P, K>::value),
-            CH_REQUIRES(is_bit_convertible<V, N>::value)>
-  auto operator()(const P& pred, const V& value) {
-    return select_case2_t<K, N>(key_, get_lnode<P, K>(pred), get_lnode<V, N>(value));
-  }
-
-protected:
-
-  lnode key_;
+  select_impl impl_;
 };
 
 template <typename V,
-          CH_REQUIRES(is_bit_convertible<V, V::bitcount>::value)>
+          CH_REQUIRES(is_bit_convertible<V>::value)>
 auto ch_select(const ch_bitbase<1>& pred, const V& value) {
-  return select_t<V>(get_lnode(pred), get_lnode(value));
+  return select_t<typename V::value_type>(get_lnode(pred), get_lnode(value));
 }
 
-template <unsigned N, typename V,
-          CH_REQUIRES(is_bit_convertible<V, N>::value)>
+template <typename R, typename V,
+          CH_REQUIRES(is_cast_convertible<V, R>::value)>
 auto ch_select(const ch_bitbase<1>& pred, const V& value) {
-  return select2_t<N>(get_lnode(pred), get_lnode<V, N>(value));
+  return select_t<R>(
+        get_lnode(pred), get_lnode<V, R::bitcount>(value));
 }
 
-template <typename K,
-          CH_REQUIRES(is_bit_convertible<K, K::bitcount>::value)>
-auto ch_select(const K& key) {
-  return select_key_t<K::bitcount>(get_lnode(key));
+template <typename K, typename P, typename V,
+          CH_REQUIRES(is_bit_convertible<K>::value),
+          CH_REQUIRES(is_equality_comparable<P, K>::value),
+          CH_REQUIRES(is_bit_convertible<V>::value)>
+auto ch_case(const K& key, const P& pred, const V& value) {
+  return case_t<K, typename V::value_type>(
+        get_lnode(key), get_lnode<P, K::bitcount>(pred), get_lnode(value));
 }
 
-template <unsigned N, typename K,
-          CH_REQUIRES(is_bit_convertible<K, K::bitcount>::value)>
-auto ch_select(const K& key) {
-  return select_key2_t<K::bitcount, N>(get_lnode(key));
+template <typename R, typename K, typename P, typename V,
+          CH_REQUIRES(is_bit_convertible<K>::value),
+          CH_REQUIRES(is_equality_comparable<P, K>::value),
+          CH_REQUIRES(is_cast_convertible<V, R>::value)>
+auto ch_case(const K& key, const P& pred, const V& value) {
+  return case_t<K, R>(
+        get_lnode(key), get_lnode<P, K::bitcount>(pred), get_lnode<V, R::bitcount>(value));
 }
 
 template <typename U, typename V,
@@ -212,14 +130,14 @@ const auto ch_select(const ch_bitbase<1>& pred, const U& _true, const V& _false)
                          get_lnode<V, deduce_type<U, V>::bitcount>(_false)));
 }
 
-template <unsigned N, typename U, typename V,
-          CH_REQUIRES(is_bit_convertible<U, N>::value),
-          CH_REQUIRES(is_bit_convertible<V, N>::value)>
+template <typename R, typename U, typename V,
+          CH_REQUIRES(is_cast_convertible<U, R>::value),
+          CH_REQUIRES(is_cast_convertible<V, R>::value)>
 const auto ch_select(const ch_bitbase<1>& pred, const U& _true, const V& _false) {
-  return make_bit<N>(
+  return make_type<R>(
         createSelectNode(get_lnode(pred),
-                         get_lnode<U, N>(_true),
-                         get_lnode<V, N>(_false)));
+                         get_lnode<U, R::bitcount>(_true),
+                         get_lnode<V, R::bitcount>(_false)));
 }
 
 template <typename U, typename V,

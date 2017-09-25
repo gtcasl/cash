@@ -28,6 +28,7 @@ template <unsigned N>
 class typebase<N, snode> : public typebase_itf<snode> {
 public:  
   static constexpr unsigned bitcount = N;
+  static_assert(N > 0, "invalid size");
   using base = typebase_itf<snode>;
   using data_type = snode;
 

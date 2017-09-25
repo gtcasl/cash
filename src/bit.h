@@ -192,7 +192,7 @@ struct are_bit_convertible<T0, Ts...> {
 };
 
 template <typename T, unsigned N = T::bitcount>
-using bit_cast = std::conditional<
+using bitbase_cast = std::conditional<
   std::is_base_of<ch_bitbase<N>, T>::value,
   const ch_bitbase<N>&,
   ch_bit<N>>;
@@ -201,7 +201,7 @@ template <typename T, unsigned N = T::bitcount,
           CH_REQUIRES(is_bit_convertible<T, N>::value)>
 lnode get_lnode(const T& rhs) {
   nodelist<lnode> data(N);
-  typename bit_cast<T, N>::type x(rhs);
+  typename bitbase_cast<T, N>::type x(rhs);
   read_data(x, data, 0, N);
   return lnode(data);
 }
@@ -229,7 +229,7 @@ const auto cat_impl(const Ts&... args) {
 template <typename... Ts,
          CH_REQUIRES(are_bit_convertible<Ts...>::value)>
 const auto ch_cat(const Ts&... args) {
-  return cat_impl(static_cast<typename bit_cast<Ts>::type>(args)...);
+  return cat_impl(static_cast<typename bitbase_cast<Ts>::type>(args)...);
 }
 
 template <unsigned B, unsigned A>
@@ -346,26 +346,6 @@ const auto ch_shuffle(const ch_bitbase<N>& in,
     ret.template aslice<<(N / I)>(i) = in.template aslice<(N / I)>(indices[i]);
   }
   return ret;
-}
-
-// rotate functions
-
-template <typename A, typename B,
-          CH_REQUIRES(deduce_first_type<A, B>::bitcount != 0),
-          CH_REQUIRES(is_bit_convertible<A, deduce_first_type<A, B>::bitcount>::value),
-          CH_REQUIRES(is_bit_convertible<B, deduce_first_type<B, A>::bitcount>::value)>
-const auto ch_rotl(const A& a, const B& b) {
-  //return OpShift<alu_op_rotl, deduce_first_type<A, B>::bitcount, deduce_first_type<B, A>::bitcount>(a, b);
-  CH_TODO();
-}
-
-template <typename A, typename B,
-          CH_REQUIRES(deduce_first_type<A, B>::bitcount != 0),
-          CH_REQUIRES(is_bit_convertible<A, deduce_first_type<A, B>::bitcount>::value),
-          CH_REQUIRES(is_bit_convertible<B, deduce_first_type<B, A>::bitcount>::value)>
-const auto ch_rotr(const A& a, const B& b) {
-  //return OpShift<alu_op_rotr, deduce_first_type<A, B>::bitcount, deduce_first_type<B, A>::bitcount>(a, b);
-  CH_TODO();
 }
 
 // utils functions

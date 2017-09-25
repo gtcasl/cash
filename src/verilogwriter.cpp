@@ -393,8 +393,9 @@ void verilogwriter::print_operator(ch_alu_op alu_op) {
   case alu_op_mult:out_ << "*"; break;
   case alu_op_div: out_ << "/"; break;
   case alu_op_mod: out_ << "%"; break;
-  case alu_op_shl: out_ << "<<<"; break;
-  case alu_op_shr: out_ << ">>>"; break;
+  case alu_op_sll: out_ << "<<"; break;
+  case alu_op_srl: out_ << ">>"; break;
+  case alu_op_sra: out_ << ">>>"; break;
   case alu_op_eq:  out_ << "=="; break;
   case alu_op_ne:  out_ << "!="; break;
   case alu_op_lt:  out_ << "<"; break;

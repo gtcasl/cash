@@ -137,7 +137,7 @@ bitvector& bitvector::operator=(const char* value) {
     CH_ABORT("invalid binary format, missing encoding base type.");
   }
   
-  uint32_t log_base = ilog2ceil(base);
+  uint32_t log_base = log2ceil(base);
   --len; // remove type character
   
   // calculate binary size
