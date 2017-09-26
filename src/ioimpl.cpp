@@ -19,6 +19,10 @@ void inputimpl::bind(const snode& node) {
   bus_ = node;
 }
 
+void inputimpl::unbind() {
+  bus_.clear();
+}
+
 const bitvector& inputimpl::eval(ch_tick t) {
   if (tick_ != t) {
     tick_ = t;

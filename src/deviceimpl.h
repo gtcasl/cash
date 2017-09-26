@@ -26,7 +26,9 @@ public:
 
   snodeimpl* get_tap(const std::string& name, uint32_t size) const;
 
-  void to_verilog(const std::string& module_name, std::ostream& out);
+  void to_verilog(std::ostream& out,
+                  const std::string& module_name,
+                  const std::initializer_list<const char*>& port_names);
 
   void dump_stats(std::ostream& out);
 

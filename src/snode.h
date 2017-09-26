@@ -25,6 +25,8 @@ public:
   snode(const bitvector& value);
 
   ~snode();
+
+  void clear();
   
   snode& operator=(const snode& rhs);
 
@@ -81,8 +83,6 @@ protected:
 
   void ensureInitialized(uint32_t size) const;
 
-  void clear();
-  
   void assign(uint32_t dst_offset,
               const snode& src,
               uint32_t src_offset,

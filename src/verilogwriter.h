@@ -8,6 +8,7 @@ namespace internal {
 
 class context;
 class lnodeimpl;
+class litimpl;
 class proxyimpl;
 class aluimpl;
 class selectimpl;
@@ -22,11 +23,15 @@ public:
   verilogwriter(std::ostream& out);
   ~verilogwriter();
 
-  void print(context* ctx, const std::string& module_name);
+  void print(context* ctx,
+             const std::string& module_name,
+             const std::initializer_list<const char*>& port_names);
 
 protected:
 
-  void print_header(context* ctx, const std::string& module_name);
+  void print_header(
+      context* ctx,
+      const std::string& module_name);
 
   void print_body(context* ctx);
 
@@ -41,6 +46,8 @@ protected:
   void print_type(lnodeimpl* node);
 
   void print_value(const bitvector& value);
+
+  void print_literal(litimpl* node);
 
   void print_proxy(proxyimpl* node);
 
@@ -57,6 +64,8 @@ protected:
   void print_mem(memimpl* node);
 
   std::ostream& out_;
+
+  std::map<uint32_t, const char*> m_port_names;
 };
 
 }

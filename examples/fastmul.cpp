@@ -16,7 +16,8 @@ auto FastMul = [](const ch_bit4& lhs, const ch_bit4& rhs) {
     }
   }
   ch_rom<8, 8> mem(tbl_mult);
-  auto result = mem[(ch_zext<8>(lhs) << 4) | ch_zext<8>(rhs)];
+  auto addr   = (ch_zext<8>(lhs) << 4) | ch_zext<8>(rhs);
+  auto result = mem[addr];
   __ret(result);
 };
 
@@ -29,7 +30,7 @@ int main(int argc, char **argv) {
   out = fastMul(lhs, rhs);
 
   std::ofstream v_file("fastmul.v");
-  fastMul.to_verilog("fastmul", v_file);
+  fastMul.to_verilog(v_file, "fastmul", "lhs", "rhs", "out");
   v_file.close();
 
   ch_vcdtracer tracer(vcd_file, fastMul);

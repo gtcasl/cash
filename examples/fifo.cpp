@@ -46,13 +46,19 @@ int main(int argc, char **argv) {
   __tie(dout, empty, full) = fifo(din, push, pop);
 
   std::ofstream v_file("fifo.v");
-  fifo.to_verilog("fifo", v_file);
+  fifo.to_verilog(v_file, "fifo", "din", "push", "pop", "dout", "empty", "full");
   v_file.close();
 
   ch_vcdtracer tracer(vcd_file, fifo);
   __trace(tracer, din, push, pop, dout, empty, full);
   tracer.run([&](ch_tick t)->bool {
-    std::cout << "t" << t << ": din=" << din << ", push=" << push << ", pop=" << pop << ", dout=" << dout << ", empty=" << empty << ", full=" << full << std::endl;
+    std::cout << "t" << t
+              << ": din=" << din
+              << ", push=" << push
+              << ", pop=" << pop
+              << ", dout=" << dout
+              << ", empty=" << empty
+              << ", full=" << full << std::endl;
     switch (t) {
     case 0:
       CHECK(empty);

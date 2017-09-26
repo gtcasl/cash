@@ -11,8 +11,8 @@ auto Adder = [](
     const ch_bit<N>& lhs,
     const ch_bit<N>& rhs,
     const ch_bit1& cin) {
-  auto sum = (0_b, lhs) + ch_zext<N+1>(rhs) + ch_zext<N+1>(cin);
-  auto out = sum.template slice<N>();
+  auto sum  = (0_b, lhs) + ch_zext<N+1>(rhs) + ch_zext<N+1>(cin);
+  auto out  = ch_slice<N>(sum);
   auto cout = sum[N];
   __ret(out, cout);
 };
@@ -26,7 +26,7 @@ int main(int argc, char **argv) {
   __tie(out, cout) = adder(lhs, rhs, cin);
 
   std::ofstream v_file("adder.v");
-  adder.to_verilog("adder", v_file);
+  adder.to_verilog(v_file, "adder", "lhs", "rhs", "cin", "out", "cout");
   v_file.close();
 
   ch_vcdtracer tracer(vcd_file, adder);

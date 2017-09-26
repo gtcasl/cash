@@ -21,7 +21,7 @@ int main(int argc, char **argv) {
   out = counter();
 
   std::ofstream v_file("counter.v");
-  counter.to_verilog("counter", v_file);
+  counter.to_verilog(v_file, "counter", "out");
   v_file.close();
 
   ch_vcdtracer tracer(vcd_file, counter);

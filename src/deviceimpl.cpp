@@ -32,9 +32,11 @@ snodeimpl* deviceimpl::get_tap(const std::string& name, uint32_t size) const {
   return ctx_->get_tap(name, size);
 }
 
-void deviceimpl::to_verilog(const std::string& module_name, std::ostream& out) {
+void deviceimpl::to_verilog(std::ostream& out,
+                            const std::string& module_name,
+                            const std::initializer_list<const char*>& port_names) {
   verilogwriter writer(out);
-  writer.print(ctx_, module_name);
+  writer.print(ctx_, module_name, port_names);
 }
 
 void deviceimpl::dump_stats(std::ostream& out) {
@@ -63,6 +65,11 @@ ch_device& ch_device::operator=(const ch_device& device) {
   return *this;
 }
 
+context* ch_device::get_ctx() const {
+  CH_CHECK(impl_ != nullptr, "uninitialized device!");
+  return impl_->get_ctx();
+}
+
 void ch_device::begin_context() {
   if (nullptr == impl_) {
     impl_ = new deviceimpl();
@@ -86,9 +93,11 @@ snodeimpl* ch_device::get_tap(const std::string& name, uint32_t size) const {
   return impl_->get_tap(name, size);
 }
 
-void ch_device::to_verilog(const std::string& module_name, std::ostream& out) {
+void ch_device::to_verilog(std::ostream& out,
+                           const std::string& module_name,
+                           const std::initializer_list<const char*>& port_names) {
   CH_CHECK(impl_ != nullptr, "uninitialized device!");
-  impl_->to_verilog(module_name, out);
+  impl_->to_verilog(out, module_name, port_names);
 }
 
 void ch_device::dump_stats(std::ostream& out) {

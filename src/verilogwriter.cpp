@@ -23,7 +23,22 @@ verilogwriter::~verilogwriter() {
   //--
 }
 
-void verilogwriter::print(context* ctx, const std::string& module_name) {
+void verilogwriter::print(
+    context* ctx,
+    const std::string& module_name,
+    const std::initializer_list<const char*>& port_names) {
+  // assign port names
+  CH_CHECK(port_names.size() == ctx->get_inputs().size() + ctx->get_outputs().size(),
+           "invalid number of port names (given %ld, expecting %ld)",
+           port_names.size(), ctx->get_inputs().size() + ctx->get_outputs().size());
+  auto it_port = port_names.begin();
+  for (auto input : ctx->get_inputs()) {
+    m_port_names[input->get_id()] = *it_port++;
+  }
+  for (auto output : ctx->get_outputs()) {
+    m_port_names[output->get_id()] = *it_port++;
+  }
+
   // print header
   this->print_header(ctx, module_name);
 
@@ -38,7 +53,9 @@ void verilogwriter::print(context* ctx, const std::string& module_name) {
   this->print_footer(ctx);
 }
 
-void verilogwriter::print_header(context* ctx, const std::string& module_name) {
+void verilogwriter::print_header(
+    context* ctx,
+    const std::string& module_name) {
   //
   // ports declaration
   //
@@ -46,6 +63,18 @@ void verilogwriter::print_header(context* ctx, const std::string& module_name) {
   {
     auto_indent indent(out_);
     const char* sep = "";
+
+    auto default_clk = ctx->get_default_clk();
+    if (default_clk) {
+      out_ << sep << std::endl; sep = ",";
+      this->print_port(default_clk);
+    }
+
+    auto default_reset = ctx->get_default_reset();
+    if (default_reset) {
+      out_ << sep << std::endl; sep = ",";
+      this->print_port(default_reset);
+    }
 
     for (auto input : ctx->get_inputs()) {
       out_ << sep << std::endl; sep = ",";
@@ -90,6 +119,9 @@ void verilogwriter::print_body(context* ctx) {
     for (auto node : ctx->get_nodes()) {
       auto op = node->get_op();
       switch (op) {
+      case op_lit:
+        this->print_literal(dynamic_cast<litimpl*>(node));
+        break;
       case op_proxy:
         this->print_proxy(dynamic_cast<proxyimpl*>(node));
         break;
@@ -105,8 +137,15 @@ void verilogwriter::print_body(context* ctx) {
       case op_mem:
         this->print_mem(dynamic_cast<memimpl*>(node));
         break;
-      default:
+      case op_input:
+      case op_clk:
+      case op_reset:
+      case op_output:
+      case op_tap:
+      case op_memport:
         break;
+      default:
+        assert(false);
       }
     }
   }
@@ -118,11 +157,11 @@ void verilogwriter::print_footer(context* ctx) {
   //
   {
     auto_indent indent(out_);
-    for (auto node : ctx->get_outputs()) {
+    for (auto output : ctx->get_outputs()) {
       out_ << "assign ";
-      this->print_name(node);
+      this->print_name(output);
       out_ << " = ";
-      this->print_name(dynamic_cast<outputimpl*>(node)->get_src(0).get_impl());
+      this->print_name(dynamic_cast<outputimpl*>(output)->get_src(0).get_impl());
       out_ << ";" << std::endl;
     }
   }
@@ -156,28 +195,41 @@ void verilogwriter::print_port(lnodeimpl* node) {
 void verilogwriter::print_decl(lnodeimpl* node) {
   auto op = node->get_op();
   switch (op) {
-  case op_proxy:
-  case op_lit:
-  case op_alu:
-  case op_select:
-  case op_reg:
   case op_mem:
     this->print_type(node);
     out_ << " ";
     this->print_name(node);
-    if (op_lit == op) {
-      out_ << " = ";
-      this->print_value(node->get_value());
-    } else
-    if (op_mem == op) {
-      auto addr_width = dynamic_cast<memimpl*>(node)->get_addr_width();
-      out_ << "[0:" << (addr_width - 1) << "]";
-    }
+    out_ << "[0:" << ((1 << dynamic_cast<memimpl*>(node)->get_addr_width()) - 1) << "]";
     out_ << ";" << std::endl;
     break;
-  default:
+  case op_lit:
+  case op_proxy:
+  case op_alu:
+  case op_select:
+  case op_reg:
+    this->print_type(node);
+    out_ << " ";
+    this->print_name(node);
+    out_ << ";" << std::endl;
     break;
+  case op_input:
+  case op_clk:
+  case op_reset:
+  case op_output:
+  case op_tap:
+  case op_memport:
+    break;
+  default:
+    assert(false);
   }
+}
+
+void verilogwriter::print_literal(litimpl* node) {
+  out_ << "assign ";
+  this->print_name(node);
+  out_ << " = ";
+  this->print_value(node->get_value());
+  out_ << ";" << std::endl;
 }
 
 void verilogwriter::print_proxy(proxyimpl* node) {
@@ -229,8 +281,8 @@ void verilogwriter::print_alu(aluimpl* node) {
       out_ << " ";
       this->print_name(node->get_src(1).get_impl());
       out_ << ";" << std::endl;
-    } else
-    if (alu_op & alu_unary) {
+    } else {
+      assert(alu_op & alu_unary);
       out_ << "assign ";
       this->print_name(node);
       out_ << " = ";
@@ -375,6 +427,7 @@ void verilogwriter::print_mem(memimpl* node) {
 
 void verilogwriter::print_operator(ch_alu_op alu_op) {
   switch (alu_op) {
+  case alu_op_inv: out_ << "~"; break;
   case alu_op_and: out_ << "&"; break;
   case alu_op_or:  out_ << "|"; break;
   case alu_op_xor: out_ << "^"; break;
@@ -403,43 +456,58 @@ void verilogwriter::print_operator(ch_alu_op alu_op) {
   case alu_op_le:  out_ << "<="; break;
   case alu_op_ge:  out_ << ">="; break;
   default:
-    break;
+    assert(false);
   }
 }
 
 void verilogwriter::print_name(lnodeimpl* node) {
+  auto print_basic_name = [&](char prefix) {
+    out_ << "__" << prefix;
+    out_ << node->get_id();
+    out_ << "__";
+  };
   auto op = node->get_op();
   switch (op) {
-  case op_proxy:  out_ << "__x"; break;
-  case op_lit:    out_ << "__l"; break;
-  case op_input:  out_ << "__i"; break;
-  case op_output: out_ << "__o"; break;
-  case op_clk:    out_ << "__i"; break;
-  case op_reset:  out_ << "__i"; break;
-  case op_select: out_ << "__s"; break;
-  case op_tap:    out_ << "__t"; break;
-  case op_reg:    out_ << "__r"; break;
-  case op_mem:    out_ << "__m"; break;
-  case op_memport:out_ << "__m"; break;
-  default:        out_ << "__w"; break;
-  }
-
-  if (op == op_memport) {
+  case op_clk:
+    out_ << "clk";
+    break;
+  case op_reset:
+    out_ << "reset";
+    break;
+  case op_input:
+  case op_output:
+    out_ << m_port_names[node->get_id()];
+    break;
+  case op_tap:
+    out_ << dynamic_cast<tapimpl*>(node)->get_name();
+    break;
+  case op_proxy:
+    print_basic_name('w');
+    break;
+  case op_lit:
+    print_basic_name('l');
+    break;
+  case op_select:
+    print_basic_name('s');
+    break;
+  case op_alu:
+    print_basic_name('a');
+    break;
+  case op_reg:
+    print_basic_name('r');
+    break;
+  case op_mem:
+    print_basic_name('m');
+    break;
+  case op_memport:
+    out_ << "__m";
     out_ << dynamic_cast<memportimpl*>(node)->get_mem().get_id();
-  } else {
-    out_ << node->get_id();
-  }
-
-  if (op == op_tap) {
-    out_ << "_" << dynamic_cast<tapimpl*>(node)->get_name();
-  }
-
-  out_ << "__";
-
-  if (op == op_memport) {
-    out_ << "[";
+    out_ << "__[";
     this->print_name(dynamic_cast<memportimpl*>(node)->get_addr().get_impl());
     out_ << "]";
+    break;
+  default:
+    assert(false);
   }
 }
 

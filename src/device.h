@@ -22,17 +22,26 @@ public:
     return make_bus<N>(this->get_tap(name, N));
   }
   
-  void to_verilog(const std::string& module_name, std::ostream& out);  
+  template <typename... Ts>
+  void to_verilog(std::ostream& out, const std::string& module_name, const Ts... port_names) {
+    this->to_verilog(out, module_name, {port_names...});
+  }
   
   void dump_stats(std::ostream& out);
     
 protected:
+
+  context* get_ctx() const;
 
   void begin_context();
 
   void end_context();
 
   void compile();
+
+  void to_verilog(std::ostream& out,
+                  const std::string& module_name,
+                  const std::initializer_list<const char*>& port_names);
   
   snodeimpl* get_tap(const std::string& name, uint32_t size) const;
 

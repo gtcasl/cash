@@ -4,9 +4,13 @@ VERSION
 env.sh
 examples/Makefile
 examples/adder.cpp
+examples/adder_tb.v
 examples/counter.cpp
+examples/counter_tb.v
 examples/fastmul.cpp
+examples/fastmul_tb.v
 examples/fifo.cpp
+examples/fifo_tb.v
 src/cash.cpp
 src/deviceimpl.cpp
 src/deviceimpl.h

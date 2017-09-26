@@ -65,11 +65,11 @@ public:
   }
 
   inputimpl* get_default_clk() const {
-    return clk_;
+    return default_clk_;
   }
 
   inputimpl* get_default_reset() const {
-    return reset_;
+    return default_reset_;
   }
 
   //--
@@ -81,6 +81,8 @@ public:
   void push_reset(const lnode& reset);
   void pop_reset();
   lnodeimpl* get_reset();
+
+  void unbind_default_signals(snodeimpl* clk, snodeimpl* reset);
 
   //--
 
@@ -219,8 +221,8 @@ protected:
 
   uint32_t    node_ids_;
   uint32_t    block_ids_;
-  inputimpl*  clk_;
-  inputimpl*  reset_;
+  inputimpl*  default_clk_;
+  inputimpl*  default_reset_;
   tickimpl*   tick_;
   
   std::unordered_map<std::string, unsigned> dup_taps_;

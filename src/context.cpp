@@ -24,8 +24,8 @@ thread_local context* tls_ctx = nullptr;
 context::context()
   : node_ids_(0)
   , block_ids_(0)
-  , clk_(nullptr)
-  , reset_(nullptr)
+  , default_clk_(nullptr)
+  , default_reset_(nullptr)
   , tick_(nullptr)
 {}
 
@@ -44,8 +44,8 @@ context::~context() {
   assert(cdomains_.empty());
   assert(cond_blocks_.empty());
 
-  assert(nullptr == clk_);
-  assert(nullptr == reset_);
+  assert(nullptr == default_clk_);
+  assert(nullptr == default_reset_);
   assert(nullptr == tick_);
 }
 
@@ -68,23 +68,31 @@ void context::pop_reset() {
 lnodeimpl* context::get_clk() {
   if (!user_clks_.empty())
     return user_clks_.top().get_impl();
-  if (nullptr == clk_)
-    clk_ = new inputimpl(op_clk, this, 1);
-  return clk_;
+  if (nullptr == default_clk_)
+    default_clk_ = new inputimpl(op_clk, this, 1);
+  return default_clk_;
 }
 
 lnodeimpl* context::get_reset() {
   if (!user_resets_.empty())
     return user_resets_.top().get_impl();
-  if (nullptr == reset_)
-     reset_ = new inputimpl(op_reset, this, 1);
-  return reset_;
+  if (nullptr == default_reset_)
+     default_reset_ = new inputimpl(op_reset, this, 1);
+  return default_reset_;
 }
 
 lnodeimpl* context::get_tick() {
   if (nullptr == tick_)
     tick_ = new tickimpl(this);
   return tick_;
+}
+
+void context::unbind_default_signals(snodeimpl* clk, snodeimpl* reset) {
+  if (default_clk_ && clk && default_clk_->get_bus().get_id() == clk->get_id())
+    default_clk_->unbind();
+  if (default_reset_ && reset && default_reset_->get_bus().get_id() == reset->get_id()) {
+    default_reset_->unbind();
+  }
 }
 
 uint32_t context::add_node(lnodeimpl* node) {
@@ -98,11 +106,6 @@ uint32_t context::add_node(lnodeimpl* node) {
   }
 #endif
   nodes_.emplace_back(node);
-  
-  // Note: we have to explicitly select io nodes here
-  // because using dynamic_cast<ioimpl*> doesn't work during the object construction
-  // and add_node() is called inside lnodeimpl constructor.
-  bool is_ionode = false;
 
   switch (node->get_op()) {
   case op_undef:
@@ -115,30 +118,41 @@ uint32_t context::add_node(lnodeimpl* node) {
     literals_.emplace_back((litimpl*)node);
     break;
   case op_input:
-  case op_clk:
-  case op_reset:  
     inputs_.emplace_back((inputimpl*)node);
-    is_ionode = true;
     break;  
   case op_output:
     outputs_.emplace_back((outputimpl*)node);
-    is_ionode = true;
     break; 
   case op_tap:
     taps_.emplace_back((tapimpl*)node);
-    is_ionode = true;
     break;
   case op_assert:
   case op_print:
     gtaps_.emplace_back((ioimpl*)node);
-    is_ionode = true;
     break;
+  default:
+    break;
+  }
+
+  // Note: we have to explicitly select io nodes here
+  // because using dynamic_cast<ioimpl*> doesn't work during the object construction
+  // and add_node() is called inside lnodeimpl constructor.
+  bool is_ionode;
+  switch (node->get_op()) {
+  case op_input:
+  case op_output:
+  case op_clk:
+  case op_reset:
   case op_mem:
   case op_memport:
+  case op_tap:
+  case op_assert:
+  case op_print:
   case op_tick:
     is_ionode = true;
     break;
   default:
+    is_ionode = false;
     break;
   }
 
@@ -168,19 +182,19 @@ void context::remove_node(lnodeimpl* node) {
     literals_.remove((litimpl*)node);
     break;
   case op_input:
-  case op_clk:
-  case op_reset:
-    if (node == clk_) {
-      clk_ = nullptr;
-    } else
-    if (node == reset_) {
-      reset_ = nullptr;
-    }
     inputs_.remove((inputimpl*)node);
-    break;  
+    break;
   case op_output:
     outputs_.remove((outputimpl*)node);
-    break; 
+    break;
+  case op_clk:
+    if (node == default_clk_)
+      default_clk_ = nullptr;
+    break;
+  case op_reset:
+    if (node == default_reset_)
+      default_reset_ = nullptr;
+    break;
   case op_tap:
     taps_.remove((tapimpl*)node);
     break;
@@ -189,9 +203,8 @@ void context::remove_node(lnodeimpl* node) {
     gtaps_.remove((ioimpl*)node);
     break;
   case op_tick:
-    if (node == tick_) {
+    if (node == tick_)
       tick_ = nullptr;
-    }
     break;
   default:
     break;
@@ -490,6 +503,14 @@ snodeimpl* context::get_tap(const std::string& name, uint32_t size) {
 }
 
 void context::get_live_nodes(std::unordered_set<lnodeimpl*>& live_nodes) {
+  // default signals
+  if (default_clk_) {
+    live_nodes.emplace(default_clk_);
+  }
+  if (default_reset_) {
+    live_nodes.emplace(default_reset_);
+  }
+
   // get inputs
   for (auto node : inputs_) {
     live_nodes.emplace(node);

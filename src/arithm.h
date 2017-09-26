@@ -3,58 +3,58 @@
 #include "bit.h"
 
 enum alu_flags {
-  alu_unary   = 0 << 8,
-  alu_binary  = 1 << 8,
-  alu_tenary  = 2 << 8,
-  alu_nary    = 3 << 8,
+  alu_unary   = 1 << 8,
+  alu_binary  = 2 << 8,
+  alu_tenary  = 3 << 8,
+  alu_nary    = 4 << 8,
 
-  alu_bitwise = 1 << 10,
-  alu_compare = 2 << 10,
-  alu_shift   = 3 << 10,
-  alu_arithm  = 4 << 10,
-  alu_reduce  = 5 << 10,
-  alu_misc    = 6 << 10,
+  alu_bitwise = 1 << 11,
+  alu_compare = 2 << 11,
+  alu_shift   = 3 << 11,
+  alu_arithm  = 4 << 11,
+  alu_reduce  = 5 << 11,
+  alu_misc    = 6 << 11,
 
-  alu_integer = 1 << 13,
-  alu_fixed   = 2 << 13,
-  alu_float   = 3 << 13,
-  alu_double  = 4 << 13,
+  alu_integer = 1 << 14,
+  alu_fixed   = 2 << 14,
+  alu_float   = 3 << 14,
+  alu_double  = 4 << 14,
 };
 
 #define CH_ALUOP_TYPE(e, v) alu_op_##e = v,
 #define CH_ALUOP_ENUM(m) \
-  m(inv, 0 | alu_unary | alu_bitwise | alu_integer) \
-  m(and, 1 | alu_binary | alu_bitwise | alu_integer) \
-  m(or, 2 | alu_binary | alu_bitwise | alu_integer) \
-  m(xor, 3 | alu_binary | alu_bitwise | alu_integer) \
-  m(nand, 4 | alu_binary | alu_bitwise | alu_integer) \
-  m(nor, 5 | alu_binary | alu_bitwise | alu_integer) \
-  m(xnor, 6 | alu_binary | alu_bitwise | alu_integer) \
-  m(andr, 7 | alu_unary | alu_reduce | alu_integer) \
-  m(orr, 8 | alu_unary | alu_reduce | alu_integer) \
-  m(xorr, 9 | alu_unary | alu_reduce | alu_integer) \
-  m(nandr, 10 | alu_unary | alu_reduce | alu_integer) \
-  m(norr, 11 | alu_unary | alu_reduce | alu_integer) \
-  m(xnorr, 12 | alu_unary | alu_reduce | alu_integer) \
-  m(sll, 13 | alu_binary | alu_shift | alu_integer) \
-  m(srl, 14 | alu_binary | alu_shift | alu_integer) \
-  m(sra, 15 | alu_binary | alu_shift | alu_integer) \
-  m(add, 16 | alu_binary | alu_arithm | alu_integer) \
-  m(sub, 17 | alu_binary | alu_arithm | alu_integer) \
-  m(neg, 18 | alu_unary | alu_arithm | alu_integer) \
-  m(mult, 19 | alu_binary | alu_arithm | alu_integer) \
-  m(div, 20 | alu_binary | alu_arithm | alu_integer) \
-  m(mod, 21 | alu_binary | alu_arithm | alu_integer) \
-  m(eq, 22 | alu_binary | alu_compare | alu_integer) \
-  m(ne, 23 | alu_binary | alu_compare | alu_integer) \
-  m(lt, 24 | alu_binary | alu_compare | alu_integer) \
-  m(gt, 25 | alu_binary | alu_compare | alu_integer) \
-  m(le, 26 | alu_binary | alu_compare | alu_integer) \
-  m(ge, 27 | alu_binary | alu_compare | alu_integer) \
-  m(fadd, 28 | alu_binary | alu_arithm | alu_float) \
-  m(fsub, 29 | alu_binary | alu_arithm | alu_float) \
-  m(fmult, 30 | alu_binary | alu_arithm | alu_float) \
-  m(fdiv, 31 | alu_binary | alu_arithm | alu_float)
+  m(inv,    1 | alu_unary | alu_bitwise | alu_integer) \
+  m(and,    2 | alu_binary | alu_bitwise | alu_integer) \
+  m(or,     3 | alu_binary | alu_bitwise | alu_integer) \
+  m(xor,    4 | alu_binary | alu_bitwise | alu_integer) \
+  m(nand,   5 | alu_binary | alu_bitwise | alu_integer) \
+  m(nor,    6 | alu_binary | alu_bitwise | alu_integer) \
+  m(xnor,   7 | alu_binary | alu_bitwise | alu_integer) \
+  m(andr,   8 | alu_unary | alu_reduce | alu_integer) \
+  m(orr,    9 | alu_unary | alu_reduce | alu_integer) \
+  m(xorr,  10 | alu_unary | alu_reduce | alu_integer) \
+  m(nandr, 11 | alu_unary | alu_reduce | alu_integer) \
+  m(norr,  12 | alu_unary | alu_reduce | alu_integer) \
+  m(xnorr, 13 | alu_unary | alu_reduce | alu_integer) \
+  m(sll,   14 | alu_binary | alu_shift | alu_integer) \
+  m(srl,   15 | alu_binary | alu_shift | alu_integer) \
+  m(sra,   16 | alu_binary | alu_shift | alu_integer) \
+  m(add,   17 | alu_binary | alu_arithm | alu_integer) \
+  m(sub,   18 | alu_binary | alu_arithm | alu_integer) \
+  m(neg,   19 | alu_unary | alu_arithm | alu_integer) \
+  m(mult,  20 | alu_binary | alu_arithm | alu_integer) \
+  m(div,   21 | alu_binary | alu_arithm | alu_integer) \
+  m(mod,   22 | alu_binary | alu_arithm | alu_integer) \
+  m(eq,    23 | alu_binary | alu_compare | alu_integer) \
+  m(ne,    24 | alu_binary | alu_compare | alu_integer) \
+  m(lt,    25 | alu_binary | alu_compare | alu_integer) \
+  m(gt,    26 | alu_binary | alu_compare | alu_integer) \
+  m(le,    27 | alu_binary | alu_compare | alu_integer) \
+  m(ge,    28 | alu_binary | alu_compare | alu_integer) \
+  m(fadd,  29 | alu_binary | alu_arithm | alu_float) \
+  m(fsub,  30 | alu_binary | alu_arithm | alu_float) \
+  m(fmult, 31 | alu_binary | alu_arithm | alu_float) \
+  m(fdiv,  32 | alu_binary | alu_arithm | alu_float)
 
 #define CH_BINOP_GEN(func, op) \
   template <typename A, typename B, \

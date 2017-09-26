@@ -10,7 +10,7 @@ simulatorimpl::simulatorimpl(const std::initializer_list<const ch_device*>& devi
   , clk_(nullptr)
   , reset_(nullptr) {
   for (auto device : devices) {
-    context* ctx = device->impl_->get_ctx();
+    context* ctx = device->get_ctx();
     auto ret = contexts_.emplace(ctx);
     if (ret.second)
       ctx->acquire();
@@ -18,13 +18,14 @@ simulatorimpl::simulatorimpl(const std::initializer_list<const ch_device*>& devi
 }
 
 simulatorimpl::~simulatorimpl() {
+  for (auto ctx : contexts_) {
+    ctx->unbind_default_signals(clk_, reset_);
+    ctx->release();
+  }
   if (clk_)
     clk_->release();
   if (reset_)
     reset_->release();
-  for (auto ctx : contexts_) {
-    ctx->release();
-  }
 }
 
 void simulatorimpl::add_device(const ch_device& device) {

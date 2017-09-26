@@ -19,7 +19,13 @@ public:
 
   inputimpl(context* ctx, const snode& node);
   
+  const snode& get_bus() const {
+    return bus_;
+  }
+
   void bind(const snode& node);
+
+  void unbind();
 
   const bitvector& eval(ch_tick t) override;
   
