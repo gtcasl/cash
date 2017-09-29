@@ -19,7 +19,7 @@ all: $(PROJECTS)
 	$(CXX) $(CXXFLAGS) -MM $^ > .depend;
 
 clean:
-	rm -f *.out *.o *.v *.vcd .depend *~ *\#
+	rm -f *.out *.o *.vcd .depend *~ *\#
 
 run: $(PROJECTS)
 	$(foreach proj, $(PROJECTS), ./$(proj) || exit;)	 

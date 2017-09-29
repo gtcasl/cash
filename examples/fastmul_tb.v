@@ -1,5 +1,5 @@
-`include "fastmul.v"
 `timescale 1ns/1ns
+`include "fastmul.v"
 
 module testbench();
 

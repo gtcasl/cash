@@ -1,5 +1,5 @@
-`include "fifo.v"
 `timescale 1ns/1ns
+`include "fifo.v"
 
 module testbench();
 

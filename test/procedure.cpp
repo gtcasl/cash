@@ -51,13 +51,13 @@ auto dogfood = [](const ch_bit2& w) {
   return (c == a + b);
 };
 
-__out(ch_bit1) foo1() {
+auto foo1 = []() {
   __ret(1_b);
-}
+};
 
-__out(ch_bit1, ch_bit2) foo2(const ch_bit2& x) {
+auto foo2 = [](const ch_bit2& x) {
   __ret(x == 1, x);
-}
+};
 
 TEST_CASE("procedure", "[procedure]") {
   SECTION("function", "[function]") {

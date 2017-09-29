@@ -1,5 +1,5 @@
-`include "adder.v"
 `timescale 1ns/1ns
+`include "adder.v"
 
 module testbench();
 

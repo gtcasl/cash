@@ -1,5 +1,5 @@
-`include "counter.v"
 `timescale 1ns/1ns
+`include "counter.v"
 
 module testbench();
 

@@ -53,6 +53,14 @@ protected:
 
   void print_alu(aluimpl* node);
 
+  void print_rotate(aluimpl* node, bool right_dir);
+
+  void print_mux(aluimpl* node);
+
+  void print_fmult(aluimpl* node);
+
+  void print_fadd(aluimpl* node);
+
   void print_operator(ch_alu_op alu_op);
 
   void print_select(selectimpl* node);

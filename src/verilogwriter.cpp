@@ -56,6 +56,19 @@ void verilogwriter::print(
 void verilogwriter::print_header(
     context* ctx,
     const std::string& module_name) {
+
+  //
+  // includes
+  //
+  std::string lib_file = "verilog.v";
+  auto lib_dir = std::getenv("CASH_PATH");
+  if (lib_dir) {
+    lib_file = std::string(lib_dir) + "/" + lib_file;
+  }
+  out_ << "`include \"" << lib_file << "\"" << std::endl;
+
+  out_ << std::endl;
+
   //
   // ports declaration
   //
@@ -143,6 +156,9 @@ void verilogwriter::print_body(context* ctx) {
       case op_output:
       case op_tap:
       case op_memport:
+      case op_assert:
+      case op_print:
+      case op_tick:
         break;
       default:
         assert(false);
@@ -218,6 +234,9 @@ void verilogwriter::print_decl(lnodeimpl* node) {
   case op_output:
   case op_tap:
   case op_memport:
+  case op_assert:
+  case op_print:
+  case op_tick:
     break;
   default:
     assert(false);
@@ -270,8 +289,17 @@ void verilogwriter::print_proxy(proxyimpl* node) {
 
 void verilogwriter::print_alu(aluimpl* node) {
   auto alu_op = node->get_alu_op();
-  if (alu_op & alu_integer) {
-    if (alu_op & alu_binary) {
+  if (alu_op == alu_op_rotl) {
+    this->print_rotate(node, false);
+  } else
+  if (alu_op == alu_op_rotr) {
+    this->print_rotate(node, true);
+  } else
+  if (alu_op == alu_op_mux) {
+    this->print_mux(node);
+  } else
+  if (CH_ALUOP_DATA(alu_op) == alu_integer) {
+    if (CH_ALUOP_ARY(alu_op) == alu_binary) {
       out_ << "assign ";
       this->print_name(node);
       out_ << " = ";
@@ -282,7 +310,7 @@ void verilogwriter::print_alu(aluimpl* node) {
       this->print_name(node->get_src(1).get_impl());
       out_ << ";" << std::endl;
     } else {
-      assert(alu_op & alu_unary);
+      assert(CH_ALUOP_ARY(alu_op) == alu_unary);
       out_ << "assign ";
       this->print_name(node);
       out_ << " = ";
@@ -291,8 +319,67 @@ void verilogwriter::print_alu(aluimpl* node) {
       out_ << ";" << std::endl;
     }
   } else {
-    CH_TODO();
+    if (alu_op == alu_op_fmult) {
+      this->print_fmult(node);
+    } else
+    if (alu_op == alu_op_fadd) {
+      this->print_fadd(node);
+    } else {
+      CH_TODO();
+    }
   }
+}
+
+void verilogwriter::print_rotate(aluimpl* node, bool right_dir) {
+  out_ << "barrel_shift #(";
+  out_ << (right_dir ? 1 : 0);
+  out_ << ", ";
+  out_ << node->get_size();
+  out_ << ") __barrel_shift_";
+  out_ << node->get_id() << "__(";
+  this->print_name(node->get_src(0).get_impl());
+  out_ << ", ";
+  this->print_name(node);
+  out_ << ", ";
+  this->print_name(node->get_src(1).get_impl());
+  out_ << ");" << std::endl;
+}
+
+void verilogwriter::print_mux(aluimpl* node) {
+  out_ << "bus_mux #(";
+  out_ << node->get_size();
+  out_ << ", ";
+  out_ << node->get_src(1).get_size();
+  out_ << ") __bus_mux_";
+  out_ << node->get_id() << "__(";
+  this->print_name(node->get_src(0).get_impl());
+  out_ << ", ";
+  this->print_name(node->get_src(1).get_impl());
+  out_ << ", ";
+  this->print_name(node);
+  out_ << ");" << std::endl;
+}
+
+void verilogwriter::print_fmult(aluimpl* node) {
+  out_ << "fp_mult __fp_mult_";
+  out_ << node->get_id() << "__(.clock(clk), .dataa(";
+  this->print_name(node->get_src(0).get_impl());
+  out_ << "), .datab(";
+  this->print_name(node->get_src(1).get_impl());
+  out_ << "), .result(";
+  this->print_name(node);
+  out_ << "));" << std::endl;
+}
+
+void verilogwriter::print_fadd(aluimpl* node) {
+  out_ << "fp_add __fp_add_sub_";
+  out_ << node->get_id() << "__(.clock(clk), .dataa(";
+  this->print_name(node->get_src(0).get_impl());
+  out_ << "), .datab(";
+  this->print_name(node->get_src(1).get_impl());
+  out_ << "), .result(";
+  this->print_name(node);
+  out_ << "));" << std::endl;
 }
 
 void verilogwriter::print_select(selectimpl* node) {

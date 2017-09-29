@@ -199,6 +199,76 @@ static void SRL(bitvector& out, const bitvector& in, uint32_t dist) {
   }
 }
 
+static void RotL(bitvector& out, const bitvector& in, uint32_t dist) {
+  assert(out.get_size() == in.get_size());
+  if (dist > in.get_size())
+    dist %= in.get_size();
+  if (0 == dist) {
+    out = in;
+    return;
+  }
+  uint32_t num_words = in.get_num_words();
+  if (num_words == 1) {
+    out.set_word(0, rotl(in.get_word(0), dist, in.get_size()));
+  } else {
+    uint32_t shift_words = dist >> bitvector::WORD_SIZE_LOG;
+    uint32_t shift_bits = dist & bitvector::WORD_MASK;
+    if (shift_bits) {
+      uint32_t shift_bits_r = bitvector::WORD_SIZE - shift_bits;
+      uint32_t prev = in.get_word(num_words - 1);
+      for (uint32_t i = 0, j = shift_words; i < num_words; ++i) {
+        uint32_t curr = in.get_word(i);
+        out.set_word(j, (curr << shift_bits) | (prev >> shift_bits_r));
+        prev = curr;
+        if (++j == num_words)
+          j = 0;
+      }
+    } else {
+      for (uint32_t i = 0, j = shift_words; i < num_words; ++i) {
+        out.set_word(j, in.get_word(i));
+        if (++j == num_words)
+          j = 0;
+      }
+    }
+  }
+  out.clear_unused_bits(); // clear extra bits added by left shift
+}
+
+static void RotR(bitvector& out, const bitvector& in, uint32_t dist) {
+  assert(out.get_size() == in.get_size());
+  if (dist > in.get_size())
+    dist %= in.get_size();
+  if (0 == dist) {
+    out = in;
+    return;
+  }
+  uint32_t num_words = in.get_num_words();
+  if (num_words == 1) {
+    out.set_word(0, rotr(in.get_word(0), dist, in.get_size()));
+  } else {
+    int32_t shift_words = dist >> bitvector::WORD_SIZE_LOG;
+    int32_t shift_bits = dist & bitvector::WORD_MASK;
+    if (shift_bits) {
+      uint32_t shift_bits_l = bitvector::WORD_SIZE - shift_bits;
+      uint32_t prev = in.get_word(0);
+      for (int32_t i = num_words - 1, j = i - shift_words; i >= 0; --i) {
+        uint32_t curr = in.get_word(i);
+        out.set_word(j, (curr >> shift_bits) | (prev << shift_bits_l));
+        prev = curr;
+        if (0 == j--)
+          j = num_words - 1;
+      }
+    } else {
+      for (int32_t i = num_words - 1, j = i - shift_words; i >= 0; --i) {
+        out.set_word(j, in.get_word(i));
+        if (0 == j--)
+          j = num_words - 1;
+      }
+    }
+  }
+  out.clear_unused_bits(); // clear extra bits added by left shift
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 static void Add(bitvector& out, const bitvector& lhs, const bitvector& rhs, uint32_t cin = 0) {
@@ -239,6 +309,25 @@ static void Sub(bitvector& out, const bitvector& lhs, const bitvector& rhs) {
 static void Negate(bitvector& out, const bitvector& in) {
   bitvector zero(out.get_size(), 0x0);
   Sub(out, zero, in);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+static void Mux(bitvector& dst, const bitvector& in, const bitvector& sel) {
+  uint32_t D = dst.get_size();
+  uint32_t N = in.get_size();
+  uint32_t S = sel.get_size();
+  assert(D == N >> S);
+
+  assert(sel.get_num_words() == 1);
+  uint32_t offset = sel.get_word(0) * D;
+  assert(offset + D <= N);
+
+  bitvector::const_iterator iter_in(in.begin() + offset);
+  bitvector::iterator iter_dst(dst.begin());
+  for (uint32_t i = 0; i < D; ++i) {
+    *iter_dst++ = *iter_in++;
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -364,6 +453,24 @@ static void shiftop(bitvector& out, const bitvector& in, const bitvector& bits) 
 }
 
 template <ch_alu_op op>
+static void rotateop(bitvector& dst, const bitvector& in, const bitvector& bits) {
+  assert(dst.get_size() == in.get_size());
+  CH_CHECK(bits.find_last() <= 31, "shift amount out of range!");
+
+  uint32_t wbits = bits.get_word(0);
+  switch (op) {
+  case alu_op_rotl:
+    RotL(dst, in, wbits);
+    break;
+  case alu_op_rotr:
+    RotR(dst, in, wbits);
+    break;
+  default:
+    CH_TODO();
+  }
+}
+
+template <ch_alu_op op>
 static void reduceop(bitvector& out, const bitvector& in) {
   assert(out.get_size() == 1);
   
@@ -442,6 +549,11 @@ static uint32_t get_output_size(ch_alu_op op, const lnode& lhs, const lnode& rhs
 
   case alu_op_sll:
   case alu_op_srl:
+  case alu_op_sra:
+    return lhs.get_size();
+
+  case alu_op_rotl:
+  case alu_op_rotr:
     return lhs.get_size();
 
   case alu_op_eq:
@@ -452,6 +564,9 @@ static uint32_t get_output_size(ch_alu_op op, const lnode& lhs, const lnode& rhs
   case alu_op_ge:
     assert(lhs.get_size() == rhs.get_size());
     return 1;
+
+  case alu_op_mux:
+    return lhs.get_size() >> rhs.get_size();
 
   case alu_op_fadd:
   case alu_op_fsub:
@@ -556,6 +671,13 @@ const bitvector& aluimpl::eval(ch_tick t) {
       shiftop<alu_op_sra>(value_, srcs_[0].eval(t), srcs_[1].eval(t));
       break;
 
+    case alu_op_rotl:
+      rotateop<alu_op_rotl>(value_, srcs_[0].eval(t), srcs_[1].eval(t));
+      break;
+    case alu_op_rotr:
+      rotateop<alu_op_rotr>(value_, srcs_[0].eval(t), srcs_[1].eval(t));
+      break;
+
     case alu_op_add:
       Add(value_, srcs_[0].eval(t), srcs_[1].eval(t));
       break;
@@ -588,6 +710,10 @@ const bitvector& aluimpl::eval(ch_tick t) {
       break;
     case alu_op_ge:
       compareop<alu_op_ge>(value_, srcs_[0].eval(t), srcs_[1].eval(t));
+      break;
+
+    case alu_op_mux:
+      Mux(value_, srcs_[0].eval(t), srcs_[1].eval(t));
       break;
       
     case alu_op_fadd:

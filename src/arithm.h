@@ -9,17 +9,22 @@ enum alu_flags {
   alu_nary    = 4 << 8,
 
   alu_bitwise = 1 << 11,
-  alu_compare = 2 << 11,
-  alu_shift   = 3 << 11,
-  alu_arithm  = 4 << 11,
-  alu_reduce  = 5 << 11,
-  alu_misc    = 6 << 11,
+  alu_compare = 2 << 11,  
+  alu_arithm  = 3 << 11,
+  alu_shift   = 4 << 11,
+  alu_rotate  = 5 << 11,
+  alu_reduce  = 6 << 11,
+  alu_misc    = 7 << 11,
 
   alu_integer = 1 << 14,
   alu_fixed   = 2 << 14,
   alu_float   = 3 << 14,
   alu_double  = 4 << 14,
 };
+
+#define CH_ALUOP_ARY(x)   (x & (0x7 <<  8))
+#define CH_ALUOP_CLASS(x) (x & (0x7 << 11))
+#define CH_ALUOP_DATA(x)  (x & (0x7 << 14))
 
 #define CH_ALUOP_TYPE(e, v) alu_op_##e = v,
 #define CH_ALUOP_ENUM(m) \
@@ -51,10 +56,13 @@ enum alu_flags {
   m(gt,    26 | alu_binary | alu_compare | alu_integer) \
   m(le,    27 | alu_binary | alu_compare | alu_integer) \
   m(ge,    28 | alu_binary | alu_compare | alu_integer) \
-  m(fadd,  29 | alu_binary | alu_arithm | alu_float) \
-  m(fsub,  30 | alu_binary | alu_arithm | alu_float) \
-  m(fmult, 31 | alu_binary | alu_arithm | alu_float) \
-  m(fdiv,  32 | alu_binary | alu_arithm | alu_float)
+  m(rotl,  29 | alu_binary | alu_rotate | alu_integer) \
+  m(rotr,  30 | alu_binary | alu_rotate | alu_integer) \
+  m(mux,   31 | alu_binary | alu_misc | alu_integer) \
+  m(fadd,  32 | alu_binary | alu_arithm | alu_float) \
+  m(fsub,  33 | alu_binary | alu_arithm | alu_float) \
+  m(fmult, 34 | alu_binary | alu_arithm | alu_float) \
+  m(fdiv,  35 | alu_binary | alu_arithm | alu_float)
 
 #define CH_BINOP_GEN(func, op) \
   template <typename A, typename B, \
@@ -338,18 +346,7 @@ template <typename A, typename B,
           CH_REQUIRES(is_bit_convertible<A, deduce_first_type<A, B>::bitcount>::value),
           CH_REQUIRES(is_bit_convertible<B, deduce_first_type<B, A>::bitcount>::value)>
 const auto ch_rotl(const A& a, const B& b) {
-  static const unsigned NA = deduce_first_type<A, B>::bitcount;
-  static const unsigned NB = deduce_first_type<B, A>::bitcount;
-  typename bitbase_cast<B, NB>::type _b(b);
-  ch_bit<NA> ret(a);
-  for (unsigned i = 0, n = std::min(NB, log2ceil(NA)); i < n; ++i) {
-    ch_bit<NA> shifted, in(ret.clone());
-    for (unsigned j = 0, s = (1 << i); j < NA; ++j) {
-      shifted[(j + s) % NA] = in[j];
-    }
-    ret = ch_select(_b[i], shifted, in);
-  }
-  return ret;
+  return OpShift<alu_op_rotl, deduce_first_type<A, B>::bitcount, deduce_first_type<B, A>::bitcount>(a, b);
 }
 
 template <typename A, typename B,
@@ -357,18 +354,7 @@ template <typename A, typename B,
           CH_REQUIRES(is_bit_convertible<A, deduce_first_type<A, B>::bitcount>::value),
           CH_REQUIRES(is_bit_convertible<B, deduce_first_type<B, A>::bitcount>::value)>
 const auto ch_rotr(const A& a, const B& b) {
-  static const unsigned NA = deduce_first_type<A, B>::bitcount;
-  static const unsigned NB = deduce_first_type<B, A>::bitcount;
-  typename bitbase_cast<B, NB>::type _b(b);
-  ch_bit<NA> ret(a);
-  for (unsigned i = 0, n = std::min(NB, log2ceil(NA)); i < n; ++i) {
-    ch_bit<NA> shifted, in(ret.clone());
-    for (unsigned j = 0, s = (1 << i); j < NA; ++j) {
-      shifted[j] = in[(j + s) % NA];
-    }
-    ret = ch_select(_b[i], shifted, in);
-  }
-  return ret;
+  return OpShift<alu_op_rotr, deduce_first_type<A, B>::bitcount, deduce_first_type<B, A>::bitcount>(a, b);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -422,14 +408,8 @@ const auto ch_mod(const A& a, const B& b) {
 
 template <unsigned I, unsigned S>
 const auto ch_mux(const ch_bitbase<I>& in, const ch_bitbase<S>& sel) {
-  static const unsigned R = (I >> S);
-  static_assert(I == (R << S), "input size mismatch");
-  auto cs = ch_case(sel, 0, in.template aslice<R>(0));
-  uint32_t last_addr = (1 << S) - 1;
-  for (uint32_t a = 1; a < last_addr; ++a) {
-    cs(a, in.template aslice<R>(a));
-  }
-  return cs(in.template aslice<R>(last_addr));
+  return make_bit<(I >> S)>(
+        createAluNode(alu_op_mux, get_lnode(in), get_lnode(sel)));
 }
 
 }

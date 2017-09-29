@@ -393,6 +393,5 @@ const auto make_return(const T0& arg0, const Ts&... args) {
 }
 }
 
-#define CH_OUT(...) typename cash::internal::return_type<__VA_ARGS__>::type
 #define CH_RET(...) return cash::internal::make_return(__VA_ARGS__)
 #define CH_TIE(...) std::forward_as_tuple(__VA_ARGS__)

@@ -24,6 +24,9 @@ int main(int argc, char **argv) {
   
   auto adder = ch_function(Adder<2>);
   __tie(out, cout) = adder(lhs, rhs, cin);
+  //auto adder = ch_call(Adder<2>)(lhs, rhs, cin, out, cout);
+  //auto adder = __call(Adder<2>, lhs, rhs, cin, out, cout);
+
 
   std::ofstream v_file("adder.v");
   adder.to_verilog(v_file, "adder", "lhs", "rhs", "cin", "out", "cout");
