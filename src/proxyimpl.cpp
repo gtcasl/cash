@@ -303,7 +303,7 @@ const bitvector& proxyimpl::eval(ch_tick t) {
 }
 
 void proxyimpl::print(std::ostream& out, uint32_t level) const {
-  out << "#" << id_ << " <- " << this->get_name() << value_.get_size();
+  out << "#" << id_ << " <- " << this->get_op() << value_.get_size();
   out << "(";
   for (uint32_t i = 0, s = 0, n = ranges_.size(); i < n; ++i) {
     const range_t& range = ranges_[i];

@@ -5,29 +5,26 @@
 namespace cash {
 namespace internal {
 
-lnodeimpl* createInputNode(const snode& in);
+lnodeimpl* createInputNode(const std::string& name, uint32_t size);
 
-snodeimpl* createOutputNode(const lnode& out);
+lnodeimpl* createOutputNode(const std::string& name, const lnode& src);
 
-template <typename T, unsigned N = T::bitcount,
-          CH_REQUIRES(is_bus_convertible<T>::value)>
-auto ch_input(const T& in) {
-  return make_bit<N>(createInputNode(get_snode<T, N>(in)));
-}
-
-template <typename T, unsigned N = T::bitcount,
-          CH_REQUIRES(is_bit_convertible<T>::value)>
-auto ch_output(const T& out) {
-  return make_bus<N>(createOutputNode(get_lnode<T, N>(out)));
-}
+void bindInput(const lnode& input, const lnode& src);
 
 template <bool input, bool output>
 class ch_port {
 public:
-  //--
+  static constexpr bool is_input = input;
+  static constexpr bool is_output = output;
+
+  ch_port(const std::string& inout_name) : name_(inout_name) {}
+
+  const std::string& get_name() const {
+    return name_;
+  }
 
 protected:
-  //--
+  std::string name_;
 };
 
 template <typename T>
@@ -44,33 +41,39 @@ public:
   using const_type = typename T::const_type;
   using flip_type = ch_out<T>;
 
-  ch_in() {}
-  ch_in(const ch_in& in) : base(in) {}
-  ch_in(ch_in&& in) : base(std::move(in)) {}
+  ch_in(const std::string& name = "io") : ch_port(name) {
+    input_ = createInputNode(name, base::bitcount);
+    this->write_data(0, {input_, 0 , base::bitcount}, 0, base::bitcount);
+  }
+
+  ch_in(const ch_in& in) : base(in), ch_port(in.get_name()) {}
+  ch_in(ch_in&& in) : base(std::move(in)), ch_port(std::move(in)) {}
 
   template <typename U,
             CH_REQUIRES(is_cast_convertible<U, T>::value)>
-  void operator()(const ch_in<U>& in) {
-    this->assign(in);
+  void operator()(const ch_in<U>& in) const {
+    bindInput(input_, get_lnode(in));
   }
 
   template <typename U,
             CH_REQUIRES(is_cast_convertible<U, T>::value)>
-  void operator()(const ch_out<U>& out) {
-    this->assign(out);
+  void operator()(const ch_out<U>& out) const {
+    bindInput(input_, get_lnode(out));
+  }
+
+  void operator()(const ch_bitbase<T::bitcount>& value) const {
+    bindInput(input_, get_lnode(value));
   }
 
   template <typename U,
             CH_REQUIRES(is_cast_convertible<U, T>::value)>
-  void operator()(const U& value) {
-    this->assign(value);
-  }
-
-  void operator()(const ch_busbase<T::bitcount>& value) {
-    this->assign(ch_input(value));
+  void operator()(const U& value) const {
+    bindInput(input_, get_lnode<U, base::bitcount>(value));
   }
 
 protected:
+
+  lnode input_;
 
   ch_in& operator=(const ch_in&) = delete;
   ch_in& operator=(ch_in&&) = delete;
@@ -85,33 +88,22 @@ public:
   using const_type = typename T::const_type;
   using flip_type = ch_in<T>;
 
-  ch_out() {}
-  ch_out(const ch_out& out) : base(out) {}
-  ch_out(ch_out&& out) : base(std::move(out)) {}
+  ch_out(const std::string& name = "io") : ch_port(name) {
+    output_ = createOutputNode(name, get_lnode(*this));
+  }
+
+  ch_out(const ch_out& out) : base(out), ch_port(out.get_name()) {}
+  ch_out(ch_out&& out) : base(std::move(out)), ch_port(std::move(out)) {}
 
   template <typename U,
             CH_REQUIRES(is_cast_convertible<U, T>::value)>
-  void operator()(const ch_out<U>& out) {
-    base::operator=(out);
-  }
-
-  template <typename U,
-            CH_REQUIRES(is_cast_convertible<T, U>::value)>
-  void operator()(ch_in<U>& in) {
-    in(*this);
-  }
-
-  template <typename U,
-            CH_REQUIRES(is_cast_convertible<T, U>::value)>
-  void operator()(U& value) {
-    value = *this;
-  }
-
-  void operator()(ch_bus<T::bitcount>& value) {
-    value = ch_output(*this);
+  void operator()(ch_out<U>& out) const {
+    out = make_type<U>(output_);
   }
 
 protected:
+
+  lnode output_;
 
   ch_out& operator=(const ch_out&) = delete;
   ch_out& operator=(ch_out&&) = delete;
@@ -123,7 +115,10 @@ protected:
   CH_PAIR_L(x) CH_PAIR_R(x)
 
 #define CH_INOUT_FLIP_FIELD(i, x) \
-  CH_PAIR_L(x)::flip_type CH_PAIR_R(x)
+  typename CH_PAIR_L(x)::flip_type CH_PAIR_R(x)
+
+#define CH_INOUT_CTOR_APPLY(i, x) \
+  CH_PAIR_R(x)(cash::internal::fstring("%s_%s", this->get_name().c_str(), CH_STRINGIZE(CH_PAIR_R(x))))
 
 #define CH_INOUT_BIND_APPLY(i, x) \
   this->CH_PAIR_R(x)(__rhs__.CH_PAIR_R(x))
@@ -134,26 +129,20 @@ protected:
 #define CH_INOUT_BIND_FIELD_APPLY(i, x) \
   this->CH_PAIR_R(x)(std::forward<__T##i>(CH_CONCAT(_,CH_PAIR_R(x))))
 
-#define CH_INOUT_IMPL(name, ...) \
-  class name : public cash::internal::ch_port<true, true> { \
+#define CH_INOUT_IMPL(inout_name, ...) \
+  class inout_name : public cash::internal::ch_port<true, true> { \
   private: \
-    CH_STRUCT_IMPL(__value_type__, __VA_ARGS__); \
     class __flip_type__ : public cash::internal::ch_port<true, true> { \
     private: \
       __flip_type__& operator=(const __flip_type__&) = delete; \
     public: \
-      static constexpr unsigned bitcount = __value_type__::bitcount; \
+      static constexpr unsigned bitcount = CH_STRUCT_SIZE(__VA_ARGS__); \
       using base = cash::internal::ch_port<true, true>; \
-      using value_type = __value_type__; \
-      using const_type = __value_type__::const_type; \
-      using flip_type = name; \
-      __flip_type__() {} \
-      __flip_type__(const __flip_type__& __rhs__) : CH_FOR_EACH(CH_STRUCT_COPY_CTOR_APPLY, CH_SEP_COMMA, __VA_ARGS__) {} \
-      __flip_type__(__flip_type__&& __rhs__) : CH_FOR_EACH(CH_STRUCT_MOVE_CTOR_APPLY, CH_SEP_COMMA, __VA_ARGS__) {} \
+      using flip_type = inout_name; \
+      __flip_type__(const std::string& name = "io") : CH_FOR_EACH(CH_INOUT_CTOR_APPLY, CH_SEP_COMMA, __VA_ARGS__), ch_port(name) {} \
+      __flip_type__(const __flip_type__& __rhs__) : CH_FOR_EACH(CH_STRUCT_COPY_CTOR_APPLY, CH_SEP_COMMA, __VA_ARGS__), ch_port(__rhs__.get_name()) {} \
+      __flip_type__(__flip_type__&& __rhs__) : CH_FOR_EACH(CH_STRUCT_MOVE_CTOR_APPLY, CH_SEP_COMMA, __VA_ARGS__), ch_port(std::move(__rhs__)) {} \
       void operator()(__flip_type__& __rhs__) { \
-        CH_FOR_EACH(CH_INOUT_BIND_APPLY, CH_SEP_SEMICOLON, __VA_ARGS__); \
-      } \
-      void operator()(value_type& __rhs__) { \
         CH_FOR_EACH(CH_INOUT_BIND_APPLY, CH_SEP_SEMICOLON, __VA_ARGS__); \
       } \
       template <CH_REVERSE_FOR_EACH(CH_STRUCT_FIELD_CTOR_TMPL, CH_SEP_COMMA, __VA_ARGS__)> \
@@ -162,21 +151,15 @@ protected:
       } \
       CH_FOR_EACH(CH_INOUT_FLIP_FIELD, CH_SEP_SEMICOLON, __VA_ARGS__); \
     }; \
-    name& operator=(const name&) = delete; \
+    inout_name& operator=(const inout_name&) = delete; \
   public: \
-    static constexpr unsigned bitcount = __value_type__::bitcount; \
+    static constexpr unsigned bitcount = CH_STRUCT_SIZE(__VA_ARGS__); \
     using base = cash::internal::ch_port<true, true>; \
-    using value_type = __value_type__; \
-    using const_type = __value_type__::const_type; \
-    using bus_type = value_type::bus_type; \
     using flip_type  = __flip_type__; \
-    name() {} \
-    name(const name& __rhs__) : CH_FOR_EACH(CH_STRUCT_COPY_CTOR_APPLY, CH_SEP_COMMA, __VA_ARGS__) {} \
-    name(name&& __rhs__) : CH_FOR_EACH(CH_STRUCT_MOVE_CTOR_APPLY, CH_SEP_COMMA, __VA_ARGS__) {} \
-    void operator()(name& __rhs__) { \
-      CH_FOR_EACH(CH_INOUT_BIND_APPLY, CH_SEP_SEMICOLON, __VA_ARGS__); \
-    } \
-    void operator()(value_type& __rhs__) { \
+    inout_name(const std::string& name = "io") : CH_FOR_EACH(CH_INOUT_CTOR_APPLY, CH_SEP_COMMA, __VA_ARGS__), ch_port(name) {} \
+    inout_name(const inout_name& __rhs__) : CH_FOR_EACH(CH_STRUCT_COPY_CTOR_APPLY, CH_SEP_COMMA, __VA_ARGS__), ch_port(__rhs__.get_name()) {} \
+    inout_name(inout_name&& __rhs__) : CH_FOR_EACH(CH_STRUCT_MOVE_CTOR_APPLY, CH_SEP_COMMA, __VA_ARGS__), ch_port(std::move(__rhs__)) {} \
+    void operator()(inout_name& __rhs__) { \
       CH_FOR_EACH(CH_INOUT_BIND_APPLY, CH_SEP_SEMICOLON, __VA_ARGS__); \
     } \
     template <CH_REVERSE_FOR_EACH(CH_STRUCT_FIELD_CTOR_TMPL, CH_SEP_COMMA, __VA_ARGS__)> \
@@ -190,8 +173,7 @@ protected:
   CH_INOUT_IMPL(name, CH_REM body)
 
 #define CH_IO(...) \
-  CH_INOUT_IMPL(io_t, __VA_ARGS__); \
-  io_t io
-
+  CH_INOUT_IMPL(io_type, __VA_ARGS__); \
+  io_type io
 }
 }

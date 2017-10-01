@@ -93,7 +93,7 @@ public:
   }
   
   void write(const lnode& data);
-  
+
   void tick(ch_tick t);
   void tick_next(ch_tick t);
   

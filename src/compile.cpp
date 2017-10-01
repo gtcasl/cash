@@ -37,7 +37,7 @@ void ch_compiler::syntax_check() {
   if (undefs.size()) {
     ctx_->dump_ast(std::cerr, 1);    
     for (auto node : undefs) {
-      fprintf(stderr, "error: un-initialized node %s%d(#%d)!\n", node->get_name(), node->get_size(), node->get_id());
+      fprintf(stderr, "error: un-initialized node %s%d(#%d)!\n", to_string(node->get_op()), node->get_size(), node->get_id());
     }
     if (1 == undefs.size())
       CH_ABORT("1 node has not been initialized.");

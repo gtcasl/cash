@@ -1,5 +1,5 @@
 `timescale 1ns/1ns
-`include "fastmul.v"
+`include "fastmult.v"
 
 module testbench();
 
@@ -7,7 +7,7 @@ module testbench();
     reg[3:0]  rhs = 3;
     wire[7:0] out;
 
-    fastmul m1(lhs, rhs, out);
+    fastmult m1(lhs, rhs, out);
 
     initial begin
         $dumpfile("testbench.vcd");

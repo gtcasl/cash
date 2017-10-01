@@ -2,10 +2,26 @@
 
 #include "device.h"
 #include "context.h"
-#include "snodeimpl.h"
 
 namespace cash {
 namespace internal {
+
+class clock_driver {
+public:
+  clock_driver(bool value) : value_(value) {}
+
+  void add_node(lnodeimpl* node);
+
+  void flip();
+
+  bool is_empty() const {
+    return nodes_.empty();
+  }
+
+private:
+  std::vector<lnodeimpl*> nodes_;
+  bool value_;
+};
 
 class simulatorimpl : public refcounted {
 public:
@@ -30,8 +46,8 @@ protected:
 
   std::unordered_set<context*> contexts_;
   bool initialized_;
-  snodeimpl* clk_;
-  snodeimpl* reset_;
+  clock_driver clk_;
+  clock_driver reset_;
 };
 
 }

@@ -15,7 +15,6 @@
 #include "union.h"
 #include "real.h"
 #include "seq.h"
-#include "bus.h"
 #include "port.h"
 #include "device.h"
 #include "simulator.h"
@@ -58,6 +57,7 @@ namespace core {
 
   template <typename T> using ch_in = cash::internal::ch_in<T>;
   template <typename T> using ch_out = cash::internal::ch_out<T>;
+  template <typename T> using ch_module = cash::internal::ch_module<T>;
 
   //
   // bit types
@@ -196,23 +196,6 @@ namespace sim {
 
   using ch_tick  = cash::internal::ch_tick;
   
-  template <unsigned N> using ch_bus = cash::internal::ch_bus<N>;
-
-  template <unsigned N> using ch_busbase = cash::internal::ch_busbase<N>;
-
-  //
-  // bus types
-  //
-
-  using ch_bus1   = ch_bus<1>;
-  using ch_bus2   = ch_bus<2>;
-  using ch_bus4   = ch_bus<4>;
-  using ch_bus8   = ch_bus<8>;
-  using ch_bus16  = ch_bus<16>;
-  using ch_bus32  = ch_bus<32>;
-  using ch_bus64  = ch_bus<64>;
-  using ch_bus128 = ch_bus<128>;
-  
   //
   // objects
   //
@@ -225,21 +208,19 @@ namespace sim {
   //
   // functions
   //
-  using cash::internal::ch_function;
-  using cash::internal::ch_module;
 
+  using cash::internal::ch_peek;
+  using cash::internal::ch_poke;
+  using cash::internal::ch_toVerilog;
+  using cash::internal::ch_dumpStats;
 }
 
 //
 // literals
 //
 
-inline namespace core_literals {
-  using namespace cash::internal::core_literals;
-}
-
-inline namespace sim_literals {
-  using namespace cash::internal::sim_literals;
+inline namespace literals {
+  using namespace cash::internal::literals;
 }
 
 }

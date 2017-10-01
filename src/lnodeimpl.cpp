@@ -6,10 +6,16 @@
 #include "tickable.h"
 #include "regimpl.h"
 #include "cdomain.h"
-#include "snodeimpl.h"
 #include "context.h"
 
 using namespace cash::internal;
+
+const char* cash::internal::to_string(ch_operator op) {
+  static const char* sc_names[] = {
+    CH_OPERATOR_ENUM(CH_OPERATOR_NAME)
+  };
+  return sc_names[(int)op];
+}
 
 lnodeimpl::lnodeimpl(ch_operator op, context* ctx, uint32_t size) 
   : op_(op)
@@ -20,13 +26,6 @@ lnodeimpl::lnodeimpl(ch_operator op, context* ctx, uint32_t size)
 
 lnodeimpl::~lnodeimpl() {
   ctx_->remove_node(this);  
-}
-
-const char* lnodeimpl::get_name() const {
-  static const char* sc_names[] = {
-    CH_OPERATOR_ENUM(CH_OPERATOR_NAME)
-  };
-  return sc_names[(int)op_];
 }
 
 bool lnodeimpl::ready() const {
@@ -53,7 +52,7 @@ lnodeimpl* lnodeimpl::get_slice(uint32_t offset, uint32_t length) {
 }
 
 void lnodeimpl::print(std::ostream& out, uint32_t level) const {
-  out << "#" << id_ << " <- " << this->get_name() << value_.get_size();
+  out << "#" << id_ << " <- " << this->get_op() << value_.get_size();
   uint32_t n = srcs_.size();
   if (n > 0) {
     out << "(";
@@ -100,7 +99,7 @@ lnode::lnode(const bitvector& value) {
   impl_ = ctx_curr()->get_literal(value);
 }
 
-lnode::lnode(const nodelist<lnode>& data) : impl_(nullptr) {
+lnode::lnode(const nodelist& data) : impl_(nullptr) {
   if (data.is_srccopy())  {
     impl_ = data.begin()->src.get_impl();
   } else {
@@ -128,6 +127,10 @@ lnode::lnode(lnode&& rhs, uint32_t size) {
 lnode::lnode(const lnode& rhs) : impl_(rhs.impl_) {}
 
 lnode::~lnode() {
+  this->clear();
+}
+
+void lnode::clear() {
   impl_ = nullptr;
 }
 
@@ -270,7 +273,7 @@ void lnode::assign(uint32_t dst_offset,
   }
 }
 
-void lnode::read_data(nodelist<lnode>& inout,
+void lnode::read_data(nodelist& inout,
                       uint32_t offset,
                       uint32_t length,
                       uint32_t size) const {
@@ -280,7 +283,7 @@ void lnode::read_data(nodelist<lnode>& inout,
 }
 
 void lnode::write_data(uint32_t dst_offset,
-                       const nodelist<lnode>& in,
+                       const nodelist& in,
                        uint32_t src_offset,
                        uint32_t length,
                        uint32_t size) {
@@ -299,11 +302,56 @@ void lnode::write_data(uint32_t dst_offset,
   }
 }
 
+void lnode::read_bytes(uint32_t dst_offset,
+                       void* out,
+                       uint32_t out_cbsize,
+                       uint32_t src_offset,
+                       uint32_t length,
+                       uint32_t size) const {
+  this->ensureInitialized(size, false);
+  impl_->read_bytes(dst_offset, out, out_cbsize, src_offset, length);
+}
+
+void lnode::write_bytes(uint32_t dst_offset,
+                        const void* in,
+                        uint32_t in_cbsize,
+                        uint32_t src_offset,
+                        uint32_t length,
+                        uint32_t size) const {
+  this->ensureInitialized(size, false);
+  impl_->write_bytes(dst_offset, in, in_cbsize, src_offset, length);
+}
+
+const bitvector& lnode::get_value() const {
+  assert(impl_);
+  return impl_->get_value();
+}
+
+void lnode::set_value(const bitvector& value) {
+  assert(impl_);
+  impl_->set_value(value);
+}
+
+bool lnode::get_bool(unsigned i) const {
+  assert(impl_);
+  return impl_->get_bool(i);
+}
+
+void lnode::set_bool(unsigned i, bool value) {
+  assert(impl_);
+  impl_->set_bool(i, value);
+}
+
 lnodeimpl* lnode::clone(uint32_t size) const {
   return impl_ ? impl_->get_slice(0, size) : nullptr;
 }
 
-std::ostream& cash::internal::operator<<(std::ostream& out, const lnode& rhs) {
-  out << rhs.get_id();
+std::ostream& cash::internal::operator<<(std::ostream& out, ch_operator op) {
+  out << to_string(op);
+  return out;
+}
+
+std::ostream& cash::internal::operator<<(std::ostream& out, const lnode& node) {
+  out << node.get_value();
   return out;
 }

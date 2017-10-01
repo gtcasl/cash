@@ -40,9 +40,10 @@ public:
 
   void write(const lnode& addr,
              size_t dst_offset,
-             const nodelist<lnode>& in,
+             const nodelist& in,
              size_t src_offset,
-             size_t length);  
+             size_t length);
+
 private:
 
   void load(const std::vector<uint8_t>& data);
@@ -54,8 +55,7 @@ template <unsigned N>
 class memport_ref : public ch_bitbase<N> {
 public:
   using base = ch_bitbase<N>;
-  using data_type  = typename base::data_type;
-  using value_type = typename data_traits<data_type>:: template device_type<base::bitcount>;
+  using value_type = ch_bit<N>;
 
   memport_ref& operator=(const ch_bitbase<N>& rhs) {
     this->assign(rhs);
@@ -69,14 +69,24 @@ protected:
     , addr_(addr)
   {}
 
-  void read_data(nodelist<lnode>& inout, size_t offset, size_t length) const override {
+  void read_data(nodelist& inout, size_t offset, size_t length) const override {
     CH_CHECK(offset + length <= N, "invalid read range");
     inout.push(mem_.read(addr_), offset, length);
   }
 
-  void write_data(size_t dst_offset, const nodelist<lnode>& in, size_t src_offset, size_t length) override {
+  void write_data(size_t dst_offset, const nodelist& in, size_t src_offset, size_t length) override {
     CH_CHECK(0 == dst_offset || N == length, "partial update not supported!");
     mem_.write(addr_, dst_offset, in, src_offset, length);
+  }
+
+  void read_bytes(uint32_t dst_offset, void* out, uint32_t out_cbsize, uint32_t src_offset, uint32_t length) const override {
+    CH_UNUSED(dst_offset, out, out_cbsize, src_offset, length);
+    CH_ABORT("invalid call");
+  }
+
+  void write_bytes(uint32_t dst_offset, const void* in, uint32_t in_cbsize, uint32_t src_offset, uint32_t length) const override {
+    CH_UNUSED(dst_offset, in, in_cbsize, src_offset, length);
+    CH_ABORT("invalid call");
   }
 
   memory& mem_;

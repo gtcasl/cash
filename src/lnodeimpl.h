@@ -41,8 +41,6 @@ public:
   ch_operator get_op() const {
     return op_;
   }
-  
-  const char* get_name() const;
 
   context* get_ctx() const {
     return ctx_;
@@ -78,8 +76,24 @@ public:
     return value_;
   }
   
-  bitvector& get_value() { 
-    return value_;
+  void set_value(const bitvector& value) {
+    value_ = value;
+  }
+
+  bool get_bool(unsigned i) const {
+    return value_[i];
+  }
+
+  void set_bool(unsigned i, bool value) {
+    value_[i] = value;
+  }
+
+  void read_bytes(uint32_t dst_offset, void* out, uint32_t out_cbsize, uint32_t src_offset, uint32_t size) const {
+    value_.read(dst_offset, out, out_cbsize, src_offset, size);
+  }
+
+  void write_bytes(uint32_t dst_offset, const void* in, uint32_t in_cbsize, uint32_t src_offset, uint32_t size) {
+    value_.write(dst_offset, in, in_cbsize, src_offset, size);
   }
 
   virtual lnodeimpl* get_slice(uint32_t offset, uint32_t length);
@@ -107,6 +121,10 @@ public:
 
   const bitvector& eval(ch_tick t) override;
 };
+
+const char* to_string(ch_operator op);
+
+std::ostream& operator<<(std::ostream& out, ch_operator op);
 
 }
 }

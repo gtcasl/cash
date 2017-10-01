@@ -23,15 +23,11 @@ public:
   verilogwriter(std::ostream& out);
   ~verilogwriter();
 
-  void print(context* ctx,
-             const std::string& module_name,
-             const std::initializer_list<const char*>& port_names);
+  void print(context* ctx);
 
 protected:
 
-  void print_header(
-      context* ctx,
-      const std::string& module_name);
+  void print_header(context* ctx);
 
   void print_body(context* ctx);
 
@@ -72,8 +68,6 @@ protected:
   void print_mem(memimpl* node);
 
   std::ostream& out_;
-
-  std::map<uint32_t, const char*> m_port_names;
 };
 
 }

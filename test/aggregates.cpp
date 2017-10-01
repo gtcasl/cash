@@ -1,7 +1,5 @@
 #include "common.h"
 
-using namespace cash::core_literals;
-
 __enum (my_enum, 4, (
   (idle, 0),
   execute,

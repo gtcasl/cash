@@ -7,8 +7,8 @@
 
 using namespace cash::internal;
 
-deviceimpl::deviceimpl() {
-  ctx_ = ctx_create();
+deviceimpl::deviceimpl(const std::string& name) {
+  ctx_ = ctx_create(name);
 }
 
 deviceimpl::~deviceimpl() {
@@ -26,21 +26,6 @@ void deviceimpl::end_context() {
 void deviceimpl::compile() {
   ch_compiler compiler(ctx_);
   compiler.run();
-}
-
-snodeimpl* deviceimpl::get_tap(const std::string& name, uint32_t size) const {
-  return ctx_->get_tap(name, size);
-}
-
-void deviceimpl::to_verilog(std::ostream& out,
-                            const std::string& module_name,
-                            const std::initializer_list<const char*>& port_names) {
-  verilogwriter writer(out);
-  writer.print(ctx_, module_name, port_names);
-}
-
-void deviceimpl::dump_stats(std::ostream& out) {
-  ctx_->dump_stats(out);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -65,14 +50,9 @@ ch_device& ch_device::operator=(const ch_device& device) {
   return *this;
 }
 
-context* ch_device::get_ctx() const {
-  CH_CHECK(impl_ != nullptr, "uninitialized device!");
-  return impl_->get_ctx();
-}
-
-void ch_device::begin_context() {
+void ch_device::begin_context(const std::string& name) {
   if (nullptr == impl_) {
-    impl_ = new deviceimpl();
+    impl_ = new deviceimpl(name);
     impl_->acquire();
   }
   impl_->begin_context();
@@ -88,30 +68,31 @@ void ch_device::compile() {
   impl_->compile();
 }
 
-snodeimpl* ch_device::get_tap(const std::string& name, uint32_t size) const {
-  CH_CHECK(impl_ != nullptr, "uninitialized device!");
-  return impl_->get_tap(name, size);
-}
-
-void ch_device::to_verilog(std::ostream& out,
-                           const std::string& module_name,
-                           const std::initializer_list<const char*>& port_names) {
-  CH_CHECK(impl_ != nullptr, "uninitialized device!");
-  impl_->to_verilog(out, module_name, port_names);
-}
-
-void ch_device::dump_stats(std::ostream& out) {
-  CH_CHECK(impl_ != nullptr, "uninitialized device!");
-  impl_->dump_stats(out);
-}
-
 ///////////////////////////////////////////////////////////////////////////////
 
-lnodeimpl* cash::internal::createInputNode(const snode& in) {
-  return new inputimpl(ctx_curr(), in);
+lnodeimpl* cash::internal::createInputNode(const std::string& name, uint32_t size) {
+  return new inputimpl(ctx_curr(), size, name);
 }
 
-snodeimpl* cash::internal::createOutputNode(const lnode& out) {
-  outputimpl* impl = new outputimpl(out);
-  return impl->get_bus().get_impl();
+lnodeimpl* cash::internal::createOutputNode(const std::string& name, const lnode& src) {
+  return new outputimpl(src, name);
+}
+
+void cash::internal::bindInput(const lnode& input, const lnode& src) {
+  dynamic_cast<inputimpl*>(input.get_impl())->set_input(src);
+}
+
+context* cash::internal::get_ctx(const ch_device& device) {
+  return device.impl_->get_ctx();
+}
+
+void cash::internal::toVerilog(std::ostream& out, const std::initializer_list<const ch_device*>& devices) {
+  verilogwriter writer(out);
+  for (auto device : devices) {
+    writer.print(get_ctx(*device));
+  }
+}
+
+void cash::internal::ch_dumpStats(std::ostream& out, const ch_device& device) {
+  get_ctx(device)->dump_stats(out);
 }

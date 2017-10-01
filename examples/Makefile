@@ -3,7 +3,7 @@
 CXXFLAGS += -std=c++14 -O0 -g -fmax-errors=5
 LDFLAGS += -lcash
 
-SRCS = adder.cpp counter.cpp fastmul.cpp fifo.cpp
+SRCS = adder.cpp counter.cpp fastmult.cpp fifo.cpp
 
 PROJECTS = $(SRCS:.cpp=.out)
 
@@ -19,7 +19,7 @@ all: $(PROJECTS)
 	$(CXX) $(CXXFLAGS) -MM $^ > .depend;
 
 clean:
-	rm -f *.out *.o *.vcd .depend *~ *\#
+	rm -f *.out *.o *.vcd *.iv .depend *~ *\#
 
 run: $(PROJECTS)
 	$(foreach proj, $(PROJECTS), ./$(proj) || exit;)	 

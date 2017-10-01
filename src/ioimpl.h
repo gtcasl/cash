@@ -1,7 +1,6 @@
 #pragma once
 
 #include "lnodeimpl.h"
-#include "snode.h"
 
 namespace cash {
 namespace internal {
@@ -11,72 +10,77 @@ public:
   ioimpl(ch_operator op, context* ctx, uint32_t size)
     : lnodeimpl(op, ctx, size)
   {}
+
+  ioimpl(ch_operator op, context* ctx, uint32_t size, const std::string& name)
+    : lnodeimpl(op, ctx, size)
+    , name_(name)
+  {}
+
+  void set_name(const std::string& name) {
+    name_ = name;
+  }
+
+  const std::string& get_name() const {
+    return name_;
+  }
+
+protected:
+  std::string name_;
 };
 
 class inputimpl : public ioimpl {
 public:
-  inputimpl(ch_operator op, context* ctx, uint32_t size);
+  inputimpl(ch_operator op, context* ctx, uint32_t size, const std::string& name);
 
-  inputimpl(context* ctx, const snode& node);
-  
-  const snode& get_bus() const {
-    return bus_;
+  inputimpl(context* ctx, uint32_t size, const std::string& name)
+    : inputimpl(op_input, ctx, size, name)
+  {}
+
+  void set_input(const lnode& input) {
+    assert(ctx_ != input.get_ctx());
+    input_ = input;
   }
-
-  void bind(const snode& node);
-
-  void unbind();
+  
+  const lnode& get_input() const {
+    return input_;
+  }
 
   const bitvector& eval(ch_tick t) override;
   
   void print(std::ostream& out, uint32_t level) const override;
   
-protected:
-  snode bus_;
+protected:  
+  lnode input_;
   ch_tick tick_;
 };
 
 class outputimpl : public ioimpl {
 public:
-  outputimpl(ch_operator op, const lnode& src);
-
-  outputimpl(const lnode& src)
-    : outputimpl(op_output, src)
-  {}
+  outputimpl(const lnode& src, const std::string& name);
   
-  const snode& get_bus() const {
-    return bus_;
+  const bitvector& eval(ch_tick t) override;
+  
+  void print(std::ostream& out, uint32_t level) const override;
+  
+protected:
+
+  ch_tick tick_;
+};
+
+class tapimpl : public ioimpl {
+public:
+  tapimpl(const lnode& src, const std::string& name);
+
+  const lnode& get_target() const {
+    return srcs_[0];
   }
 
   const bitvector& eval(ch_tick t) override;
   
   void print(std::ostream& out, uint32_t level) const override;
-  
-private:
-  snode bus_;
-  ch_tick tick_;
-};
 
-class tapimpl : public outputimpl {
-public:
-  tapimpl(const std::string& name, const lnode& src);
-  
-  const lnode& get_target() const {
-    return srcs_[0];
-  }
-  
-  void set_tagName(const std::string& tagName) {
-    tapName_ = tagName;
-  }
-  
-  const std::string& get_tapName() const {
-    return tapName_;
-  }
-  
-  void print(std::ostream& out, uint32_t level) const override;
-  
 protected:
-  std::string  tapName_;
+  ch_tick tick_;
 };
 
 }

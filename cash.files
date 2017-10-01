@@ -9,9 +9,9 @@ examples/adder_tb.v
 examples/counter.cpp
 examples/counter_tb.v
 examples/counter_tb.v
-examples/fastmul.cpp
 examples/fastmul_tb.v
-examples/fastmul_tb.v
+examples/fastmult.cpp
+examples/fastmult_tb.v
 examples/fifo.cpp
 examples/fifo_tb.v
 examples/fifo_tb.v
@@ -61,8 +61,6 @@ src/bitvector.cpp
 src/bitvector.h
 src/bitvector.h
 src/bus.h
-src/bus.h
-src/busbase.h
 src/busbase.h
 src/cash.h
 src/cash.h
@@ -142,11 +140,7 @@ src/seq.h
 src/seq.h
 src/sim.cpp
 src/sim.h
-src/snode.h
-src/snode.h
 src/snodeimpl.cpp
-src/snodeimpl.cpp
-src/snodeimpl.h
 src/snodeimpl.h
 src/struct.h
 src/struct.h
@@ -158,7 +152,6 @@ src/tickimpl.cpp
 src/tickimpl.cpp
 src/tickimpl.h
 src/tickimpl.h
-src/typebase.h
 src/typebase.h
 src/union.h
 src/union.h

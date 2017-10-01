@@ -1,46 +1,45 @@
 #include <cash.h>
 
 using namespace cash::core;
-using namespace cash::core_literals;
+using namespace cash::literals;
 using namespace cash::sim;
 
-#define CHECK(x) if (!(x)) { assert(false); exit(1); }
+#define CHECK(x, v) if (ch_peek<decltype(v)>(x) != v) { assert(false); exit(1); }
 
 template <unsigned N>
-auto Adder = [](
-    const ch_bit<N>& lhs,
-    const ch_bit<N>& rhs,
-    const ch_bit1& cin) {
-  auto sum  = (0_b, lhs) + ch_zext<N+1>(rhs) + ch_zext<N+1>(cin);
-  auto out  = ch_slice<N>(sum);
-  auto cout = sum[N];
-  __ret(out, cout);
+struct Adder {
+  __io (
+    (ch_in<ch_bit1>)    cin,
+    (ch_in<ch_bit<N>>)  lhs,
+    (ch_in<ch_bit<N>>)  rhs,
+    (ch_out<ch_bit<N>>) out,
+    (ch_out<ch_bit1>)   cout
+  );
+  Adder() {
+    auto sum = (0_b, io.lhs) + (0_b, io.rhs) + ch_zext<N+1>(io.cin);
+    io.out  = ch_slice<N>(sum);
+    io.cout = sum[N];
+  }
 };
 
 int main(int argc, char **argv) {
-  std::ofstream vcd_file("adder.vcd");
-  ch_bus1 cout, cin(1);
-  ch_bus2 out, lhs(1), rhs(3);
-  
-  auto adder = ch_function(Adder<2>);
-  __tie(out, cout) = adder(lhs, rhs, cin);
-  //auto adder = ch_call(Adder<2>)(lhs, rhs, cin, out, cout);
-  //auto adder = __call(Adder<2>, lhs, rhs, cin, out, cout);
+  ch_module<Adder<2>> adder;
 
+  ch_poke(adder->io.cin, 1);
+  ch_poke(adder->io.lhs, 1);
+  ch_poke(adder->io.rhs, 3);
 
-  std::ofstream v_file("adder.v");
-  adder.to_verilog(v_file, "adder", "lhs", "rhs", "cin", "out", "cout");
-  v_file.close();
-
-  ch_vcdtracer tracer(vcd_file, adder);
-  __trace(tracer, lhs, rhs, cin, out, cout);
+  ch_vcdtracer tracer("adder.vcd", adder);
   tracer.run();
   
   std::cout << "result:" << std::endl;
-  std::cout << "cout = " << cout << std::endl;
-  std::cout << "out = " << out << std::endl;
+  std::cout << "cout = " << adder->io.cout << std::endl;
+  std::cout << "out = " << adder->io.out << std::endl;
 
-  CHECK(cout == 1 && out == 1);
+  CHECK(adder->io.out, 1);
+  CHECK(adder->io.cout, true);
+
+  ch_toVerilog("adder.v", adder);
 
   return 0;
 }

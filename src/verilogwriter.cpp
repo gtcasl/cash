@@ -4,7 +4,6 @@
 #include "regimpl.h"
 #include "memimpl.h"
 #include "ioimpl.h"
-#include "snodeimpl.h"
 #include "selectimpl.h"
 #include "proxyimpl.h"
 #include "memimpl.h"
@@ -23,24 +22,9 @@ verilogwriter::~verilogwriter() {
   //--
 }
 
-void verilogwriter::print(
-    context* ctx,
-    const std::string& module_name,
-    const std::initializer_list<const char*>& port_names) {
-  // assign port names
-  CH_CHECK(port_names.size() == ctx->get_inputs().size() + ctx->get_outputs().size(),
-           "invalid number of port names (given %ld, expecting %ld)",
-           port_names.size(), ctx->get_inputs().size() + ctx->get_outputs().size());
-  auto it_port = port_names.begin();
-  for (auto input : ctx->get_inputs()) {
-    m_port_names[input->get_id()] = *it_port++;
-  }
-  for (auto output : ctx->get_outputs()) {
-    m_port_names[output->get_id()] = *it_port++;
-  }
-
+void verilogwriter::print(context* ctx) {
   // print header
-  this->print_header(ctx, module_name);
+  this->print_header(ctx);
 
   out_ << std::endl;
 
@@ -53,10 +37,7 @@ void verilogwriter::print(
   this->print_footer(ctx);
 }
 
-void verilogwriter::print_header(
-    context* ctx,
-    const std::string& module_name) {
-
+void verilogwriter::print_header(context* ctx) {
   //
   // includes
   //
@@ -72,7 +53,7 @@ void verilogwriter::print_header(
   //
   // ports declaration
   //
-  out_ << "module " << module_name << '(';
+  out_ << "module " << ctx->get_name() << '(';
   {
     auto_indent indent(out_);
     const char* sep = "";
@@ -97,11 +78,6 @@ void verilogwriter::print_header(
     for (auto output : ctx->get_outputs()) {
       out_ << sep << std::endl; sep = ",";
       this->print_port(output);
-    }
-
-    for (auto tap : ctx->get_taps()) {
-      out_ << sep << std::endl; sep = ",";
-      this->print_port(tap);
     }
 
     if (strlen(sep) != 0)
@@ -556,17 +532,10 @@ void verilogwriter::print_name(lnodeimpl* node) {
   auto op = node->get_op();
   switch (op) {
   case op_clk:
-    out_ << "clk";
-    break;
   case op_reset:
-    out_ << "reset";
-    break;
   case op_input:
   case op_output:
-    out_ << m_port_names[node->get_id()];
-    break;
-  case op_tap:
-    out_ << dynamic_cast<tapimpl*>(node)->get_name();
+    out_ << dynamic_cast<ioimpl*>(node)->get_name();
     break;
   case op_proxy:
     print_basic_name('w');

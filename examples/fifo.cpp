@@ -3,104 +3,100 @@
 #include <cash.h>
 
 using namespace cash::core;
-using namespace cash::core_literals;
+using namespace cash::literals;
 using namespace cash::sim;
 
-#define CHECK(x) if (!(x)) { assert(false); exit(1); }
+#define CHECK(x, v) if (ch_peek<decltype(v)>(x) != v) { assert(false); exit(1); }
 
 template <unsigned A, unsigned W>
-auto FiFo = [](
-    const ch_bit<W>& din,
-    const ch_bit1& push,
-    const ch_bit1& pop) {
-  ch_ram<W, A> mem;
-  ch_seq<ch_bit<A+1>> rd_ptr, wr_ptr;
-  ch_bit1 empty, full;
-
-  auto rd_A = ch_slice<A>(rd_ptr);
-  auto wr_A = ch_slice<A>(wr_ptr);
-
-  auto reading = pop && !empty;
-  auto writing = push && !full;
-  
-  rd_ptr.next = ch_select(reading, rd_ptr + 1, rd_ptr);
-  wr_ptr.next = ch_select(writing, wr_ptr + 1, wr_ptr);
-  
-  empty = (wr_ptr == rd_ptr);
-  full  = (wr_A == rd_A) && (wr_ptr[A] != rd_ptr[A]);
-  
-  auto dout = mem[rd_A];
-  __if (writing) (
-    mem[wr_A] = din;
+struct FiFo {
+  __io(
+    (ch_in<ch_bit<W>>)  din,
+    (ch_in<ch_bit1>)    push,
+    (ch_in<ch_bit1>)    pop,
+    (ch_out<ch_bit<W>>) dout,
+    (ch_out<ch_bit1>)   empty,
+    (ch_out<ch_bit1>)   full
   );
-  
-  __ret(dout, empty, full);
+  FiFo() {
+    ch_seq<ch_bit<A+1>> rd_ptr, wr_ptr;
+
+    auto rd_A = ch_slice<A>(rd_ptr);
+    auto wr_A = ch_slice<A>(wr_ptr);
+
+    auto reading = io.pop && !io.empty;
+    auto writing = io.push && !io.full;
+
+    rd_ptr.next = ch_select(reading, rd_ptr + 1, rd_ptr);
+    wr_ptr.next = ch_select(writing, wr_ptr + 1, wr_ptr);
+
+    ch_ram<W, A> mem;
+    __if (writing) (
+      mem[wr_A] = io.din;
+    );
+
+    io.dout  = mem[rd_A];
+    io.empty = (wr_ptr == rd_ptr);
+    io.full  = (wr_A == rd_A) && (wr_ptr[A] != rd_ptr[A]);
+  }
 };
 
 int main(int argc, char **argv) {
-  std::ofstream vcd_file("fifo.vcd");
-  ch_bus2 din, dout;
-  ch_bus1 push, pop, empty, full;
+  ch_module<FiFo<1, 2>> fifo;
 
-  auto fifo = ch_function(FiFo<1, 2>);
-  __tie(dout, empty, full) = fifo(din, push, pop);
-
-  std::ofstream v_file("fifo.v");
-  fifo.to_verilog(v_file, "fifo", "din", "push", "pop", "dout", "empty", "full");
-  v_file.close();
-
-  ch_vcdtracer tracer(vcd_file, fifo);
-  __trace(tracer, din, push, pop, dout, empty, full);
+  ch_vcdtracer tracer("fifo.vcd", fifo);
   tracer.run([&](ch_tick t)->bool {
     std::cout << "t" << t
-              << ": din=" << din
-              << ", push=" << push
-              << ", pop=" << pop
-              << ", dout=" << dout
-              << ", empty=" << empty
-              << ", full=" << full << std::endl;
+              << ": din=" << fifo->io.din
+              << ", push=" << fifo->io.push
+              << ", pop=" << fifo->io.pop
+              << ", dout=" << fifo->io.dout
+              << ", empty=" << fifo->io.empty
+              << ", full=" << fifo->io.full << std::endl;
     switch (t) {
     case 0:
-      CHECK(empty);
-      CHECK(!full);
-      din  = 1;
-      push = 1;      
+      CHECK(fifo->io.empty, true);
+      CHECK(fifo->io.full, false);
+      ch_poke(fifo->io.din, 1);
+      ch_poke(fifo->io.push, 1);
       break;      
     case 2:
-      CHECK(!empty);
-      CHECK(!full);
-      CHECK(dout == 1);
-      din  = 2;
-      push = 1;
+      CHECK(fifo->io.empty, false);
+      CHECK(fifo->io.full, false);
+      CHECK(fifo->io.dout, 1);
+      ch_poke(fifo->io.din, 2);
+      ch_poke(fifo->io.push, 1);
       break;
     case 4:
-      CHECK(!empty);
-      CHECK(full);
-      CHECK(dout == 1);
-      din  = 0;
-      push = 0;
+      CHECK(fifo->io.empty, false);
+      CHECK(fifo->io.full, true);
+      CHECK(fifo->io.dout, 1);
+      ch_poke(fifo->io.din, 0);
+      ch_poke(fifo->io.push, 0);
       break;
     case 6:
-      CHECK(!empty);
-      CHECK(full);
-      CHECK(dout == 1);
-      pop = 1;
+      CHECK(fifo->io.empty, false);
+      CHECK(fifo->io.full, true);
+      CHECK(fifo->io.dout, 1);
+      ch_poke(fifo->io.pop, 1);
       break;
     case 8:
-      CHECK(!empty);
-      CHECK(!full);
-      CHECK(dout == 2);
-      pop = 1;
+      CHECK(fifo->io.empty, false);
+      CHECK(fifo->io.full, false);
+      CHECK(fifo->io.dout, 2);
+      ch_poke(fifo->io.pop, 1);
       break;
     case 10:
-      CHECK(empty);
-      CHECK(!full);
-      CHECK(dout == 1);
-      pop = 0;
+      CHECK(fifo->io.empty, true);
+      CHECK(fifo->io.full, false);
+      CHECK(fifo->io.dout, 1);
+      ch_poke(fifo->io.pop, 0);
       break;
     }
     return (t <= 10);
   });
+
+  ch_toVerilog("fifo.v", fifo);
 
   return 0;
 }

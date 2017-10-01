@@ -1,6 +1,7 @@
 #pragma once
 
-#include "typebase.h"
+#include "common.h"
+#include "bitvector.h"
 
 namespace cash {
 namespace internal {
@@ -9,6 +10,8 @@ class lnodeimpl;
 class context;
 
 using ch_tick = uint64_t;
+
+class nodelist;
 
 class lnode {
 public:
@@ -29,13 +32,15 @@ public:
 
   lnode(const bitvector& value);
 
-  lnode(const nodelist<lnode>& data);
+  lnode(const nodelist& data);
 
   lnode& operator=(const lnode& rhs);
 
   bool operator==(const lnode& rhs) const;
 
   bool operator<(const lnode& rhs) const;
+
+  void clear();
 
   bool is_empty() const;
 
@@ -61,16 +66,38 @@ public:
 
   void move(lnode& rhs, uint32_t size);
 
-  void read_data(nodelist<lnode>& inout,
+  void read_data(nodelist& inout,
                  uint32_t offset,
                  uint32_t length,
                  uint32_t size) const;
   
   void write_data(uint32_t dst_offset,
-                  const nodelist<lnode>& in,
+                  const nodelist& in,
                   uint32_t src_offset,
                   uint32_t length,
                   uint32_t size);
+
+  void read_bytes(uint32_t dst_offset,
+                  void* out,
+                  uint32_t out_cbsize,
+                  uint32_t src_offset,
+                  uint32_t length,
+                  uint32_t size) const;
+
+  void write_bytes(uint32_t dst_offset,
+                   const void* in,
+                   uint32_t in_cbsize,
+                   uint32_t src_offset,
+                   uint32_t length,
+                   uint32_t size) const;
+
+  const bitvector& get_value() const;
+
+  void set_value(const bitvector& value);
+
+  bool get_bool(unsigned i) const;
+
+  void set_bool(unsigned i, bool value);
 
   lnodeimpl* clone(uint32_t size) const;
 
@@ -93,7 +120,60 @@ protected:
   mutable lnodeimpl* impl_;
 };
 
-std::ostream& operator<<(std::ostream& out, const lnode& rhs);
+class nodelist {
+public:
+  nodelist(uint32_t capacity) : capacity_(capacity), size_(0) {}
+
+  nodelist(const lnode& src, uint32_t offset, uint32_t length)
+    : nodelist(length) {
+    this->push(src, offset, length);
+  }
+
+  uint32_t get_capacity() const {
+    return capacity_;
+  }
+
+  uint32_t get_size() const {
+    return size_;
+  }
+
+  uint32_t get_num_slices() const {
+    return slices_.size();
+  }
+
+  bool is_srccopy() const {
+    return (1 == slices_.size()) && (slices_[0].src.get_size() == size_);
+  }
+
+  void push(const lnode& src, uint32_t offset, uint32_t length) {
+    slices_.emplace_back(slice_t{src, offset, length});
+    size_ += length;
+    assert(size_ <= capacity_);
+  }
+
+  auto begin() const {
+    assert(size_ == capacity_);
+    return slices_.begin();
+  }
+
+  auto end() const {
+    return slices_.end();
+  }
+
+private:
+
+  struct slice_t {
+    const lnode& src;
+    uint32_t offset;
+    uint32_t length;
+  };
+
+  std::vector<slice_t> slices_;
+  uint32_t capacity_;
+  uint32_t size_;
+};
+
+std::ostream& operator<<(std::ostream& out, const lnode& node);
 
 }
 }

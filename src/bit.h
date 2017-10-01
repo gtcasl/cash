@@ -10,8 +10,6 @@ void register_tap(const std::string& name, const lnode& node);
 void createPrintNode(const std::string& format,
                      const std::initializer_list<lnode>& args);
 
-template <unsigned N> class ch_bus;
-
 #define CH_BIT_READONLY_INTERFACE(type) \
   const auto operator[](size_t index) const & { \
     return cash::internal::const_sliceref<cash::internal::refproxy<type>, 1>(*this, index); \
@@ -84,10 +82,8 @@ template <unsigned N>
 class const_bit : public ch_bitbase<N> {
 public:
   using base = ch_bitbase<N>;
-  using data_type  = lnode;
   using value_type = ch_bit<N>;
   using const_type = const_bit<N>;
-  using bus_type   = ch_bus<N>;
 
   const_bit() : node_(N) {}
 
@@ -113,12 +109,20 @@ protected:
     assert(N == node_.get_size());
   }
 
-  void read_data(nodelist<lnode>& inout, size_t offset, size_t length) const override {
+  void read_data(nodelist& inout, size_t offset, size_t length) const override {
     node_.read_data(inout, offset, length, N);
   }
 
-  void write_data(size_t dst_offset, const nodelist<lnode>& in, size_t src_offset, size_t length) override {
+  void write_data(size_t dst_offset, const nodelist& in, size_t src_offset, size_t length) override {
     node_.write_data(dst_offset, in, src_offset, length, N);
+  }
+
+  void read_bytes(uint32_t dst_offset, void* out, uint32_t out_cbsize, uint32_t src_offset, uint32_t length) const override {
+    node_.read_bytes(dst_offset, out, out_cbsize, src_offset, length, N);
+  }
+
+  void write_bytes(uint32_t dst_offset, const void* in, uint32_t in_cbsize, uint32_t src_offset, uint32_t length) const override {
+    node_.write_bytes(dst_offset, in, in_cbsize, src_offset, length, N);
   }
 
   lnode node_;
@@ -128,10 +132,8 @@ template <unsigned N>
 class ch_bit : public const_bit<N> {
 public:
   using base = const_bit<N>;
-  using data_type  = lnode;
   using value_type = ch_bit<N>;
   using const_type = const_bit<N>;
-  using bus_type   = ch_bus<N>;
 
   using base::node_;
       
@@ -200,7 +202,7 @@ using bitbase_cast = std::conditional<
 template <typename T, unsigned N = T::bitcount,
           CH_REQUIRES(is_bit_convertible<T, N>::value)>
 lnode get_lnode(const T& rhs) {
-  nodelist<lnode> data(N);
+  nodelist data(N);
   typename bitbase_cast<T, N>::type x(rhs);
   read_data(x, data, 0, N);
   return lnode(data);
@@ -209,21 +211,21 @@ lnode get_lnode(const T& rhs) {
 // concatenation functions
 
 template <typename T>
-void ch_cat_helper(nodelist<lnode>& data, const T& arg) {
+void ch_cat_helper(nodelist& data, const T& arg) {
   read_data(arg, data, 0, T::bitcount);
 }
 
 template <typename T0, typename... Ts>
-void ch_cat_helper(nodelist<lnode>& data, const T0& arg0, const Ts&... args) {
+void ch_cat_helper(nodelist& data, const T0& arg0, const Ts&... args) {
   ch_cat_helper(data, args...);
   read_data(arg0, data, 0, T0::bitcount);
 }
 
 template <typename... Ts>
 const auto cat_impl(const Ts&... args) {
-  nodelist<lnode> data(concat_info<Ts...>::bitcount);
+  nodelist data(concat_traits<Ts...>::bitcount);
   ch_cat_helper(data, args...);
-  return make_bit<concat_info<Ts...>::bitcount>(lnode(data));
+  return make_bit<concat_traits<Ts...>::bitcount>(lnode(data));
 }
 
 template <typename... Ts,
@@ -349,6 +351,23 @@ const auto ch_shuffle(const ch_bitbase<N>& in,
 }
 
 // utils functions
+
+template <unsigned N>
+std::ostream& operator<<(std::ostream& out, const ch_bitbase<N>& node) {
+  return out << get_lnode(node);
+}
+
+template <typename T, unsigned N>
+T ch_peek(const ch_bitbase<N>& node) {
+  T ret(0);
+  cash::internal::read_bytes(node, 0, &ret, sizeof(T), 0, N);
+  return ret;
+}
+
+template <typename T, unsigned N>
+void ch_poke(const ch_bitbase<N>& node, const T& value) {
+  cash::internal::write_bytes(node, 0, &value, sizeof(T), 0, N);
+}
 
 template <unsigned N>
 void ch_tap(const std::string& name, const ch_bitbase<N>& value) {

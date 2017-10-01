@@ -1,7 +1,5 @@
 #include "common.h"
 
-using namespace cash::core_literals;
-
 __inout (RouterIO, (
   (ch_in<ch_bit2>)  in,
   (ch_out<ch_bit2>) out

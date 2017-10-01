@@ -1,7 +1,7 @@
 #include <cash.h>
 
 using namespace cash::core;
-using namespace cash::core_literals;
+using namespace cash::literals;
 using namespace cash::sim;
 
 auto dogfood = []()->ch_bit1 {

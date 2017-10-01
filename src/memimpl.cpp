@@ -111,7 +111,7 @@ const bitvector& memimpl::eval(ch_tick t) {
 
 void memimpl::print(std::ostream& out, uint32_t level) const {
   CH_UNUSED(level);
-  out << "#" << id_ << " <- " << this->get_name() << value_.get_size();
+  out << "#" << id_ << " <- " << this->get_op() << value_.get_size();
   uint32_t n = srcs_.size();
   if (n > 0) {
     out << "(";
@@ -211,15 +211,15 @@ lnode& memory::read(const lnode& addr) const {
 
 void memory::write(const lnode& addr,
                    size_t dst_offset,
-                   const nodelist<lnode>& in,
+                   const nodelist& in,
                    size_t src_offset,
                    size_t length) {
   assert(0 == dst_offset);
   if (0 == src_offset) {
     impl_->write(addr, lnode(in));
   } else {
-    nodelist<lnode> in2(length);
-    for (auto slice : in) {
+    nodelist in2(length);
+    for (const auto& slice : in) {
       if (src_offset < slice.length) {
         uint32_t len = std::min(slice.length - src_offset, length);
         in2.push(slice.src, slice.offset + src_offset, len);

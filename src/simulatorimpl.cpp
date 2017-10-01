@@ -1,16 +1,31 @@
 #include "simulatorimpl.h"
 #include "simulator.h"
 #include "deviceimpl.h"
+#include "litimpl.h"
 #include "ioimpl.h"
 
 using namespace cash::internal;
 
+void clock_driver::add_node(lnodeimpl* node) {
+  node->set_bool(0, value_);
+  nodes_.push_back(node);
+}
+
+void clock_driver::flip() {
+  value_ = !value_;
+  for (auto node : nodes_) {
+    node->set_bool(0, value_);
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 simulatorimpl::simulatorimpl(const std::initializer_list<const ch_device*>& devices)
   : initialized_(false)
-  , clk_(nullptr)
-  , reset_(nullptr) {
+  , clk_(true)
+  , reset_(false) {
   for (auto device : devices) {
-    context* ctx = device->get_ctx();
+    context* ctx = get_ctx(*device);
     auto ret = contexts_.emplace(ctx);
     if (ret.second)
       ctx->acquire();
@@ -19,17 +34,12 @@ simulatorimpl::simulatorimpl(const std::initializer_list<const ch_device*>& devi
 
 simulatorimpl::~simulatorimpl() {
   for (auto ctx : contexts_) {
-    ctx->unbind_default_signals(clk_, reset_);
     ctx->release();
   }
-  if (clk_)
-    clk_->release();
-  if (reset_)
-    reset_->release();
 }
 
 void simulatorimpl::add_device(const ch_device& device) {
-  context* ctx = device.impl_->get_ctx();
+  context* ctx = get_ctx(device);
   auto ret = contexts_.emplace(ctx);
   if (ret.second) {
     ctx->acquire();
@@ -37,25 +47,15 @@ void simulatorimpl::add_device(const ch_device& device) {
 }
 
 void simulatorimpl::ensureInitialize() {
-  // bind context taps
+  // bind clocks
   for (auto ctx : contexts_) {
-    auto default_clk = ctx->get_default_clk();
-    if (default_clk) {
-      if (nullptr == clk_) {
-        clk_ = new snodeimpl(1);
-        clk_->acquire();
-        clk_->set_bit(0, true); // set 'high' by default
-      }
-      default_clk->bind(clk_);
+    auto clk = ctx->get_default_clk();
+    if (clk) {
+      clk_.add_node(clk);
     }
-
-    auto default_reset = ctx->get_default_reset();
-    if (default_reset) {
-      if (nullptr == reset_) {
-        reset_ = new snodeimpl(1);
-        reset_->acquire();
-      }
-      default_reset->bind(reset_);
+    auto reset = ctx->get_default_reset();
+    if (reset) {
+      reset_.add_node(reset);
     }
   }
 }
@@ -108,19 +108,19 @@ ch_tick simulatorimpl::reset(ch_tick t) {
     initialized_ = true;
   }
 
-  if (reset_) {
-    reset_->set_bit(0, true);
+  if (!reset_.is_empty()) {
+    reset_.flip();
     t = this->step(t);
-    reset_->set_bit(0, false);
+    reset_.flip();
   }
 
   return t;
 }
 
 ch_tick simulatorimpl::step(ch_tick t) {
-  if (clk_) {
+  if (!clk_.is_empty()) {
     for (int i = 0; i < 2; ++i) {
-      clk_->set_bit(0, !clk_->get_bit(0));
+      clk_.flip();
       this->tick(t++);
     }
   } else {

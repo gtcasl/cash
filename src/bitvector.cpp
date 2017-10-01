@@ -323,11 +323,11 @@ bool bitvector::is_empty() const {
 void bitvector::read(
     uint32_t dst_offset,
     void* out,
-    uint32_t sizeInBytes,
+    uint32_t out_cbsize,
     uint32_t src_offset,
     uint32_t length) const {
   CH_CHECK(src_offset + length <= size_, "out of bound access");
-  CH_CHECK(dst_offset + length <= sizeInBytes * 8, "out of bound access");
+  CH_CHECK(dst_offset + length <= out_cbsize * 8, "out of bound access");
 
   uint32_t b_dst_offset = dst_offset / 8;
   uint8_t* b_out = reinterpret_cast<uint8_t*>(out) + b_dst_offset;
@@ -375,11 +375,11 @@ void bitvector::read(
 void bitvector::write(
     uint32_t dst_offset,
     const void* in,
-    uint32_t sizeInBytes,
+    uint32_t in_cbsize,
     uint32_t src_offset,
     uint32_t length) {
   CH_CHECK(dst_offset + length <= size_, "out of bound access");
-  CH_CHECK(src_offset + length <= sizeInBytes * 8, "out of bound access");
+  CH_CHECK(src_offset + length <= in_cbsize * 8, "out of bound access");
 
   uint32_t b_src_offset = src_offset / 8;
   const uint8_t* b_in = reinterpret_cast<const uint8_t*>(in) + b_src_offset;

@@ -5,6 +5,7 @@
 #include "catch.h"
 
 using namespace cash::core;
+using namespace cash::literals;
 using namespace cash::sim;
 
 bool runtest(const std::function<ch_bit<1>()> &test, ch_tick ticks = 1);

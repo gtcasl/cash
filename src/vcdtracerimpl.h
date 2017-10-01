@@ -11,6 +11,10 @@ public:
     : tracerimpl(out, devices)
   {}
 
+  vcdtracerimpl(const std::string& file, const std::initializer_list<const ch_device*>& devices)
+    : tracerimpl(file, devices)
+  {}
+
   ~vcdtracerimpl() {}
 
   void ensureInitialize() override;

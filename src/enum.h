@@ -1,81 +1,55 @@
 #pragma once
 
 #include "bit.h"
-#include "bus.h"
 
 #define CH_ENUM_FIELD_1(x, y) y
 #define CH_ENUM_FIELD_2(x, y) CH_PAIR_FIRST(x) = CH_PAIR_SECOND(x)
 #define CH_ENUM_FIELD_(c) CH_CONCAT(CH_ENUM_FIELD_, c)
 #define CH_ENUM_FIELD(i, x) CH_ENUM_FIELD_(CH_NARG(CH_REM x))(CH_REM x, x)
 
-#define CH_ENUM_BUS_IMPL(name, size) \
-  class name : public cash::internal::ch_bus<size> { \
-    public: \
-      using base = cash::internal::ch_bus<size>; \
-      using data_type = typename base::data_type; \
-      name() {} \
-      name(const name& __rhs__) : base(__rhs__) {} \
-      name(name&& __rhs__) : base(std::move(__rhs__)) {} \
-      name(enum_type __rhs__) : base(__rhs__) {} \
-      name& operator=(const name& __rhs__) { \
-        base::operator=(__rhs__); \
-        return *this; \
-      } \
-      name& operator=(name&& __rhs__) { \
-        base::operator=(std::move(__rhs__)); \
-        return *this; \
-      } \
-      name& operator=(enum_type __rhs__) { \
-        base::operator=(__rhs__); \
-        return *this; \
-      } \
-    }
-
-#define CH_ENUM_BODY_IMPL(name, value_name, const_name, bus_name, base_name, size, assignment_body) \
+#define CH_ENUM_BODY_IMPL(enum_name, value_name, const_name, base_name, size, assignment_body) \
   public: \
     using base = cash::internal::base_name<size>; \
-    using data_type  = typename base::data_type; \
     using value_type = value_name; \
     using const_type = const_name; \
-    using bus_type   = bus_name; \
-    name() {} \
-    name(const name& __rhs__) : base(__rhs__) {} \
-    name(name&& __rhs__) : base(std::move(__rhs__)) {} \
-    name(enum_type __rhs__) : base(__rhs__) {} \
-    assignment_body(name) \
+    enum_name() {} \
+    enum_name(const enum_name& __rhs__) : base(__rhs__) {} \
+    enum_name(enum_name&& __rhs__) : base(std::move(__rhs__)) {} \
+    enum_name(enum_type __rhs__) : base(__rhs__) {} \
+    assignment_body(enum_name) \
     const auto clone() const { \
       return value_type(base::clone()); \
     } \
   protected: \
-    name(const base& __rhs__) : base(__rhs__) {} \
-    friend const auto ch_reg(const name& next, const name& init) { \
+    enum_name(const base& __rhs__) : base(__rhs__) {} \
+    friend const auto ch_reg(const enum_name& next, const enum_name& init) { \
       return cash::internal::ch_reg(next, init); \
     } \
-    friend const auto ch_reg(const name& next) { \
+    friend const auto ch_reg(const enum_name& next) { \
       return cash::internal::ch_reg(next); \
     }
 
-#define CH_ENUM_READONLY_IMPL(name) \
-  CH_BIT_READONLY_INTERFACE(name)
+#define CH_ENUM_READONLY_IMPL(enum_name) \
+  CH_BIT_READONLY_INTERFACE(enum_name)
 
-#define CH_ENUM_WRITABLE_IMPL(name) \
-  name(const const_type& __rhs__) : name(reinterpret_cast<const base&>(__rhs__)) {} \
-  name& operator=(const name& __rhs__) { \
+#define CH_ENUM_WRITABLE_IMPL(enum_name) \
+  enum_name(const const_type& __rhs__) : enum_name(reinterpret_cast<const base&>(__rhs__)) {} \
+  enum_name& operator=(const enum_name& __rhs__) { \
     base::operator=(__rhs__); \
     return *this; \
   } \
-  name& operator=(name&& __rhs__) { \
+  enum_name& operator=(enum_name&& __rhs__) { \
     base::operator=(std::move(__rhs__)); \
     return *this; \
   } \
-  name& operator=(enum_type __rhs__) { \
+  enum_name& operator=(enum_type __rhs__) { \
     base::operator=(__rhs__); \
     return *this; \
   } \
-  CH_BIT_WRITABLE_INTERFACE(name)
+  CH_BIT_WRITABLE_INTERFACE(enum_name)
 
-#define CH_ENUM_IMPL(name, size, ...) \
-  class name : public cash::internal::ch_bit<size> { \
+#define CH_ENUM_IMPL(enum_name, size, ...) \
+  class enum_name : public cash::internal::ch_bit<size> { \
   public: \
     enum enum_type { \
     CH_FOR_EACH(CH_ENUM_FIELD, CH_SEP_COMMA, __VA_ARGS__) \
@@ -83,11 +57,10 @@
     }; \
     static_assert(ilog2(__MAX_VALUE__) <= size, "enum size mismatch"); \
   protected: \
-    CH_ENUM_BUS_IMPL(__bus_type__, size); \
     class __const_type__ : public cash::internal::const_bit<size> { \
-      CH_ENUM_BODY_IMPL(__const_type__, name, __const_type__, __bus_type__, const_bit, size, CH_ENUM_READONLY_IMPL) \
+      CH_ENUM_BODY_IMPL(__const_type__, enum_name, __const_type__, const_bit, size, CH_ENUM_READONLY_IMPL) \
     }; \
-    CH_ENUM_BODY_IMPL(name, name, __const_type__, __bus_type__, ch_bit, size,CH_ENUM_WRITABLE_IMPL) \
+    CH_ENUM_BODY_IMPL(enum_name, enum_name, __const_type__, ch_bit, size,CH_ENUM_WRITABLE_IMPL) \
   }
 
 #define CH_ENUM(name, size, body) \

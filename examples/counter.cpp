@@ -1,37 +1,35 @@
 #include <cash.h>
 
 using namespace cash::core;
-using namespace cash::core_literals;
+using namespace cash::literals;
 using namespace cash::sim;
 
-#define CHECK(x) if (!(x)) { assert(false); exit(1); }
+#define CHECK(x, v) if (ch_peek<decltype(v)>(x) != v) { assert(false); exit(1); }
 
 template <unsigned N>
-auto Counter = []() {
-  ch_seq<ch_bit<N>> out;
-  out.next = out + 1;
-  __ret(out);
+struct Counter {
+  __io (
+    (ch_out<ch_bit<N>>) out
+  );
+  Counter() {
+    ch_seq<ch_bit<N>> out;
+    out.next = out + 1;
+    io.out = out;
+  }
 };
 
 int main(int argc, char **argv) {
-  std::ofstream vcd_file("counter.vcd");
-  ch_bus4 out;
+  ch_module<Counter<4>> counter;
 
-  auto counter = ch_function(Counter<4>);
-  out = counter();
-
-  std::ofstream v_file("counter.v");
-  counter.to_verilog(v_file, "counter", "out");
-  v_file.close();
-
-  ch_vcdtracer tracer(vcd_file, counter);
-  __trace(tracer, out);
+  ch_vcdtracer tracer("counter.vcd", counter);
   tracer.run(22);
 
   std::cout << "result:" << std::endl;
-  std::cout << "out = " << out << std::endl;
+  std::cout << "out = " << counter->io.out << std::endl;
 
-  CHECK(out == 10);
+  CHECK(counter->io.out, 10);
+
+  ch_toVerilog("counter.v", counter);
 
   return 0;
 }

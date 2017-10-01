@@ -7,6 +7,7 @@ namespace internal {
 
 class litimpl : public lnodeimpl {
 public:
+  litimpl(context* ctx, uint32_t size);
   litimpl(context* ctx, const bitvector& value);
 
   const bitvector& eval(ch_tick t) override;

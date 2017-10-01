@@ -17,8 +17,6 @@ class outputimpl;
 class selectimpl;
 class tapimpl;
 class assertimpl;
-class snode;
-class snodeimpl;
 class tickimpl;
 class clock_event;
 class cdomain;
@@ -27,10 +25,13 @@ using ch_tick = uint64_t;
 
 class context : public refcounted {
 public:
-  context();
-  ~context();
+  uint32_t get_id() const {
+    return id_;
+  }
 
-  //--
+  const std::string& get_name() const {
+    return name_;
+  }
 
   const auto& get_nodes() const {
     return nodes_;
@@ -82,8 +83,6 @@ public:
   void pop_reset();
   lnodeimpl* get_reset();
 
-  void unbind_default_signals(snodeimpl* clk, snodeimpl* reset);
-
   //--
 
   lnodeimpl* get_tick();
@@ -110,7 +109,7 @@ public:
   void remove_cdomain(cdomain* cd);
 
   void register_tap(const std::string& name, const lnode& lnode);
-  snodeimpl* get_tap(const std::string& name, uint32_t size);
+  lnodeimpl* get_tap(const std::string& name, uint32_t size);
   
   //--
   
@@ -135,6 +134,9 @@ public:
   void dump_stats(std::ostream& out);
   
 protected:
+
+  context(const std::string& name);
+  ~context();
 
   struct cond_upd_t {
     cond_upd_t(selectimpl* p_sel, uint32_t p_block_id)
@@ -203,6 +205,15 @@ protected:
       const cond_range_t& range,
       uint32_t offset,
       uint32_t length);
+
+  uint32_t    id_;
+  std::string name_;
+
+  uint32_t    node_ids_;
+  uint32_t    block_ids_;
+  inputimpl*  default_clk_;
+  inputimpl*  default_reset_;
+  tickimpl*   tick_;
   
   std::list<lnodeimpl*>   nodes_;
   std::list<undefimpl*>   undefs_;
@@ -218,17 +229,12 @@ protected:
   cond_branches_t         cond_branches_;
   std::stack<lnode>       user_clks_;
   std::stack<lnode>       user_resets_;
-
-  uint32_t    node_ids_;
-  uint32_t    block_ids_;
-  inputimpl*  default_clk_;
-  inputimpl*  default_reset_;
-  tickimpl*   tick_;
-  
   std::unordered_map<std::string, unsigned> dup_taps_;
+
+  friend class context_manager;
 };
 
-context* ctx_create();
+context* ctx_create(const std::string& name);
 context* ctx_swap(context* ctx);
 context* ctx_curr();
 

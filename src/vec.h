@@ -1,6 +1,6 @@
 #pragma once
 
-#include "typebase.h"
+#include "bitbase.h"
 
 namespace cash {
 namespace internal {
@@ -12,13 +12,11 @@ template <typename T, unsigned N>
 class const_vec;
 
 template <typename T, unsigned N>
-class const_vec : public typebase<N * T::bitcount, typename T::data_type> {
+class const_vec : public ch_bitbase<N * T::bitcount> {
 public:
-  using base = typebase<N * T::bitcount, typename T::data_type>;
-  using data_type  = typename base::data_type;
+  using base = ch_bitbase<N * T::bitcount>;
   using value_type = ch_vec<T, N>;
   using const_type = const_vec;
-  using bus_type   = ch_vec<typename data_traits<data_type>::template bus_type<T>, N>;
   
   const_vec() {}
 
@@ -34,7 +32,7 @@ public:
     }
   }
 
-  const_vec(const typebase<const_vec::bitcount, data_type>& rhs) {
+  const_vec(const base& rhs) {
     this->assign(rhs);
   }
 
@@ -70,28 +68,52 @@ protected:
     this->init(values...);
   }
   
-  void read_data(nodelist<data_type>& out, size_t offset, size_t length) const override {
-    CH_CHECK(offset + length <= const_vec::bitcount, "invalid vector read range");
+  void read_data(nodelist& out, size_t offset, size_t length) const override {
     for (unsigned i = 0; length && i < N; ++i) {
       if (offset < T::bitcount) {
         size_t len = std::min<size_t>(length, T::bitcount - offset);
         cash::internal::read_data(items_[i], out, offset, len);
+        offset = T::bitcount;        
         length -= len;
-        offset = T::bitcount;
       }
       offset -= T::bitcount;
     }
   }
   
-  void write_data(size_t dst_offset, const nodelist<data_type>& data, size_t src_offset, size_t length) override {
-    CH_CHECK(dst_offset + length <= const_vec::bitcount, "invalid vector write range");
+  void write_data(size_t dst_offset, const nodelist& data, size_t src_offset, size_t length) override {
     for (unsigned i = 0; length && i < N; ++i) {
       if (dst_offset < T::bitcount) {
         size_t len = std::min<size_t>(length, T::bitcount - dst_offset);
         cash::internal::write_data(items_[i], dst_offset, data, src_offset, len);
-        length -= len;
         src_offset += len;
         dst_offset = T::bitcount;
+        length -= len;
+      }
+      dst_offset -= T::bitcount;
+    }
+  }
+
+  void read_bytes(uint32_t dst_offset, void* out, uint32_t out_cbsize, uint32_t src_offset, uint32_t length) const override {
+    for (unsigned i = 0; length && i < N; ++i) {
+      if (dst_offset < T::bitcount) {
+        size_t len = std::min<size_t>(length, T::bitcount - dst_offset);
+        cash::internal::read_bytes(items_[i], dst_offset, out, src_offset, len);
+        src_offset += len;
+        dst_offset = T::bitcount;
+        length -= len;
+      }
+      dst_offset -= T::bitcount;
+    }
+  }
+
+  void write_bytes(uint32_t dst_offset, const void* in, uint32_t in_cbsize, uint32_t src_offset, uint32_t length) const override {
+    for (unsigned i = 0; length && i < N; ++i) {
+      if (dst_offset < T::bitcount) {
+        size_t len = std::min<size_t>(length, T::bitcount - dst_offset);
+        cash::internal::write_bytes(items_[i], dst_offset, in, in_cbsize, src_offset, len);
+        src_offset += len;
+        dst_offset = T::bitcount;
+        length -= len;
       }
       dst_offset -= T::bitcount;
     }
@@ -102,10 +124,8 @@ template <typename T, unsigned N>
 class ch_vec : public const_vec<T, N> {
 public:
   using base = const_vec<T, N>;
-  using data_type  = typename base::data_type;
   using value_type = ch_vec;
   using const_type = const_vec<T, N>;
-  using bus_type   = ch_vec<typename data_traits<data_type>::template bus_type<T>, N>;
 
   using base::items_;
 
@@ -123,7 +143,7 @@ public:
             CH_REQUIRES(is_cast_convertible<U, T>::value)>
   ch_vec(const ch_vec<U, N>& rhs) : base(rhs) {}
 
-  ch_vec(const typebase<ch_vec::bitcount, data_type>& rhs) : base(rhs) {}
+  ch_vec(const ch_bitbase<base::bitcount>& rhs) : base(rhs) {}
 
   template <typename... Vs,
            CH_REQUIRES(are_all_cast_convertible<T, Vs...>::value)>
@@ -152,7 +172,7 @@ public:
     return *this;
   }
 
-  ch_vec& operator=(const typebase<ch_vec::bitcount, data_type>& rhs) {
+  ch_vec& operator=(const ch_bitbase<base::bitcount>& rhs) {
     this->assign(rhs);
     return *this;
   }

@@ -1,14 +1,19 @@
 #pragma once
 
 // macro primitives
+
 #define CH_COMMA ,
 #define CH_REM(...) __VA_ARGS__
 #define CH_EAT(...)
-#define CH_STRINGIZE(x) #x
+
+#define CH_STRINGIZE_(x) #x
+#define CH_STRINGIZE(x) CH_STRINGIZE_(x)
+
 #define CH_CONCAT_(x, ...) x ## __VA_ARGS__
 #define CH_CONCAT(x, ...) CH_CONCAT_(x, __VA_ARGS__)
 
 // conditional macro
+
 #define CH_IIF_0(x, y) y
 #define CH_IIF_1(x, y) x
 #define CH_IIF(c) CH_CONCAT(CH_IIF_, c)
@@ -17,6 +22,7 @@
 #define CH_PAIR_SECOND(a, b) b
 
 // pair macros
+
 #define CH_PAIR(x) CH_REM x
 #define CH_PAIR_HEAD_(x, ...) CH_REM x
 #define CH_PAIR_PROBE_(...) (__VA_ARGS__),
@@ -25,6 +31,7 @@
 #define CH_PAIR_R(x) CH_EAT x
 
 // separator macros
+
 #define CH_SEP_COMMA() ,
 #define CH_SEP_SEMICOLON() ;
 #define CH_SEP_PLUS() +
@@ -32,10 +39,12 @@
 #define CH_SEP_SPACE() /**/
 
 // MAKE_UNIQUE macro
+
 #define CH_MAKE_UNIQUE(x) CH_CONCAT(x, __COUNTER__)
 #define CH_UNAME(n1, n2) CH_CONCAT(__, CH_CONCAT(n1, CH_CONCAT(_, CH_CONCAT(n2, __))))
 
 // NARG macro
+
 #define CH_NARG_N(_1, _2, _3, _4, _5, _6, _7, _8, _9,_10,_11,_12,_13,_14,_15,_16, \
                    _17,_18,_19,_20,_21,_22,_23,_24,_25,_26,_27,_28,_29,_30,_31,_32, \
                    _33,_34,_35,_36,_37,_38,_39,_40,_41,_42,_43,_44,_45,_46,_47,_48, \
@@ -48,6 +57,7 @@
 #define CH_NARG(...)  CH_NARG_(__VA_ARGS__, CH_NARG_R())
 
 // FOR_EACH macro
+
 #define CH_FOR_EACH_1(what, sep, x, ...)   what(0, x)
 #define CH_FOR_EACH_2(what, sep, x, ...)   what(1, x) sep() CH_FOR_EACH_1(what, sep, __VA_ARGS__)
 #define CH_FOR_EACH_3(what, sep, x, ...)   what(2, x) sep() CH_FOR_EACH_2(what, sep, __VA_ARGS__)
@@ -116,6 +126,7 @@
 #define CH_FOR_EACH(what, sep, ...) CH_FOR_EACH_(CH_NARG(__VA_ARGS__), what, sep, __VA_ARGS__)
 
 // REVERSE_FOR_EACH macro
+
 #define CH_REVERSE_FOR_EACH_1(what, sep, x, ...)   what(0, x)
 #define CH_REVERSE_FOR_EACH_2(what, sep, x, ...)   CH_REVERSE_FOR_EACH_1(what, sep, __VA_ARGS__) sep() what(1, x)
 #define CH_REVERSE_FOR_EACH_3(what, sep, x, ...)   CH_REVERSE_FOR_EACH_2(what, sep, __VA_ARGS__) sep() what(2, x)

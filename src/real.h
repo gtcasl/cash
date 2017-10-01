@@ -12,10 +12,8 @@ class const_real;
 class const_real : public const_bit<32> {
 public:
   using base = const_bit<32>;
-  using data_type  = base::data_type;
   using value_type = ch_real;
   using const_type = const_real;
-  using bus_type   = base::bus_type;
 
   const_real() {}
 
@@ -31,10 +29,8 @@ public:
 class ch_real : public const_real {
 public:
   using base = const_real;
-  using data_type  = base::data_type;
   using value_type = ch_real;
   using const_type = const_real;
-  using bus_type   = base::bus_type;
 
   ch_real() {}
 

@@ -5,7 +5,6 @@
 #include "regimpl.h"
 #include "memimpl.h"
 #include "ioimpl.h"
-#include "snodeimpl.h"
 #include "selectimpl.h"
 #include "proxyimpl.h"
 #include "memimpl.h"
@@ -13,24 +12,78 @@
 #include "assertimpl.h"
 #include "tickimpl.h"
 #include "cdomain.h"
-#include "device.h"
 #include "arithm.h"
 #include "select.h"
 
+namespace cash {
+namespace internal {
+
+class context_manager {
+public:
+  context_manager() : ctx_(nullptr) {}
+  ~context_manager() {
+    if (ctx_)
+      ctx_->release();
+  }
+
+  context* create(const std::string& name) const {
+    auto ctx = new context(name);
+    ctx->acquire();
+    return ctx;
+  }
+
+  context* get_ctx() const {
+    CH_CHECK(ctx_ != nullptr, "invalid context!");
+    return ctx_;
+  }
+
+  context* swap(context* ctx) {
+    std::swap(ctx_, ctx);
+    return ctx;
+  }
+
+private:
+  mutable context* ctx_;
+};
+
+}
+}
+
 using namespace cash::internal;
 
-thread_local context* tls_ctx = nullptr;
+thread_local context_manager tls_ctx;
 
-context::context()
-  : node_ids_(0)
+context* cash::internal::ctx_create(const std::string& name) {
+  return tls_ctx.create(name);
+}
+
+context* cash::internal::ctx_swap(context* ctx) {
+  return tls_ctx.swap(ctx);
+}
+
+context* cash::internal::ctx_curr() {
+  return tls_ctx.get_ctx();
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+static uint32_t make_id() {
+  static uint32_t s_id(0);
+  return s_id++;
+}
+
+context::context(const std::string& name)
+  : id_(make_id())
+  , name_(name)
+  , node_ids_(0)
   , block_ids_(0)
   , default_clk_(nullptr)
   , default_reset_(nullptr)
   , tick_(nullptr)
 {}
 
-context::~context() {  
-  // delete all nodes
+context::~context() {
+  // delete allocated nodes
   for (auto it = nodes_.begin(), end = nodes_.end(); it != end;) {
     delete *it++;
   }
@@ -69,7 +122,7 @@ lnodeimpl* context::get_clk() {
   if (!user_clks_.empty())
     return user_clks_.top().get_impl();
   if (nullptr == default_clk_)
-    default_clk_ = new inputimpl(op_clk, this, 1);
+    default_clk_ = new inputimpl(op_clk, this, 1, "clk");
   return default_clk_;
 }
 
@@ -77,7 +130,7 @@ lnodeimpl* context::get_reset() {
   if (!user_resets_.empty())
     return user_resets_.top().get_impl();
   if (nullptr == default_reset_)
-     default_reset_ = new inputimpl(op_reset, this, 1);
+     default_reset_ = new inputimpl(op_reset, this, 1, "reset");
   return default_reset_;
 }
 
@@ -85,14 +138,6 @@ lnodeimpl* context::get_tick() {
   if (nullptr == tick_)
     tick_ = new tickimpl(this);
   return tick_;
-}
-
-void context::unbind_default_signals(snodeimpl* clk, snodeimpl* reset) {
-  if (default_clk_ && clk && default_clk_->get_bus().get_id() == clk->get_id())
-    default_clk_->unbind();
-  if (default_reset_ && reset && default_reset_->get_bus().get_id() == reset->get_id()) {
-    default_reset_->unbind();
-  }
 }
 
 uint32_t context::add_node(lnodeimpl* node) {
@@ -166,7 +211,7 @@ uint32_t context::add_node(lnodeimpl* node) {
 }
 
 void context::remove_node(lnodeimpl* node) {
-  DBG(3, "*** deleting node: %s%d(#%d)!\n", node->get_name(), node->get_size(), node->get_id());
+  DBG(3, "*** deleting node: %s%d(#%d)!\n", to_string(node->get_op()), node->get_size(), node->get_id());
   
   assert(!nodes_.empty());
   nodes_.remove(node);
@@ -482,21 +527,21 @@ void context::register_tap(const std::string& name, const lnode& node) {
     if (instances == 1) {
       // rename first instance
       auto iter = std::find_if(taps_.begin(), taps_.end(),
-        [name](tapimpl* t)->bool { return t->get_tapName() == name; });
+        [name](tapimpl* t)->bool { return t->get_name() == name; });
       assert(iter != taps_.end());
-      (*iter)->set_tagName(fstring("%s_%d", name.c_str(), 0));
+      (*iter)->set_name(fstring("%s_%d", name.c_str(), 0));
     }
     full_name = fstring("%s_%d", name.c_str(), instances);
   }
   // create tap node
-  new tapimpl(full_name, node);
+  new tapimpl(node, full_name);
 }
 
-snodeimpl* context::get_tap(const std::string& name, uint32_t size) {
+lnodeimpl* context::get_tap(const std::string& name, uint32_t size) {
   for (tapimpl* tap : taps_) {
-    if (tap->get_tapName() == name) {
+    if (tap->get_name() == name) {
       CH_CHECK(tap->get_size() == size, "tap bus size mismatch: received %u, expected %u", size, tap->get_size());
-      return tap->get_bus().get_impl();
+      return tap;
     }
   } 
   CH_ABORT("couldn't find tab '%s'", name.c_str());
@@ -579,7 +624,7 @@ static void dump_cfg_impl(
   
   auto iter = taps.find(node->get_id());
   if (iter != taps.end()) {
-    out << " // " << iter->second->get_tapName();
+    out << " // " << iter->second->get_name();
     out << std::endl;
     return;
   }  
@@ -606,7 +651,7 @@ void context::dump_cfg(lnodeimpl* node, std::ostream& out, uint32_t level) {
   if (tap) {
     node = tap->get_target().get_impl();
     node->print(out, level);
-    out << " // " << tap->get_tapName();        
+    out << " // " << tap->get_name();
   } else {  
     node->print(out, level);
   }
@@ -677,23 +722,4 @@ void context::dump_stats(std::ostream& out) {
 
 void cash::internal::register_tap(const std::string& name, const lnode& node) {
   node.get_ctx()->register_tap(name, node);
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-context* cash::internal::ctx_create() {
-  auto ctx = new context();  
-  ctx->acquire();  
-  return ctx;
-}
-
-context* cash::internal::ctx_swap(context* ctx) {
-  context* old = tls_ctx;
-  tls_ctx = ctx;
-  return old;
-}
-
-context* cash::internal::ctx_curr() {
-  CH_CHECK(tls_ctx, "unitialized context!");
-  return tls_ctx;
 }

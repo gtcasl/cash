@@ -1,7 +1,6 @@
 #pragma once
 
 #include "bit.h"
-#include "bus.h"
 
 namespace cash {
 namespace internal {
@@ -125,16 +124,7 @@ struct lit_hex_sizex {
   static constexpr unsigned value = lit_size<true, lit_hex, 0, Chars...>::value;
 };
 
-#define CH_DEF_LITERALS_IMPL(x, ...) \
-  CH_FOR_EACH(x, CH_SEP_SPACE, __VA_ARGS__)
-
-#define CH_DEF_LITERALS(x) \
-  CH_DEF_LITERALS_IMPL(x, 2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,29,30,31,32) \
-  CH_DEF_LITERALS_IMPL(x, 33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64) \
-  CH_DEF_LITERALS_IMPL(x, 65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92) \
-  CH_DEF_LITERALS_IMPL(x, 93,94,95,96,97,98,99,100,101,102,103,104,105,106,107,108,109,110,111,112,113,114,115,116,117,118,119,120,121,122,123,124,125,126,127,128)
-
-namespace core_literals {
+namespace literals {
 
   template < char... Chars>
   const auto operator "" _b() {
@@ -155,7 +145,7 @@ namespace core_literals {
   }
 
 
-#define CH_CORE_LITERALS(i, x) \
+#define CH_DEF_LITERALS_IMPL(i, x) \
   template < char... Chars> \
   const auto operator "" _b##x() { \
     static_assert(x >= lit_bin_sizex<Chars...>::value, "literal value overflow"); \
@@ -175,56 +165,21 @@ namespace core_literals {
     return make_bit<x>(lnode(bitvector(x, str))); \
   }
 
-  CH_DEF_LITERALS(CH_CORE_LITERALS)
-#undef CH_CORE_LITERALs
-}
+#define CH_DEF_LITERALS_IMPL2(x, ...) \
+  CH_FOR_EACH(x, CH_SEP_SPACE, __VA_ARGS__)
 
-namespace sim_literals {
+#define CH_DEF_LITERALS(x) \
+  CH_DEF_LITERALS_IMPL2(x, 2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,29,30,31,32) \
+  CH_DEF_LITERALS_IMPL2(x, 33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64) \
+  CH_DEF_LITERALS_IMPL2(x, 65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92) \
+  CH_DEF_LITERALS_IMPL2(x, 93,94,95,96,97,98,99,100,101,102,103,104,105,106,107,108,109,110,111,112,113,114,115,116,117,118,119,120,121,122,123,124,125,126,127,128)
 
-  template < char... Chars>
-  const auto operator "" _b() {
-    constexpr const char str[] = {Chars..., 'b', '\0'};
-    return make_bus<lit_bin_size<Chars...>::value>(snode(bitvector(lit_bin_size<Chars...>::value, str)));
-  }
+  CH_DEF_LITERALS(CH_DEF_LITERALS_IMPL)
 
-  template < char... Chars>
-  const auto operator "" _o() {
-    constexpr const char str[] = {Chars..., 'o', '\0'};
-    return make_bus<lit_oct_size<Chars...>::value>(snode(bitvector(lit_oct_size<Chars...>::value, str)));
-  }
-
-  template < char... Chars>
-  const auto operator "" _h() {
-    constexpr const char str[] = {Chars..., 'h', '\0'};
-    return make_bus<lit_hex_size<Chars...>::value>(snode(bitvector(lit_hex_size<Chars...>::value, str)));
-  }
-
-#define CH_SIM_LITERALS(i, x) \
-  template < char... Chars> \
-  const auto operator "" _b##x() { \
-    static_assert(x >= lit_bin_sizex<Chars...>::value, "literal value overflow"); \
-    constexpr const char str[] = {Chars..., 'b', '\0'}; \
-    return make_bus<x>(snode(bitvector(x, str))); \
-  } \
-  template < char... Chars> \
-  const auto operator "" _o##x() { \
-    static_assert(x >= lit_oct_sizex<Chars...>::value, "literal value overflow"); \
-    constexpr const char str[] = {Chars..., 'o', '\0'}; \
-    return make_bus<x>(snode(bitvector(x, str))); \
-  } \
-  template < char... Chars> \
-  const auto operator "" _h##x() { \
-    static_assert(x >= lit_hex_sizex<Chars...>::value, "literal value overflow"); \
-    constexpr const char str[] = {Chars..., 'h', '\0'}; \
-    return make_bus<x>(snode(bitvector(x, str))); \
-  }
-
-  CH_DEF_LITERALS(CH_SIM_LITERALS)
-#undef CH_SIM_LITERALs
-}
-
+#undef CH_DEF_LITERALS
 #undef CH_DEF_LITERALS_IMPL
-#undef CH_SIM_LITERALs
+#undef CH_DEF_LITERALS_IMPL2
+}
 
 }
 }
