@@ -4,7 +4,7 @@
 #include "litimpl.h"
 #include "ioimpl.h"
 
-using namespace cash::internal;
+using namespace ch::internal;
 
 void clock_driver::add_node(lnodeimpl* node) {
   node->set_bool(0, value_);

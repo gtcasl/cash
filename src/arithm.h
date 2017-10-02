@@ -66,6 +66,7 @@ enum alu_flags {
 
 #define CH_BINOP_GEN(func, op) \
   template <typename A, typename B, \
+            CH_REQUIRES(!are_ch_literal<A, B>::value), \
             CH_REQUIRES(deduce_type<A, B>::bitcount != 0), \
             CH_REQUIRES(is_bit_convertible<A, deduce_type<A, B>::bitcount>::value), \
             CH_REQUIRES(is_bit_convertible<B, deduce_type<A, B>::bitcount>::value)> \
@@ -81,6 +82,7 @@ enum alu_flags {
 
 #define CH_COMPAREOP_GEN(func, op) \
   template <typename A, typename B, \
+            CH_REQUIRES(!are_ch_literal<A, B>::value), \
             CH_REQUIRES(deduce_type<A, B>::bitcount != 0), \
             CH_REQUIRES(is_bit_convertible<A, deduce_type<A, B>::bitcount>::value), \
             CH_REQUIRES(is_bit_convertible<B, deduce_type<A, B>::bitcount>::value)> \
@@ -90,6 +92,7 @@ enum alu_flags {
 
 #define CH_SHIFTOP_GEN(func, op) \
   template <typename A, typename B, \
+            CH_REQUIRES(!are_ch_literal<A, B>::value), \
             CH_REQUIRES(deduce_first_type<A, B>::bitcount != 0), \
             CH_REQUIRES(is_bit_convertible<A, deduce_first_type<A, B>::bitcount>::value), \
             CH_REQUIRES(is_bit_convertible<B, deduce_first_type<B, A>::bitcount>::value)> \
@@ -97,7 +100,7 @@ enum alu_flags {
     return func(a, b); \
   }
 
-namespace cash {
+namespace ch {
 namespace internal {
 
 enum ch_alu_op {
@@ -364,42 +367,42 @@ const auto ch_neg(const ch_bitbase<N>& a) {
   return OpUnary<alu_op_neg>(a);
 }
 
-template <typename A, typename B, \
-          CH_REQUIRES(deduce_type<A, B>::bitcount != 0), \
-          CH_REQUIRES(is_bit_convertible<A, deduce_type<A, B>::bitcount>::value), \
-          CH_REQUIRES(is_bit_convertible<B, deduce_type<A, B>::bitcount>::value)> \
+template <typename A, typename B,
+          CH_REQUIRES(deduce_type<A, B>::bitcount != 0),
+          CH_REQUIRES(is_bit_convertible<A, deduce_type<A, B>::bitcount>::value),
+          CH_REQUIRES(is_bit_convertible<B, deduce_type<A, B>::bitcount>::value)>
 const auto ch_add(const A& a, const B& b) {
   return OpBinary<alu_op_add, deduce_type<A, B>::bitcount>(a, b);
 }
 
-template <typename A, typename B, \
-          CH_REQUIRES(deduce_type<A, B>::bitcount != 0), \
-          CH_REQUIRES(is_bit_convertible<A, deduce_type<A, B>::bitcount>::value), \
-          CH_REQUIRES(is_bit_convertible<B, deduce_type<A, B>::bitcount>::value)> \
+template <typename A, typename B,
+          CH_REQUIRES(deduce_type<A, B>::bitcount != 0),
+          CH_REQUIRES(is_bit_convertible<A, deduce_type<A, B>::bitcount>::value),
+          CH_REQUIRES(is_bit_convertible<B, deduce_type<A, B>::bitcount>::value)>
 const auto ch_sub(const A& a, const B& b) {
   return OpBinary<alu_op_sub, deduce_type<A, B>::bitcount>(a, b);
 }
 
-template <typename A, typename B, \
-          CH_REQUIRES(deduce_type<A, B>::bitcount != 0), \
-          CH_REQUIRES(is_bit_convertible<A, deduce_type<A, B>::bitcount>::value), \
-          CH_REQUIRES(is_bit_convertible<B, deduce_type<A, B>::bitcount>::value)> \
+template <typename A, typename B,
+          CH_REQUIRES(deduce_type<A, B>::bitcount != 0),
+          CH_REQUIRES(is_bit_convertible<A, deduce_type<A, B>::bitcount>::value),
+          CH_REQUIRES(is_bit_convertible<B, deduce_type<A, B>::bitcount>::value)>
 const auto ch_mult(const A& a, const B& b) {
   return OpBinary<alu_op_mult, deduce_type<A, B>::bitcount>(a, b);
 }
 
-template <typename A, typename B, \
-          CH_REQUIRES(deduce_type<A, B>::bitcount != 0), \
-          CH_REQUIRES(is_bit_convertible<A, deduce_type<A, B>::bitcount>::value), \
-          CH_REQUIRES(is_bit_convertible<B, deduce_type<A, B>::bitcount>::value)> \
+template <typename A, typename B,
+          CH_REQUIRES(deduce_type<A, B>::bitcount != 0),
+          CH_REQUIRES(is_bit_convertible<A, deduce_type<A, B>::bitcount>::value),
+          CH_REQUIRES(is_bit_convertible<B, deduce_type<A, B>::bitcount>::value)>
 const auto ch_div(const A& a, const B& b) {
   return OpBinary<alu_op_div, deduce_type<A, B>::bitcount>(a, b);
 }
 
-template <typename A, typename B, \
-          CH_REQUIRES(deduce_type<A, B>::bitcount != 0), \
-          CH_REQUIRES(is_bit_convertible<A, deduce_type<A, B>::bitcount>::value), \
-          CH_REQUIRES(is_bit_convertible<B, deduce_type<A, B>::bitcount>::value)> \
+template <typename A, typename B,
+          CH_REQUIRES(deduce_type<A, B>::bitcount != 0),
+          CH_REQUIRES(is_bit_convertible<A, deduce_type<A, B>::bitcount>::value),
+          CH_REQUIRES(is_bit_convertible<B, deduce_type<A, B>::bitcount>::value)>
 const auto ch_mod(const A& a, const B& b) {
   return OpBinary<alu_op_mod, deduce_type<A, B>::bitcount>(a, b);
 }

@@ -2,7 +2,7 @@
 
 #include "common.h"
 
-namespace cash {
+namespace ch {
 namespace internal {
 
 class bitvector {
@@ -434,8 +434,8 @@ public:
 
   bitvector(uint32_t size, const std::initializer_list<uint32_t>& value);
 
-  bitvector(uint32_t size, const char* value);
-  
+  bitvector(uint32_t size, const std::string& value);
+
   ~bitvector();
   
   void resize(uint32_t size,
@@ -453,7 +453,7 @@ public:
 
   bitvector& operator=(char value);
   
-  bitvector& operator=(const char* value);
+  bitvector& operator=(const std::string& value);
   
   bitvector& operator=(uint32_t value);
   
@@ -534,11 +534,15 @@ public:
   }
   
   uint32_t get_num_words() const {
-    return (size_ + WORD_MASK) >> WORD_SIZE_LOG;;
+    return (size_ + WORD_MASK) >> WORD_SIZE_LOG;
   }
   
   uint32_t get_size() const {
     return size_;
+  }
+
+  uint32_t get_cbsize() const {
+    return (get_num_words() << WORD_SIZE_LOG) / 8;
   }
 
   void clear_unused_bits();
@@ -639,6 +643,22 @@ protected:
   uint32_t* words_;
   uint32_t  size_;
 };
+
+inline bool operator!=(const bitvector& lhs, const bitvector& rhs) {
+  return !(lhs == rhs);
+}
+
+inline bool operator>=(const bitvector& lhs, const bitvector& rhs) {
+  return !(lhs < rhs);
+}
+
+inline bool operator>(const bitvector& lhs, const bitvector& rhs) {
+  return (rhs < lhs);
+}
+
+inline bool operator<=(const bitvector& lhs, const bitvector& rhs) {
+  return !(rhs < lhs);
+}
 
 std::ostream& operator<<(std::ostream& out, const bitvector& b);
 

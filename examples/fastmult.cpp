@@ -1,10 +1,8 @@
-#include <iostream>
-#include <fstream>
 #include <cash.h>
 
-using namespace cash::core;
-using namespace cash::literals;
-using namespace cash::sim;
+using namespace ch::core;
+using namespace ch::literals;
+using namespace ch::sim;
 
 #define CHECK(x, v) if (ch_peek<decltype(v)>(x) != v) { assert(false); exit(1); }
 
@@ -14,7 +12,7 @@ struct FastMult {
     (ch_in<ch_bit4>) rhs,
     (ch_out<ch_bit8>) out
   );
-  FastMult() {
+  void describe() {
     std::vector<uint8_t> tbl_mult(256);
     for (int j = 0; j < 16; ++j) {
       for (int i = 0; i < 16; ++i) {

@@ -1,8 +1,8 @@
 #include <cash.h>
 
-using namespace cash::core;
-using namespace cash::literals;
-using namespace cash::sim;
+using namespace ch::core;
+using namespace ch::literals;
+using namespace ch::sim;
 
 auto dogfood = []()->ch_bit1 {
   ch_bit4 a(1100_b), b(1);

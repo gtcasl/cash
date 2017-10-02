@@ -3,7 +3,7 @@
 #include "bit.h"
 #include "select.h"
 
-namespace cash {
+namespace ch {
 namespace internal {
 
 lnodeimpl* createRegNode(const lnode& next, const lnode& init);

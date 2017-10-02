@@ -2,7 +2,7 @@
 
 #include "lnodeimpl.h"
 
-namespace cash {
+namespace ch {
 namespace internal {
 
 class proxyimpl : public lnodeimpl {
@@ -30,6 +30,11 @@ public:
   proxyimpl(const lnode& src);
   proxyimpl(const lnode& src, uint32_t offset, uint32_t length);
 
+  bool is_identity() const {
+    return (1 == ranges_.size())
+        && (srcs_[0].get_size() == value_.get_size());
+  }
+
   const std::vector<range_t>& get_ranges() const {
     return ranges_;
   }
@@ -46,6 +51,7 @@ public:
   std::vector<std::pair<uint32_t, uint32_t>> get_update_slices(uint32_t offset, uint32_t length);
 
   const bitvector& eval(ch_tick t) override;
+
   void print(std::ostream& out, uint32_t level) const override;
   
 private:

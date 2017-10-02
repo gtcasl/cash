@@ -5,7 +5,7 @@
 #include "arithm.h"
 #include "context.h"
 
-using namespace cash::internal;
+using namespace ch::internal;
 
 selectimpl::selectimpl(const lnode& pred, const lnode& _true, const lnode& _false)
   : lnodeimpl(op_select, pred.get_ctx(), _true.get_size())
@@ -25,7 +25,7 @@ const bitvector& selectimpl::eval(ch_tick t) {
   return value_;
 }
 
-lnodeimpl* cash::internal::createSelectNode(
+lnodeimpl* ch::internal::createSelectNode(
     const lnode& pred,
     const lnode& _true,
     const lnode& _false) {

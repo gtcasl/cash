@@ -2,7 +2,7 @@
 
 #include "struct.h"
 
-namespace cash {
+namespace ch {
 namespace internal {
 
 lnodeimpl* createInputNode(const std::string& name, uint32_t size);
@@ -10,6 +10,15 @@ lnodeimpl* createInputNode(const std::string& name, uint32_t size);
 lnodeimpl* createOutputNode(const std::string& name, const lnode& src);
 
 void bindInput(const lnode& input, const lnode& src);
+
+void registerIOMap(const nodelist& data);
+
+template <typename T>
+void registerIOMap(const T& node) {
+  nodelist data(T::bitcount);
+  ch::internal::read_data(node, data, 0, T::bitcount);
+  registerIOMap(data);
+}
 
 template <bool input, bool output>
 class ch_port {
@@ -44,6 +53,7 @@ public:
   ch_in(const std::string& name = "io") : ch_port(name) {
     input_ = createInputNode(name, base::bitcount);
     this->write_data(0, {input_, 0 , base::bitcount}, 0, base::bitcount);
+    registerIOMap(*this);
   }
 
   ch_in(const ch_in& in) : base(in), ch_port(in.get_name()) {}
@@ -90,6 +100,7 @@ public:
 
   ch_out(const std::string& name = "io") : ch_port(name) {
     output_ = createOutputNode(name, get_lnode(*this));
+    registerIOMap(*this);
   }
 
   ch_out(const ch_out& out) : base(out), ch_port(out.get_name()) {}
@@ -118,7 +129,7 @@ protected:
   typename CH_PAIR_L(x)::flip_type CH_PAIR_R(x)
 
 #define CH_INOUT_CTOR_APPLY(i, x) \
-  CH_PAIR_R(x)(cash::internal::fstring("%s_%s", this->get_name().c_str(), CH_STRINGIZE(CH_PAIR_R(x))))
+  CH_PAIR_R(x)(ch::internal::fstring("%s_%s", this->get_name().c_str(), CH_STRINGIZE(CH_PAIR_R(x))))
 
 #define CH_INOUT_BIND_APPLY(i, x) \
   this->CH_PAIR_R(x)(__rhs__.CH_PAIR_R(x))
@@ -130,14 +141,14 @@ protected:
   this->CH_PAIR_R(x)(std::forward<__T##i>(CH_CONCAT(_,CH_PAIR_R(x))))
 
 #define CH_INOUT_IMPL(inout_name, ...) \
-  class inout_name : public cash::internal::ch_port<true, true> { \
+  class inout_name : public ch::internal::ch_port<true, true> { \
   private: \
-    class __flip_type__ : public cash::internal::ch_port<true, true> { \
+    class __flip_type__ : public ch::internal::ch_port<true, true> { \
     private: \
       __flip_type__& operator=(const __flip_type__&) = delete; \
     public: \
       static constexpr unsigned bitcount = CH_STRUCT_SIZE(__VA_ARGS__); \
-      using base = cash::internal::ch_port<true, true>; \
+      using base = ch::internal::ch_port<true, true>; \
       using flip_type = inout_name; \
       __flip_type__(const std::string& name = "io") : CH_FOR_EACH(CH_INOUT_CTOR_APPLY, CH_SEP_COMMA, __VA_ARGS__), ch_port(name) {} \
       __flip_type__(const __flip_type__& __rhs__) : CH_FOR_EACH(CH_STRUCT_COPY_CTOR_APPLY, CH_SEP_COMMA, __VA_ARGS__), ch_port(__rhs__.get_name()) {} \
@@ -154,7 +165,7 @@ protected:
     inout_name& operator=(const inout_name&) = delete; \
   public: \
     static constexpr unsigned bitcount = CH_STRUCT_SIZE(__VA_ARGS__); \
-    using base = cash::internal::ch_port<true, true>; \
+    using base = ch::internal::ch_port<true, true>; \
     using flip_type  = __flip_type__; \
     inout_name(const std::string& name = "io") : CH_FOR_EACH(CH_INOUT_CTOR_APPLY, CH_SEP_COMMA, __VA_ARGS__), ch_port(name) {} \
     inout_name(const inout_name& __rhs__) : CH_FOR_EACH(CH_STRUCT_COPY_CTOR_APPLY, CH_SEP_COMMA, __VA_ARGS__), ch_port(__rhs__.get_name()) {} \

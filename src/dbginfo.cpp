@@ -7,7 +7,7 @@
 
 #include <boost/algorithm/string.hpp>
 
-namespace cash {
+namespace ch {
 namespace internal {
 
 std::string addr2line(std::string const &program, void *addr) {

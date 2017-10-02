@@ -12,7 +12,7 @@
 #include "tickimpl.h"
 #include <cstring>
 
-using namespace cash::internal;
+using namespace ch::internal;
 
 verilogwriter::verilogwriter(std::ostream& out) : out_(out) {
   //--

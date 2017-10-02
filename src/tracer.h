@@ -2,7 +2,7 @@
 
 #include "simulator.h"
 
-namespace cash {
+namespace ch {
 namespace internal {
 
 class ch_tracer : public ch_simulator {
@@ -50,7 +50,7 @@ protected:
 
 #define CH_TRACE(x, ...) \
   do { \
-    cash::internal::ch_tracer& __tracer = x; \
+    ch::internal::ch_tracer& __tracer = x; \
     CH_FOR_EACH(CH_MAKE_TRACE, CH_MAKE_TRACE_SEP, __VA_ARGS__); \
   } while (0)
 

@@ -1,8 +1,8 @@
 #pragma once
 
-#include "lnode.h"
+#include "context.h"
 
-namespace cash {
+namespace ch {
 namespace internal {
 
 class ch_compiler {
@@ -13,13 +13,16 @@ public:
   
 protected:
   
-  bool dead_code_elimination();
+  size_t dead_code_elimination();
+
+  size_t remove_identity_nodes();
   
   void syntax_check();
 
-  size_t remove_dead_nodes(const std::unordered_set<lnodeimpl*>& live_nodes);
+  size_t remove_dead_nodes(const live_nodes_t& live_nodes);
 
-  std::unordered_set<lnodeimpl*> live_nodes_;
+  node_map_t node_map_;
+
   context* ctx_;
 };
 

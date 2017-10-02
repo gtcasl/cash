@@ -1,7 +1,7 @@
 #include "ioimpl.h"
 #include "context.h"
 
-using namespace cash::internal;
+using namespace ch::internal;
 
 inputimpl::inputimpl(ch_operator op, context* ctx, uint32_t size, const std::string& name)
   : ioimpl(op, ctx, size, name)
@@ -9,10 +9,9 @@ inputimpl::inputimpl(ch_operator op, context* ctx, uint32_t size, const std::str
 {}
 
 const bitvector& inputimpl::eval(ch_tick t) {
-  if (tick_ != t
-   && !input_.is_empty()) {
+  if (tick_ != t && !srcs_.empty()) {
     tick_ = t;
-    value_ = input_.eval(t);
+    value_ = srcs_[0].eval(t);
   }
   return value_;
 }
@@ -20,8 +19,8 @@ const bitvector& inputimpl::eval(ch_tick t) {
 void inputimpl::print(std::ostream& out, uint32_t level) const {
   out << "#" << id_ << " <- " << this->get_op() << value_.get_size();
   out << "(" << name_ << ", ";
-  if (!input_.is_empty()) {
-    out << "$" << input_.get_id();
+  if (!srcs_.empty()) {
+    out << "$" << srcs_[0].get_id();
   } else {
     out << "?";
   }

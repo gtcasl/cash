@@ -2,7 +2,7 @@
 
 #include "bitbase.h"
 
-namespace cash {
+namespace ch {
 namespace internal {
 
 void register_tap(const std::string& name, const lnode& node);
@@ -12,26 +12,26 @@ void createPrintNode(const std::string& format,
 
 #define CH_BIT_READONLY_INTERFACE(type) \
   const auto operator[](size_t index) const & { \
-    return cash::internal::const_sliceref<cash::internal::refproxy<type>, 1>(*this, index); \
+    return ch::internal::const_sliceref<ch::internal::refproxy<type>, 1>(*this, index); \
   } \
   const auto operator[](size_t index) const && { \
-    return cash::internal::const_sliceref<type, 1>(std::move(*this), index); \
+    return ch::internal::const_sliceref<type, 1>(std::move(*this), index); \
   } \
   template <unsigned M> \
   const auto slice(size_t index = 0) const & { \
-    return cash::internal::const_sliceref<cash::internal::refproxy<type>, M>(*this, index); \
+    return ch::internal::const_sliceref<ch::internal::refproxy<type>, M>(*this, index); \
   } \
   template <unsigned M> \
   const auto slice(size_t index = 0) const && { \
-    return cash::internal::const_sliceref<type, M>(std::move(*this), index); \
+    return ch::internal::const_sliceref<type, M>(std::move(*this), index); \
   } \
   template <unsigned M> \
   const auto aslice(size_t index = 0) const & { \
-    return cash::internal::const_sliceref<cash::internal::refproxy<type>, M>(*this, index * M); \
+    return ch::internal::const_sliceref<ch::internal::refproxy<type>, M>(*this, index * M); \
   } \
   template <unsigned M> \
   const auto aslice(size_t index = 0) const && { \
-    return cash::internal::const_sliceref<type, M>(std::move(*this), index * M); \
+    return ch::internal::const_sliceref<type, M>(std::move(*this), index * M); \
   }
 
 #define CH_BIT_WRITABLE_INTERFACE(type) \
@@ -39,43 +39,47 @@ void createPrintNode(const std::string& format,
     this->assign(rhs); \
     return *this; \
   } \
-  template <typename U, CH_REQUIRES(cash::internal::is_bit_scalar<U>::value)> \
+  type& operator=(const ch_literal<type::bitcount>& rhs) { \
+    this->assign(rhs); \
+    return *this; \
+  } \
+  template <typename U, CH_REQUIRES(ch::internal::is_ch_scalar<U>::value)> \
   type& operator=(U rhs) { \
     this->assign(rhs); \
     return *this; \
   } \
   auto operator[](size_t index) & { \
-    return cash::internal::sliceref<type, 1>(*this, index); \
+    return ch::internal::sliceref<type, 1>(*this, index); \
   } \
   const auto operator[](size_t index) const & { \
-    return cash::internal::const_sliceref<cash::internal::refproxy<type>, 1>(*this, index); \
+    return ch::internal::const_sliceref<ch::internal::refproxy<type>, 1>(*this, index); \
   } \
   const auto operator[](size_t index) const && { \
-    return cash::internal::const_sliceref<type, 1>(std::move(*this), index); \
+    return ch::internal::const_sliceref<type, 1>(std::move(*this), index); \
   } \
   template <unsigned M> \
   auto slice(size_t index = 0) & { \
-    return cash::internal::sliceref<type, M>(*this, index); \
+    return ch::internal::sliceref<type, M>(*this, index); \
   } \
   template <unsigned M> \
   const auto slice(size_t index = 0) const & { \
-    return cash::internal::const_sliceref<cash::internal::refproxy<type>, M>(*this, index); \
+    return ch::internal::const_sliceref<ch::internal::refproxy<type>, M>(*this, index); \
   } \
   template <unsigned M> \
   const auto slice(size_t index = 0) const && { \
-    return cash::internal::const_sliceref<type, M>(std::move(*this), index); \
+    return ch::internal::const_sliceref<type, M>(std::move(*this), index); \
   } \
   template <unsigned M> \
   auto aslice(size_t index = 0) & { \
-    return cash::internal::sliceref<type, M>(*this, index * M); \
+    return ch::internal::sliceref<type, M>(*this, index * M); \
   } \
   template <unsigned M> \
   const auto aslice(size_t index = 0) const & { \
-    return cash::internal::const_sliceref<cash::internal::refproxy<type>, M>(*this, index * M); \
+    return ch::internal::const_sliceref<ch::internal::refproxy<type>, M>(*this, index * M); \
   } \
   template <unsigned M> \
   const auto aslice(size_t index = 0) const && { \
-    return cash::internal::const_sliceref<type, M>(std::move(*this), index * M); \
+    return ch::internal::const_sliceref<type, M>(std::move(*this), index * M); \
   }
 
 template <unsigned N>
@@ -93,8 +97,10 @@ public:
 
   const_bit(const ch_bitbase<N>& rhs) : node_(get_lnode(rhs), N) {}
 
+  const_bit(const ch_literal<N>& rhs) : node_(rhs) {}
+
   template <typename U,
-            CH_REQUIRES(is_bit_scalar<U>::value)>
+            CH_REQUIRES(is_ch_scalar<U>::value)>
   explicit const_bit(U rhs) : node_(bitvector(N, rhs)) {}
 
   const auto clone() const {
@@ -146,9 +152,11 @@ public:
   ch_bit(ch_bit&& rhs) : base(rhs) {}
 
   ch_bit(const ch_bitbase<N>& rhs) : base(rhs) {}
+
+  ch_bit(const ch_literal<N>& rhs) : base(rhs) {}
     
   template <typename U,
-            CH_REQUIRES(is_bit_scalar<U>::value)>
+            CH_REQUIRES(is_ch_scalar<U>::value)>
   explicit ch_bit(U rhs) : base(rhs) {}
 
   ch_bit& operator=(const ch_bit& rhs) {
@@ -232,11 +240,6 @@ template <typename... Ts,
          CH_REQUIRES(are_bit_convertible<Ts...>::value)>
 const auto ch_cat(const Ts&... args) {
   return cat_impl(static_cast<typename bitbase_cast<Ts>::type>(args)...);
-}
-
-template <unsigned B, unsigned A>
-const auto operator,(const ch_bitbase<B>& b, const ch_bitbase<A>& a) {
-  return ch_cat(b, a);
 }
 
 template <typename... Ts,
@@ -358,15 +361,45 @@ std::ostream& operator<<(std::ostream& out, const ch_bitbase<N>& node) {
 }
 
 template <typename T, unsigned N>
+struct peek_impl {
+  static const T read_bytes(const ch_bitbase<N>& node) {
+    T ret(0);
+    ch::internal::read_bytes(node, 0, &ret, sizeof(T), 0, N);
+    return ret;
+  }
+};
+
+template <unsigned N>
+struct peek_impl< ch_literal<N>, N > {
+  static const ch_literal<N> read_bytes(const ch_bitbase<N>& node) {
+    ch_literal<N> ret;
+    ch::internal::read_bytes(node, 0, ret.get_words(), ret.get_cbsize(), 0, N);
+    return ret;
+  }
+};
+
+template <typename T, unsigned N>
 T ch_peek(const ch_bitbase<N>& node) {
-  T ret(0);
-  cash::internal::read_bytes(node, 0, &ret, sizeof(T), 0, N);
-  return ret;
+  return peek_impl<typename std::decay<T>::type, N>::read_bytes(node);
 }
 
 template <typename T, unsigned N>
+struct poke_impl {
+  static void write_bytes(const ch_bitbase<N>& node, const T& value) {
+    ch::internal::write_bytes(node, 0, &value, sizeof(T), 0, N);
+  }
+};
+
+template <unsigned N>
+struct poke_impl< ch_literal<N>, N > {
+  static void write_bytes(const ch_bitbase<N>& node, const ch_literal<N>& value) {
+    ch::internal::write_bytes(node, 0, value.get_words(), value.get_cbsize(), 0, N);
+  }
+};
+
+template <typename T, unsigned N>
 void ch_poke(const ch_bitbase<N>& node, const T& value) {
-  cash::internal::write_bytes(node, 0, &value, sizeof(T), 0, N);
+  poke_impl<typename std::decay<T>::type, N>::write_bytes(node, value);
 }
 
 template <unsigned N>
@@ -412,5 +445,5 @@ const auto make_return(const T0& arg0, const Ts&... args) {
 }
 }
 
-#define CH_RET(...) return cash::internal::make_return(__VA_ARGS__)
+#define CH_RET(...) return ch::internal::make_return(__VA_ARGS__)
 #define CH_TIE(...) std::forward_as_tuple(__VA_ARGS__)

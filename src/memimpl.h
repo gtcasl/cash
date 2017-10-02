@@ -3,7 +3,7 @@
 #include "ioimpl.h"
 #include "cdomain.h"
 
-namespace cash {
+namespace ch {
 namespace internal {
 
 class memportimpl;
@@ -73,15 +73,15 @@ public:
   memportimpl(memimpl* mem, const lnode& addr, bool writable);
 
   const lnode& get_mem() const {
-    return srcs_[mem_id_];
+    return srcs_[mem_idx_];
   }
 
   const lnode& get_addr() const {
-    return srcs_[addr_id_];
+    return srcs_[addr_idx_];
   }
 
   const lnode& get_wdata() const {
-    return srcs_[wdata_id_];
+    return srcs_[wdata_idx_];
   }
 
   bool is_writable() const {
@@ -104,9 +104,9 @@ protected:
   bitvector q_next_;
   uint32_t  a_next_;
   
-  int mem_id_;
-  int addr_id_;
-  int wdata_id_;
+  int mem_idx_;
+  int addr_idx_;
+  int wdata_idx_;
   bool writable_;
   
   ch_tick tick_;

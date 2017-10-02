@@ -4,7 +4,7 @@
 #include "tickable.h"
 #include "cdomain.h"
 
-namespace cash {
+namespace ch {
 namespace internal {
 
 class regimpl : public tickable, public lnodeimpl {
@@ -27,27 +27,27 @@ public:
   }
 
   const lnode& get_next() const {
-    return srcs_[next_id_];
+    return srcs_[next_idx_];
   }
 
   const lnode& get_init() const {
-    return srcs_[init_id_];
+    return srcs_[init_idx_];
   }
 
   bool has_reset() const {
-    return (reset_id_ != -1);
+    return (reset_idx_ != -1);
   }
 
   const lnode& get_reset() const {
-    return srcs_[reset_id_];
+    return srcs_[reset_idx_];
   }
 
   bool has_enable() const {
-    return (enable_id_ != -1);
+    return (enable_idx_ != -1);
   }
 
   const lnode& get_enable() const {
-    return srcs_[enable_id_];
+    return srcs_[enable_idx_];
   }
   
   const bitvector& eval(ch_tick t) override;
@@ -62,10 +62,10 @@ protected:
 
   cdomain*  cd_;
   bitvector q_next_;
-  int next_id_;
-  int init_id_;
-  int reset_id_;
-  int enable_id_;
+  int next_idx_;
+  int init_idx_;
+  int reset_idx_;
+  int enable_idx_;
 };
 
 }

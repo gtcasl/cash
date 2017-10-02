@@ -15,7 +15,7 @@
 #include "arithm.h"
 #include "select.h"
 
-namespace cash {
+namespace ch {
 namespace internal {
 
 class context_manager {
@@ -49,19 +49,19 @@ private:
 }
 }
 
-using namespace cash::internal;
+using namespace ch::internal;
 
 thread_local context_manager tls_ctx;
 
-context* cash::internal::ctx_create(const std::string& name) {
+context* ch::internal::ctx_create(const std::string& name) {
   return tls_ctx.create(name);
 }
 
-context* cash::internal::ctx_swap(context* ctx) {
+context* ch::internal::ctx_swap(context* ctx) {
   return tls_ctx.swap(ctx);
 }
 
-context* cash::internal::ctx_curr() {
+context* ch::internal::ctx_curr() {
   return tls_ctx.get_ctx();
 }
 
@@ -547,7 +547,15 @@ lnodeimpl* context::get_tap(const std::string& name, uint32_t size) {
   CH_ABORT("couldn't find tab '%s'", name.c_str());
 }
 
-void context::get_live_nodes(std::unordered_set<lnodeimpl*>& live_nodes) {
+void context::register_io_map(const nodelist& data) {
+  for (auto& slice : data) {
+    io_map_[slice.src.get_id()].push_back(&slice.src);
+  }
+}
+
+live_nodes_t context::compute_live_nodes() const {
+  live_nodes_t live_nodes;
+
   // default signals
   if (default_clk_) {
     live_nodes.emplace(default_clk_);
@@ -575,6 +583,8 @@ void context::get_live_nodes(std::unordered_set<lnodeimpl*>& live_nodes) {
   for (auto node : gtaps_) {
     live_nodes.emplace(node);
   }
+
+  return live_nodes;
 }
 
 void context::tick(ch_tick t) {
@@ -708,18 +718,18 @@ void context::dump_stats(std::ostream& out) {
     }
   }
   
-  out << "cash-stats: total memories = " << num_memories << std::endl;
-  out << "cash-stats: total memory bits = " << memory_bits << std::endl;
-  out << "cash-stats: total registers = " << num_registers << std::endl;
-  out << "cash-stats: total regiters bits = " << register_bits << std::endl;
-  out << "cash-stats: total muxes = " << num_muxes << std::endl;
-  out << "cash-stats: total alus = " << num_alus << std::endl;
-  out << "cash-stats: total literals = " << num_lits << std::endl;
-  out << "cash-stats: total proxies = " << num_proxies << std::endl;
+  out << "ch-stats: total memories = " << num_memories << std::endl;
+  out << "ch-stats: total memory bits = " << memory_bits << std::endl;
+  out << "ch-stats: total registers = " << num_registers << std::endl;
+  out << "ch-stats: total regiters bits = " << register_bits << std::endl;
+  out << "ch-stats: total muxes = " << num_muxes << std::endl;
+  out << "ch-stats: total alus = " << num_alus << std::endl;
+  out << "ch-stats: total literals = " << num_lits << std::endl;
+  out << "ch-stats: total proxies = " << num_proxies << std::endl;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void cash::internal::register_tap(const std::string& name, const lnode& node) {
+void ch::internal::register_tap(const std::string& name, const lnode& node) {
   node.get_ctx()->register_tap(name, node);
 }

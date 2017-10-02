@@ -4,7 +4,7 @@
 #include <functional>
 #include <assert.h>
 
-namespace cash {
+namespace ch {
 namespace internal {
 
 std::string fstring(const char* format, ...);
@@ -334,7 +334,7 @@ constexpr uint32_t rotr(uint32_t value, uint32_t shift, uint32_t width) {
 #else
   #define CH_ABORT(msg, ...) \
     do { \
-      cash::internal::dump_stack_trace(stdout); \
+      ch::internal::dump_stack_trace(stdout); \
       fprintf(stderr, "ERROR: " msg " (" __FILE__ ":" CH_STRINGIZE(__LINE__) ")\n", ##__VA_ARGS__); \
       std::abort(); \
     } while (false)
@@ -352,7 +352,7 @@ constexpr uint32_t rotr(uint32_t value, uint32_t shift, uint32_t width) {
 
 #define CH_REQUIRES(...) typename = typename std::enable_if<(__VA_ARGS__)>::type
 
-#define CH_UNUSED(...) cash::internal::unused(__VA_ARGS__)
+#define CH_UNUSED(...) ch::internal::unused(__VA_ARGS__)
 
 #define CH_TODO() CH_ABORT("Not yet implemented");
 

@@ -1,7 +1,7 @@
 #include "bitvector.h"
 #include <cstring>
 
-using namespace cash::internal;
+using namespace ch::internal;
 
 bitvector::bitvector(const bitvector& rhs) : words_(nullptr), size_(0) {
   this->resize(rhs.size_, 0x0, false, false);
@@ -35,7 +35,7 @@ bitvector::bitvector(uint32_t size, const std::initializer_list<uint32_t>& value
   this->operator =(value);  
 }
 
-bitvector::bitvector(uint32_t size, const char* value) : words_(nullptr), size_(0) {
+bitvector::bitvector(uint32_t size, const std::string& value) : words_(nullptr), size_(0) {
   this->resize(size, 0x0, false, false);
   this->operator =(value);
 }
@@ -111,14 +111,14 @@ static uint32_t chr2int(char x, int base) {
       return (x - 'a') + 10;
     break;
   }  
-  CH_ABORT("invalid literal value");
+  CH_ABORT("invalid ch_literal value");
 }
 
-bitvector& bitvector::operator=(const char* value) {
+bitvector& bitvector::operator=(const std::string& value) {
   int base = 0;
   int start = 0;
 
-  size_t len = strlen(value);
+  size_t len = value.length();
   
   switch (value[len-1]) {
   case 'b':
@@ -157,7 +157,7 @@ bitvector& bitvector::operator=(const char* value) {
     }
   }
   
-  CH_CHECK(size <= size_, "literal value overflow");
+  CH_CHECK(size <= size_, "ch_literal value overflow");
   
   // clear unused words
   uint32_t num_words = this->get_num_words();
@@ -419,7 +419,7 @@ void bitvector::write(
   }
 }
 
-std::ostream& cash::internal::operator<<(std::ostream& out, const bitvector& b) {
+std::ostream& ch::internal::operator<<(std::ostream& out, const bitvector& b) {
   auto oldflags = out.flags();
   out.setf(std::ios_base::hex, std::ios_base::basefield);
   out << "0x";

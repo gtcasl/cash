@@ -3,7 +3,7 @@
 #include "bit.h"
 #include "arithm.h"
 
-namespace cash {
+namespace ch {
 namespace internal {
 
 class ch_real;

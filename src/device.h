@@ -2,7 +2,7 @@
 
 #include "port.h"
 
-namespace cash {
+namespace ch {
 namespace internal {
 
 class deviceimpl;
@@ -42,6 +42,7 @@ public:
   ch_module(const Ts&... args) {
     this->begin_context(typeid(T).name());
     impl_ = new T(args...);
+    impl_->describe();
     this->compile();
     this->end_context();
   }

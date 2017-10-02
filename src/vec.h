@@ -2,7 +2,7 @@
 
 #include "bitbase.h"
 
-namespace cash {
+namespace ch {
 namespace internal {
 
 template <typename T, unsigned N>
@@ -43,7 +43,7 @@ public:
   }
 
   template <typename U,
-            CH_REQUIRES(cash::internal::is_bit_scalar<U>::value)>
+            CH_REQUIRES(ch::internal::is_ch_scalar<U>::value)>
   explicit const_vec(U value) {
     this->assign(value);
   }
@@ -72,7 +72,7 @@ protected:
     for (unsigned i = 0; length && i < N; ++i) {
       if (offset < T::bitcount) {
         size_t len = std::min<size_t>(length, T::bitcount - offset);
-        cash::internal::read_data(items_[i], out, offset, len);
+        ch::internal::read_data(items_[i], out, offset, len);
         offset = T::bitcount;        
         length -= len;
       }
@@ -84,7 +84,7 @@ protected:
     for (unsigned i = 0; length && i < N; ++i) {
       if (dst_offset < T::bitcount) {
         size_t len = std::min<size_t>(length, T::bitcount - dst_offset);
-        cash::internal::write_data(items_[i], dst_offset, data, src_offset, len);
+        ch::internal::write_data(items_[i], dst_offset, data, src_offset, len);
         src_offset += len;
         dst_offset = T::bitcount;
         length -= len;
@@ -97,7 +97,7 @@ protected:
     for (unsigned i = 0; length && i < N; ++i) {
       if (dst_offset < T::bitcount) {
         size_t len = std::min<size_t>(length, T::bitcount - dst_offset);
-        cash::internal::read_bytes(items_[i], dst_offset, out, src_offset, len);
+        ch::internal::read_bytes(items_[i], dst_offset, out, out_cbsize, src_offset, len);
         src_offset += len;
         dst_offset = T::bitcount;
         length -= len;
@@ -110,7 +110,7 @@ protected:
     for (unsigned i = 0; length && i < N; ++i) {
       if (dst_offset < T::bitcount) {
         size_t len = std::min<size_t>(length, T::bitcount - dst_offset);
-        cash::internal::write_bytes(items_[i], dst_offset, in, in_cbsize, src_offset, len);
+        ch::internal::write_bytes(items_[i], dst_offset, in, in_cbsize, src_offset, len);
         src_offset += len;
         dst_offset = T::bitcount;
         length -= len;
@@ -150,7 +150,7 @@ public:
   explicit ch_vec(const Vs&... values) : base(values...) {}
 
   template <typename U,
-            CH_REQUIRES(cash::internal::is_bit_scalar<U>::value)>
+            CH_REQUIRES(ch::internal::is_ch_scalar<U>::value)>
   explicit ch_vec(U value) : base(value) {} \
 
   ch_vec& operator=(const ch_vec& rhs) {
@@ -177,7 +177,7 @@ public:
     return *this;
   }
 
-  template <typename U, CH_REQUIRES(cash::internal::is_bit_scalar<U>::value)>
+  template <typename U, CH_REQUIRES(ch::internal::is_ch_scalar<U>::value)>
   ch_vec& operator=(U rhs) {
     this->assign(rhs);
     return *this;

@@ -3,7 +3,7 @@
 #include "litimpl.h"
 #include "context.h"
 
-using namespace cash::internal;
+using namespace ch::internal;
 
 clock_event::clock_event()
   : edgedir_(EDGE_POS)

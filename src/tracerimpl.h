@@ -2,7 +2,7 @@
 
 #include "simulatorimpl.h"
 
-namespace cash {
+namespace ch {
 namespace internal {
 
 class tracerimpl : public simulatorimpl {

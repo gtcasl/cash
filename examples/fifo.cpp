@@ -1,10 +1,8 @@
-#include <iostream>
-#include <fstream>
 #include <cash.h>
 
-using namespace cash::core;
-using namespace cash::literals;
-using namespace cash::sim;
+using namespace ch::core;
+using namespace ch::literals;
+using namespace ch::sim;
 
 #define CHECK(x, v) if (ch_peek<decltype(v)>(x) != v) { assert(false); exit(1); }
 
@@ -18,7 +16,7 @@ struct FiFo {
     (ch_out<ch_bit1>)   empty,
     (ch_out<ch_bit1>)   full
   );
-  FiFo() {
+  void describe() {
     ch_seq<ch_bit<A+1>> rd_ptr, wr_ptr;
 
     auto rd_A = ch_slice<A>(rd_ptr);

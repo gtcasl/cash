@@ -20,14 +20,14 @@
 #include "simulator.h"
 #include "vcdtracer.h"
 
-namespace cash {
+namespace ch {
 
 //
 // utility namespace
 //
 
 namespace utility {
-  using cash::internal::fstring;
+  using ch::internal::fstring;
 }
 
 //
@@ -35,29 +35,29 @@ namespace utility {
 //
 namespace core {
 
-  using namespace cash::utility;
+  using namespace ch::utility;
 
   //
   // basic types
   //
 
-  using cash::internal::ispow2;
-  using cash::internal::ilog2;
-  using cash::internal::log2ceil;
+  using ch::internal::ispow2;
+  using ch::internal::ilog2;
+  using ch::internal::log2ceil;
 
-  template <typename T, unsigned N> using ch_vec = cash::internal::ch_vec<T, N>;
+  template <typename T, unsigned N> using ch_vec = ch::internal::ch_vec<T, N>;
 
-  template <unsigned N> using ch_bit = cash::internal::ch_bit<N>;
+  template <unsigned N> using ch_bit = ch::internal::ch_bit<N>;
 
-  template <unsigned N> using ch_bitbase = cash::internal::ch_bitbase<N>;
+  template <unsigned N> using ch_bitbase = ch::internal::ch_bitbase<N>;
 
-  template <typename T> using ch_seq = cash::internal::ch_seq<T>;
+  template <typename T> using ch_seq = ch::internal::ch_seq<T>;
 
-  using ch_float = cash::internal::ch_real;
+  using ch_float = ch::internal::ch_real;
 
-  template <typename T> using ch_in = cash::internal::ch_in<T>;
-  template <typename T> using ch_out = cash::internal::ch_out<T>;
-  template <typename T> using ch_module = cash::internal::ch_module<T>;
+  template <typename T> using ch_in = ch::internal::ch_in<T>;
+  template <typename T> using ch_out = ch::internal::ch_out<T>;
+  template <typename T> using ch_module = ch::internal::ch_module<T>;
 
   //
   // bit types
@@ -83,104 +83,104 @@ namespace core {
   // subscript operators
   //
 
-  using cash::internal::ch_zext;
-  using cash::internal::ch_sext;
-  using cash::internal::ch_cat;
-  using cash::internal::ch_slice;
-  using cash::internal::ch_aslice;
-  using cash::internal::ch_shuffle;
+  using ch::internal::ch_zext;
+  using ch::internal::ch_sext;
+  using ch::internal::ch_cat;
+  using ch::internal::ch_slice;
+  using ch::internal::ch_aslice;
+  using ch::internal::ch_shuffle;
 
   //
   // conditional operators
   //
 
-  using cash::internal::ch_select;
-  using cash::internal::ch_case;
-  using cash::internal::ch_if;
-  using cash::internal::ch_switch;
+  using ch::internal::ch_select;
+  using ch::internal::ch_case;
+  using ch::internal::ch_if;
+  using ch::internal::ch_switch;
 
   //
   // register functions
   //
 
-  using cash::internal::ch_reg;
-  using cash::internal::ch_latch;
-  using cash::internal::ch_pushClock;
-  using cash::internal::ch_popClock;
-  using cash::internal::ch_pushReset;
-  using cash::internal::ch_popReset;
-  using cash::internal::ch_getClock;
-  using cash::internal::ch_getReset;
-  using cash::internal::ch_getTick;
+  using ch::internal::ch_reg;
+  using ch::internal::ch_latch;
+  using ch::internal::ch_pushClock;
+  using ch::internal::ch_popClock;
+  using ch::internal::ch_pushReset;
+  using ch::internal::ch_popReset;
+  using ch::internal::ch_getClock;
+  using ch::internal::ch_getReset;
+  using ch::internal::ch_getTick;
 
   //
   // gates functions
   //
 
-  using cash::internal::ch_nand;
-  using cash::internal::ch_inv;
-  using cash::internal::ch_nor;
-  using cash::internal::ch_and;
-  using cash::internal::ch_or;
-  using cash::internal::ch_xor;
-  using cash::internal::ch_xnor;
+  using ch::internal::ch_nand;
+  using ch::internal::ch_inv;
+  using ch::internal::ch_nor;
+  using ch::internal::ch_and;
+  using ch::internal::ch_or;
+  using ch::internal::ch_xor;
+  using ch::internal::ch_xnor;
 
   //
   // compare functions
   //
 
-  using cash::internal::ch_eq;
-  using cash::internal::ch_ne;
-  using cash::internal::ch_lt;
-  using cash::internal::ch_gt;
-  using cash::internal::ch_le;
-  using cash::internal::ch_ge;
+  using ch::internal::ch_eq;
+  using ch::internal::ch_ne;
+  using ch::internal::ch_lt;
+  using ch::internal::ch_gt;
+  using ch::internal::ch_le;
+  using ch::internal::ch_ge;
 
   //
   // reduce functions
   //
 
-  using cash::internal::ch_andr;
-  using cash::internal::ch_orr;
-  using cash::internal::ch_xorr;
+  using ch::internal::ch_andr;
+  using ch::internal::ch_orr;
+  using ch::internal::ch_xorr;
 
   //
   // arithmetic functions
   //
 
-  using cash::internal::ch_add;
-  using cash::internal::ch_sub;
-  using cash::internal::ch_neg;
-  using cash::internal::ch_mult;
-  using cash::internal::ch_div;
-  using cash::internal::ch_sll;
-  using cash::internal::ch_srl;
-  using cash::internal::ch_sra;
-  using cash::internal::ch_rotl;
-  using cash::internal::ch_rotr;
+  using ch::internal::ch_add;
+  using ch::internal::ch_sub;
+  using ch::internal::ch_neg;
+  using ch::internal::ch_mult;
+  using ch::internal::ch_div;
+  using ch::internal::ch_sll;
+  using ch::internal::ch_srl;
+  using ch::internal::ch_sra;
+  using ch::internal::ch_rotl;
+  using ch::internal::ch_rotr;
 
   //
   // memory functions
   //
 
-  using cash::internal::ch_rom;
-  using cash::internal::ch_ram;
+  using ch::internal::ch_rom;
+  using ch::internal::ch_ram;
 
   //
   // other functions
   //
 
-  using cash::internal::ch_mux;
-  using cash::internal::ch_min;
-  using cash::internal::ch_max;
+  using ch::internal::ch_mux;
+  using ch::internal::ch_min;
+  using ch::internal::ch_max;
 
   //
   // utility functions
   //
 
-  using cash::internal::ch_assert;
-  using cash::internal::ch_tap;
-  using cash::internal::ch_print;
+  using ch::internal::ch_assert;
+  using ch::internal::ch_tap;
+  using ch::internal::ch_print;
 }
 
 //
@@ -188,31 +188,31 @@ namespace core {
 //
 namespace sim {
 
-  using namespace cash::utility;
+  using namespace ch::utility;
 
   //
   // basic types
   //
 
-  using ch_tick  = cash::internal::ch_tick;
+  using ch_tick  = ch::internal::ch_tick;
   
   //
   // objects
   //
 
-  using ch_device    = cash::internal::ch_device;
-  using ch_simulator = cash::internal::ch_simulator;
-  using ch_tracer    = cash::internal::ch_tracer;
-  using ch_vcdtracer = cash::internal::ch_vcdtracer;
+  using ch_device    = ch::internal::ch_device;
+  using ch_simulator = ch::internal::ch_simulator;
+  using ch_tracer    = ch::internal::ch_tracer;
+  using ch_vcdtracer = ch::internal::ch_vcdtracer;
 
   //
   // functions
   //
 
-  using cash::internal::ch_peek;
-  using cash::internal::ch_poke;
-  using cash::internal::ch_toVerilog;
-  using cash::internal::ch_dumpStats;
+  using ch::internal::ch_peek;
+  using ch::internal::ch_poke;
+  using ch::internal::ch_toVerilog;
+  using ch::internal::ch_dumpStats;
 }
 
 //
@@ -220,7 +220,7 @@ namespace sim {
 //
 
 inline namespace literals {
-  using namespace cash::internal::literals;
+  using namespace ch::internal::literals;
 }
 
 }

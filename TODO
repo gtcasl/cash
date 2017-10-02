@@ -87,7 +87,7 @@ X*** Assignment rule: by constructor assignent is ignored during check
 - implement ch_make_device() to use compiler time binding
 - add C++ user defined literals for _b, _h, _d, _o convertion to bit<N> and bus<N>
 - create ../configure --prefix / make / make install scripts
-- implement cash namespaces cash::core, cash::sim, cash::stl
+- implement cash namespaces ch::core, ch::sim, ch::stl
 - to_verilog() renaming module arguments
 - investigate using std::bind and variadic functions for device creation
 - add mutex and fifo primitives for TML modelling
@@ -134,7 +134,7 @@ Completed:
 - create cash.h header file
 - adding native support for integers operations
 - add CASH_ to all header files #define declarations
-- implement cash::internal to cleanup api namespace
+- implement ch::internal to cleanup api namespace
 - keep all implementation specific headers private
 - append ch_ to CASH public types and functions
 - runtime assertion support for testing

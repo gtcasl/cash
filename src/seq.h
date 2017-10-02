@@ -2,7 +2,7 @@
 
 #include "reg.h"
 
-namespace cash {
+namespace ch {
 namespace internal {
 
 template <typename T>

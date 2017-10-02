@@ -2,7 +2,7 @@
 
 #include "bit.h"
 
-namespace cash {
+namespace ch {
 namespace internal {
 
 //
@@ -14,13 +14,13 @@ struct lit_size;
 
 template <typename T, unsigned N, char... Chars>
 struct lit_size<false, T, N, Chars...> {
-  static_assert(N > 0, "invalid literal size");
+  static_assert(N > 0, "invalid ch_literal size");
   static constexpr unsigned value = N;
 };
 
 template <typename T, unsigned N, char Char, char... Chars>
 struct lit_size<false, T, N, Char, Chars...> {
-  static_assert(T::is_digit(Char) || T::is_escape(Char), "invalid literal value");
+  static_assert(T::is_digit(Char) || T::is_escape(Char), "invalid ch_literal value");
   static constexpr unsigned value = lit_size<false, T, T::size(Char, N), Chars...>::value;
 };
 
@@ -31,7 +31,7 @@ struct lit_size<true, T, N, Chars...> {
 
 template <typename T, unsigned N, char Char, char... Chars>
 struct lit_size<true, T, N, Char, Chars...> {
-  static_assert(T::is_digit(Char) || T::is_escape(Char), "invalid literal value");
+  static_assert(T::is_digit(Char) || T::is_escape(Char), "invalid ch_literal value");
   static constexpr unsigned value = lit_size<true, T, T::sizex(Char, N), Chars...>::value;
 };
 
@@ -128,41 +128,35 @@ namespace literals {
 
   template < char... Chars>
   const auto operator "" _b() {
-    constexpr const char str[] = {Chars..., 'b', '\0'};
-    return make_bit<lit_bin_size<Chars...>::value>(lnode(bitvector(lit_bin_size<Chars...>::value, str)));
+    return ch_literal<lit_bin_size<Chars...>::value>({Chars..., 'b'});
   }
 
   template < char... Chars>
   const auto operator "" _o() {
-    constexpr const char str[] = {Chars..., 'o', '\0'};
-    return make_bit<lit_oct_size<Chars...>::value>(lnode(bitvector(lit_oct_size<Chars...>::value, str)));
+    return ch_literal<lit_oct_size<Chars...>::value>({Chars..., 'o'});
   }
 
   template < char... Chars>
   const auto operator "" _h() {
-    constexpr const char str[] = {Chars..., 'h', '\0'};
-    return make_bit<lit_hex_size<Chars...>::value>(lnode(bitvector(lit_hex_size<Chars...>::value, str)));
+    return ch_literal<lit_hex_size<Chars...>::value>({Chars..., 'h'});
   }
 
 
 #define CH_DEF_LITERALS_IMPL(i, x) \
   template < char... Chars> \
   const auto operator "" _b##x() { \
-    static_assert(x >= lit_bin_sizex<Chars...>::value, "literal value overflow"); \
-    constexpr const char str[] = {Chars..., 'b', '\0'}; \
-    return make_bit<x>(lnode(bitvector(x, str))); \
+    static_assert(x >= lit_bin_sizex<Chars...>::value, "ch_literal value overflow"); \
+    return ch_literal<x>({Chars..., 'b'}); \
   } \
   template < char... Chars> \
   const auto operator "" _o##x() { \
-    static_assert(x >= lit_oct_sizex<Chars...>::value, "literal value overflow"); \
-    constexpr const char str[] = {Chars..., 'o', '\0'}; \
-    return make_bit<x>(lnode(bitvector(x, str))); \
+    static_assert(x >= lit_oct_sizex<Chars...>::value, "ch_literal value overflow"); \
+    return ch_literal<x>({Chars..., 'o'}); \
   } \
   template < char... Chars> \
   const auto operator "" _h##x() { \
-    static_assert(x >= lit_hex_sizex<Chars...>::value, "literal value overflow"); \
-    constexpr const char str[] = {Chars..., 'h', '\0'}; \
-    return make_bit<x>(lnode(bitvector(x, str))); \
+    static_assert(x >= lit_hex_sizex<Chars...>::value, "ch_literal value overflow"); \
+    return ch_literal<x>({Chars..., 'h'}); \
   }
 
 #define CH_DEF_LITERALS_IMPL2(x, ...) \

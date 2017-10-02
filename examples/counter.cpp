@@ -1,8 +1,8 @@
 #include <cash.h>
 
-using namespace cash::core;
-using namespace cash::literals;
-using namespace cash::sim;
+using namespace ch::core;
+using namespace ch::literals;
+using namespace ch::sim;
 
 #define CHECK(x, v) if (ch_peek<decltype(v)>(x) != v) { assert(false); exit(1); }
 
@@ -11,7 +11,7 @@ struct Counter {
   __io (
     (ch_out<ch_bit<N>>) out
   );
-  Counter() {
+  void describe() {
     ch_seq<ch_bit<N>> out;
     out.next = out + 1;
     io.out = out;

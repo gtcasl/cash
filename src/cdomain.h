@@ -3,7 +3,7 @@
 #include "lnodeimpl.h"
 #include "tickable.h"
 
-namespace cash {
+namespace ch {
 namespace internal {
 
 enum EDGE_DIR {

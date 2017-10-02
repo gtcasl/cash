@@ -3,7 +3,7 @@
 #include "select.h"
 #include "context.h"
 
-using namespace cash::internal;
+using namespace ch::internal;
 
 regimpl::regimpl(cdomain* cd,
                  const lnode& next,
@@ -11,19 +11,19 @@ regimpl::regimpl(cdomain* cd,
                  const lnode& reset)
   : lnodeimpl(op_reg, next.get_ctx(), next.get_size())
   , cd_(cd)
-  , next_id_(-1)
-  , init_id_(-1)
-  , reset_id_(-1)
-  , enable_id_(-1) {
+  , next_idx_(-1)
+  , init_idx_(-1)
+  , reset_idx_(-1)
+  , enable_idx_(-1) {
   cd_->add_use(this);
 
-  next_id_ = srcs_.size();
+  next_idx_ = srcs_.size();
   srcs_.emplace_back(next);
 
-  init_id_ = srcs_.size();
+  init_idx_ = srcs_.size();
   srcs_.emplace_back(init);
 
-  reset_id_ = srcs_.size();
+  reset_idx_ = srcs_.size();
   srcs_.emplace_back(reset);
 
   this->get_signals(cd);
@@ -36,22 +36,22 @@ regimpl::regimpl(cdomain* cd,
                  const lnode& enable)
   : lnodeimpl(op_reg, next.get_ctx(), next.get_size())
   , cd_(cd)
-  , next_id_(-1)
-  , init_id_(-1)
-  , reset_id_(-1)
-  , enable_id_(-1) {
+  , next_idx_(-1)
+  , init_idx_(-1)
+  , reset_idx_(-1)
+  , enable_idx_(-1) {
   cd_->add_use(this);
 
-  next_id_ = srcs_.size();
+  next_idx_ = srcs_.size();
   srcs_.emplace_back(next);
 
-  init_id_ = srcs_.size();
+  init_idx_ = srcs_.size();
   srcs_.emplace_back(init);
 
-  reset_id_ = srcs_.size();
+  reset_idx_ = srcs_.size();
   srcs_.emplace_back(reset);
 
-  enable_id_ = srcs_.size();
+  enable_idx_ = srcs_.size();
   srcs_.emplace_back(enable);
 
   this->get_signals(cd);
@@ -84,18 +84,18 @@ void regimpl::tick(ch_tick t) {
 }
 
 void regimpl::tick_next(ch_tick t) {
-  if (reset_id_ != -1 && srcs_[reset_id_].eval(t)[0]) {
-    q_next_ = srcs_[init_id_].eval(t);
-    if (cd_->is_asynchronous(srcs_[reset_id_]))
+  if (reset_idx_ != -1 && srcs_[reset_idx_].eval(t)[0]) {
+    q_next_ = srcs_[init_idx_].eval(t);
+    if (cd_->is_asynchronous(srcs_[reset_idx_]))
       value_ = q_next_;
-  } else if (enable_id_ != -1) {
-    if (srcs_[enable_id_].eval(t)[0]) {
-      q_next_ = srcs_[next_id_].eval(t);
-      if (cd_->is_asynchronous(srcs_[enable_id_]))
+  } else if (enable_idx_ != -1) {
+    if (srcs_[enable_idx_].eval(t)[0]) {
+      q_next_ = srcs_[next_idx_].eval(t);
+      if (cd_->is_asynchronous(srcs_[enable_idx_]))
         value_ = q_next_;
     }
   } else {
-    q_next_ = srcs_[next_id_].eval(t);
+    q_next_ = srcs_[next_idx_].eval(t);
   }
 }
 
@@ -106,37 +106,37 @@ const bitvector& regimpl::eval(ch_tick t) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-const ch_bit<1> cash::internal::ch_getClock() {
+const ch_bit<1> ch::internal::ch_getClock() {
   return make_bit<1>(ctx_curr()->get_clk());
 }
 
-void cash::internal::pushClock(const lnode& clk) {
+void ch::internal::pushClock(const lnode& clk) {
   ctx_curr()->push_clk(clk);
 }
 
-void cash::internal::ch_popClock() {
+void ch::internal::ch_popClock() {
   ctx_curr()->pop_clk();
 }
 
-const ch_bit<1> cash::internal::ch_getReset() {
+const ch_bit<1> ch::internal::ch_getReset() {
   return make_bit<1>(ctx_curr()->get_reset());
 }
 
-void cash::internal::pushReset(const lnode& reset) {
+void ch::internal::pushReset(const lnode& reset) {
   ctx_curr()->push_reset(reset);
 }
 
-void cash::internal::ch_popReset() {
+void ch::internal::ch_popReset() {
   ctx_curr()->pop_reset();
 }
 
-lnodeimpl* cash::internal::createRegNode(const lnode& next, const lnode& init) {
+lnodeimpl* ch::internal::createRegNode(const lnode& next, const lnode& init) {
   auto ctx = next.get_ctx();
   auto cd = ctx->create_cdomain({clock_event(ctx->get_clk(), EDGE_POS)});
   return new regimpl(cd, next, init, ctx_curr()->get_reset());
 }
 
-lnodeimpl* cash::internal::createLatchNode(
+lnodeimpl* ch::internal::createLatchNode(
     const lnode& next,
     const lnode& init,
     const lnode& enable,
@@ -149,12 +149,12 @@ lnodeimpl* cash::internal::createLatchNode(
   return new regimpl(cd, next, init, reset, enable);
 }
 
-lnodeimpl* cash::internal::createReadyNode(const lnode& node) {
+lnodeimpl* ch::internal::createReadyNode(const lnode& node) {
   CH_UNUSED(node);
   CH_TODO();
 }
 
-lnodeimpl* cash::internal::createValidNode(const lnode& node) {
+lnodeimpl* ch::internal::createValidNode(const lnode& node) {
   CH_UNUSED(node);
   CH_TODO();
 }

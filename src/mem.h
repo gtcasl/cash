@@ -2,7 +2,7 @@
 
 #include "bit.h"
 
-namespace cash {
+namespace ch {
 namespace internal {
 
 class memimpl;

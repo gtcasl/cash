@@ -2,11 +2,29 @@
 
 #include "lnode.h"
 
-namespace cash {
+namespace ch {
 namespace internal {
 
+template <unsigned N>
+struct ch_literal : public bitvector {
+  static constexpr unsigned bitcount = N;
+  constexpr ch_literal() : bitvector(N) {}
+  constexpr ch_literal(const std::string& value) : bitvector(N, value) {}
+};
+
 template <typename T>
-struct is_bit_scalar : std::integral_constant<bool,
+struct is_ch_literal : public std::false_type {};
+
+template <unsigned N>
+struct is_ch_literal< ch_literal<N> > : public std::true_type {};
+
+template <typename T0, typename T1>
+struct are_ch_literal {
+  static constexpr bool value = (is_ch_literal<T0>::value && is_ch_literal<T1>::value);
+};
+
+template <typename T>
+struct is_ch_scalar : std::integral_constant<bool,
   std::is_integral<T>::value ||
   std::is_enum<T>::value>
 {};
@@ -148,12 +166,17 @@ protected:
 
   void assign(const ch_bitbase& rhs) {
     nodelist data(N);
-    cash::internal::read_data(rhs, data, 0, N);
+    ch::internal::read_data(rhs, data, 0, N);
     this->write_data(0, data, 0, N);
   }
 
+  void assign(const ch_literal<N>& rhs) {
+    lnode node(rhs);
+    this->write_data(0, {node, 0 , N}, 0, N);
+  }
+
   template <typename U,
-            CH_REQUIRES(is_bit_scalar<U>::value)>
+            CH_REQUIRES(is_ch_scalar<U>::value)>
   void assign(U rhs) {
     lnode node(bitvector(N, rhs));
     this->write_data(0, {node, 0 , N}, 0, N);
@@ -171,11 +194,11 @@ public:
 protected:
 
   void read_data(nodelist& inout, size_t offset, size_t length) const override {
-    cash::internal::read_data(value_, inout, offset, length);
+    ch::internal::read_data(value_, inout, offset, length);
   }
 
   void read_bytes(uint32_t dst_offset, void* out, uint32_t out_cbsize, uint32_t src_offset, uint32_t length) const override {
-    cash::internal::read_bytes(value_, dst_offset, out, out_cbsize, src_offset, length);
+    ch::internal::read_bytes(value_, dst_offset, out, out_cbsize, src_offset, length);
   }
 
   // LCOV_EXCL_START
@@ -244,11 +267,11 @@ public:
 protected:
 
   void read_data(nodelist& inout, size_t offset, size_t length) const override {
-    cash::internal::read_data(container_, inout, start_ + offset, length);
+    ch::internal::read_data(container_, inout, start_ + offset, length);
   }
 
   void read_bytes(uint32_t dst_offset, void* out, uint32_t out_cbsize, uint32_t src_offset, uint32_t length) const override {
-    cash::internal::read_bytes(container_, start_ + dst_offset, out, out_cbsize, src_offset, length);
+    ch::internal::read_bytes(container_, start_ + dst_offset, out, out_cbsize, src_offset, length);
   }
 
   // LCOV_EXCL_START
@@ -291,7 +314,7 @@ public:
     return *this;
   }
 
-  template <typename U, CH_REQUIRES(is_bit_scalar<U>::value)>
+  template <typename U, CH_REQUIRES(is_ch_scalar<U>::value)>
   sliceref& operator=(U rhs) {
     this->assign(rhs);
     return *this;
@@ -328,19 +351,19 @@ public:
 protected:
 
   void read_data(nodelist& inout, size_t offset, size_t length) const override {
-    cash::internal::read_data(container_, inout, start_ + offset, length);
+    ch::internal::read_data(container_, inout, start_ + offset, length);
   }
 
   void write_data(size_t dst_offset, const nodelist& in, size_t src_offset, size_t length) override {
-    cash::internal::write_data(container_, start_ + dst_offset, in, src_offset, length);
+    ch::internal::write_data(container_, start_ + dst_offset, in, src_offset, length);
   }
 
   void read_bytes(uint32_t dst_offset, void* out, uint32_t out_cbsize, uint32_t src_offset, uint32_t length) const override {
-    cash::internal::read_bytes(container_, start_ + dst_offset, out, out_cbsize, src_offset, length);
+    ch::internal::read_bytes(container_, start_ + dst_offset, out, out_cbsize, src_offset, length);
   }
 
   void write_bytes(uint32_t dst_offset, const void* in, uint32_t in_cbsize, uint32_t src_offset, uint32_t length) const override {
-    cash::internal::write_bytes(container_, start_ + dst_offset, in, in_cbsize, src_offset, length);
+    ch::internal::write_bytes(container_, start_ + dst_offset, in, in_cbsize, src_offset, length);
   }
 
   T& container_;
@@ -383,7 +406,7 @@ public:
     return *this;
   }
 
-  template <typename U, CH_REQUIRES(is_bit_scalar<U>::value)>
+  template <typename U, CH_REQUIRES(is_ch_scalar<U>::value)>
   concatref& operator=(U rhs) {
     this->assign(rhs);
     return *this;
@@ -395,26 +418,17 @@ protected:
   concatref& operator=(concatref&&) = default;
 
   // LCOV_EXCL_START
-  void read_data(nodelist& inout, size_t offset, size_t length) const override {
-    this->read_data(inout, offset, length, args_, std::index_sequence_for<Ts...>());
-  }
-
-  template <size_t... I>
-  void read_data(nodelist& inout, size_t offset, size_t length, const std::tuple<Ts&...>& args, std::index_sequence<I...>) const {
-    this->read_data(inout, offset, length, std::get<sizeof...(Ts) - 1 - I>(args)...);
-  }
-
   template <typename U>
   void read_data(nodelist& inout, size_t offset, size_t length, U& arg) const {
     size_t len = std::min<size_t>(length, U::bitcount);
-    cash::internal::read_data(arg, inout, offset, len);
+    ch::internal::read_data(arg, inout, offset, len);
   }
 
   template <typename U0, typename... Us>
   void read_data(nodelist& inout, size_t offset, size_t length, U0& arg0, Us&... args) const {
     if (offset < U0::bitcount) {
       size_t len = std::min<size_t>(length, U0::bitcount);
-      cash::internal::read_data(arg0, inout, offset, len);
+      ch::internal::read_data(arg0, inout, offset, len);
       offset += len;
       length -= len;
     }
@@ -423,8 +437,35 @@ protected:
     }
   }
 
-  void read_bytes(uint32_t dst_offset, void* out, uint32_t out_cbsize, uint32_t src_offset, uint32_t length) const override {
-    this->read_bytes(dst_offset, out, out_cbsize, src_offset, length, args_, std::index_sequence_for<Ts...>());
+  template <size_t... I>
+  void read_data(nodelist& inout, size_t offset, size_t length, const std::tuple<Ts&...>& args, std::index_sequence<I...>) const {
+    this->read_data(inout, offset, length, std::get<sizeof...(Ts) - 1 - I>(args)...);
+  }
+
+  void read_data(nodelist& inout, size_t offset, size_t length) const override {
+    this->read_data(inout, offset, length, args_, std::index_sequence_for<Ts...>());
+  }
+  // LCOV_EXCL_STOP
+
+  // LCOV_EXCL_START
+  template <typename U>
+  void read_bytes(uint32_t dst_offset, void* out, uint32_t out_cbsize, uint32_t src_offset, size_t length, U& arg) const {
+    size_t len = std::min<size_t>(length, U::bitcount);
+    ch::internal::read_bytes(arg, dst_offset, out, out_cbsize, src_offset, len);
+  }
+
+  template <typename U0, typename... Us>
+  void read_bytes(uint32_t dst_offset, void* out, uint32_t out_cbsize, uint32_t src_offset, size_t length, U0& arg0, Us&... args) const {
+    if (dst_offset < U0::bitcount) {
+      size_t len = std::min<size_t>(length, U0::bitcount);
+      ch::internal::read_bytes(arg0, dst_offset, out, out_cbsize, src_offset, len);
+      dst_offset += len;
+      src_offset += len;
+      length -= len;
+    }
+    if (length != 0) {
+      this->read_bytes(dst_offset - U0::bitcount, out, out_cbsize, src_offset, length, args...);
+    }
   }
 
   template <size_t... I>
@@ -432,47 +473,22 @@ protected:
     this->read_bytes(dst_offset, out, out_cbsize, src_offset, length, std::get<sizeof...(Ts) - 1 - I>(args)...);
   }
 
-  template <typename U>
-  void read_bytes(uint32_t dst_offset, void* out, uint32_t out_cbsize, uint32_t src_offset, size_t length, U& arg) const {
-    size_t len = std::min<size_t>(length, U::bitcount);
-    cash::internal::read_bytes(arg, dst_offset, out, out_cbsize, src_offset, len);
-  }
-
-  template <typename U0, typename... Us>
-  void read_bytes(uint32_t dst_offset, void* out, uint32_t out_cbsize, uint32_t src_offset, size_t length, U0& arg0, Us&... args) const {
-    if (dst_offset < U0::bitcount) {
-      size_t len = std::min<size_t>(length, U0::bitcount);
-      cash::internal::read_bytes(arg0, dst_offset, out, out_cbsize, src_offset, len);
-      dst_offset += len;
-      src_offset += len;
-      length -= len;
-    }
-    if (length != 0) {
-      this->read_bytes(dst_offset - U0::bitcount, out, out_cbsize, src_offset, args...);
-    }
+  void read_bytes(uint32_t dst_offset, void* out, uint32_t out_cbsize, uint32_t src_offset, uint32_t length) const override {
+    this->read_bytes(dst_offset, out, out_cbsize, src_offset, length, args_, std::index_sequence_for<Ts...>());
   }
   // LCOV_EXCL_STOP
-
-  void write_data(size_t dst_offset, const nodelist& in, size_t src_offset, size_t length) override {
-    this->write_data(dst_offset, in, src_offset, length, args_, std::index_sequence_for<Ts...>());
-  }
-
-  template <size_t... I>
-  void write_data(size_t dst_offset, const nodelist& in, size_t src_offset, size_t length, std::tuple<Ts&...>& args, std::index_sequence<I...>) {
-    this->write_data(dst_offset, in, src_offset, length, std::get<sizeof...(Ts) - 1 - I>(args)...);
-  }
 
   template <typename U>
   void write_data(size_t dst_offset, const nodelist& in, size_t src_offset, size_t length, U& arg) {
     size_t len = std::min<size_t>(length, U::bitcount);
-    cash::internal::write_data(arg, dst_offset, in, src_offset, len);
+    ch::internal::write_data(arg, dst_offset, in, src_offset, len);
   }
 
   template <typename U0, typename... Us>
   void write_data(size_t dst_offset, const nodelist& in, size_t src_offset, size_t length, U0& arg0, Us&... args) {
     if (dst_offset < U0::bitcount) {
       size_t len = std::min<size_t>(length, U0::bitcount);
-      cash::internal::write_data(arg0, dst_offset, in, src_offset, len);
+      ch::internal::write_data(arg0, dst_offset, in, src_offset, len);
       dst_offset += len;
       src_offset += len;
       length -= len;
@@ -482,26 +498,26 @@ protected:
     }
   }
 
-  void write_bytes(uint32_t dst_offset, const void* in, uint32_t in_cbsize, uint32_t src_offset, uint32_t length) const override {
-    this->write_bytes(dst_offset, in, in_cbsize, src_offset, length, args_, std::index_sequence_for<Ts...>());
+  template <size_t... I>
+  void write_data(size_t dst_offset, const nodelist& in, size_t src_offset, size_t length, std::tuple<Ts&...>& args, std::index_sequence<I...>) {
+    this->write_data(dst_offset, in, src_offset, length, std::get<sizeof...(Ts) - 1 - I>(args)...);
   }
 
-  template <size_t... I>
-  void write_bytes(uint32_t dst_offset, const void* in, uint32_t in_cbsize, uint32_t src_offset, size_t length, std::tuple<Ts&...>& args, std::index_sequence<I...>) const {
-    this->write_bytes(dst_offset, in, in_cbsize, src_offset, length, std::get<sizeof...(Ts) - 1 - I>(args)...);
+  void write_data(size_t dst_offset, const nodelist& in, size_t src_offset, size_t length) override {
+    this->write_data(dst_offset, in, src_offset, length, args_, std::index_sequence_for<Ts...>());
   }
 
   template <typename U>
   void write_bytes(uint32_t dst_offset, const void* in, uint32_t in_cbsize, uint32_t src_offset, size_t length, U& arg) const {
     size_t len = std::min<size_t>(length, U::bitcount);
-    cash::internal::write_bytes(arg, dst_offset, in, in_cbsize, src_offset, len);
+    ch::internal::write_bytes(arg, dst_offset, in, in_cbsize, src_offset, len);
   }
 
   template <typename U0, typename... Us>
   void write_bytes(uint32_t dst_offset, const void* in, uint32_t in_cbsize, uint32_t src_offset, size_t length, U0& arg0, Us&... args) const {
     if (dst_offset < U0::bitcount) {
       size_t len = std::min<size_t>(length, U0::bitcount);
-      cash::internal::write_bytes(arg0, dst_offset, in, in_cbsize, src_offset, len);
+      ch::internal::write_bytes(arg0, dst_offset, in, in_cbsize, src_offset, len);
       dst_offset += len;
       src_offset += len;
       length -= len;
@@ -509,6 +525,15 @@ protected:
     if (length != 0) {
       this->write_bytes(dst_offset - U0::bitcount, in, in_cbsize, src_offset, length, args...);
     }
+  }
+
+  template <size_t... I>
+  void write_bytes(uint32_t dst_offset, const void* in, uint32_t in_cbsize, uint32_t src_offset, size_t length, const std::tuple<Ts&...>& args, std::index_sequence<I...>) const {
+    this->write_bytes(dst_offset, in, in_cbsize, src_offset, length, std::get<sizeof...(Ts) - 1 - I>(args)...);
+  }
+
+  void write_bytes(uint32_t dst_offset, const void* in, uint32_t in_cbsize, uint32_t src_offset, uint32_t length) const override {
+    this->write_bytes(dst_offset, in, in_cbsize, src_offset, length, args_, std::index_sequence_for<Ts...>());
   }
 
   std::tuple<Ts&...> args_;

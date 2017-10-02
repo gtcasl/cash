@@ -8,9 +8,9 @@
 #include "cdomain.h"
 #include "context.h"
 
-using namespace cash::internal;
+using namespace ch::internal;
 
-const char* cash::internal::to_string(ch_operator op) {
+const char* ch::internal::to_string(ch_operator op) {
   static const char* sc_names[] = {
     CH_OPERATOR_ENUM(CH_OPERATOR_NAME)
   };
@@ -63,7 +63,6 @@ void lnodeimpl::print(std::ostream& out, uint32_t level) const {
     }
     out << ")";
   }
-
   if (level == 2) {
     out << " = " << value_;
   }
@@ -100,7 +99,7 @@ lnode::lnode(const bitvector& value) {
 }
 
 lnode::lnode(const nodelist& data) : impl_(nullptr) {
-  if (data.is_srccopy())  {
+  if (data.is_identity())  {
     impl_ = data.begin()->src.get_impl();
   } else {
     uint32_t dst_offset = 0;
@@ -288,17 +287,24 @@ void lnode::write_data(uint32_t dst_offset,
                        uint32_t length,
                        uint32_t size) {
   assert((dst_offset + length) <= size);
-  for (const auto& d : in) {
-    if (src_offset < d.length) {
-      uint32_t len = std::min(d.length - src_offset, length);
-      this->assign(dst_offset, d.src, d.offset + src_offset, len, size);
-      length -= len;
-      if (0 == length)
-        return;
-      dst_offset += len;                
-      src_offset = d.length;
+  if ((nullptr == impl_)
+   && (length == size )
+   && (length == in.get_size())
+   && in.is_identity())  {
+    impl_ = in.begin()->src.get_impl();
+  } else {
+    for (const auto& d : in) {
+      if (src_offset < d.length) {
+        uint32_t len = std::min(d.length - src_offset, length);
+        this->assign(dst_offset, d.src, d.offset + src_offset, len, size);
+        length -= len;
+        if (0 == length)
+          return;
+        dst_offset += len;
+        src_offset = d.length;
+      }
+      src_offset -= d.length;
     }
-    src_offset -= d.length;
   }
 }
 
@@ -346,12 +352,12 @@ lnodeimpl* lnode::clone(uint32_t size) const {
   return impl_ ? impl_->get_slice(0, size) : nullptr;
 }
 
-std::ostream& cash::internal::operator<<(std::ostream& out, ch_operator op) {
+std::ostream& ch::internal::operator<<(std::ostream& out, ch_operator op) {
   out << to_string(op);
   return out;
 }
 
-std::ostream& cash::internal::operator<<(std::ostream& out, const lnode& node) {
+std::ostream& ch::internal::operator<<(std::ostream& out, const lnode& node) {
   out << node.get_value();
   return out;
 }

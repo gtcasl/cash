@@ -2,7 +2,7 @@
 
 #include "device.h"
 
-namespace cash {
+namespace ch {
 namespace internal {
 
 class simulatorimpl;

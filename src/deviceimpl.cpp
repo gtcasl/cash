@@ -5,7 +5,7 @@
 #include "ioimpl.h"
 #include "verilogwriter.h"
 
-using namespace cash::internal;
+using namespace ch::internal;
 
 deviceimpl::deviceimpl(const std::string& name) {
   ctx_ = ctx_create(name);
@@ -70,29 +70,33 @@ void ch_device::compile() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-lnodeimpl* cash::internal::createInputNode(const std::string& name, uint32_t size) {
+void ch::internal::registerIOMap(const nodelist& data) {
+  ctx_curr()->register_io_map(data);
+}
+
+lnodeimpl* ch::internal::createInputNode(const std::string& name, uint32_t size) {
   return new inputimpl(ctx_curr(), size, name);
 }
 
-lnodeimpl* cash::internal::createOutputNode(const std::string& name, const lnode& src) {
+lnodeimpl* ch::internal::createOutputNode(const std::string& name, const lnode& src) {
   return new outputimpl(src, name);
 }
 
-void cash::internal::bindInput(const lnode& input, const lnode& src) {
+void ch::internal::bindInput(const lnode& input, const lnode& src) {
   dynamic_cast<inputimpl*>(input.get_impl())->set_input(src);
 }
 
-context* cash::internal::get_ctx(const ch_device& device) {
+context* ch::internal::get_ctx(const ch_device& device) {
   return device.impl_->get_ctx();
 }
 
-void cash::internal::toVerilog(std::ostream& out, const std::initializer_list<const ch_device*>& devices) {
+void ch::internal::toVerilog(std::ostream& out, const std::initializer_list<const ch_device*>& devices) {
   verilogwriter writer(out);
   for (auto device : devices) {
     writer.print(get_ctx(*device));
   }
 }
 
-void cash::internal::ch_dumpStats(std::ostream& out, const ch_device& device) {
+void ch::internal::ch_dumpStats(std::ostream& out, const ch_device& device) {
   get_ctx(device)->dump_stats(out);
 }

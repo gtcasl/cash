@@ -2,7 +2,7 @@
 #include "vcdtracer.h"
 #include <fstream>
 
-using namespace cash::internal;
+using namespace ch::internal;
 
 static std::string fixup_name(std::string name) {
   std::string ret(name);

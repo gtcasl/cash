@@ -3,7 +3,7 @@
 #include "device.h"
 #include "context.h"
 
-namespace cash {
+namespace ch {
 namespace internal {
 
 class clock_driver {

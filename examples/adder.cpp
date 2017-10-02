@@ -1,8 +1,8 @@
 #include <cash.h>
 
-using namespace cash::core;
-using namespace cash::literals;
-using namespace cash::sim;
+using namespace ch::core;
+using namespace ch::literals;
+using namespace ch::sim;
 
 #define CHECK(x, v) if (ch_peek<decltype(v)>(x) != v) { assert(false); exit(1); }
 
@@ -15,8 +15,8 @@ struct Adder {
     (ch_out<ch_bit<N>>) out,
     (ch_out<ch_bit1>)   cout
   );
-  Adder() {
-    auto sum = (0_b, io.lhs) + (0_b, io.rhs) + ch_zext<N+1>(io.cin);
+  void describe() {
+    auto sum = ch_cat(0_b, io.lhs) + ch_cat(0_b, io.rhs) + ch_zext<N+1>(io.cin);
     io.out  = ch_slice<N>(sum);
     io.cout = sum[N];
   }

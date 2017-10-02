@@ -6,16 +6,18 @@
 #include "context.h"
 #include "mem.h"
 
-using namespace cash::internal;
+using namespace ch::internal;
 
-ch_compiler::ch_compiler(context* ctx) : ctx_(ctx) {}
+ch_compiler::ch_compiler(context* ctx) : ctx_(ctx) {
+  node_map_ = ctx_->get_io_map();
+}
 
 void ch_compiler::run() {
   size_t orig_num_nodes = ctx_->get_nodes().size();
-
-  ctx_->get_live_nodes(live_nodes_);
   
-  this->dead_code_elimination();
+  size_t dead_nodes = this->dead_code_elimination();
+
+  size_t identity_nodes = 0; //this->remove_identity_nodes();
   
   this->syntax_check();
   
@@ -27,8 +29,10 @@ void ch_compiler::run() {
   }
 #endif
   
+  DBG(2, "*** deleted %lu dead nodes\n", dead_nodes);
+  DBG(2, "*** deleted %lu identity nodes\n", identity_nodes);
   DBG(2, "Before optimization: %lu\n", orig_num_nodes);
-  DBG(2, "After dead code elimination: %lu\n", ctx_->get_nodes().size());
+  DBG(2, "After optimization: %lu\n", ctx_->get_nodes().size());
 }
 
 void ch_compiler::syntax_check() {
@@ -46,9 +50,9 @@ void ch_compiler::syntax_check() {
   }
 }
 
-bool ch_compiler::dead_code_elimination() {
+size_t ch_compiler::dead_code_elimination() {
   std::unordered_map<proxyimpl*, std::unordered_set<uint32_t>> used_proxy_sources;
-  std::unordered_set<lnodeimpl*> live_nodes = live_nodes_;
+  live_nodes_t live_nodes(ctx_->compute_live_nodes());
   std::list<lnodeimpl*> working_set(live_nodes.begin(), live_nodes.end());
 
   while (!working_set.empty()) {
@@ -59,9 +63,13 @@ bool ch_compiler::dead_code_elimination() {
     for (uint32_t i = 0, n = srcs.size(); i < n; ++i) {
       lnodeimpl* src_impl = srcs[i].get_impl();
 
+      // skip external sources
+      if (src_impl->get_ctx() != ctx_)
+        continue;
+
       // skip unused proxy sources
       if (proxy) {
-        if (used_proxy_sources.count(proxy)) {
+        if (used_proxy_sources.count(proxy) != 0) {
           auto& uses = used_proxy_sources.at(proxy);
           if (0 == uses.count(i))
             continue;
@@ -96,6 +104,10 @@ bool ch_compiler::dead_code_elimination() {
         }
       }
 
+      // track container node
+      node_map_[src_impl->get_id()].push_back(&srcs[i]);
+
+      // add to live list
       auto ret = live_nodes.emplace(src_impl);
       if (ret.second || new_proxy_source) {
         // we have a new live node, add it to working set
@@ -117,7 +129,7 @@ bool ch_compiler::dead_code_elimination() {
     }
   }
 
-  return (this->remove_dead_nodes(live_nodes) != 0);
+  return this->remove_dead_nodes(live_nodes);
 }
 
 size_t ch_compiler::remove_dead_nodes(const std::unordered_set<lnodeimpl*>& live_nodes) {
@@ -125,9 +137,33 @@ size_t ch_compiler::remove_dead_nodes(const std::unordered_set<lnodeimpl*>& live
   for (auto iter = ctx_->get_nodes().begin(),
        iterEnd = ctx_->get_nodes().end(); iter != iterEnd;) {
     lnodeimpl* const node = *iter++;
-    if (0 == live_nodes.count(node)) {            
+    if (0 == live_nodes.count(node)) {
+      node_map_.erase(node->get_id());
       delete node;
       ++deleted;      
+    }
+  }
+
+  return deleted;
+}
+
+size_t ch_compiler::remove_identity_nodes() {
+  size_t deleted = 0;
+  for (auto iter = ctx_->get_proxies().begin(),
+       iterEnd = ctx_->get_proxies().end(); iter != iterEnd;) {
+    proxyimpl* const proxy = *iter++;
+    if (proxy->is_identity()) {
+      // replace proxy's uses with proxy's source
+      auto src = proxy->get_src(0).get_impl();
+      auto it = node_map_.find(proxy->get_id());
+      assert(it != node_map_.end());
+      for (auto node : it->second) {
+        node_map_[src->get_id()].push_back(node);
+        const_cast<lnode*>(node)->set_impl(src);
+      }
+      node_map_.erase(it);
+      delete proxy;
+      ++deleted;
     }
   }
   return deleted;

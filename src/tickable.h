@@ -2,7 +2,7 @@
 
 #include "common.h"
 
-namespace cash {
+namespace ch {
 namespace internal {
 
 class tickable {

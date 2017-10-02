@@ -2,11 +2,12 @@
 
 #include "common.h"
 
-namespace cash {
+namespace ch {
 namespace internal {
 
 class bitvector;
 class lnode;
+class nodelist;
 class lnodeimpl;
 class undefimpl;
 class proxyimpl;
@@ -22,6 +23,10 @@ class clock_event;
 class cdomain;
 
 using ch_tick = uint64_t;
+
+using node_map_t = std::unordered_map<uint32_t, std::vector<const lnode*>>;
+
+using live_nodes_t  =std::unordered_set<lnodeimpl*>;
 
 class context : public refcounted {
 public:
@@ -110,14 +115,21 @@ public:
 
   void register_tap(const std::string& name, const lnode& lnode);
   lnodeimpl* get_tap(const std::string& name, uint32_t size);
-  
+
+  //--
+
+  void register_io_map(const nodelist& data);
+  const node_map_t& get_io_map() const {
+    return io_map_;
+  }
+
   //--
   
   void syntax_check();
     
   //--
   
-  void get_live_nodes(std::unordered_set<lnodeimpl*>& live_nodes);
+  live_nodes_t compute_live_nodes() const;
   
   //--
   
@@ -230,6 +242,7 @@ protected:
   std::stack<lnode>       user_clks_;
   std::stack<lnode>       user_resets_;
   std::unordered_map<std::string, unsigned> dup_taps_;
+  node_map_t io_map_;
 
   friend class context_manager;
 };

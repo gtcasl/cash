@@ -3,7 +3,7 @@
 #include "common.h"
 #include "bitvector.h"
 
-namespace cash {
+namespace ch {
 namespace internal {
 
 class lnodeimpl;
@@ -141,8 +141,9 @@ public:
     return slices_.size();
   }
 
-  bool is_srccopy() const {
-    return (1 == slices_.size()) && (slices_[0].src.get_size() == size_);
+  bool is_identity() const {
+    return (1 == slices_.size())
+        && (slices_[0].src.get_size() == size_);
   }
 
   void push(const lnode& src, uint32_t offset, uint32_t length) {

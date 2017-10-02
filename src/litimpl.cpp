@@ -1,7 +1,7 @@
 #include "litimpl.h"
 #include "context.h"
 
-using namespace cash::internal;
+using namespace ch::internal;
 litimpl::litimpl(context* ctx, uint32_t size)
   : lnodeimpl(op_lit, ctx, size) {}
 

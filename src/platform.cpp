@@ -1,6 +1,6 @@
 #include "platform.h"
 
-using namespace cash::internal;
+using namespace ch::internal;
 
 platform::platform()
   : dbg_level_(0)

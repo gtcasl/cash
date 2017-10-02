@@ -22,7 +22,7 @@
   m(tick) \
   m(print)
 
-namespace cash {
+namespace ch {
 namespace internal {
   
 enum ch_operator {
@@ -99,7 +99,9 @@ public:
   virtual lnodeimpl* get_slice(uint32_t offset, uint32_t length);
   
   virtual bool ready() const;
-  virtual bool valid() const;  
+
+  virtual bool valid() const;
+
   virtual const bitvector& eval(ch_tick t) = 0;
   
   virtual void print(std::ostream& out, uint32_t level) const;
@@ -110,7 +112,7 @@ protected:
   ch_operator op_;
   context* ctx_;
   std::vector<lnode> srcs_;
-  bitvector value_; 
+  bitvector value_;
   
   friend class context;
 };

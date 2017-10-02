@@ -4,9 +4,9 @@
 #include <cash.h>
 #include "catch.h"
 
-using namespace cash::core;
-using namespace cash::literals;
-using namespace cash::sim;
+using namespace ch::core;
+using namespace ch::literals;
+using namespace ch::sim;
 
 bool runtest(const std::function<ch_bit<1>()> &test, ch_tick ticks = 1);
 

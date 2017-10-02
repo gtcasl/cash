@@ -2,7 +2,7 @@
 
 #include "tracerimpl.h"
 
-namespace cash {
+namespace ch {
 namespace internal {
 
 class vcdtracerimpl : public tracerimpl {

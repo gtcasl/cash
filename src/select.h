@@ -2,7 +2,7 @@
 
 #include "bit.h"
 
-namespace cash {
+namespace ch {
 namespace internal {
 
 lnodeimpl* createSelectNode(const lnode& pred, const lnode& a, const lnode& b);

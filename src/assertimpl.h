@@ -2,7 +2,7 @@
 
 #include "ioimpl.h"
 
-namespace cash {
+namespace ch {
 namespace internal {
 
 class assertimpl : public ioimpl {

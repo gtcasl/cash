@@ -2,7 +2,7 @@
 
 #include "lnodeimpl.h"
 
-namespace cash {
+namespace ch {
 namespace internal {
 
 class ioimpl : public lnodeimpl {
@@ -37,20 +37,19 @@ public:
   {}
 
   void set_input(const lnode& input) {
-    assert(ctx_ != input.get_ctx());
-    input_ = input;
+    assert(ctx_ != srcs_[0].get_ctx());
+    srcs_[0] = input;
   }
   
   const lnode& get_input() const {
-    return input_;
+    return srcs_[0];
   }
 
   const bitvector& eval(ch_tick t) override;
   
   void print(std::ostream& out, uint32_t level) const override;
   
-protected:  
-  lnode input_;
+protected:
   ch_tick tick_;
 };
 
@@ -63,7 +62,6 @@ public:
   void print(std::ostream& out, uint32_t level) const override;
   
 protected:
-
   ch_tick tick_;
 };
 

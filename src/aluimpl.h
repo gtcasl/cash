@@ -3,7 +3,7 @@
 #include "lnodeimpl.h"
 #include "arithm.h"
 
-namespace cash {
+namespace ch {
 namespace internal {
 
 class aluimpl : public lnodeimpl {

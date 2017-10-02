@@ -9,7 +9,7 @@
 
 #define CH_ENUM_BODY_IMPL(enum_name, value_name, const_name, base_name, size, assignment_body) \
   public: \
-    using base = cash::internal::base_name<size>; \
+    using base = ch::internal::base_name<size>; \
     using value_type = value_name; \
     using const_type = const_name; \
     enum_name() {} \
@@ -23,10 +23,10 @@
   protected: \
     enum_name(const base& __rhs__) : base(__rhs__) {} \
     friend const auto ch_reg(const enum_name& next, const enum_name& init) { \
-      return cash::internal::ch_reg(next, init); \
+      return ch::internal::ch_reg(next, init); \
     } \
     friend const auto ch_reg(const enum_name& next) { \
-      return cash::internal::ch_reg(next); \
+      return ch::internal::ch_reg(next); \
     }
 
 #define CH_ENUM_READONLY_IMPL(enum_name) \
@@ -49,7 +49,7 @@
   CH_BIT_WRITABLE_INTERFACE(enum_name)
 
 #define CH_ENUM_IMPL(enum_name, size, ...) \
-  class enum_name : public cash::internal::ch_bit<size> { \
+  class enum_name : public ch::internal::ch_bit<size> { \
   public: \
     enum enum_type { \
     CH_FOR_EACH(CH_ENUM_FIELD, CH_SEP_COMMA, __VA_ARGS__) \
@@ -57,7 +57,7 @@
     }; \
     static_assert(ilog2(__MAX_VALUE__) <= size, "enum size mismatch"); \
   protected: \
-    class __const_type__ : public cash::internal::const_bit<size> { \
+    class __const_type__ : public ch::internal::const_bit<size> { \
       CH_ENUM_BODY_IMPL(__const_type__, enum_name, __const_type__, const_bit, size, CH_ENUM_READONLY_IMPL) \
     }; \
     CH_ENUM_BODY_IMPL(enum_name, enum_name, __const_type__, ch_bit, size,CH_ENUM_WRITABLE_IMPL) \

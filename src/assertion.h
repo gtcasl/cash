@@ -2,7 +2,7 @@
 
 #include "bit.h"
 
-namespace cash {
+namespace ch {
 namespace internal {
 
 void createAssertNode(const lnode& pred, const std::string& msg);

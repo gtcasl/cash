@@ -2,7 +2,7 @@
 #include "context.h"
 #include "bit.h"
 
-using namespace cash::internal;
+using namespace ch::internal;
 
 tickimpl::tickimpl(context* ctx) 
   : ioimpl(op_tick, ctx, CHAR_BIT * sizeof(ch_tick))
@@ -19,6 +19,6 @@ const bitvector& tickimpl::eval(ch_tick t) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-const ch_bit<64> cash::internal::ch_getTick() {
+const ch_bit<64> ch::internal::ch_getTick() {
   return make_bit<64>(ctx_curr()->get_tick());
 }

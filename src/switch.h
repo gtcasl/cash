@@ -2,7 +2,7 @@
 
 #include "if.h"
 
-namespace cash {
+namespace ch {
 namespace internal {
 
 class switch_impl {

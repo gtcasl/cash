@@ -2,7 +2,7 @@
 #include "assertion.h"
 #include "context.h"
 
-using namespace cash::internal;
+using namespace ch::internal;
 
 assertimpl::assertimpl(const lnode& pred, const std::string& msg)
   : ioimpl(op_assert, pred.get_ctx(), 0)
@@ -26,6 +26,6 @@ const bitvector& assertimpl::eval(ch_tick t) {
   return value_;
 }
 
-void cash::internal::createAssertNode(const lnode& pred, const std::string& msg) {
+void ch::internal::createAssertNode(const lnode& pred, const std::string& msg) {
   new assertimpl(pred, msg);
 }

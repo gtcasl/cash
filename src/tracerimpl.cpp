@@ -2,7 +2,7 @@
 #include "tracer.h"
 #include "ioimpl.h"
 
-using namespace cash::internal;
+using namespace ch::internal;
 
 void tracerimpl::ensureInitialize() {
   // call parent ensureInitialize()

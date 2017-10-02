@@ -1,7 +1,7 @@
 #include "aluimpl.h"
 #include "context.h"
 
-using namespace cash::internal;
+using namespace ch::internal;
 
 static void Inverse(bitvector& out, const bitvector& in) {
   assert(out.get_size() == in.get_size());
@@ -736,13 +736,13 @@ const bitvector& aluimpl::eval(ch_tick t) {
   return value_;
 }
 
-lnodeimpl* cash::internal::createAluNode(
+lnodeimpl* ch::internal::createAluNode(
     ch_alu_op op,
     const lnode& lhs,
     const lnode& rhs) {
   return new aluimpl(op, lhs, rhs);
 }
 
-lnodeimpl* cash::internal::createAluNode(ch_alu_op op, const lnode& in) {
+lnodeimpl* ch::internal::createAluNode(ch_alu_op op, const lnode& in) {
   return new aluimpl(op, in);
 }

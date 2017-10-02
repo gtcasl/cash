@@ -2,7 +2,7 @@
 #include "mem.h"
 #include "context.h"
 
-using namespace cash::internal;
+using namespace ch::internal;
 
 memimpl::memimpl(context* ctx,
                  uint32_t data_width,
@@ -129,38 +129,38 @@ void memimpl::print(std::ostream& out, uint32_t level) const {
 memportimpl::memportimpl(memimpl* mem, const lnode& addr, bool writable)
   : ioimpl(op_memport, mem->get_ctx(), mem->data_width_)
   , a_next_(0)
-  , mem_id_(-1)
-  , addr_id_(-1)
-  , wdata_id_(-1)
+  , mem_idx_(-1)
+  , addr_idx_(-1)
+  , wdata_idx_(-1)
   , writable_(writable)
   , tick_(~0ull) {
-  mem_id_ = srcs_.size();
+  mem_idx_ = srcs_.size();
   srcs_.emplace_back(mem);
 
-  addr_id_ = srcs_.size();
+  addr_idx_ = srcs_.size();
   srcs_.emplace_back(addr);
 }
 
 void memportimpl::write(const lnode& data) {  
   assert(writable_);
-  if (wdata_id_ == -1) {
-    wdata_id_ = srcs_.size();
+  if (wdata_idx_ == -1) {
+    wdata_idx_ = srcs_.size();
     // use explicit assignment to force conditionals resolution
     if (ctx_->conditional_enabled(this)) {
       srcs_.emplace_back(this);
-      ctx_->conditional_assign(srcs_[wdata_id_], data, 0, data.get_size());
+      ctx_->conditional_assign(srcs_[wdata_idx_], data, 0, data.get_size());
     } else {
       srcs_.emplace_back(data);
     }
   } else {
-    srcs_[wdata_id_] = data;
+    srcs_[wdata_idx_] = data;
   }
 }
 
 void memportimpl::tick(ch_tick t) {
   CH_UNUSED(t);
-  if (wdata_id_ != -1) {
-    auto mem = dynamic_cast<memimpl*>(srcs_[mem_id_].get_impl());
+  if (wdata_idx_ != -1) {
+    auto mem = dynamic_cast<memimpl*>(srcs_[mem_idx_].get_impl());
     mem->value_.write(a_next_ * mem->data_width_,
                       q_next_.get_words(),
                       CH_CEILDIV(q_next_.get_size(), 8),
@@ -170,17 +170,17 @@ void memportimpl::tick(ch_tick t) {
 }
 
 void memportimpl::tick_next(ch_tick t) {
-  if (wdata_id_ != -1) {
-    a_next_ = srcs_[addr_id_].eval(t).get_word(0);
-    q_next_ = srcs_[wdata_id_].eval(t);
+  if (wdata_idx_ != -1) {
+    a_next_ = srcs_[addr_idx_].eval(t).get_word(0);
+    q_next_ = srcs_[wdata_idx_].eval(t);
   }
 }
 
 const bitvector& memportimpl::eval(ch_tick t) {  
   if (tick_ != t) {
     tick_ = t;
-    auto mem = dynamic_cast<memimpl*>(srcs_[mem_id_].get_impl());
-    uint32_t addr = srcs_[addr_id_].eval(t).get_word(0);    
+    auto mem = dynamic_cast<memimpl*>(srcs_[mem_idx_].get_impl());
+    uint32_t addr = srcs_[addr_idx_].eval(t).get_word(0);    
     mem->value_.read(0,
                      value_.get_words(),
                      CH_CEILDIV(value_.get_size(), 8),
