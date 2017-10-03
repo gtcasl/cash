@@ -44,10 +44,10 @@
       ch::internal::write_data(_, __dst_offset__, __in__, __src_offset__, __length__); \
     } \
     void read_bytes(uint32_t __dst_offset__, void* __out__, uint32_t __out_cbsize__, uint32_t __src_offset__, uint32_t __length__) const override { \
-      _.read_bytes(__dst_offset__, __out__, __out_cbsize__, __src_offset__, __length__); \
+      ch::internal::read_bytes(_, __dst_offset__, __out__, __out_cbsize__, __src_offset__, __length__); \
     } \
     void write_bytes(uint32_t __dst_offset__, const void* __in__, uint32_t __in_cbsize__, uint32_t __src_offset__, uint32_t __length__) const override { \
-      _.write_bytes(__dst_offset__, __in__, __in_cbsize__, __src_offset__, __length__); \
+      ch::internal::write_bytes(_, __dst_offset__, __in__, __in_cbsize__, __src_offset__, __length__); \
     }
 
 #define CH_UNION_READONLY_IMPL(union_name, ...) \

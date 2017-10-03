@@ -1,5 +1,17 @@
 #include "common.h"
 
+struct inverter {
+  __io (
+    (ch_in<ch_bit2>) in,
+    (ch_out<ch_bit2>) out
+  );
+  void describe() {
+    auto x = ~io.in;
+    __tap(x);
+    io.out = x;
+  }
+};
+
 TEST_CASE("miscs", "[miscs]") {
   SECTION("utils", "[utils]") {
     TESTX([]()->bool {
@@ -82,50 +94,29 @@ TEST_CASE("miscs", "[miscs]") {
   }
   
   SECTION("tracer", "[tracer]") {
-    TESTX([]()->bool {      
-      ch_bus2 in(2), x, out;       
-      auto inverter = [](const ch_bit2& x)->ch_bit2 {
-        __tap(x);
-        return ~x;
-      };             
-      auto func = ch_function(inverter);
-      out = func(in);
-      x = func.get_tap<2>("x");
-      ch_tracer tracer(std::cout, func);
-      __trace(tracer, in, out);
+    TESTX([]()->bool {
+      ch_module<inverter> module;
+      ch_poke(module->io.in, 2);
+      ch_tracer tracer(std::cout, module);
       tracer.run();
-      return (out == 1);
+      return (ch_peek<int>(module->io.out) == 1);
     });
   }
 
   SECTION("vcdtracer", "[vcdtracer]") {
     TESTX([]()->bool {
-      ch_bus2 in(2), x, out;
-      auto inverter = [](const ch_bit2& x)->ch_bit2 {
-        __tap(x);
-        return ~x;
-      };
-      auto func = ch_function(inverter);
-      out = func(in);
-      x = func.get_tap<2>("x");
-      ch_vcdtracer tracer(std::cout, func);
-      __trace(tracer, in, out);
+      ch_module<inverter> module;
+      ch_poke(module->io.in, 2);
+      ch_vcdtracer tracer(std::cout, module);
       tracer.run();
-      return (out == 1);
+      return (ch_peek<int>(module->io.out) == 1);
     });
   }
 
-
   SECTION("stats", "[stats]") {
     TESTX([]()->bool {
-      auto inverter = [](const ch_bit2& x)->ch_bit2 {
-        ch_bit2 a(0), b(1);
-        return ~x;
-      };
-      ch_bus2 in(0), out;
-      auto func = ch_function(inverter);
-      out = func(in);
-      func.dump_stats(std::cout);
+      ch_module<inverter> module;
+      ch_dumpStats(std::cout, module);
       return true;
     });
   }

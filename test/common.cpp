@@ -5,23 +5,32 @@ static void begin_test() {
   std::cout << "running test #" << test_number++ << " ..." << std::endl;
 }
 
+struct TestRunner {
+  __io (
+    (ch_out<ch_bit1>) out
+  );
+  TestRunner(const std::function<ch_bit<1>()>& test) : test_(test) {}
+  void describe() {
+    io.out = test_();
+  }
+  const std::function<ch_bit<1>()> test_;
+};
+
 bool runtest(const std::function<ch_bit<1>()>& test, ch_tick ticks) {
   assert(ticks > 0);
   begin_test();
 
-  auto func = ch_function(test);
-  auto ret = func();
-
-  ch_simulator sim(func);
+  ch_module<TestRunner> module(test);
+  ch_simulator sim(module);
 
   sim.run([&](ch_tick t)->bool {
-    // std::cout << "t" << tick << ": ret=" << ret << std::endl;
-    if (t > 0 && !static_cast<bool>(ret))
+    std::cout << "t" << t << ": ret=" << module->io.out << std::endl;
+    if (t > 0 && !ch_peek<bool>(module->io.out))
       return false;
     return (t < ticks);
   });
 
-  bool bRet = static_cast<bool>(ret);
+  bool bRet = ch_peek<bool>(module->io.out);
   assert(bRet);
   return bRet;
 }

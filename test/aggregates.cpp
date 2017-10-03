@@ -87,7 +87,7 @@ TEST_CASE("aggregates", "[aggregates]") {
       s4 = 0010_h;
       s4.b = 1_h;
            
-      return (s1, s4) == (s3, s2);
+      return ch_cat(s1, s4) == ch_cat(s3, s2);
     });
     TEST([]()->ch_bit1 {
       s2_t s2(1_b4, 0_b4);

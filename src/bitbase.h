@@ -5,9 +5,12 @@
 namespace ch {
 namespace internal {
 
+template <unsigned N> class ch_bit;
+
 template <unsigned N>
 struct ch_literal : public bitvector {
   static constexpr unsigned bitcount = N;
+  using value_type = ch_bit<N>;
   constexpr ch_literal() : bitvector(N) {}
   constexpr ch_literal(const std::string& value) : bitvector(N, value) {}
 };
@@ -31,50 +34,48 @@ struct is_ch_scalar : std::integral_constant<bool,
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct non_bit_type {
-  static constexpr unsigned bitcount = 0;
-};
-
 template <typename T>
 class has_bitcount {
 private:
-    template <typename U, typename = typename std::enable_if<!std::is_member_pointer<decltype(&U::bitcount)>::value>::type>
+    template <typename U, typename = typename std::enable_if<U::bitcount>::type>
     static std::true_type check(int);
 
     template <typename>
     static std::false_type check(...);
 public:
-    static const bool value = decltype(check<T>(0))::value;
+    static const bool value = decltype(check<typename std::decay<T>::type>(0))::value;
+};
+
+static_assert(!has_bitcount<int>::value, ":-(");
+
+struct non_bit_type {
+  static constexpr unsigned bitcount = 0;
 };
 
 template <typename T0, typename T1>
-struct deduce_type_helper2 {
+struct deduce_type_helper {
   using D0 = typename std::decay<T0>::type;
   using D1 = typename std::decay<T1>::type;
   using U0 = typename std::conditional<has_bitcount<D0>::value, D0, non_bit_type>::type;
   using U1 = typename std::conditional<has_bitcount<D1>::value, D1, non_bit_type>::type;
   using type = typename std::conditional<
-    (U0::bitcount != 0) && (U1::bitcount != 0),
-    typename std::conditional<(U0::bitcount != U1::bitcount), non_bit_type, U0>::type,
-    typename std::conditional<(U0::bitcount != 0), U0, U1>::type>::type;
+    ((int)U0::bitcount != 0) && ((int)U1::bitcount != 0),
+    typename std::conditional<((int)U0::bitcount != (int)U1::bitcount), non_bit_type, U0>::type,
+    typename std::conditional<((int)U0::bitcount != 0), U0, U1>::type>::type;
 };
 
-template <typename T0, typename... Ts>
-struct deduce_type_helper;
+template <typename... Ts>
+struct deduce_type;
 
 template <typename T0, typename T1>
-struct deduce_type_helper<T0, T1> {
-  using type = typename deduce_type_helper2<T0, T1>::type;
+struct deduce_type<T0, T1> {
+  using type = typename deduce_type_helper<T0, T1>::type;
+  static constexpr unsigned bitcount = type::bitcount;
 };
 
 template <typename T0, typename T1, typename... Ts>
-struct deduce_type_helper<T0, T1, Ts...> {
-  using type = typename deduce_type_helper<typename deduce_type_helper2<T0, T1>::type, Ts...>::type;
-};
-
-template <typename T0, typename T1, typename... Ts>
-struct deduce_type {
-  using type = typename deduce_type_helper<T0, T1, Ts...>::type;
+struct deduce_type<T0, T1, Ts...> {
+  using type = typename deduce_type<typename deduce_type_helper<T0, T1>::type, Ts...>::type;
   static constexpr unsigned bitcount = type::bitcount;
 };
 
@@ -84,7 +85,7 @@ struct deduce_first_type {
   using D1 = typename std::decay<T1>::type;
   using U0 = typename std::conditional<has_bitcount<D0>::value, D0, non_bit_type>::type;
   using U1 = typename std::conditional<has_bitcount<D1>::value, D1, non_bit_type>::type;
-  using type = typename std::conditional<(U0::bitcount != 0), U0, U1>::type;
+  using type = typename std::conditional<((int)U0::bitcount != 0), U0, U1>::type;
   static constexpr unsigned bitcount = type::bitcount;
 };
 
@@ -314,6 +315,11 @@ public:
     return *this;
   }
 
+  sliceref& operator=(const ch_literal<N>& rhs) {
+    this->assign(rhs);
+    return *this;
+  }
+
   template <typename U, CH_REQUIRES(is_ch_scalar<U>::value)>
   sliceref& operator=(U rhs) {
     this->assign(rhs);
@@ -382,7 +388,7 @@ struct concat_traits<T> {
 
 template <typename T0, typename... Ts>
 struct concat_traits<T0, Ts...> {
-    static constexpr unsigned bitcount = T0::bitcount + concat_traits<Ts...>::bitcount;
+  static constexpr unsigned bitcount = T0::bitcount + concat_traits<Ts...>::bitcount;
 };
 
 template <typename... Ts>
@@ -402,6 +408,11 @@ public:
   }
 
   concatref& operator=(const base& rhs) {
+    this->assign(rhs);
+    return *this;
+  }
+
+  concatref& operator=(const ch_literal<base::bitcount>& rhs) {
     this->assign(rhs);
     return *this;
   }

@@ -39,7 +39,7 @@ void createPrintNode(const std::string& format,
     this->assign(rhs); \
     return *this; \
   } \
-  type& operator=(const ch_literal<type::bitcount>& rhs) { \
+  type& operator=(const ch::internal::ch_literal<type::bitcount>& rhs) { \
     this->assign(rhs); \
     return *this; \
   } \
@@ -178,6 +178,12 @@ protected:
   template <unsigned M> friend const ch_bit<M> make_bit(const lnode& node);
 };
 
+static_assert(has_bitcount<ch_bit<1>>::value, ":-(");
+static_assert(deduce_type<ch_bitbase<1>, ch_bitbase<2>>::bitcount == 0, ":-(");
+static_assert(deduce_type<ch_bitbase<1>, ch_bitbase<1>>::bitcount == 1, ":-(");
+static_assert(are_ch_literal<ch_bitbase<1>, ch_bitbase<1>>::value == false, ":-(");
+static_assert(deduce_type<ch_bit<2>, ch_bit<2>>::bitcount == 2, ":-(");
+
 template <unsigned N>
 const ch_bit<N> make_bit(const lnode& node) {
   return ch_bit<N>(node);
@@ -240,6 +246,13 @@ template <typename... Ts,
          CH_REQUIRES(are_bit_convertible<Ts...>::value)>
 const auto ch_cat(const Ts&... args) {
   return cat_impl(static_cast<typename bitbase_cast<Ts>::type>(args)...);
+}
+
+template <typename B, typename A,
+          CH_REQUIRES(is_bit_convertible<B>::value),
+          CH_REQUIRES(is_bit_convertible<A>::value)>
+const auto operator,(const B& b, const A& a) {
+  return ch_cat(b, a);
 }
 
 template <typename... Ts,

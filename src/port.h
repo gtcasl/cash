@@ -112,6 +112,18 @@ public:
     out = make_type<U>(output_);
   }
 
+  template <typename U,
+            CH_REQUIRES(is_cast_convertible<T, U>::value)>
+  void operator()(ch_in<U>& in) const {
+    in(make_type<U>(output_));
+  }
+
+  template <typename U,
+            CH_REQUIRES(is_cast_convertible<T, U>::value)>
+  void operator()(U& value) const {
+    value = make_type<U>(output_);
+  }
+
 protected:
 
   lnode output_;
@@ -153,11 +165,11 @@ protected:
       __flip_type__(const std::string& name = "io") : CH_FOR_EACH(CH_INOUT_CTOR_APPLY, CH_SEP_COMMA, __VA_ARGS__), ch_port(name) {} \
       __flip_type__(const __flip_type__& __rhs__) : CH_FOR_EACH(CH_STRUCT_COPY_CTOR_APPLY, CH_SEP_COMMA, __VA_ARGS__), ch_port(__rhs__.get_name()) {} \
       __flip_type__(__flip_type__&& __rhs__) : CH_FOR_EACH(CH_STRUCT_MOVE_CTOR_APPLY, CH_SEP_COMMA, __VA_ARGS__), ch_port(std::move(__rhs__)) {} \
-      void operator()(__flip_type__& __rhs__) { \
+      void operator()(__flip_type__& __rhs__) const { \
         CH_FOR_EACH(CH_INOUT_BIND_APPLY, CH_SEP_SEMICOLON, __VA_ARGS__); \
       } \
       template <CH_REVERSE_FOR_EACH(CH_STRUCT_FIELD_CTOR_TMPL, CH_SEP_COMMA, __VA_ARGS__)> \
-      void operator()(CH_FOR_EACH(CH_INOUT_BIND_FIELD_ARGS, CH_SEP_COMMA, __VA_ARGS__)) { \
+      void operator()(CH_FOR_EACH(CH_INOUT_BIND_FIELD_ARGS, CH_SEP_COMMA, __VA_ARGS__)) const { \
         CH_FOR_EACH(CH_INOUT_BIND_FIELD_APPLY, CH_SEP_SEMICOLON, __VA_ARGS__); \
       } \
       CH_FOR_EACH(CH_INOUT_FLIP_FIELD, CH_SEP_SEMICOLON, __VA_ARGS__); \
@@ -170,11 +182,11 @@ protected:
     inout_name(const std::string& name = "io") : CH_FOR_EACH(CH_INOUT_CTOR_APPLY, CH_SEP_COMMA, __VA_ARGS__), ch_port(name) {} \
     inout_name(const inout_name& __rhs__) : CH_FOR_EACH(CH_STRUCT_COPY_CTOR_APPLY, CH_SEP_COMMA, __VA_ARGS__), ch_port(__rhs__.get_name()) {} \
     inout_name(inout_name&& __rhs__) : CH_FOR_EACH(CH_STRUCT_MOVE_CTOR_APPLY, CH_SEP_COMMA, __VA_ARGS__), ch_port(std::move(__rhs__)) {} \
-    void operator()(inout_name& __rhs__) { \
+    void operator()(inout_name& __rhs__) const { \
       CH_FOR_EACH(CH_INOUT_BIND_APPLY, CH_SEP_SEMICOLON, __VA_ARGS__); \
     } \
     template <CH_REVERSE_FOR_EACH(CH_STRUCT_FIELD_CTOR_TMPL, CH_SEP_COMMA, __VA_ARGS__)> \
-    void operator()(CH_FOR_EACH(CH_INOUT_BIND_FIELD_ARGS, CH_SEP_COMMA, __VA_ARGS__)) { \
+    void operator()(CH_FOR_EACH(CH_INOUT_BIND_FIELD_ARGS, CH_SEP_COMMA, __VA_ARGS__)) const { \
       CH_FOR_EACH(CH_INOUT_BIND_FIELD_APPLY, CH_SEP_SEMICOLON, __VA_ARGS__); \
     } \
     CH_FOR_EACH(CH_INOUT_FIELD, CH_SEP_SEMICOLON, __VA_ARGS__); \

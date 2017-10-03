@@ -64,7 +64,7 @@
 #define CH_STRUCT_READ_BYTES(i, x) \
   if (__dst_offset__ < CH_PAIR_L(x)::bitcount) { \
     size_t __len__ = std::min<size_t>(__length__, CH_PAIR_L(x)::bitcount - __dst_offset__); \
-    CH_PAIR_R(x).read_bytes(__dst_offset__, __out__, __out_cbsize__, __src_offset__, __len__); \
+    ch::internal::read_bytes(CH_PAIR_R(x), __dst_offset__, __out__, __out_cbsize__, __src_offset__, __len__); \
     __length__ -= __len__; \
     if (0 == __length__) \
       return; \
@@ -76,7 +76,7 @@
 #define CH_STRUCT_WRITE_BYTES(i, x) \
   if (__dst_offset__ < CH_PAIR_L(x)::bitcount) { \
     size_t __len__ = std::min<size_t>(__length__, CH_PAIR_L(x)::bitcount - __dst_offset__); \
-    CH_PAIR_R(x).write_bytes(__dst_offset__, __in__, __in_cbsize__, __src_offset__, __len__); \
+    ch::internal::write_bytes(CH_PAIR_R(x), __dst_offset__, __in__, __in_cbsize__, __src_offset__, __len__); \
     __length__ -= __len__; \
     if (0 == __length__) \
       return; \

@@ -4,24 +4,19 @@ using namespace ch::core;
 using namespace ch::literals;
 using namespace ch::sim;
 
-auto dogfood = []()->ch_bit1 {
-  ch_bit4 a(1100_b), b(1);
-  ch_bit2 c = a.slice<2>(1) ^ 01_b;
-  ch_print("c={0}", c);
-  __if (b == 1) (
-    ch_assert(c == 11_b, "assertion failed!");
-  )
-  __else (
-    ch_assert(c != 11_b, "assertion failed!");
+struct Dogfood {
+  __io (
+    (ch_out<ch_bit1>) out
   );
-  return (c == 11_b);
+  void describe() {
+    io.out = 1;
+  }
 };
 
 int main(int argc, char **argv) {
-  //--
-
-  auto f = ch_function(dogfood);
-  auto out = f();
-
+  ch_module<Dogfood> dogfood;
+  ch_simulator sim(dogfood);
+  assert(ch_peek<bool>(dogfood->io.out));
+  sim.run();
   return 0;
 }

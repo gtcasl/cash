@@ -37,7 +37,8 @@ TEST_CASE("proxies", "[proxies]") {
       return (c == 11_b);
     });
     TEST([]()->ch_bit1 {
-      ch_bit2 c = ch_slice<2>(1100_b, 1) ^ 01_b;
+      ch_bit4 a(1100_b);
+      ch_bit2 c = ch_slice<2>(a, 1) ^ 01_b;
       return (c == 11_b);
     });
     TEST([]()->ch_bit1 {
@@ -46,7 +47,8 @@ TEST_CASE("proxies", "[proxies]") {
       return (c == 10_b);
     });
     TEST([]()->ch_bit1 {
-      ch_bit2 c = ch_aslice<2>(1100_b, 1) ^ 01_b;
+      ch_bit4 a(1100_b);
+      ch_bit2 c = ch_aslice<2>(a, 1) ^ 01_b;
       return (c == 10_b);
     });
     TEST([]()->ch_bit1 {
@@ -146,26 +148,26 @@ TEST_CASE("proxies", "[proxies]") {
   SECTION("concat", "[concat]") {
     TEST([]()->ch_bit1 {
       ch_bit4 a(1100_b);
-      ch_bit<5> c = (a, 1_b);
+      ch_bit<5> c = ch_cat(a, 1_b);
       return (c == 11001_b);
     });
     TEST([]()->ch_bit1 {
       ch_bit4 a(1100_b);
-      ch_bit<5> c = (1_b, a);
+      ch_bit<5> c = ch_cat(1_b, a);
       return (c == 11100_b);
     });
     TEST([]()->ch_bit1 {
-      ch_bit<6> c = (011_b, 011_b);
+      ch_bit<6> c = ch_cat(011_b, 011_b);
       return (c == 011011_b);
     });
     TEST([]()->ch_bit1 {
-      ch_bit<6> c = (10_b, 1011_b);
+      ch_bit<6> c = ch_cat(10_b, 1011_b);
       return (c == 101011_b);
     });
     TEST([]()->ch_bit1 {
       ch_bit4 a(1100_b);
-      ch_bit4 c = (a[3], a[2], a[1], a[0]);
-      return (c == 1100_b && (a[3], a[0]) == 10_b);
+      ch_bit4 c = ch_cat(a[3], a[2], a[1], a[0]);
+      return (c == 1100_b && ch_cat(a[3], a[0]) == 10_b);
     });
     TEST([]()->ch_bit1 {
       ch_bit4 a(1100_b);
@@ -174,14 +176,14 @@ TEST_CASE("proxies", "[proxies]") {
     });
     TEST([]()->ch_bit1 {
        ch_bit4 a(1100_b);
-       ch_bit4 c = (a[3], a[0], a[0], a[0]);
-       return (c == 1000_b);
-    });
-    TEST([]()->ch_bit1 {
-       ch_bit4 a(1100_b);
        ch_bit4 c = ch_cat(a[3], a[0], a[0], a[0]);
        return (c == 1000_b);
     });
+    TEST([]()->ch_bit1 {
+      ch_bit4 a(1100_b);
+      ch_bit4 c = (a[3], a[0], a[0], a[0]);
+      return (c == 1000_b);
+   });
     TEST([]()->ch_bit1 {
       ch_bit2 x(0), y(0);
       ch_tie(y, x) = 0101_b;
@@ -196,7 +198,7 @@ TEST_CASE("proxies", "[proxies]") {
     });
     TEST([]()->ch_bit1 {
       ch_bit2 x(0), y(1);
-      ch_tie(x, y) = (y, x);
+      ch_tie(x, y) = ch_cat(y, x);
       ch_print("x={0}, y={1}", x, y);
       return (x == 1 && y == 0);
     });
@@ -221,7 +223,7 @@ TEST_CASE("proxies", "[proxies]") {
       ch_bit4 x, y;
       ch_bit8 z, w;
       ch_tie(w, y, z, x) = 0xfa2eb1_h;
-      auto k = (y, x) + z + w;
+      auto k = ch_cat(y, x) + z + w;
       return (0x06 == k);
     });
 
@@ -229,8 +231,8 @@ TEST_CASE("proxies", "[proxies]") {
       ch_bit32 k(0x00fa2eb1_h);
       ch_bit4 x, y;
       ch_bit8 z, w;
-      auto a = (ch_slice<4>(k, 4), ch_slice<4>(k, 0));
-      auto b = (ch_slice<8>(k, 16), ch_slice<8>(k, 8));
+      auto a = ch_cat(ch_slice<4>(k, 4), ch_slice<4>(k, 0));
+      auto b = ch_cat(ch_slice<8>(k, 16), ch_slice<8>(k, 8));
       ch_tie(y, x) = a;
       ch_tie(w, z) = b;
       return (x == 0x1 && y == 0xb && z == 0x2e && w == 0xfa);

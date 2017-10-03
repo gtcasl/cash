@@ -27,7 +27,7 @@ __enum (my_enum, 4,(
 )); 
 
 TEST_CASE("simulation", "[sim]") {
-  SECTION("bus", "[bus]") {
+  /*SECTION("bus", "[bus]") {
     TESTX([]()->bool {          
       ch_bus4 a(1), b(2), c;
       c = (uint8_t)a + (uint8_t)b;
@@ -125,9 +125,9 @@ TEST_CASE("simulation", "[sim]") {
       sim.run(1);
       return (out == 8);
     });
-  }
+  }*/
   SECTION("devices", "[device]") {
-    TESTX([]()->bool {
+    /*TESTX([]()->bool {
       ch_bus4 in, out;
       auto foo = [](const ch_bit4& x)->ch_bit4 {
         return x + 1;
@@ -140,10 +140,10 @@ TEST_CASE("simulation", "[sim]") {
       in = 0x7_h4;
       sim.run(1);
       return (out == 8);
-    });
+    });*/
   }
   SECTION("simulators", "[simulator]") {
-    TESTX([]()->bool {
+    /*TESTX([]()->bool {
       ch_bus4 in, out;
       auto foo = [](const ch_bit4& x)->ch_bit4 {
         return x + 1;
@@ -157,6 +157,6 @@ TEST_CASE("simulation", "[sim]") {
       in = 0x7_h4;
       x.run(1);
       return (out == 8);
-    });
+    });*/
   }
 }
