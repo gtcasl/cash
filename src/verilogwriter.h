@@ -57,7 +57,7 @@ protected:
 
   void print_fadd(aluimpl* node);
 
-  void print_operator(ch_alu_op alu_op);
+  void print_operator(ch_alu_op op);
 
   void print_select(selectimpl* node);
 

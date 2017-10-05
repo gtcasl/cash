@@ -10,15 +10,15 @@
 
 using namespace ch::internal;
 
-const char* ch::internal::to_string(ch_operator op) {
+const char* ch::internal::to_string(lnodetype type) {
   static const char* sc_names[] = {
-    CH_OPERATOR_ENUM(CH_OPERATOR_NAME)
+    CH_LNODE_ENUM(CH_LNODE_NAME)
   };
-  return sc_names[(int)op];
+  return sc_names[CH_LNODE_INDEX(type)];
 }
 
-lnodeimpl::lnodeimpl(ch_operator op, context* ctx, uint32_t size) 
-  : op_(op)
+lnodeimpl::lnodeimpl(lnodetype type, context* ctx, uint32_t size)
+  : type_(type)
   , ctx_(ctx)
   , value_(size) {
   id_ = ctx->add_node(this);  
@@ -52,7 +52,7 @@ lnodeimpl* lnodeimpl::get_slice(uint32_t offset, uint32_t length) {
 }
 
 void lnodeimpl::print(std::ostream& out, uint32_t level) const {
-  out << "#" << id_ << " <- " << this->get_op() << value_.get_size();
+  out << "#" << id_ << " <- " << this->get_type() << value_.get_size();
   uint32_t n = srcs_.size();
   if (n > 0) {
     out << "(";
@@ -71,7 +71,7 @@ void lnodeimpl::print(std::ostream& out, uint32_t level) const {
 ///////////////////////////////////////////////////////////////////////////////
 
 undefimpl::undefimpl(context* ctx, uint32_t size)
-  : lnodeimpl(op_undef, ctx, size)
+  : lnodeimpl(type_undef, ctx, size)
 {}
 
 const bitvector& undefimpl::eval(ch_tick) {
@@ -99,6 +99,7 @@ lnode::lnode(const bitvector& value) {
 }
 
 lnode::lnode(const nodelist& data) : impl_(nullptr) {
+  assert(data.is_movable());
   if (data.is_identity())  {
     impl_ = data.begin()->src.get_impl();
   } else {
@@ -287,10 +288,12 @@ void lnode::write_data(uint32_t dst_offset,
                        uint32_t length,
                        uint32_t size) {
   assert((dst_offset + length) <= size);
-  if ((nullptr == impl_)
-   && (length == size )
+  if ((length == size )
    && (length == in.get_size())
-   && in.is_identity())  {
+   && in.is_identity()
+   && in.is_movable()
+   && !dynamic_cast<proxyimpl*>(impl_)
+   && !ctx_curr()->conditional_enabled(impl_)) {
     impl_ = in.begin()->src.get_impl();
   } else {
     for (const auto& d : in) {
@@ -352,8 +355,8 @@ lnodeimpl* lnode::clone(uint32_t size) const {
   return impl_ ? impl_->get_slice(0, size) : nullptr;
 }
 
-std::ostream& ch::internal::operator<<(std::ostream& out, ch_operator op) {
-  out << to_string(op);
+std::ostream& ch::internal::operator<<(std::ostream& out, lnodetype type) {
+  out << to_string(type);
   return out;
 }
 

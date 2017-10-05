@@ -200,7 +200,7 @@ namespace sim {
   // objects
   //
 
-  using ch_device    = ch::internal::ch_device;
+  using ch_device    = ch::internal::device;
   using ch_simulator = ch::internal::ch_simulator;
   using ch_tracer    = ch::internal::ch_tracer;
   using ch_vcdtracer = ch::internal::ch_vcdtracer;

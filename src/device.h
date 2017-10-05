@@ -7,15 +7,15 @@ namespace internal {
 
 class deviceimpl;
 
-class ch_device {
+class device {
 public:
 
-  ch_device();
-  virtual ~ch_device();
+  device();
+  virtual ~device();
 
-  ch_device(const ch_device& device);
+  device(const device& device);
 
-  ch_device& operator=(const ch_device& device);
+  device& operator=(const device& device);
     
 protected:
 
@@ -27,15 +27,15 @@ protected:
 
   deviceimpl* impl_;
 
-  friend context* get_ctx(const ch_device& device);
+  friend context* get_ctx(const device& device);
 };
 
-context* get_ctx(const ch_device& device);
+context* get_ctx(const device& device);
 
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T>
-class ch_module : public ch_device {
+class ch_module : public device {
 public:
 
   template <typename... Ts>
@@ -61,20 +61,20 @@ private:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void toVerilog(std::ostream& out, const std::initializer_list<const ch_device*>& devices);
+void toVerilog(std::ostream& out, const std::initializer_list<const device*>& devices);
 
 template <typename... Devices>
-void ch_toVerilog(std::ostream& out, const ch_device& device, const Devices&... more) {
+void ch_toVerilog(std::ostream& out, const device& device, const Devices&... more) {
   toVerilog(out, {&device, &more...});
 }
 
 template <typename... Devices>
-void ch_toVerilog(const std::string& file, const ch_device& device, const Devices&... more) {
+void ch_toVerilog(const std::string& file, const device& device, const Devices&... more) {
   std::ofstream out(file);
   toVerilog(out, {&device, &more...});
 }
 
-void ch_dumpStats(std::ostream& out, const ch_device& device);
+void ch_dumpStats(std::ostream& out, const device& device);
 
 }
 }

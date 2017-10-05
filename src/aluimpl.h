@@ -11,14 +11,16 @@ public:
   aluimpl(ch_alu_op op, const lnode& lhs, const lnode& rhs);
   aluimpl(ch_alu_op op, const lnode& in);
   
-  ch_alu_op get_alu_op() const {
-    return alu_op_;
+  ch_alu_op get_op() const {
+    return op_;
   }  
 
   const bitvector& eval(ch_tick t) override;
+
+  void print(std::ostream& out, uint32_t level) const override;
   
 protected:
-  ch_alu_op alu_op_;
+  ch_alu_op op_;
   ch_tick tick_;
 };
 

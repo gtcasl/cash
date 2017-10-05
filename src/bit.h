@@ -104,7 +104,7 @@ public:
   explicit const_bit(U rhs) : node_(bitvector(N, rhs)) {}
 
   const auto clone() const {
-    return make_bit<N>(node_.clone(N));
+    return make_type<ch_bit<N>>(node_.clone(N));
   }
 
   CH_BIT_READONLY_INTERFACE(const_bit)
@@ -170,12 +170,6 @@ public:
   }
 
   CH_BIT_WRITABLE_INTERFACE(ch_bit)
-  
-protected:
-
-  ch_bit(const lnode& node) : base(node) {}
-
-  template <unsigned M> friend const ch_bit<M> make_bit(const lnode& node);
 };
 
 static_assert(has_bitcount<ch_bit<1>>::value, ":-(");
@@ -183,11 +177,6 @@ static_assert(deduce_type<ch_bitbase<1>, ch_bitbase<2>>::bitcount == 0, ":-(");
 static_assert(deduce_type<ch_bitbase<1>, ch_bitbase<1>>::bitcount == 1, ":-(");
 static_assert(are_ch_literal<ch_bitbase<1>, ch_bitbase<1>>::value == false, ":-(");
 static_assert(deduce_type<ch_bit<2>, ch_bit<2>>::bitcount == 2, ":-(");
-
-template <unsigned N>
-const ch_bit<N> make_bit(const lnode& node) {
-  return ch_bit<N>(node);
-}
 
 template <typename T, unsigned N = std::decay<T>::type::bitcount>
 struct is_bit_convertible {
@@ -216,7 +205,7 @@ using bitbase_cast = std::conditional<
 template <typename T, unsigned N = T::bitcount,
           CH_REQUIRES(is_bit_convertible<T, N>::value)>
 lnode get_lnode(const T& rhs) {
-  nodelist data(N);
+  nodelist data(N, true);
   typename bitbase_cast<T, N>::type x(rhs);
   read_data(x, data, 0, N);
   return lnode(data);
@@ -237,9 +226,9 @@ void ch_cat_helper(nodelist& data, const T0& arg0, const Ts&... args) {
 
 template <typename... Ts>
 const auto cat_impl(const Ts&... args) {
-  nodelist data(concat_traits<Ts...>::bitcount);
+  nodelist data(concat_traits<Ts...>::bitcount, true);
   ch_cat_helper(data, args...);
-  return make_bit<concat_traits<Ts...>::bitcount>(lnode(data));
+  return make_type<ch_bit<concat_traits<Ts...>::bitcount>>(data);
 }
 
 template <typename... Ts,

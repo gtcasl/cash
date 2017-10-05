@@ -24,24 +24,24 @@ void deviceimpl::end_context() {
 }
 
 void deviceimpl::compile() {
-  ch_compiler compiler(ctx_);
+  compiler compiler(ctx_);
   compiler.run();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-ch_device::ch_device() : impl_(nullptr) {}
+device::device() : impl_(nullptr) {}
 
-ch_device::~ch_device() {
+device::~device() {
   if (impl_)
     impl_->release();
 }
 
-ch_device::ch_device(const ch_device& device) : impl_(device.impl_) {
+device::device(const device& device) : impl_(device.impl_) {
   impl_->acquire();
 }
 
-ch_device& ch_device::operator=(const ch_device& device) {
+device& device::operator=(const device& device) {
   if (device.impl_)
     device.impl_->acquire();
   if (impl_)
@@ -50,7 +50,7 @@ ch_device& ch_device::operator=(const ch_device& device) {
   return *this;
 }
 
-void ch_device::begin_context(const std::string& name) {
+void device::begin_context(const std::string& name) {
   if (nullptr == impl_) {
     impl_ = new deviceimpl(name);
     impl_->acquire();
@@ -58,12 +58,12 @@ void ch_device::begin_context(const std::string& name) {
   impl_->begin_context();
 }
 
-void ch_device::end_context() {
+void device::end_context() {
   CH_CHECK(impl_ != nullptr, "uninitialized device!");
   impl_->end_context();
 }
 
-void ch_device::compile() {
+void device::compile() {
   CH_CHECK(impl_ != nullptr, "uninitialized device!");
   impl_->compile();
 }
@@ -86,17 +86,17 @@ void ch::internal::bindInput(const lnode& input, const lnode& src) {
   dynamic_cast<inputimpl*>(input.get_impl())->set_input(src);
 }
 
-context* ch::internal::get_ctx(const ch_device& device) {
+context* ch::internal::get_ctx(const device& device) {
   return device.impl_->get_ctx();
 }
 
-void ch::internal::toVerilog(std::ostream& out, const std::initializer_list<const ch_device*>& devices) {
+void ch::internal::toVerilog(std::ostream& out, const std::initializer_list<const device*>& devices) {
   verilogwriter writer(out);
   for (auto device : devices) {
     writer.print(get_ctx(*device));
   }
 }
 
-void ch::internal::ch_dumpStats(std::ostream& out, const ch_device& device) {
+void ch::internal::ch_dumpStats(std::ostream& out, const device& device) {
   get_ctx(device)->dump_stats(out);
 }

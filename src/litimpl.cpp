@@ -3,10 +3,10 @@
 
 using namespace ch::internal;
 litimpl::litimpl(context* ctx, uint32_t size)
-  : lnodeimpl(op_lit, ctx, size) {}
+  : lnodeimpl(type_lit, ctx, size) {}
 
 litimpl::litimpl(context* ctx, const bitvector& value) 
-  : lnodeimpl(op_lit, ctx, value.get_size()) {
+  : lnodeimpl(type_lit, ctx, value.get_size()) {
   value_ = value;
 }
 
@@ -16,6 +16,6 @@ const bitvector& litimpl::eval(ch_tick) {
 
 void litimpl::print(std::ostream& out, uint32_t level) const {
   CH_UNUSED(level);
-  out << "#" << id_ << " <- " << this->get_op() << value_.get_size()
+  out << "#" << id_ << " <- " << this->get_type() << value_.get_size()
       << "(" << value_ << ")";
 }

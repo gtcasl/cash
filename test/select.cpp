@@ -153,7 +153,7 @@ TEST_CASE("conditionals", "[conditionals]") {
        )__else(
         c = 2;
        );
-      ch_print("c={0}", c);
+      //ch_print("c={0}", c);
       return (c == 0);
     });
     TEST([]()->ch_bit1 {

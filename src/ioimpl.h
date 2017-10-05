@@ -7,12 +7,12 @@ namespace internal {
 
 class ioimpl : public lnodeimpl {
 public:
-  ioimpl(ch_operator op, context* ctx, uint32_t size)
-    : lnodeimpl(op, ctx, size)
+  ioimpl(lnodetype type, context* ctx, uint32_t size)
+    : lnodeimpl(type, ctx, size)
   {}
 
-  ioimpl(ch_operator op, context* ctx, uint32_t size, const std::string& name)
-    : lnodeimpl(op, ctx, size)
+  ioimpl(lnodetype type, context* ctx, uint32_t size, const std::string& name)
+    : lnodeimpl(type, ctx, size)
     , name_(name)
   {}
 
@@ -30,10 +30,10 @@ protected:
 
 class inputimpl : public ioimpl {
 public:
-  inputimpl(ch_operator op, context* ctx, uint32_t size, const std::string& name);
+  inputimpl(lnodetype type, context* ctx, uint32_t size, const std::string& name);
 
   inputimpl(context* ctx, uint32_t size, const std::string& name)
-    : inputimpl(op_input, ctx, size, name)
+    : inputimpl(type_input, ctx, size, name)
   {}
 
   void set_input(const lnode& input) {

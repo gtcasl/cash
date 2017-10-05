@@ -66,35 +66,35 @@ public:
 };
 
 inline const auto operator+(const const_real& lhs, const const_real& rhs) {
-  return make_type<ch_real>(createAluNode(alu_op_fadd, get_lnode(lhs), get_lnode(rhs)));
+  return make_type<ch_real>(createAluNode(alu_fadd, get_lnode(lhs), get_lnode(rhs)));
 }
 
 inline const auto operator-(const const_real& lhs, const const_real& rhs) {
-  return make_type<ch_real>(createAluNode(alu_op_fsub, get_lnode(lhs), get_lnode(rhs)));
+  return make_type<ch_real>(createAluNode(alu_fsub, get_lnode(lhs), get_lnode(rhs)));
 }
 
 inline const auto operator*(const const_real& lhs, const const_real& rhs) {
-  return make_type<ch_real>(createAluNode(alu_op_fmult, get_lnode(lhs), get_lnode(rhs)));
+  return make_type<ch_real>(createAluNode(alu_fmult, get_lnode(lhs), get_lnode(rhs)));
 }
 
 inline const auto operator/(const const_real& lhs, const const_real& rhs) {
-  return make_type<ch_real>(createAluNode(alu_op_fdiv, get_lnode(lhs), get_lnode(rhs)));
+  return make_type<ch_real>(createAluNode(alu_fdiv, get_lnode(lhs), get_lnode(rhs)));
 }
 
 inline const auto operator+(const ch_real& lhs, const ch_real& rhs) {
-  return make_type<ch_real>(createAluNode(alu_op_fadd, get_lnode(lhs), get_lnode(rhs)));
+  return make_type<ch_real>(createAluNode(alu_fadd, get_lnode(lhs), get_lnode(rhs)));
 }
 
 inline const auto operator-(const ch_real& lhs, const ch_real& rhs) {
-  return make_type<ch_real>(createAluNode(alu_op_fsub, get_lnode(lhs), get_lnode(rhs)));
+  return make_type<ch_real>(createAluNode(alu_fsub, get_lnode(lhs), get_lnode(rhs)));
 }
 
 inline const auto operator*(const ch_real& lhs, const ch_real& rhs) {
-  return make_type<ch_real>(createAluNode(alu_op_fmult, get_lnode(lhs), get_lnode(rhs)));
+  return make_type<ch_real>(createAluNode(alu_fmult, get_lnode(lhs), get_lnode(rhs)));
 }
 
 inline const auto operator/(const ch_real& lhs, const ch_real& rhs) {
-  return make_type<ch_real>(createAluNode(alu_op_fdiv, get_lnode(lhs), get_lnode(rhs)));
+  return make_type<ch_real>(createAluNode(alu_fdiv, get_lnode(lhs), get_lnode(rhs)));
 }
 
 }

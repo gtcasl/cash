@@ -20,7 +20,7 @@ void clock_driver::flip() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-simulatorimpl::simulatorimpl(const std::initializer_list<const ch_device*>& devices)
+simulatorimpl::simulatorimpl(const std::initializer_list<const device*>& devices)
   : initialized_(false)
   , clk_(true)
   , reset_(false) {
@@ -38,7 +38,7 @@ simulatorimpl::~simulatorimpl() {
   }
 }
 
-void simulatorimpl::add_device(const ch_device& device) {
+void simulatorimpl::add_device(const device& device) {
   context* ctx = get_ctx(device);
   auto ret = contexts_.emplace(ctx);
   if (ret.second) {
@@ -131,7 +131,7 @@ ch_tick simulatorimpl::step(ch_tick t) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-ch_simulator::ch_simulator(const std::initializer_list<const ch_device*>& devices) {
+ch_simulator::ch_simulator(const std::initializer_list<const device*>& devices) {
   impl_ = new simulatorimpl(devices);
   impl_->acquire();
 }
@@ -160,7 +160,7 @@ ch_simulator& ch_simulator::operator=(const ch_simulator& simulator) {
   return *this;
 }
 
-void ch_simulator::add_device(const ch_device& device) {
+void ch_simulator::add_device(const device& device) {
   impl_->add_device(device);
 }
 

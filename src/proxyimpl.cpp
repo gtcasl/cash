@@ -4,18 +4,18 @@
 using namespace ch::internal;
 
 proxyimpl::proxyimpl(context* ctx, uint32_t size) 
-  : lnodeimpl(op_proxy, ctx, size)
+  : lnodeimpl(type_proxy, ctx, size)
   , tick_(~0ull) 
 {}
 
 proxyimpl::proxyimpl(const lnode& src)
-  : lnodeimpl(op_proxy, src.get_ctx(), src.get_size())
+  : lnodeimpl(type_proxy, src.get_ctx(), src.get_size())
   , tick_(~0ull)  {
   this->add_source(0, src, 0, src.get_size());
 }
 
 proxyimpl::proxyimpl(const lnode& src, uint32_t offset, uint32_t length)
-  : lnodeimpl(op_proxy, src.get_ctx(), length)
+  : lnodeimpl(type_proxy, src.get_ctx(), length)
   , tick_(~0ull)  {
   this->add_source(0, src, offset, length);
 }
@@ -303,7 +303,7 @@ const bitvector& proxyimpl::eval(ch_tick t) {
 }
 
 void proxyimpl::print(std::ostream& out, uint32_t level) const {
-  out << "#" << id_ << " <- " << this->get_op() << value_.get_size();
+  out << "#" << id_ << " <- " << this->get_type() << value_.get_size();
   out << "(";
   for (uint32_t i = 0, s = 0, n = ranges_.size(); i < n; ++i) {
     const range_t& range = ranges_[i];
@@ -314,10 +314,15 @@ void proxyimpl::print(std::ostream& out, uint32_t level) const {
       out << range.dst_offset << ":";
     }
     s += range.length;
-    out << "#" << srcs_[range.src_idx].get_id() << "{" << range.src_offset;
-    if (range.length > 1)
-      out << "-" << range.src_offset + (range.length - 1);
-    out << "}";
+    const auto src = srcs_[range.src_idx];
+    out << "#" << src.get_id();
+    if (range.length < src.get_size()) {
+      out << "[" << range.src_offset;
+      if (range.length > 1) {
+        out << "-" << range.src_offset + (range.length - 1);
+      }
+      out << "]";
+    }
   }
   out << ")";
 

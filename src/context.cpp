@@ -122,7 +122,7 @@ lnodeimpl* context::get_clk() {
   if (!user_clks_.empty())
     return user_clks_.top().get_impl();
   if (nullptr == default_clk_)
-    default_clk_ = new inputimpl(op_clk, this, 1, "clk");
+    default_clk_ = new inputimpl(type_clk, this, 1, "clk");
   return default_clk_;
 }
 
@@ -130,7 +130,7 @@ lnodeimpl* context::get_reset() {
   if (!user_resets_.empty())
     return user_resets_.top().get_impl();
   if (nullptr == default_reset_)
-     default_reset_ = new inputimpl(op_reset, this, 1, "reset");
+     default_reset_ = new inputimpl(type_reset, this, 1, "reset");
   return default_reset_;
 }
 
@@ -152,27 +152,27 @@ uint32_t context::add_node(lnodeimpl* node) {
 #endif
   nodes_.emplace_back(node);
 
-  switch (node->get_op()) {
-  case op_undef:
+  switch (node->get_type()) {
+  case type_undef:
     undefs_.emplace_back((undefimpl*)node);
     break;
-  case op_proxy:
+  case type_proxy:
     proxies_.emplace_back((proxyimpl*)node);
     break;
-  case op_lit:
+  case type_lit:
     literals_.emplace_back((litimpl*)node);
     break;
-  case op_input:
+  case type_input:
     inputs_.emplace_back((inputimpl*)node);
     break;  
-  case op_output:
+  case type_output:
     outputs_.emplace_back((outputimpl*)node);
     break; 
-  case op_tap:
+  case type_tap:
     taps_.emplace_back((tapimpl*)node);
     break;
-  case op_assert:
-  case op_print:
+  case type_assert:
+  case type_print:
     gtaps_.emplace_back((ioimpl*)node);
     break;
   default:
@@ -183,17 +183,17 @@ uint32_t context::add_node(lnodeimpl* node) {
   // because using dynamic_cast<ioimpl*> doesn't work during the object construction
   // and add_node() is called inside lnodeimpl constructor.
   bool is_ionode;
-  switch (node->get_op()) {
-  case op_input:
-  case op_output:
-  case op_clk:
-  case op_reset:
-  case op_mem:
-  case op_memport:
-  case op_tap:
-  case op_assert:
-  case op_print:
-  case op_tick:
+  switch (node->get_type()) {
+  case type_input:
+  case type_output:
+  case type_clk:
+  case type_reset:
+  case type_mem:
+  case type_memport:
+  case type_tap:
+  case type_assert:
+  case type_print:
+  case type_tick:
     is_ionode = true;
     break;
   default:
@@ -211,43 +211,43 @@ uint32_t context::add_node(lnodeimpl* node) {
 }
 
 void context::remove_node(lnodeimpl* node) {
-  DBG(3, "*** deleting node: %s%d(#%d)!\n", to_string(node->get_op()), node->get_size(), node->get_id());
+  DBG(3, "*** deleting node: %s%d(#%d)!\n", to_string(node->get_type()), node->get_size(), node->get_id());
   
   assert(!nodes_.empty());
   nodes_.remove(node);
   
-  switch (node->get_op()) {
-  case op_undef:
+  switch (node->get_type()) {
+  case type_undef:
     undefs_.remove((undefimpl*)node);
     break;
-  case op_proxy:
+  case type_proxy:
     proxies_.remove((proxyimpl*)node);
     break;
-  case op_lit:
+  case type_lit:
     literals_.remove((litimpl*)node);
     break;
-  case op_input:
+  case type_input:
     inputs_.remove((inputimpl*)node);
     break;
-  case op_output:
+  case type_output:
     outputs_.remove((outputimpl*)node);
     break;
-  case op_clk:
+  case type_clk:
     if (node == default_clk_)
       default_clk_ = nullptr;
     break;
-  case op_reset:
+  case type_reset:
     if (node == default_reset_)
       default_reset_ = nullptr;
     break;
-  case op_tap:
+  case type_tap:
     taps_.remove((tapimpl*)node);
     break;
-  case op_assert:
-  case op_print:
+  case type_assert:
+  case type_print:
     gtaps_.remove((ioimpl*)node);
     break;
-  case op_tick:
+  case type_tick:
     if (node == tick_)
       tick_ = nullptr;
     break;
@@ -276,9 +276,9 @@ void context::begin_block(lnodeimpl* pred) {
     branch->else_pred = pred;
   } else {
     if (pred) {
-      branch->else_pred = createAluNode(alu_op_or, branch->else_pred, pred);
+      branch->else_pred = createAluNode(alu_or, branch->else_pred, pred);
     } else {
-      branch->else_pred = createAluNode(alu_op_inv, branch->else_pred);
+      branch->else_pred = createAluNode(alu_inv, branch->else_pred);
     }
   }
   // insert new conditional block
@@ -311,7 +311,7 @@ lnodeimpl* context::build_aggregate_predicate(
     if (nullptr == parent_pred) {
       parent_pred = parent_block->branch->else_pred;
     }
-    pred = createAluNode(alu_op_and, parent_pred, pred);
+    pred = createAluNode(alu_and, parent_pred, pred);
   }
   use_block->agg_preds[def_block_id] = pred;
 

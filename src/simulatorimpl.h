@@ -25,10 +25,10 @@ private:
 
 class simulatorimpl : public refcounted {
 public:
-  simulatorimpl(const std::initializer_list<const ch_device*>& devices);
+  simulatorimpl(const std::initializer_list<const device*>& devices);
   virtual ~simulatorimpl();
 
-  void add_device(const ch_device& device);
+  void add_device(const device& device);
 
   virtual void tick(ch_tick t);
 

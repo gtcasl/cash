@@ -36,12 +36,12 @@ void ch_popReset();
 
 template <unsigned N>
 const auto ch_ready(const ch_bitbase<N>& x) {
-  return make_bit<1>(createReadyNode(get_lnode(x)));
+  return make_type<ch_bit<1>>(createReadyNode(get_lnode(x)));
 }
 
 template <unsigned N>
 const auto ch_valid(const ch_bitbase<N>& x) {
-  return make_bit<1>(createValidNode(get_lnode(x)));
+  return make_type<ch_bit<1>>(createValidNode(get_lnode(x)));
 }
 
 template <typename T, typename I,

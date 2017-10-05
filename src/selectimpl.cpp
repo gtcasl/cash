@@ -8,7 +8,7 @@
 using namespace ch::internal;
 
 selectimpl::selectimpl(const lnode& pred, const lnode& _true, const lnode& _false)
-  : lnodeimpl(op_select, pred.get_ctx(), _true.get_size())
+  : lnodeimpl(type_select, pred.get_ctx(), _true.get_size())
   , tick_(~0ull) {
   assert(pred.get_size() == 1);
   assert(_true.get_size() == _false.get_size());
@@ -40,7 +40,7 @@ lnodeimpl* select_impl::eval(const lnode& value) {
   if (!key_.is_empty()) {
     while (!stmts.empty()) {
       const auto& stmt = stmts.top();
-      lnode pred(createAluNode(alu_op_eq, key_, stmt.pred));
+      lnode pred(createAluNode(alu_eq, key_, stmt.pred));
       curr = createSelectNode(pred, stmt.value, curr ? lnode(curr) : value);
       stmts.pop();
     }
@@ -91,7 +91,7 @@ switch_impl::~switch_impl() {
 
 void switch_impl::eval(const lnode& pred, func_t func) {
   auto ctx = key_.get_ctx();
-  ctx->begin_block(createAluNode(alu_op_eq, key_, pred));
+  ctx->begin_block(createAluNode(alu_eq, key_, pred));
   func();
   ctx->end_block();
 }

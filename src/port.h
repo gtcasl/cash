@@ -15,18 +15,18 @@ void registerIOMap(const nodelist& data);
 
 template <typename T>
 void registerIOMap(const T& node) {
-  nodelist data(T::bitcount);
+  nodelist data(T::bitcount, true);
   ch::internal::read_data(node, data, 0, T::bitcount);
   registerIOMap(data);
 }
 
 template <bool input, bool output>
-class ch_port {
+class port {
 public:
   static constexpr bool is_input = input;
   static constexpr bool is_output = output;
 
-  ch_port(const std::string& inout_name) : name_(inout_name) {}
+  port(const std::string& inout_name) : name_(inout_name) {}
 
   const std::string& get_name() const {
     return name_;
@@ -43,21 +43,23 @@ template <typename T>
 class ch_out;
 
 template <typename T>
-class ch_in : public T::const_type, public ch_port<true, false> {
+class ch_in : public T::const_type, public port<true, false> {
 public:
   using base = typename T::const_type;
   using value_type = T;
   using const_type = typename T::const_type;
   using flip_type = ch_out<T>;
 
-  ch_in(const std::string& name = "io") : ch_port(name) {
+  ch_in(const std::string& name = "io") : port(name) {
     input_ = createInputNode(name, base::bitcount);
-    this->write_data(0, {input_, 0 , base::bitcount}, 0, base::bitcount);
+    nodelist data(base::bitcount, true);
+    data.push(input_);
+    this->write_data(0, data, 0, base::bitcount);
     registerIOMap(*this);
   }
 
-  ch_in(const ch_in& in) : base(in), ch_port(in.get_name()) {}
-  ch_in(ch_in&& in) : base(std::move(in)), ch_port(std::move(in)) {}
+  ch_in(const ch_in& in) : base(in), port(in.get_name()) {}
+  ch_in(ch_in&& in) : base(std::move(in)), port(std::move(in)) {}
 
   template <typename U,
             CH_REQUIRES(is_cast_convertible<U, T>::value)>
@@ -90,7 +92,7 @@ protected:
 };
 
 template <typename T>
-class ch_out : public T, public ch_port<false, true> {
+class ch_out : public T, public port<false, true> {
 public:
   using base = T;
   using base::operator=;
@@ -98,13 +100,13 @@ public:
   using const_type = typename T::const_type;
   using flip_type = ch_in<T>;
 
-  ch_out(const std::string& name = "io") : ch_port(name) {
+  ch_out(const std::string& name = "io") : port(name) {
     output_ = createOutputNode(name, get_lnode(*this));
     registerIOMap(*this);
   }
 
-  ch_out(const ch_out& out) : base(out), ch_port(out.get_name()) {}
-  ch_out(ch_out&& out) : base(std::move(out)), ch_port(std::move(out)) {}
+  ch_out(const ch_out& out) : base(out), port(out.get_name()) {}
+  ch_out(ch_out&& out) : base(std::move(out)), port(std::move(out)) {}
 
   template <typename U,
             CH_REQUIRES(is_cast_convertible<U, T>::value)>
@@ -153,18 +155,18 @@ protected:
   this->CH_PAIR_R(x)(std::forward<__T##i>(CH_CONCAT(_,CH_PAIR_R(x))))
 
 #define CH_INOUT_IMPL(inout_name, ...) \
-  class inout_name : public ch::internal::ch_port<true, true> { \
+  class inout_name : public ch::internal::port<true, true> { \
   private: \
-    class __flip_type__ : public ch::internal::ch_port<true, true> { \
+    class __flip_type__ : public ch::internal::port<true, true> { \
     private: \
       __flip_type__& operator=(const __flip_type__&) = delete; \
     public: \
       static constexpr unsigned bitcount = CH_STRUCT_SIZE(__VA_ARGS__); \
-      using base = ch::internal::ch_port<true, true>; \
+      using base = ch::internal::port<true, true>; \
       using flip_type = inout_name; \
-      __flip_type__(const std::string& name = "io") : CH_FOR_EACH(CH_INOUT_CTOR_APPLY, CH_SEP_COMMA, __VA_ARGS__), ch_port(name) {} \
-      __flip_type__(const __flip_type__& __rhs__) : CH_FOR_EACH(CH_STRUCT_COPY_CTOR_APPLY, CH_SEP_COMMA, __VA_ARGS__), ch_port(__rhs__.get_name()) {} \
-      __flip_type__(__flip_type__&& __rhs__) : CH_FOR_EACH(CH_STRUCT_MOVE_CTOR_APPLY, CH_SEP_COMMA, __VA_ARGS__), ch_port(std::move(__rhs__)) {} \
+      __flip_type__(const std::string& name = "io") : CH_FOR_EACH(CH_INOUT_CTOR_APPLY, CH_SEP_COMMA, __VA_ARGS__), port(name) {} \
+      __flip_type__(const __flip_type__& __rhs__) : CH_FOR_EACH(CH_STRUCT_COPY_CTOR_APPLY, CH_SEP_COMMA, __VA_ARGS__), port(__rhs__.get_name()) {} \
+      __flip_type__(__flip_type__&& __rhs__) : CH_FOR_EACH(CH_STRUCT_MOVE_CTOR_APPLY, CH_SEP_COMMA, __VA_ARGS__), port(std::move(__rhs__)) {} \
       void operator()(__flip_type__& __rhs__) const { \
         CH_FOR_EACH(CH_INOUT_BIND_APPLY, CH_SEP_SEMICOLON, __VA_ARGS__); \
       } \
@@ -177,11 +179,11 @@ protected:
     inout_name& operator=(const inout_name&) = delete; \
   public: \
     static constexpr unsigned bitcount = CH_STRUCT_SIZE(__VA_ARGS__); \
-    using base = ch::internal::ch_port<true, true>; \
+    using base = ch::internal::port<true, true>; \
     using flip_type  = __flip_type__; \
-    inout_name(const std::string& name = "io") : CH_FOR_EACH(CH_INOUT_CTOR_APPLY, CH_SEP_COMMA, __VA_ARGS__), ch_port(name) {} \
-    inout_name(const inout_name& __rhs__) : CH_FOR_EACH(CH_STRUCT_COPY_CTOR_APPLY, CH_SEP_COMMA, __VA_ARGS__), ch_port(__rhs__.get_name()) {} \
-    inout_name(inout_name&& __rhs__) : CH_FOR_EACH(CH_STRUCT_MOVE_CTOR_APPLY, CH_SEP_COMMA, __VA_ARGS__), ch_port(std::move(__rhs__)) {} \
+    inout_name(const std::string& name = "io") : CH_FOR_EACH(CH_INOUT_CTOR_APPLY, CH_SEP_COMMA, __VA_ARGS__), port(name) {} \
+    inout_name(const inout_name& __rhs__) : CH_FOR_EACH(CH_STRUCT_COPY_CTOR_APPLY, CH_SEP_COMMA, __VA_ARGS__), port(__rhs__.get_name()) {} \
+    inout_name(inout_name&& __rhs__) : CH_FOR_EACH(CH_STRUCT_MOVE_CTOR_APPLY, CH_SEP_COMMA, __VA_ARGS__), port(std::move(__rhs__)) {} \
     void operator()(inout_name& __rhs__) const { \
       CH_FOR_EACH(CH_INOUT_BIND_APPLY, CH_SEP_SEMICOLON, __VA_ARGS__); \
     } \

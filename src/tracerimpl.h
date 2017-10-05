@@ -7,13 +7,13 @@ namespace internal {
 
 class tracerimpl : public simulatorimpl {
 public:
-  tracerimpl(std::ostream& out, const std::initializer_list<const ch_device*>& devices)
+  tracerimpl(std::ostream& out, const std::initializer_list<const device*>& devices)
     : simulatorimpl(devices)
     , file_(nullptr)
     , out_(out)
   {}
 
-  tracerimpl(const std::string& file, const std::initializer_list<const ch_device*>& devices)
+  tracerimpl(const std::string& file, const std::initializer_list<const device*>& devices)
     : simulatorimpl(devices)
     , file_(new std::ofstream(file))
     , out_(*file_)
@@ -41,7 +41,7 @@ protected:
     lnode node;
   };
 
-  std::unordered_map<std::string, unsigned> dup_taps_;
+  tap_counts_t dup_taps_;
   std::vector<tap_t> taps_;
   std::ofstream* file_;
   std::ostream& out_;

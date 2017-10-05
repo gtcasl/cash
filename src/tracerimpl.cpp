@@ -74,12 +74,12 @@ void tracerimpl::tick(ch_tick t) {
 ///////////////////////////////////////////////////////////////////////////////
 
 ch_tracer::ch_tracer(std::ostream& out,
-                     const std::initializer_list<const ch_device*>& devices)
+                     const std::initializer_list<const device*>& devices)
   : ch_simulator(new tracerimpl(out, devices))
 {}
 
 ch_tracer::ch_tracer(const std::string& file,
-                     const std::initializer_list<const ch_device*>& devices)
+                     const std::initializer_list<const device*>& devices)
   : ch_simulator(new tracerimpl(file, devices))
 {}
 

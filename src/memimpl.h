@@ -44,7 +44,7 @@ public:
   void load(const std::vector<uint8_t>& data);
   
   lnode& read(const lnode& addr);
-  void write(const lnode& addr, const lnode& data);
+  void write(const lnode& addr, const nodelist& in);
   
   void tick(ch_tick t) override;
   void tick_next(ch_tick t) override;
@@ -92,7 +92,7 @@ public:
     writable_ = writable;
   }
   
-  void write(const lnode& data);
+  void write(const nodelist& in);
 
   void tick(ch_tick t);
   void tick_next(ch_tick t);

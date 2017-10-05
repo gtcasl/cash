@@ -134,12 +134,11 @@ inline void write_bytes(const typebase_itf& obj, uint32_t dst_offset, const void
   obj.write_bytes(dst_offset, in, in_cbsize, src_offset, length);
 }
 
-template <unsigned N>
-const ch_bit<N> make_bit(const lnode& node);
-
 template <typename T> const auto make_type(const lnode& node) {
   typename T::value_type ret;
-  write_data(ret, 0, {node, 0 , T::bitcount}, 0, T::bitcount);
+  nodelist data(T::bitcount, true);
+  data.push(node);
+  write_data(ret, 0, data, 0, T::bitcount);
   return ret;
 };
 
@@ -166,21 +165,25 @@ public:
 protected:
 
   void assign(const ch_bitbase& rhs) {
-    nodelist data(N);
+    nodelist data(N, false);
     ch::internal::read_data(rhs, data, 0, N);
     this->write_data(0, data, 0, N);
   }
 
   void assign(const ch_literal<N>& rhs) {
     lnode node(rhs);
-    this->write_data(0, {node, 0 , N}, 0, N);
+    nodelist data(N, false);
+    data.push(node);
+    this->write_data(0, data, 0, N);
   }
 
   template <typename U,
             CH_REQUIRES(is_ch_scalar<U>::value)>
   void assign(U rhs) {
     lnode node(bitvector(N, rhs));
-    this->write_data(0, {node, 0 , N}, 0, N);
+    nodelist data(N, false);
+    data.push(node);
+    this->write_data(0, data, 0, N);
   }
 };
 

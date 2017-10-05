@@ -2,9 +2,10 @@
 
 #include "lnode.h"
 
-#define CH_OPERATOR_TYPE(t) op_##t,
-#define CH_OPERATOR_NAME(n) #n,
-#define CH_OPERATOR_ENUM(m) \
+#define CH_LNODE_TYPE(t) type_##t,
+#define CH_LNODE_NAME(n) #n,
+#define CH_LNODE_INDEX(op) ((int)op)
+#define CH_LNODE_ENUM(m) \
   m(undef) \
   m(proxy) \
   m(lit) \
@@ -25,21 +26,21 @@
 namespace ch {
 namespace internal {
   
-enum ch_operator {
-  CH_OPERATOR_ENUM(CH_OPERATOR_TYPE)
+enum lnodetype {
+  CH_LNODE_ENUM(CH_LNODE_TYPE)
 };
 
 class lnodeimpl {
 public:
-  lnodeimpl(ch_operator op, context* ctx, uint32_t size);
+  lnodeimpl(lnodetype type, context* ctx, uint32_t size);
   virtual ~lnodeimpl();
   
   uint32_t get_id() const {
     return id_;
   }
   
-  ch_operator get_op() const {
-    return op_;
+  lnodetype get_type() const {
+    return type_;
   }
 
   context* get_ctx() const {
@@ -109,7 +110,7 @@ public:
 protected:
   
   uint32_t id_;
-  ch_operator op_;
+  lnodetype type_;
   context* ctx_;
   std::vector<lnode> srcs_;
   bitvector value_;
@@ -124,9 +125,9 @@ public:
   const bitvector& eval(ch_tick t) override;
 };
 
-const char* to_string(ch_operator op);
+const char* to_string(lnodetype type);
 
-std::ostream& operator<<(std::ostream& out, ch_operator op);
+std::ostream& operator<<(std::ostream& out, lnodetype type);
 
 }
 }

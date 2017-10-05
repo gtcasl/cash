@@ -9,12 +9,12 @@ class ch_tracer : public ch_simulator {
 public:
 
   template <typename... Devices>
-  ch_tracer(std::ostream& out, const ch_device& device, const Devices&... more)
+  ch_tracer(std::ostream& out, const device& device, const Devices&... more)
     : ch_tracer(out, {&device, &more...})
   {}
 
   template <typename... Devices>
-  ch_tracer(const std::string& file, const ch_device& device, const Devices&... more)
+  ch_tracer(const std::string& file, const device& device, const Devices&... more)
     : ch_tracer(file, {&device, &more...})
   {}
 
@@ -31,9 +31,9 @@ public:
 
 protected:
 
-  ch_tracer(std::ostream& out, const std::initializer_list<const ch_device*>& devices);
+  ch_tracer(std::ostream& out, const std::initializer_list<const device*>& devices);
 
-  ch_tracer(const std::string& file, const std::initializer_list<const ch_device*>& devices);
+  ch_tracer(const std::string& file, const std::initializer_list<const device*>& devices);
 
   ch_tracer(simulatorimpl* impl);
 

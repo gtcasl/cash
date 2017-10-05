@@ -5,7 +5,7 @@
 using namespace ch::internal;
 
 tickimpl::tickimpl(context* ctx) 
-  : ioimpl(op_tick, ctx, CHAR_BIT * sizeof(ch_tick))
+  : ioimpl(type_tick, ctx, CHAR_BIT * sizeof(ch_tick))
   , tick_(~0ull) 
 {}
 
@@ -20,5 +20,5 @@ const bitvector& tickimpl::eval(ch_tick t) {
 ///////////////////////////////////////////////////////////////////////////////
 
 const ch_bit<64> ch::internal::ch_getTick() {
-  return make_bit<64>(ctx_curr()->get_tick());
+  return make_type<ch_bit<64>>(ctx_curr()->get_tick());
 }

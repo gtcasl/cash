@@ -117,7 +117,7 @@ public:
     template <typename T,
               CH_REQUIRES(is_bit_convertible<T, A>::value)>
     const auto operator[](const T& addr) const {
-      return make_bit<W>(mem_.read(get_lnode<T, A>(addr)));
+      return make_type<ch_bit<W>>(mem_.read(get_lnode<T, A>(addr)));
     }
     
 private:
@@ -146,7 +146,7 @@ public:
     template <typename T,
               CH_REQUIRES(is_bit_convertible<T, A>::value)>
     const auto operator[](const T& addr) const {
-      return make_bit<W>(mem_.read(get_lnode<T, A>(addr)));
+      return make_type<ch_bit<W>>(mem_.read(get_lnode<T, A>(addr)));
     }
     
     template <typename T,

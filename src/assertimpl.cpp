@@ -5,7 +5,7 @@
 using namespace ch::internal;
 
 assertimpl::assertimpl(const lnode& pred, const std::string& msg)
-  : ioimpl(op_assert, pred.get_ctx(), 0)
+  : ioimpl(type_assert, pred.get_ctx(), 0)
   , msg_(msg)
   , predicated_(false) {
   if (ctx_->conditional_enabled(this)) {

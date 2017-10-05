@@ -3,8 +3,8 @@
 
 using namespace ch::internal;
 
-inputimpl::inputimpl(ch_operator op, context* ctx, uint32_t size, const std::string& name)
-  : ioimpl(op, ctx, size, name)
+inputimpl::inputimpl(lnodetype type, context* ctx, uint32_t size, const std::string& name)
+  : ioimpl(type, ctx, size, name)
   , tick_(~0ull)
 {}
 
@@ -17,7 +17,7 @@ const bitvector& inputimpl::eval(ch_tick t) {
 }
 
 void inputimpl::print(std::ostream& out, uint32_t level) const {
-  out << "#" << id_ << " <- " << this->get_op() << value_.get_size();
+  out << "#" << id_ << " <- " << this->get_type() << value_.get_size();
   out << "(" << name_ << ", ";
   if (!srcs_.empty()) {
     out << "$" << srcs_[0].get_id();
@@ -33,7 +33,7 @@ void inputimpl::print(std::ostream& out, uint32_t level) const {
 ///////////////////////////////////////////////////////////////////////////////
 
 outputimpl::outputimpl(const lnode& src, const std::string& name)
-  : ioimpl(op_output, src.get_ctx(), src.get_size(), name)
+  : ioimpl(type_output, src.get_ctx(), src.get_size(), name)
   , tick_(~0ull) {
   srcs_.emplace_back(src);
 }
@@ -47,7 +47,7 @@ const bitvector& outputimpl::eval(ch_tick t) {
 }
 
 void outputimpl::print(std::ostream& out, uint32_t level) const {
-  out << "#" << id_ << " <- " << this->get_op() << value_.get_size();
+  out << "#" << id_ << " <- " << this->get_type() << value_.get_size();
   out << "(" << name_ << ", #" << srcs_[0].get_id() << ")";
   if (level == 2) {
     out << " = " << value_;
@@ -57,11 +57,13 @@ void outputimpl::print(std::ostream& out, uint32_t level) const {
 ///////////////////////////////////////////////////////////////////////////////
 
 tapimpl::tapimpl(const lnode& src, const std::string& name)
-  : ioimpl(op_tap, src.get_ctx(), src.get_size(), name)
-  , tick_(~0ull) {}
+  : ioimpl(type_tap, src.get_ctx(), src.get_size(), name)
+  , tick_(~0ull) {
+  srcs_.emplace_back(src);
+}
 
 void tapimpl::print(std::ostream& out, uint32_t level) const {
-  out << "#" << id_ << " <- " << this->get_op() << value_.get_size();
+  out << "#" << id_ << " <- " << this->get_type() << value_.get_size();
   out << "(" << name_ << ", #" << srcs_[0].get_id() << ")";
   if (level == 2) {
     out << " = " << value_;

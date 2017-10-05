@@ -66,7 +66,7 @@ static const char* parse_format_index(fmtinfo_t* out, const char* str) {
 printimpl::printimpl(context* ctx,
                      const std::string& format,
                      const std::initializer_list<lnode>& args)
-  : ioimpl(op_print, ctx, 0)
+  : ioimpl(type_print, ctx, 0)
   , format_(format)
   , predicated_(false)
   , tick_(~0ull) {

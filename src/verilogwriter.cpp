@@ -106,35 +106,35 @@ void verilogwriter::print_body(context* ctx) {
   {
     auto_indent indent(out_);
     for (auto node : ctx->get_nodes()) {
-      auto op = node->get_op();
-      switch (op) {
-      case op_lit:
+      auto type = node->get_type();
+      switch (type) {
+      case type_lit:
         this->print_literal(dynamic_cast<litimpl*>(node));
         break;
-      case op_proxy:
+      case type_proxy:
         this->print_proxy(dynamic_cast<proxyimpl*>(node));
         break;
-      case op_alu:
+      case type_alu:
         this->print_alu(dynamic_cast<aluimpl*>(node));
         break;
-      case op_select:
+      case type_select:
         this->print_select(dynamic_cast<selectimpl*>(node));
         break;
-      case op_reg:
+      case type_reg:
         this->print_reg(dynamic_cast<regimpl*>(node));
         break;
-      case op_mem:
+      case type_mem:
         this->print_mem(dynamic_cast<memimpl*>(node));
         break;
-      case op_input:
-      case op_clk:
-      case op_reset:
-      case op_output:
-      case op_tap:
-      case op_memport:
-      case op_assert:
-      case op_print:
-      case op_tick:
+      case type_input:
+      case type_clk:
+      case type_reset:
+      case type_output:
+      case type_tap:
+      case type_memport:
+      case type_assert:
+      case type_print:
+      case type_tick:
         break;
       default:
         assert(false);
@@ -162,15 +162,15 @@ void verilogwriter::print_footer(context* ctx) {
 }
 
 void verilogwriter::print_port(lnodeimpl* node) {
-  auto op = node->get_op();
-  switch (op) {
-  case op_input:
-  case op_clk:
-  case op_reset:
+  auto type = node->get_type();
+  switch (type) {
+  case type_input:
+  case type_clk:
+  case type_reset:
     out_ << "input";
     break;
-  case op_output:
-  case op_tap:
+  case type_output:
+  case type_tap:
     out_ << "output";
     break;
   default:
@@ -185,34 +185,34 @@ void verilogwriter::print_port(lnodeimpl* node) {
 }
 
 void verilogwriter::print_decl(lnodeimpl* node) {
-  auto op = node->get_op();
-  switch (op) {
-  case op_mem:
+  auto type = node->get_type();
+  switch (type) {
+  case type_mem:
     this->print_type(node);
     out_ << " ";
     this->print_name(node);
     out_ << "[0:" << ((1 << dynamic_cast<memimpl*>(node)->get_addr_width()) - 1) << "]";
     out_ << ";" << std::endl;
     break;
-  case op_lit:
-  case op_proxy:
-  case op_alu:
-  case op_select:
-  case op_reg:
+  case type_lit:
+  case type_proxy:
+  case type_alu:
+  case type_select:
+  case type_reg:
     this->print_type(node);
     out_ << " ";
     this->print_name(node);
     out_ << ";" << std::endl;
     break;
-  case op_input:
-  case op_clk:
-  case op_reset:
-  case op_output:
-  case op_tap:
-  case op_memport:
-  case op_assert:
-  case op_print:
-  case op_tick:
+  case type_input:
+  case type_clk:
+  case type_reset:
+  case type_output:
+  case type_tap:
+  case type_memport:
+  case type_assert:
+  case type_print:
+  case type_tick:
     break;
   default:
     assert(false);
@@ -264,41 +264,41 @@ void verilogwriter::print_proxy(proxyimpl* node) {
 }
 
 void verilogwriter::print_alu(aluimpl* node) {
-  auto alu_op = node->get_alu_op();
-  if (alu_op == alu_op_rotl) {
+  auto op = node->get_op();
+  if (op == alu_rotl) {
     this->print_rotate(node, false);
   } else
-  if (alu_op == alu_op_rotr) {
+  if (op == alu_rotr) {
     this->print_rotate(node, true);
   } else
-  if (alu_op == alu_op_mux) {
+  if (op == alu_mux) {
     this->print_mux(node);
   } else
-  if (CH_ALUOP_DATA(alu_op) == alu_integer) {
-    if (CH_ALUOP_ARY(alu_op) == alu_binary) {
+  if (CH_ALUOP_DATA(op) == alu_integer) {
+    if (CH_ALUOP_ARY(op) == alu_binary) {
       out_ << "assign ";
       this->print_name(node);
       out_ << " = ";
       this->print_name(node->get_src(0).get_impl());
       out_ << " ";
-      this->print_operator(alu_op);
+      this->print_operator(op);
       out_ << " ";
       this->print_name(node->get_src(1).get_impl());
       out_ << ";" << std::endl;
     } else {
-      assert(CH_ALUOP_ARY(alu_op) == alu_unary);
+      assert(CH_ALUOP_ARY(op) == alu_unary);
       out_ << "assign ";
       this->print_name(node);
       out_ << " = ";
-      this->print_operator(alu_op);
+      this->print_operator(op);
       this->print_name(node->get_src(0).get_impl());
       out_ << ";" << std::endl;
     }
   } else {
-    if (alu_op == alu_op_fmult) {
+    if (op == alu_fmult) {
       this->print_fmult(node);
     } else
-    if (alu_op == alu_op_fadd) {
+    if (op == alu_fadd) {
       this->print_fadd(node);
     } else {
       CH_TODO();
@@ -488,36 +488,36 @@ void verilogwriter::print_mem(memimpl* node) {
   }
 }
 
-void verilogwriter::print_operator(ch_alu_op alu_op) {
-  switch (alu_op) {
-  case alu_op_inv: out_ << "~"; break;
-  case alu_op_and: out_ << "&"; break;
-  case alu_op_or:  out_ << "|"; break;
-  case alu_op_xor: out_ << "^"; break;
-  case alu_op_nand: out_ << "~&"; break;
-  case alu_op_nor:  out_ << "~|"; break;
-  case alu_op_xnor: out_ << "~^"; break;
-  case alu_op_andr: out_ << "&"; break;
-  case alu_op_orr:  out_ << "|"; break;
-  case alu_op_xorr: out_ << "^"; break;
-  case alu_op_nandr: out_ << "~&"; break;
-  case alu_op_norr:  out_ << "~|"; break;
-  case alu_op_xnorr: out_ << "~^"; break;
-  case alu_op_neg: out_ << "-"; break;
-  case alu_op_add: out_ << "+"; break;
-  case alu_op_sub: out_ << "-"; break;
-  case alu_op_mult:out_ << "*"; break;
-  case alu_op_div: out_ << "/"; break;
-  case alu_op_mod: out_ << "%"; break;
-  case alu_op_sll: out_ << "<<"; break;
-  case alu_op_srl: out_ << ">>"; break;
-  case alu_op_sra: out_ << ">>>"; break;
-  case alu_op_eq:  out_ << "=="; break;
-  case alu_op_ne:  out_ << "!="; break;
-  case alu_op_lt:  out_ << "<"; break;
-  case alu_op_gt:  out_ << ">"; break;
-  case alu_op_le:  out_ << "<="; break;
-  case alu_op_ge:  out_ << ">="; break;
+void verilogwriter::print_operator(ch_alu_op op) {
+  switch (op) {
+  case alu_inv: out_ << "~"; break;
+  case alu_and: out_ << "&"; break;
+  case alu_or:  out_ << "|"; break;
+  case alu_xor: out_ << "^"; break;
+  case alu_nand: out_ << "~&"; break;
+  case alu_nor:  out_ << "~|"; break;
+  case alu_xnor: out_ << "~^"; break;
+  case alu_andr: out_ << "&"; break;
+  case alu_orr:  out_ << "|"; break;
+  case alu_xorr: out_ << "^"; break;
+  case alu_nandr: out_ << "~&"; break;
+  case alu_norr:  out_ << "~|"; break;
+  case alu_xnorr: out_ << "~^"; break;
+  case alu_neg: out_ << "-"; break;
+  case alu_add: out_ << "+"; break;
+  case alu_sub: out_ << "-"; break;
+  case alu_mult:out_ << "*"; break;
+  case alu_div: out_ << "/"; break;
+  case alu_mod: out_ << "%"; break;
+  case alu_sll: out_ << "<<"; break;
+  case alu_srl: out_ << ">>"; break;
+  case alu_sra: out_ << ">>>"; break;
+  case alu_eq:  out_ << "=="; break;
+  case alu_ne:  out_ << "!="; break;
+  case alu_lt:  out_ << "<"; break;
+  case alu_gt:  out_ << ">"; break;
+  case alu_le:  out_ << "<="; break;
+  case alu_ge:  out_ << ">="; break;
   default:
     assert(false);
   }
@@ -529,33 +529,33 @@ void verilogwriter::print_name(lnodeimpl* node) {
     out_ << node->get_id();
     out_ << "__";
   };
-  auto op = node->get_op();
-  switch (op) {
-  case op_clk:
-  case op_reset:
-  case op_input:
-  case op_output:
+  auto type = node->get_type();
+  switch (type) {
+  case type_clk:
+  case type_reset:
+  case type_input:
+  case type_output:
     out_ << dynamic_cast<ioimpl*>(node)->get_name();
     break;
-  case op_proxy:
+  case type_proxy:
     print_basic_name('w');
     break;
-  case op_lit:
+  case type_lit:
     print_basic_name('l');
     break;
-  case op_select:
+  case type_select:
     print_basic_name('s');
     break;
-  case op_alu:
+  case type_alu:
     print_basic_name('a');
     break;
-  case op_reg:
+  case type_reg:
     print_basic_name('r');
     break;
-  case op_mem:
+  case type_mem:
     print_basic_name('m');
     break;
-  case op_memport:
+  case type_memport:
     out_ << "__m";
     out_ << dynamic_cast<memportimpl*>(node)->get_mem().get_id();
     out_ << "__[";
@@ -568,17 +568,17 @@ void verilogwriter::print_name(lnodeimpl* node) {
 }
 
 void verilogwriter::print_type(lnodeimpl* node) {
-  auto op = node->get_op();
-  switch (op) {
-  case op_reg:
-  case op_mem:
+  auto type = node->get_type();
+  switch (type) {
+  case type_reg:
+  case type_mem:
     out_ << "reg";
     break;
   default:
     out_ << "wire";
     break;
   }
-  if (op == op_mem) {
+  if (type == type_mem) {
     auto data_width = dynamic_cast<memimpl*>(node)->get_data_width();
     if (data_width > 1) {
       out_ << "[" << (data_width - 1) << ":0]";

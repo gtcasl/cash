@@ -31,6 +31,7 @@ src/vcdtracerimpl.h
 src/verilog.v
 src/verilogwriter.cpp
 src/verilogwriter.h
+test/basic.cpp
 test/common.cpp
 env.sh
 examples/adder.cpp

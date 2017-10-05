@@ -26,7 +26,9 @@ using ch_tick = uint64_t;
 
 using node_map_t = std::unordered_map<uint32_t, std::vector<const lnode*>>;
 
-using live_nodes_t  =std::unordered_set<lnodeimpl*>;
+using live_nodes_t = std::unordered_set<lnodeimpl*>;
+
+using tap_counts_t = std::unordered_map<std::string, unsigned>;
 
 class context : public refcounted {
 public:
@@ -227,22 +229,22 @@ protected:
   inputimpl*  default_reset_;
   tickimpl*   tick_;
   
-  std::list<lnodeimpl*>   nodes_;
-  std::list<undefimpl*>   undefs_;
-  std::list<proxyimpl*>   proxies_;
-  std::list<inputimpl*>   inputs_;
-  std::list<outputimpl*>  outputs_;
-  std::list<tapimpl*>     taps_;
-  std::list<ioimpl*>      gtaps_;
-  std::list<litimpl*>     literals_;
-  std::list<cdomain*>     cdomains_;  
-  cond_upds_t             cond_upds_;
-  cond_blocks_t           cond_blocks_;
-  cond_branches_t         cond_branches_;
-  std::stack<lnode>       user_clks_;
-  std::stack<lnode>       user_resets_;
-  std::unordered_map<std::string, unsigned> dup_taps_;
-  node_map_t io_map_;
+  std::list<lnodeimpl*>  nodes_;
+  std::list<undefimpl*>  undefs_;
+  std::list<proxyimpl*>  proxies_;
+  std::list<inputimpl*>  inputs_;
+  std::list<outputimpl*> outputs_;
+  std::list<tapimpl*>    taps_;
+  std::list<ioimpl*>     gtaps_;
+  std::list<litimpl*>    literals_;
+  std::list<cdomain*>    cdomains_;
+  cond_upds_t            cond_upds_;
+  cond_blocks_t          cond_blocks_;
+  cond_branches_t        cond_branches_;
+  std::stack<lnode>      user_clks_;
+  std::stack<lnode>      user_resets_;
+  tap_counts_t           dup_taps_;
+  node_map_t             io_map_;
 
   friend class context_manager;
 };

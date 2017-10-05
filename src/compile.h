@@ -5,9 +5,9 @@
 namespace ch {
 namespace internal {
 
-class ch_compiler {
+class compiler {
 public:  
-  ch_compiler(context* ctx);
+  compiler(context* ctx);
   
   void run();
   
@@ -20,6 +20,8 @@ protected:
   void syntax_check();
 
   size_t remove_dead_nodes(const live_nodes_t& live_nodes);
+
+  void build_node_map();
 
   node_map_t node_map_;
 

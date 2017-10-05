@@ -122,15 +122,14 @@ protected:
 
 class nodelist {
 public:
-  nodelist(uint32_t capacity) : capacity_(capacity), size_(0) {}
+  nodelist(uint32_t capacity, bool movable)
+    : capacity_(capacity)
+    , size_(0)
+    , movable_(movable)
+  {}
 
-  nodelist(const lnode& src, uint32_t offset, uint32_t length)
-    : nodelist(length) {
-    this->push(src, offset, length);
-  }
-
-  uint32_t get_capacity() const {
-    return capacity_;
+  bool is_movable() const {
+    return movable_;
   }
 
   uint32_t get_size() const {
@@ -150,6 +149,10 @@ public:
     slices_.emplace_back(slice_t{src, offset, length});
     size_ += length;
     assert(size_ <= capacity_);
+  }
+
+  void push(const lnode& src, uint32_t offset = 0) {
+    this->push(src, offset, capacity_);
   }
 
   auto begin() const {
@@ -172,6 +175,7 @@ private:
   std::vector<slice_t> slices_;
   uint32_t capacity_;
   uint32_t size_;
+  bool movable_;
 };
 
 std::ostream& operator<<(std::ostream& out, const lnode& node);

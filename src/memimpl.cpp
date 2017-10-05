@@ -8,7 +8,7 @@ memimpl::memimpl(context* ctx,
                  uint32_t data_width,
                  uint32_t addr_width,
                  bool write_enable)
-  : ioimpl(op_mem, ctx, data_width << addr_width)
+  : ioimpl(type_mem, ctx, data_width << addr_width)
   , data_width_(data_width)
   , addr_width_(addr_width)
   , wr_ports_offset_(0)
@@ -63,10 +63,10 @@ lnode& memimpl::read(const lnode& addr) {
   return this->get_port(addr, false);
 }
 
-void memimpl::write(const lnode& addr, const lnode& data) {
+void memimpl::write(const lnode& addr, const nodelist& in) {
   auto& port = this->get_port(addr, true);
   auto impl = dynamic_cast<memportimpl*>(port.get_impl());
-  impl->write(data);
+  impl->write(in);
 }
 
 lnode& memimpl::get_port(const lnode& addr, bool writable) {
@@ -111,7 +111,7 @@ const bitvector& memimpl::eval(ch_tick t) {
 
 void memimpl::print(std::ostream& out, uint32_t level) const {
   CH_UNUSED(level);
-  out << "#" << id_ << " <- " << this->get_op() << value_.get_size();
+  out << "#" << id_ << " <- " << this->get_type() << value_.get_size();
   uint32_t n = srcs_.size();
   if (n > 0) {
     out << "(";
@@ -127,7 +127,7 @@ void memimpl::print(std::ostream& out, uint32_t level) const {
 ///////////////////////////////////////////////////////////////////////////////
 
 memportimpl::memportimpl(memimpl* mem, const lnode& addr, bool writable)
-  : ioimpl(op_memport, mem->get_ctx(), mem->data_width_)
+  : ioimpl(type_memport, mem->get_ctx(), mem->data_width_)
   , a_next_(0)
   , mem_idx_(-1)
   , addr_idx_(-1)
@@ -141,20 +141,13 @@ memportimpl::memportimpl(memimpl* mem, const lnode& addr, bool writable)
   srcs_.emplace_back(addr);
 }
 
-void memportimpl::write(const lnode& data) {  
+void memportimpl::write(const nodelist& in) {
   assert(writable_);
   if (wdata_idx_ == -1) {
     wdata_idx_ = srcs_.size();
-    // use explicit assignment to force conditionals resolution
-    if (ctx_->conditional_enabled(this)) {
-      srcs_.emplace_back(this);
-      ctx_->conditional_assign(srcs_[wdata_idx_], data, 0, data.get_size());
-    } else {
-      srcs_.emplace_back(data);
-    }
-  } else {
-    srcs_[wdata_idx_] = data;
+    srcs_.emplace_back(this);
   }
+  srcs_[wdata_idx_].write_data(0, in, 0, in.get_size(), this->get_size());
 }
 
 void memportimpl::tick(ch_tick t) {
@@ -216,9 +209,9 @@ void memory::write(const lnode& addr,
                    size_t length) {
   assert(0 == dst_offset);
   if (0 == src_offset) {
-    impl_->write(addr, lnode(in));
+    impl_->write(addr, in);
   } else {
-    nodelist in2(length);
+    nodelist in2(length, true);
     for (const auto& slice : in) {
       if (src_offset < slice.length) {
         uint32_t len = std::min(slice.length - src_offset, length);
@@ -230,6 +223,6 @@ void memory::write(const lnode& addr,
       }
       src_offset -= slice.length;
     }
-    impl_->write(addr, lnode(in2));
+    impl_->write(addr, in2);
   }
 }

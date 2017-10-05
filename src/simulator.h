@@ -11,7 +11,7 @@ class ch_simulator {
 public:  
   
   template <typename... Devices>
-  ch_simulator(const ch_device& device, const Devices&... more)
+  ch_simulator(const device& device, const Devices&... more)
     : ch_simulator({&device, &more...})
   {}
 
@@ -23,7 +23,7 @@ public:
 
   ch_simulator& operator=(const ch_simulator& simulator);
   
-  void add_device(const ch_device& device);
+  void add_device(const device& device);
 
   ch_tick step(ch_tick t);
   
@@ -37,7 +37,7 @@ public:
 
 protected:
 
-  ch_simulator(const std::initializer_list<const ch_device*>& devices);
+  ch_simulator(const std::initializer_list<const device*>& devices);
 
   ch_simulator(simulatorimpl* impl);
 

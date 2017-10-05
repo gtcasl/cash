@@ -9,7 +9,7 @@ regimpl::regimpl(cdomain* cd,
                  const lnode& next,
                  const lnode& init,
                  const lnode& reset)
-  : lnodeimpl(op_reg, next.get_ctx(), next.get_size())
+  : lnodeimpl(type_reg, next.get_ctx(), next.get_size())
   , cd_(cd)
   , next_idx_(-1)
   , init_idx_(-1)
@@ -34,7 +34,7 @@ regimpl::regimpl(cdomain* cd,
                  const lnode& init,
                  const lnode& reset,
                  const lnode& enable)
-  : lnodeimpl(op_reg, next.get_ctx(), next.get_size())
+  : lnodeimpl(type_reg, next.get_ctx(), next.get_size())
   , cd_(cd)
   , next_idx_(-1)
   , init_idx_(-1)
@@ -107,7 +107,7 @@ const bitvector& regimpl::eval(ch_tick t) {
 ///////////////////////////////////////////////////////////////////////////////
 
 const ch_bit<1> ch::internal::ch_getClock() {
-  return make_bit<1>(ctx_curr()->get_clk());
+  return make_type<ch_bit<1>>(ctx_curr()->get_clk());
 }
 
 void ch::internal::pushClock(const lnode& clk) {
@@ -119,7 +119,7 @@ void ch::internal::ch_popClock() {
 }
 
 const ch_bit<1> ch::internal::ch_getReset() {
-  return make_bit<1>(ctx_curr()->get_reset());
+  return make_type<ch_bit<1>>(ctx_curr()->get_reset());
 }
 
 void ch::internal::pushReset(const lnode& reset) {
