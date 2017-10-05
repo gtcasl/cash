@@ -116,7 +116,6 @@ public:
   void remove_cdomain(cdomain* cd);
 
   void register_tap(const std::string& name, const lnode& lnode);
-  lnodeimpl* get_tap(const std::string& name, uint32_t size);
 
   //--
 

@@ -3,6 +3,7 @@
 #include "regimpl.h"
 #include "aluimpl.h"
 #include "proxyimpl.h"
+#include "ioimpl.h"
 #include "context.h"
 #include "mem.h"
 
@@ -28,6 +29,15 @@ void compiler::run() {
   int dump_ast_level = platform::self().get_dump_ast();
   if (dump_ast_level) {
     ctx_->dump_ast(std::cerr, dump_ast_level);
+  }
+
+  // dump tap's CFG
+  int dump_cfg_level = platform::self().get_dump_cfg();
+  if (dump_cfg_level) {
+    for (auto node : ctx_->get_taps()) {
+      std::cout << "CFG dump for tap variable: " << node->get_name() << std::endl;
+      ctx_->dump_cfg(node, std::cout, dump_cfg_level);
+    }
   }
 #endif
   

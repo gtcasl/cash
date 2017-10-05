@@ -421,31 +421,13 @@ void ch_print(const std::string& format, const Args& ...args) {
   createPrintNode(format, {get_lnode(args)...});
 }
 
-template <typename... Ts>
-struct return_type {
-  using type = std::tuple<typename Ts::value_type...>;
-};
-
-template <typename U>
-struct return_type<U> {
-  using type = typename U::value_type;
-};
-
-template <typename T,
-          CH_REQUIRES(is_bit_convertible<T>::value)>
-const typename T::value_type make_return(const T& arg) {
-  return arg;
-}
-
-template <typename T0, typename... Ts,
-          CH_REQUIRES(is_bit_convertible<T0>::value),
-          CH_REQUIRES(are_bit_convertible<Ts...>::value)>
-const auto make_return(const T0& arg0, const Ts&... args) {
-  return typename std::tuple<typename T0::value_type, typename Ts::value_type...>(arg0, args...);
-}
-
 }
 }
 
-#define CH_RET(...) return ch::internal::make_return(__VA_ARGS__)
 #define CH_TIE(...) std::forward_as_tuple(__VA_ARGS__)
+
+#ifndef NDEBUG
+  #define CH_TAP(x) ch_tap(#x, x)
+#else
+  #define CH_TAP(x)
+#endif

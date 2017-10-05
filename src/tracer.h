@@ -24,11 +24,6 @@ public:
 
   ~ch_tracer();
 
-  template <unsigned N>
-  void add_trace(const std::string& name, const ch_bitbase<N>& value) {
-    this->add_trace(name, get_lnode(value));
-  }
-
 protected:
 
   ch_tracer(std::ostream& out, const std::initializer_list<const device*>& devices);
@@ -36,27 +31,8 @@ protected:
   ch_tracer(const std::string& file, const std::initializer_list<const device*>& devices);
 
   ch_tracer(simulatorimpl* impl);
-
-  void add_trace(const std::string& name, const lnode& value);
 };
 
 }
 }
-
-#define CH_MAKE_TRACE(i, x) \
-  __tracer.add_trace(CH_STRINGIZE(x), x)
-
-#define CH_MAKE_TRACE_SEP() ;
-
-#define CH_TRACE(x, ...) \
-  do { \
-    ch::internal::ch_tracer& __tracer = x; \
-    CH_FOR_EACH(CH_MAKE_TRACE, CH_MAKE_TRACE_SEP, __VA_ARGS__); \
-  } while (0)
-
-#ifndef NDEBUG
-  #define CH_TAP(x) ch_tap(#x, x)
-#else
-  #define CH_TAP(x)
-#endif
 

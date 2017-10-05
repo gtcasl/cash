@@ -7,24 +7,13 @@ namespace internal {
 
 class tracerimpl : public simulatorimpl {
 public:
-  tracerimpl(std::ostream& out, const std::initializer_list<const device*>& devices)
-    : simulatorimpl(devices)
-    , file_(nullptr)
-    , out_(out)
-  {}
-
-  tracerimpl(const std::string& file, const std::initializer_list<const device*>& devices)
-    : simulatorimpl(devices)
-    , file_(new std::ofstream(file))
-    , out_(*file_)
-  {}
+  tracerimpl(std::ostream& out, const std::initializer_list<const device*>& devices);
+  tracerimpl(const std::string& file, const std::initializer_list<const device*>& devices);
 
   ~tracerimpl() {
     if (file_)
       delete file_;
   }
-
-  void add_trace(const std::string& name, const lnode& value);
 
   void tick(ch_tick t) override;
 
@@ -32,13 +21,15 @@ protected:
 
   void ensureInitialize() override;
 
+  void add_trace(const std::string& name, ioimpl* value);
+
   struct tap_t {
-    tap_t(const std::string& p_name, const lnode& p_node)
-      : name(p_name)
-      , node(p_node)
+    tap_t(const std::string& _name, ioimpl* _node)
+      : name(_name)
+      , node(_node)
     {}
     std::string name;
-    lnode node;
+    ioimpl* node;
   };
 
   tap_counts_t dup_taps_;

@@ -537,16 +537,6 @@ void context::register_tap(const std::string& name, const lnode& node) {
   new tapimpl(node, full_name);
 }
 
-lnodeimpl* context::get_tap(const std::string& name, uint32_t size) {
-  for (tapimpl* tap : taps_) {
-    if (tap->get_name() == name) {
-      CH_CHECK(tap->get_size() == size, "tap bus size mismatch: received %u, expected %u", size, tap->get_size());
-      return tap;
-    }
-  } 
-  CH_ABORT("couldn't find tab '%s'", name.c_str());
-}
-
 void context::register_io_map(const nodelist& data) {
   for (auto& slice : data) {
     io_map_[slice.src.get_id()].push_back(&slice.src);

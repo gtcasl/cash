@@ -4,6 +4,18 @@
 
 using namespace ch::internal;
 
+tracerimpl::tracerimpl(std::ostream& out, const std::initializer_list<const device*>& devices)
+  : simulatorimpl(devices)
+  , file_(nullptr)
+  , out_(out)
+{}
+
+tracerimpl::tracerimpl(const std::string& file, const std::initializer_list<const device*>& devices)
+  : simulatorimpl(devices)
+  , file_(new std::ofstream(file))
+  , out_(*file_)
+{}
+
 void tracerimpl::ensureInitialize() {
   // call parent ensureInitialize()
   simulatorimpl::ensureInitialize();
@@ -13,6 +25,7 @@ void tracerimpl::ensureInitialize() {
 
   // register context taps
   for (auto ctx : contexts_) {
+    // get clk
     if (!clk_found) {
       auto clk = ctx->get_default_clk();
       if (clk) {
@@ -21,6 +34,7 @@ void tracerimpl::ensureInitialize() {
       }
     }
 
+    // get reset
     if (!reset_found) {
       auto reset = ctx->get_default_reset();
       if (reset) {
@@ -29,20 +43,24 @@ void tracerimpl::ensureInitialize() {
       }
     }
 
-    for (tapimpl* tap : ctx->get_taps()) {
-      this->add_trace(tap->get_name(), tap->get_target());
-    #ifndef NDEBUG
-      int dump_cfg_level = platform::self().get_dump_cfg();
-      if (dump_cfg_level) {
-        std::cout << "CFG dump for tap variable: " << tap->get_name() << std::endl;
-        ctx->dump_cfg(tap, std::cout, dump_cfg_level);
-      }
-    #endif
+    // get inputs
+    for (auto node : ctx->get_inputs()) {
+      this->add_trace(node->get_name(), node);
+    }
+
+    // get outputs
+    for (auto node : ctx->get_outputs()) {
+      this->add_trace(node->get_name(), node);
+    }
+
+    // get taps
+    for (auto node : ctx->get_taps()) {
+      this->add_trace(node->get_name(), node);
     }
   }
 }
 
-void tracerimpl::add_trace(const std::string& name, const lnode& value) {
+void tracerimpl::add_trace(const std::string& name, ioimpl* value) {
   CH_CHECK(!initialized_, "new tap not allowed after simulation has started");
 
   // resolve duplicate names
@@ -86,7 +104,3 @@ ch_tracer::ch_tracer(const std::string& file,
 ch_tracer::ch_tracer(simulatorimpl* impl) : ch_simulator(impl) {}
 
 ch_tracer::~ch_tracer() {}
-
-void ch_tracer::add_trace(const std::string& name, const lnode& value) {
-  dynamic_cast<tracerimpl*>(impl_)->add_trace(name, value);
-}
