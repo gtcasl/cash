@@ -11,17 +11,17 @@ public:
     : lnodeimpl(type, ctx, size)
   {}
 
-  ioimpl(lnodetype type, context* ctx, uint32_t size, const std::string& name)
+  ioimpl(lnodetype type, context* ctx, uint32_t size, const char* name)
     : lnodeimpl(type, ctx, size)
     , name_(name)
   {}
 
-  void set_name(const std::string& name) {
+  void set_name(const char* name) {
     name_ = name;
   }
 
-  const std::string& get_name() const {
-    return name_;
+  const char* get_name() const {
+    return name_.c_str();
   }
 
 protected:
@@ -30,17 +30,14 @@ protected:
 
 class inputimpl : public ioimpl {
 public:
-  inputimpl(lnodetype type, context* ctx, uint32_t size, const std::string& name);
+  inputimpl(lnodetype type, context* ctx, uint32_t size, const char* name);
 
-  inputimpl(context* ctx, uint32_t size, const std::string& name)
+  inputimpl(context* ctx, uint32_t size, const char* name)
     : inputimpl(type_input, ctx, size, name)
   {}
 
-  void set_input(const lnode& input) {
-    assert(ctx_ != srcs_[0].get_ctx());
-    srcs_[0] = input;
-  }
-  
+  void bind(const lnode& input);
+
   const lnode& get_input() const {
     return srcs_[0];
   }
@@ -55,19 +52,28 @@ protected:
 
 class outputimpl : public ioimpl {
 public:
-  outputimpl(const lnode& src, const std::string& name);
+  outputimpl(const lnode& src, const char* name);
+
+  void bind(const lnode& output) {
+    output_ = output;
+  }
+
+  const lnode& get_output() const {
+    return output_;
+  }
   
   const bitvector& eval(ch_tick t) override;
   
   void print(std::ostream& out, uint32_t level) const override;
   
 protected:
+  lnode output_;
   ch_tick tick_;
 };
 
 class tapimpl : public ioimpl {
 public:
-  tapimpl(const lnode& src, const std::string& name);
+  tapimpl(const lnode& src, const char* name);
 
   const lnode& get_target() const {
     return srcs_[0];

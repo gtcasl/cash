@@ -42,36 +42,31 @@ struct is_equality_comparable : std::false_type {};
 
 template<typename A, typename B>
 struct is_equality_comparable<A, B,
-    typename std::enable_if<
-        true,
-        decltype(std::declval<A&>() == std::declval<B&>(), (void)0)
-        >::type
-    > : std::true_type {};
+    std::enable_if_t<
+      true,
+      decltype(std::declval<A&>() == std::declval<B&>(), (void)0)
+    >> : std::true_type {};
 
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T>
-struct identity_type {
-  using type = T;
-};
+using identity_t = T;
 
 template <typename...>
-using void_type = void;
+using void_t = void;
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename Function>
-struct function_traits : public function_traits<decltype(&Function::operator())> {};
+template <typename T>
+struct to_function : public to_function<decltype(&T::operator())> {};
 
 template <typename Class, typename Ret, typename... Args>
-struct function_traits<Ret(Class::*)(Args...) const> {
+struct to_function<Ret(Class::*)(Args...) const> {
   using type = const std::function<Ret(Args...)>;
 };
 
-template <typename Function>
-typename function_traits<Function>::type to_function(const Function& func) {
-  return static_cast<typename function_traits<Function>::type>(func);
-}
+template <typename T>
+using to_function_t = typename to_function<T>::type;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -266,6 +261,30 @@ protected:
 
 using auto_indent = basic_auto_indent<char>;
 
+template <class CharT, class Traits = std::char_traits<CharT>>
+class basic_auto_separator {
+public:
+  basic_auto_separator(const std::basic_string<CharT, Traits>& sep)
+    : sep_(sep)
+    , enabled_(false)
+  {}
+  const auto& data() const {
+    const auto& ret = enabled_ ? sep_ : empty_;
+    enabled_ = true;
+    return ret;
+  }
+private:
+  std::basic_string<CharT, Traits> sep_;
+  std::basic_string<CharT, Traits> empty_;
+  mutable bool enabled_;
+
+  friend std::ostream& operator<<(std::ostream& out, const basic_auto_separator& sep) {
+    return out << sep.data();
+  }
+};
+
+using auto_separator = basic_auto_separator<char>;
+
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename... Args>
@@ -353,7 +372,7 @@ constexpr uint32_t rotr(uint32_t value, uint32_t shift, uint32_t width) {
     } \
   } while (false)
 
-#define CH_REQUIRES(...) typename = typename std::enable_if<(__VA_ARGS__)>::type
+#define CH_REQUIRES(...) typename = std::enable_if_t<(__VA_ARGS__)>
 
 #define CH_UNUSED(...) ch::internal::unused(__VA_ARGS__)
 

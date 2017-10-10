@@ -9,7 +9,7 @@ PROJECT = libcash
 SRCS = utils.cpp platform.cpp bitvector.cpp \
        lnodeimpl.cpp proxyimpl.cpp litimpl.cpp selectimpl.cpp regimpl.cpp \
        aluimpl.cpp ioimpl.cpp memimpl.cpp assertimpl.cpp tickimpl.cpp printimpl.cpp \
-       cdomain.cpp context.cpp compile.cpp deviceimpl.cpp \
+       cdomain.cpp context.cpp compile.cpp moduleimpl.cpp \
        simulatorimpl.cpp tracerimpl.cpp vcdtracerimpl.cpp \
        verilogwriter.cpp \
        cash.cpp

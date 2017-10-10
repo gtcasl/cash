@@ -4,7 +4,7 @@
 
 using namespace ch::internal;
 
-assertimpl::assertimpl(const lnode& pred, const std::string& msg)
+assertimpl::assertimpl(const lnode& pred, const char* msg)
   : ioimpl(type_assert, pred.get_ctx(), 0)
   , msg_(msg)
   , predicated_(false) {
@@ -26,6 +26,6 @@ const bitvector& assertimpl::eval(ch_tick t) {
   return value_;
 }
 
-void ch::internal::createAssertNode(const lnode& pred, const std::string& msg) {
+void ch::internal::createAssertNode(const lnode& pred, const char* msg) {
   new assertimpl(pred, msg);
 }

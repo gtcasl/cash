@@ -16,9 +16,11 @@
 #include "real.h"
 #include "seq.h"
 #include "port.h"
-#include "device.h"
+#include "module.h"
 #include "simulator.h"
 #include "vcdtracer.h"
+#include "verilog.h"
+#include "misc.h"
 
 namespace ch {
 
@@ -52,6 +54,8 @@ namespace core {
   template <unsigned N> using ch_bitbase = ch::internal::ch_bitbase<N>;
 
   template <typename T> using ch_seq = ch::internal::ch_seq<T>;
+
+  template <typename T> using ch_flip_t = typename T::flip_type;
 
   using ch_float = ch::internal::ch_real;
 
@@ -200,7 +204,6 @@ namespace sim {
   // objects
   //
 
-  using ch_device    = ch::internal::device;
   using ch_simulator = ch::internal::ch_simulator;
   using ch_tracer    = ch::internal::ch_tracer;
   using ch_vcdtracer = ch::internal::ch_vcdtracer;
@@ -249,5 +252,5 @@ inline namespace literals {
 #define __io       CH_IO
 #define __module   CH_MODULE
 
-#define __ret      CH_RET
 #define __tie      CH_TIE
+#define __flip     CH_FLIP

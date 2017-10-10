@@ -35,7 +35,7 @@ bitvector::bitvector(uint32_t size, const std::initializer_list<uint32_t>& value
   this->operator =(value);  
 }
 
-bitvector::bitvector(uint32_t size, const std::string& value) : words_(nullptr), size_(0) {
+bitvector::bitvector(uint32_t size, const char* value) : words_(nullptr), size_(0) {
   this->resize(size, 0x0, false, false);
   this->operator =(value);
 }
@@ -114,11 +114,11 @@ static uint32_t chr2int(char x, int base) {
   CH_ABORT("invalid ch_literal value");
 }
 
-bitvector& bitvector::operator=(const std::string& value) {
+bitvector& bitvector::operator=(const char* value) {
   int base = 0;
   int start = 0;
 
-  size_t len = value.length();
+  size_t len = std::strlen(value);
   
   switch (value[len-1]) {
   case 'b':

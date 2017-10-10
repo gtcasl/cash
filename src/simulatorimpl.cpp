@@ -1,6 +1,6 @@
 #include "simulatorimpl.h"
 #include "simulator.h"
-#include "deviceimpl.h"
+#include "moduleimpl.h"
 #include "litimpl.h"
 #include "ioimpl.h"
 
@@ -20,12 +20,11 @@ void clock_driver::flip() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-simulatorimpl::simulatorimpl(const std::initializer_list<const device*>& devices)
+simulatorimpl::simulatorimpl(const std::initializer_list<context*>& contexts)
   : initialized_(false)
   , clk_(true)
   , reset_(false) {
-  for (auto device : devices) {
-    context* ctx = get_ctx(*device);
+  for (auto ctx : contexts) {
     auto ret = contexts_.emplace(ctx);
     if (ret.second)
       ctx->acquire();
@@ -38,8 +37,8 @@ simulatorimpl::~simulatorimpl() {
   }
 }
 
-void simulatorimpl::add_device(const device& device) {
-  context* ctx = get_ctx(device);
+void simulatorimpl::add_module(const module& module) {
+  context* ctx = get_ctx(module);
   auto ret = contexts_.emplace(ctx);
   if (ret.second) {
     ctx->acquire();
@@ -131,8 +130,8 @@ ch_tick simulatorimpl::step(ch_tick t) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-ch_simulator::ch_simulator(const std::initializer_list<const device*>& devices) {
-  impl_ = new simulatorimpl(devices);
+ch_simulator::ch_simulator(const std::initializer_list<context*>& contexts) {
+  impl_ = new simulatorimpl(contexts);
   impl_->acquire();
 }
 
@@ -160,8 +159,8 @@ ch_simulator& ch_simulator::operator=(const ch_simulator& simulator) {
   return *this;
 }
 
-void ch_simulator::add_device(const device& device) {
-  impl_->add_device(device);
+void ch_simulator::add_module(const module& module) {
+  impl_->add_module(module);
 }
 
 void ch_simulator::tick(ch_tick t) { 

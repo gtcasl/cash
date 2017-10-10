@@ -12,7 +12,7 @@ struct ch_literal : public bitvector {
   static constexpr unsigned bitcount = N;
   using value_type = ch_bit<N>;
   constexpr ch_literal() : bitvector(N) {}
-  constexpr ch_literal(const std::string& value) : bitvector(N, value) {}
+  constexpr ch_literal(const char* value) : bitvector(N, value) {}
 };
 
 template <typename T>
@@ -37,13 +37,13 @@ struct is_ch_scalar : std::integral_constant<bool,
 template <typename T>
 class has_bitcount {
 private:
-    template <typename U, typename = typename std::enable_if<U::bitcount>::type>
+    template <typename U, typename = std::enable_if_t<U::bitcount>>
     static std::true_type check(int);
 
     template <typename>
     static std::false_type check(...);
 public:
-    static const bool value = decltype(check<typename std::decay<T>::type>(0))::value;
+    static const bool value = decltype(check<std::decay_t<T>>(0))::value;
 };
 
 static_assert(!has_bitcount<int>::value, ":-(");
@@ -54,14 +54,14 @@ struct non_bit_type {
 
 template <typename T0, typename T1>
 struct deduce_type_helper {
-  using D0 = typename std::decay<T0>::type;
-  using D1 = typename std::decay<T1>::type;
-  using U0 = typename std::conditional<has_bitcount<D0>::value, D0, non_bit_type>::type;
-  using U1 = typename std::conditional<has_bitcount<D1>::value, D1, non_bit_type>::type;
-  using type = typename std::conditional<
-    ((int)U0::bitcount != 0) && ((int)U1::bitcount != 0),
-    typename std::conditional<((int)U0::bitcount != (int)U1::bitcount), non_bit_type, U0>::type,
-    typename std::conditional<((int)U0::bitcount != 0), U0, U1>::type>::type;
+  using D0 = std::decay_t<T0>;
+  using D1 = std::decay_t<T1>;
+  using U0 = std::conditional_t<has_bitcount<D0>::value, D0, non_bit_type>;
+  using U1 = std::conditional_t<has_bitcount<D1>::value, D1, non_bit_type>;
+  using type = std::conditional_t<
+    (U0::bitcount != 0) && (U1::bitcount != 0),
+    std::conditional_t<(U0::bitcount != U1::bitcount), non_bit_type, U0>,
+    std::conditional_t<(U0::bitcount != 0), U0, U1>>;
 };
 
 template <typename... Ts>
@@ -70,24 +70,27 @@ struct deduce_type;
 template <typename T0, typename T1>
 struct deduce_type<T0, T1> {
   using type = typename deduce_type_helper<T0, T1>::type;
-  static constexpr unsigned bitcount = type::bitcount;
 };
 
 template <typename T0, typename T1, typename... Ts>
 struct deduce_type<T0, T1, Ts...> {
   using type = typename deduce_type<typename deduce_type_helper<T0, T1>::type, Ts...>::type;
-  static constexpr unsigned bitcount = type::bitcount;
 };
+
+template <typename... Ts>
+using deduce_type_t = typename deduce_type<Ts...>::type;
 
 template <typename T0, typename T1>
 struct deduce_first_type {
-  using D0 = typename std::decay<T0>::type;
-  using D1 = typename std::decay<T1>::type;
-  using U0 = typename std::conditional<has_bitcount<D0>::value, D0, non_bit_type>::type;
-  using U1 = typename std::conditional<has_bitcount<D1>::value, D1, non_bit_type>::type;
-  using type = typename std::conditional<((int)U0::bitcount != 0), U0, U1>::type;
-  static constexpr unsigned bitcount = type::bitcount;
+  using D0 = std::decay_t<T0>;
+  using D1 = std::decay_t<T1>;
+  using U0 = std::conditional_t<has_bitcount<D0>::value, D0, non_bit_type>;
+  using U1 = std::conditional_t<has_bitcount<D1>::value, D1, non_bit_type>;
+  using type = std::conditional_t<(U0::bitcount != 0), U0, U1>;
 };
+
+template <typename T0, typename T1>
+using deduce_first_type_t = typename deduce_first_type<T0, T1>::type;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -109,29 +112,33 @@ protected:
   virtual void write_data(size_t dst_offset, const nodelist& in, size_t src_offset, size_t length) = 0;
 
   virtual void read_bytes(uint32_t dst_offset, void* out, uint32_t out_cbsize, uint32_t src_offset, uint32_t length) const  = 0;
-  virtual void write_bytes(uint32_t dst_offset, const void* in, uint32_t in_cbsize, uint32_t src_offset, uint32_t length) const = 0;
+  virtual void write_bytes(uint32_t dst_offset, const void* in, uint32_t in_cbsize, uint32_t src_offset, uint32_t length) = 0;
 
-  friend void read_data(const typebase_itf& obj, nodelist& inout, size_t offset, size_t length);
-  friend void write_data(typebase_itf& obj, size_t dst_offset, const nodelist& in, size_t src_offset, size_t length);
+  template <typename T> friend void read_data(const T& obj, nodelist& inout, size_t offset, size_t length);
+  template <typename T> friend void write_data(T& obj, size_t dst_offset, const nodelist& in, size_t src_offset, size_t length);
 
-  friend void read_bytes(const typebase_itf& obj, uint32_t dst_offset, void* out, uint32_t out_cbsize, uint32_t src_offset, uint32_t length);
-  friend void write_bytes(const typebase_itf& obj, uint32_t dst_offset, const void* in, uint32_t in_cbsize, uint32_t src_offset, uint32_t length);
+  template <typename T> friend void read_bytes(const T& obj, uint32_t dst_offset, void* out, uint32_t out_cbsize, uint32_t src_offset, uint32_t length);
+  template <typename T> friend void write_bytes(T& obj, uint32_t dst_offset, const void* in, uint32_t in_cbsize, uint32_t src_offset, uint32_t length);
 };
 
-inline void read_data(const typebase_itf& obj, nodelist& inout, size_t offset, size_t length) {
-  obj.read_data(inout, offset, length);
+template <typename T>
+void read_data(const T& obj, nodelist& inout, size_t offset, size_t length) {
+  reinterpret_cast<const ch_bitbase<T::bitcount>&>(obj).read_data(inout, offset, length);
 }
 
-inline void write_data(typebase_itf& obj, size_t dst_offset, const nodelist& in, size_t src_offset, size_t length) {
-  obj.write_data(dst_offset, in, src_offset, length);
+template <typename T>
+void write_data(T& obj, size_t dst_offset, const nodelist& in, size_t src_offset, size_t length) {
+  reinterpret_cast<ch_bitbase<T::bitcount>&>(obj).write_data(dst_offset, in, src_offset, length);
 }
 
-inline void read_bytes(const typebase_itf& obj, uint32_t dst_offset, void* out, uint32_t out_cbsize, uint32_t src_offset, uint32_t length) {
-  obj.read_bytes(dst_offset, out, out_cbsize, src_offset, length);
+template <typename T>
+void read_bytes(const T& obj, uint32_t dst_offset, void* out, uint32_t out_cbsize, uint32_t src_offset, uint32_t length) {
+  reinterpret_cast<const ch_bitbase<T::bitcount>&>(obj).read_bytes(dst_offset, out, out_cbsize, src_offset, length);
 }
 
-inline void write_bytes(const typebase_itf& obj, uint32_t dst_offset, const void* in, uint32_t in_cbsize, uint32_t src_offset, uint32_t length) {
-  obj.write_bytes(dst_offset, in, in_cbsize, src_offset, length);
+template <typename T>
+void write_bytes(T& obj, uint32_t dst_offset, const void* in, uint32_t in_cbsize, uint32_t src_offset, uint32_t length) {
+  reinterpret_cast<ch_bitbase<T::bitcount>&>(obj).write_bytes(dst_offset, in, in_cbsize, src_offset, length);
 }
 
 template <typename T> const auto make_type(const lnode& node) {
@@ -211,7 +218,7 @@ protected:
     CH_ABORT("invalid call");
   }
 
-  void write_bytes(uint32_t dst_offset, const void* in, uint32_t in_cbsize, uint32_t src_offset, uint32_t length) const override {
+  void write_bytes(uint32_t dst_offset, const void* in, uint32_t in_cbsize, uint32_t src_offset, uint32_t length) override {
     CH_UNUSED(dst_offset, in, in_cbsize, src_offset, length);
     CH_ABORT("invalid call");
   }
@@ -284,7 +291,7 @@ protected:
     CH_ABORT("invalid call");
   }
 
-  void write_bytes(uint32_t dst_offset, const void* in, uint32_t in_cbsize, uint32_t src_offset, uint32_t length) const override {
+  void write_bytes(uint32_t dst_offset, const void* in, uint32_t in_cbsize, uint32_t src_offset, uint32_t length) override {
     CH_UNUSED(dst_offset, in, in_cbsize, src_offset, length);
     CH_ABORT("invalid call");
   }
@@ -309,23 +316,23 @@ public:
   }
 
   sliceref& operator=(const sliceref& rhs) {
-    this->assign(rhs);
+    base::assign(rhs);
     return *this;
   }
 
   sliceref& operator=(const base& rhs) {
-    this->assign(rhs);
+    base::assign(rhs);
     return *this;
   }
 
   sliceref& operator=(const ch_literal<N>& rhs) {
-    this->assign(rhs);
+    base::assign(rhs);
     return *this;
   }
 
   template <typename U, CH_REQUIRES(is_ch_scalar<U>::value)>
   sliceref& operator=(U rhs) {
-    this->assign(rhs);
+    base::assign(rhs);
     return *this;
   }
 
@@ -371,7 +378,7 @@ protected:
     ch::internal::read_bytes(container_, start_ + dst_offset, out, out_cbsize, src_offset, length);
   }
 
-  void write_bytes(uint32_t dst_offset, const void* in, uint32_t in_cbsize, uint32_t src_offset, uint32_t length) const override {
+  void write_bytes(uint32_t dst_offset, const void* in, uint32_t in_cbsize, uint32_t src_offset, uint32_t length) override {
     ch::internal::write_bytes(container_, start_ + dst_offset, in, in_cbsize, src_offset, length);
   }
 
@@ -406,23 +413,23 @@ public:
   concatref(Ts&... args) : args_(args...) {}
 
   concatref& operator=(const concatref& rhs) {
-    this->assign(rhs);
+    base::assign(rhs);
     return *this;
   }
 
   concatref& operator=(const base& rhs) {
-    this->assign(rhs);
+    base::assign(rhs);
     return *this;
   }
 
   concatref& operator=(const ch_literal<base::bitcount>& rhs) {
-    this->assign(rhs);
+    base::assign(rhs);
     return *this;
   }
 
   template <typename U, CH_REQUIRES(is_ch_scalar<U>::value)>
   concatref& operator=(U rhs) {
-    this->assign(rhs);
+    base::assign(rhs);
     return *this;
   }
 
@@ -522,13 +529,13 @@ protected:
   }
 
   template <typename U>
-  void write_bytes(uint32_t dst_offset, const void* in, uint32_t in_cbsize, uint32_t src_offset, size_t length, U& arg) const {
+  void write_bytes(uint32_t dst_offset, const void* in, uint32_t in_cbsize, uint32_t src_offset, size_t length, U& arg) {
     size_t len = std::min<size_t>(length, U::bitcount);
     ch::internal::write_bytes(arg, dst_offset, in, in_cbsize, src_offset, len);
   }
 
   template <typename U0, typename... Us>
-  void write_bytes(uint32_t dst_offset, const void* in, uint32_t in_cbsize, uint32_t src_offset, size_t length, U0& arg0, Us&... args) const {
+  void write_bytes(uint32_t dst_offset, const void* in, uint32_t in_cbsize, uint32_t src_offset, size_t length, U0& arg0, Us&... args) {
     if (dst_offset < U0::bitcount) {
       size_t len = std::min<size_t>(length, U0::bitcount);
       ch::internal::write_bytes(arg0, dst_offset, in, in_cbsize, src_offset, len);
@@ -542,11 +549,11 @@ protected:
   }
 
   template <size_t... I>
-  void write_bytes(uint32_t dst_offset, const void* in, uint32_t in_cbsize, uint32_t src_offset, size_t length, const std::tuple<Ts&...>& args, std::index_sequence<I...>) const {
+  void write_bytes(uint32_t dst_offset, const void* in, uint32_t in_cbsize, uint32_t src_offset, size_t length, const std::tuple<Ts&...>& args, std::index_sequence<I...>) {
     this->write_bytes(dst_offset, in, in_cbsize, src_offset, length, std::get<sizeof...(Ts) - 1 - I>(args)...);
   }
 
-  void write_bytes(uint32_t dst_offset, const void* in, uint32_t in_cbsize, uint32_t src_offset, uint32_t length) const override {
+  void write_bytes(uint32_t dst_offset, const void* in, uint32_t in_cbsize, uint32_t src_offset, uint32_t length) override {
     this->write_bytes(dst_offset, in, in_cbsize, src_offset, length, args_, std::index_sequence_for<Ts...>());
   }
 

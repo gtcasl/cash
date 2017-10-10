@@ -47,13 +47,13 @@ void vcdtracerimpl::tick(ch_tick t) {
 ///////////////////////////////////////////////////////////////////////////////
 
 ch_vcdtracer::ch_vcdtracer(std::ostream& out,
-                           const std::initializer_list<const device*>& devices)
-  : ch_tracer(new vcdtracerimpl(out, devices))
+                           const std::initializer_list<context*>& contexts)
+  : ch_tracer(new vcdtracerimpl(out, contexts))
 {}
 
-ch_vcdtracer::ch_vcdtracer(const std::string& file,
-                           const std::initializer_list<const device*>& devices)
-  : ch_tracer(new vcdtracerimpl(file, devices))
+ch_vcdtracer::ch_vcdtracer(const char* file,
+                           const std::initializer_list<context*>& contexts)
+  : ch_tracer(new vcdtracerimpl(file, contexts))
 {}
 
 ch_vcdtracer::~ch_vcdtracer() {}

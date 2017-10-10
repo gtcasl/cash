@@ -45,50 +45,50 @@ int main(int argc, char **argv) {
   ch_vcdtracer tracer("fifo.vcd", fifo);
   tracer.run([&](ch_tick t)->bool {
     std::cout << "t" << t
-              << ": din=" << fifo->io.din
-              << ", push=" << fifo->io.push
-              << ", pop=" << fifo->io.pop
-              << ", dout=" << fifo->io.dout
-              << ", empty=" << fifo->io.empty
-              << ", full=" << fifo->io.full << std::endl;
+              << ": din=" << fifo.io.din
+              << ", push=" << fifo.io.push
+              << ", pop=" << fifo.io.pop
+              << ", dout=" << fifo.io.dout
+              << ", empty=" << fifo.io.empty
+              << ", full=" << fifo.io.full << std::endl;
     switch (t) {
     case 0:
-      CHECK(fifo->io.empty, true);
-      CHECK(fifo->io.full, false);
-      ch_poke(fifo->io.din, 1);
-      ch_poke(fifo->io.push, 1);
+      CHECK(fifo.io.empty, true);
+      CHECK(fifo.io.full, false);
+      ch_poke(fifo.io.din, 1);
+      ch_poke(fifo.io.push, 1);
       break;      
     case 2:
-      CHECK(fifo->io.empty, false);
-      CHECK(fifo->io.full, false);
-      CHECK(fifo->io.dout, 1);
-      ch_poke(fifo->io.din, 2);
-      ch_poke(fifo->io.push, 1);
+      CHECK(fifo.io.empty, false);
+      CHECK(fifo.io.full, false);
+      CHECK(fifo.io.dout, 1);
+      ch_poke(fifo.io.din, 2);
+      ch_poke(fifo.io.push, 1);
       break;
     case 4:
-      CHECK(fifo->io.empty, false);
-      CHECK(fifo->io.full, true);
-      CHECK(fifo->io.dout, 1);
-      ch_poke(fifo->io.din, 0);
-      ch_poke(fifo->io.push, 0);
+      CHECK(fifo.io.empty, false);
+      CHECK(fifo.io.full, true);
+      CHECK(fifo.io.dout, 1);
+      ch_poke(fifo.io.din, 0);
+      ch_poke(fifo.io.push, 0);
       break;
     case 6:
-      CHECK(fifo->io.empty, false);
-      CHECK(fifo->io.full, true);
-      CHECK(fifo->io.dout, 1);
-      ch_poke(fifo->io.pop, 1);
+      CHECK(fifo.io.empty, false);
+      CHECK(fifo.io.full, true);
+      CHECK(fifo.io.dout, 1);
+      ch_poke(fifo.io.pop, 1);
       break;
     case 8:
-      CHECK(fifo->io.empty, false);
-      CHECK(fifo->io.full, false);
-      CHECK(fifo->io.dout, 2);
-      ch_poke(fifo->io.pop, 1);
+      CHECK(fifo.io.empty, false);
+      CHECK(fifo.io.full, false);
+      CHECK(fifo.io.dout, 2);
+      ch_poke(fifo.io.pop, 1);
       break;
     case 10:
-      CHECK(fifo->io.empty, true);
-      CHECK(fifo->io.full, false);
-      CHECK(fifo->io.dout, 1);
-      ch_poke(fifo->io.pop, 0);
+      CHECK(fifo.io.empty, true);
+      CHECK(fifo.io.full, false);
+      CHECK(fifo.io.dout, 1);
+      ch_poke(fifo.io.pop, 0);
       break;
     }
     return (t <= 10);

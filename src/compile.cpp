@@ -14,6 +14,8 @@ compiler::compiler(context* ctx) : ctx_(ctx) {
 }
 
 void compiler::run() {
+  DBG(2, "compiling %s ...\n", ctx_->get_name());
+
   size_t orig_num_nodes = ctx_->get_nodes().size();
   
   size_t dead_nodes = this->dead_code_elimination();
@@ -76,8 +78,10 @@ size_t compiler::dead_code_elimination() {
       lnodeimpl* src_impl = srcs[i].get_impl();
 
       // skip external sources
-      if (src_impl->get_ctx() != ctx_)
+      if (src_impl->get_ctx() != ctx_) {
+        ports_.emplace(node->get_id());
         continue;
+      }
 
       // skip unused proxy sources
       if (proxy) {
@@ -169,7 +173,8 @@ size_t compiler::remove_identity_nodes() {
   for (auto iter = ctx_->get_proxies().begin(),
        iterEnd = ctx_->get_proxies().end(); iter != iterEnd;) {
     proxyimpl* const proxy = *iter++;
-    if (proxy->is_identity()) {
+    if (proxy->is_identity()
+     && 0 == ports_.count(proxy->get_id())) {
       auto& src = proxy->get_src(0);
       auto src_impl = src.get_impl();
 

@@ -22,13 +22,13 @@ public:
     
   template <typename Func>
   if_t& elif_(const ch_bitbase<1>& pred, const Func& func) {
-    this->eval(get_lnode(pred), to_function(func));
+    this->eval(get_lnode(pred), to_function_t<Func>(func));
     return *this; 
   }
   
   template <typename Func>
   void else_(const Func& func) {
-    this->eval(to_function(func));
+    this->eval(to_function_t<Func>(func));
   }
 };
 

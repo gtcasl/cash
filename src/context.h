@@ -31,13 +31,18 @@ using live_nodes_t = std::unordered_set<lnodeimpl*>;
 using tap_counts_t = std::unordered_map<std::string, unsigned>;
 
 class context : public refcounted {
-public:
+public:  
+
+  const auto& get_children() const {
+    return children_;
+  }
+
   uint32_t get_id() const {
     return id_;
   }
 
-  const std::string& get_name() const {
-    return name_;
+  const char* get_name() const {
+    return name_.c_str();
   }
 
   const auto& get_nodes() const {
@@ -115,7 +120,7 @@ public:
   cdomain* create_cdomain(const std::vector<clock_event>& sensitivity_list);
   void remove_cdomain(cdomain* cd);
 
-  void register_tap(const std::string& name, const lnode& lnode);
+  void registerTap(const char* name, const lnode& lnode);
 
   //--
 
@@ -145,10 +150,14 @@ public:
   void dump_cfg(lnodeimpl* node, std::ostream& out, uint32_t level);
   
   void dump_stats(std::ostream& out);
+
+  //--
+
+  void add_context(context* ctx);
   
 protected:
 
-  context(const std::string& name);
+  context(const char* name);
   ~context();
 
   struct cond_upd_t {
@@ -245,10 +254,12 @@ protected:
   tap_counts_t           dup_taps_;
   node_map_t             io_map_;
 
+  std::vector<context*>  children_;
+
   friend class context_manager;
 };
 
-context* ctx_create(const std::string& name);
+context* ctx_create(const char* name);
 context* ctx_swap(context* ctx);
 context* ctx_curr();
 

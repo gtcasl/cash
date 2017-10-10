@@ -1,4 +1,5 @@
 #include "verilogwriter.h"
+#include "verilog.h"
 #include "context.h"
 #include "litimpl.h"
 #include "regimpl.h"
@@ -23,123 +24,116 @@ verilogwriter::~verilogwriter() {
 }
 
 void verilogwriter::print(context* ctx) {
-  // print header
-  this->print_header(ctx);
-
-  out_ << std::endl;
-
-  // print body
-  this->print_body(ctx);
-
-  out_ << std::endl;
-
-  // print footer
-  this->print_footer(ctx);
-}
-
-void verilogwriter::print_header(context* ctx) {
-  //
   // includes
-  //
   std::string lib_file = "verilog.v";
   auto lib_dir = std::getenv("CASH_PATH");
   if (lib_dir) {
     lib_file = std::string(lib_dir) + "/" + lib_file;
   }
   out_ << "`include \"" << lib_file << "\"" << std::endl;
-
   out_ << std::endl;
 
+  // print module
+  this->print_impl(ctx);
+}
+
+bool verilogwriter::print_impl(context* ctx) {
+  // print all child modules
+  {
+    auto_separator sep("\n");
+    int written = 0;
+    for (auto child_ctx : ctx->get_children()) {
+      out_ << sep;
+      written |= this->print_impl(child_ctx);
+    }
+    if (written)
+      out_ << std::endl;
+  }
+
+  // print header
+  this->print_header(ctx);
+
+  // print body
+  this->print_body(ctx);
+
+  // print footer
+  this->print_footer(ctx);
+
+  return true;
+}
+
+void verilogwriter::print_header(context* ctx) {
   //
   // ports declaration
   //
   out_ << "module " << ctx->get_name() << '(';
   {
     auto_indent indent(out_);
-    const char* sep = "";
+    auto_separator sep(",");
 
     auto default_clk = ctx->get_default_clk();
     if (default_clk) {
-      out_ << sep << std::endl; sep = ",";
+      out_ << sep << std::endl;
       this->print_port(default_clk);
     }
 
     auto default_reset = ctx->get_default_reset();
     if (default_reset) {
-      out_ << sep << std::endl; sep = ",";
+      out_ << sep << std::endl;
       this->print_port(default_reset);
     }
 
     for (auto input : ctx->get_inputs()) {
-      out_ << sep << std::endl; sep = ",";
+      out_ << sep << std::endl;
       this->print_port(input);
     }
 
     for (auto output : ctx->get_outputs()) {
-      out_ << sep << std::endl; sep = ",";
+      out_ << sep << std::endl;
       this->print_port(output);
     }
-
-    if (strlen(sep) != 0)
-      out_ << std::endl;
   }
-  out_ << ");" << std::endl;
-
-  out_ << std::endl;
-
-  //
-  // signals declaration
-  //
-  {
-    auto_indent indent(out_);
-
-    for (auto node : ctx->get_nodes()) {
-      this->print_decl(node);
-    }
-  }
+  out_ << std::endl << ");" << std::endl;
 }
 
 void verilogwriter::print_body(context* ctx) {
   //
-  // module logic
+  // declaration
   //
   {
     auto_indent indent(out_);
+    int written = 0;
     for (auto node : ctx->get_nodes()) {
-      auto type = node->get_type();
-      switch (type) {
-      case type_lit:
-        this->print_literal(dynamic_cast<litimpl*>(node));
-        break;
-      case type_proxy:
-        this->print_proxy(dynamic_cast<proxyimpl*>(node));
-        break;
-      case type_alu:
-        this->print_alu(dynamic_cast<aluimpl*>(node));
-        break;
-      case type_select:
-        this->print_select(dynamic_cast<selectimpl*>(node));
-        break;
-      case type_reg:
-        this->print_reg(dynamic_cast<regimpl*>(node));
-        break;
-      case type_mem:
-        this->print_mem(dynamic_cast<memimpl*>(node));
-        break;
-      case type_input:
-      case type_clk:
-      case type_reset:
-      case type_output:
-      case type_tap:
-      case type_memport:
-      case type_assert:
-      case type_print:
-      case type_tick:
-        break;
-      default:
-        assert(false);
-      }
+      written |= this->print_decl(node);
     }
+    if (written)
+      out_ << std::endl;
+  }
+
+  //
+  // child modules binding
+  //
+  {
+    auto_indent indent(out_);
+    int written = 0;
+    for (auto child_ctx : ctx->get_children()) {
+      written |= this->print_binding(child_ctx);
+    }
+    if (written)
+      out_ << std::endl;
+  }
+
+  //
+  // body logic
+  //
+  {
+    auto_indent indent(out_);
+    int written = 0;
+    for (auto node : ctx->get_nodes()) {
+      written |= this->print_logic(node);
+    }
+    if (written)
+      out_ << std::endl;
   }
 }
 
@@ -149,16 +143,41 @@ void verilogwriter::print_footer(context* ctx) {
   //
   {
     auto_indent indent(out_);
+    bool written = false;
+
     for (auto output : ctx->get_outputs()) {
       out_ << "assign ";
       this->print_name(output);
       out_ << " = ";
       this->print_name(dynamic_cast<outputimpl*>(output)->get_src(0).get_impl());
       out_ << ";" << std::endl;
+      written = true;
     }
+
+    if (written)
+      out_ << std::endl;
   }
-  out_ << std::endl;
+
   out_ << "endmodule" << std::endl;
+}
+
+bool verilogwriter::print_binding(context* ctx) {
+  auto_separator sep(", ");
+  out_ << ctx->get_name() << " __module" << ctx->get_id() << "__(";
+  for (auto input : ctx->get_inputs()) {
+    out_ << sep << input->get_name() << "(";
+    this->print_name(input->get_input().get_impl());
+    ports_.emplace(input->get_input().get_id());
+    out_ << ")";
+  }
+  for (auto output : ctx->get_outputs()) {
+    out_ << sep << output->get_name() << "(";
+    this->print_name(output->get_output().get_impl());
+    ports_.emplace(output->get_output().get_id());
+    out_ << ")";
+  }
+  out_ << ");" << std::endl;
+  return true;
 }
 
 void verilogwriter::print_port(lnodeimpl* node) {
@@ -184,7 +203,7 @@ void verilogwriter::print_port(lnodeimpl* node) {
   this->print_name(node);
 }
 
-void verilogwriter::print_decl(lnodeimpl* node) {
+bool verilogwriter::print_decl(lnodeimpl* node) {
   auto type = node->get_type();
   switch (type) {
   case type_mem:
@@ -193,8 +212,15 @@ void verilogwriter::print_decl(lnodeimpl* node) {
     this->print_name(node);
     out_ << "[0:" << ((1 << dynamic_cast<memimpl*>(node)->get_addr_width()) - 1) << "]";
     out_ << ";" << std::endl;
-    break;
+    return true;
   case type_lit:
+    this->print_type(node);
+    out_ << " ";
+    this->print_name(node);
+    out_ << " = ";
+    this->print_value(node->get_value());
+    out_ << ";" << std::endl;
+    return true;
   case type_proxy:
   case type_alu:
   case type_select:
@@ -203,7 +229,7 @@ void verilogwriter::print_decl(lnodeimpl* node) {
     out_ << " ";
     this->print_name(node);
     out_ << ";" << std::endl;
-    break;
+    return true;
   case type_input:
   case type_clk:
   case type_reset:
@@ -217,14 +243,45 @@ void verilogwriter::print_decl(lnodeimpl* node) {
   default:
     assert(false);
   }
+  return false;
 }
 
-void verilogwriter::print_literal(litimpl* node) {
-  out_ << "assign ";
-  this->print_name(node);
-  out_ << " = ";
-  this->print_value(node->get_value());
-  out_ << ";" << std::endl;
+bool verilogwriter::print_logic(lnodeimpl* node) {
+  auto type = node->get_type();
+  switch (type) {  
+  case type_proxy:
+    if (0 == ports_.count(node->get_id())) {
+      this->print_proxy(dynamic_cast<proxyimpl*>(node));
+      return true;
+    }
+    return false;
+  case type_alu:
+    this->print_alu(dynamic_cast<aluimpl*>(node));
+    return true;
+  case type_select:
+    this->print_select(dynamic_cast<selectimpl*>(node));
+    return true;
+  case type_reg:
+    this->print_reg(dynamic_cast<regimpl*>(node));
+    return true;
+  case type_mem:
+    this->print_mem(dynamic_cast<memimpl*>(node));
+    return true;
+  case type_lit:
+  case type_input:
+  case type_clk:
+  case type_reset:
+  case type_output:
+  case type_tap:
+  case type_memport:
+  case type_assert:
+  case type_print:
+  case type_tick:
+    break;
+  default:
+    assert(false);
+  }
+  return false;
 }
 
 void verilogwriter::print_proxy(proxyimpl* node) {
@@ -250,10 +307,9 @@ void verilogwriter::print_proxy(proxyimpl* node) {
   };
   if (ranges.size() > 1) {
     out_ << "{";
-    const char* sep = "";
+    auto_separator sep(", ");
     for (int i = ranges.size() - 1; i >= 0; --i) {
       out_ << sep;
-      sep = ", ";
       print_range(ranges[i]);
     }
     out_ << "}";
@@ -423,10 +479,9 @@ void verilogwriter::print_reg(regimpl* node) {
 }
 
 void verilogwriter::print_cdomain(cdomain* cd) {
-  const char* sep = "";
+  auto_separator sep(", ");
   for (auto& e : cd->get_sensitivity_list()) {
     out_ << sep;
-    sep = ", ";
     switch (e.get_edgedir()) {
     case EDGE_POS:
       out_ << "posedge ";
@@ -594,5 +649,14 @@ void verilogwriter::print_value(const bitvector& value) {
   out_ << value.get_size() << "'b";
   for (auto it = value.rbegin(), end = value.rend(); it != end;) {
     out_ << ((*it++) ? 1 : 0);
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void ch::internal::toVerilog(std::ostream& out, const std::initializer_list<context*>& contexts) {
+  verilogwriter writer(out);
+  for (auto ctx : contexts) {
+    writer.print(ctx);
   }
 }

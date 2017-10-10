@@ -33,7 +33,7 @@ public:
   }
 
   const_vec(const base& rhs) {
-    this->assign(rhs);
+    base::assign(rhs);
   }
 
   template <typename... Vs,
@@ -45,7 +45,7 @@ public:
   template <typename U,
             CH_REQUIRES(ch::internal::is_ch_scalar<U>::value)>
   explicit const_vec(U value) {
-    this->assign(value);
+    base::assign(value);
   }
 
   const T& operator[](size_t i) const {
@@ -106,7 +106,7 @@ protected:
     }
   }
 
-  void write_bytes(uint32_t dst_offset, const void* in, uint32_t in_cbsize, uint32_t src_offset, uint32_t length) const override {
+  void write_bytes(uint32_t dst_offset, const void* in, uint32_t in_cbsize, uint32_t src_offset, uint32_t length) override {
     for (unsigned i = 0; length && i < N; ++i) {
       if (dst_offset < T::bitcount) {
         size_t len = std::min<size_t>(length, T::bitcount - dst_offset);
@@ -173,13 +173,13 @@ public:
   }
 
   ch_vec& operator=(const ch_bitbase<base::bitcount>& rhs) {
-    this->assign(rhs);
+    base::assign(rhs);
     return *this;
   }
 
   template <typename U, CH_REQUIRES(ch::internal::is_ch_scalar<U>::value)>
   ch_vec& operator=(U rhs) {
-    this->assign(rhs);
+    base::assign(rhs);
     return *this;
   }
 

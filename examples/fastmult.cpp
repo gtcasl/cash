@@ -8,8 +8,8 @@ using namespace ch::sim;
 
 struct FastMult {
   __io (
-    (ch_in<ch_bit4>) lhs,
-    (ch_in<ch_bit4>) rhs,
+    (ch_in<ch_bit4>)  lhs,
+    (ch_in<ch_bit4>)  rhs,
     (ch_out<ch_bit8>) out
   );
   void describe() {
@@ -28,18 +28,18 @@ struct FastMult {
 int main(int argc, char **argv) {
   ch_module<FastMult> fastmult;
 
-  ch_poke(fastmult->io.lhs, 2);
-  ch_poke(fastmult->io.rhs, 3);
+  ch_poke(fastmult.io.lhs, 2);
+  ch_poke(fastmult.io.rhs, 3);
 
   ch_vcdtracer tracer("fastmult.vcd", fastmult);
   tracer.run();
 
   std::cout << "result:" << std::endl;
-  std::cout << "lhs = " << fastmult->io.lhs << std::endl;
-  std::cout << "rhs = " << fastmult->io.rhs << std::endl;
-  std::cout << "out = " << fastmult->io.out << std::endl;
+  std::cout << "lhs = "  << fastmult.io.lhs << std::endl;
+  std::cout << "rhs = "  << fastmult.io.rhs << std::endl;
+  std::cout << "out = "  << fastmult.io.out << std::endl;
 
-  CHECK(fastmult->io.out, 6);
+  CHECK(fastmult.io.out, 6);
 
   ch_toVerilog("fastmult.v", fastmult);
 }

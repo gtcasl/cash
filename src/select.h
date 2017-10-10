@@ -120,14 +120,14 @@ auto ch_case(const K& key, const P& pred, const V& value) {
 }
 
 template <typename U, typename V,
-          CH_REQUIRES(deduce_type<U, V>::bitcount != 0),
-          CH_REQUIRES(is_bit_convertible<U, deduce_type<U, V>::bitcount>::value),
-          CH_REQUIRES(is_bit_convertible<V, deduce_type<U, V>::bitcount>::value)>
+          CH_REQUIRES(deduce_type_t<U, V>::bitcount != 0),
+          CH_REQUIRES(is_bit_convertible<U, deduce_type_t<U, V>::bitcount>::value),
+          CH_REQUIRES(is_bit_convertible<V, deduce_type_t<U, V>::bitcount>::value)>
 const auto ch_select(const ch_bitbase<1>& pred, const U& _true, const V& _false) {
-  return make_type<typename deduce_first_type<U, V>::type>(
+  return make_type<deduce_first_type_t<U, V>>(
         createSelectNode(get_lnode(pred),
-                         get_lnode<U, deduce_type<U, V>::bitcount>(_true),
-                         get_lnode<V, deduce_type<U, V>::bitcount>(_false)));
+                         get_lnode<U, deduce_type_t<U, V>::bitcount>(_true),
+                         get_lnode<V, deduce_type_t<U, V>::bitcount>(_false)));
 }
 
 template <typename R, typename U, typename V,
@@ -141,17 +141,17 @@ const auto ch_select(const ch_bitbase<1>& pred, const U& _true, const V& _false)
 }
 
 template <typename U, typename V,
-          CH_REQUIRES(deduce_type<U, V>::bitcount != 0),
-          CH_REQUIRES(is_bit_convertible<U, deduce_type<U, V>::bitcount>::value),
-          CH_REQUIRES(is_bit_convertible<V, deduce_type<U, V>::bitcount>::value)>
+          CH_REQUIRES(deduce_type_t<U, V>::bitcount != 0),
+          CH_REQUIRES(is_bit_convertible<U, deduce_type_t<U, V>::bitcount>::value),
+          CH_REQUIRES(is_bit_convertible<V, deduce_type_t<U, V>::bitcount>::value)>
 const auto ch_min(const U& lhs, const V& rhs) {
   return ch_select(lhs < rhs, lhs, rhs);
 }
 
 template <typename U, typename V,
-          CH_REQUIRES(deduce_type<U, V>::bitcount != 0),
-          CH_REQUIRES(is_bit_convertible<U, deduce_type<U, V>::bitcount>::value),
-          CH_REQUIRES(is_bit_convertible<V, deduce_type<U, V>::bitcount>::value)>
+          CH_REQUIRES(deduce_type_t<U, V>::bitcount != 0),
+          CH_REQUIRES(is_bit_convertible<U, deduce_type_t<U, V>::bitcount>::value),
+          CH_REQUIRES(is_bit_convertible<V, deduce_type_t<U, V>::bitcount>::value)>
 const auto ch_max(const U& lhs, const V& rhs) {
   return ch_select(lhs > rhs, lhs, rhs);
 }

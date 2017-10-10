@@ -40,7 +40,7 @@ public:
     return cd_;
   }
 
-  void load(const std::string& file);
+  void load(const char* file);
   void load(const std::vector<uint8_t>& data);
   
   lnode& read(const lnode& addr);

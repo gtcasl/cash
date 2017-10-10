@@ -25,9 +25,9 @@ int main(int argc, char **argv) {
   tracer.run(22);
 
   std::cout << "result:" << std::endl;
-  std::cout << "out = " << counter->io.out << std::endl;
+  std::cout << "out = "  << counter.io.out << std::endl;
 
-  CHECK(counter->io.out, 10);
+  CHECK(counter.io.out, 10);
 
   ch_toVerilog("counter.v", counter);
 

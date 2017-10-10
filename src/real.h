@@ -45,7 +45,7 @@ public:
   explicit ch_real(float rhs) : base(rhs) {}
 
   ch_real& operator=(const ch_real& rhs) {
-    this->assign(rhs);
+    base::assign(rhs);
     return *this;
   }
 
@@ -55,12 +55,12 @@ public:
   }
 
   ch_real& operator=(const ch_bitbase<32>& rhs) {
-    this->assign(rhs);
+    base::assign(rhs);
     return *this;
   }
 
   ch_real& operator=(float rhs) {
-    this->assign(ch_real(rhs));
+    base::assign(ch_real(rhs));
     return *this;
   }
 };

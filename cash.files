@@ -16,8 +16,10 @@ examples/fifo.cpp
 examples/fifo_tb.v
 examples/fifo_tb.v
 src/cash.cpp
-src/deviceimpl.cpp
-src/deviceimpl.h
+src/misc.h
+src/module.h
+src/moduleimpl.cpp
+src/moduleimpl.h
 src/port.h
 src/simulator.h
 src/simulatorimpl.cpp
@@ -28,6 +30,7 @@ src/tracerimpl.h
 src/vcdtracer.h
 src/vcdtracerimpl.cpp
 src/vcdtracerimpl.h
+src/verilog.h
 src/verilog.v
 src/verilogwriter.cpp
 src/verilogwriter.h
@@ -81,7 +84,6 @@ src/context.h
 src/context.h
 src/dbginfo.cpp
 src/device.cpp
-src/device.h
 src/device.h
 src/enum.h
 src/enum.h
@@ -173,8 +175,8 @@ test/float.cpp
 test/literals.cpp
 test/main.cpp
 test/mem.cpp
-test/miscs.cpp
-test/procedure.cpp
+test/misc.cpp
+test/module.cpp
 test/proxies.cpp
 test/reg.cpp
 test/select.cpp

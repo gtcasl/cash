@@ -1,18 +1,6 @@
 #include "common.h"
 
-struct inverter {
-  __io (
-    (ch_in<ch_bit2>) in,
-    (ch_out<ch_bit2>) out
-  );
-  void describe() {
-    auto x = ~io.in;
-    __tap(x);
-    io.out = x;
-  }
-};
-
-TEST_CASE("miscs", "[miscs]") {    
+TEST_CASE("misc", "[misc]") {
   SECTION("utils", "[utils]") {
     TESTX([]()->bool {
       char bigs[258];
@@ -90,34 +78,6 @@ TEST_CASE("miscs", "[miscs]") {
       ch_float a(0.1f);
       ch_print("a={0:f}", a);
       return 1_b;
-    });
-  }
-  
-  SECTION("tracer", "[tracer]") {
-    TESTX([]()->bool {
-      ch_module<inverter> module;
-      ch_poke(module->io.in, 2);
-      ch_tracer tracer(std::cout, module);
-      tracer.run();
-      return (ch_peek<int>(module->io.out) == 1);
-    });
-  }
-
-  SECTION("vcdtracer", "[vcdtracer]") {
-    TESTX([]()->bool {
-      ch_module<inverter> module;
-      ch_poke(module->io.in, 2);
-      ch_vcdtracer tracer(std::cout, module);
-      tracer.run();
-      return (ch_peek<int>(module->io.out) == 1);
-    });
-  }
-
-  SECTION("stats", "[stats]") {
-    TESTX([]()->bool {
-      ch_module<inverter> module;
-      ch_dumpStats(std::cout, module);
-      return true;
     });
   }
 }

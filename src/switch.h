@@ -34,13 +34,13 @@ public:
   template <typename T, typename Func,
             CH_REQUIRES(is_bit_convertible<T, N>::value)>
   switch_t& case_(const T& value, const Func& func) {
-    impl_.eval(get_lnode<T, N>(value), to_function(func));
+    impl_.eval(get_lnode<T, N>(value), to_function_t<Func>(func));
     return *this;
   }
   
   template <typename Func>
   void default_(const Func& func) {
-    impl_.eval(to_function(func));
+    impl_.eval(to_function_t<Func>(func));
   }
   
 protected:

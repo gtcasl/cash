@@ -89,7 +89,7 @@ public:
                    uint32_t in_cbsize,
                    uint32_t src_offset,
                    uint32_t length,
-                   uint32_t size) const;
+                   uint32_t size);
 
   const bitvector& get_value() const;
 

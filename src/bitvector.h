@@ -434,7 +434,7 @@ public:
 
   bitvector(uint32_t size, const std::initializer_list<uint32_t>& value);
 
-  bitvector(uint32_t size, const std::string& value);
+  bitvector(uint32_t size, const char* value);
 
   ~bitvector();
   
@@ -453,7 +453,7 @@ public:
 
   bitvector& operator=(char value);
   
-  bitvector& operator=(const std::string& value);
+  bitvector& operator=(const char* value);
   
   bitvector& operator=(uint32_t value);
   

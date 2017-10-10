@@ -64,7 +64,7 @@ static const char* parse_format_index(fmtinfo_t* out, const char* str) {
 }
 
 printimpl::printimpl(context* ctx,
-                     const std::string& format,
+                     const char* format,
                      const std::initializer_list<lnode>& args)
   : ioimpl(type_print, ctx, 0)
   , format_(format)
@@ -118,9 +118,9 @@ const bitvector& printimpl::eval(ch_tick t) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-static int getFormatMaxIndex(const std::string& format) {
+static int getFormatMaxIndex(const char* format) {
   int max_index = -1;
-  for (const char *str = format.c_str(); *str != '\0'; ++str) {
+  for (const char *str = format; *str != '\0'; ++str) {
     if (*str == '{') {
       fmtinfo_t fmt;
       str = parse_format_index(&fmt, str);
@@ -131,7 +131,7 @@ static int getFormatMaxIndex(const std::string& format) {
 }
 
 void ch::internal::createPrintNode(
-    const std::string& format,
+    const char* format,
     const std::initializer_list<lnode>& args) {
   // printing is only enabled in debug mode
   if (0 == platform::self().get_dbg_level())

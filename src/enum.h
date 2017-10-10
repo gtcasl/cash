@@ -7,33 +7,30 @@
 #define CH_ENUM_FIELD_(c) CH_CONCAT(CH_ENUM_FIELD_, c)
 #define CH_ENUM_FIELD(i, x) CH_ENUM_FIELD_(CH_NARG(CH_REM x))(CH_REM x, x)
 
-#define CH_ENUM_BODY_IMPL(enum_name, value_name, const_name, base_name, size, assignment_body) \
-  public: \
-    using base = ch::internal::base_name<size>; \
-    using value_type = value_name; \
-    using const_type = const_name; \
-    enum_name() {} \
-    enum_name(const enum_name& __rhs__) : base(__rhs__) {} \
-    enum_name(enum_name&& __rhs__) : base(std::move(__rhs__)) {} \
-    enum_name(enum_type __rhs__) : base(__rhs__) {} \
-    assignment_body(enum_name) \
-    const auto clone() const { \
-      return value_type(base::clone()); \
-    } \
-  protected: \
-    enum_name(const base& __rhs__) : base(__rhs__) {} \
-    friend const auto ch_reg(const enum_name& next, const enum_name& init) { \
-      return ch::internal::ch_reg(next, init); \
-    } \
-    friend const auto ch_reg(const enum_name& next) { \
-      return ch::internal::ch_reg(next); \
-    }
+#define CH_ENUM_BODY_IMPL(enum_name, assignment_body) \
+  enum_name() {} \
+  enum_name(const enum_name& __rhs__) : base(__rhs__) {} \
+  enum_name(enum_name&& __rhs__) : base(std::move(__rhs__)) {} \
+  enum_name(enum_type __rhs__) : base(__rhs__) {} \
+  assignment_body(enum_name) \
+  const auto clone() const { \
+    return value_type(base::clone()); \
+  } \
+protected: \
+  enum_name(const base& __rhs__) : base(__rhs__) {} \
+  friend const auto ch_reg(const enum_name& next, const enum_name& init) { \
+    return ch::internal::ch_reg(next, init); \
+  } \
+  friend const auto ch_reg(const enum_name& next) { \
+    return ch::internal::ch_reg(next); \
+  }
 
 #define CH_ENUM_READONLY_IMPL(enum_name) \
   CH_BIT_READONLY_INTERFACE(enum_name)
 
 #define CH_ENUM_WRITABLE_IMPL(enum_name) \
-  enum_name(const const_type& __rhs__) : enum_name(reinterpret_cast<const base&>(__rhs__)) {} \
+  enum_name(const const_type& __rhs__) \
+    : enum_name(reinterpret_cast<const base&>(__rhs__)) {} \
   enum_name& operator=(const enum_name& __rhs__) { \
     base::operator=(__rhs__); \
     return *this; \
@@ -58,9 +55,17 @@
     static_assert(ilog2(__MAX_VALUE__) <= size, "enum size mismatch"); \
   protected: \
     class __const_type__ : public ch::internal::const_bit<size> { \
-      CH_ENUM_BODY_IMPL(__const_type__, enum_name, __const_type__, const_bit, size, CH_ENUM_READONLY_IMPL) \
+    public: \
+      using base = ch::internal::const_bit<size>; \
+      using value_type = enum_name; \
+      using const_type = __const_type__; \
+      CH_ENUM_BODY_IMPL(__const_type__, CH_ENUM_READONLY_IMPL) \
     }; \
-    CH_ENUM_BODY_IMPL(enum_name, enum_name, __const_type__, ch_bit, size,CH_ENUM_WRITABLE_IMPL) \
+  public: \
+    using base = ch::internal::ch_bit<size>; \
+    using value_type = enum_name; \
+    using const_type = __const_type__; \
+    CH_ENUM_BODY_IMPL(enum_name, CH_ENUM_WRITABLE_IMPL) \
   }
 
 #define CH_ENUM(name, size, body) \

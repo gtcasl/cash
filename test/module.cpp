@@ -1,8 +1,4 @@
-#include <cash.h>
-
-using namespace ch::core;
-using namespace ch::literals;
-using namespace ch::sim;
+#include "common.h"
 
 template <typename T>
 __inout(FiFoIO, (
@@ -65,7 +61,7 @@ __inout(PLink, SimpleLink<T>, (
 
 template <typename T>
 __inout(FilterIO, (
-  __flip(PLink<T>) x,
+  (ch_flip_t<PLink<T>>) x,
   (PLink<T>) y
 ));
 
@@ -135,29 +131,25 @@ struct Foo2 {
   }
 };
 
-struct Dogfood {
-  __io (
-    (ch_out<ch_bit1>) out
-  );
-  void describe() {    
-    io.out = 1_b;
+TEST_CASE("module", "[module]") {
+  SECTION("sim", "[sim]") {
+    TESTX([]()->bool {
+      ch_module<Adder> adder;
+      ch_poke(adder.io.in1, 1);
+      ch_poke(adder.io.in2, 2);
+      ch_simulator sim(adder);
+      sim.run(1);
+      return (3 == ch_peek<int>(adder.io.out));
+    });
   }
-};
-
-int main(int argc, char **argv) {
-  /*ch_module<Dogfood> dogfood;
-  ch_simulator sim(dogfood);
-  sim.run(1);
-  assert(ch_peek<bool>(dogfood.io.out));*/
-
-  ch_module<Foo1> foo;
-  ch_poke(foo.io.in1, 1);
-  ch_poke(foo.io.in2, 2);
-  ch_simulator sim(foo);
-  sim.run(1);
-  assert(3 == ch_peek<int>(foo.io.out));
-
-  ch_toVerilog("foo.v", foo);
-
-  return 0;
+  SECTION("emplace", "[emplace]") {
+    TESTX([]()->bool {
+      ch_module<Foo1> foo;
+      ch_poke(foo.io.in1, 1);
+      ch_poke(foo.io.in2, 2);
+      ch_simulator sim(foo);
+      sim.run(1);
+      return (3 == ch_peek<int>(foo.io.out));
+    });
+  }
 }

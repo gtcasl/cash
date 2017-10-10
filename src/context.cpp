@@ -14,6 +14,7 @@
 #include "cdomain.h"
 #include "arithm.h"
 #include "select.h"
+#include "misc.h"
 
 namespace ch {
 namespace internal {
@@ -26,10 +27,8 @@ public:
       ctx_->release();
   }
 
-  context* create(const std::string& name) const {
-    auto ctx = new context(name);
-    ctx->acquire();
-    return ctx;
+  context* create(const char* name) const {
+    return new context(name);
   }
 
   context* get_ctx() const {
@@ -53,7 +52,7 @@ using namespace ch::internal;
 
 thread_local context_manager tls_ctx;
 
-context* ch::internal::ctx_create(const std::string& name) {
+context* ch::internal::ctx_create(const char* name) {
   return tls_ctx.create(name);
 }
 
@@ -72,7 +71,7 @@ static uint32_t make_id() {
   return s_id++;
 }
 
-context::context(const std::string& name)
+context::context(const char* name)
   : id_(make_id())
   , name_(name)
   , node_ids_(0)
@@ -83,6 +82,11 @@ context::context(const std::string& name)
 {}
 
 context::~context() {
+  // release children
+  for (auto ctx : children_) {
+    ctx->release();
+  }
+
   // delete allocated nodes
   for (auto it = nodes_.begin(), end = nodes_.end(); it != end;) {
     delete *it++;
@@ -102,7 +106,12 @@ context::~context() {
   assert(nullptr == tick_);
 }
 
-void context::push_clk(const lnode& clk) {
+void context::add_context(context* ctx) {
+  ctx->acquire();
+  children_.push_back(ctx);
+}
+
+void context::push_clk(const lnode& clk) {  
   user_clks_.emplace(clk);
 }
 
@@ -519,7 +528,7 @@ void context::remove_cdomain(cdomain* cd) {
   cdomains_.remove(cd);
 }
 
-void context::register_tap(const std::string& name, const lnode& node) {
+void context::registerTap(const char* name, const lnode& node) {
   // resolve duplicate names
   std::string full_name(name);
   unsigned instances = dup_taps_[name]++;
@@ -529,12 +538,12 @@ void context::register_tap(const std::string& name, const lnode& node) {
       auto iter = std::find_if(taps_.begin(), taps_.end(),
         [name](tapimpl* t)->bool { return t->get_name() == name; });
       assert(iter != taps_.end());
-      (*iter)->set_name(fstring("%s_%d", name.c_str(), 0));
+      (*iter)->set_name(fstring("%s_%d", name, 0).c_str());
     }
-    full_name = fstring("%s_%d", name.c_str(), instances);
+    full_name = fstring("%s_%d", name, instances);
   }
   // create tap node
-  new tapimpl(node, full_name);
+  new tapimpl(node, full_name.c_str());
 }
 
 void context::register_io_map(const nodelist& data) {
@@ -578,18 +587,33 @@ live_nodes_t context::compute_live_nodes() const {
 }
 
 void context::tick(ch_tick t) {
+  // tick children
+  for (auto ctx : children_) {
+    ctx->tick(t);
+  }
+  // tick clock domains
   for (auto cd : cdomains_) {
     cd->tick(t);
   }  
 }
 
 void context::tick_next(ch_tick t) {
+  // tick_next children
+  for (auto ctx : children_) {
+    ctx->tick_next(t);
+  }
+  // tick_next clock domains
   for (auto cd : cdomains_) {
     cd->tick_next(t);
   }  
 }
 
 void context::eval(ch_tick t) {
+  // evaluate children
+  for (auto ctx : children_) {
+    ctx->eval(t);
+  }
+
   // evaluate outputs
   for (auto node : outputs_) {
     node->eval(t);
@@ -720,6 +744,14 @@ void context::dump_stats(std::ostream& out) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void ch::internal::register_tap(const std::string& name, const lnode& node) {
-  node.get_ctx()->register_tap(name, node);
+void ch::internal::registerIOMap(const nodelist& data) {
+  ctx_curr()->register_io_map(data);
+}
+
+void ch::internal::registerTap(const char* name, const lnode& node) {
+  node.get_ctx()->registerTap(name, node);
+}
+
+void ch::internal::ch_dumpStats(std::ostream& out, const module& module) {
+  get_ctx(module)->dump_stats(out);
 }

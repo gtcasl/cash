@@ -35,8 +35,8 @@ void memimpl::load(const std::vector<uint8_t>& data) {
   initialized_ = true;
 }
 
-void memimpl::load(const std::string& file) {
-  std::ifstream in(file.c_str(), std::ios::binary);
+void memimpl::load(const char* file) {
+  std::ifstream in(file, std::ios::binary);
   uint32_t size = value_.get_size();
   uint32_t offset = 0;
 
@@ -194,7 +194,7 @@ void memory::load(const std::vector<uint8_t>& data) {
   impl_->load(data);
 }
 
-void memory::load(const std::string& file) {
+void memory::load(const char* file) {
   impl_->load(file);
 }
 

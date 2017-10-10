@@ -1,6 +1,6 @@
 ﻿#pragma once
 
-#include "device.h"
+#include "module.h"
 
 namespace ch {
 namespace internal {
@@ -10,9 +10,9 @@ class simulatorimpl;
 class ch_simulator {
 public:  
   
-  template <typename... Devices>
-  ch_simulator(const device& device, const Devices&... more)
-    : ch_simulator({&device, &more...})
+  template <typename... Modules>
+  ch_simulator(const module& module, const Modules&... more)
+    : ch_simulator({get_ctx(module), get_ctx(more)...})
   {}
 
   ch_simulator() : ch_simulator({}) {}
@@ -23,13 +23,13 @@ public:
 
   ch_simulator& operator=(const ch_simulator& simulator);
   
-  void add_device(const device& device);
+  void add_module(const module& module);
 
   ch_tick step(ch_tick t);
   
   void run(const std::function<bool(ch_tick t)>& callback);
   
-  void run(ch_tick ticks = 20);
+  void run(ch_tick ticks = 1);
 
   ch_tick reset(ch_tick t);
 
@@ -37,7 +37,7 @@ public:
 
 protected:
 
-  ch_simulator(const std::initializer_list<const device*>& devices);
+  ch_simulator(const std::initializer_list<context*>& contexts);
 
   ch_simulator(simulatorimpl* impl);
 

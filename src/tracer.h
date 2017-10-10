@@ -8,27 +8,27 @@ namespace internal {
 class ch_tracer : public ch_simulator {
 public:
 
-  template <typename... Devices>
-  ch_tracer(std::ostream& out, const device& device, const Devices&... more)
-    : ch_tracer(out, {&device, &more...})
+  template <typename... Modules>
+  ch_tracer(std::ostream& out, const module& module, const Modules&... more)
+    : ch_tracer(out, {get_ctx(module), get_ctx(more)...})
   {}
 
-  template <typename... Devices>
-  ch_tracer(const std::string& file, const device& device, const Devices&... more)
-    : ch_tracer(file, {&device, &more...})
+  template <typename... Modules>
+  ch_tracer(const char* file, const module& module, const Modules&... more)
+    : ch_tracer(file, {get_ctx(module), get_ctx(more)...})
   {}
 
   ch_tracer(std::ostream& out) : ch_tracer(out, {}) {}
 
-  ch_tracer(const std::string& file) : ch_tracer(file, {}) {}
+  ch_tracer(const char* file) : ch_tracer(file, {}) {}
 
   ~ch_tracer();
 
 protected:
 
-  ch_tracer(std::ostream& out, const std::initializer_list<const device*>& devices);
+  ch_tracer(std::ostream& out, const std::initializer_list<context*>& contexts);
 
-  ch_tracer(const std::string& file, const std::initializer_list<const device*>& devices);
+  ch_tracer(const char* file, const std::initializer_list<context*>& contexts);
 
   ch_tracer(simulatorimpl* impl);
 };

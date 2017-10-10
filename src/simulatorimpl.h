@@ -1,6 +1,6 @@
 #pragma once
 
-#include "device.h"
+#include "module.h"
 #include "context.h"
 
 namespace ch {
@@ -25,10 +25,10 @@ private:
 
 class simulatorimpl : public refcounted {
 public:
-  simulatorimpl(const std::initializer_list<const device*>& devices);
+  simulatorimpl(const std::initializer_list<context*>& contexts);
   virtual ~simulatorimpl();
 
-  void add_device(const device& device);
+  void add_module(const module& module);
 
   virtual void tick(ch_tick t);
 

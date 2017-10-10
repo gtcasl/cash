@@ -6,7 +6,7 @@ namespace ch {
 namespace internal {
 
 template <typename T>
-class ch_seq : public T::const_type {
+class ch_seq final : public T::const_type {
 public:
   using base = typename T::const_type;
   using value_type = T;
@@ -14,14 +14,14 @@ public:
   T next;
 
   ch_seq() {
-    this->assign(ch_reg(next));
+    base::assign(ch_reg(next));
     next = *this;
   }
   
   template <typename U,
             CH_REQUIRES(is_cast_convertible<U, T>::value)>
   explicit ch_seq(const U& init) {
-    this->assign(ch_reg(next, init));
+    base::assign(ch_reg(next, init));
     next = *this;
   }
 

@@ -47,13 +47,17 @@ __struct (ss_t, (
   (s1_t) b
 ));
 
-template <unsigned N> 
+template <unsigned N>
 __struct (st_t, (
   (ch_bit<N>) a,
   (ch_bit<N>) b
 ));
 
 using st4_t = st_t<4>;
+
+__struct (sd_t, s1_t, (
+  (ch_bit4) b
+));
  
 __union (u2_t, (
   (ch_bit4) a,

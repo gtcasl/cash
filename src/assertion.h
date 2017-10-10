@@ -5,9 +5,9 @@
 namespace ch {
 namespace internal {
 
-void createAssertNode(const lnode& pred, const std::string& msg);
+void createAssertNode(const lnode& pred, const char* msg);
 
-inline void ch_assert(const ch_bitbase<1>& pred, const std::string& msg) {
+inline void ch_assert(const ch_bitbase<1>& pred, const char* msg) {
   createAssertNode(get_lnode(pred), msg);
 }
 

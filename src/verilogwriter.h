@@ -27,6 +27,8 @@ public:
 
 protected:
 
+  bool print_impl(context* ctx);
+
   void print_header(context* ctx);
 
   void print_body(context* ctx);
@@ -35,15 +37,17 @@ protected:
 
   void print_port(lnodeimpl* node);
 
-  void print_decl(lnodeimpl* node);
+  bool print_decl(lnodeimpl* node);
+
+  bool print_binding(context* ctx);
+
+  bool print_logic(lnodeimpl* node);
 
   void print_name(lnodeimpl* node);
 
   void print_type(lnodeimpl* node);
 
   void print_value(const bitvector& value);
-
-  void print_literal(litimpl* node);
 
   void print_proxy(proxyimpl* node);
 
@@ -65,7 +69,9 @@ protected:
 
   void print_cdomain(cdomain* cd);
 
-  void print_mem(memimpl* node);
+  void print_mem(memimpl* node);  
+
+  std::set<unsigned> ports_;
 
   std::ostream& out_;
 };

@@ -5,10 +5,9 @@
 namespace ch {
 namespace internal {
 
-void register_tap(const std::string& name, const lnode& node);
+void registerTap(const char* name, const lnode& node);
 
-void createPrintNode(const std::string& format,
-                     const std::initializer_list<lnode>& args);
+void createPrintNode(const char* format, const std::initializer_list<lnode>& args);
 
 #define CH_BIT_READONLY_INTERFACE(type) \
   const auto operator[](size_t index) const & { \
@@ -36,16 +35,16 @@ void createPrintNode(const std::string& format,
 
 #define CH_BIT_WRITABLE_INTERFACE(type) \
   type& operator=(const ch_bitbase<type::bitcount>& rhs) { \
-    this->assign(rhs); \
+    base::assign(rhs); \
     return *this; \
   } \
   type& operator=(const ch::internal::ch_literal<type::bitcount>& rhs) { \
-    this->assign(rhs); \
+    base::assign(rhs); \
     return *this; \
   } \
   template <typename U, CH_REQUIRES(ch::internal::is_ch_scalar<U>::value)> \
   type& operator=(U rhs) { \
-    this->assign(rhs); \
+    base::assign(rhs); \
     return *this; \
   } \
   auto operator[](size_t index) & { \
@@ -127,7 +126,7 @@ protected:
     node_.read_bytes(dst_offset, out, out_cbsize, src_offset, length, N);
   }
 
-  void write_bytes(uint32_t dst_offset, const void* in, uint32_t in_cbsize, uint32_t src_offset, uint32_t length) const override {
+  void write_bytes(uint32_t dst_offset, const void* in, uint32_t in_cbsize, uint32_t src_offset, uint32_t length) override {
     node_.write_bytes(dst_offset, in, in_cbsize, src_offset, length, N);
   }
 
@@ -173,12 +172,12 @@ public:
 };
 
 static_assert(has_bitcount<ch_bit<1>>::value, ":-(");
-static_assert(deduce_type<ch_bitbase<1>, ch_bitbase<2>>::bitcount == 0, ":-(");
-static_assert(deduce_type<ch_bitbase<1>, ch_bitbase<1>>::bitcount == 1, ":-(");
+static_assert(deduce_type_t<ch_bitbase<1>, ch_bitbase<2>>::bitcount == 0, ":-(");
+static_assert(deduce_type_t<ch_bitbase<1>, ch_bitbase<1>>::bitcount == 1, ":-(");
 static_assert(are_ch_literal<ch_bitbase<1>, ch_bitbase<1>>::value == false, ":-(");
-static_assert(deduce_type<ch_bit<2>, ch_bit<2>>::bitcount == 2, ":-(");
+static_assert(deduce_type_t<ch_bit<2>, ch_bit<2>>::bitcount == 2, ":-(");
 
-template <typename T, unsigned N = std::decay<T>::type::bitcount>
+template <typename T, unsigned N = std::decay_t<T>::bitcount>
 struct is_bit_convertible {
   static constexpr bool value = is_cast_convertible<T, ch_bit<N>>::value;
 };
@@ -188,25 +187,23 @@ struct are_bit_convertible;
 
 template <typename T>
 struct are_bit_convertible<T> {
-  static constexpr bool value = is_cast_convertible<T, ch_bit<std::decay<T>::type::bitcount>>::value;
+  static constexpr bool value = is_cast_convertible<T, ch_bit<std::decay_t<T>::bitcount>>::value;
 };
 
 template <typename T0, typename... Ts>
 struct are_bit_convertible<T0, Ts...> {
-  static constexpr bool value = is_cast_convertible<T0, ch_bit<std::decay<T0>::type::bitcount>>::value && are_bit_convertible<Ts...>::value;
+  static constexpr bool value = is_cast_convertible<T0, ch_bit<std::decay_t<T0>::bitcount>>::value && are_bit_convertible<Ts...>::value;
 };
 
 template <typename T, unsigned N = T::bitcount>
-using bitbase_cast = std::conditional<
-  std::is_base_of<ch_bitbase<N>, T>::value,
-  const ch_bitbase<N>&,
-  ch_bit<N>>;
+using bitbase_cast_t = std::conditional_t<
+  std::is_base_of<ch_bitbase<N>, T>::value, const ch_bitbase<N>&, ch_bit<N>>;
 
 template <typename T, unsigned N = T::bitcount,
           CH_REQUIRES(is_bit_convertible<T, N>::value)>
 lnode get_lnode(const T& rhs) {
   nodelist data(N, true);
-  typename bitbase_cast<T, N>::type x(rhs);
+  bitbase_cast_t<T, N> x(rhs);
   read_data(x, data, 0, N);
   return lnode(data);
 }
@@ -234,7 +231,7 @@ const auto cat_impl(const Ts&... args) {
 template <typename... Ts,
          CH_REQUIRES(are_bit_convertible<Ts...>::value)>
 const auto ch_cat(const Ts&... args) {
-  return cat_impl(static_cast<typename bitbase_cast<Ts>::type>(args)...);
+  return cat_impl(static_cast<bitbase_cast_t<Ts>>(args)...);
 }
 
 template <typename B, typename A,
@@ -358,66 +355,19 @@ const auto ch_shuffle(const ch_bitbase<N>& in,
 // utils functions
 
 template <unsigned N>
-std::ostream& operator<<(std::ostream& out, const ch_bitbase<N>& node) {
-  return out << get_lnode(node);
-}
-
-template <typename T, unsigned N>
-struct peek_impl {
-  static const T read_bytes(const ch_bitbase<N>& node) {
-    T ret(0);
-    ch::internal::read_bytes(node, 0, &ret, sizeof(T), 0, N);
-    return ret;
-  }
-};
-
-template <unsigned N>
-struct peek_impl< ch_literal<N>, N > {
-  static const ch_literal<N> read_bytes(const ch_bitbase<N>& node) {
-    ch_literal<N> ret;
-    ch::internal::read_bytes(node, 0, ret.get_words(), ret.get_cbsize(), 0, N);
-    return ret;
-  }
-};
-
-template <typename T, unsigned N>
-T ch_peek(const ch_bitbase<N>& node) {
-  return peek_impl<typename std::decay<T>::type, N>::read_bytes(node);
-}
-
-template <typename T, unsigned N>
-struct poke_impl {
-  static void write_bytes(const ch_bitbase<N>& node, const T& value) {
-    ch::internal::write_bytes(node, 0, &value, sizeof(T), 0, N);
-  }
-};
-
-template <unsigned N>
-struct poke_impl< ch_literal<N>, N > {
-  static void write_bytes(const ch_bitbase<N>& node, const ch_literal<N>& value) {
-    ch::internal::write_bytes(node, 0, value.get_words(), value.get_cbsize(), 0, N);
-  }
-};
-
-template <typename T, unsigned N>
-void ch_poke(const ch_bitbase<N>& node, const T& value) {
-  poke_impl<typename std::decay<T>::type, N>::write_bytes(node, value);
-}
-
-template <unsigned N>
-void ch_tap(const std::string& name, const ch_bitbase<N>& value) {
-  register_tap(name, get_lnode(value));
+void ch_tap(const char* name, const ch_bitbase<N>& value) {
+  registerTap(name, get_lnode(value));
 }
 
 const ch_bit<64> ch_getTick();
 
-inline void ch_print(const std::string& format) {
+inline void ch_print(const char* format) {
   createPrintNode(format, {});
 }
 
 template <typename...Args,
           CH_REQUIRES(are_bit_convertible<Args...>::value)>
-void ch_print(const std::string& format, const Args& ...args) {
+void ch_print(const char* format, const Args& ...args) {
   createPrintNode(format, {get_lnode(args)...});
 }
 

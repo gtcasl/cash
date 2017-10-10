@@ -326,7 +326,7 @@ void lnode::write_bytes(uint32_t dst_offset,
                         uint32_t in_cbsize,
                         uint32_t src_offset,
                         uint32_t length,
-                        uint32_t size) const {
+                        uint32_t size) {
   this->ensureInitialized(size, false);
   impl_->write_bytes(dst_offset, in, in_cbsize, src_offset, length);
 }

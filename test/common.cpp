@@ -24,13 +24,13 @@ bool runtest(const std::function<ch_bit<1>()>& test, ch_tick ticks) {
   ch_simulator sim(module);
 
   sim.run([&](ch_tick t)->bool {
-    std::cout << "t" << t << ": ret=" << module->io.out << std::endl;
-    if (t > 0 && !ch_peek<bool>(module->io.out))
+    std::cout << "t" << t << ": ret=" << module.io.out << std::endl;
+    if (t > 0 && !ch_peek<bool>(module.io.out))
       return false;
     return (t < ticks);
   });
 
-  bool bRet = ch_peek<bool>(module->io.out);
+  bool bRet = ch_peek<bool>(module.io.out);
   assert(bRet);
   return bRet;
 }

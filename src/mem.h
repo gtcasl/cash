@@ -11,8 +11,6 @@ class memory {
 public:
   memory(uint32_t data_width, uint32_t addr_width, bool writeEnable);
 
-  void load(const std::string& file);
-
   template <typename T>
   void load(const std::vector<T>& data, uint32_t data_width, uint32_t lines) {
     assert(data.size() <= (lines * CH_CEILDIV(data_width, sizeof(T) * 8)));
@@ -36,6 +34,8 @@ public:
     this->load(packed);
   }
 
+  void load(const char* file);
+
   lnode& read(const lnode& addr) const;
 
   void write(const lnode& addr,
@@ -58,7 +58,7 @@ public:
   using value_type = ch_bit<N>;
 
   memport_ref& operator=(const ch_bitbase<N>& rhs) {
-    this->assign(rhs);
+    base::assign(rhs);
     return *this;
   }
 
@@ -84,7 +84,7 @@ protected:
     CH_ABORT("invalid call");
   }
 
-  void write_bytes(uint32_t dst_offset, const void* in, uint32_t in_cbsize, uint32_t src_offset, uint32_t length) const override {
+  void write_bytes(uint32_t dst_offset, const void* in, uint32_t in_cbsize, uint32_t src_offset, uint32_t length) override {
     CH_UNUSED(dst_offset, in, in_cbsize, src_offset, length);
     CH_ABORT("invalid call");
   }
@@ -100,7 +100,7 @@ class ch_rom {
 public:
     ch_rom() : mem_(W, A, false) {}
   
-    ch_rom(const std::string& init_file) : mem_(W, A, false) {
+    ch_rom(const char* init_file) : mem_(W, A, false) {
       mem_.load(init_file);
     }
     
@@ -129,7 +129,7 @@ class ch_ram {
 public:
     ch_ram() : mem_(W, A, true) {}
   
-    ch_ram(const std::string& init_file) : mem_(W, A, true) {
+    ch_ram(const char* init_file) : mem_(W, A, true) {
       mem_.load(init_file);
     }
 
