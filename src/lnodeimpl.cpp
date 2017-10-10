@@ -17,16 +17,14 @@ const char* ch::internal::to_string(lnodetype type) {
   return sc_names[CH_LNODE_INDEX(type)];
 }
 
-lnodeimpl::lnodeimpl(lnodetype type, context* ctx, uint32_t size)
-  : type_(type)
-  , ctx_(ctx)
-  , value_(size) {
-  id_ = ctx->add_node(this);  
-}
+lnodeimpl::lnodeimpl(context* ctx, lnodetype type, uint32_t size)
+  : ctx_(ctx)
+  , id_(ctx->node_id())
+  , type_(type)
+  , value_(size)
+{}
 
-lnodeimpl::~lnodeimpl() {
-  ctx_->remove_node(this);  
-}
+lnodeimpl::~lnodeimpl() {}
 
 bool lnodeimpl::ready() const {
   for (auto& src : srcs_) {
@@ -48,7 +46,7 @@ lnodeimpl* lnodeimpl::get_slice(uint32_t offset, uint32_t length) {
   assert(length <= value_.get_size());
   if (value_.get_size() == length)
     return this;
-  return new proxyimpl(lnode(this), offset, length);
+  return ctx_->createNode<proxyimpl>(lnode(this), offset, length);
 }
 
 void lnodeimpl::print(std::ostream& out, uint32_t level) const {
@@ -71,7 +69,7 @@ void lnodeimpl::print(std::ostream& out, uint32_t level) const {
 ///////////////////////////////////////////////////////////////////////////////
 
 undefimpl::undefimpl(context* ctx, uint32_t size)
-  : lnodeimpl(type_undef, ctx, size)
+  : lnodeimpl(ctx, type_undef, size)
 {}
 
 const bitvector& undefimpl::eval(ch_tick) {
@@ -216,9 +214,10 @@ bool lnode::operator<(const lnode& rhs) const {
 void lnode::ensureInitialized(uint32_t size, bool initialize) const {
   if (nullptr == impl_) {
     if (initialize) {
-      impl_ = new proxyimpl(new undefimpl(ctx_curr(), size));
+      impl_ = ctx_curr()->createNode<proxyimpl>(
+            ctx_curr()->createNode<undefimpl>(size));
     } else {
-      impl_ = new proxyimpl(ctx_curr(), size);
+      impl_ = ctx_curr()->createNode<proxyimpl>(size);
     }
   }
   assert(impl_->get_size() == size);
@@ -264,7 +263,7 @@ void lnode::assign(uint32_t dst_offset,
       if (slice.second != src.get_size()) {
         assert(slice.first >= dst_offset);
         uint32_t offset = src_offset + (slice.first - dst_offset);
-        src_impl = new proxyimpl(src, offset, slice.second);
+        src_impl = ctx->createNode<proxyimpl>(src, offset, slice.second);
       }
       ctx->conditional_assign(*this, src_impl, slice.first, slice.second);
     }

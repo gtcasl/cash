@@ -25,8 +25,6 @@ protected:
 
   node_map_t node_map_;
 
-  std::set<unsigned> ports_;
-
   context* ctx_;
 };
 

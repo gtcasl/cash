@@ -5,11 +5,12 @@
 
 using namespace ch::internal;
 
-regimpl::regimpl(cdomain* cd,
+regimpl::regimpl(context* ctx,
+                 cdomain* cd,
                  const lnode& next,
                  const lnode& init,
                  const lnode& reset)
-  : lnodeimpl(type_reg, next.get_ctx(), next.get_size())
+  : lnodeimpl(ctx, type_reg, next.get_size())
   , cd_(cd)
   , next_idx_(-1)
   , init_idx_(-1)
@@ -29,12 +30,13 @@ regimpl::regimpl(cdomain* cd,
   this->get_signals(cd);
 }
 
-regimpl::regimpl(cdomain* cd,
+regimpl::regimpl(context* ctx,
+                 cdomain* cd,
                  const lnode& next,
                  const lnode& init,
                  const lnode& reset,
                  const lnode& enable)
-  : lnodeimpl(type_reg, next.get_ctx(), next.get_size())
+  : lnodeimpl(ctx, type_reg, next.get_size())
   , cd_(cd)
   , next_idx_(-1)
   , init_idx_(-1)
@@ -133,7 +135,7 @@ void ch::internal::ch_popReset() {
 lnodeimpl* ch::internal::createRegNode(const lnode& next, const lnode& init) {
   auto ctx = next.get_ctx();
   auto cd = ctx->create_cdomain({clock_event(ctx->get_clk(), EDGE_POS)});
-  return new regimpl(cd, next, init, ctx_curr()->get_reset());
+  return ctx->createNode<regimpl>(cd, next, init, ctx_curr()->get_reset());
 }
 
 lnodeimpl* ch::internal::createLatchNode(
@@ -141,12 +143,13 @@ lnodeimpl* ch::internal::createLatchNode(
     const lnode& init,
     const lnode& enable,
     const lnode& reset) {
-  auto cd = next.get_ctx()->create_cdomain({
+  auto ctx = next.get_ctx();
+  auto cd = ctx->create_cdomain({
     clock_event(enable, EDGE_ANY),
     clock_event(next, EDGE_ANY),
     clock_event(reset, EDGE_ANY),
     clock_event(init, EDGE_ANY)});
-  return new regimpl(cd, next, init, reset, enable);
+  return ctx->createNode<regimpl>(cd, next, init, reset, enable);
 }
 
 lnodeimpl* ch::internal::createReadyNode(const lnode& node) {

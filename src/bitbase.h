@@ -36,7 +36,7 @@ struct is_ch_scalar : std::integral_constant<bool,
 
 template <typename T>
 class has_bitcount {
-private:
+protected:
     template <typename U, typename = std::enable_if_t<U::bitcount>>
     static std::true_type check(int);
 

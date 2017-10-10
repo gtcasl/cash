@@ -66,7 +66,7 @@ static const char* parse_format_index(fmtinfo_t* out, const char* str) {
 printimpl::printimpl(context* ctx,
                      const char* format,
                      const std::initializer_list<lnode>& args)
-  : ioimpl(type_print, ctx, 0)
+  : ioimpl(ctx, type_print, 0)
   , format_(format)
   , predicated_(false)
   , tick_(~0ull) {
@@ -141,6 +141,5 @@ void ch::internal::createPrintNode(
   auto max_index = getFormatMaxIndex(format);
   CH_CHECK(max_index < (int)args.size(), "print format index out of range");
 
-  context* ctx = ctx_curr();
-  new printimpl(ctx, format, args);
+  ctx_curr()->createNode<printimpl>(format, args);
 }

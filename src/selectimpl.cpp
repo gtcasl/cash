@@ -7,8 +7,11 @@
 
 using namespace ch::internal;
 
-selectimpl::selectimpl(const lnode& pred, const lnode& _true, const lnode& _false)
-  : lnodeimpl(type_select, pred.get_ctx(), _true.get_size())
+selectimpl::selectimpl(context* ctx,
+                       const lnode& pred,
+                       const lnode& _true,
+                       const lnode& _false)
+  : lnodeimpl(ctx, type_select, _true.get_size())
   , tick_(~0ull) {
   assert(pred.get_size() == 1);
   assert(_true.get_size() == _false.get_size());
@@ -29,7 +32,7 @@ lnodeimpl* ch::internal::createSelectNode(
     const lnode& pred,
     const lnode& _true,
     const lnode& _false) {
-  return new selectimpl(pred, _true, _false);
+  return pred.get_ctx()->createNode<selectimpl>(pred, _true, _false);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

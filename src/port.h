@@ -13,15 +13,6 @@ void bindInput(const lnode& input, const lnode& src);
 
 void bindOutput(const lnode& dst, const lnode& output);
 
-void registerIOMap(const nodelist& data);
-
-template <typename T>
-void registerIOMap(const T& node) {
-  nodelist data(T::bitcount, true);
-  ch::internal::read_data(node, data, 0, T::bitcount);
-  registerIOMap(data);
-}
-
 ///////////////////////////////////////////////////////////////////////////////
 
 class iobase {
@@ -104,11 +95,15 @@ public:
     return ch::internal::connector<decltype(*this)>(*this);
   }
 
-private:
+protected:
   ch_in<T>& in_;
 
+  lnode& get_input() const {
+    return in_.input_;
+  }
+
   friend std::ostream& operator<<(std::ostream& out, const input_port& port) {
-    return out << get_lnode(port.in_);
+    return out << port.get_input();
   }
 
   template <typename U> friend class output_port;
@@ -131,7 +126,7 @@ public:
   }
 
   void operator()(const input_port<T>& in) const {
-    bindOutput(in.in_.input_, out_.output_);
+    bindOutput(in.get_input(), out_.output_);
   }
 
   template <typename U, CH_REQUIRES(is_cast_convertible<T, U>::value)>
@@ -143,11 +138,15 @@ public:
     return ch::internal::connector<decltype(*this)>(*this);
   }
 
-private:
+protected:
   const ch_out<T>& out_;
 
+  const lnode& get_output() const {
+    return out_.output_;
+  }
+
   friend std::ostream& operator<<(std::ostream& out, const output_port& port) {
-    return out << get_lnode(port.out_);
+    return out << port.get_output();
   }
 
   template <typename U> friend class input_port;
@@ -170,7 +169,6 @@ public:
     nodelist data(T::bitcount, true);
     data.push(input_);
     this->write_data(0, data, 0, T::bitcount);
-    registerIOMap(*this);
   }
 
   ch_in(const ch_in& in) : base(in), T::const_type(in) {}
@@ -180,15 +178,13 @@ public:
     return ch::internal::connector<decltype(*this)>(*this);
   }
 
-protected:
-
-  lnode input_;
-
+private:
   ch_in& operator=(const ch_in&) = delete;
   ch_in& operator=(ch_in&&) = delete;
 
+  lnode input_;
+
   template <typename U> friend class input_port;
-  template <typename U> friend class output_port;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -205,7 +201,6 @@ public:
 
   ch_out(const char* name = "io") : base(name) {
     output_ = createOutputNode(name, get_lnode(*this));
-    registerIOMap(*this);
   }
 
   ch_out(const ch_out& out) : base(out), T(out) {}
@@ -215,12 +210,11 @@ public:
     return ch::internal::connector<decltype(*this)>(*this);
   }
 
-protected:
-
-  lnode output_;
-
+private:
   ch_out& operator=(const ch_out&) = delete;
   ch_out& operator=(ch_out&&) = delete;
+
+  lnode output_;
 
   template <typename U> friend class output_port;
 };
@@ -229,44 +223,44 @@ protected:
 
 template <typename T, unsigned N>
 struct peek_impl {
-  static const T read_bytes(const ch_bitbase<N>& node) {
+  static const T read_bytes(const lnode& node) {
     T ret(0);
-    ch::internal::read_bytes(node, 0, &ret, sizeof(T), 0, N);
+    node.read_bytes(0, &ret, sizeof(T), 0, N, N);
     return ret;
   }
 };
 
 template <unsigned N>
-struct peek_impl< ch_literal<N>, N > {
-  static const ch_literal<N> read_bytes(const ch_bitbase<N>& node) {
+struct peek_impl<ch_literal<N>, N> {
+  static const ch_literal<N> read_bytes(const lnode& node) {
     ch_literal<N> ret;
-    ch::internal::read_bytes(node, 0, ret.get_words(), ret.get_cbsize(), 0, N);
+    node.read_bytes(0, ret.get_words(), ret.get_cbsize(), 0, N, N);
     return ret;
   }
 };
 
 template <typename T, unsigned N>
 struct poke_impl {
-  static void write_bytes(ch_bitbase<N>& node, const T& value) {
-    ch::internal::write_bytes(node, 0, &value, sizeof(T), 0, N);
+  static void write_bytes(lnode& node, const T& value) {
+    node.write_bytes(0, &value, sizeof(T), 0, N, N);
   }
 };
 
 template <unsigned N>
-struct poke_impl< ch_literal<N>, N > {
-  static void write_bytes(ch_bitbase<N>& node, const ch_literal<N>& value) {
-    ch::internal::write_bytes(node, 0, value.get_words(), value.get_cbsize(), 0, N);
+struct poke_impl<ch_literal<N>, N> {
+  static void write_bytes(lnode& node, const ch_literal<N>& value) {
+    node.write_bytes(0, value.get_words(), value.get_cbsize(), 0, N, N);
   }
 };
 
 template <typename V, typename T>
 V ch_peek(const output_port<T>& port) {
-  return peek_impl<std::decay_t<V>, T::bitcount>::read_bytes(port.out_);
+  return peek_impl<std::decay_t<V>, T::bitcount>::read_bytes(port.get_output());
 }
 
 template <typename V, typename T>
 void ch_poke(const input_port<T>& port, const V& value) {
-  poke_impl<std::decay_t<V>, T::bitcount>::write_bytes(port.in_, value);
+  poke_impl<std::decay_t<V>, T::bitcount>::write_bytes(port.get_input(), value);
 }
 
 template <typename T>

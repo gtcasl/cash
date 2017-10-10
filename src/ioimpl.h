@@ -7,15 +7,6 @@ namespace internal {
 
 class ioimpl : public lnodeimpl {
 public:
-  ioimpl(lnodetype type, context* ctx, uint32_t size)
-    : lnodeimpl(type, ctx, size)
-  {}
-
-  ioimpl(lnodetype type, context* ctx, uint32_t size, const char* name)
-    : lnodeimpl(type, ctx, size)
-    , name_(name)
-  {}
-
   void set_name(const char* name) {
     name_ = name;
   }
@@ -24,22 +15,32 @@ public:
     return name_.c_str();
   }
 
-protected:
+protected:  
+
+  ioimpl(context* ctx, lnodetype type, uint32_t size)
+    : lnodeimpl(ctx, type, size)
+  {}
+
+  ioimpl(context* ctx, lnodetype type, uint32_t size, const char* name)
+    : lnodeimpl(ctx, type, size)
+    , name_(name)
+  {}
+
+  ~ioimpl() {}
+
   std::string name_;
+
+  friend class context;
 };
 
 class inputimpl : public ioimpl {
 public:
-  inputimpl(lnodetype type, context* ctx, uint32_t size, const char* name);
-
-  inputimpl(context* ctx, uint32_t size, const char* name)
-    : inputimpl(type_input, ctx, size, name)
-  {}
-
-  void bind(const lnode& input);
+  void bind(const lnode& input) {
+    input_ = input;
+  }
 
   const lnode& get_input() const {
-    return srcs_[0];
+    return input_;
   }
 
   const bitvector& eval(ch_tick t) override;
@@ -47,34 +48,38 @@ public:
   void print(std::ostream& out, uint32_t level) const override;
   
 protected:
+
+  inputimpl(context* ctx, lnodetype type, uint32_t size, const char* name);
+
+  inputimpl(context* ctx, uint32_t size, const char* name)
+    : inputimpl(ctx, type_input, size, name)
+  {}
+
+  ~inputimpl() {}
+
+  lnode input_;
   ch_tick tick_;
+
+  friend class context;
 };
 
 class outputimpl : public ioimpl {
 public:
-  outputimpl(const lnode& src, const char* name);
-
-  void bind(const lnode& output) {
-    output_ = output;
-  }
-
-  const lnode& get_output() const {
-    return output_;
-  }
-  
   const bitvector& eval(ch_tick t) override;
   
   void print(std::ostream& out, uint32_t level) const override;
   
 protected:
-  lnode output_;
+  outputimpl(context* ctx, const lnode& src, const char* name);
+  ~outputimpl() {}
+
   ch_tick tick_;
+
+  friend class context;
 };
 
 class tapimpl : public ioimpl {
 public:
-  tapimpl(const lnode& src, const char* name);
-
   const lnode& get_target() const {
     return srcs_[0];
   }
@@ -84,7 +89,12 @@ public:
   void print(std::ostream& out, uint32_t level) const override;
 
 protected:
+  tapimpl(context* ctx, const lnode& src, const char* name);
+  ~tapimpl() {}
+
   ch_tick tick_;
+
+  friend class context;
 };
 
 }

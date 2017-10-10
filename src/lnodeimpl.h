@@ -18,6 +18,8 @@
   m(reg) \
   m(mem) \
   m(memport) \
+  m(call) \
+  m(callport) \
   m(tap) \
   m(assert) \
   m(tick) \
@@ -32,9 +34,6 @@ enum lnodetype {
 
 class lnodeimpl {
 public:
-  lnodeimpl(lnodetype type, context* ctx, uint32_t size);
-  virtual ~lnodeimpl();
-  
   uint32_t get_id() const {
     return id_;
   }
@@ -108,10 +107,12 @@ public:
   virtual void print(std::ostream& out, uint32_t level) const;
 
 protected:
-  
-  uint32_t id_;
-  lnodetype type_;
+  lnodeimpl(context* ctx, lnodetype type, uint32_t size);
+  virtual ~lnodeimpl();
+
   context* ctx_;
+  uint32_t id_;
+  lnodetype type_;  
   std::vector<lnode> srcs_;
   bitvector value_;
   

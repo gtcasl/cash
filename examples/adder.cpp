@@ -23,7 +23,7 @@ struct Adder {
 };
 
 int main(int argc, char **argv) {
-  ch_module<Adder<2>> adder;
+  ch_module<Adder<2>> adder("Adder");
 
   ch_poke(adder.io.cin, 1);
   ch_poke(adder.io.lhs, 1);

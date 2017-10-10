@@ -26,10 +26,6 @@ public:
     }
   };
 
-  proxyimpl(context* ctx, uint32_t size);
-  proxyimpl(const lnode& src);
-  proxyimpl(const lnode& src, uint32_t offset, uint32_t length);
-
   bool is_identity() const {
     return (1 == ranges_.size())
         && (srcs_[0].get_size() == value_.get_size());
@@ -54,10 +50,16 @@ public:
 
   void print(std::ostream& out, uint32_t level) const override;
   
-private:
+protected:
+  proxyimpl(context* ctx, uint32_t size);
+  proxyimpl(context* ctx, const lnode& src);
+  proxyimpl(context* ctx, const lnode& src, uint32_t offset, uint32_t length);
+  ~proxyimpl() {}
 
   std::vector<range_t> ranges_; 
   ch_tick tick_;
+
+  friend class context;
 };
 
 }

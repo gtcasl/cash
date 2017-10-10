@@ -125,7 +125,7 @@ struct Foo2 {
     ch_bit2 out;
     ch_module<Adder> adder;
     adder.io.in1(1);
-    adder.io.in1(2);
+    adder.io.in2(2);
     adder.io.out(out);
     io = (3 == out);
   }
@@ -150,6 +150,12 @@ TEST_CASE("module", "[module]") {
       ch_simulator sim(foo);
       sim.run(1);
       return (3 == ch_peek<int>(foo.io.out));
+    });
+    TESTX([]()->bool {
+      ch_module<Foo2> foo;
+      ch_simulator sim(foo);
+      sim.run(1);
+      return ch_peek<bool>(foo.io);
     });
   }
 }

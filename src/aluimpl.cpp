@@ -607,16 +607,16 @@ static uint32_t get_output_size(ch_alu_op op, const lnode& in) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-aluimpl::aluimpl(ch_alu_op op, const lnode& lhs, const lnode& rhs)
-  : lnodeimpl(type_alu, lhs.get_ctx(), get_output_size(op, lhs, rhs))
+aluimpl::aluimpl(context* ctx, ch_alu_op op, const lnode& lhs, const lnode& rhs)
+  : lnodeimpl(ctx, type_alu, get_output_size(op, lhs, rhs))
   , op_(op)
   , tick_(~0ull) {
   srcs_.emplace_back(lhs);
   srcs_.emplace_back(rhs);
 }
 
-aluimpl::aluimpl(ch_alu_op op, const lnode& in)
-  : lnodeimpl(type_alu, in.get_ctx(), get_output_size(op, in))
+aluimpl::aluimpl(context* ctx, ch_alu_op op, const lnode& in)
+  : lnodeimpl(ctx, type_alu, get_output_size(op, in))
   , op_(op)
   , tick_(~0ull) {
   srcs_.emplace_back(in);
@@ -764,9 +764,9 @@ lnodeimpl* ch::internal::createAluNode(
     ch_alu_op op,
     const lnode& lhs,
     const lnode& rhs) {
-  return new aluimpl(op, lhs, rhs);
+  return lhs.get_ctx()->createNode<aluimpl>(op, lhs, rhs);
 }
 
 lnodeimpl* ch::internal::createAluNode(ch_alu_op op, const lnode& in) {
-  return new aluimpl(op, in);
+  return in.get_ctx()->createNode<aluimpl>(op, in);
 }

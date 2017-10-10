@@ -18,7 +18,7 @@ public:
     return nodes_.empty();
   }
 
-private:
+protected:
   std::vector<lnodeimpl*> nodes_;
   bool value_;
 };

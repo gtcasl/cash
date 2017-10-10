@@ -15,6 +15,7 @@ class selectimpl;
 class regimpl;
 class latchimpl;
 class memimpl;
+class callimpl;
 class bitvector;
 class cdomain;
 
@@ -39,7 +40,7 @@ protected:
 
   bool print_decl(lnodeimpl* node);
 
-  bool print_binding(context* ctx);
+  bool print_call(callimpl* call);
 
   bool print_logic(lnodeimpl* node);
 
@@ -69,9 +70,7 @@ protected:
 
   void print_cdomain(cdomain* cd);
 
-  void print_mem(memimpl* node);  
-
-  std::set<unsigned> ports_;
+  void print_mem(memimpl* node);
 
   std::ostream& out_;
 };

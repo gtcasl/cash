@@ -4,18 +4,18 @@
 using namespace ch::internal;
 
 proxyimpl::proxyimpl(context* ctx, uint32_t size) 
-  : lnodeimpl(type_proxy, ctx, size)
+  : lnodeimpl(ctx, type_proxy, size)
   , tick_(~0ull) 
 {}
 
-proxyimpl::proxyimpl(const lnode& src)
-  : lnodeimpl(type_proxy, src.get_ctx(), src.get_size())
+proxyimpl::proxyimpl(context* ctx, const lnode& src)
+  : lnodeimpl(ctx, type_proxy, src.get_size())
   , tick_(~0ull)  {
   this->add_source(0, src, 0, src.get_size());
 }
 
-proxyimpl::proxyimpl(const lnode& src, uint32_t offset, uint32_t length)
-  : lnodeimpl(type_proxy, src.get_ctx(), length)
+proxyimpl::proxyimpl(context* ctx, const lnode& src, uint32_t offset, uint32_t length)
+  : lnodeimpl(ctx, type_proxy, length)
   , tick_(~0ull)  {
   this->add_source(0, src, offset, length);
 }
@@ -221,7 +221,7 @@ lnodeimpl* proxyimpl::get_slice(uint32_t offset, uint32_t length) {
   }
 
   // return new slice
-  auto proxy = new proxyimpl(ctx_, length);
+  auto proxy = ctx_->createNode<proxyimpl>(length);
   for (auto& r : ranges_) {
     uint32_t r_end = r.dst_offset + r.length;
     uint32_t src_end = offset + length;

@@ -8,9 +8,6 @@ namespace internal {
 
 class aluimpl : public lnodeimpl {
 public:
-  aluimpl(ch_alu_op op, const lnode& lhs, const lnode& rhs);
-  aluimpl(ch_alu_op op, const lnode& in);
-  
   ch_alu_op get_op() const {
     return op_;
   }  
@@ -19,9 +16,15 @@ public:
 
   void print(std::ostream& out, uint32_t level) const override;
   
-protected:
+protected:    
+  aluimpl(context* ctx, ch_alu_op op, const lnode& lhs, const lnode& rhs);
+  aluimpl(context* ctx, ch_alu_op op, const lnode& in);
+  ~aluimpl() {}
+
   ch_alu_op op_;
   ch_tick tick_;
+
+  friend class context;
 };
 
 }

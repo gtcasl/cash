@@ -8,7 +8,7 @@ memimpl::memimpl(context* ctx,
                  uint32_t data_width,
                  uint32_t addr_width,
                  bool write_enable)
-  : ioimpl(type_mem, ctx, data_width << addr_width)
+  : ioimpl(ctx, type_mem, data_width << addr_width)
   , data_width_(data_width)
   , addr_width_(addr_width)
   , wr_ports_offset_(0)
@@ -80,7 +80,7 @@ lnode& memimpl::get_port(const lnode& addr, bool writable) {
       return port;
     }
   }
-  auto impl = new memportimpl(this, addr, writable);
+  auto impl = ctx_->createNode<memportimpl>(this, addr, writable);
   ports_.emplace_back(impl);
   if (writable) {
     srcs_.emplace_back(impl);
@@ -126,8 +126,8 @@ void memimpl::print(std::ostream& out, uint32_t level) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-memportimpl::memportimpl(memimpl* mem, const lnode& addr, bool writable)
-  : ioimpl(type_memport, mem->get_ctx(), mem->data_width_)
+memportimpl::memportimpl(context* ctx, memimpl* mem, const lnode& addr, bool writable)
+  : ioimpl(ctx, type_memport, mem->data_width_)
   , a_next_(0)
   , mem_idx_(-1)
   , addr_idx_(-1)
@@ -187,7 +187,7 @@ const bitvector& memportimpl::eval(ch_tick t) {
 
 memory::memory(uint32_t data_width, uint32_t addr_width, bool writeEnable) {
   CH_CHECK(!ctx_curr()->conditional_enabled(), "memory objects cannot be nested inside a conditional block");
-  impl_ = new memimpl(ctx_curr(), data_width, addr_width, writeEnable);
+  impl_ = ctx_curr()->createNode<memimpl>(data_width, addr_width, writeEnable);
 }
 
 void memory::load(const std::vector<uint8_t>& data) {

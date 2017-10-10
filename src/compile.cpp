@@ -9,9 +9,7 @@
 
 using namespace ch::internal;
 
-compiler::compiler(context* ctx) : ctx_(ctx) {
-  node_map_ = ctx_->get_io_map();
-}
+compiler::compiler(context* ctx) : ctx_(ctx) {}
 
 void compiler::run() {
   DBG(2, "compiling %s ...\n", ctx_->get_name());
@@ -76,12 +74,7 @@ size_t compiler::dead_code_elimination() {
     auto& srcs = node->get_srcs();
     for (uint32_t i = 0, n = srcs.size(); i < n; ++i) {
       lnodeimpl* src_impl = srcs[i].get_impl();
-
-      // skip external sources
-      if (src_impl->get_ctx() != ctx_) {
-        ports_.emplace(node->get_id());
-        continue;
-      }
+      assert(src_impl->get_ctx() == ctx_);
 
       // skip unused proxy sources
       if (proxy) {
@@ -152,7 +145,7 @@ size_t compiler::remove_dead_nodes(
        iterEnd = ctx_->get_nodes().end(); iter != iterEnd;) {
     lnodeimpl* const node = *iter++;
     if (0 == live_nodes.count(node)) {
-      delete node;
+      ctx_->destroyNode(node);
       ++deleted;      
     }
   }
@@ -173,8 +166,7 @@ size_t compiler::remove_identity_nodes() {
   for (auto iter = ctx_->get_proxies().begin(),
        iterEnd = ctx_->get_proxies().end(); iter != iterEnd;) {
     proxyimpl* const proxy = *iter++;
-    if (proxy->is_identity()
-     && 0 == ports_.count(proxy->get_id())) {
+    if (proxy->is_identity()) {
       auto& src = proxy->get_src(0);
       auto src_impl = src.get_impl();
 
@@ -197,7 +189,7 @@ size_t compiler::remove_identity_nodes() {
         src_refs.push_back(node);
       }
       node_map_.erase(it);
-      delete proxy;
+      ctx_->destroyNode(proxy);
       ++deleted;
     }
   }

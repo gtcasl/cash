@@ -164,8 +164,7 @@ public:
     return slices_.end();
   }
 
-private:
-
+protected:
   struct slice_t {
     const lnode& src;
     uint32_t offset;

@@ -9,19 +9,6 @@ namespace internal {
 
 class regimpl : public tickable, public lnodeimpl {
 public:
-  regimpl(cdomain* cd,
-          const lnode& next,
-          const lnode& init,
-          const lnode& reset);
-
-  regimpl(cdomain* cd,
-          const lnode& next,
-          const lnode& init,
-          const lnode& reset,
-          const lnode& enable);
-
-  virtual ~regimpl();
-
   cdomain* get_cd() const {
     return cd_;
   }
@@ -58,6 +45,21 @@ public:
   
 protected:
 
+  regimpl(context* ctx,
+          cdomain* cd,
+          const lnode& next,
+          const lnode& init,
+          const lnode& reset);
+
+  regimpl(context* ctx,
+          cdomain* cd,
+          const lnode& next,
+          const lnode& init,
+          const lnode& reset,
+          const lnode& enable);
+
+  virtual ~regimpl();
+
   void get_signals(cdomain* cd);
 
   cdomain*  cd_;
@@ -66,6 +68,8 @@ protected:
   int init_idx_;
   int reset_idx_;
   int enable_idx_;
+
+  friend class context;
 };
 
 }

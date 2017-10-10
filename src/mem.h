@@ -44,7 +44,7 @@ public:
              size_t src_offset,
              size_t length);
 
-private:
+protected:
 
   void load(const std::vector<uint8_t>& data);
 
@@ -63,7 +63,6 @@ public:
   }
 
 protected:
-
   memport_ref(memory& mem, const lnode& addr)
     : mem_(mem)
     , addr_(addr)
@@ -120,7 +119,7 @@ public:
       return make_type<ch_bit<W>>(mem_.read(get_lnode<T, A>(addr)));
     }
     
-private:
+protected:
     memory mem_;
 };
 
@@ -155,7 +154,7 @@ public:
       return memport_ref<W>(mem_, get_lnode<T, A>(addr));
     }
     
-private:    
+protected:
     memory mem_;
 };
 

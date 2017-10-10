@@ -129,7 +129,7 @@ struct Foo2 {
     ch_bit2 out;
     ch_module<Adder> adder;
     adder.io.in1(1);
-    adder.io.in1(2);
+    adder.io.in2(2);
     adder.io.out(out);
     io = (3 == out);
   }
@@ -156,6 +156,11 @@ int main(int argc, char **argv) {
   ch_simulator sim(foo);
   sim.run(1);
   assert(3 == ch_peek<int>(foo.io.out));
+
+  /*ch_module<Foo2> foo;
+  ch_simulator sim(foo);
+  sim.run(1);
+  assert(ch_peek<bool>(foo.io));*/
 
   ch_toVerilog("foo.v", foo);
 

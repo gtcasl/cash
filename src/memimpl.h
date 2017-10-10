@@ -9,13 +9,7 @@ namespace internal {
 class memportimpl;
 
 class memimpl : public tickable, public ioimpl {
-public:  
-  memimpl(context* ctx,
-          uint32_t data_width,
-          uint32_t addr_width,
-          bool write_enable);
-  ~memimpl();
-
+public:
   uint32_t get_total_size() const {
     return value_.get_size();
   }
@@ -53,6 +47,11 @@ public:
   void print(std::ostream& out, uint32_t level) const override;
 
 protected:
+  memimpl(context* ctx,
+          uint32_t data_width,
+          uint32_t addr_width,
+          bool write_enable);
+  ~memimpl();
 
   void load_data(const std::function<bool(uint8_t* out)>& getdata);
   
@@ -66,12 +65,11 @@ protected:
   bool initialized_;
   
   friend class memportimpl;
+  friend class context;
 };
 
 class memportimpl : public ioimpl {
 public:  
-  memportimpl(memimpl* mem, const lnode& addr, bool writable);
-
   const lnode& get_mem() const {
     return srcs_[mem_idx_];
   }
@@ -100,6 +98,8 @@ public:
   const bitvector& eval(ch_tick t) override;
 
 protected:
+  memportimpl(context* ctx, memimpl* mem, const lnode& addr, bool writable);
+  ~memportimpl() {}
     
   bitvector q_next_;
   uint32_t  a_next_;
@@ -112,6 +112,7 @@ protected:
   ch_tick tick_;
   
   friend class memimpl;
+  friend class context;
 };
 
 }

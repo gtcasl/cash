@@ -23,7 +23,7 @@ public:
     return ctx_;
   }
 
-private:
+protected:
   context* ctx_;
   context* old_ctx_;
 };

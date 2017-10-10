@@ -1,10 +1,11 @@
-#include "context.h"
+﻿#include "context.h"
 #include <thread>
 #include "lnode.h"
 #include "litimpl.h"
 #include "regimpl.h"
 #include "memimpl.h"
 #include "ioimpl.h"
+#include "callimpl.h"
 #include "selectimpl.h"
 #include "proxyimpl.h"
 #include "memimpl.h"
@@ -41,7 +42,7 @@ public:
     return ctx;
   }
 
-private:
+protected:
   mutable context* ctx_;
 };
 
@@ -82,33 +83,10 @@ context::context(const char* name)
 {}
 
 context::~context() {
-  // release children
-  for (auto ctx : children_) {
-    ctx->release();
-  }
-
   // delete allocated nodes
   for (auto it = nodes_.begin(), end = nodes_.end(); it != end;) {
     delete *it++;
   }
-  assert(undefs_.empty());
-  assert(proxies_.empty());
-  assert(literals_.empty());
-  assert(inputs_.empty());
-  assert(outputs_.empty());
-  assert(taps_.empty());
-  assert(gtaps_.empty());
-  assert(cdomains_.empty());
-  assert(cond_blocks_.empty());
-
-  assert(nullptr == default_clk_);
-  assert(nullptr == default_reset_);
-  assert(nullptr == tick_);
-}
-
-void context::add_context(context* ctx) {
-  ctx->acquire();
-  children_.push_back(ctx);
 }
 
 void context::push_clk(const lnode& clk) {  
@@ -131,7 +109,7 @@ lnodeimpl* context::get_clk() {
   if (!user_clks_.empty())
     return user_clks_.top().get_impl();
   if (nullptr == default_clk_)
-    default_clk_ = new inputimpl(type_clk, this, 1, "clk");
+    default_clk_ = this->createNode<inputimpl>(type_clk, 1, "clk");
   return default_clk_;
 }
 
@@ -139,17 +117,17 @@ lnodeimpl* context::get_reset() {
   if (!user_resets_.empty())
     return user_resets_.top().get_impl();
   if (nullptr == default_reset_)
-     default_reset_ = new inputimpl(type_reset, this, 1, "reset");
+     default_reset_ = this->createNode<inputimpl>(type_reset, 1, "reset");
   return default_reset_;
 }
 
 lnodeimpl* context::get_tick() {
   if (nullptr == tick_)
-    tick_ = new tickimpl(this);
+    tick_ = this->createNode<tickimpl>();
   return tick_;
 }
 
-uint32_t context::add_node(lnodeimpl* node) {
+uint32_t context::node_id() {
   uint32_t nodeid = ++node_ids_;
 #ifndef NDEBUG
   uint32_t dbg_nodeid = platform::self().get_dbg_node();
@@ -159,6 +137,15 @@ uint32_t context::add_node(lnodeimpl* node) {
     }
   }
 #endif
+  return nodeid;
+}
+
+void context::destroyNode(lnodeimpl* node) {
+  this->remove_node(node);
+  delete node;
+}
+
+void context::add_node(lnodeimpl* node) {
   nodes_.emplace_back(node);
 
   switch (node->get_type()) {
@@ -177,6 +164,12 @@ uint32_t context::add_node(lnodeimpl* node) {
   case type_output:
     outputs_.emplace_back((outputimpl*)node);
     break; 
+  case type_call:
+    calls_.emplace_back((callimpl*)node);
+    break;
+  case type_callport:
+    callports_.emplace_back((callportimpl*)node);
+    break;
   case type_tap:
     taps_.emplace_back((tapimpl*)node);
     break;
@@ -188,39 +181,16 @@ uint32_t context::add_node(lnodeimpl* node) {
     break;
   }
 
-  // Note: we have to explicitly select io nodes here
-  // because using dynamic_cast<ioimpl*> doesn't work during the object construction
-  // and add_node() is called inside lnodeimpl constructor.
-  bool is_ionode;
-  switch (node->get_type()) {
-  case type_input:
-  case type_output:
-  case type_clk:
-  case type_reset:
-  case type_mem:
-  case type_memport:
-  case type_tap:
-  case type_assert:
-  case type_print:
-  case type_tick:
-    is_ionode = true;
-    break;
-  default:
-    is_ionode = false;
-    break;
-  }
-
-  // register local nodes
-  // io objects have global scope
-  if (!cond_blocks_.empty() && !is_ionode) {
+  // register local nodes, io objects have global scope
+  if (!cond_blocks_.empty()
+   && nullptr == dynamic_cast<ioimpl*>(node)) {
     cond_blocks_.front().locals.emplace(node);
   }
-
-  return nodeid;  
 }
 
 void context::remove_node(lnodeimpl* node) {
-  DBG(3, "*** deleting node: %s%d(#%d)!\n", to_string(node->get_type()), node->get_size(), node->get_id());
+  DBG(3, "*** deleting node: %s%d(#%d)!\n",
+      to_string(node->get_type()), node->get_size(), node->get_id());
   
   assert(!nodes_.empty());
   nodes_.remove(node);
@@ -248,6 +218,12 @@ void context::remove_node(lnodeimpl* node) {
   case type_reset:
     if (node == default_reset_)
       default_reset_ = nullptr;
+    break;
+  case type_call:
+    calls_.remove((callimpl*)node);
+    break;
+  case type_callport:
+    callports_.remove((callportimpl*)node);
     break;
   case type_tap:
     taps_.remove((tapimpl*)node);
@@ -483,9 +459,9 @@ void context::clone_conditional_assignment(
        it_upd != it_upd_end; ++it_upd) {
     auto sel_old = it_upd->sel;
     lnode _true((sel_old->get_true().get_impl() == prev_sel_old) ?
-          prev_sel_new : new proxyimpl(sel_old->get_true(), offset - range.offset, length));
+          prev_sel_new : this->createNode<proxyimpl>(sel_old->get_true(), offset - range.offset, length));
     lnode _false((sel_old->get_false().get_impl() == prev_sel_old) ?
-          prev_sel_new : new proxyimpl(sel_old->get_false(), offset - range.offset, length));
+          prev_sel_new : this->createNode<proxyimpl>(sel_old->get_false(), offset - range.offset, length));
     auto sel_new = dynamic_cast<selectimpl*>(createSelectNode(sel_old->get_pred(), _true, _false));
     cond_upds_[new_range].emplace_front(sel_new, it_upd->block_id);
     prev_sel_old = sel_old;
@@ -508,7 +484,7 @@ lnodeimpl* context::get_literal(const bitvector& value) {
     if (lit->get_value() == value)
       return lit;
   }
-  return new litimpl(this, value);
+  return this->createNode<litimpl>(value);
 }
 
 cdomain* context::create_cdomain(
@@ -528,7 +504,7 @@ void context::remove_cdomain(cdomain* cd) {
   cdomains_.remove(cd);
 }
 
-void context::registerTap(const char* name, const lnode& node) {
+void context::register_tap(const char* name, const lnode& node) {
   // resolve duplicate names
   std::string full_name(name);
   unsigned instances = dup_taps_[name]++;
@@ -543,12 +519,34 @@ void context::registerTap(const char* name, const lnode& node) {
     full_name = fstring("%s_%d", name, instances);
   }
   // create tap node
-  new tapimpl(node, full_name.c_str());
+  this->createNode<tapimpl>(node, full_name.c_str());
 }
 
-void context::register_io_map(const nodelist& data) {
-  for (auto& slice : data) {
-    io_map_[slice.src.get_id()].push_back(&slice.src);
+callimpl* context::find_call(context* module_ctx) {
+  for (auto call : calls_) {
+    if (call->get_module_ctx() == module_ctx)
+      return call;
+  }
+  return this->createNode<callimpl>(module_ctx);
+}
+
+void context::bind_input(const lnode& input, const lnode& src) {
+  auto call = this->find_call(input.get_ctx());
+  call->bind_input(input, src);
+  dynamic_cast<inputimpl*>(input.get_impl())->bind(src);
+}
+
+void context::bind_output(const lnode& dst, const lnode& output) {
+  auto call = this->find_call(output.get_ctx());
+  lnode callport(this->createNode<callportimpl>(call, output));
+
+  auto input = dynamic_cast<inputimpl*>(dst.get_impl());
+  if (input) {
+    this->bind_input(input, callport);
+  } else {
+    nodelist data(dst.get_size(), false);
+    data.push(callport);
+    const_cast<lnode&>(dst).write_data(0, data, 0, dst.get_size(), dst.get_size());
   }
 }
 
@@ -587,31 +585,21 @@ live_nodes_t context::compute_live_nodes() const {
 }
 
 void context::tick(ch_tick t) {
-  // tick children
-  for (auto ctx : children_) {
-    ctx->tick(t);
-  }
-  // tick clock domains
   for (auto cd : cdomains_) {
     cd->tick(t);
   }  
 }
 
 void context::tick_next(ch_tick t) {
-  // tick_next children
-  for (auto ctx : children_) {
-    ctx->tick_next(t);
-  }
-  // tick_next clock domains
   for (auto cd : cdomains_) {
     cd->tick_next(t);
   }  
 }
 
 void context::eval(ch_tick t) {
-  // evaluate children
-  for (auto ctx : children_) {
-    ctx->eval(t);
+  // evaluate calls
+  for (auto node : calls_) {
+    node->eval(t);
   }
 
   // evaluate outputs
@@ -622,8 +610,8 @@ void context::eval(ch_tick t) {
   // evaluate taps
   for (auto node : taps_) {
     node->eval(t);
-  }  
-  
+  }
+
   // evaluate asserts
   for (auto node : gtaps_) {
     node->eval(t);
@@ -744,14 +732,18 @@ void context::dump_stats(std::ostream& out) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void ch::internal::registerIOMap(const nodelist& data) {
-  ctx_curr()->register_io_map(data);
-}
-
 void ch::internal::registerTap(const char* name, const lnode& node) {
-  node.get_ctx()->registerTap(name, node);
+  node.get_ctx()->register_tap(name, node);
 }
 
 void ch::internal::ch_dumpStats(std::ostream& out, const module& module) {
   get_ctx(module)->dump_stats(out);
+}
+
+void ch::internal::bindInput(const lnode& input, const lnode& src) {
+  src.get_ctx()->bind_input(input, src);
+}
+
+void ch::internal::bindOutput(const lnode& dst, const lnode& output) {
+  dst.get_ctx()->bind_output(dst, output);
 }

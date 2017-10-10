@@ -18,9 +18,6 @@ moduleimpl::~moduleimpl() {
 
 void moduleimpl::begin_context() {
   old_ctx_ = ctx_swap(ctx_);
-  if (old_ctx_) {
-    old_ctx_->add_context(ctx_);
-  }
 }
 
 void moduleimpl::end_context() {

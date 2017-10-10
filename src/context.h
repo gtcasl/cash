@@ -15,6 +15,8 @@ class litimpl;
 class ioimpl;
 class inputimpl;
 class outputimpl;
+class callimpl;
+class callportimpl;
 class selectimpl;
 class tapimpl;
 class assertimpl;
@@ -31,12 +33,7 @@ using live_nodes_t = std::unordered_set<lnodeimpl*>;
 using tap_counts_t = std::unordered_map<std::string, unsigned>;
 
 class context : public refcounted {
-public:  
-
-  const auto& get_children() const {
-    return children_;
-  }
-
+public:
   uint32_t get_id() const {
     return id_;
   }
@@ -77,12 +74,20 @@ public:
     return literals_;
   }
 
-  inputimpl* get_default_clk() const {
+  auto get_default_clk() const {
     return default_clk_;
   }
 
-  inputimpl* get_default_reset() const {
+  auto get_default_reset() const {
     return default_reset_;
+  }
+
+  const auto& get_calls() const {
+    return calls_;
+  }
+
+  const auto& get_callports() const {
+    return callports_;
   }
 
   //--
@@ -100,10 +105,23 @@ public:
   lnodeimpl* get_tick();
 
   //--
-  
-  uint32_t add_node(lnodeimpl* node);  
+
+  uint32_t node_id();
+
+  template <typename T, typename... Ts>
+  T* createNode(Ts&&... args) {
+    auto node = new T(this, std::forward<Ts>(args)...);
+    this->add_node(node);
+    return node;
+  }
+
+  void destroyNode(lnodeimpl* node);
+
+  void add_node(lnodeimpl* node);
   void remove_node(lnodeimpl* node);
   
+  //--
+
   void begin_branch();
   void end_branch();
 
@@ -114,20 +132,15 @@ public:
   void conditional_assign(lnode& dst, const lnode& src, uint32_t offset, uint32_t length);
   lnodeimpl* get_predicate(lnodeimpl* node, uint32_t offset, uint32_t length);
   void remove_from_locals(lnodeimpl* node);
+
+  //--
   
   lnodeimpl* get_literal(const bitvector& value);
 
   cdomain* create_cdomain(const std::vector<clock_event>& sensitivity_list);
   void remove_cdomain(cdomain* cd);
 
-  void registerTap(const char* name, const lnode& lnode);
-
-  //--
-
-  void register_io_map(const nodelist& data);
-  const node_map_t& get_io_map() const {
-    return io_map_;
-  }
+  void register_tap(const char* name, const lnode& lnode);
 
   //--
   
@@ -153,7 +166,9 @@ public:
 
   //--
 
-  void add_context(context* ctx);
+  void bind_input(const lnode& input, const lnode& src);
+
+  void bind_output(const lnode& dst, const lnode& output);
   
 protected:
 
@@ -202,7 +217,9 @@ protected:
   typedef std::list<cond_branch_t> cond_branches_t;
 
   struct cond_block_t {
-    cond_block_t(uint32_t p_id, lnodeimpl* p_pred, cond_branches_t::iterator p_branch)
+    cond_block_t(uint32_t p_id,
+                 lnodeimpl* p_pred,
+                 cond_branches_t::iterator p_branch)
       : id(p_id)
       , pred(p_pred)
       , branch(p_branch)
@@ -228,6 +245,8 @@ protected:
       uint32_t offset,
       uint32_t length);
 
+  callimpl* find_call(context* module_ctx);
+
   uint32_t    id_;
   std::string name_;
 
@@ -246,15 +265,17 @@ protected:
   std::list<ioimpl*>     gtaps_;
   std::list<litimpl*>    literals_;
   std::list<cdomain*>    cdomains_;
+  std::list<callimpl*>   calls_;
+  std::list<callportimpl*> callports_;
+
   cond_upds_t            cond_upds_;
   cond_blocks_t          cond_blocks_;
   cond_branches_t        cond_branches_;
+
   std::stack<lnode>      user_clks_;
   std::stack<lnode>      user_resets_;
-  tap_counts_t           dup_taps_;
-  node_map_t             io_map_;
 
-  std::vector<context*>  children_;
+  tap_counts_t           dup_taps_;
 
   friend class context_manager;
 };

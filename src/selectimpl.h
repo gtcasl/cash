@@ -7,8 +7,6 @@ namespace internal {
 
 class selectimpl : public lnodeimpl {
 public:
-  selectimpl(const lnode& pred, const lnode& _true, const lnode& _false);
-  
  const lnode& get_pred() const {
     return srcs_[0];
   }
@@ -34,9 +32,17 @@ public:
   }
 
   const bitvector& eval(ch_tick t) override;
-  
-private:
+
+protected:
+  selectimpl(context* ctx,
+             const lnode& pred,
+             const lnode& _true,
+             const lnode& _false);
+  ~selectimpl() {}
+
   ch_tick tick_;
+
+  friend class context;
 };
 
 }

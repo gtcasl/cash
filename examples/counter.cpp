@@ -19,7 +19,7 @@ struct Counter {
 };
 
 int main(int argc, char **argv) {
-  ch_module<Counter<4>> counter;
+  ch_module<Counter<4>> counter("Counter");
 
   ch_vcdtracer tracer("counter.vcd", counter);
   tracer.run(22);

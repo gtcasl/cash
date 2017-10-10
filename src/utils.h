@@ -273,7 +273,7 @@ public:
     enabled_ = true;
     return ret;
   }
-private:
+protected:
   std::basic_string<CharT, Traits> sep_;
   std::basic_string<CharT, Traits> empty_;
   mutable bool enabled_;

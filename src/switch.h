@@ -6,8 +6,7 @@ namespace ch {
 namespace internal {
 
 class switch_impl {
-public:
-  
+public:  
   ~switch_impl();
   
   using func_t = std::function<void ()>;
@@ -16,8 +15,7 @@ public:
 
   void eval(func_t func);
  
-private: 
- 
+protected:
   switch_impl(const lnode& key);
  
   lnode key_;
