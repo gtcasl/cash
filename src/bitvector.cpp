@@ -15,27 +15,32 @@ bitvector::bitvector(bitvector&& rhs) {
   rhs.size_ = 0;
 }
 
-bitvector::bitvector(uint32_t size) : words_(nullptr), size_(0) {
+bitvector::bitvector(uint32_t size)
+  : words_(nullptr), size_(0) {
   this->resize(size, 0, true, false);
 }
 
-bitvector::bitvector(uint32_t size, char value) : words_(nullptr), size_(0) {
+bitvector::bitvector(uint32_t size, char value)
+  : words_(nullptr), size_(0) {
   this->resize(size, 0x0, false, false);
   this->operator =(value);
 }
 
-bitvector::bitvector(uint32_t size, uint32_t value) : words_(nullptr), size_(0) {
+bitvector::bitvector(uint32_t size, uint32_t value)
+  : words_(nullptr), size_(0) {
   this->resize(size, 0x0, false, false);
   this->operator =(value);
 }
 
-bitvector::bitvector(uint32_t size, const std::initializer_list<uint32_t>& value)
+bitvector::bitvector(uint32_t size,
+                     const std::initializer_list<uint32_t>& value)
   : words_(nullptr), size_(0) {  
   this->resize(size, 0x0, false, false);
   this->operator =(value);  
 }
 
-bitvector::bitvector(uint32_t size, const char* value) : words_(nullptr), size_(0) {
+bitvector::bitvector(uint32_t size, const char* value)
+  : words_(nullptr), size_(0) {
   this->resize(size, 0x0, false, false);
   this->operator =(value);
 }
@@ -46,7 +51,10 @@ bitvector::~bitvector() {
   }
 }
 
-void bitvector::resize(uint32_t size, uint32_t value, bool initialize, bool preserve) {
+void bitvector::resize(uint32_t size,
+                       uint32_t value,
+                       bool initialize,
+                       bool preserve) {
   uint32_t old_num_words = (size_ + WORD_MASK) >> WORD_SIZE_LOG;
   uint32_t new_num_words = (size + WORD_MASK) >> WORD_SIZE_LOG;
   if (new_num_words != old_num_words) {

@@ -259,6 +259,11 @@ V ch_peek(const output_port<T>& port) {
 }
 
 template <typename V, typename T>
+V ch_peek(const input_port<T>& port) {
+  return peek_impl<std::decay_t<V>, T::bitcount>::read_bytes(port.get_input());
+}
+
+template <typename V, typename T>
 void ch_poke(const input_port<T>& port, const V& value) {
   poke_impl<std::decay_t<V>, T::bitcount>::write_bytes(port.get_input(), value);
 }

@@ -23,10 +23,11 @@ public:
   public:    
     
     reference& operator=(bool rhs) {
-      if (rhs)
+      if (rhs) {
         word_ |= mask_;
-      else
+      } else {
         word_ &= ~mask_;
+      }
       return *this;
     }
     
@@ -50,21 +51,21 @@ public:
   public:        
     const_iterator(const const_iterator& rhs) 
       : words_(rhs.words_)
-      , index_(rhs.index_)
+      , offset_(rhs.offset_)
     {}
     
     const_iterator& operator=(const const_iterator& rhs) {
       words_ = rhs.words_;
-      index_ = rhs.index_;
+      offset_ = rhs.offset_;
       return *this;
     }
     
     const_reference operator*() const {
-      return (*words_ & (1 << (index_ & WORD_MASK))) != 0;
+      return (*words_ & (1 << (offset_ & WORD_MASK))) != 0;
     }
     
     bool operator==(const const_iterator& rhs) const {
-      return index_ == rhs.index_;
+      return offset_ == rhs.offset_;
     }
     
     bool operator!=(const const_iterator& rhs) const {
@@ -72,13 +73,13 @@ public:
     }
     
     const_iterator& operator++() {
-      if (0 == (++index_ & WORD_MASK))
+      if (0 == (++offset_ & WORD_MASK))
           ++words_;
       return *this;
     }
     
     const_iterator& operator--() {
-      if (0 == (index_-- & WORD_MASK))
+      if (0 == (offset_-- & WORD_MASK))
           --words_;
       return *this;
     }
@@ -119,23 +120,23 @@ public:
     
   protected:
     
-    const_iterator(const uint32_t* words, uint32_t index) 
+    const_iterator(const uint32_t* words, uint32_t offset)
       : words_(words)
-      , index_(index) 
+      , offset_(offset)
     {}
     
     void advance(int delta) {
-      int offset = (index_ & WORD_MASK) + delta;
+      int offset = (offset_ & WORD_MASK) + delta;
       if (offset >= 0) {
         words_ += (offset >> WORD_SIZE_LOG);    
       } else {
         words_ -= ((WORD_MASK - offset) >> WORD_SIZE_LOG);
       }
-      index_ += delta;
+      offset_ += delta;
     }
     
     const uint32_t* words_;
-    uint32_t index_;
+    uint32_t offset_;
     
     friend class iterator;
     friend class bitvector;
@@ -145,14 +146,14 @@ public:
   public:
     using base = const_iterator;
     using base::words_;
-    using base::index_;
+    using base::offset_;
     
     iterator(const iterator& rhs) : base(rhs) {}
     
     iterator(const const_iterator& rhs) : base(rhs) {}
     
     reference operator*() const {
-      return reference(const_cast<uint32_t&>(*words_), 1 << (index_ & WORD_MASK));
+      return reference(const_cast<uint32_t&>(*words_), 1 << (offset_ & WORD_MASK));
     }
     
     bool operator==(const iterator& rhs) const {
@@ -164,13 +165,13 @@ public:
     }
     
     iterator& operator++() {
-      if (0 == (++index_ & WORD_MASK))
+      if (0 == (++offset_ & WORD_MASK))
           ++words_;
       return *this;
     } 
     
     iterator& operator--() {
-      if (0 == (index_-- & WORD_MASK))
+      if (0 == (offset_-- & WORD_MASK))
           --words_;
       return *this;
     }
@@ -211,8 +212,8 @@ public:
     
   protected:  
     
-    iterator(uint32_t* words, uint32_t index)
-      : const_iterator(words, index) {}
+    iterator(uint32_t* words, uint32_t offset)
+      : const_iterator(words, offset) {}
     
     friend class bitvector;
   };
@@ -221,21 +222,21 @@ public:
   public:
     const_reverse_iterator(const const_reverse_iterator& rhs)
       : words_(rhs.words_)
-      , index_(rhs.index_)
+      , offset_(rhs.offset_)
     {}
 
     const_reverse_iterator& operator=(const const_reverse_iterator& rhs) {
       words_ = rhs.words_;
-      index_ = rhs.index_;
+      offset_ = rhs.offset_;
       return *this;
     }
 
     const_reference operator*() const {
-      return (*words_ & (1 << (index_ & WORD_MASK))) != 0;
+      return (*words_ & (1 << (offset_ & WORD_MASK))) != 0;
     }
 
     bool operator==(const const_reverse_iterator& rhs) const {
-      return index_ == rhs.index_;
+      return offset_ == rhs.offset_;
     }
 
     bool operator!=(const const_reverse_iterator& rhs) const {
@@ -243,13 +244,13 @@ public:
     }
 
     const_reverse_iterator& operator++() {
-      if (0 == (index_-- & WORD_MASK))
+      if (0 == (offset_-- & WORD_MASK))
           --words_;
       return *this;
     }
 
     const_reverse_iterator& operator--() {
-      if (0 == (++index_ & WORD_MASK))
+      if (0 == (++offset_ & WORD_MASK))
           ++words_;
       return *this;
     }
@@ -290,23 +291,23 @@ public:
 
   protected:
 
-    const_reverse_iterator(const uint32_t* words, uint32_t index)
+    const_reverse_iterator(const uint32_t* words, uint32_t offset)
       : words_(words)
-      , index_(index)
+      , offset_(offset)
     {}
 
     void advance(int delta) {
-      int offset = (index_ & WORD_MASK) + delta;
+      int offset = (offset_ & WORD_MASK) + delta;
       if (offset >= 0) {
         words_ += (offset >> WORD_SIZE_LOG);
       } else {
         words_ -= ((WORD_MASK - offset) >> WORD_SIZE_LOG);
       }
-      index_ += delta;
+      offset_ += delta;
     }
 
     const uint32_t* words_;
-    uint32_t index_;
+    uint32_t offset_;
 
     friend class reverse_iterator;
     friend class bitvector;
@@ -316,14 +317,14 @@ public:
   public:
     using base = const_reverse_iterator;
     using base::words_;
-    using base::index_;
+    using base::offset_;
 
     reverse_iterator(const reverse_iterator& rhs) : base(rhs) {}
 
     reverse_iterator(const const_reverse_iterator& rhs) : base(rhs) {}
 
     reference operator*() const {
-      return reference(const_cast<uint32_t&>(*words_), 1 << (index_ & WORD_MASK));
+      return reference(const_cast<uint32_t&>(*words_), 1 << (offset_ & WORD_MASK));
     }
 
     bool operator==(const reverse_iterator& rhs) const {
@@ -335,13 +336,13 @@ public:
     }
 
     reverse_iterator& operator++() {
-      if (0 == (index_-- & WORD_MASK))
+      if (0 == (offset_-- & WORD_MASK))
           --words_;
       return *this;
     }
 
     reverse_iterator& operator--() {
-      if (0 == (++index_ & WORD_MASK))
+      if (0 == (++offset_ & WORD_MASK))
           ++words_;
       return *this;
     }
@@ -382,8 +383,8 @@ public:
 
   protected:
 
-    reverse_iterator(uint32_t* words, uint32_t index)
-      : const_reverse_iterator(words, index) {}
+    reverse_iterator(uint32_t* words, uint32_t offset)
+      : const_reverse_iterator(words, offset) {}
 
     friend class bitvector;
   };
