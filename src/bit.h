@@ -38,11 +38,11 @@ void createPrintNode(const char* format, const std::initializer_list<lnode>& arg
     base::assign(rhs); \
     return *this; \
   } \
-  type& operator=(const ch::internal::ch_literal<type::bitcount>& rhs) { \
+  type& operator=(const ch::internal::ch_scalar<type::bitcount>& rhs) { \
     base::assign(rhs); \
     return *this; \
   } \
-  template <typename U, CH_REQUIRES(ch::internal::is_ch_scalar<U>::value)> \
+  template <typename U, CH_REQUIRES(ch::internal::is_scalar<U>::value)> \
   type& operator=(U rhs) { \
     base::assign(rhs); \
     return *this; \
@@ -87,6 +87,7 @@ public:
   using base = ch_bitbase<N>;
   using value_type = ch_bit<N>;
   using const_type = const_bit<N>;
+  using sim_type   = ch_scalar<N>;
 
   const_bit() : node_(N) {}
 
@@ -96,10 +97,10 @@ public:
 
   const_bit(const ch_bitbase<N>& rhs) : node_(get_lnode(rhs), N) {}
 
-  const_bit(const ch_literal<N>& rhs) : node_(rhs) {}
+  const_bit(const ch_scalar<N>& rhs) : node_(rhs.value_) {}
 
   template <typename U,
-            CH_REQUIRES(is_ch_scalar<U>::value)>
+            CH_REQUIRES(is_scalar<U>::value)>
   explicit const_bit(U rhs) : node_(bitvector(N, rhs)) {}
 
   const auto clone() const {
@@ -139,6 +140,7 @@ public:
   using base = const_bit<N>;
   using value_type = ch_bit<N>;
   using const_type = const_bit<N>;
+  using sim_type   = ch_scalar<N>;
 
   using base::node_;
       
@@ -152,10 +154,10 @@ public:
 
   ch_bit(const ch_bitbase<N>& rhs) : base(rhs) {}
 
-  ch_bit(const ch_literal<N>& rhs) : base(rhs) {}
+  ch_bit(const ch_scalar<N>& rhs) : base(rhs) {}
     
   template <typename U,
-            CH_REQUIRES(is_ch_scalar<U>::value)>
+            CH_REQUIRES(is_scalar<U>::value)>
   explicit ch_bit(U rhs) : base(rhs) {}
 
   ch_bit& operator=(const ch_bit& rhs) {
@@ -174,7 +176,7 @@ public:
 static_assert(has_bitcount<ch_bit<1>>::value, ":-(");
 static_assert(deduce_type_t<ch_bitbase<1>, ch_bitbase<2>>::bitcount == 0, ":-(");
 static_assert(deduce_type_t<ch_bitbase<1>, ch_bitbase<1>>::bitcount == 1, ":-(");
-static_assert(are_ch_literal<ch_bitbase<1>, ch_bitbase<1>>::value == false, ":-(");
+static_assert(are_all_ch_scalar<ch_bitbase<1>, ch_bitbase<1>>::value == false, ":-(");
 static_assert(deduce_type_t<ch_bit<2>, ch_bit<2>>::bitcount == 2, ":-(");
 
 template <typename T, unsigned N = std::decay_t<T>::bitcount>

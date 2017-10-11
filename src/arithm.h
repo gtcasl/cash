@@ -68,7 +68,7 @@ enum alu_flags {
 
 #define CH_BINOP_GEN(func, op) \
   template <typename A, typename B, \
-            CH_REQUIRES(!are_ch_literal<A, B>::value), \
+            CH_REQUIRES(!are_all_ch_scalar<A, B>::value), \
             CH_REQUIRES(deduce_type_t<A, B>::bitcount != 0), \
             CH_REQUIRES(is_bit_convertible<A, deduce_type_t<A, B>::bitcount>::value), \
             CH_REQUIRES(is_bit_convertible<B, deduce_type_t<A, B>::bitcount>::value)> \
@@ -84,7 +84,7 @@ enum alu_flags {
 
 #define CH_COMPAREOP_GEN(func, op) \
   template <typename A, typename B, \
-            CH_REQUIRES(!are_ch_literal<A, B>::value), \
+            CH_REQUIRES(!are_all_ch_scalar<A, B>::value), \
             CH_REQUIRES(deduce_type_t<A, B>::bitcount != 0), \
             CH_REQUIRES(is_bit_convertible<A, deduce_type_t<A, B>::bitcount>::value), \
             CH_REQUIRES(is_bit_convertible<B, deduce_type_t<A, B>::bitcount>::value)> \
@@ -94,7 +94,7 @@ enum alu_flags {
 
 #define CH_SHIFTOP_GEN(func, op) \
   template <typename A, typename B, \
-            CH_REQUIRES(!are_ch_literal<A, B>::value), \
+            CH_REQUIRES(!are_all_ch_scalar<A, B>::value), \
             CH_REQUIRES(deduce_first_type_t<A, B>::bitcount != 0), \
             CH_REQUIRES(is_bit_convertible<A, deduce_first_type_t<A, B>::bitcount>::value), \
             CH_REQUIRES(is_bit_convertible<B, deduce_first_type_t<B, A>::bitcount>::value)> \

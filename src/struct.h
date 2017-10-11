@@ -104,7 +104,7 @@
             CH_REVERSE_FOR_EACH(CH_STRUCT_FIELD_CTOR_REQUIRES, CH_SEP_COMMA, __VA_ARGS__)> \
   explicit struct_name(CH_REVERSE_FOR_EACH(CH_STRUCT_FIELD_CTOR_ARGS, CH_SEP_COMMA, __VA_ARGS__)) \
     : CH_FOR_EACH(CH_STRUCT_FIELD_CTOR_APPLY, CH_SEP_COMMA, __VA_ARGS__) {} \
-  template <typename __T__, CH_REQUIRES(ch::internal::is_ch_scalar<__T__>::value)> \
+  template <typename __T__, CH_REQUIRES(ch::internal::is_scalar<__T__>::value)> \
   explicit struct_name(__T__ __rhs__) { base::assign(__rhs__); } \
   assignment_body(struct_name, __VA_ARGS__) \
   const auto clone() const { \
@@ -138,7 +138,7 @@ protected: \
   explicit struct_name(CH_REVERSE_FOR_EACH(CH_STRUCT_FIELD_CTOR_ARGS, CH_SEP_COMMA, __VA_ARGS__), __Ts__&&... __args__) \
     : parent(__args__...)\
     , CH_FOR_EACH(CH_STRUCT_FIELD_CTOR_APPLY, CH_SEP_COMMA, __VA_ARGS__) {} \
-  template <typename __T__, CH_REQUIRES(ch::internal::is_ch_scalar<__T__>::value)> \
+  template <typename __T__, CH_REQUIRES(ch::internal::is_scalar<__T__>::value)> \
   explicit struct_name(__T__ __rhs__) { base::assign(__rhs__); } \
   assignment_body(struct_name, __VA_ARGS__) \
   const auto clone() const { \

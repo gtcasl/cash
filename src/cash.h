@@ -1,6 +1,7 @@
 #pragma once
 
 #include "bit.h"
+#include "scalar.h"
 #include "literals.h"
 #include "select.h"
 #include "if.h"

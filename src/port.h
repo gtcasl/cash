@@ -231,9 +231,9 @@ struct peek_impl {
 };
 
 template <unsigned N>
-struct peek_impl<ch_literal<N>, N> {
-  static const ch_literal<N> read_bytes(const lnode& node) {
-    ch_literal<N> ret;
+struct peek_impl<ch_scalar<N>, N> {
+  static const ch_scalar<N> read_bytes(const lnode& node) {
+    ch_scalar<N> ret;
     node.read_bytes(0, ret.get_words(), ret.get_cbsize(), 0, N, N);
     return ret;
   }
@@ -247,8 +247,8 @@ struct poke_impl {
 };
 
 template <unsigned N>
-struct poke_impl<ch_literal<N>, N> {
-  static void write_bytes(lnode& node, const ch_literal<N>& value) {
+struct poke_impl<ch_scalar<N>, N> {
+  static void write_bytes(lnode& node, const ch_scalar<N>& value) {
     node.write_bytes(0, value.get_words(), value.get_cbsize(), 0, N, N);
   }
 };

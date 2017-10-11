@@ -1,33 +1,29 @@
 #pragma once
 
 #include "lnode.h"
+#include "scalar.h"
 
 namespace ch {
 namespace internal {
 
 template <unsigned N> class ch_bit;
 
+template <typename T>
+struct is_ch_scalar_impl : public std::false_type {};
+
 template <unsigned N>
-struct ch_literal : public bitvector {
-  static constexpr unsigned bitcount = N;
-  using value_type = ch_bit<N>;
-  constexpr ch_literal() : bitvector(N) {}
-  constexpr ch_literal(const char* value) : bitvector(N, value) {}
-};
+struct is_ch_scalar_impl< ch_scalar<N> > : public std::true_type {};
 
 template <typename T>
-struct is_ch_literal : public std::false_type {};
-
-template <unsigned N>
-struct is_ch_literal< ch_literal<N> > : public std::true_type {};
+using is_ch_scalar = is_ch_scalar_impl< std::decay_t<T> >;
 
 template <typename T0, typename T1>
-struct are_ch_literal {
-  static constexpr bool value = (is_ch_literal<T0>::value && is_ch_literal<T1>::value);
+struct are_all_ch_scalar {
+  static constexpr bool value = (is_ch_scalar<T0>::value && is_ch_scalar<T1>::value);
 };
 
 template <typename T>
-struct is_ch_scalar : std::integral_constant<bool,
+struct is_scalar : std::integral_constant<bool,
   std::is_integral<T>::value ||
   std::is_enum<T>::value>
 {};
@@ -43,7 +39,7 @@ protected:
     template <typename>
     static std::false_type check(...);
 public:
-    static const bool value = decltype(check<std::decay_t<T>>(0))::value;
+    static const bool value = decltype(check< std::decay_t<T> >(0))::value;
 };
 
 static_assert(!has_bitcount<int>::value, ":-(");
@@ -177,15 +173,15 @@ protected:
     this->write_data(0, data, 0, N);
   }
 
-  void assign(const ch_literal<N>& rhs) {
-    lnode node(rhs);
+  void assign(const ch_scalar<N>& rhs) {
+    lnode node(rhs.value_);
     nodelist data(N, false);
     data.push(node);
     this->write_data(0, data, 0, N);
   }
 
   template <typename U,
-            CH_REQUIRES(is_ch_scalar<U>::value)>
+            CH_REQUIRES(is_scalar<U>::value)>
   void assign(U rhs) {
     lnode node(bitvector(N, rhs));
     nodelist data(N, false);
@@ -325,12 +321,12 @@ public:
     return *this;
   }
 
-  sliceref& operator=(const ch_literal<N>& rhs) {
+  sliceref& operator=(const ch_scalar<N>& rhs) {
     base::assign(rhs);
     return *this;
   }
 
-  template <typename U, CH_REQUIRES(is_ch_scalar<U>::value)>
+  template <typename U, CH_REQUIRES(is_scalar<U>::value)>
   sliceref& operator=(U rhs) {
     base::assign(rhs);
     return *this;
@@ -422,12 +418,12 @@ public:
     return *this;
   }
 
-  concatref& operator=(const ch_literal<base::bitcount>& rhs) {
+  concatref& operator=(const ch_scalar<base::bitcount>& rhs) {
     base::assign(rhs);
     return *this;
   }
 
-  template <typename U, CH_REQUIRES(is_ch_scalar<U>::value)>
+  template <typename U, CH_REQUIRES(is_scalar<U>::value)>
   concatref& operator=(U rhs) {
     base::assign(rhs);
     return *this;

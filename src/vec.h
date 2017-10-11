@@ -43,7 +43,7 @@ public:
   }
 
   template <typename U,
-            CH_REQUIRES(ch::internal::is_ch_scalar<U>::value)>
+            CH_REQUIRES(ch::internal::is_scalar<U>::value)>
   explicit const_vec(U value) {
     base::assign(value);
   }
@@ -150,7 +150,7 @@ public:
   explicit ch_vec(const Vs&... values) : base(values...) {}
 
   template <typename U,
-            CH_REQUIRES(ch::internal::is_ch_scalar<U>::value)>
+            CH_REQUIRES(ch::internal::is_scalar<U>::value)>
   explicit ch_vec(U value) : base(value) {} \
 
   ch_vec& operator=(const ch_vec& rhs) {
@@ -177,7 +177,7 @@ public:
     return *this;
   }
 
-  template <typename U, CH_REQUIRES(ch::internal::is_ch_scalar<U>::value)>
+  template <typename U, CH_REQUIRES(ch::internal::is_scalar<U>::value)>
   ch_vec& operator=(U rhs) {
     base::assign(rhs);
     return *this;

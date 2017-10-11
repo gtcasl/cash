@@ -5,7 +5,7 @@
 using namespace ch::internal;
 
 tickimpl::tickimpl(context* ctx) 
-  : ioimpl(ctx, type_tick, CHAR_BIT * sizeof(ch_tick))
+  : ioimpl(ctx, type_tick, 8 * sizeof(ch_tick))
   , tick_(~0ull) 
 {}
 

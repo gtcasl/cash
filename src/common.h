@@ -20,7 +20,6 @@
 #include <fstream>
 #include <sstream>
 #include <memory>
-#include <limits.h>
 #include "macros.h"
 #include "utils.h"
 #include "platform.h"

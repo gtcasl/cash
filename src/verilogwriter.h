@@ -73,6 +73,8 @@ protected:
   void print_mem(memimpl* node);
 
   std::ostream& out_;
+
+  std::set<std::string> exported_modules_;
 };
 
 }

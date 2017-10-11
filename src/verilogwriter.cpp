@@ -42,14 +42,13 @@ bool verilogwriter::print_impl(context* ctx) {
   // print dependent modules
   {
     auto_separator sep("\n");
-    int written = 0;
-    std::set<std::string> visited;
+    int written = 0;    
     for (auto call : ctx->get_calls()) {
-      if (0 == visited.count(ctx->get_name())) {
-        visited.insert(ctx->get_name());
-        out_ << sep;
-        written |= this->print_impl(call->get_module_ctx());
-      }
+      if (exported_modules_.count(ctx->get_name()))
+        continue;
+      exported_modules_.insert(ctx->get_name());
+      out_ << sep;
+      written |= this->print_impl(call->get_module_ctx());
     }
     if (written)
       out_ << std::endl;

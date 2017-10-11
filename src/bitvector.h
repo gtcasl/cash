@@ -396,9 +396,7 @@ public:
   
   explicit bitvector(uint32_t size);
   
-  bitvector(uint32_t size, bool value)
-    : bitvector(size, value ? '1' : '0')
-  {}
+  bitvector(uint32_t size, bool value) : bitvector(size, value ? 0x1 : 0x0) {}
 
   bitvector(uint32_t size, char value);
 
@@ -448,16 +446,10 @@ public:
   bitvector& operator=(bitvector&& rhs);
 
   bitvector& operator=(bool value) {
-    return this->operator =(value ? '1' : '0');
+    return this->operator =(value ? 0x1 : 0x0);
   }
 
   bitvector& operator=(char value);
-  
-  bitvector& operator=(const char* value);
-  
-  bitvector& operator=(uint32_t value);
-  
-  bitvector& operator=(const std::initializer_list<uint32_t>& value);
   
   bitvector& operator=(int8_t value) {
     return this->operator=(bitcast<uint32_t>(value));
@@ -478,6 +470,8 @@ public:
   bitvector& operator=(int32_t value) {
     return this->operator=(bitcast<uint32_t>(value));
   }
+
+  bitvector& operator=(uint32_t value);
   
   bitvector& operator=(int64_t value) {
     return this->operator=(
@@ -490,6 +484,10 @@ public:
       {bitcast<uint32_t>(value >> 32), bitcast<uint32_t>(value)}
     );
   }
+
+  bitvector& operator=(const std::initializer_list<uint32_t>& value);
+
+  bitvector& operator=(const char* value);
   
   const_reference at(uint32_t idx) const {
     assert(idx < size_);
@@ -552,9 +550,17 @@ public:
             uint32_t src_offset,
             uint32_t length);
   
-  void read(uint32_t dst_offset, void* out, uint32_t out_cbsize, uint32_t src_offset, uint32_t length) const;
+  void read(uint32_t dst_offset,
+            void* out,
+            uint32_t out_cbsize,
+            uint32_t src_offset,
+            uint32_t length) const;
   
-  void write(uint32_t dst_offset, const void* in, uint32_t in_cbsize, uint32_t src_offset, uint32_t length);
+  void write(uint32_t dst_offset,
+             const void* in,
+             uint32_t in_cbsize,
+             uint32_t src_offset,
+             uint32_t length);
   
   int32_t find_first() const;
   
@@ -644,23 +650,40 @@ protected:
   uint32_t  size_;
 };
 
-inline bool operator!=(const bitvector& lhs, const bitvector& rhs) {
-  return !(lhs == rhs);
-}
+///////////////////////////////////////////////////////////////////////////////
 
-inline bool operator>=(const bitvector& lhs, const bitvector& rhs) {
-  return !(lhs < rhs);
-}
+std::ostream& operator<<(std::ostream& out, const bitvector& rhs);
 
-inline bool operator>(const bitvector& lhs, const bitvector& rhs) {
-  return (rhs < lhs);
-}
+void Inverse(bitvector& out, const bitvector& in);
+void And(bitvector& out, const bitvector& lhs, const bitvector& rhs);
+void Or(bitvector& out, const bitvector& lhs, const bitvector& rhs);
+void Xor(bitvector& out, const bitvector& lhs, const bitvector& rhs);
+void Nand(bitvector& out, const bitvector& lhs, const bitvector& rhs);
+void Nor(bitvector& out, const bitvector& lhs, const bitvector& rhs);
+void Xnor(bitvector& out, const bitvector& lhs, const bitvector& rhs);
 
-inline bool operator<=(const bitvector& lhs, const bitvector& rhs) {
-  return !(rhs < lhs);
-}
+bool AndR(const bitvector& in);
+bool OrR(const bitvector& in);
+bool XorR(const bitvector& in);
+bool NandR(const bitvector& in);
+bool NorR(const bitvector& in);
+bool XnorR(const bitvector& in);
 
-std::ostream& operator<<(std::ostream& out, const bitvector& b);
+void SLL(bitvector& out, const bitvector& in, uint32_t dist);
+void SRL(bitvector& out, const bitvector& in, uint32_t dist);
+void RotL(bitvector& out, const bitvector& in, uint32_t dist);
+void RotR(bitvector& out, const bitvector& in, uint32_t dist);
+
+void Add(bitvector& out, const bitvector& lhs, const bitvector& rhs, uint32_t cin = 0);
+void Sub(bitvector& out, const bitvector& lhs, const bitvector& rhs);
+void Negate(bitvector& out, const bitvector& in);
+
+void Mux(bitvector& dst, const bitvector& in, const bitvector& sel);
+
+void fAdd(bitvector& out, const bitvector& lhs, const bitvector& rhs);
+void fSub(bitvector& out, const bitvector& lhs, const bitvector& rhs);
+void fMult(bitvector& out, const bitvector& lhs, const bitvector& rhs);
+void fDiv(bitvector& out, const bitvector& lhs, const bitvector& rhs);
 
 }
 }
