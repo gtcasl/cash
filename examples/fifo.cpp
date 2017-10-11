@@ -40,7 +40,7 @@ struct FiFo {
 };
 
 int main(int argc, char **argv) {
-  ch_module<FiFo<1, 2>> fifo("FiFo");
+  ch_module<FiFo<1, 2>> fifo;
 
   ch_vcdtracer tracer("fifo.vcd", fifo);
   tracer.run([&](ch_tick t)->bool {

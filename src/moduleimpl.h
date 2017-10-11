@@ -10,7 +10,7 @@ class lnodeimpl;
 
 class moduleimpl : public refcounted {
 public:
-  moduleimpl(const char* name);
+  moduleimpl(size_t signature, const char* name);
   ~moduleimpl();
 
   void begin_context();

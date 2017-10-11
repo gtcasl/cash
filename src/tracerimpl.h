@@ -23,8 +23,8 @@ protected:
 
   void add_trace(const char* name, ioimpl* value);
 
-  struct tap_t {
-    tap_t(const std::string& _name, ioimpl* _node)
+  struct trace_t {
+    trace_t(const std::string& _name, ioimpl* _node)
       : name(_name)
       , node(_node)
     {}
@@ -32,8 +32,8 @@ protected:
     ioimpl* node;
   };
 
-  tap_counts_t dup_taps_;
-  std::vector<tap_t> taps_;
+  unique_name unique_trace_names_;
+  std::vector<trace_t> traces_;
   std::ofstream* file_;
   std::ostream& out_;
 };

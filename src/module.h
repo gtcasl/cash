@@ -9,7 +9,7 @@ class moduleimpl;
 
 class module {
 public:
-  module(const char* name);
+  module(size_t signature, const char* name);
   virtual ~module();
     
 protected:
@@ -35,7 +35,7 @@ public:
 
   template <typename... Ts>
   ch_module(const char* name, const Ts&... args)
-    : module(name)
+    : module(typeid(T).hash_code(), name)
     , impl_(args...)
     , io(impl_.io) {
     impl_.describe();
@@ -44,7 +44,7 @@ public:
 
   template <typename... Ts>
   ch_module(const Ts&... args)
-    : module(typeid(T).name())
+    : module(typeid(T).hash_code(), identifier_from_typeid(typeid(T).name()).c_str())
     , impl_(args...)
     , io(impl_.io) {
     impl_.describe();

@@ -6,6 +6,8 @@ examples/Makefile
 examples/adder.cpp
 examples/adder_tb.v
 examples/adder_tb.v
+examples/aes.cpp
+examples/aes_tb.v
 examples/counter.cpp
 examples/counter_tb.v
 examples/counter_tb.v

@@ -1,6 +1,7 @@
 #include "utils.h"
 #include "common.h"
 #include <stdarg.h>
+#include <cxxabi.h>
 
 #define BACKWARD_HAS_BFD 1
 #include "backward.h"
@@ -54,4 +55,31 @@ void ch::internal::dump_stack_trace(FILE *out, unsigned int max_frames) {
   st.load_here(max_frames);
   Printer p; 
   p.print(st, out);
+}
+
+std::string ch::internal::identifier_from_typeid(const char* name) {
+  int status;
+  char* demangled = abi::__cxa_demangle(name, 0, 0, &status);
+  CH_CHECK(0 == status, "abi::__cxa_demangle() failed");
+  std::string ret(demangled);
+  // remove namespace prefix and template posfix
+  auto pos = ret.find_last_of(':') + 1;
+  auto len = ret.find_first_of('<') - pos;
+  ret = ret.substr(pos, len);
+  free(demangled);
+  return ret;
+}
+
+std::string unique_name::get(const char* name) {
+  std::string unique_name(name);
+  unsigned instances = dups_[name]++;
+  if (instances != 0) {
+    unique_name = fstring("%s_%d", name, instances-1);
+    // resolve collisions
+    while (dups_.count(unique_name) != 0) {
+      instances = dups_[name]++;
+      unique_name = fstring("%s_%d", name, instances-1);
+    }
+  }
+  return unique_name;
 }

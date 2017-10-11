@@ -61,22 +61,7 @@ void tracerimpl::ensureInitialize() {
 }
 
 void tracerimpl::add_trace(const char* name, ioimpl* value) {
-  CH_CHECK(!initialized_, "new tap not allowed after simulation has started");
-
-  // resolve duplicate names
-  std::string full_name(name);
-  unsigned instances = dup_taps_[name]++;
-  if (instances > 0) {
-    if (instances == 1) {
-      // rename first instance
-      auto iter = std::find_if(taps_.begin(), taps_.end(),
-        [name](const tap_t& t)->bool { return t.name == name; });
-      assert(iter != taps_.end());
-      iter->name = fstring("%s_%d", name, 0);
-    }
-    full_name = fstring("%s_%d", name, instances);
-  }
-  taps_.emplace_back(full_name, value);
+  traces_.emplace_back(unique_trace_names_.get(name), value);
 }
 
 void tracerimpl::tick(ch_tick t) {
@@ -84,7 +69,7 @@ void tracerimpl::tick(ch_tick t) {
   simulatorimpl::tick(t);
 
   // log tap values
-  for (auto& tap : taps_) {
+  for (auto& tap : traces_) {
     out_ << tap.name << " = " << tap.node << std::endl;
   }
 }

@@ -3,9 +3,10 @@
 CXXFLAGS += -std=c++14 -O0 -g -fmax-errors=5
 LDFLAGS += -lcash
 
-SRCS = adder.cpp counter.cpp fastmult.cpp fifo.cpp
+SRCS = adder.cpp counter.cpp fastmult.cpp fifo.cpp aes.cpp
 
 PROJECTS = $(SRCS:.cpp=.out)
+PROJECTS_NAMES = $(SRCS:.cpp=)
 
 all: $(PROJECTS)
 
@@ -22,7 +23,9 @@ clean:
 	rm -f *.out *.o *.vcd *.iv .depend *~ *\#
 
 run: $(PROJECTS)
-	$(foreach proj, $(PROJECTS), ./$(proj) || exit;)	 
+	$(foreach proj, $(PROJECTS), ./$(proj) || exit;)
+	$(foreach proj, $(PROJECTS_NAMES), iverilog $(proj)_tb.v -o $(proj)_tb.iv || exit;)	 
+	$(foreach proj, $(PROJECTS_NAMES), vvp $(proj)_tb.iv || exit;)
 
 ifneq ($(MAKECMDGOALS),clean)
     -include .depend

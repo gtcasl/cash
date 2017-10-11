@@ -28,8 +28,16 @@ public:
       ctx_->release();
   }
 
-  context* create(const char* name) const {
-    return new context(name);
+  context* create(size_t signature, const char* name) {
+    std::string unique_name(name);
+    auto it = module_names_.find(signature);
+    if (it != module_names_.end()) {
+      CH_CHECK(it->second == unique_name, "Multiple names assigned to same module: new=%s, old=%s", unique_name.c_str(), it->second.c_str());
+    } else {
+      unique_name = unique_name_.get(unique_name.c_str());
+      module_names_[signature] = unique_name;
+    }
+    return new context(unique_name.c_str());
   }
 
   context* get_ctx() const {
@@ -44,6 +52,8 @@ public:
 
 protected:
   mutable context* ctx_;
+  std::map<size_t, std::string> module_names_;
+  unique_name unique_name_;
 };
 
 }
@@ -53,8 +63,8 @@ using namespace ch::internal;
 
 thread_local context_manager tls_ctx;
 
-context* ch::internal::ctx_create(const char* name) {
-  return tls_ctx.create(name);
+context* ch::internal::ctx_create(size_t signature, const char* name) {
+  return tls_ctx.create(signature, name);
 }
 
 context* ch::internal::ctx_swap(context* ctx) {
@@ -505,21 +515,7 @@ void context::remove_cdomain(cdomain* cd) {
 }
 
 void context::register_tap(const char* name, const lnode& node) {
-  // resolve duplicate names
-  std::string full_name(name);
-  unsigned instances = dup_taps_[name]++;
-  if (instances > 0) {
-    if (instances == 1) {
-      // rename first instance
-      auto iter = std::find_if(taps_.begin(), taps_.end(),
-        [name](tapimpl* t)->bool { return t->get_name() == name; });
-      assert(iter != taps_.end());
-      (*iter)->set_name(fstring("%s_%d", name, 0).c_str());
-    }
-    full_name = fstring("%s_%d", name, instances);
-  }
-  // create tap node
-  this->createNode<tapimpl>(node, full_name.c_str());
+  this->createNode<tapimpl>(node, unique_tap_names_.get(name).c_str());
 }
 
 callimpl* context::find_call(context* module_ctx) {

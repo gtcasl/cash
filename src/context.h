@@ -30,8 +30,6 @@ using node_map_t = std::unordered_map<uint32_t, std::vector<const lnode*>>;
 
 using live_nodes_t = std::unordered_set<lnodeimpl*>;
 
-using tap_counts_t = std::unordered_map<std::string, unsigned>;
-
 class context : public refcounted {
 public:
   uint32_t get_id() const {
@@ -275,12 +273,12 @@ protected:
   std::stack<lnode>      user_clks_;
   std::stack<lnode>      user_resets_;
 
-  tap_counts_t           dup_taps_;
+  unique_name            unique_tap_names_;
 
   friend class context_manager;
 };
 
-context* ctx_create(const char* name);
+context* ctx_create(size_t signature, const char* name);
 context* ctx_swap(context* ctx);
 context* ctx_curr();
 

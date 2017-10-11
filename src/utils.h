@@ -2,6 +2,7 @@
 
 #include <string>
 #include <functional>
+#include <unordered_map>
 #include <assert.h>
 
 namespace ch {
@@ -12,6 +13,20 @@ std::string fstring(const char* format, ...);
 void dbprint(int level, const char *format, ...);
 
 void dump_stack_trace(FILE* out, unsigned int max_frames = 32);
+
+std::string identifier_from_typeid(const char* name);
+
+///////////////////////////////////////////////////////////////////////////////
+
+class unique_name {
+public:
+  unique_name() {}
+
+  std::string get(const char* name);
+
+private:
+  std::unordered_map<std::string, unsigned> dups_;
+};
 
 ///////////////////////////////////////////////////////////////////////////////
 

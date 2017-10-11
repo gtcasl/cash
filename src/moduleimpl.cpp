@@ -7,8 +7,8 @@
 
 using namespace ch::internal;
 
-moduleimpl::moduleimpl(const char* name) {
-  ctx_ = ctx_create(name);
+moduleimpl::moduleimpl(size_t signature, const char* name) {
+  ctx_ = ctx_create(signature, name);
   ctx_->acquire();
 }
 
@@ -31,8 +31,8 @@ void moduleimpl::compile() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-module::module(const char* name) {
-  impl_ = new moduleimpl(name);
+module::module(size_t signature, const char* name) {
+  impl_ = new moduleimpl(signature, name);
   impl_->acquire();
   impl_->begin_context();
 }
