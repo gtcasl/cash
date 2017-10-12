@@ -102,29 +102,32 @@ class refproxy;
 template <typename T, unsigned N>
 class const_sliceref;
 
-class typebase_itf {
+class lnode_accessor_if {
 protected:
-  virtual void read_data(nodelist& inout, size_t offset, size_t length) const = 0;
-  virtual void write_data(size_t dst_offset, const nodelist& in, size_t src_offset, size_t length) = 0;
+  virtual void read_lnode(nodelist& inout, size_t offset, size_t length) const = 0;
+  virtual void write_lnode(size_t dst_offset, const nodelist& in, size_t src_offset, size_t length) = 0;
 
+  template <typename T> friend void read_lnode(const T& obj, nodelist& inout, size_t offset, size_t length);
+  template <typename T> friend void write_lnode(T& obj, size_t dst_offset, const nodelist& in, size_t src_offset, size_t length);
+};
+
+class bytes_accessor_if {
+protected:
   virtual void read_bytes(uint32_t dst_offset, void* out, uint32_t out_cbsize, uint32_t src_offset, uint32_t length) const  = 0;
   virtual void write_bytes(uint32_t dst_offset, const void* in, uint32_t in_cbsize, uint32_t src_offset, uint32_t length) = 0;
-
-  template <typename T> friend void read_data(const T& obj, nodelist& inout, size_t offset, size_t length);
-  template <typename T> friend void write_data(T& obj, size_t dst_offset, const nodelist& in, size_t src_offset, size_t length);
 
   template <typename T> friend void read_bytes(const T& obj, uint32_t dst_offset, void* out, uint32_t out_cbsize, uint32_t src_offset, uint32_t length);
   template <typename T> friend void write_bytes(T& obj, uint32_t dst_offset, const void* in, uint32_t in_cbsize, uint32_t src_offset, uint32_t length);
 };
 
 template <typename T>
-void read_data(const T& obj, nodelist& inout, size_t offset, size_t length) {
-  reinterpret_cast<const ch_bitbase<T::bitcount>&>(obj).read_data(inout, offset, length);
+void read_lnode(const T& obj, nodelist& inout, size_t offset, size_t length) {
+  reinterpret_cast<const ch_bitbase<T::bitcount>&>(obj).read_lnode(inout, offset, length);
 }
 
 template <typename T>
-void write_data(T& obj, size_t dst_offset, const nodelist& in, size_t src_offset, size_t length) {
-  reinterpret_cast<ch_bitbase<T::bitcount>&>(obj).write_data(dst_offset, in, src_offset, length);
+void write_lnode(T& obj, size_t dst_offset, const nodelist& in, size_t src_offset, size_t length) {
+  reinterpret_cast<ch_bitbase<T::bitcount>&>(obj).write_lnode(dst_offset, in, src_offset, length);
 }
 
 template <typename T>
@@ -141,12 +144,12 @@ template <typename T> const auto make_type(const lnode& node) {
   typename T::value_type ret;
   nodelist data(T::bitcount, true);
   data.push(node);
-  write_data(ret, 0, data, 0, T::bitcount);
+  write_lnode(ret, 0, data, 0, T::bitcount);
   return ret;
 };
 
 template <unsigned N>
-class ch_bitbase : public typebase_itf {
+class ch_bitbase : public lnode_accessor_if, public bytes_accessor_if {
 public:
   static constexpr unsigned bitcount = N;
   static_assert(N > 0, "invalid size");
@@ -169,15 +172,15 @@ protected:
 
   void assign(const ch_bitbase& rhs) {
     nodelist data(N, false);
-    ch::internal::read_data(rhs, data, 0, N);
-    this->write_data(0, data, 0, N);
+    ch::internal::read_lnode(rhs, data, 0, N);
+    this->write_lnode(0, data, 0, N);
   }
 
   void assign(const ch_scalar<N>& rhs) {
     lnode node(rhs.value_);
     nodelist data(N, false);
     data.push(node);
-    this->write_data(0, data, 0, N);
+    this->write_lnode(0, data, 0, N);
   }
 
   template <typename U,
@@ -186,7 +189,7 @@ protected:
     lnode node(bitvector(N, rhs));
     nodelist data(N, false);
     data.push(node);
-    this->write_data(0, data, 0, N);
+    this->write_lnode(0, data, 0, N);
   }
 };
 
@@ -200,8 +203,8 @@ public:
 
 protected:
 
-  void read_data(nodelist& inout, size_t offset, size_t length) const override {
-    ch::internal::read_data(value_, inout, offset, length);
+  void read_lnode(nodelist& inout, size_t offset, size_t length) const override {
+    ch::internal::read_lnode(value_, inout, offset, length);
   }
 
   void read_bytes(uint32_t dst_offset, void* out, uint32_t out_cbsize, uint32_t src_offset, uint32_t length) const override {
@@ -209,7 +212,7 @@ protected:
   }
 
   // LCOV_EXCL_START
-  void write_data(size_t dst_offset, const nodelist& in, size_t src_offset, size_t length) override {
+  void write_lnode(size_t dst_offset, const nodelist& in, size_t src_offset, size_t length) override {
     CH_UNUSED(dst_offset, in, src_offset, length);
     CH_ABORT("invalid call");
   }
@@ -273,8 +276,8 @@ public:
 
 protected:
 
-  void read_data(nodelist& inout, size_t offset, size_t length) const override {
-    ch::internal::read_data(container_, inout, start_ + offset, length);
+  void read_lnode(nodelist& inout, size_t offset, size_t length) const override {
+    ch::internal::read_lnode(container_, inout, start_ + offset, length);
   }
 
   void read_bytes(uint32_t dst_offset, void* out, uint32_t out_cbsize, uint32_t src_offset, uint32_t length) const override {
@@ -282,7 +285,7 @@ protected:
   }
 
   // LCOV_EXCL_START
-  void write_data(size_t dst_offset, const nodelist& in, size_t src_offset, size_t length) override {
+  void write_lnode(size_t dst_offset, const nodelist& in, size_t src_offset, size_t length) override {
     CH_UNUSED(dst_offset, in, src_offset, length);
     CH_ABORT("invalid call");
   }
@@ -362,12 +365,12 @@ public:
 
 protected:
 
-  void read_data(nodelist& inout, size_t offset, size_t length) const override {
-    ch::internal::read_data(container_, inout, start_ + offset, length);
+  void read_lnode(nodelist& inout, size_t offset, size_t length) const override {
+    ch::internal::read_lnode(container_, inout, start_ + offset, length);
   }
 
-  void write_data(size_t dst_offset, const nodelist& in, size_t src_offset, size_t length) override {
-    ch::internal::write_data(container_, start_ + dst_offset, in, src_offset, length);
+  void write_lnode(size_t dst_offset, const nodelist& in, size_t src_offset, size_t length) override {
+    ch::internal::write_lnode(container_, start_ + dst_offset, in, src_offset, length);
   }
 
   void read_bytes(uint32_t dst_offset, void* out, uint32_t out_cbsize, uint32_t src_offset, uint32_t length) const override {
@@ -436,31 +439,31 @@ protected:
 
   // LCOV_EXCL_START
   template <typename U>
-  void read_data(nodelist& inout, size_t offset, size_t length, U& arg) const {
+  void read_lnode(nodelist& inout, size_t offset, size_t length, U& arg) const {
     size_t len = std::min<size_t>(length, U::bitcount);
-    ch::internal::read_data(arg, inout, offset, len);
+    ch::internal::read_lnode(arg, inout, offset, len);
   }
 
   template <typename U0, typename... Us>
-  void read_data(nodelist& inout, size_t offset, size_t length, U0& arg0, Us&... args) const {
+  void read_lnode(nodelist& inout, size_t offset, size_t length, U0& arg0, Us&... args) const {
     if (offset < U0::bitcount) {
       size_t len = std::min<size_t>(length, U0::bitcount);
-      ch::internal::read_data(arg0, inout, offset, len);
+      ch::internal::read_lnode(arg0, inout, offset, len);
       offset += len;
       length -= len;
     }
     if (length != 0) {
-      this->read_data(inout, offset - U0::bitcount, length, args...);
+      this->read_lnode(inout, offset - U0::bitcount, length, args...);
     }
   }
 
   template <size_t... I>
-  void read_data(nodelist& inout, size_t offset, size_t length, const std::tuple<Ts&...>& args, std::index_sequence<I...>) const {
-    this->read_data(inout, offset, length, std::get<sizeof...(Ts) - 1 - I>(args)...);
+  void read_lnode(nodelist& inout, size_t offset, size_t length, const std::tuple<Ts&...>& args, std::index_sequence<I...>) const {
+    this->read_lnode(inout, offset, length, std::get<sizeof...(Ts) - 1 - I>(args)...);
   }
 
-  void read_data(nodelist& inout, size_t offset, size_t length) const override {
-    this->read_data(inout, offset, length, args_, std::index_sequence_for<Ts...>());
+  void read_lnode(nodelist& inout, size_t offset, size_t length) const override {
+    this->read_lnode(inout, offset, length, args_, std::index_sequence_for<Ts...>());
   }
   // LCOV_EXCL_STOP
 
@@ -496,32 +499,32 @@ protected:
   // LCOV_EXCL_STOP
 
   template <typename U>
-  void write_data(size_t dst_offset, const nodelist& in, size_t src_offset, size_t length, U& arg) {
+  void write_lnode(size_t dst_offset, const nodelist& in, size_t src_offset, size_t length, U& arg) {
     size_t len = std::min<size_t>(length, U::bitcount);
-    ch::internal::write_data(arg, dst_offset, in, src_offset, len);
+    ch::internal::write_lnode(arg, dst_offset, in, src_offset, len);
   }
 
   template <typename U0, typename... Us>
-  void write_data(size_t dst_offset, const nodelist& in, size_t src_offset, size_t length, U0& arg0, Us&... args) {
+  void write_lnode(size_t dst_offset, const nodelist& in, size_t src_offset, size_t length, U0& arg0, Us&... args) {
     if (dst_offset < U0::bitcount) {
       size_t len = std::min<size_t>(length, U0::bitcount);
-      ch::internal::write_data(arg0, dst_offset, in, src_offset, len);
+      ch::internal::write_lnode(arg0, dst_offset, in, src_offset, len);
       dst_offset += len;
       src_offset += len;
       length -= len;
     }
     if (length != 0) {
-      this->write_data(dst_offset - U0::bitcount, in, src_offset, length, args...);
+      this->write_lnode(dst_offset - U0::bitcount, in, src_offset, length, args...);
     }
   }
 
   template <size_t... I>
-  void write_data(size_t dst_offset, const nodelist& in, size_t src_offset, size_t length, std::tuple<Ts&...>& args, std::index_sequence<I...>) {
-    this->write_data(dst_offset, in, src_offset, length, std::get<sizeof...(Ts) - 1 - I>(args)...);
+  void write_lnode(size_t dst_offset, const nodelist& in, size_t src_offset, size_t length, std::tuple<Ts&...>& args, std::index_sequence<I...>) {
+    this->write_lnode(dst_offset, in, src_offset, length, std::get<sizeof...(Ts) - 1 - I>(args)...);
   }
 
-  void write_data(size_t dst_offset, const nodelist& in, size_t src_offset, size_t length) override {
-    this->write_data(dst_offset, in, src_offset, length, args_, std::index_sequence_for<Ts...>());
+  void write_lnode(size_t dst_offset, const nodelist& in, size_t src_offset, size_t length) override {
+    this->write_lnode(dst_offset, in, src_offset, length, args_, std::index_sequence_for<Ts...>());
   }
 
   template <typename U>

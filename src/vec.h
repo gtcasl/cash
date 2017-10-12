@@ -68,11 +68,11 @@ protected:
     this->init(values...);
   }
   
-  void read_data(nodelist& out, size_t offset, size_t length) const override {
+  void read_lnode(nodelist& out, size_t offset, size_t length) const override {
     for (unsigned i = 0; length && i < N; ++i) {
       if (offset < T::bitcount) {
         size_t len = std::min<size_t>(length, T::bitcount - offset);
-        ch::internal::read_data(items_[i], out, offset, len);
+        ch::internal::read_lnode(items_[i], out, offset, len);
         offset = T::bitcount;        
         length -= len;
       }
@@ -80,11 +80,11 @@ protected:
     }
   }
   
-  void write_data(size_t dst_offset, const nodelist& data, size_t src_offset, size_t length) override {
+  void write_lnode(size_t dst_offset, const nodelist& data, size_t src_offset, size_t length) override {
     for (unsigned i = 0; length && i < N; ++i) {
       if (dst_offset < T::bitcount) {
         size_t len = std::min<size_t>(length, T::bitcount - dst_offset);
-        ch::internal::write_data(items_[i], dst_offset, data, src_offset, len);
+        ch::internal::write_lnode(items_[i], dst_offset, data, src_offset, len);
         src_offset += len;
         dst_offset = T::bitcount;
         length -= len;

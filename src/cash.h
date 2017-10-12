@@ -54,11 +54,15 @@ namespace core {
 
   template <unsigned N> using ch_bitbase = ch::internal::ch_bitbase<N>;
 
+  using ch_float = ch::internal::ch_real;
+
   template <typename T> using ch_seq = ch::internal::ch_seq<T>;
 
+  template <typename T> using ch_value_t = typename T::value_type;
   template <typename T> using ch_flip_t = typename T::flip_type;
+  template <typename T> using ch_ioport_t = typename decltype(T::io)::port_type;
 
-  using ch_float = ch::internal::ch_real;
+  using ch_iotype = ch::internal::ch_iotype;
 
   template <typename T> using ch_in = ch::internal::ch_in<T>;
   template <typename T> using ch_out = ch::internal::ch_out<T>;
@@ -249,9 +253,10 @@ inline namespace literals {
 #define __union    CH_UNION
 #define __enum     CH_ENUM
 
+#define __in(x)    (ch_in<x>)
+#define __out(x)   (ch_out<x>)
 #define __inout    CH_INOUT
 #define __io       CH_IO
-#define __module   CH_MODULE
+#define __flip     CH_FLIP
 
 #define __tie      CH_TIE
-#define __flip     CH_FLIP

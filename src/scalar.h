@@ -136,7 +136,7 @@ private:
     return ret;
   }
 
-  template <unsigned M> friend class bitbase;
+  template <unsigned M> friend class ch_bitbase;
   template <unsigned M> friend class const_bit;
 };
 

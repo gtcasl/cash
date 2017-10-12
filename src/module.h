@@ -31,7 +31,9 @@ private:
   T impl_;
 
 public:  
-  typename decltype(impl_.io)::port_type io;
+  using io_type   = decltype(impl_.io);
+  using port_type = typename io_type::port_type;
+  port_type io;
 
   template <typename... Ts>
   ch_module(const char* name, const Ts&... args)

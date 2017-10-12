@@ -542,7 +542,7 @@ void context::bind_output(const lnode& dst, const lnode& output) {
   } else {
     nodelist data(dst.get_size(), false);
     data.push(callport);
-    const_cast<lnode&>(dst).write_data(0, data, 0, dst.get_size(), dst.get_size());
+    const_cast<lnode&>(dst).write_lnode(0, data, 0, dst.get_size(), dst.get_size());
   }
 }
 

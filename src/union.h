@@ -44,11 +44,11 @@
   CH_FOR_EACH(field_body, CH_SEP_SEMICOLON, __VA_ARGS__); \
 protected: \
   ch_bit<base::bitcount> _; \
-  void read_data(ch::internal::nodelist& __inout__, size_t __offset__, size_t __length__) const override { \
-    ch::internal::read_data(_, __inout__, __offset__, __length__); \
+  void read_lnode(ch::internal::nodelist& __inout__, size_t __offset__, size_t __length__) const override { \
+    ch::internal::read_lnode(_, __inout__, __offset__, __length__); \
   } \
-  void write_data(size_t __dst_offset__, const ch::internal::nodelist& __in__, size_t __src_offset__, size_t __length__) override { \
-    ch::internal::write_data(_, __dst_offset__, __in__, __src_offset__, __length__); \
+  void write_lnode(size_t __dst_offset__, const ch::internal::nodelist& __in__, size_t __src_offset__, size_t __length__) override { \
+    ch::internal::write_lnode(_, __dst_offset__, __in__, __src_offset__, __length__); \
   } \
   void read_bytes(uint32_t __dst_offset__, void* __out__, uint32_t __out_cbsize__, uint32_t __src_offset__, uint32_t __length__) const override { \
     ch::internal::read_bytes(_, __dst_offset__, __out__, __out_cbsize__, __src_offset__, __length__); \

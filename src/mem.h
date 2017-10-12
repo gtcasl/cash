@@ -68,12 +68,12 @@ protected:
     , addr_(addr)
   {}
 
-  void read_data(nodelist& inout, size_t offset, size_t length) const override {
+  void read_lnode(nodelist& inout, size_t offset, size_t length) const override {
     CH_CHECK(offset + length <= N, "invalid read range");
     inout.push(mem_.read(addr_), offset, length);
   }
 
-  void write_data(size_t dst_offset, const nodelist& in, size_t src_offset, size_t length) override {
+  void write_lnode(size_t dst_offset, const nodelist& in, size_t src_offset, size_t length) override {
     CH_CHECK(0 == dst_offset || N == length, "partial update not supported!");
     mem_.write(addr_, dst_offset, in, src_offset, length);
   }

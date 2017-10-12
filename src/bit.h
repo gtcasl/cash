@@ -114,12 +114,12 @@ protected:
     assert(N == node_.get_size());
   }
 
-  void read_data(nodelist& inout, size_t offset, size_t length) const override {
-    node_.read_data(inout, offset, length, N);
+  void read_lnode(nodelist& inout, size_t offset, size_t length) const override {
+    node_.read_lnode(inout, offset, length, N);
   }
 
-  void write_data(size_t dst_offset, const nodelist& in, size_t src_offset, size_t length) override {
-    node_.write_data(dst_offset, in, src_offset, length, N);
+  void write_lnode(size_t dst_offset, const nodelist& in, size_t src_offset, size_t length) override {
+    node_.write_lnode(dst_offset, in, src_offset, length, N);
   }
 
   void read_bytes(uint32_t dst_offset, void* out, uint32_t out_cbsize, uint32_t src_offset, uint32_t length) const override {
@@ -204,7 +204,7 @@ template <typename T, unsigned N = T::bitcount,
 lnode get_lnode(const T& rhs) {
   nodelist data(N, true);
   bitbase_cast_t<T, N> x(rhs);
-  read_data(x, data, 0, N);
+  read_lnode(x, data, 0, N);
   return lnode(data);
 }
 
@@ -212,13 +212,13 @@ lnode get_lnode(const T& rhs) {
 
 template <typename T>
 void ch_cat_helper(nodelist& data, const T& arg) {
-  read_data(arg, data, 0, T::bitcount);
+  read_lnode(arg, data, 0, T::bitcount);
 }
 
 template <typename T0, typename... Ts>
 void ch_cat_helper(nodelist& data, const T0& arg0, const Ts&... args) {
   ch_cat_helper(data, args...);
-  read_data(arg0, data, 0, T0::bitcount);
+  read_lnode(arg0, data, 0, T0::bitcount);
 }
 
 template <typename... Ts>

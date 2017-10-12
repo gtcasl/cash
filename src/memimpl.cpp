@@ -147,7 +147,7 @@ void memportimpl::write(const nodelist& in) {
     wdata_idx_ = srcs_.size();
     srcs_.emplace_back(this);
   }
-  srcs_[wdata_idx_].write_data(0, in, 0, in.get_size(), this->get_size());
+  srcs_[wdata_idx_].write_lnode(0, in, 0, in.get_size(), this->get_size());
 }
 
 void memportimpl::tick(ch_tick t) {

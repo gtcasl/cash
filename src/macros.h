@@ -35,6 +35,7 @@
 #define CH_SEP_COMMA() ,
 #define CH_SEP_SEMICOLON() ;
 #define CH_SEP_PLUS() +
+#define CH_SEP_OR() |
 #define CH_SEP_COLON() :
 #define CH_SEP_SPACE() /**/
 

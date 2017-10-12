@@ -272,7 +272,7 @@ void lnode::assign(uint32_t dst_offset,
   }
 }
 
-void lnode::read_data(nodelist& inout,
+void lnode::read_lnode(nodelist& inout,
                       uint32_t offset,
                       uint32_t length,
                       uint32_t size) const {
@@ -281,7 +281,7 @@ void lnode::read_data(nodelist& inout,
   inout.push(*this, offset, length);
 }
 
-void lnode::write_data(uint32_t dst_offset,
+void lnode::write_lnode(uint32_t dst_offset,
                        const nodelist& in,
                        uint32_t src_offset,
                        uint32_t length,

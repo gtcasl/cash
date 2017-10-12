@@ -66,12 +66,12 @@ public:
 
   void move(lnode& rhs, uint32_t size);
 
-  void read_data(nodelist& inout,
+  void read_lnode(nodelist& inout,
                  uint32_t offset,
                  uint32_t length,
                  uint32_t size) const;
   
-  void write_data(uint32_t dst_offset,
+  void write_lnode(uint32_t dst_offset,
                   const nodelist& in,
                   uint32_t src_offset,
                   uint32_t length,
