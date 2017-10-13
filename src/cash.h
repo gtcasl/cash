@@ -54,6 +54,8 @@ namespace core {
 
   template <unsigned N> using ch_bitbase = ch::internal::ch_bitbase<N>;
 
+  template <unsigned N> using ch_scalar = ch::internal::ch_scalar<N>;
+
   using ch_float = ch::internal::ch_real;
 
   template <typename T> using ch_seq = ch::internal::ch_seq<T>;

@@ -26,15 +26,6 @@ __struct (s3_t, (
   (ch_bit4) c
 ));
 
-struct Q_t {
-  __struct (value_t, (
-    (ch_bit4) a,
-    (ch_bit4) b,
-    (ch_bit4) c
-  ));
-  value_t value;
-};
-
 __struct (s4_t, (
   (ch_bit4) a,
   (ch_bit4) b,
@@ -55,7 +46,16 @@ __struct (st_t, (
 
 using st4_t = st_t<4>;
 
-__struct (sd_t, s1_t, (
+__struct (sd1_t, s1_t, (
+  (ch_bit4) b
+));
+
+__struct (sd2_t, sd1_t, (
+  (ch_bit4) c
+));
+
+__struct (sd3_t, (
+  (sd2_t)   a,
   (ch_bit4) b
 ));
  

@@ -4,6 +4,80 @@ using namespace ch::core;
 using namespace ch::literals;
 using namespace ch::sim;
 
+__enum (my_enum, 4, (
+  (idle, 0),
+  execute,
+  stats,
+  done
+));
+
+__enum (O_t, 1, (
+  a
+));
+
+__union (u2_t, (
+  (ch_bit4) a,
+  (ch_bit4) b
+  ));
+
+__union (u3_t, (
+  (ch_bit2) a,
+  (ch_bit8) b,
+  (ch_bit4) c
+));
+
+__struct (s1_t, (
+  (ch_bit4) a
+  ));
+
+__struct (s2_t, (
+  (ch_bit4) a,
+  (ch_bit4) b
+));
+
+__struct (s3_t, (
+  (ch_bit4) a,
+  (ch_bit4) b,
+  (ch_bit4) c
+));
+
+struct Q_t {
+  __struct (value_t, (
+    (ch_bit4) a,
+    (ch_bit4) b,
+    (ch_bit4) c
+  ));
+  value_t value;
+};
+
+__struct (s4_t, (
+  (ch_bit4) a,
+  (ch_bit4) b,
+  (ch_bit4) c,
+  (ch_bit4) d
+));
+
+__struct (ss_t, (
+  (s1_t) a,
+  (s1_t) b
+));
+
+template <unsigned N>
+__struct (st_t, (
+  (ch_bit<N>) a,
+  (ch_bit<N>) b
+));
+
+using st4_t = st_t<4>;
+
+__struct (sd_t, s1_t, (
+  (ch_bit4) b
+));
+
+ch_vec<ch_bit2, 1> v1_t;
+
+ch_vec<ch_bit2, 2> v2_t;
+
 template <typename T>
 __inout(FiFoIO, (
   (ch_in<ch_bit1>)  ready,

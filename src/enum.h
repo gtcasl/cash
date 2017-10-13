@@ -7,6 +7,30 @@
 #define CH_ENUM_FIELD_(c) CH_CONCAT(CH_ENUM_FIELD_, c)
 #define CH_ENUM_FIELD(i, x) CH_ENUM_FIELD_(CH_NARG(CH_REM x))(CH_REM x, x)
 
+#define CH_ENUM_SIM_IMPL(enum_name, value_name, size) \
+  class enum_name : public ch::internal::ch_scalar<size> { \
+  public: \
+    using base = ch::internal::ch_scalar<size>; \
+    using sim_type = enum_name;
+    using value_type = value_name; \
+    enum_name() {} \
+    enum_name(const enum_name& __rhs__) : base(__rhs__) {} \
+    enum_name(enum_name&& __rhs__) : base(std::move(__rhs__)) {} \
+    enum_name(enum_type __rhs__) : base(__rhs__) {} \
+    enum_name& operator=(const enum_name& __rhs__) { \
+      base::operator=(__rhs__); \
+      return *this; \
+    } \
+    enum_name& operator=(enum_name&& __rhs__) { \
+      base::operator=(std::move(__rhs__)); \
+      return *this; \
+    } \
+    enum_name& operator=(enum_type __rhs__) { \
+      base::operator=(__rhs__); \
+      return *this; \
+    } \
+  }
+
 #define CH_ENUM_BODY_IMPL(enum_name, assignment_body) \
   enum_name() {} \
   enum_name(const enum_name& __rhs__) : base(__rhs__) {} \
@@ -54,17 +78,20 @@ protected: \
     }; \
     static_assert(ilog2(__MAX_VALUE__) <= size, "enum size mismatch"); \
   protected: \
+    CH_ENUM_SIM_IMPL(__sim_type__, enum_name, size); \
     class __const_type__ : public ch::internal::const_bit<size> { \
     public: \
       using base = ch::internal::const_bit<size>; \
       using value_type = enum_name; \
       using const_type = __const_type__; \
+      using sim_type   = __sim_type__; \
       CH_ENUM_BODY_IMPL(__const_type__, CH_ENUM_READONLY_IMPL) \
     }; \
   public: \
     using base = ch::internal::ch_bit<size>; \
     using value_type = enum_name; \
     using const_type = __const_type__; \
+    using sim_type   = __sim_type__; \
     CH_ENUM_BODY_IMPL(enum_name, CH_ENUM_WRITABLE_IMPL) \
   }
 

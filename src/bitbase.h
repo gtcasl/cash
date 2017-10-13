@@ -102,15 +102,6 @@ class refproxy;
 template <typename T, unsigned N>
 class const_sliceref;
 
-class lnode_accessor_if {
-protected:
-  virtual void read_lnode(nodelist& inout, size_t offset, size_t length) const = 0;
-  virtual void write_lnode(size_t dst_offset, const nodelist& in, size_t src_offset, size_t length) = 0;
-
-  template <typename T> friend void read_lnode(const T& obj, nodelist& inout, size_t offset, size_t length);
-  template <typename T> friend void write_lnode(T& obj, size_t dst_offset, const nodelist& in, size_t src_offset, size_t length);
-};
-
 class bytes_accessor_if {
 protected:
   virtual void read_bytes(uint32_t dst_offset, void* out, uint32_t out_cbsize, uint32_t src_offset, uint32_t length) const  = 0;
@@ -118,6 +109,15 @@ protected:
 
   template <typename T> friend void read_bytes(const T& obj, uint32_t dst_offset, void* out, uint32_t out_cbsize, uint32_t src_offset, uint32_t length);
   template <typename T> friend void write_bytes(T& obj, uint32_t dst_offset, const void* in, uint32_t in_cbsize, uint32_t src_offset, uint32_t length);
+};
+
+class lnode_accessor_if {
+protected:
+  virtual void read_lnode(nodelist& inout, size_t offset, size_t length) const = 0;
+  virtual void write_lnode(size_t dst_offset, const nodelist& in, size_t src_offset, size_t length) = 0;
+
+  template <typename T> friend void read_lnode(const T& obj, nodelist& inout, size_t offset, size_t length);
+  template <typename T> friend void write_lnode(T& obj, size_t dst_offset, const nodelist& in, size_t src_offset, size_t length);
 };
 
 template <typename T>

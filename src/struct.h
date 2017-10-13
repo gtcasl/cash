@@ -8,6 +8,9 @@
 #define CH_STRUCT_SIZE(...) \
   (CH_FOR_EACH(CH_STRUCT_SIZE_EACH, CH_SEP_PLUS, __VA_ARGS__))
 
+#define CH_STRUCT_SIM_FIELD(i, x) \
+  typename CH_PAIR_L(x)::sim_type CH_PAIR_R(x)
+
 #define CH_STRUCT_FIELD(i, x) \
   typename ch::internal::identity_t<CH_PAIR_L(x)>::value_type CH_PAIR_R(x)
 
@@ -90,6 +93,40 @@
 #define CH_STRUCT_WRITE_BYTES(i, x) \
   CH_STRUCT_MEMBER3(CH_PAIR_R(x), __dst_offset__, __src_offset__, __length__, \
     ch::internal::identity_t<CH_PAIR_L(x)>::bitcount, CH_STRUCT_MEMBER_WRITE_BYTES)
+
+#define CH_STRUCT_SIM_IMPL2(struct_name, value_name, ...) \
+  class struct_name { \
+  public: \
+    static constexpr unsigned bitcount = CH_STRUCT_SIZE(__VA_ARGS__); \
+    using value_type = value_name; \
+    struct_name() {} \
+    struct_name(const struct_name& __rhs__) : CH_FOR_EACH(CH_STRUCT_COPY_CTOR_APPLY, CH_SEP_COMMA, __VA_ARGS__) {} \
+    struct_name(struct_name&& __rhs__) : CH_FOR_EACH(CH_STRUCT_MOVE_CTOR_APPLY, CH_SEP_COMMA, __VA_ARGS__) {} \
+    template <CH_REVERSE_FOR_EACH(CH_STRUCT_FIELD_CTOR_TMPL, CH_SEP_COMMA, __VA_ARGS__), \
+              CH_REVERSE_FOR_EACH(CH_STRUCT_FIELD_CTOR_REQUIRES, CH_SEP_COMMA, __VA_ARGS__)> \
+    explicit struct_name(CH_REVERSE_FOR_EACH(CH_STRUCT_FIELD_CTOR_ARGS, CH_SEP_COMMA, __VA_ARGS__)) \
+      : CH_FOR_EACH(CH_STRUCT_FIELD_CTOR_APPLY, CH_SEP_COMMA, __VA_ARGS__) {} \
+    template <typename U, CH_REQUIRES(is_sim_type<U>::value)> \
+    explicit struct_name(const U& __rhs__) : \
+    template <typename __T__, CH_REQUIRES(ch::internal::is_scalar<__T__>::value)> \
+    explicit struct_name(__T__ __rhs__) { this->assign(__rhs__); } \
+    struct_name& operator=(const struct_name& __rhs__) { \
+      CH_FOR_EACH(CH_STRUCT_COPY_ASSIGN, CH_SEP_SEMICOLON, __VA_ARGS__); \
+      return *this; \
+    } \
+    struct_name& operator=(struct_name&& __rhs__) { \
+      CH_FOR_EACH(CH_STRUCT_MOVE_ASSIGN, CH_SEP_SEMICOLON, __VA_ARGS__); \
+      return *this; \
+    } \
+    CH_FOR_EACH(CH_STRUCT_SIM_FIELD, CH_SEP_SEMICOLON, __VA_ARGS__); \
+  protected: \
+    void read_bytes(uint32_t __dst_offset__, void* __out__, uint32_t __out_cbsize__, uint32_t __src_offset__, uint32_t __length__) const { \
+      CH_FOR_EACH(CH_STRUCT_READ_BYTES, CH_SEP_SEMICOLON, __VA_ARGS__); \
+    } \
+    void write_bytes(uint32_t __dst_offset__, const void* __in__, uint32_t __in_cbsize__, uint32_t __src_offset__, uint32_t __length__) { \
+      CH_FOR_EACH(CH_STRUCT_WRITE_BYTES, CH_SEP_SEMICOLON, __VA_ARGS__); \
+    } \
+  }
 
 #define CH_STRUCT_BODY_IMPL2(struct_name, assignment_body, field_body, ...) \
   struct_name() {} \
@@ -186,17 +223,20 @@ protected: \
 #define CH_STRUCT_IMPL2(struct_name, ...) \
   class struct_name : public virtual ch_bitbase<CH_STRUCT_SIZE(__VA_ARGS__)> { \
   private: \
+    CH_STRUCT_SIM_IMPL2(__sim_type__, struct_name, __VA_ARGS__); \
     class __const_type__ : public virtual ch_bitbase<CH_STRUCT_SIZE(__VA_ARGS__)> { \
     public: \
       using base = ch_bitbase<__const_type__::bitcount>; \
       using value_type = struct_name; \
       using const_type = __const_type__; \
+      using sim_type   = __sim_type__; \
       CH_STRUCT_BODY_IMPL2(__const_type__, CH_STRUCT_READONLY_IMPL, CH_STRUCT_CONST_FIELD, __VA_ARGS__) \
     }; \
   public: \
     using base = ch_bitbase<struct_name::bitcount>; \
     using value_type = struct_name; \
     using const_type = __const_type__; \
+    using sim_type   = __sim_type__; \
     CH_STRUCT_BODY_IMPL2(struct_name, CH_STRUCT_WRITABLE_IMPL, CH_STRUCT_FIELD, __VA_ARGS__) \
   }
 

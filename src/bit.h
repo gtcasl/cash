@@ -87,6 +87,7 @@ public:
   using base = ch_bitbase<N>;
   using value_type = ch_bit<N>;
   using const_type = const_bit<N>;
+  using sim_type   = ch_scalar<N>;
 
   const_bit() : node_(N) {}
 
@@ -139,6 +140,7 @@ public:
   using base = const_bit<N>;
   using value_type = ch_bit<N>;
   using const_type = const_bit<N>;
+  using sim_type   = ch_scalar<N>;
 
   using base::node_;
       
