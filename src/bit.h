@@ -34,15 +34,15 @@ void createPrintNode(const char* format, const std::initializer_list<lnode>& arg
   }
 
 #define CH_BIT_WRITABLE_INTERFACE(type) \
-  type& operator=(const ch_bitbase<type::bitcount>& rhs) { \
+  type& operator=(const ch_bitbase<type::bitsize>& rhs) { \
     base::assign(rhs); \
     return *this; \
   } \
-  type& operator=(const ch::internal::ch_scalar<type::bitcount>& rhs) { \
+  type& operator=(const ch::internal::ch_scalar<type::bitsize>& rhs) { \
     base::assign(rhs); \
     return *this; \
   } \
-  template <typename U, CH_REQUIRES(ch::internal::is_scalar<U>::value)> \
+  template <typename U, CH_REQUIRES(ch::internal::is_integral_or_enum<U>::value)> \
   type& operator=(U rhs) { \
     base::assign(rhs); \
     return *this; \
@@ -97,10 +97,10 @@ public:
 
   const_bit(const ch_bitbase<N>& rhs) : node_(get_lnode(rhs), N) {}
 
-  const_bit(const ch_scalar<N>& rhs) : node_(rhs.value_) {}
+  const_bit(const ch_scalar<N>& rhs) : node_(rhs.get_value()) {}
 
   template <typename U,
-            CH_REQUIRES(is_scalar<U>::value)>
+            CH_REQUIRES(is_integral_or_enum<U>::value)>
   explicit const_bit(U rhs) : node_(bitvector(N, rhs)) {}
 
   const auto clone() const {
@@ -157,7 +157,7 @@ public:
   ch_bit(const ch_scalar<N>& rhs) : base(rhs) {}
     
   template <typename U,
-            CH_REQUIRES(is_scalar<U>::value)>
+            CH_REQUIRES(is_integral_or_enum<U>::value)>
   explicit ch_bit(U rhs) : base(rhs) {}
 
   ch_bit& operator=(const ch_bit& rhs) {
@@ -173,36 +173,34 @@ public:
   CH_BIT_WRITABLE_INTERFACE(ch_bit)
 };
 
-static_assert(has_bitcount<ch_bit<1>>::value, ":-(");
-static_assert(deduce_type_t<ch_bitbase<1>, ch_bitbase<2>>::bitcount == 0, ":-(");
-static_assert(deduce_type_t<ch_bitbase<1>, ch_bitbase<1>>::bitcount == 1, ":-(");
-static_assert(are_all_ch_scalar<ch_bitbase<1>, ch_bitbase<1>>::value == false, ":-(");
-static_assert(deduce_type_t<ch_bit<2>, ch_bit<2>>::bitcount == 2, ":-(");
+static_assert(has_bitsize<ch_bit<1>>::value, ":-(");
+static_assert(deduce_ch_bit_t<int, int>::bitsize == 0, ":-(");
+static_assert(deduce_ch_bit_t<int, ch_bit<2>>::bitsize == 2, ":-(");
 
-template <typename T, unsigned N = std::decay_t<T>::bitcount>
-struct is_bit_convertible {
+template <typename T, unsigned N = std::decay_t<T>::bitsize>
+struct is_ch_bit_convertible {
   static constexpr bool value = is_cast_convertible<T, ch_bit<N>>::value;
 };
 
 template <typename... Ts>
-struct are_bit_convertible;
+struct are_ch_bit_convertible;
 
 template <typename T>
-struct are_bit_convertible<T> {
-  static constexpr bool value = is_cast_convertible<T, ch_bit<std::decay_t<T>::bitcount>>::value;
+struct are_ch_bit_convertible<T> {
+  static constexpr bool value = is_cast_convertible<T, ch_bit<std::decay_t<T>::bitsize>>::value;
 };
 
 template <typename T0, typename... Ts>
-struct are_bit_convertible<T0, Ts...> {
-  static constexpr bool value = is_cast_convertible<T0, ch_bit<std::decay_t<T0>::bitcount>>::value && are_bit_convertible<Ts...>::value;
+struct are_ch_bit_convertible<T0, Ts...> {
+  static constexpr bool value = is_cast_convertible<T0, ch_bit<std::decay_t<T0>::bitsize>>::value && are_ch_bit_convertible<Ts...>::value;
 };
 
-template <typename T, unsigned N = T::bitcount>
+template <typename T, unsigned N = T::bitsize>
 using bitbase_cast_t = std::conditional_t<
   std::is_base_of<ch_bitbase<N>, T>::value, const ch_bitbase<N>&, ch_bit<N>>;
 
-template <typename T, unsigned N = T::bitcount,
-          CH_REQUIRES(is_bit_convertible<T, N>::value)>
+template <typename T, unsigned N = T::bitsize,
+          CH_REQUIRES(is_ch_bit_convertible<T, N>::value)>
 lnode get_lnode(const T& rhs) {
   nodelist data(N, true);
   bitbase_cast_t<T, N> x(rhs);
@@ -214,37 +212,37 @@ lnode get_lnode(const T& rhs) {
 
 template <typename T>
 void ch_cat_helper(nodelist& data, const T& arg) {
-  read_lnode(arg, data, 0, T::bitcount);
+  read_lnode(arg, data, 0, T::bitsize);
 }
 
 template <typename T0, typename... Ts>
 void ch_cat_helper(nodelist& data, const T0& arg0, const Ts&... args) {
   ch_cat_helper(data, args...);
-  read_lnode(arg0, data, 0, T0::bitcount);
+  read_lnode(arg0, data, 0, T0::bitsize);
 }
 
 template <typename... Ts>
 const auto cat_impl(const Ts&... args) {
-  nodelist data(concat_traits<Ts...>::bitcount, true);
+  nodelist data(concat_traits<Ts...>::bitsize, true);
   ch_cat_helper(data, args...);
-  return make_type<ch_bit<concat_traits<Ts...>::bitcount>>(data);
+  return make_type<ch_bit<concat_traits<Ts...>::bitsize>>(data);
 }
 
 template <typename... Ts,
-         CH_REQUIRES(are_bit_convertible<Ts...>::value)>
+         CH_REQUIRES(are_ch_bit_convertible<Ts...>::value)>
 const auto ch_cat(const Ts&... args) {
   return cat_impl(static_cast<bitbase_cast_t<Ts>>(args)...);
 }
 
 template <typename B, typename A,
-          CH_REQUIRES(is_bit_convertible<B>::value),
-          CH_REQUIRES(is_bit_convertible<A>::value)>
+          CH_REQUIRES(is_ch_bit_convertible<B>::value),
+          CH_REQUIRES(is_ch_bit_convertible<A>::value)>
 const auto operator,(const B& b, const A& a) {
   return ch_cat(b, a);
 }
 
 template <typename... Ts,
-         CH_REQUIRES(are_bit_convertible<Ts...>::value)>
+         CH_REQUIRES(are_ch_bit_convertible<Ts...>::value)>
 concatref<Ts...> ch_tie(Ts&... args) {
   return concatref<Ts...>(args...);
 }
@@ -252,13 +250,13 @@ concatref<Ts...> ch_tie(Ts&... args) {
 // slice functions
 
 template <unsigned N, typename T,
-          CH_REQUIRES(is_bit_convertible<T>::value)>
+          CH_REQUIRES(is_ch_bit_convertible<T>::value)>
 const auto ch_slice(const T&& in, size_t index = 0) {
   return std::move(in).template slice<N>(index);
 }
 
 template <unsigned N, typename T,
-          CH_REQUIRES(is_bit_convertible<T>::value)>
+          CH_REQUIRES(is_ch_bit_convertible<T>::value)>
 const auto ch_aslice(const T&& in, size_t index = 0) {
   return std::move(in).template aslice<N>(index);
 }
@@ -368,7 +366,7 @@ inline void ch_print(const char* format) {
 }
 
 template <typename...Args,
-          CH_REQUIRES(are_bit_convertible<Args...>::value)>
+          CH_REQUIRES(are_ch_bit_convertible<Args...>::value)>
 void ch_print(const char* format, const Args& ...args) {
   createPrintNode(format, {get_lnode(args)...});
 }

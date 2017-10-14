@@ -25,7 +25,7 @@ struct Fifo {
     rd_ptr.next = ch_select(reading, rd_ptr + 1, rd_ptr);
     wr_ptr.next = ch_select(writing, wr_ptr + 1, wr_ptr);
 
-    ch_ram<T::bitcount, A> mem;
+    ch_ram<T::bitsize, A> mem;
     __if (writing) (
       mem[wr_A] = io.end.data;
     );

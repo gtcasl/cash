@@ -12,9 +12,9 @@ template <typename T, unsigned N>
 class const_vec;
 
 template <typename T, unsigned N>
-class const_vec : public ch_bitbase<N * T::bitcount> {
+class const_vec : public ch_bitbase<N * T::bitsize> {
 public:
-  using base = ch_bitbase<N * T::bitcount>;
+  using base = ch_bitbase<N * T::bitsize>;
   using value_type = ch_vec<T, N>;
   using const_type = const_vec;
   
@@ -43,7 +43,7 @@ public:
   }
 
   template <typename U,
-            CH_REQUIRES(ch::internal::is_scalar<U>::value)>
+            CH_REQUIRES(ch::internal::is_integral_or_enum<U>::value)>
   explicit const_vec(U value) {
     base::assign(value);
   }
@@ -70,52 +70,52 @@ protected:
   
   void read_lnode(nodelist& out, size_t offset, size_t length) const override {
     for (unsigned i = 0; length && i < N; ++i) {
-      if (offset < T::bitcount) {
-        size_t len = std::min<size_t>(length, T::bitcount - offset);
+      if (offset < T::bitsize) {
+        size_t len = std::min<size_t>(length, T::bitsize - offset);
         ch::internal::read_lnode(items_[i], out, offset, len);
-        offset = T::bitcount;        
+        offset = T::bitsize;        
         length -= len;
       }
-      offset -= T::bitcount;
+      offset -= T::bitsize;
     }
   }
   
   void write_lnode(size_t dst_offset, const nodelist& data, size_t src_offset, size_t length) override {
     for (unsigned i = 0; length && i < N; ++i) {
-      if (dst_offset < T::bitcount) {
-        size_t len = std::min<size_t>(length, T::bitcount - dst_offset);
+      if (dst_offset < T::bitsize) {
+        size_t len = std::min<size_t>(length, T::bitsize - dst_offset);
         ch::internal::write_lnode(items_[i], dst_offset, data, src_offset, len);
         src_offset += len;
-        dst_offset = T::bitcount;
+        dst_offset = T::bitsize;
         length -= len;
       }
-      dst_offset -= T::bitcount;
+      dst_offset -= T::bitsize;
     }
   }
 
   void read_bytes(uint32_t dst_offset, void* out, uint32_t out_cbsize, uint32_t src_offset, uint32_t length) const override {
     for (unsigned i = 0; length && i < N; ++i) {
-      if (dst_offset < T::bitcount) {
-        size_t len = std::min<size_t>(length, T::bitcount - dst_offset);
+      if (dst_offset < T::bitsize) {
+        size_t len = std::min<size_t>(length, T::bitsize - dst_offset);
         ch::internal::read_bytes(items_[i], dst_offset, out, out_cbsize, src_offset, len);
         src_offset += len;
-        dst_offset = T::bitcount;
+        dst_offset = T::bitsize;
         length -= len;
       }
-      dst_offset -= T::bitcount;
+      dst_offset -= T::bitsize;
     }
   }
 
   void write_bytes(uint32_t dst_offset, const void* in, uint32_t in_cbsize, uint32_t src_offset, uint32_t length) override {
     for (unsigned i = 0; length && i < N; ++i) {
-      if (dst_offset < T::bitcount) {
-        size_t len = std::min<size_t>(length, T::bitcount - dst_offset);
+      if (dst_offset < T::bitsize) {
+        size_t len = std::min<size_t>(length, T::bitsize - dst_offset);
         ch::internal::write_bytes(items_[i], dst_offset, in, in_cbsize, src_offset, len);
         src_offset += len;
-        dst_offset = T::bitcount;
+        dst_offset = T::bitsize;
         length -= len;
       }
-      dst_offset -= T::bitcount;
+      dst_offset -= T::bitsize;
     }
   }
 };
@@ -143,14 +143,14 @@ public:
             CH_REQUIRES(is_cast_convertible<U, T>::value)>
   ch_vec(const ch_vec<U, N>& rhs) : base(rhs) {}
 
-  ch_vec(const ch_bitbase<base::bitcount>& rhs) : base(rhs) {}
+  ch_vec(const ch_bitbase<base::bitsize>& rhs) : base(rhs) {}
 
   template <typename... Vs,
            CH_REQUIRES(are_all_cast_convertible<T, Vs...>::value)>
   explicit ch_vec(const Vs&... values) : base(values...) {}
 
   template <typename U,
-            CH_REQUIRES(ch::internal::is_scalar<U>::value)>
+            CH_REQUIRES(ch::internal::is_integral_or_enum<U>::value)>
   explicit ch_vec(U value) : base(value) {} \
 
   ch_vec& operator=(const ch_vec& rhs) {
@@ -172,12 +172,12 @@ public:
     return *this;
   }
 
-  ch_vec& operator=(const ch_bitbase<base::bitcount>& rhs) {
+  ch_vec& operator=(const ch_bitbase<base::bitsize>& rhs) {
     base::assign(rhs);
     return *this;
   }
 
-  template <typename U, CH_REQUIRES(ch::internal::is_scalar<U>::value)>
+  template <typename U, CH_REQUIRES(ch::internal::is_integral_or_enum<U>::value)>
   ch_vec& operator=(U rhs) {
     base::assign(rhs);
     return *this;

@@ -438,9 +438,9 @@ public:
   ~bitvector();
   
   void resize(uint32_t size,
-              uint32_t value = 0,
-              bool initialize = true,
-              bool preserve = true);
+              uint32_t value = 0x0,
+              bool initialize = false,
+              bool preserve = false);
   
   bitvector& operator=(const bitvector& rhs);
   

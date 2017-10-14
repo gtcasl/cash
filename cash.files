@@ -184,6 +184,7 @@ test/misc.cpp
 test/module.cpp
 test/proxies.cpp
 test/reg.cpp
+test/scalar.cpp
 test/select.cpp
 test/sim.cpp
 test/smoke.cpp

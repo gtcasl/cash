@@ -128,6 +128,16 @@ TEST_CASE("arithmetic", "[arithmetic]") {
       return (c == 1000_b);
     });
     TEST([]()->ch_bit1 {
+      ch_bit4 a(2);
+      ch_bit4 c = 1 << a;
+      return (c == 0100_b);
+    });
+    TEST([]()->ch_bit1 {
+      ch_bit4 a(2);
+      ch_bit4 c = 0100_b >> a;
+      return (c == 0001_b);
+    });
+    TEST([]()->ch_bit1 {
       ch_bit4 a(1010_b);
       ch_bit4 c = a << 5;
       return (c == 0000_b);
@@ -144,6 +154,18 @@ TEST_CASE("arithmetic", "[arithmetic]") {
     });
     TEST([]()->ch_bit1 {
       ch_bit4 a(1), b(2);
+      ch_bit4 c = a << b;
+      return (c == 0100_b);
+    });
+    TEST([]()->ch_bit1 {
+      ch_bit4 a(1);
+      ch_bit2 b(2);
+      ch_bit4 c = a << b;
+      return (c == 0100_b);
+    });
+    TEST([]()->ch_bit1 {
+      ch_bit4 a(1);
+      ch_bit8 b(2);
       ch_bit4 c = a << b;
       return (c == 0100_b);
     });
@@ -177,6 +199,8 @@ TEST_CASE("arithmetic", "[arithmetic]") {
       ch_bit<128> c = a << 64;
       return (c == 0x10000000000000000_h128);
     });
+  }
+  SECTION("rotate", "[rotate]") {
     TEST([]()->ch_bit1 {
       ch_bit4 a(1000_b), b(2);
       ch_bit4 c = ch_rotr(a, b);

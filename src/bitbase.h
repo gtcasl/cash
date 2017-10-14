@@ -6,87 +6,33 @@
 namespace ch {
 namespace internal {
 
-template <unsigned N> class ch_bit;
+template <unsigned N> class const_bit;
+
+CH_DEF_SFINAE_CHECK(is_ch_bit, (std::is_base_of<const_bit<T::bitsize>, T>::value
+                             || std::is_same<typename T::value_type, ch_bit<T::bitsize>>::value));
+
+static_assert(!is_ch_bit<int>::value, ":-(");
+
+template <typename... Ts>
+using deduce_ch_bit_t = std::conditional_t<
+  is_ch_bit<deduce_type_t<Ts...>>::value, deduce_type_t<Ts...>, non_bitsize_type>;
+
+template <typename T0, typename T1>
+using deduce_first_ch_bit_t = std::conditional_t<
+  (is_ch_bit<T0>::value || is_ch_bit<T1>::value), deduce_first_type_t<T0, T1>, non_bitsize_type>;
 
 template <typename T>
-struct is_ch_scalar_impl : public std::false_type {};
+struct value_type_impl {
+  using type = typename T::value_type;
+};
 
 template <unsigned N>
-struct is_ch_scalar_impl< ch_scalar<N> > : public std::true_type {};
-
-template <typename T>
-using is_ch_scalar = is_ch_scalar_impl< std::decay_t<T> >;
-
-template <typename T0, typename T1>
-struct are_all_ch_scalar {
-  static constexpr bool value = (is_ch_scalar<T0>::value && is_ch_scalar<T1>::value);
+struct value_type_impl< ch_scalar<N> > {
+  using type = ch_bit<N>;
 };
 
 template <typename T>
-struct is_scalar : std::integral_constant<bool,
-  std::is_integral<T>::value ||
-  std::is_enum<T>::value>
-{};
-
-///////////////////////////////////////////////////////////////////////////////
-
-template <typename T>
-class has_bitcount {
-protected:
-    template <typename U, typename = std::enable_if_t<U::bitcount>>
-    static std::true_type check(int);
-
-    template <typename>
-    static std::false_type check(...);
-public:
-    static const bool value = decltype(check< std::decay_t<T> >(0))::value;
-};
-
-static_assert(!has_bitcount<int>::value, ":-(");
-
-struct non_bit_type {
-  static constexpr unsigned bitcount = 0;
-};
-
-template <typename T0, typename T1>
-struct deduce_type_helper {
-  using D0 = std::decay_t<T0>;
-  using D1 = std::decay_t<T1>;
-  using U0 = std::conditional_t<has_bitcount<D0>::value, D0, non_bit_type>;
-  using U1 = std::conditional_t<has_bitcount<D1>::value, D1, non_bit_type>;
-  using type = std::conditional_t<
-    (U0::bitcount != 0) && (U1::bitcount != 0),
-    std::conditional_t<(U0::bitcount != U1::bitcount), non_bit_type, U0>,
-    std::conditional_t<(U0::bitcount != 0), U0, U1>>;
-};
-
-template <typename... Ts>
-struct deduce_type;
-
-template <typename T0, typename T1>
-struct deduce_type<T0, T1> {
-  using type = typename deduce_type_helper<T0, T1>::type;
-};
-
-template <typename T0, typename T1, typename... Ts>
-struct deduce_type<T0, T1, Ts...> {
-  using type = typename deduce_type<typename deduce_type_helper<T0, T1>::type, Ts...>::type;
-};
-
-template <typename... Ts>
-using deduce_type_t = typename deduce_type<Ts...>::type;
-
-template <typename T0, typename T1>
-struct deduce_first_type {
-  using D0 = std::decay_t<T0>;
-  using D1 = std::decay_t<T1>;
-  using U0 = std::conditional_t<has_bitcount<D0>::value, D0, non_bit_type>;
-  using U1 = std::conditional_t<has_bitcount<D1>::value, D1, non_bit_type>;
-  using type = std::conditional_t<(U0::bitcount != 0), U0, U1>;
-};
-
-template <typename T0, typename T1>
-using deduce_first_type_t = typename deduce_first_type<T0, T1>::type;
+using value_type_t = typename value_type_impl<T>::type;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -122,36 +68,37 @@ protected:
 
 template <typename T>
 void read_lnode(const T& obj, nodelist& inout, size_t offset, size_t length) {
-  reinterpret_cast<const ch_bitbase<T::bitcount>&>(obj).read_lnode(inout, offset, length);
+  reinterpret_cast<const ch_bitbase<T::bitsize>&>(obj).read_lnode(inout, offset, length);
 }
 
 template <typename T>
 void write_lnode(T& obj, size_t dst_offset, const nodelist& in, size_t src_offset, size_t length) {
-  reinterpret_cast<ch_bitbase<T::bitcount>&>(obj).write_lnode(dst_offset, in, src_offset, length);
+  reinterpret_cast<ch_bitbase<T::bitsize>&>(obj).write_lnode(dst_offset, in, src_offset, length);
 }
 
 template <typename T>
 void read_bytes(const T& obj, uint32_t dst_offset, void* out, uint32_t out_cbsize, uint32_t src_offset, uint32_t length) {
-  reinterpret_cast<const ch_bitbase<T::bitcount>&>(obj).read_bytes(dst_offset, out, out_cbsize, src_offset, length);
+  reinterpret_cast<const ch_bitbase<T::bitsize>&>(obj).read_bytes(dst_offset, out, out_cbsize, src_offset, length);
 }
 
 template <typename T>
 void write_bytes(T& obj, uint32_t dst_offset, const void* in, uint32_t in_cbsize, uint32_t src_offset, uint32_t length) {
-  reinterpret_cast<ch_bitbase<T::bitcount>&>(obj).write_bytes(dst_offset, in, in_cbsize, src_offset, length);
+  reinterpret_cast<ch_bitbase<T::bitsize>&>(obj).write_bytes(dst_offset, in, in_cbsize, src_offset, length);
 }
 
-template <typename T> const auto make_type(const lnode& node) {
-  typename T::value_type ret;
-  nodelist data(T::bitcount, true);
+template <typename T>
+const auto make_type(const lnode& node) {
+  value_type_t<T> ret;
+  nodelist data(T::bitsize, true);
   data.push(node);
-  write_lnode(ret, 0, data, 0, T::bitcount);
+  write_lnode(ret, 0, data, 0, T::bitsize);
   return ret;
 };
 
 template <unsigned N>
 class ch_bitbase : public lnode_accessor_if, public bytes_accessor_if {
 public:
-  static constexpr unsigned bitcount = N;
+  static constexpr unsigned bitsize = N;
   static_assert(N > 0, "invalid size");
 
   const auto operator[](size_t index) const {
@@ -177,14 +124,14 @@ protected:
   }
 
   void assign(const ch_scalar<N>& rhs) {
-    lnode node(rhs.value_);
+    lnode node(rhs.get_value());
     nodelist data(N, false);
     data.push(node);
     this->write_lnode(0, data, 0, N);
   }
 
   template <typename U,
-            CH_REQUIRES(is_scalar<U>::value)>
+            CH_REQUIRES(is_integral_or_enum<U>::value)>
   void assign(U rhs) {
     lnode node(bitvector(N, rhs));
     nodelist data(N, false);
@@ -196,7 +143,7 @@ protected:
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T>
-class refproxy : public ch_bitbase<T::bitcount> {
+class refproxy : public ch_bitbase<T::bitsize> {
 public:
   refproxy() {}
   refproxy(const T& value) : value_(value) {}
@@ -237,13 +184,13 @@ public:
   const_sliceref(const T& container, size_t start = 0)
     : container_(container)
     , start_(start) {
-    CH_CHECK(start + N <= T::bitcount, "invalid slice range");
+    CH_CHECK(start + N <= T::bitsize, "invalid slice range");
   }
 
   const_sliceref(const T&& container, size_t start = 0)
     : container_(std::move(const_cast<T&&>(container)))
     , start_(start) {
-    CH_CHECK(start + N <= T::bitcount, "invalid slice range");
+    CH_CHECK(start + N <= T::bitsize, "invalid slice range");
   }
 
   const auto operator[](size_t index) const & {
@@ -311,7 +258,7 @@ public:
   sliceref(T& container, size_t start = 0)
     : container_(container)
     , start_(start) {
-    CH_CHECK(start + N <= T::bitcount, "invalid slice range");
+    CH_CHECK(start + N <= T::bitsize, "invalid slice range");
   }
 
   sliceref& operator=(const sliceref& rhs) {
@@ -329,7 +276,7 @@ public:
     return *this;
   }
 
-  template <typename U, CH_REQUIRES(is_scalar<U>::value)>
+  template <typename U, CH_REQUIRES(is_integral_or_enum<U>::value)>
   sliceref& operator=(U rhs) {
     base::assign(rhs);
     return *this;
@@ -392,22 +339,22 @@ struct concat_traits;
 
 template <typename T>
 struct concat_traits<T> {
-  static constexpr unsigned bitcount = T::bitcount;
+  static constexpr unsigned bitsize = T::bitsize;
 };
 
 template <typename T0, typename... Ts>
 struct concat_traits<T0, Ts...> {
-  static constexpr unsigned bitcount = T0::bitcount + concat_traits<Ts...>::bitcount;
+  static constexpr unsigned bitsize = T0::bitsize + concat_traits<Ts...>::bitsize;
 };
 
 template <typename... Ts>
 class concatref;
 
 template <typename... Ts>
-class concatref : public ch_bitbase<concat_traits<Ts...>::bitcount> {
+class concatref : public ch_bitbase<concat_traits<Ts...>::bitsize> {
 public:
-  using base = ch_bitbase<concat_traits<Ts...>::bitcount>;
-  using value_type = ch_bit<base::bitcount>;
+  using base = ch_bitbase<concat_traits<Ts...>::bitsize>;
+  using value_type = ch_bit<base::bitsize>;
 
   concatref(Ts&... args) : args_(args...) {}
 
@@ -421,12 +368,12 @@ public:
     return *this;
   }
 
-  concatref& operator=(const ch_scalar<base::bitcount>& rhs) {
+  concatref& operator=(const ch_scalar<base::bitsize>& rhs) {
     base::assign(rhs);
     return *this;
   }
 
-  template <typename U, CH_REQUIRES(is_scalar<U>::value)>
+  template <typename U, CH_REQUIRES(is_integral_or_enum<U>::value)>
   concatref& operator=(U rhs) {
     base::assign(rhs);
     return *this;
@@ -440,20 +387,20 @@ protected:
   // LCOV_EXCL_START
   template <typename U>
   void read_lnode(nodelist& inout, size_t offset, size_t length, U& arg) const {
-    size_t len = std::min<size_t>(length, U::bitcount);
+    size_t len = std::min<size_t>(length, U::bitsize);
     ch::internal::read_lnode(arg, inout, offset, len);
   }
 
   template <typename U0, typename... Us>
   void read_lnode(nodelist& inout, size_t offset, size_t length, U0& arg0, Us&... args) const {
-    if (offset < U0::bitcount) {
-      size_t len = std::min<size_t>(length, U0::bitcount);
+    if (offset < U0::bitsize) {
+      size_t len = std::min<size_t>(length, U0::bitsize);
       ch::internal::read_lnode(arg0, inout, offset, len);
       offset += len;
       length -= len;
     }
     if (length != 0) {
-      this->read_lnode(inout, offset - U0::bitcount, length, args...);
+      this->read_lnode(inout, offset - U0::bitsize, length, args...);
     }
   }
 
@@ -470,21 +417,21 @@ protected:
   // LCOV_EXCL_START
   template <typename U>
   void read_bytes(uint32_t dst_offset, void* out, uint32_t out_cbsize, uint32_t src_offset, size_t length, U& arg) const {
-    size_t len = std::min<size_t>(length, U::bitcount);
+    size_t len = std::min<size_t>(length, U::bitsize);
     ch::internal::read_bytes(arg, dst_offset, out, out_cbsize, src_offset, len);
   }
 
   template <typename U0, typename... Us>
   void read_bytes(uint32_t dst_offset, void* out, uint32_t out_cbsize, uint32_t src_offset, size_t length, U0& arg0, Us&... args) const {
-    if (dst_offset < U0::bitcount) {
-      size_t len = std::min<size_t>(length, U0::bitcount);
+    if (dst_offset < U0::bitsize) {
+      size_t len = std::min<size_t>(length, U0::bitsize);
       ch::internal::read_bytes(arg0, dst_offset, out, out_cbsize, src_offset, len);
       dst_offset += len;
       src_offset += len;
       length -= len;
     }
     if (length != 0) {
-      this->read_bytes(dst_offset - U0::bitcount, out, out_cbsize, src_offset, length, args...);
+      this->read_bytes(dst_offset - U0::bitsize, out, out_cbsize, src_offset, length, args...);
     }
   }
 
@@ -500,21 +447,21 @@ protected:
 
   template <typename U>
   void write_lnode(size_t dst_offset, const nodelist& in, size_t src_offset, size_t length, U& arg) {
-    size_t len = std::min<size_t>(length, U::bitcount);
+    size_t len = std::min<size_t>(length, U::bitsize);
     ch::internal::write_lnode(arg, dst_offset, in, src_offset, len);
   }
 
   template <typename U0, typename... Us>
   void write_lnode(size_t dst_offset, const nodelist& in, size_t src_offset, size_t length, U0& arg0, Us&... args) {
-    if (dst_offset < U0::bitcount) {
-      size_t len = std::min<size_t>(length, U0::bitcount);
+    if (dst_offset < U0::bitsize) {
+      size_t len = std::min<size_t>(length, U0::bitsize);
       ch::internal::write_lnode(arg0, dst_offset, in, src_offset, len);
       dst_offset += len;
       src_offset += len;
       length -= len;
     }
     if (length != 0) {
-      this->write_lnode(dst_offset - U0::bitcount, in, src_offset, length, args...);
+      this->write_lnode(dst_offset - U0::bitsize, in, src_offset, length, args...);
     }
   }
 
@@ -529,21 +476,21 @@ protected:
 
   template <typename U>
   void write_bytes(uint32_t dst_offset, const void* in, uint32_t in_cbsize, uint32_t src_offset, size_t length, U& arg) {
-    size_t len = std::min<size_t>(length, U::bitcount);
+    size_t len = std::min<size_t>(length, U::bitsize);
     ch::internal::write_bytes(arg, dst_offset, in, in_cbsize, src_offset, len);
   }
 
   template <typename U0, typename... Us>
   void write_bytes(uint32_t dst_offset, const void* in, uint32_t in_cbsize, uint32_t src_offset, size_t length, U0& arg0, Us&... args) {
-    if (dst_offset < U0::bitcount) {
-      size_t len = std::min<size_t>(length, U0::bitcount);
+    if (dst_offset < U0::bitsize) {
+      size_t len = std::min<size_t>(length, U0::bitsize);
       ch::internal::write_bytes(arg0, dst_offset, in, in_cbsize, src_offset, len);
       dst_offset += len;
       src_offset += len;
       length -= len;
     }
     if (length != 0) {
-      this->write_bytes(dst_offset - U0::bitcount, in, in_cbsize, src_offset, length, args...);
+      this->write_bytes(dst_offset - U0::bitsize, in, in_cbsize, src_offset, length, args...);
     }
   }
 

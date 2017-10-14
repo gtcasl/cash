@@ -50,7 +50,7 @@ public:
   }
 
   ch_real& operator=(ch_real&& rhs) {
-    node_.move(rhs.node_, bitcount);
+    node_.move(rhs.node_, bitsize);
     return *this;
   }
 

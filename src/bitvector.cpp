@@ -4,7 +4,7 @@
 using namespace ch::internal;
 
 bitvector::bitvector(const bitvector& rhs) : words_(nullptr), size_(0) {
-  this->resize(rhs.size_, 0x0, false, false);
+  this->resize(rhs.size_);
   std::copy(rhs.words_, rhs.words_ + this->get_num_words(), words_);
 }
 
@@ -17,31 +17,31 @@ bitvector::bitvector(bitvector&& rhs) {
 
 bitvector::bitvector(uint32_t size)
   : words_(nullptr), size_(0) {
-  this->resize(size, 0, true, false);
+  this->resize(size, 0, true);
 }
 
 bitvector::bitvector(uint32_t size, char value)
   : words_(nullptr), size_(0) {
-  this->resize(size, 0x0, false, false);
+  this->resize(size);
   this->operator =(value);
 }
 
 bitvector::bitvector(uint32_t size, uint32_t value)
   : words_(nullptr), size_(0) {
-  this->resize(size, 0x0, false, false);
+  this->resize(size);
   this->operator =(value);
 }
 
 bitvector::bitvector(uint32_t size,
                      const std::initializer_list<uint32_t>& value)
   : words_(nullptr), size_(0) {  
-  this->resize(size, 0x0, false, false);
+  this->resize(size);
   this->operator =(value);  
 }
 
 bitvector::bitvector(uint32_t size, const char* value)
   : words_(nullptr), size_(0) {
-  this->resize(size, 0x0, false, false);
+  this->resize(size);
   this->operator =(value);
 }
 
@@ -86,7 +86,7 @@ void bitvector::clear_unused_bits() {
 
 bitvector& bitvector::operator=(const bitvector& rhs) {
   if (size_ != rhs.size_) {
-    this->resize(rhs.size_, 0x0, false, false);
+    this->resize(rhs.size_);
   }
   std::copy(rhs.words_, rhs.words_ + rhs.get_num_words(), words_);
   return *this;

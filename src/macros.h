@@ -42,18 +42,17 @@
 // MAKE_UNIQUE macro
 
 #define CH_MAKE_UNIQUE(x) CH_CONCAT(x, __COUNTER__)
-#define CH_UNAME(n1, n2) CH_CONCAT(__, CH_CONCAT(n1, CH_CONCAT(_, CH_CONCAT(n2, __))))
 
 // NARG macro
 
-#define CH_NARG_N(_1, _2, _3, _4, _5, _6, _7, _8, _9,_10,_11,_12,_13,_14,_15,_16, \
-                   _17,_18,_19,_20,_21,_22,_23,_24,_25,_26,_27,_28,_29,_30,_31,_32, \
-                   _33,_34,_35,_36,_37,_38,_39,_40,_41,_42,_43,_44,_45,_46,_47,_48, \
-                   _49,_50,_51,_52,_53,_54,_55,_56,_57,_58,_59,_60,_61,_62,_63,  N, ...) N 
+#define CH_NARG_N(_1, _2, _3, _4, _5, _6, _7, _8, _9, _10,_11,_12,_13,_14,_15,_16, \
+                  _17,_18,_19,_20,_21,_22,_23,_24,_25,_26,_27,_28,_29,_30,_31,_32, \
+                  _33,_34,_35,_36,_37,_38,_39,_40,_41,_42,_43,_44,_45,_46,_47,_48, \
+                  _49,_50,_51,_52,_53,_54,_55,_56,_57,_58,_59,_60,_61,_62,_63, N, ...) N
 #define CH_NARG_R() 63,62,61,60,59,58,57,56,55,54,53,52,51,50,49,48, \
-                      47,46,45,44,43,42,41,40,39,38,37,36,35,34,33,32, \
-                      31,30,29,28,27,26,25,24,23,22,21,20,19,18,17,16, \
-                      15,14,13,12,11,10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0
+                    47,46,45,44,43,42,41,40,39,38,37,36,35,34,33,32, \
+                    31,30,29,28,27,26,25,24,23,22,21,20,19,18,17,16, \
+                    15,14,13,12,11,10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0
 #define CH_NARG_(...) CH_NARG_N(__VA_ARGS__) 
 #define CH_NARG(...)  CH_NARG_(__VA_ARGS__, CH_NARG_R())
 
@@ -194,3 +193,69 @@
 
 #define CH_REVERSE_FOR_EACH_(N, what, sep, ...) CH_CONCAT(CH_REVERSE_FOR_EACH_, N)(what, sep, __VA_ARGS__)
 #define CH_REVERSE_FOR_EACH(what, sep, ...) CH_REVERSE_FOR_EACH_(CH_NARG(__VA_ARGS__), what, sep, __VA_ARGS__)
+
+#define CH_INC(x) CH_INC_ ## x
+#define CH_INC_0 1
+#define CH_INC_1 2
+#define CH_INC_2 3
+#define CH_INC_3 4
+#define CH_INC_4 5
+#define CH_INC_5 6
+#define CH_INC_6 7
+#define CH_INC_7 8
+#define CH_INC_8 9
+#define CH_INC_9 10
+#define CH_INC_10 11
+#define CH_INC_11 12
+#define CH_INC_12 13
+#define CH_INC_13 14
+#define CH_INC_14 15
+#define CH_INC_15 16
+#define CH_INC_16 17
+#define CH_INC_17 18
+#define CH_INC_18 19
+#define CH_INC_19 20
+#define CH_INC_20 21
+#define CH_INC_21 22
+#define CH_INC_22 23
+#define CH_INC_23 24
+#define CH_INC_24 25
+#define CH_INC_25 26
+#define CH_INC_26 27
+#define CH_INC_27 28
+#define CH_INC_28 29
+#define CH_INC_29 30
+#define CH_INC_30 31
+#define CH_INC_31 32
+#define CH_INC_32 33
+#define CH_INC_33 34
+#define CH_INC_34 35
+#define CH_INC_35 36
+#define CH_INC_36 37
+#define CH_INC_37 38
+#define CH_INC_38 39
+#define CH_INC_39 40
+#define CH_INC_40 41
+#define CH_INC_41 42
+#define CH_INC_42 43
+#define CH_INC_43 44
+#define CH_INC_44 45
+#define CH_INC_45 46
+#define CH_INC_46 47
+#define CH_INC_47 48
+#define CH_INC_48 49
+#define CH_INC_49 50
+#define CH_INC_50 51
+#define CH_INC_51 52
+#define CH_INC_52 53
+#define CH_INC_53 54
+#define CH_INC_54 55
+#define CH_INC_55 56
+#define CH_INC_56 57
+#define CH_INC_57 58
+#define CH_INC_58 59
+#define CH_INC_59 60
+#define CH_INC_60 61
+#define CH_INC_61 62
+#define CH_INC_62 63
+#define CH_INC_63 64

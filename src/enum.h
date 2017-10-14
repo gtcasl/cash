@@ -11,11 +11,12 @@
   class enum_name : public ch::internal::ch_scalar<size> { \
   public: \
     using base = ch::internal::ch_scalar<size>; \
-    using sim_type = enum_name;
-    using value_type = value_name; \
+    using sim_type = enum_name; \
+    using logic_type = value_name; \
     enum_name() {} \
     enum_name(const enum_name& __rhs__) : base(__rhs__) {} \
     enum_name(enum_name&& __rhs__) : base(std::move(__rhs__)) {} \
+    enum_name(const ch::internal::bytes_store& store, unsigned offset = 0) : base(store, offset) {} \
     enum_name(enum_type __rhs__) : base(__rhs__) {} \
     enum_name& operator=(const enum_name& __rhs__) { \
       base::operator=(__rhs__); \

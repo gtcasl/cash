@@ -30,6 +30,22 @@ private:
 
 ///////////////////////////////////////////////////////////////////////////////
 
+template <typename T>
+struct is_integral_or_enum : std::integral_constant<bool,
+  std::is_integral<T>::value ||
+  std::is_enum<T>::value>
+{};
+
+///////////////////////////////////////////////////////////////////////////////
+
+template <bool Pred>
+using is_true = std::conditional<Pred, std::true_type, std::false_type>;
+
+template <bool Pred>
+using is_false = std::conditional<Pred, std::false_type, std::true_type>;
+
+///////////////////////////////////////////////////////////////////////////////
+
 template <bool... B>
 struct conjunction {};
 
@@ -386,6 +402,14 @@ constexpr uint32_t rotr(uint32_t value, uint32_t shift, uint32_t width) {
       CH_ABORT("assertion `" CH_STRINGIZE(x) "' failed, " msg, ##__VA_ARGS__); \
     } \
   } while (false)
+
+#define CH_DEF_SFINAE_CHECK(type_name, predicate) \
+  template<typename T, typename Enable = void> \
+  struct type_name : std::false_type {}; \
+  template<typename T> \
+  struct type_name<T, typename std::enable_if_t<predicate>> : std::true_type {}
+
+#define CH_VOID_T typename = void
 
 #define CH_REQUIRES(...) typename = std::enable_if_t<(__VA_ARGS__)>
 

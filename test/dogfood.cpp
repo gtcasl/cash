@@ -4,27 +4,21 @@ using namespace ch::core;
 using namespace ch::literals;
 using namespace ch::sim;
 
-__enum (my_enum, 4, (
+__enum (e2_t, 2, (
   (idle, 0),
   execute,
   stats,
   done
 ));
 
-__enum (O_t, 1, (
-  a
-));
+__union (u1_t, (
+  (ch_bit4) a
+  ));
 
 __union (u2_t, (
   (ch_bit4) a,
   (ch_bit4) b
   ));
-
-__union (u3_t, (
-  (ch_bit2) a,
-  (ch_bit8) b,
-  (ch_bit4) c
-));
 
 __struct (s1_t, (
   (ch_bit4) a
@@ -35,48 +29,27 @@ __struct (s2_t, (
   (ch_bit4) b
 ));
 
-__struct (s3_t, (
-  (ch_bit4) a,
-  (ch_bit4) b,
-  (ch_bit4) c
+__union (u4_t, (
+  (u1_t) a,
+  (s2_t) b
 ));
 
-struct Q_t {
-  __struct (value_t, (
-    (ch_bit4) a,
-    (ch_bit4) b,
-    (ch_bit4) c
-  ));
-  value_t value;
-};
-
-__struct (s4_t, (
-  (ch_bit4) a,
-  (ch_bit4) b,
-  (ch_bit4) c,
-  (ch_bit4) d
-));
-
-__struct (ss_t, (
-  (s1_t) a,
-  (s1_t) b
-));
-
-template <unsigned N>
-__struct (st_t, (
-  (ch_bit<N>) a,
-  (ch_bit<N>) b
-));
-
-using st4_t = st_t<4>;
-
-__struct (sd_t, s1_t, (
+__struct (sd1_t, s1_t, (
   (ch_bit4) b
 ));
 
-ch_vec<ch_bit2, 1> v1_t;
+__struct (sd2_t, sd1_t, (
+  (ch_bit4) c
+));
 
-ch_vec<ch_bit2, 2> v2_t;
+__struct (sd3_t, (
+  (sd1_t)   a,
+  (ch_bit4) b
+));
+
+using v2_1_t = ch_vec<ch_bit2, 1>;
+using v2_2_t = ch_vec<ch_bit2, 2>;
+using v2_3_t = ch_vec<ch_bit2, 3>;
 
 template <typename T>
 __inout(FiFoIO, (
@@ -103,7 +76,7 @@ struct Fifo {
     rd_ptr.next = ch_select(reading, rd_ptr + 1, rd_ptr);
     wr_ptr.next = ch_select(writing, wr_ptr + 1, wr_ptr);
 
-    ch_ram<T::bitcount, A> mem;
+    ch_ram<T::bitsize, A> mem;
     __if (writing) (
       mem[wr_A] = io.end.data;
     );
@@ -213,30 +186,33 @@ struct Dogfood {
   __io (
     (ch_out<ch_bit1>) out
   );
-  void describe() {    
+  void describe() {
     io.out = 1_b;
   }
 };
 
 int main(int argc, char **argv) {
+
+  ch_scalar<2> a(e2_t::done);
+  assert(a == 0);
+
   /*ch_module<Dogfood> dogfood;
   ch_simulator sim(dogfood);
   sim.run(1);
   assert(ch_peek<bool>(dogfood.io.out));*/
 
-  ch_module<Foo1> foo;
+  /*ch_module<Foo1> foo;
   ch_poke(foo.io.in1, 1);
   ch_poke(foo.io.in2, 2);
   ch_simulator sim(foo);
   sim.run(1);
   assert(3 == ch_peek<int>(foo.io.out));
+  ch_toVerilog("foo.v", foo);*/
 
   /*ch_module<Foo2> foo;
   ch_simulator sim(foo);
   sim.run(1);
   assert(ch_peek<bool>(foo.io));*/
-
-  ch_toVerilog("foo.v", foo);
 
   return 0;
 }

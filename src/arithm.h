@@ -68,36 +68,33 @@ enum alu_flags {
 
 #define CH_BINOP_GEN(func, op) \
   template <typename A, typename B, \
-            CH_REQUIRES(!are_all_ch_scalar<A, B>::value), \
-            CH_REQUIRES(deduce_type_t<A, B>::bitcount != 0), \
-            CH_REQUIRES(is_bit_convertible<A, deduce_type_t<A, B>::bitcount>::value), \
-            CH_REQUIRES(is_bit_convertible<B, deduce_type_t<A, B>::bitcount>::value)> \
+            CH_REQUIRES(deduce_ch_bit_t<A, B>::bitsize != 0), \
+            CH_REQUIRES(is_ch_bit_convertible<A, deduce_ch_bit_t<A, B>::bitsize>::value), \
+            CH_REQUIRES(is_ch_bit_convertible<B, deduce_ch_bit_t<A, B>::bitsize>::value)> \
   const auto op(const A& a, const B& b) { \
     return func(a, b); \
   }
 
 #define CH_UNARYOP_GEN(func, op) \
   template <unsigned N> \
-  const auto op(const ch_bitbase<N>& in) { \
+  const auto op(const const_bit<N>& in) { \
     return func(in); \
   }
 
 #define CH_COMPAREOP_GEN(func, op) \
   template <typename A, typename B, \
-            CH_REQUIRES(!are_all_ch_scalar<A, B>::value), \
-            CH_REQUIRES(deduce_type_t<A, B>::bitcount != 0), \
-            CH_REQUIRES(is_bit_convertible<A, deduce_type_t<A, B>::bitcount>::value), \
-            CH_REQUIRES(is_bit_convertible<B, deduce_type_t<A, B>::bitcount>::value)> \
+            CH_REQUIRES(deduce_ch_bit_t<A, B>::bitsize != 0), \
+            CH_REQUIRES(is_ch_bit_convertible<A, deduce_ch_bit_t<A, B>::bitsize>::value), \
+            CH_REQUIRES(is_ch_bit_convertible<B, deduce_ch_bit_t<A, B>::bitsize>::value)> \
   const auto op(const A& a, const B& b) { \
     return func(a, b); \
   }
 
 #define CH_SHIFTOP_GEN(func, op) \
   template <typename A, typename B, \
-            CH_REQUIRES(!are_all_ch_scalar<A, B>::value), \
-            CH_REQUIRES(deduce_first_type_t<A, B>::bitcount != 0), \
-            CH_REQUIRES(is_bit_convertible<A, deduce_first_type_t<A, B>::bitcount>::value), \
-            CH_REQUIRES(is_bit_convertible<B, deduce_first_type_t<B, A>::bitcount>::value)> \
+            CH_REQUIRES(deduce_first_ch_bit_t<A, B>::bitsize != 0), \
+            CH_REQUIRES(is_ch_bit_convertible<A, deduce_first_ch_bit_t<A, B>::bitsize>::value), \
+            CH_REQUIRES(is_ch_bit_convertible<B, deduce_first_ch_bit_t<B, A>::bitsize>::value)> \
   const auto op(const A& a, const B& b) { \
     return func(a, b); \
   }
@@ -162,253 +159,253 @@ const auto OpCompare(const A& a, const B& b) {
 }
 
 template <ch_alu_op op, unsigned N>
-const auto OpUnary(const ch_bitbase<N>& a) {
+const auto OpUnary(const const_bit<N>& a) {
   return make_type<ch_bit<N>>(createAluNode(op, get_lnode(a)));
 }
 
 template <ch_alu_op op, unsigned N>
-const auto OpReduce(const ch_bitbase<N>& a) {
+const auto OpReduce(const const_bit<N>& a) {
   return make_type<ch_bit<1>>(createAluNode(op, get_lnode(a)));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 template <unsigned N>
-const auto ch_inv(const ch_bitbase<N>& a) {
+const auto ch_inv(const const_bit<N>& a) {
   return OpUnary<alu_inv>(a);
 }
 
 template <typename A, typename B,
-          CH_REQUIRES(deduce_type_t<A, B>::bitcount != 0),
-          CH_REQUIRES(is_bit_convertible<A, deduce_type_t<A, B>::bitcount>::value),
-          CH_REQUIRES(is_bit_convertible<B, deduce_type_t<A, B>::bitcount>::value)>
+          CH_REQUIRES(deduce_ch_bit_t<A, B>::bitsize != 0),
+          CH_REQUIRES(is_ch_bit_convertible<A, deduce_ch_bit_t<A, B>::bitsize>::value),
+          CH_REQUIRES(is_ch_bit_convertible<B, deduce_ch_bit_t<A, B>::bitsize>::value)>
 const auto ch_nand(const A& a, const B& b) {
-  return OpBinary<alu_nand, deduce_type_t<A, B>::bitcount>(a, b);
+  return OpBinary<alu_nand, deduce_ch_bit_t<A, B>::bitsize>(a, b);
 }
 
 template <typename A, typename B,
-          CH_REQUIRES(deduce_type_t<A, B>::bitcount != 0),
-          CH_REQUIRES(is_bit_convertible<A, deduce_type_t<A, B>::bitcount>::value),
-          CH_REQUIRES(is_bit_convertible<B, deduce_type_t<A, B>::bitcount>::value)>
+          CH_REQUIRES(deduce_ch_bit_t<A, B>::bitsize != 0),
+          CH_REQUIRES(is_ch_bit_convertible<A, deduce_ch_bit_t<A, B>::bitsize>::value),
+          CH_REQUIRES(is_ch_bit_convertible<B, deduce_ch_bit_t<A, B>::bitsize>::value)>
 const auto ch_nor(const A& a, const B& b) {
-  return OpBinary<alu_nor, deduce_type_t<A, B>::bitcount>(a, b);
+  return OpBinary<alu_nor, deduce_ch_bit_t<A, B>::bitsize>(a, b);
 }
 
 template <typename A, typename B,
-          CH_REQUIRES(deduce_type_t<A, B>::bitcount != 0),
-          CH_REQUIRES(is_bit_convertible<A, deduce_type_t<A, B>::bitcount>::value),
-          CH_REQUIRES(is_bit_convertible<B, deduce_type_t<A, B>::bitcount>::value)>
+          CH_REQUIRES(deduce_ch_bit_t<A, B>::bitsize != 0),
+          CH_REQUIRES(is_ch_bit_convertible<A, deduce_ch_bit_t<A, B>::bitsize>::value),
+          CH_REQUIRES(is_ch_bit_convertible<B, deduce_ch_bit_t<A, B>::bitsize>::value)>
 const auto ch_and(const A& a, const B& b) {
-  return OpBinary<alu_and, deduce_type_t<A, B>::bitcount>(a, b);
+  return OpBinary<alu_and, deduce_ch_bit_t<A, B>::bitsize>(a, b);
 }
 
 template <typename A, typename B,
-          CH_REQUIRES(deduce_type_t<A, B>::bitcount != 0),
-          CH_REQUIRES(is_bit_convertible<A, deduce_type_t<A, B>::bitcount>::value),
-          CH_REQUIRES(is_bit_convertible<B, deduce_type_t<A, B>::bitcount>::value)>
+          CH_REQUIRES(deduce_ch_bit_t<A, B>::bitsize != 0),
+          CH_REQUIRES(is_ch_bit_convertible<A, deduce_ch_bit_t<A, B>::bitsize>::value),
+          CH_REQUIRES(is_ch_bit_convertible<B, deduce_ch_bit_t<A, B>::bitsize>::value)>
 const auto ch_or(const A& a, const B& b) {
-  return OpBinary<alu_or, deduce_type_t<A, B>::bitcount>(a, b);
+  return OpBinary<alu_or, deduce_ch_bit_t<A, B>::bitsize>(a, b);
 }
 
 template <typename A, typename B,
-          CH_REQUIRES(deduce_type_t<A, B>::bitcount != 0),
-          CH_REQUIRES(is_bit_convertible<A, deduce_type_t<A, B>::bitcount>::value),
-          CH_REQUIRES(is_bit_convertible<B, deduce_type_t<A, B>::bitcount>::value)>
+          CH_REQUIRES(deduce_ch_bit_t<A, B>::bitsize != 0),
+          CH_REQUIRES(is_ch_bit_convertible<A, deduce_ch_bit_t<A, B>::bitsize>::value),
+          CH_REQUIRES(is_ch_bit_convertible<B, deduce_ch_bit_t<A, B>::bitsize>::value)>
 const auto ch_xor(const A& a, const B& b) {
-  return OpBinary<alu_xor, deduce_type_t<A, B>::bitcount>(a, b);
+  return OpBinary<alu_xor, deduce_ch_bit_t<A, B>::bitsize>(a, b);
 }
 
 template <typename A, typename B,
-          CH_REQUIRES(deduce_type_t<A, B>::bitcount != 0),
-          CH_REQUIRES(is_bit_convertible<A, deduce_type_t<A, B>::bitcount>::value),
-          CH_REQUIRES(is_bit_convertible<B, deduce_type_t<A, B>::bitcount>::value)>
+          CH_REQUIRES(deduce_ch_bit_t<A, B>::bitsize != 0),
+          CH_REQUIRES(is_ch_bit_convertible<A, deduce_ch_bit_t<A, B>::bitsize>::value),
+          CH_REQUIRES(is_ch_bit_convertible<B, deduce_ch_bit_t<A, B>::bitsize>::value)>
 const auto ch_xnor(const A& a, const B& b) {
-  return OpBinary<alu_xnor, deduce_type_t<A, B>::bitcount>(a, b);
+  return OpBinary<alu_xnor, deduce_ch_bit_t<A, B>::bitsize>(a, b);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 template <unsigned N>
-const auto ch_andr(const ch_bitbase<N>& a) {
+const auto ch_andr(const const_bit<N>& a) {
   return OpReduce<alu_andr>(a);
 }
 
 template <unsigned N>
-const auto ch_orr(const ch_bitbase<N>& a) {
+const auto ch_orr(const const_bit<N>& a) {
   return OpReduce<alu_orr>(a);
 }
 
 template <unsigned N>
-const auto ch_xorr(const ch_bitbase<N>& a) {
+const auto ch_xorr(const const_bit<N>& a) {
   return OpReduce<alu_xorr>(a);
 }
 
 template <unsigned N>
-const auto ch_nandr(const ch_bitbase<N>& a) {
+const auto ch_nandr(const const_bit<N>& a) {
   return OpReduce<alu_nandr>(a);
 }
 
 template <unsigned N>
-const auto ch_norr(const ch_bitbase<N>& a) {
+const auto ch_norr(const const_bit<N>& a) {
   return OpReduce<alu_norr>(a);
 }
 
 template <unsigned N>
-const auto ch_xnorr(const ch_bitbase<N>& a) {
+const auto ch_xnorr(const const_bit<N>& a) {
   return OpReduce<alu_xnorr>(a);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-inline const auto operator! (const ch_bitbase<1>& a) {
+inline const auto operator! (const const_bit<1>& a) {
   return ch_inv(a);         
 }
 
-inline const auto operator&& (const ch_bitbase<1>& a, const ch_bitbase<1>& b) {
+inline const auto operator&& (const const_bit<1>& a, const const_bit<1>& b) {
   return ch_and(a, b);      
 }
 
-inline const auto operator|| (const ch_bitbase<1>& a, const ch_bitbase<1>& b) {
+inline const auto operator|| (const const_bit<1>& a, const const_bit<1>& b) {
   return ch_or(a, b);      
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename A, typename B,
-          CH_REQUIRES(deduce_type_t<A, B>::bitcount != 0),
-          CH_REQUIRES(is_bit_convertible<A, deduce_type_t<A, B>::bitcount>::value),
-          CH_REQUIRES(is_bit_convertible<B, deduce_type_t<A, B>::bitcount>::value)>
+          CH_REQUIRES(deduce_ch_bit_t<A, B>::bitsize != 0),
+          CH_REQUIRES(is_ch_bit_convertible<A, deduce_ch_bit_t<A, B>::bitsize>::value),
+          CH_REQUIRES(is_ch_bit_convertible<B, deduce_ch_bit_t<A, B>::bitsize>::value)>
 const auto ch_eq(const A& a, const B& b) {
-  return OpCompare<alu_eq, deduce_type_t<A, B>::bitcount>(a, b);
+  return OpCompare<alu_eq, deduce_ch_bit_t<A, B>::bitsize>(a, b);
 }
 
 template <typename A, typename B,
-          CH_REQUIRES(deduce_type_t<A, B>::bitcount != 0),
-          CH_REQUIRES(is_bit_convertible<A, deduce_type_t<A, B>::bitcount>::value),
-          CH_REQUIRES(is_bit_convertible<B, deduce_type_t<A, B>::bitcount>::value)>
+          CH_REQUIRES(deduce_ch_bit_t<A, B>::bitsize != 0),
+          CH_REQUIRES(is_ch_bit_convertible<A, deduce_ch_bit_t<A, B>::bitsize>::value),
+          CH_REQUIRES(is_ch_bit_convertible<B, deduce_ch_bit_t<A, B>::bitsize>::value)>
 const auto ch_ne(const A& a, const B& b) {
-  return OpCompare<alu_ne, deduce_type_t<A, B>::bitcount>(a, b);
+  return OpCompare<alu_ne, deduce_ch_bit_t<A, B>::bitsize>(a, b);
 }
 
 template <typename A, typename B,
-          CH_REQUIRES(deduce_type_t<A, B>::bitcount != 0),
-          CH_REQUIRES(is_bit_convertible<A, deduce_type_t<A, B>::bitcount>::value),
-          CH_REQUIRES(is_bit_convertible<B, deduce_type_t<A, B>::bitcount>::value)>
+          CH_REQUIRES(deduce_ch_bit_t<A, B>::bitsize != 0),
+          CH_REQUIRES(is_ch_bit_convertible<A, deduce_ch_bit_t<A, B>::bitsize>::value),
+          CH_REQUIRES(is_ch_bit_convertible<B, deduce_ch_bit_t<A, B>::bitsize>::value)>
 const auto ch_lt(const A& a, const B& b) {
-  return OpCompare<alu_lt, deduce_type_t<A, B>::bitcount>(a, b);
+  return OpCompare<alu_lt, deduce_ch_bit_t<A, B>::bitsize>(a, b);
 }
 
 template <typename A, typename B,
-          CH_REQUIRES(deduce_type_t<A, B>::bitcount != 0),
-          CH_REQUIRES(is_bit_convertible<A, deduce_type_t<A, B>::bitcount>::value),
-          CH_REQUIRES(is_bit_convertible<B, deduce_type_t<A, B>::bitcount>::value)>
+          CH_REQUIRES(deduce_ch_bit_t<A, B>::bitsize != 0),
+          CH_REQUIRES(is_ch_bit_convertible<A, deduce_ch_bit_t<A, B>::bitsize>::value),
+          CH_REQUIRES(is_ch_bit_convertible<B, deduce_ch_bit_t<A, B>::bitsize>::value)>
 const auto ch_gt(const A& a, const B& b) {
-  return OpCompare<alu_gt, deduce_type_t<A, B>::bitcount>(a, b);
+  return OpCompare<alu_gt, deduce_ch_bit_t<A, B>::bitsize>(a, b);
 }
 
 template <typename A, typename B,
-          CH_REQUIRES(deduce_type_t<A, B>::bitcount != 0),
-          CH_REQUIRES(is_bit_convertible<A, deduce_type_t<A, B>::bitcount>::value),
-          CH_REQUIRES(is_bit_convertible<B, deduce_type_t<A, B>::bitcount>::value)>
+          CH_REQUIRES(deduce_ch_bit_t<A, B>::bitsize != 0),
+          CH_REQUIRES(is_ch_bit_convertible<A, deduce_ch_bit_t<A, B>::bitsize>::value),
+          CH_REQUIRES(is_ch_bit_convertible<B, deduce_ch_bit_t<A, B>::bitsize>::value)>
 const auto ch_ge(const A& a, const B& b) {
-  return OpCompare<alu_ge, deduce_type_t<A, B>::bitcount>(a, b);
+  return OpCompare<alu_ge, deduce_ch_bit_t<A, B>::bitsize>(a, b);
 }
 
 template <typename A, typename B,
-          CH_REQUIRES(deduce_type_t<A, B>::bitcount != 0),
-          CH_REQUIRES(is_bit_convertible<A, deduce_type_t<A, B>::bitcount>::value),
-          CH_REQUIRES(is_bit_convertible<B, deduce_type_t<A, B>::bitcount>::value)>
+          CH_REQUIRES(deduce_ch_bit_t<A, B>::bitsize != 0),
+          CH_REQUIRES(is_ch_bit_convertible<A, deduce_ch_bit_t<A, B>::bitsize>::value),
+          CH_REQUIRES(is_ch_bit_convertible<B, deduce_ch_bit_t<A, B>::bitsize>::value)>
 const auto ch_le(const A& a, const B& b) {
-  return OpCompare<alu_le, deduce_type_t<A, B>::bitcount>(a, b);
+  return OpCompare<alu_le, deduce_ch_bit_t<A, B>::bitsize>(a, b);
 }  
 
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename A, typename B,
-          CH_REQUIRES(deduce_first_type_t<A, B>::bitcount != 0),
-          CH_REQUIRES(is_bit_convertible<A, deduce_first_type_t<A, B>::bitcount>::value),
-          CH_REQUIRES(is_bit_convertible<B, deduce_first_type_t<B, A>::bitcount>::value)>
+          CH_REQUIRES(deduce_first_ch_bit_t<A, B>::bitsize != 0),
+          CH_REQUIRES(is_ch_bit_convertible<A, deduce_first_ch_bit_t<A, B>::bitsize>::value),
+          CH_REQUIRES(is_ch_bit_convertible<B, deduce_first_ch_bit_t<B, A>::bitsize>::value)>
 const auto ch_sll(const A& a, const B& b) {
-  return OpShift<alu_sll, deduce_first_type_t<A, B>::bitcount, deduce_first_type_t<B, A>::bitcount>(a, b);
+  return OpShift<alu_sll, deduce_first_ch_bit_t<A, B>::bitsize, deduce_first_ch_bit_t<B, A>::bitsize>(a, b);
 }
 
 template <typename A, typename B,
-          CH_REQUIRES(deduce_first_type_t<A, B>::bitcount != 0),
-          CH_REQUIRES(is_bit_convertible<A, deduce_first_type_t<A, B>::bitcount>::value),
-          CH_REQUIRES(is_bit_convertible<B, deduce_first_type_t<B, A>::bitcount>::value)>
+          CH_REQUIRES(deduce_first_ch_bit_t<A, B>::bitsize != 0),
+          CH_REQUIRES(is_ch_bit_convertible<A, deduce_first_ch_bit_t<A, B>::bitsize>::value),
+          CH_REQUIRES(is_ch_bit_convertible<B, deduce_first_ch_bit_t<B, A>::bitsize>::value)>
 const auto ch_srl(const A& a, const B& b) {
-  return OpShift<alu_srl, deduce_first_type_t<A, B>::bitcount, deduce_first_type_t<B, A>::bitcount>(a, b);
+  return OpShift<alu_srl, deduce_first_ch_bit_t<A, B>::bitsize, deduce_first_ch_bit_t<B, A>::bitsize>(a, b);
 }  
 
 template <typename A, typename B,
-          CH_REQUIRES(deduce_first_type_t<A, B>::bitcount != 0),
-          CH_REQUIRES(is_bit_convertible<A, deduce_first_type_t<A, B>::bitcount>::value),
-          CH_REQUIRES(is_bit_convertible<B, deduce_first_type_t<B, A>::bitcount>::value)>
+          CH_REQUIRES(deduce_first_ch_bit_t<A, B>::bitsize != 0),
+          CH_REQUIRES(is_ch_bit_convertible<A, deduce_first_ch_bit_t<A, B>::bitsize>::value),
+          CH_REQUIRES(is_ch_bit_convertible<B, deduce_first_ch_bit_t<B, A>::bitsize>::value)>
 const auto ch_sra(const A& a, const B& b) {
-  return OpShift<alu_sra, deduce_first_type_t<A, B>::bitcount, deduce_first_type_t<B, A>::bitcount>(a, b);
+  return OpShift<alu_sra, deduce_first_ch_bit_t<A, B>::bitsize, deduce_first_ch_bit_t<B, A>::bitsize>(a, b);
 }
 
 template <typename A, typename B,
-          CH_REQUIRES(deduce_first_type_t<A, B>::bitcount != 0),
-          CH_REQUIRES(is_bit_convertible<A, deduce_first_type_t<A, B>::bitcount>::value),
-          CH_REQUIRES(is_bit_convertible<B, deduce_first_type_t<B, A>::bitcount>::value)>
+          CH_REQUIRES(deduce_first_ch_bit_t<A, B>::bitsize != 0),
+          CH_REQUIRES(is_ch_bit_convertible<A, deduce_first_ch_bit_t<A, B>::bitsize>::value),
+          CH_REQUIRES(is_ch_bit_convertible<B, deduce_first_ch_bit_t<B, A>::bitsize>::value)>
 const auto ch_rotl(const A& a, const B& b) {
-  return OpShift<alu_rotl, deduce_first_type_t<A, B>::bitcount, deduce_first_type_t<B, A>::bitcount>(a, b);
+  return OpShift<alu_rotl, deduce_first_ch_bit_t<A, B>::bitsize, deduce_first_ch_bit_t<B, A>::bitsize>(a, b);
 }
 
 template <typename A, typename B,
-          CH_REQUIRES(deduce_first_type_t<A, B>::bitcount != 0),
-          CH_REQUIRES(is_bit_convertible<A, deduce_first_type_t<A, B>::bitcount>::value),
-          CH_REQUIRES(is_bit_convertible<B, deduce_first_type_t<B, A>::bitcount>::value)>
+          CH_REQUIRES(deduce_first_ch_bit_t<A, B>::bitsize != 0),
+          CH_REQUIRES(is_ch_bit_convertible<A, deduce_first_ch_bit_t<A, B>::bitsize>::value),
+          CH_REQUIRES(is_ch_bit_convertible<B, deduce_first_ch_bit_t<B, A>::bitsize>::value)>
 const auto ch_rotr(const A& a, const B& b) {
-  return OpShift<alu_rotr, deduce_first_type_t<A, B>::bitcount, deduce_first_type_t<B, A>::bitcount>(a, b);
+  return OpShift<alu_rotr, deduce_first_ch_bit_t<A, B>::bitsize, deduce_first_ch_bit_t<B, A>::bitsize>(a, b);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 template <unsigned N>
-const auto ch_neg(const ch_bitbase<N>& a) {
+const auto ch_neg(const const_bit<N>& a) {
   return OpUnary<alu_neg>(a);
 }
 
 template <typename A, typename B,
-          CH_REQUIRES(deduce_type_t<A, B>::bitcount != 0),
-          CH_REQUIRES(is_bit_convertible<A, deduce_type_t<A, B>::bitcount>::value),
-          CH_REQUIRES(is_bit_convertible<B, deduce_type_t<A, B>::bitcount>::value)>
+          CH_REQUIRES(deduce_ch_bit_t<A, B>::bitsize != 0),
+          CH_REQUIRES(is_ch_bit_convertible<A, deduce_ch_bit_t<A, B>::bitsize>::value),
+          CH_REQUIRES(is_ch_bit_convertible<B, deduce_ch_bit_t<A, B>::bitsize>::value)>
 const auto ch_add(const A& a, const B& b) {
-  return OpBinary<alu_add, deduce_type_t<A, B>::bitcount>(a, b);
+  return OpBinary<alu_add, deduce_ch_bit_t<A, B>::bitsize>(a, b);
 }
 
 template <typename A, typename B,
-          CH_REQUIRES(deduce_type_t<A, B>::bitcount != 0),
-          CH_REQUIRES(is_bit_convertible<A, deduce_type_t<A, B>::bitcount>::value),
-          CH_REQUIRES(is_bit_convertible<B, deduce_type_t<A, B>::bitcount>::value)>
+          CH_REQUIRES(deduce_ch_bit_t<A, B>::bitsize != 0),
+          CH_REQUIRES(is_ch_bit_convertible<A, deduce_ch_bit_t<A, B>::bitsize>::value),
+          CH_REQUIRES(is_ch_bit_convertible<B, deduce_ch_bit_t<A, B>::bitsize>::value)>
 const auto ch_sub(const A& a, const B& b) {
-  return OpBinary<alu_sub, deduce_type_t<A, B>::bitcount>(a, b);
+  return OpBinary<alu_sub, deduce_ch_bit_t<A, B>::bitsize>(a, b);
 }
 
 template <typename A, typename B,
-          CH_REQUIRES(deduce_type_t<A, B>::bitcount != 0),
-          CH_REQUIRES(is_bit_convertible<A, deduce_type_t<A, B>::bitcount>::value),
-          CH_REQUIRES(is_bit_convertible<B, deduce_type_t<A, B>::bitcount>::value)>
+          CH_REQUIRES(deduce_ch_bit_t<A, B>::bitsize != 0),
+          CH_REQUIRES(is_ch_bit_convertible<A, deduce_ch_bit_t<A, B>::bitsize>::value),
+          CH_REQUIRES(is_ch_bit_convertible<B, deduce_ch_bit_t<A, B>::bitsize>::value)>
 const auto ch_mult(const A& a, const B& b) {
-  return OpBinary<alu_mult, deduce_type_t<A, B>::bitcount>(a, b);
+  return OpBinary<alu_mult, deduce_ch_bit_t<A, B>::bitsize>(a, b);
 }
 
 template <typename A, typename B,
-          CH_REQUIRES(deduce_type_t<A, B>::bitcount != 0),
-          CH_REQUIRES(is_bit_convertible<A, deduce_type_t<A, B>::bitcount>::value),
-          CH_REQUIRES(is_bit_convertible<B, deduce_type_t<A, B>::bitcount>::value)>
+          CH_REQUIRES(deduce_ch_bit_t<A, B>::bitsize != 0),
+          CH_REQUIRES(is_ch_bit_convertible<A, deduce_ch_bit_t<A, B>::bitsize>::value),
+          CH_REQUIRES(is_ch_bit_convertible<B, deduce_ch_bit_t<A, B>::bitsize>::value)>
 const auto ch_div(const A& a, const B& b) {
-  return OpBinary<alu_div, deduce_type_t<A, B>::bitcount>(a, b);
+  return OpBinary<alu_div, deduce_ch_bit_t<A, B>::bitsize>(a, b);
 }
 
 template <typename A, typename B,
-          CH_REQUIRES(deduce_type_t<A, B>::bitcount != 0),
-          CH_REQUIRES(is_bit_convertible<A, deduce_type_t<A, B>::bitcount>::value),
-          CH_REQUIRES(is_bit_convertible<B, deduce_type_t<A, B>::bitcount>::value)>
+          CH_REQUIRES(deduce_ch_bit_t<A, B>::bitsize != 0),
+          CH_REQUIRES(is_ch_bit_convertible<A, deduce_ch_bit_t<A, B>::bitsize>::value),
+          CH_REQUIRES(is_ch_bit_convertible<B, deduce_ch_bit_t<A, B>::bitsize>::value)>
 const auto ch_mod(const A& a, const B& b) {
-  return OpBinary<alu_mod, deduce_type_t<A, B>::bitcount>(a, b);
+  return OpBinary<alu_mod, deduce_ch_bit_t<A, B>::bitsize>(a, b);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

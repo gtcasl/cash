@@ -60,7 +60,7 @@ namespace core {
 
   template <typename T> using ch_seq = ch::internal::ch_seq<T>;
 
-  template <typename T> using ch_value_t = typename T::value_type;
+  template <typename T> using ch_value_t = ch::internal::value_type_t<T>;
   template <typename T> using ch_flip_t = typename T::flip_type;
   template <typename T> using ch_ioport_t = typename decltype(T::io)::port_type;
 
@@ -87,8 +87,8 @@ namespace core {
   // constants
   //
 
-  //const ch_constant<ch_bit1> ch_false(0);
-  //const ch_constant<ch_bit1> ch_true(1);
+  const ch_scalar<1> ch_false(0);
+  const ch_scalar<1> ch_true(1);
 
   //
   // subscript operators

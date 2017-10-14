@@ -73,7 +73,11 @@ __union (u3_t, (
 __struct (U_t, (
   (O_t) a
 ));
- 
+
+using v2_1_t = ch_vec<ch_bit2, 1>;
+using v2_2_t = ch_vec<ch_bit2, 2>;
+using v2_3_t = ch_vec<ch_bit2, 3>;
+
 TEST_CASE("aggregates", "[aggregates]") {
   SECTION("structs", "[struct]") {
     TEST([]()->ch_bit1 {
@@ -95,11 +99,11 @@ TEST_CASE("aggregates", "[aggregates]") {
     });
     TEST([]()->ch_bit1 {
       s2_t s2(1_b4, 0_b4);
-      return (s2 == 10000_b8);
+      return ((ch_bit<s2_t::bitsize>)s2 == 10000_b8);
     });
     TEST([]()->ch_bit1 {
       s3_t s3{3, 2, 1};
-      return (s3 == 0x321_h12);
+      return ((ch_bit<s3_t::bitsize>)s3 == 0x321_h12);
     });
   } 
   
@@ -119,39 +123,39 @@ TEST_CASE("aggregates", "[aggregates]") {
       u3.b = 01010101_b;
       u3.a = 11_b;
       u3.c.slice<2>(2) = 00_b;
-      return (u3 == 01010011_b);
+      return ((ch_bit<u3_t::bitsize>)u3 == 01010011_b);
     });
   }
   
   SECTION("vectors", "[vector]") {
     TEST([]()->ch_bit1 {
-      ch_vec<ch_bit2, 2> a(0, 0);
+      v2_2_t a(0, 0);
       a[0][1] = 1;
-      return (a == 0010_b);
+      return ((ch_bit<v2_2_t::bitsize>)a == 0010_b);
     });
 
     TEST([]()->ch_bit1 {
-      ch_vec<ch_bit2, 3> a{3, 2, 1};
-      return (a == 111001_b);
+      v2_3_t a{3, 2, 1};
+      return ((ch_bit<v2_3_t::bitsize>)a == 111001_b);
     });
 
     TEST([]()->ch_bit1 {
-      ch_vec<ch_bit2, 1> a{3};
+      v2_1_t a{3};
       return (a[0] == 11_b);
     });
 
     TEST([]()->ch_bit1 {
-      ch_vec<ch_bit2, 2> a{01_b, 10_b};
+      v2_2_t a{01_b, 10_b};
       return (a[0] == 10_b && a[1] == 01_b);
     });
     
     TEST([]()->ch_bit1 {
-      ch_vec<ch_bit2, 2> a(1, 1), b;
+      v2_2_t a(1, 1), b;
       b[0][0] = a[1][1];
       b[0][1] = a[1][0];
       b[1][0] = a[0][1];
       b[1][1] = a[0][0];
-      return (b == 1010_b);
+      return ((ch_bit<v2_2_t::bitsize>)b == 1010_b);
     });
 
     TEST([]()->ch_bit1 {

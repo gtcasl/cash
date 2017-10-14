@@ -114,7 +114,7 @@ public:
     }
     
     template <typename T,
-              CH_REQUIRES(is_bit_convertible<T, A>::value)>
+              CH_REQUIRES(is_ch_bit_convertible<T, A>::value)>
     const auto operator[](const T& addr) const {
       return make_type<ch_bit<W>>(mem_.read(get_lnode<T, A>(addr)));
     }
@@ -143,13 +143,13 @@ public:
     }
     
     template <typename T,
-              CH_REQUIRES(is_bit_convertible<T, A>::value)>
+              CH_REQUIRES(is_ch_bit_convertible<T, A>::value)>
     const auto operator[](const T& addr) const {
       return make_type<ch_bit<W>>(mem_.read(get_lnode<T, A>(addr)));
     }
     
     template <typename T,
-              CH_REQUIRES(is_bit_convertible<T, A>::value)>
+              CH_REQUIRES(is_ch_bit_convertible<T, A>::value)>
     memport_ref<W> operator[](const T& addr) {
       return memport_ref<W>(mem_, get_lnode<T, A>(addr));
     }

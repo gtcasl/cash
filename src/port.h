@@ -24,7 +24,7 @@ enum class ch_iotype : int {
 template <unsigned N, ch_iotype Type>
 class iobase {
 public:
-  static constexpr unsigned bitcount = N;
+  static constexpr unsigned bitsize = N;
   static constexpr ch_iotype iotype = Type;
 
   iobase(const char* name) : name_(name) {}
@@ -92,7 +92,7 @@ class output_port;
 template <typename T>
 class input_port {
 public:
-  static constexpr unsigned bitcount = T::bitcount;
+  static constexpr unsigned bitsize = T::bitsize;
 
   input_port(ch_in<T>& in) : in_(in) {}
 
@@ -108,13 +108,13 @@ public:
     bindInput(in_.input_, get_lnode(out.out_));
   }
 
-  void operator()(const ch_bitbase<T::bitcount>& value) const {
+  void operator()(const ch_bitbase<T::bitsize>& value) const {
     bindInput(in_.input_, get_lnode(value));
   }
 
   template <typename U, CH_REQUIRES(is_cast_convertible<U, T>::value)>
   void operator()(const U& value) const {
-    bindInput(in_.input_, get_lnode<U, T::bitcount>(value));
+    bindInput(in_.input_, get_lnode<U, T::bitsize>(value));
   }
 
   auto operator()() const {
@@ -133,7 +133,10 @@ protected:
   }
 
   template <typename U> friend class output_port;
+  template <typename V, typename U> friend V ch_peek(const input_port<U>& port);
   template <typename V, typename U> friend void ch_poke(const input_port<U>& port, const V& value);
+  template <typename U> friend void ch_peek(const input_port<U>& port, uint32_t dst_offset, void* out, uint32_t out_cbsize, uint32_t src_offset, uint32_t length);
+  template <typename U> friend void ch_poke(const input_port<U>& port, uint32_t dst_offset, const void* in, uint32_t in_cbsize, uint32_t src_offset, uint32_t length);
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -141,7 +144,7 @@ protected:
 template <typename T>
 class output_port {
 public:
-  static constexpr unsigned bitcount = T::bitcount;
+  static constexpr unsigned bitsize = T::bitsize;
 
   output_port(const ch_out<T>& out) : out_(out) {}
 
@@ -179,26 +182,27 @@ protected:
 
   template <typename U> friend class input_port;
   template <typename V, typename U> friend V ch_peek(const output_port<U>& port);
+  template <typename U> friend void ch_peek(const output_port<U>& port, uint32_t dst_offset, void* out, uint32_t out_cbsize, uint32_t src_offset, uint32_t length);
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T>
-class ch_in final : public iobase<T::bitcount, ch_iotype::input>, public T::const_type {
+class ch_in final : public iobase<T::bitsize, ch_iotype::input>, public T::const_type {
 public:
   static_assert(!is_iotype<T>::value, "invalid nested type");
-  using base = iobase<T::bitcount, ch_iotype::input>;
-  using base::bitcount;
+  using base = iobase<T::bitsize, ch_iotype::input>;
+  using base::bitsize;
   using value_type = T;
   using const_type = typename T::const_type;
   using flip_type = ch_out<T>;
   using port_type = input_port<T>;
 
   ch_in(const char* name = "io") : base(name) {
-    input_ = createInputNode(name, T::bitcount);
-    nodelist data(T::bitcount, true);
+    input_ = createInputNode(name, T::bitsize);
+    nodelist data(T::bitsize, true);
     data.push(input_);
-    this->write_lnode(0, data, 0, T::bitcount);
+    this->write_lnode(0, data, 0, T::bitsize);
   }
 
   ch_in(const ch_in& in) : base(in), T::const_type(in) {}
@@ -220,11 +224,11 @@ private:
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T>
-class ch_out final : public iobase<T::bitcount, ch_iotype::output>, public T {
+class ch_out final : public iobase<T::bitsize, ch_iotype::output>, public T {
 public:
   static_assert(!is_iotype<T>::value, "invalid nested type");
-  using base = iobase<T::bitcount, ch_iotype::output>;
-  using base::bitcount;
+  using base = iobase<T::bitsize, ch_iotype::output>;
+  using base::bitsize;
   using value_type = T;
   using const_type = typename T::const_type;
   using flip_type = ch_in<T>;  
@@ -287,7 +291,7 @@ struct poke_impl<ch_scalar<N>, N> {
 
 template <typename V, typename T>
 V ch_peek(const output_port<T>& port) {
-  return peek_impl<std::decay_t<V>, T::bitcount>::read_bytes(port.get_output());
+  return peek_impl<std::decay_t<V>, T::bitsize>::read_bytes(port.get_output());
 }
 
 template <typename T>
@@ -296,13 +300,13 @@ void ch_peek(const output_port<T>& port,
              void* out,
              uint32_t out_cbsize,
              uint32_t src_offset = 0,
-             uint32_t length = T::bitcount) {
-  port.get_output().read_bytes(dst_offset, out, out_cbsize, src_offset, length, T::bitcount);
+             uint32_t length = T::bitsize) {
+  port.get_output().read_bytes(dst_offset, out, out_cbsize, src_offset, length, T::bitsize);
 }
 
 template <typename V, typename T>
 V ch_peek(const input_port<T>& port) {
-  return peek_impl<std::decay_t<V>, T::bitcount>::read_bytes(port.get_input());
+  return peek_impl<std::decay_t<V>, T::bitsize>::read_bytes(port.get_input());
 }
 
 template <typename T>
@@ -311,13 +315,13 @@ void ch_peek(const input_port<T>& port,
              void* out,
              uint32_t out_cbsize,
              uint32_t src_offset = 0,
-             uint32_t length = T::bitcount) {
-  port.get_input().read_bytes(dst_offset, out, out_cbsize, src_offset, length, T::bitcount);
+             uint32_t length = T::bitsize) {
+  port.get_input().read_bytes(dst_offset, out, out_cbsize, src_offset, length, T::bitsize);
 }
 
 template <typename V, typename T>
 void ch_poke(const input_port<T>& port, const V& value) {
-  poke_impl<std::decay_t<V>, T::bitcount>::write_bytes(port.get_input(), value);
+  poke_impl<std::decay_t<V>, T::bitsize>::write_bytes(port.get_input(), value);
 }
 
 template <typename T>
@@ -326,8 +330,8 @@ void ch_poke(const input_port<T>& port,
              const void* in,
              uint32_t in_cbsize,
              uint32_t src_offset = 0,
-             uint32_t length = T::bitcount) {
-  port.get_input().write_bytes(dst_offset, in, in_cbsize, src_offset, length, T::bitcount);
+             uint32_t length = T::bitsize) {
+  port.get_input().write_bytes(dst_offset, in, in_cbsize, src_offset, length, T::bitsize);
 }
 
 template <typename T>
@@ -385,10 +389,10 @@ using ch_flip_t = typename T::flip_type;
     , CH_FOR_EACH(CH_INOUT_CTOR_APPLY, CH_SEP_COMMA, __VA_ARGS__) {} \
   inout_name(const inout_name& __rhs__) \
     : base(__rhs__)\
-    , CH_FOR_EACH(CH_STRUCT_COPY_CTOR_APPLY, CH_SEP_COMMA, __VA_ARGS__) {} \
+    , CH_FOR_EACH(CH_STRUCT_COPY_CTOR, CH_SEP_COMMA, __VA_ARGS__) {} \
   inout_name(inout_name&& __rhs__) \
     : base(std::move(__rhs__))\
-    , CH_FOR_EACH(CH_STRUCT_MOVE_CTOR_APPLY, CH_SEP_COMMA, __VA_ARGS__) {} \
+    , CH_FOR_EACH(CH_STRUCT_MOVE_CTOR, CH_SEP_COMMA, __VA_ARGS__) {} \
   CH_FOR_EACH(field_body, CH_SEP_SEMICOLON, __VA_ARGS__); \
   auto operator()() const { \
     return ch::internal::connector<decltype(*this)>(*this); \
@@ -422,11 +426,11 @@ using ch_flip_t = typename T::flip_type;
   inout_name(const inout_name& __rhs__) \
     : base(__rhs__) \
     , parent(__rhs__) \
-    , CH_FOR_EACH(CH_STRUCT_COPY_CTOR_APPLY, CH_SEP_COMMA, __VA_ARGS__) {} \
+    , CH_FOR_EACH(CH_STRUCT_COPY_CTOR, CH_SEP_COMMA, __VA_ARGS__) {} \
   inout_name(inout_name&& __rhs__) \
     : base(std::move(__rhs__)) \
     , parent(std::move(__rhs__)) \
-    , CH_FOR_EACH(CH_STRUCT_MOVE_CTOR_APPLY, CH_SEP_COMMA, __VA_ARGS__) {} \
+    , CH_FOR_EACH(CH_STRUCT_MOVE_CTOR, CH_SEP_COMMA, __VA_ARGS__) {} \
   CH_FOR_EACH(field_body, CH_SEP_SEMICOLON, __VA_ARGS__); \
   auto operator()() const { \
     return ch::internal::connector<decltype(*this)>(*this); \
@@ -465,19 +469,20 @@ using ch_flip_t = typename T::flip_type;
     private: \
       __flip_type__& operator=(const __flip_type__&) = delete; \
     public: \
-      using base = ch::internal::iobase<__flip_type__::bitcount, __flip_type__::iotype>; \
+      using base = ch::internal::iobase<__flip_type__::bitsize, __flip_type__::iotype>; \
       using value_type = __value_type__; \
       using const_type = typename __value_type__::const_type; \
+      using sim_type = typename __value_type__::sim_type; \
       using flip_type = inout_name; \
       CH_INOUT_BODY_IMPL2(__flip_type__, CH_INOUT_FLIP_FIELD, __VA_ARGS__) \
     private: \
       class __port_type__ { \
       public: \
-        static constexpr unsigned bitcount = base::bitcount; \
+        static constexpr unsigned bitsize = base::bitsize; \
         using __self_type__ = __flip_type__; \
         using __flip_port_type__ = __flop_port_type__; \
         __port_type__(__flip_type__& __rhs__) \
-          : CH_FOR_EACH(CH_STRUCT_COPY_CTOR_APPLY, CH_SEP_COMMA, __VA_ARGS__) {} \
+          : CH_FOR_EACH(CH_STRUCT_COPY_CTOR, CH_SEP_COMMA, __VA_ARGS__) {} \
         CH_INOUT_BIND_IMPL2(CH_INOUT_FLIP_BIND_FIELD, __VA_ARGS__) \
       }; \
     public: \
@@ -485,20 +490,21 @@ using ch_flip_t = typename T::flip_type;
     }; \
     inout_name& operator=(const inout_name&) = delete; \
   public: \
-    using base = ch::internal::iobase<inout_name::bitcount, inout_name::iotype>; \
+    using base = ch::internal::iobase<inout_name::bitsize, inout_name::iotype>; \
     using value_type = __value_type__; \
     using const_type = typename __value_type__::const_type; \
+    using sim_type = typename __value_type__::sim_type; \
     using flip_type = __flip_type__; \
     CH_INOUT_BODY_IMPL2(inout_name, CH_INOUT_FIELD, __VA_ARGS__) \
   private: \
     class __flop_port_type__ { \
     public: \
-      static constexpr unsigned bitcount = base::bitcount; \
+      static constexpr unsigned bitsize = base::bitsize; \
       using __port_type__ = __flop_port_type__; \
       using __self_type__ = inout_name; \
       using __flip_port_type__ = typename __flip_type__::port_type; \
       __flop_port_type__(inout_name& __rhs__) \
-        : CH_FOR_EACH(CH_STRUCT_COPY_CTOR_APPLY, CH_SEP_COMMA, __VA_ARGS__) {} \
+        : CH_FOR_EACH(CH_STRUCT_COPY_CTOR, CH_SEP_COMMA, __VA_ARGS__) {} \
       CH_INOUT_BIND_IMPL2(CH_INOUT_BIND_FIELD, __VA_ARGS__) \
     }; \
   public: \
@@ -506,35 +512,36 @@ using ch_flip_t = typename T::flip_type;
   }
 
 #define CH_INOUT_IMPL3(inout_name, parent, ...) \
-  class inout_name : public virtual ch::internal::iobase<parent::bitcount + CH_STRUCT_SIZE(__VA_ARGS__), \
+  class inout_name : public virtual ch::internal::iobase<parent::bitsize + CH_STRUCT_SIZE(__VA_ARGS__), \
                                                          ch_iotype((int)parent::iotype | (int)CH_INOUT_IOTYPE(__VA_ARGS__))> \
                    , public parent { \
   private: \
     CH_STRUCT_IMPL3(__value_type__, parent, __VA_ARGS__); \
     class __flop_port_type__; \
-    class __flip_type__ : public virtual ch::internal::iobase<parent::flip_type::bitcount + CH_STRUCT_SIZE(__VA_ARGS__), \
+    class __flip_type__ : public virtual ch::internal::iobase<parent::flip_type::bitsize + CH_STRUCT_SIZE(__VA_ARGS__), \
                                                               ch_iotype((int)parent::flip_type::iotype | (int)CH_INOUT_FLIP_IOTYPE(__VA_ARGS__))> \
                         , public parent::flip_type { \
     private: \
       __flip_type__& operator=(const __flip_type__&) = delete; \
     public: \
-      using base = ch::internal::iobase<parent::flip_type::bitcount + CH_STRUCT_SIZE(__VA_ARGS__), \
+      using base = ch::internal::iobase<parent::flip_type::bitsize + CH_STRUCT_SIZE(__VA_ARGS__), \
                                         ch_iotype((int)parent::flip_type::iotype | (int)CH_INOUT_FLIP_IOTYPE(__VA_ARGS__))>; \
-      using base::bitcount; \
+      using base::bitsize; \
       using base::iotype; \
       using value_type = __value_type__; \
       using const_type = typename __value_type__::const_type; \
+      using sim_type = typename __value_type__::sim_type; \
       using flip_type = inout_name; \
       CH_INOUT_BODY_IMPL3(__flip_type__, parent::flip_type, CH_INOUT_FLIP_FIELD, __VA_ARGS__) \
     private: \
       class __port_type__ : public parent::flip_type::port_type { \
       public: \
-        static constexpr unsigned bitcount = base::bitcount; \
+        static constexpr unsigned bitsize = base::bitsize; \
         using __self_type__ = __flip_type__; \
         using __flip_port_type__ = __flop_port_type__; \
         __port_type__(__flip_type__& __rhs__) \
           : parent::flip_type::port_type(__rhs__) \
-          , CH_FOR_EACH(CH_STRUCT_COPY_CTOR_APPLY, CH_SEP_COMMA, __VA_ARGS__) {} \
+          , CH_FOR_EACH(CH_STRUCT_COPY_CTOR, CH_SEP_COMMA, __VA_ARGS__) {} \
         CH_INOUT_BIND_IMPL3(parent::flip_type::port_type, CH_INOUT_FLIP_BIND_FIELD, __VA_ARGS__) \
       }; \
     public: \
@@ -542,25 +549,26 @@ using ch_flip_t = typename T::flip_type;
     }; \
     inout_name& operator=(const inout_name&) = delete; \
   public: \
-    using base = ch::internal::iobase<parent::bitcount + CH_STRUCT_SIZE(__VA_ARGS__), \
+    using base = ch::internal::iobase<parent::bitsize + CH_STRUCT_SIZE(__VA_ARGS__), \
                                       ch_iotype((int)parent::iotype | (int)CH_INOUT_IOTYPE(__VA_ARGS__))>; \
-    using base::bitcount; \
+    using base::bitsize; \
     using base::iotype; \
     using value_type = __value_type__; \
     using const_type = typename __value_type__::const_type; \
+    using sim_type = typename __value_type__::sim_type; \
     using flip_type = __flip_type__; \
     using self_type = inout_name; \
     CH_INOUT_BODY_IMPL3(inout_name, parent, CH_INOUT_FIELD, __VA_ARGS__) \
   private: \
     class __flop_port_type__ : public parent::port_type { \
     public: \
-      static constexpr unsigned bitcount = base::bitcount; \
+      static constexpr unsigned bitsize = base::bitsize; \
       using __port_type__ = __flop_port_type__; \
       using __self_type__ = inout_name; \
       using __flip_port_type__ = typename __flip_type__::port_type; \
       __flop_port_type__(inout_name& __rhs__) \
         : parent::port_type(__rhs__) \
-        , CH_FOR_EACH(CH_STRUCT_COPY_CTOR_APPLY, CH_SEP_COMMA, __VA_ARGS__) {} \
+        , CH_FOR_EACH(CH_STRUCT_COPY_CTOR, CH_SEP_COMMA, __VA_ARGS__) {} \
       CH_INOUT_BIND_IMPL3(parent::port_type, CH_INOUT_BIND_FIELD, __VA_ARGS__) \
     }; \
   public: \
