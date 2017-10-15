@@ -78,6 +78,10 @@ using v2_1_t = ch_vec<ch_bit2, 1>;
 using v2_2_t = ch_vec<ch_bit2, 2>;
 using v2_3_t = ch_vec<ch_bit2, 3>;
 
+/*__struct (W_t, (
+  (v2_1_t) a
+));*/
+
 TEST_CASE("aggregates", "[aggregates]") {
   SECTION("structs", "[struct]") {
     TEST([]()->ch_bit1 {

@@ -39,6 +39,7 @@ src/verilog.h
 src/verilog.v
 src/verilogwriter.cpp
 src/verilogwriter.h
+stl/fifo.h
 test/basic.cpp
 test/common.cpp
 env.sh

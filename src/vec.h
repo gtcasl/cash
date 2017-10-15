@@ -19,9 +19,7 @@ public:
   using const_type = const_vec;
   
   const_vec() {}
-
   const_vec(const const_vec& rhs) : items_(rhs.items_) {}
-
   const_vec(const_vec&& rhs) : items_(std::move(rhs.items_)) {}
 
   template <typename U,
@@ -130,9 +128,7 @@ public:
   using base::items_;
 
   ch_vec() {}
-
   ch_vec(const ch_vec& rhs) : base(rhs) {}
-
   ch_vec(ch_vec&& rhs) : base(rhs) {}
 
   template <typename U,

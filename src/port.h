@@ -25,7 +25,7 @@ template <unsigned N, ch_iotype Type>
 class iobase {
 public:
   static constexpr unsigned bitsize = N;
-  static constexpr ch_iotype iotype = Type;
+  static constexpr ch_iotype io_type = Type;
 
   iobase(const char* name) : name_(name) {}
   iobase(const iobase& rhs) : name_(rhs.name_) {}
@@ -43,7 +43,7 @@ protected:
 template <typename T>
 class is_iotype {
 protected:
-    template <typename U, typename = std::enable_if_t<U::iotype>>
+    template <typename U, typename = std::enable_if_t<U::io_type>>
     static std::true_type check(int);
 
     template <typename>
@@ -193,8 +193,8 @@ public:
   static_assert(!is_iotype<T>::value, "invalid nested type");
   using base = iobase<T::bitsize, ch_iotype::input>;
   using base::bitsize;
-  using value_type = T;
-  using const_type = typename T::const_type;
+  using logic_type = T;
+  using sim_type = typename T::sim_type;
   using flip_type = ch_out<T>;
   using port_type = input_port<T>;
 
@@ -229,8 +229,8 @@ public:
   static_assert(!is_iotype<T>::value, "invalid nested type");
   using base = iobase<T::bitsize, ch_iotype::output>;
   using base::bitsize;
-  using value_type = T;
-  using const_type = typename T::const_type;
+  using logic_type = T;
+  using sim_type = typename T::sim_type;
   using flip_type = ch_in<T>;  
   using port_type = output_port<T>;
   using T::operator=;
@@ -343,13 +343,13 @@ using ch_flip_t = typename T::flip_type;
 ///////////////////////////////////////////////////////////////////////////////
 
 #define CH_INOUT_IOTYPE_EACH(i, x) \
-  (int)ch::internal::identity_t<CH_PAIR_L(x)>::iotype
+  (int)ch::internal::identity_t<CH_PAIR_L(x)>::io_type
 
 #define CH_INOUT_IOTYPE(...) \
   ch_iotype(CH_FOR_EACH(CH_INOUT_IOTYPE_EACH, CH_SEP_OR, __VA_ARGS__))
 
 #define CH_INOUT_FLIP_IOTYPE_EACH(i, x) \
-  (int)ch::internal::identity_t<CH_PAIR_L(x)>::flip_type::iotype
+  (int)ch::internal::identity_t<CH_PAIR_L(x)>::flip_type::io_type
 
 #define CH_INOUT_FLIP_IOTYPE(...) \
   ch_iotype(CH_FOR_EACH(CH_INOUT_FLIP_IOTYPE_EACH, CH_SEP_OR, __VA_ARGS__))
@@ -469,9 +469,8 @@ using ch_flip_t = typename T::flip_type;
     private: \
       __flip_type__& operator=(const __flip_type__&) = delete; \
     public: \
-      using base = ch::internal::iobase<__flip_type__::bitsize, __flip_type__::iotype>; \
-      using value_type = __value_type__; \
-      using const_type = typename __value_type__::const_type; \
+      using base = ch::internal::iobase<__flip_type__::bitsize, __flip_type__::io_type>; \
+      using logic_type = __value_type__; \
       using sim_type = typename __value_type__::sim_type; \
       using flip_type = inout_name; \
       CH_INOUT_BODY_IMPL2(__flip_type__, CH_INOUT_FLIP_FIELD, __VA_ARGS__) \
@@ -490,9 +489,8 @@ using ch_flip_t = typename T::flip_type;
     }; \
     inout_name& operator=(const inout_name&) = delete; \
   public: \
-    using base = ch::internal::iobase<inout_name::bitsize, inout_name::iotype>; \
-    using value_type = __value_type__; \
-    using const_type = typename __value_type__::const_type; \
+    using base = ch::internal::iobase<inout_name::bitsize, inout_name::io_type>; \
+    using logic_type = __value_type__; \
     using sim_type = typename __value_type__::sim_type; \
     using flip_type = __flip_type__; \
     CH_INOUT_BODY_IMPL2(inout_name, CH_INOUT_FIELD, __VA_ARGS__) \
@@ -513,23 +511,22 @@ using ch_flip_t = typename T::flip_type;
 
 #define CH_INOUT_IMPL3(inout_name, parent, ...) \
   class inout_name : public virtual ch::internal::iobase<parent::bitsize + CH_STRUCT_SIZE(__VA_ARGS__), \
-                                                         ch_iotype((int)parent::iotype | (int)CH_INOUT_IOTYPE(__VA_ARGS__))> \
+                                                         ch_iotype((int)parent::io_type | (int)CH_INOUT_IOTYPE(__VA_ARGS__))> \
                    , public parent { \
   private: \
     CH_STRUCT_IMPL3(__value_type__, parent, __VA_ARGS__); \
     class __flop_port_type__; \
     class __flip_type__ : public virtual ch::internal::iobase<parent::flip_type::bitsize + CH_STRUCT_SIZE(__VA_ARGS__), \
-                                                              ch_iotype((int)parent::flip_type::iotype | (int)CH_INOUT_FLIP_IOTYPE(__VA_ARGS__))> \
+                                                              ch_iotype((int)parent::flip_type::io_type | (int)CH_INOUT_FLIP_IOTYPE(__VA_ARGS__))> \
                         , public parent::flip_type { \
     private: \
       __flip_type__& operator=(const __flip_type__&) = delete; \
     public: \
       using base = ch::internal::iobase<parent::flip_type::bitsize + CH_STRUCT_SIZE(__VA_ARGS__), \
-                                        ch_iotype((int)parent::flip_type::iotype | (int)CH_INOUT_FLIP_IOTYPE(__VA_ARGS__))>; \
+                                        ch_iotype((int)parent::flip_type::io_type | (int)CH_INOUT_FLIP_IOTYPE(__VA_ARGS__))>; \
       using base::bitsize; \
-      using base::iotype; \
-      using value_type = __value_type__; \
-      using const_type = typename __value_type__::const_type; \
+      using base::io_type; \
+      using logic_type = __value_type__; \
       using sim_type = typename __value_type__::sim_type; \
       using flip_type = inout_name; \
       CH_INOUT_BODY_IMPL3(__flip_type__, parent::flip_type, CH_INOUT_FLIP_FIELD, __VA_ARGS__) \
@@ -550,11 +547,10 @@ using ch_flip_t = typename T::flip_type;
     inout_name& operator=(const inout_name&) = delete; \
   public: \
     using base = ch::internal::iobase<parent::bitsize + CH_STRUCT_SIZE(__VA_ARGS__), \
-                                      ch_iotype((int)parent::iotype | (int)CH_INOUT_IOTYPE(__VA_ARGS__))>; \
+                                      ch_iotype((int)parent::io_type | (int)CH_INOUT_IOTYPE(__VA_ARGS__))>; \
     using base::bitsize; \
-    using base::iotype; \
-    using value_type = __value_type__; \
-    using const_type = typename __value_type__::const_type; \
+    using base::io_type; \
+    using logic_type = __value_type__; \
     using sim_type = typename __value_type__::sim_type; \
     using flip_type = __flip_type__; \
     using self_type = inout_name; \
@@ -585,7 +581,7 @@ using ch_flip_t = typename T::flip_type;
 #define CH_INOUT(...) GET_INOUT(__VA_ARGS__, CH_INOUT3, CH_INOUT2)(__VA_ARGS__)
 
 #define CH_IO(...) \
-  CH_INOUT_IMPL2(io_type, __VA_ARGS__); \
-  io_type io
+  CH_INOUT_IMPL2(__io_type__, __VA_ARGS__); \
+  __io_type__ io
 
 #define CH_FLIP(x) (ch_flip_t<x>)

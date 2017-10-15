@@ -12,10 +12,10 @@
   typename ch::internal::identity_t<CH_PAIR_L(x)>::sim_type CH_PAIR_R(x)
 
 #define CH_STRUCT_FIELD(i, x) \
-  typename ch::internal::identity_t<CH_PAIR_L(x)>::value_type CH_PAIR_R(x)
+  typename ch::internal::identity_t<CH_PAIR_L(x)>::logic_type::value_type CH_PAIR_R(x)
 
 #define CH_STRUCT_CONST_FIELD(i, x) \
-  typename ch::internal::identity_t<CH_PAIR_L(x)>::const_type CH_PAIR_R(x)
+  typename ch::internal::identity_t<CH_PAIR_L(x)>::logic_type::const_type CH_PAIR_R(x)
 
 #define CH_STRUCT_SIM_FIELD_OFFSET(i, x) \
   CH_CONCAT(__field_offset, CH_INC(i)) = __field_offset##i + ch::internal::identity_t<CH_PAIR_L(x)>::bitsize
@@ -38,7 +38,7 @@
 
 #define CH_STRUCT_FIELD_CTOR_REQUIRES(i, x) \
   CH_REQUIRES(ch::internal::is_cast_convertible< \
-    __T##i, typename ch::internal::identity_t<CH_PAIR_L(x)>::value_type>::value)
+    __T##i, typename ch::internal::identity_t<CH_PAIR_L(x)>::logic_type::value_type>::value)
 
 #define CH_STRUCT_FIELD_CTOR_ARGS(i, x) \
   const __T##i& CH_CONCAT(_,CH_PAIR_R(x))
@@ -314,6 +314,7 @@ protected: \
       using base = ch_bitbase<__const_type__::bitsize>; \
       using value_type = struct_name; \
       using const_type = __const_type__; \
+      using logic_type = __const_type__; \
       using sim_type   = __sim_type__; \
       CH_STRUCT_BODY_IMPL2(__const_type__, CH_STRUCT_READONLY_IMPL, CH_STRUCT_CONST_FIELD, __VA_ARGS__) \
     }; \
@@ -321,6 +322,7 @@ protected: \
     using base = ch_bitbase<struct_name::bitsize>; \
     using value_type = struct_name; \
     using const_type = __const_type__; \
+    using logic_type = struct_name; \
     using sim_type   = __sim_type__; \
     CH_STRUCT_BODY_IMPL2(struct_name, CH_STRUCT_WRITABLE_IMPL2, CH_STRUCT_FIELD, __VA_ARGS__) \
   }
@@ -337,6 +339,7 @@ protected: \
       using base::bitsize; \
       using value_type = struct_name; \
       using const_type = __const_type__; \
+      using logic_type = __const_type__; \
       using sim_type   = __sim_type__; \
       CH_STRUCT_BODY_IMPL3(__const_type__, CH_STRUCT_READONLY_IMPL, CH_STRUCT_CONST_FIELD, __VA_ARGS__) \
     }; \
@@ -346,6 +349,7 @@ protected: \
     using base::bitsize; \
     using value_type = struct_name; \
     using const_type = __const_type__; \
+    using logic_type = struct_name; \
     using sim_type   = __sim_type__; \
     CH_STRUCT_BODY_IMPL3(struct_name, CH_STRUCT_WRITABLE_IMPL3, CH_STRUCT_FIELD, __VA_ARGS__) \
   }

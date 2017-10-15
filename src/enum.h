@@ -85,6 +85,7 @@ protected: \
       using base = ch::internal::const_bit<size>; \
       using value_type = enum_name; \
       using const_type = __const_type__; \
+      using logic_type = __const_type__; \
       using sim_type   = __sim_type__; \
       CH_ENUM_BODY_IMPL(__const_type__, CH_ENUM_READONLY_IMPL) \
     }; \
@@ -92,6 +93,7 @@ protected: \
     using base = ch::internal::ch_bit<size>; \
     using value_type = enum_name; \
     using const_type = __const_type__; \
+    using logic_type = enum_name; \
     using sim_type   = __sim_type__; \
     CH_ENUM_BODY_IMPL(enum_name, CH_ENUM_WRITABLE_IMPL) \
   }

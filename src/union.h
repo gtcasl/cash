@@ -133,6 +133,7 @@ protected: \
       using base = ch_bitbase<CH_UNION_SIZE(__VA_ARGS__)>; \
       using value_type = union_name; \
       using const_type = __const_type__; \
+      using logic_type = __const_type__; \
       using sim_type   = __sim_type__; \
       CH_UNION_BODY_IMPL(__const_type__, CH_UNION_READONLY_IMPL, CH_UNION_CONST_FIELD, __VA_ARGS__) \
     }; \
@@ -140,6 +141,7 @@ protected: \
     using base = ch_bitbase<CH_UNION_SIZE(__VA_ARGS__)>; \
     using value_type = union_name; \
     using const_type = __const_type__; \
+    using logic_type = union_name; \
     using sim_type   = __sim_type__; \
     CH_UNION_BODY_IMPL(union_name, CH_UNION_WRITABLE_IMPL, CH_UNION_FIELD, __VA_ARGS__) \
   }

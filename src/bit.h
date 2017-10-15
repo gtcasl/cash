@@ -86,7 +86,8 @@ class const_bit : public ch_bitbase<N> {
 public:
   using base = ch_bitbase<N>;
   using value_type = ch_bit<N>;
-  using const_type = const_bit<N>;
+  using const_type = const_bit;
+  using logic_type = const_bit;
   using sim_type   = ch_scalar<N>;
 
   const_bit() : node_(N) {}
@@ -138,8 +139,9 @@ template <unsigned N>
 class ch_bit : public const_bit<N> {
 public:
   using base = const_bit<N>;
-  using value_type = ch_bit<N>;
+  using value_type = ch_bit;
   using const_type = const_bit<N>;
+  using logic_type = ch_bit;
   using sim_type   = ch_scalar<N>;
 
   using base::node_;
