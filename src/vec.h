@@ -60,7 +60,8 @@ public:
     this->assign(rhs);
   }
 
-  template <typename... Vs>
+  template <typename... Vs,
+            CH_REQUIRES(are_all_cast_convertible<T, Vs...>::value)>
   explicit const_vec(const Vs&... values) {
     this->init(values...);
   }
@@ -170,7 +171,8 @@ public:
   template <typename U>
   explicit ch_vec(const ch_vec<U, N>& rhs) : base(rhs) {}
 
-  template <typename... Vs>
+  template <typename... Vs,
+            CH_REQUIRES(are_all_cast_convertible<T, Vs...>::value)>
   explicit ch_vec(const Vs&... values) : base(values...) {}
 
   ch_vec& operator=(const ch_vec& rhs) {

@@ -187,19 +187,23 @@ struct Dogfood {
     (ch_out<ch_bit1>) out
   );
   void describe() {
-    io.out = 1_b;
+    v2_2_t a = ch_reg(v2_2_t{3, 1});
+    auto e = ch_case(ch_getTick(), 3, 1101_b)(a);
+    ch_print("t={0}, a={1}, e={2}", ch_getTick(), a, e);
+    io.out = ((ch_bit<v2_2_t::bitsize>)a == e);
+    //io.out = 1_b;
   }
 };
 
 int main(int argc, char **argv) {
 
-  ch_scalar<2> a(e2_t::done);
-  assert(a == 0);
+  //ch_scalar<2> a(e2_t::done);
+  //assert(a == 0);
 
-  /*ch_module<Dogfood> dogfood;
+  ch_module<Dogfood> dogfood;
   ch_simulator sim(dogfood);
   sim.run(1);
-  assert(ch_peek<bool>(dogfood.io.out));*/
+  assert(ch_peek<bool>(dogfood.io.out));
 
   /*ch_module<Foo1> foo;
   ch_poke(foo.io.in1, 1);

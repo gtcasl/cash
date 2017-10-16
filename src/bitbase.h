@@ -38,19 +38,6 @@ template <typename T0, typename T1>
 using deduce_first_ch_bit_t = std::conditional_t<
   (is_ch_bit<T0>::value || is_ch_bit<T1>::value), deduce_first_type_t<T0, T1>, non_bitsize_type>;
 
-template <typename T>
-struct value_type_impl {
-  using type = typename T::traits::value_type;
-};
-
-template <unsigned N>
-struct value_type_impl< ch_scalar<N> > {
-  using type = ch_bit<N>;
-};
-
-template <typename T>
-using value_type_t = typename value_type_impl<T>::type;
-
 ///////////////////////////////////////////////////////////////////////////////
 
 template <unsigned N> class bitbase;
@@ -103,14 +90,41 @@ void write_bytes(T& obj, uint32_t dst_offset, const void* in, uint32_t in_cbsize
   reinterpret_cast<bitbase<T::bitsize>&>(obj).write_bytes(dst_offset, in, in_cbsize, src_offset, length);
 }
 
+///////////////////////////////////////////////////////////////////////////////
+
+template <typename T>
+using value_type_t = typename T::traits::logic_type::traits::value_type;
+
+template <typename T>
+struct make_type_impl {
+  static const auto make(const nodelist& data) {
+    T ret;
+    write_lnode(ret, 0, data, 0, T::bitsize);
+    return ret;
+  }
+};
+
+template <typename T, unsigned N>
+struct make_type_impl< ch_vec<T, N> > {
+  static const auto make(const nodelist& data) {
+    ch_vec<T, N> ret;
+    unsigned src_offset = 0;
+    for (unsigned i = 0; i < N; ++i) {
+      ch::internal::write_lnode(ret[i], 0, data, src_offset, T::bitsize);
+      src_offset += T::bitsize;
+    }
+    return ret;
+  }
+};
+
 template <typename T>
 const auto make_type(const lnode& node) {
-  value_type_t<T> ret;
   nodelist data(T::bitsize, true);
   data.push(node);
-  write_lnode(ret, 0, data, 0, T::bitsize);
-  return ret;
+  return make_type_impl<value_type_t<T>>::make(data);
 };
+
+///////////////////////////////////////////////////////////////////////////////
 
 template <unsigned N>
 class bitbase : public lnode_accessor_if, public bytes_accessor_if {
