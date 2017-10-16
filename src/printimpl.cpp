@@ -64,7 +64,7 @@ static const char* parse_format_index(fmtinfo_t* out, const char* str) {
 }
 
 printimpl::printimpl(context* ctx,
-                     const char* format,
+                     const std::string& format,
                      const std::initializer_list<lnode>& args)
   : ioimpl(ctx, type_print, 0)
   , format_(format)
@@ -131,14 +131,14 @@ static int getFormatMaxIndex(const char* format) {
 }
 
 void ch::internal::createPrintNode(
-    const char* format,
+    const std::string& format,
     const std::initializer_list<lnode>& args) {
   // printing is only enabled in debug mode
   if (0 == platform::self().get_dbg_level())
     return;
 
   // check format
-  auto max_index = getFormatMaxIndex(format);
+  auto max_index = getFormatMaxIndex(format.c_str());
   CH_CHECK(max_index < (int)args.size(), "print format index out of range");
 
   ctx_curr()->createNode<printimpl>(format, args);

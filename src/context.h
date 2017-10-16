@@ -36,8 +36,8 @@ public:
     return id_;
   }
 
-  const char* get_name() const {
-    return name_.c_str();
+  const std::string& get_name() const {
+    return name_;
   }
 
   const auto& get_nodes() const {
@@ -138,7 +138,7 @@ public:
   cdomain* create_cdomain(const std::vector<clock_event>& sensitivity_list);
   void remove_cdomain(cdomain* cd);
 
-  void register_tap(const char* name, const lnode& lnode);
+  void register_tap(const std::string& name, const lnode& lnode);
 
   //--
   
@@ -170,7 +170,7 @@ public:
   
 protected:
 
-  context(const char* name);
+  context(const std::string& name);
   ~context();
 
   struct cond_upd_t {
@@ -278,7 +278,7 @@ protected:
   friend class context_manager;
 };
 
-context* ctx_create(size_t signature, const char* name);
+context* ctx_create(size_t signature, const std::string& name);
 context* ctx_swap(context* ctx);
 context* ctx_curr();
 

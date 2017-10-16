@@ -7,12 +7,12 @@ namespace internal {
 
 class ioimpl : public lnodeimpl {
 public:
-  void set_name(const char* name) {
+  void set_name(const std::string& name) {
     name_ = name;
   }
 
-  const char* get_name() const {
-    return name_.c_str();
+  const std::string& get_name() const {
+    return name_;
   }
 
 protected:  
@@ -21,7 +21,7 @@ protected:
     : lnodeimpl(ctx, type, size)
   {}
 
-  ioimpl(context* ctx, lnodetype type, uint32_t size, const char* name)
+  ioimpl(context* ctx, lnodetype type, uint32_t size, const std::string& name)
     : lnodeimpl(ctx, type, size)
     , name_(name)
   {}
@@ -49,9 +49,9 @@ public:
   
 protected:
 
-  inputimpl(context* ctx, lnodetype type, uint32_t size, const char* name);
+  inputimpl(context* ctx, lnodetype type, uint32_t size, const std::string& name);
 
-  inputimpl(context* ctx, uint32_t size, const char* name)
+  inputimpl(context* ctx, uint32_t size, const std::string& name)
     : inputimpl(ctx, type_input, size, name)
   {}
 
@@ -70,7 +70,7 @@ public:
   void print(std::ostream& out, uint32_t level) const override;
   
 protected:
-  outputimpl(context* ctx, const lnode& src, const char* name);
+  outputimpl(context* ctx, const lnode& src, const std::string& name);
   ~outputimpl() {}
 
   ch_tick tick_;
@@ -89,7 +89,7 @@ public:
   void print(std::ostream& out, uint32_t level) const override;
 
 protected:
-  tapimpl(context* ctx, const lnode& src, const char* name);
+  tapimpl(context* ctx, const lnode& src, const std::string& name);
   ~tapimpl() {}
 
   ch_tick tick_;

@@ -34,8 +34,8 @@ public:
     return cd_;
   }
 
-  void load(const char* file);
-  void load(const std::vector<uint8_t>& data);
+  void load(const std::string& init_file);
+  void load(const std::vector<uint8_t>& init_data);
   
   lnode& read(const lnode& addr);
   void write(const lnode& addr, const nodelist& in);

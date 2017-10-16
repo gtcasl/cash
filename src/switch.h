@@ -47,7 +47,7 @@ protected:
 };
 
 template <unsigned N>
-auto ch_switch(const ch_bitbase<N>& key) {
+auto ch_switch(const bitbase<N>& key) {
   return switch_t<N>(get_lnode(key));
 }
 

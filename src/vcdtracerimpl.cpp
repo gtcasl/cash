@@ -51,7 +51,7 @@ ch_vcdtracer::ch_vcdtracer(std::ostream& out,
   : ch_tracer(new vcdtracerimpl(out, contexts))
 {}
 
-ch_vcdtracer::ch_vcdtracer(const char* file,
+ch_vcdtracer::ch_vcdtracer(const std::string& file,
                            const std::initializer_list<context*>& contexts)
   : ch_tracer(new vcdtracerimpl(file, contexts))
 {}

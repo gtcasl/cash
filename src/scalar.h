@@ -64,10 +64,23 @@ template <typename T, unsigned N> class const_scalar_slice;
 
 template <typename T, unsigned N> class ch_scalar_slice;
 
-CH_DEF_SFINAE_CHECK(is_sim_type, (std::is_same<std::decay_t<T>, typename std::decay_t<T>::sim_type>::value));
+template <typename ScalarType, typename LogicType>
+struct scalar_traits {
+  using scalar_type = ScalarType;
+  using logic_type = LogicType;
+};
+
+template <typename T>
+struct is_scalar_traits : std::false_type {};
+
+template <typename ScalarType, typename LogicType>
+struct is_scalar_traits<scalar_traits<ScalarType, LogicType>> : std::true_type {};
+
+template <typename T>
+using is_scalar_type = is_scalar_traits<typename T::traits>;
 
 CH_DEF_SFINAE_CHECK(is_ch_scalar, (std::is_same<ch_scalar<T::bitsize>, T>::value
-                               || std::is_base_of<ch_scalar<T::bitsize>, T>::value));
+                                || std::is_base_of<ch_scalar<T::bitsize>, T>::value));
 
 template <typename... Ts>
 using deduce_ch_scalar_t = std::conditional_t<
@@ -75,14 +88,14 @@ using deduce_ch_scalar_t = std::conditional_t<
 
 template <typename T, unsigned N = std::decay_t<T>::bitsize>
 struct is_ch_scalar_convertible {
-  static constexpr bool value = is_cast_convertible<T, ch_scalar<N>>::value;
+  static constexpr bool value = is_cast_convertible<ch_scalar<N>, T>::value;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
 class bytes_store {
 public:
-  bytes_store(unsigned size = 0)
+  bytes_store(unsigned size)
     : local_(size)
     , local_outdated_(false)
     , size_(size)
@@ -125,18 +138,10 @@ public:
   bytes_store& operator=(bytes_store&& rhs) {
     local_ = std::move(rhs.local_);
     local_outdated_ = rhs.local_outdated_;
-    size_ = rhs.size_;
+    size_   = rhs.size_;
     shared_ = rhs.shared_;
     offset_ = rhs.offset_;
     return *this;
-  }
-
-  void set(const bytes_store& store, unsigned offset = 0) {
-    local_outdated_ = true;
-    shared_ = store.data();
-    offset_ = store.offset_ + offset;
-    assert(size_ != 0);
-    assert(offset + size_ <= shared_->get_size());
   }
 
   bitvector* data() const {
@@ -192,10 +197,13 @@ private:
   unsigned   offset_;
 };
 
-template <typename T>
-auto& get_store(T& obj) {
-  return obj.store_;
-}
+#define CH_SCALAR_TYPE_INTERFACE() \
+  void read(uint32_t dst_offset, void* out, uint32_t out_cbsize, uint32_t src_offset = 0, uint32_t length = bitsize) const { \
+    _.read(dst_offset, out, out_cbsize, src_offset, length); \
+  } \
+  void write(uint32_t dst_offset, const void* in, uint32_t in_cbsize, uint32_t src_offset = 0, uint32_t length = bitsize) { \
+    _.write(dst_offset, in, in_cbsize, src_offset, length); \
+  }
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -203,64 +211,45 @@ template <unsigned N>
 class ch_scalar {
 public:
   static constexpr unsigned bitsize = N;
-  using sim_type = ch_scalar;
-  using logic_type = ch_bit<N>;
+  using traits = scalar_traits<ch_scalar, ch_bit<N>>;
 
-  constexpr ch_scalar() : store_(N) {}  
-  constexpr ch_scalar(const ch_scalar& rhs) : store_(rhs.store_) {}
-  constexpr ch_scalar(ch_scalar&& rhs) : store_(std::move(rhs.store_)) {}
+  constexpr ch_scalar() : _(N) {}
+  constexpr ch_scalar(const ch_scalar& rhs) : _(rhs._) {}
+  constexpr ch_scalar(ch_scalar&& rhs) : _(std::move(rhs._)) {}
 
-  constexpr ch_scalar(const bytes_store& store, unsigned offset = 0) : store_(N, store, offset) {}
+  explicit ch_scalar(const bytes_store& store, unsigned offset = 0) : _(N, store, offset) {}
 
-  ch_scalar(const bitvector& value) : store_(N) {
-    store_.set_value(value);
+  explicit ch_scalar(const bitvector& value) : _(N) {
+    _.set_value(value);
   }
 
-  ch_scalar(bitvector&& value) : store_(N) {
-    store_.set_value(value);
+  explicit ch_scalar(bitvector&& value) : _(N) {
+    _.set_value(value);
   }
 
   template <unsigned M>
-  ch_scalar(const const_scalar_slice<ch_scalar<M>, N>& slice) : store_(N) {
-    store_.write(0, slice.container_.get_value().get_words(), slice.start_, N);
+  explicit ch_scalar(const const_scalar_slice<ch_scalar<M>, N>& slice) : _(N) {
+    _.write(0, slice.container_.get_value().get_words(), slice.start_, N);
   }
 
-  template <typename U, CH_REQUIRES(is_integral_or_enum<U>::value)>
-  explicit ch_scalar(U value) : store_(N) {
-    store_.set_value(bitvector(N, value));
-  }
-
-  explicit ch_scalar(const std::initializer_list<uint32_t>& value) : store_(N) {
-    store_.set_value(bitvector(N, value));
-  }
-
-  explicit ch_scalar(const char* value) : store_(N) {
-    store_.set_value(bitvector(N, value));
+  template <typename U, CH_REQUIRES(is_bitvector_value<U>::value || std::is_enum<U>::value)>
+  explicit ch_scalar(const U& value) : _(N) {
+    _.set_value(bitvector(N, value));
   }
 
   ch_scalar& operator=(const ch_scalar& rhs) {
-    store_ = rhs.store_;
+    _ = rhs._;
     return *this;
   }
 
   ch_scalar& operator=(ch_scalar&& rhs) {
-    store_ = std::move(rhs.store_);
+    _ = std::move(rhs._);
     return *this;
   }
 
-  template <typename U, CH_REQUIRES(is_integral_or_enum<U>::value)>
-  ch_scalar& operator=(U value) {
-    store_.set_value(bitvector(value));
-    return *this;
-  }
-
-  ch_scalar& operator=(const std::initializer_list<uint32_t>& value) {
-    store_.set_value(bitvector(value));
-    return *this;
-  }
-
-  ch_scalar& operator=(const char* value) {
-    store_.set_value(bitvector(value));
+  template <typename U, CH_REQUIRES(is_bitvector_value<U>::value || std::is_enum<U>::value)>
+  ch_scalar& operator=(const U& value) {
+    _.set_value(bitvector(value));
     return *this;
   }
 
@@ -292,27 +281,20 @@ public:
     return ch_scalar_slice<ch_scalar, M>(*this, start * M);
   }
 
-  template <typename U, CH_REQUIRES(std::is_integral<U>::value)>
+  template <typename U, CH_REQUIRES(can_bitvector_cast<U>::value)>
   operator U() const {
-    return static_cast<U>(store_.get_value());
-  }
-
-  void read(uint32_t dst_offset, void* out, uint32_t out_cbsize, uint32_t src_offset = 0, uint32_t length = N) const {
-    store_.read(dst_offset, out, out_cbsize, src_offset, length);
-  }
-
-  void write(uint32_t dst_offset, const void* in, uint32_t in_cbsize, uint32_t src_offset = 0, uint32_t length = N) {
-    store_.write(dst_offset, in, in_cbsize, src_offset, length);
+    return static_cast<U>(_.get_value());
   }
 
   const bitvector& get_value() const {
-    return store_.get_value();
+    return _.get_value();
   }
+
+  CH_SCALAR_TYPE_INTERFACE();
 
 protected:
 
-  bytes_store store_;
-  template <typename T> friend auto& get_store(T& obj);
+  bytes_store _;
 
   friend std::ostream& operator<<(std::ostream& out, const ch_scalar& rhs) {
     return out << rhs.get_value();
@@ -462,19 +444,11 @@ const auto operator-(const ch_scalar<N>& a) {
   return ch_scalar<N>(std::move(ret));
 }
 
-#define CH_SIM_TYPE_INTERFACE() \
-  void read(uint32_t dst_offset, void* out, uint32_t out_cbsize, uint32_t src_offset = 0, uint32_t length = bitsize) const { \
-    _.read(dst_offset, out, out_cbsize, src_offset, length); \
-  } \
-  void write(uint32_t dst_offset, const void* in, uint32_t in_cbsize, uint32_t src_offset = 0, uint32_t length = bitsize) { \
-    _.write(dst_offset, in, in_cbsize, src_offset, length); \
-  }
-
 template <typename T, unsigned N>
 class const_scalar_slice {
 public:
   static constexpr unsigned bitsize = N;
-  using sim_type = const_scalar_slice<T, N>;
+  using scalar_type = const_scalar_slice<T, N>;
   using logic_type = ch_bit<N>;
 
   const_scalar_slice(const T& container, unsigned start = 0)
@@ -486,9 +460,9 @@ public:
 
 protected:
 
-  void copy(const bitvector& src) {
-    assert(src.get_size() == N);
-    container_.write(start_, src.get_words(), src.get_cbsize(), 0, N);
+  void write(const bitvector& value) {
+    assert(value.get_size() == N);
+    container_.write(start_, value.get_words(), value.get_cbsize(), 0, N);
   }
 
   T& container_;
@@ -508,23 +482,13 @@ public:
   {}
 
   ch_scalar_slice& operator=(const ch_scalar<N>& rhs) {
-    this->copy(rhs.get_value());
+    this->write(rhs.get_value());
     return *this;
   }
 
-  template <typename U, CH_REQUIRES(is_integral_or_enum<U>::value)>
-  ch_scalar_slice& operator=(U value) {
-    this->copy(bitvector(value), 0);
-    return *this;
-  }
-
-  ch_scalar_slice& operator=(const std::initializer_list<uint32_t>& value) {
-    this->copy(bitvector(value));
-    return *this;
-  }
-
-  ch_scalar_slice& operator=(const char* value) {
-    this->copy(bitvector(value));
+  template <typename U, CH_REQUIRES(is_bitvector_value<U>::value || std::is_enum<U>::value)>
+  ch_scalar_slice& operator=(const U& value) {
+    this->write(bitvector(value), 0);
     return *this;
   }
 };

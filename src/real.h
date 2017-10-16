@@ -12,8 +12,7 @@ class const_real;
 class const_real : public const_bit<32> {
 public:
   using base = const_bit<32>;
-  using value_type = ch_real;
-  using const_type = const_real;
+  using traits = logic_traits<const_real, const_real, ch_real, ch_scalar<32>>;
 
   const_real() {}
 
@@ -21,7 +20,7 @@ public:
 
   const_real(const_real&& rhs) : base(rhs) {}
 
-  const_real(const ch_bitbase<32>& rhs) : base(rhs) {}
+  const_real(const bitbase<32>& rhs) : base(rhs) {}
 
   explicit const_real(float rhs) : base(bitcast<uint32_t, float>(rhs)) {}
 };
@@ -29,8 +28,7 @@ public:
 class ch_real : public const_real {
 public:
   using base = const_real;
-  using value_type = ch_real;
-  using const_type = const_real;
+  using traits = logic_traits<ch_real, const_real, ch_real, ch_scalar<32>>;
 
   ch_real() {}
 
@@ -40,7 +38,7 @@ public:
 
   ch_real(ch_real&& rhs) : base(rhs) {}
 
-  ch_real(const ch_bitbase<32>& rhs) : base(rhs) {}
+  ch_real(const bitbase<32>& rhs) : base(rhs) {}
 
   explicit ch_real(float rhs) : base(rhs) {}
 
@@ -54,7 +52,7 @@ public:
     return *this;
   }
 
-  ch_real& operator=(const ch_bitbase<32>& rhs) {
+  ch_real& operator=(const bitbase<32>& rhs) {
     base::assign(rhs);
     return *this;
   }

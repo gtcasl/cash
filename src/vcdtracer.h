@@ -13,7 +13,7 @@ public:
   {}
 
   template <typename... Modules>
-  ch_vcdtracer(const char* file, const module& module, const Modules&... more) :
+  ch_vcdtracer(const std::string& file, const module& module, const Modules&... more) :
     ch_vcdtracer(file, {get_ctx(module), get_ctx(more)...})
   {}
 
@@ -23,7 +23,7 @@ public:
 
 protected:
   ch_vcdtracer(std::ostream& out, const std::initializer_list<context*>& contexts);
-  ch_vcdtracer(const char* file, const std::initializer_list<context*>& contexts);
+  ch_vcdtracer(const std::string& file, const std::initializer_list<context*>& contexts);
 };
 
 }

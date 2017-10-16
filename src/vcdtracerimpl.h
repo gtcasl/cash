@@ -11,7 +11,7 @@ public:
     : tracerimpl(out, contexts)
   {}
 
-  vcdtracerimpl(const char* file, const std::initializer_list<context*>& contexts)
+  vcdtracerimpl(const std::string& file, const std::initializer_list<context*>& contexts)
     : tracerimpl(file, contexts)
   {}
 

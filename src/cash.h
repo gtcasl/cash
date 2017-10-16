@@ -52,19 +52,17 @@ namespace core {
 
   template <unsigned N> using ch_bit = ch::internal::ch_bit<N>;
 
-  template <unsigned N> using ch_bitbase = ch::internal::ch_bitbase<N>;
-
   template <unsigned N> using ch_scalar = ch::internal::ch_scalar<N>;
 
   using ch_float = ch::internal::ch_real;
 
   template <typename T> using ch_seq = ch::internal::ch_seq<T>;
 
-  template <typename T> using ch_value_t = ch::internal::value_type_t<T>;
-  template <typename T> using ch_flip_t = typename T::flip_type;
-  template <typename T> using ch_ioport_t = typename decltype(T::io)::port_type;
+  template <typename T> using ch_value_t  = ch::internal::value_type_t<T>;
+  template <typename T> using ch_flip_t   = ch::internal::ch_flip_t<T>;
+  template <typename T> using ch_ioport_t = ch::internal::ch_ioport_t<T>;
 
-  using ch_iotype = ch::internal::ch_iotype;
+  using ch_direction = ch::internal::ch_direction;
 
   template <typename T> using ch_in = ch::internal::ch_in<T>;
   template <typename T> using ch_out = ch::internal::ch_out<T>;

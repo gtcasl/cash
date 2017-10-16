@@ -60,8 +60,8 @@ int platform::get_dump_cfg() const {
   return impl_->dump_cfg;
 }
 
-const char* platform::get_lib_path() const {
-  return impl_->lib_path.c_str();
+const std::string& platform::get_lib_path() const {
+  return impl_->lib_path;
 }
 
 const platform& platform::self() {

@@ -6,10 +6,10 @@ namespace ch {
 namespace internal {
 
 template <typename T>
-class ch_seq final : public T::const_type {
+class ch_seq final : public T::traits::const_type {
 public:
-  using base = typename T::const_type;
-  using value_type = T;
+  using base = typename T::traits::const_type;
+  using traits = logic_traits<ch_seq, typename T::traits::const_type, T, typename T::traits::scalar_type>;
 
   T next;
 
@@ -19,7 +19,7 @@ public:
   }
   
   template <typename U,
-            CH_REQUIRES(is_cast_convertible<U, T>::value)>
+            CH_REQUIRES(is_cast_convertible<T, U>::value)>
   explicit ch_seq(const U& init) {
     base::assign(ch_reg(next, init));
     next = *this;

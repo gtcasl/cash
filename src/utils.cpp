@@ -8,7 +8,7 @@
 
 using namespace ch::internal;
 
-std::string ch::internal::fstring(const char *format, ...) {
+std::string ch::internal::fstring(const char* format, ...) {
   static const int STACK_BUFFER_SIZE = 256;
 
   std::string result;
@@ -40,7 +40,7 @@ std::string ch::internal::fstring(const char *format, ...) {
   return result;
 }
 
-void ch::internal::dbprint(int level, const char *format, ...) {
+void ch::internal::dbprint(int level, const char* format, ...) {
   if (level > platform::self().get_dbg_level())
     return;
   va_list args;
@@ -57,28 +57,28 @@ void ch::internal::dump_stack_trace(FILE *out, unsigned int max_frames) {
   p.print(st, out);
 }
 
-std::string ch::internal::identifier_from_typeid(const char* name) {
+std::string ch::internal::identifier_from_typeid(const std::string& name) {
   int status;
-  char* demangled = abi::__cxa_demangle(name, 0, 0, &status);
+  char* demangled = abi::__cxa_demangle(name.c_str(), 0, 0, &status);
   CH_CHECK(0 == status, "abi::__cxa_demangle() failed");
   std::string ret(demangled);
   // remove namespace prefix and template posfix
   auto pos = ret.find_last_of(':') + 1;
   auto len = ret.find_first_of('<') - pos;
   ret = ret.substr(pos, len);
-  free(demangled);
+  ::free(demangled);
   return ret;
 }
 
-std::string unique_name::get(const char* name) {
+std::string unique_name::get(const std::string& name) {
   std::string unique_name(name);
   unsigned instances = dups_[name]++;
   if (instances != 0) {
-    unique_name = fstring("%s_%d", name, instances-1);
+    unique_name = fstring("%s_%d", name.c_str(), instances-1);
     // resolve collisions
     while (dups_.count(unique_name) != 0) {
       instances = dups_[name]++;
-      unique_name = fstring("%s_%d", name, instances-1);
+      unique_name = fstring("%s_%d", name.c_str(), instances-1);
     }
   }
   return unique_name;

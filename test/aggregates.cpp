@@ -86,17 +86,12 @@ TEST_CASE("aggregates", "[aggregates]") {
   SECTION("structs", "[struct]") {
     TEST([]()->ch_bit1 {
       s1_t s1;
-      s2_t s2;
-      s3_t s3;
-      s4_t s4;
+      s2_t s2(10_h);
+      s3_t s3(100_h);
+      s4_t s4(0010_h);
            
       s1.a = 1_h;
-      s2 = 10_h;
-      
-      s3 = 100_h;
-      s3.c = 1_h;
-           
-      s4 = 0010_h;
+      s3.c = 1_h;           
       s4.b = 1_h;
            
       return ch_cat(s1, s4) == ch_cat(s3, s2);

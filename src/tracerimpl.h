@@ -8,7 +8,7 @@ namespace internal {
 class tracerimpl : public simulatorimpl {
 public:
   tracerimpl(std::ostream& out, const std::initializer_list<context*>& contexts);
-  tracerimpl(const char* file, const std::initializer_list<context*>& contexts);
+  tracerimpl(const std::string& file, const std::initializer_list<context*>& contexts);
 
   ~tracerimpl() {
     if (file_)
@@ -21,7 +21,7 @@ protected:
 
   void ensureInitialize() override;
 
-  void add_trace(const char* name, ioimpl* value);
+  void add_trace(const std::string& name, ioimpl* value);
 
   struct trace_t {
     trace_t(const std::string& _name, ioimpl* _node)

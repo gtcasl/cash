@@ -29,14 +29,14 @@ memimpl::~memimpl() {
   }
 }
 
-void memimpl::load(const std::vector<uint8_t>& data) {
-  assert(8 * data.size() >= value_.get_size());
-  value_.write(0, data.data(), data.size(), 0, value_.get_size());
+void memimpl::load(const std::vector<uint8_t>& init_data) {
+  assert(8 * init_data.size() >= value_.get_size());
+  value_.write(0, init_data.data(), init_data.size(), 0, value_.get_size());
   initialized_ = true;
 }
 
-void memimpl::load(const char* file) {
-  std::ifstream in(file, std::ios::binary);
+void memimpl::load(const std::string& init_file) {
+  std::ifstream in(init_file, std::ios::binary);
   uint32_t size = value_.get_size();
   uint32_t offset = 0;
 
@@ -190,12 +190,12 @@ memory::memory(uint32_t data_width, uint32_t addr_width, bool writeEnable) {
   impl_ = ctx_curr()->createNode<memimpl>(data_width, addr_width, writeEnable);
 }
 
-void memory::load(const std::vector<uint8_t>& data) {
-  impl_->load(data);
+void memory::load(const std::vector<uint8_t>& init_data) {
+  impl_->load(init_data);
 }
 
-void memory::load(const char* file) {
-  impl_->load(file);
+void memory::load(const std::string& init_file) {
+  impl_->load(init_file);
 }
 
 lnode& memory::read(const lnode& addr) const {

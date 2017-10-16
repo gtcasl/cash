@@ -28,7 +28,7 @@ public:
       ctx_->release();
   }
 
-  context* create(size_t signature, const char* name) {
+  context* create(size_t signature, const std::string& name) {
     std::string unique_name(name);
     auto it = module_names_.find(signature);
     if (it != module_names_.end()) {
@@ -63,7 +63,7 @@ using namespace ch::internal;
 
 thread_local context_manager tls_ctx;
 
-context* ch::internal::ctx_create(size_t signature, const char* name) {
+context* ch::internal::ctx_create(size_t signature, const std::string& name) {
   return tls_ctx.create(signature, name);
 }
 
@@ -82,7 +82,7 @@ static uint32_t make_id() {
   return s_id++;
 }
 
-context::context(const char* name)
+context::context(const std::string& name)
   : id_(make_id())
   , name_(name)
   , node_ids_(0)
@@ -514,7 +514,7 @@ void context::remove_cdomain(cdomain* cd) {
   cdomains_.remove(cd);
 }
 
-void context::register_tap(const char* name, const lnode& node) {
+void context::register_tap(const std::string& name, const lnode& node) {
   this->createNode<tapimpl>(node, unique_tap_names_.get(name).c_str());
 }
 
@@ -728,7 +728,7 @@ void context::dump_stats(std::ostream& out) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void ch::internal::registerTap(const char* name, const lnode& node) {
+void ch::internal::registerTap(const std::string& name, const lnode& node) {
   node.get_ctx()->register_tap(name, node);
 }
 

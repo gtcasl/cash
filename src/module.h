@@ -9,7 +9,7 @@ class moduleimpl;
 
 class module {
 public:
-  module(size_t signature, const char* name);
+  module(size_t signature, const std::string& name);
   virtual ~module();
     
 protected:
@@ -32,11 +32,11 @@ private:
 
 public:  
   using io_type   = decltype(impl_.io);
-  using port_type = typename io_type::port_type;
-  port_type io;
+  using ioport_type = typename io_type::traits::port_type;
+  ioport_type io;
 
   template <typename... Ts>
-  ch_module(const char* name, const Ts&... args)
+  ch_module(const std::string& name, const Ts&... args)
     : module(typeid(T).hash_code(), name)
     , impl_(args...)
     , io(impl_.io) {

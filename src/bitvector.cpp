@@ -1,5 +1,4 @@
 #include "bitvector.h"
-#include <cstring>
 
 using namespace ch::internal;
 
@@ -34,12 +33,12 @@ bitvector::bitvector(uint32_t size, uint32_t value)
 
 bitvector::bitvector(uint32_t size,
                      const std::initializer_list<uint32_t>& value)
-  : words_(nullptr), size_(0) {  
+  : words_(nullptr), size_(0) {
   this->resize(size);
-  this->operator =(value);  
+  this->operator =(value);
 }
 
-bitvector::bitvector(uint32_t size, const char* value)
+bitvector::bitvector(uint32_t size, const std::string& value)
   : words_(nullptr), size_(0) {
   this->resize(size);
   this->operator =(value);
@@ -101,6 +100,36 @@ bitvector& bitvector::operator=(bitvector&& rhs) {
   return *this;
 }
 
+bitvector& bitvector::operator=(const std::initializer_list<uint32_t>& value) {
+  assert(size_);
+  auto iterValue = value.begin();
+
+  uint32_t num_words = (size_ + WORD_MASK) >> WORD_SIZE_LOG;
+  uint32_t used_num_words = value.size();
+
+  // check for extra bits
+  for (uint32_t i = num_words; i < used_num_words; ++i) {
+    CH_CHECK(0 == *iterValue++, "input value overflow");
+  }
+  CH_CHECK((value.size() < num_words)
+          || (0 == (size_ & WORD_MASK) || (0 == (*iterValue >> (size_ & WORD_MASK)))), "input value overflow");
+
+  // clear unused words
+  uint32_t* dst = words_ + (num_words - 1);
+  if (used_num_words < num_words) {
+    uint32_t unused_words = num_words - used_num_words;
+    std::fill_n(dst, unused_words, 0x0);
+    dst -= unused_words;
+  }
+
+  // write the value
+  for (auto iterEnd = value.end(); iterValue != iterEnd; ++iterValue) {
+    *dst-- = *iterValue;
+  }
+
+  return *this;
+}
+
 static uint32_t chr2int(char x, int base) {
   switch (base) {
   case 2:
@@ -123,11 +152,11 @@ static uint32_t chr2int(char x, int base) {
   CH_ABORT("invalid ch_scalar value");
 }
 
-bitvector& bitvector::operator=(const char* value) {
+bitvector& bitvector::operator=(const std::string& value) {
   int base = 0;
   int start = 0;
 
-  size_t len = std::strlen(value);
+  size_t len = value.length();
   
   switch (value[len-1]) {
   case 'b':
@@ -228,36 +257,6 @@ bitvector& bitvector::operator=(uint32_t value) {
   return *this;
 }
 
-bitvector& bitvector::operator=(const std::initializer_list<uint32_t>& value) {
-  assert(size_);
-  auto iterValue = value.begin();
-  
-  uint32_t num_words = (size_ + WORD_MASK) >> WORD_SIZE_LOG;   
-  uint32_t used_num_words = value.size();
-  
-  // check for extra bits
-  for (uint32_t i = num_words; i < used_num_words; ++i) {
-    CH_CHECK(0 == *iterValue++, "input value overflow");
-  }  
-  CH_CHECK((value.size() < num_words) 
-          || (0 == (size_ & WORD_MASK) || (0 == (*iterValue >> (size_ & WORD_MASK)))), "input value overflow");  
-     
-  // clear unused words
-  uint32_t* dst = words_ + (num_words - 1);
-  if (used_num_words < num_words) {
-    uint32_t unused_words = num_words - used_num_words;
-    std::fill_n(dst, unused_words, 0x0);  
-    dst -= unused_words;
-  }
-  
-  // write the value
-  for (auto iterEnd = value.end(); iterValue != iterEnd; ++iterValue) {
-    *dst-- = *iterValue;
-  }
-
-  return *this;
-}
-
 bool bitvector::operator==(const bitvector& rhs) const {
   if (size_ != rhs.size_)
     return false;
@@ -351,11 +350,11 @@ void bitvector::read(
     uint32_t b_src_offset = src_offset / 8;
     uint8_t* b_src = reinterpret_cast<uint8_t*>(words_) + b_src_offset;
     if (0 == end_rem) {
-      std::memcpy(b_out, b_src, b_length);
+      std::copy_n(b_src, b_length, b_out);
     } else {
       // copy all bytes except the last one
       uint32_t end = b_length - 1;
-      std::memcpy(b_out, b_src, end);
+      std::copy_n(b_src, end, b_out);
       // only update set bits from source in the last byte
       uint32_t sel_mask = (~0UL << end_rem);
       b_out[end] = CH_BLEND(sel_mask, b_src[end], b_out[end]);
@@ -403,11 +402,11 @@ void bitvector::write(
     uint8_t* b_dst = reinterpret_cast<uint8_t*>(words_) + b_dst_offset;
     uint32_t end_rem = (src_offset + length) & 0x7;
     if (0 == end_rem) {
-      std::memcpy(b_dst, b_in, b_length);
+      std::copy_n(b_in, b_length, b_dst);
     } else {
       // copy all bytes except the last one
       uint32_t end = b_length - 1;
-      std::memcpy(b_dst, b_in, end);
+      std::copy_n(b_in, end, b_dst);
       // only update set bits from source in the last byte
       uint32_t sel_mask = (~0UL << end_rem);
       b_dst[end] = CH_BLEND(sel_mask, b_in[end], b_dst[end]);

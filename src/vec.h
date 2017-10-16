@@ -1,54 +1,125 @@
 #pragma once
 
-#include "bitbase.h"
+#include "port.h"
 
 namespace ch {
 namespace internal {
 
-template <typename T, unsigned N>
-class ch_vec;
+template <typename T, unsigned N> class const_vec;
+template <typename T, unsigned N> class ch_vec;
+
+template <unsigned N, typename T>
+struct const_vec_traits;
+
+template <unsigned N, typename T>
+struct vec_traits;
+
+template <unsigned N, typename ScalarType, typename LogicType>
+struct const_vec_traits<N, scalar_traits<ScalarType, LogicType>>  {
+  using type = scalar_traits<ch_vec<ScalarType, N>, ch_vec<LogicType, N>>;
+};
+
+template <unsigned N, typename LogicType, typename ConstType, typename ValueType, typename ScalarType>
+struct const_vec_traits<N, logic_traits<LogicType, ConstType, ValueType, ScalarType>>  {
+  using type = logic_traits<const_vec<LogicType, N>, const_vec<LogicType, N>, ch_vec<ValueType, N>, ch_vec<ScalarType, N>>;
+};
+
+template <unsigned N, typename IoType, ch_direction Direction, typename FlipType, typename PortType, typename LogicType>
+struct const_vec_traits<N, io_traits<IoType, Direction, FlipType, PortType, LogicType>>  {
+  using type = io_traits<ch_vec<IoType, N>, Direction, ch_vec<FlipType, N>, ch_vec<PortType, N>, ch_vec<LogicType, N>>;
+};
+
+template <unsigned N, typename ScalarType, typename LogicType>
+struct vec_traits<N, scalar_traits<ScalarType, LogicType>>  {
+  using type = scalar_traits<ch_vec<ScalarType, N>, ch_vec<LogicType, N>>;
+};
+
+template <unsigned N, typename LogicType, typename ConstType, typename ValueType, typename ScalarType>
+struct vec_traits<N, logic_traits<LogicType, ConstType, ValueType, ScalarType>>  {
+  using type = logic_traits<ch_vec<LogicType, N>, const_vec<LogicType, N>, ch_vec<ValueType, N>, ch_vec<ScalarType, N>>;
+};
+
+template <unsigned N, typename IoType, ch_direction Direction, typename FlipType, typename PortType, typename LogicType>
+struct vec_traits<N, io_traits<IoType, Direction, FlipType, PortType, LogicType>>  {
+  using type = io_traits<ch_vec<IoType, N>, Direction, ch_vec<FlipType, N>, ch_vec<PortType, N>, ch_vec<LogicType, N>>;
+};
 
 template <typename T, unsigned N>
-class const_vec;
-
-template <typename T, unsigned N>
-class const_vec : public ch_bitbase<N * T::bitsize> {
+class const_vec {
 public:
-  using base = ch_bitbase<N * T::bitsize>;
-  using value_type = ch_vec<T, N>;
-  using const_type = const_vec;
-  
+  static constexpr unsigned bitsize = N * T::bitsize;
+  using traits = typename const_vec_traits<N, typename T::traits>::type;
+  using value_type = T;
+
   const_vec() {}
   const_vec(const const_vec& rhs) : items_(rhs.items_) {}
   const_vec(const_vec&& rhs) : items_(std::move(rhs.items_)) {}
 
-  template <typename U,
-            CH_REQUIRES(is_cast_convertible<U, T>::value)>
-  const_vec(const const_vec<U, N>& rhs) {
-    for (unsigned i = 0; i < N; ++i) {
-      items_[i] = rhs.items_[i];
-    }
+  template <typename U>
+  explicit const_vec(const const_vec<U, N>& rhs) {
+    this->assign(rhs);
   }
 
-  const_vec(const base& rhs) {
-    base::assign(rhs);
-  }
-
-  template <typename... Vs,
-           CH_REQUIRES(are_all_cast_convertible<T, Vs...>::value)>
+  template <typename... Vs>
   explicit const_vec(const Vs&... values) {
     this->init(values...);
   }
 
-  template <typename U,
-            CH_REQUIRES(ch::internal::is_integral_or_enum<U>::value)>
-  explicit const_vec(U value) {
-    base::assign(value);
+  const T& at(size_t i) const {
+    CH_CHECK(i < N, "invalid subscript index");
+    return items_[i];
   }
 
   const T& operator[](size_t i) const {
-    CH_CHECK(i < N, "invalid subscript index");
-    return items_[i];
+    return this->at(i);
+  }
+
+  auto front() const {
+    return items_.front();
+  }
+
+  auto back() const {
+    return items_.back();
+  }
+
+  auto begin() const {
+    return items_.cbegin();
+  }
+
+  auto cbegin() const {
+    return items_.cbegin();
+  }
+
+  auto end() const {
+    return items_.cend();
+  }
+
+  auto cend() const {
+    return items_.cend();
+  }
+
+  auto rbegin() const {
+    return items_.crbegin();
+  }
+
+  auto crbegin() const {
+    return items_.crbegin();
+  }
+
+  auto rend() const {
+    return items_.crend();
+  }
+
+  auto crend() const {
+    return items_.crend();
+  }
+
+  auto size() const {
+    return items_.size();
+  }
+
+  auto empty() const {
+    return items_.empty();
   }
 
 protected:
@@ -65,89 +136,42 @@ protected:
     items_[sizeof...(Vs)] = value0;
     this->init(values...);
   }
-  
-  void read_lnode(nodelist& out, size_t offset, size_t length) const override {
-    for (unsigned i = 0; length && i < N; ++i) {
-      if (offset < T::bitsize) {
-        size_t len = std::min<size_t>(length, T::bitsize - offset);
-        ch::internal::read_lnode(items_[i], out, offset, len);
-        offset = T::bitsize;        
-        length -= len;
-      }
-      offset -= T::bitsize;
-    }
-  }
-  
-  void write_lnode(size_t dst_offset, const nodelist& data, size_t src_offset, size_t length) override {
-    for (unsigned i = 0; length && i < N; ++i) {
-      if (dst_offset < T::bitsize) {
-        size_t len = std::min<size_t>(length, T::bitsize - dst_offset);
-        ch::internal::write_lnode(items_[i], dst_offset, data, src_offset, len);
-        src_offset += len;
-        dst_offset = T::bitsize;
-        length -= len;
-      }
-      dst_offset -= T::bitsize;
+
+  template <typename U>
+  void assign(const const_vec<U, N>& rhs) {
+    for (unsigned i = 0; i < N; ++i) {
+      items_[i] = rhs[i];
     }
   }
 
-  void read_bytes(uint32_t dst_offset, void* out, uint32_t out_cbsize, uint32_t src_offset, uint32_t length) const override {
-    for (unsigned i = 0; length && i < N; ++i) {
-      if (dst_offset < T::bitsize) {
-        size_t len = std::min<size_t>(length, T::bitsize - dst_offset);
-        ch::internal::read_bytes(items_[i], dst_offset, out, out_cbsize, src_offset, len);
-        src_offset += len;
-        dst_offset = T::bitsize;
-        length -= len;
-      }
-      dst_offset -= T::bitsize;
-    }
-  }
-
-  void write_bytes(uint32_t dst_offset, const void* in, uint32_t in_cbsize, uint32_t src_offset, uint32_t length) override {
-    for (unsigned i = 0; length && i < N; ++i) {
-      if (dst_offset < T::bitsize) {
-        size_t len = std::min<size_t>(length, T::bitsize - dst_offset);
-        ch::internal::write_bytes(items_[i], dst_offset, in, in_cbsize, src_offset, len);
-        src_offset += len;
-        dst_offset = T::bitsize;
-        length -= len;
-      }
-      dst_offset -= T::bitsize;
-    }
-  }
+  // TODO: ugly hack to create vec from logic
+  template <typename U> class ch_in;
 };
 
 template <typename T, unsigned N>
 class ch_vec : public const_vec<T, N> {
 public:
+  static constexpr unsigned bitsize = N * T::bitsize;
   using base = const_vec<T, N>;
-  using value_type = ch_vec;
-  using const_type = const_vec<T, N>;
-
+  using traits = typename vec_traits<N, typename T::traits>::type;
+  using value_type = T;
+  using base::operator [];
   using base::items_;
 
   ch_vec() {}
   ch_vec(const ch_vec& rhs) : base(rhs) {}
   ch_vec(ch_vec&& rhs) : base(rhs) {}
 
-  template <typename U,
-            CH_REQUIRES(is_cast_convertible<U, T>::value)>
-  ch_vec(const const_vec<U, N>& rhs) : base(rhs) {}
+  ch_vec(const const_vec<T, N>& rhs) : base(rhs) {}
 
-  template <typename U,
-            CH_REQUIRES(is_cast_convertible<U, T>::value)>
-  ch_vec(const ch_vec<U, N>& rhs) : base(rhs) {}
+  template <typename U>
+  explicit ch_vec(const const_vec<U, N>& rhs) : base(rhs) {}
 
-  ch_vec(const ch_bitbase<base::bitsize>& rhs) : base(rhs) {}
+  template <typename U>
+  explicit ch_vec(const ch_vec<U, N>& rhs) : base(rhs) {}
 
-  template <typename... Vs,
-           CH_REQUIRES(are_all_cast_convertible<T, Vs...>::value)>
+  template <typename... Vs>
   explicit ch_vec(const Vs&... values) : base(values...) {}
-
-  template <typename U,
-            CH_REQUIRES(ch::internal::is_integral_or_enum<U>::value)>
-  explicit ch_vec(U value) : base(value) {} \
 
   ch_vec& operator=(const ch_vec& rhs) {
     items_ = rhs.items_;
@@ -159,34 +183,56 @@ public:
     return *this;
   }
 
-  template <typename U,
-            CH_REQUIRES(is_cast_convertible<U, T>::value)>
+  template <typename U>
+  ch_vec& operator=(const const_vec<U, N>& rhs) {
+    this->assign(rhs);
+    return *this;
+  }
+
+  template <typename U>
   ch_vec& operator=(const ch_vec<U, N>& rhs) {
-    for (unsigned i = 0; i < N; ++i) {
-      items_[i] = rhs.items_[i];
-    }
+    this->assign(rhs);
     return *this;
   }
 
-  ch_vec& operator=(const ch_bitbase<base::bitsize>& rhs) {
-    base::assign(rhs);
-    return *this;
-  }
-
-  template <typename U, CH_REQUIRES(ch::internal::is_integral_or_enum<U>::value)>
-  ch_vec& operator=(U rhs) {
-    base::assign(rhs);
-    return *this;
-  }
-
-  const T& operator[](size_t i) const {
+  T& at(size_t i) {
     CH_CHECK(i < N, "invalid subscript index");
     return items_[i];
   }
 
   T& operator[](size_t i) {
-    CH_CHECK(i < N, "invalid subscript index");
-    return items_[i];
+    return this->at(i);
+  }
+
+  auto front() {
+    return items_.front();
+  }
+
+  auto back() {
+    return items_.back();
+  }
+
+  auto begin() {
+    return items_.begin();
+  }
+
+  auto end() {
+    return items_.end();
+  }
+
+  auto rbegin() {
+    return items_.rbegin();
+  }
+
+  auto rend() {
+    return items_.rend();
+  }
+
+  template <typename U>
+  void fill(const U& value) {
+    for (unsigned i = 0; i < N; ++i) {
+      items_[i] = value;
+    }
   }
 };
 

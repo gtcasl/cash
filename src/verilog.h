@@ -13,7 +13,7 @@ void ch_toVerilog(std::ostream& out, const module& module, const Modules&... mor
 }
 
 template <typename... Modules>
-void ch_toVerilog(const char* file, const module& module, const Modules&... more) {
+void ch_toVerilog(const std::string& file, const module& module, const Modules&... more) {
   std::ofstream out(file);
   toVerilog(out, {get_ctx(module), get_ctx(more)...});
 }

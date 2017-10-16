@@ -12,7 +12,7 @@ using namespace ch::internal;
 compiler::compiler(context* ctx) : ctx_(ctx) {}
 
 void compiler::run() {
-  DBG(2, "compiling %s ...\n", ctx_->get_name());
+  DBG(2, "compiling %s ...\n", ctx_->get_name().c_str());
 
   size_t orig_num_nodes = ctx_->get_nodes().size();
   

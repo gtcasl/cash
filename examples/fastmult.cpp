@@ -13,7 +13,7 @@ struct FastMult {
     (ch_out<ch_bit8>) out
   );
   void describe() {
-    std::vector<uint8_t> tbl_mult(256);
+    std::array<uint8_t, 256> tbl_mult;
     for (int j = 0; j < 16; ++j) {
       for (int i = 0; i < 16; ++i) {
         tbl_mult[j * 16 + i] = i * j;

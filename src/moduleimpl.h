@@ -10,7 +10,7 @@ class lnodeimpl;
 
 class moduleimpl : public refcounted {
 public:
-  moduleimpl(size_t signature, const char* name);
+  moduleimpl(size_t signature, const std::string& name);
   ~moduleimpl();
 
   void begin_context();

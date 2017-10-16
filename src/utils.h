@@ -10,11 +10,11 @@ namespace internal {
 
 std::string fstring(const char* format, ...);
 
-void dbprint(int level, const char *format, ...);
+void dbprint(int level, const char* format, ...);
 
 void dump_stack_trace(FILE* out, unsigned int max_frames = 32);
 
-std::string identifier_from_typeid(const char* name);
+std::string identifier_from_typeid(const std::string& name);
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -22,7 +22,7 @@ class unique_name {
 public:
   unique_name() {}
 
-  std::string get(const char* name);
+  std::string get(const std::string& name);
 
 private:
   std::unordered_map<std::string, unsigned> dups_;
@@ -58,13 +58,11 @@ struct conjunction<B> : std::integral_constant<bool, B> {};
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename From, typename To>
+template <typename To, typename From>
 using is_cast_convertible = std::is_constructible<To, From>;
 
-///////////////////////////////////////////////////////////////////////////////
-
 template <typename To, typename... Froms>
-using are_all_cast_convertible = conjunction<is_cast_convertible<Froms, To>::value...>;
+using are_all_cast_convertible = conjunction<is_cast_convertible<To, Froms>::value...>;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -343,12 +341,9 @@ constexpr unsigned log2ceil(unsigned x) {
   return ispow2(x) ? ilog2(x) : (ilog2(x) + 1);
 }
 
-template <class Dst, class Src>
-Dst bitcast(const Src& src) {
-  union merged_t {
-    Src src;
-    Dst dst;
-  };
+template <typename Dst, typename Src>
+const auto bitcast(const Src& src) {
+  union merged_t { Src src; Dst dst; };
   merged_t m;
   m.dst = 0;
   m.src = src;

@@ -4,7 +4,7 @@
 
 using namespace ch::internal;
 
-inputimpl::inputimpl(context* ctx, lnodetype type, uint32_t size, const char* name)
+inputimpl::inputimpl(context* ctx, lnodetype type, uint32_t size, const std::string& name)
   : ioimpl(ctx, type, size, name)
   , tick_(~0ull)
 {}
@@ -31,7 +31,7 @@ void inputimpl::print(std::ostream& out, uint32_t level) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-outputimpl::outputimpl(context* ctx, const lnode& src, const char* name)
+outputimpl::outputimpl(context* ctx, const lnode& src, const std::string& name)
   : ioimpl(ctx, type_output, src.get_size(), name)
   , tick_(~0ull) {
   srcs_.emplace_back(src);
@@ -55,7 +55,7 @@ void outputimpl::print(std::ostream& out, uint32_t level) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-tapimpl::tapimpl(context* ctx, const lnode& src, const char* name)
+tapimpl::tapimpl(context* ctx, const lnode& src, const std::string& name)
   : ioimpl(ctx, type_tap, src.get_size(), name)
   , tick_(~0ull) {
   srcs_.emplace_back(src);
@@ -79,10 +79,10 @@ const bitvector& tapimpl::eval(ch_tick t) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-lnodeimpl* ch::internal::createInputNode(const char* name, uint32_t size) {
+lnodeimpl* ch::internal::createInputNode(const std::string& name, uint32_t size) {
   return ctx_curr()->createNode<inputimpl>(size, name);
 }
 
-lnodeimpl* ch::internal::createOutputNode(const char* name, const lnode& src) {
+lnodeimpl* ch::internal::createOutputNode(const std::string& name, const lnode& src) {
   return src.get_ctx()->createNode<outputimpl>(src, name);
 }

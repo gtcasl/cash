@@ -10,7 +10,7 @@ tracerimpl::tracerimpl(std::ostream& out, const std::initializer_list<context*>&
   , out_(out)
 {}
 
-tracerimpl::tracerimpl(const char* file, const std::initializer_list<context*>& contexts)
+tracerimpl::tracerimpl(const std::string& file, const std::initializer_list<context*>& contexts)
   : simulatorimpl(contexts)
   , file_(new std::ofstream(file))
   , out_(*file_)
@@ -60,7 +60,7 @@ void tracerimpl::ensureInitialize() {
   }
 }
 
-void tracerimpl::add_trace(const char* name, ioimpl* value) {
+void tracerimpl::add_trace(const std::string& name, ioimpl* value) {
   traces_.emplace_back(unique_trace_names_.get(name), value);
 }
 
@@ -81,7 +81,7 @@ ch_tracer::ch_tracer(std::ostream& out,
   : ch_simulator(new tracerimpl(out, contexts))
 {}
 
-ch_tracer::ch_tracer(const char* file,
+ch_tracer::ch_tracer(const std::string& file,
                      const std::initializer_list<context*>& contexts)
   : ch_simulator(new tracerimpl(file, contexts))
 {}

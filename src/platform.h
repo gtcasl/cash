@@ -20,7 +20,7 @@ public:
   
   int get_dump_cfg() const;
 
-  const char* get_lib_path() const;
+  const std::string& get_lib_path() const;
   
 protected:
   class Impl;

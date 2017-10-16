@@ -5,6 +5,53 @@
 namespace ch {
 namespace internal {
 
+template <typename T> struct is_bitvector_array_value : std::false_type {};
+template <> struct is_bitvector_array_value <int8_t> : std::true_type {};
+template <> struct is_bitvector_array_value <uint8_t> : std::true_type {};
+template <> struct is_bitvector_array_value <int16_t> : std::true_type {};
+template <> struct is_bitvector_array_value <uint16_t> : std::true_type {};
+template <> struct is_bitvector_array_value <int32_t> : std::true_type {};
+template <> struct is_bitvector_array_value <uint32_t> : std::true_type {};
+template <> struct is_bitvector_array_value <int64_t> : std::true_type {};
+template <> struct is_bitvector_array_value <uint64_t> : std::true_type {};
+
+template <typename T> struct is_bitvector_value : std::false_type {};
+template <> struct is_bitvector_value <bool> : std::true_type {};
+template <> struct is_bitvector_value <char> : std::true_type {};
+template <> struct is_bitvector_value <int8_t> : std::true_type {};
+template <> struct is_bitvector_value <uint8_t> : std::true_type {};
+template <> struct is_bitvector_value <int16_t> : std::true_type {};
+template <> struct is_bitvector_value <uint16_t> : std::true_type {};
+template <> struct is_bitvector_value <int32_t> : std::true_type {};
+template <> struct is_bitvector_value <uint32_t> : std::true_type {};
+template <> struct is_bitvector_value <int64_t> : std::true_type {};
+template <> struct is_bitvector_value <uint64_t> : std::true_type {};
+
+template <>
+struct is_bitvector_value< std::initializer_list<uint32_t> > : std::true_type {};
+
+template <typename T, std::size_t N>
+struct is_bitvector_value< std::array<T, N> > : std::true_type {};
+
+template <typename T>
+struct is_bitvector_value< std::vector<T> > : std::true_type {};
+
+template <>
+struct is_bitvector_value< std::string > : std::true_type {};
+
+template <typename T> struct can_bitvector_cast : std::false_type {};
+template <> struct can_bitvector_cast <bool> : std::true_type {};
+template <> struct can_bitvector_cast <char> : std::true_type {};
+template <> struct can_bitvector_cast <int8_t> : std::true_type {};
+template <> struct can_bitvector_cast <uint8_t> : std::true_type {};
+template <> struct can_bitvector_cast <int16_t> : std::true_type {};
+template <> struct can_bitvector_cast <uint16_t> : std::true_type {};
+template <> struct can_bitvector_cast <int32_t> : std::true_type {};
+template <> struct can_bitvector_cast <uint32_t> : std::true_type {};
+template <> struct can_bitvector_cast <int64_t> : std::true_type {};
+template <> struct can_bitvector_cast <uint64_t> : std::true_type {};
+
+
 class bitvector {
 public:
   
@@ -422,18 +469,28 @@ public:
   {}
 
   bitvector(uint32_t size, uint32_t value);
-  
+
   bitvector(uint32_t size, int64_t value)
     : bitvector(size, {bitcast<uint32_t>(value >> 32), bitcast<uint32_t>(value)})
   {}
-  
+
   bitvector(uint32_t size, uint64_t value)
     : bitvector(size, {bitcast<uint32_t>(value >> 32), bitcast<uint32_t>(value)})
   {}
 
+  template <typename T, std::size_t N, CH_REQUIRES(is_bitvector_array_value<T>::value)>
+  bitvector(uint32_t size, const std::array<T, N>& value) : bitvector(size) {
+    this->write(0, value.data(), N * sizeof(T), 0, N * sizeof(T) * 8);
+  }
+
+  template <typename T, CH_REQUIRES(is_bitvector_array_value<T>::value)>
+  bitvector(uint32_t size, const std::vector<T>& value) : bitvector(size) {
+    this->write(0, value.data(), value.size() * sizeof(T), 0, value.size() * sizeof(T) * 8);
+  }
+
   bitvector(uint32_t size, const std::initializer_list<uint32_t>& value);
 
-  bitvector(uint32_t size, const char* value);
+  bitvector(uint32_t size, const std::string& value);
 
   ~bitvector();
   
@@ -486,9 +543,21 @@ public:
     );
   }
 
+  template <typename T, std::size_t N, CH_REQUIRES(is_bitvector_array_value<T>::value)>
+  bitvector& operator=(const std::array<T, N>& value) {
+    this->write(0, value.data(), N * sizeof(T), 0, N * sizeof(T) * 8);
+    return *this;
+  }
+
+  template <typename T, CH_REQUIRES(is_bitvector_array_value<T>::value)>
+  bitvector& operator=(const std::vector<T>& value) {
+    this->write(0, value.data(), value.size() * sizeof(T), 0, value.size() * sizeof(T) * 8);
+    return *this;
+  }
+
   bitvector& operator=(const std::initializer_list<uint32_t>& value);
 
-  bitvector& operator=(const char* value);
+  bitvector& operator=(const std::string& value);
   
   const_reference at(uint32_t idx) const {
     assert(idx < size_);

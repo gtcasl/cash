@@ -411,7 +411,7 @@ const auto ch_mod(const A& a, const B& b) {
 ///////////////////////////////////////////////////////////////////////////////
 
 template <unsigned I, unsigned S>
-const auto ch_mux(const ch_bitbase<I>& in, const ch_bitbase<S>& sel) {
+const auto ch_mux(const bitbase<I>& in, const bitbase<S>& sel) {
   return make_type<ch_bit<(I >> S)>>(
         createAluNode(alu_mux, get_lnode(in), get_lnode(sel)));
 }

@@ -11,7 +11,7 @@ public:
 
 protected:
   printimpl(context* ctx,
-            const char* format,
+            const std::string& format,
             const std::initializer_list<lnode>& args);
   ~printimpl() {}
 

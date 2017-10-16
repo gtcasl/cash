@@ -21,7 +21,7 @@ public:
   ~if_t();
     
   template <typename Func>
-  if_t& elif_(const ch_bitbase<1>& pred, const Func& func) {
+  if_t& elif_(const bitbase<1>& pred, const Func& func) {
     this->eval(get_lnode(pred), to_function_t<Func>(func));
     return *this; 
   }
@@ -33,7 +33,7 @@ public:
 };
 
 template <typename Func>
-if_t ch_if(const ch_bitbase<1>& pred, const Func& func) {
+if_t ch_if(const bitbase<1>& pred, const Func& func) {
   return if_t(get_lnode(pred), func);
 }
 

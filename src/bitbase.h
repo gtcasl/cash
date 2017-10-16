@@ -6,10 +6,27 @@
 namespace ch {
 namespace internal {
 
+template <typename LogicType, typename ConstType, typename ValueType, typename ScalarType>
+struct logic_traits {
+  using logic_type  = LogicType;
+  using const_type  = ConstType;
+  using value_type  = ValueType;
+  using scalar_type = ScalarType;
+};
+
+template <typename T>
+struct is_logic_traits : std::false_type {};
+
+template <typename LogicType, typename ConstType, typename ValueType, typename ScalarType>
+struct is_logic_traits<logic_traits<LogicType, ConstType, ValueType, ScalarType>> : std::true_type {};
+
+template <typename T>
+using is_logic_type = is_logic_traits<typename T::traits>;
+
 template <unsigned N> class const_bit;
 
 CH_DEF_SFINAE_CHECK(is_ch_bit, (std::is_base_of<const_bit<T::bitsize>, T>::value
-                             || std::is_same<typename T::value_type, ch_bit<T::bitsize>>::value));
+                             || std::is_same<typename T::traits::value_type, ch_bit<T::bitsize>>::value));
 
 static_assert(!is_ch_bit<int>::value, ":-(");
 
@@ -23,7 +40,7 @@ using deduce_first_ch_bit_t = std::conditional_t<
 
 template <typename T>
 struct value_type_impl {
-  using type = typename T::value_type;
+  using type = typename T::traits::value_type;
 };
 
 template <unsigned N>
@@ -36,17 +53,17 @@ using value_type_t = typename value_type_impl<T>::type;
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <unsigned N>
-class ch_bitbase;
+template <unsigned N> class bitbase;
 
-template <unsigned N>
-class ch_bit;
+template <unsigned N> class ch_bit;
 
-template <typename T>
-class refproxy;
+template <typename T, unsigned N> class const_vec;
 
-template <typename T, unsigned N>
-class const_sliceref;
+template <typename T, unsigned N> class ch_vec;
+
+template <typename T> class refproxy;
+
+template <typename T, unsigned N> class const_sliceref;
 
 class bytes_accessor_if {
 protected:
@@ -68,22 +85,22 @@ protected:
 
 template <typename T>
 void read_lnode(const T& obj, nodelist& inout, size_t offset, size_t length) {
-  reinterpret_cast<const ch_bitbase<T::bitsize>&>(obj).read_lnode(inout, offset, length);
+  reinterpret_cast<const bitbase<T::bitsize>&>(obj).read_lnode(inout, offset, length);
 }
 
 template <typename T>
 void write_lnode(T& obj, size_t dst_offset, const nodelist& in, size_t src_offset, size_t length) {
-  reinterpret_cast<ch_bitbase<T::bitsize>&>(obj).write_lnode(dst_offset, in, src_offset, length);
+  reinterpret_cast<bitbase<T::bitsize>&>(obj).write_lnode(dst_offset, in, src_offset, length);
 }
 
 template <typename T>
 void read_bytes(const T& obj, uint32_t dst_offset, void* out, uint32_t out_cbsize, uint32_t src_offset, uint32_t length) {
-  reinterpret_cast<const ch_bitbase<T::bitsize>&>(obj).read_bytes(dst_offset, out, out_cbsize, src_offset, length);
+  reinterpret_cast<const bitbase<T::bitsize>&>(obj).read_bytes(dst_offset, out, out_cbsize, src_offset, length);
 }
 
 template <typename T>
 void write_bytes(T& obj, uint32_t dst_offset, const void* in, uint32_t in_cbsize, uint32_t src_offset, uint32_t length) {
-  reinterpret_cast<ch_bitbase<T::bitsize>&>(obj).write_bytes(dst_offset, in, in_cbsize, src_offset, length);
+  reinterpret_cast<bitbase<T::bitsize>&>(obj).write_bytes(dst_offset, in, in_cbsize, src_offset, length);
 }
 
 template <typename T>
@@ -96,46 +113,42 @@ const auto make_type(const lnode& node) {
 };
 
 template <unsigned N>
-class ch_bitbase : public lnode_accessor_if, public bytes_accessor_if {
+class bitbase : public lnode_accessor_if, public bytes_accessor_if {
 public:
   static constexpr unsigned bitsize = N;
   static_assert(N > 0, "invalid size");
 
-  const auto operator[](size_t index) const {
-    return const_sliceref<refproxy<ch_bitbase>, 1>(*this, index);
-  }
-
-  template <unsigned M>
-  const auto slice(size_t index = 0) const {
-    return const_sliceref<refproxy<ch_bitbase>, M>(*this, index);
-  }
-
-  template <unsigned M>
-  const auto aslice(size_t index = 0) const {
-    return const_sliceref<refproxy<ch_bitbase>, M>(*this, index * M);
-  }
-
 protected:
 
-  void assign(const ch_bitbase& rhs) {
+  void assign(const bitbase& rhs) {
     nodelist data(N, false);
     ch::internal::read_lnode(rhs, data, 0, N);
     this->write_lnode(0, data, 0, N);
   }
 
   void assign(const ch_scalar<N>& rhs) {
-    lnode node(rhs.get_value());
     nodelist data(N, false);
+    lnode node(rhs.get_value());    
     data.push(node);
     this->write_lnode(0, data, 0, N);
   }
 
   template <typename U,
             CH_REQUIRES(is_integral_or_enum<U>::value)>
-  void assign(U rhs) {
+  void assign(const U& rhs) {
     lnode node(bitvector(N, rhs));
     nodelist data(N, false);
     data.push(node);
+    this->write_lnode(0, data, 0, N);
+  }
+
+  template <typename U,
+            CH_REQUIRES(std::is_base_of<bitbase<U::bitsize>, U>::value)>
+  void assign(const const_vec<U, (N / U::bitsize)>& rhs) {
+    nodelist data(N, false);
+    for (auto& item : rhs) {
+      ch::internal::read_lnode(item, data, 0, U::bitsize);
+    }
     this->write_lnode(0, data, 0, N);
   }
 };
@@ -143,7 +156,7 @@ protected:
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T>
-class refproxy : public ch_bitbase<T::bitsize> {
+class refproxy : public bitbase<T::bitsize> {
 public:
   refproxy() {}
   refproxy(const T& value) : value_(value) {}
@@ -176,10 +189,10 @@ protected:
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T, unsigned N>
-class const_sliceref : public ch_bitbase<N> {
+class const_sliceref : public bitbase<N> {
 public:
-  using base = ch_bitbase<N>;
-  using value_type = ch_bit<N>;
+  using base = bitbase<N>;
+  using traits = logic_traits<const_sliceref, const_sliceref, ch_bit<N>, ch_scalar<N>>;
 
   const_sliceref(const T& container, size_t start = 0)
     : container_(container)
@@ -250,10 +263,10 @@ protected:
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T, unsigned N>
-class sliceref : public ch_bitbase<N> {
+class sliceref : public bitbase<N> {
 public:
-  using base = ch_bitbase<N>;
-  using value_type = ch_bit<N>;
+  using base = bitbase<N>;
+  using traits = logic_traits<sliceref, const_sliceref<T, N>, ch_bit<N>, ch_scalar<N>>;
 
   sliceref(T& container, size_t start = 0)
     : container_(container)
@@ -276,8 +289,8 @@ public:
     return *this;
   }
 
-  template <typename U, CH_REQUIRES(is_integral_or_enum<U>::value)>
-  sliceref& operator=(U rhs) {
+  template <typename U, CH_REQUIRES(is_bitvector_value<U>::value || std::is_enum<U>::value)>
+  sliceref& operator=(const U& rhs) {
     base::assign(rhs);
     return *this;
   }
@@ -351,10 +364,10 @@ template <typename... Ts>
 class concatref;
 
 template <typename... Ts>
-class concatref : public ch_bitbase<concat_traits<Ts...>::bitsize> {
+class concatref : public bitbase<concat_traits<Ts...>::bitsize> {
 public:
-  using base = ch_bitbase<concat_traits<Ts...>::bitsize>;
-  using value_type = ch_bit<base::bitsize>;
+  using base = bitbase<concat_traits<Ts...>::bitsize>;
+  using traits = logic_traits<concatref, concatref, ch_bit<base::bitsize>, ch_scalar<base::bitsize>>;
 
   concatref(Ts&... args) : args_(args...) {}
 
@@ -373,8 +386,8 @@ public:
     return *this;
   }
 
-  template <typename U, CH_REQUIRES(is_integral_or_enum<U>::value)>
-  concatref& operator=(U rhs) {
+  template <typename U, CH_REQUIRES(is_bitvector_value<U>::value || std::is_enum<U>::value)>
+  concatref& operator=(const U& rhs) {
     base::assign(rhs);
     return *this;
   }

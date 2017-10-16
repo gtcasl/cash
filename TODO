@@ -82,7 +82,7 @@ X*** Assignment rule: by constructor assignent is ignored during check
 *** handshking valid/ready signals
 
 - implement ch_call(function, args...) using variadic template to generate modules binding 
-- implement ch_bitbase.clone() to enable fork assignments
+- implement bitbase.clone() to enable fork assignments
 - prevent assignments to yourself (e.g. a = a, a[0] = a[1])
 - implement ch_make_device() to use compiler time binding
 - add C++ user defined literals for _b, _h, _d, _o convertion to bit<N> and bus<N>
