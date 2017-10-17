@@ -58,9 +58,13 @@ namespace core {
 
   template <typename T> using ch_seq = ch::internal::ch_seq<T>;
 
+  template <typename T> using ch_scalar_t = ch::internal::scalar_type_t<T>;
+  template <typename T> using ch_logic_t  = ch::internal::logic_type_t<T>;
   template <typename T> using ch_value_t  = ch::internal::value_type_t<T>;
+  template <typename T> using ch_const_t  = ch::internal::const_type_t<T>;
   template <typename T> using ch_flip_t   = ch::internal::ch_flip_t<T>;
   template <typename T> using ch_ioport_t = ch::internal::ch_ioport_t<T>;
+  template <typename T> using ch_direction_t = ch::internal::ch_direction_t<T>;
 
   using ch_direction = ch::internal::ch_direction;
 

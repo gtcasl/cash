@@ -28,9 +28,9 @@ struct io_traits {
   using flip_type   = FlipType;
   using port_type   = PortType;
   using logic_type  = LogicType;
-  using const_type  = typename LogicType::traits::const_type;
-  using value_type  = typename LogicType::traits::value_type;
-  using scalar_type = typename LogicType::traits::scalar_type;
+  using const_type  = const_type_t<LogicType>;
+  using value_type  = value_type_t<LogicType>;
+  using scalar_type = scalar_type_t<LogicType>;
 };
 
 template <typename T>
@@ -178,7 +178,7 @@ protected:
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T>
-class ch_in final : public T::traits::const_type {
+class ch_in final : public const_type_t<T> {
 public:
   static_assert(!is_io_type<T>::value, "invalid nested type");
   using traits = io_traits<ch_in, ch_direction::in, ch_out<T>, input_port<T>, T>;
@@ -190,8 +190,8 @@ public:
     this->init(*this, data);
   }
 
-  ch_in(const ch_in& in) : T::traits::const_type(in) {}
-  ch_in(ch_in&& in) : T::traits::const_type(std::move(in)) {}
+  ch_in(const ch_in& in) : const_type_t<T>(in) {}
+  ch_in(ch_in&& in) : const_type_t<T>(std::move(in)) {}
 
   auto operator()() const {
     return ch::internal::connector<decltype(*this)>(*this);
@@ -335,6 +335,9 @@ using ch_flip_t = typename T::traits::flip_type;
 template <typename T>
 using ch_ioport_t = typename T::traits::port_type;
 
+template <typename T>
+using ch_direction_t = typename T::traits::direction;
+
 }
 }
 
@@ -347,7 +350,7 @@ using ch_ioport_t = typename T::traits::port_type;
   ch_direction(CH_FOR_EACH(CH_INOUT_DIRECTION_EACH, CH_SEP_OR, __VA_ARGS__))
 
 #define CH_INOUT_FLIP_DIRECTION_EACH(i, x) \
-  (int)ch::internal::identity_t<CH_PAIR_L(x)>::traits::flip_type::traits::direction
+  (int)ch_flip_t<ch::internal::identity_t<CH_PAIR_L(x)>>::traits::direction
 
 #define CH_INOUT_FLIP_DIRECTION(...) \
   ch_direction(CH_FOR_EACH(CH_INOUT_FLIP_DIRECTION_EACH, CH_SEP_OR, __VA_ARGS__))
@@ -356,13 +359,13 @@ using ch_ioport_t = typename T::traits::port_type;
   ch::internal::identity_t<CH_PAIR_L(x)> CH_PAIR_R(x)
 
 #define CH_INOUT_FLIP_FIELD(i, x) \
-  typename ch::internal::identity_t<CH_PAIR_L(x)>::traits::flip_type CH_PAIR_R(x)
+  ch_flip_t<ch::internal::identity_t<CH_PAIR_L(x)>> CH_PAIR_R(x)
 
 #define CH_INOUT_BIND_FIELD(i, x) \
   typename ch::internal::identity_t<CH_PAIR_L(x)>::traits::port_type CH_PAIR_R(x)
 
 #define CH_INOUT_FLIP_BIND_FIELD(i, x) \
-  typename ch::internal::identity_t<CH_PAIR_L(x)>::traits::flip_type::traits::port_type CH_PAIR_R(x)
+  typename ch_flip_t<ch::internal::identity_t<CH_PAIR_L(x)>>::traits::port_type CH_PAIR_R(x)
 
 #define CH_INOUT_CTOR_BODY(i, x) \
   CH_PAIR_R(x)(ch::internal::fstring("%s_%s", name.c_str(), CH_STRINGIZE(CH_PAIR_R(x))).c_str())
@@ -382,18 +385,19 @@ using ch_ioport_t = typename T::traits::port_type;
            && !std::is_same<std::decay_t<__T##i>, __flip_port_type__>::value)
 
 #define CH_INOUT_BODY_IMPL2(inout_name, field_body, ...) \
+  CH_FOR_EACH(field_body, CH_SEP_SEMICOLON, __VA_ARGS__); \
   inout_name(const std::string& name = "io") \
     : CH_FOR_EACH(CH_INOUT_CTOR_BODY, CH_SEP_COMMA, __VA_ARGS__) {} \
   inout_name(const inout_name& __rhs__) \
     : CH_FOR_EACH(CH_STRUCT_COPY_CTOR, CH_SEP_COMMA, __VA_ARGS__) {} \
   inout_name(inout_name&& __rhs__) \
     : CH_FOR_EACH(CH_STRUCT_MOVE_CTOR, CH_SEP_COMMA, __VA_ARGS__) {} \
-  CH_FOR_EACH(field_body, CH_SEP_SEMICOLON, __VA_ARGS__); \
   auto operator()() const { \
     return ch::internal::connector<decltype(*this)>(*this); \
   }
 
 #define CH_INOUT_BIND_IMPL2(field_body, ...) \
+  CH_FOR_EACH(field_body, CH_SEP_SEMICOLON, __VA_ARGS__); \
   void operator()(const __self_type__& __rhs__) const { \
     CH_FOR_EACH(CH_INOUT_BIND_BODY, CH_SEP_SEMICOLON, __VA_ARGS__); \
   } \
@@ -408,12 +412,12 @@ using ch_ioport_t = typename T::traits::port_type;
   void operator()(CH_REVERSE_FOR_EACH(CH_INOUT_BIND_FIELD_ARGS, CH_SEP_COMMA, __VA_ARGS__)) const { \
     CH_FOR_EACH(CH_INOUT_BIND_FIELD_BODY, CH_SEP_SEMICOLON, __VA_ARGS__); \
   } \
-  CH_FOR_EACH(field_body, CH_SEP_SEMICOLON, __VA_ARGS__); \
   auto operator()() const { \
     return ch::internal::connector<decltype(*this)>(*this); \
   }
 
 #define CH_INOUT_BODY_IMPL3(inout_name, parent, field_body, ...) \
+  CH_FOR_EACH(field_body, CH_SEP_SEMICOLON, __VA_ARGS__); \
   inout_name(const std::string& name = "io") \
     : parent(name) \
     , CH_FOR_EACH(CH_INOUT_CTOR_BODY, CH_SEP_COMMA, __VA_ARGS__) {} \
@@ -423,12 +427,12 @@ using ch_ioport_t = typename T::traits::port_type;
   inout_name(inout_name&& __rhs__) \
     : parent(std::move(__rhs__)) \
     , CH_FOR_EACH(CH_STRUCT_MOVE_CTOR, CH_SEP_COMMA, __VA_ARGS__) {} \
-  CH_FOR_EACH(field_body, CH_SEP_SEMICOLON, __VA_ARGS__); \
   auto operator()() const { \
     return ch::internal::connector<decltype(*this)>(*this); \
   }
 
 #define CH_INOUT_BIND_IMPL3(parent, field_body, ...) \
+  CH_FOR_EACH(field_body, CH_SEP_SEMICOLON, __VA_ARGS__); \
   void operator()(const __self_type__& __rhs__) const { \
     parent::operator()(__rhs__); \
     CH_FOR_EACH(CH_INOUT_BIND_BODY, CH_SEP_SEMICOLON, __VA_ARGS__); \
@@ -447,7 +451,6 @@ using ch_ioport_t = typename T::traits::port_type;
     parent::operator()(__args__...); \
     CH_FOR_EACH(CH_INOUT_BIND_FIELD_BODY, CH_SEP_SEMICOLON, __VA_ARGS__); \
   } \
-  CH_FOR_EACH(field_body, CH_SEP_SEMICOLON, __VA_ARGS__); \
   auto operator()() const { \
     return ch::internal::connector<decltype(*this)>(*this); \
   }
@@ -500,25 +503,25 @@ using ch_ioport_t = typename T::traits::port_type;
   private: \
     CH_STRUCT_IMPL3(__value_type__, parent, __VA_ARGS__); \
     class __flop_port_type__; \
-    class __flip_type__ : public parent::traits::flip_type { \
+    class __flip_type__ : public ch_flip_t<parent> { \
     private: \
       __flip_type__& operator=(const __flip_type__&) = delete; \
     public: \
       static constexpr unsigned bitsize = parent::bitsize + CH_STRUCT_SIZE(__VA_ARGS__); \
-      CH_INOUT_BODY_IMPL3(__flip_type__, parent::traits::flip_type, CH_INOUT_FLIP_FIELD, __VA_ARGS__) \
+      CH_INOUT_BODY_IMPL3(__flip_type__, ch_flip_t<parent>, CH_INOUT_FLIP_FIELD, __VA_ARGS__) \
     private: \
-      class __port_type__ : public parent::traits::flip_type::traits::port_type { \
+      class __port_type__ : public ch_flip_t<parent>::traits::port_type { \
       public: \
         static constexpr unsigned bitsize = __flip_type__::bitsize; \
         using __self_type__ = __flip_type__; \
         using __flip_port_type__ = __flop_port_type__; \
         __port_type__(__flip_type__& __rhs__) \
-          : parent::traits::flip_type::traits::port_type(__rhs__) \
+          : ch_flip_t<parent>::traits::port_type(__rhs__) \
           , CH_FOR_EACH(CH_STRUCT_COPY_CTOR, CH_SEP_COMMA, __VA_ARGS__) {} \
-        CH_INOUT_BIND_IMPL3(parent::traits::flip_type::traits::port_type, CH_INOUT_FLIP_BIND_FIELD, __VA_ARGS__) \
+        CH_INOUT_BIND_IMPL3(ch_flip_t<parent>::traits::port_type, CH_INOUT_FLIP_BIND_FIELD, __VA_ARGS__) \
       }; \
     public: \
-      using traits = ch::internal::io_traits<__flip_type__, ch_direction((int)parent::traits::flip_type::traits::direction | (int)CH_INOUT_FLIP_DIRECTION(__VA_ARGS__)), inout_name, __port_type__, __value_type__>; \
+      using traits = ch::internal::io_traits<__flip_type__, ch_direction((int)ch_flip_t<parent>::traits::direction | (int)CH_INOUT_FLIP_DIRECTION(__VA_ARGS__)), inout_name, __port_type__, __value_type__>; \
     }; \
     inout_name& operator=(const inout_name&) = delete; \
   public: \

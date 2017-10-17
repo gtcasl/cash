@@ -55,12 +55,12 @@ __struct (sd2_t, sd1_t, (
 ));
 
 __struct (sd3_t, (
-  (sd2_t)   a,
-  (ch_bit4) b
+  (sd2_t)   d,
+  (ch_bit4) e
 ));
  
 __union (u2_t, (
-  (ch_bit4) a,
+  (ch_bit2) a,
   (ch_bit4) b
   ));
  
@@ -108,17 +108,17 @@ TEST_CASE("aggregates", "[aggregates]") {
   
   SECTION("unions", "[union]") {
     TEST([]()->ch_bit1 {
-      u2_t u2;
+      u2_t u2(0);
       u2.a = 1;
       return (u2.b == 1);
     });
     TEST([]()->ch_bit1 {
-      u2_t u2;
+      u2_t u2(0);
       u2.b = 1;
       return (u2.a == 1);
     });
     TEST([]()->ch_bit1 {
-      u3_t u3;
+      u3_t u3(0);
       u3.b = 01010101_b;
       u3.a = 11_b;
       u3.c.slice<2>(2) = 00_b;

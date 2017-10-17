@@ -25,6 +25,7 @@ src/module.h
 src/moduleimpl.cpp
 src/moduleimpl.h
 src/port.h
+src/scalar.cpp
 src/scalar.h
 src/simulator.h
 src/simulatorimpl.cpp

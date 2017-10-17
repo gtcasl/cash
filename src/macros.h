@@ -43,6 +43,74 @@
 
 #define CH_MAKE_UNIQUE(x) CH_CONCAT(x, __COUNTER__)
 
+// increment macro
+
+#define CH_INC(x) CH_INC_ ## x
+#define CH_INC_0 1
+#define CH_INC_1 2
+#define CH_INC_2 3
+#define CH_INC_3 4
+#define CH_INC_4 5
+#define CH_INC_5 6
+#define CH_INC_6 7
+#define CH_INC_7 8
+#define CH_INC_8 9
+#define CH_INC_9 10
+#define CH_INC_10 11
+#define CH_INC_11 12
+#define CH_INC_12 13
+#define CH_INC_13 14
+#define CH_INC_14 15
+#define CH_INC_15 16
+#define CH_INC_16 17
+#define CH_INC_17 18
+#define CH_INC_18 19
+#define CH_INC_19 20
+#define CH_INC_20 21
+#define CH_INC_21 22
+#define CH_INC_22 23
+#define CH_INC_23 24
+#define CH_INC_24 25
+#define CH_INC_25 26
+#define CH_INC_26 27
+#define CH_INC_27 28
+#define CH_INC_28 29
+#define CH_INC_29 30
+#define CH_INC_30 31
+#define CH_INC_31 32
+#define CH_INC_32 33
+#define CH_INC_33 34
+#define CH_INC_34 35
+#define CH_INC_35 36
+#define CH_INC_36 37
+#define CH_INC_37 38
+#define CH_INC_38 39
+#define CH_INC_39 40
+#define CH_INC_40 41
+#define CH_INC_41 42
+#define CH_INC_42 43
+#define CH_INC_43 44
+#define CH_INC_44 45
+#define CH_INC_45 46
+#define CH_INC_46 47
+#define CH_INC_47 48
+#define CH_INC_48 49
+#define CH_INC_49 50
+#define CH_INC_50 51
+#define CH_INC_51 52
+#define CH_INC_52 53
+#define CH_INC_53 54
+#define CH_INC_54 55
+#define CH_INC_55 56
+#define CH_INC_56 57
+#define CH_INC_57 58
+#define CH_INC_58 59
+#define CH_INC_59 60
+#define CH_INC_60 61
+#define CH_INC_61 62
+#define CH_INC_62 63
+#define CH_INC_63 64
+
 // NARG macro
 
 #define CH_NARG_N(_1, _2, _3, _4, _5, _6, _7, _8, _9, _10,_11,_12,_13,_14,_15,_16, \
@@ -58,71 +126,72 @@
 
 // FOR_EACH macro
 
-#define CH_FOR_EACH_1(what, sep, x, ...)   what(0, x)
-#define CH_FOR_EACH_2(what, sep, x, ...)   what(1, x) sep() CH_FOR_EACH_1(what, sep, __VA_ARGS__)
-#define CH_FOR_EACH_3(what, sep, x, ...)   what(2, x) sep() CH_FOR_EACH_2(what, sep, __VA_ARGS__)
-#define CH_FOR_EACH_4(what, sep, x, ...)   what(3, x) sep() CH_FOR_EACH_3(what, sep, __VA_ARGS__)
-#define CH_FOR_EACH_5(what, sep, x, ...)   what(4, x) sep() CH_FOR_EACH_4(what, sep, __VA_ARGS__)
-#define CH_FOR_EACH_6(what, sep, x, ...)   what(5, x) sep() CH_FOR_EACH_5(what, sep, __VA_ARGS__)
-#define CH_FOR_EACH_7(what, sep, x, ...)   what(6, x) sep() CH_FOR_EACH_6(what, sep, __VA_ARGS__)
-#define CH_FOR_EACH_8(what, sep, x, ...)   what(7, x) sep() CH_FOR_EACH_7(what, sep, __VA_ARGS__)
-#define CH_FOR_EACH_9(what, sep, x, ...)   what(8, x) sep() CH_FOR_EACH_8(what, sep, __VA_ARGS__)
-#define CH_FOR_EACH_10(what, sep, x, ...)  what(9, x) sep() CH_FOR_EACH_9(what, sep, __VA_ARGS__)
-#define CH_FOR_EACH_11(what, sep, x, ...)  what(10, x) sep() CH_FOR_EACH_10(what, sep, __VA_ARGS__)
-#define CH_FOR_EACH_12(what, sep, x, ...)  what(11, x) sep() CH_FOR_EACH_11(what, sep, __VA_ARGS__)
-#define CH_FOR_EACH_13(what, sep, x, ...)  what(12, x) sep() CH_FOR_EACH_12(what, sep, __VA_ARGS__)
-#define CH_FOR_EACH_14(what, sep, x, ...)  what(13, x) sep() CH_FOR_EACH_13(what, sep, __VA_ARGS__)
-#define CH_FOR_EACH_15(what, sep, x, ...)  what(14, x) sep() CH_FOR_EACH_14(what, sep, __VA_ARGS__)
-#define CH_FOR_EACH_16(what, sep, x, ...)  what(15, x) sep() CH_FOR_EACH_15(what, sep, __VA_ARGS__)
-#define CH_FOR_EACH_17(what, sep, x, ...)  what(16, x) sep() CH_FOR_EACH_16(what, sep, __VA_ARGS__)
-#define CH_FOR_EACH_18(what, sep, x, ...)  what(17, x) sep() CH_FOR_EACH_17(what, sep, __VA_ARGS__)
-#define CH_FOR_EACH_19(what, sep, x, ...)  what(18, x) sep() CH_FOR_EACH_18(what, sep, __VA_ARGS__)
-#define CH_FOR_EACH_20(what, sep, x, ...)  what(19, x) sep() CH_FOR_EACH_19(what, sep, __VA_ARGS__)
-#define CH_FOR_EACH_21(what, sep, x, ...)  what(20, x) sep() CH_FOR_EACH_20(what, sep, __VA_ARGS__)
-#define CH_FOR_EACH_22(what, sep, x, ...)  what(21, x) sep() CH_FOR_EACH_21(what, sep, __VA_ARGS__)
-#define CH_FOR_EACH_23(what, sep, x, ...)  what(22, x) sep() CH_FOR_EACH_22(what, sep, __VA_ARGS__)
-#define CH_FOR_EACH_24(what, sep, x, ...)  what(23, x) sep() CH_FOR_EACH_23(what, sep, __VA_ARGS__)
-#define CH_FOR_EACH_25(what, sep, x, ...)  what(24, x) sep() CH_FOR_EACH_24(what, sep, __VA_ARGS__)
-#define CH_FOR_EACH_26(what, sep, x, ...)  what(25, x) sep() CH_FOR_EACH_25(what, sep, __VA_ARGS__)
-#define CH_FOR_EACH_27(what, sep, x, ...)  what(26, x) sep() CH_FOR_EACH_26(what, sep, __VA_ARGS__)
-#define CH_FOR_EACH_28(what, sep, x, ...)  what(27, x) sep() CH_FOR_EACH_27(what, sep, __VA_ARGS__)
-#define CH_FOR_EACH_29(what, sep, x, ...)  what(28, x) sep() CH_FOR_EACH_28(what, sep, __VA_ARGS__)
-#define CH_FOR_EACH_30(what, sep, x, ...)  what(29, x) sep() CH_FOR_EACH_29(what, sep, __VA_ARGS__)
-#define CH_FOR_EACH_31(what, sep, x, ...)  what(30, x) sep() CH_FOR_EACH_30(what, sep, __VA_ARGS__)
-#define CH_FOR_EACH_32(what, sep, x, ...)  what(31, x) sep() CH_FOR_EACH_31(what, sep, __VA_ARGS__)
-#define CH_FOR_EACH_33(what, sep, x, ...)  what(32, x) sep() CH_FOR_EACH_32(what, sep, __VA_ARGS__)
-#define CH_FOR_EACH_34(what, sep, x, ...)  what(33, x) sep() CH_FOR_EACH_33(what, sep, __VA_ARGS__)
-#define CH_FOR_EACH_35(what, sep, x, ...)  what(34, x) sep() CH_FOR_EACH_34(what, sep, __VA_ARGS__)
-#define CH_FOR_EACH_36(what, sep, x, ...)  what(35, x) sep() CH_FOR_EACH_35(what, sep, __VA_ARGS__)
-#define CH_FOR_EACH_37(what, sep, x, ...)  what(36, x) sep() CH_FOR_EACH_36(what, sep, __VA_ARGS__)
-#define CH_FOR_EACH_38(what, sep, x, ...)  what(37, x) sep() CH_FOR_EACH_37(what, sep, __VA_ARGS__)
-#define CH_FOR_EACH_39(what, sep, x, ...)  what(38, x) sep() CH_FOR_EACH_38(what, sep, __VA_ARGS__)
-#define CH_FOR_EACH_40(what, sep, x, ...)  what(39, x) sep() CH_FOR_EACH_39(what, sep, __VA_ARGS__)
-#define CH_FOR_EACH_41(what, sep, x, ...)  what(40, x) sep() CH_FOR_EACH_40(what, sep, __VA_ARGS__)
-#define CH_FOR_EACH_42(what, sep, x, ...)  what(41, x) sep() CH_FOR_EACH_41(what, sep, __VA_ARGS__)
-#define CH_FOR_EACH_43(what, sep, x, ...)  what(42, x) sep() CH_FOR_EACH_42(what, sep, __VA_ARGS__)
-#define CH_FOR_EACH_44(what, sep, x, ...)  what(43, x) sep() CH_FOR_EACH_43(what, sep, __VA_ARGS__)
-#define CH_FOR_EACH_45(what, sep, x, ...)  what(44, x) sep() CH_FOR_EACH_44(what, sep, __VA_ARGS__)
-#define CH_FOR_EACH_46(what, sep, x, ...)  what(45, x) sep() CH_FOR_EACH_45(what, sep, __VA_ARGS__)
-#define CH_FOR_EACH_47(what, sep, x, ...)  what(46, x) sep() CH_FOR_EACH_46(what, sep, __VA_ARGS__)
-#define CH_FOR_EACH_48(what, sep, x, ...)  what(47, x) sep() CH_FOR_EACH_47(what, sep, __VA_ARGS__)
-#define CH_FOR_EACH_49(what, sep, x, ...)  what(48, x) sep() CH_FOR_EACH_48(what, sep, __VA_ARGS__)
-#define CH_FOR_EACH_50(what, sep, x, ...)  what(49, x) sep() CH_FOR_EACH_49(what, sep, __VA_ARGS__)
-#define CH_FOR_EACH_51(what, sep, x, ...)  what(50, x) sep() CH_FOR_EACH_50(what, sep, __VA_ARGS__)
-#define CH_FOR_EACH_52(what, sep, x, ...)  what(51, x) sep() CH_FOR_EACH_51(what, sep, __VA_ARGS__)
-#define CH_FOR_EACH_53(what, sep, x, ...)  what(52, x) sep() CH_FOR_EACH_52(what, sep, __VA_ARGS__)
-#define CH_FOR_EACH_54(what, sep, x, ...)  what(53, x) sep() CH_FOR_EACH_53(what, sep, __VA_ARGS__)
-#define CH_FOR_EACH_55(what, sep, x, ...)  what(54, x) sep() CH_FOR_EACH_54(what, sep, __VA_ARGS__)
-#define CH_FOR_EACH_56(what, sep, x, ...)  what(55, x) sep() CH_FOR_EACH_55(what, sep, __VA_ARGS__)
-#define CH_FOR_EACH_57(what, sep, x, ...)  what(56, x) sep() CH_FOR_EACH_56(what, sep, __VA_ARGS__)
-#define CH_FOR_EACH_58(what, sep, x, ...)  what(57, x) sep() CH_FOR_EACH_57(what, sep, __VA_ARGS__)
-#define CH_FOR_EACH_59(what, sep, x, ...)  what(58, x) sep() CH_FOR_EACH_58(what, sep, __VA_ARGS__)
-#define CH_FOR_EACH_60(what, sep, x, ...)  what(59, x) sep() CH_FOR_EACH_59(what, sep, __VA_ARGS__)
-#define CH_FOR_EACH_61(what, sep, x, ...)  what(60, x) sep() CH_FOR_EACH_60(what, sep, __VA_ARGS__)
-#define CH_FOR_EACH_62(what, sep, x, ...)  what(61, x) sep() CH_FOR_EACH_61(what, sep, __VA_ARGS__)
-#define CH_FOR_EACH_63(what, sep, x, ...)  what(62, x) sep() CH_FOR_EACH_62(what, sep, __VA_ARGS__)
+#define CH_FOR_EACH_1(idx, what, sep, x, ...)   what(idx, x)
+#define CH_FOR_EACH_2(idx, what, sep, x, ...)   what(idx, x) sep() CH_FOR_EACH_1(CH_INC(idx), what, sep, __VA_ARGS__)
+#define CH_FOR_EACH_3(idx, what, sep, x, ...)   what(idx, x) sep() CH_FOR_EACH_2(CH_INC(idx), what, sep, __VA_ARGS__)
+#define CH_FOR_EACH_4(idx, what, sep, x, ...)   what(idx, x) sep() CH_FOR_EACH_3(CH_INC(idx), what, sep, __VA_ARGS__)
+#define CH_FOR_EACH_5(idx, what, sep, x, ...)   what(idx, x) sep() CH_FOR_EACH_4(CH_INC(idx), what, sep, __VA_ARGS__)
+#define CH_FOR_EACH_6(idx, what, sep, x, ...)   what(idx, x) sep() CH_FOR_EACH_5(CH_INC(idx), what, sep, __VA_ARGS__)
+#define CH_FOR_EACH_7(idx, what, sep, x, ...)   what(idx, x) sep() CH_FOR_EACH_6(CH_INC(idx), what, sep, __VA_ARGS__)
+#define CH_FOR_EACH_8(idx, what, sep, x, ...)   what(idx, x) sep() CH_FOR_EACH_7(CH_INC(idx), what, sep, __VA_ARGS__)
+#define CH_FOR_EACH_9(idx, what, sep, x, ...)   what(idx, x) sep() CH_FOR_EACH_8(CH_INC(idx), what, sep, __VA_ARGS__)
+#define CH_FOR_EACH_10(idx, what, sep, x, ...)  what(idx, x) sep() CH_FOR_EACH_9(CH_INC(idx), what, sep, __VA_ARGS__)
+#define CH_FOR_EACH_11(idx, what, sep, x, ...)  what(idx, x) sep() CH_FOR_EACH_10(CH_INC(idx), what, sep, __VA_ARGS__)
+#define CH_FOR_EACH_12(idx, what, sep, x, ...)  what(idx, x) sep() CH_FOR_EACH_11(CH_INC(idx), what, sep, __VA_ARGS__)
+#define CH_FOR_EACH_13(idx, what, sep, x, ...)  what(idx, x) sep() CH_FOR_EACH_12(CH_INC(idx), what, sep, __VA_ARGS__)
+#define CH_FOR_EACH_14(idx, what, sep, x, ...)  what(idx, x) sep() CH_FOR_EACH_13(CH_INC(idx), what, sep, __VA_ARGS__)
+#define CH_FOR_EACH_15(idx, what, sep, x, ...)  what(idx, x) sep() CH_FOR_EACH_14(CH_INC(idx), what, sep, __VA_ARGS__)
+#define CH_FOR_EACH_16(idx, what, sep, x, ...)  what(idx, x) sep() CH_FOR_EACH_15(CH_INC(idx), what, sep, __VA_ARGS__)
+#define CH_FOR_EACH_17(idx, what, sep, x, ...)  what(idx, x) sep() CH_FOR_EACH_16(CH_INC(idx), what, sep, __VA_ARGS__)
+#define CH_FOR_EACH_18(idx, what, sep, x, ...)  what(idx, x) sep() CH_FOR_EACH_17(CH_INC(idx), what, sep, __VA_ARGS__)
+#define CH_FOR_EACH_19(idx, what, sep, x, ...)  what(idx, x) sep() CH_FOR_EACH_18(CH_INC(idx), what, sep, __VA_ARGS__)
+#define CH_FOR_EACH_20(idx, what, sep, x, ...)  what(idx, x) sep() CH_FOR_EACH_19(CH_INC(idx), what, sep, __VA_ARGS__)
+#define CH_FOR_EACH_21(idx, what, sep, x, ...)  what(idx, x) sep() CH_FOR_EACH_20(CH_INC(idx), what, sep, __VA_ARGS__)
+#define CH_FOR_EACH_22(idx, what, sep, x, ...)  what(idx, x) sep() CH_FOR_EACH_21(CH_INC(idx), what, sep, __VA_ARGS__)
+#define CH_FOR_EACH_23(idx, what, sep, x, ...)  what(idx, x) sep() CH_FOR_EACH_22(CH_INC(idx), what, sep, __VA_ARGS__)
+#define CH_FOR_EACH_24(idx, what, sep, x, ...)  what(idx, x) sep() CH_FOR_EACH_23(CH_INC(idx), what, sep, __VA_ARGS__)
+#define CH_FOR_EACH_25(idx, what, sep, x, ...)  what(idx, x) sep() CH_FOR_EACH_24(CH_INC(idx), what, sep, __VA_ARGS__)
+#define CH_FOR_EACH_26(idx, what, sep, x, ...)  what(idx, x) sep() CH_FOR_EACH_25(CH_INC(idx), what, sep, __VA_ARGS__)
+#define CH_FOR_EACH_27(idx, what, sep, x, ...)  what(idx, x) sep() CH_FOR_EACH_26(CH_INC(idx), what, sep, __VA_ARGS__)
+#define CH_FOR_EACH_28(idx, what, sep, x, ...)  what(idx, x) sep() CH_FOR_EACH_27(CH_INC(idx), what, sep, __VA_ARGS__)
+#define CH_FOR_EACH_29(idx, what, sep, x, ...)  what(idx, x) sep() CH_FOR_EACH_28(CH_INC(idx), what, sep, __VA_ARGS__)
+#define CH_FOR_EACH_30(idx, what, sep, x, ...)  what(idx, x) sep() CH_FOR_EACH_29(CH_INC(idx), what, sep, __VA_ARGS__)
+#define CH_FOR_EACH_31(idx, what, sep, x, ...)  what(idx, x) sep() CH_FOR_EACH_30(CH_INC(idx), what, sep, __VA_ARGS__)
+#define CH_FOR_EACH_32(idx, what, sep, x, ...)  what(idx, x) sep() CH_FOR_EACH_31(CH_INC(idx), what, sep, __VA_ARGS__)
+#define CH_FOR_EACH_33(idx, what, sep, x, ...)  what(idx, x) sep() CH_FOR_EACH_32(CH_INC(idx), what, sep, __VA_ARGS__)
+#define CH_FOR_EACH_34(idx, what, sep, x, ...)  what(idx, x) sep() CH_FOR_EACH_33(CH_INC(idx), what, sep, __VA_ARGS__)
+#define CH_FOR_EACH_35(idx, what, sep, x, ...)  what(idx, x) sep() CH_FOR_EACH_34(CH_INC(idx), what, sep, __VA_ARGS__)
+#define CH_FOR_EACH_36(idx, what, sep, x, ...)  what(idx, x) sep() CH_FOR_EACH_35(CH_INC(idx), what, sep, __VA_ARGS__)
+#define CH_FOR_EACH_37(idx, what, sep, x, ...)  what(idx, x) sep() CH_FOR_EACH_36(CH_INC(idx), what, sep, __VA_ARGS__)
+#define CH_FOR_EACH_38(idx, what, sep, x, ...)  what(idx, x) sep() CH_FOR_EACH_37(CH_INC(idx), what, sep, __VA_ARGS__)
+#define CH_FOR_EACH_39(idx, what, sep, x, ...)  what(idx, x) sep() CH_FOR_EACH_38(CH_INC(idx), what, sep, __VA_ARGS__)
+#define CH_FOR_EACH_40(idx, what, sep, x, ...)  what(idx, x) sep() CH_FOR_EACH_39(CH_INC(idx), what, sep, __VA_ARGS__)
+#define CH_FOR_EACH_41(idx, what, sep, x, ...)  what(idx, x) sep() CH_FOR_EACH_40(CH_INC(idx), what, sep, __VA_ARGS__)
+#define CH_FOR_EACH_42(idx, what, sep, x, ...)  what(idx, x) sep() CH_FOR_EACH_41(CH_INC(idx), what, sep, __VA_ARGS__)
+#define CH_FOR_EACH_43(idx, what, sep, x, ...)  what(idx, x) sep() CH_FOR_EACH_42(CH_INC(idx), what, sep, __VA_ARGS__)
+#define CH_FOR_EACH_44(idx, what, sep, x, ...)  what(idx, x) sep() CH_FOR_EACH_43(CH_INC(idx), what, sep, __VA_ARGS__)
+#define CH_FOR_EACH_45(idx, what, sep, x, ...)  what(idx, x) sep() CH_FOR_EACH_44(CH_INC(idx), what, sep, __VA_ARGS__)
+#define CH_FOR_EACH_46(idx, what, sep, x, ...)  what(idx, x) sep() CH_FOR_EACH_45(CH_INC(idx), what, sep, __VA_ARGS__)
+#define CH_FOR_EACH_47(idx, what, sep, x, ...)  what(idx, x) sep() CH_FOR_EACH_46(CH_INC(idx), what, sep, __VA_ARGS__)
+#define CH_FOR_EACH_48(idx, what, sep, x, ...)  what(idx, x) sep() CH_FOR_EACH_47(CH_INC(idx), what, sep, __VA_ARGS__)
+#define CH_FOR_EACH_49(idx, what, sep, x, ...)  what(idx, x) sep() CH_FOR_EACH_48(CH_INC(idx), what, sep, __VA_ARGS__)
+#define CH_FOR_EACH_50(idx, what, sep, x, ...)  what(idx, x) sep() CH_FOR_EACH_49(CH_INC(idx), what, sep, __VA_ARGS__)
+#define CH_FOR_EACH_51(idx, what, sep, x, ...)  what(idx, x) sep() CH_FOR_EACH_50(CH_INC(idx), what, sep, __VA_ARGS__)
+#define CH_FOR_EACH_52(idx, what, sep, x, ...)  what(idx, x) sep() CH_FOR_EACH_51(CH_INC(idx), what, sep, __VA_ARGS__)
+#define CH_FOR_EACH_53(idx, what, sep, x, ...)  what(idx, x) sep() CH_FOR_EACH_52(CH_INC(idx), what, sep, __VA_ARGS__)
+#define CH_FOR_EACH_54(idx, what, sep, x, ...)  what(idx, x) sep() CH_FOR_EACH_53(CH_INC(idx), what, sep, __VA_ARGS__)
+#define CH_FOR_EACH_55(idx, what, sep, x, ...)  what(idx, x) sep() CH_FOR_EACH_54(CH_INC(idx), what, sep, __VA_ARGS__)
+#define CH_FOR_EACH_56(idx, what, sep, x, ...)  what(idx, x) sep() CH_FOR_EACH_55(CH_INC(idx), what, sep, __VA_ARGS__)
+#define CH_FOR_EACH_57(idx, what, sep, x, ...)  what(idx, x) sep() CH_FOR_EACH_56(CH_INC(idx), what, sep, __VA_ARGS__)
+#define CH_FOR_EACH_58(idx, what, sep, x, ...)  what(idx, x) sep() CH_FOR_EACH_57(CH_INC(idx), what, sep, __VA_ARGS__)
+#define CH_FOR_EACH_59(idx, what, sep, x, ...)  what(idx, x) sep() CH_FOR_EACH_58(CH_INC(idx), what, sep, __VA_ARGS__)
+#define CH_FOR_EACH_60(idx, what, sep, x, ...)  what(idx, x) sep() CH_FOR_EACH_59(CH_INC(idx), what, sep, __VA_ARGS__)
+#define CH_FOR_EACH_61(idx, what, sep, x, ...)  what(idx, x) sep() CH_FOR_EACH_60(CH_INC(idx), what, sep, __VA_ARGS__)
+#define CH_FOR_EACH_62(idx, what, sep, x, ...)  what(idx, x) sep() CH_FOR_EACH_61(CH_INC(idx), what, sep, __VA_ARGS__)
+#define CH_FOR_EACH_63(idx, what, sep, x, ...)  what(idx, x) sep() CH_FOR_EACH_62(CH_INC(idx), what, sep, __VA_ARGS__)
+#define CH_FOR_EACH_64(idx, what, sep, x, ...)  what(idx, x) sep() CH_FOR_EACH_63(CH_INC(idx), what, sep, __VA_ARGS__)
 
-#define CH_FOR_EACH_(N, what, sep, ...) CH_CONCAT(CH_FOR_EACH_, N)(what, sep, __VA_ARGS__)
+#define CH_FOR_EACH_(N, what, sep, ...) CH_CONCAT(CH_FOR_EACH_, N)(0, what, sep, __VA_ARGS__)
 #define CH_FOR_EACH(what, sep, ...) CH_FOR_EACH_(CH_NARG(__VA_ARGS__), what, sep, __VA_ARGS__)
 
 // REVERSE_FOR_EACH macro
@@ -190,72 +259,7 @@
 #define CH_REVERSE_FOR_EACH_61(what, sep, x, ...)  CH_REVERSE_FOR_EACH_60(what, sep, __VA_ARGS__) sep() what(60, x)
 #define CH_REVERSE_FOR_EACH_62(what, sep, x, ...)  CH_REVERSE_FOR_EACH_61(what, sep, __VA_ARGS__) sep() what(61, x)
 #define CH_REVERSE_FOR_EACH_63(what, sep, x, ...)  CH_REVERSE_FOR_EACH_62(what, sep, __VA_ARGS__) sep() what(62, x)
+#define CH_REVERSE_FOR_EACH_64(what, sep, x, ...)  CH_REVERSE_FOR_EACH_63(what, sep, __VA_ARGS__) sep() what(63, x)
 
 #define CH_REVERSE_FOR_EACH_(N, what, sep, ...) CH_CONCAT(CH_REVERSE_FOR_EACH_, N)(what, sep, __VA_ARGS__)
 #define CH_REVERSE_FOR_EACH(what, sep, ...) CH_REVERSE_FOR_EACH_(CH_NARG(__VA_ARGS__), what, sep, __VA_ARGS__)
-
-#define CH_INC(x) CH_INC_ ## x
-#define CH_INC_0 1
-#define CH_INC_1 2
-#define CH_INC_2 3
-#define CH_INC_3 4
-#define CH_INC_4 5
-#define CH_INC_5 6
-#define CH_INC_6 7
-#define CH_INC_7 8
-#define CH_INC_8 9
-#define CH_INC_9 10
-#define CH_INC_10 11
-#define CH_INC_11 12
-#define CH_INC_12 13
-#define CH_INC_13 14
-#define CH_INC_14 15
-#define CH_INC_15 16
-#define CH_INC_16 17
-#define CH_INC_17 18
-#define CH_INC_18 19
-#define CH_INC_19 20
-#define CH_INC_20 21
-#define CH_INC_21 22
-#define CH_INC_22 23
-#define CH_INC_23 24
-#define CH_INC_24 25
-#define CH_INC_25 26
-#define CH_INC_26 27
-#define CH_INC_27 28
-#define CH_INC_28 29
-#define CH_INC_29 30
-#define CH_INC_30 31
-#define CH_INC_31 32
-#define CH_INC_32 33
-#define CH_INC_33 34
-#define CH_INC_34 35
-#define CH_INC_35 36
-#define CH_INC_36 37
-#define CH_INC_37 38
-#define CH_INC_38 39
-#define CH_INC_39 40
-#define CH_INC_40 41
-#define CH_INC_41 42
-#define CH_INC_42 43
-#define CH_INC_43 44
-#define CH_INC_44 45
-#define CH_INC_45 46
-#define CH_INC_46 47
-#define CH_INC_47 48
-#define CH_INC_48 49
-#define CH_INC_49 50
-#define CH_INC_50 51
-#define CH_INC_51 52
-#define CH_INC_52 53
-#define CH_INC_53 54
-#define CH_INC_54 55
-#define CH_INC_55 56
-#define CH_INC_56 57
-#define CH_INC_57 58
-#define CH_INC_58 59
-#define CH_INC_59 60
-#define CH_INC_60 61
-#define CH_INC_61 62
-#define CH_INC_62 63
-#define CH_INC_63 64

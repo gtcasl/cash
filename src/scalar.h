@@ -71,6 +71,9 @@ struct scalar_traits {
 };
 
 template <typename T>
+using scalar_type_t = typename T::traits::scalar_type;
+
+template <typename T>
 struct is_scalar_traits : std::false_type {};
 
 template <typename ScalarType, typename LogicType>
@@ -95,114 +98,58 @@ struct is_ch_scalar_convertible {
 
 class bytes_store {
 public:
-  bytes_store(unsigned size)
-    : local_(size)
-    , local_outdated_(false)
-    , size_(size)
-    , shared_(nullptr)
-    , offset_(0)
-  {}
+  bytes_store(unsigned size);
 
-  bytes_store(const bytes_store& rhs)
-    : local_(rhs.local_)
-    , local_outdated_(false)
-    , size_(rhs.size_)
-    , shared_(0)
-    , offset_(0)  {
-    assert(nullptr == rhs.shared_ && 0 == rhs.offset_);
+  bytes_store(const bytes_store& rhs);
+
+  bytes_store(bytes_store&& rhs);
+
+  bytes_store(const bitvector& value);
+
+  bytes_store(bitvector&& value);
+
+  bytes_store(unsigned size, const bytes_store& store, unsigned offset = 0);
+
+  bytes_store& operator=(const bytes_store& rhs);
+
+  bytes_store& operator=(bytes_store&& rhs);
+
+  void set_value(const bitvector& value);
+
+  const bitvector& get_value() const;
+
+  void read(uint32_t dst_offset, void* out, uint32_t out_cbsize, uint32_t src_offset, uint32_t length) const;
+
+  void write(uint32_t dst_offset, const void* in, uint32_t in_cbsize, uint32_t src_offset, uint32_t length);
+
+  bytes_store clone() const;
+
+  void copy(const bytes_store& rhs);
+
+  auto get_size() const {
+    return size_;
   }
 
-  bytes_store(bytes_store&& rhs)
-    : local_(std::move(rhs.local_))
-    , local_outdated_(rhs.local_outdated_)
-    , size_(rhs.size_)
-    , shared_(rhs.shared_)
-    , offset_(rhs.offset_)
-  {}
+private:  
+  std::shared_ptr<bitvector> buffer_;
+  mutable bitvector proxy_;
+  unsigned offset_;
+  unsigned size_;
+};
 
-  bytes_store(unsigned size, const bytes_store& store, unsigned offset = 0)
-    : local_outdated_(true)
-    , size_(size)
-    , shared_(store.data())
-    , offset_(store.offset_ + offset) {
-    assert(nullptr == shared_ || offset + size <= shared_->get_size());
+struct scalar_accessor {
+  template <typename T>
+  static bytes_store& get_store(const T& obj) {
+    return obj.get_store();
   }
-
-  bytes_store& operator=(const bytes_store& rhs) {
-    assert(size_ == rhs.size_);
-    data()->copy(offset_, *rhs.data(), rhs.offset_, size_);
-    local_outdated_ = true;
-    return *this;
-  }
-
-  bytes_store& operator=(bytes_store&& rhs) {
-    local_ = std::move(rhs.local_);
-    local_outdated_ = rhs.local_outdated_;
-    size_   = rhs.size_;
-    shared_ = rhs.shared_;
-    offset_ = rhs.offset_;
-    return *this;
-  }
-
-  bitvector* data() const {
-     return shared_ ? shared_ : &local_;
-  }
-
-  void set_value(const bitvector& value) {
-    if (shared_) {
-      shared_->copy(offset_, value, 0, size_);
-      local_outdated_ = true;
-    } else {
-      local_ = value;
-    }
-  }
-
-  void set_value(bitvector&& value) {
-    if (shared_) {
-      shared_->copy(offset_, value, 0, size_);
-      local_outdated_ = true;
-    } else {
-      local_ = std::move(value);
-    }
-  }
-
-  const bitvector& get_value() const {
-    if (shared_ && local_outdated_) {
-      local_.resize(size_);
-      local_.copy(0, *shared_, offset_, size_);
-      local_outdated_ = false;
-    }
-    return local_;
-  }
-
-  void read(uint32_t dst_offset, void* out, uint32_t out_cbsize, uint32_t src_offset, uint32_t length) const {
-    assert(src_offset + length <= size_);
-    assert(offset_ + src_offset + length <= data()->get_size());
-    data()->read(dst_offset, out, out_cbsize, offset_ + src_offset, length);
-  }
-
-  void write(uint32_t dst_offset, const void* in, uint32_t in_cbsize, uint32_t src_offset, uint32_t length) {
-    assert(dst_offset + length <= size_);
-    assert(offset_ + dst_offset + length <= data()->get_size());
-    data()->write(offset_ + dst_offset, in, in_cbsize, src_offset, length);
-    local_outdated_ = true;
-  }
-
-private:
-
-  mutable bitvector local_;
-  mutable bool local_outdated_;
-  unsigned   size_;
-  bitvector* shared_;
-  unsigned   offset_;
 };
 
 #define CH_SCALAR_TYPE_INTERFACE() \
   void read(uint32_t dst_offset, void* out, uint32_t out_cbsize, uint32_t src_offset = 0, uint32_t length = bitsize) const { \
-    _.read(dst_offset, out, out_cbsize, src_offset, length); \
+    this->get_store().read(dst_offset, out, out_cbsize, src_offset, length); \
   } \
   void write(uint32_t dst_offset, const void* in, uint32_t in_cbsize, uint32_t src_offset = 0, uint32_t length = bitsize) { \
-    _.write(dst_offset, in, in_cbsize, src_offset, length); \
+    this->get_store().write(dst_offset, in, in_cbsize, src_offset, length); \
   }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -213,43 +160,41 @@ public:
   static constexpr unsigned bitsize = N;
   using traits = scalar_traits<ch_scalar, ch_bit<N>>;
 
-  constexpr ch_scalar() : _(N) {}
-  constexpr ch_scalar(const ch_scalar& rhs) : _(rhs._) {}
-  constexpr ch_scalar(ch_scalar&& rhs) : _(std::move(rhs._)) {}
+  constexpr ch_scalar() : store_(N) {}
 
-  explicit ch_scalar(const bytes_store& store, unsigned offset = 0) : _(N, store, offset) {}
+  constexpr ch_scalar(const ch_scalar& rhs) : store_(rhs.store_.clone()) {}
 
-  explicit ch_scalar(const bitvector& value) : _(N) {
-    _.set_value(value);
+  constexpr ch_scalar(ch_scalar&& rhs) : store_(std::move(rhs.store_)) {}
+
+  explicit ch_scalar(const bytes_store& store) : store_(store) {
+    assert(store.get_size() == N);
   }
 
-  explicit ch_scalar(bitvector&& value) : _(N) {
-    _.set_value(value);
-  }
+  explicit ch_scalar(const bitvector& value) : store_(value) {}
+
+  explicit ch_scalar(bitvector&& value) : store_(std::move(value)) {}
 
   template <unsigned M>
-  explicit ch_scalar(const const_scalar_slice<ch_scalar<M>, N>& slice) : _(N) {
-    _.write(0, slice.container_.get_value().get_words(), slice.start_, N);
+  explicit ch_scalar(const const_scalar_slice<ch_scalar<M>, N>& slice) : store_(N) {
+    store_.write(0, slice.container_.get_value().get_words(), slice.start_, N);
   }
 
   template <typename U, CH_REQUIRES(is_bitvector_value<U>::value || std::is_enum<U>::value)>
-  explicit ch_scalar(const U& value) : _(N) {
-    _.set_value(bitvector(N, value));
-  }
+  explicit ch_scalar(const U& value) : store_(bitvector(N, value)) {}
 
   ch_scalar& operator=(const ch_scalar& rhs) {
-    _ = rhs._;
+    store_.copy(rhs.store_);
     return *this;
   }
 
   ch_scalar& operator=(ch_scalar&& rhs) {
-    _ = std::move(rhs._);
+    store_ = std::move(rhs.store_);
     return *this;
   }
 
-  template <typename U, CH_REQUIRES(is_bitvector_value<U>::value || std::is_enum<U>::value)>
+  template <typename U, CH_REQUIRES(is_integral_or_enum<U>::value)>
   ch_scalar& operator=(const U& value) {
-    _.set_value(bitvector(value));
+    store_.set_value(bitvector(N, value));
     return *this;
   }
 
@@ -282,28 +227,34 @@ public:
   }
 
   template <typename U, CH_REQUIRES(can_bitvector_cast<U>::value)>
-  operator U() const {
-    return static_cast<U>(_.get_value());
+  explicit operator U() const {
+    return static_cast<U>(store_.get_value());
   }
 
   const bitvector& get_value() const {
-    return _.get_value();
+    return store_.get_value();
   }
 
   CH_SCALAR_TYPE_INTERFACE();
 
 protected:
 
-  bytes_store _;
+  bytes_store& get_store() const {
+    return const_cast<ch_scalar&>(*this).store_;
+  }
+
+  bytes_store store_;
 
   friend std::ostream& operator<<(std::ostream& out, const ch_scalar& rhs) {
     return out << rhs.get_value();
   }
+
+  friend class scalar_accessor;
 };
 
-template <typename T>
+template <unsigned N, typename T>
 bitvector get_bitvector(const T& x) {
-  return bitvector(x);
+  return bitvector(N, x);
 }
 
 template <unsigned N>
@@ -316,7 +267,7 @@ template <typename A, typename B,
           CH_REQUIRES(is_ch_scalar_convertible<A, deduce_ch_scalar_t<A, B>::bitsize>::value),
           CH_REQUIRES(is_ch_scalar_convertible<B, deduce_ch_scalar_t<A, B>::bitsize>::value), CH_VOID_T>
 bool operator==(const A& a, const B& b) {
-  return (get_bitvector(a) == get_bitvector(b));
+  return (get_bitvector<deduce_ch_scalar_t<A, B>::bitsize>(a) == get_bitvector<deduce_ch_scalar_t<A, B>::bitsize>(b));
 }
 
 template <typename A, typename B,
@@ -324,7 +275,7 @@ template <typename A, typename B,
           CH_REQUIRES(is_ch_scalar_convertible<A, deduce_ch_scalar_t<A, B>::bitsize>::value),
           CH_REQUIRES(is_ch_scalar_convertible<B, deduce_ch_scalar_t<A, B>::bitsize>::value), CH_VOID_T>
 bool operator!=(const A& a, const B& b) {
-  return !(get_bitvector(a) == get_bitvector(b));
+  return !(get_bitvector<deduce_ch_scalar_t<A, B>::bitsize>(a) == get_bitvector<deduce_ch_scalar_t<A, B>::bitsize>(b));
 }
 
 template <typename A, typename B,
@@ -332,7 +283,7 @@ template <typename A, typename B,
           CH_REQUIRES(is_ch_scalar_convertible<A, deduce_ch_scalar_t<A, B>::bitsize>::value),
           CH_REQUIRES(is_ch_scalar_convertible<B, deduce_ch_scalar_t<A, B>::bitsize>::value), CH_VOID_T>
 bool operator<(const A& a, const B& b) {
-  return (get_bitvector(a) < get_bitvector(b));
+  return (get_bitvector<deduce_ch_scalar_t<A, B>::bitsize>(a) < get_bitvector<deduce_ch_scalar_t<A, B>::bitsize>(b));
 }
 
 template <typename A, typename B,
@@ -340,7 +291,7 @@ template <typename A, typename B,
           CH_REQUIRES(is_ch_scalar_convertible<A, deduce_ch_scalar_t<A, B>::bitsize>::value),
           CH_REQUIRES(is_ch_scalar_convertible<B, deduce_ch_scalar_t<A, B>::bitsize>::value), CH_VOID_T>
 bool operator>=(const A& a, const B& b) {
-  return !(get_bitvector(a) < get_bitvector(b));
+  return !(get_bitvector<deduce_ch_scalar_t<A, B>::bitsize>(a) < get_bitvector<deduce_ch_scalar_t<A, B>::bitsize>(b));
 }
 
 template <typename A, typename B,
@@ -348,7 +299,7 @@ template <typename A, typename B,
           CH_REQUIRES(is_ch_scalar_convertible<A, deduce_ch_scalar_t<A, B>::bitsize>::value),
           CH_REQUIRES(is_ch_scalar_convertible<B, deduce_ch_scalar_t<A, B>::bitsize>::value), CH_VOID_T>
 bool operator>(const A& a, const B& b) {
-  return (get_bitvector(b) < get_bitvector(a));
+  return (get_bitvector<deduce_ch_scalar_t<A, B>::bitsize>(b) < get_bitvector<deduce_ch_scalar_t<A, B>::bitsize>(a));
 }
 
 template <typename A, typename B,
@@ -356,19 +307,19 @@ template <typename A, typename B,
           CH_REQUIRES(is_ch_scalar_convertible<A, deduce_ch_scalar_t<A, B>::bitsize>::value),
           CH_REQUIRES(is_ch_scalar_convertible<B, deduce_ch_scalar_t<A, B>::bitsize>::value), CH_VOID_T>
 bool operator<=(const A& a, const B& b) {
-  return !(get_bitvector(b) < get_bitvector(a));
+  return !(get_bitvector<deduce_ch_scalar_t<A, B>::bitsize>(b) < get_bitvector<deduce_ch_scalar_t<A, B>::bitsize>(a));
 }
 
 template <unsigned N>
 bool operator!(const ch_scalar<N>& a) {
-  bitvector ret;
+  bitvector ret(N);
   Inverse(ret, a.get_value());
   return ch_scalar<N>(std::move(ret));
 }
 
 template <unsigned N>
 const auto operator~(const ch_scalar<N>& a) {
-  bitvector ret;
+  bitvector ret(N);
   Inverse(ret, a.get_value());
   return ch_scalar<N>(std::move(ret));
 }
@@ -378,9 +329,9 @@ template <typename A, typename B,
           CH_REQUIRES(is_ch_scalar_convertible<A, deduce_ch_scalar_t<A, B>::bitsize>::value),
           CH_REQUIRES(is_ch_scalar_convertible<B, deduce_ch_scalar_t<A, B>::bitsize>::value), CH_VOID_T>
 const auto operator&(const A& a, const B& b) {
-  bitvector ret;
-  And(ret, get_bitvector(a), get_bitvector(b));
-  return deduce_ch_scalar_t<A, B>::bitsize(std::move(ret));
+  bitvector ret(deduce_ch_scalar_t<A, B>::bitsize);
+  And(ret, get_bitvector<deduce_ch_scalar_t<A, B>::bitsize>(a), get_bitvector<deduce_ch_scalar_t<A, B>::bitsize>(b));
+  return deduce_ch_scalar_t<A, B>(std::move(ret));
 }
 
 template <typename A, typename B,
@@ -388,9 +339,9 @@ template <typename A, typename B,
           CH_REQUIRES(is_ch_scalar_convertible<A, deduce_ch_scalar_t<A, B>::bitsize>::value),
           CH_REQUIRES(is_ch_scalar_convertible<B, deduce_ch_scalar_t<A, B>::bitsize>::value), CH_VOID_T>
 const auto operator|(const A& a, const B& b) {
-  bitvector ret;
-  Or(ret, get_bitvector(a), get_bitvector(b));
-  return deduce_ch_scalar_t<A, B>::bitsize(std::move(ret));
+  bitvector ret(deduce_ch_scalar_t<A, B>::bitsize);
+  Or(ret, get_bitvector<deduce_ch_scalar_t<A, B>::bitsize>(a), get_bitvector<deduce_ch_scalar_t<A, B>::bitsize>(b));
+  return deduce_ch_scalar_t<A, B>(std::move(ret));
 }
 
 template <typename A, typename B,
@@ -398,22 +349,22 @@ template <typename A, typename B,
           CH_REQUIRES(is_ch_scalar_convertible<A, deduce_ch_scalar_t<A, B>::bitsize>::value),
           CH_REQUIRES(is_ch_scalar_convertible<B, deduce_ch_scalar_t<A, B>::bitsize>::value), CH_VOID_T>
 const auto operator^(const A& a, const B& b) {
-  bitvector ret;
-  Xor(ret, get_bitvector(a), get_bitvector(b));
-  return deduce_ch_scalar_t<A, B>::bitsize(std::move(ret));
+  bitvector ret(deduce_ch_scalar_t<A, B>::bitsize);
+  Xor(ret, get_bitvector<deduce_ch_scalar_t<A, B>::bitsize>(a), get_bitvector<deduce_ch_scalar_t<A, B>::bitsize>(b));
+  return deduce_ch_scalar_t<A, B>(std::move(ret));
 }
 
 template <unsigned N>\
 const auto operator<<(const ch_scalar<N>& a, uint32_t b) {
-  bitvector ret;
+  bitvector ret(N);
   SLL(ret, a.get_value(), b);
   return ch_scalar<N>(std::move(ret));
 }
 
 template <unsigned N>
 const auto operator>>(const ch_scalar<N>& a, uint32_t b) {
-  bitvector ret;
-  SLL(ret, a.get_value(), b);
+  bitvector ret(N);
+  SRL(ret, a.get_value(), b);
   return ch_scalar<N>(std::move(ret));
 }
 
@@ -422,9 +373,9 @@ template <typename A, typename B,
           CH_REQUIRES(is_ch_scalar_convertible<A, deduce_ch_scalar_t<A, B>::bitsize>::value),
           CH_REQUIRES(is_ch_scalar_convertible<B, deduce_ch_scalar_t<A, B>::bitsize>::value), CH_VOID_T>
 const auto operator+(const A& a, const B& b) {
-  bitvector ret;
-  Add(ret, get_bitvector(a), get_bitvector(b));
-  return deduce_ch_scalar_t<A, B>::bitsize(std::move(ret));
+  bitvector ret(deduce_ch_scalar_t<A, B>::bitsize);
+  Add(ret, get_bitvector<deduce_ch_scalar_t<A, B>::bitsize>(a), get_bitvector<deduce_ch_scalar_t<A, B>::bitsize>(b));
+  return deduce_ch_scalar_t<A, B>(std::move(ret));
 }
 
 template <typename A, typename B,
@@ -432,14 +383,14 @@ template <typename A, typename B,
           CH_REQUIRES(is_ch_scalar_convertible<A, deduce_ch_scalar_t<A, B>::bitsize>::value),
           CH_REQUIRES(is_ch_scalar_convertible<B, deduce_ch_scalar_t<A, B>::bitsize>::value), CH_VOID_T>
 const auto operator-(const A& a, const B& b) {
-  bitvector ret;
-  Sub(ret, get_bitvector(a), get_bitvector(b));
-  return deduce_ch_scalar_t<A, B>::bitsize(std::move(ret));
+  bitvector ret(deduce_ch_scalar_t<A, B>::bitsize);
+  Sub(ret, get_bitvector<deduce_ch_scalar_t<A, B>::bitsize>(a), get_bitvector<deduce_ch_scalar_t<A, B>::bitsize>(b));
+  return deduce_ch_scalar_t<A, B>(std::move(ret));
 }
 
 template <unsigned N>
 const auto operator-(const ch_scalar<N>& a) {
-  bitvector ret;
+  bitvector ret(N);
   Negate(ret, a.get_value());
   return ch_scalar<N>(std::move(ret));
 }
@@ -486,7 +437,7 @@ public:
     return *this;
   }
 
-  template <typename U, CH_REQUIRES(is_bitvector_value<U>::value || std::is_enum<U>::value)>
+  template <typename U, CH_REQUIRES(is_integral_or_enum<U>::value)>
   ch_scalar_slice& operator=(const U& value) {
     this->write(bitvector(value), 0);
     return *this;

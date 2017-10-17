@@ -8,14 +8,20 @@
 #define CH_UNION_SIZE(...) \
   std::max({CH_FOR_EACH(CH_UNION_SIZE_EACH, CH_SEP_COMMA, __VA_ARGS__)})
 
-#define CH_UNION_SIM_FIELD(i, x) \
-  typename ch::internal::identity_t<CH_PAIR_L(x)>::traits::scalar_type CH_PAIR_R(x)
+#define CH_UNION_SCALAR_FIELD(i, x) \
+  ch_scalar_t<ch::internal::identity_t<CH_PAIR_L(x)>> CH_PAIR_R(x)
 
-#define CH_UNION_SIM_MOVE_CTOR(i, x) \
+#define CH_UNION_SCALAR_DEFAULT_CTOR(i, x) \
+  CH_PAIR_R(x)(ch::internal::bytes_store(ch::internal::identity_t<CH_PAIR_L(x)>::bitsize, store, 0))
+
+#define CH_UNION_SCALAR_MOVE_CTOR(i, x) \
   CH_PAIR_R(x)(std::move(__rhs__.CH_PAIR_R(x)))
 
-#define CH_UNION_SIM_MOVE_ASSIGN(i, x) \
+#define CH_UNION_MOVE_ASSIGN(i, x) \
   CH_PAIR_R(x) = std::move(__rhs__.CH_PAIR_R(x))
+
+#define CH_UNION_SCALAR_GETSTORE(i, x) \
+  return ch::internal::scalar_accessor::get_store(CH_PAIR_R(x))
 
 #define CH_UNION_FIELD(i, x) \
   ch::internal::sliceref< \
@@ -29,47 +35,45 @@
 #define CH_UNION_COPY_CTOR(i, x) \
   CH_PAIR_R(x)(_)
 
-#define CH_UNION_SIM_IMPL(union_name, value_name, ...) \
+#define CH_UNION_SCALAR_IMPL(union_name, value_name, ...) \
   class union_name { \
   public: \
     static constexpr unsigned bitsize = CH_UNION_SIZE(__VA_ARGS__); \
     using traits = ch::internal::scalar_traits<union_name, value_name>; \
-  protected: \
-    ch::internal::bytes_store _; \
   public: \
-    union_name() \
-      : _(bitsize) \
-      , CH_FOR_EACH(CH_UNION_COPY_CTOR, CH_SEP_COMMA, __VA_ARGS__) {} \
+    CH_FOR_EACH(CH_UNION_SCALAR_FIELD, CH_SEP_SEMICOLON, __VA_ARGS__); \
+    union_name(const ch::internal::bytes_store& store = ch::internal::bytes_store(bitsize)) \
+      : CH_FOR_EACH(CH_UNION_SCALAR_DEFAULT_CTOR, CH_SEP_COMMA, __VA_ARGS__) {} \
     union_name(const union_name& __rhs__) \
-      : _(__rhs__._) \
-      , CH_FOR_EACH(CH_UNION_COPY_CTOR, CH_SEP_COMMA, __VA_ARGS__) {} \
+      : union_name(__rhs__.get_store().clone()) {} \
     union_name(union_name&& __rhs__) \
-      : _(std::move(__rhs__._)) \
-      , CH_FOR_EACH(CH_UNION_SIM_MOVE_CTOR, CH_SEP_COMMA, __VA_ARGS__) {} \
-    union_name(const ch::internal::bytes_store& store, unsigned offset = 0) \
-      : _(bitsize, store, offset) \
-      , CH_FOR_EACH(CH_UNION_COPY_CTOR, CH_SEP_COMMA, __VA_ARGS__) {} \
-    template <typename U, CH_REQUIRES(ch::internal::is_cast_convertible<ch_scalar<bitsize>, U>::value)> \
-    explicit union_name(const U& __rhs__) \
-      : _(__rhs__) \
-      , CH_FOR_EACH(CH_UNION_COPY_CTOR, CH_SEP_COMMA, __VA_ARGS__) {} \
+      : CH_FOR_EACH(CH_UNION_SCALAR_MOVE_CTOR, CH_SEP_COMMA, __VA_ARGS__) {} \
+    template <typename __T__, CH_REQUIRES(ch::internal::is_bitvector_value<__T__>::value || std::is_enum<__T__>::value)> \
+    explicit union_name(const __T__& __rhs__) \
+      : union_name(ch::internal::bytes_store(ch::internal::bitvector(bitsize, __rhs__))) {} \
+    explicit union_name(const ch_scalar<bitsize>& __rhs__) \
+      : union_name(ch::internal::bytes_store(__rhs__.get_value())) {} \
     union_name& operator=(const union_name& __rhs__) { \
-      _ = __rhs__._; \
+      this->get_store().copy(__rhs__.get_store()); \
       return *this; \
     } \
     union_name& operator=(union_name&& __rhs__) { \
-      _ = std::move(__rhs__._); \
-      CH_FOR_EACH(CH_UNION_SIM_MOVE_ASSIGN, CH_SEP_SEMICOLON, __VA_ARGS__); \
+      CH_FOR_EACH(CH_UNION_MOVE_ASSIGN, CH_SEP_SEMICOLON, __VA_ARGS__); \
       return *this; \
     } \
-    CH_FOR_EACH(CH_UNION_SIM_FIELD, CH_SEP_SEMICOLON, __VA_ARGS__); \
     CH_SCALAR_TYPE_INTERFACE() \
+  private: \
+    ch::internal::bytes_store& get_store() const { \
+      CH_FOR_EACH_1(0, CH_UNION_SCALAR_GETSTORE, CH_SEP_SEMICOLON, __VA_ARGS__); \
+    } \
+    friend class ch::internal::scalar_accessor; \
   }
 
 #define CH_UNION_BODY_IMPL(union_name, assignment_body, field_body, ...) \
 protected: \
   ch_bit<base::bitsize> _; \
 public: \
+  CH_FOR_EACH(field_body, CH_SEP_SEMICOLON, __VA_ARGS__); \
   union_name() \
     : CH_FOR_EACH(CH_UNION_COPY_CTOR, CH_SEP_COMMA, __VA_ARGS__) {} \
   union_name(const union_name& __rhs__) \
@@ -81,16 +85,15 @@ public: \
   union_name(const ch::internal::bitbase<union_name::bitsize>& __rhs__) \
     : _(__rhs__) \
     , CH_FOR_EACH(CH_UNION_COPY_CTOR, CH_SEP_COMMA, __VA_ARGS__) {} \
-  template <typename T, \
-            CH_REQUIRES(ch::internal::is_ch_bit_convertible<T, base::bitsize>::value)> \
-  explicit union_name(const T& __rhs__) \
-    : _(static_cast<ch::internal::bitbase_cast_t<T, base::bitsize>>(__rhs__)) \
+  template <typename __T__, \
+            CH_REQUIRES(ch::internal::is_ch_bit_convertible<__T__, base::bitsize>::value)> \
+  explicit union_name(const __T__& __rhs__) \
+    : _(static_cast<ch::internal::bitbase_cast_t<__T__, base::bitsize>>(__rhs__)) \
     , CH_FOR_EACH(CH_UNION_COPY_CTOR, CH_SEP_COMMA, __VA_ARGS__) {} \
   assignment_body(union_name, __VA_ARGS__) \
   const auto clone() const { \
     return traits::value_type(_.clone()); \
   } \
-  CH_FOR_EACH(field_body, CH_SEP_SEMICOLON, __VA_ARGS__); \
 protected: \
   void read_lnode(ch::internal::nodelist& __inout__, size_t __offset__, size_t __length__) const override { \
     ch::internal::read_lnode(_, __inout__, __offset__, __length__); \
@@ -124,7 +127,7 @@ protected: \
 #define CH_UNION_IMPL(union_name, ...) \
   class union_name : public ch::internal::bitbase<CH_UNION_SIZE(__VA_ARGS__)> { \
   protected: \
-    CH_UNION_SIM_IMPL(__scalar_type__, union_name, __VA_ARGS__); \
+    CH_UNION_SCALAR_IMPL(__scalar_type__, union_name, __VA_ARGS__); \
     class __const_type__ : public ch::internal::bitbase<CH_UNION_SIZE(__VA_ARGS__)> { \
     public: \
       using base = ch::internal::bitbase<CH_UNION_SIZE(__VA_ARGS__)>; \

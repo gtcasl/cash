@@ -15,6 +15,15 @@ struct logic_traits {
 };
 
 template <typename T>
+using logic_type_t = typename T::traits::logic_type;
+
+template <typename T>
+using value_type_t = typename logic_type_t<T>::traits::value_type;
+
+template <typename T>
+using const_type_t = typename logic_type_t<T>::traits::const_type;
+
+template <typename T>
 struct is_logic_traits : std::false_type {};
 
 template <typename LogicType, typename ConstType, typename ValueType, typename ScalarType>
@@ -91,9 +100,6 @@ void write_bytes(T& obj, uint32_t dst_offset, const void* in, uint32_t in_cbsize
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-
-template <typename T>
-using value_type_t = typename T::traits::logic_type::traits::value_type;
 
 template <typename T>
 struct make_type_impl {
@@ -303,7 +309,7 @@ public:
     return *this;
   }
 
-  template <typename U, CH_REQUIRES(is_bitvector_value<U>::value || std::is_enum<U>::value)>
+  template <typename U, CH_REQUIRES(is_integral_or_enum<U>::value)>
   sliceref& operator=(const U& rhs) {
     base::assign(rhs);
     return *this;
@@ -400,7 +406,7 @@ public:
     return *this;
   }
 
-  template <typename U, CH_REQUIRES(is_bitvector_value<U>::value || std::is_enum<U>::value)>
+  template <typename U, CH_REQUIRES(is_integral_or_enum<U>::value)>
   concatref& operator=(const U& rhs) {
     base::assign(rhs);
     return *this;

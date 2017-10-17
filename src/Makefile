@@ -6,7 +6,7 @@ LDFLAGS += -shared --coverage -lbfd
 
 PROJECT = libcash
 
-SRCS = utils.cpp platform.cpp bitvector.cpp \
+SRCS = utils.cpp platform.cpp bitvector.cpp scalar.cpp \
        lnodeimpl.cpp proxyimpl.cpp litimpl.cpp selectimpl.cpp regimpl.cpp \
        aluimpl.cpp ioimpl.cpp memimpl.cpp callimpl.cpp assertimpl.cpp tickimpl.cpp printimpl.cpp \
        cdomain.cpp context.cpp compile.cpp moduleimpl.cpp \

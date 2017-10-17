@@ -12,7 +12,7 @@ __union (u1_t, (
   ));
 
 __union (u2_t, (
-  (ch_bit4) a,
+  (ch_bit2) a,
   (ch_bit4) b
   ));
 
@@ -39,8 +39,8 @@ __struct (sd2_t, sd1_t, (
 ));
 
 __struct (sd3_t, (
-  (sd1_t)   a,
-  (ch_bit4) b
+  (sd1_t)   d,
+  (ch_bit4) e
 ));
 
 using v2_1_t = ch_vec<ch_bit2, 1>;

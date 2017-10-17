@@ -11,30 +11,30 @@ __enum (e2_t, 2, (
   done
 ));
 
-__union (u1_t, (
-  (ch_bit4) a
-  ));
-
-__union (u2_t, (
-  (ch_bit4) a,
-  (ch_bit4) b
-  ));
-
-__struct (s1_t, (
-  (ch_bit4) a
-  ));
-
-__struct (s2_t, (
-  (ch_bit4) a,
-  (ch_bit4) b
-));
-
 __union (u4_t, (
-  (u1_t) a,
-  (s2_t) b
+  (ch_bit4) a
+  ));
+
+__union (u2_4_t, (
+  (ch_bit2) a,
+  (ch_bit4) b
+  ));
+
+__struct (s4_t, (
+  (ch_bit4) a
+  ));
+
+__struct (s2_4_t, (
+  (ch_bit2) a,
+  (ch_bit4) b
 ));
 
-__struct (sd1_t, s1_t, (
+__union (ux_t, (
+  (u2_4_t) a,
+  (s2_4_t) b
+));
+
+__struct (sd1_t, s4_t, (
   (ch_bit4) b
 ));
 
@@ -43,8 +43,8 @@ __struct (sd2_t, sd1_t, (
 ));
 
 __struct (sd3_t, (
-  (sd1_t)   a,
-  (ch_bit4) b
+  (sd1_t)   c,
+  (ch_bit4) d
 ));
 
 using v2_1_t = ch_vec<ch_bit2, 1>;
@@ -197,13 +197,44 @@ struct Dogfood {
 
 int main(int argc, char **argv) {
 
-  //ch_scalar<2> a(e2_t::done);
-  //assert(a == 0);
+  ch_scalar<4> a(e2_t::done), b(1);
 
-  ch_module<Dogfood> dogfood;
+  assert(a == 3);
+  assert((a + b) == 4);
+  assert((a - 1) == 2);
+  assert((a & b) == 1);
+  assert((a | 1) == 3);
+  assert(~a == 1100_b);
+  assert(~b == 1110_b);
+  assert((a >> 1) == 1);
+  assert((b << 1) == 2);
+
+  ch_scalar_t<u2_4_t> u2(0101_b);
+  assert(u2.a == 1);
+  assert(u2.b == 5);
+  u2.b = 7;
+  assert(u2.a == 3);
+  u2.a = 0;
+  assert(u2.b == 4);
+
+  ch_scalar_t<s2_4_t> s2(010101_b);
+  assert(s2.a == 1);
+  assert(s2.b == 5);
+  s2.b = 7;
+  assert(s2.a == 1);
+  s2.a = 0;
+  assert(s2.b == 7);
+
+  ch_scalar_t<sd3_t> s3(321_h);
+  assert(s3.c.a == 1);
+  assert(s3.c.b == 2);
+  assert(s3.d == 3);
+  s3.c.b = 4;
+
+  /*ch_module<Dogfood> dogfood;
   ch_simulator sim(dogfood);
   sim.run(1);
-  assert(ch_peek<bool>(dogfood.io.out));
+  assert(ch_peek<bool>(dogfood.io.out));*/
 
   /*ch_module<Foo1> foo;
   ch_poke(foo.io.in1, 1);

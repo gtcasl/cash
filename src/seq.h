@@ -6,10 +6,10 @@ namespace ch {
 namespace internal {
 
 template <typename T>
-class ch_seq final : public T::traits::const_type {
+class ch_seq final : public const_type_t<T> {
 public:
-  using base = typename T::traits::const_type;
-  using traits = logic_traits<ch_seq, typename T::traits::const_type, T, typename T::traits::scalar_type>;
+  using base = const_type_t<T>;
+  using traits = logic_traits<ch_seq, const_type_t<T>, T, scalar_type_t<T>>;
 
   T next;
 
