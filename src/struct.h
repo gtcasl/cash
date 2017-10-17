@@ -21,7 +21,7 @@
   ch_const_t<ch::internal::identity_t<CH_PAIR_L(x)>> CH_PAIR_R(x)
 
 #define CH_STRUCT_SCALAR_DEFAULT_CTOR(i, x) \
-  CH_PAIR_R(x)(ch::internal::bytes_store(ch::internal::identity_t<CH_PAIR_L(x)>::bitsize, store, __field_offset##i))
+  CH_PAIR_R(x)(ch::internal::scalar_buffer(ch::internal::identity_t<CH_PAIR_L(x)>::bitsize, buffer, __field_offset##i))
 
 #define CH_STRUCT_COPY_CTOR(i, x) \
   CH_PAIR_R(x)(__rhs__.CH_PAIR_R(x))
@@ -53,7 +53,7 @@
   this->CH_PAIR_R(x) = std::move(__rhs__.CH_PAIR_R(x))
 
 #define CH_STRUCT_SCALAR_GETSTORE(i, x) \
-  return ch::internal::scalar_accessor::get_store(CH_PAIR_R(x))
+  return ch::internal::scalar_accessor::get_buffer(CH_PAIR_R(x))
 
 #define CH_STRUCT_CLONE(i, x) \
   CH_PAIR_R(x).clone()
@@ -119,14 +119,14 @@
            CH_FOR_EACH(CH_STRUCT_SCALAR_FIELD_OFFSET, CH_SEP_COMMA, __VA_ARGS__) }; \
   public: \
     CH_FOR_EACH(CH_STRUCT_SCALAR_FIELD, CH_SEP_SEMICOLON, __VA_ARGS__); \
-    struct_name(const ch::internal::bytes_store& store = ch::internal::bytes_store(bitsize)) \
+    struct_name(const ch::internal::scalar_buffer& buffer = ch::internal::scalar_buffer(bitsize)) \
       : CH_FOR_EACH(CH_STRUCT_SCALAR_DEFAULT_CTOR, CH_SEP_COMMA, __VA_ARGS__) {} \
     struct_name(const struct_name& __rhs__) \
-      : struct_name(__rhs__.get_store().clone()) {} \
+      : struct_name(__rhs__.get_buffer().clone()) {} \
     struct_name(struct_name&& __rhs__) \
       : CH_FOR_EACH(CH_STRUCT_MOVE_CTOR, CH_SEP_COMMA, __VA_ARGS__) {} \
     explicit struct_name(const ch_scalar<bitsize>& __rhs__) \
-      : struct_name(ch::internal::bytes_store(__rhs__.get_value())) {} \
+      : struct_name(ch::internal::scalar_buffer(__rhs__.get_value())) {} \
     template <CH_REVERSE_FOR_EACH(CH_STRUCT_FIELD_CTOR_TMPL, CH_SEP_COMMA, __VA_ARGS__), \
               CH_REVERSE_FOR_EACH(CH_STRUCT_SCALAR_FIELD_CTOR_REQUIRES, CH_SEP_COMMA, __VA_ARGS__)> \
     explicit struct_name(CH_REVERSE_FOR_EACH(CH_STRUCT_FIELD_CTOR_ARGS, CH_SEP_COMMA, __VA_ARGS__)) \
@@ -134,7 +134,7 @@
       CH_FOR_EACH(CH_STRUCT_SCALAR_FIELD_CTOR_BODY, CH_SEP_SEMICOLON, __VA_ARGS__); \
     } \
     struct_name& operator=(const struct_name& __rhs__) { \
-      this->get_store().copy(__rhs__.get_store()); \
+      this->get_buffer().copy(__rhs__.get_buffer()); \
       return *this; \
     } \
     struct_name& operator=(struct_name&& __rhs__) { \
@@ -143,7 +143,7 @@
     } \
     CH_SCALAR_TYPE_INTERFACE() \
   private: \
-    ch::internal::bytes_store& get_store() const { \
+    ch::internal::scalar_buffer& get_buffer() const { \
       CH_FOR_EACH_1(0, CH_STRUCT_SCALAR_GETSTORE, CH_SEP_SEMICOLON, __VA_ARGS__); \
     } \
     friend class ch::internal::scalar_accessor; \
@@ -159,16 +159,16 @@
            CH_FOR_EACH(CH_STRUCT_SCALAR_FIELD_OFFSET, CH_SEP_COMMA, __VA_ARGS__) }; \
   public: \
     CH_FOR_EACH(CH_STRUCT_SCALAR_FIELD, CH_SEP_SEMICOLON, __VA_ARGS__); \
-    struct_name(const ch::internal::bytes_store& store = ch::internal::bytes_store(bitsize)) \
-      : parent(store) \
+    struct_name(const ch::internal::scalar_buffer& buffer = ch::internal::scalar_buffer(bitsize)) \
+      : parent(buffer) \
       , CH_FOR_EACH(CH_STRUCT_SCALAR_DEFAULT_CTOR, CH_SEP_COMMA, __VA_ARGS__) {} \
     struct_name(const struct_name& __rhs__) \
-      : struct_name(__rhs__.get_store().clone()) {} \
+      : struct_name(__rhs__.get_buffer().clone()) {} \
     struct_name(struct_name&& __rhs__) \
       : parent(std::move(__rhs__)) \
       , CH_FOR_EACH(CH_STRUCT_MOVE_CTOR, CH_SEP_COMMA, __VA_ARGS__) {} \
     explicit struct_name(const ch_scalar<bitsize>& __rhs__) \
-      : struct_name(ch::internal::bytes_store(__rhs__.get_value())) {} \
+      : struct_name(ch::internal::scalar_buffer(__rhs__.get_value())) {} \
     template <CH_REVERSE_FOR_EACH(CH_STRUCT_FIELD_CTOR_TMPL, CH_SEP_COMMA, __VA_ARGS__), typename... __Ts__, \
               CH_REVERSE_FOR_EACH(CH_STRUCT_SCALAR_FIELD_CTOR_REQUIRES, CH_SEP_COMMA, __VA_ARGS__)> \
     explicit struct_name(CH_REVERSE_FOR_EACH(CH_STRUCT_FIELD_CTOR_ARGS, CH_SEP_COMMA, __VA_ARGS__), __Ts__&&... __args__) \
@@ -177,7 +177,7 @@
       CH_FOR_EACH(CH_STRUCT_SCALAR_FIELD_CTOR_BODY, CH_SEP_SEMICOLON, __VA_ARGS__); \
     } \
     struct_name& operator=(const struct_name& __rhs__) { \
-      this->get_store().copy(__rhs__.get_store()); \
+      this->get_buffer().copy(__rhs__.get_buffer()); \
       return *this; \
     } \
     struct_name& operator=(struct_name&& __rhs__) { \
@@ -187,8 +187,8 @@
     } \
     CH_SCALAR_TYPE_INTERFACE() \
   private: \
-    ch::internal::bytes_store& get_store() const { \
-      return ch::internal::scalar_accessor::get_store<parent>(*this); \
+    ch::internal::scalar_buffer& get_buffer() const { \
+      return ch::internal::scalar_accessor::get_buffer<parent>(*this); \
     } \
     friend class ch::internal::scalar_accessor; \
   }

@@ -12,7 +12,7 @@
   ch_scalar_t<ch::internal::identity_t<CH_PAIR_L(x)>> CH_PAIR_R(x)
 
 #define CH_UNION_SCALAR_DEFAULT_CTOR(i, x) \
-  CH_PAIR_R(x)(ch::internal::bytes_store(ch::internal::identity_t<CH_PAIR_L(x)>::bitsize, store, 0))
+  CH_PAIR_R(x)(ch::internal::scalar_buffer(ch::internal::identity_t<CH_PAIR_L(x)>::bitsize, buffer, 0))
 
 #define CH_UNION_SCALAR_MOVE_CTOR(i, x) \
   CH_PAIR_R(x)(std::move(__rhs__.CH_PAIR_R(x)))
@@ -21,7 +21,7 @@
   CH_PAIR_R(x) = std::move(__rhs__.CH_PAIR_R(x))
 
 #define CH_UNION_SCALAR_GETSTORE(i, x) \
-  return ch::internal::scalar_accessor::get_store(CH_PAIR_R(x))
+  return ch::internal::scalar_accessor::get_buffer(CH_PAIR_R(x))
 
 #define CH_UNION_FIELD(i, x) \
   ch::internal::sliceref< \
@@ -42,19 +42,19 @@
     using traits = ch::internal::scalar_traits<union_name, value_name>; \
   public: \
     CH_FOR_EACH(CH_UNION_SCALAR_FIELD, CH_SEP_SEMICOLON, __VA_ARGS__); \
-    union_name(const ch::internal::bytes_store& store = ch::internal::bytes_store(bitsize)) \
+    union_name(const ch::internal::scalar_buffer& buffer = ch::internal::scalar_buffer(bitsize)) \
       : CH_FOR_EACH(CH_UNION_SCALAR_DEFAULT_CTOR, CH_SEP_COMMA, __VA_ARGS__) {} \
     union_name(const union_name& __rhs__) \
-      : union_name(__rhs__.get_store().clone()) {} \
+      : union_name(__rhs__.get_buffer().clone()) {} \
     union_name(union_name&& __rhs__) \
       : CH_FOR_EACH(CH_UNION_SCALAR_MOVE_CTOR, CH_SEP_COMMA, __VA_ARGS__) {} \
     template <typename __T__, CH_REQUIRES(ch::internal::is_bitvector_value<__T__>::value || std::is_enum<__T__>::value)> \
     explicit union_name(const __T__& __rhs__) \
-      : union_name(ch::internal::bytes_store(ch::internal::bitvector(bitsize, __rhs__))) {} \
+      : union_name(ch::internal::scalar_buffer(ch::internal::bitvector(bitsize, __rhs__))) {} \
     explicit union_name(const ch_scalar<bitsize>& __rhs__) \
-      : union_name(ch::internal::bytes_store(__rhs__.get_value())) {} \
+      : union_name(ch::internal::scalar_buffer(__rhs__.get_value())) {} \
     union_name& operator=(const union_name& __rhs__) { \
-      this->get_store().copy(__rhs__.get_store()); \
+      this->get_buffer().copy(__rhs__.get_buffer()); \
       return *this; \
     } \
     union_name& operator=(union_name&& __rhs__) { \
@@ -63,7 +63,7 @@
     } \
     CH_SCALAR_TYPE_INTERFACE() \
   private: \
-    ch::internal::bytes_store& get_store() const { \
+    ch::internal::scalar_buffer& get_buffer() const { \
       CH_FOR_EACH_1(0, CH_UNION_SCALAR_GETSTORE, CH_SEP_SEMICOLON, __VA_ARGS__); \
     } \
     friend class ch::internal::scalar_accessor; \

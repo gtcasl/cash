@@ -12,7 +12,7 @@
   public: \
     using base = ch::internal::ch_scalar<size>; \
     using traits = ch::internal::scalar_traits<enum_name, value_name>; \
-    enum_name(const ch::internal::bytes_store& store = ch::internal::bytes_store(size)) : base(store) {} \
+    enum_name(const ch::internal::scalar_buffer& buffer = ch::internal::scalar_buffer(size)) : base(buffer) {} \
     enum_name(const enum_name& __rhs__) : base(__rhs__) {} \
     enum_name(enum_name&& __rhs__) : base(std::move(__rhs__)) {} \
     enum_name(enum_type __rhs__) : base(__rhs__) {} \

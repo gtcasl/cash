@@ -96,23 +96,23 @@ struct is_ch_scalar_convertible {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class bytes_store {
+class scalar_buffer {
 public:
-  bytes_store(unsigned size);
+  scalar_buffer(unsigned size);
 
-  bytes_store(const bytes_store& rhs);
+  scalar_buffer(const scalar_buffer& rhs);
 
-  bytes_store(bytes_store&& rhs);
+  scalar_buffer(scalar_buffer&& rhs);
 
-  bytes_store(const bitvector& value);
+  scalar_buffer(const bitvector& value);
 
-  bytes_store(bitvector&& value);
+  scalar_buffer(bitvector&& value);
 
-  bytes_store(unsigned size, const bytes_store& store, unsigned offset = 0);
+  scalar_buffer(unsigned size, const scalar_buffer& buffer, unsigned offset = 0);
 
-  bytes_store& operator=(const bytes_store& rhs);
+  scalar_buffer& operator=(const scalar_buffer& rhs);
 
-  bytes_store& operator=(bytes_store&& rhs);
+  scalar_buffer& operator=(scalar_buffer&& rhs);
 
   void set_value(const bitvector& value);
 
@@ -122,9 +122,9 @@ public:
 
   void write(uint32_t dst_offset, const void* in, uint32_t in_cbsize, uint32_t src_offset, uint32_t length);
 
-  bytes_store clone() const;
+  scalar_buffer clone() const;
 
-  void copy(const bytes_store& rhs);
+  void copy(const scalar_buffer& rhs);
 
   auto get_size() const {
     return size_;
@@ -139,17 +139,17 @@ private:
 
 struct scalar_accessor {
   template <typename T>
-  static bytes_store& get_store(const T& obj) {
-    return obj.get_store();
+  static scalar_buffer& get_buffer(const T& obj) {
+    return obj.get_buffer();
   }
 };
 
 #define CH_SCALAR_TYPE_INTERFACE() \
   void read(uint32_t dst_offset, void* out, uint32_t out_cbsize, uint32_t src_offset = 0, uint32_t length = bitsize) const { \
-    this->get_store().read(dst_offset, out, out_cbsize, src_offset, length); \
+    this->get_buffer().read(dst_offset, out, out_cbsize, src_offset, length); \
   } \
   void write(uint32_t dst_offset, const void* in, uint32_t in_cbsize, uint32_t src_offset = 0, uint32_t length = bitsize) { \
-    this->get_store().write(dst_offset, in, in_cbsize, src_offset, length); \
+    this->get_buffer().write(dst_offset, in, in_cbsize, src_offset, length); \
   }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -160,41 +160,41 @@ public:
   static constexpr unsigned bitsize = N;
   using traits = scalar_traits<ch_scalar, ch_bit<N>>;
 
-  constexpr ch_scalar() : store_(N) {}
+  constexpr ch_scalar() : buffer_(N) {}
 
-  constexpr ch_scalar(const ch_scalar& rhs) : store_(rhs.store_.clone()) {}
+  constexpr ch_scalar(const ch_scalar& rhs) : buffer_(rhs.buffer_.clone()) {}
 
-  constexpr ch_scalar(ch_scalar&& rhs) : store_(std::move(rhs.store_)) {}
+  constexpr ch_scalar(ch_scalar&& rhs) : buffer_(std::move(rhs.buffer_)) {}
 
-  explicit ch_scalar(const bytes_store& store) : store_(store) {
-    assert(store.get_size() == N);
+  explicit ch_scalar(const scalar_buffer& buffer) : buffer_(buffer) {
+    assert(buffer.get_size() == N);
   }
 
-  explicit ch_scalar(const bitvector& value) : store_(value) {}
+  explicit ch_scalar(const bitvector& value) : buffer_(value) {}
 
-  explicit ch_scalar(bitvector&& value) : store_(std::move(value)) {}
+  explicit ch_scalar(bitvector&& value) : buffer_(std::move(value)) {}
 
   template <unsigned M>
-  explicit ch_scalar(const const_scalar_slice<ch_scalar<M>, N>& slice) : store_(N) {
-    store_.write(0, slice.container_.get_value().get_words(), slice.start_, N);
+  explicit ch_scalar(const const_scalar_slice<ch_scalar<M>, N>& slice) : buffer_(N) {
+    buffer_.write(0, slice.container_.get_value().get_words(), slice.start_, N);
   }
 
   template <typename U, CH_REQUIRES(is_bitvector_value<U>::value || std::is_enum<U>::value)>
-  explicit ch_scalar(const U& value) : store_(bitvector(N, value)) {}
+  explicit ch_scalar(const U& value) : buffer_(bitvector(N, value)) {}
 
   ch_scalar& operator=(const ch_scalar& rhs) {
-    store_.copy(rhs.store_);
+    buffer_.copy(rhs.buffer_);
     return *this;
   }
 
   ch_scalar& operator=(ch_scalar&& rhs) {
-    store_ = std::move(rhs.store_);
+    buffer_ = std::move(rhs.buffer_);
     return *this;
   }
 
   template <typename U, CH_REQUIRES(is_integral_or_enum<U>::value)>
   ch_scalar& operator=(const U& value) {
-    store_.set_value(bitvector(N, value));
+    buffer_.set_value(bitvector(N, value));
     return *this;
   }
 
@@ -228,22 +228,22 @@ public:
 
   template <typename U, CH_REQUIRES(can_bitvector_cast<U>::value)>
   explicit operator U() const {
-    return static_cast<U>(store_.get_value());
+    return static_cast<U>(buffer_.get_value());
   }
 
   const bitvector& get_value() const {
-    return store_.get_value();
+    return buffer_.get_value();
   }
 
   CH_SCALAR_TYPE_INTERFACE();
 
 protected:
 
-  bytes_store& get_store() const {
-    return const_cast<ch_scalar&>(*this).store_;
+  scalar_buffer& get_buffer() const {
+    return const_cast<ch_scalar&>(*this).buffer_;
   }
 
-  bytes_store store_;
+  scalar_buffer buffer_;
 
   friend std::ostream& operator<<(std::ostream& out, const ch_scalar& rhs) {
     return out << rhs.get_value();
