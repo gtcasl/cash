@@ -39,10 +39,10 @@ struct is_integral_or_enum : std::integral_constant<bool,
 ///////////////////////////////////////////////////////////////////////////////
 
 template <bool Pred>
-using is_true = std::conditional<Pred, std::true_type, std::false_type>;
+using is_true = std::conditional_t<Pred, std::true_type, std::false_type>;
 
 template <bool Pred>
-using is_false = std::conditional<Pred, std::false_type, std::true_type>;
+using is_false = std::conditional_t<Pred, std::false_type, std::true_type>;
 
 ///////////////////////////////////////////////////////////////////////////////
 

@@ -167,12 +167,12 @@ TEST_CASE("aggregates", "[aggregates]") {
   SECTION("enums", "[enum]") {
     TEST([]()->ch_bit1 {
       my_enum a(my_enum::idle);
-      return (0 == a);
+      return (0 == (ch_bit<4>)a);
     });
     TEST([]()->ch_bit1 {
       my_enum a;
       a = my_enum::execute;
-      return (a == 1);
+      return ((ch_bit<4>)a == 1);
     });
   }
 }

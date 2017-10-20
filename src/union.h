@@ -43,9 +43,9 @@
   public: \
     CH_FOR_EACH(CH_UNION_SCALAR_FIELD, CH_SEP_SEMICOLON, __VA_ARGS__); \
     union_name(const ch::internal::scalar_buffer& buffer = ch::internal::scalar_buffer(bitsize)) \
-      : CH_FOR_EACH(CH_UNION_SCALAR_DEFAULT_CTOR, CH_SEP_COMMA, __VA_ARGS__) {} \
+      : CH_FOR_EACH(CH_UNION_SCALAR_DEFAULT_CTOR, CH_SEP_COMMA, __VA_ARGS__) { assert(bitsize == buffer.get_size()); } \
     union_name(const union_name& __rhs__) \
-      : union_name(__rhs__.get_buffer().clone()) {} \
+      : union_name(ch::internal::scalar_accessor::clone(__rhs__)) {} \
     union_name(union_name&& __rhs__) \
       : CH_FOR_EACH(CH_UNION_MOVE_CTOR, CH_SEP_COMMA, __VA_ARGS__) {} \
     template <typename __T__, CH_REQUIRES(ch::internal::is_bitvector_value<__T__>::value || std::is_enum<__T__>::value)> \
@@ -54,7 +54,7 @@
     explicit union_name(const ch_scalar<bitsize>& __rhs__) \
       : union_name(ch::internal::scalar_buffer(ch::internal::scalar_accessor::get_data(__rhs__))) {} \
     union_name& operator=(const union_name& __rhs__) { \
-      this->get_buffer().copy(__rhs__.get_buffer()); \
+      ch::internal::scalar_accessor::copy(*this, __rhs__); \
       return *this; \
     } \
     union_name& operator=(union_name&& __rhs__) { \
@@ -75,19 +75,22 @@
 #define CH_UNION_BODY_IMPL(union_name, reverse_name, assignment_body, field_body, ...) \
   CH_FOR_EACH(field_body, CH_SEP_SEMICOLON, __VA_ARGS__); \
   union_name(const ch::internal::bit_buffer& buffer = ch::internal::bit_buffer(bitsize)) \
-    : CH_FOR_EACH(CH_UNION_DEFAULT_CTOR, CH_SEP_COMMA, __VA_ARGS__) {} \
+    : CH_FOR_EACH(CH_UNION_DEFAULT_CTOR, CH_SEP_COMMA, __VA_ARGS__) { assert(bitsize == buffer.get_size()); } \
   union_name(const union_name& __rhs__) \
-    : union_name(ch::internal::bit_accessor::get_buffer(__rhs__).clone()) {} \
+    : union_name(ch::internal::bit_accessor::clone(__rhs__)) {} \
   union_name(union_name&& __rhs__) \
     : CH_FOR_EACH(CH_UNION_MOVE_CTOR, CH_SEP_COMMA, __VA_ARGS__) {} \
+  union_name(const reverse_name& __rhs__) \
+    : union_name(ch::internal::bit_accessor::clone(__rhs__)) {} \
   template <typename __T__, \
             CH_REQUIRES(ch::internal::is_bit_convertible<__T__, bitsize>::value)> \
   explicit union_name(const __T__& __rhs__) \
     : union_name(ch::internal::bit_buffer(ch::internal::bit_accessor::get_data( \
                     static_cast<ch::internal::bit_cast_t<__T__, bitsize>>(__rhs__)))) {} \
   const auto clone() const { \
-    auto tmp = ch_bit<bitsize>(get_buffer()).clone(); \
-    return traits::value_type(ch::internal::bit_accessor::get_buffer(tmp)); \
+    auto buffer = ch::internal::bit_accessor::clone(*this); \
+    auto data = buffer.get_data().clone(); \
+    return traits::value_type(ch::internal::bit_buffer(data)); \
   } \
   assignment_body(union_name, __VA_ARGS__) \
 protected: \
@@ -105,7 +108,7 @@ protected: \
 #define CH_UNION_WRITABLE_IMPL(union_name, ...) \
   CH_BIT_WRITABLE_INTERFACE(union_name) \
   union_name& operator=(const union_name& __rhs__) { \
-    this->get_buffer().copy(ch::internal::bit_accessor::get_buffer(__rhs__)); \
+    ch::internal::bit_accessor::copy(*this, __rhs__); \
     return *this; \
   } \
   union_name& operator=(union_name&& __rhs__) { \
@@ -113,7 +116,7 @@ protected: \
     return *this; \
   } \
   union_name& operator=(const __const_type__& __rhs__) { \
-    this->get_buffer().copy(ch::internal::bit_accessor::get_buffer(__rhs__)); \
+    ch::internal::bit_accessor::copy(*this, __rhs__); \
     return *this; \
   }
 

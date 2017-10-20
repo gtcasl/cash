@@ -182,7 +182,7 @@ struct Foo2 {
   }
 };
 
-struct Dogfood {
+/*struct Dogfood {
   __io (
     (ch_out<ch_bit1>) out
   );
@@ -193,7 +193,7 @@ struct Dogfood {
     io.out = ((ch_bit<v2_2_t::bitsize>)a == e);
     //io.out = 1_b;
   }
-};
+};*/
 
 int main(int argc, char **argv) {
 
@@ -232,13 +232,35 @@ int main(int argc, char **argv) {
   }
 
   {
-    ch_scalar_t<s2_4_t> s2(010101_b), s3(0101_b, 01_b);
-    assert((ch_bit<6>)s2 == (ch_bit<6>)s3);
+    ch_scalar_t<u2_4_t> a(0101_b), b(a);
+    assert((ch_scalar<4>)a == (ch_scalar<4>)b);
+  }
+
+  {
+    ch_scalar_t<u2_4_t> a(0101_b), b;
+    b = a;
+    assert((ch_scalar<4>)a == (ch_scalar<4>)b);
+  }
+
+  {
+    ch_scalar_t<s2_4_t> a(010101_b), b(0101_b, 01_b);
+    assert((ch_scalar<6>)a == (ch_scalar<6>)b);
+  }
+
+  {
+    ch_scalar_t<s2_4_t> a(010101_b), b(a);
+    assert((ch_scalar<6>)a == (ch_scalar<6>)b);
+  }
+
+  {
+    ch_scalar_t<s2_4_t> a(010101_b), b;
+    b = a;
+    assert((ch_scalar<6>)a == (ch_scalar<6>)b);
   }
 
   {
     ch_scalar_t<sd3_t> s3(321_h);
-    sd1_t x(54_h);
+    ch_scalar_t<sd1_t> x(54_h);
 
     assert(s3.c.a == 1);
     assert(s3.c.b == 2);
@@ -250,35 +272,18 @@ int main(int argc, char **argv) {
   }
 
   {
-    ch_scalar_t<sd3_t> s3(321_h), s4(3_h, 2_h, 1_h);
-    assert((ch_bit<12>)s3 == (ch_bit<12>)s4);
+    ch_scalar_t<sd1_t> a(21_h), b(2_h, 1_h);
+    assert((ch_scalar<8>)a == (ch_scalar<8>)b);
   }
 
   {
-    ch_scalar_t<s2_4_t> s2(010101_b), s3(s2);
-    assert(s2 == s3);
+    ch_scalar_t<sd3_t> a(321_h), b(3_h, 21_h);
+    assert((ch_scalar<12>)a == (ch_scalar<12>)b);
   }
 
   {
-    ch_scalar_t<s2_4_t> s2(010101_b); s3;
-    s3 = s2;
-    assert(s2 == s3);
-  }
-
-  {
-    ch_scalar_t<u2_4_t> u2(0101_b); u3(u2);
-    assert(u2 == u3);
-  }
-
-  {
-    ch_scalar_t<u2_4_t> u2(0101_b); u3;
-    u3 = u2;
-    assert(u2 == u3);
-  }
-
-  {
-    ch_scalar_t<sd3_t> s3(321_h), s4(sa3);
-    assert(s3.d == 3);
+    ch_scalar_t<sd3_t> a(321_h), b(a);
+    assert(b.d == 3);
   }
 
   /*ch_module<Dogfood> dogfood;

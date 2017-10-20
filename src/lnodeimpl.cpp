@@ -209,8 +209,9 @@ void lnode::set_bool(unsigned i, bool value) {
   impl_->set_bool(i, value);
 }
 
-lnodeimpl* lnode::clone(uint32_t size) const {
-  return impl_ ? impl_->get_slice(0, size) : nullptr;
+lnodeimpl* lnode::clone() const {
+  assert(impl_);
+  return impl_->get_slice(0, impl_->get_size());
 }
 
 std::ostream& ch::internal::operator<<(std::ostream& out, lnodetype type) {

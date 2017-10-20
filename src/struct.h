@@ -43,8 +43,11 @@
 #define CH_STRUCT_FIELD_CTOR_ARGS(i, x) \
   const __T##i& CH_CONCAT(_,CH_PAIR_R(x))
 
+#define CH_STRUCT_SCALAR_FIELD_CTOR_BODY(i, x) \
+  ch::internal::scalar_accessor::copy(CH_PAIR_R(x), ch_scalar_t<ch::internal::identity_t<CH_PAIR_L(x)>>(CH_CONCAT(_,CH_PAIR_R(x))))
+
 #define CH_STRUCT_FIELD_CTOR_BODY(i, x) \
-  CH_PAIR_R(x) = CH_CONCAT(_,CH_PAIR_R(x))
+  ch::internal::bit_accessor::copy(CH_PAIR_R(x), ch_value_t<ch::internal::identity_t<CH_PAIR_L(x)>>(CH_CONCAT(_,CH_PAIR_R(x))))
 
 #define CH_STRUCT_MOVE_ASSIGN(i, x) \
   this->CH_PAIR_R(x) = std::move(__rhs__.CH_PAIR_R(x))
@@ -69,9 +72,9 @@
   public: \
     CH_FOR_EACH(CH_STRUCT_SCALAR_FIELD, CH_SEP_SEMICOLON, __VA_ARGS__); \
     struct_name(const ch::internal::scalar_buffer& buffer = ch::internal::scalar_buffer(bitsize)) \
-      : CH_FOR_EACH(CH_STRUCT_SCALAR_DEFAULT_CTOR, CH_SEP_COMMA, __VA_ARGS__) {} \
+      : CH_FOR_EACH(CH_STRUCT_SCALAR_DEFAULT_CTOR, CH_SEP_COMMA, __VA_ARGS__) { assert(bitsize == buffer.get_size()); } \
     struct_name(const struct_name& __rhs__) \
-      : struct_name(ch::internal::scalar_accessor::get_buffer(__rhs__).clone()) {} \
+      : struct_name(ch::internal::scalar_accessor::clone(__rhs__)) {} \
     struct_name(struct_name&& __rhs__) \
       : CH_FOR_EACH(CH_STRUCT_MOVE_CTOR, CH_SEP_COMMA, __VA_ARGS__) {} \
     explicit struct_name(const ch_scalar<bitsize>& __rhs__) \
@@ -83,10 +86,10 @@
               CH_REVERSE_FOR_EACH(CH_STRUCT_SCALAR_FIELD_CTOR_REQUIRES, CH_SEP_COMMA, __VA_ARGS__)> \
     explicit struct_name(CH_REVERSE_FOR_EACH(CH_STRUCT_FIELD_CTOR_ARGS, CH_SEP_COMMA, __VA_ARGS__)) \
       : struct_name() { \
-      CH_FOR_EACH(CH_STRUCT_FIELD_CTOR_BODY, CH_SEP_SEMICOLON, __VA_ARGS__); \
+      CH_FOR_EACH(CH_STRUCT_SCALAR_FIELD_CTOR_BODY, CH_SEP_SEMICOLON, __VA_ARGS__); \
     } \
     struct_name& operator=(const struct_name& __rhs__) { \
-      this->get_buffer().copy(ch::internal::scalar_accessor::get_buffer(__rhs__)); \
+      ch::internal::scalar_accessor::copy(*this, __rhs__); \
       return *this; \
     } \
     struct_name& operator=(struct_name&& __rhs__) { \
@@ -116,9 +119,9 @@
     CH_FOR_EACH(CH_STRUCT_SCALAR_FIELD, CH_SEP_SEMICOLON, __VA_ARGS__); \
     struct_name(const ch::internal::scalar_buffer& buffer = ch::internal::scalar_buffer(bitsize)) \
       : parent(ch::internal::scalar_buffer(parent::bitsize, buffer, 0)) \
-      , CH_FOR_EACH(CH_STRUCT_SCALAR_DEFAULT_CTOR, CH_SEP_COMMA, __VA_ARGS__) {} \
+      , CH_FOR_EACH(CH_STRUCT_SCALAR_DEFAULT_CTOR, CH_SEP_COMMA, __VA_ARGS__) { assert(bitsize == buffer.get_size()); } \
     struct_name(const struct_name& __rhs__) \
-      : struct_name(ch::internal::scalar_accessor::get_buffer(__rhs__).clone()) {} \
+      : struct_name(ch::internal::scalar_accessor::clone(__rhs__)) {} \
     struct_name(struct_name&& __rhs__) \
       : parent(std::move(__rhs__)) \
       , CH_FOR_EACH(CH_STRUCT_MOVE_CTOR, CH_SEP_COMMA, __VA_ARGS__) {} \
@@ -131,11 +134,11 @@
               CH_REVERSE_FOR_EACH(CH_STRUCT_SCALAR_FIELD_CTOR_REQUIRES, CH_SEP_COMMA, __VA_ARGS__)> \
     explicit struct_name(CH_REVERSE_FOR_EACH(CH_STRUCT_FIELD_CTOR_ARGS, CH_SEP_COMMA, __VA_ARGS__), __Ts__&&... __args__) \
       : struct_name() { \
-      parent::operator=(__args__...); \
-      CH_FOR_EACH(CH_STRUCT_FIELD_CTOR_BODY, CH_SEP_SEMICOLON, __VA_ARGS__); \
+      ch::internal::scalar_accessor::copy<parent>(*this, parent(__args__...)); \
+      CH_FOR_EACH(CH_STRUCT_SCALAR_FIELD_CTOR_BODY, CH_SEP_SEMICOLON, __VA_ARGS__); \
     } \
     struct_name& operator=(const struct_name& __rhs__) { \
-      this->get_buffer().copy(ch::internal::scalar_accessor::get_buffer(__rhs__)); \
+      ch::internal::scalar_accessor::copy(*this, __rhs__); \
       return *this; \
     } \
     struct_name& operator=(struct_name&& __rhs__) { \
@@ -161,13 +164,13 @@ private: \
 public: \
   CH_FOR_EACH(field_body, CH_SEP_SEMICOLON, __VA_ARGS__); \
   struct_name(const ch::internal::bit_buffer& buffer = ch::internal::bit_buffer(bitsize)) \
-    : CH_FOR_EACH(CH_STRUCT_DEFAULT_CTOR, CH_SEP_COMMA, __VA_ARGS__) {} \
+    : CH_FOR_EACH(CH_STRUCT_DEFAULT_CTOR, CH_SEP_COMMA, __VA_ARGS__) { assert(bitsize == buffer.get_size()); } \
   struct_name(const struct_name& __rhs__) \
-    : struct_name(ch::internal::bit_accessor::get_buffer(__rhs__).clone()) {} \
+    : struct_name(ch::internal::bit_accessor::clone(__rhs__)) {} \
   struct_name(struct_name&& __rhs__) : \
     CH_FOR_EACH(CH_STRUCT_MOVE_CTOR, CH_SEP_COMMA, __VA_ARGS__) {} \
   struct_name(const reverse_name& __rhs__) \
-    : struct_name(ch::internal::bit_accessor::get_buffer(__rhs__).clone()) {} \
+    : struct_name(ch::internal::bit_accessor::clone(__rhs__)) {} \
   template <typename __T__, CH_REQUIRES(ch::internal::is_integral_or_enum<__T__>::value)> \
   explicit struct_name(__T__ __rhs__) \
     : struct_name(ch::internal::bit_buffer(bitvector(bitsize, __rhs__))) {} \
@@ -200,14 +203,14 @@ public: \
   CH_FOR_EACH(field_body, CH_SEP_SEMICOLON, __VA_ARGS__); \
   struct_name(const ch::internal::bit_buffer& buffer = ch::internal::bit_buffer(bitsize)) \
     : __parent_type__(ch::internal::bit_buffer(__parent_type__::bitsize, buffer, 0)) \
-    , CH_FOR_EACH(CH_STRUCT_DEFAULT_CTOR, CH_SEP_COMMA, __VA_ARGS__) {} \
+    , CH_FOR_EACH(CH_STRUCT_DEFAULT_CTOR, CH_SEP_COMMA, __VA_ARGS__) { assert(bitsize == buffer.get_size()); } \
   struct_name(const struct_name& __rhs__) \
-    : struct_name(ch::internal::bit_accessor::get_buffer(__rhs__).clone()) {} \
+    : struct_name(ch::internal::bit_accessor::clone(__rhs__)) {} \
   struct_name(struct_name&& __rhs__) \
     : __parent_type__(std::move(__rhs__))\
     , CH_FOR_EACH(CH_STRUCT_MOVE_CTOR, CH_SEP_COMMA, __VA_ARGS__) {} \
   struct_name(const reverse_name& __rhs__) \
-    : struct_name(ch::internal::bit_accessor::get_buffer(__rhs__).clone()) {} \
+    : struct_name(ch::internal::bit_accessor::clone(__rhs__)) {} \
   template <typename __T__, CH_REQUIRES(ch::internal::is_integral_or_enum<__T__>::value)> \
   explicit struct_name(__T__ __rhs__) \
     : struct_name(ch::internal::bit_buffer(bitvector(bitsize, __rhs__))) {} \
@@ -217,7 +220,7 @@ public: \
             CH_REVERSE_FOR_EACH(CH_STRUCT_FIELD_CTOR_REQUIRES, CH_SEP_COMMA, __VA_ARGS__)> \
   explicit struct_name(CH_REVERSE_FOR_EACH(CH_STRUCT_FIELD_CTOR_ARGS, CH_SEP_COMMA, __VA_ARGS__), __Ts__&&... __args__) \
     : struct_name() { \
-    get_buffer().copy(ch::internal::bit_accessor::get_buffer(__parent_type__(__args__...))); \
+    ch::internal::bit_accessor::copy<__parent_type__>(*this, __parent_type__(__args__...)); \
     CH_FOR_EACH(CH_STRUCT_FIELD_CTOR_BODY, CH_SEP_SEMICOLON, __VA_ARGS__); \
   } \
   const auto clone() const { \
@@ -239,7 +242,7 @@ private: \
 #define CH_STRUCT_WRITABLE_IMPL2(struct_name, ...) \
   CH_BIT_WRITABLE_INTERFACE(struct_name) \
   struct_name& operator=(const struct_name& __rhs__) { \
-    this->get_buffer().copy(__rhs__.get_buffer()); \
+    ch::internal::bit_accessor::copy(*this, __rhs__); \
     return *this; \
   } \
   struct_name& operator=(struct_name&& __rhs__) { \
@@ -247,7 +250,7 @@ private: \
     return *this; \
   } \
   struct_name& operator=(const __const_type__& __rhs__) { \
-    this->get_buffer().copy(ch::internal::bit_accessor::get_buffer(__rhs__)); \
+    ch::internal::bit_accessor::copy(*this, __rhs__); \
     return *this; \
   }
 
@@ -257,7 +260,7 @@ private: \
 #define CH_STRUCT_WRITABLE_IMPL3(struct_name, ...) \
   CH_BIT_WRITABLE_INTERFACE(struct_name) \
   struct_name& operator=(const struct_name& __rhs__) { \
-    this->get_buffer().copy(__rhs__.get_buffer()); \
+    ch::internal::bit_accessor::copy(*this, __rhs__); \
     return *this; \
   } \
   struct_name& operator=(struct_name&& __rhs__) { \
@@ -266,7 +269,7 @@ private: \
     return *this; \
   } \
   struct_name& operator=(const __const_type__& __rhs__) { \
-    this->get_buffer().copy(ch::internal::bit_accessor::get_buffer(__rhs__)); \
+    ch::internal::bit_accessor::copy(*this, __rhs__); \
     return *this; \
   }
 

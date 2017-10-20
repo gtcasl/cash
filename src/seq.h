@@ -16,7 +16,7 @@ public:
   ch_seq() {
     auto& buffer = bit_accessor::get_buffer(*this);
     auto reg = createRegNode(get_lnode<T>(next), get_lnode<int, T::bitsize>(0));
-    buffer.write(0, reg, 0, T::bitsize);
+    buffer.set_data(reg);
     next = *this;
   }
   
@@ -25,7 +25,7 @@ public:
   explicit ch_seq(const U& init) {
     auto& buffer = bit_accessor::get_buffer(*this);
     auto reg = createRegNode(get_lnode<T>(next), get_lnode<U, T::bitsize>(init));
-    buffer.write(0, reg, 0, T::bitsize);
+    buffer.set_data(reg);
     next = *this;
   }
 

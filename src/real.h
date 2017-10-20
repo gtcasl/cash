@@ -43,7 +43,7 @@ public:
   explicit ch_real(float rhs) : base(rhs) {}
 
   ch_real& operator=(const ch_real& rhs) {
-    buffer_.copy(rhs.buffer_);
+    bit_accessor::copy(*this, rhs);
     return *this;
   }
 

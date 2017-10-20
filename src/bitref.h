@@ -12,11 +12,12 @@ public:
   using traits = logic_traits<const_bit_slice, const_bit_slice, ch_bit<N>, ch_scalar<N>>;
 
   const_bit_slice(const bit_buffer& buffer, size_t start = 0)
-    : buffer_(bit_buffer(N, buffer, start))
-  {}
+    : buffer_(bit_buffer(N, buffer, start)) {
+    assert(N + start <= buffer.get_size());
+  }
 
   const_bit_slice(const const_bit_slice& rhs)
-    : buffer_(rhs.buffer_.clone())
+    : buffer_(bit_accessor::clone(rhs))
   {}
 
   const_bit_slice(const_bit_slice&& rhs)
@@ -68,7 +69,7 @@ public:
   bit_slice(bit_slice&& rhs) : base(std::move(rhs)) {}
 
   bit_slice& operator=(const bit_slice& rhs) {
-    buffer_.copy(rhs.buffer_);
+    bit_accessor::copy(*this, rhs);
     return *this;
   }
 
@@ -79,7 +80,7 @@ public:
 
   template <typename T, CH_REQUIRES(is_bit_convertible<T, N>::value)>
   bit_slice& operator=(const T& rhs) {
-    buffer_.write(0, get_lnode<T, N>(rhs), 0, N);
+    buffer_.set_data(get_lnode<T, N>(rhs));
     return *this;
   }
 

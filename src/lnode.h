@@ -62,7 +62,7 @@ public:
 
   void set_bool(unsigned index, bool value);
 
-  lnodeimpl* clone(uint32_t size) const;
+  lnodeimpl* clone() const;
 
 protected:
 

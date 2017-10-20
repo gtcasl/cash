@@ -494,11 +494,6 @@ public:
 
   ~bitvector();
   
-  void resize(uint32_t size,
-              uint32_t value = 0x0,
-              bool initialize = false,
-              bool preserve = false);
-  
   bitvector& operator=(const bitvector& rhs);
   
   bitvector& operator=(bitvector&& rhs);
@@ -612,6 +607,11 @@ public:
   uint32_t get_cbsize() const {
     return (get_num_words() << WORD_SIZE_LOG) / 8;
   }
+
+  void resize(uint32_t size,
+              uint32_t value = 0x0,
+              bool initialize = false,
+              bool preserve = false);
 
   void clear_unused_bits();
   

@@ -45,8 +45,8 @@ struct is_logic_traits<logic_traits<LogicType, ConstType, ValueType, ScalarType>
 
 CH_DEF_SFINAE_CHECK(is_logic_type, is_logic_traits<typename T::traits>::value);
 
-CH_DEF_SFINAE_CHECK(is_bit_compatible, (std::is_base_of<const_bit<T::bitsize>, T>::value
-                                        || std::is_same<typename T::traits::value_type, ch_bit<T::bitsize>>::value));
+CH_DEF_SFINAE_CHECK(is_bit_compatible, (!is_scalar_type<T>::value
+                                     && std::is_same<ch_bit<T::bitsize>, value_type_t<T>>::value));
 
 template <typename... Ts>
 using deduce_ch_bit_t = std::conditional_t<
@@ -61,9 +61,7 @@ using deduce_first_ch_bit_t = std::conditional_t<
   non_bitsize_type>;
 
 template <typename T, unsigned N = std::decay_t<T>::bitsize>
-struct is_bit_convertible {
-  static constexpr bool value = is_cast_convertible<ch_bit<N>, T>::value;
-};
+using is_bit_convertible = is_cast_convertible<ch_bit<N>, T>;
 
 template <typename... Ts>
 using are_all_bit_convertible = conjunction<is_bit_convertible<Ts>::value...>;
@@ -106,23 +104,28 @@ public:
 
   bit_buffer& operator=(bit_buffer&& rhs);
 
+  void write(uint32_t dst_offset, const lnode& data, uint32_t src_offset, uint32_t length);
+
   void set_data(const lnode& data);
 
   const lnode& get_data() const;
 
-  void write(uint32_t dst_offset, const lnode& data, uint32_t src_offset, uint32_t length);
+  const lnode& get_source() const;
 
-  bit_buffer clone() const;
+  lnode& get_source();
 
-  void copy(const bit_buffer& rhs);
+  auto get_offset() const {
+    return offset_;
+  }
 
   auto get_size() const {
     return size_;
   }
 
 private:
-  lnode    src_;
-  mutable lnode node_;
+
+  lnode    source_;
+  mutable lnode proxy_;
   unsigned offset_;
   unsigned size_;
 };
@@ -132,13 +135,34 @@ struct bit_accessor {
   static const bit_buffer& get_buffer(const T& obj) {
     return obj.get_buffer();
   }
+
   template <typename T>
   static bit_buffer& get_buffer(T& obj) {
     return obj.get_buffer();
   }
+
   template <typename T>
   static const lnode& get_data(const T& obj) {
     return obj.get_buffer().get_data();
+  }
+
+  template <typename U, typename V,
+            CH_REQUIRES(U::bitsize == V::bitsize)>
+  static void copy(U& dst, const V& src) {
+    auto& d = dst.get_buffer().get_source();
+    auto d_offset = dst.get_buffer().get_offset();
+    const auto& s = src.get_buffer().get_source();
+    auto s_offset = src.get_buffer().get_offset();
+    d.write(d_offset, s, s_offset, U::bitsize, U::bitsize);
+  }
+
+  template <typename T>
+  static bit_buffer clone(const T& obj) {
+    bit_buffer ret(T::bitsize);
+    auto& s = obj.get_buffer().get_source();
+    auto s_offset = obj.get_buffer().get_offset();
+    ret.write(0, s, s_offset, T::bitsize);
+    return ret;
   }
 };
 
@@ -156,21 +180,23 @@ public:
 
   const_bit() : buffer_(N) {}
 
-  const_bit(const const_bit& rhs) : buffer_(rhs.buffer_.clone()) {}
+  const_bit(const const_bit& rhs) : buffer_(bit_accessor::clone(rhs)) {}
 
   const_bit(const_bit&& rhs) : buffer_(std::move(rhs.buffer_)) {}
-
-  template <typename T, CH_REQUIRES(is_logic_type<T>::value)>
-  explicit const_bit(const T& rhs) : buffer_(bit_accessor::get_buffer(rhs).clone()) {}
 
   explicit const_bit(const bit_buffer& buffer) : buffer_(buffer) {
     assert(N == buffer.get_size());
   }
 
+  template <typename T,
+            CH_REQUIRES(is_logic_type<T>::value),
+            CH_REQUIRES(N == T::bitsize)>
+  explicit const_bit(const T& rhs) : buffer_(bit_accessor::clone(rhs)) {}
+
   explicit const_bit(const ch_scalar<N>& rhs) : buffer_(scalar_accessor::get_data(rhs)) {}
 
   template <typename U,
-            CH_REQUIRES(is_bitvector_value<U>::value || std::is_enum<U>::value), CH_VOID_T>
+            CH_REQUIRES(is_bitvector_value<U>::value || std::is_enum<U>::value)>
   explicit const_bit(const U& rhs) : buffer_(bitvector(N, rhs)) {}
 
   const auto operator[](size_t index) const {
@@ -188,7 +214,7 @@ public:
   }
 
   const auto clone() const {
-    return ch_bit<N>(buffer_.clone());
+    return ch_bit<N>(bit_buffer(buffer_.get_data().clone()));
   }
 
   CH_BIT_READONLY_INTERFACE(const_bit)
@@ -196,7 +222,7 @@ public:
 protected:
 
   const_bit& operator=(const const_bit& rhs) {
-    buffer_.copy(rhs.buffer_);
+    bit_accessor::copy(*this, rhs);
     return *this;
   }
 
@@ -235,7 +261,9 @@ public:
 
   ch_bit(const const_bit<N>& rhs) : base(rhs) {}
 
-  template <typename T, CH_REQUIRES(is_logic_type<T>::value)>
+  template <typename T,
+            CH_REQUIRES(is_logic_type<T>::value),
+            CH_REQUIRES(N == T::bitsize)>
   explicit ch_bit(const T& rhs) : base(rhs) {}
 
   explicit ch_bit(const bit_buffer& buffer) : base(buffer) {}
@@ -243,7 +271,7 @@ public:
   explicit ch_bit(const ch_scalar<N>& rhs) : base(rhs) {}
 
   template <typename U,
-            CH_REQUIRES(is_bitvector_value<U>::value || std::is_enum<U>::value), CH_VOID_T>
+            CH_REQUIRES(is_bitvector_value<U>::value || std::is_enum<U>::value)>
   explicit ch_bit(const U& rhs) : base(rhs) {}
 
   ch_bit& operator=(const ch_bit& rhs) {
@@ -261,9 +289,11 @@ public:
     return *this;
   }
 
-  template <typename T, CH_REQUIRES(is_logic_type<T>::value)>
+  template <typename T,
+            CH_REQUIRES(is_logic_type<T>::value),
+            CH_REQUIRES(N == T::bitsize)>
   ch_bit& operator=(const T& rhs) {
-    buffer_.copy(bit_accessor::get_buffer(rhs));
+    bit_accessor::copy(*this, rhs);
     return *this;
   }
 
@@ -272,7 +302,7 @@ public:
     return *this;
   }
 
-  template <typename T, CH_REQUIRES(is_integral_or_enum<T>::value), CH_VOID_T>
+  template <typename T, CH_REQUIRES(is_integral_or_enum<T>::value)>
   ch_bit& operator=(const T& rhs) {
     buffer_.set_data(bitvector(N, rhs));
     return *this;
