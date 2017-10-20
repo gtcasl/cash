@@ -75,9 +75,9 @@ public:
   const bitvector& get_value() const { 
     return value_;
   }
-  
-  void set_value(const bitvector& value) {
-    value_ = value;
+
+  bitvector& get_value() {
+    return value_;
   }
 
   bool get_bool(unsigned i) const {
@@ -97,16 +97,13 @@ public:
   }
 
   virtual lnodeimpl* get_slice(uint32_t offset, uint32_t length);
-  
-  virtual bool ready() const;
-
-  virtual bool valid() const;
 
   virtual const bitvector& eval(ch_tick t) = 0;
   
   virtual void print(std::ostream& out, uint32_t level) const;
 
 protected:
+
   lnodeimpl(context* ctx, lnodetype type, uint32_t size);
   virtual ~lnodeimpl();
 

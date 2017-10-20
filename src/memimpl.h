@@ -22,8 +22,12 @@ public:
     return addr_width_;
   }
 
-  bool is_initialized() const {
-    return initialized_;
+  bool has_initdata() const {
+    return has_initdata_;
+  }
+
+  bool is_write_enable() const {
+    return (wr_ports_offset_ != 0);
   }
 
   const std::vector<lnode>& get_ports() const {
@@ -35,34 +39,38 @@ public:
   }
 
   void load(const std::string& init_file);
+
   void load(const std::vector<uint8_t>& init_data);
-  
-  lnode& read(const lnode& addr);
-  void write(const lnode& addr, const nodelist& in);
+
+  lnode& get_port(const lnode& addr);
+
+  void write(const lnode& port, const lnode& data);
   
   void tick(ch_tick t) override;
+
   void tick_next(ch_tick t) override;
   
   const bitvector& eval(ch_tick t) override;  
+
   void print(std::ostream& out, uint32_t level) const override;
 
 protected:
+
   memimpl(context* ctx,
           uint32_t data_width,
           uint32_t addr_width,
           bool write_enable);
+
   ~memimpl();
 
   void load_data(const std::function<bool(uint8_t* out)>& getdata);
-  
-  lnode& get_port(const lnode& addr, bool writable);
   
   std::vector<lnode> ports_;
   uint32_t data_width_;
   uint32_t addr_width_;
   uint32_t wr_ports_offset_;
   cdomain* cd_;
-  bool initialized_;
+  bool has_initdata_;
   
   friend class memportimpl;
   friend class context;
@@ -82,15 +90,11 @@ public:
     return srcs_[wdata_idx_];
   }
 
-  bool is_writable() const {
-    return writable_;
-  }
-
-  void set_writable(bool writable) {
-    writable_ = writable;
+  bool has_wdata() const {
+    return (wdata_idx_ != -1);
   }
   
-  void write(const nodelist& in);
+  void write(const lnode& data);
 
   void tick(ch_tick t);
   void tick_next(ch_tick t);
@@ -98,7 +102,7 @@ public:
   const bitvector& eval(ch_tick t) override;
 
 protected:
-  memportimpl(context* ctx, memimpl* mem, const lnode& addr, bool writable);
+  memportimpl(context* ctx, memimpl* mem, const lnode& addr);
   ~memportimpl() {}
     
   bitvector q_next_;
@@ -107,7 +111,6 @@ protected:
   int mem_idx_;
   int addr_idx_;
   int wdata_idx_;
-  bool writable_;
   
   ch_tick tick_;
   

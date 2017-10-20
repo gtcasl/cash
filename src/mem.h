@@ -36,13 +36,9 @@ public:
 
   void load(const std::string& init_file);
 
-  lnode& read(const lnode& addr) const;
+  const lnode& get_port(const lnode& addr) const;
 
-  void write(const lnode& addr,
-             size_t dst_offset,
-             const nodelist& in,
-             size_t src_offset,
-             size_t length);
+  void write(const lnode& port, const lnode& data);
 
 protected:
 
@@ -52,45 +48,35 @@ protected:
 };
 
 template <unsigned N>
-class memport_ref : public bitbase<N> {
+class memport_ref {
 public:
-  using base = bitbase<N>;
+  static constexpr unsigned bitsize = N;
   using traits = logic_traits<memport_ref, const_bit<N>, ch_bit<N>, ch_scalar<N>>;
 
-  memport_ref& operator=(const bitbase<N>& rhs) {
-    base::assign(rhs);
+  template <typename T, CH_REQUIRES(is_bit_convertible<T, N>::value)>
+  memport_ref& operator=(const T& rhs) {
+    mem_.write(buffer_.get_data(), get_lnode<T, N>(rhs));
     return *this;
   }
 
 protected:
   memport_ref(memory& mem, const lnode& addr)
-    : mem_(mem)
-    , addr_(addr)
+    : buffer_(mem.get_port(addr))
+    , mem_(mem)
   {}
 
-  void read_lnode(nodelist& inout, size_t offset, size_t length) const override {
-    CH_CHECK(offset + length <= N, "invalid read range");
-    inout.push(mem_.read(addr_), offset, length);
+  const bit_buffer& get_buffer() const {
+    return buffer_;
   }
 
-  void write_lnode(size_t dst_offset, const nodelist& in, size_t src_offset, size_t length) override {
-    CH_CHECK(0 == dst_offset || N == length, "partial update not supported!");
-    mem_.write(addr_, dst_offset, in, src_offset, length);
+  bit_buffer& get_buffer() {
+    return buffer_;
   }
 
-  void read_bytes(uint32_t dst_offset, void* out, uint32_t out_cbsize, uint32_t src_offset, uint32_t length) const override {
-    CH_UNUSED(dst_offset, out, out_cbsize, src_offset, length);
-    CH_ABORT("invalid call");
-  }
-
-  void write_bytes(uint32_t dst_offset, const void* in, uint32_t in_cbsize, uint32_t src_offset, uint32_t length) override {
-    CH_UNUSED(dst_offset, in, in_cbsize, src_offset, length);
-    CH_ABORT("invalid call");
-  }
-
+  bit_buffer buffer_;
   memory& mem_;
-  lnode addr_;
 
+  friend class bit_accessor;
   template <unsigned W, unsigned A> friend class ch_ram;
 };
 
@@ -118,9 +104,9 @@ public:
     }
     
     template <typename T,
-              CH_REQUIRES(is_ch_bit_convertible<T, A>::value)>
+              CH_REQUIRES(is_bit_convertible<T, A>::value)>
     const auto operator[](const T& addr) const {
-      return make_type<ch_bit<W>>(mem_.read(get_lnode<T, A>(addr)));
+      return make_type<ch_bit<W>>(mem_.get_port(get_lnode<T, A>(addr)));
     }
     
 protected:
@@ -151,13 +137,13 @@ public:
     }
     
     template <typename T,
-              CH_REQUIRES(is_ch_bit_convertible<T, A>::value)>
+              CH_REQUIRES(is_bit_convertible<T, A>::value)>
     const auto operator[](const T& addr) const {
-      return make_type<ch_bit<W>>(mem_.read(get_lnode<T, A>(addr)));
+      return make_type<ch_bit<W>>(mem_.get_port(get_lnode<T, A>(addr)));
     }
     
     template <typename T,
-              CH_REQUIRES(is_ch_bit_convertible<T, A>::value)>
+              CH_REQUIRES(is_bit_convertible<T, A>::value)>
     memport_ref<W> operator[](const T& addr) {
       return memport_ref<W>(mem_, get_lnode<T, A>(addr));
     }

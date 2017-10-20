@@ -26,22 +26,6 @@ lnodeimpl::lnodeimpl(context* ctx, lnodetype type, uint32_t size)
 
 lnodeimpl::~lnodeimpl() {}
 
-bool lnodeimpl::ready() const {
-  for (auto& src : srcs_) {
-    if (!src.ready())
-      return false;
-  }
-  return true;
-}
-
-bool lnodeimpl::valid() const {
-  for (auto& src : srcs_) {
-    if (!src.valid())
-      return false;
-  }
-  return true;
-}
-
 lnodeimpl* lnodeimpl::get_slice(uint32_t offset, uint32_t length) {
   assert(length <= value_.get_size());
   if (value_.get_size() == length)
@@ -81,11 +65,20 @@ const bitvector& undefimpl::eval(ch_tick) {
 
 lnode::lnode() : impl_(nullptr) {}
 
+lnode::lnode(const lnode& rhs) : impl_(rhs.impl_) {}
+
 lnode::lnode(uint32_t size) : impl_(nullptr) {
   // force initialization inside conditional blocks
   if (ctx_curr()->conditional_enabled()) {
     this->ensureInitialized(size, true);
   }
+}
+
+lnode::lnode(uint32_t size, const lnode& src, unsigned src_offset) : impl_(nullptr) {
+  assert(!src.is_empty());
+  this->ensureInitialized(size, false);
+  auto proxy = dynamic_cast<proxyimpl*>(impl_);
+  proxy->add_source(0, src, src_offset, size);
 }
 
 lnode::lnode(lnodeimpl* impl) : impl_(impl) {
@@ -96,34 +89,6 @@ lnode::lnode(const bitvector& value) {
   impl_ = ctx_curr()->get_literal(value);
 }
 
-lnode::lnode(const nodelist& data) : impl_(nullptr) {
-  assert(data.is_movable());
-  if (data.is_identity())  {
-    impl_ = data.begin()->src.get_impl();
-  } else {
-    uint32_t dst_offset = 0;
-    this->ensureInitialized(data.get_size(), false);
-    auto proxy = dynamic_cast<proxyimpl*>(impl_);
-    for (const auto& slice : data) {
-      proxy->add_source(dst_offset, slice.src, slice.offset, slice.length);
-      dst_offset += slice.length;
-    }
-  }
-}
-
-lnode::lnode(const lnode& rhs, uint32_t size) : impl_(nullptr) {
-  rhs.ensureInitialized(size, true);
-  this->init(0, rhs, 0, size, size);
-}
-
-lnode::lnode(lnode&& rhs, uint32_t size) {
-  rhs.ensureInitialized(size, true);
-  impl_ = rhs.impl_;
-  rhs.impl_ = nullptr;
-}
-
-lnode::lnode(const lnode& rhs) : impl_(rhs.impl_) {}
-
 lnode::~lnode() {
   this->clear();
 }
@@ -132,35 +97,14 @@ void lnode::clear() {
   impl_ = nullptr;
 }
 
-lnode& lnode::operator=(const lnode& rhs) {
-  impl_ = rhs.impl_;
+const lnode& lnode::ensureInitialized(uint32_t size) const {
+  this->ensureInitialized(size, true);
   return *this;
 }
 
-void lnode::assign(const lnode& rhs, uint32_t size) {
-  rhs.ensureInitialized(size, true);
-  this->assign(0, rhs, 0, size, size);
-}
-
-void lnode::assign(const bitvector& value) {
-  auto impl = ctx_curr()->get_literal(value);
-  this->assign(0, impl, 0, value.get_size(), value.get_size());
-}
-
-void lnode::move(lnode& rhs, uint32_t size) {
-  assert(this != &rhs);
-  rhs.ensureInitialized(size, true);
-  if (ctx_curr()->conditional_enabled(impl_)) {
-    this->assign(0, rhs, 0, size, size);
-  } else {
-    auto proxy = dynamic_cast<proxyimpl*>(impl_);
-    if (proxy) {
-      proxy->add_source(0, rhs, 0, size);
-    } else {
-      impl_ = rhs.impl_;
-    }
-  }
-  rhs.impl_ = nullptr;
+lnode& lnode::operator=(const lnode& rhs) {
+  impl_ = rhs.impl_;
+  return *this;
 }
 
 bool lnode::is_empty() const {
@@ -180,14 +124,6 @@ uint32_t lnode::get_size() const {
   return impl_ ? impl_->get_size() : 0;
 }
 
-bool lnode::ready() const {
-  return impl_ ? impl_->ready() : true;
-}
-
-bool lnode::valid() const {
-  return impl_ ? impl_->valid() : true;
-}
-
 const bitvector& lnode::eval(ch_tick t) {
   assert(impl_);
   return impl_->eval(t);
@@ -203,14 +139,6 @@ lnodeimpl* lnode::get_impl() const {
   return impl_;
 }
 
-bool lnode::operator==(const lnode& rhs) const {
-  return this->get_impl() == rhs.get_impl();
-}
-
-bool lnode::operator<(const lnode& rhs) const {
-  return this->get_impl() < rhs.get_impl();
-}
-
 void lnode::ensureInitialized(uint32_t size, bool initialize) const {
   if (nullptr == impl_) {
     if (initialize) {
@@ -220,26 +148,15 @@ void lnode::ensureInitialized(uint32_t size, bool initialize) const {
       impl_ = ctx_curr()->createNode<proxyimpl>(size);
     }
   }
-  assert(impl_->get_size() == size);
+  assert(impl_->get_size() >= size);
 }
 
-void lnode::init(uint32_t dst_offset,
-                 const lnode& src,
-                 uint32_t src_offset,
-                 uint32_t length,
-                 uint32_t size) {
-  assert(size > dst_offset);
-  assert(size >= dst_offset + length);
-  this->ensureInitialized(size, length != size);
-  auto proxy = dynamic_cast<proxyimpl*>(impl_);
-  proxy->add_source(dst_offset, src, src_offset, length);
-}
-
-void lnode::assign(uint32_t dst_offset,
-                   const lnode& src,
-                   uint32_t src_offset,
-                   uint32_t length,
-                   uint32_t size) {
+void lnode::write(uint32_t dst_offset,
+                  const lnode& src,
+                  uint32_t src_offset,
+                  uint32_t length,
+                  uint32_t size) {
+  assert(!src.is_empty());
   assert(size > dst_offset);
   assert(size >= dst_offset + length);
   context* ctx = src.get_ctx();  
@@ -272,72 +189,14 @@ void lnode::assign(uint32_t dst_offset,
   }
 }
 
-void lnode::read_lnode(nodelist& inout,
-                      uint32_t offset,
-                      uint32_t length,
-                      uint32_t size) const {
-  assert((offset + length) <= size);
-  this->ensureInitialized(size, true);
-  inout.push(*this, offset, length);
-}
-
-void lnode::write_lnode(uint32_t dst_offset,
-                       const nodelist& in,
-                       uint32_t src_offset,
-                       uint32_t length,
-                       uint32_t size) {
-  assert((dst_offset + length) <= size);
-  if ((length == size )
-   && (length == in.get_size())
-   && in.is_identity()
-   && in.is_movable()
-   && !dynamic_cast<proxyimpl*>(impl_)
-   && !ctx_curr()->conditional_enabled(impl_)) {
-    impl_ = in.begin()->src.get_impl();
-  } else {
-    for (const auto& d : in) {
-      if (src_offset < d.length) {
-        uint32_t len = std::min(d.length - src_offset, length);
-        this->assign(dst_offset, d.src, d.offset + src_offset, len, size);
-        length -= len;
-        if (0 == length)
-          return;
-        dst_offset += len;
-        src_offset = d.length;
-      }
-      src_offset -= d.length;
-    }
-  }
-}
-
-void lnode::read_bytes(uint32_t dst_offset,
-                       void* out,
-                       uint32_t out_cbsize,
-                       uint32_t src_offset,
-                       uint32_t length,
-                       uint32_t size) const {
-  this->ensureInitialized(size, false);
-  impl_->read_bytes(dst_offset, out, out_cbsize, src_offset, length);
-}
-
-void lnode::write_bytes(uint32_t dst_offset,
-                        const void* in,
-                        uint32_t in_cbsize,
-                        uint32_t src_offset,
-                        uint32_t length,
-                        uint32_t size) {
-  this->ensureInitialized(size, false);
-  impl_->write_bytes(dst_offset, in, in_cbsize, src_offset, length);
-}
-
-const bitvector& lnode::get_value() const {
+const bitvector& lnode::get_data() const {
   assert(impl_);
   return impl_->get_value();
 }
 
-void lnode::set_value(const bitvector& value) {
+bitvector& lnode::get_data() {
   assert(impl_);
-  impl_->set_value(value);
+  return impl_->get_value();
 }
 
 bool lnode::get_bool(unsigned i) const {
@@ -360,6 +219,6 @@ std::ostream& ch::internal::operator<<(std::ostream& out, lnodetype type) {
 }
 
 std::ostream& ch::internal::operator<<(std::ostream& out, const lnode& node) {
-  out << node.get_value();
+  out << node.get_data();
   return out;
 }

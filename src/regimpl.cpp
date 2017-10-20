@@ -151,13 +151,3 @@ lnodeimpl* ch::internal::createLatchNode(
     clock_event(init, EDGE_ANY)});
   return ctx->createNode<regimpl>(cd, next, init, reset, enable);
 }
-
-lnodeimpl* ch::internal::createReadyNode(const lnode& node) {
-  CH_UNUSED(node);
-  CH_TODO();
-}
-
-lnodeimpl* ch::internal::createValidNode(const lnode& node) {
-  CH_UNUSED(node);
-  CH_TODO();
-}

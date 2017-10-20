@@ -197,39 +197,89 @@ struct Dogfood {
 
 int main(int argc, char **argv) {
 
-  ch_scalar<4> a(e2_t::done), b(1);
+  {
+    ch_scalar<4> a(e2_t::done), b(1);
 
-  assert(a == 3);
-  assert((a + b) == 4);
-  assert((a - 1) == 2);
-  assert((a & b) == 1);
-  assert((a | 1) == 3);
-  assert(~a == 1100_b);
-  assert(~b == 1110_b);
-  assert((a >> 1) == 1);
-  assert((b << 1) == 2);
+    assert(a == 3);
+    assert((a + b) == 4);
+    assert((a - 1) == 2);
+    assert((a & b) == 1);
+    assert((a | 1) == 3);
+    assert(~a == 1100_b);
+    assert(~b == 1110_b);
+    assert((a >> 1) == 1);
+    assert((b << 1) == 2);
+  }
 
-  ch_scalar_t<u2_4_t> u2(0101_b);
-  assert(u2.a == 1);
-  assert(u2.b == 5);
-  u2.b = 7;
-  assert(u2.a == 3);
-  u2.a = 0;
-  assert(u2.b == 4);
+  {
+    ch_scalar_t<u2_4_t> u2(0101_b);
+    assert(u2.a == 1);
+    assert(u2.b == 5);
+    u2.b = 7;
+    assert(u2.a == 3);
+    u2.a = 0;
+    assert(u2.b == 4);
+  }
 
-  ch_scalar_t<s2_4_t> s2(010101_b);
-  assert(s2.a == 1);
-  assert(s2.b == 5);
-  s2.b = 7;
-  assert(s2.a == 1);
-  s2.a = 0;
-  assert(s2.b == 7);
+  {
+    ch_scalar_t<s2_4_t> s2(0101_b, 01_b);
+    assert(s2.a == 1);
+    assert(s2.b == 5);
+    s2.b = 7;
+    assert(s2.a == 1);
+    s2.a = 0;
+    assert(s2.b == 7);
+  }
 
-  ch_scalar_t<sd3_t> s3(321_h);
-  assert(s3.c.a == 1);
-  assert(s3.c.b == 2);
-  assert(s3.d == 3);
-  s3.c.b = 4;
+  {
+    ch_scalar_t<s2_4_t> s2(010101_b), s3(0101_b, 01_b);
+    assert((ch_bit<6>)s2 == (ch_bit<6>)s3);
+  }
+
+  {
+    ch_scalar_t<sd3_t> s3(321_h);
+    sd1_t x(54_h);
+
+    assert(s3.c.a == 1);
+    assert(s3.c.b == 2);
+    assert(s3.d == 3);
+    s3.c = x;
+    assert(s3.c.a == 4);
+    assert(s3.c.b == 5);
+    assert(s3.d == 3);
+  }
+
+  {
+    ch_scalar_t<sd3_t> s3(321_h), s4(3_h, 2_h, 1_h);
+    assert((ch_bit<12>)s3 == (ch_bit<12>)s4);
+  }
+
+  {
+    ch_scalar_t<s2_4_t> s2(010101_b), s3(s2);
+    assert(s2 == s3);
+  }
+
+  {
+    ch_scalar_t<s2_4_t> s2(010101_b); s3;
+    s3 = s2;
+    assert(s2 == s3);
+  }
+
+  {
+    ch_scalar_t<u2_4_t> u2(0101_b); u3(u2);
+    assert(u2 == u3);
+  }
+
+  {
+    ch_scalar_t<u2_4_t> u2(0101_b); u3;
+    u3 = u2;
+    assert(u2 == u3);
+  }
+
+  {
+    ch_scalar_t<sd3_t> s3(321_h), s4(sa3);
+    assert(s3.d == 3);
+  }
 
   /*ch_module<Dogfood> dogfood;
   ch_simulator sim(dogfood);

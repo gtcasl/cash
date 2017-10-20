@@ -13,7 +13,7 @@ memimpl::memimpl(context* ctx,
   , addr_width_(addr_width)
   , wr_ports_offset_(0)
   , cd_(nullptr)
-  , initialized_(false) {
+  , has_initdata_(false) {
   if (write_enable) {
     lnode clk(ctx->get_clk());
     cd_ = ctx->create_cdomain({clock_event(clk, EDGE_POS)});
@@ -32,7 +32,7 @@ memimpl::~memimpl() {
 void memimpl::load(const std::vector<uint8_t>& init_data) {
   assert(8 * init_data.size() >= value_.get_size());
   value_.write(0, init_data.data(), init_data.size(), 0, value_.get_size());
-  initialized_ = true;
+  has_initdata_ = true;
 }
 
 void memimpl::load(const std::string& init_file) {
@@ -56,36 +56,24 @@ void memimpl::load(const std::string& init_file) {
   }
 
   in.close();
-  initialized_ = true;
+  has_initdata_ = true;
 }
 
-lnode& memimpl::read(const lnode& addr) {
-  return this->get_port(addr, false);
-}
-
-void memimpl::write(const lnode& addr, const nodelist& in) {
-  auto& port = this->get_port(addr, true);
-  auto impl = dynamic_cast<memportimpl*>(port.get_impl());
-  impl->write(in);
-}
-
-lnode& memimpl::get_port(const lnode& addr, bool writable) {
+lnode& memimpl::get_port(const lnode& addr) {
   for (auto& port : ports_) {
     auto impl = dynamic_cast<memportimpl*>(port.get_impl());
-    if (impl->get_addr() == addr) {
-      if (writable && !impl->is_writable()) {
-        impl->set_writable(true);
-        srcs_.emplace_back(impl);
-      }
+    if (impl->get_addr().get_id() == addr.get_id())
       return port;
-    }
   }
-  auto impl = ctx_->createNode<memportimpl>(this, addr, writable);
+  auto impl = ctx_->createNode<memportimpl>(this, addr);
   ports_.emplace_back(impl);
-  if (writable) {
-    srcs_.emplace_back(impl);
-  }
   return ports_.back();
+}
+
+void memimpl::write(const lnode& port, const lnode& data) {
+   auto impl = dynamic_cast<memportimpl*>(port.get_impl());
+   assert(impl->get_mem().get_id() == this->get_id());
+   impl->write(data);
 }
 
 void memimpl::tick(ch_tick t) {    
@@ -126,13 +114,12 @@ void memimpl::print(std::ostream& out, uint32_t level) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-memportimpl::memportimpl(context* ctx, memimpl* mem, const lnode& addr, bool writable)
+memportimpl::memportimpl(context* ctx, memimpl* mem, const lnode& addr)
   : ioimpl(ctx, type_memport, mem->data_width_)
   , a_next_(0)
   , mem_idx_(-1)
   , addr_idx_(-1)
   , wdata_idx_(-1)
-  , writable_(writable)
   , tick_(~0ull) {
   mem_idx_ = srcs_.size();
   srcs_.emplace_back(mem);
@@ -141,13 +128,18 @@ memportimpl::memportimpl(context* ctx, memimpl* mem, const lnode& addr, bool wri
   srcs_.emplace_back(addr);
 }
 
-void memportimpl::write(const nodelist& in) {
-  assert(writable_);
+void memportimpl::write(const lnode& data) {
   if (wdata_idx_ == -1) {
+    // add write port to memory sources
+    memimpl* mem = dynamic_cast<memimpl*>(srcs_[mem_idx_].get_impl());
+    assert(mem->is_write_enable());
+    mem->srcs_.emplace_back(this);
+
+    // port source initially points to memory content
     wdata_idx_ = srcs_.size();
     srcs_.emplace_back(this);
   }
-  srcs_[wdata_idx_].write_lnode(0, in, 0, in.get_size(), this->get_size());
+  srcs_[wdata_idx_].write(0, data, 0, data.get_size(), this->get_size());
 }
 
 void memportimpl::tick(ch_tick t) {
@@ -198,31 +190,10 @@ void memory::load(const std::string& init_file) {
   impl_->load(init_file);
 }
 
-lnode& memory::read(const lnode& addr) const {
-  return impl_->read(addr);
+const lnode& memory::get_port(const lnode& addr) const {
+  return impl_->get_port(addr);
 }
 
-void memory::write(const lnode& addr,
-                   size_t dst_offset,
-                   const nodelist& in,
-                   size_t src_offset,
-                   size_t length) {
-  assert(0 == dst_offset);
-  if (0 == src_offset) {
-    impl_->write(addr, in);
-  } else {
-    nodelist in2(length, true);
-    for (const auto& slice : in) {
-      if (src_offset < slice.length) {
-        uint32_t len = std::min(slice.length - src_offset, length);
-        in2.push(slice.src, slice.offset + src_offset, len);
-        length -= len;
-        if (0 == length)
-          break;
-        src_offset = slice.length;
-      }
-      src_offset -= slice.length;
-    }
-    impl_->write(addr, in2);
-  }
+void memory::write(const lnode& port, const lnode& data) {
+  return impl_->write(port, data);
 }

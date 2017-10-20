@@ -20,19 +20,19 @@ protected:
  
   lnode key_;
   
-  template <unsigned N> friend class switch_t;
+  template <typename K> friend class switch_t;
 };
 
-template <unsigned N>
+template <typename K>
 class switch_t {
 public:
 
   switch_t(const lnode& key) : impl_(key) {}
   
   template <typename T, typename Func,
-            CH_REQUIRES(is_ch_bit_convertible<T, N>::value)>
+            CH_REQUIRES(is_cast_convertible<K, T>::value)>
   switch_t& case_(const T& value, const Func& func) {
-    impl_.eval(get_lnode<T, N>(value), to_function_t<Func>(func));
+    impl_.eval(get_lnode<T, K::bitsize>(value), to_function_t<Func>(func));
     return *this;
   }
   
@@ -46,9 +46,10 @@ protected:
   switch_impl impl_;
 };
 
-template <unsigned N>
-auto ch_switch(const bitbase<N>& key) {
-  return switch_t<N>(get_lnode(key));
+template <typename K,
+          CH_REQUIRES(is_bit_convertible<K>::value)>
+auto ch_switch(const K& key) {
+  return switch_t<K>(get_lnode(key));
 }
 
 }

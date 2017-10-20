@@ -495,7 +495,7 @@ void verilogwriter::print_mem(memimpl* node) {
   //
   // initialization data
   //
-  if (node->is_initialized()) {
+  if (node->has_initdata()) {
     out_ << "initial begin" << std::endl;
     {
       auto_indent indent(out_);
@@ -521,7 +521,7 @@ void verilogwriter::print_mem(memimpl* node) {
   //
   for (auto& p : node->get_ports()) {
     auto p_impl = dynamic_cast<memportimpl*>(p.get_impl());
-    if (!p_impl->is_writable())
+    if (!p_impl->has_wdata())
       continue;
     out_ << "always @(" ;
     this->print_cdomain(node->get_cd());

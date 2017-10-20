@@ -7,7 +7,7 @@ SRCS = common.cpp basic.cpp scalar.cpp literals.cpp proxies.cpp aggregates.cpp s
 
 OBJS = $(SRCS:.cpp=.o)
 
-all: $(PROJECT) dogfood.out
+all: dogfood.out $(PROJECT)
 
 $(PROJECT) : $(OBJS)
 	$(CXX) $(CXXFLAGS) $^ $(LDFLAGS) -o $@

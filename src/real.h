@@ -20,7 +20,7 @@ public:
 
   const_real(const_real&& rhs) : base(rhs) {}
 
-  const_real(const bitbase<32>& rhs) : base(rhs) {}
+  explicit const_real(const bit_buffer& buffer) : base(buffer) {}
 
   explicit const_real(float rhs) : base(bitcast<uint32_t, float>(rhs)) {}
 };
@@ -38,27 +38,22 @@ public:
 
   ch_real(ch_real&& rhs) : base(rhs) {}
 
-  ch_real(const bitbase<32>& rhs) : base(rhs) {}
+  explicit ch_real(const bit_buffer& buffer) : base(buffer) {}
 
   explicit ch_real(float rhs) : base(rhs) {}
 
   ch_real& operator=(const ch_real& rhs) {
-    base::assign(rhs);
+    buffer_.copy(rhs.buffer_);
     return *this;
   }
 
   ch_real& operator=(ch_real&& rhs) {
-    node_.move(rhs.node_, bitsize);
-    return *this;
-  }
-
-  ch_real& operator=(const bitbase<32>& rhs) {
-    base::assign(rhs);
+    buffer_ = std::move(rhs.buffer_);
     return *this;
   }
 
   ch_real& operator=(float rhs) {
-    base::assign(ch_real(rhs));
+    buffer_.set_data(bitvector(32, bitcast<uint32_t, float>(rhs)));
     return *this;
   }
 };

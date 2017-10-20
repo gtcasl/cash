@@ -20,8 +20,10 @@ public:
   
   ~if_t();
     
-  template <typename Func>
-  if_t& elif_(const bitbase<1>& pred, const Func& func) {
+  template <typename Func, typename P,
+            CH_REQUIRES(is_bit_convertible<P>::value)>
+  if_t& elif_(const P& pred, const Func& func) {
+    static_assert(P::bitsize == 1, "invalid predicate size");
     this->eval(get_lnode(pred), to_function_t<Func>(func));
     return *this; 
   }
@@ -32,8 +34,10 @@ public:
   }
 };
 
-template <typename Func>
-if_t ch_if(const bitbase<1>& pred, const Func& func) {
+template <typename Func, typename P,
+          CH_REQUIRES(is_bit_convertible<P>::value)>
+if_t ch_if(const P& pred, const Func& func) {
+  static_assert(P::bitsize == 1, "invalid predicate size");
   return if_t(get_lnode(pred), func);
 }
 

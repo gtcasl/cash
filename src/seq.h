@@ -14,19 +14,24 @@ public:
   T next;
 
   ch_seq() {
-    base::assign(ch_reg(next));
+    auto& buffer = bit_accessor::get_buffer(*this);
+    auto reg = createRegNode(get_lnode<T>(next), get_lnode<int, T::bitsize>(0));
+    buffer.write(0, reg, 0, T::bitsize);
     next = *this;
   }
   
   template <typename U,
             CH_REQUIRES(is_cast_convertible<T, U>::value)>
   explicit ch_seq(const U& init) {
-    base::assign(ch_reg(next, init));
+    auto& buffer = bit_accessor::get_buffer(*this);
+    auto reg = createRegNode(get_lnode<T>(next), get_lnode<U, T::bitsize>(init));
+    buffer.write(0, reg, 0, T::bitsize);
     next = *this;
   }
 
 protected:
 
+  ch_seq(ch_seq&) = delete;
   ch_seq(ch_seq&&) = delete;
   ch_seq& operator=(const ch_seq&) = delete;
   ch_seq& operator=(ch_seq&&) = delete;

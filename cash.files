@@ -17,6 +17,8 @@ examples/fastmult_tb.v
 examples/fifo.cpp
 examples/fifo_tb.v
 examples/fifo_tb.v
+src/bit.cpp
+src/bitref.h
 src/callimpl.cpp
 src/callimpl.h
 src/cash.cpp
@@ -65,7 +67,6 @@ src/backward.h
 src/backward.h
 src/bit.h
 src/bit.h
-src/bitbase.h
 src/bitbase.h
 src/bitvector.cpp
 src/bitvector.cpp

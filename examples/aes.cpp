@@ -120,7 +120,7 @@ private:
 };
 
 int main(int argc, char **argv) {
-  ch_module<AES_ExpandKey<>> expand;
+  /*ch_module<AES_ExpandKey<>> expand;
   ch_module<AES_Encrypt<>> encrypt;
   ch_module<AES_Decrypt<>> decrypt;
 
@@ -132,7 +132,7 @@ int main(int argc, char **argv) {
 
   //CHECK(counter.io.out, 10);
 
-  ch_toVerilog("aes.v", expand, encrypt, decrypt);
+  ch_toVerilog("aes.v", expand, encrypt, decrypt);*/
 
   return 0;
 }

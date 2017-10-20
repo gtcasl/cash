@@ -30,10 +30,11 @@
     } \
   }
 
-#define CH_ENUM_BODY_IMPL(enum_name, assignment_body) \
-  enum_name() {} \
+#define CH_ENUM_BODY_IMPL(enum_name, reverse_name, assignment_body) \
+  enum_name(const ch::internal::bit_buffer& buffer = ch::internal::bit_buffer(base::bitsize)) : base(buffer) {} \
   enum_name(const enum_name& __rhs__) : base(__rhs__) {} \
   enum_name(enum_name&& __rhs__) : base(std::move(__rhs__)) {} \
+  enum_name(const reverse_name& __rhs__) : base(__rhs__) {} \
   enum_name(enum_type __rhs__) : base(__rhs__) {} \
   assignment_body(enum_name) \
   const auto clone() const { \
@@ -52,8 +53,7 @@ protected: \
   CH_BIT_READONLY_INTERFACE(enum_name)
 
 #define CH_ENUM_WRITABLE_IMPL(enum_name) \
-  enum_name(const __const_type__& __rhs__) \
-    : enum_name(reinterpret_cast<const base&>(__rhs__)) {} \
+  CH_BIT_WRITABLE_INTERFACE(enum_name) \
   enum_name& operator=(const enum_name& __rhs__) { \
     base::operator=(__rhs__); \
     return *this; \
@@ -62,11 +62,14 @@ protected: \
     base::operator=(std::move(__rhs__)); \
     return *this; \
   } \
-  enum_name& operator=(enum_type __rhs__) { \
+  enum_name& operator=(const __const_type__& __rhs__) { \
     base::operator=(__rhs__); \
     return *this; \
   } \
-  CH_BIT_WRITABLE_INTERFACE(enum_name)
+  enum_name& operator=(enum_type __rhs__) { \
+    base::operator=(__rhs__); \
+    return *this; \
+  }
 
 #define CH_ENUM_IMPL(enum_name, size, ...) \
   class enum_name : public ch::internal::ch_bit<size> { \
@@ -82,12 +85,12 @@ protected: \
     public: \
       using base = ch::internal::const_bit<size>; \
       using traits = ch::internal::logic_traits<__const_type__, __const_type__, enum_name, __scalar_type__>; \
-      CH_ENUM_BODY_IMPL(__const_type__, CH_ENUM_READONLY_IMPL) \
+      CH_ENUM_BODY_IMPL(__const_type__, enum_name, CH_ENUM_READONLY_IMPL) \
     }; \
   public: \
     using base = ch::internal::ch_bit<size>; \
     using traits = ch::internal::logic_traits<enum_name, __const_type__, enum_name, __scalar_type__>; \
-    CH_ENUM_BODY_IMPL(enum_name, CH_ENUM_WRITABLE_IMPL) \
+    CH_ENUM_BODY_IMPL(enum_name, __const_type__, CH_ENUM_WRITABLE_IMPL) \
   }
 
 #define CH_ENUM(name, size, body) \

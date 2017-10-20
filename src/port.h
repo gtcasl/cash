@@ -39,8 +39,7 @@ struct is_io_traits : std::false_type {};
 template <typename IoType, ch_direction Direction, typename FlipType, typename PortType, typename LogicType>
 struct is_io_traits<io_traits<IoType, Direction, FlipType, PortType, LogicType>> : std::true_type {};
 
-template <typename T>
-using is_io_type = is_io_traits<typename T::traits>;
+CH_DEF_SFINAE_CHECK(is_io_type, is_io_traits<typename T::traits>::value);
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -96,10 +95,6 @@ public:
 
   void operator()(const output_port<T>& out) const {
     bindInput(in_.input_, get_lnode(out.out_));
-  }
-
-  void operator()(const bitbase<T::bitsize>& value) const {
-    bindInput(in_.input_, get_lnode(value));
   }
 
   template <typename U, CH_REQUIRES(is_cast_convertible<T, U>::value)>
@@ -185,9 +180,7 @@ public:
 
   ch_in(const std::string& name = "io") {
     input_ = createInputNode(name, T::bitsize);
-    nodelist data(T::bitsize, true);
-    data.push(input_);
-    this->init(*this, data);
+    bit_accessor::get_buffer(*this).write(0, input_, 0, T::bitsize);
   }
 
   ch_in(const ch_in& in) : const_type_t<T>(in) {}
@@ -200,21 +193,6 @@ public:
 private:
   ch_in& operator=(const ch_in&) = delete;
   ch_in& operator=(ch_in&&) = delete;
-
-  template <typename U>
-  void init(U& x, const nodelist& data) {
-    x.write_lnode(0, data, 0, T::bitsize);
-  }
-
-  template <typename U, unsigned N>
-  void init(ch_in<ch_vec<U, N>>& x, const nodelist& data) {
-    // TODO: ugly hack to create vec from logic
-    unsigned src_offset = 0;
-    for (unsigned i = 0; i < N; ++i) {
-      ch::internal::write_lnode(x.items_[i], 0, data, src_offset, U::bitsize);
-      src_offset += U::bitsize;
-    }
-  }
 
   lnode input_;
 
@@ -254,39 +232,39 @@ private:
 
 template <typename T, unsigned N>
 struct peek_impl {
-  static const T read_bytes(const lnode& node) {
+  static const T read(const lnode& node) {
     T ret(0);
-    node.read_bytes(0, &ret, sizeof(T), 0, N, N);
+    node.get_data().read(0, &ret, sizeof(T), 0, N);
     return ret;
   }
 };
 
 template <unsigned N>
 struct peek_impl<ch_scalar<N>, N> {
-  static const ch_scalar<N> read_bytes(const lnode& node) {
+  static const ch_scalar<N> read(const lnode& node) {
     ch_scalar<N> ret;
-    node.read_bytes(0, ret.get_words(), ret.get_cbsize(), 0, N, N);
+    node.get_data().read(0, ret.get_words(), ret.get_cbsize(), 0, N);
     return ret;
   }
 };
 
 template <typename T, unsigned N>
 struct poke_impl {
-  static void write_bytes(lnode& node, const T& value) {
-    node.write_bytes(0, &value, sizeof(T), 0, N, N);
+  static void write(lnode& node, const T& value) {
+    node.get_data().write(0, &value, sizeof(T), 0, N);
   }
 };
 
 template <unsigned N>
 struct poke_impl<ch_scalar<N>, N> {
-  static void write_bytes(lnode& node, const ch_scalar<N>& value) {
-    node.write_bytes(0, value.get_words(), value.get_cbsize(), 0, N, N);
+  static void write(lnode& node, const ch_scalar<N>& value) {
+    node.get_data().write(0, value.get_words(), value.get_cbsize(), 0, N);
   }
 };
 
 template <typename V, typename T>
 V ch_peek(const output_port<T>& port) {
-  return peek_impl<std::decay_t<V>, T::bitsize>::read_bytes(port.get_output());
+  return peek_impl<std::decay_t<V>, T::bitsize>::read(port.get_output());
 }
 
 template <typename T>
@@ -296,12 +274,12 @@ void ch_peek(const output_port<T>& port,
              uint32_t out_cbsize,
              uint32_t src_offset = 0,
              uint32_t length = T::bitsize) {
-  port.get_output().read_bytes(dst_offset, out, out_cbsize, src_offset, length, T::bitsize);
+  port.get_output().get_data().read(dst_offset, out, out_cbsize, src_offset, length);
 }
 
 template <typename V, typename T>
 V ch_peek(const input_port<T>& port) {
-  return peek_impl<std::decay_t<V>, T::bitsize>::read_bytes(port.get_input());
+  return peek_impl<std::decay_t<V>, T::bitsize>::read(port.get_input());
 }
 
 template <typename T>
@@ -311,12 +289,12 @@ void ch_peek(const input_port<T>& port,
              uint32_t out_cbsize,
              uint32_t src_offset = 0,
              uint32_t length = T::bitsize) {
-  port.get_input().read_bytes(dst_offset, out, out_cbsize, src_offset, length, T::bitsize);
+  port.get_input().get_data().read(dst_offset, out, out_cbsize, src_offset, length);
 }
 
 template <typename V, typename T>
 void ch_poke(const input_port<T>& port, const V& value) {
-  poke_impl<std::decay_t<V>, T::bitsize>::write_bytes(port.get_input(), value);
+  poke_impl<std::decay_t<V>, T::bitsize>::write(port.get_input(), value);
 }
 
 template <typename T>
@@ -326,7 +304,7 @@ void ch_poke(const input_port<T>& port,
              uint32_t in_cbsize,
              uint32_t src_offset = 0,
              uint32_t length = T::bitsize) {
-  port.get_input().write_bytes(dst_offset, in, in_cbsize, src_offset, length, T::bitsize);
+  port.get_input().get_data().write(dst_offset, in, in_cbsize, src_offset, length);
 }
 
 template <typename T>
@@ -367,6 +345,9 @@ using ch_direction_t = typename T::traits::direction;
 #define CH_INOUT_FLIP_BIND_FIELD(i, x) \
   typename ch_flip_t<ch::internal::identity_t<CH_PAIR_L(x)>>::traits::port_type CH_PAIR_R(x)
 
+#define CH_INOUT_COPY_CTOR(i, x) \
+  CH_PAIR_R(x)(__rhs__.CH_PAIR_R(x))
+
 #define CH_INOUT_CTOR_BODY(i, x) \
   CH_PAIR_R(x)(ch::internal::fstring("%s_%s", name.c_str(), CH_STRINGIZE(CH_PAIR_R(x))).c_str())
 
@@ -389,7 +370,7 @@ using ch_direction_t = typename T::traits::direction;
   inout_name(const std::string& name = "io") \
     : CH_FOR_EACH(CH_INOUT_CTOR_BODY, CH_SEP_COMMA, __VA_ARGS__) {} \
   inout_name(const inout_name& __rhs__) \
-    : CH_FOR_EACH(CH_STRUCT_COPY_CTOR, CH_SEP_COMMA, __VA_ARGS__) {} \
+    : CH_FOR_EACH(CH_INOUT_COPY_CTOR, CH_SEP_COMMA, __VA_ARGS__) {} \
   inout_name(inout_name&& __rhs__) \
     : CH_FOR_EACH(CH_STRUCT_MOVE_CTOR, CH_SEP_COMMA, __VA_ARGS__) {} \
   auto operator()() const { \
@@ -423,7 +404,7 @@ using ch_direction_t = typename T::traits::direction;
     , CH_FOR_EACH(CH_INOUT_CTOR_BODY, CH_SEP_COMMA, __VA_ARGS__) {} \
   inout_name(const inout_name& __rhs__) \
     : parent(__rhs__) \
-    , CH_FOR_EACH(CH_STRUCT_COPY_CTOR, CH_SEP_COMMA, __VA_ARGS__) {} \
+    , CH_FOR_EACH(CH_INOUT_COPY_CTOR, CH_SEP_COMMA, __VA_ARGS__) {} \
   inout_name(inout_name&& __rhs__) \
     : parent(std::move(__rhs__)) \
     , CH_FOR_EACH(CH_STRUCT_MOVE_CTOR, CH_SEP_COMMA, __VA_ARGS__) {} \
@@ -473,7 +454,7 @@ using ch_direction_t = typename T::traits::direction;
         using __self_type__ = __flip_type__; \
         using __flip_port_type__ = __flop_port_type__; \
         __port_type__(__flip_type__& __rhs__) \
-          : CH_FOR_EACH(CH_STRUCT_COPY_CTOR, CH_SEP_COMMA, __VA_ARGS__) {} \
+          : CH_FOR_EACH(CH_INOUT_COPY_CTOR, CH_SEP_COMMA, __VA_ARGS__) {} \
         CH_INOUT_BIND_IMPL2(CH_INOUT_FLIP_BIND_FIELD, __VA_ARGS__) \
       }; \
     public: \
@@ -491,7 +472,7 @@ using ch_direction_t = typename T::traits::direction;
       using __self_type__ = inout_name; \
       using __flip_port_type__ = typename __flip_type__::traits::port_type; \
       __flop_port_type__(inout_name& __rhs__) \
-        : CH_FOR_EACH(CH_STRUCT_COPY_CTOR, CH_SEP_COMMA, __VA_ARGS__) {} \
+        : CH_FOR_EACH(CH_INOUT_COPY_CTOR, CH_SEP_COMMA, __VA_ARGS__) {} \
       CH_INOUT_BIND_IMPL2(CH_INOUT_BIND_FIELD, __VA_ARGS__) \
     }; \
   public: \
@@ -517,7 +498,7 @@ using ch_direction_t = typename T::traits::direction;
         using __flip_port_type__ = __flop_port_type__; \
         __port_type__(__flip_type__& __rhs__) \
           : ch_flip_t<parent>::traits::port_type(__rhs__) \
-          , CH_FOR_EACH(CH_STRUCT_COPY_CTOR, CH_SEP_COMMA, __VA_ARGS__) {} \
+          , CH_FOR_EACH(CH_INOUT_COPY_CTOR, CH_SEP_COMMA, __VA_ARGS__) {} \
         CH_INOUT_BIND_IMPL3(ch_flip_t<parent>::traits::port_type, CH_INOUT_FLIP_BIND_FIELD, __VA_ARGS__) \
       }; \
     public: \
@@ -536,7 +517,7 @@ using ch_direction_t = typename T::traits::direction;
       using __flip_port_type__ = typename __flip_type__::traits::port_type; \
       __flop_port_type__(inout_name& __rhs__) \
         : parent::traits::port_type(__rhs__) \
-        , CH_FOR_EACH(CH_STRUCT_COPY_CTOR, CH_SEP_COMMA, __VA_ARGS__) {} \
+        , CH_FOR_EACH(CH_INOUT_COPY_CTOR, CH_SEP_COMMA, __VA_ARGS__) {} \
       CH_INOUT_BIND_IMPL3(parent::traits::port_type, CH_INOUT_BIND_FIELD, __VA_ARGS__) \
     }; \
   public: \

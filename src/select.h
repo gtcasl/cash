@@ -43,9 +43,11 @@ public:
     impl_.push(pred, value);
   }
 
-  template <typename V,
+  template <typename P, typename V,
+            CH_REQUIRES(is_bit_convertible<P>::value),
             CH_REQUIRES(is_cast_convertible<T, V>::value)>
-  select_t<T>& operator()(const bitbase<1>& pred, const V& value) {
+  select_t<T>& operator()(const P& pred, const V& value) {
+    static_assert(P::bitsize == 1, "invalid predicate size");
     impl_.push(get_lnode(pred), get_lnode<V, T::bitsize>(value));
     return *this;
   }
@@ -88,30 +90,34 @@ protected:
   select_impl impl_;
 };
 
-template <typename V,
-          CH_REQUIRES(is_ch_bit_convertible<V>::value)>
-auto ch_select(const bitbase<1>& pred, const V& value) {
+template <typename P, typename V,
+          CH_REQUIRES(is_bit_convertible<P>::value),
+          CH_REQUIRES(is_bit_convertible<V>::value)>
+auto ch_select(const P& pred, const V& value) {
+  static_assert(P::bitsize == 1, "invalid predicate size");
   return select_t<value_type_t<V>>(get_lnode(pred), get_lnode(value));
 }
 
-template <typename R, typename V,
+template <typename R, typename P, typename V,
+          CH_REQUIRES(is_bit_convertible<P>::value),
           CH_REQUIRES(is_cast_convertible<R, V>::value)>
-auto ch_select(const bitbase<1>& pred, const V& value) {
+auto ch_select(const P& pred, const V& value) {
+  static_assert(P::bitsize == 1, "invalid predicate size");
   return select_t<R>(
         get_lnode(pred), get_lnode<V, R::bitsize>(value));
 }
 
 template <typename K, typename P, typename V,
-          CH_REQUIRES(is_ch_bit_convertible<K>::value),
+          CH_REQUIRES(is_bit_convertible<K>::value),
           CH_REQUIRES(is_equality_comparable<P, K>::value),
-          CH_REQUIRES(is_ch_bit_convertible<V>::value)>
+          CH_REQUIRES(is_bit_convertible<V>::value)>
 auto ch_case(const K& key, const P& pred, const V& value) {
   return case_t<K, value_type_t<V>>(
         get_lnode(key), get_lnode<P, K::bitsize>(pred), get_lnode(value));
 }
 
 template <typename R, typename K, typename P, typename V,
-          CH_REQUIRES(is_ch_bit_convertible<K>::value),
+          CH_REQUIRES(is_bit_convertible<K>::value),
           CH_REQUIRES(is_equality_comparable<P, K>::value),
           CH_REQUIRES(is_cast_convertible<R, V>::value)>
 auto ch_case(const K& key, const P& pred, const V& value) {
@@ -119,21 +125,25 @@ auto ch_case(const K& key, const P& pred, const V& value) {
         get_lnode(key), get_lnode<P, K::bitsize>(pred), get_lnode<V, R::bitsize>(value));
 }
 
-template <typename U, typename V,
+template <typename P, typename U, typename V,
           CH_REQUIRES(deduce_type_t<U, V>::bitsize != 0),
-          CH_REQUIRES(is_ch_bit_convertible<U, deduce_type_t<U, V>::bitsize>::value),
-          CH_REQUIRES(is_ch_bit_convertible<V, deduce_type_t<U, V>::bitsize>::value)>
-const auto ch_select(const bitbase<1>& pred, const U& _true, const V& _false) {
+          CH_REQUIRES(is_bit_convertible<P>::value),
+          CH_REQUIRES(is_bit_convertible<U, deduce_type_t<U, V>::bitsize>::value),
+          CH_REQUIRES(is_bit_convertible<V, deduce_type_t<U, V>::bitsize>::value)>
+const auto ch_select(const P& pred, const U& _true, const V& _false) {
+  static_assert(P::bitsize == 1, "invalid predicate size");
   return make_type<deduce_first_type_t<U, V>>(
         createSelectNode(get_lnode(pred),
                          get_lnode<U, deduce_type_t<U, V>::bitsize>(_true),
                          get_lnode<V, deduce_type_t<U, V>::bitsize>(_false)));
 }
 
-template <typename R, typename U, typename V,
+template <typename R, typename P, typename U, typename V,
+          CH_REQUIRES(is_bit_convertible<P>::value),
           CH_REQUIRES(is_cast_convertible<R, U>::value),
           CH_REQUIRES(is_cast_convertible<R, V>::value)>
-const auto ch_select(const bitbase<1>& pred, const U& _true, const V& _false) {
+const auto ch_select(const P& pred, const U& _true, const V& _false) {
+  static_assert(P::bitsize == 1, "invalid predicate size");
   return make_type<R>(
         createSelectNode(get_lnode(pred),
                          get_lnode<U, R::bitsize>(_true),
@@ -142,16 +152,16 @@ const auto ch_select(const bitbase<1>& pred, const U& _true, const V& _false) {
 
 template <typename U, typename V,
           CH_REQUIRES(deduce_type_t<U, V>::bitsize != 0),
-          CH_REQUIRES(is_ch_bit_convertible<U, deduce_type_t<U, V>::bitsize>::value),
-          CH_REQUIRES(is_ch_bit_convertible<V, deduce_type_t<U, V>::bitsize>::value)>
+          CH_REQUIRES(is_bit_convertible<U, deduce_type_t<U, V>::bitsize>::value),
+          CH_REQUIRES(is_bit_convertible<V, deduce_type_t<U, V>::bitsize>::value)>
 const auto ch_min(const U& lhs, const V& rhs) {
   return ch_select(lhs < rhs, lhs, rhs);
 }
 
 template <typename U, typename V,
           CH_REQUIRES(deduce_type_t<U, V>::bitsize != 0),
-          CH_REQUIRES(is_ch_bit_convertible<U, deduce_type_t<U, V>::bitsize>::value),
-          CH_REQUIRES(is_ch_bit_convertible<V, deduce_type_t<U, V>::bitsize>::value)>
+          CH_REQUIRES(is_bit_convertible<U, deduce_type_t<U, V>::bitsize>::value),
+          CH_REQUIRES(is_bit_convertible<V, deduce_type_t<U, V>::bitsize>::value)>
 const auto ch_max(const U& lhs, const V& rhs) {
   return ch_select(lhs > rhs, lhs, rhs);
 }
