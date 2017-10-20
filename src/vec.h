@@ -5,64 +5,26 @@
 namespace ch {
 namespace internal {
 
-template <typename T, unsigned N> class const_vec;
-template <typename T, unsigned N> class ch_vec;
-
-template <unsigned N, typename T>
-struct const_vec_traits;
-
-template <unsigned N, typename T>
-struct vec_traits;
-
-template <unsigned N, typename ScalarType, typename LogicType>
-struct const_vec_traits<N, scalar_traits<ScalarType, LogicType>>  {
-  using type = scalar_traits<ch_vec<ScalarType, N>, ch_vec<LogicType, N>>;
-};
-
-template <unsigned N, typename LogicType, typename ConstType, typename ValueType, typename ScalarType>
-struct const_vec_traits<N, logic_traits<LogicType, ConstType, ValueType, ScalarType>>  {
-  using type = logic_traits<const_vec<LogicType, N>, const_vec<LogicType, N>, ch_vec<ValueType, N>, ch_vec<ScalarType, N>>;
-};
-
-template <unsigned N, typename IoType, ch_direction Direction, typename FlipType, typename PortType, typename LogicType>
-struct const_vec_traits<N, io_traits<IoType, Direction, FlipType, PortType, LogicType>>  {
-  using type = io_traits<ch_vec<IoType, N>, Direction, ch_vec<FlipType, N>, ch_vec<PortType, N>, ch_vec<LogicType, N>>;
-};
-
-template <unsigned N, typename ScalarType, typename LogicType>
-struct vec_traits<N, scalar_traits<ScalarType, LogicType>>  {
-  using type = scalar_traits<ch_vec<ScalarType, N>, ch_vec<LogicType, N>>;
-};
-
-template <unsigned N, typename LogicType, typename ConstType, typename ValueType, typename ScalarType>
-struct vec_traits<N, logic_traits<LogicType, ConstType, ValueType, ScalarType>>  {
-  using type = logic_traits<ch_vec<LogicType, N>, const_vec<LogicType, N>, ch_vec<ValueType, N>, ch_vec<ScalarType, N>>;
-};
-
-template <unsigned N, typename IoType, ch_direction Direction, typename FlipType, typename PortType, typename LogicType>
-struct vec_traits<N, io_traits<IoType, Direction, FlipType, PortType, LogicType>>  {
-  using type = io_traits<ch_vec<IoType, N>, Direction, ch_vec<FlipType, N>, ch_vec<PortType, N>, ch_vec<LogicType, N>>;
-};
+template <typename T, unsigned N> class const_vec_base;
+template <typename T, unsigned N> class ch_vec_base;
 
 template <typename T, unsigned N>
-class const_vec {
+class const_vec_base {
 public:
   static constexpr unsigned bitsize = N * T::bitsize;
-  using traits = typename const_vec_traits<N, typename T::traits>::type;
-  using value_type = T;
 
-  const_vec() {}
-  const_vec(const const_vec& rhs) : items_(rhs.items_) {}
-  const_vec(const_vec&& rhs) : items_(std::move(rhs.items_)) {}
+  const_vec_base() {}
+  const_vec_base(const const_vec_base& rhs) : items_(rhs.items_) {}
+  const_vec_base(const_vec_base&& rhs) : items_(std::move(rhs.items_)) {}
 
   template <typename U>
-  explicit const_vec(const const_vec<U, N>& rhs) {
+  explicit const_vec_base(const const_vec_base<U, N>& rhs) {
     this->assign(rhs);
   }
 
   template <typename... Vs,
             CH_REQUIRES(are_all_cast_convertible<T, Vs...>::value)>
-  explicit const_vec(const Vs&... values) {
+  explicit const_vec_base(const Vs&... values) {
     this->init(values...);
   }
 
@@ -139,7 +101,7 @@ protected:
   }
 
   template <typename U>
-  void assign(const const_vec<U, N>& rhs) {
+  void assign(const const_vec_base<U, N>& rhs) {
     for (unsigned i = 0; i < N; ++i) {
       items_[i] = rhs[i];
     }
@@ -150,49 +112,46 @@ protected:
 };
 
 template <typename T, unsigned N>
-class ch_vec : public const_vec<T, N> {
+class ch_vec_base : public const_vec_base<T, N> {
 public:
-  static constexpr unsigned bitsize = N * T::bitsize;
-  using base = const_vec<T, N>;
-  using traits = typename vec_traits<N, typename T::traits>::type;
-  using value_type = T;
+  using base = const_vec_base<T, N>;
   using base::operator [];
   using base::items_;
 
-  ch_vec() {}
-  ch_vec(const ch_vec& rhs) : base(rhs) {}
-  ch_vec(ch_vec&& rhs) : base(rhs) {}
+  ch_vec_base() {}
+  ch_vec_base(const ch_vec_base& rhs) : base(rhs) {}
+  ch_vec_base(ch_vec_base&& rhs) : base(rhs) {}
 
-  ch_vec(const const_vec<T, N>& rhs) : base(rhs) {}
-
-  template <typename U>
-  explicit ch_vec(const const_vec<U, N>& rhs) : base(rhs) {}
+  ch_vec_base(const const_vec_base<T, N>& rhs) : base(rhs) {}
 
   template <typename U>
-  explicit ch_vec(const ch_vec<U, N>& rhs) : base(rhs) {}
+  explicit ch_vec_base(const const_vec_base<U, N>& rhs) : base(rhs) {}
+
+  template <typename U>
+  explicit ch_vec_base(const ch_vec_base<U, N>& rhs) : base(rhs) {}
 
   template <typename... Vs,
             CH_REQUIRES(are_all_cast_convertible<T, Vs...>::value)>
-  explicit ch_vec(const Vs&... values) : base(values...) {}
+  explicit ch_vec_base(const Vs&... values) : base(values...) {}
 
-  ch_vec& operator=(const ch_vec& rhs) {
+  ch_vec_base& operator=(const ch_vec_base& rhs) {
     items_ = rhs.items_;
     return *this;
   }
 
-  ch_vec& operator=(ch_vec&& rhs) {
+  ch_vec_base& operator=(ch_vec_base&& rhs) {
     items_ = std::move(rhs.items_);
     return *this;
   }
 
   template <typename U>
-  ch_vec& operator=(const const_vec<U, N>& rhs) {
+  ch_vec_base& operator=(const const_vec_base<U, N>& rhs) {
     this->assign(rhs);
     return *this;
   }
 
   template <typename U>
-  ch_vec& operator=(const ch_vec<U, N>& rhs) {
+  ch_vec_base& operator=(const ch_vec_base<U, N>& rhs) {
     this->assign(rhs);
     return *this;
   }
@@ -237,6 +196,52 @@ public:
     }
   }
 };
+
+template <typename T, unsigned N>
+class ch_scalar_vec : public ch_vec_base<T, N> {
+public:
+  using type = scalar_traits<ch_scalar_vec<scalar_type_t<T>, N>, ch_scalar_vec<logic_type_t<T>, N>>;
+
+private:
+  //--
+};
+
+template <typename T, unsigned N> class ch_logic_vec;
+
+template <typename T, unsigned N>
+class ch_logic_const_vec : public const_vec_base<T, N> {
+public:
+  using type = logic_traits<ch_logic_const_vec<logic_type_t<T>, N>, ch_logic_const_vec<logic_type_t<T>, N>, ch_logic_vec<value_type_t<T>, N>, ch_logic_vec<scalar_type_t<T>, N>>;
+
+private:
+  //--
+};
+
+template <typename T, unsigned N>
+class ch_logic_vec : public ch_vec_base<T, N> {
+public:
+  using type = logic_traits<ch_logic_vec<logic_type_t<T>, N>, ch_logic_const_vec<logic_type_t<T>, N>, ch_logic_vec<value_type_t<T>, N>, ch_logic_vec<scalar_type_t<T>, N>>;
+
+private:
+  //--
+};
+
+template <typename T, unsigned N>
+class ch_io_vec : public ch_vec_base<T, N> {
+public:
+  using type = io_traits<ch_io_vec<io_type_t<T>, N>, direction_v<T>, ch_io_vec<flip_type_t<T>, N>, ch_io_vec<port_type_t<T>, N>, ch_io_vec<logic_type_t<T>, N>>;
+
+private:
+  //--
+};
+
+template <typename T, unsigned N>
+using const_vec = std::conditional_t<is_logic_type<T>::value, ch_logic_const_vec<T, N>,
+                      std::conditional_t<is_io_type<T>::value, ch_io_vec<T, N>, ch_scalar_vec<T, N>>>;
+
+template <typename T, unsigned N>
+using ch_vec = std::conditional_t<is_logic_type<T>::value, ch_logic_vec<T, N>,
+                  std::conditional_t<is_io_type<T>::value, ch_io_vec<T, N>, ch_scalar_vec<T, N>>>;
 
 }
 }

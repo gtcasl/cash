@@ -34,6 +34,18 @@ struct io_traits {
 };
 
 template <typename T>
+using io_type_t = typename T::traits::io_type;
+
+template <typename T>
+using flip_type_t = typename T::traits::flip_type;
+
+template <typename T>
+using port_type_t = typename T::traits::port_type;
+
+template <typename T>
+constexpr ch_direction direction_v = T::traits::direction;
+
+template <typename T>
 struct is_io_traits : std::false_type {};
 
 template <typename IoType, ch_direction Direction, typename FlipType, typename PortType, typename LogicType>
@@ -306,15 +318,6 @@ void ch_poke(const input_port<T>& port,
              uint32_t length = T::bitsize) {
   port.get_input().get_data().write(dst_offset, in, in_cbsize, src_offset, length);
 }
-
-template <typename T>
-using ch_flip_t = typename T::traits::flip_type;
-
-template <typename T>
-using ch_ioport_t = typename T::traits::port_type;
-
-template <typename T>
-using ch_direction_t = typename T::traits::direction;
 
 }
 }

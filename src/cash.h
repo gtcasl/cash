@@ -49,7 +49,7 @@ namespace core {
   using ch::internal::ilog2;
   using ch::internal::log2ceil;
 
-  template <typename T, unsigned N> using ch_vec = ch::internal::ch_vec<T, N>;
+  template <typename T, unsigned N> using ch_vec = ch::internal::ch_vec_base<T, N>;
 
   template <unsigned N> using ch_bit = ch::internal::ch_bit<N>;
 
@@ -59,15 +59,15 @@ namespace core {
 
   template <typename T> using ch_seq = ch::internal::ch_seq<T>;
 
+  using ch_direction = ch::internal::ch_direction;
+
   template <typename T> using ch_scalar_t = ch::internal::scalar_type_t<T>;
   template <typename T> using ch_logic_t  = ch::internal::logic_type_t<T>;
   template <typename T> using ch_value_t  = ch::internal::value_type_t<T>;
   template <typename T> using ch_const_t  = ch::internal::const_type_t<T>;
-  template <typename T> using ch_flip_t   = ch::internal::ch_flip_t<T>;
-  template <typename T> using ch_ioport_t = ch::internal::ch_ioport_t<T>;
-  template <typename T> using ch_direction_t = ch::internal::ch_direction_t<T>;
-
-  using ch_direction = ch::internal::ch_direction;
+  template <typename T> using ch_flip_t   = ch::internal::flip_type_t<T>;
+  template <typename T> using ch_port_t   = ch::internal::port_type_t<T>;
+  template <typename T> constexpr ch_direction ch_direction_v = ch::internal::direction_v<T>;
 
   template <typename T> using ch_in = ch::internal::ch_in<T>;
   template <typename T> using ch_out = ch::internal::ch_out<T>;
