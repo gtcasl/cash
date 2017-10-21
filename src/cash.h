@@ -49,7 +49,7 @@ namespace core {
   using ch::internal::ilog2;
   using ch::internal::log2ceil;
 
-  template <typename T, unsigned N> using ch_vec = ch::internal::ch_vec_base<T, N>;
+  template <typename T, unsigned N> using ch_vec = ch::internal::ch_vec<T, N>;
 
   template <unsigned N> using ch_bit = ch::internal::ch_bit<N>;
 
@@ -90,6 +90,7 @@ namespace core {
   // constants
   //
 
+  using ch_bool = ch_bit1;
   const ch_scalar<1> ch_false(0);
   const ch_scalar<1> ch_true(1);
 
@@ -97,6 +98,7 @@ namespace core {
   // subscript operators
   //
 
+  using ch::internal::ch_clone;
   using ch::internal::ch_zext;
   using ch::internal::ch_sext;
   using ch::internal::ch_cat;

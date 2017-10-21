@@ -15,7 +15,7 @@ public:
 
   ch_seq() {
     auto& buffer = bit_accessor::get_buffer(*this);
-    auto reg = createRegNode(get_lnode<T>(next), get_lnode<int, T::bitsize>(0));
+    auto reg = createRegNode(get_lnode<T>(next), get_lnode<int, T::bitwidth>(0));
     buffer.set_data(reg);
     next = *this;
   }
@@ -24,7 +24,7 @@ public:
             CH_REQUIRES(is_cast_convertible<T, U>::value)>
   explicit ch_seq(const U& init) {
     auto& buffer = bit_accessor::get_buffer(*this);
-    auto reg = createRegNode(get_lnode<T>(next), get_lnode<U, T::bitsize>(init));
+    auto reg = createRegNode(get_lnode<T>(next), get_lnode<U, T::bitwidth>(init));
     buffer.set_data(reg);
     next = *this;
   }

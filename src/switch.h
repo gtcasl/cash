@@ -32,7 +32,7 @@ public:
   template <typename T, typename Func,
             CH_REQUIRES(is_cast_convertible<K, T>::value)>
   switch_t& case_(const T& value, const Func& func) {
-    impl_.eval(get_lnode<T, K::bitsize>(value), to_function_t<Func>(func));
+    impl_.eval(get_lnode<T, K::bitwidth>(value), to_function_t<Func>(func));
     return *this;
   }
   

@@ -48,19 +48,19 @@ TEST_CASE("literals", "[literals]") {
     });
     TEST([]()->ch_bit1 {
       ch_bit32 a(0x0001'0000_h);
-      return (a.aslice<4>(4) == 0x1_h);
+      return (ch_aslice<4>(a, 4) == 0x1_h);
     });
     TEST([]()->ch_bit1 {
       ch_bit32 a(0x00'01'00'00_h32);
-      return (a.aslice<4>(4) == 0x1_h);
+      return (ch_aslice<4>(a, 4) == 0x1_h);
     });
     TEST([]()->ch_bit1 {
       const ch_bit32 a(0x00'01'00'00_h32);
-      return (a.aslice<4>(4) == 0x1_h);
+      return (ch_aslice<4>(a, 4) == 0x1_h);
     });
     TEST([]()->ch_bit1 {
       ch_bit64 a(0x10000000'00000000_h);
-      return (a.aslice<4>(15) == 0x1_h);
+      return (ch_aslice<4>(a, 15) == 0x1_h);
     });
   }
 }

@@ -8,7 +8,7 @@ namespace internal {
 template <unsigned N>
 class const_bit_slice {
 public:
-  static constexpr unsigned bitsize = N;
+  static constexpr unsigned bitwidth = N;
   using traits = logic_traits<const_bit_slice, const_bit_slice, ch_bit<N>, ch_scalar<N>>;
 
   const_bit_slice(const bit_buffer& buffer, size_t start = 0)
@@ -17,7 +17,7 @@ public:
   }
 
   const_bit_slice(const const_bit_slice& rhs)
-    : buffer_(bit_accessor::clone(rhs))
+    : buffer_(bit_accessor::cloneBuffer(rhs))
   {}
 
   const_bit_slice(const_bit_slice&& rhs)
@@ -104,7 +104,7 @@ public:
 template <unsigned N>
 class bit_concat {
 public:
-  static constexpr unsigned bitsize = N;
+  static constexpr unsigned bitwidth = N;
   using traits = logic_traits<bit_concat, bit_concat, ch_bit<N>, ch_scalar<N>>;
 
   bit_concat(const std::vector<bit_buffer>& buffers) : buffers_(buffers) {}

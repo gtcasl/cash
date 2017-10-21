@@ -451,20 +451,20 @@ TEST_CASE("conditionals", "[conditionals]") {
   }
   SECTION("muxes", "[mux]") {
     TEST([]()->ch_bit1 {
-      ch_bit4 a = 1100_b;
-      ch_bit2 b = 10_b;
+      ch_bit4 a(1100_b);
+      ch_bit2 b(10_b);
       auto c = ch_mux(a, b);
       return (c == 1_b);
     });
     TEST([]()->ch_bit1 {
-      ch_bit4 a = 1100_b;
-      ch_bit1 b = 1_b;
+      ch_bit4 a(1100_b);
+      ch_bit1 b(1_b);
       auto c = ch_mux(a, b);
       return (c == 11_b);
     });
     TEST([]()->ch_bit1 {
-      ch_bit8 a = 01110101_b;
-      ch_bit2 b = 10_b;
+      ch_bit8 a(01110101_b);
+      ch_bit2 b(10_b);
       auto c = ch_mux(a, b);
       return (c == 11_b);
     });

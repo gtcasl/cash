@@ -47,24 +47,24 @@ TEST_CASE("misc", "[misc]") {
   SECTION("tick", "[tick]") {
     TEST([]()->ch_bit1 {
       ch_print("tick={0}", ch_getTick());
-      return 1_b;
+      return ch_true;
     });
   }
   
   SECTION("print", "[print]") {
     TEST([]()->ch_bit1 {
       ch_print("hello world");
-      return 1_b;
+      return ch_true;
     });
     TEST([]()->ch_bit1 {
       ch_bit8 a(255);
       ch_print("a={0}", a);
-      return 1_b;
+      return ch_true;
     });    
     TEST([]()->ch_bit1 {
       ch_bit8 a(255), b(0);
       ch_print("a={0}, b={1}", a, b);
-      return 1_b;
+      return ch_true;
     });  
     TEST([]()->ch_bit1 {
       ch_bit8 a(255);
@@ -72,12 +72,12 @@ TEST_CASE("misc", "[misc]") {
       __if (b) (
         ch_print("a={0}", a);
       );
-      return 1_b;
+      return ch_true;
     });
     TEST([]()->ch_bit1 {
       ch_float a(0.1f);
       ch_print("a={0:f}", a);
-      return 1_b;
+      return ch_true;
     });
   }
 }

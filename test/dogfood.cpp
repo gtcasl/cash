@@ -11,6 +11,13 @@ __enum (e2_t, 2, (
   done
 ));
 
+__enum(E, 2, (
+  a,
+  b,
+  c,
+  d
+));
+
 __union (u4_t, (
   (ch_bit4) a
   ));
@@ -76,7 +83,7 @@ struct Fifo {
     rd_ptr.next = ch_select(reading, rd_ptr + 1, rd_ptr);
     wr_ptr.next = ch_select(writing, wr_ptr + 1, wr_ptr);
 
-    ch_ram<T::bitsize, A> mem;
+    ch_ram<T::bitwidth, A> mem;
     __if (writing) (
       mem[wr_A] = io.end.data;
     );
@@ -182,18 +189,21 @@ struct Foo2 {
   }
 };
 
-/*struct Dogfood {
+struct Dogfood {
   __io (
     (ch_out<ch_bit1>) out
   );
   void describe() {
-    v2_2_t a = ch_reg(v2_2_t{3, 1});
+    auto x = ch_reg(E::c, E::a);
+    auto e = ch_case<E>(ch_getTick(), 3, E::c)(x);
+    io.out = (x == e);
+    /*v2_2_t a = ch_reg(v2_2_t{3, 1});
     auto e = ch_case(ch_getTick(), 3, 1101_b)(a);
     ch_print("t={0}, a={1}, e={2}", ch_getTick(), a, e);
-    io.out = ((ch_bit<v2_2_t::bitsize>)a == e);
+    io.out = ((ch_bit<v2_2_t::bitwidth>)a == e);*/
     //io.out = 1_b;
   }
-};*/
+};
 
 int main(int argc, char **argv) {
 

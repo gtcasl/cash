@@ -59,7 +59,13 @@ struct conjunction<B> : std::integral_constant<bool, B> {};
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename To, typename From>
+using is_implicit_convertible = std::is_convertible<To, From>;
+
+template <typename To, typename From>
 using is_cast_convertible = std::is_constructible<To, From>;
+
+template <typename To, typename... Froms>
+using are_all_implicit_convertible = conjunction<is_implicit_convertible<To, Froms>::value...>;
 
 template <typename To, typename... Froms>
 using are_all_cast_convertible = conjunction<is_cast_convertible<To, Froms>::value...>;
