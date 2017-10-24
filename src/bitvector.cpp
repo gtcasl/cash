@@ -336,15 +336,15 @@ bool bitvector::is_empty() const {
 
 void bitvector::read(
     uint32_t dst_offset,
-    void* out,
-    uint32_t out_cbsize,
+    void* dst,
+    uint32_t dst_cbsize,
     uint32_t src_offset,
     uint32_t length) const {
   CH_CHECK(src_offset + length <= size_, "out of bound access");
-  CH_CHECK(dst_offset + length <= out_cbsize * 8, "out of bound access");
+  CH_CHECK(dst_offset + length <= dst_cbsize * 8, "out of bound access");
 
   uint32_t b_dst_offset = dst_offset / 8;
-  uint8_t* b_out = reinterpret_cast<uint8_t*>(out) + b_dst_offset;
+  uint8_t* b_dst = reinterpret_cast<uint8_t*>(dst) + b_dst_offset;
   uint32_t dst_rem = dst_offset & 0x7;
   uint32_t src_rem = src_offset & 0x7;
   uint32_t end_rem = (dst_offset + length) & 0x7;
@@ -356,47 +356,47 @@ void bitvector::read(
     uint32_t b_src_offset = src_offset / 8;
     uint8_t* b_src = reinterpret_cast<uint8_t*>(words_) + b_src_offset;
     if (0 == end_rem) {
-      std::copy_n(b_src, b_length, b_out);
+      std::copy_n(b_src, b_length, b_dst);
     } else {
       // copy all bytes except the last one
       uint32_t end = b_length - 1;
-      std::copy_n(b_src, end, b_out);
+      std::copy_n(b_src, end, b_dst);
       // only update set bits from source in the last byte
       uint32_t sel_mask = (~0UL << end_rem);
-      b_out[end] = CH_BLEND(sel_mask, b_src[end], b_out[end]);
+      b_dst[end] = CH_BLEND(sel_mask, b_src[end], b_dst[end]);
     }
   } else {
     uint8_t tmp = 0;
     const_iterator iter = this->begin() + src_offset;
     if (dst_rem) {
-      tmp = *b_out & ~(~0UL << dst_rem);
+      tmp = *b_dst & ~(~0UL << dst_rem);
     }
     for (uint32_t i = dst_offset, end = dst_offset + length; i < end; ++i) {
       uint32_t shift = i & 0x7;
       tmp |= (*iter++) << shift;
       if (shift == 0x7) {
-        *b_out++ = tmp;
+        *b_dst++ = tmp;
         tmp = 0;
       }
     }
     if (tmp) {
       uint32_t sel_mask = (~0UL << end_rem);
-      *b_out = CH_BLEND(sel_mask, tmp, *b_out);
+      *b_dst = CH_BLEND(sel_mask, tmp, *b_dst);
     }
   }
 }
 
 void bitvector::write(
     uint32_t dst_offset,
-    const void* in,
-    uint32_t in_cbsize,
+    const void* src,
+    uint32_t src_cbsize,
     uint32_t src_offset,
     uint32_t length) {
   CH_CHECK(dst_offset + length <= size_, "out of bound access");
-  CH_CHECK(src_offset + length <= in_cbsize * 8, "out of bound access");
+  CH_CHECK(src_offset + length <= src_cbsize * 8, "out of bound access");
 
   uint32_t b_src_offset = src_offset / 8;
-  const uint8_t* b_in = reinterpret_cast<const uint8_t*>(in) + b_src_offset;
+  const uint8_t* b_src = reinterpret_cast<const uint8_t*>(src) + b_src_offset;
   uint32_t dst_rem = dst_offset & 0x7;
   uint32_t src_rem = src_offset & 0x7;
 
@@ -408,25 +408,25 @@ void bitvector::write(
     uint8_t* b_dst = reinterpret_cast<uint8_t*>(words_) + b_dst_offset;
     uint32_t end_rem = (src_offset + length) & 0x7;
     if (0 == end_rem) {
-      std::copy_n(b_in, b_length, b_dst);
+      std::copy_n(b_src, b_length, b_dst);
     } else {
       // copy all bytes except the last one
       uint32_t end = b_length - 1;
-      std::copy_n(b_in, end, b_dst);
+      std::copy_n(b_src, end, b_dst);
       // only update set bits from source in the last byte
       uint32_t sel_mask = (~0UL << end_rem);
-      b_dst[end] = CH_BLEND(sel_mask, b_in[end], b_dst[end]);
+      b_dst[end] = CH_BLEND(sel_mask, b_src[end], b_dst[end]);
     }
   } else {
     iterator iter = this->begin() + dst_offset;
     uint8_t tmp;
     if (src_offset) {
-      tmp = *b_in++;
+      tmp = *b_src++;
     }
     for (uint32_t i = src_offset, end = src_offset + length; i < end; ++i) {
       uint32_t shift = i & 0x7;
       if (0 == shift) {
-        tmp = *b_in++;
+        tmp = *b_src++;
       }
       *iter++ = (tmp >> shift) & 0x1;
     }

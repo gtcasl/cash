@@ -61,7 +61,7 @@ public:
   }
 
   ch_real& operator=(float rhs) {
-    buffer_.set_data(bitvector(32, bitcast<uint32_t, float>(rhs)));
+    buffer_->set_data(bitvector(32, bitcast<uint32_t, float>(rhs)));
     return *this;
   }
 

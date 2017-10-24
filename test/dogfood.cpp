@@ -245,6 +245,15 @@ int main(int argc, char **argv) {
   }
 
   {
+    auto force_move_assignment = []() {
+      return 4_h + 3_h;
+    };
+    ch_scalar<4> x;
+    x = force_move_assignment();
+    assert(x == 7);
+  }
+
+  {
     ch_scalar<4> a(e2_t::done), b(1);
 
     assert(a == 3);

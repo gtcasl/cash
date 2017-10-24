@@ -54,7 +54,7 @@ public:
 
   template <typename T, CH_REQUIRES(is_bit_convertible<T, N>::value)>
   memport_ref& operator=(const T& rhs) {
-    mem_.write(buffer_.get_data(), get_lnode<T, N>(rhs));
+    mem_.write(buffer_->get_data(), get_lnode<T, N>(rhs));
     return *this;
   }
 
@@ -64,11 +64,11 @@ protected:
     , mem_(mem)
   {}
 
-  const bit_buffer& get_buffer() const {
+  const bit_buffer_ptr& get_buffer() const {
     return buffer_;
   }
 
-  bit_buffer& get_buffer() {
+  bit_buffer_ptr& get_buffer() {
     return buffer_;
   }
 

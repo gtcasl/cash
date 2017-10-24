@@ -85,11 +85,11 @@
                     static_cast<ch::internal::bit_cast_t<__T__, traits::bitwidth>>(rhs)))) {} \
   assignment_body(union_name, __VA_ARGS__) \
 protected: \
-  const ch::internal::bit_buffer& get_buffer() const { \
-    CH_FOR_EACH_1(0, CH_UNION_GETBUFFER, CH_SEP_SEMICOLON, __VA_ARGS__); \
+  const ch::internal::bit_buffer_ptr& get_buffer() const { \
+    CH_FOR_EACH_1(0, CH_UNION_GETBUFFER, CH_SEP_SEMICOLON, __VA_ARGS__)->get_source(); \
   } \
-  ch::internal::bit_buffer& get_buffer() { \
-    CH_FOR_EACH_1(0, CH_UNION_GETBUFFER, CH_SEP_SEMICOLON, __VA_ARGS__); \
+  ch::internal::bit_buffer_ptr& get_buffer() { \
+    CH_FOR_EACH_1(0, CH_UNION_GETBUFFER, CH_SEP_SEMICOLON, __VA_ARGS__)->get_source(); \
   } \
   friend class ch::internal::bit_accessor; \
 

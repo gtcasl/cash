@@ -214,12 +214,12 @@ protected:
     : base((bit_buffer(bitwidth_v<T>, buffer, Is * bitwidth_v<T>))...)
   {}
 
-  const bit_buffer& get_buffer() const {
-    return bit_accessor::get_buffer(items_[0]);
+  const bit_buffer_ptr& get_buffer() const {
+    return bit_accessor::get_buffer(items_[0])->get_source();
   }
 
-  bit_buffer& get_buffer() {
-    return bit_accessor::get_buffer(items_[0]);
+  bit_buffer_ptr& get_buffer() {
+    return bit_accessor::get_buffer(items_[0])->get_source();
   }
 
   friend class bit_accessor;

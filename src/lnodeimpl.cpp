@@ -155,13 +155,6 @@ const lnode& lnode::ensureInitialized(uint32_t size, bool initialize) const {
     } else {
       impl_ = ctx_curr()->createNode<proxyimpl>(size);
     }
-  } else {
-    auto proxy = dynamic_cast<proxyimpl*>(impl_);
-    if (nullptr == proxy) {
-      lnodeimpl* impl = impl_;
-      impl_ = impl->get_ctx()->createNode<proxyimpl>(impl);
-      impl->get_ctx()->relocate_locals(impl, impl_);
-    }
   }
   assert(impl_->get_size() >= size);
   return *this;
@@ -169,6 +162,7 @@ const lnode& lnode::ensureInitialized(uint32_t size, bool initialize) const {
 
 void lnode::move(const lnode& rhs) {
   assert(this != &rhs);
+  assert(!rhs.is_empty());
   if (ctx_curr()->conditional_enabled(impl_)) {
     rhs.ensureInitialized(impl_->get_size(), true);
     this->write(0, rhs, 0, impl_->get_size(), impl_->get_size());
@@ -193,8 +187,18 @@ void lnode::write(uint32_t dst_offset,
   assert(size >= dst_offset + length);
   context* ctx = src.get_ctx();  
 
-  this->ensureInitialized(size);
   auto proxy = dynamic_cast<proxyimpl*>(impl_);
+  if (nullptr == proxy) {
+    lnodeimpl* impl = nullptr;
+    std::swap<lnodeimpl*>(impl, impl_);
+    this->ensureInitialized(size, nullptr == impl);
+    proxy = dynamic_cast<proxyimpl*>(impl_);
+    if (impl) {
+      proxy->add_source(0, impl, 0, size);
+    }
+    ctx->relocate_locals(impl, impl_);
+  }
+
   if (ctx->conditional_enabled(impl_)) {
     const auto& slices = proxy->get_update_slices(dst_offset, length);
     for (const auto& slice : slices) {

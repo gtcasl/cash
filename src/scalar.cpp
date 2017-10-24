@@ -41,7 +41,9 @@ scalar_buffer_impl::scalar_buffer_impl(bitvector&& data)
   , version_(1)
 {}
 
-scalar_buffer_impl::scalar_buffer_impl(unsigned size, const scalar_buffer_ptr& buffer, unsigned offset)
+scalar_buffer_impl::scalar_buffer_impl(unsigned size,
+                                       const scalar_buffer_ptr& buffer,
+                                       unsigned offset)
   : source_(buffer)
   , offset_(offset)
   , size_(size)
@@ -61,11 +63,14 @@ scalar_buffer_impl& scalar_buffer_impl::operator=(const scalar_buffer_impl& rhs)
 }
 
 scalar_buffer_impl& scalar_buffer_impl::operator=(scalar_buffer_impl&& rhs) {
-  source_ = std::move(rhs.source_);
-  value_  = std::move(rhs.value_);
-  offset_ = rhs.offset_;
-  size_   = rhs.size_;
-  version_= rhs.version_;
+  if (source_ || rhs.source_) {
+    this->copy(rhs);
+  } else {
+    value_  = std::move(rhs.value_);
+    offset_ = rhs.offset_;
+    size_   = rhs.size_;
+    ++version_;
+  }
   return *this;
 }
 
@@ -87,12 +92,12 @@ const bitvector& scalar_buffer_impl::get_data() const {
   return value_;
 }
 
-void scalar_buffer_impl::copy(const scalar_buffer_ptr& rhs) {
+void scalar_buffer_impl::copy(const scalar_buffer_impl& rhs) {
   this->write(0,
-              rhs->get_data().get_words(),
-              rhs->get_data().get_cbsize(),
-              rhs->get_offset(),
-              rhs->get_size());
+              rhs.get_data().get_words(),
+              rhs.get_data().get_cbsize(),
+              rhs.get_offset(),
+              rhs.get_size());
 }
 
 void scalar_buffer_impl::read(uint32_t dst_offset,
@@ -117,11 +122,8 @@ void scalar_buffer_impl::write(uint32_t dst_offset,
     source_->write(offset_ + dst_offset, in, in_cbsize, src_offset, length);
   } else {
     assert(dst_offset + length <= size_);
+    assert(0 == offset_);
     value_.write(dst_offset, in, in_cbsize, src_offset, length);
     ++version_;
   }
-}
-
-bool scalar_buffer_impl::is_slice() const {
-  return !!source_;
 }

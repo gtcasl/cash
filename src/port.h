@@ -189,7 +189,7 @@ public:
 
   ch_in(const std::string& name = "io") {
     input_ = createInputNode(name, bitwidth_v<T>);
-    bit_accessor::get_buffer(*this).set_data(input_);
+    bit_accessor::set_data(*this, input_);
   }
 
   ch_in(const ch_in& in) : const_type_t<T>(in) {}

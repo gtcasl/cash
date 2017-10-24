@@ -139,11 +139,19 @@ public:
 
   const bitvector& get_data() const;
 
-  void copy(const scalar_buffer_ptr& rhs);
+  void copy(const scalar_buffer_impl& rhs);
 
-  void read(uint32_t dst_offset, void* out, uint32_t out_cbsize, uint32_t src_offset, uint32_t length) const;
+  void read(uint32_t dst_offset,
+            void* out,
+            uint32_t out_cbsize,
+            uint32_t src_offset,
+            uint32_t length) const;
 
-  void write(uint32_t dst_offset, const void* in, uint32_t in_cbsize, uint32_t src_offset, uint32_t length);
+  void write(uint32_t dst_offset,
+             const void* in,
+             uint32_t in_cbsize,
+             uint32_t src_offset,
+             uint32_t length);
 
   const auto& get_source() const {
     return source_;
@@ -160,8 +168,6 @@ public:
   auto get_size() const {
     return size_;
   }
-
-  bool is_slice() const;
 
 private:
   scalar_buffer_ptr source_;
@@ -202,16 +208,21 @@ public:
 struct scalar_accessor {
   template <typename T>
   static const auto& get_buffer(const T& obj) {
+    // TODO: uncommeny after fixing derived struct's initialization
+    // assert(bitwidth_v<T> == obj.get_buffer()->get_size());
     return obj.get_buffer();
   }
 
   template <typename T>
   static auto& get_buffer(T& obj) {
+    // TODO: uncommeny after fixing derived struct's initialization
+    // assert(bitwidth_v<T> == obj.get_buffer()->get_size());
     return obj.get_buffer();
   }
 
   template <typename T>
   static const auto& get_data(const T& obj) {
+    assert(bitwidth_v<T> == obj.get_buffer()->get_size());
     return obj.get_buffer()->get_data();
   }
 
@@ -224,20 +235,17 @@ struct scalar_accessor {
   template <typename U, typename V,
             CH_REQUIRES(bitwidth_v<U> == bitwidth_v<V>)>
   static void copy(U& dst, const V& src) {
-    assert(bitwidth_v<U> <= dst.get_buffer()->get_size()); // TODO: remove '<=' and to fix derived struct's initialization
+    // TODO: uncommeny after fixing derived struct's initialization
+    // assert(bitwidth_v<U> == dst.get_buffer()->get_size());
     assert(bitwidth_v<V> == src.get_buffer()->get_size());
-    dst.get_buffer()->copy(src.get_buffer());
+    dst.get_buffer()->copy(*src.get_buffer());
   }
 
   template <typename U, typename V,
             CH_REQUIRES(bitwidth_v<U> == bitwidth_v<V>)>
   static void move(U& dst, V&& src) {
     assert(bitwidth_v<U> == dst.get_buffer()->get_size());
-    if (dst.get_buffer()->is_slice()) {
-      copy(dst, src);
-    } else {
-      dst = std::move(src);
-    }
+    *dst.get_buffer() = std::move(*src.get_buffer());
   }
 
   template <typename D, typename T>
@@ -277,10 +285,18 @@ struct scalar_accessor {
   ch_scalar<type::traits::bitwidth> asScalar() const { \
     return this->as<ch_scalar<type::traits::bitwidth>>(); \
   } \
-  void read(uint32_t dst_offset, void* out, uint32_t out_cbsize, uint32_t src_offset = 0, uint32_t length = type::traits::bitwidth) const { \
+  void read(uint32_t dst_offset, \
+            void* out, \
+            uint32_t out_cbsize, \
+            uint32_t src_offset = 0, \
+            uint32_t length = type::traits::bitwidth) const { \
     this->get_buffer()->read(dst_offset, out, out_cbsize, src_offset, length); \
   } \
-  void write(uint32_t dst_offset, const void* in, uint32_t in_cbsize, uint32_t src_offset = 0, uint32_t length = type::traits::bitwidth) { \
+  void write(uint32_t dst_offset, \
+             const void* in, \
+             uint32_t in_cbsize, \
+             uint32_t src_offset = 0, \
+             uint32_t length = type::traits::bitwidth) { \
     this->get_buffer()->write(dst_offset, in, in_cbsize, src_offset, length); \
   }
 

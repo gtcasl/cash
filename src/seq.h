@@ -14,18 +14,16 @@ public:
   T next;
 
   ch_seq() {
-    auto& buffer = bit_accessor::get_buffer(*this);
     auto reg = createRegNode(get_lnode<T>(next), get_lnode<int, bitwidth_v<T>>(0));
-    buffer.set_data(reg);
+    bit_accessor::set_data(*this, reg);
     next = *this;
   }
 
   template <typename U,
             CH_REQUIRES(is_cast_convertible<T, U>::value)>
   explicit ch_seq(const U& init) {
-    auto& buffer = bit_accessor::get_buffer(*this);
     auto reg = createRegNode(get_lnode<T>(next), get_lnode<U, bitwidth_v<T>>(init));
-    buffer.set_data(reg);
+    bit_accessor::set_data(*this, reg);
     next = *this;
   }
 

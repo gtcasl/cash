@@ -178,11 +178,11 @@ public: \
   } \
   assignment_body(struct_name, __VA_ARGS__) \
 private: \
-  const ch::internal::bit_buffer& get_buffer() const { \
-    CH_FOR_EACH_1(0, CH_STRUCT_GETBUFFER, CH_SEP_SEMICOLON, __VA_ARGS__); \
+  const ch::internal::bit_buffer_ptr& get_buffer() const { \
+    CH_FOR_EACH_1(0, CH_STRUCT_GETBUFFER, CH_SEP_SEMICOLON, __VA_ARGS__)->get_source(); \
   } \
-  ch::internal::bit_buffer& get_buffer() { \
-    CH_FOR_EACH_1(0, CH_STRUCT_GETBUFFER, CH_SEP_SEMICOLON, __VA_ARGS__); \
+  ch::internal::bit_buffer_ptr& get_buffer() { \
+    CH_FOR_EACH_1(0, CH_STRUCT_GETBUFFER, CH_SEP_SEMICOLON, __VA_ARGS__)->get_source(); \
   } \
   friend class ch::internal::bit_accessor; \
 
@@ -216,10 +216,10 @@ public: \
   } \
   assignment_body(struct_name, __VA_ARGS__) \
 private: \
-  const ch::internal::bit_buffer& get_buffer() const { \
+  const ch::internal::bit_buffer_ptr& get_buffer() const { \
     return ch::internal::bit_accessor::get_buffer<__parent_type__>(*this); \
   } \
-  ch::internal::bit_buffer& get_buffer() { \
+  ch::internal::bit_buffer_ptr& get_buffer() { \
     return ch::internal::bit_accessor::get_buffer<__parent_type__>(*this); \
   } \
   friend class ch::internal::bit_accessor; \

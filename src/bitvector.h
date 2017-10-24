@@ -623,14 +623,14 @@ public:
             uint32_t length);
   
   void read(uint32_t dst_offset,
-            void* out,
-            uint32_t out_cbsize,
+            void* dst,
+            uint32_t dst_cbsize,
             uint32_t src_offset,
             uint32_t length) const;
   
   void write(uint32_t dst_offset,
-             const void* in,
-             uint32_t in_cbsize,
+             const void* src,
+             uint32_t src_cbsize,
              uint32_t src_offset,
              uint32_t length);
   

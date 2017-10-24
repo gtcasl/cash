@@ -69,33 +69,49 @@ using are_all_logic_type = conjunction<is_logic_type<Ts>::value...>;
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class bit_buffer {
+class bit_buffer_impl;
+
+using bit_buffer_ptr = std::shared_ptr<bit_buffer_impl>;
+
+class bit_buffer_impl {
 public:
-  bit_buffer(unsigned size);
+  bit_buffer_impl(unsigned size);
 
-  bit_buffer(const bit_buffer& rhs);
+  bit_buffer_impl(const bit_buffer_impl& rhs);
 
-  bit_buffer(bit_buffer&& rhs);
+  bit_buffer_impl(bit_buffer_impl&& rhs);
 
-  bit_buffer(const lnode& data);
+  bit_buffer_impl(const lnode& data);
 
-  bit_buffer(lnode&& data);
+  bit_buffer_impl(lnode&& data);
 
-  bit_buffer(unsigned size, const bit_buffer& buffer, unsigned offset = 0);
+  bit_buffer_impl(unsigned size, const bit_buffer_ptr& buffer, unsigned offset);
 
-  bit_buffer& operator=(const bit_buffer& rhs);
+  bit_buffer_impl& operator=(const bit_buffer_impl& rhs);
 
-  bit_buffer& operator=(bit_buffer&& rhs);
+  bit_buffer_impl& operator=(bit_buffer_impl&& rhs);
 
-  void write(uint32_t dst_offset, const lnode& data, uint32_t src_offset, uint32_t length);
+  void write(uint32_t dst_offset,
+             const lnode& data,
+             uint32_t src_offset,
+             uint32_t length);
+
+  void write(uint32_t dst_offset,
+             const bit_buffer_impl& src,
+             uint32_t src_offset,
+             uint32_t length);
 
   void set_data(const lnode& data);
 
   const lnode& get_data() const;
 
-  const lnode& get_source() const;
+  const auto& get_source() const {
+    return source_;
+  }
 
-  lnode& get_source();
+  auto& get_source() {
+    return source_;
+  }
 
   auto get_offset() const {
     return offset_;
@@ -105,32 +121,89 @@ public:
     return size_;
   }
 
-  bool is_slice() const;
-
 private:
 
-  lnode    source_;
+  bit_buffer_ptr source_;
+  mutable lnode value_;
   unsigned offset_;
-  unsigned size_;
-  mutable lnode cache_;
+  unsigned size_;  
 };
+
+class bit_buffer : public bit_buffer_ptr {
+public:
+  using base = bit_buffer_ptr;
+  using base::operator*;
+  using base::operator->;
+
+  template <typename... Args>
+  explicit bit_buffer(Args&&... args)
+    : base(new bit_buffer_impl(std::forward<Args>(args)...))
+  {}
+
+  bit_buffer(const bit_buffer& rhs) : base(rhs) {}
+
+  bit_buffer(bit_buffer&& rhs) : base(std::move(rhs)) {}
+
+  bit_buffer& operator =(const bit_buffer& rhs) {
+    base::operator =(rhs);
+    return *this;
+  }
+
+  bit_buffer& operator =(bit_buffer&& rhs) {
+    base::operator =(std::move(rhs));
+    return *this;
+  }
+};
+
+///////////////////////////////////////////////////////////////////////////////
 
 struct bit_accessor {
   template <typename T>
   static const auto& get_buffer(const T& obj) {
+    // TODO: uncommeny after fixing derived struct's initialization
+    // assert(bitwidth_v<T> == obj.get_buffer()->get_size());
     return obj.get_buffer();
   }
 
   template <typename T>
   static auto& get_buffer(T& obj) {
+    // TODO: uncommeny after fixing derived struct's initialization
+    // assert(bitwidth_v<T> == obj.get_buffer()->get_size());
     return obj.get_buffer();
   }
 
   template <typename T>
   static const auto& get_data(const T& obj) {
-    const auto& data = obj.get_buffer().get_data();
-    assert(bitwidth_v<T> == data.get_size());
-    return data;
+    assert(bitwidth_v<T> == obj.get_buffer()->get_size());
+    return obj.get_buffer()->get_data();
+  }
+
+  template <typename T>
+  static void set_data(const T& obj, const lnode& data) {
+    assert(bitwidth_v<T> == obj.get_buffer()->get_size());
+    obj.get_buffer()->set_data(data);
+  }
+
+  template <typename T>
+  static auto cloneBuffer(const T& obj) {
+    assert(bitwidth_v<T> == obj.get_buffer()->get_size());
+    return bit_buffer(obj.get_buffer()->get_data());
+  }
+
+  template <typename U, typename V,
+            CH_REQUIRES(bitwidth_v<U> == bitwidth_v<V>)>
+  static void copy(U& dst, const V& src) {
+    // TODO: uncommeny after fixing derived struct's initialization
+    assert(bitwidth_v<U> == dst.get_buffer()->get_size());
+    assert(bitwidth_v<V> == src.get_buffer()->get_size());
+    dst.get_buffer()->write(0, *src.get_buffer(), 0, bitwidth_v<V>);
+  }
+
+  template <typename U, typename V,
+            CH_REQUIRES(bitwidth_v<U> == bitwidth_v<V>)>
+  static void move(U& dst, V&& src) {
+    assert(bitwidth_v<U> == dst.get_buffer()->get_size());
+    *dst.get_buffer() = std::move(*src.get_buffer());
   }
 
   template <typename U, typename V>
@@ -139,47 +212,19 @@ struct bit_accessor {
                     const V& src,
                     unsigned src_offset,
                     unsigned length) {
-    auto& d = dst.get_buffer().get_source();
-    auto d_offset = dst.get_buffer().get_offset();
-    const auto& s = src.get_buffer().get_source();
-    auto s_offset = src.get_buffer().get_offset();
-    d.write(d_offset + dst_offset, s, s_offset + src_offset, length, d.get_size());
-  }
-
-  template <typename U, typename V,
-            CH_REQUIRES(bitwidth_v<U> == bitwidth_v<V>)>
-  static void copy(U& dst, const V& src) {
-    write(dst, 0, src, 0, bitwidth_v<U>);
-  }
-
-  template <typename U, typename V,
-            CH_REQUIRES(bitwidth_v<U> == bitwidth_v<V>)>
-  static void move(U& dst, V&& src) {
-    if (dst.get_buffer().is_slice()) {
-      copy(dst, src);
-    } else {
-      dst.get_buffer() = std::move(src.get_buffer());
-    }
-  }
-
-  template <typename T>
-  static auto cloneBuffer(const T& obj) {
-    bit_buffer ret(bitwidth_v<T>);
-    auto& s = obj.get_buffer().get_source();
-    auto s_offset = obj.get_buffer().get_offset();
-    ret.write(0, s, s_offset, bitwidth_v<T>);
-    return ret;
+    dst.get_buffer()->write(dst_offset, *src.get_buffer(), src_offset, length);
   }
 
   template <typename T>
   static const auto clone(const T& obj) {
-    T tmp(bit_buffer(bitwidth_v<T>, obj.get_buffer(), 0));
-    return value_type_t<T>(bit_buffer(tmp.get_data().clone()));
+    assert(bitwidth_v<T> == obj.get_buffer()->get_size());
+    return value_type_t<T>(bit_buffer(obj.get_buffer()->get_data().clone()));
   }
 
   template <typename D, typename T>
   static auto cast(const T& obj) {
-    return D(bit_buffer(bitwidth_v<T>, obj.get_buffer(), 0));
+    assert(bitwidth_v<T> == obj.get_buffer()->get_size());
+    return const_type_t<D>(bit_buffer(bitwidth_v<T>, obj.get_buffer(), 0));
   }
 };
 
@@ -299,7 +344,7 @@ public:
   const_bit(const ch_scalar<N>& rhs) : buffer_(scalar_accessor::get_data(rhs)) {}
 
   explicit const_bit(const bit_buffer& buffer) : buffer_(buffer) {
-    assert(N == buffer.get_size());
+    assert(N == buffer->get_size());
   }
 
   template <typename U,
@@ -408,11 +453,11 @@ public:
 
 protected:
 
-  const bit_buffer& get_buffer() const {
+  const bit_buffer_ptr& get_buffer() const {
     return buffer_;
   }
 
-  bit_buffer& get_buffer() {
+  bit_buffer_ptr& get_buffer() {
     return buffer_;
   }
 
@@ -479,13 +524,13 @@ public:
   }
 
   ch_bit& operator=(const ch_scalar<N>& rhs) {
-    buffer_.set_data(scalar_accessor::get_data(rhs));
+    buffer_->set_data(scalar_accessor::get_data(rhs));
     return *this;
   }
 
   template <typename U, CH_REQUIRES(is_integral_or_enum<U>::value)>
   ch_bit& operator=(U rhs) {
-    buffer_.set_data(bitvector(N, rhs));
+    buffer_->set_data(bitvector(N, rhs));
     return *this;
   }
 
