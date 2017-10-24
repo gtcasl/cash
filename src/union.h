@@ -48,7 +48,7 @@
     explicit union_name(const __T__& rhs) \
       : union_name(ch::internal::scalar_buffer(ch::internal::bitvector(traits::bitwidth, rhs))) {} \
     explicit union_name(const ch_scalar<traits::bitwidth>& rhs) \
-      : union_name(ch::internal::scalar_buffer(ch::internal::scalar_accessor::get_data(rhs))) {} \
+      : union_name(ch::internal::scalar_accessor::cloneBuffer(rhs)) {} \
     union_name& operator=(const union_name& rhs) { \
       ch::internal::scalar_accessor::copy(*this, rhs); \
       return *this; \

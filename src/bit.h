@@ -280,7 +280,7 @@ const auto OpReduce(const const_bit<N>& a) {
     return ch::internal::bit_accessor::cast<R>(*this); \
   } \
   auto asBits() const { \
-    return this->as<ch_bit<ch::internal::bitwidth_v<type>>>(); \
+    return this->as<ch_bit<type::traits::bitwidth>>(); \
   }
 
 #define CH_BIT_WRITABLE_INTERFACE(type)

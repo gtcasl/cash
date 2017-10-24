@@ -74,7 +74,7 @@
     struct_name(struct_name&& rhs) \
       : CH_FOR_EACH(CH_STRUCT_MOVE_CTOR, CH_SEP_COMMA, __VA_ARGS__) {} \
     explicit struct_name(const ch_scalar<traits::bitwidth>& rhs) \
-      : struct_name(ch::internal::scalar_buffer(ch::internal::scalar_accessor::get_data(rhs))) {} \
+      : struct_name(ch::internal::scalar_accessor::cloneBuffer(rhs)) {} \
     template <typename __T__, CH_REQUIRES(ch::internal::is_integral_or_enum<__T__>::value)> \
     explicit struct_name(__T__ rhs) \
       : struct_name(ch::internal::scalar_buffer(bitvector(traits::bitwidth, rhs))) {} \
@@ -121,7 +121,7 @@
       : parent(std::move(rhs)) \
       , CH_FOR_EACH(CH_STRUCT_MOVE_CTOR, CH_SEP_COMMA, __VA_ARGS__) {} \
     explicit struct_name(const ch_scalar<traits::bitwidth>& rhs) \
-        : struct_name(ch::internal::scalar_buffer(ch::internal::scalar_accessor::get_data(rhs))) {} \
+        : struct_name(ch::internal::scalar_accessor::cloneBuffer(rhs)) {} \
     template <typename __T__, CH_REQUIRES(ch::internal::is_integral_or_enum<__T__>::value)> \
     explicit struct_name(__T__ rhs) \
       : struct_name(ch::internal::scalar_buffer(bitvector(traits::bitwidth, rhs))) {} \

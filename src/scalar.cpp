@@ -87,6 +87,14 @@ const bitvector& scalar_buffer_impl::get_data() const {
   return value_;
 }
 
+void scalar_buffer_impl::copy(const scalar_buffer_ptr& rhs) {
+  this->write(0,
+              rhs->get_data().get_words(),
+              rhs->get_data().get_cbsize(),
+              rhs->get_offset(),
+              rhs->get_size());
+}
+
 void scalar_buffer_impl::read(uint32_t dst_offset,
                               void* out,
                               uint32_t out_cbsize,

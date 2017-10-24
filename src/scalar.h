@@ -139,6 +139,8 @@ public:
 
   const bitvector& get_data() const;
 
+  void copy(const scalar_buffer_ptr& rhs);
+
   void read(uint32_t dst_offset, void* out, uint32_t out_cbsize, uint32_t src_offset, uint32_t length) const;
 
   void write(uint32_t dst_offset, const void* in, uint32_t in_cbsize, uint32_t src_offset, uint32_t length);
@@ -215,31 +217,22 @@ struct scalar_accessor {
 
   template <typename T>
   static auto cloneBuffer(const T& obj) {
-    scalar_buffer ret(bitwidth_v<T>);
-    auto& src_buf = obj.get_buffer();
-    ret->write(0,
-               src_buf->get_data().get_words(),
-               src_buf->get_data().get_cbsize(),
-               src_buf->get_offset(),
-               bitwidth_v<T>);
-    return ret;
+    assert(bitwidth_v<T> == obj.get_buffer()->get_size());
+    return scalar_buffer(obj.get_buffer()->get_data());
   }
 
   template <typename U, typename V,
             CH_REQUIRES(bitwidth_v<U> == bitwidth_v<V>)>
   static void copy(U& dst, const V& src) {
-    auto& dst_buf = dst.get_buffer();
-    auto& src_buf = src.get_buffer();
-    dst_buf->write(0,
-                   src_buf->get_data().get_words(),
-                   src_buf->get_data().get_cbsize(),
-                   src_buf->get_offset(),
-                   bitwidth_v<U>);
+    assert(bitwidth_v<U> <= dst.get_buffer()->get_size()); // TODO: remove '<=' and to fix derived struct's initialization
+    assert(bitwidth_v<V> == src.get_buffer()->get_size());
+    dst.get_buffer()->copy(src.get_buffer());
   }
 
   template <typename U, typename V,
             CH_REQUIRES(bitwidth_v<U> == bitwidth_v<V>)>
   static void move(U& dst, V&& src) {
+    assert(bitwidth_v<U> == dst.get_buffer()->get_size());
     if (dst.get_buffer()->is_slice()) {
       copy(dst, src);
     } else {
@@ -248,7 +241,7 @@ struct scalar_accessor {
   }
 
   template <typename D, typename T>
-  static auto cast(const T& obj) {
+  static D cast(const T& obj) {
     return D(scalar_buffer(bitwidth_v<T>, obj.get_buffer(), 0));
   }
 };
@@ -281,13 +274,13 @@ struct scalar_accessor {
   R as() const { \
     return ch::internal::scalar_accessor::cast<R>(*this); \
   } \
-  ch_scalar<ch::internal::bitwidth_v<type>> asScalar() const { \
-    return this->as<ch_scalar<ch::internal::bitwidth_v<type>>>(); \
+  ch_scalar<type::traits::bitwidth> asScalar() const { \
+    return this->as<ch_scalar<type::traits::bitwidth>>(); \
   } \
-  void read(uint32_t dst_offset, void* out, uint32_t out_cbsize, uint32_t src_offset = 0, uint32_t length = ch::internal::bitwidth_v<type>) const { \
+  void read(uint32_t dst_offset, void* out, uint32_t out_cbsize, uint32_t src_offset = 0, uint32_t length = type::traits::bitwidth) const { \
     this->get_buffer()->read(dst_offset, out, out_cbsize, src_offset, length); \
   } \
-  void write(uint32_t dst_offset, const void* in, uint32_t in_cbsize, uint32_t src_offset = 0, uint32_t length = ch::internal::bitwidth_v<type>) { \
+  void write(uint32_t dst_offset, const void* in, uint32_t in_cbsize, uint32_t src_offset = 0, uint32_t length = type::traits::bitwidth) { \
     this->get_buffer()->write(dst_offset, in, in_cbsize, src_offset, length); \
   }
 
