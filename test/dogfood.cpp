@@ -83,7 +83,7 @@ struct Fifo {
     rd_ptr.next = ch_select(reading, rd_ptr + 1, rd_ptr);
     wr_ptr.next = ch_select(writing, wr_ptr + 1, wr_ptr);
 
-    ch_ram<T::bitwidth, A> mem;
+    ch_ram<ch_bitwidth_v<T>, A> mem;
     __if (writing) (
       mem[wr_A] = io.end.data;
     );
@@ -203,7 +203,7 @@ struct Dogfood {
     io.out = (b.asBits() == 0001_b);*/
     /*v2_2_t a(0, 0);
     a[0][1] = 1;
-    io.out = ((ch_bit<v2_2_t::bitwidth>)a == 0010_b);*/
+    io.out = (a.asBits() == 0010_b);*/
     /*ch_bit4 a;
     a.slice<3>(0) = '0';
     a[3] = '1';
@@ -226,7 +226,7 @@ struct Dogfood {
     /*v2_2_t a = ch_reg(v2_2_t{3, 1});
     auto e = ch_case(ch_getTick(), 3, 1101_b)(a);
     ch_print("t={0}, a={1}, e={2}", ch_getTick(), a, e);
-    io.out = ((ch_bit<v2_2_t::bitwidth>)a == e);*/
+    io.out = (a.asBits() == e);*/
   }
 };
 

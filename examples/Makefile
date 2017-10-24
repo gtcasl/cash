@@ -1,6 +1,6 @@
 #CXX = clang-3.8
-#CXXFLAGS += -std=c++14 -O2 -DNDEBUG
-CXXFLAGS += -std=c++14 -O0 -g -fmax-errors=5
+#CXXFLAGS += -std=c++17 -O2 -DNDEBUG
+CXXFLAGS += -std=c++17 -O0 -g -fmax-errors=5
 LDFLAGS += -lcash
 
 SRCS = adder.cpp counter.cpp fastmult.cpp fifo.cpp aes.cpp

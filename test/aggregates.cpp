@@ -98,11 +98,11 @@ TEST_CASE("aggregates", "[aggregates]") {
     });
     TEST([]()->ch_bit1 {
       s2_t s2(1_b4, 0_b4);
-      return ((ch_bit<s2_t::bitwidth>)s2 == 10000_b8);
+      return (s2.asBits() == 10000_b8);
     });
     TEST([]()->ch_bit1 {
       s3_t s3{3, 2, 1};
-      return ((ch_bit<s3_t::bitwidth>)s3 == 0x321_h12);
+      return (s3.asBits() == 0x321_h12);
     });
   } 
   
@@ -122,7 +122,7 @@ TEST_CASE("aggregates", "[aggregates]") {
       u3.b = 01010101_b;
       u3.a = 11_b;
       u3.c.slice<2>(2) = 00_b;
-      return ((ch_bit<u3_t::bitwidth>)u3 == 01010011_b);
+      return (u3.asBits() == 01010011_b);
     });
   }
   
@@ -130,12 +130,12 @@ TEST_CASE("aggregates", "[aggregates]") {
     TEST([]()->ch_bit1 {
       v2_2_t a(0, 0);
       a[0][1] = 1;
-      return ((ch_bit<v2_2_t::bitwidth>)a == 0010_b);
+      return (a.asBits() == 0010_b);
     });
 
     TEST([]()->ch_bit1 {
       v2_3_t a{3, 2, 1};
-      return ((ch_bit<v2_3_t::bitwidth>)a == 111001_b);
+      return (a.asBits() == 111001_b);
     });
 
     TEST([]()->ch_bit1 {
@@ -154,7 +154,7 @@ TEST_CASE("aggregates", "[aggregates]") {
       b[0][1] = a[1][0];
       b[1][0] = a[0][1];
       b[1][1] = a[0][0];
-      return ((ch_bit<v2_2_t::bitwidth>)b == 1010_b);
+      return (b.asBits() == 1010_b);
     });
 
     TEST([]()->ch_bit1 {

@@ -3,6 +3,14 @@
 TEST_CASE("floats", "[floats]") {
   SECTION("basic", "[basic]") {
     TEST([]()->ch_bit1 {
+      ch_float x(1.0f), y(1.0f);
+      return x == y;
+    });
+    TEST([]()->ch_bit1 {
+      ch_float x(0.0f), y(1.0f);
+      return x != y;
+    });
+    TEST([]()->ch_bit1 {
       ch_float x(0.0f);
       ch_bit32 y(0);
       return x.asBits() == y;

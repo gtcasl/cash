@@ -4,6 +4,10 @@ using namespace ch::core;
 using namespace ch::literals;
 using namespace ch::sim;
 
+__union (u4_t, (
+  (ch_bit4) a
+  ));
+
 #define CHECK(x, v) if (ch_peek<decltype(v)>(x) != v) { assert(false); exit(1); }
 
 template <unsigned N>

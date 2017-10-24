@@ -11,14 +11,14 @@ class const_real;
 
 class const_real : public const_bit<32> {
 public:
+  using traits = logic_traits<32, const_real, const_real, ch_real, ch_scalar<32>>;
   using base = const_bit<32>;
-  using traits = logic_traits<const_real, const_real, ch_real, ch_scalar<32>>;
 
   const_real() {}
 
   const_real(const const_real& rhs) : base(rhs) {}
 
-  const_real(const_real&& rhs) : base(rhs) {}
+  const_real(const_real&& rhs) : base(std::move(rhs)) {}
 
   explicit const_real(const const_bit<32>& rhs) : base(rhs) {}
 
@@ -27,35 +27,11 @@ public:
   explicit const_real(const bit_buffer& buffer) : base(buffer) {}
 
   explicit const_real(float rhs) : base(bitcast<uint32_t, float>(rhs)) {}
-
-  /*const auto operator==(const const_real& rhs) const {
-    return (this->asBits() == rhs.asBits());
-  }
-
-  const auto operator!=(const const_real& rhs) const {
-    return (this->asBits() != rhs.asBits());
-  }
-
-  const auto operator<(const const_real& rhs) const {
-    return (this->asBits() < rhs.asBits());
-  }
-
-  const auto operator<=(const const_real& rhs) const {
-    return (this->asBits() <= rhs.asBits());
-  }
-
-  const auto operator>(const const_real& rhs) const {
-    return (this->asBits() > rhs.asBits());
-  }
-
-  const auto operator>=(const const_real& rhs) const {
-    return (this->asBits() >= rhs.asBits());
-  }*/
 };
 
 class ch_real : public const_real {
 public:  
-  using traits = logic_traits<ch_real, const_real, ch_real, ch_scalar<32>>;
+  using traits = logic_traits<32, ch_real, const_real, ch_real, ch_scalar<32>>;
   using base = const_real;
 
   ch_real() {}
@@ -64,7 +40,7 @@ public:
 
   ch_real(const const_real& rhs) : base(rhs) {}
 
-  ch_real(ch_real&& rhs) : base(rhs) {}
+  ch_real(ch_real&& rhs) : base(std::move(rhs)) {}
 
   explicit ch_real(const const_bit<32>& rhs) : base(rhs) {}
 

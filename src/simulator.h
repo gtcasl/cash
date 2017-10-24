@@ -15,7 +15,7 @@ public:
     : ch_simulator({get_ctx(module), get_ctx(more)...})
   {}
 
-  ch_simulator() : ch_simulator({}) {}
+  ch_simulator() {}
 
   ch_simulator(const ch_simulator& simulator);
 

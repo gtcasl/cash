@@ -2,98 +2,118 @@
 
 using namespace ch::internal;
 
-scalar_buffer::scalar_buffer(unsigned size)
-  : source_(std::make_shared<source_t>(size, 1))
+scalar_buffer_impl::scalar_buffer_impl(unsigned size)
+  : value_(size)
   , offset_(0)
   , size_(size)  
   , version_(0)
 {}
 
-scalar_buffer::scalar_buffer(const scalar_buffer& rhs)
-  : source_(rhs.source_)  
+scalar_buffer_impl::scalar_buffer_impl(const scalar_buffer_impl& rhs)
+  : source_(rhs.source_)
   , offset_(rhs.offset_)
   , size_(rhs.size_)
-  , version_(0)
-{}
-
-scalar_buffer::scalar_buffer(scalar_buffer&& rhs)
-  : source_(std::move(rhs.source_))
-  , offset_(rhs.offset_)
-  , size_(rhs.size_)
-  , version_(0)
-{}
-
-scalar_buffer::scalar_buffer(const bitvector& data)
-  : source_(std::make_shared<source_t>(data, 1))
-  , offset_(0)
-  , size_(source_->first.get_size())
-  , version_(0)
-{}
-
-scalar_buffer::scalar_buffer(bitvector&& data)
-  : source_(std::make_shared<source_t>(std::move(data), 1))
-  , offset_(0)
-  , size_(source_->first.get_size())
-  , version_(0)
-{}
-
-scalar_buffer::scalar_buffer(unsigned size, const scalar_buffer& buffer, unsigned offset)
-  : source_(buffer.source_)
-  , offset_(buffer.offset_ + offset)
-  , size_(size)
   , version_(0) {
-  assert(offset_ + size_ <= source_->first.get_size());
+  if (!rhs.source_) {
+    value_ = rhs.value_;
+  }
 }
 
-scalar_buffer& scalar_buffer::operator=(const scalar_buffer& rhs) {
+scalar_buffer_impl::scalar_buffer_impl(scalar_buffer_impl&& rhs)
+  : source_(std::move(rhs.source_))
+  , value_(std::move(rhs.value_))
+  , offset_(rhs.offset_)
+  , size_(rhs.size_)
+  , version_(rhs.version_)
+{}
+
+scalar_buffer_impl::scalar_buffer_impl(const bitvector& data)
+  : value_(data)
+  , offset_(0)
+  , size_(value_.get_size())
+  , version_(1)
+{}
+
+scalar_buffer_impl::scalar_buffer_impl(bitvector&& data)
+  : value_(std::move(data))
+  , offset_(0)
+  , size_(value_.get_size())
+  , version_(1)
+{}
+
+scalar_buffer_impl::scalar_buffer_impl(unsigned size, const scalar_buffer_ptr& buffer, unsigned offset)
+  : source_(buffer)
+  , offset_(offset)
+  , size_(size)
+  , version_(0) {
+  assert(offset_ + size_ <= buffer->get_size());
+}
+
+scalar_buffer_impl& scalar_buffer_impl::operator=(const scalar_buffer_impl& rhs) {
   source_ = rhs.source_;
   offset_ = rhs.offset_;
   size_   = rhs.size_;
-  cache_.clear();
-  version_= 0;
+  if (!rhs.source_) {
+    value_ = rhs.value_;
+  }
+  ++version_;
   return *this;
 }
 
-scalar_buffer& scalar_buffer::operator=(scalar_buffer&& rhs) {
+scalar_buffer_impl& scalar_buffer_impl::operator=(scalar_buffer_impl&& rhs) {
   source_ = std::move(rhs.source_);
+  value_  = std::move(rhs.value_);
   offset_ = rhs.offset_;
   size_   = rhs.size_;
-  cache_.clear();
-  version_= 0;
+  version_= rhs.version_;
   return *this;
 }
 
-void scalar_buffer::set_data(const bitvector& data) {
-  source_->first.copy(offset_, data, 0, size_);
-  ++source_->second;
+void scalar_buffer_impl::set_data(const bitvector& data) {
+  this->write(0, data.get_words(), data.get_cbsize(), 0, size_);
 }
 
-const bitvector& scalar_buffer::get_data() const {
-  if (source_->first.get_size() == size_)
-    return source_->first;
-  if (version_ != source_->second) {
-    if (cache_.is_empty()) {
-      cache_.resize(size_, 0, true);
+const bitvector& scalar_buffer_impl::get_data() const {
+  if (source_) {
+    const auto& data = source_->get_data();
+    if (source_->version_ != version_) {
+      if (value_.is_empty()) {
+        value_.resize(size_, 0, true);
+      }
+      value_.copy(0, data, offset_, size_);
+      version_ = source_->version_;
     }
-    cache_.copy(0, source_->first, offset_, size_);
-    version_ = source_->second;
   }
-  return cache_;
+  return value_;
 }
 
-void scalar_buffer::read(uint32_t dst_offset, void* out, uint32_t out_cbsize, uint32_t src_offset, uint32_t length) const {
-  assert(src_offset + length <= size_);
-  assert(offset_ + src_offset + length <= source_->first.get_size());
-  source_->first.read(dst_offset, out, out_cbsize, offset_ + src_offset, length);
+void scalar_buffer_impl::read(uint32_t dst_offset,
+                              void* out,
+                              uint32_t out_cbsize,
+                              uint32_t src_offset,
+                              uint32_t length) const {
+  if (source_) {
+    source_->read(offset_ + dst_offset, out, out_cbsize, src_offset, length);
+  } else {
+    assert(dst_offset + length <= size_);
+    value_.read(dst_offset, out, out_cbsize, src_offset, length);
+  }
 }
 
-void scalar_buffer::write(uint32_t dst_offset, const void* in, uint32_t in_cbsize, uint32_t src_offset, uint32_t length) {
-  assert(dst_offset + length <= size_);
-  assert(offset_ + dst_offset + length <= source_->first.get_size());
-  source_->first.write(offset_ + dst_offset, in, in_cbsize, src_offset, length);
-  ++source_->second;
+void scalar_buffer_impl::write(uint32_t dst_offset,
+                               const void* in,
+                               uint32_t in_cbsize,
+                               uint32_t src_offset,
+                               uint32_t length) {
+  if (source_) {
+    source_->write(offset_ + dst_offset, in, in_cbsize, src_offset, length);
+  } else {
+    assert(dst_offset + length <= size_);
+    value_.write(dst_offset, in, in_cbsize, src_offset, length);
+    ++version_;
+  }
 }
 
-bool scalar_buffer::is_slice() const {
-  return (size_ < source_->first.get_size());
+bool scalar_buffer_impl::is_slice() const {
+  return !!source_;
 }

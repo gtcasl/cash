@@ -8,8 +8,6 @@ namespace internal {
 template <typename T, unsigned N>
 class const_vec_base {
 public:
-  static constexpr unsigned bitwidth = N * T::bitwidth;
-
   const_vec_base() {}
   const_vec_base(const const_vec_base& rhs) : items_(rhs.items_) {}
   const_vec_base(const_vec_base&& rhs) : items_(std::move(rhs.items_)) {}
@@ -168,7 +166,8 @@ template <typename T, unsigned N> class ch_logic_vec;
 template <typename T, unsigned N>
 class ch_logic_const_vec : public const_vec_base<T, N> {
 public:
-  using traits = logic_traits<ch_logic_const_vec<logic_type_t<T>, N>,
+  using traits = logic_traits<N * bitwidth_v<T>,
+                              ch_logic_const_vec<logic_type_t<T>, N>,
                               ch_logic_const_vec<logic_type_t<T>, N>,
                               ch_logic_vec<value_type_t<T>, N>,
                               ch_logic_vec<scalar_type_t<T>, N>>;
@@ -176,7 +175,7 @@ public:
   using base::operator [];
   using base::items_;
 
-  ch_logic_const_vec(const bit_buffer& buffer = bit_buffer(base::bitwidth))
+  ch_logic_const_vec(const bit_buffer& buffer = bit_buffer(traits::bitwidth))
     : ch_logic_const_vec(buffer, std::make_index_sequence<N>())
   {}
 
@@ -193,10 +192,10 @@ public:
 
   template <typename __T__, CH_REQUIRES(is_integral_or_enum<__T__>::value)>
   explicit ch_logic_const_vec(__T__ rhs)
-    : ch_logic_const_vec(bit_buffer(bitvector(base::bitwidth, rhs)))
+    : ch_logic_const_vec(bit_buffer(bitvector(traits::bitwidth, rhs)))
   {}
 
-  explicit ch_logic_const_vec(const ch_scalar<base::bitwidth>& rhs)
+  explicit ch_logic_const_vec(const ch_scalar<traits::bitwidth>& rhs)
     : ch_logic_const_vec(bit_buffer(scalar_accessor::get_data(rhs)))
   {}
 
@@ -212,7 +211,7 @@ protected:
 
   template <std::size_t...Is>
   explicit ch_logic_const_vec(const bit_buffer& buffer, std::index_sequence<Is...>)
-    : base((bit_buffer(T::bitwidth, buffer, Is * T::bitwidth))...)
+    : base((bit_buffer(bitwidth_v<T>, buffer, Is * bitwidth_v<T>))...)
   {}
 
   const bit_buffer& get_buffer() const {
@@ -229,7 +228,8 @@ protected:
 template <typename T, unsigned N>
 class ch_logic_vec : public ch_logic_const_vec<T, N> {
 public:
-  using traits = logic_traits<ch_logic_vec<logic_type_t<T>, N>,
+  using traits = logic_traits<N * bitwidth_v<T>,
+                              ch_logic_vec<logic_type_t<T>, N>,
                               ch_logic_const_vec<logic_type_t<T>, N>,
                               ch_logic_vec<value_type_t<T>, N>,
                               ch_logic_vec<scalar_type_t<T>, N>>;
@@ -237,7 +237,7 @@ public:
   using base::operator [];
   using base::items_;
 
-  ch_logic_vec(const bit_buffer& buffer = bit_buffer(base::bitwidth)) : base(buffer) {}
+  ch_logic_vec(const bit_buffer& buffer = bit_buffer(traits::bitwidth)) : base(buffer) {}
   ch_logic_vec(const ch_logic_const_vec<T, N>& rhs) : base(rhs) {}
   ch_logic_vec(const ch_logic_vec& rhs) : base(rhs) {}
   ch_logic_vec(ch_logic_vec&& rhs) : base(std::move(rhs)) {}
@@ -248,7 +248,7 @@ public:
   template <typename __T__, CH_REQUIRES(is_integral_or_enum<__T__>::value)>
   explicit ch_logic_vec(__T__ rhs) : base(rhs) {}
 
-  explicit ch_logic_vec(const ch_scalar<base::bitwidth>& rhs) : base(rhs) {}
+  explicit ch_logic_vec(const ch_scalar<traits::bitwidth>& rhs) : base(rhs) {}
 
   template <typename... Vs, CH_REQUIRES(are_all_cast_convertible<T, Vs...>::value)>
   explicit ch_logic_vec(const Vs&... values) : base(values...) {}
@@ -318,7 +318,9 @@ private:
 template <typename T, unsigned N>
 class ch_scalar_vec : public ch_vec_base<T, N> {
 public:
-  using traits = scalar_traits<ch_scalar_vec<scalar_type_t<T>, N>, ch_scalar_vec<logic_type_t<T>, N>>;
+  using traits = scalar_traits<N * bitwidth_v<T>,
+                               ch_scalar_vec<scalar_type_t<T>, N>,
+                               ch_scalar_vec<logic_type_t<T>, N>>;
 
 private:
   //--
@@ -329,7 +331,11 @@ private:
 template <typename T, unsigned N>
 class ch_io_vec : public ch_vec_base<T, N> {
 public:
-  using type = io_traits<ch_io_vec<io_type_t<T>, N>, direction_v<T>, ch_io_vec<flip_type_t<T>, N>, ch_io_vec<port_type_t<T>, N>, ch_io_vec<logic_type_t<T>, N>>;
+  using type = io_traits<ch_io_vec<io_type_t<T>, N>,
+                         direction_v<T>,
+                         ch_io_vec<flip_type_t<T>, N>,
+                         ch_io_vec<port_type_t<T>, N>,
+                         ch_io_vec<logic_type_t<T>, N>>;
 
 private:
   //--

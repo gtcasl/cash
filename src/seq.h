@@ -8,14 +8,14 @@ namespace internal {
 template <typename T>
 class ch_seq final : public const_type_t<T> {
 public:
+  using traits = logic_traits<bitwidth_v<T>, ch_seq, const_type_t<T>, T, scalar_type_t<T>>;
   using base = const_type_t<T>;
-  using traits = logic_traits<ch_seq, const_type_t<T>, T, scalar_type_t<T>>;
 
   T next;
 
   ch_seq() {
     auto& buffer = bit_accessor::get_buffer(*this);
-    auto reg = createRegNode(get_lnode<T>(next), get_lnode<int, T::bitwidth>(0));
+    auto reg = createRegNode(get_lnode<T>(next), get_lnode<int, bitwidth_v<T>>(0));
     buffer.set_data(reg);
     next = *this;
   }
@@ -24,7 +24,7 @@ public:
             CH_REQUIRES(is_cast_convertible<T, U>::value)>
   explicit ch_seq(const U& init) {
     auto& buffer = bit_accessor::get_buffer(*this);
-    auto reg = createRegNode(get_lnode<T>(next), get_lnode<U, T::bitwidth>(init));
+    auto reg = createRegNode(get_lnode<T>(next), get_lnode<U, bitwidth_v<T>>(init));
     buffer.set_data(reg);
     next = *this;
   }

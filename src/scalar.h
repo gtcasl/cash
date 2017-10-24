@@ -6,13 +6,31 @@
 namespace ch {
 namespace internal {
 
-CH_DEF_SFINAE_CHECK(has_bitsize, T::bitwidth != 0);
+template <typename... Ts>
+struct bitwidth_impl;
+
+template <typename T>
+struct bitwidth_impl<T> {
+  static constexpr unsigned value = T::traits::bitwidth;
+};
+
+template <typename T0, typename... Ts>
+struct bitwidth_impl<T0, Ts...> {
+  static constexpr unsigned value = T0::traits::bitwidth + bitwidth_impl<Ts...>::value;
+};
+
+template <typename... Ts>
+inline constexpr unsigned bitwidth_v = bitwidth_impl<std::decay_t<Ts>...>::value;
+
+CH_DEF_SFINAE_CHECK(has_bitsize, T::traits::bitwidth != 0);
 static_assert(!has_bitsize<int>::value, ":-(");
 
 ///////////////////////////////////////////////////////////////////////////////
 
 struct non_bitsize_type {
-  static constexpr unsigned bitwidth = 0;
+  struct traits {
+    static constexpr unsigned bitwidth = 0;
+  };
 };
 
 template <typename T0, typename T1>
@@ -22,9 +40,9 @@ struct deduce_type_impl {
   using U0 = std::conditional_t<has_bitsize<D0>::value, D0, non_bitsize_type>;
   using U1 = std::conditional_t<has_bitsize<D1>::value, D1, non_bitsize_type>;
   using type = std::conditional_t<
-    (U0::bitwidth != 0) && (U1::bitwidth != 0),
-    std::conditional_t<(U0::bitwidth != U1::bitwidth), non_bitsize_type, U0>,
-    std::conditional_t<(U0::bitwidth != 0), U0, U1>>;
+    (bitwidth_v<U0> != 0) && (bitwidth_v<U1> != 0),
+    std::conditional_t<(bitwidth_v<U0> != bitwidth_v<U1>), non_bitsize_type, U0>,
+    std::conditional_t<(bitwidth_v<U0> != 0), U0, U1>>;
 };
 
 template <typename... Ts>
@@ -49,7 +67,7 @@ struct deduce_first_type_impl {
   using D1 = std::decay_t<T1>;
   using U0 = std::conditional_t<has_bitsize<D0>::value, D0, non_bitsize_type>;
   using U1 = std::conditional_t<has_bitsize<D1>::value, D1, non_bitsize_type>;
-  using type = std::conditional_t<(U0::bitwidth != 0), U0, U1>;
+  using type = std::conditional_t<(bitwidth_v<U0> != 0), U0, U1>;
 };
 
 template <typename T0, typename T1>
@@ -65,8 +83,9 @@ template <unsigned N> class const_scalar_slice;
 
 template <unsigned N> class ch_scalar_slice;
 
-template <typename ScalarType, typename LogicType>
+template <unsigned Bitwidth, typename ScalarType, typename LogicType>
 struct scalar_traits {
+  static constexpr unsigned bitwidth = Bitwidth;
   using scalar_type = ScalarType;
   using logic_type = LogicType;
 };
@@ -77,40 +96,44 @@ using scalar_type_t = typename std::decay_t<T>::traits::scalar_type;
 template <typename T>
 struct is_scalar_traits : std::false_type {};
 
-template <typename ScalarType, typename LogicType>
-struct is_scalar_traits<scalar_traits<ScalarType, LogicType>> : std::true_type {};
+template <unsigned Bitwidth, typename ScalarType, typename LogicType>
+struct is_scalar_traits<scalar_traits<Bitwidth, ScalarType, LogicType>> : std::true_type {};
 
 CH_DEF_SFINAE_CHECK(is_scalar_type, is_scalar_traits<typename std::decay_t<T>::traits>::value);
 
-CH_DEF_SFINAE_CHECK(is_scalar_compatible, (std::is_same<ch_scalar<T::bitwidth>, T>::value
-                                        || std::is_base_of<ch_scalar<T::bitwidth>, T>::value));
+CH_DEF_SFINAE_CHECK(is_scalar_compatible, (std::is_same<ch_scalar<bitwidth_v<T>>, T>::value
+                                        || std::is_base_of<ch_scalar<bitwidth_v<T>>, T>::value));
 
 template <typename... Ts>
 using deduce_ch_scalar_t = std::conditional_t<
   is_scalar_compatible<deduce_type_t<Ts...>>::value, deduce_type_t<Ts...>, non_bitsize_type>;
 
-template <typename T, unsigned N = std::decay_t<T>::bitwidth>
+template <typename T, unsigned N = bitwidth_v<T>>
 using is_scalar_convertible = is_cast_convertible<ch_scalar<N>, T>;
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class scalar_buffer {
+class scalar_buffer_impl;
+
+using scalar_buffer_ptr = std::shared_ptr<scalar_buffer_impl>;
+
+class scalar_buffer_impl {
 public:
-  scalar_buffer(unsigned size);
+  scalar_buffer_impl(unsigned size);
 
-  scalar_buffer(const scalar_buffer& rhs);
+  scalar_buffer_impl(const scalar_buffer_impl& rhs);
 
-  scalar_buffer(scalar_buffer&& rhs);
+  scalar_buffer_impl(scalar_buffer_impl&& rhs);
 
-  scalar_buffer(const bitvector& data);
+  scalar_buffer_impl(const bitvector& data);
 
-  scalar_buffer(bitvector&& data);
+  scalar_buffer_impl(bitvector&& data);
 
-  scalar_buffer(unsigned size, const scalar_buffer& buffer, unsigned offset = 0);
+  scalar_buffer_impl(unsigned size, const scalar_buffer_ptr& buffer, unsigned offset);
 
-  scalar_buffer& operator=(const scalar_buffer& rhs);
+  scalar_buffer_impl& operator=(const scalar_buffer_impl& rhs);
 
-  scalar_buffer& operator=(scalar_buffer&& rhs);
+  scalar_buffer_impl& operator=(scalar_buffer_impl&& rhs);
 
   void set_data(const bitvector& data);
 
@@ -139,13 +162,40 @@ public:
   bool is_slice() const;
 
 private:
-  using source_t = std::pair<bitvector, uint64_t>;
-  std::shared_ptr<source_t> source_;
+  scalar_buffer_ptr source_;
+  mutable bitvector value_;
   unsigned offset_;
   unsigned size_;
-  mutable bitvector cache_;
   mutable uint64_t version_;
 };
+
+class scalar_buffer : public scalar_buffer_ptr {
+public:
+  using base = scalar_buffer_ptr;
+  using base::operator*;
+  using base::operator->;
+
+  template <typename... Args>
+  explicit scalar_buffer(Args&&... args)
+    : base(new scalar_buffer_impl(std::forward<Args>(args)...))
+  {}
+
+  scalar_buffer(const scalar_buffer& rhs) : base(rhs) {}
+
+  scalar_buffer(scalar_buffer&& rhs) : base(std::move(rhs)) {}
+
+  scalar_buffer& operator =(const scalar_buffer& rhs) {
+    base::operator =(rhs);
+    return *this;
+  }
+
+  scalar_buffer& operator =(scalar_buffer&& rhs) {
+    base::operator =(std::move(rhs));
+    return *this;
+  }
+};
+
+///////////////////////////////////////////////////////////////////////////////
 
 struct scalar_accessor {
   template <typename T>
@@ -160,42 +210,46 @@ struct scalar_accessor {
 
   template <typename T>
   static const auto& get_data(const T& obj) {
-    return obj.get_buffer().get_data();
+    return obj.get_buffer()->get_data();
+  }
+
+  template <typename T>
+  static auto cloneBuffer(const T& obj) {
+    scalar_buffer ret(bitwidth_v<T>);
+    auto& src_buf = obj.get_buffer();
+    ret->write(0,
+               src_buf->get_data().get_words(),
+               src_buf->get_data().get_cbsize(),
+               src_buf->get_offset(),
+               bitwidth_v<T>);
+    return ret;
   }
 
   template <typename U, typename V,
-            CH_REQUIRES(U::bitwidth == V::bitwidth)>
+            CH_REQUIRES(bitwidth_v<U> == bitwidth_v<V>)>
   static void copy(U& dst, const V& src) {
-    auto& d = dst.get_buffer().get_source();
-    auto d_offset = dst.get_buffer().get_offset();
-    const auto& s = src.get_buffer().get_source();
-    auto s_offset = src.get_buffer().get_offset();
-    d->first.copy(d_offset, s->first, s_offset, U::bitwidth);
-    ++d->second;
+    auto& dst_buf = dst.get_buffer();
+    auto& src_buf = src.get_buffer();
+    dst_buf->write(0,
+                   src_buf->get_data().get_words(),
+                   src_buf->get_data().get_cbsize(),
+                   src_buf->get_offset(),
+                   bitwidth_v<U>);
   }
 
   template <typename U, typename V,
-            CH_REQUIRES(U::bitwidth == V::bitwidth)>
+            CH_REQUIRES(bitwidth_v<U> == bitwidth_v<V>)>
   static void move(U& dst, V&& src) {
-    if (dst.get_buffer().is_slice()) {
+    if (dst.get_buffer()->is_slice()) {
       copy(dst, src);
     } else {
       dst = std::move(src);
     }
   }
 
-  template <typename T>
-  static auto cloneBuffer(const T& obj) {
-    scalar_buffer ret(T::bitwidth);
-    auto& s = obj.get_buffer().get_source();
-    auto s_offset = obj.get_buffer().get_offset();
-    ret.write(0, s->first.get_words(), s->first.get_cbsize(), s_offset, T::bitwidth);
-    return ret;
-  }
-
   template <typename D, typename T>
   static auto cast(const T& obj) {
-    return D(scalar_buffer(T::bitwidth, obj.get_buffer(), 0));
+    return D(scalar_buffer(bitwidth_v<T>, obj.get_buffer(), 0));
   }
 };
 
@@ -227,21 +281,20 @@ struct scalar_accessor {
   R as() const { \
     return ch::internal::scalar_accessor::cast<R>(*this); \
   } \
-  ch_scalar<type::bitwidth> asScalar() const { \
-    return this->as<ch_scalar<type::bitwidth>>(); \
+  ch_scalar<ch::internal::bitwidth_v<type>> asScalar() const { \
+    return this->as<ch_scalar<ch::internal::bitwidth_v<type>>>(); \
   } \
-  void read(uint32_t dst_offset, void* out, uint32_t out_cbsize, uint32_t src_offset = 0, uint32_t length = bitwidth) const { \
-    this->get_buffer().read(dst_offset, out, out_cbsize, src_offset, length); \
+  void read(uint32_t dst_offset, void* out, uint32_t out_cbsize, uint32_t src_offset = 0, uint32_t length = ch::internal::bitwidth_v<type>) const { \
+    this->get_buffer()->read(dst_offset, out, out_cbsize, src_offset, length); \
   } \
-  void write(uint32_t dst_offset, const void* in, uint32_t in_cbsize, uint32_t src_offset = 0, uint32_t length = bitwidth) { \
-    this->get_buffer().write(dst_offset, in, in_cbsize, src_offset, length); \
+  void write(uint32_t dst_offset, const void* in, uint32_t in_cbsize, uint32_t src_offset = 0, uint32_t length = ch::internal::bitwidth_v<type>) { \
+    this->get_buffer()->write(dst_offset, in, in_cbsize, src_offset, length); \
   }
 
 template <unsigned N>
 class ch_scalar {
 public:
-  static constexpr unsigned bitwidth = N;
-  using traits = scalar_traits<ch_scalar, ch_bit<N>>;
+  using traits = scalar_traits<N, ch_scalar, ch_bit<N>>;
 
   ch_scalar() : buffer_(N) {}
 
@@ -253,12 +306,12 @@ public:
     : buffer_(scalar_accessor::cloneBuffer(rhs)) {}
 
   explicit ch_scalar(const scalar_buffer& buffer) : buffer_(buffer) {
-    assert(N == buffer.get_size());
+    assert(N == buffer->get_size());
   }
 
   template <typename U,
             CH_REQUIRES(is_scalar_type<U>::value),
-            CH_REQUIRES(N == U::bitwidth)>
+            CH_REQUIRES(N == bitwidth_v<U>)>
   explicit ch_scalar(const U& rhs) : buffer_(scalar_accessor::cloneBuffer(rhs)) {}
 
   template <typename U, CH_REQUIRES(is_bitvector_value<U>::value || std::is_enum<U>::value)>
@@ -281,7 +334,7 @@ public:
 
   template <typename U,
             CH_REQUIRES(is_scalar_type<U>::value),
-            CH_REQUIRES(N == U::bitwidth)>
+            CH_REQUIRES(N == bitwidth_v<U>)>
   ch_scalar& operator=(const U& rhs) {
     scalar_accessor::copy(*this, rhs);
     return *this;
@@ -289,7 +342,7 @@ public:
 
   template <typename U, CH_REQUIRES(is_integral_or_enum<U>::value)>
   ch_scalar& operator=(U value) {
-    buffer_.set_data(bitvector(N, value));
+    buffer_->set_data(bitvector(N, value));
     return *this;
   }
 
@@ -313,31 +366,31 @@ public:
 
   template <typename U, CH_REQUIRES(can_bitvector_cast<U>::value)>
   explicit operator U() const {
-    return static_cast<U>(buffer_.get_data());
+    return static_cast<U>(buffer_->get_data());
   }
 
   auto operator==(const ch_scalar& rhs) const {
-    return (buffer_.get_data() == rhs.buffer_.get_data());
+    return (buffer_->get_data() == rhs.buffer_->get_data());
   }
 
   auto operator!=(const ch_scalar& rhs) const {
-    return !(buffer_.get_data() == rhs.buffer_.get_data());
+    return !(buffer_->get_data() == rhs.buffer_->get_data());
   }
 
   auto operator<(const ch_scalar& rhs) const {
-    return (buffer_.get_data() < rhs.buffer_.get_data());
+    return (buffer_->get_data() < rhs.buffer_->get_data());
   }
 
   auto operator>=(const ch_scalar& rhs) const {
-    return !(buffer_.get_data() < rhs.buffer_.get_data());
+    return !(buffer_->get_data() < rhs.buffer_->get_data());
   }
 
   auto operator>(const ch_scalar& rhs) const {
-    return (rhs.buffer_.get_data() < buffer_.get_data());
+    return (rhs.buffer_->get_data() < buffer_->get_data());
   }
 
   auto operator<=(const ch_scalar& rhs) const {
-    return !(rhs.buffer_.get_data() < rhs.buffer_.get_data());
+    return !(rhs.buffer_->get_data() < rhs.buffer_->get_data());
   }
 
   const auto operator!() const {
@@ -346,59 +399,59 @@ public:
 
   const auto operator~() const {
     bitvector ret(N);
-    Inverse(ret, buffer_.get_data());
+    Inverse(ret, buffer_->get_data());
     return ch_scalar(scalar_buffer(std::move(ret)));
   }
 
   const auto operator&(const ch_scalar& rhs) const {
     bitvector ret(N);
-    And(ret, buffer_.get_data(), rhs.buffer_.get_data());
+    And(ret, buffer_->get_data(), rhs.buffer_->get_data());
     return ch_scalar(scalar_buffer(std::move(ret)));
   }
 
   const auto operator|(const ch_scalar& rhs) const {
     bitvector ret(N);
-    Or(ret, buffer_.get_data(), rhs.buffer_.get_data());
+    Or(ret, buffer_->get_data(), rhs.buffer_->get_data());
     return ch_scalar(scalar_buffer(std::move(ret)));
   }
 
   const auto operator^(const ch_scalar& rhs) const {
     bitvector ret(N);
-    Xor(ret, buffer_.get_data(), rhs.buffer_.get_data());
+    Xor(ret, buffer_->get_data(), rhs.buffer_->get_data());
     return ch_scalar(scalar_buffer(std::move(ret)));
   }
 
   const auto operator-() const {
     bitvector ret(N);
-    Negate(ret, buffer_.get_data());
+    Negate(ret, buffer_->get_data());
     return ch_scalar(scalar_buffer(std::move(ret)));
   }
 
   const auto operator+(const ch_scalar& rhs) const {
     bitvector ret(N);
-    Add(ret, buffer_.get_data(), rhs.buffer_.get_data());
+    Add(ret, buffer_->get_data(), rhs.buffer_->get_data());
     return ch_scalar(scalar_buffer(std::move(ret)));
   }
 
   const auto operator-(const ch_scalar& rhs) const {
     bitvector ret(N);
-    Sub(ret, buffer_.get_data(), rhs.buffer_.get_data());
+    Sub(ret, buffer_->get_data(), rhs.buffer_->get_data());
     return ch_scalar(scalar_buffer(std::move(ret)));
   }
 
   const auto operator<<(const ch_scalar& rhs) const {
     bitvector ret(N);
-    auto shift = rhs.buffer_.get_data();
+    auto shift = rhs.buffer_->get_data();
     CH_CHECK(shift.find_last() <= 31, "shift amount out of range!");
-    SLL(ret, buffer_.get_data(), shift.get_word(0));
+    SLL(ret, buffer_->get_data(), shift.get_word(0));
     return ch_scalar(scalar_buffer(std::move(ret)));
   }
 
   const auto operator>>(const ch_scalar& rhs) const {
     bitvector ret(N);
-    auto shift = rhs.buffer_.get_data();
+    auto shift = rhs.buffer_->get_data();
     CH_CHECK(shift.find_last() <= 31, "shift amount out of range!");
-    SRL(ret, buffer_.get_data(), shift.get_word(0));
+    SRL(ret, buffer_->get_data(), shift.get_word(0));
     return ch_scalar(scalar_buffer(std::move(ret)));
   }
 
@@ -406,11 +459,11 @@ public:
 
 protected:
 
-  const scalar_buffer& get_buffer() const {
+  const scalar_buffer_ptr& get_buffer() const {
     return buffer_;
   }
 
-  scalar_buffer& get_buffer() {
+  scalar_buffer_ptr& get_buffer() {
     return buffer_;
   }
 
@@ -430,12 +483,11 @@ protected:
 template <unsigned N>
 class const_scalar_slice {
 public:
-  static constexpr unsigned bitwidth = N;
-  using traits = scalar_traits<const_scalar_slice, ch_bit<N>>;
+  using traits = scalar_traits<N, const_scalar_slice, ch_bit<N>>;
 
   const_scalar_slice(const scalar_buffer& buffer, unsigned start = 0)
     : buffer_(scalar_buffer(N, buffer, start)) {
-    assert(N + start <= buffer.get_size());
+    assert(N + start <= buffer->get_size());
   }
 
   const_scalar_slice(const const_scalar_slice& rhs)
@@ -457,11 +509,11 @@ public:
 
 protected:
 
-  const scalar_buffer& get_buffer() const {
+  const scalar_buffer_ptr& get_buffer() const {
     return buffer_;
   }
 
-  scalar_buffer& get_buffer() {
+  scalar_buffer_ptr& get_buffer() {
     return buffer_;
   }
 

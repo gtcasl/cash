@@ -23,6 +23,7 @@ enum class ch_direction {
 
 template <typename IoType, ch_direction Direction, typename FlipType, typename PortType, typename LogicType>
 struct io_traits {
+  static constexpr unsigned bitwidth = bitwidth_v<LogicType>;
   static constexpr ch_direction direction = Direction;
   using io_type     = IoType;
   using flip_type   = FlipType;
@@ -43,7 +44,7 @@ template <typename T>
 using port_type_t = typename std::decay_t<T>::traits::port_type;
 
 template <typename T>
-constexpr ch_direction direction_v = std::decay_t<T>::traits::direction;
+inline constexpr ch_direction direction_v = std::decay_t<T>::traits::direction;
 
 template <typename T>
 struct is_io_traits : std::false_type {};
@@ -93,8 +94,6 @@ class output_port;
 template <typename T>
 class input_port {
 public:
-  static constexpr unsigned bitwidth = T::bitwidth;
-
   input_port(ch_in<T>& in) : in_(in) {}
 
   void operator()(const ch_in<T>& in) const {
@@ -111,7 +110,7 @@ public:
 
   template <typename U, CH_REQUIRES(is_cast_convertible<T, U>::value)>
   void operator()(const U& value) const {
-    bindInput(in_.input_, get_lnode<U, T::bitwidth>(value));
+    bindInput(in_.input_, get_lnode<U, bitwidth_v<T>>(value));
   }
 
   auto operator()() const {
@@ -141,8 +140,6 @@ protected:
 template <typename T>
 class output_port {
 public:
-  static constexpr unsigned bitwidth = T::bitwidth;
-
   output_port(const ch_out<T>& out) : out_(out) {}
 
   void operator()(const ch_out<T>& out) const {
@@ -191,7 +188,7 @@ public:
   using traits = io_traits<ch_in, ch_direction::in, ch_out<T>, input_port<T>, T>;
 
   ch_in(const std::string& name = "io") {
-    input_ = createInputNode(name, T::bitwidth);
+    input_ = createInputNode(name, bitwidth_v<T>);
     bit_accessor::get_buffer(*this).set_data(input_);
   }
 
@@ -276,7 +273,7 @@ struct poke_impl<ch_scalar<N>, N> {
 
 template <typename V, typename T>
 V ch_peek(const output_port<T>& port) {
-  return peek_impl<std::decay_t<V>, T::bitwidth>::read(port.get_output());
+  return peek_impl<std::decay_t<V>, bitwidth_v<T>>::read(port.get_output());
 }
 
 template <typename T>
@@ -285,13 +282,13 @@ void ch_peek(const output_port<T>& port,
              void* out,
              uint32_t out_cbsize,
              uint32_t src_offset = 0,
-             uint32_t length = T::bitwidth) {
+             uint32_t length = bitwidth_v<T>) {
   port.get_output().get_data().read(dst_offset, out, out_cbsize, src_offset, length);
 }
 
 template <typename V, typename T>
 V ch_peek(const input_port<T>& port) {
-  return peek_impl<std::decay_t<V>, T::bitwidth>::read(port.get_input());
+  return peek_impl<std::decay_t<V>, bitwidth_v<T>>::read(port.get_input());
 }
 
 template <typename T>
@@ -300,13 +297,13 @@ void ch_peek(const input_port<T>& port,
              void* out,
              uint32_t out_cbsize,
              uint32_t src_offset = 0,
-             uint32_t length = T::bitwidth) {
+             uint32_t length = bitwidth_v<T>) {
   port.get_input().get_data().read(dst_offset, out, out_cbsize, src_offset, length);
 }
 
 template <typename V, typename T>
 void ch_poke(const input_port<T>& port, const V& value) {
-  poke_impl<std::decay_t<V>, T::bitwidth>::write(port.get_input(), value);
+  poke_impl<std::decay_t<V>, bitwidth_v<T>>::write(port.get_input(), value);
 }
 
 template <typename T>
@@ -315,7 +312,7 @@ void ch_poke(const input_port<T>& port,
              const void* in,
              uint32_t in_cbsize,
              uint32_t src_offset = 0,
-             uint32_t length = T::bitwidth) {
+             uint32_t length = bitwidth_v<T>) {
   port.get_input().get_data().write(dst_offset, in, in_cbsize, src_offset, length);
 }
 
@@ -448,12 +445,10 @@ void ch_poke(const input_port<T>& port,
     private: \
       __flip_type__& operator=(const __flip_type__&) = delete; \
     public: \
-      static constexpr unsigned bitwidth = CH_STRUCT_SIZE(__VA_ARGS__); \
       CH_INOUT_BODY_IMPL2(__flip_type__, CH_INOUT_FLIP_FIELD, __VA_ARGS__) \
     private: \
       class __port_type__ { \
       public: \
-        static constexpr unsigned bitwidth = __flip_type__::bitwidth; \
         using __self_type__ = __flip_type__; \
         using __flip_port_type__ = __flop_port_type__; \
         __port_type__(__flip_type__& rhs) \
@@ -465,12 +460,10 @@ void ch_poke(const input_port<T>& port,
     }; \
     inout_name& operator=(const inout_name&) = delete; \
   public: \
-    static constexpr unsigned bitwidth = CH_STRUCT_SIZE(__VA_ARGS__); \
     CH_INOUT_BODY_IMPL2(inout_name, CH_INOUT_FIELD, __VA_ARGS__) \
   private: \
     class __flop_port_type__ { \
     public: \
-      static constexpr unsigned bitwidth = inout_name::bitwidth; \
       using __port_type__ = __flop_port_type__; \
       using __self_type__ = inout_name; \
       using __flip_port_type__ = typename __flip_type__::traits::port_type; \
@@ -491,12 +484,10 @@ void ch_poke(const input_port<T>& port,
     private: \
       __flip_type__& operator=(const __flip_type__&) = delete; \
     public: \
-      static constexpr unsigned bitwidth = parent::bitwidth + CH_STRUCT_SIZE(__VA_ARGS__); \
       CH_INOUT_BODY_IMPL3(__flip_type__, ch_flip_t<parent>, CH_INOUT_FLIP_FIELD, __VA_ARGS__) \
     private: \
       class __port_type__ : public ch_flip_t<parent>::traits::port_type { \
       public: \
-        static constexpr unsigned bitwidth = __flip_type__::bitwidth; \
         using __self_type__ = __flip_type__; \
         using __flip_port_type__ = __flop_port_type__; \
         __port_type__(__flip_type__& rhs) \
@@ -509,12 +500,10 @@ void ch_poke(const input_port<T>& port,
     }; \
     inout_name& operator=(const inout_name&) = delete; \
   public: \
-    static constexpr unsigned bitwidth = parent::bitwidth + CH_STRUCT_SIZE(__VA_ARGS__); \
     CH_INOUT_BODY_IMPL3(inout_name, parent, CH_INOUT_FIELD, __VA_ARGS__) \
   private: \
     class __flop_port_type__ : public parent::traits::port_type { \
     public: \
-      static constexpr unsigned bitwidth = inout_name::bitwidth; \
       using __port_type__ = __flop_port_type__; \
       using __self_type__ = inout_name; \
       using __flip_port_type__ = typename __flip_type__::traits::port_type; \

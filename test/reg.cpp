@@ -34,21 +34,21 @@ TEST_CASE("registers", "[registers]") {
       auto a = ch_reg(V2{3, 1});
       auto e = ch_case(ch_getTick(), 3, 1101_b)(a);
       ch_print("t={0}, a={1}, e={2}", ch_getTick(), a, e);
-      return ((ch_bit<V2::bitwidth>)a == e);
+      return (a.asBits() == e);
     }, 3);
 
     TEST([]()->ch_bit1 {
       auto a = ch_reg(X{3, 1});
       auto e = ch_case(ch_getTick(), 3, 1101_b)(a);
       ch_print("t={0}, a={1}, e={2}", ch_getTick(), a, e);
-      return ((ch_bit<X::bitwidth>)a == e);
+      return (a.asBits() == e);
     }, 3);
 
     TEST([]()->ch_bit1 {
       auto a = ch_reg(U{2});
       auto e = ch_case(ch_getTick(), 3, 10_b)(a);
       ch_print("t={0}, a={1}, e={2}", ch_getTick(), a, e);
-      return ((ch_bit<U::bitwidth>)a == e);
+      return (a.asBits() == e);
     }, 3);
 
     TEST([]()->ch_bit1 {
@@ -91,7 +91,7 @@ TEST_CASE("registers", "[registers]") {
       a.next = V2{3, 1};
       auto e = ch_case(ch_getTick(), 3, 1101_b)(a);
       ch_print("t={0}, a={1}, e={2}", ch_getTick(), a, e);
-      return ((ch_bit<V2::bitwidth>)a == e);
+      return (a.asBits() == e);
     }, 3);
 
     TEST([]()->ch_bit1 {
@@ -99,7 +99,7 @@ TEST_CASE("registers", "[registers]") {
       a.next = X{3, 1};
       auto e = ch_case(ch_getTick(), 3, 1101_b)(a);
       ch_print("t={0}, a={1}, e={2}", ch_getTick(), a, e);
-      return ((ch_bit<X::bitwidth>)a == e);
+      return (a.asBits() == e);
     }, 3);
 
     TEST([]()->ch_bit1 {
@@ -107,7 +107,7 @@ TEST_CASE("registers", "[registers]") {
       a.next = U{2};
       auto e = ch_case(ch_getTick(), 3, 10_b)(a);
       ch_print("t={0}, a={1}, e={2}", ch_getTick(), a, e);
-      return ((ch_bit<U::bitwidth>)a == e);
+      return (a.asBits() == e);
     }, 3);
 
     TEST([]()->ch_bit1 {

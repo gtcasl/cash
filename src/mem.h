@@ -50,8 +50,7 @@ protected:
 template <unsigned N>
 class memport_ref {
 public:
-  static constexpr unsigned bitwidth = N;
-  using traits = logic_traits<memport_ref, const_bit<N>, ch_bit<N>, ch_scalar<N>>;
+  using traits = logic_traits<N, memport_ref, const_bit<N>, ch_bit<N>, ch_scalar<N>>;
 
   template <typename T, CH_REQUIRES(is_bit_convertible<T, N>::value)>
   memport_ref& operator=(const T& rhs) {

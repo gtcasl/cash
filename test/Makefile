@@ -1,4 +1,4 @@
-CXXFLAGS += -std=c++14 -O0 -g --coverage -fmax-errors=5
+CXXFLAGS += -std=c++17 -O0 -g --coverage -fmax-errors=5
 LDFLAGS += -lcash
 
 PROJECT = test.out

@@ -58,7 +58,8 @@ namespace core {
 
   template <typename T> using ch_seq = ch::internal::ch_seq<T>;
 
-  template <typename... Ts> constexpr unsigned ch_bitwidth_v = ch::internal::bitwidth_v<Ts...>;
+  template <typename... Ts>
+  inline constexpr unsigned ch_bitwidth_v = ch::internal::bitwidth_v<Ts...>;
 
   using ch_direction = ch::internal::ch_direction;
 
@@ -68,7 +69,9 @@ namespace core {
   template <typename T> using ch_const_t  = ch::internal::const_type_t<T>;
   template <typename T> using ch_flip_t   = ch::internal::flip_type_t<T>;
   template <typename T> using ch_port_t   = ch::internal::port_type_t<T>;
-  template <typename T> constexpr ch_direction ch_direction_v = ch::internal::direction_v<T>;
+
+  template <typename T>
+  inline constexpr ch_direction ch_direction_v = ch::internal::direction_v<T>;
 
   template <typename T> using ch_in = ch::internal::ch_in<T>;
   template <typename T> using ch_out = ch::internal::ch_out<T>;
