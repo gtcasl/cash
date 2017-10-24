@@ -53,10 +53,10 @@ public:
   );
   SubWord() : table_(inverse ? tb_inv_sbox : tb_sbox) {}
   void describe() {
-    auto out0 = get_sbox(io.in.aslice<8>(0));
-    auto out1 = get_sbox(io.in.aslice<8>(1));
-    auto out2 = get_sbox(io.in.aslice<8>(2));
-    auto out3 = get_sbox(io.in.aslice<8>(3));
+    auto out0 = get_sbox(io.in.slice<8>(0));
+    auto out1 = get_sbox(io.in.slice<8>(8));
+    auto out2 = get_sbox(io.in.slice<8>(16));
+    auto out3 = get_sbox(io.in.slice<8>(24));
     io.out = ch_cat(out3, out2, out1, out0);
   }
 private:

@@ -15,10 +15,7 @@
   CH_PAIR_R(x)(ch::internal::bit_buffer(ch::internal::identity_t<CH_PAIR_L(x)>::bitwidth, buffer, 0))
 
 #define CH_UNION_MOVE_CTOR(i, x) \
-  CH_PAIR_R(x)(std::move(__rhs__.CH_PAIR_R(x)))
-
-#define CH_UNION_MOVE_ASSIGN(i, x) \
-  CH_PAIR_R(x) = std::move(__rhs__.CH_PAIR_R(x))
+  CH_PAIR_R(x)(std::move(rhs.CH_PAIR_R(x)))
 
 #define CH_UNION_SCALAR_GETBUFFER(i, x) \
   return ch::internal::scalar_accessor::get_buffer(CH_PAIR_R(x))
@@ -44,21 +41,21 @@
     CH_FOR_EACH(CH_UNION_SCALAR_FIELD, CH_SEP_SEMICOLON, __VA_ARGS__); \
     union_name(const ch::internal::scalar_buffer& buffer = ch::internal::scalar_buffer(bitwidth)) \
       : CH_FOR_EACH(CH_UNION_SCALAR_DEFAULT_CTOR, CH_SEP_COMMA, __VA_ARGS__) { assert(bitwidth == buffer.get_size()); } \
-    union_name(const union_name& __rhs__) \
-      : union_name(ch::internal::scalar_accessor::cloneBuffer(__rhs__)) {} \
-    union_name(union_name&& __rhs__) \
+    union_name(const union_name& rhs) \
+      : union_name(ch::internal::scalar_accessor::cloneBuffer(rhs)) {} \
+    union_name(union_name&& rhs) \
       : CH_FOR_EACH(CH_UNION_MOVE_CTOR, CH_SEP_COMMA, __VA_ARGS__) {} \
     template <typename __T__, CH_REQUIRES(ch::internal::is_bitvector_value<__T__>::value || std::is_enum<__T__>::value)> \
-    explicit union_name(const __T__& __rhs__) \
-      : union_name(ch::internal::scalar_buffer(ch::internal::bitvector(bitwidth, __rhs__))) {} \
-    explicit union_name(const ch_scalar<bitwidth>& __rhs__) \
-      : union_name(ch::internal::scalar_buffer(ch::internal::scalar_accessor::get_data(__rhs__))) {} \
-    union_name& operator=(const union_name& __rhs__) { \
-      ch::internal::scalar_accessor::copy(*this, __rhs__); \
+    explicit union_name(const __T__& rhs) \
+      : union_name(ch::internal::scalar_buffer(ch::internal::bitvector(bitwidth, rhs))) {} \
+    explicit union_name(const ch_scalar<bitwidth>& rhs) \
+      : union_name(ch::internal::scalar_buffer(ch::internal::scalar_accessor::get_data(rhs))) {} \
+    union_name& operator=(const union_name& rhs) { \
+      ch::internal::scalar_accessor::copy(*this, rhs); \
       return *this; \
     } \
-    union_name& operator=(union_name&& __rhs__) { \
-      CH_FOR_EACH(CH_UNION_MOVE_ASSIGN, CH_SEP_SEMICOLON, __VA_ARGS__); \
+    union_name& operator=(union_name&& rhs) { \
+      ch::internal::scalar_accessor::move(*this, std::move(rhs)); \
       return *this; \
     } \
     CH_SCALAR_TYPE_INTERFACE(union_name) \
@@ -76,17 +73,17 @@
   CH_FOR_EACH(field_body, CH_SEP_SEMICOLON, __VA_ARGS__); \
   union_name(const ch::internal::bit_buffer& buffer = ch::internal::bit_buffer(bitwidth)) \
     : CH_FOR_EACH(CH_UNION_DEFAULT_CTOR, CH_SEP_COMMA, __VA_ARGS__) { assert(bitwidth == buffer.get_size()); } \
-  union_name(const union_name& __rhs__) \
-    : union_name(ch::internal::bit_accessor::cloneBuffer(__rhs__)) {} \
-  union_name(union_name&& __rhs__) \
+  union_name(const union_name& rhs) \
+    : union_name(ch::internal::bit_accessor::cloneBuffer(rhs)) {} \
+  union_name(union_name&& rhs) \
     : CH_FOR_EACH(CH_UNION_MOVE_CTOR, CH_SEP_COMMA, __VA_ARGS__) {} \
-  union_name(const reverse_name& __rhs__) \
-    : union_name(ch::internal::bit_accessor::cloneBuffer(__rhs__)) {} \
+  union_name(const reverse_name& rhs) \
+    : union_name(ch::internal::bit_accessor::cloneBuffer(rhs)) {} \
   template <typename __T__, \
             CH_REQUIRES(ch::internal::is_bit_convertible<__T__, bitwidth>::value)> \
-  explicit union_name(const __T__& __rhs__) \
+  explicit union_name(const __T__& rhs) \
     : union_name(ch::internal::bit_buffer(ch::internal::bit_accessor::get_data( \
-                    static_cast<ch::internal::bit_cast_t<__T__, bitwidth>>(__rhs__)))) {} \
+                    static_cast<ch::internal::bit_cast_t<__T__, bitwidth>>(rhs)))) {} \
   assignment_body(union_name, __VA_ARGS__) \
 protected: \
   const ch::internal::bit_buffer& get_buffer() const { \
@@ -102,16 +99,16 @@ protected: \
 
 #define CH_UNION_WRITABLE_IMPL(union_name, ...) \
   CH_BIT_WRITABLE_INTERFACE(union_name) \
-  union_name& operator=(const union_name& __rhs__) { \
-    ch::internal::bit_accessor::copy(*this, __rhs__); \
+  union_name& operator=(const union_name& rhs) { \
+    ch::internal::bit_accessor::copy(*this, rhs); \
     return *this; \
   } \
-  union_name& operator=(union_name&& __rhs__) { \
-    CH_FOR_EACH(CH_UNION_MOVE_ASSIGN, CH_SEP_SEMICOLON, __VA_ARGS__); \
+  union_name& operator=(union_name&& rhs) { \
+    ch::internal::bit_accessor::move(*this, std::move(rhs)); \
     return *this; \
   } \
-  union_name& operator=(const __const_type__& __rhs__) { \
-    ch::internal::bit_accessor::copy(*this, __rhs__); \
+  union_name& operator=(const __const_type__& rhs) { \
+    ch::internal::bit_accessor::copy(*this, rhs); \
     return *this; \
   }
 

@@ -45,9 +45,15 @@ bitvector::bitvector(uint32_t size, const std::string& value)
 }
 
 bitvector::~bitvector() {
+  this->clear();
+}
+
+void bitvector::clear() {
   if (words_) {
     delete [] words_;
+    words_ = nullptr;
   }
+  size_ = 0;
 }
 
 void bitvector::resize(uint32_t size,

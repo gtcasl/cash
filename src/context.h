@@ -129,7 +129,7 @@ public:
   bool conditional_enabled(lnodeimpl* node = nullptr) const;
   void conditional_assign(lnode& dst, const lnode& src, uint32_t offset, uint32_t length);
   lnodeimpl* get_predicate(lnodeimpl* node, uint32_t offset, uint32_t length);
-  void remove_from_locals(lnodeimpl* node);
+  void relocate_locals(lnodeimpl* dst, lnodeimpl* src);
 
   //--
   

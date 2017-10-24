@@ -34,16 +34,16 @@ struct io_traits {
 };
 
 template <typename T>
-using io_type_t = typename T::traits::io_type;
+using io_type_t = typename std::decay_t<T>::traits::io_type;
 
 template <typename T>
-using flip_type_t = typename T::traits::flip_type;
+using flip_type_t = typename std::decay_t<T>::traits::flip_type;
 
 template <typename T>
-using port_type_t = typename T::traits::port_type;
+using port_type_t = typename std::decay_t<T>::traits::port_type;
 
 template <typename T>
-constexpr ch_direction direction_v = T::traits::direction;
+constexpr ch_direction direction_v = std::decay_t<T>::traits::direction;
 
 template <typename T>
 struct is_io_traits : std::false_type {};
@@ -51,7 +51,7 @@ struct is_io_traits : std::false_type {};
 template <typename IoType, ch_direction Direction, typename FlipType, typename PortType, typename LogicType>
 struct is_io_traits<io_traits<IoType, Direction, FlipType, PortType, LogicType>> : std::true_type {};
 
-CH_DEF_SFINAE_CHECK(is_io_type, is_io_traits<typename T::traits>::value);
+CH_DEF_SFINAE_CHECK(is_io_type, is_io_traits<typename std::decay_t<T>::traits>::value);
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -349,13 +349,13 @@ void ch_poke(const input_port<T>& port,
   typename ch_flip_t<ch::internal::identity_t<CH_PAIR_L(x)>>::traits::port_type CH_PAIR_R(x)
 
 #define CH_INOUT_COPY_CTOR(i, x) \
-  CH_PAIR_R(x)(__rhs__.CH_PAIR_R(x))
+  CH_PAIR_R(x)(rhs.CH_PAIR_R(x))
 
 #define CH_INOUT_CTOR_BODY(i, x) \
   CH_PAIR_R(x)(ch::internal::fstring("%s_%s", name.c_str(), CH_STRINGIZE(CH_PAIR_R(x))).c_str())
 
 #define CH_INOUT_BIND_BODY(i, x) \
-  this->CH_PAIR_R(x)(__rhs__.CH_PAIR_R(x))
+  this->CH_PAIR_R(x)(rhs.CH_PAIR_R(x))
 
 #define CH_INOUT_BIND_FIELD_ARGS(i, x) \
   __T##i&& CH_CONCAT(_,CH_PAIR_R(x))
@@ -372,9 +372,9 @@ void ch_poke(const input_port<T>& port,
   CH_FOR_EACH(field_body, CH_SEP_SEMICOLON, __VA_ARGS__); \
   inout_name(const std::string& name = "io") \
     : CH_FOR_EACH(CH_INOUT_CTOR_BODY, CH_SEP_COMMA, __VA_ARGS__) {} \
-  inout_name(const inout_name& __rhs__) \
+  inout_name(const inout_name& rhs) \
     : CH_FOR_EACH(CH_INOUT_COPY_CTOR, CH_SEP_COMMA, __VA_ARGS__) {} \
-  inout_name(inout_name&& __rhs__) \
+  inout_name(inout_name&& rhs) \
     : CH_FOR_EACH(CH_STRUCT_MOVE_CTOR, CH_SEP_COMMA, __VA_ARGS__) {} \
   auto operator()() const { \
     return ch::internal::connector<decltype(*this)>(*this); \
@@ -382,13 +382,13 @@ void ch_poke(const input_port<T>& port,
 
 #define CH_INOUT_BIND_IMPL2(field_body, ...) \
   CH_FOR_EACH(field_body, CH_SEP_SEMICOLON, __VA_ARGS__); \
-  void operator()(const __self_type__& __rhs__) const { \
+  void operator()(const __self_type__& rhs) const { \
     CH_FOR_EACH(CH_INOUT_BIND_BODY, CH_SEP_SEMICOLON, __VA_ARGS__); \
   } \
-  void operator()(const __port_type__& __rhs__) const { \
+  void operator()(const __port_type__& rhs) const { \
     CH_FOR_EACH(CH_INOUT_BIND_BODY, CH_SEP_SEMICOLON, __VA_ARGS__); \
   } \
-  void operator()(const __flip_port_type__& __rhs__) const { \
+  void operator()(const __flip_port_type__& rhs) const { \
     CH_FOR_EACH(CH_INOUT_BIND_BODY, CH_SEP_SEMICOLON, __VA_ARGS__); \
   } \
   template <CH_REVERSE_FOR_EACH(CH_STRUCT_FIELD_CTOR_TMPL, CH_SEP_COMMA, __VA_ARGS__), \
@@ -405,11 +405,11 @@ void ch_poke(const input_port<T>& port,
   inout_name(const std::string& name = "io") \
     : parent(name) \
     , CH_FOR_EACH(CH_INOUT_CTOR_BODY, CH_SEP_COMMA, __VA_ARGS__) {} \
-  inout_name(const inout_name& __rhs__) \
-    : parent(__rhs__) \
+  inout_name(const inout_name& rhs) \
+    : parent(rhs) \
     , CH_FOR_EACH(CH_INOUT_COPY_CTOR, CH_SEP_COMMA, __VA_ARGS__) {} \
-  inout_name(inout_name&& __rhs__) \
-    : parent(std::move(__rhs__)) \
+  inout_name(inout_name&& rhs) \
+    : parent(std::move(rhs)) \
     , CH_FOR_EACH(CH_STRUCT_MOVE_CTOR, CH_SEP_COMMA, __VA_ARGS__) {} \
   auto operator()() const { \
     return ch::internal::connector<decltype(*this)>(*this); \
@@ -417,22 +417,22 @@ void ch_poke(const input_port<T>& port,
 
 #define CH_INOUT_BIND_IMPL3(parent, field_body, ...) \
   CH_FOR_EACH(field_body, CH_SEP_SEMICOLON, __VA_ARGS__); \
-  void operator()(const __self_type__& __rhs__) const { \
-    parent::operator()(__rhs__); \
+  void operator()(const __self_type__& rhs) const { \
+    parent::operator()(rhs); \
     CH_FOR_EACH(CH_INOUT_BIND_BODY, CH_SEP_SEMICOLON, __VA_ARGS__); \
   } \
-  void operator()(const __port_type__& __rhs__) const { \
-    parent::operator()(__rhs__); \
+  void operator()(const __port_type__& rhs) const { \
+    parent::operator()(rhs); \
     CH_FOR_EACH(CH_INOUT_BIND_BODY, CH_SEP_SEMICOLON, __VA_ARGS__); \
   } \
-  void operator()(const __flip_port_type__& __rhs__) const { \
-    parent::operator()(__rhs__); \
+  void operator()(const __flip_port_type__& rhs) const { \
+    parent::operator()(rhs); \
     CH_FOR_EACH(CH_INOUT_BIND_BODY, CH_SEP_SEMICOLON, __VA_ARGS__); \
   } \
   template <CH_REVERSE_FOR_EACH(CH_STRUCT_FIELD_CTOR_TMPL, CH_SEP_COMMA, __VA_ARGS__), typename... __Ts__, \
             CH_REVERSE_FOR_EACH(CH_INOUT_FIELD_BIND_REQUIRES, CH_SEP_COMMA, __VA_ARGS__)> \
-  void operator()(CH_REVERSE_FOR_EACH(CH_INOUT_BIND_FIELD_ARGS, CH_SEP_COMMA, __VA_ARGS__), __Ts__&&... __args__) const { \
-    parent::operator()(__args__...); \
+  void operator()(CH_REVERSE_FOR_EACH(CH_INOUT_BIND_FIELD_ARGS, CH_SEP_COMMA, __VA_ARGS__), __Ts__&&... args) const { \
+    parent::operator()(args...); \
     CH_FOR_EACH(CH_INOUT_BIND_FIELD_BODY, CH_SEP_SEMICOLON, __VA_ARGS__); \
   } \
   auto operator()() const { \
@@ -456,7 +456,7 @@ void ch_poke(const input_port<T>& port,
         static constexpr unsigned bitwidth = __flip_type__::bitwidth; \
         using __self_type__ = __flip_type__; \
         using __flip_port_type__ = __flop_port_type__; \
-        __port_type__(__flip_type__& __rhs__) \
+        __port_type__(__flip_type__& rhs) \
           : CH_FOR_EACH(CH_INOUT_COPY_CTOR, CH_SEP_COMMA, __VA_ARGS__) {} \
         CH_INOUT_BIND_IMPL2(CH_INOUT_FLIP_BIND_FIELD, __VA_ARGS__) \
       }; \
@@ -474,7 +474,7 @@ void ch_poke(const input_port<T>& port,
       using __port_type__ = __flop_port_type__; \
       using __self_type__ = inout_name; \
       using __flip_port_type__ = typename __flip_type__::traits::port_type; \
-      __flop_port_type__(inout_name& __rhs__) \
+      __flop_port_type__(inout_name& rhs) \
         : CH_FOR_EACH(CH_INOUT_COPY_CTOR, CH_SEP_COMMA, __VA_ARGS__) {} \
       CH_INOUT_BIND_IMPL2(CH_INOUT_BIND_FIELD, __VA_ARGS__) \
     }; \
@@ -499,8 +499,8 @@ void ch_poke(const input_port<T>& port,
         static constexpr unsigned bitwidth = __flip_type__::bitwidth; \
         using __self_type__ = __flip_type__; \
         using __flip_port_type__ = __flop_port_type__; \
-        __port_type__(__flip_type__& __rhs__) \
-          : ch_flip_t<parent>::traits::port_type(__rhs__) \
+        __port_type__(__flip_type__& rhs) \
+          : ch_flip_t<parent>::traits::port_type(rhs) \
           , CH_FOR_EACH(CH_INOUT_COPY_CTOR, CH_SEP_COMMA, __VA_ARGS__) {} \
         CH_INOUT_BIND_IMPL3(ch_flip_t<parent>::traits::port_type, CH_INOUT_FLIP_BIND_FIELD, __VA_ARGS__) \
       }; \
@@ -518,8 +518,8 @@ void ch_poke(const input_port<T>& port,
       using __port_type__ = __flop_port_type__; \
       using __self_type__ = inout_name; \
       using __flip_port_type__ = typename __flip_type__::traits::port_type; \
-      __flop_port_type__(inout_name& __rhs__) \
-        : parent::traits::port_type(__rhs__) \
+      __flop_port_type__(inout_name& rhs) \
+        : parent::traits::port_type(rhs) \
         , CH_FOR_EACH(CH_INOUT_COPY_CTOR, CH_SEP_COMMA, __VA_ARGS__) {} \
       CH_INOUT_BIND_IMPL3(parent::traits::port_type, CH_INOUT_BIND_FIELD, __VA_ARGS__) \
     }; \

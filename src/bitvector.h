@@ -608,6 +608,8 @@ public:
     return (get_num_words() << WORD_SIZE_LOG) / 8;
   }
 
+  void clear();
+
   void resize(uint32_t size,
               uint32_t value = 0x0,
               bool initialize = false,

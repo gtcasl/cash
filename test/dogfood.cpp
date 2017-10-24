@@ -194,18 +194,55 @@ struct Dogfood {
     (ch_out<ch_bit1>) out
   );
   void describe() {
-    auto x = ch_reg(E::c, E::a);
+    io.out = 1_b;
+    /*ch_bit4 a(1100_b), b(0011_b);
+    b[3] = a[3];
+    io.out = (b == 1011_b);*/
+    /*v2_2_t a(1, 1), b(0);
+    b[0][0] = a[0][0];
+    io.out = (b.asBits() == 0001_b);*/
+    /*v2_2_t a(0, 0);
+    a[0][1] = 1;
+    io.out = ((ch_bit<v2_2_t::bitwidth>)a == 0010_b);*/
+    /*ch_bit4 a;
+    a.slice<3>(0) = '0';
+    a[3] = '1';
+    io.out = (a == 1000_b);*/
+    /*ch_bit4 a(1100_b), b(0011_b), c(3);
+    auto t = ch_orr(a[0] & b[3]);
+    c[0] = t;
+    ch_print("t={0}, c={1}", t, c);
+    io.out = (c == 2);*/
+    /*ch_bit4 a;
+    ch_bit1 x, y;
+    a[3] = x;
+    a[1] = y;
+    x = 1_b;
+    y = 0_b;
+    io.out = (a[3] == 1_b && a[1] == 0_b);*/
+    /*auto x = ch_reg(E::c, E::a);
     auto e = ch_case<E>(ch_getTick(), 3, E::c)(x);
-    io.out = (x == e);
+    io.out = (x == e);*/
     /*v2_2_t a = ch_reg(v2_2_t{3, 1});
     auto e = ch_case(ch_getTick(), 3, 1101_b)(a);
     ch_print("t={0}, a={1}, e={2}", ch_getTick(), a, e);
     io.out = ((ch_bit<v2_2_t::bitwidth>)a == e);*/
-    //io.out = 1_b;
   }
 };
 
 int main(int argc, char **argv) {
+
+  ch_module<Dogfood> dogfood;
+  ch_simulator sim(dogfood);
+  sim.run(1);
+  assert(ch_peek<bool>(dogfood.io.out));
+
+  {
+    ch_scalar<4> a(0), b(1), c(1);
+    assert(a != b);
+    assert(b == c);
+    assert(a == (b - c));
+  }
 
   {
     ch_scalar<4> a(e2_t::done), b(1);
@@ -239,6 +276,16 @@ int main(int argc, char **argv) {
     assert(s2.a == 1);
     s2.a = 0;
     assert(s2.b == 7);
+  }
+
+  {
+    auto force_move_assignment = []() {
+      return 4_h + 3_h;
+    };
+    ch_scalar_t<s2_4_t> s2(0101_b, 01_b);
+    s2.b = force_move_assignment();
+    assert(s2.b == 7);
+    assert(s2.asScalar() == 011101_b);
   }
 
   {

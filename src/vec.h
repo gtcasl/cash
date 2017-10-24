@@ -14,8 +14,8 @@ public:
   const_vec_base(const const_vec_base& rhs) : items_(rhs.items_) {}
   const_vec_base(const_vec_base&& rhs) : items_(std::move(rhs.items_)) {}
 
-  template <typename... Vs, CH_REQUIRES(are_all_implicit_convertible<T, Vs...>::value)>
-  explicit const_vec_base(const Vs&... values) : items_{values...} {}
+  template <typename... Vs, CH_REQUIRES(are_all_cast_convertible<T, Vs...>::value)>
+  explicit const_vec_base(const Vs&... values) : items_{T(values)...} {}
 
   const T& at(size_t i) const {
     CH_CHECK(i < N, "invalid subscript index");
@@ -102,7 +102,7 @@ public:
   ch_vec_base(ch_vec_base&& rhs) : base(std::move(rhs)) {}
   ch_vec_base(const const_vec_base<T, N>& rhs) : base(rhs) {}
 
-  template <typename... Vs, CH_REQUIRES(are_all_implicit_convertible<T, Vs...>::value)>
+  template <typename... Vs, CH_REQUIRES(are_all_cast_convertible<T, Vs...>::value)>
   explicit ch_vec_base(const Vs&... values) : base(values...) {}
 
   ch_vec_base& operator=(const ch_vec_base& rhs) {
@@ -192,12 +192,12 @@ public:
   }
 
   template <typename __T__, CH_REQUIRES(is_integral_or_enum<__T__>::value)>
-  explicit ch_logic_const_vec(__T__ __rhs__)
-    : ch_logic_const_vec(bit_buffer(bitvector(base::bitwidth, __rhs__)))
+  explicit ch_logic_const_vec(__T__ rhs)
+    : ch_logic_const_vec(bit_buffer(bitvector(base::bitwidth, rhs)))
   {}
 
-  explicit ch_logic_const_vec(const ch_scalar<base::bitwidth>& __rhs__)
-    : ch_logic_const_vec(bit_buffer(scalar_accessor::get_data(__rhs__)))
+  explicit ch_logic_const_vec(const ch_scalar<base::bitwidth>& rhs)
+    : ch_logic_const_vec(bit_buffer(scalar_accessor::get_data(rhs)))
   {}
 
   template <typename... Vs, CH_REQUIRES(are_all_cast_convertible<T, Vs...>::value)>
@@ -211,8 +211,8 @@ public:
 protected:
 
   template <std::size_t...Is>
-  ch_logic_const_vec(const bit_buffer& buffer, std::index_sequence<Is...>)
-    : base(T(bit_buffer(T::bitwidth, buffer, Is * T::bitwidth))...)
+  explicit ch_logic_const_vec(const bit_buffer& buffer, std::index_sequence<Is...>)
+    : base((bit_buffer(T::bitwidth, buffer, Is * T::bitwidth))...)
   {}
 
   const bit_buffer& get_buffer() const {
@@ -246,25 +246,25 @@ public:
   explicit ch_logic_vec(const ch_logic_vec<U, N>& rhs) : base(rhs ) {}
 
   template <typename __T__, CH_REQUIRES(is_integral_or_enum<__T__>::value)>
-  explicit ch_logic_vec(__T__ __rhs__) : base(__rhs__) {}
+  explicit ch_logic_vec(__T__ rhs) : base(rhs) {}
 
-  explicit ch_logic_vec(const ch_scalar<base::bitwidth>& __rhs__) : base(__rhs__) {}
+  explicit ch_logic_vec(const ch_scalar<base::bitwidth>& rhs) : base(rhs) {}
 
   template <typename... Vs, CH_REQUIRES(are_all_cast_convertible<T, Vs...>::value)>
   explicit ch_logic_vec(const Vs&... values) : base(values...) {}
 
   ch_logic_vec& operator=(const ch_logic_vec& rhs) {
-    items_ = rhs.items_;
+    ch::internal::bit_accessor::copy(*this, rhs);
     return *this;
   }
 
   ch_logic_vec& operator=(ch_logic_vec&& rhs) {
-    items_ = std::move(rhs.items_);
+    ch::internal::bit_accessor::move(*this, std::move(rhs));
     return *this;
   }
 
   ch_logic_vec& operator=(const ch_logic_const_vec<T, N>& rhs) {
-    items_ = rhs.items_;
+    ch::internal::bit_accessor::copy(*this, rhs);
     return *this;
   }
 

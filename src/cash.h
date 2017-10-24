@@ -9,7 +9,6 @@
 #include "switch.h"
 #include "reg.h"
 #include "mem.h"
-#include "arithm.h"
 #include "assertion.h"
 #include "vec.h"
 #include "enum.h"
@@ -59,6 +58,8 @@ namespace core {
 
   template <typename T> using ch_seq = ch::internal::ch_seq<T>;
 
+  template <typename... Ts> constexpr unsigned ch_bitwidth_v = ch::internal::bitwidth_v<Ts...>;
+
   using ch_direction = ch::internal::ch_direction;
 
   template <typename T> using ch_scalar_t = ch::internal::scalar_type_t<T>;
@@ -103,7 +104,6 @@ namespace core {
   using ch::internal::ch_sext;
   using ch::internal::ch_cat;
   using ch::internal::ch_slice;
-  using ch::internal::ch_aslice;
   using ch::internal::ch_shuffle;
 
   //

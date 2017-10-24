@@ -27,12 +27,36 @@ public:
   explicit const_real(const bit_buffer& buffer) : base(buffer) {}
 
   explicit const_real(float rhs) : base(bitcast<uint32_t, float>(rhs)) {}
+
+  /*const auto operator==(const const_real& rhs) const {
+    return (this->asBits() == rhs.asBits());
+  }
+
+  const auto operator!=(const const_real& rhs) const {
+    return (this->asBits() != rhs.asBits());
+  }
+
+  const auto operator<(const const_real& rhs) const {
+    return (this->asBits() < rhs.asBits());
+  }
+
+  const auto operator<=(const const_real& rhs) const {
+    return (this->asBits() <= rhs.asBits());
+  }
+
+  const auto operator>(const const_real& rhs) const {
+    return (this->asBits() > rhs.asBits());
+  }
+
+  const auto operator>=(const const_real& rhs) const {
+    return (this->asBits() >= rhs.asBits());
+  }*/
 };
 
 class ch_real : public const_real {
-public:
-  using base = const_real;
+public:  
   using traits = logic_traits<ch_real, const_real, ch_real, ch_scalar<32>>;
+  using base = const_real;
 
   ch_real() {}
 
@@ -56,37 +80,13 @@ public:
   }
 
   ch_real& operator=(ch_real&& rhs) {
-    buffer_ = std::move(rhs.buffer_);
+    bit_accessor::move(*this, std::move(rhs));
     return *this;
   }
 
   ch_real& operator=(float rhs) {
     buffer_.set_data(bitvector(32, bitcast<uint32_t, float>(rhs)));
     return *this;
-  }
-
-  const auto operator==(const ch_real& rhs) const {
-    return (this->asBits() == rhs.asBits());
-  }
-
-  const auto operator!=(const ch_real& rhs) const {
-    return (this->asBits() != rhs.asBits());
-  }
-
-  const auto operator<(const ch_real& rhs) const {
-    return (this->asBits() < rhs.asBits());
-  }
-
-  const auto operator<=(const ch_real& rhs) const {
-    return (this->asBits() <= rhs.asBits());
-  }
-
-  const auto operator>(const ch_real& rhs) const {
-    return (this->asBits() > rhs.asBits());
-  }
-
-  const auto operator>=(const ch_real& rhs) const {
-    return (this->asBits() >= rhs.asBits());
   }
 
   const auto operator+(const ch_real& rhs) const {

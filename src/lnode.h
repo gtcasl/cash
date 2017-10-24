@@ -7,6 +7,7 @@ namespace ch {
 namespace internal {
 
 class lnodeimpl;
+class proxyimpl;
 class context;
 
 using ch_tick = uint64_t;
@@ -28,11 +29,19 @@ public:
 
   ~lnode();
 
-  const lnode& ensureInitialized(uint32_t size) const;
-
   lnode& operator=(const lnode& rhs);
 
+  const lnode& ensureInitialized(uint32_t size, bool initialize = true) const;
+
   void clear();
+
+  void move(const lnode& rhs);
+
+  void write(uint32_t dst_offset,
+             const lnode& in,
+             uint32_t src_offset,
+             uint32_t length,
+             uint32_t size);
 
   bool is_empty() const;
 
@@ -46,14 +55,6 @@ public:
   
   context* get_ctx() const;
 
-  const bitvector& eval(ch_tick t);
-
-  void write(uint32_t dst_offset,
-             const lnode& in,
-             uint32_t src_offset,
-             uint32_t length,
-             uint32_t size);
-
   const bitvector& get_data() const;
 
   bitvector& get_data();
@@ -64,10 +65,10 @@ public:
 
   lnodeimpl* clone() const;
 
+  const bitvector& eval(ch_tick t);
+
 protected:
 
-  void ensureInitialized(uint32_t size, bool initialize) const;
-  
   mutable lnodeimpl* impl_;
 };
 

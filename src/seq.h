@@ -19,7 +19,7 @@ public:
     buffer.set_data(reg);
     next = *this;
   }
-  
+
   template <typename U,
             CH_REQUIRES(is_cast_convertible<T, U>::value)>
   explicit ch_seq(const U& init) {

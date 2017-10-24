@@ -481,12 +481,20 @@ void context::clone_conditional_assignment(
   proxy->add_source(offset, prev_sel_new, 0, length);
 }
 
-void context::remove_from_locals(lnodeimpl* node) {
+void context::relocate_locals(lnodeimpl* dst, lnodeimpl* src) {
   if (cond_blocks_.empty())
     return;
   // remove from local scope
   cond_block_t& block = cond_blocks_.front();
-  block.locals.erase(node);
+  auto ret = block.locals.erase(src);
+  if (ret > 0 && dst) {
+    for (auto& block : cond_blocks_) {
+      if (block.locals.count(dst) != 0) {
+        block.locals.insert(src);
+        break;
+      }
+    }
+  }
 }
 
 lnodeimpl* context::get_literal(const bitvector& value) {
