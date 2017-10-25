@@ -26,7 +26,6 @@ public:
 
   explicit const_float32(const ch_scalar<32>& rhs) : base(rhs) {}
 
-
   explicit const_float32(float rhs) : base(bitcast<uint32_t, float>(rhs)) {}
 };
 

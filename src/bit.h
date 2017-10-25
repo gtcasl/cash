@@ -296,30 +296,6 @@ const auto OpReduce(const const_bit<N>& a) {
   CH_FRIEND_OP_SLL(, const const_bit&, x) \
   CH_FRIEND_OP_SRL(, const const_bit&, x) \
 
-#define CH_BIT_GLOBAL_OPS(i, x) \
-  CH_GLOBAL_OP_EQ(template <unsigned N>, const const_bit<N>&, x) \
-  CH_GLOBAL_OP_NE(template <unsigned N>, const const_bit<N>&, x) \
-  CH_GLOBAL_OP_LT(template <unsigned N>, const const_bit<N>&, x) \
-  CH_GLOBAL_OP_LE(template <unsigned N>, const const_bit<N>&, x) \
-  CH_GLOBAL_OP_GT(template <unsigned N>, const const_bit<N>&, x) \
-  CH_GLOBAL_OP_GE(template <unsigned N>, const const_bit<N>&, x) \
-  CH_GLOBAL_OP_AND(template <unsigned N>, const const_bit<N>&, x) \
-  CH_GLOBAL_OP_OR(template <unsigned N>, const const_bit<N>&, x) \
-  CH_GLOBAL_OP_XOR(template <unsigned N>, const const_bit<N>&, x) \
-  CH_GLOBAL_OP_NAND(template <unsigned N>, const const_bit<N>&, x) \
-  CH_GLOBAL_OP_NOR(template <unsigned N>, const const_bit<N>&, x) \
-  CH_GLOBAL_OP_XNOR(template <unsigned N>, const const_bit<N>&, x) \
-  CH_GLOBAL_OP_ADD(template <unsigned N>, const const_bit<N>&, x) \
-  CH_GLOBAL_OP_SUB(template <unsigned N>, const const_bit<N>&, x) \
-  CH_GLOBAL_OP_MULT(template <unsigned N>, const const_bit<N>&, x) \
-  CH_GLOBAL_OP_DIV(template <unsigned N>, const const_bit<N>&, x) \
-  CH_GLOBAL_OP_MOD(template <unsigned N>, const const_bit<N>&, x) \
-  CH_GLOBAL_OP_SLL(template <unsigned N>, const const_bit<N>&, x) \
-  CH_GLOBAL_OP_SRL(template <unsigned N>, const const_bit<N>&, x) \
-  CH_GLOBAL_OP_SRA(template <unsigned N>, const const_bit<N>&, x) \
-  CH_GLOBAL_OP_ROTL(template <unsigned N>, const const_bit<N>&, x) \
-  CH_GLOBAL_OP_ROTR(template <unsigned N>, const const_bit<N>&, x)
-
 #define CH_BIT_OP_TYPES \
   ch_scalar<N>, int8_t, uint8_t, int16_t, uint16_t, int32_t, uint32_t, int64_t, uint64_t
 
@@ -339,7 +315,7 @@ class const_bit {
 public:  
   using traits = logic_traits<N, const_bit, const_bit, ch_bit<N>, ch_scalar<N>>;
 
-  const_bit() : buffer_(N) {}
+  const_bit(const bit_buffer& buffer = bit_buffer(N)) : buffer_(buffer) {}
 
   const_bit(const const_bit& rhs) : buffer_(bit_accessor::cloneBuffer(rhs)) {}
 
@@ -347,17 +323,13 @@ public:
 
   const_bit(const ch_scalar<N>& rhs) : buffer_(scalar_accessor::get_data(rhs)) {}
 
-  explicit const_bit(const bit_buffer& buffer) : buffer_(buffer) {
-    assert(N == buffer->get_size());
-  }
-
   template <typename U,
             CH_REQUIRES(is_logic_type<U>::value),
             CH_REQUIRES(N == bitwidth_v<U>)>
   explicit const_bit(const U& rhs) : buffer_(bit_accessor::cloneBuffer(rhs)) {}
 
   template <typename U,
-            CH_REQUIRES(is_bitvector_value<U>::value || std::is_enum<U>::value)>
+            CH_REQUIRES(is_bitvector_convertible<U>::value || std::is_enum<U>::value)>
   explicit const_bit(const U& rhs) : buffer_(bitvector(N, rhs)) {}
 
   // slicing operators
@@ -472,7 +444,7 @@ protected:
   CH_FOR_EACH(CH_BIT_FRIEND_OPS, CH_SEP_SPACE, CH_BIT_OP_TYPES)
 };
 
-template <typename T> class ch_seq;
+///////////////////////////////////////////////////////////////////////////////
 
 template <unsigned N>
 class ch_bit : public const_bit<N> {
@@ -481,15 +453,13 @@ public:
   using base = const_bit<N>;
   using base::buffer_;
       
-  ch_bit() {}
+  ch_bit(const bit_buffer& buffer = bit_buffer(N)) : base(buffer) {}
   
   ch_bit(const ch_bit& rhs) : base(rhs) {}
 
   ch_bit(ch_bit&& rhs) : base(std::move(rhs)) {}
 
   ch_bit(const const_bit<N>& rhs) : base(rhs) {}
-
-  ch_bit(const ch_seq<ch_bit>& rhs) : base(rhs) {}
 
   ch_bit(const ch_scalar<N>& rhs) : base(rhs) {}
 
@@ -498,10 +468,8 @@ public:
             CH_REQUIRES(N == bitwidth_v<U>)>
   explicit ch_bit(const U& rhs) : base(rhs) {}
 
-  explicit ch_bit(const bit_buffer& buffer) : base(buffer) {}
-
   template <typename U,
-            CH_REQUIRES(is_bitvector_value<U>::value || std::is_enum<U>::value)>
+            CH_REQUIRES(is_bitvector_convertible<U>::value || std::is_enum<U>::value)>
   explicit ch_bit(const U& rhs) : base(rhs) {}
 
   ch_bit& operator=(const ch_bit& rhs) {
@@ -559,6 +527,10 @@ public:
   CH_BIT_WRITABLE_INTERFACE(ch_bit)
 };
 
+///////////////////////////////////////////////////////////////////////////////
+
+// compare operators
+
 template <unsigned N>
 inline const auto ch_eq(const const_bit<N>& lhs, const const_bit<N>& rhs) {
   return (lhs == rhs);
@@ -589,6 +561,8 @@ inline const auto ch_ge(const const_bit<N>& lhs, const const_bit<N>& rhs) {
   return (lhs >= rhs);
 }
 
+// bitwise operators
+
 template <unsigned N>
 inline const auto ch_and(const const_bit<N>& lhs, const const_bit<N>& rhs) {
   return (lhs & rhs);
@@ -603,6 +577,8 @@ template <unsigned N>
 inline const auto ch_xor(const const_bit<N>& lhs, const const_bit<N>& rhs) {
   return (lhs ^ rhs);
 }
+
+// arithmetic operators
 
 template <unsigned N>
 inline const auto ch_add(const const_bit<N>& lhs, const const_bit<N>& rhs) {
@@ -624,6 +600,8 @@ inline const auto ch_div(const const_bit<N>& lhs, const const_bit<N>& rhs) {
   return (lhs / rhs);
 }
 
+// shift operators
+
 template <unsigned N, unsigned M>
 inline const auto ch_sll(const const_bit<N>& lhs, const const_bit<M>& rhs) {
   return (lhs << rhs);
@@ -633,10 +611,6 @@ template <unsigned N, unsigned M>
 inline const auto ch_srl(const const_bit<N>& lhs, const const_bit<M>& rhs) {
   return (lhs >> rhs);
 }
-
-CH_FOR_EACH(CH_BIT_GLOBAL_OPS, CH_SEP_SPACE, CH_BIT_OP_TYPES)
-
-///////////////////////////////////////////////////////////////////////////////
 
 // unary operators
 
@@ -730,6 +704,36 @@ inline const auto operator|| (const const_bit<1>& lhs, const const_bit<1>& rhs) 
   return lhs | rhs;
 }
 
+// generate global operators for convertible types
+
+#define CH_BIT_GLOBAL_OPS(i, x) \
+  CH_GLOBAL_OP_EQ(template <unsigned N>, const const_bit<N>&, x) \
+  CH_GLOBAL_OP_NE(template <unsigned N>, const const_bit<N>&, x) \
+  CH_GLOBAL_OP_LT(template <unsigned N>, const const_bit<N>&, x) \
+  CH_GLOBAL_OP_LE(template <unsigned N>, const const_bit<N>&, x) \
+  CH_GLOBAL_OP_GT(template <unsigned N>, const const_bit<N>&, x) \
+  CH_GLOBAL_OP_GE(template <unsigned N>, const const_bit<N>&, x) \
+  CH_GLOBAL_OP_AND(template <unsigned N>, const const_bit<N>&, x) \
+  CH_GLOBAL_OP_OR(template <unsigned N>, const const_bit<N>&, x) \
+  CH_GLOBAL_OP_XOR(template <unsigned N>, const const_bit<N>&, x) \
+  CH_GLOBAL_OP_NAND(template <unsigned N>, const const_bit<N>&, x) \
+  CH_GLOBAL_OP_NOR(template <unsigned N>, const const_bit<N>&, x) \
+  CH_GLOBAL_OP_XNOR(template <unsigned N>, const const_bit<N>&, x) \
+  CH_GLOBAL_OP_ADD(template <unsigned N>, const const_bit<N>&, x) \
+  CH_GLOBAL_OP_SUB(template <unsigned N>, const const_bit<N>&, x) \
+  CH_GLOBAL_OP_MULT(template <unsigned N>, const const_bit<N>&, x) \
+  CH_GLOBAL_OP_DIV(template <unsigned N>, const const_bit<N>&, x) \
+  CH_GLOBAL_OP_MOD(template <unsigned N>, const const_bit<N>&, x) \
+  CH_GLOBAL_OP_SLL(template <unsigned N>, const const_bit<N>&, x) \
+  CH_GLOBAL_OP_SRL(template <unsigned N>, const const_bit<N>&, x) \
+  CH_GLOBAL_OP_SRA(template <unsigned N>, const const_bit<N>&, x) \
+  CH_GLOBAL_OP_ROTL(template <unsigned N>, const const_bit<N>&, x) \
+  CH_GLOBAL_OP_ROTR(template <unsigned N>, const const_bit<N>&, x)
+
+CH_FOR_EACH(CH_BIT_GLOBAL_OPS, CH_SEP_SPACE, CH_BIT_OP_TYPES)
+
+///////////////////////////////////////////////////////////////////////////////
+
 // multiplexers
 
 template <typename I, typename S,
@@ -760,7 +764,6 @@ const auto ch_slice(const T& obj, size_t start = 0) {
   bit_accessor::write(ret, 0, obj, start, N);
   return ret;
 }
-
 
 // concatenation function
 

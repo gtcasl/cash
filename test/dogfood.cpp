@@ -267,6 +267,18 @@ int main(int argc, char **argv) {
   }
 
   {
+    ch_scalar<4> a(0101_b);
+    assert(a[0] == a[2]);
+    assert(a.slice<2>() == a.slice<2>(2));
+  }
+
+  {
+    const ch_scalar<4> a(0101_b);
+    assert(a[0] == a[2]);
+    assert(a.slice<2>() == a.slice<2>(2));
+  }
+
+  {
     auto force_move_assignment = []() {
       return 4_h + 3_h;
     };

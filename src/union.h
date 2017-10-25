@@ -44,7 +44,7 @@
       : union_name(ch::internal::scalar_accessor::cloneBuffer(rhs)) {} \
     union_name(union_name&& rhs) \
       : CH_FOR_EACH(CH_UNION_MOVE_CTOR, CH_SEP_COMMA, __VA_ARGS__) {} \
-    template <typename __T__, CH_REQUIRES(ch::internal::is_bitvector_value<__T__>::value || std::is_enum<__T__>::value)> \
+    template <typename __T__, CH_REQUIRES(std::is_integral_v<__T__>)> \
     explicit union_name(const __T__& rhs) \
       : union_name(ch::internal::scalar_buffer(ch::internal::bitvector(traits::bitwidth, rhs))) {} \
     explicit union_name(const ch_scalar<traits::bitwidth>& rhs) \
@@ -57,7 +57,8 @@
       ch::internal::scalar_accessor::move(*this, std::move(rhs)); \
       return *this; \
     } \
-    CH_SCALAR_TYPE_INTERFACE(union_name) \
+    CH_SCALAR_READONLY_INTERFACE(union_name) \
+    CH_SCALAR_WRITABLE_INTERFACE(union_name) \
   private: \
     const ch::internal::scalar_buffer_ptr& get_buffer() const { \
       CH_FOR_EACH_1(0, CH_UNION_SCALAR_GETBUFFER, CH_SEP_SEMICOLON, __VA_ARGS__)->get_source(); \

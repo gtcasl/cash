@@ -368,7 +368,8 @@ public:
     return *this;
   }
 
-  CH_SCALAR_TYPE_INTERFACE(ch_scalar_vec)
+  CH_SCALAR_READONLY_INTERFACE(ch_scalar_vec)
+  CH_SCALAR_WRITABLE_INTERFACE(ch_scalar_vec)
 
 protected:
 

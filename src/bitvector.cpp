@@ -263,6 +263,22 @@ bitvector& bitvector::operator=(uint32_t value) {
   return *this;
 }
 
+bitvector::const_reference bitvector::at(uint32_t idx) const {
+  assert(idx < size_);
+  uint32_t widx = idx >> WORD_SIZE_LOG;
+  uint32_t wbit = idx & WORD_MASK;
+  uint32_t mask = 1 << wbit;
+  return (words_[widx] & mask) != 0;
+}
+
+bitvector::reference bitvector::at(uint32_t idx) {
+  assert(idx < size_);
+  uint32_t widx = idx >> WORD_SIZE_LOG;
+  uint32_t wbit = idx & WORD_MASK;
+  uint32_t mask = 1 << wbit;
+  return reference(words_[widx], mask);
+}
+
 bool bitvector::operator==(const bitvector& rhs) const {
   if (size_ != rhs.size_)
     return false;

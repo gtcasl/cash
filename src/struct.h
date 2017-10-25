@@ -92,7 +92,8 @@
       ch::internal::scalar_accessor::move(*this, std::move(rhs)); \
       return *this; \
     } \
-    CH_SCALAR_TYPE_INTERFACE(struct_name) \
+    CH_SCALAR_READONLY_INTERFACE(struct_name) \
+    CH_SCALAR_WRITABLE_INTERFACE(struct_name) \
   private: \
     const ch::internal::scalar_buffer_ptr& get_buffer() const { \
       CH_FOR_EACH_1(0, CH_STRUCT_SCALAR_GETBUFFER, CH_SEP_SEMICOLON, __VA_ARGS__)->get_source(); \
@@ -140,7 +141,8 @@
       ch::internal::scalar_accessor::move(*this, std::move(rhs)); \
       return *this; \
     } \
-    CH_SCALAR_TYPE_INTERFACE(struct_name) \
+    CH_SCALAR_READONLY_INTERFACE(struct_name) \
+    CH_SCALAR_WRITABLE_INTERFACE(struct_name) \
   private: \
     const ch::internal::scalar_buffer_ptr& get_buffer() const { \
       return ch::internal::scalar_accessor::get_buffer<parent>(*this); \

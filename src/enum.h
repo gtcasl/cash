@@ -28,13 +28,8 @@
       base::operator=(rhs); \
       return *this; \
     } \
-    inline friend const auto operator==(const enum_name& lhs, const enum_name& rhs) { \
-      return (lhs.asScalar() == rhs.asScalar()); \
-    } \
-    inline friend const auto operator!=(const enum_name& lhs, const enum_name& rhs) { \
-      return (lhs.asScalar() != rhs.asScalar()); \
-    } \
-    CH_SCALAR_TYPE_INTERFACE(enum_name) \
+    CH_SCALAR_READONLY_INTERFACE(enum_name) \
+    CH_SCALAR_WRITABLE_INTERFACE(enum_name) \
   }
 
 #define CH_ENUM_BODY_IMPL(enum_name, reverse_name, assignment_body) \
@@ -48,13 +43,7 @@ protected: \
   enum_name(const base& rhs) : base(rhs) {}
 
 #define CH_ENUM_READONLY_IMPL(enum_name) \
-  CH_BIT_READONLY_INTERFACE(enum_name) \
-  const auto operator==(const enum_name& rhs) const { \
-    return (this->asBits() == rhs.asBits()); \
-  } \
-  const auto operator!=(const enum_name& rhs) const { \
-    return (this->asBits() != rhs.asBits()); \
-  }
+  CH_BIT_READONLY_INTERFACE(enum_name)
 
 #define CH_ENUM_WRITABLE_IMPL(enum_name) \
   CH_BIT_READONLY_INTERFACE(enum_name) \
