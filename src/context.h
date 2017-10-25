@@ -15,8 +15,7 @@ class litimpl;
 class ioimpl;
 class inputimpl;
 class outputimpl;
-class callimpl;
-class callportimpl;
+class bindimpl;
 class selectimpl;
 class tapimpl;
 class assertimpl;
@@ -29,6 +28,66 @@ using ch_tick = uint64_t;
 using node_map_t = std::unordered_map<uint32_t, std::vector<const lnode*>>;
 
 using live_nodes_t = std::unordered_set<lnodeimpl*>;
+
+struct cond_upd_t {
+  cond_upd_t(selectimpl* p_sel, uint32_t p_block_id)
+    : sel(p_sel)
+    , block_id(p_block_id)
+  {}
+  selectimpl* sel;
+  uint32_t block_id;
+};
+
+struct cond_range_t {
+  uint32_t nodeid;
+  uint32_t offset;
+  uint32_t length;
+
+  bool operator==(const cond_range_t& range) const {
+    return this->nodeid == range.nodeid
+        && this->offset == range.offset
+        && this->length == range.length;
+  }
+
+  bool operator!=(const cond_range_t& range) const {
+    return !(*this == range);
+  }
+
+  bool operator<(const cond_range_t& range) const {
+    if (this->nodeid != range.nodeid)
+      return (this->nodeid < range.nodeid);
+    if (this->offset != range.offset)
+      return (this->offset < range.offset);
+    if (this->length != range.length)
+      return (this->length < range.length);
+    return false;
+  }
+};
+
+struct cond_branch_t {
+  lnodeimpl* else_pred;
+};
+
+typedef std::list<cond_branch_t> cond_branches_t;
+
+struct cond_block_t {
+  cond_block_t(uint32_t p_id,
+               lnodeimpl* p_pred,
+               cond_branches_t::iterator p_branch)
+    : id(p_id)
+    , pred(p_pred)
+    , branch(p_branch)
+  {}
+  uint32_t id;
+  lnodeimpl* pred;
+  cond_branches_t::iterator branch;
+  std::unordered_map<uint32_t, lnodeimpl*> agg_preds;
+  std::unordered_set<lnodeimpl*> locals;
+};
+
+typedef std::list<cond_block_t> cond_blocks_t;
+
+typedef std::map<cond_range_t, std::list<cond_upd_t>> cond_upds_t;
 
 class context : public refcounted {
 public:
@@ -80,12 +139,8 @@ public:
     return default_reset_;
   }
 
-  const auto& get_calls() const {
-    return calls_;
-  }
-
-  const auto& get_callports() const {
-    return callports_;
+  const auto& get_bindings() const {
+    return bindings_;
   }
 
   //--
@@ -114,9 +169,6 @@ public:
   }
 
   void destroyNode(lnodeimpl* node);
-
-  void add_node(lnodeimpl* node);
-  void remove_node(lnodeimpl* node);
   
   //--
 
@@ -135,8 +187,12 @@ public:
   
   lnodeimpl* get_literal(const bitvector& value);
 
+  //--
+
   cdomain* create_cdomain(const std::vector<clock_event>& sensitivity_list);
   void remove_cdomain(cdomain* cd);
+
+  //--
 
   void register_tap(const std::string& name, const lnode& lnode);
 
@@ -156,16 +212,13 @@ public:
   
   //--
   
-  void dump_ast(std::ostream& out, uint32_t level);
-  
-  void dump_cfg(lnodeimpl* node, std::ostream& out, uint32_t level);
-  
+  void dump_ast(std::ostream& out, uint32_t level);  
+  void dump_cfg(lnodeimpl* node, std::ostream& out, uint32_t level);  
   void dump_stats(std::ostream& out);
 
   //--
 
-  void bind_input(const lnode& input, const lnode& src);
-
+  void bind_input(const lnode& src, const lnode& input);
   void bind_output(const lnode& dst, const lnode& output);
   
 protected:
@@ -173,65 +226,8 @@ protected:
   context(const std::string& name);
   ~context();
 
-  struct cond_upd_t {
-    cond_upd_t(selectimpl* p_sel, uint32_t p_block_id)
-      : sel(p_sel)
-      , block_id(p_block_id)
-    {}
-    selectimpl* sel;
-    uint32_t block_id;
-  };
-
-  struct cond_range_t {
-    uint32_t nodeid;
-    uint32_t offset;
-    uint32_t length;
-
-    bool operator==(const cond_range_t& range) const {
-      return this->nodeid == range.nodeid
-          && this->offset == range.offset
-          && this->length == range.length;
-    }
-
-    bool operator!=(const cond_range_t& range) const {
-      return !(*this == range);
-    }
-
-    bool operator<(const cond_range_t& range) const {
-      if (this->nodeid != range.nodeid)
-        return (this->nodeid < range.nodeid);
-      if (this->offset != range.offset)
-        return (this->offset < range.offset);
-      if (this->length != range.length)
-        return (this->length < range.length);
-      return false;
-    }
-  };
-
-  struct cond_branch_t {
-    lnodeimpl* else_pred;
-  };
-
-  typedef std::list<cond_branch_t> cond_branches_t;
-
-  struct cond_block_t {
-    cond_block_t(uint32_t p_id,
-                 lnodeimpl* p_pred,
-                 cond_branches_t::iterator p_branch)
-      : id(p_id)
-      , pred(p_pred)
-      , branch(p_branch)
-    {}
-    uint32_t id;
-    lnodeimpl* pred;
-    cond_branches_t::iterator branch;
-    std::unordered_map<uint32_t, lnodeimpl*> agg_preds;
-    std::unordered_set<lnodeimpl*> locals;
-  };
-
-  typedef std::list<cond_block_t> cond_blocks_t;
-
-  typedef std::map<cond_range_t, std::list<cond_upd_t>> cond_upds_t;
+  void add_node(lnodeimpl* node);
+  void remove_node(lnodeimpl* node);
 
   lnodeimpl* build_aggregate_predicate(
       cond_blocks_t::iterator def_block,
@@ -243,7 +239,7 @@ protected:
       uint32_t offset,
       uint32_t length);
 
-  callimpl* find_call(context* module_ctx);
+  bindimpl* get_binding(context* module);
 
   uint32_t    id_;
   std::string name_;
@@ -263,8 +259,8 @@ protected:
   std::list<ioimpl*>     gtaps_;
   std::list<litimpl*>    literals_;
   std::list<cdomain*>    cdomains_;
-  std::list<callimpl*>   calls_;
-  std::list<callportimpl*> callports_;
+
+  std::list<bindimpl*>   bindings_;
 
   cond_upds_t            cond_upds_;
   cond_blocks_t          cond_blocks_;

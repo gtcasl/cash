@@ -1,7 +1,7 @@
 #include "verilogwriter.h"
 #include "verilog.h"
 #include "context.h"
-#include "callimpl.h"
+#include "bindimpl.h"
 #include "litimpl.h"
 #include "regimpl.h"
 #include "memimpl.h"
@@ -43,15 +43,16 @@ bool verilogwriter::print_impl(context* ctx) {
   {
     auto_separator sep("\n");
     int written = 0;    
-    for (auto call : ctx->get_calls()) {
+    for (auto binding : ctx->get_bindings()) {
       if (exported_modules_.count(ctx->get_name()))
         continue;
       exported_modules_.insert(ctx->get_name());
       out_ << sep;
-      written |= this->print_impl(call->get_module_ctx());
+      written |= this->print_impl(binding->get_module());
     }
-    if (written)
+    if (written) {
       out_ << std::endl;
+    }
   }
 
   // print header
@@ -110,8 +111,9 @@ void verilogwriter::print_body(context* ctx) {
     for (auto node : ctx->get_nodes()) {
       written |= this->print_decl(node);
     }
-    if (written)
+    if (written) {
       out_ << std::endl;
+    }
   }
 
   //
@@ -123,8 +125,9 @@ void verilogwriter::print_body(context* ctx) {
     for (auto node : ctx->get_nodes()) {
       written |= this->print_logic(node);
     }
-    if (written)
+    if (written) {
       out_ << std::endl;
+    }
   }
 }
 
@@ -145,27 +148,30 @@ void verilogwriter::print_footer(context* ctx) {
       written = true;
     }
 
-    if (written)
+    if (written) {
       out_ << std::endl;
+    }
   }
 
   out_ << "endmodule" << std::endl;
 }
 
-bool verilogwriter::print_call(callimpl* call) {
+bool verilogwriter::print_binding(bindimpl* node) {
   auto_separator sep(", ");
-  auto ctx = call->get_ctx();
-  auto module_ctx = call->get_module_ctx();
-  out_ << module_ctx->get_name() << " __module" << module_ctx->get_id() << "__(";
-  for (auto input : module_ctx->get_inputs()) {
-    out_ << sep << input->get_name() << "(";
-    this->print_name(input->get_input().get_impl());
+  auto module = node->get_module();
+  out_ << module->get_name() << " __module" << module->get_id() << "__(";
+  for (auto& input : node->get_inputs()) {
+    auto bindport = dynamic_cast<bindportimpl*>(input.get_impl());
+    auto ioport = dynamic_cast<ioimpl*>(bindport->get_ioport().get_impl());
+    out_ << sep << ioport->get_name() << "(";
+    this->print_name(bindport);
     out_ << ")";
   }
-  for (auto callport : ctx->get_callports()) {
-    auto output = dynamic_cast<outputimpl*>(callport->get_output().get_impl());
-    out_ << sep << output->get_name() << "(";
-    this->print_name(callport);
+  for (auto output : node->get_outputs()) {
+    auto bindport = dynamic_cast<bindportimpl*>(output.get_impl());
+    auto ioport = dynamic_cast<ioimpl*>(bindport->get_ioport().get_impl());
+    out_ << sep << ioport->get_name() << "(";
+    this->print_name(bindport);
     out_ << ")";
   }
   out_ << ");" << std::endl;
@@ -213,7 +219,7 @@ bool verilogwriter::print_decl(lnodeimpl* node) {
     this->print_value(node->get_value());
     out_ << ";" << std::endl;
     return true;
-  case type_callport:
+  case type_bindport:
   case type_proxy:
   case type_alu:
   case type_select:
@@ -223,7 +229,7 @@ bool verilogwriter::print_decl(lnodeimpl* node) {
     this->print_name(node);
     out_ << ";" << std::endl;
     return true;
-  case type_call:
+  case type_bind:
   case type_input:
   case type_clk:
   case type_reset:
@@ -258,10 +264,10 @@ bool verilogwriter::print_logic(lnodeimpl* node) {
   case type_mem:
     this->print_mem(dynamic_cast<memimpl*>(node));
     return true;
-  case type_call:
-    this->print_call(dynamic_cast<callimpl*>(node));
+  case type_bind:
+    this->print_binding(dynamic_cast<bindimpl*>(node));
     return true;
-  case type_callport:
+  case type_bindport:
   case type_lit:
   case type_input:
   case type_clk:
@@ -605,7 +611,7 @@ void verilogwriter::print_name(lnodeimpl* node) {
   case type_mem:
     print_basic_name('m');
     break;
-  case type_callport:
+  case type_bindport:
     print_basic_name('c');
     break;
   case type_memport:

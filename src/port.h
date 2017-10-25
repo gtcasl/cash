@@ -9,7 +9,7 @@ lnodeimpl* createInputNode(const std::string& name, uint32_t size);
 
 lnodeimpl* createOutputNode(const std::string& name, const lnode& src);
 
-void bindInput(const lnode& input, const lnode& src);
+void bindInput(const lnode& src, const lnode& input);
 
 void bindOutput(const lnode& dst, const lnode& output);
 
@@ -97,20 +97,20 @@ public:
   input_port(ch_in<T>& in) : in_(in) {}
 
   void operator()(const ch_in<T>& in) const {
-    bindInput(in_.input_, get_lnode(in));
+    bindInput(get_lnode(in), in_.input_);
   }
 
   void operator()(const input_port& in) const {
-    bindInput(in_.input_, get_lnode(in.in_));
+    bindInput(get_lnode(in.in_), in_.input_);
   }
 
   void operator()(const output_port<T>& out) const {
-    bindInput(in_.input_, get_lnode(out.out_));
+    bindInput(get_lnode(out.out_), in_.input_);
   }
 
   template <typename U, CH_REQUIRES(is_cast_convertible<T, U>::value)>
   void operator()(const U& value) const {
-    bindInput(in_.input_, get_lnode<U, bitwidth_v<T>>(value));
+    bindInput(get_lnode<U, bitwidth_v<T>>(value), in_.input_);
   }
 
   auto operator()() const {

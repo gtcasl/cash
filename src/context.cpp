@@ -5,7 +5,7 @@
 #include "regimpl.h"
 #include "memimpl.h"
 #include "ioimpl.h"
-#include "callimpl.h"
+#include "bindimpl.h"
 #include "selectimpl.h"
 #include "proxyimpl.h"
 #include "memimpl.h"
@@ -174,11 +174,8 @@ void context::add_node(lnodeimpl* node) {
   case type_output:
     outputs_.emplace_back((outputimpl*)node);
     break; 
-  case type_call:
-    calls_.emplace_back((callimpl*)node);
-    break;
-  case type_callport:
-    callports_.emplace_back((callportimpl*)node);
+  case type_bind:
+    bindings_.emplace_back((bindimpl*)node);
     break;
   case type_tap:
     taps_.emplace_back((tapimpl*)node);
@@ -229,11 +226,8 @@ void context::remove_node(lnodeimpl* node) {
     if (node == default_reset_)
       default_reset_ = nullptr;
     break;
-  case type_call:
-    calls_.remove((callimpl*)node);
-    break;
-  case type_callport:
-    callports_.remove((callportimpl*)node);
+  case type_bind:
+    bindings_.remove((bindimpl*)node);
     break;
   case type_tap:
     taps_.remove((tapimpl*)node);
@@ -526,30 +520,22 @@ void context::register_tap(const std::string& name, const lnode& node) {
   this->createNode<tapimpl>(node, unique_tap_names_.get(name).c_str());
 }
 
-callimpl* context::find_call(context* module_ctx) {
-  for (auto call : calls_) {
-    if (call->get_module_ctx() == module_ctx)
-      return call;
+bindimpl* context::get_binding(context* module) {
+  for (auto binding : bindings_) {
+    if (binding->get_module() == module)
+      return binding;
   }
-  return this->createNode<callimpl>(module_ctx);
+  return this->createNode<bindimpl>(module);
 }
 
-void context::bind_input(const lnode& input, const lnode& src) {
-  auto call = this->find_call(input.get_ctx());
-  call->bind_input(input, src);
-  dynamic_cast<inputimpl*>(input.get_impl())->bind(src);
+void context::bind_input(const lnode& src, const lnode& input) {
+  auto binding = this->get_binding(input.get_ctx());
+  binding->bind_input(src, input);
 }
 
 void context::bind_output(const lnode& dst, const lnode& output) {
-  auto call = this->find_call(output.get_ctx());
-  lnode callport(this->createNode<callportimpl>(call, output));
-
-  auto input = dynamic_cast<inputimpl*>(dst.get_impl());
-  if (input) {
-    this->bind_input(input, callport);
-  } else {
-    const_cast<lnode&>(dst).write(0, dst, 0, dst.get_size(), dst.get_size());
-  }
+  auto binding = this->get_binding(output.get_ctx());
+  binding->bind_output(dst, output);
 }
 
 live_nodes_t context::compute_live_nodes() const {
@@ -599,8 +585,8 @@ void context::tick_next(ch_tick t) {
 }
 
 void context::eval(ch_tick t) {
-  // evaluate calls
-  for (auto node : calls_) {
+  // evaluate bindings
+  for (auto node : bindings_) {
     node->eval(t);
   }
 
@@ -742,8 +728,8 @@ void ch::internal::ch_dumpStats(std::ostream& out, const module& module) {
   get_ctx(module)->dump_stats(out);
 }
 
-void ch::internal::bindInput(const lnode& input, const lnode& src) {
-  src.get_ctx()->bind_input(input, src);
+void ch::internal::bindInput(const lnode& src, const lnode& input) {
+  src.get_ctx()->bind_input(src, input);
 }
 
 void ch::internal::bindOutput(const lnode& dst, const lnode& output) {

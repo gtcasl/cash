@@ -17,11 +17,12 @@ examples/fastmult_tb.v
 examples/fifo.cpp
 examples/fifo_tb.v
 examples/fifo_tb.v
+src/bindimpl.cpp
+src/bindimpl.h
 src/bit.cpp
 src/bitref.h
-src/callimpl.cpp
-src/callimpl.h
 src/cash.cpp
+src/float32.h
 src/misc.h
 src/module.h
 src/moduleimpl.cpp
@@ -133,7 +134,6 @@ src/proxyimpl.cpp
 src/proxyimpl.cpp
 src/proxyimpl.h
 src/proxyimpl.h
-src/real.h
 src/real.h
 src/reg.h
 src/reg.h

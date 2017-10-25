@@ -194,7 +194,9 @@ struct Dogfood {
     (ch_out<ch_bit1>) out
   );
   void describe() {
-    io.out = 1_b;
+    //io.out = 1_b;
+    ch_float32 x(0.5f);
+    io.out = (x == 0x3f000000_h);
     /*ch_bit4 a(1100_b), b(0011_b);
     b[3] = a[3];
     io.out = (b == 1011_b);*/
@@ -357,13 +359,15 @@ int main(int argc, char **argv) {
   sim.run(1);
   assert(ch_peek<bool>(dogfood.io.out));*/
 
-  /*ch_module<Foo1> foo;
-  ch_poke(foo.io.in1, 1);
-  ch_poke(foo.io.in2, 2);
-  ch_simulator sim(foo);
-  sim.run(1);
-  assert(3 == ch_peek<int>(foo.io.out));
-  ch_toVerilog("foo.v", foo);*/
+  /*{
+    ch_module<Foo1> foo;
+    ch_poke(foo.io.in1, 1);
+    ch_poke(foo.io.in2, 2);
+    ch_simulator sim(foo);
+    sim.run(1);
+    assert(3 == ch_peek<int>(foo.io.out));
+    ch_toVerilog("foo.v", foo);
+  }*/
 
   /*ch_module<Foo2> foo;
   ch_simulator sim(foo);

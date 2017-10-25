@@ -36,6 +36,9 @@ struct is_integral_or_enum : std::integral_constant<bool,
   std::is_enum<T>::value>
 {};
 
+template <typename T>
+inline constexpr bool is_integral_or_enum_v = is_integral_or_enum<T>::value;
+
 ///////////////////////////////////////////////////////////////////////////////
 
 template <bool Pred>
@@ -249,6 +252,20 @@ template <typename T, typename... Args>
 refcounted_ptr<T> make_ptr(const Args&... args) {
   return refcounted_ptr<T>(new T(args...));
 } 
+
+///////////////////////////////////////////////////////////////////////////////
+
+template<class InputIt, class T>
+typename std::iterator_traits<InputIt>::difference_type
+find_distance(InputIt first, InputIt last, const T& value) {
+  typename std::iterator_traits<InputIt>::difference_type index = 0;
+  for (;first != last; ++first, ++index) {
+    if (*first == value) {
+      return index;
+    }
+  }
+  return -1;
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 

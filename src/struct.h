@@ -75,7 +75,7 @@
       : CH_FOR_EACH(CH_STRUCT_MOVE_CTOR, CH_SEP_COMMA, __VA_ARGS__) {} \
     explicit struct_name(const ch_scalar<traits::bitwidth>& rhs) \
       : struct_name(ch::internal::scalar_accessor::cloneBuffer(rhs)) {} \
-    template <typename __T__, CH_REQUIRES(ch::internal::is_integral_or_enum<__T__>::value)> \
+    template <typename __T__, CH_REQUIRES(std::is_integral_v<__T__>)> \
     explicit struct_name(__T__ rhs) \
       : struct_name(ch::internal::scalar_buffer(bitvector(traits::bitwidth, rhs))) {} \
     template <CH_REVERSE_FOR_EACH(CH_STRUCT_FIELD_CTOR_TMPL, CH_SEP_COMMA, __VA_ARGS__), \
@@ -122,7 +122,7 @@
       , CH_FOR_EACH(CH_STRUCT_MOVE_CTOR, CH_SEP_COMMA, __VA_ARGS__) {} \
     explicit struct_name(const ch_scalar<traits::bitwidth>& rhs) \
         : struct_name(ch::internal::scalar_accessor::cloneBuffer(rhs)) {} \
-    template <typename __T__, CH_REQUIRES(ch::internal::is_integral_or_enum<__T__>::value)> \
+    template <typename __T__, CH_REQUIRES(std::is_integral_v<__T__>)> \
     explicit struct_name(__T__ rhs) \
       : struct_name(ch::internal::scalar_buffer(bitvector(traits::bitwidth, rhs))) {} \
     template <CH_REVERSE_FOR_EACH(CH_STRUCT_FIELD_CTOR_TMPL, CH_SEP_COMMA, __VA_ARGS__), typename... __Ts__, \
@@ -165,7 +165,7 @@ public: \
     CH_FOR_EACH(CH_STRUCT_MOVE_CTOR, CH_SEP_COMMA, __VA_ARGS__) {} \
   struct_name(const reverse_name& rhs) \
     : struct_name(ch::internal::bit_accessor::cloneBuffer(rhs)) {} \
-  template <typename __T__, CH_REQUIRES(ch::internal::is_integral_or_enum<__T__>::value)> \
+  template <typename __T__, CH_REQUIRES(std::is_integral_v<__T__>)> \
   explicit struct_name(__T__ rhs) \
     : struct_name(ch::internal::bit_buffer(bitvector(traits::bitwidth, rhs))) {} \
   explicit struct_name(const ch_scalar<traits::bitwidth>& rhs) \
@@ -202,7 +202,7 @@ public: \
     , CH_FOR_EACH(CH_STRUCT_MOVE_CTOR, CH_SEP_COMMA, __VA_ARGS__) {} \
   struct_name(const reverse_name& rhs) \
     : struct_name(ch::internal::bit_accessor::cloneBuffer(rhs)) {} \
-  template <typename __T__, CH_REQUIRES(ch::internal::is_integral_or_enum<__T__>::value)> \
+  template <typename __T__, CH_REQUIRES(std::is_integral_v<__T__>)> \
   explicit struct_name(__T__ rhs) \
     : struct_name(ch::internal::bit_buffer(bitvector(traits::bitwidth, rhs))) {} \
   explicit struct_name(const ch_scalar<traits::bitwidth>& rhs) \

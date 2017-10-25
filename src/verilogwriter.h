@@ -15,7 +15,7 @@ class selectimpl;
 class regimpl;
 class latchimpl;
 class memimpl;
-class callimpl;
+class bindimpl;
 class bitvector;
 class cdomain;
 
@@ -40,7 +40,7 @@ protected:
 
   bool print_decl(lnodeimpl* node);
 
-  bool print_call(callimpl* call);
+  bool print_binding(bindimpl* node);
 
   bool print_logic(lnodeimpl* node);
 

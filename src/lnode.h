@@ -70,6 +70,15 @@ public:
 protected:
 
   mutable lnodeimpl* impl_;
+
+  inline friend bool operator==(const lnode& lhs, const lnode& rhs) {
+    return lhs.get_id() == rhs.get_id();
+  }
+
+  inline friend bool operator!=(const lnode& lhs, const lnode& rhs) {
+    return lhs.get_id() != rhs.get_id();
+  }
+
 };
 
 std::ostream& operator<<(std::ostream& out, const lnode& node);

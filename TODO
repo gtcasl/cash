@@ -68,7 +68,7 @@ X*** Assignment rule: by constructor assignent is ignored during check
 *** address the issue why friend member still don't get implicit template constructor (e.g. ch_min, ch_select, ...)
 
 
-*** handling floating-point delays: (y = a * b) => ch_decoupled<ch_float> object exporting ready/valid signals to be connected
+*** handling floating-point delays: (y = a * b) => ch_decoupled<ch_float32> object exporting ready/valid signals to be connected
 *** complete float implementation (compare operations) 
 *** make ch_mem store the enclosed type like ch_mem<ch_bit32, 10> 
 

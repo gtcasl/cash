@@ -75,7 +75,7 @@ TEST_CASE("misc", "[misc]") {
       return ch_true;
     });
     TEST([]()->ch_bit1 {
-      ch_float a(0.1f);
+      ch_float32 a(0.1f);
       ch_print("a={0:f}", a);
       return ch_true;
     });

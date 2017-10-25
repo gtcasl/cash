@@ -182,6 +182,7 @@ void lnode::write(uint32_t dst_offset,
                   uint32_t src_offset,
                   uint32_t length,
                   uint32_t size) {
+  assert(this != &src);
   assert(!src.is_empty());
   assert(size > dst_offset);
   assert(size >= dst_offset + length);

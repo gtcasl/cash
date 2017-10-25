@@ -190,7 +190,7 @@ public:
     this->assign(rhs);
   }
 
-  template <typename __T__, CH_REQUIRES(is_integral_or_enum<__T__>::value)>
+  template <typename __T__, CH_REQUIRES(std::is_integral_v<__T__>)>
   explicit ch_logic_const_vec(__T__ rhs)
     : ch_logic_const_vec(bit_buffer(bitvector(traits::bitwidth, rhs)))
   {}
@@ -245,7 +245,7 @@ public:
   template <typename U>
   explicit ch_logic_vec(const ch_logic_vec<U, N>& rhs) : base(rhs ) {}
 
-  template <typename __T__, CH_REQUIRES(is_integral_or_enum<__T__>::value)>
+  template <typename __T__, CH_REQUIRES(std::is_integral_v<__T__>)>
   explicit ch_logic_vec(__T__ rhs) : base(rhs) {}
 
   explicit ch_logic_vec(const ch_scalar<traits::bitwidth>& rhs) : base(rhs) {}

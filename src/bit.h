@@ -236,8 +236,7 @@ using bit_cast_t = std::conditional_t<is_logic_type<T>::value, const T&, ch_bit<
 template <typename T, unsigned N = bitwidth_v<T>,
           CH_REQUIRES(is_bit_convertible<T, N>::value)>
 lnode get_lnode(const T& rhs) {
-  bit_cast_t<T, N> x(rhs);
-  return bit_accessor::get_data(x);
+  return bit_accessor::get_data(static_cast<bit_cast_t<T, N>>(rhs));
 }
 
 template <typename T>
@@ -528,7 +527,7 @@ public:
     return *this;
   }
 
-  template <typename U, CH_REQUIRES(is_integral_or_enum<U>::value)>
+  template <typename U, CH_REQUIRES(is_integral_or_enum_v<U>)>
   ch_bit& operator=(U rhs) {
     buffer_->set_data(bitvector(N, rhs));
     return *this;

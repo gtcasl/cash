@@ -349,7 +349,7 @@ public:
     return *this;
   }
 
-  template <typename U, CH_REQUIRES(is_integral_or_enum<U>::value)>
+  template <typename U, CH_REQUIRES(is_integral_or_enum_v<U>)>
   ch_scalar& operator=(U value) {
     buffer_->set_data(bitvector(N, value));
     return *this;

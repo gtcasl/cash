@@ -18,8 +18,8 @@
   m(reg) \
   m(mem) \
   m(memport) \
-  m(call) \
-  m(callport) \
+  m(bind) \
+  m(bindport) \
   m(tap) \
   m(assert) \
   m(tick) \
@@ -58,14 +58,14 @@ public:
     return srcs_;
   }
   
-  const lnode& get_src(unsigned i) const {
-    assert(i < srcs_.size());
-    return srcs_[i];
+  const lnode& get_src(unsigned index) const {
+    assert(index < srcs_.size());
+    return srcs_[index];
   }
   
-  const lnode& get_src(unsigned i) {
-    assert(i < srcs_.size());
-    return srcs_[i];
+  void set_src(unsigned index, const lnode& node) {
+    assert(index < srcs_.size());
+    srcs_[index] = node;
   }
   
   uint32_t get_size() const {
@@ -80,12 +80,12 @@ public:
     return value_;
   }
 
-  bool get_bool(unsigned i) const {
-    return value_[i];
+  bool get_bool(unsigned index) const {
+    return value_[index];
   }
 
-  void set_bool(unsigned i, bool value) {
-    value_[i] = value;
+  void set_bool(unsigned index, bool value) {
+    value_[index] = value;
   }
 
   void read_bytes(uint32_t dst_offset, void* out, uint32_t out_cbsize, uint32_t src_offset, uint32_t size) const {

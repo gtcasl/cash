@@ -5,7 +5,7 @@ TEST_CASE("arithmetic", "[arithmetic]") {
     TEST([]()->ch_bit1 {
       ch_bit4 a(1100_b);
       ch_bit4 c = ~a;
-      return (c == 0011_b);
+      return (c == 0011_b) && (c == 3);
     });
     TEST([]()->ch_bit1 {
       ch_bit4 a(1100_b);

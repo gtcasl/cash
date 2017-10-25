@@ -14,7 +14,7 @@
 #include "enum.h"
 #include "struct.h"
 #include "union.h"
-#include "real.h"
+#include "float32.h"
 #include "seq.h"
 #include "port.h"
 #include "module.h"
@@ -54,7 +54,7 @@ namespace core {
 
   template <unsigned N> using ch_scalar = ch::internal::ch_scalar<N>;
 
-  using ch_float = ch::internal::ch_real;
+  using ch_float32 = ch::internal::ch_float32;
 
   template <typename T> using ch_seq = ch::internal::ch_seq<T>;
 
