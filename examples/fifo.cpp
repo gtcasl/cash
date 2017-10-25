@@ -6,13 +6,13 @@ using namespace ch::sim;
 
 #define CHECK(x, v) if (ch_peek<decltype(v)>(x) != v) { assert(false); exit(1); }
 
-template <unsigned A, unsigned W>
+template <typename T, unsigned A>
 struct FiFo {
   __io(
-    (ch_in<ch_bit<W>>)  din,
+    (ch_in<T>)  din,
     (ch_in<ch_bit1>)    push,
     (ch_in<ch_bit1>)    pop,
-    (ch_out<ch_bit<W>>) dout,
+    (ch_out<T>) dout,
     (ch_out<ch_bit1>)   empty,
     (ch_out<ch_bit1>)   full
   );
@@ -28,7 +28,7 @@ struct FiFo {
     rd_ptr.next = ch_select(reading, rd_ptr + 1, rd_ptr);
     wr_ptr.next = ch_select(writing, wr_ptr + 1, wr_ptr);
 
-    ch_ram<W, A> mem;
+    ch_ram<T, A> mem;
     __if (writing) (
       mem[wr_A] = io.din;
     );
@@ -40,7 +40,7 @@ struct FiFo {
 };
 
 int main(int argc, char **argv) {
-  ch_module<FiFo<1, 2>> fifo;
+  ch_module<FiFo<ch_bit<2>, 1>> fifo;
 
   ch_vcdtracer tracer("fifo.vcd", fifo);
   tracer.run([&](ch_tick t)->bool {

@@ -20,11 +20,12 @@ public:
 
   const_float32(const_float32&& rhs) : base(std::move(rhs)) {}
 
+  explicit const_float32(const bit_buffer& buffer) : base(buffer) {}
+
   explicit const_float32(const const_bit<32>& rhs) : base(rhs) {}
 
   explicit const_float32(const ch_scalar<32>& rhs) : base(rhs) {}
 
-  explicit const_float32(const bit_buffer& buffer) : base(buffer) {}
 
   explicit const_float32(float rhs) : base(bitcast<uint32_t, float>(rhs)) {}
 };
@@ -42,11 +43,11 @@ public:
 
   ch_float32(ch_float32&& rhs) : base(std::move(rhs)) {}
 
+  explicit ch_float32(const bit_buffer& buffer) : base(buffer) {}
+
   explicit ch_float32(const const_bit<32>& rhs) : base(rhs) {}
 
   explicit ch_float32(const ch_scalar<32>& rhs) : base(rhs) {}
-
-  explicit ch_float32(const bit_buffer& buffer) : base(buffer) {}
 
   explicit ch_float32(float rhs) : base(rhs) {}
 

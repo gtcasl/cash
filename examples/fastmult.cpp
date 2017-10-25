@@ -19,7 +19,7 @@ struct FastMult {
         tbl_mult[j * 16 + i] = i * j;
       }
     }
-    ch_rom<8, 8> mem(tbl_mult);
+    ch_rom<ch_bit8, 8> mem(tbl_mult);
     auto addr = (ch_zext<8>(io.lhs) << 4) | ch_zext<8>(io.rhs);
     io.out = mem[addr];
   }

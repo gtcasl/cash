@@ -2,6 +2,7 @@
 #include "common.h"
 #include <stdarg.h>
 #include <cxxabi.h>
+#include <regex>
 
 #define BACKWARD_HAS_BFD 1
 #include "backward.h"
@@ -62,11 +63,13 @@ std::string ch::internal::identifier_from_typeid(const std::string& name) {
   char* demangled = abi::__cxa_demangle(name.c_str(), 0, 0, &status);
   CH_CHECK(0 == status, "abi::__cxa_demangle() failed");
   std::string ret(demangled);
-  // remove namespace prefix and template posfix
-  auto pos = ret.find_last_of(':') + 1;
-  auto len = ret.find_first_of('<') - pos;
-  ret = ret.substr(pos, len);
   ::free(demangled);
+  // remove namespace prefix
+  auto tmp = std::regex_replace(ret, std::regex("[a-zA-Z_][a-zA-Z0-9_]*::"), "");
+  // replace template arguments
+  ret.clear();
+  std::regex_replace(std::back_inserter(ret), tmp.begin(), tmp.end(),
+                     std::regex("<.*>"), "");
   return ret;
 }
 
