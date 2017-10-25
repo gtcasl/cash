@@ -169,7 +169,8 @@ public:
     return size_;
   }
 
-private:
+protected:
+
   scalar_buffer_ptr source_;
   mutable bitvector value_;
   unsigned offset_;

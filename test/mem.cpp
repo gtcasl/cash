@@ -46,6 +46,28 @@ TEST_CASE("memory", "[memory]") {
       ch_print("t={0}, clk={1}, a={2}, d={3}, en={4}, q={5}, e={6}", ch_getTick(), ch_getClock(), a, d, en, q, e);
       return (q == e);
     }, 12);
+
+    TEST([]()->ch_bit1 {
+      ch_bit2 a;
+      ch_bit4 d, q;
+      ch_bit1 en;
+      ch_ram<4, 2> mem({0xA, 0xB, 0xC, 0xD});
+      q = (mem[a] + 1) - 1;
+      __if (en) (
+        mem[a] = d;
+      );
+      ch_tie(a, d, en) = ch_reg(
+        ch_case(ch_getTick(),
+           2, (01_b, 0x0_h, 0_b))
+          (4, (00_b, 0xE_h, 1_b))
+          (6, (10_b, 0x0_h, 0_b))
+          (8, (00_b, 0x0_h, 0_b))
+          (10,(11_b, 0x0_h, 0_b))
+             ((00_b, 0x0_h, 0_b)));
+      ch_bit4 e = ch_case(ch_getTick(), 3, 0xB_h)(5, 0xA_h)(7, 0xC_h)(9, 0xE_h)(11,0xD_h)(q);
+      ch_print("t={0}, clk={1}, a={2}, d={3}, en={4}, q={5}, e={6}", ch_getTick(), ch_getClock(), a, d, en, q, e);
+      return (q == e);
+    }, 12);
     
     TEST([]()->ch_bit1 {
       ch_bit2 a;

@@ -95,11 +95,6 @@ public:
   bit_buffer_impl& operator=(bit_buffer_impl&& rhs);
 
   void write(uint32_t dst_offset,
-             const lnode& data,
-             uint32_t src_offset,
-             uint32_t length);
-
-  void write(uint32_t dst_offset,
              const bit_buffer_impl& src,
              uint32_t src_offset,
              uint32_t length);
@@ -124,7 +119,11 @@ public:
     return size_;
   }
 
-private:
+  virtual void write(uint32_t dst_offset,
+                     const lnode& data,
+                     uint32_t src_offset,
+                     uint32_t length);
+protected:
 
   bit_buffer_ptr source_;
   mutable lnode value_;
@@ -142,6 +141,8 @@ public:
   explicit bit_buffer(Args&&... args)
     : base(new bit_buffer_impl(std::forward<Args>(args)...))
   {}
+
+  bit_buffer(bit_buffer_impl* rhs) : base(rhs) {}
 
   bit_buffer(const bit_buffer& rhs) : base(rhs) {}
 

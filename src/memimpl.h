@@ -43,8 +43,6 @@ public:
   void load(const std::vector<uint8_t>& init_data);
 
   lnode& get_port(const lnode& addr);
-
-  void write(const lnode& port, const lnode& data);
   
   void tick(ch_tick t) override;
 

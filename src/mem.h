@@ -47,36 +47,14 @@ protected:
   memimpl* impl_;
 };
 
-template <unsigned N>
-class memport_ref {
+class mem_buffer : public bit_buffer_impl {
 public:
-  using traits = logic_traits<N, memport_ref, const_bit<N>, ch_bit<N>, ch_scalar<N>>;
+  mem_buffer(const lnode& port) : bit_buffer_impl(port) {}
 
-  template <typename T, CH_REQUIRES(is_bit_convertible<T, N>::value)>
-  memport_ref& operator=(const T& rhs) {
-    mem_.write(buffer_->get_data(), get_lnode<T, N>(rhs));
-    return *this;
-  }
-
-protected:
-  memport_ref(memory& mem, const lnode& addr)
-    : buffer_(mem.get_port(addr))
-    , mem_(mem)
-  {}
-
-  const bit_buffer_ptr& get_buffer() const {
-    return buffer_;
-  }
-
-  bit_buffer_ptr& get_buffer() {
-    return buffer_;
-  }
-
-  bit_buffer buffer_;
-  memory& mem_;
-
-  friend class bit_accessor;
-  template <unsigned W, unsigned A> friend class ch_ram;
+  void write(uint32_t dst_offset,
+             const lnode& data,
+             uint32_t src_offset,
+             uint32_t length) override;
 };
 
 template <unsigned W, unsigned A>
@@ -105,7 +83,7 @@ public:
     template <typename T,
               CH_REQUIRES(is_bit_convertible<T, A>::value)>
     const auto operator[](const T& addr) const {
-      return make_type<ch_bit<W>>(mem_.get_port(get_lnode<T, A>(addr)));
+      return const_bit<W>(new mem_buffer(mem_.get_port(get_lnode<T, A>(addr))));
     }
     
 protected:
@@ -138,13 +116,13 @@ public:
     template <typename T,
               CH_REQUIRES(is_bit_convertible<T, A>::value)>
     const auto operator[](const T& addr) const {
-      return make_type<ch_bit<W>>(mem_.get_port(get_lnode<T, A>(addr)));
+      return const_bit<W>(new mem_buffer(mem_.get_port(get_lnode<T, A>(addr))));
     }
     
     template <typename T,
               CH_REQUIRES(is_bit_convertible<T, A>::value)>
-    memport_ref<W> operator[](const T& addr) {
-      return memport_ref<W>(mem_, get_lnode<T, A>(addr));
+    auto operator[](const T& addr) {
+      return ch_bit<W>(new mem_buffer(mem_.get_port(get_lnode<T, A>(addr))));
     }
     
 protected:

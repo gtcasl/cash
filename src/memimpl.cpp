@@ -70,12 +70,6 @@ lnode& memimpl::get_port(const lnode& addr) {
   return ports_.back();
 }
 
-void memimpl::write(const lnode& port, const lnode& data) {
-   auto impl = dynamic_cast<memportimpl*>(port.get_impl());
-   assert(impl->get_mem().get_id() == this->get_id());
-   impl->write(data);
-}
-
 void memimpl::tick(ch_tick t) {    
   for (uint32_t i = wr_ports_offset_, n = srcs_.size(); i < n; ++i) {
     auto port = dynamic_cast<memportimpl*>(srcs_[i].get_impl());
@@ -130,7 +124,7 @@ memportimpl::memportimpl(context* ctx, memimpl* mem, const lnode& addr)
 
 void memportimpl::write(const lnode& data) {
   if (wdata_idx_ == -1) {
-    // add write port to memory sources
+    // add write port to memory sources to enforce DFG dependencies
     memimpl* mem = dynamic_cast<memimpl*>(srcs_[mem_idx_].get_impl());
     assert(mem->is_write_enable());
     mem->srcs_.emplace_back(this);
@@ -194,6 +188,16 @@ const lnode& memory::get_port(const lnode& addr) const {
   return impl_->get_port(addr);
 }
 
-void memory::write(const lnode& port, const lnode& data) {
-  return impl_->write(port, data);
+///////////////////////////////////////////////////////////////////////////////
+
+void mem_buffer::write(uint32_t dst_offset,
+                       const lnode& data,
+                       uint32_t src_offset,
+                       uint32_t length) {
+  CH_CHECK(0 == dst_offset
+        && 0 == src_offset
+        && length == size_, "partial memory update not supported");
+  auto port = dynamic_cast<memportimpl*>(value_.get_impl());
+  assert(port);
+  port->write(data);
 }
