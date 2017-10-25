@@ -58,7 +58,11 @@ TEST_CASE("scalars", "[scalars]") {
 
   }
   SECTION("vector", "[vector]") {
-
+    TEST([]()->ch_bit1 {
+      ch_scalar_t<v2_2_t> x(3_h);
+      v2_2_t y(x.asScalar());
+      return (y[0] == 3) && (y[1] == 0);
+    });
   }
 }
 

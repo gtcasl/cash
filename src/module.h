@@ -31,7 +31,7 @@ private:
   T impl_;
 
 public:  
-  using io_type   = decltype(impl_.io);
+  using io_type = decltype(impl_.io);
   using ioport_type = typename io_type::traits::port_type;
   ioport_type io;
 

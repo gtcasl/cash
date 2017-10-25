@@ -21,7 +21,11 @@ enum class ch_direction {
   inout = 0x3,
 };
 
-template <typename IoType, ch_direction Direction, typename FlipType, typename PortType, typename LogicType>
+template <typename IoType,
+          ch_direction Direction,
+          typename FlipType,
+          typename PortType,
+          typename LogicType>
 struct io_traits {
   static constexpr unsigned bitwidth = bitwidth_v<LogicType>;
   static constexpr ch_direction direction = Direction;
@@ -57,23 +61,23 @@ CH_DEF_SFINAE_CHECK(is_io_type, is_io_traits<typename std::decay_t<T>::traits>::
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T>
-class connector {
+class io_connector {
 public:
-  connector(const T& obj) : obj_(obj) {}
+  io_connector(const T& obj) : obj_(obj) {}
 
   template <typename U>
-  void bind(const connector<U>& rhs) const {
+  void bind(const io_connector<U>& rhs) const {
     obj_(rhs.obj_);
   }
 
 protected:     
   const T& obj_;
 
-  template <typename U> friend class connector;
+  template <typename U> friend class io_connector;
 };
 
 template <typename U, typename V>
-void operator%(const connector<U>& c1, const connector<V>& c2) {
+void operator%(const io_connector<U>& c1, const io_connector<V>& c2) {
   c1.bind(c2);
 }
 
@@ -114,15 +118,16 @@ public:
   }
 
   auto operator()() const {
-    return ch::internal::connector<decltype(*this)>(*this);
+    return io_connector<decltype(*this)>(*this);
   }
 
 protected:
-  ch_in<T>& in_;
 
   lnode& get_input() const {
     return in_.input_;
   }
+
+  ch_in<T>& in_;
 
   friend std::ostream& operator<<(std::ostream& out, const input_port& port) {
     return out << port.get_input();
@@ -130,9 +135,20 @@ protected:
 
   template <typename U> friend class output_port;
   template <typename V, typename U> friend V ch_peek(const input_port<U>& port);
-  template <typename V, typename U> friend void ch_poke(const input_port<U>& port, const V& value);
-  template <typename U> friend void ch_peek(const input_port<U>& port, uint32_t dst_offset, void* out, uint32_t out_cbsize, uint32_t src_offset, uint32_t length);
-  template <typename U> friend void ch_poke(const input_port<U>& port, uint32_t dst_offset, const void* in, uint32_t in_cbsize, uint32_t src_offset, uint32_t length);
+  template <typename V, typename U> friend void ch_poke(const input_port<U>& port,
+                                                        const V& value);
+  template <typename U> friend void ch_peek(const input_port<U>& port,
+                                            uint32_t dst_offset,
+                                            void* out,
+                                            uint32_t out_cbsize,
+                                            uint32_t src_offset,
+                                            uint32_t length);
+  template <typename U> friend void ch_poke(const input_port<U>& port,
+                                            uint32_t dst_offset,
+                                            const void* in,
+                                            uint32_t in_cbsize,
+                                            uint32_t src_offset,
+                                            uint32_t length);
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -160,15 +176,16 @@ public:
   }
 
   auto operator()() const {
-    return ch::internal::connector<decltype(*this)>(*this);
+    return io_connector<decltype(*this)>(*this);
   }
 
 protected:
-  const ch_out<T>& out_;
 
   const lnode& get_output() const {
     return out_.output_;
   }
+
+  const ch_out<T>& out_;
 
   friend std::ostream& operator<<(std::ostream& out, const output_port& port) {
     return out << port.get_output();
@@ -176,7 +193,12 @@ protected:
 
   template <typename U> friend class input_port;
   template <typename V, typename U> friend V ch_peek(const output_port<U>& port);
-  template <typename U> friend void ch_peek(const output_port<U>& port, uint32_t dst_offset, void* out, uint32_t out_cbsize, uint32_t src_offset, uint32_t length);
+  template <typename U> friend void ch_peek(const output_port<U>& port,
+                                            uint32_t dst_offset,
+                                            void* out,
+                                            uint32_t out_cbsize,
+                                            uint32_t src_offset,
+                                            uint32_t length);
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -193,13 +215,15 @@ public:
   }
 
   ch_in(const ch_in& in) : const_type_t<T>(in) {}
+
   ch_in(ch_in&& in) : const_type_t<T>(std::move(in)) {}
 
   auto operator()() const {
-    return ch::internal::connector<decltype(*this)>(*this);
+    return io_connector<decltype(*this)>(*this);
   }
 
 private:
+
   ch_in& operator=(const ch_in&) = delete;
   ch_in& operator=(ch_in&&) = delete;
 
@@ -222,14 +246,20 @@ public:
   }
 
   ch_out(const ch_out& out) : T(out) {}
+
   ch_out(ch_out&& out) : T(std::move(out)) {}
 
+  ch_out& operator=(const ch_out& rhs) {
+    T::operator=(rhs);
+    return *this;
+  }
+
   auto operator()() const {
-    return ch::internal::connector<decltype(*this)>(*this);
+    return io_connector<decltype(*this)>(*this);
   }
 
 private:
-  ch_out& operator=(const ch_out&) = delete;
+
   ch_out& operator=(ch_out&&) = delete;
 
   lnode output_;
@@ -374,7 +404,7 @@ void ch_poke(const input_port<T>& port,
   inout_name(inout_name&& rhs) \
     : CH_FOR_EACH(CH_STRUCT_MOVE_CTOR, CH_SEP_COMMA, __VA_ARGS__) {} \
   auto operator()() const { \
-    return ch::internal::connector<decltype(*this)>(*this); \
+    return ch::internal::io_connector<decltype(*this)>(*this); \
   }
 
 #define CH_INOUT_BIND_IMPL2(field_body, ...) \
@@ -394,7 +424,7 @@ void ch_poke(const input_port<T>& port,
     CH_FOR_EACH(CH_INOUT_BIND_FIELD_BODY, CH_SEP_SEMICOLON, __VA_ARGS__); \
   } \
   auto operator()() const { \
-    return ch::internal::connector<decltype(*this)>(*this); \
+    return ch::internal::io_connector<decltype(*this)>(*this); \
   }
 
 #define CH_INOUT_BODY_IMPL3(inout_name, parent, field_body, ...) \
@@ -409,7 +439,7 @@ void ch_poke(const input_port<T>& port,
     : parent(std::move(rhs)) \
     , CH_FOR_EACH(CH_STRUCT_MOVE_CTOR, CH_SEP_COMMA, __VA_ARGS__) {} \
   auto operator()() const { \
-    return ch::internal::connector<decltype(*this)>(*this); \
+    return ch::internal::io_connector<decltype(*this)>(*this); \
   }
 
 #define CH_INOUT_BIND_IMPL3(parent, field_body, ...) \
@@ -433,7 +463,7 @@ void ch_poke(const input_port<T>& port,
     CH_FOR_EACH(CH_INOUT_BIND_FIELD_BODY, CH_SEP_SEMICOLON, __VA_ARGS__); \
   } \
   auto operator()() const { \
-    return ch::internal::connector<decltype(*this)>(*this); \
+    return ch::internal::io_connector<decltype(*this)>(*this); \
   }
 
 #define CH_INOUT_IMPL2(inout_name, ...) \

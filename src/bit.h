@@ -36,6 +36,9 @@ template <typename T>
 using const_type_t = typename logic_type_t<std::decay_t<T>>::traits::const_type;
 
 template <typename T>
+using is_const_type = is_true<std::is_same<T, const_type_t<T>>::value>;
+
+template <typename T>
 struct is_logic_traits : std::false_type {};
 
 template <unsigned Bitwidth, typename LogicType, typename ConstType, typename ValueType, typename ScalarType>
@@ -224,7 +227,8 @@ struct bit_accessor {
   template <typename D, typename T>
   static auto cast(const T& obj) {
     assert(bitwidth_v<T> == obj.get_buffer()->get_size());
-    return const_type_t<D>(bit_buffer(bitwidth_v<T>, obj.get_buffer(), 0));
+    using return_type = std::conditional_t<is_const_type<T>::value, const_type_t<D>, D>;
+    return return_type(bit_buffer(bitwidth_v<T>, obj.get_buffer(), 0));
   }
 };
 

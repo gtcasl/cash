@@ -189,6 +189,26 @@ struct Foo2 {
   }
 };
 
+struct Foo3 {
+  __inout(io_ab_t, (
+    (ch_in<ch_bit2>) a,
+    (ch_out<ch_bit2>) b
+  ));
+
+  __io(
+    (ch_vec<io_ab_t, 2>) x,
+    (ch_vec<ch_in<ch_bit2>, 2>) y,
+    (ch_vec<ch_out<ch_bit2>, 2>) z
+  );
+
+  void describe() {
+    for (int i = 0; i < 2; ++i) {
+      io.x[i].b = io.y[i] + io.x[i].a;
+      io.z[i] = io.x[i].b;
+    }
+  }
+};
+
 struct Dogfood {
   __io (
     (ch_out<ch_bit1>) out
@@ -354,12 +374,20 @@ int main(int argc, char **argv) {
     assert(b.d == 3);
   }
 
-  /*ch_module<Dogfood> dogfood;
-  ch_simulator sim(dogfood);
-  sim.run(1);
-  assert(ch_peek<bool>(dogfood.io.out));*/
+  {
+    ch_scalar_t<v2_2_t> x(3_h);
+    assert(x[0] == 3);
+    assert(x[1] == 0);
+  }
 
-  /*{
+  {
+    ch_module<Dogfood> dogfood;
+    ch_simulator sim(dogfood);
+    sim.run(1);
+    assert(ch_peek<bool>(dogfood.io.out));
+  }
+
+  {
     ch_module<Foo1> foo;
     ch_poke(foo.io.in1, 1);
     ch_poke(foo.io.in2, 2);
@@ -367,12 +395,28 @@ int main(int argc, char **argv) {
     sim.run(1);
     assert(3 == ch_peek<int>(foo.io.out));
     ch_toVerilog("foo.v", foo);
-  }*/
+  }
 
-  /*ch_module<Foo2> foo;
-  ch_simulator sim(foo);
-  sim.run(1);
-  assert(ch_peek<bool>(foo.io));*/
+  {
+    ch_module<Foo2> foo;
+    ch_simulator sim(foo);
+    sim.run(1);
+    assert(ch_peek<bool>(foo.io));
+  }
+
+  {
+    ch_module<Foo3> foo;
+    ch_simulator sim(foo);
+    for (int i = 0; i < 2; ++i) {
+      ch_poke(foo.io.y[i], i);
+      ch_poke(foo.io.x[i].a, 2-i);
+    }
+    sim.run(1);
+    for (int i = 0; i < 2; ++i) {
+      assert(2 == ch_peek<int>(foo.io.z[i]));
+      assert(2 == ch_peek<int>(foo.io.x[i].b));
+    }
+  }
 
   return 0;
 }
