@@ -88,13 +88,15 @@ void regimpl::tick(ch_tick t) {
 void regimpl::tick_next(ch_tick t) {
   if (reset_idx_ != -1 && srcs_[reset_idx_].eval(t)[0]) {
     q_next_ = srcs_[init_idx_].eval(t);
-    if (cd_->is_asynchronous(srcs_[reset_idx_]))
+    if (cd_->is_asynchronous(srcs_[reset_idx_])) {
       value_ = q_next_;
+    }
   } else if (enable_idx_ != -1) {
     if (srcs_[enable_idx_].eval(t)[0]) {
       q_next_ = srcs_[next_idx_].eval(t);
-      if (cd_->is_asynchronous(srcs_[enable_idx_]))
+      if (cd_->is_asynchronous(srcs_[enable_idx_])) {
         value_ = q_next_;
+      }
     }
   } else {
     q_next_ = srcs_[next_idx_].eval(t);

@@ -11,7 +11,6 @@ memimpl::memimpl(context* ctx,
   : ioimpl(ctx, type_mem, data_width << addr_width)
   , data_width_(data_width)
   , addr_width_(addr_width)
-  , wr_ports_offset_(0)
   , cd_(nullptr)
   , has_initdata_(false) {
   if (write_enable) {
@@ -19,7 +18,6 @@ memimpl::memimpl(context* ctx,
     cd_ = ctx->create_cdomain({clock_event(clk, EDGE_POS)});
     cd_->add_use(this);
     srcs_.emplace_back(clk);
-    wr_ports_offset_ = 1;
   }
 }
 
@@ -71,16 +69,16 @@ lnode& memimpl::get_port(const lnode& addr) {
 }
 
 void memimpl::tick(ch_tick t) {    
-  for (uint32_t i = wr_ports_offset_, n = srcs_.size(); i < n; ++i) {
-    auto port = dynamic_cast<memportimpl*>(srcs_[i].get_impl());
-    port->tick(t);
+  for (auto& port : ports_) {
+    auto impl = dynamic_cast<memportimpl*>(port.get_impl());
+    impl->tick(t);
   }
 }
 
 void memimpl::tick_next(ch_tick t) {
-  for (uint32_t i = wr_ports_offset_, n = srcs_.size(); i < n; ++i) {
-    auto port = dynamic_cast<memportimpl*>(srcs_[i].get_impl());
-    port->tick_next(t);
+  for (auto& port : ports_) {
+    auto impl = dynamic_cast<memportimpl*>(port.get_impl());
+    impl->tick_next(t);
   }
 }
 
@@ -126,7 +124,6 @@ void memportimpl::write(const lnode& data) {
   if (wdata_idx_ == -1) {
     // add write port to memory sources to enforce DFG dependencies
     memimpl* mem = dynamic_cast<memimpl*>(srcs_[mem_idx_].get_impl());
-    assert(mem->is_write_enable());
     mem->srcs_.emplace_back(this);
 
     // port source initially points to memory content

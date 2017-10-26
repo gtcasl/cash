@@ -4,8 +4,8 @@
 
 using namespace ch::internal;
 
-inputimpl::inputimpl(context* ctx, lnodetype type, uint32_t size, const std::string& name)
-  : ioimpl(ctx, type, size, name)
+inputimpl::inputimpl(context* ctx, uint32_t size, const std::string& name)
+  : ioimpl(ctx, type_input, size, name)
   , tick_(~0ull)
 {}
 

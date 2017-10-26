@@ -7,6 +7,7 @@ namespace internal {
 
 class ioimpl : public lnodeimpl {
 public:
+
   void set_name(const std::string& name) {
     name_ = name;
   }
@@ -35,6 +36,7 @@ protected:
 
 class inputimpl : public ioimpl {
 public:
+
   void bind(const lnode& input) {
     input_ = input;
   }
@@ -49,12 +51,7 @@ public:
   
 protected:
 
-  inputimpl(context* ctx, lnodetype type, uint32_t size, const std::string& name);
-
-  inputimpl(context* ctx, uint32_t size, const std::string& name)
-    : inputimpl(ctx, type_input, size, name)
-  {}
-
+  inputimpl(context* ctx, uint32_t size, const std::string& name);
   ~inputimpl() {}
 
   lnode input_;
@@ -65,11 +62,13 @@ protected:
 
 class outputimpl : public ioimpl {
 public:
+
   const bitvector& eval(ch_tick t) override;
   
   void print(std::ostream& out, uint32_t level) const override;
   
 protected:
+
   outputimpl(context* ctx, const lnode& src, const std::string& name);
   ~outputimpl() {}
 
@@ -80,6 +79,7 @@ protected:
 
 class tapimpl : public ioimpl {
 public:
+
   const lnode& get_target() const {
     return srcs_[0];
   }
@@ -89,6 +89,7 @@ public:
   void print(std::ostream& out, uint32_t level) const override;
 
 protected:
+
   tapimpl(context* ctx, const lnode& src, const std::string& name);
   ~tapimpl() {}
 

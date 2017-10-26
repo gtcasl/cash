@@ -24,16 +24,14 @@ public:
   ch_simulator& operator=(const ch_simulator& simulator);
   
   void add_module(const module& module);
-
-  ch_tick step(ch_tick t);
-  
-  void run(const std::function<bool(ch_tick t)>& callback);
   
   void run(ch_tick ticks = 1);
 
+  ch_tick run(const std::function<bool(ch_tick t)>& callback);
+
   ch_tick reset(ch_tick t);
 
-  void tick(ch_tick t);
+  ch_tick step(ch_tick t, unsigned count = 1);
 
 protected:
 

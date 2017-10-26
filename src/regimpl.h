@@ -62,7 +62,7 @@ protected:
 
   void get_signals(cdomain* cd);
 
-  cdomain*  cd_;
+  cdomain* cd_;
   bitvector q_next_;
   int next_idx_;
   int init_idx_;

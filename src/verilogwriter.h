@@ -16,6 +16,7 @@ class regimpl;
 class latchimpl;
 class memimpl;
 class bindimpl;
+class bindportimpl;
 class bitvector;
 class cdomain;
 
@@ -41,6 +42,8 @@ protected:
   bool print_decl(lnodeimpl* node);
 
   bool print_binding(bindimpl* node);
+
+  bool print_bindport(bindportimpl* node);
 
   bool print_logic(lnodeimpl* node);
 

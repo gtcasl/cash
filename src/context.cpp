@@ -118,22 +118,25 @@ void context::pop_reset() {
 lnodeimpl* context::get_clk() {
   if (!user_clks_.empty())
     return user_clks_.top().get_impl();
-  if (nullptr == default_clk_)
-    default_clk_ = this->createNode<inputimpl>(type_clk, 1, "clk");
+  if (nullptr == default_clk_) {
+    default_clk_ = this->createNode<inputimpl>(1, "clk");
+  }
   return default_clk_;
 }
 
 lnodeimpl* context::get_reset() {
   if (!user_resets_.empty())
     return user_resets_.top().get_impl();
-  if (nullptr == default_reset_)
-     default_reset_ = this->createNode<inputimpl>(type_reset, 1, "reset");
+  if (nullptr == default_reset_) {
+     default_reset_ = this->createNode<inputimpl>(1, "reset");
+  }
   return default_reset_;
 }
 
 lnodeimpl* context::get_tick() {
-  if (nullptr == tick_)
+  if (nullptr == tick_) {
     tick_ = this->createNode<tickimpl>();
+  }
   return tick_;
 }
 
@@ -169,7 +172,21 @@ void context::add_node(lnodeimpl* node) {
     literals_.emplace_back((litimpl*)node);
     break;
   case type_input:
-    inputs_.emplace_back((inputimpl*)node);
+    {
+      // ensure clock and reset signals are ordered first
+      auto input = dynamic_cast<inputimpl*>(node);
+      if (input->get_name() == "clk") {
+        inputs_.emplace_front(input);
+      } else if (input->get_name() == "reset") {
+        if (default_clk_) {
+          inputs_.emplace(std::next(inputs_.begin()), input);
+        } else {
+          inputs_.emplace_front(input);
+        }
+      } else {
+        inputs_.emplace_back(input);
+      }
+    }
     break;  
   case type_output:
     outputs_.emplace_back((outputimpl*)node);
@@ -213,18 +230,16 @@ void context::remove_node(lnodeimpl* node) {
     literals_.remove((litimpl*)node);
     break;
   case type_input:
+    if (node == default_clk_) {
+      default_clk_ = nullptr;
+    } else
+    if (node == default_reset_) {
+      default_reset_ = nullptr;
+    }
     inputs_.remove((inputimpl*)node);
     break;
   case type_output:
     outputs_.remove((outputimpl*)node);
-    break;
-  case type_clk:
-    if (node == default_clk_)
-      default_clk_ = nullptr;
-    break;
-  case type_reset:
-    if (node == default_reset_)
-      default_reset_ = nullptr;
     break;
   case type_bind:
     bindings_.remove((bindimpl*)node);
@@ -573,12 +588,18 @@ live_nodes_t context::compute_live_nodes() const {
 }
 
 void context::tick(ch_tick t) {
+  for (auto node : bindings_) {
+    node->tick(t);
+  }
   for (auto cd : cdomains_) {
     cd->tick(t);
   }  
 }
 
 void context::tick_next(ch_tick t) {
+  for (auto node : bindings_) {
+    node->tick_next(t);
+  }
   for (auto cd : cdomains_) {
     cd->tick_next(t);
   }  

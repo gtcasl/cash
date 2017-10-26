@@ -11,8 +11,6 @@
   m(lit) \
   m(input) \
   m(output) \
-  m(clk) \
-  m(reset) \
   m(alu) \
   m(select) \
   m(reg) \

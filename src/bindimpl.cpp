@@ -10,6 +10,18 @@ bindimpl::bindimpl(context* ctx, context* module)
   module_->acquire();
   srcs_.resize(module->get_inputs().size());
   outputs_.resize(module->get_outputs().size());
+
+  // bind default clock
+  auto module_clk = module->get_default_clk();
+  if (module_clk) {
+    this->bind_input(ctx->get_clk(), module_clk);
+  }
+
+  // bind default reset
+  auto module_reset = module->get_default_reset();
+  if (module_reset) {
+    this->bind_input(ctx->get_reset(), module_reset);
+  }
 }
 
 bindimpl::~bindimpl() {

@@ -3,7 +3,7 @@
 CXXFLAGS += -std=c++17 -O0 -g -fmax-errors=5
 LDFLAGS += -lcash
 
-SRCS = adder.cpp counter.cpp fastmult.cpp fifo.cpp aes.cpp
+SRCS = adder.cpp counter.cpp fastmult.cpp fifo.cpp gcd.cpp
 
 PROJECTS = $(SRCS:.cpp=.out)
 PROJECTS_NAMES = $(SRCS:.cpp=)

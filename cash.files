@@ -6,7 +6,6 @@ examples/Makefile
 examples/adder.cpp
 examples/adder_tb.v
 examples/adder_tb.v
-examples/aes.cpp
 examples/aes_tb.v
 examples/counter.cpp
 examples/counter_tb.v
@@ -17,12 +16,15 @@ examples/fastmult_tb.v
 examples/fifo.cpp
 examples/fifo_tb.v
 examples/fifo_tb.v
+examples/gcd.cpp
+examples/gcd_tb.v
 src/bindimpl.cpp
 src/bindimpl.h
 src/bit.cpp
 src/bitref.h
 src/cash.cpp
 src/float32.h
+src/inout.h
 src/misc.h
 src/module.h
 src/moduleimpl.cpp
@@ -179,6 +181,7 @@ test/arithm.cpp
 test/catch.h
 test/common.h
 test/dogfood.cpp
+test/fifowrapper_tb.v
 test/float.cpp
 test/literals.cpp
 test/main.cpp

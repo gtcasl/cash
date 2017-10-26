@@ -9,12 +9,12 @@ using namespace ch::sim;
 template <typename T, unsigned A>
 struct FiFo {
   __io(
-    (ch_in<T>)  din,
-    (ch_in<ch_bit1>)    push,
-    (ch_in<ch_bit1>)    pop,
-    (ch_out<T>) dout,
-    (ch_out<ch_bit1>)   empty,
-    (ch_out<ch_bit1>)   full
+    (ch_in<T>)        din,
+    (ch_in<ch_bit1>)  push,
+    (ch_in<ch_bit1>)  pop,
+    (ch_out<T>)       dout,
+    (ch_out<ch_bit1>) empty,
+    (ch_out<ch_bit1>) full
   );
   void describe() {
     ch_seq<ch_bit<A+1>> rd_ptr, wr_ptr;

@@ -1,54 +1,6 @@
 #include "common.h"
 
 template <typename T>
-__inout(FiFoIO, (
-  (ch_in<ch_bit1>)  ready,
-  (ch_out<ch_bit1>) valid,
-  (ch_out<T>)       data
-));
-
-template <typename T, unsigned A>
-struct Fifo {
-  __io (
-    (ch_flip_t<FiFoIO<T>>) enq,
-    (FiFoIO<T>) deq
-  );
-  void describe() {
-    ch_seq<ch_bit<A+1>> rd_ptr, wr_ptr;
-
-    auto rd_A = ch_slice<A>(rd_ptr);
-    auto wr_A = ch_slice<A>(wr_ptr);
-
-    auto reading = io.deq.ready && io.deq.valid;
-    auto writing = io.enq.ready && io.enq.valid;
-
-    rd_ptr.next = ch_select(reading, rd_ptr + 1, rd_ptr);
-    wr_ptr.next = ch_select(writing, wr_ptr + 1, wr_ptr);
-
-    ch_ram<T, A> mem;
-    __if (writing) (
-      mem[wr_A] = io.end.data;
-    );
-
-    io.deq.data  = mem[rd_A];
-    io.deq.valid = (wr_ptr != rd_ptr);
-    io.enq.ready = (wr_A != rd_A) || (wr_ptr[A] == rd_ptr[A]);
-  }
-};
-
-struct FifoWrapper {
-  __io (
-    (ch_flip_t<FiFoIO<ch_bit4>>) enq,
-    (FiFoIO<ch_bit4>) deq
-  );
-  void describe() {
-    f1_.io.enq() % io.enq();
-    f1_.io.deq() % io.deq();
-  }
-  ch_module<Fifo<ch_bit4, 2>> f1_;
-};
-
-template <typename T>
 __inout(SimpleLink, (
   (ch_out<T>) data,
   (ch_out<ch_bit1>) ready
@@ -77,21 +29,24 @@ struct Filter {
 struct FilterBlock {
   FilterIO<ch_bit8> io;
   void describe() {
-    f1_.io.x() % io.x();
-    f1_.io.y() % f2_.io.x();
-    f2_.io.y() % io.y();
-  }
-  ch_module<Filter> f1_, f2_;
-};
-
-struct FilterBlock2 {
-  FilterIO<ch_bit8> io;
-  void describe() {
     f1_.io.x(io.x);
     f1_.io.y(f2_.io.x);
     f2_.io.y(io.y);
   }
   ch_module<Filter> f1_, f2_;
+};
+
+template <typename T, unsigned N>
+struct FifoWrapper {
+  __io (
+    (ch_deqIO<T>) enq,
+    (ch_enqIO<T>) deq
+  );
+  void describe() {
+    f1_.io.enq(io.enq);
+    f1_.io.deq(io.deq);
+  }
+  ch_module<ch_fifo<T, log2ceil(N)>> f1_;
 };
 
 struct Adder {
@@ -131,6 +86,26 @@ struct Foo2 {
   }
 };
 
+struct Foo3 {
+  __inout(io_ab_t, (
+    (ch_in<ch_bit2>) a,
+    (ch_out<ch_bit2>) b
+  ));
+
+  __io(
+    (ch_vec<io_ab_t, 2>) x,
+    (ch_vec<ch_in<ch_bit2>, 2>) y,
+    (ch_vec<ch_out<ch_bit2>, 2>) z
+  );
+
+  void describe() {
+    for (int i = 0; i < 2; ++i) {
+      io.x[i].b = io.y[i] + io.x[i].a;
+      io.z[i] = io.x[i].b;
+    }
+  }
+};
+
 TEST_CASE("module", "[module]") {
   SECTION("sim", "[sim]") {
     TESTX([]()->bool {
@@ -140,6 +115,22 @@ TEST_CASE("module", "[module]") {
       ch_simulator sim(adder);
       sim.run(1);
       return (3 == ch_peek<int>(adder.io.out));
+    });
+
+    TESTX([]()->bool {
+      ch_module<Foo3> foo;
+      ch_simulator sim(foo);
+      for (int i = 0; i < 2; ++i) {
+        ch_poke(foo.io.y[i], i);
+        ch_poke(foo.io.x[i].a, 2-i);
+      }
+      sim.run(1);
+      int ret = 1;
+      for (int i = 0; i < 2; ++i) {
+        ret &= (2 == ch_peek<int>(foo.io.z[i]));
+        ret &= (2 == ch_peek<int>(foo.io.x[i].b));
+      }
+      return !!ret;
     });
   }
   SECTION("emplace", "[emplace]") {
@@ -156,6 +147,40 @@ TEST_CASE("module", "[module]") {
       ch_simulator sim(foo);
       sim.run(1);
       return ch_peek<bool>(foo.io);
+    });
+    TESTX([]()->bool {
+      ch_module<FifoWrapper<ch_bit4, 2>> fifo;
+      ch_simulator sim(fifo);
+      ch_tick t = sim.reset(0);
+
+      int ret = (ch_peek<bool>(fifo.io.enq.ready));  // !full
+      ret &= (!ch_peek<bool>(fifo.io.deq.valid)); // empty
+      ch_poke(fifo.io.deq.ready, 0);
+      ch_poke(fifo.io.enq.data, 0xA);
+      ch_poke(fifo.io.enq.valid, 1); // push
+      t = sim.step(t);
+
+      ret &= (ch_peek<bool>(fifo.io.deq.valid));  // !empty
+      ch_poke(fifo.io.enq.data, 0xB);
+      t = sim.step(t);
+
+      ret &= (!ch_peek<bool>(fifo.io.enq.ready)); // full
+      ret &= (ch_peek<bool>(fifo.io.deq.valid));
+      ret &= (0xA == ch_peek<int>(fifo.io.deq.data));
+      ch_poke(fifo.io.enq.valid, 0); // !push
+      ch_poke(fifo.io.deq.ready, 1); // pop
+      t = sim.step(t);
+
+      ret &= (ch_peek<bool>(fifo.io.enq.ready));  // !full
+      ret &= (0xB == ch_peek<int>(fifo.io.deq.data));
+      ch_poke(fifo.io.deq.ready, 1); // pop
+      t = sim.step(t, 4);
+
+      ret &= (!ch_peek<bool>(fifo.io.deq.valid)); // empty
+
+      ch_toVerilog("fifowrapper.v", fifo);
+      ret &= (checkVerilog("fifowrapper_tb.v"));
+      return !!ret;
     });
   }
 }

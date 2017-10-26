@@ -13,13 +13,13 @@ public:
   ~tracerimpl() {
     if (file_)
       delete file_;
-  }
-
-  void tick(ch_tick t) override;
+  }  
 
 protected:
 
   void ensureInitialize() override;
+
+  void tick(ch_tick t) override;
 
   void add_trace(const std::string& name, ioimpl* value);
 

@@ -17,6 +17,8 @@ public:
 
   ~vcdtracerimpl() {}
 
+protected:
+
   void ensureInitialize() override;
 
   void tick(ch_tick t) override;

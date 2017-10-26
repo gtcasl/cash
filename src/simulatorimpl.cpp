@@ -6,7 +6,7 @@
 
 using namespace ch::internal;
 
-void clock_driver::add_node(lnodeimpl* node) {
+void clock_driver::add_signal(lnodeimpl* node) {
   node->set_bool(0, value_);
   nodes_.push_back(node);
 }
@@ -22,8 +22,8 @@ void clock_driver::flip() {
 
 simulatorimpl::simulatorimpl(const std::initializer_list<context*>& contexts)
   : initialized_(false)
-  , clk_(true)
-  , reset_(false) {
+  , clk_driver_(true)
+  , reset_driver_(false) {
   for (auto ctx : contexts) {
     auto ret = contexts_.emplace(ctx);
     if (ret.second)
@@ -46,15 +46,15 @@ void simulatorimpl::add_module(const module& module) {
 }
 
 void simulatorimpl::ensureInitialize() {
-  // bind clocks
+  // bind default clocks to clock driver
   for (auto ctx : contexts_) {
     auto clk = ctx->get_default_clk();
     if (clk) {
-      clk_.add_node(clk);
+      clk_driver_.add_signal(clk);
     }
     auto reset = ctx->get_default_reset();
     if (reset) {
-      reset_.add_node(reset);
+      reset_driver_.add_signal(reset);
     }
   }
 }
@@ -86,11 +86,13 @@ void simulatorimpl::tick(ch_tick t) {
   }
 }
 
-void simulatorimpl::run(const std::function<bool(ch_tick t)>& callback) {
+ch_tick simulatorimpl::run(const std::function<bool(ch_tick t)>& callback) {
   ch_tick start = this->reset(0);
-  for (ch_tick t = start; callback(t - start);) {
+  ch_tick t(start);
+  for (; callback(t - start);) {
     t = this->step(t);
   }
+  return t;
 }
 
 void simulatorimpl::run(ch_tick ticks) {
@@ -107,23 +109,30 @@ ch_tick simulatorimpl::reset(ch_tick t) {
     initialized_ = true;
   }
 
-  if (!reset_.is_empty()) {
-    reset_.flip();
+  if (!reset_driver_.is_empty()) {
+    reset_driver_.flip();
     t = this->step(t);
-    reset_.flip();
+    reset_driver_.flip();
   }
 
   return t;
 }
 
 ch_tick simulatorimpl::step(ch_tick t) {
-  if (!clk_.is_empty()) {
+  if (!clk_driver_.is_empty()) {
     for (int i = 0; i < 2; ++i) {
-      clk_.flip();
+      clk_driver_.flip();
       this->tick(t++);
     }
   } else {
     this->tick(t++);
+  }
+  return t;
+}
+
+ch_tick simulatorimpl::step(ch_tick t, unsigned count) {
+  while (count--) {
+    t = this->step(t);
   }
   return t;
 }
@@ -163,12 +172,8 @@ void ch_simulator::add_module(const module& module) {
   impl_->add_module(module);
 }
 
-void ch_simulator::tick(ch_tick t) { 
-  impl_->tick(t);
-}
-
-void ch_simulator::run(const std::function<bool(ch_tick t)>& callback) {
-  impl_->run(callback);
+ch_tick ch_simulator::run(const std::function<bool(ch_tick t)>& callback) {
+  return impl_->run(callback);
 }
 
 void ch_simulator::run(ch_tick ticks) {
@@ -179,6 +184,6 @@ ch_tick ch_simulator::reset(ch_tick t) {
   return impl_->reset(t);
 }
 
-ch_tick ch_simulator::step(ch_tick t) {
-  return impl_->step(t);
+ch_tick ch_simulator::step(ch_tick t, unsigned count) {
+  return impl_->step(t, count);
 }

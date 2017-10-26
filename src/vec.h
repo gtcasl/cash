@@ -449,10 +449,6 @@ public:
 
   ch_io_vec(ch_io_vec&& rhs) : base(std::move(rhs)) {}
 
-  auto operator()() const {
-    return io_connector<decltype(*this)>(*this);
-  }
-
 protected:
 
   template <std::size_t...Is>

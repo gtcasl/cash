@@ -17,6 +17,7 @@
 #include "float32.h"
 #include "seq.h"
 #include "port.h"
+#include "inout.h"
 #include "module.h"
 #include "simulator.h"
 #include "vcdtracer.h"
@@ -244,7 +245,7 @@ inline namespace literals {
 }
 
 //
-// utility macros
+// macro operators
 //
 
 #define __if       CH_IF
@@ -270,3 +271,28 @@ inline namespace literals {
 #define __flip     CH_FLIP
 
 #define __tie      CH_TIE
+
+//
+// IO utilities
+//
+
+namespace ch {
+namespace core {
+
+template <typename T>
+__inout (ch_validIO, (
+  (ch_out<ch_bool>) valid,
+  (ch_out<T>)       data
+));
+
+template <typename T>
+__inout (ch_decoupledIO, (
+  (ch_in<ch_bool>)  ready,
+  (ch_out<ch_bool>) valid,
+  (ch_out<T>)       data
+));
+
+template <typename T> using ch_enqIO = ch_decoupledIO<T>;
+template <typename T> using ch_deqIO = ch_flip_t<ch_decoupledIO<T>>;
+
+}}

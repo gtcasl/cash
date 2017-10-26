@@ -12,7 +12,7 @@ all: dogfood.out $(PROJECT)
 $(PROJECT) : $(OBJS)
 	$(CXX) $(CXXFLAGS) $^ $(LDFLAGS) -o $@
 
-dogfood.out : dogfood.o
+dogfood.out : common.o dogfood.o
 	$(CXX) $(CXXFLAGS) $^ $(LDFLAGS) -o $@
 
 .depend: $(SRCS) dogfood.cpp

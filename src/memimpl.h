@@ -26,10 +26,6 @@ public:
     return has_initdata_;
   }
 
-  bool is_write_enable() const {
-    return (wr_ports_offset_ != 0);
-  }
-
   const std::vector<lnode>& get_ports() const {
     return ports_;
   }
@@ -66,7 +62,6 @@ protected:
   std::vector<lnode> ports_;
   uint32_t data_width_;
   uint32_t addr_width_;
-  uint32_t wr_ports_offset_;
   cdomain* cd_;
   bool has_initdata_;
   

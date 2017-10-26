@@ -1,7 +1,7 @@
 #pragma once
 
 #include "ioimpl.h"
-#include "tickable.h"
+#include "cdomain.h"
 
 namespace ch {
 namespace internal {
@@ -53,6 +53,10 @@ class bindportimpl : public ioimpl {
 public:
   const lnode& get_ioport() const {
     return ioport_;
+  }
+
+  bool is_output() const {
+    return is_output_;
   }
 
   const bitvector& eval(ch_tick t) override;

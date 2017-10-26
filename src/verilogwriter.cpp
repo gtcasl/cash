@@ -76,18 +76,6 @@ void verilogwriter::print_header(context* ctx) {
     auto_indent indent(out_);
     auto_separator sep(",");
 
-    auto default_clk = ctx->get_default_clk();
-    if (default_clk) {
-      out_ << sep << std::endl;
-      this->print_port(default_clk);
-    }
-
-    auto default_reset = ctx->get_default_reset();
-    if (default_reset) {
-      out_ << sep << std::endl;
-      this->print_port(default_reset);
-    }
-
     for (auto input : ctx->get_inputs()) {
       out_ << sep << std::endl;
       this->print_port(input);
@@ -163,14 +151,14 @@ bool verilogwriter::print_binding(bindimpl* node) {
   for (auto& input : node->get_inputs()) {
     auto bindport = dynamic_cast<bindportimpl*>(input.get_impl());
     auto ioport = dynamic_cast<ioimpl*>(bindport->get_ioport().get_impl());
-    out_ << sep << ioport->get_name() << "(";
+    out_ << sep << "." << ioport->get_name() << "(";
     this->print_name(bindport);
     out_ << ")";
   }
   for (auto output : node->get_outputs()) {
     auto bindport = dynamic_cast<bindportimpl*>(output.get_impl());
     auto ioport = dynamic_cast<ioimpl*>(bindport->get_ioport().get_impl());
-    out_ << sep << ioport->get_name() << "(";
+    out_ << sep << "." << ioport->get_name() << "(";
     this->print_name(bindport);
     out_ << ")";
   }
@@ -178,12 +166,23 @@ bool verilogwriter::print_binding(bindimpl* node) {
   return true;
 }
 
+bool verilogwriter::print_bindport(bindportimpl* node) {
+  // outputs are sourced via binding already
+  if (node->is_output())
+    return false;
+
+  out_ << "assign ";
+  this->print_name(node);
+  out_ << " = ";
+  this->print_name(node->get_src(0).get_impl());
+  out_ << ";" << std::endl;
+  return true;
+}
+
 void verilogwriter::print_port(lnodeimpl* node) {
   auto type = node->get_type();
   switch (type) {
   case type_input:
-  case type_clk:
-  case type_reset:
     out_ << "input";
     break;
   case type_output:
@@ -231,8 +230,6 @@ bool verilogwriter::print_decl(lnodeimpl* node) {
     return true;
   case type_bind:
   case type_input:
-  case type_clk:
-  case type_reset:
   case type_output:
   case type_tap:
   case type_memport:
@@ -268,10 +265,10 @@ bool verilogwriter::print_logic(lnodeimpl* node) {
     this->print_binding(dynamic_cast<bindimpl*>(node));
     return true;
   case type_bindport:
+    this->print_bindport(dynamic_cast<bindportimpl*>(node));
+    return true;
   case type_lit:
   case type_input:
-  case type_clk:
-  case type_reset:
   case type_output:
   case type_tap:
   case type_memport:
@@ -587,8 +584,6 @@ void verilogwriter::print_name(lnodeimpl* node) {
   };
   auto type = node->get_type();
   switch (type) {
-  case type_clk:
-  case type_reset:
   case type_input:
   case type_output:
     out_ << dynamic_cast<ioimpl*>(node)->get_name();
@@ -612,7 +607,7 @@ void verilogwriter::print_name(lnodeimpl* node) {
     print_basic_name('m');
     break;
   case type_bindport:
-    print_basic_name('c');
+    print_basic_name('b');
     break;
   case type_memport:
     out_ << "__m";

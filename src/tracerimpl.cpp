@@ -20,29 +20,8 @@ void tracerimpl::ensureInitialize() {
   // call parent ensureInitialize()
   simulatorimpl::ensureInitialize();
 
-  bool clk_found = false;
-  bool reset_found = false;
-
   // register context taps
   for (auto ctx : contexts_) {
-    // get clk
-    if (!clk_found) {
-      auto clk = ctx->get_default_clk();
-      if (clk) {
-        this->add_trace("clk", clk);
-        clk_found = true;
-      }
-    }
-
-    // get reset
-    if (!reset_found) {
-      auto reset = ctx->get_default_reset();
-      if (reset) {
-        this->add_trace("reset", reset);
-        reset_found = true;
-      }
-    }
-
     // get inputs
     for (auto node : ctx->get_inputs()) {
       this->add_trace(node->get_name(), node);

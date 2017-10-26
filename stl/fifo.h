@@ -7,14 +7,9 @@ using namespace  ch::core;
 
 template <typename T, unsigned A>
 struct ch_fifo {
-  __inout(link_t, (
-    (ch_in<ch_bit1>)  ready,
-    (ch_out<ch_bit1>) valid,
-    (ch_out<T>)       data
-  ));
   __io (
-    (ch_flip_t<link_t>) enq,
-    (link_t) deq
+    (ch_deqIO<T>) enq,
+    (ch_enqIO<T>) deq
   );
   void describe() {
     ch_seq<ch_bit<A+1>> rd_ptr, wr_ptr;
@@ -23,14 +18,14 @@ struct ch_fifo {
     auto wr_A = ch_slice<A>(wr_ptr);
 
     auto reading = io.deq.ready && io.deq.valid;
-    auto writing = io.enq.ready && io.enq.valid;
+    auto writing = io.enq.valid && io.enq.ready;
 
     rd_ptr.next = ch_select(reading, rd_ptr + 1, rd_ptr);
     wr_ptr.next = ch_select(writing, wr_ptr + 1, wr_ptr);
 
     ch_ram<T, A> mem;
     __if (writing) (
-      mem[wr_A] = io.end.data;
+      mem[wr_A] = io.enq.data;
     );
 
     io.deq.data  = mem[rd_A];
