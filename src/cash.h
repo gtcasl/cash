@@ -292,7 +292,10 @@ __inout (ch_decoupledIO, (
   (ch_out<T>)       data
 ));
 
+// producer driven input stream
 template <typename T> using ch_enqIO = ch_decoupledIO<T>;
+
+// producer driven output stream
 template <typename T> using ch_deqIO = ch_flip_t<ch_decoupledIO<T>>;
 
 }}

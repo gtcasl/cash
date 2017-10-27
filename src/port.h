@@ -78,15 +78,15 @@ public:
   input_port(ch_in<T>& in) : in_(in) {}
 
   void operator()(const ch_in<T>& in) const {
-    bindInput(get_lnode(in), in_.input_);
+    bindInput(bit_accessor::get_data(in), in_.input_);
   }
 
   void operator()(const input_port& in) const {
-    bindInput(get_lnode(in.in_), in_.input_);
+    bindInput(bit_accessor::get_data(in.in_), in_.input_);
   }
 
   void operator()(const output_port<T>& out) const {
-    bindInput(get_lnode(out.out_), in_.input_);
+    bindInput(bit_accessor::get_data(out.out_), in_.input_);
   }
 
   template <typename U, CH_REQUIRES(is_cast_convertible<T, U>::value)>
@@ -132,11 +132,11 @@ public:
   output_port(const ch_out<T>& out) : out_(out) {}
 
   void operator()(const ch_out<T>& out) const {
-    bindOutput(get_lnode(out), out_.output_);
+    bindOutput(bit_accessor::get_data(out), out_.output_);
   }
 
   void operator()(const output_port& out) const {
-    bindOutput(get_lnode(out.out_), out_.output_);
+    bindOutput(bit_accessor::get_data(out.out_), out_.output_);
   }
 
   void operator()(const input_port<T>& in) const {
@@ -207,7 +207,7 @@ public:
   using T::operator=;
 
   ch_out(const std::string& name = "io") {
-    output_ = createOutputNode(name, get_lnode(*this));
+    output_ = createOutputNode(name, bit_accessor::get_data(*this));
   }
 
   ch_out(const ch_out& out) : T(out) {}

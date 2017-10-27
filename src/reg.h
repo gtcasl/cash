@@ -18,7 +18,7 @@ void pushReset(const lnode& node);
 const ch_bit<1> ch_getClock();
 
 template <typename T,
-          CH_REQUIRES(is_bit_convertible<T>::value)>
+          CH_REQUIRES(is_bit_compatible<T>::value)>
 inline void ch_pushClock(const T& clk) {
   static_assert(1 == bitwidth_v<T>, "invalid predicate size");
   pushClock(get_lnode(clk));
@@ -29,25 +29,13 @@ void ch_popClock();
 const ch_bit<1> ch_getReset();
 
 template <typename T,
-          CH_REQUIRES(is_bit_convertible<T>::value)>
+          CH_REQUIRES(is_bit_compatible<T>::value)>
 inline void ch_pushReset(const T& reset) {
   static_assert(1 == bitwidth_v<T>, "invalid predicate size");
   pushReset(get_lnode(reset));
 }
 
 void ch_popReset();
-
-template <unsigned N, typename T,
-          CH_REQUIRES(is_bit_convertible<T>::value)>
-const auto ch_ready(const T& x) {
-  return make_type<ch_bit<1>>(createReadyNode(get_lnode(x)));
-}
-
-template <unsigned N, typename T,
-          CH_REQUIRES(is_bit_convertible<T>::value)>
-const auto ch_valid(const T& x) {
-  return make_type<ch_bit<1>>(createValidNode(get_lnode(x)));
-}
 
 template <typename T, typename I,
           CH_REQUIRES(bitwidth_v<deduce_type_t<T, I>> != 0),

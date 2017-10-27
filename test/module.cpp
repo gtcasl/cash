@@ -21,6 +21,27 @@ __inout(io_bundle3_t, (
 ));
 static_assert(ch_direction_v<io_bundle3_t> == ch_direction::inout, "invalid direction");
 
+__enum (e2_t, 2, (
+  a, b, c, d
+));
+
+__struct (s4_2_t, (
+  (ch_bit4) a,
+  (ch_bit2) b
+));
+
+__struct (u4_2_t, (
+  (ch_bit4) a,
+  (ch_bit2) b
+));
+
+__inout(io_bundle4_t, (
+  (ch_in<e2_t>) x,
+  (ch_in<s4_2_t>) y,
+  (ch_out<u4_2_t>) z,
+  (ch_out<ch_vec<ch_bool, 2>>) w
+));
+
 template <typename T>
 __inout(SimpleLink, (
   (ch_out<T>) data,

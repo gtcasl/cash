@@ -44,7 +44,7 @@ public:
   }
 
   template <typename P, typename V,
-            CH_REQUIRES(is_bit_convertible<P>::value),
+            CH_REQUIRES(is_bit_compatible<P>::value),
             CH_REQUIRES(is_cast_convertible<T, V>::value)>
   select_t<T>& operator()(const P& pred, const V& value) {
     static_assert(1 == bitwidth_v<P>, "invalid predicate size");
@@ -91,7 +91,7 @@ protected:
 };
 
 template <typename P, typename V,
-          CH_REQUIRES(is_bit_convertible<P>::value),
+          CH_REQUIRES(is_bit_compatible<P>::value),
           CH_REQUIRES(is_bit_convertible<V>::value)>
 auto ch_select(const P& pred, const V& value) {
   static_assert(1 == bitwidth_v<P>, "invalid predicate size");

@@ -21,7 +21,7 @@ public:
   ~if_t();
     
   template <typename Func, typename P,
-            CH_REQUIRES(is_bit_convertible<P>::value)>
+            CH_REQUIRES(is_bit_compatible<P>::value)>
   if_t& elif_(const P& pred, const Func& func) {
     static_assert(1 == bitwidth_v<P>, "invalid predicate size");
     this->eval(get_lnode(pred), to_function_t<Func>(func));
@@ -35,7 +35,7 @@ public:
 };
 
 template <typename Func, typename P,
-          CH_REQUIRES(is_bit_convertible<P>::value)>
+          CH_REQUIRES(is_bit_compatible<P>::value)>
 if_t ch_if(const P& pred, const Func& func) {
   static_assert(1 == bitwidth_v<P>, "invalid predicate size");
   return if_t(get_lnode(pred), func);

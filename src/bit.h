@@ -466,7 +466,7 @@ public:
   explicit ch_bit(const U& rhs) : base(rhs) {}
 
   template <typename U,
-            CH_REQUIRES(is_bitvector_convertible<U>::value || std::is_enum<U>::value)>
+            CH_REQUIRES(is_bitvector_convertible<U>::value)>
   explicit ch_bit(const U& rhs) : base(rhs) {}
 
   ch_bit& operator=(const ch_bit& rhs) {
@@ -849,7 +849,7 @@ struct zext_impl<0> {
 };
 
 template <unsigned N, typename T,
-          CH_REQUIRES(is_bit_convertible<T>::value)>
+          CH_REQUIRES(is_bit_compatible<T>::value)>
 const auto ch_zext(const T& obj) {
   static_assert(N >= bitwidth_v<T>, "invalid extend size");
   return zext_impl<(N-bitwidth_v<T>)>()(obj);
@@ -875,7 +875,7 @@ struct sext_impl<0> {
 };
 
 template <unsigned N, typename T,
-          CH_REQUIRES(is_bit_convertible<T>::value)>
+          CH_REQUIRES(is_bit_compatible<T>::value)>
 const auto ch_sext(const T& obj) {
   static_assert(N >= bitwidth_v<T>, "invalid extend size");
   return sext_impl<(N-bitwidth_v<T>)>()(obj);
@@ -884,7 +884,7 @@ const auto ch_sext(const T& obj) {
 // shuffle functions
 
 template <unsigned N, typename T,
-          CH_REQUIRES(is_bit_convertible<T>::value)>
+          CH_REQUIRES(is_bit_compatible<T>::value)>
 const auto ch_shuffle(const T& obj,
                       const std::array<uint32_t, bitwidth_v<T>>& indices) {
   static_assert((bitwidth_v<T> % N) == 0, "invalid indices size");
@@ -913,7 +913,7 @@ inline void ch_print(const std::string& format) {
 }
 
 template <typename...Args,
-          CH_REQUIRES(are_all_bit_convertible<Args...>::value)>
+          CH_REQUIRES(are_all_logic_type<Args...>::value)>
 void ch_print(const std::string& format, const Args& ...args) {
   createPrintNode(format, {get_lnode(args)...});
 }
