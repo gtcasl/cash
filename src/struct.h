@@ -114,7 +114,7 @@
   public: \
     CH_FOR_EACH(CH_STRUCT_SCALAR_FIELD, CH_SEP_SEMICOLON, __VA_ARGS__); \
     struct_name(const ch::internal::scalar_buffer& buffer = ch::internal::scalar_buffer(traits::bitwidth)) \
-      : parent(buffer) \
+      : parent(ch::internal::scalar_buffer(ch_bitwidth_v<parent>, buffer, 0)) \
       , CH_FOR_EACH(CH_STRUCT_SCALAR_DEFAULT_CTOR, CH_SEP_COMMA, __VA_ARGS__) {} \
     struct_name(const struct_name& rhs) \
       : struct_name(ch::internal::scalar_accessor::cloneBuffer(rhs)) {} \
@@ -145,10 +145,10 @@
     CH_SCALAR_WRITABLE_INTERFACE(struct_name) \
   private: \
     const ch::internal::scalar_buffer_ptr& get_buffer() const { \
-      return ch::internal::scalar_accessor::get_buffer<parent>(*this); \
+      return ch::internal::scalar_accessor::get_buffer<parent>(*this)->get_source(); \
     } \
     ch::internal::scalar_buffer_ptr& get_buffer() { \
-      return ch::internal::scalar_accessor::get_buffer<parent>(*this); \
+      return ch::internal::scalar_accessor::get_buffer<parent>(*this)->get_source(); \
     } \
     friend class ch::internal::scalar_accessor; \
   }
@@ -195,7 +195,7 @@ private: \
 public: \
   CH_FOR_EACH(field_body, CH_SEP_SEMICOLON, __VA_ARGS__); \
   struct_name(const ch::internal::bit_buffer& buffer = ch::internal::bit_buffer(traits::bitwidth)) \
-    : __parent_type__(buffer) \
+    : __parent_type__(ch::internal::bit_buffer(ch_bitwidth_v<__parent_type__>, buffer, 0)) \
     , CH_FOR_EACH(CH_STRUCT_DEFAULT_CTOR, CH_SEP_COMMA, __VA_ARGS__) {} \
   struct_name(const struct_name& rhs) \
     : struct_name(ch::internal::bit_accessor::cloneBuffer(rhs)) {} \
@@ -219,10 +219,10 @@ public: \
   assignment_body(struct_name, __VA_ARGS__) \
 private: \
   const ch::internal::bit_buffer_ptr& get_buffer() const { \
-    return ch::internal::bit_accessor::get_buffer<__parent_type__>(*this); \
+    return ch::internal::bit_accessor::get_buffer<__parent_type__>(*this)->get_source(); \
   } \
   ch::internal::bit_buffer_ptr& get_buffer() { \
-    return ch::internal::bit_accessor::get_buffer<__parent_type__>(*this); \
+    return ch::internal::bit_accessor::get_buffer<__parent_type__>(*this)->get_source(); \
   } \
   friend class ch::internal::bit_accessor; \
 

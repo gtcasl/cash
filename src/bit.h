@@ -164,15 +164,13 @@ public:
 struct bit_accessor {
   template <typename T>
   static const auto& get_buffer(const T& obj) {
-    // TODO: uncomment after fixing derived struct's initialization
-    // assert(bitwidth_v<T> == obj.get_buffer()->get_size());
+    assert(bitwidth_v<T> == obj.get_buffer()->get_size());
     return obj.get_buffer();
   }
 
   template <typename T>
   static auto& get_buffer(T& obj) {
-    // TODO: uncomment after fixing derived struct's initialization
-    // assert(bitwidth_v<T> == obj.get_buffer()->get_size());
+    assert(bitwidth_v<T> == obj.get_buffer()->get_size());
     return obj.get_buffer();
   }
 
@@ -197,7 +195,6 @@ struct bit_accessor {
   template <typename U, typename V,
             CH_REQUIRES(bitwidth_v<U> == bitwidth_v<V>)>
   static void copy(U& dst, const V& src) {
-    // TODO: uncomment after fixing derived struct's initialization
     assert(bitwidth_v<U> == dst.get_buffer()->get_size());
     assert(bitwidth_v<V> == src.get_buffer()->get_size());
     dst.get_buffer()->write(0, *src.get_buffer(), 0, bitwidth_v<V>);
@@ -329,7 +326,7 @@ public:
   explicit const_bit(const U& rhs) : buffer_(bit_accessor::cloneBuffer(rhs)) {}
 
   template <typename U,
-            CH_REQUIRES(is_bitvector_convertible<U>::value || std::is_enum<U>::value)>
+            CH_REQUIRES(is_bitvector_convertible<U>::value)>
   explicit const_bit(const U& rhs) : buffer_(bitvector(N, rhs)) {}
 
   // slicing operators

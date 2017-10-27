@@ -55,8 +55,8 @@ __struct (sd2_t, sd1_t, (
 ));
 
 __struct (sd3_t, (
-  (sd2_t)   d,
-  (ch_bit4) e
+  (sd1_t)   c,
+  (ch_bit4) d
 ));
  
 __union (u2_t, (
@@ -99,10 +99,37 @@ TEST_CASE("aggregates", "[aggregates]") {
     TEST([]()->ch_bit1 {
       s2_t s2(1_b4, 0_b4);
       return (s2.asBits() == 10000_b8);
-    });
+    });    
     TEST([]()->ch_bit1 {
       s3_t s3{3, 2, 1};
       return (s3.asBits() == 0x321_h12);
+    });
+    TEST([]()->ch_bit1 {
+      sd1_t a(21_h), b(2_h, 1_h);
+      return (a.asBits() == b.asBits());
+    });
+    TEST([]()->ch_bit1 {
+      sd3_t a(321_h), b(3_h, 21_h);
+      return (a.asBits() == b.asBits());
+    });
+    TEST([]()->ch_bit1 {
+      sd3_t a(321_h), b(a);
+      return (a.asBits() == b.asBits());
+    });
+    TEST([]()->ch_bit1 {
+      auto force_move_assignment = []() {
+        return sd3_t{321_h};
+      };
+      sd3_t a;
+      a = force_move_assignment();
+      return (a.asBits() == 321_h);
+    });
+    TEST([]()->ch_bit1 {
+      auto force_move_assignment = []() {
+        return sd3_t{321_h};
+      };
+      sd3_t a(force_move_assignment());
+      return (a.asBits() == 321_h);
     });
   } 
   
@@ -167,7 +194,7 @@ TEST_CASE("aggregates", "[aggregates]") {
   SECTION("enums", "[enum]") {
     TEST([]()->ch_bit1 {
       my_enum a(my_enum::idle);
-      return (0 == (ch_bit<4>)a);
+      return (0 == a.asBits());
     });
     TEST([]()->ch_bit1 {
       my_enum a(my_enum::idle), b(a);
@@ -180,7 +207,7 @@ TEST_CASE("aggregates", "[aggregates]") {
     TEST([]()->ch_bit1 {
       my_enum a;
       a = my_enum::execute;
-      return ((ch_bit<4>)a == 1);
+      return (1 == a.asBits());
     });
   }
 }

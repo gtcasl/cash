@@ -21,7 +21,7 @@ struct Filter {
   FilterIO<ch_bit8> io;
   void describe() {
     io.y.data   = ~io.x.data;
-    io.y.ready  = io.x.ready;
+    io.y.ready  =  io.x.ready;
     io.y.parity = ~io.x.parity;
   }
 };

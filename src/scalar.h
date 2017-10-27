@@ -205,15 +205,13 @@ public:
 struct scalar_accessor {
   template <typename T>
   static const auto& get_buffer(const T& obj) {
-    // TODO: uncomment after fixing derived struct's initialization
-    // assert(bitwidth_v<T> == obj.get_buffer()->get_size());
+    assert(bitwidth_v<T> == obj.get_buffer()->get_size());
     return obj.get_buffer();
   }
 
   template <typename T>
   static auto& get_buffer(T& obj) {
-    // TODO: uncomment after fixing derived struct's initialization
-    // assert(bitwidth_v<T> == obj.get_buffer()->get_size());
+    assert(bitwidth_v<T> == obj.get_buffer()->get_size());
     return obj.get_buffer();
   }
 
@@ -232,8 +230,7 @@ struct scalar_accessor {
   template <typename U, typename V,
             CH_REQUIRES(bitwidth_v<U> == bitwidth_v<V>)>
   static void copy(U& dst, const V& src) {
-    // TODO: uncomment after fixing derived struct's initialization
-    // assert(bitwidth_v<U> == dst.get_buffer()->get_size());
+    assert(bitwidth_v<U> == dst.get_buffer()->get_size());
     assert(bitwidth_v<V> == src.get_buffer()->get_size());
     dst.get_buffer()->copy(*src.get_buffer());
   }
@@ -304,7 +301,9 @@ class const_scalar {
 public:
   using traits = scalar_traits<N, const_scalar, ch_bit<N>>;
 
-  const_scalar(const scalar_buffer& buffer = scalar_buffer(N)) : buffer_(buffer) {}
+  const_scalar(const scalar_buffer& buffer = scalar_buffer(N))
+    : buffer_(buffer)
+  {}
 
   const_scalar(const const_scalar& rhs)
     : buffer_(scalar_accessor::cloneBuffer(rhs))
