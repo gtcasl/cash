@@ -1,5 +1,26 @@
 #include "common.h"
 
+static_assert(ch_direction_v<ch_in<ch_bool>> == ch_direction::in, "invalid direction");
+static_assert(ch_direction_v<ch_out<ch_bool>> == ch_direction::out, "invalid direction");
+
+__inout(io_bundle2_t, (
+  (ch_in<ch_bool>) x,
+  (ch_in<ch_bool>) y
+));
+static_assert(ch_direction_v<io_bundle2_t> == ch_direction::in, "invalid direction");
+
+__inout(io_bundle1_t, (
+  (ch_out<ch_bool>) x,
+  (ch_out<ch_bool>) y
+));
+static_assert(ch_direction_v<io_bundle1_t> == ch_direction::out, "invalid direction");
+
+__inout(io_bundle3_t, (
+  (ch_in<ch_bool>) x,
+  (ch_out<ch_bool>) y
+));
+static_assert(ch_direction_v<io_bundle3_t> == ch_direction::inout, "invalid direction");
+
 template <typename T>
 __inout(SimpleLink, (
   (ch_out<T>) data,

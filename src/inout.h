@@ -141,7 +141,7 @@
       CH_INOUT_BIND_IMPL2(CH_INOUT_BIND_FIELD, __VA_ARGS__) \
     }; \
   public: \
-    using traits = ch::internal::io_traits<inout_name, CH_INOUT_FLIP_DIRECTION(__VA_ARGS__), __flip_type__, __flop_port_type__, __value_type__>; \
+    using traits = ch::internal::io_traits<inout_name, CH_INOUT_DIRECTION(__VA_ARGS__), __flip_type__, __flop_port_type__, __value_type__>; \
   }
 
 #define CH_INOUT_IMPL3(inout_name, parent, ...) \
