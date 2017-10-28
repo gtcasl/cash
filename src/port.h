@@ -25,7 +25,8 @@ template <typename IoType,
           ch_direction Direction,
           typename FlipType,
           typename PortType,
-          typename LogicType>
+          typename LogicType,
+          typename Next = void>
 struct io_traits {
   static constexpr unsigned bitwidth = bitwidth_v<LogicType>;
   static constexpr ch_direction direction = Direction;
@@ -36,6 +37,7 @@ struct io_traits {
   using const_type  = const_type_t<LogicType>;
   using value_type  = value_type_t<LogicType>;
   using scalar_type = scalar_type_t<LogicType>;
+  using next        = Next;
 };
 
 template <typename T>
@@ -58,117 +60,13 @@ struct is_io_traits<io_traits<IoType, Direction, FlipType, PortType, LogicType>>
 
 CH_DEF_SFINAE_CHECK(is_io_type, is_io_traits<typename std::decay_t<T>::traits>::value);
 
-///////////////////////////////////////////////////////////////////////////////
+template <typename T> class ch_in;
 
-template <typename T>
-class ch_in;
+template <typename T> class ch_out;
 
-template <typename T>
-class ch_out;
+template <typename T> class in_port;
 
-template <typename T>
-class input_port;
-
-template <typename T>
-class output_port;
-
-template <typename T>
-class input_port {
-public:
-  input_port(ch_in<T>& in) : in_(in) {}
-
-  void operator()(const ch_in<T>& in) const {
-    bindInput(bit_accessor::get_data(in), in_.input_);
-  }
-
-  void operator()(const input_port& in) const {
-    bindInput(bit_accessor::get_data(in.in_), in_.input_);
-  }
-
-  void operator()(const output_port<T>& out) const {
-    bindInput(bit_accessor::get_data(out.out_), in_.input_);
-  }
-
-  template <typename U, CH_REQUIRES(is_cast_convertible<T, U>::value)>
-  void operator()(const U& value) const {
-    bindInput(get_lnode<U, bitwidth_v<T>>(value), in_.input_);
-  }
-
-protected:
-
-  lnode& get_input() const {
-    return in_.input_;
-  }
-
-  ch_in<T>& in_;
-
-  friend std::ostream& operator<<(std::ostream& out, const input_port& port) {
-    return out << port.get_input();
-  }
-
-  template <typename U> friend class output_port;
-  template <typename V, typename U> friend V ch_peek(const input_port<U>& port);
-  template <typename V, typename U> friend void ch_poke(const input_port<U>& port,
-                                                        const V& value);
-  template <typename U> friend void ch_peek(const input_port<U>& port,
-                                            uint32_t dst_offset,
-                                            void* out,
-                                            uint32_t out_cbsize,
-                                            uint32_t src_offset,
-                                            uint32_t length);
-  template <typename U> friend void ch_poke(const input_port<U>& port,
-                                            uint32_t dst_offset,
-                                            const void* in,
-                                            uint32_t in_cbsize,
-                                            uint32_t src_offset,
-                                            uint32_t length);
-};
-
-///////////////////////////////////////////////////////////////////////////////
-
-template <typename T>
-class output_port {
-public:
-  output_port(const ch_out<T>& out) : out_(out) {}
-
-  void operator()(const ch_out<T>& out) const {
-    bindOutput(bit_accessor::get_data(out), out_.output_);
-  }
-
-  void operator()(const output_port& out) const {
-    bindOutput(bit_accessor::get_data(out.out_), out_.output_);
-  }
-
-  void operator()(const input_port<T>& in) const {
-    bindOutput(in.get_input(), out_.output_);
-  }
-
-  template <typename U, CH_REQUIRES(is_cast_convertible<U, T>::value)>
-  void operator()(U& value) const {
-    bindOutput(get_lnode(value), out_.output_);
-  }
-
-protected:
-
-  const lnode& get_output() const {
-    return out_.output_;
-  }
-
-  const ch_out<T>& out_;
-
-  friend std::ostream& operator<<(std::ostream& out, const output_port& port) {
-    return out << port.get_output();
-  }
-
-  template <typename U> friend class input_port;
-  template <typename V, typename U> friend V ch_peek(const output_port<U>& port);
-  template <typename U> friend void ch_peek(const output_port<U>& port,
-                                            uint32_t dst_offset,
-                                            void* out,
-                                            uint32_t out_cbsize,
-                                            uint32_t src_offset,
-                                            uint32_t length);
-};
+template <typename T> class out_port;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -176,7 +74,8 @@ template <typename T>
 class ch_in final : public const_type_t<T> {
 public:
   static_assert(!is_io_type<T>::value, "invalid nested type");
-  using traits = io_traits<ch_in, ch_direction::in, ch_out<T>, input_port<T>, T>;
+  using traits = io_traits<ch_in, ch_direction::in, ch_out<T>, in_port<T>, T,
+                           typename T::traits>;
 
   ch_in(const std::string& name = "io") {
     input_ = createInputNode(name, bitwidth_v<T>);
@@ -194,7 +93,7 @@ private:
 
   lnode input_;
 
-  template <typename U> friend class input_port;
+  template <typename U> friend class in_port;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -203,7 +102,8 @@ template <typename T>
 class ch_out final : public T {
 public:
   static_assert(!is_io_type<T>::value, "invalid nested type");
-  using traits = io_traits<ch_out, ch_direction::out, ch_in<T>, output_port<T>, T>;
+  using traits = io_traits<ch_out, ch_direction::out, ch_in<T>, out_port<T>, T,
+                           typename T::traits>;
   using T::operator=;
 
   ch_out(const std::string& name = "io") {
@@ -225,7 +125,107 @@ private:
 
   lnode output_;
 
-  template <typename U> friend class output_port;
+  template <typename U> friend class out_port;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+template <typename T>
+class in_port {
+public:
+  in_port(ch_in<T>& in) : in_(in) {}
+
+  void operator()(const ch_in<T>& in) const {
+    bindInput(bit_accessor::get_data(in), in_.input_);
+  }
+
+  void operator()(const in_port& in) const {
+    bindInput(bit_accessor::get_data(in.in_), in_.input_);
+  }
+
+  void operator()(const out_port<T>& out) const {
+    bindInput(bit_accessor::get_data(out.out_), in_.input_);
+  }
+
+  template <typename U, CH_REQUIRES(is_cast_convertible<T, U>::value)>
+  void operator()(const U& value) const {
+    bindInput(get_lnode<U, bitwidth_v<T>>(value), in_.input_);
+  }
+
+protected:
+
+  lnode& get_input() const {
+    return in_.input_;
+  }
+
+  ch_in<T>& in_;
+
+  friend std::ostream& operator<<(std::ostream& out, const in_port& port) {
+    return out << port.get_input();
+  }
+
+  template <typename U> friend class out_port;
+  template <typename V, typename U> friend V ch_peek(const in_port<U>& port);
+  template <typename V, typename U> friend void ch_poke(const in_port<U>& port,
+                                                        const V& value);
+  template <typename U> friend void ch_peek(const in_port<U>& port,
+                                            uint32_t dst_offset,
+                                            void* out,
+                                            uint32_t out_cbsize,
+                                            uint32_t src_offset,
+                                            uint32_t length);
+  template <typename U> friend void ch_poke(const in_port<U>& port,
+                                            uint32_t dst_offset,
+                                            const void* in,
+                                            uint32_t in_cbsize,
+                                            uint32_t src_offset,
+                                            uint32_t length);
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+template <typename T>
+class out_port {
+public:
+  out_port(const ch_out<T>& out) : out_(out) {}
+
+  void operator()(const ch_out<T>& out) const {
+    bindOutput(bit_accessor::get_data(out), out_.output_);
+  }
+
+  void operator()(const out_port& out) const {
+    bindOutput(bit_accessor::get_data(out.out_), out_.output_);
+  }
+
+  void operator()(const in_port<T>& in) const {
+    bindOutput(in.get_input(), out_.output_);
+  }
+
+  template <typename U, CH_REQUIRES(is_cast_convertible<U, T>::value)>
+  void operator()(U& value) const {
+    bindOutput(get_lnode(value), out_.output_);
+  }
+
+protected:
+
+  const lnode& get_output() const {
+    return out_.output_;
+  }
+
+  const ch_out<T>& out_;
+
+  friend std::ostream& operator<<(std::ostream& out, const out_port& port) {
+    return out << port.get_output();
+  }
+
+  template <typename U> friend class in_port;
+  template <typename V, typename U> friend V ch_peek(const out_port<U>& port);
+  template <typename U> friend void ch_peek(const out_port<U>& port,
+                                            uint32_t dst_offset,
+                                            void* out,
+                                            uint32_t out_cbsize,
+                                            uint32_t src_offset,
+                                            uint32_t length);
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -264,12 +264,12 @@ struct poke_impl<ch_scalar<N>, N> {
 };
 
 template <typename V, typename T>
-V ch_peek(const output_port<T>& port) {
+V ch_peek(const out_port<T>& port) {
   return peek_impl<std::decay_t<V>, bitwidth_v<T>>::read(port.get_output());
 }
 
 template <typename T>
-void ch_peek(const output_port<T>& port,
+void ch_peek(const out_port<T>& port,
              uint32_t dst_offset,
              void* out,
              uint32_t out_cbsize,
@@ -279,12 +279,12 @@ void ch_peek(const output_port<T>& port,
 }
 
 template <typename V, typename T>
-V ch_peek(const input_port<T>& port) {
+V ch_peek(const in_port<T>& port) {
   return peek_impl<std::decay_t<V>, bitwidth_v<T>>::read(port.get_input());
 }
 
 template <typename T>
-void ch_peek(const input_port<T>& port,
+void ch_peek(const in_port<T>& port,
              uint32_t dst_offset,
              void* out,
              uint32_t out_cbsize,
@@ -294,12 +294,12 @@ void ch_peek(const input_port<T>& port,
 }
 
 template <typename V, typename T>
-void ch_poke(const input_port<T>& port, const V& value) {
+void ch_poke(const in_port<T>& port, const V& value) {
   poke_impl<std::decay_t<V>, bitwidth_v<T>>::write(port.get_input(), value);
 }
 
 template <typename T>
-void ch_poke(const input_port<T>& port,
+void ch_poke(const in_port<T>& port,
              uint32_t dst_offset,
              const void* in,
              uint32_t in_cbsize,

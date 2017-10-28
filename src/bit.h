@@ -17,13 +17,19 @@ template <unsigned N> class bit;
 
 template <unsigned N> class bit_concat;
 
-template <unsigned Bitwidth, typename LogicType, typename ConstType, typename ValueType, typename ScalarType>
+template <unsigned Bitwidth,
+          typename LogicType,
+          typename ConstType,
+          typename ValueType,
+          typename ScalarType,
+          typename Next = void>
 struct logic_traits {
   static constexpr unsigned bitwidth = Bitwidth;
   using logic_type  = LogicType;
   using const_type  = ConstType;
   using value_type  = ValueType;
   using scalar_type = ScalarType;
+  using next        = Next;
 };
 
 template <typename T>
@@ -53,13 +59,13 @@ template <typename... Ts>
 using deduce_ch_bit_t = std::conditional_t<
   is_bit_compatible<deduce_type_t<Ts...>>::value,
   deduce_type_t<Ts...>,
-  non_bitsize_type>;
+  non_bitwidth_type>;
 
 template <typename T0, typename T1>
 using deduce_first_ch_bit_t = std::conditional_t<
   (is_bit_compatible<T0>::value || is_bit_compatible<T1>::value),
   deduce_first_type_t<T0, T1>,
-  non_bitsize_type>;
+  non_bitwidth_type>;
 
 template <typename T, unsigned N = T::traits::bitwidth>
 using is_bit_convertible = is_cast_convertible<ch_bit<N>, T>;
@@ -69,6 +75,12 @@ using are_all_bit_convertible = conjunction<is_bit_convertible<Ts>::value...>;
 
 template <typename... Ts>
 using are_all_logic_type = conjunction<is_logic_type<Ts>::value...>;
+
+CH_DEF_SFINAE_CHECK(is_logic_compatible, is_logic_traits<typename std::decay_t<T>::traits>::value
+                                      || is_logic_traits<typename std::decay_t<T>::traits::next>::value);
+
+template <typename... Ts>
+using are_all_logic_compatible = conjunction<is_logic_compatible<Ts>::value...>;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -164,13 +176,11 @@ public:
 struct bit_accessor {
   template <typename T>
   static const auto& get_buffer(const T& obj) {
-    assert(bitwidth_v<T> == obj.get_buffer()->get_size());
     return obj.get_buffer();
   }
 
   template <typename T>
   static auto& get_buffer(T& obj) {
-    assert(bitwidth_v<T> == obj.get_buffer()->get_size());
     return obj.get_buffer();
   }
 
@@ -233,7 +243,7 @@ struct bit_accessor {
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T, unsigned N = bitwidth_v<T>>
-using bit_cast_t = std::conditional_t<is_logic_type<T>::value, const T&, ch_bit<N>>;
+using bit_cast_t = std::conditional_t<is_logic_compatible<T>::value, const T&, ch_bit<N>>;
 
 template <typename T, unsigned N = bitwidth_v<T>,
           CH_REQUIRES(is_bit_convertible<T, N>::value)>
@@ -913,7 +923,7 @@ inline void ch_print(const std::string& format) {
 }
 
 template <typename...Args,
-          CH_REQUIRES(are_all_logic_type<Args...>::value)>
+          CH_REQUIRES(are_all_logic_compatible<Args...>::value)>
 void ch_print(const std::string& format, const Args& ...args) {
   createPrintNode(format, {get_lnode(args)...});
 }

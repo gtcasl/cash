@@ -43,10 +43,13 @@
 #define CH_STRUCT_FIELD_CTOR_ARGS(i, x) \
   const __T##i& CH_CONCAT(_,CH_PAIR_R(x))
 
-#define CH_STRUCT_SCALAR_FIELD_CTOR_BODY(i, x) \
+#define CH_STRUCT_FIELD_CTOR_BODY(i, x) \
+  CH_CONCAT(_,CH_PAIR_R(x))
+
+#define CH_STRUCT_SCALAR_INIT_FIELD(i, x) \
   ch::internal::scalar_accessor::copy(CH_PAIR_R(x), ch_scalar_t<ch::internal::identity_t<CH_PAIR_L(x)>>(CH_CONCAT(_,CH_PAIR_R(x))))
 
-#define CH_STRUCT_FIELD_CTOR_BODY(i, x) \
+#define CH_STRUCT_INIT_FIELD(i, x) \
   ch::internal::bit_accessor::copy(CH_PAIR_R(x), ch_value_t<ch::internal::identity_t<CH_PAIR_L(x)>>(CH_CONCAT(_,CH_PAIR_R(x))))
 
 #define CH_STRUCT_SCALAR_GETBUFFER(i, x) \
@@ -77,12 +80,12 @@
       : struct_name(ch::internal::scalar_accessor::cloneBuffer(rhs)) {} \
     template <typename __T__, CH_REQUIRES(std::is_integral_v<__T__>)> \
     explicit struct_name(__T__ rhs) \
-      : struct_name(ch::internal::scalar_buffer(bitvector(traits::bitwidth, rhs))) {} \
+      : struct_name(ch::internal::scalar_buffer(ch::internal::bitvector(traits::bitwidth, rhs))) {} \
     template <CH_REVERSE_FOR_EACH(CH_STRUCT_FIELD_CTOR_TMPL, CH_SEP_COMMA, __VA_ARGS__), \
               CH_REVERSE_FOR_EACH(CH_STRUCT_SCALAR_FIELD_CTOR_REQUIRES, CH_SEP_COMMA, __VA_ARGS__)> \
     explicit struct_name(CH_REVERSE_FOR_EACH(CH_STRUCT_FIELD_CTOR_ARGS, CH_SEP_COMMA, __VA_ARGS__)) \
       : struct_name() { \
-      CH_FOR_EACH(CH_STRUCT_SCALAR_FIELD_CTOR_BODY, CH_SEP_SEMICOLON, __VA_ARGS__); \
+      this->init_fields(CH_REVERSE_FOR_EACH(CH_STRUCT_FIELD_CTOR_BODY, CH_SEP_COMMA, __VA_ARGS__)); \
     } \
     struct_name& operator=(const struct_name& rhs) { \
       ch::internal::scalar_accessor::copy(*this, rhs); \
@@ -94,7 +97,12 @@
     } \
     CH_SCALAR_READONLY_INTERFACE(struct_name) \
     CH_SCALAR_WRITABLE_INTERFACE(struct_name) \
-  private: \
+  protected: \
+    template <CH_REVERSE_FOR_EACH(CH_STRUCT_FIELD_CTOR_TMPL, CH_SEP_COMMA, __VA_ARGS__), \
+              CH_REVERSE_FOR_EACH(CH_STRUCT_SCALAR_FIELD_CTOR_REQUIRES, CH_SEP_COMMA, __VA_ARGS__)> \
+    void init_fields(CH_REVERSE_FOR_EACH(CH_STRUCT_FIELD_CTOR_ARGS, CH_SEP_COMMA, __VA_ARGS__)) { \
+      CH_FOR_EACH(CH_STRUCT_SCALAR_INIT_FIELD, CH_SEP_SEMICOLON, __VA_ARGS__); \
+    } \
     const ch::internal::scalar_buffer_ptr& get_buffer() const { \
       CH_FOR_EACH_1(0, CH_STRUCT_SCALAR_GETBUFFER, CH_SEP_SEMICOLON, __VA_ARGS__)->get_source(); \
     } \
@@ -114,7 +122,7 @@
   public: \
     CH_FOR_EACH(CH_STRUCT_SCALAR_FIELD, CH_SEP_SEMICOLON, __VA_ARGS__); \
     struct_name(const ch::internal::scalar_buffer& buffer = ch::internal::scalar_buffer(traits::bitwidth)) \
-      : parent(ch::internal::scalar_buffer(ch_bitwidth_v<parent>, buffer, 0)) \
+      : parent(buffer) \
       , CH_FOR_EACH(CH_STRUCT_SCALAR_DEFAULT_CTOR, CH_SEP_COMMA, __VA_ARGS__) {} \
     struct_name(const struct_name& rhs) \
       : struct_name(ch::internal::scalar_accessor::cloneBuffer(rhs)) {} \
@@ -125,13 +133,12 @@
         : struct_name(ch::internal::scalar_accessor::cloneBuffer(rhs)) {} \
     template <typename __T__, CH_REQUIRES(std::is_integral_v<__T__>)> \
     explicit struct_name(__T__ rhs) \
-      : struct_name(ch::internal::scalar_buffer(bitvector(traits::bitwidth, rhs))) {} \
+      : struct_name(ch::internal::scalar_buffer(ch::internal::bitvector(traits::bitwidth, rhs))) {} \
     template <CH_REVERSE_FOR_EACH(CH_STRUCT_FIELD_CTOR_TMPL, CH_SEP_COMMA, __VA_ARGS__), typename... __Ts__, \
               CH_REVERSE_FOR_EACH(CH_STRUCT_SCALAR_FIELD_CTOR_REQUIRES, CH_SEP_COMMA, __VA_ARGS__)> \
     explicit struct_name(CH_REVERSE_FOR_EACH(CH_STRUCT_FIELD_CTOR_ARGS, CH_SEP_COMMA, __VA_ARGS__), __Ts__&&... args) \
       : struct_name() { \
-      ch::internal::scalar_accessor::copy<parent>(*this, parent(args...)); \
-      CH_FOR_EACH(CH_STRUCT_SCALAR_FIELD_CTOR_BODY, CH_SEP_SEMICOLON, __VA_ARGS__); \
+      this->init_fields(CH_REVERSE_FOR_EACH(CH_STRUCT_FIELD_CTOR_BODY, CH_SEP_COMMA, __VA_ARGS__), args...); \
     } \
     struct_name& operator=(const struct_name& rhs) { \
       ch::internal::scalar_accessor::copy(*this, rhs); \
@@ -143,12 +150,18 @@
     } \
     CH_SCALAR_READONLY_INTERFACE(struct_name) \
     CH_SCALAR_WRITABLE_INTERFACE(struct_name) \
-  private: \
+  protected: \
+    template <CH_REVERSE_FOR_EACH(CH_STRUCT_FIELD_CTOR_TMPL, CH_SEP_COMMA, __VA_ARGS__), typename... __Ts__, \
+              CH_REVERSE_FOR_EACH(CH_STRUCT_SCALAR_FIELD_CTOR_REQUIRES, CH_SEP_COMMA, __VA_ARGS__)> \
+    void init_fields(CH_REVERSE_FOR_EACH(CH_STRUCT_FIELD_CTOR_ARGS, CH_SEP_COMMA, __VA_ARGS__), __Ts__&&... args) { \
+      parent::init_fields(args...); \
+      CH_FOR_EACH(CH_STRUCT_SCALAR_INIT_FIELD, CH_SEP_SEMICOLON, __VA_ARGS__); \
+    } \
     const ch::internal::scalar_buffer_ptr& get_buffer() const { \
-      return ch::internal::scalar_accessor::get_buffer<parent>(*this)->get_source(); \
+      return ch::internal::scalar_accessor::get_buffer<parent>(*this); \
     } \
     ch::internal::scalar_buffer_ptr& get_buffer() { \
-      return ch::internal::scalar_accessor::get_buffer<parent>(*this)->get_source(); \
+      return ch::internal::scalar_accessor::get_buffer<parent>(*this); \
     } \
     friend class ch::internal::scalar_accessor; \
   }
@@ -169,17 +182,22 @@ public: \
     : struct_name(ch::internal::bit_accessor::cloneBuffer(rhs)) {} \
   template <typename __T__, CH_REQUIRES(std::is_integral_v<__T__>)> \
   explicit struct_name(__T__ rhs) \
-    : struct_name(ch::internal::bit_buffer(bitvector(traits::bitwidth, rhs))) {} \
+    : struct_name(ch::internal::bit_buffer(ch::internal::bitvector(traits::bitwidth, rhs))) {} \
   explicit struct_name(const ch_scalar<traits::bitwidth>& rhs) \
     : struct_name(ch::internal::bit_buffer(ch::internal::scalar_accessor::get_data(rhs))) {} \
   template <CH_REVERSE_FOR_EACH(CH_STRUCT_FIELD_CTOR_TMPL, CH_SEP_COMMA, __VA_ARGS__), \
             CH_REVERSE_FOR_EACH(CH_STRUCT_FIELD_CTOR_REQUIRES, CH_SEP_COMMA, __VA_ARGS__)> \
   explicit struct_name(CH_REVERSE_FOR_EACH(CH_STRUCT_FIELD_CTOR_ARGS, CH_SEP_COMMA, __VA_ARGS__)) \
     : struct_name() { \
-    CH_FOR_EACH(CH_STRUCT_FIELD_CTOR_BODY, CH_SEP_SEMICOLON, __VA_ARGS__); \
+    this->init_fields(CH_REVERSE_FOR_EACH(CH_STRUCT_FIELD_CTOR_BODY, CH_SEP_COMMA, __VA_ARGS__)); \
   } \
   assignment_body(struct_name, __VA_ARGS__) \
-private: \
+protected: \
+  template <CH_REVERSE_FOR_EACH(CH_STRUCT_FIELD_CTOR_TMPL, CH_SEP_COMMA, __VA_ARGS__), \
+            CH_REVERSE_FOR_EACH(CH_STRUCT_FIELD_CTOR_REQUIRES, CH_SEP_COMMA, __VA_ARGS__)> \
+  void init_fields(CH_REVERSE_FOR_EACH(CH_STRUCT_FIELD_CTOR_ARGS, CH_SEP_COMMA, __VA_ARGS__)) { \
+    CH_FOR_EACH(CH_STRUCT_INIT_FIELD, CH_SEP_SEMICOLON, __VA_ARGS__); \
+  } \
   const ch::internal::bit_buffer_ptr& get_buffer() const { \
     CH_FOR_EACH_1(0, CH_STRUCT_GETBUFFER, CH_SEP_SEMICOLON, __VA_ARGS__)->get_source(); \
   } \
@@ -195,7 +213,7 @@ private: \
 public: \
   CH_FOR_EACH(field_body, CH_SEP_SEMICOLON, __VA_ARGS__); \
   struct_name(const ch::internal::bit_buffer& buffer = ch::internal::bit_buffer(traits::bitwidth)) \
-    : __parent_type__(ch::internal::bit_buffer(ch_bitwidth_v<__parent_type__>, buffer, 0)) \
+    : __parent_type__(buffer) \
     , CH_FOR_EACH(CH_STRUCT_DEFAULT_CTOR, CH_SEP_COMMA, __VA_ARGS__) {} \
   struct_name(const struct_name& rhs) \
     : struct_name(ch::internal::bit_accessor::cloneBuffer(rhs)) {} \
@@ -206,23 +224,28 @@ public: \
     : struct_name(ch::internal::bit_accessor::cloneBuffer(rhs)) {} \
   template <typename __T__, CH_REQUIRES(std::is_integral_v<__T__>)> \
   explicit struct_name(__T__ rhs) \
-    : struct_name(ch::internal::bit_buffer(bitvector(traits::bitwidth, rhs))) {} \
+    : struct_name(ch::internal::bit_buffer(ch::internal::bitvector(traits::bitwidth, rhs))) {} \
   explicit struct_name(const ch_scalar<traits::bitwidth>& rhs) \
     : struct_name(ch::internal::bit_buffer(ch::internal::scalar_accessor::get_data(rhs))) {} \
   template <CH_REVERSE_FOR_EACH(CH_STRUCT_FIELD_CTOR_TMPL, CH_SEP_COMMA, __VA_ARGS__), typename... __Ts__, \
             CH_REVERSE_FOR_EACH(CH_STRUCT_FIELD_CTOR_REQUIRES, CH_SEP_COMMA, __VA_ARGS__)> \
   explicit struct_name(CH_REVERSE_FOR_EACH(CH_STRUCT_FIELD_CTOR_ARGS, CH_SEP_COMMA, __VA_ARGS__), __Ts__&&... args) \
     : struct_name() { \
-    ch::internal::bit_accessor::copy<__parent_type__>(*this, __parent_type__(args...)); \
-    CH_FOR_EACH(CH_STRUCT_FIELD_CTOR_BODY, CH_SEP_SEMICOLON, __VA_ARGS__); \
+    this->init_fields(CH_REVERSE_FOR_EACH(CH_STRUCT_FIELD_CTOR_BODY, CH_SEP_COMMA, __VA_ARGS__), args...); \
   } \
   assignment_body(struct_name, __VA_ARGS__) \
-private: \
+protected: \
+  template <CH_REVERSE_FOR_EACH(CH_STRUCT_FIELD_CTOR_TMPL, CH_SEP_COMMA, __VA_ARGS__), typename... __Ts__, \
+            CH_REVERSE_FOR_EACH(CH_STRUCT_FIELD_CTOR_REQUIRES, CH_SEP_COMMA, __VA_ARGS__)> \
+  void init_fields(CH_REVERSE_FOR_EACH(CH_STRUCT_FIELD_CTOR_ARGS, CH_SEP_COMMA, __VA_ARGS__), __Ts__&&... args) {\
+    __parent_type__::init_fields(args...); \
+    CH_FOR_EACH(CH_STRUCT_INIT_FIELD, CH_SEP_SEMICOLON, __VA_ARGS__); \
+  } \
   const ch::internal::bit_buffer_ptr& get_buffer() const { \
-    return ch::internal::bit_accessor::get_buffer<__parent_type__>(*this)->get_source(); \
+    return ch::internal::bit_accessor::get_buffer<__parent_type__>(*this); \
   } \
   ch::internal::bit_buffer_ptr& get_buffer() { \
-    return ch::internal::bit_accessor::get_buffer<__parent_type__>(*this)->get_source(); \
+    return ch::internal::bit_accessor::get_buffer<__parent_type__>(*this); \
   } \
   friend class ch::internal::bit_accessor; \
 

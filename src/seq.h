@@ -19,10 +19,9 @@ public:
     next = *this;
   }
 
-  template <typename U,
-            CH_REQUIRES(is_cast_convertible<T, U>::value)>
-  explicit ch_seq(const U& init) {
-    auto reg = createRegNode(get_lnode<T>(next), get_lnode<U, bitwidth_v<T>>(init));
+  template <typename... Args>
+  explicit ch_seq(Args&&... args) {
+    auto reg = createRegNode(get_lnode<T>(next), get_lnode(T(std::forward<Args>(args)...)));
     bit_accessor::set_data(*this, reg);
     next = *this;
   }

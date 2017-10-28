@@ -22,12 +22,12 @@ struct bitwidth_impl<T0, Ts...> {
 template <typename... Ts>
 inline constexpr unsigned bitwidth_v = bitwidth_impl<std::decay_t<Ts>...>::value;
 
-CH_DEF_SFINAE_CHECK(has_bitsize, T::traits::bitwidth != 0);
-static_assert(!has_bitsize<int>::value, ":-(");
+CH_DEF_SFINAE_CHECK(has_bitwidth, T::traits::bitwidth != 0);
+static_assert(!has_bitwidth<int>::value, ":-(");
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct non_bitsize_type {
+struct non_bitwidth_type {
   struct traits {
     static constexpr unsigned bitwidth = 0;
   };
@@ -37,11 +37,11 @@ template <typename T0, typename T1>
 struct deduce_type_impl {
   using D0 = std::decay_t<T0>;
   using D1 = std::decay_t<T1>;
-  using U0 = std::conditional_t<has_bitsize<D0>::value, D0, non_bitsize_type>;
-  using U1 = std::conditional_t<has_bitsize<D1>::value, D1, non_bitsize_type>;
+  using U0 = std::conditional_t<has_bitwidth<D0>::value, D0, non_bitwidth_type>;
+  using U1 = std::conditional_t<has_bitwidth<D1>::value, D1, non_bitwidth_type>;
   using type = std::conditional_t<
     (bitwidth_v<U0> != 0) && (bitwidth_v<U1> != 0),
-    std::conditional_t<(bitwidth_v<U0> != bitwidth_v<U1>), non_bitsize_type, U0>,
+    std::conditional_t<(bitwidth_v<U0> != bitwidth_v<U1>), non_bitwidth_type, U0>,
     std::conditional_t<(bitwidth_v<U0> != 0), U0, U1>>;
 };
 
@@ -65,8 +65,8 @@ template <typename T0, typename T1>
 struct deduce_first_type_impl {
   using D0 = std::decay_t<T0>;
   using D1 = std::decay_t<T1>;
-  using U0 = std::conditional_t<has_bitsize<D0>::value, D0, non_bitsize_type>;
-  using U1 = std::conditional_t<has_bitsize<D1>::value, D1, non_bitsize_type>;
+  using U0 = std::conditional_t<has_bitwidth<D0>::value, D0, non_bitwidth_type>;
+  using U1 = std::conditional_t<has_bitwidth<D1>::value, D1, non_bitwidth_type>;
   using type = std::conditional_t<(bitwidth_v<U0> != 0), U0, U1>;
 };
 
@@ -79,11 +79,15 @@ template <unsigned N> class ch_bit;
 
 template <unsigned N> class ch_scalar;
 
-template <unsigned Bitwidth, typename ScalarType, typename LogicType>
+template <unsigned Bitwidth,
+          typename ScalarType,
+          typename LogicType,
+          typename Next = void>
 struct scalar_traits {
   static constexpr unsigned bitwidth = Bitwidth;
-  using scalar_type = ScalarType;
+  using scalar_type = ScalarType;  
   using logic_type = LogicType;
+  using next = Next;
 };
 
 template <typename T>
@@ -102,10 +106,13 @@ CH_DEF_SFINAE_CHECK(is_scalar_compatible, (std::is_same<ch_scalar<bitwidth_v<T>>
 
 template <typename... Ts>
 using deduce_ch_scalar_t = std::conditional_t<
-  is_scalar_compatible<deduce_type_t<Ts...>>::value, deduce_type_t<Ts...>, non_bitsize_type>;
+  is_scalar_compatible<deduce_type_t<Ts...>>::value, deduce_type_t<Ts...>, non_bitwidth_type>;
 
 template <typename T, unsigned N = bitwidth_v<T>>
 using is_scalar_convertible = is_cast_convertible<ch_scalar<N>, T>;
+
+template <typename T, unsigned N = bitwidth_v<T>>
+using scalar_cast_t = std::conditional_t<is_scalar_type<T>::value, const T&, ch_scalar<N>>;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -205,13 +212,11 @@ public:
 struct scalar_accessor {
   template <typename T>
   static const auto& get_buffer(const T& obj) {
-    assert(bitwidth_v<T> == obj.get_buffer()->get_size());
     return obj.get_buffer();
   }
 
   template <typename T>
   static auto& get_buffer(T& obj) {
-    assert(bitwidth_v<T> == obj.get_buffer()->get_size());
     return obj.get_buffer();
   }
 

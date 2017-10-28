@@ -2,6 +2,74 @@
 
 #include "bit.h"
 
+namespace ch {
+namespace internal {
+
+template <typename T, typename... Fs>
+struct union_init_fields_impl {};
+
+template <typename T, typename F>
+struct union_init_fields_impl<T, F> {
+  static void apply(const T& value, F& field) {
+    field = value;
+  }
+};
+
+template <typename T, typename F0, typename... Fs>
+struct union_init_fields_impl0 {
+  static void apply(const T& value, F0& field0, Fs&... fields) {
+    field0 = value;
+  }
+};
+
+template <typename T, typename F0, typename... Fs>
+struct union_init_fields_impl1 {
+  static void apply(const T& value, F0& field0, Fs&... fields) {
+    union_init_fields_impl<T, Fs...>::apply(value, fields...);
+  }
+};
+
+template <typename T, typename F0, typename... Fs>
+struct union_init_fields_impl<T, F0, Fs...> {
+  static void apply(const T& value, F0& field0, Fs&... fields) {
+    std::conditional_t<is_cast_convertible<F0, T>::value,
+                       union_init_fields_impl0<T, F0, Fs...>,
+                       union_init_fields_impl1<T, F0, Fs...>>::apply(value, field0, fields...);
+  }
+};
+
+struct union_init_fields {
+  template <typename T, typename... Fs>
+  static void apply(const T& value, Fs&... fields) {
+    union_init_fields_impl<T, Fs...>::apply(value, fields...);
+  }
+};
+
+template <typename U, typename T>
+using union_init_cast_t = std::conditional_t<has_bitwidth<T>::value, const T&, U>;
+
+template <typename T>
+struct union_zero_init_impl0 {
+  static void apply(T& obj) {};
+};
+
+template <typename T, typename U>
+struct union_zero_init_impl1 {
+  static void apply(T& obj) {
+    if constexpr(bitwidth_v<U> < T::traits::bitwidth) {
+      obj.asBits() = 0;
+    }
+  };
+};
+
+template <typename T, typename U>
+using union_zero_init = std::conditional_t<has_bitwidth<U>::value,
+                                           union_zero_init_impl1<T, U>,
+                                           union_zero_init_impl0<T>>;
+
+}
+}
+
 #define CH_UNION_SIZE_EACH(i, x) \
   ch_bitwidth_v<ch::internal::identity_t<CH_PAIR_L(x)>>
 
@@ -32,6 +100,15 @@
 #define CH_UNION_CONST_FIELD(i, x) \
   ch_const_t<ch::internal::identity_t<CH_PAIR_L(x)>> CH_PAIR_R(x)
 
+#define CH_UNION_SCALAR_FIELD_CTOR_REQUIRES(i, x) \
+  ch::internal::is_cast_convertible<ch_scalar_t<ch::internal::identity_t<CH_PAIR_L(x)>>, __T__>::value
+
+#define CH_UNION_FIELD_CTOR_REQUIRES(i, x) \
+  ch::internal::is_cast_convertible<ch_value_t<ch::internal::identity_t<CH_PAIR_L(x)>>, __T__>::value
+
+#define CH_UNION_INIT_FIELD(i, x) \
+  CH_PAIR_R(x)
+
 #define CH_UNION_SCALAR_IMPL(union_name, value_name, ...) \
   class union_name { \
   public: \
@@ -44,11 +121,13 @@
       : union_name(ch::internal::scalar_accessor::cloneBuffer(rhs)) {} \
     union_name(union_name&& rhs) \
       : CH_FOR_EACH(CH_UNION_MOVE_CTOR, CH_SEP_COMMA, __VA_ARGS__) {} \
-    template <typename __T__, CH_REQUIRES(std::is_integral_v<__T__>)> \
-    explicit union_name(const __T__& rhs) \
-      : union_name(ch::internal::scalar_buffer(ch::internal::bitvector(traits::bitwidth, rhs))) {} \
     explicit union_name(const ch_scalar<traits::bitwidth>& rhs) \
       : union_name(ch::internal::scalar_accessor::cloneBuffer(rhs)) {} \
+    template <typename __T__, \
+              CH_REQUIRES(CH_FOR_EACH(CH_UNION_FIELD_CTOR_REQUIRES, CH_SEP_OR, __VA_ARGS__))> \
+    explicit union_name(const __T__& rhs) : union_name() { \
+      this->init_fields(rhs); \
+    } \
     union_name& operator=(const union_name& rhs) { \
       ch::internal::scalar_accessor::copy(*this, rhs); \
       return *this; \
@@ -59,7 +138,14 @@
     } \
     CH_SCALAR_READONLY_INTERFACE(union_name) \
     CH_SCALAR_WRITABLE_INTERFACE(union_name) \
-  private: \
+  protected: \
+    template <typename __T__, \
+              CH_REQUIRES(CH_FOR_EACH(CH_UNION_SCALAR_FIELD_CTOR_REQUIRES, CH_SEP_OR, __VA_ARGS__))> \
+    void init_fields(const __T__& rhs) { \
+      ch::internal::union_init_fields::apply( \
+        static_cast<ch::internal::union_init_cast_t<ch_scalar<traits::bitwidth>, __T__>>(rhs), \
+        CH_FOR_EACH(CH_UNION_INIT_FIELD, CH_SEP_COMMA, __VA_ARGS__)); \
+    } \
     const ch::internal::scalar_buffer_ptr& get_buffer() const { \
       CH_FOR_EACH_1(0, CH_UNION_SCALAR_GETBUFFER, CH_SEP_SEMICOLON, __VA_ARGS__)->get_source(); \
     } \
@@ -79,13 +165,23 @@
     : CH_FOR_EACH(CH_UNION_MOVE_CTOR, CH_SEP_COMMA, __VA_ARGS__) {} \
   union_name(const reverse_name& rhs) \
     : union_name(ch::internal::bit_accessor::cloneBuffer(rhs)) {} \
+  explicit union_name(const ch_scalar<traits::bitwidth>& rhs) \
+    : union_name(ch::internal::bit_buffer(ch::internal::scalar_accessor::get_data(rhs))) {} \
   template <typename __T__, \
-            CH_REQUIRES(ch::internal::is_bit_convertible<__T__, traits::bitwidth>::value)> \
-  explicit union_name(const __T__& rhs) \
-    : union_name(ch::internal::bit_buffer(ch::internal::bit_accessor::get_data( \
-                    static_cast<ch::internal::bit_cast_t<__T__, traits::bitwidth>>(rhs)))) {} \
+            CH_REQUIRES(CH_FOR_EACH(CH_UNION_FIELD_CTOR_REQUIRES, CH_SEP_OR, __VA_ARGS__))> \
+  explicit union_name(const __T__& rhs) : union_name() { \
+    this->init_fields(rhs); \
+  } \
   assignment_body(union_name, __VA_ARGS__) \
 protected: \
+  template <typename __T__, \
+            CH_REQUIRES(CH_FOR_EACH(CH_UNION_FIELD_CTOR_REQUIRES, CH_SEP_OR, __VA_ARGS__))> \
+  void init_fields(const __T__& rhs) { \
+    ch::internal::union_zero_init<union_name, __T__>::apply(*this); \
+    ch::internal::union_init_fields::apply( \
+      static_cast<ch::internal::union_init_cast_t<ch_bit<traits::bitwidth>, __T__>>(rhs), \
+      CH_FOR_EACH(CH_UNION_INIT_FIELD, CH_SEP_COMMA, __VA_ARGS__)); \
+  } \
   const ch::internal::bit_buffer_ptr& get_buffer() const { \
     CH_FOR_EACH_1(0, CH_UNION_GETBUFFER, CH_SEP_SEMICOLON, __VA_ARGS__)->get_source(); \
   } \

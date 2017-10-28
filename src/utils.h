@@ -425,7 +425,7 @@ constexpr uint32_t rotr(uint32_t value, uint32_t shift, uint32_t width) {
   template<typename T, typename Enable = void> \
   struct type_name : std::false_type {}; \
   template<typename T> \
-  struct type_name<T, typename std::enable_if_t<predicate>> : std::true_type {}
+  struct type_name<T, typename std::enable_if_t<(predicate)>> : std::true_type {}
 
 #define CH_VOID_T typename = void
 

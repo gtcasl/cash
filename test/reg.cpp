@@ -6,7 +6,7 @@ __struct(X, (
 ));
 
 __union(U, (
-(ch_bit2) q,
+(ch_bit1) q,
 (ch_bit2) p
 ));
 
@@ -87,7 +87,7 @@ TEST_CASE("registers", "[registers]") {
     }, 10);
 
     TEST([]()->ch_bit1 {
-      ch_seq<V2> a;
+      ch_seq<V2> a, b(0), c(0000_b);
       a.next = V2{3, 1};
       auto e = ch_case(ch_getTick(), 3, 1101_b)(a);
       ch_print("t={0}, a={1}, e={2}", ch_getTick(), a, e);
@@ -95,7 +95,7 @@ TEST_CASE("registers", "[registers]") {
     }, 3);
 
     TEST([]()->ch_bit1 {
-      ch_seq<X> a;
+      ch_seq<X> a, b(0), c(0000_b);
       a.next = X{3, 1};
       auto e = ch_case(ch_getTick(), 3, 1101_b)(a);
       ch_print("t={0}, a={1}, e={2}", ch_getTick(), a, e);
@@ -103,7 +103,7 @@ TEST_CASE("registers", "[registers]") {
     }, 3);
 
     TEST([]()->ch_bit1 {
-      ch_seq<U> a;
+      ch_seq<U> a, b(0), c(0_b);
       a.next = U{2};
       auto e = ch_case(ch_getTick(), 3, 10_b)(a);
       ch_print("t={0}, a={1}, e={2}", ch_getTick(), a, e);

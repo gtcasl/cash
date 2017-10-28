@@ -59,7 +59,7 @@ __struct (sd3_t, (
   (ch_bit4) d
 ));
  
-__union (u2_t, (
+__union (u2_4_t, (
   (ch_bit2) a,
   (ch_bit4) b
   ));
@@ -117,6 +117,18 @@ TEST_CASE("aggregates", "[aggregates]") {
       return (a.asBits() == b.asBits());
     });
     TEST([]()->ch_bit1 {
+      auto force_move_a = []() {
+        return ch_bit4{1};
+      };
+      auto force_move_b = []() {
+        return ch_bit4{2};
+      };
+      s2_t s{0};
+      s.a = force_move_a();
+      s.b = force_move_b();
+      return (s.asBits() == 21_h);
+    });
+    TEST([]()->ch_bit1 {
       auto force_move_assignment = []() {
         return sd3_t{321_h};
       };
@@ -135,12 +147,12 @@ TEST_CASE("aggregates", "[aggregates]") {
   
   SECTION("unions", "[union]") {
     TEST([]()->ch_bit1 {
-      u2_t u2(0);
+      u2_4_t u2(0);
       u2.a = 1;
       return (u2.b == 1);
     });
     TEST([]()->ch_bit1 {
-      u2_t u2(0);
+      u2_4_t u2(0);
       u2.b = 1;
       return (u2.a == 1);
     });
@@ -150,6 +162,18 @@ TEST_CASE("aggregates", "[aggregates]") {
       u3.a = 11_b;
       u3.c.slice<2>(2) = 00_b;
       return (u3.asBits() == 01010011_b);
+    });    
+    TEST([]()->ch_bit1 {
+      u2_4_t a(3);
+      return (a.asBits() == 3);
+    });
+    TEST([]()->ch_bit1 {
+      u2_4_t a(0011_b4);
+      return (a.asBits() == 3);
+    });
+    TEST([]()->ch_bit1 {
+      u2_4_t a(11_b2);
+      return (a.asBits() == 3);
     });
   }
   
