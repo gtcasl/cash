@@ -1,57 +1,37 @@
 ﻿#pragma once
 
-#include "port.h"
+#include "device.h"
 
 namespace ch {
 namespace internal {
 
-class moduleimpl;
-
-class module {
-public:
-  module(size_t signature, const std::string& name);
-  virtual ~module();
-    
-protected:
-
-  void end_context();
-
-  moduleimpl* impl_;
-
-  friend context* get_ctx(const module& module);
+template <typename IoType>
+struct module_traits {
+  using io_type = IoType;
 };
 
-context* get_ctx(const module& module);
-
-///////////////////////////////////////////////////////////////////////////////
-
 template <typename T>
-class ch_module final : public module {
-private:
-  T impl_;
+class ch_module final : public device_base<T> {
+public:
+  using base = device_base<T>;
+  using base::obj_;
+  using traits = module_traits<flip_type_t<decltype(obj_->io)>>;
 
-public:  
-  using io_type = decltype(impl_.io);
-  using ioport_type = typename io_type::traits::port_type;
-  ioport_type io;
-
-  template <typename... Ts>
-  ch_module(const std::string& name, const Ts&... args)
-    : module(typeid(T).hash_code(), name)
-    , impl_(args...)
-    , io(impl_.io) {
-    impl_.describe();
-    this->end_context();
-  }
+  typename traits::io_type io;
 
   template <typename... Ts>
-  ch_module(const Ts&... args)
-    : module(typeid(T).hash_code(), identifier_from_typeid(typeid(T).name()).c_str())
-    , impl_(args...)
-    , io(impl_.io) {
-    impl_.describe();
-    this->end_context();
-  }
+  ch_module(const std::string& name, Ts&&... args)
+    : base(typeid(T).hash_code(), name, std::forward<Ts>(args)...)
+    ,io(obj_->io)
+  {}
+
+  template <typename... Ts>
+  ch_module(Ts&&... args)
+    : base(typeid(T).hash_code(),
+           identifier_from_typeid(typeid(T).name()).c_str(),
+           std::forward<Ts>(args)...)
+    , io(obj_->io)
+  {}
 };
 
 }

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "module.h"
+#include "device.h"
 #include "context.h"
 
 namespace ch {
@@ -28,7 +28,7 @@ public:
   simulatorimpl(const std::initializer_list<context*>& contexts);
   virtual ~simulatorimpl();
 
-  void add_module(const module& module);
+  void add_device(const device& device);
 
   ch_tick run(const std::function<bool(ch_tick t)>& callback);
 

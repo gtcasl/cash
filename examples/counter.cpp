@@ -9,7 +9,7 @@ using namespace ch::sim;
 template <unsigned N>
 struct Counter {
   __io (
-    (ch_out<ch_bit<N>>) out
+    __out(ch_bit<N>) out
   );
   void describe() {
     ch_seq<ch_bit<N>> out;
@@ -19,7 +19,7 @@ struct Counter {
 };
 
 int main(int argc, char **argv) {
-  ch_module<Counter<4>> counter;
+  ch_device<Counter<4>> counter;
 
   ch_vcdtracer tracer("counter.vcd", counter);
   tracer.run(22);

@@ -4,20 +4,16 @@ using namespace ch::core;
 using namespace ch::literals;
 using namespace ch::sim;
 
-__union (u4_t, (
-  (ch_bit4) a
-  ));
-
 #define CHECK(x, v) if (ch_peek<decltype(v)>(x) != v) { assert(false); exit(1); }
 
 template <unsigned N>
 struct Adder {
   __io (
-    (ch_in<ch_bit1>)    cin,
-    (ch_in<ch_bit<N>>)  lhs,
-    (ch_in<ch_bit<N>>)  rhs,
-    (ch_out<ch_bit<N>>) out,
-    (ch_out<ch_bit1>)   cout
+    __in(ch_bit1)    cin,
+    __in(ch_bit<N>)  lhs,
+    __in(ch_bit<N>)  rhs,
+    __out(ch_bit<N>) out,
+    __out(ch_bit1)   cout
   );
   void describe() {
     auto sum = ch_cat(0_b, io.lhs) + ch_cat(0_b, io.rhs) + ch_zext<N+1>(io.cin);
@@ -27,7 +23,7 @@ struct Adder {
 };
 
 int main(int argc, char **argv) {
-  ch_module<Adder<2>> adder;
+  ch_device<Adder<2>> adder;
 
   ch_poke(adder.io.cin, 1);
   ch_poke(adder.io.lhs, 1);

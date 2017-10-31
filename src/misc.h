@@ -1,11 +1,11 @@
 #pragma once
 
-#include "module.h"
+#include "device.h"
 
 namespace ch {
 namespace internal {
 
-void ch_dumpStats(std::ostream& out, const module& module);
+void ch_dumpStats(std::ostream& out, const device& device);
 
 }
 }

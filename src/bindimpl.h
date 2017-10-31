@@ -27,18 +27,20 @@ public:
     return module_;
   }
 
-  void tick(ch_tick t) override;
+  void remove_output(bindportimpl* output);
 
+  void tick(ch_tick t) override;
   void tick_next(ch_tick t) override;
 
   const bitvector& eval(ch_tick t) override;
-
   void print(std::ostream& out, uint32_t level) const override;
 
 protected:
 
   bindimpl(context* ctx, context* module);
   ~bindimpl();
+
+  static void add_port(bindportimpl* bindport, std::vector<lnode>& list);
 
   context* module_;
   std::vector<lnode> outputs_;
@@ -59,13 +61,14 @@ public:
     return is_output_;
   }
 
-  const bitvector& eval(ch_tick t) override;
+  void detach();
 
+  const bitvector& eval(ch_tick t) override;
   void print(std::ostream& out, uint32_t level) const override;
 
-protected:
+protected:  
   bindportimpl(context* ctx, const lnode& src, const lnode& ioport);
-  ~bindportimpl() {}
+  ~bindportimpl();
 
   lnode ioport_;
   bool is_output_;

@@ -207,7 +207,7 @@ bool verilogwriter::print_decl(lnodeimpl* node) {
     this->print_type(node);
     out_ << " ";
     this->print_name(node);
-    out_ << "[0:" << ((1 << dynamic_cast<memimpl*>(node)->get_addr_width()) - 1) << "]";
+    out_ << "[0:" << (dynamic_cast<memimpl*>(node)->get_num_items() - 1) << "]";
     out_ << ";" << std::endl;
     return true;
   case type_lit:
@@ -504,11 +504,11 @@ void verilogwriter::print_mem(memimpl* node) {
       auto_indent indent(out_);
       const auto& value = node->get_value();
       uint32_t data_width = node->get_data_width();
-      uint32_t addr_size = 1 << node->get_addr_width();
-      for (uint32_t addr = 0; addr < addr_size; ++addr) {
+      uint32_t num_items = 1 << node->get_num_items();
+      for (uint32_t i = 0; i < num_items; ++i) {
         this->print_name(node);
-        out_ << "[" << addr << "] = " << data_width << "'b";
-        uint32_t data_msb = (addr + 1) * data_width - 1;
+        out_ << "[" << i << "] = " << data_width << "'b";
+        uint32_t data_msb = (i + 1) * data_width - 1;
         auto it = value.begin() + data_msb;
         for (uint32_t n = data_width; n--;) {
           out_ << ((*it--) ? 1 : 0);

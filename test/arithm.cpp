@@ -138,6 +138,11 @@ TEST_CASE("arithmetic", "[arithmetic]") {
       return (c == 0001_b);
     });
     TEST([]()->ch_bit1 {
+      ch_bit2 a(2);
+      ch_bit4 c = 0001_b << a;
+      return (c == 0100_b);
+    });
+    TEST([]()->ch_bit1 {
       ch_bit4 a(1010_b);
       ch_bit4 c = a << 5;
       return (c == 0000_b);

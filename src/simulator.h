@@ -1,6 +1,6 @@
 ﻿#pragma once
 
-#include "module.h"
+#include "device.h"
 
 namespace ch {
 namespace internal {
@@ -10,9 +10,9 @@ class simulatorimpl;
 class ch_simulator {
 public:  
   
-  template <typename... Modules>
-  ch_simulator(const module& module, const Modules&... more)
-    : ch_simulator({get_ctx(module), get_ctx(more)...})
+  template <typename... Devices>
+  ch_simulator(const device& device, const Devices&... more)
+    : ch_simulator({get_ctx(device), get_ctx(more)...})
   {}
 
   ch_simulator() {}
@@ -23,7 +23,7 @@ public:
 
   ch_simulator& operator=(const ch_simulator& simulator);
   
-  void add_module(const module& module);
+  void add_device(const device& device);
   
   void run(ch_tick ticks = 1);
 

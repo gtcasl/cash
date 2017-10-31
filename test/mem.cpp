@@ -5,7 +5,7 @@ TEST_CASE("memory", "[memory]") {
     TEST([]()->ch_bit1 {
       ch_bit2 a;
       ch_bit4 q;
-      ch_rom<ch_bit4, 2> rom({0xA, 0xB, 0xC, 0xD});
+      ch_rom<ch_bit4, 4> rom({0xA, 0xB, 0xC, 0xD});
       q = rom[a];  
       a = ch_reg(a + 1);
       ch_bit4 e = ch_case(ch_getTick(), 2, 0xA_h)(4, 0xB_h)(6, 0xC_h)(8, 0xD_h)(10,0xA_h)(q);
@@ -15,7 +15,7 @@ TEST_CASE("memory", "[memory]") {
     TEST([]()->ch_bit1 {
       ch_bit2 a;
       ch_bit4 q;
-      ch_rom<ch_bit4, 2> rom({0xA, 0xB, 0xC, 0xD});
+      ch_rom<ch_bit4, 4> rom({0xA, 0xB, 0xC, 0xD});
       q = ch_reg(rom[a]);
       a = ch_reg(a + 1);
       ch_bit4 e = ch_case(ch_getTick(), 3, 0xA_h)(5, 0xB_h)(7, 0xC_h)(9, 0xD_h)(11,0xA_h)(q);
@@ -29,7 +29,7 @@ TEST_CASE("memory", "[memory]") {
       ch_bit2 a;
       ch_bit4 d, q;
       ch_bit1 en;
-      ch_ram<ch_bit4, 2> mem({0xA, 0xB, 0xC, 0xD});
+      ch_ram<ch_bit4, 4> mem({0xA, 0xB, 0xC, 0xD});
       q = mem[a];
       __if (en) ( 
         mem[a] = d;
@@ -51,7 +51,7 @@ TEST_CASE("memory", "[memory]") {
       ch_bit2 a;
       ch_bit4 d, q;
       ch_bit1 en;
-      ch_ram<ch_bit4, 2> mem({0xA, 0xB, 0xC, 0xD});
+      ch_ram<ch_bit4, 4> mem({0xA, 0xB, 0xC, 0xD});
       q = (mem[a] + 1) - 1;
       __if (en) (
         mem[a] = d;
@@ -73,7 +73,7 @@ TEST_CASE("memory", "[memory]") {
       ch_bit2 a;
       ch_bit4 d, q;
       ch_bit1 en;
-      ch_ram<ch_bit4, 2> mem({0xA, 0xB, 0xC, 0xD});
+      ch_ram<ch_bit4, 4> mem({0xA, 0xB, 0xC, 0xD});
       q = ch_reg(mem[a]);
       __if (en) (
         mem[a] = d;

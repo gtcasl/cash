@@ -2,7 +2,7 @@
 
 #include <string.h>
 #include <cash.h>
-#include <../stl/fifo.h>
+#include <../stl/queue.h>
 #include "catch.h"
 
 using namespace ch::core;

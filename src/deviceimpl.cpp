@@ -1,5 +1,5 @@
-#include "moduleimpl.h"
-#include "module.h"
+#include "deviceimpl.h"
+#include "device.h"
 #include "context.h"
 #include "compile.h"
 #include "ioimpl.h"
@@ -7,47 +7,47 @@
 
 using namespace ch::internal;
 
-moduleimpl::moduleimpl(size_t signature, const std::string& name) {
+deviceimpl::deviceimpl(size_t signature, const std::string& name) {
   ctx_ = ctx_create(signature, name);
   ctx_->acquire();
 }
 
-moduleimpl::~moduleimpl() {
+deviceimpl::~deviceimpl() {
   ctx_->release();
 }
 
-void moduleimpl::begin_context() {
+void deviceimpl::begin_context() {
   old_ctx_ = ctx_swap(ctx_);
 }
 
-void moduleimpl::end_context() {
+void deviceimpl::end_context() {
   ctx_swap(old_ctx_);
 }
 
-void moduleimpl::compile() {
+void deviceimpl::compile() {
   compiler compiler(ctx_);
   compiler.run();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-module::module(size_t signature, const std::string& name) {
-  impl_ = new moduleimpl(signature, name);
+device::device(size_t signature, const std::string& name) {
+  impl_ = new deviceimpl(signature, name);
   impl_->acquire();
   impl_->begin_context();
 }
 
-module::~module() {
+device::~device() {
   impl_->release();
 }
 
-void module::end_context() {
+void device::compile() {
   impl_->compile();
   impl_->end_context();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-context* ch::internal::get_ctx(const module& module) {
-  return module.impl_->get_ctx();
+context* ch::internal::get_ctx(const device& device) {
+  return device.impl_->get_ctx();
 }

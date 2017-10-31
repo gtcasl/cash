@@ -43,7 +43,7 @@ struct GCD {
 };
 
 int main(int argc, char **argv) {
-  ch_module<GCD<16>> gcd;
+  ch_device<GCD<16>> gcd;
 
   ch_poke(gcd.io.in.data, 0x00300020_h);
   ch_poke(gcd.io.in.valid, true);

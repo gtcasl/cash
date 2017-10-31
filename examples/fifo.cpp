@@ -6,21 +6,22 @@ using namespace ch::sim;
 
 #define CHECK(x, v) if (ch_peek<decltype(v)>(x) != v) { assert(false); exit(1); }
 
-template <typename T, unsigned A>
+template <typename T, unsigned N>
 struct FiFo {
+  static constexpr unsigned addr_width = log2ceil(N);
   __io(
-    (ch_in<T>)        din,
-    (ch_in<ch_bit1>)  push,
-    (ch_in<ch_bit1>)  pop,
-    (ch_out<T>)       dout,
-    (ch_out<ch_bit1>) empty,
-    (ch_out<ch_bit1>) full
+    __in(T)        din,
+    __in(ch_bit1)  push,
+    __in(ch_bit1)  pop,
+    __out(T)       dout,
+    __out(ch_bit1) empty,
+    __out(ch_bit1) full
   );
   void describe() {
-    ch_seq<ch_bit<A+1>> rd_ptr, wr_ptr;
+    ch_seq<ch_bit<addr_width+1>> rd_ptr, wr_ptr;
 
-    auto rd_A = ch_slice<A>(rd_ptr);
-    auto wr_A = ch_slice<A>(wr_ptr);
+    auto rd_A = ch_slice<addr_width>(rd_ptr);
+    auto wr_A = ch_slice<addr_width>(wr_ptr);
 
     auto reading = io.pop && !io.empty;
     auto writing = io.push && !io.full;
@@ -28,19 +29,19 @@ struct FiFo {
     rd_ptr.next = ch_select(reading, rd_ptr + 1, rd_ptr);
     wr_ptr.next = ch_select(writing, wr_ptr + 1, wr_ptr);
 
-    ch_ram<T, A> mem;
+    ch_ram<T, N> mem;
     __if (writing) (
       mem[wr_A] = io.din;
     );
 
     io.dout  = mem[rd_A];
     io.empty = (wr_ptr == rd_ptr);
-    io.full  = (wr_A == rd_A) && (wr_ptr[A] != rd_ptr[A]);
+    io.full  = (wr_A == rd_A) && (wr_ptr[addr_width] != rd_ptr[addr_width]);
   }
 };
 
 int main(int argc, char **argv) {
-  ch_module<FiFo<ch_bit<2>, 1>> fifo;
+  ch_device<FiFo<ch_bit<2>, 2>> fifo;
 
   ch_vcdtracer tracer("fifo.vcd", fifo);
   tracer.run([&](ch_tick t)->bool {

@@ -7,7 +7,7 @@ static void begin_test() {
 
 struct TestRunner {
   __io (
-    (ch_out<ch_bit1>) out
+    __out(ch_bit1) out
   );
   TestRunner(const std::function<ch_bit<1>()>& test) : test_(test) {}
   void describe() {
@@ -20,17 +20,17 @@ bool runtest(const std::function<ch_bit<1>()>& test, ch_tick ticks) {
   assert(ticks > 0);
   begin_test();
 
-  ch_module<TestRunner> module(test);
-  ch_simulator sim(module);
+  ch_device<TestRunner> device(test);
+  ch_simulator sim(device);
 
   sim.run([&](ch_tick t)->bool {
-    std::cout << "t" << t << ": ret=" << module.io.out << std::endl;
-    if (t > 0 && !ch_peek<bool>(module.io.out))
+    std::cout << "t" << t << ": ret=" << device.io.out << std::endl;
+    if (t > 0 && !ch_peek<bool>(device.io.out))
       return false;
     return (t < ticks);
   });
 
-  bool bRet = ch_peek<bool>(module.io.out);
+  bool bRet = ch_peek<bool>(device.io.out);
   assert(bRet);
   return bRet;
 }

@@ -10,6 +10,13 @@ class memportimpl;
 
 class memimpl : public tickable, public ioimpl {
 public:
+  memimpl(context* ctx,
+          uint32_t data_width,
+          uint32_t num_items,
+          bool write_enable,
+          const std::vector<uint8_t>& init_data);
+  ~memimpl();
+
   uint32_t get_total_size() const {
     return value_.get_size();
   }
@@ -18,8 +25,8 @@ public:
     return data_width_;
   }
 
-  uint32_t get_addr_width() {
-    return addr_width_;
+  uint32_t get_num_items() {
+    return num_items_;
   }
 
   bool has_initdata() const {
@@ -34,43 +41,31 @@ public:
     return cd_;
   }
 
-  void load(const std::string& init_file);
-
-  void load(const std::vector<uint8_t>& init_data);
-
   lnode& get_port(const lnode& addr);
+
+  void remove(memportimpl* port);
   
   void tick(ch_tick t) override;
-
   void tick_next(ch_tick t) override;
   
   const bitvector& eval(ch_tick t) override;  
-
   void print(std::ostream& out, uint32_t level) const override;
 
 protected:
-
-  memimpl(context* ctx,
-          uint32_t data_width,
-          uint32_t addr_width,
-          bool write_enable);
-
-  ~memimpl();
-
-  void load_data(const std::function<bool(uint8_t* out)>& getdata);
   
   std::vector<lnode> ports_;
   uint32_t data_width_;
-  uint32_t addr_width_;
+  uint32_t num_items_;
   cdomain* cd_;
   bool has_initdata_;
-  
-  friend class memportimpl;
-  friend class context;
 };
 
 class memportimpl : public ioimpl {
 public:  
+
+  memportimpl(context* ctx, memimpl* mem, const lnode& addr);
+  ~memportimpl();
+
   const lnode& get_mem() const {
     return srcs_[mem_idx_];
   }
@@ -86,6 +81,8 @@ public:
   bool has_wdata() const {
     return (wdata_idx_ != -1);
   }
+
+  void detach();
   
   void write(const lnode& data);
 
@@ -95,8 +92,6 @@ public:
   const bitvector& eval(ch_tick t) override;
 
 protected:
-  memportimpl(context* ctx, memimpl* mem, const lnode& addr);
-  ~memportimpl() {}
     
   bitvector q_next_;
   uint32_t  a_next_;
@@ -106,9 +101,6 @@ protected:
   int wdata_idx_;
   
   ch_tick tick_;
-  
-  friend class memimpl;
-  friend class context;
 };
 
 }

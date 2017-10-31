@@ -449,6 +449,26 @@ protected:
   friend class bit_accessor;
 
   CH_FOR_EACH(CH_BIT_FRIEND_OPS, CH_SEP_SPACE, CH_BIT_OP_TYPES)
+
+  template <unsigned M>
+  inline friend ch_bit<M> operator<<(const const_bit& lhs, const ch_scalar<M>& rhs) {
+    return lhs << const_bit<M>(rhs);
+  }
+
+  template <unsigned M>
+  inline friend ch_bit<M> operator<<(const ch_scalar<M>& rhs, const const_bit& lhs) {
+    return const_bit<M>(rhs) << lhs;
+  }
+
+  template <unsigned M>
+  inline friend ch_bit<M> operator>>(const const_bit& lhs, const ch_scalar<M>& rhs) {
+    return lhs >> const_bit<M>(rhs);
+  }
+
+  template <unsigned M>
+  inline friend ch_bit<M> operator>>(const ch_scalar<M>& rhs, const const_bit& lhs) {
+    return const_bit<M>(rhs) >> lhs;
+  }
 };
 
 ///////////////////////////////////////////////////////////////////////////////

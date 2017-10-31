@@ -402,24 +402,6 @@ public:
     : ch_io_vec_port(rhs, std::make_index_sequence<N>())
   {}
 
-  void operator()(const ch_io_vec<T, N>& rhs) const {
-    for (unsigned i = 0, n = items_.size(); i < n; ++i) {
-      items_[i](rhs[i]);
-    }
-  }
-
-  void operator()(const ch_io_vec_port& rhs) const {
-    for (unsigned i = 0, n = items_.size(); i < n; ++i) {
-      items_[i](rhs[i]);
-    }
-  }
-
-  void operator()(const ch_io_vec_port<flip_type_t<T>, N>& rhs) const {
-    for (unsigned i = 0, n = items_.size(); i < n; ++i) {
-      items_[i](rhs[i]);
-    }
-  }
-
 protected:
 
   template <std::size_t...Is>
@@ -427,6 +409,8 @@ protected:
     : base((rhs[Is])...)
   {}
 };
+
+///////////////////////////////////////////////////////////////////////////////
 
 template <typename T, unsigned N>
 class ch_io_vec : public vec_base<T, N> {
@@ -445,15 +429,32 @@ public:
     : ch_io_vec(name, std::make_index_sequence<N>())
   {}
 
+  ch_io_vec(const ch_io_vec<flip_type_t<T>, N>& rhs)
+    : ch_io_vec(rhs, std::make_index_sequence<N>())
+  {}
   ch_io_vec(const ch_io_vec& rhs) : base(rhs) {}
 
   ch_io_vec(ch_io_vec&& rhs) : base(std::move(rhs)) {}
 
+  void operator()(const ch_io_vec<flip_type_t<T>, N>& rhs) const {
+    for (unsigned i = 0, n = items_.size(); i < n; ++i) {
+      items_[i](rhs[i]);
+    }
+  }
+
 protected:
+
+  ch_io_vec& operator=(const ch_io_vec& rhs) = delete;
+  ch_io_vec& operator=(ch_io_vec&& rhs) = delete;
 
   template <std::size_t...Is>
   explicit ch_io_vec(const std::string& name, std::index_sequence<Is...>)
     : base((fstring("%s_%d", name.c_str(), Is))...)
+  {}
+
+  template <std::size_t...Is>
+  explicit ch_io_vec(const ch_io_vec<flip_type_t<T>, N>& rhs, std::index_sequence<Is...>)
+    : base(rhs[Is]...)
   {}
 };
 

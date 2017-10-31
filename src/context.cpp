@@ -745,8 +745,8 @@ void ch::internal::registerTap(const std::string& name, const lnode& node) {
   node.get_ctx()->register_tap(name, node);
 }
 
-void ch::internal::ch_dumpStats(std::ostream& out, const module& module) {
-  get_ctx(module)->dump_stats(out);
+void ch::internal::ch_dumpStats(std::ostream& out, const device& device) {
+  get_ctx(device)->dump_stats(out);
 }
 
 void ch::internal::bindInput(const lnode& src, const lnode& input) {

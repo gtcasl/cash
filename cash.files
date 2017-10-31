@@ -23,12 +23,13 @@ src/bindimpl.h
 src/bit.cpp
 src/bitref.h
 src/cash.cpp
+src/device.h
+src/deviceimpl.cpp
+src/deviceimpl.h
 src/float32.h
 src/inout.h
 src/misc.h
 src/module.h
-src/moduleimpl.cpp
-src/moduleimpl.h
 src/port.h
 src/scalar.cpp
 src/scalar.h
@@ -45,7 +46,7 @@ src/verilog.h
 src/verilog.v
 src/verilogwriter.cpp
 src/verilogwriter.h
-stl/fifo.h
+stl/queue.h
 test/basic.cpp
 test/common.cpp
 env.sh
@@ -181,7 +182,6 @@ test/arithm.cpp
 test/catch.h
 test/common.h
 test/dogfood.cpp
-test/fifowrapper_tb.v
 test/float.cpp
 test/literals.cpp
 test/main.cpp
@@ -189,6 +189,7 @@ test/mem.cpp
 test/misc.cpp
 test/module.cpp
 test/proxies.cpp
+test/queue_tb.v
 test/reg.cpp
 test/scalar.cpp
 test/select.cpp

@@ -7,9 +7,8 @@ bindimpl::bindimpl(context* ctx, context* module)
   : ioimpl(ctx, type_bind, 0)
   , module_(module)
   , tick_(~0ull) {
+  // acquire module instance
   module_->acquire();
-  srcs_.resize(module->get_inputs().size());
-  outputs_.resize(module->get_outputs().size());
 
   // bind default clock
   auto module_clk = module->get_default_clk();
@@ -25,46 +24,63 @@ bindimpl::bindimpl(context* ctx, context* module)
 }
 
 bindimpl::~bindimpl() {
+  // detach connected outputs for cleanup
+  while (!outputs_.empty()) {
+    auto impl = dynamic_cast<bindportimpl*>(outputs_.front().get_impl());
+    impl->detach();
+  }
+  // release module instance
   module_->release();
 }
 
 void bindimpl::bind_input(const lnode& src, const lnode& ioport) {
   assert(src.get_ctx() == ctx_);
   assert(ioport.get_ctx() != ctx_);
-  // get input index
-  auto index = find_distance(module_->get_inputs().begin(),
-                             module_->get_inputs().end(),
-                             ioport);
-  assert(index != -1);
 
   // create bind port
-  lnode bindport(ctx_->createNode<bindportimpl>(src, ioport));
+  auto bindport(ctx_->createNode<bindportimpl>(src, ioport));
   dynamic_cast<inputimpl*>(ioport.get_impl())->bind(bindport);
 
   // add to list
-  srcs_[index] = bindport;
+  bindimpl::add_port(bindport, srcs_);
 }
 
 void bindimpl::bind_output(const lnode& dst, const lnode& ioport) {
   assert(dst.get_ctx() == ctx_);
   assert(ioport.get_ctx() != ctx_);
-  // get output index
-  auto index = find_distance(module_->get_outputs().begin(),
-                             module_->get_outputs().end(),
-                             ioport);
-  assert(index != -1);
 
   // create bind port
-  lnode bindport(ctx_->createNode<bindportimpl>(this, ioport));
-  auto input = dynamic_cast<inputimpl*>(dst.get_impl());
-  if (input) {
-    this->bind_input(bindport, input);
-  } else {
-    const_cast<lnode&>(dst).write(0, bindport, 0, dst.get_size(), dst.get_size());
+  auto bindport(ctx_->createNode<bindportimpl>(this, ioport));
+  const_cast<lnode&>(dst).write(0, bindport, 0, dst.get_size(), dst.get_size());
+
+  // add to list
+  bindimpl::add_port(bindport, outputs_);
+}
+
+void bindimpl::add_port(bindportimpl* bindport, std::vector<lnode>& list) {
+  // lookup existing binding
+  size_t index = 0;
+  for (;index < list.size(); ++index) {
+    auto impl = dynamic_cast<bindportimpl*>(list[index].get_impl());
+    if (impl->get_ioport().get_id() == bindport->get_ioport().get_id())
+      break;
   }
 
   // add to list
-  outputs_[index] = bindport;
+  if (index < list.size()) {
+    list[index] = bindport;
+  } else {
+    list.push_back(bindport);
+  }
+}
+
+void bindimpl::remove_output(bindportimpl* output) {
+  for (auto it = outputs_.begin(), end = outputs_.end(); it != end; ++it) {
+    if (it->get_id() == output->get_id()) {
+      outputs_.erase(it);
+      break;
+    }
+  }
 }
 
 void bindimpl::tick(ch_tick t) {
@@ -100,7 +116,19 @@ bindportimpl::bindportimpl(context* ctx, const lnode& src, const lnode& ioport)
   , ioport_(ioport)
   , tick_(~0ull) {
   srcs_.push_back(src);
-  is_output_ = dynamic_cast<outputimpl*>(ioport_.get_impl()) != nullptr;
+  is_output_ = (dynamic_cast<outputimpl*>(ioport_.get_impl()) != nullptr);
+}
+
+bindportimpl::~bindportimpl() {
+  this->detach();
+}
+
+void bindportimpl::detach() {
+  if (is_output_) {
+    auto binding = dynamic_cast<bindimpl*>(srcs_[0].get_impl());
+    binding->remove_output(this);
+    is_output_ = false;
+  }
 }
 
 const bitvector& bindportimpl::eval(ch_tick t) {

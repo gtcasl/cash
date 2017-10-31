@@ -8,9 +8,9 @@ using namespace ch::sim;
 
 struct FastMult {
   __io (
-    (ch_in<ch_bit4>)  lhs,
-    (ch_in<ch_bit4>)  rhs,
-    (ch_out<ch_bit8>) out
+    __in(ch_bit4)  lhs,
+    __in(ch_bit4)  rhs,
+    __out(ch_bit8) out
   );
   void describe() {
     std::array<uint8_t, 256> tbl_mult;
@@ -19,14 +19,14 @@ struct FastMult {
         tbl_mult[j * 16 + i] = i * j;
       }
     }
-    ch_rom<ch_bit8, 8> mem(tbl_mult);
+    ch_rom<ch_bit8, 256> mem(tbl_mult);
     auto addr = (ch_zext<8>(io.lhs) << 4) | ch_zext<8>(io.rhs);
     io.out = mem[addr];
   }
 };
 
 int main(int argc, char **argv) {
-  ch_module<FastMult> fastmult;
+  ch_device<FastMult> fastmult;
 
   ch_poke(fastmult.io.lhs, 2);
   ch_poke(fastmult.io.rhs, 3);

@@ -8,10 +8,10 @@ namespace internal {
 class context;
 class lnodeimpl;
 
-class moduleimpl : public refcounted {
+class deviceimpl : public refcounted {
 public:
-  moduleimpl(size_t signature, const std::string& name);
-  ~moduleimpl();
+  deviceimpl(size_t signature, const std::string& name);
+  ~deviceimpl();
 
   void begin_context();
 

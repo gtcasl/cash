@@ -1,6 +1,6 @@
 #include "simulatorimpl.h"
 #include "simulator.h"
-#include "moduleimpl.h"
+#include "deviceimpl.h"
 #include "litimpl.h"
 #include "ioimpl.h"
 
@@ -37,8 +37,8 @@ simulatorimpl::~simulatorimpl() {
   }
 }
 
-void simulatorimpl::add_module(const module& module) {
-  context* ctx = get_ctx(module);
+void simulatorimpl::add_device(const device& device) {
+  context* ctx = get_ctx(device);
   auto ret = contexts_.emplace(ctx);
   if (ret.second) {
     ctx->acquire();
@@ -168,8 +168,8 @@ ch_simulator& ch_simulator::operator=(const ch_simulator& simulator) {
   return *this;
 }
 
-void ch_simulator::add_module(const module& module) {
-  impl_->add_module(module);
+void ch_simulator::add_device(const device& device) {
+  impl_->add_device(device);
 }
 
 ch_tick ch_simulator::run(const std::function<bool(ch_tick t)>& callback) {

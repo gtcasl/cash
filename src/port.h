@@ -82,9 +82,18 @@ public:
     bit_accessor::set_data(*this, input_);
   }
 
+  ch_in(const ch_out<T>& out) {
+    input_ = bit_accessor::get_data(*this);
+    bindOutput(input_, out.output_);
+  }
+
   ch_in(const ch_in& in) : const_type_t<T>(in) {}
 
   ch_in(ch_in&& in) : const_type_t<T>(std::move(in)) {}
+
+  void operator()(const ch_out<T>& out) const {
+    const_cast<ch_out<T>&>(out) = *this;
+  }
 
 private:
 
@@ -93,6 +102,7 @@ private:
 
   lnode input_;
 
+  template <typename U> friend class ch_out;
   template <typename U> friend class in_port;
 };
 
@@ -110,6 +120,11 @@ public:
     output_ = createOutputNode(name, bit_accessor::get_data(*this));
   }
 
+  ch_out(const ch_in<T>& in) {
+    output_ = bit_accessor::get_data(*this);
+    bindInput(output_, in.input_);
+  }
+
   ch_out(const ch_out& out) : T(out) {}
 
   ch_out(ch_out&& out) : T(std::move(out)) {}
@@ -119,13 +134,18 @@ public:
     return *this;
   }
 
+  void operator()(const ch_in<T>& in) const {
+    const_cast<ch_out&>(*this) = in;
+  }
+
 private:
 
   ch_out& operator=(ch_out&&) = delete;
 
   lnode output_;
 
-  template <typename U> friend class out_port;
+  template <typename U> friend class ch_in;
+  template <typename U> friend class out_port;  
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -134,23 +154,6 @@ template <typename T>
 class in_port {
 public:
   in_port(ch_in<T>& in) : in_(in) {}
-
-  void operator()(const ch_in<T>& in) const {
-    bindInput(bit_accessor::get_data(in), in_.input_);
-  }
-
-  void operator()(const in_port& in) const {
-    bindInput(bit_accessor::get_data(in.in_), in_.input_);
-  }
-
-  void operator()(const out_port<T>& out) const {
-    bindInput(bit_accessor::get_data(out.out_), in_.input_);
-  }
-
-  template <typename U, CH_REQUIRES(is_cast_convertible<T, U>::value)>
-  void operator()(const U& value) const {
-    bindInput(get_lnode<U, bitwidth_v<T>>(value), in_.input_);
-  }
 
 protected:
 
@@ -188,23 +191,6 @@ template <typename T>
 class out_port {
 public:
   out_port(const ch_out<T>& out) : out_(out) {}
-
-  void operator()(const ch_out<T>& out) const {
-    bindOutput(bit_accessor::get_data(out), out_.output_);
-  }
-
-  void operator()(const out_port& out) const {
-    bindOutput(bit_accessor::get_data(out.out_), out_.output_);
-  }
-
-  void operator()(const in_port<T>& in) const {
-    bindOutput(in.get_input(), out_.output_);
-  }
-
-  template <typename U, CH_REQUIRES(is_cast_convertible<U, T>::value)>
-  void operator()(U& value) const {
-    bindOutput(get_lnode(value), out_.output_);
-  }
 
 protected:
 

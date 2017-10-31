@@ -151,7 +151,7 @@ const lnode& lnode::ensureInitialized(uint32_t size, bool initialize) const {
   if (nullptr == impl_) {
     if (initialize) {
       impl_ = ctx_curr()->createNode<proxyimpl>(
-            ctx_curr()->createNode<undefimpl>(size));
+                ctx_curr()->createNode<undefimpl>(size));
     } else {
       impl_ = ctx_curr()->createNode<proxyimpl>(size);
     }

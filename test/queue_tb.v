@@ -1,5 +1,5 @@
 `timescale 1ns/1ns
-`include "fifowrapper.v"
+`include "queue.v"
 
 `define assert(condition) if (!(condition)) begin $display("assertion FAILED!"); $finish_and_return(1); end
 
@@ -14,7 +14,7 @@ module testbench();
     wire      enq_ready;
     wire      deq_valid;
 
-    FifoWrapper fifo(clk, reset, enq, din, deq, enq_ready, deq_valid, dout);
+    QueueWrapper queue(clk, reset, enq, din, deq, enq_ready, deq_valid, dout);
 
     always begin
         #1 clk = !clk;

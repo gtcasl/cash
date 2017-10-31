@@ -70,6 +70,7 @@ namespace core {
   template <typename T> using ch_const_t  = ch::internal::const_type_t<T>;
   template <typename T> using ch_flip_t   = ch::internal::flip_type_t<T>;
   template <typename T> using ch_port_t   = ch::internal::port_type_t<T>;
+  template <typename T> using ch_io_t     = ch::internal::io_type_t<T>;
 
   template <typename T>
   inline constexpr ch_direction ch_direction_v = ch::internal::direction_v<T>;
@@ -220,6 +221,7 @@ namespace sim {
   // objects
   //
 
+  template <typename T> using ch_device = ch::internal::ch_device<T>;
   using ch_simulator = ch::internal::ch_simulator;
   using ch_tracer    = ch::internal::ch_tracer;
   using ch_vcdtracer = ch::internal::ch_vcdtracer;
@@ -264,8 +266,8 @@ inline namespace literals {
 #define __union    CH_UNION
 #define __enum     CH_ENUM
 
-#define __in(x)    (ch_in<x>)
-#define __out(x)   (ch_out<x>)
+#define __in(...)  (ch_in<__VA_ARGS__>)
+#define __out(...) (ch_out<__VA_ARGS__>)
 #define __inout    CH_INOUT
 #define __io       CH_IO
 #define __flip     CH_FLIP
@@ -281,15 +283,15 @@ namespace core {
 
 template <typename T>
 __inout (ch_validIO, (
-  (ch_out<ch_bool>) valid,
-  (ch_out<T>)       data
+  __out(ch_bool) valid,
+  __out(T)       data
 ));
 
 template <typename T>
 __inout (ch_decoupledIO, (
-  (ch_in<ch_bool>)  ready,
-  (ch_out<ch_bool>) valid,
-  (ch_out<T>)       data
+  __in(ch_bool)  ready,
+  __out(ch_bool) valid,
+  __out(T)       data
 ));
 
 // producer driven input stream
