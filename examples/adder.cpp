@@ -4,8 +4,6 @@ using namespace ch::core;
 using namespace ch::literals;
 using namespace ch::sim;
 
-#define CHECK(x, v) if (ch_peek<decltype(v)>(x) != v) { assert(false); exit(1); }
-
 template <unsigned N>
 struct Adder {
   __io (
@@ -25,9 +23,9 @@ struct Adder {
 int main(int argc, char **argv) {
   ch_device<Adder<2>> adder;
 
-  ch_poke(adder.io.cin, 1);
-  ch_poke(adder.io.lhs, 1);
-  ch_poke(adder.io.rhs, 3);
+  adder.io.cin = 1;
+  adder.io.lhs = 1;
+  adder.io.rhs = 3;
 
   ch_vcdtracer tracer("adder.vcd", adder);
   tracer.run();
@@ -36,8 +34,8 @@ int main(int argc, char **argv) {
   std::cout << "cout = " << adder.io.cout << std::endl;
   std::cout << "out = "  << adder.io.out << std::endl;
 
-  CHECK(adder.io.out, 1);
-  CHECK(adder.io.cout, true);
+  assert(adder.io.out == 1);
+  assert(adder.io.cout == 1);
 
   ch_toVerilog("adder.v", adder);
 

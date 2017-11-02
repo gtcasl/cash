@@ -12,7 +12,8 @@ public:
   const_vec_base(const const_vec_base& rhs) : items_(rhs.items_) {}
   const_vec_base(const_vec_base&& rhs) : items_(std::move(rhs.items_)) {}
 
-  template <typename... Ts, CH_REQUIRES(are_all_cast_convertible<T, Ts...>::value)>
+  template <typename... Ts,
+            CH_REQUIRES(sizeof...(Ts) == N && are_all_cast_convertible<T, Ts...>::value)>
   explicit const_vec_base(Ts&&... values)
     : items_{(T(std::forward<Ts>(values)))...}
   {}
@@ -75,20 +76,11 @@ public:
   }
 
 protected:
-
-  template <typename V>
-  void init(const V& value) {
-    items_[0] = value;
-  }
-
-  template <typename V0, typename... Vs>
-  void init(const V0& value0, const Vs&... values) {
-    items_[sizeof...(Vs)] = value0;
-    this->init(values...);
-  }
   
   std::array<T, N> items_;
 };
+
+///////////////////////////////////////////////////////////////////////////////
 
 template <typename T, unsigned N>
 class vec_base : public const_vec_base<T, N> {
@@ -102,7 +94,8 @@ public:
   vec_base(vec_base&& rhs) : base(std::move(rhs)) {}
   vec_base(const const_vec_base<T, N>& rhs) : base(rhs) {}
 
-  template <typename... Ts, CH_REQUIRES(are_all_cast_convertible<T, Ts...>::value)>
+  template <typename... Ts,
+            CH_REQUIRES(sizeof...(Ts) == N && are_all_cast_convertible<T, Ts...>::value)>
   explicit vec_base(Ts&&... values) : base(std::forward<Ts>(values)...) {}
 
   vec_base& operator=(const vec_base& rhs) {
@@ -163,7 +156,11 @@ public:
 
 ///////////////////////////////////////////////////////////////////////////////
 
+template <typename T, unsigned N> class const_logic_vec;
+
 template <typename T, unsigned N> class ch_logic_vec;
+
+template <typename T, unsigned N> class const_scalar_vec;
 
 template <typename T, unsigned N> class ch_scalar_vec;
 
@@ -172,49 +169,67 @@ template <typename T, unsigned N> class ch_io_vec;
 template <typename T, unsigned N> class ch_port_vec;
 
 template <typename T, unsigned N>
-class ch_logic_const_vec : public const_vec_base<T, N> {
+class const_logic_vec : public const_vec_base<T, N> {
 public:
+  static_assert(is_logic_type<T>::value, "invalid value type");
+  static_assert(!is_const_type<T>::value, "invalid value type");
   using traits = logic_traits<N * bitwidth_v<T>,
-                              ch_logic_const_vec,
-                              ch_logic_const_vec,
-                              ch_logic_vec<value_type_t<T>, N>,
-                              ch_scalar_vec<scalar_type_t<T>, N>>;
+                              const_logic_vec,
+                              const_logic_vec,
+                              ch_logic_vec<T, N>,
+                              const_scalar_vec<scalar_type_t<T>, N>>;
   using base = const_vec_base<T, N>;
   using base::operator [];
   using base::items_;
 
-  ch_logic_const_vec(const bit_buffer& buffer = bit_buffer(traits::bitwidth))
-    : ch_logic_const_vec(buffer, std::make_index_sequence<N>())
+  const_logic_vec(const bit_buffer& buffer = bit_buffer(traits::bitwidth))
+    : const_logic_vec(buffer, std::make_index_sequence<N>())
   {}
 
-  ch_logic_const_vec(const ch_logic_const_vec& rhs)
-    : ch_logic_const_vec(bit_accessor::cloneBuffer(rhs))
+  const_logic_vec(const const_logic_vec& rhs)
+    : const_logic_vec(bit_accessor::cloneBuffer(rhs))
   {}
 
-  ch_logic_const_vec(ch_logic_const_vec&& rhs) : base(std::move(rhs)) {}
+  const_logic_vec(const_logic_vec&& rhs) : base(std::move(rhs)) {}
 
-  explicit ch_logic_const_vec(const ch_scalar<traits::bitwidth>& rhs)
-    : ch_logic_const_vec(bit_buffer(scalar_accessor::get_data(rhs)))
+  explicit const_logic_vec(const ch_scalar<traits::bitwidth>& rhs)
+    : const_logic_vec(bit_buffer(scalar_accessor::get_data(rhs)))
   {}
 
   template <typename __T__, CH_REQUIRES(std::is_integral_v<__T__>)>
-  explicit ch_logic_const_vec(__T__ rhs)
-    : ch_logic_const_vec(bit_buffer(bitvector(traits::bitwidth, rhs)))
+  explicit const_logic_vec(__T__ rhs)
+    : const_logic_vec(bit_buffer(bitvector(traits::bitwidth, rhs)))
   {}
 
-  template <typename... Vs, CH_REQUIRES(are_all_cast_convertible<T, Vs...>::value)>
-  explicit ch_logic_const_vec(const Vs&... values)
-    : ch_logic_const_vec() {
-    this->init(values...);
+  template <typename... Vs,
+            CH_REQUIRES(sizeof...(Vs) == N && are_all_cast_convertible<T, Vs...>::value)>
+  explicit const_logic_vec(Vs&&... values)
+    : const_logic_vec() {
+    this->init(std::forward<Vs>(values)...);
   }
 
-  CH_BIT_READONLY_INTERFACE(ch_logic_const_vec)
+  CH_LOGIC_READONLY_INTERFACE(const_logic_vec)
 
 protected:
 
+  template <typename V>
+  void init(const V& value) {
+    bit_accessor::copy(
+        items_[0],
+        static_cast<aggregate_init_cast_t<T, V>>(value));
+  }
+
+  template <typename V0, typename... Vs>
+  void init(const V0& value0, const Vs&... values) {
+    bit_accessor::copy(
+        items_[sizeof...(Vs)],
+        static_cast<aggregate_init_cast_t<T, V0>>(value0));
+    this->init(values...);
+  }
+
   template <std::size_t...Is>
-  explicit ch_logic_const_vec(const bit_buffer& buffer, std::index_sequence<Is...>)
-    : base((bit_buffer(bitwidth_v<T>, buffer, Is * bitwidth_v<T>))...)
+  explicit const_logic_vec(const bit_buffer& buffer, std::index_sequence<Is...>)
+    : base(bit_buffer(bitwidth_v<T>, buffer, Is * bitwidth_v<T>)...)
   {}
 
   const bit_buffer_ptr& get_buffer() const {
@@ -228,20 +243,24 @@ protected:
   friend class bit_accessor;
 };
 
+///////////////////////////////////////////////////////////////////////////////
+
 template <typename T, unsigned N>
-class ch_logic_vec : public ch_logic_const_vec<T, N> {
+class ch_logic_vec : public const_logic_vec<T, N> {
 public:
+  static_assert(is_logic_type<T>::value, "invalid value type");
+  static_assert(!is_const_type<T>::value, "invalid value type");
   using traits = logic_traits<N * bitwidth_v<T>,
                               ch_logic_vec,
-                              ch_logic_const_vec<T, N>,
-                              ch_logic_vec<value_type_t<T>, N>,
+                              const_logic_vec<T, N>,
+                              ch_logic_vec,
                               ch_scalar_vec<scalar_type_t<T>, N>>;
-  using base = ch_logic_const_vec<T, N>;
+  using base = const_logic_vec<T, N>;
   using base::operator [];
   using base::items_;
 
   ch_logic_vec(const bit_buffer& buffer = bit_buffer(traits::bitwidth)) : base(buffer) {}
-  ch_logic_vec(const ch_logic_const_vec<T, N>& rhs) : base(rhs) {}
+  ch_logic_vec(const const_logic_vec<T, N>& rhs) : base(rhs) {}
   ch_logic_vec(const ch_logic_vec& rhs) : base(rhs) {}
   ch_logic_vec(ch_logic_vec&& rhs) : base(std::move(rhs)) {}
 
@@ -253,8 +272,9 @@ public:
   template <typename __T__, CH_REQUIRES(std::is_integral_v<__T__>)>
   explicit ch_logic_vec(__T__ rhs) : base(rhs) {}
 
-  template <typename... Vs, CH_REQUIRES(are_all_cast_convertible<T, Vs...>::value)>
-  explicit ch_logic_vec(const Vs&... values) : base(values...) {}
+  template <typename... Vs,
+            CH_REQUIRES(sizeof...(Vs) == N && are_all_cast_convertible<T, Vs...>::value)>
+  explicit ch_logic_vec(Vs&&... values) : base(std::forward<Vs>(values)...) {}
 
   ch_logic_vec& operator=(const ch_logic_vec& rhs) {
     bit_accessor::copy(*this, rhs);
@@ -266,7 +286,7 @@ public:
     return *this;
   }
 
-  ch_logic_vec& operator=(const ch_logic_const_vec<T, N>& rhs) {
+  ch_logic_vec& operator=(const const_logic_vec<T, N>& rhs) {
     bit_accessor::copy(*this, rhs);
     return *this;
   }
@@ -311,71 +331,77 @@ public:
     }
   }
 
-  CH_BIT_WRITABLE_INTERFACE(ch_logic_vec)
-private:
-  //--
+  CH_LOGIC_WRITABLE_INTERFACE(ch_logic_vec)
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T, unsigned N>
-class ch_scalar_vec : public vec_base<T, N> {
+class const_scalar_vec : public const_vec_base<T, N> {
 public:
+  static_assert(is_scalar_type<T>::value, "invalid value type");
+  static_assert(!is_const_type<T>::value, "invalid value type");
   using traits = scalar_traits<N * bitwidth_v<T>,
-                               ch_scalar_vec,
-                               ch_logic_vec<logic_type_t<T>, N>>;
-
-  using base = vec_base<T, N>;
+                               const_scalar_vec,
+                               const_scalar_vec,
+                               ch_scalar_vec<T, N>,
+                               const_logic_vec<logic_type_t<T>, N>>;
+  using base = const_vec_base<T, N>;
   using base::operator [];
   using base::items_;
 
-  ch_scalar_vec(const scalar_buffer& buffer = scalar_buffer(traits::bitwidth))
-    : ch_scalar_vec(buffer, std::make_index_sequence<N>())
+  const_scalar_vec(const scalar_buffer& buffer = scalar_buffer(traits::bitwidth))
+    : const_scalar_vec(buffer, std::make_index_sequence<N>())
   {}
 
-  ch_scalar_vec(const ch_scalar_vec& rhs)
-    : ch_scalar_vec(scalar_accessor::cloneBuffer(rhs))
+  const_scalar_vec(const const_scalar_vec& rhs)
+    : const_scalar_vec(scalar_accessor::cloneBuffer(rhs))
   {}
 
-  ch_scalar_vec(ch_scalar_vec&& rhs) : base(std::move(rhs)) {}
+  const_scalar_vec(const_scalar_vec&& rhs) : base(std::move(rhs)) {}
 
   template <typename U>
-  explicit ch_scalar_vec(const ch_scalar_vec<U, N>& rhs)
-    : ch_scalar_vec(scalar_accessor::cloneBuffer(rhs))
+  explicit const_scalar_vec(const const_scalar_vec<U, N>& rhs)
+    : const_scalar_vec(scalar_accessor::cloneBuffer(rhs))
   {}
 
-  explicit ch_scalar_vec(const ch_scalar<traits::bitwidth>& rhs)
-    : ch_scalar_vec(scalar_accessor::cloneBuffer(rhs))
+  explicit const_scalar_vec(const ch_scalar<traits::bitwidth>& rhs)
+    : const_scalar_vec(scalar_accessor::cloneBuffer(rhs))
   {}
 
   template <typename __T__, CH_REQUIRES(std::is_integral_v<__T__>)>
-  explicit ch_scalar_vec(__T__ rhs)
-    : ch_scalar_vec(scalar_buffer(bitvector(traits::bitwidth, rhs)))
+  explicit const_scalar_vec(__T__ rhs)
+    : const_scalar_vec(scalar_buffer(bitvector(traits::bitwidth, rhs)))
   {}
 
-  template <typename... Vs, CH_REQUIRES(are_all_cast_convertible<T, Vs...>::value)>
-  explicit ch_scalar_vec(const Vs&... values) : ch_scalar_vec() {
-    this->init(values...);
+  template <typename... Vs,
+            CH_REQUIRES(sizeof...(Vs) == N && are_all_cast_convertible<T, Vs...>::value)>
+  explicit const_scalar_vec(Vs&&... values) : const_scalar_vec() {
+    this->init(std::forward<Vs>(values)...);
   }
 
-  ch_scalar_vec& operator=(const ch_scalar_vec& rhs) {
-    scalar_accessor::copy(*this, rhs);
-    return *this;
-  }
-
-  ch_scalar_vec& operator=(ch_scalar_vec&& rhs) {
-    scalar_accessor::move(*this, std::move(rhs));
-    return *this;
-  }
-
-  CH_SCALAR_READONLY_INTERFACE(ch_scalar_vec)
-  CH_SCALAR_WRITABLE_INTERFACE(ch_scalar_vec)
+  CH_SCALAR_READONLY_INTERFACE(const_scalar_vec)
 
 protected:
 
+  template <typename V>
+  void init(const V& value) {
+    scalar_accessor::copy(
+        items_[0],
+        static_cast<aggregate_init_cast_t<T, V>>(value));
+  }
+
+  template <typename V0, typename... Vs>
+  void init(const V0& value0, const Vs&... values) {
+    scalar_accessor::copy(
+        items_[sizeof...(Vs)],
+        static_cast<aggregate_init_cast_t<T, V0>>(value0));
+    this->init(values...);
+  }
+
   template <std::size_t...Is>
-  explicit ch_scalar_vec(const scalar_buffer& buffer, std::index_sequence<Is...>)
-    : base((scalar_buffer(bitwidth_v<T>, buffer, Is * bitwidth_v<T>))...)
+  explicit const_scalar_vec(const scalar_buffer& buffer, std::index_sequence<Is...>)
+    : base(scalar_buffer(bitwidth_v<T>, buffer, Is * bitwidth_v<T>)...)
   {}
 
   const scalar_buffer_ptr& get_buffer() const {
@@ -392,34 +418,163 @@ protected:
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T, unsigned N>
-class ch_io_vec_port : public const_vec_base<port_type_t<T>, N> {
+class ch_scalar_vec : public const_scalar_vec<T, N> {
 public:
-  using base = const_vec_base<port_type_t<T>, N>;
+  static_assert(is_scalar_type<T>::value, "invalid value type");
+  static_assert(!is_const_type<T>::value, "invalid value type");
+  using traits = scalar_traits<N * bitwidth_v<T>,
+                               ch_scalar_vec,
+                               const_scalar_vec<T, N>,
+                               ch_scalar_vec,
+                               ch_logic_vec<logic_type_t<T>, N>>;
+  using base = const_scalar_vec<T, N>;
   using base::operator [];
   using base::items_;
 
-  ch_io_vec_port(ch_io_vec<T, N>& rhs)
-    : ch_io_vec_port(rhs, std::make_index_sequence<N>())
-  {}
+  ch_scalar_vec(const scalar_buffer& buffer = scalar_buffer(traits::bitwidth)) : base(buffer) {}
+  ch_scalar_vec(const ch_scalar_vec& rhs) : base(rhs) {}
+  ch_scalar_vec(ch_scalar_vec&& rhs) : base(std::move(rhs)) {}
 
-protected:
+  template <typename U>
+  explicit ch_scalar_vec(const ch_scalar_vec<U, N>& rhs) : base(rhs) {}
 
-  template <std::size_t...Is>
-  explicit ch_io_vec_port(ch_io_vec<T, N>& rhs, std::index_sequence<Is...>)
-    : base((rhs[Is])...)
-  {}
+  explicit ch_scalar_vec(const ch_scalar<traits::bitwidth>& rhs) : base(rhs) {}
+
+  template <typename __T__, CH_REQUIRES(std::is_integral_v<__T__>)>
+  explicit ch_scalar_vec(__T__ rhs) : base(rhs) {}
+
+  template <typename... Vs,
+            CH_REQUIRES(sizeof...(Vs) == N && are_all_cast_convertible<T, Vs...>::value)>
+  explicit ch_scalar_vec(Vs&&... values) : base(std::forward<Vs>(values)...) {}
+
+  ch_scalar_vec& operator=(const ch_scalar_vec& rhs) {
+    scalar_accessor::copy(*this, rhs);
+    return *this;
+  }
+
+  ch_scalar_vec& operator=(ch_scalar_vec&& rhs) {
+    scalar_accessor::move(*this, std::move(rhs));
+    return *this;
+  }
+
+  T& at(size_t i) {
+    CH_CHECK(i < N, "invalid subscript index");
+    return items_[i];
+  }
+
+  T& operator[](size_t i) {
+    return this->at(i);
+  }
+
+  auto front() {
+    return items_.front();
+  }
+
+  auto back() {
+    return items_.back();
+  }
+
+  auto begin() {
+    return items_.begin();
+  }
+
+  auto end() {
+    return items_.end();
+  }
+
+  auto rbegin() {
+    return items_.rbegin();
+  }
+
+  auto rend() {
+    return items_.rend();
+  }
+
+  template <typename U>
+  void fill(const U& value) {
+    for (unsigned i = 0; i < N; ++i) {
+      items_[i] = value;
+    }
+  }
+
+  CH_SCALAR_WRITABLE_INTERFACE(ch_scalar_vec)
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T, unsigned N>
+class ch_io_buffer_vec : public scalar_buffer_io {
+public:
+  using base = scalar_buffer_io;
+
+  ch_io_buffer_vec(ch_io_vec<T, N>& rhs)
+    : ch_io_buffer_vec(rhs, std::make_index_sequence<N>())
+  {}
+
+  void read(uint32_t dst_offset,
+            void* out,
+            uint32_t out_cbsize,
+            uint32_t src_offset,
+            uint32_t length) const override {
+    for (auto& item : items_) {
+      if (src_offset < bitwidth_v<T>) {
+        size_t len = std::min<size_t>(length, bitwidth_v<T> - src_offset);
+        item.read(dst_offset, out, out_cbsize, src_offset, len);
+        length -= len;
+        if (0 == length)
+          return;
+        dst_offset += len;
+        src_offset = bitwidth_v<T>;
+      }
+      src_offset -= bitwidth_v<T>;
+    }
+  }
+
+  void write(uint32_t dst_offset,
+             const void* in,
+             uint32_t in_cbsize,
+             uint32_t src_offset,
+             uint32_t length) override {
+    for (auto& item : items_) {
+      if (dst_offset < bitwidth_v<T>) {
+        size_t len = std::min<size_t>(length, bitwidth_v<T> - dst_offset);
+        item.write(dst_offset, in, in_cbsize, src_offset, len);
+        length -= len;
+        if (0 == length)
+          return;
+        src_offset += len;
+        dst_offset = bitwidth_v<T>;
+      }
+      dst_offset -= bitwidth_v<T>;
+    }
+  }
+
+protected:
+
+  template <std::size_t...Is>
+  explicit ch_io_buffer_vec(ch_io_vec<T, N>& rhs, std::index_sequence<Is...>)
+    : base(N * bitwidth_v<T>)
+    , items_{buffer_type_t<T>(rhs[Is])...}
+  {}
+
+  std::array<buffer_type_t<T>, N> items_;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+template <typename T, unsigned N>
+using resolve_logic_vec = std::conditional_t<is_const_type<T>::value,
+                              const_logic_vec<value_type_t<T>, N>, ch_logic_vec<T, N>>;
+
+template <typename T, unsigned N>
 class ch_io_vec : public vec_base<T, N> {
 public:
+  static_assert(is_io_type<T>::value, "invalid value type");
   using traits = io_traits<ch_io_vec,
                           direction_v<T>,
                           ch_io_vec<flip_type_t<T>, N>,
-                          ch_io_vec_port<T, N>,
-                          ch_logic_vec<logic_type_t<T>, N>>;
+                          ch_io_buffer_vec<T, N>,
+                          resolve_logic_vec<logic_type_t<T>, N>>;
 
   using base = vec_base<T, N>;
   using base::operator [];
@@ -432,6 +587,7 @@ public:
   ch_io_vec(const ch_io_vec<flip_type_t<T>, N>& rhs)
     : ch_io_vec(rhs, std::make_index_sequence<N>())
   {}
+
   ch_io_vec(const ch_io_vec& rhs) : base(rhs) {}
 
   ch_io_vec(ch_io_vec&& rhs) : base(std::move(rhs)) {}
@@ -461,8 +617,8 @@ protected:
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T, unsigned N>
-using const_vec = std::conditional_t<is_logic_type<T>::value, ch_logic_const_vec<T, N>,
-                      std::conditional_t<is_scalar_type<T>::value, ch_scalar_vec<T, N>, ch_io_vec<T, N>>>;
+using const_vec = std::conditional_t<is_logic_type<T>::value, const_logic_vec<T, N>,
+                      std::conditional_t<is_scalar_type<T>::value, const_scalar_vec<T, N>, ch_io_vec<T, N>>>;
 
 template <typename T, unsigned N>
 using ch_vec = std::conditional_t<is_logic_type<T>::value, ch_logic_vec<T, N>,

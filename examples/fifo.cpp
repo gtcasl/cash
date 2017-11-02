@@ -4,8 +4,6 @@ using namespace ch::core;
 using namespace ch::literals;
 using namespace ch::sim;
 
-#define CHECK(x, v) if (ch_peek<decltype(v)>(x) != v) { assert(false); exit(1); }
-
 template <typename T, unsigned N>
 struct FiFo {
   static constexpr unsigned addr_width = log2ceil(N);
@@ -54,42 +52,42 @@ int main(int argc, char **argv) {
               << ", full=" << fifo.io.full << std::endl;
     switch (t) {
     case 0:
-      CHECK(fifo.io.empty, true);
-      CHECK(fifo.io.full, false);
-      ch_poke(fifo.io.din, 1);
-      ch_poke(fifo.io.push, 1);
+      assert(fifo.io.empty == true);
+      assert(fifo.io.full == false);
+      fifo.io.din = 1;
+      fifo.io.push = 1;
       break;      
     case 2:
-      CHECK(fifo.io.empty, false);
-      CHECK(fifo.io.full, false);
-      CHECK(fifo.io.dout, 1);
-      ch_poke(fifo.io.din, 2);
-      ch_poke(fifo.io.push, 1);
+      assert(fifo.io.empty == false);
+      assert(fifo.io.full == false);
+      assert(fifo.io.dout == 1);
+      fifo.io.din = 2;
+      fifo.io.push = 1;
       break;
     case 4:
-      CHECK(fifo.io.empty, false);
-      CHECK(fifo.io.full, true);
-      CHECK(fifo.io.dout, 1);
-      ch_poke(fifo.io.din, 0);
-      ch_poke(fifo.io.push, 0);
+      assert(fifo.io.empty == false);
+      assert(fifo.io.full == true);
+      assert(fifo.io.dout == 1);
+      fifo.io.din = 0;
+      fifo.io.push = 0;
       break;
     case 6:
-      CHECK(fifo.io.empty, false);
-      CHECK(fifo.io.full, true);
-      CHECK(fifo.io.dout, 1);
-      ch_poke(fifo.io.pop, 1);
+      assert(fifo.io.empty == false);
+      assert(fifo.io.full == true);
+      assert(fifo.io.dout == 1);
+      fifo.io.pop = 1;
       break;
     case 8:
-      CHECK(fifo.io.empty, false);
-      CHECK(fifo.io.full, false);
-      CHECK(fifo.io.dout, 2);
-      ch_poke(fifo.io.pop, 1);
+      assert(fifo.io.empty == false);
+      assert(fifo.io.full == false);
+      assert(fifo.io.dout == 2);
+      fifo.io.pop = 1;
       break;
     case 10:
-      CHECK(fifo.io.empty, true);
-      CHECK(fifo.io.full, false);
-      CHECK(fifo.io.dout, 1);
-      ch_poke(fifo.io.pop, 0);
+      assert(fifo.io.empty == true);
+      assert(fifo.io.full == false);
+      assert(fifo.io.dout == 1);
+      fifo.io.pop = 0;
       break;
     }
     return (t <= 10);

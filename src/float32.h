@@ -11,8 +11,8 @@ class const_float32;
 
 class const_float32 : public const_bit<32> {
 public:
-  using traits = logic_traits<32, const_float32, const_float32, ch_float32, ch_scalar<32>>;
   using base = const_bit<32>;
+  using traits = logic_traits<32, const_float32, const_float32, ch_float32, ch_scalar<32>>;
 
   const_float32() {}
 
@@ -31,8 +31,8 @@ public:
 
 class ch_float32 : public const_float32 {
 public:  
-  using traits = logic_traits<32, ch_float32, const_float32, ch_float32, ch_scalar<32>>;
   using base = const_float32;
+  using traits = logic_traits<32, ch_float32, const_float32, ch_float32, ch_scalar<32>>;
 
   ch_float32() {}
 

@@ -8,8 +8,8 @@ namespace internal {
 template <typename T>
 class ch_seq final : public const_type_t<T> {
 public:
-  using traits = logic_traits<bitwidth_v<T>, ch_seq, const_type_t<T>, T, scalar_type_t<T>>;
   using base = const_type_t<T>;
+  using traits = logic_traits<bitwidth_v<T>, ch_seq, const_type_t<T>, T, scalar_type_t<T>>;
 
   T next;
 

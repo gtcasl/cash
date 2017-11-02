@@ -42,7 +42,8 @@ context* get_ctx(const device& device);
 
 template <typename IoType>
 struct device_traits {
-  using io_type = IoType;
+  using io_type = scalar_type_t<IoType>;
+  using buffer_type = buffer_type_t<IoType>;
 };
 
 template <typename T>
@@ -50,14 +51,14 @@ class ch_device final : public device_base<T> {
 public:
   using base = device_base<T>;
   using base::obj_;
-  using traits = device_traits<port_type_t<decltype(obj_->io)>>;
+  using traits = device_traits<decltype(obj_->io)>;
 
   typename traits::io_type io;
 
   template <typename... Ts>
   ch_device(const std::string& name, Ts&&... args)
     : base(typeid(T).hash_code(), name, std::forward<Ts>(args)...)
-    , io(obj_->io)
+    , io(new typename traits::buffer_type(obj_->io))
   {}
 
   template <typename... Ts>
@@ -65,7 +66,7 @@ public:
     : base(typeid(T).hash_code(),
            identifier_from_typeid(typeid(T).name()).c_str(),
            std::forward<Ts>(args)...)
-    , io(obj_->io)
+    , io(new typename traits::buffer_type(obj_->io))
   {}
 };
 

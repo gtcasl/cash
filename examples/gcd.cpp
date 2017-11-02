@@ -4,8 +4,6 @@ using namespace ch::core;
 using namespace ch::literals;
 using namespace ch::sim;
 
-#define CHECK(x, v) if (ch_peek<decltype(v)>(x) != v) { assert(false); exit(1); }
-
 template <unsigned N>
 struct GCD {
   __io (
@@ -45,20 +43,22 @@ struct GCD {
 int main(int argc, char **argv) {
   ch_device<GCD<16>> gcd;
 
-  ch_poke(gcd.io.in.data, 0x00300020_h);
-  ch_poke(gcd.io.in.valid, true);
+  gcd.io.in.data[0] = 0x0020_h;
+  gcd.io.in.data[1] = 0x0030_h;
+  gcd.io.in.valid = true;
 
   ch_vcdtracer tracer("gcd.vcd", gcd);
   auto ticks = tracer.run([&](ch_tick t)->bool {
-    return !ch_peek<bool>(gcd.io.out.valid);
+    return !gcd.io.out.valid;
   });
 
   std::cout << "completed after " << (ticks/2) << " cycles" << std::endl;
   std::cout << "result:" << std::endl;
-  std::cout << "inputs = " << gcd.io.in.data << std::endl;
+  std::cout << "input[0] = " << gcd.io.in.data[0] << std::endl;
+  std::cout << "input[1] = " << gcd.io.in.data[1] << std::endl;
   std::cout << "out = "  << gcd.io.out.data << std::endl;
 
-  CHECK(gcd.io.out.data, 16);
+  assert(gcd.io.out.data == 16);
 
   ch_toVerilog("gcd.v", gcd);
 

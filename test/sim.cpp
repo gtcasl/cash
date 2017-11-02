@@ -16,20 +16,20 @@ TEST_CASE("simulation", "[sim]") {
   SECTION("tracer", "[tracer]") {
     TESTX([]()->bool {
       ch_device<inverter> device;
-      ch_poke(device.io.in, 2);
+      device.io.in = 2;
       ch_tracer tracer(std::cout, device);
       tracer.run();
-      return (1 == ch_peek<int>(device.io.out));
+      return (1 == (int)device.io.out);
     });
   }
 
   SECTION("vcdtracer", "[vcdtracer]") {
     TESTX([]()->bool {
       ch_device<inverter> device;
-      ch_poke(device.io.in, 2);
+      device.io.in = 2;
       ch_vcdtracer tracer(std::cout, device);
       tracer.run();
-      return (1 == ch_peek<int>(device.io.out));
+      return (1 == (int)device.io.out);
     });
   }
 

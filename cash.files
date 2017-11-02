@@ -21,7 +21,6 @@ examples/gcd_tb.v
 src/bindimpl.cpp
 src/bindimpl.h
 src/bit.cpp
-src/bitref.h
 src/cash.cpp
 src/device.h
 src/deviceimpl.cpp
@@ -182,6 +181,7 @@ test/arithm.cpp
 test/catch.h
 test/common.h
 test/dogfood.cpp
+test/filter_tb.v
 test/float.cpp
 test/literals.cpp
 test/main.cpp

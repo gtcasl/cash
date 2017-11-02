@@ -23,25 +23,35 @@ template <typename... Ts>
 inline constexpr unsigned bitwidth_v = bitwidth_impl<std::decay_t<Ts>...>::value;
 
 CH_DEF_SFINAE_CHECK(has_bitwidth, T::traits::bitwidth != 0);
-static_assert(!has_bitwidth<int>::value, ":-(");
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct non_bitwidth_type {
+enum traits_type {
+  traits_NA,
+  traits_logic,
+  traits_scalar,
+  traits_io,
+};
+
+struct non_ch_type {
   struct traits {
+    static constexpr traits_type type = traits_NA;
     static constexpr unsigned bitwidth = 0;
   };
 };
+
+template <typename T>
+using ch_type_t = std::conditional_t<has_bitwidth<T>::value, T, non_ch_type>;
 
 template <typename T0, typename T1>
 struct deduce_type_impl {
   using D0 = std::decay_t<T0>;
   using D1 = std::decay_t<T1>;
-  using U0 = std::conditional_t<has_bitwidth<D0>::value, D0, non_bitwidth_type>;
-  using U1 = std::conditional_t<has_bitwidth<D1>::value, D1, non_bitwidth_type>;
+  using U0 = std::conditional_t<has_bitwidth<D0>::value, D0, non_ch_type>;
+  using U1 = std::conditional_t<has_bitwidth<D1>::value, D1, non_ch_type>;
   using type = std::conditional_t<
     (bitwidth_v<U0> != 0) && (bitwidth_v<U1> != 0),
-    std::conditional_t<(bitwidth_v<U0> != bitwidth_v<U1>), non_bitwidth_type, U0>,
+    std::conditional_t<(bitwidth_v<U0> != bitwidth_v<U1>), non_ch_type, U0>,
     std::conditional_t<(bitwidth_v<U0> != 0), U0, U1>>;
 };
 
@@ -65,8 +75,8 @@ template <typename T0, typename T1>
 struct deduce_first_type_impl {
   using D0 = std::decay_t<T0>;
   using D1 = std::decay_t<T1>;
-  using U0 = std::conditional_t<has_bitwidth<D0>::value, D0, non_bitwidth_type>;
-  using U1 = std::conditional_t<has_bitwidth<D1>::value, D1, non_bitwidth_type>;
+  using U0 = std::conditional_t<has_bitwidth<D0>::value, D0, non_ch_type>;
+  using U1 = std::conditional_t<has_bitwidth<D1>::value, D1, non_ch_type>;
   using type = std::conditional_t<(bitwidth_v<U0> != 0), U0, U1>;
 };
 
@@ -75,18 +85,27 @@ using deduce_first_type_t = typename deduce_first_type_impl<T0, T1>::type;
 
 ///////////////////////////////////////////////////////////////////////////////
 
+template <unsigned N> class const_bit;
+
 template <unsigned N> class ch_bit;
+
+template <unsigned N> class const_scalar;
 
 template <unsigned N> class ch_scalar;
 
 template <unsigned Bitwidth,
           typename ScalarType,
+          typename ConstType,
+          typename ValueType,
           typename LogicType,
           typename Next = void>
 struct scalar_traits {
+  static constexpr traits_type type = traits_scalar;
   static constexpr unsigned bitwidth = Bitwidth;
-  using scalar_type = ScalarType;  
-  using logic_type = LogicType;
+  using scalar_type = ScalarType;
+  using const_type  = ConstType;
+  using value_type  = ValueType;
+  using logic_type  = LogicType;
   using next = Next;
 };
 
@@ -94,10 +113,29 @@ template <typename T>
 using scalar_type_t = typename std::decay_t<T>::traits::scalar_type;
 
 template <typename T>
+using value_type_t = typename std::decay_t<T>::traits::value_type;
+
+template <typename T>
+using const_type_t = typename std::decay_t<T>::traits::const_type;
+
+template <typename T>
+using is_value_type = is_true<std::is_same<T, value_type_t<T>>::value>;
+
+template <typename T>
+using is_const_type = is_true<std::is_same<T, const_type_t<T>>::value>;
+
+template <typename T>
 struct is_scalar_traits : std::false_type {};
 
-template <unsigned Bitwidth, typename ScalarType, typename LogicType>
-struct is_scalar_traits<scalar_traits<Bitwidth, ScalarType, LogicType>> : std::true_type {};
+template <unsigned Bitwidth,
+          typename ScalarType,
+          typename ConstType,
+          typename ValueType,
+          typename LogicType,
+          typename Next>
+struct is_scalar_traits<scalar_traits<Bitwidth, ScalarType, ConstType, ValueType, LogicType, Next>>
+  : std::true_type
+{};
 
 CH_DEF_SFINAE_CHECK(is_scalar_type, is_scalar_traits<typename std::decay_t<T>::traits>::value);
 
@@ -106,7 +144,7 @@ CH_DEF_SFINAE_CHECK(is_scalar_compatible, (std::is_same<ch_scalar<bitwidth_v<T>>
 
 template <typename... Ts>
 using deduce_ch_scalar_t = std::conditional_t<
-  is_scalar_compatible<deduce_type_t<Ts...>>::value, deduce_type_t<Ts...>, non_bitwidth_type>;
+  is_scalar_compatible<deduce_type_t<Ts...>>::value, deduce_type_t<Ts...>, non_ch_type>;
 
 template <typename T, unsigned N = bitwidth_v<T>>
 using is_scalar_convertible = is_cast_convertible<ch_scalar<N>, T>;
@@ -134,27 +172,29 @@ public:
 
   scalar_buffer_impl(unsigned size, const scalar_buffer_ptr& buffer, unsigned offset);
 
+  virtual ~scalar_buffer_impl() {}
+
   scalar_buffer_impl& operator=(const scalar_buffer_impl& rhs);
 
   scalar_buffer_impl& operator=(scalar_buffer_impl&& rhs);
 
   void set_data(const bitvector& data);
 
-  const bitvector& get_data() const;
+  virtual const bitvector& get_data() const;
 
   void copy(const scalar_buffer_impl& rhs);
 
-  void read(uint32_t dst_offset,
-            void* out,
-            uint32_t out_cbsize,
-            uint32_t src_offset,
-            uint32_t length) const;
+  virtual void read(uint32_t dst_offset,
+                    void* out,
+                    uint32_t out_cbsize,
+                    uint32_t src_offset,
+                    uint32_t length) const;
 
-  void write(uint32_t dst_offset,
-             const void* in,
-             uint32_t in_cbsize,
-             uint32_t src_offset,
-             uint32_t length);
+  virtual void write(uint32_t dst_offset,
+                     const void* in,
+                     uint32_t in_cbsize,
+                     uint32_t src_offset,
+                     uint32_t length);
 
   const auto& get_source() const {
     return source_;
@@ -178,7 +218,6 @@ protected:
   mutable bitvector value_;
   unsigned offset_;
   unsigned size_;
-  mutable uint64_t version_;
 };
 
 class scalar_buffer : public scalar_buffer_ptr {
@@ -191,6 +230,8 @@ public:
   explicit scalar_buffer(Args&&... args)
     : base(new scalar_buffer_impl(std::forward<Args>(args)...))
   {}
+
+  scalar_buffer(scalar_buffer_impl* rhs) : base(rhs) {}
 
   scalar_buffer(const scalar_buffer& rhs) : base(rhs) {}
 
@@ -283,28 +324,14 @@ struct scalar_accessor {
   } \
   auto asScalar() const { \
     return this->as<ch_scalar<type::traits::bitwidth>>(); \
-  } \
-  void read(uint32_t dst_offset, \
-            void* out, \
-            uint32_t out_cbsize, \
-            uint32_t src_offset = 0, \
-            uint32_t length = type::traits::bitwidth) const { \
-    this->get_buffer()->read(dst_offset, out, out_cbsize, src_offset, length); \
   }
 
-#define CH_SCALAR_WRITABLE_INTERFACE(type) \
-  void write(uint32_t dst_offset, \
-             const void* in, \
-             uint32_t in_cbsize, \
-             uint32_t src_offset = 0, \
-             uint32_t length = type::traits::bitwidth) { \
-    this->get_buffer()->write(dst_offset, in, in_cbsize, src_offset, length); \
-  }
+#define CH_SCALAR_WRITABLE_INTERFACE(type)
 
 template <unsigned N>
 class const_scalar {
 public:
-  using traits = scalar_traits<N, const_scalar, ch_bit<N>>;
+  using traits = scalar_traits<N, const_scalar, const_scalar, ch_scalar<N>, const_bit<N>>;
 
   const_scalar(const scalar_buffer& buffer = scalar_buffer(N))
     : buffer_(buffer)
@@ -432,6 +459,14 @@ public:
 
   CH_SCALAR_READONLY_INTERFACE(const_scalar)
 
+  void read(uint32_t dst_offset,
+            void* out,
+            uint32_t out_cbsize,
+            uint32_t src_offset = 0,
+            uint32_t length = N) const {
+    buffer_->read(dst_offset, out, out_cbsize, src_offset, length);
+  }
+
 protected:
 
   const scalar_buffer_ptr& get_buffer() const {
@@ -458,9 +493,9 @@ protected:
 template <unsigned N>
 class ch_scalar : public const_scalar<N> {
 public:
-  using traits = scalar_traits<N, ch_scalar, ch_bit<N>>;
   using base = const_scalar<N>;
   using base::buffer_;
+  using traits = scalar_traits<N, ch_scalar, const_scalar<N>, ch_scalar, ch_bit<N>>;
 
   ch_scalar(const scalar_buffer& buffer = scalar_buffer(N)) : base(buffer) {}
 
@@ -516,6 +551,14 @@ public:
   template <unsigned M>
   auto slice(size_t start = 0) {
     return ch_scalar<M>(scalar_buffer(M, buffer_, start));
+  }
+
+  void write(uint32_t dst_offset,
+             const void* in,
+             uint32_t in_cbsize,
+             uint32_t src_offset = 0,
+             uint32_t length = N) {
+    buffer_->write(dst_offset, in, in_cbsize, src_offset, length);
   }
 };
 

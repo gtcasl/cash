@@ -15,27 +15,38 @@ void bindOutput(const lnode& dst, const lnode& output);
 
 ///////////////////////////////////////////////////////////////////////////////
 
+template <typename T> class ch_in;
+
+template <typename T> class ch_out;
+
+template <typename T> class in_buffer;
+
+template <typename T> class out_buffer;
+
 enum class ch_direction {
   in    = 0x1,
   out   = 0x2,
   inout = 0x3,
 };
 
+inline constexpr auto operator|(ch_direction lsh, ch_direction rhs) {
+  return ch_direction((int)lsh | (int)rhs);
+}
+
 template <typename IoType,
           ch_direction Direction,
           typename FlipType,
-          typename PortType,
+          typename BufferType,
           typename LogicType,
           typename Next = void>
 struct io_traits {
+  static constexpr traits_type type = traits_io;
   static constexpr unsigned bitwidth = bitwidth_v<LogicType>;
   static constexpr ch_direction direction = Direction;
   using io_type     = IoType;
   using flip_type   = FlipType;
-  using port_type   = PortType;
+  using buffer_type = BufferType;
   using logic_type  = LogicType;
-  using const_type  = const_type_t<LogicType>;
-  using value_type  = value_type_t<LogicType>;
   using scalar_type = scalar_type_t<LogicType>;
   using next        = Next;
 };
@@ -47,7 +58,7 @@ template <typename T>
 using flip_type_t = typename std::decay_t<T>::traits::flip_type;
 
 template <typename T>
-using port_type_t = typename std::decay_t<T>::traits::port_type;
+using buffer_type_t = typename std::decay_t<T>::traits::buffer_type;
 
 template <typename T>
 inline constexpr ch_direction direction_v = std::decay_t<T>::traits::direction;
@@ -55,18 +66,20 @@ inline constexpr ch_direction direction_v = std::decay_t<T>::traits::direction;
 template <typename T>
 struct is_io_traits : std::false_type {};
 
-template <typename IoType, ch_direction Direction, typename FlipType, typename PortType, typename LogicType>
-struct is_io_traits<io_traits<IoType, Direction, FlipType, PortType, LogicType>> : std::true_type {};
+template <typename IoType,
+          ch_direction Direction,
+          typename FlipType,
+          typename BufferType,
+          typename LogicType,
+          typename Next>
+struct is_io_traits<io_traits<IoType,
+                              Direction,
+                              FlipType,
+                              BufferType,
+                              LogicType,
+                              Next>> : std::true_type {};
 
 CH_DEF_SFINAE_CHECK(is_io_type, is_io_traits<typename std::decay_t<T>::traits>::value);
-
-template <typename T> class ch_in;
-
-template <typename T> class ch_out;
-
-template <typename T> class in_port;
-
-template <typename T> class out_port;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -74,7 +87,7 @@ template <typename T>
 class ch_in final : public const_type_t<T> {
 public:
   static_assert(!is_io_type<T>::value, "invalid nested type");
-  using traits = io_traits<ch_in, ch_direction::in, ch_out<T>, in_port<T>, T,
+  using traits = io_traits<ch_in, ch_direction::in, ch_out<T>, in_buffer<T>, T,
                            typename T::traits>;
 
   ch_in(const std::string& name = "io") {
@@ -103,7 +116,7 @@ private:
   lnode input_;
 
   template <typename U> friend class ch_out;
-  template <typename U> friend class in_port;
+  template <typename U> friend class in_buffer;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -112,7 +125,7 @@ template <typename T>
 class ch_out final : public T {
 public:
   static_assert(!is_io_type<T>::value, "invalid nested type");
-  using traits = io_traits<ch_out, ch_direction::out, ch_in<T>, out_port<T>, T,
+  using traits = io_traits<ch_out, ch_direction::out, ch_in<T>, out_buffer<T>, const_type_t<T>,
                            typename T::traits>;
   using T::operator=;
 
@@ -145,154 +158,76 @@ private:
   lnode output_;
 
   template <typename U> friend class ch_in;
-  template <typename U> friend class out_port;  
+  template <typename U> friend class out_buffer;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T>
-class in_port {
+class scalar_buffer_io : public scalar_buffer_impl {
 public:
-  in_port(ch_in<T>& in) : in_(in) {}
+  using base = scalar_buffer_impl;
+  using base::size_;
+  using base::value_;
 
-protected:
+  scalar_buffer_io(unsigned size) : scalar_buffer_impl(size) {}
 
-  lnode& get_input() const {
-    return in_.input_;
+  const bitvector& get_data() const override {
+    this->read(0, value_.get_words(), value_.get_cbsize(), 0, value_.get_size());
+    return value_;
   }
-
-  ch_in<T>& in_;
-
-  friend std::ostream& operator<<(std::ostream& out, const in_port& port) {
-    return out << port.get_input();
-  }
-
-  template <typename U> friend class out_port;
-  template <typename V, typename U> friend V ch_peek(const in_port<U>& port);
-  template <typename V, typename U> friend void ch_poke(const in_port<U>& port,
-                                                        const V& value);
-  template <typename U> friend void ch_peek(const in_port<U>& port,
-                                            uint32_t dst_offset,
-                                            void* out,
-                                            uint32_t out_cbsize,
-                                            uint32_t src_offset,
-                                            uint32_t length);
-  template <typename U> friend void ch_poke(const in_port<U>& port,
-                                            uint32_t dst_offset,
-                                            const void* in,
-                                            uint32_t in_cbsize,
-                                            uint32_t src_offset,
-                                            uint32_t length);
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T>
-class out_port {
+class in_buffer : public scalar_buffer_io {
 public:
-  out_port(const ch_out<T>& out) : out_(out) {}
+  using base = scalar_buffer_io;
+  in_buffer(ch_in<T>& in) : base(bitwidth_v<T>), in_(in) {}
 
-protected:
-
-  const lnode& get_output() const {
-    return out_.output_;
+  void read(uint32_t dst_offset,
+            void* out,
+            uint32_t out_cbsize,
+            uint32_t src_offset,
+            uint32_t length) const override {
+    in_.input_.get_data().read(dst_offset, out, out_cbsize, src_offset, length);
   }
 
-  const ch_out<T>& out_;
-
-  friend std::ostream& operator<<(std::ostream& out, const out_port& port) {
-    return out << port.get_output();
-  }
-
-  template <typename U> friend class in_port;
-  template <typename V, typename U> friend V ch_peek(const out_port<U>& port);
-  template <typename U> friend void ch_peek(const out_port<U>& port,
-                                            uint32_t dst_offset,
-                                            void* out,
-                                            uint32_t out_cbsize,
-                                            uint32_t src_offset,
-                                            uint32_t length);
-};
-
-///////////////////////////////////////////////////////////////////////////////
-
-template <typename T, unsigned N>
-struct peek_impl {
-  static const T read(const lnode& node) {
-    T ret(0);
-    node.get_data().read(0, &ret, sizeof(T), 0, N);
-    return ret;
-  }
-};
-
-template <unsigned N>
-struct peek_impl<ch_scalar<N>, N> {
-  static const ch_scalar<N> read(const lnode& node) {
-    bitvector ret(N);
-    node.get_data().read(0, ret.get_words(), ret.get_cbsize(), 0, N);
-    return ch_scalar<N>(std::move(ret));
-  }
-};
-
-template <typename T, unsigned N>
-struct poke_impl {
-  static void write(lnode& node, const T& value) {
-    node.get_data().write(0, &value, sizeof(T), 0, N);
-  }
-};
-
-template <unsigned N>
-struct poke_impl<ch_scalar<N>, N> {
-  static void write(lnode& node, const ch_scalar<N>& value) {
-    auto& data = scalar_accessor::get_data(value);
-    node.get_data().write(0, data.get_words(), data.get_cbsize(), 0, N);
-  }
-};
-
-template <typename V, typename T>
-V ch_peek(const out_port<T>& port) {
-  return peek_impl<std::decay_t<V>, bitwidth_v<T>>::read(port.get_output());
-}
-
-template <typename T>
-void ch_peek(const out_port<T>& port,
-             uint32_t dst_offset,
-             void* out,
-             uint32_t out_cbsize,
-             uint32_t src_offset = 0,
-             uint32_t length = bitwidth_v<T>) {
-  port.get_output().get_data().read(dst_offset, out, out_cbsize, src_offset, length);
-}
-
-template <typename V, typename T>
-V ch_peek(const in_port<T>& port) {
-  return peek_impl<std::decay_t<V>, bitwidth_v<T>>::read(port.get_input());
-}
-
-template <typename T>
-void ch_peek(const in_port<T>& port,
-             uint32_t dst_offset,
-             void* out,
-             uint32_t out_cbsize,
-             uint32_t src_offset = 0,
-             uint32_t length = bitwidth_v<T>) {
-  port.get_input().get_data().read(dst_offset, out, out_cbsize, src_offset, length);
-}
-
-template <typename V, typename T>
-void ch_poke(const in_port<T>& port, const V& value) {
-  poke_impl<std::decay_t<V>, bitwidth_v<T>>::write(port.get_input(), value);
-}
-
-template <typename T>
-void ch_poke(const in_port<T>& port,
-             uint32_t dst_offset,
+  void write(uint32_t dst_offset,
              const void* in,
              uint32_t in_cbsize,
-             uint32_t src_offset = 0,
-             uint32_t length = bitwidth_v<T>) {
-  port.get_input().get_data().write(dst_offset, in, in_cbsize, src_offset, length);
-}
+             uint32_t src_offset,
+             uint32_t length) override {
+    in_.input_.get_data().write(dst_offset, in, in_cbsize, src_offset, length);
+  }
+
+protected:
+  ch_in<T>& in_;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+template <typename T>
+class out_buffer : public scalar_buffer_io {
+public:
+  using base = scalar_buffer_io;
+  out_buffer(const ch_out<T>& out) : base(bitwidth_v<T>), out_(out) {}
+
+  void read(uint32_t dst_offset,
+            void* out,
+            uint32_t out_cbsize,
+            uint32_t src_offset,
+            uint32_t length) const override {
+    out_.output_.get_data().read(dst_offset, out, out_cbsize, src_offset, length);
+  }
+
+  void write(uint32_t, const void*, uint32_t, uint32_t, uint32_t) override {
+    assert(false);
+  }
+
+protected:
+  const ch_out<T>& out_;
+};
 
 }
 }

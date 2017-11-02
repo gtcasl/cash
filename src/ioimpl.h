@@ -41,10 +41,6 @@ public:
     input_ = input;
   }
 
-  const lnode& get_input() const {
-    return input_;
-  }
-
   const bitvector& eval(ch_tick t) override;
   
   void print(std::ostream& out, uint32_t level) const override;

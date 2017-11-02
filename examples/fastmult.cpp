@@ -4,8 +4,6 @@ using namespace ch::core;
 using namespace ch::literals;
 using namespace ch::sim;
 
-#define CHECK(x, v) if (ch_peek<decltype(v)>(x) != v) { assert(false); exit(1); }
-
 struct FastMult {
   __io (
     __in(ch_bit4)  lhs,
@@ -28,8 +26,8 @@ struct FastMult {
 int main(int argc, char **argv) {
   ch_device<FastMult> fastmult;
 
-  ch_poke(fastmult.io.lhs, 2);
-  ch_poke(fastmult.io.rhs, 3);
+  fastmult.io.lhs = 2;
+  fastmult.io.rhs = 3;
 
   ch_vcdtracer tracer("fastmult.vcd", fastmult);
   tracer.run();
@@ -39,7 +37,7 @@ int main(int argc, char **argv) {
   std::cout << "rhs = "  << fastmult.io.rhs << std::endl;
   std::cout << "out = "  << fastmult.io.out << std::endl;
 
-  CHECK(fastmult.io.out, 6);
+  assert(fastmult.io.out == 6);
 
   ch_toVerilog("fastmult.v", fastmult);
 }

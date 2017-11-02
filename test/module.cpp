@@ -43,13 +43,13 @@ __inout(io_bundle4_t, (
 ));
 
 template <typename T>
-__inout(SimpleLink, (
+__inout(Link, (
   __out(T) data,
   __out(ch_bool) valid
 ));
 
 template <typename T>
-__inout(PLink, SimpleLink<T>, (
+__inout(PLink, Link<T>, (
   __out(ch_bool) parity
 ));
 
@@ -63,8 +63,10 @@ template <typename T>
 struct Filter {
   FilterIO<T> io;
   void describe() {
-    io.y.data   = ch_reg(io.x.data << 1);
-    io.y.parity = io.x.data[0];
+    auto tmp = (ch_zext<ch_bitwidth_v<T>+1>(io.x.data) << 1)
+              | ch_zext<ch_bitwidth_v<T>+1>(io.x.parity);
+    io.y.data   = ch_reg(tmp.template slice<ch_bitwidth_v<T>>());
+    io.y.parity = tmp[ch_bitwidth_v<T>];
     io.y.valid  = ch_reg(io.x.valid);
   }
 };
@@ -119,7 +121,7 @@ struct Foo1 {
 };
 
 struct Foo2 {
-  ch_out<ch_bit1> io;
+  ch_out<ch_bool> io;
   void describe() {
     ch_module<Adder> adder;
     adder.io.in1 = 1;
@@ -152,25 +154,25 @@ TEST_CASE("module", "[module]") {
   SECTION("sim", "[sim]") {
     TESTX([]()->bool {
       ch_device<Adder> adder;
-      ch_poke(adder.io.in1, 1);
-      ch_poke(adder.io.in2, 2);
+      adder.io.in1 = 1;
+      adder.io.in2 = 2;
       ch_simulator sim(adder);
       sim.run(1);
-      return (3 == ch_peek<int>(adder.io.out));
+      return (3 == (int)adder.io.out);
     });
 
     TESTX([]()->bool {
       ch_device<Foo3> foo;
       ch_simulator sim(foo);
       for (int i = 0; i < 2; ++i) {
-        ch_poke(foo.io.y[i], i);
-        ch_poke(foo.io.x[i].a, 2-i);
+        foo.io.y[i] = i;
+        foo.io.x[i].a = 2-i;
       }
       sim.run(1);
       int ret = 1;
       for (int i = 0; i < 2; ++i) {
-        ret &= (2 == ch_peek<int>(foo.io.z[i]));
-        ret &= (2 == ch_peek<int>(foo.io.x[i].b));
+        ret &= (2 == (int)foo.io.z[i]);
+        ret &= (2 == (int)foo.io.x[i].b);
       }
       return !!ret;
     });
@@ -178,31 +180,34 @@ TEST_CASE("module", "[module]") {
   SECTION("emplace", "[emplace]") {
     TESTX([]()->bool {
       ch_device<Foo1> foo;
-      ch_poke(foo.io.in1, 1);
-      ch_poke(foo.io.in2, 2);
+      foo.io.in1 = 1;
+      foo.io.in2 = 2;
       ch_simulator sim(foo);
       sim.run(1);
-      return (3 == ch_peek<int>(foo.io.out));
+      return (3 == (int)foo.io.out);
     });
     TESTX([]()->bool {
       ch_device<Foo2> foo;
       ch_simulator sim(foo);
       sim.run(1);
-      return ch_peek<bool>(foo.io);
+      return (bool)foo.io;
     });
     TESTX([]()->bool {
       ch_device<FilterBlock<ch_bit16>> filter;
       ch_simulator sim(filter);
       ch_tick t = sim.reset(0);
 
-      ch_poke(filter.io.x.data, 3);
-      ch_poke(filter.io.x.valid, 1);
+      filter.io.x.data   = 3;
+      filter.io.x.valid  = 1;
+      filter.io.x.parity = 0;
       t = sim.step(t, 2);
 
-      int ret = (ch_peek<bool>(filter.io.y.valid));
-      ret &= (12 == ch_peek<int>(filter.io.y.data));
+      int ret = !!filter.io.y.valid;
+      ret &= (12 == (int)filter.io.y.data);
+      ret &= !filter.io.y.parity;
 
       ch_toVerilog("filter.v", filter);
+      ret &= (checkVerilog("filter_tb.v"));
 
       return !!ret;
     });
@@ -211,30 +216,30 @@ TEST_CASE("module", "[module]") {
       ch_simulator sim(queue);
       ch_tick t = sim.reset(0);
 
-      int ret = (ch_peek<bool>(queue.io.enq.ready));  // !full
-      ret &= (!ch_peek<bool>(queue.io.deq.valid)); // empty
-      ch_poke(queue.io.deq.ready, 0);
-      ch_poke(queue.io.enq.data, 0xA);
-      ch_poke(queue.io.enq.valid, 1); // push
+      int ret = ((bool)queue.io.enq.ready);  // !full
+      ret &= (!(bool)queue.io.deq.valid); // empty
+      queue.io.deq.ready = 0;
+      queue.io.enq.data = 0xA;
+      queue.io.enq.valid = 1; // push
       t = sim.step(t);
 
-      ret &= (ch_peek<bool>(queue.io.deq.valid));  // !empty
-      ch_poke(queue.io.enq.data, 0xB);
+      ret &= ((bool)queue.io.deq.valid);  // !empty
+      queue.io.enq.data = 0xB;
       t = sim.step(t);
 
-      ret &= (!ch_peek<bool>(queue.io.enq.ready)); // full
-      ret &= (ch_peek<bool>(queue.io.deq.valid));
-      ret &= (0xA == ch_peek<int>(queue.io.deq.data));
-      ch_poke(queue.io.enq.valid, 0); // !push
-      ch_poke(queue.io.deq.ready, 1); // pop
+      ret &= (!(bool)queue.io.enq.ready); // full
+      ret &= ((bool)queue.io.deq.valid);
+      ret &= (0xA == (int)queue.io.deq.data);
+      queue.io.enq.valid = 0; // !push
+      queue.io.deq.ready = 1; // pop
       t = sim.step(t);
 
-      ret &= (ch_peek<bool>(queue.io.enq.ready));  // !full
-      ret &= (0xB == ch_peek<int>(queue.io.deq.data));
-      ch_poke(queue.io.deq.ready, 1); // pop
+      ret &= ((bool)queue.io.enq.ready);  // !full
+      ret &= (0xB == (int)queue.io.deq.data);
+      queue.io.deq.ready = 1; // pop
       t = sim.step(t, 4);
 
-      ret &= (!ch_peek<bool>(queue.io.deq.valid)); // empty
+      ret &= (!(bool)queue.io.deq.valid); // empty
 
       ch_toVerilog("queue.v", queue);
       ret &= (checkVerilog("queue_tb.v"));

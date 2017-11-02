@@ -25,12 +25,12 @@ bool runtest(const std::function<ch_bit<1>()>& test, ch_tick ticks) {
 
   sim.run([&](ch_tick t)->bool {
     std::cout << "t" << t << ": ret=" << device.io.out << std::endl;
-    if (t > 0 && !ch_peek<bool>(device.io.out))
+    if (t > 0 && !(bool)device.io.out)
       return false;
     return (t < ticks);
   });
 
-  bool bRet = ch_peek<bool>(device.io.out);
+  bool bRet = (bool)device.io.out;
   assert(bRet);
   return bRet;
 }

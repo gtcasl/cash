@@ -3,7 +3,6 @@
 #include "scalar.h"
 #include "literals.h"
 #include "bit.h"
-#include "bitref.h"
 #include "select.h"
 #include "if.h"
 #include "switch.h"
@@ -12,8 +11,8 @@
 #include "assertion.h"
 #include "vec.h"
 #include "enum.h"
-#include "struct.h"
 #include "union.h"
+#include "struct.h"
 #include "float32.h"
 #include "seq.h"
 #include "port.h"
@@ -69,7 +68,6 @@ namespace core {
   template <typename T> using ch_value_t  = ch::internal::value_type_t<T>;
   template <typename T> using ch_const_t  = ch::internal::const_type_t<T>;
   template <typename T> using ch_flip_t   = ch::internal::flip_type_t<T>;
-  template <typename T> using ch_port_t   = ch::internal::port_type_t<T>;
   template <typename T> using ch_io_t     = ch::internal::io_type_t<T>;
 
   template <typename T>
@@ -230,8 +228,6 @@ namespace sim {
   // functions
   //
 
-  using ch::internal::ch_peek;
-  using ch::internal::ch_poke;
   using ch::internal::ch_toVerilog;
   using ch::internal::ch_dumpStats;
 }

@@ -95,7 +95,7 @@ template <typename P, typename V,
           CH_REQUIRES(is_bit_convertible<V>::value)>
 auto ch_select(const P& pred, const V& value) {
   static_assert(1 == bitwidth_v<P>, "invalid predicate size");
-  return select_t<value_type_t<V>>(get_lnode(pred), get_lnode(value));
+  return select_t<bit_value_t<V>>(get_lnode(pred), get_lnode(value));
 }
 
 template <typename R, typename P, typename V,
@@ -112,7 +112,7 @@ template <typename K, typename P, typename V,
           CH_REQUIRES(is_equality_comparable<P, K>::value),
           CH_REQUIRES(is_bit_convertible<V>::value)>
 auto ch_case(const K& key, const P& pred, const V& value) {
-  return case_t<K, value_type_t<V>>(
+  return case_t<K, bit_value_t<V>>(
         get_lnode(key), get_lnode<P, bitwidth_v<K>>(pred), get_lnode(value));
 }
 
@@ -132,7 +132,7 @@ template <typename P, typename U, typename V,
           CH_REQUIRES(is_bit_convertible<V, bitwidth_v<deduce_type_t<U, V>>>::value)>
 const auto ch_select(const P& pred, const U& _true, const V& _false) {
   static_assert(1 == bitwidth_v<P>, "invalid predicate size");
-  return make_type<value_type_t<deduce_first_type_t<U, V>>>(
+  return make_type<bit_value_t<deduce_first_type_t<U, V>>>(
         createSelectNode(get_lnode(pred),
                          get_lnode<U, bitwidth_v<deduce_type_t<U, V>>>(_true),
                          get_lnode<V, bitwidth_v<deduce_type_t<U, V>>>(_false)));

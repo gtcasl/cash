@@ -24,6 +24,7 @@ template <unsigned Bitwidth,
           typename ScalarType,
           typename Next = void>
 struct logic_traits {
+  static constexpr traits_type type = traits_logic;
   static constexpr unsigned bitwidth = Bitwidth;
   using logic_type  = LogicType;
   using const_type  = ConstType;
@@ -36,36 +37,36 @@ template <typename T>
 using logic_type_t = typename std::decay_t<T>::traits::logic_type;
 
 template <typename T>
-using value_type_t = typename logic_type_t<std::decay_t<T>>::traits::value_type;
-
-template <typename T>
-using const_type_t = typename logic_type_t<std::decay_t<T>>::traits::const_type;
-
-template <typename T>
-using is_const_type = is_true<std::is_same<T, const_type_t<T>>::value>;
+using bit_value_t = typename logic_type_t<T>::traits::value_type;
 
 template <typename T>
 struct is_logic_traits : std::false_type {};
 
-template <unsigned Bitwidth, typename LogicType, typename ConstType, typename ValueType, typename ScalarType>
-struct is_logic_traits<logic_traits<Bitwidth, LogicType, ConstType, ValueType, ScalarType>> : std::true_type {};
+template <unsigned Bitwidth,
+          typename LogicType,
+          typename ConstType,
+          typename ValueType,
+          typename ScalarType,
+          typename Next>
+struct is_logic_traits<logic_traits<Bitwidth, LogicType, ConstType, ValueType, ScalarType, Next>> : std::true_type {};
 
 CH_DEF_SFINAE_CHECK(is_logic_type, is_logic_traits<typename std::decay_t<T>::traits>::value);
 
-CH_DEF_SFINAE_CHECK(is_bit_compatible, (!is_scalar_type<T>::value
-                                     && std::is_same<ch_bit<bitwidth_v<T>>, value_type_t<T>>::value));
+CH_DEF_SFINAE_CHECK(is_bit_compatible, ((is_logic_traits<typename T::traits>::value
+                                      || is_logic_traits<typename T::traits::next>::value)
+                                     && std::is_base_of<const_bit<bitwidth_v<T>>, logic_type_t<T>>::value));
 
 template <typename... Ts>
 using deduce_ch_bit_t = std::conditional_t<
   is_bit_compatible<deduce_type_t<Ts...>>::value,
   deduce_type_t<Ts...>,
-  non_bitwidth_type>;
+  non_ch_type>;
 
 template <typename T0, typename T1>
 using deduce_first_ch_bit_t = std::conditional_t<
   (is_bit_compatible<T0>::value || is_bit_compatible<T1>::value),
   deduce_first_type_t<T0, T1>,
-  non_bitwidth_type>;
+  non_ch_type>;
 
 template <typename T, unsigned N = T::traits::bitwidth>
 using is_bit_convertible = is_cast_convertible<ch_bit<N>, T>;
@@ -101,6 +102,8 @@ public:
   bit_buffer_impl(lnode&& data);
 
   bit_buffer_impl(unsigned size, const bit_buffer_ptr& buffer, unsigned offset);
+
+  virtual ~bit_buffer_impl() {}
 
   bit_buffer_impl& operator=(const bit_buffer_impl& rhs);
 
@@ -142,6 +145,8 @@ protected:
   unsigned offset_;
   unsigned size_;  
 };
+
+///////////////////////////////////////////////////////////////////////////////
 
 class bit_buffer : public bit_buffer_ptr {
 public:
@@ -229,7 +234,7 @@ struct bit_accessor {
   template <typename T>
   static const auto clone(const T& obj) {
     assert(bitwidth_v<T> == obj.get_buffer()->get_size());
-    return value_type_t<T>(bit_buffer(obj.get_buffer()->get_data().clone()));
+    return bit_value_t<T>(bit_buffer(obj.get_buffer()->get_data().clone()));
   }
 
   template <typename D, typename T>
@@ -255,6 +260,23 @@ template <typename T>
 const auto make_type(const lnode& node) {
   return T(bit_buffer(node));
 };
+
+template <typename T>
+using type_buffer_t = std::conditional_t<is_logic_traits<T>::value, bit_buffer, scalar_buffer>;
+
+template <typename T>
+using type_accessor_t = std::conditional_t<is_logic_traits<T>::value, bit_accessor, scalar_accessor>;
+
+template <typename T, typename U, typename Q = typename T::traits, typename X = typename ch_type_t<U>::traits>
+using aggregate_init_cast_t = std::conditional_t<X::bitwidth != 0,
+      std::conditional_t<(Q::type == X::type),
+                         const U&,
+                         std::conditional_t<is_logic_traits<Q>::value,
+                                            ch_bit<X::bitwidth>,
+                                            ch_scalar<X::bitwidth>>>,
+      std::conditional_t<is_logic_traits<Q>::value,
+                         ch_bit<Q::bitwidth>,
+                         ch_scalar<Q::bitwidth>>>;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -306,7 +328,7 @@ const auto OpReduce(const const_bit<N>& a) {
 #define CH_BIT_OP_TYPES \
   ch_scalar<N>, int8_t, uint8_t, int16_t, uint16_t, int32_t, uint32_t, int64_t, uint64_t
 
-#define CH_BIT_READONLY_INTERFACE(type) \
+#define CH_LOGIC_READONLY_INTERFACE(type) \
   template <typename R> \
   auto as() const { \
     return ch::internal::bit_accessor::cast<R>(*this); \
@@ -315,7 +337,7 @@ const auto OpReduce(const const_bit<N>& a) {
     return this->as<ch_bit<type::traits::bitwidth>>(); \
   }
 
-#define CH_BIT_WRITABLE_INTERFACE(type)
+#define CH_LOGIC_WRITABLE_INTERFACE(type)
 
 template <unsigned N>
 class const_bit {
@@ -432,7 +454,7 @@ public:
     return OpShiftOp<alu_srl, N, M>(*this, rhs);
   }
 
-  CH_BIT_READONLY_INTERFACE(const_bit)
+  CH_LOGIC_READONLY_INTERFACE(const_bit)
 
 protected:
 
@@ -551,7 +573,7 @@ public:
     return ch_bit<M>(bit_buffer(M, buffer_, start));
   }
 
-  CH_BIT_WRITABLE_INTERFACE(ch_bit)
+  CH_LOGIC_WRITABLE_INTERFACE(ch_bit)
 };
 
 ///////////////////////////////////////////////////////////////////////////////

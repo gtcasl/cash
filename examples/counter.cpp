@@ -4,8 +4,6 @@ using namespace ch::core;
 using namespace ch::literals;
 using namespace ch::sim;
 
-#define CHECK(x, v) if (ch_peek<decltype(v)>(x) != v) { assert(false); exit(1); }
-
 template <unsigned N>
 struct Counter {
   __io (
@@ -27,7 +25,7 @@ int main(int argc, char **argv) {
   std::cout << "result:" << std::endl;
   std::cout << "out = "  << counter.io.out << std::endl;
 
-  CHECK(counter.io.out, 10);
+  assert(counter.io.out == 10);
 
   ch_toVerilog("counter.v", counter);
 
