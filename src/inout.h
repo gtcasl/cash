@@ -46,7 +46,7 @@
     : CH_FOR_EACH(CH_INOUT_COPY_CTOR, CH_SEP_COMMA, __VA_ARGS__) {} \
   inout_name(inout_name&& rhs) \
     : CH_FOR_EACH(CH_STRUCT_MOVE_CTOR, CH_SEP_COMMA, __VA_ARGS__) {} \
-  void operator()(const typename traits::flip_type& rhs) const { \
+  void operator()(typename traits::flip_type& rhs) { \
     CH_FOR_EACH(CH_INOUT_BIND_BODY, CH_SEP_SEMICOLON, __VA_ARGS__); \
   }
 
@@ -64,7 +64,7 @@
   inout_name(inout_name&& rhs) \
     : parent(std::move(rhs)) \
     , CH_FOR_EACH(CH_STRUCT_MOVE_CTOR, CH_SEP_COMMA, __VA_ARGS__) {} \
-  void operator()(const typename traits::flip_type& rhs) const { \
+  void operator()(typename traits::flip_type& rhs) { \
     parent::operator()(rhs); \
     CH_FOR_EACH(CH_INOUT_BIND_BODY, CH_SEP_SEMICOLON, __VA_ARGS__); \
   }

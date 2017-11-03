@@ -592,7 +592,7 @@ public:
 
   ch_io_vec(ch_io_vec&& rhs) : base(std::move(rhs)) {}
 
-  void operator()(const ch_io_vec<flip_type_t<T>, N>& rhs) const {
+  void operator()(typename traits::flip_type& rhs) {
     for (unsigned i = 0, n = items_.size(); i < n; ++i) {
       items_[i](rhs[i]);
     }

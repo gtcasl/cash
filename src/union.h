@@ -117,7 +117,7 @@ using union_zero_init = std::conditional_t<has_bitwidth<U>::value,
   explicit union_name(const ch_scalar<traits::bitwidth>& rhs) \
     : union_name(ch::internal::type_buffer_t<traits>(ch::internal::scalar_accessor::get_data(rhs))) {} \
   template <typename __T__, \
-             CH_REQUIRES(std::is_integral<__T__>::value || ch::internal::has_bitwidth<__T__>::value), \
+             CH_REQUIRES(std::is_integral_v<__T__> || std::is_enum_v<__T__> || ch::internal::has_bitwidth<__T__>::value), \
              CH_REQUIRES(CH_FOR_EACH(CH_UNION_FIELD_CTOR_REQUIRES, CH_SEP_OR, __VA_ARGS__))> \
   explicit union_name(const __T__& rhs) : union_name() { \
     this->init_fields(rhs); \

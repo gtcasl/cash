@@ -1,6 +1,7 @@
 #pragma once
 
 #include "struct.h"
+#include "seq.h"
 
 namespace ch {
 namespace internal {
@@ -104,8 +105,8 @@ public:
 
   ch_in(ch_in&& in) : const_type_t<T>(std::move(in)) {}
 
-  void operator()(const ch_out<T>& out) const {
-    const_cast<ch_out<T>&>(out) = *this;
+  void operator()(ch_out<T>& out) const {
+    out = *this;
   }
 
 private:
@@ -147,8 +148,20 @@ public:
     return *this;
   }
 
-  void operator()(const ch_in<T>& in) const {
-    const_cast<ch_out&>(*this) = in;
+  void operator()(const ch_in<T>& in) {
+    (*this) = in;
+  }
+
+  const ch_seq<T> asSeq() {
+    ch_seq<T> s;
+    (*this) = s;
+    return s;
+  }
+
+  const ch_seq<T> asSeq(const T& init) {
+    ch_seq<T> s(init);
+    (*this) = s;
+    return s;
   }
 
 private:

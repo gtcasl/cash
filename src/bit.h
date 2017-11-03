@@ -786,8 +786,8 @@ CH_FOR_EACH(CH_BIT_GLOBAL_OPS, CH_SEP_SPACE, CH_BIT_OP_TYPES)
 // multiplexers
 
 template <typename I, typename S,
-          CH_REQUIRES(is_logic_type<I>::value),
-          CH_REQUIRES(is_logic_type<S>::value),
+          CH_REQUIRES(is_logic_compatible<I>::value),
+          CH_REQUIRES(is_logic_compatible<S>::value),
           CH_REQUIRES(ispow2(bitwidth_v<I>)),
           CH_REQUIRES(ispow2(bitwidth_v<S>)),
           CH_REQUIRES((bitwidth_v<I> >> bitwidth_v<S>) != 0)>
@@ -807,7 +807,7 @@ const auto ch_clone(const T& obj) {
 // slice functions
 
 template <unsigned N, typename T,
-          CH_REQUIRES(is_logic_type<T>::value)>
+          CH_REQUIRES(is_logic_compatible<T>::value)>
 const auto ch_slice(const T& obj, size_t start = 0) {
   ch_bit<N> ret;
   bit_accessor::write(ret, 0, obj, start, N);
@@ -833,13 +833,6 @@ const auto ch_cat(const Ts&... args) {
   ch_bit<bitwidth_v<Ts...>> ret;
   cat_impl(ret, bitwidth_v<Ts...>, static_cast<bit_cast_t<Ts>>(args)...);
   return ret;
-}
-
-template <typename B, typename A,
-          CH_REQUIRES(is_bit_convertible<B>::value),
-          CH_REQUIRES(is_bit_convertible<A>::value)>
-const auto operator,(const B& b, const A& a) {
-  return ch_cat(b, a);
 }
 
 // tie function
@@ -876,7 +869,7 @@ protected:
 };
 
 template <typename... Ts,
-         CH_REQUIRES(are_all_logic_type<Ts...>::value)>
+         CH_REQUIRES(are_all_logic_compatible<Ts...>::value)>
 auto ch_tie(Ts&... args) {
   return tie_impl<Ts...>(args...);
 }
@@ -951,7 +944,7 @@ const auto ch_shuffle(const T& obj,
 // tap functions
 
 template <typename T,
-          CH_REQUIRES(is_logic_type<T>::value)>
+          CH_REQUIRES(is_logic_compatible<T>::value)>
 void ch_tap(const std::string& name, const T& value) {
   registerTap(name, get_lnode(value));
 }

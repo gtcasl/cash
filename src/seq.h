@@ -26,12 +26,18 @@ public:
     next = *this;
   }
 
+  ch_seq(ch_seq&& rhs) : base(std::move(rhs)) {}
+
+  ch_seq& operator=(ch_seq&& rhs) {
+    base::operator=(std::move(rhs));
+    return *this;
+  }
+
 protected:
 
   ch_seq(ch_seq&) = delete;
-  ch_seq(ch_seq&&) = delete;
-  ch_seq& operator=(const ch_seq&) = delete;
-  ch_seq& operator=(ch_seq&&) = delete;
+
+  ch_seq& operator=(const ch_seq&) = delete;  
 };
 
 }

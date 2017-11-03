@@ -32,7 +32,7 @@ public:
     std::string unique_name(name);
     auto it = module_names_.find(signature);
     if (it != module_names_.end()) {
-      CH_CHECK(it->second == unique_name, "Multiple names assigned to same module: new=%s, old=%s", unique_name.c_str(), it->second.c_str());
+      unique_name = it->second;
     } else {
       unique_name = unique_name_.get(unique_name.c_str());
       module_names_[signature] = unique_name;
