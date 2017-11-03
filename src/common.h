@@ -2,6 +2,7 @@
 
 #include <cstdlib>
 #include <string>
+#include <string_view>
 #include <list>
 #include <queue>
 #include <vector>

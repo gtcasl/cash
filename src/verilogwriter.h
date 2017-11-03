@@ -25,11 +25,12 @@ public:
   verilogwriter(std::ostream& out);
   ~verilogwriter();
 
-  void print(context* ctx);
+  void print(const std::initializer_list<context*>& contexts);
 
 protected:
 
-  bool print_impl(context* ctx);
+  bool print_module(context* ctx,
+                    std::unordered_set<std::string_view>& visited);
 
   void print_header(context* ctx);
 
@@ -39,7 +40,9 @@ protected:
 
   void print_port(lnodeimpl* node);
 
-  bool print_decl(lnodeimpl* node);
+  bool print_decl(lnodeimpl* node,
+                  std::unordered_set<uint32_t>& visited,
+                  lnodeimpl* ref = nullptr);
 
   bool print_binding(bindimpl* node);
 
@@ -76,8 +79,6 @@ protected:
   void print_mem(memimpl* node);
 
   std::ostream& out_;
-
-  std::set<std::string> exported_modules_;
 };
 
 }
