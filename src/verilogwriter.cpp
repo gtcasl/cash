@@ -585,9 +585,7 @@ void verilogwriter::print_operator(ch_alu_op op) {
 
 void verilogwriter::print_name(lnodeimpl* node) {
   auto print_basic_name = [&](char prefix) {
-    out_ << "__" << prefix;
-    out_ << node->get_id();
-    out_ << "__";
+    out_ << prefix << node->get_id();
   };
   auto type = node->get_type();
   switch (type) {
@@ -616,13 +614,14 @@ void verilogwriter::print_name(lnodeimpl* node) {
   case type_bindport:
     print_basic_name('b');
     break;
-  case type_memport:
-    out_ << "__m";
-    out_ << dynamic_cast<memportimpl*>(node)->get_mem().get_id();
-    out_ << "__[";
-    this->print_name(dynamic_cast<memportimpl*>(node)->get_addr().get_impl());
+  case type_memport: {
+    auto memport = dynamic_cast<memportimpl*>(node);
+    out_ << "m";
+    out_ << memport->get_mem().get_id();
+    out_ << "[";
+    this->print_name(memport->get_addr().get_impl());
     out_ << "]";
-    break;
+  } break;
   default:
     assert(false);
   }
