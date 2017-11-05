@@ -9,8 +9,8 @@ using namespace ch::htl;
 template <unsigned N>
 struct GCD {
   __io (
-    (ch_deqIO<ch_vec<ch_bit<N>,2>>) in,
-    (ch_validIO<ch_bit<N>>) out
+    (ch_deq_io<ch_vec<ch_bit<N>,2>>) in,
+    (ch_valid_io<ch_bit<N>>) out
   );
   void describe() {
     ch_seq<ch_bit<N>> x, y;

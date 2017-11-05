@@ -504,12 +504,12 @@ public:
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T, unsigned N>
-class ch_io_buffer_vec : public scalar_buffer_io {
+class ch_vec_buffer_io : public scalar_buffer_io {
 public:
   using base = scalar_buffer_io;
 
-  ch_io_buffer_vec(ch_vec<T, N>& rhs)
-    : ch_io_buffer_vec(rhs, std::make_index_sequence<N>())
+  ch_vec_buffer_io(ch_vec<T, N>& rhs)
+    : ch_vec_buffer_io(rhs, std::make_index_sequence<N>())
   {}
 
   void read(uint32_t dst_offset,
@@ -553,7 +553,7 @@ public:
 protected:
 
   template <std::size_t...Is>
-  explicit ch_io_buffer_vec(ch_vec<T, N>& rhs, std::index_sequence<Is...>)
+  explicit ch_vec_buffer_io(ch_vec<T, N>& rhs, std::index_sequence<Is...>)
     : base(N * bitwidth_v<T>)
     , items_{buffer_type_t<T>(rhs[Is])...}
   {}
@@ -575,7 +575,7 @@ public:
   using traits = io_traits<ch_vec,
                           direction_v<T>,
                           ch_vec<flip_type_t<T>, N>,
-                          ch_io_buffer_vec<T, N>,
+                          ch_vec_buffer_io<T, N>,
                           resolve_const_vec<logic_type_t<T>, N>>;
 
   using base = vec_base<T, N>;

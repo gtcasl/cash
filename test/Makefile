@@ -3,8 +3,8 @@ LDFLAGS += -lcash
 
 PROJECT = test.out
 
-SRCS = htl.cpp common.cpp basic.cpp scalar.cpp literals.cpp proxies.cpp aggregates.cpp select.cpp arithm.cpp reg.cpp mem.cpp \
-       module.cpp sim.cpp misc.cpp float.cpp main.cpp
+SRCS = common.cpp basic.cpp scalar.cpp literals.cpp proxies.cpp aggregates.cpp select.cpp arithm.cpp reg.cpp mem.cpp \
+       module.cpp sim.cpp misc.cpp float.cpp htl.cpp main.cpp
 
 OBJS = $(SRCS:.cpp=.o)
 

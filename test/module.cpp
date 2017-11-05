@@ -38,33 +38,35 @@ __struct (u4_2_t, (
   (ch_bit2) b
 ));
 
-__inout(io_bundle4_t, (
+__inout(bundle4_io, (
   __in(e2_t) x,
   __in(s4_2_t) y,
   __out(u4_2_t) z,
-  __out(ch_vec<ch_bool, 2>) w
+  __out(ch_vec<ch_bool, 2>) w,
+  (ch_enq_io<s4_2_t>) eq,
+  (ch_deq_io<s4_2_t>) dq
 ));
 
 template <typename T>
-__inout(Link, (
+__inout(link_io, (
   __out(T) data,
   __out(ch_bool) valid
 ));
 
 template <typename T>
-__inout(PLink, Link<T>, (
+__inout(plink_io, link_io<T>, (
   __out(ch_bool) parity
 ));
 
 template <typename T>
-__inout(FilterIO, (
-  (ch_flip_t<PLink<T>>) x,
-  (PLink<T>) y
+__inout(filter_io, (
+  (ch_flip_t<plink_io<T>>) x,
+  (plink_io<T>) y
 ));
 
 template <typename T>
 struct Filter {
-  FilterIO<T> io;
+  filter_io<T> io;
   void describe() {
     auto tmp = (ch_zext<ch_bitwidth_v<T>+1>(io.x.data) << 1)
               | ch_zext<ch_bitwidth_v<T>+1>(io.x.parity);
@@ -76,7 +78,7 @@ struct Filter {
 
 template <typename T>
 struct FilterBlock {
-  FilterIO<T> io;
+  filter_io<T> io;
   void describe() {
     f1_.io.x(io.x);
     f1_.io.y(f2_.io.x);
@@ -88,8 +90,8 @@ struct FilterBlock {
 template <typename T, unsigned N>
 struct QueueWrapper {
   __io (
-    (ch_deqIO<T>) enq,
-    (ch_enqIO<T>) deq
+    (ch_deq_io<T>) enq,
+    (ch_enq_io<T>) deq
   );
   void describe() {
     queue_.io.enq(io.enq);

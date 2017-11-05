@@ -154,7 +154,7 @@
 #define CH_INOUT_IMPL3(inout_name, parent, ...) \
   class inout_name : public parent { \
   private: \
-    CH_STRUCT_IMPL3(__logic_type__, parent, __VA_ARGS__); \
+    CH_STRUCT_IMPL3(__logic_type__, ch_logic_t<parent>, __VA_ARGS__); \
     class __flop_buffer_type__; \
     class __flip_type__; \
     class __flip_buffer_type__ : public ch::internal::scalar_buffer_io { \

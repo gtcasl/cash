@@ -15,8 +15,8 @@ struct ch_queue {
   static constexpr unsigned addr_width = log2ceil(N);
 
   __io (
-    (ch_deqIO<T>) enq,
-    (ch_enqIO<T>) deq,
+    (ch_deq_io<T>) enq,
+    (ch_enq_io<T>) deq,
     __out(ch_bit<addr_width+1>) size
   );
 
