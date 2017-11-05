@@ -7,9 +7,6 @@ namespace htl {
 
 using namespace ch::core;
 
-// One-hot encoder:
-// converts a One-hot number to binary format
-
 template <unsigned N>
 const auto ch_hot2bin = [](const ch_bit<N>& onehot) {
   auto cs = ch_case<ch_bit<log2ceil(N)>>(onehot, 1, 0);

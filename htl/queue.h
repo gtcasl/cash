@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cash.h>
 #include <../htl/decoupled.h>
 
 namespace ch {
