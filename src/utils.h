@@ -18,6 +18,42 @@ std::string identifier_from_typeid(const std::string& name);
 
 ///////////////////////////////////////////////////////////////////////////////
 
+template <typename F, typename Arg>
+void for_each_impl(const F& f, Arg&& arg) {
+  f(std::forward<Arg>(arg));
+}
+
+template <typename F, typename Arg0, typename... Args>
+void for_each_impl(const F& f, Arg0&& arg0, Args&&... args) {
+  f(std::forward<Arg0>(arg0));
+  for_each_impl(f, std::forward<Args>(args)...);
+}
+
+template <typename F, typename... Args>
+void for_each(const F& f, Args&&... args) {
+  for_each_impl(f, std::forward<Args>(args)...);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+template <typename F, typename Arg>
+void for_each_reverse_impl(const F& f, Arg&& arg) {
+  f(std::forward<Arg>(arg));
+}
+
+template <typename F, typename Arg0, typename... Args>
+void for_each_reverse_impl(const F& f, Arg0&& arg0, Args&&... args) {
+  for_each_reverse_impl(f, std::forward<Args>(args)...);
+  f(std::forward<Arg0>(arg0));
+}
+
+template <typename F, typename... Args>
+void for_each_reverse(const F& f, Args&&... args) {
+  for_each_reverse_impl(f, std::forward<Args>(args)...);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 class unique_name {
 public:
   unique_name() {}
@@ -87,8 +123,16 @@ struct is_equality_comparable<A, B,
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T>
-using identity_t = T;
+//template <typename T>
+//using identity_t = T;
+
+template<class T>
+struct identity_impl {
+  typedef T type;
+};
+
+template<class T>
+using identity_t = typename identity_impl<T>::type;
 
 template <typename...>
 using void_t = void;
@@ -313,6 +357,8 @@ protected:
 
 using auto_indent = basic_auto_indent<char>;
 
+///////////////////////////////////////////////////////////////////////////////
+
 template <class CharT, class Traits = std::char_traits<CharT>>
 class basic_auto_separator {
 public:
@@ -427,8 +473,6 @@ constexpr uint32_t rotr(uint32_t value, uint32_t shift, uint32_t width) {
   template<typename T> \
   struct type_name<T, typename std::enable_if_t<(predicate)>> : std::true_type {}
 
-#define CH_VOID_T typename = void
-
 #define CH_REQUIRES(...) typename = std::enable_if_t<(__VA_ARGS__)>
 
 #define CH_UNUSED(...) ch::internal::unused(__VA_ARGS__)
@@ -436,6 +480,9 @@ constexpr uint32_t rotr(uint32_t value, uint32_t shift, uint32_t width) {
 #define CH_TODO() CH_ABORT("Not yet implemented");
 
 #define CH_COUNTOF(a) (sizeof(a) / sizeof(a[0]))
+
 #define CH_MAX(a,b) (((a) > (b)) ? (a) : (b))
+
 #define CH_CEILDIV(a, b) (((a) + (b) - 1) / b)
+
 #define CH_BLEND(m, a, b)  (a) ^ (((a) ^ (b)) & (m)) // 0->a, 1->b

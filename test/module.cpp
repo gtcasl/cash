@@ -1,4 +1,7 @@
 #include "common.h"
+#include <../htl/queue.h>
+
+using namespace ch::htl;
 
 static_assert(ch_direction_v<ch_in<ch_bool>> == ch_direction::in, "invalid direction");
 static_assert(ch_direction_v<ch_out<ch_bool>> == ch_direction::out, "invalid direction");

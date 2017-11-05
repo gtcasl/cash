@@ -48,11 +48,12 @@ namespace core {
   using ch::internal::ilog2;
   using ch::internal::log2ceil;
 
-  template <typename T, unsigned N> using ch_vec = ch::internal::ch_vec<T, N>;
-
   template <unsigned N> using ch_bit = ch::internal::ch_bit<N>;
 
   template <unsigned N> using ch_scalar = ch::internal::ch_scalar<N>;
+
+  template <typename T, unsigned N> using ch_vec = ch::internal::ch_vec<T, N>;
+  template <typename T, unsigned N> using ch_const_vec = ch::internal::const_vec<T, N>;
 
   using ch_float32 = ch::internal::ch_float32;
 
@@ -76,6 +77,16 @@ namespace core {
   template <typename T> using ch_in = ch::internal::ch_in<T>;
   template <typename T> using ch_out = ch::internal::ch_out<T>;
   template <typename T> using ch_module = ch::internal::ch_module<T>;
+
+  //
+  // type traits
+  //
+
+  template <typename T, unsigned N = ch_bitwidth_v<T>>
+  using ch_is_bit_convertible = ch::internal::is_bit_convertible<T, N>;
+
+  template <typename T, unsigned N = ch_bitwidth_v<T>>
+  using ch_is_scalar_convertible = ch::internal::is_scalar_convertible<T, N>;
 
   //
   // bit types
@@ -270,30 +281,4 @@ inline namespace literals {
 
 #define __tie      CH_TIE
 
-//
-// IO utilities
-//
-
-namespace ch {
-namespace core {
-
-template <typename T>
-__inout (ch_validIO, (
-  __out(ch_bool) valid,
-  __out(T)       data
-));
-
-template <typename T>
-__inout (ch_decoupledIO, (
-  __in(ch_bool)  ready,
-  __out(ch_bool) valid,
-  __out(T)       data
-));
-
-// producer driven input stream
-template <typename T> using ch_enqIO = ch_decoupledIO<T>;
-
-// producer driven output stream
-template <typename T> using ch_deqIO = ch_flip_t<ch_decoupledIO<T>>;
-
-}}
+#define __requires CH_REQUIRES

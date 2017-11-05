@@ -2,13 +2,11 @@
 
 #include <string.h>
 #include <cash.h>
-#include <../stl/queue.h>
 #include "catch.h"
 
 using namespace ch::core;
 using namespace ch::literals;
 using namespace ch::sim;
-using namespace ch::stl;
 
 bool checkVerilog(const std::string& moduleName);
 

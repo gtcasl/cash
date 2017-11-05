@@ -1,8 +1,10 @@
 #include <cash.h>
+#include <../htl/decoupled.h>
 
 using namespace ch::core;
 using namespace ch::literals;
 using namespace ch::sim;
+using namespace ch::htl;
 
 template <unsigned N>
 struct GCD {
