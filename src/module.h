@@ -32,6 +32,18 @@ public:
            std::forward<Ts>(args)...)
     , io(obj_->io)
   {}
+
+  ch_module(ch_module&& rhs) : base(std::move(rhs)) {}
+
+  ch_module& operator=(ch_module&& rhs) {
+    base::operator=(std::move(rhs));
+    return *this;
+  }
+
+protected:
+
+  ch_module(const ch_module& rhs) = delete;
+  ch_module& operator=(const ch_module& rhs) = delete;
 };
 
 }

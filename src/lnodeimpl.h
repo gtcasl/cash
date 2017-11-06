@@ -35,6 +35,14 @@ public:
   uint32_t get_id() const {
     return id_;
   }
+
+  void set_name(const std::string& name) {
+    name_ = name;
+  }
+
+  const std::string& get_name() const {
+    return name_;
+  }
   
   lnodetype get_type() const {
     return type_;
@@ -103,10 +111,12 @@ public:
 protected:
 
   lnodeimpl(context* ctx, lnodetype type, uint32_t size);
+  lnodeimpl(context* ctx, const std::string& name, lnodetype type, uint32_t size);
   virtual ~lnodeimpl();
 
   context* ctx_;
   uint32_t id_;
+  std::string name_;
   lnodetype type_;  
   std::vector<lnode> srcs_;
   bitvector value_;

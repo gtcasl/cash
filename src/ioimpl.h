@@ -8,14 +8,6 @@ namespace internal {
 class ioimpl : public lnodeimpl {
 public:
 
-  void set_name(const std::string& name) {
-    name_ = name;
-  }
-
-  const std::string& get_name() const {
-    return name_;
-  }
-
 protected:  
 
   ioimpl(context* ctx, lnodetype type, uint32_t size)
@@ -23,13 +15,10 @@ protected:
   {}
 
   ioimpl(context* ctx, lnodetype type, uint32_t size, const std::string& name)
-    : lnodeimpl(ctx, type, size)
-    , name_(name)
+    : lnodeimpl(ctx, name, type, size)
   {}
 
   ~ioimpl() {}
-
-  std::string name_;
 
   friend class context;
 };

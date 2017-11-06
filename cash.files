@@ -24,6 +24,7 @@ examples/gcd.cpp
 examples/gcd.cpp
 examples/gcd_tb.v
 htl/arbiter.h
+htl/counter.h
 htl/decoupled.h
 htl/mux.h
 htl/onehot.h

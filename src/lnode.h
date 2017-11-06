@@ -50,6 +50,8 @@ public:
   lnodeimpl* get_impl() const;
   
   uint32_t get_id() const;
+
+  const std::string& get_name() const;
   
   uint32_t get_size() const;
   

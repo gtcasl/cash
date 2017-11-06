@@ -17,6 +17,8 @@ template <unsigned N> class bit;
 
 template <unsigned N> class bit_concat;
 
+template <typename T> class ch_seq;
+
 template <unsigned Bitwidth,
           typename LogicType,
           typename ConstType,
@@ -25,6 +27,7 @@ template <unsigned Bitwidth,
           typename Next = void>
 struct logic_traits {
   static constexpr traits_type type = traits_logic;
+  static constexpr ch_direction direction = ch_direction::none;
   static constexpr unsigned bitwidth = Bitwidth;
   using logic_type  = LogicType;
   using const_type  = ConstType;
@@ -329,7 +332,7 @@ const auto OpReduce(const const_bit<N>& a) {
   ch_scalar<N>, int8_t, uint8_t, int16_t, uint16_t, int32_t, uint32_t, int64_t, uint64_t
 
 #define CH_LOGIC_READONLY_INTERFACE(type) \
-  template <typename R> \
+  template <typename R, CH_REQUIRES(ch::internal::is_logic_type<R>::value)> \
   auto as() const { \
     return ch::internal::bit_accessor::cast<R>(*this); \
   } \
@@ -337,12 +340,22 @@ const auto OpReduce(const const_bit<N>& a) {
     return this->as<ch_bit<type::traits::bitwidth>>(); \
   }
 
-#define CH_LOGIC_WRITABLE_INTERFACE(type)
+#define CH_LOGIC_WRITABLE_INTERFACE(type) \
+  const ch_seq<type> asSeq() { \
+    ch_seq<type> s; \
+    (*this) = s; \
+    return s; \
+  } \
+  const ch_seq<type> asSeq(const type& init) { \
+    ch_seq<type> s(init); \
+    (*this) = s; \
+    return s; \
+  }
 
 template <unsigned N>
 class const_bit {
 public:  
-  using traits = logic_traits<N, const_bit, const_bit, ch_bit<N>, ch_scalar<N>>;
+  using traits = logic_traits<N, const_bit, const_bit, ch_bit<N>, const_scalar<N>>;
 
   const_bit(const bit_buffer& buffer = bit_buffer(N)) : buffer_(buffer) {}
 

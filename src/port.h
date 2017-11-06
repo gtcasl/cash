@@ -24,12 +24,6 @@ template <typename T> class in_buffer;
 
 template <typename T> class out_buffer;
 
-enum class ch_direction {
-  in    = 0x1,
-  out   = 0x2,
-  inout = 0x3,
-};
-
 inline constexpr auto operator|(ch_direction lsh, ch_direction rhs) {
   return ch_direction((int)lsh | (int)rhs);
 }
@@ -87,9 +81,10 @@ CH_DEF_SFINAE_CHECK(is_io_type, is_io_traits<typename std::decay_t<T>::traits>::
 template <typename T>
 class ch_in final : public const_type_t<T> {
 public:
-  static_assert(!is_io_type<T>::value, "invalid nested type");
-  using traits = io_traits<ch_in, ch_direction::in, ch_out<T>, in_buffer<T>, T,
-                           typename T::traits>;
+  static_assert(is_logic_type<T>::value, "invalid type");
+  using base = const_type_t<T>;
+  using traits = io_traits<ch_in<T>, ch_direction::in, ch_out<T>, in_buffer<T>,
+                           T, typename base::traits>;
 
   ch_in(const std::string& name = "io") {
     input_ = createInputNode(name, bitwidth_v<T>);
@@ -101,9 +96,9 @@ public:
     bindOutput(input_, out.output_);
   }
 
-  ch_in(const ch_in& in) : const_type_t<T>(in) {}
+  ch_in(const ch_in& in) : base(in) {}
 
-  ch_in(ch_in&& in) : const_type_t<T>(std::move(in)) {}
+  ch_in(ch_in&& in) : base(std::move(in)) {}
 
   void operator()(ch_out<T>& out) const {
     out = *this;
@@ -125,10 +120,11 @@ private:
 template <typename T>
 class ch_out final : public T {
 public:
-  static_assert(!is_io_type<T>::value, "invalid nested type");
-  using traits = io_traits<ch_out, ch_direction::out, ch_in<T>, out_buffer<T>, const_type_t<T>,
-                           typename T::traits>;
-  using T::operator=;
+  static_assert(is_logic_type<T>::value, "invalid type");
+  using base = T;
+  using traits = io_traits<ch_out, ch_direction::out, ch_in<T>, out_buffer<T>,
+                           T, typename base::traits>;
+  using base::operator=;
 
   ch_out(const std::string& name = "io") {
     output_ = createOutputNode(name, bit_accessor::get_data(*this));
@@ -139,29 +135,17 @@ public:
     bindInput(output_, in.input_);
   }
 
-  ch_out(const ch_out& out) : T(out) {}
+  ch_out(const ch_out& out) : base(out) {}
 
-  ch_out(ch_out&& out) : T(std::move(out)) {}
+  ch_out(ch_out&& out) : base(std::move(out)) {}
 
   ch_out& operator=(const ch_out& rhs) {
-    T::operator=(rhs);
+    base::operator=(rhs);
     return *this;
   }
 
   void operator()(const ch_in<T>& in) {
     (*this) = in;
-  }
-
-  const ch_seq<T> asSeq() {
-    ch_seq<T> s;
-    (*this) = s;
-    return s;
-  }
-
-  const ch_seq<T> asSeq(const T& init) {
-    ch_seq<T> s(init);
-    (*this) = s;
-    return s;
   }
 
 private:
@@ -235,7 +219,7 @@ public:
   }
 
   void write(uint32_t, const void*, uint32_t, uint32_t, uint32_t) override {
-    assert(false);
+    CH_ABORT("trying to write to a read-only port: %s", out_.output_.get_name().c_str());
   }
 
 protected:

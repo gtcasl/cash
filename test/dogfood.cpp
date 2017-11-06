@@ -10,6 +10,29 @@ using namespace ch::literals;
 using namespace ch::sim;
 using namespace ch::htl;
 
+__enum (e2_t, 2, (
+  a, b, c, d
+));
+
+__struct (s4_2_t, (
+  (ch_bit4) a,
+  (ch_bit2) b
+));
+
+__struct (u4_2_t, (
+  (ch_bit4) a,
+  (ch_bit2) b
+));
+
+__inout(bundle4_io, (
+  __in(e2_t) x,
+  __in(s4_2_t) y,
+  __out(u4_2_t) z,
+  __out(ch_vec<ch_bool, 2>) w,
+  (ch_enq_io<s4_2_t>) eq,
+  (ch_deq_io<s4_2_t>) dq
+));
+
 __struct (s2_t, (
   (ch_bit4) a,
   (ch_bit4) b
@@ -86,8 +109,8 @@ struct Foo3 {
 template <typename T, unsigned N>
 struct QueueWrapper {
   __io (
-    (ch_deqIO<T>) enq,
-    (ch_enqIO<T>) deq
+    (ch_deq_io<T>) enq,
+    (ch_enq_io<T>) deq
   );
   void describe() {
     queue_.io.enq(io.enq);
@@ -106,12 +129,12 @@ struct Dogfood {
 };
 
 int main(int argc, char **argv) {
-  {
+  /*{
     ch_device<Dogfood> dogfood;
     ch_simulator sim(dogfood);
     sim.run(1);
     assert(dogfood.io.out);
-  }
+  }*/
 
   /*{
     ch_device<Foo1> foo;

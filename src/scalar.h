@@ -27,15 +27,23 @@ CH_DEF_SFINAE_CHECK(has_bitwidth, T::traits::bitwidth != 0);
 ///////////////////////////////////////////////////////////////////////////////
 
 enum traits_type {
-  traits_NA,
+  traits_none,
   traits_logic,
   traits_scalar,
   traits_io,
 };
 
+enum class ch_direction {
+  none  = 0x0,
+  in    = 0x1,
+  out   = 0x2,
+  inout = 0x3,
+};
+
 struct non_ch_type {
   struct traits {
-    static constexpr traits_type type = traits_NA;
+    static constexpr traits_type type = traits_none;
+    static constexpr ch_direction direction = ch_direction::none;
     static constexpr unsigned bitwidth = 0;
   };
 };
@@ -101,6 +109,7 @@ template <unsigned Bitwidth,
           typename Next = void>
 struct scalar_traits {
   static constexpr traits_type type = traits_scalar;
+  static constexpr ch_direction direction = ch_direction::none;
   static constexpr unsigned bitwidth = Bitwidth;
   using scalar_type = ScalarType;
   using const_type  = ConstType;

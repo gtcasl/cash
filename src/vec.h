@@ -564,10 +564,6 @@ protected:
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T, unsigned N>
-using resolve_const_vec = std::conditional_t<is_const_type<T>::value,
-                              const_vec<value_type_t<T>, N>, ch_vec<T, N>>;
-
-template <typename T, unsigned N>
 class ch_vec<T, N, typename std::enable_if_t<is_io_type<T>::value>>
     : public vec_base<T, N> {
 public:
@@ -576,7 +572,7 @@ public:
                           direction_v<T>,
                           ch_vec<flip_type_t<T>, N>,
                           ch_vec_buffer_io<T, N>,
-                          resolve_const_vec<logic_type_t<T>, N>>;
+                          ch_vec<logic_type_t<T>, N>>;
 
   using base = vec_base<T, N>;
   using base::operator [];

@@ -12,7 +12,17 @@ public:
   device(size_t signature, const std::string& name);
   virtual ~device();
 
+  device(device&& rhs) : impl_(std::move(rhs.impl_)) {}
+
+  device& operator=(device&& rhs) {
+    impl_ = std::move(rhs.impl_);
+    return *this;
+  }
+
 protected:
+
+  device(const device& rhs) = delete;
+  device& operator=(const device& rhs) = delete;
 
   void compile();
 
@@ -24,6 +34,8 @@ protected:
 template <typename T>
 class device_base : public device {
 public:
+  using base = device;
+
   template <typename... Ts>
   device_base(size_t signature, const std::string& name, Ts&&... args)
     : device(signature, name) {
@@ -32,7 +44,22 @@ public:
     this->compile();
   }
 
+  device_base(device_base&& rhs)
+    : base(std::move(rhs))
+    , obj_(std::move(rhs.obj_))
+  {}
+
+  device_base& operator=(device_base&& rhs) {
+    base::operator=(std::move(rhs));
+    impl_ = std::move(rhs.impl_);
+    return *this;
+  }
+
 protected:
+
+  device_base(const device_base& rhs) = delete;
+  device_base& operator=(const device_base& rhs) = delete;
+
   std::shared_ptr<T> obj_;
 };
 
@@ -42,7 +69,7 @@ context* get_ctx(const device& device);
 
 template <typename IoType>
 struct device_traits {
-  using io_type = scalar_type_t<IoType>;
+  using io_type = scalar_type_t<flip_type_t<IoType>>;
   using buffer_type = buffer_type_t<IoType>;
 };
 
@@ -68,6 +95,18 @@ public:
            std::forward<Ts>(args)...)
     , io(new typename traits::buffer_type(obj_->io))
   {}
+
+  ch_device(ch_device&& rhs) : base(std::move(rhs)) {}
+
+  ch_device& operator=(ch_device&& rhs) {
+    base::operator=(std::move(rhs));
+    return *this;
+  }
+
+protected:
+
+  ch_device(const ch_device& rhs) = delete;
+  ch_device& operator=(const ch_device& rhs) = delete;
 };
 
 }

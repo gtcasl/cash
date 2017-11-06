@@ -6,23 +6,23 @@ using namespace ch::htl;
 static_assert(ch_direction_v<ch_in<ch_bool>> == ch_direction::in, "invalid direction");
 static_assert(ch_direction_v<ch_out<ch_bool>> == ch_direction::out, "invalid direction");
 
-__inout(io_bundle2_t, (
+__inout(io_bundle2_io, (
   __in(ch_bool) x,
   __in(ch_bool) y
 ));
-static_assert(ch_direction_v<io_bundle2_t> == ch_direction::in, "invalid direction");
+static_assert(ch_direction_v<io_bundle2_io> == ch_direction::in, "invalid direction");
 
-__inout(io_bundle1_t, (
+__inout(io_bundle1_io, (
   __out(ch_bool) x,
   __out(ch_bool) y
 ));
-static_assert(ch_direction_v<io_bundle1_t> == ch_direction::out, "invalid direction");
+static_assert(ch_direction_v<io_bundle1_io> == ch_direction::out, "invalid direction");
 
-__inout(io_bundle3_t, (
+__inout(io_bundle3_io, (
   __in(ch_bool) x,
   __out(ch_bool) y
 ));
-static_assert(ch_direction_v<io_bundle3_t> == ch_direction::inout, "invalid direction");
+static_assert(ch_direction_v<io_bundle3_io> == ch_direction::inout, "invalid direction");
 
 __enum (e2_t, 2, (
   a, b, c, d

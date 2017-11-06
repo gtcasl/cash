@@ -20,6 +20,15 @@ const char* ch::internal::to_string(lnodetype type) {
 lnodeimpl::lnodeimpl(context* ctx, lnodetype type, uint32_t size)
   : ctx_(ctx)
   , id_(ctx->node_id())
+  , name_(fstring("%s%d", to_string(type), id_))
+  , type_(type)
+  , value_(size)
+{}
+
+lnodeimpl::lnodeimpl(context* ctx, const std::string& name, lnodetype type, uint32_t size)
+  : ctx_(ctx)
+  , id_(ctx->node_id())
+  , name_(name)
   , type_(type)
   , value_(size)
 {}
@@ -101,7 +110,13 @@ bool lnode::is_empty() const {
 }
 
 uint32_t lnode::get_id() const {
-  return impl_ ? impl_->get_id() : 0; 
+  assert(impl_);
+  return impl_->get_id();
+}
+
+const std::string& lnode::get_name() const {
+  assert(impl_);
+  return impl_->get_name();
 }
 
 context* lnode::get_ctx() const {
