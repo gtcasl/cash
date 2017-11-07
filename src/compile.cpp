@@ -52,8 +52,15 @@ void compiler::syntax_check() {
   const auto& undefs = ctx_->get_undefs();
   if (undefs.size()) {
     ctx_->dump_ast(std::cerr, 1);    
-    for (auto node : undefs) {
-      fprintf(stderr, "error: un-initialized node %s%d(#%d)!\n", to_string(node->get_type()), node->get_size(), node->get_id());
+    for (auto undef : undefs) {
+      for (auto node : ctx_->get_nodes()) {
+        auto ret = std::find_if(node->get_srcs().begin(), node->get_srcs().end(),
+                     [undef](const lnode& x)->bool { return x.get_id() == undef->get_id(); });
+        if (ret != node->get_srcs().end()) {
+          fprintf(stderr, "error: un-initialized node '%s' in module '%s'!\n", node->get_name().c_str(), ctx_->get_name().c_str());
+          break;
+        }
+      }
     }
     if (1 == undefs.size())
       CH_ABORT("1 node has not been initialized.");
@@ -108,7 +115,10 @@ size_t compiler::dead_code_elimination() {
           }
         } else {
           for (auto& curr : src_proxy->get_ranges()) {
-            uses.insert(curr.src_idx);
+            auto ret = uses.insert(curr.src_idx);
+            if (ret.second) {
+              new_proxy_source = true;
+            }
           }
         }
       }
