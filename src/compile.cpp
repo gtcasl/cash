@@ -20,7 +20,7 @@ void compiler::run() {
 
   this->build_node_map();
 
-  size_t identity_nodes = 0; //this->remove_identity_nodes();
+  size_t identity_nodes = this->remove_identity_nodes();
   
   this->syntax_check();
   
