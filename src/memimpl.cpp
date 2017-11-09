@@ -1,6 +1,7 @@
 #include "memimpl.h"
 #include "mem.h"
 #include "context.h"
+#include "proxyimpl.h"
 
 using namespace ch::internal;
 
@@ -198,10 +199,30 @@ void mem_buffer::write(uint32_t dst_offset,
                        const lnode& data,
                        uint32_t src_offset,
                        uint32_t length) {
-  CH_CHECK(0 == dst_offset
-        && 0 == src_offset
-        && length == size_, "partial memory update not supported");
+  assert(0 == src_offset && (dst_offset + length) <= size_);
   auto port = dynamic_cast<memportimpl*>(value_.get_impl());
   assert(port);
-  port->write(data);
+
+  // if partial write, use masking
+  if (length != size_) {
+    // build write mask
+    bitvector one(size_, 1), tmp1(size_), tmp2(size_);
+    Sll(tmp1, one, length);
+    Sub(tmp2, tmp1, one);
+
+    // resize source
+    lnode zero(bitvector(size_ - data.get_size(), 0));
+    auto resized_data = data.get_ctx()->createNode<proxyimpl>(size_);
+    resized_data->add_source(0, data);
+    resized_data->add_source(data.get_size(), zero);
+    auto lhs = createAluNode(alu_and, resized_data, tmp2);
+    lhs = createAluNode(alu_sll, lhs, bitvector(size_, dst_offset));
+    Sll(tmp1, tmp2, dst_offset);
+    Inv(tmp2, tmp1);
+    auto rhs = createAluNode(alu_and, port, tmp2);
+    auto dst = createAluNode(alu_or, lhs, rhs);
+    port->write(dst);
+  } else {
+    port->write(data);
+  }
 }

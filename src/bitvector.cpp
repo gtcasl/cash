@@ -468,7 +468,7 @@ std::ostream& ch::internal::operator<<(std::ostream& out, const bitvector& rhs) 
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void ch::internal::Inverse(bitvector& out, const bitvector& in) {
+void ch::internal::Inv(bitvector& out, const bitvector& in) {
   assert(out.get_size() == in.get_size());
   for (uint32_t i = 0, n = in.get_num_words(); i < n; ++i) {
     out.set_word(i, ~in.get_word(i));
@@ -609,7 +609,7 @@ bool ch::internal::XnorR(const bitvector& in) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void ch::internal::SLL(bitvector& out, const bitvector& in, uint32_t dist) {
+void ch::internal::Sll(bitvector& out, const bitvector& in, uint32_t dist) {
   assert(out.get_size() == in.get_size());
   uint32_t num_words = in.get_num_words();
   if (num_words == 1) {
@@ -639,7 +639,7 @@ void ch::internal::SLL(bitvector& out, const bitvector& in, uint32_t dist) {
   out.clear_unused_bits(); // clear extra bits added by left shift
 }
 
-void ch::internal::SRL(bitvector& out, const bitvector& in, uint32_t dist) {
+void ch::internal::Srl(bitvector& out, const bitvector& in, uint32_t dist) {
   assert(out.get_size() == in.get_size());
   uint32_t num_words   = in.get_num_words();
   if (num_words == 1) {
@@ -771,7 +771,7 @@ void ch::internal::Add(bitvector& out, const bitvector& lhs, const bitvector& rh
 
 void ch::internal::Sub(bitvector& out, const bitvector& lhs, const bitvector& rhs) {
   bitvector minus_b(out.get_size());
-  Inverse(minus_b, rhs);
+  Inv(minus_b, rhs);
   Add(out, lhs, minus_b, 1);
 }
 

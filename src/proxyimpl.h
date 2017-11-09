@@ -40,6 +40,12 @@ public:
                   uint32_t src_offset,
                   uint32_t length);
 
+  void add_source(uint32_t dst_offset,
+                  const lnode& src,
+                  uint32_t src_offset = 0) {
+    this->add_source(dst_offset, src, src_offset, src.get_size());
+  }
+
   std::vector<lnode>::iterator erase_source(std::vector<lnode>::iterator iter);
 
   lnodeimpl* get_slice(uint32_t offset, uint32_t length);

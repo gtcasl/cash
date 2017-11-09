@@ -410,7 +410,7 @@ public:
 
   const auto operator~() const {
     bitvector ret(N);
-    Inverse(ret, buffer_->get_data());
+    Inv(ret, buffer_->get_data());
     return ch_scalar<N>(scalar_buffer(std::move(ret)));
   }
 
@@ -454,7 +454,7 @@ public:
     bitvector ret(N);
     auto shift = rhs.buffer_->get_data();
     CH_CHECK(shift.find_last() <= 31, "shift amount out of range!");
-    SLL(ret, buffer_->get_data(), shift.get_word(0));
+    Sll(ret, buffer_->get_data(), shift.get_word(0));
     return ch_scalar<N>(scalar_buffer(std::move(ret)));
   }
 
@@ -462,7 +462,7 @@ public:
     bitvector ret(N);
     auto shift = rhs.buffer_->get_data();
     CH_CHECK(shift.find_last() <= 31, "shift amount out of range!");
-    SRL(ret, buffer_->get_data(), shift.get_word(0));
+    Srl(ret, buffer_->get_data(), shift.get_word(0));
     return ch_scalar<N>(scalar_buffer(std::move(ret)));
   }
 

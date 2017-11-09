@@ -18,7 +18,7 @@ static void unaryop(bitvector& out, const bitvector& in) {
   
   switch (op) {
   case alu_inv:
-    Inverse(out, in);
+    Inv(out, in);
     break;
   case alu_neg:
     Negate(out, in);
@@ -65,10 +65,10 @@ static void shiftop(bitvector& out, const bitvector& in, const bitvector& bits) 
   uint32_t wbits = bits.get_word(0);
   switch (op) {  
   case alu_sll:
-    SLL(out, in, wbits);
+    Sll(out, in, wbits);
     break;
   case alu_srl:
-    SRL(out, in, wbits);
+    Srl(out, in, wbits);
     break;
   case alu_sra:
     CH_TODO();

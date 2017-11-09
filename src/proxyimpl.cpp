@@ -11,7 +11,7 @@ proxyimpl::proxyimpl(context* ctx, uint32_t size)
 proxyimpl::proxyimpl(context* ctx, const lnode& src)
   : lnodeimpl(ctx, type_proxy, src.get_size())
   , tick_(~0ull)  {
-  this->add_source(0, src, 0, src.get_size());
+  this->add_source(0, src);
 }
 
 proxyimpl::proxyimpl(context* ctx, const lnode& src, uint32_t offset, uint32_t length)

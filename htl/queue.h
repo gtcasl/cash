@@ -13,6 +13,7 @@ struct ch_queue {
   using value_type = T;
   static constexpr unsigned max_size = N;
   static constexpr unsigned addr_width = log2ceil(N);
+  static_assert(N > 1, "invalid size");
 
   __io (
     (ch_deq_io<T>) enq,

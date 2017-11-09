@@ -1,5 +1,10 @@
 #include "common.h"
 
+__struct (Q_t, (
+  (ch_bit2) a,
+  (ch_bit2) b
+));
+
 TEST_CASE("memory", "[memory]") {
   SECTION("rom", "[rom]") {
     TEST([]()->ch_bit1 {
@@ -90,5 +95,19 @@ TEST_CASE("memory", "[memory]") {
       //ch_print("t={0}, a={1}, d={2}, en={3}, q={4}, e={5}", ch_getTick(), a, d, en, q, e);
       return (q == e);
     }, 12);
+  }
+
+  SECTION("partial_write", "[partial_write]") {
+    TEST([]()->ch_bit1 {
+      ch_ram<Q_t, 2> mem;
+      mem[0].a = 1;
+      mem[1].b = 2;
+      auto x = mem[0].asBits();
+      auto y = mem[1].asBits();
+      auto e1 = ch_reg(0001_b);
+      auto e2 = ch_reg(1000_b);
+      ch_print("t={0}, x={1}, e1={2}, y={3}, e2={4}", ch_getTick(), x, e1, y, e2);
+      return (x == e1 && y == e2);
+    }, 4);
   }
 }

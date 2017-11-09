@@ -719,7 +719,7 @@ protected:
 
 std::ostream& operator<<(std::ostream& out, const bitvector& rhs);
 
-void Inverse(bitvector& out, const bitvector& in);
+void Inv(bitvector& out, const bitvector& in);
 void And(bitvector& out, const bitvector& lhs, const bitvector& rhs);
 void Or(bitvector& out, const bitvector& lhs, const bitvector& rhs);
 void Xor(bitvector& out, const bitvector& lhs, const bitvector& rhs);
@@ -734,8 +734,8 @@ bool NandR(const bitvector& in);
 bool NorR(const bitvector& in);
 bool XnorR(const bitvector& in);
 
-void SLL(bitvector& out, const bitvector& in, uint32_t dist);
-void SRL(bitvector& out, const bitvector& in, uint32_t dist);
+void Sll(bitvector& out, const bitvector& in, uint32_t dist);
+void Srl(bitvector& out, const bitvector& in, uint32_t dist);
 void RotL(bitvector& out, const bitvector& in, uint32_t dist);
 void RotR(bitvector& out, const bitvector& in, uint32_t dist);
 
