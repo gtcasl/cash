@@ -29,7 +29,7 @@ TEST_CASE("memory", "[memory]") {
     }, 12);
   }
   
-  SECTION("mem", "[mem]") {
+  SECTION("ram", "[ram]") {
     TEST([]()->ch_bit1 {
       ch_bit2 a;
       ch_bit4 d, q;
@@ -95,6 +95,14 @@ TEST_CASE("memory", "[memory]") {
       //ch_print("t={0}, a={1}, d={2}, en={3}, q={4}, e={5}", ch_getTick(), a, d, en, q, e);
       return (q == e);
     }, 12);
+    TEST([]()->ch_bit1 {
+      ch_ram<Q_t, 2> mem;
+      mem[0] = Q_t(1101_b);
+      auto x = mem[0].asBits();
+      auto e = ch_reg(1101_b);
+      ch_print("t={0}, x={1}, e={2}", ch_getTick(), x, e);
+      return (x == e);
+    }, 4);
   }
 
   SECTION("partial_write", "[partial_write]") {

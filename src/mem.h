@@ -43,6 +43,8 @@ public:
              const lnode& data,
              uint32_t src_offset,
              uint32_t length) override;
+
+  void move(const lnode& data) override;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

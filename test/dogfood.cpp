@@ -10,6 +10,11 @@ using namespace ch::literals;
 using namespace ch::sim;
 using namespace ch::htl;
 
+__struct (Q_t, (
+  (ch_bit2) a,
+  (ch_bit2) b
+));
+
 __enum (e2_t, 2, (
   a, b, c, d
 ));
@@ -125,9 +130,12 @@ struct Dogfood {
     __out(ch_bit1) out
   );
   void describe() {
-    ch_bit4 w(io.in);
-    w = 0xB;
-    io.out = (io.in == 0xA);
+    ch_ram<Q_t, 2> mem;
+    mem[0] = Q_t(1101_b);
+    auto x = mem[0].asBits();
+    auto e = ch_reg(1101_b);
+    ch_print("t={0}, x={1}, e={2}", ch_getTick(), x, e);
+    io.out = (x == e);
   }
 };
 
@@ -136,7 +144,7 @@ int main(int argc, char **argv) {
     ch_device<Dogfood> device;
     ch_simulator sim(device);
     device.io.in = 0xA;
-    sim.run(1);
+    sim.run(4);
     assert(device.io.out);
   }
 

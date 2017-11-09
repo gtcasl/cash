@@ -59,9 +59,8 @@ bit_buffer_impl& bit_buffer_impl::operator=(bit_buffer_impl&& rhs) {
   if (source_ || rhs.source_) {
     this->write(0, rhs, 0, size_);
   } else {
-    value_.move(rhs.value_);
-    offset_ = rhs.offset_;
-    size_   = rhs.size_;
+    assert(rhs.offset_ == 0 && rhs.offset_ == offset_ && rhs.size_ == size_);
+    this->move(rhs.value_);
   }
   return *this;
 }
@@ -79,6 +78,10 @@ const lnode& bit_buffer_impl::get_data() const {
     value_.ensureInitialized(size_);
   }
   return value_;
+}
+
+void bit_buffer_impl::move(const lnode& data) {
+  value_.move(data);
 }
 
 void bit_buffer_impl::write(uint32_t dst_offset,

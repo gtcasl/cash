@@ -10,10 +10,7 @@ public:
   tracerimpl(std::ostream& out, const std::initializer_list<context*>& contexts);
   tracerimpl(const std::string& file, const std::initializer_list<context*>& contexts);
 
-  ~tracerimpl() {
-    if (file_)
-      delete file_;
-  }  
+  ~tracerimpl();
 
 protected:
 

@@ -141,6 +141,9 @@ public:
                      const lnode& data,
                      uint32_t src_offset,
                      uint32_t length);
+
+  virtual void move(const lnode& data);
+
 protected:
 
   bit_buffer_ptr source_;

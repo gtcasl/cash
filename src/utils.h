@@ -173,9 +173,11 @@ public:
 
   long release() const {
     assert(refcount_ > 0);
-    if (0 == --refcount_)
+    long refcount = --refcount_;
+    if (0 == refcount) {
       delete this;
-    return refcount_;
+    }
+    return refcount;
   }
   
   long get_refcount() const {

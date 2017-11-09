@@ -16,6 +16,12 @@ tracerimpl::tracerimpl(const std::string& file, const std::initializer_list<cont
   , out_(*file_)
 {}
 
+tracerimpl::~tracerimpl() {
+  if (file_) {
+    delete file_;
+  }
+}
+
 void tracerimpl::ensureInitialize() {
   // call parent ensureInitialize()
   simulatorimpl::ensureInitialize();

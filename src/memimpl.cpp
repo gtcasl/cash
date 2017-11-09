@@ -226,3 +226,7 @@ void mem_buffer::write(uint32_t dst_offset,
     port->write(data);
   }
 }
+
+void mem_buffer::move(const lnode& data) {
+  this->write(0, data, 0, size_);
+}

@@ -26,8 +26,9 @@ simulatorimpl::simulatorimpl(const std::initializer_list<context*>& contexts)
   , reset_driver_(false) {
   for (auto ctx : contexts) {
     auto ret = contexts_.emplace(ctx);
-    if (ret.second)
+    if (ret.second) {
       ctx->acquire();
+    }
   }
 }
 
