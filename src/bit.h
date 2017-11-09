@@ -207,7 +207,7 @@ struct bit_accessor {
   template <typename T>
   static auto cloneBuffer(const T& obj) {
     assert(bitwidth_v<T> == obj.get_buffer()->get_size());
-    return bit_buffer(obj.get_buffer()->get_data());
+    return bit_buffer(obj.get_buffer()->get_data().clone());
   }
 
   template <typename U, typename V,

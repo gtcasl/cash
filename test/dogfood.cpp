@@ -121,20 +121,24 @@ struct QueueWrapper {
 
 struct Dogfood {
   __io (
+    __in(ch_bit4) in,
     __out(ch_bit1) out
   );
   void describe() {
-    io.out = 1_b;
+    ch_bit4 w(io.in);
+    w = 0xB;
+    io.out = (io.in == 0xA);
   }
 };
 
 int main(int argc, char **argv) {
-  /*{
-    ch_device<Dogfood> dogfood;
-    ch_simulator sim(dogfood);
+  {
+    ch_device<Dogfood> device;
+    ch_simulator sim(device);
+    device.io.in = 0xA;
     sim.run(1);
-    assert(dogfood.io.out);
-  }*/
+    assert(device.io.out);
+  }
 
   /*{
     ch_device<Foo1> foo;
