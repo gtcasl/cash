@@ -16,6 +16,8 @@
 
 using namespace ch::internal;
 
+#define EMPLACE_LITERAL_WIDTH 32
+
 const auto IsRegType = [](lnodetype type) {
   return (type_reg == type) || (type_mem == type) || (type_memport == type);
 };
@@ -30,12 +32,7 @@ verilogwriter::~verilogwriter() {
 
 void verilogwriter::print(const std::initializer_list<context*>& contexts) {
   // includes
-  std::string lib_file = "verilog.v";
-  auto lib_dir = std::getenv("CASH_PATH");
-  if (lib_dir) {
-    lib_file = std::string(lib_dir) + "/" + lib_file;
-  }
-  out_ << "`include \"" << lib_file << "\"" << std::endl;
+  out_ << "`include \"cash.v\"" << std::endl;
   out_ << std::endl;
 
   // print module  
@@ -222,13 +219,15 @@ bool verilogwriter::print_decl(lnodeimpl* node,
   auto type = node->get_type();
   switch (type) {
   case type_lit:
+    visited.insert(node->get_id());
+    if (node->get_size() <= EMPLACE_LITERAL_WIDTH)
+      return false;
     this->print_type(node);
     out_ << " ";
     this->print_name(node);
     out_ << " = ";
     this->print_value(node->get_value());
-    out_ << ";" << std::endl;
-    visited.insert(node->get_id());
+    out_ << ";" << std::endl;    
     return true;
   case type_bindport:
   case type_proxy:
@@ -516,15 +515,12 @@ void verilogwriter::print_mem(memimpl* node) {
       auto_indent indent(out_);
       const auto& value = node->get_value();
       uint32_t data_width = node->get_data_width();
-      uint32_t num_items = 1 << node->get_num_items();
+      uint32_t num_items = node->get_num_items();
       for (uint32_t i = 0; i < num_items; ++i) {
-        this->print_name(node);
-        out_ << "[" << i << "] = " << data_width << "'b";
-        uint32_t data_msb = (i + 1) * data_width - 1;
-        auto it = value.begin() + data_msb;
-        for (uint32_t n = data_width; n--;) {
-          out_ << ((*it--) ? 1 : 0);
-        }
+        this->print_name(node, true);
+        out_ << "[" << i << "] = ";
+        uint32_t offset = i * data_width;
+        this->print_value(value, offset, data_width);
         out_ << ";" << std::endl;
       }
     }
@@ -583,7 +579,7 @@ void verilogwriter::print_operator(ch_alu_op op) {
   }
 }
 
-void verilogwriter::print_name(lnodeimpl* node) {
+void verilogwriter::print_name(lnodeimpl* node, bool force) {
   auto print_basic_name = [&](char prefix) {
     out_ << prefix << node->get_id();
   };
@@ -597,7 +593,11 @@ void verilogwriter::print_name(lnodeimpl* node) {
     print_basic_name('w');
     break;
   case type_lit:
-    print_basic_name('l');
+    if (!force && node->get_size() <= EMPLACE_LITERAL_WIDTH) {
+      print_value(node->get_value());
+    } else {
+      print_basic_name('l');
+    }
     break;
   case type_select:
     print_basic_name('s');
@@ -644,10 +644,49 @@ void verilogwriter::print_type(lnodeimpl* node) {
   }
 }
 
-void verilogwriter::print_value(const bitvector& value) {
-  out_ << value.get_size() << "'b";
-  for (auto it = value.rbegin(), end = value.rend(); it != end;) {
-    out_ << ((*it++) ? 1 : 0);
+void verilogwriter::print_value(const bitvector& value, unsigned offset, unsigned size) {
+  bool skip_leading_zeros_enable = true;
+  auto skip_leading_zeros = [&](int word)->bool {
+    if (skip_leading_zeros_enable) {
+      if (0 == word) {
+        return true;
+      } else {
+        skip_leading_zeros_enable = false;
+      }
+    }
+    return false;
+  };
+  if (0 == size) {
+    size = value.get_size();
+  }
+  offset += (size -1);
+  if (0 == (value.get_size() & 0x3)) {
+    int word = 0;
+    int wsize = 0;
+    out_ << size << "'h";
+    auto oldflags = out_.flags();
+    out_.setf(std::ios_base::hex, std::ios_base::basefield);
+    for (auto it = value.begin() + offset; size--;) {
+      word = (word << 0x1) | *it--;
+      if (0 == (++wsize & 0x3)) {
+        if (0 == size || !skip_leading_zeros(word)) {
+          out_ << word;
+        }
+        word = 0;
+      }
+    }
+    if (0 != (wsize & 0x3)) {
+      out_ << word;
+    }
+    out_.flags(oldflags);
+  } else {
+    out_ << size<< "'b";
+    for (auto it = value.begin() + offset; size--;) {
+      int word = *it--;
+      if (size != 0 && skip_leading_zeros(word))
+        continue;
+      out_ << word;
+    }
   }
 }
 

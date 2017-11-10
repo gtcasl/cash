@@ -179,8 +179,8 @@ void lnode::move(const lnode& rhs) {
   assert(this != &rhs);
   assert(!rhs.is_empty());
   if (ctx_curr()->conditional_enabled(impl_)) {
-    rhs.ensureInitialized(impl_->get_size(), true);
-    this->write(0, rhs, 0, impl_->get_size(), impl_->get_size());
+    rhs.ensureInitialized(rhs.get_size(), true);
+    this->write(0, rhs, 0, rhs.get_size(), rhs.get_size());
   } else {
     auto proxy = dynamic_cast<proxyimpl*>(impl_);
     if (proxy) {

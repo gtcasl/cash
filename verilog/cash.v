@@ -20,6 +20,9 @@
 // other product not provided by Altera.
 /////////////////////////////////////////////////////////////////////////////
 
+`ifndef __cash_v__
+`define __cash_v__
+
 module bus_mux (din,sel,dout);
 
 parameter DAT_WIDTH = 16;
@@ -164,3 +167,5 @@ generate
 endgenerate
 
 endmodule
+
+`endif //__cash_v__

@@ -336,10 +336,10 @@ const auto OpReduce(const const_bit<N>& a) {
 
 #define CH_LOGIC_READONLY_INTERFACE(type) \
   template <typename R, CH_REQUIRES(ch::internal::is_logic_type<R>::value)> \
-  auto as() const { \
+  R as() const { \
     return ch::internal::bit_accessor::cast<R>(*this); \
   } \
-  auto asBits() const { \
+  ch_bit<type::traits::bitwidth> asBits() const { \
     return this->as<ch_bit<type::traits::bitwidth>>(); \
   }
 

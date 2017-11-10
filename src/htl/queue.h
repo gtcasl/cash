@@ -1,7 +1,7 @@
 #pragma once
 
 #include <cash.h>
-#include <../htl/decoupled.h>
+#include <htl/decoupled.h>
 
 namespace ch {
 namespace htl {

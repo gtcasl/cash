@@ -1,9 +1,9 @@
 #include "common.h"
-#include <../htl/queue.h>
-#include <../htl/onehot.h>
-#include <../htl/mux.h>
-#include <../htl/xbar.h>
-#include <../htl/arbiter.h>
+#include <htl/queue.h>
+#include <htl/onehot.h>
+#include <htl/mux.h>
+#include <htl/xbar.h>
+#include <htl/arbiter.h>
 
 using namespace ch::core;
 using namespace ch::literals;

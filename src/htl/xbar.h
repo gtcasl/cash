@@ -1,7 +1,7 @@
 #pragma once
 
 #include <cash.h>
-#include <../htl/mux.h>
+#include <htl/mux.h>
 
 namespace ch {
 namespace htl {

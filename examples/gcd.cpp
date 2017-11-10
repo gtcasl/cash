@@ -1,5 +1,5 @@
 #include <cash.h>
-#include <../htl/decoupled.h>
+#include <htl/decoupled.h>
 
 using namespace ch::core;
 using namespace ch::literals;

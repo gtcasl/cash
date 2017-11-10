@@ -50,11 +50,11 @@ protected:
 
   bool print_logic(lnodeimpl* node);
 
-  void print_name(lnodeimpl* node);
+  void print_name(lnodeimpl* node, bool force = false);
 
   void print_type(lnodeimpl* node);
 
-  void print_value(const bitvector& value);
+  void print_value(const bitvector& value, unsigned offset = 0, unsigned size = 0);
 
   void print_proxy(proxyimpl* node);
 
