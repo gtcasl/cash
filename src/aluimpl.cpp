@@ -226,138 +226,133 @@ static uint32_t get_output_size(ch_alu_op op, const lnode& in) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-aluimpl::aluimpl(context* ctx, ch_alu_op op, const lnode& lhs, const lnode& rhs)
-  : lnodeimpl(ctx, type_alu, get_output_size(op, lhs, rhs))
+aluimpl::aluimpl(context* ctx, ch_alu_op op, unsigned size, unsigned num_operands)
+  : lnodeimpl(ctx, type_alu, size)
   , op_(op)
   , tick_(~0ull) {
-  srcs_.emplace_back(lhs);
-  srcs_.emplace_back(rhs);
+  srcs_.resize(num_operands);
 }
 
-aluimpl::aluimpl(context* ctx, ch_alu_op op, const lnode& in)
-  : lnodeimpl(ctx, type_alu, get_output_size(op, in))
-  , op_(op)
-  , tick_(~0ull) {
-  srcs_.emplace_back(in);
+void aluimpl::eval(bitvector& inout, ch_tick t) {
+  switch (op_) {
+  case alu_inv:
+    unaryop<alu_inv>(inout, srcs_[0].eval(t));
+    break;
+  case alu_and:
+    binaryop<alu_and>(inout, srcs_[0].eval(t), srcs_[1].eval(t));
+    break;
+  case alu_or:
+    binaryop<alu_or>(inout, srcs_[0].eval(t), srcs_[1].eval(t));
+    break;
+  case alu_xor:
+    binaryop<alu_xor>(inout, srcs_[0].eval(t), srcs_[1].eval(t));
+    break;
+  case alu_nand:
+    binaryop<alu_nand>(inout, srcs_[0].eval(t), srcs_[1].eval(t));
+    break;
+  case alu_nor:
+    binaryop<alu_nor>(inout, srcs_[0].eval(t), srcs_[1].eval(t));
+    break;
+  case alu_xnor:
+    binaryop<alu_xnor>(inout, srcs_[0].eval(t), srcs_[1].eval(t));
+    break;
+
+  case alu_andr:
+    reduceop<alu_andr>(inout, srcs_[0].eval(t));
+    break;
+  case alu_orr:
+    reduceop<alu_orr>(inout, srcs_[0].eval(t));
+    break;
+  case alu_xorr:
+    reduceop<alu_xorr>(inout, srcs_[0].eval(t));
+    break;
+  case alu_nandr:
+    reduceop<alu_nandr>(inout, srcs_[0].eval(t));
+    break;
+  case alu_norr:
+    reduceop<alu_norr>(inout, srcs_[0].eval(t));
+    break;
+  case alu_xnorr:
+    reduceop<alu_xnorr>(inout, srcs_[0].eval(t));
+    break;
+
+  case alu_sll:
+    shiftop<alu_sll>(inout, srcs_[0].eval(t), srcs_[1].eval(t));
+    break;
+  case alu_srl:
+    shiftop<alu_srl>(inout, srcs_[0].eval(t), srcs_[1].eval(t));
+    break;
+  case alu_sra:
+    shiftop<alu_sra>(inout, srcs_[0].eval(t), srcs_[1].eval(t));
+    break;
+
+  case alu_rotl:
+    rotateop<alu_rotl>(inout, srcs_[0].eval(t), srcs_[1].eval(t));
+    break;
+  case alu_rotr:
+    rotateop<alu_rotr>(inout, srcs_[0].eval(t), srcs_[1].eval(t));
+    break;
+
+  case alu_add:
+    Add(inout, srcs_[0].eval(t), srcs_[1].eval(t));
+    break;
+  case alu_sub:
+    Sub(inout, srcs_[0].eval(t), srcs_[1].eval(t));
+    break;
+  case alu_neg:
+    unaryop<alu_neg>(inout, srcs_[0].eval(t));
+    break;
+  case alu_mult:
+  case alu_div:
+  case alu_mod:
+    CH_TODO();
+    break;
+
+  case alu_eq:
+    compareop<alu_eq>(inout, srcs_[0].eval(t), srcs_[1].eval(t));
+    break;
+  case alu_ne:
+    compareop<alu_ne>(inout, srcs_[0].eval(t), srcs_[1].eval(t));
+    break;
+  case alu_lt:
+    compareop<alu_lt>(inout, srcs_[0].eval(t), srcs_[1].eval(t));
+    break;
+  case alu_gt:
+    compareop<alu_gt>(inout, srcs_[0].eval(t), srcs_[1].eval(t));
+    break;
+  case alu_le:
+    compareop<alu_le>(inout, srcs_[0].eval(t), srcs_[1].eval(t));
+    break;
+  case alu_ge:
+    compareop<alu_ge>(inout, srcs_[0].eval(t), srcs_[1].eval(t));
+    break;
+
+  case alu_mux:
+    Mux(inout, srcs_[0].eval(t), srcs_[1].eval(t));
+    break;
+
+  case alu_fadd:
+    fAdd(inout, srcs_[0].eval(t), srcs_[1].eval(t));
+    break;
+  case alu_fsub:
+    fSub(inout, srcs_[0].eval(t), srcs_[1].eval(t));
+    break;
+  case alu_fmult:
+    fMult(inout, srcs_[0].eval(t), srcs_[1].eval(t));
+    break;
+  case alu_fdiv:
+    fDiv(inout, srcs_[0].eval(t), srcs_[1].eval(t));
+    break;
+
+  default:
+    CH_ABORT("invalid alu operation");
+  }
 }
 
 const bitvector& aluimpl::eval(ch_tick t) {  
   if (tick_ != t) {  
     tick_ = t;
-    
-    switch (op_) {
-    case alu_inv:
-      unaryop<alu_inv>(value_, srcs_[0].eval(t));
-      break;
-    case alu_and:
-      binaryop<alu_and>(value_, srcs_[0].eval(t), srcs_[1].eval(t));
-      break;
-    case alu_or:
-      binaryop<alu_or>(value_, srcs_[0].eval(t), srcs_[1].eval(t));
-      break;
-    case alu_xor:
-      binaryop<alu_xor>(value_, srcs_[0].eval(t), srcs_[1].eval(t));
-      break;
-    case alu_nand:
-      binaryop<alu_nand>(value_, srcs_[0].eval(t), srcs_[1].eval(t));
-      break;
-    case alu_nor:
-      binaryop<alu_nor>(value_, srcs_[0].eval(t), srcs_[1].eval(t));
-      break;
-    case alu_xnor:
-      binaryop<alu_xnor>(value_, srcs_[0].eval(t), srcs_[1].eval(t));
-      break;
-    
-    case alu_andr:
-      reduceop<alu_andr>(value_, srcs_[0].eval(t));
-      break;
-    case alu_orr:
-      reduceop<alu_orr>(value_, srcs_[0].eval(t));
-      break;
-    case alu_xorr:
-      reduceop<alu_xorr>(value_, srcs_[0].eval(t));
-      break;
-    case alu_nandr:
-      reduceop<alu_nandr>(value_, srcs_[0].eval(t));
-      break;
-    case alu_norr:
-      reduceop<alu_norr>(value_, srcs_[0].eval(t));
-      break;
-    case alu_xnorr:
-      reduceop<alu_xnorr>(value_, srcs_[0].eval(t));
-      break;
-      
-    case alu_sll:
-      shiftop<alu_sll>(value_, srcs_[0].eval(t), srcs_[1].eval(t));
-      break;
-    case alu_srl:
-      shiftop<alu_srl>(value_, srcs_[0].eval(t), srcs_[1].eval(t));
-      break;
-    case alu_sra:
-      shiftop<alu_sra>(value_, srcs_[0].eval(t), srcs_[1].eval(t));
-      break;
-
-    case alu_rotl:
-      rotateop<alu_rotl>(value_, srcs_[0].eval(t), srcs_[1].eval(t));
-      break;
-    case alu_rotr:
-      rotateop<alu_rotr>(value_, srcs_[0].eval(t), srcs_[1].eval(t));
-      break;
-
-    case alu_add:
-      Add(value_, srcs_[0].eval(t), srcs_[1].eval(t));
-      break;
-    case alu_sub:
-      Sub(value_, srcs_[0].eval(t), srcs_[1].eval(t));
-      break;
-    case alu_neg:
-      unaryop<alu_neg>(value_, srcs_[0].eval(t));
-      break;
-    case alu_mult:
-    case alu_div:
-    case alu_mod:
-      CH_TODO();
-      break;
-      
-    case alu_eq:
-      compareop<alu_eq>(value_, srcs_[0].eval(t), srcs_[1].eval(t));
-      break;
-    case alu_ne:
-      compareop<alu_ne>(value_, srcs_[0].eval(t), srcs_[1].eval(t));
-      break;
-    case alu_lt:
-      compareop<alu_lt>(value_, srcs_[0].eval(t), srcs_[1].eval(t));
-      break;
-    case alu_gt:
-      compareop<alu_gt>(value_, srcs_[0].eval(t), srcs_[1].eval(t));
-      break;
-    case alu_le:
-      compareop<alu_le>(value_, srcs_[0].eval(t), srcs_[1].eval(t));
-      break;
-    case alu_ge:
-      compareop<alu_ge>(value_, srcs_[0].eval(t), srcs_[1].eval(t));
-      break;
-
-    case alu_mux:
-      Mux(value_, srcs_[0].eval(t), srcs_[1].eval(t));
-      break;
-      
-    case alu_fadd:
-      fAdd(value_, srcs_[0].eval(t), srcs_[1].eval(t));
-      break;      
-    case alu_fsub:
-      fSub(value_, srcs_[0].eval(t), srcs_[1].eval(t));
-      break;      
-    case alu_fmult:
-      fMult(value_, srcs_[0].eval(t), srcs_[1].eval(t));
-      break;      
-    case alu_fdiv:
-      fDiv(value_, srcs_[0].eval(t), srcs_[1].eval(t));
-      break;
-      
-    default:
-      CH_ABORT("invalid alu operation");
-    }
+    this->eval(value_, t);
   }
   return value_;
 }
@@ -379,13 +374,69 @@ void aluimpl::print(std::ostream& out, uint32_t level) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+delayed_aluimpl::delayed_aluimpl(context* ctx,
+                                 ch_alu_op op,
+                                 unsigned size,
+                                 unsigned delay,
+                                 unsigned num_operands)
+  : aluimpl(ctx, op, size, num_operands)
+  , queue_(delay, bitvector(size))
+  , next_(size)
+  , curr_pos_(0) {
+  cd_ = ctx->create_cdomain({clock_event(ctx->get_clk(), EDGE_POS)});
+  cd_->add_use(this);
+}
+
+delayed_aluimpl::~delayed_aluimpl() {
+  cd_->remove_use(this);
+}
+
+void delayed_aluimpl::tick(ch_tick t) {
+  CH_UNUSED(t);
+  queue_[curr_pos_] = next_;
+  curr_pos_ = (curr_pos_ + 1) % queue_.size();
+  value_ = queue_[curr_pos_];
+}
+
+void delayed_aluimpl::tick_next(ch_tick t) {
+  this->aluimpl::eval(next_, t);
+}
+
+const bitvector& delayed_aluimpl::eval(ch_tick t) {
+  CH_UNUSED(t);
+  return value_;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 lnodeimpl* ch::internal::createAluNode(
     ch_alu_op op,
     const lnode& lhs,
-    const lnode& rhs) {
-  return lhs.get_ctx()->createNode<aluimpl>(op, lhs, rhs);
+    const lnode& rhs,
+    unsigned delay) {
+  aluimpl* impl;
+  auto size = get_output_size(op, lhs, rhs);
+  if (delay != 0) {
+    impl = lhs.get_ctx()->createNode<delayed_aluimpl>(op, size, delay, 2);
+  } else {
+    impl = lhs.get_ctx()->createNode<aluimpl>(op, size, 2);
+  }
+  impl->set_src(0, lhs);
+  impl->set_src(1, rhs);
+  return impl;
 }
 
-lnodeimpl* ch::internal::createAluNode(ch_alu_op op, const lnode& in) {
-  return in.get_ctx()->createNode<aluimpl>(op, in);
+lnodeimpl* ch::internal::createAluNode(
+    ch_alu_op op,
+    const lnode& in,
+    unsigned delay) {
+  aluimpl* impl;
+  auto size = get_output_size(op, in);
+  if (delay != 0) {
+    impl = in.get_ctx()->createNode<delayed_aluimpl>(op, size, delay, 1);
+  } else {
+    impl = in.get_ctx()->createNode<aluimpl>(op, size, 1);
+  }
+  impl->set_src(0, in);
+  return impl;
 }

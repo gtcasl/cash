@@ -15,6 +15,8 @@ lnodeimpl* createLatchNode(const lnode& next,
 void pushClock(const lnode& node);
 void pushReset(const lnode& node);
 
+///////////////////////////////////////////////////////////////////////////////
+
 const ch_bit<1> ch_getClock();
 
 template <typename T,
@@ -26,6 +28,8 @@ inline void ch_pushClock(const T& clk) {
 
 void ch_popClock();
 
+///////////////////////////////////////////////////////////////////////////////
+
 const ch_bit<1> ch_getReset();
 
 template <typename T,
@@ -36,6 +40,8 @@ inline void ch_pushReset(const T& reset) {
 }
 
 void ch_popReset();
+
+///////////////////////////////////////////////////////////////////////////////
 
 template <typename T, typename I,
           CH_REQUIRES(bitwidth_v<deduce_type_t<T, I>> != 0),
@@ -69,6 +75,8 @@ const auto ch_reg(const T& next) {
   return make_type<R>(
     createRegNode(get_lnode<T, bitwidth_v<R>>(next), get_lnode<int, bitwidth_v<R>>(0)));
 }
+
+///////////////////////////////////////////////////////////////////////////////
 
 template <typename T, typename E, typename I, typename Z,
           CH_REQUIRES(bitwidth_v<deduce_type_t<T, I>> != 0),
@@ -150,6 +158,28 @@ const auto ch_latch(const T& next, const E& enable) {
                     get_lnode<int, bitwidth_v<R>>(0),
                     get_lnode(enable),
                     get_lnode(ch_getReset())));
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+template <typename T,
+          CH_REQUIRES(is_bit_convertible<T>::value)>
+const auto ch_delay(const T& rhs, unsigned delay) {
+  T ret(rhs);
+  for (unsigned i = 0; i < delay; ++i) {
+    ret = ch_reg(ch_clone(ret));
+  }
+  return ret;
+}
+
+template <typename R, typename T,
+          CH_REQUIRES(is_cast_convertible<R, T>::value)>
+const auto ch_delay(const T& rhs, unsigned delay) {
+  R ret(rhs);
+  for (unsigned i = 0; i < delay; ++i) {
+    ret = ch_reg(ch_clone(ret));
+  }
+  return ret;
 }
 
 }

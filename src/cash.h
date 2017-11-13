@@ -135,6 +135,7 @@ namespace core {
 
   using ch::internal::ch_reg;
   using ch::internal::ch_latch;
+  using ch::internal::ch_delay;
   using ch::internal::ch_pushClock;
   using ch::internal::ch_popClock;
   using ch::internal::ch_pushReset;
@@ -211,6 +212,15 @@ namespace core {
   using ch::internal::ch_assert;
   using ch::internal::ch_tap;
   using ch::internal::ch_print;
+
+  //
+  // floating point functions
+  //
+
+  using ch::internal::ch_fadd;
+  using ch::internal::ch_fsub;
+  using ch::internal::ch_fmult;
+  using ch::internal::ch_fdiv;
 }
 
 //

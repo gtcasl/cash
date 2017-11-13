@@ -2,6 +2,7 @@
 
 #include "bit.h"
 #include "arithm.h"
+#include "reg.h"
 
 namespace ch {
 namespace internal {
@@ -95,6 +96,26 @@ protected:
   CH_FRIEND_OP_MULT(, const ch_float32&, float)
   CH_FRIEND_OP_DIV(, const ch_float32&, float)
 };
+
+template <unsigned Delay>
+const auto ch_fadd(const ch_float32& lhs, const ch_float32& rhs) {
+  return make_type<ch_float32>(createAluNode(alu_fadd, get_lnode(lhs), get_lnode(rhs), Delay));
+}
+
+template <unsigned Delay>
+const auto ch_fsub(const ch_float32& lhs, const ch_float32& rhs) {
+  return make_type<ch_float32>(createAluNode(alu_fsub, get_lnode(lhs), get_lnode(rhs), Delay));
+}
+
+template <unsigned Delay>
+const auto ch_fmult(const ch_float32& lhs, const ch_float32& rhs) {
+  return make_type<ch_float32>(createAluNode(alu_fmult, get_lnode(lhs), get_lnode(rhs), Delay));
+}
+
+template <unsigned Delay>
+const auto ch_fdiv(const ch_float32& lhs, const ch_float32& rhs) {
+  return make_type<ch_float32>(createAluNode(alu_fdiv, get_lnode(lhs), get_lnode(rhs), Delay));
+}
 
 }
 }

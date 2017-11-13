@@ -2,9 +2,13 @@
 
 #include "lnode.h"
 
+#define ALTFP_SP_ADD_SUB 14
+#define ALTFP_SP_MULT    11
+#define ALTFP_SP_DIV     13
+
 #define CH_ALUOP_ARY(x)   (x & (0x7 <<  8))
 #define CH_ALUOP_CLASS(x) (x & (0x7 << 11))
-#define CH_ALUOP_DATA(x)  (x & (0x7 << 14))
+#define CH_ALUOP_DTYPE(x) (x & (0x7 << 14))
 
 #define CH_ALUOP_TYPE(n, v) alu_##n = v,
 #define CH_ALUOP_NAME(n, v) #n,
@@ -75,9 +79,9 @@ enum ch_alu_op {
 
 const char* to_string(ch_alu_op op);
 
-lnodeimpl* createAluNode(ch_alu_op op, const lnode& lhs, const lnode& rhs);
+lnodeimpl* createAluNode(ch_alu_op op, const lnode& in, unsigned delay = 0);
 
-lnodeimpl* createAluNode(ch_alu_op op, const lnode& in);
+lnodeimpl* createAluNode(ch_alu_op op, const lnode& lhs, const lnode& rhs, unsigned delay = 0);
 
 }
 }

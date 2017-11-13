@@ -358,7 +358,7 @@ void verilogwriter::print_alu(aluimpl* node) {
   if (op == alu_mux) {
     this->print_mux(node);
   } else
-  if (CH_ALUOP_DATA(op) == alu_integer) {
+  if (CH_ALUOP_DTYPE(op) == alu_integer) {
     if (CH_ALUOP_ARY(op) == alu_binary) {
       out_ << "assign ";
       this->print_name(node);
@@ -422,7 +422,9 @@ void verilogwriter::print_mux(aluimpl* node) {
 
 void verilogwriter::print_fmult(aluimpl* node) {
   out_ << "fp_mult __fp_mult_";
-  out_ << node->get_id() << "__(.clock(clk), .dataa(";
+  out_ << node->get_id() << "__(.clock(";
+  this->print_name(node->get_src(2).get_impl());
+  out_ << "), .dataa(";
   this->print_name(node->get_src(0).get_impl());
   out_ << "), .datab(";
   this->print_name(node->get_src(1).get_impl());
@@ -433,7 +435,9 @@ void verilogwriter::print_fmult(aluimpl* node) {
 
 void verilogwriter::print_fadd(aluimpl* node) {
   out_ << "fp_add __fp_add_sub_";
-  out_ << node->get_id() << "__(.clock(clk), .dataa(";
+  out_ << node->get_id() << "__(.clock(";
+  this->print_name(node->get_src(2).get_impl());
+  out_ << "), .dataa(";
   this->print_name(node->get_src(0).get_impl());
   out_ << "), .datab(";
   this->print_name(node->get_src(1).get_impl());
