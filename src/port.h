@@ -42,6 +42,8 @@ struct io_traits {
   using flip_type   = FlipType;
   using buffer_type = BufferType;
   using logic_type  = LogicType;
+  using value_type  = value_type_t<LogicType>;
+  using const_type  = const_type_t<LogicType>;
   using scalar_type = scalar_type_t<LogicType>;
   using next        = Next;
 };

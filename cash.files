@@ -36,6 +36,7 @@ src/htl/counter.h
 src/htl/decoupled.h
 src/htl/mux.h
 src/htl/onehot.h
+src/htl/pipe.h
 src/htl/queue.h
 src/htl/xbar.h
 src/if.h

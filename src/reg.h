@@ -162,21 +162,21 @@ const auto ch_latch(const T& next, const E& enable) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T,
+template <unsigned Delay, typename T,
           CH_REQUIRES(is_bit_convertible<T>::value)>
-const auto ch_delay(const T& rhs, unsigned delay) {
-  T ret(rhs);
-  for (unsigned i = 0; i < delay; ++i) {
+const auto ch_delay(const T& rhs) {
+  value_type_t<T> ret(rhs);
+  for (unsigned i = 0; i < Delay; ++i) {
     ret = ch_reg(ch_clone(ret));
   }
   return ret;
 }
 
-template <typename R, typename T,
+template <typename R, unsigned Delay, typename T,
           CH_REQUIRES(is_cast_convertible<R, T>::value)>
-const auto ch_delay(const T& rhs, unsigned delay) {
+const auto ch_delay(const T& rhs) {
   R ret(rhs);
-  for (unsigned i = 0; i < delay; ++i) {
+  for (unsigned i = 0; i < Delay; ++i) {
     ret = ch_reg(ch_clone(ret));
   }
   return ret;

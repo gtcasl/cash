@@ -77,7 +77,7 @@ TEST_CASE("floats", "[floats]") {
     TEST([]()->ch_bit1 {
       ch_float32 x(0.5f), y(0.5f), z, e;
       z = ch_fmult<5>(x, y);
-      e = ch_delay<ch_float32>(0x3e800000_h, 5-1); // remove reset cycle
+      e = ch_delay<ch_float32, 5-1>(0x3e800000_h); // remove reset cycle
       //ch_print("{0}: clk={1}, rst={2}, z={3}, e={4}", ch_getTick(), ch_getClock(), ch_getReset(), z, e);
       return (z == e);
     }, 2+2*5);
@@ -85,7 +85,7 @@ TEST_CASE("floats", "[floats]") {
     TEST([]()->ch_bit1 {
       ch_float32 x(0.5f), y(0.5f), z, e;
       z = ch_fadd<7>(x, y);
-      e = ch_delay<ch_float32>(0x3f800000_h, 7-1); // remove reset cycle
+      e = ch_delay<ch_float32, 7-1>(0x3f800000_h); // remove reset cycle
       //ch_print("{0}: clk={1}, rst={2}, z={3}, e={4}", ch_getTick(), ch_getClock(), ch_getReset(), z, e);
       return (z == e);
     }, 2+2*7);

@@ -39,7 +39,9 @@ struct ch_rrArbiter {
 };
 
 template <typename T, unsigned I, typename Arbiter = ch_rrArbiter<I>>
-struct ch_arbiter {
+struct ch_xbar_switch {
+  using value_type = T;
+  using arbiter_type = Arbiter;
   using in_io = ch_vec<ch_deq_io<T>, I>;
   __inout (out_io, ch_enq_io<T>, (
     __out(ch_bit<I>) grant

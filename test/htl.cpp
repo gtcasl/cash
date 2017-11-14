@@ -3,10 +3,31 @@
 #include <htl/mux.h>
 #include <htl/xbar.h>
 #include <htl/arbiter.h>
+#include <htl/pipe.h>
 
 using namespace ch::htl;
 
 TEST_CASE("htl", "[htl]") {
+  SECTION("pipe", "[pipe]") {
+    TESTX([]()->bool {
+      int ret = 1;
+      ch_device<ch_pipe<ch_bit4, 3>> device;
+      ch_simulator sim(device);
+      ch_tick t = sim.reset(0);
+      device.io.enq.data  = 0xA;
+      device.io.enq.valid = true;
+      t = sim.step(t, 1);
+      ret &= !device.io.deq.valid;
+      device.io.enq.valid = false;
+      t = sim.step(t, 1);
+      ret &= !device.io.deq.valid;
+      t = sim.step(t, 1);
+      ret &= !!device.io.deq.valid;
+      t = sim.step(t, 1);
+      ret &= !device.io.deq.valid;
+      return !!ret;
+    });
+  }
   SECTION("onehot", "[onehot]") {
     TEST([]()->ch_bit1 {
       auto y = ch_hot2bin<4>(0001_b);
@@ -103,7 +124,7 @@ TEST_CASE("htl", "[htl]") {
   }
   SECTION("arbiter", "[arbiter]") {
     TESTX([]()->bool {
-      ch_device<ch_arbiter<ch_bit4, 2>> device;
+      ch_device<ch_xbar_switch<ch_bit4, 2>> device;
       ch_simulator sim(device);
       ch_tick t = sim.reset(0);
       device.io.in[0].data  = 0xA;
