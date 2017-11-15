@@ -9,7 +9,7 @@ assertimpl::assertimpl(context* ctx, const lnode& pred, const std::string& msg)
   , msg_(msg)
   , predicated_(false) {
   if (ctx_->conditional_enabled(this)) {
-    auto pred = ctx_->conditional_predicate(this, 0, 0);
+    auto pred = ctx_->get_predicate(this, 0, 0);
     if (pred) {
       srcs_.emplace_back(pred);
       predicated_ = true;

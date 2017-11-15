@@ -87,7 +87,6 @@ context::context(const std::string& name)
   , name_(name)
   , node_ids_(0)
   , block_ids_(0)
-  , branch_ids_(0)
   , default_clk_(nullptr)
   , default_reset_(nullptr)
   , tick_(nullptr)
@@ -262,7 +261,7 @@ void context::remove_node(lnodeimpl* node) {
 }
 
 void context::begin_branch() {
-  cond_branches_.emplace_front(cond_branch_t(++branch_ids_));
+  cond_branches_.emplace_front(cond_branch_t());
 }
 
 void context::end_branch() {
@@ -295,10 +294,10 @@ void context::end_block() {
   cond_blocks_.pop_front();
 }
 
-lnodeimpl* context::conditional_predicate(
+lnodeimpl* context::build_aggregate_predicate(
     cond_blocks_t::iterator def_block,
     cond_blocks_t::iterator use_block) {
-  // try to use precomputed value from cache
+  // try use precomputed value from cache
   uint32_t def_block_id = (def_block != cond_blocks_.end()) ? def_block->id : 0;
   if (use_block->agg_preds.count(def_block_id) != 0) {
     return use_block->agg_preds.at(def_block_id);
@@ -312,7 +311,7 @@ lnodeimpl* context::conditional_predicate(
     if (nullptr == pred) {
       pred = use_block->branch->else_pred;
     }
-    auto parent_pred = this->conditional_predicate(def_block, parent_block);
+    auto parent_pred = this->build_aggregate_predicate(def_block, parent_block);
     if (nullptr == parent_pred) {
       parent_pred = parent_block->branch->else_pred;
     }
@@ -323,16 +322,16 @@ lnodeimpl* context::conditional_predicate(
   return pred;
 }
 
-lnodeimpl* context::conditional_predicate(lnodeimpl* node, uint32_t offset, uint32_t length) {
-  // find decl block
+lnodeimpl* context::get_predicate(lnodeimpl* node, uint32_t offset, uint32_t length) {
+  // get variable decl block
   auto def_block = std::find_if(cond_blocks_.begin(), cond_blocks_.end(),
     [&](const cond_block_t& cond_block)->bool {
       return cond_block.locals.count(node) != 0;
     });
 
-  auto pred = this->conditional_predicate(def_block, cond_blocks_.begin());
+  auto pred = this->build_aggregate_predicate(def_block, cond_blocks_.begin());
   if (nullptr == pred) {
-    // return the 'else' aggregate predicate if first assignment
+    // use the 'else' aggregate predicate if first assignment
     cond_range_t range{node->get_id(), offset, length};
     if (cond_upds_.find(range) == cond_upds_.end()) {
       cond_branch_t& branch = cond_branches_.front();
@@ -341,62 +340,6 @@ lnodeimpl* context::conditional_predicate(lnodeimpl* node, uint32_t offset, uint
   }
 
   return pred;
-}
-
-bool context::has_update(const cond_block_t& block, const cond_range_t& range) {
-  auto it_upds = std::find_if(cond_upds_.begin(), cond_upds_.end(),
-  [&](const cond_upds_t::value_type& v)->bool {
-    if (v.first == range) {
-      for (auto& upd : v.second) {
-        if (upd.block_id == block.id)
-          return true;
-      }
-    }
-    return false;
-  });
-  return (it_upds != cond_upds_.end());
-}
-
-lnodeimpl* context::get_predicate(
-    const cond_range_t& range,
-    uint32_t def_block_id,
-    cond_blocks_t::iterator use_block) {
-  // check if the node was assigned in current block
-  if (this->has_update(*use_block, range))
-    return nullptr;
-
-  // try to use precomputed value from cache
-  if (use_block->agg_preds.count(def_block_id) != 0) {
-    return use_block->agg_preds.at(def_block_id);
-  }
-
-  auto pred = use_block->pred;
-
-  // add parent predicate
-  auto parent_block = std::next(use_block);
-  if (parent_block->id != def_block_id) {
-    if (nullptr == pred) {
-      pred = use_block->branch->else_pred;
-    }
-    auto parent_pred = this->get_predicate(range, def_block_id, parent_block);
-    if (parent_pred) {
-      pred = createAluNode(alu_and, parent_pred, pred);
-    }
-  }
-  use_block->agg_preds[def_block_id] = pred;
-  return pred;
-}
-
-lnodeimpl* context::get_predicate(lnodeimpl* node, uint32_t offset, uint32_t length) {
-  // find decl block
-  auto def_block = std::find_if(cond_blocks_.begin(), cond_blocks_.end(),
-    [&](const cond_block_t& cond_block)->bool {
-      return cond_block.locals.count(node) != 0;
-    });
-  //--
-  cond_range_t range{node->get_id(), offset, length};
-  uint32_t def_block_id = (def_block != cond_blocks_.end()) ? def_block->id : 0;
-  return this->get_predicate(range, def_block_id, cond_blocks_.begin());
 }
 
 bool context::conditional_enabled(lnodeimpl* node) const {
@@ -479,54 +422,39 @@ void context::conditional_assign(
     }
   }
 
-  // compute predicate
-  lnodeimpl* pred = this->conditional_predicate(dst.get_impl(), offset, length);
+  selectimpl* sel;
+  selectimpl* sel_old = nullptr;
 
-  // check if assignments already exist
+  lnodeimpl* pred = this->get_predicate(dst.get_impl(), offset, length);
+
   if (it_upds != cond_upds_.end()) {
-    cond_upd_t& prev_upd = it_upds->second.front();
-    if (block.id > prev_upd.block_id) {
+    sel_old = it_upds->second.front().sel;
+    sel = sel_old;
+    cond_upd_t& last_upd = it_upds->second.front();
+    if (block.id > last_upd.block_id) {
       // last assignment took place in parent or sibling blocks
       if (pred) {
-        if (block.branch->id == prev_upd.branch_id) {
-          // 'elif' conditional assignment
-          auto prev_false = prev_upd.sel->get_false();
-          auto sel = dynamic_cast<selectimpl*>(createSelectNode(pred, src, prev_false));
-          prev_upd.sel->set_false(sel);
-          it_upds->second.emplace_front(sel, block.id, block.branch->id);
-        } else {
-          // nested conditional assignment
-          auto prev_true = prev_upd.sel->get_true();
-          auto sel = dynamic_cast<selectimpl*>(createSelectNode(pred, src, prev_true));
-          prev_upd.sel->set_true(sel);
-          it_upds->second.emplace_front(sel, block.id, block.branch->id);
-        }
+        // new conditional assignment
+        sel = dynamic_cast<selectimpl*>(createSelectNode(pred, src, last_upd.sel));
+        it_upds->second.emplace_front(sel, block.id);
       } else {
         // 'default' last assignment
-        // update last assignment to same branch
-        bool found = false;
-        for (auto& upd : it_upds->second) {
-          if (upd.block_id == block.branch->id) {
-            upd.sel->set_false(src);
-            found = true;
-            break;
-          }
-        }
-        if (!found) {
-          it_upds->second.back().sel->set_false(src);
-        }
+        it_upds->second.back().sel->set_false(src);
       }
     } else {
       // reassignment in current block
-      assert(block.id == prev_upd.block_id);
-      prev_upd.sel->set_true(src);
+      assert(block.id == last_upd.block_id);
+      last_upd.sel->set_true(src);
     }
   } else {
-    // new conditional assignment
+    // new variable conditional assignment
     assert(pred);
     lnode _false(dst.get_impl()->get_slice(offset, length));
-    auto sel = dynamic_cast<selectimpl*>(createSelectNode(pred, src, _false));
-    cond_upds_[range].emplace_front(sel, block.id, block.branch->id);
+    sel = dynamic_cast<selectimpl*>(createSelectNode(pred, src, _false));
+    cond_upds_[range].emplace_front(sel, block.id);
+  }
+
+  if (sel != sel_old) {
     auto proxy = dynamic_cast<proxyimpl*>(dst.get_impl());
     if (proxy) {
       proxy->add_source(offset, sel, 0, length);
@@ -554,7 +482,7 @@ void context::clone_conditional_assignment(
     lnode _false((sel_old->get_false().get_impl() == prev_sel_old) ?
           prev_sel_new : this->createNode<proxyimpl>(sel_old->get_false(), offset - range.offset, length));
     auto sel_new = dynamic_cast<selectimpl*>(createSelectNode(sel_old->get_pred(), _true, _false));
-    cond_upds_[new_range].emplace_front(sel_new, it_upd->block_id, it_upd->branch_id);
+    cond_upds_[new_range].emplace_front(sel_new, it_upd->block_id);
     prev_sel_old = sel_old;
     prev_sel_new = sel_new;
   }

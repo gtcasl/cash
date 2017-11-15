@@ -30,14 +30,12 @@ using node_map_t = std::unordered_map<uint32_t, std::vector<const lnode*>>;
 using live_nodes_t = std::unordered_set<lnodeimpl*>;
 
 struct cond_upd_t {
-  cond_upd_t(selectimpl* p_sel, uint32_t p_block_id, uint32_t p_branch_id)
+  cond_upd_t(selectimpl* p_sel, uint32_t p_block_id)
     : sel(p_sel)
     , block_id(p_block_id)
-    , branch_id(p_branch_id)
   {}
   selectimpl* sel;
   uint32_t block_id;
-  uint32_t branch_id;
 };
 
 struct cond_range_t {
@@ -67,12 +65,6 @@ struct cond_range_t {
 };
 
 struct cond_branch_t {
-  cond_branch_t(uint32_t p_id)
-    : id(p_id)
-    , else_pred(nullptr)
-  {}
-
-  uint32_t id;
   lnodeimpl* else_pred;
 };
 
@@ -188,7 +180,7 @@ public:
 
   bool conditional_enabled(lnodeimpl* node = nullptr) const;
   void conditional_assign(lnode& dst, const lnode& src, uint32_t offset, uint32_t length);
-  lnodeimpl* conditional_predicate(lnodeimpl* node, uint32_t offset, uint32_t length);
+  lnodeimpl* get_predicate(lnodeimpl* node, uint32_t offset, uint32_t length);
   void relocate_locals(lnodeimpl* dst, lnodeimpl* src);
 
   //--
@@ -237,18 +229,9 @@ protected:
   void add_node(lnodeimpl* node);
   void remove_node(lnodeimpl* node);
 
-  lnodeimpl* get_predicate(lnodeimpl* node, uint32_t offset, uint32_t length);
-
-  lnodeimpl* get_predicate(
-      const cond_range_t& range,
-      uint32_t def_block_id,
-      cond_blocks_t::iterator use_block);
-
-  lnodeimpl* conditional_predicate(
+  lnodeimpl* build_aggregate_predicate(
       cond_blocks_t::iterator def_block,
       cond_blocks_t::iterator use_block);
-
-  bool has_update(const cond_block_t& block, const cond_range_t& range);
 
   void clone_conditional_assignment(
       lnode& dst,
@@ -263,7 +246,6 @@ protected:
 
   uint32_t    node_ids_;
   uint32_t    block_ids_;
-  uint32_t    branch_ids_;
   inputimpl*  default_clk_;
   inputimpl*  default_reset_;
   tickimpl*   tick_;
@@ -280,9 +262,9 @@ protected:
 
   std::list<bindimpl*>   bindings_;
 
-  cond_branches_t        cond_branches_;
-  cond_blocks_t          cond_blocks_;
   cond_upds_t            cond_upds_;
+  cond_blocks_t          cond_blocks_;
+  cond_branches_t        cond_branches_;
 
   std::stack<lnode>      user_clks_;
   std::stack<lnode>      user_resets_;
