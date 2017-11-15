@@ -71,7 +71,7 @@ printimpl::printimpl(context* ctx,
   , predicated_(false)
   , tick_(~0ull) {
   if (ctx_->conditional_enabled(this)) {
-    auto pred = ctx_->get_predicate(this, 0, 0);
+    auto pred = ctx_->conditional_predicate(this, 0, 0);
     if (pred) {
       srcs_.emplace_back(pred);
       predicated_ = true;

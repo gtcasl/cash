@@ -191,6 +191,46 @@ TEST_CASE("conditionals", "[conditionals]") {
       return (x == 2);
     });
     TEST([]()->ch_bit1 {
+      ch_bit8 a(1), b(1), x;
+      __if (a == 1) (
+         x = 0;
+         __if (b < 1) (
+           x = 1;
+         )
+         __elif (b < 2) (
+           x = 2;
+         )
+         __else (
+           x = 3;
+         );
+      )
+      __else(
+         x = 4;
+      );
+      ch_print("x={0}", x);
+      return (x == 2);
+    });
+    TEST([]()->ch_bit1 {
+      ch_bit8 a(1), b(0), x;
+      __if (a == 1) (
+         x = 0;
+         __if (b < 1) (
+           x = 1;
+         )
+         __elif (b < 2) (
+           x = 2;
+         )
+         __else (
+           x = 3;
+         );
+      )
+      __else(
+         x = 4;
+      );
+      ch_print("x={0}", x);
+      return (x == 1);
+    });
+    TEST([]()->ch_bit1 {
       ch_bit8 a(1), b(2), x;
       __if (a == 1) (
          x = 0;

@@ -379,12 +379,14 @@ delayed_aluimpl::delayed_aluimpl(context* ctx,
                                  unsigned size,
                                  unsigned delay,
                                  unsigned num_operands)
-  : aluimpl(ctx, op, size, num_operands)
+  : aluimpl(ctx, op, size, num_operands + 1)
   , queue_(delay, bitvector(size))
   , next_(size)
   , curr_pos_(0) {
-  cd_ = ctx->create_cdomain({clock_event(ctx->get_clk(), EDGE_POS)});
+  auto clk = ctx->get_clk();
+  cd_ = ctx->create_cdomain({clock_event(clk, EDGE_POS)});
   cd_->add_use(this);
+  this->set_src(num_operands, clk);
 }
 
 delayed_aluimpl::~delayed_aluimpl() {
