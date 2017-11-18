@@ -30,6 +30,32 @@ verilogwriter::~verilogwriter() {
   //--
 }
 
+void verilogwriter::build_uses(context* ctx) {
+  uses_.clear();
+  for (lnodeimpl* node : ctx->get_nodes()) {
+    for (auto& src : node->get_srcs()) {
+      uses_[src.get_id()].insert(node);
+    }
+  }
+}
+
+bool verilogwriter::is_inline_subscript(lnodeimpl* node) {
+  if (node->get_type() != type_proxy)
+    return false;
+  if (dynamic_cast<proxyimpl*>(node)->get_ranges().size() > 1)
+    return false;
+  for (lnodeimpl* use : uses_[node->get_id()]) {
+    if (type_proxy == use->get_type()
+     || type_memport == use->get_type())
+      return false;
+  }
+  lnodeimpl* src = node->get_src(0).get_impl();
+  if (type_proxy == src->get_type()
+   || type_memport == src->get_type())
+    return false;
+  return true;
+};
+
 void verilogwriter::print(const std::initializer_list<context*>& contexts) {
   // includes
   out_ << "`include \"cash.v\"" << std::endl;
@@ -60,6 +86,9 @@ bool verilogwriter::print_module(context* ctx,
       out_ << std::endl;
     }
   }
+
+  //--
+  this->build_uses(ctx);
 
   // print header
   this->print_header(ctx);
@@ -229,16 +258,21 @@ bool verilogwriter::print_decl(lnodeimpl* node,
     this->print_value(node->get_value());
     out_ << ";" << std::endl;    
     return true;
-  case type_bindport:
   case type_proxy:
+    if (this->is_inline_subscript(node)) {
+      visited.insert(node->get_id());
+      return false;
+    }
+    [[fallthrough]];
+  case type_bindport:
   case type_alu:
   case type_select:
   case type_reg:
-  case type_mem:
+  case type_mem:    
     if (ref
      && (IsRegType(ref->get_type()) != IsRegType(type)
       || ref->get_size() != node->get_size()))
-      return false;
+      return false;    
     if (ref) {
       out_ << ", ";
     } else {
@@ -275,9 +309,15 @@ bool verilogwriter::print_decl(lnodeimpl* node,
 
 bool verilogwriter::print_logic(lnodeimpl* node) {
   auto type = node->get_type();
-  switch (type) {  
+  switch (type) {
   case type_proxy:
+    if (this->is_inline_subscript(node))
+      return false;
+    out_ << "assign ";
+    this->print_name(node);
+    out_ << " = ";
     this->print_proxy(dynamic_cast<proxyimpl*>(node));
+    out_ << ";" << std::endl;
     return true;
   case type_alu:
     this->print_alu(dynamic_cast<aluimpl*>(node));
@@ -296,7 +336,7 @@ bool verilogwriter::print_logic(lnodeimpl* node) {
     return true;
   case type_bindport:
     this->print_bindport(dynamic_cast<bindportimpl*>(node));
-    return true;
+    return true;  
   case type_lit:
   case type_input:
   case type_output:
@@ -313,9 +353,6 @@ bool verilogwriter::print_logic(lnodeimpl* node) {
 }
 
 void verilogwriter::print_proxy(proxyimpl* node) {
-  out_ << "assign ";
-  this->print_name(node);
-  out_ << " = ";
   const auto& ranges = node->get_ranges();
   uint32_t dst_offset = node->get_size();
   auto print_range = [&](const proxyimpl::range_t& range) {
@@ -343,8 +380,7 @@ void verilogwriter::print_proxy(proxyimpl* node) {
     out_ << "}";
   } else {
     print_range(ranges[0]);
-  }  
-  out_ << ";" << std::endl;
+  }
 }
 
 void verilogwriter::print_alu(aluimpl* node) {
@@ -358,11 +394,11 @@ void verilogwriter::print_alu(aluimpl* node) {
   if (op == alu_mux) {
     this->print_mux(node);
   } else
-  if (CH_ALUOP_DTYPE(op) == alu_integer) {
+  if (CH_ALUOP_DTYPE(op) == alu_integer) {    
+    out_ << "assign ";
+    this->print_name(node);
+    out_ << " = ";
     if (CH_ALUOP_ARY(op) == alu_binary) {
-      out_ << "assign ";
-      this->print_name(node);
-      out_ << " = ";
       this->print_name(node->get_src(0).get_impl());
       out_ << " ";
       this->print_operator(op);
@@ -371,9 +407,6 @@ void verilogwriter::print_alu(aluimpl* node) {
       out_ << ";" << std::endl;
     } else {
       assert(CH_ALUOP_ARY(op) == alu_unary);
-      out_ << "assign ";
-      this->print_name(node);
-      out_ << " = ";
       this->print_operator(op);
       this->print_name(node->get_src(0).get_impl());
       out_ << ";" << std::endl;
@@ -593,8 +626,12 @@ void verilogwriter::print_name(lnodeimpl* node, bool force) {
   case type_output:
     out_ << dynamic_cast<ioimpl*>(node)->get_name();
     break;
-  case type_proxy:
-    print_basic_name('w');
+  case type_proxy:    
+    if (this->is_inline_subscript(node)) {
+      this->print_proxy(dynamic_cast<proxyimpl*>(node));
+    } else {
+      print_basic_name('w');
+    }
     break;
   case type_lit:
     if (!force && node->get_size() <= EMPLACE_LITERAL_WIDTH) {

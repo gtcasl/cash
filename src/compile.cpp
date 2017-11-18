@@ -93,9 +93,9 @@ size_t compiler::dead_code_elimination() {
       }
 
       // gather used proxy sources
-      bool new_proxy_source = false;
-      auto src_proxy = dynamic_cast<proxyimpl*>(src_impl);
-      if (src_proxy) {
+      bool new_proxy_source = false;      
+      if (type_proxy == src_impl->get_type()) {
+        auto src_proxy = dynamic_cast<proxyimpl*>(src_impl);
         auto& uses = used_proxy_sources[src_proxy];
         if (proxy) {
           for (auto& curr : src_proxy->get_ranges()) {

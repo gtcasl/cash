@@ -455,8 +455,9 @@ void context::conditional_assign(
   }
 
   if (sel != sel_old) {
-    auto proxy = dynamic_cast<proxyimpl*>(dst.get_impl());
-    if (proxy) {
+    if (!dst.is_empty()
+     && type_proxy == dst.get_impl()->get_type()) {
+      auto proxy = dynamic_cast<proxyimpl*>(dst.get_impl());
       proxy->add_source(offset, sel, 0, length);
     } else {
       dst.set_impl(sel);
@@ -668,8 +669,8 @@ void context::dump_cfg(lnodeimpl* node, std::ostream& out, uint32_t level) {
   
   visits[node->get_id()] = true;
   
-  auto tap = dynamic_cast<tapimpl*>(node);
-  if (tap) {
+  if (type_tap == node->get_type()) {
+    auto tap = dynamic_cast<tapimpl*>(node);
     node = tap->get_target().get_impl();
     node->print(out, level);
     out << " // " << tap->get_name();
@@ -695,37 +696,29 @@ void context::dump_stats(std::ostream& out) {
   uint32_t num_proxies = 0;
   
   for (lnodeimpl* node : nodes_) {
-    auto* mem = dynamic_cast<memimpl*>(node);
-    if (mem) {
+    switch (node->get_type()) {
+    case type_mem:
       ++num_memories;
-      memory_bits += mem->get_total_size();      
-      continue;
-    }
-    auto* reg = dynamic_cast<regimpl*>(node);
-    if (reg) {
+      memory_bits += dynamic_cast<memimpl*>(node)->get_total_size();
+      break;
+    case type_reg:
       ++num_registers;
-      register_bits += reg->get_size();      
-      continue;
-    }
-    auto* sel = dynamic_cast<selectimpl*>(node);
-    if (sel) {
+      register_bits += node->get_size();
+      break;
+    case type_select:
       ++num_muxes;
-      continue;
-    }
-    auto* alu = dynamic_cast<aluimpl*>(node);
-    if (alu) {
+      break;
+    case type_alu:
       ++num_alus;
-      continue;
-    }
-    auto* lit = dynamic_cast<litimpl*>(node);
-    if (lit) {
+      break;
+    case type_lit:
       ++num_lits;
-      continue;
-    }
-    auto* proxy = dynamic_cast<proxyimpl*>(node);
-    if (proxy) {
+      break;
+    case type_proxy:
       ++num_proxies;
-      continue;
+      break;
+    default:
+      break;
     }
   }
   

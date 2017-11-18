@@ -78,6 +78,12 @@ protected:
 
   void print_mem(memimpl* node);
 
+  void build_uses(context* ctx);
+
+  bool is_inline_subscript(lnodeimpl* node);
+
+  std::unordered_map<unsigned, std::unordered_set<lnodeimpl*>> uses_;
+
   std::ostream& out_;
 };
 
