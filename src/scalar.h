@@ -169,15 +169,15 @@ using scalar_buffer_ptr = std::shared_ptr<scalar_buffer_impl>;
 
 class scalar_buffer_impl {
 public:
-  scalar_buffer_impl(unsigned size);
+  explicit scalar_buffer_impl(unsigned size);
 
   scalar_buffer_impl(const scalar_buffer_impl& rhs);
 
   scalar_buffer_impl(scalar_buffer_impl&& rhs);
 
-  scalar_buffer_impl(const bitvector& data);
+  explicit  scalar_buffer_impl(const bitvector& data);
 
-  scalar_buffer_impl(bitvector&& data);
+  explicit scalar_buffer_impl(bitvector&& data);
 
   scalar_buffer_impl(unsigned size, const scalar_buffer_ptr& buffer, unsigned offset);
 
@@ -240,18 +240,18 @@ public:
     : base(new scalar_buffer_impl(std::forward<Args>(args)...))
   {}
 
-  scalar_buffer(scalar_buffer_impl* rhs) : base(rhs) {}
+  scalar_buffer(const scalar_buffer_ptr& rhs) : base(rhs) {}
 
   scalar_buffer(const scalar_buffer& rhs) : base(rhs) {}
 
   scalar_buffer(scalar_buffer&& rhs) : base(std::move(rhs)) {}
 
-  scalar_buffer& operator =(const scalar_buffer& rhs) {
+  scalar_buffer& operator=(const scalar_buffer& rhs) {
     base::operator =(rhs);
     return *this;
   }
 
-  scalar_buffer& operator =(scalar_buffer&& rhs) {
+  scalar_buffer& operator=(scalar_buffer&& rhs) {
     base::operator =(std::move(rhs));
     return *this;
   }

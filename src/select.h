@@ -146,8 +146,8 @@ const auto ch_select(const P& pred, const U& _true, const V& _false) {
   static_assert(1 == bitwidth_v<P>, "invalid predicate size");
   return make_type<R>(
         createSelectNode(get_lnode(pred),
-                         get_lnode<U, bitwidth_v<R>>(_true),
-                         get_lnode<V, bitwidth_v<R>>(_false)));
+                         get_lnode<U, R>(_true),
+                         get_lnode<V, R>(_false)));
 }
 
 template <typename U, typename V,

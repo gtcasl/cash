@@ -4,6 +4,7 @@
 #include <htl/mux.h>
 #include <htl/xbar.h>
 #include <htl/arbiter.h>
+#include <htl/pipe.h>
 
 using namespace ch::core;
 using namespace ch::literals;
@@ -139,14 +140,16 @@ struct Dogfood {
   }
 };
 
+
+
 int main(int argc, char **argv) {
-  {
+  /*{
     ch_device<Dogfood> device;
     ch_simulator sim(device);
     device.io.in = 0xA;
     sim.run(4);
     assert(device.io.out);
-  }
+  }*/
 
   /*{
     ch_device<Foo1> foo;

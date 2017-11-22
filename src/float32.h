@@ -67,19 +67,23 @@ public:
   }
 
   const auto operator+(const ch_float32& rhs) const {
-    return make_type<ch_float32>(createAluNode(alu_fadd, get_lnode(*this), get_lnode(rhs)));
+    auto ret = createAluNode(alu_fadd, get_lnode(*this), get_lnode(rhs));
+    return make_type<ch_float32>(ret);
   }
 
   const auto operator-(const ch_float32& rhs) const {
-    return make_type<ch_float32>(createAluNode(alu_fsub, get_lnode(*this), get_lnode(rhs)));
+    auto ret = createAluNode(alu_fsub, get_lnode(*this), get_lnode(rhs));
+    return make_type<ch_float32>(ret);
   }
 
   const auto operator*(const ch_float32& rhs) const {
-    return make_type<ch_float32>(createAluNode(alu_fmult, get_lnode(*this), get_lnode(rhs)));
+    auto ret = createAluNode(alu_fmult, get_lnode(*this), get_lnode(rhs));
+    return make_type<ch_float32>(ret);
   }
 
   const auto operator/(const ch_float32& rhs) const {
-    return make_type<ch_float32>(createAluNode(alu_fdiv, get_lnode(*this), get_lnode(rhs)));
+    auto ret = createAluNode(alu_fdiv, get_lnode(*this), get_lnode(rhs));
+    return make_type<ch_float32>(ret);
   }
 
 protected:
@@ -98,23 +102,27 @@ protected:
 };
 
 template <unsigned Delay>
-const auto ch_fadd(const ch_float32& lhs, const ch_float32& rhs) {
-  return make_type<ch_float32>(createAluNode(alu_fadd, get_lnode(lhs), get_lnode(rhs), Delay));
+const auto ch_fadd(const ch_float32& lhs, const ch_float32& rhs, const ch_bit<1>& enable = ch_bit<1>(true)) {
+  auto ret = createAluNode(alu_fadd, get_lnode(lhs), get_lnode(rhs), Delay, get_lnode(enable));
+  return make_type<ch_float32>(ret);
 }
 
 template <unsigned Delay>
-const auto ch_fsub(const ch_float32& lhs, const ch_float32& rhs) {
-  return make_type<ch_float32>(createAluNode(alu_fsub, get_lnode(lhs), get_lnode(rhs), Delay));
+const auto ch_fsub(const ch_float32& lhs, const ch_float32& rhs, const ch_bit<1>& enable = ch_bit<1>(true)) {
+  auto ret = createAluNode(alu_fsub, get_lnode(lhs), get_lnode(rhs), Delay, get_lnode(enable));
+  return make_type<ch_float32>(ret);
 }
 
 template <unsigned Delay>
-const auto ch_fmult(const ch_float32& lhs, const ch_float32& rhs) {
-  return make_type<ch_float32>(createAluNode(alu_fmult, get_lnode(lhs), get_lnode(rhs), Delay));
+const auto ch_fmult(const ch_float32& lhs, const ch_float32& rhs, const ch_bit<1>& enable = ch_bit<1>(true)) {
+  auto ret = createAluNode(alu_fmult, get_lnode(lhs), get_lnode(rhs), Delay, get_lnode(enable));
+  return make_type<ch_float32>(ret);
 }
 
 template <unsigned Delay>
-const auto ch_fdiv(const ch_float32& lhs, const ch_float32& rhs) {
-  return make_type<ch_float32>(createAluNode(alu_fdiv, get_lnode(lhs), get_lnode(rhs), Delay));
+const auto ch_fdiv(const ch_float32& lhs, const ch_float32& rhs, const ch_bit<1>& enable = ch_bit<1>(true)) {
+  auto ret = createAluNode(alu_fdiv, get_lnode(lhs), get_lnode(rhs), Delay, get_lnode(enable));
+  return make_type<ch_float32>(ret);
 }
 
 }

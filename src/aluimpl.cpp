@@ -157,7 +157,7 @@ static void compareop(bitvector& out, const bitvector& lhs, const bitvector& rhs
   out[0] = result;
 }
 
-static uint32_t get_output_size(ch_alu_op op, const lnode& lhs, const lnode& rhs) {
+static uint32_t get_output_size(ch_alu_op op, const lnode& a, const lnode& b) {
   switch (op) {
   case alu_and:
   case alu_or:
@@ -170,17 +170,21 @@ static uint32_t get_output_size(ch_alu_op op, const lnode& lhs, const lnode& rhs
   case alu_mult:
   case alu_div:
   case alu_mod:
-    assert(lhs.get_size() == rhs.get_size());
-    return lhs.get_size();
+  case alu_fadd:
+  case alu_fsub:
+  case alu_fmult:
+  case alu_fdiv:
+    assert(a.get_size() == b.get_size());
+    return a.get_size();
 
   case alu_sll:
   case alu_srl:
   case alu_sra:
-    return lhs.get_size();
+    return a.get_size();
 
   case alu_rotl:
   case alu_rotr:
-    return lhs.get_size();
+    return a.get_size();
 
   case alu_eq:
   case alu_ne:
@@ -188,29 +192,22 @@ static uint32_t get_output_size(ch_alu_op op, const lnode& lhs, const lnode& rhs
   case alu_gt:
   case alu_le:
   case alu_ge:
-    assert(lhs.get_size() == rhs.get_size());
+    assert(a.get_size() == b.get_size());
     return 1;
 
   case alu_mux:
-    return lhs.get_size() >> rhs.get_size();
-
-  case alu_fadd:
-  case alu_fsub:
-  case alu_fmult:
-  case alu_fdiv:
-    assert(lhs.get_size() == rhs.get_size());
-    return lhs.get_size();
+    return (a.get_size() >> b.get_size());
 
   default:
     CH_ABORT("invalid alu operation");
   }
 }
 
-static uint32_t get_output_size(ch_alu_op op, const lnode& in) {
+static uint32_t get_output_size(ch_alu_op op, const lnode& a) {
   switch (op) {
   case alu_inv:
   case alu_neg:
-    return in.get_size();
+    return a.get_size();
 
   case alu_andr:
   case alu_orr:
@@ -377,16 +374,22 @@ void aluimpl::print(std::ostream& out, uint32_t level) const {
 delayed_aluimpl::delayed_aluimpl(context* ctx,
                                  ch_alu_op op,
                                  unsigned size,
+                                 const lnode& enable,
                                  unsigned delay,
                                  unsigned num_operands)
-  : aluimpl(ctx, op, size, num_operands + 1)
-  , queue_(delay, bitvector(size))
-  , next_(size)
-  , curr_pos_(0) {
+  : aluimpl(ctx, op, size, num_operands + 1 + (enable.is_empty() ? 0 : 1))
+  , p_value_(delay, bitvector(size))
+  , p_next_(delay, bitvector(size))
+  , clk_idx_(num_operands)
+  , enable_idx_((enable.is_empty() ? -1 : num_operands + 1)) {
+  assert(1 == enable.get_size());
   auto clk = ctx->get_clk();
   cd_ = ctx->create_cdomain({clock_event(clk, EDGE_POS)});
   cd_->add_use(this);
-  this->set_src(num_operands, clk);
+  this->set_src(clk_idx_, clk);
+  if (enable_idx_ != -1) {
+    this->set_src(enable_idx_, enable);
+  }  
 }
 
 delayed_aluimpl::~delayed_aluimpl() {
@@ -395,50 +398,64 @@ delayed_aluimpl::~delayed_aluimpl() {
 
 void delayed_aluimpl::tick(ch_tick t) {
   CH_UNUSED(t);
-  queue_[curr_pos_] = next_;
-  curr_pos_ = (curr_pos_ + 1) % queue_.size();
-  value_ = queue_[curr_pos_];
+  for (int i = p_value_.size()-1; i >= 0; --i) {
+    p_value_[i] = p_next_[i];
+  }
 }
 
 void delayed_aluimpl::tick_next(ch_tick t) {
-  this->aluimpl::eval(next_, t);
+  if (-1 == enable_idx_ || srcs_[enable_idx_].eval(t)[0]) {
+    for (int i = p_value_.size()-1; i >= 0; --i) {
+      if (0 == i) {
+        this->aluimpl::eval(p_next_[0], t);
+      } else {
+        p_next_[i] = p_value_[i-1];
+      }
+    }
+  } else {
+    for (int i = p_value_.size()-1; i >= 0; --i) {
+      p_next_[i] = p_value_[i];
+    }
+  }
 }
 
 const bitvector& delayed_aluimpl::eval(ch_tick t) {
   CH_UNUSED(t);
-  return value_;
+  return p_value_[p_value_.size()-1];
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 lnodeimpl* ch::internal::createAluNode(
     ch_alu_op op,
-    const lnode& lhs,
-    const lnode& rhs,
-    unsigned delay) {
+    const lnode& in,
+    unsigned delay,
+    const lnode& enable) {
   aluimpl* impl;
-  auto size = get_output_size(op, lhs, rhs);
+  auto size = get_output_size(op, in);
   if (delay != 0) {
-    impl = lhs.get_ctx()->createNode<delayed_aluimpl>(op, size, delay, 2);
+    impl = in.get_ctx()->createNode<delayed_aluimpl>(op, size, enable, delay, 1);
   } else {
-    impl = lhs.get_ctx()->createNode<aluimpl>(op, size, 2);
+    impl = in.get_ctx()->createNode<aluimpl>(op, size, 1);
   }
-  impl->set_src(0, lhs);
-  impl->set_src(1, rhs);
+  impl->set_src(0, in);
   return impl;
 }
 
 lnodeimpl* ch::internal::createAluNode(
     ch_alu_op op,
-    const lnode& in,
-    unsigned delay) {
+    const lnode& lhs,
+    const lnode& rhs,
+    unsigned delay,
+    const lnode& enable) {
   aluimpl* impl;
-  auto size = get_output_size(op, in);
+  auto size = get_output_size(op, lhs, rhs);
   if (delay != 0) {
-    impl = in.get_ctx()->createNode<delayed_aluimpl>(op, size, delay, 1);
+    impl = lhs.get_ctx()->createNode<delayed_aluimpl>(op, size, enable, delay, 2);
   } else {
-    impl = in.get_ctx()->createNode<aluimpl>(op, size, 1);
+    impl = lhs.get_ctx()->createNode<aluimpl>(op, size, 2);
   }
-  impl->set_src(0, in);
+  impl->set_src(0, lhs);
+  impl->set_src(1, rhs);
   return impl;
 }

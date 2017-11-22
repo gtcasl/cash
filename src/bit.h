@@ -94,15 +94,15 @@ using bit_buffer_ptr = std::shared_ptr<bit_buffer_impl>;
 
 class bit_buffer_impl {
 public:
-  bit_buffer_impl(unsigned size);
+  explicit bit_buffer_impl(unsigned size);
 
   bit_buffer_impl(const bit_buffer_impl& rhs);
 
   bit_buffer_impl(bit_buffer_impl&& rhs);
 
-  bit_buffer_impl(const lnode& data);
+  explicit bit_buffer_impl(const lnode& data);
 
-  bit_buffer_impl(lnode&& data);
+  explicit bit_buffer_impl(lnode&& data);
 
   bit_buffer_impl(unsigned size, const bit_buffer_ptr& buffer, unsigned offset);
 
@@ -165,7 +165,7 @@ public:
     : base(new bit_buffer_impl(std::forward<Args>(args)...))
   {}
 
-  bit_buffer(bit_buffer_impl* rhs) : base(rhs) {}
+  bit_buffer(const bit_buffer_ptr& rhs) : base(rhs) {}
 
   bit_buffer(const bit_buffer& rhs) : base(rhs) {}
 
@@ -253,14 +253,21 @@ struct bit_accessor {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T, unsigned N = bitwidth_v<T>>
-using bit_cast_t = std::conditional_t<is_logic_compatible<T>::value, const T&, ch_bit<N>>;
+template <typename T, typename R = ch_bit<bitwidth_v<T>>>
+using logic_cast_t = std::conditional_t<is_logic_compatible<T>::value, const T&, R>;
 
 template <typename T, unsigned N = bitwidth_v<T>,
           CH_REQUIRES(is_bit_convertible<T, N>::value)>
 lnode get_lnode(const T& rhs) {
-  return bit_accessor::get_data(static_cast<bit_cast_t<T, N>>(rhs));
+  return bit_accessor::get_data(static_cast<logic_cast_t<T, ch_bit<N>>>(rhs));
 }
+
+template <typename T, typename R,
+          CH_REQUIRES(is_cast_convertible<R, T>::value)>
+lnode get_lnode(const T& rhs) {
+  return bit_accessor::get_data(static_cast<logic_cast_t<T, R>>(rhs));
+}
+
 
 template <typename T>
 const auto make_type(const lnode& node) {
@@ -847,7 +854,7 @@ template <typename... Ts,
          CH_REQUIRES(are_all_bit_convertible<Ts...>::value)>
 const auto ch_cat(const Ts&... args) {
   ch_bit<bitwidth_v<Ts...>> ret;
-  cat_impl(ret, bitwidth_v<Ts...>, static_cast<bit_cast_t<Ts>>(args)...);
+  cat_impl(ret, bitwidth_v<Ts...>, static_cast<logic_cast_t<Ts>>(args)...);
   return ret;
 }
 
@@ -860,7 +867,7 @@ public:
 
   template <typename T>
   void operator=(const T& rhs) {
-    this->assign(static_cast<bit_cast_t<T, bitwidth_v<Ts...>>>(rhs), std::index_sequence_for<Ts...>());
+    this->assign(static_cast<logic_cast_t<T, ch_bit<bitwidth_v<Ts...>>>>(rhs), std::index_sequence_for<Ts...>());
   }
 
 protected:

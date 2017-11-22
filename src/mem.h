@@ -98,7 +98,8 @@ public:
   template <typename U,
             CH_REQUIRES(is_bit_convertible<U, addr_width>::value)>
   const auto operator[](const U& addr) const {
-    return const_type_t<T>(new mem_buffer(mem_.get_port(get_lnode<U, addr_width>(addr))));
+    return const_type_t<T>(
+      bit_buffer_ptr(new mem_buffer(mem_.get_port(get_lnode<U, addr_width>(addr)))));
   }
     
 protected:
@@ -138,13 +139,14 @@ public:
   template <typename U,
             CH_REQUIRES(is_bit_convertible<U, addr_width>::value)>
   const auto operator[](const U& addr) const {
-    return const_type_t<T>(new mem_buffer(mem_.get_port(get_lnode<U, addr_width>(addr))));
+    return const_type_t<T>(
+          bit_buffer_ptr(new mem_buffer(mem_.get_port(get_lnode<U, addr_width>(addr)))));
   }
 
   template <typename U,
             CH_REQUIRES(is_bit_convertible<U, addr_width>::value)>
   auto operator[](const U& addr) {
-    return T(new mem_buffer(mem_.get_port(get_lnode<U, addr_width>(addr))));
+    return T(bit_buffer_ptr(new mem_buffer(mem_.get_port(get_lnode<U, addr_width>(addr)))));
   }
     
 protected:

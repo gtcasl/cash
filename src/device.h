@@ -85,7 +85,7 @@ public:
   template <typename... Ts>
   ch_device(const std::string& name, Ts&&... args)
     : base(typeid(T).hash_code(), name, std::forward<Ts>(args)...)
-    , io(new typename traits::buffer_type(obj_->io))
+    , io(scalar_buffer_ptr(new typename traits::buffer_type(obj_->io)))
   {}
 
   template <typename... Ts>
@@ -93,7 +93,7 @@ public:
     : base(typeid(T).hash_code(),
            identifier_from_typeid(typeid(T).name()).c_str(),
            std::forward<Ts>(args)...)
-    , io(new typename traits::buffer_type(obj_->io))
+    , io(scalar_buffer_ptr(new typename traits::buffer_type(obj_->io)))
   {}
 
   ch_device(ch_device&& rhs) : base(std::move(rhs)) {}

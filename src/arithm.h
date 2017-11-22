@@ -79,9 +79,16 @@ enum ch_alu_op {
 
 const char* to_string(ch_alu_op op);
 
-lnodeimpl* createAluNode(ch_alu_op op, const lnode& in, unsigned delay = 0);
+lnodeimpl* createAluNode(ch_alu_op op,
+                         const lnode& in,
+                         unsigned delay = 0,
+                         const lnode& enable = lnode());
 
-lnodeimpl* createAluNode(ch_alu_op op, const lnode& lhs, const lnode& rhs, unsigned delay = 0);
+lnodeimpl* createAluNode(ch_alu_op op,
+                         const lnode& lhs,
+                         const lnode& rhs,
+                         unsigned delay = 0,
+                         const lnode& enable = lnode());
 
 }
 }

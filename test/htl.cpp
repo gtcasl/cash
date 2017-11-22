@@ -7,25 +7,68 @@
 
 using namespace ch::htl;
 
+template <typename T, unsigned Delay>
+struct PipeTest {
+  __io (
+    (ch_deq_io<T>) enq,
+    (ch_enq_io<T>) deq,
+    __out(T) value
+  );
+  void describe() {
+    ch_module<ch_pipe<T, Delay>> pipe;
+    pipe.io.enq(io.enq);
+    pipe.io.deq(io.deq);
+
+    ch_float32 x(io.enq.data);
+    ch_float32 y(1.0f);
+    io.value = ch_fmult<Delay>(x, y, io.deq.ready);
+  }
+};
+
 TEST_CASE("htl", "[htl]") {
   SECTION("pipe", "[pipe]") {
     TESTX([]()->bool {
       int ret = 1;
-      ch_device<ch_pipe<ch_bit4, 3>> device;
-      ch_simulator sim(device);
+      ch_device<PipeTest<ch_bit32, 4>> device;
+      ch_vcdtracer sim("pipe.vcd", device);
       ch_tick t = sim.reset(0);
-      device.io.enq.data  = 0xA;
+      device.io.enq.data  = 0x3e4ccccd; // 0.2f
       device.io.enq.valid = true;
+      device.io.deq.ready = true;
+      t = sim.step(t, 1);
+      ret &= !device.io.deq.valid;
+      device.io.enq.data  = 0x3dcccccd; // 0.1f
+      device.io.enq.valid = true;
+      device.io.deq.ready = true;
       t = sim.step(t, 1);
       ret &= !device.io.deq.valid;
       device.io.enq.valid = false;
+      device.io.deq.ready = true;
       t = sim.step(t, 1);
       ret &= !device.io.deq.valid;
+      device.io.deq.ready = false;
+      t = sim.step(t, 3);
+      ret &= !device.io.deq.valid;
+      device.io.deq.ready = true;
       t = sim.step(t, 1);
       ret &= !!device.io.deq.valid;
+      ret &= 0x3e4ccccd == device.io.deq.data;
+      device.io.deq.ready = false;
+      t = sim.step(t, 1);
+      ret &= !!device.io.deq.valid;
+      ret &= 0x3e4ccccd == device.io.deq.data;
+      device.io.deq.ready = true;
+      t = sim.step(t, 1);
+      ret &= !!device.io.deq.valid;
+      ret &= 0x3dcccccd == device.io.deq.data;
+      device.io.deq.ready = false;
+      t = sim.step(t, 1);
+      ret &= !!device.io.deq.valid;
+      ret &= 0x3dcccccd == device.io.deq.data;
+      device.io.deq.ready = true;
       t = sim.step(t, 1);
       ret &= !device.io.deq.valid;
-      return !!ret;
+      t = sim.step(t, 1);
     });
   }
   SECTION("onehot", "[onehot]") {

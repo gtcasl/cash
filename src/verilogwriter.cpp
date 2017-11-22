@@ -454,9 +454,16 @@ void verilogwriter::print_mux(aluimpl* node) {
 }
 
 void verilogwriter::print_fmult(aluimpl* node) {
+  auto dalu = dynamic_cast<delayed_aluimpl*>(node);
   out_ << "fp_mult __fp_mult_";
   out_ << node->get_id() << "__(.clock(";
-  this->print_name(node->get_src(2).get_impl());
+  this->print_name(dalu->get_clk().get_impl());
+  out_ << "), .clk_en(";
+  if (dalu->has_enable()) {
+    this->print_name(dalu->get_enable().get_impl());
+  } else {
+    out_ << "1b'1";
+  }
   out_ << "), .dataa(";
   this->print_name(node->get_src(0).get_impl());
   out_ << "), .datab(";
@@ -467,9 +474,16 @@ void verilogwriter::print_fmult(aluimpl* node) {
 }
 
 void verilogwriter::print_fadd(aluimpl* node) {
+  auto dalu = dynamic_cast<delayed_aluimpl*>(node);
   out_ << "fp_add __fp_add_sub_";
   out_ << node->get_id() << "__(.clock(";
-  this->print_name(node->get_src(2).get_impl());
+  this->print_name(dalu->get_clk().get_impl());
+  out_ << "), .clk_en(";
+  if (dalu->has_enable()) {
+    this->print_name(dalu->get_enable().get_impl());
+  } else {
+    out_ << "1b'1";
+  }
   out_ << "), .dataa(";
   this->print_name(node->get_src(0).get_impl());
   out_ << "), .datab(";

@@ -134,7 +134,8 @@ void ch::internal::ch_popReset() {
   ctx_curr()->pop_reset();
 }
 
-lnodeimpl* ch::internal::createRegNode(const lnode& next, const lnode& init) {
+lnodeimpl* ch::internal::createRegNode(const lnode& next,
+                                       const lnode& init) {
   auto ctx = next.get_ctx();
   auto cd = ctx->create_cdomain({clock_event(ctx->get_clk(), EDGE_POS)});
   return ctx->createNode<regimpl>(cd, next, init, ctx_curr()->get_reset());

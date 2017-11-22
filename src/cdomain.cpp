@@ -86,7 +86,7 @@ void cdomain::remove_use(tickable* reg) {
 void cdomain::tick(ch_tick t) {
   for (clock_event& event : sensitivity_list_) {
     if (event.eval(t)) {
-      for (tickable* reg : regs_) {
+      for (auto reg : regs_) {
         reg->tick(t);
       }
       return;
