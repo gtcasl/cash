@@ -2,9 +2,9 @@
 
 #include "lnode.h"
 
-#define ALTFP_SP_ADD_SUB 14
-#define ALTFP_SP_MULT    11
-#define ALTFP_SP_DIV     13
+#define ALTFP_SP_ADD_SUB 7
+#define ALTFP_SP_MULT    5
+#define ALTFP_SP_DIV     6
 
 #define CH_ALUOP_ARY(x)   (x & (0x7 <<  8))
 #define CH_ALUOP_CLASS(x) (x & (0x7 << 11))

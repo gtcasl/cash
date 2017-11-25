@@ -93,7 +93,7 @@ public:
     bit_accessor::set_data(*this, input_);
   }
 
-  ch_in(const ch_out<T>& out) {
+  explicit ch_in(const ch_out<T>& out) {
     input_ = bit_accessor::get_data(*this);
     bindOutput(input_, out.output_);
   }
@@ -132,7 +132,7 @@ public:
     output_ = createOutputNode(name, bit_accessor::get_data(*this));
   }
 
-  ch_out(const ch_in<T>& in) {
+  explicit ch_out(const ch_in<T>& in) {
     output_ = bit_accessor::get_data(*this);
     bindInput(output_, in.input_);
   }
@@ -168,7 +168,7 @@ public:
   using base::size_;
   using base::value_;
 
-  scalar_buffer_io(unsigned size) : scalar_buffer_impl(size) {}
+  explicit scalar_buffer_io(unsigned size) : scalar_buffer_impl(size) {}
 
   const bitvector& get_data() const override {
     this->read(0, value_.get_words(), value_.get_cbsize(), 0, value_.get_size());
@@ -182,7 +182,7 @@ template <typename T>
 class in_buffer : public scalar_buffer_io {
 public:
   using base = scalar_buffer_io;
-  in_buffer(ch_in<T>& in) : base(bitwidth_v<T>), in_(in) {}
+  explicit in_buffer(ch_in<T>& in) : base(bitwidth_v<T>), in_(in) {}
 
   void read(uint32_t dst_offset,
             void* out,
@@ -210,7 +210,7 @@ template <typename T>
 class out_buffer : public scalar_buffer_io {
 public:
   using base = scalar_buffer_io;
-  out_buffer(const ch_out<T>& out) : base(bitwidth_v<T>), out_(out) {}
+  explicit out_buffer(const ch_out<T>& out) : base(bitwidth_v<T>), out_(out) {}
 
   void read(uint32_t dst_offset,
             void* out,

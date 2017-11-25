@@ -40,7 +40,7 @@
   CH_FOR_EACH(field_body, CH_SEP_SEMICOLON, __VA_ARGS__); \
   inout_name(const std::string& name = "io") \
     : CH_FOR_EACH(CH_INOUT_CTOR_BODY, CH_SEP_COMMA, __VA_ARGS__) {} \
-  inout_name(const typename traits::flip_type& rhs) \
+  explicit inout_name(const typename traits::flip_type& rhs) \
     : CH_FOR_EACH(CH_INOUT_COPY_CTOR, CH_SEP_COMMA, __VA_ARGS__) {} \
   inout_name(const inout_name& rhs) \
     : CH_FOR_EACH(CH_INOUT_COPY_CTOR, CH_SEP_COMMA, __VA_ARGS__) {} \
@@ -55,7 +55,7 @@
   inout_name(const std::string& name = "io") \
     : parent(name) \
     , CH_FOR_EACH(CH_INOUT_CTOR_BODY, CH_SEP_COMMA, __VA_ARGS__) {} \
-  inout_name(const typename traits::flip_type& rhs) \
+  explicit inout_name(const typename traits::flip_type& rhs) \
     : parent(rhs) \
     , CH_FOR_EACH(CH_INOUT_COPY_CTOR, CH_SEP_COMMA, __VA_ARGS__) {} \
   inout_name(const inout_name& rhs) \
@@ -119,7 +119,7 @@
     public: \
       using base = ch::internal::scalar_buffer_io; \
       CH_FOR_EACH(CH_INOUT_FLIP_BUFFER_FIELD, CH_SEP_SEMICOLON, __VA_ARGS__); \
-      __flip_buffer_type__(__flip_type__& rhs) \
+      explicit __flip_buffer_type__(__flip_type__& rhs) \
         : base(__logic_type__::traits::bitwidth) \
         , CH_FOR_EACH(CH_INOUT_COPY_CTOR, CH_SEP_COMMA, __VA_ARGS__) {} \
       CH_INOUT_BUFFER_ACCESS(__VA_ARGS__) \
@@ -137,7 +137,7 @@
     public: \
       using base = ch::internal::scalar_buffer_io; \
       CH_FOR_EACH(CH_INOUT_BUFFER_FIELD, CH_SEP_SEMICOLON, __VA_ARGS__); \
-      __flop_buffer_type__(inout_name& rhs) \
+      explicit __flop_buffer_type__(inout_name& rhs) \
         : base(__logic_type__::traits::bitwidth) \
         , CH_FOR_EACH(CH_INOUT_COPY_CTOR, CH_SEP_COMMA, __VA_ARGS__) {} \
       CH_INOUT_BUFFER_ACCESS(__VA_ARGS__) \
@@ -162,7 +162,7 @@
       using base = ch::internal::scalar_buffer_io; \
       ch::internal::buffer_type_t<ch_flip_t<parent>> __parent__; \
       CH_FOR_EACH(CH_INOUT_FLIP_BUFFER_FIELD, CH_SEP_SEMICOLON, __VA_ARGS__); \
-      __flip_buffer_type__(__flip_type__& rhs) \
+      explicit __flip_buffer_type__(__flip_type__& rhs) \
         : base(__logic_type__::traits::bitwidth), __parent__(rhs) \
         , CH_FOR_EACH(CH_INOUT_COPY_CTOR, CH_SEP_COMMA, __VA_ARGS__) {} \
       CH_INOUT_BUFFER_ACCESS((ch_flip_t<parent>) __parent__, __VA_ARGS__) \
@@ -182,7 +182,7 @@
       using base = ch::internal::scalar_buffer_io; \
       ch::internal::buffer_type_t<parent> __parent__; \
       CH_FOR_EACH(CH_INOUT_BUFFER_FIELD, CH_SEP_SEMICOLON, __VA_ARGS__); \
-      __flop_buffer_type__(inout_name& rhs) \
+      explicit __flop_buffer_type__(inout_name& rhs) \
         : base(__logic_type__::traits::bitwidth), __parent__(rhs) \
         , CH_FOR_EACH(CH_INOUT_COPY_CTOR, CH_SEP_COMMA, __VA_ARGS__) {} \
       CH_INOUT_BUFFER_ACCESS((parent) __parent__, __VA_ARGS__) \

@@ -508,7 +508,7 @@ class ch_vec_buffer_io : public scalar_buffer_io {
 public:
   using base = scalar_buffer_io;
 
-  ch_vec_buffer_io(ch_vec<T, N>& rhs)
+  explicit ch_vec_buffer_io(ch_vec<T, N>& rhs)
     : ch_vec_buffer_io(rhs, std::make_index_sequence<N>())
   {}
 
