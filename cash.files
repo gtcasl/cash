@@ -1,8 +1,14 @@
 examples/adder.cpp
+examples/adder.v
+examples/adder.v
 examples/counter.cpp
+examples/counter.v
 examples/fastmult.cpp
+examples/fastmult.v
 examples/fifo.cpp
+examples/fifo.v
 examples/gcd.cpp
+examples/gcd.v
 src/aluimpl.cpp
 src/aluimpl.h
 src/arithm.h

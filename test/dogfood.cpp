@@ -131,25 +131,18 @@ struct Dogfood {
     __out(ch_bit1) out
   );
   void describe() {
-    ch_ram<Q_t, 2> mem;
-    mem[0] = Q_t(1101_b);
-    auto x = mem[0].asBits();
-    auto e = ch_reg(1101_b);
-    ch_print("t={0}, x={1}, e={2}", ch_getTick(), x, e);
-    io.out = (x == e);
+    io.out.asBits() = (io.in.asBits() == 0xA);
   }
 };
 
-
-
 int main(int argc, char **argv) {
-  /*{
+  {
     ch_device<Dogfood> device;
     ch_simulator sim(device);
     device.io.in = 0xA;
     sim.run(4);
     assert(device.io.out);
-  }*/
+  }
 
   /*{
     ch_device<Foo1> foo;

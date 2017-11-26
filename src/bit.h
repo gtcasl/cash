@@ -210,7 +210,7 @@ struct bit_accessor {
   template <typename T>
   static auto cloneBuffer(const T& obj) {
     assert(bitwidth_v<T> == obj.get_buffer()->get_size());
-    return bit_buffer(obj.get_buffer()->get_data().clone());
+    return bit_buffer(lnode(bitwidth_v<T>, obj.get_buffer()->get_data()));
   }
 
   template <typename U, typename V,
@@ -246,8 +246,7 @@ struct bit_accessor {
   template <typename D, typename T>
   static auto cast(const T& obj) {
     assert(bitwidth_v<T> == obj.get_buffer()->get_size());
-    using return_type = std::conditional_t<is_const_type<T>::value, const_type_t<D>, D>;
-    return return_type(bit_buffer(bitwidth_v<T>, obj.get_buffer(), 0));
+    return D(obj.get_buffer());
   }
 };
 
@@ -343,14 +342,21 @@ const auto OpReduce(const const_bit<N>& a) {
 
 #define CH_LOGIC_READONLY_INTERFACE(type) \
   template <typename R, CH_REQUIRES(ch::internal::is_logic_type<R>::value)> \
-  R as() const { \
-    return ch::internal::bit_accessor::cast<R>(*this); \
+  ch::internal::const_type_t<R> as() const { \
+    return ch::internal::bit_accessor::cast<ch::internal::const_type_t<R>>(*this); \
   } \
-  ch_bit<type::traits::bitwidth> asBits() const { \
-    return this->as<ch_bit<type::traits::bitwidth>>(); \
+  ch::internal::const_bit<type::traits::bitwidth> asBits() const { \
+    return this->as<ch::internal::const_bit<type::traits::bitwidth>>(); \
   }
 
 #define CH_LOGIC_WRITABLE_INTERFACE(type) \
+  template <typename R, CH_REQUIRES(ch::internal::is_logic_type<R>::value)> \
+  R as() { \
+    return ch::internal::bit_accessor::cast<R>(*this); \
+  } \
+  ch_bit<type::traits::bitwidth> asBits() { \
+    return this->as<ch_bit<type::traits::bitwidth>>(); \
+  } \
   const ch_seq<type> asSeq() { \
     ch_seq<type> s; \
     (*this) = s; \
@@ -596,6 +602,7 @@ public:
     return ch_bit<M>(bit_buffer(M, buffer_, start));
   }
 
+  CH_LOGIC_READONLY_INTERFACE(ch_bit)
   CH_LOGIC_WRITABLE_INTERFACE(ch_bit)
 };
 
@@ -867,7 +874,8 @@ public:
 
   template <typename T>
   void operator=(const T& rhs) {
-    this->assign(static_cast<logic_cast_t<T, ch_bit<bitwidth_v<Ts...>>>>(rhs), std::index_sequence_for<Ts...>());
+    this->assign(static_cast<logic_cast_t<T, ch_bit<bitwidth_v<Ts...>>>>(rhs),
+                 std::index_sequence_for<Ts...>());
   }
 
 protected:

@@ -185,12 +185,16 @@ protected: \
     public: \
       using traits = ch::internal::logic_traits<CH_UNION_SIZE(__VA_ARGS__), __logic_const_type__, __logic_const_type__, union_name, __scalar_const_type__>; \
       CH_UNION_BODY_IMPL(__logic_const_type__, union_name, CH_UNION_CONST_LOGIC_FIELD, __VA_ARGS__) \
+      explicit __logic_const_type__(const ch_bit<traits::bitwidth>& rhs) \
+        : __logic_const_type__(ch::internal::type_accessor_t<traits>::cloneBuffer(rhs)) {} \
       CH_LOGIC_READONLY_INTERFACE(__logic_const_type__) \
       CH_UNION_LOGIC_FRIENDS_IMPL(__logic_const_type__) \
     }; \
   public: \
     using traits = ch::internal::logic_traits<CH_UNION_SIZE(__VA_ARGS__), union_name, __logic_const_type__, union_name, __scalar_type__>; \
     CH_UNION_BODY_IMPL(union_name, __logic_const_type__, CH_UNION_LOGIC_FIELD, __VA_ARGS__) \
+    explicit union_name(const ch_bit<traits::bitwidth>& rhs) \
+      : union_name(ch::internal::type_accessor_t<traits>::cloneBuffer(rhs)) {} \
     CH_UNION_WRITABLE_IMPL(union_name, __logic_const_type__) \
     CH_LOGIC_READONLY_INTERFACE(union_name) \
     CH_LOGIC_WRITABLE_INTERFACE(union_name) \

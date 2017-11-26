@@ -12,6 +12,28 @@ struct TestAssign {
   }
 };
 
+struct TestAssign2 {
+  __io (
+    __in(ch_bit4) in,
+    __out(ch_bit1) out
+  );
+  void describe() {
+    ch_bool x = io.out;
+    ch_assert(x, "oops!");
+    io.out = (io.in == 0xA);
+  }
+};
+
+struct TestAssign3 {
+  __io (
+    __in(ch_bit4) in,
+    __out(ch_bit1) out
+  );
+  void describe() {
+    io.out.asBits() = (io.in.asBits() == 0xA);
+  }
+};
+
 TEST_CASE("basics", "[basics]") {
   SECTION("assign", "[assign]") {
     TEST([]()->ch_bit1 {
@@ -33,6 +55,18 @@ TEST_CASE("basics", "[basics]") {
 
     TEST([]()->ch_bit1 {
       ch_module<TestAssign> m;
+      m.io.in = 0xA;
+      return m.io.out;
+    });
+
+    TEST([]()->ch_bit1 {
+      ch_module<TestAssign2> m;
+      m.io.in = 0xA;
+      return m.io.out;
+    });
+
+    TEST([]()->ch_bit1 {
+      ch_module<TestAssign3> m;
       m.io.in = 0xA;
       return m.io.out;
     });

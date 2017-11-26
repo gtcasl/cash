@@ -190,6 +190,9 @@ public:
 
   const_vec(const_vec&& rhs) : base(std::move(rhs)) {}
 
+  explicit const_vec(const ch_bit<traits::bitwidth>& rhs) \
+    : const_vec(bit_accessor::cloneBuffer(rhs)) {} \
+
   explicit const_vec(const ch_scalar<traits::bitwidth>& rhs)
     : const_vec(bit_buffer(scalar_accessor::get_data(rhs)))
   {}
@@ -265,6 +268,8 @@ public:
 
   template <typename U>
   explicit ch_vec(const ch_vec<U, N>& rhs) : base(rhs ) {}
+
+  explicit ch_vec(const ch_bit<traits::bitwidth>& rhs) : base(rhs) {} \
 
   explicit ch_vec(const ch_scalar<traits::bitwidth>& rhs) : base(rhs) {}
 

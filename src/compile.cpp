@@ -21,6 +21,9 @@ void compiler::run() {
   this->build_node_map();
 
   size_t identity_nodes = this->remove_identity_nodes();
+
+  DBG(2, "*** deleted %lu dead nodes\n", dead_nodes);
+  DBG(2, "*** deleted %lu identity nodes\n", identity_nodes);
   
   this->syntax_check();
   
@@ -40,9 +43,7 @@ void compiler::run() {
     }
   }
 #endif
-  
-  DBG(2, "*** deleted %lu dead nodes\n", dead_nodes);
-  DBG(2, "*** deleted %lu identity nodes\n", identity_nodes);
+
   DBG(2, "Before optimization: %lu\n", orig_num_nodes);
   DBG(2, "After optimization: %lu\n", ctx_->get_nodes().size());
 }

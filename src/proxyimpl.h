@@ -15,10 +15,10 @@ public:
     uint32_t length;
 
     bool operator==(const range_t& rhs) const {
-      return this->src_idx == rhs.src_idx
+      return this->src_idx    == rhs.src_idx
           && this->dst_offset == rhs.dst_offset
           && this->src_offset == rhs.src_offset
-          && this->length == rhs.length;
+          && this->length     == rhs.length;
     }
 
     bool operator!=(const range_t& rhs) const {

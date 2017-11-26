@@ -181,12 +181,16 @@ protected: \
     public: \
       using traits = ch::internal::logic_traits<CH_STRUCT_SIZE(__VA_ARGS__), __logic_const_type__, __logic_const_type__, struct_name, __scalar_const_type__>; \
       CH_STRUCT_BODY_IMPL2(__logic_const_type__, struct_name, CH_STRUCT_CONST_LOGIC_FIELD, __VA_ARGS__) \
+      explicit __logic_const_type__(const ch_bit<traits::bitwidth>& rhs) \
+        : __logic_const_type__(ch::internal::type_accessor_t<traits>::cloneBuffer(rhs)) {} \
       CH_LOGIC_READONLY_INTERFACE(__logic_const_type__) \
       CH_STRUCT_LOGIC_FRIENDS_IMPL(__logic_const_type__) \
     }; \
   public: \
     using traits = ch::internal::logic_traits<CH_STRUCT_SIZE(__VA_ARGS__), struct_name, __logic_const_type__, struct_name, __scalar_type__>; \
     CH_STRUCT_BODY_IMPL2(struct_name, __logic_const_type__, CH_STRUCT_LOGIC_FIELD, __VA_ARGS__) \
+    explicit struct_name(const ch_bit<traits::bitwidth>& rhs) \
+      : struct_name(ch::internal::type_accessor_t<traits>::cloneBuffer(rhs)) {} \
     CH_STRUCT_WRITABLE_IMPL(struct_name, __logic_const_type__) \
     CH_LOGIC_READONLY_INTERFACE(struct_name) \
     CH_LOGIC_WRITABLE_INTERFACE(struct_name) \
@@ -221,6 +225,8 @@ protected: \
       using base = ch_const_t<parent>; \
       using traits = ch::internal::logic_traits<ch_bitwidth_v<base> + CH_STRUCT_SIZE(__VA_ARGS__), __logic_const_type__, __logic_const_type__, struct_name, __scalar_const_type__>; \
       CH_STRUCT_BODY_IMPL3(__logic_const_type__, struct_name, CH_STRUCT_CONST_LOGIC_FIELD, __VA_ARGS__) \
+      explicit __logic_const_type__(const ch_bit<traits::bitwidth>& rhs) \
+        : __logic_const_type__(ch::internal::type_accessor_t<traits>::cloneBuffer(rhs)) {} \
       CH_LOGIC_READONLY_INTERFACE(__logic_const_type__) \
       CH_STRUCT_LOGIC_FRIENDS_IMPL(__logic_const_type__) \
     }; \
@@ -228,6 +234,8 @@ protected: \
     using base = parent; \
     using traits = ch::internal::logic_traits<ch_bitwidth_v<base> + CH_STRUCT_SIZE(__VA_ARGS__), struct_name, __logic_const_type__, struct_name, __scalar_type__>; \
     CH_STRUCT_BODY_IMPL3(struct_name, __logic_const_type__, CH_STRUCT_LOGIC_FIELD, __VA_ARGS__) \
+    explicit struct_name(const ch_bit<traits::bitwidth>& rhs) \
+      : struct_name(ch::internal::type_accessor_t<traits>::cloneBuffer(rhs)) {} \
     CH_STRUCT_WRITABLE_IMPL(struct_name, __logic_const_type__) \
     CH_LOGIC_READONLY_INTERFACE(struct_name) \
     CH_LOGIC_WRITABLE_INTERFACE(struct_name) \

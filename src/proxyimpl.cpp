@@ -209,12 +209,11 @@ proxyimpl::erase_source(std::vector<lnode>::iterator iter) {
 lnodeimpl* proxyimpl::get_slice(uint32_t offset, uint32_t length) {
   assert(length <= value_.get_size());
 
-  // check for matching source
-  if (1 == ranges_.size()) {
-    auto& range = ranges_[0];
+  // return the nested node if the offset/size match
+  for (const auto& range : ranges_) {
     if (range.length == length
-     && range.src_offset == 0
      && range.dst_offset == offset
+     && range.src_offset == 0
      && srcs_[range.src_idx].get_size() == length) {
       return srcs_[range.src_idx].get_impl();
     }
@@ -222,15 +221,15 @@ lnodeimpl* proxyimpl::get_slice(uint32_t offset, uint32_t length) {
 
   // return new slice
   auto proxy = ctx_->createNode<proxyimpl>(length);
-  for (auto& r : ranges_) {
-    uint32_t r_end = r.dst_offset + r.length;
+  for (const auto& range : ranges_) {
+    uint32_t r_end = range.dst_offset + range.length;
     uint32_t src_end = offset + length;
-    if (offset < r_end && src_end > r.dst_offset) {
-      uint32_t sub_start = std::max(offset, r.dst_offset);
+    if (offset < r_end && src_end > range.dst_offset) {
+      uint32_t sub_start = std::max(offset, range.dst_offset);
       uint32_t sub_end = std::min(src_end, r_end);
       uint32_t dst_offset = sub_start - offset;
-      uint32_t src_offset = r.src_offset + (sub_start - r.dst_offset);
-      proxy->add_source(dst_offset, srcs_[r.src_idx], src_offset, sub_end - sub_start);
+      uint32_t src_offset = range.src_offset + (sub_start - range.dst_offset);
+      proxy->add_source(dst_offset, srcs_[range.src_idx], src_offset, sub_end - sub_start);
     }
   }
 

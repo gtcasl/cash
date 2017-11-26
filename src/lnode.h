@@ -21,7 +21,7 @@ public:
 
   explicit lnode(uint32_t size);
 
-  lnode(uint32_t size, const lnode& src, unsigned src_offset);
+  lnode(uint32_t size, const lnode& src, unsigned src_offset = 0);
 
   lnode(lnodeimpl* impl);
 
