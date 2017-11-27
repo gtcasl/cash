@@ -18,7 +18,7 @@ struct ch_queue {
   __io (
     (ch_deq_io<T>) enq,
     (ch_enq_io<T>) deq,
-    __out(ch_bit<addr_width+1>) size
+    __out(ch_bit<log2ceil(N+1)>) size
   );
 
   void describe() {

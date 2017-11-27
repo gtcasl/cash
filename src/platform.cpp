@@ -30,7 +30,7 @@ struct platform::Impl {
     if (_dump_cfg)
       dump_cfg = atol(_dump_cfg);
 
-    auto _lib_path = std::getenv("CASH_PATH");
+    auto _lib_path = std::getenv("CASH_HOME");
     if (_lib_path)
       lib_path = _lib_path;
   }

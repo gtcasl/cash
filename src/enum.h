@@ -2,6 +2,14 @@
 
 #include "bit.h"
 
+#define CH_ENUM_VALUE_1(x, i) i
+#define CH_ENUM_VALUE_2(x, i) CH_PAIR_SECOND(x)
+#define CH_ENUM_VALUE_(c) CH_CONCAT(CH_ENUM_VALUE_, c)
+#define CH_ENUM_VALUE(i, x) CH_ENUM_VALUE_(CH_NARG(CH_REM x))(CH_REM x, i)
+
+#define CH_ENUM_SIZE(...) \
+  log2ceil(std::max({1, CH_FOR_EACH(CH_ENUM_VALUE, CH_SEP_COMMA, __VA_ARGS__)}) + 1)
+
 #define CH_ENUM_FIELD_1(x, y) y
 #define CH_ENUM_FIELD_2(x, y) CH_PAIR_FIRST(x) = CH_PAIR_SECOND(x)
 #define CH_ENUM_FIELD_(c) CH_CONCAT(CH_ENUM_FIELD_, c)
@@ -87,5 +95,12 @@ protected: \
     CH_ENUM_LOGIC_FRIENDS_IMPL(enum_name) \
   }
 
-#define CH_ENUM(name, size, body) \
+#define CH_ENUM3(name, size, body) \
   CH_ENUM_IMPL(name, size, CH_REM body)
+
+#define CH_ENUM2(name, body) \
+  CH_ENUM_IMPL(name, CH_ENUM_SIZE(CH_REM body), CH_REM body)
+
+#define GET_ENUM(_1, _2, _3, NAME, ...) NAME
+#define CH_ENUM(...) GET_ENUM(__VA_ARGS__, CH_ENUM3, CH_ENUM2)(__VA_ARGS__)
+
