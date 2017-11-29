@@ -12,15 +12,18 @@ using namespace ch::internal;
 compiler::compiler(context* ctx) : ctx_(ctx) {}
 
 void compiler::run() {
+  size_t orig_num_nodes, dead_nodes, identity_nodes;
+  CH_UNUSED(orig_num_nodes, dead_nodes, identity_nodes);
+
   DBG(2, "compiling %s ...\n", ctx_->get_name().c_str());
 
-  size_t orig_num_nodes = ctx_->get_nodes().size();
-  
-  size_t dead_nodes = this->dead_code_elimination();
+  orig_num_nodes = ctx_->get_nodes().size();
+
+  dead_nodes = this->dead_code_elimination();
 
   this->build_node_map();
 
-  size_t identity_nodes = this->remove_identity_nodes();
+  identity_nodes = this->remove_identity_nodes();
 
   DBG(2, "*** deleted %lu dead nodes\n", dead_nodes);
   DBG(2, "*** deleted %lu identity nodes\n", identity_nodes);

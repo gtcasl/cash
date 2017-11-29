@@ -18,7 +18,7 @@ struct GCD {
 
     io.in.ready = !p;
 
-    __if (io.in.valid && !p) (
+    __if (io.in.valid && io.in.ready) (
       x.next = io.in.data[0];
       y.next = io.in.data[1];
       p.next = true;

@@ -87,6 +87,7 @@ context::context(const std::string& name)
   , name_(name)
   , node_ids_(0)
   , block_ids_(0)
+  , branch_ids_(0)
   , default_clk_(nullptr)
   , default_reset_(nullptr)
   , tick_(nullptr)
@@ -206,9 +207,10 @@ void context::add_node(lnodeimpl* node) {
   }
 
   // register local nodes, io objects have global scope
-  if (!cond_blocks_.empty()
+  if (!cond_branches_.empty()
+   && !cond_branches_.front().blocks.empty()
    && nullptr == dynamic_cast<ioimpl*>(node)) {
-    cond_blocks_.front().locals.emplace(node);
+    cond_branches_.front().blocks.front().locals.emplace(node->get_id());
   }
 }
 
@@ -261,91 +263,90 @@ void context::remove_node(lnodeimpl* node) {
 }
 
 void context::begin_branch() {
-  cond_branches_.emplace_front(cond_branch_t());
+  // insert new conditional branch
+  cond_branches_.emplace_front(++branch_ids_);
 }
 
 void context::end_branch() {
   assert(!cond_branches_.empty());
   cond_branches_.pop_front();
   if (cond_branches_.empty()) {
+    // reset used resources
     cond_upds_.clear();
-    block_ids_ = 0;
+    block_ids_  = 0;
+    branch_ids_ = 0;
   }
 }
 
-void context::begin_block(lnodeimpl* pred) {
-  // compute 'else' predicate
-  auto branch = cond_branches_.begin();
-  if (nullptr == branch->else_pred) {
-    branch->else_pred = pred;
-  } else {
-    if (pred) {
-      branch->else_pred = createAluNode(alu_or, branch->else_pred, pred);
-    } else {
-      branch->else_pred = createAluNode(alu_inv, branch->else_pred);
-    }
-  }
+void context::begin_block(lnodeimpl* pred) {  
   // insert new conditional block
-  cond_blocks_.emplace_front(++block_ids_, pred, branch);
+  cond_branches_.front().blocks.emplace_front(++block_ids_, pred);
 }
 
 void context::end_block() {
-  assert(!cond_blocks_.empty());
-  cond_blocks_.pop_front();
+  assert(!cond_branches_.empty());
+  cond_branches_.front().preds.clear();
 }
 
-lnodeimpl* context::build_aggregate_predicate(
-    cond_blocks_t::iterator def_block,
-    cond_blocks_t::iterator use_block) {
-  // try use precomputed value from cache
-  uint32_t def_block_id = (def_block != cond_blocks_.end()) ? def_block->id : 0;
-  if (use_block->agg_preds.count(def_block_id) != 0) {
-    return use_block->agg_preds.at(def_block_id);
+uint32_t context::find_decl_branch(uint32_t node_id) {
+  auto it = std::find_if(cond_branches_.begin(), cond_branches_.end(),
+    [&](const cond_branch_t& branch)->bool {
+      return branch.blocks.front().locals.count(node_id) != 0;
+    });
+  if (it != cond_branches_.end()) {
+    return it->id;
+  }
+  return 0;
+}
+
+lnodeimpl* context::get_predicate(uint32_t node_id) {
+  uint32_t def_br_id = this->find_decl_branch(node_id);
+  return this->get_predicate(def_br_id, cond_branches_.begin());
+}
+
+lnodeimpl* context::get_predicate(
+    uint32_t def_br_id,
+    cond_branches_t::iterator ibr) {
+  // use precomputed branch predicate if available
+  if (ibr->preds.count(def_br_id) != 0) {
+    return ibr->preds.at(def_br_id);
   }
 
-  auto pred = use_block->pred;
+  // build branch predicate
+  const auto& blocks = ibr->blocks;
+  const auto& curr_block = blocks.front();
+  lnodeimpl* pred = nullptr;
+  for (auto it = std::next(blocks.begin()), end = blocks.end(); it != end; ++it) {
+    pred = pred ? createAluNode(alu_or, pred, it->pred) : it->pred;
+  }
+  if (pred) {
+    pred = createAluNode(alu_inv, pred);
+    if (curr_block.pred) {
+      pred = createAluNode(alu_and, pred, curr_block.pred);
+    }
+  } else {
+    pred = curr_block.pred;
+  }
 
   // add parent predicate
-  auto parent_block = std::next(use_block);
-  if (parent_block != def_block) {
-    if (nullptr == pred) {
-      pred = use_block->branch->else_pred;
-    }
-    auto parent_pred = this->build_aggregate_predicate(def_block, parent_block);
-    if (nullptr == parent_pred) {
-      parent_pred = parent_block->branch->else_pred;
-    }
+  auto parent_br = std::next(ibr);
+  if (parent_br != cond_branches_.end()
+   && parent_br->id != def_br_id) {
+    auto parent_pred = this->get_predicate(def_br_id, parent_br);
     pred = createAluNode(alu_and, parent_pred, pred);
   }
-  use_block->agg_preds[def_block_id] = pred;
 
-  return pred;
-}
-
-lnodeimpl* context::get_predicate(lnodeimpl* node, uint32_t offset, uint32_t length) {
-  // get variable decl block
-  auto def_block = std::find_if(cond_blocks_.begin(), cond_blocks_.end(),
-    [&](const cond_block_t& cond_block)->bool {
-      return cond_block.locals.count(node) != 0;
-    });
-
-  auto pred = this->build_aggregate_predicate(def_block, cond_blocks_.begin());
-  if (nullptr == pred) {
-    // use the 'else' aggregate predicate if first assignment
-    cond_range_t range{node->get_id(), offset, length};
-    if (cond_upds_.find(range) == cond_upds_.end()) {
-      cond_branch_t& branch = cond_branches_.front();
-      pred = branch.else_pred;
-    }
-  }
+  // save predicate for reuse
+  ibr->preds[def_br_id] = pred;
 
   return pred;
 }
 
 bool context::conditional_enabled(lnodeimpl* node) const {
   // a node is conditionally assigned if it is not local to the current block
-  return (!cond_blocks_.empty()
-       && 0 == cond_blocks_.front().locals.count(node));
+  return (!cond_branches_.empty()
+       && (nullptr == node
+        || 0 == cond_branches_.front().blocks.front().locals.count(node->get_id())));
 }
 
 void context::conditional_assign(
@@ -354,7 +355,7 @@ void context::conditional_assign(
     uint32_t offset,
     uint32_t length) {
   assert(this->conditional_enabled(dst.get_impl()));
-  cond_range_t range{dst.get_id(), offset, length};
+  cond_var_t var{dst.get_id(), offset, length};
 
   // split overlapping assignment to same node
   auto it_upds = std::find_if(cond_upds_.begin(), cond_upds_.end(),
@@ -362,8 +363,8 @@ void context::conditional_assign(
       const auto& curr = v.first;
       uint32_t curr_end = curr.offset + curr.length;
       uint32_t src_end = offset + length;
-      return (curr != range)
-          && (curr.nodeid == range.nodeid)
+      return (curr != var)
+          && (curr.nodeid == var.nodeid)
           && (offset < curr_end && src_end > curr.offset);
     });
   if (it_upds != cond_upds_.end()) {
@@ -377,20 +378,20 @@ void context::conditional_assign(
         assert(false);
       } else if (offset < curr.offset) {
         // source overlaps on the left
-        this->clone_conditional_assignment(dst, curr, curr.offset, src_end - curr.offset);
-        this->clone_conditional_assignment(dst, curr, src_end, curr_end - src_end);
+        this->split_conditional_assignment(dst, curr, curr.offset, src_end - curr.offset);
+        this->split_conditional_assignment(dst, curr, src_end, curr_end - src_end);
       } else if (src_end > curr_end) {
         // source overlaps on the right
-        this->clone_conditional_assignment(dst, curr, curr.offset, offset - curr.offset);
-        this->clone_conditional_assignment(dst, curr, offset, curr_end - offset);
+        this->split_conditional_assignment(dst, curr, curr.offset, offset - curr.offset);
+        this->split_conditional_assignment(dst, curr, offset, curr_end - offset);
       } else {
         // source fully included
         if (offset != curr.offset) {
-          this->clone_conditional_assignment(dst, curr, curr.offset, offset - curr.offset);
+          this->split_conditional_assignment(dst, curr, curr.offset, offset - curr.offset);
         }
-        this->clone_conditional_assignment(dst, curr, offset, src_end - offset);
+        this->split_conditional_assignment(dst, curr, offset, src_end - offset);
         if (src_end != curr_end) {
-          this->clone_conditional_assignment(dst, curr, src_end, curr_end - src_end);
+          this->split_conditional_assignment(dst, curr, src_end, curr_end - src_end);
         }
       }
       // remove entry
@@ -399,10 +400,10 @@ void context::conditional_assign(
   }
 
   // get the current conditional block
-  cond_block_t& block = cond_blocks_.front();
+  cond_block_t& block = cond_branches_.front().blocks.front();
 
   // lookup for dst assignment history  
-  it_upds = cond_upds_.find(range);
+  it_upds = cond_upds_.find(var);
   if (it_upds != cond_upds_.end()) {
     // check if last assignment took place in nested blocks
     auto it_upd = it_upds->second.begin();
@@ -414,7 +415,7 @@ void context::conditional_assign(
           break;
         it_upd = it_upds->second.erase(it_upd);
       }
-      // remove variable if no more assignment exist
+      // delete entry if no more assignment exist
       if (it_upd != it_upd_end) {
         cond_upds_.erase(it_upds);
         it_upds = cond_upds_.end();
@@ -425,7 +426,8 @@ void context::conditional_assign(
   selectimpl* sel;
   selectimpl* sel_old = nullptr;
 
-  lnodeimpl* pred = this->get_predicate(dst.get_impl(), offset, length);
+  lnodeimpl* pred = this->get_predicate(dst.get_id());
+  assert(pred);
 
   if (it_upds != cond_upds_.end()) {
     sel_old = it_upds->second.front().sel;
@@ -433,13 +435,17 @@ void context::conditional_assign(
     cond_upd_t& last_upd = it_upds->second.front();
     if (block.id > last_upd.block_id) {
       // last assignment took place in parent or sibling blocks
-      if (pred) {
+      auto parent_br = std::next(cond_branches_.begin());
+      auto decl_br_id = this->find_decl_branch(dst.get_id());
+      if (nullptr == block.pred
+       && (parent_br == cond_branches_.end()
+        || parent_br->id == decl_br_id)) {
+        // 'default' last assignment
+        it_upds->second.back().sel->set_false(src);
+      } else {
         // new conditional assignment
         sel = dynamic_cast<selectimpl*>(createSelectNode(pred, src, last_upd.sel));
         it_upds->second.emplace_front(sel, block.id);
-      } else {
-        // 'default' last assignment
-        it_upds->second.back().sel->set_false(src);
       }
     } else {
       // reassignment in current block
@@ -447,11 +453,10 @@ void context::conditional_assign(
       last_upd.sel->set_true(src);
     }
   } else {
-    // new variable conditional assignment
-    assert(pred);
+    // new variable conditional assignment    
     lnode _false(dst.get_impl()->get_slice(offset, length));
     sel = dynamic_cast<selectimpl*>(createSelectNode(pred, src, _false));
-    cond_upds_[range].emplace_front(sel, block.id);
+    cond_upds_[var].emplace_front(sel, block.id);
   }
 
   if (sel != sel_old) {
@@ -465,25 +470,25 @@ void context::conditional_assign(
   }
 }
 
-void context::clone_conditional_assignment(
+void context::split_conditional_assignment(
     lnode& dst,
-    const cond_range_t& range,
+    const cond_var_t& var,
     uint32_t offset,
     uint32_t length) {
   lnodeimpl* prev_sel_old = nullptr;
   lnodeimpl* prev_sel_new = nullptr;
-  cond_range_t new_range{dst.get_id(), offset, length};
+  cond_var_t new_var{dst.get_id(), offset, length};
   // traverse assignment history in reverse order, from oldest to latest
-  const auto& cond_upds = cond_upds_.at(range);  
+  const auto& cond_upds = cond_upds_.at(var);
   for (auto it_upd = cond_upds.rbegin(), it_upd_end = cond_upds.rend();
        it_upd != it_upd_end; ++it_upd) {
     auto sel_old = it_upd->sel;
     lnode _true((sel_old->get_true().get_impl() == prev_sel_old) ?
-          prev_sel_new : this->createNode<proxyimpl>(sel_old->get_true(), offset - range.offset, length));
+          prev_sel_new : this->createNode<proxyimpl>(sel_old->get_true(), offset - var.offset, length));
     lnode _false((sel_old->get_false().get_impl() == prev_sel_old) ?
-          prev_sel_new : this->createNode<proxyimpl>(sel_old->get_false(), offset - range.offset, length));
+          prev_sel_new : this->createNode<proxyimpl>(sel_old->get_false(), offset - var.offset, length));
     auto sel_new = dynamic_cast<selectimpl*>(createSelectNode(sel_old->get_pred(), _true, _false));
-    cond_upds_[new_range].emplace_front(sel_new, it_upd->block_id);
+    cond_upds_[new_var].emplace_front(sel_new, it_upd->block_id);
     prev_sel_old = sel_old;
     prev_sel_new = sel_new;
   }
@@ -491,16 +496,18 @@ void context::clone_conditional_assignment(
   proxy->add_source(offset, prev_sel_new, 0, length);
 }
 
-void context::relocate_locals(lnodeimpl* dst, lnodeimpl* src) {
-  if (cond_blocks_.empty())
+void context::fixup_local_variable(lnodeimpl* dst, lnodeimpl* src) {
+  if (cond_branches_.empty())
     return;
   // remove from local scope
-  cond_block_t& block = cond_blocks_.front();
-  auto ret = block.locals.erase(src);
-  if (ret > 0 && dst) {
-    for (auto& block : cond_blocks_) {
-      if (block.locals.count(dst) != 0) {
-        block.locals.insert(src);
+  cond_block_t& block = cond_branches_.front().blocks.front();
+  auto ret = block.locals.erase(src->get_id());
+  if (ret && dst) {
+    // add to destination block
+    for (auto& branch : cond_branches_) {
+      auto& curr_block = branch.blocks.front();
+      if (curr_block.locals.count(dst->get_id()) != 0) {
+        curr_block.locals.insert(src->get_id());
         break;
       }
     }

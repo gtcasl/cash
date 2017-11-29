@@ -199,6 +199,7 @@ void mem_buffer::write(uint32_t dst_offset,
                        const lnode& data,
                        uint32_t src_offset,
                        uint32_t length) {
+  CH_UNUSED(src_offset);
   assert(0 == src_offset && (dst_offset + length) <= size_);
   auto port = dynamic_cast<memportimpl*>(value_.get_impl());
   assert(port);

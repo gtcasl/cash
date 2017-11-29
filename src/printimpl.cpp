@@ -71,7 +71,7 @@ printimpl::printimpl(context* ctx,
   , predicated_(false)
   , tick_(~0ull) {
   if (ctx_->conditional_enabled(this)) {
-    auto pred = ctx_->get_predicate(this, 0, 0);
+    auto pred = ctx_->get_predicate(id_);
     if (pred) {
       srcs_.emplace_back(pred);
       predicated_ = true;
@@ -99,7 +99,7 @@ const bitvector& printimpl::eval(ch_tick t) {
               break;
             case fmttype::Float: {
                 uint32_t value = srcs_[args_offset_ + fmt.index].eval(t).get_word(0);
-                float valuef = *(const float*)&value;
+                float valuef = bitcast<float>(value);
                 strbuf_ << valuef;
               }
               break;

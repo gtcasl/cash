@@ -212,7 +212,7 @@ void lnode::write(uint32_t dst_offset,
     if (impl) {
       proxy->add_source(0, impl, 0, size);
     }
-    ctx->relocate_locals(impl, impl_);
+    ctx->fixup_local_variable(impl, impl_);
   }
 
   if (ctx->conditional_enabled(impl_)) {
