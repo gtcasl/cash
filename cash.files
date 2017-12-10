@@ -9,6 +9,8 @@ examples/fifo.cpp
 examples/fifo.v
 examples/gcd.cpp
 examples/gcd.v
+parser/Makefile
+parser/parser.cpp
 src/aluimpl.cpp
 src/aluimpl.h
 src/arithm.h

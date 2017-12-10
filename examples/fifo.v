@@ -10,35 +10,49 @@ module FiFo(
     output wire io_empty,
     output wire io_full
 );
-    reg[1:0] r24, r29;
-    wire w33, w35, a36, a37, a38, a39, a50, a53, a54, a55;
-    wire[1:0] a41, s42, a43, s44, s48;
-    reg[1:0] m45[0:1];
+    wire[1:0] io_dout11, proxy20, proxy22, proxy29, proxy31, add48, sel50, proxy51, add53, sel55, proxy56, proxy59, sel60;
+    wire io_empty14, io_full17, proxy35, proxy37, inv38, and40, inv42, and44, eq62, proxy63, proxy64, proxy65, ne66, eq68, and70, proxy71;
+    reg[1:0] reg27, reg33;
+    reg[1:0] mem57[0:1];
 
+    assign io_dout11 = mem57[proxy35];
+    assign io_empty14 = proxy63;
+    assign io_full17 = proxy71;
+    assign proxy20 = reg27;
+    assign proxy22 = proxy51;
     always @ (posedge clk)
-    r24 <= reset ? 2'b0 : s42;
+    reg27 <= reset ? 2'b0 : proxy22;
+    assign proxy29 = reg33;
+    assign proxy31 = proxy56;
     always @ (posedge clk)
-    r29 <= reset ? 2'b0 : s44;
-    assign w33 = r24[0];
-    assign w35 = r29[0];
-    assign a36 = ~a50;
-    assign a37 = io_pop & a36;
-    assign a38 = ~a55;
-    assign a39 = io_push & a38;
-    assign a41 = r24 + 2'b1;
-    assign s42 = a37 ? a41 : r24;
-    assign a43 = r29 + 2'b1;
-    assign s44 = a39 ? a43 : r29;
+    reg33 <= reset ? 2'b0 : proxy31;
+    assign proxy35 = proxy20[0];
+    assign proxy37 = proxy29[0];
+    assign inv38 = ~io_empty14;
+    assign and40 = io_pop & inv38;
+    assign inv42 = ~io_full17;
+    assign and44 = io_push & inv42;
+    assign add48 = proxy20 + 2'b1;
+    assign sel50 = and40 ? add48 : proxy20;
+    assign proxy51 = sel50;
+    assign add53 = proxy29 + 2'b1;
+    assign sel55 = and44 ? add53 : proxy29;
+    assign proxy56 = sel55;
     always @(posedge clk)
-    m45[w35] = s48;
-    assign s48 = a39 ? io_din : m45[w35];
-    assign a50 = r29 == r24;
-    assign a53 = r29[1] != r24[1];
-    assign a54 = w35 == w33;
-    assign a55 = a54 & a53;
+    mem57[proxy37] = proxy59;
+    assign proxy59 = sel60;
+    assign sel60 = and44 ? io_din : mem57[proxy37];
+    assign eq62 = proxy29 == proxy20;
+    assign proxy63 = eq62;
+    assign proxy64 = proxy20[1];
+    assign proxy65 = proxy29[1];
+    assign ne66 = proxy65 != proxy64;
+    assign eq68 = proxy37 == proxy35;
+    assign and70 = eq68 & ne66;
+    assign proxy71 = and70;
 
-    assign io_dout = m45[w33];
-    assign io_empty = a50;
-    assign io_full = a55;
+    assign io_dout = io_dout11;
+    assign io_empty = io_empty14;
+    assign io_full = io_full17;
 
 endmodule

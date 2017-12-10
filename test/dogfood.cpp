@@ -106,8 +106,9 @@ struct Foo3 {
 
   void describe() {
     for (int i = 0; i < 2; ++i) {
-      io.x[i].b = io.y[i] + io.x[i].a;
-      io.z[i] = io.x[i].b;
+      auto x = io.y[i] + io.x[i].a;
+      io.x[i].b = x;
+      io.z[i] = x;
     }
   }
 };
@@ -131,11 +132,11 @@ struct Dogfood {
     __out(ch_bit1) out
   );
   void describe() {
-    io.out.asBits() = (io.in.asBits() == 0xA);
+    io.out = (io.in == 0xA);
   }
 };
 
-int main(int argc, char **argv) {
+int main() {
   {
     ch_device<Dogfood> device;
     ch_simulator sim(device);

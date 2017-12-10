@@ -97,24 +97,24 @@ lnodeimpl* createAluNode(ch_alu_op op,
 
 #define CH_FRIEND_OPERATORS(func, header, lhs_t, rhs_t, body) \
   header \
-  inline friend const auto func(lhs_t lhs, rhs_t _rhs) { \
+  inline friend auto func(lhs_t lhs, rhs_t _rhs) { \
     auto rhs = static_cast<std::decay_t<lhs_t>>(_rhs); \
     return body; \
   } \
   header \
-  inline friend const auto func(rhs_t _lhs, lhs_t rhs) { \
+  inline friend auto func(rhs_t _lhs, lhs_t rhs) { \
     auto lhs = static_cast<std::decay_t<lhs_t>>(_lhs); \
     return body; \
   }
 
 #define CH_GLOBAL_OPERATORS(func, header, lhs_t, rhs_t, body) \
   header \
-  inline const auto func(lhs_t lhs, rhs_t _rhs) { \
+  inline auto func(lhs_t lhs, rhs_t _rhs) { \
     auto rhs = static_cast<std::decay_t<lhs_t>>(_rhs); \
     return body; \
   } \
   header \
-  inline const auto func(rhs_t _lhs, lhs_t rhs) { \
+  inline auto func(rhs_t _lhs, lhs_t rhs) { \
     auto lhs = static_cast<std::decay_t<lhs_t>>(_lhs); \
     return body; \
   }

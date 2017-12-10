@@ -12,9 +12,9 @@ std::vector<uint8_t> toByteVector(const std::string& init_file,
                                   uint32_t num_items);
 
 template <typename T>
-static const auto toByteVector(const T& container,
-                               uint32_t data_width,
-                               uint32_t num_items) {
+static auto toByteVector(const T& container,
+                         uint32_t data_width,
+                         uint32_t num_items) {
   uint32_t src_width = sizeof(typename T::value_type) * 8;
   CH_CHECK(container.size() == (CH_CEILDIV(data_width, src_width) * num_items), "invalid input size");
   std::vector<uint8_t> packed(CH_CEILDIV(data_width * num_items, 8));
@@ -37,14 +37,12 @@ static const auto toByteVector(const T& container,
 
 class mem_buffer : public bit_buffer_impl {
 public:
-  mem_buffer(const lnode& port) : bit_buffer_impl(port) {}
+  mem_buffer(const lnode& port) : bit_buffer_impl(port, nullptr, 0) {}
 
   void write(uint32_t dst_offset,
              const lnode& data,
              uint32_t src_offset,
              uint32_t length) override;
-
-  void move(const lnode& data) override;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -97,7 +95,7 @@ public:
 
   template <typename U,
             CH_REQUIRES(is_bit_convertible<U, addr_width>::value)>
-  const auto operator[](const U& addr) const {
+  auto operator[](const U& addr) const {
     return const_type_t<T>(
       bit_buffer_ptr(new mem_buffer(mem_.get_port(get_lnode<U, addr_width>(addr)))));
   }
@@ -138,7 +136,7 @@ public:
 
   template <typename U,
             CH_REQUIRES(is_bit_convertible<U, addr_width>::value)>
-  const auto operator[](const U& addr) const {
+  auto operator[](const U& addr) const {
     return const_type_t<T>(
           bit_buffer_ptr(new mem_buffer(mem_.get_port(get_lnode<U, addr_width>(addr)))));
   }

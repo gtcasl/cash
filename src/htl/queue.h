@@ -34,9 +34,9 @@ struct ch_queue {
     wr_ptr.next = ch_select(writing, wr_ptr + 1, wr_ptr);
 
     ch_ram<T, N> mem;
-    __if (writing) (
+    __if (writing)
       mem[wr_A] = io.enq.data;
-    );
+    __end
 
     io.deq.data  = mem[rd_A];
     io.deq.valid = (wr_ptr != rd_ptr);

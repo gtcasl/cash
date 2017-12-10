@@ -21,16 +21,16 @@ struct ch_rrArbiter {
     ch_bit<N> dis[N];
     ch_bit<N> grant;
 
-    for (int i = 0; i < N; ++i) {
-      for (int j = i + 1; j < N; ++j) {
+    for (unsigned i = 0; i < N; ++i) {
+      for (unsigned j = i + 1; j < N; ++j) {
         dis[j][i] = state[i][j] && io.in[i];
       }
       dis[i][i] = 0;
-      for(int j = 0; j < i; ++j) {
+      for(unsigned j = 0; j < i; ++j) {
         dis[j][i] = (~state[j][i]) && io.in[i];
       }
       grant[i] = io.in[i] && ~ch_orr(dis[i]);
-      for (int j = i + 1; j < N; ++j) {
+      for (unsigned j = i + 1; j < N; ++j) {
         state[i][j].next = (state[i][j] || grant[j]) && ~grant[i];
       }
     }
@@ -52,7 +52,7 @@ struct ch_xbar_switch {
   );
   void describe() {
     auto grant = ch_bit<I>(1) << (ch_counter<I>(io.out.ready));
-    for (int i = 0; i < I; ++i) {
+    for (unsigned i = 0; i < I; ++i) {
       xbar_.io.in[i].data  = io.in[i].data;
       xbar_.io.in[i].valid = io.in[i].valid;
       arb_.io.in[i]        = io.in[i].valid;
@@ -60,7 +60,7 @@ struct ch_xbar_switch {
     io.out.data  = xbar_.io.out[0].data;
     io.out.valid = xbar_.io.out[0].valid;
     xbar_.io.sel = arb_.io.grant;
-    for (int i = 0; i < I; ++i) {
+    for (unsigned i = 0; i < I; ++i) {
       io.in[i].ready = io.out.ready && (arb_.io.grant == (1 << i));
     }
     io.out.grant = arb_.io.grant;

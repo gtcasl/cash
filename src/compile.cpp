@@ -23,7 +23,7 @@ void compiler::run() {
 
   this->build_node_map();
 
-  identity_nodes = this->remove_identity_nodes();
+  identity_nodes = 0; //this->remove_identity_nodes();
 
   DBG(2, "*** deleted %lu dead nodes\n", dead_nodes);
   DBG(2, "*** deleted %lu identity nodes\n", identity_nodes);
@@ -61,15 +61,17 @@ void compiler::syntax_check() {
         auto ret = std::find_if(node->get_srcs().begin(), node->get_srcs().end(),
                      [undef](const lnode& x)->bool { return x.get_id() == undef->get_id(); });
         if (ret != node->get_srcs().end()) {
-          fprintf(stderr, "error: un-initialized node '%s' in module '%s'!\n", node->get_name().c_str(), ctx_->get_name().c_str());
+          auto& sloc = node->get_source_location();
+          fprintf(stderr, "error: un-initialized node '%s' in module '%s' (%s:%d)\n",
+                  node->get_name().c_str(),
+                  ctx_->get_name().c_str(),
+                  sloc.file(),
+                  sloc.line());
           break;
         }
       }
     }
-    if (1 == undefs.size())
-      CH_ABORT("1 node has not been initialized.");
-    else
-      CH_ABORT("%zd nodes have not been initialized.", undefs.size());
+    std::abort();
   }
 }
 

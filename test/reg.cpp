@@ -140,18 +140,15 @@ TEST_CASE("registers", "[registers]") {
       auto b = ch_case(ch_getTick(), 8, 11_b)(6, 0)(4, 2)(2, 1)(0);
       e.next = ch_case(ch_getTick(), 8, 11_b)(6, 1)(4, 0)(2, 2)(0);
 
-      __if (b == 1) (
+      __if (b == 1)
         a.next = 2;
-      )
-      __elif (b == 0) (
+      __elif (b == 0)
          a.next = 1;
-      )
-      __elif (b == 2) (
+      __elif (b == 2)
         a.next = 0;
-      )
-      __else (
+      __else
         a.next = 3;
-      );
+      __end
 
       ch_print("t={0}, clk={1}, a={2}, b={3}, e={4}", ch_getTick(), ch_getClock(), a, b, e);
       return (a == e);
@@ -162,18 +159,15 @@ TEST_CASE("registers", "[registers]") {
       auto b = ch_case(ch_getTick(), 10, 11_b)(8, 3)(6, 0)(4, 2)(2, 1)(0);
       e.next = ch_case(ch_getTick(), 10, 01_b)(8, 1)(6, 1)(4, 0)(2, 2)(0);
 
-      __if (b == 1) (
+      __if (b == 1)
         a.next = 2;
-      )
-      __elif (b == 0) (
+      __elif (b == 0)
          a.next = 1;
-      )
-      __elif (b == 2) (
+      __elif (b == 2)
         a.next = 0;
-      )
-      __else (
+      __else
         a.next = a;
-      );
+      __end
 
       ch_print("t={0}, clk={1}, a={2}, b={3}, e={4}", ch_getTick(), ch_getClock(), a, b, e);
       return (a == e);
@@ -184,19 +178,16 @@ TEST_CASE("registers", "[registers]") {
       auto b = ch_case(ch_getTick(), 8, 11_b)(6, 0)(4, 2)(2, 1)(0);
       e.next = ch_case(ch_getTick(), 8, 01_b)(6, 1)(4, 0)(2, 2)(0);
 
-      __switch (b) (
-      __case (1) (
-         a.next = 2;
-      )
-      __case (0) (
-         a.next = 1;
-      )
-      __case (2) (
-        a.next = 0;
-      )
-      __default (
+      __switch (b)
+      __case (1)
+        a.next = 2;
+      __case (0)
+        a.next = 1;
+      __case (2)
+        a.next = 0;      
+      __else
         a.next = a;
-      ));
+      __end
 
       //ch_print("t={0}, clk={1}, a={2}, b={3}, e={4}", ch_getTick(), ch_getClock(), a, b, e);
       return (a == e);
@@ -209,18 +200,15 @@ TEST_CASE("registers", "[registers]") {
       auto v = ch_case(ch_getTick(), 8, 11_b)(6, 1)(4, 0)(2, 2)(0);
       e.next = v.slice<2>();
 
-      __if (b == 1) (
+      __if (b == 1)
         a.next = v.slice<2>();
-      )
-      __elif (b == 0) (
+      __elif (b == 0)
          a.next = v.slice<2>();
-      )
-      __elif (b == 2) (
+      __elif (b == 2)
         a.next = 0;
-      )
-      __else (
+      __else
         a.next = 3;
-      );
+      __end
 
       //ch_print("t={0}, clk={1}, a={2}, b={3}, e={4}", ch_getTick(), ch_getClock(), a, b, e);
       return (a == e);

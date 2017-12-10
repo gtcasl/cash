@@ -15,19 +15,31 @@ public:
   using base = const_bit<32>;
   using traits = logic_traits<32, const_float32, const_float32, ch_float32, ch_scalar<32>>;
 
-  const_float32() {}
+  const_float32(const bit_buffer& buffer = bit_buffer(32, CH_SOURCE_LOCATION))
+    : base(buffer)
+  {}
 
-  const_float32(const const_float32& rhs) : base(rhs) {}
+  const_float32(const const_float32& rhs,
+                const source_location& sloc = CH_SOURCE_LOCATION)
+    : base(rhs, sloc)
+  {}
 
   const_float32(const_float32&& rhs) : base(std::move(rhs)) {}
 
-  explicit const_float32(const bit_buffer& buffer) : base(buffer) {}
+  explicit const_float32(const const_bit<32>& rhs,
+                         const source_location& sloc = CH_SOURCE_LOCATION)
+    : base(rhs, sloc)
+  {}
 
-  explicit const_float32(const const_bit<32>& rhs) : base(rhs) {}
+  explicit const_float32(const ch_scalar<32>& rhs,
+                         const source_location& sloc = CH_SOURCE_LOCATION)
+    : base(rhs, sloc)
+  {}
 
-  explicit const_float32(const ch_scalar<32>& rhs) : base(rhs) {}
-
-  explicit const_float32(float rhs) : base(bitcast<uint32_t, float>(rhs)) {}
+  explicit const_float32(float rhs,
+                         const source_location& sloc = CH_SOURCE_LOCATION)
+    : base(bitcast<uint32_t, float>(rhs), sloc)
+  {}
 };
 
 class ch_float32 : public const_float32 {
@@ -35,21 +47,36 @@ public:
   using base = const_float32;
   using traits = logic_traits<32, ch_float32, const_float32, ch_float32, ch_scalar<32>>;
 
-  ch_float32() {}
+  ch_float32(const bit_buffer& buffer = bit_buffer(32, CH_SOURCE_LOCATION))
+    : base(buffer)
+  {}
 
-  ch_float32(const ch_float32& rhs) : base(rhs) {}
+  ch_float32(const ch_float32& rhs,
+             const source_location& sloc = CH_SOURCE_LOCATION)
+    : base(rhs, sloc)
+  {}
 
-  ch_float32(const const_float32& rhs) : base(rhs) {}
+  ch_float32(const const_float32& rhs,
+             const source_location& sloc = CH_SOURCE_LOCATION)
+    : base(rhs, sloc)
+  {}
 
   ch_float32(ch_float32&& rhs) : base(std::move(rhs)) {}
 
-  explicit ch_float32(const bit_buffer& buffer) : base(buffer) {}
+  explicit ch_float32(const const_bit<32>& rhs,
+                      const source_location& sloc = CH_SOURCE_LOCATION)
+    : base(rhs, sloc)
+  {}
 
-  explicit ch_float32(const const_bit<32>& rhs) : base(rhs) {}
+  explicit ch_float32(const ch_scalar<32>& rhs,
+                      const source_location& sloc = CH_SOURCE_LOCATION)
+    : base(rhs, sloc)
+  {}
 
-  explicit ch_float32(const ch_scalar<32>& rhs) : base(rhs) {}
-
-  explicit ch_float32(float rhs) : base(rhs) {}
+  explicit ch_float32(float rhs,
+                      const source_location& sloc = CH_SOURCE_LOCATION)
+    : base(rhs, sloc)
+  {}
 
   ch_float32& operator=(const ch_float32& rhs) {
     bit_accessor::copy(*this, rhs);
@@ -62,26 +89,26 @@ public:
   }
 
   ch_float32& operator=(float rhs) {
-    buffer_->set_data(bitvector(32, bitcast<uint32_t, float>(rhs)));
+    buffer_->write(bitvector(32, bitcast<uint32_t, float>(rhs)));
     return *this;
   }
 
-  const auto operator+(const ch_float32& rhs) const {
+  auto operator+(const ch_float32& rhs) const {
     auto ret = createAluNode(alu_fadd, get_lnode(*this), get_lnode(rhs));
     return make_type<ch_float32>(ret);
   }
 
-  const auto operator-(const ch_float32& rhs) const {
+  auto operator-(const ch_float32& rhs) const {
     auto ret = createAluNode(alu_fsub, get_lnode(*this), get_lnode(rhs));
     return make_type<ch_float32>(ret);
   }
 
-  const auto operator*(const ch_float32& rhs) const {
+  auto operator*(const ch_float32& rhs) const {
     auto ret = createAluNode(alu_fmult, get_lnode(*this), get_lnode(rhs));
     return make_type<ch_float32>(ret);
   }
 
-  const auto operator/(const ch_float32& rhs) const {
+  auto operator/(const ch_float32& rhs) const {
     auto ret = createAluNode(alu_fdiv, get_lnode(*this), get_lnode(rhs));
     return make_type<ch_float32>(ret);
   }
@@ -102,25 +129,25 @@ protected:
 };
 
 template <unsigned Delay>
-const auto ch_fadd(const ch_float32& lhs, const ch_float32& rhs, const ch_bit<1>& enable = ch_bit<1>(true)) {
+auto ch_fadd(const ch_float32& lhs, const ch_float32& rhs, const ch_bit<1>& enable = ch_bit<1>(true)) {
   auto ret = createAluNode(alu_fadd, get_lnode(lhs), get_lnode(rhs), Delay, get_lnode(enable));
   return make_type<ch_float32>(ret);
 }
 
 template <unsigned Delay>
-const auto ch_fsub(const ch_float32& lhs, const ch_float32& rhs, const ch_bit<1>& enable = ch_bit<1>(true)) {
+auto ch_fsub(const ch_float32& lhs, const ch_float32& rhs, const ch_bit<1>& enable = ch_bit<1>(true)) {
   auto ret = createAluNode(alu_fsub, get_lnode(lhs), get_lnode(rhs), Delay, get_lnode(enable));
   return make_type<ch_float32>(ret);
 }
 
 template <unsigned Delay>
-const auto ch_fmult(const ch_float32& lhs, const ch_float32& rhs, const ch_bit<1>& enable = ch_bit<1>(true)) {
+auto ch_fmult(const ch_float32& lhs, const ch_float32& rhs, const ch_bit<1>& enable = ch_bit<1>(true)) {
   auto ret = createAluNode(alu_fmult, get_lnode(lhs), get_lnode(rhs), Delay, get_lnode(enable));
   return make_type<ch_float32>(ret);
 }
 
 template <unsigned Delay>
-const auto ch_fdiv(const ch_float32& lhs, const ch_float32& rhs, const ch_bit<1>& enable = ch_bit<1>(true)) {
+auto ch_fdiv(const ch_float32& lhs, const ch_float32& rhs, const ch_bit<1>& enable = ch_bit<1>(true)) {
   auto ret = createAluNode(alu_fdiv, get_lnode(lhs), get_lnode(rhs), Delay, get_lnode(enable));
   return make_type<ch_float32>(ret);
 }

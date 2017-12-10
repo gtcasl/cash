@@ -37,7 +37,7 @@ public:
   }
   
   template <typename Func>
-  void default_(const Func& func) {
+  void else_(const Func& func) {
     impl_.eval(to_function_t<Func>(func));
   }
   
@@ -48,15 +48,13 @@ protected:
 
 template <typename K,
           CH_REQUIRES(is_bit_convertible<K>::value)>
-auto ch_switch(const K& key) {
+auto ch_switch(const K& key, const std::function<void ()>& f = {}) {
+  CH_UNUSED(f);
   return switch_t<K>(get_lnode(key));
 }
 
 }
 }
 
-#define CH_SWITCH_BODY(body)    body
-#define CH_SWITCH(key)          ch_switch(key) CH_SWITCH_BODY
-#define CH_CASE_BODY(value)     value })
-#define CH_CASE(pred)           .case_(pred, [&](){ CH_CASE_BODY
-#define CH_DEFAULT(value)       .default_([&](){ value })
+#define CH_SWITCH(key)  ch_switch(key, [&]() {
+#define CH_CASE(pred)   }).case_(pred, [&]() {

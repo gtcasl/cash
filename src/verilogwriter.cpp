@@ -16,10 +16,12 @@
 
 using namespace ch::internal;
 
-#define EMPLACE_LITERAL_WIDTH 32
-
 const auto IsRegType = [](lnodetype type) {
   return (type_reg == type) || (type_mem == type) || (type_memport == type);
+};
+
+const auto is_inline_literal = [](lnodeimpl* node) {
+  return (node->get_size() <= 32);
 };
 
 verilogwriter::verilogwriter(std::ostream& out) : out_(out) {
@@ -54,7 +56,7 @@ bool verilogwriter::is_inline_subscript(lnodeimpl* node) {
    || type_memport == src->get_type())
     return false;
   return true;
-};
+}
 
 void verilogwriter::print(const std::initializer_list<context*>& contexts) {
   // includes
@@ -249,7 +251,7 @@ bool verilogwriter::print_decl(lnodeimpl* node,
   switch (type) {
   case type_lit:
     visited.insert(node->get_id());
-    if (node->get_size() <= EMPLACE_LITERAL_WIDTH)
+    if (is_inline_literal(node))
       return false;
     this->print_type(node);
     out_ << " ";
@@ -266,7 +268,7 @@ bool verilogwriter::print_decl(lnodeimpl* node,
     [[fallthrough]];
   case type_bindport:
   case type_alu:
-  case type_select:
+  case type_sel:
   case type_reg:
   case type_mem:    
     if (ref
@@ -322,7 +324,7 @@ bool verilogwriter::print_logic(lnodeimpl* node) {
   case type_alu:
     this->print_alu(dynamic_cast<aluimpl*>(node));
     return true;
-  case type_select:
+  case type_sel:
     this->print_select(dynamic_cast<selectimpl*>(node));
     return true;
   case type_reg:
@@ -631,50 +633,42 @@ void verilogwriter::print_operator(ch_alu_op op) {
 }
 
 void verilogwriter::print_name(lnodeimpl* node, bool force) {
-  auto print_basic_name = [&](char prefix) {
-    out_ << prefix << node->get_id();
+  auto print_unique_name = [&](const lnode& node) {
+    out_ << node.get_name() << node.get_id();
   };
+
   auto type = node->get_type();
   switch (type) {
   case type_input:
   case type_output:
-    out_ << dynamic_cast<ioimpl*>(node)->get_name();
+    out_ << node->get_name();
     break;
   case type_proxy:    
-    if (this->is_inline_subscript(node)) {
+    if (!force && this->is_inline_subscript(node)) {
       this->print_proxy(dynamic_cast<proxyimpl*>(node));
     } else {
-      print_basic_name('w');
+      print_unique_name(node);
     }
     break;
   case type_lit:
-    if (!force && node->get_size() <= EMPLACE_LITERAL_WIDTH) {
+    if (!force && is_inline_literal(node)) {
       print_value(node->get_value());
     } else {
-      print_basic_name('l');
+      print_unique_name(node);
     }
     break;
-  case type_select:
-    print_basic_name('s');
-    break;
+  case type_sel:
   case type_alu:
-    print_basic_name('a');
-    break;
   case type_reg:
-    print_basic_name('r');
-    break;
   case type_mem:
-    print_basic_name('m');
-    break;
   case type_bindport:
-    print_basic_name('b');
+    print_unique_name(node);
     break;
   case type_memport: {
     auto memport = dynamic_cast<memportimpl*>(node);
-    out_ << "m";
-    out_ << memport->get_mem().get_id();
+    print_unique_name(memport->get_mem());
     out_ << "[";
-    this->print_name(memport->get_addr().get_impl());
+    print_unique_name(memport->get_addr());
     out_ << "]";
   } break;
   default:

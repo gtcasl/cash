@@ -47,7 +47,7 @@ template <typename T, typename I,
           CH_REQUIRES(bitwidth_v<deduce_type_t<T, I>> != 0),
           CH_REQUIRES(is_bit_convertible<T, bitwidth_v<deduce_type_t<T, I>>>::value),
           CH_REQUIRES(is_bit_convertible<I, bitwidth_v<deduce_type_t<T, I>>>::value)>
-const auto ch_reg(const T& next, const I& init) {
+auto ch_reg(const T& next, const I& init) {
   return make_type<bit_value_t<deduce_first_type_t<T, I>>>(
     createRegNode(get_lnode<T, bitwidth_v<deduce_type_t<T, I>>>(next),
                   get_lnode<I, bitwidth_v<deduce_type_t<T, I>>>(init)));
@@ -56,7 +56,7 @@ const auto ch_reg(const T& next, const I& init) {
 template <typename R, typename T, typename I,
           CH_REQUIRES(is_cast_convertible<R, T>::value),
           CH_REQUIRES(is_cast_convertible<R, I>::value)>
-const auto ch_reg(const T& next, const I& init) {
+auto ch_reg(const T& next, const I& init) {
   return make_type<R>(
     createRegNode(get_lnode<T, R>(next),
                   get_lnode<I, R>(init)));
@@ -64,7 +64,7 @@ const auto ch_reg(const T& next, const I& init) {
 
 template <typename T,
           CH_REQUIRES(is_bit_convertible<T>::value)>
-const auto ch_reg(const T& next) {
+auto ch_reg(const T& next) {
   ch_bit<bitwidth_v<T>> init(0);
   return make_type<bit_value_t<T>>(
     createRegNode(get_lnode(next), get_lnode(init)));
@@ -72,7 +72,7 @@ const auto ch_reg(const T& next) {
 
 template <typename R, typename T,
           CH_REQUIRES(is_cast_convertible<R, T>::value)>
-const auto ch_reg(const T& next) {
+auto ch_reg(const T& next) {
   ch_bit<bitwidth_v<R>> init(0);
   return make_type<R>(
     createRegNode(get_lnode<T, R>(next), get_lnode(init)));
@@ -86,7 +86,7 @@ template <typename T, typename E, typename I, typename Z,
           CH_REQUIRES(is_bit_convertible<E>::value),
           CH_REQUIRES(is_bit_convertible<I, bitwidth_v<deduce_type_t<T, I>>>::value),
           CH_REQUIRES(is_bit_convertible<Z>::value)>
-const auto ch_latch(const T& next, const E& enable, const I& init, const Z& reset) {
+auto ch_latch(const T& next, const E& enable, const I& init, const Z& reset) {
   static_assert(1 == bitwidth_v<E>, "invalid predicate size");
   static_assert(1 == bitwidth_v<Z>, "invalid predicate size");
   return make_type<bit_value_t<deduce_first_type_t<T, I>>>(
@@ -101,7 +101,7 @@ template <typename R, typename T, typename E, typename I, typename Z,
           CH_REQUIRES(is_bit_convertible<E>::value),
           CH_REQUIRES(is_cast_convertible<R, I>::value),
           CH_REQUIRES(is_bit_convertible<Z>::value)>
-const auto ch_latch(const T& next, const E& enable, const I& init, const Z& reset) {
+auto ch_latch(const T& next, const E& enable, const I& init, const Z& reset) {
   static_assert(1 == bitwidth_v<E>, "invalid predicate size");
   static_assert(1 == bitwidth_v<Z>, "invalid predicate size");
   return make_type<R>(
@@ -116,7 +116,7 @@ template <typename T, typename E, typename I,
           CH_REQUIRES(is_bit_convertible<T, bitwidth_v<deduce_type_t<T, I>>>::value),
           CH_REQUIRES(is_bit_convertible<E>::value),
           CH_REQUIRES(is_bit_convertible<I, bitwidth_v<deduce_type_t<T, I>>>::value)>
-const auto ch_latch(const T& next, const E& enable, const I& init) {
+auto ch_latch(const T& next, const E& enable, const I& init) {
   static_assert(1 == bitwidth_v<E>, "invalid predicate size");
   return make_type<bit_value_t<deduce_first_type_t<T, I>>>(
     createLatchNode(get_lnode<T, bitwidth_v<deduce_type_t<T, I>>>(next),
@@ -129,7 +129,7 @@ template <typename R, typename T, typename E, typename I,
           CH_REQUIRES(is_cast_convertible<R, T>::value),
           CH_REQUIRES(is_bit_convertible<E>::value),
           CH_REQUIRES(is_cast_convertible<R, I>::value)>
-const auto ch_latch(const T& next, const E& enable, const I& init) {
+auto ch_latch(const T& next, const E& enable, const I& init) {
   static_assert(1 == bitwidth_v<E>, "invalid predicate size");
   return make_type<R>(
     createLatchNode(get_lnode<T, R>(next),
@@ -141,7 +141,7 @@ const auto ch_latch(const T& next, const E& enable, const I& init) {
 template <typename T, typename E,
           CH_REQUIRES(is_bit_convertible<T>::value),
           CH_REQUIRES(is_bit_convertible<E>::value)>
-const auto ch_latch(const T& next, const E& enable) {
+auto ch_latch(const T& next, const E& enable) {
   static_assert(1 == bitwidth_v<E>, "invalid predicate size");
   ch_bit<bitwidth_v<T>> init(0);
   return make_type<bit_value_t<T>>(
@@ -154,7 +154,7 @@ const auto ch_latch(const T& next, const E& enable) {
 template <typename R, typename T, typename E,
           CH_REQUIRES(is_cast_convertible<R, T>::value),
           CH_REQUIRES(is_bit_convertible<E>::value)>
-const auto ch_latch(const T& next, const E& enable) {
+auto ch_latch(const T& next, const E& enable) {
   static_assert(1 == bitwidth_v<E>, "invalid predicate size");
   ch_bit<bitwidth_v<R>> init(0);
   return make_type<R>(
@@ -168,7 +168,7 @@ const auto ch_latch(const T& next, const E& enable) {
 
 template <unsigned Delay, typename T,
           CH_REQUIRES(is_bit_convertible<T>::value)>
-const auto ch_delay(const T& rhs) {
+auto ch_delay(const T& rhs) {
   value_type_t<T> ret(rhs);
   for (unsigned i = 0; i < Delay; ++i) {
     ret = ch_reg(ch_clone(ret));
@@ -178,7 +178,7 @@ const auto ch_delay(const T& rhs) {
 
 template <typename R, unsigned Delay, typename T,
           CH_REQUIRES(is_cast_convertible<R, T>::value)>
-const auto ch_delay(const T& rhs) {
+auto ch_delay(const T& rhs) {
   R ret(rhs);
   for (unsigned i = 0; i < Delay; ++i) {
     ret = ch_reg(ch_clone(ret));

@@ -6,7 +6,7 @@ namespace ch {
 namespace htl {
 
 template <unsigned End, unsigned Start = 0x0>
-const auto ch_counter(const ch_bool& inc) {
+auto ch_counter(const ch_bool& inc) {
   ch_seq<ch_bit<log2ceil(End+1)>> count(Start);
   if constexpr(ispow2(End+1)) {
     count.next = ch_select(inc, count + 0x1, count);

@@ -54,7 +54,7 @@ public:
   
   template <typename V,
             CH_REQUIRES(is_cast_convertible<T, V>::value)>
-  const auto operator()(const V& value) {
+  auto operator()(const V& value) {
     return make_type<T>(impl_.eval(get_lnode<V, bitwidth_v<T>>(value)));
   }
   
@@ -81,7 +81,7 @@ public:
 
   template <typename T,
             CH_REQUIRES(is_cast_convertible<V, T>::value)>
-  const auto operator()(const T& value) {
+  auto operator()(const T& value) {
     return make_type<V>(impl_.eval(get_lnode<T, bitwidth_v<V>>(value)));
   }
   
@@ -130,7 +130,7 @@ template <typename P, typename U, typename V,
           CH_REQUIRES(is_bit_convertible<P>::value),
           CH_REQUIRES(is_bit_convertible<U, bitwidth_v<deduce_type_t<U, V>>>::value),
           CH_REQUIRES(is_bit_convertible<V, bitwidth_v<deduce_type_t<U, V>>>::value)>
-const auto ch_select(const P& pred, const U& _true, const V& _false) {
+auto ch_select(const P& pred, const U& _true, const V& _false) {
   static_assert(1 == bitwidth_v<P>, "invalid predicate size");
   return make_type<bit_value_t<deduce_first_type_t<U, V>>>(
         createSelectNode(get_lnode(pred),
@@ -142,7 +142,7 @@ template <typename R, typename P, typename U, typename V,
           CH_REQUIRES(is_bit_convertible<P>::value),
           CH_REQUIRES(is_cast_convertible<R, U>::value),
           CH_REQUIRES(is_cast_convertible<R, V>::value)>
-const auto ch_select(const P& pred, const U& _true, const V& _false) {
+auto ch_select(const P& pred, const U& _true, const V& _false) {
   static_assert(1 == bitwidth_v<P>, "invalid predicate size");
   return make_type<R>(
         createSelectNode(get_lnode(pred),
@@ -154,7 +154,7 @@ template <typename U, typename V,
           CH_REQUIRES(bitwidth_v<deduce_type_t<U, V>> != 0),
           CH_REQUIRES(is_bit_convertible<U, bitwidth_v<deduce_type_t<U, V>>>::value),
           CH_REQUIRES(is_bit_convertible<V, bitwidth_v<deduce_type_t<U, V>>>::value)>
-const auto ch_min(const U& lhs, const V& rhs) {
+auto ch_min(const U& lhs, const V& rhs) {
   return ch_select(lhs < rhs, lhs, rhs);
 }
 
@@ -162,7 +162,7 @@ template <typename U, typename V,
           CH_REQUIRES(bitwidth_v<deduce_type_t<U, V>> != 0),
           CH_REQUIRES(is_bit_convertible<U, bitwidth_v<deduce_type_t<U, V>>>::value),
           CH_REQUIRES(is_bit_convertible<V, bitwidth_v<deduce_type_t<U, V>>>::value)>
-const auto ch_max(const U& lhs, const V& rhs) {
+auto ch_max(const U& lhs, const V& rhs) {
   return ch_select(lhs > rhs, lhs, rhs);
 }
 

@@ -88,17 +88,19 @@ public:
   using traits = io_traits<ch_in<T>, ch_direction::in, ch_out<T>, in_buffer<T>,
                            T, typename base::traits>;
 
-  ch_in(const std::string& name = "io") {
+  ch_in(const std::string& name = "io", const source_location& sloc = CH_SOURCE_LOCATION)
+    : base(bit_buffer(bitwidth_v<T>, sloc, name)) {
     input_ = createInputNode(name, bitwidth_v<T>);
     bit_accessor::set_data(*this, input_);
   }
 
-  explicit ch_in(const ch_out<T>& out) {
+  explicit ch_in(const ch_out<T>& out, const source_location& sloc = CH_SOURCE_LOCATION)
+    : base(bit_buffer(bitwidth_v<T>, sloc)) {
     input_ = bit_accessor::get_data(*this);
     bindOutput(input_, out.output_);
   }
 
-  ch_in(const ch_in& in) : base(in) {}
+  ch_in(const ch_in& in, const source_location& sloc = CH_SOURCE_LOCATION) : base(in, sloc) {}
 
   ch_in(ch_in&& in) : base(std::move(in)) {}
 
@@ -128,16 +130,18 @@ public:
                            T, typename base::traits>;
   using base::operator=;
 
-  ch_out(const std::string& name = "io") {
+  ch_out(const std::string& name = "io", const source_location& sloc = CH_SOURCE_LOCATION)
+    : base(bit_buffer(bitwidth_v<T>, sloc, name)) {
     output_ = createOutputNode(name, bit_accessor::get_data(*this));
   }
 
-  explicit ch_out(const ch_in<T>& in) {
+  explicit ch_out(const ch_in<T>& in, const source_location& sloc = CH_SOURCE_LOCATION)
+    : base(bit_buffer(bitwidth_v<T>, sloc)) {
     output_ = bit_accessor::get_data(*this);
     bindInput(output_, in.input_);
   }
 
-  ch_out(const ch_out& out) : base(out) {}
+  ch_out(const ch_out& out, const source_location& sloc = CH_SOURCE_LOCATION) : base(out, sloc) {}
 
   ch_out(ch_out&& out) : base(std::move(out)) {}
 

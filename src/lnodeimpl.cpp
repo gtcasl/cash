@@ -1,5 +1,4 @@
 #include "lnodeimpl.h"
-#include "bit.h"
 #include "ioimpl.h"
 #include "proxyimpl.h"
 #include "litimpl.h"
@@ -17,20 +16,29 @@ const char* ch::internal::to_string(lnodetype type) {
   return sc_names[CH_LNODE_INDEX(type)];
 }
 
-lnodeimpl::lnodeimpl(context* ctx, lnodetype type, uint32_t size)
+lnodeimpl::lnodeimpl(context* ctx,
+                     lnodetype type,
+                     uint32_t size,
+                     const source_location& sloc)
   : ctx_(ctx)
   , id_(ctx->node_id())
-  , name_(fstring("%s%d", to_string(type), id_))
+  , name_(to_string(type))
   , type_(type)
   , value_(size)
+  , sloc_(sloc)
 {}
 
-lnodeimpl::lnodeimpl(context* ctx, const std::string& name, lnodetype type, uint32_t size)
+lnodeimpl::lnodeimpl(context* ctx,
+                     const std::string& name,
+                     lnodetype type,
+                     uint32_t size,
+                     const source_location& sloc)
   : ctx_(ctx)
   , id_(ctx->node_id())
   , name_(name)
   , type_(type)
   , value_(size)
+  , sloc_(sloc)
 {}
 
 lnodeimpl::~lnodeimpl() {}
@@ -66,7 +74,7 @@ undefimpl::undefimpl(context* ctx, uint32_t size)
 {}
 
 const bitvector& undefimpl::eval(ch_tick) {
-  CH_ABORT("undefined node: %d!", id_);
+  CH_ABORT("undefined node: %s!", name_.c_str());
   return value_;
 }
 
@@ -76,14 +84,14 @@ lnode::lnode() : impl_(nullptr) {}
 
 lnode::lnode(const lnode& rhs) : impl_(rhs.impl_) {}
 
-lnode::lnode(uint32_t size) : impl_(nullptr) {
-  // force initialization inside conditional blocks
-  if (ctx_curr()->conditional_enabled()) {
-    this->ensureInitialized(size, true);
-  }
+lnode::lnode(uint32_t size) {
+  impl_ = ctx_curr()->createNode<proxyimpl>(
+            ctx_curr()->createNode<undefimpl>(size));
 }
 
-lnode::lnode(uint32_t size, const lnode& src, unsigned src_offset) {
+lnode::lnode(uint32_t size,
+             const lnode& src,
+             unsigned src_offset) {
   assert(!src.is_empty());
   impl_ = src.get_ctx()->createNode<proxyimpl>(src, src_offset, size);
 }
@@ -162,41 +170,12 @@ void lnode::clear() {
   impl_ = nullptr;
 }
 
-const lnode& lnode::ensureInitialized(uint32_t size, bool initialize) const {
-  if (nullptr == impl_) {
-    if (initialize) {
-      impl_ = ctx_curr()->createNode<proxyimpl>(
-                ctx_curr()->createNode<undefimpl>(size));
-    } else {
-      impl_ = ctx_curr()->createNode<proxyimpl>(size);
-    }
-  }
-  assert(impl_->get_size() >= size);
-  return *this;
-}
-
-void lnode::move(const lnode& rhs) {
-  assert(this != &rhs);
-  assert(!rhs.is_empty());
-  if (ctx_curr()->conditional_enabled(impl_)) {
-    rhs.ensureInitialized(rhs.get_size(), true);
-    this->write(0, rhs, 0, rhs.get_size(), rhs.get_size());
-  } else {
-    auto proxy = dynamic_cast<proxyimpl*>(impl_);
-    if (proxy) {
-      rhs.ensureInitialized(proxy->get_size(), true);
-      proxy->add_source(0, rhs, 0, proxy->get_size());
-    } else {
-      impl_ = rhs.impl_;
-    }
-  }
-}
-
 void lnode::write(uint32_t dst_offset,
                   const lnode& src,
                   uint32_t src_offset,
-                  uint32_t length,
-                  uint32_t size) {
+                  uint32_t length) {
+  assert(impl_);
+  auto size = impl_->get_size();
   assert(this != &src);
   assert(!src.is_empty());
   assert(size > dst_offset);
@@ -205,14 +184,10 @@ void lnode::write(uint32_t dst_offset,
 
   auto proxy = dynamic_cast<proxyimpl*>(impl_);
   if (nullptr == proxy) {
-    lnodeimpl* impl = nullptr;
-    std::swap<lnodeimpl*>(impl, impl_);
-    this->ensureInitialized(size, nullptr == impl);
-    proxy = dynamic_cast<proxyimpl*>(impl_);
-    if (impl) {
-      proxy->add_source(0, impl, 0, size);
-    }
-    ctx->fixup_local_variable(impl, impl_);
+    proxy = ctx->createNode<proxyimpl>(size);
+    ctx->fixup_local_variable(impl_, proxy);
+    proxy->add_source(0, impl_, 0, size);
+    impl_ = proxy;
   }
 
   if (ctx->conditional_enabled(impl_)) {
@@ -229,6 +204,21 @@ void lnode::write(uint32_t dst_offset,
   } else {
     proxy->add_source(dst_offset, src, src_offset, length);
   }
+}
+
+void lnode::set_name(const std::string& name) {
+  assert(impl_);
+  impl_->set_name(name);
+}
+
+const source_location& lnode::get_source_location() const {
+  assert(impl_);
+  return impl_->get_source_location();
+}
+
+void lnode::set_source_location(const source_location& sloc) {
+  assert(impl_);
+  return impl_->set_source_location(sloc);
 }
 
 lnodeimpl* lnode::clone() const {

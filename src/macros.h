@@ -126,7 +126,7 @@
 
 // FOR_EACH macro
 
-#define CH_FOR_EACH_1(idx, what, sep, x, ...)   what(idx, x)
+#define CH_FOR_EACH_1(idx, what, sep, ...)      what(idx, __VA_ARGS__)
 #define CH_FOR_EACH_2(idx, what, sep, x, ...)   what(idx, x) sep() CH_FOR_EACH_1(CH_INC(idx), what, sep, __VA_ARGS__)
 #define CH_FOR_EACH_3(idx, what, sep, x, ...)   what(idx, x) sep() CH_FOR_EACH_2(CH_INC(idx), what, sep, __VA_ARGS__)
 #define CH_FOR_EACH_4(idx, what, sep, x, ...)   what(idx, x) sep() CH_FOR_EACH_3(CH_INC(idx), what, sep, __VA_ARGS__)
@@ -196,7 +196,7 @@
 
 // REVERSE_FOR_EACH macro
 
-#define CH_REVERSE_FOR_EACH_1(what, sep, x, ...)   what(0, x)
+#define CH_REVERSE_FOR_EACH_1(what, sep, ...)      what(0, __VA_ARGS__)
 #define CH_REVERSE_FOR_EACH_2(what, sep, x, ...)   CH_REVERSE_FOR_EACH_1(what, sep, __VA_ARGS__) sep() what(1, x)
 #define CH_REVERSE_FOR_EACH_3(what, sep, x, ...)   CH_REVERSE_FOR_EACH_2(what, sep, __VA_ARGS__) sep() what(2, x)
 #define CH_REVERSE_FOR_EACH_4(what, sep, x, ...)   CH_REVERSE_FOR_EACH_3(what, sep, __VA_ARGS__) sep() what(3, x)
@@ -263,3 +263,6 @@
 
 #define CH_REVERSE_FOR_EACH_(N, what, sep, ...) CH_CONCAT(CH_REVERSE_FOR_EACH_, N)(what, sep, __VA_ARGS__)
 #define CH_REVERSE_FOR_EACH(what, sep, ...) CH_REVERSE_FOR_EACH_(CH_NARG(__VA_ARGS__), what, sep, __VA_ARGS__)
+
+#define CH_FIRST_ARG_(N, ...) N
+#define CH_FIRST_ARG(...) CH_FIRST_ARG_(__VA_ARGS__, ignore)

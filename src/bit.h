@@ -94,17 +94,24 @@ using bit_buffer_ptr = std::shared_ptr<bit_buffer_impl>;
 
 class bit_buffer_impl {
 public:
-  explicit bit_buffer_impl(unsigned size);
+  explicit bit_buffer_impl(unsigned size,
+                           const source_location& sloc = source_location(),
+                           const std::string& name = "");
 
-  bit_buffer_impl(const bit_buffer_impl& rhs);
+  bit_buffer_impl(const bit_buffer_impl& rhs,
+                  const source_location& sloc = source_location(),
+                  const std::string& name = "");
 
   bit_buffer_impl(bit_buffer_impl&& rhs);
 
-  explicit bit_buffer_impl(const lnode& data);
+  explicit bit_buffer_impl(const lnode& data,
+                           const source_location& sloc = source_location(),
+                           const std::string& name = "");
 
-  explicit bit_buffer_impl(lnode&& data);
-
-  bit_buffer_impl(unsigned size, const bit_buffer_ptr& buffer, unsigned offset);
+  bit_buffer_impl(unsigned size,
+                  const bit_buffer_ptr& buffer,
+                  unsigned offset,
+                  const std::string& name = "");
 
   virtual ~bit_buffer_impl() {}
 
@@ -112,44 +119,52 @@ public:
 
   bit_buffer_impl& operator=(bit_buffer_impl&& rhs);
 
-  void write(uint32_t dst_offset,
-             const bit_buffer_impl& src,
-             uint32_t src_offset,
-             uint32_t length);
-
-  void set_data(const lnode& data);
-
-  const lnode& get_data() const;
-
-  const auto& get_source() const {
-    return source_;
-  }
-
-  auto& get_source() {
-    return source_;
-  }
-
-  auto get_offset() const {
-    return offset_;
-  }
-
-  auto get_size() const {
-    return size_;
-  }
-
   virtual void write(uint32_t dst_offset,
                      const lnode& data,
                      uint32_t src_offset,
                      uint32_t length);
 
-  virtual void move(const lnode& data);
+  void write(const lnode& data) {
+    this->write(0, data, 0, data.get_size());
+  }
+
+  void copy(const bit_buffer_impl& rhs) {
+    this->write(0, rhs.get_data(), 0, rhs.get_size());
+  }
+
+  const lnode& get_data() const {
+    return value_;
+  }
+
+  unsigned get_size() const {
+    return value_.get_size();
+  }
+
+  const bit_buffer_ptr& get_source() const {
+    return source_;
+  }
+
+  bit_buffer_ptr& get_source() {
+    return source_;
+  }
+
+  unsigned get_offset() const {
+    return offset_;
+  }
 
 protected:
 
+  bit_buffer_impl(const lnode& value,
+                  const bit_buffer_ptr& source,
+                  unsigned offset)
+    : value_(value)
+    , source_(source)
+    , offset_(offset)
+  {}
+
+  lnode value_;
   bit_buffer_ptr source_;
-  mutable lnode value_;
   unsigned offset_;
-  unsigned size_;  
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -184,7 +199,8 @@ public:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct bit_accessor {
+class bit_accessor {
+public:
   template <typename T>
   static const auto& get_buffer(const T& obj) {
     return obj.get_buffer();
@@ -204,21 +220,25 @@ struct bit_accessor {
   template <typename T>
   static void set_data(const T& obj, const lnode& data) {
     assert(bitwidth_v<T> == obj.get_buffer()->get_size());
-    obj.get_buffer()->set_data(data);
+    obj.get_buffer()->write(data);
   }
 
   template <typename T>
-  static auto cloneBuffer(const T& obj) {
+  static auto copy(const T& obj,
+                   const source_location& sloc,
+                   const std::string& name = "") {
     assert(bitwidth_v<T> == obj.get_buffer()->get_size());
-    return bit_buffer(lnode(bitwidth_v<T>, obj.get_buffer()->get_data()));
+    return bit_buffer(*obj.get_buffer(), sloc, name);
   }
 
   template <typename U, typename V,
+            CH_REQUIRES(is_logic_compatible<U>::value),
+            CH_REQUIRES(is_logic_compatible<V>::value),
             CH_REQUIRES(bitwidth_v<U> == bitwidth_v<V>)>
   static void copy(U& dst, const V& src) {
     assert(bitwidth_v<U> == dst.get_buffer()->get_size());
     assert(bitwidth_v<V> == src.get_buffer()->get_size());
-    dst.get_buffer()->write(0, *src.get_buffer(), 0, bitwidth_v<V>);
+   *dst.get_buffer() = *src.get_buffer();
   }
 
   template <typename U, typename V,
@@ -234,11 +254,11 @@ struct bit_accessor {
                     const V& src,
                     unsigned src_offset,
                     unsigned length) {
-    dst.get_buffer()->write(dst_offset, *src.get_buffer(), src_offset, length);
+    dst.get_buffer()->write(dst_offset, src.get_buffer()->get_data(), src_offset, length);
   }
 
   template <typename T>
-  static const auto clone(const T& obj) {
+  static auto clone(const T& obj) {
     assert(bitwidth_v<T> == obj.get_buffer()->get_size());
     return bit_value_t<T>(bit_buffer(obj.get_buffer()->get_data().clone()));
   }
@@ -267,11 +287,10 @@ lnode get_lnode(const T& rhs) {
   return bit_accessor::get_data(static_cast<logic_cast_t<T, R>>(rhs));
 }
 
-
 template <typename T>
-const auto make_type(const lnode& node) {
+auto make_type(const lnode& node) {
   return T(bit_buffer(node));
-};
+}
 
 template <typename T>
 using type_buffer_t = std::conditional_t<is_logic_traits<T>::value, bit_buffer, scalar_buffer>;
@@ -293,27 +312,27 @@ using aggregate_init_cast_t = std::conditional_t<X::bitwidth != 0,
 ///////////////////////////////////////////////////////////////////////////////
 
 template <ch_alu_op op, unsigned N, typename A, typename B>
-const auto OpBinary(const A& a, const B& b) {
+auto OpBinary(const A& a, const B& b) {
   return make_type<ch_bit<N>>(createAluNode(op, get_lnode<A, N>(a), get_lnode<B, N>(b)));
 }
 
 template <ch_alu_op op, unsigned N, unsigned M, typename A, typename B>
-const auto OpShiftOp(const A& a, const B& b) {
+auto OpShiftOp(const A& a, const B& b) {
   return make_type<ch_bit<N>>(createAluNode(op, get_lnode<A, N>(a), get_lnode<B, M>(b)));
 }
 
 template <ch_alu_op op, unsigned N, typename A, typename B>
-const auto OpCompare(const A& a, const B& b) {
+auto OpCompare(const A& a, const B& b) {
   return make_type<ch_bit<1>>(createAluNode(op, get_lnode<A, N>(a), get_lnode<B, N>(b)));
 }
 
 template <ch_alu_op op, unsigned N>
-const auto OpUnary(const const_bit<N>& a) {
+auto OpUnary(const const_bit<N>& a) {
   return make_type<ch_bit<N>>(createAluNode(op, get_lnode(a)));
 }
 
 template <ch_alu_op op, unsigned N>
-const auto OpReduce(const const_bit<N>& a) {
+auto OpReduce(const const_bit<N>& a) {
   return make_type<ch_bit<1>>(createAluNode(op, get_lnode(a)));
 }
 
@@ -373,113 +392,123 @@ class const_bit {
 public:  
   using traits = logic_traits<N, const_bit, const_bit, ch_bit<N>, const_scalar<N>>;
 
-  const_bit(const bit_buffer& buffer = bit_buffer(N)) : buffer_(buffer) {}
+  const_bit(const bit_buffer& buffer = bit_buffer(N, CH_SOURCE_LOCATION))
+    : buffer_(buffer)
+  {}
 
-  const_bit(const const_bit& rhs) : buffer_(bit_accessor::cloneBuffer(rhs)) {}
+  const_bit(const const_bit& rhs, const source_location& sloc = CH_SOURCE_LOCATION)
+    : const_bit(bit_accessor::copy(rhs, sloc))
+  {}
 
   const_bit(const_bit&& rhs) : buffer_(std::move(rhs.buffer_)) {}
 
-  const_bit(const ch_scalar<N>& rhs) : buffer_(scalar_accessor::get_data(rhs)) {}
+  const_bit(const ch_scalar<N>& rhs, const source_location& sloc = CH_SOURCE_LOCATION)
+    : const_bit(bit_buffer(scalar_accessor::get_data(rhs), sloc))
+  {}
 
   template <typename U,
             CH_REQUIRES(is_logic_type<U>::value),
             CH_REQUIRES(N == bitwidth_v<U>)>
-  explicit const_bit(const U& rhs) : buffer_(bit_accessor::cloneBuffer(rhs)) {}
+  explicit const_bit(const U& rhs, const source_location& sloc = CH_SOURCE_LOCATION)
+    : const_bit(bit_accessor::copy(rhs, sloc))
+  {}
 
   template <typename U,
             CH_REQUIRES(is_bitvector_convertible<U>::value)>
-  explicit const_bit(const U& rhs) : buffer_(bitvector(N, rhs)) {}
+  explicit const_bit(const U& rhs, const source_location& sloc = CH_SOURCE_LOCATION)
+    : const_bit(bit_buffer(bitvector(N, rhs), sloc))
+  {}
 
   // slicing operators
 
-  const auto operator[](size_t index) const {
+  auto operator[](size_t index) const {
     return const_bit<1>(bit_buffer(1, buffer_, index));
   }
 
   template <unsigned M>
-  const auto slice(size_t start = 0) const {
+  auto slice(size_t start = 0) const {
     return const_bit<M>(bit_buffer(M, buffer_, start));
   }
 
   // compare operators
 
-  const auto operator==(const const_bit& rhs) const {
+  auto operator==(const const_bit& rhs) const {
     return OpCompare<alu_eq, N>(*this, rhs);
   }
 
-  const auto operator!=(const const_bit& rhs) const {
+  auto operator!=(const const_bit& rhs) const {
     return OpCompare<alu_ne, N>(*this, rhs);
   }
 
-  const auto operator<(const const_bit& rhs) const {
+  auto operator<(const const_bit& rhs) const {
     return OpCompare<alu_lt, N>(*this, rhs);
   }
 
-  const auto operator<=(const const_bit& rhs) const {
+  auto operator<=(const const_bit& rhs) const {
     return OpCompare<alu_le, N>(*this, rhs);
   }
 
-  const auto operator>(const const_bit& rhs) const {
+  auto operator>(const const_bit& rhs) const {
     return OpCompare<alu_gt, N>(*this, rhs);
   }
 
-  const auto operator>=(const const_bit& rhs) const {
+  auto operator>=(const const_bit& rhs) const {
     return OpCompare<alu_ge, N>(*this, rhs);
   }
 
   // bitwise operators
 
-  const auto operator~() const {
+  auto operator~() const {
     return OpUnary<alu_inv>(*this);
   }
 
-  const auto operator&(const const_bit& rhs) const {
+  auto operator&(const const_bit& rhs) const {
     return OpBinary<alu_and, N>(*this, rhs);
   }
 
-  const auto operator|(const const_bit& rhs) const {
+  auto operator|(const const_bit& rhs) const {
     return OpBinary<alu_or, N>(*this, rhs);
   }
 
-  const auto operator^(const const_bit& rhs) const {
+  auto operator^(const const_bit& rhs) const {
     return OpBinary<alu_xor, N>(*this, rhs);
   }
 
   // arithmetic operators
 
-  const auto operator-() const {
+  auto operator-() const {
     return OpUnary<alu_neg>(*this);
   }
 
-  const auto operator+(const const_bit& rhs) const {
+  auto operator+(const const_bit& rhs) const {
     return OpBinary<alu_add, N>(*this, rhs);
   }
 
-  const auto operator-(const const_bit& rhs) const {
+  auto operator-(const const_bit& rhs) const {
     return OpBinary<alu_sub, N>(*this, rhs);
   }
 
-  const auto operator*(const const_bit& rhs) const {
+  auto operator*(const const_bit& rhs) const {
     return OpBinary<alu_mult, N>(*this, rhs);
   }
 
-  const auto operator/(const const_bit& rhs) const {
+  auto operator/(const const_bit& rhs) const {
     return OpBinary<alu_div, N>(*this, rhs);
   }
 
-  const auto operator%(const const_bit& rhs) const {
+  auto operator%(const const_bit& rhs) const {
     return OpBinary<alu_mod, N>(*this, rhs);
   }
 
   // shift operators
 
   template <unsigned M>
-  const auto operator<<(const const_bit<M>& rhs) const {
+  auto operator<<(const const_bit<M>& rhs) const {
     return OpShiftOp<alu_sll, N, M>(*this, rhs);
   }
 
   template <unsigned M>
-  const auto operator>>(const const_bit<M>& rhs) const {
+  auto operator>>(const const_bit<M>& rhs) const {
     return OpShiftOp<alu_srl, N, M>(*this, rhs);
   }
 
@@ -531,24 +560,36 @@ public:
   using base = const_bit<N>;
   using base::buffer_;
       
-  ch_bit(const bit_buffer& buffer = bit_buffer(N)) : base(buffer) {}
+  ch_bit(const bit_buffer& buffer = bit_buffer(N, CH_SOURCE_LOCATION))
+    : base(buffer)
+  {}
   
-  ch_bit(const ch_bit& rhs) : base(rhs) {}
+  ch_bit(const ch_bit& rhs, const source_location& sloc = CH_SOURCE_LOCATION)
+    : base(rhs, sloc)
+  {}
 
   ch_bit(ch_bit&& rhs) : base(std::move(rhs)) {}
 
-  ch_bit(const const_bit<N>& rhs) : base(rhs) {}
+  ch_bit(const const_bit<N>& rhs, const source_location& sloc = CH_SOURCE_LOCATION)
+    : base(rhs, sloc)
+  {}
 
-  ch_bit(const ch_scalar<N>& rhs) : base(rhs) {}
+  ch_bit(const ch_scalar<N>& rhs, const source_location& sloc = CH_SOURCE_LOCATION)
+    : base(rhs, sloc)
+  {}
 
   template <typename U,
             CH_REQUIRES(is_logic_type<U>::value),
             CH_REQUIRES(N == bitwidth_v<U>)>
-  explicit ch_bit(const U& rhs) : base(rhs) {}
+  explicit ch_bit(const U& rhs, const source_location& sloc = CH_SOURCE_LOCATION)
+    : base(rhs, sloc)
+  {}
 
   template <typename U,
             CH_REQUIRES(is_bitvector_convertible<U>::value)>
-  explicit ch_bit(const U& rhs) : base(rhs) {}
+  explicit ch_bit(const U& rhs, const source_location& sloc = CH_SOURCE_LOCATION)
+    : base(rhs, sloc)
+  {}
 
   ch_bit& operator=(const ch_bit& rhs) {
     bit_accessor::copy(*this, rhs);
@@ -574,17 +615,17 @@ public:
   }
 
   ch_bit& operator=(const ch_scalar<N>& rhs) {
-    buffer_->set_data(scalar_accessor::get_data(rhs));
+    buffer_->write(scalar_accessor::get_data(rhs));
     return *this;
   }
 
   template <typename U, CH_REQUIRES(is_integral_or_enum_v<U>)>
   ch_bit& operator=(U rhs) {
-    buffer_->set_data(bitvector(N, rhs));
+    buffer_->write(bitvector(N, rhs));
     return *this;
   }
 
-  const auto operator[](size_t index) const {
+  auto operator[](size_t index) const {
     return const_bit<1>(bit_buffer(1, buffer_, index));
   }
 
@@ -593,7 +634,7 @@ public:
   }
 
   template <unsigned M>
-  const auto slice(size_t start = 0) const {
+  auto slice(size_t start = 0) const {
     return const_bit<M>(bit_buffer(M, buffer_, start));
   }
 
@@ -611,175 +652,175 @@ public:
 // compare operators
 
 template <unsigned N>
-inline const auto ch_eq(const const_bit<N>& lhs, const const_bit<N>& rhs) {
+inline auto ch_eq(const const_bit<N>& lhs, const const_bit<N>& rhs) {
   return (lhs == rhs);
 }
 
 template <unsigned N>
-inline const auto ch_ne(const const_bit<N>& lhs, const const_bit<N>& rhs) {
+inline auto ch_ne(const const_bit<N>& lhs, const const_bit<N>& rhs) {
   return (lhs != rhs);
 }
 
 template <unsigned N>
-inline const auto ch_lt(const const_bit<N>& lhs, const const_bit<N>& rhs) {
+inline auto ch_lt(const const_bit<N>& lhs, const const_bit<N>& rhs) {
   return (lhs < rhs);
 }
 
 template <unsigned N>
-inline const auto ch_le(const const_bit<N>& lhs, const const_bit<N>& rhs) {
+inline auto ch_le(const const_bit<N>& lhs, const const_bit<N>& rhs) {
   return (lhs <= rhs);
 }
 
 template <unsigned N>
-inline const auto ch_gt(const const_bit<N>& lhs, const const_bit<N>& rhs) {
+inline auto ch_gt(const const_bit<N>& lhs, const const_bit<N>& rhs) {
   return (lhs > rhs);
 }
 
 template <unsigned N>
-inline const auto ch_ge(const const_bit<N>& lhs, const const_bit<N>& rhs) {
+inline auto ch_ge(const const_bit<N>& lhs, const const_bit<N>& rhs) {
   return (lhs >= rhs);
 }
 
 // bitwise operators
 
 template <unsigned N>
-inline const auto ch_and(const const_bit<N>& lhs, const const_bit<N>& rhs) {
+inline auto ch_and(const const_bit<N>& lhs, const const_bit<N>& rhs) {
   return (lhs & rhs);
 }
 
 template <unsigned N>
-inline const auto ch_or(const const_bit<N>& lhs, const const_bit<N>& rhs) {
+inline auto ch_or(const const_bit<N>& lhs, const const_bit<N>& rhs) {
   return (lhs | rhs);
 }
 
 template <unsigned N>
-inline const auto ch_xor(const const_bit<N>& lhs, const const_bit<N>& rhs) {
+inline auto ch_xor(const const_bit<N>& lhs, const const_bit<N>& rhs) {
   return (lhs ^ rhs);
 }
 
 // arithmetic operators
 
 template <unsigned N>
-inline const auto ch_add(const const_bit<N>& lhs, const const_bit<N>& rhs) {
+inline auto ch_add(const const_bit<N>& lhs, const const_bit<N>& rhs) {
   return (lhs + rhs);
 }
 
 template <unsigned N>
-inline const auto ch_sub(const const_bit<N>& lhs, const const_bit<N>& rhs) {
+inline auto ch_sub(const const_bit<N>& lhs, const const_bit<N>& rhs) {
   return (lhs - rhs);
 }
 
 template <unsigned N>
-inline const auto ch_mult(const const_bit<N>& lhs, const const_bit<N>& rhs) {
+inline auto ch_mult(const const_bit<N>& lhs, const const_bit<N>& rhs) {
   return (lhs * rhs);
 }
 
 template <unsigned N>
-inline const auto ch_div(const const_bit<N>& lhs, const const_bit<N>& rhs) {
+inline auto ch_div(const const_bit<N>& lhs, const const_bit<N>& rhs) {
   return (lhs / rhs);
 }
 
 // shift operators
 
 template <unsigned N, unsigned M>
-inline const auto ch_sll(const const_bit<N>& lhs, const const_bit<M>& rhs) {
+inline auto ch_sll(const const_bit<N>& lhs, const const_bit<M>& rhs) {
   return (lhs << rhs);
 }
 
 template <unsigned N, unsigned M>
-inline const auto ch_srl(const const_bit<N>& lhs, const const_bit<M>& rhs) {
+inline auto ch_srl(const const_bit<N>& lhs, const const_bit<M>& rhs) {
   return (lhs >> rhs);
 }
 
 // unary operators
 
 template <unsigned N>
-const auto ch_inv(const const_bit<N>& in) {
+auto ch_inv(const const_bit<N>& in) {
   return ~in;
 }
 
 template <unsigned N>
-const auto ch_neg(const const_bit<N>& in) {
+auto ch_neg(const const_bit<N>& in) {
   return -in;
 }
 
 // bitwise operators
 
 template <unsigned N>
-const auto ch_nand(const const_bit<N>& lhs, const const_bit<N>& rhs) {
+auto ch_nand(const const_bit<N>& lhs, const const_bit<N>& rhs) {
   return OpBinary<alu_nand, N>(lhs, rhs);
 }
 
 template <unsigned N>
-const auto ch_nor(const const_bit<N>& lhs, const const_bit<N>& rhs) {
+auto ch_nor(const const_bit<N>& lhs, const const_bit<N>& rhs) {
   return OpBinary<alu_nor, N>(lhs, rhs);
 }
 
 template <unsigned N>
-const auto ch_xnor(const const_bit<N>& lhs, const const_bit<N>& rhs) {
+auto ch_xnor(const const_bit<N>& lhs, const const_bit<N>& rhs) {
   return OpBinary<alu_xnor, N>(lhs, rhs);
 }
 
 // reduce operators
 
 template <unsigned N>
-const auto ch_andr(const const_bit<N>& in) {
+auto ch_andr(const const_bit<N>& in) {
   return OpReduce<alu_andr>(in);
 }
 
 template <unsigned N>
-const auto ch_orr(const const_bit<N>& in) {
+auto ch_orr(const const_bit<N>& in) {
   return OpReduce<alu_orr>(in);
 }
 
 template <unsigned N>
-const auto ch_xorr(const const_bit<N>& in) {
+auto ch_xorr(const const_bit<N>& in) {
   return OpReduce<alu_xorr>(in);
 }
 
 template <unsigned N>
-const auto ch_nandr(const const_bit<N>& in) {
+auto ch_nandr(const const_bit<N>& in) {
   return OpReduce<alu_nandr>(in);
 }
 
 template <unsigned N>
-const auto ch_norr(const const_bit<N>& in) {
+auto ch_norr(const const_bit<N>& in) {
   return OpReduce<alu_norr>(in);
 }
 
 template <unsigned N>
-const auto ch_xnorr(const const_bit<N>& in) {
+auto ch_xnorr(const const_bit<N>& in) {
   return OpReduce<alu_xnorr>(in);
 }
 
 // shift operators
 
 template <unsigned N, unsigned M>
-const auto ch_sra(const const_bit<N>& lhs, const const_bit<M>& rhs) {
+auto ch_sra(const const_bit<N>& lhs, const const_bit<M>& rhs) {
   return OpShiftOp<alu_sra, N, M>(lhs, rhs);
 }
 
 template <unsigned N, unsigned M>
-const auto ch_rotl(const const_bit<N>& lhs, const const_bit<M>& rhs) {
+auto ch_rotl(const const_bit<N>& lhs, const const_bit<M>& rhs) {
   return OpShiftOp<alu_rotl, N, M>(lhs, rhs);
 }
 
 template <unsigned N, unsigned M>
-const auto ch_rotr(const const_bit<N>& lhs, const const_bit<M>& rhs) {
+auto ch_rotr(const const_bit<N>& lhs, const const_bit<M>& rhs) {
   return OpShiftOp<alu_rotr, N, M>(lhs, rhs);
 }
 
 // logic operators
 
-inline const auto operator! (const const_bit<1>& in) {
+inline auto operator! (const const_bit<1>& in) {
   return ~in;
 }
 
-inline const auto operator&& (const const_bit<1>& lhs, const const_bit<1>& rhs) {
+inline auto operator&& (const const_bit<1>& lhs, const const_bit<1>& rhs) {
   return lhs & rhs;
 }
 
-inline const auto operator|| (const const_bit<1>& lhs, const const_bit<1>& rhs) {
+inline auto operator|| (const const_bit<1>& lhs, const const_bit<1>& rhs) {
   return lhs | rhs;
 }
 
@@ -821,7 +862,7 @@ template <typename I, typename S,
           CH_REQUIRES(ispow2(bitwidth_v<I>)),
           CH_REQUIRES(ispow2(bitwidth_v<S>)),
           CH_REQUIRES((bitwidth_v<I> >> bitwidth_v<S>) != 0)>
-const auto ch_mux(const I& in, const S& sel) {
+auto ch_mux(const I& in, const S& sel) {
   return make_type<ch_bit<(bitwidth_v<I> >> bitwidth_v<S>)>>(
         createAluNode(alu_mux, get_lnode(in), get_lnode(sel)));
 }
@@ -830,7 +871,7 @@ const auto ch_mux(const I& in, const S& sel) {
 
 template <typename T,
           CH_REQUIRES(is_logic_type<T>::value)>
-const auto ch_clone(const T& obj) {
+auto ch_clone(const T& obj) {
   return bit_accessor::clone(obj);
 }
 
@@ -838,7 +879,7 @@ const auto ch_clone(const T& obj) {
 
 template <unsigned N, typename T,
           CH_REQUIRES(is_logic_compatible<T>::value)>
-const auto ch_slice(const T& obj, size_t start = 0) {
+auto ch_slice(const T& obj, size_t start = 0) {
   ch_bit<N> ret;
   bit_accessor::write(ret, 0, obj, start, N);
   return ret;
@@ -859,7 +900,7 @@ void cat_impl(ch_bit<N>& inout, unsigned dst_offset, const T0& arg0, const Ts&..
 
 template <typename... Ts,
          CH_REQUIRES(are_all_bit_convertible<Ts...>::value)>
-const auto ch_cat(const Ts&... args) {
+auto ch_cat(const Ts&... args) {
   ch_bit<bitwidth_v<Ts...>> ret;
   cat_impl(ret, bitwidth_v<Ts...>, static_cast<logic_cast_t<Ts>>(args)...);
   return ret;
@@ -911,7 +952,7 @@ template <unsigned D>
 class zext_impl {
 public:
     template <typename T>
-    const auto operator() (const T& obj) {
+    auto operator() (const T& obj) {
       return ch_cat(ch_bit<D>(0x0), obj);
     }
 };
@@ -919,14 +960,14 @@ public:
 template <>
 struct zext_impl<0> {
     template <typename T>
-    const auto operator() (const T& obj) {
+    auto operator() (const T& obj) {
       return ch_bit<bitwidth_v<T>>(obj);
     }
 };
 
 template <unsigned N, typename T,
           CH_REQUIRES(is_bit_compatible<T>::value)>
-const auto ch_zext(const T& obj) {
+auto ch_zext(const T& obj) {
   static_assert(N >= bitwidth_v<T>, "invalid extend size");
   return zext_impl<(N-bitwidth_v<T>)>()(obj);
 }
@@ -936,7 +977,7 @@ const auto ch_zext(const T& obj) {
 template <unsigned D>
 struct sext_impl {
   template <typename T>
-  const auto operator() (const T& obj) {
+  auto operator() (const T& obj) {
     auto pad = ch_bit<D>(0x0) - ch_zext<D>(obj[bitwidth_v<T> - 1]);
     return ch_cat(pad, obj);
   }
@@ -945,14 +986,14 @@ struct sext_impl {
 template <>
 struct sext_impl<0> {
   template <typename T>
-  const auto operator() (const T& obj) {
+  auto operator() (const T& obj) {
     return ch_bit<bitwidth_v<T>>(obj);
   }
 };
 
 template <unsigned N, typename T,
           CH_REQUIRES(is_bit_compatible<T>::value)>
-const auto ch_sext(const T& obj) {
+auto ch_sext(const T& obj) {
   static_assert(N >= bitwidth_v<T>, "invalid extend size");
   return sext_impl<(N-bitwidth_v<T>)>()(obj);
 }
@@ -961,7 +1002,7 @@ const auto ch_sext(const T& obj) {
 
 template <unsigned N, typename T,
           CH_REQUIRES(is_bit_compatible<T>::value)>
-const auto ch_shuffle(const T& obj,
+auto ch_shuffle(const T& obj,
                       const std::array<uint32_t, bitwidth_v<T>>& indices) {
   static_assert((bitwidth_v<T> % N) == 0, "invalid indices size");
   static const unsigned M = (N / bitwidth_v<T>);

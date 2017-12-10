@@ -1,7 +1,7 @@
 #pragma once
 
 #include <cstdlib>
-#include <string>
+#include <string.h>
 #include <string_view>
 #include <list>
 #include <queue>

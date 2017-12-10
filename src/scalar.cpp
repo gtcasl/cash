@@ -20,8 +20,8 @@ scalar_buffer_impl::scalar_buffer_impl(const scalar_buffer_impl& rhs)
 scalar_buffer_impl::scalar_buffer_impl(scalar_buffer_impl&& rhs)
   : source_(std::move(rhs.source_))
   , value_(std::move(rhs.value_))
-  , offset_(rhs.offset_)
-  , size_(rhs.size_)
+  , offset_(std::move(rhs.offset_))
+  , size_(std::move(rhs.size_))
 {}
 
 scalar_buffer_impl::scalar_buffer_impl(const bitvector& data)
@@ -46,26 +46,29 @@ scalar_buffer_impl::scalar_buffer_impl(unsigned size,
 }
 
 scalar_buffer_impl& scalar_buffer_impl::operator=(const scalar_buffer_impl& rhs) {
-  source_ = rhs.source_;
-  value_  = rhs.value_;
-  offset_ = rhs.offset_;
-  size_   = rhs.size_;
-  return *this;
-}
-
-scalar_buffer_impl& scalar_buffer_impl::operator=(scalar_buffer_impl&& rhs) {
-  if (source_ || rhs.source_) {
+  if (source_) {
     this->copy(rhs);
   } else {
-    value_  = std::move(rhs.value_);
+    source_ = rhs.source_;
     offset_ = rhs.offset_;
     size_   = rhs.size_;
+    if (!rhs.source_) {
+      value_ = rhs.value_;
+    }
   }
   return *this;
 }
 
-void scalar_buffer_impl::set_data(const bitvector& data) {
-  this->write(0, data.get_words(), data.get_cbsize(), 0, size_);
+scalar_buffer_impl& scalar_buffer_impl::operator=(scalar_buffer_impl&& rhs) {
+  if (source_) {
+    this->copy(rhs);
+  } else {
+    source_ = std::move(rhs.source_);
+    value_  = std::move(rhs.value_);
+    offset_ = std::move(rhs.offset_);
+    size_   = std::move(rhs.size_);
+  }
+  return *this;
 }
 
 const bitvector& scalar_buffer_impl::get_data() const {
@@ -76,14 +79,6 @@ const bitvector& scalar_buffer_impl::get_data() const {
     source_->read(0, value_.get_words(), value_.get_cbsize(), offset_, size_);
   }
   return value_;
-}
-
-void scalar_buffer_impl::copy(const scalar_buffer_impl& rhs) {
-  this->write(0,
-              rhs.get_data().get_words(),
-              rhs.get_data().get_cbsize(),
-              rhs.get_offset(),
-              rhs.get_size());
 }
 
 void scalar_buffer_impl::read(uint32_t dst_offset,

@@ -48,6 +48,8 @@ namespace core {
   using ch::internal::ilog2;
   using ch::internal::log2ceil;
 
+  using ch::internal::source_location;
+
   template <unsigned N> using ch_bit = ch::internal::ch_bit<N>;
 
   template <unsigned N> using ch_scalar = ch::internal::ch_scalar<N>;
@@ -270,10 +272,10 @@ inline namespace literals {
 #define __if       CH_IF
 #define __elif     CH_ELIF
 #define __else     CH_ELSE
+#define __end      CH_END
 
 #define __switch   CH_SWITCH
 #define __case     CH_CASE
-#define __default  CH_DEFAULT
 
 #define __tap      CH_TAP
 #define __trace    CH_TRACE
@@ -292,3 +294,5 @@ inline namespace literals {
 #define __tie      CH_TIE
 
 #define __requires CH_REQUIRES
+
+#define __source_location CH_SOURCE_LOCATION

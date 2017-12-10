@@ -9,6 +9,7 @@ struct Counter {
   __io (
     __out(ch_bit<N>) out
   );
+
   void describe() {
     ch_seq<ch_bit<N>> out;
     out.next = out + 1;
@@ -16,7 +17,7 @@ struct Counter {
   }
 };
 
-int main(int argc, char **argv) {
+int main() {
   ch_device<Counter<4>> counter;
 
   ch_vcdtracer tracer("counter.vcd", counter);

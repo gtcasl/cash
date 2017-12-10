@@ -12,7 +12,7 @@
   m(input) \
   m(output) \
   m(alu) \
-  m(select) \
+  m(sel) \
   m(reg) \
   m(mem) \
   m(memport) \
@@ -94,11 +94,27 @@ public:
     value_[index] = value;
   }
 
-  void read_bytes(uint32_t dst_offset, void* out, uint32_t out_cbsize, uint32_t src_offset, uint32_t size) const {
+  const source_location& get_source_location() const {
+    return sloc_;
+  }
+
+  void set_source_location(const source_location& sloc) {
+    sloc_ = sloc;
+  }
+
+  void read_bytes(uint32_t dst_offset,
+                  void* out,
+                  uint32_t out_cbsize,
+                  uint32_t src_offset,
+                  uint32_t size) const {
     value_.read(dst_offset, out, out_cbsize, src_offset, size);
   }
 
-  void write_bytes(uint32_t dst_offset, const void* in, uint32_t in_cbsize, uint32_t src_offset, uint32_t size) {
+  void write_bytes(uint32_t dst_offset,
+                   const void* in,
+                   uint32_t in_cbsize,
+                   uint32_t src_offset,
+                   uint32_t size) {
     value_.write(dst_offset, in, in_cbsize, src_offset, size);
   }
 
@@ -110,8 +126,17 @@ public:
 
 protected:
 
-  lnodeimpl(context* ctx, lnodetype type, uint32_t size);
-  lnodeimpl(context* ctx, const std::string& name, lnodetype type, uint32_t size);
+  lnodeimpl(context* ctx,
+            lnodetype type,
+            uint32_t size,
+            const source_location& sloc = source_location());
+
+  lnodeimpl(context* ctx,
+            const std::string& name,
+            lnodetype type,
+            uint32_t size,
+            const source_location& sloc = source_location());
+
   virtual ~lnodeimpl();
 
   context* ctx_;
@@ -120,7 +145,8 @@ protected:
   lnodetype type_;  
   std::vector<lnode> srcs_;
   bitvector value_;
-  
+  source_location sloc_;
+
   friend class context;
 };
 

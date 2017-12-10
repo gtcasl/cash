@@ -69,6 +69,7 @@ TEST_CASE("htl", "[htl]") {
       t = sim.step(t, 1);
       ret &= !device.io.deq.valid;
       t = sim.step(t, 1);
+      return !!ret;
     });
   }
   SECTION("onehot", "[onehot]") {

@@ -59,6 +59,7 @@ protected:
                   const lnode& enable,
                   unsigned delay,
                   unsigned num_operands);
+
   ~delayed_aluimpl();
 
   std::vector<bitvector> p_value_;

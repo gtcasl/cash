@@ -2,7 +2,7 @@
 
 using namespace ch::internal;
 
-struct platform::Impl {
+class platform::Impl {
   int dbg_level;
   int dbg_node;
   int dump_ast;
@@ -34,6 +34,8 @@ struct platform::Impl {
     if (_lib_path)
       lib_path = _lib_path;
   }
+
+  friend class platform;
 };
 
 platform::platform() {

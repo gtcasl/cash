@@ -23,8 +23,11 @@
 #define CH_INOUT_COPY_CTOR(i, x) \
   CH_PAIR_R(x)(rhs.CH_PAIR_R(x))
 
+#define CH_INOUT_COPY_CTOR2(i, x) \
+  CH_PAIR_R(x)(rhs.CH_PAIR_R(x), sloc)
+
 #define CH_INOUT_CTOR_BODY(i, x) \
-  CH_PAIR_R(x)(ch::internal::fstring("%s_%s", name.c_str(), CH_STRINGIZE(CH_PAIR_R(x))).c_str())
+  CH_PAIR_R(x)(ch::internal::fstring("%s_%s", name.c_str(), CH_STRINGIZE(CH_PAIR_R(x))).c_str(), sloc)
 
 #define CH_INOUT_BIND_BODY(i, x) \
   this->CH_PAIR_R(x)(rhs.CH_PAIR_R(x))
@@ -38,12 +41,15 @@
 
 #define CH_INOUT_BODY_IMPL2(inout_name, field_body, ...) \
   CH_FOR_EACH(field_body, CH_SEP_SEMICOLON, __VA_ARGS__); \
-  inout_name(const std::string& name = "io") \
+  inout_name(const std::string& name = "io", \
+             const source_location& sloc = CH_SOURCE_LOCATION) \
     : CH_FOR_EACH(CH_INOUT_CTOR_BODY, CH_SEP_COMMA, __VA_ARGS__) {} \
-  explicit inout_name(const typename traits::flip_type& rhs) \
-    : CH_FOR_EACH(CH_INOUT_COPY_CTOR, CH_SEP_COMMA, __VA_ARGS__) {} \
-  inout_name(const inout_name& rhs) \
-    : CH_FOR_EACH(CH_INOUT_COPY_CTOR, CH_SEP_COMMA, __VA_ARGS__) {} \
+  explicit inout_name(const typename traits::flip_type& rhs, \
+                      const source_location& sloc = CH_SOURCE_LOCATION) \
+    : CH_FOR_EACH(CH_INOUT_COPY_CTOR2, CH_SEP_COMMA, __VA_ARGS__) {} \
+  inout_name(const inout_name& rhs, \
+             const source_location& sloc = CH_SOURCE_LOCATION) \
+    : CH_FOR_EACH(CH_INOUT_COPY_CTOR2, CH_SEP_COMMA, __VA_ARGS__) {} \
   inout_name(inout_name&& rhs) \
     : CH_FOR_EACH(CH_STRUCT_MOVE_CTOR, CH_SEP_COMMA, __VA_ARGS__) {} \
   void operator()(typename traits::flip_type& rhs) { \
@@ -52,15 +58,18 @@
 
 #define CH_INOUT_BODY_IMPL3(inout_name, parent, field_body, ...) \
   CH_FOR_EACH(field_body, CH_SEP_SEMICOLON, __VA_ARGS__); \
-  inout_name(const std::string& name = "io") \
-    : parent(name) \
+  inout_name(const std::string& name = "io", \
+             const source_location& sloc = CH_SOURCE_LOCATION) \
+    : parent(name, sloc) \
     , CH_FOR_EACH(CH_INOUT_CTOR_BODY, CH_SEP_COMMA, __VA_ARGS__) {} \
-  explicit inout_name(const typename traits::flip_type& rhs) \
-    : parent(rhs) \
-    , CH_FOR_EACH(CH_INOUT_COPY_CTOR, CH_SEP_COMMA, __VA_ARGS__) {} \
-  inout_name(const inout_name& rhs) \
-    : parent(rhs) \
-    , CH_FOR_EACH(CH_INOUT_COPY_CTOR, CH_SEP_COMMA, __VA_ARGS__) {} \
+  explicit inout_name(const typename traits::flip_type& rhs, \
+                      const source_location& sloc = CH_SOURCE_LOCATION) \
+    : parent(rhs, sloc) \
+    , CH_FOR_EACH(CH_INOUT_COPY_CTOR2, CH_SEP_COMMA, __VA_ARGS__) {} \
+  inout_name(const inout_name& rhs, \
+             const source_location& sloc = CH_SOURCE_LOCATION) \
+    : parent(rhs, sloc) \
+    , CH_FOR_EACH(CH_INOUT_COPY_CTOR2, CH_SEP_COMMA, __VA_ARGS__) {} \
   inout_name(inout_name&& rhs) \
     : parent(std::move(rhs)) \
     , CH_FOR_EACH(CH_STRUCT_MOVE_CTOR, CH_SEP_COMMA, __VA_ARGS__) {} \
@@ -71,7 +80,7 @@
 
 #define CH_INOUT_BUFFER_READ(i, x) \
   if (__src_offset__ < ch_bitwidth_v<CH_PAIR_L(x)>) { \
-    size_t __len__ = std::min<size_t>(__length__, ch_bitwidth_v<CH_PAIR_L(x)> - __src_offset__); \
+    auto __len__ = std::min<size_t>(__length__, ch_bitwidth_v<CH_PAIR_L(x)> - __src_offset__); \
     CH_PAIR_R(x).read(__dst_offset__, __out__, __out_cbsize__, __src_offset__, __len__); \
     __length__ -= __len__; \
     if (0 == __length__) \
@@ -79,11 +88,11 @@
     __dst_offset__ += __len__; \
     __src_offset__ = ch_bitwidth_v<CH_PAIR_L(x)>; \
   } \
-  __src_offset__ -= ch_bitwidth_v<CH_PAIR_L(x)>
+  __src_offset__ -= ch_bitwidth_v<CH_PAIR_L(x)>;
 
 #define CH_INOUT_BUFFER_WRITE(i, x) \
   if (__dst_offset__ < ch_bitwidth_v<CH_PAIR_L(x)>) { \
-    size_t __len__ = std::min<size_t>(__length__, ch_bitwidth_v<CH_PAIR_L(x)> - __dst_offset__); \
+    auto __len__ = std::min<size_t>(__length__, ch_bitwidth_v<CH_PAIR_L(x)> - __dst_offset__); \
     CH_PAIR_R(x).write(__dst_offset__, __in__, __in_cbsize__, __src_offset__, __len__); \
     __length__ -= __len__; \
     if (0 == __length__) \
@@ -91,7 +100,7 @@
     __src_offset__ += __len__; \
     __dst_offset__ = ch_bitwidth_v<CH_PAIR_L(x)>; \
   } \
-  __dst_offset__ -= ch_bitwidth_v<CH_PAIR_L(x)>
+  __dst_offset__ -= ch_bitwidth_v<CH_PAIR_L(x)>;
 
 #define CH_INOUT_BUFFER_ACCESS(...) \
   void read(uint32_t __dst_offset__, \
@@ -99,14 +108,14 @@
             uint32_t __out_cbsize__, \
             uint32_t __src_offset__, \
             uint32_t __length__) const override { \
-    CH_FOR_EACH(CH_INOUT_BUFFER_READ, CH_SEP_SEMICOLON, __VA_ARGS__); \
+    CH_FOR_EACH(CH_INOUT_BUFFER_READ, CH_SEP_SEMICOLON, __VA_ARGS__) \
   } \
   void write(uint32_t __dst_offset__, \
              const void* __in__, \
              uint32_t __in_cbsize__, \
              uint32_t __src_offset__, \
              uint32_t __length__) override { \
-     CH_FOR_EACH(CH_INOUT_BUFFER_WRITE, CH_SEP_SEMICOLON, __VA_ARGS__); \
+     CH_FOR_EACH(CH_INOUT_BUFFER_WRITE, CH_SEP_SEMICOLON, __VA_ARGS__) \
   }
 
 #define CH_INOUT_IMPL2(inout_name, ...) \
@@ -204,7 +213,7 @@
   CH_INOUT_IMPL3(name, parent, CH_REM body)
 
 #define GET_INOUT(_1, _2, _3, NAME, ...) NAME
-#define CH_INOUT(...) GET_INOUT(__VA_ARGS__, CH_INOUT3, CH_INOUT2)(__VA_ARGS__)
+#define CH_INOUT(...) GET_INOUT(__VA_ARGS__, CH_INOUT3, CH_INOUT2, ignore)(__VA_ARGS__)
 
 #define CH_IO(...) \
   CH_INOUT_IMPL2(__io_type__, __VA_ARGS__); \

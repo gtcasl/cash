@@ -143,7 +143,7 @@ void memportimpl::write(const lnode& data) {
     wdata_idx_ = srcs_.size();
     srcs_.emplace_back(this);
   }
-  srcs_[wdata_idx_].write(0, data, 0, data.get_size(), this->get_size());
+  srcs_[wdata_idx_].write(0, data, 0, data.get_size());
 }
 
 void memportimpl::tick(ch_tick t) {
@@ -200,24 +200,25 @@ void mem_buffer::write(uint32_t dst_offset,
                        uint32_t src_offset,
                        uint32_t length) {
   CH_UNUSED(src_offset);
-  assert(0 == src_offset && (dst_offset + length) <= size_);
+  auto size = value_.get_size();
+  assert(0 == src_offset && (dst_offset + length) <= size);
   auto port = dynamic_cast<memportimpl*>(value_.get_impl());
   assert(port);
 
   // if partial write, use masking
-  if (length != size_) {
+  if (length != size) {
     // build write mask
-    bitvector one(size_, 1), tmp1(size_), tmp2(size_);
+    bitvector one(size, 1), tmp1(size), tmp2(size);
     Sll(tmp1, one, length);
     Sub(tmp2, tmp1, one);
 
     // resize source
-    lnode zero(bitvector(size_ - data.get_size(), 0));
-    auto resized_data = data.get_ctx()->createNode<proxyimpl>(size_);
+    lnode zero(bitvector(size - data.get_size(), 0));
+    auto resized_data = data.get_ctx()->createNode<proxyimpl>(size);
     resized_data->add_source(0, data);
     resized_data->add_source(data.get_size(), zero);
     auto lhs = createAluNode(alu_and, resized_data, tmp2);
-    lhs = createAluNode(alu_sll, lhs, bitvector(size_, dst_offset));
+    lhs = createAluNode(alu_sll, lhs, bitvector(size, dst_offset));
     Sll(tmp1, tmp2, dst_offset);
     Inv(tmp2, tmp1);
     auto rhs = createAluNode(alu_and, port, tmp2);
@@ -226,8 +227,4 @@ void mem_buffer::write(uint32_t dst_offset,
   } else {
     port->write(data);
   }
-}
-
-void mem_buffer::move(const lnode& data) {
-  this->write(0, data, 0, size_);
 }

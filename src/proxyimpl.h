@@ -48,7 +48,7 @@ public:
 
   std::vector<lnode>::iterator erase_source(std::vector<lnode>::iterator iter);
 
-  lnodeimpl* get_slice(uint32_t offset, uint32_t length);
+  lnodeimpl* get_slice(uint32_t offset, uint32_t length) override;
 
   std::vector<std::pair<uint32_t, uint32_t>> get_update_slices(uint32_t offset, uint32_t length);
 
@@ -57,6 +57,7 @@ public:
   void print(std::ostream& out, uint32_t level) const override;
   
 protected:
+
   proxyimpl(context* ctx, uint32_t size);
   proxyimpl(context* ctx, const lnode& src);
   proxyimpl(context* ctx, const lnode& src, uint32_t offset, uint32_t length);

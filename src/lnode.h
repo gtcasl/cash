@@ -31,17 +31,12 @@ public:
 
   lnode& operator=(const lnode& rhs);
 
-  const lnode& ensureInitialized(uint32_t size, bool initialize = true) const;
-
   void clear();
-
-  void move(const lnode& rhs);
 
   void write(uint32_t dst_offset,
              const lnode& in,
              uint32_t src_offset,
-             uint32_t length,
-             uint32_t size);
+             uint32_t length);
 
   bool is_empty() const;
 
@@ -52,6 +47,8 @@ public:
   uint32_t get_id() const;
 
   const std::string& get_name() const;
+
+  void set_name(const std::string& name);
   
   uint32_t get_size() const;
   
@@ -64,6 +61,10 @@ public:
   bool get_bool(unsigned index) const;
 
   void set_bool(unsigned index, bool value);
+
+  const source_location& get_source_location() const;
+
+  void set_source_location(const source_location& sloc);
 
   lnodeimpl* clone() const;
 

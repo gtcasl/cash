@@ -10,7 +10,7 @@ using namespace ch::core;
 template <unsigned N>
 const auto ch_hot2bin = [](const ch_bit<N>& onehot) {
   auto cs = ch_case<ch_bit<log2ceil(N)>>(onehot, 1, 0);
-  for (int i = 1; i < N; ++i) {
+  for (unsigned i = 1; i < N; ++i) {
     cs(1 << i, i);
   }
   return cs(0);

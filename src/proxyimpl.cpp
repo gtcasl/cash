@@ -5,12 +5,12 @@ using namespace ch::internal;
 
 proxyimpl::proxyimpl(context* ctx, uint32_t size) 
   : lnodeimpl(ctx, type_proxy, size)
-  , tick_(~0ull) 
+  , tick_(~0ull)
 {}
 
 proxyimpl::proxyimpl(context* ctx, const lnode& src)
   : lnodeimpl(ctx, type_proxy, src.get_size())
-  , tick_(~0ull)  {
+  , tick_(~0ull)  {  
   this->add_source(0, src);
 }
 
@@ -24,6 +24,7 @@ void proxyimpl::add_source(uint32_t dst_offset,
                            const lnode& src,
                            uint32_t src_offset,
                            uint32_t length) {
+  assert(!src.is_empty());
   assert(this != src.get_impl());
   assert(length != 0);
   assert(dst_offset + length <= value_.get_size());

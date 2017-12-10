@@ -80,7 +80,13 @@ protected:
   template <typename... Ts,
             CH_REQUIRES(sizeof...(Ts) == N && are_all_cast_convertible<T, Ts...>::value)>
   explicit const_vec_base(Ts&&... values)
-    : items_{(T(std::forward<Ts>(values)))...}
+    : items_{T(std::forward<Ts>(values))...}
+  {}
+
+  template <typename... Ts,
+            CH_REQUIRES(sizeof...(Ts) == N && are_all_cast_convertible<T, Ts...>::value)>
+  explicit const_vec_base(const source_location& sloc, Ts&&... values)
+    : items_{T(std::forward<Ts>(values), sloc)...}
   {}
   
   std::array<T, N> items_;
@@ -161,6 +167,10 @@ protected:
   template <typename... Ts,
             CH_REQUIRES(sizeof...(Ts) == N && are_all_cast_convertible<T, Ts...>::value)>
   explicit vec_base(Ts&&... values) : base(std::forward<Ts>(values)...) {}
+
+  template <typename... Ts,
+            CH_REQUIRES(sizeof...(Ts) == N && are_all_cast_convertible<T, Ts...>::value)>
+  explicit vec_base(const source_location& sloc, Ts&&... values) : base(sloc, std::forward<Ts>(values)...) {}
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -180,33 +190,41 @@ public:
   using base::operator [];
   using base::items_;
 
-  const_vec(const bit_buffer& buffer = bit_buffer(traits::bitwidth))
+  const_vec(const bit_buffer& buffer = bit_buffer(traits::bitwidth, CH_SOURCE_LOCATION))
     : const_vec(buffer, std::make_index_sequence<N>())
   {}
 
-  const_vec(const const_vec& rhs)
-    : const_vec(bit_accessor::cloneBuffer(rhs))
+  const_vec(const const_vec& rhs, const source_location& sloc = CH_SOURCE_LOCATION)
+    : const_vec(bit_accessor::copy(rhs, sloc))
   {}
 
-  const_vec(const_vec&& rhs) : base(std::move(rhs)) {}
-
-  explicit const_vec(const ch_bit<traits::bitwidth>& rhs) \
-    : const_vec(bit_accessor::cloneBuffer(rhs)) {} \
-
-  explicit const_vec(const ch_scalar<traits::bitwidth>& rhs)
-    : const_vec(bit_buffer(scalar_accessor::get_data(rhs)))
+  const_vec(const_vec&& rhs) : base(std::move(rhs))
   {}
 
-  template <typename __T__, CH_REQUIRES(std::is_integral_v<__T__>)>
-  explicit const_vec(__T__ rhs)
-    : const_vec(bit_buffer(bitvector(traits::bitwidth, rhs)))
+  explicit const_vec(const ch_bit<traits::bitwidth>& rhs,
+                     const source_location& sloc = CH_SOURCE_LOCATION)
+    : const_vec(bit_accessor::copy(rhs, sloc))
   {}
 
-  template <typename... Vs,
-            CH_REQUIRES(sizeof...(Vs) == N && are_all_cast_convertible<T, Vs...>::value)>
-  explicit const_vec(Vs&&... values)
-    : const_vec() {
-    this->init(std::forward<Vs>(values)...);
+  explicit const_vec(const ch_scalar<traits::bitwidth>& rhs,
+                     const source_location& sloc = CH_SOURCE_LOCATION)
+    : const_vec(bit_buffer(scalar_accessor::get_data(rhs), sloc))
+  {}
+
+  template <typename U, CH_REQUIRES(std::is_integral_v<U>)>
+  explicit const_vec(U rhs, const source_location& sloc = CH_SOURCE_LOCATION)
+    : const_vec(bit_buffer(bitvector(traits::bitwidth, rhs), sloc))
+  {}
+
+  template <typename U>
+  explicit const_vec(const std::initializer_list<U>& values,
+                     const source_location& sloc = CH_SOURCE_LOCATION)
+    : const_vec(bit_buffer(traits::bitwidth, sloc)) {
+    assert(values.size() == N);
+    int i = N - 1;
+    for (auto& value : values) {
+      items_[i--] = value;
+    }
   }
 
   CH_LOGIC_READONLY_INTERFACE(const_vec)
@@ -261,24 +279,47 @@ public:
   using base::operator [];
   using base::items_;
 
-  ch_vec(const bit_buffer& buffer = bit_buffer(traits::bitwidth)) : base(buffer) {}
-  ch_vec(const const_vec<T, N>& rhs) : base(rhs) {}
-  ch_vec(const ch_vec& rhs) : base(rhs) {}
+  ch_vec(const bit_buffer& buffer = bit_buffer(traits::bitwidth, CH_SOURCE_LOCATION))
+    : base(buffer)
+  {}
+
+  ch_vec(const const_vec<T, N>& rhs, const source_location& sloc = CH_SOURCE_LOCATION)
+    : base(rhs, sloc)
+  {}
+
+  ch_vec(const ch_vec& rhs, const source_location& sloc = CH_SOURCE_LOCATION)
+    : base(rhs, sloc)
+  {}
+
   ch_vec(ch_vec&& rhs) : base(std::move(rhs)) {}
 
   template <typename U>
-  explicit ch_vec(const ch_vec<U, N>& rhs) : base(rhs ) {}
+  explicit ch_vec(const ch_vec<U, N>& rhs,
+                  const source_location& sloc = CH_SOURCE_LOCATION)
+    : base(rhs, sloc)
+  {}
 
-  explicit ch_vec(const ch_bit<traits::bitwidth>& rhs) : base(rhs) {} \
+  explicit ch_vec(const ch_bit<traits::bitwidth>& rhs,
+                  const source_location& sloc = CH_SOURCE_LOCATION)
+    : base(rhs, sloc)
+  {}
 
-  explicit ch_vec(const ch_scalar<traits::bitwidth>& rhs) : base(rhs) {}
+  explicit ch_vec(const ch_scalar<traits::bitwidth>& rhs,
+                  const source_location& sloc = CH_SOURCE_LOCATION)
+    : base(rhs, sloc)
+  {}
 
-  template <typename __T__, CH_REQUIRES(std::is_integral_v<__T__>)>
-  explicit ch_vec(__T__ rhs) : base(rhs) {}
+  template <typename U, CH_REQUIRES(std::is_integral_v<U>)>
+  explicit ch_vec(U rhs,
+                  const source_location& sloc = CH_SOURCE_LOCATION)
+    : base(rhs, sloc)
+  {}
 
-  template <typename... Vs,
-            CH_REQUIRES(sizeof...(Vs) == N && are_all_cast_convertible<T, Vs...>::value)>
-  explicit ch_vec(Vs&&... values) : base(std::forward<Vs>(values)...) {}
+  template <typename U>
+  explicit ch_vec(const std::initializer_list<U>& values,
+                  const source_location& sloc = CH_SOURCE_LOCATION)
+    : base(values, sloc)
+  {}
 
   ch_vec& operator=(const ch_vec& rhs) {
     bit_accessor::copy(*this, rhs);
@@ -360,22 +401,22 @@ public:
   {}
 
   const_vec(const const_vec& rhs)
-    : const_vec(scalar_accessor::cloneBuffer(rhs))
+    : const_vec(scalar_accessor::copy(rhs))
   {}
 
   const_vec(const_vec&& rhs) : base(std::move(rhs)) {}
 
   template <typename U>
   explicit const_vec(const const_vec<U, N>& rhs)
-    : const_vec(scalar_accessor::cloneBuffer(rhs))
+    : const_vec(scalar_accessor::copy(rhs))
   {}
 
   explicit const_vec(const ch_scalar<traits::bitwidth>& rhs)
-    : const_vec(scalar_accessor::cloneBuffer(rhs))
+    : const_vec(scalar_accessor::copy(rhs))
   {}
 
-  template <typename __T__, CH_REQUIRES(std::is_integral_v<__T__>)>
-  explicit const_vec(__T__ rhs)
+  template <typename U, CH_REQUIRES(std::is_integral_v<U>)>
+  explicit const_vec(U rhs)
     : const_vec(scalar_buffer(bitvector(traits::bitwidth, rhs)))
   {}
 
@@ -446,8 +487,8 @@ public:
 
   explicit ch_vec(const ch_scalar<traits::bitwidth>& rhs) : base(rhs) {}
 
-  template <typename __T__, CH_REQUIRES(std::is_integral_v<__T__>)>
-  explicit ch_vec(__T__ rhs) : base(rhs) {}
+  template <typename U, CH_REQUIRES(std::is_integral_v<U>)>
+  explicit ch_vec(U rhs) : base(rhs) {}
 
   template <typename... Vs,
             CH_REQUIRES(sizeof...(Vs) == N && are_all_cast_convertible<T, Vs...>::value)>
@@ -583,15 +624,17 @@ public:
   using base::operator [];
   using base::items_;
 
-  ch_vec(const std::string& name = "io")
-    : ch_vec(name, std::make_index_sequence<N>())
+  ch_vec(const std::string& name = "io", const source_location& sloc = CH_SOURCE_LOCATION)
+    : ch_vec(name, sloc, std::make_index_sequence<N>())
   {}
 
-  ch_vec(const ch_vec<flip_type_t<T>, N>& rhs)
-    : ch_vec(rhs, std::make_index_sequence<N>())
+  ch_vec(const ch_vec<flip_type_t<T>, N>& rhs, const source_location& sloc = CH_SOURCE_LOCATION)
+    : ch_vec(rhs, sloc, std::make_index_sequence<N>())
   {}
 
-  ch_vec(const ch_vec& rhs) : base(rhs) {}
+  ch_vec(const ch_vec& rhs, const source_location& sloc = CH_SOURCE_LOCATION)
+    : ch_vec(rhs, sloc, std::make_index_sequence<N>())
+  {}
 
   ch_vec(ch_vec&& rhs) : base(std::move(rhs)) {}
 
@@ -607,13 +650,17 @@ protected:
   ch_vec& operator=(ch_vec&& rhs) = delete;
 
   template <std::size_t...Is>
-  explicit ch_vec(const std::string& name, std::index_sequence<Is...>)
-    : base((fstring("%s_%d", name.c_str(), Is))...)
+  explicit ch_vec(const std::string& name,
+                  const source_location& sloc,
+                  std::index_sequence<Is...>)
+    : base(sloc, fstring("%s_%d", name.c_str(), Is)...)
   {}
 
-  template <std::size_t...Is>
-  explicit ch_vec(const ch_vec<flip_type_t<T>, N>& rhs, std::index_sequence<Is...>)
-    : base(rhs[Is]...)
+  template <typename U, std::size_t...Is>
+  explicit ch_vec(const vec_base<U, N>& rhs,
+                  const source_location& sloc,
+                  std::index_sequence<Is...>)
+    : base(sloc, rhs[Is]...)
   {}
 };
 

@@ -44,7 +44,7 @@ if_t ch_if(const P& pred, const Func& func) {
 }
 }
 
-#define CH_IF_BODY(value)   value })
-#define CH_IF(pred)         ch_if(pred, [&](){ CH_IF_BODY
-#define CH_ELIF(pred)       .elif_(pred, [&](){ CH_IF_BODY
-#define CH_ELSE(value)      .else_([&](){ value })
+#define CH_END          });
+#define CH_IF(pred)     ch_if(pred, [&]() {
+#define CH_ELIF(pred)   }).elif_(pred, [&]() {
+#define CH_ELSE         }).else_([&]() {

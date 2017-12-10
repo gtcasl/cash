@@ -51,7 +51,7 @@ void bindimpl::bind_output(const lnode& dst, const lnode& ioport) {
 
   // create bind port
   auto bindport(ctx_->createNode<bindportimpl>(this, ioport));
-  const_cast<lnode&>(dst).write(0, bindport, 0, dst.get_size(), dst.get_size());
+  const_cast<lnode&>(dst).write(0, bindport, 0, dst.get_size());
 
   // add to list
   bindimpl::add_port(bindport, outputs_);
@@ -116,7 +116,8 @@ bindportimpl::bindportimpl(context* ctx, const lnode& src, const lnode& ioport)
   , ioport_(ioport)
   , tick_(~0ull) {
   srcs_.push_back(src);
-  is_output_ = (dynamic_cast<outputimpl*>(ioport_.get_impl()) != nullptr);
+  is_output_ = (dynamic_cast<outputimpl*>(ioport.get_impl()) != nullptr);
+  name_ = is_output_ ? "bindout" : "bindin";
 }
 
 bindportimpl::~bindportimpl() {

@@ -14,13 +14,13 @@ struct Adder {
     __out(ch_bit1)   cout
   );
   void describe() {
-    auto sum = ch_cat(0_b, io.lhs) + ch_cat(0_b, io.rhs) + ch_zext<N+1>(io.cin);
+    auto sum = ch_zext<N+1>(io.cin) + ch_cat(0_b, io.lhs) + ch_cat(0_b, io.rhs);
     io.out  = ch_slice<N>(sum);
     io.cout = sum[N];
   }
 };
 
-int main(int argc, char **argv) {
+int main() {
   ch_device<Adder<2>> adder;
 
   adder.io.cin = 1;

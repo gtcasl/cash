@@ -18,6 +18,30 @@ std::string identifier_from_typeid(const std::string& name);
 
 ///////////////////////////////////////////////////////////////////////////////
 
+class source_location {
+public:
+  constexpr source_location(const char* file = "unknown", int line = 0) noexcept
+    : file_(file)
+    , line_(line)
+  {}
+
+  constexpr const char* file() const noexcept {
+    return file_;
+  }
+
+  constexpr int line() const noexcept {
+    return line_;
+  }
+
+private:
+  const char* file_;
+  int line_;
+};
+
+#define CH_SOURCE_LOCATION source_location(__builtin_FILE(), __builtin_LINE())
+
+///////////////////////////////////////////////////////////////////////////////
+
 template <typename F, typename Arg>
 void for_each_impl(const F& f, Arg&& arg) {
   f(std::forward<Arg>(arg));
@@ -413,7 +437,7 @@ constexpr unsigned log2ceil(unsigned x) {
 }
 
 template <typename Dst, typename Src>
-const auto bitcast(const Src& src) {
+auto bitcast(const Src& src) {
   union merged_t { Src src; Dst dst; };
   merged_t m;
   m.dst = 0;
@@ -443,29 +467,34 @@ constexpr uint32_t rotr(uint32_t value, uint32_t shift, uint32_t width) {
 }
 
 #ifdef NDEBUG
-  #define CH_ABORT(msg, ...) \
+  #define CH_ABORT(...) \
     do { \
-      fprintf(stderr, "ERROR: " msg "\n", ##__VA_ARGS__); \
+      fprintf(stderr, "ERROR: "); \
+      fprintf(stderr, __VA_ARGS__); \
       std::abort(); \
     } while (false)
 
   #define DBG(level, format, ...)
 #else
-  #define CH_ABORT(msg, ...) \
+  #define CH_ABORT(...) \
     do { \
-      ch::internal::dump_stack_trace(stdout); \
-      fprintf(stderr, "ERROR: " msg " (" __FILE__ ":" CH_STRINGIZE(__LINE__) ")\n", ##__VA_ARGS__); \
+      fprintf(stderr, "ERROR: "); \
+      fprintf(stderr, __VA_ARGS__); \
+      fprintf(stderr, " (" __FILE__ ":" CH_STRINGIZE(__LINE__) ")\n"); \
       std::abort(); \
     } while (false)
 
-  #define DBG(level, format, ...) \
-    dbprint(level, "DBG: " format, ##__VA_ARGS__)
+  #define DBG(level, ...) \
+    dbprint(level, __VA_ARGS__)
 #endif
 
-#define CH_CHECK(x, msg, ...) \
+#define CH_CHECK(pred, ...) \
   do { \
-    if (!(x)) { \
-      CH_ABORT("assertion `" CH_STRINGIZE(x) "' failed, " msg, ##__VA_ARGS__); \
+    if (!(pred)) { \
+      fprintf(stderr, "ERROR: assertion `" CH_STRINGIZE(pred) "' failed, "); \
+      fprintf(stderr, __VA_ARGS__); \
+      fprintf(stderr, " (" __FILE__ ":" CH_STRINGIZE(__LINE__) ")\n"); \
+      std::abort(); \
     } \
   } while (false)
 

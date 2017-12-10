@@ -2,86 +2,65 @@
 
 using namespace ch::internal;
 
-bit_buffer_impl::bit_buffer_impl(unsigned size)
+bit_buffer_impl::bit_buffer_impl(unsigned size,
+                                 const source_location& sloc,
+                                 const std::string& name)
   : value_(size)
-  , offset_(0)
-  , size_(size)
-{}
+  , offset_(0) {
+  value_.set_source_location(sloc);  
+  if (!name.empty())
+    value_.set_name(name);
+}
 
-bit_buffer_impl::bit_buffer_impl(const bit_buffer_impl& rhs)
-  : source_(rhs.source_)
-  , value_(rhs.value_)
-  , offset_(rhs.offset_)
-  , size_(rhs.size_)
-{}
+bit_buffer_impl::bit_buffer_impl(const bit_buffer_impl& rhs,
+                                 const source_location& sloc,
+                                 const std::string& name)
+  : value_(rhs.get_size(), rhs.get_data())
+  , offset_(0) {
+  value_.set_source_location(sloc);
+  if (!name.empty())
+    value_.set_name(name);
+}
 
 bit_buffer_impl::bit_buffer_impl(bit_buffer_impl&& rhs)
-  : source_(std::move(rhs.source_))
-  , value_(std::move(rhs.value_))
-  , offset_(rhs.offset_)
-  , size_(rhs.size_)
+  : value_(std::move(rhs.value_))
+  , source_(std::move(rhs.source_))
+  , offset_(std::move(offset_))
 {}
 
-bit_buffer_impl::bit_buffer_impl(const lnode& data)
-  : value_(data)
-  , offset_(0)
-  , size_(value_.get_size())
-{}
-
-bit_buffer_impl::bit_buffer_impl(lnode&& data)
-  : value_(std::move(data))
-  , offset_(0)
-  , size_(value_.get_size())
-{}
+bit_buffer_impl::bit_buffer_impl(const lnode& data,
+                                 const source_location& sloc,
+                                 const std::string& name)
+  : value_(data.get_size(), data)
+  , offset_(0) {
+  value_.set_source_location(sloc);
+  if (!name.empty())
+    value_.set_name(name);
+}
 
 bit_buffer_impl::bit_buffer_impl(unsigned size,
                                  const bit_buffer_ptr& buffer,
-                                 unsigned offset)
-  : source_(buffer)
-  , offset_(offset)
-  , size_(size) {
-  assert(offset_ + size_ <= buffer->get_size());
+                                 unsigned offset,
+                                 const std::string& name)
+  : value_(size, buffer->get_data(), offset)
+  , source_(buffer)
+  , offset_(offset) {
+  assert(offset + size <= buffer->get_size());
+  value_.set_source_location(buffer->get_data().get_source_location());
+  if (!name.empty()) {
+    assert(!buffer->get_data().get_name().empty());
+    value_.set_name(fstring("%s_%s", buffer->get_data().get_name().c_str(), name.c_str()));
+  }
 }
 
 bit_buffer_impl& bit_buffer_impl::operator=(const bit_buffer_impl& rhs) {
-  source_ = rhs.source_;
-  offset_ = rhs.offset_;
-  size_   = rhs.size_;
-  if (source_) {
-    value_.clear();
-  } else {
-    value_ = rhs.value_;
-  }
+  this->copy(rhs);
   return *this;
 }
 
 bit_buffer_impl& bit_buffer_impl::operator=(bit_buffer_impl&& rhs) {
-  if (source_ || rhs.source_) {
-    this->write(0, rhs, 0, size_);
-  } else {
-    assert(rhs.offset_ == 0 && rhs.offset_ == offset_ && rhs.size_ == size_);
-    this->move(rhs.value_);
-  }
+  this->copy(rhs);
   return *this;
-}
-
-void bit_buffer_impl::set_data(const lnode& data) {
-  this->write(0, data, 0, size_);
-}
-
-const lnode& bit_buffer_impl::get_data() const {
-  if (source_) {
-    if (value_.is_empty()) {
-      value_ = lnode(size_, source_->get_data(), offset_);
-    }
-  } else {
-    value_.ensureInitialized(size_);
-  }
-  return value_;
-}
-
-void bit_buffer_impl::move(const lnode& data) {
-  value_.move(data);
 }
 
 void bit_buffer_impl::write(uint32_t dst_offset,
@@ -91,15 +70,6 @@ void bit_buffer_impl::write(uint32_t dst_offset,
   if (source_) {
     source_->write(offset_ + dst_offset, data, src_offset, length);
   } else {
-    assert(dst_offset + length <= size_);
-    assert(0 == offset_);
-    value_.write(dst_offset, data, src_offset, length, size_);
+    value_.write(dst_offset, data, src_offset, length);
   }
-}
-
-void bit_buffer_impl::write(uint32_t dst_offset,
-                            const bit_buffer_impl& src,
-                            uint32_t src_offset,
-                            uint32_t length) {
-  this->write(dst_offset, src.get_data(), src_offset, length);
 }

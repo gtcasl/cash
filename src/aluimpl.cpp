@@ -60,7 +60,7 @@ static void binaryop(bitvector& out, const bitvector& lhs, const bitvector& rhs)
 template <ch_alu_op op>
 static void shiftop(bitvector& out, const bitvector& in, const bitvector& bits) {
   assert(out.get_size() == in.get_size());
-  CH_CHECK(bits.find_last() <= 31, "shift amount out of range!");
+  CH_CHECK(bits.find_last() <= 31, "shift amount out of range");
   
   uint32_t wbits = bits.get_word(0);
   switch (op) {  
@@ -81,7 +81,7 @@ static void shiftop(bitvector& out, const bitvector& in, const bitvector& bits) 
 template <ch_alu_op op>
 static void rotateop(bitvector& dst, const bitvector& in, const bitvector& bits) {
   assert(dst.get_size() == in.get_size());
-  CH_CHECK(bits.find_last() <= 31, "shift amount out of range!");
+  CH_CHECK(bits.find_last() <= 31, "shift amount out of range");
 
   uint32_t wbits = bits.get_word(0);
   switch (op) {
@@ -228,6 +228,7 @@ aluimpl::aluimpl(context* ctx, ch_alu_op op, unsigned size, unsigned num_operand
   , op_(op)
   , tick_(~0ull) {
   srcs_.resize(num_operands);
+  name_ = to_string(op);
 }
 
 void aluimpl::eval(bitvector& inout, ch_tick t) {

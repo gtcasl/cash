@@ -11,7 +11,7 @@ selectimpl::selectimpl(context* ctx,
                        const lnode& pred,
                        const lnode& _true,
                        const lnode& _false)
-  : lnodeimpl(ctx, type_select, _true.get_size())
+  : lnodeimpl(ctx, type_sel, _true.get_size())
   , tick_(~0ull) {
   assert(pred.get_size() == 1);
   assert(_true.get_size() == _false.get_size());

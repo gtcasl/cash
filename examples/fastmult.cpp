@@ -23,7 +23,7 @@ struct FastMult {
   }
 };
 
-int main(int argc, char **argv) {
+int main() {
   ch_device<FastMult> fastmult;
 
   fastmult.io.lhs = 2;
@@ -40,4 +40,6 @@ int main(int argc, char **argv) {
   assert(fastmult.io.out == 6);
 
   ch_toVerilog("fastmult.v", fastmult);
+
+  return 0;
 }

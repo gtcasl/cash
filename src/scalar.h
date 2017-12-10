@@ -187,11 +187,7 @@ public:
 
   scalar_buffer_impl& operator=(scalar_buffer_impl&& rhs);
 
-  void set_data(const bitvector& data);
-
   virtual const bitvector& get_data() const;
-
-  void copy(const scalar_buffer_impl& rhs);
 
   virtual void read(uint32_t dst_offset,
                     void* out,
@@ -205,19 +201,31 @@ public:
                      uint32_t src_offset,
                      uint32_t length);
 
-  const auto& get_source() const {
+  void write(const bitvector& data) {
+    this->write(0, data.get_words(), data.get_cbsize(), 0, size_);
+  }
+
+  void copy(const scalar_buffer_impl& rhs) {
+    this->write(0,
+                rhs.get_data().get_words(),
+                rhs.get_data().get_cbsize(),
+                rhs.get_offset(),
+                rhs.get_size());
+  }
+
+  const scalar_buffer_ptr& get_source() const {
     return source_;
   }
 
-  auto& get_source() {
+  scalar_buffer_ptr& get_source() {
     return source_;
   }
 
-  auto get_offset() const {
+  unsigned get_offset() const {
     return offset_;
   }
 
-  auto get_size() const {
+  unsigned get_size() const {
     return size_;
   }
 
@@ -259,7 +267,8 @@ public:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct scalar_accessor {
+class scalar_accessor {
+public:
   template <typename T>
   static const auto& get_buffer(const T& obj) {
     return obj.get_buffer();
@@ -277,9 +286,9 @@ struct scalar_accessor {
   }
 
   template <typename T>
-  static auto cloneBuffer(const T& obj) {
+  static auto copy(const T& obj) {
     assert(bitwidth_v<T> == obj.get_buffer()->get_size());
-    return scalar_buffer(obj.get_buffer()->get_data());
+    return scalar_buffer(*obj.get_buffer());
   }
 
   template <typename U, typename V,
@@ -287,7 +296,7 @@ struct scalar_accessor {
   static void copy(U& dst, const V& src) {
     assert(bitwidth_v<U> == dst.get_buffer()->get_size());
     assert(bitwidth_v<V> == src.get_buffer()->get_size());
-    dst.get_buffer()->copy(*src.get_buffer());
+    *dst.get_buffer() = *src.get_buffer();
   }
 
   template <typename U, typename V,
@@ -347,7 +356,7 @@ public:
   {}
 
   const_scalar(const const_scalar& rhs)
-    : buffer_(scalar_accessor::cloneBuffer(rhs))
+    : buffer_(scalar_accessor::copy(rhs))
   {}
 
   const_scalar(const_scalar&& rhs)
@@ -358,7 +367,7 @@ public:
             CH_REQUIRES(is_scalar_type<U>::value),
             CH_REQUIRES(N == bitwidth_v<U>)>
   explicit const_scalar(const U& rhs) :
-    buffer_(scalar_accessor::cloneBuffer(rhs))
+    buffer_(scalar_accessor::copy(rhs))
   {}
 
   template <typename U, CH_REQUIRES(is_bitvector_convertible<U>::value)>
@@ -366,12 +375,12 @@ public:
     : buffer_(bitvector(N, value))
   {}
 
-  const auto operator[](size_t index) const {
+  auto operator[](size_t index) const {
     return const_scalar<1>(scalar_buffer(1, buffer_, index));
   }
 
   template <unsigned M>
-  const auto slice(size_t start = 0) const {
+  auto slice(size_t start = 0) const {
     return const_scalar<M>(scalar_buffer(M, buffer_, start));
   }
 
@@ -404,64 +413,64 @@ public:
     return !(rhs.buffer_->get_data() < rhs.buffer_->get_data());
   }
 
-  const auto operator!() const {
+  auto operator!() const {
     return (const_scalar(0x0) == *this);
   }
 
-  const auto operator~() const {
+  auto operator~() const {
     bitvector ret(N);
     Inv(ret, buffer_->get_data());
     return ch_scalar<N>(scalar_buffer(std::move(ret)));
   }
 
-  const auto operator&(const const_scalar& rhs) const {
+  auto operator&(const const_scalar& rhs) const {
     bitvector ret(N);
     And(ret, buffer_->get_data(), rhs.buffer_->get_data());
     return ch_scalar<N>(scalar_buffer(std::move(ret)));
   }
 
-  const auto operator|(const const_scalar& rhs) const {
+  auto operator|(const const_scalar& rhs) const {
     bitvector ret(N);
     Or(ret, buffer_->get_data(), rhs.buffer_->get_data());
     return ch_scalar<N>(scalar_buffer(std::move(ret)));
   }
 
-  const auto operator^(const const_scalar& rhs) const {
+  auto operator^(const const_scalar& rhs) const {
     bitvector ret(N);
     Xor(ret, buffer_->get_data(), rhs.buffer_->get_data());
     return ch_scalar<N>(scalar_buffer(std::move(ret)));
   }
 
-  const auto operator-() const {
+  auto operator-() const {
     bitvector ret(N);
     Negate(ret, buffer_->get_data());
     return ch_scalar<N>(scalar_buffer(std::move(ret)));
   }
 
-  const auto operator+(const const_scalar& rhs) const {
+  auto operator+(const const_scalar& rhs) const {
     bitvector ret(N);
     Add(ret, buffer_->get_data(), rhs.buffer_->get_data());
     return ch_scalar<N>(scalar_buffer(std::move(ret)));
   }
 
-  const auto operator-(const const_scalar& rhs) const {
+  auto operator-(const const_scalar& rhs) const {
     bitvector ret(N);
     Sub(ret, buffer_->get_data(), rhs.buffer_->get_data());
     return ch_scalar<N>(scalar_buffer(std::move(ret)));
   }
 
-  const auto operator<<(const const_scalar& rhs) const {
+  auto operator<<(const const_scalar& rhs) const {
     bitvector ret(N);
     auto shift = rhs.buffer_->get_data();
-    CH_CHECK(shift.find_last() <= 31, "shift amount out of range!");
+    CH_CHECK(shift.find_last() <= 31, "shift amount out of range");
     Sll(ret, buffer_->get_data(), shift.get_word(0));
     return ch_scalar<N>(scalar_buffer(std::move(ret)));
   }
 
-  const auto operator>>(const const_scalar& rhs) const {
+  auto operator>>(const const_scalar& rhs) const {
     bitvector ret(N);
     auto shift = rhs.buffer_->get_data();
-    CH_CHECK(shift.find_last() <= 31, "shift amount out of range!");
+    CH_CHECK(shift.find_last() <= 31, "shift amount out of range");
     Srl(ret, buffer_->get_data(), shift.get_word(0));
     return ch_scalar<N>(scalar_buffer(std::move(ret)));
   }
@@ -540,11 +549,11 @@ public:
 
   template <typename U, CH_REQUIRES(is_integral_or_enum_v<U>)>
   ch_scalar& operator=(U value) {
-    buffer_->set_data(bitvector(N, value));
+    buffer_->write(bitvector(N, value));
     return *this;
   }
 
-  const auto operator[](size_t index) const {
+  auto operator[](size_t index) const {
     return const_scalar<1>(scalar_buffer(1, buffer_, index));
   }
 
@@ -553,7 +562,7 @@ public:
   }
 
   template <unsigned M>
-  const auto slice(size_t start = 0) const {
+  auto slice(size_t start = 0) const {
     return const_scalar<M>(scalar_buffer(M, buffer_, start));
   }
 

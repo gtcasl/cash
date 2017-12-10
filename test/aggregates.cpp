@@ -34,7 +34,7 @@ static_assert(ch_bitwidth_v<O2_t> == 1, ":-(");
 
 __struct (s1_t, (
   (ch_bit4) a
-  ));
+));
 
 __struct (s2_t, (
   (ch_bit4) a,
@@ -200,7 +200,7 @@ TEST_CASE("aggregates", "[aggregates]") {
   
   SECTION("vectors", "[vector]") {
     TEST([]()->ch_bit1 {
-      v2_2_t a(0, 0);
+      v2_2_t a{0, 0};
       a[0][1] = 1;
       return (a.asBits() == 0010_b);
     });
@@ -221,7 +221,7 @@ TEST_CASE("aggregates", "[aggregates]") {
     });
     
     TEST([]()->ch_bit1 {
-      v2_2_t a(1, 1), b;
+      v2_2_t a{1, 1}, b;
       b[0][0] = a[1][1];
       b[0][1] = a[1][0];
       b[1][0] = a[0][1];
@@ -230,7 +230,7 @@ TEST_CASE("aggregates", "[aggregates]") {
     });
 
     TEST([]()->ch_bit1 {
-      ch_vec<ch_bit2, 2> a(11_b, 00_b), b{00_b, 11_b};
+      ch_vec<ch_bit2, 2> a{11_b, 00_b}, b{00_b, 11_b};
       auto c = ch_orr(a[0] & b[0]);
       return (c == 0);
     });

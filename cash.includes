@@ -6,3 +6,4 @@ stl
 htl
 verilog
 src/htl
+parser

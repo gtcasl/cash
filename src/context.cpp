@@ -215,7 +215,7 @@ void context::add_node(lnodeimpl* node) {
 }
 
 void context::remove_node(lnodeimpl* node) {
-  DBG(3, "*** deleting node: %s%d(#%d)!\n",
+  DBG(3, "*** deleting node: %s%d(#%d)\n",
       to_string(node->get_type()), node->get_size(), node->get_id());
   
   assert(!nodes_.empty());
@@ -712,7 +712,7 @@ void context::dump_stats(std::ostream& out) {
       ++num_registers;
       register_bits += node->get_size();
       break;
-    case type_select:
+    case type_sel:
       ++num_muxes;
       break;
     case type_alu:

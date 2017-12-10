@@ -187,8 +187,8 @@ $ valgrind --tool=callgrind <app> <args...>
 $ kcachegrind
 
 // debugging C macros
-g++ -std=c++14 -O0 -g -fmax-errors=5 -E -dD dogfood.cpp > dogfood.log
-clang-format-3.6 dogfood.log -i
+g++ -std=c++17 -O0 -g -Wall -Wextra -Werror -fmax-errors=5 -E -dD dogfood.cpp > dogfood.log
+clang-format-5.0 dogfood.log -i
 
 // Detecting Cycles in CASH?
 // cycles only occurs when combinatorial nets eval() function is entered a second time without having exited.

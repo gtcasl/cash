@@ -16,7 +16,7 @@ struct ch_hxbar {
     __out(ch_vec<T, O>) out
   );
   void describe() {
-    for (int i = 0; i < O; ++i) {
+    for (unsigned i = 0; i < O; ++i) {
       io.out[i] = ch_hmux(ch_slice<I>(io.sel, i * I), io.in);
     }
   }

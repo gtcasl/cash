@@ -435,16 +435,13 @@ void bitvector::write(
     }
   } else {
     iterator iter = this->begin() + dst_offset;
-    uint8_t tmp;
-    if (src_offset) {
-      tmp = *b_src++;
-    }
+    uint32_t tmp = 0;
     for (uint32_t i = src_offset, end = src_offset + length; i < end; ++i) {
       uint32_t shift = i & 0x7;
-      if (0 == shift) {
+      if (i == src_offset || 0 == shift) {
         tmp = *b_src++;
       }
-      *iter++ = (tmp >> shift) & 0x1;
+      *iter++ = (tmp >> shift) & 0x1;            
     }
   }
 }
@@ -786,6 +783,7 @@ void ch::internal::Mux(bitvector& dst, const bitvector& in, const bitvector& sel
   uint32_t D = dst.get_size();
   uint32_t N = in.get_size();
   uint32_t S = sel.get_size();
+  CH_UNUSED(N, S);
   assert(D == N >> S);
 
   assert(sel.get_num_words() == 1);
@@ -807,10 +805,10 @@ void ch::internal::fAdd(bitvector& out, const bitvector& lhs, const bitvector& r
   assert(rhs.get_size() == 32);
   uint32_t a_value = lhs.get_word(0);
   uint32_t b_value = rhs.get_word(0);
-  float a_valuef = *(const float*)&a_value;
-  float b_valuef = *(const float*)&b_value;
+  float a_valuef = bitcast<float>(a_value);
+  float b_valuef = bitcast<float>(b_value);
   float resultf = a_valuef + b_valuef;
-  uint32_t result = *(const uint32_t*)&resultf;
+  uint32_t result = bitcast<uint32_t>(resultf);
   out.set_word(0, result);
 }
 
@@ -820,10 +818,10 @@ void ch::internal::fSub(bitvector& out, const bitvector& lhs, const bitvector& r
   assert(rhs.get_size() == 32);
   uint32_t a_value = lhs.get_word(0);
   uint32_t b_value = rhs.get_word(0);
-  float a_valuef = *(const float*)&a_value;
-  float b_valuef = *(const float*)&b_value;
+  float a_valuef = bitcast<float>(a_value);
+  float b_valuef = bitcast<float>(b_value);
   float resultf = a_valuef - b_valuef;
-  uint32_t result = *(const uint32_t*)&resultf;
+  uint32_t result = bitcast<uint32_t>(resultf);
   out.set_word(0, result);
 }
 
@@ -833,10 +831,10 @@ void ch::internal::fMult(bitvector& out, const bitvector& lhs, const bitvector& 
   assert(rhs.get_size() == 32);
   uint32_t a_value = lhs.get_word(0);
   uint32_t b_value = rhs.get_word(0);
-  float a_valuef = *(const float*)&a_value;
-  float b_valuef = *(const float*)&b_value;
+  float a_valuef = bitcast<float>(a_value);
+  float b_valuef = bitcast<float>(b_value);
   float resultf = a_valuef * b_valuef;
-  uint32_t result = *(const uint32_t*)&resultf;
+  uint32_t result = bitcast<uint32_t>(resultf);
   out.set_word(0, result);
 }
 
@@ -846,9 +844,9 @@ void ch::internal::fDiv(bitvector& out, const bitvector& lhs, const bitvector& r
   assert(rhs.get_size() == 32);
   uint32_t a_value = lhs.get_word(0);
   uint32_t b_value = rhs.get_word(0);
-  float a_valuef = *(const float*)&a_value;
-  float b_valuef = *(const float*)&b_value;
+  float a_valuef = bitcast<float>(a_value);
+  float b_valuef = bitcast<float>(b_value);
   float resultf = a_valuef / b_valuef;
-  uint32_t result = *(const uint32_t*)&resultf;
+  uint32_t result = bitcast<uint32_t>(resultf);
   out.set_word(0, result);
 }
