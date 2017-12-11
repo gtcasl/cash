@@ -54,7 +54,7 @@ template <typename T, typename U>
 struct union_zero_init_impl1 {
   static void apply(T& obj) {
     if constexpr(is_logic_traits<typename T::traits>::value
-              && bitwidth_v<U> < T::traits::bitwidth) {
+              && width_v<U> < T::traits::bitwidth) {
       obj.asBits() = 0;
     }
   };
@@ -68,18 +68,18 @@ using union_zero_init = std::conditional_t<has_bitwidth<U>::value,
 }
 
 #define CH_UNION_SIZE_EACH(i, x) \
-  ch_bitwidth_v<ch::internal::identity_t<CH_PAIR_L(x)>>
+  ch_width_v<ch::internal::identity_t<CH_PAIR_L(x)>>
 
 #define CH_UNION_SIZE(...) \
   std::max({CH_FOR_EACH(CH_UNION_SIZE_EACH, CH_SEP_COMMA, __VA_ARGS__)})
 
 #define CH_UNION_SCALAR_CTOR(i, x) \
   CH_PAIR_R(x)(ch::internal::type_buffer_t<traits>( \
-    ch_bitwidth_v<ch::internal::identity_t<CH_PAIR_L(x)>>, buffer, 0))
+    ch_width_v<ch::internal::identity_t<CH_PAIR_L(x)>>, buffer, 0))
 
 #define CH_UNION_LOGIC_CTOR(i, x) \
   CH_PAIR_R(x)(ch::internal::type_buffer_t<traits>( \
-    ch_bitwidth_v<ch::internal::identity_t<CH_PAIR_L(x)>>, buffer, 0, \
+    ch_width_v<ch::internal::identity_t<CH_PAIR_L(x)>>, buffer, 0, \
     CH_STRINGIZE(CH_PAIR_R(x))))
 
 #define CH_UNION_MOVE_CTOR(i, x) \

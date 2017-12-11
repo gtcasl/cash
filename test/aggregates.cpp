@@ -13,7 +13,7 @@ __enum (my_enum2, (
   stats,
   done
 ));
-static_assert(ch_bitwidth_v<my_enum2> == 2, ":-(");
+static_assert(ch_width_v<my_enum2> == 2, ":-(");
 
 __enum (my_enum3, (
   (idle,    1<<0),
@@ -21,7 +21,7 @@ __enum (my_enum3, (
   (stats,   1<<2),
   (done,    1<<3)
 ));
-static_assert(ch_bitwidth_v<my_enum3> == 4, ":-(");
+static_assert(ch_width_v<my_enum3> == 4, ":-(");
 
 __enum (O_t, 1, (
   a
@@ -30,7 +30,7 @@ __enum (O_t, 1, (
 __enum (O2_t, (
   a
 ));
-static_assert(ch_bitwidth_v<O2_t> == 1, ":-(");
+static_assert(ch_width_v<O2_t> == 1, ":-(");
 
 __struct (s1_t, (
   (ch_bit4) a

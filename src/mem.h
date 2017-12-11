@@ -69,28 +69,28 @@ template <typename T, unsigned N>
 class ch_rom {
 public:
   static constexpr unsigned size = N;
-  static constexpr unsigned data_width = bitwidth_v<T>;
+  static constexpr unsigned data_width = width_v<T>;
   static constexpr unsigned addr_width = log2ceil(N);
   using value_type = T;
 
-  ch_rom() : mem_(bitwidth_v<T>, N, false, {}) {}
+  ch_rom() : mem_(width_v<T>, N, false, {}) {}
 
   ch_rom(const std::string& init_file)
-    : mem_(bitwidth_v<T>, N, false, toByteVector(init_file, data_width, N))
+    : mem_(width_v<T>, N, false, toByteVector(init_file, data_width, N))
   {}
 
   ch_rom(const std::initializer_list<uint32_t>& init_data)
-    : mem_(bitwidth_v<T>, N, false, toByteVector(init_data, data_width, N))
+    : mem_(width_v<T>, N, false, toByteVector(init_data, data_width, N))
   {}
 
   template <typename U, std::size_t M>
   ch_rom(const std::array<U, M>& init_data)
-    : mem_(bitwidth_v<T>, N, false, toByteVector(init_data, data_width, N))
+    : mem_(width_v<T>, N, false, toByteVector(init_data, data_width, N))
   {}
 
   template <typename U>
   ch_rom(const std::vector<U>& init_data)
-    : mem_(bitwidth_v<T>, N, false, toByteVector(init_data, data_width, N))
+    : mem_(width_v<T>, N, false, toByteVector(init_data, data_width, N))
   {}
 
   template <typename U,
@@ -110,28 +110,28 @@ template <typename T, unsigned N>
 class ch_ram {
 public:
   static constexpr unsigned size = N;
-  static constexpr unsigned data_width = bitwidth_v<T>;
+  static constexpr unsigned data_width = width_v<T>;
   static constexpr unsigned addr_width = log2ceil(N);
   using value_type = T;
 
-  ch_ram() : mem_(bitwidth_v<T>, N, true, {}) {}
+  ch_ram() : mem_(width_v<T>, N, true, {}) {}
 
   ch_ram(const std::string& init_file)
-    : mem_(bitwidth_v<T>, N, true, toByteVector(init_file, data_width, N))
+    : mem_(width_v<T>, N, true, toByteVector(init_file, data_width, N))
   {}
 
   ch_ram(const std::initializer_list<uint32_t>& init_data)
-    : mem_(bitwidth_v<T>, N, true, toByteVector(init_data, data_width, N))
+    : mem_(width_v<T>, N, true, toByteVector(init_data, data_width, N))
   {}
 
   template <typename U, std::size_t M>
   ch_ram(const std::array<U, M>& init_data)
-    : mem_(bitwidth_v<T>, N, true, toByteVector(init_data, data_width, N))
+    : mem_(width_v<T>, N, true, toByteVector(init_data, data_width, N))
   {}
 
   template <typename U>
   ch_ram(const std::vector<U>& init_data)
-    : mem_(bitwidth_v<T>, N, true, toByteVector(init_data, data_width, N))
+    : mem_(width_v<T>, N, true, toByteVector(init_data, data_width, N))
   {}
 
   template <typename U,

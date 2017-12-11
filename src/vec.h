@@ -181,7 +181,7 @@ class const_vec<T, N, typename std::enable_if_t<is_logic_type<T>::value>>
 public:
   static_assert(is_logic_type<T>::value, "invalid value type");
   static_assert(!is_const_type<T>::value, "invalid value type");
-  using traits = logic_traits<N * bitwidth_v<T>,
+  using traits = logic_traits<N * width_v<T>,
                               const_vec,
                               const_vec,
                               ch_vec<T, N>,
@@ -248,7 +248,7 @@ protected:
 
   template <std::size_t...Is>
   explicit const_vec(const bit_buffer& buffer, std::index_sequence<Is...>)
-    : base(bit_buffer(bitwidth_v<T>, buffer, Is * bitwidth_v<T>)...)
+    : base(bit_buffer(width_v<T>, buffer, Is * width_v<T>)...)
   {}
 
   const bit_buffer_ptr& get_buffer() const {
@@ -270,7 +270,7 @@ class ch_vec<T, N, typename std::enable_if_t<is_logic_type<T>::value>>
 public:
   static_assert(is_logic_type<T>::value, "invalid value type");
   static_assert(!is_const_type<T>::value, "invalid value type");
-  using traits = logic_traits<N * bitwidth_v<T>,
+  using traits = logic_traits<N * width_v<T>,
                               ch_vec,
                               const_vec<T, N>,
                               ch_vec,
@@ -387,7 +387,7 @@ class const_vec<T, N, typename std::enable_if_t<is_scalar_type<T>::value>>
 public:
   static_assert(is_scalar_type<T>::value, "invalid value type");
   static_assert(!is_const_type<T>::value, "invalid value type");
-  using traits = scalar_traits<N * bitwidth_v<T>,
+  using traits = scalar_traits<N * width_v<T>,
                                const_vec,
                                const_vec,
                                ch_vec<T, N>,
@@ -447,7 +447,7 @@ protected:
 
   template <std::size_t...Is>
   explicit const_vec(const scalar_buffer& buffer, std::index_sequence<Is...>)
-    : base(scalar_buffer(bitwidth_v<T>, buffer, Is * bitwidth_v<T>)...)
+    : base(scalar_buffer(width_v<T>, buffer, Is * width_v<T>)...)
   {}
 
   const scalar_buffer_ptr& get_buffer() const {
@@ -469,7 +469,7 @@ class ch_vec<T, N, typename std::enable_if_t<is_scalar_type<T>::value>>
 public:
   static_assert(is_scalar_type<T>::value, "invalid value type");
   static_assert(!is_const_type<T>::value, "invalid value type");
-  using traits = scalar_traits<N * bitwidth_v<T>,
+  using traits = scalar_traits<N * width_v<T>,
                                ch_vec,
                                const_vec<T, N>,
                                ch_vec,

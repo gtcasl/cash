@@ -20,7 +20,7 @@ struct bitwidth_impl<T0, Ts...> {
 };
 
 template <typename... Ts>
-inline constexpr unsigned bitwidth_v = bitwidth_impl<std::decay_t<Ts>...>::value;
+inline constexpr unsigned width_v = bitwidth_impl<std::decay_t<Ts>...>::value;
 
 CH_DEF_SFINAE_CHECK(has_bitwidth, T::traits::bitwidth != 0);
 
@@ -58,9 +58,9 @@ struct deduce_type_impl {
   using U0 = std::conditional_t<has_bitwidth<D0>::value, D0, non_ch_type>;
   using U1 = std::conditional_t<has_bitwidth<D1>::value, D1, non_ch_type>;
   using type = std::conditional_t<
-    (bitwidth_v<U0> != 0) && (bitwidth_v<U1> != 0),
-    std::conditional_t<(bitwidth_v<U0> != bitwidth_v<U1>), non_ch_type, U0>,
-    std::conditional_t<(bitwidth_v<U0> != 0), U0, U1>>;
+    (width_v<U0> != 0) && (width_v<U1> != 0),
+    std::conditional_t<(width_v<U0> != width_v<U1>), non_ch_type, U0>,
+    std::conditional_t<(width_v<U0> != 0), U0, U1>>;
 };
 
 template <typename... Ts>
@@ -85,7 +85,7 @@ struct deduce_first_type_impl {
   using D1 = std::decay_t<T1>;
   using U0 = std::conditional_t<has_bitwidth<D0>::value, D0, non_ch_type>;
   using U1 = std::conditional_t<has_bitwidth<D1>::value, D1, non_ch_type>;
-  using type = std::conditional_t<(bitwidth_v<U0> != 0), U0, U1>;
+  using type = std::conditional_t<(width_v<U0> != 0), U0, U1>;
 };
 
 template <typename T0, typename T1>
@@ -148,17 +148,17 @@ struct is_scalar_traits<scalar_traits<Bitwidth, ScalarType, ConstType, ValueType
 
 CH_DEF_SFINAE_CHECK(is_scalar_type, is_scalar_traits<typename std::decay_t<T>::traits>::value);
 
-CH_DEF_SFINAE_CHECK(is_scalar_compatible, (std::is_same<ch_scalar<bitwidth_v<T>>, T>::value
-                                        || std::is_base_of<ch_scalar<bitwidth_v<T>>, T>::value));
+CH_DEF_SFINAE_CHECK(is_scalar_compatible, (std::is_same<ch_scalar<width_v<T>>, T>::value
+                                        || std::is_base_of<ch_scalar<width_v<T>>, T>::value));
 
 template <typename... Ts>
 using deduce_ch_scalar_t = std::conditional_t<
   is_scalar_compatible<deduce_type_t<Ts...>>::value, deduce_type_t<Ts...>, non_ch_type>;
 
-template <typename T, unsigned N = bitwidth_v<T>>
+template <typename T, unsigned N = width_v<T>>
 using is_scalar_convertible = is_cast_convertible<ch_scalar<N>, T>;
 
-template <typename T, unsigned N = bitwidth_v<T>>
+template <typename T, unsigned N = width_v<T>>
 using scalar_cast_t = std::conditional_t<is_scalar_type<T>::value, const T&, ch_scalar<N>>;
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -291,34 +291,34 @@ public:
 
   template <typename T>
   static const auto& get_data(const T& obj) {
-    assert(bitwidth_v<T> == obj.get_buffer()->get_size());
+    assert(width_v<T> == obj.get_buffer()->get_size());
     return obj.get_buffer()->get_data();
   }
 
   template <typename T>
   static auto copy(const T& obj) {
-    assert(bitwidth_v<T> == obj.get_buffer()->get_size());
+    assert(width_v<T> == obj.get_buffer()->get_size());
     return scalar_buffer(*obj.get_buffer());
   }
 
   template <typename U, typename V,
-            CH_REQUIRES(bitwidth_v<U> == bitwidth_v<V>)>
+            CH_REQUIRES(width_v<U> == width_v<V>)>
   static void copy(U& dst, const V& src) {
-    assert(bitwidth_v<U> == dst.get_buffer()->get_size());
-    assert(bitwidth_v<V> == src.get_buffer()->get_size());
+    assert(width_v<U> == dst.get_buffer()->get_size());
+    assert(width_v<V> == src.get_buffer()->get_size());
     *dst.get_buffer() = *src.get_buffer();
   }
 
   template <typename U, typename V,
-            CH_REQUIRES(bitwidth_v<U> == bitwidth_v<V>)>
+            CH_REQUIRES(width_v<U> == width_v<V>)>
   static void move(U& dst, V&& src) {
-    assert(bitwidth_v<U> == dst.get_buffer()->get_size());
+    assert(width_v<U> == dst.get_buffer()->get_size());
     *dst.get_buffer() = std::move(*src.get_buffer());
   }
 
   template <typename D, typename T>
   static D cast(const T& obj) {
-    return D(scalar_buffer(bitwidth_v<T>, obj.get_buffer(), 0));
+    return D(scalar_buffer(width_v<T>, obj.get_buffer(), 0));
   }
 };
 
@@ -375,7 +375,7 @@ public:
 
   template <typename U,
             CH_REQUIRES(is_scalar_type<U>::value),
-            CH_REQUIRES(N == bitwidth_v<U>)>
+            CH_REQUIRES(N == width_v<U>)>
   explicit const_scalar(const U& rhs) :
     buffer_(scalar_accessor::copy(rhs))
   {}
@@ -533,7 +533,7 @@ public:
 
   template <typename U,
             CH_REQUIRES(is_scalar_type<U>::value),
-            CH_REQUIRES(N == bitwidth_v<U>)>
+            CH_REQUIRES(N == width_v<U>)>
   explicit ch_scalar(const U& rhs)  : base(rhs) {}
 
   template <typename U, CH_REQUIRES(is_bitvector_convertible<U>::value)>
@@ -551,7 +551,7 @@ public:
 
   template <typename U,
             CH_REQUIRES(is_scalar_type<U>::value),
-            CH_REQUIRES(N == bitwidth_v<U>)>
+            CH_REQUIRES(N == width_v<U>)>
   ch_scalar& operator=(const U& rhs) {
     scalar_accessor::copy(*this, rhs);
     return *this;

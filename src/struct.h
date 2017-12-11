@@ -3,13 +3,13 @@
 #include "bit.h"
 
 #define CH_STRUCT_SIZE_EACH(i, x) \
-  ch_bitwidth_v<ch::internal::identity_t<CH_PAIR_L(x)>>
+  ch_width_v<ch::internal::identity_t<CH_PAIR_L(x)>>
 
 #define CH_STRUCT_SIZE(...) \
   (CH_FOR_EACH(CH_STRUCT_SIZE_EACH, CH_SEP_PLUS, __VA_ARGS__))
 
 #define CH_STRUCT_FIELD_OFFSET(i, x) \
-  CH_CONCAT(__field_offset, CH_INC(i)) = __field_offset##i + ch_bitwidth_v<ch::internal::identity_t<CH_PAIR_L(x)>>
+  CH_CONCAT(__field_offset, CH_INC(i)) = __field_offset##i + ch_width_v<ch::internal::identity_t<CH_PAIR_L(x)>>
 
 #define CH_STRUCT_SCALAR_FIELD(i, x) \
   ch_value_t<ch_scalar_t<ch::internal::identity_t<CH_PAIR_L(x)>>> CH_PAIR_R(x)
@@ -25,11 +25,11 @@
 
 #define CH_STRUCT_SCALAR_CTOR(i, x) \
   CH_PAIR_R(x)(ch::internal::type_buffer_t<traits>( \
-    ch_bitwidth_v<ch::internal::identity_t<CH_PAIR_L(x)>>, buffer, __field_offset##i))
+    ch_width_v<ch::internal::identity_t<CH_PAIR_L(x)>>, buffer, __field_offset##i))
 
 #define CH_STRUCT_LOGIC_CTOR(i, x) \
   CH_PAIR_R(x)(ch::internal::type_buffer_t<traits>( \
-    ch_bitwidth_v<ch::internal::identity_t<CH_PAIR_L(x)>>, buffer, __field_offset##i, \
+    ch_width_v<ch::internal::identity_t<CH_PAIR_L(x)>>, buffer, __field_offset##i, \
     CH_STRINGIZE(CH_PAIR_R(x))))
 
 #define CH_STRUCT_MOVE_CTOR(i, x) \
@@ -141,7 +141,7 @@ public:
 
 #define CH_STRUCT_SCALAR_IMPL3(struct_name, const_name, field_body, ...) \
 private: \
-  enum { __field_offset0 = ch_bitwidth_v<base>, \
+  enum { __field_offset0 = ch_width_v<base>, \
          CH_FOR_EACH(CH_STRUCT_FIELD_OFFSET, CH_SEP_COMMA, __VA_ARGS__) }; \
 public: \
   CH_FOR_EACH(field_body, CH_SEP_SEMICOLON, __VA_ARGS__); \
@@ -183,7 +183,7 @@ public:
 
 #define CH_STRUCT_LOGIC_IMPL3(struct_name, const_name, name, field_body, ...) \
 private: \
-  enum { __field_offset0 = ch_bitwidth_v<base>, \
+  enum { __field_offset0 = ch_width_v<base>, \
          CH_FOR_EACH(CH_STRUCT_FIELD_OFFSET, CH_SEP_COMMA, __VA_ARGS__) }; \
 public: \
   CH_FOR_EACH(field_body, CH_SEP_SEMICOLON, __VA_ARGS__); \
@@ -301,7 +301,7 @@ protected: \
     class __scalar_const_type__ : public ch_const_t<ch_scalar_t<parent>> { \
     public: \
       using base = ch_const_t<ch_scalar_t<parent>>; \
-      using traits = ch::internal::scalar_traits<ch_bitwidth_v<base> + CH_STRUCT_SIZE(__VA_ARGS__), __scalar_const_type__, __scalar_const_type__, __scalar_type__, __logic_const_type__>; \
+      using traits = ch::internal::scalar_traits<ch_width_v<base> + CH_STRUCT_SIZE(__VA_ARGS__), __scalar_const_type__, __scalar_const_type__, __scalar_type__, __logic_const_type__>; \
       CH_STRUCT_SCALAR_IMPL3(__scalar_const_type__, __scalar_type__, CH_STRUCT_CONST_SCALAR_FIELD, __VA_ARGS__) \
       CH_SCALAR_READONLY_INTERFACE(__scalar_const_type__) \
       CH_STRUCT_SCALAR_FRIENDS_IMPL(__scalar_const_type__) \
@@ -309,7 +309,7 @@ protected: \
     class __scalar_type__ : public ch_scalar_t<parent> { \
     public: \
       using base = ch_scalar_t<parent>; \
-      using traits = ch::internal::scalar_traits<ch_bitwidth_v<base> + CH_STRUCT_SIZE(__VA_ARGS__), __scalar_type__, __scalar_const_type__, __scalar_type__, struct_name>; \
+      using traits = ch::internal::scalar_traits<ch_width_v<base> + CH_STRUCT_SIZE(__VA_ARGS__), __scalar_type__, __scalar_const_type__, __scalar_type__, struct_name>; \
       CH_STRUCT_SCALAR_IMPL3(__scalar_type__, __scalar_const_type__, CH_STRUCT_SCALAR_FIELD, __VA_ARGS__) \
       CH_STRUCT_WRITABLE_IMPL(__scalar_type__, __scalar_const_type__) \
       CH_SCALAR_READONLY_INTERFACE(__scalar_type__) \
@@ -319,14 +319,14 @@ protected: \
     class __logic_const_type__ : public ch_const_t<parent> { \
     public: \
       using base = ch_const_t<parent>; \
-      using traits = ch::internal::logic_traits<ch_bitwidth_v<base> + CH_STRUCT_SIZE(__VA_ARGS__), __logic_const_type__, __logic_const_type__, struct_name, __scalar_const_type__>; \
+      using traits = ch::internal::logic_traits<ch_width_v<base> + CH_STRUCT_SIZE(__VA_ARGS__), __logic_const_type__, __logic_const_type__, struct_name, __scalar_const_type__>; \
       CH_STRUCT_LOGIC_IMPL3(__logic_const_type__, struct_name, struct_name, CH_STRUCT_CONST_LOGIC_FIELD, __VA_ARGS__) \
       CH_LOGIC_READONLY_INTERFACE(__logic_const_type__) \
       CH_STRUCT_LOGIC_FRIENDS_IMPL(__logic_const_type__) \
     }; \
   public: \
     using base = parent; \
-    using traits = ch::internal::logic_traits<ch_bitwidth_v<base> + CH_STRUCT_SIZE(__VA_ARGS__), struct_name, __logic_const_type__, struct_name, __scalar_type__>; \
+    using traits = ch::internal::logic_traits<ch_width_v<base> + CH_STRUCT_SIZE(__VA_ARGS__), struct_name, __logic_const_type__, struct_name, __scalar_type__>; \
     CH_STRUCT_LOGIC_IMPL3(struct_name, __logic_const_type__, struct_name, CH_STRUCT_LOGIC_FIELD, __VA_ARGS__) \
     CH_STRUCT_WRITABLE_IMPL(struct_name, __logic_const_type__) \
     CH_LOGIC_READONLY_INTERFACE(struct_name) \

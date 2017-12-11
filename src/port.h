@@ -36,7 +36,7 @@ template <typename IoType,
           typename Next = void>
 struct io_traits {
   static constexpr traits_type type = traits_io;
-  static constexpr unsigned bitwidth = bitwidth_v<LogicType>;
+  static constexpr unsigned bitwidth = width_v<LogicType>;
   static constexpr ch_direction direction = Direction;
   using io_type     = IoType;  
   using flip_type   = FlipType;
@@ -90,13 +90,13 @@ public:
                            T, typename base::traits>;
 
   ch_in(const std::string& name = "io", const source_location& sloc = CH_SOURCE_LOCATION)
-    : base(bit_buffer(bitwidth_v<T>, sloc, name)) {
-    input_ = createInputNode(name, bitwidth_v<T>);
+    : base(bit_buffer(width_v<T>, sloc, name)) {
+    input_ = createInputNode(name, width_v<T>);
     bit_accessor::set_data(*this, input_);
   }
 
   explicit ch_in(const ch_out<T>& out, const source_location& sloc = CH_SOURCE_LOCATION)
-    : base(bit_buffer(bitwidth_v<T>, sloc)) {
+    : base(bit_buffer(width_v<T>, sloc)) {
     input_ = bit_accessor::get_data(*this);
     bindOutput(input_, out.output_);
   }
@@ -131,12 +131,12 @@ public:
   using base::operator=;
 
   ch_out(const std::string& name = "io", const source_location& sloc = CH_SOURCE_LOCATION)
-    : base(bit_buffer(bitwidth_v<T>, sloc, name)) {
+    : base(bit_buffer(width_v<T>, sloc, name)) {
     output_ = createOutputNode(name, bit_accessor::get_data(*this));
   }
 
   explicit ch_out(const ch_in<T>& in, const source_location& sloc = CH_SOURCE_LOCATION)
-    : base(bit_buffer(bitwidth_v<T>, sloc)) {
+    : base(bit_buffer(width_v<T>, sloc)) {
     output_ = bit_accessor::get_data(*this);
     bindInput(output_, in.input_);
   }

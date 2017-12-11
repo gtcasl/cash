@@ -57,7 +57,7 @@ CH_DEF_SFINAE_CHECK(is_logic_type, is_logic_traits<typename std::decay_t<T>::tra
 
 CH_DEF_SFINAE_CHECK(is_bit_compatible, ((is_logic_traits<typename T::traits>::value
                                       || is_logic_traits<typename T::traits::next>::value)
-                                     && std::is_base_of<const_bit<bitwidth_v<T>>, logic_type_t<T>>::value));
+                                     && std::is_base_of<const_bit<width_v<T>>, logic_type_t<T>>::value));
 
 template <typename... Ts>
 using deduce_ch_bit_t = std::conditional_t<
@@ -213,13 +213,13 @@ public:
 
   template <typename T>
   static const auto& get_data(const T& obj) {
-    assert(bitwidth_v<T> == obj.get_buffer()->get_size());
+    assert(width_v<T> == obj.get_buffer()->get_size());
     return obj.get_buffer()->get_data();
   }
 
   template <typename T>
   static void set_data(const T& obj, const lnode& data) {
-    assert(bitwidth_v<T> == obj.get_buffer()->get_size());
+    assert(width_v<T> == obj.get_buffer()->get_size());
     obj.get_buffer()->write(data);
   }
 
@@ -227,24 +227,24 @@ public:
   static auto copy(const T& obj,
                    const source_location& sloc,
                    const std::string& name = "") {
-    assert(bitwidth_v<T> == obj.get_buffer()->get_size());
+    assert(width_v<T> == obj.get_buffer()->get_size());
     return bit_buffer(*obj.get_buffer(), sloc, name);
   }
 
   template <typename U, typename V,
             CH_REQUIRES(is_logic_compatible<U>::value),
             CH_REQUIRES(is_logic_compatible<V>::value),
-            CH_REQUIRES(bitwidth_v<U> == bitwidth_v<V>)>
+            CH_REQUIRES(width_v<U> == width_v<V>)>
   static void copy(U& dst, const V& src) {
-    assert(bitwidth_v<U> == dst.get_buffer()->get_size());
-    assert(bitwidth_v<V> == src.get_buffer()->get_size());
+    assert(width_v<U> == dst.get_buffer()->get_size());
+    assert(width_v<V> == src.get_buffer()->get_size());
    *dst.get_buffer() = *src.get_buffer();
   }
 
   template <typename U, typename V,
-            CH_REQUIRES(bitwidth_v<U> == bitwidth_v<V>)>
+            CH_REQUIRES(width_v<U> == width_v<V>)>
   static void move(U& dst, V&& src) {
-    assert(bitwidth_v<U> == dst.get_buffer()->get_size());
+    assert(width_v<U> == dst.get_buffer()->get_size());
     *dst.get_buffer() = std::move(*src.get_buffer());
   }
 
@@ -259,23 +259,23 @@ public:
 
   template <typename T>
   static auto clone(const T& obj) {
-    assert(bitwidth_v<T> == obj.get_buffer()->get_size());
+    assert(width_v<T> == obj.get_buffer()->get_size());
     return bit_value_t<T>(bit_buffer(obj.get_buffer()->get_data().clone()));
   }
 
   template <typename D, typename T>
   static auto cast(const T& obj) {
-    assert(bitwidth_v<T> == obj.get_buffer()->get_size());
+    assert(width_v<T> == obj.get_buffer()->get_size());
     return D(obj.get_buffer());
   }
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T, typename R = ch_bit<bitwidth_v<T>>>
+template <typename T, typename R = ch_bit<width_v<T>>>
 using logic_cast_t = std::conditional_t<is_logic_compatible<T>::value, const T&, R>;
 
-template <typename T, unsigned N = bitwidth_v<T>,
+template <typename T, unsigned N = width_v<T>,
           CH_REQUIRES(is_bit_convertible<T, N>::value)>
 lnode get_lnode(const T& rhs) {
   return bit_accessor::get_data(static_cast<logic_cast_t<T, ch_bit<N>>>(rhs));
@@ -408,7 +408,7 @@ public:
 
   template <typename U,
             CH_REQUIRES(is_logic_type<U>::value),
-            CH_REQUIRES(N == bitwidth_v<U>)>
+            CH_REQUIRES(N == width_v<U>)>
   explicit const_bit(const U& rhs, const source_location& sloc = CH_SOURCE_LOCATION)
     : const_bit(bit_accessor::copy(rhs, sloc))
   {}
@@ -580,7 +580,7 @@ public:
 
   template <typename U,
             CH_REQUIRES(is_logic_type<U>::value),
-            CH_REQUIRES(N == bitwidth_v<U>)>
+            CH_REQUIRES(N == width_v<U>)>
   explicit ch_bit(const U& rhs, const source_location& sloc = CH_SOURCE_LOCATION)
     : base(rhs, sloc)
   {}
@@ -608,7 +608,7 @@ public:
 
   template <typename T,
             CH_REQUIRES(is_logic_type<T>::value),
-            CH_REQUIRES(N == bitwidth_v<T>)>
+            CH_REQUIRES(N == width_v<T>)>
   ch_bit& operator=(const T& rhs) {
     bit_accessor::copy(*this, rhs);
     return *this;
@@ -859,11 +859,11 @@ CH_FOR_EACH(CH_BIT_GLOBAL_OPS, CH_SEP_SPACE, CH_BIT_OP_TYPES)
 template <typename I, typename S,
           CH_REQUIRES(is_logic_compatible<I>::value),
           CH_REQUIRES(is_logic_compatible<S>::value),
-          CH_REQUIRES(ispow2(bitwidth_v<I>)),
-          CH_REQUIRES(ispow2(bitwidth_v<S>)),
-          CH_REQUIRES((bitwidth_v<I> >> bitwidth_v<S>) != 0)>
+          CH_REQUIRES(ispow2(width_v<I>)),
+          CH_REQUIRES(ispow2(width_v<S>)),
+          CH_REQUIRES((width_v<I> >> width_v<S>) != 0)>
 auto ch_mux(const I& in, const S& sel) {
-  return make_type<ch_bit<(bitwidth_v<I> >> bitwidth_v<S>)>>(
+  return make_type<ch_bit<(width_v<I> >> width_v<S>)>>(
         createAluNode(alu_mux, get_lnode(in), get_lnode(sel)));
 }
 
@@ -889,20 +889,20 @@ auto ch_slice(const T& obj, size_t start = 0) {
 
 template <unsigned N, typename T>
 void cat_impl(ch_bit<N>& inout, unsigned dst_offset, const T& arg) {
-  bit_accessor::write(inout, dst_offset - bitwidth_v<T>, arg, 0, bitwidth_v<T>);
+  bit_accessor::write(inout, dst_offset - width_v<T>, arg, 0, width_v<T>);
 }
 
 template <unsigned N, typename T0, typename... Ts>
 void cat_impl(ch_bit<N>& inout, unsigned dst_offset, const T0& arg0, const Ts&... args) {
   cat_impl(inout, dst_offset, arg0);
-  cat_impl(inout, dst_offset - bitwidth_v<T0>, args...);
+  cat_impl(inout, dst_offset - width_v<T0>, args...);
 }
 
 template <typename... Ts,
          CH_REQUIRES(are_all_bit_convertible<Ts...>::value)>
 auto ch_cat(const Ts&... args) {
-  ch_bit<bitwidth_v<Ts...>> ret;
-  cat_impl(ret, bitwidth_v<Ts...>, static_cast<logic_cast_t<Ts>>(args)...);
+  ch_bit<width_v<Ts...>> ret;
+  cat_impl(ret, width_v<Ts...>, static_cast<logic_cast_t<Ts>>(args)...);
   return ret;
 }
 
@@ -915,7 +915,7 @@ public:
 
   template <typename T>
   void operator=(const T& rhs) {
-    this->assign(static_cast<logic_cast_t<T, ch_bit<bitwidth_v<Ts...>>>>(rhs),
+    this->assign(static_cast<logic_cast_t<T, ch_bit<width_v<Ts...>>>>(rhs),
                  std::index_sequence_for<Ts...>());
   }
 
@@ -928,13 +928,13 @@ protected:
 
   template <typename T, typename U>
   void assign(unsigned src_offset, const T& src, U& dst) {
-    dst = ch_slice<bitwidth_v<U>>(src, src_offset). template as<U>();
+    dst = ch_slice<width_v<U>>(src, src_offset). template as<U>();
   }
 
   template <typename T, typename U0, typename... Us>
   void assign(unsigned src_offset, const T& src, U0& dst0, Us&... dsts) {
     this->assign(src_offset, src, dst0);
-    this->assign(src_offset + bitwidth_v<U0>, src, dsts...);
+    this->assign(src_offset + width_v<U0>, src, dsts...);
   }
 
   std::tuple<Ts&...> args_;
@@ -961,15 +961,15 @@ template <>
 struct zext_impl<0> {
     template <typename T>
     auto operator() (const T& obj) {
-      return ch_bit<bitwidth_v<T>>(obj);
+      return ch_bit<width_v<T>>(obj);
     }
 };
 
 template <unsigned N, typename T,
           CH_REQUIRES(is_bit_compatible<T>::value)>
 auto ch_zext(const T& obj) {
-  static_assert(N >= bitwidth_v<T>, "invalid extend size");
-  return zext_impl<(N-bitwidth_v<T>)>()(obj);
+  static_assert(N >= width_v<T>, "invalid extend size");
+  return zext_impl<(N-width_v<T>)>()(obj);
 }
 
 // sign-extend function
@@ -978,7 +978,7 @@ template <unsigned D>
 struct sext_impl {
   template <typename T>
   auto operator() (const T& obj) {
-    auto pad = ch_bit<D>(0x0) - ch_zext<D>(obj[bitwidth_v<T> - 1]);
+    auto pad = ch_bit<D>(0x0) - ch_zext<D>(obj[width_v<T> - 1]);
     return ch_cat(pad, obj);
   }
 };
@@ -987,15 +987,15 @@ template <>
 struct sext_impl<0> {
   template <typename T>
   auto operator() (const T& obj) {
-    return ch_bit<bitwidth_v<T>>(obj);
+    return ch_bit<width_v<T>>(obj);
   }
 };
 
 template <unsigned N, typename T,
           CH_REQUIRES(is_bit_compatible<T>::value)>
 auto ch_sext(const T& obj) {
-  static_assert(N >= bitwidth_v<T>, "invalid extend size");
-  return sext_impl<(N-bitwidth_v<T>)>()(obj);
+  static_assert(N >= width_v<T>, "invalid extend size");
+  return sext_impl<(N-width_v<T>)>()(obj);
 }
 
 // shuffle functions
@@ -1003,11 +1003,11 @@ auto ch_sext(const T& obj) {
 template <unsigned N, typename T,
           CH_REQUIRES(is_bit_compatible<T>::value)>
 auto ch_shuffle(const T& obj,
-                      const std::array<uint32_t, bitwidth_v<T>>& indices) {
-  static_assert((bitwidth_v<T> % N) == 0, "invalid indices size");
-  static const unsigned M = (N / bitwidth_v<T>);
+                      const std::array<uint32_t, width_v<T>>& indices) {
+  static_assert((width_v<T> % N) == 0, "invalid indices size");
+  static const unsigned M = (N / width_v<T>);
   ch_bit<N> ret;
-  for (unsigned i = 0; i < bitwidth_v<T>; ++i) {
+  for (unsigned i = 0; i < width_v<T>; ++i) {
     ch_slice<M>(ret, i * M) = ch_slice<M>(obj, indices[i] * M);
   }
   return ret;

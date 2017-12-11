@@ -62,7 +62,7 @@ namespace core {
   template <typename T> using ch_seq = ch::internal::ch_seq<T>;
 
   template <typename... Ts>
-  inline constexpr unsigned ch_bitwidth_v = ch::internal::bitwidth_v<Ts...>;
+  inline constexpr unsigned ch_width_v = ch::internal::width_v<Ts...>;
 
   using ch_direction = ch::internal::ch_direction;
 
@@ -84,10 +84,10 @@ namespace core {
   // type traits
   //
 
-  template <typename T, unsigned N = ch_bitwidth_v<T>>
+  template <typename T, unsigned N = ch_width_v<T>>
   using ch_is_bit_convertible = ch::internal::is_bit_convertible<T, N>;
 
-  template <typename T, unsigned N = ch_bitwidth_v<T>>
+  template <typename T, unsigned N = ch_width_v<T>>
   using ch_is_scalar_convertible = ch::internal::is_scalar_convertible<T, N>;
 
   //
