@@ -7,7 +7,7 @@ namespace internal {
 
 template <typename IoType>
 struct module_traits {
-  using io_type = IoType;
+  using io_type = flip_type_t<IoType>;
 };
 
 template <typename T>
@@ -15,7 +15,7 @@ class ch_module final : public device_base<T> {
 public:
   using base = device_base<T>;
   using base::obj_;
-  using traits = module_traits<flip_type_t<decltype(obj_->io)>>;
+  using traits = module_traits<decltype(obj_->io)>;
 
   typename traits::io_type io;
 

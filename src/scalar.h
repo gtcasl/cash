@@ -231,8 +231,18 @@ public:
 
 protected:
 
-  scalar_buffer_ptr source_;
+  scalar_buffer_impl(const bitvector& value,
+                     const scalar_buffer_ptr& source,
+                     unsigned offset,
+                     unsigned size)
+    : value_(value)
+    , source_(source)
+    , offset_(offset)
+    , size_(size)
+  {}
+
   mutable bitvector value_;
+  scalar_buffer_ptr source_;
   unsigned offset_;
   unsigned size_;
 };

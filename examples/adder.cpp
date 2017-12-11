@@ -13,6 +13,7 @@ struct Adder {
     __out(ch_bit<N>) out,
     __out(ch_bit1)   cout
   );
+
   void describe() {
     auto sum = ch_zext<N+1>(io.cin) + ch_cat(0_b, io.lhs) + ch_cat(0_b, io.rhs);
     io.out  = ch_slice<N>(sum);

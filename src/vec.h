@@ -550,61 +550,35 @@ public:
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T, unsigned N>
-class ch_vec_buffer_io : public scalar_buffer_io {
+class ch_vec_device_io : public vec_base<device_type_t<T>, N> {
 public:
-  using base = scalar_buffer_io;
+  static_assert(is_io_type<T>::value, "invalid type");
+  using traits = io_traits<ch_vec_device_io,
+                           direction_v<T>,
+                           ch_vec_device_io<flip_type_t<T>, N>,
+                           ch_vec<T, N>,
+                           ch_vec<logic_type_t<T>, N>>;
 
-  explicit ch_vec_buffer_io(ch_vec<T, N>& rhs)
-    : ch_vec_buffer_io(rhs, std::make_index_sequence<N>())
+  using base = vec_base<device_type_t<T>, N>;
+  using base::operator [];
+
+  ch_vec_device_io(const ch_vec<T, N>& rhs)
+    : ch_vec_device_io(rhs, std::make_index_sequence<N>())
   {}
-
-  void read(uint32_t dst_offset,
-            void* out,
-            uint32_t out_cbsize,
-            uint32_t src_offset,
-            uint32_t length) const override {
-    for (auto& item : items_) {
-      if (src_offset < bitwidth_v<T>) {
-        size_t len = std::min<size_t>(length, bitwidth_v<T> - src_offset);
-        item.read(dst_offset, out, out_cbsize, src_offset, len);
-        length -= len;
-        if (0 == length)
-          return;
-        dst_offset += len;
-        src_offset = bitwidth_v<T>;
-      }
-      src_offset -= bitwidth_v<T>;
-    }
-  }
-
-  void write(uint32_t dst_offset,
-             const void* in,
-             uint32_t in_cbsize,
-             uint32_t src_offset,
-             uint32_t length) override {
-    for (auto& item : items_) {
-      if (dst_offset < bitwidth_v<T>) {
-        size_t len = std::min<size_t>(length, bitwidth_v<T> - dst_offset);
-        item.write(dst_offset, in, in_cbsize, src_offset, len);
-        length -= len;
-        if (0 == length)
-          return;
-        src_offset += len;
-        dst_offset = bitwidth_v<T>;
-      }
-      dst_offset -= bitwidth_v<T>;
-    }
-  }
 
 protected:
 
-  template <std::size_t...Is>
-  explicit ch_vec_buffer_io(ch_vec<T, N>& rhs, std::index_sequence<Is...>)
-    : base(N * bitwidth_v<T>)
-    , items_{buffer_type_t<T>(rhs[Is])...}
-  {}
+  ch_vec_device_io(const ch_vec_device_io& rhs) = delete;
+  ch_vec_device_io(ch_vec_device_io&& rhs) = delete;
 
-  std::array<buffer_type_t<T>, N> items_;
+  ch_vec_device_io& operator=(const ch_vec_device_io& rhs) = delete;
+  ch_vec_device_io& operator=(ch_vec_device_io&& rhs) = delete;
+
+  template <typename U, std::size_t...Is>
+  explicit ch_vec_device_io(const vec_base<U, N>& rhs,
+                            std::index_sequence<Is...>)
+    : base(rhs[Is]...)
+  {}
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -613,12 +587,12 @@ template <typename T, unsigned N>
 class ch_vec<T, N, typename std::enable_if_t<is_io_type<T>::value>>
     : public vec_base<T, N> {
 public:
-  static_assert(is_io_type<T>::value, "invalid value type");
+  static_assert(is_io_type<T>::value, "invalid type");
   using traits = io_traits<ch_vec,
-                          direction_v<T>,
-                          ch_vec<flip_type_t<T>, N>,
-                          ch_vec_buffer_io<T, N>,
-                          ch_vec<logic_type_t<T>, N>>;
+                           direction_v<T>,
+                           ch_vec<flip_type_t<T>, N>,
+                           ch_vec_device_io<T, N>,
+                           ch_vec<logic_type_t<T>, N>>;
 
   using base = vec_base<T, N>;
   using base::operator [];
@@ -632,12 +606,6 @@ public:
     : ch_vec(rhs, sloc, std::make_index_sequence<N>())
   {}
 
-  ch_vec(const ch_vec& rhs, const source_location& sloc = CH_SOURCE_LOCATION)
-    : ch_vec(rhs, sloc, std::make_index_sequence<N>())
-  {}
-
-  ch_vec(ch_vec&& rhs) : base(std::move(rhs)) {}
-
   void operator()(typename traits::flip_type& rhs) {
     for (unsigned i = 0, n = items_.size(); i < n; ++i) {
       items_[i](rhs[i]);
@@ -645,6 +613,9 @@ public:
   }
 
 protected:
+
+  ch_vec(const ch_vec& rhs) = delete;
+  ch_vec(ch_vec&& rhs) = delete;
 
   ch_vec& operator=(const ch_vec& rhs) = delete;
   ch_vec& operator=(ch_vec&& rhs) = delete;

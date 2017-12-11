@@ -18,8 +18,8 @@ scalar_buffer_impl::scalar_buffer_impl(const scalar_buffer_impl& rhs)
 }
 
 scalar_buffer_impl::scalar_buffer_impl(scalar_buffer_impl&& rhs)
-  : source_(std::move(rhs.source_))
-  , value_(std::move(rhs.value_))
+  : value_(std::move(rhs.value_))
+  , source_(std::move(rhs.source_))
   , offset_(std::move(rhs.offset_))
   , size_(std::move(rhs.size_))
 {}
