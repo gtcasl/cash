@@ -25,11 +25,11 @@ TEST_CASE("misc", "[misc]") {
       ch_bit4 a(1100_b), b(1);
       ch_bit2 c = a.slice<2>(1) ^ 01_b;
       ch_print("c={0}", c);
-      __if (b == 1)
+      __if (b == 1) {
         ch_assert(c == 11_b, "assertion failed!");
-      __else
+      } __else {
         ch_assert(c != 11_b, "assertion failed!");
-      __end
+      };
       return (c == 11_b);
     });
   }
@@ -68,9 +68,9 @@ TEST_CASE("misc", "[misc]") {
     TEST([]()->ch_bit1 {
       ch_bit8 a(255);
       ch_bit1 b(1);
-      __if (b)
+      __if (b) {
         ch_print("a={0}", a);
-      __end
+      };
       return ch_true;
     });
     TEST([]()->ch_bit1 {

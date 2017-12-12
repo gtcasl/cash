@@ -25,7 +25,7 @@ bit_buffer_impl::bit_buffer_impl(const bit_buffer_impl& rhs,
 bit_buffer_impl::bit_buffer_impl(bit_buffer_impl&& rhs)
   : value_(std::move(rhs.value_))
   , source_(std::move(rhs.source_))
-  , offset_(std::move(offset_))
+  , offset_(std::move(rhs.offset_))
 {}
 
 bit_buffer_impl::bit_buffer_impl(const lnode& data,

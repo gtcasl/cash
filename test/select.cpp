@@ -52,301 +52,301 @@ TEST_CASE("conditionals", "[conditionals]") {
   SECTION("if", "[if]") {
     TEST([]()->ch_bit1 {
       ch_bit4 a(5), b(1), c(0);
-      __if (a > b)
+      __if (a > b) {
         c = a;
-      __end
+      };
       return (c == a);
     });
     TEST([]()->ch_bit1 {
       ch_bit4 a(5), b(1), c(0);
-      __if (a < b)
+      __if (a < b) {
         c = a;
-      __end
+      };
       return (c == 0);
     });
     TEST([]()->ch_bit1 {
       ch_bit4 a(5), b(1), c(0);
-      __if (a < b)
+      __if (a < b) {
         c = a;
-      __elif (a > b)
+      } __elif (a > b) {
         c = b;
-      __end
+      };
       return (c == b);
     });
     TEST([]()->ch_bit1 {
       ch_bit4 a(5), b(1), c(0);
-      __if (a < b)
+      __if (a < b) {
         c = a;
-      __else
+      } __else {
         c = b;
-      __end
+      };
       return (c == b);
     });
     TEST([]()->ch_bit1 {
       ch_bit4 a(5), b(1), c(0);
-      __if (a > b)
+      __if (a > b) {
         c = a - b; 
         b = 0;
-      __elif (a == b)
+      } __elif (a == b) {
         c = 0;
-      __else
+      } __else {
         c = b;
-      __end
+      };
       ch_print("c={0}, b={1}", c, b);
       return (c == 5 && b == 0);
     });
     TEST([]()->ch_bit1 {
       ch_bit2 a;
       ch_bit1 x(1), y(0);
-      __if (x)
+      __if (x) {
         ch_bit2 b;
-        __if (y)
+        __if (y) {
           b = 1;
-        __else
+        } __else {
           b = 2;
-        __end
+        };
         a = b;
-      __else
+      } __else {
         a = 0;
-      __end
+      };
       return (a == 2);
     });
     TEST([]()->ch_bit1 {
       ch_bit4 a(0), b;
        b = 1;
-       __if (a == 1)
+       __if (a == 1) {
          b = 0;
-       __end
+       };
       return (b == 1);
     });
     TEST([]()->ch_bit1 {
       ch_bit4 a(1), b;
        b = 1;
-       __if (a == 1)
+       __if (a == 1) {
          b = 0;
          b = 2;
-       __end
+       };
       return (b == 2);
     });
     TEST([]()->ch_bit1 {
       ch_bit4 a(0), b;
       b = 1;
-      __if (a == 1)
+      __if (a == 1) {
         b = 0;
-      __else
+      } __else {
         b = 2;
-      __end
+      };
       return (b == 2);
     });
     TEST([]()->ch_bit1 {
       ch_bit4 a(1), b(0), c;
-      __if (a == 1)
+      __if (a == 1) {
         c = 0;
-        __if (b == 1)
+        __if (b == 1) {
           c = 1;
-        __end
-      __else
+        };
+      } __else {
         c = 2;
-      __end
+      };
       //ch_print("c={0}", c);
       return (c == 0);
     });
     TEST([]()->ch_bit1 {
       ch_bit4 a(1), b(0), c;
-      __if (a == 1)
+      __if (a == 1) {
         c = 0;
-        __if (b == 1)
+        __if (b == 1) {
           c = 1;
-        __else
+        } __else {
           c = 3;
-        __end
-      __else
+        };
+      } __else {
         c = 2;
-      __end
+      };
       return (c == 3);
     });
     TEST([]()->ch_bit1 {
       ch_bit8 a(1), b(1), x;
-      __if (a == 1)
+      __if (a == 1) {
         x = 0;
-        __if (b == 0)
+        __if (b == 0) {
           x = 1;
-        __elif (b == 1)
+        } __elif (b == 1) {
           x = 2;
-        __else
+        } __else {
           x = 3;
-        __end
-      __else
+        };
+      } __else {
         x = 4;
-      __end
+      };
       ch_print("x={0}", x);
       return (x == 2);
     });
     TEST([]()->ch_bit1 {
       ch_bit8 a(1), b(1), x;
-      __if (a == 1)
+      __if (a == 1) {
          x = 0;
-         __if (b < 1)
+         __if (b < 1) {
            x = 1;
-         __elif (b < 2)
+         } __elif (b < 2) {
            x = 2;
-         __else
+         } __else {
            x = 3;
-         __end
-      __else
+         };
+      } __else {
         x = 4;
-      __end
+      };
       ch_print("x={0}", x);
       return (x == 2);
     });
     TEST([]()->ch_bit1 {
       ch_bit8 a(1), b(0), x;
-      __if (a == 1)
+      __if (a == 1) {
          x = 0;
-         __if (b < 1)
+         __if (b < 1) {
            x = 1;
-         __elif (b < 2)
+         } __elif (b < 2) {
            x = 2;
-         __else
+         } __else {
            x = 3;
-         __end
-      __else
+         };
+      } __else {
         x = 4;
-      __end
+      };
       ch_print("x={0}", x);
       return (x == 1);
     });
     TEST([]()->ch_bit1 {
       ch_bit8 a(1), b(2), x;
-      __if (a == 1)
+      __if (a == 1) {
         x = 0;
-        __if (b == 0)
+        __if (b == 0) {
           x = 1;
-        __elif (b == 1)
+        } __elif (b == 1) {
           x = 2;
-        __else
+        } __else {
           x = 3;
-        __end
-      __else
+        };
+      } __else {
         x = 4;
-      __end
+      };
       ch_print("x={0}", x);
       return (x == 3);
     });
     TEST([]()->ch_bit1 {
       ch_bit8 a(1), b(2), x;
-      __if (a == 1)
+      __if (a == 1) {
         x = 0;
-        __if (b == 0)
+        __if (b == 0) {
           x = 1;
-        __elif (b == 1)
+        } __elif (b == 1) {
           x = 2;
-        __end
-      __else
+        };
+      } __else {
         x = 4;
-      __end
+      };
       ch_print("x={0}", x);
       return (x == 0);
     });
     TEST([]()->ch_bit1 {
       ch_bit8 a(1), b(1), x;
-      __if (a == 1)
+      __if (a == 1) {
         x = 0;
-        __if (b == 0)
+        __if (b == 0) {
           x = 1;
-        __elif (b == 1)
+        } __elif (b == 1) {
           x = 2;
-        __end
+        };
         x = 3;
-      __else
+      } __else {
         x = 4;
-      __end
+      };
       ch_print("x={0}", x);
       return (x == 3);
     });
     TEST([]()->ch_bit1 {
       ch_bit8 a(1), b(1), x, y;
-      __if (a == 1)
+      __if (a == 1) {
         ch_tie(y, x) = 1;
-        __if (b == 0)
+        __if (b == 0) {
           x = 1;
-        __elif (b == 1)
+        } __elif (b == 1) {
           y = 1;
-        __end
-      __else
+        };
+      } __else {
         x = 4;
         y = 5;
-      __end
+      };
       ch_print("x={0}, y={1}", x, y);
       return (x == 1 && y == 1);
     });
 
     TEST([]()->ch_bit1 {
       ch_bit4 a(5), b(1), c(0);
-      __if (a > b)
+      __if (a > b) {
         c = 1;
         c = a;
-      __end
+      };
       return (c == a);
     });
     TEST([]()->ch_bit1 {
       ch_bit4 a(0), b;
        b = 1;
-       __if (a == 1)
+       __if (a == 1) {
          b = 0;
-       __else
+       } __else {
          b = 1;
          b = 2;
-       __end
+       };
       return (b == 2);
     });
     TEST([]()->ch_bit1 {
       ch_bit4 a(0), b, c(0);
       b = 1;
-      __if (a == 1)
+      __if (a == 1) {
         b = 0;
-      __else
+      } __else {
         b = 2;
         c = 2;
-      __end
+      };
       return (b == 2 && c == 2);
     });
     TEST([]()->ch_bit1 {
       ch_bit4 a(0), b, c(0);
       b = 1;
-      __if (a == 1)
+      __if (a == 1) {
         b = 0;
-      __else
+      } __else {
         b = 2;
         c = 1;
         c = 2;
-      __end
+      };
       ch_print("b={0}, c={1}", b, c);
       return (b == 2 && c == 2);
     });
     TEST([]()->ch_bit1 {
       ch_bit4 a(0), b;
-      __if (a == 1)
+      __if (a == 1) {
         b = 1;
-      __elif (a == 0)
+      } __elif (a == 0) {
         b[1] = 1;
-      __else
+      } __else {
         b = 1000_b;
-      __end
+      };
       ch_print("b={0}", b);
       return (b == 1010_b);
     });
     TEST([]()->ch_bit1 {
       ch_bit4 a(3), b;
-      __if (a == 1)
+      __if (a == 1) {
         b = 1;
-      __elif (a == 2)
+      } __elif (a == 2) {
         b.slice<3>() = 1;
-      __elif (a == 3)
+      } __elif (a == 3) {
         b.slice<2>(2) = 1;
-      __else
+      } __else {
         b = 1000_b;
-      __end
+      };
       ch_print("b={0}", b);
       return (b == 0100_b);
     });
@@ -355,87 +355,89 @@ TEST_CASE("conditionals", "[conditionals]") {
     TEST([]()->ch_bit1 {
       ch_bit4 a(5), b(1), c(0);
       __switch (a)
-      __case(0) c = a;
-      __case(1) c = b;
-      __end
+      __case(0) { c = a; }
+      __case(1) { c = b; };
       return (c == 0);
     });
     TEST([]()->ch_bit1 {
       ch_bit4 a(5), b(1), c(0);
       __switch (a)
-      __case(0) c = a;
-      __case(1) c = b;
-      __else    c = a + b;
-      __end
+      __case(0) { c = a; }
+      __case(1) { c = b; }
+      __default { c = a + b; };
       return (c == 6);
     });
     TEST([]()->ch_bit1 {
       ch_bit4 a(5), b(1), c(0);
       __switch (a)
-      __case(0) c = a;
-      __case(1) c = b;
-      __else
-         __if (b > 0)
+      __case(0) { c = a; }
+      __case(1) { c = b; }
+      __default {
+         __if (b > 0) {
            c = a + b;
-         __else
+         } __else {
            c = a - b;
-         __end
-      __end
+         };
+      };
       return (c == 6);
     });
     TEST([]()->ch_bit1 {
       ch_bit4 a(1), b(1), c(2), d, e;
       __switch (a)
-      __case(0) d = 0;
-      __case(1)
-         __if (b == 0)
+      __case(0) { d = 0;}
+      __case(1) {
+         __if (b == 0) {
            d = 1;
-         __elif (b == 1)
+         } __elif (b == 1) {
            e = 1;
-         __else
+         }__else {
            d = 0;
            e = 0;         
-         __end
-      __else
+         };
+      }
+      __default {
          d = c;
          e = c;         
-      __end
+      };
       return (d + e == 3);
     });
     TEST([]()->ch_bit1 {
       ch_bit4 a(0), b;
       __switch (a)
-      __case(0)
+      __case(0) {
         b.slice<3>(0) = 101_b;
-      __case(1)
+      }
+      __case(1) {
         b = 0;
-      __else
+      }
+      __default {
         b = 1000_b;
-      __end
+      };
       return (b == 1101_b);
     });
     TEST([]()->ch_bit1 {
       ch_bit4 a(0), b;           
       b[3] = 1;
       __switch (a)
-      __case(0)
+      __case(0) {
         b[0] = 1;
         b[1] = 0;
         b[2] = 1;
-      __case(1)
+      }
+      __case(1) {
         b[1] = 0;
-      __else
+      }
+      __default {
         b = 1000_b;
-      __end
+      };
       return (b == 1101_b);
     });
     TEST([]()->ch_bit1 {
       ch_bit4 a(0), b;
       __switch (a)
-      __case(0) b = 0010_b;
-      __case(1) b = 0001_b;
-      __else    b = 1000_b;
-      __end
+      __case(0) { b = 0010_b; }
+      __case(1) { b = 0001_b; }
+      __default { b = 1000_b; };
       return (b == 0010_b);
     });
   }

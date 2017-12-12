@@ -272,10 +272,10 @@ inline namespace literals {
 #define __if       CH_IF
 #define __elif     CH_ELIF
 #define __else     CH_ELSE
-#define __end      CH_END
 
 #define __switch   CH_SWITCH
 #define __case     CH_CASE
+#define __default  CH_DEFAULT
 
 #define __tap      CH_TAP
 #define __trace    CH_TRACE

@@ -18,24 +18,24 @@ struct GCD {
 
     io.in.ready = !p;
 
-    __if (io.in.valid && io.in.ready)
+    __if (io.in.valid && io.in.ready) {
       x.next = io.in.data[0];
       y.next = io.in.data[1];
       p.next = true;
-    __end
+    };
 
-    __if (p)
-      __if (x > y)
+    __if (p) {
+      __if (x > y) {
         x.next = y;
         y.next = x;
-      __else
+      } __else {
         y.next = y - x;
-      __end
-    __end
+      };
+    };
 
-    __if (io.out.valid)
+    __if (io.out.valid) {
       p.next = false;
-    __end
+    };
 
     io.out.data  = x;
     io.out.valid = (0 == y) && p;

@@ -28,9 +28,9 @@ struct FiFo {
     wr_ptr.next = ch_select(writing, wr_ptr + 1, wr_ptr);
 
     ch_ram<T, N> mem;
-    __if(writing)
+    __if (writing) {
       mem[wr_A] = io.din;
-    __end
+    };
 
     io.dout  = mem[rd_A];
     io.empty = (wr_ptr == rd_ptr);

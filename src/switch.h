@@ -5,56 +5,79 @@
 namespace ch {
 namespace internal {
 
-class switch_impl {
-public:  
-  ~switch_impl();
-  
-  using func_t = std::function<void ()>;
-  
-  void eval(const lnode& pred, func_t func);
+class switch_t {
+public:
+  switch_t(const lnode& key) : key_(key) {
+    begin_branch();
+  }
+  ~switch_t() {
+    end_branch();
+  }
 
-  void eval(func_t func);
- 
 protected:
-  switch_impl(const lnode& key);
- 
   lnode key_;
-  
-  template <typename K> friend class switch_t;
+
+  template <typename K> friend class switch_body_t;
+};
+using switch_ptr = std::shared_ptr<switch_t>;
+
+template <typename K> class switch_case_t;
+
+template <typename K> class switch_body_t;
+
+template <typename K>
+class switch_case_t {
+public:
+  switch_case_t(const switch_ptr& p_switch) : switch_(p_switch) {}
+
+  template <typename V,
+            CH_REQUIRES(is_cast_convertible<K, V>::value)>
+  switch_body_t<K> operator,(const V& value);
+
+  void operator,(const fvoid_t& body) {
+    cond_block(body);
+  }
+
+protected:
+  switch_ptr switch_;
 };
 
 template <typename K>
-class switch_t {
+class switch_body_t {
 public:
+  switch_body_t(const switch_ptr& p_switch, const lnode& value)
+    : switch_(p_switch)
+    , value_(value)
+  {}
 
-  switch_t(const lnode& key) : impl_(key) {}
-  
-  template <typename T, typename Func,
-            CH_REQUIRES(is_cast_convertible<K, T>::value)>
-  switch_t& case_(const T& value, const Func& func) {
-    impl_.eval(get_lnode<T, width_v<K>>(value), to_function_t<Func>(func));
-    return *this;
-  }
-  
-  template <typename Func>
-  void else_(const Func& func) {
-    impl_.eval(to_function_t<Func>(func));
-  }
-  
+  switch_case_t<K> operator,(const fvoid_t& body);
+
 protected:
-  
-  switch_impl impl_;
+  switch_ptr switch_;
+  lnode value_;
 };
+
+template <typename K>
+template <typename V, typename>
+switch_body_t<K> switch_case_t<K>::operator,(const V& value) {
+  return switch_body_t<K>(switch_, get_lnode<V, width_v<K>>(value));
+}
+
+template <typename K>
+switch_case_t<K> switch_body_t<K>::operator,(const fvoid_t& body) {
+  cond_block(createAluNode(alu_eq, switch_->key_, value_), body);
+  return switch_case_t<K>(switch_);
+}
 
 template <typename K,
           CH_REQUIRES(is_bit_convertible<K>::value)>
-auto ch_switch(const K& key, const std::function<void ()>& f = {}) {
-  CH_UNUSED(f);
-  return switch_t<K>(get_lnode(key));
+auto ch_switch(const K& key) {
+  return switch_case_t<K>(std::make_shared<switch_t>(get_lnode(key)));
 }
 
 }
 }
 
-#define CH_SWITCH(key)  ch_switch(key, [&]() {
-#define CH_CASE(pred)   }).case_(pred, [&]() {
+#define CH_SWITCH(key)  ch_switch(key)
+#define CH_CASE(pred)   , pred, [&]()
+#define CH_DEFAULT      , [&]()

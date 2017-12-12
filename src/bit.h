@@ -55,8 +55,11 @@ struct is_logic_traits<logic_traits<Bitwidth, LogicType, ConstType, ValueType, S
 
 CH_DEF_SFINAE_CHECK(is_logic_type, is_logic_traits<typename std::decay_t<T>::traits>::value);
 
-CH_DEF_SFINAE_CHECK(is_bit_compatible, ((is_logic_traits<typename T::traits>::value
-                                      || is_logic_traits<typename T::traits::next>::value)
+CH_DEF_SFINAE_CHECK(is_logic_compatible, is_logic_traits<typename std::decay_t<T>::traits>::value
+                                      || is_logic_traits<typename std::decay_t<T>::traits::next>::value);
+
+CH_DEF_SFINAE_CHECK(is_bit_compatible, ((is_logic_traits<typename std::decay_t<T>::traits>::value
+                                      || is_logic_traits<typename std::decay_t<T>::traits::next>::value)
                                      && std::is_base_of<const_bit<width_v<T>>, logic_type_t<T>>::value));
 
 template <typename... Ts>
@@ -79,9 +82,6 @@ using are_all_bit_convertible = conjunction<is_bit_convertible<Ts>::value...>;
 
 template <typename... Ts>
 using are_all_logic_type = conjunction<is_logic_type<Ts>::value...>;
-
-CH_DEF_SFINAE_CHECK(is_logic_compatible, is_logic_traits<typename std::decay_t<T>::traits>::value
-                                      || is_logic_traits<typename std::decay_t<T>::traits::next>::value);
 
 template <typename... Ts>
 using are_all_logic_compatible = conjunction<is_logic_compatible<Ts>::value...>;

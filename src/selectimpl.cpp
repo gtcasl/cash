@@ -7,6 +7,32 @@
 
 using namespace ch::internal;
 
+///////////////////////////////////////////////////////////////////////////////
+
+void ch::internal::begin_branch() {
+  ctx_curr()->begin_branch();
+}
+
+void ch::internal::end_branch() {
+  ctx_curr()->end_branch();
+}
+
+void ch::internal::cond_block(const lnode& pred, fvoid_t func) {
+  auto ctx = ctx_curr();
+  ctx->begin_block(pred.get_impl());
+  func();
+  ctx->end_block();
+}
+
+void ch::internal::cond_block(fvoid_t func) {
+  auto ctx = ctx_curr();
+  ctx->begin_block();
+  func();
+  ctx->end_block();
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 selectimpl::selectimpl(context* ctx,
                        const lnode& pred,
                        const lnode& _true,
@@ -27,15 +53,6 @@ const bitvector& selectimpl::eval(ch_tick t) {
   }
   return value_;
 }
-
-lnodeimpl* ch::internal::createSelectNode(
-    const lnode& pred,
-    const lnode& _true,
-    const lnode& _false) {
-  return pred.get_ctx()->createNode<selectimpl>(pred, _true, _false);
-}
-
-///////////////////////////////////////////////////////////////////////////////
 
 lnodeimpl* select_impl::eval(const lnode& value) {
   lnodeimpl* curr = nullptr;
@@ -59,49 +76,9 @@ lnodeimpl* select_impl::eval(const lnode& value) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-if_t::if_t(const lnode& pred, func_t func) {
-  ctx_curr()->begin_branch();
-  this->eval(pred, func);
-}
-
-if_t::~if_t() {
-  ctx_curr()->end_branch();
-}
-
-void if_t::eval(const lnode& pred, func_t func) {
-  auto ctx = ctx_curr();
-  ctx->begin_block(pred.get_impl());
-  func();
-  ctx->end_block();
-}
-
-void if_t::eval(func_t func) {
-  auto ctx = ctx_curr();
-  ctx->begin_block();
-  func();
-  ctx->end_block();
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-switch_impl::switch_impl(const lnode& key) : key_(key) {
-  ctx_curr()->begin_branch();
-}
-
-switch_impl::~switch_impl() {
-  ctx_curr()->end_branch();
-}
-
-void switch_impl::eval(const lnode& pred, func_t func) {
-  auto ctx = key_.get_ctx();
-  ctx->begin_block(createAluNode(alu_eq, key_, pred));
-  func();
-  ctx->end_block();
-}
-
-void switch_impl::eval(func_t func) {
-  auto ctx = key_.get_ctx();
-  ctx->begin_block();
-  func();
-  ctx->end_block();
+lnodeimpl* ch::internal::createSelectNode(
+    const lnode& pred,
+    const lnode& _true,
+    const lnode& _false) {
+  return pred.get_ctx()->createNode<selectimpl>(pred, _true, _false);
 }

@@ -36,9 +36,9 @@ TEST_CASE("memory", "[memory]") {
       ch_bit1 en;
       ch_ram<ch_bit4, 4> mem({0xA, 0xB, 0xC, 0xD});
       q = mem[a];
-      __if (en)
+      __if (en) {
         mem[a] = d;
-      __end
+      };
       ch_tie(a, d, en) = ch_reg(
         ch_case(ch_getTick(),
            2, ch_cat(01_b, 0x0_h, 0_b))
@@ -58,9 +58,9 @@ TEST_CASE("memory", "[memory]") {
       ch_bit1 en;
       ch_ram<ch_bit4, 4> mem({0xA, 0xB, 0xC, 0xD});
       q = (mem[a] + 1) - 1;
-      __if (en)
+      __if (en) {
         mem[a] = d;
-      __end
+      };
       ch_tie(a, d, en) = ch_reg(
         ch_case(ch_getTick(),
            2, ch_cat(01_b, 0x0_h, 0_b))
@@ -80,9 +80,9 @@ TEST_CASE("memory", "[memory]") {
       ch_bit1 en;
       ch_ram<ch_bit4, 4> mem({0xA, 0xB, 0xC, 0xD});
       q = ch_reg(mem[a]);
-      __if (en)
+      __if (en) {
         mem[a] = d;
-      __end
+      };
       ch_tie(a, d, en) = ch_reg(
         ch_case(ch_getTick(),
            2, ch_cat(01_b, 0x0_h, 0_b))
