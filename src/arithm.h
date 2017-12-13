@@ -12,7 +12,7 @@
 
 #define CH_ALUOP_TYPE(n, v) alu_##n = v,
 #define CH_ALUOP_NAME(n, v) #n,
-#define CH_ALUOP_INDEX(op) (op & 0xff)
+#define CH_ALUOP_INDEX(op)  (op & 0xff)
 #define CH_ALUOP_ENUM(m) \
   m(inv,    0 | alu_unary  | alu_bitwise | alu_integer) \
   m(and,    1 | alu_binary | alu_bitwise | alu_integer) \
@@ -96,24 +96,24 @@ lnodeimpl* createAluNode(ch_alu_op op,
 ///////////////////////////////////////////////////////////////////////////////
 
 #define CH_FRIEND_OPERATORS(func, header, lhs_t, rhs_t, body) \
-  header \
+  CH_REM header \
   inline friend auto func(lhs_t lhs, rhs_t _rhs) { \
     auto rhs = static_cast<std::decay_t<lhs_t>>(_rhs); \
     return body; \
   } \
-  header \
+  CH_REM header \
   inline friend auto func(rhs_t _lhs, lhs_t rhs) { \
     auto lhs = static_cast<std::decay_t<lhs_t>>(_lhs); \
     return body; \
   }
 
 #define CH_GLOBAL_OPERATORS(func, header, lhs_t, rhs_t, body) \
-  header \
+  CH_REM header \
   inline auto func(lhs_t lhs, rhs_t _rhs) { \
     auto rhs = static_cast<std::decay_t<lhs_t>>(_rhs); \
     return body; \
   } \
-  header \
+  CH_REM header \
   inline auto func(rhs_t _lhs, lhs_t rhs) { \
     auto lhs = static_cast<std::decay_t<lhs_t>>(_lhs); \
     return body; \

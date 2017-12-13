@@ -325,22 +325,22 @@ public:
 ///////////////////////////////////////////////////////////////////////////////
 
 #define CH_SCALAR_FRIEND_OPS(i, x) \
-  CH_FRIEND_OP_EQ(, const const_scalar&, x) \
-  CH_FRIEND_OP_NE(, const const_scalar&, x) \
-  CH_FRIEND_OP_LT(, const const_scalar&, x) \
-  CH_FRIEND_OP_LE(, const const_scalar&, x) \
-  CH_FRIEND_OP_GT(, const const_scalar&, x) \
-  CH_FRIEND_OP_GE(, const const_scalar&, x) \
-  CH_FRIEND_OP_AND(, const const_scalar&, x) \
-  CH_FRIEND_OP_OR(, const const_scalar&, x) \
-  CH_FRIEND_OP_XOR(, const const_scalar&, x) \
-  CH_FRIEND_OP_ADD(, const const_scalar&, x) \
-  CH_FRIEND_OP_SUB(, const const_scalar&, x) \
-  CH_FRIEND_OP_MULT(, const const_scalar&, x) \
-  CH_FRIEND_OP_DIV(, const const_scalar&, x) \
-  CH_FRIEND_OP_MOD(, const const_scalar&, x) \
-  CH_FRIEND_OP_SLL(, const const_scalar&, x) \
-  CH_FRIEND_OP_SRL(, const const_scalar&, x)
+  CH_FRIEND_OP_EQ((), const const_scalar&, x) \
+  CH_FRIEND_OP_NE((), const const_scalar&, x) \
+  CH_FRIEND_OP_LT((), const const_scalar&, x) \
+  CH_FRIEND_OP_LE((), const const_scalar&, x) \
+  CH_FRIEND_OP_GT((), const const_scalar&, x) \
+  CH_FRIEND_OP_GE((), const const_scalar&, x) \
+  CH_FRIEND_OP_AND((), const const_scalar&, x) \
+  CH_FRIEND_OP_OR((), const const_scalar&, x) \
+  CH_FRIEND_OP_XOR((), const const_scalar&, x) \
+  CH_FRIEND_OP_ADD((), const const_scalar&, x) \
+  CH_FRIEND_OP_SUB((), const const_scalar&, x) \
+  CH_FRIEND_OP_MULT((), const const_scalar&, x) \
+  CH_FRIEND_OP_DIV((), const const_scalar&, x) \
+  CH_FRIEND_OP_MOD((), const const_scalar&, x) \
+  CH_FRIEND_OP_SLL((), const const_scalar&, x) \
+  CH_FRIEND_OP_SRL((), const const_scalar&, x)
 
 #define CH_SCALAR_OP_TYPES \
   int8_t, uint8_t, int16_t, uint16_t, int32_t, uint32_t, int64_t, uint64_t
@@ -380,7 +380,8 @@ public:
     buffer_(scalar_accessor::copy(rhs))
   {}
 
-  template <typename U, CH_REQUIRES(is_bitvector_convertible<U>::value)>
+  template <typename U,
+            CH_REQUIRES(is_bitvector_convertible<U>::value)>
   explicit const_scalar(const U& value)
     : buffer_(bitvector(N, value))
   {}
@@ -394,7 +395,8 @@ public:
     return const_scalar<M>(scalar_buffer(M, buffer_, start));
   }
 
-  template <typename U, CH_REQUIRES(is_bitvector_castable<U>::value)>
+  template <typename U,
+            CH_REQUIRES(is_bitvector_castable<U>::value)>
   explicit operator U() const {
     return static_cast<U>(buffer_->get_data());
   }

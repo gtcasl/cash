@@ -132,7 +132,10 @@ struct Dogfood {
     __out(ch_bit1) out
   );
   void describe() {
+    ch_bool x = io.out;
+    ch_assert(x, "oops!");
     io.out = (io.in == 0xA);
+    //io.out = (io.in == 0xA);
   }
 };
 

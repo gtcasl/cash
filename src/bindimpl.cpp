@@ -141,9 +141,8 @@ const bitvector& bindportimpl::eval(ch_tick t) {
 }
 
 void bindportimpl::print(std::ostream& out, uint32_t level) const {
-  out << "#" << id_ << " <- " << this->get_type() << value_.get_size();
-  out << "(" << (is_output_ ? "out" : "in") << ", ";
-  out << "#" << srcs_[0].get_id() << ", $" << ioport_.get_id() << ")";
+  out << "#" << id_ << " <- " << (is_output_ ? "bindout" : "bindin") << value_.get_size();
+  out << "(#" << srcs_[0].get_id() << ", $" << ioport_.get_id() << ")";
   if (level == 2) {
     out << " = " << value_;
   }

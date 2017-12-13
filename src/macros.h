@@ -38,6 +38,8 @@
 #define CH_SEP_OR() |
 #define CH_SEP_COLON() :
 #define CH_SEP_SPACE() /**/
+#define CH_SEP_LESS() <
+#define CH_SEP_GREATER() >
 
 // MAKE_UNIQUE macro
 

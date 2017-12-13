@@ -115,17 +115,17 @@ public:
 
 protected:
 
-  CH_FRIEND_OP_EQ(, const ch_float32&, float)
-  CH_FRIEND_OP_NE(, const ch_float32&, float)
-  CH_FRIEND_OP_LT(, const ch_float32&, float)
-  CH_FRIEND_OP_LE(, const ch_float32&, float)
-  CH_FRIEND_OP_GT(, const ch_float32&, float)
-  CH_FRIEND_OP_GE(, const ch_float32&, float)
+  CH_FRIEND_OP_EQ((), const ch_float32&, float)
+  CH_FRIEND_OP_NE((), const ch_float32&, float)
+  CH_FRIEND_OP_LT((), const ch_float32&, float)
+  CH_FRIEND_OP_LE((), const ch_float32&, float)
+  CH_FRIEND_OP_GT((), const ch_float32&, float)
+  CH_FRIEND_OP_GE((), const ch_float32&, float)
 
-  CH_FRIEND_OP_ADD(, const ch_float32&, float)
-  CH_FRIEND_OP_SUB(, const ch_float32&, float)
-  CH_FRIEND_OP_MULT(, const ch_float32&, float)
-  CH_FRIEND_OP_DIV(, const ch_float32&, float)
+  CH_FRIEND_OP_ADD((), const ch_float32&, float)
+  CH_FRIEND_OP_SUB((), const ch_float32&, float)
+  CH_FRIEND_OP_MULT((), const ch_float32&, float)
+  CH_FRIEND_OP_DIV((), const ch_float32&, float)
 };
 
 template <unsigned Delay>

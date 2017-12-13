@@ -15,7 +15,7 @@ struct Adder {
   );
 
   void describe() {
-    auto sum = ch_zext<N+1>(io.cin) + ch_cat(0_b, io.lhs) + ch_cat(0_b, io.rhs);
+    auto sum = ch_zext<N+1>(io.cin) + io.lhs + io.rhs;
     io.out  = ch_slice<N>(sum);
     io.cout = sum[N];
   }

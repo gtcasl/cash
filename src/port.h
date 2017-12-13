@@ -101,14 +101,15 @@ public:
     bindOutput(input_, out.output_);
   }
 
+  ch_in(const ch_in& in, const source_location& sloc = CH_SOURCE_LOCATION) : base(in, sloc) {}
+
+  ch_in(ch_in&& in) : base(std::move(in)) {}
+
   void operator()(ch_out<T>& out) const {
     out = *this;
   }
 
 private:
-
-  ch_in(const ch_in& in) = delete;
-  ch_in(ch_in&& in) = delete;
 
   ch_in& operator=(const ch_in&) = delete;
   ch_in& operator=(ch_in&&) = delete;
@@ -141,8 +142,17 @@ public:
     bindInput(output_, in.input_);
   }
 
+  ch_out(const ch_out& out, const source_location& sloc = CH_SOURCE_LOCATION) : base(out, sloc) {}
+
+  ch_out(ch_out&& out) : base(std::move(out)) {}
+
   ch_out& operator=(const ch_out& rhs) {
     base::operator=(rhs);
+    return *this;
+  }
+
+  ch_out& operator=(ch_out&& rhs) {
+    base::operator=(std::move(rhs));
     return *this;
   }
 
@@ -151,10 +161,6 @@ public:
   }
 
 private:
-
-  ch_out(const ch_out& in) = delete;
-  ch_out(ch_out&& in) = delete;
-  ch_out& operator=(ch_out&&) = delete;
 
   lnode output_;
 
