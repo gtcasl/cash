@@ -15,6 +15,8 @@ public:
   int get_dbg_level() const;
   
   int get_dbg_node() const;
+
+  int get_dbg_verilog() const;
   
   int get_dump_ast() const;
   

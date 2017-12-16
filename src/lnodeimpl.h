@@ -94,6 +94,14 @@ public:
     value_[index] = value;
   }
 
+  uint32_t get_var_id() const {
+    return var_id_;
+  }
+
+  void set_var_id(uint32_t var_id) {
+    var_id_ = var_id;
+  }
+
   const source_location& get_source_location() const {
     return sloc_;
   }
@@ -128,14 +136,12 @@ protected:
 
   lnodeimpl(context* ctx,
             lnodetype type,
-            uint32_t size,
-            const source_location& sloc = source_location());
+            uint32_t size);
 
   lnodeimpl(context* ctx,
             const std::string& name,
             lnodetype type,
-            uint32_t size,
-            const source_location& sloc = source_location());
+            uint32_t size);
 
   virtual ~lnodeimpl();
 
@@ -145,6 +151,7 @@ protected:
   lnodetype type_;  
   std::vector<lnode> srcs_;
   bitvector value_;
+  uint32_t var_id_;
   source_location sloc_;
 
   friend class context;

@@ -13,8 +13,8 @@ public:
 
   T next;
 
-  ch_seq(const bit_buffer& buffer = bit_buffer(width_v<T>, CH_SOURCE_LOCATION))
-    : base(buffer) {
+  ch_seq(const source_location& sloc = CH_SOURCE_LOCATION)
+    : base(bit_buffer(width_v<T>, sloc)) {
     auto reg = createRegNode(get_lnode(next), get_lnode<int, width_v<T>>(0));
     bit_accessor::set_data(*this, reg);
     next = *this;

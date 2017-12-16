@@ -268,3 +268,14 @@
 
 #define CH_FIRST_ARG_(N, ...) N
 #define CH_FIRST_ARG(...) CH_FIRST_ARG_(__VA_ARGS__, ignore)
+
+#define CH_VA_ARGS_MAP(x) x(0) \
+                          x(0, 1) \
+                          x(0, 1, 2) \
+                          x(0, 1, 2, 3) \
+                          x(0, 1, 2, 3, 4) \
+                          x(0, 1, 2, 3, 4, 5) \
+                          x(0, 1, 2, 3, 4, 5, 6 ) \
+                          x(0, 1, 2, 3, 4, 5, 6, 7) \
+                          x(0, 1, 2, 3, 4, 5, 6, 7, 8) \
+                          x(0, 1, 2, 3, 4, 5, 6, 7, 8, 9)

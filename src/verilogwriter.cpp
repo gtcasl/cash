@@ -21,6 +21,7 @@ const auto IsRegType = [](lnodetype type) {
 };
 
 const auto is_inline_literal = [](lnodeimpl* node) {
+  assert(type_lit == node->get_type());
   return (node->get_size() <= 32);
 };
 
@@ -42,8 +43,7 @@ void verilogwriter::build_uses(context* ctx) {
 }
 
 bool verilogwriter::is_inline_subscript(lnodeimpl* node) {
-  if (node->get_type() != type_proxy)
-    return false;
+  assert(type_proxy == node->get_type());
   if (dynamic_cast<proxyimpl*>(node)->get_ranges().size() > 1)
     return false;
   for (lnodeimpl* use : uses_[node->get_id()]) {
@@ -287,10 +287,19 @@ bool verilogwriter::print_decl(lnodeimpl* node,
     }
     visited.insert(node->get_id());
     if (!ref) {
-      for (auto other : node->get_ctx()->get_nodes()) {
-        this->print_decl(other, visited, node);
+      if (0 == platform::self().get_dbg_verilog()) {
+        for (auto other : node->get_ctx()->get_nodes()) {
+          this->print_decl(other, visited, node);
+        }
+        out_ << ";" << std::endl;
+      } else {
+        auto& sloc = node->get_source_location();
+        if (0 == strcmp(sloc.file(), "unknown")) {
+          out_ << ";" << std::endl;
+        } else {
+          out_ << "; // #" << node->get_var_id() << " " << sloc.file() << "(" << sloc.line() << ")" << std::endl;
+        }
       }
-      out_ << ";" << std::endl;
     }
     return true;
   case type_bind:
@@ -510,7 +519,7 @@ void verilogwriter::print_select(selectimpl* node) {
 void verilogwriter::print_reg(regimpl* node) {
   out_ << "always @ (";
   this->print_cdomain(node->get_cd());
-  out_ << ")" << std::endl;
+  out_ << ") ";
   this->print_name(node);
   out_ << " <= ";
   if (node->has_reset()) {
@@ -589,7 +598,7 @@ void verilogwriter::print_mem(memimpl* node) {
       continue;
     out_ << "always @(" ;
     this->print_cdomain(node->get_cd());
-    out_ << ")" << std::endl;
+    out_ << ") ";
     this->print_name(p_impl);
     out_ << " = ";
     this->print_name(p_impl->get_wdata().get_impl());
@@ -666,9 +675,9 @@ void verilogwriter::print_name(lnodeimpl* node, bool force) {
     break;
   case type_memport: {
     auto memport = dynamic_cast<memportimpl*>(node);
-    print_unique_name(memport->get_mem());
+    this->print_name(memport->get_mem().get_impl());
     out_ << "[";
-    print_unique_name(memport->get_addr());
+    this->print_name(memport->get_addr().get_impl());
     out_ << "]";
   } break;
   default:

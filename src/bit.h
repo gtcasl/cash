@@ -133,6 +133,8 @@ public:
   }
 
   const lnode& get_data() const {
+    uint32_t var_id = value_.get_var_id();
+    CH_UNUSED(var_id);
     return value_;
   }
 
@@ -156,12 +158,8 @@ protected:
 
   bit_buffer_impl(const lnode& value,
                   const bit_buffer_ptr& source,
-                  unsigned offset)
-    : value_(value)
-    , source_(source)
-    , offset_(offset)
-  {}
-
+                  unsigned offset);
+  uint32_t id_;
   lnode value_;
   bit_buffer_ptr source_;
   unsigned offset_;
@@ -220,6 +218,9 @@ public:
   template <typename T>
   static void set_data(const T& obj, const lnode& data) {
     assert(width_v<T> == obj.get_buffer()->get_size());
+    auto& obj_data = obj.get_buffer()->get_data();
+    const_cast<lnode&>(data).set_var_id(obj_data.get_var_id());
+    const_cast<lnode&>(data).set_source_location(obj_data.get_source_location());
     obj.get_buffer()->write(data);
   }
 
@@ -258,9 +259,9 @@ public:
   }
 
   template <typename T>
-  static auto clone(const T& obj) {
+  static auto clone(const T& obj, const source_location& sloc) {
     assert(width_v<T> == obj.get_buffer()->get_size());
-    return bit_value_t<T>(bit_buffer(obj.get_buffer()->get_data().clone()));
+    return bit_value_t<T>(bit_buffer(obj.get_buffer()->get_data().clone(), sloc));
   }
 
   template <typename D, typename T>
@@ -376,20 +377,20 @@ auto OpReduce(const const_bit<N>& a) {
   ch_bit<type::traits::bitwidth> asBits() { \
     return this->as<ch_bit<type::traits::bitwidth>>(); \
   } \
-  const ch_seq<type> asSeq() { \
-    ch_seq<type> s; \
+  const ch_seq<type> asSeq(const source_location& sloc = CH_SOURCE_LOCATION) { \
+    ch_seq<type> s(sloc); \
     (*this) = s; \
     return s; \
   } \
-  const ch_seq<type> asSeq(const type& init) { \
-    ch_seq<type> s(init); \
+  const ch_seq<type> asSeq(const type& init, const source_location& sloc = CH_SOURCE_LOCATION) { \
+    ch_seq<type> s(init, sloc); \
     (*this) = s; \
     return s; \
   }
 
 template <unsigned N, typename T,
           CH_REQUIRES(is_bit_compatible<T>::value)>
-ch_bit<N> ch_zext(const T& obj);
+ch_bit<N> ch_zext(const T& obj, const source_location& sloc = CH_SOURCE_LOCATION);
 
 template <unsigned N>
 class const_bit {
@@ -848,6 +849,19 @@ inline auto operator|| (const const_bit<1>& lhs, const const_bit<1>& rhs) {
   return lhs | rhs;
 }
 
+// multiplexers
+
+template <typename I, typename S,
+          CH_REQUIRES(is_logic_compatible<I>::value),
+          CH_REQUIRES(is_logic_compatible<S>::value),
+          CH_REQUIRES(ispow2(width_v<I>)),
+          CH_REQUIRES(ispow2(width_v<S>)),
+          CH_REQUIRES((width_v<I> >> width_v<S>) != 0)>
+auto ch_mux(const I& in, const S& sel) {
+  return make_type<ch_bit<(width_v<I> >> width_v<S>)>>(
+        createAluNode(alu_mux, get_lnode(in), get_lnode(sel)));
+}
+
 // generate global operators for convertible types
 
 CH_GLOBAL_OP_AND((template<unsigned N, unsigned M, CH_REQUIRES(M < N)>), const const_bit<N>&, const const_bit<M>&)
@@ -887,36 +901,79 @@ CH_FOR_EACH(CH_BIT_GLOBAL_OPS, CH_SEP_SPACE, CH_BIT_OP_TYPES)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-// multiplexers
-
-template <typename I, typename S,
-          CH_REQUIRES(is_logic_compatible<I>::value),
-          CH_REQUIRES(is_logic_compatible<S>::value),
-          CH_REQUIRES(ispow2(width_v<I>)),
-          CH_REQUIRES(ispow2(width_v<S>)),
-          CH_REQUIRES((width_v<I> >> width_v<S>) != 0)>
-auto ch_mux(const I& in, const S& sel) {
-  return make_type<ch_bit<(width_v<I> >> width_v<S>)>>(
-        createAluNode(alu_mux, get_lnode(in), get_lnode(sel)));
-}
-
 // clone function
 
 template <typename T,
           CH_REQUIRES(is_logic_type<T>::value)>
-auto ch_clone(const T& obj) {
-  return bit_accessor::clone(obj);
+auto ch_clone(const T& obj, const source_location& sloc = CH_SOURCE_LOCATION) {
+  return bit_accessor::clone(obj, sloc);
 }
 
 // slice functions
 
 template <unsigned N, typename T,
           CH_REQUIRES(is_logic_compatible<T>::value)>
-auto ch_slice(const T& obj, size_t start = 0) {
-  ch_bit<N> ret;
+auto ch_slice(const T& obj, size_t start = 0, const source_location& sloc = CH_SOURCE_LOCATION) {
+  ch_bit<N> ret(bit_buffer(N, sloc));
   bit_accessor::write(ret, 0, obj, start, N);
   return ret;
 }
+
+// tie function
+
+template <typename... Ts>
+class tie_impl {
+public:
+  tie_impl(const source_location& sloc, Ts&... args)
+    : sloc_(sloc)
+    , args_(args...)
+  {}
+
+  template <typename T>
+  void operator=(const T& rhs) {
+    this->assign(static_cast<logic_cast_t<T, ch_bit<width_v<Ts...>>>>(rhs),
+                 std::index_sequence_for<Ts...>());
+  }
+
+protected:
+
+  template <typename T, typename U>
+  void assign_impl(unsigned src_offset, const T& src, U& dst) {
+    dst = ch_slice<width_v<U>>(src, src_offset, sloc_). template as<U>();
+  }
+
+  template <typename T, typename U0, typename... Us>
+  void assign_impl(unsigned src_offset, const T& src, U0& dst0, Us&... dsts) {
+    this->assign_impl(src_offset, src, dst0);
+    this->assign_impl(src_offset + width_v<U0>, src, dsts...);
+  }
+
+  template <typename T, size_t... I>
+  void assign(const T& src, std::index_sequence<I...>) {
+    this->assign_impl(0, src, std::get<sizeof...(Ts) - 1 - I>(args_)...);
+  }
+
+  source_location sloc_;
+  std::tuple<Ts&...> args_;
+};
+
+#define CH_TIE_TMPL(i, x) typename __T##i
+#define CH_TIE_REQUIRE(i, x) CH_REQUIRES(is_logic_compatible<__T##i>::value)
+#define CH_TIE_DECL(i, x) __T##i& arg##i
+#define CH_TIE_ARG(i, x) arg##i
+#define CH_TIE(...) \
+  template <CH_FOR_EACH(CH_TIE_TMPL, CH_SEP_COMMA, __VA_ARGS__), \
+            CH_FOR_EACH(CH_TIE_REQUIRE, CH_SEP_COMMA, __VA_ARGS__)> \
+  auto ch_tie(CH_FOR_EACH(CH_TIE_DECL, CH_SEP_COMMA, __VA_ARGS__), \
+         const source_location& sloc = CH_SOURCE_LOCATION) { \
+    return tie_impl(sloc, CH_FOR_EACH(CH_TIE_ARG, CH_SEP_COMMA, __VA_ARGS__)); \
+  }
+CH_VA_ARGS_MAP(CH_TIE)
+#undef CH_TIE_TMPL
+#undef CH_TIE_REQUIRE
+#undef CH_TIE_DECL
+#undef CH_TIE_ARG
+#undef CH_TIE
 
 // concatenation function
 
@@ -931,62 +988,37 @@ void cat_impl(ch_bit<N>& inout, unsigned dst_offset, const T0& arg0, const Ts&..
   cat_impl(inout, dst_offset - width_v<T0>, args...);
 }
 
-template <typename... Ts,
-         CH_REQUIRES(are_all_bit_convertible<Ts...>::value)>
-auto ch_cat(const Ts&... args) {
-  ch_bit<width_v<Ts...>> ret;
-  cat_impl(ret, width_v<Ts...>, static_cast<logic_cast_t<Ts>>(args)...);
-  return ret;
-}
-
-// tie function
-
-template <typename... Ts>
-class tie_impl {
-public:
-  tie_impl(Ts&... args) : args_(args...) {}
-
-  template <typename T>
-  void operator=(const T& rhs) {
-    this->assign(static_cast<logic_cast_t<T, ch_bit<width_v<Ts...>>>>(rhs),
-                 std::index_sequence_for<Ts...>());
+#define CH_CAT_TYPE(i, x) __T##i
+#define CH_CAT_TMPL(i, x) typename __T##i
+#define CH_CAT_REQUIRE(i, x) CH_REQUIRES(is_logic_compatible<__T##i>::value || is_bit_convertible<__T##i>::value)
+#define CH_CAT_DECL(i, x) const __T##i& arg##i
+#define CH_CAT_ARG(i, x) static_cast<logic_cast_t<__T##i>>(arg##i)
+#define CH_CAT(...) \
+  template <CH_FOR_EACH(CH_CAT_TMPL, CH_SEP_COMMA, __VA_ARGS__), \
+            CH_FOR_EACH(CH_CAT_REQUIRE, CH_SEP_COMMA, __VA_ARGS__)> \
+  auto ch_cat(CH_FOR_EACH(CH_CAT_DECL, CH_SEP_COMMA, __VA_ARGS__), \
+         const source_location& sloc = CH_SOURCE_LOCATION) { \
+    static constexpr unsigned width = width_v<CH_FOR_EACH(CH_CAT_TYPE, CH_SEP_COMMA, __VA_ARGS__)>; \
+    ch_bit<width> ret(bit_buffer(width, sloc)); \
+    cat_impl(ret, width, CH_FOR_EACH(CH_CAT_ARG, CH_SEP_COMMA, __VA_ARGS__)); \
+    return ret; \
   }
-
-protected:
-
-  template <typename T, size_t... I>
-  void assign(const T& src, std::index_sequence<I...>) {
-    this->assign(0, src, std::get<sizeof...(Ts) - 1 - I>(args_)...);
-  }
-
-  template <typename T, typename U>
-  void assign(unsigned src_offset, const T& src, U& dst) {
-    dst = ch_slice<width_v<U>>(src, src_offset). template as<U>();
-  }
-
-  template <typename T, typename U0, typename... Us>
-  void assign(unsigned src_offset, const T& src, U0& dst0, Us&... dsts) {
-    this->assign(src_offset, src, dst0);
-    this->assign(src_offset + width_v<U0>, src, dsts...);
-  }
-
-  std::tuple<Ts&...> args_;
-};
-
-template <typename... Ts,
-         CH_REQUIRES(are_all_logic_compatible<Ts...>::value)>
-auto ch_tie(Ts&... args) {
-  return tie_impl<Ts...>(args...);
-}
+CH_VA_ARGS_MAP(CH_CAT)
+#undef CH_CAT_TYPE
+#undef CH_CAT_TMPL
+#undef CH_CAT_REQUIRE
+#undef CH_CAT_DECL
+#undef CH_CAT_ARG
+#undef CH_CAT
 
 // zero-extend function
 
 template <unsigned N, typename T, typename>
-ch_bit<N> ch_zext(const T& obj) {
+ch_bit<N> ch_zext(const T& obj, const source_location& sloc) {
   static_assert(N >= width_v<T>, "invalid extend size");
   if constexpr(width_v<T> < N) {
     auto pad = ch_bit<(N - width_v<T>)>(0x0);
-    return ch_cat(pad, obj);
+    return ch_cat(pad, obj, sloc);
   } else {
     return obj;
   }
@@ -996,12 +1028,12 @@ ch_bit<N> ch_zext(const T& obj) {
 
 template <unsigned N, typename T,
           CH_REQUIRES(is_bit_compatible<T>::value)>
-ch_bit<N> ch_sext(const T& obj) {
+ch_bit<N> ch_sext(const T& obj, const source_location& sloc = CH_SOURCE_LOCATION) {
   static_assert(N >= width_v<T>, "invalid extend size");
   if constexpr(width_v<T> < N) {
     static constexpr unsigned D = N - width_v<T>;
     auto pad = ch_bit<D>(0x0) - ch_zext<D>(obj[width_v<T> - 1]);
-    return ch_cat(pad, obj);
+    return ch_cat(pad, obj, sloc);
   } else {
     return obj;
   }
@@ -1012,10 +1044,11 @@ ch_bit<N> ch_sext(const T& obj) {
 template <unsigned N, typename T,
           CH_REQUIRES(is_bit_compatible<T>::value)>
 auto ch_shuffle(const T& obj,
-                      const std::array<uint32_t, width_v<T>>& indices) {
+                const std::array<uint32_t, width_v<T>>& indices,
+                const source_location& sloc = CH_SOURCE_LOCATION) {
   static_assert((width_v<T> % N) == 0, "invalid indices size");
   static const unsigned M = (N / width_v<T>);
-  ch_bit<N> ret;
+  ch_bit<N> ret(bit_buffer(N, sloc));
   for (unsigned i = 0; i < width_v<T>; ++i) {
     ch_slice<M>(ret, i * M) = ch_slice<M>(obj, indices[i] * M);
   }
@@ -1046,8 +1079,6 @@ void ch_print(const std::string& format, const Args& ...args) {
 
 }
 }
-
-#define CH_TIE(...) std::forward_as_tuple(__VA_ARGS__)
 
 #ifndef NDEBUG
   #define CH_TAP(x) ch_tap(#x, x)

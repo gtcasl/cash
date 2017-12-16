@@ -291,8 +291,6 @@ inline namespace literals {
 #define __io       CH_IO
 #define __flip     CH_FLIP
 
-#define __tie      CH_TIE
-
 #define __requires CH_REQUIRES
 
 #define __source_location CH_SOURCE_LOCATION

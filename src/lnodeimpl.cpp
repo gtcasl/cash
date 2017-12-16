@@ -16,29 +16,25 @@ const char* ch::internal::to_string(lnodetype type) {
   return sc_names[CH_LNODE_INDEX(type)];
 }
 
-lnodeimpl::lnodeimpl(context* ctx,
-                     lnodetype type,
-                     uint32_t size,
-                     const source_location& sloc)
+lnodeimpl::lnodeimpl(context* ctx, lnodetype type, uint32_t size)
   : ctx_(ctx)
   , id_(ctx->node_id())
   , name_(to_string(type))
   , type_(type)
   , value_(size)
-  , sloc_(sloc)
+  , var_id_(0)
 {}
 
 lnodeimpl::lnodeimpl(context* ctx,
                      const std::string& name,
                      lnodetype type,
-                     uint32_t size,
-                     const source_location& sloc)
+                     uint32_t size)
   : ctx_(ctx)
   , id_(ctx->node_id())
   , name_(name)
   , type_(type)
   , value_(size)
-  , sloc_(sloc)
+  , var_id_(0)
 {}
 
 lnodeimpl::~lnodeimpl() {}
@@ -211,6 +207,16 @@ void lnode::set_name(const std::string& name) {
   impl_->set_name(name);
 }
 
+uint32_t lnode::get_var_id() const {
+  assert(impl_);
+  return impl_->get_var_id();
+}
+
+void lnode::set_var_id(uint32_t var_id) {
+  assert(impl_);
+  impl_->set_var_id(var_id);
+}
+
 const source_location& lnode::get_source_location() const {
   assert(impl_);
   return impl_->get_source_location();
@@ -218,7 +224,7 @@ const source_location& lnode::get_source_location() const {
 
 void lnode::set_source_location(const source_location& sloc) {
   assert(impl_);
-  return impl_->set_source_location(sloc);
+  impl_->set_source_location(sloc);
 }
 
 lnodeimpl* lnode::clone() const {

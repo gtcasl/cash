@@ -62,8 +62,10 @@ void compiler::syntax_check() {
                      [undef](const lnode& x)->bool { return x.get_id() == undef->get_id(); });
         if (ret != node->get_srcs().end()) {
           auto& sloc = node->get_source_location();
-          fprintf(stderr, "error: un-initialized node '%s' in module '%s' (%s:%d)\n",
+          fprintf(stderr, "error: un-initialized variable '%s%d (#%d)' in module '%s' (%s:%d)\n",
                   node->get_name().c_str(),
+                  node->get_id(),
+                  node->get_var_id(),
                   ctx_->get_name().c_str(),
                   sloc.file(),
                   sloc.line());

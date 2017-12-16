@@ -62,6 +62,10 @@ public:
 
   void set_bool(unsigned index, bool value);
 
+  uint32_t get_var_id() const;
+
+  void set_var_id(uint32_t var_id);
+
   const source_location& get_source_location() const;
 
   void set_source_location(const source_location& sloc);

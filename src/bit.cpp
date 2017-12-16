@@ -2,11 +2,27 @@
 
 using namespace ch::internal;
 
+static uint32_t make_id() {
+  static uint32_t s_id(0);
+  return ++s_id;
+}
+
+bit_buffer_impl::bit_buffer_impl(const lnode& value,
+                                 const bit_buffer_ptr& source,
+                                 unsigned offset)
+  : id_(make_id())
+  , value_(value)
+  , source_(source)
+  , offset_(offset)
+{}
+
 bit_buffer_impl::bit_buffer_impl(unsigned size,
                                  const source_location& sloc,
                                  const std::string& name)
-  : value_(size)
+  : id_(make_id())
+  , value_(size)
   , offset_(0) {
+  value_.set_var_id(id_);
   value_.set_source_location(sloc);  
   if (!name.empty())
     value_.set_name(name);
@@ -15,15 +31,18 @@ bit_buffer_impl::bit_buffer_impl(unsigned size,
 bit_buffer_impl::bit_buffer_impl(const bit_buffer_impl& rhs,
                                  const source_location& sloc,
                                  const std::string& name)
-  : value_(rhs.get_size(), rhs.get_data())
+  : id_(make_id())
+  , value_(rhs.get_size(), rhs.get_data())
   , offset_(0) {
+  value_.set_var_id(id_);
   value_.set_source_location(sloc);
   if (!name.empty())
     value_.set_name(name);
 }
 
 bit_buffer_impl::bit_buffer_impl(bit_buffer_impl&& rhs)
-  : value_(std::move(rhs.value_))
+  : id_(std::move(rhs.id_))
+  , value_(std::move(rhs.value_))
   , source_(std::move(rhs.source_))
   , offset_(std::move(rhs.offset_))
 {}
@@ -31,8 +50,10 @@ bit_buffer_impl::bit_buffer_impl(bit_buffer_impl&& rhs)
 bit_buffer_impl::bit_buffer_impl(const lnode& data,
                                  const source_location& sloc,
                                  const std::string& name)
-  : value_(data.get_size(), data)
+  : id_(make_id())
+  , value_(data.get_size(), data)
   , offset_(0) {
+  value_.set_var_id(id_);
   value_.set_source_location(sloc);
   if (!name.empty())
     value_.set_name(name);
@@ -42,10 +63,12 @@ bit_buffer_impl::bit_buffer_impl(unsigned size,
                                  const bit_buffer_ptr& buffer,
                                  unsigned offset,
                                  const std::string& name)
-  : value_(size, buffer->get_data(), offset)
+  : id_(make_id())
+  , value_(size, buffer->get_data(), offset)
   , source_(buffer)
   , offset_(offset) {
   assert(offset + size <= buffer->get_size());
+  value_.set_var_id(id_);
   value_.set_source_location(buffer->get_data().get_source_location());
   if (!name.empty()) {
     assert(!buffer->get_data().get_name().empty());

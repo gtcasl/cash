@@ -5,6 +5,7 @@ using namespace ch::internal;
 class platform::Impl {
   int dbg_level;
   int dbg_node;
+  int dbg_verilog;
   int dump_ast;
   int dump_cfg;
   std::string lib_path;
@@ -12,6 +13,7 @@ class platform::Impl {
   Impl()
     : dbg_level(0)
     , dbg_node(0)
+    , dbg_verilog(0)
     , dump_ast(0)
     , dump_cfg(0) {
     auto _dbg_level = std::getenv("CASH_DEBUG_LEVEL");
@@ -21,6 +23,10 @@ class platform::Impl {
     auto _dbg_node = std::getenv("CASH_DEBUG_NODE");
     if (_dbg_node)
       dbg_node = atol(_dbg_node);
+
+    auto _dbg_verilog = std::getenv("CASH_DEBUG_VERILOG");
+    if (_dbg_verilog)
+      dbg_verilog = atol(_dbg_verilog);
 
     auto _dump_ast = std::getenv("CASH_DUMP_AST");
     if (_dump_ast)
@@ -52,6 +58,10 @@ int platform::get_dbg_level() const {
 
 int platform::get_dbg_node() const {
   return impl_->dbg_node;
+}
+
+int platform::get_dbg_verilog() const {
+  return impl_->dbg_verilog;
 }
 
 int platform::get_dump_ast() const {
