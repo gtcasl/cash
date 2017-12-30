@@ -292,11 +292,11 @@ bool verilogwriter::print_decl(lnodeimpl* node,
           this->print_decl(other, visited, node);
         }
         out_ << ";" << std::endl;
-      } else {
-        auto& sloc = node->get_source_location();
-        if (0 == strcmp(sloc.file(), "unknown")) {
+      } else {        
+        if (0 == node->get_var_id()) {
           out_ << ";" << std::endl;
         } else {
+          auto& sloc = node->get_source_location();
           out_ << "; // #" << node->get_var_id() << " " << sloc.file() << "(" << sloc.line() << ")" << std::endl;
         }
       }

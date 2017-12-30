@@ -255,12 +255,36 @@ TEST_CASE("arithmetic", "[arithmetic]") {
       return (c == 3);
     });
     TEST([]()->ch_bit1 {
+      ch_bit4 a(0x1);
+      ch_bit8 b(0x2);
+      ch_bit8 c = a + b;
+      return (c == 3);
+    });
+    TEST([]()->ch_bit1 {
+      ch_bit8 a(0x1);
+      ch_bit4 b(0x2);
+      ch_bit8 c = a + b;
+      return (c == 3);
+    });
+    TEST([]()->ch_bit1 {
       ch_bit64 a(0xffffffff), b(0x1);
       ch_bit64 c = a + b;
       return (c == 0x100000000_h64);
     });
     TEST([]()->ch_bit1 {
       ch_bit4 a(0x1), b(0x2);
+      ch_bit4 c = b - a;
+      return (c == 1);
+    });
+    TEST([]()->ch_bit1 {
+      ch_bit4 a(0x1);
+      ch_bit8 b(0x2);
+      ch_bit4 c = b - a;
+      return (c == 1);
+    });
+    TEST([]()->ch_bit1 {
+      ch_bit8 a(0x1);
+      ch_bit4 b(0x2);
       ch_bit4 c = b - a;
       return (c == 1);
     });

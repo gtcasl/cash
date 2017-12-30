@@ -89,7 +89,6 @@ lnodeimpl* createAluNode(ch_alu_op op,
                          const lnode& rhs,
                          unsigned delay = 0,
                          const lnode& enable = lnode());
-
 }
 }
 
@@ -109,13 +108,10 @@ lnodeimpl* createAluNode(ch_alu_op op,
 
 #define CH_GLOBAL_OPERATORS(func, header, lhs_t, rhs_t, body) \
   CH_REM header \
-  inline auto func(lhs_t lhs, rhs_t _rhs) { \
-    auto rhs = static_cast<std::decay_t<lhs_t>>(_rhs); \
-    return body; \
-  } \
-  CH_REM header \
-  inline auto func(rhs_t _lhs, lhs_t rhs) { \
-    auto lhs = static_cast<std::decay_t<lhs_t>>(_lhs); \
+  inline auto func(lhs_t _lhs, rhs_t _rhs) { \
+    using ret_t = deduce_type_t<true, lhs_t, rhs_t>; \
+    auto lhs = ch_zext<ret_t>(static_cast<logic_cast_t<lhs_t, ret_t>>(_lhs)); \
+    auto rhs = ch_zext<ret_t>(static_cast<logic_cast_t<rhs_t, ret_t>>(_rhs)); \
     return body; \
   }
 

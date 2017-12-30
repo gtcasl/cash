@@ -53,8 +53,7 @@ struct union_zero_init_impl0 {
 template <typename T, typename U>
 struct union_zero_init_impl1 {
   static void apply(T& obj) {
-    if constexpr(is_logic_traits<typename T::traits>::value
-              && width_v<U> < T::traits::bitwidth) {
+    if constexpr(is_logic_traits<typename T::traits>::value && width_v<U> < T::traits::bitwidth) {
       obj.asBits() = 0;
     }
   };
@@ -115,11 +114,11 @@ using union_zero_init = std::conditional_t<has_bitwidth<U>::value,
     ch::internal::type_buffer_t<traits>(traits::bitwidth)) \
     : CH_FOR_EACH(CH_UNION_SCALAR_CTOR, CH_SEP_COMMA, __VA_ARGS__) {} \
   union_name(const union_name& rhs) \
-    : union_name(ch::internal::type_accessor_t<traits>::copy(rhs)) {} \
+    : union_name(ch::internal::type_accessor_t<traits>::copy_buffer(rhs)) {} \
   union_name(union_name&& rhs) \
     : CH_FOR_EACH(CH_UNION_MOVE_CTOR, CH_SEP_COMMA, __VA_ARGS__) {} \
   union_name(const const_name& rhs) \
-    : union_name(ch::internal::type_accessor_t<traits>::copy(rhs)) {} \
+    : union_name(ch::internal::type_accessor_t<traits>::copy_buffer(rhs)) {} \
   explicit union_name(const ch_scalar<traits::bitwidth>& rhs) \
     : union_name(ch::internal::type_buffer_t<traits>(ch::internal::scalar_accessor::get_data(rhs))) {} \
   template <typename __T__, \
@@ -150,14 +149,14 @@ public:
     ch::internal::type_buffer_t<traits>(traits::bitwidth, CH_SOURCE_LOCATION, CH_STRINGIZE(name))) \
     : CH_FOR_EACH(CH_UNION_LOGIC_CTOR, CH_SEP_COMMA, __VA_ARGS__) {} \
   union_name(const union_name& rhs, const source_location& sloc = CH_SOURCE_LOCATION) \
-    : union_name(ch::internal::type_accessor_t<traits>::copy(rhs, sloc, CH_STRINGIZE(name))) {} \
+    : union_name(ch::internal::type_accessor_t<traits>::copy_buffer(rhs, sloc, CH_STRINGIZE(name))) {} \
   union_name(union_name&& rhs) \
     : CH_FOR_EACH(CH_UNION_MOVE_CTOR, CH_SEP_COMMA, __VA_ARGS__) {} \
   union_name(const const_name& rhs, const source_location& sloc = CH_SOURCE_LOCATION) \
-    : union_name(ch::internal::type_accessor_t<traits>::copy(rhs, sloc, CH_STRINGIZE(name))) {} \
+    : union_name(ch::internal::type_accessor_t<traits>::copy_buffer(rhs, sloc, CH_STRINGIZE(name))) {} \
   explicit union_name(const ch_bit<traits::bitwidth>& rhs, \
                       const source_location& sloc = CH_SOURCE_LOCATION) \
-    : union_name(ch::internal::type_accessor_t<traits>::copy(rhs, sloc, CH_STRINGIZE(name))) {} \
+    : union_name(ch::internal::type_accessor_t<traits>::copy_buffer(rhs, sloc, CH_STRINGIZE(name))) {} \
   explicit union_name(const ch_scalar<traits::bitwidth>& rhs, \
                       const source_location& sloc = CH_SOURCE_LOCATION) \
     : union_name(ch::internal::type_buffer_t<traits>( \

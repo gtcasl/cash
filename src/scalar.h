@@ -7,20 +7,20 @@ namespace ch {
 namespace internal {
 
 template <typename... Ts>
-struct bitwidth_impl;
+struct width_impl;
 
 template <typename T>
-struct bitwidth_impl<T> {
+struct width_impl<T> {
   static constexpr unsigned value = T::traits::bitwidth;
 };
 
 template <typename T0, typename... Ts>
-struct bitwidth_impl<T0, Ts...> {
-  static constexpr unsigned value = T0::traits::bitwidth + bitwidth_impl<Ts...>::value;
+struct width_impl<T0, Ts...> {
+  static constexpr unsigned value = T0::traits::bitwidth + width_impl<Ts...>::value;
 };
 
 template <typename... Ts>
-inline constexpr unsigned width_v = bitwidth_impl<std::decay_t<Ts>...>::value;
+inline constexpr unsigned width_v = width_impl<std::decay_t<Ts>...>::value;
 
 CH_DEF_SFINAE_CHECK(has_bitwidth, T::traits::bitwidth != 0);
 
@@ -51,33 +51,33 @@ struct non_ch_type {
 template <typename T>
 using ch_type_t = std::conditional_t<has_bitwidth<T>::value, T, non_ch_type>;
 
-template <typename T0, typename T1>
+template <bool resize, typename T0, typename T1>
 struct deduce_type_impl {
   using D0 = std::decay_t<T0>;
   using D1 = std::decay_t<T1>;
   using U0 = std::conditional_t<has_bitwidth<D0>::value, D0, non_ch_type>;
   using U1 = std::conditional_t<has_bitwidth<D1>::value, D1, non_ch_type>;
-  using type = std::conditional_t<
-    (width_v<U0> != 0) && (width_v<U1> != 0),
-    std::conditional_t<(width_v<U0> != width_v<U1>), non_ch_type, U0>,
-    std::conditional_t<(width_v<U0> != 0), U0, U1>>;
+  using type = std::conditional_t<(width_v<U0> != 0) && (width_v<U1> != 0),
+    std::conditional_t<(width_v<U0> == width_v<U1>) || ((width_v<U0> > width_v<U1>) && resize), U0,
+        std::conditional_t<(width_v<U0> < width_v<U1>) && resize, U1, non_ch_type>>,
+          std::conditional_t<(width_v<U0> != 0), U0, U1>>;
 };
 
-template <typename... Ts>
+template <bool resize, typename... Ts>
 struct deduce_type;
 
-template <typename T0, typename T1>
-struct deduce_type<T0, T1> {
-  using type = typename deduce_type_impl<T0, T1>::type;
+template <bool resize, typename T0, typename T1>
+struct deduce_type<resize, T0, T1> {
+  using type = typename deduce_type_impl<resize, T0, T1>::type;
 };
 
-template <typename T0, typename T1, typename... Ts>
-struct deduce_type<T0, T1, Ts...> {
-  using type = typename deduce_type<typename deduce_type_impl<T0, T1>::type, Ts...>::type;
+template <bool resize, typename T0, typename T1, typename... Ts>
+struct deduce_type<resize, T0, T1, Ts...> {
+  using type = typename deduce_type<resize, typename deduce_type_impl<resize, T0, T1>::type, Ts...>::type;
 };
 
-template <typename... Ts>
-using deduce_type_t = typename deduce_type<Ts...>::type;
+template <bool resize, typename... Ts>
+using deduce_type_t = typename deduce_type<resize, Ts...>::type;
 
 template <typename T0, typename T1>
 struct deduce_first_type_impl {
@@ -153,13 +153,13 @@ CH_DEF_SFINAE_CHECK(is_scalar_compatible, (std::is_same<ch_scalar<width_v<T>>, T
 
 template <typename... Ts>
 using deduce_ch_scalar_t = std::conditional_t<
-  is_scalar_compatible<deduce_type_t<Ts...>>::value, deduce_type_t<Ts...>, non_ch_type>;
+  is_scalar_compatible<deduce_type_t<false, Ts...>>::value, deduce_type_t<false, Ts...>, non_ch_type>;
 
 template <typename T, unsigned N = width_v<T>>
 using is_scalar_convertible = is_cast_convertible<ch_scalar<N>, T>;
 
-template <typename T, unsigned N = width_v<T>>
-using scalar_cast_t = std::conditional_t<is_scalar_type<T>::value, const T&, ch_scalar<N>>;
+template <typename T, typename R = ch_scalar<width_v<T>>>
+using scalar_cast_t = std::conditional_t<is_scalar_type<T>::value, const T&, R>;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -296,7 +296,7 @@ public:
   }
 
   template <typename T>
-  static auto copy(const T& obj) {
+  static auto copy_buffer(const T& obj) {
     assert(width_v<T> == obj.get_buffer()->get_size());
     return scalar_buffer(*obj.get_buffer());
   }
@@ -366,7 +366,7 @@ public:
   {}
 
   const_scalar(const const_scalar& rhs)
-    : buffer_(scalar_accessor::copy(rhs))
+    : buffer_(scalar_accessor::copy_buffer(rhs))
   {}
 
   const_scalar(const_scalar&& rhs)
@@ -377,7 +377,7 @@ public:
             CH_REQUIRES(is_scalar_type<U>::value),
             CH_REQUIRES(N == width_v<U>)>
   explicit const_scalar(const U& rhs) :
-    buffer_(scalar_accessor::copy(rhs))
+    buffer_(scalar_accessor::copy_buffer(rhs))
   {}
 
   template <typename U,

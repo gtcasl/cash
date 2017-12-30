@@ -68,11 +68,11 @@ public: \
     ch::internal::type_buffer_t<traits>(traits::bitwidth)) \
     : CH_FOR_EACH(CH_STRUCT_SCALAR_CTOR, CH_SEP_COMMA, __VA_ARGS__) {} \
   struct_name(const struct_name& rhs) \
-    : struct_name(ch::internal::type_accessor_t<traits>::copy(rhs)) {} \
+    : struct_name(ch::internal::type_accessor_t<traits>::copy_buffer(rhs)) {} \
   struct_name(struct_name&& rhs) : \
     CH_FOR_EACH(CH_STRUCT_MOVE_CTOR, CH_SEP_COMMA, __VA_ARGS__) {} \
   struct_name(const const_name& rhs) \
-    : struct_name(ch::internal::type_accessor_t<traits>::copy(rhs)) {} \
+    : struct_name(ch::internal::type_accessor_t<traits>::copy_buffer(rhs)) {} \
   template <typename __T__, CH_REQUIRES(std::is_integral_v<__T__> || std::is_enum_v<__T__>)> \
   explicit struct_name(__T__ rhs) \
     : struct_name(ch::internal::type_buffer_t<traits>(ch::internal::bitvector(traits::bitwidth, rhs))) {} \
@@ -107,16 +107,16 @@ public: \
     ch::internal::type_buffer_t<traits>(traits::bitwidth, CH_SOURCE_LOCATION, CH_STRINGIZE(name))) \
     : CH_FOR_EACH(CH_STRUCT_LOGIC_CTOR, CH_SEP_COMMA, __VA_ARGS__) {} \
   struct_name(const struct_name& rhs, const source_location& sloc = CH_SOURCE_LOCATION) \
-    : struct_name(ch::internal::type_accessor_t<traits>::copy(rhs, sloc, CH_STRINGIZE(name))) {} \
+    : struct_name(ch::internal::type_accessor_t<traits>::copy_buffer(rhs, sloc, CH_STRINGIZE(name))) {} \
   struct_name(struct_name&& rhs) : \
     CH_FOR_EACH(CH_STRUCT_MOVE_CTOR, CH_SEP_COMMA, __VA_ARGS__) {} \
   struct_name(const const_name& rhs, const source_location& sloc = CH_SOURCE_LOCATION) \
-    : struct_name(ch::internal::type_accessor_t<traits>::copy(rhs, sloc, CH_STRINGIZE(name))) {} \
+    : struct_name(ch::internal::type_accessor_t<traits>::copy_buffer(rhs, sloc, CH_STRINGIZE(name))) {} \
   template <typename __T__, CH_REQUIRES(std::is_integral_v<__T__> || std::is_enum_v<__T__>)> \
   explicit struct_name(__T__ rhs, const source_location& sloc = CH_SOURCE_LOCATION) \
     : struct_name(ch::internal::type_buffer_t<traits>(ch::internal::bitvector(traits::bitwidth, rhs), sloc, CH_STRINGIZE(name))) {} \
   explicit struct_name(const ch_bit<traits::bitwidth>& rhs, const source_location& sloc = CH_SOURCE_LOCATION) \
-    : struct_name(ch::internal::type_accessor_t<traits>::copy(rhs, sloc, CH_STRINGIZE(name))) {} \
+    : struct_name(ch::internal::type_accessor_t<traits>::copy_buffer(rhs, sloc, CH_STRINGIZE(name))) {} \
   explicit struct_name(const ch_scalar<traits::bitwidth>& rhs, const source_location& sloc = CH_SOURCE_LOCATION) \
     : struct_name(ch::internal::type_buffer_t<traits>(ch::internal::scalar_accessor::get_data(rhs), sloc, CH_STRINGIZE(name))) {} \
   template <CH_REVERSE_FOR_EACH(CH_STRUCT_FIELD_CTOR_TMPL, CH_SEP_COMMA, __VA_ARGS__), \
@@ -150,12 +150,12 @@ public: \
     : base(buffer) \
     , CH_FOR_EACH(CH_STRUCT_SCALAR_CTOR, CH_SEP_COMMA, __VA_ARGS__) {} \
   struct_name(const struct_name& rhs) \
-    : struct_name(ch::internal::type_accessor_t<traits>::copy(rhs)) {} \
+    : struct_name(ch::internal::type_accessor_t<traits>::copy_buffer(rhs)) {} \
   struct_name(struct_name&& rhs) \
     : base(std::move(rhs))\
     , CH_FOR_EACH(CH_STRUCT_MOVE_CTOR, CH_SEP_COMMA, __VA_ARGS__) {} \
   struct_name(const const_name& rhs) \
-    : struct_name(ch::internal::type_accessor_t<traits>::copy(rhs)) {} \
+    : struct_name(ch::internal::type_accessor_t<traits>::copy_buffer(rhs)) {} \
   template <typename __T__, CH_REQUIRES(std::is_integral_v<__T__> || std::is_enum_v<__T__>)> \
   explicit struct_name(__T__ rhs) \
     : struct_name(ch::internal::type_buffer_t<traits>(ch::internal::bitvector(traits::bitwidth, rhs))) {} \
@@ -192,17 +192,17 @@ public: \
     : base(buffer) \
     , CH_FOR_EACH(CH_STRUCT_LOGIC_CTOR, CH_SEP_COMMA, __VA_ARGS__) {} \
   struct_name(const struct_name& rhs, const source_location& sloc = CH_SOURCE_LOCATION) \
-    : struct_name(ch::internal::type_accessor_t<traits>::copy(rhs, sloc, CH_STRINGIZE(name))) {} \
+    : struct_name(ch::internal::type_accessor_t<traits>::copy_buffer(rhs, sloc, CH_STRINGIZE(name))) {} \
   struct_name(struct_name&& rhs) \
     : base(std::move(rhs))\
     , CH_FOR_EACH(CH_STRUCT_MOVE_CTOR, CH_SEP_COMMA, __VA_ARGS__) {} \
   struct_name(const const_name& rhs, const source_location& sloc = CH_SOURCE_LOCATION) \
-    : struct_name(ch::internal::type_accessor_t<traits>::copy(rhs, sloc, CH_STRINGIZE(name))) {} \
+    : struct_name(ch::internal::type_accessor_t<traits>::copy_buffer(rhs, sloc, CH_STRINGIZE(name))) {} \
   template <typename __T__, CH_REQUIRES(std::is_integral_v<__T__> || std::is_enum_v<__T__>)> \
   explicit struct_name(__T__ rhs, const source_location& sloc = CH_SOURCE_LOCATION) \
     : struct_name(ch::internal::type_buffer_t<traits>(ch::internal::bitvector(traits::bitwidth, rhs), sloc, CH_STRINGIZE(name))) {} \
   explicit struct_name(const ch_bit<traits::bitwidth>& rhs, const source_location& sloc = CH_SOURCE_LOCATION) \
-    : struct_name(ch::internal::type_accessor_t<traits>::copy(rhs, sloc, CH_STRINGIZE(name))) {} \
+    : struct_name(ch::internal::type_accessor_t<traits>::copy_buffer(rhs, sloc, CH_STRINGIZE(name))) {} \
   explicit struct_name(const ch_scalar<traits::bitwidth>& rhs, const source_location& sloc = CH_SOURCE_LOCATION) \
     : struct_name(ch::internal::type_buffer_t<traits>(ch::internal::scalar_accessor::get_data(rhs), sloc, CH_STRINGIZE(name))) {} \
   template <CH_REVERSE_FOR_EACH(CH_STRUCT_FIELD_CTOR_TMPL, CH_SEP_COMMA, __VA_ARGS__), \

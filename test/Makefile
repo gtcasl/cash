@@ -1,5 +1,5 @@
 #CXX = clang-5.0
-CXXFLAGS += -std=c++17 -O0 -g --coverage -pedantic -Wall -Wextra
+CXXFLAGS += -std=c++17 -O0 -g --coverage -pedantic -Wall -Wextra -fmax-errors=5
 LDFLAGS += -lcash -lstdc++
 
 PROJECT = test.out

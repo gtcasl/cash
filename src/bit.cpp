@@ -4,7 +4,8 @@ using namespace ch::internal;
 
 static uint32_t make_id() {
   static uint32_t s_id(0);
-  return ++s_id;
+  uint32_t var_id = ++s_id;
+  return var_id;
 }
 
 bit_buffer_impl::bit_buffer_impl(const lnode& value,

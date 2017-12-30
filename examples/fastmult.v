@@ -5,18 +5,21 @@ module FastMult(
     input wire[3:0] io_rhs,
     output wire[7:0] io_out
 );
-    wire[3:0] io_lhs2; // fastmult.cpp(7) #1
-    wire[3:0] io_rhs5; // fastmult.cpp(7) #2
-    wire[7:0] io_out8; // fastmult.cpp(7) #3
+    wire[3:0] io_lhs2; // #1 fastmult.cpp(7)
+    wire[3:0] io_rhs5; // #2 fastmult.cpp(7)
+    wire[7:0] io_out8; // #3 fastmult.cpp(7)
     reg[7:0] mem10[0:255];
-    wire[7:0] proxy13; // fastmult.cpp(21) #5
-    wire[7:0] proxy15; // fastmult.cpp(21) #7
-    wire[7:0] sll17;
-    wire[7:0] or18;
+    wire[3:0] proxy12; // #4 /home/blaise/dev/cash/src/bit.h(1020)
+    wire[7:0] proxy14; // #5 fastmult.cpp(21)
+    wire[3:0] proxy15; // #6 /home/blaise/dev/cash/src/bit.h(1020)
+    wire[7:0] proxy17; // #7 fastmult.cpp(21)
+    wire[7:0] sll20;
+    wire[7:0] or22;
+    wire[7:0] proxy23; // #10 unknown(0)
 
     assign io_lhs2 = io_lhs;
     assign io_rhs5 = io_rhs;
-    assign io_out8 = mem10[or18];
+    assign io_out8 = mem10[proxy23];
     initial begin
         mem10[0] = 8'h0;
         mem10[1] = 8'h0;
@@ -275,10 +278,13 @@ module FastMult(
         mem10[254] = 8'hd2;
         mem10[255] = 8'he1;
     end
-    assign proxy13 = {4'h0, io_rhs5};
-    assign proxy15 = {4'h0, io_lhs2};
-    assign sll17 = proxy15 << 8'h4;
-    assign or18 = sll17 | proxy13;
+    assign proxy12 = 4'h0;
+    assign proxy14 = {proxy12, io_rhs5};
+    assign proxy15 = 4'h0;
+    assign proxy17 = {proxy15, io_lhs2};
+    assign sll20 = proxy17 << 8'h4;
+    assign or22 = sll20 | proxy14;
+    assign proxy23 = or22;
 
     assign io_out = io_out8;
 

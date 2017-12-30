@@ -116,10 +116,10 @@ namespace core {
   //
 
   using ch::internal::ch_clone;
+  using ch::internal::ch_slice;
   using ch::internal::ch_zext;
   using ch::internal::ch_sext;
   using ch::internal::ch_cat;
-  using ch::internal::ch_slice;
   using ch::internal::ch_shuffle;
 
   //
