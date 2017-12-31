@@ -279,13 +279,13 @@ TEST_CASE("arithmetic", "[arithmetic]") {
     TEST([]()->ch_bit1 {
       ch_bit4 a(0x1);
       ch_bit8 b(0x2);
-      ch_bit4 c = b - a;
+      ch_bit8 c = b - a;
       return (c == 1);
     });
     TEST([]()->ch_bit1 {
       ch_bit8 a(0x1);
       ch_bit4 b(0x2);
-      ch_bit4 c = b - a;
+      ch_bit8 c = b - a;
       return (c == 1);
     });
     TEST([]()->ch_bit1 {

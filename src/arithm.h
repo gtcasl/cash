@@ -108,6 +108,18 @@ lnodeimpl* createAluNode(ch_alu_op op,
 
 #define CH_GLOBAL_OPERATORS(func, header, lhs_t, rhs_t, body) \
   CH_REM header \
+  inline auto func(lhs_t lhs, rhs_t _rhs) { \
+    auto rhs = static_cast<std::decay_t<lhs_t>>(_rhs); \
+    return body; \
+  } \
+  CH_REM header \
+  inline auto func(rhs_t _lhs, lhs_t rhs) { \
+    auto lhs = static_cast<std::decay_t<lhs_t>>(_lhs); \
+    return body; \
+  }
+
+#define CH_GLOBAL_OPERATORS_SZ(func, header, lhs_t, rhs_t, body) \
+  CH_REM header \
   inline auto func(lhs_t _lhs, rhs_t _rhs) { \
     using ret_t = deduce_type_t<true, lhs_t, rhs_t>; \
     auto lhs = ch_zext<ret_t>(static_cast<logic_cast_t<lhs_t, ret_t>>(_lhs)); \
@@ -234,3 +246,36 @@ lnodeimpl* createAluNode(ch_alu_op op,
 
 #define CH_GLOBAL_OP_ROTR(header, lhs_t, rhs_t) \
   CH_GLOBAL_OPERATORS(ch_rotr, header, lhs_t, rhs_t, ch_rotr(lhs, rhs))
+
+
+#define CH_GLOBAL_OP_AND_SZ(header, lhs_t, rhs_t) \
+  CH_GLOBAL_OPERATORS_SZ(ch_and, header, lhs_t, rhs_t, (lhs & rhs)) \
+  CH_GLOBAL_OPERATORS_SZ(operator&, header, lhs_t, rhs_t, (lhs & rhs))
+
+#define CH_GLOBAL_OP_OR_SZ(header, lhs_t, rhs_t) \
+  CH_GLOBAL_OPERATORS_SZ(ch_or, header, lhs_t, rhs_t, (lhs | rhs)) \
+  CH_GLOBAL_OPERATORS_SZ(operator|, header, lhs_t, rhs_t, (lhs | rhs))
+
+#define CH_GLOBAL_OP_XOR_SZ(header, lhs_t, rhs_t) \
+  CH_GLOBAL_OPERATORS_SZ(ch_xor, header, lhs_t, rhs_t, (lhs ^ rhs)) \
+  CH_GLOBAL_OPERATORS_SZ(operator^, header, lhs_t, rhs_t, (lhs ^ rhs))
+
+#define CH_GLOBAL_OP_ADD_SZ(header, lhs_t, rhs_t) \
+  CH_GLOBAL_OPERATORS_SZ(ch_add, header, lhs_t, rhs_t, (lhs + rhs)) \
+  CH_GLOBAL_OPERATORS_SZ(operator+, header, lhs_t, rhs_t, (lhs + rhs))
+
+#define CH_GLOBAL_OP_SUB_SZ(header, lhs_t, rhs_t) \
+  CH_GLOBAL_OPERATORS_SZ(ch_sub, header, lhs_t, rhs_t, (lhs - rhs)) \
+  CH_GLOBAL_OPERATORS_SZ(operator-, header, lhs_t, rhs_t, (lhs - rhs))
+
+#define CH_GLOBAL_OP_MULT_SZ(header, lhs_t, rhs_t) \
+  CH_GLOBAL_OPERATORS_SZ(ch_mult, header, lhs_t, rhs_t, (lhs * rhs)) \
+  CH_GLOBAL_OPERATORS_SZ(operator*, header, lhs_t, rhs_t, (lhs * rhs))
+
+#define CH_GLOBAL_OP_DIV_SZ(header, lhs_t, rhs_t) \
+  CH_GLOBAL_OPERATORS_SZ(ch_div, header, lhs_t, rhs_t, (lhs / rhs)) \
+  CH_GLOBAL_OPERATORS_SZ(operator/, header, lhs_t, rhs_t, (lhs / rhs))
+
+#define CH_GLOBAL_OP_MOD_SZ(header, lhs_t, rhs_t) \
+  CH_GLOBAL_OPERATORS_SZ(ch_mod, header, lhs_t, rhs_t, (lhs % rhs)) \
+  CH_GLOBAL_OPERATORS_SZ(operator%, header, lhs_t, rhs_t, (lhs % rhs))
