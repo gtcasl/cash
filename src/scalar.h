@@ -325,6 +325,8 @@ public:
 ///////////////////////////////////////////////////////////////////////////////
 
 #define CH_SCALAR_FRIEND_OPS(i, x) \
+  CH_FRIEND_BOOL_AND((), const const_scalar&, x) \
+  CH_FRIEND_BOOL_OR((), const const_scalar&, x) \
   CH_FRIEND_OP_EQ((), const const_scalar&, x) \
   CH_FRIEND_OP_NE((), const const_scalar&, x) \
   CH_FRIEND_OP_LT((), const const_scalar&, x) \
@@ -425,8 +427,22 @@ public:
     return !(rhs.buffer_->get_data() < rhs.buffer_->get_data());
   }
 
+  auto operator&&(const const_scalar& rhs) const {
+    static_assert(N == 1, "invalid size");
+    bitvector ret(1);
+    And(ret, buffer_->get_data(), rhs.buffer_->get_data());
+    return ch_scalar<N>(scalar_buffer(std::move(ret)));
+  }
+
+  auto operator||(const const_scalar& rhs) const {
+    static_assert(N == 1, "invalid size");
+    bitvector ret(1);
+    Or(ret, buffer_->get_data(), rhs.buffer_->get_data());
+    return ch_scalar<N>(scalar_buffer(std::move(ret)));
+  }
+
   auto operator!() const {
-    return (const_scalar(0x0) == *this);
+    return (*this == 0x0);
   }
 
   auto operator~() const {

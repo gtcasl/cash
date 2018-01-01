@@ -131,58 +131,63 @@ lnodeimpl* createAluNode(ch_alu_op op,
   CH_FRIEND_OPERATORS(operator==, header, lhs_t, rhs_t, (lhs == rhs))
 
 #define CH_GLOBAL_OP_EQ(header, lhs_t, rhs_t) \
-  CH_GLOBAL_OPERATORS(ch_eq, header, lhs_t, rhs_t, ch_eq(lhs, rhs))
+  CH_GLOBAL_OPERATORS(ch_eq, header, lhs_t, rhs_t, (lhs == rhs))
 
 #define CH_FRIEND_OP_NE(header, lhs_t, rhs_t) \
   CH_FRIEND_OPERATORS(operator!=, header, lhs_t, rhs_t, (lhs != rhs))
 
 #define CH_GLOBAL_OP_NE(header, lhs_t, rhs_t) \
-  CH_GLOBAL_OPERATORS(ch_ne, header, lhs_t, rhs_t, ch_ne(lhs, rhs))
+  CH_GLOBAL_OPERATORS(ch_ne, header, lhs_t, rhs_t, (lhs != rhs))
 
 #define CH_FRIEND_OP_LT(header, lhs_t, rhs_t) \
   CH_FRIEND_OPERATORS(operator<, header, lhs_t, rhs_t, (lhs < rhs))
 
 #define CH_GLOBAL_OP_LT(header, lhs_t, rhs_t) \
-  CH_GLOBAL_OPERATORS(ch_lt, header, lhs_t, rhs_t, ch_lt(lhs, rhs))
+  CH_GLOBAL_OPERATORS(ch_lt, header, lhs_t, rhs_t, (lhs < rhs))
 
 #define CH_FRIEND_OP_LE(header, lhs_t, rhs_t) \
   CH_FRIEND_OPERATORS(operator<=, header, lhs_t, rhs_t, (lhs <= rhs))
 
 #define CH_GLOBAL_OP_LE(header, lhs_t, rhs_t) \
-  CH_GLOBAL_OPERATORS(ch_le, header, lhs_t, rhs_t, ch_le(lhs, rhs))
+  CH_GLOBAL_OPERATORS(ch_le, header, lhs_t, rhs_t, (lhs <= rhs))
 
 #define CH_FRIEND_OP_GT(header, lhs_t, rhs_t) \
   CH_FRIEND_OPERATORS(operator>, header, lhs_t, rhs_t, (lhs > rhs))
 
 #define CH_GLOBAL_OP_GT(header, lhs_t, rhs_t) \
-  CH_GLOBAL_OPERATORS(ch_gt, header, lhs_t, rhs_t, ch_gt(lhs, rhs))
+  CH_GLOBAL_OPERATORS(ch_gt, header, lhs_t, rhs_t, (lhs > rhs))
 
 #define CH_FRIEND_OP_GE(header, lhs_t, rhs_t) \
   CH_FRIEND_OPERATORS(operator>=, header, lhs_t, rhs_t, (lhs >= rhs))
 
 #define CH_GLOBAL_OP_GE(header, lhs_t, rhs_t) \
-  CH_GLOBAL_OPERATORS(ch_ge, header, lhs_t, rhs_t, ch_ge(lhs, rhs))
+  CH_GLOBAL_OPERATORS(ch_ge, header, lhs_t, rhs_t, (lhs >= rhs))
+
+
+#define CH_FRIEND_BOOL_AND(header, lhs_t, rhs_t) \
+  CH_FRIEND_OPERATORS(operator&&, header, lhs_t, rhs_t, (lhs && rhs))
+
+#define CH_FRIEND_BOOL_OR(header, lhs_t, rhs_t) \
+  CH_FRIEND_OPERATORS(operator||, header, lhs_t, rhs_t, (lhs || rhs))
 
 
 #define CH_FRIEND_OP_AND(header, lhs_t, rhs_t) \
-  CH_FRIEND_OPERATORS(operator&&, header, lhs_t, rhs_t, (lhs && rhs)) \
   CH_FRIEND_OPERATORS(operator&, header, lhs_t, rhs_t, (lhs & rhs))
 
 #define CH_GLOBAL_OP_AND(header, lhs_t, rhs_t) \
-  CH_GLOBAL_OPERATORS(ch_and, header, lhs_t, rhs_t, ch_and(lhs, rhs))
+  CH_GLOBAL_OPERATORS(ch_and, header, lhs_t, rhs_t, (lhs & rhs))
 
 #define CH_FRIEND_OP_OR(header, lhs_t, rhs_t) \
-  CH_FRIEND_OPERATORS(operator||, header, lhs_t, rhs_t, (lhs || rhs)) \
   CH_FRIEND_OPERATORS(operator|, header, lhs_t, rhs_t, (lhs | rhs))
 
 #define CH_GLOBAL_OP_OR(header, lhs_t, rhs_t) \
-  CH_GLOBAL_OPERATORS(ch_or, header, lhs_t, rhs_t, ch_or(lhs, rhs))
+  CH_GLOBAL_OPERATORS(ch_or, header, lhs_t, rhs_t, (lhs | rhs))
 
 #define CH_FRIEND_OP_XOR(header, lhs_t, rhs_t) \
   CH_FRIEND_OPERATORS(operator^, header, lhs_t, rhs_t, (lhs ^ rhs))
 
 #define CH_GLOBAL_OP_XOR(header, lhs_t, rhs_t) \
-  CH_GLOBAL_OPERATORS(ch_xor, header, lhs_t, rhs_t, ch_xor(lhs, rhs))
+  CH_GLOBAL_OPERATORS(ch_xor, header, lhs_t, rhs_t, (lhs ^ rhs))
 
 
 #define CH_GLOBAL_OP_NAND(header, lhs_t, rhs_t) \
@@ -199,44 +204,44 @@ lnodeimpl* createAluNode(ch_alu_op op,
   CH_FRIEND_OPERATORS(operator+, header, lhs_t, rhs_t, (lhs + rhs))
 
 #define CH_GLOBAL_OP_ADD(header, lhs_t, rhs_t) \
-  CH_GLOBAL_OPERATORS(ch_add, header, lhs_t, rhs_t, ch_add(lhs, rhs))
+  CH_GLOBAL_OPERATORS(ch_add, header, lhs_t, rhs_t, (lhs + rhs))
 
 #define CH_FRIEND_OP_SUB(header, lhs_t, rhs_t) \
   CH_FRIEND_OPERATORS(operator-, header, lhs_t, rhs_t, (lhs - rhs))
 
 #define CH_GLOBAL_OP_SUB(header, lhs_t, rhs_t) \
-  CH_GLOBAL_OPERATORS(ch_sub, header, lhs_t, rhs_t, ch_sub(lhs, rhs))
+  CH_GLOBAL_OPERATORS(ch_sub, header, lhs_t, rhs_t, (lhs - rhs))
 
 #define CH_FRIEND_OP_MULT(header, lhs_t, rhs_t) \
   CH_FRIEND_OPERATORS(operator*, header, lhs_t, rhs_t, (lhs * rhs))
 
 #define CH_GLOBAL_OP_MULT(header, lhs_t, rhs_t) \
-  CH_GLOBAL_OPERATORS(ch_mult, header, lhs_t, rhs_t, ch_mult(lhs, rhs))
+  CH_GLOBAL_OPERATORS(ch_mult, header, lhs_t, rhs_t, (lhs * rhs))
 
 #define CH_FRIEND_OP_DIV(header, lhs_t, rhs_t) \
   CH_FRIEND_OPERATORS(operator/, header, lhs_t, rhs_t, (lhs / rhs))
 
 #define CH_GLOBAL_OP_DIV(header, lhs_t, rhs_t) \
-  CH_GLOBAL_OPERATORS(ch_div, header, lhs_t, rhs_t, ch_div(lhs, rhs))
+  CH_GLOBAL_OPERATORS(ch_div, header, lhs_t, rhs_t, (lhs / rhs))
 
 #define CH_FRIEND_OP_MOD(header, lhs_t, rhs_t) \
   CH_FRIEND_OPERATORS(operator%, header, lhs_t, rhs_t, (lhs % rhs))
 
 #define CH_GLOBAL_OP_MOD(header, lhs_t, rhs_t) \
-  CH_GLOBAL_OPERATORS(ch_mod, header, lhs_t, rhs_t, ch_mod(lhs, rhs))
+  CH_GLOBAL_OPERATORS(ch_mod, header, lhs_t, rhs_t, (lhs % rhs))
 
 
 #define CH_FRIEND_OP_SLL(header, lhs_t, rhs_t) \
   CH_FRIEND_OPERATORS(operator<<, header, lhs_t, rhs_t, (lhs << rhs))
 
 #define CH_GLOBAL_OP_SLL(header, lhs_t, rhs_t) \
-  CH_GLOBAL_OPERATORS(ch_sll, header, lhs_t, rhs_t, ch_sll(lhs, rhs))
+  CH_GLOBAL_OPERATORS(ch_sll, header, lhs_t, rhs_t, (lhs << rhs))
 
 #define CH_FRIEND_OP_SRL(header, lhs_t, rhs_t) \
   CH_FRIEND_OPERATORS(operator>>, header, lhs_t, rhs_t, (lhs >> rhs))
 
 #define CH_GLOBAL_OP_SRL(header, lhs_t, rhs_t) \
-  CH_GLOBAL_OPERATORS(ch_srl, header, lhs_t, rhs_t, ch_srl(lhs, rhs))
+  CH_GLOBAL_OPERATORS(ch_srl, header, lhs_t, rhs_t, (lhs >> rhs))
 
 #define CH_GLOBAL_OP_SRA(header, lhs_t, rhs_t) \
   CH_GLOBAL_OPERATORS(ch_sra, header, lhs_t, rhs_t, ch_sra(lhs, rhs))

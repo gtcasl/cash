@@ -340,6 +340,8 @@ auto OpReduce(const const_bit<N>& a) {
 ///////////////////////////////////////////////////////////////////////////////
 
 #define CH_BIT_FRIEND_OPS(i, x) \
+  CH_FRIEND_BOOL_AND((), const const_bit&, x) \
+  CH_FRIEND_BOOL_OR((), const const_bit&, x) \
   CH_FRIEND_OP_EQ((), const const_bit&, x) \
   CH_FRIEND_OP_NE((), const const_bit&, x) \
   CH_FRIEND_OP_LT((), const const_bit&, x) \
@@ -455,6 +457,22 @@ public:
 
   auto operator>=(const const_bit& rhs) const {
     return OpCompare<alu_ge, N>(*this, rhs);
+  }
+
+  // logical operators
+
+  auto operator&&(const const_bit& rhs) const {
+    static_assert(N == 1, "invalid size");
+    return OpBinary<alu_and, 1>(*this, rhs);
+  }
+
+  auto operator||(const const_bit& rhs) const {
+    static_assert(N == 1, "invalid size");
+    return OpBinary<alu_or, 1>(*this, rhs);
+  }
+
+  auto operator!() const {
+    return (*this == 0x0);
   }
 
   // bitwise operators
@@ -809,20 +827,6 @@ auto ch_rotl(const const_bit<N>& lhs, const const_bit<M>& rhs) {
 template <unsigned N, unsigned M>
 auto ch_rotr(const const_bit<N>& lhs, const const_bit<M>& rhs) {
   return OpShiftOp<alu_rotr, N, M>(lhs, rhs);
-}
-
-// logic operators
-
-inline auto operator! (const const_bit<1>& in) {
-  return ~in;
-}
-
-inline auto operator&& (const const_bit<1>& lhs, const const_bit<1>& rhs) {
-  return lhs & rhs;
-}
-
-inline auto operator|| (const const_bit<1>& lhs, const const_bit<1>& rhs) {
-  return lhs | rhs;
 }
 
 // multiplexers
