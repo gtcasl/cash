@@ -63,6 +63,7 @@ bit_buffer_impl::bit_buffer_impl(const lnode& data,
 bit_buffer_impl::bit_buffer_impl(unsigned size,
                                  const bit_buffer_ptr& buffer,
                                  unsigned offset,
+                                 const source_location& sloc,
                                  const std::string& name)
   : id_(make_id())
   , value_(size, buffer->get_data(), offset)
@@ -70,7 +71,7 @@ bit_buffer_impl::bit_buffer_impl(unsigned size,
   , offset_(offset) {
   assert(offset + size <= buffer->get_size());
   value_.set_var_id(id_);
-  value_.set_source_location(buffer->get_data().get_source_location());
+  value_.set_source_location(sloc);
   if (!name.empty()) {
     assert(!buffer->get_data().get_name().empty());
     value_.set_name(fstring("%s_%s", buffer->get_data().get_name().c_str(), name.c_str()));

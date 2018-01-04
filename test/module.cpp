@@ -70,7 +70,7 @@ struct Filter {
   void describe() {
     auto tmp = (ch_zext<ch_width_v<T>+1>(io.x.data) << 1)
               | ch_zext<ch_width_v<T>+1>(io.x.parity);
-    io.y.data   = ch_reg(tmp.template slice<ch_width_v<T>>());
+    io.y.data   = ch_reg(ch_slice<T>(tmp));
     io.y.parity = tmp[ch_width_v<T>];
     io.y.valid  = ch_reg(io.x.valid);
   }

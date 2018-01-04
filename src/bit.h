@@ -111,6 +111,7 @@ public:
   bit_buffer_impl(unsigned size,
                   const bit_buffer_ptr& buffer,
                   unsigned offset,
+                  const source_location& sloc = source_location(),
                   const std::string& name = "");
 
   virtual ~bit_buffer_impl() {}
@@ -429,8 +430,16 @@ public:
   }
 
   template <unsigned M>
-  auto slice(size_t start = 0) const {
-    return const_bit<M>(bit_buffer(M, buffer_, start));
+  auto slice(size_t start = 0, const source_location& sloc = CH_SOURCE_LOCATION) const {
+    static_assert(M <= N, "invalid size");
+    return const_bit<M>(bit_buffer(M, buffer_, start, sloc));
+  }
+
+  template <typename R,
+            CH_REQUIRES(is_logic_compatible<R>::value)>
+  auto slice(size_t start = 0, const source_location& sloc = CH_SOURCE_LOCATION) const {
+    static_assert(width_v<R> <= N, "invalid size");
+    return const_type_t<R>(bit_buffer(width_v<R>, buffer_, start, sloc));
   }
 
   // compare operators
@@ -649,17 +658,33 @@ public:
   }
 
   auto operator[](size_t index) {
-    return ch_bit<1>(bit_buffer(1, buffer_, index)); \
+    return ch_bit<1>(bit_buffer(1, buffer_, index));
   }
 
   template <unsigned M>
-  auto slice(size_t start = 0) const {
-    return const_bit<M>(bit_buffer(M, buffer_, start));
+  auto slice(size_t start = 0, const source_location& sloc = CH_SOURCE_LOCATION) const {
+    static_assert(M <= N, "invalid size");
+    return const_bit<M>(bit_buffer(M, buffer_, start, sloc));
+  }
+
+  template <typename R,
+            CH_REQUIRES(is_logic_compatible<R>::value)>
+  auto slice(size_t start = 0, const source_location& sloc = CH_SOURCE_LOCATION) const {
+    static_assert(width_v<R> <= N, "invalid size");
+    return const_type_t<R>(bit_buffer(width_v<R>, buffer_, start, sloc));
   }
 
   template <unsigned M>
-  auto slice(size_t start = 0) {
-    return ch_bit<M>(bit_buffer(M, buffer_, start));
+  auto slice(size_t start = 0, const source_location& sloc = CH_SOURCE_LOCATION) {
+    static_assert(M <= N, "invalid size");
+    return ch_bit<M>(bit_buffer(M, buffer_, start, sloc));
+  }
+
+  template <typename R,
+            CH_REQUIRES(is_logic_compatible<R>::value)>
+  auto slice(size_t start = 0, const source_location& sloc = CH_SOURCE_LOCATION) {
+    static_assert(width_v<R> <= N, "invalid size");
+    return R(bit_buffer(width_v<R>, buffer_, start, sloc));
   }
 
   CH_LOGIC_READONLY_INTERFACE(ch_bit)
@@ -896,7 +921,7 @@ protected:
 
   template <typename T, typename U>
   void assign_impl(unsigned src_offset, const T& src, U& dst) {
-    dst = ch_slice<width_v<U>>(src, src_offset, sloc_). template as<U>();
+    dst = ch_slice<U>(src, src_offset, sloc_);
   }
 
   template <typename T, typename U0, typename... Us>

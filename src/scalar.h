@@ -394,7 +394,15 @@ public:
 
   template <unsigned M>
   auto slice(size_t start = 0) const {
+    static_assert(M <= N, "invalid size");
     return const_scalar<M>(scalar_buffer(M, buffer_, start));
+  }
+
+  template <typename R,
+            CH_REQUIRES(is_scalar_compatible<R>::value)>
+  auto slice(size_t start = 0) const {
+    static_assert(width_v<R> <= N, "invalid size");
+    return const_type_t<R>(bit_buffer(width_v<R>, buffer_, start));
   }
 
   template <typename U,
@@ -591,12 +599,28 @@ public:
 
   template <unsigned M>
   auto slice(size_t start = 0) const {
+    static_assert(M <= N, "invalid size");
     return const_scalar<M>(scalar_buffer(M, buffer_, start));
+  }
+
+  template <typename R,
+            CH_REQUIRES(is_scalar_compatible<R>::value)>
+  auto slice(size_t start = 0) const {
+    static_assert(width_v<R> <= N, "invalid size");
+    return const_type_t<R>(scalar_buffer(width_v<R>, buffer_, start));
   }
 
   template <unsigned M>
   auto slice(size_t start = 0) {
+    static_assert(M <= N, "invalid size");
     return ch_scalar<M>(scalar_buffer(M, buffer_, start));
+  }
+
+  template <typename R,
+            CH_REQUIRES(is_scalar_compatible<R>::value)>
+  auto slice(size_t start = 0) {
+    static_assert(width_v<R> <= N, "invalid size");
+    return R(scalar_buffer(width_v<R>, buffer_, start));
   }
 
   void write(uint32_t dst_offset,

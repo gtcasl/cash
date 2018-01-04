@@ -141,22 +141,22 @@ struct Dogfood {
 };
 
 int main() {
-  {
+  /*{
     ch_device<Dogfood> device;
     ch_simulator sim(device);
     device.io.in = 0xA;
     sim.run(4);
     assert(device.io.out);
-  }
+  }*/
 
-  /*{
+  {
     ch_device<Foo1> foo;
     foo.io.in1 = 1;
     foo.io.in2 = 2;
     ch_simulator sim(foo);
     sim.run(1);
     assert(3 == (int)foo.io.out);
-  }*/
+  }
 
   /*{
     ch_device<Foo2> foo;

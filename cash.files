@@ -107,6 +107,7 @@ test/catch.h
 test/common.cpp
 test/common.h
 test/dogfood.cpp
+test/filter.v
 test/float.cpp
 test/htl.cpp
 test/literals.cpp
