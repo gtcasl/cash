@@ -889,9 +889,9 @@ R ch_slice(const T& obj, size_t start = 0, const source_location& sloc = CH_SOUR
       return R(obj, sloc);
     }
   } else {
-    R ret(bit_buffer(width_v<R>, sloc));
+    ch_bit<width_v<R>> ret(bit_buffer(width_v<R>, sloc));
     bit_accessor::write(ret, 0, obj, start, width_v<R>);
-    return ret;
+    return ret.template as<R>();
   }
 }
 
