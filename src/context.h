@@ -87,6 +87,8 @@ struct cond_branch_t {
 
 typedef std::list<cond_branch_t> cond_branches_t;
 
+typedef const char* (*enum_string_cb)(uint32_t value);
+
 class context : public refcounted {
 public:
   uint32_t get_id() const {
@@ -218,6 +220,10 @@ public:
 
   void bind_input(const lnode& src, const lnode& input);
   void bind_output(const lnode& dst, const lnode& output);
+
+  //--
+  void register_enum_string(const lnode& node, enum_string_cb callback);
+  const char* enum_to_string(const lnode& node, ch_tick t);
   
 protected:
 
@@ -271,6 +277,8 @@ protected:
   std::stack<lnode>      user_resets_;
 
   unique_name            unique_tap_names_;
+
+  std::unordered_map<uint32_t, enum_string_cb> enum_strings_;
 
   friend class context_manager;
 };

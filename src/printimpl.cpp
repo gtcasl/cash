@@ -7,6 +7,7 @@ using namespace ch::internal;
 enum class fmttype {
   Int,
   Float,
+  String,
 };
 
 struct fmtinfo_t {
@@ -40,14 +41,13 @@ static const char* parse_format_index(fmtinfo_t* out, const char* str) {
     if (*str != '\0') {
       switch (*str) {
       case 'i':
-      case 'd':
-      case 'x':
         out->type = fmttype::Int;
         break;
       case 'f':
-      case 'F':
-      case 'g':
         out->type = fmttype::Float;
+        break;
+      case 's':
+        out->type = fmttype::String;
         break;
       }
       ++str; // advance pointer
@@ -102,6 +102,9 @@ const bitvector& printimpl::eval(ch_tick t) {
                 float valuef = bitcast<float>(value);
                 strbuf_ << valuef;
               }
+              break;
+            case fmttype::String:
+              strbuf_ << ctx_->enum_to_string(srcs_[args_offset_ + fmt.index], t);
               break;
             }            
           } else {

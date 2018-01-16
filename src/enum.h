@@ -2,6 +2,14 @@
 
 #include "bit.h"
 
+namespace ch {
+namespace internal {
+
+void register_enum_string(const lnode& node, void* callback);
+
+}
+}
+
 #define CH_ENUM_VALUE_1(x, i) i
 #define CH_ENUM_VALUE_2(x, i) CH_PAIR_SECOND(x)
 #define CH_ENUM_VALUE_(c) CH_CONCAT(CH_ENUM_VALUE_, c)
@@ -15,6 +23,11 @@
 #define CH_ENUM_FIELD_(c) CH_CONCAT(CH_ENUM_FIELD_, c)
 #define CH_ENUM_FIELD(i, x) CH_ENUM_FIELD_(CH_NARG(CH_REM x))(CH_REM x, x)
 
+#define CH_ENUM_STRING_1(x, y) y : return CH_STRINGIZE(y)
+#define CH_ENUM_STRING_2(x, y) CH_PAIR_FIRST(x) : return CH_STRINGIZE(CH_PAIR_FIRST(x))
+#define CH_ENUM_STRING_(c) CH_CONCAT(CH_ENUM_STRING_, c)
+#define CH_ENUM_STRING(i, x) case CH_ENUM_STRING_(CH_NARG(CH_REM x))(CH_REM x, x)
+
 #define CH_ENUM_SCALAR_IMPL(enum_name, const_name) \
   enum_name(const ch::internal::type_buffer_t<traits>& buffer = \
     ch::internal::type_buffer_t<traits>(traits::bitwidth)) : base(buffer) {} \
@@ -26,14 +39,15 @@
 #define CH_ENUM_LOGIC_IMPL(enum_name, const_name) \
   enum_name(const ch::internal::type_buffer_t<traits>& buffer = \
     ch::internal::type_buffer_t<traits>(traits::bitwidth, CH_SOURCE_LOCATION)) \
-    : base(buffer) {} \
+    : base(buffer) { ch::internal::register_enum_string(ch::internal::bit_accessor::get_data(*this), (void*)to_string); } \
   enum_name(const enum_name& rhs, const source_location& sloc = CH_SOURCE_LOCATION) \
-    : base(rhs, sloc) {} \
-  enum_name(enum_name&& rhs) : base(std::move(rhs)) {} \
+    : base(rhs, sloc) { ch::internal::register_enum_string(ch::internal::bit_accessor::get_data(*this), (void*)to_string); } \
+  enum_name(enum_name&& rhs) \
+    : base(std::move(rhs)) { ch::internal::register_enum_string(ch::internal::bit_accessor::get_data(*this), (void*)to_string); } \
   enum_name(const const_name& rhs, const source_location& sloc = CH_SOURCE_LOCATION) \
-    : base(rhs, sloc) {} \
+    : base(rhs, sloc) { ch::internal::register_enum_string(ch::internal::bit_accessor::get_data(*this), (void*)to_string); } \
   enum_name(enum_type rhs, const source_location& sloc = CH_SOURCE_LOCATION) \
-    : base(rhs, sloc) {}
+    : base(rhs, sloc) { ch::internal::register_enum_string(ch::internal::bit_accessor::get_data(*this), (void*)to_string); }
 
 #define CH_ENUM_WRITABLE_IMPL(enum_name, const_name) \
   enum_name& operator=(const enum_name& rhs) { \
@@ -70,6 +84,13 @@ protected: \
     , __MAX_VALUE__ \
     }; \
     static_assert(ilog2(__MAX_VALUE__) <= size, "enum size mismatch"); \
+    static const char* to_string(enum_type value) { \
+      switch (value) { \
+      CH_FOR_EACH(CH_ENUM_STRING, CH_SEP_SEMICOLON, __VA_ARGS__); \
+      default: \
+        return "undefined"; \
+      } \
+    }\
   private: \
     class __logic_const_type__; \
     class __scalar_type__; \

@@ -232,7 +232,7 @@ lnodeimpl* lnode::clone() const {
   return impl_->get_slice(0, impl_->get_size());
 }
 
-const bitvector& lnode::eval(ch_tick t) {
+const bitvector& lnode::eval(ch_tick t) const {
   assert(impl_);
   return impl_->eval(t);
 }

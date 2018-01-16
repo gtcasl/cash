@@ -15,6 +15,7 @@
 #include "cdomain.h"
 #include "arithm.h"
 #include "select.h"
+#include "enum.h"
 #include "misc.h"
 
 namespace ch {
@@ -635,6 +636,18 @@ void context::eval(ch_tick t) {
   }
 }
 
+void context::register_enum_string(const lnode& node, enum_string_cb callback) {
+  enum_strings_.emplace(node.get_var_id(), callback);
+}
+
+const char* context::enum_to_string(const lnode& node, ch_tick t) {
+  auto iter = enum_strings_.find(node.get_var_id());
+  if (iter != enum_strings_.end()) {
+    return iter->second(node.eval(t).get_word(0));
+  }
+  return "undefined";
+}
+
 void context::dump_ast(std::ostream& out, uint32_t level) {
   for (lnodeimpl* node : nodes_) {
     node->print(out, level);
@@ -755,4 +768,8 @@ void ch::internal::bindInput(const lnode& src, const lnode& input) {
 
 void ch::internal::bindOutput(const lnode& dst, const lnode& output) {
   dst.get_ctx()->bind_output(dst, output);
+}
+
+void ch::internal::register_enum_string(const lnode& node, void* callback) {
+  node.get_ctx()->register_enum_string(node, (enum_string_cb)callback);
 }

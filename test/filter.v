@@ -15,9 +15,9 @@ module Filter(
     wire[15:0] io_y_data11; // #2307 module.cpp(68)
     wire io_y_valid14; // #2308 module.cpp(68)
     wire io_y_parity17; // #2309 module.cpp(68)
-    wire[15:0] proxy20; // #2310 /home/blaise/dev/cash/src/bit.h(1004)
+    wire[15:0] proxy20; // #2310 /home/blaise/dev/cash/src/bit.h(1008)
     wire[16:0] proxy22; // #2311 module.cpp(72)
-    wire proxy24; // #2312 /home/blaise/dev/cash/src/bit.h(1004)
+    wire proxy24; // #2312 /home/blaise/dev/cash/src/bit.h(1008)
     wire[16:0] proxy26; // #2313 module.cpp(71)
     wire[16:0] sll29;
     wire[16:0] or31;

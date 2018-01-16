@@ -133,6 +133,10 @@ public:
     this->write(0, rhs.get_data(), 0, rhs.get_size());
   }
 
+  uint32_t get_id() const {
+    return id_;
+  }
+
   const lnode& get_data() const {
     uint32_t var_id = value_.get_var_id();
     CH_UNUSED(var_id);

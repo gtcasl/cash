@@ -9,9 +9,9 @@ module FastMult(
     wire[3:0] io_rhs5; // #2 fastmult.cpp(7)
     wire[7:0] io_out8; // #3 fastmult.cpp(7)
     reg[7:0] mem10[0:255];
-    wire[3:0] proxy12; // #4 /home/blaise/dev/cash/src/bit.h(1004)
+    wire[3:0] proxy12; // #4 /home/blaise/dev/cash/src/bit.h(1008)
     wire[7:0] proxy14; // #5 fastmult.cpp(21)
-    wire[3:0] proxy15; // #6 /home/blaise/dev/cash/src/bit.h(1004)
+    wire[3:0] proxy15; // #6 /home/blaise/dev/cash/src/bit.h(1008)
     wire[7:0] proxy17; // #7 fastmult.cpp(21)
     wire[7:0] sll20;
     wire[7:0] or22;
