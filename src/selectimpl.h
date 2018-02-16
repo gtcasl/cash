@@ -7,40 +7,29 @@ namespace internal {
 
 class selectimpl : public lnodeimpl {
 public:
- const lnode& get_pred() const {
-    return srcs_[0];
-  }
 
-  void set_pred(const lnode& node) {
-    srcs_[0] = node;
-  }
-
-  const lnode& get_true() const {
-    return srcs_[1];
-  }
-
-  void set_true(const lnode& node) {
-    srcs_[1] = node;
-  }
-
-  const lnode& get_false() const {
-    return srcs_[2];
-  }
-
-  void set_false(const lnode& node) {
-    srcs_[2] = node;
+  bool has_key() const {
+    return has_key_;
   }
 
   const bitvector& eval(ch_tick t) override;
 
+  void print(std::ostream& out, uint32_t level) const override;
+
 protected:
+
+  selectimpl(context* ctx, uint32_t size, lnodeimpl* key);
+
   selectimpl(context* ctx,
              const lnode& pred,
              const lnode& _true,
              const lnode& _false);
+
   ~selectimpl() {}
 
   ch_tick tick_;
+
+  bool has_key_;
 
   friend class context;
 };

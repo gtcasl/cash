@@ -1,4 +1,4 @@
-#include "verilogwriter.h"
+﻿#include "verilogwriter.h"
 #include "verilog.h"
 #include "context.h"
 #include "bindimpl.h"
@@ -257,7 +257,7 @@ bool verilogwriter::print_decl(lnodeimpl* node,
     out_ << " ";
     this->print_name(node);
     out_ << " = ";
-    this->print_value(node->get_value());
+    this->print_value(node->get_value(), true);
     out_ << ";" << std::endl;    
     return true;
   case type_proxy:
@@ -504,16 +504,52 @@ void verilogwriter::print_fadd(aluimpl* node) {
   out_ << "));" << std::endl;
 }
 
-void verilogwriter::print_select(selectimpl* node) {
-  out_ << "assign ";
-  this->print_name(node);
-  out_ << " = ";
-  this->print_name(node->get_pred().get_impl());
-  out_ << " ? ";
-  this->print_name(node->get_true().get_impl());
-  out_ << " : ";
-  this->print_name(node->get_false().get_impl());
-  out_ << ";" << std::endl;
+void verilogwriter::print_select(selectimpl* node) {  
+  bool has_key = node->has_key();
+  uint32_t i = has_key ? 1 : 0;
+  uint32_t last = node->get_num_srcs() - 1;
+  if (2 == last) {
+    out_ << "assign ";
+    this->print_name(node);
+    out_ << " = ";
+    if (has_key) {
+      out_ << "(";
+      this->print_name(node->get_src(0).get_impl());
+      out_ << " == ";
+      this->print_name(node->get_src(1).get_impl());
+      out_ << ")";
+    } else {
+      this->print_name(node->get_src(0).get_impl());
+    }
+    out_ << " ? ";
+    this->print_name(node->get_src(i+1).get_impl());
+    out_ << " : ";
+    this->print_name(node->get_src(i+2).get_impl());
+    out_ << ";" << std::endl;
+  } else {
+    out_ << "assign ";
+    this->print_name(node);
+    out_ << " = " << std::endl;
+    {
+      auto_indent indent(out_);
+      for (; i < last; i += 2) {
+        if (has_key) {
+          out_ << "(";
+          this->print_name(node->get_src(0).get_impl());
+          out_ << " == ";
+          this->print_name(node->get_src(i).get_impl());
+          out_ << ")";
+        } else {
+          this->print_name(node->get_src(i).get_impl());
+        }
+        out_ << " ? ";
+        this->print_name(node->get_src(i + 1).get_impl());
+        out_ << " : " << std::endl;
+      }
+      this->print_name(node->get_src(last).get_impl());
+      out_ << ";" << std::endl;
+    }
+  }
 }
 
 void verilogwriter::print_reg(regimpl* node) {
@@ -582,7 +618,7 @@ void verilogwriter::print_mem(memimpl* node) {
         this->print_name(node, true);
         out_ << "[" << i << "] = ";
         uint32_t offset = i * data_width;
-        this->print_value(value, offset, data_width);
+        this->print_value(value, true, offset, data_width);
         out_ << ";" << std::endl;
       }
     }
@@ -661,7 +697,7 @@ void verilogwriter::print_name(lnodeimpl* node, bool force) {
     break;
   case type_lit:
     if (!force && is_inline_literal(node)) {
-      print_value(node->get_value());
+      print_value(node->get_value(), true);
     } else {
       print_unique_name(node);
     }
@@ -702,8 +738,11 @@ void verilogwriter::print_type(lnodeimpl* node) {
   }
 }
 
-void verilogwriter::print_value(const bitvector& value, unsigned offset, unsigned size) {
-  bool skip_leading_zeros_enable = true;
+void verilogwriter::print_value(const bitvector& value,
+                                bool skip_leading_zeros_enable,
+                                unsigned offset,
+                                unsigned size) {
+  //--
   auto skip_leading_zeros = [&](int word)->bool {
     if (skip_leading_zeros_enable) {
       if (0 == word) {
@@ -714,10 +753,13 @@ void verilogwriter::print_value(const bitvector& value, unsigned offset, unsigne
     }
     return false;
   };
+
   if (0 == size) {
     size = value.get_size();
   }
+
   offset += (size -1);
+
   if (0 == (value.get_size() & 0x3)) {
     int word = 0;
     int wsize = 0;

@@ -7,15 +7,12 @@ namespace internal {
 
 class switch_t {
 public:
-  switch_t(const lnode& key) : key_(key) {
-    begin_branch();
+  switch_t(const lnode& key) {
+    begin_branch(key.get_impl());
   }
   ~switch_t() {
     end_branch();
   }
-
-protected:
-  lnode key_;
 
   template <typename K> friend class switch_body_t;
 };
@@ -65,7 +62,7 @@ switch_body_t<K> switch_case_t<K>::operator,(const V& value) {
 
 template <typename K>
 switch_case_t<K> switch_body_t<K>::operator,(const fvoid_t& body) {
-  cond_block(createAluNode(alu_eq, switch_->key_, value_), body);
+  cond_block(value_, body);
   return switch_case_t<K>(switch_);
 }
 

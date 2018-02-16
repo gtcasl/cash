@@ -2,6 +2,7 @@
 #include "context.h"
 
 using namespace ch::internal;
+
 litimpl::litimpl(context* ctx, uint32_t size)
   : lnodeimpl(ctx, type_lit, size) {}
 

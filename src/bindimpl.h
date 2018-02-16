@@ -12,7 +12,6 @@ class bindimpl : public tickable, public ioimpl {
 public:
 
   void bind_input(const lnode& src, const lnode& ioport);
-
   void bind_output(const lnode& dst, const lnode& ioport);
 
   const auto& get_inputs() {
@@ -53,6 +52,7 @@ protected:
 
 class bindportimpl : public ioimpl {
 public:
+
   const lnode& get_ioport() const {
     return ioport_;
   }
@@ -67,6 +67,7 @@ public:
   void print(std::ostream& out, uint32_t level) const override;
 
 protected:  
+
   bindportimpl(context* ctx, const lnode& src, const lnode& ioport);
   ~bindportimpl();
 

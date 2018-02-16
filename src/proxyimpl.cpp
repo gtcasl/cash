@@ -44,7 +44,7 @@ void proxyimpl::add_source(uint32_t dst_offset,
     srcs_.emplace_back(src);    
   }
   
-  auto merge_prev_range = [&](uint32_t idx)->bool {
+  auto merge_adjacent_ranges = [&](uint32_t idx)->bool {
     assert(idx > 0);
     if (ranges_[idx-1].src_idx == ranges_[idx].src_idx
      && (ranges_[idx-1].dst_offset + ranges_[idx-1].length) == ranges_[idx].dst_offset
@@ -65,7 +65,7 @@ void proxyimpl::add_source(uint32_t dst_offset,
     // split existing nodes if needed
     std::set<uint32_t> deleted; // use ordered set for index ordering
     uint32_t i = 0;
-    for (; length && i < n; ++i) {
+    for (; length != 0 && i < n; ++i) {
       range_t& curr = ranges_[i];
       uint32_t curr_end = curr.dst_offset + curr.length;
       uint32_t src_end  = dst_offset + length;
@@ -145,7 +145,7 @@ void proxyimpl::add_source(uint32_t dst_offset,
         ranges_.insert(ranges_.begin() + i, new_range);       
         ++n;
         
-        length = 0;
+        length = 0; // no need to continue
       } else {
         // no overlap with current,
         // skip merge if no update took place
@@ -154,7 +154,7 @@ void proxyimpl::add_source(uint32_t dst_offset,
       
       if (i > 0) {
         // try merging with previous range
-        if (merge_prev_range(i)) {
+        if (merge_adjacent_ranges(i)) {
           --i;
           --n;
         }
@@ -164,7 +164,7 @@ void proxyimpl::add_source(uint32_t dst_offset,
     assert(0 == length);
     if (i < n) {
       // try merging with previous range
-      merge_prev_range(i);
+      merge_adjacent_ranges(i);
     }
     
     // cleanup deleted nodes
@@ -325,7 +325,6 @@ void proxyimpl::print(std::ostream& out, uint32_t level) const {
     }
   }
   out << ")";
-
   if (level == 2) {
     out << " = " << value_;
   }

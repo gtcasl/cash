@@ -9,6 +9,7 @@ namespace internal {
 
 class regimpl : public tickable, public lnodeimpl {
 public:
+
   cdomain* get_cd() const {
     return cd_;
   }

@@ -325,7 +325,7 @@ TEST_CASE("conditionals", "[conditionals]") {
       return (b == 2 && c == 2);
     });
     TEST([]()->ch_bit1 {
-      ch_bit4 a(0), b;
+      ch_bit4 a(0), b(0);
       __if (a == 1) {
         b = 1;
       } __elif (a == 0) {
@@ -334,10 +334,10 @@ TEST_CASE("conditionals", "[conditionals]") {
         b = 1000_b;
       };
       ch_print("b={0}", b);
-      return (b == 1010_b);
+      return (b == 0010_b);
     });
     TEST([]()->ch_bit1 {
-      ch_bit4 a(3), b;
+      ch_bit4 a(3), b(0);
       __if (a == 1) {
         b = 1;
       } __elif (a == 2) {
@@ -382,17 +382,18 @@ TEST_CASE("conditionals", "[conditionals]") {
       return (c == 6);
     });
     TEST([]()->ch_bit1 {
-      ch_bit4 a(1), b(1), c(2), d, e;
+      ch_bit4 a(1), b(1), c(2), d(0), e(0);
       __switch (a)
-      __case(0) { d = 0;}
+      __case(0) { d = 1;}
       __case(1) {
+         d = c;
          __if (b == 0) {
-           d = 1;
+           d = 2;
          } __elif (b == 1) {
            e = 1;
          }__else {
-           d = 0;
-           e = 0;         
+           d = 3;
+           e = 2;
          };
       }
       __default {
@@ -402,7 +403,7 @@ TEST_CASE("conditionals", "[conditionals]") {
       return (d + e == 3);
     });
     TEST([]()->ch_bit1 {
-      ch_bit4 a(0), b;
+      ch_bit4 a(0), b(0);
       __switch (a)
       __case(0) {
         b.slice<3>(0) = 101_b;
@@ -413,7 +414,7 @@ TEST_CASE("conditionals", "[conditionals]") {
       __default {
         b = 1000_b;
       };
-      return (b == 1101_b);
+      return (b == 0101_b);
     });
     TEST([]()->ch_bit1 {
       ch_bit4 a(0), b;           
@@ -425,7 +426,7 @@ TEST_CASE("conditionals", "[conditionals]") {
         b[2] = 1;
       }
       __case(1) {
-        b[1] = 0;
+        b = 0;
       }
       __default {
         b = 1000_b;

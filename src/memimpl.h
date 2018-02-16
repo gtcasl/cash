@@ -10,6 +10,7 @@ class memportimpl;
 
 class memimpl : public tickable, public ioimpl {
 public:
+
   memimpl(context* ctx,
           uint32_t data_width,
           uint32_t num_items,

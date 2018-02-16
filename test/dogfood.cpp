@@ -132,31 +132,41 @@ struct Dogfood {
     __out(ch_bit1) out
   );
   void describe() {
-    ch_bit2 a(0);
+    /*ch_bit2 a(0);
     auto b = a + 1;
     a = 1;
-    io.out = (b == 2);
+    io.out = (b == 2);*/
     //io.out = (io.in == 0xA);
+    ch_bit4 a(0), b(0);
+    __if (a == 1) {
+      b = 1;
+    } __elif (a == 0) {
+      b[1] = 1;
+    } __else {
+      b = 1000_b;
+    };
+    //ch_print("b={0}", b);
+    io.out = (b == 0010_b);
   }
 };
 
 int main() {
-  /*{
+  {
     ch_device<Dogfood> device;
     ch_simulator sim(device);
     device.io.in = 0xA;
     sim.run(4);
     assert(device.io.out);
-  }*/
+  }
 
-  {
+  /*{
     ch_device<Foo1> foo;
     foo.io.in1 = 1;
     foo.io.in2 = 2;
     ch_simulator sim(foo);
     sim.run(1);
     assert(3 == (int)foo.io.out);
-  }
+  }*/
 
   /*{
     ch_device<Foo2> foo;

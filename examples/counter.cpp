@@ -21,7 +21,7 @@ int main() {
   ch_device<Counter<4>> counter;
 
   ch_vcdtracer tracer("counter.vcd", counter);
-  tracer.run(22);
+  tracer.run(2*(1+10));
 
   std::cout << "result:" << std::endl;
   std::cout << "out = "  << counter.io.out << std::endl;

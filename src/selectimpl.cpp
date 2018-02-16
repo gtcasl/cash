@@ -9,8 +9,8 @@ using namespace ch::internal;
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void ch::internal::begin_branch() {
-  ctx_curr()->begin_branch();
+void ch::internal::begin_branch(lnodeimpl* key) {
+  ctx_curr()->begin_branch(key);
 }
 
 void ch::internal::end_branch() {
@@ -33,13 +33,24 @@ void ch::internal::cond_block(fvoid_t func) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+selectimpl::selectimpl(context* ctx, uint32_t size, lnodeimpl* key)
+  : lnodeimpl(ctx, type_sel, size)
+  , tick_(~0ull)
+  , has_key_(false) {
+  if (key) {
+    has_key_ = true;
+    srcs_.emplace_back(key);
+  }
+}
+
 selectimpl::selectimpl(context* ctx,
                        const lnode& pred,
                        const lnode& _true,
                        const lnode& _false)
   : lnodeimpl(ctx, type_sel, _true.get_size())
-  , tick_(~0ull) {
-  assert(pred.get_size() == 1);
+  , tick_(~0ull)
+  , has_key_(false) {
+  assert(1 == pred.get_size());
   assert(_true.get_size() == _false.get_size());
   srcs_.emplace_back(pred);
   srcs_.emplace_back(_true);
@@ -49,10 +60,44 @@ selectimpl::selectimpl(context* ctx,
 const bitvector& selectimpl::eval(ch_tick t) {
   if (tick_ != t) {
     tick_ = t;
-    value_ = srcs_[0].eval(t)[0] ? srcs_[1].eval(t) : srcs_[2].eval(t);
+    uint32_t i;
+    uint32_t last = srcs_.size() - 1;
+    if (has_key_) {
+      auto& key = srcs_[0].eval(t);
+      for (i = 1; i < last; i += 2) {
+        if (key == srcs_[i].eval(t))
+          break;
+      }
+    } else {
+      for (i = 0; i < last; i += 2) {
+        if (srcs_[i].eval(t)[0])
+          break;
+      }
+    }
+    value_ = (i < last) ? srcs_[i+1].eval(t) : srcs_[last].eval(t);
   }
   return value_;
 }
+
+void selectimpl::print(std::ostream& out, uint32_t level) const {
+  out << "#" << id_ << " <- " << (has_key_ ? "case" : "if") << value_.get_size();
+  uint32_t n = srcs_.size();
+  if (n > 0) {
+    out << "(";
+    for (uint32_t i = 0; i < n; ++i) {
+      if (i > 0) {
+        out << ", ";
+      }
+      out << "#" << srcs_[i].get_id();
+    }
+    out << ")";
+  }
+  if (level == 2) {
+    out << " = " << value_;
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
 
 lnodeimpl* select_impl::eval(const lnode& value) {
   lnodeimpl* curr = nullptr;

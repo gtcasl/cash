@@ -9,6 +9,9 @@ examples/fifo.cpp
 examples/fifo.v
 examples/gcd.cpp
 examples/gcd.v
+examples/vending.cpp
+examples/vending.v
+examples/vending_tb.v
 parser/Makefile
 parser/parser.cpp
 src/aluimpl.cpp

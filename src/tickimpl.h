@@ -7,9 +7,11 @@ namespace internal {
 
 class tickimpl : public ioimpl {
 public:
+
   const bitvector& eval(ch_tick t) override;
   
 protected:
+
   tickimpl(context* ctx);
   ~tickimpl() {}
 

@@ -7,6 +7,7 @@ namespace internal {
 
 class vcdtracerimpl : public tracerimpl {
 public:
+
   vcdtracerimpl(std::ostream& out, const std::initializer_list<context*>& contexts)
     : tracerimpl(out, contexts)
   {}

@@ -7,7 +7,7 @@ namespace internal {
 
 using fvoid_t = std::function<void ()>;
 
-void begin_branch();
+void begin_branch(lnodeimpl* key);
 void end_branch();
 
 void cond_block(const lnode& pred, fvoid_t func);
@@ -15,9 +15,11 @@ void cond_block(fvoid_t func);
 
 class if_t {
 public:
+
   if_t() {
-    begin_branch();
+    begin_branch(nullptr);
   }
+
   ~if_t() {
     end_branch();
   }
@@ -29,7 +31,10 @@ class if_body_t;
 
 class if_cond_t {
 public:
-  if_cond_t(const if_ptr& p_if) : if_(p_if) {}
+
+  if_cond_t(const if_ptr& p_if)
+    : if_(p_if)
+  {}
 
   template <typename P,
             CH_REQUIRES(is_logic_compatible<P>::value),
@@ -41,11 +46,13 @@ public:
   }
 
 protected:
+
   if_ptr if_;
 };
 
 class if_body_t {
 public:
+
   if_body_t(const if_ptr& p_if, const lnode& pred)
     : if_(p_if)
     , pred_(pred)
@@ -54,8 +61,9 @@ public:
   if_cond_t operator,(const fvoid_t& body);
 
 protected:
+
   if_ptr if_;
-  lnode pred_;
+  lnode  pred_;
 };
 
 template <typename P, typename, typename>

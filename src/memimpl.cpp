@@ -103,6 +103,9 @@ void memimpl::print(std::ostream& out, uint32_t level) const {
     }
     out << ")";
   }
+  if (level == 2) {
+    out << " = " << value_;
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////

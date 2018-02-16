@@ -7,9 +7,11 @@ namespace internal {
 
 class printimpl : public ioimpl {
 public:
+
   const bitvector& eval(ch_tick t) override;
 
 protected:
+
   printimpl(context* ctx,
             const std::string& format,
             const std::initializer_list<lnode>& args);

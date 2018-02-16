@@ -10,6 +10,7 @@ class lnodeimpl;
 
 class deviceimpl : public refcounted {
 public:
+
   deviceimpl(size_t signature, const std::string& name);
   ~deviceimpl();
 
@@ -24,6 +25,7 @@ public:
   }
 
 protected:
+
   context* ctx_;
   context* old_ctx_;
 };

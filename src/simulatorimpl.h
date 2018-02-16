@@ -8,6 +8,7 @@ namespace internal {
 
 class clock_driver {
 public:
+
   clock_driver(bool value) : value_(value) {}
 
   void add_signal(lnodeimpl* node);
@@ -19,12 +20,14 @@ public:
   }
 
 protected:
+
   std::vector<lnodeimpl*> nodes_;
   bool value_;
 };
 
 class simulatorimpl : public refcounted {
 public:
+
   simulatorimpl(const std::initializer_list<context*>& contexts);
   virtual ~simulatorimpl();
 

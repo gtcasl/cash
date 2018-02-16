@@ -7,10 +7,10 @@
 #define CH_LNODE_INDEX(op) ((int)op)
 #define CH_LNODE_ENUM(m) \
   m(undef) \
-  m(proxy) \
   m(lit) \
   m(input) \
   m(output) \
+  m(proxy) \
   m(alu) \
   m(sel) \
   m(reg) \
@@ -32,6 +32,7 @@ enum lnodetype {
 
 class lnodeimpl {
 public:
+
   uint32_t get_id() const {
     return id_;
   }
@@ -159,6 +160,7 @@ protected:
 
 class undefimpl : public lnodeimpl {
 public:
+
   undefimpl(context* ctx, uint32_t size);
 
   const bitvector& eval(ch_tick t) override;

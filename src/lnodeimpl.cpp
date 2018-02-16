@@ -181,22 +181,21 @@ void lnode::write(uint32_t dst_offset,
   auto proxy = dynamic_cast<proxyimpl*>(impl_);
   if (nullptr == proxy) {
     proxy = ctx->createNode<proxyimpl>(size);
-    ctx->fixup_local_variable(impl_, proxy);
+    // remove new proxy from current block's local list and
+    if (ctx->conditional_enabled()) {
+      // move it into the local list of the node's def block
+      ctx->remove_local_variable(proxy, impl_);
+    }
     proxy->add_source(0, impl_, 0, size);
     impl_ = proxy;
   }
 
-  if (ctx->conditional_enabled(impl_)) {
-    const auto& slices = proxy->get_update_slices(dst_offset, length);
-    for (const auto& slice : slices) {
-      lnodeimpl* src_impl = src.get_impl();
-      if (slice.second != src.get_size()) {
-        assert(slice.first >= dst_offset);
-        uint32_t offset = src_offset + (slice.first - dst_offset);
-        src_impl = ctx->createNode<proxyimpl>(src, offset, slice.second);
-      }
-      ctx->conditional_assign(*this, src_impl, slice.first, slice.second);
+  if (ctx->conditional_enabled(proxy)) {
+    lnodeimpl* src_impl = src.get_impl();
+    if (src_offset != 0 || src.get_size() != length) {
+      src_impl = ctx->createNode<proxyimpl>(src, src_offset, length);
     }
+    ctx->conditional_assign(proxy, dst_offset, length, src_impl);
   } else {
     proxy->add_source(dst_offset, src, src_offset, length);
   }

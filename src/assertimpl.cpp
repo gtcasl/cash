@@ -4,18 +4,18 @@
 
 using namespace ch::internal;
 
-assertimpl::assertimpl(context* ctx, const lnode& pred, const std::string& msg)
+assertimpl::assertimpl(context* ctx, const lnode& cond, const std::string& msg)
   : ioimpl(ctx, type_assert, 0)
   , msg_(msg)
   , predicated_(false) {
   if (ctx_->conditional_enabled(this)) {
-    auto pred = ctx_->get_predicate(id_);
+    auto pred = ctx_->get_predicate();
     if (pred) {
       srcs_.emplace_back(pred);
       predicated_ = true;
     }
   }
-  srcs_.emplace_back(pred);
+  srcs_.emplace_back(cond);
 }
 
 const bitvector& assertimpl::eval(ch_tick t) {

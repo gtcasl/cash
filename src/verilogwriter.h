@@ -22,6 +22,7 @@ class cdomain;
 
 class verilogwriter {
 public:
+
   verilogwriter(std::ostream& out);
   ~verilogwriter();
 
@@ -54,7 +55,10 @@ protected:
 
   void print_type(lnodeimpl* node);
 
-  void print_value(const bitvector& value, unsigned offset = 0, unsigned size = 0);
+  void print_value(const bitvector& value,
+                   bool skip_leading_zeros_enable = false,
+                   unsigned offset = 0,
+                   unsigned size = 0);
 
   void print_proxy(proxyimpl* node);
 

@@ -29,65 +29,72 @@ using node_map_t = std::unordered_map<uint32_t, std::vector<const lnode*>>;
 
 using live_nodes_t = std::unordered_set<lnodeimpl*>;
 
-struct cond_upd_t {
-  cond_upd_t(selectimpl* p_sel, uint32_t p_block_id)
-    : sel(p_sel)
-    , block_id(p_block_id)
-  {}
-  selectimpl* sel;
-  uint32_t block_id;
-};
+struct cond_block_t;
 
-struct cond_var_t {
-  uint32_t nodeid;
+struct cond_range_t {
   uint32_t offset;
   uint32_t length;
 
-  bool operator==(const cond_var_t& var) const {
-    return this->nodeid == var.nodeid
-        && this->offset == var.offset
+  bool operator==(const cond_range_t& var) const {
+    return this->offset == var.offset
         && this->length == var.length;
   }
 
-  bool operator!=(const cond_var_t& var) const {
+  bool operator!=(const cond_range_t& var) const {
     return !(*this == var);
   }
 
-  bool operator<(const cond_var_t& var) const {
-    if (this->nodeid != var.nodeid)
-      return (this->nodeid < var.nodeid);
+  bool operator<(const cond_range_t& var) const {
     if (this->offset != var.offset)
       return (this->offset < var.offset);
-    if (this->length != var.length)
-      return (this->length < var.length);
-    return false;
+    return (this->length < var.length);
   }
 };
 
+struct cond_def_t;
+
+struct cond_block_t;
+
+struct cond_br_t {
+  cond_br_t(lnodeimpl* p_key, cond_block_t* p_parent)
+    : key(p_key)
+    , parent(p_parent)
+  {}
+  ~cond_br_t();
+  lnodeimpl* key;
+  cond_block_t* parent;
+  std::list<cond_block_t*> blocks;
+};
+
 struct cond_block_t {
-  cond_block_t(uint32_t p_id = 0, lnodeimpl* p_pred = nullptr)
+  cond_block_t(uint32_t p_id, lnodeimpl* p_pred, cond_br_t* p_branch)
     : id(p_id)
     , pred(p_pred)
+    , branch(p_branch)
   {}
   uint32_t id;
   lnodeimpl* pred;
-  std::unordered_set<uint32_t> locals;
+  cond_br_t* branch;
+  std::list<cond_br_t*> branches;
 };
 
-typedef std::list<cond_block_t> cond_blocks_t;
+inline cond_br_t::~cond_br_t() {
+  for (auto block : blocks) {
+    delete block;
+  }
+}
 
-typedef std::map<cond_var_t, std::list<cond_upd_t>> cond_upds_t;
+typedef std::unordered_map<uint32_t, lnodeimpl*> cond_defs_t;
 
-struct cond_branch_t {
-  cond_branch_t(uint32_t p_id) : id(p_id) {}
-  uint32_t id;
-  std::unordered_map<uint32_t, lnodeimpl*> preds;
-  cond_blocks_t blocks;
-};
+typedef std::map<cond_range_t, cond_defs_t> cond_slices_t;
 
-typedef std::list<cond_branch_t> cond_branches_t;
+typedef std::unordered_map<lnodeimpl*, cond_slices_t> cond_vars_t;
+
+typedef std::unordered_map<uint32_t, cond_block_t*> cond_inits_t;
 
 typedef const char* (*enum_string_cb)(uint32_t value);
+
+typedef std::unordered_map<uint32_t, enum_string_cb> enum_strings_t;
 
 class context : public refcounted {
 public:
@@ -172,16 +179,19 @@ public:
   
   //--
 
-  void begin_branch();
+  void begin_branch(lnodeimpl* key);
   void end_branch();
 
   void begin_block(lnodeimpl* pred = nullptr);
   void end_block();
 
   bool conditional_enabled(lnodeimpl* node = nullptr) const;
-  void conditional_assign(lnode& dst, const lnode& src, uint32_t offset, uint32_t length);
-  lnodeimpl* get_predicate(uint32_t node_id);
-  void fixup_local_variable(lnodeimpl* dst, lnodeimpl* src);
+  void conditional_assign(lnodeimpl* dst,
+                          uint32_t offset,
+                          uint32_t length,
+                          lnodeimpl* src);
+  lnodeimpl* get_predicate();
+  void remove_local_variable(lnodeimpl* src, lnodeimpl* dst);
 
   //--
   
@@ -233,18 +243,10 @@ protected:
   void add_node(lnodeimpl* node);
   void remove_node(lnodeimpl* node);
 
-
-  uint32_t find_decl_branch(uint32_t node_id);
-
-  lnodeimpl* get_predicate(
-      uint32_t def_br_id,
-      cond_branches_t::iterator ibr);
-
-  void split_conditional_assignment(
-      lnode& dst,
-      const cond_var_t& var,
-      uint32_t offset,
-      uint32_t length);
+  lnodeimpl* emit_conditionals(lnodeimpl* dst,
+                               const cond_range_t& range,
+                               const cond_defs_t& defs,
+                               const cond_br_t* branch);
 
   bindimpl* get_binding(context* module);
 
@@ -252,8 +254,7 @@ protected:
   std::string name_;
 
   uint32_t    node_ids_;
-  uint32_t    block_ids_;
-  uint32_t    branch_ids_;
+  uint32_t    block_idx_;
   inputimpl*  default_clk_;
   inputimpl*  default_reset_;
   tickimpl*   tick_;
@@ -270,15 +271,16 @@ protected:
 
   std::list<bindimpl*>   bindings_;
 
-  cond_branches_t        cond_branches_;
-  cond_upds_t            cond_upds_;
+  std::stack<cond_br_t*> cond_branches_;
+  cond_vars_t            cond_vars_;
+  cond_inits_t           cond_inits_;
 
   std::stack<lnode>      user_clks_;
   std::stack<lnode>      user_resets_;
 
   unique_name            unique_tap_names_;
 
-  std::unordered_map<uint32_t, enum_string_cb> enum_strings_;
+  enum_strings_t         enum_strings_;
 
   friend class context_manager;
 };

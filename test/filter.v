@@ -10,24 +10,24 @@ module Filter(
     output wire io_y_valid,
     output wire io_y_parity
 );
-    wire[15:0] io_x_data2; // #2304 module.cpp(68)
-    wire io_x_parity8; // #2306 module.cpp(68)
-    wire[15:0] io_y_data11; // #2307 module.cpp(68)
-    wire io_y_valid14; // #2308 module.cpp(68)
-    wire io_y_parity17; // #2309 module.cpp(68)
-    wire[15:0] proxy20; // #2310 /home/blaise/dev/cash/src/bit.h(1008)
-    wire[16:0] proxy22; // #2311 module.cpp(72)
-    wire proxy24; // #2312 /home/blaise/dev/cash/src/bit.h(1008)
-    wire[16:0] proxy26; // #2313 module.cpp(71)
+    wire[15:0] io_x_data2; // #2303 module.cpp(68)
+    wire io_x_parity8; // #2305 module.cpp(68)
+    wire[15:0] io_y_data11; // #2306 module.cpp(68)
+    wire io_y_valid14; // #2307 module.cpp(68)
+    wire io_y_parity17; // #2308 module.cpp(68)
+    wire[15:0] proxy20; // #2309 /home/blaise/dev/cash/src/bit.h(1008)
+    wire[16:0] proxy22; // #2310 module.cpp(72)
+    wire proxy24; // #2311 /home/blaise/dev/cash/src/bit.h(1008)
+    wire[16:0] proxy26; // #2312 module.cpp(71)
     wire[16:0] sll29;
     wire[16:0] or31;
-    wire[16:0] proxy32; // #2316 unknown(0)
-    wire[15:0] proxy34; // #2317 module.cpp(73)
+    wire[16:0] proxy32; // #2315 unknown(0)
+    wire[15:0] proxy34; // #2316 module.cpp(73)
     reg[15:0] reg38;
-    wire[15:0] proxy39; // #2319 unknown(0)
-    wire proxy40; // #2320 unknown(0)
+    wire[15:0] proxy39; // #2318 unknown(0)
+    wire proxy40; // #2319 unknown(0)
     reg reg42;
-    wire proxy43; // #2322 unknown(0)
+    wire proxy43; // #2321 unknown(0)
 
     assign io_x_data2 = io_x_data;
     assign io_x_parity8 = io_x_parity;
@@ -65,39 +65,39 @@ module FilterBlock(
     output wire io_y_valid,
     output wire io_y_parity
 );
-    wire[15:0] io_x_data2; // #2298 module.cpp(80)
-    wire io_x_valid5; // #2299 module.cpp(80)
-    wire io_x_parity8; // #2300 module.cpp(80)
-    wire[15:0] io_y_data11; // #2301 module.cpp(80)
-    wire io_y_valid14; // #2302 module.cpp(80)
-    wire io_y_parity17; // #2303 module.cpp(80)
-    wire[15:0] proxy20; // #2323 /home/blaise/dev/cash/src/module.h(33)
+    wire[15:0] io_x_data2; // #2297 module.cpp(80)
+    wire io_x_valid5; // #2298 module.cpp(80)
+    wire io_x_parity8; // #2299 module.cpp(80)
+    wire[15:0] io_y_data11; // #2300 module.cpp(80)
+    wire io_y_valid14; // #2301 module.cpp(80)
+    wire io_y_parity17; // #2302 module.cpp(80)
+    wire[15:0] proxy20; // #2322 /home/blaise/dev/cash/src/module.h(33)
     wire bindin23;
     wire bindin25;
     wire[15:0] bindin26;
-    wire proxy28; // #2324 /home/blaise/dev/cash/src/module.h(33)
+    wire proxy28; // #2323 /home/blaise/dev/cash/src/module.h(33)
     wire bindin29;
-    wire proxy31; // #2325 /home/blaise/dev/cash/src/module.h(33)
+    wire proxy31; // #2324 /home/blaise/dev/cash/src/module.h(33)
     wire bindin32;
-    wire[15:0] proxy34; // #2326 /home/blaise/dev/cash/src/module.h(33)
+    wire[15:0] proxy34; // #2325 /home/blaise/dev/cash/src/module.h(33)
     wire[15:0] bindout35;
-    wire proxy37; // #2327 /home/blaise/dev/cash/src/module.h(33)
+    wire proxy37; // #2326 /home/blaise/dev/cash/src/module.h(33)
     wire bindout38;
-    wire proxy40; // #2328 /home/blaise/dev/cash/src/module.h(33)
+    wire proxy40; // #2327 /home/blaise/dev/cash/src/module.h(33)
     wire bindout41;
-    wire[15:0] proxy43; // #2348 /home/blaise/dev/cash/src/module.h(33)
+    wire[15:0] proxy43; // #2347 /home/blaise/dev/cash/src/module.h(33)
     wire bindin45;
     wire bindin46;
     wire[15:0] bindin47;
-    wire proxy49; // #2349 /home/blaise/dev/cash/src/module.h(33)
+    wire proxy49; // #2348 /home/blaise/dev/cash/src/module.h(33)
     wire bindin50;
-    wire proxy52; // #2350 /home/blaise/dev/cash/src/module.h(33)
+    wire proxy52; // #2349 /home/blaise/dev/cash/src/module.h(33)
     wire bindin53;
-    wire[15:0] proxy55; // #2351 /home/blaise/dev/cash/src/module.h(33)
+    wire[15:0] proxy55; // #2350 /home/blaise/dev/cash/src/module.h(33)
     wire[15:0] bindout56;
-    wire proxy58; // #2352 /home/blaise/dev/cash/src/module.h(33)
+    wire proxy58; // #2351 /home/blaise/dev/cash/src/module.h(33)
     wire bindout59;
-    wire proxy61; // #2353 /home/blaise/dev/cash/src/module.h(33)
+    wire proxy61; // #2352 /home/blaise/dev/cash/src/module.h(33)
     wire bindout62;
 
     assign io_x_data2 = io_x_data;
