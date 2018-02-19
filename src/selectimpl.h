@@ -12,6 +12,14 @@ public:
     return has_key_;
   }
 
+  void set_key(bool value) {
+    has_key_ = value;
+  }
+
+  bool is_ternary() const {
+    return (srcs_.size() == (has_key_ ? 4 : 3));
+  }
+
   const bitvector& eval(ch_tick t) override;
 
   void print(std::ostream& out, uint32_t level) const override;

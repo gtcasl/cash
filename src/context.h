@@ -11,6 +11,7 @@ class nodelist;
 class lnodeimpl;
 class undefimpl;
 class proxyimpl;
+class aluimpl;
 class litimpl;
 class ioimpl;
 class inputimpl;
@@ -25,9 +26,9 @@ class cdomain;
 
 using ch_tick = uint64_t;
 
-using node_map_t = std::unordered_map<uint32_t, std::vector<const lnode*>>;
+typedef std::unordered_map<uint32_t, std::vector<const lnode*>> node_map_t;
 
-using live_nodes_t = std::unordered_set<lnodeimpl*>;
+typedef std::unordered_set<lnodeimpl*> live_nodes_t;
 
 struct cond_block_t;
 
@@ -51,18 +52,24 @@ struct cond_range_t {
   }
 };
 
-struct cond_def_t;
+typedef std::unordered_map<uint32_t, lnodeimpl*> cond_defs_t;
+
+typedef std::map<cond_range_t, cond_defs_t> cond_slices_t;
+
+typedef std::unordered_map<lnodeimpl*, cond_slices_t> cond_vars_t;
 
 struct cond_block_t;
 
 struct cond_br_t {
-  cond_br_t(lnodeimpl* p_key, cond_block_t* p_parent)
+  cond_br_t(lnodeimpl* p_key, cond_block_t* p_parent, const source_location& p_sloc)
     : key(p_key)
     , parent(p_parent)
+    , sloc(p_sloc)
   {}
   ~cond_br_t();
   lnodeimpl* key;
   cond_block_t* parent;
+  const source_location sloc;
   std::list<cond_block_t*> blocks;
 };
 
@@ -84,13 +91,27 @@ inline cond_br_t::~cond_br_t() {
   }
 }
 
-typedef std::unordered_map<uint32_t, lnodeimpl*> cond_defs_t;
-
-typedef std::map<cond_range_t, cond_defs_t> cond_slices_t;
-
-typedef std::unordered_map<lnodeimpl*, cond_slices_t> cond_vars_t;
-
 typedef std::unordered_map<uint32_t, cond_block_t*> cond_inits_t;
+
+struct alu_key_t {
+  uint32_t op;
+  uint32_t arg0;
+  uint32_t arg1;
+
+  bool operator==(const alu_key_t& rhs) const {
+    return this->op == rhs.op
+        && this->arg0 == rhs.arg0
+        && this->arg1 == rhs.arg1;
+  }
+};
+
+struct hash_alu_key_t {
+  std::size_t operator()(const alu_key_t& key) const {
+    return key.op ^ key.arg0 ^ key.arg1;
+  }
+};
+
+typedef std::unordered_map<alu_key_t, aluimpl*, hash_alu_key_t> alu_cache_t;
 
 typedef const char* (*enum_string_cb)(uint32_t value);
 
@@ -175,14 +196,17 @@ public:
     return node;
   }
 
+  aluimpl* createAluNode(uint32_t op, const lnode& in);
+  aluimpl* createAluNode(uint32_t op, const lnode& lhs, const lnode& rhs);
+
   void destroyNode(lnodeimpl* node);
   
   //--
 
-  void begin_branch(lnodeimpl* key);
+  void begin_branch(lnodeimpl* key, const source_location& sloc);
   void end_branch();
 
-  void begin_block(lnodeimpl* pred = nullptr);
+  void begin_block(lnodeimpl* pred);
   void end_block();
 
   bool conditional_enabled(lnodeimpl* node = nullptr) const;
@@ -274,6 +298,8 @@ protected:
   std::stack<cond_br_t*> cond_branches_;
   cond_vars_t            cond_vars_;
   cond_inits_t           cond_inits_;
+
+  alu_cache_t          alu_cache_;
 
   std::stack<lnode>      user_clks_;
   std::stack<lnode>      user_resets_;

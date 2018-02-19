@@ -5,12 +5,12 @@ module Counter(
     input wire reset,
     output wire[3:0] io_out
 );
-    wire[3:0] io_out2; // #1 counter.cpp(8)
-    wire[3:0] proxy5; // #2 counter.cpp(14)
-    wire[3:0] proxy7; // #3 /home/blaise/dev/cash/src/seq.h(17)
-    reg[3:0] reg12; // #2 counter.cpp(14)
+    wire[3:0] io_out2; // counter.cpp(8) @var1
+    wire[3:0] proxy5; // counter.cpp(14) @var2
+    wire[3:0] proxy7; // /home/blaise/dev/cash/src/seq.h(17) @var3
+    reg[3:0] reg12; // counter.cpp(14) @var2
     wire[3:0] add15;
-    wire[3:0] proxy16; // #6 unknown(0)
+    wire[3:0] proxy16; // @var6
 
     assign io_out2 = proxy5;
     assign proxy5 = reg12;

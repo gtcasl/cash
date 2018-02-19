@@ -10,38 +10,38 @@ module FiFo(
     output wire io_empty,
     output wire io_full
 );
-    wire[1:0] io_dout11; // #4 fifo.cpp(8)
-    wire io_empty14; // #5 fifo.cpp(8)
-    wire io_full17; // #6 fifo.cpp(8)
-    wire[1:0] proxy20; // #7 fifo.cpp(19)
-    wire[1:0] proxy22; // #8 /home/blaise/dev/cash/src/seq.h(17)
-    reg[1:0] reg27; // #7 fifo.cpp(19)
-    wire[1:0] proxy29; // #10 fifo.cpp(19)
-    wire[1:0] proxy31; // #11 /home/blaise/dev/cash/src/seq.h(17)
-    reg[1:0] reg33; // #10 fifo.cpp(19)
-    wire proxy35; // #13 fifo.cpp(21)
-    wire proxy37; // #14 fifo.cpp(22)
+    wire[1:0] io_dout11; // fifo.cpp(8) @var4
+    wire io_empty14; // fifo.cpp(8) @var5
+    wire io_full17; // fifo.cpp(8) @var6
+    wire[1:0] proxy20; // fifo.cpp(19) @var7
+    wire[1:0] proxy22; // /home/blaise/dev/cash/src/seq.h(17) @var8
+    reg[1:0] reg27; // fifo.cpp(19) @var7
+    wire[1:0] proxy29; // fifo.cpp(19) @var10
+    wire[1:0] proxy31; // /home/blaise/dev/cash/src/seq.h(17) @var11
+    reg[1:0] reg33; // fifo.cpp(19) @var10
+    wire proxy35; // fifo.cpp(21) @var13
+    wire proxy37; // fifo.cpp(22) @var14
     wire eq40;
     wire and42;
     wire eq45;
     wire and47;
     wire[1:0] add51;
     wire[1:0] sel53;
-    wire[1:0] proxy54; // #23 unknown(0)
+    wire[1:0] proxy54; // @var23
     wire[1:0] add56;
     wire[1:0] sel58;
-    wire[1:0] proxy59; // #26 unknown(0)
+    wire[1:0] proxy59; // @var26
     reg[1:0] mem60[0:1];
-    wire[1:0] proxy62;
-    wire[1:0] sel63;
+    wire[1:0] proxy62; // fifo.cpp(31)
+    wire[1:0] sel63; // fifo.cpp(31)
     wire eq65;
-    wire proxy66; // #29 unknown(0)
-    wire proxy67; // #30 unknown(0)
-    wire proxy68; // #31 unknown(0)
+    wire proxy66; // @var29
+    wire proxy67; // @var30
+    wire proxy68; // @var31
     wire ne69;
     wire eq71;
     wire and73;
-    wire proxy74; // #34 unknown(0)
+    wire proxy74; // @var34
 
     assign io_dout11 = mem60[proxy35];
     assign io_empty14 = proxy66;

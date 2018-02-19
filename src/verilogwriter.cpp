@@ -293,12 +293,19 @@ bool verilogwriter::print_decl(lnodeimpl* node,
         }
         out_ << ";" << std::endl;
       } else {        
-        if (0 == node->get_var_id()) {
-          out_ << ";" << std::endl;
-        } else {
-          auto& sloc = node->get_source_location();
-          out_ << "; // #" << node->get_var_id() << " " << sloc.file() << "(" << sloc.line() << ")" << std::endl;
+        out_ << ";";
+        auto& sloc = node->get_source_location();
+        if (!sloc.is_empty() || node->get_var_id() != 0) {
+          out_ << " //";
+          if (!sloc.is_empty()) {
+            out_ << " " << (sloc.file() ? sloc.file() : "unknown")
+                 << "(" << sloc.line() << ")";
+          }
+          if (node->get_var_id() != 0) {
+            out_ << " @var" << node->get_var_id();
+          }
         }
+        out_ << std::endl;
       }
     }
     return true;
@@ -506,9 +513,8 @@ void verilogwriter::print_fadd(aluimpl* node) {
 
 void verilogwriter::print_select(selectimpl* node) {  
   bool has_key = node->has_key();
-  uint32_t i = has_key ? 1 : 0;
-  uint32_t last = node->get_num_srcs() - 1;
-  if (2 == last) {
+  uint32_t i = has_key ? 1 : 0;  
+  if (node->is_ternary()) {
     out_ << "assign ";
     this->print_name(node);
     out_ << " = ";
@@ -527,28 +533,54 @@ void verilogwriter::print_select(selectimpl* node) {
     this->print_name(node->get_src(i+2).get_impl());
     out_ << ";" << std::endl;
   } else {
-    out_ << "assign ";
-    this->print_name(node);
-    out_ << " = " << std::endl;
-    {
-      auto_indent indent(out_);
-      for (; i < last; i += 2) {
-        if (has_key) {
-          out_ << "(";
-          this->print_name(node->get_src(0).get_impl());
-          out_ << " == ";
-          this->print_name(node->get_src(i).get_impl());
-          out_ << ")";
-        } else {
-          this->print_name(node->get_src(i).get_impl());
+    uint32_t last = node->get_num_srcs() - 1;
+    out_ << "always @(*) begin" << std::endl;
+    if (has_key) {
+      auto_indent indent1(out_);
+      out_ << "case (";
+      this->print_name(node->get_src(0).get_impl());
+      out_ << ")" << std::endl;
+      {
+        auto_indent indent2(out_);
+        for (; i < last; i += 2) {
+          print_value(node->get_src(i).get_impl()->get_value(), false);
+          out_ << ": ";
+          this->print_name(node);
+          out_ << " = ";
+          this->print_name(node->get_src(i + 1).get_impl());
+          out_ << ";" << std::endl;
         }
-        out_ << " ? ";
-        this->print_name(node->get_src(i + 1).get_impl());
-        out_ << " : " << std::endl;
+        out_ << "default: ";
+        this->print_name(node);
+        out_ << " = ";
+        this->print_name(node->get_src(i).get_impl());
+        out_ << ";" << std::endl;
       }
-      this->print_name(node->get_src(last).get_impl());
-      out_ << ";" << std::endl;
+      out_ << "endcase" << std::endl;
+    } else {
+      auto_indent indent1(out_);
+      for (; i < last; i += 2) {
+        out_ << (0 == i ? "if (" : "else if (");
+        this->print_name(node->get_src(i).get_impl());
+        out_ << ")" << std::endl;
+        {
+          auto_indent indent2(out_);
+          this->print_name(node);
+          out_ << " = ";
+          this->print_name(node->get_src(i + 1).get_impl());
+          out_ << ";" << std::endl;
+        }
+      }
+      out_ << "else" << std::endl;
+      {
+        auto_indent indent2(out_);
+        this->print_name(node);
+        out_ << " = ";
+        this->print_name(node->get_src(i).get_impl());
+        out_ << ";" << std::endl;
+      }
     }
+    out_ << "end" << std::endl;
   }
 }
 
@@ -724,7 +756,11 @@ void verilogwriter::print_name(lnodeimpl* node, bool force) {
 void verilogwriter::print_type(lnodeimpl* node) {
   auto type = node->get_type();
 
-  out_ << (IsRegType(type) ? "reg" : "wire");
+  bool is_reg_type = (type_sel == type) ?
+        !dynamic_cast<selectimpl*>(node)->is_ternary() :
+        IsRegType(type);
+
+  out_ << (is_reg_type ? "reg" : "wire");
 
   if (type == type_mem) {
     auto data_width = dynamic_cast<memimpl*>(node)->get_data_width();

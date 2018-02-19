@@ -7,25 +7,25 @@ module Adder(
     output wire[1:0] io_out,
     output wire io_cout
 );
-    wire io_cin2; // #1 adder.cpp(8)
-    wire[1:0] io_lhs5; // #2 adder.cpp(8)
-    wire[1:0] io_rhs8; // #3 adder.cpp(8)
-    wire[1:0] io_out11; // #4 adder.cpp(8)
-    wire io_cout14; // #5 adder.cpp(8)
-    wire[1:0] proxy17; // #6 /home/blaise/dev/cash/src/bit.h(1008)
-    wire[2:0] proxy19; // #7 adder.cpp(18)
-    wire[2:0] proxy20; // #8 /home/blaise/dev/cash/src/bit.h(1012)
-    wire proxy22; // #9 /home/blaise/dev/cash/src/bit.h(1008)
-    wire[2:0] proxy24; // #10 /home/blaise/dev/cash/src/bit.h(1094)
+    wire io_cin2; // adder.cpp(8) @var1
+    wire[1:0] io_lhs5; // adder.cpp(8) @var2
+    wire[1:0] io_rhs8; // adder.cpp(8) @var3
+    wire[1:0] io_out11; // adder.cpp(8) @var4
+    wire io_cout14; // adder.cpp(8) @var5
+    wire[1:0] proxy17; // adder.cpp(18) @var6
+    wire[2:0] proxy19; // adder.cpp(18) @var7
+    wire[2:0] proxy20; // /home/blaise/dev/cash/src/bit.h(1086) @var8
+    wire proxy22; // /home/blaise/dev/cash/src/bit.h(1086) @var9
+    wire[2:0] proxy24; // /home/blaise/dev/cash/src/bit.h(1086) @var10
     wire[2:0] add25;
-    wire[2:0] proxy26; // #11 unknown(0)
-    wire[2:0] proxy27; // #12 /home/blaise/dev/cash/src/bit.h(1012)
-    wire proxy28; // #13 /home/blaise/dev/cash/src/bit.h(1008)
-    wire[2:0] proxy30; // #14 /home/blaise/dev/cash/src/bit.h(1094)
+    wire[2:0] proxy26; // @var11
+    wire[2:0] proxy27; // /home/blaise/dev/cash/src/bit.h(1086) @var12
+    wire proxy28; // /home/blaise/dev/cash/src/bit.h(1086) @var13
+    wire[2:0] proxy30; // /home/blaise/dev/cash/src/bit.h(1086) @var14
     wire[2:0] add31;
-    wire[2:0] proxy32; // #15 unknown(0)
-    wire[1:0] proxy34; // #16 adder.cpp(19)
-    wire proxy35; // #17 unknown(0)
+    wire[2:0] proxy32; // @var15
+    wire[1:0] proxy34; // adder.cpp(19) @var16
+    wire proxy35; // @var17
 
     assign io_cin2 = io_cin;
     assign io_lhs5 = io_lhs;

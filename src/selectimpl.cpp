@@ -9,8 +9,8 @@ using namespace ch::internal;
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void ch::internal::begin_branch(lnodeimpl* key) {
-  ctx_curr()->begin_branch(key);
+void ch::internal::begin_branch(lnodeimpl* key, const source_location& sloc) {
+  ctx_curr()->begin_branch(key, sloc);
 }
 
 void ch::internal::end_branch() {
@@ -26,7 +26,7 @@ void ch::internal::cond_block(const lnode& pred, fvoid_t func) {
 
 void ch::internal::cond_block(fvoid_t func) {
   auto ctx = ctx_curr();
-  ctx->begin_block();
+  ctx->begin_block(nullptr);
   func();
   ctx->end_block();
 }

@@ -20,7 +20,8 @@ public:
   
 protected:
 
-  aluimpl(context* ctx, ch_alu_op op, unsigned size, unsigned num_operands);
+  aluimpl(context* ctx, ch_alu_op op, const lnode& lhs);
+  aluimpl(context* ctx, ch_alu_op op, const lnode& lhs, const lnode& rhs);
   ~aluimpl() {}
 
    void eval(bitvector& inout, ch_tick t);
@@ -55,10 +56,16 @@ protected:
 
   delayed_aluimpl(context* ctx,
                   ch_alu_op op,
-                  unsigned size,
                   const lnode& enable,
                   unsigned delay,
-                  unsigned num_operands);
+                  const lnode& lhs);
+
+  delayed_aluimpl(context* ctx,
+                  ch_alu_op op,
+                  const lnode& enable,
+                  unsigned delay,
+                  const lnode& lhs,
+                  const lnode& rhs);
 
   ~delayed_aluimpl();
 
@@ -69,6 +76,8 @@ protected:
   int enable_idx_;
   friend class context;
 };
+
+bool alu_symmetric(ch_alu_op op);
 
 }
 }

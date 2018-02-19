@@ -7,8 +7,8 @@ namespace internal {
 
 class switch_t {
 public:
-  switch_t(const lnode& key) {
-    begin_branch(key.get_impl());
+  switch_t(const lnode& key, const source_location& sloc) {
+    begin_branch(key.get_impl(), sloc);
   }
   ~switch_t() {
     end_branch();
@@ -42,7 +42,7 @@ protected:
 template <typename K>
 class switch_body_t {
 public:
-  switch_body_t(const switch_ptr& p_switch, const lnode& value)
+  switch_body_t(const switch_ptr& p_switch, const bitvector& value)
     : switch_(p_switch)
     , value_(value)
   {}
@@ -51,13 +51,13 @@ public:
 
 protected:
   switch_ptr switch_;
-  lnode value_;
+  bitvector value_;
 };
 
 template <typename K>
 template <typename V, typename>
 switch_body_t<K> switch_case_t<K>::operator,(const V& value) {
-  return switch_body_t<K>(switch_, get_lnode<V, width_v<K>>(value));
+  return switch_body_t<K>(switch_, bitvector(width_v<K>, value));
 }
 
 template <typename K>
@@ -68,8 +68,8 @@ switch_case_t<K> switch_body_t<K>::operator,(const fvoid_t& body) {
 
 template <typename K,
           CH_REQUIRES(is_bit_convertible<K>::value)>
-auto ch_switch(const K& key) {
-  return switch_case_t<K>(std::make_shared<switch_t>(get_lnode(key)));
+auto ch_switch(const K& key, const source_location& sloc = CH_SOURCE_LOCATION) {
+  return switch_case_t<K>(std::make_shared<switch_t>(get_lnode(key), sloc));
 }
 
 }

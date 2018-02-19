@@ -20,7 +20,7 @@ std::string identifier_from_typeid(const std::string& name);
 
 class source_location {
 public:
-  constexpr source_location(const char* file = "unknown", int line = 0) noexcept
+  constexpr source_location(const char* file = nullptr, int line = 0) noexcept
     : file_(file)
     , line_(line)
   {}
@@ -31,6 +31,15 @@ public:
 
   constexpr int line() const noexcept {
     return line_;
+  }
+
+  bool is_empty() const {
+    return (nullptr == file_);
+  }
+
+  void clear() {
+    file_ = nullptr;
+    line_ = 0;
   }
 
 private:

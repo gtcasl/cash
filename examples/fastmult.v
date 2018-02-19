@@ -5,17 +5,17 @@ module FastMult(
     input wire[3:0] io_rhs,
     output wire[7:0] io_out
 );
-    wire[3:0] io_lhs2; // #1 fastmult.cpp(7)
-    wire[3:0] io_rhs5; // #2 fastmult.cpp(7)
-    wire[7:0] io_out8; // #3 fastmult.cpp(7)
+    wire[3:0] io_lhs2; // fastmult.cpp(7) @var1
+    wire[3:0] io_rhs5; // fastmult.cpp(7) @var2
+    wire[7:0] io_out8; // fastmult.cpp(7) @var3
     reg[7:0] mem10[0:255];
-    wire[3:0] proxy12; // #4 /home/blaise/dev/cash/src/bit.h(1008)
-    wire[7:0] proxy14; // #5 fastmult.cpp(21)
-    wire[3:0] proxy15; // #6 /home/blaise/dev/cash/src/bit.h(1008)
-    wire[7:0] proxy17; // #7 fastmult.cpp(21)
+    wire[3:0] proxy12; // fastmult.cpp(21) @var4
+    wire[7:0] proxy14; // fastmult.cpp(21) @var5
+    wire[3:0] proxy15; // fastmult.cpp(21) @var6
+    wire[7:0] proxy17; // fastmult.cpp(21) @var7
     wire[7:0] sll20;
     wire[7:0] or22;
-    wire[7:0] proxy23; // #10 unknown(0)
+    wire[7:0] proxy23; // @var10
 
     assign io_lhs2 = io_lhs;
     assign io_rhs5 = io_rhs;

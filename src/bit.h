@@ -1005,14 +1005,10 @@ template <typename R, typename T,
 R ch_zext(const T& obj, const source_location& sloc = CH_SOURCE_LOCATION) {
   static_assert(width_v<R> >= width_v<T>, "invalid extend size");
   if constexpr(width_v<T> < width_v<R>) {
-    auto pad = ch_bit<(width_v<R> - width_v<T>)>(0x0);
+    auto pad = ch_bit<(width_v<R> - width_v<T>)>(0x0, sloc);
     return ch_cat(pad, obj, sloc).template as<R>();
-  } else {
-    if constexpr(std::is_same<R, T>::value) {
-      return obj;
-    } else {
-      return R(obj, sloc);
-    }
+  } else {    
+    return R(obj, sloc);
   }
 }
 
@@ -1031,14 +1027,10 @@ R ch_sext(const T& obj, const source_location& sloc = CH_SOURCE_LOCATION) {
   static_assert(width_v<R> >= width_v<T>, "invalid extend size");
   if constexpr(width_v<T> < width_v<R>) {
     static constexpr unsigned D = width_v<R> - width_v<T>;
-    auto pad = ch_bit<D>(0x0) - ch_zext<D>(obj[width_v<T> - 1]);
+    auto pad = ch_bit<D>(0x0) - ch_zext<D>(obj[width_v<T> - 1], sloc);
     return ch_cat(pad, obj, sloc).template as<R>();
   } else {
-    if constexpr(std::is_same<R, T>::value) {
-      return obj;
-    } else {
-      return R(obj, sloc);
-    }
+    return R(obj, sloc);
   }
 }
 

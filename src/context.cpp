@@ -154,6 +154,37 @@ uint32_t context::node_id() {
   return nodeid;
 }
 
+aluimpl* context::createAluNode(uint32_t op, const lnode& in) {
+  aluimpl* node;
+  alu_key_t hk{op, in.get_id(), 0};
+  auto it = alu_cache_.find(hk);
+  if (it == alu_cache_.end()) {
+    node = this->createNode<aluimpl>((ch_alu_op)op, in);
+    alu_cache_[hk] = node;
+  } else {
+    node = it->second;
+  }
+  return node;
+}
+
+aluimpl* context::createAluNode(uint32_t op, const lnode& lhs, const lnode& rhs) {
+  aluimpl* node;
+  alu_key_t hk{op, lhs.get_id(), rhs.get_id()};
+  if (alu_symmetric((ch_alu_op)hk.op)
+   && hk.arg0 > hk.arg1) {
+    // adjust ordering for symmetrix operators
+    std::swap(hk.arg0, hk.arg1);
+  }
+  auto it = alu_cache_.find(hk);
+  if (it == alu_cache_.end()) {
+    node = this->createNode<aluimpl>((ch_alu_op)op, lhs, rhs);
+    alu_cache_[hk] = node;
+  } else {
+    node = it->second;
+  }
+  return node;
+}
+
 void context::destroyNode(lnodeimpl* node) {
   this->remove_node(node);
   delete node;
@@ -264,17 +295,17 @@ void context::remove_node(lnodeimpl* node) {
   }
 }
 
-void context::begin_branch(lnodeimpl* key) {
+void context::begin_branch(lnodeimpl* key, const source_location& sloc) {
   // create new conditional branch
   // add to current block and push on the stack
   cond_br_t* new_branch;
   if (!cond_branches_.empty()) {
     auto curr_branch = cond_branches_.top();
     auto curr_block = curr_branch->blocks.back();
-    new_branch = new cond_br_t(key, curr_block);
+    new_branch = new cond_br_t(key, curr_block, sloc);
     curr_block->branches.push_back(new_branch);
   } else {
-    new_branch = new cond_br_t(key, nullptr);
+    new_branch = new cond_br_t(key, nullptr, sloc);
   }
   cond_branches_.push(new_branch);
 }
@@ -314,7 +345,7 @@ void context::end_branch() {
   }
 }
 
-void context::begin_block(lnodeimpl* pred) {  
+void context::begin_block(lnodeimpl* pred) {
   // insert new conditional block  
   auto curr_branch = cond_branches_.top();
   auto new_block = new cond_block_t(++block_idx_, pred, curr_branch);
@@ -525,6 +556,65 @@ context::emit_conditionals(lnodeimpl* dst,
                            lnodeimpl* current)> emit_conditional_branch;
 
   //--
+  typedef std::list<std::pair<lnodeimpl*, lnodeimpl*>> branch_info_t;
+
+  //--
+  auto branch_optimizer = [&](lnodeimpl* key,
+                              branch_info_t& values,
+                              lnodeimpl* current)->lnodeimpl* {
+    // ensure default argument
+    if (values.back().first) {
+       values.emplace_back(nullptr, current);
+    }
+
+    {
+      // skip paths with value equal to default value
+      auto df_value = values.back().second;
+      for (auto it = values.begin(), end = values.end(); it != end;) {
+        if (it->first && it->second == df_value) {
+          it = values.erase(it);
+        } else {
+          ++it;
+        }
+      }
+    }
+
+    // return single assignment as default value
+    if (1 ==  values.size()) {
+      assert(nullptr == values.front().first);
+      return values.front().second;
+    }
+
+    // coallesce cascading ternary branches sharing the same default value
+    if (2 == values.size()) {
+      auto _true = dynamic_cast<selectimpl*>(values.front().second);
+      if (_true) {
+        uint32_t num_srcs = _true->has_key() ? 4 : 3;
+        if (_true->get_num_srcs() == num_srcs
+         && _true->get_src(num_srcs-1) == values.back().second) {
+          // combine predicates
+          auto pred0 = values.front().first;
+          if (key) {
+            pred0 = this->createAluNode(alu_eq, key, pred0);
+          }
+          auto pred1 = _true->get_src(0);
+          if (_true->has_key()) {
+            // create predicate and remove key from src list
+            pred1 = this->createAluNode(alu_eq, pred1, _true->get_src(1));
+            _true->get_srcs().erase(_true->get_srcs().begin());
+            _true->set_key(false);
+          }
+          auto pred = this->createAluNode(alu_and, pred0, pred1);
+          _true->set_src(0, pred);
+          return _true;
+        }
+      }
+    }
+
+    return nullptr;
+  };
+
+  //--
   auto emit_conditional_block = [&](const cond_block_t* block,
                                     lnodeimpl* current)->lnodeimpl* {
     // get existing definition in current block
@@ -540,10 +630,16 @@ context::emit_conditionals(lnodeimpl* dst,
   };
 
   //--
+  auto get_scalar = [&](lnodeimpl* pred)->lnodeimpl* {
+    assert(type_lit == pred->get_type());
+    return pred;
+  };
+
+  //--
   emit_conditional_branch = [&](const cond_br_t* branch,
                                 lnodeimpl* current)->lnodeimpl* {
     uint32_t changed = 0;
-    std::list<std::pair<lnodeimpl*, lnodeimpl*>> values;
+    branch_info_t values;
 
     for (auto block : branch->blocks) {
       // get definition
@@ -553,19 +649,25 @@ context::emit_conditionals(lnodeimpl* dst,
     }
 
     if (changed) {
+      // optimize the branch
+      auto ret = branch_optimizer(branch->key, values, current);
+      if (ret)
+        return ret;
+
       // create select node
       selectimpl* sel = this->createNode<selectimpl>(current->get_size(), branch->key);
-      for (auto value : values) {
-        if (value.first) {
-          sel->get_srcs().push_back(value.first);
+      sel->set_source_location(branch->sloc);      
+      for (auto& value : values) {
+        auto pred = value.first;
+        if (pred) {
+          if (branch->key) {
+            pred = get_scalar(pred);
+          }
+          sel->get_srcs().push_back(pred);
         }
         sel->get_srcs().push_back(value.second);
       }
 
-      // ensure default argument
-      if (values.back().first) {
-         sel->get_srcs().push_back(current);
-      }
       return sel;
     }
 

@@ -7,7 +7,7 @@ namespace internal {
 
 using fvoid_t = std::function<void ()>;
 
-void begin_branch(lnodeimpl* key);
+void begin_branch(lnodeimpl* key, const source_location& sloc);
 void end_branch();
 
 void cond_block(const lnode& pred, fvoid_t func);
@@ -16,8 +16,8 @@ void cond_block(fvoid_t func);
 class if_t {
 public:
 
-  if_t() {
-    begin_branch(nullptr);
+  if_t(const source_location& sloc) {
+    begin_branch(nullptr, sloc);
   }
 
   ~if_t() {
@@ -79,9 +79,9 @@ inline if_cond_t if_body_t::operator,(const fvoid_t& body) {
 
 template <typename P,
           CH_REQUIRES(is_bit_compatible<P>::value)>
-if_body_t ch_if(const P& pred) {
+if_body_t ch_if(const P& pred, const source_location& sloc = CH_SOURCE_LOCATION) {
   static_assert(1 == width_v<P>, "invalid predicate size");
-  return if_body_t(std::make_shared<if_t>(), get_lnode(pred));
+  return if_body_t(std::make_shared<if_t>(sloc), get_lnode(pred));
 }
 
 }

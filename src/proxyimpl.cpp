@@ -14,7 +14,10 @@ proxyimpl::proxyimpl(context* ctx, const lnode& src)
   this->add_source(0, src);
 }
 
-proxyimpl::proxyimpl(context* ctx, const lnode& src, uint32_t offset, uint32_t length)
+proxyimpl::proxyimpl(context* ctx,
+                     const lnode& src,
+                     uint32_t offset,
+                     uint32_t length)
   : lnodeimpl(ctx, type_proxy, length)
   , tick_(~0ull)  {
   this->add_source(0, src, offset, length);
@@ -29,6 +32,11 @@ void proxyimpl::add_source(uint32_t dst_offset,
   assert(length != 0);
   assert(dst_offset + length <= value_.get_size());
   assert(src_offset + length <= src.get_size());
+
+  // update source location
+  if (sloc_.is_empty()) {
+    sloc_ = src.get_source_location();
+  }
 
   // add new source
   uint32_t new_srcidx = 0xffffffff;
@@ -233,6 +241,9 @@ lnodeimpl* proxyimpl::get_slice(uint32_t offset, uint32_t length) {
       proxy->add_source(dst_offset, srcs_[range.src_idx], src_offset, sub_end - sub_start);
     }
   }
+
+  // update source location
+  proxy->set_source_location(sloc_);
 
   return proxy;
 }
