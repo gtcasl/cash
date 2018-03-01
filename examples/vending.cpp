@@ -40,20 +40,21 @@ struct VendingMachine {
 };
 
 int main() {
-  ch_device<VendingMachine> device;
+  ch_device<VendingMachine> vending;
 
-  device.io.nickel = true;
-  device.io.dime = false;
+  vending.io.nickel = true;
+  vending.io.dime = false;
 
-  ch_vcdtracer tracer("vending.vcd", device);
+  ch_vcdtracer tracer("vending.vcd", vending);
   tracer.run(2*(1+4));
 
   std::cout << "result:" << std::endl;
-  std::cout << "valid = "  << device.io.valid << std::endl;
+  std::cout << "valid = "  << vending.io.valid << std::endl;
 
-  assert(device.io.valid);
+  assert(vending.io.valid);
 
-  ch_toVerilog("vending.v", device);
+  ch_toVerilog("vending.v", vending);
+  ch_toFIRRTL("vending.fir", vending);
 
   return 0;
 }

@@ -29,6 +29,7 @@ int main() {
   assert(counter.io.out == 10);
 
   ch_toVerilog("counter.v", counter);
+  ch_toFIRRTL("counter.fir", counter);
 
   return 0;
 }

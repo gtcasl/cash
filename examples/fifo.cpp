@@ -28,11 +28,9 @@ struct FiFo {
     wr_ptr.next = ch_select(writing, wr_ptr + 1, wr_ptr);
 
     ch_ram<T, N> mem;
-    __if (writing) {
-      mem[wr_A] = io.din;
-    };
+    mem.write(wr_A, io.din, writing);
 
-    io.dout  = mem[rd_A];
+    io.dout  = mem.read(rd_A);
     io.empty = (wr_ptr == rd_ptr);
     io.full  = (wr_A == rd_A) && (wr_ptr[addr_width] != rd_ptr[addr_width]);
   }
@@ -94,6 +92,7 @@ int main() {
   });
 
   ch_toVerilog("fifo.v", fifo);
+  ch_toFIRRTL("fifo.fir", fifo);
 
   return 0;
 }

@@ -19,7 +19,7 @@ struct FastMult {
     }
     ch_rom<ch_bit8, 256> mem(tbl_mult);
     auto addr = (ch_zext<8>(io.lhs) << 4) | ch_zext<8>(io.rhs);
-    io.out = mem[addr];
+    io.out = mem.read(addr);
   }
 };
 
@@ -40,6 +40,7 @@ int main() {
   assert(fastmult.io.out == 6);
 
   ch_toVerilog("fastmult.v", fastmult);
+  //ch_toFIRRTL("fastmult.fir", fastmult);
 
   return 0;
 }

@@ -23,7 +23,7 @@ void compiler::run() {
 
   this->build_node_map();
 
-  identity_nodes = 0; //this->remove_identity_nodes();
+  identity_nodes = this->remove_identity_nodes();
 
   DBG(2, "*** deleted %lu dead nodes\n", dead_nodes);
   DBG(2, "*** deleted %lu identity nodes\n", identity_nodes);
@@ -134,7 +134,7 @@ size_t compiler::dead_code_elimination() {
       }
 
       // add to live list
-      auto ret = live_nodes.emplace(src_impl);
+      auto ret = live_nodes.insert(src_impl);
       if (ret.second || new_proxy_source) {
         // we have a new live node, add it to working set
         working_set.emplace_back(src_impl);
@@ -155,21 +155,32 @@ size_t compiler::dead_code_elimination() {
     }
   }
 
-  return this->remove_dead_nodes(live_nodes);
-}
+  // delete dead nodes
+  auto deleted = this->remove_dead_nodes(live_nodes);
+  assert(ctx_->get_nodes().size() == live_nodes.size());
 
-size_t compiler::remove_dead_nodes(
-    const std::unordered_set<lnodeimpl*>& live_nodes) {
-  size_t deleted = 0;
-  for (auto iter = ctx_->get_nodes().begin(),
-       iterEnd = ctx_->get_nodes().end(); iter != iterEnd;) {
-    lnodeimpl* const node = *iter++;
-    if (0 == live_nodes.count(node)) {
-      ctx_->destroyNode(node);
-      ++deleted;      
-    }
+  // update nodes in topological order
+  auto it_dst = ctx_->get_nodes().begin();
+  for (auto it = live_nodes.rbegin(),
+       end = live_nodes.rend(); it != end;) {
+    *it_dst++ = *it++;
   }
 
+  return deleted;
+}
+
+size_t compiler::remove_dead_nodes(const live_nodes_t& live_nodes) {
+  size_t deleted = 0;
+  for (auto it = ctx_->get_nodes().begin(),
+       end = ctx_->get_nodes().end(); it != end;) {
+    lnodeimpl* const node = *it;
+    if (0 == live_nodes.count(node)) {
+      it = ctx_->destroyNode(it);
+      ++deleted;      
+    } else {
+      ++it;
+    }
+  }
   return deleted;
 }
 
@@ -179,37 +190,51 @@ void compiler::build_node_map() {
       node_map_[src.get_id()].push_back(&src);
     }
   }
+  for (auto& cd : ctx_->get_cdomains()) {
+    for (auto& ev : cd->get_sensitivity_list()) {
+      auto& sg = ev.get_signal();
+      node_map_[sg.get_id()].push_back(&sg);
+    }
+  }
 }
 
 size_t compiler::remove_identity_nodes() {
   size_t deleted = 0;
-  for (auto iter = ctx_->get_proxies().begin(),
-       iterEnd = ctx_->get_proxies().end(); iter != iterEnd;) {
-    proxyimpl* const proxy = *iter++;
+  for (auto it = ctx_->get_proxies().begin(),
+       end = ctx_->get_proxies().end(); it != end;) {
+    proxyimpl* const proxy = *it++;
     if (proxy->is_identity()) {
       auto& src = proxy->get_src(0);
       auto src_impl = src.get_impl();
 
       // remove proxy from source's refs
       auto& src_refs = node_map_[src_impl->get_id()];
-      for (auto it = src_refs.begin(), end = src_refs.end(); it != end; ++it) {
-        if (*it == &src) {
-          src_refs.erase(it);
+      for (auto s_it = src_refs.begin(), s_end = src_refs.end(); s_it != s_end; ++s_it) {
+        if (*s_it == &src) {
+          src_refs.erase(s_it);
           break;
         }
       }
 
       // replace proxy's uses with proxy's source      
-      auto it = node_map_.find(proxy->get_id());
-      assert(it != node_map_.end());
-      for (auto node : it->second) {
-        const_cast<lnode*>(node)->set_impl(src_impl);
+      {
+        auto p_it = node_map_.find(proxy->get_id());
+        assert(p_it != node_map_.end());
+        for (auto node : p_it->second) {
+          const_cast<lnode*>(node)->set_impl(src_impl);
 
-        // update source refs
-        src_refs.push_back(node);
+          // update source refs
+          src_refs.push_back(node);
+        }
+        node_map_.erase(p_it);
       }
-      node_map_.erase(it);
-      ctx_->destroyNode(proxy);
+
+      {
+        auto n_it = std::find(ctx_->get_nodes().begin(), ctx_->get_nodes().end(), proxy);
+        assert(n_it != ctx_->get_nodes().end());
+        ctx_->destroyNode(n_it);
+      }
+
       ++deleted;
     }
   }

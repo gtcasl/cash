@@ -39,6 +39,7 @@ int main() {
   assert(adder.io.cout == 1);
 
   ch_toVerilog("adder.v", adder);
+  ch_toFIRRTL("adder.fir", adder);
 
   return 0;
 }

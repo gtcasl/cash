@@ -21,6 +21,7 @@
 #include "simulator.h"
 #include "vcdtracer.h"
 #include "verilog.h"
+#include "firrtl.h"
 #include "misc.h"
 
 namespace ch {

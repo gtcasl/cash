@@ -39,6 +39,18 @@ lnodeimpl::lnodeimpl(context* ctx,
 
 lnodeimpl::~lnodeimpl() {}
 
+unsigned lnodeimpl::add_src(unsigned index, const lnode& src) {
+  if (0xffffffff == index) {
+    // add first entry
+    index = srcs_.size();
+    srcs_.push_back(src);
+  } else {
+    // override existing entry
+    srcs_[index] = src;
+  }
+  return index;
+}
+
 lnodeimpl* lnodeimpl::get_slice(uint32_t offset, uint32_t length) {
   assert(length <= value_.get_size());
   if (value_.get_size() == length)

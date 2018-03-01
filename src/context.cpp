@@ -185,9 +185,11 @@ aluimpl* context::createAluNode(uint32_t op, const lnode& lhs, const lnode& rhs)
   return node;
 }
 
-void context::destroyNode(lnodeimpl* node) {
-  this->remove_node(node);
+node_list_t::iterator context::destroyNode(const node_list_t::iterator& it) {
+  auto node = *it;
+  auto next = this->remove_node(it);
   delete node;
+  return next;
 }
 
 void context::add_node(lnodeimpl* node) {
@@ -247,12 +249,13 @@ void context::add_node(lnodeimpl* node) {
   }
 }
 
-void context::remove_node(lnodeimpl* node) {
+node_list_t::iterator context::remove_node(const node_list_t::iterator& it) {
+  auto node = *it;
   DBG(3, "*** deleting node: %s%d(#%d)\n",
       to_string(node->get_type()), node->get_size(), node->get_id());
   
   assert(!nodes_.empty());
-  nodes_.remove(node);
+  auto next = nodes_.erase(it);
   
   switch (node->get_type()) {
   case type_undef:
@@ -293,6 +296,7 @@ void context::remove_node(lnodeimpl* node) {
   default:
     break;
   }
+  return next;
 }
 
 void context::begin_branch(lnodeimpl* key, const source_location& sloc) {
@@ -599,8 +603,9 @@ context::emit_conditionals(lnodeimpl* dst,
           }
           auto pred1 = _true->get_src(0);
           if (_true->has_key()) {
-            // create predicate and remove key from src list
-            pred1 = this->createAluNode(alu_eq, pred1, _true->get_src(1));
+            // create predicate
+            pred1 = this->createAluNode(alu_eq, pred1, _true->get_src(1));            
+            // remove key from src list
             _true->get_srcs().erase(_true->get_srcs().begin());
             _true->set_key(false);
           }
@@ -754,32 +759,24 @@ void context::bind_output(const lnode& dst, const lnode& output) {
 live_nodes_t context::compute_live_nodes() const {
   live_nodes_t live_nodes;
 
-  // default signals
-  if (default_clk_) {
-    live_nodes.emplace(default_clk_);
-  }
-  if (default_reset_) {
-    live_nodes.emplace(default_reset_);
-  }
-
   // get inputs
   for (auto node : inputs_) {
-    live_nodes.emplace(node);
+    live_nodes.insert(node);
   }
 
   // get outputs
   for (auto node : outputs_) {
-    live_nodes.emplace(node);
+    live_nodes.insert(node);
   }  
   
   // get debug taps
   for (auto node : taps_) {
-    live_nodes.emplace(node);
+    live_nodes.insert(node);
   }
 
   // get assert taps
   for (auto node : gtaps_) {
-    live_nodes.emplace(node);
+    live_nodes.insert(node);
   }
 
   return live_nodes;

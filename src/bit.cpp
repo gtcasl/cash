@@ -88,6 +88,12 @@ bit_buffer_impl& bit_buffer_impl::operator=(bit_buffer_impl&& rhs) {
   return *this;
 }
 
+const lnode& bit_buffer_impl::get_data() const {
+  uint32_t var_id = value_.get_var_id();
+  CH_UNUSED(var_id);
+  return value_;
+}
+
 void bit_buffer_impl::write(uint32_t dst_offset,
                             const lnode& data,
                             uint32_t src_offset,

@@ -120,6 +120,8 @@ public:
 
   bit_buffer_impl& operator=(bit_buffer_impl&& rhs);
 
+  virtual const lnode& get_data() const;
+
   virtual void write(uint32_t dst_offset,
                      const lnode& data,
                      uint32_t src_offset,
@@ -135,12 +137,6 @@ public:
 
   uint32_t get_id() const {
     return id_;
-  }
-
-  const lnode& get_data() const {
-    uint32_t var_id = value_.get_var_id();
-    CH_UNUSED(var_id);
-    return value_;
   }
 
   unsigned get_size() const {
@@ -792,23 +788,6 @@ auto ch_neg(const const_bit<N>& in) {
   return -in;
 }
 
-// bitwise operators
-
-template <unsigned N>
-auto ch_nand(const const_bit<N>& lhs, const const_bit<N>& rhs) {
-  return OpBinary<alu_nand, N>(lhs, rhs);
-}
-
-template <unsigned N>
-auto ch_nor(const const_bit<N>& lhs, const const_bit<N>& rhs) {
-  return OpBinary<alu_nor, N>(lhs, rhs);
-}
-
-template <unsigned N>
-auto ch_xnor(const const_bit<N>& lhs, const const_bit<N>& rhs) {
-  return OpBinary<alu_xnor, N>(lhs, rhs);
-}
-
 // reduce operators
 
 template <unsigned N>
@@ -824,21 +803,6 @@ auto ch_orr(const const_bit<N>& in) {
 template <unsigned N>
 auto ch_xorr(const const_bit<N>& in) {
   return OpReduce<alu_xorr>(in);
-}
-
-template <unsigned N>
-auto ch_nandr(const const_bit<N>& in) {
-  return OpReduce<alu_nandr>(in);
-}
-
-template <unsigned N>
-auto ch_norr(const const_bit<N>& in) {
-  return OpReduce<alu_norr>(in);
-}
-
-template <unsigned N>
-auto ch_xnorr(const const_bit<N>& in) {
-  return OpReduce<alu_xnorr>(in);
 }
 
 // shift operators

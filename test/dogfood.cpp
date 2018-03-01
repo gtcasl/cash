@@ -132,21 +132,7 @@ struct Dogfood {
     __out(ch_bit1) out
   );
   void describe() {
-    /*ch_bit2 a(0);
-    auto b = a + 1;
-    a = 1;
-    io.out = (b == 2);*/
-    //io.out = (io.in == 0xA);
-    ch_bit4 a(0), b(0);
-    __if (a == 1) {
-      b = 1;
-    } __elif (a == 0) {
-      b[1] = 1;
-    } __else {
-      b = 1000_b;
-    };
-    //ch_print("b={0}", b);
-    io.out = (b == 0010_b);
+    io.out = true;
   }
 };
 

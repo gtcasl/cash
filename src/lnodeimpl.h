@@ -70,10 +70,12 @@ public:
     return srcs_[index];
   }
   
-  void set_src(unsigned index, const lnode& node) {
+  void set_src(unsigned index, const lnode& src) {
     assert(index < srcs_.size());
-    srcs_[index] = node;
+    srcs_[index] = src;
   }
+
+  unsigned add_src(unsigned index, const lnode& src);
   
   uint32_t get_size() const {
     return value_.get_size();

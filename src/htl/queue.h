@@ -34,11 +34,9 @@ struct ch_queue {
     wr_ptr.next = ch_select(writing, wr_ptr + 1, wr_ptr);
 
     ch_ram<T, N> mem;
-    __if (writing) {
-      mem[wr_A] = io.enq.data;
-    };
+    mem.write(wr_A, io.enq.data, writing);
 
-    io.deq.data  = mem[rd_A];
+    io.deq.data  = mem.read(rd_A);
     io.deq.valid = (wr_ptr != rd_ptr);
     io.enq.ready = (wr_A != rd_A) || (wr_ptr[addr_width] == rd_ptr[addr_width]);
     io.size      = (wr_ptr - rd_ptr);

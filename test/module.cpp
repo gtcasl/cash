@@ -214,6 +214,8 @@ TEST_CASE("module", "[module]") {
       ch_toVerilog("filter.v", filter);
       ret &= (checkVerilog("filter_tb.v"));
 
+      ch_toFIRRTL("filter.fir", filter);
+
       return !!ret;
     });
     TESTX([]()->bool {
@@ -248,6 +250,8 @@ TEST_CASE("module", "[module]") {
 
       ch_toVerilog("queue.v", queue);
       ret &= (checkVerilog("queue_tb.v"));
+
+      ch_toFIRRTL("queue.fir", queue);
 
       return !!ret;
     });

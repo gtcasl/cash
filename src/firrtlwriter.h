@@ -20,13 +20,13 @@ class bindportimpl;
 class bitvector;
 class cdomain;
 
-class verilogwriter {
+class firrtlwriter {
 public:
 
-  verilogwriter(std::ostream& out);
-  ~verilogwriter();
+  firrtlwriter(std::ostream& out);
+  ~firrtlwriter();
 
-  void print(context* context);
+  void print(context* ctx);
 
 protected:
 
@@ -48,22 +48,22 @@ protected:
 
   void print_footer(module_t& module);
 
-  void print_port(module_t& module, lnodeimpl* node);
+  void print_port(lnodeimpl* node);
 
-  bool print_decl(module_t& module,
-                  lnodeimpl* node,
-                  std::unordered_set<uint32_t>& visited,
-                  lnodeimpl* ref = nullptr);
+  bool print_decl(lnodeimpl* node,
+                  std::unordered_set<uint32_t>& visited);
 
-  bool print_binding(module_t& module, bindimpl* node);
+  bool print_binding(bindimpl* node);
 
-  bool print_bindport(module_t& module, bindportimpl* node);
+  bool print_bindport(bindportimpl* node);
 
   bool print_logic(module_t& module, lnodeimpl* node);
 
-  void print_name(module_t& module, lnodeimpl* node, bool force = false);
+  void print_name(lnodeimpl* node, bool force = false);
 
   void print_type(lnodeimpl* node);
+
+  void print_dtype(lnodeimpl* node);
 
   void print_value(const bitvector& value,
                    bool skip_leading_zeros_enable = false,
@@ -74,21 +74,21 @@ protected:
 
   void print_alu(module_t& module, aluimpl* node);
 
-  void print_rotate(module_t& module, aluimpl* node, bool right_dir);
+  void print_rotate(aluimpl* node, bool right_dir);
 
-  void print_mux(module_t& module, aluimpl* node);
+  void print_mux(aluimpl* node);
 
-  void print_fmult(module_t& module, aluimpl* node);
+  void print_fmult(aluimpl* node);
 
-  void print_fadd(module_t& module, aluimpl* node);
+  void print_fadd(aluimpl* node);
 
   void print_select(module_t& module, selectimpl* node);
 
-  void print_reg(module_t& module, regimpl* node);
+  void print_reg(regimpl* node);
 
-  void print_cdomain(module_t& module, cdomain* cd);
+  void print_cdomain(cdomain* cd);
 
-  void print_mem(module_t& module, memimpl* node);
+  void print_mem(memimpl* node);
 
   void print_operator(ch_alu_op op);
 

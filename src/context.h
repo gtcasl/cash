@@ -28,7 +28,7 @@ using ch_tick = uint64_t;
 
 typedef std::unordered_map<uint32_t, std::vector<const lnode*>> node_map_t;
 
-typedef std::unordered_set<lnodeimpl*> live_nodes_t;
+typedef ordered_set<lnodeimpl*> live_nodes_t;
 
 struct cond_block_t;
 
@@ -57,6 +57,8 @@ typedef std::unordered_map<uint32_t, lnodeimpl*> cond_defs_t;
 typedef std::map<cond_range_t, cond_defs_t> cond_slices_t;
 
 typedef std::unordered_map<lnodeimpl*, cond_slices_t> cond_vars_t;
+
+typedef std::list<lnodeimpl*> node_list_t;
 
 struct cond_block_t;
 
@@ -131,6 +133,10 @@ public:
     return nodes_;
   }
 
+  auto& get_nodes() {
+    return nodes_;
+  }
+
   const auto& get_undefs() const {
     return undefs_;
   }
@@ -171,6 +177,10 @@ public:
     return bindings_;
   }
 
+  const auto& get_cdomains() const {
+    return cdomains_;
+  }
+
   //--
 
   void push_clk(const lnode& clk);
@@ -199,7 +209,7 @@ public:
   aluimpl* createAluNode(uint32_t op, const lnode& in);
   aluimpl* createAluNode(uint32_t op, const lnode& lhs, const lnode& rhs);
 
-  void destroyNode(lnodeimpl* node);
+  node_list_t::iterator destroyNode(const node_list_t::iterator& it);
   
   //--
 
@@ -265,7 +275,7 @@ protected:
   ~context();
 
   void add_node(lnodeimpl* node);
-  void remove_node(lnodeimpl* node);
+  node_list_t::iterator remove_node(const node_list_t::iterator& it);
 
   lnodeimpl* emit_conditionals(lnodeimpl* dst,
                                const cond_range_t& range,
@@ -283,30 +293,30 @@ protected:
   inputimpl*  default_reset_;
   tickimpl*   tick_;
   
-  std::list<lnodeimpl*>  nodes_;
-  std::list<undefimpl*>  undefs_;
-  std::list<proxyimpl*>  proxies_;
-  std::list<inputimpl*>  inputs_;
-  std::list<outputimpl*> outputs_;
-  std::list<tapimpl*>    taps_;
-  std::list<ioimpl*>     gtaps_;
-  std::list<litimpl*>    literals_;
-  std::list<cdomain*>    cdomains_;
+  node_list_t             nodes_;
+  std::list<undefimpl*>   undefs_;
+  std::list<proxyimpl*>   proxies_;
+  std::list<inputimpl*>   inputs_;
+  std::list<outputimpl*>  outputs_;
+  std::list<tapimpl*>     taps_;
+  std::list<ioimpl*>      gtaps_;
+  std::list<litimpl*>     literals_;
+  std::list<cdomain*>     cdomains_;
 
-  std::list<bindimpl*>   bindings_;
+  std::list<bindimpl*>    bindings_;
 
-  std::stack<cond_br_t*> cond_branches_;
-  cond_vars_t            cond_vars_;
-  cond_inits_t           cond_inits_;
+  std::stack<cond_br_t*>  cond_branches_;
+  cond_vars_t             cond_vars_;
+  cond_inits_t            cond_inits_;
 
-  alu_cache_t          alu_cache_;
+  alu_cache_t             alu_cache_;
 
-  std::stack<lnode>      user_clks_;
-  std::stack<lnode>      user_resets_;
+  std::stack<lnode>       user_clks_;
+  std::stack<lnode>       user_resets_;
 
-  unique_name            unique_tap_names_;
+  unique_name             unique_tap_names_;
 
-  enum_strings_t         enum_strings_;
+  enum_strings_t          enum_strings_;
 
   friend class context_manager;
 };

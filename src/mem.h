@@ -35,31 +35,24 @@ static auto toByteVector(const T& container,
   return packed;
 }
 
-class mem_buffer : public bit_buffer_impl {
-public:
-  mem_buffer(const lnode& port) : bit_buffer_impl(port, nullptr, 0) {}
-
-  void write(uint32_t dst_offset,
-             const lnode& data,
-             uint32_t src_offset,
-             uint32_t length) override;
-};
-
 ///////////////////////////////////////////////////////////////////////////////
 
 class memory {
 public:
-  memory(uint32_t data_width, uint32_t num_items, bool writeEnable);
+  memory(uint32_t data_width, uint32_t num_items, bool write_enable);
 
   memory(uint32_t data_width,
          uint32_t num_items,
-         bool writeEnable,
+         bool write_enable,
          const std::vector<uint8_t>& init_data);
 
-  const lnode& get_port(const lnode& addr) const;
+  const lnode& read(const lnode& addr) const;
+
+  void write(const lnode& addr, const lnode& value);
+
+  void write(const lnode& addr, const lnode& value, const lnode& enable);
 
 protected:
-
   memimpl* impl_;
 };
 
@@ -95,9 +88,9 @@ public:
 
   template <typename U,
             CH_REQUIRES(is_bit_convertible<U, addr_width>::value)>
-  auto operator[](const U& addr) const {
-    return const_type_t<T>(
-      bit_buffer_ptr(new mem_buffer(mem_.get_port(get_lnode<U, addr_width>(addr)))));
+  auto read(const U& addr) const {
+    auto l_addr = get_lnode<U, addr_width>(addr);
+    return const_type_t<T>(bit_buffer(mem_.read(l_addr)));
   }
     
 protected:
@@ -136,15 +129,30 @@ public:
 
   template <typename U,
             CH_REQUIRES(is_bit_convertible<U, addr_width>::value)>
-  auto operator[](const U& addr) const {
-    return const_type_t<T>(
-          bit_buffer_ptr(new mem_buffer(mem_.get_port(get_lnode<U, addr_width>(addr)))));
+  auto read(const U& addr) const {
+    auto laddr = get_lnode<U, addr_width>(addr);
+    return const_type_t<T>(bit_buffer(mem_.read(laddr)));
   }
 
-  template <typename U,
-            CH_REQUIRES(is_bit_convertible<U, addr_width>::value)>
-  auto operator[](const U& addr) {
-    return T(bit_buffer_ptr(new mem_buffer(mem_.get_port(get_lnode<U, addr_width>(addr)))));
+  template <typename U, typename V,
+            CH_REQUIRES(is_bit_convertible<U, addr_width>::value),
+            CH_REQUIRES(is_cast_convertible<T, V>::value)>
+  void write(const U& addr, const V& value) {
+    auto l_addr  = get_lnode<U, addr_width>(addr);
+    auto l_value = get_lnode<T, width_v<V>>(value);
+    mem_.write(l_addr, l_value);
+  }
+
+  template <typename U, typename V, typename E,
+            CH_REQUIRES(is_bit_convertible<U, addr_width>::value),
+            CH_REQUIRES(is_cast_convertible<T, V>::value),
+            CH_REQUIRES(is_bit_convertible<E>::value)>
+  void write(const U& addr, const V& value, const E& enable) {
+    static_assert(1 == width_v<E>, "invalid predicate size");
+    auto l_addr   = get_lnode<U, addr_width>(addr);
+    auto l_value  = get_lnode<T, width_v<V>>(value);
+    auto l_enable = get_lnode(enable);
+    mem_.write(l_addr, l_value, l_enable);
   }
     
 protected:

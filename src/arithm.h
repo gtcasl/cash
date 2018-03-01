@@ -18,37 +18,31 @@
   m(and,    1 | alu_binary | alu_bitwise | alu_integer) \
   m(or,     2 | alu_binary | alu_bitwise | alu_integer) \
   m(xor,    3 | alu_binary | alu_bitwise | alu_integer) \
-  m(nand,   4 | alu_binary | alu_bitwise | alu_integer) \
-  m(nor,    5 | alu_binary | alu_bitwise | alu_integer) \
-  m(xnor,   6 | alu_binary | alu_bitwise | alu_integer) \
-  m(andr,   7 | alu_unary  | alu_reduce  | alu_integer) \
-  m(orr,    8 | alu_unary  | alu_reduce  | alu_integer) \
-  m(xorr,   9 | alu_unary  | alu_reduce  | alu_integer) \
-  m(nandr, 10 | alu_unary  | alu_reduce  | alu_integer) \
-  m(norr,  11 | alu_unary  | alu_reduce  | alu_integer) \
-  m(xnorr, 12 | alu_unary  | alu_reduce  | alu_integer) \
-  m(sll,   13 | alu_binary | alu_shift   | alu_integer) \
-  m(srl,   14 | alu_binary | alu_shift   | alu_integer) \
-  m(sra,   15 | alu_binary | alu_shift   | alu_integer) \
-  m(add,   16 | alu_binary | alu_arithm  | alu_integer) \
-  m(sub,   17 | alu_binary | alu_arithm  | alu_integer) \
-  m(neg,   18 | alu_unary  | alu_arithm  | alu_integer) \
-  m(mult,  19 | alu_binary | alu_arithm  | alu_integer) \
-  m(div,   20 | alu_binary | alu_arithm  | alu_integer) \
-  m(mod,   21 | alu_binary | alu_arithm  | alu_integer) \
-  m(eq,    22 | alu_binary | alu_compare | alu_integer) \
-  m(ne,    23 | alu_binary | alu_compare | alu_integer) \
-  m(lt,    24 | alu_binary | alu_compare | alu_integer) \
-  m(gt,    25 | alu_binary | alu_compare | alu_integer) \
-  m(le,    26 | alu_binary | alu_compare | alu_integer) \
-  m(ge,    27 | alu_binary | alu_compare | alu_integer) \
-  m(rotl,  28 | alu_binary | alu_rotate  | alu_integer) \
-  m(rotr,  29 | alu_binary | alu_rotate  | alu_integer) \
-  m(mux,   30 | alu_binary | alu_misc    | alu_integer) \
-  m(fadd,  31 | alu_binary | alu_arithm  | alu_float) \
-  m(fsub,  32 | alu_binary | alu_arithm  | alu_float) \
-  m(fmult, 33 | alu_binary | alu_arithm  | alu_float) \
-  m(fdiv,  34 | alu_binary | alu_arithm  | alu_float)
+  m(andr,   4 | alu_unary  | alu_reduce  | alu_integer) \
+  m(orr,    5 | alu_unary  | alu_reduce  | alu_integer) \
+  m(xorr,   6 | alu_unary  | alu_reduce  | alu_integer) \
+  m(sll,    7 | alu_binary | alu_shift   | alu_integer) \
+  m(srl,    8 | alu_binary | alu_shift   | alu_integer) \
+  m(sra,    9 | alu_binary | alu_shift   | alu_integer) \
+  m(add,   10 | alu_binary | alu_arithm  | alu_integer) \
+  m(sub,   11 | alu_binary | alu_arithm  | alu_integer) \
+  m(neg,   12 | alu_unary  | alu_arithm  | alu_integer) \
+  m(mult,  13 | alu_binary | alu_arithm  | alu_integer) \
+  m(div,   14 | alu_binary | alu_arithm  | alu_integer) \
+  m(mod,   15 | alu_binary | alu_arithm  | alu_integer) \
+  m(eq,    16 | alu_binary | alu_compare | alu_integer) \
+  m(ne,    17 | alu_binary | alu_compare | alu_integer) \
+  m(lt,    18 | alu_binary | alu_compare | alu_integer) \
+  m(gt,    19 | alu_binary | alu_compare | alu_integer) \
+  m(le,    20 | alu_binary | alu_compare | alu_integer) \
+  m(ge,    21 | alu_binary | alu_compare | alu_integer) \
+  m(rotl,  22 | alu_binary | alu_rotate  | alu_integer) \
+  m(rotr,  23 | alu_binary | alu_rotate  | alu_integer) \
+  m(mux,   24 | alu_binary | alu_misc    | alu_integer) \
+  m(fadd,  25 | alu_binary | alu_arithm  | alu_float) \
+  m(fsub,  26 | alu_binary | alu_arithm  | alu_float) \
+  m(fmult, 27 | alu_binary | alu_arithm  | alu_float) \
+  m(fdiv,  28 | alu_binary | alu_arithm  | alu_float)
 
 namespace ch {
 namespace internal {

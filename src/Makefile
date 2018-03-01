@@ -11,7 +11,7 @@ SRCS = utils.cpp platform.cpp bitvector.cpp scalar.cpp \
        aluimpl.cpp ioimpl.cpp memimpl.cpp bindimpl.cpp assertimpl.cpp tickimpl.cpp printimpl.cpp \
        bit.cpp cdomain.cpp context.cpp compile.cpp deviceimpl.cpp \
        simulatorimpl.cpp tracerimpl.cpp vcdtracerimpl.cpp \
-       verilogwriter.cpp \
+       verilogwriter.cpp firrtlwriter.cpp \
        cash.cpp
 
 OBJS := $(SRCS:.cpp=.o)

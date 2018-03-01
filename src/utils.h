@@ -4,6 +4,7 @@
 #include <functional>
 #include <unordered_map>
 #include <assert.h>
+#include "ordered_set.h"
 
 namespace ch {
 namespace internal {
@@ -87,6 +88,12 @@ void for_each_reverse_impl(const F& f, Arg0&& arg0, Args&&... args) {
 template <typename F, typename... Args>
 void for_each_reverse(const F& f, Args&&... args) {
   for_each_reverse_impl(f, std::forward<Args>(args)...);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+constexpr inline std::size_t hash_combine(std::size_t hash1, std::size_t hash2) {
+  return hash1 ^ (hash2 * 0x9e3779b9 + (hash1 << 6) + (hash1 >> 2));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -368,7 +375,7 @@ protected:
 template <class CharT, class Traits = std::char_traits<CharT>>
 class basic_auto_indent : public std::basic_streambuf<CharT, Traits> {
 public:
-  explicit basic_auto_indent(std::basic_ostream<CharT, Traits>& out, int indent = 4)
+  explicit basic_auto_indent(std::basic_ostream<CharT, Traits>& out, int indent = 2)
     : out_(out)
     , indent_(indent)
     , add_indent_(true) {

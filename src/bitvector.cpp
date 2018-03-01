@@ -497,33 +497,6 @@ void ch::internal::Xor(bitvector& out, const bitvector& lhs, const bitvector& rh
   }
 }
 
-void ch::internal::Nand(bitvector& out, const bitvector& lhs, const bitvector& rhs) {
-  assert(out.get_size() == lhs.get_size());
-  assert(lhs.get_size() == rhs.get_size());
-  for (int32_t i = 0, n = rhs.get_num_words(); i < n; ++i) {
-    out.set_word(i, ~(lhs.get_word(i) & rhs.get_word(i)));
-  }
-  out.clear_unused_bits();
-}
-
-void ch::internal::Nor(bitvector& out, const bitvector& lhs, const bitvector& rhs) {
-  assert(out.get_size() == lhs.get_size());
-  assert(lhs.get_size() == rhs.get_size());
-  for (int32_t i = 0, n = rhs.get_num_words(); i < n; ++i) {
-    out.set_word(i, ~(lhs.get_word(i) | rhs.get_word(i)));
-  }
-  out.clear_unused_bits();
-}
-
-void ch::internal::Xnor(bitvector& out, const bitvector& lhs, const bitvector& rhs) {
-  assert(out.get_size() == lhs.get_size());
-  assert(lhs.get_size() == rhs.get_size());
-  for (int32_t i = 0, n = rhs.get_num_words(); i < n; ++i) {
-    out.set_word(i, ~(lhs.get_word(i) ^ rhs.get_word(i)));
-  }
-  out.clear_unused_bits();
-}
-
 ///////////////////////////////////////////////////////////////////////////////
 
 bool ch::internal::AndR(const bitvector& in) {
@@ -561,45 +534,6 @@ bool ch::internal::XorR(const bitvector& in) {
     }
     in_w >>= 1;
     result ^= (in_w & 0x1);
-  }
-  return (result != 0);
-}
-
-bool ch::internal::NandR(const bitvector& in) {
-  uint32_t in_w = in.get_word(0);
-  uint32_t result = in_w & 0x1;
-  for (uint32_t i = 1, j = 1, n = in.get_size(); i < n; ++i) {
-    if (0 == (i % bitvector::WORD_SIZE)) {
-      in_w = in.get_word(j++);
-    }
-    in_w >>= 1;
-    result = ~(result & (in_w & 0x1));
-  }
-  return (result != 0);
-}
-
-bool ch::internal::NorR(const bitvector& in) {
-  uint32_t in_w = in.get_word(0);
-  uint32_t result = in_w & 0x1;
-  for (uint32_t i = 1, j = 1, n = in.get_size(); i < n; ++i) {
-    if (0 == (i % bitvector::WORD_SIZE)) {
-      in_w = in.get_word(j++);
-    }
-    in_w >>= 1;
-    result = ~(result | (in_w & 0x1));
-  }
-  return (result != 0);
-}
-
-bool ch::internal::XnorR(const bitvector& in) {
-  uint32_t in_w = in.get_word(0);
-  uint32_t result = in_w & 0x1;
-  for (uint32_t i = 1, j = 1, n = in.get_size(); i < n; ++i) {
-    if (0 == (i % bitvector::WORD_SIZE)) {
-      in_w = in.get_word(j++);
-    }
-    in_w >>= 1;
-    result = ~(result ^ (in_w & 0x1));
   }
   return (result != 0);
 }

@@ -41,6 +41,9 @@ src/device.h
 src/deviceimpl.cpp
 src/deviceimpl.h
 src/enum.h
+src/firrtl.h
+src/firrtlwriter.cpp
+src/firrtlwriter.h
 src/float32.h
 src/htl/arbiter.h
 src/htl/counter.h
@@ -66,6 +69,7 @@ src/memimpl.cpp
 src/memimpl.h
 src/misc.h
 src/module.h
+src/ordered_set.h
 src/platform.cpp
 src/platform.h
 src/port.h

@@ -52,8 +52,9 @@ memimpl::~memimpl() {
 lnode& memimpl::get_port(const lnode& addr) {
   for (auto& port : ports_) {
     auto impl = dynamic_cast<memportimpl*>(port.get_impl());
-    if (impl->get_addr().get_id() == addr.get_id())
+    if (impl->get_addr().get_id() == addr.get_id()) {
       return port;
+    }
   }
   auto impl = ctx_->createNode<memportimpl>(this, addr);
   ports_.emplace_back(impl);
@@ -113,9 +114,12 @@ void memimpl::print(std::ostream& out, uint32_t level) const {
 memportimpl::memportimpl(context* ctx, memimpl* mem, const lnode& addr)
   : ioimpl(ctx, type_memport, mem->get_data_width())
   , a_next_(0)
+  , en_next_(false)
   , mem_idx_(-1)
   , addr_idx_(-1)
   , wdata_idx_(-1)
+  , enable_idx_(-1)
+  , read_enable_(false)
   , tick_(~0ull) {
   mem_idx_ = srcs_.size();
   srcs_.emplace_back(mem);
@@ -136,41 +140,54 @@ void memportimpl::detach() {
   }
 }
 
+void memportimpl::read() {
+  read_enable_ = true;
+}
+
 void memportimpl::write(const lnode& data) {
   if (wdata_idx_ == -1) {
     // add write port to memory sources to enforce DFG dependencies
     memimpl* mem = dynamic_cast<memimpl*>(srcs_[mem_idx_].get_impl());
     mem->get_srcs().emplace_back(this);
-
-    // port source initially points to memory content
-    wdata_idx_ = srcs_.size();
-    srcs_.emplace_back(this);
   }
-  srcs_[wdata_idx_].write(0, data, 0, data.get_size());
+  // add data source
+  wdata_idx_ = this->add_src(wdata_idx_, data);
+}
+
+void memportimpl::write(const lnode& data, const lnode& enable) {
+  // add data source
+  this->write(data);
+
+  // add enable predicate
+  enable_idx_ = this->add_src(enable_idx_, enable);
 }
 
 void memportimpl::tick(ch_tick t) {
   CH_UNUSED(t);
-  if (wdata_idx_ != -1) {
+  if (en_next_) {
     auto mem = dynamic_cast<memimpl*>(srcs_[mem_idx_].get_impl());
-    mem->get_value().write(a_next_ * mem->get_data_width(),
+    auto data_width = mem->get_data_width();
+    mem->get_value().write(a_next_ * data_width,
                            q_next_.get_words(),
                            CH_CEILDIV(q_next_.get_size(), 8),
                            0,
-                           mem->get_data_width());
+                           data_width);
   }  
 }
 
 void memportimpl::tick_next(ch_tick t) {
   if (wdata_idx_ != -1) {
-    a_next_ = srcs_[addr_idx_].eval(t).get_word(0);
-    q_next_ = srcs_[wdata_idx_].eval(t);
+    // synchronous memory write
+    en_next_ = (enable_idx_ != -1) ? srcs_[enable_idx_].eval(t).get_word(0) : true;
+    a_next_   = srcs_[addr_idx_].eval(t).get_word(0);
+    q_next_   = srcs_[wdata_idx_].eval(t);
   }
 }
 
 const bitvector& memportimpl::eval(ch_tick t) {  
   if (tick_ != t) {
     tick_ = t;
+    // asynchronous memory read
     auto mem = dynamic_cast<memimpl*>(srcs_[mem_idx_].get_impl());
     uint32_t addr = srcs_[addr_idx_].eval(t).get_word(0);    
     mem->get_value().read(0,
@@ -186,48 +203,24 @@ const bitvector& memportimpl::eval(ch_tick t) {
 
 memory::memory(uint32_t data_width,
                uint32_t num_items,
-               bool writeEnable,
+               bool write_enable,
                const std::vector<uint8_t>& init_data) {
   CH_CHECK(!ctx_curr()->conditional_enabled(), "memory objects cannot be nested inside a conditional block");
-  impl_ = ctx_curr()->createNode<memimpl>(data_width, num_items, writeEnable, init_data);
+  impl_ = ctx_curr()->createNode<memimpl>(data_width, num_items, write_enable, init_data);
 }
 
-const lnode& memory::get_port(const lnode& addr) const {
-  return impl_->get_port(addr);
+const lnode& memory::read(const lnode& addr) const {
+  auto& port = impl_->get_port(addr);
+  dynamic_cast<memportimpl*>(port.get_impl())->read();
+  return port;
 }
 
-///////////////////////////////////////////////////////////////////////////////
+void memory::write(const lnode& addr, const lnode& value) {
+  auto& port = impl_->get_port(addr);
+  dynamic_cast<memportimpl*>(port.get_impl())->write(value);
+}
 
-void mem_buffer::write(uint32_t dst_offset,
-                       const lnode& data,
-                       uint32_t src_offset,
-                       uint32_t length) {
-  CH_UNUSED(src_offset);
-  auto size = value_.get_size();
-  assert(0 == src_offset && (dst_offset + length) <= size);
-  auto port = dynamic_cast<memportimpl*>(value_.get_impl());
-  assert(port);
-
-  // if partial write, use masking
-  if (length != size) {
-    // build write mask
-    bitvector one(size, 1), tmp1(size), tmp2(size);
-    Sll(tmp1, one, length);
-    Sub(tmp2, tmp1, one);
-
-    // resize source
-    lnode zero(bitvector(size - data.get_size(), 0));
-    auto resized_data = data.get_ctx()->createNode<proxyimpl>(size);
-    resized_data->add_source(0, data);
-    resized_data->add_source(data.get_size(), zero);
-    auto lhs = createAluNode(alu_and, resized_data, tmp2);
-    lhs = createAluNode(alu_sll, lhs, bitvector(size, dst_offset));
-    Sll(tmp1, tmp2, dst_offset);
-    Inv(tmp2, tmp1);
-    auto rhs = createAluNode(alu_and, port, tmp2);
-    auto dst = createAluNode(alu_or, lhs, rhs);
-    port->write(dst);
-  } else {
-    port->write(data);
-  }
+void memory::write(const lnode& addr, const lnode& value, const lnode& enable) {
+  auto& port = impl_->get_port(addr);
+  dynamic_cast<memportimpl*>(port.get_impl())->write(value, enable);
 }

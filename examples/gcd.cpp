@@ -63,6 +63,7 @@ int main() {
   assert(gcd.io.out.data == 16);
 
   ch_toVerilog("gcd.v", gcd);
+  ch_toFIRRTL("gcd.fir", gcd);
 
   return 0;
 }

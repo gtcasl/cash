@@ -17,16 +17,10 @@ bool ch::internal::alu_symmetric(ch_alu_op op) {
   case alu_and:
   case alu_or:
   case alu_xor:
-  case alu_nand:
     return true;
-  case alu_nor:
-  case alu_xnor:
   case alu_andr:
   case alu_orr:
   case alu_xorr:
-  case alu_nandr:
-  case alu_norr:
-  case alu_xnorr:
   case alu_sll:
   case alu_srl:
   case alu_sra:
@@ -94,15 +88,6 @@ static void binaryop(bitvector& out, const bitvector& lhs, const bitvector& rhs)
   case alu_xor:
     Xor(out, lhs, rhs);
     break;
-  case alu_nand:
-    Nand(out, lhs, rhs);
-    break;
-  case alu_nor:
-    Nor(out, lhs, rhs);
-    break;
-  case alu_xnor:
-    Xnor(out, lhs, rhs);
-    break;
   default:
     CH_ABORT("invalid alu operation");
   }
@@ -162,15 +147,6 @@ static void reduceop(bitvector& out, const bitvector& in) {
   case alu_xorr:
     result = XorR(in);
     break;
-  case alu_nandr:
-    result = NandR(in);
-    break;
-  case alu_norr:
-    result = NorR(in);
-    break;
-  case alu_xnorr:
-    result = XnorR(in);
-    break;
   default:
     CH_ABORT("invalid alu operation");
   } 
@@ -213,9 +189,6 @@ static uint32_t get_output_size(ch_alu_op op, const lnode& a, const lnode& b) {
   case alu_and:
   case alu_or:
   case alu_xor:
-  case alu_nand:
-  case alu_nor:
-  case alu_xnor:
   case alu_add:
   case alu_sub:
   case alu_mult:
@@ -263,9 +236,6 @@ static uint32_t get_output_size(ch_alu_op op, const lnode& a) {
   case alu_andr:
   case alu_orr:
   case alu_xorr:
-  case alu_nandr:
-  case alu_norr:
-  case alu_xnorr:
     return 1;
   default:
     CH_ABORT("invalid alu operation");
@@ -305,15 +275,6 @@ void aluimpl::eval(bitvector& inout, ch_tick t) {
   case alu_xor:
     binaryop<alu_xor>(inout, srcs_[0].eval(t), srcs_[1].eval(t));
     break;
-  case alu_nand:
-    binaryop<alu_nand>(inout, srcs_[0].eval(t), srcs_[1].eval(t));
-    break;
-  case alu_nor:
-    binaryop<alu_nor>(inout, srcs_[0].eval(t), srcs_[1].eval(t));
-    break;
-  case alu_xnor:
-    binaryop<alu_xnor>(inout, srcs_[0].eval(t), srcs_[1].eval(t));
-    break;
 
   case alu_andr:
     reduceop<alu_andr>(inout, srcs_[0].eval(t));
@@ -323,15 +284,6 @@ void aluimpl::eval(bitvector& inout, ch_tick t) {
     break;
   case alu_xorr:
     reduceop<alu_xorr>(inout, srcs_[0].eval(t));
-    break;
-  case alu_nandr:
-    reduceop<alu_nandr>(inout, srcs_[0].eval(t));
-    break;
-  case alu_norr:
-    reduceop<alu_norr>(inout, srcs_[0].eval(t));
-    break;
-  case alu_xnorr:
-    reduceop<alu_xnorr>(inout, srcs_[0].eval(t));
     break;
 
   case alu_sll:
