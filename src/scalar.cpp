@@ -45,32 +45,6 @@ scalar_buffer_impl::scalar_buffer_impl(unsigned size,
   assert(offset_ + size_ <= buffer->get_size());
 }
 
-scalar_buffer_impl& scalar_buffer_impl::operator=(const scalar_buffer_impl& rhs) {
-  if (source_) {
-    this->copy(rhs);
-  } else {
-    source_ = rhs.source_;
-    offset_ = rhs.offset_;
-    size_   = rhs.size_;
-    if (!rhs.source_) {
-      value_ = rhs.value_;
-    }
-  }
-  return *this;
-}
-
-scalar_buffer_impl& scalar_buffer_impl::operator=(scalar_buffer_impl&& rhs) {
-  if (source_) {
-    this->copy(rhs);
-  } else {
-    source_ = std::move(rhs.source_);
-    value_  = std::move(rhs.value_);
-    offset_ = std::move(rhs.offset_);
-    size_   = std::move(rhs.size_);
-  }
-  return *this;
-}
-
 const bitvector& scalar_buffer_impl::get_data() const {
   if (source_) {
     if (value_.is_empty()) {

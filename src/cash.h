@@ -52,8 +52,10 @@ namespace core {
   using ch::internal::source_location;
 
   template <unsigned N> using ch_bit = ch::internal::ch_bit<N>;
+  template <unsigned N> using const_bit = ch::internal::const_bit<N>;
 
   template <unsigned N> using ch_scalar = ch::internal::ch_scalar<N>;
+  template <unsigned N> using const_scalar = ch::internal::const_scalar<N>;
 
   template <typename T, unsigned N> using ch_vec = ch::internal::ch_vec<T, N>;
   template <typename T, unsigned N> using ch_const_vec = ch::internal::const_vec<T, N>;
@@ -109,8 +111,8 @@ namespace core {
   //
 
   using ch_bool = ch_bit1;
-  const ch_scalar<1> ch_false(0);
-  const ch_scalar<1> ch_true(1);
+  const const_scalar<1> ch_false(0);
+  const const_scalar<1> ch_true(1);
 
   //
   // subscript operators

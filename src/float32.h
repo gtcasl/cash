@@ -31,7 +31,7 @@ public:
     : base(rhs, sloc)
   {}
 
-  explicit const_float32(const ch_scalar<32>& rhs,
+  explicit const_float32(const const_scalar<32>& rhs,
                          const source_location& sloc = CH_SOURCE_LOCATION)
     : base(rhs, sloc)
   {}
@@ -68,7 +68,7 @@ public:
     : base(rhs, sloc)
   {}
 
-  explicit ch_float32(const ch_scalar<32>& rhs,
+  explicit ch_float32(const const_scalar<32>& rhs,
                       const source_location& sloc = CH_SOURCE_LOCATION)
     : base(rhs, sloc)
   {}

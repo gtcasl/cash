@@ -119,7 +119,7 @@ using union_zero_init = std::conditional_t<has_bitwidth<U>::value,
     : CH_FOR_EACH(CH_UNION_MOVE_CTOR, CH_SEP_COMMA, __VA_ARGS__) {} \
   union_name(const const_name& rhs) \
     : union_name(ch::internal::type_accessor_t<traits>::copy_buffer(rhs)) {} \
-  explicit union_name(const ch_scalar<traits::bitwidth>& rhs) \
+  explicit union_name(const const_scalar<traits::bitwidth>& rhs) \
     : union_name(ch::internal::type_buffer_t<traits>(ch::internal::scalar_accessor::get_data(rhs))) {} \
   template <typename __T__, \
              CH_REQUIRES(std::is_integral_v<__T__> || std::is_enum_v<__T__> || ch::internal::has_bitwidth<__T__>::value), \
@@ -157,7 +157,7 @@ public:
   explicit union_name(const ch_bit<traits::bitwidth>& rhs, \
                       const source_location& sloc = CH_SOURCE_LOCATION) \
     : union_name(ch::internal::type_accessor_t<traits>::copy_buffer(rhs, sloc, CH_STRINGIZE(name))) {} \
-  explicit union_name(const ch_scalar<traits::bitwidth>& rhs, \
+  explicit union_name(const const_scalar<traits::bitwidth>& rhs, \
                       const source_location& sloc = CH_SOURCE_LOCATION) \
     : union_name(ch::internal::type_buffer_t<traits>( \
         ch::internal::scalar_accessor::get_data(rhs), sloc, CH_STRINGIZE(name))) {} \

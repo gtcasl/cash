@@ -183,9 +183,15 @@ public:
 
   virtual ~scalar_buffer_impl() {}
 
-  scalar_buffer_impl& operator=(const scalar_buffer_impl& rhs);
+  scalar_buffer_impl& operator=(const scalar_buffer_impl& rhs) {
+    this->copy(rhs);
+    return *this;
+  }
 
-  scalar_buffer_impl& operator=(scalar_buffer_impl&& rhs);
+  scalar_buffer_impl& operator=(scalar_buffer_impl&& rhs) {
+    this->copy(rhs);
+    return *this;
+  }
 
   virtual const bitvector& get_data() const;
 

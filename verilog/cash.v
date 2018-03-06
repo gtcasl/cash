@@ -61,7 +61,6 @@ localparam MAX_D = 1 << DIST_WIDTH; // The shifting range described by
 // this subdesign does not allow shifting beyond the data width
 // e.g. rotating an 8 bit value 100 steps.
 initial begin
-    #10
     if (MAX_D > WIDTH) begin
         $display ("Error - Rotation by distance greater than data width not supported");
         $stop();

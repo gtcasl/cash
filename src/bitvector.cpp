@@ -155,7 +155,7 @@ static uint32_t chr2int(char x, int base) {
       return (x - 'a') + 10;
     break;
   }  
-  CH_ABORT("invalid ch_scalar value");
+  CH_ABORT("invalid scalar value");
 }
 
 bitvector& bitvector::operator=(const std::string& value) {
@@ -201,7 +201,7 @@ bitvector& bitvector::operator=(const std::string& value) {
     }
   }
   
-  CH_CHECK(size <= size_, "ch_scalar value overflow");
+  CH_CHECK(size <= size_, "scalar value overflow");
   
   // clear unused words
   uint32_t num_words = this->get_num_words();

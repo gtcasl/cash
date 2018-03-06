@@ -7,3 +7,5 @@ htl
 verilog
 src/htl
 parser
+projects/aes
+projects/router

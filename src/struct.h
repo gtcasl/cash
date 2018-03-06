@@ -76,7 +76,7 @@ public: \
   template <typename __T__, CH_REQUIRES(std::is_integral_v<__T__> || std::is_enum_v<__T__>)> \
   explicit struct_name(__T__ rhs) \
     : struct_name(ch::internal::type_buffer_t<traits>(ch::internal::bitvector(traits::bitwidth, rhs))) {} \
-  explicit struct_name(const ch_scalar<traits::bitwidth>& rhs) \
+  explicit struct_name(const const_scalar<traits::bitwidth>& rhs) \
     : struct_name(ch::internal::type_buffer_t<traits>(ch::internal::scalar_accessor::get_data(rhs))) {} \
   template <CH_REVERSE_FOR_EACH(CH_STRUCT_FIELD_CTOR_TMPL, CH_SEP_COMMA, __VA_ARGS__), \
             CH_REVERSE_FOR_EACH(CH_STRUCT_FIELD_CTOR_REQUIRES, CH_SEP_COMMA, __VA_ARGS__)> \
@@ -117,7 +117,7 @@ public: \
     : struct_name(ch::internal::type_buffer_t<traits>(ch::internal::bitvector(traits::bitwidth, rhs), sloc, CH_STRINGIZE(name))) {} \
   explicit struct_name(const ch_bit<traits::bitwidth>& rhs, const source_location& sloc = CH_SOURCE_LOCATION) \
     : struct_name(ch::internal::type_accessor_t<traits>::copy_buffer(rhs, sloc, CH_STRINGIZE(name))) {} \
-  explicit struct_name(const ch_scalar<traits::bitwidth>& rhs, const source_location& sloc = CH_SOURCE_LOCATION) \
+  explicit struct_name(const const_scalar<traits::bitwidth>& rhs, const source_location& sloc = CH_SOURCE_LOCATION) \
     : struct_name(ch::internal::type_buffer_t<traits>(ch::internal::scalar_accessor::get_data(rhs), sloc, CH_STRINGIZE(name))) {} \
   template <CH_REVERSE_FOR_EACH(CH_STRUCT_FIELD_CTOR_TMPL, CH_SEP_COMMA, __VA_ARGS__), \
             CH_REVERSE_FOR_EACH(CH_STRUCT_FIELD_CTOR_REQUIRES, CH_SEP_COMMA, __VA_ARGS__)> \
@@ -159,7 +159,7 @@ public: \
   template <typename __T__, CH_REQUIRES(std::is_integral_v<__T__> || std::is_enum_v<__T__>)> \
   explicit struct_name(__T__ rhs) \
     : struct_name(ch::internal::type_buffer_t<traits>(ch::internal::bitvector(traits::bitwidth, rhs))) {} \
-  explicit struct_name(const ch_scalar<traits::bitwidth>& rhs) \
+  explicit struct_name(const const_scalar<traits::bitwidth>& rhs) \
     : struct_name(ch::internal::type_buffer_t<traits>(ch::internal::scalar_accessor::get_data(rhs))) {} \
   template <CH_REVERSE_FOR_EACH(CH_STRUCT_FIELD_CTOR_TMPL, CH_SEP_COMMA, __VA_ARGS__), typename... __Ts__, \
             CH_REVERSE_FOR_EACH(CH_STRUCT_FIELD_CTOR_REQUIRES, CH_SEP_COMMA, __VA_ARGS__)> \
@@ -203,7 +203,7 @@ public: \
     : struct_name(ch::internal::type_buffer_t<traits>(ch::internal::bitvector(traits::bitwidth, rhs), sloc, CH_STRINGIZE(name))) {} \
   explicit struct_name(const ch_bit<traits::bitwidth>& rhs, const source_location& sloc = CH_SOURCE_LOCATION) \
     : struct_name(ch::internal::type_accessor_t<traits>::copy_buffer(rhs, sloc, CH_STRINGIZE(name))) {} \
-  explicit struct_name(const ch_scalar<traits::bitwidth>& rhs, const source_location& sloc = CH_SOURCE_LOCATION) \
+  explicit struct_name(const const_scalar<traits::bitwidth>& rhs, const source_location& sloc = CH_SOURCE_LOCATION) \
     : struct_name(ch::internal::type_buffer_t<traits>(ch::internal::scalar_accessor::get_data(rhs), sloc, CH_STRINGIZE(name))) {} \
   template <CH_REVERSE_FOR_EACH(CH_STRUCT_FIELD_CTOR_TMPL, CH_SEP_COMMA, __VA_ARGS__), \
             CH_REVERSE_FOR_EACH(CH_STRUCT_FIELD_CTOR_REQUIRES, CH_SEP_COMMA, __VA_ARGS__)> \

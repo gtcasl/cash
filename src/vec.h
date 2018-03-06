@@ -201,12 +201,12 @@ public:
   const_vec(const_vec&& rhs) : base(std::move(rhs))
   {}
 
-  explicit const_vec(const ch_bit<traits::bitwidth>& rhs,
+  explicit const_vec(const const_bit<traits::bitwidth>& rhs,
                      const source_location& sloc = CH_SOURCE_LOCATION)
     : const_vec(bit_accessor::copy_buffer(rhs, sloc))
   {}
 
-  explicit const_vec(const ch_scalar<traits::bitwidth>& rhs,
+  explicit const_vec(const const_scalar<traits::bitwidth>& rhs,
                      const source_location& sloc = CH_SOURCE_LOCATION)
     : const_vec(bit_buffer(scalar_accessor::get_data(rhs), sloc))
   {}
@@ -283,10 +283,6 @@ public:
     : base(buffer)
   {}
 
-  ch_vec(const const_vec<T, N>& rhs, const source_location& sloc = CH_SOURCE_LOCATION)
-    : base(rhs, sloc)
-  {}
-
   ch_vec(const ch_vec& rhs, const source_location& sloc = CH_SOURCE_LOCATION)
     : base(rhs, sloc)
   {}
@@ -294,17 +290,17 @@ public:
   ch_vec(ch_vec&& rhs) : base(std::move(rhs)) {}
 
   template <typename U>
-  explicit ch_vec(const ch_vec<U, N>& rhs,
+  explicit ch_vec(const const_vec<U, N>& rhs,
                   const source_location& sloc = CH_SOURCE_LOCATION)
     : base(rhs, sloc)
   {}
 
-  explicit ch_vec(const ch_bit<traits::bitwidth>& rhs,
+  explicit ch_vec(const const_bit<traits::bitwidth>& rhs,
                   const source_location& sloc = CH_SOURCE_LOCATION)
     : base(rhs, sloc)
   {}
 
-  explicit ch_vec(const ch_scalar<traits::bitwidth>& rhs,
+  explicit ch_vec(const const_scalar<traits::bitwidth>& rhs,
                   const source_location& sloc = CH_SOURCE_LOCATION)
     : base(rhs, sloc)
   {}
@@ -411,7 +407,7 @@ public:
     : const_vec(scalar_accessor::copy_buffer(rhs))
   {}
 
-  explicit const_vec(const ch_scalar<traits::bitwidth>& rhs)
+  explicit const_vec(const const_scalar<traits::bitwidth>& rhs)
     : const_vec(scalar_accessor::copy_buffer(rhs))
   {}
 
@@ -483,9 +479,9 @@ public:
   ch_vec(ch_vec&& rhs) : base(std::move(rhs)) {}
 
   template <typename U>
-  explicit ch_vec(const ch_vec<U, N>& rhs) : base(rhs) {}
+  explicit ch_vec(const const_vec<U, N>& rhs) : base(rhs) {}
 
-  explicit ch_vec(const ch_scalar<traits::bitwidth>& rhs) : base(rhs) {}
+  explicit ch_vec(const const_scalar<traits::bitwidth>& rhs) : base(rhs) {}
 
   template <typename U, CH_REQUIRES(std::is_integral_v<U>)>
   explicit ch_vec(U rhs) : base(rhs) {}

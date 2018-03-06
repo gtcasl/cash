@@ -361,7 +361,7 @@ auto OpReduce(const const_bit<N>& a) {
   CH_FRIEND_OP_SRL((), const const_bit&, x)
 
 #define CH_BIT_OP_TYPES \
-  ch_scalar<N>, int8_t, uint8_t, int16_t, uint16_t, int32_t, uint32_t, int64_t, uint64_t
+  const_scalar<N>, int8_t, uint8_t, int16_t, uint16_t, int32_t, uint32_t, int64_t, uint64_t
 
 #define CH_LOGIC_READONLY_INTERFACE(type) \
   template <typename R, CH_REQUIRES(ch::internal::is_logic_type<R>::value)> \
@@ -406,7 +406,7 @@ public:
 
   const_bit(const_bit&& rhs) : buffer_(std::move(rhs.buffer_)) {}
 
-  const_bit(const ch_scalar<N>& rhs, const source_location& sloc = CH_SOURCE_LOCATION)
+  const_bit(const const_scalar<N>& rhs, const source_location& sloc = CH_SOURCE_LOCATION)
     : const_bit(bit_buffer(scalar_accessor::get_data(rhs), sloc))
   {}
 
@@ -559,22 +559,22 @@ protected:
   CH_FOR_EACH(CH_BIT_FRIEND_OPS, CH_SEP_SPACE, CH_BIT_OP_TYPES)
 
   template <unsigned M>
-  inline friend ch_bit<M> operator<<(const const_bit& lhs, const ch_scalar<M>& rhs) {
+  inline friend ch_bit<M> operator<<(const const_bit& lhs, const const_scalar<M>& rhs) {
     return lhs << const_bit<M>(rhs);
   }
 
   template <unsigned M>
-  inline friend ch_bit<M> operator<<(const ch_scalar<M>& rhs, const const_bit& lhs) {
+  inline friend ch_bit<M> operator<<(const const_scalar<M>& rhs, const const_bit& lhs) {
     return const_bit<M>(rhs) << lhs;
   }
 
   template <unsigned M>
-  inline friend ch_bit<M> operator>>(const const_bit& lhs, const ch_scalar<M>& rhs) {
+  inline friend ch_bit<M> operator>>(const const_bit& lhs, const const_scalar<M>& rhs) {
     return lhs >> const_bit<M>(rhs);
   }
 
   template <unsigned M>
-  inline friend ch_bit<M> operator>>(const ch_scalar<M>& rhs, const const_bit& lhs) {
+  inline friend ch_bit<M> operator>>(const const_scalar<M>& rhs, const const_bit& lhs) {
     return const_bit<M>(rhs) >> lhs;
   }
 };
@@ -602,7 +602,7 @@ public:
     : base(rhs, sloc)
   {}
 
-  ch_bit(const ch_scalar<N>& rhs, const source_location& sloc = CH_SOURCE_LOCATION)
+  ch_bit(const const_scalar<N>& rhs, const source_location& sloc = CH_SOURCE_LOCATION)
     : base(rhs, sloc)
   {}
 
@@ -642,7 +642,7 @@ public:
     return *this;
   }
 
-  ch_bit& operator=(const ch_scalar<N>& rhs) {
+  ch_bit& operator=(const const_scalar<N>& rhs) {
     buffer_->write(scalar_accessor::get_data(rhs));
     return *this;
   }

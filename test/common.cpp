@@ -73,7 +73,7 @@ int syscall(const std::string& cmd, std::string& output) {
 }
 
 bool checkVerilog(const std::string& file) {
-  int ret = syscall(fstring("iverilog %s -o %s.iv 2>&1 | grep \".*syntax error.*\"", file.c_str()));
+  int ret = syscall(fstring("iverilog %s -o %s.iv 2>&1 | grep \".*syntax error.*\"", file.c_str(), file.c_str()));
   if (ret != 1)
     return false;
   ret = syscall(fstring("vvp %s.iv", file.c_str()));

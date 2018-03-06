@@ -14,13 +14,13 @@ struct lit_size;
 
 template <typename T, unsigned N, char... Chars>
 struct lit_size<false, T, N, Chars...> {
-  static_assert(N > 0, "invalid ch_scalar size");
+  static_assert(N > 0, "invalid scalar size");
   static constexpr unsigned value = N;
 };
 
 template <typename T, unsigned N, char Char, char... Chars>
 struct lit_size<false, T, N, Char, Chars...> {
-  static_assert(T::is_digit(Char) || T::is_escape(Char), "invalid ch_scalar value");
+  static_assert(T::is_digit(Char) || T::is_escape(Char), "invalid scalar value");
   static constexpr unsigned value = lit_size<false, T, T::size(Char, N), Chars...>::value;
 };
 
@@ -31,7 +31,7 @@ struct lit_size<true, T, N, Chars...> {
 
 template <typename T, unsigned N, char Char, char... Chars>
 struct lit_size<true, T, N, Char, Chars...> {
-  static_assert(T::is_digit(Char) || T::is_escape(Char), "invalid ch_scalar value");
+  static_assert(T::is_digit(Char) || T::is_escape(Char), "invalid scalar value");
   static constexpr unsigned value = lit_size<true, T, T::sizex(Char, N), Chars...>::value;
 };
 
@@ -128,34 +128,34 @@ namespace literals {
 
   template <char... Chars>
   auto operator "" _b() {
-    return ch_scalar<lit_bin_size<Chars...>::value>(std::string{Chars..., 'b'});
+    return const_scalar<lit_bin_size<Chars...>::value>(std::string{Chars..., 'b'});
   }
 
   template <char... Chars>
   auto operator "" _o() {
-    return ch_scalar<lit_oct_size<Chars...>::value>(std::string{Chars..., 'o'});
+    return const_scalar<lit_oct_size<Chars...>::value>(std::string{Chars..., 'o'});
   }
 
   template <char... Chars>
   auto operator "" _h() {
-    return ch_scalar<lit_hex_size<Chars...>::value>(std::string{Chars..., 'h'});
+    return const_scalar<lit_hex_size<Chars...>::value>(std::string{Chars..., 'h'});
   }
 
 #define CH_DEF_LITERALS_IMPL(i, x) \
   template <char... Chars> \
   auto operator "" _b##x() { \
-    static_assert(x >= lit_bin_sizex<Chars...>::value, "ch_scalar value overflow"); \
-    return ch_scalar<x>(std::string{Chars..., 'b'}); \
+    static_assert(x >= lit_bin_sizex<Chars...>::value, "scalar value overflow"); \
+    return const_scalar<x>(std::string{Chars..., 'b'}); \
   } \
   template <char... Chars> \
   auto operator "" _o##x() { \
-    static_assert(x >= lit_oct_sizex<Chars...>::value, "ch_scalar value overflow"); \
-    return ch_scalar<x>(std::string{Chars..., 'o'}); \
+    static_assert(x >= lit_oct_sizex<Chars...>::value, "scalar value overflow"); \
+    return const_scalar<x>(std::string{Chars..., 'o'}); \
   } \
   template <char... Chars> \
   auto operator "" _h##x() { \
-    static_assert(x >= lit_hex_sizex<Chars...>::value, "ch_scalar value overflow"); \
-    return ch_scalar<x>(std::string{Chars..., 'h'}); \
+    static_assert(x >= lit_hex_sizex<Chars...>::value, "scalar value overflow"); \
+    return const_scalar<x>(std::string{Chars..., 'h'}); \
   }
 
 #define CH_DEF_LITERALS_IMPL2(x, ...) \

@@ -1,7 +1,7 @@
 #CXX = clang-5.0
 PREFIX ?= /usr/local
-#CXXFLAGS += -fPIC -std=c++17 -O3 -DNDEBUG -Wall -Wextra -pedantic
-CXXFLAGS += -fPIC -std=c++17 -O0 -g --coverage -pedantic -Wall -Wextra -fmax-errors=5
+CXXFLAGS += -fPIC -std=c++17 -O3 -DNDEBUG -Wall -Wextra -pedantic
+#CXXFLAGS += -fPIC -std=c++17 -O0 -g --coverage -pedantic -Wall -Wextra -fmax-errors=5
 LDFLAGS += -shared --coverage -lbfd
 
 PROJECT = libcash
