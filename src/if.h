@@ -27,28 +27,7 @@ public:
 
 using if_ptr = std::shared_ptr<if_t>;
 
-class if_body_t;
-
-class if_cond_t {
-public:
-
-  if_cond_t(const if_ptr& p_if)
-    : if_(p_if)
-  {}
-
-  template <typename P,
-            CH_REQUIRES(is_logic_compatible<P>::value),
-            CH_REQUIRES(is_bit_compatible<P>::value)>
-  if_body_t operator,(const P& pred);
-
-  void operator,(const fvoid_t& body) {
-    cond_block(body);
-  }
-
-protected:
-
-  if_ptr if_;
-};
+class if_cond_t;
 
 class if_body_t {
 public:
@@ -66,11 +45,29 @@ protected:
   lnode  pred_;
 };
 
-template <typename P, typename, typename>
-if_body_t if_cond_t::operator,(const P& pred) {
-  static_assert(1 == width_v<P>, "invalid predicate size");
-  return if_body_t(if_, get_lnode(pred));
-}
+class if_cond_t {
+public:
+
+  if_cond_t(const if_ptr& p_if)
+    : if_(p_if)
+  {}
+
+  template <typename P,
+            CH_REQUIRE_0(is_logic_compatible<P>::value),
+            CH_REQUIRE_0(is_bit_compatible<P>::value)>
+  if_body_t operator,(const P& pred) {
+    static_assert(1 == width_v<P>, "invalid predicate size");
+    return if_body_t(if_, get_lnode(pred));
+  }
+
+  void operator,(const fvoid_t& body) {
+    cond_block(body);
+  }
+
+protected:
+
+  if_ptr if_;
+};
 
 inline if_cond_t if_body_t::operator,(const fvoid_t& body) {
   cond_block(pred_, body);
@@ -78,7 +75,7 @@ inline if_cond_t if_body_t::operator,(const fvoid_t& body) {
 }
 
 template <typename P,
-          CH_REQUIRES(is_bit_compatible<P>::value)>
+          CH_REQUIRE_0(is_bit_compatible<P>::value)>
 if_body_t ch_if(const P& pred, const source_location& sloc = CH_SOURCE_LOCATION) {
   static_assert(1 == width_v<P>, "invalid predicate size");
   return if_body_t(std::make_shared<if_t>(sloc), get_lnode(pred));

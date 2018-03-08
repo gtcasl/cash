@@ -10,7 +10,7 @@
 using namespace ch::internal;
 
 std::string ch::internal::fstring(const char* format, ...) {
-  static const int STACK_BUFFER_SIZE = 256;
+  static constexpr unsigned STACK_BUFFER_SIZE = 1024;
 
   std::string result;
   char stack_buffer[STACK_BUFFER_SIZE];

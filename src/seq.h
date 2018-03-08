@@ -20,7 +20,7 @@ public:
     next = *this;
   }
 
-  template <typename U, CH_REQUIRES(is_cast_convertible<T, U>::value)>
+  template <typename U, CH_REQUIRE_0(is_cast_convertible<T, U>::value)>
   explicit ch_seq(const U& init,
                   const source_location& sloc = CH_SOURCE_LOCATION)
     : base(bit_buffer(width_v<T>, sloc)) {

@@ -234,4 +234,23 @@ TEST_CASE("proxies", "[proxies]") {
       return (x == 0x1 && y == 0xb && z == 0x2e && w == 0xfa);
     });
   }
+  SECTION("shuffle", "[shuffle]") {
+    TEST([]()->ch_bit1 {
+      ch_bit8 a(10111001_b);
+      auto b = ch_shuffle<4>(a, {0, 1, 2, 3});
+      return (b == 01101110_b);
+    });
+
+    TEST([]()->ch_bit1 {
+      ch_bit8 a(10111001_b);
+      auto b = ch_shuffle<4>(a, {0, 0, 0, 0});
+      return (b == 01010101_b);
+    });
+
+    TEST([]()->ch_bit1 {
+      ch_bit8 a(10111001_b);
+      auto b = ch_shuffle<4>(a, {2, 0, 2, 0});
+      return (b == 11011101_b);
+    });
+  }
 }

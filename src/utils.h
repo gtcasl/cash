@@ -524,7 +524,19 @@ constexpr uint32_t rotr(uint32_t value, uint32_t shift, uint32_t width) {
   template<typename T> \
   struct type_name<T, typename std::enable_if_t<(predicate)>> : std::true_type {}
 
-#define CH_REQUIRES(...) typename = std::enable_if_t<(__VA_ARGS__)>
+template <unsigned N>
+struct requires_enum {
+  enum class type {};
+};
+
+#define CH_REQUIRE_0(...) typename std::enable_if_t<(__VA_ARGS__), typename requires_enum<0>::type>* = nullptr
+#define CH_REQUIRE_1(...) typename std::enable_if_t<(__VA_ARGS__), typename requires_enum<1>::type>* = nullptr
+#define CH_REQUIRE_2(...) typename std::enable_if_t<(__VA_ARGS__), typename requires_enum<2>::type>* = nullptr
+#define CH_REQUIRE_3(...) typename std::enable_if_t<(__VA_ARGS__), typename requires_enum<3>::type>* = nullptr
+#define CH_REQUIRE_4(...) typename std::enable_if_t<(__VA_ARGS__), typename requires_enum<4>::type>* = nullptr
+#define CH_REQUIRE_5(...) typename std::enable_if_t<(__VA_ARGS__), typename requires_enum<5>::type>* = nullptr
+#define CH_REQUIRE_6(...) typename std::enable_if_t<(__VA_ARGS__), typename requires_enum<6>::type>* = nullptr
+#define CH_REQUIRE_7(...) typename std::enable_if_t<(__VA_ARGS__), typename requires_enum<7>::type>* = nullptr
 
 #define CH_UNUSED(...) ch::internal::unused(__VA_ARGS__)
 

@@ -63,14 +63,16 @@ verilogwriter::~verilogwriter() {
   //--
 }
 
-void verilogwriter::print(context* ctx) {
+void verilogwriter::print(const std::initializer_list<context*>& contexts) {
   // includes
   out_ << "`include \"cash.v\"" << std::endl;
   out_ << std::endl;
 
-  // print top module
-  module_t module(ctx);
-  this->print_module(module);
+  // print top modules
+  for (auto ctx : contexts) {
+    module_t module(ctx);
+    this->print_module(module);
+  }
 }
 
 bool verilogwriter::print_module(module_t& module) {
@@ -843,7 +845,8 @@ void verilogwriter::print_operator(ch_alu_op op) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void ch::internal::toVerilog(std::ostream& out, context* ctx) {
+void ch::internal::toVerilog(std::ostream& out,
+                             const std::initializer_list<context*>& contexts) {
   verilogwriter writer(out);
-  writer.print(ctx);
+  writer.print(contexts);
 }

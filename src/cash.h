@@ -120,6 +120,7 @@ namespace core {
 
   using ch::internal::ch_clone;
   using ch::internal::ch_slice;
+  using ch::internal::ch_aslice;
   using ch::internal::ch_zext;
   using ch::internal::ch_sext;
   using ch::internal::ch_cat;
@@ -294,6 +295,6 @@ inline namespace literals {
 #define __io       CH_IO
 #define __flip     CH_FLIP
 
-#define __requires CH_REQUIRES
+#define __requires CH_REQUIRE_0
 
 #define __source_location CH_SOURCE_LOCATION

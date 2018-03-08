@@ -26,10 +26,13 @@ projects/aes/Vaes_tb.cpp
 projects/aes/aes.cpp
 projects/aes/aes.h
 projects/aes/aes.v
-projects/aes/aes_ref.sv
 projects/aes/aes_tb.v
 projects/aes/aes_tb.v
+projects/aes/block128.h
 projects/aes/main.cpp
+projects/aes/ref.cpp
+projects/aes/ref.h
+projects/aes/ref.sv
 projects/router/arbiter.h
 projects/router/clockgater.h
 projects/router/common.h

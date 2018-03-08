@@ -308,7 +308,7 @@ public:
   }
 
   template <typename U, typename V,
-            CH_REQUIRES(width_v<U> == width_v<V>)>
+            CH_REQUIRE_0(width_v<U> == width_v<V>)>
   static void copy(U& dst, const V& src) {
     assert(width_v<U> == dst.get_buffer()->get_size());
     assert(width_v<V> == src.get_buffer()->get_size());
@@ -316,7 +316,7 @@ public:
   }
 
   template <typename U, typename V,
-            CH_REQUIRES(width_v<U> == width_v<V>)>
+            CH_REQUIRE_0(width_v<U> == width_v<V>)>
   static void move(U& dst, V&& src) {
     assert(width_v<U> == dst.get_buffer()->get_size());
     *dst.get_buffer() = std::move(*src.get_buffer());
@@ -382,37 +382,51 @@ public:
   {}
 
   template <typename U,
-            CH_REQUIRES(is_scalar_type<U>::value),
-            CH_REQUIRES(N == width_v<U>)>
+            CH_REQUIRE_0(is_scalar_type<U>::value),
+            CH_REQUIRE_0(N == width_v<U>)>
   explicit const_scalar(const U& rhs) :
     buffer_(scalar_accessor::copy_buffer(rhs))
   {}
 
   template <typename U,
-            CH_REQUIRES(is_bitvector_convertible<U>::value)>
+            CH_REQUIRE_0(is_bitvector_convertible<U>::value)>
   explicit const_scalar(const U& value)
     : buffer_(bitvector(N, value))
   {}
 
   auto operator[](size_t index) const {
+    assert(index < N);
     return const_scalar<1>(scalar_buffer(1, buffer_, index));
   }
 
   template <unsigned M>
   auto slice(size_t start = 0) const {
     static_assert(M <= N, "invalid size");
+    assert((start + M) <= N);
     return const_scalar<M>(scalar_buffer(M, buffer_, start));
   }
 
+  template <unsigned M>
+  auto aslice(size_t start = 0) const {
+    return this->slice<M>(start * M);
+  }
+
   template <typename R,
-            CH_REQUIRES(is_scalar_compatible<R>::value)>
+            CH_REQUIRE_0(is_scalar_compatible<R>::value)>
   auto slice(size_t start = 0) const {
     static_assert(width_v<R> <= N, "invalid size");
+    assert((start + width_v<R>) <= N);
     return const_type_t<R>(bit_buffer(width_v<R>, buffer_, start));
   }
 
+  template <typename R,
+            CH_REQUIRE_0(is_scalar_compatible<R>::value)>
+  auto aslice(size_t start = 0) const {
+    return this->slice<R>(start * width_v<R>);
+  }
+
   template <typename U,
-            CH_REQUIRES(is_bitvector_castable<U>::value)>
+            CH_REQUIRE_0(is_bitvector_castable<U>::value)>
   explicit operator U() const {
     return static_cast<U>(buffer_->get_data());
   }
@@ -564,11 +578,11 @@ public:
   ch_scalar(ch_scalar&& rhs) : base(rhs) {}
 
   template <typename U,
-            CH_REQUIRES(is_scalar_type<U>::value),
-            CH_REQUIRES(N == width_v<U>)>
+            CH_REQUIRE_0(is_scalar_type<U>::value),
+            CH_REQUIRE_0(N == width_v<U>)>
   explicit ch_scalar(const U& rhs)  : base(rhs) {}
 
-  template <typename U, CH_REQUIRES(is_bitvector_convertible<U>::value)>
+  template <typename U, CH_REQUIRE_0(is_bitvector_convertible<U>::value)>
   explicit ch_scalar(const U& value)  : base(value) {}
 
   ch_scalar& operator=(const ch_scalar& rhs) {
@@ -582,51 +596,79 @@ public:
   }
 
   template <typename U,
-            CH_REQUIRES(is_scalar_type<U>::value),
-            CH_REQUIRES(N == width_v<U>)>
+            CH_REQUIRE_0(is_scalar_type<U>::value),
+            CH_REQUIRE_0(N == width_v<U>)>
   ch_scalar& operator=(const U& rhs) {
     scalar_accessor::copy(*this, rhs);
     return *this;
   }
 
-  template <typename U, CH_REQUIRES(is_integral_or_enum_v<U>)>
+  template <typename U, CH_REQUIRE_0(is_integral_or_enum_v<U>)>
   ch_scalar& operator=(U value) {
     buffer_->write(bitvector(N, value));
     return *this;
   }
 
   auto operator[](size_t index) const {
+    assert(index < N);
     return const_scalar<1>(scalar_buffer(1, buffer_, index));
   }
 
   auto operator[](size_t index) {
+    assert(index < N);
     return ch_scalar<1>(scalar_buffer(1, buffer_, index));
   }
 
   template <unsigned M>
   auto slice(size_t start = 0) const {
     static_assert(M <= N, "invalid size");
+    assert((start + M) <= N);
     return const_scalar<M>(scalar_buffer(M, buffer_, start));
   }
 
+  template <unsigned M>
+  auto aslice(size_t start = 0) const {
+    return this->slice<M>(start * M);
+  }
+
   template <typename R,
-            CH_REQUIRES(is_scalar_compatible<R>::value)>
+            CH_REQUIRE_0(is_scalar_compatible<R>::value)>
   auto slice(size_t start = 0) const {
     static_assert(width_v<R> <= N, "invalid size");
+    assert((start + width_v<R>) <= N);
     return const_type_t<R>(scalar_buffer(width_v<R>, buffer_, start));
+  }
+
+  template <typename R,
+            CH_REQUIRE_0(is_scalar_compatible<R>::value)>
+  auto aslice(size_t start = 0) const {
+    return this->slice<R>(start * width_v<R>);
   }
 
   template <unsigned M>
   auto slice(size_t start = 0) {
     static_assert(M <= N, "invalid size");
+    assert((start + M) <= N);
     return ch_scalar<M>(scalar_buffer(M, buffer_, start));
   }
 
+  template <unsigned M>
+  auto aslice(size_t start = 0) {
+    return this->slice<M>(start * M);
+  }
+
   template <typename R,
-            CH_REQUIRES(is_scalar_compatible<R>::value)>
+            CH_REQUIRE_0(is_scalar_compatible<R>::value)>
   auto slice(size_t start = 0) {
     static_assert(width_v<R> <= N, "invalid size");
+    assert((start + width_v<R>) <= N);
     return R(scalar_buffer(width_v<R>, buffer_, start));
+  }
+
+  template <typename R,
+            CH_REQUIRE_0(is_scalar_compatible<R>::value)>
+  auto aslice(size_t start = 0) {
+    return this->slice<R>(start * width_v<R>);
   }
 
   void write(uint32_t dst_offset,

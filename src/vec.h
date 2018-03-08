@@ -78,13 +78,13 @@ public:
 protected:
 
   template <typename... Ts,
-            CH_REQUIRES(sizeof...(Ts) == N && are_all_cast_convertible<T, Ts...>::value)>
+            CH_REQUIRE_0(sizeof...(Ts) == N && are_all_cast_convertible<T, Ts...>::value)>
   explicit const_vec_base(Ts&&... values)
     : items_{T(std::forward<Ts>(values))...}
   {}
 
   template <typename... Ts,
-            CH_REQUIRES(sizeof...(Ts) == N && are_all_cast_convertible<T, Ts...>::value)>
+            CH_REQUIRE_0(sizeof...(Ts) == N && are_all_cast_convertible<T, Ts...>::value)>
   explicit const_vec_base(const source_location& sloc, Ts&&... values)
     : items_{T(std::forward<Ts>(values), sloc)...}
   {}
@@ -165,11 +165,11 @@ protected:
   vec_base(const const_vec_base<T, N>& rhs) : base(rhs) {}
 
   template <typename... Ts,
-            CH_REQUIRES(sizeof...(Ts) == N && are_all_cast_convertible<T, Ts...>::value)>
+            CH_REQUIRE_0(sizeof...(Ts) == N && are_all_cast_convertible<T, Ts...>::value)>
   explicit vec_base(Ts&&... values) : base(std::forward<Ts>(values)...) {}
 
   template <typename... Ts,
-            CH_REQUIRES(sizeof...(Ts) == N && are_all_cast_convertible<T, Ts...>::value)>
+            CH_REQUIRE_0(sizeof...(Ts) == N && are_all_cast_convertible<T, Ts...>::value)>
   explicit vec_base(const source_location& sloc, Ts&&... values) : base(sloc, std::forward<Ts>(values)...) {}
 };
 
@@ -211,7 +211,7 @@ public:
     : const_vec(bit_buffer(scalar_accessor::get_data(rhs), sloc))
   {}
 
-  template <typename U, CH_REQUIRES(std::is_integral_v<U>)>
+  template <typename U, CH_REQUIRE_0(std::is_integral_v<U>)>
   explicit const_vec(U rhs, const source_location& sloc = CH_SOURCE_LOCATION)
     : const_vec(bit_buffer(bitvector(traits::bitwidth, rhs), sloc))
   {}
@@ -305,7 +305,7 @@ public:
     : base(rhs, sloc)
   {}
 
-  template <typename U, CH_REQUIRES(std::is_integral_v<U>)>
+  template <typename U, CH_REQUIRE_0(std::is_integral_v<U>)>
   explicit ch_vec(U rhs,
                   const source_location& sloc = CH_SOURCE_LOCATION)
     : base(rhs, sloc)
@@ -411,13 +411,13 @@ public:
     : const_vec(scalar_accessor::copy_buffer(rhs))
   {}
 
-  template <typename U, CH_REQUIRES(std::is_integral_v<U>)>
+  template <typename U, CH_REQUIRE_0(std::is_integral_v<U>)>
   explicit const_vec(U rhs)
     : const_vec(scalar_buffer(bitvector(traits::bitwidth, rhs)))
   {}
 
   template <typename... Vs,
-            CH_REQUIRES(sizeof...(Vs) == N && are_all_cast_convertible<T, Vs...>::value)>
+            CH_REQUIRE_0(sizeof...(Vs) == N && are_all_cast_convertible<T, Vs...>::value)>
   explicit const_vec(Vs&&... values) : const_vec() {
     this->init(std::forward<Vs>(values)...);
   }
@@ -483,11 +483,11 @@ public:
 
   explicit ch_vec(const const_scalar<traits::bitwidth>& rhs) : base(rhs) {}
 
-  template <typename U, CH_REQUIRES(std::is_integral_v<U>)>
+  template <typename U, CH_REQUIRE_0(std::is_integral_v<U>)>
   explicit ch_vec(U rhs) : base(rhs) {}
 
   template <typename... Vs,
-            CH_REQUIRES(sizeof...(Vs) == N && are_all_cast_convertible<T, Vs...>::value)>
+            CH_REQUIRE_0(sizeof...(Vs) == N && are_all_cast_convertible<T, Vs...>::value)>
   explicit ch_vec(Vs&&... values) : base(std::forward<Vs>(values)...) {}
 
   ch_vec& operator=(const ch_vec& rhs) {

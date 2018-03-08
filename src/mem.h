@@ -87,7 +87,7 @@ public:
   {}
 
   template <typename U,
-            CH_REQUIRES(is_bit_convertible<U, addr_width>::value)>
+            CH_REQUIRE_0(is_bit_convertible<U, addr_width>::value)>
   auto read(const U& addr) const {
     auto l_addr = get_lnode<U, addr_width>(addr);
     return const_type_t<T>(bit_buffer(mem_.read(l_addr)));
@@ -128,15 +128,15 @@ public:
   {}
 
   template <typename U,
-            CH_REQUIRES(is_bit_convertible<U, addr_width>::value)>
+            CH_REQUIRE_0(is_bit_convertible<U, addr_width>::value)>
   auto read(const U& addr) const {
     auto laddr = get_lnode<U, addr_width>(addr);
     return const_type_t<T>(bit_buffer(mem_.read(laddr)));
   }
 
   template <typename U, typename V,
-            CH_REQUIRES(is_bit_convertible<U, addr_width>::value),
-            CH_REQUIRES(is_cast_convertible<T, V>::value)>
+            CH_REQUIRE_0(is_bit_convertible<U, addr_width>::value),
+            CH_REQUIRE_0(is_cast_convertible<T, V>::value)>
   void write(const U& addr, const V& value) {
     auto l_addr  = get_lnode<U, addr_width>(addr);
     auto l_value = get_lnode<T, width_v<V>>(value);
@@ -144,9 +144,9 @@ public:
   }
 
   template <typename U, typename V, typename E,
-            CH_REQUIRES(is_bit_convertible<U, addr_width>::value),
-            CH_REQUIRES(is_cast_convertible<T, V>::value),
-            CH_REQUIRES(is_bit_convertible<E>::value)>
+            CH_REQUIRE_0(is_bit_convertible<U, addr_width>::value),
+            CH_REQUIRE_0(is_cast_convertible<T, V>::value),
+            CH_REQUIRE_0(is_bit_convertible<E>::value)>
   void write(const U& addr, const V& value, const E& enable) {
     static_assert(1 == width_v<E>, "invalid predicate size");
     auto l_addr   = get_lnode<U, addr_width>(addr);

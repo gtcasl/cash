@@ -26,7 +26,7 @@ public:
   verilogwriter(std::ostream& out);
   ~verilogwriter();
 
-  void print(context* context);
+  void print(const std::initializer_list<context*>& contexts);
 
 protected:
 

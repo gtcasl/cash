@@ -483,12 +483,12 @@ public:
     : bitvector(size, {bitcast<uint32_t>(value >> 32), bitcast<uint32_t>(value)})
   {}
 
-  template <typename T, std::size_t N, CH_REQUIRES(is_bitvector_array_value<T>::value)>
+  template <typename T, std::size_t N, CH_REQUIRE_0(is_bitvector_array_value<T>::value)>
   bitvector(uint32_t size, const std::array<T, N>& value) : bitvector(size) {
     this->write(0, value.data(), N * sizeof(T), 0, N * sizeof(T) * 8);
   }
 
-  template <typename T, CH_REQUIRES(is_bitvector_array_value<T>::value)>
+  template <typename T, CH_REQUIRE_0(is_bitvector_array_value<T>::value)>
   bitvector(uint32_t size, const std::vector<T>& value) : bitvector(size) {
     this->write(0, value.data(), value.size() * sizeof(T), 0, value.size() * sizeof(T) * 8);
   }
@@ -543,13 +543,13 @@ public:
     );
   }
 
-  template <typename T, std::size_t N, CH_REQUIRES(is_bitvector_array_value<T>::value)>
+  template <typename T, std::size_t N, CH_REQUIRE_0(is_bitvector_array_value<T>::value)>
   bitvector& operator=(const std::array<T, N>& value) {
     this->write(0, value.data(), N * sizeof(T), 0, N * sizeof(T) * 8);
     return *this;
   }
 
-  template <typename T, CH_REQUIRES(is_bitvector_array_value<T>::value)>
+  template <typename T, CH_REQUIRE_0(is_bitvector_array_value<T>::value)>
   bitvector& operator=(const std::vector<T>& value) {
     this->write(0, value.data(), value.size() * sizeof(T), 0, value.size() * sizeof(T) * 8);
     return *this;
