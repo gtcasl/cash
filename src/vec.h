@@ -79,14 +79,19 @@ protected:
 
   template <typename... Ts,
             CH_REQUIRE_0(sizeof...(Ts) == N && are_all_cast_convertible<T, Ts...>::value)>
-  explicit const_vec_base(Ts&&... values)
+  const_vec_base(Ts&&... values)
     : items_{T(std::forward<Ts>(values))...}
   {}
 
   template <typename... Ts,
             CH_REQUIRE_0(sizeof...(Ts) == N && are_all_cast_convertible<T, Ts...>::value)>
-  explicit const_vec_base(const source_location& sloc, Ts&&... values)
+  const_vec_base(const source_location& sloc, Ts&&... values)
     : items_{T(std::forward<Ts>(values), sloc)...}
+  {}
+
+  template <typename U, std::size_t...Is>
+  const_vec_base(const U& rhs, std::index_sequence<Is...>)
+    : items_{T(rhs[Is])...}
   {}
   
   std::array<T, N> items_;
@@ -115,8 +120,11 @@ public:
     return *this;
   }
 
-  vec_base& operator=(const const_vec_base<T, N>& rhs) {
-    items_ = rhs.items_;
+  template <typename U, CH_REQUIRE_0(is_cast_convertible<T, U>::value)>
+  vec_base& operator=(const const_vec_base<U, N>& rhs) {
+    for (unsigned i = 0; i < N; ++i) {
+      items_[i] = rhs.items_[i];
+    }
     return *this;
   }
 
@@ -162,15 +170,13 @@ public:
 
 protected:
 
-  vec_base(const const_vec_base<T, N>& rhs) : base(rhs) {}
+  template <typename... Ts,
+            CH_REQUIRE_0(sizeof...(Ts) == N && are_all_cast_convertible<T, Ts...>::value)>
+  vec_base(Ts&&... values) : base(std::forward<Ts>(values)...) {}
 
   template <typename... Ts,
             CH_REQUIRE_0(sizeof...(Ts) == N && are_all_cast_convertible<T, Ts...>::value)>
-  explicit vec_base(Ts&&... values) : base(std::forward<Ts>(values)...) {}
-
-  template <typename... Ts,
-            CH_REQUIRE_0(sizeof...(Ts) == N && are_all_cast_convertible<T, Ts...>::value)>
-  explicit vec_base(const source_location& sloc, Ts&&... values) : base(sloc, std::forward<Ts>(values)...) {}
+  vec_base(const source_location& sloc, Ts&&... values) : base(sloc, std::forward<Ts>(values)...) {}
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -201,13 +207,23 @@ public:
   const_vec(const_vec&& rhs) : base(std::move(rhs))
   {}
 
-  explicit const_vec(const const_bit<traits::bitwidth>& rhs,
+  template <typename U, CH_REQUIRE_0(is_cast_convertible<T, U>::value)>
+  explicit const_vec(const const_vec_base<U, N>& rhs,
                      const source_location& sloc = CH_SOURCE_LOCATION)
     : const_vec(bit_accessor::copy_buffer(rhs, sloc))
   {}
 
-  explicit const_vec(const const_scalar<traits::bitwidth>& rhs,
-                     const source_location& sloc = CH_SOURCE_LOCATION)
+  template <typename U,
+            CH_REQUIRE_0(is_logic_type<U>::value),
+            CH_REQUIRE_0(width_v<U> == N)>
+  explicit const_vec(const U& rhs, const source_location& sloc = CH_SOURCE_LOCATION)
+    : const_vec(bit_accessor::copy_buffer(rhs, sloc))
+  {}
+
+  template <typename U,
+            CH_REQUIRE_1(is_scalar_type<U>::value),
+            CH_REQUIRE_1(width_v<U> == N)>
+  explicit const_vec(const U& rhs, const source_location& sloc = CH_SOURCE_LOCATION)
     : const_vec(bit_buffer(scalar_accessor::get_data(rhs), sloc))
   {}
 
@@ -247,7 +263,7 @@ protected:
   }
 
   template <std::size_t...Is>
-  explicit const_vec(const bit_buffer& buffer, std::index_sequence<Is...>)
+  const_vec(const bit_buffer& buffer, std::index_sequence<Is...>)
     : base(bit_buffer(width_v<T>, buffer, Is * width_v<T>)...)
   {}
 
@@ -289,19 +305,23 @@ public:
 
   ch_vec(ch_vec&& rhs) : base(std::move(rhs)) {}
 
-  template <typename U>
-  explicit ch_vec(const const_vec<U, N>& rhs,
+  template <typename U, CH_REQUIRE_0(is_cast_convertible<T, U>::value)>
+  explicit ch_vec(const const_vec_base<U, N>& rhs,
                   const source_location& sloc = CH_SOURCE_LOCATION)
     : base(rhs, sloc)
   {}
 
-  explicit ch_vec(const const_bit<traits::bitwidth>& rhs,
-                  const source_location& sloc = CH_SOURCE_LOCATION)
+  template <typename U,
+            CH_REQUIRE_0(is_logic_type<U>::value),
+            CH_REQUIRE_0(width_v<U> == N)>
+  explicit ch_vec(const U& rhs, const source_location& sloc = CH_SOURCE_LOCATION)
     : base(rhs, sloc)
   {}
 
-  explicit ch_vec(const const_scalar<traits::bitwidth>& rhs,
-                  const source_location& sloc = CH_SOURCE_LOCATION)
+  template <typename U,
+            CH_REQUIRE_1(is_scalar_type<U>::value),
+            CH_REQUIRE_1(width_v<U> == N)>
+  explicit ch_vec(const U& rhs, const source_location& sloc = CH_SOURCE_LOCATION)
     : base(rhs, sloc)
   {}
 
@@ -327,7 +347,18 @@ public:
     return *this;
   }
 
-  ch_vec& operator=(const const_vec<T, N>& rhs) {
+  template <typename U,
+            CH_REQUIRE_0(is_scalar_type<U>::value),
+            CH_REQUIRE_0(width_v<U> == N)>
+  ch_vec& operator=(const U& rhs) {
+    this->get_buffer()->write(scalar_accessor::get_data(rhs));
+    return *this;
+  }
+
+  template <typename U,
+            CH_REQUIRE_1(is_logic_type<U>::value),
+            CH_REQUIRE_1(width_v<U> == N)>
+  ch_vec& operator=(const U& rhs) {
     bit_accessor::copy(*this, rhs);
     return *this;
   }
@@ -402,12 +433,15 @@ public:
 
   const_vec(const_vec&& rhs) : base(std::move(rhs)) {}
 
-  template <typename U>
-  explicit const_vec(const const_vec<U, N>& rhs)
+  template <typename U, CH_REQUIRE_0(is_cast_convertible<T, U>::value)>
+  explicit const_vec(const const_vec_base<U, N>& rhs)
     : const_vec(scalar_accessor::copy_buffer(rhs))
   {}
 
-  explicit const_vec(const const_scalar<traits::bitwidth>& rhs)
+  template <typename U,
+              CH_REQUIRE_0(is_scalar_type<U>::value),
+              CH_REQUIRE_0(width_v<U> == N)>
+  explicit const_vec(const U& rhs)
     : const_vec(scalar_accessor::copy_buffer(rhs))
   {}
 
@@ -442,7 +476,7 @@ protected:
   }
 
   template <std::size_t...Is>
-  explicit const_vec(const scalar_buffer& buffer, std::index_sequence<Is...>)
+  const_vec(const scalar_buffer& buffer, std::index_sequence<Is...>)
     : base(scalar_buffer(width_v<T>, buffer, Is * width_v<T>)...)
   {}
 
@@ -478,8 +512,13 @@ public:
   ch_vec(const ch_vec& rhs) : base(rhs) {}
   ch_vec(ch_vec&& rhs) : base(std::move(rhs)) {}
 
-  template <typename U>
-  explicit ch_vec(const const_vec<U, N>& rhs) : base(rhs) {}
+  template <typename U, CH_REQUIRE_0(is_cast_convertible<T, U>::value)>
+  explicit ch_vec(const const_vec_base<U, N>& rhs) : base(rhs) {}
+
+  template <typename U,
+              CH_REQUIRE_0(is_scalar_type<U>::value),
+              CH_REQUIRE_0(width_v<U> == N)>
+  explicit ch_vec(const U& rhs) : base(rhs) {}
 
   explicit ch_vec(const const_scalar<traits::bitwidth>& rhs) : base(rhs) {}
 
@@ -497,6 +536,14 @@ public:
 
   ch_vec& operator=(ch_vec&& rhs) {
     scalar_accessor::move(*this, std::move(rhs));
+    return *this;
+  }
+
+  template <typename U,
+            CH_REQUIRE_0(is_scalar_type<U>::value),
+            CH_REQUIRE_0(width_v<U> == N)>
+  ch_vec& operator=(const U& rhs) {
+    scalar_accessor::copy(*this, rhs);
     return *this;
   }
 
@@ -571,8 +618,8 @@ protected:
   ch_vec_device_io& operator=(ch_vec_device_io&& rhs) = delete;
 
   template <typename U, std::size_t...Is>
-  explicit ch_vec_device_io(const vec_base<U, N>& rhs,
-                            std::index_sequence<Is...>)
+  ch_vec_device_io(const vec_base<U, N>& rhs,
+                   std::index_sequence<Is...>)
     : base(rhs[Is]...)
   {}
 };
@@ -617,16 +664,16 @@ protected:
   ch_vec& operator=(ch_vec&& rhs) = delete;
 
   template <std::size_t...Is>
-  explicit ch_vec(const std::string& name,
-                  const source_location& sloc,
-                  std::index_sequence<Is...>)
+  ch_vec(const std::string& name,
+         const source_location& sloc,
+         std::index_sequence<Is...>)
     : base(sloc, fstring("%s_%d", name.c_str(), Is)...)
   {}
 
   template <typename U, std::size_t...Is>
-  explicit ch_vec(const vec_base<U, N>& rhs,
-                  const source_location& sloc,
-                  std::index_sequence<Is...>)
+  ch_vec(const vec_base<U, N>& rhs,
+         const source_location& sloc,
+         std::index_sequence<Is...>)
     : base(sloc, rhs[Is]...)
   {}
 };

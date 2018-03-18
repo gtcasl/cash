@@ -418,17 +418,17 @@ public:
   {}
 
   template <typename U,
-            CH_REQUIRE_0(is_scalar_type<U>::value),
+            CH_REQUIRE_0(is_logic_type<U>::value),
             CH_REQUIRE_0(width_v<U> == N)>
   explicit const_bit(const U& rhs, const source_location& sloc = CH_SOURCE_LOCATION)
-    : const_bit(bit_buffer(scalar_accessor::get_data(rhs), sloc))
+    : const_bit(bit_accessor::copy_buffer(rhs, sloc))
   {}
 
   template <typename U,
-            CH_REQUIRE_1(is_logic_type<U>::value),
+            CH_REQUIRE_1(is_scalar_type<U>::value),
             CH_REQUIRE_1(width_v<U> == N)>
   explicit const_bit(const U& rhs, const source_location& sloc = CH_SOURCE_LOCATION)
-    : const_bit(bit_accessor::copy_buffer(rhs, sloc))
+    : const_bit(bit_buffer(scalar_accessor::get_data(rhs), sloc))
   {}
 
   template <typename U,
@@ -635,14 +635,14 @@ public:
   {}
 
   template <typename U,
-            CH_REQUIRE_0(is_scalar_type<U>::value),
+            CH_REQUIRE_0(is_logic_type<U>::value),
             CH_REQUIRE_0(width_v<U> == N)>
   explicit ch_bit(const U& rhs, const source_location& sloc = CH_SOURCE_LOCATION)
     : base(rhs, sloc)
   {}
 
   template <typename U,
-            CH_REQUIRE_1(is_logic_type<U>::value),
+            CH_REQUIRE_1(is_scalar_type<U>::value),
             CH_REQUIRE_1(width_v<U> == N)>
   explicit ch_bit(const U& rhs, const source_location& sloc = CH_SOURCE_LOCATION)
     : base(rhs, sloc)
@@ -664,24 +664,19 @@ public:
     return *this;
   }
 
-  ch_bit& operator=(const const_bit<N>& rhs) {
-    bit_accessor::copy(*this, rhs);
-    return *this;
-  }
-
   template <typename U,
-            CH_REQUIRE_0(is_scalar_type<U>::value),
+            CH_REQUIRE_0(is_logic_type<U>::value),
             CH_REQUIRE_0(N == width_v<U>)>
   ch_bit& operator=(const U& rhs) {
-    buffer_->write(scalar_accessor::get_data(rhs));
+    bit_accessor::copy(*this, rhs);
     return *this;
   }
 
   template <typename U,
-            CH_REQUIRE_1(is_logic_type<U>::value),
+            CH_REQUIRE_1(is_scalar_type<U>::value),
             CH_REQUIRE_1(N == width_v<U>)>
   ch_bit& operator=(const U& rhs) {
-    bit_accessor::copy(*this, rhs);
+    buffer_->write(scalar_accessor::get_data(rhs));
     return *this;
   }
 

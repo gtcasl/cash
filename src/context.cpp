@@ -887,50 +887,53 @@ void context::dump_cfg(lnodeimpl* node, std::ostream& out, uint32_t level) {
 }
 
 void context::dump_stats(std::ostream& out) {
-  uint32_t memory_bits = 0;
-  uint32_t register_bits = 0;
-  uint32_t num_memories = 0;
-  uint32_t num_registers = 0;
-  uint32_t num_muxes = 0;
-  uint32_t num_alus = 0;
-  uint32_t num_lits = 0;
-  uint32_t num_proxies = 0;
-  
-  for (lnodeimpl* node : nodes_) {
-    switch (node->get_type()) {
-    case type_mem:
-      ++num_memories;
-      memory_bits += dynamic_cast<memimpl*>(node)->get_total_size();
-      break;
-    case type_reg:
-      ++num_registers;
-      register_bits += node->get_size();
-      break;
-    case type_sel:
-      ++num_muxes;
-      break;
-    case type_alu:
-      ++num_alus;
-      break;
-    case type_lit:
-      ++num_lits;
-      break;
-    case type_proxy:
-      ++num_proxies;
-      break;
-    default:
-      break;
+  uint64_t num_memories = 0;
+  uint64_t num_registers = 0;
+  uint64_t num_muxes = 0;
+  uint64_t num_alus = 0;
+  uint64_t num_lits = 0;
+
+  uint64_t memory_bits = 0;
+  uint64_t register_bits = 0;
+
+  std::function<void(context* ctx)> calc_stats = [&](context* ctx) {
+    for (lnodeimpl* node : ctx->get_nodes()) {
+      switch (node->get_type()) {
+      case type_mem:
+        memory_bits += dynamic_cast<memimpl*>(node)->get_total_size();
+        ++num_memories;
+        break;
+      case type_reg:
+        register_bits += node->get_size();
+        ++num_registers;
+        break;
+      case type_sel:
+        ++num_muxes;
+        break;
+      case type_alu:
+        ++num_alus;
+        break;
+      case type_lit:
+        ++num_lits;
+        break;
+      case type_bind:
+        calc_stats(dynamic_cast<bindimpl*>(node)->get_module());
+        break;
+      default:
+        break;
+      }
     }
-  }
-  
-  out << "ch-stats: total memories = " << num_memories << std::endl;
+  };
+
+  calc_stats(this);
+
   out << "ch-stats: total memory bits = " << memory_bits << std::endl;
+  out << "ch-stats: total register bits = " << register_bits << std::endl;
+  out << "ch-stats: total memories = " << num_memories << std::endl;
   out << "ch-stats: total registers = " << num_registers << std::endl;
-  out << "ch-stats: total regiters bits = " << register_bits << std::endl;
   out << "ch-stats: total muxes = " << num_muxes << std::endl;
   out << "ch-stats: total alus = " << num_alus << std::endl;
   out << "ch-stats: total literals = " << num_lits << std::endl;
-  out << "ch-stats: total proxies = " << num_proxies << std::endl;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

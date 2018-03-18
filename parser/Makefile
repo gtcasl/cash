@@ -1,5 +1,5 @@
 #CXX = clang-5.0
-#CXXFLAGS += -std=c++17 -O2 -DNDEBUG -Wall -Wextra -pedantic
+#CXXFLAGS += -std=c++17 -O3 -DNDEBUG -Wall -Wextra -pedantic
 CXXFLAGS += -std=c++17 -O0 -g -I/usr/lib/llvm-5.0/include -Wall -Wextra -pedantic
 LDFLAGS += -L/usr/lib/llvm-5.0/lib -lclang -lstdc++
 

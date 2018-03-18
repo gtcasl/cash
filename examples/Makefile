@@ -1,5 +1,5 @@
 #CXX = clang-5.0
-#CXXFLAGS += -std=c++17 -O2 -DNDEBUG -Wall -Wextra -pedantic
+#CXXFLAGS += -std=c++17 -O3 -DNDEBUG -Wall -Wextra -pedantic
 CXXFLAGS += -std=c++17 -O0 -g -Wall -Wextra -pedantic -fmax-errors=1
 LDFLAGS += -lcash -lstdc++
 

@@ -40,7 +40,7 @@ int main() {
   assert(fastmult.io.out == 6);
 
   ch_toVerilog("fastmult.v", fastmult);
-  //ch_toFIRRTL("fastmult.fir", fastmult);
+  ch_toFIRRTL("fastmult.fir", fastmult);
 
   return 0;
 }

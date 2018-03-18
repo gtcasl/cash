@@ -56,9 +56,6 @@ template <typename T>
 using device_type_t = typename std::decay_t<T>::traits::device_type;
 
 template <typename T>
-using buffer_type_t = typename std::decay_t<T>::traits::buffer_type;
-
-template <typename T>
 inline constexpr ch_direction direction_v = std::decay_t<T>::traits::direction;
 
 template <typename T>
