@@ -14,7 +14,6 @@ examples/fifo.v
 examples/gcd.cpp
 examples/gcd.cpp
 examples/gcd.v
-examples/matmult.cpp
 examples/vending.cpp
 examples/vending.cpp
 examples/vending.v
@@ -185,7 +184,6 @@ src/selectimpl.cpp
 src/selectimpl.cpp
 src/selectimpl.h
 src/selectimpl.h
-src/seq.h
 src/seq.h
 src/simulator.h
 src/simulator.h

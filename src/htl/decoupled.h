@@ -8,14 +8,14 @@ namespace htl {
 using namespace ch::core;
 
 template <typename T>
-__inout (ch_valid_io, (
+__inout (ch_valid_io, (    
   __out(ch_bool) valid,
-  __out(T)       data
+  __out(T) data
 ));
 
 template <typename T>
 __inout (ch_decoupled_io, ch_valid_io<T>, (
-  __in(ch_bool)  ready
+  __in(ch_bool) ready
 ));
 
 // producer driven input stream

@@ -17,7 +17,7 @@ struct ch_rrArbiter {
   );
 
   void describe() {
-    ch_seq<ch_bool> state[N][N];
+    ch_reg<ch_bool> state[N][N];
     ch_bit<N> dis[N];
     ch_bit<N> grant;
 

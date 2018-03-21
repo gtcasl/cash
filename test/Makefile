@@ -21,7 +21,7 @@ dogfood.out : common.o dogfood.o
 	$(CXX) $(CXXFLAGS) -MM $^ > .depend;
 
 clean:
-	rm -f *.out *.o *.vcd *.gcda *.gcno .depend *~ *\#
+	rm -f *.out *.o *.vcd *.fir *.gcda *.gcno .depend *~ *\#
 
 run: $(PROJECT)
 	./$(PROJECT)

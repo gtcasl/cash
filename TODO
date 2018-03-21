@@ -63,7 +63,7 @@ X*** Assignment rule: by constructor assignent is ignored during check
 
 
 *** investigate alternative proxy implementation based on bitmask for simplicity
-*** find a way to fix ch_seq such that it is initialized to itself by default (next -> this)
+*** find a way to fix ch_reg such that it is initialized to itself by default (next -> this)
 *** should consider gettng rid of defer initialization once auto dead code elimination is supported (will remove all nasty hacks in code where dst == nullptr is a worry)
 *** address the issue why friend member still don't get implicit template constructor (e.g. ch_min, ch_select, ...)
 
@@ -75,7 +75,7 @@ X*** Assignment rule: by constructor assignent is ignored during check
  
 *** use callstack api to save source file/line for undefined variables. check out GDB api (https://github.com/brasko/gdbwire) and libcwd (http://libcwd.sourceforge.net/index.html)
 *** move all the math routines into the bitvector class, then accelerate the bitvector class using intel SSE/AVX intrinsics
-*** add support for ch_seq implace operators ++(), --(), >>=(), <<=(), &=(), |=(), ^=(), +=(), -=(), *=(), \=()
+*** add support for ch_reg implace operators ++(), --(), >>=(), <<=(), &=(), |=(), ^=(), +=(), -=(), *=(), \=()
 *** test ch_shuffle
 *** printing struct, union, enum values using reflection 
 *** allow ch_print() to use __if and __switch 
@@ -128,7 +128,7 @@ X*** Assignment rule: by constructor assignent is ignored during check
 Completed:
 ==========
 
-- refactor ch_reg class => move to function
+- refactor ch_regNext class => move to function
 - refactor ch_wire class => all objects operate as wires before first assignment
 - move ch_rom into llmem.h
 - create cash.h header file
@@ -175,8 +175,8 @@ export CASH_DEBUG_LEVEL=2
 export CASH_DUMP_AST=1
 
 // infering multiple cycles operations
-y = ch_pipeline(x, 2) = ch_reg(ch_reg(x));
-z = ch_pipeline(x * y, 2); => z = ch_reg(mult1(x,y,ch_reg(mult0(x,y)));
+y = ch_pipeline(x, 2) = ch_regNext(ch_regNext(x));
+z = ch_pipeline(x * y, 2); => z = ch_regNext(mult1(x,y,ch_regNext(mult0(x,y)));
 
 // Detecting leaks using valgrind
 $ valgrind --leak-check=yes <app> <args...> > valgrind.log 2>&1

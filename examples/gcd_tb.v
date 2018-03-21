@@ -23,7 +23,7 @@ module testbench();
         $dumpfile("testbench.vcd");
         $dumpvars(0, testbench);
 
-        $display ("time\tclk\treset\tout");
+        $display ("time\tclk\treset\tin_val\tin_data\t\tin_rdy\tout_val\tout_data");
         $monitor("%3d\t%b\t%b\t%b\t%h\t%b\t%b\t%h", $time, clk, reset, in_valid, in_data, in_ready, out_valid, out_data);
 
         #0 reset  = 1;

@@ -16,7 +16,7 @@ struct FiFo {
     __out(ch_bit1) full
   );
   void describe() {
-    ch_seq<ch_bit<addr_width+1>> rd_ptr, wr_ptr;
+    ch_reg<ch_bit<addr_width+1>> rd_ptr, wr_ptr;
 
     auto rd_A = ch_slice<addr_width>(rd_ptr);
     auto wr_A = ch_slice<addr_width>(wr_ptr);

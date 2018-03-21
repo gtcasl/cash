@@ -14,7 +14,7 @@ struct VendingMachine {
   __enum (State, (idle, s5, s10, s15, sOk));
 
   void describe() {
-    ch_seq<State> state(State::idle);
+    ch_reg<State> state(State::idle);
     __switch (state)
     __case (State::idle) {
       __if (io.nickel) { state.next = State::s5; };

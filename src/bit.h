@@ -17,7 +17,7 @@ template <unsigned N> class bit;
 
 template <unsigned N> class bit_concat;
 
-template <typename T> class ch_seq;
+template <typename T> class ch_reg;
 
 template <unsigned Bitwidth,
           typename LogicType,
@@ -375,13 +375,13 @@ auto OpReduce(const const_bit<N>& a) {
   ch_bit<type::traits::bitwidth> asBits() { \
     return this->as<ch_bit<type::traits::bitwidth>>(); \
   } \
-  const ch_seq<type> asSeq(const source_location& sloc = CH_SRC_LOCATION) { \
-    ch_seq<type> s(sloc); \
+  const ch_reg<type> asReg(const source_location& sloc = CH_SRC_LOCATION) { \
+    ch_reg<type> s(sloc); \
     (*this) = s; \
     return s; \
   } \
-  const ch_seq<type> asSeq(const type& init, const source_location& sloc = CH_SRC_LOCATION) { \
-    ch_seq<type> s(init, sloc); \
+  const ch_reg<type> asReg(const type& init, const source_location& sloc = CH_SRC_LOCATION) { \
+    ch_reg<type> s(init, sloc); \
     (*this) = s; \
     return s; \
   }

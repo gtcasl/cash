@@ -69,11 +69,11 @@ void register_enum_string(const lnode& node, void* callback);
 
 #define CH_ENUM_LOGIC_FRIENDS_IMPL(enum_name) \
 protected: \
-  friend auto ch_reg(const enum_name& next, const enum_name& init) { \
-    return ch::internal::ch_reg(next, init); \
+  friend auto ch_regNext(const enum_name& next, const enum_name& init) { \
+    return ch::internal::ch_regNext(next, init); \
   } \
-  friend auto ch_reg(const enum_name& next) { \
-    return ch::internal::ch_reg(next); \
+  friend auto ch_regNext(const enum_name& next) { \
+    return ch::internal::ch_regNext(next); \
   }
 
 #define CH_ENUM_IMPL(enum_name, size, ...) \

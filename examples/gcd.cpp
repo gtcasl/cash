@@ -13,8 +13,8 @@ struct GCD {
     (ch_valid_io<ch_bit<N>>) out
   );
   void describe() {
-    ch_seq<ch_bit<N>> x, y;
-    ch_seq<ch_bool> p(false);
+    ch_reg<ch_bit<N>> x, y;
+    ch_reg<ch_bool> p(false);
 
     io.in.ready = !p;
 

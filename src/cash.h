@@ -14,7 +14,6 @@
 #include "union.h"
 #include "struct.h"
 #include "float32.h"
-#include "seq.h"
 #include "port.h"
 #include "inout.h"
 #include "module.h"
@@ -62,7 +61,7 @@ namespace core {
 
   using ch_float32 = ch::internal::ch_float32;
 
-  template <typename T> using ch_seq = ch::internal::ch_seq<T>;
+  template <typename T> using ch_reg = ch::internal::ch_reg<T>;
 
   template <typename... Ts>
   inline constexpr unsigned ch_width_v = ch::internal::width_v<Ts...>;
@@ -136,11 +135,11 @@ namespace core {
   using ch::internal::ch_switch;
 
   //
-  // register functions
+  // sequential functions
   //
 
-  using ch::internal::ch_reg;
-  using ch::internal::ch_latch;
+  using ch::internal::ch_regNext;
+  using ch::internal::ch_latchNext;
   using ch::internal::ch_delay;
   using ch::internal::ch_pushClock;
   using ch::internal::ch_popClock;

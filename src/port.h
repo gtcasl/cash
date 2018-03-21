@@ -1,7 +1,6 @@
 #pragma once
 
-#include "struct.h"
-#include "seq.h"
+#include "bit.h"
 
 namespace ch {
 namespace internal {
