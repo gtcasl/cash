@@ -19,6 +19,8 @@ public:
 
   ch_vcdtracer(std::ostream& out) : ch_vcdtracer(out, {}) {}
 
+  ch_vcdtracer(const std::string& file) : ch_vcdtracer(file, {}) {}
+
   ~ch_vcdtracer();
 
 protected:

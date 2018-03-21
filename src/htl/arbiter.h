@@ -65,7 +65,12 @@ struct ch_xbar_switch {
     }
     io.out.grant = arb_.io.grant;
   }
-  ch_module<ch_hxbar<ch_logic_t<ch_valid_io<T>>, I, 1>> xbar_;
+private:
+  __struct (xb_data_t, (
+    (T) data,
+    (ch_bool) valid
+  ));
+  ch_module<ch_hxbar<xb_data_t, I, 1>> xbar_;
   ch_module<Arbiter> arb_;
 };
 

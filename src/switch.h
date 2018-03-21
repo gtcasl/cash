@@ -62,7 +62,7 @@ switch_case_t<K> switch_body_t<K>::operator,(const fvoid_t& body) {
 
 template <typename K,
           CH_REQUIRE_0(is_bit_convertible<K>::value)>
-auto ch_switch(const K& key, const source_location& sloc = CH_SOURCE_LOCATION) {
+auto ch_switch(const K& key, const source_location& sloc = CH_SRC_LOCATION) {
   return switch_case_t<K>(std::make_shared<switch_t>(get_lnode(key), sloc));
 }
 

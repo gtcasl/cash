@@ -27,23 +27,17 @@ CH_DEF_SFINAE_CHECK(has_bitwidth, T::traits::bitwidth != 0);
 ///////////////////////////////////////////////////////////////////////////////
 
 enum traits_type {
-  traits_none,
-  traits_logic,
-  traits_scalar,
-  traits_io,
-};
-
-enum class ch_direction {
-  none  = 0x0,
-  in    = 0x1,
-  out   = 0x2,
-  inout = 0x3,
+  traits_none     = 0x0,
+  traits_logic    = 0x1,
+  traits_scalar   = 0x2,
+  traits_io       = 0x4,
+  traits_logic_io = traits_logic | traits_io,
+  traits_scalar_io= traits_scalar | traits_io,
 };
 
 struct non_ch_type {
   struct traits {
     static constexpr traits_type type = traits_none;
-    static constexpr ch_direction direction = ch_direction::none;
     static constexpr unsigned bitwidth = 0;
   };
 };
@@ -105,17 +99,14 @@ template <unsigned Bitwidth,
           typename ScalarType,
           typename ConstType,
           typename ValueType,
-          typename LogicType,
-          typename Next = void>
+          typename LogicType>
 struct scalar_traits {
   static constexpr traits_type type = traits_scalar;
-  static constexpr ch_direction direction = ch_direction::none;
   static constexpr unsigned bitwidth = Bitwidth;
   using scalar_type = ScalarType;
   using const_type  = ConstType;
   using value_type  = ValueType;
   using logic_type  = LogicType;
-  using next = Next;
 };
 
 template <typename T>
@@ -134,17 +125,9 @@ template <typename T>
 using is_const_type = is_true<std::is_same<T, const_type_t<T>>::value>;
 
 template <typename T>
-struct is_scalar_traits : std::false_type {};
+using is_scalar_traits = is_true<(T::type & traits_scalar)>;
 
-template <unsigned Bitwidth,
-          typename ScalarType,
-          typename ConstType,
-          typename ValueType,
-          typename LogicType,
-          typename Next>
-struct is_scalar_traits<scalar_traits<Bitwidth, ScalarType, ConstType, ValueType, LogicType, Next>>
-  : std::true_type
-{};
+CH_DEF_SFINAE_CHECK(is_scalar_only, is_true<(std::decay_t<T>::traits::type == traits_scalar)>::value);
 
 CH_DEF_SFINAE_CHECK(is_scalar_type, is_scalar_traits<typename std::decay_t<T>::traits>::value);
 

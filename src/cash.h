@@ -282,7 +282,6 @@ inline namespace literals {
 #define __default  CH_DEFAULT
 
 #define __tap      CH_TAP
-#define __trace    CH_TRACE
 #define __assert   CH_ASSERT
 
 #define __struct   CH_STRUCT
@@ -297,4 +296,4 @@ inline namespace literals {
 
 #define __requires CH_REQUIRE_0
 
-#define __source_location CH_SOURCE_LOCATION
+#define __source_location CH_SRC_LOCATION

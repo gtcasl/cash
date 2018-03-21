@@ -41,7 +41,7 @@ public:
 
   ch_tick step(ch_tick t);
 
-  ch_tick step(ch_tick t, unsigned count);
+  ch_tick step(ch_tick t, unsigned count);  
 
 protected:
 

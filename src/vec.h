@@ -182,11 +182,10 @@ protected:
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T, unsigned N>
-class const_vec<T, N, typename std::enable_if_t<is_logic_type<T>::value>>
-    : public const_vec_base<T, N> {
+class const_vec<T, N, typename std::enable_if_t<is_logic_only<T>::value>>
+  : public const_vec_base<T, N> {
 public:
-  static_assert(is_logic_type<T>::value, "invalid value type");
-  static_assert(!is_const_type<T>::value, "invalid value type");
+  static_assert(is_value_type<T>::value, "invalid type");
   using traits = logic_traits<N * width_v<T>,
                               const_vec,
                               const_vec,
@@ -196,11 +195,11 @@ public:
   using base::operator [];
   using base::items_;
 
-  const_vec(const bit_buffer& buffer = bit_buffer(traits::bitwidth, CH_SOURCE_LOCATION))
+  const_vec(const bit_buffer& buffer = bit_buffer(traits::bitwidth, CH_SRC_LOCATION))
     : const_vec(buffer, std::make_index_sequence<N>())
   {}
 
-  const_vec(const const_vec& rhs, const source_location& sloc = CH_SOURCE_LOCATION)
+  const_vec(const const_vec& rhs, const source_location& sloc = CH_SRC_LOCATION)
     : const_vec(bit_accessor::copy_buffer(rhs, sloc))
   {}
 
@@ -209,32 +208,32 @@ public:
 
   template <typename U, CH_REQUIRE_0(is_cast_convertible<T, U>::value)>
   explicit const_vec(const const_vec_base<U, N>& rhs,
-                     const source_location& sloc = CH_SOURCE_LOCATION)
+                     const source_location& sloc = CH_SRC_LOCATION)
     : const_vec(bit_accessor::copy_buffer(rhs, sloc))
   {}
 
   template <typename U,
             CH_REQUIRE_0(is_logic_type<U>::value),
-            CH_REQUIRE_0(width_v<U> == N)>
-  explicit const_vec(const U& rhs, const source_location& sloc = CH_SOURCE_LOCATION)
+            CH_REQUIRE_0(width_v<U> == N * width_v<T>)>
+  explicit const_vec(const U& rhs, const source_location& sloc = CH_SRC_LOCATION)
     : const_vec(bit_accessor::copy_buffer(rhs, sloc))
   {}
 
   template <typename U,
             CH_REQUIRE_1(is_scalar_type<U>::value),
-            CH_REQUIRE_1(width_v<U> == N)>
-  explicit const_vec(const U& rhs, const source_location& sloc = CH_SOURCE_LOCATION)
+            CH_REQUIRE_1(width_v<U> == N * width_v<T>)>
+  explicit const_vec(const U& rhs, const source_location& sloc = CH_SRC_LOCATION)
     : const_vec(bit_buffer(scalar_accessor::get_data(rhs), sloc))
   {}
 
   template <typename U, CH_REQUIRE_0(std::is_integral_v<U>)>
-  explicit const_vec(U rhs, const source_location& sloc = CH_SOURCE_LOCATION)
+  explicit const_vec(U rhs, const source_location& sloc = CH_SRC_LOCATION)
     : const_vec(bit_buffer(bitvector(traits::bitwidth, rhs), sloc))
   {}
 
   template <typename U>
   explicit const_vec(const std::initializer_list<U>& values,
-                     const source_location& sloc = CH_SOURCE_LOCATION)
+                     const source_location& sloc = CH_SRC_LOCATION)
     : const_vec(bit_buffer(traits::bitwidth, sloc)) {
     assert(values.size() == N);
     int i = N - 1;
@@ -281,11 +280,10 @@ protected:
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T, unsigned N>
-class ch_vec<T, N, typename std::enable_if_t<is_logic_type<T>::value>>
-    : public const_vec<T, N> {
+class ch_vec<T, N, typename std::enable_if_t<is_logic_only<T>::value>>
+  : public const_vec<T, N> {
 public:
-  static_assert(is_logic_type<T>::value, "invalid value type");
-  static_assert(!is_const_type<T>::value, "invalid value type");
+  static_assert(is_value_type<T>::value, "invalid type");
   using traits = logic_traits<N * width_v<T>,
                               ch_vec,
                               const_vec<T, N>,
@@ -295,11 +293,11 @@ public:
   using base::operator [];
   using base::items_;
 
-  ch_vec(const bit_buffer& buffer = bit_buffer(traits::bitwidth, CH_SOURCE_LOCATION))
+  ch_vec(const bit_buffer& buffer = bit_buffer(traits::bitwidth, CH_SRC_LOCATION))
     : base(buffer)
   {}
 
-  ch_vec(const ch_vec& rhs, const source_location& sloc = CH_SOURCE_LOCATION)
+  ch_vec(const ch_vec& rhs, const source_location& sloc = CH_SRC_LOCATION)
     : base(rhs, sloc)
   {}
 
@@ -307,33 +305,33 @@ public:
 
   template <typename U, CH_REQUIRE_0(is_cast_convertible<T, U>::value)>
   explicit ch_vec(const const_vec_base<U, N>& rhs,
-                  const source_location& sloc = CH_SOURCE_LOCATION)
+                  const source_location& sloc = CH_SRC_LOCATION)
     : base(rhs, sloc)
   {}
 
   template <typename U,
             CH_REQUIRE_0(is_logic_type<U>::value),
-            CH_REQUIRE_0(width_v<U> == N)>
-  explicit ch_vec(const U& rhs, const source_location& sloc = CH_SOURCE_LOCATION)
+            CH_REQUIRE_0(width_v<U> == N * width_v<T>)>
+  explicit ch_vec(const U& rhs, const source_location& sloc = CH_SRC_LOCATION)
     : base(rhs, sloc)
   {}
 
   template <typename U,
             CH_REQUIRE_1(is_scalar_type<U>::value),
-            CH_REQUIRE_1(width_v<U> == N)>
-  explicit ch_vec(const U& rhs, const source_location& sloc = CH_SOURCE_LOCATION)
+            CH_REQUIRE_1(width_v<U> == N * width_v<T>)>
+  explicit ch_vec(const U& rhs, const source_location& sloc = CH_SRC_LOCATION)
     : base(rhs, sloc)
   {}
 
   template <typename U, CH_REQUIRE_0(std::is_integral_v<U>)>
   explicit ch_vec(U rhs,
-                  const source_location& sloc = CH_SOURCE_LOCATION)
+                  const source_location& sloc = CH_SRC_LOCATION)
     : base(rhs, sloc)
   {}
 
   template <typename U>
   explicit ch_vec(const std::initializer_list<U>& values,
-                  const source_location& sloc = CH_SOURCE_LOCATION)
+                  const source_location& sloc = CH_SRC_LOCATION)
     : base(values, sloc)
   {}
 
@@ -349,7 +347,7 @@ public:
 
   template <typename U,
             CH_REQUIRE_0(is_scalar_type<U>::value),
-            CH_REQUIRE_0(width_v<U> == N)>
+            CH_REQUIRE_0(width_v<U> == N * width_v<T>)>
   ch_vec& operator=(const U& rhs) {
     this->get_buffer()->write(scalar_accessor::get_data(rhs));
     return *this;
@@ -357,7 +355,7 @@ public:
 
   template <typename U,
             CH_REQUIRE_1(is_logic_type<U>::value),
-            CH_REQUIRE_1(width_v<U> == N)>
+            CH_REQUIRE_1(width_v<U> == N * width_v<T>)>
   ch_vec& operator=(const U& rhs) {
     bit_accessor::copy(*this, rhs);
     return *this;
@@ -409,11 +407,10 @@ public:
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T, unsigned N>
-class const_vec<T, N, typename std::enable_if_t<is_scalar_type<T>::value>>
-    : public const_vec_base<T, N> {
+class const_vec<T, N, typename std::enable_if_t<is_scalar_only<T>::value>>
+  : public const_vec_base<T, N> {
 public:
-  static_assert(is_scalar_type<T>::value, "invalid value type");
-  static_assert(!is_const_type<T>::value, "invalid value type");
+  static_assert(is_value_type<T>::value, "invalid type");
   using traits = scalar_traits<N * width_v<T>,
                                const_vec,
                                const_vec,
@@ -440,7 +437,7 @@ public:
 
   template <typename U,
               CH_REQUIRE_0(is_scalar_type<U>::value),
-              CH_REQUIRE_0(width_v<U> == N)>
+              CH_REQUIRE_0(width_v<U> == N * width_v<T>)>
   explicit const_vec(const U& rhs)
     : const_vec(scalar_accessor::copy_buffer(rhs))
   {}
@@ -494,11 +491,10 @@ protected:
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T, unsigned N>
-class ch_vec<T, N, typename std::enable_if_t<is_scalar_type<T>::value>>
-    : public const_vec<T, N> {
+class ch_vec<T, N, typename std::enable_if_t<is_scalar_only<T>::value>>
+  : public const_vec<T, N> {
 public:
-  static_assert(is_scalar_type<T>::value, "invalid value type");
-  static_assert(!is_const_type<T>::value, "invalid value type");
+  static_assert(is_value_type<T>::value, "invalid type");
   using traits = scalar_traits<N * width_v<T>,
                                ch_vec,
                                const_vec<T, N>,
@@ -517,7 +513,7 @@ public:
 
   template <typename U,
               CH_REQUIRE_0(is_scalar_type<U>::value),
-              CH_REQUIRE_0(width_v<U> == N)>
+              CH_REQUIRE_0(width_v<U> == N * width_v<T>)>
   explicit ch_vec(const U& rhs) : base(rhs) {}
 
   explicit ch_vec(const const_scalar<traits::bitwidth>& rhs) : base(rhs) {}
@@ -541,7 +537,7 @@ public:
 
   template <typename U,
             CH_REQUIRE_0(is_scalar_type<U>::value),
-            CH_REQUIRE_0(width_v<U> == N)>
+            CH_REQUIRE_0(width_v<U> == N * width_v<T>)>
   ch_vec& operator=(const U& rhs) {
     scalar_accessor::copy(*this, rhs);
     return *this;
@@ -596,11 +592,11 @@ template <typename T, unsigned N>
 class ch_vec_device_io : public vec_base<device_type_t<T>, N> {
 public:
   static_assert(is_io_type<T>::value, "invalid type");
-  using traits = io_traits<ch_vec_device_io,
+  using traits = io_traits<N * width_v<T>,
+                           ch_vec_device_io,
                            direction_v<T>,
                            ch_vec_device_io<flip_type_t<T>, N>,
-                           ch_vec<T, N>,
-                           ch_vec<logic_type_t<T>, N>>;
+                           ch_vec<T, N>>;
 
   using base = vec_base<device_type_t<T>, N>;
   using base::operator [];
@@ -618,8 +614,7 @@ protected:
   ch_vec_device_io& operator=(ch_vec_device_io&& rhs) = delete;
 
   template <typename U, std::size_t...Is>
-  ch_vec_device_io(const vec_base<U, N>& rhs,
-                   std::index_sequence<Is...>)
+  ch_vec_device_io(const vec_base<U, N>& rhs, std::index_sequence<Is...>)
     : base(rhs[Is]...)
   {}
 };
@@ -628,24 +623,23 @@ protected:
 
 template <typename T, unsigned N>
 class ch_vec<T, N, typename std::enable_if_t<is_io_type<T>::value>>
-    : public vec_base<T, N> {
+  : public vec_base<T, N> {
 public:
-  static_assert(is_io_type<T>::value, "invalid type");
-  using traits = io_traits<ch_vec,
+  using traits = io_traits<N * width_v<T>,
+                           ch_vec,
                            direction_v<T>,
                            ch_vec<flip_type_t<T>, N>,
-                           ch_vec_device_io<T, N>,
-                           ch_vec<logic_type_t<T>, N>>;
+                           ch_vec_device_io<T, N>>;
 
   using base = vec_base<T, N>;
   using base::operator [];
   using base::items_;
 
-  ch_vec(const std::string& name = "io", const source_location& sloc = CH_SOURCE_LOCATION)
+  ch_vec(const std::string& name = "io", const source_location& sloc = CH_SRC_LOCATION)
     : ch_vec(name, sloc, std::make_index_sequence<N>())
   {}
 
-  ch_vec(const ch_vec<flip_type_t<T>, N>& rhs, const source_location& sloc = CH_SOURCE_LOCATION)
+  ch_vec(const ch_vec<flip_type_t<T>, N>& rhs, const source_location& sloc = CH_SRC_LOCATION)
     : ch_vec(rhs, sloc, std::make_index_sequence<N>())
   {}
 
@@ -664,16 +658,12 @@ protected:
   ch_vec& operator=(ch_vec&& rhs) = delete;
 
   template <std::size_t...Is>
-  ch_vec(const std::string& name,
-         const source_location& sloc,
-         std::index_sequence<Is...>)
+  ch_vec(const std::string& name, const source_location& sloc, std::index_sequence<Is...>)
     : base(sloc, fstring("%s_%d", name.c_str(), Is)...)
   {}
 
   template <typename U, std::size_t...Is>
-  ch_vec(const vec_base<U, N>& rhs,
-         const source_location& sloc,
-         std::index_sequence<Is...>)
+  ch_vec(const vec_base<U, N>& rhs, const source_location& sloc, std::index_sequence<Is...>)
     : base(sloc, rhs[Is]...)
   {}
 };

@@ -13,7 +13,7 @@ public:
 
   T next;
 
-  ch_seq(const source_location& sloc = CH_SOURCE_LOCATION)
+  ch_seq(const source_location& sloc = CH_SRC_LOCATION)
     : base(bit_buffer(width_v<T>, sloc)) {
     auto reg = createRegNode(get_lnode(next), get_lnode<int, width_v<T>>(0));
     bit_accessor::set_data(*this, reg);
@@ -22,7 +22,7 @@ public:
 
   template <typename U, CH_REQUIRE_0(is_cast_convertible<T, U>::value)>
   explicit ch_seq(const U& init,
-                  const source_location& sloc = CH_SOURCE_LOCATION)
+                  const source_location& sloc = CH_SRC_LOCATION)
     : base(bit_buffer(width_v<T>, sloc)) {
     auto reg = createRegNode(get_lnode(next), get_lnode<U, T>(init));
     bit_accessor::set_data(*this, reg);

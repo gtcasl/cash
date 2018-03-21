@@ -23,17 +23,14 @@ template <unsigned Bitwidth,
           typename LogicType,
           typename ConstType,
           typename ValueType,
-          typename ScalarType,
-          typename Next = void>
+          typename ScalarType>
 struct logic_traits {
   static constexpr traits_type type = traits_logic;
-  static constexpr ch_direction direction = ch_direction::none;
   static constexpr unsigned bitwidth = Bitwidth;
   using logic_type  = LogicType;
   using const_type  = ConstType;
   using value_type  = ValueType;
   using scalar_type = ScalarType;
-  using next        = Next;
 };
 
 template <typename T>
@@ -43,26 +40,20 @@ template <typename T>
 using bit_value_t = typename logic_type_t<T>::traits::value_type;
 
 template <typename T>
-struct is_logic_traits : std::false_type {};
+using is_logic_traits = is_true<(T::type & traits_logic)>;
 
-template <unsigned Bitwidth,
-          typename LogicType,
-          typename ConstType,
-          typename ValueType,
-          typename ScalarType,
-          typename Next>
-struct is_logic_traits<
-    logic_traits<Bitwidth, LogicType, ConstType, ValueType, ScalarType, Next>
-  > : std::true_type {};
+CH_DEF_SFINAE_CHECK(is_logic_only, is_true<(std::decay_t<T>::traits::type == traits_logic)>::value);
 
 CH_DEF_SFINAE_CHECK(is_logic_type, is_logic_traits<typename std::decay_t<T>::traits>::value);
 
-CH_DEF_SFINAE_CHECK(is_logic_compatible, is_logic_traits<typename std::decay_t<T>::traits>::value
-                                      || is_logic_traits<typename std::decay_t<T>::traits::next>::value);
-
-CH_DEF_SFINAE_CHECK(is_bit_compatible, ((is_logic_traits<typename std::decay_t<T>::traits>::value
-                                      || is_logic_traits<typename std::decay_t<T>::traits::next>::value)
+CH_DEF_SFINAE_CHECK(is_bit_compatible, (is_logic_traits<typename std::decay_t<T>::traits>::value
                                      && std::is_base_of<const_bit<width_v<T>>, logic_type_t<T>>::value));
+
+#if defined(__clang__)
+  #define CH_SRC_LOCATION source_location(__FILE__, __LINE__)
+#else
+  #define CH_SRC_LOCATION source_location(__builtin_FILE(), __builtin_LINE())
+#endif
 
 template <typename... Ts>
 using deduce_ch_bit_t = std::conditional_t<
@@ -84,9 +75,6 @@ using are_all_bit_convertible = conjunction<is_bit_convertible<Ts>::value...>;
 
 template <typename... Ts>
 using are_all_logic_type = conjunction<is_logic_type<Ts>::value...>;
-
-template <typename... Ts>
-using are_all_logic_compatible = conjunction<is_logic_compatible<Ts>::value...>;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -229,15 +217,15 @@ public:
 
   template <typename T>
   static auto copy_buffer(const T& obj,
-                          const source_location& sloc = CH_SOURCE_LOCATION,
+                          const source_location& sloc = CH_SRC_LOCATION,
                           const std::string& name = "") {
     assert(width_v<T> == obj.get_buffer()->get_size());
     return bit_buffer(*obj.get_buffer(), sloc, name);
   }
 
   template <typename U, typename V,
-            CH_REQUIRE_0(is_logic_compatible<U>::value),
-            CH_REQUIRE_0(is_logic_compatible<V>::value),
+            CH_REQUIRE_0(is_logic_type<U>::value),
+            CH_REQUIRE_0(is_logic_type<V>::value),
             CH_REQUIRE_0(width_v<U> == width_v<V>)>
   static void copy(U& dst, const V& src) {
     assert(width_v<U> == dst.get_buffer()->get_size());
@@ -279,7 +267,7 @@ public:
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T, typename R = ch_bit<width_v<T>>>
-using logic_cast_t = std::conditional_t<is_logic_compatible<T>::value, const T&, R>;
+using logic_cast_t = std::conditional_t<is_logic_type<T>::value, const T&, R>;
 
 template <typename T, unsigned N = width_v<T>,
           CH_REQUIRE_0(is_bit_convertible<T, N>::value)>
@@ -387,12 +375,12 @@ auto OpReduce(const const_bit<N>& a) {
   ch_bit<type::traits::bitwidth> asBits() { \
     return this->as<ch_bit<type::traits::bitwidth>>(); \
   } \
-  const ch_seq<type> asSeq(const source_location& sloc = CH_SOURCE_LOCATION) { \
+  const ch_seq<type> asSeq(const source_location& sloc = CH_SRC_LOCATION) { \
     ch_seq<type> s(sloc); \
     (*this) = s; \
     return s; \
   } \
-  const ch_seq<type> asSeq(const type& init, const source_location& sloc = CH_SOURCE_LOCATION) { \
+  const ch_seq<type> asSeq(const type& init, const source_location& sloc = CH_SRC_LOCATION) { \
     ch_seq<type> s(init, sloc); \
     (*this) = s; \
     return s; \
@@ -403,37 +391,37 @@ class const_bit {
 public:  
   using traits = logic_traits<N, const_bit, const_bit, ch_bit<N>, const_bit<N>>;
 
-  const_bit(const bit_buffer& buffer = bit_buffer(N, CH_SOURCE_LOCATION))
+  const_bit(const bit_buffer& buffer = bit_buffer(N, CH_SRC_LOCATION))
     : buffer_(buffer)
   {}
 
-  const_bit(const const_bit& rhs, const source_location& sloc = CH_SOURCE_LOCATION)
+  const_bit(const const_bit& rhs, const source_location& sloc = CH_SRC_LOCATION)
     : const_bit(bit_accessor::copy_buffer(rhs, sloc))
   {}
 
   const_bit(const_bit&& rhs) : buffer_(std::move(rhs.buffer_)) {}
 
-  const_bit(const const_scalar<N>& rhs, const source_location& sloc = CH_SOURCE_LOCATION)
+  const_bit(const const_scalar<N>& rhs, const source_location& sloc = CH_SRC_LOCATION)
     : const_bit(bit_buffer(scalar_accessor::get_data(rhs), sloc))
   {}
 
   template <typename U,
             CH_REQUIRE_0(is_logic_type<U>::value),
             CH_REQUIRE_0(width_v<U> == N)>
-  explicit const_bit(const U& rhs, const source_location& sloc = CH_SOURCE_LOCATION)
+  explicit const_bit(const U& rhs, const source_location& sloc = CH_SRC_LOCATION)
     : const_bit(bit_accessor::copy_buffer(rhs, sloc))
   {}
 
   template <typename U,
             CH_REQUIRE_1(is_scalar_type<U>::value),
             CH_REQUIRE_1(width_v<U> == N)>
-  explicit const_bit(const U& rhs, const source_location& sloc = CH_SOURCE_LOCATION)
+  explicit const_bit(const U& rhs, const source_location& sloc = CH_SRC_LOCATION)
     : const_bit(bit_buffer(scalar_accessor::get_data(rhs), sloc))
   {}
 
   template <typename U,
             CH_REQUIRE_0(is_bitvector_convertible<U>::value)>
-  explicit const_bit(const U& rhs, const source_location& sloc = CH_SOURCE_LOCATION)
+  explicit const_bit(const U& rhs, const source_location& sloc = CH_SRC_LOCATION)
     : const_bit(bit_buffer(bitvector(N, rhs), sloc))
   {}
 
@@ -445,28 +433,28 @@ public:
   }
 
   template <unsigned M>
-  auto slice(size_t start = 0, const source_location& sloc = CH_SOURCE_LOCATION) const {
+  auto slice(size_t start = 0, const source_location& sloc = CH_SRC_LOCATION) const {
     static_assert(M <= N, "invalid size");
     assert((start + M) <= N);
     return const_bit<M>(bit_buffer(M, buffer_, start, sloc));
   }
 
   template <unsigned M>
-  auto aslice(size_t start = 0, const source_location& sloc = CH_SOURCE_LOCATION) const {
+  auto aslice(size_t start = 0, const source_location& sloc = CH_SRC_LOCATION) const {
     return this->slice<M>(start * M, sloc);
   }
 
   template <typename R,
-            CH_REQUIRE_0(is_logic_compatible<R>::value)>
-  auto slice(size_t start = 0, const source_location& sloc = CH_SOURCE_LOCATION) const {
+            CH_REQUIRE_0(is_logic_type<R>::value)>
+  auto slice(size_t start = 0, const source_location& sloc = CH_SRC_LOCATION) const {
     static_assert(width_v<R> <= N, "invalid size");
     assert((start + width_v<R>) <= N);
     return const_type_t<R>(bit_buffer(width_v<R>, buffer_, start, sloc));
   }
 
   template <typename R,
-            CH_REQUIRE_0(is_logic_compatible<R>::value)>
-  auto aslice(size_t start = 0, const source_location& sloc = CH_SOURCE_LOCATION) const {
+            CH_REQUIRE_0(is_logic_type<R>::value)>
+  auto aslice(size_t start = 0, const source_location& sloc = CH_SRC_LOCATION) const {
     return this->slice<R>(start * width_v<R>, sloc);
   }
 
@@ -616,41 +604,41 @@ public:
   using base = const_bit<N>;
   using base::buffer_;
       
-  ch_bit(const bit_buffer& buffer = bit_buffer(N, CH_SOURCE_LOCATION))
+  ch_bit(const bit_buffer& buffer = bit_buffer(N, CH_SRC_LOCATION))
     : base(buffer)
   {}
   
-  ch_bit(const ch_bit& rhs, const source_location& sloc = CH_SOURCE_LOCATION)
+  ch_bit(const ch_bit& rhs, const source_location& sloc = CH_SRC_LOCATION)
     : base(rhs, sloc)
   {}
 
   ch_bit(ch_bit&& rhs) : base(std::move(rhs)) {}
 
-  ch_bit(const const_bit<N>& rhs, const source_location& sloc = CH_SOURCE_LOCATION)
+  ch_bit(const const_bit<N>& rhs, const source_location& sloc = CH_SRC_LOCATION)
     : base(rhs, sloc)
   {}
 
-  ch_bit(const const_scalar<N>& rhs, const source_location& sloc = CH_SOURCE_LOCATION)
+  ch_bit(const const_scalar<N>& rhs, const source_location& sloc = CH_SRC_LOCATION)
     : base(rhs, sloc)
   {}
 
   template <typename U,
             CH_REQUIRE_0(is_logic_type<U>::value),
             CH_REQUIRE_0(width_v<U> == N)>
-  explicit ch_bit(const U& rhs, const source_location& sloc = CH_SOURCE_LOCATION)
+  explicit ch_bit(const U& rhs, const source_location& sloc = CH_SRC_LOCATION)
     : base(rhs, sloc)
   {}
 
   template <typename U,
             CH_REQUIRE_1(is_scalar_type<U>::value),
             CH_REQUIRE_1(width_v<U> == N)>
-  explicit ch_bit(const U& rhs, const source_location& sloc = CH_SOURCE_LOCATION)
+  explicit ch_bit(const U& rhs, const source_location& sloc = CH_SRC_LOCATION)
     : base(rhs, sloc)
   {}
 
   template <typename U,
             CH_REQUIRE_0(is_bitvector_convertible<U>::value)>
-  explicit ch_bit(const U& rhs, const source_location& sloc = CH_SOURCE_LOCATION)
+  explicit ch_bit(const U& rhs, const source_location& sloc = CH_SRC_LOCATION)
     : base(rhs, sloc)
   {}
 
@@ -697,52 +685,52 @@ public:
   }
 
   template <unsigned M>
-  auto slice(size_t start = 0, const source_location& sloc = CH_SOURCE_LOCATION) const {
+  auto slice(size_t start = 0, const source_location& sloc = CH_SRC_LOCATION) const {
     static_assert(M <= N, "invalid size");
     assert((start + M) <= N);
     return const_bit<M>(bit_buffer(M, buffer_, start, sloc));
   }
 
   template <unsigned M>
-  auto aslice(size_t start = 0, const source_location& sloc = CH_SOURCE_LOCATION) const {
+  auto aslice(size_t start = 0, const source_location& sloc = CH_SRC_LOCATION) const {
     return this->slice<M>(start * M, sloc);
   }
 
   template <typename R,
-            CH_REQUIRE_0(is_logic_compatible<R>::value)>
-  auto slice(size_t start = 0, const source_location& sloc = CH_SOURCE_LOCATION) const {
+            CH_REQUIRE_0(is_logic_type<R>::value)>
+  auto slice(size_t start = 0, const source_location& sloc = CH_SRC_LOCATION) const {
     static_assert(width_v<R> <= N, "invalid size");
     assert((start + width_v<R>) <= N);
     return const_type_t<R>(bit_buffer(width_v<R>, buffer_, start, sloc));
   }
 
   template <typename R,
-            CH_REQUIRE_0(is_logic_compatible<R>::value)>
-  auto aslice(size_t start = 0, const source_location& sloc = CH_SOURCE_LOCATION) const {
+            CH_REQUIRE_0(is_logic_type<R>::value)>
+  auto aslice(size_t start = 0, const source_location& sloc = CH_SRC_LOCATION) const {
     return this->slice<R>(start * width_v<R>, sloc);
   }
 
   template <unsigned M>
-  auto slice(size_t start = 0, const source_location& sloc = CH_SOURCE_LOCATION) {
+  auto slice(size_t start = 0, const source_location& sloc = CH_SRC_LOCATION) {
     static_assert(M <= N, "invalid size");
     return ch_bit<M>(bit_buffer(M, buffer_, start, sloc));
   }
 
   template <unsigned M>
-  auto aslice(size_t start = 0, const source_location& sloc = CH_SOURCE_LOCATION) {
+  auto aslice(size_t start = 0, const source_location& sloc = CH_SRC_LOCATION) {
     return this->slice<M>(start * M, sloc);
   }
 
   template <typename R,
-            CH_REQUIRE_0(is_logic_compatible<R>::value)>
-  auto slice(size_t start = 0, const source_location& sloc = CH_SOURCE_LOCATION) {
+            CH_REQUIRE_0(is_logic_type<R>::value)>
+  auto slice(size_t start = 0, const source_location& sloc = CH_SRC_LOCATION) {
     static_assert(width_v<R> <= N, "invalid size");
     return R(bit_buffer(width_v<R>, buffer_, start, sloc));
   }
 
   template <typename R,
-            CH_REQUIRE_0(is_logic_compatible<R>::value)>
-  auto aslice(size_t start = 0, const source_location& sloc = CH_SOURCE_LOCATION) {
+            CH_REQUIRE_0(is_logic_type<R>::value)>
+  auto aslice(size_t start = 0, const source_location& sloc = CH_SRC_LOCATION) {
     return this->slice<R>(start * width_v<R>, sloc);
   }
 
@@ -898,16 +886,16 @@ auto ch_mux(const I& in, const S& sel) {
 
 template <typename T,
           CH_REQUIRE_0(is_logic_type<T>::value)>
-auto ch_clone(const T& obj, const source_location& sloc = CH_SOURCE_LOCATION) {
+auto ch_clone(const T& obj, const source_location& sloc = CH_SRC_LOCATION) {
   return bit_accessor::clone(obj, sloc);
 }
 
 // slicing
 
 template <typename R, typename T,
-          CH_REQUIRE_0(is_logic_compatible<R>::value),
-          CH_REQUIRE_0(is_logic_compatible<T>::value)>
-R ch_slice(const T& obj, size_t start = 0, const source_location& sloc = CH_SOURCE_LOCATION) {
+          CH_REQUIRE_0(is_logic_type<R>::value),
+          CH_REQUIRE_0(is_logic_type<T>::value)>
+R ch_slice(const T& obj, size_t start = 0, const source_location& sloc = CH_SRC_LOCATION) {
   static_assert(width_v<R> <= width_v<T>, "invalid size");
   assert((start + width_v<R>) <= width_v<T>);
   if constexpr(width_v<R> == width_v<T>) {    
@@ -924,21 +912,21 @@ R ch_slice(const T& obj, size_t start = 0, const source_location& sloc = CH_SOUR
 }
 
 template <typename R, typename T,
-          CH_REQUIRE_0(is_logic_compatible<R>::value),
-          CH_REQUIRE_0(is_logic_compatible<T>::value)>
-R ch_aslice(const T& obj, size_t start = 0, const source_location& sloc = CH_SOURCE_LOCATION) {
+          CH_REQUIRE_0(is_logic_type<R>::value),
+          CH_REQUIRE_0(is_logic_type<T>::value)>
+R ch_aslice(const T& obj, size_t start = 0, const source_location& sloc = CH_SRC_LOCATION) {
   return ch_slice<R>(obj, start * width_v<R>, sloc);
 }
 
 template <unsigned N, typename T,
-          CH_REQUIRE_0(is_logic_compatible<T>::value)>
-auto ch_slice(const T& obj, size_t start = 0, const source_location& sloc = CH_SOURCE_LOCATION) {  
+          CH_REQUIRE_0(is_logic_type<T>::value)>
+auto ch_slice(const T& obj, size_t start = 0, const source_location& sloc = CH_SRC_LOCATION) {
   return ch_slice<ch_bit<N>>(obj, start, sloc);
 }
 
 template <unsigned N, typename T,
-          CH_REQUIRE_0(is_logic_compatible<T>::value)>
-auto ch_aslice(const T& obj, size_t start = 0, const source_location& sloc = CH_SOURCE_LOCATION) {
+          CH_REQUIRE_0(is_logic_type<T>::value)>
+auto ch_aslice(const T& obj, size_t start = 0, const source_location& sloc = CH_SRC_LOCATION) {
   return ch_slice<ch_bit<N>>(obj, start * N, sloc);
 }
 
@@ -981,14 +969,14 @@ protected:
 };
 
 #define CH_TIE_TMPL(i, x) typename __T##i
-#define CH_TIE_REQUIRE(i, x) CH_REQUIRE_0(is_logic_compatible<__T##i>::value)
+#define CH_TIE_REQUIRE(i, x) CH_REQUIRE_0(is_logic_type<__T##i>::value)
 #define CH_TIE_DECL(i, x) __T##i& arg##i
 #define CH_TIE_ARG(i, x) arg##i
 #define CH_TIE(...) \
   template <CH_FOR_EACH(CH_TIE_TMPL, CH_SEP_COMMA, __VA_ARGS__), \
             CH_FOR_EACH(CH_TIE_REQUIRE, CH_SEP_COMMA, __VA_ARGS__)> \
   auto ch_tie(CH_FOR_EACH(CH_TIE_DECL, CH_SEP_COMMA, __VA_ARGS__), \
-         const source_location& sloc = CH_SOURCE_LOCATION) { \
+         const source_location& sloc = CH_SRC_LOCATION) { \
     return tie_impl(sloc, CH_FOR_EACH(CH_TIE_ARG, CH_SEP_COMMA, __VA_ARGS__)); \
   }
 CH_VA_ARGS_MAP(CH_TIE)
@@ -1013,7 +1001,7 @@ void cat_impl(U& inout, unsigned dst_offset, const T0& arg0, const Ts&... args) 
 
 #define CH_CAT_TYPE(i, x) __T##i
 #define CH_CAT_TMPL(i, x) typename __T##i
-#define CH_CAT_REQUIRE(i, x) CH_REQUIRE_0(is_logic_compatible<__T##i>::value || is_bit_convertible<__T##i>::value)
+#define CH_CAT_REQUIRE(i, x) CH_REQUIRE_0(is_logic_type<__T##i>::value || is_bit_convertible<__T##i>::value)
 #define CH_CAT_DECL(i, x) const __T##i& arg##i
 #define CH_CAT_ARG(i, x) static_cast<logic_cast_t<__T##i>>(arg##i)
 #define CH_CAT(...) \
@@ -1021,7 +1009,7 @@ void cat_impl(U& inout, unsigned dst_offset, const T0& arg0, const Ts&... args) 
             CH_FOR_EACH(CH_CAT_TMPL, CH_SEP_COMMA, __VA_ARGS__), \
             CH_FOR_EACH(CH_CAT_REQUIRE, CH_SEP_COMMA, __VA_ARGS__)> \
   auto ch_cat(CH_FOR_EACH(CH_CAT_DECL, CH_SEP_COMMA, __VA_ARGS__), \
-         const source_location& sloc = CH_SOURCE_LOCATION) { \
+         const source_location& sloc = CH_SRC_LOCATION) { \
     static constexpr unsigned N = width_v<CH_FOR_EACH(CH_CAT_TYPE, CH_SEP_COMMA, __VA_ARGS__)>; \
     static_assert(width_v<R> == N, "size mismatch"); \
     R ret(bit_buffer(N, sloc)); \
@@ -1031,7 +1019,7 @@ void cat_impl(U& inout, unsigned dst_offset, const T0& arg0, const Ts&... args) 
   template <CH_FOR_EACH(CH_CAT_TMPL, CH_SEP_COMMA, __VA_ARGS__), \
             CH_FOR_EACH(CH_CAT_REQUIRE, CH_SEP_COMMA, __VA_ARGS__)> \
   auto ch_cat(CH_FOR_EACH(CH_CAT_DECL, CH_SEP_COMMA, __VA_ARGS__), \
-         const source_location& sloc = CH_SOURCE_LOCATION) { \
+         const source_location& sloc = CH_SRC_LOCATION) { \
     static constexpr unsigned N = width_v<CH_FOR_EACH(CH_CAT_TYPE, CH_SEP_COMMA, __VA_ARGS__)>; \
     ch_bit<N> ret(bit_buffer(N, sloc)); \
     cat_impl(ret, N, CH_FOR_EACH(CH_CAT_ARG, CH_SEP_COMMA, __VA_ARGS__)); \
@@ -1048,9 +1036,9 @@ CH_VA_ARGS_MAP(CH_CAT)
 // zero-extend
 
 template <typename R, typename T,
-          CH_REQUIRE_0(is_logic_compatible<R>::value),
-          CH_REQUIRE_0(is_logic_compatible<T>::value)>
-R ch_zext(const T& obj, const source_location& sloc = CH_SOURCE_LOCATION) {
+          CH_REQUIRE_0(is_logic_type<R>::value),
+          CH_REQUIRE_0(is_logic_type<T>::value)>
+R ch_zext(const T& obj, const source_location& sloc = CH_SRC_LOCATION) {
   static_assert(width_v<R> >= width_v<T>, "invalid extend size");
   if constexpr(width_v<T> < width_v<R>) {
     auto pad = ch_bit<(width_v<R> - width_v<T>)>(0x0, sloc);
@@ -1062,7 +1050,7 @@ R ch_zext(const T& obj, const source_location& sloc = CH_SOURCE_LOCATION) {
 
 template <unsigned N, typename T,
           CH_REQUIRE_0(is_bit_compatible<T>::value)>
-auto ch_zext(const T& obj, const source_location& sloc = CH_SOURCE_LOCATION) {
+auto ch_zext(const T& obj, const source_location& sloc = CH_SRC_LOCATION) {
   return ch_zext<ch_bit<N>>(obj, sloc);
 }
 
@@ -1071,7 +1059,7 @@ auto ch_zext(const T& obj, const source_location& sloc = CH_SOURCE_LOCATION) {
 template <typename R, typename T,
           CH_REQUIRE_0(is_bit_compatible<R>::value),
           CH_REQUIRE_0(is_bit_compatible<T>::value)>
-R ch_sext(const T& obj, const source_location& sloc = CH_SOURCE_LOCATION) {
+R ch_sext(const T& obj, const source_location& sloc = CH_SRC_LOCATION) {
   static_assert(width_v<R> >= width_v<T>, "invalid extend size");
   if constexpr(width_v<T> < width_v<R>) {
     static constexpr unsigned D = width_v<R> - width_v<T>;
@@ -1084,7 +1072,7 @@ R ch_sext(const T& obj, const source_location& sloc = CH_SOURCE_LOCATION) {
 
 template <unsigned N, typename T,
           CH_REQUIRE_0(is_bit_compatible<T>::value)>
-ch_bit<N> ch_sext(const T& obj, const source_location& sloc = CH_SOURCE_LOCATION) {
+ch_bit<N> ch_sext(const T& obj, const source_location& sloc = CH_SRC_LOCATION) {
   return ch_sext<ch_bit<N>>(obj, sloc);
 }
 
@@ -1094,7 +1082,7 @@ template <unsigned N, typename T,
           CH_REQUIRE_0(is_bit_compatible<T>::value)>
 auto ch_shuffle(const T& obj,
                 const std::array<unsigned, N>& indices,
-                const source_location& sloc = CH_SOURCE_LOCATION) {
+                const source_location& sloc = CH_SRC_LOCATION) {
   static_assert(0 == (width_v<T> % N), "invalid indices size");
   static constexpr unsigned M = (width_v<T> / N);
   ch_bit<width_v<T>> ret(bit_buffer(width_v<T>, sloc));
@@ -1109,7 +1097,7 @@ auto ch_shuffle(const T& obj,
 // tap
 
 template <typename T,
-          CH_REQUIRE_0(is_logic_compatible<T>::value)>
+          CH_REQUIRE_0(is_logic_type<T>::value)>
 void ch_tap(const std::string& name, const T& value) {
   registerTap(name, get_lnode(value));
 }
@@ -1123,7 +1111,7 @@ inline void ch_print(const std::string& format) {
 }
 
 template <typename...Args,
-          CH_REQUIRE_0(are_all_logic_compatible<Args...>::value)>
+          CH_REQUIRE_0(are_all_logic_type<Args...>::value)>
 void ch_print(const std::string& format, const Args& ...args) {
   createPrintNode(format, {get_lnode(args)...});
 }

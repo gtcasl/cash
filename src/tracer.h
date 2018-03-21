@@ -24,6 +24,12 @@ public:
 
   ~ch_tracer();
 
+  template <typename U,
+            CH_REQUIRE_0(is_scalar_type<U>::value)>
+  void add_trace(const std::string& name, const U& var) {
+    this->add_trace(name, scalar_accessor::get_buffer(var));
+  }
+
 protected:
 
   ch_tracer(std::ostream& out, const std::initializer_list<context*>& contexts);
@@ -31,6 +37,8 @@ protected:
   ch_tracer(const std::string& file, const std::initializer_list<context*>& contexts);
 
   ch_tracer(simulatorimpl* impl);
+
+  void add_trace(const std::string& name, const scalar_buffer_ptr& buffer);
 };
 
 }

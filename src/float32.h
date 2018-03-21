@@ -15,29 +15,29 @@ public:
   using base = const_bit<32>;
   using traits = logic_traits<32, const_float32, const_float32, ch_float32, ch_scalar<32>>;
 
-  const_float32(const bit_buffer& buffer = bit_buffer(32, CH_SOURCE_LOCATION))
+  const_float32(const bit_buffer& buffer = bit_buffer(32, CH_SRC_LOCATION))
     : base(buffer)
   {}
 
   const_float32(const const_float32& rhs,
-                const source_location& sloc = CH_SOURCE_LOCATION)
+                const source_location& sloc = CH_SRC_LOCATION)
     : base(rhs, sloc)
   {}
 
   const_float32(const_float32&& rhs) : base(std::move(rhs)) {}
 
   explicit const_float32(const const_bit<32>& rhs,
-                         const source_location& sloc = CH_SOURCE_LOCATION)
+                         const source_location& sloc = CH_SRC_LOCATION)
     : base(rhs, sloc)
   {}
 
   explicit const_float32(const const_scalar<32>& rhs,
-                         const source_location& sloc = CH_SOURCE_LOCATION)
+                         const source_location& sloc = CH_SRC_LOCATION)
     : base(rhs, sloc)
   {}
 
   explicit const_float32(float rhs,
-                         const source_location& sloc = CH_SOURCE_LOCATION)
+                         const source_location& sloc = CH_SRC_LOCATION)
     : base(bitcast<uint32_t, float>(rhs), sloc)
   {}
 };
@@ -47,34 +47,34 @@ public:
   using base = const_float32;
   using traits = logic_traits<32, ch_float32, const_float32, ch_float32, ch_scalar<32>>;
 
-  ch_float32(const bit_buffer& buffer = bit_buffer(32, CH_SOURCE_LOCATION))
+  ch_float32(const bit_buffer& buffer = bit_buffer(32, CH_SRC_LOCATION))
     : base(buffer)
   {}
 
   ch_float32(const ch_float32& rhs,
-             const source_location& sloc = CH_SOURCE_LOCATION)
+             const source_location& sloc = CH_SRC_LOCATION)
     : base(rhs, sloc)
   {}
 
   ch_float32(const const_float32& rhs,
-             const source_location& sloc = CH_SOURCE_LOCATION)
+             const source_location& sloc = CH_SRC_LOCATION)
     : base(rhs, sloc)
   {}
 
   ch_float32(ch_float32&& rhs) : base(std::move(rhs)) {}
 
   explicit ch_float32(const const_bit<32>& rhs,
-                      const source_location& sloc = CH_SOURCE_LOCATION)
+                      const source_location& sloc = CH_SRC_LOCATION)
     : base(rhs, sloc)
   {}
 
   explicit ch_float32(const const_scalar<32>& rhs,
-                      const source_location& sloc = CH_SOURCE_LOCATION)
+                      const source_location& sloc = CH_SRC_LOCATION)
     : base(rhs, sloc)
   {}
 
   explicit ch_float32(float rhs,
-                      const source_location& sloc = CH_SOURCE_LOCATION)
+                      const source_location& sloc = CH_SRC_LOCATION)
     : base(rhs, sloc)
   {}
 

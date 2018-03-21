@@ -37,7 +37,7 @@ protected:
 
   ch_simulator(const std::initializer_list<context*>& contexts);
 
-  ch_simulator(simulatorimpl* impl);
+  ch_simulator(simulatorimpl* impl);  
 
   simulatorimpl* impl_;
 };

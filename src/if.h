@@ -53,7 +53,7 @@ public:
   {}
 
   template <typename P,
-            CH_REQUIRE_0(is_logic_compatible<P>::value),
+            CH_REQUIRE_0(is_logic_type<P>::value),
             CH_REQUIRE_0(is_bit_compatible<P>::value)>
   if_body_t operator,(const P& pred) {
     static_assert(1 == width_v<P>, "invalid predicate size");
@@ -76,7 +76,7 @@ inline if_cond_t if_body_t::operator,(const fvoid_t& body) {
 
 template <typename P,
           CH_REQUIRE_0(is_bit_compatible<P>::value)>
-if_body_t ch_if(const P& pred, const source_location& sloc = CH_SOURCE_LOCATION) {
+if_body_t ch_if(const P& pred, const source_location& sloc = CH_SRC_LOCATION) {
   static_assert(1 == width_v<P>, "invalid predicate size");
   return if_body_t(std::make_shared<if_t>(sloc), get_lnode(pred));
 }

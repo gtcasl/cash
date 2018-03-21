@@ -48,12 +48,6 @@ private:
   int line_;
 };
 
-#if defined(__clang__)
-  #define CH_SOURCE_LOCATION source_location(__FILE__, __LINE__)
-#else
-  #define CH_SOURCE_LOCATION source_location(__builtin_FILE(), __builtin_LINE())
-#endif
-
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename F, typename Arg>

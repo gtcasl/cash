@@ -45,17 +45,26 @@ void tracerimpl::ensureInitialize() {
   }
 }
 
-void tracerimpl::add_trace(const std::string& name, ioimpl* value) {
-  traces_.emplace_back(unique_trace_names_.get(name), value);
+void tracerimpl::add_trace(const std::string& name, ioimpl* node) {
+  io_traces_.emplace_back(unique_trace_names_.get(name), node);
+}
+
+void tracerimpl::add_trace(const std::string& name, const scalar_buffer_ptr& node) {
+  sc_traces_.emplace_back(unique_trace_names_.get(name), node);
 }
 
 void tracerimpl::tick(ch_tick t) {
   // advance simulation
   simulatorimpl::tick(t);
 
-  // log tap values
-  for (auto& tap : traces_) {
-    out_ << tap.name << " = " << tap.node << std::endl;
+  // log io nodes
+  for (auto& trace : io_traces_) {
+    out_ << trace.name << " = " << trace.node << std::endl;
+  }
+
+  // log scalars
+  for (auto& trace : sc_traces_) {
+    out_ << trace.name << " = " << trace.node->get_data() << std::endl;
   }
 }
 
@@ -74,3 +83,8 @@ ch_tracer::ch_tracer(const std::string& file,
 ch_tracer::ch_tracer(simulatorimpl* impl) : ch_simulator(impl) {}
 
 ch_tracer::~ch_tracer() {}
+
+void ch_tracer::add_trace(const std::string& name, const scalar_buffer_ptr& buffer) {
+  return reinterpret_cast<tracerimpl*>(impl_)->add_trace(name, buffer);
+}
+

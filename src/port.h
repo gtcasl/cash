@@ -24,26 +24,65 @@ template <typename T> class scalar_in;
 
 template <typename T> class scalar_out;
 
+enum class ch_direction {
+  none  = 0x0,
+  in    = 0x1,
+  out   = 0x2,
+  inout = 0x3,
+};
+
 inline constexpr auto operator|(ch_direction lsh, ch_direction rhs) {
   return ch_direction((int)lsh | (int)rhs);
 }
+
+template <unsigned Bitwidth,
+          typename IoType,
+          ch_direction Direction,
+          typename FlipType,
+          typename DeviceType>
+struct io_traits {
+  static constexpr traits_type type = traits_io;
+  static constexpr unsigned bitwidth = Bitwidth;
+  static constexpr ch_direction direction = Direction;
+  using io_type     = IoType;
+  using flip_type   = FlipType;
+  using device_type = DeviceType;
+};
 
 template <typename IoType,
           ch_direction Direction,
           typename FlipType,
           typename DeviceType,
-          typename LogicType,
-          typename Next = void>
-struct io_traits {
-  static constexpr traits_type type = traits_io;
+          typename LogicType>
+struct io_logic_traits {
+  static constexpr traits_type type = traits_logic_io;
   static constexpr unsigned bitwidth = width_v<LogicType>;
   static constexpr ch_direction direction = Direction;
-  using io_type     = IoType;  
+  using io_type     = IoType;
   using flip_type   = FlipType;
   using device_type = DeviceType;
   using logic_type  = LogicType;
+  using const_type  = const_type_t<LogicType>;
+  using value_type  = value_type_t<LogicType>;
   using scalar_type = scalar_type_t<LogicType>;
-  using next        = Next;
+};
+
+template <typename IoType,
+          ch_direction Direction,
+          typename FlipType,
+          typename DeviceType,
+          typename ScalarType>
+struct io_scalar_traits {
+  static constexpr traits_type type = traits_scalar_io;
+  static constexpr unsigned bitwidth = width_v<ScalarType>;
+  static constexpr ch_direction direction = Direction;
+  using io_type     = IoType;
+  using flip_type   = FlipType;
+  using device_type = DeviceType;
+  using scalar_type = ScalarType;
+  using const_type  = const_type_t<ScalarType>;
+  using value_type  = value_type_t<ScalarType>;
+  using logic_type  = logic_type_t<ScalarType>;
 };
 
 template <typename T>
@@ -59,20 +98,7 @@ template <typename T>
 inline constexpr ch_direction direction_v = std::decay_t<T>::traits::direction;
 
 template <typename T>
-struct is_io_traits : std::false_type {};
-
-template <typename IoType,
-          ch_direction Direction,
-          typename FlipType,
-          typename DeviceType,
-          typename LogicType,
-          typename Next>
-struct is_io_traits<io_traits<IoType,
-                              Direction,
-                              FlipType,
-                              DeviceType,
-                              LogicType,
-                              Next>> : std::true_type {};
+using is_io_traits = is_true<(T::type & traits_io)>;
 
 CH_DEF_SFINAE_CHECK(is_io_type, is_io_traits<typename std::decay_t<T>::traits>::value);
 
@@ -81,24 +107,23 @@ CH_DEF_SFINAE_CHECK(is_io_type, is_io_traits<typename std::decay_t<T>::traits>::
 template <typename T>
 class ch_in final : public const_type_t<T> {
 public:
-  static_assert(is_logic_type<T>::value && is_value_type<T>::value, "invalid type");
+  static_assert(is_logic_only<T>::value && is_value_type<T>::value, "invalid type");
   using base = const_type_t<T>;
-  using traits = io_traits<ch_in<T>, ch_direction::in, ch_out<T>, scalar_in<T>,
-                           T, typename base::traits>;
+  using traits = io_logic_traits<ch_in<T>, ch_direction::in, ch_out<T>, scalar_in<scalar_type_t<T>>, T>;
 
-  ch_in(const std::string& name = "io", const source_location& sloc = CH_SOURCE_LOCATION)
+  ch_in(const std::string& name = "io", const source_location& sloc = CH_SRC_LOCATION)
     : base(bit_buffer(width_v<T>, sloc, name)) {
     input_ = createInputNode(name, width_v<T>);
     bit_accessor::set_data(*this, input_);
   }
 
-  explicit ch_in(const ch_out<T>& out, const source_location& sloc = CH_SOURCE_LOCATION)
+  explicit ch_in(const ch_out<T>& out, const source_location& sloc = CH_SRC_LOCATION)
     : base(bit_buffer(width_v<T>, sloc)) {
     input_ = bit_accessor::get_data(*this);
     bindOutput(input_, out.output_);
   }
 
-  ch_in(const ch_in& in, const source_location& sloc = CH_SOURCE_LOCATION) : base(in, sloc) {}
+  ch_in(const ch_in& in, const source_location& sloc = CH_SRC_LOCATION) : base(in, sloc) {}
 
   ch_in(ch_in&& in) : base(std::move(in)) {}
 
@@ -122,24 +147,23 @@ private:
 template <typename T>
 class ch_out final : public T {
 public:
-  static_assert(is_logic_type<T>::value && is_value_type<T>::value, "invalid type");
+  static_assert(is_logic_only<T>::value && is_value_type<T>::value, "invalid type");
   using base = T;
-  using traits = io_traits<ch_out, ch_direction::out, ch_in<T>, scalar_out<T>,
-                           T, typename base::traits>;
+  using traits = io_logic_traits<ch_out, ch_direction::out, ch_in<T>, scalar_out<scalar_type_t<T>>, T>;
   using base::operator=;
 
-  ch_out(const std::string& name = "io", const source_location& sloc = CH_SOURCE_LOCATION)
+  ch_out(const std::string& name = "io", const source_location& sloc = CH_SRC_LOCATION)
     : base(bit_buffer(width_v<T>, sloc, name)) {
     output_ = createOutputNode(name, bit_accessor::get_data(*this));
   }
 
-  explicit ch_out(const ch_in<T>& in, const source_location& sloc = CH_SOURCE_LOCATION)
+  explicit ch_out(const ch_in<T>& in, const source_location& sloc = CH_SRC_LOCATION)
     : base(bit_buffer(width_v<T>, sloc)) {
     output_ = bit_accessor::get_data(*this);
     bindInput(output_, in.input_);
   }
 
-  ch_out(const ch_out& out, const source_location& sloc = CH_SOURCE_LOCATION) : base(out, sloc) {}
+  ch_out(const ch_out& out, const source_location& sloc = CH_SRC_LOCATION) : base(out, sloc) {}
 
   ch_out(ch_out&& out) : base(std::move(out)) {}
 
@@ -201,15 +225,14 @@ public:
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T>
-class scalar_in : public scalar_type_t<T> {
+class scalar_in : public T {
 public:
-  static_assert(is_logic_type<T>::value && is_value_type<T>::value, "invalid type");
-  using base = scalar_type_t<T>;
-  using traits = io_traits<scalar_in, ch_direction::out, scalar_out<T>,
-                           ch_in<T>, T, typename base::traits>;
+  static_assert(is_scalar_only<T>::value && is_value_type<T>::value, "invalid type");
+  using base = T;
+  using traits = io_scalar_traits<scalar_in, ch_direction::out, scalar_out<T>, ch_in<logic_type_t<T>>, base>;
   using base::operator=;
 
-  explicit scalar_in(const ch_in<T>& in)
+  explicit scalar_in(const ch_in<logic_type_t<T>>& in)
     : base(ch::internal::scalar_buffer_ptr(new scalar_buffer_io(in.input_)))
   {}
 
@@ -225,14 +248,13 @@ protected:
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T>
-class scalar_out : public const_type_t<scalar_type_t<T>> {
+class scalar_out : public const_type_t<T> {
 public:
-  static_assert(is_logic_type<T>::value && is_value_type<T>::value, "invalid type");
-  using base = const_type_t<scalar_type_t<T>>;
-  using traits = io_traits<scalar_out, ch_direction::out, scalar_in<T>,
-                           ch_out<T>, T, typename base::traits>;
+  static_assert(is_scalar_only<T>::value && is_value_type<T>::value, "invalid type");
+  using base = const_type_t<T>;
+  using traits = io_scalar_traits<scalar_out, ch_direction::out, scalar_in<T>, ch_out<logic_type_t<T>>, T>;
 
-  explicit scalar_out(const ch_out<T>& out)
+  explicit scalar_out(const ch_out<logic_type_t<T>>& out)
     : base(ch::internal::scalar_buffer_ptr(new scalar_buffer_io(out.output_)))
   {}
 
