@@ -30,7 +30,7 @@ public:
     return num_items_;
   }
 
-  bool has_wdata() const {
+  bool is_write_enable() const {
     return (cd_ != nullptr);
   }
 
@@ -68,11 +68,15 @@ protected:
 class memportimpl : public ioimpl {
 public:  
 
-  memportimpl(context* ctx, memimpl* mem, const lnode& addr);
+  memportimpl(context* ctx, memimpl* mem, unsigned index, const lnode& addr);
   ~memportimpl();
 
   const lnode& get_mem() const {
     return srcs_[mem_idx_];
+  }
+
+  unsigned get_index() const {
+    return index_;
   }
 
   const lnode& get_addr() const {
@@ -116,9 +120,10 @@ public:
 protected:
 
   int insert(int index, const lnode& value);
-    
+
+  unsigned index_;
   bitvector q_next_;
-  uint32_t  a_next_;
+  uint32_t a_next_;
   bool en_next_;
   
   int mem_idx_;

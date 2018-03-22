@@ -206,7 +206,6 @@ namespace core {
   // other functions
   //
 
-  using ch::internal::ch_mux;
   using ch::internal::ch_min;
   using ch::internal::ch_max;
 

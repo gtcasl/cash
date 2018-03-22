@@ -266,8 +266,6 @@ test/select.cpp
 test/select.cpp
 test/sim.cpp
 test/sim.cpp
-verilog/fp_mult.v
-verilog/cash.v
 LICENSE
 TODO
 VERSION

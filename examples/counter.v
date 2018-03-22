@@ -1,5 +1,3 @@
-`include "cash.v"
-
 module Counter(
   input wire clk,
   input wire reset,

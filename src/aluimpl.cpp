@@ -1,4 +1,5 @@
 #include "aluimpl.h"
+#include "proxyimpl.h"
 #include "context.h"
 
 using namespace ch::internal;
@@ -24,8 +25,6 @@ bool ch::internal::alu_symmetric(ch_alu_op op) {
   case alu_sll:
   case alu_srl:
   case alu_sra:
-  case alu_rotl:
-  case alu_rotr:
     return false;
   case alu_add:
     return true;
@@ -44,7 +43,6 @@ bool ch::internal::alu_symmetric(ch_alu_op op) {
   case alu_gt:
   case alu_le:
   case alu_ge:
-  case alu_mux:
   case alu_fadd:
   case alu_fsub:
   case alu_fmult:
@@ -107,28 +105,10 @@ static void shiftop(bitvector& out, const bitvector& in, const bitvector& bits) 
     Srl(out, in, wbits);
     break;
   case alu_sra:
-    CH_TODO();
+    Sra(out, in, wbits);
     break;
   default:
     CH_ABORT("invalid alu operation");
-  }
-}
-
-template <ch_alu_op op>
-static void rotateop(bitvector& dst, const bitvector& in, const bitvector& bits) {
-  assert(dst.get_size() == in.get_size());
-  CH_CHECK(bits.find_last() <= 31, "shift amount out of range");
-
-  uint32_t wbits = bits.get_word(0);
-  switch (op) {
-  case alu_rotl:
-    RotL(dst, in, wbits);
-    break;
-  case alu_rotr:
-    RotR(dst, in, wbits);
-    break;
-  default:
-    CH_TODO();
   }
 }
 
@@ -206,10 +186,6 @@ static uint32_t get_output_size(ch_alu_op op, const lnode& a, const lnode& b) {
   case alu_sra:
     return a.get_size();
 
-  case alu_rotl:
-  case alu_rotr:
-    return a.get_size();
-
   case alu_eq:
   case alu_ne:
   case alu_lt:
@@ -218,9 +194,6 @@ static uint32_t get_output_size(ch_alu_op op, const lnode& a, const lnode& b) {
   case alu_ge:
     assert(a.get_size() == b.get_size());
     return 1;
-
-  case alu_mux:
-    return (a.get_size() >> b.get_size());
 
   default:
     CH_ABORT("invalid alu operation");
@@ -296,13 +269,6 @@ void aluimpl::eval(bitvector& inout, ch_tick t) {
     shiftop<alu_sra>(inout, srcs_[0].eval(t), srcs_[1].eval(t));
     break;
 
-  case alu_rotl:
-    rotateop<alu_rotl>(inout, srcs_[0].eval(t), srcs_[1].eval(t));
-    break;
-  case alu_rotr:
-    rotateop<alu_rotr>(inout, srcs_[0].eval(t), srcs_[1].eval(t));
-    break;
-
   case alu_add:
     Add(inout, srcs_[0].eval(t), srcs_[1].eval(t));
     break;
@@ -335,10 +301,6 @@ void aluimpl::eval(bitvector& inout, ch_tick t) {
     break;
   case alu_ge:
     compareop<alu_ge>(inout, srcs_[0].eval(t), srcs_[1].eval(t));
-    break;
-
-  case alu_mux:
-    Mux(inout, srcs_[0].eval(t), srcs_[1].eval(t));
     break;
 
   case alu_fadd:
@@ -492,4 +454,19 @@ lnodeimpl* ch::internal::createAluNode(
     impl = ctx->createAluNode(op, lhs, rhs);
   }  
   return impl;
+}
+
+lnodeimpl* ch::internal::createRotateNode(const lnode& next, int dist, bool right) {
+  auto ctx = next.get_ctx();
+  auto N = next.get_size();
+  auto mod = dist % N;
+  auto ret = ctx->createNode<proxyimpl>(N);
+  if (right) {
+    ret->add_source(0, next, mod, N - mod);
+    ret->add_source(N - mod, next, 0, mod);
+  } else {
+    ret->add_source(0, next, N - mod, mod);
+    ret->add_source(mod, next, 0, N - mod);
+  }
+  return ret;
 }

@@ -1,5 +1,3 @@
-`include "cash.v"
-
 module VendingMachine(
   input wire clk,
   input wire reset,

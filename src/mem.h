@@ -66,23 +66,21 @@ public:
   static constexpr unsigned addr_width = log2ceil(N);
   using value_type = T;
 
-  ch_rom() : mem_(width_v<T>, N, false, {}) {}
-
-  ch_rom(const std::string& init_file)
+  explicit ch_rom(const std::string& init_file)
     : mem_(width_v<T>, N, false, toByteVector(init_file, data_width, N))
   {}
 
-  ch_rom(const std::initializer_list<uint32_t>& init_data)
+  explicit ch_rom(const std::initializer_list<uint32_t>& init_data)
     : mem_(width_v<T>, N, false, toByteVector(init_data, data_width, N))
   {}
 
-  template <typename U, std::size_t M>
-  ch_rom(const std::array<U, M>& init_data)
+  template <typename U, std::size_t M, CH_REQUIRE_0(is_bitvector_array_type<U>::value)>
+  explicit ch_rom(const std::array<U, M>& init_data)
     : mem_(width_v<T>, N, false, toByteVector(init_data, data_width, N))
   {}
 
-  template <typename U>
-  ch_rom(const std::vector<U>& init_data)
+  template <typename U, CH_REQUIRE_0(is_bitvector_array_type<U>::value)>
+  explicit ch_rom(const std::vector<U>& init_data)
     : mem_(width_v<T>, N, false, toByteVector(init_data, data_width, N))
   {}
 
@@ -109,21 +107,21 @@ public:
 
   ch_ram() : mem_(width_v<T>, N, true, {}) {}
 
-  ch_ram(const std::string& init_file)
+  explicit ch_ram(const std::string& init_file)
     : mem_(width_v<T>, N, true, toByteVector(init_file, data_width, N))
   {}
 
-  ch_ram(const std::initializer_list<uint32_t>& init_data)
+  explicit ch_ram(const std::initializer_list<uint32_t>& init_data)
     : mem_(width_v<T>, N, true, toByteVector(init_data, data_width, N))
   {}
 
-  template <typename U, std::size_t M>
-  ch_ram(const std::array<U, M>& init_data)
+  template <typename U, std::size_t M, CH_REQUIRE_0(is_bitvector_array_type<U>::value)>
+  explicit ch_ram(const std::array<U, M>& init_data)
     : mem_(width_v<T>, N, true, toByteVector(init_data, data_width, N))
   {}
 
-  template <typename U>
-  ch_ram(const std::vector<U>& init_data)
+  template <typename U, CH_REQUIRE_0(is_bitvector_array_type<U>::value)>
+  explicit ch_ram(const std::vector<U>& init_data)
     : mem_(width_v<T>, N, true, toByteVector(init_data, data_width, N))
   {}
 

@@ -1,5 +1,3 @@
-`include "cash.v"
-
 module FastMult(
   input wire[3:0] io_lhs,
   input wire[3:0] io_rhs,

@@ -36,13 +36,10 @@
   m(gt,    19 | alu_binary | alu_compare | alu_integer) \
   m(le,    20 | alu_binary | alu_compare | alu_integer) \
   m(ge,    21 | alu_binary | alu_compare | alu_integer) \
-  m(rotl,  22 | alu_binary | alu_rotate  | alu_integer) \
-  m(rotr,  23 | alu_binary | alu_rotate  | alu_integer) \
-  m(mux,   24 | alu_binary | alu_misc    | alu_integer) \
-  m(fadd,  25 | alu_binary | alu_arithm  | alu_float) \
-  m(fsub,  26 | alu_binary | alu_arithm  | alu_float) \
-  m(fmult, 27 | alu_binary | alu_arithm  | alu_float) \
-  m(fdiv,  28 | alu_binary | alu_arithm  | alu_float)
+  m(fadd,  22 | alu_binary | alu_arithm  | alu_float) \
+  m(fsub,  23 | alu_binary | alu_arithm  | alu_float) \
+  m(fmult, 24 | alu_binary | alu_arithm  | alu_float) \
+  m(fdiv,  25 | alu_binary | alu_arithm  | alu_float)
 
 namespace ch {
 namespace internal {
@@ -57,9 +54,7 @@ enum alu_flags {
   alu_compare = 2 << 11,
   alu_arithm  = 3 << 11,
   alu_shift   = 4 << 11,
-  alu_rotate  = 5 << 11,
-  alu_reduce  = 6 << 11,
-  alu_misc    = 7 << 11,
+  alu_reduce  = 5 << 11,
 
   alu_integer = 1 << 14,
   alu_fixed   = 2 << 14,
@@ -83,6 +78,9 @@ lnodeimpl* createAluNode(ch_alu_op op,
                          const lnode& rhs,
                          unsigned delay = 0,
                          const lnode& enable = lnode());
+
+lnodeimpl* createRotateNode(const lnode& next, int dist, bool right);
+
 }
 }
 
@@ -239,12 +237,6 @@ lnodeimpl* createAluNode(ch_alu_op op,
 
 #define CH_GLOBAL_OP_SRA(header, lhs_t, rhs_t) \
   CH_GLOBAL_OPERATORS(ch_sra, header, lhs_t, rhs_t, ch_sra(lhs, rhs))
-
-#define CH_GLOBAL_OP_ROTL(header, lhs_t, rhs_t) \
-  CH_GLOBAL_OPERATORS(ch_rotl, header, lhs_t, rhs_t, ch_rotl(lhs, rhs))
-
-#define CH_GLOBAL_OP_ROTR(header, lhs_t, rhs_t) \
-  CH_GLOBAL_OPERATORS(ch_rotr, header, lhs_t, rhs_t, ch_rotr(lhs, rhs))
 
 
 #define CH_GLOBAL_OP_AND_SZ(header, lhs_t, rhs_t) \

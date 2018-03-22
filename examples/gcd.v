@@ -1,5 +1,3 @@
-`include "cash.v"
-
 module GCD(
   input wire clk,
   input wire reset,

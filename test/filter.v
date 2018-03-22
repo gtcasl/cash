@@ -1,5 +1,3 @@
-`include "cash.v"
-
 module Filter(
   input wire clk,
   input wire reset,
@@ -10,9 +8,9 @@ module Filter(
   output wire io_y_valid,
   output wire io_y_parity
 );
-  wire[16:0] proxy26; // v2253 - module.cpp(71)
+  wire[16:0] proxy26; // v2239 - module.cpp(71)
   wire[16:0] sll29;
-  wire[16:0] proxy22; // v2251 - module.cpp(72)
+  wire[16:0] proxy22; // v2237 - module.cpp(72)
   wire[16:0] or31;
   reg reg42;
   reg[15:0] reg38;
@@ -67,13 +65,13 @@ module FilterBlock(
   assign bindin26 = io_x_data;
   assign bindin25 = reset;
   assign bindin23 = clk;
-  Filter __module214__(.clk(bindin23), .reset(bindin25), .io_x_data(bindin26), .io_x_valid(bindin29), .io_x_parity(bindin32), .io_y_data(bindout35), .io_y_valid(bindout38), .io_y_parity(bindout41));
+  Filter __module213__(.clk(bindin23), .reset(bindin25), .io_x_data(bindin26), .io_x_valid(bindin29), .io_x_parity(bindin32), .io_y_data(bindout35), .io_y_valid(bindout38), .io_y_parity(bindout41));
   assign bindin53 = bindout41;
   assign bindin50 = bindout38;
   assign bindin47 = bindout35;
   assign bindin46 = reset;
   assign bindin45 = clk;
-  Filter __module215__(.clk(bindin45), .reset(bindin46), .io_x_data(bindin47), .io_x_valid(bindin50), .io_x_parity(bindin53), .io_y_data(bindout56), .io_y_valid(bindout59), .io_y_parity(bindout62));
+  Filter __module214__(.clk(bindin45), .reset(bindin46), .io_x_data(bindin47), .io_x_valid(bindin50), .io_x_parity(bindin53), .io_y_data(bindout56), .io_y_valid(bindout59), .io_y_parity(bindout62));
 
   assign io_y_data = bindout56;
   assign io_y_valid = bindout59;

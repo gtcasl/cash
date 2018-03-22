@@ -56,7 +56,7 @@ lnode& memimpl::get_port(const lnode& addr) {
       return port;
     }
   }
-  auto impl = ctx_->createNode<memportimpl>(this, addr);
+  auto impl = ctx_->createNode<memportimpl>(this, ports_.size(), addr);
   ports_.emplace_back(impl);
   return ports_.back();
 }
@@ -111,10 +111,11 @@ void memimpl::print(std::ostream& out, uint32_t level) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-memportimpl::memportimpl(context* ctx, memimpl* mem, const lnode& addr)
+memportimpl::memportimpl(context* ctx, memimpl* mem, unsigned index, const lnode& addr)
   : ioimpl(ctx, type_memport, mem->get_data_width())
+  , index_(index)
   , a_next_(0)
-  , en_next_(false)
+  , en_next_(false)  
   , mem_idx_(-1)
   , addr_idx_(-1)
   , wdata_idx_(-1)

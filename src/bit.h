@@ -823,6 +823,12 @@ inline auto ch_srl(const const_bit<N>& lhs, const const_bit<M>& rhs) {
   return (lhs >> rhs);
 }
 
+template <unsigned N, unsigned M>
+auto ch_sra(const const_bit<N>& lhs, const const_bit<M>& rhs) {
+  static_assert(N >= 2, "invalid size");
+  return OpShiftOp<alu_sra, N, M>(lhs, rhs);
+}
+
 // unary operators
 
 template <unsigned N>
@@ -852,34 +858,18 @@ auto ch_xorr(const const_bit<N>& in) {
   return OpReduce<alu_xorr>(in);
 }
 
-// shift operators
+// rotate operators
 
-template <unsigned N, unsigned M>
-auto ch_sra(const const_bit<N>& lhs, const const_bit<M>& rhs) {
-  return OpShiftOp<alu_sra, N, M>(lhs, rhs);
+template <unsigned N>
+auto ch_rotl(const const_bit<N>& lhs, int rhs) {
+  assert(rhs >= 0);
+  return make_type<ch_bit<N>>(createRotateNode(get_lnode(lhs), rhs, false));
 }
 
-template <unsigned N, unsigned M>
-auto ch_rotl(const const_bit<N>& lhs, const const_bit<M>& rhs) {
-  return OpShiftOp<alu_rotl, N, M>(lhs, rhs);
-}
-
-template <unsigned N, unsigned M>
-auto ch_rotr(const const_bit<N>& lhs, const const_bit<M>& rhs) {
-  return OpShiftOp<alu_rotr, N, M>(lhs, rhs);
-}
-
-// multiplexers
-
-template <typename I, typename S,
-          CH_REQUIRE_0(has_bitwidth<I>::value),
-          CH_REQUIRE_0(has_bitwidth<S>::value),
-          CH_REQUIRE_0(ispow2(width_v<I>)),
-          CH_REQUIRE_0(ispow2(width_v<S>)),
-          CH_REQUIRE_0((width_v<I> >> width_v<S>) != 0)>
-auto ch_mux(const I& in, const S& sel) {
-  return make_type<ch_bit<(width_v<I> >> width_v<S>)>>(
-        createAluNode(alu_mux, get_lnode(in), get_lnode(sel)));
+template <unsigned N>
+auto ch_rotr(const const_bit<N>& lhs, int rhs) {
+  assert(rhs >= 0);
+  return make_type<ch_bit<N>>(createRotateNode(get_lnode(lhs), rhs, true));
 }
 
 // cloning
@@ -1147,9 +1137,7 @@ CH_GLOBAL_OP_MOD_SZ((template<unsigned N, unsigned M, CH_REQUIRE_0(M != N)>), co
   CH_GLOBAL_OP_MOD((template <unsigned N>), const const_bit<N>&, x) \
   CH_GLOBAL_OP_SLL((template <unsigned N>), const const_bit<N>&, x) \
   CH_GLOBAL_OP_SRL((template <unsigned N>), const const_bit<N>&, x) \
-  CH_GLOBAL_OP_SRA((template <unsigned N>), const const_bit<N>&, x) \
-  CH_GLOBAL_OP_ROTL((template <unsigned N>), const const_bit<N>&, x) \
-  CH_GLOBAL_OP_ROTR((template <unsigned N>), const const_bit<N>&, x)
+  CH_GLOBAL_OP_SRA((template <unsigned N>), const const_bit<N>&, x)
 
 CH_FOR_EACH(CH_BIT_GLOBAL_OPS, CH_SEP_SPACE, CH_BIT_OP_TYPES)
 

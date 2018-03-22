@@ -186,6 +186,10 @@ $ valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes <app> <ar
 $ valgrind --tool=callgrind <app> <args...>
 $ kcachegrind
 
+// FIRRTL codegen
+
+
+
 // debugging C macros
 g++ -std=c++17 -O0 -g -Wall -Wextra -Werror -fmax-errors=5 -E -dD dogfood.cpp > dogfood.log
 clang-format-5.0 dogfood.log -i

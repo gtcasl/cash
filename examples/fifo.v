@@ -1,5 +1,3 @@
-`include "cash.v"
-
 module FiFo(
   input wire clk,
   input wire reset,

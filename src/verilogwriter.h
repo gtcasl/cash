@@ -74,10 +74,6 @@ protected:
 
   void print_alu(module_t& module, aluimpl* node);
 
-  void print_rotate(module_t& module, aluimpl* node, bool right_dir);
-
-  void print_mux(module_t& module, aluimpl* node);
-
   void print_fmult(module_t& module, aluimpl* node);
 
   void print_fadd(module_t& module, aluimpl* node);

@@ -599,74 +599,13 @@ void ch::internal::Srl(bitvector& out, const bitvector& in, uint32_t dist) {
   }
 }
 
-void ch::internal::RotL(bitvector& out, const bitvector& in, uint32_t dist) {
+void ch::internal::Sra(bitvector& out, const bitvector& in, uint32_t dist) {
+  assert(in.get_size() >= 2);
   assert(out.get_size() == in.get_size());
-  if (dist > in.get_size())
-    dist %= in.get_size();
-  if (0 == dist) {
-    out = in;
-    return;
-  }
-  uint32_t num_words = in.get_num_words();
-  if (num_words == 1) {
-    out.set_word(0, rotl(in.get_word(0), dist, in.get_size()));
-  } else {
-    uint32_t shift_words = dist >> bitvector::WORD_SIZE_LOG;
-    uint32_t shift_bits = dist & bitvector::WORD_MASK;
-    if (shift_bits) {
-      uint32_t shift_bits_r = bitvector::WORD_SIZE - shift_bits;
-      uint32_t prev = in.get_word(num_words - 1);
-      for (uint32_t i = 0, j = shift_words; i < num_words; ++i) {
-        uint32_t curr = in.get_word(i);
-        out.set_word(j, (curr << shift_bits) | (prev >> shift_bits_r));
-        prev = curr;
-        if (++j == num_words)
-          j = 0;
-      }
-    } else {
-      for (uint32_t i = 0, j = shift_words; i < num_words; ++i) {
-        out.set_word(j, in.get_word(i));
-        if (++j == num_words)
-          j = 0;
-      }
-    }
-  }
-  out.clear_unused_bits(); // clear extra bits added by left shift
-}
-
-void ch::internal::RotR(bitvector& out, const bitvector& in, uint32_t dist) {
-  assert(out.get_size() == in.get_size());
-  if (dist > in.get_size())
-    dist %= in.get_size();
-  if (0 == dist) {
-    out = in;
-    return;
-  }
-  uint32_t num_words = in.get_num_words();
-  if (num_words == 1) {
-    out.set_word(0, rotr(in.get_word(0), dist, in.get_size()));
-  } else {
-    int32_t shift_words = dist >> bitvector::WORD_SIZE_LOG;
-    int32_t shift_bits = dist & bitvector::WORD_MASK;
-    if (shift_bits) {
-      uint32_t shift_bits_l = bitvector::WORD_SIZE - shift_bits;
-      uint32_t prev = in.get_word(0);
-      for (int32_t i = num_words - 1, j = i - shift_words; i >= 0; --i) {
-        uint32_t curr = in.get_word(i);
-        out.set_word(j, (curr >> shift_bits) | (prev << shift_bits_l));
-        prev = curr;
-        if (0 == j--)
-          j = num_words - 1;
-      }
-    } else {
-      for (int32_t i = num_words - 1, j = i - shift_words; i >= 0; --i) {
-        out.set_word(j, in.get_word(i));
-        if (0 == j--)
-          j = num_words - 1;
-      }
-    }
-  }
-  out.clear_unused_bits(); // clear extra bits added by left shift
+  Srl(out, in, dist);
+  auto msb_idx = in.get_size() - 1;
+  out[msb_idx] = in[msb_idx];
+  out[msb_idx-1] = 0;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -709,26 +648,6 @@ void ch::internal::Sub(bitvector& out, const bitvector& lhs, const bitvector& rh
 void ch::internal::Negate(bitvector& out, const bitvector& in) {
   bitvector zero(out.get_size(), 0x0);
   Sub(out, zero, in);
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-void ch::internal::Mux(bitvector& dst, const bitvector& in, const bitvector& sel) {
-  uint32_t D = dst.get_size();
-  uint32_t N = in.get_size();
-  uint32_t S = sel.get_size();
-  CH_UNUSED(N, S);
-  assert(D == N >> S);
-
-  assert(sel.get_num_words() == 1);
-  uint32_t offset = sel.get_word(0) * D;
-  assert(offset + D <= N);
-
-  bitvector::const_iterator iter_in(in.begin() + offset);
-  bitvector::iterator iter_dst(dst.begin());
-  for (uint32_t i = 0; i < D; ++i) {
-    *iter_dst++ = *iter_in++;
-  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////

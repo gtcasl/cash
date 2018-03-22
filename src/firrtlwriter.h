@@ -70,17 +70,11 @@ protected:
                    unsigned offset = 0,
                    unsigned size = 0);
 
+  void print_lit(litimpl* node);
+
   void print_proxy(module_t& module, proxyimpl* node);
 
   void print_alu(module_t& module, aluimpl* node);
-
-  void print_rotate(aluimpl* node, bool right_dir);
-
-  void print_mux(aluimpl* node);
-
-  void print_fmult(aluimpl* node);
-
-  void print_fadd(aluimpl* node);
 
   void print_select(module_t& module, selectimpl* node);
 

@@ -64,10 +64,6 @@ verilogwriter::~verilogwriter() {
 }
 
 void verilogwriter::print(const std::initializer_list<context*>& contexts) {
-  // includes
-  out_ << "`include \"cash.v\"" << std::endl;
-  out_ << std::endl;
-
   // print top modules
   for (auto ctx : contexts) {
     module_t module(ctx);
@@ -408,15 +404,6 @@ void verilogwriter::print_proxy(module_t& module, proxyimpl* node) {
 
 void verilogwriter::print_alu(module_t& module, aluimpl* node) {
   auto op = node->get_op();
-  if (op == alu_rotl) {
-    this->print_rotate(module, node, false);
-  } else
-  if (op == alu_rotr) {
-    this->print_rotate(module, node, true);
-  } else
-  if (op == alu_mux) {
-    this->print_mux(module, node);
-  } else
   if (CH_ALUOP_DTYPE(op) == alu_integer) {    
     out_ << "assign ";
     this->print_name(module, node);
@@ -444,36 +431,6 @@ void verilogwriter::print_alu(module_t& module, aluimpl* node) {
       CH_TODO();
     }
   }
-}
-
-void verilogwriter::print_rotate(module_t& module, aluimpl* node, bool right_dir) {
-  out_ << "barrel_shift #(";
-  out_ << (right_dir ? 1 : 0);
-  out_ << ", ";
-  out_ << node->get_size();
-  out_ << ") __barrel_shift_";
-  out_ << node->get_id() << "__(";
-  this->print_name(module, node->get_src(0).get_impl());
-  out_ << ", ";
-  this->print_name(module, node);
-  out_ << ", ";
-  this->print_name(module, node->get_src(1).get_impl());
-  out_ << ");" << std::endl;
-}
-
-void verilogwriter::print_mux(module_t& module, aluimpl* node) {
-  out_ << "bus_mux #(";
-  out_ << node->get_size();
-  out_ << ", ";
-  out_ << node->get_src(1).get_size();
-  out_ << ") __bus_mux_";
-  out_ << node->get_id() << "__(";
-  this->print_name(module, node->get_src(0).get_impl());
-  out_ << ", ";
-  this->print_name(module, node->get_src(1).get_impl());
-  out_ << ", ";
-  this->print_name(module, node);
-  out_ << ");" << std::endl;
 }
 
 void verilogwriter::print_fmult(module_t& module, aluimpl* node) {

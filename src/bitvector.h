@@ -5,15 +5,15 @@
 namespace ch {
 namespace internal {
 
-template <typename T> struct is_bitvector_array_value : std::false_type {};
-template <> struct is_bitvector_array_value <int8_t> : std::true_type {};
-template <> struct is_bitvector_array_value <uint8_t> : std::true_type {};
-template <> struct is_bitvector_array_value <int16_t> : std::true_type {};
-template <> struct is_bitvector_array_value <uint16_t> : std::true_type {};
-template <> struct is_bitvector_array_value <int32_t> : std::true_type {};
-template <> struct is_bitvector_array_value <uint32_t> : std::true_type {};
-template <> struct is_bitvector_array_value <int64_t> : std::true_type {};
-template <> struct is_bitvector_array_value <uint64_t> : std::true_type {};
+template <typename T> struct is_bitvector_array_type : std::false_type {};
+template <> struct is_bitvector_array_type <int8_t> : std::true_type {};
+template <> struct is_bitvector_array_type <uint8_t> : std::true_type {};
+template <> struct is_bitvector_array_type <int16_t> : std::true_type {};
+template <> struct is_bitvector_array_type <uint16_t> : std::true_type {};
+template <> struct is_bitvector_array_type <int32_t> : std::true_type {};
+template <> struct is_bitvector_array_type <uint32_t> : std::true_type {};
+template <> struct is_bitvector_array_type <int64_t> : std::true_type {};
+template <> struct is_bitvector_array_type <uint64_t> : std::true_type {};
 
 template <typename T> struct is_bitvector_convertible_impl : std::false_type {};
 template <> struct is_bitvector_convertible_impl <bool> : std::true_type {};
@@ -483,12 +483,12 @@ public:
     : bitvector(size, {bitcast<uint32_t>(value >> 32), bitcast<uint32_t>(value)})
   {}
 
-  template <typename T, std::size_t N, CH_REQUIRE_0(is_bitvector_array_value<T>::value)>
+  template <typename T, std::size_t N, CH_REQUIRE_0(is_bitvector_array_type<T>::value)>
   bitvector(uint32_t size, const std::array<T, N>& value) : bitvector(size) {
     this->write(0, value.data(), N * sizeof(T), 0, N * sizeof(T) * 8);
   }
 
-  template <typename T, CH_REQUIRE_0(is_bitvector_array_value<T>::value)>
+  template <typename T, CH_REQUIRE_0(is_bitvector_array_type<T>::value)>
   bitvector(uint32_t size, const std::vector<T>& value) : bitvector(size) {
     this->write(0, value.data(), value.size() * sizeof(T), 0, value.size() * sizeof(T) * 8);
   }
@@ -543,13 +543,13 @@ public:
     );
   }
 
-  template <typename T, std::size_t N, CH_REQUIRE_0(is_bitvector_array_value<T>::value)>
+  template <typename T, std::size_t N, CH_REQUIRE_0(is_bitvector_array_type<T>::value)>
   bitvector& operator=(const std::array<T, N>& value) {
     this->write(0, value.data(), N * sizeof(T), 0, N * sizeof(T) * 8);
     return *this;
   }
 
-  template <typename T, CH_REQUIRE_0(is_bitvector_array_value<T>::value)>
+  template <typename T, CH_REQUIRE_0(is_bitvector_array_type<T>::value)>
   bitvector& operator=(const std::vector<T>& value) {
     this->write(0, value.data(), value.size() * sizeof(T), 0, value.size() * sizeof(T) * 8);
     return *this;
@@ -736,14 +736,11 @@ bool XnorR(const bitvector& in);
 
 void Sll(bitvector& out, const bitvector& in, uint32_t dist);
 void Srl(bitvector& out, const bitvector& in, uint32_t dist);
-void RotL(bitvector& out, const bitvector& in, uint32_t dist);
-void RotR(bitvector& out, const bitvector& in, uint32_t dist);
+void Sra(bitvector& out, const bitvector& in, uint32_t dist);
 
 void Add(bitvector& out, const bitvector& lhs, const bitvector& rhs, uint32_t cin = 0);
 void Sub(bitvector& out, const bitvector& lhs, const bitvector& rhs);
 void Negate(bitvector& out, const bitvector& in);
-
-void Mux(bitvector& dst, const bitvector& in, const bitvector& sel);
 
 void fAdd(bitvector& out, const bitvector& lhs, const bitvector& rhs);
 void fSub(bitvector& out, const bitvector& lhs, const bitvector& rhs);
