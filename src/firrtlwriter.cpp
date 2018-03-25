@@ -502,8 +502,6 @@ void firrtlwriter::print_select(module_t& module, selectimpl* node) {
 }
 
 void firrtlwriter::print_reg(regimpl* node) {
-  assert(node->has_reset());
-  assert(!node->has_enable());
   this->print_name(node);
   out_ << " <= ";
   out_ << " mux(";
@@ -518,7 +516,7 @@ void firrtlwriter::print_reg(regimpl* node) {
 void firrtlwriter::print_cdomain(cdomain* cd) {
   assert(1 == cd->get_sensitivity_list().size());
   auto& e = cd->get_sensitivity_list()[0];
-  assert(EDGE_POS == e.get_edgedir());
+  assert(e.is_pos_edge());
   this->print_name(e.get_signal().get_impl());
 }
 
@@ -548,8 +546,8 @@ void firrtlwriter::print_mem(memimpl* node) {
 
       this->print_name(node);
       out_ << '.' << type << port->get_index() << ".en <= ";
-      if (port->has_enable()) {
-        this->print_name(port->get_enable().get_impl());
+      if (port->has_wenable()) {
+        this->print_name(port->get_wenable().get_impl());
       } else {
         out_ << "UInt<1>(\"h1\")";
       }

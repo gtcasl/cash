@@ -554,32 +554,11 @@ void verilogwriter::print_reg(module_t& module, regimpl* node) {
     auto_indent indent(out_);
     this->print_name(module, node);
     out_ << " <= ";
-    if (node->has_reset()) {
-      this->print_name(module, node->get_reset().get_impl());
-      out_ << " ? ";
-      this->print_name(module, node->get_init().get_impl());
-      out_ << " : ";
-      if (node->has_enable()) {
-        out_ << "(";
-        this->print_name(module, node->get_enable().get_impl());
-        out_ << " ? ";
-        this->print_name(module, node->get_next().get_impl());
-        out_ << " : ";
-        this->print_name(module, node);
-        out_ << ")";
-      } else {
-        this->print_name(module, node->get_next().get_impl());
-      }
-    } else
-    if (node->has_enable()) {
-      this->print_name(module, node->get_enable().get_impl());
-      out_ << " ? ";
-      this->print_name(module, node->get_next().get_impl());
-      out_ << " : ";
-      this->print_name(module, node);
-    } else {
-      this->print_name(module, node->get_next().get_impl());
-    }
+    this->print_name(module, node->get_reset().get_impl());
+    out_ << " ? ";
+    this->print_name(module, node->get_init().get_impl());
+    out_ << " : ";
+    this->print_name(module, node->get_next().get_impl());
     out_ << ";" << std::endl;
   }
   out_ << "end" << std::endl;
@@ -588,17 +567,7 @@ void verilogwriter::print_reg(module_t& module, regimpl* node) {
 void verilogwriter::print_cdomain(module_t& module, cdomain* cd) {
   auto_separator sep(", ");
   for (auto& e : cd->get_sensitivity_list()) {
-    out_ << sep;
-    switch (e.get_edgedir()) {
-    case EDGE_POS:
-      out_ << "posedge ";
-      break;
-    case EDGE_NEG:
-      out_ << "negedge ";
-      break;
-    default:
-      break;
-    }
+    out_ << sep << (e.is_pos_edge() ? "posedge" : "negedge") << " ";
     this->print_name(module, e.get_signal().get_impl());
   }
 }
@@ -637,9 +606,9 @@ void verilogwriter::print_mem(module_t& module, memimpl* node) {
     out_ << ") begin" << std::endl;
     {
       auto_indent indent1(out_);
-      if (p_impl->has_enable()) {
+      if (p_impl->has_wenable()) {
         out_ << "if (";
-        this->print_name(module, p_impl->get_enable().get_impl());
+        this->print_name(module, p_impl->get_wenable().get_impl());
         out_ << ") begin" << std::endl;
         {
           auto_indent indent2(out_);
@@ -707,7 +676,7 @@ void verilogwriter::print_name(module_t& module, lnodeimpl* node, bool force) {
 void verilogwriter::print_type(lnodeimpl* node) {
   auto type = node->get_type();
 
-  bool is_reg_type = (type_sel == type) ?
+  auto is_reg_type = (type_sel == type) ?
         !dynamic_cast<selectimpl*>(node)->is_ternary() :
         IsRegType(type);
 

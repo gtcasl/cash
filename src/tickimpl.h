@@ -13,6 +13,7 @@ public:
 protected:
 
   tickimpl(context* ctx);
+
   ~tickimpl() {}
 
   ch_tick tick_;

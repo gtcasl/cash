@@ -1,6 +1,6 @@
 #pragma once
 
-#include "bit.h"
+#include "logic.h"
 
 #define CH_STRUCT_SIZE_EACH(i, x) \
   ch_width_v<ch::internal::identity_t<CH_PAIR_L(x)>>
@@ -254,7 +254,7 @@ protected: \
 
 #define CH_STRUCT_LOGIC_FRIENDS_IMPL(enum_name) \
 protected: \
-  friend class ch::internal::bit_accessor;
+  friend class ch::internal::logic_accessor;
 
 #define CH_STRUCT_IMPL2(struct_name, ...) \
   class struct_name { \

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "bit.h"
+#include "logic.h"
 
 namespace ch {
 namespace internal {
@@ -205,7 +205,7 @@ protected: \
 
 #define CH_UNION_LOGIC_FRIENDS_IMPL(enum_name) \
 protected: \
-  friend class ch::internal::bit_accessor;
+  friend class ch::internal::logic_accessor;
 
 #define CH_UNION_IMPL(union_name, ...) \
   class union_name { \

@@ -131,11 +131,10 @@ CH_DEF_SFINAE_CHECK(is_scalar_only, is_true<(std::decay_t<T>::traits::type == tr
 
 CH_DEF_SFINAE_CHECK(is_scalar_type, is_scalar_traits<typename std::decay_t<T>::traits>::value);
 
-CH_DEF_SFINAE_CHECK(is_scalar_compatible, (std::is_same<ch_scalar<width_v<T>>, T>::value
-                                        || std::is_base_of<ch_scalar<width_v<T>>, T>::value));
+CH_DEF_SFINAE_CHECK(is_scalar_compatible, (std::is_base_of<const_scalar<width_v<T>>, T>::value));
 
 template <typename... Ts>
-using deduce_ch_scalar_t = std::conditional_t<
+using deduce_scalar_t = std::conditional_t<
   is_scalar_compatible<deduce_type_t<false, Ts...>>::value, deduce_type_t<false, Ts...>, non_ch_type>;
 
 template <typename T, unsigned N = width_v<T>>
@@ -399,7 +398,7 @@ public:
   auto slice(size_t start = 0) const {
     static_assert(width_v<R> <= N, "invalid size");
     assert((start + width_v<R>) <= N);
-    return const_type_t<R>(bit_buffer(width_v<R>, buffer_, start));
+    return const_type_t<R>(logic_buffer(width_v<R>, buffer_, start));
   }
 
   template <typename R,
@@ -409,7 +408,8 @@ public:
   }
 
   template <typename U,
-            CH_REQUIRE_0(is_bitvector_castable<U>::value)>
+            CH_REQUIRE_0(is_bitvector_castable<U>::value),
+            CH_REQUIRE_0(sizeof(U) * 8 >= N)>
   explicit operator U() const {
     return static_cast<U>(buffer_->get_data());
   }

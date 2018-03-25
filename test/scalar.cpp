@@ -50,6 +50,13 @@ using v2_3_t = ch_vec<ch_bit2, 3>;
 TEST_CASE("scalars", "[scalars]") {
   SECTION("basics", "[basics]") {
     TESTX([]()->bool {
+      ch_scalar<4> a(0xa);
+      ch_scalar<4> b(0x5);
+      uint32_t v(a + b);
+      uint32_t ret = v + 1;
+      return (ret == 0x10);
+    });
+    TESTX([]()->bool {
       ch_scalar<4> a(0), b(1), c(1);
       int ret = (a != b);
       ret &= (b == c);

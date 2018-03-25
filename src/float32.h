@@ -1,6 +1,6 @@
 #pragma once
 
-#include "bit.h"
+#include "logic.h"
 #include "arithm.h"
 #include "reg.h"
 
@@ -15,7 +15,7 @@ public:
   using base = const_bit<32>;
   using traits = logic_traits<32, const_float32, const_float32, ch_float32, ch_scalar<32>>;
 
-  const_float32(const bit_buffer& buffer = bit_buffer(32, CH_SRC_LOCATION))
+  const_float32(const logic_buffer& buffer = logic_buffer(32, CH_SRC_LOCATION))
     : base(buffer)
   {}
 
@@ -47,7 +47,7 @@ public:
   using base = const_float32;
   using traits = logic_traits<32, ch_float32, const_float32, ch_float32, ch_scalar<32>>;
 
-  ch_float32(const bit_buffer& buffer = bit_buffer(32, CH_SRC_LOCATION))
+  ch_float32(const logic_buffer& buffer = logic_buffer(32, CH_SRC_LOCATION))
     : base(buffer)
   {}
 
@@ -79,12 +79,12 @@ public:
   {}
 
   ch_float32& operator=(const ch_float32& rhs) {
-    bit_accessor::copy(*this, rhs);
+    logic_accessor::copy(*this, rhs);
     return *this;
   }
 
   ch_float32& operator=(ch_float32&& rhs) {
-    bit_accessor::move(*this, std::move(rhs));
+    logic_accessor::move(*this, std::move(rhs));
     return *this;
   }
 

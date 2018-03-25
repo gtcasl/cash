@@ -195,12 +195,12 @@ public:
   using base::operator [];
   using base::items_;
 
-  const_vec(const bit_buffer& buffer = bit_buffer(traits::bitwidth, CH_SRC_LOCATION))
+  const_vec(const logic_buffer& buffer = logic_buffer(traits::bitwidth, CH_SRC_LOCATION))
     : const_vec(buffer, std::make_index_sequence<N>())
   {}
 
   const_vec(const const_vec& rhs, const source_location& sloc = CH_SRC_LOCATION)
-    : const_vec(bit_accessor::copy_buffer(rhs, sloc))
+    : const_vec(logic_accessor::copy_buffer(rhs, sloc))
   {}
 
   const_vec(const_vec&& rhs) : base(std::move(rhs))
@@ -209,32 +209,32 @@ public:
   template <typename U, CH_REQUIRE_0(is_cast_convertible<T, U>::value)>
   explicit const_vec(const const_vec_base<U, N>& rhs,
                      const source_location& sloc = CH_SRC_LOCATION)
-    : const_vec(bit_accessor::copy_buffer(rhs, sloc))
+    : const_vec(logic_accessor::copy_buffer(rhs, sloc))
   {}
 
   template <typename U,
             CH_REQUIRE_0(is_logic_type<U>::value),
             CH_REQUIRE_0(width_v<U> == N * width_v<T>)>
   explicit const_vec(const U& rhs, const source_location& sloc = CH_SRC_LOCATION)
-    : const_vec(bit_accessor::copy_buffer(rhs, sloc))
+    : const_vec(logic_accessor::copy_buffer(rhs, sloc))
   {}
 
   template <typename U,
             CH_REQUIRE_1(is_scalar_type<U>::value),
             CH_REQUIRE_1(width_v<U> == N * width_v<T>)>
   explicit const_vec(const U& rhs, const source_location& sloc = CH_SRC_LOCATION)
-    : const_vec(bit_buffer(scalar_accessor::get_data(rhs), sloc))
+    : const_vec(logic_buffer(scalar_accessor::get_data(rhs), sloc))
   {}
 
   template <typename U, CH_REQUIRE_0(std::is_integral_v<U>)>
   explicit const_vec(U rhs, const source_location& sloc = CH_SRC_LOCATION)
-    : const_vec(bit_buffer(bitvector(traits::bitwidth, rhs), sloc))
+    : const_vec(logic_buffer(bitvector(traits::bitwidth, rhs), sloc))
   {}
 
   template <typename U>
   explicit const_vec(const std::initializer_list<U>& values,
                      const source_location& sloc = CH_SRC_LOCATION)
-    : const_vec(bit_buffer(traits::bitwidth, sloc)) {
+    : const_vec(logic_buffer(traits::bitwidth, sloc)) {
     assert(values.size() == N);
     int i = N - 1;
     for (auto& value : values) {
@@ -248,33 +248,33 @@ protected:
 
   template <typename V>
   void init(const V& value) {
-    bit_accessor::copy(
+    logic_accessor::copy(
         items_[0],
         static_cast<aggregate_init_cast_t<T, V>>(value));
   }
 
   template <typename V0, typename... Vs>
   void init(const V0& value0, const Vs&... values) {
-    bit_accessor::copy(
+    logic_accessor::copy(
         items_[sizeof...(Vs)],
         static_cast<aggregate_init_cast_t<T, V0>>(value0));
     this->init(values...);
   }
 
   template <std::size_t...Is>
-  const_vec(const bit_buffer& buffer, std::index_sequence<Is...>)
-    : base(bit_buffer(width_v<T>, buffer, Is * width_v<T>)...)
+  const_vec(const logic_buffer& buffer, std::index_sequence<Is...>)
+    : base(logic_buffer(width_v<T>, buffer, Is * width_v<T>)...)
   {}
 
-  const bit_buffer_ptr& get_buffer() const {
-    return bit_accessor::get_buffer(items_[0])->get_source();
+  const logic_buffer_ptr& get_buffer() const {
+    return logic_accessor::get_buffer(items_[0])->get_source();
   }
 
-  bit_buffer_ptr& get_buffer() {
-    return bit_accessor::get_buffer(items_[0])->get_source();
+  logic_buffer_ptr& get_buffer() {
+    return logic_accessor::get_buffer(items_[0])->get_source();
   }
 
-  friend class bit_accessor;
+  friend class logic_accessor;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -293,7 +293,7 @@ public:
   using base::operator [];
   using base::items_;
 
-  ch_vec(const bit_buffer& buffer = bit_buffer(traits::bitwidth, CH_SRC_LOCATION))
+  ch_vec(const logic_buffer& buffer = logic_buffer(traits::bitwidth, CH_SRC_LOCATION))
     : base(buffer)
   {}
 
@@ -336,12 +336,12 @@ public:
   {}
 
   ch_vec& operator=(const ch_vec& rhs) {
-    bit_accessor::copy(*this, rhs);
+    logic_accessor::copy(*this, rhs);
     return *this;
   }
 
   ch_vec& operator=(ch_vec&& rhs) {
-    bit_accessor::move(*this, std::move(rhs));
+    logic_accessor::move(*this, std::move(rhs));
     return *this;
   }
 
@@ -357,7 +357,7 @@ public:
             CH_REQUIRE_1(is_logic_type<U>::value),
             CH_REQUIRE_1(width_v<U> == N * width_v<T>)>
   ch_vec& operator=(const U& rhs) {
-    bit_accessor::copy(*this, rhs);
+    logic_accessor::copy(*this, rhs);
     return *this;
   }
 

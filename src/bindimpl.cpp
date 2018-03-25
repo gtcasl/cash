@@ -3,6 +3,23 @@
 
 using namespace ch::internal;
 
+static void add_port(bindportimpl* bindport, std::vector<lnode>& list) {
+  // lookup existing binding
+  size_t index = 0;
+  for (;index < list.size(); ++index) {
+    auto impl = dynamic_cast<bindportimpl*>(list[index].get_impl());
+    if (impl->get_ioport().get_id() == bindport->get_ioport().get_id())
+      break;
+  }
+
+  // add to list
+  if (index < list.size()) {
+    list[index] = bindport;
+  } else {
+    list.push_back(bindport);
+  }
+}
+
 bindimpl::bindimpl(context* ctx, context* module)
   : ioimpl(ctx, type_bind, 0)
   , module_(module)
@@ -24,13 +41,22 @@ bindimpl::bindimpl(context* ctx, context* module)
 }
 
 bindimpl::~bindimpl() {
-  // detach connected outputs for cleanup
+  // detach outputs
   while (!outputs_.empty()) {
-    auto impl = dynamic_cast<bindportimpl*>(outputs_.front().get_impl());
-    impl->detach();
+    dynamic_cast<bindportimpl*>(outputs_.front().get_impl())->detach();
   }
+
   // release module instance
   module_->release();
+}
+
+void bindimpl::remove_output(bindportimpl* output) {
+  for (auto it = outputs_.begin(), end = outputs_.end(); it != end; ++it) {
+    if (it->get_id() == output->get_id()) {
+      outputs_.erase(it);
+      break;
+    }
+  }
 }
 
 void bindimpl::bind_input(const lnode& src, const lnode& ioport) {
@@ -42,7 +68,7 @@ void bindimpl::bind_input(const lnode& src, const lnode& ioport) {
   dynamic_cast<inputimpl*>(ioport.get_impl())->bind(bindport);
 
   // add to list
-  bindimpl::add_port(bindport, srcs_);
+  add_port(bindport, srcs_);
 }
 
 void bindimpl::bind_output(const lnode& dst, const lnode& ioport) {
@@ -54,33 +80,7 @@ void bindimpl::bind_output(const lnode& dst, const lnode& ioport) {
   const_cast<lnode&>(dst).write(0, bindport, 0, dst.get_size());
 
   // add to list
-  bindimpl::add_port(bindport, outputs_);
-}
-
-void bindimpl::add_port(bindportimpl* bindport, std::vector<lnode>& list) {
-  // lookup existing binding
-  size_t index = 0;
-  for (;index < list.size(); ++index) {
-    auto impl = dynamic_cast<bindportimpl*>(list[index].get_impl());
-    if (impl->get_ioport().get_id() == bindport->get_ioport().get_id())
-      break;
-  }
-
-  // add to list
-  if (index < list.size()) {
-    list[index] = bindport;
-  } else {
-    list.push_back(bindport);
-  }
-}
-
-void bindimpl::remove_output(bindportimpl* output) {
-  for (auto it = outputs_.begin(), end = outputs_.end(); it != end; ++it) {
-    if (it->get_id() == output->get_id()) {
-      outputs_.erase(it);
-      break;
-    }
-  }
+  add_port(bindport, outputs_);
 }
 
 void bindimpl::tick(ch_tick t) {
@@ -126,11 +126,13 @@ bindportimpl::~bindportimpl() {
 
 void bindportimpl::detach() {
   if (is_output_) {
-    auto binding = dynamic_cast<bindimpl*>(srcs_[0].get_impl());
-    binding->remove_output(this);
-    is_output_ = false;
+    if (!srcs_[0].is_empty()) {
+      dynamic_cast<bindimpl*>(srcs_[0].get_impl())->remove_output(this);
+      srcs_[0].clear();
+    }
   }
 }
+
 
 const bitvector& bindportimpl::eval(ch_tick t) {
   if (tick_ != t) {

@@ -20,7 +20,7 @@ assertimpl::assertimpl(context* ctx, const lnode& cond, const std::string& msg)
 
 const bitvector& assertimpl::eval(ch_tick t) {
   if (!predicated_ || srcs_[0].eval(t)[0]) {
-    const bitvector& cond = srcs_[predicated_ ? 1: 0].eval(t);
+    auto& cond = srcs_[predicated_ ? 1: 0].eval(t);
     CH_CHECK(cond[0], "assertion failure at tick %ld, %s", t, msg_.c_str());
   }
   return value_;

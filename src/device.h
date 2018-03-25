@@ -9,7 +9,9 @@ class deviceimpl;
 
 class device {
 public:
+
   device(size_t signature, const std::string& name);
+
   virtual ~device();
 
   device(device&& rhs) : impl_(std::move(rhs.impl_)) {}
@@ -22,6 +24,7 @@ public:
 protected:
 
   device(const device& rhs) = delete;
+
   device& operator=(const device& rhs) = delete;
 
   void compile();
@@ -58,6 +61,7 @@ public:
 protected:
 
   device_base(const device_base& rhs) = delete;
+
   device_base& operator=(const device_base& rhs) = delete;
 
   std::shared_ptr<T> obj_;
@@ -105,6 +109,7 @@ public:
 protected:
 
   ch_device(const ch_device& rhs) = delete;
+
   ch_device& operator=(const ch_device& rhs) = delete;
 };
 

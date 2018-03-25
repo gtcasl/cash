@@ -1,6 +1,6 @@
 #include "printimpl.h"
 #include "context.h"
-#include "bit.h"
+#include "logic.h"
 
 using namespace ch::internal;
 

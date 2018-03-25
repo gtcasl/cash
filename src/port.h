@@ -1,6 +1,6 @@
 #pragma once
 
-#include "bit.h"
+#include "logic.h"
 
 namespace ch {
 namespace internal {
@@ -111,14 +111,14 @@ public:
   using traits = io_logic_traits<ch_in<T>, ch_direction::in, ch_out<T>, scalar_in<scalar_type_t<T>>, T>;
 
   ch_in(const std::string& name = "io", const source_location& sloc = CH_SRC_LOCATION)
-    : base(bit_buffer(width_v<T>, sloc, name)) {
+    : base(logic_buffer(width_v<T>, sloc, name)) {
     input_ = createInputNode(name, width_v<T>);
-    bit_accessor::set_data(*this, input_);
+    logic_accessor::set_data(*this, input_);
   }
 
   explicit ch_in(const ch_out<T>& out, const source_location& sloc = CH_SRC_LOCATION)
-    : base(bit_buffer(width_v<T>, sloc)) {
-    input_ = bit_accessor::get_data(*this);
+    : base(logic_buffer(width_v<T>, sloc)) {
+    input_ = logic_accessor::get_data(*this);
     bindOutput(input_, out.output_);
   }
 
@@ -133,6 +133,7 @@ public:
 private:
 
   ch_in& operator=(const ch_in&) = delete;
+
   ch_in& operator=(ch_in&&) = delete;
 
   lnode input_;
@@ -152,13 +153,13 @@ public:
   using base::operator=;
 
   ch_out(const std::string& name = "io", const source_location& sloc = CH_SRC_LOCATION)
-    : base(bit_buffer(width_v<T>, sloc, name)) {
-    output_ = createOutputNode(name, bit_accessor::get_data(*this));
+    : base(logic_buffer(width_v<T>, sloc, name)) {
+    output_ = createOutputNode(name, logic_accessor::get_data(*this));
   }
 
   explicit ch_out(const ch_in<T>& in, const source_location& sloc = CH_SRC_LOCATION)
-    : base(bit_buffer(width_v<T>, sloc)) {
-    output_ = bit_accessor::get_data(*this);
+    : base(logic_buffer(width_v<T>, sloc)) {
+    output_ = logic_accessor::get_data(*this);
     bindInput(output_, in.input_);
   }
 
@@ -238,9 +239,11 @@ public:
 protected:
 
   scalar_in(const scalar_in& out) = delete;
+
   scalar_in(scalar_in&& out) = delete;
 
   scalar_in& operator=(const scalar_in&) = delete;
+
   scalar_in& operator=(scalar_in&&) = delete;
 };
 
@@ -260,9 +263,11 @@ public:
 protected:
 
   scalar_out(const scalar_out& out) = delete;
+
   scalar_out(scalar_out&& out) = delete;
 
   scalar_out& operator=(const scalar_out&) = delete;
+
   scalar_out& operator=(scalar_out&&) = delete;
 };
 

@@ -35,7 +35,7 @@ void vcdtracerimpl::tick(ch_tick t) {
     if (tap.node->get_size() > 1)
       out_ << 'b';
     for (int j = tap.node->get_size()-1; j >= 0; --j) {
-      out_ << (tap.node->get_bool(j) ? '1' : '0');
+      out_ << (tap.node->get_value()[j] ? '1' : '0');
     }
     if (tap.node->get_size() > 1)
       out_ << ' ';

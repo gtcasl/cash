@@ -13,7 +13,6 @@ class proxyimpl;
 class aluimpl;
 class selectimpl;
 class regimpl;
-class latchimpl;
 class memimpl;
 class bindimpl;
 class bindportimpl;
@@ -24,6 +23,7 @@ class verilogwriter {
 public:
 
   verilogwriter(std::ostream& out);
+
   ~verilogwriter();
 
   void print(const std::initializer_list<context*>& contexts);

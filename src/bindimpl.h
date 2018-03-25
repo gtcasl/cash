@@ -12,6 +12,7 @@ class bindimpl : public tickable, public ioimpl {
 public:
 
   void bind_input(const lnode& src, const lnode& ioport);
+
   void bind_output(const lnode& dst, const lnode& ioport);
 
   const auto& get_inputs() {
@@ -22,24 +23,25 @@ public:
     return outputs_;
   }
 
+  void remove_output(bindportimpl* output);
+
   context* get_module() const {
     return module_;
   }
 
-  void remove_output(bindportimpl* output);
-
   void tick(ch_tick t) override;
+
   void tick_next(ch_tick t) override;
 
   const bitvector& eval(ch_tick t) override;
+
   void print(std::ostream& out, uint32_t level) const override;
 
 protected:
 
   bindimpl(context* ctx, context* module);
-  ~bindimpl();
 
-  static void add_port(bindportimpl* bindport, std::vector<lnode>& list);
+  ~bindimpl();
 
   context* module_;
   std::vector<lnode> outputs_;
@@ -61,14 +63,16 @@ public:
     return is_output_;
   }
 
-  void detach();
-
   const bitvector& eval(ch_tick t) override;
+
   void print(std::ostream& out, uint32_t level) const override;
+
+  void detach();
 
 protected:  
 
   bindportimpl(context* ctx, const lnode& src, const lnode& ioport);
+
   ~bindportimpl();
 
   lnode ioport_;

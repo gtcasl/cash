@@ -59,8 +59,11 @@ public:
 protected:
 
   proxyimpl(context* ctx, uint32_t size);
+
   proxyimpl(context* ctx, const lnode& src);
+
   proxyimpl(context* ctx, const lnode& src, uint32_t offset, uint32_t length);
+
   ~proxyimpl() {}
 
   std::vector<range_t> ranges_; 

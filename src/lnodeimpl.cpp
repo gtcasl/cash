@@ -164,16 +164,6 @@ bitvector& lnode::get_data() {
   return impl_->get_value();
 }
 
-bool lnode::get_bool(unsigned i) const {
-  assert(impl_);
-  return impl_->get_bool(i);
-}
-
-void lnode::set_bool(unsigned i, bool value) {
-  assert(impl_);
-  impl_->set_bool(i, value);
-}
-
 void lnode::clear() {
   impl_ = nullptr;
 }
@@ -188,7 +178,7 @@ void lnode::write(uint32_t dst_offset,
   assert(!src.is_empty());
   assert(size > dst_offset);
   assert(size >= dst_offset + length);
-  context* ctx = src.get_ctx();  
+  auto ctx = src.get_ctx();
 
   auto proxy = dynamic_cast<proxyimpl*>(impl_);
   if (nullptr == proxy) {
@@ -203,7 +193,7 @@ void lnode::write(uint32_t dst_offset,
   }
 
   if (ctx->conditional_enabled(proxy)) {
-    lnodeimpl* src_impl = src.get_impl();
+    auto src_impl = src.get_impl();
     if (src_offset != 0 || src.get_size() != length) {
       src_impl = ctx->createNode<proxyimpl>(src, src_offset, length);
     }

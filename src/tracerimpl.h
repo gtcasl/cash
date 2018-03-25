@@ -9,7 +9,9 @@ class tracerimpl : public simulatorimpl {
 public:
 
   tracerimpl(std::ostream& out, const std::initializer_list<context*>& contexts);
+
   tracerimpl(const std::string& file, const std::initializer_list<context*>& contexts);
+
   ~tracerimpl();
 
   void add_trace(const std::string& name, const scalar_buffer_ptr& node);

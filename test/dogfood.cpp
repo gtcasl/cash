@@ -146,6 +146,11 @@ int main() {
   }
 
   /*{
+    ch_device<QueueWrapper<ch_bit4, 2>> queue;
+    ch_toVerilog("queue.v", queue);
+  }*/
+
+  /*{
     ch_device<Foo1> foo;
     foo.io.in1 = 1;
     foo.io.in2 = 2;

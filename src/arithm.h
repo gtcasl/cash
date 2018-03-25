@@ -79,7 +79,7 @@ lnodeimpl* createAluNode(ch_alu_op op,
                          unsigned delay = 0,
                          const lnode& enable = lnode());
 
-lnodeimpl* createRotateNode(const lnode& next, int dist, bool right);
+lnodeimpl* createRotateNode(const lnode& next, unsigned dist, bool right);
 
 }
 }

@@ -61,8 +61,6 @@ src/bindimpl.cpp
 src/bindimpl.h
 src/bindimpl.h
 src/bit.cpp
-src/bit.cpp
-src/bit.h
 src/bit.h
 src/bitvector.cpp
 src/bitvector.cpp
@@ -140,6 +138,8 @@ src/lnodeimpl.cpp
 src/lnodeimpl.cpp
 src/lnodeimpl.h
 src/lnodeimpl.h
+src/logic.cpp
+src/logic.h
 src/macros.h
 src/macros.h
 src/mem.h

@@ -13,6 +13,7 @@ public:
 protected:
 
   assertimpl(context* ctx, const lnode& cond, const std::string& msg);
+
   ~assertimpl() {}
 
   std::string msg_;

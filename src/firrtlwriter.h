@@ -13,7 +13,6 @@ class proxyimpl;
 class aluimpl;
 class selectimpl;
 class regimpl;
-class latchimpl;
 class memimpl;
 class bindimpl;
 class bindportimpl;
@@ -24,6 +23,7 @@ class firrtlwriter {
 public:
 
   firrtlwriter(std::ostream& out);
+
   ~firrtlwriter();
 
   void print(context* ctx);
@@ -50,8 +50,7 @@ protected:
 
   void print_port(lnodeimpl* node);
 
-  bool print_decl(lnodeimpl* node,
-                  std::unordered_set<uint32_t>& visited);
+  bool print_decl(lnodeimpl* node, std::unordered_set<uint32_t>& visited);
 
   bool print_binding(bindimpl* node);
 

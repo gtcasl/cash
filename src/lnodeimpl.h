@@ -89,14 +89,6 @@ public:
     return value_;
   }
 
-  bool get_bool(unsigned index) const {
-    return value_[index];
-  }
-
-  void set_bool(unsigned index, bool value) {
-    value_[index] = value;
-  }
-
   uint32_t get_var_id() const {
     return var_id_;
   }
@@ -111,22 +103,6 @@ public:
 
   void set_source_location(const source_location& sloc) {
     sloc_ = sloc;
-  }
-
-  void read_bytes(uint32_t dst_offset,
-                  void* out,
-                  uint32_t out_cbsize,
-                  uint32_t src_offset,
-                  uint32_t size) const {
-    value_.read(dst_offset, out, out_cbsize, src_offset, size);
-  }
-
-  void write_bytes(uint32_t dst_offset,
-                   const void* in,
-                   uint32_t in_cbsize,
-                   uint32_t src_offset,
-                   uint32_t size) {
-    value_.write(dst_offset, in, in_cbsize, src_offset, size);
   }
 
   virtual lnodeimpl* get_slice(uint32_t offset, uint32_t length);

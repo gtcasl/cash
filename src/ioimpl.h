@@ -6,8 +6,6 @@ namespace ch {
 namespace internal {
 
 class ioimpl : public lnodeimpl {
-public:
-
 protected:  
 
   ioimpl(context* ctx, lnodetype type, uint32_t size)
@@ -37,6 +35,7 @@ public:
 protected:
 
   inputimpl(context* ctx, uint32_t size, const std::string& name);
+
   ~inputimpl() {}
 
   lnode input_;
@@ -55,6 +54,7 @@ public:
 protected:
 
   outputimpl(context* ctx, const lnode& src, const std::string& name);
+
   ~outputimpl() {}
 
   ch_tick tick_;
@@ -76,6 +76,7 @@ public:
 protected:
 
   tapimpl(context* ctx, const lnode& src, const std::string& name);
+
   ~tapimpl() {}
 
   ch_tick tick_;

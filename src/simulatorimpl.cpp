@@ -7,23 +7,21 @@
 using namespace ch::internal;
 
 void clock_driver::add_signal(lnodeimpl* node) {
-  node->set_bool(0, value_);
+  node->get_value()[0] = value_;
   nodes_.push_back(node);
 }
 
 void clock_driver::flip() {
   value_ = !value_;
   for (auto node : nodes_) {
-    node->set_bool(0, value_);
+    node->get_value()[0] = value_;
   }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 simulatorimpl::simulatorimpl(const std::initializer_list<context*>& contexts)
-  : initialized_(false)
-  , clk_driver_(true)
-  , reset_driver_(false) {
+  : initialized_(false) {
   for (auto ctx : contexts) {
     auto ret = contexts_.emplace(ctx);
     if (ret.second) {
@@ -39,7 +37,7 @@ simulatorimpl::~simulatorimpl() {
 }
 
 void simulatorimpl::add_device(const device& device) {
-  context* ctx = get_ctx(device);
+  auto ctx = get_ctx(device);
   auto ret = contexts_.emplace(ctx);
   if (ret.second) {
     ctx->acquire();
@@ -68,15 +66,17 @@ void simulatorimpl::tick(ch_tick t) {
   }
 
   // evaluate all contexts
+
   for (auto ctx : contexts_) {
     ctx->tick(t);
   }
+
   for (auto ctx : contexts_) {
     ctx->tick_next(t);
   }
+
   for (auto ctx : contexts_) {
     ctx->eval(t);
-
   #ifndef NDEBUG
     int dump_ast_level = platform::self().get_dump_ast();
     if (2 == dump_ast_level) {
@@ -87,22 +87,6 @@ void simulatorimpl::tick(ch_tick t) {
   }
 }
 
-ch_tick simulatorimpl::run(const std::function<bool(ch_tick t)>& callback) {
-  ch_tick start = this->reset(0);
-  ch_tick t(start);
-  for (; callback(t - start);) {
-    t = this->step(t);
-  }
-  return t;
-}
-
-void simulatorimpl::run(ch_tick ticks) {
-  ch_tick t = this->reset(0);
-  for (; t < ticks;) {
-    t = this->step(t);
-  }
-}
-
 ch_tick simulatorimpl::reset(ch_tick t) {
   // ensure initialized
   if (!initialized_) {
@@ -110,6 +94,7 @@ ch_tick simulatorimpl::reset(ch_tick t) {
     initialized_ = true;
   }
 
+  // reset signal
   if (!reset_driver_.is_empty()) {
     reset_driver_.flip();
     t = this->step(t);
@@ -121,9 +106,9 @@ ch_tick simulatorimpl::reset(ch_tick t) {
 
 ch_tick simulatorimpl::step(ch_tick t) {
   if (!clk_driver_.is_empty()) {
-    for (int i = 0; i < 2; ++i) {
-      clk_driver_.flip();
+    for (int i = 0; i < 2; ++i) {      
       this->tick(t++);
+      clk_driver_.flip();
     }
   } else {
     this->tick(t++);
@@ -138,6 +123,20 @@ ch_tick simulatorimpl::step(ch_tick t, unsigned count) {
   return t;
 }
 
+ch_tick simulatorimpl::run(const std::function<bool(ch_tick t)>& callback) {
+  auto t = this->reset(0);
+  for (auto start = t; callback(t - start);) {
+    t = this->step(t);
+  }
+  return t;
+}
+
+void simulatorimpl::run(ch_tick ticks) {
+  for (auto t = this->reset(0); t < ticks;) {
+    t = this->step(t);
+  }
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 ch_simulator::ch_simulator(const std::initializer_list<context*>& contexts) {
@@ -146,25 +145,30 @@ ch_simulator::ch_simulator(const std::initializer_list<context*>& contexts) {
 }
 
 ch_simulator::ch_simulator(simulatorimpl* impl) : impl_(impl) {
-  if (impl)
+  if (impl) {
     impl->acquire();
+  }
 }
 
 ch_simulator::ch_simulator(const ch_simulator& simulator) : impl_(simulator.impl_) {
-  if (impl_)
+  if (impl_) {
     impl_->acquire();
+  }
 }
 
 ch_simulator::~ch_simulator() {
-  if (impl_)
+  if (impl_) {
     impl_->release();
+  }
 }
 
 ch_simulator& ch_simulator::operator=(const ch_simulator& simulator) {
-  if (simulator.impl_)
+  if (simulator.impl_) {
     simulator.impl_->acquire();
-  if (impl_)
+  }
+  if (impl_) {
     impl_->release();
+  }
   impl_ = simulator.impl_;
   return *this;
 }

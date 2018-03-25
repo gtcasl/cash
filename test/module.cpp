@@ -223,30 +223,30 @@ TEST_CASE("module", "[module]") {
       ch_simulator sim(queue);
       ch_tick t = sim.reset(0);
 
-      int ret = ((bool)queue.io.enq.ready);  // !full
-      ret &= (!(bool)queue.io.deq.valid); // empty
+      int ret = (bool)queue.io.enq.ready;  // !full
+      ret &= !(bool)queue.io.deq.valid; // empty
       queue.io.deq.ready = 0;
       queue.io.enq.data = 0xA;
       queue.io.enq.valid = 1; // push
       t = sim.step(t);
 
-      ret &= ((bool)queue.io.deq.valid);  // !empty
+      ret &= (bool)queue.io.deq.valid;  // !empty
       queue.io.enq.data = 0xB;
       t = sim.step(t);
 
-      ret &= (!(bool)queue.io.enq.ready); // full
-      ret &= ((bool)queue.io.deq.valid);
+      ret &= !(bool)queue.io.enq.ready; // full
+      ret &= (bool)queue.io.deq.valid;
       ret &= (0xA == (int)queue.io.deq.data);
       queue.io.enq.valid = 0; // !push
       queue.io.deq.ready = 1; // pop
       t = sim.step(t);
 
-      ret &= ((bool)queue.io.enq.ready);  // !full
+      ret &= (bool)queue.io.enq.ready;  // !full
       ret &= (0xB == (int)queue.io.deq.data);
       queue.io.deq.ready = 1; // pop
       t = sim.step(t, 4);
 
-      ret &= (!(bool)queue.io.deq.valid); // empty
+      ret &= !(bool)queue.io.deq.valid; // empty
 
       ch_toVerilog("queue.v", queue);
       ret &= (checkVerilog("queue_tb.v"));

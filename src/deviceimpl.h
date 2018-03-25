@@ -12,6 +12,7 @@ class deviceimpl : public refcounted {
 public:
 
   deviceimpl(size_t signature, const std::string& name);
+
   ~deviceimpl();
 
   void begin_context();

@@ -53,7 +53,7 @@ void compiler::run() {
 
 void compiler::syntax_check() {
   // check for un-initialized nodes
-  const auto& undefs = ctx_->get_undefs();
+  auto& undefs = ctx_->get_undefs();
   if (undefs.size()) {
     ctx_->dump_ast(std::cerr, 1);    
     for (auto undef : undefs) {
@@ -85,12 +85,12 @@ size_t compiler::dead_code_elimination() {
   std::list<lnodeimpl*> working_set(live_nodes.begin(), live_nodes.end());
 
   while (!working_set.empty()) {
-    lnodeimpl* node = working_set.front();
+    auto node = working_set.front();
     auto proxy = dynamic_cast<proxyimpl*>(node);
 
     auto& srcs = node->get_srcs();
     for (uint32_t i = 0, n = srcs.size(); i < n; ++i) {
-      lnodeimpl* src_impl = srcs[i].get_impl();
+      auto src_impl = srcs[i].get_impl();
       assert(src_impl->get_ctx() == ctx_);
 
       // skip unused proxy sources
@@ -173,7 +173,7 @@ size_t compiler::remove_dead_nodes(const live_nodes_t& live_nodes) {
   size_t deleted = 0;
   for (auto it = ctx_->get_nodes().begin(),
        end = ctx_->get_nodes().end(); it != end;) {
-    lnodeimpl* const node = *it;
+    auto node = *it;
     if (0 == live_nodes.count(node)) {
       it = ctx_->destroyNode(it);
       ++deleted;      

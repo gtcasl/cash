@@ -99,7 +99,7 @@ public:
   std::string get(const std::string& name);
 
 private:
-  std::unordered_map<std::string, unsigned> dups_;
+  std::unordered_map<std::string, uint32_t> dups_;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -527,10 +527,6 @@ struct requires_enum {
 #define CH_REQUIRE_1(...) typename std::enable_if_t<(__VA_ARGS__), typename requires_enum<1>::type>* = nullptr
 #define CH_REQUIRE_2(...) typename std::enable_if_t<(__VA_ARGS__), typename requires_enum<2>::type>* = nullptr
 #define CH_REQUIRE_3(...) typename std::enable_if_t<(__VA_ARGS__), typename requires_enum<3>::type>* = nullptr
-#define CH_REQUIRE_4(...) typename std::enable_if_t<(__VA_ARGS__), typename requires_enum<4>::type>* = nullptr
-#define CH_REQUIRE_5(...) typename std::enable_if_t<(__VA_ARGS__), typename requires_enum<5>::type>* = nullptr
-#define CH_REQUIRE_6(...) typename std::enable_if_t<(__VA_ARGS__), typename requires_enum<6>::type>* = nullptr
-#define CH_REQUIRE_7(...) typename std::enable_if_t<(__VA_ARGS__), typename requires_enum<7>::type>* = nullptr
 
 #define CH_UNUSED(...) ch::internal::unused(__VA_ARGS__)
 

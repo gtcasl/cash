@@ -28,7 +28,7 @@ memimpl::memimpl(context* ctx,
   , has_initdata_(!init_data.empty()) {
   if (write_enable) {
     lnode clk(ctx->get_clk());
-    cd_ = ctx->create_cdomain({clock_event(clk, EDGE_POS)});
+    cd_ = ctx->create_cdomain({clock_event(clk, true)});
     cd_->add_use(this);
     srcs_.emplace_back(clk);
   }
@@ -39,13 +39,21 @@ memimpl::memimpl(context* ctx,
 }
 
 memimpl::~memimpl() {
-  // detach connected ports for cleanup
+  // detach ports
   while (!ports_.empty()) {
-    auto impl = dynamic_cast<memportimpl*>(ports_.front().get_impl());
-    impl->detach();
+    dynamic_cast<memportimpl*>(ports_.front().get_impl())->detach();
   }
   if (cd_) {
     cd_->remove_use(this);
+  }
+}
+
+void memimpl::remove_port(memportimpl* port) {
+  for (auto it = ports_.begin(), end = ports_.end(); it != end; ++it) {
+    if (it->get_id() == port->get_id()) {
+      ports_.erase(it);
+      break;
+    }
   }
 }
 
@@ -61,26 +69,15 @@ lnode& memimpl::get_port(const lnode& addr) {
   return ports_.back();
 }
 
-void memimpl::remove(memportimpl* port) {
-  for (auto it = ports_.begin(), end = ports_.end(); it != end; ++it) {
-    if (it->get_id() == port->get_id()) {
-      ports_.erase(it);
-      break;
-    }
-  }
-}
-
-void memimpl::tick(ch_tick t) {    
+void memimpl::tick(ch_tick t) {
   for (auto& port : ports_) {
-    auto impl = dynamic_cast<memportimpl*>(port.get_impl());
-    impl->tick(t);
+    dynamic_cast<memportimpl*>(port.get_impl())->tick(t);
   }
 }
 
 void memimpl::tick_next(ch_tick t) {
   for (auto& port : ports_) {
-    auto impl = dynamic_cast<memportimpl*>(port.get_impl());
-    impl->tick_next(t);
+    dynamic_cast<memportimpl*>(port.get_impl())->tick_next(t);
   }
 }
 
@@ -114,18 +111,13 @@ void memimpl::print(std::ostream& out, uint32_t level) const {
 memportimpl::memportimpl(context* ctx, memimpl* mem, unsigned index, const lnode& addr)
   : ioimpl(ctx, type_memport, mem->get_data_width())
   , index_(index)
-  , a_next_(0)
-  , en_next_(false)  
-  , mem_idx_(-1)
-  , addr_idx_(-1)
-  , wdata_idx_(-1)
-  , enable_idx_(-1)
   , read_enable_(false)
+  , a_next_(0)  
+  , wdata_idx_(-1)
+  , wenable_idx_(-1)
+  , dirty_(false)
   , tick_(~0ull) {
-  mem_idx_ = srcs_.size();
   srcs_.emplace_back(mem);
-
-  addr_idx_ = srcs_.size();
   srcs_.emplace_back(addr);
 }
 
@@ -134,12 +126,12 @@ memportimpl::~memportimpl() {
 }
 
 void memportimpl::detach() {
-  if (mem_idx_ != -1) {
-    auto mem = dynamic_cast<memimpl*>(srcs_[mem_idx_].get_impl());
-    mem->remove(this);
-    mem_idx_ = -1;
+  if (!srcs_[0].is_empty()) {
+    dynamic_cast<memimpl*>(srcs_[0].get_impl())->remove_port(this);
+    srcs_[0].clear();
   }
 }
+
 
 void memportimpl::read() {
   read_enable_ = true;
@@ -148,7 +140,7 @@ void memportimpl::read() {
 void memportimpl::write(const lnode& data) {
   if (wdata_idx_ == -1) {
     // add write port to memory sources to enforce DFG dependencies
-    memimpl* mem = dynamic_cast<memimpl*>(srcs_[mem_idx_].get_impl());
+    memimpl* mem = dynamic_cast<memimpl*>(srcs_[0].get_impl());
     mem->get_srcs().emplace_back(this);
   }
   // add data source
@@ -160,28 +152,30 @@ void memportimpl::write(const lnode& data, const lnode& enable) {
   this->write(data);
 
   // add enable predicate
-  enable_idx_ = this->add_src(enable_idx_, enable);
+  wenable_idx_ = this->add_src(wenable_idx_, enable);
 }
 
 void memportimpl::tick(ch_tick t) {
   CH_UNUSED(t);
-  if (en_next_) {
-    auto mem = dynamic_cast<memimpl*>(srcs_[mem_idx_].get_impl());
+  if (dirty_) {
+    auto mem = dynamic_cast<memimpl*>(srcs_[0].get_impl());
     auto data_width = mem->get_data_width();
     mem->get_value().write(a_next_ * data_width,
                            q_next_.get_words(),
-                           CH_CEILDIV(q_next_.get_size(), 8),
+                           q_next_.get_cbsize(),
                            0,
                            data_width);
-  }  
+  }
 }
 
 void memportimpl::tick_next(ch_tick t) {
   if (wdata_idx_ != -1) {
     // synchronous memory write
-    en_next_ = (enable_idx_ != -1) ? srcs_[enable_idx_].eval(t).get_word(0) : true;
-    a_next_   = srcs_[addr_idx_].eval(t).get_word(0);
-    q_next_   = srcs_[wdata_idx_].eval(t);
+    dirty_ = (wenable_idx_ != -1) ? srcs_[wenable_idx_].eval(t).get_word(0) : true;
+    if (dirty_) {
+      a_next_ = srcs_[1].eval(t).get_word(0);
+      q_next_ = srcs_[wdata_idx_].eval(t);
+    }
   }
 }
 
@@ -189,13 +183,14 @@ const bitvector& memportimpl::eval(ch_tick t) {
   if (tick_ != t) {
     tick_ = t;
     // asynchronous memory read
-    auto mem = dynamic_cast<memimpl*>(srcs_[mem_idx_].get_impl());
-    uint32_t addr = srcs_[addr_idx_].eval(t).get_word(0);    
+    auto mem = dynamic_cast<memimpl*>(srcs_[0].get_impl());
+    auto data_width = mem->get_data_width();
+    uint32_t addr = srcs_[1].eval(t).get_word(0);
     mem->get_value().read(0,
                           value_.get_words(),
-                          CH_CEILDIV(value_.get_size(), 8),
-                          addr * mem->get_data_width(),
-                          mem->get_data_width());
+                          value_.get_cbsize(),
+                          addr * data_width,
+                          data_width);
   }
   return value_;
 }

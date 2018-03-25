@@ -356,7 +356,7 @@ delayed_aluimpl::delayed_aluimpl(context* ctx,
   p_next_.resize(delay, bitvector(this->get_size()));
   {
     auto clk = ctx->get_clk();
-    cd_ = ctx->create_cdomain({clock_event(clk, EDGE_POS)});
+    cd_ = ctx->create_cdomain({clock_event(clk, true)});
     cd_->add_use(this);
     clk_idx_ = srcs_.size();
     srcs_.push_back(clk);
@@ -379,7 +379,7 @@ delayed_aluimpl::delayed_aluimpl(context* ctx,
   p_next_.resize(delay, bitvector(this->get_size()));
   {
     auto clk = ctx->get_clk();
-    cd_ = ctx->create_cdomain({clock_event(clk, EDGE_POS)});
+    cd_ = ctx->create_cdomain({clock_event(clk, true)});
     cd_->add_use(this);
     clk_idx_ = srcs_.size();
     srcs_.push_back(clk);
@@ -456,7 +456,7 @@ lnodeimpl* ch::internal::createAluNode(
   return impl;
 }
 
-lnodeimpl* ch::internal::createRotateNode(const lnode& next, int dist, bool right) {
+lnodeimpl* ch::internal::createRotateNode(const lnode& next, unsigned dist, bool right) {
   auto ctx = next.get_ctx();
   auto N = next.get_size();
   auto mod = dist % N;

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "bit.h"
+#include "logic.h"
 
 namespace ch {
 namespace internal {
@@ -88,7 +88,7 @@ public:
             CH_REQUIRE_0(is_bit_convertible<U, addr_width>::value)>
   auto read(const U& addr) const {
     auto l_addr = get_lnode<U, addr_width>(addr);
-    return const_type_t<T>(bit_buffer(mem_.read(l_addr)));
+    return const_type_t<T>(logic_buffer(mem_.read(l_addr)));
   }
     
 protected:
@@ -129,7 +129,7 @@ public:
             CH_REQUIRE_0(is_bit_convertible<U, addr_width>::value)>
   auto read(const U& addr) const {
     auto laddr = get_lnode<U, addr_width>(addr);
-    return const_type_t<T>(bit_buffer(mem_.read(laddr)));
+    return const_type_t<T>(logic_buffer(mem_.read(laddr)));
   }
 
   template <typename U, typename V,

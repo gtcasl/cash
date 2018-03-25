@@ -261,18 +261,4 @@ TEST_CASE("registers", "[registers]") {
       return (r ==e);
     }, 8);
   }
-  
-  SECTION("latches", "[latch]") {
-    TEST([]()->ch_bit1 {
-      auto en   = ch_case(ch_getTick(), 8, 1_b)(5, 1)(4, 1)(2, 1)(1, 1)(0);
-      auto val  = ch_case(ch_getTick(), 8, 11_b)(5, 1)(3, 3)(2, 2)(1, 1)(0);
-      auto e    = ch_case(ch_getTick(), 9, 11_b)(8, 3)(7, 1)(6, 1)(5, 1)(3, 2)(2, 2)(0);
-      auto l = ch_latchNext(val, en);
-
-      ch_print("t={0}, clk={1}, en={2}, val={3}, l={4}, e={5}",
-           ch_getTick(), ch_getClock(), en, val, l, e);
-
-      return l == e;
-    }, 8);
-  }
 }

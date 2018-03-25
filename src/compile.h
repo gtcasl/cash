@@ -7,6 +7,7 @@ namespace internal {
 
 class compiler {
 public:  
+
   compiler(context* ctx);
   
   void run();

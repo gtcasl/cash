@@ -12,49 +12,11 @@ regimpl::regimpl(context* ctx,
                  const lnode& reset)
   : lnodeimpl(ctx, type_reg, next.get_size())
   , cd_(cd)
-  , next_idx_(-1)
-  , init_idx_(-1)
-  , reset_idx_(-1)
-  , enable_idx_(-1) {
+  , tick_(~0ull) {
   cd_->add_use(this);
-
-  next_idx_ = srcs_.size();
-  srcs_.emplace_back(next);
-
-  init_idx_ = srcs_.size();
-  srcs_.emplace_back(init);
-
-  reset_idx_ = srcs_.size();
   srcs_.emplace_back(reset);
-
-  this->get_signals(cd);
-}
-
-regimpl::regimpl(context* ctx,
-                 cdomain* cd,
-                 const lnode& next,
-                 const lnode& init,
-                 const lnode& reset,
-                 const lnode& enable)
-  : lnodeimpl(ctx, type_reg, next.get_size())
-  , cd_(cd)
-  , next_idx_(-1)
-  , init_idx_(-1)
-  , reset_idx_(-1)
-  , enable_idx_(-1) {
-  cd_->add_use(this);
-
-  next_idx_ = srcs_.size();
-  srcs_.emplace_back(next);
-
-  init_idx_ = srcs_.size();
   srcs_.emplace_back(init);
-
-  reset_idx_ = srcs_.size();
-  srcs_.emplace_back(reset);
-
-  enable_idx_ = srcs_.size();
-  srcs_.emplace_back(enable);
+  srcs_.emplace_back(next);
 
   this->get_signals(cd);
 }
@@ -80,27 +42,13 @@ regimpl::~regimpl() {
   cd_->remove_use(this);
 }
 
-void regimpl::tick(ch_tick t) { 
+void regimpl::tick(ch_tick t) {
   CH_UNUSED(t);
   value_ = q_next_;
 }
 
 void regimpl::tick_next(ch_tick t) {
-  if (reset_idx_ != -1 && srcs_[reset_idx_].eval(t)[0]) {
-    q_next_ = srcs_[init_idx_].eval(t);
-    if (cd_->is_asynchronous(srcs_[reset_idx_])) {
-      value_ = q_next_;
-    }
-  } else if (enable_idx_ != -1) {
-    if (srcs_[enable_idx_].eval(t)[0]) {
-      q_next_ = srcs_[next_idx_].eval(t);
-      if (cd_->is_asynchronous(srcs_[enable_idx_])) {
-        value_ = q_next_;
-      }
-    }
-  } else {
-    q_next_ = srcs_[next_idx_].eval(t);
-  }
+  q_next_ = srcs_[0].eval(t)[0] ? srcs_[1].eval(t) : srcs_[2].eval(t);
 }
 
 const bitvector& regimpl::eval(ch_tick t) {
@@ -137,20 +85,6 @@ void ch::internal::ch_popReset() {
 lnodeimpl* ch::internal::createRegNode(const lnode& next,
                                        const lnode& init) {
   auto ctx = next.get_ctx();
-  auto cd = ctx->create_cdomain({clock_event(ctx->get_clk(), EDGE_POS)});
+  auto cd = ctx->create_cdomain({clock_event(ctx->get_clk(), true)});
   return ctx->createNode<regimpl>(cd, next, init, ctx_curr()->get_reset());
-}
-
-lnodeimpl* ch::internal::createLatchNode(
-    const lnode& next,
-    const lnode& init,
-    const lnode& enable,
-    const lnode& reset) {
-  auto ctx = next.get_ctx();
-  auto cd = ctx->create_cdomain({
-    clock_event(enable, EDGE_ANY),
-    clock_event(next, EDGE_ANY),
-    clock_event(reset, EDGE_ANY),
-    clock_event(init, EDGE_ANY)});
-  return ctx->createNode<regimpl>(cd, next, init, reset, enable);
 }

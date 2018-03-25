@@ -7,7 +7,9 @@ namespace internal {
 
 class platform {
 public:  
+
   platform();
+
   ~platform();
 
   static const platform& self();

@@ -6,15 +6,16 @@
 using namespace ch::internal;
 
 clock_event::clock_event()
-  : edgedir_(EDGE_POS)
+  : pos_edge_(false)
   , cval_(false)
 {}
 
-clock_event::clock_event(const lnode& signal, EDGE_DIR edgedir)
+clock_event::clock_event(const lnode& signal, bool pos_edge)
   : signal_(signal)
-  , edgedir_(edgedir)
-  , cval_(false) 
-{}
+  , pos_edge_(pos_edge)
+  , cval_(false) {
+  assert(1 == signal.get_size());
+}
 
 clock_event::~clock_event() {
   //--
@@ -24,8 +25,7 @@ bool clock_event::eval(ch_tick t) {
   bool value = signal_.eval(t)[0];
   if (cval_ != value) {
     cval_ = value;
-    return (value  && (edgedir_ == EDGE_POS || edgedir_ == EDGE_ANY))
-        || (!value && (edgedir_ == EDGE_NEG || edgedir_ == EDGE_ANY));
+    return (value && pos_edge_) || (!value && !pos_edge_);
   }
   return false;
 }
@@ -45,15 +45,6 @@ cdomain::cdomain(context* ctx, const std::vector<clock_event>& sensitivity_list)
 
 cdomain::~cdomain() {
   ctx_->remove_cdomain(this);
-}
-
-bool cdomain::is_asynchronous(const lnode& signal) const {
-  for (auto& e : sensitivity_list_) {
-    if (e.get_signal().get_id() == signal.get_id()
-     && e.get_edgedir() == EDGE_ANY)
-        return true;
-  }
-  return false;
 }
 
 bool cdomain::operator==(const std::vector<clock_event>& events) const {

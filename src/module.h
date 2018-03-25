@@ -43,6 +43,7 @@ public:
 protected:
 
   ch_module(const ch_module& rhs) = delete;
+
   ch_module& operator=(const ch_module& rhs) = delete;
 };
 

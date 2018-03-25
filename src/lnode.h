@@ -58,10 +58,6 @@ public:
 
   bitvector& get_data();
 
-  bool get_bool(unsigned index) const;
-
-  void set_bool(unsigned index, bool value);
-
   uint32_t get_var_id() const;
 
   void set_var_id(uint32_t var_id);

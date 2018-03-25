@@ -660,7 +660,7 @@ context::emit_conditionals(lnodeimpl* dst,
         return ret;
 
       // create select node
-      selectimpl* sel = this->createNode<selectimpl>(current->get_size(), branch->key);
+      auto sel = this->createNode<selectimpl>(current->get_size(), branch->key);
       sel->set_source_location(branch->sloc);      
       for (auto& value : values) {
         auto pred = value.first;
@@ -709,7 +709,7 @@ lnodeimpl* context::get_predicate() {
 
 lnodeimpl* context::get_literal(const bitvector& value) {
   // first lookup literals cache
-  for (litimpl* lit : literals_) {
+  for (auto lit : literals_) {
     if (lit->get_value() == value)
       return lit;
   }
@@ -720,12 +720,12 @@ lnodeimpl* context::get_literal(const bitvector& value) {
 cdomain* context::create_cdomain(
     const std::vector<clock_event>& sensitivity_list) {
   // return existing cdomain 
-  for (cdomain* cd : cdomains_) {
+  for (auto cd : cdomains_) {
     if (*cd == sensitivity_list)
       return cd;
   }  
   // allocate new cdomain
-  cdomain* cd = new cdomain(this, sensitivity_list);
+  auto cd = new cdomain(this, sensitivity_list);
   cdomains_.emplace_back(cd);
   return cd;
 }
@@ -783,21 +783,27 @@ live_nodes_t context::compute_live_nodes() const {
 }
 
 void context::tick(ch_tick t) {
+  // tick bindings
   for (auto node : bindings_) {
     node->tick(t);
   }
+
+  // tick local clock domains
   for (auto cd : cdomains_) {
     cd->tick(t);
-  }  
+  }
 }
 
 void context::tick_next(ch_tick t) {
+  // tick bindings
   for (auto node : bindings_) {
     node->tick_next(t);
   }
+
+  // tick local clock domains
   for (auto cd : cdomains_) {
     cd->tick_next(t);
-  }  
+  }
 }
 
 void context::eval(ch_tick t) {
@@ -835,7 +841,7 @@ const char* context::enum_to_string(const lnode& node, ch_tick t) {
 }
 
 void context::dump_ast(std::ostream& out, uint32_t level) {
-  for (lnodeimpl* node : nodes_) {
+  for (auto node : nodes_) {
     node->print(out, level);
     out << std::endl;
   }

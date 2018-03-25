@@ -21,7 +21,9 @@ public:
 protected:
 
   aluimpl(context* ctx, ch_alu_op op, const lnode& lhs);
+
   aluimpl(context* ctx, ch_alu_op op, const lnode& lhs, const lnode& rhs);
+
   ~aluimpl() {}
 
    void eval(bitvector& inout, ch_tick t);
@@ -48,6 +50,7 @@ public:
   }
 
   void tick(ch_tick t) override;
+
   void tick_next(ch_tick t) override;
 
   const bitvector& eval(ch_tick t) override;

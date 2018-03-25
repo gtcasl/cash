@@ -14,7 +14,7 @@ std::string ch::internal::fstring(const char* format, ...) {
 
   std::string result;
   char stack_buffer[STACK_BUFFER_SIZE];
-  char *buffer = stack_buffer;
+  auto buffer = stack_buffer;
   bool is_heap_buffer = false;
 
   va_list args_orig, args_copy;
@@ -75,7 +75,7 @@ std::string ch::internal::identifier_from_typeid(const std::string& name) {
 
 std::string unique_name::get(const std::string& name) {
   std::string unique_name(name);
-  unsigned instances = dups_[name]++;
+  uint32_t instances = dups_[name]++;
   if (instances != 0) {
     unique_name = fstring("%s_%d", name.c_str(), instances-1);
     // resolve collisions

@@ -74,7 +74,7 @@ void proxyimpl::add_source(uint32_t dst_offset,
     std::set<uint32_t> deleted; // use ordered set for index ordering
     uint32_t i = 0;
     for (; length != 0 && i < n; ++i) {
-      range_t& curr = ranges_[i];
+      auto& curr = ranges_[i];
       uint32_t curr_end = curr.dst_offset + curr.length;
       uint32_t src_end  = dst_offset + length;
       range_t new_range{new_srcidx, dst_offset, src_offset, length};
@@ -181,7 +181,7 @@ void proxyimpl::add_source(uint32_t dst_offset,
       uint32_t idx = *it;
       bool in_use = false;
       // ensure that it is not in use
-      for (const range_t& r : ranges_) {
+      for (auto& r : ranges_) {
         if (r.src_idx == idx) {
           in_use = true;
           break;
@@ -219,7 +219,7 @@ lnodeimpl* proxyimpl::get_slice(uint32_t offset, uint32_t length) {
   assert(length <= value_.get_size());
 
   // return the nested node if the offset/size match
-  for (const auto& range : ranges_) {
+  for (auto& range : ranges_) {
     if (range.length == length
      && range.dst_offset == offset
      && range.src_offset == 0
@@ -230,7 +230,7 @@ lnodeimpl* proxyimpl::get_slice(uint32_t offset, uint32_t length) {
 
   // return new slice
   auto proxy = ctx_->createNode<proxyimpl>(length);
-  for (const auto& range : ranges_) {
+  for (auto& range : ranges_) {
     uint32_t r_end = range.dst_offset + range.length;
     uint32_t src_end = offset + length;
     if (offset < r_end && src_end > range.dst_offset) {
@@ -251,14 +251,13 @@ lnodeimpl* proxyimpl::get_slice(uint32_t offset, uint32_t length) {
 std::vector<std::pair<uint32_t, uint32_t>>
 proxyimpl::get_update_slices(uint32_t offset, uint32_t length) {
   std::vector<std::pair<uint32_t, uint32_t>> ret;
-
   uint32_t n = ranges_.size();
   if (0 == n) {
     ret.emplace_back(offset, length);
   } else {
     uint32_t i = 0;
     for (; length && i < n; ++i) {
-      range_t& curr = ranges_[i];
+      auto& curr = ranges_[i];
       uint32_t curr_end = curr.dst_offset + curr.length;
       uint32_t src_end  = offset + length;
 
@@ -305,8 +304,8 @@ proxyimpl::get_update_slices(uint32_t offset, uint32_t length) {
 const bitvector& proxyimpl::eval(ch_tick t) {
   if (tick_ != t) {  
     tick_ = t;    
-    for (const range_t& range : ranges_) {
-      const bitvector& bits = srcs_[range.src_idx].eval(t);
+    for (auto& range : ranges_) {
+      auto& bits = srcs_[range.src_idx].eval(t);
       value_.copy(range.dst_offset, bits, range.src_offset, range.length);
     }
   }  
@@ -316,16 +315,16 @@ const bitvector& proxyimpl::eval(ch_tick t) {
 void proxyimpl::print(std::ostream& out, uint32_t level) const {
   out << "#" << id_ << " <- " << this->get_type() << value_.get_size();
   out << "(";
-  for (uint32_t i = 0, s = 0, n = ranges_.size(); i < n; ++i) {
-    const range_t& range = ranges_[i];
-    if (i > 0)
-      out << ", ";
+  uint32_t s(0);
+  auto_separator sep(", ");
+  for (auto& range : ranges_) {
+    out << sep;
     if (s != range.dst_offset) {
       s = range.dst_offset;
       out << range.dst_offset << ":";
     }
     s += range.length;
-    const auto src = srcs_[range.src_idx];
+    auto& src = srcs_[range.src_idx];
     out << "#" << src.get_id();
     if (range.length < src.get_size()) {
       out << "[" << range.src_offset;
@@ -336,7 +335,7 @@ void proxyimpl::print(std::ostream& out, uint32_t level) const {
     }
   }
   out << ")";
-  if (level == 2) {
+  if (2 == level) {
     out << " = " << value_;
   }
 }

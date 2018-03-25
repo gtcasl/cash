@@ -6,24 +6,18 @@
 namespace ch {
 namespace internal {
 
-enum EDGE_DIR {
-  EDGE_POS = 0,
-  EDGE_NEG = 1,
-  EDGE_ANY = 2,
-};
-
 class clock_event {
 public:  
   clock_event();
-  clock_event(const lnode& signal, EDGE_DIR edgedir);
+  clock_event(const lnode& signal, bool pos_edge);
   ~clock_event();
   
   const lnode& get_signal() const {
     return signal_;
   }
   
-  EDGE_DIR get_edgedir() const {
-    return edgedir_;
+  bool is_pos_edge() const {
+    return pos_edge_;
   }
   
   bool operator==(const lnode& signal) const {
@@ -32,16 +26,16 @@ public:
   
   bool operator==(const clock_event& e) const {
     return (signal_.get_id() == e.signal_.get_id())
-        && (edgedir_ == e.edgedir_);
+        && (pos_edge_ == e.pos_edge_);
   }
   
   bool eval(ch_tick t);
   
 protected:
 
-  lnode    signal_;
-  EDGE_DIR edgedir_;
-  bool     cval_; 
+  lnode signal_;
+  bool  pos_edge_;
+  bool  cval_;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -49,8 +43,6 @@ protected:
 class cdomain : public refcounted {
 public:
   cdomain(context* ctx, const std::vector<clock_event>& sensitivity_list);
-
-  bool is_asynchronous(const lnode& signal) const;
 
   const std::vector<clock_event>& get_sensitivity_list() const {
     return sensitivity_list_;
@@ -65,7 +57,7 @@ public:
   void add_use(tickable* reg);
 
   void remove_use(tickable* reg);
-  
+
   void tick(ch_tick t);
 
   void tick_next(ch_tick t);

@@ -14,7 +14,7 @@ std::string addr2line(std::string const &program, void *addr) {
   std::stringstream ss;
   ss << "addr2line -e " << program << " " << addr;
 
-  FILE *fp = popen(ss.str().c_str(), "r");
+  auto fp = popen(ss.str().c_str(), "r");
   ss.str("");
   if (fp) {
     char buff[256];
@@ -37,7 +37,7 @@ std::vector<std::string> generate_stack_trace() {
   void *trace[MAX_TRACE_LEVEL];
   int trace_size = backtrace(trace, MAX_TRACE_LEVEL);
 
-  char **messages = backtrace_symbols(trace, trace_size);
+  char** messages = backtrace_symbols(trace, trace_size);
   std::vector<std::string> stacktrace;
   for (int i = 0; i < trace_size; i++) {
     // message[i] will be of the form:
@@ -48,7 +48,7 @@ std::vector<std::string> generate_stack_trace() {
     boost::algorithm::split(split_vector, messages[i], boost::is_any_of("(+)"));
 
     int status;
-    char *demangled_name = abi::__cxa_demangle(split_vector[1].c_str(), 0, 0, &status);
+    char* demangled_name = abi::__cxa_demangle(split_vector[1].c_str(), 0, 0, &status);
     if (demangled_name == nullptr) {
       demangled_name = messages[i];
     }

@@ -161,7 +161,6 @@ Completed:
 - update llrom
 - update llram
 - fix memory implementation
-- implemtned latch support
 - replace abort() with runtime assertion macro
 - implement ch_pushcd, ch_popcd api (check out the opengl matrix api)
 - implement new verilog generator

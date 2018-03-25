@@ -68,7 +68,9 @@ struct cond_br_t {
     , parent(p_parent)
     , sloc(p_sloc)
   {}
+
   ~cond_br_t();
+
   lnodeimpl* key;
   cond_block_t* parent;
   const source_location sloc;
@@ -81,6 +83,7 @@ struct cond_block_t {
     , pred(p_pred)
     , branch(p_branch)
   {}
+
   uint32_t id;
   lnodeimpl* pred;
   cond_br_t* branch;
@@ -121,6 +124,7 @@ typedef std::unordered_map<uint32_t, enum_string_cb> enum_strings_t;
 
 class context : public refcounted {
 public:
+
   uint32_t get_id() const {
     return id_;
   }
@@ -184,11 +188,15 @@ public:
   //--
 
   void push_clk(const lnode& clk);
+
   void pop_clk();
+
   lnodeimpl* get_clk();
 
   void push_reset(const lnode& reset);
+
   void pop_reset();
+
   lnodeimpl* get_reset();
 
   //--
@@ -207,6 +215,7 @@ public:
   }
 
   aluimpl* createAluNode(uint32_t op, const lnode& in);
+
   aluimpl* createAluNode(uint32_t op, const lnode& lhs, const lnode& rhs);
 
   node_list_t::iterator destroyNode(const node_list_t::iterator& it);
@@ -214,17 +223,22 @@ public:
   //--
 
   void begin_branch(lnodeimpl* key, const source_location& sloc);
+
   void end_branch();
 
   void begin_block(lnodeimpl* pred);
+
   void end_block();
 
   bool conditional_enabled(lnodeimpl* node = nullptr) const;
+
   void conditional_assign(lnodeimpl* dst,
                           uint32_t offset,
                           uint32_t length,
                           lnodeimpl* src);
+
   lnodeimpl* get_predicate();
+
   void remove_local_variable(lnodeimpl* src, lnodeimpl* dst);
 
   //--
@@ -234,6 +248,7 @@ public:
   //--
 
   cdomain* create_cdomain(const std::vector<clock_event>& sensitivity_list);
+
   void remove_cdomain(cdomain* cd);
 
   //--
@@ -250,31 +265,40 @@ public:
   
   //--
   
-  void tick(ch_tick t);  
+  void tick(ch_tick t);
+
   void tick_next(ch_tick t);
+
   void eval(ch_tick t);
-  
+
   //--
   
-  void dump_ast(std::ostream& out, uint32_t level);  
+  void dump_ast(std::ostream& out, uint32_t level);
+
   void dump_cfg(lnodeimpl* node, std::ostream& out, uint32_t level);  
+
   void dump_stats(std::ostream& out);
 
   //--
 
   void bind_input(const lnode& src, const lnode& input);
+
   void bind_output(const lnode& dst, const lnode& output);
 
   //--
+
   void register_enum_string(const lnode& node, enum_string_cb callback);
+
   const char* enum_to_string(const lnode& node, ch_tick t);
   
 protected:
 
   context(const std::string& name);
+
   ~context();
 
   void add_node(lnodeimpl* node);
+
   node_list_t::iterator remove_node(const node_list_t::iterator& it);
 
   lnodeimpl* emit_conditionals(lnodeimpl* dst,
@@ -302,7 +326,6 @@ protected:
   std::list<ioimpl*>      gtaps_;
   std::list<litimpl*>     literals_;
   std::list<cdomain*>     cdomains_;
-
   std::list<bindimpl*>    bindings_;
 
   std::stack<cond_br_t*>  cond_branches_;
@@ -322,7 +345,9 @@ protected:
 };
 
 context* ctx_create(size_t signature, const std::string& name);
+
 context* ctx_swap(context* ctx);
+
 context* ctx_curr();
 
 }

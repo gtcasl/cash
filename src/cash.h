@@ -2,7 +2,7 @@
 
 #include "scalar.h"
 #include "literals.h"
-#include "bit.h"
+#include "logic.h"
 #include "select.h"
 #include "if.h"
 #include "switch.h"
@@ -139,7 +139,6 @@ namespace core {
   //
 
   using ch::internal::ch_regNext;
-  using ch::internal::ch_latchNext;
   using ch::internal::ch_delay;
   using ch::internal::ch_pushClock;
   using ch::internal::ch_popClock;
@@ -292,6 +291,9 @@ inline namespace literals {
 #define __io       CH_IO
 #define __flip     CH_FLIP
 
-#define __requires CH_REQUIRE_0
+#define __require0 CH_REQUIRE_0
+#define __require1 CH_REQUIRE_1
+#define __require2 CH_REQUIRE_2
+#define __require3 CH_REQUIRE_3
 
 #define __source_location CH_SRC_LOCATION
