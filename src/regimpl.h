@@ -2,7 +2,7 @@
 
 #include "lnodeimpl.h"
 #include "tickable.h"
-#include "cdomain.h"
+#include "cdimpl.h"
 
 namespace ch {
 namespace internal {
@@ -10,19 +10,19 @@ namespace internal {
 class regimpl : public tickable, public lnodeimpl {
 public:
 
-  cdomain* get_cd() const {
-    return cd_;
-  }
-
-  const lnode& get_reset() const {
+  const lnode& get_cd() const {
     return srcs_[0];
   }
 
-  const lnode& get_init() const {
+  const lnode& get_next() const {
     return srcs_[1];
   }
 
-  const lnode& get_next() const {
+  bool has_init() const {
+    return (3 == srcs_.size());
+  }
+
+  const lnode& get_init() const {
     return srcs_[2];
   }
 
@@ -32,20 +32,16 @@ public:
   
   const bitvector& eval(ch_tick t) override;
 
+  void detach() override;
   
 protected:
 
-  regimpl(context* ctx,
-          cdomain* cd,
-          const lnode& next,
-          const lnode& init,
-          const lnode& reset);
+  regimpl(context* ctx, const lnode& next, const lnode& init);
+
+  regimpl(context* ctx, const lnode& next);
 
   virtual ~regimpl();
 
-  void get_signals(cdomain* cd);
-
-  cdomain* cd_;
   bitvector q_next_;
   ch_tick tick_;
 

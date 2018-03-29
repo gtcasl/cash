@@ -5,16 +5,16 @@
 namespace ch {
 namespace internal {
 
-class tickimpl : public ioimpl {
+class timeimpl : public ioimpl {
 public:
 
   const bitvector& eval(ch_tick t) override;
   
 protected:
 
-  tickimpl(context* ctx);
+  timeimpl(context* ctx);
 
-  ~tickimpl() {}
+  ~timeimpl() {}
 
   ch_tick tick_;
 

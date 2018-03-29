@@ -5,41 +5,34 @@
 
 using namespace ch::internal;
 
-regimpl::regimpl(context* ctx,
-                 cdomain* cd,
-                 const lnode& next,
-                 const lnode& init,
-                 const lnode& reset)
+regimpl::regimpl(context* ctx, const lnode& next, const lnode& init)
   : lnodeimpl(ctx, type_reg, next.get_size())
-  , cd_(cd)
   , tick_(~0ull) {
-  cd_->add_use(this);
-  srcs_.emplace_back(reset);
-  srcs_.emplace_back(init);
+  auto cd = ctx->current_cd();
+  cd->add_reg(this);
+  srcs_.emplace_back(cd);  
   srcs_.emplace_back(next);
-
-  this->get_signals(cd);
+  srcs_.emplace_back(init);
 }
 
-void regimpl::get_signals(cdomain* cd) {
-  auto& sensitivity_list = cd->get_sensitivity_list();
-  for (auto& e : sensitivity_list) {
-    const auto& signal = e.get_signal();
-    bool already_added = false;
-    for (auto& src : srcs_) {
-      if (src.get_id() == signal.get_id()) {
-        already_added = true;
-        break;
-      }
-    }
-    if (!already_added) {
-      srcs_.emplace_back(signal);
-    }
-  }
+regimpl::regimpl(context* ctx, const lnode& next)
+  : lnodeimpl(ctx, type_reg, next.get_size())
+  , tick_(~0ull) {
+  auto cd = ctx->current_cd();
+  cd->add_reg(this);
+  srcs_.emplace_back(cd);
+  srcs_.emplace_back(next);
 }
 
 regimpl::~regimpl() {
-  cd_->remove_use(this);
+  this->detach();
+}
+
+void regimpl::detach() {
+  if (!srcs_[0].is_empty()) {
+    reinterpret_cast<cdimpl*>(srcs_[0].get_impl())->remove_reg(this);
+    srcs_[0].clear();
+  }
 }
 
 void regimpl::tick(ch_tick t) {
@@ -48,7 +41,12 @@ void regimpl::tick(ch_tick t) {
 }
 
 void regimpl::tick_next(ch_tick t) {
-  q_next_ = srcs_[0].eval(t)[0] ? srcs_[1].eval(t) : srcs_[2].eval(t);
+  if (this->has_init()) {
+    auto& reset = reinterpret_cast<cdimpl*>(srcs_[0].get_impl())->get_reset();
+    q_next_ = reset.eval(t)[0] ? srcs_[2].eval(t) : srcs_[1].eval(t);
+  } else {
+    q_next_ = srcs_[1].eval(t);
+  }
 }
 
 const bitvector& regimpl::eval(ch_tick t) {
@@ -58,33 +56,36 @@ const bitvector& regimpl::eval(ch_tick t) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-const ch_bit<1> ch::internal::ch_getClock() {
-  return make_type<ch_bit<1>>(ctx_curr()->get_clk());
-}
-
-void ch::internal::pushClock(const lnode& clk) {
-  ctx_curr()->push_clk(clk);
-}
-
-void ch::internal::ch_popClock() {
-  ctx_curr()->pop_clk();
-}
-
-const ch_bit<1> ch::internal::ch_getReset() {
-  return make_type<ch_bit<1>>(ctx_curr()->get_reset());
-}
-
-void ch::internal::pushReset(const lnode& reset) {
-  ctx_curr()->push_reset(reset);
-}
-
-void ch::internal::ch_popReset() {
-  ctx_curr()->pop_reset();
-}
-
-lnodeimpl* ch::internal::createRegNode(const lnode& next,
-                                       const lnode& init) {
+lnodeimpl* ch::internal::createRegNode(const lnode& next, const lnode& init) {
   auto ctx = next.get_ctx();
-  auto cd = ctx->create_cdomain({clock_event(ctx->get_clk(), true)});
-  return ctx->createNode<regimpl>(cd, next, init, ctx_curr()->get_reset());
+  return ctx->create_node<regimpl>(next, init);
+}
+
+lnodeimpl* ch::internal::createRegNode(const lnode& next) {
+  auto ctx = next.get_ctx();
+  return ctx->create_node<regimpl>(next);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void ch::internal::ch_pushcd(const ch_bit<1>& clock,
+                             const ch_bit<1>& reset,
+                             bool posedge) {
+  auto ctx = ctx_curr();
+  auto _cd = ctx->create_cdomain(get_lnode(clock), get_lnode(reset), posedge);
+  ctx->push_cd(_cd);
+}
+
+void ch::internal::ch_popcd() {
+  ctx_curr()->pop_cd();
+}
+
+ch_bit<1> ch::internal::ch_clock() {
+  auto cd = ctx_curr()->current_cd();
+  return make_type<ch_bit<1>>(cd->get_clock());
+}
+
+ch_bit<1> ch::internal::ch_reset() {
+  auto cd = ctx_curr()->current_cd();
+  return make_type<ch_bit<1>>(cd->get_reset());
 }

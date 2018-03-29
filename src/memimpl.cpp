@@ -24,13 +24,12 @@ memimpl::memimpl(context* ctx,
   : ioimpl(ctx, type_mem, data_width * num_items)
   , data_width_(data_width)
   , num_items_(num_items)
-  , cd_(nullptr)
+  , write_enable_(write_enable)
   , has_initdata_(!init_data.empty()) {
   if (write_enable) {
-    lnode clk(ctx->get_clk());
-    cd_ = ctx->create_cdomain({clock_event(clk, true)});
-    cd_->add_use(this);
-    srcs_.emplace_back(clk);
+    auto cd = ctx->current_cd();
+    cd->add_reg(this);
+    srcs_.emplace_back(cd);
   }
   if (has_initdata_) {
     assert(8 * init_data.size() >= value_.get_size());
@@ -41,43 +40,49 @@ memimpl::memimpl(context* ctx,
 memimpl::~memimpl() {
   // detach ports
   while (!ports_.empty()) {
-    dynamic_cast<memportimpl*>(ports_.front().get_impl())->detach();
+    ports_.front()->detach();
   }
-  if (cd_) {
-    cd_->remove_use(this);
+  if (write_enable_) {
+    this->detach();
+  }
+}
+
+void memimpl::detach() {
+  if (!srcs_[0].is_empty()) {
+    reinterpret_cast<cdimpl*>(srcs_[0].get_impl())->remove_reg(this);
+    srcs_[0].clear();
   }
 }
 
 void memimpl::remove_port(memportimpl* port) {
   for (auto it = ports_.begin(), end = ports_.end(); it != end; ++it) {
-    if (it->get_id() == port->get_id()) {
+    if ((*it)->get_id() == port->get_id()) {
       ports_.erase(it);
       break;
     }
   }
 }
 
-lnode& memimpl::get_port(const lnode& addr) {
-  for (auto& port : ports_) {
-    auto impl = dynamic_cast<memportimpl*>(port.get_impl());
-    if (impl->get_addr().get_id() == addr.get_id()) {
+memportimpl* memimpl::get_port(const lnode& addr) {
+  for (auto port : ports_) {
+    if (port->get_addr().get_id() == addr.get_id()) {
       return port;
     }
   }
-  auto impl = ctx_->createNode<memportimpl>(this, ports_.size(), addr);
+  auto impl = ctx_->create_node<memportimpl>(this, ports_.size(), addr);
   ports_.emplace_back(impl);
   return ports_.back();
 }
 
 void memimpl::tick(ch_tick t) {
-  for (auto& port : ports_) {
-    dynamic_cast<memportimpl*>(port.get_impl())->tick(t);
+  for (auto port : ports_) {
+    port->tick(t);
   }
 }
 
 void memimpl::tick_next(ch_tick t) {
-  for (auto& port : ports_) {
-    dynamic_cast<memportimpl*>(port.get_impl())->tick_next(t);
+  for (auto port : ports_) {
+    port->tick_next(t);
   }
 }
 
@@ -202,21 +207,21 @@ memory::memory(uint32_t data_width,
                bool write_enable,
                const std::vector<uint8_t>& init_data) {
   CH_CHECK(!ctx_curr()->conditional_enabled(), "memory objects cannot be nested inside a conditional block");
-  impl_ = ctx_curr()->createNode<memimpl>(data_width, num_items, write_enable, init_data);
+  impl_ = ctx_curr()->create_node<memimpl>(data_width, num_items, write_enable, init_data);
 }
 
-const lnode& memory::read(const lnode& addr) const {
-  auto& port = impl_->get_port(addr);
-  dynamic_cast<memportimpl*>(port.get_impl())->read();
+lnodeimpl* memory::read(const lnode& addr) const {
+  auto port = impl_->get_port(addr);
+  port->read();
   return port;
 }
 
 void memory::write(const lnode& addr, const lnode& value) {
-  auto& port = impl_->get_port(addr);
-  dynamic_cast<memportimpl*>(port.get_impl())->write(value);
+  auto port = impl_->get_port(addr);
+  port->write(value);
 }
 
 void memory::write(const lnode& addr, const lnode& value, const lnode& enable) {
-  auto& port = impl_->get_port(addr);
-  dynamic_cast<memportimpl*>(port.get_impl())->write(value, enable);
+  auto port = impl_->get_port(addr);
+  port->write(value, enable);
 }

@@ -11,8 +11,8 @@
 #include "memimpl.h"
 #include "aluimpl.h"
 #include "assertimpl.h"
-#include "tickimpl.h"
-#include "cdomain.h"
+#include "timeimpl.h"
+#include "cdimpl.h"
 #include "arithm.h"
 #include "select.h"
 #include "enum.h"
@@ -25,8 +25,9 @@ class context_manager {
 public:
   context_manager() : ctx_(nullptr) {}
   ~context_manager() {
-    if (ctx_)
+    if (ctx_) {
       ctx_->release();
+    }
   }
 
   context* create(size_t signature, const std::string& name) {
@@ -90,55 +91,42 @@ context::context(const std::string& name)
   , block_idx_(0)
   , default_clk_(nullptr)
   , default_reset_(nullptr)
-  , tick_(nullptr)
+  , time_(nullptr)
 {}
 
 context::~context() {
   // delete allocated nodes
-  for (auto it = nodes_.begin(), end = nodes_.end(); it != end;) {
-    delete *it++;
+  for (auto node : nodes_) {
+    delete node;
   }
 }
 
-void context::push_clk(const lnode& clk) {  
-  user_clks_.emplace(clk);
+void context::push_cd(cdimpl* cd) {
+  cd_stack_.emplace(cd);
 }
 
-void context::pop_clk() {
-  user_clks_.pop();
+void context::pop_cd() {
+  cd_stack_.pop();
 }
 
-void context::push_reset(const lnode& reset) {
-  user_resets_.emplace(reset);
-}
-
-void context::pop_reset() {
-  user_resets_.pop();
-}
-
-lnodeimpl* context::get_clk() {
-  if (!user_clks_.empty())
-    return user_clks_.top().get_impl();
-  if (nullptr == default_clk_) {
-    default_clk_ = this->createNode<inputimpl>(1, "clk");
+cdimpl* context::current_cd() {
+  if (cd_stack_.empty()) {
+    if (nullptr == default_clk_) {
+      default_clk_ = this->create_node<inputimpl>(1, "clk");
+    }
+    if (nullptr == default_reset_) {
+       default_reset_ = this->create_node<inputimpl>(1, "reset");
+    }
+    return this->create_cdomain(default_clk_, default_reset_, true);
   }
-  return default_clk_;
+  return cd_stack_.top();
 }
 
-lnodeimpl* context::get_reset() {
-  if (!user_resets_.empty())
-    return user_resets_.top().get_impl();
-  if (nullptr == default_reset_) {
-     default_reset_ = this->createNode<inputimpl>(1, "reset");
+lnodeimpl* context::get_time() {
+  if (nullptr == time_) {
+    time_ = this->create_node<timeimpl>();
   }
-  return default_reset_;
-}
-
-lnodeimpl* context::get_tick() {
-  if (nullptr == tick_) {
-    tick_ = this->createNode<tickimpl>();
-  }
-  return tick_;
+  return time_;
 }
 
 uint32_t context::node_id() {
@@ -154,12 +142,26 @@ uint32_t context::node_id() {
   return nodeid;
 }
 
-aluimpl* context::createAluNode(uint32_t op, const lnode& in) {
+cdimpl* context::create_cdomain(const lnode& clock,
+                                const lnode& reset,
+                                bool posedge) {
+  // return existing match
+  for (auto cd : cdomains_) {
+    if (cd->get_clock() == clock
+     && cd->get_reset() == reset
+     && cd->posedge()   == posedge)
+      return cd;
+  }
+  // allocate new cdomain
+  return this->create_node<cdimpl>(clock, reset, posedge);
+}
+
+aluimpl* context::create_alu(uint32_t op, const lnode& in) {
   aluimpl* node;
   alu_key_t hk{op, in.get_id(), 0};
   auto it = alu_cache_.find(hk);
   if (it == alu_cache_.end()) {
-    node = this->createNode<aluimpl>((ch_alu_op)op, in);
+    node = this->create_node<aluimpl>((ch_alu_op)op, in);
     alu_cache_[hk] = node;
   } else {
     node = it->second;
@@ -167,7 +169,7 @@ aluimpl* context::createAluNode(uint32_t op, const lnode& in) {
   return node;
 }
 
-aluimpl* context::createAluNode(uint32_t op, const lnode& lhs, const lnode& rhs) {
+aluimpl* context::create_alu(uint32_t op, const lnode& lhs, const lnode& rhs) {
   aluimpl* node;
   alu_key_t hk{op, lhs.get_id(), rhs.get_id()};
   if (alu_symmetric((ch_alu_op)hk.op)
@@ -177,7 +179,7 @@ aluimpl* context::createAluNode(uint32_t op, const lnode& lhs, const lnode& rhs)
   }
   auto it = alu_cache_.find(hk);
   if (it == alu_cache_.end()) {
-    node = this->createNode<aluimpl>((ch_alu_op)op, lhs, rhs);
+    node = this->create_node<aluimpl>((ch_alu_op)op, lhs, rhs);
     alu_cache_[hk] = node;
   } else {
     node = it->second;
@@ -194,8 +196,8 @@ node_list_t::iterator context::destroyNode(const node_list_t::iterator& it) {
 
 void context::add_node(lnodeimpl* node) {
   nodes_.emplace_back(node);
-
-  switch (node->get_type()) {
+  auto type = node->get_type();
+  switch (type) {
   case type_undef:
     undefs_.emplace_back((undefimpl*)node);
     break;
@@ -208,7 +210,7 @@ void context::add_node(lnodeimpl* node) {
   case type_input:
     {
       // ensure clock and reset signals are ordered first
-      auto input = dynamic_cast<inputimpl*>(node);
+      auto input = reinterpret_cast<inputimpl*>(node);
       if (input->get_name() == "clk") {
         inputs_.emplace_front(input);
       } else if (input->get_name() == "reset") {
@@ -225,6 +227,9 @@ void context::add_node(lnodeimpl* node) {
   case type_output:
     outputs_.emplace_back((outputimpl*)node);
     break; 
+  case type_cd:
+    cdomains_.emplace_back((cdimpl*)node);
+    break;
   case type_bind:
     bindings_.emplace_back((bindimpl*)node);
     break;
@@ -279,6 +284,9 @@ node_list_t::iterator context::remove_node(const node_list_t::iterator& it) {
   case type_output:
     outputs_.remove((outputimpl*)node);
     break;
+  case type_cd:
+    cdomains_.remove((cdimpl*)node);
+    break;
   case type_bind:
     bindings_.remove((bindimpl*)node);
     break;
@@ -290,8 +298,9 @@ node_list_t::iterator context::remove_node(const node_list_t::iterator& it) {
     gtaps_.remove((ioimpl*)node);
     break;
   case type_tick:
-    if (node == tick_)
-      tick_ = nullptr;
+    if (node == time_) {
+      time_ = nullptr;
+    }
     break;
   default:
     break;
@@ -334,11 +343,10 @@ void context::end_branch() {
     // emit conditional statements
     for (auto& var : cond_vars_) {      
       auto dst = var.first;
-      auto proxy  = dynamic_cast<proxyimpl*>(dst);
-      assert(proxy);
+      assert(type_proxy == dst->get_type());
       for (auto& slice : var.second) {
         auto value  = this->emit_conditionals(dst, slice.first, slice.second, curr_branch);
-        proxy->add_source(slice.first.offset, value, 0, slice.first.length);
+        reinterpret_cast<proxyimpl*>(dst)->add_source(slice.first.offset, value, 0, slice.first.length);
       }
     }
     // cleanup
@@ -408,7 +416,7 @@ void context::conditional_assign(
                             lnodeimpl* src,
                             uint32_t src_offset) {
     if (src->get_size() != range.length) {
-      src = this->createNode<proxyimpl>(src, src_offset, range.length);
+      src = this->create_node<proxyimpl>(src, src_offset, range.length);
     }
     slices[range][loc] = src;
   };
@@ -599,17 +607,17 @@ context::emit_conditionals(lnodeimpl* dst,
           // combine predicates
           auto pred0 = values.front().first;
           if (key) {
-            pred0 = this->createAluNode(alu_eq, key, pred0);
+            pred0 = this->create_alu(alu_eq, key, pred0);
           }
           auto pred1 = _true->get_src(0);
           if (_true->has_key()) {
             // create predicate
-            pred1 = this->createAluNode(alu_eq, pred1, _true->get_src(1));            
+            pred1 = this->create_alu(alu_eq, pred1, _true->get_src(1));
             // remove key from src list
             _true->get_srcs().erase(_true->get_srcs().begin());
             _true->set_key(false);
           }
-          auto pred = this->createAluNode(alu_and, pred0, pred1);
+          auto pred = this->create_alu(alu_and, pred0, pred1);
           _true->set_src(0, pred);
           return _true;
         }
@@ -660,7 +668,7 @@ context::emit_conditionals(lnodeimpl* dst,
         return ret;
 
       // create select node
-      auto sel = this->createNode<selectimpl>(current->get_size(), branch->key);
+      auto sel = this->create_node<selectimpl>(current->get_size(), branch->key);
       sel->set_source_location(branch->sloc);      
       for (auto& value : values) {
         auto pred = value.first;
@@ -698,7 +706,7 @@ lnodeimpl* context::get_predicate() {
   auto one = this->get_literal(bitvector(1, true));
 
   // create predicate variable
-  auto predicate = this->createNode<proxyimpl>(zero);
+  auto predicate = this->create_node<proxyimpl>(zero);
   this->remove_local_variable(predicate, nullptr);
 
   // assign predicate
@@ -714,28 +722,11 @@ lnodeimpl* context::get_literal(const bitvector& value) {
       return lit;
   }
   // create new literal
-  return this->createNode<litimpl>(value);
-}
-
-cdomain* context::create_cdomain(
-    const std::vector<clock_event>& sensitivity_list) {
-  // return existing cdomain 
-  for (auto cd : cdomains_) {
-    if (*cd == sensitivity_list)
-      return cd;
-  }  
-  // allocate new cdomain
-  auto cd = new cdomain(this, sensitivity_list);
-  cdomains_.emplace_back(cd);
-  return cd;
-}
-
-void context::remove_cdomain(cdomain* cd) {
-  cdomains_.remove(cd);
+  return this->create_node<litimpl>(value);
 }
 
 void context::register_tap(const std::string& name, const lnode& node) {
-  this->createNode<tapimpl>(node, unique_tap_names_.get(name).c_str());
+  this->create_node<tapimpl>(node, unique_tap_names_.get(name).c_str());
 }
 
 bindimpl* context::get_binding(context* module) {
@@ -743,7 +734,7 @@ bindimpl* context::get_binding(context* module) {
     if (binding->get_module() == module)
       return binding;
   }
-  return this->createNode<bindimpl>(module);
+  return this->create_node<bindimpl>(module);
 }
 
 void context::bind_input(const lnode& src, const lnode& input) {
@@ -877,7 +868,7 @@ void context::dump_cfg(lnodeimpl* node, std::ostream& out, uint32_t level) {
   visits[node->get_id()] = true;
   
   if (type_tap == node->get_type()) {
-    auto tap = dynamic_cast<tapimpl*>(node);
+    auto tap = reinterpret_cast<tapimpl*>(node);
     node = tap->get_target().get_impl();
     node->print(out, level);
     out << " // " << tap->get_name();
@@ -923,7 +914,7 @@ void context::dump_stats(std::ostream& out) {
         ++num_lits;
         break;
       case type_bind:
-        calc_stats(dynamic_cast<bindimpl*>(node)->get_module());
+        calc_stats(reinterpret_cast<bindimpl*>(node)->get_module());
         break;
       default:
         break;

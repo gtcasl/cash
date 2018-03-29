@@ -7,9 +7,9 @@ LDFLAGS += -shared --coverage -lbfd
 PROJECT = libcash
 
 SRCS = utils.cpp platform.cpp bitvector.cpp scalar.cpp \
-       lnodeimpl.cpp proxyimpl.cpp litimpl.cpp selectimpl.cpp regimpl.cpp \
-       aluimpl.cpp ioimpl.cpp memimpl.cpp bindimpl.cpp assertimpl.cpp tickimpl.cpp printimpl.cpp \
-       logic.cpp cdomain.cpp context.cpp compile.cpp deviceimpl.cpp \
+       lnodeimpl.cpp ioimpl.cpp proxyimpl.cpp cdimpl.cpp litimpl.cpp regimpl.cpp \
+       memimpl.cpp selectimpl.cpp aluimpl.cpp bindimpl.cpp assertimpl.cpp timeimpl.cpp printimpl.cpp \
+       logic.cpp context.cpp compile.cpp deviceimpl.cpp \
        simulatorimpl.cpp tracerimpl.cpp vcdtracerimpl.cpp \
        verilogwriter.cpp firrtlwriter.cpp \
        cash.cpp

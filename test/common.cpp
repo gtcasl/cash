@@ -50,7 +50,7 @@ int syscall(const std::string& cmd) {
   while (fgets(buf, 1024, fp)) {
     std::cout << buf;
   }
-  int status = fclose(fp);
+  int status = pclose(fp);
   if (-1 == status)
     return -1;
   return WEXITSTATUS(status);
@@ -65,7 +65,7 @@ int syscall(const std::string& cmd, std::string& output) {
   while ((charBuf = fgetc(fp)) != EOF) {
     outBuffer << charBuf;
   }
-  int status = fclose(fp);
+  int status = pclose(fp);
   if (-1 == status)
     return -1;
   output = outBuffer.str();
@@ -74,8 +74,11 @@ int syscall(const std::string& cmd, std::string& output) {
 
 bool checkVerilog(const std::string& file) {
   int ret = syscall(fstring("iverilog %s -o %s.iv 2>&1 | grep \".*syntax error.*\"", file.c_str(), file.c_str()));
-  if (ret != 1)
+  if (ret != 1) {
+    assert(false);
     return false;
+  }
   ret = syscall(fstring("vvp %s.iv", file.c_str()));
+  assert(0 == ret );
   return (0 == ret);
 }

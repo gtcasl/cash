@@ -351,16 +351,17 @@ delayed_aluimpl::delayed_aluimpl(context* ctx,
                                  const lnode& enable,
                                  unsigned delay,
                                  const lnode& in)
-  : aluimpl(ctx, op, in) {
+  : aluimpl(ctx, op, in)
+  , cd_idx_(-1)
+  , enable_idx_(-1) {
   p_value_.resize(delay, bitvector(this->get_size()));
   p_next_.resize(delay, bitvector(this->get_size()));
-  {
-    auto clk = ctx->get_clk();
-    cd_ = ctx->create_cdomain({clock_event(clk, true)});
-    cd_->add_use(this);
-    clk_idx_ = srcs_.size();
-    srcs_.push_back(clk);
-  }
+
+  auto cd = ctx->current_cd();
+  cd->add_reg(this);
+  cd_idx_ = srcs_.size();
+  srcs_.push_back(cd);
+
   if (!enable.is_empty()) {
     assert(1 == enable.get_size());
     enable_idx_ = srcs_.size();
@@ -374,16 +375,17 @@ delayed_aluimpl::delayed_aluimpl(context* ctx,
                                  unsigned delay,
                                  const lnode& lhs,
                                  const lnode& rhs)
-  : aluimpl(ctx, op, lhs, rhs) {
+  : aluimpl(ctx, op, lhs, rhs)
+  , cd_idx_(-1)
+  , enable_idx_(-1) {
   p_value_.resize(delay, bitvector(this->get_size()));
   p_next_.resize(delay, bitvector(this->get_size()));
-  {
-    auto clk = ctx->get_clk();
-    cd_ = ctx->create_cdomain({clock_event(clk, true)});
-    cd_->add_use(this);
-    clk_idx_ = srcs_.size();
-    srcs_.push_back(clk);
-  }
+
+  auto cd = ctx->current_cd();
+  cd->add_reg(this);
+  cd_idx_ = srcs_.size();
+  srcs_.push_back(cd);
+
   if (!enable.is_empty()) {
     assert(1 == enable.get_size());
     enable_idx_ = srcs_.size();
@@ -392,7 +394,14 @@ delayed_aluimpl::delayed_aluimpl(context* ctx,
 }
 
 delayed_aluimpl::~delayed_aluimpl() {
-  cd_->remove_use(this);
+  this->detach();
+}
+
+void delayed_aluimpl::detach() {
+  if (!srcs_[2].is_empty()) {
+    reinterpret_cast<cdimpl*>(srcs_[2].get_impl())->remove_reg(this);
+    srcs_[2].clear();
+  }
 }
 
 void delayed_aluimpl::tick(ch_tick t) {
@@ -433,9 +442,9 @@ lnodeimpl* ch::internal::createAluNode(
   auto ctx = in.get_ctx();
   aluimpl* impl;
   if (delay != 0) {
-    impl = ctx->createNode<delayed_aluimpl>(op, enable, delay, in);
+    impl = ctx->create_node<delayed_aluimpl>(op, enable, delay, in);
   } else {    
-    impl = ctx->createAluNode(op, in);
+    impl = ctx->create_alu(op, in);
   }  
   return impl;
 }
@@ -449,9 +458,9 @@ lnodeimpl* ch::internal::createAluNode(
   auto ctx = lhs.get_ctx();
   aluimpl* impl;
   if (delay != 0) {
-    impl = ctx->createNode<delayed_aluimpl>(op, enable, delay, lhs, rhs);
+    impl = ctx->create_node<delayed_aluimpl>(op, enable, delay, lhs, rhs);
   } else {    
-    impl = ctx->createAluNode(op, lhs, rhs);
+    impl = ctx->create_alu(op, lhs, rhs);
   }  
   return impl;
 }
@@ -460,7 +469,7 @@ lnodeimpl* ch::internal::createRotateNode(const lnode& next, unsigned dist, bool
   auto ctx = next.get_ctx();
   auto N = next.get_size();
   auto mod = dist % N;
-  auto ret = ctx->createNode<proxyimpl>(N);
+  auto ret = ctx->create_node<proxyimpl>(N);
   if (right) {
     ret->add_source(0, next, mod, N - mod);
     ret->add_source(N - mod, next, 0, mod);

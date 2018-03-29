@@ -105,7 +105,7 @@ size_t compiler::dead_code_elimination() {
       // gather used proxy sources
       bool new_proxy_source = false;      
       if (type_proxy == src_impl->get_type()) {
-        auto src_proxy = dynamic_cast<proxyimpl*>(src_impl);
+        auto src_proxy = reinterpret_cast<proxyimpl*>(src_impl);
         auto& uses = used_proxy_sources[src_proxy];
         if (proxy) {
           for (auto& curr : src_proxy->get_ranges()) {
@@ -145,7 +145,7 @@ size_t compiler::dead_code_elimination() {
 
   // remove unused proxy sources
   for (auto p : used_proxy_sources) {
-    auto proxy = dynamic_cast<proxyimpl*>(p.first);
+    auto proxy = reinterpret_cast<proxyimpl*>(p.first);
     auto& srcs = proxy->get_srcs();
     // traverse the sources in reverse order
     for (int i = srcs.size() - 1; i >= 0; --i) {
@@ -188,12 +188,6 @@ void compiler::build_node_map() {
   for (auto node : ctx_->get_nodes()) {
     for (auto& src : node->get_srcs()) {
       node_map_[src.get_id()].push_back(&src);
-    }
-  }
-  for (auto& cd : ctx_->get_cdomains()) {
-    for (auto& ev : cd->get_sensitivity_list()) {
-      auto& sg = ev.get_signal();
-      node_map_[sg.get_id()].push_back(&sg);
     }
   }
 }

@@ -67,15 +67,6 @@ void register_enum_string(const lnode& node, void* callback);
     return *this; \
   }
 
-#define CH_ENUM_LOGIC_FRIENDS_IMPL(enum_name) \
-protected: \
-  friend auto ch_regNext(const enum_name& next, const enum_name& init) { \
-    return ch::internal::ch_regNext(next, init); \
-  } \
-  friend auto ch_regNext(const enum_name& next) { \
-    return ch::internal::ch_regNext(next); \
-  }
-
 #define CH_ENUM_IMPL(enum_name, size, ...) \
   class enum_name : public ch::internal::ch_bit<size> { \
   public: \
@@ -116,7 +107,6 @@ protected: \
       using traits = ch::internal::logic_traits<size, __const_type__, __const_type__, enum_name, __scalar_const_type__>; \
       CH_ENUM_LOGIC_IMPL(__const_type__, enum_name) \
       CH_LOGIC_READONLY_INTERFACE(__const_type__) \
-      CH_ENUM_LOGIC_FRIENDS_IMPL(__const_type__) \
     }; \
   public: \
     using base = ch::internal::ch_bit<size>; \
@@ -125,7 +115,6 @@ protected: \
     CH_ENUM_WRITABLE_IMPL(enum_name, __const_type__) \
     CH_LOGIC_READONLY_INTERFACE(enum_name) \
     CH_LOGIC_WRITABLE_INTERFACE(enum_name) \
-    CH_ENUM_LOGIC_FRIENDS_IMPL(enum_name) \
   }
 
 #define CH_ENUM3(name, size, body) \

@@ -156,6 +156,8 @@ int main() {
     foo.io.in2 = 2;
     ch_simulator sim(foo);
     sim.run(1);
+    ch_toVerilog("foo.v", foo);
+    std::cout << "foo.io.out=" << (int)foo.io.out << std::endl;
     assert(3 == (int)foo.io.out);
   }*/
 

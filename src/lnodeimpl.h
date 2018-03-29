@@ -11,6 +11,7 @@
   m(input) \
   m(output) \
   m(proxy) \
+  m(cd) \
   m(alu) \
   m(sel) \
   m(reg) \

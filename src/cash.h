@@ -138,15 +138,12 @@ namespace core {
   // sequential functions
   //
 
-  using ch::internal::ch_regNext;
   using ch::internal::ch_delay;
-  using ch::internal::ch_pushClock;
-  using ch::internal::ch_popClock;
-  using ch::internal::ch_pushReset;
-  using ch::internal::ch_popReset;
-  using ch::internal::ch_getClock;
-  using ch::internal::ch_getReset;
-  using ch::internal::ch_getTick;
+  using ch::internal::ch_pushcd;
+  using ch::internal::ch_popcd;
+  using ch::internal::ch_clock;
+  using ch::internal::ch_reset;
+  using ch::internal::ch_time;
 
   //
   // gates functions

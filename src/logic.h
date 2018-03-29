@@ -1085,7 +1085,7 @@ void ch_tap(const std::string& name, const T& value) {
 
 // print
 
-const ch_bit<64> ch_getTick();
+ch_bit<64> ch_time();
 
 inline void ch_print(const std::string& format) {
   createPrintNode(format, {});

@@ -80,9 +80,9 @@ const bitvector& tapimpl::eval(ch_tick t) {
 ///////////////////////////////////////////////////////////////////////////////
 
 lnodeimpl* ch::internal::createInputNode(const std::string& name, uint32_t size) {
-  return ctx_curr()->createNode<inputimpl>(size, name);
+  return ctx_curr()->create_node<inputimpl>(size, name);
 }
 
 lnodeimpl* ch::internal::createOutputNode(const std::string& name, const lnode& src) {
-  return src.get_ctx()->createNode<outputimpl>(src, name);
+  return src.get_ctx()->create_node<outputimpl>(src, name);
 }

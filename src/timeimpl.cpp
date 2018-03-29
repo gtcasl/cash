@@ -1,15 +1,15 @@
-#include "tickimpl.h"
+#include "timeimpl.h"
 #include "context.h"
 #include "logic.h"
 
 using namespace ch::internal;
 
-tickimpl::tickimpl(context* ctx) 
+timeimpl::timeimpl(context* ctx)
   : ioimpl(ctx, type_tick, 8 * sizeof(ch_tick))
   , tick_(~0ull) 
 {}
 
-const bitvector& tickimpl::eval(ch_tick t) {
+const bitvector& timeimpl::eval(ch_tick t) {
   if (tick_ != t) {
     tick_ = t;
     value_ = t;
@@ -19,6 +19,6 @@ const bitvector& tickimpl::eval(ch_tick t) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-const ch_bit<64> ch::internal::ch_getTick() {
-  return make_type<ch_bit<64>>(ctx_curr()->get_tick());
+ch_bit<64> ch::internal::ch_time() {
+  return make_type<ch_bit<64>>(ctx_curr()->get_time());
 }

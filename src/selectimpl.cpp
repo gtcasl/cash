@@ -125,5 +125,5 @@ lnodeimpl* ch::internal::createSelectNode(
     const lnode& pred,
     const lnode& _true,
     const lnode& _false) {
-  return pred.get_ctx()->createNode<selectimpl>(pred, _true, _false);
+  return pred.get_ctx()->create_node<selectimpl>(pred, _true, _false);
 }

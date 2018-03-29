@@ -27,5 +27,5 @@ const bitvector& assertimpl::eval(ch_tick t) {
 }
 
 void ch::internal::createAssertNode(const lnode& pred, const std::string& msg) {
-  pred.get_ctx()->createNode<assertimpl>(pred, msg);
+  pred.get_ctx()->create_node<assertimpl>(pred, msg);
 }

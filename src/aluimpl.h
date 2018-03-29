@@ -1,7 +1,7 @@
 #pragma once
 
 #include "lnodeimpl.h"
-#include "cdomain.h"
+#include "cdimpl.h"
 #include "arithm.h"
 
 namespace ch {
@@ -37,8 +37,8 @@ protected:
 class delayed_aluimpl : public tickable, public aluimpl {
 public:
 
-  const lnode& get_clk() const {
-    return srcs_[clk_idx_];
+  const lnode& get_cd() const {
+    return srcs_[cd_idx_];
   }
 
   bool has_enable() const {
@@ -54,6 +54,8 @@ public:
   void tick_next(ch_tick t) override;
 
   const bitvector& eval(ch_tick t) override;
+
+  void detach() override;
 
 protected:
 
@@ -74,8 +76,7 @@ protected:
 
   std::vector<bitvector> p_value_;
   std::vector<bitvector> p_next_;
-  cdomain* cd_;
-  int clk_idx_;
+  int cd_idx_;
   int enable_idx_;
   friend class context;
 };

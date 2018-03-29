@@ -1,7 +1,7 @@
 #pragma once
 
 #include "ioimpl.h"
-#include "cdomain.h"
+#include "cdimpl.h"
 
 namespace ch {
 namespace internal {
@@ -32,25 +32,25 @@ public:
   }
 
   bool is_write_enable() const {
-    return (cd_ != nullptr);
+    return write_enable_;
   }
 
   bool has_initdata() const {
     return has_initdata_;
   }
 
-  cdomain* get_cd() const {
-    return cd_;
+  const lnode& get_cd() const {
+    return srcs_[0];
   }
 
   auto& get_ports() const {
     return ports_;
   }
 
-  lnode& get_port(const lnode& addr);
+  memportimpl* get_port(const lnode& addr);
 
   void remove_port(memportimpl* port);
-  
+
   void tick(ch_tick t) override;
 
   void tick_next(ch_tick t) override;
@@ -59,12 +59,14 @@ public:
 
   void print(std::ostream& out, uint32_t level) const override;
 
+  void detach() override;
+
 protected:
   
-  std::vector<lnode> ports_;
+  std::vector<memportimpl*> ports_;
   uint32_t data_width_;
   uint32_t num_items_;
-  cdomain* cd_;
+  bool write_enable_;
   bool has_initdata_;
 };
 
@@ -82,6 +84,7 @@ public:
   const lnode& get_mem() const {
     return srcs_[0];
   }
+
   const lnode& get_addr() const {
     return srcs_[1];
   }

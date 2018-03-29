@@ -11,7 +11,7 @@
 #include "memimpl.h"
 #include "aluimpl.h"
 #include "assertimpl.h"
-#include "tickimpl.h"
+#include "timeimpl.h"
 #include <cstring>
 
 using namespace ch::internal;
@@ -38,7 +38,7 @@ verilogwriter::module_t::module_t(context* p_ctx)
 
 bool verilogwriter::module_t::is_inline_subscript(lnodeimpl* node) const {
   assert(type_proxy == node->get_type());
-  if (dynamic_cast<proxyimpl*>(node)->get_ranges().size() > 1)
+  if (reinterpret_cast<proxyimpl*>(node)->get_ranges().size() > 1)
     return false;
   auto it = uses.find(node->get_id());
   if (it != uses.end()) {
@@ -169,7 +169,7 @@ void verilogwriter::print_footer(module_t& module) {
       out_ << "assign ";
       this->print_name(module, output);
       out_ << " = ";
-      this->print_name(module, dynamic_cast<outputimpl*>(output)->get_src(0).get_impl());
+      this->print_name(module, reinterpret_cast<outputimpl*>(output)->get_src(0).get_impl());
       out_ << ";" << std::endl;
       written = true;
     }
@@ -187,15 +187,15 @@ bool verilogwriter::print_binding(module_t& module, bindimpl* node) {
   auto m = node->get_module();
   out_ << m->get_name() << " __module" << m->get_id() << "__(";
   for (auto& input : node->get_inputs()) {
-    auto b = dynamic_cast<bindportimpl*>(input.get_impl());
-    auto p = dynamic_cast<ioimpl*>(b->get_ioport().get_impl());
+    auto b = reinterpret_cast<bindportimpl*>(input.get_impl());
+    auto p = reinterpret_cast<ioimpl*>(b->get_ioport().get_impl());
     out_ << sep << "." << p->get_name() << "(";
     this->print_name(module, b);
     out_ << ")";
   }
   for (auto& output : node->get_outputs()) {
-    auto b = dynamic_cast<bindportimpl*>(output.get_impl());
-    auto p = dynamic_cast<ioimpl*>(b->get_ioport().get_impl());
+    auto b = reinterpret_cast<bindportimpl*>(output.get_impl());
+    auto p = reinterpret_cast<ioimpl*>(b->get_ioport().get_impl());
     out_ << sep << "." << p->get_name() << "(";
     this->print_name(module, b);
     out_ << ")";
@@ -313,6 +313,7 @@ bool verilogwriter::print_decl(module_t& module,
   case type_bind:
   case type_input:
   case type_output:
+  case type_cd:
   case type_tap:
   case type_memport:
   case type_assert:
@@ -335,14 +336,14 @@ bool verilogwriter::print_logic(module_t& module, lnodeimpl* node) {
     out_ << "assign ";
     this->print_name(module, node);
     out_ << " = ";
-    this->print_proxy(module, dynamic_cast<proxyimpl*>(node));
+    this->print_proxy(module, reinterpret_cast<proxyimpl*>(node));
     out_ << ";" << std::endl;
     return true;
   case type_alu:
-    this->print_alu(module, dynamic_cast<aluimpl*>(node));
+    this->print_alu(module, reinterpret_cast<aluimpl*>(node));
     return true;
   case type_sel:
-    this->print_select(module, dynamic_cast<selectimpl*>(node));
+    this->print_select(module, reinterpret_cast<selectimpl*>(node));
     return true;
   case type_reg:
     this->print_reg(module, dynamic_cast<regimpl*>(node));
@@ -351,14 +352,15 @@ bool verilogwriter::print_logic(module_t& module, lnodeimpl* node) {
     this->print_mem(module, dynamic_cast<memimpl*>(node));
     return true;
   case type_bind:
-    this->print_binding(module, dynamic_cast<bindimpl*>(node));
+    this->print_binding(module, reinterpret_cast<bindimpl*>(node));
     return true;
   case type_bindport:
-    this->print_bindport(module, dynamic_cast<bindportimpl*>(node));
+    this->print_bindport(module, reinterpret_cast<bindportimpl*>(node));
     return true;  
   case type_lit:
   case type_input:
   case type_output:
+  case type_cd:
   case type_tap:
   case type_memport:
   case type_assert:
@@ -437,7 +439,8 @@ void verilogwriter::print_fmult(module_t& module, aluimpl* node) {
   auto dalu = dynamic_cast<delayed_aluimpl*>(node);
   out_ << "fp_mult __fp_mult_";
   out_ << node->get_id() << "__(.clock(";
-  this->print_name(module, dalu->get_clk().get_impl());
+  auto cd = reinterpret_cast<cdimpl*>(dalu->get_cd().get_impl());
+  this->print_name(module, cd->get_clock().get_impl());
   out_ << "), .clk_en(";
   if (dalu->has_enable()) {
     this->print_name(module, dalu->get_enable().get_impl());
@@ -457,7 +460,8 @@ void verilogwriter::print_fadd(module_t& module, aluimpl* node) {
   auto dalu = dynamic_cast<delayed_aluimpl*>(node);
   out_ << "fp_add __fp_add_sub_";
   out_ << node->get_id() << "__(.clock(";
-  this->print_name(module, dalu->get_clk().get_impl());
+  auto cd = reinterpret_cast<cdimpl*>(dalu->get_cd().get_impl());
+  this->print_name(module, cd->get_clock().get_impl());
   out_ << "), .clk_en(";
   if (dalu->has_enable()) {
     this->print_name(module, dalu->get_enable().get_impl());
@@ -548,28 +552,30 @@ void verilogwriter::print_select(module_t& module, selectimpl* node) {
 
 void verilogwriter::print_reg(module_t& module, regimpl* node) {
   out_ << "always @ (";
-  this->print_cdomain(module, node->get_cd());
+  auto cd = reinterpret_cast<cdimpl*>(node->get_cd().get_impl());
+  this->print_cdomain(module, cd);
   out_ << ") begin" << std::endl;
   {
     auto_indent indent(out_);
     this->print_name(module, node);
     out_ << " <= ";
-    this->print_name(module, node->get_reset().get_impl());
-    out_ << " ? ";
-    this->print_name(module, node->get_init().get_impl());
-    out_ << " : ";
-    this->print_name(module, node->get_next().get_impl());
+    if (node->has_init()) {
+      this->print_name(module, cd->get_reset().get_impl());
+      out_ << " ? ";
+      this->print_name(module, node->get_init().get_impl());
+      out_ << " : ";
+      this->print_name(module, node->get_next().get_impl());
+    } else {
+      this->print_name(module, node->get_next().get_impl());
+    }
     out_ << ";" << std::endl;
   }
   out_ << "end" << std::endl;
 }
 
-void verilogwriter::print_cdomain(module_t& module, cdomain* cd) {
-  auto_separator sep(", ");
-  for (auto& e : cd->get_sensitivity_list()) {
-    out_ << sep << (e.is_pos_edge() ? "posedge" : "negedge") << " ";
-    this->print_name(module, e.get_signal().get_impl());
-  }
+void verilogwriter::print_cdomain(module_t& module, cdimpl* cd) {
+  out_ << (cd->posedge() ? "posedge" : "negedge") << " ";
+  this->print_name(module, cd->get_clock().get_impl());
 }
 
 void verilogwriter::print_mem(module_t& module, memimpl* node) {
@@ -597,31 +603,31 @@ void verilogwriter::print_mem(module_t& module, memimpl* node) {
   //
   // write ports logic
   //
-  for (auto& p : node->get_ports()) {
-    auto p_impl = dynamic_cast<memportimpl*>(p.get_impl());
-    if (!p_impl->has_wdata())
+  for (auto port : node->get_ports()) {
+    if (!port->has_wdata())
       continue;
     out_ << "always @(" ;
-    this->print_cdomain(module, node->get_cd());
+    auto cd = reinterpret_cast<cdimpl*>(node->get_cd().get_impl());
+    this->print_cdomain(module, cd);
     out_ << ") begin" << std::endl;
     {
       auto_indent indent1(out_);
-      if (p_impl->has_wenable()) {
+      if (port->has_wenable()) {
         out_ << "if (";
-        this->print_name(module, p_impl->get_wenable().get_impl());
+        this->print_name(module, port->get_wenable().get_impl());
         out_ << ") begin" << std::endl;
         {
           auto_indent indent2(out_);
-          this->print_name(module, p_impl);
+          this->print_name(module, port);
           out_ << " = ";
-          this->print_name(module, p_impl->get_wdata().get_impl());
+          this->print_name(module, port->get_wdata().get_impl());
           out_ << ";" << std::endl;
         }
         out_ << "end" << std::endl;
       } else {
-        this->print_name(module, p_impl);
+        this->print_name(module, port);
         out_ << " = ";
-        this->print_name(module, p_impl->get_wdata().get_impl());
+        this->print_name(module, port->get_wdata().get_impl());
         out_ << ";" << std::endl;
       }
     }
@@ -642,7 +648,7 @@ void verilogwriter::print_name(module_t& module, lnodeimpl* node, bool force) {
     break;
   case type_proxy:    
     if (!force && module.is_inline_subscript(node)) {
-      this->print_proxy(module, dynamic_cast<proxyimpl*>(node));
+      this->print_proxy(module, reinterpret_cast<proxyimpl*>(node));
     } else {
       print_unique_name(node);
     }
@@ -662,7 +668,7 @@ void verilogwriter::print_name(module_t& module, lnodeimpl* node, bool force) {
     print_unique_name(node);
     break;
   case type_memport: {
-    auto memport = dynamic_cast<memportimpl*>(node);
+    auto memport = reinterpret_cast<memportimpl*>(node);
     this->print_name(module, memport->get_mem().get_impl());
     out_ << "[";
     this->print_name(module, memport->get_addr().get_impl());
@@ -677,7 +683,7 @@ void verilogwriter::print_type(lnodeimpl* node) {
   auto type = node->get_type();
 
   auto is_reg_type = (type_sel == type) ?
-        !dynamic_cast<selectimpl*>(node)->is_ternary() :
+        !reinterpret_cast<selectimpl*>(node)->is_ternary() :
         IsRegType(type);
 
   out_ << (is_reg_type ? "reg" : "wire");

@@ -144,5 +144,5 @@ void ch::internal::createPrintNode(
   auto max_index = getFormatMaxIndex(format.c_str());
   CH_CHECK(max_index < (int)args.size(), "print format index out of range");
 
-  ctx_curr()->createNode<printimpl>(format, args);
+  ctx_curr()->create_node<printimpl>(format, args);
 }

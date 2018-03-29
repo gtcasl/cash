@@ -4,7 +4,7 @@
 #include "litimpl.h"
 #include "tickable.h"
 #include "regimpl.h"
-#include "cdomain.h"
+#include "cdimpl.h"
 #include "context.h"
 
 using namespace ch::internal;
@@ -55,7 +55,7 @@ lnodeimpl* lnodeimpl::get_slice(uint32_t offset, uint32_t length) {
   assert(length <= value_.get_size());
   if (value_.get_size() == length)
     return this;
-  return ctx_->createNode<proxyimpl>(this, offset, length);
+  return ctx_->create_node<proxyimpl>(this, offset, length);
 }
 
 void lnodeimpl::print(std::ostream& out, uint32_t level) const {
@@ -93,15 +93,15 @@ lnode::lnode() : impl_(nullptr) {}
 lnode::lnode(const lnode& rhs) : impl_(rhs.impl_) {}
 
 lnode::lnode(uint32_t size) {
-  impl_ = ctx_curr()->createNode<proxyimpl>(
-            ctx_curr()->createNode<undefimpl>(size));
+  impl_ = ctx_curr()->create_node<proxyimpl>(
+            ctx_curr()->create_node<undefimpl>(size));
 }
 
 lnode::lnode(uint32_t size,
              const lnode& src,
              unsigned src_offset) {
   assert(!src.is_empty());
-  impl_ = src.get_ctx()->createNode<proxyimpl>(src, src_offset, size);
+  impl_ = src.get_ctx()->create_node<proxyimpl>(src, src_offset, size);
 }
 
 lnode::lnode(lnodeimpl* impl) : impl_(impl) {
@@ -182,7 +182,7 @@ void lnode::write(uint32_t dst_offset,
 
   auto proxy = dynamic_cast<proxyimpl*>(impl_);
   if (nullptr == proxy) {
-    proxy = ctx->createNode<proxyimpl>(size);
+    proxy = ctx->create_node<proxyimpl>(size);
     // remove new proxy from current block's local list and
     if (ctx->conditional_enabled()) {
       // move it into the local list of the node's def block
@@ -195,7 +195,7 @@ void lnode::write(uint32_t dst_offset,
   if (ctx->conditional_enabled(proxy)) {
     auto src_impl = src.get_impl();
     if (src_offset != 0 || src.get_size() != length) {
-      src_impl = ctx->createNode<proxyimpl>(src, src_offset, length);
+      src_impl = ctx->create_node<proxyimpl>(src, src_offset, length);
     }
     ctx->conditional_assign(proxy, dst_offset, length, src_impl);
   } else {

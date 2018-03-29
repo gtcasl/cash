@@ -17,7 +17,7 @@ class memimpl;
 class bindimpl;
 class bindportimpl;
 class bitvector;
-class cdomain;
+class cdimpl;
 
 class firrtlwriter {
 public:
@@ -79,7 +79,7 @@ protected:
 
   void print_reg(regimpl* node);
 
-  void print_cdomain(cdomain* cd);
+  void print_cdomain(cdimpl* cd);
 
   void print_mem(memimpl* node);
 

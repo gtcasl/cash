@@ -20,9 +20,9 @@ class bindimpl;
 class selectimpl;
 class tapimpl;
 class assertimpl;
-class tickimpl;
+class timeimpl;
+class cdimpl;
 class clock_event;
-class cdomain;
 
 using ch_tick = uint64_t;
 
@@ -104,7 +104,7 @@ struct alu_key_t {
   uint32_t arg1;
 
   bool operator==(const alu_key_t& rhs) const {
-    return this->op == rhs.op
+    return this->op   == rhs.op
         && this->arg0 == rhs.arg0
         && this->arg1 == rhs.arg1;
   }
@@ -187,36 +187,32 @@ public:
 
   //--
 
-  void push_clk(const lnode& clk);
+  void push_cd(cdimpl* cd);
 
-  void pop_clk();
+  void pop_cd();
 
-  lnodeimpl* get_clk();
-
-  void push_reset(const lnode& reset);
-
-  void pop_reset();
-
-  lnodeimpl* get_reset();
+  cdimpl* current_cd();
 
   //--
 
-  lnodeimpl* get_tick();
+  lnodeimpl* get_time();
 
   //--
 
   uint32_t node_id();
 
   template <typename T, typename... Ts>
-  T* createNode(Ts&&... args) {
+  T* create_node(Ts&&... args) {
     auto node = new T(this, std::forward<Ts>(args)...);
     this->add_node(node);
     return node;
   }
 
-  aluimpl* createAluNode(uint32_t op, const lnode& in);
+  cdimpl* create_cdomain(const lnode& clock, const lnode& reset, bool posedge);
 
-  aluimpl* createAluNode(uint32_t op, const lnode& lhs, const lnode& rhs);
+  aluimpl* create_alu(uint32_t op, const lnode& in);
+
+  aluimpl* create_alu(uint32_t op, const lnode& lhs, const lnode& rhs);
 
   node_list_t::iterator destroyNode(const node_list_t::iterator& it);
   
@@ -244,12 +240,6 @@ public:
   //--
   
   lnodeimpl* get_literal(const bitvector& value);
-
-  //--
-
-  cdomain* create_cdomain(const std::vector<clock_event>& sensitivity_list);
-
-  void remove_cdomain(cdomain* cd);
 
   //--
 
@@ -315,7 +305,7 @@ protected:
   uint32_t    block_idx_;
   inputimpl*  default_clk_;
   inputimpl*  default_reset_;
-  tickimpl*   tick_;
+  timeimpl*   time_;
   
   node_list_t             nodes_;
   std::list<undefimpl*>   undefs_;
@@ -325,17 +315,16 @@ protected:
   std::list<tapimpl*>     taps_;
   std::list<ioimpl*>      gtaps_;
   std::list<litimpl*>     literals_;
-  std::list<cdomain*>     cdomains_;
+  std::list<cdimpl*>      cdomains_;
   std::list<bindimpl*>    bindings_;
 
   std::stack<cond_br_t*>  cond_branches_;
   cond_vars_t             cond_vars_;
   cond_inits_t            cond_inits_;
 
-  alu_cache_t             alu_cache_;
+  std::stack<cdimpl*>     cd_stack_;
 
-  std::stack<lnode>       user_clks_;
-  std::stack<lnode>       user_resets_;
+  alu_cache_t             alu_cache_;
 
   unique_name             unique_tap_names_;
 

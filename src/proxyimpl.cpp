@@ -229,7 +229,7 @@ lnodeimpl* proxyimpl::get_slice(uint32_t offset, uint32_t length) {
   }
 
   // return new slice
-  auto proxy = ctx_->createNode<proxyimpl>(length);
+  auto proxy = ctx_->create_node<proxyimpl>(length);
   for (auto& range : ranges_) {
     uint32_t r_end = range.dst_offset + range.length;
     uint32_t src_end = offset + length;

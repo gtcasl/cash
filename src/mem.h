@@ -46,7 +46,7 @@ public:
          bool write_enable,
          const std::vector<uint8_t>& init_data);
 
-  const lnode& read(const lnode& addr) const;
+  lnodeimpl* read(const lnode& addr) const;
 
   void write(const lnode& addr, const lnode& value);
 

@@ -8,9 +8,7 @@ namespace internal {
 
 lnodeimpl* createRegNode(const lnode& next, const lnode& init);
 
-void pushClock(const lnode& node);
-
-void pushReset(const lnode& node);
+lnodeimpl* createRegNode(const lnode& next);
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -24,7 +22,7 @@ public:
 
   ch_reg(const source_location& sloc = CH_SRC_LOCATION)
     : base(logic_buffer(width_v<T>, sloc)) {
-    auto reg = createRegNode(get_lnode(next), get_lnode<int, width_v<T>>(0));
+    auto reg = createRegNode(get_lnode(next));
     logic_accessor::set_data(*this, reg);
     next = *this;
   }
@@ -54,86 +52,30 @@ protected:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-const ch_bit<1> ch_getClock();
+void ch_pushcd(const ch_bit<1>& clock, const ch_bit<1>& reset, bool posedge);
 
-template <typename T,
-          CH_REQUIRE_0(is_bit_compatible<T>::value)>
-inline void ch_pushClock(const T& clk) {
-  static_assert(1 == width_v<T>, "invalid predicate size");
-  pushClock(get_lnode(clk));
-}
+void ch_popcd();
 
-void ch_popClock();
+ch_bit<1> ch_clock();
+
+ch_bit<1> ch_reset();
 
 ///////////////////////////////////////////////////////////////////////////////
-
-const ch_bit<1> ch_getReset();
-
-template <typename T,
-          CH_REQUIRE_0(is_bit_compatible<T>::value)>
-inline void ch_pushReset(const T& reset) {
-  static_assert(1 == width_v<T>, "invalid predicate size");
-  pushReset(get_lnode(reset));
-}
-
-void ch_popReset();
-
-///////////////////////////////////////////////////////////////////////////////
-
-template <typename T, typename I,
-          CH_REQUIRE_0(width_v<deduce_type_t<false, T, I>> != 0),
-          CH_REQUIRE_0(is_bit_convertible<T, width_v<deduce_type_t<false, T, I>>>::value),
-          CH_REQUIRE_0(is_bit_convertible<I, width_v<deduce_type_t<false, T, I>>>::value)>
-auto ch_regNext(const T& next, const I& init) {
-  return make_type<logic_value_t<deduce_first_type_t<T, I>>>(
-    createRegNode(get_lnode<T, width_v<deduce_type_t<false, T, I>>>(next),
-                  get_lnode<I, width_v<deduce_type_t<false, T, I>>>(init)));
-}
-
-template <typename R, typename T, typename I,
-          CH_REQUIRE_0(is_cast_convertible<R, T>::value),
-          CH_REQUIRE_0(is_cast_convertible<R, I>::value)>
-auto ch_regNext(const T& next, const I& init) {
-  return make_type<R>(createRegNode(get_lnode<T, R>(next),
-                                    get_lnode<I, R>(init)));
-}
-
-template <typename T,
-          CH_REQUIRE_0(is_bit_convertible<T>::value)>
-auto ch_regNext(const T& next) {
-  ch_bit<width_v<T>> init(0);
-  return make_type<logic_value_t<T>>(
-    createRegNode(get_lnode(next), get_lnode(init)));
-}
 
 template <typename R, typename T,
           CH_REQUIRE_0(is_cast_convertible<R, T>::value)>
-auto ch_regNext(const T& next) {
-  ch_bit<width_v<R>> init(0);
-  return make_type<R>(
-    createRegNode(get_lnode<T, R>(next), get_lnode(init)));
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-template <unsigned Delay, typename T,
-          CH_REQUIRE_0(is_bit_convertible<T>::value)>
-auto ch_delay(const T& rhs) {
-  value_type_t<T> ret(rhs);
-  for (unsigned i = 0; i < Delay; ++i) {
-    ret = ch_regNext(ch_clone(ret));
-  }
-  return ret;
-}
-
-template <typename R, unsigned Delay, typename T,
-          CH_REQUIRE_0(is_cast_convertible<R, T>::value)>
-auto ch_delay(const T& rhs) {
+auto ch_delay(const T& rhs, unsigned delay = 1) {
   R ret(rhs);
-  for (unsigned i = 0; i < Delay; ++i) {
-    ret = ch_regNext(ch_clone(ret));
+  for (unsigned i = 0; i < delay; ++i) {
+    ret = make_type<R>(createRegNode(get_lnode(ch_clone(ret))));
   }
   return ret;
+}
+
+template <typename T,
+          CH_REQUIRE_0(is_bit_convertible<T>::value)>
+auto ch_delay(const T& rhs, unsigned delay = 1) {
+  return ch_delay<logic_value_t<T>, T>(rhs, delay);
 }
 
 }

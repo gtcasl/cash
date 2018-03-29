@@ -128,7 +128,7 @@ X*** Assignment rule: by constructor assignent is ignored during check
 Completed:
 ==========
 
-- refactor ch_regNext class => move to function
+- refactor ch_delay class => move to function
 - refactor ch_wire class => all objects operate as wires before first assignment
 - move ch_rom into llmem.h
 - create cash.h header file
@@ -174,8 +174,8 @@ export CASH_DEBUG_LEVEL=2
 export CASH_DUMP_AST=1
 
 // infering multiple cycles operations
-y = ch_pipeline(x, 2) = ch_regNext(ch_regNext(x));
-z = ch_pipeline(x * y, 2); => z = ch_regNext(mult1(x,y,ch_regNext(mult0(x,y)));
+y = ch_pipeline(x, 2) = ch_delay(ch_delay(x));
+z = ch_pipeline(x * y, 2); => z = ch_delay(mult1(x,y,ch_delay(mult0(x,y)));
 
 // Detecting leaks using valgrind
 $ valgrind --leak-check=yes <app> <args...> > valgrind.log 2>&1

@@ -11,7 +11,7 @@
 #include "memimpl.h"
 #include "aluimpl.h"
 #include "assertimpl.h"
-#include "tickimpl.h"
+#include "timeimpl.h"
 #include <cstring>
 
 using namespace ch::internal;
@@ -34,7 +34,7 @@ firrtlwriter::module_t::module_t(context* p_ctx)
 
 bool firrtlwriter::module_t::is_inline_subscript(lnodeimpl* node) const {
   assert(type_proxy == node->get_type());
-  if (dynamic_cast<proxyimpl*>(node)->get_ranges().size() > 1)
+  if (reinterpret_cast<proxyimpl*>(node)->get_ranges().size() > 1)
     return false;
   auto it = uses.find(node->get_id());
   if (it != uses.end()) {
@@ -162,7 +162,7 @@ void firrtlwriter::print_footer(module_t& module) {
   for (auto output : module.ctx->get_outputs()) {
     this->print_name(output);
     out_ << " <= ";
-    this->print_name(dynamic_cast<outputimpl*>(output)->get_src(0).get_impl());
+    this->print_name(reinterpret_cast<outputimpl*>(output)->get_src(0).get_impl());
     out_ << std::endl;
     written = 1;
   }
@@ -176,15 +176,15 @@ bool firrtlwriter::print_binding(bindimpl* node) {
   out_ << "inst __module" << m->get_id() << " of ";
   out_ << m->get_name() << std::endl;
   for (auto& input : node->get_inputs()) {
-    auto b = dynamic_cast<bindportimpl*>(input.get_impl());
-    auto p = dynamic_cast<ioimpl*>(b->get_ioport().get_impl());
+    auto b = reinterpret_cast<bindportimpl*>(input.get_impl());
+    auto p = reinterpret_cast<ioimpl*>(b->get_ioport().get_impl());
     out_ << "__module" << m->get_id() << "." << p->get_name() << " <= ";
     this->print_name(b);
     out_ << std::endl;
   }
   for (auto& output : node->get_outputs()) {
-    auto b = dynamic_cast<bindportimpl*>(output.get_impl());
-    auto p = dynamic_cast<ioimpl*>(b->get_ioport().get_impl());
+    auto b = reinterpret_cast<bindportimpl*>(output.get_impl());
+    auto p = reinterpret_cast<ioimpl*>(b->get_ioport().get_impl());
     this->print_name(b);
     out_ << " <= __module" << m->get_id() << "." << p->get_name() << std::endl;
   }
@@ -255,6 +255,7 @@ bool firrtlwriter::print_decl(lnodeimpl* node,
   case type_bind:
   case type_input:
   case type_output:
+  case type_cd:
   case type_tap:
   case type_memport:
   case type_assert:
@@ -273,16 +274,16 @@ bool firrtlwriter::print_logic(module_t& module, lnodeimpl* node) {
   case type_lit:
     if (is_inline_literal(node))
       return false;
-    this->print_lit(dynamic_cast<litimpl*>(node));
+    this->print_lit(reinterpret_cast<litimpl*>(node));
     return true;
   case type_proxy:
-    this->print_proxy(module, dynamic_cast<proxyimpl*>(node));
+    this->print_proxy(module, reinterpret_cast<proxyimpl*>(node));
     return true;
   case type_alu:
-    this->print_alu(module, dynamic_cast<aluimpl*>(node));
+    this->print_alu(module, reinterpret_cast<aluimpl*>(node));
     return true;
   case type_sel:
-    this->print_select(module, dynamic_cast<selectimpl*>(node));
+    this->print_select(module, reinterpret_cast<selectimpl*>(node));
     return true;
   case type_reg:
     this->print_reg(dynamic_cast<regimpl*>(node));
@@ -291,14 +292,15 @@ bool firrtlwriter::print_logic(module_t& module, lnodeimpl* node) {
     this->print_mem(dynamic_cast<memimpl*>(node));
     return true;
   case type_bind:
-    this->print_binding(dynamic_cast<bindimpl*>(node));
+    this->print_binding(reinterpret_cast<bindimpl*>(node));
     return true;
   case type_bindport:
-    this->print_bindport(dynamic_cast<bindportimpl*>(node));
+    this->print_bindport(reinterpret_cast<bindportimpl*>(node));
     return true;
   case type_input:
   case type_output:
-  case type_tap:
+  case type_cd:
+  case type_tap:  
   case type_memport:
   case type_assert:
   case type_print:
@@ -504,20 +506,24 @@ void firrtlwriter::print_select(module_t& module, selectimpl* node) {
 void firrtlwriter::print_reg(regimpl* node) {
   this->print_name(node);
   out_ << " <= ";
-  out_ << " mux(";
-  this->print_name(node->get_reset().get_impl());
-  out_ << ", ";
-  this->print_name(node->get_init().get_impl());
-  out_ << ", ";
-  this->print_name(node->get_next().get_impl());
-  out_ << ")" << std::endl;
+  if (node->has_init()) {
+    out_ << " mux(";
+    auto cd = reinterpret_cast<cdimpl*>(node->get_cd().get_impl());
+    this->print_name(cd->get_reset().get_impl());
+    out_ << ", ";
+    this->print_name(node->get_init().get_impl());
+    out_ << ", ";
+    this->print_name(node->get_next().get_impl());
+    out_ << ")";
+  } else {
+    this->print_name(node->get_next().get_impl());
+  }
+  out_ << std::endl;
 }
 
-void firrtlwriter::print_cdomain(cdomain* cd) {
-  assert(1 == cd->get_sensitivity_list().size());
-  auto& e = cd->get_sensitivity_list()[0];
-  assert(e.is_pos_edge());
-  this->print_name(e.get_signal().get_impl());
+void firrtlwriter::print_cdomain(cdimpl* cd) {
+  assert(cd->posedge());
+  this->print_name(cd->get_clock().get_impl());
 }
 
 void firrtlwriter::print_mem(memimpl* node) {
@@ -566,16 +572,16 @@ void firrtlwriter::print_mem(memimpl* node) {
 
     this->print_name(node);
     out_ << '.' << type << port->get_index() << ".clk <= ";
-    this->print_cdomain(node->get_cd());
+    auto cd = reinterpret_cast<cdimpl*>(node->get_cd().get_impl());
+    this->print_cdomain(cd);
     out_ << std::endl;
   };
 
   if (node->is_write_enable()) {
     // initialization data not supported!
     assert(!node->has_initdata());
-    for (auto& port : node->get_ports()) {
-      auto p = dynamic_cast<memportimpl*>(port.get_impl());
-      print_attributes(p);
+    for (auto port : node->get_ports()) {
+      print_attributes(port);
     }
   } else {
     assert(node->has_initdata());
@@ -653,7 +659,7 @@ void firrtlwriter::print_name(lnodeimpl* node, bool force) {
     print_unique_name(node);
     break;
   case type_memport: {
-    auto port = dynamic_cast<memportimpl*>(node);
+    auto port = reinterpret_cast<memportimpl*>(node);
     auto mem = dynamic_cast<memimpl*>(port->get_mem().get_impl());
     this->print_name(mem);
     if (mem->is_write_enable()) {
@@ -717,16 +723,17 @@ void firrtlwriter::print_dtype(lnodeimpl* node) {
   auto type = node->get_type();
   switch (type) {
   case type_input:
-    if ("clk" == dynamic_cast<inputimpl*>(node)->get_name()) {
+    if ("clk" == reinterpret_cast<inputimpl*>(node)->get_name()) {
       out_ << "Clock";
     } else {
       out_ << "UInt<" << node->get_size() << ">";
     }
     break;
-  case type_reg:
+  case type_reg: {
     out_ << "UInt<" << node->get_size() << ">, ";
-    this->print_cdomain(dynamic_cast<regimpl*>(node)->get_cd());
-    break;
+    auto cd = reinterpret_cast<cdimpl*>(dynamic_cast<regimpl*>(node)->get_cd().get_impl());
+    this->print_cdomain(cd);
+  } break;
   case type_mem: {    
     auto mem = dynamic_cast<memimpl*>(node);
     if (mem->is_write_enable()) {
@@ -739,22 +746,21 @@ void firrtlwriter::print_dtype(lnodeimpl* node) {
       out_ << "read-under-write => undefined" << std::endl;
 
       auto_separator sep("\n");
-      for (auto& port : mem->get_ports()) {
+      for (auto port : mem->get_ports()) {
         out_ << sep;
-        auto p = dynamic_cast<memportimpl*>(port.get_impl());
-        if (p->is_read_enable()
-        && !p->has_wdata()) {
+        if (port->is_read_enable()
+        && !port->has_wdata()) {
           // read-only
-          out_ << "reader => r" << p->get_index();
+          out_ << "reader => r" << port->get_index();
         } else
-        if (!p->is_read_enable()
-         && p->has_wdata()) {
+        if (!port->is_read_enable()
+         && port->has_wdata()) {
           // write-only
-          out_ << "writer => w" << p->get_index();
+          out_ << "writer => w" << port->get_index();
         } else {
-          assert(p->is_read_enable() && p->has_wdata());
+          assert(port->is_read_enable() && port->has_wdata());
           // read-write
-          out_ << "readwriter => x" << p->get_index();
+          out_ << "readwriter => x" << port->get_index();
         }
       }
     } else {
@@ -763,10 +769,10 @@ void firrtlwriter::print_dtype(lnodeimpl* node) {
     }
   } break;
   case type_bindport: {
-    auto b = dynamic_cast<bindportimpl*>(node);
-    auto p = dynamic_cast<ioimpl*>(b->get_ioport().get_impl());
+    auto b = reinterpret_cast<bindportimpl*>(node);
+    auto p = reinterpret_cast<ioimpl*>(b->get_ioport().get_impl());
     if (type_input == p->get_type()
-     && "clk" == dynamic_cast<inputimpl*>(p)->get_name()) {
+     && "clk" == reinterpret_cast<inputimpl*>(p)->get_name()) {
       out_ << "Clock";
     } else {
       out_ << "UInt<" << node->get_size() << ">";

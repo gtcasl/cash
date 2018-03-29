@@ -11,7 +11,7 @@ struct Counter {
   );
 
   void describe() {
-    ch_reg<ch_bit<N>> out;
+    ch_reg<ch_bit<N>> out(0);
     out.next = out + 1;
     io.out = out;
   }

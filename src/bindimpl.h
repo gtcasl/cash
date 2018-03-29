@@ -1,14 +1,14 @@
 #pragma once
 
 #include "ioimpl.h"
-#include "cdomain.h"
+#include "cdimpl.h"
 
 namespace ch {
 namespace internal {
 
 class bindportimpl;
 
-class bindimpl : public tickable, public ioimpl {
+class bindimpl : public ioimpl {
 public:
 
   void bind_input(const lnode& src, const lnode& ioport);
@@ -29,9 +29,9 @@ public:
     return module_;
   }
 
-  void tick(ch_tick t) override;
+  void tick(ch_tick t);
 
-  void tick_next(ch_tick t) override;
+  void tick_next(ch_tick t);
 
   const bitvector& eval(ch_tick t) override;
 

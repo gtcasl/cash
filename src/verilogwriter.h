@@ -17,7 +17,7 @@ class memimpl;
 class bindimpl;
 class bindportimpl;
 class bitvector;
-class cdomain;
+class cdimpl;
 
 class verilogwriter {
 public:
@@ -82,7 +82,7 @@ protected:
 
   void print_reg(module_t& module, regimpl* node);
 
-  void print_cdomain(module_t& module, cdomain* cd);
+  void print_cdomain(module_t& module, cdimpl* cd);
 
   void print_mem(module_t& module, memimpl* node);
 
