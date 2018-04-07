@@ -19,7 +19,7 @@ TEST_CASE("simulation", "[sim]") {
       device.io.in = 2;
       ch_tracer tracer(std::cout, device);
       tracer.run();
-      return (1 == (int)device.io.out);
+      return (1 == device.io.out);
     });
   }
 
@@ -29,7 +29,7 @@ TEST_CASE("simulation", "[sim]") {
       device.io.in = 2;
       ch_vcdtracer tracer(std::cout, device);
       tracer.run();
-      return (1 == (int)device.io.out);
+      return (1 == device.io.out);
     });
   }
 

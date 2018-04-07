@@ -2,9 +2,10 @@
 
 using namespace ch::internal;
 
-bitvector::bitvector(const bitvector& rhs) : words_(nullptr), size_(0) {
+bitvector::bitvector(const bitvector& rhs)
+  : bitvector() {
   this->resize(rhs.size_);
-  std::copy(rhs.words_, rhs.words_ + this->get_num_words(), words_);
+  std::copy(rhs.words_, rhs.words_ + rhs.get_num_words(), words_);
 }
 
 bitvector::bitvector(bitvector&& rhs) {
@@ -15,31 +16,37 @@ bitvector::bitvector(bitvector&& rhs) {
 }
 
 bitvector::bitvector(uint32_t size)
-  : words_(nullptr), size_(0) {
+  : bitvector() {
   this->resize(size, 0, true);
 }
 
+bitvector::bitvector(uint32_t size, const bitvector& rhs)
+  : bitvector(size) {
+  assert(size >= rhs.get_size());
+  std::copy(rhs.words_, rhs.words_ + rhs.get_num_words(), words_);
+}
+
 bitvector::bitvector(uint32_t size, char value)
-  : words_(nullptr), size_(0) {
+  : bitvector() {
   this->resize(size);
   this->operator =(value);
 }
 
 bitvector::bitvector(uint32_t size, uint32_t value)
-  : words_(nullptr), size_(0) {
+  : bitvector() {
   this->resize(size);
   this->operator =(value);
 }
 
 bitvector::bitvector(uint32_t size,
                      const std::initializer_list<uint32_t>& value)
-  : words_(nullptr), size_(0) {
+  : bitvector() {
   this->resize(size);
   this->operator =(value);
 }
 
 bitvector::bitvector(uint32_t size, const std::string& value)
-  : words_(nullptr), size_(0) {
+  : bitvector() {
   this->resize(size);
   this->operator =(value);
 }
@@ -107,24 +114,55 @@ bitvector& bitvector::operator=(bitvector&& rhs) {
   return *this;
 }
 
-bitvector& bitvector::operator=(const std::initializer_list<uint32_t>& value) {
+bitvector& bitvector::operator=(uint32_t value) {
   assert(size_);
-  auto iterValue = value.begin();
-  uint32_t num_words = (size_ + WORD_MASK) >> WORD_SIZE_LOG;
-  uint32_t used_num_words = value.size();
 
   // check for extra bits
-  for (uint32_t i = num_words; i < used_num_words; ++i) {
-    CH_CHECK(0 == *iterValue++, "input value overflow");
+  uint32_t num_words = (size_ + WORD_MASK) >> WORD_SIZE_LOG;
+  CH_CHECK((1 < num_words)
+        || ((1 == num_words)
+         && (0 == (size_ & WORD_MASK)
+          || (0 == (value >> (size_ & WORD_MASK))))), "value out of range");
+
+  // write the value
+  words_[0] = value;
+
+  // clear unused words
+  std::fill_n(words_ + 1, num_words - 1, 0x0);
+
+  return *this;
+}
+
+bitvector& bitvector::operator=(char value) {
+  uint32_t _value;
+  if (value == '0')
+    _value = 0x0;
+  else if (value == '1')
+    _value = 0x1;
+  else
+    CH_ABORT("invalid character value");
+  return this->operator=(_value);
+}
+
+bitvector& bitvector::operator=(const std::initializer_list<uint32_t>& value) {
+  assert(size_);
+
+  auto iterValue = value.begin();
+  uint32_t num_words = (size_ + WORD_MASK) >> WORD_SIZE_LOG;
+  uint32_t src_num_words = value.size();
+
+  // check for extra bits
+  for (uint32_t i = num_words; i < src_num_words; ++i) {
+    CH_CHECK(0 == *iterValue++, "value out of range");
   }
   CH_CHECK((value.size() < num_words)
          || (0 == (size_ & WORD_MASK)
-          || (0 == (*iterValue >> (size_ & WORD_MASK)))), "input value overflow");
+          || (0 == (*iterValue >> (size_ & WORD_MASK)))), "value out of range");
 
   // clear unused words
   auto dst = words_ + (num_words - 1);
-  if (used_num_words < num_words) {
-    uint32_t unused_words = num_words - used_num_words;
+  if (src_num_words < num_words) {
+    uint32_t unused_words = num_words - src_num_words;
     std::fill_n(dst, unused_words, 0x0);
     dst -= unused_words;
   }
@@ -137,29 +175,9 @@ bitvector& bitvector::operator=(const std::initializer_list<uint32_t>& value) {
   return *this;
 }
 
-static uint32_t chr2int(char x, int base) {
-  switch (base) {
-  case 2:
-    if (x >= '0' && x <= '1')
-      return (x - '0');
-    break;
-  case 8:
-    if (x >= '0' && x <= '7')
-      return (x - '0');
-    break;
-  case 16:
-    if (x >= '0' && x <= '9')
-      return (x - '0');
-    if (x >= 'A' && x <= 'F')
-      return (x - 'A') + 10;
-    if (x >= 'a' && x <= 'f')
-      return (x - 'a') + 10;
-    break;
-  }  
-  CH_ABORT("invalid scalar value");
-}
-
 bitvector& bitvector::operator=(const std::string& value) {
+  assert(size_);
+
   int base = 0;
   int start = 0;
   size_t len = value.length();
@@ -192,7 +210,7 @@ bitvector& bitvector::operator=(const std::string& value) {
       continue; // skip separator character
     if (0 == size) {
        // calculate exact bit coverage for the first non zero character
-       uint32_t v = chr2int(chr, base);
+       uint32_t v = char2int(chr, base);
        if (v) {
          size += ilog2(v) + 1;
        }
@@ -200,14 +218,13 @@ bitvector& bitvector::operator=(const std::string& value) {
       size += log_base;
     }
   }
-  
-  CH_CHECK(size <= size_, "scalar value overflow");
+  CH_CHECK(size_ >= size, "value out of range");
   
   // clear unused words
   uint32_t num_words = this->get_num_words();
-  uint32_t used_num_words = (size + WORD_MASK) >> WORD_SIZE_LOG;
-  if (used_num_words < num_words) {
-    std::fill_n(words_ + used_num_words, num_words - used_num_words, 0x0);    
+  uint32_t src_num_words = (size + WORD_MASK) >> WORD_SIZE_LOG;
+  if (src_num_words < num_words) {
+    std::fill_n(words_ + src_num_words, num_words - src_num_words, 0x0);
   }
   
   // write the value
@@ -217,7 +234,7 @@ bitvector& bitvector::operator=(const std::string& value) {
     char chr = value[len - i - 1];
     if (chr == '\'')
       continue; // skip separator character
-    uint32_t v = chr2int(chr, base);
+    uint32_t v = char2int(chr, base);
     w |= v << j;
     j += log_base;
     if (j >= WORD_SIZE) {
@@ -225,41 +242,12 @@ bitvector& bitvector::operator=(const std::string& value) {
       j -= WORD_SIZE;
       w = v >> (log_base - j);      
     }
-  }    
+  }
+
   if (w) {
     *dst = w;
   }
   
-  return *this;
-}
-
-bitvector& bitvector::operator=(char value) {
-  uint32_t _value;
-  if (value == '0')
-    _value = 0x0;
-  else if (value == '1')
-    _value = 0x1;
-  else
-    CH_ABORT("invalid character value");
-  return this->operator=(_value);
-}
-
-bitvector& bitvector::operator=(uint32_t value) {
-  assert(size_);
-  
-  // check for extra bits
-  uint32_t num_words = (size_ + WORD_MASK) >> WORD_SIZE_LOG;
-  CH_CHECK((1 < num_words)
-        || ((1 == num_words)
-         && (0 == (size_ & WORD_MASK)
-          || (0 == (value >> (size_ & WORD_MASK))))), "input value overflow");
-
-  // write the value
-  words_[0] = value;
-  
-  // clear unused words
-  std::fill_n(words_ + 1, num_words - 1, 0x0);
-
   return *this;
 }
 
@@ -596,13 +584,14 @@ void ch::internal::Srl(bitvector& out, const bitvector& in, uint32_t dist) {
   }
 }
 
-void ch::internal::Sra(bitvector& out, const bitvector& in, uint32_t dist) {
-  assert(in.get_size() >= 2);
+void ch::internal::Sra(bitvector& out, const bitvector& in, uint32_t dist) { 
   assert(out.get_size() == in.get_size());
   ch::internal::Srl(out, in, dist);
-  uint32_t msb_idx = in.get_size() - 1;
-  out[msb_idx] = in[msb_idx];
-  out[msb_idx-1] = 0;
+  if (in.get_size() > 1) {
+    uint32_t msb_idx = in.get_size() - 1;
+    out[msb_idx] = in[msb_idx];
+    out[msb_idx-1] = 0;
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////

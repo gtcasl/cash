@@ -7,12 +7,12 @@ using namespace ch::sim;
 template <unsigned N>
 struct Counter {
   __io (
-    __out(ch_bit<N>) out
+    __out(ch_uint<N>) out
   );
 
   void describe() {
-    ch_reg<ch_bit<N>> out(0);
-    out.next = out + 1;
+    ch_reg<ch_uint<N>> out(0);
+    out <<= out + 1;
     io.out = out;
   }
 };

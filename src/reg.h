@@ -1,64 +1,71 @@
 #pragma once
 
 #include "logic.h"
-#include "select.h"
 
 namespace ch {
 namespace internal {
 
-lnodeimpl* createRegNode(const lnode& next, const lnode& init);
-
-lnodeimpl* createRegNode(const lnode& next);
-
-///////////////////////////////////////////////////////////////////////////////
-
-template <typename T>
-class ch_reg final : public const_type_t<T> {
+class reg_buffer_impl : public logic_buffer_impl {
 public:
-  using base = const_type_t<T>;
-  using traits = logic_traits<width_v<T>, ch_reg, const_type_t<T>, T, scalar_type_t<T>>;
+  using logic_buffer_impl::value_;
 
-  T next;
+  explicit reg_buffer_impl(unsigned size,
+                           const source_location& sloc = source_location(),
+                           const std::string& name = "");
 
-  ch_reg(const source_location& sloc = CH_SRC_LOCATION)
-    : base(logic_buffer(width_v<T>, sloc)) {
-    auto reg = createRegNode(get_lnode(next));
-    logic_accessor::set_data(*this, reg);
-    next = *this;
-  }
+  explicit reg_buffer_impl(const lnode& data,
+                           const source_location& sloc = source_location(),
+                           const std::string& name = "");
 
-  template <typename U, CH_REQUIRE_0(is_cast_convertible<T, U>::value)>
-  explicit ch_reg(const U& init,
-                  const source_location& sloc = CH_SRC_LOCATION)
-    : base(logic_buffer(width_v<T>, sloc)) {
-    auto reg = createRegNode(get_lnode(next), get_lnode<U, T>(init));
-    logic_accessor::set_data(*this, reg);
-    next = *this;
-  }
-
-  ch_reg(ch_reg&& rhs) : base(std::move(rhs)) {}
-
-  ch_reg& operator=(ch_reg&& rhs) {
-    base::operator=(std::move(rhs));
-    return *this;
-  }
-
-protected:
-
-  ch_reg(ch_reg&) = delete;
-
-  ch_reg& operator=(const ch_reg&) = delete;
+  void write(uint32_t dst_offset,
+             const lnode& data,
+             uint32_t src_offset,
+             uint32_t length) override;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void ch_pushcd(const ch_bit<1>& clock, const ch_bit<1>& reset, bool posedge);
+template <typename T>
+class ch_reg_impl final : public T {
+public:  
+  using traits = logic_traits<width_v<T>, ch_reg<T>, scalar_type_t<T>>;
+  using base = T;
+
+  ch_reg_impl(const source_location& sloc = CH_SRC_LOCATION)
+    : base(ch::internal::logic_buffer_ptr(
+             new reg_buffer_impl(width_v<T>, sloc)))
+  {}
+
+  ch_reg_impl(const ch_reg_impl& rhs, const source_location& sloc = CH_SRC_LOCATION)
+    : base(ch::internal::logic_buffer_ptr(
+             new reg_buffer_impl(logic_accessor::get_data(rhs), sloc)))
+  {}
+
+  ch_reg_impl(ch_reg_impl&& rhs) : base(std::move(rhs.buffer_)) {}
+
+  template <typename U,
+            CH_REQUIRE_0(is_cast_convertible<T, U>::value)>
+  explicit ch_reg_impl(const U& init, const source_location& sloc = CH_SRC_LOCATION)
+    : base(ch::internal::logic_buffer_ptr(
+             new reg_buffer_impl(get_lnode<U, T>(init), sloc)))
+  {}
+
+  template <typename U,
+            CH_REQUIRE_0(is_cast_convertible<T, U>::value)>
+  void operator <<=(const U& rhs) const {
+    logic_accessor::get_buffer(*this)->write(get_lnode<U, T>(rhs));
+  }
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+void ch_pushcd(const ch_logic<1>& clock, const ch_logic<1>& reset, bool posedge);
 
 void ch_popcd();
 
-ch_bit<1> ch_clock();
+ch_logic<1> ch_clock();
 
-ch_bit<1> ch_reset();
+ch_logic<1> ch_reset();
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -67,15 +74,17 @@ template <typename R, typename T,
 auto ch_delay(const T& rhs, unsigned delay = 1) {
   R ret(rhs);
   for (unsigned i = 0; i < delay; ++i) {
-    ret = make_type<R>(createRegNode(get_lnode(ch_clone(ret))));
+    ch_reg<R> reg;
+    reg <<= ch_clone(ret);
+    ret = reg;
   }
   return ret;
 }
 
 template <typename T,
-          CH_REQUIRE_0(is_bit_convertible<T>::value)>
+          CH_REQUIRE_0(is_logic_convertible<T>::value)>
 auto ch_delay(const T& rhs, unsigned delay = 1) {
-  return ch_delay<logic_value_t<T>, T>(rhs, delay);
+  return ch_delay<logic_type_t<T>, T>(rhs, delay);
 }
 
 }

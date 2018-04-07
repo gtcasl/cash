@@ -12,16 +12,10 @@
   CH_CONCAT(__field_offset, CH_INC(i)) = __field_offset##i + ch_width_v<ch::internal::identity_t<CH_PAIR_L(x)>>
 
 #define CH_STRUCT_SCALAR_FIELD(i, x) \
-  ch_value_t<ch_scalar_t<ch::internal::identity_t<CH_PAIR_L(x)>>> CH_PAIR_R(x)
-
-#define CH_STRUCT_CONST_SCALAR_FIELD(i, x) \
-  ch_const_t<ch_scalar_t<ch::internal::identity_t<CH_PAIR_L(x)>>> CH_PAIR_R(x)
+  ch_scalar_t<ch::internal::identity_t<CH_PAIR_L(x)>> CH_PAIR_R(x)
 
 #define CH_STRUCT_LOGIC_FIELD(i, x) \
-  ch_value_t<ch_logic_t<ch::internal::identity_t<CH_PAIR_L(x)>>> CH_PAIR_R(x)
-
-#define CH_STRUCT_CONST_LOGIC_FIELD(i, x) \
-  ch_const_t<ch_logic_t<ch::internal::identity_t<CH_PAIR_L(x)>>> CH_PAIR_R(x)
+  ch_logic_t<ch::internal::identity_t<CH_PAIR_L(x)>> CH_PAIR_R(x)
 
 #define CH_STRUCT_SCALAR_CTOR(i, x) \
   CH_PAIR_R(x)(ch::internal::type_buffer_t<traits>( \
@@ -58,7 +52,7 @@
 #define CH_STRUCT_CLONE(i, x) \
   CH_PAIR_R(x).clone()
 
-#define CH_STRUCT_SCALAR_IMPL2(struct_name, const_name, field_body, ...) \
+#define CH_STRUCT_SCALAR_IMPL2(struct_name, field_body, ...) \
 private: \
   enum { __field_offset0 = 0, \
            CH_FOR_EACH(CH_STRUCT_FIELD_OFFSET, CH_SEP_COMMA, __VA_ARGS__) }; \
@@ -71,12 +65,10 @@ public: \
     : struct_name(ch::internal::type_accessor_t<traits>::copy_buffer(rhs)) {} \
   struct_name(struct_name&& rhs) : \
     CH_FOR_EACH(CH_STRUCT_MOVE_CTOR, CH_SEP_COMMA, __VA_ARGS__) {} \
-  struct_name(const const_name& rhs) \
-    : struct_name(ch::internal::type_accessor_t<traits>::copy_buffer(rhs)) {} \
   template <typename __T__, CH_REQUIRE_0(std::is_integral_v<__T__> || std::is_enum_v<__T__>)> \
   explicit struct_name(__T__ rhs) \
     : struct_name(ch::internal::type_buffer_t<traits>(ch::internal::bitvector(traits::bitwidth, rhs))) {} \
-  explicit struct_name(const const_scalar<traits::bitwidth>& rhs) \
+  explicit struct_name(const ch_scalar<traits::bitwidth>& rhs) \
     : struct_name(ch::internal::type_buffer_t<traits>(ch::internal::scalar_accessor::get_data(rhs))) {} \
   template <CH_REVERSE_FOR_EACH(CH_STRUCT_FIELD_CTOR_TMPL, CH_SEP_COMMA, __VA_ARGS__), \
             CH_REVERSE_FOR_EACH(CH_STRUCT_FIELD_CTOR_REQUIRES, CH_SEP_COMMA, __VA_ARGS__)> \
@@ -97,7 +89,7 @@ protected: \
   } \
 public:
 
-#define CH_STRUCT_LOGIC_IMPL2(struct_name, const_name, name, field_body, ...) \
+#define CH_STRUCT_LOGIC_IMPL2(struct_name, name, field_body, ...) \
 private: \
   enum { __field_offset0 = 0, \
            CH_FOR_EACH(CH_STRUCT_FIELD_OFFSET, CH_SEP_COMMA, __VA_ARGS__) }; \
@@ -110,14 +102,12 @@ public: \
     : struct_name(ch::internal::type_accessor_t<traits>::copy_buffer(rhs, sloc, CH_STRINGIZE(name))) {} \
   struct_name(struct_name&& rhs) : \
     CH_FOR_EACH(CH_STRUCT_MOVE_CTOR, CH_SEP_COMMA, __VA_ARGS__) {} \
-  struct_name(const const_name& rhs, const source_location& sloc = CH_SRC_LOCATION) \
-    : struct_name(ch::internal::type_accessor_t<traits>::copy_buffer(rhs, sloc, CH_STRINGIZE(name))) {} \
   template <typename __T__, CH_REQUIRE_0(std::is_integral_v<__T__> || std::is_enum_v<__T__>)> \
   explicit struct_name(__T__ rhs, const source_location& sloc = CH_SRC_LOCATION) \
     : struct_name(ch::internal::type_buffer_t<traits>(ch::internal::bitvector(traits::bitwidth, rhs), sloc, CH_STRINGIZE(name))) {} \
   explicit struct_name(const ch_bit<traits::bitwidth>& rhs, const source_location& sloc = CH_SRC_LOCATION) \
     : struct_name(ch::internal::type_accessor_t<traits>::copy_buffer(rhs, sloc, CH_STRINGIZE(name))) {} \
-  explicit struct_name(const const_scalar<traits::bitwidth>& rhs, const source_location& sloc = CH_SRC_LOCATION) \
+  explicit struct_name(const ch_scalar<traits::bitwidth>& rhs, const source_location& sloc = CH_SRC_LOCATION) \
     : struct_name(ch::internal::type_buffer_t<traits>(ch::internal::scalar_accessor::get_data(rhs), sloc, CH_STRINGIZE(name))) {} \
   template <CH_REVERSE_FOR_EACH(CH_STRUCT_FIELD_CTOR_TMPL, CH_SEP_COMMA, __VA_ARGS__), \
             CH_REVERSE_FOR_EACH(CH_STRUCT_FIELD_CTOR_REQUIRES, CH_SEP_COMMA, __VA_ARGS__)> \
@@ -139,7 +129,7 @@ protected: \
   } \
 public:
 
-#define CH_STRUCT_SCALAR_IMPL3(struct_name, const_name, field_body, ...) \
+#define CH_STRUCT_SCALAR_IMPL3(struct_name, field_body, ...) \
 private: \
   enum { __field_offset0 = ch_width_v<base>, \
          CH_FOR_EACH(CH_STRUCT_FIELD_OFFSET, CH_SEP_COMMA, __VA_ARGS__) }; \
@@ -154,12 +144,10 @@ public: \
   struct_name(struct_name&& rhs) \
     : base(std::move(rhs))\
     , CH_FOR_EACH(CH_STRUCT_MOVE_CTOR, CH_SEP_COMMA, __VA_ARGS__) {} \
-  struct_name(const const_name& rhs) \
-    : struct_name(ch::internal::type_accessor_t<traits>::copy_buffer(rhs)) {} \
   template <typename __T__, CH_REQUIRE_0(std::is_integral_v<__T__> || std::is_enum_v<__T__>)> \
   explicit struct_name(__T__ rhs) \
     : struct_name(ch::internal::type_buffer_t<traits>(ch::internal::bitvector(traits::bitwidth, rhs))) {} \
-  explicit struct_name(const const_scalar<traits::bitwidth>& rhs) \
+  explicit struct_name(const ch_scalar<traits::bitwidth>& rhs) \
     : struct_name(ch::internal::type_buffer_t<traits>(ch::internal::scalar_accessor::get_data(rhs))) {} \
   template <CH_REVERSE_FOR_EACH(CH_STRUCT_FIELD_CTOR_TMPL, CH_SEP_COMMA, __VA_ARGS__), typename... __Ts__, \
             CH_REVERSE_FOR_EACH(CH_STRUCT_FIELD_CTOR_REQUIRES, CH_SEP_COMMA, __VA_ARGS__)> \
@@ -181,7 +169,7 @@ protected: \
   } \
 public:
 
-#define CH_STRUCT_LOGIC_IMPL3(struct_name, const_name, name, field_body, ...) \
+#define CH_STRUCT_LOGIC_IMPL3(struct_name, name, field_body, ...) \
 private: \
   enum { __field_offset0 = ch_width_v<base>, \
          CH_FOR_EACH(CH_STRUCT_FIELD_OFFSET, CH_SEP_COMMA, __VA_ARGS__) }; \
@@ -196,14 +184,12 @@ public: \
   struct_name(struct_name&& rhs) \
     : base(std::move(rhs))\
     , CH_FOR_EACH(CH_STRUCT_MOVE_CTOR, CH_SEP_COMMA, __VA_ARGS__) {} \
-  struct_name(const const_name& rhs, const source_location& sloc = CH_SRC_LOCATION) \
-    : struct_name(ch::internal::type_accessor_t<traits>::copy_buffer(rhs, sloc, CH_STRINGIZE(name))) {} \
   template <typename __T__, CH_REQUIRE_0(std::is_integral_v<__T__> || std::is_enum_v<__T__>)> \
   explicit struct_name(__T__ rhs, const source_location& sloc = CH_SRC_LOCATION) \
     : struct_name(ch::internal::type_buffer_t<traits>(ch::internal::bitvector(traits::bitwidth, rhs), sloc, CH_STRINGIZE(name))) {} \
   explicit struct_name(const ch_bit<traits::bitwidth>& rhs, const source_location& sloc = CH_SRC_LOCATION) \
     : struct_name(ch::internal::type_accessor_t<traits>::copy_buffer(rhs, sloc, CH_STRINGIZE(name))) {} \
-  explicit struct_name(const const_scalar<traits::bitwidth>& rhs, const source_location& sloc = CH_SRC_LOCATION) \
+  explicit struct_name(const ch_scalar<traits::bitwidth>& rhs, const source_location& sloc = CH_SRC_LOCATION) \
     : struct_name(ch::internal::type_buffer_t<traits>(ch::internal::scalar_accessor::get_data(rhs), sloc, CH_STRINGIZE(name))) {} \
   template <CH_REVERSE_FOR_EACH(CH_STRUCT_FIELD_CTOR_TMPL, CH_SEP_COMMA, __VA_ARGS__), \
             CH_REVERSE_FOR_EACH(CH_STRUCT_FIELD_CTOR_REQUIRES, CH_SEP_COMMA, __VA_ARGS__)> \
@@ -231,20 +217,16 @@ protected: \
   } \
   typename ch::internal::type_buffer_t<traits>::base& get_buffer() { \
     return base::get_buffer(); \
-  } \
-public:
+  }
 
-#define CH_STRUCT_WRITABLE_IMPL(struct_name, const_name) \
+#define CH_STRUCT_ASSIGN_IMPL(struct_name) \
+public: \
   struct_name& operator=(const struct_name& rhs) { \
     ch::internal::type_accessor_t<traits>::copy(*this, rhs); \
     return *this; \
   } \
   struct_name& operator=(struct_name&& rhs) { \
     ch::internal::type_accessor_t<traits>::move(*this, std::move(rhs)); \
-    return *this; \
-  } \
-  struct_name& operator=(const const_name& rhs) { \
-    ch::internal::type_accessor_t<traits>::copy(*this, rhs); \
     return *this; \
   }
 
@@ -259,78 +241,40 @@ protected: \
 #define CH_STRUCT_IMPL2(struct_name, ...) \
   class struct_name { \
   private: \
-    class __const_type__; \
-    class __scalar_type__; \
-    class __scalar_const_type__ { \
-    public: \
-      using traits = ch::internal::scalar_traits<CH_STRUCT_SIZE(__VA_ARGS__), __scalar_const_type__, __scalar_const_type__, __scalar_type__, __const_type__>; \
-      CH_STRUCT_SCALAR_IMPL2(__scalar_const_type__, __scalar_type__, CH_STRUCT_CONST_SCALAR_FIELD, __VA_ARGS__) \
-      CH_SCALAR_READONLY_INTERFACE(__scalar_const_type__) \
-      CH_STRUCT_SCALAR_FRIENDS_IMPL(__scalar_const_type__) \
-    }; \
     class __scalar_type__ { \
     public: \
-      using traits = ch::internal::scalar_traits<CH_STRUCT_SIZE(__VA_ARGS__), __scalar_type__, __scalar_const_type__, __scalar_type__, struct_name>; \
-      CH_STRUCT_SCALAR_IMPL2(__scalar_type__, __scalar_const_type__, CH_STRUCT_SCALAR_FIELD, __VA_ARGS__) \
-      CH_STRUCT_WRITABLE_IMPL(__scalar_type__, __scalar_const_type__) \
-      CH_SCALAR_READONLY_INTERFACE(__scalar_type__) \
-      CH_SCALAR_WRITABLE_INTERFACE(__scalar_type__) \
+      using traits = ch::internal::scalar_traits<CH_STRUCT_SIZE(__VA_ARGS__), __scalar_type__, struct_name>; \
+      CH_STRUCT_SCALAR_IMPL2(__scalar_type__, CH_STRUCT_SCALAR_FIELD, __VA_ARGS__) \
+      CH_SCALAR_INTERFACE(__scalar_type__) \
+      CH_STRUCT_ASSIGN_IMPL(__scalar_type__) \
       CH_STRUCT_SCALAR_FRIENDS_IMPL(__scalar_type__) \
     }; \
-    class __const_type__ { \
-    public: \
-      using traits = ch::internal::logic_traits<CH_STRUCT_SIZE(__VA_ARGS__), __const_type__, __const_type__, struct_name, __scalar_const_type__>; \
-      CH_STRUCT_LOGIC_IMPL2(__const_type__, struct_name, struct_name, CH_STRUCT_CONST_LOGIC_FIELD, __VA_ARGS__) \
-      CH_LOGIC_READONLY_INTERFACE(__const_type__) \
-      CH_STRUCT_LOGIC_FRIENDS_IMPL(__const_type__) \
-    }; \
   public: \
-    using traits = ch::internal::logic_traits<CH_STRUCT_SIZE(__VA_ARGS__), struct_name, __const_type__, struct_name, __scalar_type__>; \
-    CH_STRUCT_LOGIC_IMPL2(struct_name, __const_type__, struct_name, CH_STRUCT_LOGIC_FIELD, __VA_ARGS__) \
-    CH_STRUCT_WRITABLE_IMPL(struct_name, __const_type__) \
-    CH_LOGIC_READONLY_INTERFACE(struct_name) \
-    CH_LOGIC_WRITABLE_INTERFACE(struct_name) \
+    using traits = ch::internal::logic_traits<CH_STRUCT_SIZE(__VA_ARGS__), struct_name, __scalar_type__>; \
+    CH_STRUCT_LOGIC_IMPL2(struct_name, struct_name, CH_STRUCT_LOGIC_FIELD, __VA_ARGS__) \
+    CH_LOGIC_INTERFACE(struct_name) \
+    CH_STRUCT_ASSIGN_IMPL(struct_name) \
     CH_STRUCT_LOGIC_FRIENDS_IMPL(struct_name) \
   }
 
 #define CH_STRUCT_IMPL3(struct_name, parent, ...) \
   class struct_name : public parent { \
   private: \
-    class __const_type__; \
-    class __scalar_type__; \
-    class __scalar_const_type__ : public ch_const_t<ch_scalar_t<parent>> { \
-    public: \
-      using base = ch_const_t<ch_scalar_t<parent>>; \
-      using traits = ch::internal::scalar_traits<ch_width_v<base> + CH_STRUCT_SIZE(__VA_ARGS__), __scalar_const_type__, __scalar_const_type__, __scalar_type__, __const_type__>; \
-      CH_STRUCT_SCALAR_IMPL3(__scalar_const_type__, __scalar_type__, CH_STRUCT_CONST_SCALAR_FIELD, __VA_ARGS__) \
-      CH_SCALAR_READONLY_INTERFACE(__scalar_const_type__) \
-      CH_STRUCT_SCALAR_FRIENDS_IMPL(__scalar_const_type__) \
-    }; \
     class __scalar_type__ : public ch_scalar_t<parent> { \
     public: \
       using base = ch_scalar_t<parent>; \
-      using traits = ch::internal::scalar_traits<ch_width_v<base> + CH_STRUCT_SIZE(__VA_ARGS__), __scalar_type__, __scalar_const_type__, __scalar_type__, struct_name>; \
-      CH_STRUCT_SCALAR_IMPL3(__scalar_type__, __scalar_const_type__, CH_STRUCT_SCALAR_FIELD, __VA_ARGS__) \
-      CH_STRUCT_WRITABLE_IMPL(__scalar_type__, __scalar_const_type__) \
-      CH_SCALAR_READONLY_INTERFACE(__scalar_type__) \
-      CH_SCALAR_WRITABLE_INTERFACE(__scalar_type__) \
+      using traits = ch::internal::scalar_traits<ch_width_v<base> + CH_STRUCT_SIZE(__VA_ARGS__), __scalar_type__, struct_name>; \
+      CH_STRUCT_SCALAR_IMPL3(__scalar_type__, CH_STRUCT_SCALAR_FIELD, __VA_ARGS__) \
+      CH_STRUCT_ASSIGN_IMPL(__scalar_type__) \
+      CH_SCALAR_INTERFACE(__scalar_type__) \
       CH_STRUCT_SCALAR_FRIENDS_IMPL(__scalar_type__) \
-    }; \
-    class __const_type__ : public ch_const_t<parent> { \
-    public: \
-      using base = ch_const_t<parent>; \
-      using traits = ch::internal::logic_traits<ch_width_v<base> + CH_STRUCT_SIZE(__VA_ARGS__), __const_type__, __const_type__, struct_name, __scalar_const_type__>; \
-      CH_STRUCT_LOGIC_IMPL3(__const_type__, struct_name, struct_name, CH_STRUCT_CONST_LOGIC_FIELD, __VA_ARGS__) \
-      CH_LOGIC_READONLY_INTERFACE(__const_type__) \
-      CH_STRUCT_LOGIC_FRIENDS_IMPL(__const_type__) \
     }; \
   public: \
     using base = parent; \
-    using traits = ch::internal::logic_traits<ch_width_v<base> + CH_STRUCT_SIZE(__VA_ARGS__), struct_name, __const_type__, struct_name, __scalar_type__>; \
-    CH_STRUCT_LOGIC_IMPL3(struct_name, __const_type__, struct_name, CH_STRUCT_LOGIC_FIELD, __VA_ARGS__) \
-    CH_STRUCT_WRITABLE_IMPL(struct_name, __const_type__) \
-    CH_LOGIC_READONLY_INTERFACE(struct_name) \
-    CH_LOGIC_WRITABLE_INTERFACE(struct_name) \
+    using traits = ch::internal::logic_traits<ch_width_v<base> + CH_STRUCT_SIZE(__VA_ARGS__), struct_name, __scalar_type__>; \
+    CH_STRUCT_LOGIC_IMPL3(struct_name, struct_name, CH_STRUCT_LOGIC_FIELD, __VA_ARGS__) \
+    CH_STRUCT_ASSIGN_IMPL(struct_name) \
+    CH_LOGIC_INTERFACE(struct_name) \
     CH_STRUCT_LOGIC_FRIENDS_IMPL(struct_name) \
   }
 

@@ -44,7 +44,7 @@ public:
   }
 
   template <typename P, typename V,
-            CH_REQUIRE_0(is_bit_compatible<P>::value),
+            CH_REQUIRE_0(is_logic_compatible<P>::value),
             CH_REQUIRE_0(is_cast_convertible<T, V>::value)>
   select_t<T>& operator()(const P& pred, const V& value) {
     static_assert(1 == width_v<P>, "invalid predicate size");
@@ -91,15 +91,15 @@ protected:
 };
 
 template <typename P, typename V,
-          CH_REQUIRE_0(is_bit_compatible<P>::value),
-          CH_REQUIRE_0(is_bit_convertible<V>::value)>
+          CH_REQUIRE_0(is_logic_compatible<P>::value),
+          CH_REQUIRE_0(is_logic_convertible<V>::value)>
 auto ch_select(const P& pred, const V& value) {
   static_assert(1 == width_v<P>, "invalid predicate size");
-  return select_t<logic_value_t<V>>(get_lnode(pred), get_lnode(value));
+  return select_t<logic_type_t<V>>(get_lnode(pred), get_lnode(value));
 }
 
 template <typename R, typename P, typename V,
-          CH_REQUIRE_0(is_bit_convertible<P>::value),
+          CH_REQUIRE_0(is_logic_convertible<P>::value),
           CH_REQUIRE_0(is_cast_convertible<R, V>::value)>
 auto ch_select(const P& pred, const V& value) {
   static_assert(1 == width_v<P>, "invalid predicate size");
@@ -107,17 +107,17 @@ auto ch_select(const P& pred, const V& value) {
 }
 
 template <typename K, typename P, typename V,
-          CH_REQUIRE_0(is_bit_convertible<K>::value),
+          CH_REQUIRE_0(is_logic_convertible<K>::value),
           CH_REQUIRE_0(is_equality_comparable<P, K>::value),
-          CH_REQUIRE_0(is_bit_convertible<V>::value)>
+          CH_REQUIRE_0(is_logic_convertible<V>::value)>
 auto ch_case(const K& key, const P& pred, const V& value) {
-  return case_t<K, logic_value_t<V>>(get_lnode(key),
+  return case_t<K, logic_type_t<V>>(get_lnode(key),
                                      get_lnode<P, width_v<K>>(pred),
                                      get_lnode(value));
 }
 
 template <typename R, typename K, typename P, typename V,
-          CH_REQUIRE_0(is_bit_convertible<K>::value),
+          CH_REQUIRE_0(is_logic_convertible<K>::value),
           CH_REQUIRE_0(is_equality_comparable<P, K>::value),
           CH_REQUIRE_0(is_cast_convertible<R, V>::value)>
 auto ch_case(const K& key, const P& pred, const V& value) {
@@ -128,19 +128,19 @@ auto ch_case(const K& key, const P& pred, const V& value) {
 
 template <typename P, typename U, typename V,
           CH_REQUIRE_0(width_v<deduce_type_t<false, U, V>> != 0),
-          CH_REQUIRE_0(is_bit_convertible<P>::value),
-          CH_REQUIRE_0(is_bit_convertible<U, width_v<deduce_type_t<false, U, V>>>::value),
-          CH_REQUIRE_0(is_bit_convertible<V, width_v<deduce_type_t<false, U, V>>>::value)>
+          CH_REQUIRE_0(is_logic_convertible<P>::value),
+          CH_REQUIRE_0(is_logic_convertible<U, width_v<deduce_type_t<false, U, V>>>::value),
+          CH_REQUIRE_0(is_logic_convertible<V, width_v<deduce_type_t<false, U, V>>>::value)>
 auto ch_select(const P& pred, const U& _true, const V& _false) {
   static_assert(1 == width_v<P>, "invalid predicate size");
-  return make_type<logic_value_t<deduce_first_type_t<U, V>>>(
+  return make_type<logic_type_t<deduce_first_type_t<U, V>>>(
         createSelectNode(get_lnode(pred),
                          get_lnode<U, width_v<deduce_type_t<false, U, V>>>(_true),
                          get_lnode<V, width_v<deduce_type_t<false, U, V>>>(_false)));
 }
 
 template <typename R, typename P, typename U, typename V,
-          CH_REQUIRE_0(is_bit_convertible<P>::value),
+          CH_REQUIRE_0(is_logic_convertible<P>::value),
           CH_REQUIRE_0(is_cast_convertible<R, U>::value),
           CH_REQUIRE_0(is_cast_convertible<R, V>::value)>
 auto ch_select(const P& pred, const U& _true, const V& _false) {
@@ -152,16 +152,16 @@ auto ch_select(const P& pred, const U& _true, const V& _false) {
 
 template <typename U, typename V,
           CH_REQUIRE_0(width_v<deduce_type_t<false, U, V>> != 0),
-          CH_REQUIRE_0(is_bit_convertible<U, width_v<deduce_type_t<false, U, V>>>::value),
-          CH_REQUIRE_0(is_bit_convertible<V, width_v<deduce_type_t<false, U, V>>>::value)>
+          CH_REQUIRE_0(is_logic_convertible<U, width_v<deduce_type_t<false, U, V>>>::value),
+          CH_REQUIRE_0(is_logic_convertible<V, width_v<deduce_type_t<false, U, V>>>::value)>
 auto ch_min(const U& lhs, const V& rhs) {
   return ch_select(lhs < rhs, lhs, rhs);
 }
 
 template <typename U, typename V,
           CH_REQUIRE_0(width_v<deduce_type_t<false, U, V>> != 0),
-          CH_REQUIRE_0(is_bit_convertible<U, width_v<deduce_type_t<false, U, V>>>::value),
-          CH_REQUIRE_0(is_bit_convertible<V, width_v<deduce_type_t<false, U, V>>>::value)>
+          CH_REQUIRE_0(is_logic_convertible<U, width_v<deduce_type_t<false, U, V>>>::value),
+          CH_REQUIRE_0(is_logic_convertible<V, width_v<deduce_type_t<false, U, V>>>::value)>
 auto ch_max(const U& lhs, const V& rhs) {
   return ch_select(lhs > rhs, lhs, rhs);
 }

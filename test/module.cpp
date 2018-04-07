@@ -68,8 +68,8 @@ template <typename T>
 struct Filter {
   filter_io<T> io;
   void describe() {
-    auto tmp = (ch_zext<ch_width_v<T>+1>(io.x.data) << 1)
-              | ch_zext<ch_width_v<T>+1>(io.x.parity);
+    auto tmp = (ch_pad<ch_width_v<T>+1>(io.x.data) << 1)
+              | ch_pad<ch_width_v<T>+1>(io.x.parity.as_uint());
     io.y.data   = ch_delay(ch_slice<T>(tmp));
     io.y.parity = tmp[ch_width_v<T>];
     io.y.valid  = ch_delay(io.x.valid);
@@ -102,9 +102,9 @@ struct QueueWrapper {
 
 struct Adder {
   __io (
-    __in(ch_bit2)  in1,
-    __in(ch_bit2)  in2,
-    __out(ch_bit2) out
+    __in(ch_uint2)  in1,
+    __in(ch_uint2)  in2,
+    __out(ch_uint2) out
   );
   void describe() {
     io.out = io.in1 + io.in2;
@@ -137,14 +137,14 @@ struct Foo2 {
 
 struct Foo3 {
   __inout(io_ab_t, (
-    __in(ch_bit2) a,
-    __out(ch_bit2) b
+    __in(ch_uint2) a,
+    __out(ch_uint2) b
   ));
 
   __io(
     (ch_vec<io_ab_t, 2>) x,
-    (ch_vec<ch_in<ch_bit2>, 2>) y,
-    (ch_vec<ch_out<ch_bit2>, 2>) z
+    (ch_vec<ch_in<ch_uint2>, 2>) y,
+    (ch_vec<ch_out<ch_uint2>, 2>) z
   );
 
   void describe() {
@@ -163,7 +163,7 @@ TEST_CASE("module", "[module]") {
       adder.io.in2 = 2;
       ch_simulator sim(adder);
       sim.run(1);
-      return (3 == (int)adder.io.out);
+      return (3 == adder.io.out);
     });
 
     TESTX([]()->bool {
@@ -174,10 +174,10 @@ TEST_CASE("module", "[module]") {
         foo.io.x[i].a = 2-i;
       }
       sim.run(1);
-      int ret = 1;
+      int ret(1);
       for (int i = 0; i < 2; ++i) {
-        ret &= (2 == (int)foo.io.z[i]);
-        ret &= (2 == (int)foo.io.x[i].b);
+        ret &= (2 == foo.io.z[i]);
+        ret &= (2 == foo.io.x[i].b);
       }
       return !!ret;
     });
@@ -189,7 +189,7 @@ TEST_CASE("module", "[module]") {
       foo.io.in2 = 2;
       ch_simulator sim(foo);
       sim.run(1);
-      return (3 == (int)foo.io.out);
+      return (3 == foo.io.out);
     });
     TESTX([]()->bool {
       ch_device<Foo2> foo;
@@ -198,7 +198,7 @@ TEST_CASE("module", "[module]") {
       return (bool)foo.io;
     });
     TESTX([]()->bool {
-      ch_device<FilterBlock<ch_bit16>> filter;
+      ch_device<FilterBlock<ch_uint16>> filter;
       ch_simulator sim(filter);
       ch_tick t = sim.reset(0);
 
@@ -207,8 +207,8 @@ TEST_CASE("module", "[module]") {
       filter.io.x.parity = 0;
       t = sim.step(t, 2);
 
-      int ret = !!filter.io.y.valid;
-      ret &= (12 == (int)filter.io.y.data);
+      int ret(!!filter.io.y.valid);
+      ret &= (12 == filter.io.y.data);
       ret &= !filter.io.y.parity;
 
       ch_toVerilog("filter.v", filter);
@@ -223,34 +223,32 @@ TEST_CASE("module", "[module]") {
       ch_simulator sim(queue);
       ch_tick t = sim.reset(0);
 
-      int ret = (bool)queue.io.enq.ready;  // !full
-      ret &= !(bool)queue.io.deq.valid; // empty
+      int ret(!!queue.io.enq.ready);  // !full
+      ret &= !queue.io.deq.valid; // empty
       queue.io.deq.ready = 0;
       queue.io.enq.data = 0xA;
       queue.io.enq.valid = 1; // push
       t = sim.step(t);
 
-      ret &= (bool)queue.io.deq.valid;  // !empty
+      ret &= !!queue.io.deq.valid;  // !empty
       queue.io.enq.data = 0xB;
       t = sim.step(t);
 
-      ret &= !(bool)queue.io.enq.ready; // full
-      ret &= (bool)queue.io.deq.valid;
-      ret &= (0xA == (int)queue.io.deq.data);
+      ret &= !queue.io.enq.ready; // full
+      ret &= !!queue.io.deq.valid;
+      ret &= (0xA == queue.io.deq.data);
       queue.io.enq.valid = 0; // !push
       queue.io.deq.ready = 1; // pop
       t = sim.step(t);
 
-      ret &= (bool)queue.io.enq.ready;  // !full
-      ret &= (0xB == (int)queue.io.deq.data);
+      ret &= !!queue.io.enq.ready;  // !full
+      ret &= (0xB == queue.io.deq.data);
       queue.io.deq.ready = 1; // pop
       t = sim.step(t, 4);
 
-      ret &= !(bool)queue.io.deq.valid; // empty
-
+      ret &= !queue.io.deq.valid; // empty
       ch_toVerilog("queue.v", queue);
       ret &= (checkVerilog("queue_tb.v"));
-
       ch_toFIRRTL("queue.fir", queue);
 
       return !!ret;

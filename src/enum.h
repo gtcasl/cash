@@ -28,15 +28,14 @@ void register_enum_string(const lnode& node, void* callback);
 #define CH_ENUM_STRING_(c) CH_CONCAT(CH_ENUM_STRING_, c)
 #define CH_ENUM_STRING(i, x) case CH_ENUM_STRING_(CH_NARG(CH_REM x))(CH_REM x, x)
 
-#define CH_ENUM_SCALAR_IMPL(enum_name, const_name) \
+#define CH_ENUM_SCALAR_IMPL(enum_name) \
   enum_name(const ch::internal::type_buffer_t<traits>& buffer = \
     ch::internal::type_buffer_t<traits>(traits::bitwidth)) : base(buffer) {} \
   enum_name(const enum_name& rhs) : base(rhs) {} \
   enum_name(enum_name&& rhs) : base(std::move(rhs)) {} \
-  enum_name(const const_name& rhs) : base(rhs) {} \
   enum_name(enum_type rhs) : base(rhs) {}
 
-#define CH_ENUM_LOGIC_IMPL(enum_name, const_name) \
+#define CH_ENUM_LOGIC_IMPL(enum_name) \
   enum_name(const ch::internal::type_buffer_t<traits>& buffer = \
     ch::internal::type_buffer_t<traits>(traits::bitwidth, CH_SRC_LOCATION)) \
     : base(buffer) { ch::internal::register_enum_string(ch::internal::logic_accessor::get_data(*this), (void*)to_string); } \
@@ -44,12 +43,10 @@ void register_enum_string(const lnode& node, void* callback);
     : base(rhs, sloc) { ch::internal::register_enum_string(ch::internal::logic_accessor::get_data(*this), (void*)to_string); } \
   enum_name(enum_name&& rhs) \
     : base(std::move(rhs)) { ch::internal::register_enum_string(ch::internal::logic_accessor::get_data(*this), (void*)to_string); } \
-  enum_name(const const_name& rhs, const source_location& sloc = CH_SRC_LOCATION) \
-    : base(rhs, sloc) { ch::internal::register_enum_string(ch::internal::logic_accessor::get_data(*this), (void*)to_string); } \
   enum_name(enum_type rhs, const source_location& sloc = CH_SRC_LOCATION) \
     : base(rhs, sloc) { ch::internal::register_enum_string(ch::internal::logic_accessor::get_data(*this), (void*)to_string); }
 
-#define CH_ENUM_WRITABLE_IMPL(enum_name, const_name) \
+#define CH_ENUM_ASSIGN_IMPL(enum_name) \
   enum_name& operator=(const enum_name& rhs) { \
     base::operator=(rhs); \
     return *this; \
@@ -58,17 +55,13 @@ void register_enum_string(const lnode& node, void* callback);
     base::operator=(std::move(rhs)); \
     return *this; \
   } \
-  enum_name& operator=(const const_name& rhs) { \
-    base::operator=(rhs); \
-    return *this; \
-  } \
   enum_name& operator=(enum_type rhs) { \
     base::operator=(rhs); \
     return *this; \
   }
 
 #define CH_ENUM_IMPL(enum_name, size, ...) \
-  class enum_name : public ch::internal::ch_bit<size> { \
+  class enum_name : public ch::internal::ch_logic<size> { \
   public: \
     enum enum_type { \
     CH_FOR_EACH(CH_ENUM_FIELD, CH_SEP_COMMA, __VA_ARGS__) \
@@ -83,38 +76,20 @@ void register_enum_string(const lnode& node, void* callback);
       } \
     }\
   private: \
-    class __const_type__; \
-    class __scalar_type__; \
-    class __scalar_const_type__ : public ch::internal::const_scalar<size> { \
-    public: \
-      using base = ch::internal::const_scalar<size>; \
-      using traits = ch::internal::scalar_traits<size, __scalar_const_type__, __scalar_const_type__, __scalar_type__, __const_type__>; \
-      CH_ENUM_SCALAR_IMPL(__scalar_const_type__, __scalar_type__) \
-      CH_SCALAR_READONLY_INTERFACE(__scalar_const_type__) \
-    }; \
     class __scalar_type__ : public ch::internal::ch_scalar<size> { \
     public: \
+      using traits = ch::internal::scalar_traits<size, __scalar_type__, enum_name>; \
       using base = ch::internal::ch_scalar<size>; \
-      using traits = ch::internal::scalar_traits<size, __scalar_type__, __scalar_const_type__, __scalar_type__, enum_name>; \
-      CH_ENUM_SCALAR_IMPL(__scalar_type__, __scalar_const_type__) \
-      CH_ENUM_WRITABLE_IMPL(__scalar_type__, __scalar_const_type__) \
-      CH_SCALAR_READONLY_INTERFACE(__scalar_type__) \
-      CH_SCALAR_WRITABLE_INTERFACE(__scalar_type__) \
-    }; \
-    class __const_type__ : public ch::internal::const_bit<size> { \
-    public: \
-      using base = ch::internal::const_bit<size>; \
-      using traits = ch::internal::logic_traits<size, __const_type__, __const_type__, enum_name, __scalar_const_type__>; \
-      CH_ENUM_LOGIC_IMPL(__const_type__, enum_name) \
-      CH_LOGIC_READONLY_INTERFACE(__const_type__) \
+      CH_ENUM_SCALAR_IMPL(__scalar_type__) \
+      CH_ENUM_ASSIGN_IMPL(__scalar_type__) \
+      CH_SCALAR_INTERFACE(__scalar_type__) \
     }; \
   public: \
-    using base = ch::internal::ch_bit<size>; \
-    using traits = ch::internal::logic_traits<size, enum_name, __const_type__, enum_name, __scalar_type__>; \
-    CH_ENUM_LOGIC_IMPL(enum_name, __const_type__) \
-    CH_ENUM_WRITABLE_IMPL(enum_name, __const_type__) \
-    CH_LOGIC_READONLY_INTERFACE(enum_name) \
-    CH_LOGIC_WRITABLE_INTERFACE(enum_name) \
+    using traits = ch::internal::logic_traits<size, enum_name, __scalar_type__>; \
+    using base = ch::internal::ch_logic<size>; \
+    CH_ENUM_LOGIC_IMPL(enum_name) \
+    CH_ENUM_ASSIGN_IMPL(enum_name) \
+    CH_LOGIC_INTERFACE(enum_name) \
   }
 
 #define CH_ENUM3(name, size, body) \

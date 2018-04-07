@@ -18,11 +18,11 @@ struct ch_queue {
   __io (
     (ch_deq_io<T>) enq,
     (ch_enq_io<T>) deq,
-    __out(ch_bit<addr_width+1>) size
+    __out(ch_uint<addr_width+1>) size
   );
 
   void describe() {
-    ch_reg<ch_bit<addr_width+1>> rd_ptr, wr_ptr;
+    ch_reg<ch_uint<addr_width+1>> rd_ptr, wr_ptr;
 
     auto rd_A = ch_slice<addr_width>(rd_ptr);
     auto wr_A = ch_slice<addr_width>(wr_ptr);
@@ -30,10 +30,10 @@ struct ch_queue {
     auto reading = io.deq.ready && io.deq.valid;
     auto writing = io.enq.valid && io.enq.ready;
 
-    rd_ptr.next = ch_select(reading, rd_ptr + 1, rd_ptr);
-    wr_ptr.next = ch_select(writing, wr_ptr + 1, wr_ptr);
+    rd_ptr <<= ch_select(reading, rd_ptr + 1, rd_ptr);
+    wr_ptr <<= ch_select(writing, wr_ptr + 1, wr_ptr);
 
-    ch_ram<T, N> mem;
+    ch_mem<T, N> mem;
     mem.write(wr_A, io.enq.data, writing);
 
     io.deq.data  = mem.read(rd_A);

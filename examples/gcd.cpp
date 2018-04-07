@@ -9,32 +9,32 @@ using namespace ch::htl;
 template <unsigned N>
 struct GCD {
   __io (
-    (ch_deq_io<ch_vec<ch_bit<N>,2>>) in,
-    (ch_valid_io<ch_bit<N>>) out
+    (ch_deq_io<ch_vec<ch_uint<N>,2>>) in,
+    (ch_valid_io<ch_uint<N>>) out
   );
   void describe() {
-    ch_reg<ch_bit<N>> x, y;
+    ch_reg<ch_uint<N>> x, y;
     ch_reg<ch_bool> p(false);
 
     io.in.ready = !p;
 
     __if (io.in.valid && io.in.ready) {
-      x.next = io.in.data[0];
-      y.next = io.in.data[1];
-      p.next = true;
+      x <<= io.in.data[0];
+      y <<= io.in.data[1];
+      p <<= true;
     };
 
     __if (p) {
       __if (x > y) {
-        x.next = y;
-        y.next = x;
+        x <<= y;
+        y <<= x;
       } __else {
-        y.next = y - x;
+        y <<= y - x;
       };
     };
 
     __if (io.out.valid) {
-      p.next = false;
+      p <<= false;
     };
 
     io.out.data  = x;

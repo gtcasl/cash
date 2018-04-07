@@ -9,14 +9,14 @@ struct FiFo {
   static constexpr unsigned addr_width = log2ceil(N);
   __io(
     __in(T)        din,
-    __in(ch_bit1)  push,
-    __in(ch_bit1)  pop,
+    __in(ch_bool)  push,
+    __in(ch_bool)  pop,
     __out(T)       dout,
-    __out(ch_bit1) empty,
-    __out(ch_bit1) full
+    __out(ch_bool) empty,
+    __out(ch_bool) full
   );
   void describe() {
-    ch_reg<ch_bit<addr_width+1>> rd_ptr, wr_ptr;
+    ch_reg<ch_uint<addr_width+1>> rd_ptr, wr_ptr;
 
     auto rd_A = ch_slice<addr_width>(rd_ptr);
     auto wr_A = ch_slice<addr_width>(wr_ptr);
@@ -24,10 +24,10 @@ struct FiFo {
     auto reading = io.pop && !io.empty;
     auto writing = io.push && !io.full;
 
-    rd_ptr.next = ch_select(reading, rd_ptr + 1, rd_ptr);
-    wr_ptr.next = ch_select(writing, wr_ptr + 1, wr_ptr);
+    rd_ptr <<= ch_select(reading, rd_ptr + 1, rd_ptr);
+    wr_ptr <<= ch_select(writing, wr_ptr + 1, wr_ptr);
 
-    ch_ram<T, N> mem;
+    ch_mem<T, N> mem;
     mem.write(wr_A, io.din, writing);
 
     io.dout  = mem.read(rd_A);

@@ -11,27 +11,23 @@ void createPrintNode(const std::string& format, const std::initializer_list<lnod
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> class ch_reg;
+template <unsigned N> class ch_int;
 
-template <unsigned Bitwidth,
-          typename LogicType,
-          typename ConstType,
-          typename ValueType,
-          typename ScalarType>
+template <unsigned N> class ch_uint;
+
+template <typename T> class ch_reg_impl;
+template <typename T> using ch_reg = std::add_const_t<ch_reg_impl<T>>;
+
+template <unsigned Bitwidth, typename LogicType, typename ScalarType>
 struct logic_traits {
   static constexpr traits_type type = traits_logic;
   static constexpr unsigned bitwidth = Bitwidth;
   using logic_type  = LogicType;
-  using const_type  = ConstType;
-  using value_type  = ValueType;
   using scalar_type = ScalarType;
 };
 
 template <typename T>
 using logic_type_t = typename std::decay_t<T>::traits::logic_type;
-
-template <typename T>
-using logic_value_t = typename logic_type_t<T>::traits::value_type;
 
 template <typename T>
 using is_logic_traits = is_true<(T::type & traits_logic)>;
@@ -40,7 +36,7 @@ CH_DEF_SFINAE_CHECK(is_logic_only, is_true<(std::decay_t<T>::traits::type == tra
 
 CH_DEF_SFINAE_CHECK(is_logic_type, is_logic_traits<typename std::decay_t<T>::traits>::value);
 
-CH_DEF_SFINAE_CHECK(is_bit_compatible, (std::is_base_of<const_bit<width_v<T>>, T>::value));
+CH_DEF_SFINAE_CHECK(is_logic_compatible, (std::is_base_of<ch_logic<width_v<T>>, T>::value));
 
 #if defined(__clang__)
   #define CH_SRC_LOCATION source_location(__FILE__, __LINE__)
@@ -49,22 +45,19 @@ CH_DEF_SFINAE_CHECK(is_bit_compatible, (std::is_base_of<const_bit<width_v<T>>, T
 #endif
 
 template <typename... Ts>
-using deduce_ch_bit_t = std::conditional_t<
-  is_bit_compatible<deduce_type_t<false, Ts...>>::value,
+using deduce_logic_t = std::conditional_t<
+  is_logic_compatible<deduce_type_t<false, Ts...>>::value,
   deduce_type_t<false, Ts...>,
   non_ch_type>;
 
 template <typename T0, typename T1>
-using deduce_first_ch_bit_t = std::conditional_t<
-  (is_bit_compatible<T0>::value || is_bit_compatible<T1>::value),
+using deduce_first_logic_t = std::conditional_t<
+  (is_logic_compatible<T0>::value || is_logic_compatible<T1>::value),
   deduce_first_type_t<T0, T1>,
   non_ch_type>;
 
 template <typename T, unsigned N = T::traits::bitwidth>
-using is_bit_convertible = is_cast_convertible<ch_bit<N>, T>;
-
-template <typename... Ts>
-using are_all_bit_convertible = conjunction<is_bit_convertible<Ts>::value...>;
+using is_logic_convertible = is_cast_convertible<ch_logic<N>, T>;
 
 template <typename... Ts>
 using are_all_logic_type = conjunction<is_logic_type<Ts>::value...>;
@@ -103,7 +96,7 @@ public:
 
   logic_buffer_impl& operator=(logic_buffer_impl&& rhs);
 
-  virtual const lnode& get_data() const;
+  const lnode& get_data() const;
 
   virtual void write(uint32_t dst_offset,
                      const lnode& data,
@@ -247,7 +240,7 @@ public:
   static auto clone(const T& obj, const source_location& sloc) {
     assert(width_v<T> == obj.get_buffer()->get_size());
     auto data = obj.get_buffer()->get_data().clone();
-    return value_type_t<T>(logic_buffer(data, sloc));
+    return T(logic_buffer(data, sloc));
   }
 
   template <typename D, typename T>
@@ -259,13 +252,13 @@ public:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T, typename R = ch_bit<width_v<T>>>
+template <typename T, typename R = ch_logic<width_v<T>>>
 using logic_cast_t = std::conditional_t<is_logic_type<T>::value, const T&, R>;
 
 template <typename T, unsigned N = width_v<T>,
-          CH_REQUIRE_0(is_bit_convertible<T, N>::value)>
+          CH_REQUIRE_0(is_logic_convertible<T, N>::value)>
 lnode get_lnode(const T& rhs) {
-  return logic_accessor::get_data(static_cast<logic_cast_t<T, ch_bit<N>>>(rhs));
+  return logic_accessor::get_data(static_cast<logic_cast_t<T, ch_logic<N>>>(rhs));
 }
 
 template <typename T, typename R,
@@ -285,271 +278,286 @@ using type_buffer_t = std::conditional_t<is_logic_traits<T>::value, logic_buffer
 template <typename T>
 using type_accessor_t = std::conditional_t<is_logic_traits<T>::value, logic_accessor, scalar_accessor>;
 
-template <typename T, typename U, typename Q = typename T::traits, typename X = typename ch_type_t<U>::traits>
+template <typename T,
+          typename U,
+          typename Q = typename T::traits,
+          typename X = typename ch_type_t<U>::traits>
 using aggregate_init_cast_t = std::conditional_t<X::bitwidth != 0,
       std::conditional_t<(Q::type == X::type),
                          const U&,
                          std::conditional_t<is_logic_traits<Q>::value,
-                                            ch_bit<X::bitwidth>,
+                                            ch_logic<X::bitwidth>,
                                             ch_scalar<X::bitwidth>>>,
       std::conditional_t<is_logic_traits<Q>::value,
-                         ch_bit<Q::bitwidth>,
+                         ch_logic<Q::bitwidth>,
                          ch_scalar<Q::bitwidth>>>;
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <ch_alu_op op, unsigned N, typename A, typename B>
+template <ch_alu_op op, typename R, typename A, typename B>
 auto OpBinary(const A& a, const B& b) {
-  auto node = createAluNode(op, get_lnode<A, N>(a), get_lnode<B, N>(b));
-  return make_type<ch_bit<N>>(node);
+  auto node = createAluNode(op, get_lnode(a), get_lnode(b));
+  return make_type<R>(node);
 }
 
-template <ch_alu_op op, unsigned N, unsigned M, typename A, typename B>
-auto OpShiftOp(const A& a, const B& b) {
-  auto node = createAluNode(op, get_lnode<A, N>(a), get_lnode<B, M>(b));
-  return make_type<ch_bit<N>>(node);
-}
-
-template <ch_alu_op op, unsigned N, typename A, typename B>
-auto OpCompare(const A& a, const B& b) {
-  auto node = createAluNode(op, get_lnode<A, N>(a), get_lnode<B, N>(b));
-  return make_type<ch_bit<1>>(node);
-}
-
-template <ch_alu_op op, unsigned N>
-auto OpUnary(const const_bit<N>& a) {
-  return make_type<ch_bit<N>>(createAluNode(op, get_lnode(a)));
-}
-
-template <ch_alu_op op, unsigned N>
-auto OpReduce(const const_bit<N>& a) {
-  return make_type<ch_bit<1>>(createAluNode(op, get_lnode(a)));
+template <ch_alu_op op, typename R, typename A>
+auto OpUnary(const A& a) {
+  return make_type<R>(createAluNode(op, get_lnode(a)));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-#define CH_BIT_FRIEND_OPS(i, x) \
-  CH_FRIEND_BOOL_AND((), const const_bit&, x) \
-  CH_FRIEND_BOOL_OR((), const const_bit&, x) \
-  CH_FRIEND_OP_EQ((), const const_bit&, x) \
-  CH_FRIEND_OP_NE((), const const_bit&, x) \
-  CH_FRIEND_OP_LT((), const const_bit&, x) \
-  CH_FRIEND_OP_LE((), const const_bit&, x) \
-  CH_FRIEND_OP_GT((), const const_bit&, x) \
-  CH_FRIEND_OP_GE((), const const_bit&, x) \
-  CH_FRIEND_OP_AND((), const const_bit&, x) \
-  CH_FRIEND_OP_OR((), const const_bit&, x) \
-  CH_FRIEND_OP_XOR((), const const_bit&, x) \
-  CH_FRIEND_OP_ADD((), const const_bit&, x) \
-  CH_FRIEND_OP_SUB((), const const_bit&, x) \
-  CH_FRIEND_OP_MULT((), const const_bit&, x) \
-  CH_FRIEND_OP_DIV((), const const_bit&, x) \
-  CH_FRIEND_OP_MOD((), const const_bit&, x) \
-  CH_FRIEND_OP_SLL((), const const_bit&, x) \
-  CH_FRIEND_OP_SRL((), const const_bit&, x)
+#define CH_LOGIC_FRIEND_OPS(i, x) \
+  CH_FRIEND_OP_AND1((), const ch_logic&, x) \
+  CH_FRIEND_OP_OR1((), const ch_logic&, x) \
+  CH_FRIEND_OP_EQ((), const ch_logic&, x) \
+  CH_FRIEND_OP_NE((), const ch_logic&, x) \
+  CH_FRIEND_OP_AND((), const ch_logic&, x) \
+  CH_FRIEND_OP_OR((), const ch_logic&, x) \
+  CH_FRIEND_OP_XOR((), const ch_logic&, x) \
+  CH_FRIEND_OP_SLL((), const ch_logic&, x) \
+  CH_FRIEND_OP_SRL((), const ch_logic&, x)
 
-#define CH_BIT_OP_TYPES \
-  const_scalar<N>, int8_t, uint8_t, int16_t, uint16_t, int32_t, uint32_t, int64_t, uint64_t
+#define CH_LOGIC_OP_TYPES \
+  ch_scalar<N>, int8_t, uint8_t, int16_t, uint16_t, int32_t, uint32_t, int64_t, uint64_t
 
-#define CH_LOGIC_READONLY_INTERFACE(type) \
+#define CH_LOGIC_INTERFACE(type) \
   template <typename R, CH_REQUIRE_0(ch::internal::is_logic_type<R>::value)> \
-  ch::internal::const_type_t<R> as() const { \
-    return ch::internal::logic_accessor::cast<ch::internal::const_type_t<R>>(*this); \
-  } \
-  ch::internal::const_bit<type::traits::bitwidth> asBits() const { \
-    return this->as<ch::internal::const_bit<type::traits::bitwidth>>(); \
-  }
-
-#define CH_LOGIC_WRITABLE_INTERFACE(type) \
-  template <typename R, CH_REQUIRE_0(ch::internal::is_logic_type<R>::value)> \
-  R as() { \
+  const auto as() const { \
     return ch::internal::logic_accessor::cast<R>(*this); \
   } \
-  ch_bit<type::traits::bitwidth> asBits() { \
-    return this->as<ch_bit<type::traits::bitwidth>>(); \
+  const auto as_bit() const { \
+    return this->as<ch::internal::ch_logic<type::traits::bitwidth>>(); \
   } \
-  const ch_reg<type> asReg(const source_location& sloc = CH_SRC_LOCATION) { \
+  const auto as_int() const { \
+    return this->as<ch::internal::ch_int<type::traits::bitwidth>>(); \
+  } \
+  const auto as_uint() const { \
+    return this->as<ch::internal::ch_uint<type::traits::bitwidth>>(); \
+  } \
+  template <typename R, CH_REQUIRE_0(ch::internal::is_logic_type<R>::value)> \
+  auto as() { \
+    return ch::internal::logic_accessor::cast<R>(*this); \
+  } \
+  auto as_bit() { \
+    return this->as<ch::internal::ch_logic<type::traits::bitwidth>>(); \
+  } \
+  auto as_int() { \
+    return this->as<ch::internal::ch_int<type::traits::bitwidth>>(); \
+  } \
+  auto as_uint() { \
+    return this->as<ch::internal::ch_uint<type::traits::bitwidth>>(); \
+  } \
+  auto as_reg(const source_location& sloc = CH_SRC_LOCATION) { \
     ch_reg<type> s(sloc); \
     (*this) = s; \
     return s; \
   } \
-  const ch_reg<type> asReg(const type& init, const source_location& sloc = CH_SRC_LOCATION) { \
+  auto as_reg(const type& init, const source_location& sloc = CH_SRC_LOCATION) { \
     ch_reg<type> s(init, sloc); \
     (*this) = s; \
     return s; \
   }
 
 template <unsigned N>
-class const_bit {
+class ch_logic {
 public:
-  using traits = logic_traits<N, const_bit, const_bit, ch_bit<N>, const_bit<N>>;
+  using traits = logic_traits<N, ch_logic, ch_scalar<N>>;
 
-  const_bit(const logic_buffer& buffer = logic_buffer(N, CH_SRC_LOCATION))
+  ch_logic(const logic_buffer& buffer = logic_buffer(N, CH_SRC_LOCATION))
     : buffer_(buffer)
   {}
 
-  const_bit(const const_bit& rhs, const source_location& sloc = CH_SRC_LOCATION)
-    : const_bit(logic_accessor::copy_buffer(rhs, sloc))
+  ch_logic(const ch_logic& rhs, const source_location& sloc = CH_SRC_LOCATION)
+    : ch_logic(logic_accessor::copy_buffer(rhs, sloc))
   {}
 
-  const_bit(const_bit&& rhs) : buffer_(std::move(rhs.buffer_)) {}
+  ch_logic(ch_logic&& rhs) : buffer_(std::move(rhs.buffer_)) {}
 
-  const_bit(const const_scalar<N>& rhs, const source_location& sloc = CH_SRC_LOCATION)
-    : const_bit(logic_buffer(scalar_accessor::get_data(rhs), sloc))
+  ch_logic(const ch_scalar<N>& rhs, const source_location& sloc = CH_SRC_LOCATION)
+    : ch_logic(logic_buffer(scalar_accessor::get_data(rhs), sloc))
+  {}
+
+  template <unsigned M, CH_REQUIRE_0(M < N)>
+  explicit ch_logic(const ch_scalar<M>& rhs, const source_location& sloc = CH_SRC_LOCATION)
+    : ch_logic(logic_buffer(scalar_accessor::get_data(ch_scalar<N>(rhs)), sloc))
   {}
 
   template <typename U,
             CH_REQUIRE_0(is_logic_type<U>::value),
             CH_REQUIRE_0(width_v<U> == N)>
-  explicit const_bit(const U& rhs, const source_location& sloc = CH_SRC_LOCATION)
-    : const_bit(logic_accessor::copy_buffer(rhs, sloc))
+  explicit ch_logic(const U& rhs, const source_location& sloc = CH_SRC_LOCATION)
+    : ch_logic(logic_accessor::copy_buffer(rhs, sloc))
   {}
 
   template <typename U,
             CH_REQUIRE_1(is_scalar_type<U>::value),
             CH_REQUIRE_1(width_v<U> == N)>
-  explicit const_bit(const U& rhs, const source_location& sloc = CH_SRC_LOCATION)
-    : const_bit(logic_buffer(scalar_accessor::get_data(rhs), sloc))
+  explicit ch_logic(const U& rhs, const source_location& sloc = CH_SRC_LOCATION)
+    : ch_logic(logic_buffer(scalar_accessor::get_data(rhs), sloc))
   {}
 
   template <typename U,
             CH_REQUIRE_0(is_bitvector_convertible<U>::value)>
-  explicit const_bit(const U& rhs, const source_location& sloc = CH_SRC_LOCATION)
-    : const_bit(logic_buffer(bitvector(N, rhs), sloc))
+  explicit ch_logic(const U& rhs, const source_location& sloc = CH_SRC_LOCATION)
+    : ch_logic(logic_buffer(bitvector(N, rhs), sloc))
   {}
+
+  ch_logic& operator=(const ch_logic& rhs) {
+    logic_accessor::copy(*this, rhs);
+    return *this;
+  }
+
+  ch_logic& operator=(ch_logic&& rhs) {
+    logic_accessor::move(*this, std::move(rhs));
+    return *this;
+  }
+
+  template <unsigned M, CH_REQUIRE_0(M < N)>
+  ch_logic& operator=(const ch_scalar<M>& rhs) {
+    buffer_->write(scalar_accessor::get_data(ch_scalar<N>(rhs)));
+    return *this;
+  }
+
+  template <typename U,
+            CH_REQUIRE_0(is_logic_type<U>::value),
+            CH_REQUIRE_0(N == width_v<U>)>
+  ch_logic& operator=(const U& rhs) {
+    logic_accessor::copy(*this, rhs);
+    return *this;
+  }
+
+  template <typename U,
+            CH_REQUIRE_1(is_scalar_type<U>::value),
+            CH_REQUIRE_1(N == width_v<U>)>
+  ch_logic& operator=(const U& rhs) {
+    buffer_->write(scalar_accessor::get_data(rhs));
+    return *this;
+  }
+
+  template <typename U, CH_REQUIRE_0(is_integral_or_enum_v<U>)>
+  ch_logic& operator=(U rhs) {
+    buffer_->write(bitvector(N, rhs));
+    return *this;
+  }
 
   // slicing operators
 
-  auto operator[](size_t index) const {
+  const auto operator[](size_t index) const {
     assert(index < N);
-    return const_bit<1>(logic_buffer(1, buffer_, index));
+    return ch_logic<1>(logic_buffer(1, buffer_, index));
   }
 
-  template <unsigned M>
-  auto slice(size_t start = 0, const source_location& sloc = CH_SRC_LOCATION) const {
-    static_assert(M <= N, "invalid size");
-    assert((start + M) <= N);
-    return const_bit<M>(logic_buffer(M, buffer_, start, sloc));
-  }
-
-  template <unsigned M>
-  auto aslice(size_t start = 0, const source_location& sloc = CH_SRC_LOCATION) const {
-    return this->slice<M>(start * M, sloc);
+  auto operator[](size_t index) {
+    assert(index < N);
+    return ch_logic<1>(logic_buffer(1, buffer_, index));
   }
 
   template <typename R,
             CH_REQUIRE_0(is_logic_type<R>::value)>
-  auto slice(size_t start = 0, const source_location& sloc = CH_SRC_LOCATION) const {
+  const auto slice(size_t start = 0, const source_location& sloc = CH_SRC_LOCATION) const {
     static_assert(width_v<R> <= N, "invalid size");
     assert((start + width_v<R>) <= N);
-    return const_type_t<R>(logic_buffer(width_v<R>, buffer_, start, sloc));
+    return R(logic_buffer(width_v<R>, buffer_, start, sloc));
   }
 
   template <typename R,
             CH_REQUIRE_0(is_logic_type<R>::value)>
-  auto aslice(size_t start = 0, const source_location& sloc = CH_SRC_LOCATION) const {
+  const auto aslice(size_t start = 0, const source_location& sloc = CH_SRC_LOCATION) const {
     return this->slice<R>(start * width_v<R>, sloc);
+  }
+
+  template <unsigned M>
+  const auto slice(size_t start = 0, const source_location& sloc = CH_SRC_LOCATION) const {
+    return this->slice<ch_logic<M>>(start, sloc);
+  }
+
+  template <unsigned M>
+  const auto aslice(size_t start = 0, const source_location& sloc = CH_SRC_LOCATION) const {
+    return this->slice<ch_logic<M>>(start * M, sloc);
+  }
+
+  template <typename R,
+            CH_REQUIRE_0(is_logic_type<R>::value)>
+  auto slice(size_t start = 0, const source_location& sloc = CH_SRC_LOCATION) {
+    static_assert(width_v<R> <= N, "invalid size");
+    assert((start + width_v<R>) <= N);
+    return R(logic_buffer(width_v<R>, buffer_, start, sloc));
+  }
+
+  template <typename R,
+            CH_REQUIRE_0(is_logic_type<R>::value)>
+  auto aslice(size_t start = 0, const source_location& sloc = CH_SRC_LOCATION) {
+    return this->slice<R>(start * width_v<R>, sloc);
+  }
+
+  template <unsigned M>
+  auto slice(size_t start = 0, const source_location& sloc = CH_SRC_LOCATION) {
+    return this->slice<ch_logic<M>>(start, sloc);
+  }
+
+  template <unsigned M>
+  auto aslice(size_t start = 0, const source_location& sloc = CH_SRC_LOCATION) {
+    return this->slice<ch_logic<M>>(start * M, sloc);
   }
 
   // compare operators
 
-  auto operator==(const const_bit& rhs) const {
-    return OpCompare<alu_eq, N>(*this, rhs);
+  auto operator==(const ch_logic& rhs) const {
+    return OpBinary<alu_eq, ch_logic<1>>(*this, rhs);
   }
 
-  auto operator!=(const const_bit& rhs) const {
-    return OpCompare<alu_ne, N>(*this, rhs);
-  }
-
-  auto operator<(const const_bit& rhs) const {
-    return OpCompare<alu_lt, N>(*this, rhs);
-  }
-
-  auto operator<=(const const_bit& rhs) const {
-    return OpCompare<alu_le, N>(*this, rhs);
-  }
-
-  auto operator>(const const_bit& rhs) const {
-    return OpCompare<alu_gt, N>(*this, rhs);
-  }
-
-  auto operator>=(const const_bit& rhs) const {
-    return OpCompare<alu_ge, N>(*this, rhs);
+  auto operator!=(const ch_logic& rhs) const {
+    return OpBinary<alu_ne, ch_logic<1>>(*this, rhs);
   }
 
   // logical operators
 
-  auto operator&&(const const_bit& rhs) const {
-    static_assert(N == 1, "invalid size");
-    return OpBinary<alu_and, 1>(*this, rhs);
+  auto operator&&(const ch_logic& rhs) const {
+    static_assert(1 == N, "invalid size");
+    return OpBinary<alu_and, ch_logic>(*this, rhs);
   }
 
-  auto operator||(const const_bit& rhs) const {
-    static_assert(N == 1, "invalid size");
-    return OpBinary<alu_or, 1>(*this, rhs);
+  auto operator||(const ch_logic& rhs) const {
+    static_assert(1 == N, "invalid size");
+    return OpBinary<alu_or, ch_logic>(*this, rhs);
   }
 
   auto operator!() const {
-    return (*this == 0x0);
+    return (0x0 == *this);
   }
 
   // bitwise operators
 
   auto operator~() const {
-    return OpUnary<alu_inv>(*this);
+    return OpUnary<alu_inv, ch_logic>(*this);
   }
 
-  auto operator&(const const_bit& rhs) const {
-    return OpBinary<alu_and, N>(*this, rhs);
+  auto operator&(const ch_logic& rhs) const {
+    return OpBinary<alu_and, ch_logic>(*this, rhs);
   }
 
-  auto operator|(const const_bit& rhs) const {
-    return OpBinary<alu_or, N>(*this, rhs);
+  auto operator|(const ch_logic& rhs) const {
+    return OpBinary<alu_or, ch_logic>(*this, rhs);
   }
 
-  auto operator^(const const_bit& rhs) const {
-    return OpBinary<alu_xor, N>(*this, rhs);
-  }
-
-  // arithmetic operators
-
-  auto operator-() const {
-    return OpUnary<alu_neg>(*this);
-  }
-
-  auto operator+(const const_bit& rhs) const {
-    return OpBinary<alu_add, N>(*this, rhs);
-  }
-
-  auto operator-(const const_bit& rhs) const {
-    return OpBinary<alu_sub, N>(*this, rhs);
-  }
-
-  auto operator*(const const_bit& rhs) const {
-    return OpBinary<alu_mult, N>(*this, rhs);
-  }
-
-  auto operator/(const const_bit& rhs) const {
-    return OpBinary<alu_div, N>(*this, rhs);
-  }
-
-  auto operator%(const const_bit& rhs) const {
-    return OpBinary<alu_mod, N>(*this, rhs);
+  auto operator^(const ch_logic& rhs) const {
+    return OpBinary<alu_xor, ch_logic>(*this, rhs);
   }
 
   // shift operators
 
   template <unsigned M>
-  auto operator<<(const const_bit<M>& rhs) const {
-    return OpShiftOp<alu_sll, N, M>(*this, rhs);
+  auto operator<<(const ch_logic<M>& rhs) const {
+    return OpBinary<alu_sll, ch_logic>(*this, rhs);
   }
 
   template <unsigned M>
-  auto operator>>(const const_bit<M>& rhs) const {
-    return OpShiftOp<alu_srl, N, M>(*this, rhs);
+  auto operator>>(const ch_logic<M>& rhs) const {
+    return OpBinary<alu_srl, ch_logic>(*this, rhs);
   }
 
-  CH_LOGIC_READONLY_INTERFACE(const_bit)
+  CH_LOGIC_INTERFACE(ch_logic)
 
 protected:
 
@@ -565,170 +573,27 @@ protected:
 
   friend class logic_accessor;
 
-  CH_FOR_EACH(CH_BIT_FRIEND_OPS, CH_SEP_SPACE, CH_BIT_OP_TYPES)
+  CH_FOR_EACH(CH_LOGIC_FRIEND_OPS, CH_SEP_SPACE, CH_LOGIC_OP_TYPES)                             
 
   template <unsigned M>
-  inline friend ch_bit<M> operator<<(const const_bit& lhs, const const_scalar<M>& rhs) {
-    return lhs << const_bit<M>(rhs);
-  }
-
-  template <unsigned M>
-  inline friend ch_bit<M> operator<<(const const_scalar<M>& rhs, const const_bit& lhs) {
-    return const_bit<M>(rhs) << lhs;
+  inline friend ch_logic operator<<(const ch_logic& lhs, const ch_scalar<M>& rhs) {
+    return lhs << ch_logic<M>(rhs);
   }
 
   template <unsigned M>
-  inline friend ch_bit<M> operator>>(const const_bit& lhs, const const_scalar<M>& rhs) {
-    return lhs >> const_bit<M>(rhs);
+  inline friend ch_logic<M> operator<<(const ch_scalar<M>& lhs, const ch_logic& rhs) {
+    return ch_logic<M>(lhs) << rhs;
   }
 
   template <unsigned M>
-  inline friend ch_bit<M> operator>>(const const_scalar<M>& rhs, const const_bit& lhs) {
-    return const_bit<M>(rhs) >> lhs;
-  }
-};
-
-///////////////////////////////////////////////////////////////////////////////
-
-template <unsigned N>
-class ch_bit : public const_bit<N> {
-public:
-  using traits = logic_traits<N, ch_bit, const_bit<N>, ch_bit, ch_scalar<N>>;
-  using base = const_bit<N>;
-  using base::buffer_;
-
-  ch_bit(const logic_buffer& buffer = logic_buffer(N, CH_SRC_LOCATION))
-    : base(buffer)
-  {}
-
-  ch_bit(const ch_bit& rhs, const source_location& sloc = CH_SRC_LOCATION)
-    : base(rhs, sloc)
-  {}
-
-  ch_bit(ch_bit&& rhs) : base(std::move(rhs)) {}
-
-  ch_bit(const const_bit<N>& rhs, const source_location& sloc = CH_SRC_LOCATION)
-    : base(rhs, sloc)
-  {}
-
-  ch_bit(const const_scalar<N>& rhs, const source_location& sloc = CH_SRC_LOCATION)
-    : base(rhs, sloc)
-  {}
-
-  template <typename U,
-            CH_REQUIRE_0(is_logic_type<U>::value),
-            CH_REQUIRE_0(width_v<U> == N)>
-  explicit ch_bit(const U& rhs, const source_location& sloc = CH_SRC_LOCATION)
-    : base(rhs, sloc)
-  {}
-
-  template <typename U,
-            CH_REQUIRE_1(is_scalar_type<U>::value),
-            CH_REQUIRE_1(width_v<U> == N)>
-  explicit ch_bit(const U& rhs, const source_location& sloc = CH_SRC_LOCATION)
-    : base(rhs, sloc)
-  {}
-
-  template <typename U,
-            CH_REQUIRE_0(is_bitvector_convertible<U>::value)>
-  explicit ch_bit(const U& rhs, const source_location& sloc = CH_SRC_LOCATION)
-    : base(rhs, sloc)
-  {}
-
-  ch_bit& operator=(const ch_bit& rhs) {
-    logic_accessor::copy(*this, rhs);
-    return *this;
-  }
-
-  ch_bit& operator=(ch_bit&& rhs) {
-    logic_accessor::move(*this, std::move(rhs));
-    return *this;
-  }
-
-  template <typename U,
-            CH_REQUIRE_0(is_logic_type<U>::value),
-            CH_REQUIRE_0(N == width_v<U>)>
-  ch_bit& operator=(const U& rhs) {
-    logic_accessor::copy(*this, rhs);
-    return *this;
-  }
-
-  template <typename U,
-            CH_REQUIRE_1(is_scalar_type<U>::value),
-            CH_REQUIRE_1(N == width_v<U>)>
-  ch_bit& operator=(const U& rhs) {
-    buffer_->write(scalar_accessor::get_data(rhs));
-    return *this;
-  }
-
-  template <typename U, CH_REQUIRE_0(is_integral_or_enum_v<U>)>
-  ch_bit& operator=(U rhs) {
-    buffer_->write(bitvector(N, rhs));
-    return *this;
-  }
-
-  auto operator[](size_t index) const {
-    assert(index < N);
-    return const_bit<1>(logic_buffer(1, buffer_, index));
-  }
-
-  auto operator[](size_t index) {
-    assert(index < N);
-    return ch_bit<1>(logic_buffer(1, buffer_, index));
+  inline friend ch_logic operator>>(const ch_logic& lhs, const ch_scalar<M>& rhs) {
+    return lhs >> ch_logic<M>(rhs);
   }
 
   template <unsigned M>
-  auto slice(size_t start = 0, const source_location& sloc = CH_SRC_LOCATION) const {
-    static_assert(M <= N, "invalid size");
-    assert((start + M) <= N);
-    return const_bit<M>(logic_buffer(M, buffer_, start, sloc));
+  inline friend ch_logic<M> operator>>(const ch_scalar<M>& lhs, const ch_logic& rhs) {
+    return ch_logic<M>(lhs) >> rhs;
   }
-
-  template <unsigned M>
-  auto aslice(size_t start = 0, const source_location& sloc = CH_SRC_LOCATION) const {
-    return this->slice<M>(start * M, sloc);
-  }
-
-  template <typename R,
-            CH_REQUIRE_0(is_logic_type<R>::value)>
-  auto slice(size_t start = 0, const source_location& sloc = CH_SRC_LOCATION) const {
-    static_assert(width_v<R> <= N, "invalid size");
-    assert((start + width_v<R>) <= N);
-    return const_type_t<R>(logic_buffer(width_v<R>, buffer_, start, sloc));
-  }
-
-  template <typename R,
-            CH_REQUIRE_0(is_logic_type<R>::value)>
-  auto aslice(size_t start = 0, const source_location& sloc = CH_SRC_LOCATION) const {
-    return this->slice<R>(start * width_v<R>, sloc);
-  }
-
-  template <unsigned M>
-  auto slice(size_t start = 0, const source_location& sloc = CH_SRC_LOCATION) {
-    static_assert(M <= N, "invalid size");
-    return ch_bit<M>(logic_buffer(M, buffer_, start, sloc));
-  }
-
-  template <unsigned M>
-  auto aslice(size_t start = 0, const source_location& sloc = CH_SRC_LOCATION) {
-    return this->slice<M>(start * M, sloc);
-  }
-
-  template <typename R,
-            CH_REQUIRE_0(is_logic_type<R>::value)>
-  auto slice(size_t start = 0, const source_location& sloc = CH_SRC_LOCATION) {
-    static_assert(width_v<R> <= N, "invalid size");
-    return R(logic_buffer(width_v<R>, buffer_, start, sloc));
-  }
-
-  template <typename R,
-            CH_REQUIRE_0(is_logic_type<R>::value)>
-  auto aslice(size_t start = 0, const source_location& sloc = CH_SRC_LOCATION) {
-    return this->slice<R>(start * width_v<R>, sloc);
-  }
-
-  CH_LOGIC_READONLY_INTERFACE(ch_bit)
-  CH_LOGIC_WRITABLE_INTERFACE(ch_bit)
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -736,131 +601,78 @@ public:
 // compare operators
 
 template <unsigned N>
-inline auto ch_eq(const const_bit<N>& lhs, const const_bit<N>& rhs) {
+inline auto ch_eq(const ch_logic<N>& lhs, const ch_logic<N>& rhs) {
   return (lhs == rhs);
 }
 
 template <unsigned N>
-inline auto ch_ne(const const_bit<N>& lhs, const const_bit<N>& rhs) {
+inline auto ch_ne(const ch_logic<N>& lhs, const ch_logic<N>& rhs) {
   return (lhs != rhs);
-}
-
-template <unsigned N>
-inline auto ch_lt(const const_bit<N>& lhs, const const_bit<N>& rhs) {
-  return (lhs < rhs);
-}
-
-template <unsigned N>
-inline auto ch_le(const const_bit<N>& lhs, const const_bit<N>& rhs) {
-  return (lhs <= rhs);
-}
-
-template <unsigned N>
-inline auto ch_gt(const const_bit<N>& lhs, const const_bit<N>& rhs) {
-  return (lhs > rhs);
-}
-
-template <unsigned N>
-inline auto ch_ge(const const_bit<N>& lhs, const const_bit<N>& rhs) {
-  return (lhs >= rhs);
 }
 
 // bitwise operators
 
 template <unsigned N>
-inline auto ch_and(const const_bit<N>& lhs, const const_bit<N>& rhs) {
+auto ch_inv(const ch_logic<N>& in) {
+  return ~in;
+}
+
+template <unsigned N>
+inline auto ch_and(const ch_logic<N>& lhs, const ch_logic<N>& rhs) {
   return (lhs & rhs);
 }
 
 template <unsigned N>
-inline auto ch_or(const const_bit<N>& lhs, const const_bit<N>& rhs) {
+inline auto ch_or(const ch_logic<N>& lhs, const ch_logic<N>& rhs) {
   return (lhs | rhs);
 }
 
 template <unsigned N>
-inline auto ch_xor(const const_bit<N>& lhs, const const_bit<N>& rhs) {
+inline auto ch_xor(const ch_logic<N>& lhs, const ch_logic<N>& rhs) {
   return (lhs ^ rhs);
-}
-
-// arithmetic operators
-
-template <unsigned N>
-inline auto ch_add(const const_bit<N>& lhs, const const_bit<N>& rhs) {
-  return (lhs + rhs);
-}
-
-template <unsigned N>
-inline auto ch_sub(const const_bit<N>& lhs, const const_bit<N>& rhs) {
-  return (lhs - rhs);
-}
-
-template <unsigned N>
-inline auto ch_mult(const const_bit<N>& lhs, const const_bit<N>& rhs) {
-  return (lhs * rhs);
-}
-
-template <unsigned N>
-inline auto ch_div(const const_bit<N>& lhs, const const_bit<N>& rhs) {
-  return (lhs / rhs);
 }
 
 // shift operators
 
 template <unsigned N, unsigned M>
-inline auto ch_sll(const const_bit<N>& lhs, const const_bit<M>& rhs) {
+inline auto ch_sll(const ch_logic<N>& lhs, const ch_logic<M>& rhs) {
   return (lhs << rhs);
 }
 
 template <unsigned N, unsigned M>
-inline auto ch_srl(const const_bit<N>& lhs, const const_bit<M>& rhs) {
+inline auto ch_srl(const ch_logic<N>& lhs, const ch_logic<M>& rhs) {
   return (lhs >> rhs);
-}
-
-template <unsigned N, unsigned M>
-auto ch_sra(const const_bit<N>& lhs, const const_bit<M>& rhs) {
-  static_assert(N >= 2, "invalid size");
-  return OpShiftOp<alu_sra, N, M>(lhs, rhs);
-}
-
-// unary operators
-
-template <unsigned N>
-auto ch_inv(const const_bit<N>& in) {
-  return ~in;
-}
-
-template <unsigned N>
-auto ch_neg(const const_bit<N>& in) {
-  return -in;
 }
 
 // reduce operators
 
 template <unsigned N>
-auto ch_andr(const const_bit<N>& in) {
-  return OpReduce<alu_andr>(in);
+auto ch_andr(const ch_logic<N>& in) {
+  return OpUnary<alu_andr, ch_logic<1>>(in);
 }
 
 template <unsigned N>
-auto ch_orr(const const_bit<N>& in) {
-  return OpReduce<alu_orr>(in);
+auto ch_orr(const ch_logic<N>& in) {
+  return OpUnary<alu_orr, ch_logic<1>>(in);
 }
 
 template <unsigned N>
-auto ch_xorr(const const_bit<N>& in) {
-  return OpReduce<alu_xorr>(in);
+auto ch_xorr(const ch_logic<N>& in) {
+  return OpUnary<alu_xorr, ch_logic<1>>(in);
 }
 
 // rotate operators
 
 template <unsigned N>
-auto ch_rotl(const const_bit<N>& lhs, unsigned rhs) {
-  return make_type<ch_bit<N>>(createRotateNode(get_lnode(lhs), rhs, false));
+auto ch_rotl(const ch_logic<N>& lhs, unsigned rhs) {
+  auto node = createRotateNode(get_lnode(lhs), rhs, false);
+  return make_type<ch_logic<N>>(node);
 }
 
 template <unsigned N>
-auto ch_rotr(const const_bit<N>& lhs, unsigned rhs) {
-  return make_type<ch_bit<N>>(createRotateNode(get_lnode(lhs), rhs, true));
+auto ch_rotr(const ch_logic<N>& lhs, unsigned rhs) {
+  auto node = createRotateNode(get_lnode(lhs), rhs, true);
+  return make_type<ch_logic<N>>(node);
 }
 
 // cloning
@@ -886,7 +698,7 @@ R ch_slice(const T& obj, size_t start = 0, const source_location& sloc = CH_SRC_
       return R(obj, sloc);
     }
   } else {
-    ch_bit<width_v<R>> ret(logic_buffer(width_v<R>, sloc));
+    ch_logic<width_v<R>> ret(logic_buffer(width_v<R>, sloc));
     logic_accessor::write(ret, 0, obj, start, width_v<R>);
     return ret.template as<R>();
   }
@@ -902,13 +714,13 @@ R ch_aslice(const T& obj, size_t start = 0, const source_location& sloc = CH_SRC
 template <unsigned N, typename T,
           CH_REQUIRE_0(is_logic_type<T>::value)>
 auto ch_slice(const T& obj, size_t start = 0, const source_location& sloc = CH_SRC_LOCATION) {
-  return ch_slice<ch_bit<N>>(obj, start, sloc);
+  return ch_slice<ch_logic<N>>(obj, start, sloc);
 }
 
 template <unsigned N, typename T,
           CH_REQUIRE_0(is_logic_type<T>::value)>
 auto ch_aslice(const T& obj, size_t start = 0, const source_location& sloc = CH_SRC_LOCATION) {
-  return ch_slice<ch_bit<N>>(obj, start * N, sloc);
+  return ch_slice<ch_logic<N>>(obj, start * N, sloc);
 }
 
 // tie
@@ -923,7 +735,7 @@ public:
 
   template <typename T>
   void operator=(const T& rhs) {
-    this->assign(static_cast<logic_cast_t<T, ch_bit<width_v<Ts...>>>>(rhs),
+    this->assign(static_cast<logic_cast_t<T, ch_logic<width_v<Ts...>>>>(rhs),
                  std::index_sequence_for<Ts...>());
   }
 
@@ -982,7 +794,7 @@ void cat_impl(U& inout, unsigned dst_offset, const T0& arg0, const Ts&... args) 
 
 #define CH_CAT_TYPE(i, x) __T##i
 #define CH_CAT_TMPL(i, x) typename __T##i
-#define CH_CAT_REQUIRE(i, x) CH_REQUIRE_0(is_logic_type<__T##i>::value || is_bit_convertible<__T##i>::value)
+#define CH_CAT_REQUIRE(i, x) CH_REQUIRE_0(is_logic_convertible<__T##i>::value)
 #define CH_CAT_DECL(i, x) const __T##i& arg##i
 #define CH_CAT_ARG(i, x) static_cast<logic_cast_t<__T##i>>(arg##i)
 #define CH_CAT(...) \
@@ -1002,7 +814,7 @@ void cat_impl(U& inout, unsigned dst_offset, const T0& arg0, const Ts&... args) 
   auto ch_cat(CH_FOR_EACH(CH_CAT_DECL, CH_SEP_COMMA, __VA_ARGS__), \
               const source_location& sloc = CH_SRC_LOCATION) { \
     static constexpr unsigned N = width_v<CH_FOR_EACH(CH_CAT_TYPE, CH_SEP_COMMA, __VA_ARGS__)>; \
-    ch_bit<N> ret(logic_buffer(N, sloc)); \
+    ch_logic<N> ret(logic_buffer(N, sloc)); \
     cat_impl(ret, N, CH_FOR_EACH(CH_CAT_ARG, CH_SEP_COMMA, __VA_ARGS__)); \
     return ret; \
   }
@@ -1014,59 +826,16 @@ CH_VA_ARGS_MAP(CH_CAT)
 #undef CH_CAT_ARG
 #undef CH_CAT
 
-// zero-extend
-
-template <typename R, typename T,
-          CH_REQUIRE_0(is_logic_type<R>::value),
-          CH_REQUIRE_0(is_logic_type<T>::value)>
-R ch_zext(const T& obj, const source_location& sloc = CH_SRC_LOCATION) {
-  static_assert(width_v<R> >= width_v<T>, "invalid extend size");
-  if constexpr(width_v<T> < width_v<R>) {
-    auto pad = ch_bit<(width_v<R> - width_v<T>)>(0x0, sloc);
-    return ch_cat(pad, obj, sloc).template as<R>();
-  } else {
-    return R(obj, sloc);
-  }
-}
-
-template <unsigned N, typename T,
-          CH_REQUIRE_0(is_bit_compatible<T>::value)>
-auto ch_zext(const T& obj, const source_location& sloc = CH_SRC_LOCATION) {
-  return ch_zext<ch_bit<N>>(obj, sloc);
-}
-
-// sign-extend
-
-template <typename R, typename T,
-          CH_REQUIRE_0(is_bit_compatible<R>::value),
-          CH_REQUIRE_0(is_bit_compatible<T>::value)>
-R ch_sext(const T& obj, const source_location& sloc = CH_SRC_LOCATION) {
-  static_assert(width_v<R> >= width_v<T>, "invalid extend size");
-  if constexpr(width_v<T> < width_v<R>) {
-    static constexpr unsigned D = width_v<R> - width_v<T>;
-    auto pad = ch_bit<D>(0x0) - ch_zext<D>(obj[width_v<T> - 1], sloc);
-    return ch_cat(pad, obj, sloc).template as<R>();
-  } else {
-    return R(obj, sloc);
-  }
-}
-
-template <unsigned N, typename T,
-          CH_REQUIRE_0(is_bit_compatible<T>::value)>
-ch_bit<N> ch_sext(const T& obj, const source_location& sloc = CH_SRC_LOCATION) {
-  return ch_sext<ch_bit<N>>(obj, sloc);
-}
-
 // shuffle
 
 template <unsigned N, typename T,
-          CH_REQUIRE_0(is_bit_compatible<T>::value)>
+          CH_REQUIRE_0(is_logic_compatible<T>::value)>
 auto ch_shuffle(const T& obj,
                 const std::array<unsigned, N>& indices,
                 const source_location& sloc = CH_SRC_LOCATION) {
   static_assert(0 == (width_v<T> % N), "invalid indices size");
   static constexpr unsigned M = (width_v<T> / N);
-  ch_bit<width_v<T>> ret(logic_buffer(width_v<T>, sloc));
+  ch_logic<width_v<T>> ret(logic_buffer(width_v<T>, sloc));
   for (unsigned i = 0; i < N; ++i) {
     auto j = indices[N - 1 - i];
     assert(j < N);
@@ -1085,7 +854,7 @@ void ch_tap(const std::string& name, const T& value) {
 
 // print
 
-ch_bit<64> ch_time();
+ch_logic<64> ch_time();
 
 inline void ch_print(const std::string& format) {
   createPrintNode(format, {});
@@ -1099,38 +868,20 @@ void ch_print(const std::string& format, const Args& ...args) {
 
 // global operators
 
-CH_GLOBAL_OP_AND_SZ((template<unsigned N, unsigned M, CH_REQUIRE_0(M != N)>), const const_bit<N>&, const const_bit<M>&)
-CH_GLOBAL_OP_OR_SZ((template<unsigned N, unsigned M, CH_REQUIRE_0(M != N)>), const const_bit<N>&, const const_bit<M>&)
-CH_GLOBAL_OP_XOR_SZ((template<unsigned N, unsigned M, CH_REQUIRE_0(M != N)>), const const_bit<N>&, const const_bit<M>&)
-CH_GLOBAL_OP_ADD_SZ((template<unsigned N, unsigned M, CH_REQUIRE_0(M != N)>), const const_bit<N>&, const const_bit<M>&)
-CH_GLOBAL_OP_SUB_SZ((template<unsigned N, unsigned M, CH_REQUIRE_0(M != N)>), const const_bit<N>&, const const_bit<M>&)
-CH_GLOBAL_OP_MULT_SZ((template<unsigned N, unsigned M, CH_REQUIRE_0(M != N)>), const const_bit<N>&, const const_bit<M>&)
-CH_GLOBAL_OP_DIV_SZ((template<unsigned N, unsigned M, CH_REQUIRE_0(M != N)>), const const_bit<N>&, const const_bit<M>&)
-CH_GLOBAL_OP_MOD_SZ((template<unsigned N, unsigned M, CH_REQUIRE_0(M != N)>), const const_bit<N>&, const const_bit<M>&)
+#define CH_LOGIC_GLOBAL_OPS(i, x) \
+  CH_GLOBAL_OP_EQ((template <unsigned N>), const ch_logic<N>&, x) \
+  CH_GLOBAL_OP_NE((template <unsigned N>), const ch_logic<N>&, x) \
+  CH_GLOBAL_OP_AND((template <unsigned N>), const ch_logic<N>&, x) \
+  CH_GLOBAL_OP_OR((template <unsigned N>), const ch_logic<N>&, x) \
+  CH_GLOBAL_OP_XOR((template <unsigned N>), const ch_logic<N>&, x) \
+  CH_GLOBAL_OP_NAND((template <unsigned N>), const ch_logic<N>&, x) \
+  CH_GLOBAL_OP_NOR((template <unsigned N>), const ch_logic<N>&, x) \
+  CH_GLOBAL_OP_XNOR((template <unsigned N>), const ch_logic<N>&, x) \
+  CH_GLOBAL_OP_SLL((template <unsigned N>), const ch_logic<N>&, x) \
+  CH_GLOBAL_OP_SRL((template <unsigned N>), const ch_logic<N>&, x) \
+  CH_GLOBAL_OP_SRA((template <unsigned N>), const ch_logic<N>&, x)
 
-#define CH_BIT_GLOBAL_OPS(i, x) \
-  CH_GLOBAL_OP_EQ((template <unsigned N>), const const_bit<N>&, x) \
-  CH_GLOBAL_OP_NE((template <unsigned N>), const const_bit<N>&, x) \
-  CH_GLOBAL_OP_LT((template <unsigned N>), const const_bit<N>&, x) \
-  CH_GLOBAL_OP_LE((template <unsigned N>), const const_bit<N>&, x) \
-  CH_GLOBAL_OP_GT((template <unsigned N>), const const_bit<N>&, x) \
-  CH_GLOBAL_OP_GE((template <unsigned N>), const const_bit<N>&, x) \
-  CH_GLOBAL_OP_AND((template <unsigned N>), const const_bit<N>&, x) \
-  CH_GLOBAL_OP_OR((template <unsigned N>), const const_bit<N>&, x) \
-  CH_GLOBAL_OP_XOR((template <unsigned N>), const const_bit<N>&, x) \
-  CH_GLOBAL_OP_NAND((template <unsigned N>), const const_bit<N>&, x) \
-  CH_GLOBAL_OP_NOR((template <unsigned N>), const const_bit<N>&, x) \
-  CH_GLOBAL_OP_XNOR((template <unsigned N>), const const_bit<N>&, x) \
-  CH_GLOBAL_OP_ADD((template <unsigned N>), const const_bit<N>&, x) \
-  CH_GLOBAL_OP_SUB((template <unsigned N>), const const_bit<N>&, x) \
-  CH_GLOBAL_OP_MULT((template <unsigned N>), const const_bit<N>&, x) \
-  CH_GLOBAL_OP_DIV((template <unsigned N>), const const_bit<N>&, x) \
-  CH_GLOBAL_OP_MOD((template <unsigned N>), const const_bit<N>&, x) \
-  CH_GLOBAL_OP_SLL((template <unsigned N>), const const_bit<N>&, x) \
-  CH_GLOBAL_OP_SRL((template <unsigned N>), const const_bit<N>&, x) \
-  CH_GLOBAL_OP_SRA((template <unsigned N>), const const_bit<N>&, x)
-
-CH_FOR_EACH(CH_BIT_GLOBAL_OPS, CH_SEP_SPACE, CH_BIT_OP_TYPES)
+CH_FOR_EACH(CH_LOGIC_GLOBAL_OPS, CH_SEP_SPACE, CH_LOGIC_OP_TYPES)
 
 }
 }

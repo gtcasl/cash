@@ -54,7 +54,7 @@ template <typename T, typename U>
 struct union_zero_init_impl1 {
   static void apply(T& obj) {
     if constexpr(is_logic_traits<typename T::traits>::value && width_v<U> < T::traits::bitwidth) {
-      obj.asBits() = 0;
+      obj.as_bit() = 0;
     }
   };
 };
@@ -88,16 +88,10 @@ using union_zero_init = std::conditional_t<has_bitwidth<U>::value,
   return ch::internal::type_accessor_t<traits>::get_buffer(CH_PAIR_R(x))
 
 #define CH_UNION_SCALAR_FIELD(i, x) \
-  ch_value_t<ch_scalar_t<ch::internal::identity_t<CH_PAIR_L(x)>>> CH_PAIR_R(x)
-
-#define CH_UNION_CONST_SCALAR_FIELD(i, x) \
-  ch_const_t<ch_scalar_t<ch::internal::identity_t<CH_PAIR_L(x)>>> CH_PAIR_R(x)
+  ch_scalar_t<ch::internal::identity_t<CH_PAIR_L(x)>> CH_PAIR_R(x)
 
 #define CH_UNION_LOGIC_FIELD(i, x) \
-  ch_value_t<ch_logic_t<ch::internal::identity_t<CH_PAIR_L(x)>>> CH_PAIR_R(x)
-
-#define CH_UNION_CONST_LOGIC_FIELD(i, x) \
-  ch_const_t<ch_logic_t<ch::internal::identity_t<CH_PAIR_L(x)>>> CH_PAIR_R(x)
+  ch_logic_t<ch::internal::identity_t<CH_PAIR_L(x)>> CH_PAIR_R(x)
 
 #define CH_UNION_SCALAR_FIELD_CTOR_REQUIRES(i, x) \
   ch::internal::is_cast_convertible<decltype(CH_PAIR_R(x)), __T__>::value
@@ -108,7 +102,7 @@ using union_zero_init = std::conditional_t<has_bitwidth<U>::value,
 #define CH_UNION_INIT_FIELD(i, x) \
   CH_PAIR_R(x)
 
-#define CH_UNION_SCALAR_IMPL(union_name, const_name, field_body, ...) \
+#define CH_UNION_SCALAR_IMPL(union_name, field_body, ...) \
   CH_FOR_EACH(field_body, CH_SEP_SEMICOLON, __VA_ARGS__); \
   union_name(const ch::internal::type_buffer_t<traits>& buffer = \
     ch::internal::type_buffer_t<traits>(traits::bitwidth)) \
@@ -117,9 +111,7 @@ using union_zero_init = std::conditional_t<has_bitwidth<U>::value,
     : union_name(ch::internal::type_accessor_t<traits>::copy_buffer(rhs)) {} \
   union_name(union_name&& rhs) \
     : CH_FOR_EACH(CH_UNION_MOVE_CTOR, CH_SEP_COMMA, __VA_ARGS__) {} \
-  union_name(const const_name& rhs) \
-    : union_name(ch::internal::type_accessor_t<traits>::copy_buffer(rhs)) {} \
-  explicit union_name(const const_scalar<traits::bitwidth>& rhs) \
+  explicit union_name(const ch_scalar<traits::bitwidth>& rhs) \
     : union_name(ch::internal::type_buffer_t<traits>(ch::internal::scalar_accessor::get_data(rhs))) {} \
   template <typename __T__, \
              CH_REQUIRE_0(std::is_integral_v<__T__> || std::is_enum_v<__T__> || ch::internal::has_bitwidth<__T__>::value), \
@@ -143,7 +135,7 @@ protected: \
   } \
 public:
 
-#define CH_UNION_LOGIC_IMPL(union_name, const_name, name, field_body, ...) \
+#define CH_UNION_LOGIC_IMPL(union_name, name, field_body, ...) \
   CH_FOR_EACH(field_body, CH_SEP_SEMICOLON, __VA_ARGS__); \
   union_name(const ch::internal::type_buffer_t<traits>& buffer = \
     ch::internal::type_buffer_t<traits>(traits::bitwidth, CH_SRC_LOCATION, CH_STRINGIZE(name))) \
@@ -152,12 +144,10 @@ public:
     : union_name(ch::internal::type_accessor_t<traits>::copy_buffer(rhs, sloc, CH_STRINGIZE(name))) {} \
   union_name(union_name&& rhs) \
     : CH_FOR_EACH(CH_UNION_MOVE_CTOR, CH_SEP_COMMA, __VA_ARGS__) {} \
-  union_name(const const_name& rhs, const source_location& sloc = CH_SRC_LOCATION) \
-    : union_name(ch::internal::type_accessor_t<traits>::copy_buffer(rhs, sloc, CH_STRINGIZE(name))) {} \
   explicit union_name(const ch_bit<traits::bitwidth>& rhs, \
                       const source_location& sloc = CH_SRC_LOCATION) \
     : union_name(ch::internal::type_accessor_t<traits>::copy_buffer(rhs, sloc, CH_STRINGIZE(name))) {} \
-  explicit union_name(const const_scalar<traits::bitwidth>& rhs, \
+  explicit union_name(const ch_scalar<traits::bitwidth>& rhs, \
                       const source_location& sloc = CH_SRC_LOCATION) \
     : union_name(ch::internal::type_buffer_t<traits>( \
         ch::internal::scalar_accessor::get_data(rhs), sloc, CH_STRINGIZE(name))) {} \
@@ -182,20 +172,16 @@ protected: \
   } \
   typename ch::internal::type_buffer_t<traits>::base& get_buffer() { \
     CH_STRUCT_GETBUFFER(0, CH_FIRST_ARG(__VA_ARGS__))->get_source(); \
-  } \
-public:
+  }
 
-#define CH_UNION_WRITABLE_IMPL(union_name, const_name) \
+#define CH_UNION_ASSIGN_IMPL(union_name) \
+public: \
   union_name& operator=(const union_name& rhs) { \
     ch::internal::type_accessor_t<traits>::copy(*this, rhs); \
     return *this; \
   } \
   union_name& operator=(union_name&& rhs) { \
     ch::internal::type_accessor_t<traits>::move(*this, std::move(rhs)); \
-    return *this; \
-  } \
-  union_name& operator=(const const_name& rhs) { \
-    ch::internal::type_accessor_t<traits>::copy(*this, rhs); \
     return *this; \
   }
 
@@ -210,37 +196,19 @@ protected: \
 #define CH_UNION_IMPL(union_name, ...) \
   class union_name { \
   private: \
-    class __const_type__; \
-    class __scalar_type__; \
-    class __scalar_const_type__ { \
-    public: \
-      using traits = ch::internal::scalar_traits<CH_UNION_SIZE(__VA_ARGS__), __scalar_const_type__, __scalar_const_type__, __scalar_type__, __const_type__>; \
-      CH_UNION_SCALAR_IMPL(__scalar_const_type__, __scalar_type__, CH_UNION_CONST_SCALAR_FIELD, __VA_ARGS__) \
-      CH_SCALAR_READONLY_INTERFACE(__scalar_const_type__) \
-      CH_UNION_SCALAR_FRIENDS_IMPL(__scalar_const_type__) \
-    }; \
     class __scalar_type__ { \
     public: \
-      using traits = ch::internal::scalar_traits<CH_UNION_SIZE(__VA_ARGS__), __scalar_type__, __scalar_const_type__, __scalar_type__, union_name>; \
-      CH_UNION_SCALAR_IMPL(__scalar_type__, __scalar_const_type__, CH_UNION_SCALAR_FIELD, __VA_ARGS__) \
-      CH_UNION_WRITABLE_IMPL(__scalar_type__, __scalar_const_type__) \
-      CH_SCALAR_READONLY_INTERFACE(__scalar_type__) \
-      CH_SCALAR_WRITABLE_INTERFACE(__scalar_type__) \
+      using traits = ch::internal::scalar_traits<CH_UNION_SIZE(__VA_ARGS__), __scalar_type__, union_name>; \
+      CH_UNION_SCALAR_IMPL(__scalar_type__, CH_UNION_SCALAR_FIELD, __VA_ARGS__) \
+      CH_UNION_ASSIGN_IMPL(__scalar_type__) \
+      CH_SCALAR_INTERFACE(__scalar_type__) \
       CH_UNION_SCALAR_FRIENDS_IMPL(__scalar_type__) \
     }; \
-    class __const_type__ { \
-    public: \
-      using traits = ch::internal::logic_traits<CH_UNION_SIZE(__VA_ARGS__), __const_type__, __const_type__, union_name, __scalar_const_type__>; \
-      CH_UNION_LOGIC_IMPL(__const_type__, union_name, union_name, CH_UNION_CONST_LOGIC_FIELD, __VA_ARGS__) \
-      CH_LOGIC_READONLY_INTERFACE(__const_type__) \
-      CH_UNION_LOGIC_FRIENDS_IMPL(__const_type__) \
-    }; \
   public: \
-    using traits = ch::internal::logic_traits<CH_UNION_SIZE(__VA_ARGS__), union_name, __const_type__, union_name, __scalar_type__>; \
-    CH_UNION_LOGIC_IMPL(union_name, __const_type__, union_name, CH_UNION_LOGIC_FIELD, __VA_ARGS__) \
-    CH_UNION_WRITABLE_IMPL(union_name, __const_type__) \
-    CH_LOGIC_READONLY_INTERFACE(union_name) \
-    CH_LOGIC_WRITABLE_INTERFACE(union_name) \
+    using traits = ch::internal::logic_traits<CH_UNION_SIZE(__VA_ARGS__), union_name, __scalar_type__>; \
+    CH_UNION_LOGIC_IMPL(union_name, union_name, CH_UNION_LOGIC_FIELD, __VA_ARGS__) \
+    CH_UNION_ASSIGN_IMPL(union_name) \
+    CH_LOGIC_INTERFACE(union_name) \
     CH_UNION_LOGIC_FRIENDS_IMPL(union_name) \
   }
 

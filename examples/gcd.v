@@ -7,50 +7,50 @@ module GCD(
   output wire io_out_valid,
   output wire[15:0] io_out_data
 );
-  wire[15:0] sub49;
-  wire[15:0] sel46; // gcd.cpp(21)
-  wire[15:0] sel51; // gcd.cpp(28)
-  wire[15:0] sel52; // gcd.cpp(27)
+  wire[15:0] sub50;
+  wire[15:0] sel47; // gcd.cpp(21)
+  wire[15:0] sel52; // gcd.cpp(28)
+  wire[15:0] sel53; // gcd.cpp(27)
   wire and41;
-  wire gt47;
-  wire sel44; // gcd.cpp(21)
-  reg[15:0] reg30; // v10 - gcd.cpp(16)
-  wire sel55; // gcd.cpp(36)
+  wire gt48;
+  wire sel46; // gcd.cpp(21)
+  reg[15:0] reg31;
+  wire sel57; // gcd.cpp(36)
   wire[15:0] sel45; // gcd.cpp(21)
-  wire and54;
-  wire[15:0] sel53; // gcd.cpp(28)
-  wire eq58;
-  reg reg37; // v12 - gcd.cpp(17)
-  reg[15:0] reg22; // v8 - gcd.cpp(16)
-  wire and60;
+  wire and55;
+  wire[15:0] sel54; // gcd.cpp(28)
+  wire eq60;
+  reg reg36;
+  reg[15:0] reg25;
+  wire and62;
   wire eq39;
 
-  assign sub49 = reg30 - reg22;
-  assign sel46 = and41 ? io_in_data[31:16] : reg30;
-  assign sel51 = gt47 ? reg22 : sub49;
-  assign sel52 = reg37 ? sel51 : sel46;
+  assign sub50 = reg31 - reg25;
+  assign sel47 = and41 ? io_in_data[31:16] : reg31;
+  assign sel52 = gt48 ? reg25 : sub50;
+  assign sel53 = reg36 ? sel52 : sel47;
   assign and41 = io_in_valid & eq39;
-  assign gt47 = reg22 > reg30;
-  assign sel44 = and41 ? 1'h1 : reg37;
+  assign gt48 = reg25 > reg31;
+  assign sel46 = and41 ? 1'h1 : reg36;
   always @ (posedge clk) begin
-    reg30 <= sel52;
+    reg31 <= sel53;
   end
-  assign sel55 = and60 ? 1'h0 : sel44;
-  assign sel45 = and41 ? io_in_data[15:0] : reg22;
-  assign and54 = reg37 & gt47;
-  assign sel53 = and54 ? reg30 : sel45;
-  assign eq58 = 16'h0 == reg30;
+  assign sel57 = and62 ? 1'h0 : sel46;
+  assign sel45 = and41 ? io_in_data[15:0] : reg25;
+  assign and55 = reg36 & gt48;
+  assign sel54 = and55 ? reg31 : sel45;
+  assign eq60 = 16'h0 == reg31;
   always @ (posedge clk) begin
-    reg37 <= reset ? 1'h0 : sel55;
+    reg36 <= reset ? 1'h0 : sel57;
   end
   always @ (posedge clk) begin
-    reg22 <= sel53;
+    reg25 <= sel54;
   end
-  assign and60 = eq58 & reg37;
-  assign eq39 = reg37 == 1'h0;
+  assign and62 = eq60 & reg36;
+  assign eq39 = 1'h0 == reg36;
 
   assign io_in_ready = eq39;
-  assign io_out_valid = and60;
-  assign io_out_data = reg22;
+  assign io_out_valid = and62;
+  assign io_out_data = reg25;
 
 endmodule

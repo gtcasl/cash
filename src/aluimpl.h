@@ -61,14 +61,14 @@ protected:
 
   delayed_aluimpl(context* ctx,
                   ch_alu_op op,
-                  const lnode& enable,
                   unsigned delay,
+                  const lnode& enable,
                   const lnode& lhs);
 
   delayed_aluimpl(context* ctx,
                   ch_alu_op op,
-                  const lnode& enable,
                   unsigned delay,
+                  const lnode& enable,
                   const lnode& lhs,
                   const lnode& rhs);
 

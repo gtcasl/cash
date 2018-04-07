@@ -15,16 +15,16 @@ TEST_CASE("misc", "[misc]") {
   }
   
   SECTION("assert", "[assert]") {
-    TEST([]()->ch_bit1 {
+    TEST([]()->ch_bool {
       ch_bit4 a(1100_b);
       ch_bit2 c = a.slice<2>(1) ^ 01_b;
       ch_assert(c == 11_b, "assertion failed!");
       return (c == 11_b);
     });
-    TEST([]()->ch_bit1 {
+    TEST([]()->ch_bool {
       ch_bit4 a(1100_b), b(1);
       ch_bit2 c = a.slice<2>(1) ^ 01_b;
-      ch_print("c={0}", c);
+      //ch_print("c={0}", c);
       __if (b == 1) {
         ch_assert(c == 11_b, "assertion failed!");
       } __else {
@@ -35,7 +35,7 @@ TEST_CASE("misc", "[misc]") {
   }
   
   SECTION("taps", "[tap]") {
-    TEST([]()->ch_bit1 {
+    TEST([]()->ch_bool {
       ch_bit4 a(1100_b);
       ch_bit2 c = a.slice<2>(1) ^ 01_b;
       __tap(c);
@@ -44,36 +44,36 @@ TEST_CASE("misc", "[misc]") {
   }
   
   SECTION("tick", "[tick]") {
-    TEST([]()->ch_bit1 {
+    TEST([]()->ch_bool {
       ch_print("tick={0}", ch_time());
       return ch_true;
     });
   }
   
   SECTION("print", "[print]") {
-    TEST([]()->ch_bit1 {
+    TEST([]()->ch_bool {
       ch_print("hello world");
       return ch_true;
     });
-    TEST([]()->ch_bit1 {
+    TEST([]()->ch_bool {
       ch_bit8 a(255);
       ch_print("a={0}", a);
       return ch_true;
     });    
-    TEST([]()->ch_bit1 {
+    TEST([]()->ch_bool {
       ch_bit8 a(255), b(0);
       ch_print("a={0}, b={1}", a, b);
       return ch_true;
     });  
-    TEST([]()->ch_bit1 {
+    TEST([]()->ch_bool {
       ch_bit8 a(255);
-      ch_bit1 b(1);
+      ch_bool b(1);
       __if (b) {
         ch_print("a={0}", a);
       };
       return ch_true;
     });
-    TEST([]()->ch_bit1 {
+    TEST([]()->ch_bool {
       ch_float32 a(0.1f);
       ch_print("a={0:f}", a);
       return ch_true;

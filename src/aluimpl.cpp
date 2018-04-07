@@ -348,12 +348,13 @@ void aluimpl::print(std::ostream& out, uint32_t level) const {
 
 delayed_aluimpl::delayed_aluimpl(context* ctx,
                                  ch_alu_op op,
-                                 const lnode& enable,
                                  unsigned delay,
+                                 const lnode& enable,
                                  const lnode& in)
   : aluimpl(ctx, op, in)
   , cd_idx_(-1)
   , enable_idx_(-1) {
+
   p_value_.resize(delay, bitvector(this->get_size()));
   p_next_.resize(delay, bitvector(this->get_size()));
 
@@ -371,13 +372,14 @@ delayed_aluimpl::delayed_aluimpl(context* ctx,
 
 delayed_aluimpl::delayed_aluimpl(context* ctx,
                                  ch_alu_op op,
-                                 const lnode& enable,
                                  unsigned delay,
+                                 const lnode& enable,
                                  const lnode& lhs,
                                  const lnode& rhs)
   : aluimpl(ctx, op, lhs, rhs)
   , cd_idx_(-1)
-  , enable_idx_(-1) {
+  , enable_idx_(-1) {  
+
   p_value_.resize(delay, bitvector(this->get_size()));
   p_next_.resize(delay, bitvector(this->get_size()));
 
@@ -434,35 +436,33 @@ const bitvector& delayed_aluimpl::eval(ch_tick t) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-lnodeimpl* ch::internal::createAluNode(
-    ch_alu_op op,
-    const lnode& in,
-    unsigned delay,
-    const lnode& enable) {
+lnodeimpl* ch::internal::createAluNode(ch_alu_op op, const lnode& in) {
   auto ctx = in.get_ctx();
-  aluimpl* impl;
-  if (delay != 0) {
-    impl = ctx->create_node<delayed_aluimpl>(op, enable, delay, in);
-  } else {    
-    impl = ctx->create_alu(op, in);
-  }  
-  return impl;
+  return ctx->create_alu(op, in);
+}
+
+lnodeimpl* ch::internal::createAluNode(ch_alu_op op, const lnode& lhs, const lnode& rhs) {
+  auto ctx = lhs.get_ctx();
+  return ctx->create_alu(op, lhs, rhs);
 }
 
 lnodeimpl* ch::internal::createAluNode(
     ch_alu_op op,
-    const lnode& lhs,
-    const lnode& rhs,
     unsigned delay,
-    const lnode& enable) {
+    const lnode& enable,
+    const lnode& in) {
+  auto ctx = in.get_ctx();
+  return ctx->create_node<delayed_aluimpl>(op, delay, enable, in);
+}
+
+lnodeimpl* ch::internal::createAluNode(
+    ch_alu_op op,
+    unsigned delay,
+    const lnode& enable,
+    const lnode& lhs,
+    const lnode& rhs) {
   auto ctx = lhs.get_ctx();
-  aluimpl* impl;
-  if (delay != 0) {
-    impl = ctx->create_node<delayed_aluimpl>(op, enable, delay, lhs, rhs);
-  } else {    
-    impl = ctx->create_alu(op, lhs, rhs);
-  }  
-  return impl;
+  return ctx->create_node<delayed_aluimpl>(op, delay, enable, lhs, rhs);
 }
 
 lnodeimpl* ch::internal::createRotateNode(const lnode& next, unsigned dist, bool right) {

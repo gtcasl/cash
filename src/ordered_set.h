@@ -5,8 +5,7 @@
 namespace ch {
 namespace internal {
 
-template<class Key,
-         class Allocator = std::allocator<Key>>
+template<class Key, class Allocator = std::allocator<Key>>
 class ordered_set {
 protected:
 

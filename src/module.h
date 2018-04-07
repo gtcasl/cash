@@ -12,7 +12,7 @@ struct module_traits {
 
 template <typename T>
 class ch_module final : public device_base<T> {
-public:
+public:  
   using base = device_base<T>;
   using base::obj_;
   using traits = module_traits<decltype(obj_->io)>;

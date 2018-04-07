@@ -19,6 +19,6 @@ const bitvector& timeimpl::eval(ch_tick t) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-ch_bit<64> ch::internal::ch_time() {
-  return make_type<ch_bit<64>>(ctx_curr()->get_time());
+ch_logic<64> ch::internal::ch_time() {
+  return make_type<ch_logic<64>>(ctx_curr()->get_time());
 }

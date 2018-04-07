@@ -85,70 +85,50 @@ public:
   {}
 
   template <typename U,
-            CH_REQUIRE_0(is_bit_convertible<U, addr_width>::value)>
+            CH_REQUIRE_0(is_logic_convertible<U, addr_width>::value)>
   auto read(const U& addr) const {
-    auto l_addr = get_lnode<U, addr_width>(addr);
-    return const_type_t<T>(logic_buffer(mem_.read(l_addr)));
+    auto laddr = get_lnode<U, addr_width>(addr);
+    return T(logic_buffer(mem_.read(laddr)));
   }
-    
+
 protected:
   memory mem_;
 };
 
-///////////////////////////////////////////////////////////////////////////////
-
 template <typename T, unsigned N>
-class ch_ram {
+class ch_mem {
 public:
   static constexpr unsigned size = N;
   static constexpr unsigned data_width = width_v<T>;
   static constexpr unsigned addr_width = log2ceil(N);
   using value_type = T;
 
-  ch_ram() : mem_(width_v<T>, N, true, {}) {}
-
-  explicit ch_ram(const std::string& init_file)
-    : mem_(width_v<T>, N, true, toByteVector(init_file, data_width, N))
-  {}
-
-  explicit ch_ram(const std::initializer_list<uint32_t>& init_data)
-    : mem_(width_v<T>, N, true, toByteVector(init_data, data_width, N))
-  {}
-
-  template <typename U, std::size_t M, CH_REQUIRE_0(is_bitvector_array_type<U>::value)>
-  explicit ch_ram(const std::array<U, M>& init_data)
-    : mem_(width_v<T>, N, true, toByteVector(init_data, data_width, N))
-  {}
-
-  template <typename U, CH_REQUIRE_0(is_bitvector_array_type<U>::value)>
-  explicit ch_ram(const std::vector<U>& init_data)
-    : mem_(width_v<T>, N, true, toByteVector(init_data, data_width, N))
-  {}
+  ch_mem() : mem_(width_v<T>, N, true, {}) {}
 
   template <typename U,
-            CH_REQUIRE_0(is_bit_convertible<U, addr_width>::value)>
+            CH_REQUIRE_0(is_logic_convertible<U, addr_width>::value)>
   auto read(const U& addr) const {
     auto laddr = get_lnode<U, addr_width>(addr);
-    return const_type_t<T>(logic_buffer(mem_.read(laddr)));
+    return T(logic_buffer(mem_.read(laddr)));
   }
 
   template <typename U, typename V,
-            CH_REQUIRE_0(is_bit_convertible<U, addr_width>::value),
+            CH_REQUIRE_0(is_logic_convertible<U, addr_width>::value),
             CH_REQUIRE_0(is_cast_convertible<T, V>::value)>
   void write(const U& addr, const V& value) {
     auto l_addr  = get_lnode<U, addr_width>(addr);
-    auto l_value = get_lnode<T, width_v<V>>(value);
+    auto l_value = get_lnode<T, data_width>(value);
     mem_.write(l_addr, l_value);
   }
 
   template <typename U, typename V, typename E,
-            CH_REQUIRE_0(is_bit_convertible<U, addr_width>::value),
+            CH_REQUIRE_0(is_logic_convertible<U, addr_width>::value),
             CH_REQUIRE_0(is_cast_convertible<T, V>::value),
-            CH_REQUIRE_0(is_bit_convertible<E>::value)>
+            CH_REQUIRE_0(is_logic_convertible<E>::value)>
   void write(const U& addr, const V& value, const E& enable) {
     static_assert(1 == width_v<E>, "invalid predicate size");
     auto l_addr   = get_lnode<U, addr_width>(addr);
-    auto l_value  = get_lnode<T, width_v<V>>(value);
+    auto l_value  = get_lnode<T, data_width>(value);
     auto l_enable = get_lnode(enable);
     mem_.write(l_addr, l_value, l_enable);
   }

@@ -8,7 +8,7 @@ namespace htl {
 using namespace ch::core;
 
 template <typename S, typename Arg0, typename... Args,
-          __require0(ch_is_bit_convertible<S, (1+sizeof...(Args))>::value)>
+          __require0(ch_is_logic_convertible<S, (1+sizeof...(Args))>::value)>
 auto ch_hmux(const S& sel,
              const Arg0& arg0,
              const Args&... args) {
@@ -19,8 +19,8 @@ auto ch_hmux(const S& sel,
 }
 
 template <typename S, typename T, unsigned N,
-          __require0(ch_is_bit_convertible<S, N>::value)>
-auto ch_hmux(const S& sel, const ch_const_vec<T, N>& args) {
+          __require0(ch_is_logic_convertible<S, N>::value)>
+auto ch_hmux(const S& sel, const ch_vec<T, N>& args) {
   auto cs = ch_case(sel, 0x1, args[0]);
   for (unsigned i = 1; i < N; ++i) {
     cs(1 << i, args[i]);

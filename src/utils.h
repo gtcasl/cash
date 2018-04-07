@@ -17,6 +17,8 @@ void dump_stack_trace(FILE* out, unsigned int max_frames = 32);
 
 std::string identifier_from_typeid(const std::string& name);
 
+int char2int(char x, int base);
+
 ///////////////////////////////////////////////////////////////////////////////
 
 class source_location {
@@ -430,8 +432,8 @@ void unused(Args&&...) {}
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template<typename T> struct static_print;
 // usage: static_print<type>();
+template<typename T> struct static_print;
 
 ///////////////////////////////////////////////////////////////////////////////
 

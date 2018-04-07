@@ -13,6 +13,8 @@
 #include "enum.h"
 #include "union.h"
 #include "struct.h"
+#include "int.h"
+#include "uint.h"
 #include "float32.h"
 #include "port.h"
 #include "inout.h"
@@ -41,7 +43,7 @@ namespace core {
   using namespace ch::utility;
 
   //
-  // basic types
+  // data types
   //
 
   using ch::internal::ispow2;
@@ -50,18 +52,23 @@ namespace core {
 
   using ch::internal::source_location;
 
-  template <unsigned N> using ch_bit = ch::internal::ch_bit<N>;
-  template <unsigned N> using const_bit = ch::internal::const_bit<N>;
-
-  template <unsigned N> using ch_scalar = ch::internal::ch_scalar<N>;
-  template <unsigned N> using const_scalar = ch::internal::const_scalar<N>;
-
-  template <typename T, unsigned N> using ch_vec = ch::internal::ch_vec<T, N>;
-  template <typename T, unsigned N> using ch_const_vec = ch::internal::const_vec<T, N>;
-
+  template <unsigned N> using ch_bit = ch::internal::ch_logic<N>;
+  template <unsigned N> using ch_uint = ch::internal::ch_uint<N>;
+  template <unsigned N> using ch_int = ch::internal::ch_int<N>;
   using ch_float32 = ch::internal::ch_float32;
 
+  template <unsigned N> using ch_scalar = ch::internal::ch_scalar<N>;
+
+  template <typename T, unsigned N> using ch_vec = ch::internal::ch_vec<T, N>;
+
   template <typename T> using ch_reg = ch::internal::ch_reg<T>;
+
+  template <typename T, unsigned N> using ch_rom = ch::internal::ch_rom<T, N>;
+  template <typename T, unsigned N> using ch_mem = ch::internal::ch_mem<T, N>;
+
+  //
+  // utility types
+  //
 
   template <typename... Ts>
   inline constexpr unsigned ch_width_v = ch::internal::width_v<Ts...>;
@@ -70,8 +77,6 @@ namespace core {
 
   template <typename T> using ch_scalar_t = ch::internal::scalar_type_t<T>;
   template <typename T> using ch_logic_t  = ch::internal::logic_type_t<T>;
-  template <typename T> using ch_value_t  = ch::internal::value_type_t<T>;
-  template <typename T> using ch_const_t  = ch::internal::const_type_t<T>;
   template <typename T> using ch_flip_t   = ch::internal::flip_type_t<T>;
   template <typename T> using ch_io_t     = ch::internal::io_type_t<T>;
 
@@ -87,14 +92,16 @@ namespace core {
   //
 
   template <typename T, unsigned N = ch_width_v<T>>
-  using ch_is_bit_convertible = ch::internal::is_bit_convertible<T, N>;
+  using ch_is_logic_convertible = ch::internal::is_logic_convertible<T, N>;
 
   template <typename T, unsigned N = ch_width_v<T>>
   using ch_is_scalar_convertible = ch::internal::is_scalar_convertible<T, N>;
 
   //
-  // bit types
+  // declared types
   //
+
+  using ch_bool   = ch_bit<1>;
 
   using ch_bit1   = ch_bit<1>;
   using ch_bit2   = ch_bit<2>;
@@ -105,13 +112,30 @@ namespace core {
   using ch_bit64  = ch_bit<64>;
   using ch_bit128 = ch_bit<128>;
 
+  using ch_uint1  = ch_uint<1>;
+  using ch_uint2  = ch_uint<2>;
+  using ch_uint4  = ch_uint<4>;
+  using ch_uint8  = ch_uint<8>;
+  using ch_uint16 = ch_uint<16>;
+  using ch_uint32 = ch_uint<32>;
+  using ch_uint64 = ch_uint<64>;
+  using ch_uint128= ch_uint<128>;
+
+  using ch_int1   = ch_int<1>;
+  using ch_int2   = ch_int<2>;
+  using ch_int4   = ch_int<4>;
+  using ch_int8   = ch_int<8>;
+  using ch_int16  = ch_int<16>;
+  using ch_int32  = ch_int<32>;
+  using ch_int64  = ch_int<64>;
+  using ch_int128 = ch_int<128>;
+
   //
   // constants
   //
 
-  using ch_bool = ch_bit1;
-  const const_scalar<1> ch_false(0);
-  const const_scalar<1> ch_true(1);
+  const ch_scalar<1> ch_false(0);
+  const ch_scalar<1> ch_true(1);
 
   //
   // subscript operators
@@ -120,8 +144,7 @@ namespace core {
   using ch::internal::ch_clone;
   using ch::internal::ch_slice;
   using ch::internal::ch_aslice;
-  using ch::internal::ch_zext;
-  using ch::internal::ch_sext;
+  using ch::internal::ch_pad;
   using ch::internal::ch_cat;
   using ch::internal::ch_shuffle;
 
@@ -143,7 +166,6 @@ namespace core {
   using ch::internal::ch_popcd;
   using ch::internal::ch_clock;
   using ch::internal::ch_reset;
-  using ch::internal::ch_time;
 
   //
   // gates functions
@@ -187,16 +209,8 @@ namespace core {
   using ch::internal::ch_div;
   using ch::internal::ch_sll;
   using ch::internal::ch_srl;
-  using ch::internal::ch_sra;
   using ch::internal::ch_rotl;
   using ch::internal::ch_rotr;
-
-  //
-  // memory functions
-  //
-
-  using ch::internal::ch_rom;
-  using ch::internal::ch_ram;
 
   //
   // other functions
@@ -212,6 +226,7 @@ namespace core {
   using ch::internal::ch_assert;
   using ch::internal::ch_tap;
   using ch::internal::ch_print;
+  using ch::internal::ch_time;
 
   //
   // floating point functions

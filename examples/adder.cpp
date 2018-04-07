@@ -7,15 +7,15 @@ using namespace ch::sim;
 template <unsigned N>
 struct Adder {
   __io (
-    __in(ch_bit1)    cin,
-    __in(ch_bit<N>)  lhs,
-    __in(ch_bit<N>)  rhs,
-    __out(ch_bit<N>) out,
-    __out(ch_bit1)   cout
+    __in(ch_uint1)    cin,
+    __in(ch_uint<N>)  lhs,
+    __in(ch_uint<N>)  rhs,
+    __out(ch_uint<N>) out,
+    __out(ch_uint1)   cout
   );
 
   void describe() {
-    auto sum = ch_zext<N+1>(io.cin) + io.lhs + io.rhs;
+    auto sum = ch_pad<N+1>(io.cin) + io.lhs + io.rhs;
     io.out  = ch_slice<N>(sum);
     io.cout = sum[N];
   }

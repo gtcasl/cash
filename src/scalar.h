@@ -27,12 +27,12 @@ CH_DEF_SFINAE_CHECK(has_bitwidth, T::traits::bitwidth != 0);
 ///////////////////////////////////////////////////////////////////////////////
 
 enum traits_type {
-  traits_none     = 0x0,
-  traits_logic    = 0x1,
-  traits_scalar   = 0x2,
-  traits_io       = 0x4,
-  traits_logic_io = traits_logic | traits_io,
-  traits_scalar_io= traits_scalar | traits_io,
+  traits_none      = 0x0,
+  traits_logic     = 0x1,
+  traits_scalar    = 0x2,
+  traits_io        = 0x4,
+  traits_logic_io  = traits_logic | traits_io,
+  traits_scalar_io = traits_scalar | traits_io,
 };
 
 struct non_ch_type {
@@ -87,42 +87,19 @@ using deduce_first_type_t = typename deduce_first_type_impl<T0, T1>::type;
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <unsigned N> class const_bit;
-
-template <unsigned N> class ch_bit;
-
-template <unsigned N> class const_scalar;
-
+template <unsigned N> class ch_logic;
 template <unsigned N> class ch_scalar;
 
-template <unsigned Bitwidth,
-          typename ScalarType,
-          typename ConstType,
-          typename ValueType,
-          typename LogicType>
+template <unsigned Bitwidth, typename ScalarType, typename LogicType>
 struct scalar_traits {
-  static constexpr traits_type type = traits_scalar;
+  static constexpr traits_type type  = traits_scalar;
   static constexpr unsigned bitwidth = Bitwidth;
   using scalar_type = ScalarType;
-  using const_type  = ConstType;
-  using value_type  = ValueType;
   using logic_type  = LogicType;
 };
 
 template <typename T>
 using scalar_type_t = typename std::decay_t<T>::traits::scalar_type;
-
-template <typename T>
-using value_type_t = typename std::decay_t<T>::traits::value_type;
-
-template <typename T>
-using const_type_t = typename std::decay_t<T>::traits::const_type;
-
-template <typename T>
-using is_value_type = is_true<std::is_same<T, value_type_t<T>>::value>;
-
-template <typename T>
-using is_const_type = is_true<std::is_same<T, const_type_t<T>>::value>;
 
 template <typename T>
 using is_scalar_traits = is_true<(T::type & traits_scalar)>;
@@ -131,7 +108,7 @@ CH_DEF_SFINAE_CHECK(is_scalar_only, is_true<(std::decay_t<T>::traits::type == tr
 
 CH_DEF_SFINAE_CHECK(is_scalar_type, is_scalar_traits<typename std::decay_t<T>::traits>::value);
 
-CH_DEF_SFINAE_CHECK(is_scalar_compatible, (std::is_base_of<const_scalar<width_v<T>>, T>::value));
+CH_DEF_SFINAE_CHECK(is_scalar_compatible, (std::is_base_of<ch_scalar<width_v<T>>, T>::value));
 
 template <typename... Ts>
 using deduce_scalar_t = std::conditional_t<
@@ -313,260 +290,78 @@ public:
 ///////////////////////////////////////////////////////////////////////////////
 
 #define CH_SCALAR_FRIEND_OPS(i, x) \
-  CH_FRIEND_BOOL_AND((), const const_scalar&, x) \
-  CH_FRIEND_BOOL_OR((), const const_scalar&, x) \
-  CH_FRIEND_OP_EQ((), const const_scalar&, x) \
-  CH_FRIEND_OP_NE((), const const_scalar&, x) \
-  CH_FRIEND_OP_LT((), const const_scalar&, x) \
-  CH_FRIEND_OP_LE((), const const_scalar&, x) \
-  CH_FRIEND_OP_GT((), const const_scalar&, x) \
-  CH_FRIEND_OP_GE((), const const_scalar&, x) \
-  CH_FRIEND_OP_AND((), const const_scalar&, x) \
-  CH_FRIEND_OP_OR((), const const_scalar&, x) \
-  CH_FRIEND_OP_XOR((), const const_scalar&, x) \
-  CH_FRIEND_OP_ADD((), const const_scalar&, x) \
-  CH_FRIEND_OP_SUB((), const const_scalar&, x) \
-  CH_FRIEND_OP_MULT((), const const_scalar&, x) \
-  CH_FRIEND_OP_DIV((), const const_scalar&, x) \
-  CH_FRIEND_OP_MOD((), const const_scalar&, x) \
-  CH_FRIEND_OP_SLL((), const const_scalar&, x) \
-  CH_FRIEND_OP_SRL((), const const_scalar&, x)
+  CH_FRIEND_OP_AND1((), const ch_scalar&, x) \
+  CH_FRIEND_OP_OR1((), const ch_scalar&, x) \
+  CH_FRIEND_OP_EQ((), const ch_scalar&, x) \
+  CH_FRIEND_OP_NE((), const ch_scalar&, x) \
+  CH_FRIEND_OP_LT((), const ch_scalar&, x) \
+  CH_FRIEND_OP_LE((), const ch_scalar&, x) \
+  CH_FRIEND_OP_GT((), const ch_scalar&, x) \
+  CH_FRIEND_OP_GE((), const ch_scalar&, x) \
+  CH_FRIEND_OP_AND((), const ch_scalar&, x) \
+  CH_FRIEND_OP_OR((), const ch_scalar&, x) \
+  CH_FRIEND_OP_XOR((), const ch_scalar&, x) \
+  CH_FRIEND_OP_ADD((), const ch_scalar&, x) \
+  CH_FRIEND_OP_SUB((), const ch_scalar&, x) \
+  CH_FRIEND_OP_MULT((), const ch_scalar&, x) \
+  CH_FRIEND_OP_DIV((), const ch_scalar&, x) \
+  CH_FRIEND_OP_MOD((), const ch_scalar&, x) \
+  CH_FRIEND_OP_SLL((), const ch_scalar&, x) \
+  CH_FRIEND_OP_SRL((), const ch_scalar&, x)
 
 #define CH_SCALAR_OP_TYPES \
   int8_t, uint8_t, int16_t, uint16_t, int32_t, uint32_t, int64_t, uint64_t
 
-#define CH_SCALAR_READONLY_INTERFACE(type) \
+#define CH_SCALAR_INTERFACE(type) \
   template <typename R> \
-  R as() const { \
+  const auto as() const { \
     return ch::internal::scalar_accessor::cast<R>(*this); \
   } \
-  auto asScalar() const { \
+  const auto as_scalar() const { \
+    return this->as<ch_scalar<type::traits::bitwidth>>(); \
+  } \
+  template <typename R> \
+  auto as() { \
+    return ch::internal::scalar_accessor::cast<R>(*this); \
+  } \
+  auto as_scalar() { \
     return this->as<ch_scalar<type::traits::bitwidth>>(); \
   }
 
-#define CH_SCALAR_WRITABLE_INTERFACE(type)
-
 template <unsigned N>
-class const_scalar {
+class ch_scalar {
 public:
-  using traits = scalar_traits<N, const_scalar, const_scalar, ch_scalar<N>, const_bit<N>>;
+  using traits = scalar_traits<N, ch_scalar, ch_logic<N>>;
 
-  const_scalar(const scalar_buffer& buffer = scalar_buffer(N))
+  ch_scalar(const scalar_buffer& buffer = scalar_buffer(N))
     : buffer_(buffer)
   {}
 
-  const_scalar(const const_scalar& rhs)
+  ch_scalar(const ch_scalar& rhs)
     : buffer_(scalar_accessor::copy_buffer(rhs))
   {}
 
-  const_scalar(const_scalar&& rhs)
+  ch_scalar(ch_scalar&& rhs)
     : buffer_(std::move(rhs.buffer_))
+  {}
+
+  template <unsigned M, CH_REQUIRE_0(M < N)>
+  explicit ch_scalar(const ch_scalar<M>& rhs)
+    : buffer_(bitvector(N, scalar_accessor::get_data(rhs)))
   {}
 
   template <typename U,
             CH_REQUIRE_0(is_scalar_type<U>::value),
             CH_REQUIRE_0(N == width_v<U>)>
-  explicit const_scalar(const U& rhs) :
+  explicit ch_scalar(const U& rhs) :
     buffer_(scalar_accessor::copy_buffer(rhs))
   {}
 
   template <typename U,
             CH_REQUIRE_0(is_bitvector_convertible<U>::value)>
-  explicit const_scalar(const U& value)
+  explicit ch_scalar(const U& value)
     : buffer_(bitvector(N, value))
   {}
-
-  auto operator[](size_t index) const {
-    assert(index < N);
-    return const_scalar<1>(scalar_buffer(1, buffer_, index));
-  }
-
-  template <unsigned M>
-  auto slice(size_t start = 0) const {
-    static_assert(M <= N, "invalid size");
-    assert((start + M) <= N);
-    return const_scalar<M>(scalar_buffer(M, buffer_, start));
-  }
-
-  template <unsigned M>
-  auto aslice(size_t start = 0) const {
-    return this->slice<M>(start * M);
-  }
-
-  template <typename R,
-            CH_REQUIRE_0(is_scalar_compatible<R>::value)>
-  auto slice(size_t start = 0) const {
-    static_assert(width_v<R> <= N, "invalid size");
-    assert((start + width_v<R>) <= N);
-    return const_type_t<R>(logic_buffer(width_v<R>, buffer_, start));
-  }
-
-  template <typename R,
-            CH_REQUIRE_0(is_scalar_compatible<R>::value)>
-  auto aslice(size_t start = 0) const {
-    return this->slice<R>(start * width_v<R>);
-  }
-
-  template <typename U,
-            CH_REQUIRE_0(is_bitvector_castable<U>::value),
-            CH_REQUIRE_0(sizeof(U) * 8 >= N)>
-  explicit operator U() const {
-    return static_cast<U>(buffer_->get_data());
-  }
-
-  auto operator==(const const_scalar& rhs) const {
-    return (buffer_->get_data() == rhs.buffer_->get_data());
-  }
-
-  auto operator!=(const const_scalar& rhs) const {
-    return !(buffer_->get_data() == rhs.buffer_->get_data());
-  }
-
-  auto operator<(const const_scalar& rhs) const {
-    return (buffer_->get_data() < rhs.buffer_->get_data());
-  }
-
-  auto operator>=(const const_scalar& rhs) const {
-    return !(buffer_->get_data() < rhs.buffer_->get_data());
-  }
-
-  auto operator>(const const_scalar& rhs) const {
-    return (rhs.buffer_->get_data() < buffer_->get_data());
-  }
-
-  auto operator<=(const const_scalar& rhs) const {
-    return !(rhs.buffer_->get_data() < rhs.buffer_->get_data());
-  }
-
-  auto operator&&(const const_scalar& rhs) const {
-    static_assert(N == 1, "invalid size");
-    bitvector ret(1);
-    And(ret, buffer_->get_data(), rhs.buffer_->get_data());
-    return ch_scalar<N>(scalar_buffer(std::move(ret)));
-  }
-
-  auto operator||(const const_scalar& rhs) const {
-    static_assert(N == 1, "invalid size");
-    bitvector ret(1);
-    Or(ret, buffer_->get_data(), rhs.buffer_->get_data());
-    return ch_scalar<N>(scalar_buffer(std::move(ret)));
-  }
-
-  auto operator!() const {
-    return (*this == 0x0);
-  }
-
-  auto operator~() const {
-    bitvector ret(N);
-    Inv(ret, buffer_->get_data());
-    return ch_scalar<N>(scalar_buffer(std::move(ret)));
-  }
-
-  auto operator&(const const_scalar& rhs) const {
-    bitvector ret(N);
-    And(ret, buffer_->get_data(), rhs.buffer_->get_data());
-    return ch_scalar<N>(scalar_buffer(std::move(ret)));
-  }
-
-  auto operator|(const const_scalar& rhs) const {
-    bitvector ret(N);
-    Or(ret, buffer_->get_data(), rhs.buffer_->get_data());
-    return ch_scalar<N>(scalar_buffer(std::move(ret)));
-  }
-
-  auto operator^(const const_scalar& rhs) const {
-    bitvector ret(N);
-    Xor(ret, buffer_->get_data(), rhs.buffer_->get_data());
-    return ch_scalar<N>(scalar_buffer(std::move(ret)));
-  }
-
-  auto operator-() const {
-    bitvector ret(N);
-    Negate(ret, buffer_->get_data());
-    return ch_scalar<N>(scalar_buffer(std::move(ret)));
-  }
-
-  auto operator+(const const_scalar& rhs) const {
-    bitvector ret(N);
-    Add(ret, buffer_->get_data(), rhs.buffer_->get_data());
-    return ch_scalar<N>(scalar_buffer(std::move(ret)));
-  }
-
-  auto operator-(const const_scalar& rhs) const {
-    bitvector ret(N);
-    Sub(ret, buffer_->get_data(), rhs.buffer_->get_data());
-    return ch_scalar<N>(scalar_buffer(std::move(ret)));
-  }
-
-  auto operator<<(const const_scalar& rhs) const {
-    bitvector ret(N);
-    auto shift = rhs.buffer_->get_data();
-    CH_CHECK(shift.find_last() <= 31, "shift amount out of range");
-    Sll(ret, buffer_->get_data(), shift.get_word(0));
-    return ch_scalar<N>(scalar_buffer(std::move(ret)));
-  }
-
-  auto operator>>(const const_scalar& rhs) const {
-    bitvector ret(N);
-    auto shift = rhs.buffer_->get_data();
-    CH_CHECK(shift.find_last() <= 31, "shift amount out of range");
-    Srl(ret, buffer_->get_data(), shift.get_word(0));
-    return ch_scalar<N>(scalar_buffer(std::move(ret)));
-  }
-
-  CH_SCALAR_READONLY_INTERFACE(const_scalar)
-
-  void read(uint32_t dst_offset,
-            void* out,
-            uint32_t out_cbsize,
-            uint32_t src_offset = 0,
-            uint32_t length = N) const {
-    buffer_->read(dst_offset, out, out_cbsize, src_offset, length);
-  }
-
-protected:
-
-  const scalar_buffer_ptr& get_buffer() const {
-    return buffer_;
-  }
-
-  scalar_buffer_ptr& get_buffer() {
-    return buffer_;
-  }
-
-  scalar_buffer buffer_;
-
-  friend class scalar_accessor;
-
-  friend std::ostream& operator<<(std::ostream& out, const const_scalar& rhs) {
-    return out << scalar_accessor::get_data(rhs);
-  }
-
-  CH_FOR_EACH(CH_SCALAR_FRIEND_OPS, CH_SEP_SPACE, CH_SCALAR_OP_TYPES)
-};
-
-///////////////////////////////////////////////////////////////////////////////
-
-template <unsigned N>
-class ch_scalar : public const_scalar<N> {
-public:
-  using base = const_scalar<N>;
-  using base::buffer_;
-  using traits = scalar_traits<N, ch_scalar, const_scalar<N>, ch_scalar, ch_bit<N>>;
-
-  ch_scalar(const scalar_buffer& buffer = scalar_buffer(N)) : base(buffer) {}
-
-  ch_scalar(const ch_scalar& rhs) : base(rhs) {}
-
-  ch_scalar(ch_scalar&& rhs) : base(rhs) {}
-
-  template <typename U,
-            CH_REQUIRE_0(is_scalar_type<U>::value),
-            CH_REQUIRE_0(N == width_v<U>)>
-  explicit ch_scalar(const U& rhs)  : base(rhs) {}
-
-  template <typename U, CH_REQUIRE_0(is_bitvector_convertible<U>::value)>
-  explicit ch_scalar(const U& value)  : base(value) {}
 
   ch_scalar& operator=(const ch_scalar& rhs) {
     scalar_accessor::copy(*this, rhs);
@@ -575,6 +370,12 @@ public:
 
   ch_scalar& operator=(ch_scalar&& rhs) {
     scalar_accessor::move(*this, std::move(rhs));
+    return *this;
+  }
+
+  template <unsigned M, CH_REQUIRE_0(M < N)>
+  ch_scalar& operator=(const ch_scalar<M>& rhs) {
+    scalar_accessor::copy(*this, ch_scalar<N>(rhs));
     return *this;
   }
 
@@ -592,9 +393,9 @@ public:
     return *this;
   }
 
-  auto operator[](size_t index) const {
+  const auto operator[](size_t index) const {
     assert(index < N);
-    return const_scalar<1>(scalar_buffer(1, buffer_, index));
+    return ch_scalar<1>(scalar_buffer(1, buffer_, index));
   }
 
   auto operator[](size_t index) {
@@ -602,47 +403,9 @@ public:
     return ch_scalar<1>(scalar_buffer(1, buffer_, index));
   }
 
-  template <unsigned M>
-  auto slice(size_t start = 0) const {
-    static_assert(M <= N, "invalid size");
-    assert((start + M) <= N);
-    return const_scalar<M>(scalar_buffer(M, buffer_, start));
-  }
-
-  template <unsigned M>
-  auto aslice(size_t start = 0) const {
-    return this->slice<M>(start * M);
-  }
-
   template <typename R,
             CH_REQUIRE_0(is_scalar_compatible<R>::value)>
-  auto slice(size_t start = 0) const {
-    static_assert(width_v<R> <= N, "invalid size");
-    assert((start + width_v<R>) <= N);
-    return const_type_t<R>(scalar_buffer(width_v<R>, buffer_, start));
-  }
-
-  template <typename R,
-            CH_REQUIRE_0(is_scalar_compatible<R>::value)>
-  auto aslice(size_t start = 0) const {
-    return this->slice<R>(start * width_v<R>);
-  }
-
-  template <unsigned M>
-  auto slice(size_t start = 0) {
-    static_assert(M <= N, "invalid size");
-    assert((start + M) <= N);
-    return ch_scalar<M>(scalar_buffer(M, buffer_, start));
-  }
-
-  template <unsigned M>
-  auto aslice(size_t start = 0) {
-    return this->slice<M>(start * M);
-  }
-
-  template <typename R,
-            CH_REQUIRE_0(is_scalar_compatible<R>::value)>
-  auto slice(size_t start = 0) {
+  const auto slice(size_t start = 0) const {
     static_assert(width_v<R> <= N, "invalid size");
     assert((start + width_v<R>) <= N);
     return R(scalar_buffer(width_v<R>, buffer_, start));
@@ -650,8 +413,159 @@ public:
 
   template <typename R,
             CH_REQUIRE_0(is_scalar_compatible<R>::value)>
+  const auto aslice(size_t start = 0) const {
+    return this->slice<R>(start * width_v<R>);
+  }
+
+  template <unsigned M>
+  const auto slice(size_t start = 0) const {
+    return this->slice<ch_scalar<M>>(start);
+  }
+
+  template <unsigned M>
+  const auto aslice(size_t start = 0) const {
+    return this->slice<ch_scalar<M>>(start * M);
+  }
+
+  template <typename R,
+            CH_REQUIRE_0(is_scalar_type<R>::value)>
+  auto slice(size_t start = 0) {
+    static_assert(width_v<R> <= N, "invalid size");
+    assert((start + width_v<R>) <= N);
+    return R(scalar_buffer(width_v<R>, buffer_, start));
+  }
+
+  template <typename R,
+            CH_REQUIRE_0(is_scalar_type<R>::value)>
   auto aslice(size_t start = 0) {
     return this->slice<R>(start * width_v<R>);
+  }
+
+  template <unsigned M>
+  auto slice(size_t start = 0) {
+    return this->slice<ch_scalar<M>>(start);
+  }
+
+  template <unsigned M>
+  auto aslice(size_t start = 0) {
+    return this->slice<ch_scalar<M>>(start * M);
+  }
+
+  template <typename U,
+            CH_REQUIRE_0(is_bitvector_castable<U>::value),
+            CH_REQUIRE_0(sizeof(U) * 8 >= N)>
+  explicit operator U() const {
+    return static_cast<U>(buffer_->get_data());
+  }
+
+  auto operator==(const ch_scalar& rhs) const {
+    return (buffer_->get_data() == rhs.buffer_->get_data());
+  }
+
+  auto operator!=(const ch_scalar& rhs) const {
+    return !(buffer_->get_data() == rhs.buffer_->get_data());
+  }
+
+  auto operator<(const ch_scalar& rhs) const {
+    return (buffer_->get_data() < rhs.buffer_->get_data());
+  }
+
+  auto operator>=(const ch_scalar& rhs) const {
+    return !(buffer_->get_data() < rhs.buffer_->get_data());
+  }
+
+  auto operator>(const ch_scalar& rhs) const {
+    return (rhs.buffer_->get_data() < buffer_->get_data());
+  }
+
+  auto operator<=(const ch_scalar& rhs) const {
+    return !(rhs.buffer_->get_data() < rhs.buffer_->get_data());
+  }
+
+  auto operator&&(const ch_scalar& rhs) const {
+    static_assert(N == 1, "invalid size");
+    bitvector ret(1);
+    And(ret, buffer_->get_data(), rhs.buffer_->get_data());
+    return ch_scalar<N>(scalar_buffer(std::move(ret)));
+  }
+
+  auto operator||(const ch_scalar& rhs) const {
+    static_assert(N == 1, "invalid size");
+    bitvector ret(1);
+    Or(ret, buffer_->get_data(), rhs.buffer_->get_data());
+    return ch_scalar<N>(scalar_buffer(std::move(ret)));
+  }
+
+  auto operator!() const {
+    return (*this == 0x0);
+  }
+
+  auto operator~() const {
+    bitvector ret(N);
+    Inv(ret, buffer_->get_data());
+    return ch_scalar<N>(scalar_buffer(std::move(ret)));
+  }
+
+  auto operator&(const ch_scalar& rhs) const {
+    bitvector ret(N);
+    And(ret, buffer_->get_data(), rhs.buffer_->get_data());
+    return ch_scalar<N>(scalar_buffer(std::move(ret)));
+  }
+
+  auto operator|(const ch_scalar& rhs) const {
+    bitvector ret(N);
+    Or(ret, buffer_->get_data(), rhs.buffer_->get_data());
+    return ch_scalar<N>(scalar_buffer(std::move(ret)));
+  }
+
+  auto operator^(const ch_scalar& rhs) const {
+    bitvector ret(N);
+    Xor(ret, buffer_->get_data(), rhs.buffer_->get_data());
+    return ch_scalar<N>(scalar_buffer(std::move(ret)));
+  }
+
+  auto operator-() const {
+    bitvector ret(N);
+    Negate(ret, buffer_->get_data());
+    return ch_scalar<N>(scalar_buffer(std::move(ret)));
+  }
+
+  auto operator+(const ch_scalar& rhs) const {
+    bitvector ret(N);
+    Add(ret, buffer_->get_data(), rhs.buffer_->get_data());
+    return ch_scalar<N>(scalar_buffer(std::move(ret)));
+  }
+
+  auto operator-(const ch_scalar& rhs) const {
+    bitvector ret(N);
+    Sub(ret, buffer_->get_data(), rhs.buffer_->get_data());
+    return ch_scalar<N>(scalar_buffer(std::move(ret)));
+  }
+
+  auto operator<<(const ch_scalar& rhs) const {
+    bitvector ret(N);
+    auto shift = rhs.buffer_->get_data();
+    CH_CHECK(shift.find_last() <= 31, "shift amount out of range");
+    Sll(ret, buffer_->get_data(), shift.get_word(0));
+    return ch_scalar<N>(scalar_buffer(std::move(ret)));
+  }
+
+  auto operator>>(const ch_scalar& rhs) const {
+    bitvector ret(N);
+    auto shift = rhs.buffer_->get_data();
+    CH_CHECK(shift.find_last() <= 31, "shift amount out of range");
+    Srl(ret, buffer_->get_data(), shift.get_word(0));
+    return ch_scalar<N>(scalar_buffer(std::move(ret)));
+  }
+
+  CH_SCALAR_INTERFACE(ch_scalar)
+
+  void read(uint32_t dst_offset,
+            void* out,
+            uint32_t out_cbsize,
+            uint32_t src_offset = 0,
+            uint32_t length = N) const {
+    buffer_->read(dst_offset, out, out_cbsize, src_offset, length);
   }
 
   void write(uint32_t dst_offset,
@@ -661,6 +575,26 @@ public:
              uint32_t length = N) {
     buffer_->write(dst_offset, in, in_cbsize, src_offset, length);
   }
+
+protected:
+
+  const scalar_buffer_ptr& get_buffer() const {
+    return buffer_;
+  }
+
+  scalar_buffer_ptr& get_buffer() {
+    return buffer_;
+  }
+
+  scalar_buffer buffer_;
+
+  friend class scalar_accessor;
+
+  friend std::ostream& operator<<(std::ostream& out, const ch_scalar& rhs) {
+    return out << scalar_accessor::get_data(rhs);
+  }
+
+  CH_FOR_EACH(CH_SCALAR_FRIEND_OPS, CH_SEP_SPACE, CH_SCALAR_OP_TYPES)
 };
 
 }

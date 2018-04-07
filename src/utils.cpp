@@ -86,3 +86,25 @@ std::string unique_name::get(const std::string& name) {
   }
   return unique_name;
 }
+
+int ch::internal::char2int(char x, int base) {
+  switch (base) {
+  case 2:
+    if (x >= '0' && x <= '1')
+      return (x - '0');
+    break;
+  case 8:
+    if (x >= '0' && x <= '7')
+      return (x - '0');
+    break;
+  case 16:
+    if (x >= '0' && x <= '9')
+      return (x - '0');
+    if (x >= 'A' && x <= 'F')
+      return (x - 'A') + 10;
+    if (x >= 'a' && x <= 'f')
+      return (x - 'a') + 10;
+    break;
+  }
+  CH_ABORT("invalid scalar value");
+}

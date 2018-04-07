@@ -78,7 +78,7 @@ struct device_traits {
 
 template <typename T>
 class ch_device final : public device_base<T> {
-public:
+public:  
   using base = device_base<T>;
   using base::obj_;
   using traits = device_traits<decltype(obj_->io)>;

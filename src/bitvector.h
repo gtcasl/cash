@@ -446,56 +446,58 @@ public:
   bitvector(bitvector&& rhs);
   
   explicit bitvector(uint32_t size);
+
+  explicit bitvector(uint32_t size, const bitvector& rhs);
   
-  bitvector(uint32_t size, bool value)
+  explicit bitvector(uint32_t size, bool value)
     : bitvector(size, value ? 0x1 : 0x0)
   {}
 
-  bitvector(uint32_t size, char value);
+  explicit bitvector(uint32_t size, char value);
 
-  bitvector(uint32_t size, int8_t value)
+  explicit bitvector(uint32_t size, int8_t value)
     : bitvector(size, bitcast<uint32_t>(value))
   {}
   
-  bitvector(uint32_t size, uint8_t value)
+  explicit bitvector(uint32_t size, uint8_t value)
     : bitvector(size, bitcast<uint32_t>(value))
   {}
   
-  bitvector(uint32_t size, int16_t value)
+  explicit bitvector(uint32_t size, int16_t value)
     : bitvector(size, bitcast<uint32_t>(value))
   {}
   
-  bitvector(uint32_t size, uint16_t value)
+  explicit bitvector(uint32_t size, uint16_t value)
     : bitvector(size, bitcast<uint32_t>(value))
   {}
   
-  bitvector(uint32_t size, int32_t value)
+  explicit bitvector(uint32_t size, int32_t value)
     : bitvector(size, bitcast<uint32_t>(value))
   {}
 
-  bitvector(uint32_t size, uint32_t value);
+  explicit bitvector(uint32_t size, uint32_t value);
 
-  bitvector(uint32_t size, int64_t value)
+  explicit bitvector(uint32_t size, int64_t value)
     : bitvector(size, {bitcast<uint32_t>(value >> 32), bitcast<uint32_t>(value)})
   {}
 
-  bitvector(uint32_t size, uint64_t value)
+  explicit bitvector(uint32_t size, uint64_t value)
     : bitvector(size, {bitcast<uint32_t>(value >> 32), bitcast<uint32_t>(value)})
   {}
 
   template <typename T, std::size_t N, CH_REQUIRE_0(is_bitvector_array_type<T>::value)>
-  bitvector(uint32_t size, const std::array<T, N>& value) : bitvector(size) {
+  explicit bitvector(uint32_t size, const std::array<T, N>& value) : bitvector(size) {
     this->write(0, value.data(), N * sizeof(T), 0, N * sizeof(T) * 8);
   }
 
   template <typename T, CH_REQUIRE_0(is_bitvector_array_type<T>::value)>
-  bitvector(uint32_t size, const std::vector<T>& value) : bitvector(size) {
+  explicit bitvector(uint32_t size, const std::vector<T>& value) : bitvector(size) {
     this->write(0, value.data(), value.size() * sizeof(T), 0, value.size() * sizeof(T) * 8);
   }
 
-  bitvector(uint32_t size, const std::initializer_list<uint32_t>& value);
+  explicit bitvector(uint32_t size, const std::initializer_list<uint32_t>& value);
 
-  bitvector(uint32_t size, const std::string& value);
+  explicit bitvector(uint32_t size, const std::string& value);
 
   ~bitvector();
   

@@ -7,11 +7,10 @@ module testbench();
 
     reg clk    = 0;
     reg reset  = 0;
-    reg nickel = 1;
-    reg dime   = 0;
+    reg[1:0] coin   = 1;
     wire valid;
 
-    VendingMachine device(clk, reset, nickel, dime, valid);
+    VendingMachine device(clk, reset, coin, valid);
 
     always begin
         #1 clk = !clk;
@@ -22,7 +21,7 @@ module testbench();
         $dumpvars(0, testbench);
 
         $display ("time\tclk\treset\tnickel\tdime\tvalid");
-        $monitor("%3d\t%b\t%b\t%b\t%b\t%b", $time, clk, reset, nickel, dime, valid);
+        $monitor("%3d\t%b\t%b\t%h\t%b", $time, clk, reset, coin, valid);
 
         #0 reset  = 1;
         #1 reset  = 1;

@@ -50,7 +50,7 @@ logic_buffer_impl::logic_buffer_impl(logic_buffer_impl&& rhs)
 
 logic_buffer_impl::logic_buffer_impl(const lnode& data,
                                      const source_location& sloc,
-                                    const std::string& name)
+                                     const std::string& name)
   : id_(make_id())
   , value_(data.get_size(), data)
   , offset_(0) {

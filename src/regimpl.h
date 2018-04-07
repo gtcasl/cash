@@ -18,6 +18,10 @@ public:
     return srcs_[1];
   }
 
+  lnode& get_next() {
+    return srcs_[1];
+  }
+
   bool has_init() const {
     return (3 == srcs_.size());
   }

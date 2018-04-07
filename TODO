@@ -107,7 +107,7 @@ X*** Assignment rule: by constructor assignent is ignored during check
 - implement netlist export/import
 - implement binary export/import
 - implement AAL toolchain
-- add direct initialization buffer support for ch_mem and ch_rom
+- add direct initialization buffer support for ch_mem and ch_mem
 - extend operators argument to support different bit size
 - refactor ch_llrom
 - add file initialization support to ch_llmem
@@ -130,7 +130,7 @@ Completed:
 
 - refactor ch_delay class => move to function
 - refactor ch_wire class => all objects operate as wires before first assignment
-- move ch_rom into llmem.h
+- move ch_mem into llmem.h
 - create cash.h header file
 - adding native support for integers operations
 - add CASH_ to all header files #define declarations

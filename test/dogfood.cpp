@@ -59,9 +59,9 @@ __struct (sd3_t, (
 
 struct Adder {
   __io (
-    __in(ch_bit2)  in1,
-    __in(ch_bit2)  in2,
-    __out(ch_bit2) out
+    __in(ch_uint2)  in1,
+    __in(ch_uint2)  in2,
+    __out(ch_uint2) out
   );
   void describe() {
     io.out = io.in1 + io.in2;
@@ -70,9 +70,9 @@ struct Adder {
 
 struct Foo1 {
   __io (
-    __in(ch_bit2)  in1,
-    __in(ch_bit2)  in2,
-    __out(ch_bit2) out
+    __in(ch_uint2)  in1,
+    __in(ch_uint2)  in2,
+    __out(ch_uint2) out
   );
   void describe() {
     adder_.io.in1(io.in1);
@@ -94,14 +94,14 @@ struct Foo2 {
 
 struct Foo3 {
   __inout(io_ab_t, (
-    __in(ch_bit2) a,
-    __out(ch_bit2) b
+    __in(ch_uint2) a,
+    __out(ch_uint2) b
   ));
 
   __io(
     (ch_vec<io_ab_t, 2>) x,
-    (ch_vec<ch_in<ch_bit2>, 2>) y,
-    (ch_vec<ch_out<ch_bit2>, 2>) z
+    (ch_vec<ch_in<ch_uint2>, 2>) y,
+    (ch_vec<ch_out<ch_uint2>, 2>) z
   );
 
   void describe() {
@@ -128,8 +128,8 @@ struct QueueWrapper {
 
 struct Dogfood {
   __io (
-    __in(ch_bit4) in,
-    __out(ch_bit1) out
+    __in(ch_uint4) in,
+    __out(ch_bool) out
   );
   void describe() {
     io.out = true;
@@ -137,38 +137,74 @@ struct Dogfood {
 };
 
 int main() {
-  {
+  /*{
     ch_device<Dogfood> device;
     ch_simulator sim(device);
     device.io.in = 0xA;
     sim.run(4);
     assert(device.io.out);
-  }
-
-  /*{
-    ch_device<QueueWrapper<ch_bit4, 2>> queue;
-    ch_toVerilog("queue.v", queue);
   }*/
 
-  /*{
+  {
+    ch_device<QueueWrapper<ch_bit4, 2>> queue;
+    ch_simulator sim(queue);
+    ch_tick t = sim.reset(0);
+
+    int ret(!!queue.io.enq.ready);  // !full
+    ret &= !queue.io.deq.valid; // empty
+    queue.io.deq.ready = 0;
+    queue.io.enq.data = 0xA;
+    queue.io.enq.valid = 1; // push
+    t = sim.step(t);
+
+    ret &= !!queue.io.deq.valid;  // !empty
+    queue.io.enq.data = 0xB;
+    t = sim.step(t);
+
+    ret &= !queue.io.enq.ready; // full
+    ret &= !!queue.io.deq.valid;
+    ret &= (0xA == queue.io.deq.data);
+    queue.io.enq.valid = 0; // !push
+    queue.io.deq.ready = 1; // pop
+    t = sim.step(t);
+
+    ret &= !!queue.io.enq.ready;  // !full
+    ret &= (0xB == queue.io.deq.data);
+    queue.io.deq.ready = 1; // pop
+    t = sim.step(t, 4);
+
+    ret &= !queue.io.deq.valid; // empty
+    ch_toVerilog("queue.v", queue);
+    ret &= (checkVerilog("queue_tb.v"));
+    ch_toFIRRTL("queue.fir", queue);
+
+    assert(!!ret);
+  }
+
+  {
+    ch_device<QueueWrapper<ch_bit4, 2>> queue;
+    ch_toVerilog("queue.v", queue);
+  }
+
+  {
     ch_device<Foo1> foo;
     foo.io.in1 = 1;
     foo.io.in2 = 2;
     ch_simulator sim(foo);
     sim.run(1);
     ch_toVerilog("foo.v", foo);
-    std::cout << "foo.io.out=" << (int)foo.io.out << std::endl;
-    assert(3 == (int)foo.io.out);
-  }*/
+    std::cout << "foo.io.out=" << foo.io.out << std::endl;
+    assert(3 == foo.io.out);
+  }
 
-  /*{
+  {
     ch_device<Foo2> foo;
     ch_simulator sim(foo);
     sim.run(1);
     assert(foo.io);
-  }*/
+  }
 
-  /*{
+  {
     ch_device<Foo3> foo;
     ch_simulator sim(foo);
     for (int i = 0; i < 2; ++i) {
@@ -178,20 +214,20 @@ int main() {
     sim.run(1);
     int ret = 1;
     for (int i = 0; i < 2; ++i) {
-      ret &= (2 == (int)foo.io.z[i]);
-      ret &= (2 == (int)foo.io.x[i].b);
+      ret &= (2 == foo.io.z[i]);
+      ret &= (2 == foo.io.x[i].b);
     }
-    assert(ret);
-  }*/
+    assert(!!ret);
+  }
 
-  /*{
+  {
     ch_scalar<4> a(0101_b);
     assert(a[0]);
     assert(a[2]);
     assert(1 == a.slice<2>());
     assert(1 == a.slice<2>(2));
-    assert( (a[0] == a[2]) && (a.slice<2>() == a.slice<2>(2)) );
-  }*/
+    assert((a[0] == a[2]) && (a.slice<2>() == a.slice<2>(2)));
+  }
 
   return 0;
 }

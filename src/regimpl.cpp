@@ -1,9 +1,42 @@
-#include "regimpl.h"
 #include "reg.h"
+#include "regimpl.h"
+#include "proxyimpl.h"
 #include "select.h"
 #include "context.h"
 
 using namespace ch::internal;
+
+reg_buffer_impl::reg_buffer_impl(unsigned size,
+                                 const source_location& sloc,
+                                 const std::string& name)
+  : logic_buffer_impl(
+      ctx_curr()->create_node<regimpl>(
+        ctx_curr()->create_node<proxyimpl>(size)),
+      sloc, name) {
+  this->write(0, value_, 0, size);
+}
+
+reg_buffer_impl::reg_buffer_impl(const lnode& data,
+                                 const source_location& sloc,
+                                 const std::string& name)
+  : logic_buffer_impl(
+      ctx_curr()->create_node<regimpl>(
+        ctx_curr()->create_node<proxyimpl>(data.get_size()),
+        data),
+      sloc, name) {
+  this->write(0, value_, 0, data.get_size());
+}
+
+void reg_buffer_impl::write(uint32_t dst_offset,
+                            const lnode& data,
+                            uint32_t src_offset,
+                            uint32_t length) {
+  auto proxy = reinterpret_cast<proxyimpl*>(value_.get_impl());
+  auto reg = dynamic_cast<regimpl*>(proxy->get_src(0).get_impl());
+  reg->get_next().write(dst_offset, data, src_offset, length);
+}
+
+///////////////////////////////////////////////////////////////////////////////
 
 regimpl::regimpl(context* ctx, const lnode& next, const lnode& init)
   : lnodeimpl(ctx, type_reg, next.get_size())
@@ -56,20 +89,8 @@ const bitvector& regimpl::eval(ch_tick t) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-lnodeimpl* ch::internal::createRegNode(const lnode& next, const lnode& init) {
-  auto ctx = next.get_ctx();
-  return ctx->create_node<regimpl>(next, init);
-}
-
-lnodeimpl* ch::internal::createRegNode(const lnode& next) {
-  auto ctx = next.get_ctx();
-  return ctx->create_node<regimpl>(next);
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-void ch::internal::ch_pushcd(const ch_bit<1>& clock,
-                             const ch_bit<1>& reset,
+void ch::internal::ch_pushcd(const ch_logic<1>& clock,
+                             const ch_logic<1>& reset,
                              bool posedge) {
   auto ctx = ctx_curr();
   auto _cd = ctx->create_cdomain(get_lnode(clock), get_lnode(reset), posedge);
@@ -80,12 +101,12 @@ void ch::internal::ch_popcd() {
   ctx_curr()->pop_cd();
 }
 
-ch_bit<1> ch::internal::ch_clock() {
+ch_logic<1> ch::internal::ch_clock() {
   auto cd = ctx_curr()->current_cd();
-  return make_type<ch_bit<1>>(cd->get_clock());
+  return make_type<ch_logic<1>>(cd->get_clock());
 }
 
-ch_bit<1> ch::internal::ch_reset() {
+ch_logic<1> ch::internal::ch_reset() {
   auto cd = ctx_curr()->current_cd();
-  return make_type<ch_bit<1>>(cd->get_reset());
+  return make_type<ch_logic<1>>(cd->get_reset());
 }

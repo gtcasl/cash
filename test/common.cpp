@@ -7,16 +7,16 @@ static void begin_test() {
 
 struct TestRunner {
   __io (
-    __out(ch_bit1) out
+    __out(ch_bool) out
   );
-  TestRunner(const std::function<ch_bit<1>()>& test) : test_(test) {}
+  TestRunner(const std::function<ch_bool ()>& test) : test_(test) {}
   void describe() {
     io.out = test_();
   }
-  const std::function<ch_bit<1>()> test_;
+  const std::function<ch_bool()> test_;
 };
 
-bool runtest(const std::function<ch_bit<1>()>& test, ch_tick ticks) {
+bool runtest(const std::function<ch_bool ()>& test, ch_tick ticks) {
   assert(ticks > 0);
   begin_test();
 
