@@ -6,9 +6,9 @@ module Adder(
   output wire io_cout
 );
   wire[2:0] proxy25; // v10 - adder.cpp(18)
-  wire[2:0] proxy30; // v13 - /home/blaise/dev/cash/src/uint.h(301)
+  wire[2:0] proxy30; // v13 - /home/blaise/dev/cash/src/uint.h(294)
   wire[2:0] add31;
-  wire[2:0] proxy36; // v17 - /home/blaise/dev/cash/src/uint.h(301)
+  wire[2:0] proxy36; // v17 - /home/blaise/dev/cash/src/uint.h(294)
   wire[2:0] add37;
 
   assign proxy25 = {2'h0, io_cin};

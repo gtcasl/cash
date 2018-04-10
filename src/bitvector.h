@@ -743,6 +743,9 @@ void Sra(bitvector& out, const bitvector& in, uint32_t dist);
 void Add(bitvector& out, const bitvector& lhs, const bitvector& rhs, uint32_t cin = 0);
 void Sub(bitvector& out, const bitvector& lhs, const bitvector& rhs);
 void Negate(bitvector& out, const bitvector& in);
+void Mult(bitvector& out, const bitvector& lhs, const bitvector& rhs);
+void Div(bitvector& out, const bitvector& lhs, const bitvector& rhs);
+void Mod(bitvector& out, const bitvector& lhs, const bitvector& rhs);
 
 void fAdd(bitvector& out, const bitvector& lhs, const bitvector& rhs);
 void fSub(bitvector& out, const bitvector& lhs, const bitvector& rhs);

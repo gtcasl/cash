@@ -55,9 +55,10 @@ namespace core {
   template <unsigned N> using ch_bit = ch::internal::ch_logic<N>;
   template <unsigned N> using ch_uint = ch::internal::ch_uint<N>;
   template <unsigned N> using ch_int = ch::internal::ch_int<N>;
-  using ch_float32 = ch::internal::ch_float32;
 
   template <unsigned N> using ch_scalar = ch::internal::ch_scalar<N>;
+  template <unsigned N> using ch_suint  = ch::internal::ch_suint<N>;
+  template <unsigned N> using ch_sint   = ch::internal::ch_sint<N>;
 
   template <typename T, unsigned N> using ch_vec = ch::internal::ch_vec<T, N>;
 
@@ -65,6 +66,8 @@ namespace core {
 
   template <typename T, unsigned N> using ch_rom = ch::internal::ch_rom<T, N>;
   template <typename T, unsigned N> using ch_mem = ch::internal::ch_mem<T, N>;
+
+  using ch_float32 = ch::internal::ch_float32;
 
   //
   // utility types

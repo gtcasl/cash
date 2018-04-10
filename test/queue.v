@@ -15,12 +15,12 @@ module ch_queue(
   wire[1:0] sel49;
   wire[1:0] sel54;
   wire and43;
-  wire proxy40; // v2230 - /home/blaise/dev/cash/src/htl/queue.h(28)
+  wire proxy40; // v2231 - /home/blaise/dev/cash/src/htl/queue.h(28)
   reg[1:0] reg29;
   reg[1:0] reg35;
   wire eq64;
   wire ne66;
-  wire proxy38; // v2229 - /home/blaise/dev/cash/src/htl/queue.h(27)
+  wire proxy38; // v2230 - /home/blaise/dev/cash/src/htl/queue.h(27)
   reg[3:0] mem56[0:1];
   wire[1:0] sub70;
   wire ne60;

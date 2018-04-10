@@ -279,9 +279,13 @@ void aluimpl::eval(bitvector& inout, ch_tick t) {
     unaryop<alu_neg>(inout, srcs_[0].eval(t));
     break;
   case alu_mult:
+    Mult(inout, srcs_[0].eval(t), srcs_[1].eval(t));
+    break;
   case alu_div:
+    Div(inout, srcs_[0].eval(t), srcs_[1].eval(t));
+    break;
   case alu_mod:
-    CH_TODO();
+    Mod(inout, srcs_[0].eval(t), srcs_[1].eval(t));
     break;
 
   case alu_eq:

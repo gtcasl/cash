@@ -88,7 +88,12 @@ using deduce_first_type_t = typename deduce_first_type_impl<T0, T1>::type;
 ///////////////////////////////////////////////////////////////////////////////
 
 template <unsigned N> class ch_logic;
+
 template <unsigned N> class ch_scalar;
+
+template <unsigned N> class ch_sint;
+
+template <unsigned N> class ch_suint;
 
 template <unsigned Bitwidth, typename ScalarType, typename LogicType>
 struct scalar_traits {
@@ -294,18 +299,9 @@ public:
   CH_FRIEND_OP_OR1((), const ch_scalar&, x) \
   CH_FRIEND_OP_EQ((), const ch_scalar&, x) \
   CH_FRIEND_OP_NE((), const ch_scalar&, x) \
-  CH_FRIEND_OP_LT((), const ch_scalar&, x) \
-  CH_FRIEND_OP_LE((), const ch_scalar&, x) \
-  CH_FRIEND_OP_GT((), const ch_scalar&, x) \
-  CH_FRIEND_OP_GE((), const ch_scalar&, x) \
   CH_FRIEND_OP_AND((), const ch_scalar&, x) \
   CH_FRIEND_OP_OR((), const ch_scalar&, x) \
   CH_FRIEND_OP_XOR((), const ch_scalar&, x) \
-  CH_FRIEND_OP_ADD((), const ch_scalar&, x) \
-  CH_FRIEND_OP_SUB((), const ch_scalar&, x) \
-  CH_FRIEND_OP_MULT((), const ch_scalar&, x) \
-  CH_FRIEND_OP_DIV((), const ch_scalar&, x) \
-  CH_FRIEND_OP_MOD((), const ch_scalar&, x) \
   CH_FRIEND_OP_SLL((), const ch_scalar&, x) \
   CH_FRIEND_OP_SRL((), const ch_scalar&, x)
 
@@ -320,12 +316,24 @@ public:
   const auto as_scalar() const { \
     return this->as<ch_scalar<type::traits::bitwidth>>(); \
   } \
+  const auto as_int() const { \
+    return this->as<ch::internal::ch_sint<type::traits::bitwidth>>(); \
+  } \
+  const auto as_uint() const { \
+    return this->as<ch::internal::ch_suint<type::traits::bitwidth>>(); \
+  } \
   template <typename R> \
   auto as() { \
     return ch::internal::scalar_accessor::cast<R>(*this); \
   } \
   auto as_scalar() { \
     return this->as<ch_scalar<type::traits::bitwidth>>(); \
+  } \
+  auto as_int() { \
+    return this->as<ch::internal::ch_sint<type::traits::bitwidth>>(); \
+  } \
+  auto as_uint() { \
+    return this->as<ch::internal::ch_suint<type::traits::bitwidth>>(); \
   }
 
 template <unsigned N>
@@ -388,8 +396,8 @@ public:
   }
 
   template <typename U, CH_REQUIRE_0(is_integral_or_enum_v<U>)>
-  ch_scalar& operator=(U value) {
-    buffer_->write(bitvector(N, value));
+  ch_scalar& operator=(U rhs) {
+    buffer_->write(bitvector(N, rhs));
     return *this;
   }
 
@@ -451,35 +459,12 @@ public:
     return this->slice<ch_scalar<M>>(start * M);
   }
 
-  template <typename U,
-            CH_REQUIRE_0(is_bitvector_castable<U>::value),
-            CH_REQUIRE_0(sizeof(U) * 8 >= N)>
-  explicit operator U() const {
-    return static_cast<U>(buffer_->get_data());
-  }
-
   auto operator==(const ch_scalar& rhs) const {
     return (buffer_->get_data() == rhs.buffer_->get_data());
   }
 
   auto operator!=(const ch_scalar& rhs) const {
     return !(buffer_->get_data() == rhs.buffer_->get_data());
-  }
-
-  auto operator<(const ch_scalar& rhs) const {
-    return (buffer_->get_data() < rhs.buffer_->get_data());
-  }
-
-  auto operator>=(const ch_scalar& rhs) const {
-    return !(buffer_->get_data() < rhs.buffer_->get_data());
-  }
-
-  auto operator>(const ch_scalar& rhs) const {
-    return (rhs.buffer_->get_data() < buffer_->get_data());
-  }
-
-  auto operator<=(const ch_scalar& rhs) const {
-    return !(rhs.buffer_->get_data() < rhs.buffer_->get_data());
   }
 
   auto operator&&(const ch_scalar& rhs) const {
@@ -497,7 +482,7 @@ public:
   }
 
   auto operator!() const {
-    return (*this == 0x0);
+    return (0x0 == *this);
   }
 
   auto operator~() const {
@@ -524,24 +509,6 @@ public:
     return ch_scalar<N>(scalar_buffer(std::move(ret)));
   }
 
-  auto operator-() const {
-    bitvector ret(N);
-    Negate(ret, buffer_->get_data());
-    return ch_scalar<N>(scalar_buffer(std::move(ret)));
-  }
-
-  auto operator+(const ch_scalar& rhs) const {
-    bitvector ret(N);
-    Add(ret, buffer_->get_data(), rhs.buffer_->get_data());
-    return ch_scalar<N>(scalar_buffer(std::move(ret)));
-  }
-
-  auto operator-(const ch_scalar& rhs) const {
-    bitvector ret(N);
-    Sub(ret, buffer_->get_data(), rhs.buffer_->get_data());
-    return ch_scalar<N>(scalar_buffer(std::move(ret)));
-  }
-
   auto operator<<(const ch_scalar& rhs) const {
     bitvector ret(N);
     auto shift = rhs.buffer_->get_data();
@@ -559,6 +526,13 @@ public:
   }
 
   CH_SCALAR_INTERFACE(ch_scalar)
+
+  template <typename U,
+            CH_REQUIRE_0(is_bitvector_castable<U>::value),
+            CH_REQUIRE_0(sizeof(U) * 8 >= N)>
+  explicit operator U() const {
+    return static_cast<U>(buffer_->get_data());
+  }
 
   void read(uint32_t dst_offset,
             void* out,

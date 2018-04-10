@@ -826,6 +826,24 @@ CH_VA_ARGS_MAP(CH_CAT)
 #undef CH_CAT_ARG
 #undef CH_CAT
 
+// padding
+
+template <typename R, unsigned N>
+auto ch_pad(const ch_logic<N>& obj, const source_location& sloc = CH_SRC_LOCATION) {
+  static_assert(width_v<R> >= N, "invalid extend size");
+  if constexpr(width_v<R> > N) {
+    auto padding = ch_logic<(width_v<R> - N)>(0x0, sloc);
+    return ch_cat(padding, obj, sloc).template as<R>();
+  } else {
+    return R(obj, sloc);
+  }
+}
+
+template <unsigned N, unsigned M>
+auto ch_pad(const ch_logic<M>& obj, const source_location& sloc = CH_SRC_LOCATION) {
+  return ch_pad<ch_logic<N>>(obj, sloc);
+}
+
 // shuffle
 
 template <unsigned N, typename T,

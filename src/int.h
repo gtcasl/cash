@@ -10,6 +10,11 @@ namespace internal {
   CH_FRIEND_OP_LE((), const ch_int&, x) \
   CH_FRIEND_OP_GT((), const ch_int&, x) \
   CH_FRIEND_OP_GE((), const ch_int&, x) \
+  CH_FRIEND_OP_AND((), const ch_int&, x) \
+  CH_FRIEND_OP_OR((), const ch_int&, x) \
+  CH_FRIEND_OP_XOR((), const ch_int&, x) \
+  CH_FRIEND_OP_SLL((), const ch_int&, x) \
+  CH_FRIEND_OP_SRL((), const ch_int&, x) \
   CH_FRIEND_OP_ADD((), const ch_int&, x) \
   CH_FRIEND_OP_SUB((), const ch_int&, x) \
   CH_FRIEND_OP_MULT((), const ch_int&, x) \
@@ -22,9 +27,8 @@ namespace internal {
 template <unsigned N>
 class ch_int : public ch_logic<N> {
 public:
-  using traits = logic_traits<N, ch_int, ch_scalar<N>>;
+  using traits = logic_traits<N, ch_int, ch_sint<N>>;
   using base = ch_logic<N>;
-  using base::buffer_;
 
   ch_int(const logic_buffer& buffer = logic_buffer(N, CH_SRC_LOCATION))
     : base(buffer)
@@ -279,10 +283,10 @@ template <typename R, unsigned N>
 auto ch_pad(const ch_int<N>& obj, const source_location& sloc = CH_SRC_LOCATION) {
   static_assert(width_v<R> >= N, "invalid extend size");
   if constexpr(1 == N) {
-    return ch_pad<N>(obj.as_uint(), sloc);
+    return ch_pad<N>(obj, sloc);
   } else
   if constexpr(width_v<R> > N) {
-    auto padding = -ch_pad<(width_v<R> - N)>(obj[N - 1].as_uint(), sloc);
+    auto padding = -ch_pad<ch_int<width_v<R> - N>>(obj[N - 1], sloc);
     return ch_cat(padding, obj, sloc). template as<R>();
   } else {
     return R(obj, sloc);
@@ -351,5 +355,200 @@ CH_GLOBAL_OP_MOD_RSZ((template<unsigned N, unsigned M, CH_REQUIRE_0(M != N)>), c
   CH_GLOBAL_OP_SRA((template <unsigned N>), const ch_int<N>&, x)
 
 CH_FOR_EACH(CH_INT_GLOBAL_OPS, CH_SEP_SPACE, CH_INT_OP_TYPES)
+
+///////////////////////////////////////////////////////////////////////////////
+
+#define CH_SCALAR_INT_FRIEND_OPS(i, x) \
+  CH_FRIEND_OP_LT((), const ch_sint&, x) \
+  CH_FRIEND_OP_LE((), const ch_sint&, x) \
+  CH_FRIEND_OP_GT((), const ch_sint&, x) \
+  CH_FRIEND_OP_GE((), const ch_sint&, x) \
+  CH_FRIEND_OP_AND((), const ch_sint&, x) \
+  CH_FRIEND_OP_OR((), const ch_sint&, x) \
+  CH_FRIEND_OP_XOR((), const ch_sint&, x) \
+  CH_FRIEND_OP_ADD((), const ch_sint&, x) \
+  CH_FRIEND_OP_SUB((), const ch_sint&, x) \
+  CH_FRIEND_OP_MULT((), const ch_sint&, x) \
+  CH_FRIEND_OP_DIV((), const ch_sint&, x) \
+  CH_FRIEND_OP_MOD((), const ch_sint&, x) \
+  CH_FRIEND_OP_SLL((), const ch_sint&, x) \
+  CH_FRIEND_OP_SRL((), const ch_sint&, x)
+
+#define CH_SCALAR_INT_OP_TYPES \
+  ch_suint<N>, int8_t, uint8_t, int16_t, uint16_t, int32_t, uint32_t, int64_t, uint64_t
+
+template <unsigned N>
+class ch_sint : public ch_scalar<N> {
+public:
+  using traits = scalar_traits<N, ch_sint, ch_int<N>>;
+  using base = ch_scalar<N>;
+  using base::buffer_;
+
+  ch_sint(const scalar_buffer& buffer = scalar_buffer(N))
+    : base(buffer)
+  {}
+
+  ch_sint(const ch_sint& rhs)
+    : base(rhs)
+  {}
+
+  ch_sint(ch_sint&& rhs)
+    : base(std::move(rhs))
+  {}
+
+  template <unsigned M, CH_REQUIRE_0(M < N)>
+  explicit ch_sint(const ch_scalar<M>& rhs)
+    : base(rhs)
+  {}
+
+  template <typename U,
+            CH_REQUIRE_0(is_scalar_type<U>::value),
+            CH_REQUIRE_0(N == width_v<U>)>
+  explicit ch_sint(const U& rhs) :
+    base(rhs)
+  {}
+
+  template <typename U,
+            CH_REQUIRE_0(is_bitvector_convertible<U>::value)>
+  explicit ch_sint(const U& rhs)
+    : base(rhs)
+  {}
+
+  ch_sint& operator=(const ch_sint& rhs) {
+    base::operator=(rhs);
+    return *this;
+  }
+
+  ch_sint& operator=(ch_sint&& rhs) {
+    base::operator=(std::move(rhs));
+    return *this;
+  }
+
+  template <unsigned M, CH_REQUIRE_0(M < N)>
+  ch_sint& operator=(const ch_scalar<M>& rhs) {
+    base::operator=(rhs);
+    return *this;
+  }
+
+  template <typename U,
+            CH_REQUIRE_0(is_scalar_type<U>::value),
+            CH_REQUIRE_0(N == width_v<U>)>
+  ch_sint& operator=(const U& rhs) {
+    base::operator=(rhs);
+    return *this;
+  }
+
+  template <typename U,
+            CH_REQUIRE_0(is_integral_or_enum_v<U>)>
+  ch_sint& operator=(U rhs) {
+    base::operator=(rhs);
+    return *this;
+  }
+
+  // compare operators
+
+  auto operator<(const ch_sint& rhs) const {
+    return (buffer_->get_data() < rhs.buffer_->get_data());
+  }
+
+  auto operator>=(const ch_sint& rhs) const {
+    return !(buffer_->get_data() < rhs.buffer_->get_data());
+  }
+
+  auto operator>(const ch_sint& rhs) const {
+    return (rhs.buffer_->get_data() < buffer_->get_data());
+  }
+
+  auto operator<=(const ch_sint& rhs) const {
+    return !(rhs.buffer_->get_data() < rhs.buffer_->get_data());
+  }
+
+  // bitwise operators
+
+  auto operator~() const {
+    bitvector ret(N);
+    Inv(ret, buffer_->get_data());
+    return ch_sint<N>(scalar_buffer(std::move(ret)));
+  }
+
+  auto operator&(const ch_sint& rhs) const {
+    bitvector ret(N);
+    And(ret, buffer_->get_data(), rhs.buffer_->get_data());
+    return ch_sint<N>(scalar_buffer(std::move(ret)));
+  }
+
+  auto operator|(const ch_sint& rhs) const {
+    bitvector ret(N);
+    Or(ret, buffer_->get_data(), rhs.buffer_->get_data());
+    return ch_sint<N>(scalar_buffer(std::move(ret)));
+  }
+
+  auto operator^(const ch_sint& rhs) const {
+    bitvector ret(N);
+    Xor(ret, buffer_->get_data(), rhs.buffer_->get_data());
+    return ch_sint<N>(scalar_buffer(std::move(ret)));
+  }
+  // shift operators
+
+  auto operator<<(const ch_sint& rhs) const {
+    bitvector ret(N);
+    auto shift = rhs.buffer_->get_data();
+    CH_CHECK(shift.find_last() <= 31, "shift amount out of range");
+    Sll(ret, buffer_->get_data(), shift.get_word(0));
+    return ch_sint<N>(scalar_buffer(std::move(ret)));
+  }
+
+  auto operator>>(const ch_sint& rhs) const {
+    bitvector ret(N);
+    auto shift = rhs.buffer_->get_data();
+    CH_CHECK(shift.find_last() <= 31, "shift amount out of range");
+    Sra(ret, buffer_->get_data(), shift.get_word(0));
+    return ch_sint<N>(scalar_buffer(std::move(ret)));
+  }
+
+  // arithmetic operators
+
+  auto operator-() const {
+    bitvector ret(N);
+    Negate(ret, buffer_->get_data());
+    return ch_sint<N>(scalar_buffer(std::move(ret)));
+  }
+
+  auto operator+(const ch_sint& rhs) const {
+    bitvector ret(N);
+    Add(ret, buffer_->get_data(), rhs.buffer_->get_data());
+    return ch_sint<N>(scalar_buffer(std::move(ret)));
+  }
+
+  auto operator-(const ch_sint& rhs) const {
+    bitvector ret(N);
+    Sub(ret, buffer_->get_data(), rhs.buffer_->get_data());
+    return ch_sint<N>(scalar_buffer(std::move(ret)));
+  }
+
+  auto operator*(const ch_sint& rhs) const {
+    bitvector ret(N);
+    Mult(ret, buffer_->get_data(), rhs.buffer_->get_data());
+    return ch_sint<N>(scalar_buffer(std::move(ret)));
+  }
+
+  auto operator/(const ch_sint& rhs) const {
+    bitvector ret(N);
+    Div(ret, buffer_->get_data(), rhs.buffer_->get_data());
+    return ch_sint<N>(scalar_buffer(std::move(ret)));
+  }
+
+  auto operator%(const ch_sint& rhs) const {
+    bitvector ret(N);
+    Mod(ret, buffer_->get_data(), rhs.buffer_->get_data());
+    return ch_sint<N>(scalar_buffer(std::move(ret)));
+  }
+
+  CH_SCALAR_INTERFACE(ch_sint)
+
+protected:
+
+  CH_FOR_EACH(CH_SCALAR_INT_FRIEND_OPS, CH_SEP_SPACE, CH_SCALAR_INT_OP_TYPES)
+};
 
 }}

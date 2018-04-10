@@ -67,7 +67,8 @@ template <typename K, typename V>
 class case_t {
 public:
 
-  case_t(const lnode& key, const lnode& pred, const lnode& value) : impl_(key) {
+  case_t(const lnode& key, const lnode& pred, const lnode& value)
+    : impl_(key) {
     impl_.push(pred, value);
   }
 
@@ -75,7 +76,8 @@ public:
             CH_REQUIRE_0(is_equality_comparable<P, K>::value),
             CH_REQUIRE_0(is_cast_convertible<V, T>::value)>
   case_t& operator()(const P& pred, const T& value) {
-    impl_.push(get_lnode<P, width_v<K>>(pred), get_lnode<T, width_v<V>>(value));
+    impl_.push(get_lnode<P, width_v<K>>(pred),
+               get_lnode<T, width_v<V>>(value));
     return *this;
   }
 
@@ -106,17 +108,17 @@ auto ch_select(const P& pred, const V& value) {
   return select_t<R>(get_lnode(pred), get_lnode<V, width_v<R>>(value));
 }
 
-template <typename K, typename P, typename V,
+template <typename K, typename V, typename P,
           CH_REQUIRE_0(is_logic_convertible<K>::value),
           CH_REQUIRE_0(is_equality_comparable<P, K>::value),
           CH_REQUIRE_0(is_logic_convertible<V>::value)>
 auto ch_case(const K& key, const P& pred, const V& value) {
   return case_t<K, logic_type_t<V>>(get_lnode(key),
-                                     get_lnode<P, width_v<K>>(pred),
-                                     get_lnode(value));
+                                    get_lnode<P, width_v<K>>(pred),
+                                    get_lnode(value));
 }
 
-template <typename R, typename K, typename P, typename V,
+template <typename R, typename K, typename V, typename P,
           CH_REQUIRE_0(is_logic_convertible<K>::value),
           CH_REQUIRE_0(is_equality_comparable<P, K>::value),
           CH_REQUIRE_0(is_cast_convertible<R, V>::value)>

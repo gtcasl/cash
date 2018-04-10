@@ -8,7 +8,7 @@ namespace internal {
 
 class ch_float32 : public ch_int<32> {
 public:  
-  using traits = logic_traits<32, ch_float32, ch_scalar<32>>;
+  using traits = logic_traits<32, ch_float32, ch_sint<32>>;
   using base = ch_int<32>;
 
   ch_float32(const logic_buffer& buffer = logic_buffer(32, CH_SRC_LOCATION))

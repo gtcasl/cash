@@ -636,6 +636,49 @@ void ch::internal::Negate(bitvector& out, const bitvector& in) {
   Sub(out, zero, in);
 }
 
+void ch::internal::Mult(bitvector& out, const bitvector& lhs, const bitvector& rhs) {
+  assert(out.get_size() == lhs.get_size());
+  assert(lhs.get_size() == rhs.get_size());
+  if (1 == lhs.get_num_words()
+   && 1 == rhs.get_num_words()) {
+    uint32_t a_w = lhs.get_word(0);
+    uint32_t b_w = rhs.get_word(0);
+    out.set_word(0, a_w * b_w);
+  } else {
+    CH_TODO();
+  }
+}
+
+void ch::internal::Div(bitvector& out, const bitvector& lhs, const bitvector& rhs) {
+  assert(out.get_size() == lhs.get_size());
+  assert(lhs.get_size() == rhs.get_size());
+  if (1 == lhs.get_num_words()
+   && 1 == rhs.get_num_words()) {
+    uint32_t a_w = lhs.get_word(0);
+    uint32_t b_w = rhs.get_word(0);
+    out.set_word(0, b_w ? (a_w / b_w) : 0xffffffff);
+  } else {
+    CH_TODO();
+  }
+}
+
+void ch::internal::Mod(bitvector& out, const bitvector& lhs, const bitvector& rhs) {
+  assert(out.get_size() == lhs.get_size());
+  assert(lhs.get_size() == rhs.get_size());
+  if (1 == lhs.get_num_words()
+   && 1 == rhs.get_num_words()) {
+    uint32_t a_w = lhs.get_word(0);
+    uint32_t b_w = rhs.get_word(0);
+    out.set_word(0, a_w % b_w);
+  } else {
+    bitvector d(lhs.get_size());
+    bitvector m(lhs.get_size());
+    Div(d, lhs, rhs);
+    Mult(m, d, rhs);
+    Sub(out, lhs, m);
+  }
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 void ch::internal::fAdd(bitvector& out, const bitvector& lhs, const bitvector& rhs) {

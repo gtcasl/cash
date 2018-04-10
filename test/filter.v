@@ -8,9 +8,9 @@ module Filter(
   output wire io_y_valid,
   output wire io_y_parity
 );
-  wire[16:0] proxy32; // v2154 - module.cpp(71)
+  wire[16:0] proxy32; // v2155 - module.cpp(71)
   wire[16:0] sll35;
-  wire[16:0] proxy28; // v2152 - module.cpp(72)
+  wire[16:0] proxy28; // v2153 - module.cpp(72)
   wire[16:0] or37;
   reg reg52;
   reg[15:0] reg43;
