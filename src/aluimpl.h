@@ -10,7 +10,7 @@ namespace internal {
 class aluimpl : public lnodeimpl {
 public:
 
-  ch_alu_op get_op() const {
+  ch_op get_op() const {
     return op_;
   }  
 
@@ -20,15 +20,15 @@ public:
   
 protected:
 
-  aluimpl(context* ctx, ch_alu_op op, const lnode& lhs);
+  aluimpl(context* ctx, ch_op op, unsigned size, const lnode& lhs);
 
-  aluimpl(context* ctx, ch_alu_op op, const lnode& lhs, const lnode& rhs);
+  aluimpl(context* ctx, ch_op op, unsigned size, const lnode& lhs, const lnode& rhs);
 
   ~aluimpl() {}
 
    void eval(bitvector& inout, ch_tick t);
 
-  ch_alu_op op_;
+  ch_op op_;
   ch_tick tick_;
 
   friend class context;
@@ -60,13 +60,15 @@ public:
 protected:
 
   delayed_aluimpl(context* ctx,
-                  ch_alu_op op,
+                  ch_op op,
+                  unsigned size,
                   unsigned delay,
                   const lnode& enable,
                   const lnode& lhs);
 
   delayed_aluimpl(context* ctx,
-                  ch_alu_op op,
+                  ch_op op,
+                  unsigned size,
                   unsigned delay,
                   const lnode& enable,
                   const lnode& lhs,
@@ -78,10 +80,9 @@ protected:
   std::vector<bitvector> p_next_;
   int cd_idx_;
   int enable_idx_;
+
   friend class context;
 };
-
-bool alu_symmetric(ch_alu_op op);
 
 }
 }

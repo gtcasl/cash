@@ -32,7 +32,7 @@ public:
 
   void tick(ch_tick t) override;
 
-  void tick_next(ch_tick) override;
+  void tick_next(ch_tick t) override;
   
   const bitvector& eval(ch_tick t) override;
 
@@ -47,7 +47,6 @@ protected:
   virtual ~regimpl();
 
   bitvector q_next_;
-  ch_tick tick_;
 
   friend class context;
 };

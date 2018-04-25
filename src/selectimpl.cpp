@@ -60,8 +60,7 @@ selectimpl::selectimpl(context* ctx,
 const bitvector& selectimpl::eval(ch_tick t) {
   if (tick_ != t) {
     tick_ = t;
-    uint32_t i;
-    uint32_t last = srcs_.size() - 1;
+    uint32_t i, last(srcs_.size() - 1);
     if (has_key_) {
       auto& key = srcs_[0].eval(t);
       for (i = 1; i < last; i += 2) {
@@ -105,7 +104,7 @@ lnodeimpl* select_impl::eval(const lnode& value) {
   if (!key_.is_empty()) {
     while (!stmts.empty()) {
       const auto& stmt = stmts.top();
-      lnode pred(createAluNode(alu_eq, key_, stmt.pred));
+      lnode pred(createAluNode(op_eq, 1, key_, stmt.pred));
       curr = createSelectNode(pred, stmt.value, curr ? lnode(curr) : value);
       stmts.pop();
     }

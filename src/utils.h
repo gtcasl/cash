@@ -19,6 +19,8 @@ std::string identifier_from_typeid(const std::string& name);
 
 int char2int(char x, int base);
 
+unsigned signext(unsigned x, unsigned bits);
+
 ///////////////////////////////////////////////////////////////////////////////
 
 class source_location {
@@ -462,11 +464,19 @@ auto bitcast(const Src& src) {
 }
 
 constexpr uint32_t clz(uint32_t value) {
-  return __builtin_clz(value);
+  return value ? __builtin_clz(value) : 32;
 }
 
 constexpr uint32_t ctz(uint32_t value) {
-  return __builtin_ctz(value);
+  return value ? __builtin_ctz(value) : 32;
+}
+
+constexpr uint32_t clz(uint64_t value) {
+  return value ? __builtin_clzll(value) : 64;
+}
+
+constexpr uint32_t ctz(uint64_t value) {
+  return value ? __builtin_ctzll(value) : 64;
 }
 
 constexpr uint32_t rotl(uint32_t value, uint32_t shift, uint32_t width) {
@@ -541,3 +551,5 @@ struct requires_enum {
 #define CH_CEILDIV(a, b) (((a) + (b) - 1) / b)
 
 #define CH_BLEND(m, a, b)  (a) ^ (((a) ^ (b)) & (m)) // 0->a, 1->b
+
+#define CH_WIDTH_OF(a) (sizeof(a) * 8)

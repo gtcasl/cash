@@ -5,19 +5,19 @@ module Adder(
   output wire[1:0] io_out,
   output wire io_cout
 );
-  wire[2:0] proxy25; // v10 - adder.cpp(18)
-  wire[2:0] proxy30; // v13 - /home/blaise/dev/cash/src/uint.h(294)
-  wire[2:0] add31;
-  wire[2:0] proxy36; // v17 - /home/blaise/dev/cash/src/uint.h(294)
-  wire[2:0] add37;
+  wire[2:0] zext22;
+  wire[2:0] zext25;
+  wire[2:0] add27;
+  wire[2:0] zext30;
+  wire[2:0] add32;
 
-  assign proxy25 = {2'h0, io_cin};
-  assign proxy30 = {1'h0, io_lhs};
-  assign add31 = proxy25 + proxy30;
-  assign proxy36 = {1'h0, io_rhs};
-  assign add37 = add31 + proxy36;
+  assign zext22 = {{2{1'b0}}, io_cin};
+  assign zext25 = {{1{1'b0}}, io_lhs};
+  assign add27 = zext22 + zext25;
+  assign zext30 = {{1{1'b0}}, io_rhs};
+  assign add32 = add27 + zext30;
 
-  assign io_out = add37[1:0];
-  assign io_cout = add37[2];
+  assign io_out = add32[1:0];
+  assign io_cout = add32[2];
 
 endmodule

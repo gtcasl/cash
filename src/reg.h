@@ -5,15 +5,15 @@
 namespace ch {
 namespace internal {
 
-class reg_buffer_impl : public logic_buffer_impl {
+class reg_buffer : public logic_buffer {
 public:
-  using logic_buffer_impl::value_;
+  using logic_buffer::value_;
 
-  explicit reg_buffer_impl(unsigned size,
+  explicit reg_buffer(unsigned size,
                            const source_location& sloc = source_location(),
                            const std::string& name = "");
 
-  explicit reg_buffer_impl(const lnode& data,
+  explicit reg_buffer(const lnode& data,
                            const source_location& sloc = source_location(),
                            const std::string& name = "");
 
@@ -28,17 +28,15 @@ public:
 template <typename T>
 class ch_reg_impl final : public T {
 public:  
-  using traits = logic_traits<width_v<T>, ch_reg<T>, scalar_type_t<T>>;
+  using traits = logic_traits<width_v<T>, signed_v<T>, ch_reg<T>, scalar_type_t<T>>;
   using base = T;
 
   ch_reg_impl(const source_location& sloc = CH_SRC_LOCATION)
-    : base(ch::internal::logic_buffer_ptr(
-             new reg_buffer_impl(width_v<T>, sloc)))
+    : base(std::make_shared<reg_buffer>(width_v<T>, sloc))
   {}
 
   ch_reg_impl(const ch_reg_impl& rhs, const source_location& sloc = CH_SRC_LOCATION)
-    : base(ch::internal::logic_buffer_ptr(
-             new reg_buffer_impl(logic_accessor::get_data(rhs), sloc)))
+    : base(std::make_shared<reg_buffer>(logic_accessor::get_data(rhs), sloc))
   {}
 
   ch_reg_impl(ch_reg_impl&& rhs) : base(std::move(rhs.buffer_)) {}
@@ -46,8 +44,7 @@ public:
   template <typename U,
             CH_REQUIRE_0(is_cast_convertible<T, U>::value)>
   explicit ch_reg_impl(const U& init, const source_location& sloc = CH_SRC_LOCATION)
-    : base(ch::internal::logic_buffer_ptr(
-             new reg_buffer_impl(get_lnode<U, T>(init), sloc)))
+    : base(std::make_shared<reg_buffer>(get_lnode<U, T>(init), sloc))
   {}
 
   template <typename U,

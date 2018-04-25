@@ -1,14 +1,16 @@
 #include "scalar.h"
+#include "scint.h"
+#include "scuint.h"
 
 using namespace ch::internal;
 
-scalar_buffer_impl::scalar_buffer_impl(unsigned size)
+scalar_buffer::scalar_buffer(unsigned size)
   : value_(size)
   , offset_(0)
   , size_(size)
 {}
 
-scalar_buffer_impl::scalar_buffer_impl(const scalar_buffer_impl& rhs)
+scalar_buffer::scalar_buffer(const scalar_buffer& rhs)
   : source_(rhs.source_)
   , offset_(rhs.offset_)
   , size_(rhs.size_) {
@@ -17,26 +19,26 @@ scalar_buffer_impl::scalar_buffer_impl(const scalar_buffer_impl& rhs)
   }
 }
 
-scalar_buffer_impl::scalar_buffer_impl(scalar_buffer_impl&& rhs)
+scalar_buffer::scalar_buffer(scalar_buffer&& rhs)
   : value_(std::move(rhs.value_))
   , source_(std::move(rhs.source_))
   , offset_(std::move(rhs.offset_))
   , size_(std::move(rhs.size_))
 {}
 
-scalar_buffer_impl::scalar_buffer_impl(const bitvector& data)
+scalar_buffer::scalar_buffer(const bitvector& data)
   : value_(data)
   , offset_(0)
   , size_(value_.get_size())
 {}
 
-scalar_buffer_impl::scalar_buffer_impl(bitvector&& data)
+scalar_buffer::scalar_buffer(bitvector&& data)
   : value_(std::move(data))
   , offset_(0)
   , size_(value_.get_size())
 {}
 
-scalar_buffer_impl::scalar_buffer_impl(unsigned size,
+scalar_buffer::scalar_buffer(unsigned size,
                                        const scalar_buffer_ptr& buffer,
                                        unsigned offset)
   : source_(buffer)
@@ -45,7 +47,7 @@ scalar_buffer_impl::scalar_buffer_impl(unsigned size,
   assert(offset_ + size_ <= buffer->get_size());
 }
 
-const bitvector& scalar_buffer_impl::get_data() const {
+const bitvector& scalar_buffer::get_data() const {
   if (source_) {
     if (value_.is_empty()) {
       value_.resize(size_, 0, true);
@@ -55,7 +57,7 @@ const bitvector& scalar_buffer_impl::get_data() const {
   return value_;
 }
 
-void scalar_buffer_impl::read(uint32_t dst_offset,
+void scalar_buffer::read(uint32_t dst_offset,
                               void* out,
                               uint32_t out_cbsize,
                               uint32_t src_offset,
@@ -68,7 +70,7 @@ void scalar_buffer_impl::read(uint32_t dst_offset,
   }
 }
 
-void scalar_buffer_impl::write(uint32_t dst_offset,
+void scalar_buffer::write(uint32_t dst_offset,
                                const void* in,
                                uint32_t in_cbsize,
                                uint32_t src_offset,

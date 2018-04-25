@@ -11,7 +11,7 @@ using namespace ch::core;
 template <typename T, unsigned I, unsigned O>
 struct ch_hxbar {
   __io(
-    __in(ch_bit<I * O>) sel,
+    __in(ch_uint<I * O>) sel,
     __in(ch_vec<T, I>)  in,
     __out(ch_vec<T, O>) out
   );

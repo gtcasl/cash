@@ -83,7 +83,7 @@ protected:
 
   void print_mem(memimpl* node);
 
-  void print_operator(ch_alu_op op);
+  void print_operator(ch_op op);
 
   std::ostream& out_;
   std::unordered_set<std::string_view> visited_;

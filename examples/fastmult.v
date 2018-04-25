@@ -3,16 +3,16 @@ module FastMult(
   input wire[3:0] io_rhs,
   output wire[7:0] io_out
 );
-  wire[7:0] proxy21; // v9 - fastmult.cpp(21)
-  wire[7:0] sll24;
-  wire[7:0] proxy18; // v7 - fastmult.cpp(21)
-  wire[7:0] or26;
+  wire[7:0] zext17;
+  wire[7:0] zext15;
+  wire[7:0] sll21;
+  wire[7:0] or23;
   reg[7:0] mem14[0:255];
 
-  assign proxy21 = {4'h0, io_lhs};
-  assign sll24 = proxy21 << 8'h4;
-  assign proxy18 = {4'h0, io_rhs};
-  assign or26 = sll24 | proxy18;
+  assign zext17 = {{4{1'b0}}, io_lhs};
+  assign zext15 = {{4{1'b0}}, io_rhs};
+  assign sll21 = zext17 << 32'h4;
+  assign or23 = sll21 | zext15;
   initial begin
     mem14[0] = 8'h0;
     mem14[1] = 8'h0;
@@ -272,6 +272,6 @@ module FastMult(
     mem14[255] = 8'he1;
   end
 
-  assign io_out = mem14[or26];
+  assign io_out = mem14[or23];
 
 endmodule

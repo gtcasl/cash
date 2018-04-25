@@ -6,20 +6,20 @@
 
 using namespace ch::internal;
 
-reg_buffer_impl::reg_buffer_impl(unsigned size,
+reg_buffer::reg_buffer(unsigned size,
                                  const source_location& sloc,
                                  const std::string& name)
-  : logic_buffer_impl(
+  : logic_buffer(
       ctx_curr()->create_node<regimpl>(
         ctx_curr()->create_node<proxyimpl>(size)),
       sloc, name) {
   this->write(0, value_, 0, size);
 }
 
-reg_buffer_impl::reg_buffer_impl(const lnode& data,
+reg_buffer::reg_buffer(const lnode& data,
                                  const source_location& sloc,
                                  const std::string& name)
-  : logic_buffer_impl(
+  : logic_buffer(
       ctx_curr()->create_node<regimpl>(
         ctx_curr()->create_node<proxyimpl>(data.get_size()),
         data),
@@ -27,7 +27,7 @@ reg_buffer_impl::reg_buffer_impl(const lnode& data,
   this->write(0, value_, 0, data.get_size());
 }
 
-void reg_buffer_impl::write(uint32_t dst_offset,
+void reg_buffer::write(uint32_t dst_offset,
                             const lnode& data,
                             uint32_t src_offset,
                             uint32_t length) {
@@ -39,8 +39,7 @@ void reg_buffer_impl::write(uint32_t dst_offset,
 ///////////////////////////////////////////////////////////////////////////////
 
 regimpl::regimpl(context* ctx, const lnode& next, const lnode& init)
-  : lnodeimpl(ctx, type_reg, next.get_size())
-  , tick_(~0ull) {
+  : lnodeimpl(ctx, type_reg, next.get_size()) {
   auto cd = ctx->current_cd();
   cd->add_reg(this);
   srcs_.emplace_back(cd);  
@@ -49,8 +48,7 @@ regimpl::regimpl(context* ctx, const lnode& next, const lnode& init)
 }
 
 regimpl::regimpl(context* ctx, const lnode& next)
-  : lnodeimpl(ctx, type_reg, next.get_size())
-  , tick_(~0ull) {
+  : lnodeimpl(ctx, type_reg, next.get_size()) {
   auto cd = ctx->current_cd();
   cd->add_reg(this);
   srcs_.emplace_back(cd);

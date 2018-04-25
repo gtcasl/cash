@@ -74,6 +74,10 @@ protected:
 
   void print_alu(module_t& module, aluimpl* node);
 
+  void print_zext(module_t& module, aluimpl* node);
+
+  void print_sext(module_t& module, aluimpl* node);
+
   void print_fmult(module_t& module, aluimpl* node);
 
   void print_fadd(module_t& module, aluimpl* node);
@@ -86,7 +90,7 @@ protected:
 
   void print_mem(module_t& module, memimpl* node);
 
-  void print_operator(ch_alu_op op);
+  void print_operator(ch_op op);
 
   std::ostream& out_;
   std::unordered_set<std::string_view> visited_;

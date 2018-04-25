@@ -86,12 +86,10 @@ void memimpl::tick_next(ch_tick t) {
   }
 }
 
-// LCOV_EXCL_START
 const bitvector& memimpl::eval(ch_tick t) {
   CH_UNUSED(t);
-  CH_ABORT("invalid call");
+  return value_;
 }
-// LCOV_EXCL_STOP
 
 void memimpl::print(std::ostream& out, uint32_t level) const {
   CH_UNUSED(level);

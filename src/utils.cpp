@@ -108,3 +108,11 @@ int ch::internal::char2int(char x, int base) {
   }
   CH_ABORT("invalid scalar value");
 }
+
+unsigned ch::internal::signext(unsigned x, unsigned bits) {
+  assert(bits <= 32);
+  unsigned k = (1ull << bits) - 1;
+  unsigned m = 1u << (bits - 1);
+  unsigned n = x & k;
+  return (n ^ m) - m;
+}

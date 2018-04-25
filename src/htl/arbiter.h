@@ -13,20 +13,20 @@ template <unsigned N>
 struct ch_rrArbiter {
   __io (
     __in(ch_vec<ch_bool, N>) in,
-    __out(ch_bit<N>) grant
+    __out(ch_uint<N>) grant
   );
 
   void describe() {
     ch_reg<ch_bool> state[N][N];
-    ch_bit<N> dis[N];
-    ch_bit<N> grant;
+    ch_uint<N> dis[N];
+    ch_uint<N> grant;
     for (unsigned i = 0; i < N; ++i) {
-      for (unsigned j = i + 1; j < N; ++j) {
-        dis[j][i] = state[i][j] && io.in[i];
+      for (unsigned j = 0; j < i; ++j) {
+        dis[j][i] = io.in[i] && ~state[j][i];
       }
       dis[i][i] = 0;
-      for(unsigned j = 0; j < i; ++j) {
-        dis[j][i] = (~state[j][i]) && io.in[i];
+      for (unsigned j = i + 1; j < N; ++j) {
+        dis[j][i] = io.in[i] && state[i][j];
       }
       grant[i] = io.in[i] && ~ch_orr(dis[i]);
       for (unsigned j = i + 1; j < N; ++j) {

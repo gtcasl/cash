@@ -74,12 +74,14 @@ public:
     : mem_(width_v<T>, N, false, toByteVector(init_data, data_width, N))
   {}
 
-  template <typename U, std::size_t M, CH_REQUIRE_0(is_bitvector_array_type<U>::value)>
+  template <typename U, std::size_t M,
+            CH_REQUIRE_0(is_bitvector_array_type<U>::value)>
   explicit ch_rom(const std::array<U, M>& init_data)
     : mem_(width_v<T>, N, false, toByteVector(init_data, data_width, N))
   {}
 
-  template <typename U, CH_REQUIRE_0(is_bitvector_array_type<U>::value)>
+  template <typename U,
+            CH_REQUIRE_0(is_bitvector_array_type<U>::value)>
   explicit ch_rom(const std::vector<U>& init_data)
     : mem_(width_v<T>, N, false, toByteVector(init_data, data_width, N))
   {}
@@ -88,7 +90,7 @@ public:
             CH_REQUIRE_0(is_logic_convertible<U, addr_width>::value)>
   auto read(const U& addr) const {
     auto laddr = get_lnode<U, addr_width>(addr);
-    return T(logic_buffer(mem_.read(laddr)));
+    return T(make_logic_buffer(mem_.read(laddr)));
   }
 
 protected:
@@ -109,7 +111,7 @@ public:
             CH_REQUIRE_0(is_logic_convertible<U, addr_width>::value)>
   auto read(const U& addr) const {
     auto laddr = get_lnode<U, addr_width>(addr);
-    return T(logic_buffer(mem_.read(laddr)));
+    return T(make_logic_buffer(mem_.read(laddr)));
   }
 
   template <typename U, typename V,

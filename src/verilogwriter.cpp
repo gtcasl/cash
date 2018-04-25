@@ -406,11 +406,22 @@ void verilogwriter::print_proxy(module_t& module, proxyimpl* node) {
 
 void verilogwriter::print_alu(module_t& module, aluimpl* node) {
   auto op = node->get_op();
-  if (CH_ALUOP_DTYPE(op) == alu_integer) {    
+  if (op == op_zext) {
+    this->print_zext(module, node);
+  } else
+  if (op == op_sext) {
+    this->print_sext(module, node);
+  } else
+  if (op == op_fmult) {
+    this->print_fmult(module, node);
+  } else
+  if (op == op_fadd) {
+    this->print_fadd(module, node);
+  } else {
     out_ << "assign ";
     this->print_name(module, node);
     out_ << " = ";
-    if (CH_ALUOP_ARY(op) == alu_binary) {
+    if (CH_OP_ARY(op) == op_binary) {
       this->print_name(module, node->get_src(0).get_impl());
       out_ << " ";
       this->print_operator(op);
@@ -418,21 +429,33 @@ void verilogwriter::print_alu(module_t& module, aluimpl* node) {
       this->print_name(module, node->get_src(1).get_impl());
       out_ << ";" << std::endl;
     } else {
-      assert(CH_ALUOP_ARY(op) == alu_unary);
+      assert(CH_OP_ARY(op) == op_unary);
       this->print_operator(op);
       this->print_name(module, node->get_src(0).get_impl());
       out_ << ";" << std::endl;
     }
-  } else {
-    if (op == alu_fmult) {
-      this->print_fmult(module, node);
-    } else
-    if (op == alu_fadd) {
-      this->print_fadd(module, node);
-    } else {
-      CH_TODO();
-    }
   }
+}
+
+void verilogwriter::print_zext(module_t& module, aluimpl* node) {
+  out_ << "assign ";
+  this->print_name(module, node);
+  out_ << " = {{" << node->get_size() - node->get_src(0).get_size();
+  out_ << "{1'b0}}, ";
+  this->print_name(module, node->get_src(0).get_impl());
+  out_ << "}";
+  out_ << ";" << std::endl;
+}
+
+void verilogwriter::print_sext(module_t& module, aluimpl* node) {
+  out_ << "assign ";
+  this->print_name(module, node);
+  out_ << " = {{" << node->get_size() - node->get_src(0).get_size();
+  out_ << "{";
+  this->print_name(module, node->get_src(0).get_impl());
+  out_ << "[" << (node->get_src(0).get_size() - 1) << "]}";
+  this->print_name(module, node->get_src(0).get_impl());
+  out_ << ";" << std::endl;
 }
 
 void verilogwriter::print_fmult(module_t& module, aluimpl* node) {
@@ -743,33 +766,33 @@ void verilogwriter::print_value(const bitvector& value,
   out_.flags(oldflags);
 }
 
-void verilogwriter::print_operator(ch_alu_op op) {
+void verilogwriter::print_operator(ch_op op) {
   switch (op) {
-  case alu_inv:   out_ << "~"; break;
-  case alu_and:   out_ << "&"; break;
-  case alu_or:    out_ << "|"; break;
-  case alu_xor:   out_ << "^"; break;
-  case alu_andr:  out_ << "&"; break;
-  case alu_orr:   out_ << "|"; break;
-  case alu_xorr:  out_ << "^"; break;
+  case op_inv:   out_ << "~"; break;
+  case op_and:   out_ << "&"; break;
+  case op_or:    out_ << "|"; break;
+  case op_xor:   out_ << "^"; break;
+  case op_andr:  out_ << "&"; break;
+  case op_orr:   out_ << "|"; break;
+  case op_xorr:  out_ << "^"; break;
 
-  case alu_neg:   out_ << "-"; break;
-  case alu_add:   out_ << "+"; break;
-  case alu_sub:   out_ << "-"; break;
-  case alu_mult:  out_ << "*"; break;
-  case alu_div:   out_ << "/"; break;
-  case alu_mod:   out_ << "%"; break;
+  case op_neg:   out_ << "-"; break;
+  case op_add:   out_ << "+"; break;
+  case op_sub:   out_ << "-"; break;
+  case op_mult:  out_ << "*"; break;
+  case op_div:   out_ << "/"; break;
+  case op_mod:   out_ << "%"; break;
 
-  case alu_sll:   out_ << "<<"; break;
-  case alu_srl:   out_ << ">>"; break;
-  case alu_sra:   out_ << ">>>"; break;
+  case op_sll:   out_ << "<<"; break;
+  case op_srl:   out_ << ">>"; break;
+  case op_sra:   out_ << ">>>"; break;
 
-  case alu_eq:    out_ << "=="; break;
-  case alu_ne:    out_ << "!="; break;
-  case alu_lt:    out_ << "<"; break;
-  case alu_gt:    out_ << ">"; break;
-  case alu_le:    out_ << "<="; break;
-  case alu_ge:    out_ << ">="; break;
+  case op_eq:    out_ << "=="; break;
+  case op_ne:    out_ << "!="; break;
+  case op_lt:    out_ << "<"; break;
+  case op_gt:    out_ << ">"; break;
+  case op_le:    out_ << "<="; break;
+  case op_ge:    out_ << ">="; break;
   default:
     assert(false);
   }

@@ -6,312 +6,204 @@
 #define ALTFP_SP_MULT    5
 #define ALTFP_SP_DIV     6
 
-#define CH_ALUOP_ARY(x)   (x & (0x7 <<  8))
-#define CH_ALUOP_CLASS(x) (x & (0x7 << 11))
-#define CH_ALUOP_DTYPE(x) (x & (0x7 << 14))
+#define CH_OP_ARY(x)   (x & (0x3 << 5))
+#define CH_OP_CLASS(x) (x & (0x7 << 7))
 
-#define CH_ALUOP_TYPE(n, v) alu_##n = v,
-#define CH_ALUOP_NAME(n, v) #n,
-#define CH_ALUOP_INDEX(op)  (op & 0xff)
-#define CH_ALUOP_ENUM(m) \
-  m(inv,    0 | alu_unary  | alu_bitwise | alu_integer) \
-  m(and,    1 | alu_binary | alu_bitwise | alu_integer) \
-  m(or,     2 | alu_binary | alu_bitwise | alu_integer) \
-  m(xor,    3 | alu_binary | alu_bitwise | alu_integer) \
-  m(andr,   4 | alu_unary  | alu_reduce  | alu_integer) \
-  m(orr,    5 | alu_unary  | alu_reduce  | alu_integer) \
-  m(xorr,   6 | alu_unary  | alu_reduce  | alu_integer) \
-  m(sll,    7 | alu_binary | alu_shift   | alu_integer) \
-  m(srl,    8 | alu_binary | alu_shift   | alu_integer) \
-  m(sra,    9 | alu_binary | alu_shift   | alu_integer) \
-  m(add,   10 | alu_binary | alu_arithm  | alu_integer) \
-  m(sub,   11 | alu_binary | alu_arithm  | alu_integer) \
-  m(neg,   12 | alu_unary  | alu_arithm  | alu_integer) \
-  m(mult,  13 | alu_binary | alu_arithm  | alu_integer) \
-  m(div,   14 | alu_binary | alu_arithm  | alu_integer) \
-  m(mod,   15 | alu_binary | alu_arithm  | alu_integer) \
-  m(eq,    16 | alu_binary | alu_compare | alu_integer) \
-  m(ne,    17 | alu_binary | alu_compare | alu_integer) \
-  m(lt,    18 | alu_binary | alu_compare | alu_integer) \
-  m(gt,    19 | alu_binary | alu_compare | alu_integer) \
-  m(le,    20 | alu_binary | alu_compare | alu_integer) \
-  m(ge,    21 | alu_binary | alu_compare | alu_integer) \
-  m(fadd,  22 | alu_binary | alu_arithm  | alu_float) \
-  m(fsub,  23 | alu_binary | alu_arithm  | alu_float) \
-  m(fmult, 24 | alu_binary | alu_arithm  | alu_float) \
-  m(fdiv,  25 | alu_binary | alu_arithm  | alu_float)
+#define CH_OP_TYPE(n, v) op_##n = v,
+#define CH_OP_NAME(n, v) #n,
+#define CH_OP_INDEX(op)  (op & 0x1f)
+#define CH_OP_ENUM(m) \
+  m(eq,     0 | op_binary | op_compare | op_symmetric) \
+  m(ne,     1 | op_binary | op_compare | op_symmetric) \
+  m(lt,     2 | op_binary | op_compare) \
+  m(gt,     3 | op_binary | op_compare) \
+  m(le,     4 | op_binary | op_compare) \
+  m(ge,     5 | op_binary | op_compare) \
+  m(inv,    6 | op_unary  | op_bitwise) \
+  m(and,    7 | op_binary | op_bitwise | op_symmetric) \
+  m(or,     8 | op_binary | op_bitwise | op_symmetric) \
+  m(xor,    9 | op_binary | op_bitwise | op_symmetric) \
+  m(andr,  10 | op_unary  | op_reduce) \
+  m(orr,   11 | op_unary  | op_reduce) \
+  m(xorr,  12 | op_unary  | op_reduce) \
+  m(sll,   13 | op_binary | op_shift) \
+  m(srl,   14 | op_binary | op_shift) \
+  m(sra,   15 | op_binary | op_shift) \
+  m(add,   16 | op_binary | op_arithm | op_symmetric) \
+  m(sub,   17 | op_binary | op_arithm) \
+  m(neg,   18 | op_unary  | op_arithm) \
+  m(mult,  19 | op_binary | op_arithm | op_symmetric) \
+  m(div,   20 | op_binary | op_arithm) \
+  m(mod,   21 | op_binary | op_arithm) \
+  m(zext,  22 | op_unary  | op_misc) \
+  m(sext,  23 | op_unary  | op_misc) \
+  m(fadd,  24 | op_binary | op_arithm | op_symmetric) \
+  m(fsub,  25 | op_binary | op_arithm) \
+  m(fmult, 26 | op_binary | op_arithm | op_symmetric) \
+  m(fdiv,  27 | op_binary | op_arithm)
 
 namespace ch {
 namespace internal {
 
-enum alu_flags {
-  alu_unary   = 1 << 8,
-  alu_binary  = 2 << 8,
-  alu_tenary  = 3 << 8,
-  alu_nary    = 4 << 8,
+enum op_flags {
+  op_unary   = 0 << 5,
+  op_binary  = 1 << 5,
+  op_tenary  = 2 << 5,
+  op_nary    = 3 << 5,
 
-  alu_bitwise = 1 << 11,
-  alu_compare = 2 << 11,
-  alu_arithm  = 3 << 11,
-  alu_shift   = 4 << 11,
-  alu_reduce  = 5 << 11,
+  op_bitwise = 0 << 7,
+  op_compare = 1 << 7,
+  op_arithm  = 2 << 7,
+  op_shift   = 3 << 7,
+  op_reduce  = 4 << 7,
+  op_misc    = 5 << 7,
 
-  alu_integer = 1 << 14,
-  alu_fixed   = 2 << 14,
-  alu_float   = 3 << 14,
-  alu_double  = 4 << 14,
+  op_symmetric = 1 << 10,
 };
 
-enum ch_alu_op {
-  CH_ALUOP_ENUM(CH_ALUOP_TYPE)
+enum ch_op {
+  CH_OP_ENUM(CH_OP_TYPE)
 };
 
-const char* to_string(ch_alu_op op);
+template <typename... Ts>
+struct width_impl;
 
-lnodeimpl* createAluNode(ch_alu_op op,
+template <typename T>
+struct width_impl<T> {
+  static constexpr unsigned value = T::traits::bitwidth;
+};
+
+template <typename T0, typename... Ts>
+struct width_impl<T0, Ts...> {
+  static constexpr unsigned value = T0::traits::bitwidth + width_impl<Ts...>::value;
+};
+
+template <typename... Ts>
+inline constexpr unsigned width_v = width_impl<std::decay_t<Ts>...>::value;
+
+template <typename T0, typename... Ts>
+inline constexpr bool signed_v = std::decay_t<T0>::traits::is_signed;
+
+const char* to_string(ch_op op);
+
+lnodeimpl* createAluNode(ch_op op,
+                         unsigned size,
                          const lnode& in);
 
-lnodeimpl* createAluNode(ch_alu_op op,
+lnodeimpl* createAluNode(ch_op op,
+                         unsigned size,
                          const lnode& lhs,
                          const lnode& rhs);
 
-lnodeimpl* createAluNode(ch_alu_op op,
+lnodeimpl* createAluNode(ch_op op,
+                         unsigned size,
                          unsigned delay,
                          const lnode& enable,
                          const lnode& in);
 
-lnodeimpl* createAluNode(ch_alu_op op,
+lnodeimpl* createAluNode(ch_op op,
+                         unsigned size,
                          unsigned delay,
                          const lnode& enable,
                          const lnode& lhs,
                          const lnode& rhs);
 
-lnodeimpl* createRotateNode(const lnode& next, unsigned dist, bool right);
+lnodeimpl* createRotateNode(const lnode& next,
+                            unsigned dist,
+                            bool right);
 
 }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-#define CH_FRIEND_OPERATORS(func, header, lhs_t, rhs_t, body) \
+#define CH_FRIEND_OP1(header, op, lhs_t, rhs_t) \
   CH_REM header \
-  inline friend auto func(lhs_t lhs, rhs_t _rhs) { \
+  inline friend auto operator op(lhs_t lhs, rhs_t _rhs) { \
     auto rhs = static_cast<std::decay_t<lhs_t>>(_rhs); \
-    return body; \
+    return lhs op rhs; \
   } \
   CH_REM header \
-  inline friend auto func(rhs_t _lhs, lhs_t rhs) { \
+  inline friend auto operator op(rhs_t _lhs, lhs_t rhs) { \
     auto lhs = static_cast<std::decay_t<lhs_t>>(_lhs); \
-    return body; \
+    return lhs op rhs; \
   }
 
-#define CH_GLOBAL_OPERATORS(func, header, lhs_t, rhs_t, body) \
+#define CH_FRIEND_OP2(header, op, lhs_t, rhs_t) \
+  CH_REM header \
+  inline friend auto operator op(lhs_t _lhs, rhs_t _rhs) { \
+    constexpr auto W = std::max(width_v<lhs_t>, width_v<rhs_t>); \
+    auto lhs = ch_pad<W>(_lhs); \
+    auto rhs = ch_pad<W>(_rhs); \
+    return lhs op rhs; \
+  } \
+  CH_REM header \
+  inline friend auto operator op(rhs_t _lhs, lhs_t _rhs) { \
+    constexpr auto W = std::max(width_v<lhs_t>, width_v<rhs_t>); \
+    auto lhs = ch_pad<W>(_lhs); \
+    auto rhs = ch_pad<W>(_rhs); \
+    return lhs op rhs; \
+  }
+
+#define CH_FRIEND_OP3(header, op, lhs_t, rhs_t, cvt_t) \
+  CH_REM header \
+  inline friend auto operator op(lhs_t lhs, rhs_t _rhs) { \
+    auto rhs = static_cast<std::decay_t<cvt_t>>(_rhs); \
+    return lhs op rhs; \
+  }
+
+#define CH_FRIEND_OP4(header, op, cvt_t, lhs_t, rhs_t) \
+  CH_REM header \
+  inline friend auto operator op(lhs_t _lhs, rhs_t rhs) { \
+    auto lhs = static_cast<std::decay_t<cvt_t>>(_lhs); \
+    return lhs op rhs; \
+  }
+
+#define CH_GLOBAL_OP4(header, op, cvt_t, lhs_t, rhs_t) \
+  CH_REM header \
+  inline auto operator op(lhs_t _lhs, rhs_t rhs) { \
+    auto lhs = static_cast<std::decay_t<cvt_t>>(_lhs); \
+    return lhs op rhs; \
+  }
+
+#define CH_GLOBAL_FUNC1(header, func, lhs_t, rhs_t) \
   CH_REM header \
   inline auto func(lhs_t lhs, rhs_t _rhs) { \
     auto rhs = static_cast<std::decay_t<lhs_t>>(_rhs); \
-    return body; \
+    return func(lhs, rhs); \
   } \
   CH_REM header \
   inline auto func(rhs_t _lhs, lhs_t rhs) { \
     auto lhs = static_cast<std::decay_t<lhs_t>>(_lhs); \
-    return body; \
+    return func(lhs, rhs); \
   }
 
-#define CH_GLOBAL_OPERATORS_RSZ(func, header, lhs_t, rhs_t, body) \
+#define CH_GLOBAL_FUNC2(header, func, lhs_t, rhs_t) \
   CH_REM header \
   inline auto func(lhs_t _lhs, rhs_t _rhs) { \
-    constexpr auto S = std::max(width_v<lhs_t>, width_v<rhs_t>); \
-    auto lhs = ch_pad<S>(_lhs); \
-    auto rhs = ch_pad<S>(_rhs); \
-    return body; \
-  }
-
-#define CH_ASSIGN_OPERATORS(func, header, lhs_t, rhs_t, body) \
+    constexpr auto W = std::max(width_v<lhs_t>, width_v<rhs_t>); \
+    auto lhs = ch_pad<W>(_lhs); \
+    auto rhs = ch_pad<W>(_rhs); \
+    return func(lhs, rhs); \
+  } \
   CH_REM header \
-  auto& func(rhs_t _rhs) { \
-    auto rhs = static_cast<std::decay_t<lhs_t>>(_rhs); \
-    return body; \
+  inline auto func(rhs_t _lhs, lhs_t _rhs) { \
+    constexpr auto W = std::max(width_v<lhs_t>, width_v<rhs_t>); \
+    auto lhs = ch_pad<W>(_lhs); \
+    auto rhs = ch_pad<W>(_rhs); \
+    return func(lhs, rhs); \
   }
 
-#define CH_FRIEND_OP_EQ(header, lhs_t, rhs_t) \
-  CH_FRIEND_OPERATORS(operator==, header, lhs_t, rhs_t, (lhs == rhs))
+#define CH_GLOBAL_FUNC3(header, func, lhs_t, rhs_t, cvt_t) \
+  CH_REM header \
+  inline auto func(lhs_t lhs, rhs_t _rhs) { \
+    auto rhs = static_cast<std::decay_t<cvt_t>>(_rhs); \
+    return func(lhs, rhs); \
+  }
 
-#define CH_GLOBAL_OP_EQ(header, lhs_t, rhs_t) \
-  CH_GLOBAL_OPERATORS(ch_eq, header, lhs_t, rhs_t, (lhs == rhs))
-
-#define CH_FRIEND_OP_NE(header, lhs_t, rhs_t) \
-  CH_FRIEND_OPERATORS(operator!=, header, lhs_t, rhs_t, (lhs != rhs))
-
-#define CH_GLOBAL_OP_NE(header, lhs_t, rhs_t) \
-  CH_GLOBAL_OPERATORS(ch_ne, header, lhs_t, rhs_t, (lhs != rhs))
-
-#define CH_FRIEND_OP_LT(header, lhs_t, rhs_t) \
-  CH_FRIEND_OPERATORS(operator<, header, lhs_t, rhs_t, (lhs < rhs))
-
-#define CH_GLOBAL_OP_LT(header, lhs_t, rhs_t) \
-  CH_GLOBAL_OPERATORS(ch_lt, header, lhs_t, rhs_t, (lhs < rhs))
-
-#define CH_FRIEND_OP_LE(header, lhs_t, rhs_t) \
-  CH_FRIEND_OPERATORS(operator<=, header, lhs_t, rhs_t, (lhs <= rhs))
-
-#define CH_GLOBAL_OP_LE(header, lhs_t, rhs_t) \
-  CH_GLOBAL_OPERATORS(ch_le, header, lhs_t, rhs_t, (lhs <= rhs))
-
-#define CH_FRIEND_OP_GT(header, lhs_t, rhs_t) \
-  CH_FRIEND_OPERATORS(operator>, header, lhs_t, rhs_t, (lhs > rhs))
-
-#define CH_GLOBAL_OP_GT(header, lhs_t, rhs_t) \
-  CH_GLOBAL_OPERATORS(ch_gt, header, lhs_t, rhs_t, (lhs > rhs))
-
-#define CH_FRIEND_OP_GE(header, lhs_t, rhs_t) \
-  CH_FRIEND_OPERATORS(operator>=, header, lhs_t, rhs_t, (lhs >= rhs))
-
-#define CH_GLOBAL_OP_GE(header, lhs_t, rhs_t) \
-  CH_GLOBAL_OPERATORS(ch_ge, header, lhs_t, rhs_t, (lhs >= rhs))
-
-
-#define CH_FRIEND_OP_AND1(header, lhs_t, rhs_t) \
-  CH_FRIEND_OPERATORS(operator&&, header, lhs_t, rhs_t, (lhs && rhs))
-
-#define CH_FRIEND_OP_OR1(header, lhs_t, rhs_t) \
-  CH_FRIEND_OPERATORS(operator||, header, lhs_t, rhs_t, (lhs || rhs))
-
-
-#define CH_FRIEND_OP_AND(header, lhs_t, rhs_t) \
-  CH_FRIEND_OPERATORS(operator&, header, lhs_t, rhs_t, (lhs & rhs))
-
-#define CH_GLOBAL_OP_AND(header, lhs_t, rhs_t) \
-  CH_GLOBAL_OPERATORS(ch_and, header, lhs_t, rhs_t, (lhs & rhs))
-
-#define CH_FRIEND_OP_OR(header, lhs_t, rhs_t) \
-  CH_FRIEND_OPERATORS(operator|, header, lhs_t, rhs_t, (lhs | rhs))
-
-#define CH_GLOBAL_OP_OR(header, lhs_t, rhs_t) \
-  CH_GLOBAL_OPERATORS(ch_or, header, lhs_t, rhs_t, (lhs | rhs))
-
-#define CH_FRIEND_OP_XOR(header, lhs_t, rhs_t) \
-  CH_FRIEND_OPERATORS(operator^, header, lhs_t, rhs_t, (lhs ^ rhs))
-
-#define CH_GLOBAL_OP_XOR(header, lhs_t, rhs_t) \
-  CH_GLOBAL_OPERATORS(ch_xor, header, lhs_t, rhs_t, (lhs ^ rhs))
-
-
-#define CH_GLOBAL_OP_NAND(header, lhs_t, rhs_t) \
-  CH_GLOBAL_OPERATORS(ch_nand, header, lhs_t, rhs_t, ch_nand(lhs, rhs))
-
-#define CH_GLOBAL_OP_NOR(header, lhs_t, rhs_t) \
-  CH_GLOBAL_OPERATORS(ch_nor, header, lhs_t, rhs_t, ch_nor(lhs, rhs))
-
-#define CH_GLOBAL_OP_XNOR(header, lhs_t, rhs_t) \
-  CH_GLOBAL_OPERATORS(ch_xnor, header, lhs_t, rhs_t, ch_xnor(lhs, rhs))
-
-
-#define CH_FRIEND_OP_ADD(header, lhs_t, rhs_t) \
-  CH_FRIEND_OPERATORS(operator+, header, lhs_t, rhs_t, (lhs + rhs))
-
-#define CH_GLOBAL_OP_ADD(header, lhs_t, rhs_t) \
-  CH_GLOBAL_OPERATORS(ch_add, header, lhs_t, rhs_t, (lhs + rhs))
-
-#define CH_FRIEND_OP_SUB(header, lhs_t, rhs_t) \
-  CH_FRIEND_OPERATORS(operator-, header, lhs_t, rhs_t, (lhs - rhs))
-
-#define CH_GLOBAL_OP_SUB(header, lhs_t, rhs_t) \
-  CH_GLOBAL_OPERATORS(ch_sub, header, lhs_t, rhs_t, (lhs - rhs))
-
-#define CH_FRIEND_OP_MULT(header, lhs_t, rhs_t) \
-  CH_FRIEND_OPERATORS(operator*, header, lhs_t, rhs_t, (lhs * rhs))
-
-#define CH_GLOBAL_OP_MULT(header, lhs_t, rhs_t) \
-  CH_GLOBAL_OPERATORS(ch_mult, header, lhs_t, rhs_t, (lhs * rhs))
-
-#define CH_FRIEND_OP_DIV(header, lhs_t, rhs_t) \
-  CH_FRIEND_OPERATORS(operator/, header, lhs_t, rhs_t, (lhs / rhs))
-
-#define CH_GLOBAL_OP_DIV(header, lhs_t, rhs_t) \
-  CH_GLOBAL_OPERATORS(ch_div, header, lhs_t, rhs_t, (lhs / rhs))
-
-#define CH_FRIEND_OP_MOD(header, lhs_t, rhs_t) \
-  CH_FRIEND_OPERATORS(operator%, header, lhs_t, rhs_t, (lhs % rhs))
-
-#define CH_GLOBAL_OP_MOD(header, lhs_t, rhs_t) \
-  CH_GLOBAL_OPERATORS(ch_mod, header, lhs_t, rhs_t, (lhs % rhs))
-
-
-#define CH_FRIEND_OP_SLL(header, lhs_t, rhs_t) \
-  CH_FRIEND_OPERATORS(operator<<, header, lhs_t, rhs_t, (lhs << rhs))
-
-#define CH_GLOBAL_OP_SLL(header, lhs_t, rhs_t) \
-  CH_GLOBAL_OPERATORS(ch_sll, header, lhs_t, rhs_t, (lhs << rhs))
-
-#define CH_FRIEND_OP_SRL(header, lhs_t, rhs_t) \
-  CH_FRIEND_OPERATORS(operator>>, header, lhs_t, rhs_t, (lhs >> rhs))
-
-#define CH_GLOBAL_OP_SRL(header, lhs_t, rhs_t) \
-  CH_GLOBAL_OPERATORS(ch_srl, header, lhs_t, rhs_t, (lhs >> rhs))
-
-#define CH_GLOBAL_OP_SRA(header, lhs_t, rhs_t) \
-  CH_GLOBAL_OPERATORS(ch_sra, header, lhs_t, rhs_t, ch_sra(lhs, rhs))
-
-
-#define CH_GLOBAL_OP_AND_RSZ(header, lhs_t, rhs_t) \
-  CH_GLOBAL_OPERATORS_RSZ(ch_and, header, lhs_t, rhs_t, (lhs & rhs)) \
-  CH_GLOBAL_OPERATORS_RSZ(operator&, header, lhs_t, rhs_t, (lhs & rhs))
-
-#define CH_GLOBAL_OP_OR_RSZ(header, lhs_t, rhs_t) \
-  CH_GLOBAL_OPERATORS_RSZ(ch_or, header, lhs_t, rhs_t, (lhs | rhs)) \
-  CH_GLOBAL_OPERATORS_RSZ(operator|, header, lhs_t, rhs_t, (lhs | rhs))
-
-#define CH_GLOBAL_OP_XOR_RSZ(header, lhs_t, rhs_t) \
-  CH_GLOBAL_OPERATORS_RSZ(ch_xor, header, lhs_t, rhs_t, (lhs ^ rhs)) \
-  CH_GLOBAL_OPERATORS_RSZ(operator^, header, lhs_t, rhs_t, (lhs ^ rhs))
-
-#define CH_GLOBAL_OP_ADD_RSZ(header, lhs_t, rhs_t) \
-  CH_GLOBAL_OPERATORS_RSZ(ch_add, header, lhs_t, rhs_t, (lhs + rhs)) \
-  CH_GLOBAL_OPERATORS_RSZ(operator+, header, lhs_t, rhs_t, (lhs + rhs))
-
-#define CH_GLOBAL_OP_SUB_RSZ(header, lhs_t, rhs_t) \
-  CH_GLOBAL_OPERATORS_RSZ(ch_sub, header, lhs_t, rhs_t, (lhs - rhs)) \
-  CH_GLOBAL_OPERATORS_RSZ(operator-, header, lhs_t, rhs_t, (lhs - rhs))
-
-#define CH_GLOBAL_OP_MULT_RSZ(header, lhs_t, rhs_t) \
-  CH_GLOBAL_OPERATORS_RSZ(ch_mult, header, lhs_t, rhs_t, (lhs * rhs)) \
-  CH_GLOBAL_OPERATORS_RSZ(operator*, header, lhs_t, rhs_t, (lhs * rhs))
-
-#define CH_GLOBAL_OP_DIV_RSZ(header, lhs_t, rhs_t) \
-  CH_GLOBAL_OPERATORS_RSZ(ch_div, header, lhs_t, rhs_t, (lhs / rhs)) \
-  CH_GLOBAL_OPERATORS_RSZ(operator/, header, lhs_t, rhs_t, (lhs / rhs))
-
-#define CH_GLOBAL_OP_MOD_RSZ(header, lhs_t, rhs_t) \
-  CH_GLOBAL_OPERATORS_RSZ(ch_mod, header, lhs_t, rhs_t, (lhs % rhs)) \
-  CH_GLOBAL_OPERATORS_RSZ(operator%, header, lhs_t, rhs_t, (lhs % rhs))
-
-
-#define CH_ASSIGN_OP_AND(header, lhs_t, rhs_t) \
-  CH_ASSIGN_OPERATORS(operator&=, header, lhs_t, rhs_t, (*this &= rhs))
-
-#define CH_ASSIGN_OP_OR(header, lhs_t, rhs_t) \
-  CH_ASSIGN_OPERATORS(operator|=, header, lhs_t, rhs_t, (*this |= rhs))
-
-#define CH_ASSIGN_OP_XOR(header, lhs_t, rhs_t) \
-  CH_ASSIGN_OPERATORS(operator^=, header, lhs_t, rhs_t, (*this ^= rhs))
-
-#define CH_ASSIGN_OP_ADD(header, lhs_t, rhs_t) \
-  CH_ASSIGN_OPERATORS(operator+=, header, lhs_t, rhs_t, (*this += rhs))
-
-#define CH_ASSIGN_OP_SUB(header, lhs_t, rhs_t) \
-  CH_ASSIGN_OPERATORS(operator-=, header, lhs_t, rhs_t, (*this -= rhs))
-
-#define CH_ASSIGN_OP_MULT(header, lhs_t, rhs_t) \
-  CH_ASSIGN_OPERATORS(operator*=, header, lhs_t, rhs_t, (*this *= rhs))
-
-#define CH_ASSIGN_OP_DIV(header, lhs_t, rhs_t) \
-  CH_ASSIGN_OPERATORS(operator/=, header, lhs_t, rhs_t, (*this /= rhs))
-
-#define CH_ASSIGN_OP_MOD(header, lhs_t, rhs_t) \
-  CH_ASSIGN_OPERATORS(operator%=, header, lhs_t, rhs_t, (*this %= rhs))
-
-#define CH_ASSIGN_OP_SLL(header, lhs_t, rhs_t) \
-  CH_ASSIGN_OPERATORS(operator<<=, header, lhs_t, rhs_t, (*this <<= rhs))
-
-#define CH_ASSIGN_OP_SRL(header, lhs_t, rhs_t) \
-  CH_ASSIGN_OPERATORS(operator>>=, header, lhs_t, rhs_t, (*this >>= rhs))
+#define CH_GLOBAL_FUNC4(header, func, cvt_t, lhs_t, rhs_t) \
+  CH_REM header \
+  inline auto func(lhs_t _lhs, rhs_t rhs) { \
+    auto lhs = static_cast<std::decay_t<cvt_t>>(_lhs); \
+    return func(lhs, rhs); \
+  }

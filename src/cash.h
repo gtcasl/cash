@@ -1,8 +1,12 @@
 #pragma once
 
 #include "scalar.h"
+#include "scint.h"
+#include "scuint.h"
 #include "literals.h"
 #include "logic.h"
+#include "int.h"
+#include "uint.h"
 #include "select.h"
 #include "if.h"
 #include "switch.h"
@@ -13,10 +17,7 @@
 #include "enum.h"
 #include "union.h"
 #include "struct.h"
-#include "int.h"
-#include "uint.h"
-#include "float32.h"
-#include "port.h"
+#include "ioport.h"
 #include "inout.h"
 #include "module.h"
 #include "simulator.h"
@@ -24,6 +25,7 @@
 #include "verilog.h"
 #include "firrtl.h"
 #include "misc.h"
+#include "float32.h"
 
 namespace ch {
 
@@ -52,13 +54,13 @@ namespace core {
 
   using ch::internal::source_location;
 
-  template <unsigned N> using ch_bit = ch::internal::ch_logic<N>;
+  template <unsigned N> using ch_bit  = ch::internal::ch_logic<N>;
+  template <unsigned N> using ch_int  = ch::internal::ch_int<N>;
   template <unsigned N> using ch_uint = ch::internal::ch_uint<N>;
-  template <unsigned N> using ch_int = ch::internal::ch_int<N>;
 
   template <unsigned N> using ch_scalar = ch::internal::ch_scalar<N>;
-  template <unsigned N> using ch_suint  = ch::internal::ch_suint<N>;
-  template <unsigned N> using ch_sint   = ch::internal::ch_sint<N>;
+  template <unsigned N> using ch_scint  = ch::internal::ch_scint<N>;
+  template <unsigned N> using ch_scuint = ch::internal::ch_scuint<N>;
 
   template <typename T, unsigned N> using ch_vec = ch::internal::ch_vec<T, N>;
 
@@ -67,14 +69,15 @@ namespace core {
   template <typename T, unsigned N> using ch_rom = ch::internal::ch_rom<T, N>;
   template <typename T, unsigned N> using ch_mem = ch::internal::ch_mem<T, N>;
 
-  using ch_float32 = ch::internal::ch_float32;
-
   //
   // utility types
   //
 
   template <typename... Ts>
   inline constexpr unsigned ch_width_v = ch::internal::width_v<Ts...>;
+
+  template <typename... Ts>
+  inline constexpr unsigned ch_signed_v = ch::internal::signed_v<Ts...>;
 
   using ch_direction = ch::internal::ch_direction;
 
@@ -115,6 +118,15 @@ namespace core {
   using ch_bit64  = ch_bit<64>;
   using ch_bit128 = ch_bit<128>;
 
+  using ch_int1   = ch_int<1>;
+  using ch_int2   = ch_int<2>;
+  using ch_int4   = ch_int<4>;
+  using ch_int8   = ch_int<8>;
+  using ch_int16  = ch_int<16>;
+  using ch_int32  = ch_int<32>;
+  using ch_int64  = ch_int<64>;
+  using ch_int128 = ch_int<128>;
+
   using ch_uint1  = ch_uint<1>;
   using ch_uint2  = ch_uint<2>;
   using ch_uint4  = ch_uint<4>;
@@ -124,14 +136,7 @@ namespace core {
   using ch_uint64 = ch_uint<64>;
   using ch_uint128= ch_uint<128>;
 
-  using ch_int1   = ch_int<1>;
-  using ch_int2   = ch_int<2>;
-  using ch_int4   = ch_int<4>;
-  using ch_int8   = ch_int<8>;
-  using ch_int16  = ch_int<16>;
-  using ch_int32  = ch_int<32>;
-  using ch_int64  = ch_int<64>;
-  using ch_int128 = ch_int<128>;
+  using ch_float32 = ch::internal::ch_float32;
 
   //
   // constants
@@ -312,3 +317,5 @@ inline namespace literals {
 #define __require3 CH_REQUIRE_3
 
 #define __source_location CH_SRC_LOCATION
+
+#define __width_of CH_WIDTH_OF

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "port.h"
+#include "ioport.h"
 
 namespace ch {
 namespace internal {
@@ -25,7 +25,8 @@ public:
     return *this;
   }
 
-  template <typename U, CH_REQUIRE_0(is_cast_convertible<T, U>::value)>
+  template <typename U,
+            CH_REQUIRE_0(is_cast_convertible<T, U>::value)>
   vec_base& operator=(const vec_base<U, N>& rhs) {
     for (unsigned i = 0; i < N; ++i) {
       items_[i] = rhs.items_[i];
@@ -157,13 +158,14 @@ class ch_vec<T, N, typename std::enable_if_t<is_logic_only<T>::value>>
   : public vec_base<T, N> {
 public:
   using traits = logic_traits<N * width_v<T>,
+                              false,
                               ch_vec,
                               ch_vec<scalar_type_t<T>, N>>;
   using base = vec_base<T, N>;
   using base::operator [];
   using base::items_;
 
-  ch_vec(const logic_buffer& buffer = logic_buffer(traits::bitwidth, CH_SRC_LOCATION))
+  ch_vec(const logic_buffer_ptr& buffer = make_logic_buffer(traits::bitwidth, CH_SRC_LOCATION))
     : ch_vec(buffer, std::make_index_sequence<N>())
   {}
 
@@ -174,7 +176,8 @@ public:
   ch_vec(ch_vec&& rhs) : base(std::move(rhs))
   {}
 
-  template <typename U, CH_REQUIRE_0(is_cast_convertible<T, U>::value)>
+  template <typename U,
+            CH_REQUIRE_0(is_cast_convertible<T, U>::value)>
   explicit ch_vec(const vec_base<U, N>& rhs,
                      const source_location& sloc = CH_SRC_LOCATION)
     : ch_vec(logic_accessor::copy_buffer(rhs, sloc))
@@ -191,18 +194,19 @@ public:
             CH_REQUIRE_1(is_scalar_type<U>::value),
             CH_REQUIRE_1(width_v<U> == N * width_v<T>)>
   explicit ch_vec(const U& rhs, const source_location& sloc = CH_SRC_LOCATION)
-    : ch_vec(logic_buffer(scalar_accessor::get_data(rhs), sloc))
+    : ch_vec(make_logic_buffer(scalar_accessor::get_data(rhs), sloc))
   {}
 
-  template <typename U, CH_REQUIRE_0(std::is_integral_v<U>)>
+  template <typename U,
+            CH_REQUIRE_0(std::is_integral_v<U>)>
   explicit ch_vec(U rhs, const source_location& sloc = CH_SRC_LOCATION)
-    : ch_vec(logic_buffer(bitvector(traits::bitwidth, rhs), sloc))
+    : ch_vec(make_logic_buffer(bitvector(traits::bitwidth, rhs), sloc))
   {}
 
   template <typename U>
   explicit ch_vec(const std::initializer_list<U>& values,
                      const source_location& sloc = CH_SRC_LOCATION)
-    : ch_vec(logic_buffer(traits::bitwidth, sloc)) {
+    : ch_vec(make_logic_buffer(traits::bitwidth, sloc)) {
     assert(values.size() == N);
     int i = N - 1;
     for (auto& value : values) {
@@ -256,8 +260,8 @@ protected:
   }
 
   template <std::size_t...Is>
-  ch_vec(const logic_buffer& buffer, std::index_sequence<Is...>)
-    : base(logic_buffer(width_v<T>, buffer, Is * width_v<T>)...)
+  ch_vec(const logic_buffer_ptr& buffer, std::index_sequence<Is...>)
+    : base(make_logic_buffer(width_v<T>, buffer, Is * width_v<T>)...)
   {}
 
   const logic_buffer_ptr& get_buffer() const {
@@ -278,13 +282,14 @@ class ch_vec<T, N, typename std::enable_if_t<is_scalar_only<T>::value>>
   : public vec_base<T, N> {
 public:
   using traits = scalar_traits<N * width_v<T>,
+                               false,
                                ch_vec,
                                ch_vec<logic_type_t<T>, N>>;
   using base = vec_base<T, N>;
   using base::operator [];
   using base::items_;
 
-  ch_vec(const scalar_buffer& buffer = scalar_buffer(traits::bitwidth))
+  ch_vec(const scalar_buffer_ptr& buffer = make_scalar_buffer(traits::bitwidth))
     : ch_vec(buffer, std::make_index_sequence<N>())
   {}
 
@@ -294,7 +299,8 @@ public:
 
   ch_vec(ch_vec&& rhs) : base(std::move(rhs)) {}
 
-  template <typename U, CH_REQUIRE_0(is_cast_convertible<T, U>::value)>
+  template <typename U,
+            CH_REQUIRE_0(is_cast_convertible<T, U>::value)>
   explicit ch_vec(const vec_base<U, N>& rhs)
     : ch_vec(scalar_accessor::copy_buffer(rhs))
   {}
@@ -306,9 +312,10 @@ public:
     : ch_vec(scalar_accessor::copy_buffer(rhs))
   {}
 
-  template <typename U, CH_REQUIRE_0(std::is_integral_v<U>)>
+  template <typename U,
+            CH_REQUIRE_0(std::is_integral_v<U>)>
   explicit ch_vec(U rhs)
-    : ch_vec(scalar_buffer(bitvector(traits::bitwidth, rhs)))
+    : ch_vec(make_scalar_buffer(bitvector(traits::bitwidth, rhs)))
   {}
 
   template <typename... Vs,
@@ -355,8 +362,8 @@ protected:
   }
 
   template <std::size_t...Is>
-  ch_vec(const scalar_buffer& buffer, std::index_sequence<Is...>)
-    : base(scalar_buffer(width_v<T>, buffer, Is * width_v<T>)...)
+  ch_vec(const scalar_buffer_ptr& buffer, std::index_sequence<Is...>)
+    : base(make_scalar_buffer(width_v<T>, buffer, Is * width_v<T>)...)
   {}
 
   const scalar_buffer_ptr& get_buffer() const {

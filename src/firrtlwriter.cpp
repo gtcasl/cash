@@ -398,7 +398,7 @@ void firrtlwriter::print_proxy(module_t& module, proxyimpl* node) {
 
 void firrtlwriter::print_alu(module_t& module, aluimpl* node) {
   auto op = node->get_op();
-  if (op == alu_sub) {
+  if (op == op_sub) {
     auto dst = module.num_temps++;
     out_ << "node _t" << dst << " = sub(";
     this->print_name(node->get_src(0).get_impl());
@@ -408,15 +408,15 @@ void firrtlwriter::print_alu(module_t& module, aluimpl* node) {
     this->print_name(node);
     out_ << " <= asUInt(_t" << dst << ")" << std::endl;
   } else
-  if (op == alu_neg) {
+  if (op == op_neg) {
     auto dst = module.num_temps++;
-    out_ << "node _t" << dst << " = ned(";
+    out_ << "node _t" << dst << " = neg(";
     this->print_name(node->get_src(0).get_impl());
     out_ << ")" << std::endl;
     this->print_name(node);
     out_ << " <= asUInt(_t" << dst << ")" << std::endl;
   } else
-  if (op == alu_sra) {
+  if (op == op_sra) {
     auto dst = module.num_temps++;
     out_ << "node _t" << dst << " = asSInt(";
     this->print_name(node->get_src(0).get_impl());
@@ -426,10 +426,26 @@ void firrtlwriter::print_alu(module_t& module, aluimpl* node) {
     this->print_name(node->get_src(1).get_impl());
     out_ << ")" << std::endl;
   } else
-  if (CH_ALUOP_DTYPE(op) == alu_integer) {
+  if (op == op_zext) {
+    this->print_name(node);
+    out_ << " <= pad<" << node->get_size() << ">(";
+    this->print_name(node->get_src(0).get_impl());
+    out_ << ")" << std::endl;
+  } else
+  if (op == op_sext) {
+    auto src = module.num_temps++;
+    auto dst = module.num_temps++;
+    out_ << "node _t" << src << " = asSInt(";
+    this->print_name(node->get_src(0).get_impl());
+    out_ << ")" << std::endl;
+    out_ << "node _t" << dst << " = pad<" << node->get_size() << ">(";
+    out_ << "_t" << src << ")" << std::endl;
+    this->print_name(node);
+    out_ << " <= asUInt(_t" << dst << ")" << std::endl;
+  } else{
     this->print_name(node);
     out_ << " <= ";
-    if (CH_ALUOP_ARY(op) == alu_binary) {
+    if (CH_OP_ARY(op) == op_binary) {
       this->print_operator(op);
       out_ << "(";
       this->print_name(node->get_src(0).get_impl());
@@ -437,14 +453,12 @@ void firrtlwriter::print_alu(module_t& module, aluimpl* node) {
       this->print_name(node->get_src(1).get_impl());
       out_ << ")" << std::endl;
     } else {
-      assert(CH_ALUOP_ARY(op) == alu_unary);
+      assert(CH_OP_ARY(op) == op_unary);
       this->print_operator(op);
       out_ << "(";
       this->print_name(node->get_src(0).get_impl());
       out_ << ")" << std::endl;
     }
-  } else {
-    assert(false);
   }
 }
 
@@ -598,33 +612,33 @@ void firrtlwriter::print_mem(memimpl* node) {
   }
 }
 
-void firrtlwriter::print_operator(ch_alu_op op) {
+void firrtlwriter::print_operator(ch_op op) {
   switch (op) {
-  case alu_inv:   out_ << "not"; break;
-  case alu_and:   out_ << "and"; break;
-  case alu_or:    out_ << "or"; break;
-  case alu_xor:   out_ << "xor"; break;
-  case alu_andr:  out_ << "andr"; break;
-  case alu_orr:   out_ << "orr"; break;
-  case alu_xorr:  out_ << "xorr"; break;
+  case op_inv:   out_ << "not"; break;
+  case op_and:   out_ << "and"; break;
+  case op_or:    out_ << "or"; break;
+  case op_xor:   out_ << "xor"; break;
+  case op_andr:  out_ << "andr"; break;
+  case op_orr:   out_ << "orr"; break;
+  case op_xorr:  out_ << "xorr"; break;
 
-  case alu_neg:   out_ << "neg"; break;
-  case alu_add:   out_ << "add"; break;
-  case alu_sub:   out_ << "sub"; break;
-  case alu_mult:  out_ << "mul"; break;
-  case alu_div:   out_ << "div"; break;
-  case alu_mod:   out_ << "mod"; break;
+  case op_neg:   out_ << "neg"; break;
+  case op_add:   out_ << "add"; break;
+  case op_sub:   out_ << "sub"; break;
+  case op_mult:  out_ << "mul"; break;
+  case op_div:   out_ << "div"; break;
+  case op_mod:   out_ << "mod"; break;
 
-  case alu_sll:   out_ << "dshl"; break;
-  case alu_srl:   out_ << "dshr"; break;
-  case alu_sra:   out_ << "dshr"; break;
+  case op_sll:   out_ << "dshl"; break;
+  case op_srl:   out_ << "dshr"; break;
+  case op_sra:   out_ << "dshr"; break;
 
-  case alu_eq:    out_ << "eq"; break;
-  case alu_ne:    out_ << "neq"; break;
-  case alu_lt:    out_ << "lt"; break;
-  case alu_gt:    out_ << "gt"; break;
-  case alu_le:    out_ << "leq"; break;
-  case alu_ge:    out_ << "geq"; break;
+  case op_eq:    out_ << "eq"; break;
+  case op_ne:    out_ << "neq"; break;
+  case op_lt:    out_ << "lt"; break;
+  case op_gt:    out_ << "gt"; break;
+  case op_le:    out_ << "leq"; break;
+  case op_ge:    out_ << "geq"; break;
   default:
     assert(false);
   }

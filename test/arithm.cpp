@@ -90,12 +90,12 @@ TEST_CASE("arithmetic", "[arithmetic]") {
     });
     TEST([]()->ch_bool {
       ch_bit4 a(2);
-      ch_bit4 c = 1 << a;
+      auto c = 1 << a;
       return (c == 0100_b);
     });
     TEST([]()->ch_bool {
       ch_bit4 a(2);
-      ch_bit4 c = 0100_b >> a;
+      auto c = 0100_b >> a;
       return (c == 0001_b);
     });
     TEST([]()->ch_bool {
@@ -106,7 +106,22 @@ TEST_CASE("arithmetic", "[arithmetic]") {
     TEST([]()->ch_bool {
       ch_bit4 a(2);
       ch_bit4 c = ch_int4(1100_b) >> a;
-      return (c == 1011_b);
+      return (c == 1111_b);
+    });
+    TEST([]()->ch_bool {
+      ch_bit4 a(2);
+      auto c = ch_int32(1100_b) >> a;
+      return (c == 0011_b);
+    });
+    TEST([]()->ch_bool {
+      ch_bit8 a(5*4);
+      auto c = ch_int32(0xf0000000_h) >> a;
+      return (c == 0xffffff00_h);
+    });
+    TEST([]()->ch_bool {
+      ch_bit8 a(13*4);
+      auto c = ch_int64(0xf000000000000000_h) >> a;
+      return (c == 0xffffffffffffff00_h);
     });
     TEST([]()->ch_bool {
       ch_bit2 a(2);
@@ -169,6 +184,16 @@ TEST_CASE("arithmetic", "[arithmetic]") {
       ch_bit<128> a(0xf010000000000000000_h128);
       ch_bit<128> c = a >> 63;
       return (c == 0x1e02_h128);
+    });
+    TEST([]()->ch_bool {
+      ch_int64 a(0xf0000000f0000000_h64);
+      ch_int64 c = a >> 30;
+      return (c == 0xffffffffc0000003);
+    });
+    TEST([]()->ch_bool {
+      ch_int64 a(0xf0000000f0000000_h64);
+      ch_int64 c = a >> 32;
+      return (c == 0xfffffffff0000000);
     });
     TEST([]()->ch_bool {
       ch_bit<128> a(1);

@@ -137,15 +137,15 @@ struct Dogfood {
 };
 
 int main() {
-  /*{
+  {
     ch_device<Dogfood> device;
     ch_simulator sim(device);
     device.io.in = 0xA;
     sim.run(4);
     assert(device.io.out);
-  }*/
+  }
 
-  {
+  /*{
     ch_device<QueueWrapper<ch_bit4, 2>> queue;
     ch_simulator sim(queue);
     ch_tick t = sim.reset(0);
@@ -227,7 +227,7 @@ int main() {
     assert(1 == a.slice<2>());
     assert(1 == a.slice<2>(2));
     assert((a[0] == a[2]) && (a.slice<2>() == a.slice<2>(2)));
-  }
+  }*/
 
   return 0;
 }

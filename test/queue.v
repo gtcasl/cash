@@ -15,12 +15,12 @@ module ch_queue(
   wire[1:0] sel49;
   wire[1:0] sel54;
   wire and43;
-  wire proxy40; // v2231 - /home/blaise/dev/cash/src/htl/queue.h(28)
+  wire proxy40; // v2250 - /home/blaise/dev/cash/src/htl/queue.h(28)
   reg[1:0] reg29;
   reg[1:0] reg35;
   wire eq64;
   wire ne66;
-  wire proxy38; // v2230 - /home/blaise/dev/cash/src/htl/queue.h(27)
+  wire proxy38; // v2249 - /home/blaise/dev/cash/src/htl/queue.h(27)
   reg[3:0] mem56[0:1];
   wire[1:0] sub70;
   wire ne60;
@@ -82,7 +82,7 @@ module QueueWrapper(
   assign bindin33 = io_enq_valid;
   assign bindin32 = reset;
   assign bindin31 = clk;
-  ch_queue __module218__(.clk(bindin31), .reset(bindin32), .io_enq_valid(bindin33), .io_enq_data(bindin36), .io_deq_ready(bindin54), .io_enq_ready(bindout41), .io_deq_valid(bindout46), .io_deq_data(bindout51));
+  ch_queue __module223__(.clk(bindin31), .reset(bindin32), .io_enq_valid(bindin33), .io_enq_data(bindin36), .io_deq_ready(bindin54), .io_enq_ready(bindout41), .io_deq_valid(bindout46), .io_deq_data(bindout51));
 
   assign io_enq_ready = bindout41;
   assign io_deq_valid = bindout46;

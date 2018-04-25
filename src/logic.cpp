@@ -1,4 +1,6 @@
 #include "logic.h"
+#include "int.h"
+#include "uint.h"
 
 using namespace ch::internal;
 
@@ -8,7 +10,7 @@ static uint32_t make_id() {
   return var_id;
 }
 
-logic_buffer_impl::logic_buffer_impl(const lnode& value,
+logic_buffer::logic_buffer(const lnode& value,
                                      const logic_buffer_ptr& source,
                                      unsigned offset)
   : id_(make_id())
@@ -17,7 +19,7 @@ logic_buffer_impl::logic_buffer_impl(const lnode& value,
   , offset_(offset)
 {}
 
-logic_buffer_impl::logic_buffer_impl(unsigned size,
+logic_buffer::logic_buffer(unsigned size,
                                      const source_location& sloc,
                                      const std::string& name)
   : id_(make_id())
@@ -29,7 +31,7 @@ logic_buffer_impl::logic_buffer_impl(unsigned size,
     value_.set_name(name);
 }
 
-logic_buffer_impl::logic_buffer_impl(const logic_buffer_impl& rhs,
+logic_buffer::logic_buffer(const logic_buffer& rhs,
                                      const source_location& sloc,
                                      const std::string& name)
   : id_(make_id())
@@ -41,14 +43,14 @@ logic_buffer_impl::logic_buffer_impl(const logic_buffer_impl& rhs,
     value_.set_name(name);
 }
 
-logic_buffer_impl::logic_buffer_impl(logic_buffer_impl&& rhs)
+logic_buffer::logic_buffer(logic_buffer&& rhs)
   : id_(std::move(rhs.id_))
   , value_(std::move(rhs.value_))
   , source_(std::move(rhs.source_))
   , offset_(std::move(rhs.offset_))
 {}
 
-logic_buffer_impl::logic_buffer_impl(const lnode& data,
+logic_buffer::logic_buffer(const lnode& data,
                                      const source_location& sloc,
                                      const std::string& name)
   : id_(make_id())
@@ -60,7 +62,7 @@ logic_buffer_impl::logic_buffer_impl(const lnode& data,
     value_.set_name(name);
 }
 
-logic_buffer_impl::logic_buffer_impl(unsigned size,
+logic_buffer::logic_buffer(unsigned size,
                                      const logic_buffer_ptr& buffer,
                                      unsigned offset,
                                      const source_location& sloc,
@@ -78,23 +80,23 @@ logic_buffer_impl::logic_buffer_impl(unsigned size,
   }
 }
 
-logic_buffer_impl& logic_buffer_impl::operator=(const logic_buffer_impl& rhs) {
+logic_buffer& logic_buffer::operator=(const logic_buffer& rhs) {
   this->copy(rhs);
   return *this;
 }
 
-logic_buffer_impl& logic_buffer_impl::operator=(logic_buffer_impl&& rhs) {
+logic_buffer& logic_buffer::operator=(logic_buffer&& rhs) {
   this->copy(rhs);
   return *this;
 }
 
-const lnode& logic_buffer_impl::get_data() const {
+const lnode& logic_buffer::get_data() const {
   uint32_t var_id = value_.get_var_id();
   CH_UNUSED(var_id);
   return value_;
 }
 
-void logic_buffer_impl::write(uint32_t dst_offset,
+void logic_buffer::write(uint32_t dst_offset,
                               const lnode& data,
                               uint32_t src_offset,
                               uint32_t length) {

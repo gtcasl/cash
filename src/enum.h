@@ -29,15 +29,15 @@ void register_enum_string(const lnode& node, void* callback);
 #define CH_ENUM_STRING(i, x) case CH_ENUM_STRING_(CH_NARG(CH_REM x))(CH_REM x, x)
 
 #define CH_ENUM_SCALAR_IMPL(enum_name) \
-  enum_name(const ch::internal::type_buffer_t<traits>& buffer = \
-    ch::internal::type_buffer_t<traits>(traits::bitwidth)) : base(buffer) {} \
+  enum_name(const std::shared_ptr<ch::internal::type_buffer_t<traits>>& buffer = \
+    std::make_shared<ch::internal::type_buffer_t<traits>>(traits::bitwidth)) : base(buffer) {} \
   enum_name(const enum_name& rhs) : base(rhs) {} \
   enum_name(enum_name&& rhs) : base(std::move(rhs)) {} \
   enum_name(enum_type rhs) : base(rhs) {}
 
 #define CH_ENUM_LOGIC_IMPL(enum_name) \
-  enum_name(const ch::internal::type_buffer_t<traits>& buffer = \
-    ch::internal::type_buffer_t<traits>(traits::bitwidth, CH_SRC_LOCATION)) \
+  enum_name(const std::shared_ptr<ch::internal::type_buffer_t<traits>>& buffer = \
+    std::make_shared<ch::internal::type_buffer_t<traits>>(traits::bitwidth, CH_SRC_LOCATION)) \
     : base(buffer) { ch::internal::register_enum_string(ch::internal::logic_accessor::get_data(*this), (void*)to_string); } \
   enum_name(const enum_name& rhs, const source_location& sloc = CH_SRC_LOCATION) \
     : base(rhs, sloc) { ch::internal::register_enum_string(ch::internal::logic_accessor::get_data(*this), (void*)to_string); } \
@@ -78,14 +78,14 @@ void register_enum_string(const lnode& node, void* callback);
   private: \
     class __scalar_type__ : public ch::internal::ch_scalar<size> { \
     public: \
-      using traits = ch::internal::scalar_traits<size, __scalar_type__, enum_name>; \
+      using traits = ch::internal::scalar_traits<size, false, __scalar_type__, enum_name>; \
       using base = ch::internal::ch_scalar<size>; \
       CH_ENUM_SCALAR_IMPL(__scalar_type__) \
       CH_ENUM_ASSIGN_IMPL(__scalar_type__) \
       CH_SCALAR_INTERFACE(__scalar_type__) \
     }; \
   public: \
-    using traits = ch::internal::logic_traits<size, enum_name, __scalar_type__>; \
+    using traits = ch::internal::logic_traits<size, false, enum_name, __scalar_type__>; \
     using base = ch::internal::ch_logic<size>; \
     CH_ENUM_LOGIC_IMPL(enum_name) \
     CH_ENUM_ASSIGN_IMPL(enum_name) \

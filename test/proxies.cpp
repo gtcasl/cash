@@ -68,42 +68,42 @@ TEST_CASE("proxies", "[proxies]") {
     });
     TEST([]()->ch_bool {
       ch_bit4 a;
-      a.slice<3>(0) = '0';
-      a[3] = '1';
+      a.slice<3>(0) = 0;
+      a[3] = 1;
       return a == 1000_b;
     });
     TEST([]()->ch_bool {
       ch_bit4 a;
       ch_bit4 b(a);
-      a.slice<3>(0) = '0';
-      a[3] = '1';
+      a.slice<3>(0) = 0;
+      a[3] = 1;
       return a == 1000_b;
     });
     TEST([]()->ch_bool {
       ch_bit4 a;
       ch_bit4 b(a);
-      a.aslice<3>(0) = '0';
-      a[3] = '1';
+      a.aslice<3>(0) = 0;
+      a[3] = 1;
       return a == 1000_b;
     });
     TEST([]()->ch_bool {
       ch_bit4 a;
       ch_bit4 b(a);
-      a.slice<3>(0) = '0';
+      a.slice<3>(0) = 0;
       ch_bit1 x;
       a[3] = x;
-      x = '1';
+      x = 1;
       return a == 1000_b;
     });
     TEST([]()->ch_bool {
       ch_bit4 a;
-      a[0] = '0';
-      a[1] = '1';
-      a[2] = '1';
-      a[3] = '0';
-      a[0] = '1';
-      a[3] = '1';
-      a.slice<2>(1) = '0';     
+      a[0] = 0;
+      a[1] = 1;
+      a[2] = 1;
+      a[3] = 0;
+      a[0] = 1;
+      a[3] = 1;
+      a.slice<2>(1) = 0;
       return a == 1001_b;
     });
     TEST([]()->ch_bool {
@@ -111,8 +111,8 @@ TEST_CASE("proxies", "[proxies]") {
       ch_bit2 x, y;
       a.slice<2>(0) = x;
       a.slice<2>(2) = y;
-      x = '1';
-      y = '1';
+      x = 1;
+      y = 1;
       return a == 0101_b;
     });
     TEST([]()->ch_bool {
@@ -120,8 +120,8 @@ TEST_CASE("proxies", "[proxies]") {
       ch_bit2 x, y;
       a.aslice<2>(0) = x;
       a.aslice<2>(1) = y;
-      x = '1';
-      y = '1';
+      x = 1;
+      y = 1;
       return a == 0101_b;
     });
     TEST([]()->ch_bool {

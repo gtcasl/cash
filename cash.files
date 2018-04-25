@@ -21,6 +21,7 @@ examples/vending_tb.v
 parser/Makefile
 parser/parser.cpp
 parser/parser.cpp
+preproc.sh
 projects/aes/Makefile
 projects/aes/Vaes_tb.cpp
 projects/aes/aes.cpp
@@ -100,6 +101,7 @@ src/firrtlwriter.cpp
 src/firrtlwriter.cpp
 src/firrtlwriter.h
 src/firrtlwriter.h
+src/fixed.h
 src/float32.h
 src/float32.h
 src/htl/arbiter.h
@@ -127,6 +129,7 @@ src/ioimpl.cpp
 src/ioimpl.cpp
 src/ioimpl.h
 src/ioimpl.h
+src/ioport.h
 src/literals.h
 src/literals.h
 src/litimpl.cpp
@@ -160,7 +163,6 @@ src/platform.cpp
 src/platform.h
 src/platform.h
 src/port.h
-src/port.h
 src/printimpl.cpp
 src/printimpl.cpp
 src/printimpl.h
@@ -179,6 +181,8 @@ src/scalar.cpp
 src/scalar.cpp
 src/scalar.h
 src/scalar.h
+src/scint.h
+src/scuint.h
 src/select.h
 src/select.h
 src/selectimpl.cpp

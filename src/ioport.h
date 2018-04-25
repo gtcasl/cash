@@ -55,6 +55,7 @@ template <typename IoType,
 struct io_logic_traits {
   static constexpr traits_type type = traits_logic_io;
   static constexpr unsigned bitwidth = width_v<LogicType>;
+  static constexpr unsigned is_signed = signed_v<LogicType>;
   static constexpr ch_direction direction = Direction;
   using io_type     = IoType;
   using flip_type   = FlipType;
@@ -71,6 +72,7 @@ template <typename IoType,
 struct io_scalar_traits {
   static constexpr traits_type type = traits_scalar_io;
   static constexpr unsigned bitwidth = width_v<ScalarType>;
+  static constexpr unsigned is_signed = signed_v<ScalarType>;
   static constexpr ch_direction direction = Direction;
   using io_type     = IoType;
   using flip_type   = FlipType;
@@ -110,7 +112,7 @@ public:
   using base = T;
 
   ch_in_impl(const std::string& name = "io", const source_location& sloc = CH_SRC_LOCATION)
-    : base(logic_buffer(width_v<T>, sloc, name)) {
+    : base(make_logic_buffer(width_v<T>, sloc, name)) {
     input_ = createInputNode(name, width_v<T>);
     logic_accessor::set_data(*this, input_);
   }
@@ -119,7 +121,7 @@ public:
             CH_REQUIRE_0(is_logic_only<U>::value),
             CH_REQUIRE_0(is_cast_convertible<U, T>::value)>
   explicit ch_in_impl(const ch_out<U>& out, const source_location& sloc = CH_SRC_LOCATION)
-    : base(logic_buffer(width_v<T>, sloc)) {
+    : base(make_logic_buffer(width_v<T>, sloc)) {
     input_ = logic_accessor::get_data(*this);
     bindOutput(input_, out.output_);
   }
@@ -163,7 +165,7 @@ public:
   using base::operator=;
 
   ch_out(const std::string& name = "io", const source_location& sloc = CH_SRC_LOCATION)
-    : base(logic_buffer(width_v<T>, sloc, name)) {
+    : base(make_logic_buffer(width_v<T>, sloc, name)) {
     output_ = createOutputNode(name, logic_accessor::get_data(*this));
   }
 
@@ -171,7 +173,7 @@ public:
             CH_REQUIRE_0(is_logic_only<U>::value),
             CH_REQUIRE_0(is_cast_convertible<T, U>::value)>
   explicit ch_out(const ch_in_impl<U>& in, const source_location& sloc = CH_SRC_LOCATION)
-    : base(logic_buffer(width_v<T>, sloc)) {
+    : base(make_logic_buffer(width_v<T>, sloc)) {
     output_ = logic_accessor::get_data(*this);
     bindInput(output_, in.input_);
   }
@@ -207,11 +209,11 @@ private:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class scalar_buffer_io : public scalar_buffer_impl {
+class scalar_io_buffer : public scalar_buffer {
 public:
-  using base = scalar_buffer_impl;
+  using base = scalar_buffer;
 
-  scalar_buffer_io(const lnode& io)
+  explicit scalar_io_buffer(const lnode& io)
     : base(bitvector(), nullptr, 0, io.get_size()), io_(io)
   {}
 
@@ -256,7 +258,7 @@ public:
             CH_REQUIRE_0(is_logic_only<U>::value),
             CH_REQUIRE_0(width_v<T> == width_v<U>)>
   explicit ch_scalar_in(const ch_in_impl<U>& in)
-    : base(ch::internal::scalar_buffer_ptr(new scalar_buffer_io(in.input_)))
+    : base(std::make_shared<scalar_io_buffer>(in.input_))
   {}
 
 protected:
@@ -287,7 +289,7 @@ public:
             CH_REQUIRE_0(is_logic_only<U>::value),
             CH_REQUIRE_0(width_v<T> == width_v<U>)>
   explicit ch_scalar_out_impl(const ch_out<U>& out)
-    : base(ch::internal::scalar_buffer_ptr(new scalar_buffer_io(out.output_)))
+    : base(std::make_shared<scalar_io_buffer>(out.output_))
   {}
 
 protected:

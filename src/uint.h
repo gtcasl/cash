@@ -5,32 +5,134 @@
 namespace ch {
 namespace internal {
 
-#define CH_UINT_FRIEND_OPS(i, x) \
-  CH_FRIEND_OP_LT((), const ch_uint&, x) \
-  CH_FRIEND_OP_LE((), const ch_uint&, x) \
-  CH_FRIEND_OP_GT((), const ch_uint&, x) \
-  CH_FRIEND_OP_GE((), const ch_uint&, x) \
-  CH_FRIEND_OP_AND((), const ch_uint&, x) \
-  CH_FRIEND_OP_OR((), const ch_uint&, x) \
-  CH_FRIEND_OP_XOR((), const ch_uint&, x) \
-  CH_FRIEND_OP_SLL((), const ch_uint&, x) \
-  CH_FRIEND_OP_SRL((), const ch_uint&, x) \
-  CH_FRIEND_OP_ADD((), const ch_uint&, x) \
-  CH_FRIEND_OP_SUB((), const ch_uint&, x) \
-  CH_FRIEND_OP_MULT((), const ch_uint&, x) \
-  CH_FRIEND_OP_DIV((), const ch_uint&, x) \
-  CH_FRIEND_OP_MOD((), const ch_uint&, x)
+#define CH_LOGIC_UINT_FRIEND_OP1(i, x) \
+  CH_FRIEND_OP1((), <, const ch_uint&, x) \
+  CH_FRIEND_OP1((), <=, const ch_uint&, x) \
+  CH_FRIEND_OP1((), >, const ch_uint&, x) \
+  CH_FRIEND_OP1((), >=, const ch_uint&, x)
 
-#define CH_UINT_OP_TYPES \
-  ch_scalar<N>, int8_t, uint8_t, int16_t, uint16_t, int32_t, uint32_t, int64_t, uint64_t
+#define CH_LOGIC_UINT_GLOBAL_FUNC1(i, x) \
+  CH_GLOBAL_FUNC1((template <unsigned N>), ch_lt, const ch_uint<N>&, x) \
+  CH_GLOBAL_FUNC1((template <unsigned N>), ch_le, const ch_uint<N>&, x) \
+  CH_GLOBAL_FUNC1((template <unsigned N>), ch_gt, const ch_uint<N>&, x) \
+  CH_GLOBAL_FUNC1((template <unsigned N>), ch_ge, const ch_uint<N>&, x)
+
+#define CH_LOGIC_UINT_OP1_TYPES \
+  const ch_scalar<N>&, uint8_t, uint16_t, uint32_t, uint64_t
+
+#define CH_LOGIC_UINT_FRIEND_OP2(i, x) \
+  CH_FRIEND_OP1((), &, const ch_uint&, x) \
+  CH_FRIEND_OP1((), |, const ch_uint&, x) \
+  CH_FRIEND_OP1((), ^, const ch_uint&, x) \
+  CH_FRIEND_OP1((), +, const ch_uint&, x) \
+  CH_FRIEND_OP1((), -, const ch_uint&, x) \
+  CH_FRIEND_OP1((), *, const ch_uint&, x) \
+  CH_FRIEND_OP1((), /, const ch_uint&, x) \
+  CH_FRIEND_OP1((), %, const ch_uint&, x)
+
+#define CH_LOGIC_UINT_GLOBAL_FUNC2(i, x) \
+  CH_GLOBAL_FUNC1((template <unsigned N>), ch_and, const ch_uint<N>&, x) \
+  CH_GLOBAL_FUNC1((template <unsigned N>), ch_or, const ch_uint<N>&, x) \
+  CH_GLOBAL_FUNC1((template <unsigned N>), ch_xor, const ch_uint<N>&, x) \
+  CH_GLOBAL_FUNC1((template <unsigned N>), ch_add, const ch_uint<N>&, x) \
+  CH_GLOBAL_FUNC1((template <unsigned N>), ch_sub, const ch_uint<N>&, x) \
+  CH_GLOBAL_FUNC1((template <unsigned N>), ch_mult, const ch_uint<N>&, x) \
+  CH_GLOBAL_FUNC1((template <unsigned N>), ch_div, const ch_uint<N>&, x) \
+  CH_GLOBAL_FUNC1((template <unsigned N>), ch_mod, const ch_uint<N>&, x)
+
+#define CH_LOGIC_UINT_OP2_TYPES \
+  const ch_logic<N>&, const ch_scalar<N>&, \
+  int8_t, uint8_t, int16_t, uint16_t, int32_t, uint32_t, int64_t, uint64_t
+
+#define CH_LOGIC_UINT_FRIEND_OP3(i, x) \
+  CH_FRIEND_OP3((), <<, const ch_uint&, x, const ch_logic<CH_WIDTH_OF(x)>&) \
+  CH_FRIEND_OP3((), >>, const ch_uint&, x, const ch_logic<CH_WIDTH_OF(x)>&)
+
+#define CH_LOGIC_UINT_GLOBAL_FUNC3(i, x) \
+  CH_GLOBAL_FUNC3((template <unsigned N>), ch_sll, const ch_uint<N>&, x, const ch_logic<CH_WIDTH_OF(x)>&) \
+  CH_GLOBAL_FUNC3((template <unsigned N>), ch_srl, const ch_uint<N>&, x, const ch_logic<CH_WIDTH_OF(x)>&)
+
+#define CH_LOGIC_UINT_OP3_TYPES \
+  int8_t, uint8_t, int16_t, uint16_t, int32_t, uint32_t, int64_t, uint64_t
+
+#define CH_LOGIC_UINT_GLOBAL_OP4(i, x) \
+  CH_GLOBAL_OP4((template <unsigned N>), <<, const ch_uint<CH_WIDTH_OF(x)>&, x, const ch_logic<N>&) \
+  CH_GLOBAL_OP4((template <unsigned N>), >>, const ch_uint<CH_WIDTH_OF(x)>&, x, const ch_logic<N>&)
+
+#define CH_LOGIC_UINT_GLOBAL_FUNC4(i, x) \
+  CH_GLOBAL_FUNC4((template <unsigned M>), ch_sll, const ch_uint<CH_WIDTH_OF(x)>&, x, const ch_logic<M>&) \
+  CH_GLOBAL_FUNC4((template <unsigned M>), ch_srl, const ch_uint<CH_WIDTH_OF(x)>&, x, const ch_logic<M>&)
+
+#define CH_LOGIC_UINT_OP4_TYPES \
+  uint8_t, uint16_t, uint32_t, uint64_t
+
+#define CH_LOGIC_UINT_FRIEND_OP5(i, x) \
+  CH_FRIEND_OP2((template <unsigned M, CH_REQUIRE_0(M < N)>), <, const ch_uint&, x) \
+  CH_FRIEND_OP2((template <unsigned M, CH_REQUIRE_0(M < N)>), <=, const ch_uint&, x) \
+  CH_FRIEND_OP2((template <unsigned M, CH_REQUIRE_0(M < N)>), >, const ch_uint&, x) \
+  CH_FRIEND_OP2((template <unsigned M, CH_REQUIRE_0(M < N)>), >=, const ch_uint&, x)
+
+#define CH_LOGIC_UINT_GLOBAL_FUNC5(i, x) \
+  CH_GLOBAL_FUNC2((template <unsigned N, unsigned M, CH_REQUIRE_0(M < N)>), ch_lt, const ch_uint<N>&, x) \
+  CH_GLOBAL_FUNC2((template <unsigned N, unsigned M, CH_REQUIRE_0(M < N)>), ch_le, const ch_uint<N>&, x) \
+  CH_GLOBAL_FUNC2((template <unsigned N, unsigned M, CH_REQUIRE_0(M < N)>), ch_gt, const ch_uint<N>&, x) \
+  CH_GLOBAL_FUNC2((template <unsigned N, unsigned M, CH_REQUIRE_0(M < N)>), ch_ge, const ch_uint<N>&, x)
+
+#define CH_LOGIC_UINT_OP5_TYPES \
+  const ch_uint<M>&, const ch_logic<M>&, const ch_scalar<M>&
+
+#define CH_LOGIC_UINT_FRIEND_OP6(i, x) \
+  CH_FRIEND_OP2((template <unsigned M, CH_REQUIRE_0(M < N)>), &, const ch_uint&, x) \
+  CH_FRIEND_OP2((template <unsigned M, CH_REQUIRE_0(M < N)>), |, const ch_uint&, x) \
+  CH_FRIEND_OP2((template <unsigned M, CH_REQUIRE_0(M < N)>), ^, const ch_uint&, x) \
+  CH_FRIEND_OP2((template <unsigned M, CH_REQUIRE_0(M < N)>), +, const ch_uint&, x) \
+  CH_FRIEND_OP2((template <unsigned M, CH_REQUIRE_0(M < N)>), -, const ch_uint&, x) \
+  CH_FRIEND_OP2((template <unsigned M, CH_REQUIRE_0(M < N)>), *, const ch_uint&, x) \
+  CH_FRIEND_OP2((template <unsigned M, CH_REQUIRE_0(M < N)>), /, const ch_uint&, x) \
+  CH_FRIEND_OP2((template <unsigned M, CH_REQUIRE_0(M < N)>), %, const ch_uint&, x)
+
+#define CH_LOGIC_UINT_GLOBAL_FUNC6(i, x) \
+  CH_GLOBAL_FUNC2((template <unsigned N, unsigned M, CH_REQUIRE_0(M < N)>), ch_and, const ch_uint<N>&, x) \
+  CH_GLOBAL_FUNC2((template <unsigned N, unsigned M, CH_REQUIRE_0(M < N)>), ch_or, const ch_uint<N>&, x) \
+  CH_GLOBAL_FUNC2((template <unsigned N, unsigned M, CH_REQUIRE_0(M < N)>), ch_xor, const ch_uint<N>&, x) \
+  CH_GLOBAL_FUNC2((template <unsigned N, unsigned M, CH_REQUIRE_0(M < N)>), ch_add, const ch_uint<N>&, x) \
+  CH_GLOBAL_FUNC2((template <unsigned N, unsigned M, CH_REQUIRE_0(M < N)>), ch_sub, const ch_uint<N>&, x) \
+  CH_GLOBAL_FUNC2((template <unsigned N, unsigned M, CH_REQUIRE_0(M < N)>), ch_mult, const ch_uint<N>&, x) \
+  CH_GLOBAL_FUNC2((template <unsigned N, unsigned M, CH_REQUIRE_0(M < N)>), ch_div, const ch_uint<N>&, x) \
+  CH_GLOBAL_FUNC2((template <unsigned N, unsigned M, CH_REQUIRE_0(M < N)>), ch_mod, const ch_uint<N>&, x)
+
+#define CH_LOGIC_UINT_OP6_TYPES \
+  const ch_uint<M>&, const ch_logic<M>&, const ch_scalar<M>&
+
+#define CH_LOGIC_UINT_FRIEND_OP7(i, x) \
+  CH_FRIEND_OP3((template <unsigned M>), <<, const ch_uint&, x, const ch_logic<M>&) \
+  CH_FRIEND_OP3((template <unsigned M>), >>, const ch_uint&, x, const ch_logic<M>&)
+
+#define CH_LOGIC_UINT_GLOBAL_FUNC7(i, x) \
+  CH_GLOBAL_FUNC3((template <unsigned N, unsigned M>), ch_sll, const ch_uint<N>&, x, const ch_logic<M>&) \
+  CH_GLOBAL_FUNC3((template <unsigned N, unsigned M>), ch_srl, const ch_uint<N>&, x, const ch_logic<M>&)
+
+#define CH_LOGIC_UINT_OP7_TYPES \
+  const ch_scalar<M>&
+
+#define CH_LOGIC_UINT_GLOBAL_OP8(i, x) \
+  CH_GLOBAL_OP4((template <unsigned N, unsigned M>), <<, const ch_uint<N>&, x, const ch_logic<M>&) \
+  CH_GLOBAL_OP4((template <unsigned N, unsigned M>), >>, const ch_uint<N>&, x, const ch_logic<M>&)
+
+#define CH_LOGIC_UINT_GLOBAL_FUNC8(i, x) \
+  CH_GLOBAL_FUNC4((template <unsigned N, unsigned M>), ch_sll, const ch_uint<N>&, x, const ch_logic<M>&) \
+  CH_GLOBAL_FUNC4((template <unsigned N, unsigned M>), ch_srl, const ch_uint<N>&, x, const ch_logic<M>&)
+
+#define CH_LOGIC_UINT_OP8_TYPES \
+  const ch_scuint<N>&
 
 template <unsigned N>
 class ch_uint : public ch_logic<N> {
 public:
-  using traits = logic_traits<N, ch_uint, ch_suint<N>>;
+  using traits = logic_traits<N, false, ch_uint, ch_scuint<N>>;
   using base = ch_logic<N>;
 
-  ch_uint(const logic_buffer& buffer = logic_buffer(N, CH_SRC_LOCATION))
+  ch_uint(const logic_buffer_ptr& buffer = make_logic_buffer(N, CH_SRC_LOCATION))
     : base(buffer)
   {}
 
@@ -44,11 +146,6 @@ public:
     : base(rhs, sloc)
   {}
 
-  template <unsigned M, CH_REQUIRE_0(M < N)>
-  explicit ch_uint(const ch_scalar<M>& rhs, const source_location& sloc = CH_SRC_LOCATION)
-    : base(rhs, sloc)
-  {}
-
   template <typename U,
             CH_REQUIRE_0(is_logic_type<U>::value),
             CH_REQUIRE_0(width_v<U> == N)>
@@ -58,7 +155,7 @@ public:
 
   template <typename U,
             CH_REQUIRE_1(is_scalar_type<U>::value),
-            CH_REQUIRE_1(width_v<U> == N)>
+            CH_REQUIRE_1(width_v<U> <= N)>
   explicit ch_uint(const U& rhs, const source_location& sloc = CH_SRC_LOCATION)
     : base(rhs, sloc)
   {}
@@ -79,15 +176,9 @@ public:
     return *this;
   }
 
-  template <unsigned M, CH_REQUIRE_0(M < N)>
-  ch_uint& operator=(const ch_scalar<M>& rhs) {
-    base::operator=(rhs);
-    return *this;
-  }
-
   template <typename U,
             CH_REQUIRE_0(is_logic_type<U>::value),
-            CH_REQUIRE_0(N == width_v<U>)>
+            CH_REQUIRE_0(width_v<U> == N)>
   ch_uint& operator=(const U& rhs) {
     base::operator=(rhs);
     return *this;
@@ -95,7 +186,7 @@ public:
 
   template <typename U,
             CH_REQUIRE_1(is_scalar_type<U>::value),
-            CH_REQUIRE_1(N == width_v<U>)>
+            CH_REQUIRE_1(width_v<U> <= N)>
   ch_uint& operator=(const U& rhs) {
     base::operator=(rhs);
     return *this;
@@ -111,87 +202,89 @@ public:
   // compare operators
 
   auto operator<(const ch_uint& rhs) const {
-    return OpBinary<alu_lt, ch_logic<1>>(*this, rhs);
+    return LogicOp<op_lt, ch_logic<1>>(*this, rhs);
   }
 
   auto operator<=(const ch_uint& rhs) const {
-    return OpBinary<alu_le, ch_logic<1>>(*this, rhs);
+    return LogicOp<op_le, ch_logic<1>>(*this, rhs);
   }
 
   auto operator>(const ch_uint& rhs) const {
-    return OpBinary<alu_gt, ch_logic<1>>(*this, rhs);
+    return LogicOp<op_gt, ch_logic<1>>(*this, rhs);
   }
 
   auto operator>=(const ch_uint& rhs) const {
-    return OpBinary<alu_ge, ch_logic<1>>(*this, rhs);
+    return LogicOp<op_ge, ch_logic<1>>(*this, rhs);
   }
 
   // bitwise operators
 
   auto operator~() const {
-    return OpUnary<alu_inv, ch_uint>(*this);
+    return LogicOp<op_inv, ch_uint>(*this);
   }
 
-  auto operator&(const ch_logic<N>& rhs) const {
-    return OpBinary<alu_and, ch_uint>(*this, rhs);
+  auto operator&(const ch_uint& rhs) const {
+    return LogicOp<op_and, ch_uint>(*this, rhs);
   }
 
-  auto operator|(const ch_logic<N>& rhs) const {
-    return OpBinary<alu_or, ch_uint>(*this, rhs);
+  auto operator|(const ch_uint& rhs) const {
+    return LogicOp<op_or, ch_uint>(*this, rhs);
   }
 
-  auto operator^(const ch_logic<N>& rhs) const {
-    return OpBinary<alu_xor, ch_uint>(*this, rhs);
+  auto operator^(const ch_uint& rhs) const {
+    return LogicOp<op_xor, ch_uint>(*this, rhs);
   }
 
   // shift operators
 
   template <unsigned M>
   auto operator<<(const ch_logic<M>& rhs) const {
-    return OpBinary<alu_sll, ch_uint>(*this, rhs);
+    return LogicOp<op_sll, ch_uint>(*this, rhs);
   }
 
   template <unsigned M>
   auto operator>>(const ch_logic<M>& rhs) const {
-    return OpBinary<alu_sra, ch_uint>(*this, rhs);
+    return LogicOp<op_sra, ch_uint>(*this, rhs);
   }
 
   // arithmetic operators
 
   auto operator-() const {
-    return OpUnary<alu_neg, ch_uint>(*this);
+    return LogicOp<op_neg, ch_uint>(*this);
   }
 
   auto operator+(const ch_uint& rhs) const {
-    return OpBinary<alu_add, ch_uint>(*this, rhs);
+    return LogicOp<op_add, ch_uint>(*this, rhs);
   }
 
   auto operator-(const ch_uint& rhs) const {
-    return OpBinary<alu_sub, ch_uint>(*this, rhs);
+    return LogicOp<op_sub, ch_uint>(*this, rhs);
   }
 
   auto operator*(const ch_uint& rhs) const {
-    return OpBinary<alu_mult, ch_uint>(*this, rhs);
+    return LogicOp<op_mult, ch_uint>(*this, rhs);
   }
 
   auto operator/(const ch_uint& rhs) const {
-    return OpBinary<alu_div, ch_uint>(*this, rhs);
+    return LogicOp<op_div, ch_uint>(*this, rhs);
   }
 
   auto operator%(const ch_uint& rhs) const {
-    return OpBinary<alu_mod, ch_uint>(*this, rhs);
+    return LogicOp<op_mod, ch_uint>(*this, rhs);
   }
 
   CH_LOGIC_INTERFACE(ch_uint)
 
 protected:
 
-  CH_FOR_EACH(CH_UINT_FRIEND_OPS, CH_SEP_SPACE, CH_UINT_OP_TYPES)
+  // friend operators
 
-  template <unsigned M>
-  inline friend ch_uint operator>>(const ch_uint& lhs, const ch_scalar<M>& rhs) {
-    return lhs >> ch_uint<M>(rhs);
-  }
+  CH_FOR_EACH(CH_LOGIC_UINT_FRIEND_OP1, CH_SEP_SPACE, CH_LOGIC_UINT_OP1_TYPES)
+  CH_FOR_EACH(CH_LOGIC_UINT_FRIEND_OP2, CH_SEP_SPACE, CH_LOGIC_UINT_OP2_TYPES)
+  CH_FOR_EACH(CH_LOGIC_UINT_FRIEND_OP3, CH_SEP_SPACE, CH_LOGIC_UINT_OP3_TYPES)
+  CH_FOR_EACH(CH_LOGIC_UINT_FRIEND_OP5, CH_SEP_SPACE, CH_LOGIC_UINT_OP5_TYPES)
+  CH_FOR_EACH(CH_LOGIC_UINT_FRIEND_OP6, CH_SEP_SPACE, CH_LOGIC_UINT_OP6_TYPES)
+  CH_FOR_EACH(CH_LOGIC_UINT_FRIEND_OP7, CH_SEP_SPACE, CH_LOGIC_UINT_OP7_TYPES)
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -243,12 +336,12 @@ inline auto ch_xor(const ch_uint<N>& lhs, const ch_uint<N>& rhs) {
 // shift operators
 
 template <unsigned N, unsigned M>
-inline auto ch_sll(const ch_uint<N>& lhs, const ch_uint<M>& rhs) {
+inline auto ch_sll(const ch_uint<N>& lhs, const ch_logic<M>& rhs) {
   return (lhs << rhs);
 }
 
 template <unsigned N, unsigned M>
-inline auto ch_srl(const ch_uint<N>& lhs, const ch_uint<M>& rhs) {
+inline auto ch_srl(const ch_uint<N>& lhs, const ch_logic<M>& rhs) {
   return (lhs >> rhs);
 }
 
@@ -281,240 +374,25 @@ inline auto ch_div(const ch_uint<N>& lhs, const ch_uint<N>& rhs) {
 
 // padding
 
-template <unsigned N, unsigned M>
-auto ch_pad(const ch_uint<M>& obj, const source_location& sloc = CH_SRC_LOCATION) {
-  return ch_pad<ch_uint<N>>(obj, sloc);
+template <unsigned M, unsigned N>
+auto ch_pad(const ch_uint<N>& obj, const source_location& sloc = CH_SRC_LOCATION) {
+  return ch_pad<ch_uint<M>>(obj, sloc);
 }
 
 // global operators
 
-CH_GLOBAL_OP_AND_RSZ((template<unsigned N, unsigned M, CH_REQUIRE_0(M != N)>), const ch_uint<N>&, const ch_uint<M>&)
-CH_GLOBAL_OP_OR_RSZ((template<unsigned N, unsigned M, CH_REQUIRE_0(M != N)>), const ch_uint<N>&, const ch_uint<M>&)
-CH_GLOBAL_OP_XOR_RSZ((template<unsigned N, unsigned M, CH_REQUIRE_0(M != N)>), const ch_uint<N>&, const ch_uint<M>&)
-CH_GLOBAL_OP_ADD_RSZ((template<unsigned N, unsigned M, CH_REQUIRE_0(M != N)>), const ch_uint<N>&, const ch_uint<M>&)
-CH_GLOBAL_OP_SUB_RSZ((template<unsigned N, unsigned M, CH_REQUIRE_0(M != N)>), const ch_uint<N>&, const ch_uint<M>&)
-CH_GLOBAL_OP_MULT_RSZ((template<unsigned N, unsigned M, CH_REQUIRE_0(M != N)>), const ch_uint<N>&, const ch_uint<M>&)
-CH_GLOBAL_OP_DIV_RSZ((template<unsigned N, unsigned M, CH_REQUIRE_0(M != N)>), const ch_uint<N>&, const ch_uint<M>&)
-CH_GLOBAL_OP_MOD_RSZ((template<unsigned N, unsigned M, CH_REQUIRE_0(M != N)>), const ch_uint<N>&, const ch_uint<M>&)
+CH_FOR_EACH(CH_LOGIC_UINT_GLOBAL_OP4, CH_SEP_SPACE, CH_LOGIC_UINT_OP4_TYPES)
+CH_FOR_EACH(CH_LOGIC_UINT_GLOBAL_OP8, CH_SEP_SPACE, CH_LOGIC_UINT_OP8_TYPES)
 
-#define CH_UINT_GLOBAL_OPS(i, x) \
-  CH_GLOBAL_OP_EQ((template <unsigned N>), const ch_uint<N>&, x) \
-  CH_GLOBAL_OP_NE((template <unsigned N>), const ch_uint<N>&, x) \
-  CH_GLOBAL_OP_LT((template <unsigned N>), const ch_uint<N>&, x) \
-  CH_GLOBAL_OP_LE((template <unsigned N>), const ch_uint<N>&, x) \
-  CH_GLOBAL_OP_GT((template <unsigned N>), const ch_uint<N>&, x) \
-  CH_GLOBAL_OP_GE((template <unsigned N>), const ch_uint<N>&, x) \
-  CH_GLOBAL_OP_AND((template <unsigned N>), const ch_uint<N>&, x) \
-  CH_GLOBAL_OP_OR((template <unsigned N>), const ch_uint<N>&, x) \
-  CH_GLOBAL_OP_XOR((template <unsigned N>), const ch_uint<N>&, x) \
-  CH_GLOBAL_OP_NAND((template <unsigned N>), const ch_uint<N>&, x) \
-  CH_GLOBAL_OP_NOR((template <unsigned N>), const ch_uint<N>&, x) \
-  CH_GLOBAL_OP_XNOR((template <unsigned N>), const ch_uint<N>&, x) \
-  CH_GLOBAL_OP_ADD((template <unsigned N>), const ch_uint<N>&, x) \
-  CH_GLOBAL_OP_SUB((template <unsigned N>), const ch_uint<N>&, x) \
-  CH_GLOBAL_OP_MULT((template <unsigned N>), const ch_uint<N>&, x) \
-  CH_GLOBAL_OP_DIV((template <unsigned N>), const ch_uint<N>&, x) \
-  CH_GLOBAL_OP_MOD((template <unsigned N>), const ch_uint<N>&, x) \
-  CH_GLOBAL_OP_SLL((template <unsigned N>), const ch_uint<N>&, x) \
-  CH_GLOBAL_OP_SRL((template <unsigned N>), const ch_uint<N>&, x) \
-  CH_GLOBAL_OP_SRA((template <unsigned N>), const ch_uint<N>&, x)
+// global functions
 
-CH_FOR_EACH(CH_UINT_GLOBAL_OPS, CH_SEP_SPACE, CH_UINT_OP_TYPES)
-
-///////////////////////////////////////////////////////////////////////////////
-
-#define CH_SCALAR_UINT_FRIEND_OPS(i, x) \
-  CH_FRIEND_OP_LT((), const ch_suint&, x) \
-  CH_FRIEND_OP_LE((), const ch_suint&, x) \
-  CH_FRIEND_OP_GT((), const ch_suint&, x) \
-  CH_FRIEND_OP_GE((), const ch_suint&, x) \
-  CH_FRIEND_OP_AND((), const ch_suint&, x) \
-  CH_FRIEND_OP_OR((), const ch_suint&, x) \
-  CH_FRIEND_OP_XOR((), const ch_suint&, x) \
-  CH_FRIEND_OP_ADD((), const ch_suint&, x) \
-  CH_FRIEND_OP_SUB((), const ch_suint&, x) \
-  CH_FRIEND_OP_MULT((), const ch_suint&, x) \
-  CH_FRIEND_OP_DIV((), const ch_suint&, x) \
-  CH_FRIEND_OP_MOD((), const ch_suint&, x) \
-  CH_FRIEND_OP_SLL((), const ch_suint&, x) \
-  CH_FRIEND_OP_SRL((), const ch_suint&, x)
-
-#define CH_SCALAR_UINT_OP_TYPES \
-  int8_t, uint8_t, int16_t, uint16_t, int32_t, uint32_t, int64_t, uint64_t
-
-template <unsigned N>
-class ch_suint : public ch_scalar<N>  {
-public:
-  using traits = scalar_traits<N, ch_suint, ch_uint<N>>;
-  using base = ch_scalar<N>;
-  using base::buffer_;
-
-  ch_suint(const scalar_buffer& buffer = scalar_buffer(N))
-    : base(buffer)
-  {}
-
-  ch_suint(const ch_suint& rhs)
-    : base(rhs)
-  {}
-
-  ch_suint(ch_suint&& rhs)
-    : base(std::move(rhs))
-  {}
-
-  template <unsigned M, CH_REQUIRE_0(M < N)>
-  explicit ch_suint(const ch_scalar<M>& rhs)
-    : base(rhs)
-  {}
-
-  template <typename U,
-            CH_REQUIRE_0(is_scalar_type<U>::value),
-            CH_REQUIRE_0(N == width_v<U>)>
-  explicit ch_suint(const U& rhs) :
-    base(rhs)
-  {}
-
-  template <typename U,
-            CH_REQUIRE_0(is_bitvector_convertible<U>::value)>
-  explicit ch_suint(const U& rhs)
-    : base(rhs)
-  {}
-
-  ch_suint& operator=(const ch_suint& rhs) {
-    base::operator=(rhs);
-    return *this;
-  }
-
-  ch_suint& operator=(ch_suint&& rhs) {
-    base::operator=(std::move(rhs));
-    return *this;
-  }
-
-  template <unsigned M, CH_REQUIRE_0(M < N)>
-  ch_suint& operator=(const ch_scalar<M>& rhs) {
-    base::operator=(rhs);
-    return *this;
-  }
-
-  template <typename U,
-            CH_REQUIRE_0(is_scalar_type<U>::value),
-            CH_REQUIRE_0(N == width_v<U>)>
-  ch_suint& operator=(const U& rhs) {
-    base::operator=(rhs);
-    return *this;
-  }
-
-  template <typename U,
-            CH_REQUIRE_0(is_integral_or_enum_v<U>)>
-  ch_suint& operator=(U rhs) {
-    base::operator=(rhs);
-    return *this;
-  }
-
-  // compare operators
-
-  auto operator<(const ch_suint& rhs) const {
-    return (buffer_->get_data() < rhs.buffer_->get_data());
-  }
-
-  auto operator>=(const ch_suint& rhs) const {
-    return !(buffer_->get_data() < rhs.buffer_->get_data());
-  }
-
-  auto operator>(const ch_suint& rhs) const {
-    return (rhs.buffer_->get_data() < buffer_->get_data());
-  }
-
-  auto operator<=(const ch_suint& rhs) const {
-    return !(rhs.buffer_->get_data() < rhs.buffer_->get_data());
-  }
-
-  // bitwise operators
-
-  auto operator~() const {
-    bitvector ret(N);
-    Inv(ret, buffer_->get_data());
-    return ch_suint<N>(scalar_buffer(std::move(ret)));
-  }
-
-  auto operator&(const ch_suint& rhs) const {
-    bitvector ret(N);
-    And(ret, buffer_->get_data(), rhs.buffer_->get_data());
-    return ch_suint<N>(scalar_buffer(std::move(ret)));
-  }
-
-  auto operator|(const ch_suint& rhs) const {
-    bitvector ret(N);
-    Or(ret, buffer_->get_data(), rhs.buffer_->get_data());
-    return ch_suint<N>(scalar_buffer(std::move(ret)));
-  }
-
-  auto operator^(const ch_suint& rhs) const {
-    bitvector ret(N);
-    Xor(ret, buffer_->get_data(), rhs.buffer_->get_data());
-    return ch_suint<N>(scalar_buffer(std::move(ret)));
-  }
-
-  // shift operators
-
-  auto operator<<(const ch_suint& rhs) const {
-    bitvector ret(N);
-    auto shift = rhs.buffer_->get_data();
-    CH_CHECK(shift.find_last() <= 31, "shift amount out of range");
-    Sll(ret, buffer_->get_data(), shift.get_word(0));
-    return ch_suint<N>(scalar_buffer(std::move(ret)));
-  }
-
-  auto operator>>(const ch_suint& rhs) const {
-    bitvector ret(N);
-    auto shift = rhs.buffer_->get_data();
-    CH_CHECK(shift.find_last() <= 31, "shift amount out of range");
-    Srl(ret, buffer_->get_data(), shift.get_word(0));
-    return ch_suint<N>(scalar_buffer(std::move(ret)));
-  }
-
-  // arithmetic operators
-
-  auto operator-() const {
-    bitvector ret(N);
-    Negate(ret, buffer_->get_data());
-    return ch_suint<N>(scalar_buffer(std::move(ret)));
-  }
-
-  auto operator+(const ch_suint& rhs) const {
-    bitvector ret(N);
-    Add(ret, buffer_->get_data(), rhs.buffer_->get_data());
-    return ch_suint<N>(scalar_buffer(std::move(ret)));
-  }
-
-  auto operator-(const ch_suint& rhs) const {
-    bitvector ret(N);
-    Sub(ret, buffer_->get_data(), rhs.buffer_->get_data());
-    return ch_suint<N>(scalar_buffer(std::move(ret)));
-  }
-
-  auto operator*(const ch_suint& rhs) const {
-    bitvector ret(N);
-    Mult(ret, buffer_->get_data(), rhs.buffer_->get_data());
-    return ch_suint<N>(scalar_buffer(std::move(ret)));
-  }
-
-  auto operator/(const ch_suint& rhs) const {
-    bitvector ret(N);
-    Div(ret, buffer_->get_data(), rhs.buffer_->get_data());
-    return ch_suint<N>(scalar_buffer(std::move(ret)));
-  }
-
-  auto operator%(const ch_suint& rhs) const {
-    bitvector ret(N);
-    Mod(ret, buffer_->get_data(), rhs.buffer_->get_data());
-    return ch_suint<N>(scalar_buffer(std::move(ret)));
-  }
-
-  CH_SCALAR_INTERFACE(ch_suint)
-
-protected:
-
-  CH_FOR_EACH(CH_SCALAR_UINT_FRIEND_OPS, CH_SEP_SPACE, CH_SCALAR_UINT_OP_TYPES)
-};
+CH_FOR_EACH(CH_LOGIC_UINT_GLOBAL_FUNC1, CH_SEP_SPACE, CH_LOGIC_UINT_OP1_TYPES)
+CH_FOR_EACH(CH_LOGIC_UINT_GLOBAL_FUNC2, CH_SEP_SPACE, CH_LOGIC_UINT_OP2_TYPES)
+CH_FOR_EACH(CH_LOGIC_UINT_GLOBAL_FUNC3, CH_SEP_SPACE, CH_LOGIC_UINT_OP3_TYPES)
+CH_FOR_EACH(CH_LOGIC_UINT_GLOBAL_FUNC4, CH_SEP_SPACE, CH_LOGIC_UINT_OP4_TYPES)
+CH_FOR_EACH(CH_LOGIC_UINT_GLOBAL_FUNC5, CH_SEP_SPACE, CH_LOGIC_UINT_OP5_TYPES)
+CH_FOR_EACH(CH_LOGIC_UINT_GLOBAL_FUNC6, CH_SEP_SPACE, CH_LOGIC_UINT_OP6_TYPES)
+CH_FOR_EACH(CH_LOGIC_UINT_GLOBAL_FUNC7, CH_SEP_SPACE, CH_LOGIC_UINT_OP7_TYPES)
+CH_FOR_EACH(CH_LOGIC_UINT_GLOBAL_FUNC8, CH_SEP_SPACE, CH_LOGIC_UINT_OP8_TYPES)
 
 }}

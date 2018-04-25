@@ -156,31 +156,31 @@ cdimpl* context::create_cdomain(const lnode& clock,
   return this->create_node<cdimpl>(clock, reset, posedge);
 }
 
-aluimpl* context::create_alu(uint32_t op, const lnode& in) {
+aluimpl* context::create_alu(uint32_t op, unsigned size, const lnode& in) {
   aluimpl* node;
-  alu_key_t hk{op, in.get_id(), 0};
-  auto it = alu_cache_.find(hk);
-  if (it == alu_cache_.end()) {
-    node = this->create_node<aluimpl>((ch_alu_op)op, in);
-    alu_cache_[hk] = node;
+  op_key_t hk{op, size, in.get_id(), 0};
+  auto it = op_cache_.find(hk);
+  if (it == op_cache_.end()) {
+    node = this->create_node<aluimpl>((ch_op)op, size, in);
+    op_cache_[hk] = node;
   } else {
     node = it->second;
   }
   return node;
 }
 
-aluimpl* context::create_alu(uint32_t op, const lnode& lhs, const lnode& rhs) {
+aluimpl* context::create_alu(uint32_t op, unsigned size, const lnode& lhs, const lnode& rhs) {
   aluimpl* node;
-  alu_key_t hk{op, lhs.get_id(), rhs.get_id()};
-  if (alu_symmetric((ch_alu_op)hk.op)
+  op_key_t hk{op, size, lhs.get_id(), rhs.get_id()};
+  if ((hk.op & op_symmetric)
    && hk.arg0 > hk.arg1) {
     // adjust ordering for symmetrix operators
     std::swap(hk.arg0, hk.arg1);
   }
-  auto it = alu_cache_.find(hk);
-  if (it == alu_cache_.end()) {
-    node = this->create_node<aluimpl>((ch_alu_op)op, lhs, rhs);
-    alu_cache_[hk] = node;
+  auto it = op_cache_.find(hk);
+  if (it == op_cache_.end()) {
+    node = this->create_node<aluimpl>((ch_op)op, size, lhs, rhs);
+    op_cache_[hk] = node;
   } else {
     node = it->second;
   }
@@ -607,17 +607,17 @@ context::emit_conditionals(lnodeimpl* dst,
           // combine predicates
           auto pred0 = values.front().first;
           if (key) {
-            pred0 = this->create_alu(alu_eq, key, pred0);
+            pred0 = this->create_alu(op_eq, 1, key, pred0);
           }
           auto pred1 = _true->get_src(0);
           if (_true->has_key()) {
             // create predicate
-            pred1 = this->create_alu(alu_eq, pred1, _true->get_src(1));
+            pred1 = this->create_alu(op_eq, 1, pred1, _true->get_src(1));
             // remove key from src list
             _true->get_srcs().erase(_true->get_srcs().begin());
             _true->set_key(false);
           }
-          auto pred = this->create_alu(alu_and, pred0, pred1);
+          auto pred = this->create_alu(op_and, 1, pred0, pred1);
           _true->set_src(0, pred);
           return _true;
         }
@@ -779,7 +779,7 @@ void context::tick(ch_tick t) {
     node->tick(t);
   }
 
-  // tick local clock domains
+  // tick clock domains
   for (auto cd : cdomains_) {
     cd->tick(t);
   }
@@ -791,7 +791,7 @@ void context::tick_next(ch_tick t) {
     node->tick_next(t);
   }
 
-  // tick local clock domains
+  // tick clock domains
   for (auto cd : cdomains_) {
     cd->tick_next(t);
   }

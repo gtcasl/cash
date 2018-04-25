@@ -13,10 +13,10 @@ module GCD(
   wire[15:0] sel53; // gcd.cpp(27)
   wire and41;
   wire gt48;
-  wire sel46; // gcd.cpp(21)
+  wire sel45; // gcd.cpp(21)
   reg[15:0] reg31;
   wire sel57; // gcd.cpp(36)
-  wire[15:0] sel45; // gcd.cpp(21)
+  wire[15:0] sel46; // gcd.cpp(21)
   wire and55;
   wire[15:0] sel54; // gcd.cpp(28)
   wire eq60;
@@ -31,14 +31,14 @@ module GCD(
   assign sel53 = reg36 ? sel52 : sel47;
   assign and41 = io_in_valid & eq39;
   assign gt48 = reg25 > reg31;
-  assign sel46 = and41 ? 1'h1 : reg36;
+  assign sel45 = and41 ? 1'h1 : reg36;
   always @ (posedge clk) begin
     reg31 <= sel53;
   end
-  assign sel57 = and62 ? 1'h0 : sel46;
-  assign sel45 = and41 ? io_in_data[15:0] : reg25;
+  assign sel57 = and62 ? 1'h0 : sel45;
+  assign sel46 = and41 ? io_in_data[15:0] : reg25;
   assign and55 = reg36 & gt48;
-  assign sel54 = and55 ? reg31 : sel45;
+  assign sel54 = and55 ? reg31 : sel46;
   assign eq60 = 16'h0 == reg31;
   always @ (posedge clk) begin
     reg36 <= reset ? 1'h0 : sel57;

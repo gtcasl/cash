@@ -6,18 +6,13 @@ namespace ch {
 namespace internal {
 
 template <typename T> struct is_bitvector_array_type : std::false_type {};
-template <> struct is_bitvector_array_type <int8_t> : std::true_type {};
 template <> struct is_bitvector_array_type <uint8_t> : std::true_type {};
-template <> struct is_bitvector_array_type <int16_t> : std::true_type {};
 template <> struct is_bitvector_array_type <uint16_t> : std::true_type {};
-template <> struct is_bitvector_array_type <int32_t> : std::true_type {};
 template <> struct is_bitvector_array_type <uint32_t> : std::true_type {};
-template <> struct is_bitvector_array_type <int64_t> : std::true_type {};
 template <> struct is_bitvector_array_type <uint64_t> : std::true_type {};
 
 template <typename T> struct is_bitvector_convertible_impl : std::false_type {};
 template <> struct is_bitvector_convertible_impl <bool> : std::true_type {};
-template <> struct is_bitvector_convertible_impl <char> : std::true_type {};
 template <> struct is_bitvector_convertible_impl <int8_t> : std::true_type {};
 template <> struct is_bitvector_convertible_impl <uint8_t> : std::true_type {};
 template <> struct is_bitvector_convertible_impl <int16_t> : std::true_type {};
@@ -45,7 +40,6 @@ using is_bitvector_convertible =
 
 template <typename T> struct is_bitvector_castable : std::false_type {};
 template <> struct is_bitvector_castable <bool> : std::true_type {};
-template <> struct is_bitvector_castable <char> : std::true_type {};
 template <> struct is_bitvector_castable <int8_t> : std::true_type {};
 template <> struct is_bitvector_castable <uint8_t> : std::true_type {};
 template <> struct is_bitvector_castable <int16_t> : std::true_type {};
@@ -62,6 +56,7 @@ public:
     WORD_SIZE_LOG = 5, 
     WORD_SIZE     = 1 << WORD_SIZE_LOG,
     WORD_MASK     = WORD_SIZE - 1,
+    WORD_MAX      = 0xFFFFFFFF,
   };
   
   class const_iterator;
@@ -447,50 +442,38 @@ public:
   
   explicit bitvector(uint32_t size);
 
-  explicit bitvector(uint32_t size, const bitvector& rhs);
-  
-  explicit bitvector(uint32_t size, bool value)
-    : bitvector(size, value ? 0x1 : 0x0)
-  {}
-
-  explicit bitvector(uint32_t size, char value);
-
   explicit bitvector(uint32_t size, int8_t value)
-    : bitvector(size, bitcast<uint32_t>(value))
+    : bitvector(size, bitcast<int32_t>(value))
   {}
-  
+
   explicit bitvector(uint32_t size, uint8_t value)
     : bitvector(size, bitcast<uint32_t>(value))
   {}
-  
+
   explicit bitvector(uint32_t size, int16_t value)
-    : bitvector(size, bitcast<uint32_t>(value))
+    : bitvector(size, bitcast<int32_t>(value))
   {}
-  
+
   explicit bitvector(uint32_t size, uint16_t value)
-    : bitvector(size, bitcast<uint32_t>(value))
-  {}
-  
-  explicit bitvector(uint32_t size, int32_t value)
     : bitvector(size, bitcast<uint32_t>(value))
   {}
 
   explicit bitvector(uint32_t size, uint32_t value);
 
-  explicit bitvector(uint32_t size, int64_t value)
-    : bitvector(size, {bitcast<uint32_t>(value >> 32), bitcast<uint32_t>(value)})
-  {}
+  explicit bitvector(uint32_t size, int32_t value);
 
-  explicit bitvector(uint32_t size, uint64_t value)
-    : bitvector(size, {bitcast<uint32_t>(value >> 32), bitcast<uint32_t>(value)})
-  {}
+  explicit bitvector(uint32_t size, uint64_t value);
 
-  template <typename T, std::size_t N, CH_REQUIRE_0(is_bitvector_array_type<T>::value)>
+  explicit bitvector(uint32_t size, int64_t value);
+
+  template <typename T, std::size_t N,
+            CH_REQUIRE_0(is_bitvector_array_type<T>::value)>
   explicit bitvector(uint32_t size, const std::array<T, N>& value) : bitvector(size) {
     this->write(0, value.data(), N * sizeof(T), 0, N * sizeof(T) * 8);
   }
 
-  template <typename T, CH_REQUIRE_0(is_bitvector_array_type<T>::value)>
+  template <typename T,
+            CH_REQUIRE_0(is_bitvector_array_type<T>::value)>
   explicit bitvector(uint32_t size, const std::vector<T>& value) : bitvector(size) {
     this->write(0, value.data(), value.size() * sizeof(T), 0, value.size() * sizeof(T) * 8);
   }
@@ -505,53 +488,39 @@ public:
   
   bitvector& operator=(bitvector&& rhs);
 
-  bitvector& operator=(bool value) {
-    return this->operator =(value ? 0x1 : 0x0);
+  bitvector& operator=(int8_t value) {
+    return this->operator=(bitcast<int32_t>(value));
   }
 
-  bitvector& operator=(char value);
-  
-  bitvector& operator=(int8_t value) {
-    return this->operator=(bitcast<uint32_t>(value));
-  }
-  
   bitvector& operator=(uint8_t value) {
     return this->operator=(bitcast<uint32_t>(value));
   }
-  
+
   bitvector& operator=(int16_t value) {
-    return this->operator=(bitcast<uint32_t>(value));
+    return this->operator=(bitcast<int32_t>(value));
   }
-  
+
   bitvector& operator=(uint16_t value) {
     return this->operator=(bitcast<uint32_t>(value));
   }
   
-  bitvector& operator=(int32_t value) {
-    return this->operator=(bitcast<uint32_t>(value));
-  }
-
   bitvector& operator=(uint32_t value);
-  
-  bitvector& operator=(int64_t value) {
-    return this->operator=(
-      {bitcast<uint32_t>(value >> 32), bitcast<uint32_t>(value)}
-    );
-  }
-  
-  bitvector& operator=(uint64_t value) {
-    return this->operator=(
-      {bitcast<uint32_t>(value >> 32), bitcast<uint32_t>(value)}
-    );
-  }
 
-  template <typename T, std::size_t N, CH_REQUIRE_0(is_bitvector_array_type<T>::value)>
+  bitvector& operator=(int32_t value);
+
+  bitvector& operator=(uint64_t value);
+
+  bitvector& operator=(int64_t value);
+
+  template <typename T, std::size_t N,
+            CH_REQUIRE_0(is_bitvector_array_type<T>::value)>
   bitvector& operator=(const std::array<T, N>& value) {
     this->write(0, value.data(), N * sizeof(T), 0, N * sizeof(T) * 8);
     return *this;
   }
 
-  template <typename T, CH_REQUIRE_0(is_bitvector_array_type<T>::value)>
+  template <typename T,
+            CH_REQUIRE_0(is_bitvector_array_type<T>::value)>
   bitvector& operator=(const std::vector<T>& value) {
     this->write(0, value.data(), value.size() * sizeof(T), 0, value.size() * sizeof(T) * 8);
     return *this;
@@ -629,9 +598,9 @@ public:
              uint32_t src_offset,
              uint32_t length);
   
-  int32_t find_first() const;
+  int find_first() const;
   
-  int32_t find_last() const;
+  int find_last() const;
   
   bool is_empty() const;
     
@@ -689,11 +658,10 @@ public:
 
 #define CH_DEF_CAST(type) \
   explicit operator type() const { \
-    CH_CHECK(sizeof(type) * 8 >= size_, "invalid cast, cannot cast %d-bit vector to %ld-bit value", size_, sizeof(type) * 8); \
+    CH_CHECK(sizeof(type) * 8 >= size_, "invalid size cast"); \
     return bitcast<type>(words_[0]); \
   }
   CH_DEF_CAST(bool)
-  CH_DEF_CAST(char)
   CH_DEF_CAST(int8_t)
   CH_DEF_CAST(uint8_t)
   CH_DEF_CAST(int16_t)
@@ -703,7 +671,7 @@ public:
 #undef CH_DEF_CAST
 
   explicit operator uint64_t() const {
-    CH_CHECK(sizeof(uint64_t) * 8 >= size_, "invalid cast, cannot cast %d-bit vector to 64-bit value", size_);
+    CH_CHECK(sizeof(uint64_t) * 8 >= size_, "invalid size cast");
     return (static_cast<uint64_t>((size_ > 32) ? words_[1] : 0) << 32) | words_[0];
   }
 
@@ -717,9 +685,12 @@ protected:
   uint32_t  size_;
 };
 
+std::ostream& operator<<(std::ostream& out, const bitvector& rhs);
+
 ///////////////////////////////////////////////////////////////////////////////
 
-std::ostream& operator<<(std::ostream& out, const bitvector& rhs);
+void ZExt(bitvector& out, const bitvector& in);
+void SExt(bitvector& out, const bitvector& in);
 
 void Inv(bitvector& out, const bitvector& in);
 void And(bitvector& out, const bitvector& lhs, const bitvector& rhs);
@@ -736,13 +707,18 @@ bool NandR(const bitvector& in);
 bool NorR(const bitvector& in);
 bool XnorR(const bitvector& in);
 
-void Sll(bitvector& out, const bitvector& in, uint32_t dist);
-void Srl(bitvector& out, const bitvector& in, uint32_t dist);
-void Sra(bitvector& out, const bitvector& in, uint32_t dist);
+void Sll(bitvector& out, const bitvector& in, const bitvector& bits);
+void Srl(bitvector& out, const bitvector& in, const bitvector& bits);
+void Sra(bitvector& out, const bitvector& in, const bitvector& bits);
 
-void Add(bitvector& out, const bitvector& lhs, const bitvector& rhs, uint32_t cin = 0);
+void Add(bitvector& out, const bitvector& lhs, const bitvector& rhs, uint32_t cin);
+
+inline void Add(bitvector& out, const bitvector& lhs, const bitvector& rhs) {
+  Add(out, lhs, rhs, 0);
+}
+
 void Sub(bitvector& out, const bitvector& lhs, const bitvector& rhs);
-void Negate(bitvector& out, const bitvector& in);
+void Neg(bitvector& out, const bitvector& in);
 void Mult(bitvector& out, const bitvector& lhs, const bitvector& rhs);
 void Div(bitvector& out, const bitvector& lhs, const bitvector& rhs);
 void Mod(bitvector& out, const bitvector& lhs, const bitvector& rhs);

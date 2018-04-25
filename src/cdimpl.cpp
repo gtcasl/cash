@@ -51,6 +51,11 @@ void cdimpl::tick_next(ch_tick t) {
   }
 }
 
+const bitvector& cdimpl::eval(ch_tick t) {
+  CH_UNUSED(t);
+  return value_;
+}
+
 void cdimpl::print(std::ostream& out, uint32_t level) const {
   CH_UNUSED(level);
   out << "#" << id_ << " <- " << this->get_type() << "("

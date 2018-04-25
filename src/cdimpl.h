@@ -25,9 +25,7 @@ public:
 
   void tick_next(ch_tick t);
 
-  const bitvector& eval(ch_tick) override {
-    return value_;
-  }
+  const bitvector& eval(ch_tick) override;
 
   void print(std::ostream& out, uint32_t level) const override;
 

@@ -128,7 +128,7 @@ protected:
   context* ctx_;
   uint32_t id_;
   std::string name_;
-  lnodetype type_;  
+  lnodetype type_;
   std::vector<lnode> srcs_;
   bitvector value_;
   uint32_t var_id_;
