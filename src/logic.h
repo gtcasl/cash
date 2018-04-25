@@ -71,24 +71,24 @@ using logic_buffer_ptr = std::shared_ptr<logic_buffer>;
 class logic_buffer {
 public:
   explicit logic_buffer(unsigned size,
-                             const source_location& sloc = source_location(),
-                             const std::string& name = "");
+                        const source_location& sloc = source_location(),
+                        const std::string& name = "");
 
   logic_buffer(const logic_buffer& rhs,
-                    const source_location& sloc = source_location(),
-                    const std::string& name = "");
+               const source_location& sloc = source_location(),
+               const std::string& name = "");
 
   logic_buffer(logic_buffer&& rhs);
 
   explicit logic_buffer(const lnode& data,
-                             const source_location& sloc = source_location(),
-                             const std::string& name = "");
+                        const source_location& sloc = source_location(),
+                        const std::string& name = "");
 
   logic_buffer(unsigned size,
-                    const logic_buffer_ptr& buffer,
-                    unsigned offset,
-                    const source_location& sloc = source_location(),
-                    const std::string& name = "");
+               const logic_buffer_ptr& buffer,
+               unsigned offset,
+               const source_location& sloc = source_location(),
+               const std::string& name = "");
 
   virtual ~logic_buffer() {}
 
@@ -96,7 +96,29 @@ public:
 
   logic_buffer& operator=(logic_buffer&& rhs);
 
-  const lnode& get_data() const;
+  uint32_t id() const {
+    return id_;
+  }
+
+  const lnode& data() const {
+    return value_;
+  }
+
+  unsigned size() const {
+    return value_.size();
+  }
+
+  const logic_buffer_ptr& source() const {
+    return source_;
+  }
+
+  logic_buffer_ptr& source() {
+    return source_;
+  }
+
+  unsigned offset() const {
+    return offset_;
+  }
 
   virtual void write(uint32_t dst_offset,
                      const lnode& data,
@@ -108,27 +130,7 @@ public:
   }
 
   void copy(const logic_buffer& rhs) {
-    this->write(0, rhs.get_data(), 0, rhs.size());
-  }
-
-  uint32_t get_id() const {
-    return id_;
-  }
-
-  unsigned size() const {
-    return value_.size();
-  }
-
-  const logic_buffer_ptr& get_source() const {
-    return source_;
-  }
-
-  logic_buffer_ptr& get_source() {
-    return source_;
-  }
-
-  unsigned get_offset() const {
-    return offset_;
+    this->write(0, rhs.data(), 0, rhs.size());
   }
 
 protected:
@@ -152,36 +154,27 @@ auto make_logic_buffer(Args&&... args) {
 class logic_accessor {
 public:
   template <typename T>
-  static const logic_buffer_ptr& get_buffer(const T& obj) {
-    return obj.get_buffer();
+  static const logic_buffer_ptr& buffer(const T& obj) {
+    return obj.buffer();
   }
 
   template <typename T>
-  static logic_buffer_ptr& get_buffer(T& obj) {
-    return obj.get_buffer();
+  static logic_buffer_ptr& buffer(T& obj) {
+    return obj.buffer();
   }
 
   template <typename T>
-  static const lnode& get_data(const T& obj) {
-    assert(width_v<T> == obj.get_buffer()->size());
-    return obj.get_buffer()->get_data();
-  }
-
-  template <typename T>
-  static void set_data(const T& obj, const lnode& data) {
-    assert(width_v<T> == obj.get_buffer()->size());
-    auto& obj_data = obj.get_buffer()->get_data();
-    const_cast<lnode&>(data).set_var_id(obj_data.get_var_id());
-    const_cast<lnode&>(data).set_source_location(obj_data.get_source_location());
-    obj.get_buffer()->write(data);
+  static const lnode& data(const T& obj) {
+    assert(width_v<T> == obj.buffer()->size());
+    return obj.buffer()->data();
   }
 
   template <typename T>
   static auto copy_buffer(const T& obj,
                           const source_location& sloc = CH_SRC_LOCATION,
                           const std::string& name = "") {
-    assert(width_v<T> == obj.get_buffer()->size());
-    return make_logic_buffer(*obj.get_buffer(), sloc, name);
+    assert(width_v<T> == obj.buffer()->size());
+    return make_logic_buffer(*obj.buffer(), sloc, name);
   }
 
   template <typename U, typename V,
@@ -189,16 +182,16 @@ public:
             CH_REQUIRE_0(is_logic_type<V>::value),
             CH_REQUIRE_0(width_v<U> == width_v<V>)>
   static void copy(U& dst, const V& src) {
-    assert(width_v<U> == dst.get_buffer()->size());
-    assert(width_v<V> == src.get_buffer()->size());
-    *dst.get_buffer() = *src.get_buffer();
+    assert(width_v<U> == dst.buffer()->size());
+    assert(width_v<V> == src.buffer()->size());
+    *dst.buffer() = *src.buffer();
   }
 
   template <typename U, typename V,
             CH_REQUIRE_0(width_v<U> == width_v<V>)>
   static void move(U& dst, V&& src) {
-    assert(width_v<U> == dst.get_buffer()->size());
-    *dst.get_buffer() = std::move(*src.get_buffer());
+    assert(width_v<U> == dst.buffer()->size());
+    *dst.buffer() = std::move(*src.buffer());
   }
 
   template <typename U, typename V>
@@ -207,21 +200,21 @@ public:
                     const V& src,
                     unsigned src_offset,
                     unsigned length) {
-    auto data = src.get_buffer()->get_data();
-    dst.get_buffer()->write(dst_offset, data, src_offset, length);
+    auto data = src.buffer()->data();
+    dst.buffer()->write(dst_offset, data, src_offset, length);
   }
 
   template <typename T>
   static auto clone(const T& obj, const source_location& sloc) {
-    assert(width_v<T> == obj.get_buffer()->size());
-    auto data = obj.get_buffer()->get_data().clone();
+    assert(width_v<T> == obj.buffer()->size());
+    auto data = obj.buffer()->data().clone();
     return T(make_logic_buffer(data, sloc));
   }
 
   template <typename D, typename T>
   static auto cast(const T& obj) {
-    assert(width_v<T> == obj.get_buffer()->size());
-    return D(obj.get_buffer());
+    assert(width_v<T> == obj.buffer()->size());
+    return D(obj.buffer());
   }
 };
 
@@ -233,13 +226,13 @@ using logic_cast_t = std::conditional_t<is_logic_type<T>::value, const T&, R>;
 template <typename T, unsigned N = width_v<T>,
           CH_REQUIRE_0(is_logic_convertible<T, N>::value)>
 lnode get_lnode(const T& rhs) {
-  return logic_accessor::get_data(static_cast<logic_cast_t<T, ch_logic<N>>>(rhs));
+  return logic_accessor::data(static_cast<logic_cast_t<T, ch_logic<N>>>(rhs));
 }
 
 template <typename T, typename R,
           CH_REQUIRE_0(is_cast_convertible<R, T>::value)>
 lnode get_lnode(const T& rhs) {
-  return logic_accessor::get_data(static_cast<logic_cast_t<T, R>>(rhs));
+  return logic_accessor::data(static_cast<logic_cast_t<T, R>>(rhs));
 }
 
 template <typename T>
@@ -403,7 +396,7 @@ public:
   ch_logic(ch_logic&& rhs) : buffer_(std::move(rhs.buffer_)) {}
 
   ch_logic(const ch_scalar<N>& rhs, const source_location& sloc = CH_SRC_LOCATION)
-    : buffer_(make_logic_buffer(scalar_accessor::get_data(rhs), sloc))
+    : buffer_(make_logic_buffer(scalar_accessor::data(rhs), sloc))
   {}
 
   template <typename U,
@@ -417,7 +410,7 @@ public:
             CH_REQUIRE_1(is_scalar_type<U>::value),
             CH_REQUIRE_1(width_v<U> <= N)>
   explicit ch_logic(const U& rhs, const source_location& sloc = CH_SRC_LOCATION)
-    : buffer_(make_logic_buffer(scalar_accessor::get_data(ch_scalar<N>(rhs)), sloc))
+    : buffer_(make_logic_buffer(scalar_accessor::data(ch_scalar<N>(rhs)), sloc))
   {}
 
   template <typename U,
@@ -448,7 +441,7 @@ public:
             CH_REQUIRE_1(is_scalar_type<U>::value),
             CH_REQUIRE_1(width_v<U> <= N)>
   ch_logic& operator=(const U& rhs) {
-    buffer_->write(scalar_accessor::get_data(ch_scalar<N>(rhs)));
+    buffer_->write(scalar_accessor::data(ch_scalar<N>(rhs)));
     return *this;
   }
 
@@ -579,11 +572,11 @@ public:
 
 protected:
 
-  const logic_buffer_ptr& get_buffer() const {
+  const logic_buffer_ptr& buffer() const {
     return buffer_;
   }
 
-  logic_buffer_ptr& get_buffer() {
+  logic_buffer_ptr& buffer() {
     return buffer_;
   }
 

@@ -36,7 +36,7 @@ public:
   {}
 
   ch_reg_impl(const ch_reg_impl& rhs, const source_location& sloc = CH_SRC_LOCATION)
-    : base(std::make_shared<reg_buffer>(logic_accessor::get_data(rhs), sloc))
+    : base(std::make_shared<reg_buffer>(logic_accessor::data(rhs), sloc))
   {}
 
   ch_reg_impl(ch_reg_impl&& rhs) : base(std::move(rhs.buffer_)) {}
@@ -50,7 +50,7 @@ public:
   template <typename U,
             CH_REQUIRE_0(is_cast_convertible<T, U>::value)>
   void operator <<=(const U& rhs) const {
-    logic_accessor::get_buffer(*this)->write(get_lnode<U, T>(rhs));
+    logic_accessor::buffer(*this)->write(get_lnode<U, T>(rhs));
   }
 };
 

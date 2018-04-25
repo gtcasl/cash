@@ -11,8 +11,8 @@ static uint32_t make_id() {
 }
 
 logic_buffer::logic_buffer(const lnode& value,
-                                     const logic_buffer_ptr& source,
-                                     unsigned offset)
+                           const logic_buffer_ptr& source,
+                           unsigned offset)
   : id_(make_id())
   , value_(value)
   , source_(source)
@@ -20,28 +20,20 @@ logic_buffer::logic_buffer(const lnode& value,
 {}
 
 logic_buffer::logic_buffer(unsigned size,
-                                     const source_location& sloc,
-                                     const std::string& name)
+                           const source_location& sloc,
+                           const std::string& name)
   : id_(make_id())
-  , value_(size)
-  , offset_(0) {
-  value_.set_var_id(id_);
-  value_.set_source_location(sloc);  
-  if (!name.empty())
-    value_.set_name(name);
-}
+  , value_(size, id_, name, sloc)
+  , offset_(0)
+{}
 
 logic_buffer::logic_buffer(const logic_buffer& rhs,
-                                     const source_location& sloc,
-                                     const std::string& name)
+                           const source_location& sloc,
+                           const std::string& name)
   : id_(make_id())
-  , value_(rhs.size(), rhs.get_data())
-  , offset_(0) {
-  value_.set_var_id(id_);
-  value_.set_source_location(sloc);
-  if (!name.empty())
-    value_.set_name(name);
-}
+  , value_(rhs.size(), rhs.data(), 0, id_, name, sloc)
+  , offset_(0)
+{}
 
 logic_buffer::logic_buffer(logic_buffer&& rhs)
   : id_(std::move(rhs.id_))
@@ -51,33 +43,28 @@ logic_buffer::logic_buffer(logic_buffer&& rhs)
 {}
 
 logic_buffer::logic_buffer(const lnode& data,
-                                     const source_location& sloc,
-                                     const std::string& name)
+                           const source_location& sloc,
+                           const std::string& name)
   : id_(make_id())
-  , value_(data.size(), data)
-  , offset_(0) {
-  value_.set_var_id(id_);
-  value_.set_source_location(sloc);
-  if (!name.empty())
-    value_.set_name(name);
-}
+  , value_(data.size(), data, 0, id_, name, sloc)
+  , offset_(0)
+{}
 
 logic_buffer::logic_buffer(unsigned size,
-                                     const logic_buffer_ptr& buffer,
-                                     unsigned offset,
-                                     const source_location& sloc,
-                                     const std::string& name)
+                           const logic_buffer_ptr& buffer,
+                           unsigned offset,
+                           const source_location& sloc,
+                           const std::string& name)
   : id_(make_id())
-  , value_(size, buffer->get_data(), offset)
+  , value_(size,
+           buffer->data(),
+           offset,
+           id_,
+           (name.empty() ? "" : fstring("%s_%s", buffer->data().name().c_str(), name.c_str())),
+           sloc)
   , source_(buffer)
   , offset_(offset) {
   assert(offset + size <= buffer->size());
-  value_.set_var_id(id_);
-  value_.set_source_location(sloc);
-  if (!name.empty()) {
-    assert(!buffer->get_data().get_name().empty());
-    value_.set_name(fstring("%s_%s", buffer->get_data().get_name().c_str(), name.c_str()));
-  }
 }
 
 logic_buffer& logic_buffer::operator=(const logic_buffer& rhs) {
@@ -90,16 +77,10 @@ logic_buffer& logic_buffer::operator=(logic_buffer&& rhs) {
   return *this;
 }
 
-const lnode& logic_buffer::get_data() const {
-  uint32_t var_id = value_.get_var_id();
-  CH_UNUSED(var_id);
-  return value_;
-}
-
 void logic_buffer::write(uint32_t dst_offset,
-                              const lnode& data,
-                              uint32_t src_offset,
-                              uint32_t length) {
+                         const lnode& data,
+                         uint32_t src_offset,
+                         uint32_t length) {
   if (source_) {
     source_->write(offset_ + dst_offset, data, src_offset, length);
   } else {

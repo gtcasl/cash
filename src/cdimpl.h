@@ -9,11 +9,11 @@ namespace internal {
 class cdimpl : public ioimpl {
 public:
 
-  const auto& get_clock() const {
+  const auto& clock() const {
     return srcs_[0];
   }
 
-  const auto& get_reset() const {
+  const auto& reset() const {
     return srcs_[1];
   }
 

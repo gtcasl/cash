@@ -9,7 +9,7 @@ class switch_t {
 public:
 
   switch_t(const lnode& key, const source_location& sloc) {
-    begin_branch(key.get_impl(), sloc);
+    begin_branch(key.impl(), sloc);
   }
 
   ~switch_t() {

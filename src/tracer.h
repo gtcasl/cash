@@ -27,7 +27,7 @@ public:
   template <typename U,
             CH_REQUIRE_0(is_scalar_type<U>::value)>
   void add_trace(const std::string& name, const U& var) {
-    this->add_trace(name, scalar_accessor::get_buffer(var));
+    this->add_trace(name, scalar_accessor::buffer(var));
   }
 
 protected:

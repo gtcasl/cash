@@ -3,24 +3,25 @@
 
 using namespace ch::internal;
 
-proxyimpl::proxyimpl(context* ctx, uint32_t size) 
-  : lnodeimpl(ctx, type_proxy, size)
+proxyimpl::proxyimpl(context* ctx,
+                     uint32_t size,
+                     unsigned var_id,
+                     const std::string& name,
+                     const source_location& sloc)
+  : lnodeimpl(ctx, type_proxy, size, var_id, name, sloc)
   , tick_(~0ull)
 {}
-
-proxyimpl::proxyimpl(context* ctx, const lnode& src)
-  : lnodeimpl(ctx, type_proxy, src.size())
-  , tick_(~0ull)  {  
-  this->add_source(0, src);
-}
 
 proxyimpl::proxyimpl(context* ctx,
                      const lnode& src,
                      uint32_t offset,
-                     uint32_t length)
-  : lnodeimpl(ctx, type_proxy, length)
+                     uint32_t length,
+                     unsigned var_id,
+                     const std::string& name,
+                     const source_location& sloc)
+  : lnodeimpl(ctx, type_proxy, length, var_id, name, sloc)
   , tick_(~0ull)  {
-  this->add_source(0, src, offset, length);
+  this->add_source(0, src, offset, length);  
 }
 
 void proxyimpl::add_source(uint32_t dst_offset,
@@ -28,20 +29,20 @@ void proxyimpl::add_source(uint32_t dst_offset,
                            uint32_t src_offset,
                            uint32_t length) {
   assert(!src.empty());
-  assert(this != src.get_impl());
+  assert(this != src.impl());  
   assert(length != 0);
   assert(dst_offset + length <= value_.size());
   assert(src_offset + length <= src.size());
 
   // update source location
   if (sloc_.empty()) {
-    sloc_ = src.get_source_location();
+    sloc_ = src.sloc();
   }
 
   // add new source
   uint32_t new_srcidx = 0xffffffff;
   for (uint32_t i = 0, n = srcs_.size(); i < n; ++i) {
-    if (srcs_[i].get_id() == src.get_id()) {
+    if (srcs_[i].id() == src.id()) {
       new_srcidx = i;
       break;
     }
@@ -215,7 +216,7 @@ proxyimpl::erase_source(std::vector<lnode>::iterator iter) {
   return next;
 }
 
-lnodeimpl* proxyimpl::get_slice(uint32_t offset, uint32_t length) {
+lnodeimpl* proxyimpl::slice(uint32_t offset, uint32_t length) {
   assert(length <= value_.size());
 
   // return the nested node if the offset/size match
@@ -224,12 +225,12 @@ lnodeimpl* proxyimpl::get_slice(uint32_t offset, uint32_t length) {
      && range.dst_offset == offset
      && range.src_offset == 0
      && srcs_[range.src_idx].size() == length) {
-      return srcs_[range.src_idx].get_impl();
+      return srcs_[range.src_idx].impl();
     }
   }
 
   // return new slice
-  auto proxy = ctx_->create_node<proxyimpl>(length);
+  auto proxy = ctx_->create_node<proxyimpl>(length, var_id_, name_, sloc_);
   for (auto& range : ranges_) {
     uint32_t r_end = range.dst_offset + range.length;
     uint32_t src_end = offset + length;
@@ -242,63 +243,7 @@ lnodeimpl* proxyimpl::get_slice(uint32_t offset, uint32_t length) {
     }
   }
 
-  // update source location
-  proxy->set_source_location(sloc_);
-
   return proxy;
-}
-
-std::vector<std::pair<uint32_t, uint32_t>>
-proxyimpl::get_update_slices(uint32_t offset, uint32_t length) {
-  std::vector<std::pair<uint32_t, uint32_t>> ret;
-  uint32_t n = ranges_.size();
-  if (0 == n) {
-    ret.emplace_back(offset, length);
-  } else {
-    uint32_t i = 0;
-    for (; length && i < n; ++i) {
-      auto& curr = ranges_[i];
-      uint32_t curr_end = curr.dst_offset + curr.length;
-      uint32_t src_end  = offset + length;
-
-      // do ranges overlap?
-      if (offset < curr_end && src_end > curr.dst_offset) {
-        if (offset <= curr.dst_offset && src_end >= curr_end) {
-          // source fully overlaps
-          uint32_t delta = curr_end - offset;
-          ret.emplace_back(offset, delta);
-          offset += delta;
-          length -= delta;
-        } else if (offset < curr.dst_offset) {
-          // source overlaps on the left
-          uint32_t delta = curr.dst_offset - offset;
-          ret.emplace_back(offset, delta);
-          length -= delta;
-          offset += delta;
-        } else if (src_end > curr_end) {
-          // source overlaps on the right
-          uint32_t delta = curr_end - offset;
-          ret.emplace_back(offset, delta);
-          offset += delta;
-          length -= delta;
-        } else {
-          // source fully included,
-          ret.emplace_back(offset, length);
-          length = 0;
-        }
-      } else if (i+1 == n || src_end <= ranges_[i+1].dst_offset) {
-        // no overlap with current and next
-        ret.emplace_back(offset, length);
-        length = 0;
-      } else {
-        // no overlap with current
-        continue;
-      }
-    }
-    assert(0 == length);
-  }
-
-  return ret;
 }
 
 const bitvector& proxyimpl::eval(ch_tick t) {
@@ -313,7 +258,7 @@ const bitvector& proxyimpl::eval(ch_tick t) {
 }
 
 void proxyimpl::print(std::ostream& out, uint32_t level) const {
-  out << "#" << id_ << " <- " << this->get_type() << value_.size();
+  out << "#" << id_ << " <- " << this->type() << value_.size();
   out << "(";
   uint32_t s(0);
   auto_separator sep(", ");
@@ -325,7 +270,7 @@ void proxyimpl::print(std::ostream& out, uint32_t level) const {
     }
     s += range.length;
     auto& src = srcs_[range.src_idx];
-    out << "#" << src.get_id();
+    out << "#" << src.id();
     if (range.length < src.size()) {
       out << "[" << range.src_offset;
       if (range.length > 1) {

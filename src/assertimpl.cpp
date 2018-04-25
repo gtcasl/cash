@@ -9,7 +9,7 @@ assertimpl::assertimpl(context* ctx, const lnode& cond, const std::string& msg)
   , msg_(msg)
   , predicated_(false) {
   if (ctx_->conditional_enabled(this)) {
-    auto pred = ctx_->get_predicate();
+    auto pred = ctx_->create_predicate();
     if (pred) {
       srcs_.emplace_back(pred);
       predicated_ = true;
@@ -27,5 +27,5 @@ const bitvector& assertimpl::eval(ch_tick t) {
 }
 
 void ch::internal::createAssertNode(const lnode& pred, const std::string& msg) {
-  pred.get_ctx()->create_node<assertimpl>(pred, msg);
+  pred.ctx()->create_node<assertimpl>(pred, msg);
 }

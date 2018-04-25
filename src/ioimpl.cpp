@@ -18,10 +18,10 @@ const bitvector& inputimpl::eval(ch_tick t) {
 }
 
 void inputimpl::print(std::ostream& out, uint32_t level) const {
-  out << "#" << id_ << " <- " << this->get_type() << value_.size();
+  out << "#" << id_ << " <- " << this->type() << value_.size();
   out << "(" << name_;
   if (!input_.empty()) {
-    out << ", $" << input_.get_id();
+    out << ", $" << input_.id();
   }
   out << ")";
   if (level == 2) {
@@ -46,8 +46,8 @@ const bitvector& outputimpl::eval(ch_tick t) {
 }
 
 void outputimpl::print(std::ostream& out, uint32_t level) const {
-  out << "#" << id_ << " <- " << this->get_type() << value_.size();
-  out << "(" << name_ << ", #" << srcs_[0].get_id() << ")";
+  out << "#" << id_ << " <- " << this->type() << value_.size();
+  out << "(" << name_ << ", #" << srcs_[0].id() << ")";
   if (level == 2) {
     out << " = " << value_;
   }
@@ -62,8 +62,8 @@ tapimpl::tapimpl(context* ctx, const lnode& src, const std::string& name)
 }
 
 void tapimpl::print(std::ostream& out, uint32_t level) const {
-  out << "#" << id_ << " <- " << this->get_type() << value_.size();
-  out << "(" << name_ << ", #" << srcs_[0].get_id() << ")";
+  out << "#" << id_ << " <- " << this->type() << value_.size();
+  out << "(" << name_ << ", #" << srcs_[0].id() << ")";
   if (level == 2) {
     out << " = " << value_;
   }
@@ -84,5 +84,5 @@ lnodeimpl* ch::internal::createInputNode(const std::string& name, uint32_t size)
 }
 
 lnodeimpl* ch::internal::createOutputNode(const std::string& name, const lnode& src) {
-  return src.get_ctx()->create_node<outputimpl>(src, name);
+  return src.ctx()->create_node<outputimpl>(src, name);
 }

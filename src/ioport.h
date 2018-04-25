@@ -112,17 +112,15 @@ public:
   using base = T;
 
   ch_in_impl(const std::string& name = "io", const source_location& sloc = CH_SRC_LOCATION)
-    : base(make_logic_buffer(width_v<T>, sloc, name)) {
-    input_ = createInputNode(name, width_v<T>);
-    logic_accessor::set_data(*this, input_);
-  }
+    : ch_in_impl(createInputNode(name, width_v<T>), name, sloc)
+  {}
 
   template <typename U,
             CH_REQUIRE_0(is_logic_only<U>::value),
             CH_REQUIRE_0(is_cast_convertible<U, T>::value)>
   explicit ch_in_impl(const ch_out<U>& out, const source_location& sloc = CH_SRC_LOCATION)
     : base(make_logic_buffer(width_v<T>, sloc)) {
-    input_ = logic_accessor::get_data(*this);
+    input_ = logic_accessor::data(*this);
     bindOutput(input_, out.output_);
   }
 
@@ -138,6 +136,11 @@ public:
   }
 
 private:
+
+  ch_in_impl(lnodeimpl* src, const std::string& name, const source_location& sloc)
+    : base(make_logic_buffer(src, sloc, name)) {
+    input_ = src;
+  }
 
   ch_in_impl& operator=(const ch_in_impl&) = delete;
 
@@ -166,7 +169,7 @@ public:
 
   ch_out(const std::string& name = "io", const source_location& sloc = CH_SRC_LOCATION)
     : base(make_logic_buffer(width_v<T>, sloc, name)) {
-    output_ = createOutputNode(name, logic_accessor::get_data(*this));
+    output_ = createOutputNode(name, logic_accessor::data(*this));
   }
 
   template <typename U,
@@ -174,11 +177,13 @@ public:
             CH_REQUIRE_0(is_cast_convertible<T, U>::value)>
   explicit ch_out(const ch_in_impl<U>& in, const source_location& sloc = CH_SRC_LOCATION)
     : base(make_logic_buffer(width_v<T>, sloc)) {
-    output_ = logic_accessor::get_data(*this);
+    output_ = logic_accessor::data(*this);
     bindInput(output_, in.input_);
   }
 
-  ch_out(const ch_out& out, const source_location& sloc = CH_SRC_LOCATION) : base(out, sloc) {}
+  ch_out(const ch_out& out, const source_location& sloc = CH_SRC_LOCATION)
+    : base(out, sloc)
+  {}
 
   ch_out(ch_out&& out) : base(std::move(out)) {}
 
@@ -217,8 +222,8 @@ public:
     : base(bitvector(), nullptr, 0, io.size()), io_(io)
   {}
 
-  const bitvector& get_data() const override {
-    return io_.get_data();
+  const bitvector& data() const override {
+    return io_.data();
   }
 
   void read(uint32_t dst_offset,
@@ -226,7 +231,7 @@ public:
             uint32_t out_cbsize,
             uint32_t src_offset,
             uint32_t length) const override {
-    io_.get_data().read(dst_offset, out, out_cbsize, src_offset, length);
+    io_.data().read(dst_offset, out, out_cbsize, src_offset, length);
   }
 
   void write(uint32_t dst_offset,
@@ -234,7 +239,7 @@ public:
              uint32_t in_cbsize,
              uint32_t src_offset,
              uint32_t length) override {
-    io_.get_data().write(dst_offset, in, in_cbsize, src_offset, length);
+    io_.data().write(dst_offset, in, in_cbsize, src_offset, length);
   }
 
   lnode io_;

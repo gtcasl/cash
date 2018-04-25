@@ -31,26 +31,18 @@ public:
         && (srcs_[0].size() == value_.size());
   }
 
-  const std::vector<range_t>& get_ranges() const {
+  const std::vector<range_t>& ranges() const {
     return ranges_;
   }
   
   void add_source(uint32_t dst_offset,
                   const lnode& src,
-                  uint32_t src_offset,
-                  uint32_t length);
-
-  void add_source(uint32_t dst_offset,
-                  const lnode& src,
-                  uint32_t src_offset = 0) {
-    this->add_source(dst_offset, src, src_offset, src.size());
-  }
+                  uint32_t src_offset = 0,
+                  uint32_t length = 0);
 
   std::vector<lnode>::iterator erase_source(std::vector<lnode>::iterator iter);
 
-  lnodeimpl* get_slice(uint32_t offset, uint32_t length) override;
-
-  std::vector<std::pair<uint32_t, uint32_t>> get_update_slices(uint32_t offset, uint32_t length);
+  lnodeimpl* slice(uint32_t offset, uint32_t length) override;
 
   const bitvector& eval(ch_tick t) override;
 
@@ -58,11 +50,23 @@ public:
   
 protected:
 
-  proxyimpl(context* ctx, uint32_t size);
+  proxyimpl(context* ctx,
+            uint32_t size,
+            unsigned var_id = 0,
+            const std::string& name = "",
+            const source_location& sloc = source_location());
 
-  proxyimpl(context* ctx, const lnode& src);
+  proxyimpl(context* ctx,
+            const lnode& src,
+            uint32_t offset,
+            uint32_t length,
+            unsigned var_id = 0,
+            const std::string& name = "",
+            const source_location& sloc = source_location());
 
-  proxyimpl(context* ctx, const lnode& src, uint32_t offset, uint32_t length);
+  proxyimpl(context* ctx, const lnode& src, uint32_t offset = 0)
+    : proxyimpl(ctx, src, offset, src.size())
+  {}
 
   ~proxyimpl() {}
 

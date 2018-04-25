@@ -7,14 +7,14 @@
 using namespace ch::internal;
 
 void clock_driver::add_signal(lnodeimpl* node) {
-  node->get_value()[0] = value_;
+  node->value()[0] = value_;
   nodes_.push_back(node);
 }
 
 void clock_driver::flip() {
   value_ = !value_;
   for (auto node : nodes_) {
-    node->get_value()[0] = value_;
+    node->value()[0] = value_;
   }
 }
 
@@ -47,11 +47,11 @@ void simulatorimpl::add_device(const device& device) {
 void simulatorimpl::ensureInitialize() {
   // bind default clocks to clock driver
   for (auto ctx : contexts_) {
-    auto clk = ctx->get_default_clk();
+    auto clk = ctx->default_clk();
     if (clk) {
       clk_driver_.add_signal(clk);
     }
-    auto reset = ctx->get_default_reset();
+    auto reset = ctx->default_reset();
     if (reset) {
       reset_driver_.add_signal(reset);
     }
@@ -78,7 +78,7 @@ void simulatorimpl::tick(ch_tick t) {
   for (auto ctx : contexts_) {
     ctx->eval(t);
   #ifndef NDEBUG
-    int dump_ast_level = platform::self().get_dump_ast();
+    int dump_ast_level = platform::self().dump_ast();
     if (2 == dump_ast_level) {
       std::cerr << "tick " << t << ":" << std::endl;
       ctx->dump_ast(std::cerr, 2);

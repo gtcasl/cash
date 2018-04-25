@@ -29,18 +29,18 @@ void tracerimpl::ensureInitialize() {
   // register context taps
   for (auto ctx : contexts_) {
     // get inputs
-    for (auto node : ctx->get_inputs()) {
-      this->add_trace(node->get_name(), node);
+    for (auto node : ctx->inputs()) {
+      this->add_trace(node->name(), node);
     }
 
     // get outputs
-    for (auto node : ctx->get_outputs()) {
-      this->add_trace(node->get_name(), node);
+    for (auto node : ctx->outputs()) {
+      this->add_trace(node->name(), node);
     }
 
     // get taps
-    for (auto node : ctx->get_taps()) {
-      this->add_trace(node->get_name(), node);
+    for (auto node : ctx->taps()) {
+      this->add_trace(node->name(), node);
     }
   }
 }
@@ -64,7 +64,7 @@ void tracerimpl::tick(ch_tick t) {
 
   // log scalars
   for (auto& trace : sc_traces_) {
-    out_ << trace.name << " = " << trace.node->get_data() << std::endl;
+    out_ << trace.name << " = " << trace.node->data() << std::endl;
   }
 }
 

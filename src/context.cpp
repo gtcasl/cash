@@ -42,7 +42,7 @@ public:
     return new context(unique_name.c_str());
   }
 
-  context* get_ctx() const {
+  context* ctx() const {
     CH_CHECK(ctx_ != nullptr, "invalid context!");
     return ctx_;
   }
@@ -74,7 +74,7 @@ context* ch::internal::ctx_swap(context* ctx) {
 }
 
 context* ch::internal::ctx_curr() {
-  return tls_ctx.get_ctx();
+  return tls_ctx.ctx();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -122,7 +122,7 @@ cdimpl* context::current_cd() {
   return cd_stack_.top();
 }
 
-lnodeimpl* context::get_time() {
+lnodeimpl* context::time() {
   if (nullptr == time_) {
     time_ = this->create_node<timeimpl>();
   }
@@ -132,7 +132,7 @@ lnodeimpl* context::get_time() {
 uint32_t context::node_id() {
   uint32_t nodeid = ++node_ids_;
 #ifndef NDEBUG
-  uint32_t dbg_nodeid = platform::self().get_dbg_node();
+  uint32_t dbg_nodeid = platform::self().dbg_node();
   if (dbg_nodeid) {
     if (nodeid == dbg_nodeid) {
       CH_ABORT("debugbreak on nodeid %d hit!", nodeid);
@@ -147,8 +147,8 @@ cdimpl* context::create_cdomain(const lnode& clock,
                                 bool posedge) {
   // return existing match
   for (auto cd : cdomains_) {
-    if (cd->get_clock() == clock
-     && cd->get_reset() == reset
+    if (cd->clock() == clock
+     && cd->reset() == reset
      && cd->posedge()   == posedge)
       return cd;
   }
@@ -158,7 +158,7 @@ cdimpl* context::create_cdomain(const lnode& clock,
 
 aluimpl* context::create_alu(uint32_t op, unsigned size, const lnode& in) {
   aluimpl* node;
-  op_key_t hk{op, size, in.get_id(), 0};
+  op_key_t hk{op, size, in.id(), 0};
   auto it = op_cache_.find(hk);
   if (it == op_cache_.end()) {
     node = this->create_node<aluimpl>((ch_op)op, size, in);
@@ -171,7 +171,7 @@ aluimpl* context::create_alu(uint32_t op, unsigned size, const lnode& in) {
 
 aluimpl* context::create_alu(uint32_t op, unsigned size, const lnode& lhs, const lnode& rhs) {
   aluimpl* node;
-  op_key_t hk{op, size, lhs.get_id(), rhs.get_id()};
+  op_key_t hk{op, size, lhs.id(), rhs.id()};
   if ((hk.op & op_symmetric)
    && hk.arg0 > hk.arg1) {
     // adjust ordering for symmetrix operators
@@ -196,7 +196,7 @@ node_list_t::iterator context::destroyNode(const node_list_t::iterator& it) {
 
 void context::add_node(lnodeimpl* node) {
   nodes_.emplace_back(node);
-  auto type = node->get_type();
+  auto type = node->type();
   switch (type) {
   case type_undef:
     undefs_.emplace_back((undefimpl*)node);
@@ -211,9 +211,9 @@ void context::add_node(lnodeimpl* node) {
     {
       // ensure clock and reset signals are ordered first
       auto input = reinterpret_cast<inputimpl*>(node);
-      if (input->get_name() == "clk") {
+      if (input->name() == "clk") {
         inputs_.emplace_front(input);
-      } else if (input->get_name() == "reset") {
+      } else if (input->name() == "reset") {
         if (default_clk_) {
           inputs_.emplace(std::next(inputs_.begin()), input);
         } else {
@@ -250,19 +250,19 @@ void context::add_node(lnodeimpl* node) {
    && nullptr == dynamic_cast<litimpl*>(node)) {
     auto curr_branch = cond_branches_.top();
     auto curr_block = curr_branch->blocks.back();
-    cond_inits_[node->get_id()] = curr_block;
+    cond_inits_[node->id()] = curr_block;
   }
 }
 
 node_list_t::iterator context::remove_node(const node_list_t::iterator& it) {
   auto node = *it;
   DBG(3, "*** deleting node: %s%d(#%d)\n",
-      to_string(node->get_type()), node->size(), node->get_id());
+      to_string(node->type()), node->size(), node->id());
   
   assert(!nodes_.empty());
   auto next = nodes_.erase(it);
   
-  switch (node->get_type()) {
+  switch (node->type()) {
   case type_undef:
     undefs_.remove((undefimpl*)node);
     break;
@@ -343,7 +343,7 @@ void context::end_branch() {
     // emit conditional statements
     for (auto& var : cond_vars_) {      
       auto dst = var.first;
-      assert(type_proxy == dst->get_type());
+      assert(type_proxy == dst->type());
       for (auto& slice : var.second) {
         auto value  = this->emit_conditionals(dst, slice.first, slice.second, curr_branch);
         reinterpret_cast<proxyimpl*>(dst)->add_source(slice.first.offset, value, 0, slice.first.length);
@@ -370,14 +370,14 @@ void context::end_block() {
 
 void context::remove_local_variable(lnodeimpl* src, lnodeimpl* dst) {
   // remove from source init block
-  auto it = cond_inits_.find(src->get_id());
+  auto it = cond_inits_.find(src->id());
   if (it != cond_inits_.end()) {
     cond_inits_.erase(it);
     if (dst) {
       // add to destination's init block
-      auto it = cond_inits_.find(dst->get_id());
+      auto it = cond_inits_.find(dst->id());
       if (it != cond_inits_.end()) {
-        cond_inits_[src->get_id()] = it->second;
+        cond_inits_[src->id()] = it->second;
       }
     }
   }
@@ -388,7 +388,7 @@ bool context::conditional_enabled(lnodeimpl* node) const {
   if (cond_branches_.empty())
     return false;
   if (node) {
-    auto it = cond_inits_.find(node->get_id());
+    auto it = cond_inits_.find(node->id());
     if (it != cond_inits_.end()) {
       auto curr_branch = cond_branches_.top();
       auto curr_block  = curr_branch->blocks.back();
@@ -602,23 +602,22 @@ context::emit_conditionals(lnodeimpl* dst,
       auto _true = dynamic_cast<selectimpl*>(values.front().second);
       if (_true) {
         uint32_t num_srcs = _true->has_key() ? 4 : 3;
-        if (_true->get_num_srcs() == num_srcs
-         && _true->get_src(num_srcs-1) == values.back().second) {
+        if (_true->num_srcs() == num_srcs
+         && _true->src(num_srcs-1) == values.back().second) {
           // combine predicates
           auto pred0 = values.front().first;
           if (key) {
             pred0 = this->create_alu(op_eq, 1, key, pred0);
           }
-          auto pred1 = _true->get_src(0);
+          auto pred1 = _true->src(0);
           if (_true->has_key()) {
             // create predicate
-            pred1 = this->create_alu(op_eq, 1, pred1, _true->get_src(1));
+            pred1 = this->create_alu(op_eq, 1, pred1, _true->src(1));
             // remove key from src list
-            _true->get_srcs().erase(_true->get_srcs().begin());
-            _true->set_key(false);
+            _true->remove_key();
           }
           auto pred = this->create_alu(op_and, 1, pred0, pred1);
-          _true->set_src(0, pred);
+          _true->src(0) = pred;
           return _true;
         }
       }
@@ -644,7 +643,7 @@ context::emit_conditionals(lnodeimpl* dst,
 
   //--
   auto get_scalar = [&](lnodeimpl* pred)->lnodeimpl* {
-    assert(type_lit == pred->get_type());
+    assert(type_lit == pred->type());
     return pred;
   };
 
@@ -668,17 +667,17 @@ context::emit_conditionals(lnodeimpl* dst,
         return ret;
 
       // create select node
-      auto sel = this->create_node<selectimpl>(current->size(), branch->key);
-      sel->set_source_location(branch->sloc);      
+      auto sel = this->create_node<selectimpl>(
+                          current->size(), branch->key, branch->sloc);
       for (auto& value : values) {
         auto pred = value.first;
         if (pred) {
           if (branch->key) {
             pred = get_scalar(pred);
           }
-          sel->get_srcs().push_back(pred);
+          sel->srcs().push_back(pred);
         }
-        sel->get_srcs().push_back(value.second);
+        sel->srcs().push_back(value.second);
       }
 
       return sel;
@@ -688,10 +687,10 @@ context::emit_conditionals(lnodeimpl* dst,
   };
 
   // get current variable value
-  auto current = dst->get_slice(range.offset, range.length);
+  auto current = dst->slice(range.offset, range.length);
 
   // emit conditional variable
-  auto it = cond_inits_.find(dst->get_id());
+  auto it = cond_inits_.find(dst->id());
   if (it != cond_inits_.end()) {
     current = emit_conditional_block(it->second, current);
   } else {    
@@ -701,9 +700,9 @@ context::emit_conditionals(lnodeimpl* dst,
   return current;
 }
 
-lnodeimpl* context::get_predicate() {
-  auto zero = this->get_literal(bitvector(1, false));
-  auto one = this->get_literal(bitvector(1, true));
+lnodeimpl* context::create_predicate() {
+  auto zero = this->literal(bitvector(1, false));
+  auto one = this->literal(bitvector(1, true));
 
   // create predicate variable
   auto predicate = this->create_node<proxyimpl>(zero);
@@ -715,10 +714,10 @@ lnodeimpl* context::get_predicate() {
   return predicate;
 }
 
-lnodeimpl* context::get_literal(const bitvector& value) {
+lnodeimpl* context::literal(const bitvector& value) {
   // first lookup literals cache
   for (auto lit : literals_) {
-    if (lit->get_value() == value)
+    if (lit->value() == value)
       return lit;
   }
   // create new literal
@@ -729,21 +728,21 @@ void context::register_tap(const std::string& name, const lnode& node) {
   this->create_node<tapimpl>(node, unique_tap_names_.get(name).c_str());
 }
 
-bindimpl* context::get_binding(context* module) {
+bindimpl* context::find_binding(context* module) {
   for (auto binding : bindings_) {
-    if (binding->get_module() == module)
+    if (binding->module() == module)
       return binding;
   }
   return this->create_node<bindimpl>(module);
 }
 
 void context::bind_input(const lnode& src, const lnode& input) {
-  auto binding = this->get_binding(input.get_ctx());
+  auto binding = this->find_binding(input.ctx());
   binding->bind_input(src, input);
 }
 
 void context::bind_output(const lnode& dst, const lnode& output) {
-  auto binding = this->get_binding(output.get_ctx());
+  auto binding = this->find_binding(output.ctx());
   binding->bind_output(dst, output);
 }
 
@@ -820,11 +819,11 @@ void context::eval(ch_tick t) {
 }
 
 void context::register_enum_string(const lnode& node, enum_string_cb callback) {
-  enum_strings_.emplace(node.get_var_id(), callback);
+  enum_strings_.emplace(node.var_id(), callback);
 }
 
 const char* context::enum_to_string(const lnode& node, ch_tick t) {
-  auto iter = enum_strings_.find(node.get_var_id());
+  auto iter = enum_strings_.find(node.var_id());
   if (iter != enum_strings_.end()) {
     return iter->second(node.eval(t).word(0));
   }
@@ -843,42 +842,42 @@ void context::dump_cfg(lnodeimpl* node, std::ostream& out, uint32_t level) {
   std::unordered_map<uint32_t, tapimpl*> taps;
 
   std::function<void(lnodeimpl* node)> dump_cfg_impl = [&](lnodeimpl* node) {
-    visits[node->get_id()] = true;
+    visits[node->id()] = true;
     node->print(out, level);
 
-    auto iter = taps.find(node->get_id());
+    auto iter = taps.find(node->id());
     if (iter != taps.end()) {
-      out << " // " << iter->second->get_name();
+      out << " // " << iter->second->name();
       out << std::endl;
       return;
     }
     out << std::endl;
 
-    for (const lnode& src : node->get_srcs()) {
-      if (!visits[src.get_id()]) {
-        dump_cfg_impl(src.get_impl());
+    for (const lnode& src : node->srcs()) {
+      if (!visits[src.id()]) {
+        dump_cfg_impl(src.impl());
       }
     }
   };
   
   for (tapimpl* tap : taps_) {
-    taps[tap->get_target().get_id()] = tap;
+    taps[tap->target().id()] = tap;
   }
   
-  visits[node->get_id()] = true;
+  visits[node->id()] = true;
   
-  if (type_tap == node->get_type()) {
+  if (type_tap == node->type()) {
     auto tap = reinterpret_cast<tapimpl*>(node);
-    node = tap->get_target().get_impl();
+    node = tap->target().impl();
     node->print(out, level);
-    out << " // " << tap->get_name();
+    out << " // " << tap->name();
   } else {  
     node->print(out, level);
   }
   out << std::endl;    
-  for (const lnode& src : node->get_srcs()) {
-    if (!visits[src.get_id()]) {
-      dump_cfg_impl(src.get_impl());
+  for (const lnode& src : node->srcs()) {
+    if (!visits[src.id()]) {
+      dump_cfg_impl(src.impl());
     }
   }
 }
@@ -894,10 +893,10 @@ void context::dump_stats(std::ostream& out) {
   uint64_t register_bits = 0;
 
   std::function<void(context* ctx)> calc_stats = [&](context* ctx) {
-    for (lnodeimpl* node : ctx->get_nodes()) {
-      switch (node->get_type()) {
+    for (lnodeimpl* node : ctx->nodes()) {
+      switch (node->type()) {
       case type_mem:
-        memory_bits += dynamic_cast<memimpl*>(node)->get_total_size();
+        memory_bits += dynamic_cast<memimpl*>(node)->total_size();
         ++num_memories;
         break;
       case type_reg:
@@ -914,7 +913,7 @@ void context::dump_stats(std::ostream& out) {
         ++num_lits;
         break;
       case type_bind:
-        calc_stats(reinterpret_cast<bindimpl*>(node)->get_module());
+        calc_stats(reinterpret_cast<bindimpl*>(node)->module());
         break;
       default:
         break;
@@ -936,7 +935,7 @@ void context::dump_stats(std::ostream& out) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void ch::internal::registerTap(const std::string& name, const lnode& node) {
-  node.get_ctx()->register_tap(name, node);
+  node.ctx()->register_tap(name, node);
 }
 
 void ch::internal::ch_dumpStats(std::ostream& out, const device& device) {
@@ -944,13 +943,13 @@ void ch::internal::ch_dumpStats(std::ostream& out, const device& device) {
 }
 
 void ch::internal::bindInput(const lnode& src, const lnode& input) {
-  src.get_ctx()->bind_input(src, input);
+  src.ctx()->bind_input(src, input);
 }
 
 void ch::internal::bindOutput(const lnode& dst, const lnode& output) {
-  dst.get_ctx()->bind_output(dst, output);
+  dst.ctx()->bind_output(dst, output);
 }
 
 void ch::internal::register_enum_string(const lnode& node, void* callback) {
-  node.get_ctx()->register_enum_string(node, (enum_string_cb)callback);
+  node.ctx()->register_enum_string(node, (enum_string_cb)callback);
 }

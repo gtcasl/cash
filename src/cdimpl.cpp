@@ -58,7 +58,7 @@ const bitvector& cdimpl::eval(ch_tick t) {
 
 void cdimpl::print(std::ostream& out, uint32_t level) const {
   CH_UNUSED(level);
-  out << "#" << id_ << " <- " << this->get_type() << "("
+  out << "#" << id_ << " <- " << this->type() << "("
       << (posedge_ ? "posedge" : "negedge") << ", #"
-      << srcs_[0].get_id() << ", #" << srcs_[1].get_id() << ")";
+      << srcs_[0].id() << ", #" << srcs_[1].id() << ")";
 }

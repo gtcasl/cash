@@ -15,9 +15,9 @@ void compiler::run() {
   size_t orig_num_nodes, dead_nodes, identity_nodes;
   CH_UNUSED(orig_num_nodes, dead_nodes, identity_nodes);
 
-  DBG(2, "compiling %s ...\n", ctx_->get_name().c_str());
+  DBG(2, "compiling %s ...\n", ctx_->name().c_str());
 
-  orig_num_nodes = ctx_->get_nodes().size();
+  orig_num_nodes = ctx_->nodes().size();
 
   dead_nodes = this->dead_code_elimination();
 
@@ -32,42 +32,42 @@ void compiler::run() {
   
 #ifndef NDEBUG
   // dump nodes
-  int dump_ast_level = platform::self().get_dump_ast();
+  int dump_ast_level = platform::self().dump_ast();
   if (dump_ast_level) {
     ctx_->dump_ast(std::cerr, dump_ast_level);
   }
 
   // dump tap's CFG
-  int dump_cfg_level = platform::self().get_dump_cfg();
+  int dump_cfg_level = platform::self().dump_cfg();
   if (dump_cfg_level) {
-    for (auto node : ctx_->get_taps()) {
-      std::cout << "CFG dump for tap variable: " << node->get_name() << std::endl;
+    for (auto node : ctx_->taps()) {
+      std::cout << "CFG dump for tap variable: " << node->name() << std::endl;
       ctx_->dump_cfg(node, std::cout, dump_cfg_level);
     }
   }
 #endif
 
   DBG(2, "Before optimization: %lu\n", orig_num_nodes);
-  DBG(2, "After optimization: %lu\n", ctx_->get_nodes().size());
+  DBG(2, "After optimization: %lu\n", ctx_->nodes().size());
 }
 
 void compiler::syntax_check() {
   // check for un-initialized nodes
-  auto& undefs = ctx_->get_undefs();
+  auto& undefs = ctx_->undefs();
   if (undefs.size()) {
     ctx_->dump_ast(std::cerr, 1);    
     for (auto undef : undefs) {
-      for (auto node : ctx_->get_nodes()) {
-        auto ret = std::find_if(node->get_srcs().begin(), node->get_srcs().end(),
-                     [undef](const lnode& x)->bool { return x.get_id() == undef->get_id(); });
-        if (ret != node->get_srcs().end()) {
+      for (auto node : ctx_->nodes()) {
+        auto ret = std::find_if(node->srcs().begin(), node->srcs().end(),
+                     [undef](const lnode& x)->bool { return x.id() == undef->id(); });
+        if (ret != node->srcs().end()) {
           fprintf(stderr, "error: un-initialized variable '%s%d' (#%d)",
-                  node->get_name().c_str(), node->size(), node->get_id());
-          if (node->get_var_id() != 0) {
-            fprintf(stderr, " (@var%d)", node->get_var_id());
+                  node->name().c_str(), node->size(), node->id());
+          if (node->var_id() != 0) {
+            fprintf(stderr, " (@var%d)", node->var_id());
           }
-          fprintf(stderr, " in module '%s'", ctx_->get_name().c_str());
-          auto& sloc = node->get_source_location();
+          fprintf(stderr, " in module '%s'", ctx_->name().c_str());
+          auto& sloc = node->sloc();
           if (!sloc.empty()) {
             fprintf(stderr, " (%s:%d)\n", sloc.file(), sloc.line());
           }
@@ -88,10 +88,10 @@ size_t compiler::dead_code_elimination() {
     auto node = working_set.front();
     auto proxy = dynamic_cast<proxyimpl*>(node);
 
-    auto& srcs = node->get_srcs();
+    auto& srcs = node->srcs();
     for (uint32_t i = 0, n = srcs.size(); i < n; ++i) {
-      auto src_impl = srcs[i].get_impl();
-      assert(src_impl->get_ctx() == ctx_);
+      auto src_impl = srcs[i].impl();
+      assert(src_impl->ctx() == ctx_);
 
       // skip unused proxy sources
       if (proxy) {
@@ -104,13 +104,13 @@ size_t compiler::dead_code_elimination() {
 
       // gather used proxy sources
       bool new_proxy_source = false;      
-      if (type_proxy == src_impl->get_type()) {
+      if (type_proxy == src_impl->type()) {
         auto src_proxy = reinterpret_cast<proxyimpl*>(src_impl);
         auto& uses = used_proxy_sources[src_proxy];
         if (proxy) {
-          for (auto& curr : src_proxy->get_ranges()) {
+          for (auto& curr : src_proxy->ranges()) {
             uint32_t curr_end = curr.dst_offset + curr.length;
-            for (auto& range : proxy->get_ranges()) {
+            for (auto& range : proxy->ranges()) {
               if (range.src_idx == i) {
                 // do ranges overlap?
                 uint32_t src_end = range.src_offset + range.length;
@@ -124,7 +124,7 @@ size_t compiler::dead_code_elimination() {
             }
           }
         } else {
-          for (auto& curr : src_proxy->get_ranges()) {
+          for (auto& curr : src_proxy->ranges()) {
             auto ret = uses.insert(curr.src_idx);
             if (ret.second) {
               new_proxy_source = true;
@@ -146,7 +146,7 @@ size_t compiler::dead_code_elimination() {
   // remove unused proxy sources
   for (auto p : used_proxy_sources) {
     auto proxy = reinterpret_cast<proxyimpl*>(p.first);
-    auto& srcs = proxy->get_srcs();
+    auto& srcs = proxy->srcs();
     // traverse the sources in reverse order
     for (int i = srcs.size() - 1; i >= 0; --i) {
       if (0 == p.second.count(i)) {
@@ -157,10 +157,10 @@ size_t compiler::dead_code_elimination() {
 
   // delete dead nodes
   auto deleted = this->remove_dead_nodes(live_nodes);
-  assert(ctx_->get_nodes().size() == live_nodes.size());
+  assert(ctx_->nodes().size() == live_nodes.size());
 
   // update nodes in topological order
-  auto it_dst = ctx_->get_nodes().begin();
+  auto it_dst = ctx_->nodes().begin();
   for (auto it = live_nodes.rbegin(),
        end = live_nodes.rend(); it != end;) {
     *it_dst++ = *it++;
@@ -171,8 +171,8 @@ size_t compiler::dead_code_elimination() {
 
 size_t compiler::remove_dead_nodes(const live_nodes_t& live_nodes) {
   size_t deleted = 0;
-  for (auto it = ctx_->get_nodes().begin(),
-       end = ctx_->get_nodes().end(); it != end;) {
+  for (auto it = ctx_->nodes().begin(),
+       end = ctx_->nodes().end(); it != end;) {
     auto node = *it;
     if (0 == live_nodes.count(node)) {
       it = ctx_->destroyNode(it);
@@ -185,24 +185,24 @@ size_t compiler::remove_dead_nodes(const live_nodes_t& live_nodes) {
 }
 
 void compiler::build_node_map() {
-  for (auto node : ctx_->get_nodes()) {
-    for (auto& src : node->get_srcs()) {
-      node_map_[src.get_id()].push_back(&src);
+  for (auto node : ctx_->nodes()) {
+    for (auto& src : node->srcs()) {
+      node_map_[src.id()].push_back(&src);
     }
   }
 }
 
 size_t compiler::remove_identity_nodes() {
   size_t deleted = 0;
-  for (auto it = ctx_->get_proxies().begin(),
-       end = ctx_->get_proxies().end(); it != end;) {
+  for (auto it = ctx_->proxies().begin(),
+       end = ctx_->proxies().end(); it != end;) {
     proxyimpl* const proxy = *it++;
     if (proxy->is_identity()) {
-      auto& src = proxy->get_src(0);
-      auto src_impl = src.get_impl();
+      auto& src = proxy->src(0);
+      auto src_impl = src.impl();
 
       // remove proxy from source's refs
-      auto& src_refs = node_map_[src_impl->get_id()];
+      auto& src_refs = node_map_[src_impl->id()];
       for (auto s_it = src_refs.begin(), s_end = src_refs.end(); s_it != s_end; ++s_it) {
         if (*s_it == &src) {
           src_refs.erase(s_it);
@@ -212,10 +212,10 @@ size_t compiler::remove_identity_nodes() {
 
       // replace proxy's uses with proxy's source      
       {
-        auto p_it = node_map_.find(proxy->get_id());
+        auto p_it = node_map_.find(proxy->id());
         assert(p_it != node_map_.end());
         for (auto node : p_it->second) {
-          const_cast<lnode*>(node)->set_impl(src_impl);
+          *const_cast<lnode*>(node) = src_impl;
 
           // update source refs
           src_refs.push_back(node);
@@ -224,8 +224,8 @@ size_t compiler::remove_identity_nodes() {
       }
 
       {
-        auto n_it = std::find(ctx_->get_nodes().begin(), ctx_->get_nodes().end(), proxy);
-        assert(n_it != ctx_->get_nodes().end());
+        auto n_it = std::find(ctx_->nodes().begin(), ctx_->nodes().end(), proxy);
+        assert(n_it != ctx_->nodes().end());
         ctx_->destroyNode(n_it);
       }
 

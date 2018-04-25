@@ -14,17 +14,17 @@ public:
 
   static const platform& self();
   
-  int get_dbg_level() const;
+  int dbg_level() const;
   
-  int get_dbg_node() const;
+  int dbg_node() const;
 
-  int get_dbg_verilog() const;
+  int dbg_verilog() const;
   
-  int get_dump_ast() const;
+  int dump_ast() const;
   
-  int get_dump_cfg() const;
+  int dump_cfg() const;
 
-  const std::string& get_lib_path() const;
+  const std::string& lib_path() const;
   
 protected:
   class Impl;

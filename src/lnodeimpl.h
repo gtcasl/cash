@@ -34,46 +34,42 @@ enum lnodetype {
 class lnodeimpl {
 public:
 
-  uint32_t get_id() const {
+  uint32_t id() const {
     return id_;
   }
 
-  void set_name(const std::string& name) {
-    name_ = name;
-  }
-
-  const std::string& get_name() const {
+  const std::string& name() const {
     return name_;
   }
   
-  lnodetype get_type() const {
+  lnodetype type() const {
     return type_;
   }
 
-  context* get_ctx() const {
+  context* ctx() const {
     return ctx_;
   }
 
-  uint32_t get_num_srcs() const {
+  uint32_t num_srcs() const {
     return srcs_.size();
   }
 
-  const std::vector<lnode>& get_srcs() const {
+  const std::vector<lnode>& srcs() const {
     return srcs_;
   }
   
-  std::vector<lnode>& get_srcs() {
+  std::vector<lnode>& srcs() {
     return srcs_;
   }
   
-  const lnode& get_src(unsigned index) const {
+  const lnode& src(unsigned index) const {
     assert(index < srcs_.size());
     return srcs_[index];
   }
-  
-  void set_src(unsigned index, const lnode& src) {
+
+  lnode& src(unsigned index) {
     assert(index < srcs_.size());
-    srcs_[index] = src;
+    return srcs_[index];
   }
 
   unsigned add_src(unsigned index, const lnode& src);
@@ -82,31 +78,23 @@ public:
     return value_.size();
   }
   
-  const bitvector& get_value() const { 
+  const bitvector& value() const {
     return value_;
   }
 
-  bitvector& get_value() {
+  bitvector& value() {
     return value_;
   }
 
-  uint32_t get_var_id() const {
+  uint32_t var_id() const {
     return var_id_;
   }
 
-  void set_var_id(uint32_t var_id) {
-    var_id_ = var_id;
-  }
-
-  const source_location& get_source_location() const {
+  const source_location& sloc() const {
     return sloc_;
   }
 
-  void set_source_location(const source_location& sloc) {
-    sloc_ = sloc;
-  }
-
-  virtual lnodeimpl* get_slice(uint32_t offset, uint32_t length);
+  virtual lnodeimpl* slice(uint32_t offset, uint32_t length);
 
   virtual const bitvector& eval(ch_tick t) = 0;
   
@@ -116,22 +104,20 @@ protected:
 
   lnodeimpl(context* ctx,
             lnodetype type,
-            uint32_t size);
-
-  lnodeimpl(context* ctx,
-            const std::string& name,
-            lnodetype type,
-            uint32_t size);
+            uint32_t size,
+            unsigned var_id = 0,
+            const std::string& name = "",
+            const source_location& sloc = source_location());
 
   virtual ~lnodeimpl();
 
   context* ctx_;
-  uint32_t id_;
-  std::string name_;
+  uint32_t id_;  
   lnodetype type_;
   std::vector<lnode> srcs_;
   bitvector value_;
   uint32_t var_id_;
+  std::string name_;
   source_location sloc_;
 
   friend class context;

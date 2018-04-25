@@ -17,6 +17,6 @@ const bitvector& litimpl::eval(ch_tick) {
 
 void litimpl::print(std::ostream& out, uint32_t level) const {
   CH_UNUSED(level);
-  out << "#" << id_ << " <- " << this->get_type() << value_.size()
+  out << "#" << id_ << " <- " << this->type() << value_.size()
       << "(" << value_ << ")";
 }

@@ -194,7 +194,7 @@ public:
             CH_REQUIRE_1(is_scalar_type<U>::value),
             CH_REQUIRE_1(width_v<U> == N * width_v<T>)>
   explicit ch_vec(const U& rhs, const source_location& sloc = CH_SRC_LOCATION)
-    : ch_vec(make_logic_buffer(scalar_accessor::get_data(rhs), sloc))
+    : ch_vec(make_logic_buffer(scalar_accessor::data(rhs), sloc))
   {}
 
   template <typename U,
@@ -228,7 +228,7 @@ public:
             CH_REQUIRE_0(is_scalar_type<U>::value),
             CH_REQUIRE_0(width_v<U> == N * width_v<T>)>
   ch_vec& operator=(const U& rhs) {
-    this->get_buffer()->write(scalar_accessor::get_data(rhs));
+    this->buffer()->write(scalar_accessor::data(rhs));
     return *this;
   }
 
@@ -264,12 +264,12 @@ protected:
     : base(make_logic_buffer(width_v<T>, buffer, Is * width_v<T>)...)
   {}
 
-  const logic_buffer_ptr& get_buffer() const {
-    return logic_accessor::get_buffer(items_[0])->get_source();
+  const logic_buffer_ptr& buffer() const {
+    return logic_accessor::buffer(items_[0])->source();
   }
 
-  logic_buffer_ptr& get_buffer() {
-    return logic_accessor::get_buffer(items_[0])->get_source();
+  logic_buffer_ptr& buffer() {
+    return logic_accessor::buffer(items_[0])->source();
   }
 
   friend class logic_accessor;
@@ -366,12 +366,12 @@ protected:
     : base(make_scalar_buffer(width_v<T>, buffer, Is * width_v<T>)...)
   {}
 
-  const scalar_buffer_ptr& get_buffer() const {
-    return scalar_accessor::get_buffer(items_[0])->get_source();
+  const scalar_buffer_ptr& buffer() const {
+    return scalar_accessor::buffer(items_[0])->source();
   }
 
-  scalar_buffer_ptr& get_buffer() {
-    return scalar_accessor::get_buffer(items_[0])->get_source();
+  scalar_buffer_ptr& buffer() {
+    return scalar_accessor::buffer(items_[0])->source();
   }
 
   friend class scalar_accessor;

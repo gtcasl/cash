@@ -42,7 +42,7 @@ std::string ch::internal::fstring(const char* format, ...) {
 }
 
 void ch::internal::dbprint(int level, const char* format, ...) {
-  if (level > platform::self().get_dbg_level())
+  if (level > platform::self().dbg_level())
     return;
   va_list args;
   va_start(args, format);

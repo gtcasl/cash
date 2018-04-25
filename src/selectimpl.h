@@ -12,8 +12,9 @@ public:
     return has_key_;
   }
 
-  void set_key(bool value) {
-    has_key_ = value;
+  void remove_key() {
+    this->srcs().erase(this->srcs().begin());
+    has_key_ = false;
   }
 
   bool is_ternary() const {
@@ -26,7 +27,10 @@ public:
 
 protected:
 
-  selectimpl(context* ctx, uint32_t size, lnodeimpl* key);
+  selectimpl(context* ctx,
+             uint32_t size,
+             lnodeimpl* key,
+             const source_location& sloc);
 
   selectimpl(context* ctx,
              const lnode& pred,

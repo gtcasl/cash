@@ -222,7 +222,7 @@ public:
     return refcount;
   }
   
-  long get_refcount() const {
+  long refcount() const {
     return refcount_;
   }
   
@@ -295,11 +295,11 @@ public:
   }
   
   bool is_unique() const {
-    return ptr_ ? (ptr_->get_refcount() == 1) : false;
+    return ptr_ ? (ptr_->refcount() == 1) : false;
   }
   
-  unsigned get_use_count() const {
-    return ptr_ ? (ptr_->get_refcount() == 1) : false;
+  unsigned use_count() const {
+    return ptr_ ? (ptr_->refcount() == 1) : false;
   }
   
   void reset(T* ptr = nullptr) {
@@ -320,7 +320,7 @@ public:
   }
   
   operator bool() const {
-    return this->get_use_count() != 0;
+    return this->use_count() != 0;
   }
   
 protected:    

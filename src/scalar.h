@@ -136,6 +136,24 @@ public:
 
   virtual ~scalar_buffer() {}
 
+  virtual const bitvector& data() const;
+
+  const scalar_buffer_ptr& source() const {
+    return source_;
+  }
+
+  scalar_buffer_ptr& source() {
+    return source_;
+  }
+
+  unsigned offset() const {
+    return offset_;
+  }
+
+  unsigned size() const {
+    return size_;
+  }
+
   scalar_buffer& operator=(const scalar_buffer& rhs) {
     this->copy(rhs);
     return *this;
@@ -145,8 +163,6 @@ public:
     this->copy(rhs);
     return *this;
   }
-
-  virtual const bitvector& get_data() const;
 
   virtual void read(uint32_t dst_offset,
                     void* out,
@@ -166,28 +182,11 @@ public:
 
   void copy(const scalar_buffer& rhs) {
     this->write(0,
-                rhs.get_data().words(),
-                rhs.get_data().cbsize(),
-                rhs.get_offset(),
+                rhs.data().words(),
+                rhs.data().cbsize(),
+                rhs.offset(),
                 rhs.size());
   }
-
-  const scalar_buffer_ptr& get_source() const {
-    return source_;
-  }
-
-  scalar_buffer_ptr& get_source() {
-    return source_;
-  }
-
-  unsigned get_offset() const {
-    return offset_;
-  }
-
-  unsigned size() const {
-    return size_;
-  }
-
 protected:
 
   scalar_buffer(const bitvector& value,
@@ -216,45 +215,45 @@ auto make_scalar_buffer(Args&&... args) {
 class scalar_accessor {
 public:
   template <typename T>
-  static const auto& get_buffer(const T& obj) {
-    return obj.get_buffer();
+  static const auto& buffer(const T& obj) {
+    return obj.buffer();
   }
 
   template <typename T>
-  static auto& get_buffer(T& obj) {
-    return obj.get_buffer();
+  static auto& buffer(T& obj) {
+    return obj.buffer();
   }
 
   template <typename T>
-  static const auto& get_data(const T& obj) {
-    assert(width_v<T> == obj.get_buffer()->size());
-    return obj.get_buffer()->get_data();
+  static const auto& data(const T& obj) {
+    assert(width_v<T> == obj.buffer()->size());
+    return obj.buffer()->data();
   }
 
   template <typename T>
   static auto copy_buffer(const T& obj) {
-    assert(width_v<T> == obj.get_buffer()->size());
-    return make_scalar_buffer(*obj.get_buffer());
+    assert(width_v<T> == obj.buffer()->size());
+    return make_scalar_buffer(*obj.buffer());
   }
 
   template <typename U, typename V,
             CH_REQUIRE_0(width_v<U> == width_v<V>)>
   static void copy(U& dst, const V& src) {
-    assert(width_v<U> == dst.get_buffer()->size());
-    assert(width_v<V> == src.get_buffer()->size());
-    *dst.get_buffer() = *src.get_buffer();
+    assert(width_v<U> == dst.buffer()->size());
+    assert(width_v<V> == src.buffer()->size());
+    *dst.buffer() = *src.buffer();
   }
 
   template <typename U, typename V,
             CH_REQUIRE_0(width_v<U> == width_v<V>)>
   static void move(U& dst, V&& src) {
-    assert(width_v<U> == dst.get_buffer()->size());
-    *dst.get_buffer() = std::move(*src.get_buffer());
+    assert(width_v<U> == dst.buffer()->size());
+    *dst.buffer() = std::move(*src.buffer());
   }
 
   template <typename D, typename T>
   static D cast(const T& obj) {
-    return D(make_scalar_buffer(width_v<T>, obj.get_buffer(), 0));
+    return D(make_scalar_buffer(width_v<T>, obj.buffer(), 0));
   }
 };
 
@@ -266,14 +265,14 @@ typedef void (*ScalarFunc2)(bitvector& out, const bitvector& lhs, const bitvecto
 template <typename R, typename A>
 auto ScalarOp(const A& in, ScalarFunc1 func) {
   bitvector ret(width_v<R>);
-  func(ret, scalar_accessor::get_data(in));
+  func(ret, scalar_accessor::data(in));
   return R(make_scalar_buffer(std::move(ret)));
 }
 
 template <typename R, typename A, typename B>
 auto ScalarOp(const A& lhs, const B& rhs, ScalarFunc2 func) {
   bitvector ret(width_v<R>);
-  func(ret, scalar_accessor::get_data(lhs), scalar_accessor::get_data(rhs));
+  func(ret, scalar_accessor::data(lhs), scalar_accessor::data(rhs));
   return R(make_scalar_buffer(std::move(ret)));
 }
 
@@ -468,11 +467,11 @@ public:
   // compare operators
 
   auto operator==(const ch_scalar& rhs) const {
-    return (buffer_->get_data() == rhs.buffer_->get_data());
+    return (buffer_->data() == rhs.buffer_->data());
   }
 
   auto operator!=(const ch_scalar& rhs) const {
-    return !(buffer_->get_data() == rhs.buffer_->get_data());
+    return !(buffer_->data() == rhs.buffer_->data());
   }
 
   // logic operators
@@ -527,7 +526,7 @@ public:
             CH_REQUIRE_0(is_bitvector_castable<U>::value),
             CH_REQUIRE_0(sizeof(U) * 8 >= N)>
   explicit operator U() const {
-    return static_cast<U>(buffer_->get_data());
+    return static_cast<U>(buffer_->data());
   }
 
   void read(uint32_t dst_offset,
@@ -548,11 +547,11 @@ public:
 
 protected:
 
-  const scalar_buffer_ptr& get_buffer() const {
+  const scalar_buffer_ptr& buffer() const {
     return buffer_;
   }
 
-  scalar_buffer_ptr& get_buffer() {
+  scalar_buffer_ptr& buffer() {
     return buffer_;
   }
 
@@ -561,7 +560,7 @@ protected:
   friend class scalar_accessor;
 
   friend std::ostream& operator<<(std::ostream& out, const ch_scalar& rhs) {
-    return out << scalar_accessor::get_data(rhs);
+    return out << scalar_accessor::data(rhs);
   }
 
   // friend operators

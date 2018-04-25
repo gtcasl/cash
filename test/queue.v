@@ -9,52 +9,52 @@ module ch_queue(
   output wire[3:0] io_deq_data,
   output wire[1:0] io_size
 );
-  wire[1:0] add47;
-  wire and41;
-  wire[1:0] add52;
-  wire[1:0] sel49;
-  wire[1:0] sel54;
-  wire and43;
-  wire proxy40; // v2250 - /home/blaise/dev/cash/src/htl/queue.h(28)
-  reg[1:0] reg29;
-  reg[1:0] reg35;
-  wire eq64;
-  wire ne66;
-  wire proxy38; // v2249 - /home/blaise/dev/cash/src/htl/queue.h(27)
-  reg[3:0] mem56[0:1];
-  wire[1:0] sub70;
-  wire ne60;
-  wire or68;
+  wire[1:0] add44;
+  wire and38;
+  wire[1:0] add49;
+  wire[1:0] sel46;
+  wire[1:0] sel51;
+  wire and40;
+  wire proxy37; // v2250 - /home/blaise/dev/cash/src/htl/queue.h(28)
+  reg[1:0] reg26;
+  reg[1:0] reg32;
+  wire eq61;
+  wire ne63;
+  wire proxy35; // v2249 - /home/blaise/dev/cash/src/htl/queue.h(27)
+  reg[3:0] mem53[0:1];
+  wire[1:0] sub67;
+  wire ne57;
+  wire or65;
 
-  assign add47 = reg29 + 2'h1;
-  assign and41 = io_deq_ready & ne60;
-  assign add52 = reg35 + 2'h1;
-  assign sel49 = and41 ? add47 : reg29;
-  assign sel54 = and43 ? add52 : reg35;
-  assign and43 = io_enq_valid & or68;
-  assign proxy40 = reg35[0];
+  assign add44 = reg26 + 2'h1;
+  assign and38 = io_deq_ready & ne57;
+  assign add49 = reg32 + 2'h1;
+  assign sel46 = and38 ? add44 : reg26;
+  assign sel51 = and40 ? add49 : reg32;
+  assign and40 = io_enq_valid & or65;
+  assign proxy37 = reg32[0];
   always @ (posedge clk) begin
-    reg29 <= sel49;
+    reg26 <= sel46;
   end
   always @ (posedge clk) begin
-    reg35 <= sel54;
+    reg32 <= sel51;
   end
-  assign eq64 = reg35[1] == reg29[1];
-  assign ne66 = proxy40 != proxy38;
-  assign proxy38 = reg29[0];
+  assign eq61 = reg32[1] == reg26[1];
+  assign ne63 = proxy37 != proxy35;
+  assign proxy35 = reg26[0];
   always @(posedge clk) begin
-    if (and43) begin
-      mem56[proxy40] = io_enq_data;
+    if (and40) begin
+      mem53[proxy37] = io_enq_data;
     end
   end
-  assign sub70 = reg35 - reg29;
-  assign ne60 = reg35 != reg29;
-  assign or68 = ne66 | eq64;
+  assign sub67 = reg32 - reg26;
+  assign ne57 = reg32 != reg26;
+  assign or65 = ne63 | eq61;
 
-  assign io_enq_ready = or68;
-  assign io_deq_valid = ne60;
-  assign io_deq_data = mem56[proxy38];
-  assign io_size = sub70;
+  assign io_enq_ready = or65;
+  assign io_deq_valid = ne57;
+  assign io_deq_data = mem53[proxy35];
+  assign io_size = sub67;
 
 endmodule
 
@@ -68,24 +68,24 @@ module QueueWrapper(
   output wire io_deq_valid,
   output wire[3:0] io_deq_data
 );
-  wire bindin54;
-  wire[3:0] bindin36;
-  wire bindin33;
-  wire bindin32;
-  wire bindin31;
-  wire[3:0] bindout51;
-  wire bindout46;
-  wire bindout41;
+  wire bindin51;
+  wire[3:0] bindin33;
+  wire bindin30;
+  wire bindin29;
+  wire bindin28;
+  wire[3:0] bindout48;
+  wire bindout43;
+  wire bindout38;
 
-  assign bindin54 = io_deq_ready;
-  assign bindin36 = io_enq_data;
-  assign bindin33 = io_enq_valid;
-  assign bindin32 = reset;
-  assign bindin31 = clk;
-  ch_queue __module223__(.clk(bindin31), .reset(bindin32), .io_enq_valid(bindin33), .io_enq_data(bindin36), .io_deq_ready(bindin54), .io_enq_ready(bindout41), .io_deq_valid(bindout46), .io_deq_data(bindout51));
+  assign bindin51 = io_deq_ready;
+  assign bindin33 = io_enq_data;
+  assign bindin30 = io_enq_valid;
+  assign bindin29 = reset;
+  assign bindin28 = clk;
+  ch_queue __module223__(.clk(bindin28), .reset(bindin29), .io_enq_valid(bindin30), .io_enq_data(bindin33), .io_deq_ready(bindin51), .io_enq_ready(bindout38), .io_deq_valid(bindout43), .io_deq_data(bindout48));
 
-  assign io_enq_ready = bindout41;
-  assign io_deq_valid = bindout46;
-  assign io_deq_data = bindout51;
+  assign io_enq_ready = bindout38;
+  assign io_deq_valid = bindout43;
+  assign io_deq_data = bindout48;
 
 endmodule

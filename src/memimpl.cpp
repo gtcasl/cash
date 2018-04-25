@@ -49,23 +49,23 @@ memimpl::~memimpl() {
 
 void memimpl::detach() {
   if (!srcs_[0].empty()) {
-    reinterpret_cast<cdimpl*>(srcs_[0].get_impl())->remove_reg(this);
+    reinterpret_cast<cdimpl*>(srcs_[0].impl())->remove_reg(this);
     srcs_[0].clear();
   }
 }
 
 void memimpl::remove_port(memportimpl* port) {
   for (auto it = ports_.begin(), end = ports_.end(); it != end; ++it) {
-    if ((*it)->get_id() == port->get_id()) {
+    if ((*it)->id() == port->id()) {
       ports_.erase(it);
       break;
     }
   }
 }
 
-memportimpl* memimpl::get_port(const lnode& addr) {
+memportimpl* memimpl::port(const lnode& addr) {
   for (auto port : ports_) {
-    if (port->get_addr().get_id() == addr.get_id()) {
+    if (port->addr().id() == addr.id()) {
       return port;
     }
   }
@@ -93,14 +93,14 @@ const bitvector& memimpl::eval(ch_tick t) {
 
 void memimpl::print(std::ostream& out, uint32_t level) const {
   CH_UNUSED(level);
-  out << "#" << id_ << " <- " << this->get_type() << value_.size();
+  out << "#" << id_ << " <- " << this->type() << value_.size();
   uint32_t n = srcs_.size();
   if (n > 0) {
     out << "(";
     for (uint32_t i = 0; i < n; ++i) {
       if (i > 0)
         out << ", ";
-      out << "#" << srcs_[i].get_id();
+      out << "#" << srcs_[i].id();
     }
     out << ")";
   }
@@ -112,7 +112,7 @@ void memimpl::print(std::ostream& out, uint32_t level) const {
 ///////////////////////////////////////////////////////////////////////////////
 
 memportimpl::memportimpl(context* ctx, memimpl* mem, unsigned index, const lnode& addr)
-  : ioimpl(ctx, type_memport, mem->get_data_width())
+  : ioimpl(ctx, type_memport, mem->data_width())
   , index_(index)
   , read_enable_(false)
   , a_next_(0)  
@@ -130,7 +130,7 @@ memportimpl::~memportimpl() {
 
 void memportimpl::detach() {
   if (!srcs_[0].empty()) {
-    dynamic_cast<memimpl*>(srcs_[0].get_impl())->remove_port(this);
+    dynamic_cast<memimpl*>(srcs_[0].impl())->remove_port(this);
     srcs_[0].clear();
   }
 }
@@ -143,8 +143,8 @@ void memportimpl::read() {
 void memportimpl::write(const lnode& data) {
   if (wdata_idx_ == -1) {
     // add write port to memory sources to enforce DFG dependencies
-    memimpl* mem = dynamic_cast<memimpl*>(srcs_[0].get_impl());
-    mem->get_srcs().emplace_back(this);
+    memimpl* mem = dynamic_cast<memimpl*>(srcs_[0].impl());
+    mem->srcs().emplace_back(this);
   }
   // add data source
   wdata_idx_ = this->add_src(wdata_idx_, data);
@@ -161,13 +161,13 @@ void memportimpl::write(const lnode& data, const lnode& enable) {
 void memportimpl::tick(ch_tick t) {
   CH_UNUSED(t);
   if (dirty_) {
-    auto mem = dynamic_cast<memimpl*>(srcs_[0].get_impl());
-    auto data_width = mem->get_data_width();
-    mem->get_value().write(a_next_ * data_width,
-                           q_next_.words(),
-                           q_next_.cbsize(),
-                           0,
-                           data_width);
+    auto mem = dynamic_cast<memimpl*>(srcs_[0].impl());
+    auto data_width = mem->data_width();
+    mem->value().write(a_next_ * data_width,
+                       q_next_.words(),
+                       q_next_.cbsize(),
+                       0,
+                       data_width);
   }
 }
 
@@ -186,14 +186,14 @@ const bitvector& memportimpl::eval(ch_tick t) {
   if (tick_ != t) {
     tick_ = t;
     // asynchronous memory read
-    auto mem = dynamic_cast<memimpl*>(srcs_[0].get_impl());
-    auto data_width = mem->get_data_width();
+    auto mem = dynamic_cast<memimpl*>(srcs_[0].impl());
+    auto data_width = mem->data_width();
     uint32_t addr = srcs_[1].eval(t).word(0);
-    mem->get_value().read(0,
-                          value_.words(),
-                          value_.cbsize(),
-                          addr * data_width,
-                          data_width);
+    mem->value().read(0,
+                      value_.words(),
+                      value_.cbsize(),
+                      addr * data_width,
+                      data_width);
   }
   return value_;
 }
@@ -209,17 +209,17 @@ memory::memory(uint32_t data_width,
 }
 
 lnodeimpl* memory::read(const lnode& addr) const {
-  auto port = impl_->get_port(addr);
+  auto port = impl_->port(addr);
   port->read();
   return port;
 }
 
 void memory::write(const lnode& addr, const lnode& value) {
-  auto port = impl_->get_port(addr);
+  auto port = impl_->port(addr);
   port->write(value);
 }
 
 void memory::write(const lnode& addr, const lnode& value, const lnode& enable) {
-  auto port = impl_->get_port(addr);
+  auto port = impl_->port(addr);
   port->write(value, enable);
 }

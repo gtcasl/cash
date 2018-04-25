@@ -13,7 +13,7 @@ protected:
   {}
 
   ioimpl(context* ctx, lnodetype type, uint32_t size, const std::string& name)
-    : lnodeimpl(ctx, name, type, size)
+    : lnodeimpl(ctx, type, size, 0, name)
   {}
 
   ~ioimpl() {}
@@ -65,7 +65,7 @@ protected:
 class tapimpl : public ioimpl {
 public:
 
-  const lnode& get_target() const {
+  const lnode& target() const {
     return srcs_[0];
   }
 

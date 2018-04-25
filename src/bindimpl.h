@@ -15,17 +15,17 @@ public:
 
   void bind_output(const lnode& dst, const lnode& ioport);
 
-  const auto& get_inputs() {
+  const auto& inputs() {
     return srcs_;
   }
 
-  const auto& get_outputs() {
+  const auto& outputs() {
     return outputs_;
   }
 
   void remove_output(bindportimpl* output);
 
-  context* get_module() const {
+  context* module() const {
     return module_;
   }
 
@@ -55,7 +55,7 @@ protected:
 class bindportimpl : public ioimpl {
 public:
 
-  const lnode& get_ioport() const {
+  const lnode& ioport() const {
     return ioport_;
   }
 

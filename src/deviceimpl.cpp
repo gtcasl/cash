@@ -49,5 +49,5 @@ void device::compile() {
 ///////////////////////////////////////////////////////////////////////////////
 
 context* ch::internal::get_ctx(const device& device) {
-  return device.impl_->get_ctx();
+  return device.impl_->ctx();
 }

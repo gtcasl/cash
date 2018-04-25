@@ -245,13 +245,13 @@ const bitvector& aluimpl::eval(ch_tick t) {
 }
 
 void aluimpl::print(std::ostream& out, uint32_t level) const {
-  out << "#" << id_ << " <- " << to_string(this->get_type()) << value_.size();
+  out << "#" << id_ << " <- " << to_string(this->type()) << value_.size();
   uint32_t n = srcs_.size();
   out << "(" << to_string(op_) << ", ";
   for (uint32_t i = 0; i < n; ++i) {
     if (i > 0)
       out << ", ";
-    out << "#" << srcs_[i].get_id();
+    out << "#" << srcs_[i].id();
   }
   out << ")";
   if (level == 2) {
@@ -318,7 +318,7 @@ delayed_aluimpl::~delayed_aluimpl() {
 
 void delayed_aluimpl::detach() {
   if (!srcs_[2].empty()) {
-    reinterpret_cast<cdimpl*>(srcs_[2].get_impl())->remove_reg(this);
+    reinterpret_cast<cdimpl*>(srcs_[2].impl())->remove_reg(this);
     srcs_[2].clear();
   }
 }
@@ -357,7 +357,7 @@ lnodeimpl* ch::internal::createAluNode(
     ch_op op,
     unsigned size,
     const lnode& in) {
-  auto ctx = in.get_ctx();
+  auto ctx = in.ctx();
   return ctx->create_alu(op, size, in);
 }
 
@@ -366,7 +366,7 @@ lnodeimpl* ch::internal::createAluNode(
     unsigned size,
     const lnode& lhs,
     const lnode& rhs) {
-  auto ctx = lhs.get_ctx();
+  auto ctx = lhs.ctx();
   return ctx->create_alu(op, size, lhs, rhs);
 }
 
@@ -376,7 +376,7 @@ lnodeimpl* ch::internal::createAluNode(
     unsigned delay,
     const lnode& enable,
     const lnode& in) {
-  auto ctx = in.get_ctx();
+  auto ctx = in.ctx();
   return ctx->create_node<delayed_aluimpl>(op, size, delay, enable, in);
 }
 
@@ -387,7 +387,7 @@ lnodeimpl* ch::internal::createAluNode(
     const lnode& enable,
     const lnode& lhs,
     const lnode& rhs) {
-  auto ctx = lhs.get_ctx();
+  auto ctx = lhs.ctx();
   return ctx->create_node<delayed_aluimpl>(op, size, delay, enable, lhs, rhs);
 }
 
@@ -395,7 +395,7 @@ lnodeimpl* ch::internal::createRotateNode(
     const lnode& next,
     unsigned dist,
     bool right) {
-  auto ctx = next.get_ctx();
+  auto ctx = next.ctx();
   auto N = next.size();
   auto mod = dist % N;
   auto ret = ctx->create_node<proxyimpl>(N);

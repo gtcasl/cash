@@ -39,15 +39,15 @@ scalar_buffer::scalar_buffer(bitvector&& data)
 {}
 
 scalar_buffer::scalar_buffer(unsigned size,
-                                       const scalar_buffer_ptr& buffer,
-                                       unsigned offset)
+                             const scalar_buffer_ptr& buffer,
+                             unsigned offset)
   : source_(buffer)
   , offset_(offset)
   , size_(size) {
   assert(offset_ + size_ <= buffer->size());
 }
 
-const bitvector& scalar_buffer::get_data() const {
+const bitvector& scalar_buffer::data() const {
   if (source_) {
     if (value_.empty()) {
       value_.resize(size_, 0, true);
@@ -58,10 +58,10 @@ const bitvector& scalar_buffer::get_data() const {
 }
 
 void scalar_buffer::read(uint32_t dst_offset,
-                              void* out,
-                              uint32_t out_cbsize,
-                              uint32_t src_offset,
-                              uint32_t length) const {
+                         void* out,
+                         uint32_t out_cbsize,
+                         uint32_t src_offset,
+                         uint32_t length) const {
   if (source_) {
     source_->read(dst_offset, out, out_cbsize, offset_ + src_offset, length);
   } else {
@@ -71,10 +71,10 @@ void scalar_buffer::read(uint32_t dst_offset,
 }
 
 void scalar_buffer::write(uint32_t dst_offset,
-                               const void* in,
-                               uint32_t in_cbsize,
-                               uint32_t src_offset,
-                               uint32_t length) {
+                          const void* in,
+                          uint32_t in_cbsize,
+                          uint32_t src_offset,
+                          uint32_t length) {
   if (source_) {
     source_->write(offset_ + dst_offset, in, in_cbsize, src_offset, length);
   } else {

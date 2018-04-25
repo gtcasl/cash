@@ -127,63 +127,63 @@ typedef std::unordered_map<uint32_t, enum_string_cb> enum_strings_t;
 class context : public refcounted {
 public:
 
-  uint32_t get_id() const {
+  uint32_t id() const {
     return id_;
   }
 
-  const std::string& get_name() const {
+  const std::string& name() const {
     return name_;
   }
 
-  const auto& get_nodes() const {
+  const auto& nodes() const {
     return nodes_;
   }
 
-  auto& get_nodes() {
+  auto& nodes() {
     return nodes_;
   }
 
-  const auto& get_undefs() const {
+  const auto& undefs() const {
     return undefs_;
   }
 
-  const auto& get_proxies() const {
+  const auto& proxies() const {
     return proxies_;
   }
 
-  const auto& get_inputs() const {
+  const auto& inputs() const {
     return inputs_;
   }
 
-  const auto& get_outputs() const {
+  const auto& outputs() const {
     return outputs_;
   }
 
-  const auto& get_taps() const {
+  const auto& taps() const {
     return taps_;
   }
 
-  const auto& get_gtaps() const {
+  const auto& gtaps() const {
     return gtaps_;
   }
 
-  const auto& get_literals() const {
+  const auto& literals() const {
     return literals_;
   }
 
-  auto get_default_clk() const {
+  auto default_clk() const {
     return default_clk_;
   }
 
-  auto get_default_reset() const {
+  auto default_reset() const {
     return default_reset_;
   }
 
-  const auto& get_bindings() const {
+  const auto& bindings() const {
     return bindings_;
   }
 
-  const auto& get_cdomains() const {
+  const auto& cdomains() const {
     return cdomains_;
   }
 
@@ -197,7 +197,7 @@ public:
 
   //--
 
-  lnodeimpl* get_time();
+  lnodeimpl* time();
 
   //--
 
@@ -235,13 +235,13 @@ public:
                           uint32_t length,
                           lnodeimpl* src);
 
-  lnodeimpl* get_predicate();
+  lnodeimpl* create_predicate();
 
   void remove_local_variable(lnodeimpl* src, lnodeimpl* dst);
 
   //--
   
-  lnodeimpl* get_literal(const bitvector& value);
+  lnodeimpl* literal(const bitvector& value);
 
   //--
 
@@ -298,7 +298,7 @@ protected:
                                const cond_defs_t& defs,
                                const cond_br_t* branch);
 
-  bindimpl* get_binding(context* module);
+  bindimpl* find_binding(context* module);
 
   uint32_t    id_;
   std::string name_;

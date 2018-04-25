@@ -21,7 +21,7 @@ public:
 
   void compile();
 
-  context* get_ctx() const {
+  context* ctx() const {
     return ctx_;
   }
 

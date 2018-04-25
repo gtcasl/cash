@@ -38,13 +38,13 @@ void register_enum_string(const lnode& node, void* callback);
 #define CH_ENUM_LOGIC_IMPL(enum_name) \
   enum_name(const std::shared_ptr<ch::internal::type_buffer_t<traits>>& buffer = \
     std::make_shared<ch::internal::type_buffer_t<traits>>(traits::bitwidth, CH_SRC_LOCATION)) \
-    : base(buffer) { ch::internal::register_enum_string(ch::internal::logic_accessor::get_data(*this), (void*)to_string); } \
+    : base(buffer) { ch::internal::register_enum_string(ch::internal::logic_accessor::data(*this), (void*)to_string); } \
   enum_name(const enum_name& rhs, const source_location& sloc = CH_SRC_LOCATION) \
-    : base(rhs, sloc) { ch::internal::register_enum_string(ch::internal::logic_accessor::get_data(*this), (void*)to_string); } \
+    : base(rhs, sloc) { ch::internal::register_enum_string(ch::internal::logic_accessor::data(*this), (void*)to_string); } \
   enum_name(enum_name&& rhs) \
-    : base(std::move(rhs)) { ch::internal::register_enum_string(ch::internal::logic_accessor::get_data(*this), (void*)to_string); } \
+    : base(std::move(rhs)) { ch::internal::register_enum_string(ch::internal::logic_accessor::data(*this), (void*)to_string); } \
   enum_name(enum_type rhs, const source_location& sloc = CH_SRC_LOCATION) \
-    : base(rhs, sloc) { ch::internal::register_enum_string(ch::internal::logic_accessor::get_data(*this), (void*)to_string); }
+    : base(rhs, sloc) { ch::internal::register_enum_string(ch::internal::logic_accessor::data(*this), (void*)to_string); }
 
 #define CH_ENUM_ASSIGN_IMPL(enum_name) \
   enum_name& operator=(const enum_name& rhs) { \

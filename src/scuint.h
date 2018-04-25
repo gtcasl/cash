@@ -123,19 +123,19 @@ public:
   // compare operators
 
   auto operator<(const ch_scuint& rhs) const {
-    return (buffer_->get_data() < rhs.buffer_->get_data());
+    return (buffer_->data() < rhs.buffer_->data());
   }
 
   auto operator>=(const ch_scuint& rhs) const {
-    return !(buffer_->get_data() < rhs.buffer_->get_data());
+    return !(buffer_->data() < rhs.buffer_->data());
   }
 
   auto operator>(const ch_scuint& rhs) const {
-    return (rhs.buffer_->get_data() < buffer_->get_data());
+    return (rhs.buffer_->data() < buffer_->data());
   }
 
   auto operator<=(const ch_scuint& rhs) const {
-    return !(rhs.buffer_->get_data() < rhs.buffer_->get_data());
+    return !(rhs.buffer_->data() < rhs.buffer_->data());
   }
 
   // bitwise operators

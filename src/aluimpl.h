@@ -10,7 +10,7 @@ namespace internal {
 class aluimpl : public lnodeimpl {
 public:
 
-  ch_op get_op() const {
+  ch_op op() const {
     return op_;
   }  
 
@@ -37,7 +37,7 @@ protected:
 class delayed_aluimpl : public tickable, public aluimpl {
 public:
 
-  const lnode& get_cd() const {
+  const lnode& cd() const {
     return srcs_[cd_idx_];
   }
 
@@ -45,7 +45,7 @@ public:
     return (enable_idx_ != -1);
   }
 
-  const lnode& get_enable() const {
+  const lnode& enable() const {
     return srcs_[enable_idx_];
   }
 

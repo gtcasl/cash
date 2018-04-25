@@ -71,7 +71,7 @@ printimpl::printimpl(context* ctx,
   , predicated_(false)
   , tick_(~0ull) {
   if (ctx_->conditional_enabled(this)) {
-    auto pred = ctx_->get_predicate();
+    auto pred = ctx_->create_predicate();
     if (pred) {
       srcs_.emplace_back(pred);
       predicated_ = true;
@@ -137,7 +137,7 @@ void ch::internal::createPrintNode(
     const std::string& format,
     const std::initializer_list<lnode>& args) {
   // printing is only enabled in debug mode
-  if (0 == platform::self().get_dbg_level())
+  if (0 == platform::self().dbg_level())
     return;
 
   // check format

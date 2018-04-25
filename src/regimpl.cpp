@@ -31,9 +31,9 @@ void reg_buffer::write(uint32_t dst_offset,
                             const lnode& data,
                             uint32_t src_offset,
                             uint32_t length) {
-  auto proxy = reinterpret_cast<proxyimpl*>(value_.get_impl());
-  auto reg = dynamic_cast<regimpl*>(proxy->get_src(0).get_impl());
-  reg->get_next().write(dst_offset, data, src_offset, length);
+  auto proxy = reinterpret_cast<proxyimpl*>(value_.impl());
+  auto reg = dynamic_cast<regimpl*>(proxy->src(0).impl());
+  reg->next().write(dst_offset, data, src_offset, length);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -61,7 +61,7 @@ regimpl::~regimpl() {
 
 void regimpl::detach() {
   if (!srcs_[0].empty()) {
-    reinterpret_cast<cdimpl*>(srcs_[0].get_impl())->remove_reg(this);
+    reinterpret_cast<cdimpl*>(srcs_[0].impl())->remove_reg(this);
     srcs_[0].clear();
   }
 }
@@ -73,7 +73,7 @@ void regimpl::tick(ch_tick t) {
 
 void regimpl::tick_next(ch_tick t) {
   if (this->has_init()) {
-    auto& reset = reinterpret_cast<cdimpl*>(srcs_[0].get_impl())->get_reset();
+    auto& reset = reinterpret_cast<cdimpl*>(srcs_[0].impl())->reset();
     q_next_ = reset.eval(t)[0] ? srcs_[2].eval(t) : srcs_[1].eval(t);
   } else {
     q_next_ = srcs_[1].eval(t);
@@ -101,10 +101,10 @@ void ch::internal::ch_popcd() {
 
 ch_logic<1> ch::internal::ch_clock() {
   auto cd = ctx_curr()->current_cd();
-  return make_type<ch_logic<1>>(cd->get_clock());
+  return make_type<ch_logic<1>>(cd->clock());
 }
 
 ch_logic<1> ch::internal::ch_reset() {
   auto cd = ctx_curr()->current_cd();
-  return make_type<ch_logic<1>>(cd->get_reset());
+  return make_type<ch_logic<1>>(cd->reset());
 }

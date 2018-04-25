@@ -47,7 +47,7 @@
     static_cast<ch::internal::aggregate_init_cast_t<decltype(CH_PAIR_R(x)), __T##i>>(CH_CONCAT(_,CH_PAIR_R(x))))
 
 #define CH_STRUCT_GETBUFFER(i, x) \
-  return ch::internal::type_accessor_t<traits>::get_buffer(CH_PAIR_R(x))
+  return ch::internal::type_accessor_t<traits>::buffer(CH_PAIR_R(x))
 
 #define CH_STRUCT_CLONE(i, x) \
   CH_PAIR_R(x).clone()
@@ -69,7 +69,7 @@ public: \
   explicit struct_name(__T__ rhs) \
     : struct_name(std::make_shared<ch::internal::type_buffer_t<traits>>(ch::internal::bitvector(traits::bitwidth, rhs))) {} \
   explicit struct_name(const ch_scalar<traits::bitwidth>& rhs) \
-    : struct_name(std::make_shared<ch::internal::type_buffer_t<traits>>(ch::internal::scalar_accessor::get_data(rhs))) {} \
+    : struct_name(std::make_shared<ch::internal::type_buffer_t<traits>>(ch::internal::scalar_accessor::data(rhs))) {} \
   template <CH_REVERSE_FOR_EACH(CH_STRUCT_FIELD_CTOR_TMPL, CH_SEP_COMMA, __VA_ARGS__), \
             CH_REVERSE_FOR_EACH(CH_STRUCT_FIELD_CTOR_REQUIRES, CH_SEP_COMMA, __VA_ARGS__)> \
   explicit struct_name(CH_REVERSE_FOR_EACH(CH_STRUCT_FIELD_CTOR_ARGS, CH_SEP_COMMA, __VA_ARGS__)) \
@@ -81,11 +81,11 @@ protected: \
   void init_fields(CH_REVERSE_FOR_EACH(CH_STRUCT_FIELD_CTOR_ARGS, CH_SEP_COMMA, __VA_ARGS__)) { \
     CH_REVERSE_FOR_EACH(CH_STRUCT_INIT_FIELD, CH_SEP_SEMICOLON, __VA_ARGS__); \
   } \
-  const std::shared_ptr<ch::internal::type_buffer_t<traits>>& get_buffer() const { \
-    CH_STRUCT_GETBUFFER(0, CH_FIRST_ARG(__VA_ARGS__))->get_source(); \
+  const std::shared_ptr<ch::internal::type_buffer_t<traits>>& buffer() const { \
+    CH_STRUCT_GETBUFFER(0, CH_FIRST_ARG(__VA_ARGS__))->source(); \
   } \
-  std::shared_ptr<ch::internal::type_buffer_t<traits>>& get_buffer() { \
-    CH_STRUCT_GETBUFFER(0, CH_FIRST_ARG(__VA_ARGS__))->get_source(); \
+  std::shared_ptr<ch::internal::type_buffer_t<traits>>& buffer() { \
+    CH_STRUCT_GETBUFFER(0, CH_FIRST_ARG(__VA_ARGS__))->source(); \
   } \
 public:
 
@@ -108,7 +108,7 @@ public: \
   explicit struct_name(const ch_bit<traits::bitwidth>& rhs, const source_location& sloc = CH_SRC_LOCATION) \
     : struct_name(ch::internal::type_accessor_t<traits>::copy_buffer(rhs, sloc, CH_STRINGIZE(name))) {} \
   explicit struct_name(const ch_scalar<traits::bitwidth>& rhs, const source_location& sloc = CH_SRC_LOCATION) \
-    : struct_name(std::make_shared<ch::internal::type_buffer_t<traits>>(ch::internal::scalar_accessor::get_data(rhs), sloc, CH_STRINGIZE(name))) {} \
+    : struct_name(std::make_shared<ch::internal::type_buffer_t<traits>>(ch::internal::scalar_accessor::data(rhs), sloc, CH_STRINGIZE(name))) {} \
   template <CH_REVERSE_FOR_EACH(CH_STRUCT_FIELD_CTOR_TMPL, CH_SEP_COMMA, __VA_ARGS__), \
             CH_REVERSE_FOR_EACH(CH_STRUCT_FIELD_CTOR_REQUIRES, CH_SEP_COMMA, __VA_ARGS__)> \
   explicit struct_name(CH_REVERSE_FOR_EACH(CH_STRUCT_FIELD_CTOR_ARGS, CH_SEP_COMMA, __VA_ARGS__), \
@@ -121,11 +121,11 @@ protected: \
   void init_fields(CH_REVERSE_FOR_EACH(CH_STRUCT_FIELD_CTOR_ARGS, CH_SEP_COMMA, __VA_ARGS__)) { \
     CH_REVERSE_FOR_EACH(CH_STRUCT_INIT_FIELD, CH_SEP_SEMICOLON, __VA_ARGS__); \
   } \
-  const std::shared_ptr<ch::internal::type_buffer_t<traits>>& get_buffer() const { \
-    CH_STRUCT_GETBUFFER(0, CH_FIRST_ARG(__VA_ARGS__))->get_source(); \
+  const std::shared_ptr<ch::internal::type_buffer_t<traits>>& buffer() const { \
+    CH_STRUCT_GETBUFFER(0, CH_FIRST_ARG(__VA_ARGS__))->source(); \
   } \
-  std::shared_ptr<ch::internal::type_buffer_t<traits>>& get_buffer() { \
-    CH_STRUCT_GETBUFFER(0, CH_FIRST_ARG(__VA_ARGS__))->get_source(); \
+  std::shared_ptr<ch::internal::type_buffer_t<traits>>& buffer() { \
+    CH_STRUCT_GETBUFFER(0, CH_FIRST_ARG(__VA_ARGS__))->source(); \
   } \
 public:
 
@@ -148,7 +148,7 @@ public: \
   explicit struct_name(__T__ rhs) \
     : struct_name(std::make_shared<ch::internal::type_buffer_t<traits>>(ch::internal::bitvector(traits::bitwidth, rhs))) {} \
   explicit struct_name(const ch_scalar<traits::bitwidth>& rhs) \
-    : struct_name(std::make_shared<ch::internal::type_buffer_t<traits>>(ch::internal::scalar_accessor::get_data(rhs))) {} \
+    : struct_name(std::make_shared<ch::internal::type_buffer_t<traits>>(ch::internal::scalar_accessor::data(rhs))) {} \
   template <CH_REVERSE_FOR_EACH(CH_STRUCT_FIELD_CTOR_TMPL, CH_SEP_COMMA, __VA_ARGS__), typename... __Ts__, \
             CH_REVERSE_FOR_EACH(CH_STRUCT_FIELD_CTOR_REQUIRES, CH_SEP_COMMA, __VA_ARGS__)> \
   explicit struct_name(CH_REVERSE_FOR_EACH(CH_STRUCT_FIELD_CTOR_ARGS, CH_SEP_COMMA, __VA_ARGS__), __Ts__&&... args) \
@@ -161,11 +161,11 @@ protected: \
     base::init_fields(args...); \
     CH_REVERSE_FOR_EACH(CH_STRUCT_INIT_FIELD, CH_SEP_SEMICOLON, __VA_ARGS__); \
   } \
-  const std::shared_ptr<ch::internal::type_buffer_t<traits>>& get_buffer() const { \
-    return base::get_buffer(); \
+  const std::shared_ptr<ch::internal::type_buffer_t<traits>>& buffer() const { \
+    return base::buffer(); \
   } \
-  std::shared_ptr<ch::internal::type_buffer_t<traits>>& get_buffer() { \
-    return base::get_buffer(); \
+  std::shared_ptr<ch::internal::type_buffer_t<traits>>& buffer() { \
+    return base::buffer(); \
   } \
 public:
 
@@ -190,7 +190,7 @@ public: \
   explicit struct_name(const ch_bit<traits::bitwidth>& rhs, const source_location& sloc = CH_SRC_LOCATION) \
     : struct_name(ch::internal::type_accessor_t<traits>::copy_buffer(rhs, sloc, CH_STRINGIZE(name))) {} \
   explicit struct_name(const ch_scalar<traits::bitwidth>& rhs, const source_location& sloc = CH_SRC_LOCATION) \
-    : struct_name(std::make_shared<ch::internal::type_buffer_t<traits>>(ch::internal::scalar_accessor::get_data(rhs), sloc, CH_STRINGIZE(name))) {} \
+    : struct_name(std::make_shared<ch::internal::type_buffer_t<traits>>(ch::internal::scalar_accessor::data(rhs), sloc, CH_STRINGIZE(name))) {} \
   template <CH_REVERSE_FOR_EACH(CH_STRUCT_FIELD_CTOR_TMPL, CH_SEP_COMMA, __VA_ARGS__), \
             CH_REVERSE_FOR_EACH(CH_STRUCT_FIELD_CTOR_REQUIRES, CH_SEP_COMMA, __VA_ARGS__)> \
   explicit struct_name(CH_REVERSE_FOR_EACH(CH_STRUCT_FIELD_CTOR_ARGS, CH_SEP_COMMA, __VA_ARGS__), \
@@ -212,11 +212,11 @@ protected: \
     base::init_fields(args...); \
     CH_REVERSE_FOR_EACH(CH_STRUCT_INIT_FIELD, CH_SEP_SEMICOLON, __VA_ARGS__); \
   } \
-  const std::shared_ptr<ch::internal::type_buffer_t<traits>>& get_buffer() const { \
-    return base::get_buffer(); \
+  const std::shared_ptr<ch::internal::type_buffer_t<traits>>& buffer() const { \
+    return base::buffer(); \
   } \
-  std::shared_ptr<ch::internal::type_buffer_t<traits>>& get_buffer() { \
-    return base::get_buffer(); \
+  std::shared_ptr<ch::internal::type_buffer_t<traits>>& buffer() { \
+    return base::buffer(); \
   }
 
 #define CH_STRUCT_ASSIGN_IMPL(struct_name) \

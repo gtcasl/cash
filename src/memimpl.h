@@ -19,15 +19,15 @@ public:
 
   ~memimpl();
 
-  uint32_t get_total_size() const {
+  uint32_t total_size() const {
     return value_.size();
   }
 
-  uint32_t get_data_width() const {
+  uint32_t data_width() const {
     return data_width_;
   }
 
-  uint32_t get_num_items() {
+  uint32_t num_items() {
     return num_items_;
   }
 
@@ -39,15 +39,15 @@ public:
     return has_initdata_;
   }
 
-  const lnode& get_cd() const {
+  const lnode& cd() const {
     return srcs_[0];
   }
 
-  auto& get_ports() const {
+  auto& ports() const {
     return ports_;
   }
 
-  memportimpl* get_port(const lnode& addr);
+  memportimpl* port(const lnode& addr);
 
   void remove_port(memportimpl* port);
 
@@ -77,23 +77,23 @@ public:
 
   ~memportimpl();
 
-  unsigned get_index() const {
+  unsigned index() const {
     return index_;
   }
 
-  const lnode& get_mem() const {
+  const lnode& mem() const {
     return srcs_[0];
   }
 
-  const lnode& get_addr() const {
+  const lnode& addr() const {
     return srcs_[1];
   }
 
-  const lnode& get_wdata() const {
+  const lnode& wdata() const {
     return srcs_[wdata_idx_];
   }
 
-  const lnode& get_wenable() const {
+  const lnode& wenable() const {
     return srcs_[wenable_idx_];
   }
 

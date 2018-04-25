@@ -19,9 +19,17 @@ public:
 
   lnode(const lnode& rhs);
 
-  explicit lnode(uint32_t size);
+  explicit lnode(uint32_t size,
+                 unsigned var_id = 0,
+                 const std::string& name = "",
+                 const source_location& sloc = source_location());
 
-  lnode(uint32_t size, const lnode& src, unsigned src_offset = 0);
+  lnode(uint32_t size,
+        const lnode& src,
+        unsigned src_offset = 0,
+        unsigned var_id = 0,
+        const std::string& name = "",
+        const source_location& sloc = source_location());
 
   lnode(lnodeimpl* impl);
 
@@ -40,31 +48,25 @@ public:
 
   bool empty() const;
 
-  void set_impl(lnodeimpl* impl);
-
-  lnodeimpl* get_impl() const;
+  lnodeimpl* impl() const;
   
-  uint32_t get_id() const;
+  uint32_t id() const;
 
-  const std::string& get_name() const;
-
-  void set_name(const std::string& name);
+  const std::string& name() const;
   
   uint32_t size() const;
   
-  context* get_ctx() const;
+  context* ctx() const;
 
-  const bitvector& get_data() const;
+  const bitvector& data() const;
 
-  bitvector& get_data();
+  bitvector& data();
 
-  uint32_t get_var_id() const;
+  uint32_t var_id() const;
 
   void set_var_id(uint32_t var_id);
 
-  const source_location& get_source_location() const;
-
-  void set_source_location(const source_location& sloc);
+  const source_location& sloc() const;
 
   lnodeimpl* clone() const;
 
@@ -75,15 +77,15 @@ protected:
   mutable lnodeimpl* impl_;
 
   inline friend bool operator==(const lnode& lhs, const lnode& rhs) {
-    return lhs.get_id() == rhs.get_id();
+    return lhs.id() == rhs.id();
   }
 
   inline friend bool operator!=(const lnode& lhs, const lnode& rhs) {
-    return lhs.get_id() != rhs.get_id();
+    return lhs.id() != rhs.id();
   }
 
   inline friend bool operator<(const lnode& lhs, const lnode& rhs) {
-    return lhs.get_id() < rhs.get_id();
+    return lhs.id() < rhs.id();
   }
 };
 

@@ -10,15 +10,15 @@ namespace internal {
 class regimpl : public tickable, public lnodeimpl {
 public:
 
-  const lnode& get_cd() const {
+  const lnode& cd() const {
     return srcs_[0];
   }
 
-  const lnode& get_next() const {
+  const lnode& next() const {
     return srcs_[1];
   }
 
-  lnode& get_next() {
+  lnode& next() {
     return srcs_[1];
   }
 
@@ -26,7 +26,7 @@ public:
     return (3 == srcs_.size());
   }
 
-  const lnode& get_init() const {
+  const lnode& init() const {
     return srcs_[2];
   }
 

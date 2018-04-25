@@ -17,28 +17,34 @@ class platform::Impl {
     , dump_ast(0)
     , dump_cfg(0) {
     auto _dbg_level = std::getenv("CASH_DEBUG_LEVEL");
-    if (_dbg_level)
+    if (_dbg_level) {
       dbg_level = atol(_dbg_level);
+    }
 
     auto _dbg_node = std::getenv("CASH_DEBUG_NODE");
-    if (_dbg_node)
+    if (_dbg_node) {
       dbg_node = atol(_dbg_node);
+    }
 
     auto _dbg_verilog = std::getenv("CASH_DEBUG_VERILOG");
-    if (_dbg_verilog)
+    if (_dbg_verilog) {
       dbg_verilog = atol(_dbg_verilog);
+    }
 
     auto _dump_ast = std::getenv("CASH_DUMP_AST");
-    if (_dump_ast)
+    if (_dump_ast) {
       dump_ast = atol(_dump_ast);
+    }
 
     auto _dump_cfg = std::getenv("CASH_DUMP_CFG");
-    if (_dump_cfg)
+    if (_dump_cfg) {
       dump_cfg = atol(_dump_cfg);
+    }
 
     auto _lib_path = std::getenv("CASH_HOME");
-    if (_lib_path)
+    if (_lib_path) {
       lib_path = _lib_path;
+    }
   }
 
   friend class platform;
@@ -52,27 +58,27 @@ platform::~platform() {
   delete impl_;
 }
 
-int platform::get_dbg_level() const {
+int platform::dbg_level() const {
   return impl_->dbg_level;
 }
 
-int platform::get_dbg_node() const {
+int platform::dbg_node() const {
   return impl_->dbg_node;
 }
 
-int platform::get_dbg_verilog() const {
+int platform::dbg_verilog() const {
   return impl_->dbg_verilog;
 }
 
-int platform::get_dump_ast() const {
+int platform::dump_ast() const {
   return impl_->dump_ast;
 }
 
-int platform::get_dump_cfg() const {
+int platform::dump_cfg() const {
   return impl_->dump_cfg;
 }
 
-const std::string& platform::get_lib_path() const {
+const std::string& platform::lib_path() const {
   return impl_->lib_path;
 }
 

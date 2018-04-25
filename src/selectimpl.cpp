@@ -19,7 +19,7 @@ void ch::internal::end_branch() {
 
 void ch::internal::cond_block(const lnode& pred, fvoid_t func) {
   auto ctx = ctx_curr();
-  ctx->begin_block(pred.get_impl());
+  ctx->begin_block(pred.impl());
   func();
   ctx->end_block();
 }
@@ -33,8 +33,11 @@ void ch::internal::cond_block(fvoid_t func) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-selectimpl::selectimpl(context* ctx, uint32_t size, lnodeimpl* key)
-  : lnodeimpl(ctx, type_sel, size)
+selectimpl::selectimpl(context* ctx,
+                       uint32_t size,
+                       lnodeimpl* key,
+                       const source_location& sloc)
+  : lnodeimpl(ctx, type_sel, size, 0, "", sloc)
   , tick_(~0ull)
   , has_key_(false) {
   if (key) {
@@ -87,7 +90,7 @@ void selectimpl::print(std::ostream& out, uint32_t level) const {
       if (i > 0) {
         out << ", ";
       }
-      out << "#" << srcs_[i].get_id();
+      out << "#" << srcs_[i].id();
     }
     out << ")";
   }
@@ -124,5 +127,5 @@ lnodeimpl* ch::internal::createSelectNode(
     const lnode& pred,
     const lnode& _true,
     const lnode& _false) {
-  return pred.get_ctx()->create_node<selectimpl>(pred, _true, _false);
+  return pred.ctx()->create_node<selectimpl>(pred, _true, _false);
 }
