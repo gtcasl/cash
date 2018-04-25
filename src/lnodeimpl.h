@@ -78,8 +78,8 @@ public:
 
   unsigned add_src(unsigned index, const lnode& src);
   
-  uint32_t get_size() const {
-    return value_.get_size();
+  uint32_t size() const {
+    return value_.size();
   }
   
   const bitvector& get_value() const { 

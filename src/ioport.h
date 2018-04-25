@@ -214,7 +214,7 @@ public:
   using base = scalar_buffer;
 
   explicit scalar_io_buffer(const lnode& io)
-    : base(bitvector(), nullptr, 0, io.get_size()), io_(io)
+    : base(bitvector(), nullptr, 0, io.size()), io_(io)
   {}
 
   const bitvector& get_data() const override {

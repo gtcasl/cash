@@ -5,7 +5,7 @@ using namespace ch::internal;
 bitvector::bitvector(const bitvector& rhs)
   : bitvector() {
   this->resize(rhs.size_);
-  std::copy(rhs.words_, rhs.words_ + rhs.get_num_words(), words_);
+  std::copy(rhs.words_, rhs.words_ + rhs.num_words(), words_);
 }
 
 bitvector::bitvector(bitvector&& rhs) {
@@ -97,7 +97,7 @@ void bitvector::resize(uint32_t size,
 void bitvector::clear_unused_bits() {
   uint32_t extra_bits = size_ & WORD_MASK;
   if (extra_bits) {
-    uint32_t num_words = this->get_num_words();
+    uint32_t num_words = this->num_words();
     words_[num_words-1] &= ~(~0UL << extra_bits);
   }
 }
@@ -107,7 +107,7 @@ bitvector& bitvector::operator=(const bitvector& rhs) {
     this->resize(rhs.size_);
   }
   assert(size_ == rhs.size_);
-  std::copy(rhs.words_, rhs.words_ + rhs.get_num_words(), words_);
+  std::copy(rhs.words_, rhs.words_ + rhs.num_words(), words_);
   return *this;
 }
 
@@ -253,7 +253,7 @@ bitvector& bitvector::operator=(const std::string& value) {
   CH_CHECK(size_ >= size, "value out of range");
   
   // clear extra words
-  uint32_t num_words = this->get_num_words();
+  uint32_t num_words = this->num_words();
   uint32_t src_num_words = (size + WORD_MASK) >> WORD_SIZE_LOG;
   if (src_num_words < num_words) {
     std::fill_n(words_ + src_num_words, num_words - src_num_words, 0x0);
@@ -302,7 +302,7 @@ bitvector::reference bitvector::at(uint32_t idx) {
 bool bitvector::operator==(const bitvector& rhs) const {
   if (size_ != rhs.size_)
     return false;
-  for (uint32_t i = 0, n = rhs.get_num_words(); i < n; ++i) {
+  for (uint32_t i = 0, n = rhs.num_words(); i < n; ++i) {
     if (words_[i] != rhs.words_[i])
       return false;
   }
@@ -311,7 +311,7 @@ bool bitvector::operator==(const bitvector& rhs) const {
 
 bool bitvector::operator<(const bitvector& rhs) const {
   assert(size_ == rhs.size_);
-  for (int32_t i = rhs.get_num_words() - 1; i >= 0; --i) {
+  for (int32_t i = rhs.num_words() - 1; i >= 0; --i) {
     if (words_[i] < rhs.words_[i])
       return true;
     else if (words_[i] > rhs.words_[i])
@@ -341,7 +341,7 @@ void bitvector::copy(uint32_t dst_offset,
 }
 
 int bitvector::find_first() const {
-  for (uint32_t i = 0, n = this->get_num_words(); i < n; ++i) {
+  for (uint32_t i = 0, n = this->num_words(); i < n; ++i) {
     uint32_t w = words_[i];
     if (w) {
       int z = ctz(w);
@@ -352,7 +352,7 @@ int bitvector::find_first() const {
 }
 
 int bitvector::find_last() const {
-  for (int32_t i = this->get_num_words() - 1; i >= 0; --i) {
+  for (int32_t i = this->num_words() - 1; i >= 0; --i) {
     uint32_t w = words_[i];
     if (w) {
       int z = clz(w);
@@ -362,8 +362,8 @@ int bitvector::find_last() const {
   return -1;
 }
 
-bool bitvector::is_empty() const {
-  for (int32_t i = 0, n = this->get_num_words(); i < n; ++i) {
+bool bitvector::empty() const {
+  for (int32_t i = 0, n = this->num_words(); i < n; ++i) {
     if (words_[i])
       return false;
   }
@@ -471,8 +471,8 @@ std::ostream& ch::internal::operator<<(std::ostream& out, const bitvector& rhs) 
   out.setf(std::ios_base::hex, std::ios_base::basefield);
   out << "0x";
   auto_separator sep("_");
-  for (int32_t i = rhs.get_num_words() - 1; i >= 0; --i) {
-    out << sep << rhs.get_word(i);
+  for (int32_t i = rhs.num_words() - 1; i >= 0; --i) {
+    out << sep << rhs.word(i);
   }
   out.flags(oldflags);
   return out;
@@ -481,24 +481,24 @@ std::ostream& ch::internal::operator<<(std::ostream& out, const bitvector& rhs) 
 ///////////////////////////////////////////////////////////////////////////////
 
 void ch::internal::ZExt(bitvector& out, const bitvector& in) {
-  assert(out.get_size() >= in.get_size());
-  std::copy(in.get_words(), in.get_words() + in.get_num_words(), out.get_words());
-  std::fill(out.get_words() + in.get_num_words(),
-            out.get_words() + out.get_num_words(),
+  assert(out.size() >= in.size());
+  std::copy(in.words(), in.words() + in.num_words(), out.words());
+  std::fill(out.words() + in.num_words(),
+            out.words() + out.num_words(),
             0);
 }
 
 void ch::internal::SExt(bitvector& out, const bitvector& in) {
-  assert(out.get_size() >= in.get_size());
-  auto msb_idx = in.get_size() - 1;
+  assert(out.size() >= in.size());
+  auto msb_idx = in.size() - 1;
   if (in[msb_idx]) {
     auto msb_blk_idx = msb_idx >> bitvector::WORD_SIZE_LOG;
     auto msb_blk_rem = msb_idx & bitvector::WORD_MASK;
-    auto msb_blk = in.get_word(msb_blk_idx);
-    std::copy(in.get_words(), in.get_words() + in.get_num_words(), out.get_words());
-    out.set_word(msb_blk_idx, msb_blk | (bitvector::WORD_MAX << msb_blk_rem));
-    std::fill(out.get_words() + in.get_num_words(),
-              out.get_words() + out.get_num_words(),
+    auto msb_blk = in.word(msb_blk_idx);
+    std::copy(in.words(), in.words() + in.num_words(), out.words());
+    out.word(msb_blk_idx) = msb_blk | (bitvector::WORD_MAX << msb_blk_rem);
+    std::fill(out.words() + in.num_words(),
+              out.words() + out.num_words(),
               bitvector::WORD_MAX);
   } else {
     ZExt(out, in);
@@ -506,45 +506,45 @@ void ch::internal::SExt(bitvector& out, const bitvector& in) {
 }
 
 void ch::internal::Inv(bitvector& out, const bitvector& in) {
-  assert(out.get_size() == in.get_size());
-  for (uint32_t i = 0, n = in.get_num_words(); i < n; ++i) {
-    out.set_word(i, ~in.get_word(i));
+  assert(out.size() == in.size());
+  for (uint32_t i = 0, n = in.num_words(); i < n; ++i) {
+    out.word(i) = ~in.word(i);
   }
   out.clear_unused_bits();
 }
 
 void ch::internal::And(bitvector& out, const bitvector& lhs, const bitvector& rhs) {
-  assert(out.get_size() == lhs.get_size());
-  assert(lhs.get_size() == rhs.get_size());
-  for (int32_t i = 0, n = rhs.get_num_words(); i < n; ++i) {
-    out.set_word(i, lhs.get_word(i) & rhs.get_word(i));
+  assert(out.size() == lhs.size());
+  assert(lhs.size() == rhs.size());
+  for (int32_t i = 0, n = rhs.num_words(); i < n; ++i) {
+    out.word(i) = lhs.word(i) & rhs.word(i);
   }
 }
 
 void ch::internal::Or(bitvector& out, const bitvector& lhs, const bitvector& rhs) {
-  assert(out.get_size() == lhs.get_size());
-  assert(lhs.get_size() == rhs.get_size());
-  for (int32_t i = 0, n = rhs.get_num_words(); i < n; ++i) {
-    out.set_word(i, lhs.get_word(i) | rhs.get_word(i));
+  assert(out.size() == lhs.size());
+  assert(lhs.size() == rhs.size());
+  for (int32_t i = 0, n = rhs.num_words(); i < n; ++i) {
+    out.word(i) = lhs.word(i) | rhs.word(i);
   }
 }
 
 void ch::internal::Xor(bitvector& out, const bitvector& lhs, const bitvector& rhs) {
-  assert(out.get_size() == lhs.get_size());
-  assert(lhs.get_size() == rhs.get_size());
-  for (int32_t i = 0, n = rhs.get_num_words(); i < n; ++i) {
-    out.set_word(i, lhs.get_word(i) ^ rhs.get_word(i));
+  assert(out.size() == lhs.size());
+  assert(lhs.size() == rhs.size());
+  for (int32_t i = 0, n = rhs.num_words(); i < n; ++i) {
+    out.word(i) = lhs.word(i) ^ rhs.word(i);
   }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 bool ch::internal::AndR(const bitvector& in) {
-  uint32_t in_w = in.get_word(0);
+  uint32_t in_w = in.word(0);
   uint32_t result = in_w & 0x1;
-  for (uint32_t i = 1, j = 1, n = in.get_size(); i < n; ++i) {
+  for (uint32_t i = 1, j = 1, n = in.size(); i < n; ++i) {
     if (0 == (i % bitvector::WORD_SIZE)) {
-      in_w = in.get_word(j++);
+      in_w = in.word(j++);
     }
     in_w >>= 1;
     result &= (in_w & 0x1);
@@ -553,11 +553,11 @@ bool ch::internal::AndR(const bitvector& in) {
 }
 
 bool ch::internal::OrR(const bitvector& in) {
-  uint32_t in_w = in.get_word(0);
+  uint32_t in_w = in.word(0);
   uint32_t result = in_w & 0x1;
-  for (uint32_t i = 1, j = 1, n = in.get_size(); i < n; ++i) {
+  for (uint32_t i = 1, j = 1, n = in.size(); i < n; ++i) {
     if (0 == (i % bitvector::WORD_SIZE)) {
-      in_w = in.get_word(j++);
+      in_w = in.word(j++);
     }
     in_w >>= 1;
     result |= (in_w & 0x1);
@@ -566,11 +566,11 @@ bool ch::internal::OrR(const bitvector& in) {
 }
 
 bool ch::internal::XorR(const bitvector& in) {
-  uint32_t in_w = in.get_word(0);
+  uint32_t in_w = in.word(0);
   uint32_t result = in_w & 0x1;
-  for (uint32_t i = 1, j = 1, n = in.get_size(); i < n; ++i) {
+  for (uint32_t i = 1, j = 1, n = in.size(); i < n; ++i) {
     if (0 == (i % bitvector::WORD_SIZE)) {
-      in_w = in.get_word(j++);
+      in_w = in.word(j++);
     }
     in_w >>= 1;
     result ^= (in_w & 0x1);
@@ -581,83 +581,83 @@ bool ch::internal::XorR(const bitvector& in) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void ch::internal::Sll(bitvector& out, const bitvector& in, const bitvector& bits) {
-  assert(out.get_size() == in.get_size());
+  assert(out.size() == in.size());
   CH_CHECK(bits.find_last() <= 31, "shift amount out of range");
-  uint32_t dist = bits.get_word(0);
-  uint32_t num_words = in.get_num_words();
+  uint32_t dist = bits.word(0);
+  uint32_t num_words = in.num_words();
   if (1 == num_words) {
-    out.set_word(0, in.get_word(0) << dist);
+    out.word(0) = in.word(0) << dist;
   } else {
     uint32_t shift_words = dist >> bitvector::WORD_SIZE_LOG;
-    if (dist < in.get_size()) {
+    if (dist < in.size()) {
       uint32_t shift_bits = dist & bitvector::WORD_MASK;
       uint32_t shift_bits_r = bitvector::WORD_SIZE - shift_bits;
       uint32_t prev = 0;
       for (uint32_t i = 0, n = num_words - shift_words; i < n; ++i) {
-        uint32_t curr = in.get_word(i);
+        uint32_t curr = in.word(i);
         uint32_t pad = uint64_t(prev) >> shift_bits_r;
-        out.set_word(i + shift_words, (curr << shift_bits) | pad);
+        out.word(i + shift_words) = (curr << shift_bits) | pad;
         prev = curr;
       }
     } else {
       shift_words = num_words;
     }
-    std::fill_n(out.get_words(), shift_words, 0x0);
+    std::fill_n(out.words(), shift_words, 0x0);
   }
   out.clear_unused_bits(); // clear extra bits added by left shift
 }
 
 void ch::internal::Srl(bitvector& out, const bitvector& in, const bitvector& bits) {
-  assert(out.get_size() == in.get_size());
+  assert(out.size() == in.size());
   CH_CHECK(bits.find_last() <= 31, "shift amount out of range");
-  uint32_t dist = bits.get_word(0);
-  uint32_t num_words = in.get_num_words();
+  uint32_t dist = bits.word(0);
+  uint32_t num_words = in.num_words();
   if (1 == num_words) {
-    out.set_word(0, in.get_word(0) >> dist);
+    out.word(0) = in.word(0) >> dist;
   } else {
     uint32_t shift_words = dist >> bitvector::WORD_SIZE_LOG;
-    if (dist < in.get_size()) {
+    if (dist < in.size()) {
       uint32_t shift_bits = dist & bitvector::WORD_MASK;
       uint32_t shift_bits_l = bitvector::WORD_SIZE - shift_bits;
       uint32_t prev = 0;
       for (int32_t i = num_words - 1 - shift_words; i >= 0; --i) {
-        uint32_t curr = in.get_word(i + shift_words);
+        uint32_t curr = in.word(i + shift_words);
         uint32_t pad = uint64_t(prev) << shift_bits_l;
-        out.set_word(i, (curr >> shift_bits) | pad);
+        out.word(i) = (curr >> shift_bits) | pad;
         prev = curr;
       }
     } else {
       shift_words = num_words;
     }
-    std::fill_n(out.get_words() + (num_words - shift_words), shift_words, 0x0);
+    std::fill_n(out.words() + (num_words - shift_words), shift_words, 0x0);
   }
 }
 
 void ch::internal::Sra(bitvector& out, const bitvector& in, const bitvector& bits) {
-  assert(out.get_size() == in.get_size());
+  assert(out.size() == in.size());
   CH_CHECK(bits.find_last() <= 31, "shift amount out of range");
-  uint32_t dist = bits.get_word(0);
-  uint32_t fill_value = in[in.get_size() - 1] ? 0xffffffff : 0x0;
-  uint32_t num_words = in.get_num_words();
+  uint32_t dist = bits.word(0);
+  uint32_t fill_value = in[in.size() - 1] ? 0xffffffff : 0x0;
+  uint32_t num_words = in.num_words();
   if (1 == num_words) {
-    int value = signext(in.get_word(0), in.get_size());
-    out.set_word(0, value >> dist);
+    int value = signext(in.word(0), in.size());
+    out.word(0) = value >> dist;
   } else {
     uint32_t shift_words = dist >> bitvector::WORD_SIZE_LOG;
-    if (dist < in.get_size()) {
+    if (dist < in.size()) {
       uint32_t shift_bits = dist & bitvector::WORD_MASK;
       uint32_t shift_bits_l = bitvector::WORD_SIZE - shift_bits;
       uint32_t prev = fill_value;
       for (int32_t i = num_words - 1 - shift_words; i >= 0; --i) {
-        uint32_t curr = in.get_word(i + shift_words);
+        uint32_t curr = in.word(i + shift_words);
         uint32_t pad = uint64_t(prev) << shift_bits_l;
-        out.set_word(i, (curr >> shift_bits) | pad);
+        out.word(i) = (curr >> shift_bits) | pad;
         prev = curr;
       }
     } else {
       shift_words = num_words;
     }
-    std::fill_n(out.get_words() + (num_words - shift_words), shift_words, fill_value);
+    std::fill_n(out.words() + (num_words - shift_words), shift_words, fill_value);
   }
   if (fill_value) {
     out.clear_unused_bits();
@@ -667,15 +667,15 @@ void ch::internal::Sra(bitvector& out, const bitvector& in, const bitvector& bit
 ///////////////////////////////////////////////////////////////////////////////
 
 void ch::internal::Add(bitvector& out, const bitvector& lhs, const bitvector& rhs, uint32_t cin) {
-  assert(out.get_size() == lhs.get_size());
-  assert(lhs.get_size() == rhs.get_size());
+  assert(out.size() == lhs.size());
+  assert(lhs.size() == rhs.size());
 
-  uint32_t size = out.get_size();
-  uint32_t num_words = out.get_num_words();
+  uint32_t size = out.size();
+  uint32_t num_words = out.num_words();
 
   for (uint32_t i = 0; i < num_words; ++i) {
-    uint32_t a_w = lhs.get_word(i);
-    uint32_t b_w = rhs.get_word(i);
+    uint32_t a_w = lhs.word(i);
+    uint32_t b_w = rhs.word(i);
     uint32_t c_w = a_w + b_w;
 
     uint32_t cout = 0;
@@ -688,61 +688,61 @@ void ch::internal::Add(bitvector& out, const bitvector& lhs, const bitvector& rh
       c_w += cin;
       if (c_w < cin)
         cout = 1;
-      size -= 32;
+      size -= bitvector::WORD_SIZE;
       cin = cout;
     }
-    out.set_word(i, c_w);
+    out.word(i) = c_w;
   }
 }
 
 void ch::internal::Sub(bitvector& out, const bitvector& lhs, const bitvector& rhs) {
-  bitvector minus_b(out.get_size());
+  bitvector minus_b(out.size());
   Inv(minus_b, rhs);
   Add(out, lhs, minus_b, 1);
 }
 
 void ch::internal::Neg(bitvector& out, const bitvector& in) {
-  bitvector zero(out.get_size(), 0x0);
+  bitvector zero(out.size(), 0x0);
   Sub(out, zero, in);
 }
 
 void ch::internal::Mult(bitvector& out, const bitvector& lhs, const bitvector& rhs) {
-  assert(out.get_size() == lhs.get_size());
-  assert(lhs.get_size() == rhs.get_size());
-  if (1 == lhs.get_num_words()
-   && 1 == rhs.get_num_words()) {
-    uint32_t a_w = lhs.get_word(0);
-    uint32_t b_w = rhs.get_word(0);
-    out.set_word(0, a_w * b_w);
+  assert(out.size() == lhs.size());
+  assert(lhs.size() == rhs.size());
+  if (1 == lhs.num_words()
+   && 1 == rhs.num_words()) {
+    uint32_t a_w = lhs.word(0);
+    uint32_t b_w = rhs.word(0);
+    out.word(0) = a_w * b_w;
   } else {
     CH_TODO();
   }
 }
 
 void ch::internal::Div(bitvector& out, const bitvector& lhs, const bitvector& rhs) {
-  assert(out.get_size() == lhs.get_size());
-  assert(lhs.get_size() == rhs.get_size());
-  if (1 == lhs.get_num_words()
-   && 1 == rhs.get_num_words()) {
-    uint32_t a_w = lhs.get_word(0);
-    uint32_t b_w = rhs.get_word(0);
-    out.set_word(0, b_w ? (a_w / b_w) : bitvector::WORD_MAX);
+  assert(out.size() == lhs.size());
+  assert(lhs.size() == rhs.size());
+  if (1 == lhs.num_words()
+   && 1 == rhs.num_words()) {
+    uint32_t a_w = lhs.word(0);
+    uint32_t b_w = rhs.word(0);
+    out.word(0) = b_w ? (a_w / b_w) : bitvector::WORD_MAX;
   } else {
     CH_TODO();
   }
 }
 
 void ch::internal::Mod(bitvector& out, const bitvector& lhs, const bitvector& rhs) {
-  assert(out.get_size() == lhs.get_size());
-  assert(lhs.get_size() == rhs.get_size());
-  if (1 == lhs.get_num_words()
-   && 1 == rhs.get_num_words()) {
-    uint32_t a_w = lhs.get_word(0);
-    uint32_t b_w = rhs.get_word(0);
-    out.set_word(0, a_w % b_w);
+  assert(out.size() == lhs.size());
+  assert(lhs.size() == rhs.size());
+  if (1 == lhs.num_words()
+   && 1 == rhs.num_words()) {
+    uint32_t a_w = lhs.word(0);
+    uint32_t b_w = rhs.word(0);
+    out.word(0) = a_w % b_w;
   } else {
-    bitvector d(lhs.get_size());
-    bitvector m(lhs.get_size());
+    bitvector d(lhs.size());
+    bitvector m(lhs.size());
     Div(d, lhs, rhs);
     Mult(m, d, rhs);
     Sub(out, lhs, m);
@@ -752,53 +752,53 @@ void ch::internal::Mod(bitvector& out, const bitvector& lhs, const bitvector& rh
 ///////////////////////////////////////////////////////////////////////////////
 
 void ch::internal::fAdd(bitvector& out, const bitvector& lhs, const bitvector& rhs) {
-  assert(out.get_size() == 32);
-  assert(lhs.get_size() == 32);
-  assert(rhs.get_size() == 32);
-  uint32_t a_value = lhs.get_word(0);
-  uint32_t b_value = rhs.get_word(0);
+  assert(out.size() == 32);
+  assert(lhs.size() == 32);
+  assert(rhs.size() == 32);
+  uint32_t a_value = lhs.word(0);
+  uint32_t b_value = rhs.word(0);
   float a_valuef = bitcast<float>(a_value);
   float b_valuef = bitcast<float>(b_value);
   float resultf = a_valuef + b_valuef;
   uint32_t result = bitcast<uint32_t>(resultf);
-  out.set_word(0, result);
+  out.word(0) = result;
 }
 
 void ch::internal::fSub(bitvector& out, const bitvector& lhs, const bitvector& rhs) {
-  assert(out.get_size() == 32);
-  assert(lhs.get_size() == 32);
-  assert(rhs.get_size() == 32);
-  uint32_t a_value = lhs.get_word(0);
-  uint32_t b_value = rhs.get_word(0);
+  assert(out.size() == 32);
+  assert(lhs.size() == 32);
+  assert(rhs.size() == 32);
+  uint32_t a_value = lhs.word(0);
+  uint32_t b_value = rhs.word(0);
   float a_valuef = bitcast<float>(a_value);
   float b_valuef = bitcast<float>(b_value);
   float resultf = a_valuef - b_valuef;
   uint32_t result = bitcast<uint32_t>(resultf);
-  out.set_word(0, result);
+  out.word(0) = result;
 }
 
 void ch::internal::fMult(bitvector& out, const bitvector& lhs, const bitvector& rhs) {
-  assert(out.get_size() == 32);
-  assert(lhs.get_size() == 32);
-  assert(rhs.get_size() == 32);
-  uint32_t a_value = lhs.get_word(0);
-  uint32_t b_value = rhs.get_word(0);
+  assert(out.size() == 32);
+  assert(lhs.size() == 32);
+  assert(rhs.size() == 32);
+  uint32_t a_value = lhs.word(0);
+  uint32_t b_value = rhs.word(0);
   float a_valuef = bitcast<float>(a_value);
   float b_valuef = bitcast<float>(b_value);
   float resultf = a_valuef * b_valuef;
   uint32_t result = bitcast<uint32_t>(resultf);
-  out.set_word(0, result);
+  out.word(0) = result;
 }
 
 void ch::internal::fDiv(bitvector& out, const bitvector& lhs, const bitvector& rhs) {
-  assert(out.get_size() == 32);
-  assert(lhs.get_size() == 32);
-  assert(rhs.get_size() == 32);
-  uint32_t a_value = lhs.get_word(0);
-  uint32_t b_value = rhs.get_word(0);
+  assert(out.size() == 32);
+  assert(lhs.size() == 32);
+  assert(rhs.size() == 32);
+  uint32_t a_value = lhs.word(0);
+  uint32_t b_value = rhs.word(0);
   float a_valuef = bitcast<float>(a_value);
   float b_valuef = bitcast<float>(b_value);
   float resultf = a_valuef / b_valuef;
   uint32_t result = bitcast<uint32_t>(resultf);
-  out.set_word(0, result);
+  out.word(0) = result;
 }

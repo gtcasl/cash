@@ -18,7 +18,7 @@ using namespace ch::internal;
 
 const auto is_inline_literal = [](lnodeimpl* node) {
   assert(type_lit == node->get_type());
-  return (node->get_size() <= 32);
+  return (node->size() <= 32);
 };
 
 firrtlwriter::module_t::module_t(context* p_ctx)
@@ -235,15 +235,15 @@ bool firrtlwriter::print_decl(lnodeimpl* node,
     out_ << " : ";
     this->print_dtype(node);
     auto& sloc = node->get_source_location();
-    if (!sloc.is_empty() || node->get_var_id() != 0) {
+    if (!sloc.empty() || node->get_var_id() != 0) {
       out_ << " @[";
       if (node->get_var_id() != 0) {
         out_ << "v" << node->get_var_id();
-        if (!sloc.is_empty()) {
+        if (!sloc.empty()) {
           out_ << " - ";
         }
       }
-      if (!sloc.is_empty()) {
+      if (!sloc.empty()) {
         out_ << (sloc.file() ? sloc.file() : "unknown")
              << "(" << sloc.line() << ")";
       }
@@ -345,7 +345,7 @@ void firrtlwriter::print_proxy(module_t& module, proxyimpl* node) {
   //--
   auto print_range = [&](const proxyimpl::range_t& range) {
     auto& src = node->get_src(range.src_idx);
-    if (range.length == src.get_size()) {
+    if (range.length == src.size()) {
       this->print_name(src.get_impl());
     } else {
       out_ << "_t" << tmps[range];
@@ -355,7 +355,7 @@ void firrtlwriter::print_proxy(module_t& module, proxyimpl* node) {
   //--  
   for (auto& range : ranges) {
     auto& src = node->get_src(range.src_idx);
-    if (range.length != src.get_size()) {
+    if (range.length != src.size()) {
       out_ << "node _t" << alloc_tmp(range) << " = bits(";
       this->print_name(src.get_impl());
       out_ << ", " << (range.src_offset + range.length - 1);
@@ -428,7 +428,7 @@ void firrtlwriter::print_alu(module_t& module, aluimpl* node) {
   } else
   if (op == op_zext) {
     this->print_name(node);
-    out_ << " <= pad<" << node->get_size() << ">(";
+    out_ << " <= pad<" << node->size() << ">(";
     this->print_name(node->get_src(0).get_impl());
     out_ << ")" << std::endl;
   } else
@@ -438,7 +438,7 @@ void firrtlwriter::print_alu(module_t& module, aluimpl* node) {
     out_ << "node _t" << src << " = asSInt(";
     this->print_name(node->get_src(0).get_impl());
     out_ << ")" << std::endl;
-    out_ << "node _t" << dst << " = pad<" << node->get_size() << ">(";
+    out_ << "node _t" << dst << " = pad<" << node->size() << ">(";
     out_ << "_t" << src << ")" << std::endl;
     this->print_name(node);
     out_ << " <= asUInt(_t" << dst << ")" << std::endl;
@@ -560,8 +560,8 @@ void firrtlwriter::print_mem(memimpl* node) {
 
       this->print_name(node);
       out_ << '.' << type << port->get_index() << ".mask <= ";
-      std::string mask(port->get_wdata().get_size(), '1');
-      this->print_value(bitvector(port->get_wdata().get_size(), mask + "b"));
+      std::string mask(port->get_wdata().size(), '1');
+      this->print_value(bitvector(port->get_wdata().size(), mask + "b"));
       out_ << std::endl;
 
       this->print_name(node);
@@ -605,7 +605,7 @@ void firrtlwriter::print_mem(memimpl* node) {
     for (unsigned i = 0, n = node->get_num_items(); i < n; ++i) {
       this->print_name(node);
       out_ << "[" << i << "] <= ";
-      node->get_value().read(0, value.get_words(), data_cbsize, i * data_width, data_width);
+      node->get_value().read(0, value.words(), data_cbsize, i * data_width, data_width);
       this->print_value(value);
       out_ << std::endl;
     }
@@ -740,11 +740,11 @@ void firrtlwriter::print_dtype(lnodeimpl* node) {
     if ("clk" == reinterpret_cast<inputimpl*>(node)->get_name()) {
       out_ << "Clock";
     } else {
-      out_ << "UInt<" << node->get_size() << ">";
+      out_ << "UInt<" << node->size() << ">";
     }
     break;
   case type_reg: {
-    out_ << "UInt<" << node->get_size() << ">, ";
+    out_ << "UInt<" << node->size() << ">, ";
     auto cd = reinterpret_cast<cdimpl*>(dynamic_cast<regimpl*>(node)->get_cd().get_impl());
     this->print_cdomain(cd);
   } break;
@@ -789,11 +789,11 @@ void firrtlwriter::print_dtype(lnodeimpl* node) {
      && "clk" == reinterpret_cast<inputimpl*>(p)->get_name()) {
       out_ << "Clock";
     } else {
-      out_ << "UInt<" << node->get_size() << ">";
+      out_ << "UInt<" << node->size() << ">";
     }
   } break;
   default:
-    out_ << "UInt<" << node->get_size() << ">";
+    out_ << "UInt<" << node->size() << ">";
     break;
   }
 }
@@ -815,7 +815,7 @@ void firrtlwriter::print_value(const bitvector& value,
   };
 
   if (0 == size) {
-    size = value.get_size();
+    size = value.size();
   }
 
   offset += (size -1);

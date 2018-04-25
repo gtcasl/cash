@@ -95,7 +95,7 @@ ch_tick simulatorimpl::reset(ch_tick t) {
   }
 
   // reset signal
-  if (!reset_driver_.is_empty()) {
+  if (!reset_driver_.empty()) {
     reset_driver_.flip();
     t = this->step(t);
     reset_driver_.flip();
@@ -105,7 +105,7 @@ ch_tick simulatorimpl::reset(ch_tick t) {
 }
 
 ch_tick simulatorimpl::step(ch_tick t) {
-  if (!clk_driver_.is_empty()) {
+  if (!clk_driver_.empty()) {
     for (int i = 0; i < 2; ++i) {      
       this->tick(t++);
       clk_driver_.flip();

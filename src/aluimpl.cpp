@@ -15,7 +15,7 @@ const char* ch::internal::to_string(ch_op op) {
 
 template <ch_op op>
 static void unaryop(bitvector& out, const bitvector& in) {
-  assert(out.get_size() == in.get_size());
+  assert(out.size() == in.size());
   
   switch (op) {
   case op_inv:
@@ -31,8 +31,8 @@ static void unaryop(bitvector& out, const bitvector& in) {
 
 template <ch_op op>
 static void binaryop(bitvector& out, const bitvector& lhs, const bitvector& rhs) {
-  assert(out.get_size() == lhs.get_size());
-  assert(lhs.get_size() == rhs.get_size());
+  assert(out.size() == lhs.size());
+  assert(lhs.size() == rhs.size());
   
   switch (op) {
   case op_and:
@@ -51,7 +51,7 @@ static void binaryop(bitvector& out, const bitvector& lhs, const bitvector& rhs)
 
 template <ch_op op>
 static void shiftop(bitvector& out, const bitvector& in, const bitvector& bits) {
-  assert(out.get_size() == in.get_size());  
+  assert(out.size() == in.size());  
   switch (op) {  
   case op_sll:
     Sll(out, in, bits);
@@ -69,7 +69,7 @@ static void shiftop(bitvector& out, const bitvector& in, const bitvector& bits) 
 
 template <ch_op op>
 static void reduceop(bitvector& out, const bitvector& in) {
-  assert(out.get_size() == 1);
+  assert(out.size() == 1);
   
   bool result;
   switch (op) {
@@ -90,8 +90,8 @@ static void reduceop(bitvector& out, const bitvector& in) {
 
 template <ch_op op>
 static void compareop(bitvector& out, const bitvector& lhs, const bitvector& rhs) {
-  assert(out.get_size() == 1);
-  assert(lhs.get_size() == rhs.get_size());
+  assert(out.size() == 1);
+  assert(lhs.size() == rhs.size());
   
   bool result;
   switch (op) {
@@ -245,7 +245,7 @@ const bitvector& aluimpl::eval(ch_tick t) {
 }
 
 void aluimpl::print(std::ostream& out, uint32_t level) const {
-  out << "#" << id_ << " <- " << to_string(this->get_type()) << value_.get_size();
+  out << "#" << id_ << " <- " << to_string(this->get_type()) << value_.size();
   uint32_t n = srcs_.size();
   out << "(" << to_string(op_) << ", ";
   for (uint32_t i = 0; i < n; ++i) {
@@ -271,16 +271,16 @@ delayed_aluimpl::delayed_aluimpl(context* ctx,
   , cd_idx_(-1)
   , enable_idx_(-1) {
 
-  p_value_.resize(delay, bitvector(this->get_size()));
-  p_next_.resize(delay, bitvector(this->get_size()));
+  p_value_.resize(delay, bitvector(this->size()));
+  p_next_.resize(delay, bitvector(this->size()));
 
   auto cd = ctx->current_cd();
   cd->add_reg(this);
   cd_idx_ = srcs_.size();
   srcs_.push_back(cd);
 
-  if (!enable.is_empty()) {
-    assert(1 == enable.get_size());
+  if (!enable.empty()) {
+    assert(1 == enable.size());
     enable_idx_ = srcs_.size();
     srcs_.push_back(enable);
   }  
@@ -297,16 +297,16 @@ delayed_aluimpl::delayed_aluimpl(context* ctx,
   , cd_idx_(-1)
   , enable_idx_(-1) {
 
-  p_value_.resize(delay, bitvector(this->get_size()));
-  p_next_.resize(delay, bitvector(this->get_size()));
+  p_value_.resize(delay, bitvector(this->size()));
+  p_next_.resize(delay, bitvector(this->size()));
 
   auto cd = ctx->current_cd();
   cd->add_reg(this);
   cd_idx_ = srcs_.size();
   srcs_.push_back(cd);
 
-  if (!enable.is_empty()) {
-    assert(1 == enable.get_size());
+  if (!enable.empty()) {
+    assert(1 == enable.size());
     enable_idx_ = srcs_.size();
     srcs_.push_back(enable);
   }
@@ -317,7 +317,7 @@ delayed_aluimpl::~delayed_aluimpl() {
 }
 
 void delayed_aluimpl::detach() {
-  if (!srcs_[2].is_empty()) {
+  if (!srcs_[2].empty()) {
     reinterpret_cast<cdimpl*>(srcs_[2].get_impl())->remove_reg(this);
     srcs_[2].clear();
   }
@@ -396,7 +396,7 @@ lnodeimpl* ch::internal::createRotateNode(
     unsigned dist,
     bool right) {
   auto ctx = next.get_ctx();
-  auto N = next.get_size();
+  auto N = next.size();
   auto mod = dist % N;
   auto ret = ctx->create_node<proxyimpl>(N);
   if (right) {

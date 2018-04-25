@@ -21,10 +21,10 @@ reg_buffer::reg_buffer(const lnode& data,
                                  const std::string& name)
   : logic_buffer(
       ctx_curr()->create_node<regimpl>(
-        ctx_curr()->create_node<proxyimpl>(data.get_size()),
+        ctx_curr()->create_node<proxyimpl>(data.size()),
         data),
       sloc, name) {
-  this->write(0, value_, 0, data.get_size());
+  this->write(0, value_, 0, data.size());
 }
 
 void reg_buffer::write(uint32_t dst_offset,
@@ -39,7 +39,7 @@ void reg_buffer::write(uint32_t dst_offset,
 ///////////////////////////////////////////////////////////////////////////////
 
 regimpl::regimpl(context* ctx, const lnode& next, const lnode& init)
-  : lnodeimpl(ctx, type_reg, next.get_size()) {
+  : lnodeimpl(ctx, type_reg, next.size()) {
   auto cd = ctx->current_cd();
   cd->add_reg(this);
   srcs_.emplace_back(cd);  
@@ -48,7 +48,7 @@ regimpl::regimpl(context* ctx, const lnode& next, const lnode& init)
 }
 
 regimpl::regimpl(context* ctx, const lnode& next)
-  : lnodeimpl(ctx, type_reg, next.get_size()) {
+  : lnodeimpl(ctx, type_reg, next.size()) {
   auto cd = ctx->current_cd();
   cd->add_reg(this);
   srcs_.emplace_back(cd);
@@ -60,7 +60,7 @@ regimpl::~regimpl() {
 }
 
 void regimpl::detach() {
-  if (!srcs_[0].is_empty()) {
+  if (!srcs_[0].empty()) {
     reinterpret_cast<cdimpl*>(srcs_[0].get_impl())->remove_reg(this);
     srcs_[0].clear();
   }

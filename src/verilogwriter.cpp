@@ -22,7 +22,7 @@ const auto IsRegType = [](lnodetype type) {
 
 const auto is_inline_literal = [](lnodeimpl* node) {
   assert(type_lit == node->get_type());
-  return (node->get_size() <= 32);
+  return (node->size() <= 32);
 };
 
 verilogwriter::module_t::module_t(context* p_ctx)
@@ -271,7 +271,7 @@ bool verilogwriter::print_decl(module_t& module,
   case type_mem:    
     if (ref
      && (IsRegType(ref->get_type()) != IsRegType(type)
-      || ref->get_size() != node->get_size()))
+      || ref->size() != node->size()))
       return false;    
     if (ref) {
       out_ << ", ";
@@ -293,15 +293,15 @@ bool verilogwriter::print_decl(module_t& module,
       } else {        
         out_ << ";";
         auto& sloc = node->get_source_location();
-        if (!sloc.is_empty() || node->get_var_id() != 0) {
+        if (!sloc.empty() || node->get_var_id() != 0) {
           out_ << " // ";
           if (node->get_var_id() != 0) {
             out_ << "v" << node->get_var_id();
-            if (!sloc.is_empty()) {
+            if (!sloc.empty()) {
               out_ << " - ";
             }
           }
-          if (!sloc.is_empty()) {
+          if (!sloc.empty()) {
             out_ << (sloc.file() ? sloc.file() : "unknown")
                  << "(" << sloc.line() << ")";
           }
@@ -375,13 +375,13 @@ bool verilogwriter::print_logic(module_t& module, lnodeimpl* node) {
 
 void verilogwriter::print_proxy(module_t& module, proxyimpl* node) {
   const auto& ranges = node->get_ranges();
-  uint32_t dst_offset = node->get_size();
+  uint32_t dst_offset = node->size();
   auto print_range = [&](const proxyimpl::range_t& range) {
     dst_offset -= range.length;
     assert(range.dst_offset == dst_offset);
     auto& src = node->get_src(range.src_idx);
     this->print_name(module, src.get_impl());
-    if (range.length < src.get_size()) {
+    if (range.length < src.size()) {
       out_ << "[";
       if (range.length > 1) {
         out_ << (range.src_offset + range.length - 1) << ":" << range.src_offset;
@@ -440,7 +440,7 @@ void verilogwriter::print_alu(module_t& module, aluimpl* node) {
 void verilogwriter::print_zext(module_t& module, aluimpl* node) {
   out_ << "assign ";
   this->print_name(module, node);
-  out_ << " = {{" << node->get_size() - node->get_src(0).get_size();
+  out_ << " = {{" << node->size() - node->get_src(0).size();
   out_ << "{1'b0}}, ";
   this->print_name(module, node->get_src(0).get_impl());
   out_ << "}";
@@ -450,10 +450,10 @@ void verilogwriter::print_zext(module_t& module, aluimpl* node) {
 void verilogwriter::print_sext(module_t& module, aluimpl* node) {
   out_ << "assign ";
   this->print_name(module, node);
-  out_ << " = {{" << node->get_size() - node->get_src(0).get_size();
+  out_ << " = {{" << node->size() - node->get_src(0).size();
   out_ << "{";
   this->print_name(module, node->get_src(0).get_impl());
-  out_ << "[" << (node->get_src(0).get_size() - 1) << "]}";
+  out_ << "[" << (node->get_src(0).size() - 1) << "]}";
   this->print_name(module, node->get_src(0).get_impl());
   out_ << ";" << std::endl;
 }
@@ -717,8 +717,8 @@ void verilogwriter::print_type(lnodeimpl* node) {
       out_ << "[" << (data_width - 1) << ":0]";
     }
   } else {
-    if (node->get_size() > 1) {
-      out_ << "[" << (node->get_size() - 1) << ":0]";
+    if (node->size() > 1) {
+      out_ << "[" << (node->size() - 1) << ":0]";
     }
   }
 }
@@ -740,7 +740,7 @@ void verilogwriter::print_value(const bitvector& value,
   };
 
   if (0 == size) {
-    size = value.get_size();
+    size = value.size();
   }
 
   offset += (size -1);

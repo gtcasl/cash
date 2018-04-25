@@ -104,19 +104,19 @@ public:
                      uint32_t length);
 
   void write(const lnode& data) {
-    this->write(0, data, 0, data.get_size());
+    this->write(0, data, 0, data.size());
   }
 
   void copy(const logic_buffer& rhs) {
-    this->write(0, rhs.get_data(), 0, rhs.get_size());
+    this->write(0, rhs.get_data(), 0, rhs.size());
   }
 
   uint32_t get_id() const {
     return id_;
   }
 
-  unsigned get_size() const {
-    return value_.get_size();
+  unsigned size() const {
+    return value_.size();
   }
 
   const logic_buffer_ptr& get_source() const {
@@ -163,13 +163,13 @@ public:
 
   template <typename T>
   static const lnode& get_data(const T& obj) {
-    assert(width_v<T> == obj.get_buffer()->get_size());
+    assert(width_v<T> == obj.get_buffer()->size());
     return obj.get_buffer()->get_data();
   }
 
   template <typename T>
   static void set_data(const T& obj, const lnode& data) {
-    assert(width_v<T> == obj.get_buffer()->get_size());
+    assert(width_v<T> == obj.get_buffer()->size());
     auto& obj_data = obj.get_buffer()->get_data();
     const_cast<lnode&>(data).set_var_id(obj_data.get_var_id());
     const_cast<lnode&>(data).set_source_location(obj_data.get_source_location());
@@ -180,7 +180,7 @@ public:
   static auto copy_buffer(const T& obj,
                           const source_location& sloc = CH_SRC_LOCATION,
                           const std::string& name = "") {
-    assert(width_v<T> == obj.get_buffer()->get_size());
+    assert(width_v<T> == obj.get_buffer()->size());
     return make_logic_buffer(*obj.get_buffer(), sloc, name);
   }
 
@@ -189,15 +189,15 @@ public:
             CH_REQUIRE_0(is_logic_type<V>::value),
             CH_REQUIRE_0(width_v<U> == width_v<V>)>
   static void copy(U& dst, const V& src) {
-    assert(width_v<U> == dst.get_buffer()->get_size());
-    assert(width_v<V> == src.get_buffer()->get_size());
+    assert(width_v<U> == dst.get_buffer()->size());
+    assert(width_v<V> == src.get_buffer()->size());
     *dst.get_buffer() = *src.get_buffer();
   }
 
   template <typename U, typename V,
             CH_REQUIRE_0(width_v<U> == width_v<V>)>
   static void move(U& dst, V&& src) {
-    assert(width_v<U> == dst.get_buffer()->get_size());
+    assert(width_v<U> == dst.get_buffer()->size());
     *dst.get_buffer() = std::move(*src.get_buffer());
   }
 
@@ -213,14 +213,14 @@ public:
 
   template <typename T>
   static auto clone(const T& obj, const source_location& sloc) {
-    assert(width_v<T> == obj.get_buffer()->get_size());
+    assert(width_v<T> == obj.get_buffer()->size());
     auto data = obj.get_buffer()->get_data().clone();
     return T(make_logic_buffer(data, sloc));
   }
 
   template <typename D, typename T>
   static auto cast(const T& obj) {
-    assert(width_v<T> == obj.get_buffer()->get_size());
+    assert(width_v<T> == obj.get_buffer()->size());
     return D(obj.get_buffer());
   }
 };
@@ -393,7 +393,7 @@ public:
 
   ch_logic(const logic_buffer_ptr& buffer = make_logic_buffer(N, CH_SRC_LOCATION))
     : buffer_(buffer) {
-    assert(N == buffer->get_size());
+    assert(N == buffer->size());
   }
 
   ch_logic(const ch_logic& rhs, const source_location& sloc = CH_SRC_LOCATION)

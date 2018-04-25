@@ -62,13 +62,13 @@ void compiler::syntax_check() {
                      [undef](const lnode& x)->bool { return x.get_id() == undef->get_id(); });
         if (ret != node->get_srcs().end()) {
           fprintf(stderr, "error: un-initialized variable '%s%d' (#%d)",
-                  node->get_name().c_str(), node->get_size(), node->get_id());
+                  node->get_name().c_str(), node->size(), node->get_id());
           if (node->get_var_id() != 0) {
             fprintf(stderr, " (@var%d)", node->get_var_id());
           }
           fprintf(stderr, " in module '%s'", ctx_->get_name().c_str());
           auto& sloc = node->get_source_location();
-          if (!sloc.is_empty()) {
+          if (!sloc.empty()) {
             fprintf(stderr, " (%s:%d)\n", sloc.file(), sloc.line());
           }
           break;

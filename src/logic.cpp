@@ -35,7 +35,7 @@ logic_buffer::logic_buffer(const logic_buffer& rhs,
                                      const source_location& sloc,
                                      const std::string& name)
   : id_(make_id())
-  , value_(rhs.get_size(), rhs.get_data())
+  , value_(rhs.size(), rhs.get_data())
   , offset_(0) {
   value_.set_var_id(id_);
   value_.set_source_location(sloc);
@@ -54,7 +54,7 @@ logic_buffer::logic_buffer(const lnode& data,
                                      const source_location& sloc,
                                      const std::string& name)
   : id_(make_id())
-  , value_(data.get_size(), data)
+  , value_(data.size(), data)
   , offset_(0) {
   value_.set_var_id(id_);
   value_.set_source_location(sloc);
@@ -71,7 +71,7 @@ logic_buffer::logic_buffer(unsigned size,
   , value_(size, buffer->get_data(), offset)
   , source_(buffer)
   , offset_(offset) {
-  assert(offset + size <= buffer->get_size());
+  assert(offset + size <= buffer->size());
   value_.set_var_id(id_);
   value_.set_source_location(sloc);
   if (!name.empty()) {

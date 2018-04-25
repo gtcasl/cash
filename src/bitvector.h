@@ -542,34 +542,34 @@ public:
     return this->at(idx);
   }
   
-  uint32_t get_word(uint32_t widx) const {
-    assert(widx < this->get_num_words());
+  uint32_t word(uint32_t widx) const {
+    assert(widx < this->num_words());
     return words_[widx];
   }
   
-  void set_word(uint32_t widx, uint32_t word) {
-    assert(widx < this->get_num_words());
-    words_[widx] = word;
+  uint32_t& word(uint32_t widx) {
+    assert(widx < this->num_words());
+    return words_[widx];
   }
 
-  const uint32_t* get_words() const {
+  const uint32_t* words() const {
     return words_;
   }
 
-  uint32_t* get_words() {
+  uint32_t* words() {
     return words_;
   }
   
-  uint32_t get_num_words() const {
+  uint32_t num_words() const {
     return (size_ + WORD_MASK) >> WORD_SIZE_LOG;
   }
   
-  uint32_t get_size() const {
+  uint32_t size() const {
     return size_;
   }
 
-  uint32_t get_cbsize() const {
-    return (get_num_words() << WORD_SIZE_LOG) / 8;
+  uint32_t cbsize() const {
+    return (num_words() << WORD_SIZE_LOG) / 8;
   }
 
   void clear();
@@ -602,7 +602,7 @@ public:
   
   int find_last() const;
   
-  bool is_empty() const;
+  bool empty() const;
     
   const_reference front() const {
     return this->at(0);

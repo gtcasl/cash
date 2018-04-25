@@ -20,7 +20,7 @@ public:
   ~memimpl();
 
   uint32_t get_total_size() const {
-    return value_.get_size();
+    return value_.size();
   }
 
   uint32_t get_data_width() const {

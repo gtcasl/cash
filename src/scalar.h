@@ -161,15 +161,15 @@ public:
                      uint32_t length);
 
   void write(const bitvector& data) {
-    this->write(0, data.get_words(), data.get_cbsize(), 0, size_);
+    this->write(0, data.words(), data.cbsize(), 0, size_);
   }
 
   void copy(const scalar_buffer& rhs) {
     this->write(0,
-                rhs.get_data().get_words(),
-                rhs.get_data().get_cbsize(),
+                rhs.get_data().words(),
+                rhs.get_data().cbsize(),
                 rhs.get_offset(),
-                rhs.get_size());
+                rhs.size());
   }
 
   const scalar_buffer_ptr& get_source() const {
@@ -184,7 +184,7 @@ public:
     return offset_;
   }
 
-  unsigned get_size() const {
+  unsigned size() const {
     return size_;
   }
 
@@ -227,28 +227,28 @@ public:
 
   template <typename T>
   static const auto& get_data(const T& obj) {
-    assert(width_v<T> == obj.get_buffer()->get_size());
+    assert(width_v<T> == obj.get_buffer()->size());
     return obj.get_buffer()->get_data();
   }
 
   template <typename T>
   static auto copy_buffer(const T& obj) {
-    assert(width_v<T> == obj.get_buffer()->get_size());
+    assert(width_v<T> == obj.get_buffer()->size());
     return make_scalar_buffer(*obj.get_buffer());
   }
 
   template <typename U, typename V,
             CH_REQUIRE_0(width_v<U> == width_v<V>)>
   static void copy(U& dst, const V& src) {
-    assert(width_v<U> == dst.get_buffer()->get_size());
-    assert(width_v<V> == src.get_buffer()->get_size());
+    assert(width_v<U> == dst.get_buffer()->size());
+    assert(width_v<V> == src.get_buffer()->size());
     *dst.get_buffer() = *src.get_buffer();
   }
 
   template <typename U, typename V,
             CH_REQUIRE_0(width_v<U> == width_v<V>)>
   static void move(U& dst, V&& src) {
-    assert(width_v<U> == dst.get_buffer()->get_size());
+    assert(width_v<U> == dst.get_buffer()->size());
     *dst.get_buffer() = std::move(*src.get_buffer());
   }
 
@@ -343,7 +343,7 @@ public:
 
   ch_scalar(const scalar_buffer_ptr& buffer = make_scalar_buffer(N))
     : buffer_(buffer) {
-    assert(N == buffer->get_size());
+    assert(N == buffer->size());
   }
 
   ch_scalar(const ch_scalar& rhs)

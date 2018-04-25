@@ -38,7 +38,7 @@ public:
              uint32_t src_offset,
              uint32_t length);
 
-  bool is_empty() const;
+  bool empty() const;
 
   void set_impl(lnodeimpl* impl);
 
@@ -50,7 +50,7 @@ public:
 
   void set_name(const std::string& name);
   
-  uint32_t get_size() const;
+  uint32_t size() const;
   
   context* get_ctx() const;
 

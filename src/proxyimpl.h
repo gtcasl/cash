@@ -28,7 +28,7 @@ public:
 
   bool is_identity() const {
     return (1 == ranges_.size())
-        && (srcs_[0].get_size() == value_.get_size());
+        && (srcs_[0].size() == value_.size());
   }
 
   const std::vector<range_t>& get_ranges() const {
@@ -43,7 +43,7 @@ public:
   void add_source(uint32_t dst_offset,
                   const lnode& src,
                   uint32_t src_offset = 0) {
-    this->add_source(dst_offset, src, src_offset, src.get_size());
+    this->add_source(dst_offset, src, src_offset, src.size());
   }
 
   std::vector<lnode>::iterator erase_source(std::vector<lnode>::iterator iter);

@@ -52,14 +52,14 @@ unsigned lnodeimpl::add_src(unsigned index, const lnode& src) {
 }
 
 lnodeimpl* lnodeimpl::get_slice(uint32_t offset, uint32_t length) {
-  assert(length <= value_.get_size());
-  if (value_.get_size() == length)
+  assert(length <= value_.size());
+  if (value_.size() == length)
     return this;
   return ctx_->create_node<proxyimpl>(this, offset, length);
 }
 
 void lnodeimpl::print(std::ostream& out, uint32_t level) const {
-  out << "#" << id_ << " <- " << this->get_type() << value_.get_size();
+  out << "#" << id_ << " <- " << this->get_type() << value_.size();
   uint32_t n = srcs_.size();
   if (n > 0) {
     out << "(";
@@ -100,7 +100,7 @@ lnode::lnode(uint32_t size) {
 lnode::lnode(uint32_t size,
              const lnode& src,
              unsigned src_offset) {
-  assert(!src.is_empty());
+  assert(!src.empty());
   impl_ = src.get_ctx()->create_node<proxyimpl>(src, src_offset, size);
 }
 
@@ -121,7 +121,7 @@ lnode& lnode::operator=(const lnode& rhs) {
   return *this;
 }
 
-bool lnode::is_empty() const {
+bool lnode::empty() const {
   return (nullptr == impl_);
 }
 
@@ -140,8 +140,8 @@ context* lnode::get_ctx() const {
   return impl_->get_ctx();
 }
 
-uint32_t lnode::get_size() const {
-  return impl_ ? impl_->get_size() : 0;
+uint32_t lnode::size() const {
+  return impl_ ? impl_->size() : 0;
 }
 
 void lnode::set_impl(lnodeimpl* impl) {
@@ -173,9 +173,9 @@ void lnode::write(uint32_t dst_offset,
                   uint32_t src_offset,
                   uint32_t length) {
   assert(impl_);
-  auto size = impl_->get_size();
+  auto size = impl_->size();
   assert(this != &src);
-  assert(!src.is_empty());
+  assert(!src.empty());
   assert(size > dst_offset);
   assert(size >= dst_offset + length);
   auto ctx = src.get_ctx();
@@ -194,7 +194,7 @@ void lnode::write(uint32_t dst_offset,
 
   if (ctx->conditional_enabled(proxy)) {
     auto src_impl = src.get_impl();
-    if (src_offset != 0 || src.get_size() != length) {
+    if (src_offset != 0 || src.size() != length) {
       src_impl = ctx->create_node<proxyimpl>(src, src_offset, length);
     }
     ctx->conditional_assign(proxy, dst_offset, length, src_impl);
@@ -230,7 +230,7 @@ void lnode::set_source_location(const source_location& sloc) {
 
 lnodeimpl* lnode::clone() const {
   assert(impl_);
-  return impl_->get_slice(0, impl_->get_size());
+  return impl_->get_slice(0, impl_->size());
 }
 
 const bitvector& lnode::eval(ch_tick t) const {

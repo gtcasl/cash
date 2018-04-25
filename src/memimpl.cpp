@@ -32,8 +32,8 @@ memimpl::memimpl(context* ctx,
     srcs_.emplace_back(cd);
   }
   if (has_initdata_) {
-    assert(8 * init_data.size() >= value_.get_size());
-    value_.write(0, init_data.data(), init_data.size(), 0, value_.get_size());
+    assert(8 * init_data.size() >= value_.size());
+    value_.write(0, init_data.data(), init_data.size(), 0, value_.size());
   }
 }
 
@@ -48,7 +48,7 @@ memimpl::~memimpl() {
 }
 
 void memimpl::detach() {
-  if (!srcs_[0].is_empty()) {
+  if (!srcs_[0].empty()) {
     reinterpret_cast<cdimpl*>(srcs_[0].get_impl())->remove_reg(this);
     srcs_[0].clear();
   }
@@ -93,7 +93,7 @@ const bitvector& memimpl::eval(ch_tick t) {
 
 void memimpl::print(std::ostream& out, uint32_t level) const {
   CH_UNUSED(level);
-  out << "#" << id_ << " <- " << this->get_type() << value_.get_size();
+  out << "#" << id_ << " <- " << this->get_type() << value_.size();
   uint32_t n = srcs_.size();
   if (n > 0) {
     out << "(";
@@ -129,7 +129,7 @@ memportimpl::~memportimpl() {
 }
 
 void memportimpl::detach() {
-  if (!srcs_[0].is_empty()) {
+  if (!srcs_[0].empty()) {
     dynamic_cast<memimpl*>(srcs_[0].get_impl())->remove_port(this);
     srcs_[0].clear();
   }
@@ -164,8 +164,8 @@ void memportimpl::tick(ch_tick t) {
     auto mem = dynamic_cast<memimpl*>(srcs_[0].get_impl());
     auto data_width = mem->get_data_width();
     mem->get_value().write(a_next_ * data_width,
-                           q_next_.get_words(),
-                           q_next_.get_cbsize(),
+                           q_next_.words(),
+                           q_next_.cbsize(),
                            0,
                            data_width);
   }
@@ -174,9 +174,9 @@ void memportimpl::tick(ch_tick t) {
 void memportimpl::tick_next(ch_tick t) {
   if (wdata_idx_ != -1) {
     // synchronous memory write
-    dirty_ = (wenable_idx_ != -1) ? srcs_[wenable_idx_].eval(t).get_word(0) : true;
+    dirty_ = (wenable_idx_ != -1) ? srcs_[wenable_idx_].eval(t).word(0) : true;
     if (dirty_) {
-      a_next_ = srcs_[1].eval(t).get_word(0);
+      a_next_ = srcs_[1].eval(t).word(0);
       q_next_ = srcs_[wdata_idx_].eval(t);
     }
   }
@@ -188,10 +188,10 @@ const bitvector& memportimpl::eval(ch_tick t) {
     // asynchronous memory read
     auto mem = dynamic_cast<memimpl*>(srcs_[0].get_impl());
     auto data_width = mem->get_data_width();
-    uint32_t addr = srcs_[1].eval(t).get_word(0);
+    uint32_t addr = srcs_[1].eval(t).word(0);
     mem->get_value().read(0,
-                          value_.get_words(),
-                          value_.get_cbsize(),
+                          value_.words(),
+                          value_.cbsize(),
                           addr * data_width,
                           data_width);
   }

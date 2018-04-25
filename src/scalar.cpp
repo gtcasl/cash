@@ -29,13 +29,13 @@ scalar_buffer::scalar_buffer(scalar_buffer&& rhs)
 scalar_buffer::scalar_buffer(const bitvector& data)
   : value_(data)
   , offset_(0)
-  , size_(value_.get_size())
+  , size_(value_.size())
 {}
 
 scalar_buffer::scalar_buffer(bitvector&& data)
   : value_(std::move(data))
   , offset_(0)
-  , size_(value_.get_size())
+  , size_(value_.size())
 {}
 
 scalar_buffer::scalar_buffer(unsigned size,
@@ -44,15 +44,15 @@ scalar_buffer::scalar_buffer(unsigned size,
   : source_(buffer)
   , offset_(offset)
   , size_(size) {
-  assert(offset_ + size_ <= buffer->get_size());
+  assert(offset_ + size_ <= buffer->size());
 }
 
 const bitvector& scalar_buffer::get_data() const {
   if (source_) {
-    if (value_.is_empty()) {
+    if (value_.empty()) {
       value_.resize(size_, 0, true);
     }
-    source_->read(0, value_.get_words(), value_.get_cbsize(), offset_, size_);
+    source_->read(0, value_.words(), value_.cbsize(), offset_, size_);
   }
   return value_;
 }

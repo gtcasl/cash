@@ -38,7 +38,7 @@ public:
     return line_;
   }
 
-  bool is_empty() const {
+  bool empty() const {
     return (nullptr == file_);
   }
 

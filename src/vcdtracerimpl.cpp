@@ -19,7 +19,7 @@ void vcdtracerimpl::ensureInitialize() {
   out_ << "$timescale 1 ns $end" << std::endl;
   for (auto& tap : io_traces_) {
     auto name = fixup_name(tap.name);
-    out_ << "$var reg " << tap.node->get_size() << ' ' << name << ' '
+    out_ << "$var reg " << tap.node->size() << ' ' << name << ' '
          << name << " $end" << std::endl;
   }
   out_ << "$enddefinitions $end" << std::endl;
@@ -32,12 +32,12 @@ void vcdtracerimpl::tick(ch_tick t) {
   // log tap values
   out_ << '#' << t << std::endl;
   for (auto& tap : io_traces_) {
-    if (tap.node->get_size() > 1)
+    if (tap.node->size() > 1)
       out_ << 'b';
-    for (int j = tap.node->get_size()-1; j >= 0; --j) {
+    for (int j = tap.node->size()-1; j >= 0; --j) {
       out_ << (tap.node->get_value()[j] ? '1' : '0');
     }
-    if (tap.node->get_size() > 1)
+    if (tap.node->size() > 1)
       out_ << ' ';
     // remove [] from tap name
     out_ << fixup_name(tap.name) << std::endl;

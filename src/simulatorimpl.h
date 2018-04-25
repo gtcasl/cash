@@ -15,7 +15,7 @@ public:
 
   void flip();
 
-  bool is_empty() const {
+  bool empty() const {
     return nodes_.empty();
   }
 

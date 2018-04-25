@@ -9,7 +9,7 @@ proxyimpl::proxyimpl(context* ctx, uint32_t size)
 {}
 
 proxyimpl::proxyimpl(context* ctx, const lnode& src)
-  : lnodeimpl(ctx, type_proxy, src.get_size())
+  : lnodeimpl(ctx, type_proxy, src.size())
   , tick_(~0ull)  {  
   this->add_source(0, src);
 }
@@ -27,14 +27,14 @@ void proxyimpl::add_source(uint32_t dst_offset,
                            const lnode& src,
                            uint32_t src_offset,
                            uint32_t length) {
-  assert(!src.is_empty());
+  assert(!src.empty());
   assert(this != src.get_impl());
   assert(length != 0);
-  assert(dst_offset + length <= value_.get_size());
-  assert(src_offset + length <= src.get_size());
+  assert(dst_offset + length <= value_.size());
+  assert(src_offset + length <= src.size());
 
   // update source location
-  if (sloc_.is_empty()) {
+  if (sloc_.empty()) {
     sloc_ = src.get_source_location();
   }
 
@@ -216,14 +216,14 @@ proxyimpl::erase_source(std::vector<lnode>::iterator iter) {
 }
 
 lnodeimpl* proxyimpl::get_slice(uint32_t offset, uint32_t length) {
-  assert(length <= value_.get_size());
+  assert(length <= value_.size());
 
   // return the nested node if the offset/size match
   for (auto& range : ranges_) {
     if (range.length == length
      && range.dst_offset == offset
      && range.src_offset == 0
-     && srcs_[range.src_idx].get_size() == length) {
+     && srcs_[range.src_idx].size() == length) {
       return srcs_[range.src_idx].get_impl();
     }
   }
@@ -313,7 +313,7 @@ const bitvector& proxyimpl::eval(ch_tick t) {
 }
 
 void proxyimpl::print(std::ostream& out, uint32_t level) const {
-  out << "#" << id_ << " <- " << this->get_type() << value_.get_size();
+  out << "#" << id_ << " <- " << this->get_type() << value_.size();
   out << "(";
   uint32_t s(0);
   auto_separator sep(", ");
@@ -326,7 +326,7 @@ void proxyimpl::print(std::ostream& out, uint32_t level) const {
     s += range.length;
     auto& src = srcs_[range.src_idx];
     out << "#" << src.get_id();
-    if (range.length < src.get_size()) {
+    if (range.length < src.size()) {
       out << "[" << range.src_offset;
       if (range.length > 1) {
         out << "-" << range.src_offset + (range.length - 1);

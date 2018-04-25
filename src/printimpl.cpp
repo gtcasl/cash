@@ -98,7 +98,7 @@ const bitvector& printimpl::eval(ch_tick t) {
               strbuf_ << srcs_[args_offset_ + fmt.index].eval(t);
               break;
             case fmttype::Float: {
-                uint32_t value = srcs_[args_offset_ + fmt.index].eval(t).get_word(0);
+                uint32_t value = srcs_[args_offset_ + fmt.index].eval(t).word(0);
                 float valuef = bitcast<float>(value);
                 strbuf_ << valuef;
               }

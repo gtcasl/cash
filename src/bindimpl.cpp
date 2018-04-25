@@ -79,7 +79,7 @@ void bindimpl::bind_output(const lnode& dst, const lnode& ioport) {
 
   // create bind port
   auto bindport(ctx_->create_node<bindportimpl>(this, ioport));
-  const_cast<lnode&>(dst).write(0, bindport, 0, dst.get_size());
+  const_cast<lnode&>(dst).write(0, bindport, 0, dst.size());
 
   // add to list
   add_port(bindport, outputs_);
@@ -114,7 +114,7 @@ void bindimpl::print(std::ostream& out, uint32_t level) const {
 ///////////////////////////////////////////////////////////////////////////////
 
 bindportimpl::bindportimpl(context* ctx, const lnode& src, const lnode& ioport)
-  : ioimpl(ctx, type_bindport, ioport.get_size())
+  : ioimpl(ctx, type_bindport, ioport.size())
   , ioport_(ioport)
   , tick_(~0ull) {
   srcs_.push_back(src);
@@ -128,7 +128,7 @@ bindportimpl::~bindportimpl() {
 
 void bindportimpl::detach() {
   if (is_output_) {
-    if (!srcs_[0].is_empty()) {
+    if (!srcs_[0].empty()) {
       reinterpret_cast<bindimpl*>(srcs_[0].get_impl())->remove_output(this);
       srcs_[0].clear();
     }
@@ -144,7 +144,7 @@ const bitvector& bindportimpl::eval(ch_tick t) {
 }
 
 void bindportimpl::print(std::ostream& out, uint32_t level) const {
-  out << "#" << id_ << " <- " << (is_output_ ? "bindout" : "bindin") << value_.get_size();
+  out << "#" << id_ << " <- " << (is_output_ ? "bindout" : "bindin") << value_.size();
   out << "(#" << srcs_[0].get_id() << ", $" << ioport_.get_id() << ")";
   if (level == 2) {
     out << " = " << value_;

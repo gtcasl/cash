@@ -257,7 +257,7 @@ void context::add_node(lnodeimpl* node) {
 node_list_t::iterator context::remove_node(const node_list_t::iterator& it) {
   auto node = *it;
   DBG(3, "*** deleting node: %s%d(#%d)\n",
-      to_string(node->get_type()), node->get_size(), node->get_id());
+      to_string(node->get_type()), node->size(), node->get_id());
   
   assert(!nodes_.empty());
   auto next = nodes_.erase(it);
@@ -415,7 +415,7 @@ void context::conditional_assign(
                             uint32_t loc,
                             lnodeimpl* src,
                             uint32_t src_offset) {
-    if (src->get_size() != range.length) {
+    if (src->size() != range.length) {
       src = this->create_node<proxyimpl>(src, src_offset, range.length);
     }
     slices[range][loc] = src;
@@ -668,7 +668,7 @@ context::emit_conditionals(lnodeimpl* dst,
         return ret;
 
       // create select node
-      auto sel = this->create_node<selectimpl>(current->get_size(), branch->key);
+      auto sel = this->create_node<selectimpl>(current->size(), branch->key);
       sel->set_source_location(branch->sloc);      
       for (auto& value : values) {
         auto pred = value.first;
@@ -826,7 +826,7 @@ void context::register_enum_string(const lnode& node, enum_string_cb callback) {
 const char* context::enum_to_string(const lnode& node, ch_tick t) {
   auto iter = enum_strings_.find(node.get_var_id());
   if (iter != enum_strings_.end()) {
-    return iter->second(node.eval(t).get_word(0));
+    return iter->second(node.eval(t).word(0));
   }
   return "undefined";
 }
@@ -901,7 +901,7 @@ void context::dump_stats(std::ostream& out) {
         ++num_memories;
         break;
       case type_reg:
-        register_bits += node->get_size();
+        register_bits += node->size();
         ++num_registers;
         break;
       case type_sel:
