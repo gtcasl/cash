@@ -20,18 +20,6 @@ bitvector::bitvector(uint32_t size)
   this->resize(size, 0, true);
 }
 
-bitvector::bitvector(uint32_t size, uint32_t value)
-  : bitvector() {
-  this->resize(size);
-  this->operator =(value);
-}
-
-bitvector::bitvector(uint32_t size, int32_t value)
-  : bitvector() {
-  this->resize(size);
-  this->operator =(value);
-}
-
 bitvector::bitvector(uint32_t size, uint64_t value)
   : bitvector() {
   this->resize(size);
@@ -120,34 +108,10 @@ bitvector& bitvector::operator=(bitvector&& rhs) {
   return *this;
 }
 
-bitvector& bitvector::operator=(uint32_t value) {
+bitvector& bitvector::operator=(int64_t value) {
   assert(size_);
   // check for extra bits
-  CH_CHECK((32 - clz(value)) <= size_, "value out of range");
-  // write the value
-  words_[0] = value;
-  // clear extra words
-  uint32_t num_words = (size_ + WORD_MASK) >> WORD_SIZE_LOG;
-  std::fill_n(words_ + 1, num_words - 1, 0x0);
-  return *this;
-}
-
-bitvector& bitvector::operator=(int32_t value) {
-  assert(size_);
-  // check for extra bits
-  CH_CHECK((value >= 0 ? (32 - clz(uint32_t(value))) : (33 - clz(uint32_t(~value)))) <= size_, "value out of range");
-  // write the value
-  words_[0] = value;
-  // clear extra words
-  uint32_t num_words = (size_ + WORD_MASK) >> WORD_SIZE_LOG;
-  std::fill_n(words_ + 1, num_words - 1, 0x0);
-  return *this;
-}
-
-bitvector& bitvector::operator=(uint64_t value) {
-  assert(size_);
-  // check for extra bits
-  CH_CHECK((64 - clz(value)) <= size_, "value out of range");
+  CH_CHECK((value >= 0 ? (64 - clz(uint64_t(value))) : (65 - clz(uint64_t(~value)))) <= size_, "value out of range");
   // write the value
   words_[0] = value & 0xffffffff;
   uint32_t num_words = (size_ + WORD_MASK) >> WORD_SIZE_LOG;
@@ -156,13 +120,14 @@ bitvector& bitvector::operator=(uint64_t value) {
     // clear extra words
     std::fill_n(words_ + 2, num_words - 2, 0x0);
   }
+  this->clear_unused_bits();
   return *this;
 }
 
-bitvector& bitvector::operator=(int64_t value) {
+bitvector& bitvector::operator=(uint64_t value) {
   assert(size_);
   // check for extra bits
-  CH_CHECK((value >= 0 ? (64 - clz(uint64_t(value))) : (65 - clz(uint64_t(~value)))) <= size_, "value out of range");
+  CH_CHECK((64 - clz(value)) <= size_, "value out of range");
   // write the value
   words_[0] = value & 0xffffffff;
   uint32_t num_words = (size_ + WORD_MASK) >> WORD_SIZE_LOG;

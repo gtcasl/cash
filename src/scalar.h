@@ -190,9 +190,9 @@ public:
 protected:
 
   scalar_buffer(const bitvector& value,
-                     const scalar_buffer_ptr& source,
-                     unsigned offset,
-                     unsigned size)
+                const scalar_buffer_ptr& source,
+                unsigned offset,
+                unsigned size)
     : value_(value)
     , source_(source)
     , offset_(offset)
@@ -524,7 +524,7 @@ public:
 
   template <typename U,
             CH_REQUIRE_0(is_bitvector_castable<U>::value),
-            CH_REQUIRE_0(sizeof(U) * 8 >= N)>
+            CH_REQUIRE_0(CH_WIDTH_OF(U) >= N)>
   explicit operator U() const {
     return static_cast<U>(buffer_->data());
   }

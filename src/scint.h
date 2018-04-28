@@ -197,6 +197,17 @@ public:
 
   CH_SCALAR_INTERFACE(ch_scint)
 
+  template <typename U,
+            CH_REQUIRE_0(is_bitvector_castable<U>::value),
+            CH_REQUIRE_0(CH_WIDTH_OF(U) >= N)>
+  explicit operator U() const {
+    if constexpr(std::is_signed<U>::value && (CH_WIDTH_OF(U) > N)) {
+      return U(signext(static_cast<uint32_t>(buffer_->data()), N));
+    } else {
+      return static_cast<U>(buffer_->data());
+    }
+  }
+
 protected:
 
   // friend operators

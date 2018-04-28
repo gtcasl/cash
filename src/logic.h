@@ -136,8 +136,9 @@ public:
 protected:
 
   logic_buffer(const lnode& value,
-                    const logic_buffer_ptr& source,
-                    unsigned offset);
+               const logic_buffer_ptr& source,
+               unsigned offset);
+
   uint32_t id_;
   lnode value_;
   logic_buffer_ptr source_;

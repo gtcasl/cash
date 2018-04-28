@@ -443,39 +443,43 @@ public:
   explicit bitvector(uint32_t size);
 
   explicit bitvector(uint32_t size, int8_t value)
-    : bitvector(size, bitcast<int32_t>(value))
+    : bitvector(size, int64_t(value))
   {}
 
   explicit bitvector(uint32_t size, uint8_t value)
-    : bitvector(size, bitcast<uint32_t>(value))
+    : bitvector(size, uint64_t(value))
   {}
 
   explicit bitvector(uint32_t size, int16_t value)
-    : bitvector(size, bitcast<int32_t>(value))
+    : bitvector(size, int64_t(value))
   {}
 
   explicit bitvector(uint32_t size, uint16_t value)
-    : bitvector(size, bitcast<uint32_t>(value))
+    : bitvector(size, uint64_t(value))
   {}
 
-  explicit bitvector(uint32_t size, uint32_t value);
+  explicit bitvector(uint32_t size, int32_t value)
+    : bitvector(size, int64_t(value))
+  {}
 
-  explicit bitvector(uint32_t size, int32_t value);
-
-  explicit bitvector(uint32_t size, uint64_t value);
+  explicit bitvector(uint32_t size, uint32_t value)
+    : bitvector(size, uint64_t(value))
+  {}
 
   explicit bitvector(uint32_t size, int64_t value);
+
+  explicit bitvector(uint32_t size, uint64_t value);
 
   template <typename T, std::size_t N,
             CH_REQUIRE_0(is_bitvector_array_type<T>::value)>
   explicit bitvector(uint32_t size, const std::array<T, N>& value) : bitvector(size) {
-    this->write(0, value.data(), N * sizeof(T), 0, N * sizeof(T) * 8);
+    this->write(0, value.data(), N * sizeof(T), 0, N * CH_WIDTH_OF(T));
   }
 
   template <typename T,
             CH_REQUIRE_0(is_bitvector_array_type<T>::value)>
   explicit bitvector(uint32_t size, const std::vector<T>& value) : bitvector(size) {
-    this->write(0, value.data(), value.size() * sizeof(T), 0, value.size() * sizeof(T) * 8);
+    this->write(0, value.data(), value.size() * sizeof(T), 0, value.size() * CH_WIDTH_OF(T));
   }
 
   explicit bitvector(uint32_t size, const std::initializer_list<uint32_t>& value);
@@ -489,40 +493,44 @@ public:
   bitvector& operator=(bitvector&& rhs);
 
   bitvector& operator=(int8_t value) {
-    return this->operator=(bitcast<int32_t>(value));
+    return this->operator=(int64_t(value));
   }
 
   bitvector& operator=(uint8_t value) {
-    return this->operator=(bitcast<uint32_t>(value));
+    return this->operator=(uint64_t(value));
   }
 
   bitvector& operator=(int16_t value) {
-    return this->operator=(bitcast<int32_t>(value));
+    return this->operator=(int64_t(value));
   }
 
   bitvector& operator=(uint16_t value) {
-    return this->operator=(bitcast<uint32_t>(value));
+    return this->operator=(uint64_t(value));
   }
   
-  bitvector& operator=(uint32_t value);
+  bitvector& operator=(int32_t value) {
+    return this->operator=(int64_t(value));
+  }
 
-  bitvector& operator=(int32_t value);
-
-  bitvector& operator=(uint64_t value);
+  bitvector& operator=(uint32_t value) {
+    return this->operator=(uint64_t(value));
+  }
 
   bitvector& operator=(int64_t value);
+
+  bitvector& operator=(uint64_t value);
 
   template <typename T, std::size_t N,
             CH_REQUIRE_0(is_bitvector_array_type<T>::value)>
   bitvector& operator=(const std::array<T, N>& value) {
-    this->write(0, value.data(), N * sizeof(T), 0, N * sizeof(T) * 8);
+    this->write(0, value.data(), N * sizeof(T), 0, N * CH_WIDTH_OF(T));
     return *this;
   }
 
   template <typename T,
             CH_REQUIRE_0(is_bitvector_array_type<T>::value)>
   bitvector& operator=(const std::vector<T>& value) {
-    this->write(0, value.data(), value.size() * sizeof(T), 0, value.size() * sizeof(T) * 8);
+    this->write(0, value.data(), value.size() * sizeof(T), 0, value.size() * CH_WIDTH_OF(T));
     return *this;
   }
 
@@ -658,7 +666,7 @@ public:
 
 #define CH_DEF_CAST(type) \
   explicit operator type() const { \
-    CH_CHECK(sizeof(type) * 8 >= size_, "invalid size cast"); \
+    CH_CHECK(CH_WIDTH_OF(type) >= size_, "invalid size cast"); \
     return bitcast<type>(words_[0]); \
   }
   CH_DEF_CAST(bool)
@@ -671,7 +679,7 @@ public:
 #undef CH_DEF_CAST
 
   explicit operator uint64_t() const {
-    CH_CHECK(sizeof(uint64_t) * 8 >= size_, "invalid size cast");
+    CH_CHECK(CH_WIDTH_OF(uint64_t) >= size_, "invalid size cast");
     return (static_cast<uint64_t>((size_ > 32) ? words_[1] : 0) << 32) | words_[0];
   }
 

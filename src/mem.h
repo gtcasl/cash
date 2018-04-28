@@ -15,7 +15,7 @@ template <typename T>
 static auto toByteVector(const T& container,
                          uint32_t data_width,
                          uint32_t num_items) {
-  uint32_t src_width = sizeof(typename T::value_type) * 8;
+  uint32_t src_width = CH_WIDTH_OF(typename T::value_type);
   CH_CHECK(container.size() == (CH_CEILDIV(data_width, src_width) * num_items), "invalid input size");
   std::vector<uint8_t> packed(CH_CEILDIV(data_width * num_items, 8));
   uint32_t word_size(std::min<uint32_t>(src_width, data_width));

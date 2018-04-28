@@ -50,8 +50,8 @@ using v2_3_t = ch_vec<ch_bit2, 3>;
 TEST_CASE("scalars", "[scalars]") {
   SECTION("basics", "[basics]") {
     TESTX([]()->bool {
-      ch_scint<4> a(0xa);
-      ch_scint<4> b(0x5);
+      ch_scuint<4> a(0xa);
+      ch_scuint<4> b(0x5);
       int v(a + b);
       int ret = v + 1;
       return (ret == 0x10);
@@ -101,6 +101,72 @@ TEST_CASE("scalars", "[scalars]") {
       ret &= ((1 >> a) == 0);
       ret &= ((1 << b) == 2);
       return !!ret;
+    });
+  }
+  SECTION("cast", "[cast]") {
+    TESTX([]()->bool {
+      ch_scalar<4> x(8);
+      return (x == 8);
+    });
+    TESTX([]()->bool {
+      ch_scuint<4> x(8);
+      return (x == 8);
+    });
+    TESTX([]()->bool {
+      ch_scint<4> x(8);
+      return (x == 8);
+    });
+    TESTX([]()->bool {
+      ch_scalar<4> x(8);
+      return (static_cast<int>(x) == 8);
+    });
+    TESTX([]()->bool {
+      ch_scuint<4> x(8);
+      return (static_cast<int>(x) == 8);
+    });
+    TESTX([]()->bool {
+      ch_scint<4> x(8);
+      return (static_cast<int>(x) == -8);
+    });
+    TESTX([]()->bool {
+      ch_scint<4> x(7);
+      return (static_cast<int>(x) == 7);
+    });
+    TESTX([]()->bool {
+      ch_scalar<4> x(-8);
+      return (x == 8);
+    });
+    TESTX([]()->bool {
+      ch_scuint<4> x(-8);
+      return (x == 8);
+    });
+    TESTX([]()->bool {
+      ch_scint<4> x(-8);
+      return (x == -8);
+    });
+    TESTX([]()->bool {
+      ch_scalar<4> x(-8);
+      return (static_cast<int>(x) == 8);
+    });
+    TESTX([]()->bool {
+      ch_scuint<4> x(-8);
+      return (static_cast<int>(x) == 8);
+    });
+    TESTX([]()->bool {
+      ch_scint<4> x(-8);
+      return (static_cast<int>(x) == -8);
+    });
+    TESTX([]()->bool {
+      ch_scalar<4> x(-1);
+      return (static_cast<int>(x) == 0xf);
+    });
+    TESTX([]()->bool {
+      ch_scuint<4> x(-1);
+      return (static_cast<int>(x) == 0xf);
+    });
+    TESTX([]()->bool {
+      ch_scint<4> x(-1);
+      return (static_cast<int>(x) == -1);
     });
   }
   SECTION("enum", "[enum]") {
