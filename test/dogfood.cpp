@@ -132,7 +132,10 @@ struct Dogfood {
     __out(ch_bool) out
   );
   void describe() {
-    io.out = true;
+    ch_bit4 a(1100_b);
+    ch_bit4 c = ch_cat(a[3], a[2], a[1], a[0]);
+    io.out = (c == 1100_b && ch_cat(a[3], a[0]) == 10_b);
+    //io.out = true;
   }
 };
 
@@ -142,7 +145,6 @@ int main() {
     ch_simulator sim(device);
     device.io.in = 0xA;
     sim.run(4);
-    assert(device.io.out);
   }
 
   /*{

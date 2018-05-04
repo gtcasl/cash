@@ -60,6 +60,28 @@ selectimpl::selectimpl(context* ctx,
   srcs_.emplace_back(_false);
 }
 
+bool selectimpl::equals(const lnodeimpl& rhs) const {
+  if (lnodeimpl::equals(rhs)) {
+    auto _rhs = reinterpret_cast<const selectimpl&>(rhs);
+    return (this->has_key() == _rhs.has_key());
+  }
+  return false;
+}
+
+std::size_t selectimpl::hash() const {
+  hash_t ret;
+  ret.fields.type = this->type();
+  ret.fields.size = this->size();
+  auto n = this->srcs().size();
+  if (n > 0) {
+    ret.fields.arg0 = this->src(0).id();
+    if (n > 1) {
+      ret.fields.arg1 = this->src(1).id();
+    }
+  }
+  return ret.value;
+}
+
 const bitvector& selectimpl::eval(ch_tick t) {
   if (tick_ != t) {
     tick_ = t;

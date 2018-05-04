@@ -5,13 +5,7 @@ module VendingMachine(
   output wire io_valid
 );
   wire eq47;
-  wire eq38;
-  wire eq29;
-  wire eq18;
   wire eq51;
-  wire eq42;
-  wire eq33;
-  wire eq24;
   wire[2:0] sel61; // vending.cpp(31)
   wire[2:0] sel59; // vending.cpp(27)
   wire[2:0] sel57; // vending.cpp(23)
@@ -25,21 +19,15 @@ module VendingMachine(
   wire eq65;
 
   assign eq47 = io_coin == 1'h1;
-  assign eq38 = io_coin == 1'h1;
-  assign eq29 = io_coin == 1'h1;
-  assign eq18 = io_coin == 1'h1;
   assign eq51 = io_coin == 1'h0;
-  assign eq42 = io_coin == 1'h0;
-  assign eq33 = io_coin == 1'h0;
-  assign eq24 = io_coin == 1'h0;
   assign sel61 = eq47 ? 3'h4 : reg11;
-  assign sel59 = eq38 ? 3'h3 : reg11;
-  assign sel57 = eq29 ? 3'h2 : reg11;
-  assign sel55 = eq18 ? 3'h1 : reg11;
+  assign sel59 = eq47 ? 3'h3 : reg11;
+  assign sel57 = eq47 ? 3'h2 : reg11;
+  assign sel55 = eq47 ? 3'h1 : reg11;
   assign sel62 = eq51 ? 3'h4 : sel61;
-  assign sel60 = eq42 ? 3'h4 : sel59;
-  assign sel58 = eq33 ? 3'h3 : sel57;
-  assign sel56 = eq24 ? 3'h2 : sel55;
+  assign sel60 = eq51 ? 3'h4 : sel59;
+  assign sel58 = eq51 ? 3'h3 : sel57;
+  assign sel56 = eq51 ? 3'h2 : sel55;
   always @(*) begin
     case (reg11)
       3'h0: sel63 = sel56;

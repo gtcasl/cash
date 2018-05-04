@@ -48,6 +48,19 @@ unsigned lnodeimpl::add_src(unsigned index, const lnode& src) {
   return index;
 }
 
+bool lnodeimpl::equals(const lnodeimpl& rhs) const {
+  if (this->type() == rhs.type()
+   && this->size() == rhs.size()
+   && this->srcs().size() == rhs.srcs().size()) {
+    for (unsigned i = 0, n = this->srcs().size(); i < n; ++i) {
+      if (this->src(i).id() != rhs.src(i).id())
+        return false;
+    }
+    return true;
+  }
+  return false;
+}
+
 lnodeimpl* lnodeimpl::slice(uint32_t offset, uint32_t length) {
   assert(length <= value_.size());
   if (value_.size() == length)

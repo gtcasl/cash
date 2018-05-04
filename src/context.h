@@ -26,8 +26,6 @@ class clock_event;
 
 using ch_tick = uint64_t;
 
-typedef std::unordered_map<uint32_t, std::vector<const lnode*>> node_map_t;
-
 typedef ordered_set<lnodeimpl*> live_nodes_t;
 
 struct cond_block_t;
@@ -97,28 +95,6 @@ inline cond_br_t::~cond_br_t() {
 }
 
 typedef std::unordered_map<uint32_t, cond_block_t*> cond_inits_t;
-
-struct op_key_t {
-  uint32_t op;
-  uint32_t size;
-  uint32_t arg0;
-  uint32_t arg1;
-
-  bool operator==(const op_key_t& rhs) const {
-    return this->op   == rhs.op
-        && this->size == rhs.size
-        && this->arg0 == rhs.arg0
-        && this->arg1 == rhs.arg1;
-  }
-};
-
-struct hash_op_key_t {
-  std::size_t operator()(const op_key_t& key) const {
-    return key.op ^ key.size ^ key.arg0 ^ key.arg1;
-  }
-};
-
-typedef std::unordered_map<op_key_t, aluimpl*, hash_op_key_t> op_cache_t;
 
 typedef const char* (*enum_string_cb)(uint32_t value);
 
@@ -211,10 +187,6 @@ public:
   }
 
   cdimpl* create_cdomain(const lnode& clock, const lnode& reset, bool posedge);
-
-  aluimpl* create_alu(uint32_t op, unsigned size, const lnode& in);
-
-  aluimpl* create_alu(uint32_t op, unsigned size, const lnode& lhs, const lnode& rhs);
 
   node_list_t::iterator destroyNode(const node_list_t::iterator& it);
   
@@ -325,8 +297,6 @@ protected:
   cond_inits_t            cond_inits_;
 
   std::stack<cdimpl*>     cd_stack_;
-
-  op_cache_t              op_cache_;
 
   unique_name             unique_tap_names_;
 

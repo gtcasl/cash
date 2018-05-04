@@ -21,6 +21,10 @@ public:
     return (srcs_.size() == (has_key_ ? 4 : 3));
   }
 
+  bool equals(const lnodeimpl& rhs) const override;
+
+  std::size_t hash() const override;
+
   const bitvector& eval(ch_tick t) override;
 
   void print(std::ostream& out, uint32_t level) const override;

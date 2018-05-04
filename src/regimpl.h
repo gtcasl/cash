@@ -30,6 +30,8 @@ public:
     return srcs_[2];
   }
 
+  std::size_t hash() const override;
+
   void tick(ch_tick t) override;
 
   void tick_next(ch_tick t) override;

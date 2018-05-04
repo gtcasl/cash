@@ -94,6 +94,12 @@ public:
     return sloc_;
   }
 
+  virtual bool equals(const lnodeimpl& rhs) const;
+
+  virtual std::size_t hash() const {
+    return 0;
+  }
+
   virtual lnodeimpl* slice(uint32_t offset, uint32_t length);
 
   virtual const bitvector& eval(ch_tick t) = 0;
@@ -110,6 +116,20 @@ protected:
             const source_location& sloc = source_location());
 
   virtual ~lnodeimpl();
+
+  struct hash_t {
+    union {
+      struct {
+        std::size_t type : 8;
+        std::size_t size : 14;
+        std::size_t arg0 : 14;
+        std::size_t arg1 : 14;
+        std::size_t arg2 : 14;
+      } fields;
+      std::size_t value;
+    };
+    hash_t() : value(0) {}
+  };
 
   context* ctx_;
   uint32_t id_;  

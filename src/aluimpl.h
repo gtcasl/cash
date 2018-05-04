@@ -17,6 +17,10 @@ public:
   const bitvector& eval(ch_tick t) override;
 
   void print(std::ostream& out, uint32_t level) const override;
+
+  bool equals(const lnodeimpl& rhs) const override;
+
+  std::size_t hash() const override;
   
 protected:
 
@@ -56,6 +60,8 @@ public:
   const bitvector& eval(ch_tick t) override;
 
   void detach() override;
+
+  bool equals(const lnodeimpl& rhs) const override;
 
 protected:
 

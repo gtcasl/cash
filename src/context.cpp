@@ -156,38 +156,8 @@ cdimpl* context::create_cdomain(const lnode& clock,
   return this->create_node<cdimpl>(clock, reset, posedge);
 }
 
-aluimpl* context::create_alu(uint32_t op, unsigned size, const lnode& in) {
-  aluimpl* node;
-  op_key_t hk{op, size, in.id(), 0};
-  auto it = op_cache_.find(hk);
-  if (it == op_cache_.end()) {
-    node = this->create_node<aluimpl>((ch_op)op, size, in);
-    op_cache_[hk] = node;
-  } else {
-    node = it->second;
-  }
-  return node;
-}
-
-aluimpl* context::create_alu(uint32_t op, unsigned size, const lnode& lhs, const lnode& rhs) {
-  aluimpl* node;
-  op_key_t hk{op, size, lhs.id(), rhs.id()};
-  if ((hk.op & op_symmetric)
-   && hk.arg0 > hk.arg1) {
-    // adjust ordering for symmetrix operators
-    std::swap(hk.arg0, hk.arg1);
-  }
-  auto it = op_cache_.find(hk);
-  if (it == op_cache_.end()) {
-    node = this->create_node<aluimpl>((ch_op)op, size, lhs, rhs);
-    op_cache_[hk] = node;
-  } else {
-    node = it->second;
-  }
-  return node;
-}
-
 node_list_t::iterator context::destroyNode(const node_list_t::iterator& it) {
+  assert(it != nodes_.end());
   auto node = *it;
   auto next = this->remove_node(it);
   delete node;
@@ -607,16 +577,16 @@ context::emit_conditionals(lnodeimpl* dst,
           // combine predicates
           auto pred0 = values.front().first;
           if (key) {
-            pred0 = this->create_alu(op_eq, 1, key, pred0);
+            pred0 = this->create_node<aluimpl>(op_eq, 1, key, pred0);
           }
           auto pred1 = _true->src(0);
           if (_true->has_key()) {
             // create predicate
-            pred1 = this->create_alu(op_eq, 1, pred1, _true->src(1));
+            pred1 = this->create_node<aluimpl>(op_eq, 1, pred1, _true->src(1));
             // remove key from src list
             _true->remove_key();
           }
-          auto pred = this->create_alu(op_and, 1, pred0, pred1);
+          auto pred = this->create_node<aluimpl>(op_and, 1, pred0, pred1);
           _true->src(0) = pred;
           return _true;
         }

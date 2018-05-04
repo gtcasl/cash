@@ -66,6 +66,20 @@ void regimpl::detach() {
   }
 }
 
+std::size_t regimpl::hash() const {
+  hash_t ret;
+  ret.fields.type = this->type();
+  ret.fields.size = this->size();
+  auto n = this->srcs().size();
+  if (n > 0) {
+    ret.fields.arg0 = this->src(0).id();
+    if (n > 1) {
+      ret.fields.arg1 = this->src(1).id();
+    }
+  }
+  return ret.value;
+}
+
 void regimpl::tick(ch_tick t) {
   CH_UNUSED(t);
   value_ = q_next_;

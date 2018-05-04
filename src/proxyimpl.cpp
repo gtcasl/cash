@@ -216,6 +216,28 @@ proxyimpl::erase_source(std::vector<lnode>::iterator iter) {
   return next;
 }
 
+bool proxyimpl::equals(const lnodeimpl& rhs) const {
+  if (lnodeimpl::equals(rhs)) {
+    auto _rhs = reinterpret_cast<const proxyimpl&>(rhs);
+    return (this->ranges_ == _rhs.ranges_);
+  }
+  return false;
+}
+
+std::size_t proxyimpl::hash() const {
+  hash_t ret;
+  ret.fields.type = this->type();
+  ret.fields.size = this->size();
+  auto n = this->srcs().size();
+  if (n > 0) {
+    ret.fields.arg0 = this->src(0).id();
+    if (n > 1) {
+      ret.fields.arg1 = this->src(1).id();
+    }
+  }
+  return ret.value;
+}
+
 lnodeimpl* proxyimpl::slice(uint32_t offset, uint32_t length) {
   assert(length <= value_.size());
 

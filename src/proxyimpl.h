@@ -42,6 +42,10 @@ public:
 
   std::vector<lnode>::iterator erase_source(std::vector<lnode>::iterator iter);
 
+  bool equals(const lnodeimpl& rhs) const override;
+
+  std::size_t hash() const override;
+
   lnodeimpl* slice(uint32_t offset, uint32_t length) override;
 
   const bitvector& eval(ch_tick t) override;

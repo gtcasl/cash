@@ -138,6 +138,29 @@ aluimpl::aluimpl(context* ctx, ch_op op, unsigned size, const lnode& lhs, const 
   srcs_.push_back(rhs);
 }
 
+bool aluimpl::equals(const lnodeimpl& rhs) const {
+  if (lnodeimpl::equals(rhs)) {
+    auto _rhs = reinterpret_cast<const aluimpl&>(rhs);
+    return (this->op() == _rhs.op());
+  }
+  return false;
+}
+
+std::size_t aluimpl::hash() const {
+  hash_t ret;
+  ret.fields.type = this->type();
+  ret.fields.size = this->size();
+  ret.fields.arg0 = this->op();
+  auto n = this->srcs().size();
+  if (n > 0) {
+    ret.fields.arg1 = this->src(0).id();
+    if (n > 1) {
+      ret.fields.arg2 = this->src(1).id();
+    }
+  }
+  return ret.value;
+}
+
 void aluimpl::eval(bitvector& inout, ch_tick t) {
   switch (op_) {  
   case op_eq:
@@ -323,6 +346,15 @@ void delayed_aluimpl::detach() {
   }
 }
 
+bool delayed_aluimpl::equals(const lnodeimpl& rhs) const {
+  if (lnodeimpl::equals(rhs)) {
+    auto _rhs = dynamic_cast<const delayed_aluimpl&>(rhs);
+    return (this->op() == _rhs.op()
+         && this->p_next_.size() == _rhs.p_next_.size());
+  }
+  return false;
+}
+
 void delayed_aluimpl::tick(ch_tick t) {
   CH_UNUSED(t);
   for (int i = p_value_.size()-1; i >= 0; --i) {
@@ -358,7 +390,7 @@ lnodeimpl* ch::internal::createAluNode(
     unsigned size,
     const lnode& in) {
   auto ctx = in.ctx();
-  return ctx->create_alu(op, size, in);
+  return ctx->create_node<aluimpl>(op, size, in);
 }
 
 lnodeimpl* ch::internal::createAluNode(
@@ -367,7 +399,7 @@ lnodeimpl* ch::internal::createAluNode(
     const lnode& lhs,
     const lnode& rhs) {
   auto ctx = lhs.ctx();
-  return ctx->create_alu(op, size, lhs, rhs);
+  return ctx->create_node<aluimpl>(op, size, lhs, rhs);
 }
 
 lnodeimpl* ch::internal::createAluNode(

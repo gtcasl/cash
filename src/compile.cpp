@@ -9,11 +9,34 @@
 
 using namespace ch::internal;
 
+namespace ch {
+namespace internal {
+
+struct cse_key_t {
+
+  lnodeimpl* node;
+
+  cse_key_t(lnodeimpl* p_node) : node(p_node) {}
+
+  bool operator==(const cse_key_t& rhs) const {
+    return this->node->equals(*rhs.node);
+  }
+};
+
+struct cse_hash_t {
+  std::size_t operator()(const cse_key_t& key) const {
+    return key.node->hash();
+  }
+};
+
+}
+}
+
 compiler::compiler(context* ctx) : ctx_(ctx) {}
 
 void compiler::run() {
-  size_t orig_num_nodes, dead_nodes, identity_nodes;
-  CH_UNUSED(orig_num_nodes, dead_nodes, identity_nodes);
+  size_t orig_num_nodes, dead_nodes, cse_nodes, identity_nodes;
+  CH_UNUSED(orig_num_nodes, dead_nodes, cse_nodes, identity_nodes);
 
   DBG(2, "compiling %s ...\n", ctx_->name().c_str());
 
@@ -23,10 +46,9 @@ void compiler::run() {
 
   this->build_node_map();
 
-  identity_nodes = this->remove_identity_nodes();
+  cse_nodes = this->do_cse();
 
-  DBG(2, "*** deleted %lu dead nodes\n", dead_nodes);
-  DBG(2, "*** deleted %lu identity nodes\n", identity_nodes);
+  identity_nodes = this->remove_identity_nodes();
   
   this->syntax_check();
   
@@ -45,7 +67,11 @@ void compiler::run() {
       ctx_->dump_cfg(node, std::cout, dump_cfg_level);
     }
   }
-#endif
+#endif  
+
+  DBG(2, "*** deleted %lu dead nodes\n", dead_nodes);
+  DBG(2, "*** deleted %lu CSE nodes\n", cse_nodes);
+  DBG(2, "*** deleted %lu identity nodes\n", identity_nodes);
 
   DBG(2, "Before optimization: %lu\n", orig_num_nodes);
   DBG(2, "After optimization: %lu\n", ctx_->nodes().size());
@@ -161,8 +187,7 @@ size_t compiler::dead_code_elimination() {
 
   // update nodes in topological order
   auto it_dst = ctx_->nodes().begin();
-  for (auto it = live_nodes.rbegin(),
-       end = live_nodes.rend(); it != end;) {
+  for (auto it = live_nodes.rbegin(), end = live_nodes.rend(); it != end;) {
     *it_dst++ = *it++;
   }
 
@@ -172,15 +197,54 @@ size_t compiler::dead_code_elimination() {
 size_t compiler::remove_dead_nodes(const live_nodes_t& live_nodes) {
   size_t deleted = 0;
   for (auto it = ctx_->nodes().begin(),
-       end = ctx_->nodes().end(); it != end;) {
-    auto node = *it;
-    if (0 == live_nodes.count(node)) {
+            end = ctx_->nodes().end(); it != end;) {
+    if (0 == live_nodes.count(*it)) {
       it = ctx_->destroyNode(it);
       ++deleted;      
     } else {
       ++it;
     }
   }
+  return deleted;
+}
+
+size_t compiler::do_cse() {
+  size_t deleted = 0;
+  typedef std::decay_t<decltype(ctx_->nodes())> nodes_type;
+  std::vector<nodes_type::iterator> deleted_list;
+  std::unordered_set<cse_key_t, cse_hash_t> cse_table;
+
+  auto find_cse = [&](const nodes_type::iterator& it)->bool {
+    auto node = *it;
+    if (0 == node->hash())
+      return false;
+    auto p_it = cse_table.find(node);
+    if (p_it != cse_table.end()) {
+      this->replace_map_sources(node, p_it->node);
+      deleted_list.push_back(it);
+      return true;
+    }
+    cse_table.insert(node);
+    return false;
+  };
+
+  bool changed;
+  do {
+    changed = false;
+    auto& nodes = ctx_->nodes();
+    for (auto it = nodes.begin(), end = nodes.end(); it != end;) {
+      changed |= find_cse(it++);
+    }
+    if (changed) {
+      deleted += deleted_list.size();
+      for (auto it = deleted_list.rbegin(), end = deleted_list.rend(); it != end;) {
+        ctx_->destroyNode(*it++);
+      }
+      deleted_list.clear();
+      cse_table.clear();
+    }
+  } while (changed);
+
   return deleted;
 }
 
@@ -192,43 +256,31 @@ void compiler::build_node_map() {
   }
 }
 
+void compiler::replace_map_sources(lnodeimpl* source, lnodeimpl* target) {
+  auto& t_refs = node_map_.at(target->id());
+  auto s_it = node_map_.find(source->id());
+  assert(s_it != node_map_.end());
+  for (auto node : s_it->second) {
+    *const_cast<lnode*>(node) = target;
+    t_refs.push_back(node);
+  }
+  for (auto& src : source->srcs()) {
+    node_map_[src.id()].remove(&src);
+  }
+  node_map_.erase(s_it);
+}
+
 size_t compiler::remove_identity_nodes() {
   size_t deleted = 0;
   for (auto it = ctx_->proxies().begin(),
        end = ctx_->proxies().end(); it != end;) {
     proxyimpl* const proxy = *it++;
     if (proxy->is_identity()) {
-      auto& src = proxy->src(0);
-      auto src_impl = src.impl();
-
-      // remove proxy from source's refs
-      auto& src_refs = node_map_[src_impl->id()];
-      for (auto s_it = src_refs.begin(), s_end = src_refs.end(); s_it != s_end; ++s_it) {
-        if (*s_it == &src) {
-          src_refs.erase(s_it);
-          break;
-        }
-      }
-
-      // replace proxy's uses with proxy's source      
-      {
-        auto p_it = node_map_.find(proxy->id());
-        assert(p_it != node_map_.end());
-        for (auto node : p_it->second) {
-          *const_cast<lnode*>(node) = src_impl;
-
-          // update source refs
-          src_refs.push_back(node);
-        }
-        node_map_.erase(p_it);
-      }
-
-      {
-        auto n_it = std::find(ctx_->nodes().begin(), ctx_->nodes().end(), proxy);
-        assert(n_it != ctx_->nodes().end());
-        ctx_->destroyNode(n_it);
-      }
-
+      // replace proxy's uses with proxy's source
+      this->replace_map_sources(proxy, proxy->src(0).impl());
+      // delete proxy
+      auto p_it = std::find(ctx_->nodes().begin(), ctx_->nodes().end(), proxy);
+      ctx_->destroyNode(p_it);
       ++deleted;
     }
   }
