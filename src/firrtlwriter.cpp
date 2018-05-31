@@ -260,7 +260,7 @@ bool firrtlwriter::print_decl(lnodeimpl* node,
   case type_memport:
   case type_assert:
   case type_print:
-  case type_tick:
+  case type_time:
     break;
   default:
     assert(false);
@@ -304,7 +304,7 @@ bool firrtlwriter::print_logic(module_t& module, lnodeimpl* node) {
   case type_memport:
   case type_assert:
   case type_print:
-  case type_tick:
+  case type_time:
     break;
   default:
     assert(false);
@@ -523,7 +523,7 @@ void firrtlwriter::print_reg(regimpl* node) {
   if (node->has_init()) {
     out_ << " mux(";
     auto cd = reinterpret_cast<cdimpl*>(node->cd().impl());
-    this->print_name(cd->reset().impl());
+    this->print_name(cd->rst().impl());
     out_ << ", ";
     this->print_name(node->init().impl());
     out_ << ", ";
@@ -537,7 +537,7 @@ void firrtlwriter::print_reg(regimpl* node) {
 
 void firrtlwriter::print_cdomain(cdimpl* cd) {
   assert(cd->posedge());
-  this->print_name(cd->clock().impl());
+  this->print_name(cd->clk().impl());
 }
 
 void firrtlwriter::print_mem(memimpl* node) {
@@ -602,7 +602,7 @@ void firrtlwriter::print_mem(memimpl* node) {
     auto data_width = node->data_width();
     auto data_cbsize = CH_CEILDIV(data_width, 8);
     bitvector value(data_width);
-    for (unsigned i = 0, n = node->num_items(); i < n; ++i) {
+    for (uint32_t i = 0, n = node->num_items(); i < n; ++i) {
       this->print_name(node);
       out_ << "[" << i << "] <= ";
       node->value().read(0, value.words(), data_cbsize, i * data_width, data_width);
@@ -800,8 +800,8 @@ void firrtlwriter::print_dtype(lnodeimpl* node) {
 
 void firrtlwriter::print_value(const bitvector& value,
                                bool skip_leading_zeros_enable,
-                               unsigned offset,
-                               unsigned size) {
+                               uint32_t offset,
+                               uint32_t size) {
   //--
   auto skip_leading_zeros = [&](int word)->bool {
     if (skip_leading_zeros_enable) {

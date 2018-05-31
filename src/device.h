@@ -10,7 +10,7 @@ class deviceimpl;
 class device {
 public:
 
-  device(size_t signature, const std::string& name);
+  device(const std::type_index& signature, const std::string& name);
 
   virtual ~device();
 
@@ -19,6 +19,10 @@ public:
   device& operator=(device&& rhs) {
     impl_ = std::move(rhs.impl_);
     return *this;
+  }
+
+  auto impl() const {
+    return impl_;
   }
 
 protected:
@@ -30,8 +34,6 @@ protected:
   void compile();
 
   deviceimpl* impl_;
-
-  friend context* get_ctx(const device& device);
 };
 
 template <typename T>
@@ -40,7 +42,7 @@ public:
   using base = device;
 
   template <typename... Ts>
-  device_base(size_t signature, const std::string& name, Ts&&... args)
+  device_base(const std::type_index& signature, const std::string& name, Ts&&... args)
     : device(signature, name) {
     obj_ = std::make_shared<T>(args...);
     obj_->describe();
@@ -67,8 +69,6 @@ protected:
   std::shared_ptr<T> obj_;
 };
 
-context* get_ctx(const device& device);
-
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename IoType>
@@ -87,13 +87,13 @@ public:
 
   template <typename... Ts>
   ch_device(const std::string& name, Ts&&... args)
-    : base(typeid(T).hash_code(), name, std::forward<Ts>(args)...)
+    : base(std::type_index(typeid(T)), name, std::forward<Ts>(args)...)
     , io(obj_->io)
   {}
 
   template <typename... Ts>
   ch_device(Ts&&... args)
-    : base(typeid(T).hash_code(),
+    : base(std::type_index(typeid(T)),
            identifier_from_typeid(typeid(T).name()).c_str(),
            std::forward<Ts>(args)...)
     , io(obj_->io)
@@ -112,6 +112,8 @@ protected:
 
   ch_device& operator=(const ch_device& rhs) = delete;
 };
+
+context* get_ctx(const device& device);
 
 }
 }

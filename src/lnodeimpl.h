@@ -21,8 +21,9 @@
   m(bindport) \
   m(tap) \
   m(assert) \
-  m(tick) \
-  m(print)
+  m(time) \
+  m(print) \
+  m(udf)
 
 namespace ch {
 namespace internal {
@@ -31,7 +32,7 @@ enum lnodetype {
   CH_LNODE_ENUM(CH_LNODE_TYPE)
 };
 
-class lnodeimpl {
+class lnodeimpl : public refcounted {
 public:
 
   uint32_t id() const {
@@ -50,10 +51,6 @@ public:
     return ctx_;
   }
 
-  uint32_t num_srcs() const {
-    return srcs_.size();
-  }
-
   const std::vector<lnode>& srcs() const {
     return srcs_;
   }
@@ -61,18 +58,22 @@ public:
   std::vector<lnode>& srcs() {
     return srcs_;
   }
+
+  uint32_t num_srcs() const {
+    return srcs_.size();
+  }
   
-  const lnode& src(unsigned index) const {
+  const lnode& src(uint32_t index) const {
     assert(index < srcs_.size());
     return srcs_[index];
   }
 
-  lnode& src(unsigned index) {
+  lnode& src(uint32_t index) {
     assert(index < srcs_.size());
     return srcs_[index];
   }
 
-  unsigned add_src(unsigned index, const lnode& src);
+  uint32_t add_src(uint32_t index, const lnode& src);
   
   uint32_t size() const {
     return value_.size();
@@ -100,10 +101,14 @@ public:
     return 0;
   }
 
+  virtual void initialize() {}
+
+  virtual void reset() {}
+
+  virtual void eval() = 0;
+
   virtual lnodeimpl* slice(uint32_t offset, uint32_t length);
 
-  virtual const bitvector& eval(ch_tick t) = 0;
-  
   virtual void print(std::ostream& out, uint32_t level) const;
 
 protected:
@@ -111,7 +116,7 @@ protected:
   lnodeimpl(context* ctx,
             lnodetype type,
             uint32_t size,
-            unsigned var_id = 0,
+            uint32_t var_id = 0,
             const std::string& name = "",
             const source_location& sloc = source_location());
 
@@ -120,11 +125,12 @@ protected:
   struct hash_t {
     union {
       struct {
-        std::size_t type : 8;
-        std::size_t size : 14;
-        std::size_t arg0 : 14;
-        std::size_t arg1 : 14;
-        std::size_t arg2 : 14;
+        std::size_t type : 5;
+        std::size_t size : 10;
+        std::size_t srcs : 10;
+        std::size_t arg0 : 13;
+        std::size_t arg1 : 13;
+        std::size_t arg2 : 13;
       } fields;
       std::size_t value;
     };
@@ -148,7 +154,7 @@ public:
 
   undefimpl(context* ctx, uint32_t size);
 
-  const bitvector& eval(ch_tick t) override;
+  void eval() override;
 };
 
 const char* to_string(lnodetype type);

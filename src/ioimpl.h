@@ -24,11 +24,15 @@ protected:
 class inputimpl : public ioimpl {
 public:
 
-  void bind(const lnode& input) {
-    input_ = input;
+  const lnode& input() const {
+    return input_;
   }
 
-  const bitvector& eval(ch_tick t) override;
+  void bind(const lnode& input);
+
+  void initialize() override;
+
+  void eval() override;
   
   void print(std::ostream& out, uint32_t level) const override;
   
@@ -36,10 +40,11 @@ protected:
 
   inputimpl(context* ctx, uint32_t size, const std::string& name);
 
-  ~inputimpl() {}
+  ~inputimpl();
 
   lnode input_;
-  ch_tick tick_;
+
+  uint32_t* words_;
 
   friend class context;
 };
@@ -47,7 +52,9 @@ protected:
 class outputimpl : public ioimpl {
 public:
 
-  const bitvector& eval(ch_tick t) override;
+  void initialize() override;
+
+  void eval() override;
   
   void print(std::ostream& out, uint32_t level) const override;
   
@@ -55,9 +62,9 @@ protected:
 
   outputimpl(context* ctx, const lnode& src, const std::string& name);
 
-  ~outputimpl() {}
+  ~outputimpl();
 
-  ch_tick tick_;
+  uint32_t* words_;
 
   friend class context;
 };
@@ -69,7 +76,9 @@ public:
     return srcs_[0];
   }
 
-  const bitvector& eval(ch_tick t) override;
+  void initialize() override;
+
+  void eval() override;
   
   void print(std::ostream& out, uint32_t level) const override;
 
@@ -77,9 +86,9 @@ protected:
 
   tapimpl(context* ctx, const lnode& src, const std::string& name);
 
-  ~tapimpl() {}
+  ~tapimpl();
 
-  ch_tick tick_;
+  uint32_t* words_;
 
   friend class context;
 };

@@ -47,7 +47,7 @@ public:
   switch_case_t(const switch_ptr& p_switch) : switch_(p_switch) {}
 
   template <typename V,
-            CH_REQUIRE_0(is_cast_convertible<K, V>::value)>
+            CH_REQUIRE_0(is_cast_convertible_v<K, V>)>
   switch_body_t<K> operator,(const V& value) {
     return switch_body_t<K>(switch_, bitvector(width_v<K>, value));
   }
@@ -68,7 +68,7 @@ switch_case_t<K> switch_body_t<K>::operator,(const fvoid_t& body) {
 }
 
 template <typename K,
-          CH_REQUIRE_0(is_logic_convertible<K>::value)>
+          CH_REQUIRE_0(is_logic_convertible_v<K>)>
 auto ch_switch(const K& key, const source_location& sloc = CH_SRC_LOCATION) {
   return switch_case_t<K>(std::make_shared<switch_t>(get_lnode(key), sloc));
 }

@@ -21,6 +21,8 @@
 #include <fstream>
 #include <sstream>
 #include <memory>
+#include <typeindex>
+#include <type_traits>
 #include "macros.h"
 #include "utils.h"
 #include "platform.h"

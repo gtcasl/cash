@@ -4,6 +4,7 @@
 #include <htl/xbar.h>
 #include <htl/arbiter.h>
 #include <htl/pipe.h>
+#include <htl/float32.h>
 
 using namespace ch::htl;
 
@@ -21,7 +22,7 @@ struct PipeTest {
 
     ch_float32 x(io.enq.data);
     ch_float32 y(1.0f);
-    io.value = ch_fmult<Delay>(x, y, io.deq.ready);
+    io.value = ch_udf<fMult<Delay>>(x, y, io.deq.ready);
   }
 };
 

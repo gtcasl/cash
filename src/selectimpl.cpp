@@ -38,7 +38,6 @@ selectimpl::selectimpl(context* ctx,
                        lnodeimpl* key,
                        const source_location& sloc)
   : lnodeimpl(ctx, type_sel, size, 0, "", sloc)
-  , tick_(~0ull)
   , has_key_(false) {
   if (key) {
     has_key_ = true;
@@ -51,7 +50,6 @@ selectimpl::selectimpl(context* ctx,
                        const lnode& _true,
                        const lnode& _false)
   : lnodeimpl(ctx, type_sel, _true.size())
-  , tick_(~0ull)
   , has_key_(false) {
   assert(1 == pred.size());
   assert(_true.size() == _false.size());
@@ -72,35 +70,35 @@ std::size_t selectimpl::hash() const {
   hash_t ret;
   ret.fields.type = this->type();
   ret.fields.size = this->size();
-  auto n = this->srcs().size();
+  auto n = this->srcs().size();  
   if (n > 0) {
+    ret.fields.srcs = n;
     ret.fields.arg0 = this->src(0).id();
     if (n > 1) {
       ret.fields.arg1 = this->src(1).id();
+      if (n > 2) {
+        ret.fields.arg2 = this->src(2).id();
+      }
     }
   }
   return ret.value;
 }
 
-const bitvector& selectimpl::eval(ch_tick t) {
-  if (tick_ != t) {
-    tick_ = t;
-    uint32_t i, last(srcs_.size() - 1);
-    if (has_key_) {
-      auto& key = srcs_[0].eval(t);
-      for (i = 1; i < last; i += 2) {
-        if (key == srcs_[i].eval(t))
-          break;
-      }
-    } else {
-      for (i = 0; i < last; i += 2) {
-        if (srcs_[i].eval(t)[0])
-          break;
-      }
+void selectimpl::eval() {
+  uint32_t i, last(srcs_.size() - 1);
+  if (has_key_) {
+    auto& key = srcs_[0].data();
+    for (i = 1; i < last; i += 2) {
+      if (key == srcs_[i].data())
+        break;
     }
-    value_ = (i < last) ? srcs_[i+1].eval(t) : srcs_[last].eval(t);
+  } else {
+    for (i = 0; i < last; i += 2) {
+      if (srcs_[i].data().word(0))
+        break;
+    }
   }
-  return value_;
+  value_ = (i < last) ? srcs_[i+1].data() : srcs_[last].data();
 }
 
 void selectimpl::print(std::ostream& out, uint32_t level) const {

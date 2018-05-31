@@ -139,7 +139,7 @@ Completed:
 - append ch_ to CASH public types and functions
 - runtime assertion support for testing
 - explicit clock implementation
-- explicit clock simulation 
+- explicit clock simulation
 - redesign concatenation support to use the comma operation
 - add special assign operator '<=' for non-blocking assignments
 - implement signal class

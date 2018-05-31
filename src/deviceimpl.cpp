@@ -7,7 +7,7 @@
 
 using namespace ch::internal;
 
-deviceimpl::deviceimpl(size_t signature, const std::string& name) {
+deviceimpl::deviceimpl(const std::type_index& signature, const std::string& name) {
   ctx_ = ctx_create(signature, name);
   ctx_->acquire();
 }
@@ -31,7 +31,7 @@ void deviceimpl::compile() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-device::device(size_t signature, const std::string& name) {
+device::device(const std::type_index& signature, const std::string& name) {
   impl_ = new deviceimpl(signature, name);
   impl_->acquire();
   impl_->begin_context();
@@ -49,5 +49,5 @@ void device::compile() {
 ///////////////////////////////////////////////////////////////////////////////
 
 context* ch::internal::get_ctx(const device& device) {
-  return device.impl_->ctx();
+  return device.impl()->ctx();
 }

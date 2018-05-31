@@ -11,10 +11,6 @@ class bindportimpl;
 class bindimpl : public ioimpl {
 public:
 
-  void bind_input(const lnode& src, const lnode& ioport);
-
-  void bind_output(const lnode& dst, const lnode& ioport);
-
   const auto& inputs() {
     return srcs_;
   }
@@ -29,11 +25,7 @@ public:
     return module_;
   }
 
-  void tick(ch_tick t);
-
-  void tick_next(ch_tick t);
-
-  const bitvector& eval(ch_tick t) override;
+  void eval() override;
 
   void print(std::ostream& out, uint32_t level) const override;
 
@@ -43,9 +35,12 @@ protected:
 
   ~bindimpl();
 
+  void bind_input(const lnode& src, const lnode& ioport);
+
+  void bind_output(const lnode& dst, const lnode& ioport);
+
   context* module_;
   std::vector<lnode> outputs_;
-  ch_tick tick_;
 
   friend class context;
 };
@@ -63,11 +58,15 @@ public:
     return is_output_;
   }
 
-  const bitvector& eval(ch_tick t) override;
+  const lnode& binding() const {
+    return srcs_[0];
+  }
+
+  void initialize() override;
+
+  void eval() override;
 
   void print(std::ostream& out, uint32_t level) const override;
-
-  void detach();
 
 protected:  
 
@@ -77,7 +76,7 @@ protected:
 
   lnode ioport_;
   bool is_output_;
-  ch_tick tick_;
+  uint32_t* words_;
 
   friend class context;
 };

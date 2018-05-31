@@ -7,7 +7,8 @@ using namespace ch::internal;
 assertimpl::assertimpl(context* ctx, const lnode& cond, const std::string& msg)
   : ioimpl(ctx, type_assert, 0)
   , msg_(msg)
-  , predicated_(false) {
+  , predicated_(false)
+  , tick_(0) {
   if (ctx_->conditional_enabled(this)) {
     auto pred = ctx_->create_predicate();
     if (pred) {
@@ -18,12 +19,16 @@ assertimpl::assertimpl(context* ctx, const lnode& cond, const std::string& msg)
   srcs_.emplace_back(cond);
 }
 
-const bitvector& assertimpl::eval(ch_tick t) {
-  if (!predicated_ || srcs_[0].eval(t)[0]) {
-    auto& cond = srcs_[predicated_ ? 1: 0].eval(t);
-    CH_CHECK(cond[0], "assertion failure at tick %ld, %s", t, msg_.c_str());
+void assertimpl::reset() {
+  tick_ = 0;
+}
+
+void assertimpl::eval() {
+  if (!predicated_ || srcs_[0].data().word(0)) {
+    auto pred = srcs_[predicated_ ? 1 : 0].data().word(0);
+    CH_CHECK(pred, "assertion failure at tick %ld, %s", tick_, msg_.c_str());
   }
-  return value_;
+  tick_++;
 }
 
 void ch::internal::createAssertNode(const lnode& pred, const std::string& msg) {

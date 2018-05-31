@@ -1,14 +1,15 @@
 #include "reg.h"
 #include "regimpl.h"
 #include "proxyimpl.h"
+#include "cdimpl.h"
 #include "select.h"
 #include "context.h"
 
 using namespace ch::internal;
 
-reg_buffer::reg_buffer(unsigned size,
-                                 const source_location& sloc,
-                                 const std::string& name)
+reg_buffer::reg_buffer(uint32_t size,
+                       const source_location& sloc,
+                       const std::string& name)
   : logic_buffer(
       ctx_curr()->create_node<regimpl>(
         ctx_curr()->create_node<proxyimpl>(size)),
@@ -17,8 +18,8 @@ reg_buffer::reg_buffer(unsigned size,
 }
 
 reg_buffer::reg_buffer(const lnode& data,
-                                 const source_location& sloc,
-                                 const std::string& name)
+                       const source_location& sloc,
+                       const std::string& name)
   : logic_buffer(
       ctx_curr()->create_node<regimpl>(
         ctx_curr()->create_node<proxyimpl>(data.size()),
@@ -28,9 +29,9 @@ reg_buffer::reg_buffer(const lnode& data,
 }
 
 void reg_buffer::write(uint32_t dst_offset,
-                            const lnode& data,
-                            uint32_t src_offset,
-                            uint32_t length) {
+                       const lnode& data,
+                       uint32_t src_offset,
+                       uint32_t length) {
   auto proxy = reinterpret_cast<proxyimpl*>(value_.impl());
   auto reg = dynamic_cast<regimpl*>(proxy->src(0).impl());
   reg->next().write(dst_offset, data, src_offset, length);
@@ -38,32 +39,24 @@ void reg_buffer::write(uint32_t dst_offset,
 
 ///////////////////////////////////////////////////////////////////////////////
 
-regimpl::regimpl(context* ctx, const lnode& next, const lnode& init)
-  : lnodeimpl(ctx, type_reg, next.size()) {
-  auto cd = ctx->current_cd();
-  cd->add_reg(this);
-  srcs_.emplace_back(cd);  
-  srcs_.emplace_back(next);
-  srcs_.emplace_back(init);
-}
-
 regimpl::regimpl(context* ctx, const lnode& next)
   : lnodeimpl(ctx, type_reg, next.size()) {
   auto cd = ctx->current_cd();
   cd->add_reg(this);
+  cd->acquire();
   srcs_.emplace_back(cd);
   srcs_.emplace_back(next);
 }
 
-regimpl::~regimpl() {
-  this->detach();
+regimpl::regimpl(context* ctx, const lnode& next, const lnode& init)
+  : regimpl(ctx, next) {
+  srcs_.emplace_back(init);
 }
 
-void regimpl::detach() {
-  if (!srcs_[0].empty()) {
-    reinterpret_cast<cdimpl*>(srcs_[0].impl())->remove_reg(this);
-    srcs_[0].clear();
-  }
+regimpl::~regimpl() {
+  auto cd = reinterpret_cast<cdimpl*>(this->cd().impl());
+  cd->remove_reg(this);
+  cd->release();
 }
 
 std::size_t regimpl::hash() const {
@@ -72,40 +65,38 @@ std::size_t regimpl::hash() const {
   ret.fields.size = this->size();
   auto n = this->srcs().size();
   if (n > 0) {
+    ret.fields.srcs = n;
     ret.fields.arg0 = this->src(0).id();
     if (n > 1) {
       ret.fields.arg1 = this->src(1).id();
+      if (n > 2) {
+        ret.fields.arg2 = this->src(2).id();
+      }
     }
   }
   return ret.value;
 }
 
-void regimpl::tick(ch_tick t) {
-  CH_UNUSED(t);
+void regimpl::tick() {
   value_ = q_next_;
 }
 
-void regimpl::tick_next(ch_tick t) {
+void regimpl::eval() {
   if (this->has_init()) {
-    auto& reset = reinterpret_cast<cdimpl*>(srcs_[0].impl())->reset();
-    q_next_ = reset.eval(t)[0] ? srcs_[2].eval(t) : srcs_[1].eval(t);
+    auto& rst = reinterpret_cast<cdimpl*>(srcs_[0].impl())->rst();
+    q_next_ = rst.data().word(0) ? srcs_[2].data() : srcs_[1].data();
   } else {
-    q_next_ = srcs_[1].eval(t);
+    q_next_ = srcs_[1].data();
   }
-}
-
-const bitvector& regimpl::eval(ch_tick t) {
-  CH_UNUSED(t);
-  return value_; 
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void ch::internal::ch_pushcd(const ch_logic<1>& clock,
-                             const ch_logic<1>& reset,
+void ch::internal::ch_pushcd(const ch_logic<1>& clk,
+                             const ch_logic<1>& rst,
                              bool posedge) {
   auto ctx = ctx_curr();
-  auto _cd = ctx->create_cdomain(get_lnode(clock), get_lnode(reset), posedge);
+  auto _cd = ctx->create_cdomain(get_lnode(clk), get_lnode(rst), posedge);
   ctx->push_cd(_cd);
 }
 
@@ -115,10 +106,10 @@ void ch::internal::ch_popcd() {
 
 ch_logic<1> ch::internal::ch_clock() {
   auto cd = ctx_curr()->current_cd();
-  return make_type<ch_logic<1>>(cd->clock());
+  return make_type<ch_logic<1>>(cd->clk());
 }
 
 ch_logic<1> ch::internal::ch_reset() {
   auto cd = ctx_curr()->current_cd();
-  return make_type<ch_logic<1>>(cd->reset());
+  return make_type<ch_logic<1>>(cd->rst());
 }

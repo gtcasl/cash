@@ -5,11 +5,11 @@
 
 module testbench();
 
-    reg       clk   = 0;
-    reg       reset = 0;
+    reg       clk = 0;
+    reg       rst = 0;
     wire[3:0] out;
 
-    Counter counter(clk, reset, out);
+    Counter counter(clk, rst, out);
 	
     always begin
         #1 clk = !clk;
@@ -19,14 +19,14 @@ module testbench();
         $dumpfile("testbench.vcd");
         $dumpvars(0, testbench);
 
-        $display ("time\tclk\treset\tout");
-        $monitor("%3d\t%b\t%b\t%h", $time, clk, reset, out);
+        $display ("time\tclk\trst\tout");
+        $monitor("%3d\t%b\t%b\t%h", $time, clk, rst, out);
 
-        #0 reset  = 1;
-        #1 reset  = 1;
-        #1 reset  = 0;
+        #0 rst = 0;
+        #1 rst = 1;
+        #1 rst = 0;
 
-        #20 `assert(out == 10);
+        #20 `assert(out == 12);
             $finish;
     end
 

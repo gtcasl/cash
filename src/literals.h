@@ -35,6 +35,9 @@ struct lit_size<true, T, N, Char, Chars...> {
   static constexpr unsigned value = lit_size<true, T, T::sizex(Char, N), Chars...>::value;
 };
 
+template <bool X, typename T, unsigned N, char... Chars>
+inline constexpr unsigned lit_size_v = lit_size<X, T, N, Chars...>::value;
+
 struct lit_bin {
   static constexpr bool is_digit(char c) {
     return c == '0' || c == '1';
@@ -95,66 +98,54 @@ struct lit_hex {
 };
 
 template <char... Chars>
-struct lit_bin_size {
-  static constexpr unsigned value = lit_size<false, lit_bin, 0, Chars...>::value;
-};
+inline constexpr unsigned lit_bin_size_v = lit_size_v<false, lit_bin, 0, Chars...>;
 
 template <char... Chars>
-struct lit_oct_size {
-  static constexpr unsigned value = lit_size<false, lit_oct, 0, Chars...>::value;
-};
+inline constexpr unsigned lit_oct_size_v = lit_size_v<false, lit_oct, 0, Chars...>;
 
 template <char... Chars>
-struct lit_hex_size {
-  static constexpr unsigned value = lit_size<false, lit_hex, 0, Chars...>::value;
-};
+inline constexpr unsigned lit_hex_size_v = lit_size_v<false, lit_hex, 0, Chars...>;
 
 template <char... Chars>
-struct lit_bin_sizex {
-  static constexpr unsigned value = lit_size<true, lit_bin, 0, Chars...>::value;
-};
+inline constexpr unsigned lit_bin_sizex_v = lit_size_v<true, lit_bin, 0, Chars...>;
 
 template <char... Chars>
-struct lit_oct_sizex {
-  static constexpr unsigned value = lit_size<true, lit_oct, 0, Chars...>::value;
-};
+inline constexpr unsigned lit_oct_sizex_v = lit_size_v<true, lit_oct, 0, Chars...>;
 
 template <char... Chars>
-struct lit_hex_sizex {
-  static constexpr unsigned value = lit_size<true, lit_hex, 0, Chars...>::value;
-};
+inline constexpr unsigned lit_hex_sizex_v = lit_size_v<true, lit_hex, 0, Chars...>;
 
 namespace literals {
 
   template <char... Chars>
   auto operator "" _b() {
-    return ch_scuint<lit_bin_size<Chars...>::value>(std::string{Chars..., 'b'});
+    return ch_scuint<lit_bin_size_v<Chars...>>(std::string{Chars..., 'b'});
   }
 
   template <char... Chars>
   auto operator "" _o() {
-    return ch_scuint<lit_oct_size<Chars...>::value>(std::string{Chars..., 'o'});
+    return ch_scuint<lit_oct_size_v<Chars...>>(std::string{Chars..., 'o'});
   }
 
   template <char... Chars>
   auto operator "" _h() {
-    return ch_scuint<lit_hex_size<Chars...>::value>(std::string{Chars..., 'h'});
+    return ch_scuint<lit_hex_size_v<Chars...>>(std::string{Chars..., 'h'});
   }
 
 #define CH_DEF_LITERALS_IMPL(i, x) \
   template <char... Chars> \
   auto operator "" _b##x() { \
-    static_assert(x >= lit_bin_sizex<Chars...>::value, "value out of range"); \
+    static_assert(x >= lit_bin_sizex_v<Chars...>, "value out of range"); \
     return ch_scuint<x>(std::string{Chars..., 'b'}); \
   } \
   template <char... Chars> \
   auto operator "" _o##x() { \
-    static_assert(x >= lit_oct_sizex<Chars...>::value, "value out of range"); \
+    static_assert(x >= lit_oct_sizex_v<Chars...>, "value out of range"); \
     return ch_scuint<x>(std::string{Chars..., 'o'}); \
   } \
   template <char... Chars> \
   auto operator "" _h##x() { \
-    static_assert(x >= lit_hex_sizex<Chars...>::value, "value out of range"); \
+    static_assert(x >= lit_hex_sizex_v<Chars...>, "value out of range"); \
     return ch_scuint<x>(std::string{Chars..., 'h'}); \
   }
 

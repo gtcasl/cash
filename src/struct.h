@@ -33,8 +33,8 @@
   typename __T##i
 
 #define CH_STRUCT_FIELD_CTOR_REQUIRES(i, x) \
-  CH_REQUIRE_0((std::is_integral_v<__T##i> || std::is_enum_v<__T##i> || ch::internal::has_bitwidth<__T##i>::value) \
-           && ch::internal::is_cast_convertible<decltype(CH_PAIR_R(x)), __T##i>::value)
+  CH_REQUIRE_0((std::is_integral_v<__T##i> || std::is_enum_v<__T##i> || ch::internal::has_bitwidth_v<__T##i>) \
+           && ch::internal::is_cast_convertible_v<decltype(CH_PAIR_R(x)), __T##i>)
 
 #define CH_STRUCT_FIELD_CTOR_ARGS(i, x) \
   const __T##i& CH_CONCAT(_,CH_PAIR_R(x))
@@ -98,21 +98,21 @@ public: \
   struct_name(const std::shared_ptr<ch::internal::type_buffer_t<traits>>& buffer = \
     std::make_shared<ch::internal::type_buffer_t<traits>>(traits::bitwidth, CH_SRC_LOCATION, CH_STRINGIZE(name))) \
     : CH_FOR_EACH(CH_STRUCT_LOGIC_CTOR, CH_SEP_COMMA, __VA_ARGS__) {} \
-  struct_name(const struct_name& rhs, const source_location& sloc = CH_SRC_LOCATION) \
+  struct_name(const struct_name& rhs, const ch::internal::source_location& sloc = CH_SRC_LOCATION) \
     : struct_name(ch::internal::type_accessor_t<traits>::copy_buffer(rhs, sloc, CH_STRINGIZE(name))) {} \
   struct_name(struct_name&& rhs) : \
     CH_FOR_EACH(CH_STRUCT_MOVE_CTOR, CH_SEP_COMMA, __VA_ARGS__) {} \
   template <typename __T__, CH_REQUIRE_0(std::is_integral_v<__T__> || std::is_enum_v<__T__>)> \
-  explicit struct_name(__T__ rhs, const source_location& sloc = CH_SRC_LOCATION) \
+  explicit struct_name(__T__ rhs, const ch::internal::source_location& sloc = CH_SRC_LOCATION) \
     : struct_name(std::make_shared<ch::internal::type_buffer_t<traits>>(ch::internal::bitvector(traits::bitwidth, rhs), sloc, CH_STRINGIZE(name))) {} \
-  explicit struct_name(const ch_bit<traits::bitwidth>& rhs, const source_location& sloc = CH_SRC_LOCATION) \
+  explicit struct_name(const ch_bit<traits::bitwidth>& rhs, const ch::internal::source_location& sloc = CH_SRC_LOCATION) \
     : struct_name(ch::internal::type_accessor_t<traits>::copy_buffer(rhs, sloc, CH_STRINGIZE(name))) {} \
-  explicit struct_name(const ch_scalar<traits::bitwidth>& rhs, const source_location& sloc = CH_SRC_LOCATION) \
+  explicit struct_name(const ch_scalar<traits::bitwidth>& rhs, const ch::internal::source_location& sloc = CH_SRC_LOCATION) \
     : struct_name(std::make_shared<ch::internal::type_buffer_t<traits>>(ch::internal::scalar_accessor::data(rhs), sloc, CH_STRINGIZE(name))) {} \
   template <CH_REVERSE_FOR_EACH(CH_STRUCT_FIELD_CTOR_TMPL, CH_SEP_COMMA, __VA_ARGS__), \
             CH_REVERSE_FOR_EACH(CH_STRUCT_FIELD_CTOR_REQUIRES, CH_SEP_COMMA, __VA_ARGS__)> \
   explicit struct_name(CH_REVERSE_FOR_EACH(CH_STRUCT_FIELD_CTOR_ARGS, CH_SEP_COMMA, __VA_ARGS__), \
-                       const source_location& sloc = CH_SRC_LOCATION) \
+                       const ch::internal::source_location& sloc = CH_SRC_LOCATION) \
     : struct_name(std::make_shared<ch::internal::type_buffer_t<traits>>(traits::bitwidth, sloc, CH_STRINGIZE(name))) { \
     this->init_fields(CH_REVERSE_FOR_EACH(CH_STRUCT_FIELD_CTOR_BODY, CH_SEP_COMMA, __VA_ARGS__)); \
   } \
@@ -179,22 +179,22 @@ public: \
     std::make_shared<ch::internal::type_buffer_t<traits>>(traits::bitwidth, CH_SRC_LOCATION, CH_STRINGIZE(name))) \
     : base(buffer) \
     , CH_FOR_EACH(CH_STRUCT_LOGIC_CTOR, CH_SEP_COMMA, __VA_ARGS__) {} \
-  struct_name(const struct_name& rhs, const source_location& sloc = CH_SRC_LOCATION) \
+  struct_name(const struct_name& rhs, const ch::internal::source_location& sloc = CH_SRC_LOCATION) \
     : struct_name(ch::internal::type_accessor_t<traits>::copy_buffer(rhs, sloc, CH_STRINGIZE(name))) {} \
   struct_name(struct_name&& rhs) \
     : base(std::move(rhs))\
     , CH_FOR_EACH(CH_STRUCT_MOVE_CTOR, CH_SEP_COMMA, __VA_ARGS__) {} \
   template <typename __T__, CH_REQUIRE_0(std::is_integral_v<__T__> || std::is_enum_v<__T__>)> \
-  explicit struct_name(__T__ rhs, const source_location& sloc = CH_SRC_LOCATION) \
+  explicit struct_name(__T__ rhs, const ch::internal::source_location& sloc = CH_SRC_LOCATION) \
     : struct_name(std::make_shared<ch::internal::type_buffer_t<traits>>(ch::internal::bitvector(traits::bitwidth, rhs), sloc, CH_STRINGIZE(name))) {} \
-  explicit struct_name(const ch_bit<traits::bitwidth>& rhs, const source_location& sloc = CH_SRC_LOCATION) \
+  explicit struct_name(const ch_bit<traits::bitwidth>& rhs, const ch::internal::source_location& sloc = CH_SRC_LOCATION) \
     : struct_name(ch::internal::type_accessor_t<traits>::copy_buffer(rhs, sloc, CH_STRINGIZE(name))) {} \
-  explicit struct_name(const ch_scalar<traits::bitwidth>& rhs, const source_location& sloc = CH_SRC_LOCATION) \
+  explicit struct_name(const ch_scalar<traits::bitwidth>& rhs, const ch::internal::source_location& sloc = CH_SRC_LOCATION) \
     : struct_name(std::make_shared<ch::internal::type_buffer_t<traits>>(ch::internal::scalar_accessor::data(rhs), sloc, CH_STRINGIZE(name))) {} \
   template <CH_REVERSE_FOR_EACH(CH_STRUCT_FIELD_CTOR_TMPL, CH_SEP_COMMA, __VA_ARGS__), \
             CH_REVERSE_FOR_EACH(CH_STRUCT_FIELD_CTOR_REQUIRES, CH_SEP_COMMA, __VA_ARGS__)> \
   explicit struct_name(CH_REVERSE_FOR_EACH(CH_STRUCT_FIELD_CTOR_ARGS, CH_SEP_COMMA, __VA_ARGS__), \
-                       const source_location& sloc = CH_SRC_LOCATION) \
+                       const ch::internal::source_location& sloc = CH_SRC_LOCATION) \
     : struct_name(std::make_shared<ch::internal::type_buffer_t<traits>>(traits::bitwidth, sloc, CH_STRINGIZE(name))) { \
     this->init_fields(CH_REVERSE_FOR_EACH(CH_STRUCT_FIELD_CTOR_BODY, CH_SEP_COMMA, __VA_ARGS__)); \
   } \
@@ -202,7 +202,7 @@ public: \
             CH_REVERSE_FOR_EACH(CH_STRUCT_FIELD_CTOR_REQUIRES, CH_SEP_COMMA, __VA_ARGS__)> \
   explicit struct_name(CH_REVERSE_FOR_EACH(CH_STRUCT_FIELD_CTOR_ARGS, CH_SEP_COMMA, __VA_ARGS__), \
                        const __T__& arg, \
-                       const source_location& sloc = CH_SRC_LOCATION) \
+                       const ch::internal::source_location& sloc = CH_SRC_LOCATION) \
     : struct_name(std::make_shared<ch::internal::type_buffer_t<traits>>(traits::bitwidth, sloc, CH_STRINGIZE(name))) { \
     this->init_fields(CH_REVERSE_FOR_EACH(CH_STRUCT_FIELD_CTOR_BODY, CH_SEP_COMMA, __VA_ARGS__), arg); \
   } \

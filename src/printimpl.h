@@ -8,7 +8,9 @@ namespace internal {
 class printimpl : public ioimpl {
 public:
 
-  const bitvector& eval(ch_tick t) override;
+  void eval() override;
+
+  void print(std::ostream& out, uint32_t level) const override;
 
 protected:
 
@@ -21,7 +23,6 @@ protected:
   std::string format_;  
   std::stringstream strbuf_;  
   bool predicated_;
-  ch_tick tick_;
 
   friend class context;
 };

@@ -20,7 +20,7 @@ public:
 
 protected:
 
-  void ensureInitialize() override;
+  void initialize() override;
 
   void tick(ch_tick t) override;
 };

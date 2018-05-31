@@ -22,7 +22,7 @@ const auto IsRegType = [](lnodetype type) {
 
 const auto is_inline_literal = [](lnodeimpl* node) {
   assert(type_lit == node->type());
-  return (node->size() <= 32);
+  return (node->size() <= 64);
 };
 
 verilogwriter::module_t::module_t(context* p_ctx)
@@ -318,7 +318,7 @@ bool verilogwriter::print_decl(module_t& module,
   case type_memport:
   case type_assert:
   case type_print:
-  case type_tick:
+  case type_time:
     visited.insert(node->id());
     break;
   default:
@@ -365,7 +365,7 @@ bool verilogwriter::print_logic(module_t& module, lnodeimpl* node) {
   case type_memport:
   case type_assert:
   case type_print:
-  case type_tick:
+  case type_time:
     break;
   default:
     assert(false);
@@ -411,12 +411,6 @@ void verilogwriter::print_alu(module_t& module, aluimpl* node) {
   } else
   if (op == op_sext) {
     this->print_sext(module, node);
-  } else
-  if (op == op_fmult) {
-    this->print_fmult(module, node);
-  } else
-  if (op == op_fadd) {
-    this->print_fadd(module, node);
   } else {
     out_ << "assign ";
     this->print_name(module, node);
@@ -440,64 +434,19 @@ void verilogwriter::print_alu(module_t& module, aluimpl* node) {
 void verilogwriter::print_zext(module_t& module, aluimpl* node) {
   out_ << "assign ";
   this->print_name(module, node);
-  out_ << " = {{" << node->size() - node->src(0).size();
-  out_ << "{1'b0}}, ";
+  out_ << " = {{" << node->size() - node->src(0).size() << "{1'b0}}, ";
   this->print_name(module, node->src(0).impl());
-  out_ << "}";
-  out_ << ";" << std::endl;
+  out_ << "};" << std::endl;
 }
 
 void verilogwriter::print_sext(module_t& module, aluimpl* node) {
   out_ << "assign ";
   this->print_name(module, node);
-  out_ << " = {{" << node->size() - node->src(0).size();
-  out_ << "{";
+  out_ << " = {{" << node->size() - node->src(0).size() << "{";
   this->print_name(module, node->src(0).impl());
   out_ << "[" << (node->src(0).size() - 1) << "]}";
   this->print_name(module, node->src(0).impl());
   out_ << ";" << std::endl;
-}
-
-void verilogwriter::print_fmult(module_t& module, aluimpl* node) {
-  auto dalu = dynamic_cast<delayed_aluimpl*>(node);
-  out_ << "fp_mult __fp_mult_";
-  out_ << node->id() << "__(.clock(";
-  auto cd = reinterpret_cast<cdimpl*>(dalu->cd().impl());
-  this->print_name(module, cd->clock().impl());
-  out_ << "), .clk_en(";
-  if (dalu->has_enable()) {
-    this->print_name(module, dalu->enable().impl());
-  } else {
-    out_ << "1b'1";
-  }
-  out_ << "), .dataa(";
-  this->print_name(module, node->src(0).impl());
-  out_ << "), .datab(";
-  this->print_name(module, node->src(1).impl());
-  out_ << "), .result(";
-  this->print_name(module, node);
-  out_ << "));" << std::endl;
-}
-
-void verilogwriter::print_fadd(module_t& module, aluimpl* node) {
-  auto dalu = dynamic_cast<delayed_aluimpl*>(node);
-  out_ << "fp_add __fp_add_sub_";
-  out_ << node->id() << "__(.clock(";
-  auto cd = reinterpret_cast<cdimpl*>(dalu->cd().impl());
-  this->print_name(module, cd->clock().impl());
-  out_ << "), .clk_en(";
-  if (dalu->has_enable()) {
-    this->print_name(module, dalu->enable().impl());
-  } else {
-    out_ << "1b'1";
-  }
-  out_ << "), .dataa(";
-  this->print_name(module, node->src(0).impl());
-  out_ << "), .datab(";
-  this->print_name(module, node->src(1).impl());
-  out_ << "), .result(";
-  this->print_name(module, node);
-  out_ << "));" << std::endl;
 }
 
 void verilogwriter::print_select(module_t& module, selectimpl* node) {
@@ -583,7 +532,7 @@ void verilogwriter::print_reg(module_t& module, regimpl* node) {
     this->print_name(module, node);
     out_ << " <= ";
     if (node->has_init()) {
-      this->print_name(module, cd->reset().impl());
+      this->print_name(module, cd->rst().impl());
       out_ << " ? ";
       this->print_name(module, node->init().impl());
       out_ << " : ";
@@ -598,7 +547,7 @@ void verilogwriter::print_reg(module_t& module, regimpl* node) {
 
 void verilogwriter::print_cdomain(module_t& module, cdimpl* cd) {
   out_ << (cd->posedge() ? "posedge" : "negedge") << " ";
-  this->print_name(module, cd->clock().impl());
+  this->print_name(module, cd->clk().impl());
 }
 
 void verilogwriter::print_mem(module_t& module, memimpl* node) {
@@ -697,6 +646,9 @@ void verilogwriter::print_name(module_t& module, lnodeimpl* node, bool force) {
     this->print_name(module, memport->addr().impl());
     out_ << "]";
   } break;
+  case type_time:
+    out_ << "$time";
+    break;
   default:
     assert(false);
   }
@@ -725,8 +677,8 @@ void verilogwriter::print_type(lnodeimpl* node) {
 
 void verilogwriter::print_value(const bitvector& value,
                                 bool skip_leading_zeros_enable,
-                                unsigned offset,
-                                unsigned size) {
+                                uint32_t offset,
+                                uint32_t size) {
   //--
   auto skip_leading_zeros = [&](int word)->bool {
     if (skip_leading_zeros_enable) {

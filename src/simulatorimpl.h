@@ -9,7 +9,7 @@ namespace internal {
 class clock_driver {
 public:
 
-  clock_driver() : value_(false) {}
+  clock_driver(bool value = false) : value_(value) {}
 
   void add_signal(lnodeimpl* node);
 
@@ -32,13 +32,11 @@ public:
 
   virtual ~simulatorimpl();
 
-  void add_device(const device& device);
-
   ch_tick reset(ch_tick t);
 
   ch_tick step(ch_tick t);
 
-  ch_tick step(ch_tick t, unsigned count);  
+  ch_tick step(ch_tick t, uint32_t count);
 
   ch_tick run(const std::function<bool(ch_tick t)>& callback);
 
@@ -46,14 +44,14 @@ public:
 
 protected:
 
-  virtual void ensureInitialize();
+  virtual void initialize();
 
   virtual void tick(ch_tick t);
 
   std::unordered_set<context*> contexts_;
-  bool initialized_;
   clock_driver clk_driver_;
   clock_driver reset_driver_;
+  std::vector<lnodeimpl*> run_list_;
 };
 
 }

@@ -94,16 +94,16 @@ template <typename T>
 inline constexpr ch_direction direction_v = std::decay_t<T>::traits::direction;
 
 template <typename T>
-using is_io_traits = is_true<(T::type & traits_io)>;
+inline constexpr bool is_io_traits_v = is_true_v<(T::type & traits_io)>;
 
-CH_DEF_SFINAE_CHECK(is_io_type, is_io_traits<typename std::decay_t<T>::traits>::value);
+CH_DEF_SFINAE_CHECK(is_io_type, is_io_traits_v<typename std::decay_t<T>::traits>);
 
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T>
 class ch_in_impl final : public T {
 public:
-  static_assert(is_logic_only<T>::value, "invalid type");
+  static_assert(is_logic_only_v<T>, "invalid type");
   using traits = io_logic_traits<ch_in<T>,
                                  ch_direction::in,
                                  ch_out<T>,
@@ -116,8 +116,8 @@ public:
   {}
 
   template <typename U,
-            CH_REQUIRE_0(is_logic_only<U>::value),
-            CH_REQUIRE_0(is_cast_convertible<U, T>::value)>
+            CH_REQUIRE_0(is_logic_only_v<U>),
+            CH_REQUIRE_0(is_cast_convertible_v<U, T>)>
   explicit ch_in_impl(const ch_out<U>& out, const source_location& sloc = CH_SRC_LOCATION)
     : base(make_logic_buffer(width_v<T>, sloc)) {
     input_ = logic_accessor::data(*this);
@@ -129,8 +129,8 @@ public:
   ch_in_impl(ch_in_impl&& in) : base(std::move(in)) {}
 
   template <typename U,
-            CH_REQUIRE_0(is_logic_only<U>::value),
-            CH_REQUIRE_0(is_cast_convertible<U, T>::value)>
+            CH_REQUIRE_0(is_logic_only_v<U>),
+            CH_REQUIRE_0(is_cast_convertible_v<U, T>)>
   void operator()(ch_out<U>& out) const {
     out = *this;
   }
@@ -158,7 +158,7 @@ private:
 template <typename T>
 class ch_out final : public T {
 public:
-  static_assert(is_logic_only<T>::value, "invalid type");
+  static_assert(is_logic_only_v<T>, "invalid type");
   using traits = io_logic_traits<ch_out,
                                  ch_direction::out,
                                  ch_in<T>,
@@ -173,8 +173,8 @@ public:
   }
 
   template <typename U,
-            CH_REQUIRE_0(is_logic_only<U>::value),
-            CH_REQUIRE_0(is_cast_convertible<T, U>::value)>
+            CH_REQUIRE_0(is_logic_only_v<U>),
+            CH_REQUIRE_0(is_cast_convertible_v<T, U>)>
   explicit ch_out(const ch_in_impl<U>& in, const source_location& sloc = CH_SRC_LOCATION)
     : base(make_logic_buffer(width_v<T>, sloc)) {
     output_ = logic_accessor::data(*this);
@@ -198,8 +198,8 @@ public:
   }
 
   template <typename U,
-            CH_REQUIRE_0(is_logic_only<U>::value),
-            CH_REQUIRE_0(is_cast_convertible<T, U>::value)>
+            CH_REQUIRE_0(is_logic_only_v<U>),
+            CH_REQUIRE_0(is_cast_convertible_v<T, U>)>
   void operator()(const ch_in_impl<U>& in) {
     *this = in;
   }
@@ -250,7 +250,7 @@ public:
 template <typename T>
 class ch_scalar_in final : public T {
 public:
-  static_assert(is_scalar_only<T>::value, "invalid type");
+  static_assert(is_scalar_only_v<T>, "invalid type");
   using traits = io_scalar_traits<ch_scalar_in,
                                   ch_direction::in,
                                   ch_scalar_out<T>,
@@ -260,7 +260,7 @@ public:
   using base::operator=;
 
   template <typename U,
-            CH_REQUIRE_0(is_logic_only<U>::value),
+            CH_REQUIRE_0(is_logic_only_v<U>),
             CH_REQUIRE_0(width_v<T> == width_v<U>)>
   explicit ch_scalar_in(const ch_in_impl<U>& in)
     : base(std::make_shared<scalar_io_buffer>(in.input_))
@@ -282,7 +282,7 @@ protected:
 template <typename T>
 class ch_scalar_out_impl final : public T {
 public:
-  static_assert(is_scalar_only<T>::value, "invalid type");
+  static_assert(is_scalar_only_v<T>, "invalid type");
   using traits = io_scalar_traits<ch_scalar_out<T>,
                                   ch_direction::out,
                                   ch_scalar_in<T>,
@@ -291,7 +291,7 @@ public:
   using base = T;
 
   template <typename U,
-            CH_REQUIRE_0(is_logic_only<U>::value),
+            CH_REQUIRE_0(is_logic_only_v<U>),
             CH_REQUIRE_0(width_v<T> == width_v<U>)>
   explicit ch_scalar_out_impl(const ch_out<U>& out)
     : base(std::make_shared<scalar_io_buffer>(out.output_))

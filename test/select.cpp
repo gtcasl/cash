@@ -83,17 +83,17 @@ TEST_CASE("conditionals", "[conditionals]") {
       return (c == b);
     });
     TEST([]()->ch_bool {
-      ch_int4 a(5), b(1), c(0);
+      ch_int4 a(5), b(1), c(0), d(1);
       __if (a > b) {
-        c = a - b; 
-        b = 0;
+        c = a - d;
+        d = 0;
       } __elif (a == b) {
         c = 0;
       } __else {
-        c = b;
+        c = d;
       };
-      //ch_print("c={0}, b={1}", c, b);
-      return (c == 5 && b == 0);
+      ch_print("c={0}, d={1}", c, d);
+      return (c == 5 && d == 0);
     });
     TEST([]()->ch_bool {
       ch_bit2 a;

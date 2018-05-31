@@ -24,17 +24,19 @@
 #include "vcdtracer.h"
 #include "verilog.h"
 #include "firrtl.h"
+#include "udf.h"
 #include "misc.h"
-#include "float32.h"
 
 namespace ch {
 
 //
 // utility namespace
 //
-
 namespace utility {
-  using ch::internal::fstring;
+  using ch::internal::fstring;  
+  using ch::internal::ispow2;
+  using ch::internal::ilog2;
+  using ch::internal::log2ceil;
 }
 
 //
@@ -47,12 +49,6 @@ namespace core {
   //
   // data types
   //
-
-  using ch::internal::ispow2;
-  using ch::internal::ilog2;
-  using ch::internal::log2ceil;
-
-  using ch::internal::source_location;
 
   template <unsigned N> using ch_bit  = ch::internal::ch_logic<N>;
   template <unsigned N> using ch_int  = ch::internal::ch_int<N>;
@@ -76,9 +72,6 @@ namespace core {
   template <typename... Ts>
   inline constexpr unsigned ch_width_v = ch::internal::width_v<Ts...>;
 
-  template <typename... Ts>
-  inline constexpr unsigned ch_signed_v = ch::internal::signed_v<Ts...>;
-
   using ch_direction = ch::internal::ch_direction;
 
   template <typename T> using ch_scalar_t = ch::internal::scalar_type_t<T>;
@@ -93,15 +86,17 @@ namespace core {
   template <typename T> using ch_out = ch::internal::ch_out<T>;
   template <typename T> using ch_module = ch::internal::ch_module<T>;
 
+  using ch::internal::ch_udf;
+
   //
   // type traits
   //
 
   template <typename T, unsigned N = ch_width_v<T>>
-  using ch_is_logic_convertible = ch::internal::is_logic_convertible<T, N>;
+  inline constexpr bool ch_is_logic_convertible_v = ch::internal::is_logic_convertible_v<T, N>;
 
   template <typename T, unsigned N = ch_width_v<T>>
-  using ch_is_scalar_convertible = ch::internal::is_scalar_convertible<T, N>;
+  inline constexpr bool ch_is_scalar_convertible_v = ch::internal::is_scalar_convertible_v<T, N>;
 
   //
   // declared types
@@ -135,8 +130,6 @@ namespace core {
   using ch_uint32 = ch_uint<32>;
   using ch_uint64 = ch_uint<64>;
   using ch_uint128= ch_uint<128>;
-
-  using ch_float32 = ch::internal::ch_float32;
 
   //
   // constants
@@ -235,15 +228,6 @@ namespace core {
   using ch::internal::ch_tap;
   using ch::internal::ch_print;
   using ch::internal::ch_time;
-
-  //
-  // floating point functions
-  //
-
-  using ch::internal::ch_fadd;
-  using ch::internal::ch_fsub;
-  using ch::internal::ch_fmult;
-  using ch::internal::ch_fdiv;
 }
 
 //
@@ -277,9 +261,25 @@ namespace sim {
 }
 
 //
+// user defined functions
+//
+namespace extension {
+  using ch::internal::bitvector;
+  using ch::internal::source_location;
+  using ch::internal::logic_traits;
+  using ch::internal::scalar_traits;
+  using ch::internal::logic_buffer_ptr;
+  using ch::internal::scalar_buffer_ptr;
+  using ch::internal::make_logic_buffer;
+  using ch::internal::make_scalar_buffer;
+  using ch::internal::udf_comb;
+  using ch::internal::udf_seq;
+  using ch::internal::lnode;
+}
+
+//
 // literals
 //
-
 inline namespace literals {
   using namespace ch::internal::literals;
 }

@@ -11,7 +11,7 @@ class lnodeimpl;
 class deviceimpl : public refcounted {
 public:
 
-  deviceimpl(size_t signature, const std::string& name);
+  deviceimpl(const std::type_index& signature, const std::string& name);
 
   ~deviceimpl();
 

@@ -3,16 +3,12 @@ module FastMult(
   input wire[3:0] io_rhs,
   output wire[7:0] io_out
 );
-  wire[7:0] zext15;
+  reg[7:0] mem12[0:255];
   wire[7:0] zext13;
+  wire[7:0] zext15;
   wire[7:0] sll19;
   wire[7:0] or21;
-  reg[7:0] mem12[0:255];
 
-  assign zext15 = {{4{1'b0}}, io_lhs};
-  assign zext13 = {{4{1'b0}}, io_rhs};
-  assign sll19 = zext15 << 32'h4;
-  assign or21 = sll19 | zext13;
   initial begin
     mem12[0] = 8'h0;
     mem12[1] = 8'h0;
@@ -271,6 +267,10 @@ module FastMult(
     mem12[254] = 8'hd2;
     mem12[255] = 8'he1;
   end
+  assign zext13 = {{4{1'b0}}, io_rhs};
+  assign zext15 = {{4{1'b0}}, io_lhs};
+  assign sll19 = zext15 << 32'h4;
+  assign or21 = sll19 | zext13;
 
   assign io_out = mem12[or21];
 

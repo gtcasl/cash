@@ -147,21 +147,21 @@ public:
   {}
 
   template <typename U,
-            CH_REQUIRE_0(is_logic_type<U>::value),
+            CH_REQUIRE_0(is_logic_type_v<U>),
             CH_REQUIRE_0(width_v<U> == N)>
   explicit ch_int(const U& rhs, const source_location& sloc = CH_SRC_LOCATION)
     : base(rhs, sloc)
   {}
 
   template <typename U,
-            CH_REQUIRE_1(is_scalar_type<U>::value),
+            CH_REQUIRE_1(is_scalar_type_v<U>),
             CH_REQUIRE_1(width_v<U> <= N)>
   explicit ch_int(const U& rhs, const source_location& sloc = CH_SRC_LOCATION)
     : base(rhs, sloc)
   {}
 
   template <typename U,
-            CH_REQUIRE_0(is_bitvector_convertible<U>::value)>
+            CH_REQUIRE_0(is_bitvector_convertible_v<U>)>
   explicit ch_int(const U& rhs, const source_location& sloc = CH_SRC_LOCATION)
     : base(rhs, sloc)
   {}
@@ -177,7 +177,7 @@ public:
   }
 
   template <typename U,
-            CH_REQUIRE_0(is_logic_type<U>::value),
+            CH_REQUIRE_0(is_logic_type_v<U>),
             CH_REQUIRE_0(width_v<U> == N)>
   ch_int& operator=(const U& rhs) {
     base::operator=(rhs);
@@ -185,7 +185,7 @@ public:
   }
 
   template <typename U,
-            CH_REQUIRE_1(is_scalar_type<U>::value),
+            CH_REQUIRE_1(is_scalar_type_v<U>),
             CH_REQUIRE_1(width_v<U> <= N)>
   ch_int& operator=(const U& rhs) {
     base::operator=(rhs);

@@ -22,9 +22,9 @@ tracerimpl::~tracerimpl() {
   }
 }
 
-void tracerimpl::ensureInitialize() {
-  // call parent ensureInitialize()
-  simulatorimpl::ensureInitialize();
+void tracerimpl::initialize() {
+  // call parent initialize()
+  simulatorimpl::initialize();
 
   // register context taps
   for (auto ctx : contexts_) {

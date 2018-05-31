@@ -38,7 +38,7 @@ void compiler::run() {
   size_t orig_num_nodes, dead_nodes, cse_nodes, identity_nodes;
   CH_UNUSED(orig_num_nodes, dead_nodes, cse_nodes, identity_nodes);
 
-  DBG(2, "compiling %s ...\n", ctx_->name().c_str());
+  DBG(2, "compiling %s (#%d) ...\n", ctx_->name().c_str(), ctx_->id());
 
   orig_num_nodes = ctx_->nodes().size();
 
@@ -46,7 +46,7 @@ void compiler::run() {
 
   this->build_node_map();
 
-  cse_nodes = this->do_cse();
+  cse_nodes = this->common_subexpressions_elimination();
 
   identity_nodes = this->remove_identity_nodes();
   
@@ -77,39 +77,26 @@ void compiler::run() {
   DBG(2, "After optimization: %lu\n", ctx_->nodes().size());
 }
 
-void compiler::syntax_check() {
-  // check for un-initialized nodes
-  auto& undefs = ctx_->undefs();
-  if (undefs.size()) {
-    ctx_->dump_ast(std::cerr, 1);    
-    for (auto undef : undefs) {
-      for (auto node : ctx_->nodes()) {
-        auto ret = std::find_if(node->srcs().begin(), node->srcs().end(),
-                     [undef](const lnode& x)->bool { return x.id() == undef->id(); });
-        if (ret != node->srcs().end()) {
-          fprintf(stderr, "error: un-initialized variable '%s%d' (#%d)",
-                  node->name().c_str(), node->size(), node->id());
-          if (node->var_id() != 0) {
-            fprintf(stderr, " (@var%d)", node->var_id());
-          }
-          fprintf(stderr, " in module '%s'", ctx_->name().c_str());
-          auto& sloc = node->sloc();
-          if (!sloc.empty()) {
-            fprintf(stderr, " (%s:%d)\n", sloc.file(), sloc.line());
-          }
-          break;
-        }
-      }
-    }
-    std::abort();
-  }
-}
-
 size_t compiler::dead_code_elimination() {
+  ordered_set<lnodeimpl*> live_nodes;
   std::unordered_map<proxyimpl*, std::unordered_set<uint32_t>> used_proxy_sources;
-  live_nodes_t live_nodes(ctx_->compute_live_nodes());
-  std::list<lnodeimpl*> working_set(live_nodes.begin(), live_nodes.end());
 
+  // get permanent live nodes
+  for (auto node : ctx_->inputs()) {
+    live_nodes.insert(node);
+  }
+  for (auto node : ctx_->outputs()) {
+    live_nodes.insert(node);
+  }
+  for (auto node : ctx_->taps()) {
+    live_nodes.insert(node);
+  }
+  for (auto node : ctx_->gtaps()) {
+    live_nodes.insert(node);
+  }
+
+  // run DCE
+  std::list<lnodeimpl*> working_set(live_nodes.begin(), live_nodes.end());
   while (!working_set.empty()) {
     auto node = working_set.front();
     auto proxy = dynamic_cast<proxyimpl*>(node);
@@ -182,33 +169,23 @@ size_t compiler::dead_code_elimination() {
   }
 
   // delete dead nodes
-  auto deleted = this->remove_dead_nodes(live_nodes);
-  assert(ctx_->nodes().size() == live_nodes.size());
-
-  // update nodes in topological order
-  auto it_dst = ctx_->nodes().begin();
-  for (auto it = live_nodes.rbegin(), end = live_nodes.rend(); it != end;) {
-    *it_dst++ = *it++;
-  }
-
-  return deleted;
-}
-
-size_t compiler::remove_dead_nodes(const live_nodes_t& live_nodes) {
   size_t deleted = 0;
   for (auto it = ctx_->nodes().begin(),
             end = ctx_->nodes().end(); it != end;) {
     if (0 == live_nodes.count(*it)) {
-      it = ctx_->destroyNode(it);
-      ++deleted;      
+      it = ctx_->delete_node(it);
+      ++deleted;
     } else {
       ++it;
     }
   }
+
+  assert(ctx_->nodes().size() == live_nodes.size());
+
   return deleted;
 }
 
-size_t compiler::do_cse() {
+size_t compiler::common_subexpressions_elimination() {
   size_t deleted = 0;
   typedef std::decay_t<decltype(ctx_->nodes())> nodes_type;
   std::vector<nodes_type::iterator> deleted_list;
@@ -238,7 +215,7 @@ size_t compiler::do_cse() {
     if (changed) {
       deleted += deleted_list.size();
       for (auto it = deleted_list.rbegin(), end = deleted_list.rend(); it != end;) {
-        ctx_->destroyNode(*it++);
+        ctx_->delete_node(*it++);
       }
       deleted_list.clear();
       cse_table.clear();
@@ -280,9 +257,42 @@ size_t compiler::remove_identity_nodes() {
       this->replace_map_sources(proxy, proxy->src(0).impl());
       // delete proxy
       auto p_it = std::find(ctx_->nodes().begin(), ctx_->nodes().end(), proxy);
-      ctx_->destroyNode(p_it);
+      ctx_->delete_node(p_it);
       ++deleted;
     }
   }
   return deleted;
+}
+
+void compiler::syntax_check() {
+  // check for un-initialized nodes
+  auto& undefs = ctx_->undefs();
+  if (undefs.size()) {
+    ctx_->dump_ast(std::cerr, 1);
+    for (auto undef : undefs) {
+      for (auto node : ctx_->nodes()) {
+        auto ret = std::find_if(node->srcs().begin(), node->srcs().end(),
+                     [undef](const lnode& x)->bool { return x.id() == undef->id(); });
+        if (ret != node->srcs().end()) {
+          int dump_ast_level = platform::self().dump_ast();
+          if (dump_ast_level) {
+            ctx_->dump_ast(std::cerr, dump_ast_level);
+          }
+          fprintf(stderr, "error: un-initialized variable '%s%d (#%d)'",
+                  node->name().c_str(), node->size(), node->id());
+          if (node->var_id() != 0) {
+            fprintf(stderr, " (@var%d)", node->var_id());
+          }
+          fprintf(stderr, " in module '%s (#%d)'", ctx_->name().c_str(), ctx_->id());
+          auto& sloc = node->sloc();
+          if (!sloc.empty()) {
+            fprintf(stderr, " (%s:%d)", sloc.file(), sloc.line());
+          }
+          fprintf(stderr, "\n");
+          break;
+        }
+      }
+    }
+    std::abort();
+  }
 }

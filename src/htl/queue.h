@@ -11,8 +11,8 @@ using namespace ch::core;
 template <typename T, unsigned N>
 struct ch_queue {
   using value_type = T;
-  static constexpr unsigned max_size = N;
-  static constexpr unsigned addr_width = log2ceil(N);
+  static constexpr uint32_t max_size = N;
+  static constexpr uint32_t addr_width = log2ceil(N);
   static_assert(N > 1, "invalid size");
 
   __io (

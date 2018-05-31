@@ -17,26 +17,34 @@
 #include "select.h"
 #include "enum.h"
 #include "misc.h"
+#include "udf.h"
+#include "udfimpl.h"
 
 namespace ch {
 namespace internal {
 
+typedef std::unordered_map<std::type_index, udf_iface*> udfs_t;
+
 class context_manager {
 public:
   context_manager() : ctx_(nullptr) {}
+
   ~context_manager() {
     if (ctx_) {
       ctx_->release();
     }
+    for (auto item : udfs_) {
+      item.second->release();
+    }
   }
 
-  context* create(size_t signature, const std::string& name) {
+  context* create(const std::type_index& signature, const std::string& name) {
     std::string unique_name(name);
     auto it = module_names_.find(signature);
     if (it != module_names_.end()) {
       unique_name = it->second;
     } else {
-      unique_name = unique_name_.get(unique_name.c_str());
+      unique_name = unique_names_.get(unique_name.c_str());
       module_names_[signature] = unique_name;
     }
     return new context(unique_name.c_str());
@@ -52,10 +60,30 @@ public:
     return ctx;
   }
 
+  udf_iface* lookupUDF(const std::type_index& signature) {
+    auto it = udfs_.find(signature);
+    if (it != udfs_.end()) {
+      return it->second;
+    }
+    return nullptr;
+  }
+
+  void registerUDF(const std::type_index& signature, udf_iface* udf) {
+    assert(0 == udfs_.count(signature));
+    udfs_[signature] = udf;
+  }
+
+  static context_manager& instance(){
+    static context_manager inst;
+    return inst;
+  }
+
 protected:
+
   mutable context* ctx_;
-  std::unordered_map<size_t, std::string> module_names_;
-  unique_name unique_name_;
+  std::unordered_map<std::type_index, std::string> module_names_;
+  unique_names unique_names_;
+  udfs_t udfs_;
 };
 
 }
@@ -63,18 +91,24 @@ protected:
 
 using namespace ch::internal;
 
-thread_local context_manager tls_ctx;
-
-context* ch::internal::ctx_create(size_t signature, const std::string& name) {
-  return tls_ctx.create(signature, name);
+context* ch::internal::ctx_create(const std::type_index& signature, const std::string& name) {
+  return context_manager::instance().create(signature, name);
 }
 
 context* ch::internal::ctx_swap(context* ctx) {
-  return tls_ctx.swap(ctx);
+  return context_manager::instance().swap(ctx);
 }
 
 context* ch::internal::ctx_curr() {
-  return tls_ctx.ctx();
+  return context_manager::instance().ctx();
+}
+
+udf_iface* ch::internal::lookupUDF(const std::type_index& signature) {
+  return context_manager::instance().lookupUDF(signature);
+}
+
+void ch::internal::registerUDF(const std::type_index& signature, udf_iface* udf) {
+  context_manager::instance().registerUDF(signature, udf);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -97,7 +131,7 @@ context::context(const std::string& name)
 context::~context() {
   // delete allocated nodes
   for (auto node : nodes_) {
-    delete node;
+    node->release();
   }
 }
 
@@ -142,30 +176,24 @@ uint32_t context::node_id() {
   return nodeid;
 }
 
-cdimpl* context::create_cdomain(const lnode& clock,
-                                const lnode& reset,
-                                bool posedge) {
+cdimpl* context::create_cdomain(const lnode& clk, const lnode& rst, bool posedge) {
   // return existing match
   for (auto cd : cdomains_) {
-    if (cd->clock() == clock
-     && cd->reset() == reset
-     && cd->posedge()   == posedge)
+    if (cd->clk() == clk
+     && cd->rst() == rst
+     && cd->posedge() == posedge)
       return cd;
   }
   // allocate new cdomain
-  return this->create_node<cdimpl>(clock, reset, posedge);
-}
-
-node_list_t::iterator context::destroyNode(const node_list_t::iterator& it) {
-  assert(it != nodes_.end());
-  auto node = *it;
-  auto next = this->remove_node(it);
-  delete node;
-  return next;
+  return this->create_node<cdimpl>(clk, rst, posedge);
 }
 
 void context::add_node(lnodeimpl* node) {
+  // add node to main list
   nodes_.emplace_back(node);
+  node->acquire();
+
+  // add node to special containers
   auto type = node->type();
   switch (type) {
   case type_undef:
@@ -221,16 +249,12 @@ void context::add_node(lnodeimpl* node) {
     auto curr_branch = cond_branches_.top();
     auto curr_block = curr_branch->blocks.back();
     cond_inits_[node->id()] = curr_block;
-  }
+  }  
 }
 
-node_list_t::iterator context::remove_node(const node_list_t::iterator& it) {
+node_list_t::iterator context::delete_node(const node_list_t::iterator& it) {
   auto node = *it;
-  DBG(3, "*** deleting node: %s%d(#%d)\n",
-      to_string(node->type()), node->size(), node->id());
-  
-  assert(!nodes_.empty());
-  auto next = nodes_.erase(it);
+  DBG(3, "*** deleting node: %s%d(#%d)\n", to_string(node->type()), node->size(), node->id());
   
   switch (node->type()) {
   case type_undef:
@@ -267,7 +291,7 @@ node_list_t::iterator context::remove_node(const node_list_t::iterator& it) {
   case type_print:
     gtaps_.remove((ioimpl*)node);
     break;
-  case type_tick:
+  case type_time:
     if (node == time_) {
       time_ = nullptr;
     }
@@ -275,7 +299,10 @@ node_list_t::iterator context::remove_node(const node_list_t::iterator& it) {
   default:
     break;
   }
-  return next;
+
+  // remove node from main list
+  node->release();
+  return nodes_.erase(it);
 }
 
 void context::begin_branch(lnodeimpl* key, const source_location& sloc) {
@@ -295,7 +322,7 @@ void context::begin_branch(lnodeimpl* key, const source_location& sloc) {
 
 void context::end_branch() {
   // branch delete visitor
-  std::function<void(cond_br_t* branch)> delete_branch = [&](cond_br_t* branch) {
+  std::function<void(cond_br_t*)> delete_branch = [&](cond_br_t* branch) {
     for (auto bk : branch->blocks) {
       for (auto br : bk->branches) {
         delete_branch(br);
@@ -451,7 +478,7 @@ void context::conditional_assign(
   }
 
   //--
-  std::function<void (cond_defs_t& defs, const cond_block_t* block)>
+  std::function<void (cond_defs_t&, const cond_block_t*)>
       delete_definitions = [&](cond_defs_t& defs, const cond_block_t* block) {
     // delete definition in current block
     auto it = defs.find(block->id);
@@ -716,75 +743,108 @@ void context::bind_output(const lnode& dst, const lnode& output) {
   binding->bind_output(dst, output);
 }
 
-live_nodes_t context::compute_live_nodes() const {
-  live_nodes_t live_nodes;
+void context::build_run_list(std::vector<lnodeimpl*>& list) {
+  std::unordered_set<lnodeimpl*> visited;
+  std::unordered_set<lnodeimpl*> cycles;
 
-  // get inputs
-  for (auto node : inputs_) {
-    live_nodes.insert(node);
-  }
+  std::function<void(lnodeimpl*)> dfs_visit = [&](lnodeimpl* node) {
+    if (visited.count(node))
+      return;
 
-  // get outputs
-  for (auto node : outputs_) {
-    live_nodes.insert(node);
-  }  
-  
-  // get debug taps
-  for (auto node : taps_) {
-    live_nodes.insert(node);
-  }
+    if (cycles.count(node)) {
+      int dump_ast_level = platform::self().dump_ast();
+      if (dump_ast_level) {
+        for (auto n : list) {
+          std::cerr << n->ctx()->id() << ": ";
+          n->print(std::cerr, dump_ast_level);
+          std::cerr << std::endl;
+        }
+      }
+      fprintf(stderr, "error: found cycle on variable '%s%d (#%d)'",
+              node->name().c_str(), node->size(), node->id());
+      if (node->var_id() != 0) {
+        fprintf(stderr, " (@var%d)", node->var_id());
+      }
+      fprintf(stderr, " in module '%s (#%d)'", node->ctx()->name().c_str(), node->ctx()->id());
+      auto& sloc = node->sloc();
+      if (!sloc.empty()) {
+        fprintf(stderr, " (%s:%d)", sloc.file(), sloc.line());
+      }
+      fprintf(stderr, "\n");
+      std::abort();
+      return;
+    }
+    cycles.insert(node);
 
-  // get assert taps
-  for (auto node : gtaps_) {
-    live_nodes.insert(node);
-  }
+    // special handling for cyclic nodes
+    switch (node->type()) {
+    case type_reg:
+    case type_mem:
+      visited.insert(node);
+      break;
+    case type_bind:
+      visited.insert(node);
+      return; // no following
+    case type_input: {
+      auto input = reinterpret_cast<inputimpl*>(node);
+      if (!input->input().empty()) {
+        dfs_visit(input->input().impl());
+      }
+    } break;
+    case type_bindport: {
+      auto port = reinterpret_cast<bindportimpl*>(node);
+      if (port->is_output()) {
+        dfs_visit(port->ioport().impl());
+      }
+    } break;
+    default:
+      break;
+    }
 
-  return live_nodes;
-}
+    // visit source nodes
+    for (auto& src : node->srcs()) {
+      dfs_visit(src.impl());
+    }
 
-void context::tick(ch_tick t) {
-  // tick bindings
-  for (auto node : bindings_) {
-    node->tick(t);
-  }
+    visited.insert(node);
+    list.push_back(node);
+  };
 
-  // tick clock domains
+  DBG(2, "run list evaluation for %s (#%d) ...\n", this->name().c_str(), this->id());
+
   for (auto cd : cdomains_) {
-    cd->tick(t);
-  }
-}
-
-void context::tick_next(ch_tick t) {
-  // tick bindings
-  for (auto node : bindings_) {
-    node->tick_next(t);
+    for (auto node : cd->regs()) {
+      dfs_visit(dynamic_cast<lnodeimpl*>(node));
+    }
   }
 
-  // tick clock domains
-  for (auto cd : cdomains_) {
-    cd->tick_next(t);
-  }
-}
-
-void context::eval(ch_tick t) {
-  // evaluate bindings
-  for (auto node : bindings_) {
-    node->eval(t);
-  }
-
-  // evaluate outputs
   for (auto node : outputs_) {
-    node->eval(t);
+    dfs_visit(node);
   }
 
-  // evaluate taps
   for (auto node : taps_) {
-    node->eval(t);
+    dfs_visit(node);
   }
 
-  // evaluate asserts
   for (auto node : gtaps_) {
-    node->eval(t);
+    dfs_visit(node);
+  }
+
+  auto dump_ast_level = platform::self().dump_ast();
+  if (dump_ast_level) {
+    for (auto node : list) {
+      std::cerr << node->ctx()->id() << ": ";
+      node->print(std::cerr, dump_ast_level);
+      std::cerr << std::endl;
+    }
+  }
+}
+
+lnodeimpl* context::create_udf_node(udf_iface* udf, const std::initializer_list<lnode>& inputs) {
+  if (udf->delta() != 0) {
+    return this->create_node<delayed_udfimpl>(udf, inputs);
+  } else {
+    return this->create_node<udfimpl>(udf, inputs);
   }
 }
 
@@ -792,10 +852,10 @@ void context::register_enum_string(const lnode& node, enum_string_cb callback) {
   enum_strings_.emplace(node.var_id(), callback);
 }
 
-const char* context::enum_to_string(const lnode& node, ch_tick t) {
+const char* context::enum_to_string(const lnode& node) {
   auto iter = enum_strings_.find(node.var_id());
   if (iter != enum_strings_.end()) {
-    return iter->second(node.eval(t).word(0));
+    return iter->second(node.data().word(0));
   }
   return "undefined";
 }
@@ -811,7 +871,7 @@ void context::dump_cfg(lnodeimpl* node, std::ostream& out, uint32_t level) {
   std::vector<bool> visits(node_ids_ + 1);
   std::unordered_map<uint32_t, tapimpl*> taps;
 
-  std::function<void(lnodeimpl* node)> dump_cfg_impl = [&](lnodeimpl* node) {
+  std::function<void(lnodeimpl*)> dump_cfg_impl = [&](lnodeimpl* node) {
     visits[node->id()] = true;
     node->print(out, level);
 
@@ -823,7 +883,7 @@ void context::dump_cfg(lnodeimpl* node, std::ostream& out, uint32_t level) {
     }
     out << std::endl;
 
-    for (const lnode& src : node->srcs()) {
+    for (auto& src : node->srcs()) {
       if (!visits[src.id()]) {
         dump_cfg_impl(src.impl());
       }
@@ -845,7 +905,7 @@ void context::dump_cfg(lnodeimpl* node, std::ostream& out, uint32_t level) {
     node->print(out, level);
   }
   out << std::endl;    
-  for (const lnode& src : node->srcs()) {
+  for (auto& src : node->srcs()) {
     if (!visits[src.id()]) {
       dump_cfg_impl(src.impl());
     }
@@ -862,7 +922,7 @@ void context::dump_stats(std::ostream& out) {
   uint64_t memory_bits = 0;
   uint64_t register_bits = 0;
 
-  std::function<void(context* ctx)> calc_stats = [&](context* ctx) {
+  std::function<void(context*)> calc_stats = [&](context* ctx) {
     for (lnodeimpl* node : ctx->nodes()) {
       switch (node->type()) {
       case type_mem:

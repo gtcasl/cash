@@ -86,7 +86,6 @@ src/context.cpp
 src/context.h
 src/context.h
 src/dbginfo.cpp
-src/dbginfo.cpp
 src/device.h
 src/device.h
 src/deviceimpl.cpp
@@ -103,13 +102,13 @@ src/firrtlwriter.h
 src/firrtlwriter.h
 src/fixed.h
 src/float32.h
-src/float32.h
 src/htl/arbiter.h
 src/htl/arbiter.h
 src/htl/counter.h
 src/htl/counter.h
 src/htl/decoupled.h
 src/htl/decoupled.h
+src/htl/float32.h
 src/htl/mux.h
 src/htl/mux.h
 src/htl/onehot.h
@@ -212,6 +211,9 @@ src/tracerimpl.cpp
 src/tracerimpl.cpp
 src/tracerimpl.h
 src/tracerimpl.h
+src/udf.h
+src/udfimpl.cpp
+src/udfimpl.h
 src/uint.h
 src/union.h
 src/union.h

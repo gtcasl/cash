@@ -12,14 +12,14 @@ static uint32_t make_id() {
 
 logic_buffer::logic_buffer(const lnode& value,
                            const logic_buffer_ptr& source,
-                           unsigned offset)
+                           uint32_t offset)
   : id_(make_id())
   , value_(value)
   , source_(source)
   , offset_(offset)
 {}
 
-logic_buffer::logic_buffer(unsigned size,
+logic_buffer::logic_buffer(uint32_t size,
                            const source_location& sloc,
                            const std::string& name)
   : id_(make_id())
@@ -50,9 +50,9 @@ logic_buffer::logic_buffer(const lnode& data,
   , offset_(0)
 {}
 
-logic_buffer::logic_buffer(unsigned size,
+logic_buffer::logic_buffer(uint32_t size,
                            const logic_buffer_ptr& buffer,
-                           unsigned offset,
+                           uint32_t offset,
                            const source_location& sloc,
                            const std::string& name)
   : id_(make_id())

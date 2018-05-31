@@ -13,13 +13,13 @@ std::string fstring(const char* format, ...);
 
 void dbprint(int level, const char* format, ...);
 
-void dump_stack_trace(FILE* out, unsigned int max_frames = 32);
+void dump_stack_trace(FILE* out, uint32_t max_frames = 32);
 
 std::string identifier_from_typeid(const std::string& name);
 
 int char2int(char x, int base);
 
-unsigned signext(unsigned x, unsigned bits);
+uint32_t signext(uint32_t x, uint32_t bits);
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -96,9 +96,9 @@ constexpr inline std::size_t hash_combine(std::size_t hash1, std::size_t hash2) 
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class unique_name {
+class unique_names {
 public:
-  unique_name() {}
+  unique_names() {}
 
   std::string get(const std::string& name);
 
@@ -110,8 +110,8 @@ private:
 
 template <typename T>
 struct is_integral_or_enum : std::integral_constant<bool,
-  std::is_integral<T>::value ||
-  std::is_enum<T>::value>
+  std::is_integral_v<T> ||
+  std::is_enum_v<T>>
 {};
 
 template <typename T>
@@ -123,37 +123,31 @@ template <bool Pred>
 using is_true = std::conditional_t<Pred, std::true_type, std::false_type>;
 
 template <bool Pred>
+inline constexpr bool is_true_v = is_true<Pred>::value;
+
+template <bool Pred>
 using is_false = std::conditional_t<Pred, std::false_type, std::true_type>;
 
-///////////////////////////////////////////////////////////////////////////////
-
-template <bool... B>
-struct conjunction {};
-
-template <bool Head, bool... Tail>
-struct conjunction<Head, Tail...>
-    : std::integral_constant<bool, Head && conjunction<Tail...>::value>{};
-
-template <bool B>
-struct conjunction<B> : std::integral_constant<bool, B> {};
+template <bool Pred>
+inline constexpr bool is_false_v = is_false<Pred>::value;
 
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename To, typename From>
-using is_implicit_convertible = std::is_convertible<To, From>;
+inline constexpr bool is_implicit_convertible_v = std::is_convertible_v<To, From>;
 
 template <typename To, typename From>
-using is_cast_convertible = std::is_constructible<To, From>;
+inline constexpr bool is_cast_convertible_v = std::is_constructible_v<To, From>;
 
 template <typename To, typename... Froms>
-using are_all_implicit_convertible = conjunction<is_implicit_convertible<To, Froms>::value...>;
+inline constexpr bool are_all_implicit_convertible_v = std::conjunction_v<std::is_convertible<To, Froms>...>;
 
 template <typename To, typename... Froms>
-using are_all_cast_convertible = conjunction<is_cast_convertible<To, Froms>::value...>;
+inline constexpr bool are_all_cast_convertible_v = std::conjunction_v<std::is_constructible<To, Froms>...>;
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template<typename A, typename B = A, typename = void>
+template<typename A, typename B, typename = void>
 struct is_equality_comparable : std::false_type {};
 
 template<typename A, typename B>
@@ -162,6 +156,9 @@ struct is_equality_comparable<A, B,
       true,
       decltype(std::declval<A&>() == std::declval<B&>(), (void)0)
     >> : std::true_type {};
+
+template<typename A, typename B>
+inline constexpr bool is_equality_comparable_v = is_equality_comparable<A, B>::value;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -298,7 +295,7 @@ public:
     return ptr_ ? (ptr_->refcount() == 1) : false;
   }
   
-  unsigned use_count() const {
+  uint32_t use_count() const {
     return ptr_ ? (ptr_->refcount() == 1) : false;
   }
   
@@ -440,17 +437,17 @@ template<typename T> struct static_print;
 ///////////////////////////////////////////////////////////////////////////////
 
 // is power of two number ?
-constexpr bool ispow2(unsigned value) { 
+constexpr bool ispow2(uint32_t value) {
   return value && !(value & (value - 1)); 
 }
 
 // return ilog2
-constexpr unsigned ilog2(unsigned x) {
+constexpr uint32_t ilog2(uint32_t x) {
   return (x <= 1) ? 0 : (ilog2(x >> 1) + 1);
 }
 
 // return ceil of log2
-constexpr unsigned log2ceil(unsigned x) {
+constexpr uint32_t log2ceil(uint32_t x) {
   return ispow2(x) ? ilog2(x) : (ilog2(x) + 1);
 }
 
@@ -528,7 +525,9 @@ constexpr uint32_t rotr(uint32_t value, uint32_t shift, uint32_t width) {
   template<typename T, typename Enable = void> \
   struct type_name : std::false_type {}; \
   template<typename T> \
-  struct type_name<T, typename std::enable_if_t<(predicate)>> : std::true_type {}
+  struct type_name<T, typename std::enable_if_t<(predicate)>> : std::true_type {}; \
+  template <typename T> \
+  inline constexpr bool type_name##_v = type_name<T>::value
 
 template <unsigned N>
 struct requires_enum {

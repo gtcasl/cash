@@ -10,7 +10,7 @@
 using namespace ch::internal;
 
 std::string ch::internal::fstring(const char* format, ...) {
-  static constexpr unsigned STACK_BUFFER_SIZE = 1024;
+  static constexpr uint32_t STACK_BUFFER_SIZE = 1024;
 
   std::string result;
   char stack_buffer[STACK_BUFFER_SIZE];
@@ -50,7 +50,7 @@ void ch::internal::dbprint(int level, const char* format, ...) {
   va_end(args);
 }
 
-void ch::internal::dump_stack_trace(FILE *out, unsigned int max_frames) {
+void ch::internal::dump_stack_trace(FILE *out, uint32_t max_frames) {
   using namespace backward;
   StackTrace st;
   st.load_here(max_frames);
@@ -73,7 +73,7 @@ std::string ch::internal::identifier_from_typeid(const std::string& name) {
   return ret;
 }
 
-std::string unique_name::get(const std::string& name) {
+std::string unique_names::get(const std::string& name) {
   std::string unique_name(name);
   uint32_t instances = dups_[name]++;
   if (instances != 0) {
@@ -109,10 +109,10 @@ int ch::internal::char2int(char x, int base) {
   CH_ABORT("invalid scalar value");
 }
 
-unsigned ch::internal::signext(unsigned x, unsigned bits) {
+uint32_t ch::internal::signext(uint32_t x, uint32_t bits) {
   assert(bits <= 32);
-  unsigned k = (1ull << bits) - 1;
-  unsigned m = 1u << (bits - 1);
-  unsigned n = x & k;
+  uint32_t k = (1ull << bits) - 1;
+  uint32_t m = 1u << (bits - 1);
+  uint32_t n = x & k;
   return (n ^ m) - m;
 }

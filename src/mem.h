@@ -75,19 +75,19 @@ public:
   {}
 
   template <typename U, std::size_t M,
-            CH_REQUIRE_0(is_bitvector_array_type<U>::value)>
+            CH_REQUIRE_0(is_bitvector_array_type_v<U>)>
   explicit ch_rom(const std::array<U, M>& init_data)
     : mem_(width_v<T>, N, false, toByteVector(init_data, data_width, N))
   {}
 
   template <typename U,
-            CH_REQUIRE_0(is_bitvector_array_type<U>::value)>
+            CH_REQUIRE_0(is_bitvector_array_type_v<U>)>
   explicit ch_rom(const std::vector<U>& init_data)
     : mem_(width_v<T>, N, false, toByteVector(init_data, data_width, N))
   {}
 
   template <typename U,
-            CH_REQUIRE_0(is_logic_convertible<U, addr_width>::value)>
+            CH_REQUIRE_0(is_logic_convertible_v<U, addr_width>)>
   auto read(const U& addr) const {
     auto laddr = get_lnode<U, addr_width>(addr);
     return T(make_logic_buffer(mem_.read(laddr)));
@@ -108,15 +108,15 @@ public:
   ch_mem() : mem_(width_v<T>, N, true, {}) {}
 
   template <typename U,
-            CH_REQUIRE_0(is_logic_convertible<U, addr_width>::value)>
+            CH_REQUIRE_0(is_logic_convertible_v<U, addr_width>)>
   auto read(const U& addr) const {
     auto laddr = get_lnode<U, addr_width>(addr);
     return T(make_logic_buffer(mem_.read(laddr)));
   }
 
   template <typename U, typename V,
-            CH_REQUIRE_0(is_logic_convertible<U, addr_width>::value),
-            CH_REQUIRE_0(is_cast_convertible<T, V>::value)>
+            CH_REQUIRE_0(is_logic_convertible_v<U, addr_width>),
+            CH_REQUIRE_0(is_cast_convertible_v<T, V>)>
   void write(const U& addr, const V& value) {
     auto l_addr  = get_lnode<U, addr_width>(addr);
     auto l_value = get_lnode<T, data_width>(value);
@@ -124,9 +124,9 @@ public:
   }
 
   template <typename U, typename V, typename E,
-            CH_REQUIRE_0(is_logic_convertible<U, addr_width>::value),
-            CH_REQUIRE_0(is_cast_convertible<T, V>::value),
-            CH_REQUIRE_0(is_logic_convertible<E>::value)>
+            CH_REQUIRE_0(is_logic_convertible_v<U, addr_width>),
+            CH_REQUIRE_0(is_cast_convertible_v<T, V>),
+            CH_REQUIRE_0(is_logic_convertible_v<E>)>
   void write(const U& addr, const V& value, const E& enable) {
     static_assert(1 == width_v<E>, "invalid predicate size");
     auto l_addr   = get_lnode<U, addr_width>(addr);

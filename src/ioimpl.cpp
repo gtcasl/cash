@@ -6,15 +6,27 @@ using namespace ch::internal;
 
 inputimpl::inputimpl(context* ctx, uint32_t size, const std::string& name)
   : ioimpl(ctx, type_input, size, name)
-  , tick_(~0ull)
+  , words_(nullptr)
 {}
 
-const bitvector& inputimpl::eval(ch_tick t) {
-  if (tick_ != t && !input_.empty()) {
-    tick_ = t;
-    value_ = input_.eval(t);
+inputimpl::~inputimpl() {
+  if (words_) {
+    value_.words(words_);
   }
-  return value_;
+}
+
+void inputimpl::bind(const lnode& input) {
+  input_ = input;
+}
+
+void inputimpl::initialize() {
+  if (!input_.empty()) {
+    words_ = value_.words(input_.data().words());
+  }
+}
+
+void inputimpl::eval() {
+  //--
 }
 
 void inputimpl::print(std::ostream& out, uint32_t level) const {
@@ -33,16 +45,22 @@ void inputimpl::print(std::ostream& out, uint32_t level) const {
 
 outputimpl::outputimpl(context* ctx, const lnode& src, const std::string& name)
   : ioimpl(ctx, type_output, src.size(), name)
-  , tick_(~0ull) {
+  , words_(nullptr) {
   srcs_.emplace_back(src);
 }
 
-const bitvector& outputimpl::eval(ch_tick t) {  
-  if (tick_ != t) {
-    tick_ = t;
-    value_ = srcs_[0].eval(t);
+outputimpl::~outputimpl() {
+  if (words_) {
+    value_.words(words_);
   }
-  return value_;
+}
+
+void outputimpl::initialize() {
+  words_ = value_.words(srcs_[0].data().words());
+}
+
+void outputimpl::eval() {
+  //--
 }
 
 void outputimpl::print(std::ostream& out, uint32_t level) const {
@@ -57,8 +75,22 @@ void outputimpl::print(std::ostream& out, uint32_t level) const {
 
 tapimpl::tapimpl(context* ctx, const lnode& src, const std::string& name)
   : ioimpl(ctx, type_tap, src.size(), name)
-  , tick_(~0ull) {
+  , words_(nullptr) {
   srcs_.emplace_back(src);
+}
+
+tapimpl::~tapimpl() {
+  if (words_) {
+    value_.words(words_);
+  }
+}
+
+void tapimpl::initialize() {
+  words_ = value_.words(srcs_[0].data().words());
+}
+
+void tapimpl::eval() {
+  //--
 }
 
 void tapimpl::print(std::ostream& out, uint32_t level) const {
@@ -67,14 +99,6 @@ void tapimpl::print(std::ostream& out, uint32_t level) const {
   if (level == 2) {
     out << " = " << value_;
   }
-}
-
-const bitvector& tapimpl::eval(ch_tick t) {
-  if (tick_ != t) {
-    tick_ = t;
-    value_ = srcs_[0].eval(t);
-  }
-  return value_;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -29,6 +29,7 @@ memimpl::memimpl(context* ctx,
   if (write_enable) {
     auto cd = ctx->current_cd();
     cd->add_reg(this);
+    cd->acquire();
     srcs_.emplace_back(cd);
   }
   if (has_initdata_) {
@@ -38,19 +39,10 @@ memimpl::memimpl(context* ctx,
 }
 
 memimpl::~memimpl() {
-  // detach ports
-  while (!ports_.empty()) {
-    ports_.front()->detach();
-  }
   if (write_enable_) {
-    this->detach();
-  }
-}
-
-void memimpl::detach() {
-  if (!srcs_[0].empty()) {
-    reinterpret_cast<cdimpl*>(srcs_[0].impl())->remove_reg(this);
-    srcs_[0].clear();
+    auto cd = reinterpret_cast<cdimpl*>(this->cd().impl());
+    cd->remove_reg(this);
+    cd->release();
   }
 }
 
@@ -74,21 +66,14 @@ memportimpl* memimpl::port(const lnode& addr) {
   return ports_.back();
 }
 
-void memimpl::tick(ch_tick t) {
+void memimpl::tick() {
   for (auto port : ports_) {
-    port->tick(t);
+    port->tick();
   }
 }
 
-void memimpl::tick_next(ch_tick t) {
-  for (auto port : ports_) {
-    port->tick_next(t);
-  }
-}
-
-const bitvector& memimpl::eval(ch_tick t) {
-  CH_UNUSED(t);
-  return value_;
+void memimpl::eval() {
+  //--
 }
 
 void memimpl::print(std::ostream& out, uint32_t level) const {
@@ -111,28 +96,23 @@ void memimpl::print(std::ostream& out, uint32_t level) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-memportimpl::memportimpl(context* ctx, memimpl* mem, unsigned index, const lnode& addr)
+memportimpl::memportimpl(context* ctx, memimpl* mem, uint32_t index, const lnode& addr)
   : ioimpl(ctx, type_memport, mem->data_width())
   , index_(index)
   , read_enable_(false)
   , a_next_(0)  
   , wdata_idx_(-1)
   , wenable_idx_(-1)
-  , dirty_(false)
-  , tick_(~0ull) {
+  , dirty_(false) {
+  mem->acquire();
   srcs_.emplace_back(mem);
   srcs_.emplace_back(addr);
 }
 
 memportimpl::~memportimpl() {
-  this->detach();
-}
-
-void memportimpl::detach() {
-  if (!srcs_[0].empty()) {
-    dynamic_cast<memimpl*>(srcs_[0].impl())->remove_port(this);
-    srcs_[0].clear();
-  }
+  auto mem = dynamic_cast<memimpl*>(this->mem().impl());
+  mem->remove_port(this);
+  mem->release();
 }
 
 
@@ -143,7 +123,7 @@ void memportimpl::read() {
 void memportimpl::write(const lnode& data) {
   if (wdata_idx_ == -1) {
     // add write port to memory sources to enforce DFG dependencies
-    memimpl* mem = dynamic_cast<memimpl*>(srcs_[0].impl());
+    auto mem = dynamic_cast<memimpl*>(srcs_[0].impl());
     mem->srcs().emplace_back(this);
   }
   // add data source
@@ -158,8 +138,7 @@ void memportimpl::write(const lnode& data, const lnode& enable) {
   wenable_idx_ = this->add_src(wenable_idx_, enable);
 }
 
-void memportimpl::tick(ch_tick t) {
-  CH_UNUSED(t);
+void memportimpl::tick() {
   if (dirty_) {
     auto mem = dynamic_cast<memimpl*>(srcs_[0].impl());
     auto data_width = mem->data_width();
@@ -171,31 +150,25 @@ void memportimpl::tick(ch_tick t) {
   }
 }
 
-void memportimpl::tick_next(ch_tick t) {
+void memportimpl::eval() {
+  // asynchronous read
+  auto mem = dynamic_cast<memimpl*>(srcs_[0].impl());
+  auto data_width = mem->data_width();
+  uint32_t addr = srcs_[1].data().word(0);
+  mem->value().read(0,
+                    value_.words(),
+                    value_.cbsize(),
+                    addr * data_width,
+                    data_width);
+
+  // synchronous memory write
   if (wdata_idx_ != -1) {
-    // synchronous memory write
-    dirty_ = (wenable_idx_ != -1) ? srcs_[wenable_idx_].eval(t).word(0) : true;
+    dirty_ = (wenable_idx_ != -1) ? srcs_[wenable_idx_].data().word(0) : true;
     if (dirty_) {
-      a_next_ = srcs_[1].eval(t).word(0);
-      q_next_ = srcs_[wdata_idx_].eval(t);
+      a_next_ = addr;
+      q_next_ = srcs_[wdata_idx_].data();
     }
   }
-}
-
-const bitvector& memportimpl::eval(ch_tick t) {  
-  if (tick_ != t) {
-    tick_ = t;
-    // asynchronous memory read
-    auto mem = dynamic_cast<memimpl*>(srcs_[0].impl());
-    auto data_width = mem->data_width();
-    uint32_t addr = srcs_[1].eval(t).word(0);
-    mem->value().read(0,
-                      value_.words(),
-                      value_.cbsize(),
-                      addr * data_width,
-                      data_width);
-  }
-  return value_;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

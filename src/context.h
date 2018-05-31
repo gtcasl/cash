@@ -22,11 +22,10 @@ class tapimpl;
 class assertimpl;
 class timeimpl;
 class cdimpl;
+class udf_iface;
 class clock_event;
 
 using ch_tick = uint64_t;
-
-typedef ordered_set<lnodeimpl*> live_nodes_t;
 
 struct cond_block_t;
 
@@ -186,9 +185,9 @@ public:
     return node;
   }
 
-  cdimpl* create_cdomain(const lnode& clock, const lnode& reset, bool posedge);
+  cdimpl* create_cdomain(const lnode& clk, const lnode& rst, bool posedge);
 
-  node_list_t::iterator destroyNode(const node_list_t::iterator& it);
+  node_list_t::iterator delete_node(const node_list_t::iterator& it);
   
   //--
 
@@ -224,16 +223,12 @@ public:
   void syntax_check();
     
   //--
-  
-  live_nodes_t compute_live_nodes() const;
-  
+
+  void build_run_list(std::vector<lnodeimpl*>& list);
+
   //--
-  
-  void tick(ch_tick t);
 
-  void tick_next(ch_tick t);
-
-  void eval(ch_tick t);
+  lnodeimpl* create_udf_node(udf_iface* udf, const std::initializer_list<lnode>& inputs);
 
   //--
   
@@ -253,7 +248,7 @@ public:
 
   void register_enum_string(const lnode& node, enum_string_cb callback);
 
-  const char* enum_to_string(const lnode& node, ch_tick t);
+  const char* enum_to_string(const lnode& node);
   
 protected:
 
@@ -262,8 +257,6 @@ protected:
   ~context();
 
   void add_node(lnodeimpl* node);
-
-  node_list_t::iterator remove_node(const node_list_t::iterator& it);
 
   lnodeimpl* emit_conditionals(lnodeimpl* dst,
                                const cond_range_t& range,
@@ -298,14 +291,14 @@ protected:
 
   std::stack<cdimpl*>     cd_stack_;
 
-  unique_name             unique_tap_names_;
+  unique_names            unique_tap_names_;
 
   enum_strings_t          enum_strings_;
 
   friend class context_manager;
 };
 
-context* ctx_create(size_t signature, const std::string& name);
+context* ctx_create(const std::type_index& signature, const std::string& name);
 
 context* ctx_swap(context* ctx);
 

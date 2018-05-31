@@ -19,7 +19,7 @@ const char* ch::internal::to_string(lnodetype type) {
 lnodeimpl::lnodeimpl(context* ctx,
                      lnodetype type,
                      uint32_t size,
-                     unsigned var_id,
+                     uint32_t var_id,
                      const std::string& name,
                      const source_location& sloc)
   : ctx_(ctx)
@@ -36,7 +36,7 @@ lnodeimpl::lnodeimpl(context* ctx,
 
 lnodeimpl::~lnodeimpl() {}
 
-unsigned lnodeimpl::add_src(unsigned index, const lnode& src) {
+uint32_t lnodeimpl::add_src(uint32_t index, const lnode& src) {
   if (0xffffffff == index) {
     // add first entry
     index = srcs_.size();
@@ -91,9 +91,8 @@ undefimpl::undefimpl(context* ctx, uint32_t size)
   : lnodeimpl(ctx, type_undef, size)
 {}
 
-const bitvector& undefimpl::eval(ch_tick) {
+void undefimpl::eval() {
   CH_ABORT("undefined node: %s!", name_.c_str());
-  return value_;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -103,7 +102,7 @@ lnode::lnode() : impl_(nullptr) {}
 lnode::lnode(const lnode& rhs) : impl_(rhs.impl_) {}
 
 lnode::lnode(uint32_t size,
-             unsigned var_id,
+             uint32_t var_id,
              const std::string& name,
              const source_location& sloc) {
   impl_ = ctx_curr()->create_node<proxyimpl>(
@@ -112,8 +111,8 @@ lnode::lnode(uint32_t size,
 
 lnode::lnode(uint32_t size,
              const lnode& src,
-             unsigned src_offset,
-             unsigned var_id,
+             uint32_t src_offset,
+             uint32_t var_id,
              const std::string& name,
              const source_location& sloc) {
   assert(!src.empty());
@@ -129,9 +128,7 @@ lnode::lnode(const bitvector& value) {
   impl_ = ctx_curr()->literal(value);
 }
 
-lnode::~lnode() {
-  this->clear();
-}
+lnode::~lnode() {}
 
 lnode& lnode::operator=(const lnode& rhs) {
   impl_ = rhs.impl_;
@@ -174,10 +171,6 @@ const bitvector& lnode::data() const {
 bitvector& lnode::data() {
   assert(impl_);
   return impl_->value();
-}
-
-void lnode::clear() {
-  impl_ = nullptr;
 }
 
 void lnode::write(uint32_t dst_offset,
@@ -228,11 +221,6 @@ const source_location& lnode::sloc() const {
 lnodeimpl* lnode::clone() const {
   assert(impl_);
   return impl_->slice(0, impl_->size());
-}
-
-const bitvector& lnode::eval(ch_tick t) const {
-  assert(impl_);
-  return impl_->eval(t);
 }
 
 std::ostream& ch::internal::operator<<(std::ostream& out, lnodetype type) {

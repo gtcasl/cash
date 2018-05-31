@@ -21,13 +21,13 @@ public:
 
   template <typename... Ts>
   ch_module(const std::string& name, Ts&&... args)
-    : base(typeid(T).hash_code(), name, std::forward<Ts>(args)...)
+    : base(std::type_index(typeid(T)), name, std::forward<Ts>(args)...)
     ,io(obj_->io)
   {}
 
   template <typename... Ts>
   ch_module(Ts&&... args)
-    : base(typeid(T).hash_code(),
+    : base(std::type_index(typeid(T)),
            identifier_from_typeid(typeid(T).name()).c_str(),
            std::forward<Ts>(args)...)
     , io(obj_->io)

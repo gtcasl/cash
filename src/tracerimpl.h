@@ -18,7 +18,7 @@ public:
 
 protected:
 
-  void ensureInitialize() override;
+  void initialize() override;
 
   void tick(ch_tick t) override;
 
@@ -42,7 +42,7 @@ protected:
     scalar_buffer_ptr node;
   };
 
-  unique_name unique_trace_names_;
+  unique_names unique_trace_names_;
   std::vector<io_trace_t> io_traces_;
   std::vector<sc_trace_t> sc_traces_;
   std::ofstream* file_;

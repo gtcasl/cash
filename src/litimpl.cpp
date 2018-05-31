@@ -11,8 +11,8 @@ litimpl::litimpl(context* ctx, const bitvector& value)
   value_ = value;
 }
 
-const bitvector& litimpl::eval(ch_tick) { 
-  return value_; 
+void litimpl::eval() {
+  //--
 }
 
 void litimpl::print(std::ostream& out, uint32_t level) const {

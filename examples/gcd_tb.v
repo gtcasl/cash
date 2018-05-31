@@ -5,15 +5,15 @@
 
 module testbench();
 
-    reg        clk   = 0;
-    reg        reset = 0;
+    reg        clk = 0;
+    reg        rst = 0;
     reg        in_valid;
     reg[31:0]  in_data;
     wire       in_ready;
     wire       out_valid;
     wire[15:0] out_data;
 
-    GCD gcd(clk, reset, in_valid, in_data, in_ready, out_valid, out_data);
+    GCD gcd(clk, rst, in_valid, in_data, in_ready, out_valid, out_data);
 
     always begin
         #1 clk = !clk;
@@ -23,12 +23,12 @@ module testbench();
         $dumpfile("testbench.vcd");
         $dumpvars(0, testbench);
 
-        $display ("time\tclk\treset\tin_val\tin_data\t\tin_rdy\tout_val\tout_data");
-        $monitor("%3d\t%b\t%b\t%b\t%h\t%b\t%b\t%h", $time, clk, reset, in_valid, in_data, in_ready, out_valid, out_data);
+        $display ("time\tclk\trst\tin_val\tin_data\t\tin_rdy\tout_val\tout_data");
+        $monitor("%3d\t%b\t%b\t%b\t%h\t%b\t%b\t%h", $time, clk, rst, in_valid, in_data, in_ready, out_valid, out_data);
 
-        #0 reset  = 1;
-        #1 reset  = 1;
-        #1 reset  = 0;
+        #0 rst = 1;
+        #1 rst = 1;
+        #1 rst = 0;
 
         #0 in_data  = 32'h0030_0020;
            in_valid = 1;

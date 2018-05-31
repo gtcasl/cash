@@ -83,14 +83,14 @@ public:
   {}
 
   template <typename U,
-            CH_REQUIRE_0(is_scalar_type<U>::value),
+            CH_REQUIRE_0(is_scalar_type_v<U>),
             CH_REQUIRE_0(width_v<U> <= N)>
   explicit ch_scuint(const U& rhs) :
     base(rhs)
   {}
 
   template <typename U,
-            CH_REQUIRE_0(is_bitvector_convertible<U>::value)>
+            CH_REQUIRE_0(is_bitvector_convertible_v<U>)>
   explicit ch_scuint(const U& rhs)
     : base(rhs)
   {}
@@ -106,7 +106,7 @@ public:
   }
 
   template <typename U,
-            CH_REQUIRE_0(is_scalar_type<U>::value),
+            CH_REQUIRE_0(is_scalar_type_v<U>),
             CH_REQUIRE_0(width_v<U> <= N)>
   ch_scuint& operator=(const U& rhs) {
     base::operator=(rhs);

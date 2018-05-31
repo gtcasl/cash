@@ -4,7 +4,7 @@
 
 using namespace ch::internal;
 
-scalar_buffer::scalar_buffer(unsigned size)
+scalar_buffer::scalar_buffer(uint32_t size)
   : value_(size)
   , offset_(0)
   , size_(size)
@@ -38,9 +38,9 @@ scalar_buffer::scalar_buffer(bitvector&& data)
   , size_(value_.size())
 {}
 
-scalar_buffer::scalar_buffer(unsigned size,
+scalar_buffer::scalar_buffer(uint32_t size,
                              const scalar_buffer_ptr& buffer,
-                             unsigned offset)
+                             uint32_t offset)
   : source_(buffer)
   , offset_(offset)
   , size_(size) {

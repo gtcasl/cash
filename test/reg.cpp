@@ -77,7 +77,7 @@ TEST_CASE("registers", "[registers]") {
       ch_reg<ch_uint2> a(0);
       a <<= a + 1;
       auto e = ch_case(ch_time(), 3, 01_b)(5, 10_b)(7, 11_b)(9, 00_b)(a);
-      //ch_print("t={0}, a={1}", ch_time(), a);
+      ch_print("t={0}, a={1}, e={2}", ch_time(), a, e);
       return (e == a);
     }, 10);
 
@@ -234,19 +234,20 @@ TEST_CASE("registers", "[registers]") {
     }, 8);
 
     TEST([]()->ch_bool {
-      auto clk  = ch_case(ch_time(), 8, 1_b)(6, 1)(4, 1)(2, 1)(1, 0)(0);
+      auto clk  = ch_case(ch_time(), 8, 1_b)(6, 1)(4, 1)(2, 1)(0);
       auto rst  = ch_case(ch_time(), 5, 1_b)(0);
-      auto next = ch_case(ch_time(), 7, 11_b)(5, 1)(3, 3)(2, 1)(1, 2)(0);
+      auto next = ch_case(ch_time(), 8, 0011_b)(7, 0)(6, 0)(5, 1)(4, 2)(3, 3)(2, 1)(1, 2)(0);
 
-      ch_pushcd(clk, rst, true);
+      ch_pushcd(clk, rst);
 
       auto r = ch_delay(ch_select(ch_reset(), 0, next));
 
       ch_popcd();
 
-      auto e = ch_case(ch_time(), 9, 11_b)(8, 3)(5, 3)(4, 3)(3, 2)(2, 2)(0);
+      auto e = ch_case(ch_time(), 9, 0011_b)(8, 0)(7, 0)(6, 0)(5, 2)(4, 3)(3, 1)(2, 2)(0);
 
-      //ch_print("t={0}, clk={1}, clk2={2}, rst={3}, next={4}, r={5}, e={6}", ch_time(), ch_clock(), clk, rst, next, r, e);
+      ch_print("t={0}, clk={1}, clk2={2}, rst={3}, next={4}, out={5}, expected={6}",
+           ch_time(), ch_clock(), clk, rst, next, r, e);
 
       return (r == e);
     }, 8);

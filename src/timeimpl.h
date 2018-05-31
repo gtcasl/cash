@@ -8,7 +8,9 @@ namespace internal {
 class timeimpl : public ioimpl {
 public:
 
-  const bitvector& eval(ch_tick t) override;
+  void reset() override;
+
+  void eval() override;
   
 protected:
 

@@ -51,15 +51,11 @@ public:
 
   void remove_port(memportimpl* port);
 
-  void tick(ch_tick t) override;
+  void tick() override;
 
-  void tick_next(ch_tick t) override;
-
-  const bitvector& eval(ch_tick t) override;
+  void eval() override;
 
   void print(std::ostream& out, uint32_t level) const override;
-
-  void detach() override;
 
 protected:
   
@@ -73,11 +69,11 @@ protected:
 class memportimpl : public ioimpl {
 public:  
 
-  memportimpl(context* ctx, memimpl* mem, unsigned index, const lnode& addr);
+  memportimpl(context* ctx, memimpl* mem, uint32_t index, const lnode& addr);
 
   ~memportimpl();
 
-  unsigned index() const {
+  uint32_t index() const {
     return index_;
   }
 
@@ -115,26 +111,21 @@ public:
 
   void write(const lnode& data, const lnode& enable);
 
-  void tick(ch_tick t);
+  void tick();
 
-  void tick_next(ch_tick t);
-
-  const bitvector& eval(ch_tick t) override;  
-
-  void detach();
+  void eval() override;
 
 protected:
 
   int insert(int index, const lnode& value);
 
-  unsigned index_;
+  uint32_t index_;
   bool read_enable_;
   bitvector q_next_;
   uint32_t a_next_;
   int wdata_idx_;
   int wenable_idx_;
   bool dirty_;
-  ch_tick tick_;
 };
 
 }

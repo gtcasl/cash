@@ -26,7 +26,7 @@ public:
   }
 
   template <typename U,
-            CH_REQUIRE_0(is_cast_convertible<T, U>::value)>
+            CH_REQUIRE_0(is_cast_convertible_v<T, U>)>
   vec_base& operator=(const vec_base<U, N>& rhs) {
     for (unsigned i = 0; i < N; ++i) {
       items_[i] = rhs.items_[i];
@@ -132,13 +132,13 @@ public:
 protected:
 
   template <typename... Ts,
-            CH_REQUIRE_0(sizeof...(Ts) == N && are_all_cast_convertible<T, Ts...>::value)>
+            CH_REQUIRE_0(sizeof...(Ts) == N && are_all_cast_convertible_v<T, Ts...>)>
   vec_base(Ts&&... values)
     : items_{T(std::forward<Ts>(values))...}
   {}
 
   template <typename... Ts,
-            CH_REQUIRE_0(sizeof...(Ts) == N && are_all_cast_convertible<T, Ts...>::value)>
+            CH_REQUIRE_0(sizeof...(Ts) == N && are_all_cast_convertible_v<T, Ts...>)>
   vec_base(const source_location& sloc, Ts&&... values)
     : items_{T(std::forward<Ts>(values), sloc)...}
   {}
@@ -154,7 +154,7 @@ protected:
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T, unsigned N>
-class ch_vec<T, N, typename std::enable_if_t<is_logic_only<T>::value>>
+class ch_vec<T, N, typename std::enable_if_t<is_logic_only_v<T>>>
   : public vec_base<T, N> {
 public:
   using traits = logic_traits<N * width_v<T>,
@@ -177,21 +177,21 @@ public:
   {}
 
   template <typename U,
-            CH_REQUIRE_0(is_cast_convertible<T, U>::value)>
+            CH_REQUIRE_0(is_cast_convertible_v<T, U>)>
   explicit ch_vec(const vec_base<U, N>& rhs,
                      const source_location& sloc = CH_SRC_LOCATION)
     : ch_vec(logic_accessor::copy_buffer(rhs, sloc))
   {}
 
   template <typename U,
-            CH_REQUIRE_0(is_logic_type<U>::value),
+            CH_REQUIRE_0(is_logic_type_v<U>),
             CH_REQUIRE_0(width_v<U> == N * width_v<T>)>
   explicit ch_vec(const U& rhs, const source_location& sloc = CH_SRC_LOCATION)
     : ch_vec(logic_accessor::copy_buffer(rhs, sloc))
   {}
 
   template <typename U,
-            CH_REQUIRE_1(is_scalar_type<U>::value),
+            CH_REQUIRE_1(is_scalar_type_v<U>),
             CH_REQUIRE_1(width_v<U> == N * width_v<T>)>
   explicit ch_vec(const U& rhs, const source_location& sloc = CH_SRC_LOCATION)
     : ch_vec(make_logic_buffer(scalar_accessor::data(rhs), sloc))
@@ -225,7 +225,7 @@ public:
   }
 
   template <typename U,
-            CH_REQUIRE_0(is_scalar_type<U>::value),
+            CH_REQUIRE_0(is_scalar_type_v<U>),
             CH_REQUIRE_0(width_v<U> == N * width_v<T>)>
   ch_vec& operator=(const U& rhs) {
     this->buffer()->write(scalar_accessor::data(rhs));
@@ -233,7 +233,7 @@ public:
   }
 
   template <typename U,
-            CH_REQUIRE_1(is_logic_type<U>::value),
+            CH_REQUIRE_1(is_logic_type_v<U>),
             CH_REQUIRE_1(width_v<U> == N * width_v<T>)>
   ch_vec& operator=(const U& rhs) {
     logic_accessor::copy(*this, rhs);
@@ -278,7 +278,7 @@ protected:
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T, unsigned N>
-class ch_vec<T, N, typename std::enable_if_t<is_scalar_only<T>::value>>
+class ch_vec<T, N, typename std::enable_if_t<is_scalar_only_v<T>>>
   : public vec_base<T, N> {
 public:
   using traits = scalar_traits<N * width_v<T>,
@@ -300,13 +300,13 @@ public:
   ch_vec(ch_vec&& rhs) : base(std::move(rhs)) {}
 
   template <typename U,
-            CH_REQUIRE_0(is_cast_convertible<T, U>::value)>
+            CH_REQUIRE_0(is_cast_convertible_v<T, U>)>
   explicit ch_vec(const vec_base<U, N>& rhs)
     : ch_vec(scalar_accessor::copy_buffer(rhs))
   {}
 
   template <typename U,
-              CH_REQUIRE_0(is_scalar_type<U>::value),
+              CH_REQUIRE_0(is_scalar_type_v<U>),
               CH_REQUIRE_0(width_v<U> == N * width_v<T>)>
   explicit ch_vec(const U& rhs)
     : ch_vec(scalar_accessor::copy_buffer(rhs))
@@ -319,7 +319,7 @@ public:
   {}
 
   template <typename... Vs,
-            CH_REQUIRE_0(sizeof...(Vs) == N && are_all_cast_convertible<T, Vs...>::value)>
+            CH_REQUIRE_0(sizeof...(Vs) == N && are_all_cast_convertible_v<T, Vs...>)>
   explicit ch_vec(Vs&&... values) : ch_vec() {
     this->init(std::forward<Vs>(values)...);
   }
@@ -335,7 +335,7 @@ public:
   }
 
   template <typename U,
-            CH_REQUIRE_0(is_scalar_type<U>::value),
+            CH_REQUIRE_0(is_scalar_type_v<U>),
             CH_REQUIRE_0(width_v<U> == N * width_v<T>)>
   ch_vec& operator=(const U& rhs) {
     scalar_accessor::copy(*this, rhs);
@@ -382,7 +382,7 @@ protected:
 template <typename T, unsigned N>
 class ch_vec_device_io : public vec_base<device_type_t<T>, N> {
 public:
-  static_assert(is_io_type<T>::value, "invalid type");
+  static_assert(is_io_type_v<T>, "invalid type");
   using traits = io_traits<N * width_v<T>,
                            ch_vec_device_io,
                            direction_v<T>,
@@ -413,7 +413,7 @@ protected:
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T, unsigned N>
-class ch_vec<T, N, typename std::enable_if_t<is_io_type<T>::value>>
+class ch_vec<T, N, typename std::enable_if_t<is_io_type_v<T>>>
   : public vec_base<T, N> {
 public:
   using traits = io_traits<N * width_v<T>,

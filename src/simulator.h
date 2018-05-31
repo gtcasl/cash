@@ -23,15 +23,13 @@ public:
 
   ch_simulator& operator=(const ch_simulator& simulator);
   
-  void add_device(const device& device);
-  
   void run(ch_tick ticks = 1);
 
   ch_tick run(const std::function<bool(ch_tick t)>& callback);
 
   ch_tick reset(ch_tick t);
 
-  ch_tick step(ch_tick t, unsigned count = 1);
+  ch_tick step(ch_tick t, uint32_t count = 1);
 
 protected:
 

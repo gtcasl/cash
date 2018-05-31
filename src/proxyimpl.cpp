@@ -5,22 +5,20 @@ using namespace ch::internal;
 
 proxyimpl::proxyimpl(context* ctx,
                      uint32_t size,
-                     unsigned var_id,
+                     uint32_t var_id,
                      const std::string& name,
                      const source_location& sloc)
   : lnodeimpl(ctx, type_proxy, size, var_id, name, sloc)
-  , tick_(~0ull)
 {}
 
 proxyimpl::proxyimpl(context* ctx,
                      const lnode& src,
                      uint32_t offset,
                      uint32_t length,
-                     unsigned var_id,
+                     uint32_t var_id,
                      const std::string& name,
                      const source_location& sloc)
-  : lnodeimpl(ctx, type_proxy, length, var_id, name, sloc)
-  , tick_(~0ull)  {
+  : lnodeimpl(ctx, type_proxy, length, var_id, name, sloc) {
   this->add_source(0, src, offset, length);  
 }
 
@@ -228,11 +226,15 @@ std::size_t proxyimpl::hash() const {
   hash_t ret;
   ret.fields.type = this->type();
   ret.fields.size = this->size();
-  auto n = this->srcs().size();
+  auto n = this->srcs().size();  
   if (n > 0) {
+    ret.fields.srcs = n;
     ret.fields.arg0 = this->src(0).id();
     if (n > 1) {
       ret.fields.arg1 = this->src(1).id();
+      if (n > 2) {
+        ret.fields.arg2 = this->src(2).id();
+      }
     }
   }
   return ret.value;
@@ -268,15 +270,11 @@ lnodeimpl* proxyimpl::slice(uint32_t offset, uint32_t length) {
   return proxy;
 }
 
-const bitvector& proxyimpl::eval(ch_tick t) {
-  if (tick_ != t) {  
-    tick_ = t;    
-    for (auto& range : ranges_) {
-      auto& bits = srcs_[range.src_idx].eval(t);
-      value_.copy(range.dst_offset, bits, range.src_offset, range.length);
-    }
-  }  
-  return value_;
+void proxyimpl::eval() {
+  for (auto& range : ranges_) {
+    auto& bits = srcs_[range.src_idx].data();
+    value_.copy(range.dst_offset, bits, range.src_offset, range.length);
+  }
 }
 
 void proxyimpl::print(std::ostream& out, uint32_t level) const {

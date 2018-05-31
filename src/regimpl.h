@@ -2,7 +2,6 @@
 
 #include "lnodeimpl.h"
 #include "tickable.h"
-#include "cdimpl.h"
 
 namespace ch {
 namespace internal {
@@ -32,13 +31,9 @@ public:
 
   std::size_t hash() const override;
 
-  void tick(ch_tick t) override;
+  void tick() override;
 
-  void tick_next(ch_tick t) override;
-  
-  const bitvector& eval(ch_tick t) override;
-
-  void detach() override;
+  void eval() override;
   
 protected:
 

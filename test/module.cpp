@@ -211,10 +211,9 @@ TEST_CASE("module", "[module]") {
       ret &= (12 == filter.io.y.data);
       ret &= !filter.io.y.parity;
 
-      ch_toVerilog("filter.v", filter);
-      ret &= (checkVerilog("filter_tb.v"));
-
-      ch_toFIRRTL("filter.fir", filter);
+      //ch_toVerilog("filter.v", filter);
+      //ret &= (checkVerilog("filter_tb.v"));
+      //ch_toFIRRTL("filter.fir", filter);
 
       return !!ret;
     });

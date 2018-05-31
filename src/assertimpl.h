@@ -8,7 +8,9 @@ namespace internal {
 class assertimpl : public ioimpl {
 public:
 
-  const bitvector& eval(ch_tick t) override;
+  void reset() override;
+
+  void eval() override;
 
 protected:
 
@@ -18,6 +20,7 @@ protected:
 
   std::string msg_;
   bool predicated_;
+  ch_tick tick_;
 
   friend class context;
 };

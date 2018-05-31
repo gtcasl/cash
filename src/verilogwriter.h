@@ -33,7 +33,7 @@ protected:
   struct module_t {
     context* ctx;
     uint32_t num_temps;
-    std::unordered_map<unsigned, std::unordered_set<lnodeimpl*>> uses;
+    std::unordered_map<uint32_t, std::unordered_set<lnodeimpl*>> uses;
 
     module_t(context* p_ctx);
 
@@ -67,8 +67,8 @@ protected:
 
   void print_value(const bitvector& value,
                    bool skip_leading_zeros_enable = false,
-                   unsigned offset = 0,
-                   unsigned size = 0);
+                   uint32_t offset = 0,
+                   uint32_t size = 0);
 
   void print_proxy(module_t& module, proxyimpl* node);
 
@@ -77,10 +77,6 @@ protected:
   void print_zext(module_t& module, aluimpl* node);
 
   void print_sext(module_t& module, aluimpl* node);
-
-  void print_fmult(module_t& module, aluimpl* node);
-
-  void print_fadd(module_t& module, aluimpl* node);
 
   void print_select(module_t& module, selectimpl* node);
 

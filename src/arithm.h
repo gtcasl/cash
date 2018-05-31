@@ -2,10 +2,6 @@
 
 #include "lnode.h"
 
-#define ALTFP_SP_ADD_SUB 7
-#define ALTFP_SP_MULT    5
-#define ALTFP_SP_DIV     6
-
 #define CH_OP_ARY(x)   (x & (0x3 << 5))
 #define CH_OP_CLASS(x) (x & (0x7 << 7))
 
@@ -36,11 +32,7 @@
   m(div,   20 | op_binary | op_arithm) \
   m(mod,   21 | op_binary | op_arithm) \
   m(zext,  22 | op_unary  | op_misc) \
-  m(sext,  23 | op_unary  | op_misc) \
-  m(fadd,  24 | op_binary | op_arithm | op_symmetric) \
-  m(fsub,  25 | op_binary | op_arithm) \
-  m(fmult, 26 | op_binary | op_arithm | op_symmetric) \
-  m(fdiv,  27 | op_binary | op_arithm)
+  m(sext,  23 | op_unary  | op_misc)
 
 namespace ch {
 namespace internal {
@@ -70,47 +62,27 @@ struct width_impl;
 
 template <typename T>
 struct width_impl<T> {
-  static constexpr unsigned value = T::traits::bitwidth;
+  static constexpr uint32_t value = T::traits::bitwidth;
 };
 
 template <typename T0, typename... Ts>
 struct width_impl<T0, Ts...> {
-  static constexpr unsigned value = T0::traits::bitwidth + width_impl<Ts...>::value;
+  static constexpr uint32_t value = T0::traits::bitwidth + width_impl<Ts...>::value;
 };
 
 template <typename... Ts>
-inline constexpr unsigned width_v = width_impl<std::decay_t<Ts>...>::value;
+inline constexpr uint32_t width_v = width_impl<std::decay_t<Ts>...>::value;
 
 template <typename T0, typename... Ts>
 inline constexpr bool signed_v = std::decay_t<T0>::traits::is_signed;
 
 const char* to_string(ch_op op);
 
-lnodeimpl* createAluNode(ch_op op,
-                         unsigned size,
-                         const lnode& in);
+lnodeimpl* createAluNode(ch_op op, uint32_t size, const lnode& in);
 
-lnodeimpl* createAluNode(ch_op op,
-                         unsigned size,
-                         const lnode& lhs,
-                         const lnode& rhs);
+lnodeimpl* createAluNode(ch_op op, uint32_t size, const lnode& lhs, const lnode& rhs);
 
-lnodeimpl* createAluNode(ch_op op,
-                         unsigned size,
-                         unsigned delay,
-                         const lnode& enable,
-                         const lnode& in);
-
-lnodeimpl* createAluNode(ch_op op,
-                         unsigned size,
-                         unsigned delay,
-                         const lnode& enable,
-                         const lnode& lhs,
-                         const lnode& rhs);
-
-lnodeimpl* createRotateNode(const lnode& next,
-                            unsigned dist,
-                            bool right);
+lnodeimpl* createRotateNode(const lnode& next, uint32_t dist, bool right);
 
 }
 }

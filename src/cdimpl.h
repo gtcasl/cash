@@ -9,11 +9,15 @@ namespace internal {
 class cdimpl : public ioimpl {
 public:
 
-  const auto& clock() const {
+  const auto& regs() const {
+    return regs_;
+  }
+
+  const auto& clk() const {
     return srcs_[0];
   }
 
-  const auto& reset() const {
+  const auto& rst() const {
     return srcs_[1];
   }
 
@@ -21,11 +25,9 @@ public:
     return posedge_;
   }
 
-  void tick(ch_tick t);
+  void tick();
 
-  void tick_next(ch_tick t);
-
-  const bitvector& eval(ch_tick) override;
+  void eval() override;
 
   void print(std::ostream& out, uint32_t level) const override;
 
@@ -35,7 +37,7 @@ public:
 
 protected:
   
-  cdimpl(context* ctx, const lnode& clock, const lnode& reset, bool posedge);
+  cdimpl(context* ctx, const lnode& clk, const lnode& rst, bool posedge);
 
   ~cdimpl();
 

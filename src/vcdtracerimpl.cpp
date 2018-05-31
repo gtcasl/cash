@@ -12,9 +12,9 @@ static std::string fixup_name(std::string name) {
   return ret;
 }
 
-void vcdtracerimpl::ensureInitialize() {
-  // call parent ensureInitialize()
-  tracerimpl::ensureInitialize();
+void vcdtracerimpl::initialize() {
+  // call parent initialize()
+  tracerimpl::initialize();
 
   out_ << "$timescale 1 ns $end" << std::endl;
   for (auto& tap : io_traces_) {

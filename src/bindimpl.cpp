@@ -22,8 +22,7 @@ static void add_port(bindportimpl* bindport, std::vector<lnode>& list) {
 
 bindimpl::bindimpl(context* ctx, context* module)
   : ioimpl(ctx, type_bind, 0)
-  , module_(module)
-  , tick_(~0ull) {
+  , module_(module) {
   // acquire module instance
   module_->acquire();
 
@@ -31,23 +30,18 @@ bindimpl::bindimpl(context* ctx, context* module)
   auto module_clk = module->default_clk();
   if (module_clk) {
     auto cd = ctx->current_cd();
-    this->bind_input(cd->clock(), module_clk);
+    this->bind_input(cd->clk(), module_clk);
   }
 
   // bind default reset
   auto module_reset = module->default_reset();
   if (module_reset) {
     auto cd = ctx->current_cd();
-    this->bind_input(cd->reset(), module_reset);
+    this->bind_input(cd->rst(), module_reset);
   }
 }
 
 bindimpl::~bindimpl() {
-  // detach outputs
-  while (!outputs_.empty()) {
-    reinterpret_cast<bindportimpl*>(outputs_.front().impl())->detach();
-  }
-
   // release module instance
   module_->release();
 }
@@ -85,20 +79,8 @@ void bindimpl::bind_output(const lnode& dst, const lnode& ioport) {
   add_port(bindport, outputs_);
 }
 
-void bindimpl::tick(ch_tick t) {
-  module_->tick(t);
-}
-
-void bindimpl::tick_next(ch_tick t) {
-  module_->tick_next(t);
-}
-
-const bitvector& bindimpl::eval(ch_tick t) {
-  if (tick_ != t) {
-    tick_ = t;
-    module_->eval(t);
-  }
-  return value_;
+void bindimpl::eval() {
+  //--
 }
 
 void bindimpl::print(std::ostream& out, uint32_t level) const {
@@ -116,31 +98,32 @@ void bindimpl::print(std::ostream& out, uint32_t level) const {
 bindportimpl::bindportimpl(context* ctx, const lnode& src, const lnode& ioport)
   : ioimpl(ctx, type_bindport, ioport.size())
   , ioport_(ioport)
-  , tick_(~0ull) {
+  , words_(nullptr) {
   srcs_.push_back(src);
   is_output_ = (type_output == ioport.impl()->type());
+  if (is_output_) {
+    src.impl()->acquire();
+  }
   name_ = is_output_ ? "bindout" : "bindin";
 }
 
 bindportimpl::~bindportimpl() {
-  this->detach();
-}
-
-void bindportimpl::detach() {
   if (is_output_) {
-    if (!srcs_[0].empty()) {
-      reinterpret_cast<bindimpl*>(srcs_[0].impl())->remove_output(this);
-      srcs_[0].clear();
-    }
+    auto binding = reinterpret_cast<bindimpl*>(this->binding().impl());
+    binding->remove_output(this);
+    binding->release();
+  }
+  if (words_) {
+    value_.words(words_);
   }
 }
 
-const bitvector& bindportimpl::eval(ch_tick t) {
-  if (tick_ != t) {
-    tick_ = t;    
-    value_ = is_output_ ? ioport_.eval(t) : srcs_[0].eval(t);
-  }
-  return value_;
+void bindportimpl::initialize() {
+  words_ = value_.words(is_output_ ? ioport_.data().words() : srcs_[0].data().words());
+}
+
+void bindportimpl::eval() {
+  //--
 }
 
 void bindportimpl::print(std::ostream& out, uint32_t level) const {

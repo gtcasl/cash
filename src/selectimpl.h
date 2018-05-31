@@ -25,7 +25,7 @@ public:
 
   std::size_t hash() const override;
 
-  const bitvector& eval(ch_tick t) override;
+  void eval() override;
 
   void print(std::ostream& out, uint32_t level) const override;
 
@@ -42,8 +42,6 @@ protected:
              const lnode& _false);
 
   ~selectimpl() {}
-
-  ch_tick tick_;
 
   bool has_key_;
 

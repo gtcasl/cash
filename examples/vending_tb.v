@@ -5,9 +5,9 @@
 
 module testbench();
 
-    reg clk    = 0;
-    reg reset  = 0;
-    reg[1:0] coin   = 1;
+    reg clk = 0;
+    reg rst = 0;
+    reg[1:0] coin = 1;
     wire valid;
 
     VendingMachine device(clk, reset, coin, valid);
@@ -20,12 +20,12 @@ module testbench();
         $dumpfile("testbench.vcd");
         $dumpvars(0, testbench);
 
-        $display ("time\tclk\treset\tnickel\tdime\tvalid");
-        $monitor("%3d\t%b\t%b\t%h\t%b", $time, clk, reset, coin, valid);
+        $display ("time\tclk\trst\tnickel\tdime\tvalid");
+        $monitor("%3d\t%b\t%b\t%h\t%b", $time, clk, rst, coin, valid);
 
-        #0 reset  = 1;
-        #1 reset  = 1;
-        #1 reset  = 0;
+        #0 rst = 1;
+        #1 rst = 1;
+        #1 rst = 0;
 
         #8 `assert(valid == 1);
             $finish;

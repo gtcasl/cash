@@ -28,14 +28,14 @@ struct non_ch_type {
 };
 
 template <typename T>
-using ch_type_t = std::conditional_t<has_bitwidth<T>::value, T, non_ch_type>;
+using ch_type_t = std::conditional_t<has_bitwidth_v<T>, T, non_ch_type>;
 
 template <bool resize, typename T0, typename T1>
 struct deduce_type_impl {
   using D0 = std::decay_t<T0>;
   using D1 = std::decay_t<T1>;
-  using U0 = std::conditional_t<has_bitwidth<D0>::value, D0, non_ch_type>;
-  using U1 = std::conditional_t<has_bitwidth<D1>::value, D1, non_ch_type>;
+  using U0 = std::conditional_t<has_bitwidth_v<D0>, D0, non_ch_type>;
+  using U1 = std::conditional_t<has_bitwidth_v<D1>, D1, non_ch_type>;
   using type = std::conditional_t<(width_v<U0> != 0) && (width_v<U1> != 0),
     std::conditional_t<(width_v<U0> == width_v<U1>) || ((width_v<U0> > width_v<U1>) && resize), U0,
         std::conditional_t<(width_v<U0> < width_v<U1>) && resize, U1, non_ch_type>>,
@@ -62,8 +62,8 @@ template <typename T0, typename T1>
 struct deduce_first_type_impl {
   using D0 = std::decay_t<T0>;
   using D1 = std::decay_t<T1>;
-  using U0 = std::conditional_t<has_bitwidth<D0>::value, D0, non_ch_type>;
-  using U1 = std::conditional_t<has_bitwidth<D1>::value, D1, non_ch_type>;
+  using U0 = std::conditional_t<has_bitwidth_v<D0>, D0, non_ch_type>;
+  using U1 = std::conditional_t<has_bitwidth_v<D1>, D1, non_ch_type>;
   using type = std::conditional_t<(width_v<U0> != 0), U0, U1>;
 };
 
@@ -96,23 +96,23 @@ template <typename T>
 using scalar_type_t = typename std::decay_t<T>::traits::scalar_type;
 
 template <typename T>
-using is_scalar_traits = is_true<(T::type & traits_scalar)>;
+inline constexpr bool is_scalar_traits_v = is_true_v<(T::type & traits_scalar)>;
 
-CH_DEF_SFINAE_CHECK(is_scalar_only, is_true<(std::decay_t<T>::traits::type == traits_scalar)>::value);
+CH_DEF_SFINAE_CHECK(is_scalar_only, is_true_v<(std::decay_t<T>::traits::type == traits_scalar)>);
 
-CH_DEF_SFINAE_CHECK(is_scalar_type, is_scalar_traits<typename std::decay_t<T>::traits>::value);
+CH_DEF_SFINAE_CHECK(is_scalar_type, is_scalar_traits_v<typename std::decay_t<T>::traits>);
 
-CH_DEF_SFINAE_CHECK(is_scalar_compatible, (std::is_base_of<ch_scalar<width_v<T>>, T>::value));
+CH_DEF_SFINAE_CHECK(is_scalar_compatible, (std::is_base_of_v<ch_scalar<width_v<T>>, T>));
 
 template <typename... Ts>
 using deduce_scalar_t = std::conditional_t<
-  is_scalar_compatible<deduce_type_t<false, Ts...>>::value, deduce_type_t<false, Ts...>, non_ch_type>;
+  is_scalar_compatible_v<deduce_type_t<false, Ts...>>, deduce_type_t<false, Ts...>, non_ch_type>;
 
 template <typename T, unsigned N = width_v<T>>
-using is_scalar_convertible = is_cast_convertible<ch_scalar<N>, T>;
+inline constexpr bool is_scalar_convertible_v = is_cast_convertible_v<ch_scalar<N>, T>;
 
 template <typename T, typename R = ch_scalar<width_v<T>>>
-using scalar_cast_t = std::conditional_t<is_scalar_type<T>::value, const T&, R>;
+using scalar_cast_t = std::conditional_t<is_scalar_type_v<T>, const T&, R>;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -122,7 +122,7 @@ using scalar_buffer_ptr = std::shared_ptr<scalar_buffer>;
 
 class scalar_buffer {
 public:
-  explicit scalar_buffer(unsigned size);
+  explicit scalar_buffer(uint32_t size);
 
   scalar_buffer(const scalar_buffer& rhs);
 
@@ -132,7 +132,7 @@ public:
 
   explicit scalar_buffer(bitvector&& data);
 
-  scalar_buffer(unsigned size, const scalar_buffer_ptr& buffer, unsigned offset);
+  scalar_buffer(uint32_t size, const scalar_buffer_ptr& buffer, uint32_t offset);
 
   virtual ~scalar_buffer() {}
 
@@ -146,11 +146,11 @@ public:
     return source_;
   }
 
-  unsigned offset() const {
+  uint32_t offset() const {
     return offset_;
   }
 
-  unsigned size() const {
+  uint32_t size() const {
     return size_;
   }
 
@@ -191,8 +191,8 @@ protected:
 
   scalar_buffer(const bitvector& value,
                 const scalar_buffer_ptr& source,
-                unsigned offset,
-                unsigned size)
+                uint32_t offset,
+                uint32_t size)
     : value_(value)
     , source_(source)
     , offset_(offset)
@@ -201,8 +201,8 @@ protected:
 
   mutable bitvector value_;
   scalar_buffer_ptr source_;
-  unsigned offset_;
-  unsigned size_;
+  uint32_t offset_;
+  uint32_t size_;
 };
 
 template <typename... Args>
@@ -354,21 +354,21 @@ public:
   {}
 
   template <typename U,
-            CH_REQUIRE_0(is_scalar_type<U>::value),
+            CH_REQUIRE_0(is_scalar_type_v<U>),
             CH_REQUIRE_0(width_v<U> == N)>
   explicit ch_scalar(const U& rhs)
     : buffer_(scalar_accessor::copy_buffer(rhs))
   {}
 
   template <typename U,
-            CH_REQUIRE_0(is_scalar_type<U>::value),
+            CH_REQUIRE_0(is_scalar_type_v<U>),
             CH_REQUIRE_0(width_v<U> < N)>
   explicit ch_scalar(const U& rhs)
     : buffer_(scalar_accessor::copy_buffer(ch_pad<N>(rhs)))
   {}
 
   template <typename U,
-            CH_REQUIRE_0(is_bitvector_convertible<U>::value)>
+            CH_REQUIRE_0(is_bitvector_convertible_v<U>)>
   explicit ch_scalar(const U& rhs)
     : buffer_(make_scalar_buffer(bitvector(N, rhs)))
   {}
@@ -384,7 +384,7 @@ public:
   }
 
   template <typename U,
-            CH_REQUIRE_0(is_scalar_type<U>::value),
+            CH_REQUIRE_0(is_scalar_type_v<U>),
             CH_REQUIRE_0(width_v<U> == N)>
   ch_scalar& operator=(const U& rhs) {
     scalar_accessor::copy(*this, rhs);
@@ -392,7 +392,7 @@ public:
   }
 
   template <typename U,
-            CH_REQUIRE_0(is_scalar_type<U>::value),
+            CH_REQUIRE_0(is_scalar_type_v<U>),
             CH_REQUIRE_0(width_v<U> < N)>
   ch_scalar& operator=(const U& rhs) {
     scalar_accessor::copy(*this, ch_pad<N>(rhs));
@@ -417,7 +417,7 @@ public:
   }
 
   template <typename R,
-            CH_REQUIRE_0(is_scalar_compatible<R>::value)>
+            CH_REQUIRE_0(is_scalar_compatible_v<R>)>
   const auto slice(size_t start = 0) const {
     static_assert(width_v<R> <= N, "invalid size");
     assert((start + width_v<R>) <= N);
@@ -425,7 +425,7 @@ public:
   }
 
   template <typename R,
-            CH_REQUIRE_0(is_scalar_compatible<R>::value)>
+            CH_REQUIRE_0(is_scalar_compatible_v<R>)>
   const auto aslice(size_t start = 0) const {
     return this->slice<R>(start * width_v<R>);
   }
@@ -441,7 +441,7 @@ public:
   }
 
   template <typename R,
-            CH_REQUIRE_0(is_scalar_type<R>::value)>
+            CH_REQUIRE_0(is_scalar_type_v<R>)>
   auto slice(size_t start = 0) {
     static_assert(width_v<R> <= N, "invalid size");
     assert((start + width_v<R>) <= N);
@@ -449,7 +449,7 @@ public:
   }
 
   template <typename R,
-            CH_REQUIRE_0(is_scalar_type<R>::value)>
+            CH_REQUIRE_0(is_scalar_type_v<R>)>
   auto aslice(size_t start = 0) {
     return this->slice<R>(start * width_v<R>);
   }
@@ -523,7 +523,7 @@ public:
   CH_SCALAR_INTERFACE(ch_scalar)
 
   template <typename U,
-            CH_REQUIRE_0(is_bitvector_castable<U>::value),
+            CH_REQUIRE_0(is_bitvector_castable_v<U>),
             CH_REQUIRE_0(CH_WIDTH_OF(U) >= N)>
   explicit operator U() const {
     return static_cast<U>(buffer_->data());

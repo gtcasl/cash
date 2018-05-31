@@ -11,6 +11,9 @@ template <> struct is_bitvector_array_type <uint16_t> : std::true_type {};
 template <> struct is_bitvector_array_type <uint32_t> : std::true_type {};
 template <> struct is_bitvector_array_type <uint64_t> : std::true_type {};
 
+template <typename T>
+inline constexpr bool is_bitvector_array_type_v = is_bitvector_array_type<T>::value;
+
 template <typename T> struct is_bitvector_convertible_impl : std::false_type {};
 template <> struct is_bitvector_convertible_impl <bool> : std::true_type {};
 template <> struct is_bitvector_convertible_impl <int8_t> : std::true_type {};
@@ -23,20 +26,20 @@ template <> struct is_bitvector_convertible_impl <int64_t> : std::true_type {};
 template <> struct is_bitvector_convertible_impl <uint64_t> : std::true_type {};
 
 template <>
-struct is_bitvector_convertible_impl< std::initializer_list<uint32_t> > : std::true_type {};
+struct is_bitvector_convertible_impl<std::initializer_list<uint32_t>> : std::true_type {};
 
 template <typename T, std::size_t N>
-struct is_bitvector_convertible_impl< std::array<T, N> > : std::true_type {};
+struct is_bitvector_convertible_impl<std::array<T, N>> : std::true_type {};
 
 template <typename T>
-struct is_bitvector_convertible_impl< std::vector<T> > : std::true_type {};
+struct is_bitvector_convertible_impl<std::vector<T>> : std::true_type {};
 
 template <>
-struct is_bitvector_convertible_impl< std::string > : std::true_type {};
+struct is_bitvector_convertible_impl<std::string> : std::true_type {};
 
 template <typename T>
-using is_bitvector_convertible =
-  is_true<is_bitvector_convertible_impl<T>::value || std::is_enum<T>::value>;
+inline constexpr bool is_bitvector_convertible_v =
+  is_true_v<(is_bitvector_convertible_impl<T>::value || std::is_enum_v<T>)>;
 
 template <typename T> struct is_bitvector_castable : std::false_type {};
 template <> struct is_bitvector_castable <bool> : std::true_type {};
@@ -48,6 +51,9 @@ template <> struct is_bitvector_castable <int32_t> : std::true_type {};
 template <> struct is_bitvector_castable <uint32_t> : std::true_type {};
 template <> struct is_bitvector_castable <int64_t> : std::true_type {};
 template <> struct is_bitvector_castable <uint64_t> : std::true_type {};
+
+template <typename T>
+inline constexpr bool is_bitvector_castable_v = is_bitvector_castable<T>::value;
 
 class bitvector {
 public:
@@ -471,13 +477,13 @@ public:
   explicit bitvector(uint32_t size, uint64_t value);
 
   template <typename T, std::size_t N,
-            CH_REQUIRE_0(is_bitvector_array_type<T>::value)>
+            CH_REQUIRE_0(is_bitvector_array_type_v<T>)>
   explicit bitvector(uint32_t size, const std::array<T, N>& value) : bitvector(size) {
     this->write(0, value.data(), N * sizeof(T), 0, N * CH_WIDTH_OF(T));
   }
 
   template <typename T,
-            CH_REQUIRE_0(is_bitvector_array_type<T>::value)>
+            CH_REQUIRE_0(is_bitvector_array_type_v<T>)>
   explicit bitvector(uint32_t size, const std::vector<T>& value) : bitvector(size) {
     this->write(0, value.data(), value.size() * sizeof(T), 0, value.size() * CH_WIDTH_OF(T));
   }
@@ -521,14 +527,14 @@ public:
   bitvector& operator=(uint64_t value);
 
   template <typename T, std::size_t N,
-            CH_REQUIRE_0(is_bitvector_array_type<T>::value)>
+            CH_REQUIRE_0(is_bitvector_array_type_v<T>)>
   bitvector& operator=(const std::array<T, N>& value) {
     this->write(0, value.data(), N * sizeof(T), 0, N * CH_WIDTH_OF(T));
     return *this;
   }
 
   template <typename T,
-            CH_REQUIRE_0(is_bitvector_array_type<T>::value)>
+            CH_REQUIRE_0(is_bitvector_array_type_v<T>)>
   bitvector& operator=(const std::vector<T>& value) {
     this->write(0, value.data(), value.size() * sizeof(T), 0, value.size() * CH_WIDTH_OF(T));
     return *this;
@@ -566,6 +572,11 @@ public:
 
   uint32_t* words() {
     return words_;
+  }
+
+  uint32_t* words(uint32_t* words) {
+    std::swap(words_, words);
+    return words;
   }
   
   uint32_t num_words() const {

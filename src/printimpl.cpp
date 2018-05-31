@@ -68,8 +68,7 @@ printimpl::printimpl(context* ctx,
                      const std::initializer_list<lnode>& args)
   : ioimpl(ctx, type_print, 0)
   , format_(format)
-  , predicated_(false)
-  , tick_(~0ull) {
+  , predicated_(false) {
   if (ctx_->conditional_enabled(this)) {
     auto pred = ctx_->create_predicate();
     if (pred) {
@@ -82,41 +81,56 @@ printimpl::printimpl(context* ctx,
   }
 }
 
-const bitvector& printimpl::eval(ch_tick t) {
-  if (tick_ != t) {
-    tick_ = t;    
-    if (!predicated_ || srcs_[0].eval(t)[0]) {
-      if (format_ != "") {
-        strbuf_.clear();
-        for (const char *str = format_.c_str(); *str != '\0'; ++str) {
-          if (*str == '{') {
-            fmtinfo_t fmt;
-            str = parse_format_index(&fmt, str);      
-            uint32_t args_offset_ = predicated_ ? 1 : 0;
-            switch (fmt.type) {
-            case fmttype::Int:
-              strbuf_ << srcs_[args_offset_ + fmt.index].eval(t);
-              break;
-            case fmttype::Float: {
-                uint32_t value = srcs_[args_offset_ + fmt.index].eval(t).word(0);
-                float valuef = bitcast<float>(value);
-                strbuf_ << valuef;
-              }
-              break;
-            case fmttype::String:
-              strbuf_ << ctx_->enum_to_string(srcs_[args_offset_ + fmt.index], t);
-              break;
-            }            
-          } else {
-            strbuf_.put(*str);
-          }
+void printimpl::eval() {
+  if (predicated_ && 0 == srcs_[0].data().word(0))
+    return;
+  if (format_ != "") {
+    strbuf_.clear();
+    for (const char *str = format_.c_str(); *str != '\0'; ++str) {
+      if (*str == '{') {
+        fmtinfo_t fmt;
+        str = parse_format_index(&fmt, str);
+        uint32_t args_offset_ = predicated_ ? 1 : 0;
+        auto& src = srcs_[args_offset_ + fmt.index];
+        switch (fmt.type) {
+        case fmttype::Int:
+          strbuf_ << src.data();
+          break;
+        case fmttype::Float:
+          strbuf_ << bitcast<float>(src.data().word(0));
+          break;
+        case fmttype::String:
+          strbuf_ << ctx_->enum_to_string(src);
+          break;
         }
-        std::cout << strbuf_.rdbuf();
+      } else {
+        strbuf_.put(*str);
       }
-      std::cout << std::endl;
     }
+    std::cout << strbuf_.rdbuf();
   }
-  return value_;
+  std::cout << std::endl;
+}
+
+void printimpl::print(std::ostream& out, uint32_t level) const {
+  out << "#" << id_ << " <- " << this->type();
+  uint32_t n = srcs_.size();
+  if (n > 0) {
+    out << "(";
+    uint32_t i = 0;
+    if (predicated_) {
+      out << "pred=" << srcs_[i++].id();
+    }
+    for (; i < n; ++i) {
+      if (i > 0)
+        out << ", ";
+      out << "#" << srcs_[i].id();
+    }
+    out << ")";
+  }
+  if (level == 2) {
+    out << " = " << value_;
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -144,5 +158,6 @@ void ch::internal::createPrintNode(
   auto max_index = getFormatMaxIndex(format.c_str());
   CH_CHECK(max_index < (int)args.size(), "print format index out of range");
 
+  // create print node
   ctx_curr()->create_node<printimpl>(format, args);
 }

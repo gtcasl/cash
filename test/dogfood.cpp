@@ -126,26 +126,221 @@ struct QueueWrapper {
   ch_module<ch_queue<T, N>> queue_;
 };
 
+template <typename T>
+__inout(link_io, (
+  __out(T) data,
+  __out(ch_bool) valid
+));
+
+template <typename T>
+__inout(plink_io, link_io<T>, (
+  __out(ch_bool) parity
+));
+
+template <typename T>
+__inout(filter_io, (
+  (ch_flip_t<plink_io<T>>) x,
+  (plink_io<T>) y
+));
+
+template <typename T>
+struct Filter {
+  filter_io<T> io;
+  void describe() {
+    auto tmp = (ch_pad<ch_width_v<T>+1>(io.x.data) << 1)
+              | ch_pad<ch_width_v<T>+1>(io.x.parity);
+    io.y.data   = ch_delay(ch_slice<T>(tmp));
+    io.y.parity = tmp[ch_width_v<T>];
+    auto q = ch_delay(io.x.valid);
+    io.y.valid = q;
+    //ch_print("{0}: clk={1}, rst={2}, y.val={3}, x.val={4}", ch_time(), ch_clock(), ch_reset(), q, io.x.valid);
+  }
+};
+
+template <typename T>
+struct FilterBlock {
+  filter_io<T> io;
+  void describe() {
+    f1_.io.x(io.x);
+    f1_.io.y(f2_.io.x);
+    f2_.io.y(io.y);
+    //ch_print("{0}: clk={1}, rst={2}, y={3}", ch_time(), ch_clock(), ch_reset(), io.y.valid);
+  }
+  ch_module<Filter<T>> f1_, f2_;
+};
+
+struct Loop {
+  __io (
+    __in(ch_uint4)  in1,
+    __in(ch_uint4)  in2,
+    __out(ch_uint4) out
+  );
+
+  void describe() {
+    m1_.io.in1(io.in1);
+    m1_.io.in2(io.in2);
+    m2_.io.in(m1_.io.out1);
+    m1_.io.in3(m2_.io.out);
+    io.out(m1_.io.out2);
+  }
+
+  struct M1 {
+    __io (
+      __in(ch_uint4)  in1,
+      __in(ch_uint4)  in2,
+      __in(ch_uint4)  in3,
+      __out(ch_uint4) out1,
+      __out(ch_uint4) out2
+    );
+
+    void describe() {
+      io.out1 = io.in1 + io.in2;
+      io.out2 = -io.in3;
+    }
+  };
+
+  struct M2 {
+    __io (
+      __in(ch_uint4)  in,
+      __out(ch_uint4) out
+    );
+
+    void describe() {
+      io.out = -io.in;
+    }
+  };
+
+  ch_module<M1> m1_;
+  ch_module<M2> m2_;
+};
+
+struct MultiClk {
+  __io (
+    __in(ch_uint4) in,
+    __out(ch_uint4) out
+  );
+
+  void describe() {
+    ch_reg<ch_uint4> x(0);
+
+    ch_pushcd(x[0]);
+    ch_reg<ch_uint4> y(0);
+    ch_popcd();
+
+    x <<= x + 1;
+    y <<= io.in;
+    io.out = x + y;
+
+    ch_print("{0}: clk={1}, rst={2}, in={3}, x={4}, y={5}, out={6}", ch_time(), ch_clock(), ch_reset(), io.in, x, y, io.out);
+  }
+};
+
+struct CustomClk {
+  __io (
+    __in(ch_uint4) in,
+    __out(ch_uint4) out
+  );
+
+  void describe() {
+    ch_pushcd(~ch_clock());
+    ch_reg<ch_uint4> x(io.in);
+    ch_popcd();
+
+    x <<= x + 1;
+    io.out = x;
+
+    ch_print("{0}: clk={1}, rst={2}, in={3}, out={4}", ch_time(), ch_clock(), ch_reset(), io.in, io.out);
+  }
+};
+
+
 struct Dogfood {
   __io (
     __in(ch_uint4) in,
     __out(ch_bool) out
   );
   void describe() {
-    ch_bit4 a(1100_b);
-    ch_bit4 c = ch_cat(a[3], a[2], a[1], a[0]);
-    io.out = (c == 1100_b && ch_cat(a[3], a[0]) == 10_b);
+    auto clk  = ch_case(ch_time(), 8, 1_b)(6, 1)(4, 1)(2, 1)(0);
+    auto rst  = ch_case(ch_time(), 5, 1_b)(0);
+    auto next = ch_case(ch_time(), 8, 0011_b)(7, 0)(6, 0)(5, 1)(4, 2)(3, 3)(2, 1)(1, 2)(0);
+
+    ch_pushcd(clk, rst);
+
+    auto r = ch_delay(ch_select(ch_reset(), 0, next));
+
+    ch_popcd();
+
+    auto e = ch_case(ch_time(), 9, 0011_b)(8, 0)(7, 0)(6, 0)(5, 2)(4, 3)(3, 1)(2, 2)(0);
+
+    ch_print("t={0}, clk={1}, clk2={2}, rst={3}, next={4}, out={5}, expected={6}",
+         ch_time(), ch_clock(), clk, rst, next, r, e);
+    io.out = (r == e);
     //io.out = true;
   }
 };
 
 int main() {
-  {
+  /*{
     ch_device<Dogfood> device;
     ch_simulator sim(device);
     device.io.in = 0xA;
-    sim.run(4);
+    sim.run(10);
+    ch_toVerilog("test.v", device);
+    ch_vcdtracer tracer("test.vcd", device);
+  }*/
+
+  /*{
+    ch_device<MultiClk> device;
+    ch_toVerilog("multi_clk.v", device);
+
+    ch_simulator sim(device);
+    device.io.in = 0xA;
+    sim.run(10);
+    std::cout << "out = "  << device.io.out << std::endl;
+    ch_vcdtracer tracer("multi_clk.vcd", device);
+  }*/
+
+  {
+    ch_device<CustomClk> device;
+    ch_toVerilog("custom_clk.v", device);
+
+    ch_simulator sim(device);
+    device.io.in = 0xA;
+    sim.run(10);
+    std::cout << "out = "  << device.io.out << std::endl;
+    ch_vcdtracer tracer("custom_clk.vcd", device);
   }
+
+  /*{
+    ch_device<Loop> loop;
+    ch_toVerilog("loop.v", loop);
+    ch_toFIRRTL("loop.fir", loop);
+
+    loop.io.in1 = 1;
+    loop.io.in2 = 2;
+    ch_vcdtracer tracer("loop.vcd", loop);
+    tracer.run();
+
+    std::cout << "out = "  << loop.io.out << std::endl;
+    assert(loop.io.out == 3);
+  }*/
+
+  /*{
+    ch_device<FilterBlock<ch_uint16>> filter;
+    ch_simulator sim(filter);
+    ch_tick t = sim.reset(0);
+
+    filter.io.x.data   = 3;
+    filter.io.x.valid  = 1;
+    filter.io.x.parity = 0;
+    t = sim.step(t, 3);
+
+    int ret(!!filter.io.y.valid);
+    ret &= (12 == filter.io.y.data);
+    ret &= !filter.io.y.parity;
+
+    assert(!!ret);
+  }*/
 
   /*{
     ch_device<QueueWrapper<ch_bit4, 2>> queue;

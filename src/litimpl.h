@@ -8,7 +8,7 @@ namespace internal {
 class litimpl : public lnodeimpl {
 public:
 
-  const bitvector& eval(ch_tick t) override;
+  void eval() override;
 
   void print(std::ostream& out, uint32_t level) const override;
 

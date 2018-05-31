@@ -5,20 +5,15 @@
 
 using namespace ch::internal;
 
-cdimpl::cdimpl(context* ctx, const lnode& clock, const lnode& reset, bool posedge)
+cdimpl::cdimpl(context* ctx, const lnode& clk, const lnode& rst, bool posedge)
   : ioimpl(ctx, type_cd, 0)
   , posedge_(posedge)
   , prev_val_(false) {
-  srcs_.emplace_back(clock);
-  srcs_.emplace_back(reset);
+  srcs_.emplace_back(clk);
+  srcs_.emplace_back(rst);
 }
 
-cdimpl::~cdimpl() {
-  // detach registers
-  while (!regs_.empty()) {
-    regs_.front()->detach();
-  }
-}
+cdimpl::~cdimpl() {}
 
 void cdimpl::add_reg(tickable* reg) {
   regs_.push_back(reg);
@@ -33,27 +28,22 @@ void cdimpl::remove_reg(tickable* reg) {
   }
 }
 
-void cdimpl::tick(ch_tick t) {
-  bool value = srcs_[0].eval(t)[0];
+void cdimpl::tick() {
+  bool value = (this->clk().data().word(0) != 0);
   if (prev_val_ != value) {
     prev_val_ = value;
-    if ((value && posedge_) || (!value && !posedge_)) {
+    if (0 == (value ^ posedge_)) {
+      static int t = 0;
+      ++t;
       for (auto reg : regs_) {
-        reg->tick(t);
+        reg->tick();
       }
     }
   }
 }
 
-void cdimpl::tick_next(ch_tick t) {
-  for (auto reg : regs_) {
-    reg->tick_next(t);
-  }
-}
-
-const bitvector& cdimpl::eval(ch_tick t) {
-  CH_UNUSED(t);
-  return value_;
+void cdimpl::eval() {
+  //--
 }
 
 void cdimpl::print(std::ostream& out, uint32_t level) const {

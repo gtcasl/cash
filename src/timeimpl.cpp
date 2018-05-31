@@ -5,16 +5,16 @@
 using namespace ch::internal;
 
 timeimpl::timeimpl(context* ctx)
-  : ioimpl(ctx, type_tick, 8 * sizeof(ch_tick))
-  , tick_(~0ull) 
+  : ioimpl(ctx, type_time, 8 * sizeof(ch_tick))
+  , tick_(0)
 {}
 
-const bitvector& timeimpl::eval(ch_tick t) {
-  if (tick_ != t) {
-    tick_ = t;
-    value_ = t;
-  }
-  return value_;
+void timeimpl::reset() {
+  tick_ = 0;
+}
+
+void timeimpl::eval() {
+  value_ = tick_++;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

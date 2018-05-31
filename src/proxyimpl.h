@@ -48,7 +48,7 @@ public:
 
   lnodeimpl* slice(uint32_t offset, uint32_t length) override;
 
-  const bitvector& eval(ch_tick t) override;
+  void eval() override;
 
   void print(std::ostream& out, uint32_t level) const override;
   
@@ -56,7 +56,7 @@ protected:
 
   proxyimpl(context* ctx,
             uint32_t size,
-            unsigned var_id = 0,
+            uint32_t var_id = 0,
             const std::string& name = "",
             const source_location& sloc = source_location());
 
@@ -64,7 +64,7 @@ protected:
             const lnode& src,
             uint32_t offset,
             uint32_t length,
-            unsigned var_id = 0,
+            uint32_t var_id = 0,
             const std::string& name = "",
             const source_location& sloc = source_location());
 
@@ -74,8 +74,7 @@ protected:
 
   ~proxyimpl() {}
 
-  std::vector<range_t> ranges_; 
-  ch_tick tick_;
+  std::vector<range_t> ranges_;
 
   friend class context;
 };
