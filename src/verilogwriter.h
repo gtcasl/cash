@@ -18,78 +18,78 @@ class bindimpl;
 class bindportimpl;
 class bitvector;
 class cdimpl;
+class udfimpl;
+class udfsimpl;
 
 class verilogwriter {
 public:
 
-  verilogwriter(std::ostream& out);
+  verilogwriter(context* ctx);
 
   ~verilogwriter();
 
-  void print(const std::initializer_list<context*>& contexts);
+  bool print(std::ostream& out, std::unordered_set<std::string_view>& visited);
 
 protected:
 
-  struct module_t {
-    context* ctx;
-    uint32_t num_temps;
-    std::unordered_map<uint32_t, std::unordered_set<lnodeimpl*>> uses;
+  bool is_inline_subscript(lnodeimpl* node) const;
 
-    module_t(context* p_ctx);
+  bool print_module(std::ostream& out);
 
-    bool is_inline_subscript(lnodeimpl* node) const;
-  };
+  void print_header(std::ostream& out);
 
-  bool print_module(module_t& module);
+  void print_body(std::ostream& out);
 
-  void print_header(module_t& module);
+  void print_footer(std::ostream& out);
 
-  void print_body(module_t& module);
+  void print_port(std::ostream& out, lnodeimpl* node);
 
-  void print_footer(module_t& module);
-
-  void print_port(module_t& module, lnodeimpl* node);
-
-  bool print_decl(module_t& module,
+  bool print_decl(std::ostream& out,
                   lnodeimpl* node,
                   std::unordered_set<uint32_t>& visited,
                   lnodeimpl* ref = nullptr);
 
-  bool print_binding(module_t& module, bindimpl* node);
+  bool print_binding(std::ostream& out, bindimpl* node);
 
-  bool print_bindport(module_t& module, bindportimpl* node);
+  bool print_bindport(std::ostream& out, bindportimpl* node);
 
-  bool print_logic(module_t& module, lnodeimpl* node);
+  bool print_logic(std::ostream& out, lnodeimpl* node);
 
-  void print_name(module_t& module, lnodeimpl* node, bool force = false);
+  void print_proxy(std::ostream& out, proxyimpl* node);
 
-  void print_type(lnodeimpl* node);
+  void print_alu(std::ostream& out, aluimpl* node);
 
-  void print_value(const bitvector& value,
+  void print_zext(std::ostream& out, aluimpl* node);
+
+  void print_sext(std::ostream& out, aluimpl* node);
+
+  void print_select(std::ostream& out, selectimpl* node);
+
+  void print_reg(std::ostream& out, regimpl* node);
+
+  void print_cdomain(std::ostream& out, cdimpl* cd);
+
+  void print_mem(std::ostream& out, memimpl* node);
+
+  void print_udf(std::ostream& out, udfimpl* node);
+
+  void print_name(std::ostream& out,
+                  lnodeimpl* node,
+                  bool force = false);
+
+  void print_type(std::ostream& out, lnodeimpl* node);
+
+  void print_value(std::ostream& out,
+                   const bitvector& value,
                    bool skip_leading_zeros_enable = false,
                    uint32_t offset = 0,
                    uint32_t size = 0);
 
-  void print_proxy(module_t& module, proxyimpl* node);
+  void print_operator(std::ostream& out, ch_op op);
 
-  void print_alu(module_t& module, aluimpl* node);
-
-  void print_zext(module_t& module, aluimpl* node);
-
-  void print_sext(module_t& module, aluimpl* node);
-
-  void print_select(module_t& module, selectimpl* node);
-
-  void print_reg(module_t& module, regimpl* node);
-
-  void print_cdomain(module_t& module, cdimpl* cd);
-
-  void print_mem(module_t& module, memimpl* node);
-
-  void print_operator(ch_op op);
-
-  std::ostream& out_;
-  std::unordered_set<std::string_view> visited_;
+  context* ctx_;
+  uint32_t num_temps_;
+  std::unordered_map<uint32_t, std::unordered_set<lnodeimpl*>> uses_;
 };
 
 }

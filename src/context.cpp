@@ -904,9 +904,9 @@ void context::build_run_list(std::vector<lnodeimpl*>& list) {
 
 lnodeimpl* context::create_udf_node(udf_iface* udf, const std::initializer_list<lnode>& inputs) {
   if (udf->delta() != 0) {
-    return this->create_node<delayed_udfimpl>(udf, inputs);
+    return this->create_node<udfsimpl>(udf, inputs);
   } else {
-    return this->create_node<udfimpl>(udf, inputs);
+    return this->create_node<udfcimpl>(udf, inputs);
   }
 }
 

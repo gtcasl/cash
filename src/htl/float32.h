@@ -24,7 +24,7 @@ struct fAdd : public udf_seq<Delay, false, true, ch_float32, ch_float32, ch_floa
   }
 
   void to_verilog(std::ostream& out) override {
-    out << "fp_add __fp_add$id__(.clock($clock), .clk_en($enable), "
+    out << "fp_add __fp_add$id(.clock($clock), .clk_en($enable), "
            ".dataa($src0), .datab($src1), .result($dst));";
   }
 };
@@ -40,7 +40,7 @@ struct fSub : public udf_seq<Delay, false, true, ch_float32, ch_float32, ch_floa
   }
 
   void to_verilog(std::ostream& out) override {
-    out << "fp_sub __fp_sub$id__(.clock($clock), .clk_en($enable), "
+    out << "fp_sub __fp_sub$id(.clock($clock), .clk_en($enable), "
            ".dataa($src0), .datab($src1), .result($dst));";
   }
 };
@@ -56,7 +56,7 @@ struct fMult : public udf_seq<Delay, false, true, ch_float32, ch_float32, ch_flo
   }
 
   void to_verilog(std::ostream& out) override {
-    out << "fp_mult __fp_mult$id __(.clock($clock), .clk_en($enable), "
+    out << "fp_mult __fp_mult$id(.clock($clock), .clk_en($enable), "
            ".dataa($src0), .datab($src1), .result($dst));";
   }
 };
@@ -72,7 +72,7 @@ struct fDiv : public udf_seq<Delay, false, true, ch_float32, ch_float32, ch_floa
   }
 
   void to_verilog(std::ostream& out) override {
-    out << "fp_div __fp_div$id __(.clock($clock), .clk_en($enable), "
+    out << "fp_div __fp_div$id(.clock($clock), .clk_en($enable), "
            ".dataa($src0), .datab($src1), .result($dst));";
   }
 };

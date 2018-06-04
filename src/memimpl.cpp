@@ -163,9 +163,13 @@ mwportimpl::mwportimpl(context* ctx,
 mwportimpl::~mwportimpl() {}
 
 void mwportimpl::eval() {
+  // check clock transition
+  if (0 == this->cd().data().word(0))
+    return;
+
   // synchronous memory write
   int wenable = this->has_wenable() ? this->wenable().data().word(0) : wenable_idx_;
-  if (wenable && this->cd().data().word(0)) {
+  if (wenable) {
     auto data_width = mem_->data_width();
     auto addr = this->addr().data().word(0);
     auto& data = this->wdata().data();

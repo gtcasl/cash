@@ -72,13 +72,15 @@ std::size_t regimpl::hash() const {
 }
 
 void regimpl::eval() {
+  // check clock transition
   auto cd = reinterpret_cast<cdimpl*>(this->cd().impl());
-  if (cd->value().word(0)) {
-    if (this->has_init()) {
-      value_ = (cd->rst().data().word(0) ? this->init() : this->next()).data();
-    } else {
-      value_ = this->next().data();
-    }
+  if (0 == cd->value().word(0))
+    return;
+
+  if (this->has_init()) {
+    value_ = (cd->rst().data().word(0) ? this->init() : this->next()).data();
+  } else {
+    value_ = this->next().data();
   }
 }
 
