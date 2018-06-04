@@ -179,7 +179,7 @@ public:
   template <typename U,
             CH_REQUIRE_0(is_cast_convertible_v<T, U>)>
   explicit ch_vec(const vec_base<U, N>& rhs,
-                     const source_location& sloc = CH_SRC_LOCATION)
+                  const source_location& sloc = CH_SRC_LOCATION)
     : ch_vec(logic_accessor::copy_buffer(rhs, sloc))
   {}
 

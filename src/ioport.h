@@ -124,7 +124,9 @@ public:
     bindOutput(input_, out.output_);
   }
 
-  ch_in_impl(const ch_in_impl& in, const source_location& sloc = CH_SRC_LOCATION) : base(in, sloc) {}
+  ch_in_impl(const ch_in_impl& in, const source_location& sloc = CH_SRC_LOCATION)
+    : base(in, sloc)
+  {}
 
   ch_in_impl(ch_in_impl&& in) : base(std::move(in)) {}
 
@@ -181,11 +183,11 @@ public:
     bindInput(output_, in.input_);
   }
 
-  ch_out(const ch_out& out, const source_location& sloc = CH_SRC_LOCATION)
-    : base(out, sloc)
+  ch_out(const ch_out& rhs, const source_location& sloc = CH_SRC_LOCATION)
+    : base(rhs, sloc)
   {}
 
-  ch_out(ch_out&& out) : base(std::move(out)) {}
+  ch_out(ch_out&& rhs) : base(std::move(rhs)) {}
 
   ch_out& operator=(const ch_out& rhs) {
     base::operator=(rhs);
@@ -268,9 +270,9 @@ public:
 
 protected:
 
-  ch_scalar_in(const ch_scalar_in& out) = delete;
+  ch_scalar_in(const ch_scalar_in& rhs) = delete;
 
-  ch_scalar_in(ch_scalar_in&& out) = delete;
+  ch_scalar_in(ch_scalar_in&& rhs) = delete;
 
   ch_scalar_in& operator=(const ch_scalar_in&) = delete;
 

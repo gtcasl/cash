@@ -7,8 +7,6 @@ namespace ch {
 namespace internal {
 
 class lnodeimpl;
-class proxyimpl;
-class context;
 
 using ch_tick = uint64_t;
 
@@ -53,8 +51,6 @@ public:
   const std::string& name() const;
   
   uint32_t size() const;
-  
-  context* ctx() const;
 
   const bitvector& data() const;
 

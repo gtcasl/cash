@@ -1,12 +1,12 @@
 #pragma once
 
 #include "lnodeimpl.h"
-#include "tickable.h"
+#include "cdimpl.h"
 
 namespace ch {
 namespace internal {
 
-class regimpl : public tickable, public lnodeimpl {
+class regimpl : public lnodeimpl {
 public:
 
   const lnode& cd() const {
@@ -31,8 +31,6 @@ public:
 
   std::size_t hash() const override;
 
-  void tick() override;
-
   void eval() override;
   
 protected:
@@ -42,8 +40,6 @@ protected:
   regimpl(context* ctx, const lnode& next);
 
   virtual ~regimpl();
-
-  bitvector q_next_;
 
   friend class context;
 };

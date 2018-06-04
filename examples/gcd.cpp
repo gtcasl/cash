@@ -39,6 +39,8 @@ struct GCD {
 
     io.out.data  = x;
     io.out.valid = (0 == y) && p;
+
+    ch_print("{0}: clk={1}, rst={2}, x={3}, y={4}, p={5}", ch_time(), ch_clock(), ch_reset(), x, y, p);
   }
 };
 
@@ -50,15 +52,13 @@ int main() {
   gcd.io.in.valid = true;
 
   ch_vcdtracer tracer("gcd.vcd", gcd);
-  auto ticks = tracer.run([&](ch_tick)->bool {
-    return !gcd.io.out.valid;
+  auto ticks = tracer.run([&](ch_tick t)->bool {
+    std::cout << "t" << t << ": in="  << gcd.io.in.ready
+              << ", out="  << gcd.io.out.data << std::endl;
+    return !gcd.io.out.valid && t < 20;
   });
 
   std::cout << "completed after " << (ticks/2) << " cycles" << std::endl;
-  std::cout << "result:" << std::endl;
-  std::cout << "input[0] = " << gcd.io.in.data[0] << std::endl;
-  std::cout << "input[1] = " << gcd.io.in.data[1] << std::endl;
-  std::cout << "out = "  << gcd.io.out.data << std::endl;
 
   assert(gcd.io.out.data == 16);
 

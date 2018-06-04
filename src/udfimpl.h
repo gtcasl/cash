@@ -1,7 +1,6 @@
 #pragma once
 
 #include "lnodeimpl.h"
-#include "tickable.h"
 #include "udf.h"
 
 namespace ch {
@@ -25,16 +24,16 @@ protected:
   ~udfimpl();
 
   udf_iface* udf_;
-  bool initialized_;
+  std::vector<bitvector> udf_srcs_;
 
   friend class context;
 };
 
-class delayed_udfimpl : public tickable, public udfimpl {
+class delayed_udfimpl : public lnodeimpl {
 public:
 
   const lnode& cd() const {
-    return srcs_[cd_idx_];
+    return srcs_[0];
   }
 
   bool has_wenable() const {
@@ -45,7 +44,9 @@ public:
     return srcs_[wenable_idx_];
   }
 
-  void tick() override;
+  void initialize() override;
+
+  void reset() override;
 
   void eval() override;
 
@@ -57,10 +58,11 @@ protected:
 
   ~delayed_udfimpl();
 
-  std::vector<bitvector> values_;
-  bitvector q_next_;
-  int cd_idx_;
+  udf_iface* udf_;  
   int wenable_idx_;
+  std::vector<bitvector> udf_srcs_;
+  std::vector<bitvector> values_;
+  bitvector qnext_;
 
   friend class context;
 };

@@ -135,6 +135,7 @@ src/litimpl.cpp
 src/litimpl.cpp
 src/litimpl.h
 src/litimpl.h
+src/lnode.cpp
 src/lnode.h
 src/lnode.h
 src/lnodeimpl.cpp

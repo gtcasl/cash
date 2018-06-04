@@ -6,6 +6,7 @@ namespace ch {
 namespace internal {
 
 class deviceimpl;
+class context;
 
 class device {
 public:

@@ -56,27 +56,27 @@ void bindimpl::remove_output(bindportimpl* output) {
 }
 
 void bindimpl::bind_input(const lnode& src, const lnode& ioport) {
-  assert(src.ctx() == ctx_);
-  assert(ioport.ctx() != ctx_);
+  assert(src.impl()->ctx() == ctx_);
+  assert(ioport.impl()->ctx() != ctx_);
 
   // create bind port
-  auto bindport(ctx_->create_node<bindportimpl>(src, ioport));
-  reinterpret_cast<inputimpl*>(ioport.impl())->bind(bindport);
+  auto input = ctx_->create_node<bindinimpl>(this, src, ioport);
+  reinterpret_cast<inputimpl*>(ioport.impl())->bind(input);
 
   // add to list
-  add_port(bindport, srcs_);
+  add_port(input, srcs_);
 }
 
 void bindimpl::bind_output(const lnode& dst, const lnode& ioport) {
-  assert(dst.ctx() == ctx_);
-  assert(ioport.ctx() != ctx_);
+  assert(dst.impl()->ctx() == ctx_);
+  assert(ioport.impl()->ctx() != ctx_);
 
   // create bind port
-  auto bindport(ctx_->create_node<bindportimpl>(this, ioport));
-  const_cast<lnode&>(dst).write(0, bindport, 0, dst.size());
+  auto output = ctx_->create_node<bindoutimpl>(this, ioport);
+  const_cast<lnode&>(dst).write(0, output, 0, dst.size());
 
   // add to list
-  add_port(bindport, outputs_);
+  add_port(output, outputs_);
 }
 
 void bindimpl::eval() {
@@ -95,43 +95,88 @@ void bindimpl::print(std::ostream& out, uint32_t level) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bindportimpl::bindportimpl(context* ctx, const lnode& src, const lnode& ioport)
-  : ioimpl(ctx, type_bindport, ioport.size())
-  , ioport_(ioport)
-  , words_(nullptr) {
-  srcs_.push_back(src);
-  is_output_ = (type_output == ioport.impl()->type());
-  if (is_output_) {
-    src.impl()->acquire();
-  }
-  name_ = is_output_ ? "bindout" : "bindin";
+bindportimpl::bindportimpl(context* ctx,
+                           lnodetype type,
+                           bindimpl* binding,
+                           const lnode& ioport)
+  : ioimpl(ctx, type, ioport.size())
+  , binding_(binding)
+  , ioport_(ioport) {
+  binding->acquire();
 }
 
 bindportimpl::~bindportimpl() {
-  if (is_output_) {
-    auto binding = reinterpret_cast<bindimpl*>(this->binding().impl());
-    binding->remove_output(this);
-    binding->release();
-  }
+  binding_->release();
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+bindinimpl::bindinimpl(context* ctx,
+                       bindimpl* binding,
+                       const lnode& src,
+                       const lnode& ioport)
+  : bindportimpl(ctx, type_bindin, binding, ioport)
+  , words_(nullptr) {
+  srcs_.push_back(src);
+}
+
+bindinimpl::~bindinimpl() {
   if (words_) {
     value_.words(words_);
   }
 }
 
-void bindportimpl::initialize() {
-  words_ = value_.words(is_output_ ? ioport_.data().words() : srcs_[0].data().words());
+void bindinimpl::initialize() {
+  if (words_) {
+    value_.words(words_);
+  }
+  words_ = value_.words(srcs_[0].data().words());
 }
 
-void bindportimpl::eval() {
+void bindinimpl::eval() {
   //--
 }
 
-void bindportimpl::print(std::ostream& out, uint32_t level) const {
-  out << "#" << id_ << " <- " << (is_output_ ? "bindout" : "bindin") << value_.size();
-  out << "(#" << srcs_[0].id() << ", $" << ioport_.id() << ")";
+void bindinimpl::print(std::ostream& out, uint32_t level) const {
+  out << "#" << id_ << " <- " << "bindin" << value_.size();
+  out << "(#" << src(0).id() << ", $" << ioport_.id() << ")";
   if (level == 2) {
     out << " = " << value_;
   }
 }
 
+///////////////////////////////////////////////////////////////////////////////
 
+bindoutimpl::bindoutimpl(context* ctx, bindimpl* binding, const lnode& ioport)
+  : bindportimpl(ctx, type_bindout, binding, ioport)
+  , words_(nullptr) {
+  srcs_.push_back(binding); // make binding a source
+}
+
+bindoutimpl::~bindoutimpl() {
+  binding_->remove_output(this);
+  if (words_) {
+    value_.words(words_);
+  }
+}
+
+void bindoutimpl::initialize() {
+  if (words_) {
+    value_.words(words_);
+  }
+  words_ = value_.words(ioport_.data().words());
+}
+
+void bindoutimpl::eval() {
+  //--
+}
+
+void bindoutimpl::print(std::ostream& out, uint32_t level) const {
+  out << "#" << id_ << " <- " << "bindout" << value_.size();
+  out << "(#" << binding_->id() << ", $" << ioport_.id() << ")";
+  if (level == 2) {
+    out << " = " << value_;
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////

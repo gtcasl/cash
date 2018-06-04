@@ -60,8 +60,12 @@ void simulatorimpl::initialize() {
   }
 
   // initialize all nodes
+  std::unordered_set<lnodeimpl*> visited;
   for (auto node : run_list_) {
+    if (visited.count(node))
+      continue;
     node->initialize();
+    visited.insert(node);
   }
 }
 

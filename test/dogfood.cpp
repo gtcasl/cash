@@ -260,22 +260,7 @@ struct Dogfood {
     __out(ch_bool) out
   );
   void describe() {
-    auto clk  = ch_case(ch_time(), 8, 1_b)(6, 1)(4, 1)(2, 1)(0);
-    auto rst  = ch_case(ch_time(), 5, 1_b)(0);
-    auto next = ch_case(ch_time(), 8, 0011_b)(7, 0)(6, 0)(5, 1)(4, 2)(3, 3)(2, 1)(1, 2)(0);
-
-    ch_pushcd(clk, rst);
-
-    auto r = ch_delay(ch_select(ch_reset(), 0, next));
-
-    ch_popcd();
-
-    auto e = ch_case(ch_time(), 9, 0011_b)(8, 0)(7, 0)(6, 0)(5, 2)(4, 3)(3, 1)(2, 2)(0);
-
-    ch_print("t={0}, clk={1}, clk2={2}, rst={3}, next={4}, out={5}, expected={6}",
-         ch_time(), ch_clock(), clk, rst, next, r, e);
-    io.out = (r == e);
-    //io.out = true;
+    io.out = true;
   }
 };
 
@@ -300,7 +285,7 @@ int main() {
     ch_vcdtracer tracer("multi_clk.vcd", device);
   }*/
 
-  {
+  /*{
     ch_device<CustomClk> device;
     ch_toVerilog("custom_clk.v", device);
 
@@ -309,6 +294,23 @@ int main() {
     sim.run(10);
     std::cout << "out = "  << device.io.out << std::endl;
     ch_vcdtracer tracer("custom_clk.vcd", device);
+  }*/
+
+  {
+    ch_device<FilterBlock<ch_uint16>> filter;
+    ch_simulator sim(filter);
+    ch_tick t = sim.reset(0);
+
+    filter.io.x.data   = 3;
+    filter.io.x.valid  = 1;
+    filter.io.x.parity = 0;
+    t = sim.step(t, 2);
+
+    int ret(!!filter.io.y.valid);
+    ret &= (12 == filter.io.y.data);
+    ret &= !filter.io.y.parity;
+
+    assert(!!ret);
   }
 
   /*{

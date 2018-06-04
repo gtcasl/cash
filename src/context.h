@@ -146,6 +146,10 @@ public:
     return literals_;
   }
 
+  const auto& snodes() const {
+    return snodes_;
+  }
+
   auto default_clk() const {
     return default_clk_;
   }
@@ -277,8 +281,9 @@ protected:
   node_list_t             nodes_;
   std::list<undefimpl*>   undefs_;
   std::list<proxyimpl*>   proxies_;
+  std::list<lnodeimpl*>   snodes_;
   std::list<inputimpl*>   inputs_;
-  std::list<outputimpl*>  outputs_;
+  std::list<outputimpl*>  outputs_;  
   std::list<tapimpl*>     taps_;
   std::list<ioimpl*>      gtaps_;
   std::list<litimpl*>     literals_;

@@ -102,7 +102,7 @@ void selectimpl::eval() {
 }
 
 void selectimpl::print(std::ostream& out, uint32_t level) const {
-  out << "#" << id_ << " <- " << (has_key_ ? "case" : "if") << value_.size();
+  out << "#" << id_ << " <- " << (has_key_ ? "case" : "sel") << value_.size();
   uint32_t n = srcs_.size();
   if (n > 0) {
     out << "(";
@@ -147,5 +147,5 @@ lnodeimpl* ch::internal::createSelectNode(
     const lnode& pred,
     const lnode& _true,
     const lnode& _false) {
-  return pred.ctx()->create_node<selectimpl>(pred, _true, _false);
+  return pred.impl()->ctx()->create_node<selectimpl>(pred, _true, _false);
 }

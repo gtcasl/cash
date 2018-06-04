@@ -33,7 +33,7 @@ void reg_buffer::write(uint32_t dst_offset,
                        uint32_t src_offset,
                        uint32_t length) {
   auto proxy = reinterpret_cast<proxyimpl*>(value_.impl());
-  auto reg = dynamic_cast<regimpl*>(proxy->src(0).impl());
+  auto reg = reinterpret_cast<regimpl*>(proxy->src(0).impl());
   reg->next().write(dst_offset, data, src_offset, length);
 }
 
@@ -42,8 +42,6 @@ void reg_buffer::write(uint32_t dst_offset,
 regimpl::regimpl(context* ctx, const lnode& next)
   : lnodeimpl(ctx, type_reg, next.size()) {
   auto cd = ctx->current_cd();
-  cd->add_reg(this);
-  cd->acquire();
   srcs_.emplace_back(cd);
   srcs_.emplace_back(next);
 }
@@ -53,11 +51,7 @@ regimpl::regimpl(context* ctx, const lnode& next, const lnode& init)
   srcs_.emplace_back(init);
 }
 
-regimpl::~regimpl() {
-  auto cd = reinterpret_cast<cdimpl*>(this->cd().impl());
-  cd->remove_reg(this);
-  cd->release();
-}
+regimpl::~regimpl() {}
 
 std::size_t regimpl::hash() const {
   hash_t ret;
@@ -77,16 +71,14 @@ std::size_t regimpl::hash() const {
   return ret.value;
 }
 
-void regimpl::tick() {
-  value_ = q_next_;
-}
-
 void regimpl::eval() {
-  if (this->has_init()) {
-    auto& rst = reinterpret_cast<cdimpl*>(srcs_[0].impl())->rst();
-    q_next_ = rst.data().word(0) ? srcs_[2].data() : srcs_[1].data();
-  } else {
-    q_next_ = srcs_[1].data();
+  auto cd = reinterpret_cast<cdimpl*>(srcs_[0].impl());
+  if (cd->value().word(0)) {
+    if (this->has_init()) {
+      value_ = (cd->rst().data().word(0) ? this->init() : this->next()).data();
+    } else {
+      value_ = this->next().data();
+    }
   }
 }
 

@@ -161,7 +161,7 @@ lnodeimpl* ch::internal::createAluNode(
     ch_op op,
     uint32_t size,
     const lnode& in) {
-  return in.ctx()->create_node<aluimpl>(op, size, in);
+  return in.impl()->ctx()->create_node<aluimpl>(op, size, in);
 }
 
 lnodeimpl* ch::internal::createAluNode(
@@ -169,7 +169,7 @@ lnodeimpl* ch::internal::createAluNode(
     uint32_t size,
     const lnode& lhs,
     const lnode& rhs) {
-  return lhs.ctx()->create_node<aluimpl>(op, size, lhs, rhs);
+  return lhs.impl()->ctx()->create_node<aluimpl>(op, size, lhs, rhs);
 }
 
 lnodeimpl* ch::internal::createRotateNode(
@@ -178,7 +178,7 @@ lnodeimpl* ch::internal::createRotateNode(
     bool right) {
   auto N = next.size();
   auto mod = dist % N;
-  auto ret = next.ctx()->create_node<proxyimpl>(N);
+  auto ret = next.impl()->ctx()->create_node<proxyimpl>(N);
   if (right) {
     ret->add_source(0, next, mod, N - mod);
     ret->add_source(N - mod, next, 0, mod);

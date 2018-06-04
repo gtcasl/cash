@@ -50,17 +50,30 @@ protected:
 class bindportimpl : public ioimpl {
 public:
 
+  bindimpl* binding() const {
+    return binding_;
+  }
+
   const lnode& ioport() const {
     return ioport_;
   }
 
-  bool is_output() const {
-    return is_output_;
-  }
+protected:  
 
-  const lnode& binding() const {
-    return srcs_[0];
-  }
+  bindportimpl(context* ctx, lnodetype type, bindimpl* bind, const lnode& ioport);
+
+  ~bindportimpl();
+
+  bindimpl* binding_;
+  lnode ioport_;
+
+  friend class context;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+class bindinimpl : public bindportimpl {
+public:
 
   void initialize() override;
 
@@ -68,14 +81,34 @@ public:
 
   void print(std::ostream& out, uint32_t level) const override;
 
-protected:  
+protected:
 
-  bindportimpl(context* ctx, const lnode& src, const lnode& ioport);
+  bindinimpl(context* ctx, bindimpl* bind, const lnode& src, const lnode& ioport);
 
-  ~bindportimpl();
+  ~bindinimpl();
 
-  lnode ioport_;
-  bool is_output_;
+  uint32_t* words_;
+
+  friend class context;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+class bindoutimpl : public bindportimpl {
+public:
+
+  void initialize() override;
+
+  void eval() override;
+
+  void print(std::ostream& out, uint32_t level) const override;
+
+protected:
+
+  bindoutimpl(context* ctx, bindimpl* bind, const lnode& ioport);
+
+  ~bindoutimpl();
+
   uint32_t* words_;
 
   friend class context;

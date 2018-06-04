@@ -10,11 +10,11 @@ public:
   udf_iface(uint32_t delta,
             bool enable,
             uint32_t output_size,
-            const std::initializer_list<uint32_t>& inputs_size)
+            const std::initializer_list<uint32_t>& inputs_sizes)
     : delta_(delta)
     , enable_(enable)
     , output_size_(output_size)
-    , inputs_size_(inputs_size)
+    , inputs_size_(inputs_sizes)
   {}
 
   virtual ~udf_iface() {}
@@ -31,7 +31,7 @@ public:
     return output_size_;
   }
 
-  const std::vector<uint32_t>& inputs_size() const {
+  const std::vector<uint32_t>& inputs_sizes() const {
     return inputs_size_;
   }
 
@@ -39,7 +39,7 @@ public:
 
   virtual void reset() = 0;
 
-  virtual void eval(bitvector& out, const std::vector<lnode>& srcs) = 0;
+  virtual void eval(bitvector& out, const std::vector<bitvector>& srcs) = 0;
 
   virtual void init_verilog(std::ostream& out) = 0;
 
@@ -96,17 +96,16 @@ public:
 
 udf_iface* lookupUDF(const std::type_index& signature);
 
-void registerUDF(const std::type_index& signature, udf_iface* udf);
+udf_iface* registerUDF(const std::type_index& signature, udf_iface* udf);
 
-lnodeimpl* create_udf_node(udf_iface* udf, const std::initializer_list<lnode>& inputs);
+lnodeimpl* createUDFNode(udf_iface* udf, const std::initializer_list<lnode>& inputs);
 
 template <typename T>
 udf_iface* get_udf() {
   auto signature = std::type_index(typeid(T));
   auto udf = lookupUDF(signature);
   if (nullptr == udf) {
-    udf = new T();
-    registerUDF(signature, udf);
+    udf = registerUDF(signature, new T());
   }
   return udf;
 }
@@ -114,7 +113,7 @@ udf_iface* get_udf() {
 template <typename T, typename... Args>
 auto ch_udf(Args&& ...args) {
   static_assert(sizeof...(Args) >= std::tuple_size_v<typename T::traits::Inputs>, "number of inputs mismatch");
-  auto node = create_udf_node(get_udf<T>(), {get_lnode(args)...});
+  auto node = createUDFNode(get_udf<T>(), {get_lnode(args)...});
   return typename T::traits::Output(make_logic_buffer(node));
 }
 

@@ -16,18 +16,23 @@
   m(sel) \
   m(reg) \
   m(mem) \
-  m(memport) \
+  m(mrport) \
+  m(mwport) \
   m(bind) \
-  m(bindport) \
+  m(bindin) \
+  m(bindout) \
   m(tap) \
   m(assert) \
   m(time) \
   m(print) \
-  m(udf)
+  m(udfc) \
+  m(udfs)
 
 namespace ch {
 namespace internal {
   
+class context;
+
 enum lnodetype {
   CH_LNODE_ENUM(CH_LNODE_TYPE)
 };

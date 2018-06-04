@@ -32,7 +32,7 @@ struct FiFo {
 
     io.dout  = mem.read(rd_A);
     io.empty = (wr_ptr == rd_ptr);
-    io.full  = (wr_A == rd_A) && (wr_ptr[addr_width] != rd_ptr[addr_width]);
+    io.full  = (wr_A == rd_A) && (wr_ptr[addr_width] != rd_ptr[addr_width]);    
   }
 };
 

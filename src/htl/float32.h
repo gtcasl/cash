@@ -16,10 +16,10 @@ class ch_float32;
 template <unsigned Delay = 1>
 struct fAdd : public udf_seq<Delay, true, ch_float32, ch_float32, ch_float32> {
 
-  void eval(bitvector& out, const std::vector<lnode>& srcs) override {
+  void eval(bitvector& out, const std::vector<bitvector>& srcs) override {
     assert(out.size() == 32 && srcs.size() == 2);
-    uint32_t a(srcs[0].data().word(0));
-    uint32_t b(srcs[1].data().word(0));
+    uint32_t a(srcs[0].word(0));
+    uint32_t b(srcs[1].word(0));
     float c(*(float*)&a + *(float*)&b);
     out.word(0) = *(uint32_t*)&c;
   }
@@ -33,10 +33,10 @@ struct fAdd : public udf_seq<Delay, true, ch_float32, ch_float32, ch_float32> {
 template <unsigned Delay = 1>
 struct fSub : public udf_seq<Delay, true, ch_float32, ch_float32, ch_float32> {
 
-  void eval(bitvector& out, const std::vector<lnode>& srcs) override {
+  void eval(bitvector& out, const std::vector<bitvector>& srcs) override {
     assert(out.size() == 32 && srcs.size() == 2);
-    uint32_t a(srcs[0].data().word(0));
-    uint32_t b(srcs[1].data().word(0));
+    uint32_t a(srcs[0].word(0));
+    uint32_t b(srcs[1].word(0));
     float c(*(float*)&a - *(float*)&b);
     out.word(0) = *(uint32_t*)&c;
   }
@@ -50,10 +50,10 @@ struct fSub : public udf_seq<Delay, true, ch_float32, ch_float32, ch_float32> {
 template <unsigned Delay>
 struct fMult : public udf_seq<Delay, true, ch_float32, ch_float32, ch_float32> {
 
-  void eval(bitvector& out, const std::vector<lnode>& srcs) override {
+  void eval(bitvector& out, const std::vector<bitvector>& srcs) override {
     assert(out.size() == 32 && srcs.size() == 2);
-    uint32_t a(srcs[0].data().word(0));
-    uint32_t b(srcs[1].data().word(0));
+    uint32_t a(srcs[0].word(0));
+    uint32_t b(srcs[1].word(0));
     float c(*(float*)&a * *(float*)&b);
     out.word(0) = *(uint32_t*)&c;
   }
@@ -67,10 +67,10 @@ struct fMult : public udf_seq<Delay, true, ch_float32, ch_float32, ch_float32> {
 template <unsigned Delay>
 struct fDiv : public udf_seq<Delay, true, ch_float32, ch_float32, ch_float32> {
 
-  void eval(bitvector& out, const std::vector<lnode>& srcs) override {
+  void eval(bitvector& out, const std::vector<bitvector>& srcs) override {
     assert(out.size() == 32 && srcs.size() == 2);
-    uint32_t a(srcs[0].data().word(0));
-    uint32_t b(srcs[1].data().word(0));
+    uint32_t a(srcs[0].word(0));
+    uint32_t b(srcs[1].word(0));
     float c(*(float*)&a / *(float*)&b);
     out.word(0) = *(uint32_t*)&c;
   }
@@ -148,19 +148,19 @@ public:
   // arithmetic operators
 
   auto operator+(const ch_float32& rhs) const {
-    return ch_udf<fAdd<1>>(ch_true, *this, rhs);
+    return ch_udf<fAdd<1>>(*this, rhs);
   }
 
   auto operator-(const ch_float32& rhs) const {
-    return ch_udf<fSub<1>>(ch_true, *this, rhs);
+    return ch_udf<fSub<1>>(*this, rhs);
   }
 
   auto operator*(const ch_float32& rhs) const {
-    return ch_udf<fMult<1>>(ch_true, *this, rhs);
+    return ch_udf<fMult<1>>(*this, rhs);
   }
 
   auto operator/(const ch_float32& rhs) const {    
-    return ch_udf<fDiv<1>>(ch_true, *this, rhs);
+    return ch_udf<fDiv<1>>(*this, rhs);
   }
 
 protected:

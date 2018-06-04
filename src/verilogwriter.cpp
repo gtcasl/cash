@@ -17,7 +17,7 @@
 using namespace ch::internal;
 
 const auto IsRegType = [](lnodetype type) {
-  return (type_reg == type) || (type_mem == type) || (type_memport == type);
+  return (type_reg == type) || (type_mem == type) || (type_mrport == type) || (type_mwport == type);
 };
 
 const auto is_inline_literal = [](lnodeimpl* node) {
@@ -43,14 +43,16 @@ bool verilogwriter::module_t::is_inline_subscript(lnodeimpl* node) const {
   auto it = uses.find(node->id());
   if (it != uses.end()) {
     for (lnodeimpl* use : it->second) {
-      if (type_proxy == use->type()
-       || type_memport == use->type())
+      if (type_proxy  == use->type()
+       || type_mrport == use->type()
+       || type_mwport == use->type())
         return false;
     }
   }
   lnodeimpl* src = node->src(0).impl();
-  if (type_proxy == src->type()
-   || type_memport == src->type())
+  if (type_proxy  == src->type()
+   || type_mrport == src->type()
+   || type_mwport == src->type())
     return false;
   return true;
 }
@@ -206,7 +208,7 @@ bool verilogwriter::print_binding(module_t& module, bindimpl* node) {
 
 bool verilogwriter::print_bindport(module_t& module, bindportimpl* node) {
   // outputs are sourced via binding already
-  if (node->is_output())
+  if (node->type() == type_bindout)
     return false;
 
   out_ << "assign ";
@@ -264,7 +266,8 @@ bool verilogwriter::print_decl(module_t& module,
       return false;
     }
     [[fallthrough]];
-  case type_bindport:
+  case type_bindin:
+  case type_bindout:
   case type_alu:
   case type_sel:
   case type_reg:
@@ -281,7 +284,7 @@ bool verilogwriter::print_decl(module_t& module,
     }
     this->print_name(module, node);
     if (type_mem == type) {
-      out_ << "[0:" << (dynamic_cast<memimpl*>(node)->num_items() - 1) << "]";
+      out_ << "[0:" << (reinterpret_cast<memimpl*>(node)->num_items() - 1) << "]";
     }
     visited.insert(node->id());
     if (!ref) {
@@ -315,7 +318,8 @@ bool verilogwriter::print_decl(module_t& module,
   case type_output:
   case type_cd:
   case type_tap:
-  case type_memport:
+  case type_mrport:
+  case type_mwport:
   case type_assert:
   case type_print:
   case type_time:
@@ -346,15 +350,16 @@ bool verilogwriter::print_logic(module_t& module, lnodeimpl* node) {
     this->print_select(module, reinterpret_cast<selectimpl*>(node));
     return true;
   case type_reg:
-    this->print_reg(module, dynamic_cast<regimpl*>(node));
+    this->print_reg(module, reinterpret_cast<regimpl*>(node));
     return true;
   case type_mem:
-    this->print_mem(module, dynamic_cast<memimpl*>(node));
+    this->print_mem(module, reinterpret_cast<memimpl*>(node));
     return true;
   case type_bind:
     this->print_binding(module, reinterpret_cast<bindimpl*>(node));
     return true;
-  case type_bindport:
+  case type_bindin:
+  case type_bindout:
     this->print_bindport(module, reinterpret_cast<bindportimpl*>(node));
     return true;  
   case type_lit:
@@ -362,7 +367,8 @@ bool verilogwriter::print_logic(module_t& module, lnodeimpl* node) {
   case type_output:
   case type_cd:
   case type_tap:
-  case type_memport:
+  case type_mrport:
+  case type_mwport:
   case type_assert:
   case type_print:
   case type_time:
@@ -575,31 +581,32 @@ void verilogwriter::print_mem(module_t& module, memimpl* node) {
   //
   // write ports logic
   //
-  for (auto port : node->ports()) {
-    if (!port->has_wdata())
+  for (auto p : node->ports()) {
+    if (p->type() == type_mrport)
       continue;
+    auto mwport = reinterpret_cast<mwportimpl*>(p);
     out_ << "always @(" ;
-    auto cd = reinterpret_cast<cdimpl*>(node->cd().impl());
+    auto cd = reinterpret_cast<cdimpl*>(mwport->cd().impl());
     this->print_cdomain(module, cd);
     out_ << ") begin" << std::endl;
     {
       auto_indent indent1(out_);
-      if (port->has_wenable()) {
+      if (mwport->has_wenable()) {
         out_ << "if (";
-        this->print_name(module, port->wenable().impl());
+        this->print_name(module, mwport->wenable().impl());
         out_ << ") begin" << std::endl;
         {
           auto_indent indent2(out_);
-          this->print_name(module, port);
+          this->print_name(module, mwport);
           out_ << " = ";
-          this->print_name(module, port->wdata().impl());
+          this->print_name(module, mwport->wdata().impl());
           out_ << ";" << std::endl;
         }
         out_ << "end" << std::endl;
       } else {
-        this->print_name(module, port);
+        this->print_name(module, mwport);
         out_ << " = ";
-        this->print_name(module, port->wdata().impl());
+        this->print_name(module, mwport->wdata().impl());
         out_ << ";" << std::endl;
       }
     }
@@ -636,12 +643,14 @@ void verilogwriter::print_name(module_t& module, lnodeimpl* node, bool force) {
   case type_alu:
   case type_reg:
   case type_mem:
-  case type_bindport:
+  case type_bindin:
+  case type_bindout:
     print_unique_name(node);
     break;
-  case type_memport: {
+  case type_mrport:
+  case type_mwport: {
     auto memport = reinterpret_cast<memportimpl*>(node);
-    this->print_name(module, memport->mem().impl());
+    this->print_name(module, memport->mem());
     out_ << "[";
     this->print_name(module, memport->addr().impl());
     out_ << "]";
@@ -664,7 +673,7 @@ void verilogwriter::print_type(lnodeimpl* node) {
   out_ << (is_reg_type ? "reg" : "wire");
 
   if (type == type_mem) {
-    auto data_width = dynamic_cast<memimpl*>(node)->data_width();
+    auto data_width = reinterpret_cast<memimpl*>(node)->data_width();
     if (data_width > 1) {
       out_ << "[" << (data_width - 1) << ":0]";
     }

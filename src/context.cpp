@@ -60,7 +60,7 @@ public:
     return ctx;
   }
 
-  udf_iface* lookupUDF(const std::type_index& signature) {
+  udf_iface* lookup_udf(const std::type_index& signature) {
     auto it = udfs_.find(signature);
     if (it != udfs_.end()) {
       return it->second;
@@ -68,9 +68,11 @@ public:
     return nullptr;
   }
 
-  void registerUDF(const std::type_index& signature, udf_iface* udf) {
+  udf_iface* register_udf(const std::type_index& signature, udf_iface* udf) {
     assert(0 == udfs_.count(signature));
     udfs_[signature] = udf;
+    udf->acquire();
+    return udf;
   }
 
   static context_manager& instance(){
@@ -104,11 +106,11 @@ context* ch::internal::ctx_curr() {
 }
 
 udf_iface* ch::internal::lookupUDF(const std::type_index& signature) {
-  return context_manager::instance().lookupUDF(signature);
+  return context_manager::instance().lookup_udf(signature);
 }
 
-void ch::internal::registerUDF(const std::type_index& signature, udf_iface* udf) {
-  context_manager::instance().registerUDF(signature, udf);
+udf_iface* ch::internal::registerUDF(const std::type_index& signature, udf_iface* udf) {
+  return context_manager::instance().register_udf(signature, udf);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -205,6 +207,11 @@ void context::add_node(lnodeimpl* node) {
   case type_lit:
     literals_.emplace_back((litimpl*)node);
     break;
+  case type_reg:
+  case type_mwport:
+  case type_udfs:
+    snodes_.emplace_back(node);
+    break;
   case type_input:
     {
       // ensure clock and reset signals are ordered first
@@ -265,6 +272,11 @@ node_list_t::iterator context::delete_node(const node_list_t::iterator& it) {
     break;
   case type_lit:
     literals_.remove((litimpl*)node);
+    break;
+  case type_reg:
+  case type_mwport:
+  case type_udfs:
+    snodes_.remove(node);
     break;
   case type_input:
     if (node == default_clk_) {
@@ -734,24 +746,45 @@ bindimpl* context::find_binding(context* module) {
 }
 
 void context::bind_input(const lnode& src, const lnode& input) {
-  auto binding = this->find_binding(input.ctx());
+  auto binding = this->find_binding(input.impl()->ctx());
   binding->bind_input(src, input);
 }
 
 void context::bind_output(const lnode& dst, const lnode& output) {
-  auto binding = this->find_binding(output.ctx());
+  auto binding = this->find_binding(output.impl()->ctx());
   binding->bind_output(dst, output);
 }
 
 void context::build_run_list(std::vector<lnodeimpl*>& list) {
-  std::unordered_set<lnodeimpl*> visited;
-  std::unordered_set<lnodeimpl*> cycles;
+  std::unordered_set<lnodeimpl*> visited, cycles;
+  std::vector<lnodeimpl*> update_list;  
+  std::vector<lnodeimpl*> snodes;
 
-  std::function<void(lnodeimpl*)> dfs_visit = [&](lnodeimpl* node) {
+  std::function<void (context*)> gather_snodes = [&](context* ctx) {
+    for (auto node : ctx->bindings()) {
+      gather_snodes(node->module());
+    }
+    auto& n = ctx->snodes();
+    snodes.reserve(snodes.size() + n.size());
+    snodes.insert(snodes.end(), n.begin(), n.end());
+  };
+
+  std::function<bool (lnodeimpl*)> dfs_visit = [&](lnodeimpl* node)->bool {
     if (visited.count(node))
-      return;
+      return false;
 
+    // check for cycles
     if (cycles.count(node)) {
+      // handling register cycles
+      switch (node->type()) {
+      case type_reg:
+      case type_mwport:
+      case type_udfs:
+        return true;
+      default:
+        break;
+      }
+
       int dump_ast_level = platform::self().dump_ast();
       if (dump_ast_level) {
         for (auto n : list) {
@@ -772,30 +805,26 @@ void context::build_run_list(std::vector<lnodeimpl*>& list) {
       }
       fprintf(stderr, "\n");
       std::abort();
-      return;
+      return false;
     }
     cycles.insert(node);
 
-    // special handling for cyclic nodes
+    bool update = false;
+
+    // handling for special nodes
     switch (node->type()) {
-    case type_reg:
-    case type_mem:
-      visited.insert(node);
-      break;
     case type_bind:
       visited.insert(node);
-      return; // no following
+      return false; // no following
     case type_input: {
       auto input = reinterpret_cast<inputimpl*>(node);
       if (!input->input().empty()) {
-        dfs_visit(input->input().impl());
+        update |= dfs_visit(input->input().impl());
       }
     } break;
-    case type_bindport: {
-      auto port = reinterpret_cast<bindportimpl*>(node);
-      if (port->is_output()) {
-        dfs_visit(port->ioport().impl());
-      }
+    case type_bindout: {
+      auto port = reinterpret_cast<bindoutimpl*>(node);
+      update |= dfs_visit(port->ioport().impl());
     } break;
     default:
       break;
@@ -803,19 +832,52 @@ void context::build_run_list(std::vector<lnodeimpl*>& list) {
 
     // visit source nodes
     for (auto& src : node->srcs()) {
-      dfs_visit(src.impl());
+      update |= dfs_visit(src.impl());
     }
 
-    visited.insert(node);
     list.push_back(node);
+    visited.insert(node);
+
+    if (update) {
+      update_list.push_back(node);
+    }
+
+    return update;
   };
 
   DBG(2, "run list evaluation for %s (#%d) ...\n", this->name().c_str(), this->id());
 
-  for (auto cd : cdomains_) {
-    for (auto node : cd->regs()) {
-      dfs_visit(dynamic_cast<lnodeimpl*>(node));
+  // gather all sequential nodes
+  gather_snodes(this);
+
+  // enable cycle detection on sequential nodes
+  for (auto node : snodes) {
+    cycles.insert(node);
+  }
+
+  // insert sequential nodes dependencies
+  for (auto node : snodes) {
+    for (auto& src : node->srcs()) {
+      dfs_visit(src.impl());
     }
+  }
+
+  for (auto node : snodes) {
+    cycles.erase(node);
+  }
+
+  // insert sequential nodes
+  auto old_size = list.size();
+  for (auto node : snodes) {
+    dfs_visit(node);
+  }
+  // sort sequential node in reverse dependency order
+  std::reverse(list.begin() + old_size, list.begin() + list.size());
+
+  // insert all nodes with cycles
+  for (auto node : update_list) {
+    cycles.erase(node);
+    visited.erase(node);
   }
 
   for (auto node : outputs_) {
@@ -926,7 +988,7 @@ void context::dump_stats(std::ostream& out) {
     for (lnodeimpl* node : ctx->nodes()) {
       switch (node->type()) {
       case type_mem:
-        memory_bits += dynamic_cast<memimpl*>(node)->total_size();
+        memory_bits += reinterpret_cast<memimpl*>(node)->total_size();
         ++num_memories;
         break;
       case type_reg:
@@ -965,7 +1027,7 @@ void context::dump_stats(std::ostream& out) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void ch::internal::registerTap(const std::string& name, const lnode& node) {
-  node.ctx()->register_tap(name, node);
+  node.impl()->ctx()->register_tap(name, node);
 }
 
 void ch::internal::ch_dumpStats(std::ostream& out, const device& device) {
@@ -973,13 +1035,13 @@ void ch::internal::ch_dumpStats(std::ostream& out, const device& device) {
 }
 
 void ch::internal::bindInput(const lnode& src, const lnode& input) {
-  src.ctx()->bind_input(src, input);
+  src.impl()->ctx()->bind_input(src, input);
 }
 
 void ch::internal::bindOutput(const lnode& dst, const lnode& output) {
-  dst.ctx()->bind_output(dst, output);
+  dst.impl()->ctx()->bind_output(dst, output);
 }
 
 void ch::internal::register_enum_string(const lnode& node, void* callback) {
-  node.ctx()->register_enum_string(node, (enum_string_cb)callback);
+  node.impl()->ctx()->register_enum_string(node, (enum_string_cb)callback);
 }

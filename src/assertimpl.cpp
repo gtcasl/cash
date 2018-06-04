@@ -32,5 +32,5 @@ void assertimpl::eval() {
 }
 
 void ch::internal::createAssertNode(const lnode& pred, const std::string& msg) {
-  pred.ctx()->create_node<assertimpl>(pred, msg);
+  pred.impl()->ctx()->create_node<assertimpl>(pred, msg);
 }

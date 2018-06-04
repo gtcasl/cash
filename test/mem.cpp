@@ -51,15 +51,15 @@ TEST_CASE("memory", "[memory]") {
       mem.write(a, d, en);
       ch_tie(a, d, en) = ch_delay(
         ch_case(ch_time(),
-           2,  ch_cat(00_b, 0xA_h, 1_b))
-          (4,  ch_cat(01_b, 0xB_h, 1_b))
-          (6,  ch_cat(10_b, 0xC_h, 1_b))
-          (8,  ch_cat(11_b, 0xD_h, 1_b))
-          (10, ch_cat(01_b, 0x0_h, 0_b))
-          (12, ch_cat(00_b, 0xE_h, 1_b))
-          (14, ch_cat(10_b, 0x0_h, 0_b))
-          (16, ch_cat(00_b, 0x0_h, 0_b))
-          (18, ch_cat(11_b, 0x0_h, 0_b))
+           3,  ch_cat(00_b, 0xA_h, 1_b))
+          (5,  ch_cat(01_b, 0xB_h, 1_b))
+          (7,  ch_cat(10_b, 0xC_h, 1_b))
+          (9,  ch_cat(11_b, 0xD_h, 1_b))
+          (11, ch_cat(01_b, 0x0_h, 0_b))
+          (13, ch_cat(00_b, 0xE_h, 1_b))
+          (15, ch_cat(10_b, 0x0_h, 0_b))
+          (17, ch_cat(00_b, 0x0_h, 0_b))
+          (19, ch_cat(11_b, 0x0_h, 0_b))
               (ch_cat(00_b, 0x0_h, 0_b)));
       ch_bit4 e = ch_case(ch_time(),
             11, 0xB_h)
@@ -68,7 +68,7 @@ TEST_CASE("memory", "[memory]") {
            (17, 0xE_h)
            (19, 0xD_h)
                (q);
-      //ch_print("t={0}, clk={1}, a={2}, d={3}, en={4}, q={5}, e={6}", ch_time(), ch_clock(), a, d, en, q, e);
+      ch_print("t={0}, clk={1}, rst={2}, a={3}, d={4}, en={5}, q={6}, e={7}", ch_time(), ch_clock(), ch_reset(), a, d, en, q, e);
       return (q == e);
     }, 12);
 
@@ -81,15 +81,15 @@ TEST_CASE("memory", "[memory]") {
       mem.write(a, d, en);
       ch_tie(a, d, en) = ch_delay(
         ch_case(ch_time(),
-           2,  ch_cat(00_b, 0xA_h, 1_b))
-          (4,  ch_cat(01_b, 0xB_h, 1_b))
-          (6,  ch_cat(10_b, 0xC_h, 1_b))
-          (8,  ch_cat(11_b, 0xD_h, 1_b))
-          (10, ch_cat(01_b, 0x0_h, 0_b))
-          (12, ch_cat(00_b, 0xE_h, 1_b))
-          (14, ch_cat(10_b, 0x0_h, 0_b))
-          (16, ch_cat(00_b, 0x0_h, 0_b))
-          (18, ch_cat(11_b, 0x0_h, 0_b))
+           3,  ch_cat(00_b, 0xA_h, 1_b))
+          (5,  ch_cat(01_b, 0xB_h, 1_b))
+          (7,  ch_cat(10_b, 0xC_h, 1_b))
+          (9,  ch_cat(11_b, 0xD_h, 1_b))
+          (11, ch_cat(01_b, 0x0_h, 0_b))
+          (13, ch_cat(00_b, 0xE_h, 1_b))
+          (15, ch_cat(10_b, 0x0_h, 0_b))
+          (17, ch_cat(00_b, 0x0_h, 0_b))
+          (19, ch_cat(11_b, 0x0_h, 0_b))
               (ch_cat(00_b, 0x0_h, 0_b)));
       ch_bit4 e = ch_case(ch_time(),
             11, 0xB_h)
@@ -98,7 +98,7 @@ TEST_CASE("memory", "[memory]") {
            (17, 0xE_h)
            (19, 0xD_h)
                (q);
-      //ch_print("t={0}, clk={1}, a={2}, d={3}, en={4}, q={5}, e={6}", ch_time(), ch_clock(), a, d, en, q, e);
+      ch_print("t={0}, clk={1}, rst={2}, a={3}, d={4}, en={5}, q={6}, e={7}", ch_time(), ch_clock(), ch_reset(), a, d, en, q, e);
       return (q == e);
     }, 12);
 

@@ -25,12 +25,10 @@ memimpl::memimpl(context* ctx,
   , data_width_(data_width)
   , num_items_(num_items)
   , write_enable_(write_enable)
-  , has_initdata_(!init_data.empty()) {
+  , has_initdata_(!init_data.empty())
+  , cd_(nullptr) {
   if (write_enable) {
-    auto cd = ctx->current_cd();
-    cd->add_reg(this);
-    cd->acquire();
-    srcs_.emplace_back(cd);
+    cd_ = ctx->current_cd();
   }
   if (has_initdata_) {
     assert(8 * init_data.size() >= value_.size());
@@ -38,13 +36,7 @@ memimpl::memimpl(context* ctx,
   }
 }
 
-memimpl::~memimpl() {
-  if (write_enable_) {
-    auto cd = reinterpret_cast<cdimpl*>(this->cd().impl());
-    cd->remove_reg(this);
-    cd->release();
-  }
-}
+memimpl::~memimpl() {}
 
 void memimpl::remove_port(memportimpl* port) {
   for (auto it = ports_.begin(), end = ports_.end(); it != end; ++it) {
@@ -55,21 +47,33 @@ void memimpl::remove_port(memportimpl* port) {
   }
 }
 
-memportimpl* memimpl::port(const lnode& addr) {
+memportimpl* memimpl::read(const lnode& addr) {
   for (auto port : ports_) {
-    if (port->addr().id() == addr.id()) {
+    if (port->addr().id() == addr.id() && port->type() == type_mrport) {
       return port;
     }
   }
-  auto impl = ctx_->create_node<memportimpl>(this, ports_.size(), addr);
+  auto impl = ctx_->create_node<mrportimpl>(this, addr);
   ports_.emplace_back(impl);
   return ports_.back();
 }
 
-void memimpl::tick() {
+void memimpl::write(const lnode& addr, const lnode& data, const lnode& enable) {
   for (auto port : ports_) {
-    port->tick();
+    if (port->addr().id() == addr.id() && port->type() == type_mwport) {
+      CH_ABORT("duplicate memory write to the same address not allowed");
+    }
   }
+  auto impl = ctx_->create_node<mwportimpl>(this, addr, data, enable);
+  ports_.emplace_back(impl);
+}
+
+bool memimpl::is_readwrite(memportimpl* port) const {
+  for (auto p : ports_) {
+    if (p->addr().id() == port->id() && p->type() != port->type())
+      return true;
+  }
+  return false;
 }
 
 void memimpl::eval() {
@@ -96,78 +100,80 @@ void memimpl::print(std::ostream& out, uint32_t level) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-memportimpl::memportimpl(context* ctx, memimpl* mem, uint32_t index, const lnode& addr)
-  : ioimpl(ctx, type_memport, mem->data_width())
-  , index_(index)
-  , read_enable_(false)
-  , a_next_(0)  
-  , wdata_idx_(-1)
-  , wenable_idx_(-1)
-  , dirty_(false) {
-  mem->acquire();
-  srcs_.emplace_back(mem);
+memportimpl::memportimpl(context* ctx,
+                         lnodetype type,
+                         memimpl* mem,
+                         const lnode& addr)
+  : ioimpl(ctx, type, mem->data_width())
+  , mem_(mem)
+  , index_(mem->ports().size()) {
+  mem->acquire();  
   srcs_.emplace_back(addr);
 }
 
 memportimpl::~memportimpl() {
-  auto mem = dynamic_cast<memimpl*>(this->mem().impl());
-  mem->remove_port(this);
-  mem->release();
+  mem_->remove_port(this);
+  mem_->release();
 }
 
+///////////////////////////////////////////////////////////////////////////////
 
-void memportimpl::read() {
-  read_enable_ = true;
+mrportimpl::mrportimpl(context* ctx, memimpl* mem, const lnode& addr)
+  : memportimpl(ctx, type_mrport, mem, addr) {
+  srcs_.emplace_back(mem); // make memory a source
 }
 
-void memportimpl::write(const lnode& data) {
-  if (wdata_idx_ == -1) {
-    // add write port to memory sources to enforce DFG dependencies
-    auto mem = dynamic_cast<memimpl*>(srcs_[0].impl());
-    mem->srcs().emplace_back(this);
-  }
+mrportimpl::~mrportimpl() {}
+
+void mrportimpl::eval() {
+  // asynchronous read
+  auto data_width = mem_->data_width();
+  auto addr = this->addr().data().word(0);
+  mem_->value().read(0,
+                     value_.words(),
+                     value_.cbsize(),
+                     addr * data_width,
+                     data_width);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+mwportimpl::mwportimpl(context* ctx,
+                       memimpl* mem,
+                       const lnode& addr,
+                       const lnode& data,
+                       const lnode& enable)
+  : memportimpl(ctx, type_mwport, mem, addr) {
+  mem->srcs().emplace_back(this); // add to memory sources
+
+  // add clock domain
+  srcs_.emplace_back(mem->cd());
+
   // add data source
-  wdata_idx_ = this->add_src(wdata_idx_, data);
-}
-
-void memportimpl::write(const lnode& data, const lnode& enable) {
-  // add data source
-  this->write(data);
+  srcs_.emplace_back(data);
 
   // add enable predicate
-  wenable_idx_ = this->add_src(wenable_idx_, enable);
-}
-
-void memportimpl::tick() {
-  if (dirty_) {
-    auto mem = dynamic_cast<memimpl*>(srcs_[0].impl());
-    auto data_width = mem->data_width();
-    mem->value().write(a_next_ * data_width,
-                       q_next_.words(),
-                       q_next_.cbsize(),
-                       0,
-                       data_width);
+  if (enable.impl()->type() == type_lit) {
+    wenable_idx_ = (1 == enable.data().word(0)) ? -1 : 0;
+  } else {
+    wenable_idx_ = this->add_src(-1, enable);
   }
 }
 
-void memportimpl::eval() {
-  // asynchronous read
-  auto mem = dynamic_cast<memimpl*>(srcs_[0].impl());
-  auto data_width = mem->data_width();
-  uint32_t addr = srcs_[1].data().word(0);
-  mem->value().read(0,
-                    value_.words(),
-                    value_.cbsize(),
-                    addr * data_width,
-                    data_width);
+mwportimpl::~mwportimpl() {}
 
+void mwportimpl::eval() {
   // synchronous memory write
-  if (wdata_idx_ != -1) {
-    dirty_ = (wenable_idx_ != -1) ? srcs_[wenable_idx_].data().word(0) : true;
-    if (dirty_) {
-      a_next_ = addr;
-      q_next_ = srcs_[wdata_idx_].data();
-    }
+  int wenable = this->has_wenable() ? this->wenable().data().word(0) : wenable_idx_;
+  if (wenable && this->cd().data().word(0)) {
+    auto data_width = mem_->data_width();
+    auto addr = this->addr().data().word(0);
+    auto& data = this->wdata().data();
+    mem_->value().write(addr * data_width,
+                        data.words(),
+                        data.cbsize(),
+                        0,
+                        data_width);
   }
 }
 
@@ -182,17 +188,9 @@ memory::memory(uint32_t data_width,
 }
 
 lnodeimpl* memory::read(const lnode& addr) const {
-  auto port = impl_->port(addr);
-  port->read();
-  return port;
-}
-
-void memory::write(const lnode& addr, const lnode& value) {
-  auto port = impl_->port(addr);
-  port->write(value);
+  return impl_->read(addr);
 }
 
 void memory::write(const lnode& addr, const lnode& value, const lnode& enable) {
-  auto port = impl_->port(addr);
-  port->write(value, enable);
+  impl_->write(addr, value, enable);
 }

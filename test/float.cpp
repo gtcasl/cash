@@ -84,7 +84,7 @@ TEST_CASE("floats", "[floats]") {
       ch_float32 x(0.5f), y(0.5f), z, e;
       z = ch_udf<fMult<5>>(x, y);
       e = ch_delay<ch_float32>(0x3e800000_h, 5);
-      //ch_print("{0}: clk={1}, rst={2}, z={3}, e={4}", ch_time(), ch_clock(), ch_reset(), z, e);
+      ch_print("{0}: clk={1}, rst={2}, z={3}, e={4}", ch_time(), ch_clock(), ch_reset(), z, e);
       return (z == e);
     }, 2+2*5);
 
@@ -92,7 +92,7 @@ TEST_CASE("floats", "[floats]") {
       ch_float32 x(0.5f), y(0.5f), z, e;
       z = ch_udf<fAdd<7>>(x, y);
       e = ch_delay<ch_float32>(0x3f800000_h, 7);
-      //ch_print("{0}: clk={1}, rst={2}, z={3}, e={4}", ch_time(), ch_clock(), ch_reset(), z, e);
+      ch_print("{0}: clk={1}, rst={2}, z={3}, e={4}", ch_time(), ch_clock(), ch_reset(), z, e);
       return (z == e);
     }, 2+2*7);
 

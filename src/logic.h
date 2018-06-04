@@ -264,15 +264,15 @@ using aggregate_init_cast_t = std::conditional_t<X::bitwidth != 0,
 ///////////////////////////////////////////////////////////////////////////////
 
 template <ch_op op, typename R, typename A>
-auto LogicOp(const A& a) {
+auto LogicOp(const A& a, const source_location& sloc = CH_SRC_LOCATION) {
   auto node = createAluNode(op, width_v<R>, get_lnode(a));
-  return R(make_logic_buffer(node));
+  return R(make_logic_buffer(node, sloc));
 }
 
 template <ch_op op, typename R, typename A, typename B>
-auto LogicOp(const A& a, const B& b) {
+auto LogicOp(const A& a, const B& b, const source_location& sloc = CH_SRC_LOCATION) {
   auto node = createAluNode(op, width_v<R>, get_lnode(a), get_lnode(b));
-  return R(make_logic_buffer(node));
+  return R(make_logic_buffer(node, sloc));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -829,7 +829,7 @@ template <typename R, unsigned N>
 auto ch_pad(const ch_logic<N>& obj, const source_location& sloc = CH_SRC_LOCATION) {
   static_assert(width_v<R> >= N, "invalid pad size");
   if constexpr(width_v<R> > N) {
-    return LogicOp<op_zext, R>(obj);
+    return LogicOp<op_zext, R>(obj, sloc);
   } else {
     return R(obj, sloc);
   }

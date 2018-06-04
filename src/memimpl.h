@@ -8,7 +8,7 @@ namespace internal {
 
 class memportimpl;
 
-class memimpl : public tickable, public ioimpl {
+class memimpl : public ioimpl {
 public:
 
   memimpl(context* ctx,
@@ -39,19 +39,21 @@ public:
     return has_initdata_;
   }
 
-  const lnode& cd() const {
-    return srcs_[0];
+  cdimpl* cd() const {
+    return cd_;
   }
 
   auto& ports() const {
     return ports_;
   }
 
-  memportimpl* port(const lnode& addr);
+  bool is_readwrite(memportimpl* port) const;
+
+  memportimpl* read(const lnode& addr);
+
+  void write(const lnode& addr, const lnode& data, const lnode& enable);
 
   void remove_port(memportimpl* port);
-
-  void tick() override;
 
   void eval() override;
 
@@ -64,68 +66,86 @@ protected:
   uint32_t num_items_;
   bool write_enable_;
   bool has_initdata_;
+  cdimpl* cd_;
 };
 
-class memportimpl : public ioimpl {
-public:  
+///////////////////////////////////////////////////////////////////////////////
 
-  memportimpl(context* ctx, memimpl* mem, uint32_t index, const lnode& addr);
+class memportimpl : public ioimpl {
+public:
+
+  memportimpl(context* ctx,
+              lnodetype type,
+              memimpl* mem,
+              const lnode& addr);
 
   ~memportimpl();
+
+  memimpl* mem() const {
+    return mem_;
+  }
 
   uint32_t index() const {
     return index_;
   }
 
-  const lnode& mem() const {
+  const lnode& addr() const {
     return srcs_[0];
   }
 
-  const lnode& addr() const {
+protected:
+
+  memimpl* mem_;
+  uint32_t index_;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+
+class mrportimpl : public memportimpl {
+public:  
+
+  mrportimpl(context* ctx, memimpl* mem, const lnode& addr);
+
+  ~mrportimpl();
+
+  void eval() override;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+class mwportimpl : public memportimpl {
+public:
+
+  mwportimpl(context* ctx,
+             memimpl* mem,
+             const lnode& addr,
+             const lnode& data,
+             const lnode& enable);
+
+  ~mwportimpl();
+
+  const lnode& cd() const {
     return srcs_[1];
   }
 
   const lnode& wdata() const {
-    return srcs_[wdata_idx_];
-  }
-
-  const lnode& wenable() const {
-    return srcs_[wenable_idx_];
-  }
-
-  bool has_wdata() const {
-    return (wdata_idx_ != -1);
+    return srcs_[2];
   }
 
   bool has_wenable() const {
     return (wenable_idx_ != -1);
   }
 
-  bool is_read_enable() const {
-    return read_enable_;
+  const lnode& wenable() const {
+    return srcs_[wenable_idx_];
   }
-
-  void read();
-  
-  void write(const lnode& data);
-
-  void write(const lnode& data, const lnode& enable);
-
-  void tick();
 
   void eval() override;
 
 protected:
 
-  int insert(int index, const lnode& value);
-
-  uint32_t index_;
-  bool read_enable_;
-  bitvector q_next_;
-  uint32_t a_next_;
-  int wdata_idx_;
   int wenable_idx_;
-  bool dirty_;
 };
 
 }

@@ -120,7 +120,7 @@ public:
   void write(const U& addr, const V& value) {
     auto l_addr  = get_lnode<U, addr_width>(addr);
     auto l_value = get_lnode<T, data_width>(value);
-    mem_.write(l_addr, l_value);
+    mem_.write(l_addr, l_value, bitvector(1, 1));
   }
 
   template <typename U, typename V, typename E,

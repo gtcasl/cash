@@ -21,6 +21,9 @@ void inputimpl::bind(const lnode& input) {
 
 void inputimpl::initialize() {
   if (!input_.empty()) {
+    if (words_) {
+      value_.words(words_);
+    }
     words_ = value_.words(input_.data().words());
   }
 }
@@ -56,6 +59,9 @@ outputimpl::~outputimpl() {
 }
 
 void outputimpl::initialize() {
+  if (words_) {
+    value_.words(words_);
+  }
   words_ = value_.words(srcs_[0].data().words());
 }
 
@@ -86,6 +92,9 @@ tapimpl::~tapimpl() {
 }
 
 void tapimpl::initialize() {
+  if (words_) {
+    value_.words(words_);
+  }
   words_ = value_.words(srcs_[0].data().words());
 }
 
@@ -108,5 +117,5 @@ lnodeimpl* ch::internal::createInputNode(const std::string& name, uint32_t size)
 }
 
 lnodeimpl* ch::internal::createOutputNode(const std::string& name, const lnode& src) {
-  return src.ctx()->create_node<outputimpl>(src, name);
+  return src.impl()->ctx()->create_node<outputimpl>(src, name);
 }
