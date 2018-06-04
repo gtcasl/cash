@@ -9,7 +9,7 @@ timeimpl::timeimpl(context* ctx)
   , tick_(0)
 {}
 
-void timeimpl::reset() {
+void timeimpl::initialize() {
   tick_ = 0;
 }
 

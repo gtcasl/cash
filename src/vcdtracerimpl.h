@@ -22,7 +22,7 @@ protected:
 
   void initialize() override;
 
-  void tick(ch_tick t) override;
+  void eval(ch_tick t) override;
 };
 
 }

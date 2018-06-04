@@ -14,14 +14,13 @@ using namespace extension;
 class ch_float32;
 
 template <unsigned Delay = 1>
-struct fAdd : public udf_seq<Delay, true, ch_float32, ch_float32, ch_float32> {
+struct fAdd : public udf_seq<Delay, false, true, ch_float32, ch_float32, ch_float32> {
 
-  void eval(bitvector& out, const std::vector<bitvector>& srcs) override {
-    assert(out.size() == 32 && srcs.size() == 2);
-    uint32_t a(srcs[0].word(0));
-    uint32_t b(srcs[1].word(0));
-    float c(*(float*)&a + *(float*)&b);
-    out.word(0) = *(uint32_t*)&c;
+  void eval(bitvector* out, const std::vector<const bitvector*>& srcs) override {
+    uint32_t lhs = srcs[0]->word(0);
+    uint32_t rhs = srcs[1]->word(0);
+    float result = *(float*)&lhs + *(float*)&rhs;
+    out->word(0) = *(uint32_t*)&result;
   }
 
   void to_verilog(std::ostream& out) override {
@@ -31,14 +30,13 @@ struct fAdd : public udf_seq<Delay, true, ch_float32, ch_float32, ch_float32> {
 };
 
 template <unsigned Delay = 1>
-struct fSub : public udf_seq<Delay, true, ch_float32, ch_float32, ch_float32> {
+struct fSub : public udf_seq<Delay, false, true, ch_float32, ch_float32, ch_float32> {
 
-  void eval(bitvector& out, const std::vector<bitvector>& srcs) override {
-    assert(out.size() == 32 && srcs.size() == 2);
-    uint32_t a(srcs[0].word(0));
-    uint32_t b(srcs[1].word(0));
-    float c(*(float*)&a - *(float*)&b);
-    out.word(0) = *(uint32_t*)&c;
+  void eval(bitvector* out, const std::vector<const bitvector*>& srcs) override {
+    uint32_t lhs = srcs[0]->word(0);
+    uint32_t rhs = srcs[1]->word(0);
+    float result = *(float*)&lhs - *(float*)&rhs;
+    out->word(0) = *(uint32_t*)&result;
   }
 
   void to_verilog(std::ostream& out) override {
@@ -48,14 +46,13 @@ struct fSub : public udf_seq<Delay, true, ch_float32, ch_float32, ch_float32> {
 };
 
 template <unsigned Delay>
-struct fMult : public udf_seq<Delay, true, ch_float32, ch_float32, ch_float32> {
+struct fMult : public udf_seq<Delay, false, true, ch_float32, ch_float32, ch_float32> {
 
-  void eval(bitvector& out, const std::vector<bitvector>& srcs) override {
-    assert(out.size() == 32 && srcs.size() == 2);
-    uint32_t a(srcs[0].word(0));
-    uint32_t b(srcs[1].word(0));
-    float c(*(float*)&a * *(float*)&b);
-    out.word(0) = *(uint32_t*)&c;
+  void eval(bitvector* out, const std::vector<const bitvector*>& srcs) override {
+    uint32_t lhs = srcs[0]->word(0);
+    uint32_t rhs = srcs[1]->word(0);
+    float result = *(float*)&lhs * *(float*)&rhs;
+    out->word(0) = *(uint32_t*)&result;
   }
 
   void to_verilog(std::ostream& out) override {
@@ -65,14 +62,13 @@ struct fMult : public udf_seq<Delay, true, ch_float32, ch_float32, ch_float32> {
 };
 
 template <unsigned Delay>
-struct fDiv : public udf_seq<Delay, true, ch_float32, ch_float32, ch_float32> {
+struct fDiv : public udf_seq<Delay, false, true, ch_float32, ch_float32, ch_float32> {
 
-  void eval(bitvector& out, const std::vector<bitvector>& srcs) override {
-    assert(out.size() == 32 && srcs.size() == 2);
-    uint32_t a(srcs[0].word(0));
-    uint32_t b(srcs[1].word(0));
-    float c(*(float*)&a / *(float*)&b);
-    out.word(0) = *(uint32_t*)&c;
+  void eval(bitvector* out, const std::vector<const bitvector*>& srcs) override {
+    uint32_t lhs = srcs[0]->word(0);
+    uint32_t rhs = srcs[1]->word(0);
+    float result = *(float*)&lhs / *(float*)&rhs;
+    out->word(0) = *(uint32_t*)&result;
   }
 
   void to_verilog(std::ostream& out) override {

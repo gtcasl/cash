@@ -8,7 +8,7 @@ namespace internal {
 class timeimpl : public ioimpl {
 public:
 
-  void reset() override;
+  void initialize() override;
 
   void eval() override;
   

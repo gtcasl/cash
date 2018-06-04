@@ -69,7 +69,7 @@ void simulatorimpl::initialize() {
   }
 }
 
-void simulatorimpl::tick(ch_tick) {
+void simulatorimpl::eval(ch_tick) {
   // evaluate all nodes
   for (auto node : run_list_) {
     node->eval();
@@ -77,18 +77,12 @@ void simulatorimpl::tick(ch_tick) {
 }
 
 ch_tick simulatorimpl::reset(ch_tick t) {
-  // reset all contexts
-  for (auto node : run_list_) {
-    node->reset();
-  }
-
   // reset signal
   if (!reset_driver_.empty()) {
     reset_driver_.flip();
     t = this->step(t);
     reset_driver_.flip();
   }
-
   return t;
 }
 
@@ -96,10 +90,10 @@ ch_tick simulatorimpl::step(ch_tick t) {
   if (!clk_driver_.empty()) {
     for (int i = 0; i < 2; ++i) {
       clk_driver_.flip();
-      this->tick(t++);
+      this->eval(t++);
     }
   } else {
-    this->tick(t++);
+    this->eval(t++);
   }
   return t;
 }
@@ -175,4 +169,8 @@ ch_tick ch_simulator::reset(ch_tick t) {
 
 ch_tick ch_simulator::step(ch_tick t, uint32_t count) {
   return impl_->step(t, count);
+}
+
+void ch_simulator::eval(ch_tick t) {
+  impl_->eval(t);
 }

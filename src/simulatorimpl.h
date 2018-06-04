@@ -32,21 +32,21 @@ public:
 
   virtual ~simulatorimpl();
 
+  ch_tick run(const std::function<bool(ch_tick t)>& callback);
+
   ch_tick reset(ch_tick t);
 
   ch_tick step(ch_tick t);
 
   ch_tick step(ch_tick t, uint32_t count);
 
-  ch_tick run(const std::function<bool(ch_tick t)>& callback);
-
   void run(ch_tick ticks);
+
+  virtual void eval(ch_tick t);
 
 protected:
 
   virtual void initialize();
-
-  virtual void tick(ch_tick t);
 
   std::unordered_set<context*> contexts_;
   clock_driver clk_driver_;

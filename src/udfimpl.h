@@ -11,8 +11,6 @@ public:
 
   void initialize() override;
 
-  void reset() override;
-
   void eval() override;
 
 protected:
@@ -24,7 +22,7 @@ protected:
   ~udfimpl();
 
   udf_iface* udf_;
-  std::vector<bitvector> udf_srcs_;
+  std::vector<const bitvector*> udf_srcs_;
 
   friend class context;
 };
@@ -46,8 +44,6 @@ public:
 
   void initialize() override;
 
-  void reset() override;
-
   void eval() override;
 
 protected:
@@ -60,7 +56,7 @@ protected:
 
   udf_iface* udf_;  
   int wenable_idx_;
-  std::vector<bitvector> udf_srcs_;
+  std::vector<const bitvector*> udf_srcs_;
   std::vector<bitvector> values_;
   bitvector qnext_;
 

@@ -25,9 +25,9 @@ void vcdtracerimpl::initialize() {
   out_ << "$enddefinitions $end" << std::endl;
 }
 
-void vcdtracerimpl::tick(ch_tick t) {
+void vcdtracerimpl::eval(ch_tick t) {
   // call default tick()
-  simulatorimpl::tick(t);
+  simulatorimpl::eval(t);
   
   // log tap values
   out_ << '#' << t << std::endl;

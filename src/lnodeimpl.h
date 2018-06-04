@@ -108,8 +108,6 @@ public:
 
   virtual void initialize() {}
 
-  virtual void reset() {}
-
   virtual void eval() = 0;
 
   virtual lnodeimpl* slice(uint32_t offset, uint32_t length);

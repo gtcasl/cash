@@ -22,17 +22,13 @@ udfimpl::~udfimpl() {
 
 void udfimpl::initialize() {
   for (auto src : srcs_) {
-    udf_srcs_.push_back(src.data());
+    udf_srcs_.push_back(&src.data());
   }
   udf_->initialize();
 }
 
-void udfimpl::reset() {
-  udf_->reset();
-}
-
 void udfimpl::eval() {
-  udf_->eval(value_, udf_srcs_);
+  udf_->eval(&value_, udf_srcs_);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -68,17 +64,14 @@ void delayed_udfimpl::initialize() {
   // do not include the clock and enable signals
   uint32_t n = this->has_wenable() ? wenable_idx_ : srcs_.size();
   for (uint32_t i = 1; i < n; ++i) {
-    udf_srcs_.push_back(srcs_[i].data());
+    udf_srcs_.push_back(&srcs_[i].data());
   }
   udf_->initialize();  
 }
 
-void delayed_udfimpl::reset() {
-  udf_->reset();
-}
-
 void delayed_udfimpl::eval() {
-  if (this->cd().data().word(0)) {
+  auto cd = reinterpret_cast<cdimpl*>(this->cd().impl());
+  if (cd->value().word(0)) {
     // advance the pipeline
     if (!values_.empty()) {
       auto last = values_.size() - 1;
@@ -88,10 +81,14 @@ void delayed_udfimpl::eval() {
       }
     }
     // push new entry
-    int wenable = this->has_wenable() ? this->wenable().data().word(0) : wenable_idx_;
-    if (wenable) {
-      auto& value = values_.empty() ? value_ : values_[0];
-      udf_->eval(value, udf_srcs_);
+    auto& value = values_.empty() ? value_ : values_[0];
+    if (udf_->init() && cd->rst().data().word(0)) {
+      udf_->reset(&value, udf_srcs_);
+    } else {
+      int wenable = this->has_wenable() ? this->wenable().data().word(0) : wenable_idx_;
+      if (wenable) {
+        udf_->eval(&value, udf_srcs_);
+      }
     }
   }
 }

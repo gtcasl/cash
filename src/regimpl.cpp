@@ -72,7 +72,7 @@ std::size_t regimpl::hash() const {
 }
 
 void regimpl::eval() {
-  auto cd = reinterpret_cast<cdimpl*>(srcs_[0].impl());
+  auto cd = reinterpret_cast<cdimpl*>(this->cd().impl());
   if (cd->value().word(0)) {
     if (this->has_init()) {
       value_ = (cd->rst().data().word(0) ? this->init() : this->next()).data();

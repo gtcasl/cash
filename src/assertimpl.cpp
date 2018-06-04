@@ -19,7 +19,7 @@ assertimpl::assertimpl(context* ctx, const lnode& cond, const std::string& msg)
   srcs_.emplace_back(cond);
 }
 
-void assertimpl::reset() {
+void assertimpl::initialize() {
   tick_ = 0;
 }
 

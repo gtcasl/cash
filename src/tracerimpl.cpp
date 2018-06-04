@@ -53,9 +53,9 @@ void tracerimpl::add_trace(const std::string& name, const scalar_buffer_ptr& nod
   sc_traces_.emplace_back(unique_trace_names_.get(name), node);
 }
 
-void tracerimpl::tick(ch_tick t) {
+void tracerimpl::eval(ch_tick t) {
   // advance simulation
-  simulatorimpl::tick(t);
+  simulatorimpl::eval(t);
 
   // log io nodes
   for (auto& trace : io_traces_) {

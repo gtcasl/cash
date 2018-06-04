@@ -20,7 +20,7 @@ protected:
 
   void initialize() override;
 
-  void tick(ch_tick t) override;
+  void eval(ch_tick t) override;
 
   void add_trace(const std::string& name, ioimpl* node);
 

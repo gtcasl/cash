@@ -31,6 +31,8 @@ public:
 
   ch_tick step(ch_tick t, uint32_t count = 1);
 
+  void eval(ch_tick t);
+
 protected:
 
   ch_simulator(const std::initializer_list<context*>& contexts);

@@ -8,7 +8,7 @@ namespace internal {
 class assertimpl : public ioimpl {
 public:
 
-  void reset() override;
+  void initialize() override;
 
   void eval() override;
 
