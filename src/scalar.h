@@ -81,7 +81,7 @@ template <unsigned N> class ch_int;
 template <unsigned N> class ch_uint;
 
 template <unsigned M, unsigned N>
-ch_scalar<M> ch_pad(const ch_scalar<N>& obj);
+ch_scalar<M> ch_pad(const ch_scalar<N>& obj, const source_location& sloc = CH_SRC_LOCATION);
 
 template <unsigned Bitwidth, bool Signed, typename ScalarType, typename LogicType>
 struct scalar_traits {
@@ -109,7 +109,7 @@ using deduce_scalar_t = std::conditional_t<
   is_scalar_compatible_v<deduce_type_t<false, Ts...>>, deduce_type_t<false, Ts...>, non_ch_type>;
 
 template <typename T, unsigned N = width_v<T>>
-inline constexpr bool is_scalar_convertible_v = is_cast_convertible_v<ch_scalar<N>, T>;
+inline constexpr bool is_scalar_convertible_v = std::is_constructible_v<ch_scalar<N>, T>;
 
 template <typename T, typename R = ch_scalar<width_v<T>>>
 using scalar_cast_t = std::conditional_t<is_scalar_type_v<T>, const T&, R>;
@@ -571,7 +571,8 @@ protected:
 };
 
 template <unsigned M, unsigned N>
-ch_scalar<M> ch_pad(const ch_scalar<N>& obj) {
+ch_scalar<M> ch_pad(const ch_scalar<N>& obj, const source_location& sloc) {
+  CH_UNUSED(sloc);
   static_assert(M >= N, "invalid pad size");
   if constexpr(M > N) {
     return ScalarOp<ch_scalar<M>>(obj, ZExt);

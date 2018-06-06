@@ -8,8 +8,8 @@ module FiFo(
   output wire io_empty,
   output wire io_full
 );
-  reg[1:0] reg23;
-  reg[1:0] reg29;
+  reg[1:0] reg23; // fifo.cpp(19)
+  reg[1:0] reg29; // fifo.cpp(19)
   wire proxy32; // v12 - fifo.cpp(21)
   wire proxy34; // v13 - fifo.cpp(22)
   wire eq37;
@@ -20,7 +20,7 @@ module FiFo(
   wire[1:0] sel50;
   wire[1:0] add53;
   wire[1:0] sel55;
-  reg[1:0] mem57[0:1];
+  reg[1:0] mem57[0:1]; // fifo.cpp(30)
   wire eq61;
   wire ne65;
   wire eq67;

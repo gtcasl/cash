@@ -15,7 +15,8 @@ public:
           uint32_t data_width,
           uint32_t num_items,
           bool write_enable,
-          const std::vector<uint8_t>& init_data);
+          const std::vector<uint8_t>& init_data,
+          const source_location& sloc);
 
   ~memimpl();
 
@@ -49,9 +50,12 @@ public:
 
   bool is_readwrite(memportimpl* port) const;
 
-  memportimpl* read(const lnode& addr);
+  memportimpl* read(const lnode& addr, const source_location& sloc);
 
-  void write(const lnode& addr, const lnode& data, const lnode& enable);
+  void write(const lnode& addr,
+             const lnode& data,
+             const lnode& enable,
+             const source_location& sloc);
 
   void remove_port(memportimpl* port);
 
@@ -77,7 +81,8 @@ public:
   memportimpl(context* ctx,
               lnodetype type,
               memimpl* mem,
-              const lnode& addr);
+              const lnode& addr,
+              const source_location& sloc);
 
   ~memportimpl();
 
@@ -105,7 +110,10 @@ protected:
 class mrportimpl : public memportimpl {
 public:  
 
-  mrportimpl(context* ctx, memimpl* mem, const lnode& addr);
+  mrportimpl(context* ctx,
+             memimpl* mem,
+             const lnode& addr,
+             const source_location& sloc);
 
   ~mrportimpl();
 
@@ -121,7 +129,8 @@ public:
              memimpl* mem,
              const lnode& addr,
              const lnode& data,
-             const lnode& enable);
+             const lnode& enable,
+             const source_location& sloc);
 
   ~mwportimpl();
 

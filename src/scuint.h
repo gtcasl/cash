@@ -208,7 +208,8 @@ protected:
 };
 
 template <unsigned M, unsigned N>
-auto ch_pad(const ch_scuint<N>& obj) {
+auto ch_pad(const ch_scuint<N>& obj, const source_location& sloc = CH_SRC_LOCATION) {
+  CH_UNUSED(sloc);
   static_assert(M >= N, "invalid pad size");
   if constexpr(M > N) {
     return ScalarOp<ch_scuint<M>>(obj, ZExt);

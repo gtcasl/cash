@@ -100,6 +100,8 @@ public:
     return sloc_;
   }
 
+  void update_sloc(const source_location& sloc);
+
   virtual bool equals(const lnodeimpl& rhs) const;
 
   virtual std::size_t hash() const {

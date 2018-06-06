@@ -39,18 +39,18 @@ static auto toByteVector(const T& container,
 
 class memory {
 public:
-  memory(uint32_t data_width, uint32_t num_items, bool write_enable);
-
   memory(uint32_t data_width,
          uint32_t num_items,
          bool write_enable,
-         const std::vector<uint8_t>& init_data);
+         const std::vector<uint8_t>& init_data,
+         const source_location& sloc);
 
-  lnodeimpl* read(const lnode& addr) const;
+  lnodeimpl* read(const lnode& addr, const source_location& sloc) const;
 
-  void write(const lnode& addr, const lnode& value);
-
-  void write(const lnode& addr, const lnode& value, const lnode& enable);
+  void write(const lnode& addr,
+             const lnode& value,
+             const lnode& enable,
+             const source_location& sloc);
 
 protected:
   memimpl* impl_;
@@ -66,31 +66,31 @@ public:
   static constexpr unsigned addr_width = log2ceil(N);
   using value_type = T;
 
-  explicit ch_rom(const std::string& init_file)
-    : mem_(width_v<T>, N, false, toByteVector(init_file, data_width, N))
+  explicit ch_rom(const std::string& init_file, const source_location& sloc = CH_SRC_LOCATION)
+    : mem_(width_v<T>, N, false, toByteVector(init_file, data_width, N), sloc)
   {}
 
-  explicit ch_rom(const std::initializer_list<uint32_t>& init_data)
-    : mem_(width_v<T>, N, false, toByteVector(init_data, data_width, N))
+  explicit ch_rom(const std::initializer_list<uint32_t>& init_data, const source_location& sloc = CH_SRC_LOCATION)
+    : mem_(width_v<T>, N, false, toByteVector(init_data, data_width, N), sloc)
   {}
 
   template <typename U, std::size_t M,
             CH_REQUIRE_0(is_bitvector_array_type_v<U>)>
-  explicit ch_rom(const std::array<U, M>& init_data)
-    : mem_(width_v<T>, N, false, toByteVector(init_data, data_width, N))
+  explicit ch_rom(const std::array<U, M>& init_data, const source_location& sloc = CH_SRC_LOCATION)
+    : mem_(width_v<T>, N, false, toByteVector(init_data, data_width, N), sloc)
   {}
 
   template <typename U,
             CH_REQUIRE_0(is_bitvector_array_type_v<U>)>
-  explicit ch_rom(const std::vector<U>& init_data)
-    : mem_(width_v<T>, N, false, toByteVector(init_data, data_width, N))
+  explicit ch_rom(const std::vector<U>& init_data, const source_location& sloc = CH_SRC_LOCATION)
+    : mem_(width_v<T>, N, false, toByteVector(init_data, data_width, N), sloc)
   {}
 
   template <typename U,
             CH_REQUIRE_0(is_logic_convertible_v<U, addr_width>)>
-  auto read(const U& addr) const {
+  auto read(const U& addr, const source_location& sloc = CH_SRC_LOCATION) const {
     auto laddr = get_lnode<U, addr_width>(addr);
-    return T(make_logic_buffer(mem_.read(laddr)));
+    return T(make_logic_buffer(mem_.read(laddr, sloc), sloc));
   }
 
 protected:
@@ -105,34 +105,34 @@ public:
   static constexpr unsigned addr_width = log2ceil(N);
   using value_type = T;
 
-  ch_mem() : mem_(width_v<T>, N, true, {}) {}
+  ch_mem(const source_location& sloc = CH_SRC_LOCATION) : mem_(width_v<T>, N, true, {}, sloc) {}
 
   template <typename U,
             CH_REQUIRE_0(is_logic_convertible_v<U, addr_width>)>
-  auto read(const U& addr) const {
+  auto read(const U& addr, const source_location& sloc = CH_SRC_LOCATION) const {
     auto laddr = get_lnode<U, addr_width>(addr);
-    return T(make_logic_buffer(mem_.read(laddr)));
+    return T(make_logic_buffer(mem_.read(laddr, sloc), sloc));
   }
 
   template <typename U, typename V,
             CH_REQUIRE_0(is_logic_convertible_v<U, addr_width>),
-            CH_REQUIRE_0(is_cast_convertible_v<T, V>)>
-  void write(const U& addr, const V& value) {
+            CH_REQUIRE_0(std::is_constructible_v<T, V>)>
+  void write(const U& addr, const V& value, const source_location& sloc = CH_SRC_LOCATION) {
     auto l_addr  = get_lnode<U, addr_width>(addr);
     auto l_value = get_lnode<T, data_width>(value);
-    mem_.write(l_addr, l_value, bitvector(1, 1));
+    mem_.write(l_addr, l_value, bitvector(1, 1), sloc);
   }
 
   template <typename U, typename V, typename E,
             CH_REQUIRE_0(is_logic_convertible_v<U, addr_width>),
-            CH_REQUIRE_0(is_cast_convertible_v<T, V>),
+            CH_REQUIRE_0(std::is_constructible_v<T, V>),
             CH_REQUIRE_0(is_logic_convertible_v<E>)>
-  void write(const U& addr, const V& value, const E& enable) {
+  void write(const U& addr, const V& value, const E& enable, const source_location& sloc = CH_SRC_LOCATION) {
     static_assert(1 == width_v<E>, "invalid predicate size");
     auto l_addr   = get_lnode<U, addr_width>(addr);
     auto l_value  = get_lnode<T, data_width>(value);
     auto l_enable = get_lnode(enable);
-    mem_.write(l_addr, l_value, l_enable);
+    mem_.write(l_addr, l_value, l_enable, sloc);
   }
     
 protected:

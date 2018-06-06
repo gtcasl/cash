@@ -5,13 +5,15 @@
 namespace ch {
 namespace internal {
 
-lnodeimpl* createInputNode(const std::string& name, uint32_t size);
+lnodeimpl* createInputNode(const std::string& name, uint32_t size,
+                           const source_location& sloc);
 
-lnodeimpl* createOutputNode(const std::string& name, const lnode& src);
+lnodeimpl* createOutputNode(const std::string& name, const lnode& src,
+                            const source_location& sloc);
 
-void bindInput(const lnode& src, const lnode& input);
+void bindInput(const lnode& src, const lnode& input, const source_location& sloc);
 
-void bindOutput(const lnode& dst, const lnode& output);
+void bindOutput(const lnode& dst, const lnode& output, const source_location& sloc);
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -112,16 +114,16 @@ public:
   using base = T;
 
   ch_in_impl(const std::string& name = "io", const source_location& sloc = CH_SRC_LOCATION)
-    : ch_in_impl(createInputNode(name, width_v<T>), name, sloc)
+    : ch_in_impl(createInputNode(name, width_v<T>, sloc), name, sloc)
   {}
 
   template <typename U,
             CH_REQUIRE_0(is_logic_only_v<U>),
-            CH_REQUIRE_0(is_cast_convertible_v<U, T>)>
+            CH_REQUIRE_0(std::is_constructible_v<U, T>)>
   explicit ch_in_impl(const ch_out<U>& out, const source_location& sloc = CH_SRC_LOCATION)
     : base(make_logic_buffer(width_v<T>, sloc)) {
     input_ = logic_accessor::data(*this);
-    bindOutput(input_, out.output_);
+    bindOutput(input_, out.output_, sloc);
   }
 
   ch_in_impl(const ch_in_impl& in, const source_location& sloc = CH_SRC_LOCATION)
@@ -132,23 +134,22 @@ public:
 
   template <typename U,
             CH_REQUIRE_0(is_logic_only_v<U>),
-            CH_REQUIRE_0(is_cast_convertible_v<U, T>)>
+            CH_REQUIRE_0(std::is_constructible_v<U, T>)>
   void operator()(ch_out<U>& out) const {
     out = *this;
   }
 
 private:
 
-  ch_in_impl(lnodeimpl* src, const std::string& name, const source_location& sloc)
-    : base(make_logic_buffer(src, sloc, name)) {
-    input_ = src;
-  }
+  ch_in_impl(const lnode& src, const std::string& name, const source_location& sloc)
+    : base(make_logic_buffer(src, sloc, name))
+    , input_(src)
+  {}
 
   ch_in_impl& operator=(const ch_in_impl&) = delete;
 
   ch_in_impl& operator=(ch_in_impl&&) = delete;
 
-  T value_;
   lnode input_;
 
   template <typename U> friend class ch_out;
@@ -171,16 +172,16 @@ public:
 
   ch_out(const std::string& name = "io", const source_location& sloc = CH_SRC_LOCATION)
     : base(make_logic_buffer(width_v<T>, sloc, name)) {
-    output_ = createOutputNode(name, logic_accessor::data(*this));
+    output_ = createOutputNode(name, logic_accessor::data(*this), sloc);
   }
 
   template <typename U,
             CH_REQUIRE_0(is_logic_only_v<U>),
-            CH_REQUIRE_0(is_cast_convertible_v<T, U>)>
+            CH_REQUIRE_0(std::is_constructible_v<T, U>)>
   explicit ch_out(const ch_in_impl<U>& in, const source_location& sloc = CH_SRC_LOCATION)
     : base(make_logic_buffer(width_v<T>, sloc)) {
     output_ = logic_accessor::data(*this);
-    bindInput(output_, in.input_);
+    bindInput(output_, in.input_, sloc);
   }
 
   ch_out(const ch_out& rhs, const source_location& sloc = CH_SRC_LOCATION)
@@ -201,7 +202,7 @@ public:
 
   template <typename U,
             CH_REQUIRE_0(is_logic_only_v<U>),
-            CH_REQUIRE_0(is_cast_convertible_v<T, U>)>
+            CH_REQUIRE_0(std::is_constructible_v<T, U>)>
   void operator()(const ch_in_impl<U>& in) {
     *this = in;
   }

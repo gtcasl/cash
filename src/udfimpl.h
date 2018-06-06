@@ -22,7 +22,8 @@ protected:
   udfimpl(context* ctx,
           lnodetype type,
           udf_iface* udf,
-          const std::initializer_list<lnode>& srcs);
+          const std::initializer_list<lnode>& srcs,
+          const source_location& sloc);
 
   ~udfimpl();
 
@@ -45,7 +46,8 @@ protected:
 
   udfcimpl(context* ctx,
           udf_iface* udf,
-          const std::initializer_list<lnode>& srcs);
+          const std::initializer_list<lnode>& srcs,
+          const source_location& sloc);
 
   ~udfcimpl();
 
@@ -77,7 +79,8 @@ protected:
 
   udfsimpl(context* ctx,
            udf_iface* udf,
-           const std::initializer_list<lnode>& srcs);
+           const std::initializer_list<lnode>& srcs,
+           const source_location& sloc);
 
   ~udfsimpl();
 

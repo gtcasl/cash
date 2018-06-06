@@ -7,8 +7,9 @@ using namespace ch::internal;
 udfimpl::udfimpl(context* ctx,
                  lnodetype type,
                  udf_iface* udf,
-                 const std::initializer_list<lnode>& srcs)
-  : lnodeimpl(ctx, type, udf->output_size())
+                 const std::initializer_list<lnode>& srcs,
+                 const source_location& sloc)
+  : lnodeimpl(ctx, type, udf->output_size(), 0, "", sloc)
   , udf_(udf) {
   udf->acquire();
 
@@ -25,8 +26,9 @@ udfimpl::~udfimpl() {
 
 udfcimpl::udfcimpl(context* ctx,
                    udf_iface* udf,
-                   const std::initializer_list<lnode>& srcs)
-  : udfimpl(ctx, type_udfc, udf, srcs)
+                   const std::initializer_list<lnode>& srcs,
+                   const source_location& sloc)
+  : udfimpl(ctx, type_udfc, udf, srcs, sloc)
 {}
 
 udfcimpl::~udfcimpl() {}
@@ -46,10 +48,11 @@ void udfcimpl::eval() {
 
 udfsimpl::udfsimpl(context* ctx,
                    udf_iface* udf,
-                   const std::initializer_list<lnode>& srcs)
-  : udfimpl(ctx, type_udfs, udf, srcs)
+                   const std::initializer_list<lnode>& srcs,
+                   const source_location& sloc)
+  : udfimpl(ctx, type_udfs, udf, srcs, sloc)
   , enable_idx_(-1)  {
-  auto cd = ctx->current_cd();
+  auto cd = ctx->current_cd(sloc);
   cd_idx_ = this->add_src(-1, cd);
 
   if (udf->enable() && srcs.size() > udf->inputs_sizes().size()) {
@@ -99,6 +102,8 @@ void udfsimpl::eval() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-lnodeimpl* ch::internal::createUDFNode(udf_iface* udf, const std::initializer_list<lnode>& inputs) {
-  return ctx_curr()->create_udf_node(udf, inputs);
+lnodeimpl* ch::internal::createUDFNode(udf_iface* udf,
+                                       const std::initializer_list<lnode>& inputs,
+                                       const source_location& sloc) {
+  return ctx_curr()->create_udf_node(udf, inputs, sloc);
 }

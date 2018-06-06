@@ -34,7 +34,7 @@
 
 #define CH_STRUCT_FIELD_CTOR_REQUIRES(i, x) \
   CH_REQUIRE_0((std::is_integral_v<__T##i> || std::is_enum_v<__T##i> || ch::internal::has_bitwidth_v<__T##i>) \
-           && ch::internal::is_cast_convertible_v<decltype(CH_PAIR_R(x)), __T##i>)
+           && std::is_constructible_v<decltype(CH_PAIR_R(x)), __T##i>)
 
 #define CH_STRUCT_FIELD_CTOR_ARGS(i, x) \
   const __T##i& CH_CONCAT(_,CH_PAIR_R(x))

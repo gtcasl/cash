@@ -12,8 +12,12 @@ protected:
     : lnodeimpl(ctx, type, size)
   {}
 
-  ioimpl(context* ctx, lnodetype type, uint32_t size, const std::string& name)
-    : lnodeimpl(ctx, type, size, 0, name)
+  ioimpl(context* ctx,
+         lnodetype type,
+         uint32_t size,
+         const std::string& name,
+         const source_location& sloc)
+    : lnodeimpl(ctx, type, size, 0, name, sloc)
   {}
 
   ~ioimpl() {}
@@ -38,7 +42,10 @@ public:
   
 protected:
 
-  inputimpl(context* ctx, uint32_t size, const std::string& name);
+  inputimpl(context* ctx,
+            uint32_t size,
+            const std::string& name,
+            const source_location& sloc);
 
   ~inputimpl();
 
@@ -60,7 +67,10 @@ public:
   
 protected:
 
-  outputimpl(context* ctx, const lnode& src, const std::string& name);
+  outputimpl(context* ctx,
+             const lnode& src,
+             const std::string& name,
+             const source_location& sloc);
 
   ~outputimpl();
 
@@ -84,7 +94,10 @@ public:
 
 protected:
 
-  tapimpl(context* ctx, const lnode& src, const std::string& name);
+  tapimpl(context* ctx,
+          const lnode& src,
+          const std::string& name,
+          const source_location& sloc);
 
   ~tapimpl();
 

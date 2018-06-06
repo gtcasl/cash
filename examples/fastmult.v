@@ -3,7 +3,7 @@ module FastMult(
   input wire[3:0] io_rhs,
   output wire[7:0] io_out
 );
-  reg[7:0] mem12[0:255];
+  reg[7:0] mem12[0:255]; // fastmult.cpp(20)
   wire[7:0] zext13;
   wire[7:0] zext15;
   wire[7:0] sll19;

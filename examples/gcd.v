@@ -7,9 +7,9 @@ module GCD(
   output wire io_out_valid,
   output wire[15:0] io_out_data
 );
-  reg[15:0] reg23;
-  reg[15:0] reg29;
-  reg reg34;
+  reg[15:0] reg23; // gcd.cpp(16)
+  reg[15:0] reg29; // gcd.cpp(16)
+  reg reg34; // gcd.cpp(17)
   wire eq37;
   wire and39;
   wire sel43; // gcd.cpp(21)

@@ -376,7 +376,8 @@ template <typename R, unsigned N>
 auto ch_pad(const ch_int<N>& obj, const source_location& sloc = CH_SRC_LOCATION) {
   static_assert(width_v<R> >= N, "invalid pad size");
   if constexpr(width_v<R> > N) {
-    return LogicOp<op_sext, R>(obj, sloc);
+    auto node = createAluNode(op_sext, width_v<R>, get_lnode(obj));
+    return R(make_logic_buffer(node, sloc));
   } else {
     return R(obj, sloc);
   }

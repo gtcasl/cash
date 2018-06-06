@@ -87,6 +87,8 @@ protected:
 
   void print_operator(std::ostream& out, ch_op op);
 
+  void print_sloc(std::ostream& out, const source_location& sloc);
+
   context* ctx_;
   uint32_t num_temps_;
   std::unordered_map<uint32_t, std::unordered_set<lnodeimpl*>> uses_;

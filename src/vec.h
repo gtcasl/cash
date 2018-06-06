@@ -26,7 +26,7 @@ public:
   }
 
   template <typename U,
-            CH_REQUIRE_0(is_cast_convertible_v<T, U>)>
+            CH_REQUIRE_0(std::is_constructible_v<T, U>)>
   vec_base& operator=(const vec_base<U, N>& rhs) {
     for (unsigned i = 0; i < N; ++i) {
       items_[i] = rhs.items_[i];
@@ -132,13 +132,13 @@ public:
 protected:
 
   template <typename... Ts,
-            CH_REQUIRE_0(sizeof...(Ts) == N && are_all_cast_convertible_v<T, Ts...>)>
+            CH_REQUIRE_0(sizeof...(Ts) == N && are_all_constructible_v<T, Ts...>)>
   vec_base(Ts&&... values)
     : items_{T(std::forward<Ts>(values))...}
   {}
 
   template <typename... Ts,
-            CH_REQUIRE_0(sizeof...(Ts) == N && are_all_cast_convertible_v<T, Ts...>)>
+            CH_REQUIRE_0(sizeof...(Ts) == N && are_all_constructible_v<T, Ts...>)>
   vec_base(const source_location& sloc, Ts&&... values)
     : items_{T(std::forward<Ts>(values), sloc)...}
   {}
@@ -166,7 +166,7 @@ public:
   using base::items_;
 
   ch_vec(const logic_buffer_ptr& buffer = make_logic_buffer(traits::bitwidth, CH_SRC_LOCATION))
-    : ch_vec(buffer, std::make_index_sequence<N>())
+    : ch_vec(buffer, std::make_index_sequence<N>(), CH_SRC_LOCATION)
   {}
 
   ch_vec(const ch_vec& rhs, const source_location& sloc = CH_SRC_LOCATION)
@@ -177,7 +177,7 @@ public:
   {}
 
   template <typename U,
-            CH_REQUIRE_0(is_cast_convertible_v<T, U>)>
+            CH_REQUIRE_0(std::is_constructible_v<T, U>)>
   explicit ch_vec(const vec_base<U, N>& rhs,
                   const source_location& sloc = CH_SRC_LOCATION)
     : ch_vec(logic_accessor::copy_buffer(rhs, sloc))
@@ -260,8 +260,8 @@ protected:
   }
 
   template <std::size_t...Is>
-  ch_vec(const logic_buffer_ptr& buffer, std::index_sequence<Is...>)
-    : base(make_logic_buffer(width_v<T>, buffer, Is * width_v<T>)...)
+  ch_vec(const logic_buffer_ptr& buffer, std::index_sequence<Is...>, const source_location& sloc)
+    : base(make_logic_buffer(width_v<T>, buffer, Is * width_v<T>, sloc)...)
   {}
 
   const logic_buffer_ptr& buffer() const {
@@ -300,7 +300,7 @@ public:
   ch_vec(ch_vec&& rhs) : base(std::move(rhs)) {}
 
   template <typename U,
-            CH_REQUIRE_0(is_cast_convertible_v<T, U>)>
+            CH_REQUIRE_0(std::is_constructible_v<T, U>)>
   explicit ch_vec(const vec_base<U, N>& rhs)
     : ch_vec(scalar_accessor::copy_buffer(rhs))
   {}
@@ -319,7 +319,7 @@ public:
   {}
 
   template <typename... Vs,
-            CH_REQUIRE_0(sizeof...(Vs) == N && are_all_cast_convertible_v<T, Vs...>)>
+            CH_REQUIRE_0(sizeof...(Vs) == N && are_all_constructible_v<T, Vs...>)>
   explicit ch_vec(Vs&&... values) : ch_vec() {
     this->init(std::forward<Vs>(values)...);
   }

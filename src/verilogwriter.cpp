@@ -287,18 +287,8 @@ bool verilogwriter::print_decl(std::ostream& out,
       } else {        
         out << ";";
         auto& sloc = node->sloc();
-        if (!sloc.empty() || node->var_id() != 0) {
-          out << " // ";
-          if (node->var_id() != 0) {
-            out << "v" << node->var_id();
-            if (!sloc.empty()) {
-              out << " - ";
-            }
-          }
-          if (!sloc.empty()) {
-            out << (sloc.file() ? sloc.file() : "unknown")
-                 << "(" << sloc.line() << ")";
-          }
+        if (!sloc.empty()) {
+          this->print_sloc(out, sloc);
         }
         out << std::endl;
       }
@@ -320,6 +310,11 @@ bool verilogwriter::print_decl(std::ostream& out,
     assert(false);
   }  
   return false;
+}
+
+void verilogwriter::print_sloc(std::ostream& out, const source_location& sloc) {
+  out << " // " << (sloc.file() ? sloc.file() : "unknown")
+      << "(" << sloc.line() << ")";
 }
 
 bool verilogwriter::print_logic(std::ostream& out, lnodeimpl* node) {

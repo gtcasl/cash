@@ -14,7 +14,7 @@ public:
   
 protected:
 
-  timeimpl(context* ctx);
+  timeimpl(context* ctx, const source_location& sloc);
 
   ~timeimpl() {}
 

@@ -5,17 +5,11 @@
 namespace ch {
 namespace internal {
 
-void registerTap(const std::string& name, const lnode& node);
+void registerTap(const std::string& name, const lnode& node, const source_location& sloc);
 
 void createPrintNode(const std::string& format, const std::initializer_list<lnode>& args);
 
 ///////////////////////////////////////////////////////////////////////////////
-
-template <typename T> class ch_reg_impl;
-template <typename T> using ch_reg = std::add_const_t<ch_reg_impl<T>>;
-
-template <unsigned M, unsigned N>
-ch_logic<M> ch_pad(const ch_logic<N>& obj, const source_location& sloc);
 
 template <unsigned Bitwidth, bool Signed, typename LogicType, typename ScalarType>
 struct logic_traits {
@@ -38,12 +32,6 @@ CH_DEF_SFINAE_CHECK(is_logic_type, is_logic_traits_v<typename std::decay_t<T>::t
 
 CH_DEF_SFINAE_CHECK(is_logic_compatible, (std::is_base_of_v<ch_logic<width_v<T>>, T>));
 
-#if defined(__clang__)
-  #define CH_SRC_LOCATION ch::internal::source_location(__FILE__, __LINE__)
-#else
-  #define CH_SRC_LOCATION ch::internal::source_location(__builtin_FILE(), __builtin_LINE())
-#endif
-
 template <typename... Ts>
 using deduce_logic_t = std::conditional_t<
   is_logic_compatible_v<deduce_type_t<false, Ts...>>,
@@ -57,10 +45,16 @@ using deduce_first_logic_t = std::conditional_t<
   non_ch_type>;
 
 template <typename T, unsigned N = T::traits::bitwidth>
-inline constexpr bool is_logic_convertible_v = is_cast_convertible_v<ch_logic<N>, T>;
+inline constexpr bool is_logic_convertible_v = std::is_constructible_v<ch_logic<N>, T>;
 
 template <typename... Ts>
 inline constexpr bool are_all_logic_type_v = std::conjunction_v<is_logic_type<Ts>...>;
+
+template <typename T> class ch_reg_impl;
+template <typename T> using ch_reg = std::add_const_t<ch_reg_impl<T>>;
+
+template <unsigned M, unsigned N>
+ch_logic<M> ch_pad(const ch_logic<N>& obj, const source_location& sloc = CH_SRC_LOCATION);
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -108,6 +102,10 @@ public:
     return value_.size();
   }
 
+  bool has_source() const {
+    return !!source_;
+  }
+
   const logic_buffer_ptr& source() const {
     return source_;
   }
@@ -129,15 +127,13 @@ public:
     this->write(0, data, 0, data.size());
   }
 
-  void copy(const logic_buffer& rhs) {
-    this->write(0, rhs.data(), 0, rhs.size());
-  }
-
 protected:
 
   logic_buffer(const lnode& value,
                const logic_buffer_ptr& source,
                uint32_t offset);
+
+  void update_sloc(const source_location& sloc);
 
   uint32_t id_;
   lnode value_;
@@ -231,7 +227,7 @@ lnode get_lnode(const T& rhs) {
 }
 
 template <typename T, typename R,
-          CH_REQUIRE_0(is_cast_convertible_v<R, T>)>
+          CH_REQUIRE_0(std::is_constructible_v<R, T>)>
 lnode get_lnode(const T& rhs) {
   return logic_accessor::data(static_cast<logic_cast_t<T, R>>(rhs));
 }
@@ -261,7 +257,15 @@ using aggregate_init_cast_t = std::conditional_t<X::bitwidth != 0,
                          ch_logic<Q::bitwidth>,
                          ch_scalar<Q::bitwidth>>>;
 
-///////////////////////////////////////////////////////////////////////////////
+template <typename T>
+struct sloc_arg {
+  const T& value;
+  source_location sloc;
+
+  sloc_arg(const T& p_value, const source_location& p_sloc = CH_SRC_LOCATION)
+    : value(p_value), sloc(p_sloc)
+  {}
+};
 
 template <ch_op op, typename R, typename A>
 auto LogicOp(const A& a, const source_location& sloc = CH_SRC_LOCATION) {
@@ -342,6 +346,8 @@ auto LogicOp(const A& a, const B& b, const source_location& sloc = CH_SRC_LOCATI
 #define CH_LOGIC_OP4_TYPES \
   const ch_scalar<M>&
 
+///////////////////////////////////////////////////////////////////////////////
+
 #define CH_LOGIC_INTERFACE(type) \
   template <typename R, CH_REQUIRE_0(ch::internal::is_logic_type_v<R>)> \
   const auto as() const { \
@@ -379,6 +385,8 @@ auto LogicOp(const A& a, const B& b, const source_location& sloc = CH_SRC_LOCATI
     (*this) = s; \
     return s; \
   }
+
+///////////////////////////////////////////////////////////////////////////////
 
 template <unsigned N>
 class ch_logic {
@@ -455,14 +463,14 @@ public:
 
   // slicing operators
 
-  const auto operator[](size_t index) const {
-    assert(index < N);
-    return ch_logic<1>(make_logic_buffer(1, buffer_, index));
+  const auto operator[](const sloc_arg<size_t>& index) const {
+    assert(index.value < N);
+    return ch_logic<1>(make_logic_buffer(1, buffer_, index.value, index.sloc));
   }
 
-  auto operator[](size_t index) {
-    assert(index < N);
-    return ch_logic<1>(make_logic_buffer(1, buffer_, index));
+  auto operator[](const sloc_arg<size_t>& index) {
+    assert(index.value < N);
+    return ch_logic<1>(make_logic_buffer(1, buffer_, index.value, index.sloc));
   }
 
   template <typename R,
@@ -542,7 +550,7 @@ public:
   // bitwise operators
 
   auto operator~() const {
-    return LogicOp<op_inv, ch_logic>(*this);
+    return LogicOp<op_inv, ch_logic>(*this, source_location());
   }
 
   auto operator&(const ch_logic& rhs) const {
@@ -829,14 +837,15 @@ template <typename R, unsigned N>
 auto ch_pad(const ch_logic<N>& obj, const source_location& sloc = CH_SRC_LOCATION) {
   static_assert(width_v<R> >= N, "invalid pad size");
   if constexpr(width_v<R> > N) {
-    return LogicOp<op_zext, R>(obj, sloc);
+    auto node = createAluNode(op_zext, width_v<R>, get_lnode(obj));
+    return R(make_logic_buffer(node, sloc));
   } else {
     return R(obj, sloc);
   }
 }
 
 template <unsigned M, unsigned N>
-auto ch_pad(const ch_logic<N>& obj, const source_location& sloc = CH_SRC_LOCATION) {
+ch_logic<M> ch_pad(const ch_logic<N>& obj, const source_location& sloc) {
   return ch_pad<ch_logic<M>>(obj, sloc);
 }
 
@@ -862,13 +871,13 @@ auto ch_shuffle(const T& obj,
 
 template <typename T,
           CH_REQUIRE_0(is_logic_type_v<T>)>
-void ch_tap(const std::string& name, const T& value) {
-  registerTap(name, get_lnode(value));
+void ch_tap(const std::string& name, const T& value, const source_location& sloc = CH_SRC_LOCATION) {
+  registerTap(name, get_lnode(value), sloc);
 }
 
 // print
 
-ch_logic<64> ch_time();
+ch_logic<64> ch_time(const source_location& sloc = CH_SRC_LOCATION);
 
 inline void ch_print(const std::string& format) {
   createPrintNode(format, {});

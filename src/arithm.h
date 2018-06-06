@@ -34,6 +34,12 @@
   m(zext,  22 | op_unary  | op_misc) \
   m(sext,  23 | op_unary  | op_misc)
 
+#if defined(__GNUC__)
+  #define CH_SRC_LOCATION ch::internal::source_location(__builtin_FILE(), __builtin_LINE())
+#else
+  #define CH_SRC_LOCATION ch::internal::source_location(__FILE__, __LINE__)
+#endif
+
 namespace ch {
 namespace internal {
 
@@ -105,15 +111,15 @@ lnodeimpl* createRotateNode(const lnode& next, uint32_t dist, bool right);
   CH_REM header \
   inline friend auto operator op(lhs_t _lhs, rhs_t _rhs) { \
     constexpr auto W = std::max(width_v<lhs_t>, width_v<rhs_t>); \
-    auto lhs = ch_pad<W>(_lhs); \
-    auto rhs = ch_pad<W>(_rhs); \
+    auto lhs = ch_pad<W>(_lhs, source_location()); \
+    auto rhs = ch_pad<W>(_rhs, source_location()); \
     return lhs op rhs; \
   } \
   CH_REM header \
   inline friend auto operator op(rhs_t _lhs, lhs_t _rhs) { \
     constexpr auto W = std::max(width_v<lhs_t>, width_v<rhs_t>); \
-    auto lhs = ch_pad<W>(_lhs); \
-    auto rhs = ch_pad<W>(_rhs); \
+    auto lhs = ch_pad<W>(_lhs, source_location()); \
+    auto rhs = ch_pad<W>(_rhs, source_location()); \
     return lhs op rhs; \
   }
 
@@ -154,15 +160,15 @@ lnodeimpl* createRotateNode(const lnode& next, uint32_t dist, bool right);
   CH_REM header \
   inline auto func(lhs_t _lhs, rhs_t _rhs) { \
     constexpr auto W = std::max(width_v<lhs_t>, width_v<rhs_t>); \
-    auto lhs = ch_pad<W>(_lhs); \
-    auto rhs = ch_pad<W>(_rhs); \
+    auto lhs = ch_pad<W>(_lhs, source_location()); \
+    auto rhs = ch_pad<W>(_rhs, source_location()); \
     return func(lhs, rhs); \
   } \
   CH_REM header \
   inline auto func(rhs_t _lhs, lhs_t _rhs) { \
     constexpr auto W = std::max(width_v<lhs_t>, width_v<rhs_t>); \
-    auto lhs = ch_pad<W>(_lhs); \
-    auto rhs = ch_pad<W>(_rhs); \
+    auto lhs = ch_pad<W>(_lhs, source_location()); \
+    auto rhs = ch_pad<W>(_rhs, source_location()); \
     return func(lhs, rhs); \
   }
 

@@ -133,17 +133,8 @@ inline constexpr bool is_false_v = is_false<Pred>::value;
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename To, typename From>
-inline constexpr bool is_implicit_convertible_v = std::is_convertible_v<To, From>;
-
-template <typename To, typename From>
-inline constexpr bool is_cast_convertible_v = std::is_constructible_v<To, From>;
-
 template <typename To, typename... Froms>
-inline constexpr bool are_all_implicit_convertible_v = std::conjunction_v<std::is_convertible<To, Froms>...>;
-
-template <typename To, typename... Froms>
-inline constexpr bool are_all_cast_convertible_v = std::conjunction_v<std::is_constructible<To, Froms>...>;
+inline constexpr bool are_all_constructible_v = std::conjunction_v<std::is_constructible<To, Froms>...>;
 
 ///////////////////////////////////////////////////////////////////////////////
 

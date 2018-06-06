@@ -3,7 +3,7 @@ module Counter(
   input wire reset,
   output wire[3:0] io_out
 );
-  reg[3:0] reg7;
+  reg[3:0] reg7; // counter.cpp(14)
   wire[3:0] add14;
 
   always @ (posedge clk) begin

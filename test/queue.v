@@ -9,17 +9,17 @@ module ch_queue(
   output wire[3:0] io_deq_data,
   output wire[1:0] io_size
 );
-  reg[1:0] reg26;
-  reg[1:0] reg32;
-  wire proxy35; // v2309 - /home/blaise/dev/cash/src/htl/queue.h(27)
-  wire proxy37; // v2310 - /home/blaise/dev/cash/src/htl/queue.h(28)
+  reg[1:0] reg26; // /home/blaise/dev/cash/src/htl/queue.h(25)
+  reg[1:0] reg32; // /home/blaise/dev/cash/src/htl/queue.h(25)
+  wire proxy35; // v2313 - /home/blaise/dev/cash/src/htl/queue.h(27)
+  wire proxy37; // v2314 - /home/blaise/dev/cash/src/htl/queue.h(28)
   wire and38;
   wire and40;
   wire[1:0] add44;
   wire[1:0] sel46;
   wire[1:0] add49;
   wire[1:0] sel51;
-  reg[3:0] mem53[0:1];
+  reg[3:0] mem53[0:1]; // /home/blaise/dev/cash/src/htl/queue.h(36)
   wire ne57;
   wire eq61;
   wire ne63;
@@ -68,14 +68,14 @@ module QueueWrapper(
   output wire io_deq_valid,
   output wire[3:0] io_deq_data
 );
-  wire bindin28;
-  wire bindin29;
-  wire bindin30;
-  wire[3:0] bindin33;
-  wire bindout38;
-  wire bindout43;
-  wire[3:0] bindout48;
-  wire bindin51;
+  wire bindin28; // /home/blaise/dev/cash/src/module.h(33)
+  wire bindin29; // /home/blaise/dev/cash/src/module.h(33)
+  wire bindin30; // /home/blaise/dev/cash/src/module.h(33)
+  wire[3:0] bindin33; // /home/blaise/dev/cash/src/module.h(33)
+  wire bindout38; // /home/blaise/dev/cash/src/module.h(33)
+  wire bindout43; // /home/blaise/dev/cash/src/module.h(33)
+  wire[3:0] bindout48; // /home/blaise/dev/cash/src/module.h(33)
+  wire bindin51; // /home/blaise/dev/cash/src/module.h(33)
 
   assign bindin28 = clk;
   assign bindin29 = reset;

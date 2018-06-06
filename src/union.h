@@ -32,7 +32,7 @@ struct union_init_fields_impl1 {
 template <typename T, typename F0, typename... Fs>
 struct union_init_fields_impl<T, F0, Fs...> {
   static void apply(const T& value, F0& field0, Fs&... fields) {
-    std::conditional_t<is_cast_convertible_v<F0, T>,
+    std::conditional_t<std::is_constructible_v<F0, T>,
                        union_init_fields_impl0<T, F0, Fs...>,
                        union_init_fields_impl1<T, F0, Fs...>>::apply(value, field0, fields...);
   }
@@ -94,10 +94,10 @@ using union_zero_init = std::conditional_t<has_bitwidth_v<U>,
   ch_logic_t<ch::internal::identity_t<CH_PAIR_L(x)>> CH_PAIR_R(x)
 
 #define CH_UNION_SCALAR_FIELD_CTOR_REQUIRES(i, x) \
-  ch::internal::is_cast_convertible_v<decltype(CH_PAIR_R(x)), __T__>
+  std::is_constructible_v<decltype(CH_PAIR_R(x)), __T__>
 
 #define CH_UNION_FIELD_CTOR_REQUIRES(i, x) \
-  ch::internal::is_cast_convertible_v<decltype(CH_PAIR_R(x)), __T__>
+  std::is_constructible_v<decltype(CH_PAIR_R(x)), __T__>
 
 #define CH_UNION_INIT_FIELD(i, x) \
   CH_PAIR_R(x)

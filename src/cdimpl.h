@@ -26,7 +26,11 @@ public:
 
 protected:
   
-  cdimpl(context* ctx, const lnode& clk, const lnode& rst, bool posedge);
+  cdimpl(context* ctx,
+         const lnode& clk,
+         const lnode& rst,
+         bool posedge,
+         const source_location& sloc);
 
   ~cdimpl();
 

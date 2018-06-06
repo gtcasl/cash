@@ -31,13 +31,13 @@ public:
 
 protected:
 
-  bindimpl(context* ctx, context* module);
+  bindimpl(context* ctx, context* module, const source_location& sloc);
 
   ~bindimpl();
 
-  void bind_input(const lnode& src, const lnode& ioport);
+  void bind_input(const lnode& src, const lnode& ioport, const source_location& sloc);
 
-  void bind_output(const lnode& dst, const lnode& ioport);
+  void bind_output(const lnode& dst, const lnode& ioport,const source_location& sloc);
 
   context* module_;
   std::vector<lnode> outputs_;
@@ -60,7 +60,11 @@ public:
 
 protected:  
 
-  bindportimpl(context* ctx, lnodetype type, bindimpl* bind, const lnode& ioport);
+  bindportimpl(context* ctx,
+               lnodetype type,
+               bindimpl* bind,
+               const lnode& ioport,
+               const source_location& sloc);
 
   ~bindportimpl();
 
@@ -83,7 +87,11 @@ public:
 
 protected:
 
-  bindinimpl(context* ctx, bindimpl* bind, const lnode& src, const lnode& ioport);
+  bindinimpl(context* ctx,
+             bindimpl* bind,
+             const lnode& src,
+             const lnode& ioport,
+             const source_location& sloc);
 
   ~bindinimpl();
 
@@ -105,7 +113,10 @@ public:
 
 protected:
 
-  bindoutimpl(context* ctx, bindimpl* bind, const lnode& ioport);
+  bindoutimpl(context* ctx,
+              bindimpl* bind,
+              const lnode& ioport,
+              const source_location& sloc);
 
   ~bindoutimpl();
 

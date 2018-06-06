@@ -1,6 +1,7 @@
 #include "logic.h"
 #include "int.h"
 #include "uint.h"
+#include "lnodeimpl.h"
 
 using namespace ch::internal;
 
@@ -32,8 +33,11 @@ logic_buffer::logic_buffer(const logic_buffer& rhs,
                            const std::string& name)
   : id_(make_id())
   , value_(rhs.size(), rhs.data(), 0, id_, name, sloc)
-  , offset_(0)
-{}
+  , offset_(0) {
+  if (!sloc.empty()) {
+    this->update_sloc(sloc);
+  }
+}
 
 logic_buffer::logic_buffer(logic_buffer&& rhs)
   : id_(std::move(rhs.id_))
@@ -47,8 +51,11 @@ logic_buffer::logic_buffer(const lnode& data,
                            const std::string& name)
   : id_(make_id())
   , value_(data.size(), data, 0, id_, name, sloc)
-  , offset_(0)
-{}
+  , offset_(0) {
+  if (!sloc.empty()) {
+    this->update_sloc(sloc);
+  }
+}
 
 logic_buffer::logic_buffer(uint32_t size,
                            const logic_buffer_ptr& buffer,
@@ -64,16 +71,26 @@ logic_buffer::logic_buffer(uint32_t size,
            sloc)
   , source_(buffer)
   , offset_(offset) {
-  assert(offset + size <= buffer->size());
+  assert(offset + size <= buffer->size());  
+  if (!sloc.empty()) {
+    this->update_sloc(sloc);
+  }
+}
+
+void logic_buffer::update_sloc(const source_location& sloc) {
+  value_.impl()->update_sloc(sloc);
+  if (!!source_) {
+    source_->update_sloc(sloc);
+  }
 }
 
 logic_buffer& logic_buffer::operator=(const logic_buffer& rhs) {
-  this->copy(rhs);
+  this->write(0, rhs.data(), 0, rhs.size());
   return *this;
 }
 
 logic_buffer& logic_buffer::operator=(logic_buffer&& rhs) {
-  this->copy(rhs);
+  this->write(0, rhs.data(), 0, rhs.size());
   return *this;
 }
 

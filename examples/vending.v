@@ -4,7 +4,7 @@ module VendingMachine(
   input wire io_coin,
   output wire io_valid
 );
-  reg[2:0] reg11;
+  reg[2:0] reg11; // vending.cpp(16)
   wire eq18;
   wire eq24;
   wire[2:0] sel55; // vending.cpp(19)

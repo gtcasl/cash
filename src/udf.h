@@ -106,7 +106,9 @@ udf_iface* lookupUDF(const std::type_index& signature);
 
 udf_iface* registerUDF(const std::type_index& signature, udf_iface* udf);
 
-lnodeimpl* createUDFNode(udf_iface* udf, const std::initializer_list<lnode>& inputs);
+lnodeimpl* createUDFNode(udf_iface* udf,
+                         const std::initializer_list<lnode>& inputs,
+                         const source_location& sloc);
 
 template <typename T>
 udf_iface* get_udf() {
@@ -121,7 +123,7 @@ udf_iface* get_udf() {
 template <typename T, typename... Args>
 auto ch_udf(Args&& ...args) {
   static_assert(sizeof...(Args) >= std::tuple_size_v<typename T::traits::Inputs>, "number of inputs mismatch");
-  auto node = createUDFNode(get_udf<T>(), {get_lnode(args)...});
+  auto node = createUDFNode(get_udf<T>(), {get_lnode(args)...}, source_location());
   return typename T::traits::Output(make_logic_buffer(node));
 }
 

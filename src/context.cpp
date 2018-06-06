@@ -145,22 +145,22 @@ void context::pop_cd() {
   cd_stack_.pop();
 }
 
-cdimpl* context::current_cd() {
+cdimpl* context::current_cd(const source_location& sloc) {
   if (cd_stack_.empty()) {
     if (nullptr == default_clk_) {
-      default_clk_ = this->create_node<inputimpl>(1, "clk");
+      default_clk_ = this->create_node<inputimpl>(1, "clk", sloc);
     }
     if (nullptr == default_reset_) {
-       default_reset_ = this->create_node<inputimpl>(1, "reset");
+       default_reset_ = this->create_node<inputimpl>(1, "reset", sloc);
     }
-    return this->create_cdomain(default_clk_, default_reset_, true);
+    return this->create_cdomain(default_clk_, default_reset_, true, sloc);
   }
   return cd_stack_.top();
 }
 
-lnodeimpl* context::time() {
+lnodeimpl* context::time(const source_location& sloc) {
   if (nullptr == time_) {
-    time_ = this->create_node<timeimpl>();
+    time_ = this->create_node<timeimpl>(sloc);
   }
   return time_;
 }
@@ -178,7 +178,10 @@ uint32_t context::node_id() {
   return nodeid;
 }
 
-cdimpl* context::create_cdomain(const lnode& clk, const lnode& rst, bool posedge) {
+cdimpl* context::create_cdomain(const lnode& clk,
+                                const lnode& rst,
+                                bool posedge,
+                                const source_location& sloc) {
   // return existing match
   for (auto cd : cdomains_) {
     if (cd->clk() == clk
@@ -187,7 +190,7 @@ cdimpl* context::create_cdomain(const lnode& clk, const lnode& rst, bool posedge
       return cd;
   }
   // allocate new cdomain
-  return this->create_node<cdimpl>(clk, rst, posedge);
+  return this->create_node<cdimpl>(clk, rst, posedge, sloc);
 }
 
 void context::add_node(lnodeimpl* node) {
@@ -733,26 +736,32 @@ lnodeimpl* context::literal(const bitvector& value) {
   return this->create_node<litimpl>(value);
 }
 
-void context::register_tap(const std::string& name, const lnode& node) {
-  this->create_node<tapimpl>(node, unique_tap_names_.get(name).c_str());
+void context::register_tap(const std::string& name,
+                           const lnode& node,
+                           const source_location& sloc) {
+  this->create_node<tapimpl>(node, unique_tap_names_.get(name).c_str(), sloc);
 }
 
-bindimpl* context::find_binding(context* module) {
+bindimpl* context::find_binding(context* module, const source_location& sloc) {
   for (auto binding : bindings_) {
     if (binding->module() == module)
       return binding;
   }
-  return this->create_node<bindimpl>(module);
+  return this->create_node<bindimpl>(module, sloc);
 }
 
-void context::bind_input(const lnode& src, const lnode& input) {
-  auto binding = this->find_binding(input.impl()->ctx());
-  binding->bind_input(src, input);
+void context::bind_input(const lnode& src,
+                         const lnode& input,
+                         const source_location& sloc) {
+  auto binding = this->find_binding(input.impl()->ctx(), sloc);
+  binding->bind_input(src, input, sloc);
 }
 
-void context::bind_output(const lnode& dst, const lnode& output) {
-  auto binding = this->find_binding(output.impl()->ctx());
-  binding->bind_output(dst, output);
+void context::bind_output(const lnode& dst,
+                          const lnode& output,
+                          const source_location& sloc) {
+  auto binding = this->find_binding(output.impl()->ctx(), sloc);
+  binding->bind_output(dst, output, sloc);
 }
 
 void context::build_run_list(std::vector<lnodeimpl*>& list) {
@@ -902,11 +911,13 @@ void context::build_run_list(std::vector<lnodeimpl*>& list) {
   }
 }
 
-lnodeimpl* context::create_udf_node(udf_iface* udf, const std::initializer_list<lnode>& inputs) {
+lnodeimpl* context::create_udf_node(udf_iface* udf,
+                                    const std::initializer_list<lnode>& inputs,
+                                    const source_location& sloc) {
   if (udf->delta() != 0) {
-    return this->create_node<udfsimpl>(udf, inputs);
+    return this->create_node<udfsimpl>(udf, inputs, sloc);
   } else {
-    return this->create_node<udfcimpl>(udf, inputs);
+    return this->create_node<udfcimpl>(udf, inputs, sloc);
   }
 }
 
@@ -1026,20 +1037,22 @@ void context::dump_stats(std::ostream& out) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void ch::internal::registerTap(const std::string& name, const lnode& node) {
-  node.impl()->ctx()->register_tap(name, node);
+void ch::internal::registerTap(const std::string& name,
+                               const lnode& node,
+                               const source_location& sloc) {
+  node.impl()->ctx()->register_tap(name, node, sloc);
 }
 
 void ch::internal::ch_dumpStats(std::ostream& out, const device& device) {
   get_ctx(device)->dump_stats(out);
 }
 
-void ch::internal::bindInput(const lnode& src, const lnode& input) {
-  src.impl()->ctx()->bind_input(src, input);
+void ch::internal::bindInput(const lnode& src, const lnode& input, const source_location& sloc) {
+  src.impl()->ctx()->bind_input(src, input, sloc);
 }
 
-void ch::internal::bindOutput(const lnode& dst, const lnode& output) {
-  dst.impl()->ctx()->bind_output(dst, output);
+void ch::internal::bindOutput(const lnode& dst, const lnode& output, const source_location& sloc) {
+  dst.impl()->ctx()->bind_output(dst, output, sloc);
 }
 
 void ch::internal::register_enum_string(const lnode& node, void* callback) {

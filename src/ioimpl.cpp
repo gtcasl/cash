@@ -4,8 +4,11 @@
 
 using namespace ch::internal;
 
-inputimpl::inputimpl(context* ctx, uint32_t size, const std::string& name)
-  : ioimpl(ctx, type_input, size, name)
+inputimpl::inputimpl(context* ctx,
+                     uint32_t size,
+                     const std::string& name,
+                     const source_location& sloc)
+  : ioimpl(ctx, type_input, size, name, sloc)
   , words_(nullptr)
 {}
 
@@ -46,8 +49,11 @@ void inputimpl::print(std::ostream& out, uint32_t level) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-outputimpl::outputimpl(context* ctx, const lnode& src, const std::string& name)
-  : ioimpl(ctx, type_output, src.size(), name)
+outputimpl::outputimpl(context* ctx,
+                       const lnode& src,
+                       const std::string& name,
+                       const source_location& sloc)
+  : ioimpl(ctx, type_output, src.size(), name, sloc)
   , words_(nullptr) {
   srcs_.emplace_back(src);
 }
@@ -79,8 +85,11 @@ void outputimpl::print(std::ostream& out, uint32_t level) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-tapimpl::tapimpl(context* ctx, const lnode& src, const std::string& name)
-  : ioimpl(ctx, type_tap, src.size(), name)
+tapimpl::tapimpl(context* ctx,
+                 const lnode& src,
+                 const std::string& name,
+                 const source_location& sloc)
+  : ioimpl(ctx, type_tap, src.size(), name, sloc)
   , words_(nullptr) {
   srcs_.emplace_back(src);
 }
@@ -112,10 +121,14 @@ void tapimpl::print(std::ostream& out, uint32_t level) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-lnodeimpl* ch::internal::createInputNode(const std::string& name, uint32_t size) {
-  return ctx_curr()->create_node<inputimpl>(size, name);
+lnodeimpl* ch::internal::createInputNode(const std::string& name,
+                                         uint32_t size,
+                                         const source_location& sloc) {
+  return ctx_curr()->create_node<inputimpl>(size, name, sloc);
 }
 
-lnodeimpl* ch::internal::createOutputNode(const std::string& name, const lnode& src) {
-  return src.impl()->ctx()->create_node<outputimpl>(src, name);
+lnodeimpl* ch::internal::createOutputNode(const std::string& name,
+                                          const lnode& src,
+                                          const source_location& sloc) {
+  return src.impl()->ctx()->create_node<outputimpl>(src, name, sloc);
 }

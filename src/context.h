@@ -172,11 +172,11 @@ public:
 
   void pop_cd();
 
-  cdimpl* current_cd();
+  cdimpl* current_cd(const source_location& sloc);
 
   //--
 
-  lnodeimpl* time();
+  lnodeimpl* time(const source_location& sloc);
 
   //--
 
@@ -189,7 +189,10 @@ public:
     return node;
   }
 
-  cdimpl* create_cdomain(const lnode& clk, const lnode& rst, bool posedge);
+  cdimpl* create_cdomain(const lnode& clk,
+                         const lnode& rst,
+                         bool posedge,
+                         const source_location& sloc);
 
   node_list_t::iterator delete_node(const node_list_t::iterator& it);
   
@@ -220,7 +223,9 @@ public:
 
   //--
 
-  void register_tap(const std::string& name, const lnode& lnode);
+  void register_tap(const std::string& name,
+                    const lnode& lnode,
+                    const source_location& sloc);
 
   //--
   
@@ -232,7 +237,9 @@ public:
 
   //--
 
-  lnodeimpl* create_udf_node(udf_iface* udf, const std::initializer_list<lnode>& inputs);
+  lnodeimpl* create_udf_node(udf_iface* udf,
+                             const std::initializer_list<lnode>& inputs,
+                             const source_location& sloc);
 
   //--
   
@@ -244,9 +251,13 @@ public:
 
   //--
 
-  void bind_input(const lnode& src, const lnode& input);
+  void bind_input(const lnode& src,
+                  const lnode& input,
+                  const source_location& sloc);
 
-  void bind_output(const lnode& dst, const lnode& output);
+  void bind_output(const lnode& dst,
+                   const lnode& output,
+                   const source_location& sloc);
 
   //--
 
@@ -267,7 +278,7 @@ protected:
                                const cond_defs_t& defs,
                                const cond_br_t* branch);
 
-  bindimpl* find_binding(context* module);
+  bindimpl* find_binding(context* module, const source_location& sloc);
 
   uint32_t    id_;
   std::string name_;

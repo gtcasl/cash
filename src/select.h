@@ -45,7 +45,7 @@ public:
 
   template <typename P, typename V,
             CH_REQUIRE_0(is_logic_compatible_v<P>),
-            CH_REQUIRE_0(is_cast_convertible_v<T, V>)>
+            CH_REQUIRE_0(std::is_constructible_v<T, V>)>
   select_t<T>& operator()(const P& pred, const V& value) {
     static_assert(1 == width_v<P>, "invalid predicate size");
     impl_.push(get_lnode(pred), get_lnode<V, width_v<T>>(value));
@@ -53,7 +53,7 @@ public:
   }
   
   template <typename V,
-            CH_REQUIRE_0(is_cast_convertible_v<T, V>)>
+            CH_REQUIRE_0(std::is_constructible_v<T, V>)>
   auto operator()(const V& value) {
     return make_type<T>(impl_.eval(get_lnode<V, width_v<T>>(value)));
   }
@@ -74,7 +74,7 @@ public:
 
   template <typename P, typename T,
             CH_REQUIRE_0(is_equality_comparable_v<P, K>),
-            CH_REQUIRE_0(is_cast_convertible_v<V, T>)>
+            CH_REQUIRE_0(std::is_constructible_v<V, T>)>
   case_t& operator()(const P& pred, const T& value) {
     impl_.push(get_lnode<P, width_v<K>>(pred),
                get_lnode<T, width_v<V>>(value));
@@ -82,7 +82,7 @@ public:
   }
 
   template <typename T,
-            CH_REQUIRE_0(is_cast_convertible_v<V, T>)>
+            CH_REQUIRE_0(std::is_constructible_v<V, T>)>
   auto operator()(const T& value) {
     return make_type<V>(impl_.eval(get_lnode<T, width_v<V>>(value)));
   }
@@ -102,7 +102,7 @@ auto ch_select(const P& pred, const V& value) {
 
 template <typename R, typename P, typename V,
           CH_REQUIRE_0(is_logic_convertible_v<P>),
-          CH_REQUIRE_0(is_cast_convertible_v<R, V>)>
+          CH_REQUIRE_0(std::is_constructible_v<R, V>)>
 auto ch_select(const P& pred, const V& value) {
   static_assert(1 == width_v<P>, "invalid predicate size");
   return select_t<R>(get_lnode(pred), get_lnode<V, width_v<R>>(value));
@@ -121,7 +121,7 @@ auto ch_case(const K& key, const P& pred, const V& value) {
 template <typename R, typename K, typename V, typename P,
           CH_REQUIRE_0(is_logic_convertible_v<K>),
           CH_REQUIRE_0(is_equality_comparable_v<P, K>),
-          CH_REQUIRE_0(is_cast_convertible_v<R, V>)>
+          CH_REQUIRE_0(std::is_constructible_v<R, V>)>
 auto ch_case(const K& key, const P& pred, const V& value) {
   return case_t<K, R>(get_lnode(key),
                       get_lnode<P, width_v<K>>(pred),
@@ -143,8 +143,8 @@ auto ch_select(const P& pred, const U& _true, const V& _false) {
 
 template <typename R, typename P, typename U, typename V,
           CH_REQUIRE_0(is_logic_convertible_v<P>),
-          CH_REQUIRE_0(is_cast_convertible_v<R, U>),
-          CH_REQUIRE_0(is_cast_convertible_v<R, V>)>
+          CH_REQUIRE_0(std::is_constructible_v<R, U>),
+          CH_REQUIRE_0(std::is_constructible_v<R, V>)>
 auto ch_select(const P& pred, const U& _true, const V& _false) {
   static_assert(1 == width_v<P>, "invalid predicate size");
   return make_type<R>(createSelectNode(get_lnode(pred),
