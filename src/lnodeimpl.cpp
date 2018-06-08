@@ -44,9 +44,7 @@ uint32_t lnodeimpl::add_src(uint32_t index, const lnode& src) {
 }
 
 void lnodeimpl::update_sloc(const source_location& sloc) {
-  for (auto& src : srcs_) {
-    src.impl()->update_sloc(sloc);
-  }
+  assert(!sloc.empty());
   if (sloc_.empty()) {
     sloc_ = sloc;
   }

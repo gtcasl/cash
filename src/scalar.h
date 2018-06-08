@@ -81,7 +81,7 @@ template <unsigned N> class ch_int;
 template <unsigned N> class ch_uint;
 
 template <unsigned M, unsigned N>
-ch_scalar<M> ch_pad(const ch_scalar<N>& obj, const source_location& sloc = CH_SRC_LOCATION);
+ch_scalar<M> ch_pad(const ch_scalar<N>& obj);
 
 template <unsigned Bitwidth, bool Signed, typename ScalarType, typename LogicType>
 struct scalar_traits {
@@ -263,46 +263,57 @@ typedef void (*ScalarFunc1)(bitvector& out, const bitvector& in);
 typedef void (*ScalarFunc2)(bitvector& out, const bitvector& lhs, const bitvector& rhs);
 
 template <typename R, typename A>
-auto ScalarOp(const A& in, ScalarFunc1 func) {
+auto make_scalar_op(const A& in, ScalarFunc1 func) {
   bitvector ret(width_v<R>);
   func(ret, scalar_accessor::data(in));
   return R(make_scalar_buffer(std::move(ret)));
 }
 
 template <typename R, typename A, typename B>
-auto ScalarOp(const A& lhs, const B& rhs, ScalarFunc2 func) {
+auto make_scalar_op(const A& lhs, const B& rhs, ScalarFunc2 func) {
   bitvector ret(width_v<R>);
   func(ret, scalar_accessor::data(lhs), scalar_accessor::data(rhs));
   return R(make_scalar_buffer(std::move(ret)));
 }
 
+template <typename U, typename V>
+auto resize_args(const U& lhs, const V& rhs) {
+  if constexpr(width_v<U> < width_v<V>) {
+    auto _lhs = ch_pad<width_v<V>>(lhs);
+    return std::make_tuple(_lhs, rhs);
+  } else
+  if constexpr(width_v<U> > width_v<V>) {
+    auto _rhs = ch_pad<width_v<U>>(rhs);
+    return std::make_tuple(lhs, _rhs);
+  } else {
+    return std::forward_as_tuple(lhs, rhs);
+  }
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
-#define CH_SCALAR_FRIEND_OP1(i, x) \
-  CH_FRIEND_OP1((), &&, const ch_scalar&, x) \
-  CH_FRIEND_OP1((), ||, const ch_scalar&, x) \
-  CH_FRIEND_OP1((), ==, const ch_scalar&, x) \
-  CH_FRIEND_OP1((), !=, const ch_scalar&, x) \
-  CH_FRIEND_OP1((), &, const ch_scalar&, x) \
-  CH_FRIEND_OP1((), |, const ch_scalar&, x) \
-  CH_FRIEND_OP1((), ^, const ch_scalar&, x)
+#define CH_SCALAR_OP1(i, x) \
+  CH_SCALAR_OP1_IMPL((), ==, const ch_scalar&, x) \
+  CH_SCALAR_OP1_IMPL((), !=, const ch_scalar&, x) \
+  CH_SCALAR_OP1_IMPL((), &, const ch_scalar&, x) \
+  CH_SCALAR_OP1_IMPL((), |, const ch_scalar&, x) \
+  CH_SCALAR_OP1_IMPL((), ^, const ch_scalar&, x)
 
 #define CH_SCALAR_OP1_TYPES \
   int8_t, uint8_t, int16_t, uint16_t, int32_t, uint32_t, int64_t, uint64_t
 
-#define CH_SCALAR_FRIEND_OP2(i, x) \
-  CH_FRIEND_OP2((template <unsigned M, CH_REQUIRE_0(M < N)>), ==, const ch_scalar&, x) \
-  CH_FRIEND_OP2((template <unsigned M, CH_REQUIRE_0(M < N)>), !=, const ch_scalar&, x) \
-  CH_FRIEND_OP2((template <unsigned M, CH_REQUIRE_0(M < N)>), &, const ch_scalar&, x) \
-  CH_FRIEND_OP2((template <unsigned M, CH_REQUIRE_0(M < N)>), |, const ch_scalar&, x) \
-  CH_FRIEND_OP2((template <unsigned M, CH_REQUIRE_0(M < N)>), ^, const ch_scalar&, x) \
+#define CH_SCALAR_OP2(i, x) \
+  CH_SCALAR_OP2_IMPL((template <unsigned M, CH_REQUIRE_0(M < N)>), ==, const ch_scalar&, x) \
+  CH_SCALAR_OP2_IMPL((template <unsigned M, CH_REQUIRE_0(M < N)>), !=, const ch_scalar&, x) \
+  CH_SCALAR_OP2_IMPL((template <unsigned M, CH_REQUIRE_0(M < N)>), &, const ch_scalar&, x) \
+  CH_SCALAR_OP2_IMPL((template <unsigned M, CH_REQUIRE_0(M < N)>), |, const ch_scalar&, x) \
+  CH_SCALAR_OP2_IMPL((template <unsigned M, CH_REQUIRE_0(M < N)>), ^, const ch_scalar&, x) \
 
-#define CH_SCALAR_OP2_TYPES \
-  const ch_scalar<M>&
+#define CH_SCALAR_OP2_TYPES const ch_scalar<M>&
 
-#define CH_SCALAR_FRIEND_OP3(i, x) \
-  CH_FRIEND_OP3((), <<, const ch_scalar&, x, const ch_scalar<CH_WIDTH_OF(x)>&) \
-  CH_FRIEND_OP3((), >>, const ch_scalar&, x, const ch_scalar<CH_WIDTH_OF(x)>&)
+#define CH_SCALAR_OP3(i, x) \
+  CH_SCALAR_OP3_IMPL((), <<, const ch_scalar&, x, const ch_scalar<CH_WIDTH_OF(x)>&) \
+  CH_SCALAR_OP3_IMPL((), >>, const ch_scalar&, x, const ch_scalar<CH_WIDTH_OF(x)>&)
 
 #define CH_SCALAR_OP3_TYPES \
   int8_t, uint8_t, int16_t, uint16_t, int32_t, uint32_t, int64_t, uint64_t
@@ -478,12 +489,12 @@ public:
 
   auto operator&&(const ch_scalar& rhs) const {
     static_assert(N == 1, "invalid size");
-    return ScalarOp<ch_scalar>(*this, rhs, And);
+    return make_scalar_op<ch_scalar>(*this, rhs, And);
   }
 
   auto operator||(const ch_scalar& rhs) const {
     static_assert(N == 1, "invalid size");
-    return ScalarOp<ch_scalar>(*this, rhs, Or);
+    return make_scalar_op<ch_scalar>(*this, rhs, Or);
   }
 
   auto operator!() const {
@@ -493,31 +504,31 @@ public:
   // bitwise operators
 
   auto operator~() const {
-    return ScalarOp<ch_scalar>(*this, Inv);
+    return make_scalar_op<ch_scalar>(*this, Inv);
   }
 
   auto operator&(const ch_scalar& rhs) const {
-    return ScalarOp<ch_scalar>(*this, rhs, And);
+    return make_scalar_op<ch_scalar>(*this, rhs, And);
   }
 
   auto operator|(const ch_scalar& rhs) const {
-    return ScalarOp<ch_scalar>(*this, rhs, Or);
+    return make_scalar_op<ch_scalar>(*this, rhs, Or);
   }
 
   auto operator^(const ch_scalar& rhs) const {
-    return ScalarOp<ch_scalar>(*this, rhs, Xor);
+    return make_scalar_op<ch_scalar>(*this, rhs, Xor);
   }
 
   // shift operators
 
   template <unsigned M>
   auto operator<<(const ch_scalar<M>& rhs) const {
-    return ScalarOp<ch_scalar>(*this, rhs, Sll);
+    return make_scalar_op<ch_scalar>(*this, rhs, Sll);
   }
 
   template <unsigned M>
   auto operator>>(const ch_scalar<M>& rhs) const {
-    return ScalarOp<ch_scalar>(*this, rhs, Srl);
+    return make_scalar_op<ch_scalar>(*this, rhs, Srl);
   }
 
   CH_SCALAR_INTERFACE(ch_scalar)
@@ -565,17 +576,16 @@ protected:
 
   // friend operators
 
-  CH_FOR_EACH(CH_SCALAR_FRIEND_OP1, CH_SEP_SPACE, CH_SCALAR_OP1_TYPES)
-  CH_FOR_EACH(CH_SCALAR_FRIEND_OP2, CH_SEP_SPACE, CH_SCALAR_OP2_TYPES)
-  CH_FOR_EACH(CH_SCALAR_FRIEND_OP3, CH_SEP_SPACE, CH_SCALAR_OP3_TYPES)
+  CH_FOR_EACH(CH_SCALAR_OP1, CH_SEP_SPACE, CH_SCALAR_OP1_TYPES)
+  CH_FOR_EACH(CH_SCALAR_OP2, CH_SEP_SPACE, CH_SCALAR_OP2_TYPES)
+  CH_FOR_EACH(CH_SCALAR_OP3, CH_SEP_SPACE, CH_SCALAR_OP3_TYPES)
 };
 
 template <unsigned M, unsigned N>
-ch_scalar<M> ch_pad(const ch_scalar<N>& obj, const source_location& sloc) {
-  CH_UNUSED(sloc);
+ch_scalar<M> ch_pad(const ch_scalar<N>& obj) {
   static_assert(M >= N, "invalid pad size");
   if constexpr(M > N) {
-    return ScalarOp<ch_scalar<M>>(obj, ZExt);
+    return make_scalar_op<ch_scalar<M>>(obj, ZExt);
   } else {
     return obj;
   }

@@ -52,6 +52,12 @@ private:
   int line_;
 };
 
+#if defined(__GNUC__)
+  #define CH_SRC_LOCATION ch::internal::source_location(__builtin_FILE(), __builtin_LINE())
+#else
+  #define CH_SRC_LOCATION ch::internal::source_location(__FILE__, __LINE__)
+#endif
+
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename F, typename Arg>

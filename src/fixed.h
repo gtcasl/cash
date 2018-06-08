@@ -5,21 +5,21 @@
 namespace ch {
 namespace internal {
 
-#define CH_INT_FRIEND_OPS(i, x) \
-  CH_FRIEND_OP1_LT((), const ch_int&, x) \
-  CH_FRIEND_OP1_LE((), const ch_int&, x) \
-  CH_FRIEND_OP1_GT((), const ch_int&, x) \
-  CH_FRIEND_OP1_GE((), const ch_int&, x) \
-  CH_FRIEND_OP1_AND((), const ch_int&, x) \
-  CH_FRIEND_OP1_OR((), const ch_int&, x) \
-  CH_FRIEND_OP1_XOR((), const ch_int&, x) \
-  CH_FRIEND_OP1_SLL((), const ch_int&, x) \
-  CH_FRIEND_OP1_SRL((), const ch_int&, x) \
-  CH_FRIEND_OP1_ADD((), const ch_int&, x) \
-  CH_FRIEND_OP1_SUB((), const ch_int&, x) \
-  CH_FRIEND_OP1_MULT((), const ch_int&, x) \
-  CH_FRIEND_OP1_DIV((), const ch_int&, x) \
-  CH_FRIEND_OP1_MOD((), const ch_int&, x)
+#define CH_INT_OPS(i, x) \
+  CH_OP1_LT((), const ch_int&, x) \
+  CH_OP1_LE((), const ch_int&, x) \
+  CH_OP1_GT((), const ch_int&, x) \
+  CH_OP1_GE((), const ch_int&, x) \
+  CH_OP1_AND((), const ch_int&, x) \
+  CH_OP1_OR((), const ch_int&, x) \
+  CH_OP1_XOR((), const ch_int&, x) \
+  CH_OP1_SLL((), const ch_int&, x) \
+  CH_OP1_SRL((), const ch_int&, x) \
+  CH_OP1_ADD((), const ch_int&, x) \
+  CH_OP1_SUB((), const ch_int&, x) \
+  CH_OP1_MULT((), const ch_int&, x) \
+  CH_OP1_DIV((), const ch_int&, x) \
+  CH_OP1_MOD((), const ch_int&, x)
 
 #define CH_INT_OP_TYPES \
   ch_uint<N>, ch_int<N>, ch_scalar<N>, int8_t, uint8_t, int16_t, uint16_t, int32_t, uint32_t, int64_t, uint64_t

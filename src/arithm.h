@@ -34,12 +34,6 @@
   m(zext,  22 | op_unary  | op_misc) \
   m(sext,  23 | op_unary  | op_misc)
 
-#if defined(__GNUC__)
-  #define CH_SRC_LOCATION ch::internal::source_location(__builtin_FILE(), __builtin_LINE())
-#else
-  #define CH_SRC_LOCATION ch::internal::source_location(__FILE__, __LINE__)
-#endif
-
 namespace ch {
 namespace internal {
 
@@ -95,7 +89,7 @@ lnodeimpl* createRotateNode(const lnode& next, uint32_t dist, bool right);
 
 ///////////////////////////////////////////////////////////////////////////////
 
-#define CH_FRIEND_OP1(header, op, lhs_t, rhs_t) \
+#define CH_LOGIC_OP1_IMPL(header, op, lhs_t, rhs_t) \
   CH_REM header \
   inline friend auto operator op(lhs_t lhs, rhs_t _rhs) { \
     auto rhs = static_cast<std::decay_t<lhs_t>>(_rhs); \
@@ -107,44 +101,71 @@ lnodeimpl* createRotateNode(const lnode& next, uint32_t dist, bool right);
     return lhs op rhs; \
   }
 
-#define CH_FRIEND_OP2(header, op, lhs_t, rhs_t) \
+#define CH_SCALAR_OP1_IMPL(header, op, lhs_t, rhs_t) \
+  CH_REM header \
+  inline friend auto operator op(lhs_t lhs, rhs_t _rhs) { \
+    auto rhs = static_cast<std::decay_t<lhs_t>>(_rhs); \
+    return lhs op rhs; \
+  } \
+  CH_REM header \
+  inline friend auto operator op(rhs_t _lhs, lhs_t rhs) { \
+    auto lhs = static_cast<std::decay_t<lhs_t>>(_lhs); \
+    return lhs op rhs; \
+  }
+
+#define CH_LOGIC_OP2_IMPL(header, op, lhs_t, rhs_t) \
   CH_REM header \
   inline friend auto operator op(lhs_t _lhs, rhs_t _rhs) { \
-    constexpr auto W = std::max(width_v<lhs_t>, width_v<rhs_t>); \
-    auto lhs = ch_pad<W>(_lhs, source_location()); \
-    auto rhs = ch_pad<W>(_rhs, source_location()); \
+    auto [lhs, rhs] = resize_args(_lhs, _rhs); \
     return lhs op rhs; \
   } \
   CH_REM header \
   inline friend auto operator op(rhs_t _lhs, lhs_t _rhs) { \
-    constexpr auto W = std::max(width_v<lhs_t>, width_v<rhs_t>); \
-    auto lhs = ch_pad<W>(_lhs, source_location()); \
-    auto rhs = ch_pad<W>(_rhs, source_location()); \
+    auto [lhs, rhs] = resize_args(_lhs, _rhs); \
     return lhs op rhs; \
   }
 
-#define CH_FRIEND_OP3(header, op, lhs_t, rhs_t, cvt_t) \
+#define CH_SCALAR_OP2_IMPL(header, op, lhs_t, rhs_t) \
+  CH_REM header \
+  inline friend auto operator op(lhs_t _lhs, rhs_t _rhs) { \
+    auto [lhs, rhs] = resize_args(_lhs, _rhs); \
+    return lhs op rhs; \
+  } \
+  CH_REM header \
+  inline friend auto operator op(rhs_t _lhs, lhs_t _rhs) { \
+    auto [lhs, rhs] = resize_args(_lhs, _rhs); \
+    return lhs op rhs; \
+  }
+
+#define CH_LOGIC_OP3_IMPL(header, op, lhs_t, rhs_t, cvt_t) \
   CH_REM header \
   inline friend auto operator op(lhs_t lhs, rhs_t _rhs) { \
     auto rhs = static_cast<std::decay_t<cvt_t>>(_rhs); \
     return lhs op rhs; \
   }
 
-#define CH_FRIEND_OP4(header, op, cvt_t, lhs_t, rhs_t) \
+#define CH_SCALAR_OP3_IMPL(header, op, lhs_t, rhs_t, cvt_t) \
+  CH_REM header \
+  inline friend auto operator op(lhs_t lhs, rhs_t _rhs) { \
+    auto rhs = static_cast<std::decay_t<cvt_t>>(_rhs); \
+    return lhs op rhs; \
+  }
+
+#define CH_LOGIC_OP4_IMPL(header, op, cvt_t, lhs_t, rhs_t) \
   CH_REM header \
   inline friend auto operator op(lhs_t _lhs, rhs_t rhs) { \
     auto lhs = static_cast<std::decay_t<cvt_t>>(_lhs); \
     return lhs op rhs; \
   }
 
-#define CH_GLOBAL_OP4(header, op, cvt_t, lhs_t, rhs_t) \
+#define CH_SCALAR_OP4_IMPL(header, op, cvt_t, lhs_t, rhs_t) \
   CH_REM header \
-  inline auto operator op(lhs_t _lhs, rhs_t rhs) { \
+  inline friend auto operator op(lhs_t _lhs, rhs_t rhs) { \
     auto lhs = static_cast<std::decay_t<cvt_t>>(_lhs); \
     return lhs op rhs; \
   }
 
-#define CH_GLOBAL_FUNC1(header, func, lhs_t, rhs_t) \
+#define CH_LOGIC_FUNC1_IMPL(header, func, lhs_t, rhs_t) \
   CH_REM header \
   inline auto func(lhs_t lhs, rhs_t _rhs) { \
     auto rhs = static_cast<std::decay_t<lhs_t>>(_rhs); \
@@ -156,30 +177,26 @@ lnodeimpl* createRotateNode(const lnode& next, uint32_t dist, bool right);
     return func(lhs, rhs); \
   }
 
-#define CH_GLOBAL_FUNC2(header, func, lhs_t, rhs_t) \
+#define CH_LOGIC_FUNC2_IMPL(header, func, lhs_t, rhs_t) \
   CH_REM header \
   inline auto func(lhs_t _lhs, rhs_t _rhs) { \
-    constexpr auto W = std::max(width_v<lhs_t>, width_v<rhs_t>); \
-    auto lhs = ch_pad<W>(_lhs, source_location()); \
-    auto rhs = ch_pad<W>(_rhs, source_location()); \
+    auto [lhs, rhs] = resize_args(_lhs, _rhs); \
     return func(lhs, rhs); \
   } \
   CH_REM header \
   inline auto func(rhs_t _lhs, lhs_t _rhs) { \
-    constexpr auto W = std::max(width_v<lhs_t>, width_v<rhs_t>); \
-    auto lhs = ch_pad<W>(_lhs, source_location()); \
-    auto rhs = ch_pad<W>(_rhs, source_location()); \
+    auto [lhs, rhs] = resize_args(_lhs, _rhs); \
     return func(lhs, rhs); \
   }
 
-#define CH_GLOBAL_FUNC3(header, func, lhs_t, rhs_t, cvt_t) \
+#define CH_LOGIC_FUNC3_IMPL(header, func, lhs_t, rhs_t, cvt_t) \
   CH_REM header \
   inline auto func(lhs_t lhs, rhs_t _rhs) { \
     auto rhs = static_cast<std::decay_t<cvt_t>>(_rhs); \
     return func(lhs, rhs); \
   }
 
-#define CH_GLOBAL_FUNC4(header, func, cvt_t, lhs_t, rhs_t) \
+#define CH_LOGIC_FUNC4_IMPL(header, func, cvt_t, lhs_t, rhs_t) \
   CH_REM header \
   inline auto func(lhs_t _lhs, rhs_t rhs) { \
     auto lhs = static_cast<std::decay_t<cvt_t>>(_lhs); \

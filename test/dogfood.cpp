@@ -260,7 +260,10 @@ struct Dogfood {
     __out(ch_bool) out
   );
   void describe() {
-    io.out = true;
+    ch_uint4 a(1010_b);
+    auto c = a >> 2;
+    io.out = (c == 0010_b);
+    //io.out = true;
   }
 };
 

@@ -161,17 +161,17 @@ public:
 
 protected:
 
-  CH_FRIEND_OP1((), ==, const ch_float32&, float)
-  CH_FRIEND_OP1((), !=, const ch_float32&, float)
-  CH_FRIEND_OP1((), <, const ch_float32&, float)
-  CH_FRIEND_OP1((), <=, const ch_float32&, float)
-  CH_FRIEND_OP1((), >, const ch_float32&, float)
-  CH_FRIEND_OP1((), >=, const ch_float32&, float)
+  CH_LOGIC_OP1_IMPL((), ==, const ch_float32&, float)
+  CH_LOGIC_OP1_IMPL((), !=, const ch_float32&, float)
+  CH_LOGIC_OP1_IMPL((), <, const ch_float32&, float)
+  CH_LOGIC_OP1_IMPL((), <=, const ch_float32&, float)
+  CH_LOGIC_OP1_IMPL((), >, const ch_float32&, float)
+  CH_LOGIC_OP1_IMPL((), >=, const ch_float32&, float)
 
-  CH_FRIEND_OP1((), +, const ch_float32&, float)
-  CH_FRIEND_OP1((), -, const ch_float32&, float)
-  CH_FRIEND_OP1((), *, const ch_float32&, float)
-  CH_FRIEND_OP1((), /, const ch_float32&, float)
+  CH_LOGIC_OP1_IMPL((), +, const ch_float32&, float)
+  CH_LOGIC_OP1_IMPL((), -, const ch_float32&, float)
+  CH_LOGIC_OP1_IMPL((), *, const ch_float32&, float)
+  CH_LOGIC_OP1_IMPL((), /, const ch_float32&, float)
 };
 
 }

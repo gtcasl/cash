@@ -38,32 +38,32 @@ TEST_CASE("proxies", "[proxies]") {
   SECTION("slice", "[slice]") {
     TEST([]()->ch_bool {
       ch_bit4 a(1100_b);
-      ch_bit2 c = a.slice<2>(1) ^ 01_b;
+      auto c = a.slice<2>(1) ^ 01_b;
       return (c == 11_b);
     });
     TEST([]()->ch_bool {
       ch_bit4 a(1100_b);
-      ch_bit2 c = ch_slice<2>(a, 1) ^ 01_b;
+      auto c = ch_slice<2>(a, 1) ^ 01_b;
       return (c == 11_b);
     });
     TEST([]()->ch_bool {
       ch_bit4 a(1100_b);
-      ch_bit2 c = a.slice<2>(2) ^ 01_b;
+      auto c = a.slice<2>(2) ^ 01_b;
       return (c == 10_b);
     });
     TEST([]()->ch_bool {
       ch_bit4 a(1100_b);
-      ch_bit2 c = a.aslice<2>(1) ^ 01_b;
+      auto c = a.aslice<2>(1) ^ 01_b;
       return (c == 10_b);
     });
     TEST([]()->ch_bool {
       ch_bit4 a(1100_b);
-      ch_bit2 c = ch_slice<2>(a, 2) ^ 01_b;
+      auto c = ch_slice<2>(a, 2) ^ 01_b;
       return (c == 10_b);
     });
     TEST([]()->ch_bool {
       ch_bit4 a(1100_b);
-      ch_bit2 c = ch_aslice<2>(a, 1) ^ 01_b;
+      auto c = ch_aslice<2>(a, 1) ^ 01_b;
       return (c == 10_b);
     });
     TEST([]()->ch_bool {
@@ -180,30 +180,30 @@ TEST_CASE("proxies", "[proxies]") {
   SECTION("concat", "[concat]") {
     TEST([]()->ch_bool {
       ch_bit4 a(1100_b);
-      ch_bit<5> c = ch_cat(a, 1_b);
+      auto c = ch_cat(a, 1_b);
       return (c == 11001_b);
     });
     TEST([]()->ch_bool {
       ch_bit4 a(1100_b);
-      ch_bit<5> c = ch_cat(1_b, a);
+      auto c = ch_cat(1_b, a);
       return (c == 11100_b);
     });
     TEST([]()->ch_bool {
-      ch_bit<6> c = ch_cat(011_b, 011_b);
+      auto c = ch_cat(011_b, 011_b);
       return (c == 011011_b);
     });
     TEST([]()->ch_bool {
-      ch_bit<6> c = ch_cat(10_b, 1011_b);
+      auto c = ch_cat(10_b, 1011_b);
       return (c == 101011_b);
     });
     TEST([]()->ch_bool {
       ch_bit4 a(1100_b);
-      ch_bit4 c = ch_cat(a[3], a[2], a[1], a[0]);
+      auto c = ch_cat(a[3], a[2], a[1], a[0]);
       return (c == 1100_b && ch_cat(a[3], a[0]) == 10_b);
     });
     TEST([]()->ch_bool {
        ch_bit4 a(1100_b);
-       ch_bit4 c = ch_cat(a[3], a[0], a[0], a[0]);
+       auto c = ch_cat(a[3], a[0], a[0], a[0]);
        return (c == 1000_b);
     });
     TEST([]()->ch_bool {

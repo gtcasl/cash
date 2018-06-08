@@ -5,19 +5,19 @@ module Adder(
   output wire[1:0] io_out,
   output wire io_cout
 );
-  wire[2:0] zext13; // adder.cpp(18)
-  wire[2:0] zext16; // adder.cpp(18)
-  wire[2:0] add18; // adder.cpp(18)
-  wire[2:0] zext21; // adder.cpp(18)
-  wire[2:0] add23; // adder.cpp(18)
+  wire[2:0] zext13;
+  wire[2:0] zext15;
+  wire[2:0] add19;
+  wire[2:0] zext21;
+  wire[2:0] add25;
 
   assign zext13 = {{2{1'b0}}, io_cin};
-  assign zext16 = {{1{1'b0}}, io_lhs};
-  assign add18 = zext13 + zext16;
+  assign zext15 = {{1{1'b0}}, io_lhs};
+  assign add19 = zext13 + zext15;
   assign zext21 = {{1{1'b0}}, io_rhs};
-  assign add23 = add18 + zext21;
+  assign add25 = add19 + zext21;
 
-  assign io_out = add23[1:0];
-  assign io_cout = add23[2];
+  assign io_out = add25[1:0];
+  assign io_cout = add25[2];
 
 endmodule
