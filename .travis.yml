@@ -1,5 +1,6 @@
 language: cpp
 compiler: gcc
+
 dist: trusty
 addons:
     apt:
@@ -18,18 +19,14 @@ install:
   - sudo apt-get install gcc-7 g++-7
   - sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-7 60 --slave /usr/bin/g++ g++ /usr/bin/g++-7
 
-script: 
-  - source env.sh 
-  - cd src
-  - make
-  - cd example
-  - make run
-  - cd ..
-  - cd test
-  - make run
-
 git:
   submodules: false
+  
+script: 
+  - build.sh
+
+after_success: 
+  - bash <(curl -s https://codecov.io/bash)
 
 notifications:
     email:
