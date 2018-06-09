@@ -8,6 +8,7 @@ addons:
         - ubuntu-toolchain-r-test
         packages:
         - binutils-dev
+        - lcov
 
 before_install:
   # C++17
