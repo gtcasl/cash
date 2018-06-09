@@ -20,18 +20,9 @@ install:
   - sudo apt-get install gcc-7 g++-7
   - sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-7 60 --slave /usr/bin/g++ g++ /usr/bin/g++-7
 
-git:
-  submodules: false
-  
 script: 
   - build.sh
 
 after_success: 
+  - get_code_coverage.sh
   - bash <(curl -s https://codecov.io/bash)
-
-notifications:
-    email:
-        recipients:
-            - cash.gtcasl@gmail.com
-        on_success: change
-        on_failure: always
