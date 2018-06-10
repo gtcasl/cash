@@ -67,7 +67,7 @@ logic_buffer::logic_buffer(uint32_t size,
            buffer->data(),
            offset,
            id_,
-           (name.empty() ? "" : fstring("%s_%s", buffer->data().name().c_str(), name.c_str())),
+           (name.empty() ? "" : stringf("%s_%s", buffer->data().name().c_str(), name.c_str())),
            sloc)
   , source_(buffer)
   , offset_(offset) {

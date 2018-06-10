@@ -4,8 +4,11 @@
 
 using namespace ch::internal;
 
-assertimpl::assertimpl(context* ctx, const lnode& cond, const std::string& msg)
-  : ioimpl(ctx, type_assert, 0)
+assertimpl::assertimpl(context* ctx,
+                       const lnode& cond,
+                       const std::string& msg,
+                       const source_location& sloc)
+  : ioimpl(ctx, type_assert, 0, "", sloc)
   , msg_(msg)
   , predicated_(false)
   , tick_(0) {
@@ -31,6 +34,8 @@ void assertimpl::eval() {
   tick_++;
 }
 
-void ch::internal::createAssertNode(const lnode& pred, const std::string& msg) {
-  pred.impl()->ctx()->create_node<assertimpl>(pred, msg);
+void ch::internal::createAssertNode(const lnode& pred,
+                                    const std::string& msg,
+                                    const source_location& sloc) {
+  pred.impl()->ctx()->create_node<assertimpl>(pred, msg, sloc);
 }

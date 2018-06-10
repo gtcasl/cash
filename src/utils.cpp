@@ -1,15 +1,15 @@
-#include "utils.h"
-#include "common.h"
 #include <stdarg.h>
 #include <cxxabi.h>
 #include <regex>
+#include "common.h"
+#include "platform.h"
 
 #define BACKWARD_HAS_BFD 1
 #include "backward.h"
 
 using namespace ch::internal;
 
-std::string ch::internal::fstring(const char* format, ...) {
+std::string ch::internal::stringf(const char* format, ...) {
   static constexpr uint32_t STACK_BUFFER_SIZE = 1024;
 
   std::string result;
@@ -77,11 +77,11 @@ std::string unique_names::get(const std::string& name) {
   std::string unique_name(name);
   uint32_t instances = dups_[name]++;
   if (instances != 0) {
-    unique_name = fstring("%s_%d", name.c_str(), instances-1);
+    unique_name = stringf("%s_%d", name.c_str(), instances-1);
     // resolve collisions
     while (dups_.count(unique_name) != 0) {
       instances = dups_[name]++;
-      unique_name = fstring("%s_%d", name.c_str(), instances-1);
+      unique_name = stringf("%s_%d", name.c_str(), instances-1);
     }
   }
   return unique_name;

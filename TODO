@@ -185,6 +185,9 @@ $ valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes <app> <ar
 $ valgrind --tool=callgrind <app> <args...>
 $ kcachegrind
 
+// cmake build
+cmake -DCMAKE_INSTALL_PREFIX=../target/release .. && make all test
+
 // FIRRTL codegen
 
 

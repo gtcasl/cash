@@ -14,7 +14,10 @@ public:
 
 protected:
 
-  assertimpl(context* ctx, const lnode& cond, const std::string& msg);
+  assertimpl(context* ctx,
+             const lnode& cond,
+             const std::string& msg,
+             const source_location& sloc);
 
   ~assertimpl() {}
 

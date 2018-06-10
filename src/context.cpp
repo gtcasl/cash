@@ -13,10 +13,10 @@
 #include "assertimpl.h"
 #include "timeimpl.h"
 #include "cdimpl.h"
+#include "ioport.h"
 #include "arithm.h"
 #include "select.h"
 #include "enum.h"
-#include "misc.h"
 #include "udf.h"
 #include "udfimpl.h"
 
@@ -1043,15 +1043,15 @@ void ch::internal::registerTap(const std::string& name,
   node.impl()->ctx()->register_tap(name, node, sloc);
 }
 
-void ch::internal::ch_dumpStats(std::ostream& out, const device& device) {
-  get_ctx(device)->dump_stats(out);
-}
-
-void ch::internal::bindInput(const lnode& src, const lnode& input, const source_location& sloc) {
+void ch::internal::bindInput(const lnode& src,
+                             const lnode& input,
+                             const source_location& sloc) {
   src.impl()->ctx()->bind_input(src, input, sloc);
 }
 
-void ch::internal::bindOutput(const lnode& dst, const lnode& output, const source_location& sloc) {
+void ch::internal::bindOutput(const lnode& dst,
+                              const lnode& output,
+                              const source_location& sloc) {
   dst.impl()->ctx()->bind_output(dst, output, sloc);
 }
 

@@ -51,3 +51,7 @@ void device::compile() {
 context* ch::internal::get_ctx(const device& device) {
   return device.impl()->ctx();
 }
+
+void ch::internal::ch_dumpStats(std::ostream& out, const device& device) {
+  get_ctx(device)->dump_stats(out);
+}

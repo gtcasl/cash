@@ -5,6 +5,7 @@
 #include "proxyimpl.h"
 #include "ioimpl.h"
 #include "context.h"
+#include "ordered_set.h"
 #include "mem.h"
 
 using namespace ch::internal;
