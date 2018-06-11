@@ -22,8 +22,16 @@ install:
   - sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-7 60 --slave /usr/bin/g++ g++ /usr/bin/g++-7
 
 script: 
-  - build.sh
+  # Building project
+  - mkdir -p build
+  - cd build
+  - make -j8
 
 after_success: 
-  - get_code_cov.sh
+  # Code coverage test
+  - make test # run test coverage
+  - lcov -c -d . -o coverage.info # capture coverage info
+  - lcov -r coverage.info '*/backward.h' '*/catch.h' '/usr/*' -o coverage.info # exclude external components
+  - lcov --list coverage.info # debug info
+  # Upload coverage report
   - bash <(curl -s https://codecov.io/bash)
