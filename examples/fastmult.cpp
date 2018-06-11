@@ -42,5 +42,7 @@ int main() {
   ch_toVerilog("fastmult.v", fastmult);
   ch_toFIRRTL("fastmult.fir", fastmult);
 
-  return 0;
+  int ret = system("iverilog fastmult_tb.v -o fastmult_tb.iv")
+          | system("vvp fastmult_tb.iv");
+  return ret != 0;
 }

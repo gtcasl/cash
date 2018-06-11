@@ -32,5 +32,7 @@ int main() {
   ch_toVerilog("counter.v", counter);
   ch_toFIRRTL("counter.fir", counter);
 
-  return 0;
+  int ret = system("iverilog counter_tb.v -o counter_tb.iv")
+          | system("vvp counter_tb.iv");
+  return ret != 0;
 }

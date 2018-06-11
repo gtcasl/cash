@@ -3,19 +3,19 @@ cmake_minimum_required(VERSION 3.5)
 
 project(cash VERSION 0.1.0 LANGUAGES CXX)
 
-set(DEFAULT_BUILD_TYPE "Release")
-
 add_compile_options(-std=c++17 -pedantic -Wall -Wextra)
 
-set(EXECUTABLE_OUTPUT_PATH ${CMAKE_BINARY_DIR}/bin)
-
-set(LIBRARY_OUTPUT_PATH ${CMAKE_BINARY_DIR}/lib)
+set(DEFAULT_BUILD_TYPE "Release")
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake")
+set(EXECUTABLE_OUTPUT_PATH ${CMAKE_BINARY_DIR}/bin)
+set(LIBRARY_OUTPUT_PATH ${CMAKE_BINARY_DIR}/lib)
 
 set(PROJECT_CONFIG ${PROJECT_NAME}Config)
 
+# check dependent packages
 find_package(BFD REQUIRED)
+find_package(IVERILOG REQUIRED)
 
 # set include path
 include_directories("include")

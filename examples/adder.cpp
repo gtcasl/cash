@@ -41,5 +41,7 @@ int main() {
   ch_toVerilog("adder.v", adder);
   ch_toFIRRTL("adder.fir", adder);
 
-  return 0;
+  int ret = system("iverilog adder_tb.v -o adder_tb.iv")
+          | system("vvp adder_tb.iv");
+  return ret != 0;
 }

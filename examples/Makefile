@@ -24,7 +24,7 @@ clean:
 
 run: $(PROJECTS)
 	$(foreach proj, $(PROJECTS), ./$(proj) || exit;)
-	$(foreach proj, $(PROJECTS_NAMES), iverilog $(proj)_tb.v -g2012 -o $(proj)_tb.iv || exit;)
+	$(foreach proj, $(PROJECTS_NAMES), iverilog $(proj)_tb.v -o $(proj)_tb.iv || exit;)
 	$(foreach proj, $(PROJECTS_NAMES), vvp $(proj)_tb.iv || exit;)
 
 ifneq ($(MAKECMDGOALS),clean)

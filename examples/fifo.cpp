@@ -94,5 +94,7 @@ int main() {
   ch_toVerilog("fifo.v", fifo);
   ch_toFIRRTL("fifo.fir", fifo);
 
-  return 0;
+  int ret = system("iverilog fifo_tb.v -o fifo_tb.iv")
+          | system("vvp fifo_tb.iv");
+  return ret != 0;
 }

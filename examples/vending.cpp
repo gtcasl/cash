@@ -54,5 +54,7 @@ int main() {
   ch_toVerilog("vending.v", vending);
   ch_toFIRRTL("vending.fir", vending);
 
-  return 0;
+  int ret = system("iverilog vending_tb.v -o vending_tb.iv")
+          | system("vvp vending_tb.iv");
+  return ret != 0;
 }

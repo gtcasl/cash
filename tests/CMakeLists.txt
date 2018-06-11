@@ -34,4 +34,4 @@ target_link_libraries(dogfood ${PROJECT_NAME})
 target_link_libraries(testsuite ${PROJECT_NAME})
 
 # register test
-add_test(testsuite ${EXECUTABLE_OUTPUT_PATH}/testsuite)
+add_test(NAME testsuite COMMAND ${EXECUTABLE_OUTPUT_PATH}/testsuite)

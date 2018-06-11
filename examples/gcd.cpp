@@ -65,5 +65,7 @@ int main() {
   ch_toVerilog("gcd.v", gcd);
   ch_toFIRRTL("gcd.fir", gcd);
 
-  return 0;
+  int ret = system("iverilog gcd_tb.v -o gcd_tb.iv")
+          | system("vvp gcd_tb.iv");
+  return ret != 0;
 }
