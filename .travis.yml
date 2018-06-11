@@ -25,6 +25,7 @@ script:
   # Building project
   - mkdir -p build
   - cd build
+  - cmake ..
   - make -j8
 
 after_success: 
