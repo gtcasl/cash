@@ -7,6 +7,7 @@ addons:
         sources:
         - ubuntu-toolchain-r-test
         packages:
+        - iverilog
         - binutils-dev
         - lcov
 
