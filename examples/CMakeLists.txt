@@ -6,7 +6,7 @@ set(EXAMPLES
     fastmult 
     fifo 
     gcd 
-    #vending
+    vending
 )
 
 foreach(EXAMPLE ${EXAMPLES})
