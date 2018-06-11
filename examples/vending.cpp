@@ -4,9 +4,10 @@ using namespace ch::core;
 using namespace ch::literals;
 using namespace ch::sim;
 
+__enum (Coin, (dime, nickel));
+__enum (State, (idle, s5, s10, s15, sOk));
+
 struct VendingMachine {
-  __enum (Coin, (dime, nickel));
-  __enum (State, (idle, s5, s10, s15, sOk));
   __io (
     __in(Coin)     coin,
     __out(ch_bool) valid
@@ -41,7 +42,7 @@ struct VendingMachine {
 int main() {
   ch_device<VendingMachine> vending;
 
-  vending.io.coin = VendingMachine::Coin::nickel;
+  vending.io.coin = Coin::nickel;
 
   ch_vcdtracer tracer("vending.vcd", vending);
   tracer.run(2*(1+4));

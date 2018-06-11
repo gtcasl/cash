@@ -1,16 +1,16 @@
 `timescale 1ns/1ns
 `include "vending.v"
 
-`define check(condition) if (!(condition)) $display("FAILED!")
+`define check(condition) if (!(condition === 1'b1)) $display("FAILED!")
 
 module testbench();
 
     reg clk = 0;
     reg rst = 0;
-    reg[1:0] coin = 1;
+    reg coin = 1;
     wire valid;
 
-    VendingMachine device(clk, reset, coin, valid);
+    VendingMachine device(clk, rst, coin, valid);
 
     always begin
         #1 clk = !clk;
@@ -20,8 +20,8 @@ module testbench();
         $dumpfile("testbench.vcd");
         $dumpvars(0, testbench);
 
-        $display ("time\tclk\trst\tnickel\tdime\tvalid");
-        $monitor("%3d\t%b\t%b\t%h\t%b", $time, clk, rst, coin, valid);
+        $display ("time\tclk\trst\tcoin\tvalid");
+        $monitor("%3d\t%b\t%b\t%h\t%h", $time, clk, rst, coin, valid);
 
         #0 rst = 1;
         #1 rst = 1;

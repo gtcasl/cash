@@ -697,6 +697,8 @@ public:
   explicit operator int64_t() const {
     return this->operator uint64_t();
   }
+
+  void randomize();
   
 protected:
   

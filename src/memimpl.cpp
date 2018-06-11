@@ -34,6 +34,9 @@ memimpl::memimpl(context* ctx,
   if (has_initdata_) {
     assert(8 * init_data.size() >= value_.size());
     value_.write(0, init_data.data(), init_data.size(), 0, value_.size());
+  } else {
+    // randomize content to catch bugs
+    value_.randomize();
   }
 }
 

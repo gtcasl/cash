@@ -431,6 +431,13 @@ void bitvector::write(
   }
 }
 
+void bitvector::randomize() {
+  for (uint32_t i = 0, n = this->num_words(); i < n; ++i) {
+    words_[i] = 0xdeadbeef;
+  }
+  this->clear_unused_bits();
+}
+
 std::ostream& ch::internal::operator<<(std::ostream& out, const bitvector& rhs) {
   auto oldflags = out.flags();
   out.setf(std::ios_base::hex, std::ios_base::basefield);

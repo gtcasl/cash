@@ -44,6 +44,9 @@ regimpl::regimpl(context* ctx, const lnode& next, const source_location& sloc)
   auto cd = ctx->current_cd(sloc);
   srcs_.emplace_back(cd);
   srcs_.emplace_back(next);
+
+  // randomize content to catch bugs
+  this->next().data().randomize();
 }
 
 regimpl::regimpl(context* ctx,

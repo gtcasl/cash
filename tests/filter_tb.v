@@ -1,7 +1,7 @@
 `timescale 1ns/1ns
 `include "filter.v"
 
-`define check(condition) if (!(condition)) $display("FAILED!")
+`define check(condition) if (!(condition === 1'b1)) $display("FAILED!")
 
 module testbench();
 
