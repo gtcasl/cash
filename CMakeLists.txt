@@ -5,6 +5,9 @@ project(cash VERSION 0.1.0 LANGUAGES CXX)
 
 add_compile_options(-std=c++17 -pedantic -Wall -Wextra --coverage)
 
+set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} --coverage")
+set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} --coverage")
+
 set(DEFAULT_BUILD_TYPE "Release")
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake")
