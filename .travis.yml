@@ -25,11 +25,13 @@ script:
   # Building project
   - mkdir -p build
   - cd build
-  - make -j8
+  - cmake -DCMAKE_BUILD_TYPE=Debug ..
+  - make -j8 all 
+  - make test
 
 after_success: 
-  # Code coverage test
-  - make test # run test coverage
+  # Gather code coverage
+  - cd ${TRAVIS_BUILD_DIR}
   - lcov -c -d . -o coverage.info # capture coverage info
   - lcov -r coverage.info '*/backward.h' '*/catch.h' '/usr/*' -o coverage.info # exclude external components
   - lcov --list coverage.info # debug info
