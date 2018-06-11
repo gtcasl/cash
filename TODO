@@ -186,7 +186,7 @@ $ valgrind --tool=callgrind <app> <args...>
 $ kcachegrind
 
 // cmake build
-cmake -DCMAKE_INSTALL_PREFIX=../target/release .. && make all test
+cmake -DCMAKE_BUILD_TYPE=Debug -DCODECOV=ON.. && make -j4 all test
 
 // FIRRTL codegen
 

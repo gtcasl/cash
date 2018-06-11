@@ -175,19 +175,34 @@ struct Dogfood {
     __out(ch_bool) out
   );
   void describe() {
-    io.out = true;
+    auto clk  = ch_case(ch_time(), 8, 1_b)(6, 1)(4, 1)(2, 1)(0);
+    auto rst  = ch_case(ch_time(), 5, 1_b)(0);
+    auto next = ch_case(ch_time(), 8, 0011_b)(7, 0)(6, 0)(5, 1)(4, 2)(3, 3)(2, 1)(1, 2)(0);
+    auto e = ch_case(ch_time(), 9, 0011_b)(8, 0)(7, 0)(6, 0)(5, 2)(4, 3)(3, 1)(2, 2)(0);
+
+    ch_pushcd(clk, rst);
+
+    auto r = ch_delay(ch_select(ch_reset(), 0, next));    
+
+    ch_print("t={0}, clk={1}, rst={2}, next={3}, out={4}, expected={5}", ch_time(), clk, rst, next, r, e);
+
+    io.out = (r == e);
+    //io.out = true;
   }
 };
 
 int main() {
-  /*{
+  {
     ch_device<Dogfood> device;
+    ch_toVerilog("test.v", device);
     ch_simulator sim(device);
     device.io.in = 0xA;
-    sim.run(10);
-    ch_toVerilog("test.v", device);
-    ch_vcdtracer tracer("test.vcd", device);
-  }*/
+    sim.run([&](ch_tick t)->bool {
+      std::cout << "t" << t << ": out="  << device.io.out << std::endl;
+      //assert(!!device.io.out);
+      return (t != 8);
+    });
+  }
 
   /*{
     ch_device<FilterBlock<ch_uint16>> filter;

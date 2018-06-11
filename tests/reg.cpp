@@ -234,23 +234,21 @@ TEST_CASE("registers", "[registers]") {
       return (x.q == e) && (x.p == ~e);
     }, 8);
 
-    /* TODO:
     TEST([]()->ch_bool {
       auto clk  = ch_case(ch_time(), 8, 1_b)(6, 1)(4, 1)(2, 1)(0);
-      auto rst  = ch_case(ch_time(), 5, 1_b)(0);
-      auto next = ch_case(ch_time(), 8, 0011_b)(7, 0)(6, 0)(5, 1)(4, 2)(3, 3)(2, 1)(1, 2)(0);
+      auto rst  = ch_case(ch_time(), 6, 1_b)(0);
+      auto next = ch_case(ch_time(), 8, 11_b)(7, 3)(6, 3)(5, 3)(4, 2)(3, 3)(2, 1)(1, 3)(0);
+      auto e    = ch_case(ch_time(), 8, 11_b)(7, 0)(6, 0)(5, 2)(4, 2)(3, 1)(2, 1)(0);
 
       ch_pushcd(clk, rst);
 
       auto r = ch_delay(ch_select(ch_reset(), 0, next));
 
+      //ch_print("t={0}, clk={1}, rst={2}, next={3}, out={4}, expected={5}", ch_time(), clk, rst, next, r, e);
+
       ch_popcd();
 
-      auto e = ch_case(ch_time(), 9, 0011_b)(8, 0)(7, 0)(6, 0)(5, 2)(4, 3)(3, 1)(2, 2)(0);
-
-      //ch_print("t={0}, clk={1}, clk2={2}, rst={3}, next={4}, out={5}, expected={6}", ch_time(), ch_clock(), clk, rst, next, r, e);
-
       return (r == e);
-    }, 8);*/
+    }, 8);
   }
 }

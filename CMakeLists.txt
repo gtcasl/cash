@@ -3,12 +3,18 @@ cmake_minimum_required(VERSION 3.5)
 
 project(cash VERSION 0.1.0 LANGUAGES CXX)
 
-add_compile_options(-std=c++17 -pedantic -Wall -Wextra --coverage)
+option(CODECOV "Enable code coverage." ON)
 
-set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} --coverage")
-set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} --coverage")
+# use C++17 compiler
+add_compile_options(-std=c++17 -pedantic -Wall -Wextra)
 
 set(DEFAULT_BUILD_TYPE "Release")
+
+if(CODECOV)
+    add_compile_options(--coverage)
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} --coverage")
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} --coverage")
+endif()
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake")
 set(EXECUTABLE_OUTPUT_PATH ${CMAKE_BINARY_DIR}/bin)
