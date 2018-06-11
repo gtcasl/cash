@@ -22,20 +22,19 @@ install:
   - sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-7 60 --slave /usr/bin/g++ g++ /usr/bin/g++-7
 
 script: 
-  # Building project
+  # Build project
   - mkdir -p build
   - cd build
   - cmake -DCMAKE_BUILD_TYPE=Debug -DCODECOV=ON ..
   - make -j8
-
+  # Run tests
+  - make test 
+    
 after_success: 
   # Gather code coverage
   - cd ${TRAVIS_BUILD_DIR}
-  - lcov --directory . --capture --initial --output-file coverage_before.info # capture initial trace
-  - make test 
-  - lcov --directory . --capture --output-file coverage_after.info # capture final trace
-  - lcov --add-tracefile coverage_before.info --add-tracefile coverage_after.info --output-file coverage.info # merge traces
+  - lcov --directory . --capture --output-file coverage.info # capture trace  
   - lcov --remove coverage.info '/usr/*' '*/backward.h' '*/catch.h' --output-file coverage.info # exclude external components
-  - lcov --list coverage.info # debug info
+  - lcov --list coverage.info # dump final trace
   # Upload coverage report
   - bash <(curl -s https://codecov.io/bash)
