@@ -10,28 +10,3 @@ https://gtcasl.github.io/cash/
 (c) 2016-2018 Blaise Tine
 
 Release under the BSD license, see LICENSE for details.
-
-Introduction
-============
-
-...
-
-Requirements
-============
-
-...
-
-Build Instructions
-==================
-
-...
-
-Usage
-=====
-
-...
-
-Examples
-========
-
-...
