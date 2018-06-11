@@ -1,10 +1,11 @@
 
 # set programs list
-set(EXAMPLES
-    adder
-    counter
-    fastmult
-    fifo gcd
+set(EXAMPLES 
+    adder 
+    counter 
+    fastmult 
+    fifo 
+    gcd 
     vending
 )
 
