@@ -92,7 +92,7 @@ TEST_CASE("conditionals", "[conditionals]") {
       } __else {
         c = d;
       };
-      ch_print("c={0}, d={1}", c, d);
+      //ch_print("c={0}, d={1}", c, d);
       return (c == 5 && d == 0);
     });
     TEST([]()->ch_bool {

@@ -42,43 +42,9 @@ bool runtestx(const std::function<bool()>& test) {
   return bRet;
 }
 
-int syscall(const std::string& cmd) {
-  char buf[1024];
-  FILE *fp = popen(cmd.c_str(), "r");
-  if (nullptr == fp)
-    return -1;
-  while (fgets(buf, 1024, fp)) {
-    std::cout << buf;
-  }
-  int status = pclose(fp);
-  if (-1 == status)
-    return -1;
-  return WEXITSTATUS(status);
-}
-
-int syscall(const std::string& cmd, std::string& output) {
-  char charBuf;
-  std::ostringstream outBuffer;
-  FILE *fp = popen(cmd.c_str(), "r");
-  if (nullptr == fp)
-    return -1;
-  while ((charBuf = fgetc(fp)) != EOF) {
-    outBuffer << charBuf;
-  }
-  int status = pclose(fp);
-  if (-1 == status)
-    return -1;
-  output = outBuffer.str();
-  return WEXITSTATUS(status);
-}
-
 bool checkVerilog(const std::string& file) {
-  int ret = syscall(stringf("iverilog %s -o %s.iv 2>&1 | grep \".*syntax error.*\"", file.c_str(), file.c_str()));
-  if (ret != 1) {
-    assert(false);
-    return false;
-  }
-  ret = syscall(stringf("vvp %s.iv", file.c_str()));
+  int ret = system(stringf("iverilog %s -o %s.iv", file.c_str(), file.c_str()).c_str())
+          | system(stringf("vvp %s.iv", file.c_str()).c_str());
   assert(0 == ret );
   return (0 == ret);
 }

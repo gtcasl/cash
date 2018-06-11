@@ -1,7 +1,7 @@
 `timescale 1ns/1ns
 `include "queue.v"
 
-`define assert(condition) if (!(condition)) begin $display("assertion FAILED!"); $finish_and_return(1); end
+`define check(condition) if (!(condition)) $display("FAILED!")
 
 module testbench();
 
@@ -33,35 +33,35 @@ module testbench();
 
         #0 din = 1;
            enq = 1;
-           `assert(deq_valid == 0);
-           `assert(enq_ready == 1);
+           `check(deq_valid == 0);
+           `check(enq_ready == 1);
 
         #2 din = 2;
            enq = 1;
-           `assert(deq_valid == 1);
-           `assert(enq_ready == 1);
-           `assert(dout == 1);
+           `check(deq_valid == 1);
+           `check(enq_ready == 1);
+           `check(dout == 1);
 
         #2 din = 0;
            enq = 0;
-           `assert(deq_valid == 1);
-           `assert(enq_ready == 0);
-           `assert(dout == 1);
+           `check(deq_valid == 1);
+           `check(enq_ready == 0);
+           `check(dout == 1);
 
         #2 deq = 1;
-          `assert(deq_valid == 1);
-          `assert(enq_ready == 0);
-          `assert(dout == 1);
+          `check(deq_valid == 1);
+          `check(enq_ready == 0);
+          `check(dout == 1);
 
         #2 deq = 1;
-           `assert(deq_valid == 1);
-           `assert(enq_ready == 1);
-           `assert(dout == 2);
+           `check(deq_valid == 1);
+           `check(enq_ready == 1);
+           `check(dout == 2);
 
         #2 deq = 0;
-           `assert(deq_valid == 0);
-           `assert(enq_ready == 1);
-           `assert(dout == 1);
+           `check(deq_valid == 0);
+           `check(enq_ready == 1);
+           `check(dout == 1);
 
         #2 $finish;
     end

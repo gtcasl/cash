@@ -1,7 +1,7 @@
 `timescale 1ns/1ns
 `include "counter.v"
 
-`define assert(condition) if (!(condition)) begin $display("assertion FAILED!"); $finish_and_return(1); end
+`define check(condition) if (!(condition)) $display("FAILED!")
 
 module testbench();
 
@@ -26,7 +26,7 @@ module testbench();
         #1 rst = 1;
         #1 rst = 0;
 
-        #20 `assert(out == 12);
+        #20 `check(out == 12);
             $finish;
     end
 

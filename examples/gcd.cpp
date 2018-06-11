@@ -40,7 +40,7 @@ struct GCD {
     io.out.data  = x;
     io.out.valid = (0 == y) && p;
 
-    ch_print("{0}: clk={1}, rst={2}, x={3}, y={4}, p={5}", ch_time(), ch_clock(), ch_reset(), x, y, p);
+    //ch_print("{0}: clk={1}, rst={2}, x={3}, y={4}, p={5}", ch_time(), ch_clock(), ch_reset(), x, y, p);
   }
 };
 

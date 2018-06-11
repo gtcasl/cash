@@ -1,7 +1,7 @@
 `timescale 1ns/1ns
 `include "fifo.v"
 
-`define assert(condition) if (!(condition)) begin $display("assertion FAILED!"); $finish_and_return(1); end
+`define check(condition) if (!(condition)) $display("FAILED!")
 
 module testbench();
 
@@ -33,35 +33,35 @@ module testbench();
 
         #0 din    = 1;
            push   = 1;
-           `assert(empty == 1);
-           `assert(full == 0);
+           `check(empty == 1);
+           `check(full == 0);
 
         #2 din    = 2;
            push   = 1;
-           `assert(empty == 0);
-           `assert(full == 0);
-           `assert(dout == 1);
+           `check(empty == 0);
+           `check(full == 0);
+           `check(dout == 1);
 
         #2 din    = 0;
            push   = 0;
-           `assert(empty == 0);
-           `assert(full == 1);
-           `assert(dout == 1);
+           `check(empty == 0);
+           `check(full == 1);
+           `check(dout == 1);
 
         #2 pop    = 1;
-          `assert(empty == 0);
-          `assert(full == 1);
-          `assert(dout == 1);
+          `check(empty == 0);
+          `check(full == 1);
+          `check(dout == 1);
 
         #2 pop    = 1;
-           `assert(empty == 0);
-           `assert(full == 0);
-           `assert(dout == 2);
+           `check(empty == 0);
+           `check(full == 0);
+           `check(dout == 2);
 
         #2 pop    = 0;
-           `assert(empty == 1);
-           `assert(full == 0);
-           `assert(dout == 1);
+           `check(empty == 1);
+           `check(full == 0);
+           `check(dout == 1);
 
         #2 $finish;
     end

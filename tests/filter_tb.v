@@ -1,7 +1,7 @@
 `timescale 1ns/1ns
 `include "filter.v"
 
-`define assert(condition) if (!(condition)) begin $display("assertion FAILED!"); $finish_and_return(1); end
+`define check(condition) if (!(condition)) $display("FAILED!")
 
 module testbench();
 
@@ -34,13 +34,13 @@ module testbench();
         #0 x_data = 3;
            x_valid= 1;
            x_parity=0;
-           `assert(y_data  == 0);
-           `assert(y_valid == 0);
-           `assert(y_parity == 0);
+           `check(y_data  == 0);
+           `check(y_valid == 0);
+           `check(y_parity == 0);
 
-        #4 `assert(y_data   == 12);
-           `assert(y_valid  == 1);
-           `assert(y_parity == 0);
+        #4 `check(y_data   == 12);
+           `check(y_valid  == 1);
+           `check(y_parity == 0);
 
         #2 $finish;
     end

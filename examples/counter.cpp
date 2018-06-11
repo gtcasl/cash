@@ -14,7 +14,7 @@ struct Counter {
     ch_reg<ch_uint<N>> out(2);
     out <<= out + 1;
     io.out = out;
-    ch_print("{0}: clk={1}, rst={2}, out={3}", ch_time(), ch_clock(), ch_reset(), out);
+    //ch_print("{0}: clk={1}, rst={2}, out={3}", ch_time(), ch_clock(), ch_reset(), out);
   }
 };
 

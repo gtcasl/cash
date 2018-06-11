@@ -10,10 +10,6 @@ using namespace ch::sim;
 
 bool checkVerilog(const std::string& moduleName);
 
-int syscall(const std::string& cmd);
-
-int syscall(const std::string& cmd, std::string& output);
-
 bool runtest(const std::function<ch_bool()> &test, ch_tick ticks = 1);
 
 bool runtestx(const std::function<bool()> &test);

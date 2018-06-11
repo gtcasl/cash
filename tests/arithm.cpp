@@ -136,7 +136,7 @@ TEST_CASE("arithmetic", "[arithmetic]") {
     TEST([]()->ch_bool {
       ch_uint4 a(1010_b);
       auto c = a >> 2;
-      ch_print("a={0}, c={0}", a, c);
+      //ch_print("a={0}, c={0}", a, c);
       return (c == 0010_b);
     });
     TEST([]()->ch_bool {

@@ -1,7 +1,7 @@
 `timescale 1ns/1ns
 `include "vending.v"
 
-`define assert(condition) if (!(condition)) begin $display("assertion FAILED!"); $finish_and_return(1); end
+`define check(condition) if (!(condition)) $display("FAILED!")
 
 module testbench();
 
@@ -27,7 +27,7 @@ module testbench();
         #1 rst = 1;
         #1 rst = 0;
 
-        #8 `assert(valid == 1);
+        #8 `check(valid == 1);
             $finish;
     end
 

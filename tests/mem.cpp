@@ -68,7 +68,7 @@ TEST_CASE("memory", "[memory]") {
            (17, 0xE_h)
            (19, 0xD_h)
                (q);
-      ch_print("t={0}, clk={1}, rst={2}, a={3}, d={4}, en={5}, q={6}, e={7}", ch_time(), ch_clock(), ch_reset(), a, d, en, q, e);
+      //ch_print("t={0}, clk={1}, rst={2}, a={3}, d={4}, en={5}, q={6}, e={7}", ch_time(), ch_clock(), ch_reset(), a, d, en, q, e);
       return (q == e);
     }, 12);
 
@@ -98,7 +98,7 @@ TEST_CASE("memory", "[memory]") {
            (17, 0xE_h)
            (19, 0xD_h)
                (q);
-      ch_print("t={0}, clk={1}, rst={2}, a={3}, d={4}, en={5}, q={6}, e={7}", ch_time(), ch_clock(), ch_reset(), a, d, en, q, e);
+      //ch_print("t={0}, clk={1}, rst={2}, a={3}, d={4}, en={5}, q={6}, e={7}", ch_time(), ch_clock(), ch_reset(), a, d, en, q, e);
       return (q == e);
     }, 12);
 

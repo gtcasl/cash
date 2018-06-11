@@ -77,7 +77,7 @@ TEST_CASE("registers", "[registers]") {
       ch_reg<ch_uint2> a(0);
       a <<= a + 1;
       auto e = ch_case(ch_time(), 3, 01_b)(5, 10_b)(7, 11_b)(9, 00_b)(a);
-      ch_print("t={0}, a={1}, e={2}", ch_time(), a, e);
+      //ch_print("t={0}, a={1}, e={2}", ch_time(), a, e);
       return (e == a);
     }, 10);
 
@@ -126,7 +126,7 @@ TEST_CASE("registers", "[registers]") {
       auto x = ch_case(ch_time(), 8, 11_b)(6, 0)(4, 2)(2, 1)(0);
       a <<= x;
       auto b = ch_delay(x);
-      ch_print("t={0}, clk={1}, rst={2}, x={3}, a={4}, b={5}", ch_time(), ch_clock(), ch_reset(), x, a, b);
+      //ch_print("t={0}, clk={1}, rst={2}, x={3}, a={4}, b={5}", ch_time(), ch_clock(), ch_reset(), x, a, b);
       return (a == b);
     }, 8);
 
@@ -145,7 +145,7 @@ TEST_CASE("registers", "[registers]") {
         a <<= 3;
       };
 
-      ch_print("t={0}, clk={1}, rst={2}, a={3}, b={4}, e={5}", ch_time(), ch_clock(), ch_reset(), a, b, e);
+      //ch_print("t={0}, clk={1}, rst={2}, a={3}, b={4}, e={5}", ch_time(), ch_clock(), ch_reset(), a, b, e);
       return (a == e);
     }, 8);
 
@@ -164,7 +164,7 @@ TEST_CASE("registers", "[registers]") {
         a <<= a;
       };
 
-      ch_print("t={0}, clk={1}, rst={2}, a={3}, b={4}, e={5}", ch_time(), ch_clock(), ch_reset(), a, b, e);
+      //ch_print("t={0}, clk={1}, rst={2}, a={3}, b={4}, e={5}", ch_time(), ch_clock(), ch_reset(), a, b, e);
       return (a == e);
     }, 10);
 
@@ -179,7 +179,7 @@ TEST_CASE("registers", "[registers]") {
       __case (2) { a <<= 0; }
       __default  { a <<= a; };
 
-      ch_print("t={0}, clk={1}, rst={2}, a={3}, b={4}, e={5}", ch_time(), ch_clock(), ch_reset(), a, b, e);
+      //ch_print("t={0}, clk={1}, rst={2}, a={3}, b={4}, e={5}", ch_time(), ch_clock(), ch_reset(), a, b, e);
       return (a == e);
     }, 8);
 
@@ -200,7 +200,7 @@ TEST_CASE("registers", "[registers]") {
         a <<= 3;
       };
 
-      ch_print("t={0}, clk={1}, rst={2}, a={3}, b={4}, e={5}", ch_time(), ch_clock(), ch_reset(), a, b, e);
+      //ch_print("t={0}, clk={1}, rst={2}, a={3}, b={4}, e={5}", ch_time(), ch_clock(), ch_reset(), a, b, e);
       return (a == e);
     }, 8);
 
@@ -215,7 +215,7 @@ TEST_CASE("registers", "[registers]") {
       a = ch_case(ch_time(), 9, 00_b)(7, 2)(5, 3)(3, 1)(0);
       e <<= a;
 
-      ch_print("t={0}, clk={1}, rst={2}, x0={3}, x1={4}, e={5}", ch_time(), ch_clock(), ch_reset(), x[0], x[1], e);
+      //ch_print("t={0}, clk={1}, rst={2}, x0={3}, x1={4}, e={5}", ch_time(), ch_clock(), ch_reset(), x[0], x[1], e);
 
       return (x[0] == e) && (x[1] == ~e);
     }, 8);
@@ -229,11 +229,12 @@ TEST_CASE("registers", "[registers]") {
       x <<= X{~a, a};
       e <<= a;
 
-      ch_print("t={0}, clk={1}, rst={2}, x.p={3}, x.q={4}, e={5}", ch_time(), ch_clock(), ch_reset(), x.p, x.q, e);
+      //ch_print("t={0}, clk={1}, rst={2}, x.p={3}, x.q={4}, e={5}", ch_time(), ch_clock(), ch_reset(), x.p, x.q, e);
 
       return (x.q == e) && (x.p == ~e);
     }, 8);
 
+    /* TODO:
     TEST([]()->ch_bool {
       auto clk  = ch_case(ch_time(), 8, 1_b)(6, 1)(4, 1)(2, 1)(0);
       auto rst  = ch_case(ch_time(), 5, 1_b)(0);
@@ -247,10 +248,9 @@ TEST_CASE("registers", "[registers]") {
 
       auto e = ch_case(ch_time(), 9, 0011_b)(8, 0)(7, 0)(6, 0)(5, 2)(4, 3)(3, 1)(2, 2)(0);
 
-      ch_print("t={0}, clk={1}, clk2={2}, rst={3}, next={4}, out={5}, expected={6}",
-           ch_time(), ch_clock(), clk, rst, next, r, e);
+      //ch_print("t={0}, clk={1}, clk2={2}, rst={3}, next={4}, out={5}, expected={6}", ch_time(), ch_clock(), clk, rst, next, r, e);
 
       return (r == e);
-    }, 8);
+    }, 8);*/
   }
 }
