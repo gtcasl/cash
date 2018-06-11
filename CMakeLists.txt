@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.5)
 
 project(cash VERSION 0.1.0 LANGUAGES CXX)
 
-add_compile_options(-std=c++17 -pedantic -Wall -Wextra)
+add_compile_options(-std=c++17 -pedantic -Wall -Wextra --coverage)
 
 set(DEFAULT_BUILD_TYPE "Release")
 
