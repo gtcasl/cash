@@ -65,7 +65,7 @@ X*** Assignment rule: by constructor assignent is ignored during check
 *** investigate alternative proxy implementation based on bitmask for simplicity
 *** find a way to fix ch_reg such that it is initialized to itself by default (next -> this)
 *** should consider gettng rid of defer initialization once auto dead code elimination is supported (will remove all nasty hacks in code where dst == nullptr is a worry)
-*** address the issue why friend member still don't get implicit template constructor (e.g. ch_min, ch_select, ...)
+*** address the issue why friend member still don't get implicit template constructor (e.g. ch_min, ch_sel, ...)
 
 
 *** handling floating-point delays: (y = a * b) => ch_decoupled<ch_float32> object exporting ready/valid signals to be connected
@@ -156,7 +156,7 @@ Completed:
 - use C++ 11 std containers emplace api to reduce object construction overhead
 - automic device instantiation
 - new vcd simulator class
-- implement ch_select
+- implement ch_sel
 - implement ch_case
 - update llrom
 - update llram

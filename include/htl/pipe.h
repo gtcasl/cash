@@ -19,8 +19,8 @@ struct ch_pipe {
     for (unsigned i = 0; i < Delay; ++i) {
       T new_data;
       ch_bool new_valid;
-      new_data  = ch_delay(ch_select(io.deq.ready, ch_clone(data), new_data));
-      new_valid = ch_delay(ch_select(io.deq.ready, ch_clone(valid), new_valid));
+      new_data  = ch_delay(ch_sel(io.deq.ready, ch_clone(data), new_data));
+      new_valid = ch_delay(ch_sel(io.deq.ready, ch_clone(valid), new_valid));
       data  = new_data;
       valid = new_valid;
     }

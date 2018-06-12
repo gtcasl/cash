@@ -226,7 +226,11 @@ using logic_cast_t = std::conditional_t<is_logic_type_v<T>, const T&, R>;
 template <typename T, unsigned N = width_v<T>,
           CH_REQUIRE_0(is_logic_convertible_v<T, N>)>
 lnode get_lnode(const T& rhs) {
-  return logic_accessor::data(static_cast<logic_cast_t<T, ch_logic<N>>>(rhs));
+  if constexpr(is_scalar_convertible_v<T, N>) {
+    return lnode(scalar_accessor::data(static_cast<scalar_cast_t<T, ch_scalar<N>>>(rhs)));
+  } else {
+    return logic_accessor::data(static_cast<logic_cast_t<T, ch_logic<N>>>(rhs));
+  }
 }
 
 template <typename T, typename R,

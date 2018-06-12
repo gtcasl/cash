@@ -47,7 +47,7 @@ public:
   switch_case_t(const switch_ptr& p_switch) : switch_(p_switch) {}
 
   template <typename V,
-            CH_REQUIRE_0(std::is_constructible_v<K, V>)>
+            CH_REQUIRE_0(is_scalar_convertible_v<V, width_v<K>> && is_equality_comparable_v<K, V>)>
   switch_body_t<K> operator,(const V& value) {
     return switch_body_t<K>(switch_, bitvector(width_v<K>, value));
   }

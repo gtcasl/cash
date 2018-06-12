@@ -17,8 +17,13 @@
 
 using namespace ch::internal;
 
-const auto IsRegType = [](lnodetype type) {
-  return (type_reg == type) || (type_mem == type) || (type_mrport == type) || (type_mwport == type);
+const auto IsRegType = [](lnodeimpl* node) {
+  auto type = node->type();
+  return (type_reg == type)
+      || (type_mem == type)
+      || (type_mrport == type)
+      || (type_sel == type
+       && !reinterpret_cast<selectimpl*>(node)->is_ternary());
 };
 
 const auto is_inline_literal = [](lnodeimpl* node) {
@@ -264,7 +269,7 @@ bool verilogwriter::print_decl(std::ostream& out,
   case type_udfc:
   case type_udfs:
     if (ref
-     && (IsRegType(ref->type()) != IsRegType(type)
+     && (IsRegType(ref) != IsRegType(node)
       || ref->size() != node->size()))
       return false;    
     if (ref) {
@@ -723,15 +728,9 @@ void verilogwriter::print_name(std::ostream& out, lnodeimpl* node, bool force) {
   }
 }
 
-void verilogwriter::print_type(std::ostream& out, lnodeimpl* node) {
+void verilogwriter::print_type(std::ostream& out, lnodeimpl* node) {  
+  out << (IsRegType(node) ? "reg" : "wire");
   auto type = node->type();
-
-  auto is_reg_type = (type_sel == type) ?
-        !reinterpret_cast<selectimpl*>(node)->is_ternary() :
-        IsRegType(type);
-
-  out << (is_reg_type ? "reg" : "wire");
-
   if (type == type_mem) {
     auto data_width = reinterpret_cast<memimpl*>(node)->data_width();
     if (data_width > 1) {

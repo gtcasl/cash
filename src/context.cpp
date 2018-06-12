@@ -654,12 +654,6 @@ context::emit_conditionals(lnodeimpl* dst,
   };
 
   //--
-  auto get_scalar = [&](lnodeimpl* pred)->lnodeimpl* {
-    assert(type_lit == pred->type());
-    return pred;
-  };
-
-  //--
   emit_conditional_branch = [&](const cond_br_t* branch,
                                 lnodeimpl* current)->lnodeimpl* {
     uint32_t changed = 0;
@@ -684,9 +678,8 @@ context::emit_conditionals(lnodeimpl* dst,
       for (auto& value : values) {
         auto pred = value.first;
         if (pred) {
-          if (branch->key) {
-            pred = get_scalar(pred);
-          }
+          // the case predicate should be a scalar value
+          assert(!branch->key || type_lit == pred->type());
           sel->srcs().push_back(pred);
         }
         sel->srcs().push_back(value.second);

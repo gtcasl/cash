@@ -14,6 +14,7 @@
   m(cd) \
   m(alu) \
   m(sel) \
+  m(case) \
   m(reg) \
   m(mem) \
   m(mrport) \

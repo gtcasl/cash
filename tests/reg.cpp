@@ -59,7 +59,7 @@ TEST_CASE("registers", "[registers]") {
 
     TEST([]()->ch_bool {
       ch_uint2 a;
-      a = ch_delay(ch_select(ch_reset(), 1, a + 1));
+      a = ch_delay(ch_sel(ch_reset(), 1, a + 1));
       ch_bit2 e = ch_case(ch_time(), 3, 10_b)(5, 11_b)(7, 00_b)(9, 01_b)(a);
       //ch_print("t={0}, a={1}, e={2}", ch_time(), a, e);
       return (a == e);
@@ -242,7 +242,7 @@ TEST_CASE("registers", "[registers]") {
 
       ch_pushcd(clk, rst);
 
-      auto r = ch_delay(ch_select(ch_reset(), 0, next));
+      auto r = ch_delay(ch_sel(ch_reset(), 0, next));
 
       //ch_print("t={0}, clk={1}, rst={2}, next={3}, out={4}, expected={5}", ch_time(), clk, rst, next, r, e);
 

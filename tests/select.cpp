@@ -4,37 +4,37 @@ TEST_CASE("conditionals", "[conditionals]") {
   SECTION("select", "[select]") {
     TEST([]()->ch_bool {
       ch_int4 a(0), b(1), c;
-      c = ch_select(a < b, a, b);
+      c = ch_sel(a < b, a, b);
       return (c == a);
     });
     TEST([]()->ch_bool {
       ch_int4 a(0), b(1), c;
-      c = ch_select(a > b, a, b);
+      c = ch_sel(a > b, a, b);
       return (c == b);
     });
     TEST([]()->ch_bool {
       ch_int4 a(0), b(1), c;
-      c = ch_select<ch_bit4>(a > b, 3, 2);
+      c = ch_sel<ch_bit4>(a > b, 3, 2);
       return (c == 2);
     });
     TEST([]()->ch_bool {
       ch_int4 a(0), b(1), c;
-      c = ch_select(a > b, a)(a == 0, 0)(b);
+      c = ch_sel(a > b, a)(a == 0, 0)(b);
       return (c == 0);
     });
     TEST([]()->ch_bool {
       ch_int4 a(0), b(1), c;
-      c = ch_select(a > b, a, 8);
+      c = ch_sel(a > b, a, 8);
       return (c == 8);
     });
     TEST([]()->ch_bool {
       ch_int4 a(0), b(1), c;
-      c = ch_select(a < b, 7, b);
+      c = ch_sel(a < b, 7, b);
       return (c == 7);
     });
     TEST([]()->ch_bool {
       ch_int4 a(0), b(1), c;
-      c = ch_select(a < b, 3_h4, 5_h4);
+      c = ch_sel(a < b, 3_h4, 5_h4);
       return (c == 3);
     });
     TEST([]()->ch_bool {

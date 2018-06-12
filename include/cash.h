@@ -152,10 +152,12 @@ namespace core {
   // conditional operators
   //
 
-  using ch::internal::ch_select;
+  using ch::internal::ch_sel;
   using ch::internal::ch_case;
   using ch::internal::ch_if;
   using ch::internal::ch_switch;
+  using ch::internal::ch_min;
+  using ch::internal::ch_max;
 
   //
   // sequential functions
@@ -211,13 +213,6 @@ namespace core {
   using ch::internal::ch_srl;
   using ch::internal::ch_rotl;
   using ch::internal::ch_rotr;
-
-  //
-  // other functions
-  //
-
-  using ch::internal::ch_min;
-  using ch::internal::ch_max;
 
   //
   // utility functions

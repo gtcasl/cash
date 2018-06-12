@@ -122,30 +122,18 @@ void selectimpl::print(std::ostream& out, uint32_t level) const {
 ///////////////////////////////////////////////////////////////////////////////
 
 lnodeimpl* select_impl::eval(const lnode& value) {
-  lnodeimpl* curr = nullptr;
   auto& stmts = stmts_;
-  if (!key_.empty()) {
-    while (!stmts.empty()) {
-      const auto& stmt = stmts.top();
-      lnode pred(createAluNode(op_eq, 1, key_, stmt.pred));
-      curr = createSelectNode(pred, stmt.value, curr ? lnode(curr) : value);
-      stmts.pop();
-    }
-  } else {
-    while (!stmts.empty()) {
-      const auto& stmt = stmts.top();
-      curr = createSelectNode(stmt.pred, stmt.value, curr ? lnode(curr) : value);
-      stmts.pop();
-    }
+  const auto& stmt = stmts.top();
+  auto key = key_.empty() ? nullptr : key_.impl();
+  auto sel = ctx_curr()->create_node<selectimpl>(stmt.value.size(), key, sloc_);
+  while (!stmts.empty()) {
+    const auto& stmt = stmts.top();
+    // the case predicate should be a scalar value
+    assert(!key || type_lit == stmt.pred.impl()->type());
+    sel->srcs().push_back(stmt.pred);
+    sel->srcs().push_back(stmt.value);
+    stmts.pop();
   }
-  return curr;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-lnodeimpl* ch::internal::createSelectNode(
-    const lnode& pred,
-    const lnode& _true,
-    const lnode& _false) {
-  return pred.impl()->ctx()->create_node<selectimpl>(pred, _true, _false);
+  sel->srcs().push_back(value);
+  return sel;
 }
