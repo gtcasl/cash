@@ -4,8 +4,10 @@
 #include "common.h"
 #include "platform.h"
 
+#define LCOV_EXCL_START
 #define BACKWARD_HAS_BFD 1
 #include "backward.h"
+#define LCOV_EXCL_STOP
 
 using namespace ch::internal;
 

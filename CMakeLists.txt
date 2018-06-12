@@ -10,12 +10,6 @@ add_compile_options(-std=c++17 -pedantic -Wall -Wextra)
 
 set(DEFAULT_BUILD_TYPE "Release")
 
-if(CODECOV)
-    add_compile_options(--coverage)
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} --coverage")
-    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} --coverage")
-endif()
-
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake")
 set(EXECUTABLE_OUTPUT_PATH ${CMAKE_BINARY_DIR}/bin)
 set(LIBRARY_OUTPUT_PATH ${CMAKE_BINARY_DIR}/lib)
@@ -65,8 +59,14 @@ set(PROJECT_SOURCES
 # build library
 add_library(${PROJECT_NAME} SHARED ${PROJECT_SOURCES})
 
+set(PROJECT_LINK_OPTIONS ${BFD_LIBRARY_PATH})
+if(CODECOV)
+    target_compile_options(${PROJECT_NAME} PUBLIC --coverage)
+    set(PROJECT_LINK_OPTIONS ${PROJECT_LINK_OPTIONS} --coverage)
+endif()
+
 # add link libraries
-target_link_libraries(${PROJECT_NAME} ${BFD_LIBRARY_PATH})
+target_link_libraries(${PROJECT_NAME} ${PROJECT_LINK_OPTIONS})
 
 target_include_directories(${PROJECT_NAME} PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
