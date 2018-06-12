@@ -25,19 +25,13 @@ protected:
   void add_trace(const std::string& name, ioimpl* node);
 
   struct io_trace_t {
-    io_trace_t(const std::string& p_name, ioimpl* p_node)
-      : name(p_name)
-      , node(p_node)
-    {}
+    io_trace_t(const std::string& p_name, ioimpl* p_node);
     std::string name;
     ioimpl* node;
   };
 
   struct sc_trace_t {
-    sc_trace_t(const std::string& p_name, const scalar_buffer_ptr& p_node)
-      : name(p_name)
-      , node(p_node)
-    {}
+    sc_trace_t(const std::string& p_name, const scalar_buffer_ptr& p_node);
     std::string name;
     scalar_buffer_ptr node;
   };

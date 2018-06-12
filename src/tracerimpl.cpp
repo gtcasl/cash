@@ -70,6 +70,18 @@ void tracerimpl::eval(ch_tick t) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+tracerimpl::io_trace_t::io_trace_t(const std::string& p_name, ioimpl* p_node)
+  : name(p_name)
+  , node(p_node)
+{}
+
+tracerimpl::sc_trace_t::sc_trace_t(const std::string& p_name, const scalar_buffer_ptr& p_node)
+  : name(p_name)
+  , node(p_node)
+{}
+
+///////////////////////////////////////////////////////////////////////////////
+
 ch_tracer::ch_tracer(std::ostream& out,
                      const std::initializer_list<context*>& contexts)
   : ch_simulator(new tracerimpl(out, contexts))

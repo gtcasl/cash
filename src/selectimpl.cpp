@@ -58,6 +58,8 @@ selectimpl::selectimpl(context* ctx,
   srcs_.emplace_back(_false);
 }
 
+selectimpl::~selectimpl() {}
+
 bool selectimpl::equals(const lnodeimpl& rhs) const {
   if (lnodeimpl::equals(rhs)) {
     auto _rhs = reinterpret_cast<const selectimpl&>(rhs);

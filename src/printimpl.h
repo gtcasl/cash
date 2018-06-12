@@ -18,7 +18,7 @@ protected:
             const std::string& format,
             const std::initializer_list<lnode>& args);
 
-  ~printimpl() {}
+  ~printimpl();
 
   std::string format_;  
   std::stringstream strbuf_;  

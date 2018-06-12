@@ -41,7 +41,7 @@ protected:
              const lnode& _true,
              const lnode& _false);
 
-  ~selectimpl() {}
+  ~selectimpl();
 
   bool has_key_;
 

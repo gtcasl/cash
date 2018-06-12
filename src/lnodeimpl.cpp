@@ -92,7 +92,3 @@ void lnodeimpl::print(std::ostream& out, uint32_t level) const {
 undefimpl::undefimpl(context* ctx, uint32_t size)
   : lnodeimpl(ctx, type_undef, size)
 {}
-
-void undefimpl::eval() {
-  CH_ABORT("undefined node: %s!", name_.c_str());
-}

@@ -160,7 +160,7 @@ public:
 
   undefimpl(context* ctx, uint32_t size);
 
-  void eval() override;
+  void eval() override {}
 };
 
 const char* to_string(lnodetype type);
