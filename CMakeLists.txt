@@ -61,7 +61,7 @@ add_library(${PROJECT_NAME} SHARED ${PROJECT_SOURCES})
 
 set(PROJECT_LINK_OPTIONS ${BFD_LIBRARY_PATH})
 if(CODECOV)
-    target_compile_options(${PROJECT_NAME} PUBLIC --coverage)
+    target_compile_options(${PROJECT_NAME} PRIVATE --coverage)
     set(PROJECT_LINK_OPTIONS ${PROJECT_LINK_OPTIONS} --coverage)
 endif()
 
