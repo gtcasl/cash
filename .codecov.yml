@@ -1,2 +1,2 @@
 ignore:
-  - *./backward.h
+  - */backward.h
