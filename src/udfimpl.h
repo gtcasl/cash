@@ -28,7 +28,7 @@ protected:
   ~udfimpl();
 
   udf_iface* udf_;
-  std::vector<const bitvector*> udf_srcs_;
+  udf_inputs udf_srcs_;
 
   friend class context;
 };
@@ -37,8 +37,6 @@ protected:
 
 class udfcimpl : public udfimpl {
 public:
-
-  void initialize() override;
 
   void eval() override;
 
@@ -70,8 +68,6 @@ public:
   const lnode& enable() const {
     return srcs_[enable_idx_];
   }
-
-  void initialize() override;
 
   void eval() override;
 

@@ -1,7 +1,6 @@
 #include <cash.h>
 
 using namespace ch::core;
-using namespace ch::literals;
 using namespace ch::sim;
 
 template <unsigned N>

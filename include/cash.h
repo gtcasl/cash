@@ -268,6 +268,8 @@ namespace extension {
   using ch::internal::make_scalar_buffer;
   using ch::internal::udf_comb;
   using ch::internal::udf_seq;
+  using ch::internal::udf_output;
+  using ch::internal::udf_inputs;
   using ch::internal::lnode;
 }
 

@@ -10,7 +10,8 @@ udfimpl::udfimpl(context* ctx,
                  const std::initializer_list<lnode>& srcs,
                  const source_location& sloc)
   : lnodeimpl(ctx, type, udf->output_size(), 0, "", sloc)
-  , udf_(udf) {
+  , udf_(udf)
+  , udf_srcs_(srcs_) {
   udf->acquire();
 
   for (auto src : srcs) {
@@ -33,15 +34,8 @@ udfcimpl::udfcimpl(context* ctx,
 
 udfcimpl::~udfcimpl() {}
 
-void udfcimpl::initialize() {
-  for (auto src : srcs_) {
-    udf_srcs_.push_back(&src.data());
-  }
-  udf_->initialize();
-}
-
 void udfcimpl::eval() {
-  udf_->eval(&value_, udf_srcs_);
+  udf_->eval(value_, udf_srcs_);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -65,15 +59,6 @@ udfsimpl::udfsimpl(context* ctx,
 
 udfsimpl::~udfsimpl() {}
 
-void udfsimpl::initialize() {
-  // do not include the clock and enable signals
-  uint32_t n = this->has_enable() ? enable_idx_ : udf_->inputs_sizes().size();
-  for (uint32_t i = 0; i < n; ++i) {
-    udf_srcs_.push_back(&srcs_[i].data());
-  }
-  udf_->initialize();  
-}
-
 void udfsimpl::eval() {
   // check clock transition
   auto cd = reinterpret_cast<cdimpl*>(this->cd().impl());
@@ -91,11 +76,11 @@ void udfsimpl::eval() {
   // push new entry
   auto& value = pipe_.empty() ? value_ : pipe_[0];
   if (udf_->init() && cd->rst().data().word(0)) {
-    udf_->reset(&value, udf_srcs_);
+    udf_->reset(value, udf_srcs_);
   } else {
     int enable = this->has_enable() ? this->enable().data().word(0) : enable_idx_;
     if (enable) {
-      udf_->eval(&value, udf_srcs_);
+      udf_->eval(value, udf_srcs_);
     }
   }
 }

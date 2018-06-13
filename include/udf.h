@@ -5,6 +5,22 @@
 namespace ch {
 namespace internal {
 
+using udf_output = bitvector;
+
+class udf_inputs {
+public:
+  udf_inputs(const std::vector<lnode>& container)
+    : container_(container)
+  {}
+
+  const bitvector& operator[](size_t index) const {
+    return container_[index].data();
+  }
+
+private:
+  const std::vector<lnode>& container_;
+};
+
 class udf_iface : public refcounted {
 public:
   udf_iface(uint32_t delta,
@@ -43,9 +59,9 @@ public:
 
   virtual void initialize() = 0;
 
-  virtual void reset(bitvector*, const std::vector<const bitvector*>&) = 0;
+  virtual void reset(udf_output&, const udf_inputs&) = 0;
 
-  virtual void eval(bitvector*, const std::vector<const bitvector*>&) = 0;
+  virtual void eval(udf_output&, const udf_inputs&) = 0;
 
   virtual void init_verilog(std::ostream& out) = 0;
 
@@ -78,7 +94,7 @@ public:
 
   void initialize() override {}
 
-  void reset(bitvector*, const std::vector<const bitvector*>&) override {}
+  void reset(udf_output&, const udf_inputs&) override {}
 
   void init_verilog(std::ostream&) override {}
 
@@ -95,7 +111,7 @@ public:
 
   void initialize() override {}
 
-  void reset(bitvector*, const std::vector<const bitvector*>&) override {}
+  void reset(udf_output&, const udf_inputs&) override {}
 
   void init_verilog(std::ostream&) override {}
 

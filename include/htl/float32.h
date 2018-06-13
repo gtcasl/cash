@@ -17,11 +17,11 @@ class ch_float32;
 template <unsigned Delay = 1>
 struct fAdd : public udf_seq<Delay, false, true, ch_float32, ch_float32, ch_float32> {
 
-  void eval(bitvector* out, const std::vector<const bitvector*>& srcs) override {
-    uint32_t lhs = srcs[0]->word(0);
-    uint32_t rhs = srcs[1]->word(0);
+  void eval(udf_output& dst, const udf_inputs& srcs) override {
+    uint32_t lhs = srcs[0].word(0);
+    uint32_t rhs = srcs[1].word(0);
     float result = *(float*)&lhs + *(float*)&rhs;
-    out->word(0) = *(uint32_t*)&result;
+    dst.word(0) = *(uint32_t*)&result;
   }
 
   void to_verilog(std::ostream& out) override {
@@ -33,11 +33,11 @@ struct fAdd : public udf_seq<Delay, false, true, ch_float32, ch_float32, ch_floa
 template <unsigned Delay = 1>
 struct fSub : public udf_seq<Delay, false, true, ch_float32, ch_float32, ch_float32> {
 
-  void eval(bitvector* out, const std::vector<const bitvector*>& srcs) override {
-    uint32_t lhs = srcs[0]->word(0);
-    uint32_t rhs = srcs[1]->word(0);
+  void eval(udf_output& dst, const udf_inputs& srcs) override {
+    uint32_t lhs = srcs[0].word(0);
+    uint32_t rhs = srcs[1].word(0);
     float result = *(float*)&lhs - *(float*)&rhs;
-    out->word(0) = *(uint32_t*)&result;
+    dst.word(0) = *(uint32_t*)&result;
   }
 
   void to_verilog(std::ostream& out) override {
@@ -49,11 +49,11 @@ struct fSub : public udf_seq<Delay, false, true, ch_float32, ch_float32, ch_floa
 template <unsigned Delay>
 struct fMult : public udf_seq<Delay, false, true, ch_float32, ch_float32, ch_float32> {
 
-  void eval(bitvector* out, const std::vector<const bitvector*>& srcs) override {
-    uint32_t lhs = srcs[0]->word(0);
-    uint32_t rhs = srcs[1]->word(0);
+  void eval(udf_output& dst, const udf_inputs& srcs) override {
+    uint32_t lhs = srcs[0].word(0);
+    uint32_t rhs = srcs[1].word(0);
     float result = *(float*)&lhs * *(float*)&rhs;
-    out->word(0) = *(uint32_t*)&result;
+    dst.word(0) = *(uint32_t*)&result;
   }
 
   void to_verilog(std::ostream& out) override {
@@ -65,11 +65,11 @@ struct fMult : public udf_seq<Delay, false, true, ch_float32, ch_float32, ch_flo
 template <unsigned Delay>
 struct fDiv : public udf_seq<Delay, false, true, ch_float32, ch_float32, ch_float32> {
 
-  void eval(bitvector* out, const std::vector<const bitvector*>& srcs) override {
-    uint32_t lhs = srcs[0]->word(0);
-    uint32_t rhs = srcs[1]->word(0);
+  void eval(udf_output& out, const udf_inputs& srcs) override {
+    uint32_t lhs = srcs[0].word(0);
+    uint32_t rhs = srcs[1].word(0);
     float result = *(float*)&lhs / *(float*)&rhs;
-    out->word(0) = *(uint32_t*)&result;
+    out.word(0) = *(uint32_t*)&result;
   }
 
   void to_verilog(std::ostream& out) override {

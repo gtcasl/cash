@@ -2,9 +2,9 @@
 #include <htl/decoupled.h>
 
 using namespace ch::core;
-using namespace ch::literals;
 using namespace ch::sim;
 using namespace ch::htl;
+using namespace ch::literals;
 
 template <unsigned N>
 struct GCD {
