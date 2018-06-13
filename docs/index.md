@@ -4,7 +4,41 @@ layout: default
 
 # What is Cash?
 
-Cash is an embedded domain specific language for describing and simulating hardware in C++.
+Cash is A C++ embedded domain specific library (EDSL) for hardware design and simulation.It uses template metaprogramming and macro-based reflection to extend the C++ language with hardware specific constructs. Cash enables developpers to describe and simulate their hardware module from a single source program, leveraging the large C++ ecosystem.
+
+Cash designs can be exported to [FIRRTL](https://github.com/freechipsproject/firrtl) IR or verilog HDL for synthesis on FPGAs.
+
+# Requirements
+
+Cash requires C++17 compiler to build with support for inline variables.
+
+It has been tested with GCC 7 and Clang 5.
+
+Other dependencies include:
+  - [Backward](https://github.com/bombela/backward-cpp)
+  - [Catch](https://github.com/catchorg/Catch2)
+
+# Build Status
+
+[![Linux Build Status](https://travis-ci.org/gtcasl/cash.png?branch=master)](https://travis-ci.org/gtcasl/cash) 
+[![codecov.io](http://codecov.io/github/gtcasl/cash/coverage.svg?branch=master)](http://codecov.io/github/gtcasl/cash?branch=master)
+
+# Installation
+
+To install Cash you must clone the repository and create a build directory:
+
+    $ git clone https://github.com/gtcasl/cash.git && cd cash
+    $ mkdir build && cd build
+
+Then use run cmake to generate the makefile and export the package informations:
+
+    $ cmake ..
+
+Optionally, you can also install Cash on your system:
+
+    # make install
+    
+That's all!
 
 # Documentation
 
@@ -12,37 +46,49 @@ Cash documentation can be found in the [wiki](https://github.com/gtcasl/cash/wik
 
 ## Basic Example: A Generic Counter
 
-```cpp
+```C++
+#include <cash.h>
+using namespace ch::core;
+using namespace ch::sim;
+
+// hardware description
 template <unsigned N>
-struct Counter {
+struct Adder {
   __io (
-    __out(ch_bit<N>) out
+    __in(ch_uint<N>)  lhs,
+    __in(ch_uint<N>)  rhs,
+    __out(ch_uint<N>) out
   );
 
   void describe() {
-    ch_seq<ch_bit<N>> out;
-    out.next = out + 1;
-    io.out = out;
+    io.out = io.lhs + io.rhs;
   }
 };
 
 int main() {
-  ch_device<Counter<4>> my_counter;
-  ch_simulator sim(my_counter);
+  // instantiate a 4-bit adder
+  ch_device<Adder<4>> my_adder;
+
+  // assign input values
+  my_adder.io.lhs = 1;
+  my_adder.io.rhs = 3;
+
+  // run simulation
+  ch_simulator sim(my_adder);
   sim.run();
-  std::cout << "result: " << my_counter.io.out << std::endl;
+  
+  // get result
+  std::cout << "result = "  << my_adder.io.out << std::endl;
+
   return 0;
 }
 ```
-
-## Build Instructions
-
-## Requirements
-
-# Build Status
-
 # Contributions
 
-Blaise Tine -- Project initiator and main developer
+Contributions are welcome, just email me.
 
 # License
+
+Release under the BSD license, see LICENSE for details.
+
+(c) 2016-2018 Blaise Tine blaise.tine@gmail.com.
