@@ -29,7 +29,7 @@ Optionally, you can also install Cash on your system:
 That's all!
 
 Using Cash library
--------------------
+------------------
 You must link the following library from the install location to your project
 
     libcash.so
@@ -37,3 +37,46 @@ You must link the following library from the install location to your project
 Then you can include the header as follow:
 
     #include <cash/cash.hpp>
+
+Example
+-------
+A parametrizable binary adder.
+
+```C++
+#include <cash.h>
+
+using namespace ch::core;
+using namespace ch::sim;
+
+template <unsigned N>
+struct Adder {
+  __io (
+    __in(ch_uint<N>)  lhs,
+    __in(ch_uint<N>)  rhs,
+    __out(ch_uint<N>) out
+  );
+
+  void describe() {
+    io.out  = io.lhs + io.rhs;
+  }
+};
+
+int main() {
+  // instantiate a 4-bit adder
+  ch_device<Adder<4>> my_adder;
+
+  my_adder.io.lhs = 1;
+  my_adder.io.rhs = 3;
+
+  ch_simulator sim(adder);
+  sim.run();
+  
+  std::cout << "result = "  << my_adder.io.out << std::endl;
+
+  return 0;
+}
+```
+Contributing
+------------
+Contributions are welcome. Do not hesitate to fill issues, send pull
+requests, or send me emails at blaise.tine@gmail.com.
