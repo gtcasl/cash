@@ -81,7 +81,7 @@ int main() {
   my_adder.io.rhs = 3;
 
   // run simulation
-  ch_simulator sim(adder);
+  ch_simulator sim(my_adder);
   sim.run();
   
   // get result
