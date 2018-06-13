@@ -94,4 +94,4 @@ Release under the BSD license, see LICENSE for details.
 
 Contributing
 ------------
-Contributions are welcome, please email me.
+Contributions are welcome, just email me.
