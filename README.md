@@ -57,7 +57,7 @@ struct Adder {
   );
 
   void describe() {
-    io.out  = io.lhs + io.rhs;
+    io.out = io.lhs + io.rhs;
   }
 };
 
@@ -65,12 +65,15 @@ int main() {
   // instantiate a 4-bit adder
   ch_device<Adder<4>> my_adder;
 
+  // set input values
   my_adder.io.lhs = 1;
   my_adder.io.rhs = 3;
 
+  // run simulation
   ch_simulator sim(adder);
   sim.run();
   
+  // get output value
   std::cout << "result = "  << my_adder.io.out << std::endl;
 
   return 0;
