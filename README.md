@@ -7,10 +7,6 @@ A C++ EDSL for Hardware Design and Simulation.
 
 https://gtcasl.github.io/cash/
 
-(c) 2016-2018 Blaise Tine
-
-Release under the BSD license, see LICENSE for details.
-
 Dependencies
 ------------
 Cash requires C++17 compiler to build with support for inline variables.
@@ -90,6 +86,11 @@ int main() {
   return 0;
 }
 ```
+License
+-------
+Release under the BSD license, see LICENSE for details.
+(c) 2016-2018 Blaise Tine blaise.tine@gmail.com.
+
 Contributing
 ------------
 Contributions are welcome, you can email me at blaise.tine@gmail.com.
