@@ -89,12 +89,12 @@ int main() {
   return 0;
 }
 ```
+Contributing
+------------
+Contributions are welcome, just email me.
+
 License
 -------
 Release under the BSD license, see LICENSE for details.
 
 (c) 2016-2018 Blaise Tine blaise.tine@gmail.com.
-
-Contributing
-------------
-Contributions are welcome, just email me.
