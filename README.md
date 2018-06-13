@@ -11,6 +11,15 @@ https://gtcasl.github.io/cash/
 
 Release under the BSD license, see LICENSE for details.
 
+Dependencies
+------------
+Tested compilers: **G++6, Clang++ 3.8.0**
+Cash requires C++17 compiler to build with support for inline variables. 
+It has been tested with gcc 7 and clang 5. 
+Other dependencies include:
+  - [Backward](https://github.com/bombela/backward-cpp)
+  - [Catch](https://github.com/catchorg/Catch2)
+
 Installation
 ------------
 To install Cash you must clone the repository and create a build directory:
@@ -36,7 +45,7 @@ You must link the following library from the install location to your project
 
 Then you can include the header as follow:
 
-    #include <cash/cash.hpp>
+    #include <cash.hpp>
 
 Example
 -------
@@ -48,6 +57,7 @@ A parametrizable binary adder.
 using namespace ch::core;
 using namespace ch::sim;
 
+// hardware description
 template <unsigned N>
 struct Adder {
   __io (
@@ -65,7 +75,7 @@ int main() {
   // instantiate a 4-bit adder
   ch_device<Adder<4>> my_adder;
 
-  // set input values
+  // assign input values
   my_adder.io.lhs = 1;
   my_adder.io.rhs = 3;
 
@@ -73,7 +83,7 @@ int main() {
   ch_simulator sim(adder);
   sim.run();
   
-  // get output value
+  // get result
   std::cout << "result = "  << my_adder.io.out << std::endl;
 
   return 0;
@@ -81,5 +91,4 @@ int main() {
 ```
 Contributing
 ------------
-Contributions are welcome. Do not hesitate to fill issues, send pull
-requests, or send me emails at blaise.tine@gmail.com.
+Contributions are welcome, you can email me at blaise.tine@gmail.com.
