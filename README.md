@@ -3,8 +3,9 @@
 
 # Cash
 
-A C++ EDSL for Hardware Design and Simulation.
+Cash is A C++ embedded domain specific library (EDSL) for hardware design and simulation. It uses template metaprogramming and macro-based reflection to extend the C++ language with hardware specific constructs. Cash enabling developpers to describe and simulate their hardware module from a single source program, leveraging the large C++ ecosystem.
 
+The library documentation is available at:
 https://gtcasl.github.io/cash/
 
 Dependencies
