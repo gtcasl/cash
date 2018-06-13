@@ -4,9 +4,9 @@ layout: default
 
 # What is Cash?
 
-Cash is A C++ embedded domain specific library (EDSL) for hardware design and simulation.It uses template metaprogramming and macro-based reflection to extend the C++ language with hardware specific constructs. Cash enables developpers to describe and simulate their hardware module from a single source program, leveraging the large C++ ecosystem.
+Cash is A C++ embedded domain specific library (EDSL) for hardware design and simulation. It uses template metaprogramming and macro-based reflection to extend the C++ language with hardware specific constructs. Cash enables developpers to describe and simulate their hardware modules from a single source program, leveraging the large C++ ecosystem.
 
-Cash designs can be exported to [FIRRTL](https://github.com/freechipsproject/firrtl) IR or verilog HDL for synthesis on FPGAs.
+Cash designs can be exported to [FIRRTL](https://github.com/freechipsproject/firrtl) IR or Verilog HDL for synthesis on FPGAs.
 
 # Requirements
 
