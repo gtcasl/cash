@@ -13,9 +13,9 @@ Release under the BSD license, see LICENSE for details.
 
 Dependencies
 ------------
-Tested compilers: **G++6, Clang++ 3.8.0**
-Cash requires C++17 compiler to build with support for inline variables. 
-It has been tested with gcc 7 and clang 5.
+Cash requires C++17 compiler to build with support for inline variables.
+
+It has been tested with GCC 7 and Clang 5.
 
 Other dependencies include:
   - [Backward](https://github.com/bombela/backward-cpp)
