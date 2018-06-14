@@ -20,7 +20,7 @@ Other dependencies include:
 
 # Build Status
 
-The master branch has been added to [travis][https://travis-ci.org/]'s continuous integration (CI) build process.
+The master branch has been added to [travis](https://travis-ci.org)'s continuous integration (CI) build process.
 
 [![Linux Build Status](https://travis-ci.org/gtcasl/cash.png?branch=master)](https://travis-ci.org/gtcasl/cash) 
 [![codecov.io](http://codecov.io/github/gtcasl/cash/coverage.svg?branch=master)](http://codecov.io/github/gtcasl/cash?branch=master)
