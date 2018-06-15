@@ -87,10 +87,8 @@ int main() {
 ```
 # Contributions
 
-Contributions are welcome, just email me.
+Contributions are welcome, just email me at blaise.tine@gmail.com.
 
 # License
 
 Release under the BSD license, see LICENSE for details.
-
-(c) 2016-2018 Blaise Tine blaise.tine@gmail.com.
