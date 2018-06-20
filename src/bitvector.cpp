@@ -111,7 +111,7 @@ bitvector& bitvector::operator=(bitvector&& rhs) {
 bitvector& bitvector::operator=(int64_t value) {
   assert(size_);
   // check for extra bits
-  CH_CHECK((value >= 0 ? (64 - clz(uint64_t(value))) : (65 - clz(uint64_t(~value)))) <= size_, "value out of range");
+  CH_CHECK(ceilpow2(value) <= size_, "value out of range");
   // write the value
   words_[0] = value & 0xffffffff;
   uint32_t num_words = (size_ + WORD_MASK) >> WORD_SIZE_LOG;
@@ -127,7 +127,7 @@ bitvector& bitvector::operator=(int64_t value) {
 bitvector& bitvector::operator=(uint64_t value) {
   assert(size_);
   // check for extra bits
-  CH_CHECK((64 - clz(value)) <= size_, "value out of range");
+  CH_CHECK(ceilpow2(value) <= size_, "value out of range");
   // write the value
   words_[0] = value & 0xffffffff;
   uint32_t num_words = (size_ + WORD_MASK) >> WORD_SIZE_LOG;
@@ -612,7 +612,7 @@ void ch::internal::Sra(bitvector& out, const bitvector& in, const bitvector& bit
   uint32_t fill_value = in[in.size() - 1] ? 0xffffffff : 0x0;
   uint32_t num_words = in.num_words();
   if (1 == num_words) {
-    int value = signext(in.word(0), in.size());
+    int value = sign_ext(in.word(0), in.size());
     out.word(0) = value >> dist;
   } else {
     uint32_t shift_words = dist >> bitvector::WORD_SIZE_LOG;

@@ -60,7 +60,7 @@ struct union_zero_init_impl1 {
 };
 
 template <typename T, typename U>
-using union_zero_init = std::conditional_t<has_bitwidth_v<U>,
+using union_zero_init = std::conditional_t<has_traits_v<U>,
                                            union_zero_init_impl1<T, U>,
                                            union_zero_init_impl0<T>>;
 }
@@ -111,10 +111,10 @@ using union_zero_init = std::conditional_t<has_bitwidth_v<U>,
     : union_name(ch::internal::type_accessor_t<traits>::copy_buffer(rhs)) {} \
   union_name(union_name&& rhs) \
     : CH_FOR_EACH(CH_UNION_MOVE_CTOR, CH_SEP_COMMA, __VA_ARGS__) {} \
-  explicit union_name(const ch_scalar<traits::bitwidth>& rhs) \
+  explicit union_name(const ch_scbit<traits::bitwidth>& rhs) \
     : union_name(std::make_shared<ch::internal::type_buffer_t<traits>>(ch::internal::scalar_accessor::data(rhs))) {} \
   template <typename __T__, \
-             CH_REQUIRE_0(std::is_integral_v<__T__> || std::is_enum_v<__T__> || ch::internal::has_bitwidth_v<__T__>), \
+             CH_REQUIRE_0(std::std::is_integral_v<__T__> || ch::internal::has_traits_v<__T__>), \
              CH_REQUIRE_0(CH_FOR_EACH(CH_UNION_FIELD_CTOR_REQUIRES, CH_SEP_OR, __VA_ARGS__))> \
   explicit union_name(const __T__& rhs) : union_name() { \
     this->init_fields(rhs); \
@@ -130,32 +130,26 @@ protected: \
   const std::shared_ptr<ch::internal::type_buffer_t<traits>>& buffer() const { \
     CH_STRUCT_GETBUFFER(0, CH_FIRST_ARG(__VA_ARGS__))->source(); \
   } \
-  std::shared_ptr<ch::internal::type_buffer_t<traits>>& buffer() { \
-    CH_STRUCT_GETBUFFER(0, CH_FIRST_ARG(__VA_ARGS__))->source(); \
-  } \
 public:
 
 #define CH_UNION_LOGIC_IMPL(union_name, name, field_body, ...) \
   CH_FOR_EACH(field_body, CH_SEP_SEMICOLON, __VA_ARGS__); \
   union_name(const std::shared_ptr<ch::internal::type_buffer_t<traits>>& buffer = \
-    std::make_shared<ch::internal::type_buffer_t<traits>>(traits::bitwidth, CH_SRC_LOCATION, CH_STRINGIZE(name))) \
+    std::make_shared<ch::internal::type_buffer_t<traits>>(traits::bitwidth, CH_CUR_SLOC, CH_STRINGIZE(name))) \
     : CH_FOR_EACH(CH_UNION_LOGIC_CTOR, CH_SEP_COMMA, __VA_ARGS__) {} \
-  union_name(const union_name& rhs, const ch::internal::source_location& sloc = CH_SRC_LOCATION) \
+  union_name(const union_name& rhs, CH_SLOC) \
     : union_name(ch::internal::type_accessor_t<traits>::copy_buffer(rhs, sloc, CH_STRINGIZE(name))) {} \
   union_name(union_name&& rhs) \
     : CH_FOR_EACH(CH_UNION_MOVE_CTOR, CH_SEP_COMMA, __VA_ARGS__) {} \
-  explicit union_name(const ch_bit<traits::bitwidth>& rhs, \
-                      const ch::internal::source_location& sloc = CH_SRC_LOCATION) \
+  explicit union_name(const ch_bit<traits::bitwidth>& rhs, CH_SLOC) \
     : union_name(ch::internal::type_accessor_t<traits>::copy_buffer(rhs, sloc, CH_STRINGIZE(name))) {} \
-  explicit union_name(const ch_scalar<traits::bitwidth>& rhs, \
-                      const ch::internal::source_location& sloc = CH_SRC_LOCATION) \
+  explicit union_name(const ch_scbit<traits::bitwidth>& rhs, CH_SLOC) \
     : union_name(std::make_shared<ch::internal::type_buffer_t<traits>>( \
         ch::internal::scalar_accessor::data(rhs), sloc, CH_STRINGIZE(name))) {} \
   template <typename __T__, \
-             CH_REQUIRE_0(std::is_integral_v<__T__> || std::is_enum_v<__T__> || ch::internal::has_bitwidth_v<__T__>), \
+             CH_REQUIRE_0(std::std::is_integral_v<__T__> || ch::internal::has_traits_v<__T__>), \
              CH_REQUIRE_0(CH_FOR_EACH(CH_UNION_FIELD_CTOR_REQUIRES, CH_SEP_OR, __VA_ARGS__))> \
-  explicit union_name(const __T__& rhs, \
-                      const ch::internal::source_location& sloc = CH_SRC_LOCATION) \
+  explicit union_name(const __T__& rhs, CH_SLOC) \
     : union_name(std::make_shared<ch::internal::type_buffer_t<traits>>(traits::bitwidth, sloc, CH_STRINGIZE(name))) { \
     this->init_fields(rhs); \
   } \
@@ -168,9 +162,6 @@ protected: \
       CH_FOR_EACH(CH_UNION_INIT_FIELD, CH_SEP_COMMA, __VA_ARGS__)); \
   } \
   const std::shared_ptr<ch::internal::type_buffer_t<traits>>& buffer() const { \
-    CH_STRUCT_GETBUFFER(0, CH_FIRST_ARG(__VA_ARGS__))->source(); \
-  } \
-  std::shared_ptr<ch::internal::type_buffer_t<traits>>& buffer() { \
     CH_STRUCT_GETBUFFER(0, CH_FIRST_ARG(__VA_ARGS__))->source(); \
   }
 
@@ -198,6 +189,7 @@ protected: \
   private: \
     class __scalar_type__ { \
     public: \
+      using self = __scalar_type__; \
       using traits = ch::internal::scalar_traits<CH_UNION_SIZE(__VA_ARGS__), false, __scalar_type__, union_name>; \
       CH_UNION_SCALAR_IMPL(__scalar_type__, CH_UNION_SCALAR_FIELD, __VA_ARGS__) \
       CH_UNION_ASSIGN_IMPL(__scalar_type__) \
@@ -205,6 +197,7 @@ protected: \
       CH_UNION_SCALAR_FRIENDS_IMPL(__scalar_type__) \
     }; \
   public: \
+    using self = union_name; \
     using traits = ch::internal::logic_traits<CH_UNION_SIZE(__VA_ARGS__), false, union_name, __scalar_type__>; \
     CH_UNION_LOGIC_IMPL(union_name, union_name, CH_UNION_LOGIC_FIELD, __VA_ARGS__) \
     CH_UNION_ASSIGN_IMPL(union_name) \

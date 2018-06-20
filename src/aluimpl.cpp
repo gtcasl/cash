@@ -61,19 +61,19 @@ void aluimpl::eval() {
     value_.word(0) = (src0 == src1);
     break;
   case op_ne:
-    value_.word(0) = !(src0 == src1);
+    value_.word(0) = (src0 != src1);
     break;
   case op_lt:
     value_.word(0) = (src0 < src1);
     break;
   case op_gt:
-    value_.word(0) = (src1 < src0);
+    value_.word(0) = (src0 > src1);
     break;
   case op_le:
-    value_.word(0) = !(src1 < src0);
+    value_.word(0) = (src0 <= src1);
     break;
   case op_ge:
-    value_.word(0) = !(src0 < src1);
+    value_.word(0) = (src0 >= src1);
     break;
 
   case op_inv:

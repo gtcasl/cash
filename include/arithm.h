@@ -57,12 +57,40 @@ enum ch_op {
   CH_OP_ENUM(CH_OP_TYPE)
 };
 
+const char* to_string(ch_op op);
+
+///////////////////////////////////////////////////////////////////////////////
+
+lnodeimpl* createAluNode(ch_op op, uint32_t size, const lnode& in);
+
+lnodeimpl* createAluNode(ch_op op, uint32_t size, const lnode& lhs, const lnode& rhs);
+
+lnodeimpl* createRotateNode(const lnode& next, uint32_t dist, bool right);
+
+///////////////////////////////////////////////////////////////////////////////
+
+CH_DEF_SFINAE_CHECK(has_traits, std::is_class_v<typename T::self::traits>);
+
+template <typename T, typename Enable = void>
+struct width_value_impl {};
+
+template <typename T>
+struct width_value_impl<T, std::enable_if_t<std::is_arithmetic_v<T>>> {
+  static constexpr uint32_t value = std::numeric_limits<T>::digits +
+                                    std::numeric_limits<T>::is_signed;
+};
+
+template <typename T>
+struct width_value_impl<T, std::enable_if_t<has_traits_v<T>>> {
+  static constexpr uint32_t value = T::self::traits::bitwidth;
+};
+
 template <typename... Ts>
 struct width_impl;
 
 template <typename T>
 struct width_impl<T> {
-  static constexpr uint32_t value = T::traits::bitwidth;
+  static constexpr uint32_t value = width_value_impl<T>::value;
 };
 
 template <typename T0, typename... Ts>
@@ -73,90 +101,81 @@ struct width_impl<T0, Ts...> {
 template <typename... Ts>
 inline constexpr uint32_t width_v = width_impl<std::decay_t<Ts>...>::value;
 
-template <typename T0, typename... Ts>
-inline constexpr bool signed_v = std::decay_t<T0>::traits::is_signed;
+template <typename T, typename Enable = void>
+struct signed_impl {};
 
-const char* to_string(ch_op op);
+template <typename T>
+struct signed_impl<T, std::enable_if_t<std::is_arithmetic_v<T>>> {
+  static constexpr bool value = std::numeric_limits<T>::is_signed;
+};
 
-lnodeimpl* createAluNode(ch_op op, uint32_t size, const lnode& in);
+template <typename T>
+struct signed_impl<T, std::enable_if_t<has_traits_v<T>>> {
+  static constexpr bool value = T::self::traits::is_signed;
+};
 
-lnodeimpl* createAluNode(ch_op op, uint32_t size, const lnode& lhs, const lnode& rhs);
+template <typename T>
+inline constexpr bool signed_v = signed_impl<std::decay_t<T>>::value;
 
-lnodeimpl* createRotateNode(const lnode& next, uint32_t dist, bool right);
+enum traits_type {
+  traits_none      = 0x0,
+  traits_logic     = 0x1,
+  traits_scalar    = 0x2,
+  traits_io        = 0x4,
+  traits_logic_io  = traits_logic | traits_io,
+  traits_scalar_io = traits_scalar | traits_io,
+};
+
+struct non_ch_type {
+  struct traits {
+    static constexpr traits_type type = traits_none;
+    static constexpr unsigned bitwidth = 0;
+    static constexpr bool is_signed = false;
+  };
+};
+
+template <typename T>
+using ch_type_t = std::conditional_t<has_traits_v<T>, T, non_ch_type>;
+
+template <bool resize, typename T0, typename T1>
+struct deduce_type_impl {
+  using D0 = std::decay_t<T0>;
+  using D1 = std::decay_t<T1>;
+  using U0 = std::conditional_t<has_traits_v<D0>, D0, non_ch_type>;
+  using U1 = std::conditional_t<has_traits_v<D1>, D1, non_ch_type>;
+  using type = std::conditional_t<(width_v<U0> != 0) && (width_v<U1> != 0),
+    std::conditional_t<(width_v<U0> == width_v<U1>) || ((width_v<U0> > width_v<U1>) && resize), U0,
+        std::conditional_t<(width_v<U0> < width_v<U1>) && resize, U1, non_ch_type>>,
+          std::conditional_t<(width_v<U0> != 0), U0, U1>>;
+};
+
+template <bool resize, typename... Ts>
+struct deduce_type;
+
+template <bool resize, typename T0, typename T1>
+struct deduce_type<resize, T0, T1> {
+  using type = typename deduce_type_impl<resize, T0, T1>::type;
+};
+
+template <bool resize, typename T0, typename T1, typename... Ts>
+struct deduce_type<resize, T0, T1, Ts...> {
+  using type = typename deduce_type<resize, typename deduce_type_impl<resize, T0, T1>::type, Ts...>::type;
+};
+
+template <bool resize, typename... Ts>
+using deduce_type_t = typename deduce_type<resize, Ts...>::type;
+
+template <typename T0, typename T1>
+struct deduce_first_type_impl {
+  using D0 = std::decay_t<T0>;
+  using D1 = std::decay_t<T1>;
+  using U0 = std::conditional_t<has_traits_v<D0>, D0, non_ch_type>;
+  using U1 = std::conditional_t<has_traits_v<D1>, D1, non_ch_type>;
+  using type = std::conditional_t<(width_v<U0> != 0), U0, U1>;
+};
+
+template <typename T0, typename T1>
+using deduce_first_type_t = typename deduce_first_type_impl<T0, T1>::type;
 
 }
 }
-
-///////////////////////////////////////////////////////////////////////////////
-
-#define CH_FRIEND_OP1_IMPL(header, op, lhs_t, rhs_t) \
-  CH_REM header \
-  inline friend auto operator op(lhs_t lhs, rhs_t _rhs) { \
-    auto rhs = static_cast<std::decay_t<lhs_t>>(_rhs); \
-    return lhs op rhs; \
-  } \
-  CH_REM header \
-  inline friend auto operator op(rhs_t _lhs, lhs_t rhs) { \
-    auto lhs = static_cast<std::decay_t<lhs_t>>(_lhs); \
-    return lhs op rhs; \
-  }
-
-#define CH_FRIEND_OP2_IMPL(header, op, lhs_t, rhs_t) \
-  CH_REM header \
-  inline friend auto operator op(lhs_t _lhs, rhs_t _rhs) { \
-    auto [lhs, rhs] = resize_args(_lhs, _rhs); \
-    return lhs op rhs; \
-  } \
-  CH_REM header \
-  inline friend auto operator op(rhs_t _lhs, lhs_t _rhs) { \
-    auto [lhs, rhs] = resize_args(_lhs, _rhs); \
-    return lhs op rhs; \
-  }
-
-#define CH_FRIEND_OP3_IMPL(header, op, lhs_t, rhs_t, cvt_t) \
-  CH_REM header \
-  inline friend auto operator op(lhs_t lhs, rhs_t _rhs) { \
-    auto rhs = static_cast<std::decay_t<cvt_t>>(_rhs); \
-    return lhs op rhs; \
-  } \
-  CH_REM header \
-  inline friend auto operator op(rhs_t _lhs, lhs_t rhs) { \
-    auto lhs = static_cast<std::decay_t<cvt_t>>(_lhs); \
-    return lhs op rhs; \
-  }
-
-#define CH_GLOBAL_FUNC1_IMPL(header, func, lhs_t, rhs_t) \
-  CH_REM header \
-  inline auto func(lhs_t lhs, rhs_t _rhs, const source_location& sloc = CH_SRC_LOCATION) { \
-    auto rhs = static_cast<std::decay_t<lhs_t>>(_rhs); \
-    return func(lhs, rhs, sloc); \
-  } \
-  CH_REM header \
-  inline auto func(rhs_t _lhs, lhs_t rhs, const source_location& sloc = CH_SRC_LOCATION) { \
-    auto lhs = static_cast<std::decay_t<lhs_t>>(_lhs); \
-    return func(lhs, rhs, sloc); \
-  }
-
-#define CH_GLOBAL_FUNC2_IMPL(header, func, lhs_t, rhs_t) \
-  CH_REM header \
-  inline auto func(lhs_t _lhs, rhs_t _rhs, const source_location& sloc = CH_SRC_LOCATION) { \
-    auto [lhs, rhs] = resize_args(_lhs, _rhs, sloc); \
-    return func(lhs, rhs, sloc); \
-  } \
-  CH_REM header \
-  inline auto func(rhs_t _lhs, lhs_t _rhs, const source_location& sloc = CH_SRC_LOCATION) { \
-    auto [lhs, rhs] = resize_args(_lhs, _rhs, sloc); \
-    return func(lhs, rhs, sloc); \
-  }
-
-#define CH_GLOBAL_FUNC3_IMPL(header, func, lhs_t, rhs_t, cvt_t) \
-  CH_REM header \
-  inline auto func(lhs_t lhs, rhs_t _rhs, const source_location& sloc = CH_SRC_LOCATION) { \
-    auto rhs = static_cast<std::decay_t<cvt_t>>(_rhs); \
-    return func(lhs, rhs, sloc); \
-  } \
-  CH_REM header \
-  inline auto func(rhs_t _lhs, lhs_t rhs, const source_location& sloc = CH_SRC_LOCATION) { \
-    auto lhs = static_cast<std::decay_t<cvt_t>>(_lhs); \
-    return func(lhs, rhs, sloc); \
-  }

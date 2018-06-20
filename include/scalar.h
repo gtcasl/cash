@@ -6,82 +6,13 @@
 namespace ch {
 namespace internal {
 
-CH_DEF_SFINAE_CHECK(has_bitwidth, T::traits::bitwidth != 0);
-
-///////////////////////////////////////////////////////////////////////////////
-
-enum traits_type {
-  traits_none      = 0x0,
-  traits_logic     = 0x1,
-  traits_scalar    = 0x2,
-  traits_io        = 0x4,
-  traits_logic_io  = traits_logic | traits_io,
-  traits_scalar_io = traits_scalar | traits_io,
-};
-
-struct non_ch_type {
-  struct traits {
-    static constexpr traits_type type = traits_none;
-    static constexpr unsigned bitwidth = 0;
-    static constexpr bool is_signed = false;
-  };
-};
-
-template <typename T>
-using ch_type_t = std::conditional_t<has_bitwidth_v<T>, T, non_ch_type>;
-
-template <bool resize, typename T0, typename T1>
-struct deduce_type_impl {
-  using D0 = std::decay_t<T0>;
-  using D1 = std::decay_t<T1>;
-  using U0 = std::conditional_t<has_bitwidth_v<D0>, D0, non_ch_type>;
-  using U1 = std::conditional_t<has_bitwidth_v<D1>, D1, non_ch_type>;
-  using type = std::conditional_t<(width_v<U0> != 0) && (width_v<U1> != 0),
-    std::conditional_t<(width_v<U0> == width_v<U1>) || ((width_v<U0> > width_v<U1>) && resize), U0,
-        std::conditional_t<(width_v<U0> < width_v<U1>) && resize, U1, non_ch_type>>,
-          std::conditional_t<(width_v<U0> != 0), U0, U1>>;
-};
-
-template <bool resize, typename... Ts>
-struct deduce_type;
-
-template <bool resize, typename T0, typename T1>
-struct deduce_type<resize, T0, T1> {
-  using type = typename deduce_type_impl<resize, T0, T1>::type;
-};
-
-template <bool resize, typename T0, typename T1, typename... Ts>
-struct deduce_type<resize, T0, T1, Ts...> {
-  using type = typename deduce_type<resize, typename deduce_type_impl<resize, T0, T1>::type, Ts...>::type;
-};
-
-template <bool resize, typename... Ts>
-using deduce_type_t = typename deduce_type<resize, Ts...>::type;
-
-template <typename T0, typename T1>
-struct deduce_first_type_impl {
-  using D0 = std::decay_t<T0>;
-  using D1 = std::decay_t<T1>;
-  using U0 = std::conditional_t<has_bitwidth_v<D0>, D0, non_ch_type>;
-  using U1 = std::conditional_t<has_bitwidth_v<D1>, D1, non_ch_type>;
-  using type = std::conditional_t<(width_v<U0> != 0), U0, U1>;
-};
-
-template <typename T0, typename T1>
-using deduce_first_type_t = typename deduce_first_type_impl<T0, T1>::type;
-
-///////////////////////////////////////////////////////////////////////////////
-
-template <unsigned N> class ch_scalar;
+template <unsigned N> class ch_scbit;
 template <unsigned N> class ch_scint;
 template <unsigned N> class ch_scuint;
 
-template <unsigned N> class ch_logic;
+template <unsigned N> class ch_bit;
 template <unsigned N> class ch_int;
 template <unsigned N> class ch_uint;
-
-template <unsigned M, unsigned N>
-ch_scalar<M> ch_pad(const ch_scalar<N>& obj);
 
 template <unsigned Bitwidth, bool Signed, typename ScalarType, typename LogicType>
 struct scalar_traits {
@@ -102,16 +33,10 @@ CH_DEF_SFINAE_CHECK(is_scalar_only, is_true_v<(std::decay_t<T>::traits::type == 
 
 CH_DEF_SFINAE_CHECK(is_scalar_type, is_scalar_traits_v<typename std::decay_t<T>::traits>);
 
-CH_DEF_SFINAE_CHECK(is_scalar_compatible, (std::is_base_of_v<ch_scalar<width_v<T>>, T>));
-
-template <typename... Ts>
-using deduce_scalar_t = std::conditional_t<
-  is_scalar_compatible_v<deduce_type_t<false, Ts...>>, deduce_type_t<false, Ts...>, non_ch_type>;
-
 template <typename T, unsigned N = width_v<T>>
-inline constexpr bool is_scalar_convertible_v = std::is_constructible_v<ch_scalar<N>, T>;
+inline constexpr bool is_scalar_convertible_v = std::is_constructible_v<ch_scbit<N>, T>;
 
-template <typename T, typename R = ch_scalar<width_v<T>>>
+template <typename T, typename R = ch_scbit<width_v<T>>>
 using scalar_cast_t = std::conditional_t<is_scalar_type_v<T>, const T&, R>;
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -128,7 +53,7 @@ public:
 
   scalar_buffer(scalar_buffer&& rhs);
 
-  explicit  scalar_buffer(const bitvector& data);
+  explicit scalar_buffer(const bitvector& data);
 
   explicit scalar_buffer(bitvector&& data);
 
@@ -139,10 +64,6 @@ public:
   virtual const bitvector& data() const;
 
   const scalar_buffer_ptr& source() const {
-    return source_;
-  }
-
-  scalar_buffer_ptr& source() {
     return source_;
   }
 
@@ -236,24 +157,25 @@ public:
     return make_scalar_buffer(*obj.buffer());
   }
 
-  template <typename U, typename V,
-            CH_REQUIRE_0(width_v<U> == width_v<V>)>
+  template <typename U, typename V>
   static void copy(U& dst, const V& src) {
+    static_assert(width_v<U> == width_v<V>, "invalid size");
     assert(width_v<U> == dst.buffer()->size());
     assert(width_v<V> == src.buffer()->size());
     *dst.buffer() = *src.buffer();
   }
 
-  template <typename U, typename V,
-            CH_REQUIRE_0(width_v<U> == width_v<V>)>
+  template <typename U, typename V>
   static void move(U& dst, V&& src) {
+    static_assert(width_v<U> == width_v<V>, "invalid size");
     assert(width_v<U> == dst.buffer()->size());
     *dst.buffer() = std::move(*src.buffer());
   }
 
-  template <typename D, typename T>
-  static D cast(const T& obj) {
-    return D(make_scalar_buffer(width_v<T>, obj.buffer(), 0));
+  template <typename R, typename T>
+  static R cast(const T& obj) {
+    static_assert(width_v<T> == width_v<R>, "invalid size");
+    return R(make_scalar_buffer(width_v<T>, obj.buffer(), 0));
   }
 };
 
@@ -276,175 +198,131 @@ auto make_scalar_op(const A& lhs, const B& rhs, ScalarFunc2 func) {
   return R(make_scalar_buffer(std::move(ret)));
 }
 
-template <typename U, typename V>
-auto resize_args(const U& lhs, const V& rhs, const source_location& sloc = CH_SRC_LOCATION);
+template <typename A>
+auto make_scalar_op(const A& in, ScalarFunc1 func) {
+  return make_scalar_op<A, A>(in, func);
+}
+
+template <typename A, typename B>
+auto make_scalar_op(const A& lhs, const B& rhs, ScalarFunc2 func) {
+  return make_scalar_op<A, A, B>(lhs, rhs, func);
+}
 
 ///////////////////////////////////////////////////////////////////////////////
-
-#define CH_SCALAR_OP1(i, x) \
-  CH_FRIEND_OP1_IMPL((), ==, const ch_scalar&, x) \
-  CH_FRIEND_OP1_IMPL((), !=, const ch_scalar&, x) \
-  CH_FRIEND_OP1_IMPL((), &, const ch_scalar&, x) \
-  CH_FRIEND_OP1_IMPL((), |, const ch_scalar&, x) \
-  CH_FRIEND_OP1_IMPL((), ^, const ch_scalar&, x)
-
-#define CH_SCALAR_OP1_TYPES \
-  int8_t, uint8_t, int16_t, uint16_t, int32_t, uint32_t, int64_t, uint64_t
-
-#define CH_SCALAR_OP2(i, x) \
-  CH_FRIEND_OP2_IMPL((template <unsigned M, CH_REQUIRE_0(M < N)>), ==, const ch_scalar&, x) \
-  CH_FRIEND_OP2_IMPL((template <unsigned M, CH_REQUIRE_0(M < N)>), !=, const ch_scalar&, x) \
-  CH_FRIEND_OP2_IMPL((template <unsigned M, CH_REQUIRE_0(M < N)>), &, const ch_scalar&, x) \
-  CH_FRIEND_OP2_IMPL((template <unsigned M, CH_REQUIRE_0(M < N)>), |, const ch_scalar&, x) \
-  CH_FRIEND_OP2_IMPL((template <unsigned M, CH_REQUIRE_0(M < N)>), ^, const ch_scalar&, x) \
-
-#define CH_SCALAR_OP2_TYPES const ch_scalar<M>&
-
-#define CH_SCALAR_OP3(i, x) \
-  CH_FRIEND_OP3_IMPL((), <<, const ch_scalar&, x, const ch_scalar<CH_WIDTH_OF(x)>&) \
-  CH_FRIEND_OP3_IMPL((), >>, const ch_scalar&, x, const ch_scalar<CH_WIDTH_OF(x)>&)
-
-#define CH_SCALAR_OP3_TYPES \
-  int8_t, uint8_t, int16_t, uint16_t, int32_t, uint32_t, int64_t, uint64_t
 
 #define CH_SCALAR_INTERFACE(type) \
   template <typename R> \
   const auto as() const { \
+    static_assert(ch::internal::is_scalar_type_v<R>, "invalid type"); \
     return ch::internal::scalar_accessor::cast<R>(*this); \
   } \
   template <typename R> \
   auto as() { \
+    static_assert(ch::internal::is_scalar_type_v<R>, "invalid type"); \
     return ch::internal::scalar_accessor::cast<R>(*this); \
   } \
-  const auto as_scalar() const { \
-    return this->as<ch_scalar<type::traits::bitwidth>>(); \
+  const auto as_scbit() const { \
+    return this->as<ch_scbit<ch::internal::width_v<type>>>(); \
   } \
-  auto as_scalar() { \
-    return this->as<ch_scalar<type::traits::bitwidth>>(); \
+  auto as_scbit() { \
+    return this->as<ch_scbit<ch::internal::width_v<type>>>(); \
   } \
-  const auto as_int() const { \
-    return this->as<ch::internal::ch_scint<type::traits::bitwidth>>(); \
+  const auto as_scint() const { \
+    return this->as<ch::internal::ch_scint<ch::internal::width_v<type>>>(); \
   } \
-  auto as_int() { \
-    return this->as<ch::internal::ch_scint<type::traits::bitwidth>>(); \
+  auto as_scint() { \
+    return this->as<ch::internal::ch_scint<ch::internal::width_v<type>>>(); \
   } \
-  const auto as_uint() const { \
-    return this->as<ch::internal::ch_scuint<type::traits::bitwidth>>(); \
+  const auto as_scuint() const { \
+    return this->as<ch::internal::ch_scuint<ch::internal::width_v<type>>>(); \
   } \
-  auto as_uint() { \
-    return this->as<ch::internal::ch_scuint<type::traits::bitwidth>>(); \
+  auto as_scuint() { \
+    return this->as<ch::internal::ch_scuint<ch::internal::width_v<type>>>(); \
   }
 
-template <unsigned N>
-class ch_scalar {
+template <typename Derived>
+class ch_scalar_integer;
+
+template <typename Derived>
+class ch_scalar_base {
 public:
-  using traits = scalar_traits<N, false, ch_scalar, ch_logic<N>>;
+  using self = Derived;
 
-  ch_scalar(const scalar_buffer_ptr& buffer = make_scalar_buffer(N))
-    : buffer_(buffer) {
-    assert(N == buffer->size());
+  ch_scalar_base(const scalar_buffer_ptr& buffer) : buffer_(buffer) {
+    assert(width_v<Derived> == buffer->size());
   }
 
-  ch_scalar(const ch_scalar& rhs)
+  template <typename U,
+            CH_REQUIRE_0(std::is_integral_v<U>)>
+  ch_scalar_base(const U& rhs)
+    : buffer_(make_scalar_buffer(bitvector(width_v<Derived> , rhs)))
+  {}
+
+  template <typename U>
+  ch_scalar_base(const ch_scalar_base<U>& rhs)
+    : buffer_(scalar_accessor::copy_buffer(rhs)) {
+    static_assert(width_v<U> == width_v<Derived>, "invalid size");
+  }
+
+  ch_scalar_base(const ch_scalar_base& rhs)
     : buffer_(scalar_accessor::copy_buffer(rhs))
   {}
 
-  ch_scalar(ch_scalar&& rhs)
-    : buffer_(std::move(rhs.buffer_))
-  {}
+  ch_scalar_base(ch_scalar_base&& rhs) : buffer_(std::move(rhs.buffer_)) {}
 
-  template <typename U,
-            CH_REQUIRE_0(is_scalar_type_v<U>),
-            CH_REQUIRE_0(width_v<U> == N)>
-  explicit ch_scalar(const U& rhs)
-    : buffer_(scalar_accessor::copy_buffer(rhs))
-  {}
-
-  template <typename U,
-            CH_REQUIRE_0(is_scalar_type_v<U>),
-            CH_REQUIRE_0(width_v<U> < N)>
-  explicit ch_scalar(const U& rhs)
-    : buffer_(scalar_accessor::copy_buffer(ch_pad<N>(rhs)))
-  {}
-
-  template <typename U,
-            CH_REQUIRE_0(is_bitvector_convertible_v<U>)>
-  explicit ch_scalar(const U& rhs)
-    : buffer_(make_scalar_buffer(bitvector(N, rhs)))
-  {}
-
-  ch_scalar& operator=(const ch_scalar& rhs) {
+  ch_scalar_base& operator=(const ch_scalar_base& rhs) {
     scalar_accessor::copy(*this, rhs);
     return *this;
   }
 
-  ch_scalar& operator=(ch_scalar&& rhs) {
+  ch_scalar_base& operator=(ch_scalar_base&& rhs) {
     scalar_accessor::move(*this, std::move(rhs));
     return *this;
   }
 
-  template <typename U,
-            CH_REQUIRE_0(is_scalar_type_v<U>),
-            CH_REQUIRE_0(width_v<U> == N)>
-  ch_scalar& operator=(const U& rhs) {
-    scalar_accessor::copy(*this, rhs);
-    return *this;
-  }
-
-  template <typename U,
-            CH_REQUIRE_0(is_scalar_type_v<U>),
-            CH_REQUIRE_0(width_v<U> < N)>
-  ch_scalar& operator=(const U& rhs) {
-    scalar_accessor::copy(*this, ch_pad<N>(rhs));
-    return *this;
-  }
-
-  template <typename U,
-            CH_REQUIRE_0(is_integral_or_enum_v<U>)>
-  ch_scalar& operator=(U rhs) {
-    buffer_->write(bitvector(N, rhs));
-    return *this;
-  }
+  // subscript operators
 
   const auto operator[](size_t index) const {
-    assert(index < N);
-    return ch_scalar<1>(make_scalar_buffer(1, buffer_, index));
+    assert(index < width_v<Derived>);
+    return ch_scbit<1>(make_scalar_buffer(1, buffer_, index));
   }
 
   auto operator[](size_t index) {
-    assert(index < N);
-    return ch_scalar<1>(make_scalar_buffer(1, buffer_, index));
+    assert(index < width_v<Derived>);
+    return ch_scbit<1>(make_scalar_buffer(1, buffer_, index));
   }
 
+  // slicing operators
+
   template <typename R,
-            CH_REQUIRE_0(is_scalar_compatible_v<R>)>
+            CH_REQUIRE_0(is_scalar_type_v<R>)>
   const auto slice(size_t start = 0) const {
-    static_assert(width_v<R> <= N, "invalid size");
-    assert((start + width_v<R>) <= N);
+    static_assert(width_v<R> <= width_v<Derived>, "invalid size");
+    assert((start + width_v<R>) <= width_v<Derived>);
     return R(make_scalar_buffer(width_v<R>, buffer_, start));
   }
 
   template <typename R,
-            CH_REQUIRE_0(is_scalar_compatible_v<R>)>
+            CH_REQUIRE_0(is_scalar_type_v<R>)>
   const auto aslice(size_t start = 0) const {
     return this->slice<R>(start * width_v<R>);
   }
 
   template <unsigned M>
   const auto slice(size_t start = 0) const {
-    return this->slice<ch_scalar<M>>(start);
+    return this->slice<ch_scbit<M>>(start);
   }
 
   template <unsigned M>
   const auto aslice(size_t start = 0) const {
-    return this->slice<ch_scalar<M>>(start * M);
+    return this->slice<ch_scbit<M>>(start * M);
   }
 
   template <typename R,
             CH_REQUIRE_0(is_scalar_type_v<R>)>
   auto slice(size_t start = 0) {
-    static_assert(width_v<R> <= N, "invalid size");
-    assert((start + width_v<R>) <= N);
+    static_assert(width_v<R> <= width_v<Derived>, "invalid size");
+    assert((start + width_v<R>) <= width_v<Derived>);
     return R(make_scalar_buffer(width_v<R>, buffer_, start));
   }
 
@@ -456,34 +334,55 @@ public:
 
   template <unsigned M>
   auto slice(size_t start = 0) {
-    return this->slice<ch_scalar<M>>(start);
+    return this->slice<ch_scbit<M>>(start);
   }
 
   template <unsigned M>
   auto aslice(size_t start = 0) {
-    return this->slice<ch_scalar<M>>(start * M);
+    return this->slice<ch_scbit<M>>(start * M);
+  }
+
+  // padding operators
+
+  template <typename R,
+            CH_REQUIRE_0(is_scalar_type_v<R>)>
+  R pad() const {
+    static_assert(width_v<R> >= width_v<Derived>, "invalid size");
+    if constexpr (width_v<R> > width_v<Derived>) {
+      return make_scalar_op<R>(*this, (signed_v<Derived> ? SExt : ZExt));
+    } else
+    if constexpr (std::is_same_v<R, Derived>) {
+      return *this;
+    } else {
+      return R(*this);
+    }
+  }
+
+  template <unsigned M>
+  auto pad() const {
+    return this->pad<ch_scbit<M>>();
   }
 
   // compare operators
 
-  auto operator==(const ch_scalar& rhs) const {
-    return (buffer_->data() == rhs.buffer_->data());
+  friend auto operator==(const Derived& lhs, const Derived& rhs) {
+    return (lhs.buffer_->data() == rhs.buffer_->data());
   }
 
-  auto operator!=(const ch_scalar& rhs) const {
-    return !(buffer_->data() == rhs.buffer_->data());
+  friend auto operator!=(const Derived& lhs, const Derived& rhs) {
+    return (lhs.buffer_->data() != rhs.buffer_->data());
   }
 
   // logic operators
 
-  auto operator&&(const ch_scalar& rhs) const {
-    static_assert(N == 1, "invalid size");
-    return make_scalar_op<ch_scalar>(*this, rhs, And);
+  friend auto operator&&(const Derived& lhs, const Derived& rhs) {
+    static_assert(width_v<Derived> == 1, "invalid size");
+    return static_cast<bool>(make_scalar_op<ch_scbit<1>>(lhs, rhs, And));
   }
 
-  auto operator||(const ch_scalar& rhs) const {
-    static_assert(N == 1, "invalid size");
-    return make_scalar_op<ch_scalar>(*this, rhs, Or);
+  friend auto operator||(const Derived& lhs, const Derived& rhs) {
+    static_assert(width_v<Derived> == 1, "invalid size");
+    return static_cast<bool>(make_scalar_op<ch_scbit<1>>(lhs, rhs, Or));
   }
 
   auto operator!() const {
@@ -493,47 +392,70 @@ public:
   // bitwise operators
 
   auto operator~() const {
-    return make_scalar_op<ch_scalar>(*this, Inv);
+    return make_scalar_op(*this, Inv);
   }
 
-  auto operator&(const ch_scalar& rhs) const {
-    return make_scalar_op<ch_scalar>(*this, rhs, And);
+  friend auto operator&(const Derived& lhs, const Derived& rhs) {
+    return make_scalar_op(lhs, rhs, And);
   }
 
-  auto operator|(const ch_scalar& rhs) const {
-    return make_scalar_op<ch_scalar>(*this, rhs, Or);
+  friend auto operator|(const Derived& lhs, const Derived& rhs) {
+    return make_scalar_op(lhs, rhs, Or);
   }
 
-  auto operator^(const ch_scalar& rhs) const {
-    return make_scalar_op<ch_scalar>(*this, rhs, Xor);
+  friend auto operator^(const Derived& lhs, const Derived& rhs) {
+    return make_scalar_op(lhs, rhs, Xor);
   }
 
   // shift operators
 
-  template <unsigned M>
-  auto operator<<(const ch_scalar<M>& rhs) const {
-    return make_scalar_op<ch_scalar>(*this, rhs, Sll);
+  template <typename U,
+            CH_REQUIRE_0(std::is_integral_v<U>)>
+  friend auto operator<<(const Derived& lhs, const U& rhs) {
+    auto _rhs = ch_scbit<CH_WIDTH_OF(U)>(rhs);
+    return make_scalar_op(lhs, _rhs, Sll);
   }
 
-  template <unsigned M>
-  auto operator>>(const ch_scalar<M>& rhs) const {
-    return make_scalar_op<ch_scalar>(*this, rhs, Srl);
+  template <typename U>
+  friend auto operator<<(const Derived& lhs, const ch_scalar_integer<U>& rhs) {
+    return make_scalar_op(lhs, rhs, Sll);
   }
-
-  CH_SCALAR_INTERFACE(ch_scalar)
 
   template <typename U,
-            CH_REQUIRE_0(is_bitvector_castable_v<U>),
-            CH_REQUIRE_0(CH_WIDTH_OF(U) >= N)>
-  explicit operator U() const {
-    return static_cast<U>(buffer_->data());
+            CH_REQUIRE_0(std::is_integral_v<U>)>
+  friend auto operator>>(const Derived& lhs, const U& rhs) {
+    auto _rhs = ch_scbit<CH_WIDTH_OF(U)>(rhs);
+    return make_scalar_op(lhs, _rhs, (signed_v<Derived> ? Sra : Srl));
   }
+
+  template <typename U>
+  friend auto operator>>(const Derived& lhs, const ch_scalar_integer<U>& rhs) {
+    return make_scalar_op(lhs, rhs, (signed_v<Derived> ? Sra : Srl));
+  }
+
+  // cast operators
+
+  template <typename U,
+            CH_REQUIRE_0(std::is_integral_v<U>)>
+  explicit operator U() const {
+    static_assert(CH_WIDTH_OF(U) >= width_v<Derived>, "invalid size");
+    auto ret = static_cast<U>(buffer_->data());
+    if constexpr(signed_v<Derived> &&
+                 std::is_signed_v<U> &&
+                 (CH_WIDTH_OF(U) > width_v<Derived>)) {
+      return sign_ext(ret, width_v<Derived>);
+    } else {
+      return ret;
+    }
+  }
+
+  // bits access
 
   void read(uint32_t dst_offset,
             void* out,
             uint32_t out_cbsize,
             uint32_t src_offset = 0,
-            uint32_t length = N) const {
+            uint32_t length = width_v<Derived>) const {
     buffer_->read(dst_offset, out, out_cbsize, src_offset, length);
   }
 
@@ -541,9 +463,11 @@ public:
              const void* in,
              uint32_t in_cbsize,
              uint32_t src_offset = 0,
-             uint32_t length = N) {
+             uint32_t length = width_v<Derived>) {
     buffer_->write(dst_offset, in, in_cbsize, src_offset, length);
   }
+
+  CH_SCALAR_INTERFACE(Derived)
 
 protected:
 
@@ -551,34 +475,50 @@ protected:
     return buffer_;
   }
 
-  scalar_buffer_ptr& buffer() {
-    return buffer_;
-  }
-
   scalar_buffer_ptr buffer_;
 
   friend class scalar_accessor;
 
-  friend std::ostream& operator<<(std::ostream& out, const ch_scalar& rhs) {
+  friend std::ostream& operator<<(std::ostream& out, const Derived& rhs) {
     return out << scalar_accessor::data(rhs);
   }
-
-  // friend operators
-
-  CH_FOR_EACH(CH_SCALAR_OP1, CH_SEP_SPACE, CH_SCALAR_OP1_TYPES)
-  CH_FOR_EACH(CH_SCALAR_OP2, CH_SEP_SPACE, CH_SCALAR_OP2_TYPES)
-  CH_FOR_EACH(CH_SCALAR_OP3, CH_SEP_SPACE, CH_SCALAR_OP3_TYPES)
 };
 
-template <unsigned M, unsigned N>
-ch_scalar<M> ch_pad(const ch_scalar<N>& obj) {
-  static_assert(M >= N, "invalid pad size");
-  if constexpr(M > N) {
-    return make_scalar_op<ch_scalar<M>>(obj, ZExt);
-  } else {
-    return obj;
+template <unsigned N>
+class ch_scbit : public ch_scalar_base<ch_scbit<N>> {
+public:
+  using traits = scalar_traits<N, false, ch_scbit, ch_bit<N>>;
+  using base = ch_scalar_base<ch_scbit>;
+
+  ch_scbit(const scalar_buffer_ptr& buffer = make_scalar_buffer(N))
+    : base(buffer)
+  {}
+
+  template <typename U,
+            CH_REQUIRE_0(std::is_integral_v<U>)>
+  ch_scbit(const U& rhs) : base(rhs) {}
+
+  template <unsigned M,
+            CH_REQUIRE_0(M < N)>
+  ch_scbit(const ch_scbit<M>& rhs) : base(rhs.template pad<N>()) {}
+
+  template <typename U>
+  explicit ch_scbit(const ch_scalar_base<U>& rhs) : base(rhs) {}
+
+  ch_scbit(const ch_scbit& rhs) : base(rhs) {}
+
+  ch_scbit(ch_scbit&& rhs) : base(std::move(rhs)) {}
+
+  ch_scbit& operator=(const ch_scbit& rhs) {
+    base::operator=(rhs);
+    return *this;
   }
-}
+
+  ch_scbit& operator=(ch_scbit&& rhs) {
+    base::operator=(std::move(rhs));
+    return *this;
+  }
+};
 
 }
 }

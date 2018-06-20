@@ -49,9 +49,8 @@ public:
   }
 
   template <typename P, typename V,
-            CH_REQUIRE_0(is_logic_compatible_v<P>),
             CH_REQUIRE_0(std::is_constructible_v<T, V>)>
-  select_t<T>& operator()(const P& pred, const V& value) {
+  select_t<T>& operator()(const ch_logic_base<P>& pred, const V& value) {
     static_assert(1 == width_v<P>, "invalid predicate size");
     impl_.push(get_lnode(pred), get_lnode<V, width_v<T>>(value));
     return *this;
@@ -101,40 +100,32 @@ protected:
 };
 
 template <typename P, typename V,
-          CH_REQUIRE_0(is_logic_compatible_v<P>),
           CH_REQUIRE_0(is_logic_convertible_v<V>)>
-auto ch_sel(const P& pred, const V& value,
-            const source_location& sloc = CH_SRC_LOCATION) {
+auto ch_sel(const ch_logic_base<P>& pred, const V& value, CH_SLOC) {
   static_assert(1 == width_v<P>, "invalid predicate size");
   return select_t<logic_type_t<V>>(get_lnode(pred), get_lnode(value), sloc);
 }
 
 template <typename R, typename P, typename V,
-          CH_REQUIRE_0(is_logic_convertible_v<P>),
           CH_REQUIRE_0(std::is_constructible_v<R, V>)>
-auto ch_sel(const P& pred, const V& value,
-            const source_location& sloc = CH_SRC_LOCATION) {
+auto ch_sel(const ch_logic_base<P>& pred, const V& value, CH_SLOC) {
   static_assert(1 == width_v<P>, "invalid predicate size");
   return select_t<R>(get_lnode(pred), get_lnode<V, width_v<R>>(value), sloc);
 }
 
 template <typename P, typename U, typename V,
           CH_REQUIRE_0(width_v<deduce_type_t<false, U, V>> != 0),
-          CH_REQUIRE_0(is_logic_convertible_v<P>),
           CH_REQUIRE_0(is_logic_convertible_v<U, width_v<deduce_type_t<false, U, V>>>),
           CH_REQUIRE_0(is_logic_convertible_v<V, width_v<deduce_type_t<false, U, V>>>)>
-auto ch_sel(const P& pred, const U& _true, const V& _false,
-            const source_location& sloc = CH_SRC_LOCATION) {
+auto ch_sel(const ch_logic_base<P>& pred, const U& _true, const V& _false, CH_SLOC) {
   static_assert(1 == width_v<P>, "invalid predicate size");
   return ch_sel<logic_type_t<deduce_first_type_t<U, V>>>(pred, _true, sloc)(_false);
 }
 
 template <typename R, typename P, typename U, typename V,
-          CH_REQUIRE_0(is_logic_convertible_v<P>),
           CH_REQUIRE_0(std::is_constructible_v<R, U>),
           CH_REQUIRE_0(std::is_constructible_v<R, V>)>
-auto ch_sel(const P& pred, const U& _true, const V& _false,
-            const source_location& sloc = CH_SRC_LOCATION) {
+auto ch_sel(const ch_logic_base<P>& pred, const U& _true, const V& _false, CH_SLOC) {
   static_assert(1 == width_v<P>, "invalid predicate size");
   return ch_sel<R>(pred, _true, sloc)(_false);
 }
@@ -143,8 +134,7 @@ template <typename U, typename V,
           CH_REQUIRE_0(width_v<deduce_type_t<false, U, V>> != 0),
           CH_REQUIRE_0(is_logic_convertible_v<U, width_v<deduce_type_t<false, U, V>>>),
           CH_REQUIRE_0(is_logic_convertible_v<V, width_v<deduce_type_t<false, U, V>>>)>
-auto ch_min(const U& lhs, const V& rhs,
-            const source_location& sloc = CH_SRC_LOCATION) {
+auto ch_min(const U& lhs, const V& rhs, CH_SLOC) {
   return ch_sel(lhs < rhs, lhs, sloc)(rhs);
 }
 
@@ -152,8 +142,7 @@ template <typename U, typename V,
           CH_REQUIRE_0(width_v<deduce_type_t<false, U, V>> != 0),
           CH_REQUIRE_0(is_logic_convertible_v<U, width_v<deduce_type_t<false, U, V>>>),
           CH_REQUIRE_0(is_logic_convertible_v<V, width_v<deduce_type_t<false, U, V>>>)>
-auto ch_max(const U& lhs, const V& rhs,
-            const source_location& sloc = CH_SRC_LOCATION) {
+auto ch_max(const U& lhs, const V& rhs, CH_SLOC) {
   return ch_sel(lhs > rhs, lhs, sloc)(rhs);
 }
 
@@ -161,8 +150,7 @@ template <typename K, typename V, typename P,
           CH_REQUIRE_0(is_logic_convertible_v<K>),
           CH_REQUIRE_0(is_scalar_convertible_v<P, width_v<K>> && is_equality_comparable_v<P, K>),
           CH_REQUIRE_0(is_logic_convertible_v<V>)>
-auto ch_case(const K& key, const P& pred, const V& value,
-             const source_location& sloc = CH_SRC_LOCATION) {
+auto ch_case(const K& key, const P& pred, const V& value, CH_SLOC) {
   return case_t<K, logic_type_t<V>>(get_lnode(key),
                                     get_lnode<P, width_v<K>>(pred),
                                     get_lnode(value),
@@ -173,8 +161,7 @@ template <typename R, typename K, typename V, typename P,
           CH_REQUIRE_0(is_logic_convertible_v<K>),
           CH_REQUIRE_0(is_scalar_convertible_v<P, width_v<K>> && is_equality_comparable_v<P, K>),
           CH_REQUIRE_0(std::is_constructible_v<R, V>)>
-auto ch_case(const K& key, const P& pred, const V& value,
-             const source_location& sloc = CH_SRC_LOCATION) {
+auto ch_case(const K& key, const P& pred, const V& value, CH_SLOC) {
   return case_t<K, R>(get_lnode(key),
                       get_lnode<P, width_v<K>>(pred),
                       get_lnode<V, width_v<R>>(value),

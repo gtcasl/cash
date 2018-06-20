@@ -54,10 +54,8 @@ public:
     : if_(p_if)
   {}
 
-  template <typename P,
-            CH_REQUIRE_0(is_logic_type_v<P>),
-            CH_REQUIRE_0(is_logic_compatible_v<P>)>
-  if_body_t operator,(const P& pred) {
+  template <typename P>
+  if_body_t operator,(const ch_logic_base<P>& pred) {
     static_assert(1 == width_v<P>, "invalid predicate size");
     return if_body_t(if_, get_lnode(pred));
   }
@@ -76,9 +74,8 @@ inline if_cond_t if_body_t::operator,(const fvoid_t& body) {
   return if_cond_t(if_);
 }
 
-template <typename P,
-          CH_REQUIRE_0(is_logic_compatible_v<P>)>
-if_body_t ch_if(const P& pred, const source_location& sloc = CH_SRC_LOCATION) {
+template <typename P>
+if_body_t ch_if(const ch_logic_base<P>& pred, CH_SLOC) {
   static_assert(1 == width_v<P>, "invalid predicate size");
   return if_body_t(std::make_shared<if_t>(sloc), get_lnode(pred));
 }

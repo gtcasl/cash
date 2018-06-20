@@ -291,8 +291,20 @@ TEST_CASE("arithmetic", "[arithmetic]") {
       return (c == 3);
     });
     TEST([]()->ch_bool {
+      ch_uint8 a(0x1);
+      ch_uint4 b(0x2);
+      auto c = a + b;
+      return (c == 3);
+    });
+    TEST([]()->ch_bool {
       ch_int8 a(0x1);
       ch_int4 b(0x2);
+      auto c = a + b;
+      return (c == 3);
+    });
+    TEST([]()->ch_bool {
+      ch_int4 a(0x1);
+      ch_int8 b(0x2);
       auto c = a + b;
       return (c == 3);
     });

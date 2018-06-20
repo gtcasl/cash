@@ -92,8 +92,8 @@ void regimpl::eval() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void ch::internal::ch_pushcd(const ch_logic<1>& clk,
-                             const ch_logic<1>& rst,
+void ch::internal::ch_pushcd(const ch_bit<1>& clk,
+                             const ch_bit<1>& rst,
                              bool posedge,
                              const source_location& sloc) {
   auto ctx = ctx_curr();
@@ -105,12 +105,12 @@ void ch::internal::ch_popcd() {
   ctx_curr()->pop_cd();
 }
 
-ch_logic<1> ch::internal::ch_clock(const source_location& sloc) {
+ch_bit<1> ch::internal::ch_clock(const source_location& sloc) {
   auto cd = ctx_curr()->current_cd(sloc);
-  return make_type<ch_logic<1>>(cd->clk());
+  return make_type<ch_bit<1>>(cd->clk());
 }
 
-ch_logic<1> ch::internal::ch_reset(const source_location& sloc) {
+ch_bit<1> ch::internal::ch_reset(const source_location& sloc) {
   auto cd = ctx_curr()->current_cd(sloc);
-  return make_type<ch_logic<1>>(cd->rst());
+  return make_type<ch_bit<1>>(cd->rst());
 }

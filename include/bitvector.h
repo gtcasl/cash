@@ -6,10 +6,10 @@ namespace ch {
 namespace internal {
 
 template <typename T> struct is_bitvector_array_type : std::false_type {};
-template <> struct is_bitvector_array_type <uint8_t> : std::true_type {};
-template <> struct is_bitvector_array_type <uint16_t> : std::true_type {};
-template <> struct is_bitvector_array_type <uint32_t> : std::true_type {};
-template <> struct is_bitvector_array_type <uint64_t> : std::true_type {};
+template <> struct is_bitvector_array_type<uint8_t> : std::true_type {};
+template <> struct is_bitvector_array_type<uint16_t> : std::true_type {};
+template <> struct is_bitvector_array_type<uint32_t> : std::true_type {};
+template <> struct is_bitvector_array_type<uint64_t> : std::true_type {};
 
 template <typename T>
 inline constexpr bool is_bitvector_array_type_v = is_bitvector_array_type<T>::value;
@@ -24,36 +24,6 @@ template <> struct is_bitvector_convertible_impl <int32_t> : std::true_type {};
 template <> struct is_bitvector_convertible_impl <uint32_t> : std::true_type {};
 template <> struct is_bitvector_convertible_impl <int64_t> : std::true_type {};
 template <> struct is_bitvector_convertible_impl <uint64_t> : std::true_type {};
-
-template <>
-struct is_bitvector_convertible_impl<std::initializer_list<uint32_t>> : std::true_type {};
-
-template <typename T, std::size_t N>
-struct is_bitvector_convertible_impl<std::array<T, N>> : std::true_type {};
-
-template <typename T>
-struct is_bitvector_convertible_impl<std::vector<T>> : std::true_type {};
-
-template <>
-struct is_bitvector_convertible_impl<std::string> : std::true_type {};
-
-template <typename T>
-inline constexpr bool is_bitvector_convertible_v =
-  is_true_v<(is_bitvector_convertible_impl<T>::value || std::is_enum_v<T>)>;
-
-template <typename T> struct is_bitvector_castable : std::false_type {};
-template <> struct is_bitvector_castable <bool> : std::true_type {};
-template <> struct is_bitvector_castable <int8_t> : std::true_type {};
-template <> struct is_bitvector_castable <uint8_t> : std::true_type {};
-template <> struct is_bitvector_castable <int16_t> : std::true_type {};
-template <> struct is_bitvector_castable <uint16_t> : std::true_type {};
-template <> struct is_bitvector_castable <int32_t> : std::true_type {};
-template <> struct is_bitvector_castable <uint32_t> : std::true_type {};
-template <> struct is_bitvector_castable <int64_t> : std::true_type {};
-template <> struct is_bitvector_castable <uint64_t> : std::true_type {};
-
-template <typename T>
-inline constexpr bool is_bitvector_castable_v = is_bitvector_castable<T>::value;
 
 class bitvector {
 public:
@@ -673,7 +643,23 @@ public:
 
   bool operator==(const bitvector& rhs) const;
 
+  bool operator!=(const bitvector& rhs) const {
+    return !(*this == rhs);
+  }
+
   bool operator<(const bitvector& rhs) const;
+
+  bool operator>=(const bitvector& rhs) const {
+    return !(*this < rhs);
+  }
+
+  bool operator>(const bitvector& rhs) const {
+    return (rhs < *this);
+  }
+
+  bool operator<=(const bitvector& rhs) const {
+    return !(rhs < *this);
+  }
 
 #define CH_DEF_CAST(type) \
   explicit operator type() const { \

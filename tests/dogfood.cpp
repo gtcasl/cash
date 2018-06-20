@@ -314,7 +314,7 @@ int main() {
   }
 
   {
-    ch_scalar<4> a(0101_b);
+    ch_scbit<4> a(0101_b);
     assert(a[0]);
     assert(a[2]);
     assert(1 == a.slice<2>());

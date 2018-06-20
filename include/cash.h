@@ -49,11 +49,11 @@ namespace core {
   // data types
   //
 
-  template <unsigned N> using ch_bit  = ch::internal::ch_logic<N>;
+  template <unsigned N> using ch_bit  = ch::internal::ch_bit<N>;
   template <unsigned N> using ch_int  = ch::internal::ch_int<N>;
   template <unsigned N> using ch_uint = ch::internal::ch_uint<N>;
 
-  template <unsigned N> using ch_scalar = ch::internal::ch_scalar<N>;
+  template <unsigned N> using ch_scbit = ch::internal::ch_scbit<N>;
   template <unsigned N> using ch_scint  = ch::internal::ch_scint<N>;
   template <unsigned N> using ch_scuint = ch::internal::ch_scuint<N>;
 
@@ -134,8 +134,8 @@ namespace core {
   // constants
   //
 
-  const ch_scalar<1> ch_false(0);
-  const ch_scalar<1> ch_true(1);
+  const ch_scbit<1> ch_false(0);
+  const ch_scbit<1> ch_true(1);
 
   //
   // subscript operators
@@ -170,16 +170,13 @@ namespace core {
   using ch::internal::ch_reset;
 
   //
-  // gates functions
+  // bitwise functions
   //
 
-  using ch::internal::ch_nand;
   using ch::internal::ch_inv;
-  using ch::internal::ch_nor;
   using ch::internal::ch_and;
   using ch::internal::ch_or;
   using ch::internal::ch_xor;
-  using ch::internal::ch_xnor;
 
   //
   // compare functions
@@ -312,6 +309,6 @@ inline namespace literals {
 #define __require2 CH_REQUIRE_2
 #define __require3 CH_REQUIRE_3
 
-#define __source_location CH_SRC_LOCATION
+#define __source_location CH_CUR_SLOC
 
 #define __width_of CH_WIDTH_OF

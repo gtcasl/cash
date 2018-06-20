@@ -37,13 +37,13 @@ void register_enum_string(const lnode& node, void* callback);
 
 #define CH_ENUM_LOGIC_IMPL(enum_name) \
   enum_name(const std::shared_ptr<ch::internal::type_buffer_t<traits>>& buffer = \
-    std::make_shared<ch::internal::type_buffer_t<traits>>(traits::bitwidth, CH_SRC_LOCATION)) \
+    std::make_shared<ch::internal::type_buffer_t<traits>>(traits::bitwidth, CH_CUR_SLOC)) \
     : base(buffer) { ch::internal::register_enum_string(ch::internal::logic_accessor::data(*this), (void*)to_string); } \
-  enum_name(const enum_name& rhs, const ch::internal::source_location& sloc = CH_SRC_LOCATION) \
+  enum_name(const enum_name& rhs, CH_SLOC) \
     : base(rhs, sloc) { ch::internal::register_enum_string(ch::internal::logic_accessor::data(*this), (void*)to_string); } \
   enum_name(enum_name&& rhs) \
     : base(std::move(rhs)) { ch::internal::register_enum_string(ch::internal::logic_accessor::data(*this), (void*)to_string); } \
-  enum_name(enum_type rhs, const ch::internal::source_location& sloc = CH_SRC_LOCATION) \
+  enum_name(enum_type rhs, CH_SLOC) \
     : base(rhs, sloc) { ch::internal::register_enum_string(ch::internal::logic_accessor::data(*this), (void*)to_string); }
 
 #define CH_ENUM_ASSIGN_IMPL(enum_name) \
@@ -61,7 +61,7 @@ void register_enum_string(const lnode& node, void* callback);
   }
 
 #define CH_ENUM_IMPL(enum_name, size, ...) \
-  class enum_name : public ch::internal::ch_logic<size> { \
+  class enum_name : public ch::internal::ch_bit<size> { \
   public: \
     enum enum_type { \
     CH_FOR_EACH(CH_ENUM_FIELD, CH_SEP_COMMA, __VA_ARGS__) \
@@ -76,17 +76,17 @@ void register_enum_string(const lnode& node, void* callback);
       } \
     }\
   private: \
-    class __scalar_type__ : public ch::internal::ch_scalar<size> { \
+    class __scalar_type__ : public ch::internal::ch_scbit<size> { \
     public: \
       using traits = ch::internal::scalar_traits<size, false, __scalar_type__, enum_name>; \
-      using base = ch::internal::ch_scalar<size>; \
+      using base = ch::internal::ch_scbit<size>; \
       CH_ENUM_SCALAR_IMPL(__scalar_type__) \
       CH_ENUM_ASSIGN_IMPL(__scalar_type__) \
       CH_SCALAR_INTERFACE(__scalar_type__) \
     }; \
   public: \
     using traits = ch::internal::logic_traits<size, false, enum_name, __scalar_type__>; \
-    using base = ch::internal::ch_logic<size>; \
+    using base = ch::internal::ch_bit<size>; \
     CH_ENUM_LOGIC_IMPL(enum_name) \
     CH_ENUM_ASSIGN_IMPL(enum_name) \
     CH_LOGIC_INTERFACE(enum_name) \

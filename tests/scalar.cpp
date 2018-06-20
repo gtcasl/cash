@@ -50,8 +50,35 @@ using v2_3_t = ch_vec<ch_bit2, 3>;
 TEST_CASE("scalars", "[scalars]") {
   SECTION("basics", "[basics]") {
     TESTX([]()->bool {
+      ch_scbit<4> a(0xb);
+      ch_scbit<4> b(0x5);
+      int v(a & b);
+      return (ret == 0x1);
+    });
+    TESTX([]()->bool {
       ch_scuint<4> a(0xa);
       ch_scuint<4> b(0x5);
+      int v(a + b);
+      int ret = v + 1;
+      return (ret == 0x10);
+    });
+    TESTX([]()->bool {
+      ch_scint<4> a(0xa);
+      ch_scint<4> b(0x5);
+      int v(a + b);
+      int ret = v + 1;
+      return (ret == 0x10);
+    });
+    TESTX([]()->bool {
+      ch_scuint<6> a(0xa);
+      ch_scuint<4> b(0x5);
+      int v(a + b);
+      int ret = v + 1;
+      return (ret == 0x10);
+    });
+    TESTX([]()->bool {
+      ch_scuint<4> a(0xa);
+      ch_scint<6> b(0x5);
       int v(a + b);
       int ret = v + 1;
       return (ret == 0x10);
@@ -71,18 +98,18 @@ TEST_CASE("scalars", "[scalars]") {
       return !!ret;
     });
     TESTX([]()->bool {
-      ch_scalar<4> a(0101_b);
+      ch_scbit<4> a(0101_b);
       return (a[0] == a[2]) && (a.slice<2>() == a.slice<2>(2));
     });
     TESTX([]()->bool {
-      const ch_scalar<4> a(0101_b);
+      const ch_scbit<4> a(0101_b);
       return (a[0] == a[2]) && (a.slice<2>() == a.slice<2>(2));
     });
     TESTX([]()->bool {
       auto force_move_assignment = []() {
         return 4_h + 3_h;
       };
-      ch_scalar<4> x;
+      ch_scbit<4> x;
       x = force_move_assignment();
       return (x == 7);
     });
@@ -105,7 +132,7 @@ TEST_CASE("scalars", "[scalars]") {
   }
   SECTION("cast", "[cast]") {
     TESTX([]()->bool {
-      ch_scalar<4> x(8);
+      ch_scbit<4> x(8);
       return (x == 8);
     });
     TESTX([]()->bool {
@@ -117,7 +144,7 @@ TEST_CASE("scalars", "[scalars]") {
       return (x == 8);
     });
     TESTX([]()->bool {
-      ch_scalar<4> x(8);
+      ch_scbit<4> x(8);
       return (static_cast<int>(x) == 8);
     });
     TESTX([]()->bool {
@@ -133,7 +160,7 @@ TEST_CASE("scalars", "[scalars]") {
       return (static_cast<int>(x) == 7);
     });
     TESTX([]()->bool {
-      ch_scalar<4> x(-8);
+      ch_scbit<4> x(-8);
       return (x == 8);
     });
     TESTX([]()->bool {
@@ -145,7 +172,7 @@ TEST_CASE("scalars", "[scalars]") {
       return (x == -8);
     });
     TESTX([]()->bool {
-      ch_scalar<4> x(-8);
+      ch_scbit<4> x(-8);
       return (static_cast<int>(x) == 8);
     });
     TESTX([]()->bool {
@@ -157,7 +184,7 @@ TEST_CASE("scalars", "[scalars]") {
       return (static_cast<int>(x) == -8);
     });
     TESTX([]()->bool {
-      ch_scalar<4> x(-1);
+      ch_scbit<4> x(-1);
       return (static_cast<int>(x) == 0xf);
     });
     TESTX([]()->bool {
@@ -192,24 +219,24 @@ TEST_CASE("scalars", "[scalars]") {
     });
     TESTX([]()->bool {
       ch_scalar_t<u2_4_t> a(0101_b), b(a);
-      return (a.as_scalar() == b.as_scalar());
+      return (a.as_scbit() == b.as_scbit());
     });
     TESTX([]()->bool {
       ch_scalar_t<u2_4_t> a(0101_b), b;
       b = a;
-      return (a.as_scalar() == b.as_scalar());
+      return (a.as_scbit() == b.as_scbit());
     });
     TESTX([]()->bool {
       ch_scalar_t<u2_4_t> a(3);
-      return (a.as_scalar() == 3);
+      return (a.as_scbit() == 3);
     });
     TESTX([]()->bool {
       ch_scalar_t<u2_4_t> a(0011_b4);
-      return (a.as_scalar() == 3);
+      return (a.as_scbit() == 3);
     });
     TESTX([]()->bool {
       ch_scalar_t<u2_4_t> a(11_b2);
-      return (a.as_scalar() == 3);
+      return (a.as_scbit() == 3);
     });
   }
   SECTION("struct", "[struct]") {
@@ -229,32 +256,32 @@ TEST_CASE("scalars", "[scalars]") {
       };
       ch_scalar_t<s2_4_t> s2(0101_b, 01_b);
       s2.b = force_move_assignment();
-      return (s2.b == 7) && (s2.as_scalar() == 011101_b);
+      return (s2.b == 7) && (s2.as_scbit() == 011101_b);
     });
     TESTX([]()->bool {
       ch_scalar_t<s2_4_t> a(010101_b), b(0101_b, 01_b);
-      return (a.as_scalar() == b.as_scalar());
+      return (a.as_scbit() == b.as_scbit());
     });
     TESTX([]()->bool {
       ch_scalar_t<s2_4_t> a(010101_b), b(a);
-      return (a.as_scalar() == b.as_scalar());
+      return (a.as_scbit() == b.as_scbit());
     });
     TESTX([]()->bool {
       ch_scalar_t<s2_4_t> a(010101_b), b;
       b = a;
-      return (a.as_scalar() == b.as_scalar());
+      return (a.as_scbit() == b.as_scbit());
     });
     TESTX([]()->bool {
       ch_scalar_t<sd1_t> a(21_h), b(2_h, 1_h);
-      return (a.as_scalar() == b.as_scalar());
+      return (a.as_scbit() == b.as_scbit());
     });
     TESTX([]()->bool {
       ch_scalar_t<sd3_t> a(321_h), b(3_h, 21_h);
-      return (a.as_scalar() == b.as_scalar());
+      return (a.as_scbit() == b.as_scbit());
     });
     TESTX([]()->bool {
       ch_scalar_t<sd3_t> a(321_h), b(3_h, 21_h);
-      return (a.as_scalar() == b.as_scalar());
+      return (a.as_scbit() == b.as_scbit());
     });
     TESTX([]()->bool {
       ch_scalar_t<sd3_t> a(321_h), b(a);
@@ -266,14 +293,14 @@ TEST_CASE("scalars", "[scalars]") {
       };
       ch_scalar_t<sd3_t> a;
       a = force_move_assignment();
-      return (a.as_scalar() == 321_h);
+      return (a.as_scbit() == 321_h);
     });
     TESTX([]()->bool {
       auto force_move_assignment = []() {
         return ch_scalar_t<sd3_t>{321_h};
       };
       ch_scalar_t<sd3_t> a(force_move_assignment());
-      return (a.as_scalar() == 321_h);
+      return (a.as_scbit() == 321_h);
     });
     TESTX([]()->bool {
       ch_scalar_t<sd3_t> s3(321_h);
@@ -292,7 +319,7 @@ TEST_CASE("scalars", "[scalars]") {
   SECTION("vector", "[vector]") {
     TEST([]()->ch_bool {
       ch_scalar_t<v2_2_t> x(3_h);
-      v2_2_t y(x.as_scalar());
+      v2_2_t y(x.as_scbit());
       return (y[0] == 3) && (y[1] == 0);
     });
     TESTX([]()->bool {

@@ -6,7 +6,7 @@ project(cash VERSION 0.1.0 LANGUAGES CXX)
 option(CODECOV "Enable code coverage." ON)
 
 # use C++17 compiler
-add_compile_options(-std=c++17 -pedantic -Wall -Wextra)
+add_compile_options(-std=c++17 -pedantic -Wall -Wextra -fmax-errors=1)
 
 set(DEFAULT_BUILD_TYPE "Release")
 
@@ -31,6 +31,7 @@ include_directories("include")
 
 # set source files
 set(PROJECT_SOURCES
+    src/cash.cpp
     src/utils.cpp
     src/platform.cpp
     src/bitvector.cpp
@@ -59,7 +60,6 @@ set(PROJECT_SOURCES
     src/vcdtracerimpl.cpp
     src/verilogwriter.cpp
     src/firrtlwriter.cpp
-    src/cash.cpp
 )
 
 # build library

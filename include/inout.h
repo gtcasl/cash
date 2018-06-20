@@ -50,11 +50,9 @@ protected: \
 
 #define CH_INOUT_LOGIC_IMPL2(inout_name, field_body, ...) \
   CH_FOR_EACH(field_body, CH_SEP_SEMICOLON, __VA_ARGS__); \
-  inout_name(const std::string& name = "io", \
-             const ch::internal::source_location& sloc = CH_SRC_LOCATION) \
+  inout_name(const std::string& name = "io", CH_SLOC) \
     : CH_FOR_EACH(CH_INOUT_CTOR_BODY, CH_SEP_COMMA, __VA_ARGS__) {} \
-  explicit inout_name(const typename traits::flip_type& rhs, \
-                      const ch::internal::source_location& sloc = CH_SRC_LOCATION) \
+  explicit inout_name(const typename traits::flip_type& rhs, CH_SLOC) \
     : CH_FOR_EACH(CH_INOUT_COPY_CTOR, CH_SEP_COMMA, __VA_ARGS__) {} \
   void operator()(typename traits::flip_type& rhs) { \
     CH_FOR_EACH(CH_INOUT_BIND_BODY, CH_SEP_SEMICOLON, __VA_ARGS__); \
@@ -78,12 +76,10 @@ protected: \
 
 #define CH_INOUT_LOGIC_IMPL3(inout_name, field_body, ...) \
   CH_FOR_EACH(field_body, CH_SEP_SEMICOLON, __VA_ARGS__); \
-  inout_name(const std::string& name = "io", \
-             const ch::internal::source_location& sloc = CH_SRC_LOCATION) \
+  inout_name(const std::string& name = "io", CH_SLOC) \
     : base(name, sloc) \
     , CH_FOR_EACH(CH_INOUT_CTOR_BODY, CH_SEP_COMMA, __VA_ARGS__) {} \
-  explicit inout_name(const typename traits::flip_type& rhs, \
-                      const ch::internal::source_location& sloc = CH_SRC_LOCATION) \
+  explicit inout_name(const typename traits::flip_type& rhs, CH_SLOC) \
     : base(rhs, sloc) \
     , CH_FOR_EACH(CH_INOUT_COPY_CTOR, CH_SEP_COMMA, __VA_ARGS__) {} \
   void operator()(typename traits::flip_type& rhs) { \

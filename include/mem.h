@@ -66,29 +66,29 @@ public:
   static constexpr unsigned addr_width = log2ceil(N);
   using value_type = T;
 
-  explicit ch_rom(const std::string& init_file, const source_location& sloc = CH_SRC_LOCATION)
+  explicit ch_rom(const std::string& init_file, CH_SLOC)
     : mem_(width_v<T>, N, false, toByteVector(init_file, data_width, N), sloc)
   {}
 
-  explicit ch_rom(const std::initializer_list<uint32_t>& init_data, const source_location& sloc = CH_SRC_LOCATION)
+  explicit ch_rom(const std::initializer_list<uint32_t>& init_data, CH_SLOC)
     : mem_(width_v<T>, N, false, toByteVector(init_data, data_width, N), sloc)
   {}
 
   template <typename U, std::size_t M,
             CH_REQUIRE_0(is_bitvector_array_type_v<U>)>
-  explicit ch_rom(const std::array<U, M>& init_data, const source_location& sloc = CH_SRC_LOCATION)
+  explicit ch_rom(const std::array<U, M>& init_data, CH_SLOC)
     : mem_(width_v<T>, N, false, toByteVector(init_data, data_width, N), sloc)
   {}
 
   template <typename U,
             CH_REQUIRE_0(is_bitvector_array_type_v<U>)>
-  explicit ch_rom(const std::vector<U>& init_data, const source_location& sloc = CH_SRC_LOCATION)
+  explicit ch_rom(const std::vector<U>& init_data, CH_SLOC)
     : mem_(width_v<T>, N, false, toByteVector(init_data, data_width, N), sloc)
   {}
 
   template <typename U,
             CH_REQUIRE_0(is_logic_convertible_v<U, addr_width>)>
-  auto read(const U& addr, const source_location& sloc = CH_SRC_LOCATION) const {
+  auto read(const U& addr, CH_SLOC) const {
     auto laddr = get_lnode<U, addr_width>(addr);
     return make_type<T>(mem_.read(laddr, sloc), sloc);
   }
@@ -105,11 +105,11 @@ public:
   static constexpr unsigned addr_width = log2ceil(N);
   using value_type = T;
 
-  ch_mem(const source_location& sloc = CH_SRC_LOCATION) : mem_(width_v<T>, N, true, {}, sloc) {}
+  ch_mem(CH_SLOC) : mem_(width_v<T>, N, true, {}, sloc) {}
 
   template <typename U,
             CH_REQUIRE_0(is_logic_convertible_v<U, addr_width>)>
-  auto read(const U& addr, const source_location& sloc = CH_SRC_LOCATION) const {
+  auto read(const U& addr, CH_SLOC) const {
     auto laddr = get_lnode<U, addr_width>(addr);
     return make_type<T>(mem_.read(laddr, sloc), sloc);
   }
@@ -117,7 +117,7 @@ public:
   template <typename U, typename V,
             CH_REQUIRE_0(is_logic_convertible_v<U, addr_width>),
             CH_REQUIRE_0(std::is_constructible_v<T, V>)>
-  void write(const U& addr, const V& value, const source_location& sloc = CH_SRC_LOCATION) {
+  void write(const U& addr, const V& value, CH_SLOC) {
     auto l_addr  = get_lnode<U, addr_width>(addr);
     auto l_value = get_lnode<T, data_width>(value);
     mem_.write(l_addr, l_value, bitvector(1, 1), sloc);
@@ -127,7 +127,7 @@ public:
             CH_REQUIRE_0(is_logic_convertible_v<U, addr_width>),
             CH_REQUIRE_0(std::is_constructible_v<T, V>),
             CH_REQUIRE_0(is_logic_convertible_v<E>)>
-  void write(const U& addr, const V& value, const E& enable, const source_location& sloc = CH_SRC_LOCATION) {
+  void write(const U& addr, const V& value, const E& enable, CH_SLOC) {
     static_assert(1 == width_v<E>, "invalid predicate size");
     auto l_addr   = get_lnode<U, addr_width>(addr);
     auto l_value  = get_lnode<T, data_width>(value);

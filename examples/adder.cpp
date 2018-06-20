@@ -2,6 +2,7 @@
 
 using namespace ch::core;
 using namespace ch::sim;
+using namespace ch::literals;
 
 template <unsigned N>
 struct Adder {
@@ -14,7 +15,7 @@ struct Adder {
   );
 
   void describe() {
-    auto sum = ch_pad<N+1>(io.cin) + io.lhs + io.rhs;
+    auto sum = ch_cat(0_b, io.lhs) + io.rhs + io.cin;
     io.out  = ch_slice<N>(sum);
     io.cout = sum[N];
   }

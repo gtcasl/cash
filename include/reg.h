@@ -31,11 +31,11 @@ public:
   using traits = logic_traits<width_v<T>, signed_v<T>, ch_reg<T>, scalar_type_t<T>>;
   using base = T;
 
-  ch_reg_impl(const source_location& sloc = CH_SRC_LOCATION)
+  ch_reg_impl(CH_SLOC)
     : base(std::make_shared<reg_buffer>(width_v<T>, sloc))
   {}
 
-  ch_reg_impl(const ch_reg_impl& rhs, const source_location& sloc = CH_SRC_LOCATION)
+  ch_reg_impl(const ch_reg_impl& rhs, CH_SLOC)
     : base(std::make_shared<reg_buffer>(logic_accessor::data(rhs), sloc))
   {}
 
@@ -43,7 +43,7 @@ public:
 
   template <typename U,
             CH_REQUIRE_0(std::is_constructible_v<T, U>)>
-  explicit ch_reg_impl(const U& init, const source_location& sloc = CH_SRC_LOCATION)
+  explicit ch_reg_impl(const U& init, CH_SLOC)
     : base(std::make_shared<reg_buffer>(get_lnode<U, T>(init), sloc))
   {}
 
@@ -51,19 +51,19 @@ public:
             CH_REQUIRE_0(std::is_constructible_v<T, U>)>
   void operator <<=(const U& rhs) const {
     logic_accessor::buffer(*this)->write(get_lnode<U, T>(rhs));
-  }
+  }  
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
-ch_logic<1> ch_clock(const source_location& sloc = CH_SRC_LOCATION);
+ch_bit<1> ch_clock(CH_SLOC);
 
-ch_logic<1> ch_reset(const source_location& sloc = CH_SRC_LOCATION);
+ch_bit<1> ch_reset(CH_SLOC);
 
-void ch_pushcd(const ch_logic<1>& clk,
-               const ch_logic<1>& rst = ch_reset(),
+void ch_pushcd(const ch_bit<1>& clk,
+               const ch_bit<1>& rst = ch_reset(),
                bool posedge = true,
-               const source_location& sloc = CH_SRC_LOCATION);
+               CH_SLOC);
 
 void ch_popcd();
 
@@ -71,7 +71,7 @@ void ch_popcd();
 
 template <typename R, typename T,
           CH_REQUIRE_0(std::is_constructible_v<R, T>)>
-auto ch_delay(const T& rhs, uint32_t delay = 1, const source_location& sloc = CH_SRC_LOCATION) {
+auto ch_delay(const T& rhs, uint32_t delay = 1, CH_SLOC) {
   R ret(rhs, sloc);
   for (unsigned i = 0; i < delay; ++i) {
     ch_reg<R> reg(sloc);
@@ -83,7 +83,7 @@ auto ch_delay(const T& rhs, uint32_t delay = 1, const source_location& sloc = CH
 
 template <typename T,
           CH_REQUIRE_0(is_logic_convertible_v<T>)>
-auto ch_delay(const T& rhs, uint32_t delay = 1, const source_location& sloc = CH_SRC_LOCATION) {
+auto ch_delay(const T& rhs, uint32_t delay = 1, CH_SLOC) {
   return ch_delay<logic_type_t<T>, T>(rhs, delay, sloc);
 }
 

@@ -18,7 +18,14 @@ std::string identifier_from_typeid(const std::string& name);
 
 int char2int(char x, int base);
 
-uint32_t signext(uint32_t x, uint32_t bits);
+template <typename T>
+T sign_ext(T x, unsigned bits) {
+  assert(sizeof(T) * 8 > bits);
+  T k = (T(1) << bits) - 1;
+  T m = T(1) << (bits - 1);
+  T n = x & k;
+  return (n ^ m) - m;
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -52,10 +59,12 @@ private:
 };
 
 #if defined(__GNUC__)
-  #define CH_SRC_LOCATION ch::internal::source_location(__builtin_FILE(), __builtin_LINE())
+  #define CH_CUR_SLOC ch::internal::source_location(__builtin_FILE(), __builtin_LINE())
 #else
-  #define CH_SRC_LOCATION ch::internal::source_location(__FILE__, __LINE__)
+  #define CH_CUR_SLOC ch::internal::source_location(__FILE__, __LINE__)
 #endif
+
+#define CH_SLOC const ch::internal::source_location& sloc = CH_CUR_SLOC
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -113,17 +122,6 @@ private:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T>
-struct is_integral_or_enum : std::integral_constant<bool,
-  std::is_integral_v<T> ||
-  std::is_enum_v<T>>
-{};
-
-template <typename T>
-inline constexpr bool is_integral_or_enum_v = is_integral_or_enum<T>::value;
-
-///////////////////////////////////////////////////////////////////////////////
-
 template <bool Pred>
 using is_true = std::conditional_t<Pred, std::true_type, std::false_type>;
 
@@ -161,13 +159,15 @@ inline constexpr bool is_equality_comparable_v = is_equality_comparable<A, B>::v
 //template <typename T>
 //using identity_t = T;
 
-template<class T>
+template<typename T>
 struct identity_impl {
   typedef T type;
 };
 
-template<class T>
+template<typename T>
 using identity_t = typename identity_impl<T>::type;
+
+struct empty_base {};
 
 template <typename...>
 using void_t = void;
@@ -472,6 +472,14 @@ constexpr uint32_t ctz(uint64_t value) {
   return value ? __builtin_ctzll(value) : 64;
 }
 
+constexpr uint32_t ceilpow2(uint64_t value) {
+  return 64 - clz(value);
+}
+
+constexpr uint32_t ceilpow2(int64_t value) {
+  return value >= 0 ? (64 - clz(uint64_t(value))) : (65 - clz(uint64_t(~value)));
+}
+
 constexpr uint32_t rotl(uint32_t value, uint32_t shift, uint32_t width) {
   assert(shift < width);
   return  (value << shift) | (value >> (width - shift));
@@ -521,7 +529,7 @@ constexpr uint32_t rotr(uint32_t value, uint32_t shift, uint32_t width) {
   template<typename T, typename Enable = void> \
   struct type_name : std::false_type {}; \
   template<typename T> \
-  struct type_name<T, typename std::enable_if_t<(predicate)>> : std::true_type {}; \
+  struct type_name<T, std::enable_if_t<(predicate)>> : std::true_type {}; \
   template <typename T> \
   inline constexpr bool type_name##_v = type_name<T>::value
 
@@ -530,10 +538,10 @@ struct requires_enum {
   enum class type {};
 };
 
-#define CH_REQUIRE_0(...) typename std::enable_if_t<(__VA_ARGS__), typename requires_enum<0>::type>* = nullptr
-#define CH_REQUIRE_1(...) typename std::enable_if_t<(__VA_ARGS__), typename requires_enum<1>::type>* = nullptr
-#define CH_REQUIRE_2(...) typename std::enable_if_t<(__VA_ARGS__), typename requires_enum<2>::type>* = nullptr
-#define CH_REQUIRE_3(...) typename std::enable_if_t<(__VA_ARGS__), typename requires_enum<3>::type>* = nullptr
+#define CH_REQUIRE_0(...) std::enable_if_t<(__VA_ARGS__), typename requires_enum<0>::type>* = nullptr
+#define CH_REQUIRE_1(...) std::enable_if_t<(__VA_ARGS__), typename requires_enum<1>::type>* = nullptr
+#define CH_REQUIRE_2(...) std::enable_if_t<(__VA_ARGS__), typename requires_enum<2>::type>* = nullptr
+#define CH_REQUIRE_3(...) std::enable_if_t<(__VA_ARGS__), typename requires_enum<3>::type>* = nullptr
 
 #define CH_UNUSED(...) ch::internal::unused(__VA_ARGS__)
 

@@ -43,13 +43,6 @@ uint32_t lnodeimpl::add_src(uint32_t index, const lnode& src) {
   return index;
 }
 
-void lnodeimpl::update_sloc(const source_location& sloc) {
-  assert(!sloc.empty());
-  if (sloc_.empty()) {
-    sloc_ = sloc;
-  }
-}
-
 bool lnodeimpl::equals(const lnodeimpl& rhs) const {
   if (this->type() == rhs.type()
    && this->size() == rhs.size()

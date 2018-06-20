@@ -9,7 +9,7 @@ struct Counter {
     __out(ch_uint<N>) out
   );
 
-  void describe() {
+  void describe() {    
     ch_reg<ch_uint<N>> out(2);
     out <<= out + 1;
     io.out = out;
