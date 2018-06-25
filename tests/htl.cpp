@@ -97,9 +97,19 @@ TEST_CASE("htl", "[htl]") {
   }
   SECTION("hmux", "[hmux]") {
     TEST([]()->ch_bool {
+      ch_bit4 k(0001_b);
+      auto y = ch_hmux(k, 0xA_h, 0xB_h, 0xC_h, 0xD_h);
+      return (y == 0xD_h);
+    });
+    TEST([]()->ch_bool {
       ch_bit4 k(0010_b);
       auto y = ch_hmux(k, 0xA_h, 0xB_h, 0xC_h, 0xD_h);
       return (y == 0xC_h);
+    });
+    TEST([]()->ch_bool {
+      ch_bit4 k(0100_b);
+      auto y = ch_hmux(k, 0xA_h, 0xB_h, 0xC_h, 0xD_h);
+      return (y == 0xB_h);
     });
     TEST([]()->ch_bool {
       ch_bit4 k(1000_b);
@@ -107,13 +117,25 @@ TEST_CASE("htl", "[htl]") {
       return (y == 0xA_h);
     });
     TEST([]()->ch_bool {
-           ch_bit4 k(0010_b);
+      ch_bit4 k(0001_b);
+      ch_vec<ch_bit4, 4> x{0xA_h, 0xB_h, 0xC_h, 0xD_h};
+      auto y = ch_hmux(k, x);
+      return (y == 0xD_h);
+    });
+    TEST([]()->ch_bool {
+      ch_bit4 k(0010_b);
       ch_vec<ch_bit4, 4> x{0xA_h, 0xB_h, 0xC_h, 0xD_h};
       auto y = ch_hmux(k, x);
       return (y == 0xC_h);
     });
     TEST([]()->ch_bool {
-           ch_bit4 k(1000_b);
+      ch_bit4 k(0100_b);
+      ch_vec<ch_bit4, 4> x{0xA_h, 0xB_h, 0xC_h, 0xD_h};
+      auto y = ch_hmux(k, x);
+      return (y == 0xB_h);
+    });
+    TEST([]()->ch_bool {
+      ch_bit4 k(1000_b);
       ch_vec<ch_bit4, 4> x{0xA_h, 0xB_h, 0xC_h, 0xD_h};
       auto y = ch_hmux(k, x);
       return (y == 0xA_h);
