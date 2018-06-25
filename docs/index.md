@@ -20,6 +20,8 @@ Other dependencies include:
 
 # Build Status
 
+The master branch has been added to [travis](https://travis-ci.org)'s continuous integration (CI) build process and [codecov](https://codecov.io)'s code coverage.
+
 [![Linux Build Status](https://travis-ci.org/gtcasl/cash.png?branch=master)](https://travis-ci.org/gtcasl/cash) 
 [![codecov.io](http://codecov.io/github/gtcasl/cash/coverage.svg?branch=master)](http://codecov.io/github/gtcasl/cash?branch=master)
 
@@ -85,10 +87,8 @@ int main() {
 ```
 # Contributions
 
-Contributions are welcome, just email me.
+Contributions are welcome, just email me at blaise.tine@gmail.com.
 
 # License
 
 Release under the BSD license, see LICENSE for details.
-
-(c) 2016-2018 Blaise Tine blaise.tine@gmail.com.
