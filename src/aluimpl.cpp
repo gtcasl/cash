@@ -1,5 +1,6 @@
 #include "aluimpl.h"
 #include "proxyimpl.h"
+#include "logic.h"
 #include "context.h"
 
 using namespace ch::internal;
@@ -13,15 +14,17 @@ const char* ch::internal::to_string(ch_op op) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-aluimpl::aluimpl(context* ctx, ch_op op, uint32_t size, const lnode& in)
-  : lnodeimpl(ctx, type_alu, size)
+aluimpl::aluimpl(context* ctx, ch_op op, uint32_t size, const lnode& in,
+                 const source_location& sloc)
+  : lnodeimpl(ctx, type_alu, size, 0, "", sloc)
   , op_(op) {
   name_ = to_string(op);
   srcs_.push_back(in);
 }
 
-aluimpl::aluimpl(context* ctx, ch_op op, uint32_t size, const lnode& lhs, const lnode& rhs)
-  : lnodeimpl(ctx, type_alu, size)
+aluimpl::aluimpl(context* ctx, ch_op op, uint32_t size, const lnode& lhs, const lnode& rhs,
+                 const source_location& sloc)
+  : lnodeimpl(ctx, type_alu, size, 0, "", sloc)
   , op_(op) {
   name_ = to_string(op);
   srcs_.push_back(lhs);
@@ -160,25 +163,28 @@ void aluimpl::print(std::ostream& out, uint32_t level) const {
 lnodeimpl* ch::internal::createAluNode(
     ch_op op,
     uint32_t size,
-    const lnode& in) {
-  return in.impl()->ctx()->create_node<aluimpl>(op, size, in);
+    const lnode& in,
+    const source_location& sloc) {
+  return in.impl()->ctx()->create_node<aluimpl>(op, size, in, sloc);
 }
 
 lnodeimpl* ch::internal::createAluNode(
     ch_op op,
     uint32_t size,
     const lnode& lhs,
-    const lnode& rhs) {
-  return lhs.impl()->ctx()->create_node<aluimpl>(op, size, lhs, rhs);
+    const lnode& rhs,
+    const source_location& sloc) {
+  return lhs.impl()->ctx()->create_node<aluimpl>(op, size, lhs, rhs, sloc);
 }
 
 lnodeimpl* ch::internal::createRotateNode(
     const lnode& next,
     uint32_t dist,
-    bool right) {
+    bool right,
+    const source_location& sloc) {
   auto N = next.size();
   auto mod = dist % N;
-  auto ret = next.impl()->ctx()->create_node<proxyimpl>(N);
+  auto ret = next.impl()->ctx()->create_node<proxyimpl>(N, 0, "", sloc);
   if (right) {
     ret->add_source(0, next, mod, N - mod);
     ret->add_source(N - mod, next, 0, mod);

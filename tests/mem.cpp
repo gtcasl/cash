@@ -1,9 +1,13 @@
 #include "common.h"
 
+namespace {
+
 __struct (Q_t, (
   (ch_bit2) a,
   (ch_bit2) b
 ));
+
+}
 
 TEST_CASE("memory", "[memory]") {
   SECTION("rom", "[rom]") {
@@ -22,7 +26,7 @@ TEST_CASE("memory", "[memory]") {
                (q);
       //ch_print("t={0}, a={1}, q={2}", ch_time(), a, q);
       return (e == q);
-    }, 10);
+    }, 5);
     TEST([]()->ch_bool {
       ch_reg<ch_uint2> a(0);
       ch_bit4 q;
@@ -38,7 +42,7 @@ TEST_CASE("memory", "[memory]") {
                (q);
       //ch_print("t={0}, a={1}, q={2}", ch_time(), a, q);
       return (e == q);
-    }, 12);
+    }, 5);
   }
   
   SECTION("mem", "[mem]") {
@@ -49,7 +53,7 @@ TEST_CASE("memory", "[memory]") {
       ch_mem<ch_bit4, 4> mem;
       q = mem.read(a);
       mem.write(a, d, en);
-      ch_tie(a, d, en) = ch_delay(
+      ch_bind(a, d, en) = ch_delay(
         ch_case(ch_time(),
            3,  ch_cat(00_b, 0xA_h, 1_b))
           (5,  ch_cat(01_b, 0xB_h, 1_b))
@@ -70,7 +74,7 @@ TEST_CASE("memory", "[memory]") {
                (q);
       //ch_print("t={0}, clk={1}, rst={2}, a={3}, d={4}, en={5}, q={6}, e={7}", ch_time(), ch_clock(), ch_reset(), a, d, en, q, e);
       return (q == e);
-    }, 12);
+    }, 5);
 
     TEST([]()->ch_bool {
       ch_bit2 a;
@@ -79,7 +83,7 @@ TEST_CASE("memory", "[memory]") {
       ch_mem<ch_uint4, 4> mem;
       q = (mem.read(a) + 1) - 1;
       mem.write(a, d, en);
-      ch_tie(a, d, en) = ch_delay(
+      ch_bind(a, d, en) = ch_delay(
         ch_case(ch_time(),
            3,  ch_cat(00_b, 0xA_h, 1_b))
           (5,  ch_cat(01_b, 0xB_h, 1_b))
@@ -100,15 +104,15 @@ TEST_CASE("memory", "[memory]") {
                (q);
       //ch_print("t={0}, clk={1}, rst={2}, a={3}, d={4}, en={5}, q={6}, e={7}", ch_time(), ch_clock(), ch_reset(), a, d, en, q, e);
       return (q == e);
-    }, 12);
+    }, 5);
 
     TEST([]()->ch_bool {
       ch_mem<Q_t, 2> mem;
-      mem.write(0, Q_t(1101_b));
+      mem.write(0, Q_t(11_b, 01_b));
       auto x = mem.read(0).as_bit();
       auto e = ch_delay(1101_b);
       //ch_print("t={0}, x={1}, e={2}", ch_time(), x, e);
       return (x == e);
-    }, 4);
+    }, 1);
   }
 }

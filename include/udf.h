@@ -17,20 +17,18 @@ public:
     return container_[index].data();
   }
 
-private:
+protected:
   const std::vector<lnode>& container_;
 };
 
 class udf_iface : public refcounted {
 public:
   udf_iface(uint32_t delta,
-            bool init,
-            bool enable,
+            bool has_init,
             uint32_t output_size,
             const std::initializer_list<uint32_t>& inputs_sizes)
     : delta_(delta)
-    , init_(init)
-    , enable_(enable)
+    , has_init_(has_init)
     , output_size_(output_size)
     , inputs_size_(inputs_sizes)
   {}
@@ -41,12 +39,8 @@ public:
     return delta_;
   }
 
-  bool init() const {
-    return init_;
-  }
-
-  bool enable() const {
-    return enable_;
+  bool has_init() const {
+    return has_init_;
   }
 
   uint32_t output_size() const {
@@ -70,27 +64,31 @@ public:
 private:
 
   uint32_t delta_;
-  bool init_;
-  bool enable_;
+  bool has_init_;
   uint32_t output_size_;
   std::vector<uint32_t> inputs_size_;
 };
 
-template <uint32_t Delta, bool Init, bool Enable, typename Output_, typename... Inputs_>
+template <unsigned Delta, bool Init, typename Output_, typename... Inputs_>
 struct udf_traits {
+  static constexpr traits_type type  = traits_udf;
   static constexpr uint32_t delta  = Delta;
   static constexpr bool has_init   = Init;
-  static constexpr bool has_enable = Enable;
   using Output = Output_;
   using Inputs = std::tuple<Inputs_...>;
 };
 
-template <typename Output, typename... Inputs>
+template <typename T>
+inline constexpr bool is_udf_traits_v = is_true_v<(T::type == traits_udf)>;
+
+CH_DEF_SFINAE_CHECK(is_udf_type, is_udf_traits_v<typename std::decay_t<T>::traits>);
+
+template <bool Init, typename Output, typename... Inputs>
 class udf_comb : public udf_iface {
 public:
-  using traits = udf_traits<0, false, false, Output, Inputs...>;
+  using traits = udf_traits<0, Init, Output, Inputs...>;
 
-  udf_comb() : udf_iface(0, false, false, width_v<Output>, {width_v<Inputs>...}) {}
+  udf_comb() : udf_iface(0, Init, width_v<Output>, {width_v<Inputs>...}) {}
 
   void initialize() override {}
 
@@ -101,13 +99,13 @@ public:
   void to_verilog(std::ostream&) override {}
 };
 
-template <uint32_t Delta, bool Init, bool Enable, typename Output, typename... Inputs>
+template <unsigned Delta, bool Init, typename Output, typename... Inputs>
 class udf_seq : public udf_iface {
 public:
   static_assert(Delta != 0, "invalid delta value");
-  using traits = udf_traits<Delta, Init, Enable, Output, Inputs...>;
+  using traits = udf_traits<Delta, Init, Output, Inputs...>;
 
-  udf_seq() : udf_iface(Delta, Init, Enable, width_v<Output>, {width_v<Inputs>...}) {}
+  udf_seq() : udf_iface(Delta, Init, width_v<Output>, {width_v<Inputs>...}) {}
 
   void initialize() override {}
 
@@ -136,11 +134,32 @@ udf_iface* get_udf() {
   return udf;
 }
 
-template <typename T, typename... Args>
-auto ch_udf(Args&& ...args) {
-  static_assert(sizeof...(Args) >= std::tuple_size_v<typename T::traits::Inputs>, "number of inputs mismatch");
-  auto node = createUDFNode(get_udf<T>(), {get_lnode(args)...}, source_location());
-  return make_type<typename T::traits::Output>(node);
+template <typename T>
+auto ch_udf(CH_SLOC) {
+  static_assert(is_udf_type_v<T>, "invalid type");
+  static_assert(0 == std::tuple_size_v<typename T::traits::Inputs>, "number of inputs mismatch");
+  auto node = createUDFNode(get_udf<T>(), {}, sloc);
+  return make_type<typename T::traits::Output>(node, sloc);
 }
+
+#define CH_UDF_TMPL(a, i, x) typename __T##i
+#define CH_UDF_ASSERT(a, i, x) static_assert(std::is_constructible_v<std::tuple_element_t<i, typename T::traits::Inputs>, __T##i>, "invalid type")
+#define CH_UDF_DECL(a, i, x) const __T##i& arg##i
+#define CH_UDF_ARG(a, i, x) to_lnode<std::tuple_element_t<i, typename T::traits::Inputs>>(arg##i, sloc)
+#define CH_UDF(...) \
+  template <typename T, CH_FOR_EACH(CH_UDF_TMPL, , CH_SEP_COMMA, __VA_ARGS__)> \
+  auto ch_udf(CH_FOR_EACH(CH_UDF_DECL, , CH_SEP_COMMA, __VA_ARGS__), CH_SLOC) { \
+    static_assert(is_udf_type_v<T>, "invalid type"); \
+    static_assert(CH_NARG(__VA_ARGS__) == std::tuple_size_v<typename T::traits::Inputs>, "number of inputs mismatch"); \
+    CH_FOR_EACH(CH_UDF_ASSERT, , CH_SEP_SEMICOLON, __VA_ARGS__); \
+    auto node = createUDFNode(get_udf<T>(), {CH_FOR_EACH(CH_UDF_ARG, , CH_SEP_COMMA, __VA_ARGS__)}, sloc); \
+    return make_type<typename T::traits::Output>(node, sloc); \
+  }
+CH_VA_ARGS_MAP(CH_UDF)
+#undef CH_UDF_TMPL
+#undef CH_UDF_ASSERT
+#undef CH_UDF_DECL
+#undef CH_UDF_ARG
+#undef CH_UDF
 
 }}

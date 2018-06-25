@@ -90,12 +90,12 @@ TEST_CASE("arithmetic", "[arithmetic]") {
     });
     TEST([]()->ch_bool {
       ch_uint4 a(2);
-      auto c = 1 << a;
+      auto c = ch_uint4(1) << a;
       return (c == 0100_b);
     });
     TEST([]()->ch_bool {
       ch_uint4 a(2);
-      auto c = 0100_b >> a;
+      auto c = ch_uint4(0100_b) >> a;
       return (c == 0001_b);
     });
     TEST([]()->ch_bool {
@@ -110,8 +110,8 @@ TEST_CASE("arithmetic", "[arithmetic]") {
     });
     TEST([]()->ch_bool {
       ch_uint4 a(2);
-      auto c = ch_int32(1100_b) >> a;
-      return (c == 0011_b);
+      auto c = ch_uint32(1100_b) >> a;
+      return (c == 0011_b32);
     });
     TEST([]()->ch_bool {
       ch_uint8 a(5*4);
@@ -125,7 +125,7 @@ TEST_CASE("arithmetic", "[arithmetic]") {
     });
     TEST([]()->ch_bool {
       ch_uint2 a(2);
-      auto c = 0001_b << a;
+      auto c = ch_uint4(0001_b) << a;
       return (c == 0100_b);
     });
     TEST([]()->ch_bool {
@@ -252,36 +252,26 @@ TEST_CASE("arithmetic", "[arithmetic]") {
       return (c == 3);
     });
     TEST([]()->ch_bool {
-      ch_uint4 a(0x1), b(0x2);
-      auto c = ch_add(a, b);
-      return (c == 3);
-    });
-    TEST([]()->ch_bool {
       ch_uint4 a(0x1);
-      auto c = a + 10_b;
-      return (c == 3);
-    });
-    TEST([]()->ch_bool {
-      ch_uint4 a(0x1);
-      auto c = ch_add(a, 10_b);
+      auto c = a + 10_b4;
       return (c == 3);
     });
     TEST([]()->ch_bool {
       ch_uint4 a(0x1);
       ch_int4 b(0x2);
-      auto c = a + b;
+      auto c = a | b;
       return (c == 3);
     });
     TEST([]()->ch_bool {
       ch_uint4 a(0x1);
       ch_bit4 b(0x2);
-      auto c = a + b;
+      auto c = a | b;
       return (c == 3);
     });
     TEST([]()->ch_bool {
       ch_bit4 a(0x1);
       ch_uint4 b(0x2);
-      auto c = a + b;
+      auto c = a | b;
       return (c == 3);
     });
     TEST([]()->ch_bool {
@@ -321,8 +311,8 @@ TEST_CASE("arithmetic", "[arithmetic]") {
     TEST([]()->ch_bool {
       ch_int4 a(0x1);
       ch_uint8 b(0x2);
-      auto c = b - a;
-      return (c == 1);
+      auto c = b | a;
+      return (c == 3);
     });
     TEST([]()->ch_bool {
       ch_uint8 a(0x1);

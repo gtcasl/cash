@@ -38,8 +38,8 @@ int main() {
 
   assert(fastmult.io.out == 6);
 
-  ch_toVerilog("fastmult.v", fastmult);
-  ch_toFIRRTL("fastmult.fir", fastmult);
+  ch_verilog("fastmult.v", fastmult);
+  ch_firrtl("fastmult.fir", fastmult);
 
   int ret = system("iverilog fastmult_tb.v -o fastmult_tb.iv")
           | system("vvp fastmult_tb.iv");

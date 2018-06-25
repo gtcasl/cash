@@ -16,7 +16,8 @@ protected:
 
   printimpl(context* ctx,
             const std::string& format,
-            const std::initializer_list<lnode>& args);
+            const std::initializer_list<lnode>& args,
+            const source_location& sloc);
 
   ~printimpl();
 

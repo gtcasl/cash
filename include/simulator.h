@@ -10,18 +10,24 @@ class simulatorimpl;
 class ch_simulator {
 public:  
   
+  ch_simulator();
+
+  ch_simulator(const ch_device_list& devices);
+
   template <typename... Devices>
-  ch_simulator(const device& device, const Devices&... more)
-    : ch_simulator({get_ctx(device), get_ctx(more)...})
+  ch_simulator(const device& first, const Devices&... more)
+    : ch_simulator(ch_device_list{first, (more)...})
   {}
 
-  ch_simulator() {}
-
   ch_simulator(const ch_simulator& simulator);
+
+  ch_simulator(ch_simulator&& simulator);
 
   virtual ~ch_simulator();
 
   ch_simulator& operator=(const ch_simulator& simulator);
+
+  ch_simulator& operator=(ch_simulator&& simulator);
   
   void run(ch_tick ticks = 1);
 
@@ -35,9 +41,7 @@ public:
 
 protected:
 
-  ch_simulator(const std::initializer_list<context*>& contexts);
-
-  ch_simulator(simulatorimpl* impl);  
+  ch_simulator(simulatorimpl* impl);
 
   simulatorimpl* impl_;
 };

@@ -28,8 +28,8 @@ int main() {
 
   assert(counter.io.out == 12);
 
-  ch_toVerilog("counter.v", counter);
-  ch_toFIRRTL("counter.fir", counter);
+  ch_verilog("counter.v", counter);
+  ch_firrtl("counter.fir", counter);
 
   int ret = system("iverilog counter_tb.v -o counter_tb.iv")
           | system("vvp counter_tb.iv");

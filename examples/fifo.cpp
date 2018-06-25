@@ -90,8 +90,8 @@ int main() {
     return (t <= 10);
   });
 
-  ch_toVerilog("fifo.v", fifo);
-  ch_toFIRRTL("fifo.fir", fifo);
+  ch_verilog("fifo.v", fifo);
+  ch_firrtl("fifo.fir", fifo);
 
   int ret = system("iverilog fifo_tb.v -o fifo_tb.iv")
           | system("vvp fifo_tb.iv");

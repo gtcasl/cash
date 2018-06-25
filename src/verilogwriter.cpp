@@ -1,6 +1,7 @@
 ﻿#include "verilogwriter.h"
 #include "verilog.h"
 #include "context.h"
+#include "deviceimpl.h"
 #include "bindimpl.h"
 #include "litimpl.h"
 #include "regimpl.h"
@@ -13,7 +14,6 @@
 #include "assertimpl.h"
 #include "timeimpl.h"
 #include "udfimpl.h"
-#include <cstring>
 
 using namespace ch::internal;
 
@@ -632,9 +632,6 @@ void verilogwriter::print_udf(std::ostream& out, udfimpl* node) {
     auto cd = reinterpret_cast<cdimpl*>(udfs->cd().impl());
     add_to_dic("clock", cd->clk().impl());
     add_to_dic("reset", cd->rst().impl());
-    if (udfs->has_enable()) {
-      add_to_dic("enable", udfs->enable().impl());
-    }
   }
 
   std::string code;
@@ -821,8 +818,8 @@ void verilogwriter::print_operator(std::ostream& out, ch_op op) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void ch::internal::toVerilog(std::ostream& out,
-                             const std::initializer_list<context*>& contexts) {
+void ch::internal::ch_verilog(std::ostream& out,
+                                const ch_device_list& devices) {
   {
     std::unordered_set<udf_iface*> visited;
 
@@ -843,14 +840,16 @@ void ch::internal::toVerilog(std::ostream& out,
       }
     };
 
-    for (auto ctx : contexts) {
+    for (auto dev : devices) {
+      auto ctx = dev.impl()->ctx();
       print_includes(ctx);
     }
   }
 
   {
     std::unordered_set<std::string_view> visited;
-    for (auto ctx : contexts) {
+    for (auto dev : devices) {
+      auto ctx = dev.impl()->ctx();
       verilogwriter writer(ctx);
       writer.print(out, visited);
     }

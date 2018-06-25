@@ -36,7 +36,7 @@ TEST_CASE("simulation", "[sim]") {
   SECTION("stats", "[stats]") {
     TESTX([]()->bool {
       ch_device<inverter> device;
-      ch_dumpStats(std::cout, device);
+      ch_stats(std::cout, device);
       return true;
     });
   }

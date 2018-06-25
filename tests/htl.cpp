@@ -8,6 +8,8 @@
 
 using namespace ch::htl;
 
+namespace {
+
 template <typename T, unsigned Delay>
 struct PipeTest {
   __io (
@@ -25,6 +27,8 @@ struct PipeTest {
     io.value = ch_udf<fMult<Delay>>(x, y, io.deq.ready);
   }
 };
+
+}
 
 TEST_CASE("htl", "[htl]") {
   SECTION("pipe", "[pipe]") {
@@ -93,21 +97,25 @@ TEST_CASE("htl", "[htl]") {
   }
   SECTION("hmux", "[hmux]") {
     TEST([]()->ch_bool {
-      auto y = ch_hmux(0010_b, 0xA_h, 0xB_h, 0xC_h, 0xD_h);
+      ch_bit4 k(0010_b);
+      auto y = ch_hmux(k, 0xA_h, 0xB_h, 0xC_h, 0xD_h);
       return (y == 0xC_h);
     });
     TEST([]()->ch_bool {
-      auto y = ch_hmux(1000_b, 0xA_h, 0xB_h, 0xC_h, 0xD_h);
+      ch_bit4 k(1000_b);
+      auto y = ch_hmux(k, 0xA_h, 0xB_h, 0xC_h, 0xD_h);
       return (y == 0xA_h);
     });
     TEST([]()->ch_bool {
+           ch_bit4 k(0010_b);
       ch_vec<ch_bit4, 4> x{0xA_h, 0xB_h, 0xC_h, 0xD_h};
-      auto y = ch_hmux(0010_b, x);
+      auto y = ch_hmux(k, x);
       return (y == 0xC_h);
     });
     TEST([]()->ch_bool {
+           ch_bit4 k(1000_b);
       ch_vec<ch_bit4, 4> x{0xA_h, 0xB_h, 0xC_h, 0xD_h};
-      auto y = ch_hmux(1000_b, x);
+      auto y = ch_hmux(k, x);
       return (y == 0xA_h);
     });
   }

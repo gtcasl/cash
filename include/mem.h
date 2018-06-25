@@ -74,22 +74,22 @@ public:
     : mem_(width_v<T>, N, false, toByteVector(init_data, data_width, N), sloc)
   {}
 
-  template <typename U, std::size_t M,
-            CH_REQUIRE_0(is_bitvector_array_type_v<U>)>
+  template <typename U, std::size_t M>
   explicit ch_rom(const std::array<U, M>& init_data, CH_SLOC)
-    : mem_(width_v<T>, N, false, toByteVector(init_data, data_width, N), sloc)
-  {}
+    : mem_(width_v<T>, N, false, toByteVector(init_data, data_width, N), sloc) {
+    static_assert(is_bitvector_array_type_v<U>, "invalid type");
+  }
 
-  template <typename U,
-            CH_REQUIRE_0(is_bitvector_array_type_v<U>)>
+  template <typename U>
   explicit ch_rom(const std::vector<U>& init_data, CH_SLOC)
-    : mem_(width_v<T>, N, false, toByteVector(init_data, data_width, N), sloc)
-  {}
+    : mem_(width_v<T>, N, false, toByteVector(init_data, data_width, N), sloc) {
+    static_assert(is_bitvector_array_type_v<U>, "invalid type");
+  }
 
-  template <typename U,
-            CH_REQUIRE_0(is_logic_convertible_v<U, addr_width>)>
+  template <typename U>
   auto read(const U& addr, CH_SLOC) const {
-    auto laddr = get_lnode<U, addr_width>(addr);
+    static_assert(is_bit_convertible_v<U, addr_width>, "invalid type");
+    auto laddr = to_lnode<addr_width>(addr, sloc);
     return make_type<T>(mem_.read(laddr, sloc), sloc);
   }
 
@@ -107,30 +107,29 @@ public:
 
   ch_mem(CH_SLOC) : mem_(width_v<T>, N, true, {}, sloc) {}
 
-  template <typename U,
-            CH_REQUIRE_0(is_logic_convertible_v<U, addr_width>)>
+  template <typename U>
   auto read(const U& addr, CH_SLOC) const {
-    auto laddr = get_lnode<U, addr_width>(addr);
+    static_assert(is_bit_convertible_v<U, addr_width>, "invalid type");
+    auto laddr = to_lnode<addr_width>(addr, sloc);
     return make_type<T>(mem_.read(laddr, sloc), sloc);
   }
 
-  template <typename U, typename V,
-            CH_REQUIRE_0(is_logic_convertible_v<U, addr_width>),
-            CH_REQUIRE_0(std::is_constructible_v<T, V>)>
+  template <typename U, typename V>
   void write(const U& addr, const V& value, CH_SLOC) {
-    auto l_addr  = get_lnode<U, addr_width>(addr);
-    auto l_value = get_lnode<T, data_width>(value);
+    static_assert(is_bit_convertible_v<U, addr_width>, "invalid type");
+    static_assert(std::is_constructible_v<T, V>, "invalid type");
+    auto l_addr  = to_lnode<addr_width>(addr, sloc);
+    auto l_value = to_lnode<T>(value, sloc);
     mem_.write(l_addr, l_value, bitvector(1, 1), sloc);
   }
 
-  template <typename U, typename V, typename E,
-            CH_REQUIRE_0(is_logic_convertible_v<U, addr_width>),
-            CH_REQUIRE_0(std::is_constructible_v<T, V>),
-            CH_REQUIRE_0(is_logic_convertible_v<E>)>
+  template <typename U, typename V, typename E>
   void write(const U& addr, const V& value, const E& enable, CH_SLOC) {
-    static_assert(1 == width_v<E>, "invalid predicate size");
-    auto l_addr   = get_lnode<U, addr_width>(addr);
-    auto l_value  = get_lnode<T, data_width>(value);
+    static_assert(is_bit_convertible_v<U, addr_width>, "invalid type");
+    static_assert(std::is_constructible_v<T, V>, "invalid type");
+    static_assert(is_bit_convertible_v<E, 1>, "invalid type");
+    auto l_addr   = to_lnode<addr_width>(addr, sloc);
+    auto l_value  = to_lnode<T>(value, sloc);
     auto l_enable = get_lnode(enable);
     mem_.write(l_addr, l_value, l_enable, sloc);
   }

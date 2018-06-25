@@ -38,6 +38,31 @@ scalar_buffer::scalar_buffer(bitvector&& data)
   , size_(value_.size())
 {}
 
+scalar_buffer& scalar_buffer::operator=(const scalar_buffer& rhs) {
+  this->copy(rhs);
+  return *this;
+}
+
+scalar_buffer& scalar_buffer::operator=(scalar_buffer&& rhs) {
+  this->copy(rhs);
+  return *this;
+}
+
+void scalar_buffer::write(uint32_t dst_offset,
+                          const bitvector& src,
+                          uint32_t src_offset,
+                          uint32_t length) {
+  this->write(dst_offset, src.words(), src.cbsize(), src_offset, length);
+}
+
+void scalar_buffer::copy(const scalar_buffer& rhs) {
+  this->write(0,
+              rhs.data().words(),
+              rhs.data().cbsize(),
+              rhs.offset(),
+              rhs.size());
+}
+
 scalar_buffer::scalar_buffer(uint32_t size,
                              const scalar_buffer_ptr& buffer,
                              uint32_t offset)

@@ -11,16 +11,17 @@ class context;
 class device {
 public:
 
-  device(const std::type_index& signature, const std::string& name);
+  device();
 
   virtual ~device();
 
-  device(device&& rhs) : impl_(std::move(rhs.impl_)) {}
+  device(const device& rhs);
 
-  device& operator=(device&& rhs) {
-    impl_ = std::move(rhs.impl_);
-    return *this;
-  }
+  device(device&& rhs);
+
+  device& operator=(const device& rhs);
+
+  device& operator=(device&& rhs);
 
   auto impl() const {
     return impl_;
@@ -28,14 +29,50 @@ public:
 
 protected:
 
-  device(const device& rhs) = delete;
-
-  device& operator=(const device& rhs) = delete;
+  device(const std::type_index& signature, const std::string& name);
 
   void compile();
 
   deviceimpl* impl_;
+
+  template <typename T> friend class device_base;
 };
+
+///////////////////////////////////////////////////////////////////////////////
+
+class ch_device_list {
+public:
+  ch_device_list() {}
+
+  ch_device_list(const std::initializer_list<device>& devices)
+    : container_(devices)
+  {}
+
+  void push_back(const device& device) {
+    container_.push_back(device);
+  }
+
+  const device& operator[](size_t index) const {
+    return container_[index];
+  }
+
+  auto begin() const {
+    return container_.begin();
+  }
+
+  auto end() const {
+    return container_.end();
+  }
+
+  auto size() const {
+    return container_.size();
+  }
+
+protected:
+  std::vector<device> container_;
+};
+
+///////////////////////////////////////////////////////////////////////////////
 
 template <typename T>
 class device_base : public device {
@@ -114,9 +151,9 @@ protected:
   ch_device& operator=(const ch_device& rhs) = delete;
 };
 
-context* get_ctx(const device& device);
+///////////////////////////////////////////////////////////////////////////////
 
-void ch_dumpStats(std::ostream& out, const device& device);
+void ch_stats(std::ostream& out, const device& device);
 
 }
 }

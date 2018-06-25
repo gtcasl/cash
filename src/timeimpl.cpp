@@ -1,6 +1,6 @@
 #include "timeimpl.h"
 #include "context.h"
-#include "logic.h"
+#include "bit.h"
 
 using namespace ch::internal;
 
@@ -20,5 +20,5 @@ void timeimpl::eval() {
 ///////////////////////////////////////////////////////////////////////////////
 
 ch_bit<64> ch::internal::ch_time(const source_location& sloc) {
-  return make_type<ch_bit<64>>(ctx_curr()->time(sloc));
+  return make_type<ch_bit<64>>(ctx_curr()->time(sloc), sloc);
 }

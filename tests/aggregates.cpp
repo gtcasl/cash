@@ -1,5 +1,7 @@
 #include "common.h"
 
+namespace {
+
 __enum (my_enum, 4, (
   (idle, 0),
   execute,
@@ -79,6 +81,10 @@ __struct (sd3_t, (
   (sd1_t)   c,
   (ch_bit4) d
 ));
+
+__union (u4_t, (
+  (ch_bit4) a
+  ));
  
 __union (u2_4_t, (
   (ch_bit2) a,
@@ -99,23 +105,31 @@ using v2_1_t = ch_vec<ch_bit2, 1>;
 using v2_2_t = ch_vec<ch_bit2, 2>;
 using v2_3_t = ch_vec<ch_bit2, 3>;
 
-/*__struct (W_t, (
-  (v2_1_t) a
-));*/
+}
 
 TEST_CASE("aggregates", "[aggregates]") {
   SECTION("structs", "[struct]") {
     TEST([]()->ch_bool {
-      s1_t s1;
-      s2_t s2(10_h);
-      s3_t s3(100_h);
-      s4_t s4(0010_h);
+      s1_t s1(1_h);
+      s2_t s2(1_h, 0_h);
+      s3_t s3(1_h, 0_h, 0_h);
+      s4_t s4(0_h, 0_h, 1_h, 0_h);
            
       s1.a = 1_h;
       s3.c = 1_h;           
       s4.b = 1_h;
            
       return ch_cat(s1, s4) == ch_cat(s3, s2);
+    });
+    TEST([]()->ch_bool {
+      ch_bit4 a(3);
+      s1_t s1(a), s2(0011_b);
+      return (s1.as_bit() == s2.as_bit());
+    });
+    TEST([]()->ch_bool {
+      ch_bit4 a(3);
+      u4_t u1(a), u2(0011_b);
+      return (u1.as_bit() == u2.as_bit());
     });
     TEST([]()->ch_bool {
       s2_t s2(1_b4, 0_b4);
@@ -126,15 +140,15 @@ TEST_CASE("aggregates", "[aggregates]") {
       return (s3.as_bit() == 0x321_h12);
     });
     TEST([]()->ch_bool {
-      sd1_t a(21_h), b(2_h, 1_h);
-      return (a.as_bit() == b.as_bit());
+      sd1_t a{1_h, {2_h}};
+      return (a.as_bit() == 12_h);
     });
     TEST([]()->ch_bool {
-      sd3_t a(321_h), b(3_h, 21_h);
-      return (a.as_bit() == b.as_bit());
+      sd3_t a{3_h, {2_h, {1_h}}};
+      return (a.as_bit() == 321_h);
     });
     TEST([]()->ch_bool {
-      sd3_t a(321_h), b(a);
+      sd3_t a{3_h, {2_h, {1_h}}}, b(a);
       return (a.as_bit() == b.as_bit());
     });
     TEST([]()->ch_bool {
@@ -144,14 +158,14 @@ TEST_CASE("aggregates", "[aggregates]") {
       auto force_move_b = []() {
         return ch_bit4{2};
       };
-      s2_t s{0};
+      s2_t s{0_h, 0_h};
       s.a = force_move_a();
       s.b = force_move_b();
       return (s.as_bit() == 21_h);
     });
     TEST([]()->ch_bool {
       auto force_move_assignment = []() {
-        return sd3_t{321_h};
+        return sd3_t{3_h, {2_h, {1_h}}};
       };
       sd3_t a;
       a = force_move_assignment();
@@ -159,7 +173,7 @@ TEST_CASE("aggregates", "[aggregates]") {
     });
     TEST([]()->ch_bool {
       auto force_move_assignment = []() {
-        return sd3_t{321_h};
+        return sd3_t{3_h, {2_h, {1_h}}};
       };
       sd3_t a(force_move_assignment());
       return (a.as_bit() == 321_h);
@@ -168,24 +182,24 @@ TEST_CASE("aggregates", "[aggregates]") {
   
   SECTION("unions", "[union]") {
     TEST([]()->ch_bool {
-      u2_4_t u2(0);
+      u2_4_t u2 = {0_b4};
       u2.a = 1;
       return (u2.b == 1);
     });
     TEST([]()->ch_bool {
-      u2_4_t u2(0);
+      u2_4_t u2 = {0_b4};
       u2.b = 1;
       return (u2.a == 1);
     });
     TEST([]()->ch_bool {
-      u3_t u3(0);
+      u3_t u3 = {0_b8};
       u3.b = 01010101_b;
       u3.a = 11_b;
       u3.c.slice<2>(2) = 00_b;
       return (u3.as_bit() == 01010011_b);
     });    
     TEST([]()->ch_bool {
-      u2_4_t a(3);
+      u2_4_t a = {11_b4};
       return (a.as_bit() == 3);
     });
     TEST([]()->ch_bool {

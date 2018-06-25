@@ -1,7 +1,7 @@
 #pragma once
 
 #include "common.h"
-#include "arithm.h"
+#include "traits.h"
 
 namespace ch {
 namespace internal {

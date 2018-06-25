@@ -65,7 +65,7 @@ std::string ch::internal::identifier_from_typeid(const std::string& name) {
   std::string ret(demangled);
   ::free(demangled);
   // remove namespace prefix
-  auto tmp = std::regex_replace(ret, std::regex("[a-zA-Z_][a-zA-Z0-9_]*::"), "");
+  auto tmp = std::regex_replace(ret, std::regex("[^<>:]*::"), "");
   // replace template arguments
   ret.clear();
   std::regex_replace(std::back_inserter(ret), tmp.begin(), tmp.end(),

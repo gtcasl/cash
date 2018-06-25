@@ -2,7 +2,7 @@
 
 #include "lnodeimpl.h"
 #include "cdimpl.h"
-#include "arithm.h"
+#include "traits.h"
 
 namespace ch {
 namespace internal {
@@ -24,9 +24,11 @@ public:
   
 protected:
 
-  aluimpl(context* ctx, ch_op op, uint32_t size, const lnode& lhs);
+  aluimpl(context* ctx, ch_op op, uint32_t size, const lnode& lhs,
+          const source_location& sloc);
 
-  aluimpl(context* ctx, ch_op op, uint32_t size, const lnode& lhs, const lnode& rhs);
+  aluimpl(context* ctx, ch_op op, uint32_t size, const lnode& lhs, const lnode& rhs,
+          const source_location& sloc);
 
   ~aluimpl() {}
 

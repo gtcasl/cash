@@ -11,6 +11,8 @@ using namespace ch::literals;
 using namespace ch::sim;
 using namespace ch::htl;
 
+namespace {
+
 __struct (Q_t, (
   (ch_bit2) a,
   (ch_bit2) b
@@ -169,13 +171,20 @@ struct FilterBlock {
   ch_module<Filter<T>> f1_, f2_;
 };
 
+__union(U_t, (
+  (ch_bit1) q,
+  (ch_bit2) p
+));
+
+}
+
 struct Dogfood {
   __io (
     __in(ch_uint4) in,
     __out(ch_bool) out
   );
   void describe() {
-    auto clk  = ch_case(ch_time(), 8, 1_b)(6, 1)(4, 1)(2, 1)(0);
+    /*auto clk  = ch_case(ch_time(), 8, 1_b)(6, 1)(4, 1)(2, 1)(0);
     auto rst  = ch_case(ch_time(), 5, 1_b)(0);
     auto next = ch_case(ch_time(), 8, 0011_b)(7, 0)(6, 0)(5, 1)(4, 2)(3, 3)(2, 1)(1, 2)(0);
     auto e = ch_case(ch_time(), 9, 0011_b)(8, 0)(7, 0)(6, 0)(5, 2)(4, 3)(3, 1)(2, 2)(0);
@@ -186,7 +195,21 @@ struct Dogfood {
 
     ch_print("t={0}, clk={1}, rst={2}, next={3}, out={4}, expected={5}", ch_time(), clk, rst, next, r, e);
 
-    io.out = (r == e);
+    io.out = (r == e);*/
+
+    /*ch_uint8 a(5*4);
+    auto c = ch_int32(0xf0000000_h) >> a;
+    io.out = (c == 0xffffff00_h);*/
+
+    /*ch_reg<U_t> c(0_b);
+    ch_reg<U_t> a(0);
+    a <<= U_t{10_b};
+    auto e = ch_case(ch_time(), 3, 10_b)(a);
+    //ch_print("t={0}, a={1}, e={2}", ch_time(), a, e);
+    io.out = (a.as_bit() == e);*/
+
+    sd3_t a{3_h, {2_h, {1_h}}};
+    io.out = (a.as_bit() == 321_h);
     //io.out = true;
   }
 };
@@ -194,7 +217,7 @@ struct Dogfood {
 int main() {
   {
     ch_device<Dogfood> device;
-    ch_toVerilog("test.v", device);
+    //ch_verilog("test.v", device);
     ch_simulator sim(device);
     device.io.in = 0xA;
     sim.run([&](ch_tick t)->bool {
@@ -267,16 +290,16 @@ int main() {
     t = sim.step(t, 4);
 
     ret &= !queue.io.deq.valid; // empty
-    ch_toVerilog("queue.v", queue);
+    ch_verilog("queue.v", queue);
     ret &= (checkVerilog("queue_tb.v"));
-    ch_toFIRRTL("queue.fir", queue);
+    ch_firrtl("queue.fir", queue);
 
     assert(!!ret);
   }
 
   {
     ch_device<QueueWrapper<ch_bit4, 2>> queue;
-    ch_toVerilog("queue.v", queue);
+    ch_verilog("queue.v", queue);
   }
 
   {
@@ -285,7 +308,7 @@ int main() {
     foo.io.in2 = 2;
     ch_simulator sim(foo);
     sim.run(1);
-    ch_toVerilog("foo.v", foo);
+    ch_verilog("foo.v", foo);
     std::cout << "foo.io.out=" << foo.io.out << std::endl;
     assert(3 == foo.io.out);
   }

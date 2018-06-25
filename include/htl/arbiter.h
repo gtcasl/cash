@@ -13,13 +13,13 @@ template <unsigned N>
 struct ch_rrArbiter {
   __io (
     __in(ch_vec<ch_bool, N>) in,
-    __out(ch_uint<N>) grant
+    __out(ch_bit<N>) grant
   );
 
   void describe() {
     ch_reg<ch_bool> state[N][N];
-    ch_uint<N> dis[N];
-    ch_uint<N> grant;
+    ch_bit<N> dis[N];
+    ch_bit<N> grant;
     for (unsigned i = 0; i < N; ++i) {
       for (unsigned j = 0; j < i; ++j) {
         dis[j][i] = io.in[i] && ~state[j][i];
@@ -43,14 +43,14 @@ struct ch_xbar_switch {
   using arbiter_type = Arbiter;
   using in_io = ch_vec<ch_deq_io<T>, I>;
   __inout (out_io, ch_enq_io<T>, (
-    __out(ch_uint<I>) grant
+    __out(ch_bit<I>) grant
   ));
   __io (
     (in_io)  in,
     (out_io) out
   );
   void describe() {
-    auto grant = ch_uint<I>(1) << ch_counter<I>(io.out.ready);
+    auto grant = ch_bit<I>(1) << ch_counter<I>(io.out.ready);
     for (unsigned i = 0; i < I; ++i) {
       xbar_.io.in[i].data  = io.in[i].data;
       xbar_.io.in[i].valid = io.in[i].valid;

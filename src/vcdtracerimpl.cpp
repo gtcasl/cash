@@ -46,14 +46,29 @@ void vcdtracerimpl::eval(ch_tick t) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+
 ch_vcdtracer::ch_vcdtracer(std::ostream& out,
-                           const std::initializer_list<context*>& contexts)
-  : ch_tracer(new vcdtracerimpl(out, contexts))
+                           const ch_device_list& devices)
+  : ch_tracer(new vcdtracerimpl(out, devices))
 {}
 
 ch_vcdtracer::ch_vcdtracer(const std::string& file,
-                           const std::initializer_list<context*>& contexts)
-  : ch_tracer(new vcdtracerimpl(file, contexts))
+                           const ch_device_list& devices)
+  : ch_tracer(new vcdtracerimpl(file, devices))
 {}
 
+ch_vcdtracer::ch_vcdtracer(const ch_vcdtracer& tracer) : ch_tracer(tracer) {}
+
+ch_vcdtracer::ch_vcdtracer(ch_vcdtracer&& tracer) : ch_tracer(std::move(tracer)) {}
+
 ch_vcdtracer::~ch_vcdtracer() {}
+
+ch_vcdtracer& ch_vcdtracer::operator=(const ch_vcdtracer& tracer) {
+  ch_tracer::operator=(tracer);
+  return *this;
+}
+
+ch_vcdtracer& ch_vcdtracer::operator=(ch_vcdtracer&& tracer) {
+  ch_tracer::operator=(std::move(tracer));
+  return *this;
+}

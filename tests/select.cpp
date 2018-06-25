@@ -14,7 +14,7 @@ TEST_CASE("conditionals", "[conditionals]") {
     });
     TEST([]()->ch_bool {
       ch_int4 a(0), b(1), c;
-      c = ch_sel<ch_bit4>(a > b, 3, 2);
+      c = ch_sel<ch_int4>(a > b, 3, 2);
       return (c == 2);
     });
     TEST([]()->ch_bool {
@@ -33,7 +33,7 @@ TEST_CASE("conditionals", "[conditionals]") {
       return (c == 7);
     });
     TEST([]()->ch_bool {
-      ch_int4 a(0), b(1), c;
+      ch_uint4 a(0), b(1), c;
       c = ch_sel(a < b, 3_h4, 5_h4);
       return (c == 3);
     });
@@ -267,7 +267,7 @@ TEST_CASE("conditionals", "[conditionals]") {
     TEST([]()->ch_bool {
       ch_int8 a(1), b(1), x, y;
       __if (a == 1) {
-        ch_tie(y, x) = 1;
+        ch_bind(y, x) = 1;
         __if (b == 0) {
           x = 1;
         } __elif (b == 1) {

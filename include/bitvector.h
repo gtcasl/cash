@@ -14,16 +14,22 @@ template <> struct is_bitvector_array_type<uint64_t> : std::true_type {};
 template <typename T>
 inline constexpr bool is_bitvector_array_type_v = is_bitvector_array_type<T>::value;
 
-template <typename T> struct is_bitvector_convertible_impl : std::false_type {};
-template <> struct is_bitvector_convertible_impl <bool> : std::true_type {};
-template <> struct is_bitvector_convertible_impl <int8_t> : std::true_type {};
-template <> struct is_bitvector_convertible_impl <uint8_t> : std::true_type {};
-template <> struct is_bitvector_convertible_impl <int16_t> : std::true_type {};
-template <> struct is_bitvector_convertible_impl <uint16_t> : std::true_type {};
-template <> struct is_bitvector_convertible_impl <int32_t> : std::true_type {};
-template <> struct is_bitvector_convertible_impl <uint32_t> : std::true_type {};
-template <> struct is_bitvector_convertible_impl <int64_t> : std::true_type {};
-template <> struct is_bitvector_convertible_impl <uint64_t> : std::true_type {};
+template <typename T> struct is_bitvector_extended_type_impl : std::false_type {};
+
+template <>
+struct is_bitvector_extended_type_impl<std::initializer_list<uint32_t>> : std::true_type {};
+
+template <typename T, std::size_t N>
+struct is_bitvector_extended_type_impl<std::array<T, N>> : std::true_type {};
+
+template <typename T>
+struct is_bitvector_extended_type_impl<std::vector<T>> : std::true_type {};
+
+template <>
+struct is_bitvector_extended_type_impl<std::string> : std::true_type {};
+
+template <typename T>
+inline constexpr bool is_bitvector_extended_type_v = is_bitvector_extended_type_impl<T>::value;
 
 class bitvector {
 public:
@@ -446,15 +452,15 @@ public:
 
   explicit bitvector(uint32_t size, uint64_t value);
 
-  template <typename T, std::size_t N,
-            CH_REQUIRE_0(is_bitvector_array_type_v<T>)>
+  template <typename T, std::size_t N>
   explicit bitvector(uint32_t size, const std::array<T, N>& value) : bitvector(size) {
+    static_assert(is_bitvector_array_type_v<T>, "invalid array type");
     this->write(0, value.data(), N * sizeof(T), 0, N * CH_WIDTH_OF(T));
   }
 
-  template <typename T,
-            CH_REQUIRE_0(is_bitvector_array_type_v<T>)>
+  template <typename T>
   explicit bitvector(uint32_t size, const std::vector<T>& value) : bitvector(size) {
+    static_assert(is_bitvector_array_type_v<T>, "invalid array type");
     this->write(0, value.data(), value.size() * sizeof(T), 0, value.size() * CH_WIDTH_OF(T));
   }
 
@@ -496,16 +502,16 @@ public:
 
   bitvector& operator=(uint64_t value);
 
-  template <typename T, std::size_t N,
-            CH_REQUIRE_0(is_bitvector_array_type_v<T>)>
+  template <typename T, std::size_t N>
   bitvector& operator=(const std::array<T, N>& value) {
+    static_assert(is_bitvector_array_type_v<T>, "invalid array type");
     this->write(0, value.data(), N * sizeof(T), 0, N * CH_WIDTH_OF(T));
     return *this;
   }
 
-  template <typename T,
-            CH_REQUIRE_0(is_bitvector_array_type_v<T>)>
+  template <typename T>
   bitvector& operator=(const std::vector<T>& value) {
+    static_assert(is_bitvector_array_type_v<T>, "invalid array type");
     this->write(0, value.data(), value.size() * sizeof(T), 0, value.size() * CH_WIDTH_OF(T));
     return *this;
   }
@@ -684,7 +690,7 @@ public:
     return this->operator uint64_t();
   }
 
-  void randomize();
+  void deadbeef();
   
 protected:
   

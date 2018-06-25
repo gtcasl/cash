@@ -62,8 +62,8 @@ int main() {
 
   assert(gcd.io.out.data == 16);
 
-  ch_toVerilog("gcd.v", gcd);
-  ch_toFIRRTL("gcd.fir", gcd);
+  ch_verilog("gcd.v", gcd);
+  ch_firrtl("gcd.fir", gcd);
 
   int ret = system("iverilog gcd_tb.v -o gcd_tb.iv")
           | system("vvp gcd_tb.iv");

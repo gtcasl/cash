@@ -51,8 +51,8 @@ int main() {
 
   assert(vending.io.valid);
 
-  ch_toVerilog("vending.v", vending);
-  ch_toFIRRTL("vending.fir", vending);
+  ch_verilog("vending.v", vending);
+  ch_firrtl("vending.fir", vending);
 
   int ret = system("iverilog vending_tb.v -o vending_tb.iv")
           | system("vvp vending_tb.iv");

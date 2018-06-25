@@ -431,7 +431,7 @@ void bitvector::write(
   }
 }
 
-void bitvector::randomize() {
+void bitvector::deadbeef() {
   for (uint32_t i = 0, n = this->num_words(); i < n; ++i) {
     words_[i] = 0xdeadbeef;
   }

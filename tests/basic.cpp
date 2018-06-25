@@ -1,5 +1,7 @@
 #include "common.h"
 
+namespace {
+
 struct TestAssign {
   __io (
     __in(ch_bit4) in,
@@ -34,6 +36,8 @@ struct TestAssign3 {
   }
 };
 
+}
+
 TEST_CASE("basics", "[basics]") {
   SECTION("assign", "[assign]") {
     TEST([]()->ch_bool {
@@ -45,7 +49,7 @@ TEST_CASE("basics", "[basics]") {
 
     TEST([]()->ch_bool {
       ch_uint8 a(0x4_h);
-      a = 0xf_h;
+      a = 0xf_h8;
       return (a == 15);
     });
 

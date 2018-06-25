@@ -65,8 +65,9 @@ static const char* parse_format_index(fmtinfo_t* out, const char* str) {
 
 printimpl::printimpl(context* ctx,
                      const std::string& format,
-                     const std::initializer_list<lnode>& args)
-  : ioimpl(ctx, type_print, 0)
+                     const std::initializer_list<lnode>& args,
+                     const source_location& sloc)
+  : ioimpl(ctx, type_print, 0, "", sloc)
   , format_(format)
   , predicated_(false) {
   if (ctx_->conditional_enabled(this)) {
@@ -151,7 +152,8 @@ static int getFormatMaxIndex(const char* format) {
 
 void ch::internal::createPrintNode(
     const std::string& format,
-    const std::initializer_list<lnode>& args) {
+    const std::initializer_list<lnode>& args,
+    const source_location& sloc) {
   // printing is only enabled in debug mode
   if (0 == platform::self().dbg_level())
     return;
@@ -161,5 +163,5 @@ void ch::internal::createPrintNode(
   CH_CHECK(max_index < (int)args.size(), "print format index out of range");
 
   // create print node
-  ctx_curr()->create_node<printimpl>(format, args);
+  ctx_curr()->create_node<printimpl>(format, args, sloc);
 }

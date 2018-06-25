@@ -1,6 +1,6 @@
 ﻿#pragma once
 
-#include "logic.h"
+#include "bit.h"
 
 namespace ch {
 namespace internal {
@@ -54,9 +54,7 @@ public:
     : if_(p_if)
   {}
 
-  template <typename P>
-  if_body_t operator,(const ch_logic_base<P>& pred) {
-    static_assert(1 == width_v<P>, "invalid predicate size");
+  if_body_t operator,(const ch_bit<1>& pred) {
     return if_body_t(if_, get_lnode(pred));
   }
 
@@ -74,9 +72,7 @@ inline if_cond_t if_body_t::operator,(const fvoid_t& body) {
   return if_cond_t(if_);
 }
 
-template <typename P>
-if_body_t ch_if(const ch_logic_base<P>& pred, CH_SLOC) {
-  static_assert(1 == width_v<P>, "invalid predicate size");
+inline if_body_t ch_if(const ch_bit<1>& pred, CH_SLOC) {
   return if_body_t(std::make_shared<if_t>(sloc), get_lnode(pred));
 }
 

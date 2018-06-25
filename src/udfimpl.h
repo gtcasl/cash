@@ -61,14 +61,6 @@ public:
     return srcs_[cd_idx_];
   }
 
-  bool has_enable() const {
-    return (enable_idx_ != -1);
-  }
-
-  const lnode& enable() const {
-    return srcs_[enable_idx_];
-  }
-
   void eval() override;
 
 protected:
@@ -81,7 +73,6 @@ protected:
   ~udfsimpl();
 
   int cd_idx_;
-  int enable_idx_;
   std::vector<bitvector> pipe_;
 
   friend class context;

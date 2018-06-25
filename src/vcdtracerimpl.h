@@ -8,12 +8,12 @@ namespace internal {
 class vcdtracerimpl : public tracerimpl {
 public:
 
-  vcdtracerimpl(std::ostream& out, const std::initializer_list<context*>& contexts)
-    : tracerimpl(out, contexts)
+  vcdtracerimpl(std::ostream& out, const ch_device_list& devices)
+    : tracerimpl(out, devices)
   {}
 
-  vcdtracerimpl(const std::string& file, const std::initializer_list<context*>& contexts)
-    : tracerimpl(file, contexts)
+  vcdtracerimpl(const std::string& file, const ch_device_list& devices)
+    : tracerimpl(file, devices)
   {}
 
   ~vcdtracerimpl() {}

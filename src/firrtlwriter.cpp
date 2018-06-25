@@ -1,6 +1,7 @@
 #include "firrtlwriter.h"
 #include "firrtl.h"
 #include "context.h"
+#include "deviceimpl.h"
 #include "bindimpl.h"
 #include "litimpl.h"
 #include "regimpl.h"
@@ -12,7 +13,6 @@
 #include "aluimpl.h"
 #include "assertimpl.h"
 #include "timeimpl.h"
-#include <cstring>
 
 using namespace ch::internal;
 
@@ -856,7 +856,7 @@ void firrtlwriter::print_value(const bitvector& value,
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void ch::internal::toFIRRTL(std::ostream& out, context* ctx) {
+void ch::internal::ch_firrtl(std::ostream& out, const device& device) {
   firrtlwriter writer(out);
-  writer.print(ctx);
+  writer.print(device.impl()->ctx());
 }

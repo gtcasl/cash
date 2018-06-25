@@ -1,6 +1,6 @@
 #pragma once
 
-#include "logic.h"
+#include "bit.h"
 
 namespace ch {
 namespace internal {
@@ -10,11 +10,11 @@ public:
   using logic_buffer::value_;
 
   explicit reg_buffer(uint32_t size,
-                      const source_location& sloc = source_location(),
+                      const source_location& sloc,
                       const std::string& name = "");
 
   explicit reg_buffer(const lnode& data,
-                      const source_location& sloc = source_location(),
+                      const source_location& sloc,
                       const std::string& name = "");
 
   void write(uint32_t dst_offset,
@@ -41,16 +41,17 @@ public:
 
   ch_reg_impl(ch_reg_impl&& rhs) : base(std::move(rhs.buffer_)) {}
 
-  template <typename U,
-            CH_REQUIRE_0(std::is_constructible_v<T, U>)>
-  explicit ch_reg_impl(const U& init, CH_SLOC)
-    : base(std::make_shared<reg_buffer>(get_lnode<U, T>(init), sloc))
+  template <typename... Args,
+            CH_REQUIRE_0(std::is_constructible_v<T, Args...>)>
+  ch_reg_impl(const Args&... args)
+    : base(std::make_shared<reg_buffer>(logic_accessor::data(T(args...)),
+                                        source_location()))
   {}
 
-  template <typename U,
-            CH_REQUIRE_0(std::is_constructible_v<T, U>)>
+  template <typename U>
   void operator <<=(const U& rhs) const {
-    logic_accessor::buffer(*this)->write(get_lnode<U, T>(rhs));
+    static_assert(std::is_constructible_v<T, U>, "invalid type");
+    this->buffer()->write(0, to_lnode<T>(rhs, source_location()), 0, width_v<T>);
   }  
 };
 
@@ -69,9 +70,10 @@ void ch_popcd();
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename R, typename T,
-          CH_REQUIRE_0(std::is_constructible_v<R, T>)>
+template <typename R, typename T>
 auto ch_delay(const T& rhs, uint32_t delay = 1, CH_SLOC) {
+  static_assert(is_logic_type_v<R>, "invalid type");
+  static_assert(std::is_constructible_v<R, T>, "invalid type");
   R ret(rhs, sloc);
   for (unsigned i = 0; i < delay; ++i) {
     ch_reg<R> reg(sloc);
@@ -81,9 +83,9 @@ auto ch_delay(const T& rhs, uint32_t delay = 1, CH_SLOC) {
   return ret;
 }
 
-template <typename T,
-          CH_REQUIRE_0(is_logic_convertible_v<T>)>
+template <typename T>
 auto ch_delay(const T& rhs, uint32_t delay = 1, CH_SLOC) {
+  static_assert(is_object_type_v<T>, "invalid type");
   return ch_delay<logic_type_t<T>, T>(rhs, delay, sloc);
 }
 

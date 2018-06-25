@@ -20,7 +20,8 @@ int char2int(char x, int base);
 
 template <typename T>
 T sign_ext(T x, unsigned bits) {
-  assert(sizeof(T) * 8 > bits);
+  if (sizeof(T) * 8 <= bits)
+    return x;
   T k = (T(1) << bits) - 1;
   T m = T(1) << (bits - 1);
   T n = x & k;

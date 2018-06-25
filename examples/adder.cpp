@@ -15,9 +15,9 @@ struct Adder {
   );
 
   void describe() {
-    auto sum = ch_cat(0_b, io.lhs) + io.rhs + io.cin;
-    io.out  = ch_slice<N>(sum);
-    io.cout = sum[N];
+    auto sum = ch_pad<N+1>(io.lhs) + io.rhs + io.cin;
+    io.out  = ch_slice<N>(sum).as_uint();
+    io.cout = sum[N].as_uint();
   }
 };
 
@@ -38,8 +38,8 @@ int main() {
   assert(adder.io.out == 1);
   assert(adder.io.cout == 1);
 
-  ch_toVerilog("adder.v", adder);
-  ch_toFIRRTL("adder.fir", adder);
+  ch_verilog("adder.v", adder);
+  ch_firrtl("adder.fir", adder);
 
   int ret = system("iverilog adder_tb.v -o adder_tb.iv")
           | system("vvp adder_tb.iv");

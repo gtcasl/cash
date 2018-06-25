@@ -21,11 +21,12 @@ void clock_driver::flip() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-simulatorimpl::simulatorimpl(const std::initializer_list<context*>& contexts)
+simulatorimpl::simulatorimpl(const ch_device_list& devices)
   : clk_driver_(true)
   , reset_driver_(false) {
   // enqueue all contexts
-  for (auto ctx : contexts) {
+  for (auto dev : devices) {
+    auto ctx = dev.impl()->ctx();
     auto ret = contexts_.emplace(ctx);
     if (ret.second) {
       ctx->acquire();
@@ -121,8 +122,10 @@ void simulatorimpl::run(ch_tick ticks) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-ch_simulator::ch_simulator(const std::initializer_list<context*>& contexts) {
-  impl_ = new simulatorimpl(contexts);
+ch_simulator::ch_simulator() : impl_(nullptr) {}
+
+ch_simulator::ch_simulator(const ch_device_list& devices) {
+  impl_ = new simulatorimpl(devices);
   impl_->acquire();
 }
 
@@ -132,11 +135,16 @@ ch_simulator::ch_simulator(simulatorimpl* impl) : impl_(impl) {
   }
 }
 
-ch_simulator::ch_simulator(const ch_simulator& simulator) : impl_(simulator.impl_) {
+ch_simulator::ch_simulator(const ch_simulator& simulator)
+  : impl_(simulator.impl_) {
   if (impl_) {
     impl_->acquire();
   }
 }
+
+ch_simulator::ch_simulator(ch_simulator&& simulator)
+  : impl_(std::move(simulator.impl_))
+{}
 
 ch_simulator::~ch_simulator() {
   if (impl_) {
@@ -152,6 +160,11 @@ ch_simulator& ch_simulator::operator=(const ch_simulator& simulator) {
     impl_->release();
   }
   impl_ = simulator.impl_;
+  return *this;
+}
+
+ch_simulator& ch_simulator::operator=(ch_simulator&& simulator) {
+  impl_ = std::move(simulator.impl_);
   return *this;
 }
 

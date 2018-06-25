@@ -61,18 +61,22 @@ const char* to_string(ch_op op);
 
 ///////////////////////////////////////////////////////////////////////////////
 
-lnodeimpl* createAluNode(ch_op op, uint32_t size, const lnode& in);
+enum traits_type {
+  traits_none      = 0x0,
+  traits_logic     = 0x1,
+  traits_scalar    = 0x2,
+  traits_io        = 0x4,
+  traits_udf       = 0x8,
+  traits_logic_io  = traits_logic | traits_io,
+  traits_scalar_io = traits_scalar | traits_io,
+};
 
-lnodeimpl* createAluNode(ch_op op, uint32_t size, const lnode& lhs, const lnode& rhs);
-
-lnodeimpl* createRotateNode(const lnode& next, uint32_t dist, bool right);
-
-///////////////////////////////////////////////////////////////////////////////
-
-CH_DEF_SFINAE_CHECK(has_traits, std::is_class_v<typename T::self::traits>);
+CH_DEF_SFINAE_CHECK(is_object_type, (T::traits::type & (traits_logic | traits_scalar)));
 
 template <typename T, typename Enable = void>
-struct width_value_impl {};
+struct width_value_impl {
+  static constexpr uint32_t value = 0;
+};
 
 template <typename T>
 struct width_value_impl<T, std::enable_if_t<std::is_arithmetic_v<T>>> {
@@ -81,8 +85,8 @@ struct width_value_impl<T, std::enable_if_t<std::is_arithmetic_v<T>>> {
 };
 
 template <typename T>
-struct width_value_impl<T, std::enable_if_t<has_traits_v<T>>> {
-  static constexpr uint32_t value = T::self::traits::bitwidth;
+struct width_value_impl<T, std::enable_if_t<is_object_type_v<T>>> {
+  static constexpr uint32_t value = T::traits::bitwidth;
 };
 
 template <typename... Ts>
@@ -102,7 +106,9 @@ template <typename... Ts>
 inline constexpr uint32_t width_v = width_impl<std::decay_t<Ts>...>::value;
 
 template <typename T, typename Enable = void>
-struct signed_impl {};
+struct signed_impl {
+  static constexpr bool value = false;
+};
 
 template <typename T>
 struct signed_impl<T, std::enable_if_t<std::is_arithmetic_v<T>>> {
@@ -110,21 +116,12 @@ struct signed_impl<T, std::enable_if_t<std::is_arithmetic_v<T>>> {
 };
 
 template <typename T>
-struct signed_impl<T, std::enable_if_t<has_traits_v<T>>> {
-  static constexpr bool value = T::self::traits::is_signed;
+struct signed_impl<T, std::enable_if_t<is_object_type_v<T>>> {
+  static constexpr bool value = T::traits::is_signed;
 };
 
 template <typename T>
 inline constexpr bool signed_v = signed_impl<std::decay_t<T>>::value;
-
-enum traits_type {
-  traits_none      = 0x0,
-  traits_logic     = 0x1,
-  traits_scalar    = 0x2,
-  traits_io        = 0x4,
-  traits_logic_io  = traits_logic | traits_io,
-  traits_scalar_io = traits_scalar | traits_io,
-};
 
 struct non_ch_type {
   struct traits {
@@ -135,14 +132,14 @@ struct non_ch_type {
 };
 
 template <typename T>
-using ch_type_t = std::conditional_t<has_traits_v<T>, T, non_ch_type>;
+using ch_type_t = std::conditional_t<is_object_type_v<T>, T, non_ch_type>;
 
 template <bool resize, typename T0, typename T1>
 struct deduce_type_impl {
   using D0 = std::decay_t<T0>;
   using D1 = std::decay_t<T1>;
-  using U0 = std::conditional_t<has_traits_v<D0>, D0, non_ch_type>;
-  using U1 = std::conditional_t<has_traits_v<D1>, D1, non_ch_type>;
+  using U0 = std::conditional_t<is_object_type_v<D0>, D0, non_ch_type>;
+  using U1 = std::conditional_t<is_object_type_v<D1>, D1, non_ch_type>;
   using type = std::conditional_t<(width_v<U0> != 0) && (width_v<U1> != 0),
     std::conditional_t<(width_v<U0> == width_v<U1>) || ((width_v<U0> > width_v<U1>) && resize), U0,
         std::conditional_t<(width_v<U0> < width_v<U1>) && resize, U1, non_ch_type>>,
@@ -169,8 +166,8 @@ template <typename T0, typename T1>
 struct deduce_first_type_impl {
   using D0 = std::decay_t<T0>;
   using D1 = std::decay_t<T1>;
-  using U0 = std::conditional_t<has_traits_v<D0>, D0, non_ch_type>;
-  using U1 = std::conditional_t<has_traits_v<D1>, D1, non_ch_type>;
+  using U0 = std::conditional_t<is_object_type_v<D0>, D0, non_ch_type>;
+  using U1 = std::conditional_t<is_object_type_v<D1>, D1, non_ch_type>;
   using type = std::conditional_t<(width_v<U0> != 0), U0, U1>;
 };
 

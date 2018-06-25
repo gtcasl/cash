@@ -4,14 +4,14 @@
 
 using namespace ch::internal;
 
-tracerimpl::tracerimpl(std::ostream& out, const std::initializer_list<context*>& contexts)
-  : simulatorimpl(contexts)
+tracerimpl::tracerimpl(std::ostream& out, const ch_device_list& devices)
+  : simulatorimpl(devices)
   , file_(nullptr)
   , out_(out)
 {}
 
-tracerimpl::tracerimpl(const std::string& file, const std::initializer_list<context*>& contexts)
-  : simulatorimpl(contexts)
+tracerimpl::tracerimpl(const std::string& file, const ch_device_list& devices)
+  : simulatorimpl(devices)
   , file_(new std::ofstream(file))
   , out_(*file_)
 {}
@@ -83,18 +83,32 @@ tracerimpl::sc_trace_t::sc_trace_t(const std::string& p_name, const scalar_buffe
 ///////////////////////////////////////////////////////////////////////////////
 
 ch_tracer::ch_tracer(std::ostream& out,
-                     const std::initializer_list<context*>& contexts)
-  : ch_simulator(new tracerimpl(out, contexts))
+                     const ch_device_list& devices)
+  : ch_simulator(new tracerimpl(out, devices))
 {}
 
 ch_tracer::ch_tracer(const std::string& file,
-                     const std::initializer_list<context*>& contexts)
-  : ch_simulator(new tracerimpl(file, contexts))
+                     const ch_device_list& devices)
+  : ch_simulator(new tracerimpl(file, devices))
 {}
 
 ch_tracer::ch_tracer(simulatorimpl* impl) : ch_simulator(impl) {}
 
+ch_tracer::ch_tracer(const ch_tracer& tracer) : ch_simulator(tracer) {}
+
+ch_tracer::ch_tracer(ch_tracer&& tracer) : ch_simulator(std::move(tracer)) {}
+
 ch_tracer::~ch_tracer() {}
+
+ch_tracer& ch_tracer::operator=(const ch_tracer& tracer) {
+  ch_simulator::operator=(tracer);
+  return *this;
+}
+
+ch_tracer& ch_tracer::operator=(ch_tracer&& tracer) {
+  ch_simulator::operator=(std::move(tracer));
+  return *this;
+}
 
 void ch_tracer::add_trace(const std::string& name, const scalar_buffer_ptr& buffer) {
   return reinterpret_cast<tracerimpl*>(impl_)->add_trace(name, buffer);

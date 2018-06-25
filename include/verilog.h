@@ -5,18 +5,18 @@
 namespace ch {
 namespace internal {
 
-  void toVerilog(std::ostream& out, const std::initializer_list<context*>& contexts);
+void ch_verilog(std::ostream& out, const ch_device_list& devices);
 
-  template <typename... Devices>
-  void ch_toVerilog(std::ostream& out, const device& device, const Devices&... more) {
-    toVerilog(out, {get_ctx(device), get_ctx(more)...});
-  }
+template <typename... Devices>
+void ch_verilog(std::ostream& out, const device& first, const Devices&... more) {
+  ch_verilog(out, ch_device_list{first, (more)...});
+}
 
-  template <typename... Devices>
-  void ch_toVerilog(const std::string& file, const device& device, const Devices&... more) {
-    std::ofstream out(file);
-    toVerilog(out, {get_ctx(device), get_ctx(more)...});
-  }
+template <typename... Devices>
+void ch_verilog(const std::string& file, const device& first, const Devices&... more) {
+  std::ofstream out(file);
+  ch_verilog(out, ch_device_list{first, (more)...});
+}
 
 }
 }

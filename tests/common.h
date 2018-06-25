@@ -10,7 +10,7 @@ using namespace ch::sim;
 
 bool checkVerilog(const std::string& moduleName);
 
-bool runtest(const std::function<ch_bool()> &test, ch_tick ticks = 1);
+bool runtest(const std::function<ch_bool()> &test, ch_tick cycles = 0);
 
 bool runtestx(const std::function<bool()> &test);
 

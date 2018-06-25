@@ -1,78 +1,27 @@
 #pragma once
 
-#include "logic.h"
+#include "bit.h"
 
 namespace ch {
 namespace internal {
 
-template <typename Derived>
-class ch_logic_integer : public ch_logic_base<Derived> {
-public:
-  using base = ch_logic_base<Derived>;
-  using base::buffer_;
-  using base::base;
-
-  // compare operators
-
-  friend auto operator<(Derived lhs, const Derived& rhs) {
-    auto sloc = logic_accessor::sloc(lhs);
-    return make_logic_op<op_lt, ch_bit<1>>(lhs, rhs, sloc);
-  }
-
-  friend auto operator<=(Derived lhs, const Derived& rhs) {
-    auto sloc = logic_accessor::sloc(lhs);
-    return make_logic_op<op_le, ch_bit<1>>(lhs, rhs, sloc);
-  }
-
-  friend auto operator>(Derived lhs, const Derived& rhs) {
-    auto sloc = logic_accessor::sloc(lhs);
-    return make_logic_op<op_gt, ch_bit<1>>(lhs, rhs, sloc);
-  }
-
-  friend auto operator>=(Derived lhs, const Derived& rhs) {
-    auto sloc = logic_accessor::sloc(lhs);
-    return make_logic_op<op_ge, ch_bit<1>>(lhs, rhs, sloc);
-  }
-
-  // arithmetic operators
-
-  auto operator-() const {
-    return make_logic_op<op_neg>(*this);
-  }
-
-  friend auto operator+(Derived lhs, const Derived& rhs) {
-    auto sloc = logic_accessor::sloc(lhs);
-    return make_logic_op<op_add>(lhs, rhs, sloc);
-  }
-
-  friend auto operator-(Derived lhs, const Derived& rhs) {
-    auto sloc = logic_accessor::sloc(lhs);
-    return make_logic_op<op_sub>(lhs, rhs, sloc);
-  }
-
-  friend auto operator*(Derived lhs, const Derived& rhs) {
-    auto sloc = logic_accessor::sloc(lhs);
-    return make_logic_op<op_mult>(lhs, rhs, sloc);
-  }
-
-  friend auto operator/(Derived lhs, const Derived& rhs) {
-    auto sloc = logic_accessor::sloc(lhs);
-    return make_logic_op<op_div>(lhs, rhs, sloc);
-  }
-
-  friend auto operator%(Derived lhs, const Derived& rhs) {
-    auto sloc = logic_accessor::sloc(lhs);
-    return make_logic_op<op_mod>(lhs, rhs, sloc);
-  }
-};
-
 template <unsigned N>
-class ch_int : public ch_logic_integer<ch_int<N>> {
+class ch_int : public logic_op_compare<ch_int<N>,
+                        logic_op_logical<ch_int<N>,
+                          logic_op_bitwise<ch_int<N>,
+                            logic_op_shift<ch_int<N>,
+                              logic_op_relational<ch_int<N>,
+                                logic_op_arithmetic<ch_int<N>, ch_bit<N>>>>>>> {
 public:
   using traits = logic_traits<N, true, ch_int, ch_scint<N>>;
-  using base = ch_logic_integer<ch_int>;
+  using base = logic_op_compare<ch_int<N>,
+                logic_op_logical<ch_int<N>,
+                  logic_op_bitwise<ch_int<N>,
+                    logic_op_shift<ch_int<N>,
+                      logic_op_relational<ch_int<N>,
+                        logic_op_arithmetic<ch_int<N>, ch_bit<N>>>>>>>;
 
-  ch_int(const logic_buffer_ptr& buffer = make_logic_buffer(N, CH_CUR_SLOC))
+  explicit ch_int(const logic_buffer_ptr& buffer = make_logic_buffer(N, CH_CUR_SLOC))
     : base(buffer)
   {}
 
@@ -80,15 +29,22 @@ public:
             CH_REQUIRE_0(std::is_integral_v<U>)>
   ch_int(const U& rhs, CH_SLOC) : base(rhs, sloc) {}
 
-  template <typename U>
-  ch_int(const ch_scalar_base<U>& rhs, CH_SLOC) : base(rhs, sloc) {}
+  ch_int(const ch_scbit<N>& rhs, CH_SLOC) : base(rhs, sloc) {}
+
+  template <typename U,
+            CH_REQUIRE_0(is_bitvector_extended_type_v<U>)>
+  explicit ch_int(const U& rhs, CH_SLOC) : base(rhs, sloc) {}
+
+  template <typename U,
+            CH_REQUIRE_0(is_logic_type_v<U>),
+            CH_REQUIRE_0(width_v<U> == N)>
+  explicit ch_int(const U& rhs, CH_SLOC) : base(rhs, sloc) {}
 
   template <unsigned M,
             CH_REQUIRE_0(M < N)>
-  ch_int(const ch_int<M>& rhs, CH_SLOC) : base(rhs.template pad<N>(), sloc) {}
+  ch_int(const ch_int<M>& rhs, CH_SLOC) : base(rhs.template pad<N>(sloc), sloc) {}
 
-  template <typename U>
-  explicit ch_int(const ch_logic_base<U>& rhs, CH_SLOC) : base(rhs, sloc) {}
+  explicit ch_int(const ch_bit<N>& rhs, CH_SLOC) : base(rhs, sloc) {}
 
   ch_int(const ch_int& rhs, CH_SLOC) : base(rhs, sloc) {}
 
@@ -103,55 +59,29 @@ public:
     base::operator=(std::move(rhs));
     return *this;
   }
+
+  // padding operators
+
+  template <typename R>
+  R pad(CH_SLOC) const {
+    static_assert(is_logic_type_v<R>, "invalid type");
+    static_assert(width_v<R> >= N, "invalid size");
+    if constexpr (width_v<R> > N) {
+      return make_logic_op<op_zext, R>(*this, sloc);
+    } else
+    if constexpr (std::is_same_v<R, ch_int>) {
+      return *this;
+    } else {
+      return R(*this, sloc);
+    }
+  }
+
+  template <unsigned M>
+  auto pad(CH_SLOC) const {
+    return this->pad<ch_int<M>>(sloc);
+  }
+
+  CH_LOGIC_INTERFACE(ch_int)
 };
-
-// compare operators
-
-template <typename T>
-inline auto ch_lt(const ch_logic_integer<T>& lhs, const ch_logic_integer<T>& rhs, CH_SLOC) {
-  return make_logic_op<op_lt, ch_bit<1>>(lhs, rhs, sloc);
-}
-
-template <typename T>
-inline auto ch_le(const ch_logic_integer<T>& lhs, const ch_logic_integer<T>& rhs, CH_SLOC) {
-  return make_logic_op<op_le, ch_bit<1>>(lhs, rhs, sloc);
-}
-
-template <typename T>
-inline auto ch_gt(const ch_logic_integer<T>& lhs, const ch_logic_integer<T>& rhs, CH_SLOC) {
-  return make_logic_op<op_gt, ch_bit<1>>(lhs, rhs, sloc);
-}
-
-template <typename T>
-inline auto ch_ge(const ch_logic_integer<T>& lhs, const ch_logic_integer<T>& rhs, CH_SLOC) {
-  return make_logic_op<op_ge, ch_bit<1>>(lhs, rhs, sloc);
-}
-
-// arithmetic operators
-
-template <typename T>
-auto ch_neg(const ch_logic_integer<T>& in, CH_SLOC) {
-  return make_logic_op<op_neg, T>(in, sloc);
-}
-
-template <typename T>
-inline auto ch_add(const ch_logic_integer<T>& lhs, const ch_logic_integer<T>& rhs, CH_SLOC) {
-  return make_logic_op<op_add, T>(lhs, rhs, sloc);
-}
-
-template <typename T>
-inline auto ch_sub(const ch_logic_integer<T>& lhs, const ch_logic_integer<T>& rhs, CH_SLOC) {
-  return make_logic_op<op_sub, T>(lhs, rhs, sloc);
-}
-
-template <typename T>
-inline auto ch_mult(const ch_logic_integer<T>& lhs, const ch_logic_integer<T>& rhs, CH_SLOC) {
-  return make_logic_op<op_mult, T>(lhs, rhs, sloc);
-}
-
-template <typename T>
-inline auto ch_div(const ch_logic_integer<T>& lhs, const ch_logic_integer<T>& rhs, CH_SLOC) {
-  return make_logic_op<op_div, T>(lhs, rhs, sloc);
-}
 
 }}

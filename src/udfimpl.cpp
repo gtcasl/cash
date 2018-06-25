@@ -13,7 +13,6 @@ udfimpl::udfimpl(context* ctx,
   , udf_(udf)
   , udf_srcs_(srcs_) {
   udf->acquire();
-
   for (auto src : srcs) {
     srcs_.push_back(src);
   }
@@ -44,16 +43,9 @@ udfsimpl::udfsimpl(context* ctx,
                    udf_iface* udf,
                    const std::initializer_list<lnode>& srcs,
                    const source_location& sloc)
-  : udfimpl(ctx, type_udfs, udf, srcs, sloc)
-  , enable_idx_(-1)  {
+  : udfimpl(ctx, type_udfs, udf, srcs, sloc) {
   auto cd = ctx->current_cd(sloc);
   cd_idx_ = this->add_src(-1, cd);
-
-  if (udf->enable() && srcs.size() > udf->inputs_sizes().size()) {
-    // the last node is the enable signal
-    enable_idx_ = srcs.size() - 1;
-  }
-
   pipe_.resize(udf->delta() - 1, bitvector(this->size()));
 }
 
@@ -65,6 +57,8 @@ void udfsimpl::eval() {
   if (0 == cd->value().word(0))
     return;
 
+  bitvector* value = &value_;
+
   // advance the pipeline
   if (!pipe_.empty()) {
     auto last = pipe_.size() - 1;
@@ -72,16 +66,14 @@ void udfsimpl::eval() {
     for (int i = last; i > 0; --i) {
       pipe_[i] = pipe_[i-1];
     }
+    value = &pipe_[0];
   }
+
   // push new entry
-  auto& value = pipe_.empty() ? value_ : pipe_[0];
-  if (udf_->init() && cd->rst().data().word(0)) {
-    udf_->reset(value, udf_srcs_);
+  if (udf_->has_init() && cd->rst().data().word(0)) {
+    udf_->reset(*value, udf_srcs_);
   } else {
-    int enable = this->has_enable() ? this->enable().data().word(0) : enable_idx_;
-    if (enable) {
-      udf_->eval(value, udf_srcs_);
-    }
+    udf_->eval(*value, udf_srcs_);
   }
 }
 

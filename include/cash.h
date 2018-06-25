@@ -1,10 +1,10 @@
 #pragma once
 
-#include "scalar.h"
+#include "scbit.h"
 #include "scint.h"
 #include "scuint.h"
 #include "literals.h"
-#include "logic.h"
+#include "bit.h"
 #include "int.h"
 #include "uint.h"
 #include "reg.h"
@@ -88,16 +88,6 @@ namespace core {
   using ch::internal::ch_udf;
 
   //
-  // type traits
-  //
-
-  template <typename T, unsigned N = ch_width_v<T>>
-  inline constexpr bool ch_is_logic_convertible_v = ch::internal::is_logic_convertible_v<T, N>;
-
-  template <typename T, unsigned N = ch_width_v<T>>
-  inline constexpr bool ch_is_scalar_convertible_v = ch::internal::is_scalar_convertible_v<T, N>;
-
-  //
   // declared types
   //
 
@@ -170,26 +160,6 @@ namespace core {
   using ch::internal::ch_reset;
 
   //
-  // bitwise functions
-  //
-
-  using ch::internal::ch_inv;
-  using ch::internal::ch_and;
-  using ch::internal::ch_or;
-  using ch::internal::ch_xor;
-
-  //
-  // compare functions
-  //
-
-  using ch::internal::ch_eq;
-  using ch::internal::ch_ne;
-  using ch::internal::ch_lt;
-  using ch::internal::ch_gt;
-  using ch::internal::ch_le;
-  using ch::internal::ch_ge;
-
-  //
   // reduce functions
   //
 
@@ -198,16 +168,9 @@ namespace core {
   using ch::internal::ch_xorr;
 
   //
-  // arithmetic functions
+  // rotate functions
   //
 
-  using ch::internal::ch_add;
-  using ch::internal::ch_sub;
-  using ch::internal::ch_neg;
-  using ch::internal::ch_mult;
-  using ch::internal::ch_div;
-  using ch::internal::ch_sll;
-  using ch::internal::ch_srl;
   using ch::internal::ch_rotl;
   using ch::internal::ch_rotr;
 
@@ -215,6 +178,7 @@ namespace core {
   // utility functions
   //
 
+  using ch::internal::ch_bind;
   using ch::internal::ch_assert;
   using ch::internal::ch_tap;
   using ch::internal::ch_print;
@@ -239,22 +203,28 @@ namespace sim {
   //
 
   template <typename T> using ch_device = ch::internal::ch_device<T>;
-  using ch_simulator = ch::internal::ch_simulator;
-  using ch_tracer    = ch::internal::ch_tracer;
-  using ch_vcdtracer = ch::internal::ch_vcdtracer;
+  using ch_device_list = ch::internal::ch_device_list;
+  using ch_simulator   = ch::internal::ch_simulator;
+  using ch_tracer      = ch::internal::ch_tracer;
+  using ch_vcdtracer   = ch::internal::ch_vcdtracer;
 
   //
-  // functions
+  // utility functions
   //
 
-  using ch::internal::ch_toVerilog;
-  using ch::internal::ch_dumpStats;
+  using ch::internal::ch_verilog;
+  using ch::internal::ch_firrtl;
+  using ch::internal::ch_stats;
 }
 
 //
 // user defined functions
 //
 namespace extension {
+  using ch::internal::is_object_type_v;
+  using ch::internal::is_bit_convertible_v;
+  using ch::internal::is_scbit_convertible_v;
+
   using ch::internal::bitvector;
   using ch::internal::source_location;
   using ch::internal::logic_traits;
@@ -268,6 +238,20 @@ namespace extension {
   using ch::internal::udf_output;
   using ch::internal::udf_inputs;
   using ch::internal::lnode;
+
+  using ch::internal::scalar_op_compare;
+  using ch::internal::scalar_op_logical;
+  using ch::internal::scalar_op_bitwise;
+  using ch::internal::scalar_op_shift;
+  using ch::internal::scalar_op_relational;
+  using ch::internal::scalar_op_arithmetic;
+
+  using ch::internal::logic_op_compare;
+  using ch::internal::logic_op_logical;
+  using ch::internal::logic_op_bitwise;
+  using ch::internal::logic_op_shift;
+  using ch::internal::logic_op_relational;
+  using ch::internal::logic_op_arithmetic;
 }
 
 //
@@ -309,6 +293,6 @@ inline namespace literals {
 #define __require2 CH_REQUIRE_2
 #define __require3 CH_REQUIRE_3
 
-#define __source_location CH_CUR_SLOC
+#define __sloc     CH_SLOC
 
 #define __width_of CH_WIDTH_OF

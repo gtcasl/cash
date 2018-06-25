@@ -14,7 +14,7 @@
 #include "timeimpl.h"
 #include "cdimpl.h"
 #include "ioport.h"
-#include "arithm.h"
+#include "traits.h"
 #include "select.h"
 #include "enum.h"
 #include "udf.h"
@@ -619,16 +619,16 @@ context::emit_conditionals(lnodeimpl* dst,
           // combine predicates
           auto pred0 = values.front().first;
           if (key) {
-            pred0 = this->create_node<aluimpl>(op_eq, 1, key, pred0);
+            pred0 = this->create_node<aluimpl>(op_eq, 1, key, pred0, branch->sloc);
           }
           auto pred1 = _true->src(0);
           if (_true->has_key()) {
             // create predicate
-            pred1 = this->create_node<aluimpl>(op_eq, 1, pred1, _true->src(1));
+            pred1 = this->create_node<aluimpl>(op_eq, 1, pred1, _true->src(1), branch->sloc);
             // remove key from src list
             _true->remove_key();
           }
-          auto pred = this->create_node<aluimpl>(op_and, 1, pred0, pred1);
+          auto pred = this->create_node<aluimpl>(op_and, 1, pred0, pred1, branch->sloc);
           _true->src(0) = pred;
           return _true;
         }
@@ -1048,6 +1048,6 @@ void ch::internal::bindOutput(const lnode& dst,
   dst.impl()->ctx()->bind_output(dst, output, sloc);
 }
 
-void ch::internal::register_enum_string(const lnode& node, void* callback) {
+void ch::internal::registerEnumString(const lnode& node, void* callback) {
   node.impl()->ctx()->register_enum_string(node, (enum_string_cb)callback);
 }

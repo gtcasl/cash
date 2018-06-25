@@ -28,7 +28,7 @@ protected:
 class simulatorimpl : public refcounted {
 public:
 
-  simulatorimpl(const std::initializer_list<context*>& contexts);
+  simulatorimpl(const ch_device_list& devices);
 
   virtual ~simulatorimpl();
 

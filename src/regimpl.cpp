@@ -45,8 +45,8 @@ regimpl::regimpl(context* ctx, const lnode& next, const source_location& sloc)
   srcs_.emplace_back(cd);
   srcs_.emplace_back(next);
 
-  // randomize content to catch bugs
-  this->next().data().randomize();
+  // initialize with dirty content
+  this->next().data().deadbeef();
 }
 
 regimpl::regimpl(context* ctx,
@@ -107,10 +107,10 @@ void ch::internal::ch_popcd() {
 
 ch_bit<1> ch::internal::ch_clock(const source_location& sloc) {
   auto cd = ctx_curr()->current_cd(sloc);
-  return make_type<ch_bit<1>>(cd->clk());
+  return make_type<ch_bit<1>>(cd->clk(), sloc);
 }
 
 ch_bit<1> ch::internal::ch_reset(const source_location& sloc) {
   auto cd = ctx_curr()->current_cd(sloc);
-  return make_type<ch_bit<1>>(cd->rst());
+  return make_type<ch_bit<1>>(cd->rst(), sloc);
 }

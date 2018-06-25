@@ -8,9 +8,9 @@ namespace internal {
 class tracerimpl : public simulatorimpl {
 public:
 
-  tracerimpl(std::ostream& out, const std::initializer_list<context*>& contexts);
+  tracerimpl(std::ostream& out, const ch_device_list& devices);
 
-  tracerimpl(const std::string& file, const std::initializer_list<context*>& contexts);
+  tracerimpl(const std::string& file, const ch_device_list& devices);
 
   ~tracerimpl();
 

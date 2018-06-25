@@ -3,6 +3,8 @@
 
 using namespace ch::htl;
 
+namespace {
+
 static_assert(ch_direction_v<ch_in<ch_bool>> == ch_direction::in, "invalid direction");
 static_assert(ch_direction_v<ch_out<ch_bool>> == ch_direction::out, "invalid direction");
 
@@ -113,9 +115,9 @@ struct Adder {
 
 struct Foo1 {
   __io (
-    __in(ch_bit2)  in1,
-    __in(ch_bit2)  in2,
-    __out(ch_bit2) out
+    __in(ch_uint2)  in1,
+    __in(ch_uint2)  in2,
+    __out(ch_uint2) out
   );
   void describe() {
     adder_.io.in1(io.in1);
@@ -239,6 +241,8 @@ struct CustomClk {
   }
 };
 
+}
+
 TEST_CASE("module", "[module]") {
   SECTION("sim", "[sim]") {
     TESTX([]()->bool {
@@ -297,9 +301,9 @@ TEST_CASE("module", "[module]") {
       ret &= (12 == filter.io.y.data);
       ret &= !filter.io.y.parity;
 
-      ch_toVerilog("filter.v", filter);
+      ch_verilog("filter.v", filter);
       ret &= (checkVerilog("filter_tb.v"));
-      ch_toFIRRTL("filter.fir", filter);
+      ch_firrtl("filter.fir", filter);
 
       return !!ret;
     });
@@ -333,16 +337,16 @@ TEST_CASE("module", "[module]") {
       t = sim.step(t, 4);
 
       ret &= !queue.io.deq.valid; // empty
-      ch_toVerilog("queue.v", queue);
+      ch_verilog("queue.v", queue);
       ret &= (checkVerilog("queue_tb.v"));
-      ch_toFIRRTL("queue.fir", queue);
+      ch_firrtl("queue.fir", queue);
 
       return !!ret;
     });
 
     TESTX([]()->bool {
       ch_device<MultiClk> device;
-      ch_toVerilog("multi_clk.v", device);
+      ch_verilog("multi_clk.v", device);
 
       ch_simulator sim(device);
       device.io.in = 0xA;
@@ -356,7 +360,7 @@ TEST_CASE("module", "[module]") {
 
     TESTX([]()->bool {
       ch_device<CustomClk> device;
-      ch_toVerilog("custom_clk.v", device);
+      ch_verilog("custom_clk.v", device);
 
       ch_simulator sim(device);
       device.io.in = 0xA;
@@ -370,8 +374,8 @@ TEST_CASE("module", "[module]") {
 
     TESTX([]()->bool {
       ch_device<Loop> loop;
-      ch_toVerilog("loop.v", loop);
-      ch_toFIRRTL("loop.fir", loop);
+      ch_verilog("loop.v", loop);
+      ch_firrtl("loop.fir", loop);
 
       loop.io.in1 = 1;
       loop.io.in2 = 2;

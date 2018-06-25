@@ -16,7 +16,7 @@ public:
   using traits = logic_traits<N, true, ch_fixed, ch_scint<N>>;
   using base = ch_bit<N>;
 
-  ch_fixed(const logic_buffer_ptr& buffer = make_logic_buffer(N, CH_CUR_SLOC))
+  explicit ch_fixed(const logic_buffer_ptr& buffer = make_logic_buffer(N, CH_CUR_SLOC))
     : base(buffer)
   {}
 
@@ -56,12 +56,7 @@ public:
     return ch_int<32>(*this) >= ch_int<32>(rhs);
   }
 
-protected:
-
-  CH_SCALAR_OP1_IMPL((), <, const ch_fixed&, float)
-  CH_SCALAR_OP1_IMPL((), <=, const ch_fixed&, float)
-  CH_SCALAR_OP1_IMPL((), >, const ch_fixed&, float)
-  CH_SCALAR_OP1_IMPL((), >=, const ch_fixed&, float)
+  CH_LOGIC_INTERFACE(ch_fixed)
 };
 
 }

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "logic.h"
+#include "bit.h"
 
 namespace ch {
 namespace internal {
@@ -9,9 +9,7 @@ void createAssertNode(const lnode& pred,
                       const std::string& msg,
                       const source_location& sloc);
 
-template <typename P>
-inline void ch_assert(const ch_logic_base<P>& pred, const std::string& msg, CH_SLOC) {
-  static_assert(1 == width_v<P>, "invalid predicate size");
+inline void ch_assert(const ch_bit<1>& pred, const std::string& msg, CH_SLOC) {
   createAssertNode(get_lnode(pred), msg, sloc);
 }
 

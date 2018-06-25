@@ -47,8 +47,9 @@ public:
   switch_case_t(const switch_ptr& p_switch) : switch_(p_switch) {}
 
   template <typename V,
-            CH_REQUIRE_0(is_scalar_convertible_v<V, width_v<K>> && is_equality_comparable_v<K, V>)>
+            CH_REQUIRE_0(!std::is_convertible_v<V, fvoid_t>)>
   switch_body_t<K> operator,(const V& value) {
+    static_assert(is_equality_comparable_v<K, V>, "invalid type");
     return switch_body_t<K>(switch_, bitvector(width_v<K>, value));
   }
 
@@ -67,9 +68,9 @@ switch_case_t<K> switch_body_t<K>::operator,(const fvoid_t& body) {
   return switch_case_t<K>(switch_);
 }
 
-template <typename K,
-          CH_REQUIRE_0(is_logic_convertible_v<K>)>
+template <typename K>
 auto ch_switch(const K& key, CH_SLOC) {
+  static_assert(is_bit_base_v<K>, "invalid type");
   return switch_case_t<K>(std::make_shared<switch_t>(get_lnode(key), sloc));
 }
 

@@ -16,12 +16,13 @@ struct TestRunner {
   const std::function<ch_bool()> test_;
 };
 
-bool runtest(const std::function<ch_bool ()>& test, ch_tick ticks) {
-  assert(ticks > 0);
-  begin_test();
-
+bool runtest(const std::function<ch_bool ()>& test, ch_tick cycles) {
   ch_device<TestRunner> device(test);
   ch_simulator sim(device);
+
+  begin_test();
+
+  auto ticks = (0 == cycles) ? 1 : (cycles * 2);
 
   sim.run([&](ch_tick t)->bool {
     std::cout << "t" << t << ": ret=" << device.io.out << std::endl;

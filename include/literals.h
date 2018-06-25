@@ -119,38 +119,38 @@ namespace literals {
 
   template <char... Chars>
   auto operator "" _b() {
-    return ch_scbit<lit_bin_size_v<Chars...>>(std::string{Chars..., 'b'});
+    return ch_scuint<lit_bin_size_v<Chars...>>(std::string{Chars..., 'b'});
   }
 
   template <char... Chars>
   auto operator "" _o() {
-    return ch_scbit<lit_oct_size_v<Chars...>>(std::string{Chars..., 'o'});
+    return ch_scuint<lit_oct_size_v<Chars...>>(std::string{Chars..., 'o'});
   }
 
   template <char... Chars>
   auto operator "" _h() {
-    return ch_scbit<lit_hex_size_v<Chars...>>(std::string{Chars..., 'h'});
+    return ch_scuint<lit_hex_size_v<Chars...>>(std::string{Chars..., 'h'});
   }
 
-#define CH_DEF_LITERALS_IMPL(i, x) \
+#define CH_DEF_LITERALS_IMPL(a, i, x) \
   template <char... Chars> \
   auto operator "" _b##x() { \
     static_assert(x >= lit_bin_sizex_v<Chars...>, "value out of range"); \
-    return ch_scbit<x>(std::string{Chars..., 'b'}); \
+    return ch_scuint<x>(std::string{Chars..., 'b'}); \
   } \
   template <char... Chars> \
   auto operator "" _o##x() { \
     static_assert(x >= lit_oct_sizex_v<Chars...>, "value out of range"); \
-    return ch_scbit<x>(std::string{Chars..., 'o'}); \
+    return ch_scuint<x>(std::string{Chars..., 'o'}); \
   } \
   template <char... Chars> \
   auto operator "" _h##x() { \
     static_assert(x >= lit_hex_sizex_v<Chars...>, "value out of range"); \
-    return ch_scbit<x>(std::string{Chars..., 'h'}); \
+    return ch_scuint<x>(std::string{Chars..., 'h'}); \
   }
 
 #define CH_DEF_LITERALS_IMPL2(x, ...) \
-  CH_FOR_EACH(x, CH_SEP_SPACE, __VA_ARGS__)
+  CH_FOR_EACH(x, , CH_SEP_SPACE, __VA_ARGS__)
 
 #define CH_DEF_LITERALS(x) \
   CH_DEF_LITERALS_IMPL2(x, 2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,29,30,31,32) \
@@ -158,7 +158,7 @@ namespace literals {
   CH_DEF_LITERALS_IMPL2(x, 65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92) \
   CH_DEF_LITERALS_IMPL2(x, 93,94,95,96,97,98,99,100,101,102,103,104,105,106,107,108,109,110,111,112,113,114,115,116,117,118,119,120,121,122,123,124,125,126,127,128)
 
-  CH_DEF_LITERALS(CH_DEF_LITERALS_IMPL)
+CH_DEF_LITERALS(CH_DEF_LITERALS_IMPL)
 
 #undef CH_DEF_LITERALS
 #undef CH_DEF_LITERALS_IMPL
