@@ -67,11 +67,11 @@ printimpl::printimpl(context* ctx,
                      const std::string& format,
                      const std::initializer_list<lnode>& args,
                      const source_location& sloc)
-  : ioimpl(ctx, type_print, 0, "", sloc)
+  : ioimpl(ctx, type_print, 0, sloc)
   , format_(format)
   , predicated_(false) {
   if (ctx_->conditional_enabled(this)) {
-    auto pred = ctx_->create_predicate();
+    auto pred = ctx_->create_predicate(sloc);
     if (pred) {
       srcs_.emplace_back(pred);
       predicated_ = true;

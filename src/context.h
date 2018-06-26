@@ -212,9 +212,10 @@ public:
   void conditional_assign(lnodeimpl* dst,
                           uint32_t offset,
                           uint32_t length,
-                          lnodeimpl* src);
+                          lnodeimpl* src,
+                          const source_location& sloc);
 
-  lnodeimpl* create_predicate();
+  lnodeimpl* create_predicate(const source_location& sloc);
 
   void remove_local_variable(lnodeimpl* src, lnodeimpl* dst);
 

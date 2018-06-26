@@ -24,7 +24,7 @@ logic_buffer::logic_buffer(uint32_t size,
                            const source_location& sloc,
                            const std::string& name)
   : id_(make_id())
-  , value_(size, id_, name, sloc)
+  , value_(size, sloc, name, id_)
   , offset_(0)
 {}
 
@@ -32,7 +32,7 @@ logic_buffer::logic_buffer(const logic_buffer& rhs,
                            const source_location& sloc,
                            const std::string& name)
   : id_(make_id())
-  , value_(rhs.size(), rhs.data(), 0, id_, name, sloc)
+  , value_(rhs.size(), rhs.data(), 0, sloc, name, id_)
   , offset_(0)
 {}
 
@@ -47,7 +47,7 @@ logic_buffer::logic_buffer(const lnode& data,
                            const source_location& sloc,
                            const std::string& name)
   : id_(make_id())
-  , value_(data.size(), data, 0, id_, name, sloc)
+  , value_(data.size(), data, 0, sloc, name, id_)
   , offset_(0)
 {}
 
@@ -60,31 +60,32 @@ logic_buffer::logic_buffer(uint32_t size,
   , value_(size,
            buffer->data(),
            offset,
-           id_,
+           sloc,
            (name.empty() ? "" : stringf("%s_%s", buffer->data().name().c_str(), name.c_str())),
-           sloc)
+           id_)
   , source_(buffer)
   , offset_(offset) {
   assert(offset + size <= buffer->size());
 }
 
 logic_buffer& logic_buffer::operator=(const logic_buffer& rhs) {
-  this->write(0, rhs.data(), 0, rhs.size());
+  this->write(0, rhs.data(), 0, rhs.size(), source_location());
   return *this;
 }
 
 logic_buffer& logic_buffer::operator=(logic_buffer&& rhs) {
-  this->write(0, rhs.data(), 0, rhs.size());
+  this->write(0, rhs.data(), 0, rhs.size(), source_location());
   return *this;
 }
 
 void logic_buffer::write(uint32_t dst_offset,
                          const lnode& data,
                          uint32_t src_offset,
-                         uint32_t length) {
+                         uint32_t length,
+                         const source_location& sloc) {
   if (source_) {
-    source_->write(offset_ + dst_offset, data, src_offset, length);
+    source_->write(offset_ + dst_offset, data, src_offset, length, sloc);
   } else {
-    value_.write(dst_offset, data, src_offset, length);
+    value_.write(dst_offset, data, src_offset, length, sloc);
   }
 }

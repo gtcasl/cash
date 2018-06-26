@@ -46,7 +46,8 @@ public:
 
   std::size_t hash() const override;
 
-  lnodeimpl* slice(uint32_t offset, uint32_t length) override;
+  lnodeimpl* slice(uint32_t offset, uint32_t length,
+                   const source_location& sloc) override;
 
   void eval() override;
 
@@ -56,21 +57,17 @@ protected:
 
   proxyimpl(context* ctx,
             uint32_t size,
-            uint32_t var_id = 0,
+            const source_location& sloc,
             const std::string& name = "",
-            const source_location& sloc = source_location());
+            uint32_t var_id = 0);
 
   proxyimpl(context* ctx,
             const lnode& src,
             uint32_t offset,
             uint32_t length,
-            uint32_t var_id = 0,
+            const source_location& sloc,
             const std::string& name = "",
-            const source_location& sloc = source_location());
-
-  proxyimpl(context* ctx, const lnode& src, uint32_t offset = 0)
-    : proxyimpl(ctx, src, offset, src.size())
-  {}
+            uint32_t var_id = 0);
 
   ~proxyimpl() {}
 

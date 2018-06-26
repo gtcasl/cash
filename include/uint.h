@@ -6,20 +6,22 @@ namespace ch {
 namespace internal {
 
 template <unsigned N>
-class ch_uint : public logic_op_compare<ch_uint<N>,
-                        logic_op_logical<ch_uint<N>,
-                          logic_op_bitwise<ch_uint<N>,
-                            logic_op_shift<ch_uint<N>,
-                              logic_op_relational<ch_uint<N>,
-                                logic_op_arithmetic<ch_uint<N>, ch_bit<N>>>>>>> {
+class ch_uint : public logic_op_compare<ch_uint, N,
+                        logic_op_logical<ch_uint, N,
+                          logic_op_bitwise<ch_uint, N,
+                            logic_op_shift<ch_uint, N,
+                              logic_op_padding<ch_uint, N,
+                                logic_op_relational<ch_uint, N,
+                                  logic_op_arithmetic<ch_uint, N, ch_bit<N>>>>>>>> {
 public:
   using traits = logic_traits<N, false, ch_uint, ch_scuint<N>>;
-  using base = logic_op_compare<ch_uint<N>,
-                logic_op_logical<ch_uint<N>,
-                  logic_op_bitwise<ch_uint<N>,
-                    logic_op_shift<ch_uint<N>,
-                      logic_op_relational<ch_uint<N>,
-                        logic_op_arithmetic<ch_uint<N>, ch_bit<N>>>>>>>;
+  using base = logic_op_compare<ch_uint, N,
+                logic_op_logical<ch_uint, N,
+                  logic_op_bitwise<ch_uint, N,
+                    logic_op_shift<ch_uint, N,
+                      logic_op_padding<ch_uint, N,
+                        logic_op_relational<ch_uint, N,
+                          logic_op_arithmetic<ch_uint, N, ch_bit<N>>>>>>>>;
 
   explicit ch_uint(const logic_buffer_ptr& buffer = make_logic_buffer(N, CH_CUR_SLOC))
     : base(buffer)
@@ -42,7 +44,7 @@ public:
 
   template <unsigned M,
             CH_REQUIRE_0(M < N)>
-  ch_uint(const ch_uint<M>& rhs, CH_SLOC) : base(rhs.template pad<N>(sloc), sloc) {}
+  explicit ch_uint(const ch_uint<M>& rhs, CH_SLOC) : base(rhs.template pad<N>(sloc), sloc) {}
 
   explicit ch_uint(const ch_bit<N>& rhs, CH_SLOC) : base(rhs, sloc) {}
 
@@ -58,27 +60,6 @@ public:
   ch_uint& operator=(ch_uint&& rhs) {
     base::operator=(std::move(rhs));
     return *this;
-  }
-
-  // padding operators
-
-  template <typename R>
-  R pad(CH_SLOC) const {
-    static_assert(is_logic_type_v<R>, "invalid type");
-    static_assert(width_v<R> >= N, "invalid size");
-    if constexpr (width_v<R> > N) {
-      return make_logic_op<op_zext, R>(*this, sloc);
-    } else
-    if constexpr (std::is_same_v<R, ch_uint>) {
-      return *this;
-    } else {
-      return R(*this, sloc);
-    }
-  }
-
-  template <unsigned M>
-  auto pad(CH_SLOC) const {
-    return this->pad<ch_uint<M>>(sloc);
   }
 
   CH_LOGIC_INTERFACE(ch_uint)

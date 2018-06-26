@@ -8,12 +8,12 @@ assertimpl::assertimpl(context* ctx,
                        const lnode& cond,
                        const std::string& msg,
                        const source_location& sloc)
-  : ioimpl(ctx, type_assert, 0, "", sloc)
+  : ioimpl(ctx, type_assert, 0, sloc)
   , msg_(msg)
   , predicated_(false)
   , tick_(0) {
   if (ctx_->conditional_enabled(this)) {
-    auto pred = ctx_->create_predicate();
+    auto pred = ctx_->create_predicate(sloc);
     if (pred) {
       srcs_.emplace_back(pred);
       predicated_ = true;

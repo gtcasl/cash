@@ -10,17 +10,16 @@ public:
   using logic_buffer::value_;
 
   explicit reg_buffer(uint32_t size,
-                      const source_location& sloc,
-                      const std::string& name = "");
+                      const source_location& sloc);
 
   explicit reg_buffer(const lnode& data,
-                      const source_location& sloc,
-                      const std::string& name = "");
+                      const source_location& sloc);
 
   void write(uint32_t dst_offset,
              const lnode& data,
              uint32_t src_offset,
-             uint32_t length) override;
+             uint32_t length,
+             const source_location& sloc) override;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -51,7 +50,8 @@ public:
   template <typename U>
   void operator <<=(const U& rhs) const {
     static_assert(std::is_constructible_v<T, U>, "invalid type");
-    this->buffer()->write(0, to_lnode<T>(rhs, source_location()), 0, width_v<T>);
+    this->buffer()->write(0, to_lnode<T>(rhs, source_location()), 0, width_v<T>,
+                          source_location());
   }  
 };
 

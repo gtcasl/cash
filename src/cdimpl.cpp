@@ -10,7 +10,7 @@ cdimpl::cdimpl(context* ctx,
                const lnode& rst,
                bool posedge,
                const source_location& sloc)
-  : ioimpl(ctx, type_cd, 1, "", sloc)
+  : ioimpl(ctx, type_cd, 1, sloc)
   , posedge_(posedge)
   , prev_val_(false) {
   srcs_.emplace_back(clk);

@@ -1,8 +1,10 @@
-#include "cash.h"
+/*#include "cash.h"
+#include <htl/float32.h>
 
 using namespace ch::core;
 using namespace ch::sim;
 using namespace ch::literals;
+using namespace ch::htl;
 
 __enum (e2_t, 2, (
   (idle, 0),
@@ -49,6 +51,16 @@ __struct (sd3_t, (
 
 
 void foo() {
+  {
+    ch_float32 a, b;
+    auto c = ch_fmul<1>(a, b);
+    auto d = ch_fmul<1>(0.1f, b);
+    auto e = ch_fmul<1>(a, 0.1f);
+  }
+  {
+    ch_scbit<4> a(0);
+    ch_scbit<8> b(a);
+  }
   {
     ch_scbit<4> a = 3;
     auto b = a & 1;
@@ -108,6 +120,10 @@ void foo() {
     auto q5 = c << c;
     auto q7 = a << c;
     auto q8 = a << b;
+  }  
+  {
+    ch_bit4 a = 0, b = 0_b4;
+    ch_bit8 d(b);
   }
   {
     ch_bit4 a(0);
@@ -206,4 +222,4 @@ void bar() {
 
   ch_reg<s2_4_t> h{0101_b, 01_b};
   ch_reg<u2_4_t> i{0101_b};
-}
+}*/

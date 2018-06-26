@@ -48,7 +48,7 @@ TEST_CASE("basics", "[basics]") {
     });
 
     TEST([]()->ch_bool {
-      ch_uint8 a(0x4_h);
+      ch_uint8 a(0x4_h8);
       a = 0xf_h8;
       return (a == 15);
     });

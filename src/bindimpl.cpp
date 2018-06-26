@@ -21,7 +21,7 @@ static void add_port(bindportimpl* bindport, std::vector<lnode>& list) {
 }
 
 bindimpl::bindimpl(context* ctx, context* module, const source_location& sloc)
-  : ioimpl(ctx, type_bind, 0)
+  : ioimpl(ctx, type_bind, 0, sloc)
   , module_(module) {
   // acquire module instance
   module_->acquire();
@@ -77,7 +77,7 @@ void bindimpl::bind_output(const lnode& dst,
 
   // create bind port
   auto output = ctx_->create_node<bindoutimpl>(this, ioport, sloc);
-  const_cast<lnode&>(dst).write(0, output, 0, dst.size());
+  const_cast<lnode&>(dst).write(0, output, 0, dst.size(), sloc);
 
   // add to list
   add_port(output, outputs_);
@@ -104,7 +104,7 @@ bindportimpl::bindportimpl(context* ctx,
                            bindimpl* binding,
                            const lnode& ioport,
                            const source_location& sloc)
-  : ioimpl(ctx, type, ioport.size(), "", sloc)
+  : ioimpl(ctx, type, ioport.size(), sloc)
   , binding_(binding)
   , ioport_(ioport) {
   binding->acquire();

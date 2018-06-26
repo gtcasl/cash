@@ -15,7 +15,7 @@ auto ch_hmux(const ch_bit<(2+sizeof...(Args))>& sel,
              const Args&... args) {
   static_assert((is_object_type_v<ArgN>), "invalid type");
   static_assert((is_object_type_v<ArgM>), "invalid type");
-  static_assert((is_object_type_v<Args> && ...), "invalid type");  
+  static_assert((is_object_type_v<Args> && ...), "invalid type");
   auto cs = ch_case(sel, (1 << sizeof...(Args)), argM);
   int i = 0;
   for_each_reverse([&](auto arg){ cs(1 << i++, arg); }, args...);

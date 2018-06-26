@@ -415,7 +415,8 @@ void context::conditional_assign(
     lnodeimpl* dst,
     uint32_t offset,
     uint32_t length,
-    lnodeimpl* src) {
+    lnodeimpl* src,
+    const source_location& sloc) {
   assert(this->conditional_enabled(dst));
   auto& slices     = cond_vars_[dst];
   auto curr_branch = cond_branches_.top();
@@ -428,7 +429,7 @@ void context::conditional_assign(
                             lnodeimpl* src,
                             uint32_t src_offset) {
     if (src->size() != range.length) {
-      src = this->create_node<proxyimpl>(src, src_offset, range.length);
+      src = this->create_node<proxyimpl>(src, src_offset, range.length, sloc);
     }
     slices[range][loc] = src;
   };
@@ -619,16 +620,16 @@ context::emit_conditionals(lnodeimpl* dst,
           // combine predicates
           auto pred0 = values.front().first;
           if (key) {
-            pred0 = this->create_node<aluimpl>(op_eq, 1, key, pred0, branch->sloc);
+            pred0 = this->create_node<aluimpl>(op_eq, 1, false, key, pred0, branch->sloc);
           }
           auto pred1 = _true->src(0);
           if (_true->has_key()) {
             // create predicate
-            pred1 = this->create_node<aluimpl>(op_eq, 1, pred1, _true->src(1), branch->sloc);
+            pred1 = this->create_node<aluimpl>(op_eq, 1, false, pred1, _true->src(1), branch->sloc);
             // remove key from src list
             _true->remove_key();
           }
-          auto pred = this->create_node<aluimpl>(op_and, 1, pred0, pred1, branch->sloc);
+          auto pred = this->create_node<aluimpl>(op_and, 1, false, pred0, pred1, branch->sloc);
           _true->src(0) = pred;
           return _true;
         }
@@ -692,7 +693,7 @@ context::emit_conditionals(lnodeimpl* dst,
   };
 
   // get current variable value
-  auto current = dst->slice(range.offset, range.length);
+  auto current = dst->slice(range.offset, range.length, branch->sloc);
 
   // emit conditional variable
   auto it = cond_inits_.find(dst->id());
@@ -705,16 +706,16 @@ context::emit_conditionals(lnodeimpl* dst,
   return current;
 }
 
-lnodeimpl* context::create_predicate() {
+lnodeimpl* context::create_predicate(const source_location& sloc) {
   auto zero = this->literal(bitvector(1, false));
   auto one = this->literal(bitvector(1, true));
 
   // create predicate variable
-  auto predicate = this->create_node<proxyimpl>(zero);
+  auto predicate = this->create_node<proxyimpl>(zero, 0, 1, sloc);
   this->remove_local_variable(predicate, nullptr);
 
   // assign predicate
-  this->conditional_assign(predicate, 0, 1, one);
+  this->conditional_assign(predicate, 0, 1, one, sloc);
 
   return predicate;
 }

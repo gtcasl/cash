@@ -22,7 +22,7 @@ memimpl::memimpl(context* ctx,
                  bool write_enable,
                  const std::vector<uint8_t>& init_data,
                  const source_location& sloc)
-  : ioimpl(ctx, type_mem, data_width * num_items, "", sloc)
+  : ioimpl(ctx, type_mem, data_width * num_items, sloc)
   , data_width_(data_width)
   , num_items_(num_items)
   , write_enable_(write_enable)
@@ -112,7 +112,7 @@ memportimpl::memportimpl(context* ctx,
                          memimpl* mem,
                          const lnode& addr,
                          const source_location& sloc)
-  : ioimpl(ctx, type, mem->data_width(), "", sloc)
+  : ioimpl(ctx, type, mem->data_width(), sloc)
   , mem_(mem)
   , index_(mem->ports().size()) {
   mem->acquire();  

@@ -5,11 +5,11 @@
 namespace ch {
 namespace internal {  
 
-lnodeimpl* createAluNode(ch_op op, uint32_t size, const lnode& in,
+lnodeimpl* createAluNode(ch_op op, uint32_t size, bool is_signed, const lnode& in,
                          const source_location& sloc);
 
-lnodeimpl* createAluNode(ch_op op, uint32_t size, const lnode& lhs, const lnode& rhs,
-                         const source_location& sloc);
+lnodeimpl* createAluNode(ch_op op, uint32_t size, bool is_signed, const lnode& lhs,
+                         const lnode& rhs, const source_location& sloc);
 
 lnodeimpl* createRotateNode(const lnode& next, uint32_t dist, bool right,
                             const source_location& sloc);
@@ -109,7 +109,8 @@ public:
   virtual void write(uint32_t dst_offset,
                      const lnode& data,
                      uint32_t src_offset,
-                     uint32_t length);
+                     uint32_t length,
+                     const source_location& sloc);
 
 protected:
 
@@ -170,15 +171,16 @@ public:
                     uint32_t dst_offset,
                     const V& src,
                     uint32_t src_offset,
-                    uint32_t length) {
+                    uint32_t length,
+                    const source_location& sloc) {
     auto data = src.buffer()->data();
-    dst.buffer()->write(dst_offset, data, src_offset, length);
+    dst.buffer()->write(dst_offset, data, src_offset, length, sloc);
   }
 
   template <typename T>
   static auto clone(const T& obj, const source_location& sloc) {
     assert(width_v<T> == obj.buffer()->size());
-    auto data = obj.buffer()->data().clone();
+    auto data = obj.buffer()->data().clone(sloc);
     return T(make_logic_buffer(data, sloc));
   }
 
@@ -234,15 +236,15 @@ auto make_type(const lnode& node, const source_location& sloc) {
   return T(make_logic_buffer(node, sloc));
 }
 
-template <ch_op op, typename R, typename A>
+template <ch_op op, bool Signed, typename R, typename A>
 auto make_logic_op(const A& a, const source_location& sloc) {
-  auto node = createAluNode(op, width_v<R>, get_lnode(a), sloc);
+  auto node = createAluNode(op, width_v<R>, Signed, get_lnode(a), sloc);
   return make_type<R>(node, sloc);
 }
 
-template <ch_op op, typename R, typename A, typename B>
+template <ch_op op, bool Signed, typename R, typename A, typename B>
 auto make_logic_op(const A& a, const B& b, const source_location& sloc) {
-  auto node = createAluNode(op, width_v<R>, get_lnode(a), get_lnode(b), sloc);
+  auto node = createAluNode(op, width_v<R>, Signed, get_lnode(a), get_lnode(b), sloc);
   return make_type<R>(node, sloc);
 }
 
@@ -305,8 +307,9 @@ struct sloc_arg {
   }
 
 #define CH_LOGIC_OPERATOR(name) \
-  template <typename Derived, typename Next = empty_base> \
+  template <template <unsigned> typename T, unsigned N, typename Next = empty_base> \
   struct name : Next { \
+    using Derived = T<N>; \
     using Next::Next; \
     using Next::operator=; \
     name(const Next& rhs, CH_SLOC) : Next(rhs, sloc) {} \
@@ -318,57 +321,55 @@ struct sloc_arg {
     name& operator=(const name& rhs) { Next::operator=(rhs); return *this; } \
     name& operator=(name&& rhs) { Next::operator=(std::move(rhs)); return *this; }
 
-CH_LOGIC_OPERATOR(logic_op_compare)
-  friend auto operator==(Derived lhs, const Derived& rhs) {
-    auto sloc = logic_accessor::sloc(lhs);
-    return make_logic_op<op_eq, ch_bit<1>>(lhs, rhs, sloc);
+#define CH_LOGIC_OPERATOR_IMPL(op, opcode, rtype) \
+  friend auto op(Derived lhs, const Derived& rhs) { \
+    auto sloc = logic_accessor::sloc(lhs); \
+    return make_logic_op<opcode, signed_v<Derived>, rtype>(lhs, rhs, sloc); \
+  } \
+  template <unsigned M, CH_REQUIRE_0(M < N)> \
+  friend auto op(Derived lhs, const T<M>& rhs) { \
+    auto sloc = logic_accessor::sloc(lhs); \
+    return make_logic_op<opcode, signed_v<Derived>, rtype>(lhs, rhs, sloc); \
+  } \
+  template <unsigned M, CH_REQUIRE_0(M < N)> \
+  friend auto op(T<M> lhs, const Derived& rhs) { \
+    auto sloc = logic_accessor::sloc(lhs); \
+    return make_logic_op<opcode, signed_v<Derived>, rtype>(lhs, rhs, sloc); \
   }
 
-  friend auto operator!=(Derived lhs, const Derived& rhs) {
-    auto sloc = logic_accessor::sloc(lhs);
-    return make_logic_op<op_ne, ch_bit<1>>(lhs, rhs, sloc);
-  }
+CH_LOGIC_OPERATOR(logic_op_compare)
+  CH_LOGIC_OPERATOR_IMPL(operator==, op_eq, ch_bit<1>)
+  CH_LOGIC_OPERATOR_IMPL(operator!=, op_ne, ch_bit<1>)
 };
 
 CH_LOGIC_OPERATOR(logic_op_logical)
   friend auto operator&&(Derived lhs, const Derived& rhs) {
     static_assert(1 == Derived::traits::bitwidth, "invalid size");
     auto sloc = logic_accessor::sloc(lhs);
-    return make_logic_op<op_and, ch_bit<1>>(lhs, rhs, sloc);
+    return make_logic_op<op_and, false, ch_bit<1>>(lhs, rhs, sloc);
   }
 
   friend auto operator||(Derived lhs, const Derived& rhs) {
     static_assert(1 == Derived::traits::bitwidth, "invalid size");
     auto sloc = logic_accessor::sloc(lhs);
-    return make_logic_op<op_or, ch_bit<1>>(lhs, rhs, sloc);
+    return make_logic_op<op_or, false, ch_bit<1>>(lhs, rhs, sloc);
   }
 
   friend auto operator!(Derived self) {
     auto sloc = logic_accessor::sloc(self);
-    return make_logic_op<op_eq, ch_bit<1>>(self, Derived(0x0), sloc);
+    return make_logic_op<op_eq, signed_v<Derived>, ch_bit<1>>(self, Derived(0x0), sloc);
   }
 };
 
 CH_LOGIC_OPERATOR(logic_op_bitwise)
   friend auto operator~(Derived self) {
     auto sloc = logic_accessor::sloc(self);
-    return make_logic_op<op_inv, Derived>(self, sloc);
+    return make_logic_op<op_inv, false, Derived>(self, sloc);
   }
 
-  friend auto operator&(Derived lhs, const Derived& rhs) {
-    auto sloc = logic_accessor::sloc(lhs);
-    return make_logic_op<op_and, Derived>(lhs, rhs, sloc);
-  }
-
-  friend auto operator|(Derived lhs, const Derived& rhs) {
-    auto sloc = logic_accessor::sloc(lhs);
-    return make_logic_op<op_or, Derived>(lhs, rhs, sloc);
-  }
-
-  friend auto operator^(Derived lhs, const Derived& rhs) {
-    auto sloc = logic_accessor::sloc(lhs);
-    return make_logic_op<op_xor, Derived>(lhs, rhs, sloc);
-  }
+  CH_LOGIC_OPERATOR_IMPL(operator&, op_and, Derived)
+  CH_LOGIC_OPERATOR_IMPL(operator|, op_or, Derived)
+  CH_LOGIC_OPERATOR_IMPL(operator^, op_xor, Derived)
 };
 
 CH_LOGIC_OPERATOR(logic_op_shift)
@@ -377,13 +378,13 @@ CH_LOGIC_OPERATOR(logic_op_shift)
   friend auto operator<<(Derived lhs, const U& rhs) {
     auto sloc = logic_accessor::sloc(lhs);
     auto _rhs = ch_bit<CH_WIDTH_OF(U)>(rhs);
-    return make_logic_op<op_sll, Derived>(lhs, _rhs, sloc);
+    return make_logic_op<op_sll, signed_v<Derived>, Derived>(lhs, _rhs, sloc);
   }
 
   template <unsigned M>
   friend auto operator<<(Derived lhs, const ch_bit<M>& rhs) {
     auto sloc = logic_accessor::sloc(lhs);
-    return make_logic_op<op_sll, Derived>(lhs, rhs, sloc);
+    return make_logic_op<op_sll, signed_v<Derived>, Derived>(lhs, rhs, sloc);
   }
 
   template <typename U,
@@ -391,76 +392,56 @@ CH_LOGIC_OPERATOR(logic_op_shift)
   friend auto operator>>(Derived lhs, const U& rhs) {
     auto sloc = logic_accessor::sloc(lhs);
     auto _rhs = ch_bit<CH_WIDTH_OF(U)>(rhs);
-    if constexpr (signed_v<Derived>) {
-      return make_logic_op<op_sra, Derived>(lhs, _rhs, sloc);
-    } else {
-      return make_logic_op<op_srl, Derived>(lhs, _rhs, sloc);
-    }
+    return make_logic_op<op_srl, signed_v<Derived>, Derived>(lhs, _rhs, sloc);
   }
 
   template <unsigned M>
   friend auto operator>>(Derived lhs, const ch_bit<M>& rhs) {
     auto sloc = logic_accessor::sloc(lhs);
-    if constexpr (signed_v<Derived>) {
-      return make_logic_op<op_sra, Derived>(lhs, rhs, sloc);
+    return make_logic_op<op_srl, signed_v<Derived>, Derived>(lhs, rhs, sloc);
+  }
+};
+
+CH_LOGIC_OPERATOR(logic_op_padding)
+  template <typename R>
+  R pad(CH_SLOC) const {
+    static_assert(is_logic_type_v<R>, "invalid type");
+    static_assert(width_v<R> >= N, "invalid size");
+    auto& self = reinterpret_cast<const Derived&>(*this);
+    if constexpr (width_v<R> > N) {
+      return make_logic_op<op_pad, signed_v<Derived>, R>(self, sloc);
+    } else
+    if constexpr (std::is_same_v<R, Derived>) {
+      return self;
     } else {
-      return make_logic_op<op_srl, Derived>(lhs, rhs, sloc);
+      return R(*this, sloc);
     }
+  }
+
+  template <unsigned M>
+  auto pad(CH_SLOC) const {
+    return this->pad<T<M>>(sloc);
   }
 };
 
 CH_LOGIC_OPERATOR(logic_op_relational)
-  friend auto operator<(Derived lhs, const Derived& rhs) {
-    auto sloc = logic_accessor::sloc(lhs);
-    return make_logic_op<op_lt, ch_bit<1>>(lhs, rhs, sloc);
-  }
-
-  friend auto operator<=(Derived lhs, const Derived& rhs) {
-    auto sloc = logic_accessor::sloc(lhs);
-    return make_logic_op<op_le, ch_bit<1>>(lhs, rhs, sloc);
-  }
-
-  friend auto operator>(Derived lhs, const Derived& rhs) {
-    auto sloc = logic_accessor::sloc(lhs);
-    return make_logic_op<op_gt, ch_bit<1>>(lhs, rhs, sloc);
-  }
-
-  friend auto operator>=(Derived lhs, const Derived& rhs) {
-    auto sloc = logic_accessor::sloc(lhs);
-    return make_logic_op<op_ge, ch_bit<1>>(lhs, rhs, sloc);
-  }
+  CH_LOGIC_OPERATOR_IMPL(operator<, op_lt, ch_bit<1>)
+  CH_LOGIC_OPERATOR_IMPL(operator<=, op_le, ch_bit<1>)
+  CH_LOGIC_OPERATOR_IMPL(operator>, op_gt, ch_bit<1>)
+  CH_LOGIC_OPERATOR_IMPL(operator>=, op_ge, ch_bit<1>)
 };
 
 CH_LOGIC_OPERATOR(logic_op_arithmetic)
   friend auto operator-(Derived self) {
     auto sloc = logic_accessor::sloc(self);
-    return make_logic_op<op_neg, Derived>(self, sloc);
+    return make_logic_op<op_neg, signed_v<Derived>, Derived>(self, sloc);
   }
 
-  friend auto operator+(Derived lhs, const Derived& rhs) {
-    auto sloc = logic_accessor::sloc(lhs);
-    return make_logic_op<op_add, Derived>(lhs, rhs, sloc);
-  }
-
-  friend auto operator-(Derived lhs, const Derived& rhs) {
-    auto sloc = logic_accessor::sloc(lhs);
-    return make_logic_op<op_sub, Derived>(lhs, rhs, sloc);
-  }
-
-  friend auto operator*(Derived lhs, const Derived& rhs) {
-    auto sloc = logic_accessor::sloc(lhs);
-    return make_logic_op<op_mult, Derived>(lhs, rhs, sloc);
-  }
-
-  friend auto operator/(Derived lhs, const Derived& rhs) {
-    auto sloc = logic_accessor::sloc(lhs);
-    return make_logic_op<op_div, Derived>(lhs, rhs, sloc);
-  }
-
-  friend auto operator%(Derived lhs, const Derived& rhs) {
-    auto sloc = logic_accessor::sloc(lhs);
-    return make_logic_op<op_mod, Derived>(lhs, rhs, sloc);
-  }
+  CH_LOGIC_OPERATOR_IMPL(operator+, op_add, Derived)
+  CH_LOGIC_OPERATOR_IMPL(operator-, op_sub, Derived)
+  CH_LOGIC_OPERATOR_IMPL(operator*, op_mul, Derived)
+  CH_LOGIC_OPERATOR_IMPL(operator/, op_div, Derived)
+  CH_LOGIC_OPERATOR_IMPL(operator%, op_mod, Derived)
 };
 
 }

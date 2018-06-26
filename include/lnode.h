@@ -18,21 +18,20 @@ public:
   lnode(const lnode& rhs);
 
   explicit lnode(uint32_t size,
-                 uint32_t var_id = 0,
+                 const source_location& sloc,
                  const std::string& name = "",
-                 const source_location& sloc = source_location());
+                 uint32_t var_id = 0);
 
   lnode(uint32_t size,
         const lnode& src,
-        uint32_t src_offset = 0,
-        uint32_t var_id = 0,
+        uint32_t src_offset,
+        const source_location& sloc,
         const std::string& name = "",
-        const source_location& sloc = source_location());
+        uint32_t var_id = 0);
 
   lnode(lnodeimpl* impl);
 
   lnode(const bitvector& value);
-
   ~lnode();
 
   lnode& operator=(const lnode& rhs);
@@ -40,7 +39,8 @@ public:
   void write(uint32_t dst_offset,
              const lnode& in,
              uint32_t src_offset,
-             uint32_t length);
+             uint32_t length,
+             const source_location& sloc);
 
   bool empty() const;
 
@@ -62,7 +62,7 @@ public:
 
   const source_location& sloc() const;
 
-  lnodeimpl* clone() const;  
+  lnodeimpl* clone(const source_location& sloc) const;
 
 protected:
 

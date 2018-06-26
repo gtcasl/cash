@@ -5,20 +5,20 @@ using namespace ch::internal;
 
 proxyimpl::proxyimpl(context* ctx,
                      uint32_t size,
-                     uint32_t var_id,
+                     const source_location& sloc,
                      const std::string& name,
-                     const source_location& sloc)
-  : lnodeimpl(ctx, type_proxy, size, var_id, name, sloc)
+                     uint32_t var_id)
+  : lnodeimpl(ctx, type_proxy, size, sloc, name, var_id)
 {}
 
 proxyimpl::proxyimpl(context* ctx,
                      const lnode& src,
                      uint32_t offset,
                      uint32_t length,
-                     uint32_t var_id,
+                     const source_location& sloc,
                      const std::string& name,
-                     const source_location& sloc)
-  : lnodeimpl(ctx, type_proxy, length, var_id, name, sloc) {
+                     uint32_t var_id)
+  : lnodeimpl(ctx, type_proxy, length, sloc, name, var_id) {
   this->add_source(0, src, offset, length);  
 }
 
@@ -240,7 +240,8 @@ std::size_t proxyimpl::hash() const {
   return ret.value;
 }
 
-lnodeimpl* proxyimpl::slice(uint32_t offset, uint32_t length) {
+lnodeimpl* proxyimpl::slice(uint32_t offset, uint32_t length,
+                            const source_location& sloc) {
   assert(length <= value_.size());
 
   // return the nested node if the offset/size match
@@ -254,7 +255,7 @@ lnodeimpl* proxyimpl::slice(uint32_t offset, uint32_t length) {
   }
 
   // return new slice
-  auto proxy = ctx_->create_node<proxyimpl>(length, var_id_, name_, sloc_);
+  auto proxy = ctx_->create_node<proxyimpl>(length, sloc, name_, var_id_);
   for (auto& range : ranges_) {
     uint32_t r_end = range.dst_offset + range.length;
     uint32_t src_end = offset + length;

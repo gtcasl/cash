@@ -14,7 +14,6 @@
   m(cd) \
   m(alu) \
   m(sel) \
-  m(case) \
   m(reg) \
   m(mem) \
   m(mrport) \
@@ -111,7 +110,8 @@ public:
 
   virtual void eval() = 0;
 
-  virtual lnodeimpl* slice(uint32_t offset, uint32_t length);
+  virtual lnodeimpl* slice(uint32_t offset, uint32_t length,
+                           const source_location& sloc);
 
   virtual void print(std::ostream& out, uint32_t level) const;
 
@@ -120,9 +120,9 @@ protected:
   lnodeimpl(context* ctx,
             lnodetype type,
             uint32_t size,
-            uint32_t var_id = 0,
+            const source_location& sloc,
             const std::string& name = "",
-            const source_location& sloc = source_location());
+            uint32_t var_id = 0);
 
   virtual ~lnodeimpl();
 
@@ -146,9 +146,9 @@ protected:
   lnodetype type_;
   std::vector<lnode> srcs_;
   bitvector value_;
-  uint32_t var_id_;
-  std::string name_;
   source_location sloc_;
+  std::string name_;
+  uint32_t var_id_;
 
   friend class context;
 };
@@ -156,7 +156,7 @@ protected:
 class undefimpl : public lnodeimpl {
 public:
 
-  undefimpl(context* ctx, uint32_t size);
+  undefimpl(context* ctx, uint32_t size, const source_location& sloc);
 
   void eval() override {}
 };

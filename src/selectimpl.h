@@ -39,7 +39,8 @@ protected:
   selectimpl(context* ctx,
              const lnode& pred,
              const lnode& _true,
-             const lnode& _false);
+             const lnode& _false,
+             const source_location& sloc);
 
   ~selectimpl();
 

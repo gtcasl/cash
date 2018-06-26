@@ -15,7 +15,7 @@ using namespace extension;
 class ch_float32;
 
 template <unsigned Delay = 1>
-struct fAdd : public udf_seq<Delay, false, ch_float32, ch_float32, ch_float32, ch_float32> {
+struct fAdd : public udf_seq<Delay, false, ch_float32, ch_float32, ch_float32, ch_bool> {
 
   void eval(udf_output& dst, const udf_inputs& srcs) override {
     uint32_t enable = srcs[2].word(0);
@@ -34,7 +34,7 @@ struct fAdd : public udf_seq<Delay, false, ch_float32, ch_float32, ch_float32, c
 };
 
 template <unsigned Delay = 1>
-struct fSub : public udf_seq<Delay, false, ch_float32, ch_float32, ch_float32, ch_float32> {
+struct fSub : public udf_seq<Delay, false, ch_float32, ch_float32, ch_float32, ch_bool> {
 
   void eval(udf_output& dst, const udf_inputs& srcs) override {
     uint32_t enable = srcs[2].word(0);
@@ -53,7 +53,7 @@ struct fSub : public udf_seq<Delay, false, ch_float32, ch_float32, ch_float32, c
 };
 
 template <unsigned Delay>
-struct fMult : public udf_seq<Delay, false, ch_float32, ch_float32, ch_float32, ch_float32> {
+struct fMul : public udf_seq<Delay, false, ch_float32, ch_float32, ch_float32, ch_bool> {
 
   void eval(udf_output& dst, const udf_inputs& srcs) override {
     uint32_t enable = srcs[2].word(0);
@@ -72,7 +72,7 @@ struct fMult : public udf_seq<Delay, false, ch_float32, ch_float32, ch_float32, 
 };
 
 template <unsigned Delay>
-struct fDiv : public udf_seq<Delay, false, ch_float32, ch_float32, ch_float32, ch_float32> {
+struct fDiv : public udf_seq<Delay, false, ch_float32, ch_float32, ch_float32, ch_bool> {
 
   void eval(udf_output& out, const udf_inputs& srcs) override {
     uint32_t enable = srcs[2].word(0);
@@ -90,38 +90,84 @@ struct fDiv : public udf_seq<Delay, false, ch_float32, ch_float32, ch_float32, c
   }
 };
 
-template <unsigned Delay>
-ch_float32 ch_fadd(const ch_float32& lhs, const ch_float32& rhs, const ch_bool& enable, const source_location&);
+class ch_float32;
 
-template <unsigned Delay>
-ch_float32 ch_fsub(const ch_float32& lhs, const ch_float32& rhs, const ch_bool& enable, const source_location&);
-
-template <unsigned Delay>
-ch_float32 ch_fmult(const ch_float32& lhs, const ch_float32& rhs, const ch_bool& enable, const source_location&);
-
-template <unsigned Delay>
-ch_float32 ch_fdiv(const ch_float32& lhs, const ch_float32& rhs, const ch_bool& enable, const source_location&);
-
-class ch_float32 : public logic_op_compare<ch_float32,
-                            logic_op_relational<ch_float32, ch_bit32>> {
+class ch_scfloat32 : public ch_scbit<32> {
 public:
-  using traits = logic_traits<32, true, ch_float32, ch_scbit<32>>;
-  using base = logic_op_compare<ch_float32,
-                 logic_op_relational<ch_float32, ch_bit32>>;
+  using traits = scalar_traits<32, true, ch_scfloat32, ch_float32>;
+  using base = ch_scbit<32>;
+
+  explicit ch_scfloat32(const scalar_buffer_ptr& buffer = make_scalar_buffer(32))
+    : base(buffer)
+  {}
+
+  ch_scfloat32(float rhs) : base(bitcast<uint32_t>(rhs)) {}
+
+  explicit ch_scfloat32(const ch_scbit<32>& rhs) : base(rhs) {}
+
+  ch_scfloat32(const ch_scfloat32& rhs) : base(rhs) {}
+
+  ch_scfloat32(ch_scfloat32&& rhs) : base(std::move(rhs)) {}
+
+  ch_scfloat32& operator=(const ch_scfloat32& rhs) {
+    base::operator=(rhs);
+    return *this;
+  }
+
+  ch_scfloat32& operator=(ch_scfloat32&& rhs) {
+    base::operator=(std::move(rhs));
+    return *this;
+  }
+
+  CH_SCALAR_INTERFACE(ch_scfloat32)
+
+  friend bool operator==(const ch_scfloat32& lhs, const ch_scfloat32& rhs) {
+    return (lhs.as_scint() == rhs.as_scint());
+  }
+
+  friend bool operator!=(const ch_scfloat32& lhs, const ch_scfloat32& rhs) {
+    return (lhs.as_scint() != rhs.as_scint());
+  }
+
+  friend bool operator<(const ch_scfloat32& lhs, const ch_scfloat32& rhs) {
+    return (lhs.as_scint() < rhs.as_scint());
+  }
+
+  friend bool operator<=(const ch_scfloat32& lhs, const ch_scfloat32& rhs) {
+    return (lhs.as_scint() <= rhs.as_scint());
+  }
+
+  friend bool operator>(const ch_scfloat32& lhs, const ch_scfloat32& rhs) {
+    return (lhs.as_scint() >= rhs.as_scint());
+  }
+
+  friend bool operator>=(const ch_scfloat32& lhs, const ch_scfloat32& rhs) {
+    return (lhs.as_scint() >= rhs.as_scint());
+  }
+
+  explicit operator float() const {
+    return bitcast<float>(static_cast<uint32_t>(*this));
+  }  
+};
+
+class ch_float32 : public ch_bit32 {
+public:
+  using traits = logic_traits<32, true, ch_float32, ch_scfloat32>;
+  using base = ch_bit32;
 
   explicit ch_float32(const logic_buffer_ptr& buffer = make_logic_buffer(32, CH_CUR_SLOC))
     : base(buffer)
   {}
 
-  ch_float32(float rhs, CH_SLOC) : base(*(uint32_t*)&rhs, sloc) {}
+  ch_float32(float rhs, CH_SLOC) : base(bitcast<uint32_t>(rhs), sloc) {}
+
+  explicit ch_float32(const ch_scbit<32>& rhs, CH_SLOC) : base(rhs, sloc) {}
+
+  explicit ch_float32(const ch_bit<32>& rhs, CH_SLOC) : base(rhs, sloc) {}
 
   ch_float32(const ch_float32& rhs, CH_SLOC) : base(rhs, sloc) {}
 
   ch_float32(ch_float32&& rhs) : base(std::move(rhs)) {}
-
-  explicit ch_float32(const ch_bit<32>& rhs, CH_SLOC) : base(rhs, sloc) {}
-
-  explicit ch_float32(const ch_scbit<32>& rhs, CH_SLOC) : base(rhs, sloc) {}
 
   ch_float32& operator=(const ch_float32& rhs) {
     base::operator=(rhs);
@@ -133,28 +179,52 @@ public:
     return *this;
   }
 
-  template <unsigned Delay>
-  friend auto ch_fadd(const ch_float32& lhs, const ch_float32& rhs, const ch_bool& enable = true, __sloc) {
-    return ch_udf<fAdd<Delay>>(lhs, rhs, enable, sloc);
-  }
-
-  template <unsigned Delay>
-  friend auto ch_fsub(const ch_float32& lhs, const ch_float32& rhs, const ch_bool& enable = true, __sloc) {
-    return ch_udf<fSub<Delay>>(lhs, rhs, enable, sloc);
-  }
-
-  template <unsigned Delay>
-  friend auto ch_fmult(const ch_float32& lhs, const ch_float32& rhs, const ch_bool& enable = true, __sloc) {
-    return ch_udf<fMult<Delay>>(lhs, rhs, enable, sloc);
-  }
-
-  template <unsigned Delay>
-  friend auto ch_fdiv(const ch_float32& lhs, const ch_float32& rhs, const ch_bool& enable = true, __sloc) {
-    return ch_udf<fDiv<Delay>>(lhs, rhs, enable, sloc);
-  }
-
   CH_LOGIC_INTERFACE(ch_float32)
+
+  friend auto operator==(ch_float32 lhs, const ch_float32& rhs) {
+    return (lhs.as_int() == rhs.as_int());
+  }
+
+  friend auto operator!=(ch_float32 lhs, const ch_float32& rhs) {
+    return (lhs.as_int() != rhs.as_int());
+  }
+
+  friend auto operator<(ch_float32 lhs, const ch_float32& rhs) {
+    return (lhs.as_int() < rhs.as_int());
+  }
+
+  friend auto operator<=(ch_float32 lhs, const ch_float32& rhs) {
+    return (lhs.as_int() <= rhs.as_int());
+  }
+
+  friend auto operator>(ch_float32 lhs, const ch_float32& rhs) {
+    return (lhs.as_int() >= rhs.as_int());
+  }
+
+  friend auto operator>=(ch_float32 lhs, const ch_float32& rhs) {
+    return (lhs.as_int() >= rhs.as_int());
+  }
 };
+
+template <unsigned Delay>
+auto ch_fadd(const ch_float32& lhs, const ch_float32& rhs, const ch_bool& enable = true, __sloc) {
+  return ch_udf<fAdd<Delay>>(lhs, rhs, enable, sloc);
+}
+
+template <unsigned Delay>
+auto ch_fsub(const ch_float32& lhs, const ch_float32& rhs, const ch_bool& enable = true, __sloc) {
+  return ch_udf<fSub<Delay>>(lhs, rhs, enable, sloc);
+}
+
+template <unsigned Delay>
+auto ch_fmul(const ch_float32& lhs, const ch_float32& rhs, const ch_bool& enable = true, __sloc) {
+  return ch_udf<fMul<Delay>>(lhs, rhs, enable, sloc);
+}
+
+template <unsigned Delay>
+auto ch_fdiv(const ch_float32& lhs, const ch_float32& rhs, const ch_bool& enable = true, __sloc) {
+  return ch_udf<fDiv<Delay>>(lhs, rhs, enable, sloc);
+}
 
 }
 }

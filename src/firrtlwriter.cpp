@@ -422,7 +422,7 @@ void firrtlwriter::print_alu(module_t& module, aluimpl* node) {
     this->print_name(node);
     out_ << " <= asUInt(_t" << dst << ")" << std::endl;
   } else
-  if (op == op_sra) {
+  if (op == op_srl && node->is_signed()) {
     auto dst = module.num_temps++;
     out_ << "node _t" << dst << " = asSInt(";
     this->print_name(node->src(0).impl());
@@ -432,23 +432,24 @@ void firrtlwriter::print_alu(module_t& module, aluimpl* node) {
     this->print_name(node->src(1).impl());
     out_ << ")" << std::endl;
   } else
-  if (op == op_zext) {
-    this->print_name(node);
-    out_ << " <= pad<" << node->size() << ">(";
-    this->print_name(node->src(0).impl());
-    out_ << ")" << std::endl;
-  } else
-  if (op == op_sext) {
-    auto src = module.num_temps++;
-    auto dst = module.num_temps++;
-    out_ << "node _t" << src << " = asSInt(";
-    this->print_name(node->src(0).impl());
-    out_ << ")" << std::endl;
-    out_ << "node _t" << dst << " = pad<" << node->size() << ">(";
-    out_ << "_t" << src << ")" << std::endl;
-    this->print_name(node);
-    out_ << " <= asUInt(_t" << dst << ")" << std::endl;
-  } else{
+  if (op == op_pad) {
+    if (node->is_signed()) {
+      auto src = module.num_temps++;
+      auto dst = module.num_temps++;
+      out_ << "node _t" << src << " = asSInt(";
+      this->print_name(node->src(0).impl());
+      out_ << ")" << std::endl;
+      out_ << "node _t" << dst << " = pad<" << node->size() << ">(";
+      out_ << "_t" << src << ")" << std::endl;
+      this->print_name(node);
+      out_ << " <= asUInt(_t" << dst << ")" << std::endl;
+    } else {
+      this->print_name(node);
+      out_ << " <= pad<" << node->size() << ">(";
+      this->print_name(node->src(0).impl());
+      out_ << ")" << std::endl;
+    }
+  } else {
     this->print_name(node);
     out_ << " <= ";
     if (CH_OP_ARY(op) == op_binary) {
@@ -636,13 +637,12 @@ void firrtlwriter::print_operator(ch_op op) {
   case op_neg:   out_ << "neg"; break;
   case op_add:   out_ << "add"; break;
   case op_sub:   out_ << "sub"; break;
-  case op_mult:  out_ << "mul"; break;
+  case op_mul:  out_ << "mul"; break;
   case op_div:   out_ << "div"; break;
   case op_mod:   out_ << "mod"; break;
 
   case op_sll:   out_ << "dshl"; break;
   case op_srl:   out_ << "dshr"; break;
-  case op_sra:   out_ << "dshr"; break;
 
   case op_eq:    out_ << "eq"; break;
   case op_ne:    out_ << "neq"; break;

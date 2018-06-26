@@ -6,16 +6,18 @@ namespace ch {
 namespace internal {
 
 template <unsigned N>
-class ch_bit : public logic_op_compare<ch_bit<N>,
-                        logic_op_logical<ch_bit<N>,
-                          logic_op_bitwise<ch_bit<N>,
-                            logic_op_shift<ch_bit<N>>>>> {
+class ch_bit : public logic_op_compare<ch_bit, N,
+                        logic_op_logical<ch_bit, N,
+                          logic_op_bitwise<ch_bit, N,
+                            logic_op_shift<ch_bit, N,
+                              logic_op_padding<ch_bit, N >>>>> {
 public:
   using traits = logic_traits<N, false, ch_bit, ch_scbit<N>>;
-  using base = logic_op_compare<ch_bit<N>,
-                 logic_op_logical<ch_bit<N>,
-                   logic_op_bitwise<ch_bit<N>,
-                     logic_op_shift<ch_bit<N>>>>>;
+  using base = logic_op_compare<ch_bit, N,
+                 logic_op_logical<ch_bit, N,
+                   logic_op_bitwise<ch_bit, N,
+                     logic_op_shift<ch_bit, N,
+                       logic_op_padding<ch_bit, N >>>>>;
 
   explicit ch_bit(const logic_buffer_ptr& buffer = make_logic_buffer(N, CH_CUR_SLOC))
     : buffer_(buffer) {
@@ -47,7 +49,7 @@ public:
 
   template <unsigned M,
             CH_REQUIRE_0(M < N)>
-  ch_bit(const ch_bit<M>& rhs, CH_SLOC)
+  explicit ch_bit(const ch_bit<M>& rhs, CH_SLOC)
     : buffer_(logic_accessor::copy_buffer(rhs.template pad<N>(sloc), sloc))
   {}
 
@@ -136,27 +138,6 @@ public:
     return this->slice<ch_bit<M>>(start * M, sloc);
   }
 
-  // padding operators
-
-  template <typename R>
-  R pad(CH_SLOC) const {
-    static_assert(is_logic_type_v<R>, "invalid type");
-    static_assert(width_v<R> >= N, "invalid size");
-    if constexpr (width_v<R> > N) {
-      return make_logic_op<op_zext, R>(*this, sloc);
-    } else
-    if constexpr (std::is_same_v<R, ch_bit>) {
-      return *this;
-    } else {
-      return R(*this, sloc);
-    }
-  }
-
-  template <unsigned M>
-  auto pad(CH_SLOC) const {
-    return this->pad<ch_bit<M>>(sloc);
-  }
-
   CH_LOGIC_INTERFACE(ch_bit)
 
 protected:
@@ -176,17 +157,17 @@ protected:
 
 template <unsigned N>
 inline auto ch_andr(const ch_bit<N>& in, CH_SLOC) {
-  return make_logic_op<op_andr, ch_bit<1>>(in, sloc);
+  return make_logic_op<op_andr, false, ch_bit<1>>(in, sloc);
 }
 
 template <unsigned N>
 inline auto ch_orr(const ch_bit<N>& in, CH_SLOC) {
-  return make_logic_op<op_orr, ch_bit<1>>(in, sloc);
+  return make_logic_op<op_orr, false, ch_bit<1>>(in, sloc);
 }
 
 template <unsigned N>
 inline auto ch_xorr(const ch_bit<N>& in, CH_SLOC) {
-  return make_logic_op<op_xorr, ch_bit<1>>(in, sloc);
+  return make_logic_op<op_xorr, false, ch_bit<1>>(in, sloc);
 }
 
 // rotate operators
@@ -219,7 +200,7 @@ R ch_slice(const T& obj, size_t start = 0, CH_SLOC) {
     }
   } else {
     ch_bit<width_v<R>> ret(make_logic_buffer(width_v<R>, sloc));
-    logic_accessor::write(ret, 0, obj, start, width_v<R>);
+    logic_accessor::write(ret, 0, obj, start, width_v<R>, sloc);
     return ret.template as<R>();
   }
 }
@@ -307,7 +288,7 @@ protected:
 };
 
 #define CH_BIND_TMPL(a, i, x) typename __T##i
-#define CH_BIND_ASSERT(a, i, x) static_assert(is_logic_type_v<__T##i>, "invalid type")
+#define CH_BIND_ASSERT(a, i, x) static_assert(is_logic_type_v<__T##i>, "invalid type for argument"#i)
 #define CH_BIND_DECL(a, i, x) __T##i& arg##i
 #define CH_BIND_ARG(a, i, x) arg##i
 #define CH_BIND(...) \
@@ -326,19 +307,21 @@ CH_VA_ARGS_MAP(CH_BIND)
 // concatenation
 
 template <typename U, typename T>
-void cat_impl(U& inout, uint32_t dst_offset, const T& arg) {
-  logic_accessor::write(inout, dst_offset - width_v<T>, arg, 0, width_v<T>);
+void cat_impl(U& inout, uint32_t dst_offset, const source_location& sloc,
+              const T& arg) {
+  logic_accessor::write(inout, dst_offset - width_v<T>, arg, 0, width_v<T>, sloc);
 }
 
 template <typename U, typename T0, typename... Ts>
-void cat_impl(U& inout, uint32_t dst_offset, const T0& arg0, const Ts&... args) {
-  cat_impl(inout, dst_offset, arg0);
-  cat_impl(inout, dst_offset - width_v<T0>, args...);
+void cat_impl(U& inout, uint32_t dst_offset, const source_location& sloc,
+              const T0& arg0, const Ts&... args) {
+  cat_impl(inout, dst_offset, sloc, arg0);
+  cat_impl(inout, dst_offset - width_v<T0>, sloc, args...);
 }
 
 #define CH_CAT_TYPE(a, i, x) __T##i
 #define CH_CAT_TMPL(a, i, x) typename __T##i
-#define CH_CAT_ASSERT(a, i, x) static_assert(is_object_type_v<__T##i>, "invalid type")
+#define CH_CAT_ASSERT(a, i, x) static_assert(is_object_type_v<__T##i>, "invalid type for argument"#i)
 #define CH_CAT_DECL(a, i, x) const __T##i& arg##i
 #define CH_CAT_ARG(a, i, x) to_logic<width_v<__T##i>>(arg##i, sloc)
 #define CH_CAT(...) \
@@ -349,7 +332,7 @@ void cat_impl(U& inout, uint32_t dst_offset, const T0& arg0, const Ts&... args) 
     static constexpr unsigned N = width_v<CH_FOR_EACH(CH_CAT_TYPE, , CH_SEP_COMMA, __VA_ARGS__)>; \
     static_assert(width_v<R> == N, "size mismatch"); \
     R ret(make_logic_buffer(N, sloc)); \
-    cat_impl(ret, N, CH_FOR_EACH(CH_CAT_ARG, , CH_SEP_COMMA, __VA_ARGS__)); \
+    cat_impl(ret, N, sloc, CH_FOR_EACH(CH_CAT_ARG, , CH_SEP_COMMA, __VA_ARGS__)); \
     return ret; \
   } \
   template <CH_FOR_EACH(CH_CAT_TMPL, , CH_SEP_COMMA, __VA_ARGS__)> \
@@ -357,7 +340,7 @@ void cat_impl(U& inout, uint32_t dst_offset, const T0& arg0, const Ts&... args) 
     CH_FOR_EACH(CH_CAT_ASSERT, , CH_SEP_SEMICOLON, __VA_ARGS__); \
     static constexpr unsigned N = width_v<CH_FOR_EACH(CH_CAT_TYPE, , CH_SEP_COMMA, __VA_ARGS__)>; \
     ch_bit<N> ret(make_logic_buffer(N, sloc)); \
-    cat_impl(ret, N, CH_FOR_EACH(CH_CAT_ARG, , CH_SEP_COMMA, __VA_ARGS__)); \
+    cat_impl(ret, N, sloc, CH_FOR_EACH(CH_CAT_ARG, , CH_SEP_COMMA, __VA_ARGS__)); \
     return ret; \
   }
 CH_VA_ARGS_MAP(CH_CAT)
@@ -393,7 +376,7 @@ inline void ch_print(const std::string& format, CH_SLOC) {
 }
 
 #define CH_PRINT_TMPL(a, i, x) typename __T##i
-#define CH_PRINT_ASSERT(a, i, x) static_assert(is_logic_type_v<__T##i>, "invalid type")
+#define CH_PRINT_ASSERT(a, i, x) static_assert(is_logic_type_v<__T##i>, "invalid type for argument"#i)
 #define CH_PRINT_DECL(a, i, x) const __T##i& arg##i
 #define CH_PRINT_ARG(a, i, x) get_lnode(arg##i)
 #define CH_PRINT(...) \

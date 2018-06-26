@@ -14,18 +14,22 @@ const char* ch::internal::to_string(ch_op op) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-aluimpl::aluimpl(context* ctx, ch_op op, uint32_t size, const lnode& in,
-                 const source_location& sloc)
-  : lnodeimpl(ctx, type_alu, size, 0, "", sloc)
-  , op_(op) {
+aluimpl::aluimpl(context* ctx, ch_op op, uint32_t size, bool is_signed,
+                 const lnode& in, const source_location& sloc)
+  : lnodeimpl(ctx, type_alu, size, sloc)
+  , op_(op)
+  , is_signed_(is_signed)
+  , need_resizing_(false) {
   name_ = to_string(op);
   srcs_.push_back(in);
 }
 
-aluimpl::aluimpl(context* ctx, ch_op op, uint32_t size, const lnode& lhs, const lnode& rhs,
-                 const source_location& sloc)
-  : lnodeimpl(ctx, type_alu, size, 0, "", sloc)
-  , op_(op) {
+aluimpl::aluimpl(context* ctx, ch_op op, uint32_t size, bool is_signed,
+                 const lnode& lhs, const lnode& rhs, const source_location& sloc)
+  : lnodeimpl(ctx, type_alu, size, sloc)
+  , op_(op)
+  , is_signed_(is_signed)
+  , need_resizing_(false) {
   name_ = to_string(op);
   srcs_.push_back(lhs);
   srcs_.push_back(rhs);
@@ -55,87 +59,134 @@ std::size_t aluimpl::hash() const {
   return ret.value;
 }
 
+void aluimpl::initialize() {
+  // access source node data
+  if (srcs_.size() > 0) {
+    src0_ = &srcs_[0].data();
+    if (srcs_.size() > 1) {
+      src1_ = &srcs_[1].data();
+    }
+  }
+
+  // resize proxy arguments
+  auto op_ary = CH_OP_ARY(op_);
+  auto op_class = CH_OP_CLASS(op_);
+  if (op_ary > 1
+   && (op_compare == op_class
+    || op_relational == op_class
+    || op_bitwise == op_class
+    || op_arithm == op_class)
+   && src0_->size() != src1_->size()) {
+    if (src0_->size() < src1_->size()) {
+      t_src0_.resize(src1_->size());
+      src0_ = &t_src0_;
+      need_resizing_ = true;
+    } else {
+      t_src1_.resize(src0_->size());
+      src1_ = &t_src1_;
+      need_resizing_ = true;
+    }
+  }
+}
+
+void aluimpl::update_proxies() {
+  if (src0_ == &t_src0_) {
+    if (is_signed_) {
+      bv_sext(t_src0_, srcs_[0].data());
+    } else {
+      bv_zext(t_src0_, srcs_[0].data());
+    }
+  } else {
+    if (is_signed_) {
+      bv_sext(t_src1_, srcs_[1].data());
+    } else {
+      bv_zext(t_src1_, srcs_[1].data());
+    }
+  }
+}
+
 void aluimpl::eval() {
-  const bitvector& src0 = (srcs_.size() > 0) ? srcs_[0].data() : value_;
-  const bitvector& src1 = (srcs_.size() > 1) ? srcs_[1].data() : src0;
+  if (need_resizing_) {
+    this->update_proxies();
+  }
 
   switch (op_) {
   case op_eq:
-    value_.word(0) = (src0 == src1);
+    value_.word(0) = (*src0_ == *src1_);
     break;
   case op_ne:
-    value_.word(0) = (src0 != src1);
+    value_.word(0) = (*src0_ != *src1_);
     break;
   case op_lt:
-    value_.word(0) = (src0 < src1);
+    value_.word(0) = is_signed_ ? bv_lts(*src0_, *src1_) : bv_ltu(*src0_, *src1_);
     break;
   case op_gt:
-    value_.word(0) = (src0 > src1);
+    value_.word(0) = is_signed_ ? bv_lts(*src1_, *src0_) : bv_ltu(*src1_, *src0_);
     break;
   case op_le:
-    value_.word(0) = (src0 <= src1);
+    value_.word(0) = !(is_signed_ ? bv_lts(*src1_, *src0_) : bv_ltu(*src1_, *src0_));
     break;
   case op_ge:
-    value_.word(0) = (src0 >= src1);
+    value_.word(0) = !(is_signed_ ? bv_lts(*src0_, *src1_) : bv_ltu(*src0_, *src1_));
     break;
 
   case op_inv:
-    Inv(value_, src0);
+    bv_inv(value_, *src0_);
     break;
   case op_and:
-    And(value_, src0, src1);
+    bv_and(value_, *src0_, *src1_);
     break;
   case op_or:
-    Or(value_, src0, src1);
+    bv_or(value_, *src0_, *src1_);
     break;
   case op_xor:
-    Xor(value_, src0, src1);
+    bv_xor(value_, *src0_, *src1_);
     break;
 
   case op_andr:
-    value_.word(0) = AndR(src0);
+    value_.word(0) = bv_andr(*src0_);
     break;
   case op_orr:
-    value_.word(0) = OrR(src0);
+    value_.word(0) = bv_orr(*src0_);
     break;
   case op_xorr:
-    value_.word(0) = XorR(src0);
+    value_.word(0) = bv_xorr(*src0_);
     break;
 
   case op_sll:
-    Sll(value_, src0, src1);
+    bv_sll(value_, *src0_, *src1_);
     break;
   case op_srl:
-    Srl(value_, src0, src1);
-    break;
-  case op_sra:
-    Sra(value_, src0, src1);
+    if (is_signed_ )
+        bv_sra(value_, *src0_, *src1_);
+    else
+        bv_srl(value_, *src0_, *src1_);
     break;
 
   case op_add:
-    Add(value_, src0, src1);
+    bv_add(value_, *src0_, *src1_);
     break;
   case op_sub:
-    Sub(value_, src0, src1);
+    bv_sub(value_, *src0_, *src1_);
     break;
   case op_neg:
-    Neg(value_, src0);
+    bv_neg(value_, *src0_);
     break;
-  case op_mult:
-    Mult(value_, src0, src1);
+  case op_mul:
+    bv_mul(value_, *src0_, *src1_);
     break;
   case op_div:
-    Div(value_, src0, src1);
+    bv_div(value_, *src0_, *src1_);
     break;
   case op_mod:
-    Mod(value_, src0, src1);
+    bv_mod(value_, *src0_, *src1_);
     break;
 
-  case op_zext:
-    ZExt(value_, src0);
-    break;
-  case op_sext:
-    SExt(value_, src0);
+  case op_pad:
+    if (is_signed_ )
+        bv_sext(value_, *src0_);
+    else
+        bv_zext(value_, *src0_);
     break;
 
   default:
@@ -163,18 +214,20 @@ void aluimpl::print(std::ostream& out, uint32_t level) const {
 lnodeimpl* ch::internal::createAluNode(
     ch_op op,
     uint32_t size,
+    bool is_signed,
     const lnode& in,
     const source_location& sloc) {
-  return in.impl()->ctx()->create_node<aluimpl>(op, size, in, sloc);
+  return in.impl()->ctx()->create_node<aluimpl>(op, size, is_signed, in, sloc);
 }
 
 lnodeimpl* ch::internal::createAluNode(
     ch_op op,
     uint32_t size,
+    bool is_signed,
     const lnode& lhs,
     const lnode& rhs,
     const source_location& sloc) {
-  return lhs.impl()->ctx()->create_node<aluimpl>(op, size, lhs, rhs, sloc);
+  return lhs.impl()->ctx()->create_node<aluimpl>(op, size, is_signed, lhs, rhs, sloc);
 }
 
 lnodeimpl* ch::internal::createRotateNode(
@@ -184,7 +237,7 @@ lnodeimpl* ch::internal::createRotateNode(
     const source_location& sloc) {
   auto N = next.size();
   auto mod = dist % N;
-  auto ret = next.impl()->ctx()->create_node<proxyimpl>(N, 0, "", sloc);
+  auto ret = next.impl()->ctx()->create_node<proxyimpl>(N, sloc);
   if (right) {
     ret->add_source(0, next, mod, N - mod);
     ret->add_source(N - mod, next, 0, mod);

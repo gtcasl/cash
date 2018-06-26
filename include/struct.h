@@ -133,7 +133,7 @@ public: \
     , CH_FOR_EACH(CH_STRUCT_MOVE_CTOR, , CH_SEP_COMMA, __VA_ARGS__) {} \
   struct_name(CH_REVERSE_FOR_EACH(CH_STRUCT_LOGIC_FIELD_CTOR_ARGS, , CH_SEP_COMMA, __VA_ARGS__), const base& parent, CH_SLOC) \
     : struct_name(std::make_shared<ch::internal::type_buffer_t<traits>>(traits::bitwidth, sloc, CH_STRINGIZE(name))) { \
-    ch::internal::type_accessor_t<traits>::write(*this, 0, parent, 0, ch_width_v<base>); \
+    ch::internal::type_accessor_t<traits>::write(*this, 0, parent, 0, ch_width_v<base>, sloc); \
     CH_REVERSE_FOR_EACH(CH_STRUCT_FIELD_CTOR_INIT, , CH_SEP_SEMICOLON, __VA_ARGS__); \
   } \
 protected: \

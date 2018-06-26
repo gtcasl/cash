@@ -32,10 +32,11 @@ namespace ch {
 // utility namespace
 //
 namespace utility {
+  using ch::internal::bitcast;
   using ch::internal::stringf;  
   using ch::internal::ispow2;
   using ch::internal::ilog2;
-  using ch::internal::log2ceil;
+  using ch::internal::log2ceil;  
 }
 
 //
@@ -243,6 +244,8 @@ namespace extension {
   using ch::internal::scalar_op_logical;
   using ch::internal::scalar_op_bitwise;
   using ch::internal::scalar_op_shift;
+  using ch::internal::scalar_op_padding;
+  using ch::internal::scalar_op_cast;
   using ch::internal::scalar_op_relational;
   using ch::internal::scalar_op_arithmetic;
 
@@ -250,6 +253,7 @@ namespace extension {
   using ch::internal::logic_op_logical;
   using ch::internal::logic_op_bitwise;
   using ch::internal::logic_op_shift;
+  using ch::internal::logic_op_padding;
   using ch::internal::logic_op_relational;
   using ch::internal::logic_op_arithmetic;
 }

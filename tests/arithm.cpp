@@ -73,12 +73,48 @@ TEST_CASE("arithmetic", "[arithmetic]") {
       return (x <= 1100_b);
     });
     TEST([]()->ch_bool {
-      ch_uint4 x(0100_b);
-      return (x >= 0100_b);
+      ch_uint4 x(1100_b);
+      return (x <= 1100_b);
     });
     TEST([]()->ch_bool {
       ch_uint4 x(1100_b);
       return (x >= 0100_b);
+    });
+    TEST([]()->ch_bool {
+      ch_uint4 x(0100_b);
+      return (x >= 0100_b);
+    });
+    TEST([]()->ch_bool {
+      ch_int4 x(0001_b);
+      return (x < 0100_b);
+    });
+    TEST([]()->ch_bool {
+      ch_int4 x(1001_b);
+      return (x < 0100_b);
+    });
+    TEST([]()->ch_bool {
+      ch_int4 x(0100_b);
+      return (x > 0010_b);
+    });
+    TEST([]()->ch_bool {
+      ch_int4 x(1100_b);
+      return (x < 0010_b);
+    });
+    TEST([]()->ch_bool {
+      ch_int4 x(0100_b);
+      return (x >= 1100_b);
+    });
+    TEST([]()->ch_bool {
+      ch_int4 x(1100_b);
+      return (x >= 1100_b);
+    });
+    TEST([]()->ch_bool {
+      ch_int4 x(1100_b);
+      return (x <= 0100_b);
+    });
+    TEST([]()->ch_bool {
+      ch_int4 x(0100_b);
+      return (x <= 0100_b);
     });
   }
   
@@ -110,7 +146,7 @@ TEST_CASE("arithmetic", "[arithmetic]") {
     });
     TEST([]()->ch_bool {
       ch_uint4 a(2);
-      auto c = ch_uint32(1100_b) >> a;
+      auto c = ch_uint32(1100_b32) >> a;
       return (c == 0011_b32);
     });
     TEST([]()->ch_bool {

@@ -1,4 +1,3 @@
 ignore:
   - */backward.h
-  - /examples/*
-  - /tests/*
+  - */catch.h

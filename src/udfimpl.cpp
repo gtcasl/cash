@@ -9,7 +9,7 @@ udfimpl::udfimpl(context* ctx,
                  udf_iface* udf,
                  const std::initializer_list<lnode>& srcs,
                  const source_location& sloc)
-  : lnodeimpl(ctx, type, udf->output_size(), 0, "", sloc)
+  : lnodeimpl(ctx, type, udf->output_size(), sloc)
   , udf_(udf)
   , udf_srcs_(srcs_) {
   udf->acquire();

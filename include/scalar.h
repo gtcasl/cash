@@ -194,14 +194,14 @@ typedef void (*ScalarFunc1)(bitvector& out, const bitvector& in);
 typedef void (*ScalarFunc2)(bitvector& out, const bitvector& lhs, const bitvector& rhs);
 
 template <typename R, typename A>
-auto make_scalar_op(const A& in, ScalarFunc1 func) {
+auto make_scalar_op(ScalarFunc1 func, const A& in) {
   bitvector ret(width_v<R>);
   func(ret, scalar_accessor::data(in));
   return R(make_scalar_buffer(std::move(ret)));
 }
 
 template <typename R, typename A, typename B>
-auto make_scalar_op(const A& lhs, const B& rhs, ScalarFunc2 func) {
+auto make_scalar_op(ScalarFunc2 func, const A& lhs, const B& rhs) {
   bitvector ret(width_v<R>);
   func(ret, scalar_accessor::data(lhs), scalar_accessor::data(rhs));
   return R(make_scalar_buffer(std::move(ret)));
@@ -240,8 +240,9 @@ auto make_scalar_op(const A& lhs, const B& rhs, ScalarFunc2 func) {
   }
 
 #define CH_SCALAR_OPERATOR(name) \
-  template <typename Derived, typename Next = empty_base> \
+  template <template <unsigned> typename T, unsigned N, typename Next = empty_base> \
   struct name : Next { \
+    using Derived = T<N>; \
     using Next::Next; \
     using Next::operator=; \
     name(const Next& rhs) : Next(rhs) {} \
@@ -253,24 +254,37 @@ auto make_scalar_op(const A& lhs, const B& rhs, ScalarFunc2 func) {
     name& operator=(const name& rhs) { Next::operator=(rhs); return *this; } \
     name& operator=(name&& rhs) { Next::operator=(std::move(rhs)); return *this; }
 
+#define CH_SCALAR_OPERATOR_IMPL(op, body) \
+  friend auto op(const Derived& lhs, const Derived& rhs) { \
+    CH_REM body; \
+  } \
+  template <unsigned M, CH_REQUIRE_0(M < N)> \
+  friend auto op(const Derived& lhs, const T<M>& _rhs) { \
+    auto rhs = _rhs.template pad<N>(); \
+    CH_REM body; \
+  } \
+  template <unsigned M, CH_REQUIRE_0(M < N)> \
+  friend auto op(const T<M>& _lhs, const Derived& rhs) { \
+    auto lhs = _lhs.template pad<N>(); \
+    CH_REM body; \
+  }
+
 CH_SCALAR_OPERATOR(scalar_op_compare)
-  friend auto operator==(const Derived& lhs, const Derived& rhs) {
-    return (scalar_accessor::data(lhs) == scalar_accessor::data(rhs));
-  }
-  friend auto operator!=(const Derived& lhs, const Derived& rhs) {
-    return (scalar_accessor::data(lhs) != scalar_accessor::data(rhs));
-  }
+  CH_SCALAR_OPERATOR_IMPL(operator==, (return scalar_accessor::data(lhs) == scalar_accessor::data(rhs)))
+  CH_SCALAR_OPERATOR_IMPL(operator!=, (return scalar_accessor::data(lhs) != scalar_accessor::data(rhs)))
 };
 
 CH_SCALAR_OPERATOR(scalar_op_logical)
   friend auto operator&&(const Derived& lhs, const Derived& rhs) {
     static_assert(Derived::traits::bitwidth == 1, "invalid size");
-    return static_cast<bool>(make_scalar_op<ch_scbit<1>>(lhs, rhs, And));
+    auto ret = make_scalar_op<ch_scbit<1>>(bv_and, lhs, rhs);
+    return static_cast<bool>(ret);
   }
 
   friend auto operator||(const Derived& lhs, const Derived& rhs) {
     static_assert(Derived::traits::bitwidth == 1, "invalid size");
-    return static_cast<bool>(make_scalar_op<ch_scbit<1>>(lhs, rhs, Or));
+    auto ret = make_scalar_op<ch_scbit<1>>(bv_or, lhs, rhs);
+    return static_cast<bool>(ret);
   }
 
   friend auto operator!(const Derived& self) {
@@ -280,20 +294,12 @@ CH_SCALAR_OPERATOR(scalar_op_logical)
 
 CH_SCALAR_OPERATOR(scalar_op_bitwise)
   friend auto operator~(const Derived& self) {
-    return make_scalar_op<Derived>(self, Inv);
+    return make_scalar_op<Derived>(bv_inv, self);
   }
 
-  friend auto operator&(const Derived& lhs, const Derived& rhs) {
-    return make_scalar_op<Derived>(lhs, rhs, And);
-  }
-
-  friend auto operator|(const Derived& lhs, const Derived& rhs) {
-    return make_scalar_op<Derived>(lhs, rhs, Or);
-  }
-
-  friend auto operator^(const Derived& lhs, const Derived& rhs) {
-    return make_scalar_op<Derived>(lhs, rhs, Xor);
-  }
+  CH_SCALAR_OPERATOR_IMPL(operator&, (return make_scalar_op<Derived>(bv_and, lhs, rhs)))
+  CH_SCALAR_OPERATOR_IMPL(operator|, (return make_scalar_op<Derived>(bv_or, lhs, rhs)))
+  CH_SCALAR_OPERATOR_IMPL(operator^, (return make_scalar_op<Derived>(bv_xor, lhs, rhs)))
 };
 
 CH_SCALAR_OPERATOR(scalar_op_shift)
@@ -301,28 +307,28 @@ CH_SCALAR_OPERATOR(scalar_op_shift)
             CH_REQUIRE_0(std::is_integral_v<U>)>
   friend auto operator<<(const Derived& lhs, const U& rhs) {
     auto _rhs = ch_scbit<CH_WIDTH_OF(U)>(rhs);
-    return make_scalar_op<Derived>(lhs, _rhs, Sll);
+    return make_scalar_op<Derived>(bv_sll, lhs, _rhs);
   }
 
   template <unsigned M>
   friend auto operator<<(const Derived& lhs, const ch_scbit<M>& rhs) {
-    return make_scalar_op<Derived>(lhs, rhs, Sll);
+    return make_scalar_op<Derived>(bv_sll, lhs, rhs);
   }
 
   template <typename U,
             CH_REQUIRE_0(std::is_integral_v<U>)>
   friend auto operator>>(const Derived& lhs, const U& rhs) {
     auto _rhs = ch_scbit<CH_WIDTH_OF(U)>(rhs);
-    return make_scalar_op<Derived>(lhs, _rhs, (signed_v<Derived> ? Sra : Srl));
+    return make_scalar_op<Derived>(bv_srl, lhs, _rhs);
   }
 
   template <unsigned M>
   friend auto operator>>(const Derived& lhs, const ch_scbit<M>& rhs) {
-    return make_scalar_op<Derived>(lhs, rhs, (signed_v<Derived> ? Sra : Srl));
+    return make_scalar_op<Derived>(bv_srl, lhs, rhs);
   }
 };
 
-CH_SCALAR_OPERATOR(scalar_cast_op)
+CH_SCALAR_OPERATOR(scalar_op_cast)
   template <typename U,
             CH_REQUIRE_0(std::is_integral_v<U>)>
   explicit operator U() const {
@@ -336,48 +342,51 @@ CH_SCALAR_OPERATOR(scalar_cast_op)
   }
 };
 
+CH_SCALAR_OPERATOR(scalar_op_padding)
+  template <typename R>
+  R pad() const {
+    static_assert(is_scalar_type_v<R>, "invalid type");
+    static_assert(width_v<R> >= N, "invalid size");
+    auto& self = reinterpret_cast<const Derived&>(*this);
+    if constexpr (width_v<R> > N) {
+      if constexpr (signed_v<Derived>) {
+        return make_scalar_op<R>(bv_sext, self);
+      } else {
+        return make_scalar_op<R>(bv_zext, self);
+      }
+    } else
+    if constexpr (std::is_same_v<R, Derived>) {
+      return self;
+    } else {
+      return R(self);
+    }
+  }
+  template <unsigned M>
+  auto pad() const {
+    return this->pad<T<M>>();
+  }
+};
+
 CH_SCALAR_OPERATOR(scalar_op_relational)
-  friend auto operator<(const Derived& lhs, const Derived& rhs) {
-    return (lhs.buffer_->data() < rhs.buffer_->data());
-  }
-
-  friend auto operator>=(const Derived& lhs, const Derived& rhs) {
-    return (lhs.buffer_->data() >= rhs.buffer_->data());
-  }
-
-  friend auto operator>(const Derived& lhs, const Derived& rhs) {
-    return (lhs.buffer_->data() > rhs.buffer_->data());
-  }
-
-  friend auto operator<=(const Derived& lhs, const Derived& rhs) {
-    return (lhs.buffer_->data() <= rhs.buffer_->data());
-  }
+  CH_SCALAR_OPERATOR_IMPL(operator<, (if constexpr (signed_v<Derived>) {
+                                        return bv_lts(lhs.buffer_->data(), rhs.buffer_->data());
+                                      } else {
+                                        return bv_ltu(lhs.buffer_->data(), rhs.buffer_->data());
+                                      }))
+  CH_SCALAR_OPERATOR_IMPL(operator>=, (return !(lhs < rhs)))
+  CH_SCALAR_OPERATOR_IMPL(operator>, (return (rhs < lhs)))
+  CH_SCALAR_OPERATOR_IMPL(operator<=, (return !(rhs < lhs)))
 };
 
 CH_SCALAR_OPERATOR(scalar_op_arithmetic)
   friend auto operator-(const Derived& self) {
-    return make_scalar_op<Derived>(self, Neg);
+    return make_scalar_op<Derived>(bv_neg, self);
   }
-
-  friend auto operator+(const Derived& lhs, const Derived& rhs) {
-    return make_scalar_op<Derived>(lhs, rhs, Add);
-  }
-
-  friend auto operator-(const Derived& lhs, const Derived& rhs) {
-    return make_scalar_op<Derived>(lhs, rhs, Sub);
-  }
-
-  friend auto operator*(const Derived& lhs, const Derived& rhs) {
-    return make_scalar_op<Derived>(lhs, rhs, Mult);
-  }
-
-  friend auto operator/(const Derived& lhs, const Derived& rhs) {
-    return make_scalar_op<Derived>(lhs, rhs, Div);
-  }
-
-  friend auto operator%(const Derived& lhs, const Derived& rhs) {
-    return make_scalar_op<Derived>(lhs, rhs, Mod);
-  }
+  CH_SCALAR_OPERATOR_IMPL(operator+, (return make_scalar_op<Derived>(bv_add, lhs, rhs)))
+  CH_SCALAR_OPERATOR_IMPL(operator-, (return make_scalar_op<Derived>(bv_sub, lhs, rhs)))
+  CH_SCALAR_OPERATOR_IMPL(operator*, (return make_scalar_op<Derived>(bv_mul, lhs, rhs)))
+  CH_SCALAR_OPERATOR_IMPL(operator/, (return make_scalar_op<Derived>(bv_div, lhs, rhs)))
+  CH_SCALAR_OPERATOR_IMPL(operator%, (return make_scalar_op<Derived>(bv_mod, lhs, rhs)))
 };
 
 }

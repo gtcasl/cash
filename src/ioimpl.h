@@ -6,18 +6,14 @@ namespace ch {
 namespace internal {
 
 class ioimpl : public lnodeimpl {
-protected:  
-
-  ioimpl(context* ctx, lnodetype type, uint32_t size)
-    : lnodeimpl(ctx, type, size)
-  {}
+protected:
 
   ioimpl(context* ctx,
          lnodetype type,
          uint32_t size,
-         const std::string& name,
-         const source_location& sloc)
-    : lnodeimpl(ctx, type, size, 0, name, sloc)
+         const source_location& sloc,
+         const std::string& name = "")
+    : lnodeimpl(ctx, type, size, sloc, name)
   {}
 
   ~ioimpl() {}

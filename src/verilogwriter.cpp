@@ -407,11 +407,11 @@ void verilogwriter::print_proxy(std::ostream& out, proxyimpl* node) {
 
 void verilogwriter::print_alu(std::ostream& out, aluimpl* node) {
   auto op = node->op();
-  if (op == op_zext) {
-    this->print_zext(out, node);
-  } else
-  if (op == op_sext) {
-    this->print_sext(out, node);
+  if (op == op_pad) {
+    if (node->is_signed())
+      this->print_sext(out, node);
+    else
+      this->print_zext(out, node);
   } else {
     out << "assign ";
     this->print_name(out, node);
@@ -797,13 +797,12 @@ void verilogwriter::print_operator(std::ostream& out, ch_op op) {
   case op_neg:   out << "-"; break;
   case op_add:   out << "+"; break;
   case op_sub:   out << "-"; break;
-  case op_mult:  out << "*"; break;
+  case op_mul:  out << "*"; break;
   case op_div:   out << "/"; break;
   case op_mod:   out << "%"; break;
 
   case op_sll:   out << "<<"; break;
   case op_srl:   out << ">>"; break;
-  case op_sra:   out << ">>>"; break;
 
   case op_eq:    out << "=="; break;
   case op_ne:    out << "!="; break;

@@ -6,18 +6,20 @@ namespace ch {
 namespace internal {
 
 template <unsigned N>
-class ch_scbit : public scalar_op_compare<ch_scbit<N>,
-                          scalar_op_logical<ch_scbit<N>,
-                            scalar_op_bitwise<ch_scbit<N>,
-                              scalar_op_shift<ch_scbit<N>,
-                                scalar_cast_op<ch_scbit<N>>>>>> {
+class ch_scbit : public scalar_op_compare<ch_scbit, N,
+                          scalar_op_logical<ch_scbit, N,
+                            scalar_op_bitwise<ch_scbit, N,
+                              scalar_op_shift<ch_scbit, N,
+                                scalar_op_padding<ch_scbit, N,
+                                  scalar_op_cast<ch_scbit, N>>>>>> {
 public:
   using traits = scalar_traits<N, false, ch_scbit, ch_bit<N>>;
-  using base = scalar_op_compare<ch_scbit<N>,
-                scalar_op_logical<ch_scbit<N>,
-                  scalar_op_bitwise<ch_scbit<N>,
-                    scalar_op_shift<ch_scbit<N>,
-                      scalar_cast_op<ch_scbit<N>>>>>>;
+  using base = scalar_op_compare<ch_scbit, N,
+                scalar_op_logical<ch_scbit, N,
+                  scalar_op_bitwise<ch_scbit, N,
+                    scalar_op_shift<ch_scbit, N,
+                      scalar_op_padding<ch_scbit, N,
+                        scalar_op_cast<ch_scbit, N>>>>>>;
 
   explicit ch_scbit(const scalar_buffer_ptr& buffer = make_scalar_buffer(N))
     : buffer_(buffer) {
@@ -45,7 +47,7 @@ public:
 
   template <unsigned M,
             CH_REQUIRE_0(M < N)>
-  ch_scbit(const ch_scbit<M>& rhs)
+  explicit ch_scbit(const ch_scbit<M>& rhs)
     : buffer_(scalar_accessor::copy_buffer(rhs.template pad<N>()))
   {}
 
@@ -132,27 +134,6 @@ public:
   template <unsigned M>
   auto aslice(size_t start = 0) {
     return this->slice<ch_scbit<M>>(start * M);
-  }
-
-  // padding operators
-
-  template <typename R>
-  R pad() const {
-    static_assert(is_scalar_type_v<R>, "invalid type");
-    static_assert(width_v<R> >= N, "invalid size");
-    if constexpr (width_v<R> > N) {
-      return make_scalar_op<R>(*this, ZExt);
-    } else
-    if constexpr (std::is_same_v<R, ch_scbit>) {
-      return *this;
-    } else {
-      return R(*this);
-    }
-  }
-
-  template <unsigned M>
-  auto pad() const {
-    return this->pad<ch_scbit<M>>();
   }
 
   // bits access

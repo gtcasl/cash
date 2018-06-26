@@ -653,20 +653,6 @@ public:
     return !(*this == rhs);
   }
 
-  bool operator<(const bitvector& rhs) const;
-
-  bool operator>=(const bitvector& rhs) const {
-    return !(*this < rhs);
-  }
-
-  bool operator>(const bitvector& rhs) const {
-    return (rhs < *this);
-  }
-
-  bool operator<=(const bitvector& rhs) const {
-    return !(rhs < *this);
-  }
-
 #define CH_DEF_CAST(type) \
   explicit operator type() const { \
     CH_CHECK(CH_WIDTH_OF(type) >= size_, "invalid size cast"); \
@@ -702,44 +688,34 @@ std::ostream& operator<<(std::ostream& out, const bitvector& rhs);
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void ZExt(bitvector& out, const bitvector& in);
-void SExt(bitvector& out, const bitvector& in);
+bool bv_ltu(const bitvector& lhs, const bitvector& rhs);
+bool bv_lts(const bitvector& lhs, const bitvector& rhs);
 
-void Inv(bitvector& out, const bitvector& in);
-void And(bitvector& out, const bitvector& lhs, const bitvector& rhs);
-void Or(bitvector& out, const bitvector& lhs, const bitvector& rhs);
-void Xor(bitvector& out, const bitvector& lhs, const bitvector& rhs);
-void Nand(bitvector& out, const bitvector& lhs, const bitvector& rhs);
-void Nor(bitvector& out, const bitvector& lhs, const bitvector& rhs);
-void Xnor(bitvector& out, const bitvector& lhs, const bitvector& rhs);
+void bv_inv(bitvector& out, const bitvector& in);
+void bv_and(bitvector& out, const bitvector& lhs, const bitvector& rhs);
+void bv_or(bitvector& out, const bitvector& lhs, const bitvector& rhs);
+void bv_xor(bitvector& out, const bitvector& lhs, const bitvector& rhs);
 
-bool AndR(const bitvector& in);
-bool OrR(const bitvector& in);
-bool XorR(const bitvector& in);
-bool NandR(const bitvector& in);
-bool NorR(const bitvector& in);
-bool XnorR(const bitvector& in);
+bool bv_andr(const bitvector& in);
+bool bv_orr(const bitvector& in);
+bool bv_xorr(const bitvector& in);
 
-void Sll(bitvector& out, const bitvector& in, const bitvector& bits);
-void Srl(bitvector& out, const bitvector& in, const bitvector& bits);
-void Sra(bitvector& out, const bitvector& in, const bitvector& bits);
+void bv_sll(bitvector& out, const bitvector& in, const bitvector& bits);
+void bv_srl(bitvector& out, const bitvector& in, const bitvector& bits);
+void bv_sra(bitvector& out, const bitvector& in, const bitvector& bits);
 
-void Add(bitvector& out, const bitvector& lhs, const bitvector& rhs, uint32_t cin);
-
-inline void Add(bitvector& out, const bitvector& lhs, const bitvector& rhs) {
-  Add(out, lhs, rhs, 0);
+void bv_neg(bitvector& out, const bitvector& in);
+void bv_add(bitvector& out, const bitvector& lhs, const bitvector& rhs, uint32_t cin);
+inline void bv_add(bitvector& out, const bitvector& lhs, const bitvector& rhs) {
+  bv_add(out, lhs, rhs, 0);
 }
+void bv_sub(bitvector& out, const bitvector& lhs, const bitvector& rhs);
+void bv_mul(bitvector& out, const bitvector& lhs, const bitvector& rhs);
+void bv_div(bitvector& out, const bitvector& lhs, const bitvector& rhs);
+void bv_mod(bitvector& out, const bitvector& lhs, const bitvector& rhs);
 
-void Sub(bitvector& out, const bitvector& lhs, const bitvector& rhs);
-void Neg(bitvector& out, const bitvector& in);
-void Mult(bitvector& out, const bitvector& lhs, const bitvector& rhs);
-void Div(bitvector& out, const bitvector& lhs, const bitvector& rhs);
-void Mod(bitvector& out, const bitvector& lhs, const bitvector& rhs);
-
-void fAdd(bitvector& out, const bitvector& lhs, const bitvector& rhs);
-void fSub(bitvector& out, const bitvector& lhs, const bitvector& rhs);
-void fMult(bitvector& out, const bitvector& lhs, const bitvector& rhs);
-void fDiv(bitvector& out, const bitvector& lhs, const bitvector& rhs);
+void bv_zext(bitvector& out, const bitvector& in);
+void bv_sext(bitvector& out, const bitvector& in);
 
 }
 }

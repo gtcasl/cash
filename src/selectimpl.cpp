@@ -37,7 +37,7 @@ selectimpl::selectimpl(context* ctx,
                        uint32_t size,
                        lnodeimpl* key,
                        const source_location& sloc)
-  : lnodeimpl(ctx, type_sel, size, 0, "", sloc)
+  : lnodeimpl(ctx, type_sel, size, sloc)
   , has_key_(false) {
   if (key) {
     has_key_ = true;
@@ -48,8 +48,9 @@ selectimpl::selectimpl(context* ctx,
 selectimpl::selectimpl(context* ctx,
                        const lnode& pred,
                        const lnode& _true,
-                       const lnode& _false)
-  : lnodeimpl(ctx, type_sel, _true.size())
+                       const lnode& _false,
+                       const source_location& sloc)
+  : lnodeimpl(ctx, type_sel, _true.size(), sloc)
   , has_key_(false) {
   assert(1 == pred.size());
   assert(_true.size() == _false.size());

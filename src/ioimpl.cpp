@@ -8,7 +8,7 @@ inputimpl::inputimpl(context* ctx,
                      uint32_t size,
                      const std::string& name,
                      const source_location& sloc)
-  : ioimpl(ctx, type_input, size, name, sloc)
+  : ioimpl(ctx, type_input, size, sloc, name)
   , words_(nullptr)
 {}
 
@@ -53,7 +53,7 @@ outputimpl::outputimpl(context* ctx,
                        const lnode& src,
                        const std::string& name,
                        const source_location& sloc)
-  : ioimpl(ctx, type_output, src.size(), name, sloc)
+  : ioimpl(ctx, type_output, src.size(), sloc, name)
   , words_(nullptr) {
   srcs_.emplace_back(src);
 }
@@ -89,7 +89,7 @@ tapimpl::tapimpl(context* ctx,
                  const lnode& src,
                  const std::string& name,
                  const source_location& sloc)
-  : ioimpl(ctx, type_tap, src.size(), name, sloc)
+  : ioimpl(ctx, type_tap, src.size(), sloc, name)
   , words_(nullptr) {
   srcs_.emplace_back(src);
 }

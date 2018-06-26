@@ -143,7 +143,7 @@ auto ch_udf(CH_SLOC) {
 }
 
 #define CH_UDF_TMPL(a, i, x) typename __T##i
-#define CH_UDF_ASSERT(a, i, x) static_assert(std::is_constructible_v<std::tuple_element_t<i, typename T::traits::Inputs>, __T##i>, "invalid type")
+#define CH_UDF_ASSERT(a, i, x) static_assert(std::is_convertible_v<__T##i, std::tuple_element_t<i, typename T::traits::Inputs>>, "invalid type for input"#i)
 #define CH_UDF_DECL(a, i, x) const __T##i& arg##i
 #define CH_UDF_ARG(a, i, x) to_lnode<std::tuple_element_t<i, typename T::traits::Inputs>>(arg##i, sloc)
 #define CH_UDF(...) \

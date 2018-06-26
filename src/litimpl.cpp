@@ -3,8 +3,8 @@
 
 using namespace ch::internal;
 
-litimpl::litimpl(context* ctx, const bitvector& value) 
-  : lnodeimpl(ctx, type_lit, value.size()) {
+litimpl::litimpl(context* ctx, const bitvector& value)
+  : lnodeimpl(ctx, type_lit, value.size(), source_location()) {
   value_ = value;
 }
 

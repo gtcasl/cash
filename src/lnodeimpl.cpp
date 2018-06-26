@@ -13,17 +13,17 @@ const char* ch::internal::to_string(lnodetype type) {
 
 lnodeimpl::lnodeimpl(context* ctx,
                      lnodetype type,
-                     uint32_t size,
-                     uint32_t var_id,
+                     uint32_t size,                     
+                     const source_location& sloc,
                      const std::string& name,
-                     const source_location& sloc)
+                     uint32_t var_id)
   : ctx_(ctx)
   , id_(ctx->node_id())
   , type_(type)
   , value_(size)
-  , var_id_(var_id)
+  , sloc_(sloc)
   , name_(to_string(type))
-  , sloc_(sloc) {
+  , var_id_(var_id) {
   if (!name.empty()) {
     name_ = name;
   }
@@ -56,11 +56,12 @@ bool lnodeimpl::equals(const lnodeimpl& rhs) const {
   return false;
 }
 
-lnodeimpl* lnodeimpl::slice(uint32_t offset, uint32_t length) {
+lnodeimpl* lnodeimpl::slice(uint32_t offset, uint32_t length,
+                            const source_location& sloc) {
   assert(length <= value_.size());
   if (value_.size() == length)
     return this;
-  return ctx_->create_node<proxyimpl>(this, offset, length);
+  return ctx_->create_node<proxyimpl>(this, offset, length, sloc);
 }
 
 void lnodeimpl::print(std::ostream& out, uint32_t level) const {
@@ -82,6 +83,6 @@ void lnodeimpl::print(std::ostream& out, uint32_t level) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-undefimpl::undefimpl(context* ctx, uint32_t size)
-  : lnodeimpl(ctx, type_undef, size)
+undefimpl::undefimpl(context* ctx, uint32_t size, const source_location& sloc)
+  : lnodeimpl(ctx, type_undef, size, sloc)
 {}
