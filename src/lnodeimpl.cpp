@@ -50,7 +50,8 @@ bool lnodeimpl::equals(const lnodeimpl& rhs) const {
   return false;
 }
 
-lnodeimpl* lnodeimpl::slice(uint32_t offset, uint32_t length,
+lnodeimpl* lnodeimpl::slice(uint32_t offset,
+                            uint32_t length,
                             const source_location& sloc) {
   assert(length <= value_.size());
   if (value_.size() == length)

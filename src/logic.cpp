@@ -11,15 +11,6 @@ static uint32_t make_id() {
   return var_id;
 }
 
-logic_buffer::logic_buffer(const lnode& value,
-                           const logic_buffer_ptr& source,
-                           uint32_t offset)
-  : id_(make_id())
-  , value_(value)
-  , source_(source)
-  , offset_(offset)
-{}
-
 logic_buffer::logic_buffer(uint32_t size,
                            const source_location& sloc,
                            const std::string& name)
@@ -34,13 +25,6 @@ logic_buffer::logic_buffer(const logic_buffer& rhs,
   : id_(make_id())
   , value_(rhs.size(), rhs.data(), 0, sloc, name, id_)
   , offset_(0)
-{}
-
-logic_buffer::logic_buffer(logic_buffer&& rhs)
-  : id_(std::move(rhs.id_))
-  , value_(std::move(rhs.value_))
-  , source_(std::move(rhs.source_))
-  , offset_(std::move(rhs.offset_))
 {}
 
 logic_buffer::logic_buffer(const lnode& data,
@@ -68,14 +52,8 @@ logic_buffer::logic_buffer(uint32_t size,
   assert(offset + size <= buffer->size());
 }
 
-logic_buffer& logic_buffer::operator=(const logic_buffer& rhs) {
+void logic_buffer::copy(const logic_buffer& rhs) {
   this->write(0, rhs.data(), 0, rhs.size(), source_location());
-  return *this;
-}
-
-logic_buffer& logic_buffer::operator=(logic_buffer&& rhs) {
-  this->write(0, rhs.data(), 0, rhs.size(), source_location());
-  return *this;
 }
 
 void logic_buffer::write(uint32_t dst_offset,

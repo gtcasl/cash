@@ -240,7 +240,8 @@ std::size_t proxyimpl::hash() const {
   return ret.value;
 }
 
-lnodeimpl* proxyimpl::slice(uint32_t offset, uint32_t length,
+lnodeimpl* proxyimpl::slice(uint32_t offset,
+                            uint32_t length,
                             const source_location& sloc) {
   assert(length <= value_.size());
 

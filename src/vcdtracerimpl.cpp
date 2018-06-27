@@ -80,18 +80,18 @@ ch_vcdtracer::ch_vcdtracer(const std::string& file,
   : ch_tracer(new vcdtracerimpl(file, devices))
 {}
 
-ch_vcdtracer::ch_vcdtracer(const ch_vcdtracer& tracer) : ch_tracer(tracer) {}
+ch_vcdtracer::ch_vcdtracer(const ch_vcdtracer& other) : ch_tracer(other) {}
 
-ch_vcdtracer::ch_vcdtracer(ch_vcdtracer&& tracer) : ch_tracer(std::move(tracer)) {}
+ch_vcdtracer::ch_vcdtracer(ch_vcdtracer&& other) : ch_tracer(std::move(other)) {}
 
 ch_vcdtracer::~ch_vcdtracer() {}
 
-ch_vcdtracer& ch_vcdtracer::operator=(const ch_vcdtracer& tracer) {
-  ch_tracer::operator=(tracer);
+ch_vcdtracer& ch_vcdtracer::operator=(const ch_vcdtracer& other) {
+  ch_tracer::operator=(other);
   return *this;
 }
 
-ch_vcdtracer& ch_vcdtracer::operator=(ch_vcdtracer&& tracer) {
-  ch_tracer::operator=(std::move(tracer));
+ch_vcdtracer& ch_vcdtracer::operator=(ch_vcdtracer&& other) {
+  ch_tracer::operator=(std::move(other));
   return *this;
 }

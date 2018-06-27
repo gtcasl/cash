@@ -18,17 +18,33 @@ struct inverter {
 }
 
 TEST_CASE("simulation", "[sim]") {
+  SECTION("simulator", "[simulator]") {
+    TESTX([]()->bool {
+      ch_device<inverter<ch_bit2>> device;
+      device.io.in = 2;
+      ch_simulator s1, s2;
+      s1 = ch_simulator(device);
+      s2 = s1;
+      ch_simulator s3(s2);
+      ch_simulator s4(std::move(s3));
+      s4.run();
+      return (1 == device.io.out);
+    });
+  }
+
   SECTION("tracer", "[tracer]") {
     TESTX([]()->bool {
       ch_device<inverter<ch_bit2>> device;
-      auto d = std::move(device);
-      d.io.in = 2;
-      ch_tracer tracer(std::cout, d);
-      auto t = tracer;
-      auto y = d.io.out ^ 3_h;
-      t.add_trace("y", y);
-      t.run();
-      return (1 == d.io.out);
+      device.io.in = 2;
+      ch_tracer t1, t2;
+      t1 = ch_tracer(std::cout, device);
+      t2 = t1;
+      ch_tracer t3(t2);
+      ch_tracer t4(std::move(t3));
+      auto y = device.io.out ^ 3_h;
+      t4.add_trace("y", y);
+      t4.run();
+      return (1 == device.io.out);
     });
   }
 
@@ -38,13 +54,17 @@ TEST_CASE("simulation", "[sim]") {
       ch_device<inverter<ch_int2>> device2;
       device1.io.in = 2;
       device2.io.in = 2;
-      ch_vcdtracer tracer(std::cout, device1, device2);
-      auto t = tracer;
+      ch_vcdtracer t1, t2;
+      t1 = ch_vcdtracer(std::cout, device1, device2);
+      t2 = t1;
+      ch_vcdtracer t3(t2);
+      ch_vcdtracer t4(std::move(t3));
       auto y = device1.io.out ^ 3_h;
       auto z = device2.io.out ^ 3_h;
-      t.add_trace("y", y);
-      t.add_trace("y", z); // dup name!
-      t.run();
+      t4.add_trace("y_0", y);
+      t4.add_trace("y", y);
+      t4.add_trace("y", z); // dup name!
+      t4.run();
       return (1 == device1.io.out && 1 == device2.io.out);
     });
   }

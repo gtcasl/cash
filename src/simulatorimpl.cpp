@@ -135,16 +135,17 @@ ch_simulator::ch_simulator(simulatorimpl* impl) : impl_(impl) {
   }
 }
 
-ch_simulator::ch_simulator(const ch_simulator& simulator)
-  : impl_(simulator.impl_) {
+ch_simulator::ch_simulator(const ch_simulator& other)
+  : impl_(other.impl_) {
   if (impl_) {
     impl_->acquire();
   }
 }
 
-ch_simulator::ch_simulator(ch_simulator&& simulator)
-  : impl_(std::move(simulator.impl_))
-{}
+ch_simulator::ch_simulator(ch_simulator&& other)
+  : impl_(std::move(other.impl_)) {
+  other.impl_ = nullptr;
+}
 
 ch_simulator::~ch_simulator() {
   if (impl_) {
@@ -152,19 +153,20 @@ ch_simulator::~ch_simulator() {
   }
 }
 
-ch_simulator& ch_simulator::operator=(const ch_simulator& simulator) {
-  if (simulator.impl_) {
-    simulator.impl_->acquire();
+ch_simulator& ch_simulator::operator=(const ch_simulator& other) {
+  if (other.impl_) {
+    other.impl_->acquire();
   }
   if (impl_) {
     impl_->release();
   }
-  impl_ = simulator.impl_;
+  impl_ = other.impl_;
   return *this;
 }
 
-ch_simulator& ch_simulator::operator=(ch_simulator&& simulator) {
-  impl_ = std::move(simulator.impl_);
+ch_simulator& ch_simulator::operator=(ch_simulator&& other) {
+  impl_ = std::move(other.impl_);
+  other.impl_ = nullptr;
   return *this;
 }
 

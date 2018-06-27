@@ -8,9 +8,9 @@
 #define CH_LNODE_ENUM(m) \
   m(undef) \
   m(lit) \
+  m(proxy) \
   m(input) \
   m(output) \
-  m(proxy) \
   m(cd) \
   m(alu) \
   m(sel) \
@@ -110,7 +110,8 @@ public:
 
   virtual void eval() = 0;
 
-  virtual lnodeimpl* slice(uint32_t offset, uint32_t length,
+  virtual lnodeimpl* slice(uint32_t offset,
+                           uint32_t length,
                            const source_location& sloc);
 
   virtual void print(std::ostream& out, uint32_t level) const;

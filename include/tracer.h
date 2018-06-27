@@ -24,15 +24,15 @@ public:
     : ch_tracer(file, ch_device_list{first, (more)...})
   {}
 
-  ch_tracer(const ch_tracer& tracer);
+  ch_tracer(const ch_tracer& other);
 
-  ch_tracer(ch_tracer&& tracer);
+  ch_tracer(ch_tracer&& other);
 
   ~ch_tracer();
 
-  ch_tracer& operator=(const ch_tracer& tracer);
+  ch_tracer& operator=(const ch_tracer& other);
 
-  ch_tracer& operator=(ch_tracer&& tracer);
+  ch_tracer& operator=(ch_tracer&& other);
 
   template <typename U,
             CH_REQUIRE_0(is_scalar_type_v<U>)>

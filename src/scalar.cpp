@@ -19,17 +19,20 @@ scalar_buffer::scalar_buffer(const scalar_buffer& rhs)
   }
 }
 
-scalar_buffer::scalar_buffer(scalar_buffer&& rhs)
-  : value_(std::move(rhs.value_))
-  , source_(std::move(rhs.source_))
-  , offset_(std::move(rhs.offset_))
-  , size_(std::move(rhs.size_))
+scalar_buffer::scalar_buffer(const bitvector& value,
+                             const scalar_buffer_ptr& source,
+                             uint32_t offset,
+                             uint32_t size)
+  : value_(value)
+  , source_(source)
+  , offset_(offset)
+  , size_(size)
 {}
 
 scalar_buffer::scalar_buffer(const bitvector& data)
   : value_(data)
   , offset_(0)
-  , size_(value_.size())
+  , size_(data.size())
 {}
 
 scalar_buffer::scalar_buffer(bitvector&& data)
@@ -38,14 +41,24 @@ scalar_buffer::scalar_buffer(bitvector&& data)
   , size_(value_.size())
 {}
 
-scalar_buffer& scalar_buffer::operator=(const scalar_buffer& rhs) {
-  this->copy(rhs);
-  return *this;
+void scalar_buffer::copy(const scalar_buffer& rhs) {
+  this->write(0,
+              rhs.data().words(),
+              rhs.data().cbsize(),
+              rhs.offset(),
+              rhs.size());
 }
 
-scalar_buffer& scalar_buffer::operator=(scalar_buffer&& rhs) {
-  this->copy(rhs);
-  return *this;
+void scalar_buffer::move(scalar_buffer&& rhs) {
+  // disable move for indirect nodes
+  if (source_ || size_ != value_.size()) {
+    this->copy(rhs);
+  } else {
+    value_  = std::move(rhs.value_);
+    source_ = std::move(rhs.source_);
+    offset_ = std::move(rhs.offset_);
+    size_   = std::move(rhs.size_);
+  }
 }
 
 void scalar_buffer::write(uint32_t dst_offset,
@@ -53,14 +66,6 @@ void scalar_buffer::write(uint32_t dst_offset,
                           uint32_t src_offset,
                           uint32_t length) {
   this->write(dst_offset, src.words(), src.cbsize(), src_offset, length);
-}
-
-void scalar_buffer::copy(const scalar_buffer& rhs) {
-  this->write(0,
-              rhs.data().words(),
-              rhs.data().cbsize(),
-              rhs.offset(),
-              rhs.size());
 }
 
 scalar_buffer::scalar_buffer(uint32_t size,

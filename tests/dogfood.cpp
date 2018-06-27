@@ -202,6 +202,26 @@ struct Dogfood {
 
 int main() {
   {
+    ch_device<inverter> device;
+    device.io.in = 2;
+    //auto s = ch_simulator(device);
+    //s.run();
+    ch_simulator s1; //, s2;
+    s1 = ch_simulator(device);
+    //s2 = s1;
+    s1.run();
+  }
+  {
+    ch_scbit<4> a(1), b;
+    b = std::move(a);
+    assert(b == 1);
+  }
+  {
+    ch_scalar_t<s2_t> a{1, 0}, b;
+    b = std::move(a);
+    assert(b.b == 1);
+  }
+  /*{
     ch_device<Dogfood> device;
     auto x = std::move(device);
     //ch_verilog("test.v", device);
@@ -212,7 +232,7 @@ int main() {
       //assert(!!device.io.out);
       return (t != 8);
     });
-  }
+  }*/
 
   {
     ch_device<inverter> device;

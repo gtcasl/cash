@@ -60,8 +60,6 @@ public:
 
   scalar_buffer(const scalar_buffer& rhs);
 
-  scalar_buffer(scalar_buffer&& rhs);
-
   explicit scalar_buffer(const bitvector& data);
 
   explicit scalar_buffer(bitvector&& data);
@@ -84,9 +82,9 @@ public:
     return size_;
   }
 
-  scalar_buffer& operator=(const scalar_buffer& rhs);
+  void copy(const scalar_buffer& rhs);
 
-  scalar_buffer& operator=(scalar_buffer&& rhs);
+  void move(scalar_buffer&& rhs);
 
   void write(uint32_t dst_offset,
              const bitvector& src,
@@ -110,14 +108,13 @@ protected:
   scalar_buffer(const bitvector& value,
                 const scalar_buffer_ptr& source,
                 uint32_t offset,
-                uint32_t size)
-    : value_(value)
-    , source_(source)
-    , offset_(offset)
-    , size_(size)
-  {}
+                uint32_t size);
 
-  void copy(const scalar_buffer& rhs);
+  scalar_buffer(scalar_buffer&& rhs) = delete;
+
+  scalar_buffer& operator=(const scalar_buffer& rhs) = delete;
+
+  scalar_buffer& operator=(scalar_buffer&& rhs) = delete;
 
   mutable bitvector value_;
   scalar_buffer_ptr source_;
@@ -161,14 +158,14 @@ public:
     static_assert(width_v<U> == width_v<V>, "invalid size");
     assert(width_v<U> == dst.buffer()->size());
     assert(width_v<V> == src.buffer()->size());
-    *dst.buffer() = *src.buffer();
+    dst.buffer()->copy(*src.buffer());
   }
 
   template <typename U, typename V>
   static void move(U& dst, V&& src) {
     static_assert(width_v<U> == width_v<V>, "invalid size");
     assert(width_v<U> == dst.buffer()->size());
-    *dst.buffer() = std::move(*src.buffer());
+    dst.buffer()->move(std::move(*src.buffer()));
   }
 
   template <typename U, typename V>

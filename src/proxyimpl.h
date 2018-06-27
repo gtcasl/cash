@@ -46,7 +46,8 @@ public:
 
   std::size_t hash() const override;
 
-  lnodeimpl* slice(uint32_t offset, uint32_t length,
+  lnodeimpl* slice(uint32_t offset,
+                   uint32_t length,
                    const source_location& sloc) override;
 
   void eval() override;

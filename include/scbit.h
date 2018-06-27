@@ -73,6 +73,7 @@ public:
 
   ch_scbit& operator=(ch_scbit&& rhs) {
     scalar_accessor::move(*this, std::move(rhs));
+    //buffer_ = std::move(rhs.buffer_);
     return *this;
   }
 

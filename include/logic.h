@@ -68,8 +68,6 @@ public:
                const source_location& sloc,
                const std::string& name = "");
 
-  logic_buffer(logic_buffer&& rhs);
-
   explicit logic_buffer(const lnode& data,
                         const source_location& sloc,
                         const std::string& name = "");
@@ -81,10 +79,6 @@ public:
                const std::string& name = "");
 
   virtual ~logic_buffer() {}
-
-  logic_buffer& operator=(const logic_buffer& rhs);
-
-  logic_buffer& operator=(logic_buffer&& rhs);
 
   uint32_t id() const {
     return id_;
@@ -106,6 +100,8 @@ public:
     return offset_;
   }
 
+  void copy(const logic_buffer& rhs);
+
   virtual void write(uint32_t dst_offset,
                      const lnode& data,
                      uint32_t src_offset,
@@ -114,9 +110,11 @@ public:
 
 protected:
 
-  logic_buffer(const lnode& value,
-               const logic_buffer_ptr& source,
-               uint32_t offset);
+  logic_buffer(logic_buffer&& rhs) = delete;
+
+  logic_buffer& operator=(const logic_buffer& rhs) = delete;
+
+  logic_buffer& operator=(logic_buffer&& rhs) = delete;
 
   uint32_t id_;
   lnode value_;
@@ -156,14 +154,14 @@ public:
     static_assert(width_v<U> == width_v<V>, "invalid size");
     assert(width_v<U> == dst.buffer()->size());
     assert(width_v<V> == src.buffer()->size());
-    *dst.buffer() = *src.buffer();
+    dst.buffer()->copy(*src.buffer());
   }
 
   template <typename U, typename V>
   static void move(U& dst, V&& src) {
     static_assert(width_v<U> == width_v<V>, "invalid size");
     assert(width_v<U> == dst.buffer()->size());
-    *dst.buffer() = std::move(*src.buffer());
+    dst.buffer()->copy(*src.buffer());
   }
 
   template <typename U, typename V>

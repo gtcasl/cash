@@ -39,13 +39,15 @@ device::device(const std::type_index& signature, const std::string& name) {
   impl_->begin_context();
 }
 
-device::device(const device& rhs) : impl_(rhs.impl_) {
+device::device(const device& other) : impl_(other.impl_) {
   if (impl_) {
     impl_->acquire();
   }
 }
 
-device::device(device&& rhs) : impl_(std::move(rhs.impl_)) {}
+device::device(device&& other) : impl_(std::move(other.impl_)) {
+  other.impl_ = nullptr;
+}
 
 device::~device() {
   if (impl_)
@@ -63,8 +65,9 @@ device& device::operator=(const device& device) {
   return *this;
 }
 
-device& device::operator=(device&& rhs) {
-  impl_ = std::move(rhs.impl_);
+device& device::operator=(device&& other) {
+  impl_ = std::move(other.impl_);
+  other.impl_ = nullptr;
   return *this;
 }
 

@@ -15,13 +15,13 @@ public:
 
   virtual ~device();
 
-  device(const device& rhs);
+  device(const device& other);
 
-  device(device&& rhs);
+  device(device&& other);
 
-  device& operator=(const device& rhs);
+  device& operator=(const device& other);
 
-  device& operator=(device&& rhs);
+  device& operator=(device&& other);
 
   auto impl() const {
     return impl_;
@@ -87,25 +87,25 @@ public:
     this->compile();
   }
 
-  device_base(const device_base& rhs)
-    : base(rhs)
-    , obj_(rhs.obj_)
+  device_base(const device_base& other)
+    : base(other)
+    , obj_(other.obj_)
   {}
 
-  device_base(device_base&& rhs)
-    : base(std::move(rhs))
-    , obj_(std::move(rhs.obj_))
+  device_base(device_base&& other)
+    : base(std::move(other))
+    , obj_(std::move(other.obj_))
   {}
 
-  device_base& operator=(const device_base& rhs) {
-    base::operator=(rhs);
-    obj_ = rhs.obj_;
+  device_base& operator=(const device_base& other) {
+    base::operator=(other);
+    obj_ = other.obj_;
     return *this;
   }
 
-  device_base& operator=(device_base&& rhs) {
-    base::operator=(std::move(rhs));
-    obj_ = std::move(rhs.obj_);
+  device_base& operator=(device_base&& other) {
+    base::operator=(std::move(other));
+    obj_ = std::move(other.obj_);
     return *this;
   }
 
@@ -144,19 +144,19 @@ public:
     , io(obj_->io)
   {}
 
-  ch_device(ch_device&& rhs) : base(std::move(rhs)), io(std::move(rhs.io)) {}
+  ch_device(ch_device&& other) : base(std::move(other)), io(std::move(other.io)) {}
 
-  ch_device& operator=(ch_device&& rhs) {
-    base::operator=(std::move(rhs));
-    io = std::move(rhs.io);
+  ch_device& operator=(ch_device&& other) {
+    base::operator=(std::move(other));
+    io = std::move(other.io);
     return *this;
   }
 
 protected:
 
-  ch_device(const ch_device& rhs) = delete;
+  ch_device(const ch_device& other) = delete;
 
-  ch_device& operator=(const ch_device& rhs) = delete;
+  ch_device& operator=(const ch_device& other) = delete;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

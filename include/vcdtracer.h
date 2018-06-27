@@ -24,15 +24,15 @@ public:
     : ch_vcdtracer(file, ch_device_list{first, (more)...})
   {}
 
-  ch_vcdtracer(const ch_vcdtracer& tracer);
+  ch_vcdtracer(const ch_vcdtracer& other);
 
-  ch_vcdtracer(ch_vcdtracer&& tracer);
+  ch_vcdtracer(ch_vcdtracer&& other);
 
   ~ch_vcdtracer();
 
-  ch_vcdtracer& operator=(const ch_vcdtracer& tracer);
+  ch_vcdtracer& operator=(const ch_vcdtracer& other);
 
-  ch_vcdtracer& operator=(ch_vcdtracer&& tracer);
+  ch_vcdtracer& operator=(ch_vcdtracer&& other);
 };
 
 }

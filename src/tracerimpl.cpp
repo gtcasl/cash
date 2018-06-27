@@ -95,19 +95,19 @@ ch_tracer::ch_tracer(const std::string& file,
 
 ch_tracer::ch_tracer(simulatorimpl* impl) : ch_simulator(impl) {}
 
-ch_tracer::ch_tracer(const ch_tracer& tracer) : ch_simulator(tracer) {}
+ch_tracer::ch_tracer(const ch_tracer& other) : ch_simulator(other) {}
 
-ch_tracer::ch_tracer(ch_tracer&& tracer) : ch_simulator(std::move(tracer)) {}
+ch_tracer::ch_tracer(ch_tracer&& other) : ch_simulator(std::move(other)) {}
 
 ch_tracer::~ch_tracer() {}
 
-ch_tracer& ch_tracer::operator=(const ch_tracer& tracer) {
-  ch_simulator::operator=(tracer);
+ch_tracer& ch_tracer::operator=(const ch_tracer& other) {
+  ch_simulator::operator=(other);
   return *this;
 }
 
-ch_tracer& ch_tracer::operator=(ch_tracer&& tracer) {
-  ch_simulator::operator=(std::move(tracer));
+ch_tracer& ch_tracer::operator=(ch_tracer&& other) {
+  ch_simulator::operator=(std::move(other));
   return *this;
 }
 

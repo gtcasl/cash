@@ -19,15 +19,15 @@ public:
     : ch_simulator(ch_device_list{first, (more)...})
   {}
 
-  ch_simulator(const ch_simulator& simulator);
+  ch_simulator(const ch_simulator& other);
 
-  ch_simulator(ch_simulator&& simulator);
+  ch_simulator(ch_simulator&& other);
 
   virtual ~ch_simulator();
 
-  ch_simulator& operator=(const ch_simulator& simulator);
+  ch_simulator& operator=(const ch_simulator& other);
 
-  ch_simulator& operator=(ch_simulator&& simulator);
+  ch_simulator& operator=(ch_simulator&& other);
   
   void run(ch_tick ticks = 1);
 
