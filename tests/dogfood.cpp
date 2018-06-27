@@ -203,11 +203,12 @@ struct Dogfood {
 int main() {
   {
     ch_device<Dogfood> device;
+    auto x = std::move(device);
     //ch_verilog("test.v", device);
-    ch_simulator sim(device);
-    device.io.in = 0xA;
+    ch_simulator sim(x);
+    x.io.in = 0xA;
     sim.run([&](ch_tick t)->bool {
-      std::cout << "t" << t << ": out="  << device.io.out << std::endl;
+      std::cout << "t" << t << ": out="  << x.io.out << std::endl;
       //assert(!!device.io.out);
       return (t != 8);
     });

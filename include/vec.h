@@ -18,7 +18,9 @@ public:
   }
 
   vec_base& operator=(vec_base&& rhs) {
-    items_ = std::move(rhs.items_);
+    for (unsigned i = 0; i < N; ++i) {
+      items_[i] = std::move(rhs.items_[i]);
+    }
     return *this;
   }
 
@@ -360,13 +362,18 @@ public:
     : ch_vec_device_io(rhs, std::make_index_sequence<N>())
   {}
 
+  ch_vec_device_io(ch_vec_device_io&& rhs) : base(std::move(rhs)) {}
+
+  ch_vec_device_io& operator=(ch_vec_device_io&& rhs) {
+    base::operator=(std::move(rhs));
+    return *this;
+  }
+
 protected:
 
   ch_vec_device_io(const ch_vec_device_io& rhs) = delete;
-  ch_vec_device_io(ch_vec_device_io&& rhs) = delete;
 
   ch_vec_device_io& operator=(const ch_vec_device_io& rhs) = delete;
-  ch_vec_device_io& operator=(ch_vec_device_io&& rhs) = delete;
 
   template <typename U, std::size_t...Is>
   ch_vec_device_io(const vec_base<U, N>& rhs, std::index_sequence<Is...>)
@@ -404,13 +411,18 @@ public:
     }
   }
 
+  ch_vec(ch_vec&& rhs) : base(std::move(rhs)) {}
+
+  ch_vec& operator=(ch_vec&& rhs) {
+    base::operator=(std::move(rhs));
+    return *this;
+  }
+
 protected:
 
-  ch_vec(const ch_vec& rhs) = delete;
-  ch_vec(ch_vec&& rhs) = delete;
+  ch_vec(const ch_vec& rhs) = delete;  
 
   ch_vec& operator=(const ch_vec& rhs) = delete;
-  ch_vec& operator=(ch_vec&& rhs) = delete;
 
   template <std::size_t...Is>
   ch_vec(const std::string& name, const source_location& sloc, std::index_sequence<Is...>)

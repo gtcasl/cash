@@ -31,39 +31,39 @@ void registerEnumString(const lnode& node, void* callback);
 #define CH_ENUM_SCALAR_IMPL(enum_name) \
   explicit enum_name(const std::shared_ptr<ch::internal::type_buffer_t<traits>>& buffer = \
     std::make_shared<ch::internal::type_buffer_t<traits>>(traits::bitwidth)) : base(buffer) {} \
-  enum_name(const enum_name& rhs) : base(rhs) {} \
-  enum_name(enum_name&& rhs) : base(std::move(rhs)) {} \
-  enum_name(enum_type rhs) : base(static_cast<unsigned>(rhs)) {}
+  enum_name(const enum_name& __other) : base(__other) {} \
+  enum_name(enum_name&& __other) : base(std::move(__other)) {} \
+  enum_name(enum_type __other) : base(static_cast<unsigned>(__other)) {}
 
 #define CH_ENUM_LOGIC_IMPL(enum_name) \
   explicit enum_name(const std::shared_ptr<ch::internal::type_buffer_t<traits>>& buffer = \
     std::make_shared<ch::internal::type_buffer_t<traits>>(traits::bitwidth, CH_CUR_SLOC)) \
     : base(buffer) { ch::internal::registerEnumString(ch::internal::logic_accessor::data(*this), (void*)to_string); } \
-  enum_name(const enum_name& rhs, CH_SLOC) \
-    : base(rhs, sloc) { ch::internal::registerEnumString(ch::internal::logic_accessor::data(*this), (void*)to_string); } \
-  enum_name(enum_name&& rhs) \
-    : base(std::move(rhs)) { ch::internal::registerEnumString(ch::internal::logic_accessor::data(*this), (void*)to_string); } \
-  enum_name(enum_type rhs, CH_SLOC) \
-    : base(static_cast<unsigned>(rhs), sloc) { ch::internal::registerEnumString(ch::internal::logic_accessor::data(*this), (void*)to_string); }
+  enum_name(const enum_name& __other, CH_SLOC) \
+    : base(__other, sloc) { ch::internal::registerEnumString(ch::internal::logic_accessor::data(*this), (void*)to_string); } \
+  enum_name(enum_name&& __other) \
+    : base(std::move(__other)) { ch::internal::registerEnumString(ch::internal::logic_accessor::data(*this), (void*)to_string); } \
+  enum_name(enum_type __other, CH_SLOC) \
+    : base(static_cast<unsigned>(__other), sloc) { ch::internal::registerEnumString(ch::internal::logic_accessor::data(*this), (void*)to_string); }
 
 #define CH_ENUM_COMMON_IMPL(enum_name) \
-  enum_name& operator=(const enum_name& rhs) { \
-    base::operator=(rhs); \
+  enum_name& operator=(const enum_name& __other) { \
+    base::operator=(__other); \
     return *this; \
   } \
-  enum_name& operator=(enum_name&& rhs) { \
-    base::operator=(std::move(rhs)); \
+  enum_name& operator=(enum_name&& __other) { \
+    base::operator=(std::move(__other)); \
     return *this; \
   } \
-  enum_name& operator=(enum_type rhs) { \
-    base::operator=(static_cast<unsigned>(rhs)); \
+  enum_name& operator=(enum_type __other) { \
+    base::operator=(static_cast<unsigned>(__other)); \
     return *this; \
   } \
-  friend auto operator==(const enum_name& lhs, const enum_name& rhs) { \
-    return reinterpret_cast<const base&>(lhs) == reinterpret_cast<const base&>(rhs); \
+  friend auto operator==(const enum_name& lhs, const enum_name& __other) { \
+    return reinterpret_cast<const base&>(lhs) == reinterpret_cast<const base&>(__other); \
   } \
-  friend auto operator!=(const enum_name& lhs, const enum_name& rhs) { \
-    return reinterpret_cast<const base&>(lhs) != reinterpret_cast<const base&>(rhs); \
+  friend auto operator!=(const enum_name& lhs, const enum_name& __other) { \
+    return reinterpret_cast<const base&>(lhs) != reinterpret_cast<const base&>(__other); \
   }
 
 #define CH_ENUM_IMPL(enum_name, size, ...) \

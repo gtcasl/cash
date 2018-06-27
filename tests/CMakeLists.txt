@@ -16,6 +16,7 @@ set(TEST_SOURCES
     misc.cpp
     htl.cpp
     float.cpp
+    udf.cpp
     main.cpp
 )
 

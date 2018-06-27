@@ -87,22 +87,29 @@ public:
     this->compile();
   }
 
+  device_base(const device_base& rhs)
+    : base(rhs)
+    , obj_(rhs.obj_)
+  {}
+
   device_base(device_base&& rhs)
     : base(std::move(rhs))
     , obj_(std::move(rhs.obj_))
   {}
 
+  device_base& operator=(const device_base& rhs) {
+    base::operator=(rhs);
+    obj_ = rhs.obj_;
+    return *this;
+  }
+
   device_base& operator=(device_base&& rhs) {
     base::operator=(std::move(rhs));
-    impl_ = std::move(rhs.impl_);
+    obj_ = std::move(rhs.obj_);
     return *this;
   }
 
 protected:
-
-  device_base(const device_base& rhs) = delete;
-
-  device_base& operator=(const device_base& rhs) = delete;
 
   std::shared_ptr<T> obj_;
 };
@@ -137,10 +144,11 @@ public:
     , io(obj_->io)
   {}
 
-  ch_device(ch_device&& rhs) : base(std::move(rhs)) {}
+  ch_device(ch_device&& rhs) : base(std::move(rhs)), io(std::move(rhs.io)) {}
 
   ch_device& operator=(ch_device&& rhs) {
     base::operator=(std::move(rhs));
+    io = std::move(rhs.io);
     return *this;
   }
 

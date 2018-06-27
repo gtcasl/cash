@@ -1,10 +1,21 @@
-/*#include "cash.h"
+#include "cash.h"
 #include <htl/float32.h>
 
 using namespace ch::core;
 using namespace ch::sim;
 using namespace ch::literals;
 using namespace ch::htl;
+
+struct TestModule {
+  __io (
+    __in(ch_uint4)  lhs,
+    __in(ch_uint4)  rhs,
+    __out(ch_uint4) out
+  );
+  void describe() {
+    io.out = io.lhs + io.rhs;
+  }
+};
 
 __enum (e2_t, 2, (
   (idle, 0),
@@ -51,6 +62,9 @@ __struct (sd3_t, (
 
 
 void foo() {
+  {
+    ch_device<TestModule> device;
+  }
   {
     ch_scbit<4> x("5h");
   }
@@ -226,4 +240,3 @@ void bar() {
   ch_reg<s2_4_t> h{0101_b, 01_b};
   ch_reg<u2_4_t> i{0101_b};
 }
-*/

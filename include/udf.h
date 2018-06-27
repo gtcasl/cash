@@ -83,12 +83,12 @@ inline constexpr bool is_udf_traits_v = is_true_v<(T::type == traits_udf)>;
 
 CH_DEF_SFINAE_CHECK(is_udf_type, is_udf_traits_v<typename std::decay_t<T>::traits>);
 
-template <bool Init, typename Output, typename... Inputs>
+template <typename Output, typename... Inputs>
 class udf_comb : public udf_iface {
 public:
-  using traits = udf_traits<0, Init, Output, Inputs...>;
+  using traits = udf_traits<0, false, Output, Inputs...>;
 
-  udf_comb() : udf_iface(0, Init, width_v<Output>, {width_v<Inputs>...}) {}
+  udf_comb() : udf_iface(0, false, width_v<Output>, {width_v<Inputs>...}) {}
 
   void initialize() override {}
 

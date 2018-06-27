@@ -27,7 +27,7 @@
     CH_STRINGIZE(CH_PAIR_R(x))))
 
 #define CH_STRUCT_MOVE_CTOR(a, i, x) \
-  CH_PAIR_R(x)(std::move(rhs.CH_PAIR_R(x)))
+  CH_PAIR_R(x)(std::move(__other.CH_PAIR_R(x)))
 
 #define CH_STRUCT_SCALAR_FIELD_CTOR_ARGS(a, i, x) \
   const ch_scalar_t<ch::internal::identity_t<CH_PAIR_L(x)>>& CH_CONCAT(_,CH_PAIR_R(x))
@@ -53,9 +53,9 @@ public: \
   explicit struct_name(const std::shared_ptr<ch::internal::type_buffer_t<traits>>& buffer = \
     std::make_shared<ch::internal::type_buffer_t<traits>>(traits::bitwidth)) \
     : CH_FOR_EACH(CH_STRUCT_SCALAR_CTOR, , CH_SEP_COMMA, __VA_ARGS__) {} \
-  struct_name(const struct_name& rhs) \
-    : struct_name(ch::internal::type_accessor_t<traits>::copy_buffer(rhs)) {} \
-  struct_name(struct_name&& rhs) : \
+  struct_name(const struct_name& __other) \
+    : struct_name(ch::internal::type_accessor_t<traits>::copy_buffer(__other)) {} \
+  struct_name(struct_name&& __other) : \
     CH_FOR_EACH(CH_STRUCT_MOVE_CTOR, , CH_SEP_COMMA, __VA_ARGS__) {} \
   struct_name(CH_REVERSE_FOR_EACH(CH_STRUCT_SCALAR_FIELD_CTOR_ARGS, , CH_SEP_COMMA, __VA_ARGS__)) \
     : struct_name() { \
@@ -76,9 +76,9 @@ public: \
   explicit struct_name(const std::shared_ptr<ch::internal::type_buffer_t<traits>>& buffer = \
     std::make_shared<ch::internal::type_buffer_t<traits>>(traits::bitwidth, CH_CUR_SLOC, CH_STRINGIZE(name))) \
     : CH_FOR_EACH(CH_STRUCT_LOGIC_CTOR, , CH_SEP_COMMA, __VA_ARGS__) {} \
-  struct_name(const struct_name& rhs, CH_SLOC) \
-    : struct_name(ch::internal::type_accessor_t<traits>::copy_buffer(rhs, sloc, CH_STRINGIZE(name))) {} \
-  struct_name(struct_name&& rhs) : \
+  struct_name(const struct_name& __other, CH_SLOC) \
+    : struct_name(ch::internal::type_accessor_t<traits>::copy_buffer(__other, sloc, CH_STRINGIZE(name))) {} \
+  struct_name(struct_name&& __other) : \
     CH_FOR_EACH(CH_STRUCT_MOVE_CTOR, , CH_SEP_COMMA, __VA_ARGS__) {} \
   struct_name(CH_REVERSE_FOR_EACH(CH_STRUCT_LOGIC_FIELD_CTOR_ARGS, , CH_SEP_COMMA, __VA_ARGS__), CH_SLOC) \
     : struct_name(std::make_shared<ch::internal::type_buffer_t<traits>>(traits::bitwidth, sloc, CH_STRINGIZE(name))) { \
@@ -100,10 +100,10 @@ public: \
     std::make_shared<ch::internal::type_buffer_t<traits>>(traits::bitwidth)) \
     : base(buffer) \
     , CH_FOR_EACH(CH_STRUCT_SCALAR_CTOR, , CH_SEP_COMMA, __VA_ARGS__) {} \
-  struct_name(const struct_name& rhs) \
-    : struct_name(ch::internal::type_accessor_t<traits>::copy_buffer(rhs)) {} \
-  struct_name(struct_name&& rhs) \
-    : base(std::move(rhs))\
+  struct_name(const struct_name& __other) \
+    : struct_name(ch::internal::type_accessor_t<traits>::copy_buffer(__other)) {} \
+  struct_name(struct_name&& __other) \
+    : base(std::move(__other))\
     , CH_FOR_EACH(CH_STRUCT_MOVE_CTOR, , CH_SEP_COMMA, __VA_ARGS__) {} \
   struct_name(CH_REVERSE_FOR_EACH(CH_STRUCT_SCALAR_FIELD_CTOR_ARGS, , CH_SEP_COMMA, __VA_ARGS__), const base& parent) \
     : struct_name() { \
@@ -126,10 +126,10 @@ public: \
     std::make_shared<ch::internal::type_buffer_t<traits>>(traits::bitwidth, CH_CUR_SLOC, CH_STRINGIZE(name))) \
     : base(buffer) \
     , CH_FOR_EACH(CH_STRUCT_LOGIC_CTOR, , CH_SEP_COMMA, __VA_ARGS__) {} \
-  struct_name(const struct_name& rhs, CH_SLOC) \
-    : struct_name(ch::internal::type_accessor_t<traits>::copy_buffer(rhs, sloc, CH_STRINGIZE(name))) {} \
-  struct_name(struct_name&& rhs) \
-    : base(std::move(rhs))\
+  struct_name(const struct_name& __other, CH_SLOC) \
+    : struct_name(ch::internal::type_accessor_t<traits>::copy_buffer(__other, sloc, CH_STRINGIZE(name))) {} \
+  struct_name(struct_name&& __other) \
+    : base(std::move(__other))\
     , CH_FOR_EACH(CH_STRUCT_MOVE_CTOR, , CH_SEP_COMMA, __VA_ARGS__) {} \
   struct_name(CH_REVERSE_FOR_EACH(CH_STRUCT_LOGIC_FIELD_CTOR_ARGS, , CH_SEP_COMMA, __VA_ARGS__), const base& parent, CH_SLOC) \
     : struct_name(std::make_shared<ch::internal::type_buffer_t<traits>>(traits::bitwidth, sloc, CH_STRINGIZE(name))) { \
@@ -143,12 +143,12 @@ protected: \
 
 #define CH_STRUCT_ASSIGN_IMPL(struct_name) \
 public: \
-  struct_name& operator=(const struct_name& rhs) { \
-    ch::internal::type_accessor_t<traits>::copy(*this, rhs); \
+  struct_name& operator=(const struct_name& __other) { \
+    ch::internal::type_accessor_t<traits>::copy(*this, __other); \
     return *this; \
   } \
-  struct_name& operator=(struct_name&& rhs) { \
-    ch::internal::type_accessor_t<traits>::move(*this, std::move(rhs)); \
+  struct_name& operator=(struct_name&& __other) { \
+    ch::internal::type_accessor_t<traits>::move(*this, std::move(__other)); \
     return *this; \
   }
 

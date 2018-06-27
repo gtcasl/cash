@@ -130,14 +130,14 @@ public:
     bindOutput(input_, out.output_, sloc);
   }
 
-  ch_in_impl(ch_in_impl&& rhs)
+  ch_in_impl(const ch_in_impl&& rhs)
     : base(std::move(rhs))
     , input_(std::move(rhs.input_))
   {}
 
-  ch_in_impl& operator=(ch_in_impl&& rhs) {
-    base::operator=(std::move(rhs));
-    input_ = std::move(rhs.input_);
+  const ch_in_impl& operator=(const ch_in_impl&& rhs) const {
+    ((base*)this)->operator=(std::move(rhs));
+    ((ch_in_impl*)this)->input_ = std::move(rhs.input_);
     return *this;
   }
 
@@ -317,10 +317,10 @@ public:
     static_assert(width_v<T> == width_v<U>, "invalid size");
   }
 
-  ch_scout_impl(ch_scout_impl&& rhs) : base(std::move(rhs)) {}
+  ch_scout_impl(const ch_scout_impl&& rhs) : base(std::move(rhs)) {}
 
-  ch_scout_impl& operator=(ch_scout_impl&& rhs) {
-    base::operator=(std::move(rhs));
+  const ch_scout_impl& operator=(const ch_scout_impl&& rhs) const {
+    ((base*)this)->operator=(std::move(rhs));
     return *this;
   }
 

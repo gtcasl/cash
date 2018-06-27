@@ -18,7 +18,7 @@
     CH_STRINGIZE(CH_PAIR_R(x))))
 
 #define CH_UNION_MOVE_CTOR(a, i, x) \
-  CH_PAIR_R(x)(std::move(rhs.CH_PAIR_R(x)))
+  CH_PAIR_R(x)(std::move(__other.CH_PAIR_R(x)))
 
 #define CH_UNION_SCALAR_FIELD(a, i, x) \
   ch_scalar_t<ch::internal::identity_t<CH_PAIR_L(x)>> CH_PAIR_R(x)
@@ -43,9 +43,9 @@
   explicit union_name(const std::shared_ptr<ch::internal::type_buffer_t<traits>>& buffer = \
     std::make_shared<ch::internal::type_buffer_t<traits>>(traits::bitwidth)) \
     : CH_FOR_EACH(CH_UNION_SCALAR_CTOR, , CH_SEP_COMMA, __VA_ARGS__) {} \
-  union_name(const union_name& rhs) \
-    : union_name(ch::internal::type_accessor_t<traits>::copy_buffer(rhs)) {} \
-  union_name(union_name&& rhs) \
+  union_name(const union_name& __other) \
+    : union_name(ch::internal::type_accessor_t<traits>::copy_buffer(__other)) {} \
+  union_name(union_name&& __other) \
     : CH_FOR_EACH(CH_UNION_MOVE_CTOR, , CH_SEP_COMMA, __VA_ARGS__) {} \
   CH_FOR_EACH(CH_UNION_SCALAR_FIELD_CTOR, union_name, CH_SEP_SPACE, __VA_ARGS__) \
 protected: \
@@ -59,9 +59,9 @@ public:
   explicit union_name(const std::shared_ptr<ch::internal::type_buffer_t<traits>>& buffer = \
     std::make_shared<ch::internal::type_buffer_t<traits>>(traits::bitwidth, CH_CUR_SLOC, CH_STRINGIZE(name))) \
     : CH_FOR_EACH(CH_UNION_LOGIC_CTOR, , CH_SEP_COMMA, __VA_ARGS__) {} \
-  union_name(const union_name& rhs, CH_SLOC) \
-    : union_name(ch::internal::type_accessor_t<traits>::copy_buffer(rhs, sloc, CH_STRINGIZE(name))) {} \
-  union_name(union_name&& rhs) \
+  union_name(const union_name& __other, CH_SLOC) \
+    : union_name(ch::internal::type_accessor_t<traits>::copy_buffer(__other, sloc, CH_STRINGIZE(name))) {} \
+  union_name(union_name&& __other) \
     : CH_FOR_EACH(CH_UNION_MOVE_CTOR, , CH_SEP_COMMA, __VA_ARGS__) {} \
   CH_FOR_EACH(CH_UNION_LOGIC_FIELD_CTOR, union_name, CH_SEP_SPACE, __VA_ARGS__) \
 protected: \
@@ -71,12 +71,12 @@ protected: \
 
 #define CH_UNION_ASSIGN_IMPL(union_name) \
 public: \
-  union_name& operator=(const union_name& rhs) { \
-    ch::internal::type_accessor_t<traits>::copy(*this, rhs); \
+  union_name& operator=(const union_name& __other) { \
+    ch::internal::type_accessor_t<traits>::copy(*this, __other); \
     return *this; \
   } \
-  union_name& operator=(union_name&& rhs) { \
-    ch::internal::type_accessor_t<traits>::move(*this, std::move(rhs)); \
+  union_name& operator=(union_name&& __other) { \
+    ch::internal::type_accessor_t<traits>::move(*this, std::move(__other)); \
     return *this; \
   }
 

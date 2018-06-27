@@ -33,10 +33,11 @@ public:
     , io(obj_->io)
   {}
 
-  ch_module(ch_module&& rhs) : base(std::move(rhs)) {}
+  ch_module(ch_module&& rhs) : base(std::move(rhs)), io(std::move(rhs.io)) {}
 
   ch_module& operator=(ch_module&& rhs) {
     base::operator=(std::move(rhs));
+    io = std::move(rhs.io);
     return *this;
   }
 
