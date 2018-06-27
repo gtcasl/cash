@@ -1,5 +1,15 @@
 #include "common.h"
 
+namespace {
+
+  __enum (my_enum, 4, (
+    (idle, 0),
+    execute,
+    stats,
+    done
+  ));
+}
+
 TEST_CASE("misc", "[misc]") {
   SECTION("utils", "[utils]") {
     TESTX([]()->bool {
@@ -11,6 +21,11 @@ TEST_CASE("misc", "[misc]") {
       std::string s = stringf(bigs, 7);
       std::cout << s << " " << s.size() << std::endl;
       return (s.size() == 256 && s[255] == '7');
+    });
+    TESTX([]()->bool {
+      std::string tmp(1028, 'X');
+      std::string s = stringf(tmp.c_str());
+      return true;
     });
   }
   
@@ -71,6 +86,21 @@ TEST_CASE("misc", "[misc]") {
       __if (b) {
         ch_print("a={0}", a);
       };
+      return ch_true;
+    });
+    TEST([]()->ch_bool {
+      ch_int4 a(-1);
+      ch_print("a={0:i}", a);
+      return ch_true;
+    });
+    TEST([]()->ch_bool {
+      ch_int32 a(0x3e800000_h);
+      ch_print("a={0:f}", a);
+      return ch_true;
+    });
+    TEST([]()->ch_bool {
+      my_enum a(my_enum::done);
+      ch_print("a={0:s}", a);
       return ch_true;
     });
   }

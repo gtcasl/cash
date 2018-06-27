@@ -1,9 +1,12 @@
 #include "common.h"
 
+namespace {
+
+template <typename T>
 struct inverter {
   __io (
-    __in(ch_bit2)  in,
-    __out(ch_bit2) out
+    __in(T)  in,
+    __out(T) out
   );
   void describe() {
     auto x = ~io.in;
@@ -12,12 +15,16 @@ struct inverter {
   }
 };
 
+}
+
 TEST_CASE("simulation", "[sim]") {
   SECTION("tracer", "[tracer]") {
     TESTX([]()->bool {
-      ch_device<inverter> device;
+      ch_device<inverter<ch_bit2>> device;
       device.io.in = 2;
       ch_tracer tracer(std::cout, device);
+      auto y = device.io.out ^ 3_h;
+      tracer.add_trace("y", y);
       tracer.run();
       return (1 == device.io.out);
     });
@@ -25,17 +32,23 @@ TEST_CASE("simulation", "[sim]") {
 
   SECTION("vcdtracer", "[vcdtracer]") {
     TESTX([]()->bool {
-      ch_device<inverter> device;
-      device.io.in = 2;
-      ch_vcdtracer tracer(std::cout, device);
+      ch_device<inverter<ch_bit2>> device1;
+      ch_device<inverter<ch_int2>> device2;
+      device1.io.in = 2;
+      device2.io.in = 2;
+      ch_vcdtracer tracer(std::cout, device1, device2);
+      auto y = device1.io.out ^ 3_h;
+      auto z = device2.io.out ^ 3_h;
+      tracer.add_trace("y", y);
+      tracer.add_trace("y", z); // dup name!
       tracer.run();
-      return (1 == device.io.out);
+      return (1 == device1.io.out && 1 == device2.io.out);
     });
   }
 
   SECTION("stats", "[stats]") {
     TESTX([]()->bool {
-      ch_device<inverter> device;
+      ch_device<inverter<ch_bit2>> device;
       ch_stats(std::cout, device);
       return true;
     });

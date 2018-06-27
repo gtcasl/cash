@@ -7,14 +7,18 @@ using namespace ch::internal;
 tracerimpl::tracerimpl(std::ostream& out, const ch_device_list& devices)
   : simulatorimpl(devices)
   , file_(nullptr)
-  , out_(out)
-{}
+  , out_(out) {
+  // initialize
+  this->initialize();
+}
 
 tracerimpl::tracerimpl(const std::string& file, const ch_device_list& devices)
   : simulatorimpl(devices)
   , file_(new std::ofstream(file))
-  , out_(*file_)
-{}
+  , out_(*file_) {
+  // initialize
+  this->initialize();
+}
 
 tracerimpl::~tracerimpl() {
   if (file_) {
@@ -23,9 +27,6 @@ tracerimpl::~tracerimpl() {
 }
 
 void tracerimpl::initialize() {
-  // call parent initialize()
-  simulatorimpl::initialize();
-
   // register context taps
   for (auto ctx : contexts_) {
     // get inputs

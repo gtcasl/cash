@@ -20,7 +20,7 @@ struct lit_size<false, T, N, Chars...> {
 
 template <typename T, unsigned N, char Char, char... Chars>
 struct lit_size<false, T, N, Char, Chars...> {
-  static_assert(T::is_digit(Char) || T::is_escape(Char), "invalid scalar value");
+  static_assert(T::is_digit(Char) || T::is_escape(Char), "invalid literal value");
   static constexpr unsigned value = lit_size<false, T, T::size(Char, N), Chars...>::value;
 };
 
@@ -31,7 +31,7 @@ struct lit_size<true, T, N, Chars...> {
 
 template <typename T, unsigned N, char Char, char... Chars>
 struct lit_size<true, T, N, Char, Chars...> {
-  static_assert(T::is_digit(Char) || T::is_escape(Char), "invalid scalar value");
+  static_assert(T::is_digit(Char) || T::is_escape(Char), "invalid literal value");
   static constexpr unsigned value = lit_size<true, T, T::sizex(Char, N), Chars...>::value;
 };
 

@@ -78,7 +78,7 @@ public:
     return srcs_[index];
   }
 
-  uint32_t add_src(uint32_t index, const lnode& src);
+  uint32_t add_src(const lnode& src);
   
   uint32_t size() const {
     return value_.size();

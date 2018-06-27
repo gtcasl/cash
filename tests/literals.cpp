@@ -8,6 +8,10 @@ TEST_CASE("literals", "[literals]") {
     });
     TEST([]()->ch_bool {
       ch_bit4 a(0x5);
+      return (a == ch_scbit<4>("0101b"));
+    });
+    TEST([]()->ch_bool {
+      ch_bit4 a(0x5);
       return (a == 00000000101_b4);
     });
     TEST([]()->ch_bool {
@@ -21,6 +25,10 @@ TEST_CASE("literals", "[literals]") {
       return (a == 5_o);
     });
     TEST([]()->ch_bool {
+      ch_bit<3> a(0x5);
+      return (a == ch_scbit<3>("5o"));
+    });
+    TEST([]()->ch_bool {
       ch_bit64 x(0x1c0000000_h64);
       return (x == 070000000000_o64);
     });
@@ -29,6 +37,10 @@ TEST_CASE("literals", "[literals]") {
     TEST([]()->ch_bool {
       ch_bit4 a(0x5);
       return (a == 0x5_h);
+    });
+    TEST([]()->ch_bool {
+      ch_bit4 a(0x5);
+      return (a == ch_scbit<4>("5h"));
     });
     TEST([]()->ch_bool {
       ch_bit4 a(0x5);

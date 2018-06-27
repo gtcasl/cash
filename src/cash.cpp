@@ -52,6 +52,9 @@ __struct (sd3_t, (
 
 void foo() {
   {
+    ch_scbit<4> x("5h");
+  }
+  {
     ch_float32 a, b;
     auto c = ch_fmul<1>(a, b);
     auto d = ch_fmul<1>(0.1f, b);
@@ -222,4 +225,5 @@ void bar() {
 
   ch_reg<s2_4_t> h{0101_b, 01_b};
   ch_reg<u2_4_t> i{0101_b};
-}*/
+}
+*/

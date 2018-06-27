@@ -14,7 +14,12 @@ namespace {
     );
 
     void describe() {
-      io.out = ch_fmul<Delay>(io.lhs, io.rhs);
+      auto a = ch_fadd<Delay>(io.lhs, io.rhs);
+      auto b = ch_fsub<Delay>(a, io.rhs);
+      auto c = ch_fmul<Delay>(b, io.lhs);
+      auto d = ch_fmul<Delay>(c, a);
+      io.out = d;
+      //ch_print("{0}: clk={1}, rst={2}, a={3}, b={4}, c={5}, d={6}", ch_time(), ch_clock(), ch_reset(), a, b, c, d);
     }
   };
 }
@@ -100,7 +105,7 @@ TEST_CASE("floats", "[floats]") {
       ch_float32 x(0.5f), y(0.5f), z, e;
       z = ch_fmul<5>(x, y);
       e = ch_delay<ch_float32>(0x3e800000_h, 5);
-      ch_print("{0}: clk={1}, rst={2}, z={3}, e={4}", ch_time(), ch_clock(), ch_reset(), z, e);
+      //ch_print("{0}: clk={1}, rst={2}, z={3}, e={4}", ch_time(), ch_clock(), ch_reset(), z, e);
       return (z == e);
     }, 5);
 
@@ -125,9 +130,11 @@ TEST_CASE("floats", "[floats]") {
       device.io.lhs = 0.5f;
       device.io.rhs = 0.5f;
       ch_tracer tracer(std::cout, device);
-      tracer.run(2*2);
+      tracer.run(2*2*4);
       ch_verilog("fmulttest.v", device);
-      return (0.25f == device.io.out);
+      float ret(device.io.out);
+      //std::cout << "ret=" << ret << std::endl;
+      return (0.25f == ret);
     });
   }
 }

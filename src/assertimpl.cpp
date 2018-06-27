@@ -4,6 +4,12 @@
 
 using namespace ch::internal;
 
+void ch::internal::ch_assert(const ch_bit<1>& pred, const std::string& msg,
+                             const source_location& sloc) {
+  auto lpred = get_lnode(pred);
+  lpred.impl()->ctx()->create_node<assertimpl>(lpred, msg, sloc);
+}
+
 assertimpl::assertimpl(context* ctx,
                        const lnode& cond,
                        const std::string& msg,
@@ -32,10 +38,4 @@ void assertimpl::eval() {
     CH_CHECK(pred, "assertion failure at tick %ld, %s", tick_, msg_.c_str());
   }
   tick_++;
-}
-
-void ch::internal::createAssertNode(const lnode& pred,
-                                    const std::string& msg,
-                                    const source_location& sloc) {
-  pred.impl()->ctx()->create_node<assertimpl>(pred, msg, sloc);
 }

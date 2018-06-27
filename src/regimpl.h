@@ -22,11 +22,15 @@ public:
   }
 
   bool has_init() const {
-    return (3 == srcs_.size());
+    return (srcs_.size() > 2);
   }
 
   const lnode& init() const {
     return srcs_[2];
+  }
+
+  const lnode& reset() const {
+    return srcs_[3];
   }
 
   std::size_t hash() const override;
@@ -43,6 +47,8 @@ protected:
           const source_location& sloc);
 
   virtual ~regimpl();
+
+  int init_idx_;
 
   friend class context;
 };

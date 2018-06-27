@@ -28,6 +28,9 @@ struct is_bitvector_extended_type_impl<std::vector<T>> : std::true_type {};
 template <>
 struct is_bitvector_extended_type_impl<std::string> : std::true_type {};
 
+template <>
+struct is_bitvector_extended_type_impl<const char*> : std::true_type {};
+
 template <typename T>
 inline constexpr bool is_bitvector_extended_type_v = is_bitvector_extended_type_impl<T>::value;
 

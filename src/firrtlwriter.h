@@ -36,8 +36,6 @@ protected:
     std::unordered_map<uint32_t, std::unordered_set<lnodeimpl*>> uses;
 
     module_t(context* p_ctx);
-
-    bool is_inline_subscript(lnodeimpl* node) const;
   };
 
   bool print_module(module_t& module);

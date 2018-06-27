@@ -6,7 +6,7 @@
 module testbench();
 
     reg       clk   = 0;
-    reg       rst   = 0;
+    reg       reset = 0;
     reg[1:0]  din   = 0;
     reg       push  = 0;
     reg       pop   = 0;
@@ -14,7 +14,7 @@ module testbench();
     wire      empty;
     wire      full;
 
-    FiFo fifo(clk, rst, din, push, pop, dout, empty, full);
+    FiFo fifo(clk, reset, din, push, pop, dout, empty, full);
 
     always begin
         #1 clk = !clk;
@@ -25,11 +25,11 @@ module testbench();
         $dumpvars(0, testbench);
 
         $display ("time\tclk\trst\tdin\tpush\tpop\tdout\tempty\tfull");
-        $monitor("%3d\t%b\t%b\t%h\t%b\t%b\t%h\t%b\t%b", $time, clk, rst, din, push, pop, dout, empty, full);
+        $monitor("%3d\t%b\t%b\t%h\t%b\t%b\t%h\t%b\t%b", $time, clk, reset, din, push, pop, dout, empty, full);
 
-        #0 rst = 1;
-        #1 rst = 1;
-        #1 rst = 0;
+        #0 reset = 1;
+        #1 reset = 1;
+        #1 reset = 0;
 
         #0 din    = 1;
            push   = 1;

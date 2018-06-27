@@ -5,13 +5,7 @@
 namespace ch {
 namespace internal {
 
-void createAssertNode(const lnode& pred,
-                      const std::string& msg,
-                      const source_location& sloc);
-
-inline void ch_assert(const ch_bit<1>& pred, const std::string& msg, CH_SLOC) {
-  createAssertNode(get_lnode(pred), msg, sloc);
-}
+void ch_assert(const ch_bit<1>& pred, const std::string& msg, CH_SLOC);
 
 }
 }

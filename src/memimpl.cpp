@@ -168,7 +168,7 @@ mwportimpl::mwportimpl(context* ctx,
   if (enable.impl()->type() == type_lit) {
     wenable_idx_ = (1 == enable.data().word(0)) ? -1 : 0;
   } else {
-    wenable_idx_ = this->add_src(-1, enable);
+    wenable_idx_ = this->add_src(enable);
   }
 }
 

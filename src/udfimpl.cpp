@@ -43,9 +43,15 @@ udfsimpl::udfsimpl(context* ctx,
                    udf_iface* udf,
                    const std::initializer_list<lnode>& srcs,
                    const source_location& sloc)
-  : udfimpl(ctx, type_udfs, udf, srcs, sloc) {
+  : udfimpl(ctx, type_udfs, udf, srcs, sloc)
+  , cd_idx_(-1)
+  , reset_idx_(-1) {
   auto cd = ctx->current_cd(sloc);
-  cd_idx_ = this->add_src(-1, cd);
+  cd_idx_ = this->add_src(cd);
+  if (udf->has_init()) {
+    auto reset = ctx->current_reset(sloc);
+    reset_idx_ = this->add_src(reset);
+  }
   pipe_.resize(udf->delta() - 1, bitvector(this->size()));
 }
 
@@ -70,7 +76,7 @@ void udfsimpl::eval() {
   }
 
   // push new entry
-  if (udf_->has_init() && cd->rst().data().word(0)) {
+  if (this->has_init() && this->reset().data().word(0)) {
     udf_->reset(*value, udf_srcs_);
   } else {
     udf_->eval(*value, udf_srcs_);

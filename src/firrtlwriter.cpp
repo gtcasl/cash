@@ -32,27 +32,6 @@ firrtlwriter::module_t::module_t(context* p_ctx)
   }
 }
 
-bool firrtlwriter::module_t::is_inline_subscript(lnodeimpl* node) const {
-  assert(type_proxy == node->type());
-  if (reinterpret_cast<proxyimpl*>(node)->ranges().size() > 1)
-    return false;
-  auto it = uses.find(node->id());
-  if (it != uses.end()) {
-    for (lnodeimpl* use : it->second) {
-      if (type_proxy  == use->type()
-       || type_mrport == use->type()
-       || type_mwport == use->type())
-        return false;
-    }
-  }
-  lnodeimpl* src = node->src(0).impl();
-  if (type_proxy  == src->type()
-   || type_mrport == src->type()
-   || type_mwport == src->type())
-    return false;
-  return true;
-}
-
 firrtlwriter::firrtlwriter(std::ostream& out) : out_(out) {
   //--
 }
@@ -529,8 +508,7 @@ void firrtlwriter::print_reg(regimpl* node) {
   out_ << " <= ";
   if (node->has_init()) {
     out_ << " mux(";
-    auto cd = reinterpret_cast<cdimpl*>(node->cd().impl());
-    this->print_name(cd->rst().impl());
+    this->print_name(node->reset().impl());
     out_ << ", ";
     this->print_name(node->init().impl());
     out_ << ", ";

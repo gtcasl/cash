@@ -137,8 +137,12 @@ context::~context() {
   }
 }
 
-void context::push_cd(cdimpl* cd) {
-  cd_stack_.emplace(cd);
+void context::push_cd(const lnode& clk,
+                      const lnode& reset,
+                      bool posedge,
+                      const source_location& sloc) {
+  auto cd = this->create_cd(clk, posedge, sloc);
+  cd_stack_.emplace(cd, reset);
 }
 
 void context::pop_cd() {
@@ -146,16 +150,23 @@ void context::pop_cd() {
 }
 
 cdimpl* context::current_cd(const source_location& sloc) {
-  if (cd_stack_.empty()) {
-    if (nullptr == default_clk_) {
-      default_clk_ = this->create_node<inputimpl>(1, "clk", sloc);
-    }
-    if (nullptr == default_reset_) {
-       default_reset_ = this->create_node<inputimpl>(1, "reset", sloc);
-    }
-    return this->create_cdomain(default_clk_, default_reset_, true, sloc);
+  if (!cd_stack_.empty())
+    return cd_stack_.top().first;
+
+  if (nullptr == default_clk_) {
+    default_clk_ = this->create_node<inputimpl>(1, "clk", sloc);
   }
-  return cd_stack_.top();
+  return this->create_cd(default_clk_, true, sloc);
+}
+
+lnode context::current_reset(const source_location& sloc) {
+  if (!cd_stack_.empty())
+    return cd_stack_.top().second;
+
+  if (nullptr == default_reset_) {
+     default_reset_ = this->create_node<inputimpl>(1, "reset", sloc);
+  }
+  return default_reset_;
 }
 
 lnodeimpl* context::time(const source_location& sloc) {
@@ -178,19 +189,16 @@ uint32_t context::node_id() {
   return nodeid;
 }
 
-cdimpl* context::create_cdomain(const lnode& clk,
-                                const lnode& rst,
-                                bool posedge,
-                                const source_location& sloc) {
+cdimpl* context::create_cd(const lnode& clk,
+                           bool posedge,
+                           const source_location& sloc) {
   // return existing match
   for (auto cd : cdomains_) {
-    if (cd->clk() == clk
-     && cd->rst() == rst
-     && cd->posedge() == posedge)
+    if (cd->clk() == clk && cd->posedge() == posedge)
       return cd;
   }
   // allocate new cdomain
-  return this->create_node<cdimpl>(clk, rst, posedge, sloc);
+  return this->create_node<cdimpl>(clk, posedge, sloc);
 }
 
 void context::add_node(lnodeimpl* node) {
@@ -611,6 +619,7 @@ context::emit_conditionals(lnodeimpl* dst,
     }
 
     // coallesce cascading ternary branches sharing the same default value
+    // p2 ? (p1 ? t1 : f1) : f1 => (p1 & p2) ? t1 : f1;
     if (2 == values.size()) {
       auto _true = dynamic_cast<selectimpl*>(values.front().second);
       if (_true) {

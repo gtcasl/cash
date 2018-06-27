@@ -31,15 +31,9 @@ lnodeimpl::lnodeimpl(context* ctx,
 
 lnodeimpl::~lnodeimpl() {}
 
-uint32_t lnodeimpl::add_src(uint32_t index, const lnode& src) {
-  if (0xffffffff == index) {
-    // add first entry
-    index = srcs_.size();
-    srcs_.push_back(src);
-  } else {
-    // override existing entry
-    srcs_[index] = src;
-  }
+uint32_t lnodeimpl::add_src(const lnode& src) {
+  uint32_t index = srcs_.size();
+  srcs_.push_back(src);
   return index;
 }
 

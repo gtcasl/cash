@@ -33,9 +33,9 @@ public:
   {}
 
   template <typename U,
-            CH_REQUIRE_0(is_bitvector_extended_type_v<U>)>
-  explicit ch_scbit(const U& rhs)
-    : buffer_(make_scalar_buffer(bitvector(N , rhs)))
+            CH_REQUIRE_0(is_bitvector_extended_type_v<std::decay_t<U>>)>
+  explicit ch_scbit(U&& rhs)
+    : buffer_(make_scalar_buffer(bitvector(N , std::forward<U>(rhs))))
   {}
 
   template <typename U,

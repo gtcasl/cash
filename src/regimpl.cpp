@@ -51,6 +51,7 @@ regimpl::regimpl(context* ctx,
                  const source_location& sloc)
   : regimpl(ctx, next, sloc) {
   srcs_.emplace_back(init);
+  srcs_.emplace_back(ctx->current_reset(sloc));
 }
 
 regimpl::~regimpl() {}
@@ -80,7 +81,7 @@ void regimpl::eval() {
     return;
 
   if (this->has_init()) {
-    value_ = (cd->rst().data().word(0) ? this->init() : this->next()).data();
+    value_ = (this->reset().data().word(0) ? this->init() : this->next()).data();
   } else {
     value_ = this->next().data();
   }
@@ -89,12 +90,12 @@ void regimpl::eval() {
 ///////////////////////////////////////////////////////////////////////////////
 
 void ch::internal::ch_pushcd(const ch_bit<1>& clk,
-                             const ch_bit<1>& rst,
+                             const ch_bit<1>& reset,
                              bool posedge,
                              const source_location& sloc) {
-  auto ctx = ctx_curr();
-  auto _cd = ctx->create_cdomain(get_lnode(clk), get_lnode(rst), posedge, sloc);
-  ctx->push_cd(_cd);
+  auto lclk = get_lnode(clk);
+  auto lrst = get_lnode(reset);
+  lclk.impl()->ctx()->push_cd(lclk, lrst, posedge, sloc);
 }
 
 void ch::internal::ch_popcd() {
@@ -107,6 +108,6 @@ ch_bit<1> ch::internal::ch_clock(const source_location& sloc) {
 }
 
 ch_bit<1> ch::internal::ch_reset(const source_location& sloc) {
-  auto cd = ctx_curr()->current_cd(sloc);
-  return make_type<ch_bit<1>>(cd->rst(), sloc);
+  auto reset = ctx_curr()->current_reset(sloc);
+  return make_type<ch_bit<1>>(reset, sloc);
 }

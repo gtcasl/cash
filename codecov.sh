@@ -8,5 +8,8 @@ lcov --capture --directory $COV_PATH --output-file coverage.info 2> /dev/null
 # remove external components
 lcov --remove coverage.info '/usr/include/*' '/usr/lib/*' '*/backward.h' '*/catch.h' --output-file coverage.info
 
-# show report
+# report summary
 lcov --list coverage.info
+
+# report details
+genhtml coverage.info --quiet --demangle-cpp --prefix $COV_PATH --ignore-errors source --legend --output-directory lcov_html

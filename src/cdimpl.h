@@ -12,10 +12,6 @@ public:
     return srcs_[0];
   }
 
-  const auto& rst() const {
-    return srcs_[1];
-  }
-
   bool posedge() const {
     return posedge_;
   }
@@ -28,7 +24,6 @@ protected:
   
   cdimpl(context* ctx,
          const lnode& clk,
-         const lnode& rst,
          bool posedge,
          const source_location& sloc);
 

@@ -18,7 +18,7 @@ public:
 
 protected:
 
-  void initialize() override;
+  void initialize();
 
   void eval(ch_tick t) override;
 

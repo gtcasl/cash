@@ -420,12 +420,12 @@ TEST_CASE("conditionals", "[conditionals]") {
       ch_bit4 a(0), b;
       b[3] = 1;
       __switch (a)
-      __case(0) {
+      __case (0) {
         b[0] = 1;
         b[1] = 0;
         b[2] = 1;
       }
-      __case(1) {
+      __case (1) {
         b = 0;
       }
       __default {
@@ -440,6 +440,38 @@ TEST_CASE("conditionals", "[conditionals]") {
       __case(1) { b = 0001_b; }
       __default { b = 1000_b; };
       return (b == 0010_b);
+    });
+
+    TEST([]()->ch_bool {
+      ch_bit4 v1(1), v2(2), t1(3), f1(2), a;
+     __if (v2 == 2) {
+       __if (v1 == 1) {
+         a = t1;
+       } __else {
+         a = f1;
+       };
+     } __else {
+       a = f1;
+     };
+      return (a == 3);
+    });
+
+    TEST([]()->ch_bool {
+      ch_bit4 v1(1), v2(2), t1(3), f1(2), a;
+      __switch (v2)
+      __case (2) {
+        __switch (v1)
+        __case (1) {
+          a = t1;
+        }
+        __default {
+          a = f1;
+        };
+      }
+      __default {
+        a = f1;
+      };
+      return (a == 3);
     });
   }
 }

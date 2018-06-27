@@ -46,7 +46,7 @@ public:
 
 protected:
 
-  virtual void initialize();
+  void initialize();
 
   std::unordered_set<context*> contexts_;
   clock_driver clk_driver_;

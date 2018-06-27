@@ -6,11 +6,11 @@
 module testbench();
 
     reg clk = 0;
-    reg rst = 0;
+    reg reset = 0;
     reg coin = 1;
     wire valid;
 
-    VendingMachine device(clk, rst, coin, valid);
+    VendingMachine device(clk, reset, coin, valid);
 
     always begin
         #1 clk = !clk;
@@ -21,11 +21,11 @@ module testbench();
         $dumpvars(0, testbench);
 
         $display ("time\tclk\trst\tcoin\tvalid");
-        $monitor("%3d\t%b\t%b\t%h\t%h", $time, clk, rst, coin, valid);
+        $monitor("%3d\t%b\t%b\t%h\t%h", $time, clk, reset, coin, valid);
 
-        #0 rst = 1;
-        #1 rst = 1;
-        #1 rst = 0;
+        #0 reset = 1;
+        #1 reset = 1;
+        #1 reset = 0;
 
         #8 `check(valid == 1);
             $finish;

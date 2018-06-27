@@ -100,6 +100,8 @@ typedef const char* (*enum_string_cb)(uint32_t value);
 
 typedef std::unordered_map<uint32_t, enum_string_cb> enum_strings_t;
 
+typedef std::stack<std::pair<cdimpl*, lnode>> cd_stack_t;
+
 class context : public refcounted {
 public:
 
@@ -169,11 +171,16 @@ public:
 
   //--
 
-  void push_cd(cdimpl* cd);
+  void push_cd(const lnode& clk,
+               const lnode& reset,
+               bool posedge,
+               const source_location& sloc);
 
   void pop_cd();
 
   cdimpl* current_cd(const source_location& sloc);
+
+  lnode current_reset(const source_location& sloc);
 
   //--
 
@@ -190,10 +197,9 @@ public:
     return node;
   }
 
-  cdimpl* create_cdomain(const lnode& clk,
-                         const lnode& rst,
-                         bool posedge,
-                         const source_location& sloc);
+  cdimpl* create_cd(const lnode& clk,
+                    bool posedge,
+                    const source_location& sloc);
 
   node_list_t::iterator delete_node(const node_list_t::iterator& it);
   
@@ -307,7 +313,7 @@ protected:
   cond_vars_t             cond_vars_;
   cond_inits_t            cond_inits_;
 
-  std::stack<cdimpl*>     cd_stack_;
+  cd_stack_t              cd_stack_;
 
   unique_names            unique_tap_names_;
 

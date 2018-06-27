@@ -41,20 +41,34 @@ struct TestAssign3 {
 TEST_CASE("basics", "[basics]") {
   SECTION("assign", "[assign]") {
     TEST([]()->ch_bool {
-      ch_uint4 a(0);
-      auto b = a + 1;
-      a = 1;
-      return (b == 2);
+      ch_bit4 a(0), b(1_b4), c(b);
+      auto d = a << b;
+      a = b;
+      return (d == 2);
     });
 
     TEST([]()->ch_bool {
-      ch_uint8 a(0x4_h8);
+      ch_int4 a(0), b(1_b4), c(b);
+      auto d = a << b;
+      a = b;
+      return (d == 2);
+    });
+
+    TEST([]()->ch_bool {
+      ch_uint4 a(0), b(1_b4), c(b);
+      auto d = a << b;
+      a = b;
+      return (d == 2);
+    });
+
+    TEST([]()->ch_bool {
+      ch_bit8 a(0x4_h8);
       a = 0xf_h8;
       return (a == 15);
     });
 
     TEST([]()->ch_bool {
-      ch_uint4 a, b, c;
+      ch_int4 a, b, c;
       a = 0xf_h;
       b = a;
       c = b + 1;
@@ -63,7 +77,8 @@ TEST_CASE("basics", "[basics]") {
     });
 
     TEST([]()->ch_bool {
-      ch_bit2 a, b;
+      ch_int2 a;
+      ch_bit2 b;
       a = 0;
       b = a;
       a = 1;

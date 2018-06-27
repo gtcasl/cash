@@ -36,8 +36,8 @@ bindimpl::bindimpl(context* ctx, context* module, const source_location& sloc)
   // bind default reset
   auto module_reset = module->default_reset();
   if (module_reset) {
-    auto cd = ctx->current_cd(sloc);
-    this->bind_input(cd->rst(), module_reset, sloc);
+    auto reset = ctx->current_reset(sloc);
+    this->bind_input(reset, module_reset, sloc);
   }
 }
 

@@ -61,6 +61,14 @@ public:
     return srcs_[cd_idx_];
   }
 
+  bool has_init() const {
+    return (reset_idx_ != -1);
+  }
+
+  const lnode& reset() const {
+    return srcs_[reset_idx_];
+  }
+
   void eval() override;
 
 protected:
@@ -73,6 +81,7 @@ protected:
   ~udfsimpl();
 
   int cd_idx_;
+  int reset_idx_;
   std::vector<bitvector> pipe_;
 
   friend class context;

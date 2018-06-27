@@ -7,14 +7,12 @@ using namespace ch::internal;
 
 cdimpl::cdimpl(context* ctx,
                const lnode& clk,
-               const lnode& rst,
                bool posedge,
                const source_location& sloc)
   : ioimpl(ctx, type_cd, 1, sloc)
   , posedge_(posedge)
   , prev_val_(false) {
   srcs_.emplace_back(clk);
-  srcs_.emplace_back(rst);
 }
 
 cdimpl::~cdimpl() {}
@@ -29,6 +27,5 @@ void cdimpl::print(std::ostream& out, uint32_t level) const {
   CH_UNUSED(level);
   out << "#" << id_ << " <- " << this->type() << "("
       << (posedge_ ? "posedge" : "negedge")
-      << ", #" << srcs_[0].id()
-      << ", #" << srcs_[1].id() << ")";
+      << ", #" << srcs_[0].id() << ")";
 }

@@ -533,7 +533,7 @@ void verilogwriter::print_reg(std::ostream& out, regimpl* node) {
     this->print_name(out, node);
     out << " <= ";
     if (node->has_init()) {
-      this->print_name(out, cd->rst().impl());
+      this->print_name(out, node->reset().impl());
       out << " ? ";
       this->print_name(out, node->init().impl());
       out << " : ";
@@ -631,7 +631,9 @@ void verilogwriter::print_udf(std::ostream& out, udfimpl* node) {
     auto udfs = reinterpret_cast<udfsimpl*>(node);
     auto cd = reinterpret_cast<cdimpl*>(udfs->cd().impl());
     add_to_dic("clock", cd->clk().impl());
-    add_to_dic("reset", cd->rst().impl());
+    if (udfs->has_init()) {
+      add_to_dic("reset", udfs->reset().impl());
+    }
   }
 
   std::string code;
