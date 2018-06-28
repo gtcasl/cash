@@ -23,10 +23,10 @@ install:
 
 script: 
   # set test environment variables
-  export CASH_DEBUG_LEVEL=2
-  export CASH_DEBUG_VERILOG=1
-  export CASH_DUMP_AST=1
-  export CASH_DUMP_CFG=1
+  - export CASH_DEBUG_LEVEL=2
+  - export CASH_DEBUG_VERILOG=1
+  - export CASH_DUMP_AST=2
+  - export CASH_DUMP_CFG=2
 
   # Build project
   - mkdir -p build
