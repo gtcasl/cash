@@ -366,5 +366,101 @@ TEST_CASE("arithmetic", "[arithmetic]") {
       auto b = -a;
       return (b == 0xf);
     });
+    TEST([]()->ch_bool {
+      ch_int4 a(1);
+      ch_int8 b(2);
+      auto c = a * b;
+      return (c == 2);
+    });
+    TEST([]()->ch_bool {
+      ch_int4 a(1);
+      ch_int8 b(-2);
+      auto c = a * b;
+      return (c == -2);
+    });
+    TEST([]()->ch_bool {
+      ch_int4 a(-1);
+      ch_int8 b(2);
+      auto c = a * b;
+      return (c == -2);
+    });
+    TEST([]()->ch_bool {
+      ch_int4 a(-1);
+      ch_int8 b(-2);
+      auto c = a * b;
+      return (c == 2);
+    });
+    TEST([]()->ch_bool {
+      ch_uint8 a(1);
+      ch_uint4 b(2);
+      auto c = a * b;
+      return (c == 2);
+    });
+    TEST([]()->ch_bool {
+      ch_int4 a(1);
+      ch_int8 b(2);
+      auto c = a / b;
+      return (c == 0);
+    });
+    TEST([]()->ch_bool {
+      ch_int8 a(16);
+      ch_int8 b(2);
+      auto c = a / b;
+      return (c == 8);
+    });
+    TEST([]()->ch_bool {
+      ch_int8 a(16);
+      ch_int4 b(-2);
+      auto c = a / b;
+      return (c == -8);
+    });
+    TEST([]()->ch_bool {
+      ch_int8 a(-16);
+      ch_int4 b(2);
+      auto c = a / b;
+      return (c == -8);
+    });
+    TEST([]()->ch_bool {
+      ch_int8 a(-16);
+      ch_int4 b(-2);
+      auto c = a / b;
+      return (c == 8);
+    });
+    TEST([]()->ch_bool {
+      ch_int8 a(16);
+      ch_int4 b(2);
+      auto c = a % b;
+      return (c == 0);
+    });
+    TEST([]()->ch_bool {
+      ch_uint8 a(16);
+      ch_uint4 b(2);
+      auto c = a % b;
+      return (c == 0);
+    });
+    TEST([]()->ch_bool {
+      ch_int8 a(16);
+      ch_int4 b(3);
+      auto c = a % b;
+      return (c == 1);
+    });
+    TEST([]()->ch_bool {
+      ch_uint8 a(16);
+      ch_uint4 b(3);
+      auto c = a % b;
+      return (c == 1);
+    });
+    TEST([]()->ch_bool {
+      ch_int8 a(-16);
+      ch_int4 b(2);
+      auto c = a % b;
+      return (c == 0);
+    });
+    TEST([]()->ch_bool {
+      ch_int8 a(-16);
+      ch_int4 b(3);
+      auto c = a % b;
+      return (c == -1);
+    });
   }
 }

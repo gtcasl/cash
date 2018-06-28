@@ -40,7 +40,7 @@ public:
 
   template <typename U,
             CH_REQUIRE_0(is_scalar_type_v<U>),
-            CH_REQUIRE_0(width_v<U> == N)>
+            CH_REQUIRE_0(ch_width_v<U> == N)>
   explicit ch_scbit(const U& rhs)
     : buffer_(scalar_accessor::copy_buffer(rhs))
   {}
@@ -60,7 +60,7 @@ public:
 
   template <typename U,
             CH_REQUIRE_0(is_scalar_type_v<U>),
-            CH_REQUIRE_0(width_v<U> == N)>
+            CH_REQUIRE_0(ch_width_v<U> == N)>
   ch_scbit& operator=(const U& rhs) {
     scalar_accessor::copy(*this, rhs);
     return *this;
@@ -94,14 +94,14 @@ public:
   template <typename R>
   const auto slice(size_t start = 0) const {
     static_assert(is_scalar_type_v<R>, "invalid type");
-    static_assert(width_v<R> <= N, "invalid size");
-    assert((start + width_v<R>) <= N);
-    return R(make_scalar_buffer(width_v<R>, buffer_, start));
+    static_assert(ch_width_v<R> <= N, "invalid size");
+    assert((start + ch_width_v<R>) <= N);
+    return R(make_scalar_buffer(ch_width_v<R>, buffer_, start));
   }
 
   template <typename R>
   const auto aslice(size_t start = 0) const {
-    return this->slice<R>(start * width_v<R>);
+    return this->slice<R>(start * ch_width_v<R>);
   }
 
   template <unsigned M>
@@ -117,14 +117,14 @@ public:
   template <typename R>
   auto slice(size_t start = 0) {
     static_assert(is_scalar_type_v<R>, "invalid type");
-    static_assert(width_v<R> <= N, "invalid size");
-    assert((start + width_v<R>) <= N);
-    return R(make_scalar_buffer(width_v<R>, buffer_, start));
+    static_assert(ch_width_v<R> <= N, "invalid size");
+    assert((start + ch_width_v<R>) <= N);
+    return R(make_scalar_buffer(ch_width_v<R>, buffer_, start));
   }
 
   template <typename R>
   auto aslice(size_t start = 0) {
-    return this->slice<R>(start * width_v<R>);
+    return this->slice<R>(start * ch_width_v<R>);
   }
 
   template <unsigned M>

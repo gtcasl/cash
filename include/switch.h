@@ -50,7 +50,7 @@ public:
             CH_REQUIRE_0(!std::is_convertible_v<V, fvoid_t>)>
   switch_body_t<K> operator,(const V& value) {
     static_assert(is_equality_comparable_v<K, V>, "invalid type");
-    return switch_body_t<K>(switch_, bitvector(width_v<K>, value));
+    return switch_body_t<K>(switch_, bitvector(ch_width_v<K>, value));
   }
 
   void operator,(const fvoid_t& body) {

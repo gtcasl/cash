@@ -24,7 +24,7 @@ struct scalar_traits {
 };
 
 template <typename T>
-using scalar_type_t = typename std::decay_t<T>::traits::scalar_type;
+using ch_scalar_t = typename std::decay_t<T>::traits::scalar_type;
 
 template <typename T>
 inline constexpr bool is_scalar_traits_v = is_true_v<(T::type & traits_scalar)>;
@@ -34,14 +34,14 @@ CH_DEF_SFINAE_CHECK(is_scalar_only, is_true_v<(std::decay_t<T>::traits::type == 
 CH_DEF_SFINAE_CHECK(is_scalar_type, is_scalar_traits_v<typename std::decay_t<T>::traits>);
 
 template <typename T>
-inline constexpr bool is_scbit_base_v = std::is_base_of_v<ch_scbit<width_v<T>>, T>;
+inline constexpr bool is_scbit_base_v = std::is_base_of_v<ch_scbit<ch_width_v<T>>, T>;
 
 template <typename T, unsigned N>
 inline constexpr bool is_scbit_convertible_v = std::is_constructible_v<ch_scbit<N>, T>;
 
 template <unsigned N, typename T>
 auto to_scalar(T&& obj) {
-  if constexpr (is_scalar_type_v<T> && width_v<T> == N) {
+  if constexpr (is_scalar_type_v<T> && ch_width_v<T> == N) {
     return std::move(obj);
   } else {
     return ch_scbit<N>(std::forward<T>(obj));
@@ -143,28 +143,28 @@ public:
 
   template <typename T>
   static const auto& data(const T& obj) {
-    assert(width_v<T> == obj.buffer()->size());
+    assert(ch_width_v<T> == obj.buffer()->size());
     return obj.buffer()->data();
   }
 
   template <typename T>
   static auto copy_buffer(const T& obj) {
-    assert(width_v<T> == obj.buffer()->size());
+    assert(ch_width_v<T> == obj.buffer()->size());
     return make_scalar_buffer(*obj.buffer());
   }
 
   template <typename U, typename V>
   static void copy(U& dst, const V& src) {
-    static_assert(width_v<U> == width_v<V>, "invalid size");
-    assert(width_v<U> == dst.buffer()->size());
-    assert(width_v<V> == src.buffer()->size());
+    static_assert(ch_width_v<U> == ch_width_v<V>, "invalid size");
+    assert(ch_width_v<U> == dst.buffer()->size());
+    assert(ch_width_v<V> == src.buffer()->size());
     dst.buffer()->copy(*src.buffer());
   }
 
   template <typename U, typename V>
   static void move(U& dst, V&& src) {
-    static_assert(width_v<U> == width_v<V>, "invalid size");
-    assert(width_v<U> == dst.buffer()->size());
+    static_assert(ch_width_v<U> == ch_width_v<V>, "invalid size");
+    assert(ch_width_v<U> == dst.buffer()->size());
     dst.buffer()->move(std::move(*src.buffer()));
   }
 
@@ -180,8 +180,8 @@ public:
 
   template <typename R, typename T>
   static R cast(const T& obj) {
-    static_assert(width_v<T> == width_v<R>, "invalid size");
-    return R(make_scalar_buffer(width_v<T>, obj.buffer(), 0));
+    static_assert(ch_width_v<T> == ch_width_v<R>, "invalid size");
+    return R(make_scalar_buffer(ch_width_v<T>, obj.buffer(), 0));
   }
 };
 
@@ -192,14 +192,14 @@ typedef void (*ScalarFunc2)(bitvector& out, const bitvector& lhs, const bitvecto
 
 template <typename R, typename A>
 auto make_scalar_op(ScalarFunc1 func, const A& in) {
-  bitvector ret(width_v<R>);
+  bitvector ret(ch_width_v<R>);
   func(ret, scalar_accessor::data(in));
   return R(make_scalar_buffer(std::move(ret)));
 }
 
 template <typename R, typename A, typename B>
 auto make_scalar_op(ScalarFunc2 func, const A& lhs, const B& rhs) {
-  bitvector ret(width_v<R>);
+  bitvector ret(ch_width_v<R>);
   func(ret, scalar_accessor::data(lhs), scalar_accessor::data(rhs));
   return R(make_scalar_buffer(std::move(ret)));
 }
@@ -343,9 +343,9 @@ CH_SCALAR_OPERATOR(scalar_op_padding)
   template <typename R>
   R pad() const {
     static_assert(is_scalar_type_v<R>, "invalid type");
-    static_assert(width_v<R> >= N, "invalid size");
+    static_assert(ch_width_v<R> >= N, "invalid size");
     auto& self = reinterpret_cast<const Derived&>(*this);
-    if constexpr (width_v<R> > N) {
+    if constexpr (ch_width_v<R> > N) {
       if constexpr (signed_v<Derived>) {
         return make_scalar_op<R>(bv_sext, self);
       } else {
@@ -382,8 +382,18 @@ CH_SCALAR_OPERATOR(scalar_op_arithmetic)
   CH_SCALAR_OPERATOR_IMPL(operator+, (return make_scalar_op<Derived>(bv_add, lhs, rhs)))
   CH_SCALAR_OPERATOR_IMPL(operator-, (return make_scalar_op<Derived>(bv_sub, lhs, rhs)))
   CH_SCALAR_OPERATOR_IMPL(operator*, (return make_scalar_op<Derived>(bv_mul, lhs, rhs)))
-  CH_SCALAR_OPERATOR_IMPL(operator/, (return make_scalar_op<Derived>(bv_div, lhs, rhs)))
-  CH_SCALAR_OPERATOR_IMPL(operator%, (return make_scalar_op<Derived>(bv_mod, lhs, rhs)))
+
+  CH_SCALAR_OPERATOR_IMPL(operator/, (if constexpr (signed_v<Derived>) {
+                                         return make_scalar_op<Derived>(bv_divs, lhs, rhs);
+                                      } else {
+                                         return make_scalar_op<Derived>(bv_divu, lhs, rhs);
+                                      }))
+
+  CH_SCALAR_OPERATOR_IMPL(operator%, (if constexpr (signed_v<Derived>) {
+                                        return make_scalar_op<Derived>(bv_mods, lhs, rhs);
+                                     } else {
+                                        return make_scalar_op<Derived>(bv_modu, lhs, rhs);
+                                     }))
 };
 
 }

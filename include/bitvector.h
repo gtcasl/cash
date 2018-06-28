@@ -714,8 +714,10 @@ inline void bv_add(bitvector& out, const bitvector& lhs, const bitvector& rhs) {
 }
 void bv_sub(bitvector& out, const bitvector& lhs, const bitvector& rhs);
 void bv_mul(bitvector& out, const bitvector& lhs, const bitvector& rhs);
-void bv_div(bitvector& out, const bitvector& lhs, const bitvector& rhs);
-void bv_mod(bitvector& out, const bitvector& lhs, const bitvector& rhs);
+void bv_divu(bitvector& out, const bitvector& lhs, const bitvector& rhs);
+void bv_divs(bitvector& out, const bitvector& lhs, const bitvector& rhs);
+void bv_modu(bitvector& out, const bitvector& lhs, const bitvector& rhs);
+void bv_mods(bitvector& out, const bitvector& lhs, const bitvector& rhs);
 
 void bv_zext(bitvector& out, const bitvector& in);
 void bv_sext(bitvector& out, const bitvector& in);

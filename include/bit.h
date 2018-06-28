@@ -42,7 +42,7 @@ public:
 
   template <typename U,
             CH_REQUIRE_0(is_logic_type_v<U>),
-            CH_REQUIRE_0(width_v<U> == N)>
+            CH_REQUIRE_0(ch_width_v<U> == N)>
   explicit ch_bit(const U& rhs, CH_SLOC)
     : buffer_(logic_accessor::copy_buffer(rhs, sloc))
   {}
@@ -62,7 +62,7 @@ public:
 
   template <typename U,
             CH_REQUIRE_0(is_logic_type_v<U>),
-            CH_REQUIRE_0(width_v<U> == N)>
+            CH_REQUIRE_0(ch_width_v<U> == N)>
   ch_bit& operator=(const U& rhs) {
     logic_accessor::copy(*this, rhs);
     return *this;
@@ -95,14 +95,14 @@ public:
   template <typename R>
   const auto slice(size_t start = 0, CH_SLOC) const {
     static_assert(is_logic_type_v<R>, "invalid type");
-    static_assert(width_v<R> <= N, "invalid size");
-    assert((start + width_v<R>) <= N);
-    return R(make_logic_buffer(width_v<R>, buffer_, start, sloc));
+    static_assert(ch_width_v<R> <= N, "invalid size");
+    assert((start + ch_width_v<R>) <= N);
+    return R(make_logic_buffer(ch_width_v<R>, buffer_, start, sloc));
   }
 
   template <typename R>
   const auto aslice(size_t start = 0, CH_SLOC) const {
-    return this->slice<R>(start * width_v<R>, sloc);
+    return this->slice<R>(start * ch_width_v<R>, sloc);
   }
 
   template <unsigned M>
@@ -118,14 +118,14 @@ public:
   template <typename R>
   auto slice(size_t start = 0, CH_SLOC) {
     static_assert(is_logic_type_v<R>, "invalid type");
-    static_assert(width_v<R> <= N, "invalid size");
-    assert((start + width_v<R>) <= N);
-    return R(make_logic_buffer(width_v<R>, buffer_, start, sloc));
+    static_assert(ch_width_v<R> <= N, "invalid size");
+    assert((start + ch_width_v<R>) <= N);
+    return R(make_logic_buffer(ch_width_v<R>, buffer_, start, sloc));
   }
 
   template <typename R>
   auto aslice(size_t start = 0, CH_SLOC) {
-    return this->slice<R>(start * width_v<R>, sloc);
+    return this->slice<R>(start * ch_width_v<R>, sloc);
   }
 
   template <unsigned M>
@@ -190,17 +190,17 @@ template <typename R, typename T>
 R ch_slice(const T& obj, size_t start = 0, CH_SLOC) {
   static_assert(is_logic_type_v<R>, "invalid type");
   static_assert(is_logic_type_v<T>, "invalid type");
-  static_assert(width_v<R> <= width_v<T>, "invalid size");
-  assert((start + width_v<R>) <= width_v<T>);
-  if constexpr(width_v<R> == width_v<T>) {
+  static_assert(ch_width_v<R> <= ch_width_v<T>, "invalid size");
+  assert((start + ch_width_v<R>) <= ch_width_v<T>);
+  if constexpr(ch_width_v<R> == ch_width_v<T>) {
     if constexpr(std::is_same_v<R, T>) {
       return obj;
     } else {
       return R(obj, sloc);
     }
   } else {
-    ch_bit<width_v<R>> ret(make_logic_buffer(width_v<R>, sloc));
-    logic_accessor::write(ret, 0, obj, start, width_v<R>, sloc);
+    ch_bit<ch_width_v<R>> ret(make_logic_buffer(ch_width_v<R>, sloc));
+    logic_accessor::write(ret, 0, obj, start, ch_width_v<R>, sloc);
     return ret.template as<R>();
   }
 }
@@ -212,7 +212,7 @@ auto ch_slice(const T& obj, size_t start = 0, CH_SLOC) {
 
 template <typename R, typename T>
 R ch_aslice(const T& obj, size_t start = 0, CH_SLOC) {
-  return ch_slice<R>(obj, start * width_v<R>, sloc);
+  return ch_slice<R>(obj, start * ch_width_v<R>, sloc);
 }
 
 template <unsigned N, typename T>
@@ -260,8 +260,8 @@ public:
 
   template <typename T>
   void operator=(const T& rhs) {
-    static_assert(is_bit_convertible_v<T, width_v<Ts...>>, "invalid type");
-    this->assign(to_logic<width_v<Ts...>>(rhs, sloc_),
+    static_assert(is_bit_convertible_v<T, ch_width_v<Ts...>>, "invalid type");
+    this->assign(to_logic<ch_width_v<Ts...>>(rhs, sloc_),
                  std::index_sequence_for<Ts...>());
   }
 
@@ -275,7 +275,7 @@ protected:
   template <typename T, typename U0, typename... Us>
   void assign_impl(uint32_t src_offset, const T& src, U0& dst0, Us&... dsts) {
     this->assign_impl(src_offset, src, dst0);
-    this->assign_impl(src_offset + width_v<U0>, src, dsts...);
+    this->assign_impl(src_offset + ch_width_v<U0>, src, dsts...);
   }
 
   template <typename T, size_t... I>
@@ -309,28 +309,28 @@ CH_VA_ARGS_MAP(CH_BIND)
 template <typename U, typename T>
 void cat_impl(U& inout, uint32_t dst_offset, const source_location& sloc,
               const T& arg) {
-  logic_accessor::write(inout, dst_offset - width_v<T>, arg, 0, width_v<T>, sloc);
+  logic_accessor::write(inout, dst_offset - ch_width_v<T>, arg, 0, ch_width_v<T>, sloc);
 }
 
 template <typename U, typename T0, typename... Ts>
 void cat_impl(U& inout, uint32_t dst_offset, const source_location& sloc,
               const T0& arg0, const Ts&... args) {
   cat_impl(inout, dst_offset, sloc, arg0);
-  cat_impl(inout, dst_offset - width_v<T0>, sloc, args...);
+  cat_impl(inout, dst_offset - ch_width_v<T0>, sloc, args...);
 }
 
 #define CH_CAT_TYPE(a, i, x) __T##i
 #define CH_CAT_TMPL(a, i, x) typename __T##i
 #define CH_CAT_ASSERT(a, i, x) static_assert(is_object_type_v<__T##i>, "invalid type for argument"#i)
 #define CH_CAT_DECL(a, i, x) const __T##i& arg##i
-#define CH_CAT_ARG(a, i, x) to_logic<width_v<__T##i>>(arg##i, sloc)
+#define CH_CAT_ARG(a, i, x) to_logic<ch_width_v<__T##i>>(arg##i, sloc)
 #define CH_CAT(...) \
   template <typename R, \
             CH_FOR_EACH(CH_CAT_TMPL, , CH_SEP_COMMA, __VA_ARGS__)> \
   auto ch_cat(CH_FOR_EACH(CH_CAT_DECL, , CH_SEP_COMMA, __VA_ARGS__), CH_SLOC) { \
     CH_FOR_EACH(CH_CAT_ASSERT, , CH_SEP_SEMICOLON, __VA_ARGS__); \
-    static constexpr unsigned N = width_v<CH_FOR_EACH(CH_CAT_TYPE, , CH_SEP_COMMA, __VA_ARGS__)>; \
-    static_assert(width_v<R> == N, "size mismatch"); \
+    static constexpr unsigned N = ch_width_v<CH_FOR_EACH(CH_CAT_TYPE, , CH_SEP_COMMA, __VA_ARGS__)>; \
+    static_assert(ch_width_v<R> == N, "size mismatch"); \
     R ret(make_logic_buffer(N, sloc)); \
     cat_impl(ret, N, sloc, CH_FOR_EACH(CH_CAT_ARG, , CH_SEP_COMMA, __VA_ARGS__)); \
     return ret; \
@@ -338,7 +338,7 @@ void cat_impl(U& inout, uint32_t dst_offset, const source_location& sloc,
   template <CH_FOR_EACH(CH_CAT_TMPL, , CH_SEP_COMMA, __VA_ARGS__)> \
   auto ch_cat(CH_FOR_EACH(CH_CAT_DECL, , CH_SEP_COMMA, __VA_ARGS__), CH_SLOC) { \
     CH_FOR_EACH(CH_CAT_ASSERT, , CH_SEP_SEMICOLON, __VA_ARGS__); \
-    static constexpr unsigned N = width_v<CH_FOR_EACH(CH_CAT_TYPE, , CH_SEP_COMMA, __VA_ARGS__)>; \
+    static constexpr unsigned N = ch_width_v<CH_FOR_EACH(CH_CAT_TYPE, , CH_SEP_COMMA, __VA_ARGS__)>; \
     ch_bit<N> ret(make_logic_buffer(N, sloc)); \
     cat_impl(ret, N, sloc, CH_FOR_EACH(CH_CAT_ARG, , CH_SEP_COMMA, __VA_ARGS__)); \
     return ret; \

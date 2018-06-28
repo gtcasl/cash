@@ -50,41 +50,37 @@ namespace core {
   // data types
   //
 
-  template <unsigned N> using ch_bit  = ch::internal::ch_bit<N>;
-  template <unsigned N> using ch_int  = ch::internal::ch_int<N>;
-  template <unsigned N> using ch_uint = ch::internal::ch_uint<N>;
+  using ch::internal::ch_bit;
+  using ch::internal::ch_int;
+  using ch::internal::ch_uint;
 
-  template <unsigned N> using ch_scbit = ch::internal::ch_scbit<N>;
-  template <unsigned N> using ch_scint  = ch::internal::ch_scint<N>;
-  template <unsigned N> using ch_scuint = ch::internal::ch_scuint<N>;
+  using ch::internal::ch_scbit;
+  using ch::internal::ch_scint;
+  using ch::internal::ch_scuint;
 
-  template <typename T, unsigned N> using ch_vec = ch::internal::ch_vec<T, N>;
-
-  template <typename T> using ch_reg = ch::internal::ch_reg<T>;
-
-  template <typename T, unsigned N> using ch_rom = ch::internal::ch_rom<T, N>;
-  template <typename T, unsigned N> using ch_mem = ch::internal::ch_mem<T, N>;
+  using ch::internal::ch_reg;
+  using ch::internal::ch_vec;
+  using ch::internal::ch_rom;
+  using ch::internal::ch_mem;
 
   //
   // utility types
   //
 
-  template <typename... Ts>
-  inline constexpr unsigned ch_width_v = ch::internal::width_v<Ts...>;
+  using ch::internal::ch_width_v;
 
-  using ch_direction = ch::internal::ch_direction;
+  using ch::internal::ch_direction;
 
-  template <typename T> using ch_scalar_t = ch::internal::scalar_type_t<T>;
-  template <typename T> using ch_logic_t  = ch::internal::logic_type_t<T>;
-  template <typename T> using ch_flip_t   = ch::internal::flip_type_t<T>;
-  template <typename T> using ch_io_t     = ch::internal::io_type_t<T>;
+  using ch::internal::ch_scalar_t;
+  using ch::internal::ch_logic_t;
+  using ch::internal::ch_flip_t;
+  using ch::internal::ch_io_t;
 
-  template <typename T>
-  inline constexpr ch_direction ch_direction_v = ch::internal::direction_v<T>;
+  using ch::internal::ch_direction_v;
 
-  template <typename T> using ch_in = ch::internal::ch_in<T>;
-  template <typename T> using ch_out = ch::internal::ch_out<T>;
-  template <typename T> using ch_module = ch::internal::ch_module<T>;
+  using ch::internal::ch_in;
+  using ch::internal::ch_out;
+  using ch::internal::ch_module;
 
   using ch::internal::ch_udf;
 
@@ -197,17 +193,17 @@ namespace sim {
   // basic types
   //
 
-  using ch_tick  = ch::internal::ch_tick;
+  using ch::internal::ch_tick;
   
   //
   // objects
   //
 
-  template <typename T> using ch_device = ch::internal::ch_device<T>;
-  using ch_device_list = ch::internal::ch_device_list;
-  using ch_simulator   = ch::internal::ch_simulator;
-  using ch_tracer      = ch::internal::ch_tracer;
-  using ch_vcdtracer   = ch::internal::ch_vcdtracer;
+  using ch::internal::ch_device;
+  using ch::internal::ch_device_list;
+  using ch::internal::ch_simulator;
+  using ch::internal::ch_tracer;
+  using ch::internal::ch_vcdtracer;
 
   //
   // utility functions

@@ -176,10 +176,16 @@ void aluimpl::eval() {
     bv_mul(value_, *src0_, *src1_);
     break;
   case op_div:
-    bv_div(value_, *src0_, *src1_);
+    if (is_signed_ )
+      bv_divs(value_, *src0_, *src1_);
+    else
+      bv_divu(value_, *src0_, *src1_);
     break;
   case op_mod:
-    bv_mod(value_, *src0_, *src1_);
+    if (is_signed_ )
+      bv_mods(value_, *src0_, *src1_);
+    else
+      bv_modu(value_, *src0_, *src1_);
     break;
 
   case op_pad:

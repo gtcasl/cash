@@ -88,7 +88,7 @@ class udf_comb : public udf_iface {
 public:
   using traits = udf_traits<0, false, Output, Inputs...>;
 
-  udf_comb() : udf_iface(0, false, width_v<Output>, {width_v<Inputs>...}) {}
+  udf_comb() : udf_iface(0, false, ch_width_v<Output>, {ch_width_v<Inputs>...}) {}
 
   void initialize() override {}
 
@@ -105,7 +105,7 @@ public:
   static_assert(Delta != 0, "invalid delta value");
   using traits = udf_traits<Delta, Init, Output, Inputs...>;
 
-  udf_seq() : udf_iface(Delta, Init, width_v<Output>, {width_v<Inputs>...}) {}
+  udf_seq() : udf_iface(Delta, Init, ch_width_v<Output>, {ch_width_v<Inputs>...}) {}
 
   void initialize() override {}
 

@@ -132,8 +132,3 @@ std::ostream& ch::internal::operator<<(std::ostream& out, lnodetype type) {
   out << to_string(type);
   return out;
 }
-
-std::ostream& ch::internal::operator<<(std::ostream& out, const lnode& node) {
-  out << node.data();
-  return out;
-}

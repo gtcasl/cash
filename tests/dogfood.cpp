@@ -201,7 +201,17 @@ struct Dogfood {
 };
 
 int main() {
-  {
+  ch_device<Dogfood> device;
+  //ch_verilog("test.v", device);
+  ch_simulator sim(device);
+  device.io.in = 0xA;
+  sim.run([&](ch_tick t)->bool {
+    std::cout << "t" << t << ": out="  << device.io.out << std::endl;
+    //assert(!!device.io.out);
+    return (t != 8);
+  });
+
+  /*{
     ch_device<inverter> device;
     device.io.in = 2;
     //auto s = ch_simulator(device);
@@ -220,21 +230,9 @@ int main() {
     ch_scalar_t<s2_t> a{1, 0}, b;
     b = std::move(a);
     assert(b.b == 1);
-  }
-  /*{
-    ch_device<Dogfood> device;
-    auto x = std::move(device);
-    //ch_verilog("test.v", device);
-    ch_simulator sim(x);
-    x.io.in = 0xA;
-    sim.run([&](ch_tick t)->bool {
-      std::cout << "t" << t << ": out="  << x.io.out << std::endl;
-      //assert(!!device.io.out);
-      return (t != 8);
-    });
   }*/
 
-  {
+  /*{
     ch_device<inverter> device;
     device.io.in = 2;
     ch_vcdtracer tracer(std::cout, device);
@@ -242,7 +240,7 @@ int main() {
     tracer.add_trace("y", y);
     tracer.run();
     return (1 == device.io.out);
-  }
+  }*/
 
   /*{
     ch_device<FilterBlock<ch_uint16>> filter;

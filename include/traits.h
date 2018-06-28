@@ -102,7 +102,7 @@ struct width_impl<T0, Ts...> {
 };
 
 template <typename... Ts>
-inline constexpr uint32_t width_v = width_impl<std::decay_t<Ts>...>::value;
+inline constexpr uint32_t ch_width_v = width_impl<std::decay_t<Ts>...>::value;
 
 template <typename T, typename Enable = void>
 struct signed_impl {
@@ -139,10 +139,10 @@ struct deduce_type_impl {
   using D1 = std::decay_t<T1>;
   using U0 = std::conditional_t<is_object_type_v<D0>, D0, non_ch_type>;
   using U1 = std::conditional_t<is_object_type_v<D1>, D1, non_ch_type>;
-  using type = std::conditional_t<(width_v<U0> != 0) && (width_v<U1> != 0),
-    std::conditional_t<(width_v<U0> == width_v<U1>) || ((width_v<U0> > width_v<U1>) && resize), U0,
-        std::conditional_t<(width_v<U0> < width_v<U1>) && resize, U1, non_ch_type>>,
-          std::conditional_t<(width_v<U0> != 0), U0, U1>>;
+  using type = std::conditional_t<(ch_width_v<U0> != 0) && (ch_width_v<U1> != 0),
+    std::conditional_t<(ch_width_v<U0> == ch_width_v<U1>) || ((ch_width_v<U0> > ch_width_v<U1>) && resize), U0,
+        std::conditional_t<(ch_width_v<U0> < ch_width_v<U1>) && resize, U1, non_ch_type>>,
+          std::conditional_t<(ch_width_v<U0> != 0), U0, U1>>;
 };
 
 template <bool resize, typename... Ts>
@@ -167,7 +167,7 @@ struct deduce_first_type_impl {
   using D1 = std::decay_t<T1>;
   using U0 = std::conditional_t<is_object_type_v<D0>, D0, non_ch_type>;
   using U1 = std::conditional_t<is_object_type_v<D1>, D1, non_ch_type>;
-  using type = std::conditional_t<(width_v<U0> != 0), U0, U1>;
+  using type = std::conditional_t<(ch_width_v<U0> != 0), U0, U1>;
 };
 
 template <typename T0, typename T1>

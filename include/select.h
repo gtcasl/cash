@@ -86,7 +86,7 @@ public:
   case_t& operator()(const P& pred, const T& value) {
     static_assert(is_equality_comparable_v<P, K>, "invalid type");
     static_assert(std::is_constructible_v<V, T>, "invalid type");
-    impl_.push(to_lnode<width_v<K>>(pred, impl_.sloc()),
+    impl_.push(to_lnode<ch_width_v<K>>(pred, impl_.sloc()),
                to_lnode<V>(value, impl_.sloc()));
     return *this;
   }
@@ -113,7 +113,7 @@ auto ch_sel(const ch_bit<1>& pred, const T& value, CH_SLOC) {
 template <typename T>
 auto ch_sel(const ch_bit<1>& pred, const T& value, CH_SLOC) {
   static_assert(is_object_type_v<T>, "invalid type");
-  return select_t<logic_type_t<T>>(get_lnode(pred), to_lnode<width_v<T>>(value, sloc), sloc);
+  return select_t<ch_logic_t<T>>(get_lnode(pred), to_lnode<ch_width_v<T>>(value, sloc), sloc);
 }
 
 template <typename R, typename U, typename V>
@@ -123,8 +123,8 @@ auto ch_sel(const ch_bit<1>& pred, const U& _true, const V& _false, CH_SLOC) {
 
 template <typename U, typename V>
 auto ch_sel(const ch_bit<1>& pred, const U& _true, const V& _false, CH_SLOC) {  
-  static_assert(width_v<deduce_type_t<false, U, V>> != 0, "invalid type");
-  return ch_sel<logic_type_t<deduce_first_type_t<U, V>>, U, V>(pred, _true, _false, sloc);
+  static_assert(ch_width_v<deduce_type_t<false, U, V>> != 0, "invalid type");
+  return ch_sel<ch_logic_t<deduce_first_type_t<U, V>>, U, V>(pred, _true, _false, sloc);
 }
 
 template <typename U, typename V>
@@ -140,11 +140,11 @@ auto ch_max(const U& lhs, const V& rhs, CH_SLOC) {
 template <typename R, typename K, typename V, typename P>
 auto ch_case(const K& key, const P& pred, const V& value, CH_SLOC) {
   static_assert(is_logic_type_v<K>, "invalid type");
-  static_assert(is_scbit_convertible_v<P, width_v<K>>, "invalid type");
+  static_assert(is_scbit_convertible_v<P, ch_width_v<K>>, "invalid type");
   static_assert(is_equality_comparable_v<P, K>, "invalid type");
   static_assert(std::is_constructible_v<R, V>, "invalid type");
   return case_t<K, R>(get_lnode(key),
-                      to_lnode<width_v<K>>(pred, sloc),
+                      to_lnode<ch_width_v<K>>(pred, sloc),
                       to_lnode<R>(value, sloc),
                       sloc);
 }
@@ -152,7 +152,7 @@ auto ch_case(const K& key, const P& pred, const V& value, CH_SLOC) {
 template <typename K, typename V, typename P>
 auto ch_case(const K& key, const P& pred, const V& value, CH_SLOC) {
   static_assert(is_object_type_v<V>, "invalid type");
-  return ch_case<logic_type_t<V>, K, V, P>(key, pred, value, sloc);
+  return ch_case<ch_logic_t<V>, K, V, P>(key, pred, value, sloc);
 }
 
 }

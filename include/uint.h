@@ -39,7 +39,7 @@ public:
 
   template <typename U,
             CH_REQUIRE_0(is_logic_type_v<U>),
-            CH_REQUIRE_0(width_v<U> == N)>
+            CH_REQUIRE_0(ch_width_v<U> == N)>
   explicit ch_uint(const U& rhs, CH_SLOC) : base(rhs, sloc) {}
 
   template <unsigned M,

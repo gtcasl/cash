@@ -62,27 +62,27 @@ template <typename T, unsigned N>
 class ch_rom {
 public:
   static constexpr unsigned size = N;
-  static constexpr unsigned data_width = width_v<T>;
+  static constexpr unsigned data_width = ch_width_v<T>;
   static constexpr unsigned addr_width = log2ceil(N);
   using value_type = T;
 
   explicit ch_rom(const std::string& init_file, CH_SLOC)
-    : mem_(width_v<T>, N, false, toByteVector(init_file, data_width, N), sloc)
+    : mem_(ch_width_v<T>, N, false, toByteVector(init_file, data_width, N), sloc)
   {}
 
   explicit ch_rom(const std::initializer_list<uint32_t>& init_data, CH_SLOC)
-    : mem_(width_v<T>, N, false, toByteVector(init_data, data_width, N), sloc)
+    : mem_(ch_width_v<T>, N, false, toByteVector(init_data, data_width, N), sloc)
   {}
 
   template <typename U, std::size_t M>
   explicit ch_rom(const std::array<U, M>& init_data, CH_SLOC)
-    : mem_(width_v<T>, N, false, toByteVector(init_data, data_width, N), sloc) {
+    : mem_(ch_width_v<T>, N, false, toByteVector(init_data, data_width, N), sloc) {
     static_assert(is_bitvector_array_type_v<U>, "invalid type");
   }
 
   template <typename U>
   explicit ch_rom(const std::vector<U>& init_data, CH_SLOC)
-    : mem_(width_v<T>, N, false, toByteVector(init_data, data_width, N), sloc) {
+    : mem_(ch_width_v<T>, N, false, toByteVector(init_data, data_width, N), sloc) {
     static_assert(is_bitvector_array_type_v<U>, "invalid type");
   }
 
@@ -101,11 +101,11 @@ template <typename T, unsigned N>
 class ch_mem {
 public:
   static constexpr unsigned size = N;
-  static constexpr unsigned data_width = width_v<T>;
+  static constexpr unsigned data_width = ch_width_v<T>;
   static constexpr unsigned addr_width = log2ceil(N);
   using value_type = T;
 
-  ch_mem(CH_SLOC) : mem_(width_v<T>, N, true, {}, sloc) {}
+  ch_mem(CH_SLOC) : mem_(ch_width_v<T>, N, true, {}, sloc) {}
 
   template <typename U>
   auto read(const U& addr, CH_SLOC) const {

@@ -74,89 +74,69 @@ protected:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T>
-class device_base : public device {
-public:
-  using base = device;
-
-  template <typename... Ts>
-  device_base(const std::type_index& signature, const std::string& name, Ts&&... args)
-    : device(signature, name) {
-    obj_ = std::make_shared<T>(args...);
-    obj_->describe();
-    this->compile();
-  }
-
-  device_base(const device_base& other)
-    : base(other)
-    , obj_(other.obj_)
-  {}
-
-  device_base(device_base&& other)
-    : base(std::move(other))
-    , obj_(std::move(other.obj_))
-  {}
-
-  device_base& operator=(const device_base& other) {
-    base::operator=(other);
-    obj_ = other.obj_;
-    return *this;
-  }
-
-  device_base& operator=(device_base&& other) {
-    base::operator=(std::move(other));
-    obj_ = std::move(other.obj_);
-    return *this;
-  }
-
-protected:
-
-  std::shared_ptr<T> obj_;
-};
-
-///////////////////////////////////////////////////////////////////////////////
-
 template <typename IoType>
 struct device_traits {
   using io_type = typename IoType::traits::device_type;
 };
 
-template <typename T>
-class ch_device final : public device_base<T> {
+template <typename T = void>
+class ch_device final : public device {
 public:  
-  using base = device_base<T>;
-  using base::obj_;
-  using traits = device_traits<decltype(obj_->io)>;
+  using base = device;
+  using traits = device_traits<decltype(T::io)>;
 
   typename traits::io_type io;
 
   template <typename... Ts>
   ch_device(const std::string& name, Ts&&... args)
-    : base(std::type_index(typeid(T)), name, std::forward<Ts>(args)...)
-    , io(obj_->io)
+    : device(std::type_index(typeid(T)), name)
+    , io(build(T(std::forward<Ts>(args)...)).io)
   {}
 
   template <typename... Ts>
   ch_device(Ts&&... args)
-    : base(std::type_index(typeid(T)),
-           identifier_from_typeid(typeid(T).name()).c_str(),
-           std::forward<Ts>(args)...)
-    , io(obj_->io)
+    : device(std::type_index(typeid(T)),
+             identifier_from_typeid(typeid(T).name()).c_str())
+    , io(build(T(std::forward<Ts>(args)...)).io)
   {}
 
   ch_device(ch_device&& other) : base(std::move(other)), io(std::move(other.io)) {}
 
-  ch_device& operator=(ch_device&& other) {
-    base::operator=(std::move(other));
-    io = std::move(other.io);
-    return *this;
-  }
-
 protected:
+
+  auto&& build(T&& obj) {
+    obj.describe();
+    this->compile();
+    return obj;
+  }
 
   ch_device(const ch_device& other) = delete;
 
   ch_device& operator=(const ch_device& other) = delete;
+
+  ch_device& operator=(ch_device&& other) = delete;
+};
+
+template <>
+class ch_device<void> : public device {
+public:
+  using base = device;
+
+  ch_device() {}
+
+  ch_device(const base& other) : base(other) {}
+
+  ch_device(base&& other) : base(std::move(other)) {}
+
+  ch_device& operator=(const base& other) {
+    base::operator=(other);
+    return *this;
+  }
+
+  ch_device& operator=(base&& other) {
+    base::operator=(std::move(other));
+    return *this;
+  }
 };
 
 ///////////////////////////////////////////////////////////////////////////////

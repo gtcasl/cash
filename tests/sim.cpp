@@ -20,10 +20,13 @@ struct inverter {
 TEST_CASE("simulation", "[sim]") {
   SECTION("simulator", "[simulator]") {
     TESTX([]()->bool {
-      ch_device<inverter<ch_bit2>> device;
+      auto device = ch_device<inverter<ch_bit2>>();
       device.io.in = 2;
+      ch_device<> d1 = device;
+      ch_device<> d2(d1), d3;
+      d3 = d2;
       ch_simulator s1, s2;
-      s1 = ch_simulator(device);
+      s1 = ch_simulator(d3);
       s2 = s1;
       ch_simulator s3(s2);
       ch_simulator s4(std::move(s3));

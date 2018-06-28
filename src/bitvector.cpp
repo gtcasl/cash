@@ -694,21 +694,24 @@ void ch::internal::bv_neg(bitvector& out, const bitvector& in) {
 }
 
 void ch::internal::bv_mul(bitvector& out, const bitvector& lhs, const bitvector& rhs) {
-  assert(out.size() == lhs.size());
-  assert(lhs.size() == rhs.size());
+  uint32_t size = out.size();
+  assert(lhs.size() == size);
+  assert(rhs.size() == size);
   if (1 == lhs.num_words()
    && 1 == rhs.num_words()) {
     uint32_t a_w = lhs.word(0);
     uint32_t b_w = rhs.word(0);
     out.word(0) = a_w * b_w;
+    out.clear_unused_bits();
   } else {
     CH_TODO();
   }
 }
 
-void ch::internal::bv_div(bitvector& out, const bitvector& lhs, const bitvector& rhs) {
-  assert(out.size() == lhs.size());
-  assert(lhs.size() == rhs.size());
+void ch::internal::bv_divu(bitvector& out, const bitvector& lhs, const bitvector& rhs) {
+  uint32_t size = out.size();
+  assert(lhs.size() == size);
+  assert(rhs.size() == size);
   if (1 == lhs.num_words()
    && 1 == rhs.num_words()) {
     uint32_t a_w = lhs.word(0);
@@ -719,18 +722,53 @@ void ch::internal::bv_div(bitvector& out, const bitvector& lhs, const bitvector&
   }
 }
 
-void ch::internal::bv_mod(bitvector& out, const bitvector& lhs, const bitvector& rhs) {
-  assert(out.size() == lhs.size());
-  assert(lhs.size() == rhs.size());
+void ch::internal::bv_divs(bitvector& out, const bitvector& lhs, const bitvector& rhs) {
+  uint32_t size = out.size();
+  assert(lhs.size() == size);
+  assert(rhs.size() == size);
+  if (1 == lhs.num_words()
+   && 1 == rhs.num_words()) {
+    int32_t a_w = sign_ext(lhs.word(0), size);
+    int32_t b_w = sign_ext(rhs.word(0), size);
+    out.word(0) = b_w ? uint32_t(a_w / b_w) : bitvector::WORD_MAX;
+    out.clear_unused_bits();
+  } else {
+    CH_TODO();
+  }
+}
+
+void ch::internal::bv_modu(bitvector& out, const bitvector& lhs, const bitvector& rhs) {
+  uint32_t size = out.size();
+  assert(lhs.size() == size);
+  assert(rhs.size() == size);
   if (1 == lhs.num_words()
    && 1 == rhs.num_words()) {
     uint32_t a_w = lhs.word(0);
     uint32_t b_w = rhs.word(0);
     out.word(0) = a_w % b_w;
   } else {
-    bitvector d(lhs.size());
-    bitvector m(lhs.size());
-    bv_div(d, lhs, rhs);
+    bitvector d(size);
+    bitvector m(size);
+    bv_divu(d, lhs, rhs);
+    bv_mul(m, d, rhs);
+    bv_sub(out, lhs, m);
+  }
+}
+
+void ch::internal::bv_mods(bitvector& out, const bitvector& lhs, const bitvector& rhs) {
+  uint32_t size = out.size();
+  assert(lhs.size() == size);
+  assert(rhs.size() == size);
+  if (1 == lhs.num_words()
+   && 1 == rhs.num_words()) {
+    int32_t a_w = sign_ext(lhs.word(0), size);
+    int32_t b_w = sign_ext(rhs.word(0), size);
+    out.word(0) = a_w % b_w;
+    out.clear_unused_bits();
+  } else {
+    bitvector d(size);
+    bitvector m(size);
+    bv_divs(d, lhs, rhs);
     bv_mul(m, d, rhs);
     bv_sub(out, lhs, m);
   }

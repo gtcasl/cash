@@ -1,5 +1,7 @@
 #include "common.h"
 
+using namespace ch::extension;
+
 namespace {
 
   __enum (my_enum, 4, (
@@ -104,4 +106,17 @@ TEST_CASE("misc", "[misc]") {
       return ch_true;
     });
   }
+
+   SECTION("bitvector", "[bitvector]") {
+     TESTX([]()->bool {
+       bitvector x(32, {0x0, 0x0});
+       x = {0x0, 0x7};
+       return 0x7 == (int)x;
+     });
+     TESTX([]()->bool {
+       bitvector x(32, "0h");
+       x = "7h";
+       return 0x7 == (int)x;
+     });
+   }
 }

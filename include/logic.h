@@ -34,7 +34,7 @@ struct logic_traits {
 };
 
 template <typename T>
-using logic_type_t = typename std::decay_t<T>::traits::logic_type;
+using ch_logic_t = typename std::decay_t<T>::traits::logic_type;
 
 template <typename T>
 inline constexpr bool is_logic_traits_v = is_true_v<(T::type & traits_logic)>;
@@ -44,7 +44,7 @@ CH_DEF_SFINAE_CHECK(is_logic_only, is_true_v<(std::decay_t<T>::traits::type == t
 CH_DEF_SFINAE_CHECK(is_logic_type, is_logic_traits_v<typename std::decay_t<T>::traits>);
 
 template <typename T>
-inline constexpr bool is_bit_base_v = std::is_base_of_v<ch_bit<width_v<T>>, T>;
+inline constexpr bool is_bit_base_v = std::is_base_of_v<ch_bit<ch_width_v<T>>, T>;
 
 template <typename T, unsigned N = T::traits::bitwidth>
 inline constexpr bool is_bit_convertible_v = std::is_constructible_v<ch_bit<N>, T>;
@@ -138,29 +138,29 @@ public:
 
   template <typename T>
   static const lnode& data(const T& obj) {
-    assert(width_v<T> == obj.buffer()->size());
+    assert(ch_width_v<T> == obj.buffer()->size());
     return obj.buffer()->data();
   }
 
   template <typename T>
   static auto copy_buffer(const T& obj, const source_location& sloc,
                           const std::string& name = "") {
-    assert(width_v<T> == obj.buffer()->size());
+    assert(ch_width_v<T> == obj.buffer()->size());
     return make_logic_buffer(*obj.buffer(), sloc, name);
   }
 
   template <typename U, typename V>
   static void copy(U& dst, const V& src) {
-    static_assert(width_v<U> == width_v<V>, "invalid size");
-    assert(width_v<U> == dst.buffer()->size());
-    assert(width_v<V> == src.buffer()->size());
+    static_assert(ch_width_v<U> == ch_width_v<V>, "invalid size");
+    assert(ch_width_v<U> == dst.buffer()->size());
+    assert(ch_width_v<V> == src.buffer()->size());
     dst.buffer()->copy(*src.buffer());
   }
 
   template <typename U, typename V>
   static void move(U& dst, V&& src) {
-    static_assert(width_v<U> == width_v<V>, "invalid size");
-    assert(width_v<U> == dst.buffer()->size());
+    static_assert(ch_width_v<U> == ch_width_v<V>, "invalid size");
+    assert(ch_width_v<U> == dst.buffer()->size());
     dst.buffer()->copy(*src.buffer());
   }
 
@@ -177,15 +177,15 @@ public:
 
   template <typename T>
   static auto clone(const T& obj, const source_location& sloc) {
-    assert(width_v<T> == obj.buffer()->size());
+    assert(ch_width_v<T> == obj.buffer()->size());
     auto data = obj.buffer()->data().clone(sloc);
     return T(make_logic_buffer(data, sloc));
   }
 
   template <typename R, typename T>
   static auto cast(const T& obj) {
-    static_assert(width_v<T> == width_v<R>, "invalid size");
-    assert(width_v<T> == obj.buffer()->size());
+    static_assert(ch_width_v<T> == ch_width_v<R>, "invalid size");
+    assert(ch_width_v<T> == obj.buffer()->size());
     return R(obj.buffer());
   }
 
@@ -199,7 +199,7 @@ public:
 
 template <unsigned N, typename T>
 auto to_logic(T&& obj, const source_location& sloc) {
-  if constexpr (is_logic_type_v<T> && width_v<T> == N) {
+  if constexpr (is_logic_type_v<T> && ch_width_v<T> == N) {
     return std::move(obj);
   } else {
     return ch_bit<N>(std::forward<T>(obj), sloc);
@@ -213,12 +213,12 @@ lnode get_lnode(const T& obj) {
 
 template <typename R, typename T>
 lnode to_lnode(const T& obj, const source_location& sloc) {
-  if constexpr (is_logic_type_v<T> && width_v<T> == width_v<R>) {
+  if constexpr (is_logic_type_v<T> && ch_width_v<T> == ch_width_v<R>) {
     return logic_accessor::data(obj);
   } else
-  if constexpr (is_scbit_convertible_v<T, width_v<R>>) {
+  if constexpr (is_scbit_convertible_v<T, ch_width_v<R>>) {
     // directly convert scalars and integrals to lnodes
-    return lnode(scalar_accessor::data(to_scalar<width_v<R>>(obj)));
+    return lnode(scalar_accessor::data(to_scalar<ch_width_v<R>>(obj)));
   } else {
     return logic_accessor::data(R(obj, sloc));
   }
@@ -236,13 +236,13 @@ auto make_type(const lnode& node, const source_location& sloc) {
 
 template <ch_op op, bool Signed, typename R, typename A>
 auto make_logic_op(const A& a, const source_location& sloc) {
-  auto node = createAluNode(op, width_v<R>, Signed, get_lnode(a), sloc);
+  auto node = createAluNode(op, ch_width_v<R>, Signed, get_lnode(a), sloc);
   return make_type<R>(node, sloc);
 }
 
 template <ch_op op, bool Signed, typename R, typename A, typename B>
 auto make_logic_op(const A& a, const B& b, const source_location& sloc) {
-  auto node = createAluNode(op, width_v<R>, Signed, get_lnode(a), get_lnode(b), sloc);
+  auto node = createAluNode(op, ch_width_v<R>, Signed, get_lnode(a), get_lnode(b), sloc);
   return make_type<R>(node, sloc);
 }
 
@@ -404,9 +404,9 @@ CH_LOGIC_OPERATOR(logic_op_padding)
   template <typename R>
   R pad(CH_SLOC) const {
     static_assert(is_logic_type_v<R>, "invalid type");
-    static_assert(width_v<R> >= N, "invalid size");
+    static_assert(ch_width_v<R> >= N, "invalid size");
     auto& self = reinterpret_cast<const Derived&>(*this);
-    if constexpr (width_v<R> > N) {
+    if constexpr (ch_width_v<R> > N) {
       return make_logic_op<op_pad, signed_v<Derived>, R>(self, sloc);
     } else
     if constexpr (std::is_same_v<R, Derived>) {

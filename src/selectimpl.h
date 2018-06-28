@@ -36,12 +36,6 @@ protected:
              lnodeimpl* key,
              const source_location& sloc);
 
-  selectimpl(context* ctx,
-             const lnode& pred,
-             const lnode& _true,
-             const lnode& _false,
-             const source_location& sloc);
-
   ~selectimpl();
 
   bool has_key_;

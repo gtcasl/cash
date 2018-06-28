@@ -27,11 +27,11 @@ public:
 template <typename T>
 class ch_reg_impl final : public T {
 public:  
-  using traits = logic_traits<width_v<T>, signed_v<T>, ch_reg<T>, scalar_type_t<T>>;
+  using traits = logic_traits<ch_width_v<T>, signed_v<T>, ch_reg<T>, ch_scalar_t<T>>;
   using base = T;
 
   ch_reg_impl(CH_SLOC)
-    : base(std::make_shared<reg_buffer>(width_v<T>, sloc))
+    : base(std::make_shared<reg_buffer>(ch_width_v<T>, sloc))
   {}
 
   ch_reg_impl(const ch_reg_impl& rhs, CH_SLOC)
@@ -50,7 +50,7 @@ public:
   template <typename U>
   void operator <<=(const U& rhs) const {
     static_assert(std::is_constructible_v<T, U>, "invalid type");
-    this->buffer()->write(0, to_lnode<T>(rhs, source_location()), 0, width_v<T>,
+    this->buffer()->write(0, to_lnode<T>(rhs, source_location()), 0, ch_width_v<T>,
                           source_location());
   }  
 };
@@ -86,7 +86,7 @@ auto ch_delay(const T& rhs, uint32_t delay = 1, CH_SLOC) {
 template <typename T>
 auto ch_delay(const T& rhs, uint32_t delay = 1, CH_SLOC) {
   static_assert(is_object_type_v<T>, "invalid type");
-  return ch_delay<logic_type_t<T>, T>(rhs, delay, sloc);
+  return ch_delay<ch_logic_t<T>, T>(rhs, delay, sloc);
 }
 
 }
