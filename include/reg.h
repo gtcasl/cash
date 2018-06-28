@@ -34,11 +34,11 @@ public:
     : base(std::make_shared<reg_buffer>(ch_width_v<T>, sloc))
   {}
 
-  ch_reg_impl(const ch_reg_impl& rhs, CH_SLOC)
-    : base(std::make_shared<reg_buffer>(logic_accessor::data(rhs), sloc))
+  ch_reg_impl(const ch_reg_impl& other, CH_SLOC)
+    : base(std::make_shared<reg_buffer>(logic_accessor::data(other), sloc))
   {}
 
-  ch_reg_impl(ch_reg_impl&& rhs) : base(std::move(rhs.buffer_)) {}
+  ch_reg_impl(ch_reg_impl&& other) : base(std::move(other.buffer_)) {}
 
   template <typename... Args,
             CH_REQUIRE_0(std::is_constructible_v<T, Args...>)>
@@ -48,9 +48,9 @@ public:
   {}
 
   template <typename U>
-  void operator <<=(const U& rhs) const {
+  void operator <<=(const U& other) const {
     static_assert(std::is_constructible_v<T, U>, "invalid type");
-    this->buffer()->write(0, to_lnode<T>(rhs, source_location()), 0, ch_width_v<T>,
+    this->buffer()->write(0, to_lnode<T>(other, source_location()), 0, ch_width_v<T>,
                           source_location());
   }  
 };
@@ -71,10 +71,10 @@ void ch_popcd();
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename R, typename T>
-auto ch_delay(const T& rhs, uint32_t delay = 1, CH_SLOC) {
+auto ch_delay(const T& in, uint32_t delay = 1, CH_SLOC) {
   static_assert(is_logic_type_v<R>, "invalid type");
   static_assert(std::is_constructible_v<R, T>, "invalid type");
-  R ret(rhs, sloc);
+  R ret(in, sloc);
   for (unsigned i = 0; i < delay; ++i) {
     ch_reg<R> reg(sloc);
     reg <<= ch_clone(ret, sloc);
@@ -84,9 +84,9 @@ auto ch_delay(const T& rhs, uint32_t delay = 1, CH_SLOC) {
 }
 
 template <typename T>
-auto ch_delay(const T& rhs, uint32_t delay = 1, CH_SLOC) {
+auto ch_delay(const T& in, uint32_t delay = 1, CH_SLOC) {
   static_assert(is_object_type_v<T>, "invalid type");
-  return ch_delay<ch_logic_t<T>, T>(rhs, delay, sloc);
+  return ch_delay<ch_logic_t<T>, T>(in, delay, sloc);
 }
 
 }

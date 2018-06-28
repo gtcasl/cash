@@ -20,40 +20,40 @@ public:
     : base(buffer)
   {}
 
-  ch_fixed(const ch_fixed& rhs, CH_SLOC) : base(rhs, sloc) {}
+  ch_fixed(const ch_fixed& other, CH_SLOC) : base(other, sloc) {}
 
-  ch_fixed(ch_fixed&& rhs) : base(std::move(rhs)) {}
+  ch_fixed(ch_fixed&& other) : base(std::move(other)) {}
 
-  explicit ch_fixed(const ch_bit<N>& rhs, CH_SLOC) : base(rhs, sloc) {}
+  explicit ch_fixed(const ch_bit<N>& other, CH_SLOC) : base(other, sloc) {}
 
-  explicit ch_fixed(const ch_scbit<N>& rhs, CH_SLOC) : base(rhs, sloc) {}
+  explicit ch_fixed(const ch_scbit<N>& other, CH_SLOC) : base(other, sloc) {}
 
-  ch_fixed& operator=(const ch_fixed& rhs) {
-    base::operator=(rhs);
+  ch_fixed& operator=(const ch_fixed& other) {
+    base::operator=(other);
     return *this;
   }
 
-  ch_fixed& operator=(ch_fixed&& rhs) {
-    base::operator=(std::move(rhs));
+  ch_fixed& operator=(ch_fixed&& other) {
+    base::operator=(std::move(other));
     return *this;
   }
 
   // compare operators
 
-  auto operator<(const ch_fixed& rhs) const {
-    return ch_int<32>(*this) < ch_int<32>(rhs);
+  auto operator<(const ch_fixed& other) const {
+    return ch_int<32>(*this) < ch_int<32>(other);
   }
 
-  auto operator<=(const ch_fixed& rhs) const {
-    return ch_int<32>(*this) <= ch_int<32>(rhs);
+  auto operator<=(const ch_fixed& other) const {
+    return ch_int<32>(*this) <= ch_int<32>(other);
   }
 
-  auto operator>(const ch_fixed& rhs) const {
-    return ch_int<32>(*this) > ch_int<32>(rhs);
+  auto operator>(const ch_fixed& other) const {
+    return ch_int<32>(*this) > ch_int<32>(other);
   }
 
-  auto operator>=(const ch_fixed& rhs) const {
-    return ch_int<32>(*this) >= ch_int<32>(rhs);
+  auto operator>=(const ch_fixed& other) const {
+    return ch_int<32>(*this) >= ch_int<32>(other);
   }
 
   CH_LOGIC_INTERFACE(ch_fixed)

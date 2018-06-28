@@ -19,8 +19,8 @@ struct cse_key_t {
 
   cse_key_t(lnodeimpl* p_node) : node(p_node) {}
 
-  bool operator==(const cse_key_t& rhs) const {
-    return this->node->equals(*rhs.node);
+  bool operator==(const cse_key_t& other) const {
+    return this->node->equals(*other.node);
   }
 };
 
@@ -269,6 +269,7 @@ void compiler::syntax_check() {
   // check for un-initialized nodes
   auto& undefs = ctx_->undefs();
   if (undefs.size()) {
+#define LCOV_EXCL_START
     ctx_->dump_ast(std::cerr, 1);
     for (auto undef : undefs) {
       for (auto node : ctx_->nodes()) {
@@ -295,5 +296,6 @@ void compiler::syntax_check() {
       }
     }
     std::abort();
+#define LCOV_EXCL_END
   }
 }

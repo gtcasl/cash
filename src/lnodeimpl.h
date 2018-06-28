@@ -100,7 +100,7 @@ public:
     return sloc_;
   }
 
-  virtual bool equals(const lnodeimpl& rhs) const;
+  virtual bool equals(const lnodeimpl& other) const;
 
   virtual std::size_t hash() const {
     return 0;

@@ -14,15 +14,15 @@ public:
     uint32_t src_offset;
     uint32_t length;
 
-    bool operator==(const range_t& rhs) const {
-      return this->src_idx    == rhs.src_idx
-          && this->dst_offset == rhs.dst_offset
-          && this->src_offset == rhs.src_offset
-          && this->length     == rhs.length;
+    bool operator==(const range_t& other) const {
+      return this->src_idx    == other.src_idx
+          && this->dst_offset == other.dst_offset
+          && this->src_offset == other.src_offset
+          && this->length     == other.length;
     }
 
-    bool operator!=(const range_t& rhs) const {
-      return !(*this == rhs);
+    bool operator!=(const range_t& other) const {
+      return !(*this == other);
     }
   };
 
@@ -42,7 +42,7 @@ public:
 
   std::vector<lnode>::iterator erase_source(std::vector<lnode>::iterator iter);
 
-  bool equals(const lnodeimpl& rhs) const override;
+  bool equals(const lnodeimpl& other) const override;
 
   std::size_t hash() const override;
 

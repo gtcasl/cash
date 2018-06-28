@@ -58,7 +58,7 @@ class scalar_buffer {
 public:
   explicit scalar_buffer(uint32_t size);
 
-  scalar_buffer(const scalar_buffer& rhs);
+  scalar_buffer(const scalar_buffer& other);
 
   explicit scalar_buffer(const bitvector& data);
 
@@ -82,9 +82,9 @@ public:
     return size_;
   }
 
-  void copy(const scalar_buffer& rhs);
+  void copy(const scalar_buffer& other);
 
-  void move(scalar_buffer&& rhs);
+  void move(scalar_buffer&& other);
 
   void write(uint32_t dst_offset,
              const bitvector& src,
@@ -110,11 +110,11 @@ protected:
                 uint32_t offset,
                 uint32_t size);
 
-  scalar_buffer(scalar_buffer&& rhs) = delete;
+  scalar_buffer(scalar_buffer&& other) = delete;
 
-  scalar_buffer& operator=(const scalar_buffer& rhs) = delete;
+  scalar_buffer& operator=(const scalar_buffer& other) = delete;
 
-  scalar_buffer& operator=(scalar_buffer&& rhs) = delete;
+  scalar_buffer& operator=(scalar_buffer&& other) = delete;
 
   mutable bitvector value_;
   scalar_buffer_ptr source_;
@@ -242,14 +242,14 @@ auto make_scalar_op(ScalarFunc2 func, const A& lhs, const B& rhs) {
     using Derived = T<N>; \
     using Next::Next; \
     using Next::operator=; \
-    name(const Next& rhs) : Next(rhs) {} \
-    name(Next&& rhs) : Next(std::move(rhs)) {} \
-    name& operator=(const Next& rhs) { Next::operator=(rhs); return *this; } \
-    name& operator=(Next&& rhs) { Next::operator=(std::move(rhs)); return *this; } \
-    name(const name& rhs) : Next(rhs) {} \
-    name(name&& rhs) : Next(std::move(rhs)) {} \
-    name& operator=(const name& rhs) { Next::operator=(rhs); return *this; } \
-    name& operator=(name&& rhs) { Next::operator=(std::move(rhs)); return *this; }
+    name(const Next& other) : Next(other) {} \
+    name(Next&& other) : Next(std::move(other)) {} \
+    name& operator=(const Next& other) { Next::operator=(other); return *this; } \
+    name& operator=(Next&& other) { Next::operator=(std::move(other)); return *this; } \
+    name(const name& other) : Next(other) {} \
+    name(name&& other) : Next(std::move(other)) {} \
+    name& operator=(const name& other) { Next::operator=(other); return *this; } \
+    name& operator=(name&& other) { Next::operator=(std::move(other)); return *this; }
 
 #define CH_SCALAR_OPERATOR_IMPL(op, body) \
   friend auto op(const Derived& lhs, const Derived& rhs) { \

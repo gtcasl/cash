@@ -245,27 +245,27 @@ public:
       ptr_->release();
   }
   
-  refcounted_ptr(const refcounted_ptr& rhs) : refcounted_ptr(rhs.ptr_) {}
+  refcounted_ptr(const refcounted_ptr& other) : refcounted_ptr(other.ptr_) {}
   
-  refcounted_ptr(refcounted_ptr&& rhs) {
-    ptr_ = rhs.ptr_;
-    rhs.ptr_ == nullptr;
+  refcounted_ptr(refcounted_ptr&& other) {
+    ptr_ = other.ptr_;
+    other.ptr_ == nullptr;
   }
   
-  refcounted_ptr& operator=(const refcounted_ptr& rhs) {
-    if (rhs.ptr_)
-      rhs.ptr_->acquire();
+  refcounted_ptr& operator=(const refcounted_ptr& other) {
+    if (other.ptr_)
+      other.ptr_->acquire();
     if (ptr_)
       ptr_->release();
-    ptr_ = rhs.ptr_;
+    ptr_ = other.ptr_;
     return *this;
   }
   
-  refcounted_ptr& operator=(refcounted_ptr&& rhs) {
-    if (rhs.ptr_)
-      rhs.ptr_->release();
-    ptr_ = rhs.ptr_;
-    rhs.ptr_ == nullptr;
+  refcounted_ptr& operator=(refcounted_ptr&& other) {
+    if (other.ptr_)
+      other.ptr_->release();
+    ptr_ = other.ptr_;
+    other.ptr_ == nullptr;
   }
   
   T& operator*() const {
@@ -305,12 +305,12 @@ public:
     return *this;
   }
   
-  bool operator==(const refcounted_ptr& rhs) const {
-    return (ptr_ == rhs.ptr_);
+  bool operator==(const refcounted_ptr& other) const {
+    return (ptr_ == other.ptr_);
   }
   
-  bool operator==(const T* rhs) const {
-    return (ptr_ == rhs);
+  bool operator==(const T* other) const {
+    return (ptr_ == other);
   }
   
   operator bool() const {

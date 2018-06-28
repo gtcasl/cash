@@ -19,11 +19,11 @@ logic_buffer::logic_buffer(uint32_t size,
   , offset_(0)
 {}
 
-logic_buffer::logic_buffer(const logic_buffer& rhs,
+logic_buffer::logic_buffer(const logic_buffer& other,
                            const source_location& sloc,
                            const std::string& name)
   : id_(make_id())
-  , value_(rhs.size(), rhs.data(), 0, sloc, name, id_)
+  , value_(other.size(), other.data(), 0, sloc, name, id_)
   , offset_(0)
 {}
 
@@ -52,8 +52,8 @@ logic_buffer::logic_buffer(uint32_t size,
   assert(offset + size <= buffer->size());
 }
 
-void logic_buffer::copy(const logic_buffer& rhs) {
-  this->write(0, rhs.data(), 0, rhs.size(), source_location());
+void logic_buffer::copy(const logic_buffer& other) {
+  this->write(0, other.data(), 0, other.size(), source_location());
 }
 
 void logic_buffer::write(uint32_t dst_offset,

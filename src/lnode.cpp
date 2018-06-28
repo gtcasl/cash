@@ -7,7 +7,7 @@ using namespace ch::internal;
 
 lnode::lnode() : impl_(nullptr) {}
 
-lnode::lnode(const lnode& rhs) : impl_(rhs.impl_) {}
+lnode::lnode(const lnode& other) : impl_(other.impl_) {}
 
 lnode::lnode(uint32_t size,
              const source_location& sloc,
@@ -39,8 +39,8 @@ lnode::lnode(const bitvector& value) {
 
 lnode::~lnode() {}
 
-lnode& lnode::operator=(const lnode& rhs) {
-  impl_ = rhs.impl_;
+lnode& lnode::operator=(const lnode& other) {
+  impl_ = other.impl_;
   return *this;
 }
 

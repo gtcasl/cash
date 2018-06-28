@@ -101,21 +101,21 @@ public:
     : base(buffer)
   {}
 
-  ch_scfloat32(float rhs) : base(bitcast<uint32_t>(rhs)) {}
+  ch_scfloat32(float other) : base(bitcast<uint32_t>(other)) {}
 
-  explicit ch_scfloat32(const ch_scbit<32>& rhs) : base(rhs) {}
+  explicit ch_scfloat32(const ch_scbit<32>& other) : base(other) {}
 
-  ch_scfloat32(const ch_scfloat32& rhs) : base(rhs) {}
+  ch_scfloat32(const ch_scfloat32& other) : base(other) {}
 
-  ch_scfloat32(ch_scfloat32&& rhs) : base(std::move(rhs)) {}
+  ch_scfloat32(ch_scfloat32&& other) : base(std::move(other)) {}
 
-  ch_scfloat32& operator=(const ch_scfloat32& rhs) {
-    base::operator=(rhs);
+  ch_scfloat32& operator=(const ch_scfloat32& other) {
+    base::operator=(other);
     return *this;
   }
 
-  ch_scfloat32& operator=(ch_scfloat32&& rhs) {
-    base::operator=(std::move(rhs));
+  ch_scfloat32& operator=(ch_scfloat32&& other) {
+    base::operator=(std::move(other));
     return *this;
   }
 
@@ -159,23 +159,23 @@ public:
     : base(buffer)
   {}
 
-  ch_float32(float rhs, CH_SLOC) : base(bitcast<uint32_t>(rhs), sloc) {}
+  ch_float32(float other, CH_SLOC) : base(bitcast<uint32_t>(other), sloc) {}
 
-  explicit ch_float32(const ch_scbit<32>& rhs, CH_SLOC) : base(rhs, sloc) {}
+  explicit ch_float32(const ch_scbit<32>& other, CH_SLOC) : base(other, sloc) {}
 
-  explicit ch_float32(const ch_bit<32>& rhs, CH_SLOC) : base(rhs, sloc) {}
+  explicit ch_float32(const ch_bit<32>& other, CH_SLOC) : base(other, sloc) {}
 
-  ch_float32(const ch_float32& rhs, CH_SLOC) : base(rhs, sloc) {}
+  ch_float32(const ch_float32& other, CH_SLOC) : base(other, sloc) {}
 
-  ch_float32(ch_float32&& rhs) : base(std::move(rhs)) {}
+  ch_float32(ch_float32&& other) : base(std::move(other)) {}
 
-  ch_float32& operator=(const ch_float32& rhs) {
-    base::operator=(rhs);
+  ch_float32& operator=(const ch_float32& other) {
+    base::operator=(other);
     return *this;
   }
 
-  ch_float32& operator=(ch_float32&& rhs) {
-    base::operator=(std::move(rhs));
+  ch_float32& operator=(ch_float32&& other) {
+    base::operator=(std::move(other));
     return *this;
   }
 

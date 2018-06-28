@@ -35,10 +35,10 @@ aluimpl::aluimpl(context* ctx, ch_op op, uint32_t size, bool is_signed,
   srcs_.push_back(rhs);
 }
 
-bool aluimpl::equals(const lnodeimpl& rhs) const {
-  if (lnodeimpl::equals(rhs)) {
-    auto _rhs = reinterpret_cast<const aluimpl&>(rhs);
-    return (this->op() == _rhs.op());
+bool aluimpl::equals(const lnodeimpl& other) const {
+  if (lnodeimpl::equals(other)) {
+    auto _other = reinterpret_cast<const aluimpl&>(other);
+    return (this->op() == _other.op());
   }
   return false;
 }

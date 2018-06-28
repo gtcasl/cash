@@ -21,7 +21,7 @@ public:
     return (srcs_.size() == (has_key_ ? 4 : 3));
   }
 
-  bool equals(const lnodeimpl& rhs) const override;
+  bool equals(const lnodeimpl& other) const override;
 
   std::size_t hash() const override;
 

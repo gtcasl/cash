@@ -15,7 +15,7 @@ public:
 
   lnode();
 
-  lnode(const lnode& rhs);
+  lnode(const lnode& other);
 
   explicit lnode(uint32_t size,
                  const source_location& sloc,
@@ -34,7 +34,7 @@ public:
   lnode(const bitvector& value);
   ~lnode();
 
-  lnode& operator=(const lnode& rhs);
+  lnode& operator=(const lnode& other);
 
   void write(uint32_t dst_offset,
              const lnode& in,

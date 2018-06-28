@@ -64,7 +64,7 @@ public:
                         const source_location& sloc,
                         const std::string& name = "");
 
-  logic_buffer(const logic_buffer& rhs,
+  logic_buffer(const logic_buffer& other,
                const source_location& sloc,
                const std::string& name = "");
 
@@ -100,7 +100,7 @@ public:
     return offset_;
   }
 
-  void copy(const logic_buffer& rhs);
+  void copy(const logic_buffer& other);
 
   virtual void write(uint32_t dst_offset,
                      const lnode& data,
@@ -110,11 +110,11 @@ public:
 
 protected:
 
-  logic_buffer(logic_buffer&& rhs) = delete;
+  logic_buffer(logic_buffer&& other) = delete;
 
-  logic_buffer& operator=(const logic_buffer& rhs) = delete;
+  logic_buffer& operator=(const logic_buffer& other) = delete;
 
-  logic_buffer& operator=(logic_buffer&& rhs) = delete;
+  logic_buffer& operator=(logic_buffer&& other) = delete;
 
   uint32_t id_;
   lnode value_;
@@ -310,14 +310,14 @@ struct sloc_arg {
     using Derived = T<N>; \
     using Next::Next; \
     using Next::operator=; \
-    name(const Next& rhs, CH_SLOC) : Next(rhs, sloc) {} \
-    name(Next&& rhs) : Next(std::move(rhs)) {} \
-    name& operator=(const Next& rhs) { Next::operator=(rhs); return *this; } \
-    name& operator=(Next&& rhs) { Next::operator=(std::move(rhs)); return *this; } \
-    name(const name& rhs, CH_SLOC) : Next(rhs, sloc) {} \
-    name(name&& rhs) : Next(std::move(rhs)) {} \
-    name& operator=(const name& rhs) { Next::operator=(rhs); return *this; } \
-    name& operator=(name&& rhs) { Next::operator=(std::move(rhs)); return *this; }
+    name(const Next& other, CH_SLOC) : Next(other, sloc) {} \
+    name(Next&& other) : Next(std::move(other)) {} \
+    name& operator=(const Next& other) { Next::operator=(other); return *this; } \
+    name& operator=(Next&& other) { Next::operator=(std::move(other)); return *this; } \
+    name(const name& other, CH_SLOC) : Next(other, sloc) {} \
+    name(name&& other) : Next(std::move(other)) {} \
+    name& operator=(const name& other) { Next::operator=(other); return *this; } \
+    name& operator=(name&& other) { Next::operator=(std::move(other)); return *this; }
 
 #define CH_LOGIC_OPERATOR_IMPL(op, opcode, rtype) \
   friend auto op(Derived lhs, const Derived& rhs) { \

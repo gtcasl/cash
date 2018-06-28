@@ -26,55 +26,55 @@ public:
 
   template <typename U,
             CH_REQUIRE_0(std::is_integral_v<U>)>
-  ch_bit(const U& rhs, CH_SLOC)
-    : buffer_(make_logic_buffer(bitvector(N, rhs), sloc))
+  ch_bit(const U& other, CH_SLOC)
+    : buffer_(make_logic_buffer(bitvector(N, other), sloc))
   {}
 
-  ch_bit(const ch_scbit<N>& rhs, CH_SLOC)
-    : buffer_(make_logic_buffer(scalar_accessor::data(rhs), sloc))
+  ch_bit(const ch_scbit<N>& other, CH_SLOC)
+    : buffer_(make_logic_buffer(scalar_accessor::data(other), sloc))
   {}
 
   template <typename U,
             CH_REQUIRE_0(is_bitvector_extended_type_v<U>)>
-  explicit ch_bit(const U& rhs, CH_SLOC)
-    : buffer_(make_logic_buffer(bitvector(N, rhs), sloc))
+  explicit ch_bit(const U& other, CH_SLOC)
+    : buffer_(make_logic_buffer(bitvector(N, other), sloc))
   {}
 
   template <typename U,
             CH_REQUIRE_0(is_logic_type_v<U>),
             CH_REQUIRE_0(ch_width_v<U> == N)>
-  explicit ch_bit(const U& rhs, CH_SLOC)
-    : buffer_(logic_accessor::copy_buffer(rhs, sloc))
+  explicit ch_bit(const U& other, CH_SLOC)
+    : buffer_(logic_accessor::copy_buffer(other, sloc))
   {}
 
   template <unsigned M,
             CH_REQUIRE_0(M < N)>
-  explicit ch_bit(const ch_bit<M>& rhs, CH_SLOC)
-    : buffer_(logic_accessor::copy_buffer(rhs.template pad<N>(sloc), sloc))
+  explicit ch_bit(const ch_bit<M>& other, CH_SLOC)
+    : buffer_(logic_accessor::copy_buffer(other.template pad<N>(sloc), sloc))
   {}
 
-  ch_bit(const ch_bit& rhs, CH_SLOC)
+  ch_bit(const ch_bit& other, CH_SLOC)
     : base()
-    , buffer_(logic_accessor::copy_buffer(rhs, sloc))
+    , buffer_(logic_accessor::copy_buffer(other, sloc))
   {}
 
-  ch_bit(ch_bit&& rhs) : buffer_(std::move(rhs.buffer_)) {}
+  ch_bit(ch_bit&& other) : buffer_(std::move(other.buffer_)) {}
 
   template <typename U,
             CH_REQUIRE_0(is_logic_type_v<U>),
             CH_REQUIRE_0(ch_width_v<U> == N)>
-  ch_bit& operator=(const U& rhs) {
-    logic_accessor::copy(*this, rhs);
+  ch_bit& operator=(const U& other) {
+    logic_accessor::copy(*this, other);
     return *this;
   }
 
-  ch_bit& operator=(const ch_bit& rhs) {
-    logic_accessor::copy(*this, rhs);
+  ch_bit& operator=(const ch_bit& other) {
+    logic_accessor::copy(*this, other);
     return *this;
   }
 
-  ch_bit& operator=(ch_bit&& rhs) {
-    logic_accessor::move(*this, std::move(rhs));
+  ch_bit& operator=(ch_bit&& other) {
+    logic_accessor::move(*this, std::move(other));
     return *this;
   }
 
@@ -259,9 +259,9 @@ public:
   {}
 
   template <typename T>
-  void operator=(const T& rhs) {
+  void operator=(const T& other) {
     static_assert(is_bit_convertible_v<T, ch_width_v<Ts...>>, "invalid type");
-    this->assign(to_logic<ch_width_v<Ts...>>(rhs, sloc_),
+    this->assign(to_logic<ch_width_v<Ts...>>(other, sloc_),
                  std::index_sequence_for<Ts...>());
   }
 

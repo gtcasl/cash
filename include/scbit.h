@@ -28,52 +28,51 @@ public:
 
   template <typename U,
             CH_REQUIRE_0(std::is_integral_v<U>)>
-  ch_scbit(const U& rhs)
-    : buffer_(make_scalar_buffer(bitvector(N , rhs)))
+  ch_scbit(const U& other)
+    : buffer_(make_scalar_buffer(bitvector(N , other)))
   {}
 
   template <typename U,
             CH_REQUIRE_0(is_bitvector_extended_type_v<std::decay_t<U>>)>
-  explicit ch_scbit(U&& rhs)
-    : buffer_(make_scalar_buffer(bitvector(N , std::forward<U>(rhs))))
+  explicit ch_scbit(U&& other)
+    : buffer_(make_scalar_buffer(bitvector(N , std::forward<U>(other))))
   {}
 
   template <typename U,
             CH_REQUIRE_0(is_scalar_type_v<U>),
             CH_REQUIRE_0(ch_width_v<U> == N)>
-  explicit ch_scbit(const U& rhs)
-    : buffer_(scalar_accessor::copy_buffer(rhs))
+  explicit ch_scbit(const U& other)
+    : buffer_(scalar_accessor::copy_buffer(other))
   {}
 
   template <unsigned M,
             CH_REQUIRE_0(M < N)>
-  explicit ch_scbit(const ch_scbit<M>& rhs)
-    : buffer_(scalar_accessor::copy_buffer(rhs.template pad<N>()))
+  explicit ch_scbit(const ch_scbit<M>& other)
+    : buffer_(scalar_accessor::copy_buffer(other.template pad<N>()))
   {}
 
-  ch_scbit(const ch_scbit& rhs)
+  ch_scbit(const ch_scbit& other)
     : base()
-    , buffer_(scalar_accessor::copy_buffer(rhs))
+    , buffer_(scalar_accessor::copy_buffer(other))
   {}
 
-  ch_scbit(ch_scbit&& rhs) : buffer_(std::move(rhs.buffer_)) {}
+  ch_scbit(ch_scbit&& other) : buffer_(std::move(other.buffer_)) {}
 
   template <typename U,
             CH_REQUIRE_0(is_scalar_type_v<U>),
             CH_REQUIRE_0(ch_width_v<U> == N)>
-  ch_scbit& operator=(const U& rhs) {
-    scalar_accessor::copy(*this, rhs);
+  ch_scbit& operator=(const U& other) {
+    scalar_accessor::copy(*this, other);
     return *this;
   }
 
-  ch_scbit& operator=(const ch_scbit& rhs) {
-    scalar_accessor::copy(*this, rhs);
+  ch_scbit& operator=(const ch_scbit& other) {
+    scalar_accessor::copy(*this, other);
     return *this;
   }
 
-  ch_scbit& operator=(ch_scbit&& rhs) {
-    scalar_accessor::move(*this, std::move(rhs));
-    //buffer_ = std::move(rhs.buffer_);
+  ch_scbit& operator=(ch_scbit&& other) {
+    scalar_accessor::move(*this, std::move(other));
     return *this;
   }
 
@@ -167,8 +166,8 @@ protected:
 
   friend class scalar_accessor;
 
-  friend std::ostream& operator<<(std::ostream& out, const ch_scbit& rhs) {
-    return out << scalar_accessor::data(rhs);
+  friend std::ostream& operator<<(std::ostream& out, const ch_scbit& in) {
+    return out << scalar_accessor::data(in);
   }
 };
 

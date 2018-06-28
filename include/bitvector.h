@@ -52,8 +52,8 @@ public:
   class reference {
   public:    
     
-    reference& operator=(bool rhs) {
-      if (rhs) {
+    reference& operator=(bool other) {
+      if (other) {
         word_ |= mask_;
       } else {
         word_ &= ~mask_;
@@ -79,14 +79,14 @@ public:
     
   class const_iterator {
   public:        
-    const_iterator(const const_iterator& rhs) 
-      : words_(rhs.words_)
-      , offset_(rhs.offset_)
+    const_iterator(const const_iterator& other)
+      : words_(other.words_)
+      , offset_(other.offset_)
     {}
     
-    const_iterator& operator=(const const_iterator& rhs) {
-      words_ = rhs.words_;
-      offset_ = rhs.offset_;
+    const_iterator& operator=(const const_iterator& other) {
+      words_ = other.words_;
+      offset_ = other.offset_;
       return *this;
     }
     
@@ -94,12 +94,12 @@ public:
       return (*words_ & (1 << (offset_ & WORD_MASK))) != 0;
     }
     
-    bool operator==(const const_iterator& rhs) const {
-      return offset_ == rhs.offset_;
+    bool operator==(const const_iterator& other) const {
+      return offset_ == other.offset_;
     }
     
-    bool operator!=(const const_iterator& rhs) const {
-      return !(*this == rhs);
+    bool operator!=(const const_iterator& other) const {
+      return !(*this == other);
     }
     
     const_iterator& operator++() {
@@ -178,20 +178,20 @@ public:
     using base::words_;
     using base::offset_;
     
-    iterator(const iterator& rhs) : base(rhs) {}
+    iterator(const iterator& other) : base(other) {}
     
-    iterator(const const_iterator& rhs) : base(rhs) {}
+    iterator(const const_iterator& other) : base(other) {}
     
     reference operator*() const {
       return reference(const_cast<uint32_t&>(*words_), 1 << (offset_ & WORD_MASK));
     }
     
-    bool operator==(const iterator& rhs) const {
-      return base::operator ==(rhs);
+    bool operator==(const iterator& other) const {
+      return base::operator ==(other);
     }
     
-    bool operator!=(const iterator& rhs) const {
-      return base::operator !=(rhs);
+    bool operator!=(const iterator& other) const {
+      return base::operator !=(other);
     }
     
     iterator& operator++() {
@@ -250,14 +250,14 @@ public:
 
   class const_reverse_iterator {
   public:
-    const_reverse_iterator(const const_reverse_iterator& rhs)
-      : words_(rhs.words_)
-      , offset_(rhs.offset_)
+    const_reverse_iterator(const const_reverse_iterator& other)
+      : words_(other.words_)
+      , offset_(other.offset_)
     {}
 
-    const_reverse_iterator& operator=(const const_reverse_iterator& rhs) {
-      words_ = rhs.words_;
-      offset_ = rhs.offset_;
+    const_reverse_iterator& operator=(const const_reverse_iterator& other) {
+      words_ = other.words_;
+      offset_ = other.offset_;
       return *this;
     }
 
@@ -265,12 +265,12 @@ public:
       return (*words_ & (1 << (offset_ & WORD_MASK))) != 0;
     }
 
-    bool operator==(const const_reverse_iterator& rhs) const {
-      return offset_ == rhs.offset_;
+    bool operator==(const const_reverse_iterator& other) const {
+      return offset_ == other.offset_;
     }
 
-    bool operator!=(const const_reverse_iterator& rhs) const {
-      return !(*this == rhs);
+    bool operator!=(const const_reverse_iterator& other) const {
+      return !(*this == other);
     }
 
     const_reverse_iterator& operator++() {
@@ -349,20 +349,20 @@ public:
     using base::words_;
     using base::offset_;
 
-    reverse_iterator(const reverse_iterator& rhs) : base(rhs) {}
+    reverse_iterator(const reverse_iterator& other) : base(other) {}
 
-    reverse_iterator(const const_reverse_iterator& rhs) : base(rhs) {}
+    reverse_iterator(const const_reverse_iterator& other) : base(other) {}
 
     reference operator*() const {
       return reference(const_cast<uint32_t&>(*words_), 1 << (offset_ & WORD_MASK));
     }
 
-    bool operator==(const reverse_iterator& rhs) const {
-      return base::operator ==(rhs);
+    bool operator==(const reverse_iterator& other) const {
+      return base::operator ==(other);
     }
 
-    bool operator!=(const reverse_iterator& rhs) const {
-      return base::operator !=(rhs);
+    bool operator!=(const reverse_iterator& other) const {
+      return base::operator !=(other);
     }
 
     reverse_iterator& operator++() {
@@ -421,9 +421,9 @@ public:
   
   bitvector() : words_(nullptr), size_(0) {}
   
-  bitvector(const bitvector& rhs);
+  bitvector(const bitvector& other);
   
-  bitvector(bitvector&& rhs);
+  bitvector(bitvector&& other);
   
   explicit bitvector(uint32_t size);
 
@@ -473,9 +473,9 @@ public:
 
   ~bitvector();
   
-  bitvector& operator=(const bitvector& rhs);
+  bitvector& operator=(const bitvector& other);
   
-  bitvector& operator=(bitvector&& rhs);
+  bitvector& operator=(bitvector&& other);
 
   bitvector& operator=(int8_t value) {
     return this->operator=(int64_t(value));
@@ -650,10 +650,10 @@ public:
     return const_reverse_iterator(nullptr, -1);
   }
 
-  bool operator==(const bitvector& rhs) const;
+  bool operator==(const bitvector& other) const;
 
-  bool operator!=(const bitvector& rhs) const {
-    return !(*this == rhs);
+  bool operator!=(const bitvector& other) const {
+    return !(*this == other);
   }
 
 #define CH_DEF_CAST(type) \
@@ -687,7 +687,7 @@ protected:
   uint32_t  size_;
 };
 
-std::ostream& operator<<(std::ostream& out, const bitvector& rhs);
+std::ostream& operator<<(std::ostream& out, const bitvector& in);
 
 ///////////////////////////////////////////////////////////////////////////////
 

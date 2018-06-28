@@ -10,12 +10,12 @@ scalar_buffer::scalar_buffer(uint32_t size)
   , size_(size)
 {}
 
-scalar_buffer::scalar_buffer(const scalar_buffer& rhs)
-  : source_(rhs.source_)
-  , offset_(rhs.offset_)
-  , size_(rhs.size_) {
-  if (!rhs.source_) {
-    value_ = rhs.value_;
+scalar_buffer::scalar_buffer(const scalar_buffer& other)
+  : source_(other.source_)
+  , offset_(other.offset_)
+  , size_(other.size_) {
+  if (!other.source_) {
+    value_ = other.value_;
   }
 }
 
@@ -41,23 +41,23 @@ scalar_buffer::scalar_buffer(bitvector&& data)
   , size_(value_.size())
 {}
 
-void scalar_buffer::copy(const scalar_buffer& rhs) {
+void scalar_buffer::copy(const scalar_buffer& other) {
   this->write(0,
-              rhs.data().words(),
-              rhs.data().cbsize(),
-              rhs.offset(),
-              rhs.size());
+              other.data().words(),
+              other.data().cbsize(),
+              other.offset(),
+              other.size());
 }
 
-void scalar_buffer::move(scalar_buffer&& rhs) {
+void scalar_buffer::move(scalar_buffer&& other) {
   // disable move for indirect nodes
   if (source_ || size_ != value_.size()) {
-    this->copy(rhs);
+    this->copy(other);
   } else {
-    value_  = std::move(rhs.value_);
-    source_ = std::move(rhs.source_);
-    offset_ = std::move(rhs.offset_);
-    size_   = std::move(rhs.size_);
+    value_  = std::move(other.value_);
+    source_ = std::move(other.source_);
+    offset_ = std::move(other.offset_);
+    size_   = std::move(other.size_);
   }
 }
 

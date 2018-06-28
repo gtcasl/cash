@@ -47,10 +47,10 @@ selectimpl::selectimpl(context* ctx,
 
 selectimpl::~selectimpl() {}
 
-bool selectimpl::equals(const lnodeimpl& rhs) const {
-  if (lnodeimpl::equals(rhs)) {
-    auto _rhs = reinterpret_cast<const selectimpl&>(rhs);
-    return (this->has_key() == _rhs.has_key());
+bool selectimpl::equals(const lnodeimpl& other) const {
+  if (lnodeimpl::equals(other)) {
+    auto _other = reinterpret_cast<const selectimpl&>(other);
+    return (this->has_key() == _other.has_key());
   }
   return false;
 }

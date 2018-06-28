@@ -2,17 +2,17 @@
 
 using namespace ch::internal;
 
-bitvector::bitvector(const bitvector& rhs)
+bitvector::bitvector(const bitvector& other)
   : bitvector() {
-  this->resize(rhs.size_);
-  std::copy(rhs.words_, rhs.words_ + rhs.num_words(), words_);
+  this->resize(other.size_);
+  std::copy(other.words_, other.words_ + other.num_words(), words_);
 }
 
-bitvector::bitvector(bitvector&& rhs) {
-  words_ = rhs.words_;
-  size_ = rhs.size_;
-  rhs.words_ = nullptr;
-  rhs.size_ = 0;
+bitvector::bitvector(bitvector&& other) {
+  words_ = other.words_;
+  size_ = other.size_;
+  other.words_ = nullptr;
+  other.size_ = 0;
 }
 
 bitvector::bitvector(uint32_t size)
@@ -90,21 +90,21 @@ void bitvector::clear_unused_bits() {
   }
 }
 
-bitvector& bitvector::operator=(const bitvector& rhs) {
+bitvector& bitvector::operator=(const bitvector& other) {
   if (0 == size_) {
-    this->resize(rhs.size_);
+    this->resize(other.size_);
   }
-  assert(size_ == rhs.size_);
-  std::copy(rhs.words_, rhs.words_ + rhs.num_words(), words_);
+  assert(size_ == other.size_);
+  std::copy(other.words_, other.words_ + other.num_words(), words_);
   return *this;
 }
 
-bitvector& bitvector::operator=(bitvector&& rhs) {
+bitvector& bitvector::operator=(bitvector&& other) {
   delete[] words_;
-  size_ = rhs.size_;
-  words_ = rhs.words_;
-  rhs.size_ = 0;
-  rhs.words_ = nullptr;
+  size_ = other.size_;
+  words_ = other.words_;
+  other.size_ = 0;
+  other.words_ = nullptr;
   return *this;
 }
 
@@ -264,11 +264,11 @@ bitvector::reference bitvector::at(uint32_t idx) {
   return reference(words_[widx], mask);
 }
 
-bool bitvector::operator==(const bitvector& rhs) const {
-  if (size_ != rhs.size_)
+bool bitvector::operator==(const bitvector& other) const {
+  if (size_ != other.size_)
     return false;
-  for (uint32_t i = 0, n = rhs.num_words(); i < n; ++i) {
-    if (words_[i] != rhs.words_[i])
+  for (uint32_t i = 0, n = other.num_words(); i < n; ++i) {
+    if (words_[i] != other.words_[i])
       return false;
   }
   return true;
@@ -427,13 +427,13 @@ void bitvector::deadbeef() {
   this->clear_unused_bits();
 }
 
-std::ostream& ch::internal::operator<<(std::ostream& out, const bitvector& rhs) {
+std::ostream& ch::internal::operator<<(std::ostream& out, const bitvector& in) {
   auto oldflags = out.flags();
   out.setf(std::ios_base::hex, std::ios_base::basefield);
   out << "0x";
   auto_separator sep("_");
-  for (int32_t i = rhs.num_words() - 1; i >= 0; --i) {
-    out << sep << rhs.word(i);
+  for (int32_t i = in.num_words() - 1; i >= 0; --i) {
+    out << sep << in.word(i);
   }
   out.flags(oldflags);
   return out;

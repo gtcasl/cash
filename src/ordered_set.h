@@ -39,24 +39,24 @@ public:
     this->insert(first, last);
   }
 
-  ordered_set(const ordered_set& rhs)
-    : list_(rhs.list_)
-    , map_(rhs.map_)
+  ordered_set(const ordered_set& other)
+    : list_(other.list_)
+    , map_(other.map_)
   {}
 
-  ordered_set(const ordered_set& rhs, const allocator_type& alloc)
-    : list_(rhs.list_, alloc)
-    , map_(rhs.map_, alloc)
+  ordered_set(const ordered_set& other, const allocator_type& alloc)
+    : list_(other.list_, alloc)
+    , map_(other.map_, alloc)
   {}
 
-  ordered_set(ordered_set&& rhs)
-    : list_(std::move(rhs.list_))
-    , map_(std::move(rhs.map_))
+  ordered_set(ordered_set&& other)
+    : list_(std::move(other.list_))
+    , map_(std::move(other.map_))
   {}
 
-  ordered_set(ordered_set&& rhs, const allocator_type& alloc)
-    : list_(std::move(rhs.list_), alloc)
-    , map_(std::move(rhs.map_), alloc)
+  ordered_set(ordered_set&& other, const allocator_type& alloc)
+    : list_(std::move(other.list_), alloc)
+    , map_(std::move(other.map_), alloc)
   {}
 
   ordered_set(std::initializer_list<value_type> il,
@@ -65,15 +65,15 @@ public:
     this->insert(il);
   }
 
-  ordered_set& operator=(const ordered_set& rhs) {
-    list_ = rhs.list_;
-    map_ = rhs.map_;
+  ordered_set& operator=(const ordered_set& other) {
+    list_ = other.list_;
+    map_ = other.map_;
     return *this;
   }
 
-  ordered_set& operator=(ordered_set&& rhs) {
-    list_ = std::move(rhs.list_);
-    map_ = std::move(rhs.map_);
+  ordered_set& operator=(ordered_set&& other) {
+    list_ = std::move(other.list_);
+    map_ = std::move(other.map_);
     return *this;
   }
 
@@ -178,9 +178,9 @@ public:
     return ret;
   }
 
-  void swap(ordered_set& rhs) {
-    list_.swap(rhs.list_);
-    map_.swap(rhs.map_);
+  void swap(ordered_set& other) {
+    list_.swap(other.list_);
+    map_.swap(other.map_);
   }
 
   void clear() noexcept {

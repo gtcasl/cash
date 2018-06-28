@@ -37,12 +37,12 @@ uint32_t lnodeimpl::add_src(const lnode& src) {
   return index;
 }
 
-bool lnodeimpl::equals(const lnodeimpl& rhs) const {
-  if (this->type() == rhs.type()
-   && this->size() == rhs.size()
-   && this->srcs().size() == rhs.srcs().size()) {
+bool lnodeimpl::equals(const lnodeimpl& other) const {
+  if (this->type() == other.type()
+   && this->size() == other.size()
+   && this->srcs().size() == other.srcs().size()) {
     for (unsigned i = 0, n = this->srcs().size(); i < n; ++i) {
-      if (this->src(i).id() != rhs.src(i).id())
+      if (this->src(i).id() != other.src(i).id())
         return false;
     }
     return true;

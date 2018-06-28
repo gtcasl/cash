@@ -796,7 +796,7 @@ void context::build_run_list(std::vector<lnodeimpl*>& list) {
       default:
         break;
       }
-
+#define LCOV_EXCL_START
       int dump_ast_level = platform::self().dump_ast();
       if (dump_ast_level) {
         for (auto n : list) {
@@ -816,8 +816,9 @@ void context::build_run_list(std::vector<lnodeimpl*>& list) {
         fprintf(stderr, " (%s:%d)", sloc.file(), sloc.line());
       }
       fprintf(stderr, "\n");
-      std::abort();
+      std::abort();      
       return false;
+#define LCOV_EXCL_END
     }
     cycles.insert(node);
 

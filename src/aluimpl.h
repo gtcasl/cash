@@ -18,7 +18,7 @@ public:
     return is_signed_;
   }
 
-  bool equals(const lnodeimpl& rhs) const override;
+  bool equals(const lnodeimpl& other) const override;
 
   std::size_t hash() const override;
 

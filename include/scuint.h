@@ -31,29 +31,29 @@ public:
 
   template <typename U,
             CH_REQUIRE_0(std::is_integral_v<U>)>
-  ch_scuint(const U& rhs) : base(rhs) {}
+  ch_scuint(const U& other) : base(other) {}
 
   template <typename U,
             CH_REQUIRE_0(is_bitvector_extended_type_v<U>)>
-  explicit ch_scuint(const U& rhs) : base(rhs) {}
+  explicit ch_scuint(const U& other) : base(other) {}
 
-  explicit ch_scuint(const ch_scbit<N>& rhs) : base(rhs) {}
+  explicit ch_scuint(const ch_scbit<N>& other) : base(other) {}
 
   template <unsigned M,
             CH_REQUIRE_0(M < N)>
-  explicit ch_scuint(const ch_scuint<M>& rhs) : base(rhs.template pad<N>()) {}
+  explicit ch_scuint(const ch_scuint<M>& other) : base(other.template pad<N>()) {}
 
-  ch_scuint(const ch_scuint& rhs) : base(rhs) {}
+  ch_scuint(const ch_scuint& other) : base(other) {}
 
-  ch_scuint(ch_scuint&& rhs) : base(std::move(rhs)) {}
+  ch_scuint(ch_scuint&& other) : base(std::move(other)) {}
 
-  ch_scuint& operator=(const ch_scuint& rhs) {
-    base::operator=(rhs);
+  ch_scuint& operator=(const ch_scuint& other) {
+    base::operator=(other);
     return *this;
   }
 
-  ch_scuint& operator=(ch_scuint&& rhs) {
-    base::operator=(std::move(rhs));
+  ch_scuint& operator=(ch_scuint&& other) {
+    base::operator=(std::move(other));
     return *this;
   }
 

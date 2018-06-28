@@ -29,36 +29,36 @@ public:
 
   template <typename U,
             CH_REQUIRE_0(std::is_integral_v<U>)>
-  ch_uint(const U& rhs, CH_SLOC) : base(rhs, sloc) {}
+  ch_uint(const U& other, CH_SLOC) : base(other, sloc) {}
 
-  ch_uint(const ch_scbit<N>& rhs, CH_SLOC) : base(rhs, sloc) {}
+  ch_uint(const ch_scbit<N>& other, CH_SLOC) : base(other, sloc) {}
 
   template <typename U,
             CH_REQUIRE_0(is_bitvector_extended_type_v<U>)>
-  explicit ch_uint(const U& rhs, CH_SLOC) : base(rhs, sloc) {}
+  explicit ch_uint(const U& other, CH_SLOC) : base(other, sloc) {}
 
   template <typename U,
             CH_REQUIRE_0(is_logic_type_v<U>),
             CH_REQUIRE_0(ch_width_v<U> == N)>
-  explicit ch_uint(const U& rhs, CH_SLOC) : base(rhs, sloc) {}
+  explicit ch_uint(const U& other, CH_SLOC) : base(other, sloc) {}
 
   template <unsigned M,
             CH_REQUIRE_0(M < N)>
-  explicit ch_uint(const ch_uint<M>& rhs, CH_SLOC) : base(rhs.template pad<N>(sloc), sloc) {}
+  explicit ch_uint(const ch_uint<M>& other, CH_SLOC) : base(other.template pad<N>(sloc), sloc) {}
 
-  explicit ch_uint(const ch_bit<N>& rhs, CH_SLOC) : base(rhs, sloc) {}
+  explicit ch_uint(const ch_bit<N>& other, CH_SLOC) : base(other, sloc) {}
 
-  ch_uint(const ch_uint& rhs, CH_SLOC) : base(rhs, sloc) {}
+  ch_uint(const ch_uint& other, CH_SLOC) : base(other, sloc) {}
 
-  ch_uint(ch_uint&& rhs) : base(std::move(rhs)) {}
+  ch_uint(ch_uint&& other) : base(std::move(other)) {}
 
-  ch_uint& operator=(const ch_uint& rhs) {
-    base::operator=(rhs);
+  ch_uint& operator=(const ch_uint& other) {
+    base::operator=(other);
     return *this;
   }
 
-  ch_uint& operator=(ch_uint&& rhs) {
-    base::operator=(std::move(rhs));
+  ch_uint& operator=(ch_uint&& other) {
+    base::operator=(std::move(other));
     return *this;
   }
 

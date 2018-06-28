@@ -214,10 +214,10 @@ proxyimpl::erase_source(std::vector<lnode>::iterator iter) {
   return next;
 }
 
-bool proxyimpl::equals(const lnodeimpl& rhs) const {
-  if (lnodeimpl::equals(rhs)) {
-    auto _rhs = reinterpret_cast<const proxyimpl&>(rhs);
-    return (this->ranges_ == _rhs.ranges_);
+bool proxyimpl::equals(const lnodeimpl& other) const {
+  if (lnodeimpl::equals(other)) {
+    auto _other = reinterpret_cast<const proxyimpl&>(other);
+    return (this->ranges_ == _other.ranges_);
   }
   return false;
 }
