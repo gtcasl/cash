@@ -1,4 +1,4 @@
 ignore:
   - */backward.h
-  - */examples/*
-  - */tests/*
+  - /examples/*
+  - /tests/*
