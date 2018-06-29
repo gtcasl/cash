@@ -116,6 +116,8 @@ public:
 
   virtual void print(std::ostream& out, uint32_t level) const;
 
+  std::string debug_info() const;
+
 protected:
 
   lnodeimpl(context* ctx,

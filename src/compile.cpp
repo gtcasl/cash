@@ -280,17 +280,7 @@ void compiler::syntax_check() {
           if (dump_ast_level) {
             ctx_->dump_ast(std::cerr, dump_ast_level);
           }
-          fprintf(stderr, "error: un-initialized variable '%s%d (#%d)'",
-                  node->name().c_str(), node->size(), node->id());
-          if (node->var_id() != 0) {
-            fprintf(stderr, " (@var%d)", node->var_id());
-          }
-          fprintf(stderr, " in module '%s (#%d)'", ctx_->name().c_str(), ctx_->id());
-          auto& sloc = node->sloc();
-          if (!sloc.empty()) {
-            fprintf(stderr, " (%s:%d)", sloc.file(), sloc.line());
-          }
-          fprintf(stderr, "\n");
+          fprintf(stderr, "error: un-initialized variable %s\n", node->debug_info().c_str());
           break;
         }
       }

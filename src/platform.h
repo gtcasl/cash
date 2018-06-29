@@ -15,6 +15,8 @@ public:
   static const platform& self();
   
   int dbg_level() const;
+
+  int dbg_wall() const;
   
   int dbg_node() const;
 

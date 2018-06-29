@@ -703,6 +703,15 @@ void ch::internal::bv_mul(bitvector& out, const bitvector& lhs, const bitvector&
     uint32_t b_w = rhs.word(0);
     out.word(0) = a_w * b_w;
     out.clear_unused_bits();
+  } else
+  if (2 == lhs.num_words()
+   && 2 == rhs.num_words()) {
+    uint64_t a_w = (bitcast<uint64_t>(lhs.word(1)) << 32) | lhs.word(0);
+    uint64_t b_w = (bitcast<uint64_t>(rhs.word(1)) << 32) | rhs.word(0);
+    uint64_t o_w = a_w * b_w;
+    out.word(0) = bitcast<uint32_t>(o_w);
+    out.word(1) = bitcast<uint32_t>(o_w >> 32);
+    out.clear_unused_bits();
   } else {
     CH_TODO();
   }
@@ -717,6 +726,15 @@ void ch::internal::bv_divu(bitvector& out, const bitvector& lhs, const bitvector
     uint32_t a_w = lhs.word(0);
     uint32_t b_w = rhs.word(0);
     out.word(0) = b_w ? (a_w / b_w) : bitvector::WORD_MAX;
+  } else
+    if (2 == lhs.num_words()
+     && 2 == rhs.num_words()) {
+    uint64_t a_w = (bitcast<uint64_t>(lhs.word(1)) << 32) | lhs.word(0);
+    uint64_t b_w = (bitcast<uint64_t>(rhs.word(1)) << 32) | rhs.word(0);
+    uint64_t o_w = b_w ? (a_w / b_w) : 0xffffffffffffffff;
+    out.word(0) = bitcast<uint32_t>(o_w);
+    out.word(1) = bitcast<uint32_t>(o_w >> 32);
+    out.clear_unused_bits();
   } else {
     CH_TODO();
   }
@@ -731,6 +749,15 @@ void ch::internal::bv_divs(bitvector& out, const bitvector& lhs, const bitvector
     int32_t a_w = sign_ext(lhs.word(0), size);
     int32_t b_w = sign_ext(rhs.word(0), size);
     out.word(0) = b_w ? uint32_t(a_w / b_w) : bitvector::WORD_MAX;
+    out.clear_unused_bits();
+  } else
+    if (2 == lhs.num_words()
+     && 2 == rhs.num_words()) {
+    int64_t a_w = sign_ext((bitcast<uint64_t>(lhs.word(1)) << 32) | lhs.word(0), size);
+    int64_t b_w = sign_ext((bitcast<uint64_t>(rhs.word(1)) << 32) | rhs.word(0), size);
+    int64_t o_w = b_w ? (a_w / b_w) : 0xffffffffffffffff;
+    out.word(0) = bitcast<uint32_t>(o_w);
+    out.word(1) = bitcast<uint32_t>(o_w >> 32);
     out.clear_unused_bits();
   } else {
     CH_TODO();

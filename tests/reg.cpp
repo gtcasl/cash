@@ -30,21 +30,21 @@ TEST_CASE("registers", "[registers]") {
 
     TEST([]()->ch_bool {
       auto a = ch_delay(V2{3, 1});
-      auto e = ch_case(ch_time(), 3, 1101_b)(a);
+      auto e = ch_case(ch_time(), 3, 1101_b)(a.as_uint());
       //ch_print("t={0}, a={1}, e={2}", ch_time(), a, e);
       return (a.as_bit() == e);
     }, 1);
 
     TEST([]()->ch_bool {
       auto a = ch_delay(X{3, 1});
-      auto e = ch_case(ch_time(), 3, 1101_b)(a);
+      auto e = ch_case(ch_time(), 3, 1101_b)(a.as_uint());
       //ch_print("t={0}, a={1}, e={2}", ch_time(), a, e);
       return (a.as_bit() == e);
     }, 1);
 
     TEST([]()->ch_bool {
       auto a = ch_delay(U{10_b});
-      auto e = ch_case(ch_time(), 3, 10_b)(a);
+      auto e = ch_case(ch_time(), 3, 10_b)(a.as_uint());
       //ch_print("t={0}, a={1}, e={2}", ch_time(), a, e);
       return (a.as_bit() == e);
     }, 1);
@@ -83,7 +83,7 @@ TEST_CASE("registers", "[registers]") {
     TEST([]()->ch_bool {
       ch_reg<V2> a, b(0), c(0000_b);
       a <<= V2{3, 1};
-      auto e = ch_case(ch_time(), 3, 1101_b)(a);
+      auto e = ch_case(ch_time(), 3, 1101_b)(a.as_uint());
       //ch_print("t={0}, a={1}, e={2}", ch_time(), a, e);
       return (a.as_bit() == e);
     }, 1);
@@ -91,7 +91,7 @@ TEST_CASE("registers", "[registers]") {
     TEST([]()->ch_bool {
       ch_reg<X> a, b{00_b, 00_b};
       a <<= X{3, 1};
-      auto e = ch_case(ch_time(), 3, 1101_b)(a);
+      auto e = ch_case(ch_time(), 3, 1101_b)(a.as_uint());
       //ch_print("t={0}, a={1}, e={2}", ch_time(), a, e);
       return (a.as_bit() == e);
     }, 1);
@@ -99,7 +99,7 @@ TEST_CASE("registers", "[registers]") {
     TEST([]()->ch_bool {
       ch_reg<U> a{00_b}, b{1_b};
       a <<= U{10_b};
-      auto e = ch_case(ch_time(), 3, 10_b)(a);
+      auto e = ch_case(ch_time(), 3, 10_b)(a.as_uint());
       //ch_print("t={0}, a={1}, e={2}", ch_time(), a, e);
       return (a.as_bit() == e);
     }, 1);

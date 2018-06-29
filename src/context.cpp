@@ -771,6 +771,7 @@ void context::build_run_list(std::vector<lnodeimpl*>& list) {
   std::unordered_set<lnodeimpl*> visited, cycles;
   std::vector<lnodeimpl*> update_list;  
   std::vector<lnodeimpl*> snodes;
+  unsigned warnings = 0;
 
   std::function<void (context*)> gather_snodes = [&](context* ctx) {
     for (auto node : ctx->bindings()) {
@@ -790,6 +791,11 @@ void context::build_run_list(std::vector<lnodeimpl*>& list) {
       // handling register cycles
       switch (node->type()) {
       case type_reg:
+        if (!reinterpret_cast<regimpl*>(node)->has_init()) {
+          ++warnings;
+          fprintf(stderr, "warning: uninitialized register %s\n", node->debug_info().c_str());
+        }
+        [[fallthrough]];
       case type_mwport:
       case type_udfs:
         return true;
@@ -805,17 +811,7 @@ void context::build_run_list(std::vector<lnodeimpl*>& list) {
           std::cerr << std::endl;
         }
       }
-      fprintf(stderr, "error: found cycle on variable '%s%d (#%d)'",
-              node->name().c_str(), node->size(), node->id());
-      if (node->var_id() != 0) {
-        fprintf(stderr, " (@var%d)", node->var_id());
-      }
-      fprintf(stderr, " in module '%s (#%d)'", node->ctx()->name().c_str(), node->ctx()->id());
-      auto& sloc = node->sloc();
-      if (!sloc.empty()) {
-        fprintf(stderr, " (%s:%d)", sloc.file(), sloc.line());
-      }
-      fprintf(stderr, "\n");
+      fprintf(stderr, "error: found cycle on variable %s\n", node->debug_info().c_str());
       std::abort();      
       return false;
 #define LCOV_EXCL_END
@@ -912,6 +908,10 @@ void context::build_run_list(std::vector<lnodeimpl*>& list) {
       node->print(std::cerr, dump_ast_level);
       std::cerr << std::endl;
     }
+  }
+
+  if (warnings && platform::self().dbg_wall()) {
+    std::abort();
   }
 }
 

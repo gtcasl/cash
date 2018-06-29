@@ -76,6 +76,18 @@ void lnodeimpl::print(std::ostream& out, uint32_t level) const {
   }
 }
 
+std::string lnodeimpl::debug_info() const {
+  return stringf("%s%d (#%d) (@var%d) in module '%s (#%d)'  (%s:%d)",
+                 name_.c_str(),
+                 value_.size(),
+                 id_,
+                 var_id_,
+                 ctx_->name().c_str(),
+                 ctx_->id(),
+                 sloc_.file(),
+                 sloc_.line());
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 undefimpl::undefimpl(context* ctx, uint32_t size, const source_location& sloc)

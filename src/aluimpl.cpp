@@ -203,7 +203,7 @@ void aluimpl::eval() {
 void aluimpl::print(std::ostream& out, uint32_t level) const {
   out << "#" << id_ << " <- " << to_string(this->type()) << value_.size();
   uint32_t n = srcs_.size();
-  out << "(" << to_string(op_) << ", ";
+  out << "(" << to_string(op_) << (is_signed_ ? "_s" : "_u") << ", ";
   for (uint32_t i = 0; i < n; ++i) {
     if (i > 0)
       out << ", ";

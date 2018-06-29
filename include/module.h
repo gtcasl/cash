@@ -21,14 +21,14 @@ public:
   template <typename... Ts>
   ch_module(const std::string& name, Ts&&... args)
     : device(std::type_index(typeid(T)), name)
-    , io(build(T(std::forward<Ts>(args)...)).io)
+    , io(build(T(std::forward<Ts>(args)...)).io, source_location())
   {}
 
   template <typename... Ts>
   ch_module(Ts&&... args)
     : device(std::type_index(typeid(T)),
              identifier_from_typeid(typeid(T).name()).c_str())
-    , io(build(T(std::forward<Ts>(args)...)).io)
+    , io(build(T(std::forward<Ts>(args)...)).io, source_location())
   {}
 
   ch_module(ch_module&& other) : base(std::move(other)), io(std::move(other.io)) {}

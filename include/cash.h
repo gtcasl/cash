@@ -221,6 +221,7 @@ namespace extension {
   using ch::internal::is_object_type_v;
   using ch::internal::is_bit_convertible_v;
   using ch::internal::is_scbit_convertible_v;
+  using ch::internal::is_bitvector_extended_type_v;
 
   using ch::internal::bitvector;
   using ch::internal::source_location;
