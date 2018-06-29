@@ -771,7 +771,7 @@ void context::build_run_list(std::vector<lnodeimpl*>& list) {
   std::unordered_set<lnodeimpl*> visited, cycles;
   std::vector<lnodeimpl*> update_list;  
   std::vector<lnodeimpl*> snodes;
-  unsigned warnings = 0;
+  std::unordered_set<lnodeimpl*> uninitialized_regs;
 
   std::function<void (context*)> gather_snodes = [&](context* ctx) {
     for (auto node : ctx->bindings()) {
@@ -791,10 +791,8 @@ void context::build_run_list(std::vector<lnodeimpl*>& list) {
       // handling register cycles
       switch (node->type()) {
       case type_reg:
-        if (!reinterpret_cast<regimpl*>(node)->has_init()) {
-          ++warnings;
-          fprintf(stderr, "warning: uninitialized register %s\n", node->debug_info().c_str());
-        }
+        if (!reinterpret_cast<regimpl*>(node)->has_init())
+          uninitialized_regs.insert(node);
         [[fallthrough]];
       case type_mwport:
       case type_udfs:
@@ -803,11 +801,10 @@ void context::build_run_list(std::vector<lnodeimpl*>& list) {
         break;
       }
 #define LCOV_EXCL_START
-      int dump_ast_level = platform::self().dump_ast();
-      if (dump_ast_level) {
+      if (platform::self().cflags() | cflags::dump_ast) {
         for (auto n : list) {
           std::cerr << n->ctx()->id() << ": ";
-          n->print(std::cerr, dump_ast_level);
+          n->print(std::cerr, platform::self().dbg_level());
           std::cerr << std::endl;
         }
       }
@@ -901,17 +898,20 @@ void context::build_run_list(std::vector<lnodeimpl*>& list) {
     dfs_visit(node);
   }
 
-  auto dump_ast_level = platform::self().dump_ast();
-  if (dump_ast_level) {
+  if (platform::self().cflags() | cflags::dump_ast) {
     for (auto node : list) {
       std::cerr << node->ctx()->id() << ": ";
-      node->print(std::cerr, dump_ast_level);
+      node->print(std::cerr, platform::self().dbg_level());
       std::cerr << std::endl;
     }
   }
 
-  if (warnings && platform::self().dbg_wall()) {
-    std::abort();
+  if (!uninitialized_regs.empty()
+   && (platform::self().cflags() | cflags::check_reg_init)) {
+    for (auto node : uninitialized_regs) {
+      fprintf(stderr, "warning: uninitialized register %s\n",
+              node->debug_info().c_str());
+    }
   }
 }
 

@@ -284,18 +284,18 @@ bool verilogwriter::print_decl(std::ostream& out,
     }
     visited.insert(node->id());
     if (!ref) {
-      if (0 == platform::self().dbg_verilog()) {
-        for (auto other : node->ctx()->nodes()) {
-          this->print_decl(out, other, visited, node);
-        }
-        out << ";" << std::endl;
-      } else {        
+      if (platform::self().cflags() | cflags::show_src_info) {
         out << ";";
         auto& sloc = node->sloc();
         if (!sloc.empty()) {
           this->print_sloc(out, sloc);
         }
         out << std::endl;
+      } else {        
+        for (auto other : node->ctx()->nodes()) {
+          this->print_decl(out, other, visited, node);
+        }
+        out << ";" << std::endl;
       }
     }
     return true;
