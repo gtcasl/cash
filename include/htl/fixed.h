@@ -78,20 +78,26 @@ public:
     return (lhs.as_int() >= rhs.as_int());
   }
 
+  friend auto operator-(ch_fixed self) {
+    return (-self.as_int()).template as<ch_fixed>();
+  }
+
   friend auto operator+(ch_fixed lhs, const ch_fixed& rhs) {
-    return (lhs.as_int() + rhs.as_int());
+    return (lhs.as_int() + rhs.as_int()).template as<ch_fixed>();
   }
 
   friend auto operator-(ch_fixed lhs, const ch_fixed& rhs) {
-    return (lhs.as_int() - rhs.as_int());
+    return (lhs.as_int() - rhs.as_int()).template as<ch_fixed>();
   }
 
   friend auto operator*(ch_fixed lhs, const ch_fixed& rhs) {
-    return ((lhs.as_int().template pad<N + F>() * rhs.as_int()) >> F).template slice<N>();
+    auto ret = (ch_pad<N+F>(lhs.as_int()) * rhs.as_int()) >> F;
+    return ch_slice<N>(ret).template as<ch_fixed>();
   }
 
   friend auto operator/(ch_fixed lhs, const ch_fixed& rhs) {
-    return ((lhs.as_int().template pad<N + F>() << F) / rhs.as_int()).template slice<N>();
+    auto ret = (ch_pad<N+F>(lhs.as_int()) << F) / rhs.as_int();
+    return ch_slice<N>(ret).template as<ch_fixed>();
   }
 };
 

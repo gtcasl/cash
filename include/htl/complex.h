@@ -14,23 +14,28 @@ __struct (ch_complex, (
 ));
 
 template <typename T>
-bool operator==(const ch_complex<T>& lhs, const ch_complex<T>& rhs) {
-  return lhs.read == rhs.re && lhs.im == rhs.im;
+auto operator==(const ch_complex<T>& lhs, const ch_complex<T>& rhs) {
+  return (lhs.read == rhs.re) && (lhs.im == rhs.im);
 }
 
 template <typename T>
-bool operator!=(const ch_complex<T>& lhs, const ch_complex<T>& rhs) {
+auto operator!=(const ch_complex<T>& lhs, const ch_complex<T>& rhs) {
   return !(lhs == rhs);
 }
 
 template <typename T>
-ch_complex<T> operator+(const ch_complex<T>& lhs, const ch_complex<T>& rhs) {
+auto operator+(const ch_complex<T>& lhs, const ch_complex<T>& rhs) {
   return ch_complex<T>(lhs.im + rhs.im, lhs.re + rhs.re);
 }
 
 template <typename T>
-ch_complex<T> operator-(const ch_complex<T>& lhs, const ch_complex<T>& rhs) {
+auto operator-(const ch_complex<T>& lhs, const ch_complex<T>& rhs) {
   return ch_complex<T>(lhs.im - rhs.im, lhs.re - rhs.re);
+}
+
+template <typename T>
+auto operator-(const ch_complex<T>& self) {
+  return ch_complex<T>(-self.im, -self.re);
 }
 
 }
