@@ -8,9 +8,9 @@ namespace htl {
 using namespace ch::core;
 
 template <typename T>
-__inout (ch_valid_io, (    
-  __out(ch_bool) valid,
-  __out(T) data
+__inout (ch_valid_io, (      
+  __out(T) data,
+  __out(ch_bool) valid
 ));
 
 template <typename T>

@@ -1,9 +1,15 @@
 #pragma once
 
+#include "common.h"
+#include "bitvector.h"
+#include "traits.h"
+#include "lnode.h"
+#include "scalar.h"
 #include "scbit.h"
 #include "scint.h"
 #include "scuint.h"
 #include "literals.h"
+#include "logic.h"
 #include "bit.h"
 #include "int.h"
 #include "uint.h"
@@ -68,18 +74,18 @@ namespace core {
   //
 
   using ch::internal::ch_width_v;
-
-  using ch::internal::ch_direction;
+  using ch::internal::ch_signed_v;
 
   using ch::internal::ch_scalar_t;
   using ch::internal::ch_logic_t;
   using ch::internal::ch_flip_t;
   using ch::internal::ch_io_t;
 
-  using ch::internal::ch_direction_v;
-
   using ch::internal::ch_in;
   using ch::internal::ch_out;
+  using ch::internal::ch_direction;
+  using ch::internal::ch_direction_v;
+
   using ch::internal::ch_module;
 
   using ch::internal::ch_udf;

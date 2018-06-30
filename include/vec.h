@@ -168,7 +168,7 @@ public:
   using base::items_;
 
   explicit ch_vec(const logic_buffer_ptr& buffer = make_logic_buffer(traits::bitwidth, CH_CUR_SLOC))
-    : ch_vec(buffer, std::make_index_sequence<N>(), CH_CUR_SLOC)
+    : ch_vec(buffer, std::make_index_sequence<N>(), buffer->data().sloc())
   {}
 
   ch_vec(const ch_vec& other, CH_SLOC)
@@ -358,7 +358,7 @@ public:
   using base = vec_base<device_type_t<T>, N>;
   using base::operator [];
 
-  ch_vec_device_io(const ch_vec<T, N>& other)
+  explicit ch_vec_device_io(const ch_vec<T, N>& other)
     : ch_vec_device_io(other, std::make_index_sequence<N>())
   {}
 
@@ -397,11 +397,11 @@ public:
   using base::operator [];
   using base::items_;
 
-  ch_vec(const std::string& name = "io", CH_SLOC)
+  explicit ch_vec(const std::string& name = "io", CH_SLOC)
     : ch_vec(name, sloc, std::make_index_sequence<N>())
   {}
 
-  ch_vec(const ch_vec<ch_flip_t<T>, N>& other, CH_SLOC)
+  explicit ch_vec(const ch_vec<ch_flip_t<T>, N>& other, CH_SLOC)
     : ch_vec(other, sloc, std::make_index_sequence<N>())
   {}
 

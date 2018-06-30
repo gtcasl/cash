@@ -1,6 +1,6 @@
 #pragma once
 
-#include "uint.h"
+#include "scuint.h"
 
 namespace ch {
 namespace internal {

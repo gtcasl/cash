@@ -24,7 +24,7 @@
 // pair macros
 
 #define CH_PAIR(x) CH_REM x
-#define CH_PAIR_HEAD_(x, ...) CH_REM x
+#define CH_PAIR_HEAD_(x, ...) CH_PAIR(x)
 #define CH_PAIR_PROBE_(...) (__VA_ARGS__),
 #define CH_PAIR_L_(...) CH_PAIR_HEAD_(__VA_ARGS__)
 #define CH_PAIR_L(x) CH_PAIR_L_(CH_PAIR_PROBE_ x,)

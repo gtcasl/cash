@@ -27,10 +27,10 @@ public:
 template <typename T>
 class ch_reg_impl final : public T {
 public:  
-  using traits = logic_traits<ch_width_v<T>, signed_v<T>, ch_reg<T>, ch_scalar_t<T>>;
+  using traits = logic_traits<ch_width_v<T>, ch_signed_v<T>, ch_reg<T>, ch_scalar_t<T>>;
   using base = T;
 
-  ch_reg_impl(CH_SLOC)
+  explicit ch_reg_impl(CH_SLOC)
     : base(std::make_shared<reg_buffer>(ch_width_v<T>, sloc))
   {}
 
@@ -53,6 +53,11 @@ public:
     this->buffer()->write(0, to_lnode<T>(other, source_location()), 0, ch_width_v<T>,
                           source_location());
   }  
+
+private:
+
+  ch_reg_impl& operator=(ch_reg_impl&&) = delete;
+
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -83,10 +88,30 @@ auto ch_delay(const T& in, uint32_t delay = 1, CH_SLOC) {
   return ret;
 }
 
+template <typename R, typename T, typename I>
+auto ch_delay(const T& in, uint32_t delay, const I& init, CH_SLOC) {
+  static_assert(is_logic_type_v<R>, "invalid type");
+  static_assert(std::is_constructible_v<R, T>, "invalid type");
+  static_assert(std::is_constructible_v<R, I>, "invalid type");
+  R ret(in, sloc);
+  for (unsigned i = 0; i < delay; ++i) {
+    ch_reg<R> reg(init, sloc);
+    reg <<= ch_clone(ret, sloc);
+    ret = reg;
+  }
+  return ret;
+}
+
 template <typename T>
 auto ch_delay(const T& in, uint32_t delay = 1, CH_SLOC) {
   static_assert(is_object_type_v<T>, "invalid type");
   return ch_delay<ch_logic_t<T>, T>(in, delay, sloc);
+}
+
+template <typename T, typename I>
+auto ch_delay(const T& in, uint32_t delay, const I& init, CH_SLOC) {
+  static_assert(is_object_type_v<T>, "invalid type");
+  return ch_delay<ch_logic_t<T>, T>(in, delay, init, sloc);
 }
 
 }

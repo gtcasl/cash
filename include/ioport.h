@@ -61,7 +61,7 @@ template <typename IoType,
 struct io_logic_traits {
   static constexpr traits_type type = traits_logic_io;
   static constexpr unsigned bitwidth = ch_width_v<LogicType>;
-  static constexpr unsigned is_signed = signed_v<LogicType>;
+  static constexpr unsigned is_signed = ch_signed_v<LogicType>;
   static constexpr ch_direction direction = Direction;
   using io_type     = IoType;
   using flip_type   = FlipType;
@@ -78,7 +78,7 @@ template <typename IoType,
 struct io_scalar_traits {
   static constexpr traits_type type = traits_scalar_io;
   static constexpr unsigned bitwidth = ch_width_v<ScalarType>;
-  static constexpr unsigned is_signed = signed_v<ScalarType>;
+  static constexpr unsigned is_signed = ch_signed_v<ScalarType>;
   static constexpr ch_direction direction = Direction;
   using io_type     = IoType;
   using flip_type   = FlipType;
@@ -117,7 +117,7 @@ public:
                                  T>;
   using base = T;
 
-  ch_in_impl(const std::string& name = "io", CH_SLOC)
+  explicit ch_in_impl(const std::string& name = "io", CH_SLOC)
      : ch_in_impl(createInputNode(name, ch_width_v<T>, sloc), name, sloc)
   {}
 
@@ -135,12 +135,6 @@ public:
     , input_(std::move(other.input_))
   {}
 
-  const ch_in_impl& operator=(const ch_in_impl&& other) const {
-    ((base*)this)->operator=(std::move(other));
-    ((ch_in_impl*)this)->input_ = std::move(other.input_);
-    return *this;
-  }
-
   template <typename U>
   void operator()(ch_out<U>& out) const {
     static_assert(is_logic_only_v<U>, "invalid type");
@@ -156,9 +150,11 @@ private:
     , input_(src)
   {}
 
-  ch_in_impl(const ch_in_impl&) = delete;
+  ch_in_impl(const ch_in_impl& out) = delete;
 
   ch_in_impl& operator=(const ch_in_impl&) = delete;
+
+  ch_in_impl& operator=(ch_in_impl&&) = delete;
 
   lnode input_;
 
@@ -181,7 +177,7 @@ public:
   using base = T;
   using base::operator=;
 
-  ch_out(const std::string& name = "io", CH_SLOC)
+  explicit ch_out(const std::string& name = "io", CH_SLOC)
     : base(make_logic_buffer(ch_width_v<T>, sloc, name)) {
     output_ = createOutputNode(name, logic_accessor::data(*this), sloc);
   }
@@ -319,16 +315,13 @@ public:
 
   ch_scout_impl(const ch_scout_impl&& other) : base(std::move(other)) {}
 
-  const ch_scout_impl& operator=(const ch_scout_impl&& other) const {
-    ((base*)this)->operator=(std::move(other));
-    return *this;
-  }
-
 protected:
 
   ch_scout_impl(const ch_scout_impl& out) = delete;
 
   ch_scout_impl& operator=(const ch_scout_impl&) = delete;
+
+  ch_scout_impl& operator=(ch_scout_impl&&) = delete;
 };
 
 }

@@ -41,25 +41,18 @@
 #define CH_INOUT_MOVE_CTOR(a, i, x) \
   CH_PAIR_R(x)(std::move(__other.CH_PAIR_R(x)))
 
-#define CH_INOUT_MOVE_ASSIGN(a, i, x) \
-  CH_PAIR_R(x) = std::move(__other.CH_PAIR_R(x))
-
 #define CH_BASIC_INOUT_DEVICE_IMPL(inout_name, field_body, ...) \
   CH_FOR_EACH(field_body, , CH_SEP_SEMICOLON, __VA_ARGS__); \
   explicit inout_name(const typename traits::device_type& __other) \
     : CH_FOR_EACH(CH_INOUT_DEVICE_COPY_CTOR, , CH_SEP_COMMA, __VA_ARGS__) {} \
   inout_name(inout_name&& __other) : CH_FOR_EACH(CH_INOUT_MOVE_CTOR, , CH_SEP_COMMA, __VA_ARGS__) {} \
-  inout_name& operator=(inout_name&& __other) { \
-    CH_FOR_EACH(CH_INOUT_MOVE_ASSIGN, , CH_SEP_SEMICOLON, __VA_ARGS__); \
-    return *this; \
-  } \
 protected: \
   inout_name(const inout_name& __other) = delete; \
   inout_name& operator=(const inout_name&) = delete;
 
 #define CH_BASIC_INOUT_MODULE_IMPL(inout_name, field_body, ...) \
   CH_FOR_EACH(field_body, , CH_SEP_SEMICOLON, __VA_ARGS__); \
-  inout_name(const std::string& name = "io", CH_SLOC) \
+  explicit inout_name(const std::string& name = "io", CH_SLOC) \
     : CH_FOR_EACH(CH_INOUT_CTOR_BODY, , CH_SEP_COMMA, __VA_ARGS__) {} \
   explicit inout_name(const typename traits::flip_type& __other, CH_SLOC) \
     : CH_FOR_EACH(CH_INOUT_COPY_CTOR, , CH_SEP_COMMA, __VA_ARGS__) {} \
@@ -67,10 +60,6 @@ protected: \
     CH_FOR_EACH(CH_INOUT_BIND_BODY, , CH_SEP_SEMICOLON, __VA_ARGS__); \
   } \
   inout_name(inout_name&& __other) : CH_FOR_EACH(CH_INOUT_MOVE_CTOR, , CH_SEP_COMMA, __VA_ARGS__) {} \
-  inout_name& operator=(inout_name&& __other) { \
-    CH_FOR_EACH(CH_INOUT_MOVE_ASSIGN, , CH_SEP_SEMICOLON, __VA_ARGS__); \
-    return *this; \
-  } \
 protected: \
   inout_name(const inout_name& __other) = delete; \
   inout_name& operator=(const inout_name&) = delete;
@@ -83,18 +72,13 @@ protected: \
   inout_name(inout_name&& __other) \
     : base(std::move(__other)) \
     , CH_FOR_EACH(CH_INOUT_MOVE_CTOR, , CH_SEP_COMMA, __VA_ARGS__) {} \
-  inout_name& operator=(inout_name&& __other) { \
-    base::operator=(std::move(__other)); \
-    CH_FOR_EACH(CH_INOUT_MOVE_ASSIGN, , CH_SEP_SEMICOLON, __VA_ARGS__); \
-    return *this; \
-  } \
 protected: \
   inout_name(const inout_name& __other) = delete; \
   inout_name& operator=(const inout_name&) = delete;
 
 #define CH_DERIVED_INOUT_MODULE_IMPL(inout_name, field_body, ...) \
   CH_FOR_EACH(field_body, , CH_SEP_SEMICOLON, __VA_ARGS__); \
-  inout_name(const std::string& name = "io", CH_SLOC) \
+  explicit inout_name(const std::string& name = "io", CH_SLOC) \
     : base(name, sloc) \
     , CH_FOR_EACH(CH_INOUT_CTOR_BODY, , CH_SEP_COMMA, __VA_ARGS__) {} \
   explicit inout_name(const typename traits::flip_type& __other, CH_SLOC) \
@@ -107,11 +91,6 @@ protected: \
   inout_name(inout_name&& __other) \
     : base(std::move(__other)) \
     , CH_FOR_EACH(CH_INOUT_MOVE_CTOR, , CH_SEP_COMMA, __VA_ARGS__) {} \
-  inout_name& operator=(inout_name&& __other) { \
-    base::operator=(std::move(__other)); \
-    CH_FOR_EACH(CH_INOUT_MOVE_ASSIGN, , CH_SEP_SEMICOLON, __VA_ARGS__); \
-    return *this; \
-  } \
 protected: \
   inout_name(const inout_name& __other) = delete; \
   inout_name& operator=(const inout_name&) = delete;

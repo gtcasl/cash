@@ -120,7 +120,7 @@ struct signed_impl<T, std::enable_if_t<is_object_type_v<T>>> {
 };
 
 template <typename T>
-inline constexpr bool signed_v = signed_impl<std::decay_t<T>>::value;
+inline constexpr bool ch_signed_v = signed_impl<std::decay_t<T>>::value;
 
 struct non_ch_type {
   struct traits {

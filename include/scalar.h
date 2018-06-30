@@ -331,7 +331,7 @@ CH_SCALAR_OPERATOR(scalar_op_cast)
   explicit operator U() const {
     static_assert(CH_WIDTH_OF(U) >= Derived::traits::bitwidth, "invalid size");
     auto ret = static_cast<U>(scalar_accessor::data(reinterpret_cast<const Derived&>(*this)));
-    if constexpr(signed_v<Derived> && (CH_WIDTH_OF(U) > Derived::traits::bitwidth)) {
+    if constexpr(ch_signed_v<Derived> && (CH_WIDTH_OF(U) > Derived::traits::bitwidth)) {
       return sign_ext(ret, Derived::traits::bitwidth);
     } else {
       return ret;
@@ -346,7 +346,7 @@ CH_SCALAR_OPERATOR(scalar_op_padding)
     static_assert(ch_width_v<R> >= N, "invalid size");
     auto& self = reinterpret_cast<const Derived&>(*this);
     if constexpr (ch_width_v<R> > N) {
-      if constexpr (signed_v<Derived>) {
+      if constexpr (ch_signed_v<Derived>) {
         return make_scalar_op<R>(bv_sext, self);
       } else {
         return make_scalar_op<R>(bv_zext, self);
@@ -365,7 +365,7 @@ CH_SCALAR_OPERATOR(scalar_op_padding)
 };
 
 CH_SCALAR_OPERATOR(scalar_op_relational)
-  CH_SCALAR_OPERATOR_IMPL(operator<, (if constexpr (signed_v<Derived>) {
+  CH_SCALAR_OPERATOR_IMPL(operator<, (if constexpr (ch_signed_v<Derived>) {
                                         return bv_lts(lhs.buffer_->data(), rhs.buffer_->data());
                                       } else {
                                         return bv_ltu(lhs.buffer_->data(), rhs.buffer_->data());
@@ -383,13 +383,13 @@ CH_SCALAR_OPERATOR(scalar_op_arithmetic)
   CH_SCALAR_OPERATOR_IMPL(operator-, (return make_scalar_op<Derived>(bv_sub, lhs, rhs)))
   CH_SCALAR_OPERATOR_IMPL(operator*, (return make_scalar_op<Derived>(bv_mul, lhs, rhs)))
 
-  CH_SCALAR_OPERATOR_IMPL(operator/, (if constexpr (signed_v<Derived>) {
+  CH_SCALAR_OPERATOR_IMPL(operator/, (if constexpr (ch_signed_v<Derived>) {
                                          return make_scalar_op<Derived>(bv_divs, lhs, rhs);
                                       } else {
                                          return make_scalar_op<Derived>(bv_divu, lhs, rhs);
                                       }))
 
-  CH_SCALAR_OPERATOR_IMPL(operator%, (if constexpr (signed_v<Derived>) {
+  CH_SCALAR_OPERATOR_IMPL(operator%, (if constexpr (ch_signed_v<Derived>) {
                                         return make_scalar_op<Derived>(bv_mods, lhs, rhs);
                                      } else {
                                         return make_scalar_op<Derived>(bv_modu, lhs, rhs);

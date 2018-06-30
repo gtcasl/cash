@@ -5,7 +5,7 @@
 namespace ch {
 namespace internal {
 
-template <unsigned N>
+template <unsigned N = 32>
 class ch_int : public logic_op_compare<ch_int, N,
                         logic_op_logical<ch_int, N,
                           logic_op_bitwise<ch_int, N,

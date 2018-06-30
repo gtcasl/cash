@@ -6,14 +6,14 @@
 module testbench();
 
     reg        clk = 0;
-    reg        reset = 0;
-    reg        in_valid;
+    reg        reset = 0;    
     reg[31:0]  in_data;
-    wire       in_ready;
-    wire       out_valid;
+    reg        in_valid;
+    wire       in_ready;    
     wire[15:0] out_data;
+    wire       out_valid;
 
-    GCD gcd(clk, reset, in_valid, in_data, in_ready, out_valid, out_data);
+    GCD gcd(clk, reset, in_data, in_valid, in_ready, out_data, out_valid);
 
     always begin
         #1 clk = !clk;

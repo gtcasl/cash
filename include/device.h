@@ -84,7 +84,6 @@ class ch_device final : public device {
 public:  
   using base = device;
   using traits = device_traits<decltype(T::io)>;
-
   typename traits::io_type io;
 
   template <typename... Ts>

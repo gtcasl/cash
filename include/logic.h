@@ -322,17 +322,17 @@ struct sloc_arg {
 #define CH_LOGIC_OPERATOR_IMPL(op, opcode, rtype) \
   friend auto op(Derived lhs, const Derived& rhs) { \
     auto sloc = logic_accessor::sloc(lhs); \
-    return make_logic_op<opcode, signed_v<Derived>, rtype>(lhs, rhs, sloc); \
+    return make_logic_op<opcode, ch_signed_v<Derived>, rtype>(lhs, rhs, sloc); \
   } \
   template <unsigned M, CH_REQUIRE_0(M < N)> \
   friend auto op(Derived lhs, const T<M>& rhs) { \
     auto sloc = logic_accessor::sloc(lhs); \
-    return make_logic_op<opcode, signed_v<Derived>, rtype>(lhs, rhs, sloc); \
+    return make_logic_op<opcode, ch_signed_v<Derived>, rtype>(lhs, rhs, sloc); \
   } \
   template <unsigned M, CH_REQUIRE_0(M < N)> \
   friend auto op(T<M> lhs, const Derived& rhs) { \
     auto sloc = logic_accessor::sloc(lhs); \
-    return make_logic_op<opcode, signed_v<Derived>, rtype>(lhs, rhs, sloc); \
+    return make_logic_op<opcode, ch_signed_v<Derived>, rtype>(lhs, rhs, sloc); \
   }
 
 CH_LOGIC_OPERATOR(logic_op_compare)
@@ -355,7 +355,7 @@ CH_LOGIC_OPERATOR(logic_op_logical)
 
   friend auto operator!(Derived self) {
     auto sloc = logic_accessor::sloc(self);
-    return make_logic_op<op_eq, signed_v<Derived>, ch_bit<1>>(self, Derived(0x0), sloc);
+    return make_logic_op<op_eq, ch_signed_v<Derived>, ch_bit<1>>(self, Derived(0x0), sloc);
   }
 };
 
@@ -376,13 +376,13 @@ CH_LOGIC_OPERATOR(logic_op_shift)
   friend auto operator<<(Derived lhs, const U& rhs) {
     auto sloc = logic_accessor::sloc(lhs);
     auto _rhs = ch_bit<CH_WIDTH_OF(U)>(rhs);
-    return make_logic_op<op_sll, signed_v<Derived>, Derived>(lhs, _rhs, sloc);
+    return make_logic_op<op_sll, ch_signed_v<Derived>, Derived>(lhs, _rhs, sloc);
   }
 
   template <unsigned M>
   friend auto operator<<(Derived lhs, const ch_bit<M>& rhs) {
     auto sloc = logic_accessor::sloc(lhs);
-    return make_logic_op<op_sll, signed_v<Derived>, Derived>(lhs, rhs, sloc);
+    return make_logic_op<op_sll, ch_signed_v<Derived>, Derived>(lhs, rhs, sloc);
   }
 
   template <typename U,
@@ -390,13 +390,13 @@ CH_LOGIC_OPERATOR(logic_op_shift)
   friend auto operator>>(Derived lhs, const U& rhs) {
     auto sloc = logic_accessor::sloc(lhs);
     auto _rhs = ch_bit<CH_WIDTH_OF(U)>(rhs);
-    return make_logic_op<op_srl, signed_v<Derived>, Derived>(lhs, _rhs, sloc);
+    return make_logic_op<op_srl, ch_signed_v<Derived>, Derived>(lhs, _rhs, sloc);
   }
 
   template <unsigned M>
   friend auto operator>>(Derived lhs, const ch_bit<M>& rhs) {
     auto sloc = logic_accessor::sloc(lhs);
-    return make_logic_op<op_srl, signed_v<Derived>, Derived>(lhs, rhs, sloc);
+    return make_logic_op<op_srl, ch_signed_v<Derived>, Derived>(lhs, rhs, sloc);
   }
 };
 
@@ -407,7 +407,7 @@ CH_LOGIC_OPERATOR(logic_op_padding)
     static_assert(ch_width_v<R> >= N, "invalid size");
     auto& self = reinterpret_cast<const Derived&>(*this);
     if constexpr (ch_width_v<R> > N) {
-      return make_logic_op<op_pad, signed_v<Derived>, R>(self, sloc);
+      return make_logic_op<op_pad, ch_signed_v<Derived>, R>(self, sloc);
     } else
     if constexpr (std::is_same_v<R, Derived>) {
       return self;
@@ -432,7 +432,7 @@ CH_LOGIC_OPERATOR(logic_op_relational)
 CH_LOGIC_OPERATOR(logic_op_arithmetic)
   friend auto operator-(Derived self) {
     auto sloc = logic_accessor::sloc(self);
-    return make_logic_op<op_neg, signed_v<Derived>, Derived>(self, sloc);
+    return make_logic_op<op_neg, ch_signed_v<Derived>, Derived>(self, sloc);
   }
 
   CH_LOGIC_OPERATOR_IMPL(operator+, op_add, Derived)

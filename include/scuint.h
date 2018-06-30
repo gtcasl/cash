@@ -5,7 +5,7 @@
 namespace ch {
 namespace internal {
 
-template <unsigned N>
+template <unsigned N = 32>
 class ch_scuint : public scalar_op_compare<ch_scuint, N,
                           scalar_op_logical<ch_scuint, N,
                             scalar_op_bitwise<ch_scuint, N,

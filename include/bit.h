@@ -243,7 +243,7 @@ auto ch_shuffle(const ch_bit<N>& obj,
   for (unsigned i = 0; i < M; ++i) {
     auto j = indices[M - 1 - i];
     assert(j < M);
-    ret. template slice<K>(i * K) = ch_slice<K>(obj, j * K);
+    ret. template slice<K>(i * K, sloc) = ch_slice<K>(obj, j * K, sloc);
   }
   return ret;
 }
