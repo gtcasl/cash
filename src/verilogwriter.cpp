@@ -445,9 +445,9 @@ void verilogwriter::print_sext(std::ostream& out, aluimpl* node) {
   this->print_name(out, node);
   out << " = {{" << node->size() - node->src(0).size() << "{";
   this->print_name(out, node->src(0).impl());
-  out << "[" << (node->src(0).size() - 1) << "]}";
+  out << "[" << (node->src(0).size() - 1) << "]}}, ";
   this->print_name(out, node->src(0).impl());
-  out << ";" << std::endl;
+  out << "};" << std::endl;
 }
 
 void verilogwriter::print_select(std::ostream& out, selectimpl* node) {

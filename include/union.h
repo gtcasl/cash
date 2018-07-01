@@ -14,8 +14,7 @@
 
 #define CH_UNION_LOGIC_CTOR(a, i, x) \
   CH_PAIR_R(x)(std::make_shared<ch::internal::type_buffer_t<traits>>( \
-    ch_width_v<ch::internal::identity_t<CH_PAIR_L(x)>>, buffer, 0, \
-    CH_STRINGIZE(CH_PAIR_R(x))))
+    ch_width_v<ch::internal::identity_t<CH_PAIR_L(x)>>, buffer, 0, buffer->data().sloc(), CH_STRINGIZE(CH_PAIR_R(x))))
 
 #define CH_UNION_SCALAR_FIELD(a, i, x) \
   ch_scalar_t<ch::internal::identity_t<CH_PAIR_L(x)>> CH_PAIR_R(x)

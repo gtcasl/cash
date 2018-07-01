@@ -23,8 +23,7 @@
 
 #define CH_STRUCT_LOGIC_CTOR(a, i, x) \
   CH_PAIR_R(x)(std::make_shared<ch::internal::type_buffer_t<traits>>( \
-    ch_width_v<ch::internal::identity_t<CH_PAIR_L(x)>>, buffer, __field_offset##i, \
-    CH_STRINGIZE(CH_PAIR_R(x))))
+    ch_width_v<ch::internal::identity_t<CH_PAIR_L(x)>>, buffer, __field_offset##i, buffer->data().sloc(), CH_STRINGIZE(CH_PAIR_R(x))))
 
 #define CH_STRUCT_SCALAR_FIELD_CTOR_ARGS(a, i, x) \
   const ch_scalar_t<ch::internal::identity_t<CH_PAIR_L(x)>>& CH_CONCAT(_,CH_PAIR_R(x))

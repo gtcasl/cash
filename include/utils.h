@@ -32,7 +32,7 @@ T sign_ext(T x, unsigned bits) {
 
 class source_location {
 public:
-  constexpr source_location(const char* file = nullptr, int line = 0) noexcept
+  explicit constexpr source_location(const char* file = nullptr, int line = 0) noexcept
     : file_(file)
     , line_(line)
   {}
