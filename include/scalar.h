@@ -58,15 +58,21 @@ class scalar_buffer {
 public:
   explicit scalar_buffer(uint32_t size);
 
-  scalar_buffer(const scalar_buffer& other);
-
   explicit scalar_buffer(const bitvector& data);
 
   explicit scalar_buffer(bitvector&& data);
 
   scalar_buffer(uint32_t size, const scalar_buffer_ptr& buffer, uint32_t offset);
 
+  scalar_buffer(const scalar_buffer& other);
+
+  scalar_buffer(scalar_buffer&& other);
+
   virtual ~scalar_buffer() {}
+
+  scalar_buffer& operator=(const scalar_buffer& other);
+
+  scalar_buffer& operator=(scalar_buffer&& other);
 
   virtual const bitvector& data() const;
 
@@ -81,10 +87,6 @@ public:
   uint32_t size() const {
     return size_;
   }
-
-  void copy(const scalar_buffer& other);
-
-  void move(scalar_buffer&& other);
 
   void write(uint32_t dst_offset,
              const bitvector& src,
@@ -110,12 +112,6 @@ protected:
                 uint32_t offset,
                 uint32_t size);
 
-  scalar_buffer(scalar_buffer&& other) = delete;
-
-  scalar_buffer& operator=(const scalar_buffer& other) = delete;
-
-  scalar_buffer& operator=(scalar_buffer&& other) = delete;
-
   mutable bitvector value_;
   scalar_buffer_ptr source_;
   uint32_t offset_;
@@ -133,11 +129,13 @@ class scalar_accessor {
 public:
   template <typename T>
   static const auto& buffer(const T& obj) {
+    assert(ch_width_v<T> == obj.buffer()->size());
     return obj.buffer();
   }
 
   template <typename T>
   static auto& buffer(T& obj) {
+    assert(ch_width_v<T> == obj.buffer()->size());
     return obj.buffer();
   }
 
@@ -148,9 +146,15 @@ public:
   }
 
   template <typename T>
-  static auto copy_buffer(const T& obj) {
+  static auto copy(const T& obj) {
     assert(ch_width_v<T> == obj.buffer()->size());
     return make_scalar_buffer(*obj.buffer());
+  }
+
+  template <typename T>
+  static auto move(T&& obj) {
+    assert(ch_width_v<T> == obj.buffer()->size());
+    return make_scalar_buffer(std::move(*obj.buffer()));
   }
 
   template <typename U, typename V>
@@ -158,14 +162,14 @@ public:
     static_assert(ch_width_v<U> == ch_width_v<V>, "invalid size");
     assert(ch_width_v<U> == dst.buffer()->size());
     assert(ch_width_v<V> == src.buffer()->size());
-    dst.buffer()->copy(*src.buffer());
+    *dst.buffer() = *src.buffer();
   }
 
   template <typename U, typename V>
   static void move(U& dst, V&& src) {
     static_assert(ch_width_v<U> == ch_width_v<V>, "invalid size");
     assert(ch_width_v<U> == dst.buffer()->size());
-    dst.buffer()->move(std::move(*src.buffer()));
+    *dst.buffer() = std::move(*src.buffer());
   }
 
   template <typename U, typename V>

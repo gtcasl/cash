@@ -122,6 +122,12 @@ TEST_CASE("aggregates", "[aggregates]") {
       return ch_cat(s1, s4) == ch_cat(s3, s2);
     });
     TEST([]()->ch_bool {
+      s2_t s2;
+      s2 = s2_t(0, 0);
+      s2.b = 1;
+      return (s2.as_bit() == 10_h);
+    });
+    TEST([]()->ch_bool {
       ch_bit4 a(3);
       s1_t s1(a), s2(0011_b);
       return (s1.as_bit() == s2.as_bit());
@@ -172,10 +178,10 @@ TEST_CASE("aggregates", "[aggregates]") {
       return (a.as_bit() == 321_h);
     });
     TEST([]()->ch_bool {
-      auto force_move_assignment = []() {
+      auto force_move_construct = []() {
         return sd3_t{3_h, {2_h, {1_h}}};
       };
-      sd3_t a(force_move_assignment());
+      sd3_t a(force_move_construct());
       return (a.as_bit() == 321_h);
     });
   } 

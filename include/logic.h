@@ -64,10 +64,6 @@ public:
                         const source_location& sloc,
                         const std::string& name = "");
 
-  logic_buffer(const logic_buffer& other,
-               const source_location& sloc,
-               const std::string& name = "");
-
   explicit logic_buffer(const lnode& data,
                         const source_location& sloc,
                         const std::string& name = "");
@@ -78,7 +74,16 @@ public:
                const source_location& sloc,
                const std::string& name = "");
 
+  logic_buffer(const logic_buffer& other,
+               const source_location& sloc);
+
+  logic_buffer(logic_buffer&& other);
+
   virtual ~logic_buffer() {}
+
+  logic_buffer& operator=(const logic_buffer& other);
+
+  logic_buffer& operator=(logic_buffer&& other);
 
   uint32_t id() const {
     return id_;
@@ -100,8 +105,6 @@ public:
     return offset_;
   }
 
-  void copy(const logic_buffer& other);
-
   virtual void write(uint32_t dst_offset,
                      const lnode& data,
                      uint32_t src_offset,
@@ -109,12 +112,6 @@ public:
                      const source_location& sloc);
 
 protected:
-
-  logic_buffer(logic_buffer&& other) = delete;
-
-  logic_buffer& operator=(const logic_buffer& other) = delete;
-
-  logic_buffer& operator=(logic_buffer&& other) = delete;
 
   uint32_t id_;
   lnode value_;
@@ -143,10 +140,15 @@ public:
   }
 
   template <typename T>
-  static auto copy_buffer(const T& obj, const source_location& sloc,
-                          const std::string& name = "") {
+  static auto copy(const T& obj, const source_location& sloc) {
     assert(ch_width_v<T> == obj.buffer()->size());
-    return make_logic_buffer(*obj.buffer(), sloc, name);
+    return make_logic_buffer(*obj.buffer(), sloc);
+  }
+
+  template <typename T>
+  static auto move(T&& obj) {
+    assert(ch_width_v<T> == obj.buffer()->size());
+    return make_logic_buffer(std::move(*obj.buffer()));
   }
 
   template <typename U, typename V>
@@ -154,14 +156,14 @@ public:
     static_assert(ch_width_v<U> == ch_width_v<V>, "invalid size");
     assert(ch_width_v<U> == dst.buffer()->size());
     assert(ch_width_v<V> == src.buffer()->size());
-    dst.buffer()->copy(*src.buffer());
+    *dst.buffer() = *src.buffer();
   }
 
   template <typename U, typename V>
   static void move(U& dst, V&& src) {
     static_assert(ch_width_v<U> == ch_width_v<V>, "invalid size");
     assert(ch_width_v<U> == dst.buffer()->size());
-    dst.buffer()->copy(*src.buffer());
+    *dst.buffer() = std::move(*src.buffer());
   }
 
   template <typename U, typename V>

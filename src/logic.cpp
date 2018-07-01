@@ -19,14 +19,6 @@ logic_buffer::logic_buffer(uint32_t size,
   , offset_(0)
 {}
 
-logic_buffer::logic_buffer(const logic_buffer& other,
-                           const source_location& sloc,
-                           const std::string& name)
-  : id_(make_id())
-  , value_(other.size(), other.data(), 0, sloc, name, id_)
-  , offset_(0)
-{}
-
 logic_buffer::logic_buffer(const lnode& data,
                            const source_location& sloc,
                            const std::string& name)
@@ -52,8 +44,29 @@ logic_buffer::logic_buffer(uint32_t size,
   assert(offset + size <= buffer->size());
 }
 
-void logic_buffer::copy(const logic_buffer& other) {
+logic_buffer::logic_buffer(const logic_buffer& other,
+                           const source_location& sloc)
+  : id_(make_id())
+  , value_(other.size(), other.data(), 0, sloc, other.data().name(), id_)
+  , source_(nullptr)
+  , offset_(0)
+{}
+
+logic_buffer::logic_buffer(logic_buffer&& other)
+  : id_(std::move(other.id_))
+  , value_(std::move(other.value_))
+  , source_(std::move(other.source_))
+  , offset_(std::move(other.offset_))
+{}
+
+logic_buffer& logic_buffer::operator=(const logic_buffer& other) {
   this->write(0, other.data(), 0, other.size(), source_location());
+  return *this;
+}
+
+logic_buffer& logic_buffer::operator=(logic_buffer&& other) {
+  this->operator=(other);
+  return *this;
 }
 
 void logic_buffer::write(uint32_t dst_offset,

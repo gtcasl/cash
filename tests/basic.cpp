@@ -2,6 +2,18 @@
 
 namespace {
 
+__struct (s4_4_t, (
+  (ch_bit4) x,
+  (ch_bit4) y
+));
+
+__union (u2_4_t, (
+  (ch_bit2) x,
+  (ch_bit4) y
+));
+
+using v4x2_t = ch_vec<ch_bit4, 2>;
+
 struct TestAssign {
   __io (
     __in(ch_bit4) in,
@@ -101,6 +113,50 @@ TEST_CASE("basics", "[basics]") {
       ch_module<TestAssign3> m;
       m.io.in = 0xA;
       return m.io.out;
+    });
+  }
+  SECTION("clone", "[clone]") {
+    TEST([]()->ch_bool {
+      ch_bit4 a(0);
+      auto b = ch_clone(a);
+      a = 2;
+      b = 1;
+      return (a == 2 && b == 1);
+    });
+    TEST([]()->ch_bool {
+      ch_bit4 a(0);
+      auto b = ch_clone(a);
+      b = 1;
+      a = 2;
+      return (a == 2 && b == 1);
+    });
+    TEST([]()->ch_bool {
+      s4_4_t a{0, 0};
+      auto b = ch_clone(a);
+      a.x = 2;
+      b.x = 1;
+      return (a.x == 2 && b.x == 1);
+    });
+    TEST([]()->ch_bool {
+      s4_4_t a{0, 0};
+      auto b = ch_clone(a);
+      b.x = 1;
+      a.x = 2;
+      return (a.x == 2 && b.x == 1);
+    });
+    TEST([]()->ch_bool {
+      u2_4_t a(0_b4);
+      auto b = ch_clone(a);
+      a.x = 2;
+      b.x = 1;
+      return (a.x == 2 && b.x == 1);
+    });
+    TEST([]()->ch_bool {
+      u2_4_t a(0_b4);
+      auto b = ch_clone(a);
+      b.x = 1;
+      a.x = 2;
+      return (a.x == 2 && b.x == 1);
     });
   }
 }

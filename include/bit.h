@@ -44,18 +44,18 @@ public:
             CH_REQUIRE_0(is_logic_type_v<U>),
             CH_REQUIRE_0(ch_width_v<U> == N)>
   explicit ch_bit(const U& other, CH_SLOC)
-    : buffer_(logic_accessor::copy_buffer(other, sloc))
+    : buffer_(logic_accessor::copy(other, sloc))
   {}
 
   template <unsigned M,
             CH_REQUIRE_0(M < N)>
   explicit ch_bit(const ch_bit<M>& other, CH_SLOC)
-    : buffer_(logic_accessor::copy_buffer(other.template pad<N>(sloc), sloc))
+    : buffer_(logic_accessor::copy(other.template pad<N>(sloc), sloc))
   {}
 
   ch_bit(const ch_bit& other, CH_SLOC)
     : base()
-    , buffer_(logic_accessor::copy_buffer(other, sloc))
+    , buffer_(logic_accessor::copy(other, sloc))
   {}
 
   ch_bit(ch_bit&& other) : buffer_(std::move(other.buffer_)) {}

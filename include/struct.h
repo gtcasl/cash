@@ -26,9 +26,6 @@
     ch_width_v<ch::internal::identity_t<CH_PAIR_L(x)>>, buffer, __field_offset##i, \
     CH_STRINGIZE(CH_PAIR_R(x))))
 
-#define CH_STRUCT_MOVE_CTOR(a, i, x) \
-  CH_PAIR_R(x)(std::move(__other.CH_PAIR_R(x)))
-
 #define CH_STRUCT_SCALAR_FIELD_CTOR_ARGS(a, i, x) \
   const ch_scalar_t<ch::internal::identity_t<CH_PAIR_L(x)>>& CH_CONCAT(_,CH_PAIR_R(x))
 
@@ -54,9 +51,9 @@ public: \
     std::make_shared<ch::internal::type_buffer_t<traits>>(traits::bitwidth)) \
     : CH_FOR_EACH(CH_STRUCT_SCALAR_CTOR, , CH_SEP_COMMA, __VA_ARGS__) {} \
   struct_name(const struct_name& __other) \
-    : struct_name(ch::internal::type_accessor_t<traits>::copy_buffer(__other)) {} \
-  struct_name(struct_name&& __other) : \
-    CH_FOR_EACH(CH_STRUCT_MOVE_CTOR, , CH_SEP_COMMA, __VA_ARGS__) {} \
+    : struct_name(ch::internal::type_accessor_t<traits>::copy(__other)) {} \
+  struct_name(struct_name&& __other) \
+    : struct_name(ch::internal::type_accessor_t<traits>::move(__other)) {} \
   struct_name(CH_REVERSE_FOR_EACH(CH_STRUCT_SCALAR_FIELD_CTOR_ARGS, , CH_SEP_COMMA, __VA_ARGS__)) \
     : struct_name() { \
     CH_REVERSE_FOR_EACH(CH_STRUCT_FIELD_CTOR_INIT, , CH_SEP_SEMICOLON, __VA_ARGS__); \
@@ -77,9 +74,9 @@ public: \
     std::make_shared<ch::internal::type_buffer_t<traits>>(traits::bitwidth, CH_CUR_SLOC, CH_STRINGIZE(name))) \
     : CH_FOR_EACH(CH_STRUCT_LOGIC_CTOR, , CH_SEP_COMMA, __VA_ARGS__) {} \
   struct_name(const struct_name& __other, CH_SLOC) \
-    : struct_name(ch::internal::type_accessor_t<traits>::copy_buffer(__other, sloc, CH_STRINGIZE(name))) {} \
-  struct_name(struct_name&& __other) : \
-    CH_FOR_EACH(CH_STRUCT_MOVE_CTOR, , CH_SEP_COMMA, __VA_ARGS__) {} \
+    : struct_name(ch::internal::type_accessor_t<traits>::copy(__other, sloc)) {} \
+  struct_name(struct_name&& __other) \
+    : struct_name(ch::internal::type_accessor_t<traits>::move(__other)) {} \
   struct_name(CH_REVERSE_FOR_EACH(CH_STRUCT_LOGIC_FIELD_CTOR_ARGS, , CH_SEP_COMMA, __VA_ARGS__), CH_SLOC) \
     : struct_name(std::make_shared<ch::internal::type_buffer_t<traits>>(traits::bitwidth, sloc, CH_STRINGIZE(name))) { \
     CH_REVERSE_FOR_EACH(CH_STRUCT_FIELD_CTOR_INIT, , CH_SEP_SEMICOLON, __VA_ARGS__); \
@@ -101,10 +98,9 @@ public: \
     : base(buffer) \
     , CH_FOR_EACH(CH_STRUCT_SCALAR_CTOR, , CH_SEP_COMMA, __VA_ARGS__) {} \
   struct_name(const struct_name& __other) \
-    : struct_name(ch::internal::type_accessor_t<traits>::copy_buffer(__other)) {} \
+    : struct_name(ch::internal::type_accessor_t<traits>::copy(__other)) {} \
   struct_name(struct_name&& __other) \
-    : base(std::move(__other))\
-    , CH_FOR_EACH(CH_STRUCT_MOVE_CTOR, , CH_SEP_COMMA, __VA_ARGS__) {} \
+    : struct_name(ch::internal::type_accessor_t<traits>::move(__other)) {} \
   struct_name(CH_REVERSE_FOR_EACH(CH_STRUCT_SCALAR_FIELD_CTOR_ARGS, , CH_SEP_COMMA, __VA_ARGS__), const base& parent) \
     : struct_name() { \
     ch::internal::type_accessor_t<traits>::write(*this, 0, parent, 0, ch_width_v<base>); \
@@ -127,10 +123,9 @@ public: \
     : base(buffer) \
     , CH_FOR_EACH(CH_STRUCT_LOGIC_CTOR, , CH_SEP_COMMA, __VA_ARGS__) {} \
   struct_name(const struct_name& __other, CH_SLOC) \
-    : struct_name(ch::internal::type_accessor_t<traits>::copy_buffer(__other, sloc, CH_STRINGIZE(name))) {} \
+    : struct_name(ch::internal::type_accessor_t<traits>::copy(__other, sloc)) {} \
   struct_name(struct_name&& __other) \
-    : base(std::move(__other))\
-    , CH_FOR_EACH(CH_STRUCT_MOVE_CTOR, , CH_SEP_COMMA, __VA_ARGS__) {} \
+    : struct_name(ch::internal::type_accessor_t<traits>::move(__other)) {} \
   struct_name(CH_REVERSE_FOR_EACH(CH_STRUCT_LOGIC_FIELD_CTOR_ARGS, , CH_SEP_COMMA, __VA_ARGS__), const base& parent, CH_SLOC) \
     : struct_name(std::make_shared<ch::internal::type_buffer_t<traits>>(traits::bitwidth, sloc, CH_STRINGIZE(name))) { \
     ch::internal::type_accessor_t<traits>::write(*this, 0, parent, 0, ch_width_v<base>, sloc); \

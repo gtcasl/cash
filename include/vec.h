@@ -172,7 +172,7 @@ public:
   {}
 
   ch_vec(const ch_vec& other, CH_SLOC)
-    : ch_vec(logic_accessor::copy_buffer(other, sloc))
+    : ch_vec(logic_accessor::copy(other, sloc))
   {}
 
   ch_vec(ch_vec&& other) : base(std::move(other))
@@ -181,13 +181,13 @@ public:
   template <typename U,
             CH_REQUIRE_0(std::is_constructible_v<T, U>)>
   explicit ch_vec(const vec_base<U, N>& other, CH_SLOC)
-    : ch_vec(logic_accessor::copy_buffer(other, sloc))
+    : ch_vec(logic_accessor::copy(other, sloc))
   {}
 
   template <typename U,
             CH_REQUIRE_0(is_logic_type_v<U>)>
   explicit ch_vec(const U& other, CH_SLOC)
-    : ch_vec(logic_accessor::copy_buffer(other, sloc)) {
+    : ch_vec(logic_accessor::copy(other, sloc)) {
     static_assert(ch_width_v<U> == N * ch_width_v<T>, "invalid size");
   }
 
@@ -275,7 +275,7 @@ public:
   {}
 
   ch_vec(const ch_vec& other)
-    : ch_vec(scalar_accessor::copy_buffer(other))
+    : ch_vec(scalar_accessor::copy(other))
   {}
 
   ch_vec(ch_vec&& other) : base(std::move(other)) {}
@@ -283,13 +283,13 @@ public:
   template <typename U,
             CH_REQUIRE_0(std::is_constructible_v<T, U>)>
   explicit ch_vec(const vec_base<U, N>& other)
-    : ch_vec(scalar_accessor::copy_buffer(other))
+    : ch_vec(scalar_accessor::copy(other))
   {}
 
   template <typename U,
               CH_REQUIRE_0(is_scalar_type_v<U>)>
   explicit ch_vec(const U& other)
-    : ch_vec(scalar_accessor::copy_buffer(other)) {
+    : ch_vec(scalar_accessor::copy(other)) {
     static_assert(ch_width_v<U> == N * ch_width_v<T>, "invalid size");
   }
 

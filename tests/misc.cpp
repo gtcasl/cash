@@ -1,5 +1,8 @@
 #include "common.h"
+#include <htl/complex.h>
+#include <htl/fixed.h>
 
+using namespace ch::htl;
 using namespace ch::extension;
 
 namespace {
@@ -10,9 +13,34 @@ namespace {
     stats,
     done
   ));
+
+  template <typename T>
+  auto sbind(const T& a, const T& b) {
+    return std::tuple(a + b, a - b);
+  }
 }
 
 TEST_CASE("misc", "[misc]") {
+  SECTION("structured binding", "[structured binding]") {
+    TEST([]()->ch_bool {
+      ch_int4 a(0_h), b(1_h);
+      auto [x, y] = sbind(a, b);
+      return (x == 1 && y == -1);
+    });
+    TEST([]()->ch_bool {
+      ch_fixed<8, 4> a(00_h), b(10_h);
+      auto q = sbind(a, b);
+      auto [x, y] = q;
+      return (x == 10_h && y == -10_h);
+    });
+    TEST([]()->ch_bool {
+      ch_complex<ch_int4> a(0, 0), b(1, 1);
+      auto q = sbind(a, b);
+      auto [x, y] = q;
+      return (x == ch_complex<ch_int4>(1, 1)
+           && y == ch_complex<ch_int4>(-1, -1));
+    });
+  }
   SECTION("utils", "[utils]") {
     TESTX([]()->bool {
       char bigs[258];

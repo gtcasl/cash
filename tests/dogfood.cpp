@@ -59,6 +59,11 @@ __struct (sd3_t, (
   (ch_bit4) d
 ));
 
+__struct (s2_4_t, (
+  (ch_bit2) a,
+  (ch_bit4) b
+));
+
 struct Adder {
   __io (
     __in(ch_uint2)  in1,
@@ -188,8 +193,6 @@ struct inverter {
   }
 };
 
-}
-
 struct Dogfood {
   __io (
     __in(ch_uint4) in,
@@ -199,6 +202,8 @@ struct Dogfood {
     io.out = true;
   }
 };
+
+}
 
 int main() {
   ch_device<Dogfood> device;
