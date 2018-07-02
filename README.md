@@ -49,7 +49,7 @@ Then you can include the header as follow:
 
 Example
 -------
-A parametrizable binary adder.
+A generic binary adder.
 
 ```C++
 #include <cash.h>
