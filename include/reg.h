@@ -77,6 +77,7 @@ void ch_popcd();
 
 template <typename R, typename T>
 auto ch_delay(const T& in, uint32_t delay = 1, CH_SLOC) {
+  CH_CHECK(delay > 0, "invalid value");
   static_assert(is_logic_type_v<R>, "invalid type");
   static_assert(std::is_constructible_v<R, T>, "invalid type");
   R ret(in, sloc);
@@ -90,6 +91,7 @@ auto ch_delay(const T& in, uint32_t delay = 1, CH_SLOC) {
 
 template <typename R, typename T, typename I>
 auto ch_delay(const T& in, uint32_t delay, const I& init, CH_SLOC) {
+  CH_CHECK(delay > 0, "invalid value");
   static_assert(is_logic_type_v<R>, "invalid type");
   static_assert(std::is_constructible_v<R, T>, "invalid type");
   static_assert(std::is_constructible_v<R, I>, "invalid type");

@@ -40,8 +40,17 @@ auto operator-(const ch_complex<T>& lhs, const ch_complex<T>& rhs) {
 
 template <typename T>
 auto operator*(const ch_complex<T>& lhs, const ch_complex<T>& rhs) {
-  return ch_complex<T>(lhs.re * rhs.re - lhs.im * rhs.im,
-                       lhs.re + rhs.im + lhs.im * rhs.re);
+  auto re = lhs.re * rhs.re - lhs.im * rhs.im;
+  auto im = lhs.im * rhs.re + lhs.re * rhs.im;
+  return ch_complex<T>(im, re);
+}
+
+template <typename T>
+auto operator/(const ch_complex<T>& lhs, const ch_complex<T>& rhs) {
+  auto q  = rhs.re * rhs.re + rhs.im * rhs.im;
+  auto re = (lhs.re * rhs.re - lhs.im * rhs.im) / q;
+  auto im = (lhs.im * rhs.re + lhs.re * rhs.im) / q;
+  return ch_complex<T>(im, re);
 }
 
 }

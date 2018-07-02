@@ -34,10 +34,6 @@ public:
 
   explicit ch_fixed(const ch_bit<N>& other, CH_SLOC) : base(other, sloc) {}
 
-  explicit ch_fixed(const ch_bit<I>& otherI, const ch_bit<F>& otherF, CH_SLOC)
-    : base(((otherI.template pad<N>() << F) | otherF).template slice<N>(), sloc)
-  {}
-
   ch_fixed(const ch_fixed& other, CH_SLOC) : base(other, sloc) {}
 
   ch_fixed(ch_fixed&& other) : base(std::move(other)) {}
@@ -91,13 +87,17 @@ public:
   }
 
   friend auto operator*(ch_fixed lhs, const ch_fixed& rhs) {
-    auto ret = (ch_pad<N+F>(lhs.as_int()) * rhs.as_int()) >> F;
-    return ch_slice<N>(ret).template as<ch_fixed>();
+    auto ret = ch_slice<N>((ch_pad<N+F>(lhs.as_int()) * rhs.as_int()) >> F);
+    return ret.template as<ch_fixed>();
   }
 
   friend auto operator/(ch_fixed lhs, const ch_fixed& rhs) {
-    auto ret = (ch_pad<N+F>(lhs.as_int()) << F) / rhs.as_int();
-    return ch_slice<N>(ret).template as<ch_fixed>();
+    auto ret = ch_slice<N>((ch_pad<N+F>(lhs.as_int()) << F) / rhs.as_int());
+    return ret.template as<ch_fixed>();
+  }
+
+  static auto fromInt(const ch_int<I>& in, CH_SLOC) {
+    return ch_fixed((in.template pad<N>() << F), sloc);
   }
 };
 

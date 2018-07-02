@@ -18,6 +18,7 @@ set(TEST_SOURCES
     float.cpp
     udf.cpp
     fixed.cpp
+    complex.cpp
     main.cpp
 )
 

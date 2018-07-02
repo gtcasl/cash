@@ -574,6 +574,12 @@ void ch::internal::bv_sll(bitvector& out, const bitvector& in, const bitvector& 
   uint32_t num_words = in.num_words();
   if (1 == num_words) {
     out.word(0) = in.word(0) << dist;
+  } else
+  if (2 == num_words) {
+    uint64_t value = (bitcast<uint64_t>(in.word(1)) << 32) | in.word(0);
+    uint64_t result = value << dist;
+    out.word(0) = bitcast<uint32_t>(result);
+    out.word(1) = bitcast<uint32_t>(result >> 32);
   } else {
     uint32_t shift_words = dist >> bitvector::WORD_SIZE_LOG;
     if (dist < in.size()) {
@@ -595,15 +601,22 @@ void ch::internal::bv_sll(bitvector& out, const bitvector& in, const bitvector& 
 }
 
 void ch::internal::bv_srl(bitvector& out, const bitvector& in, const bitvector& bits) {
-  assert(out.size() == in.size());
+  uint32_t size = out.size();
+  assert(in.size() == size);
   CH_CHECK(bits.find_last() <= 31, "shift amount out of range");
   uint32_t dist = bits.word(0);
   uint32_t num_words = in.num_words();
   if (1 == num_words) {
     out.word(0) = in.word(0) >> dist;
+  } else
+  if (2 == num_words) {
+    uint64_t value = (bitcast<uint64_t>(in.word(1)) << 32) | in.word(0);
+    uint64_t result = value >> dist;
+    out.word(0) = bitcast<uint32_t>(result);
+    out.word(1) = bitcast<uint32_t>(result >> 32);
   } else {
     uint32_t shift_words = dist >> bitvector::WORD_SIZE_LOG;
-    if (dist < in.size()) {
+    if (dist < size) {
       uint32_t shift_bits = dist & bitvector::WORD_MASK;
       uint32_t shift_bits_l = bitvector::WORD_SIZE - shift_bits;
       uint32_t prev = 0;
@@ -621,17 +634,24 @@ void ch::internal::bv_srl(bitvector& out, const bitvector& in, const bitvector& 
 }
 
 void ch::internal::bv_sra(bitvector& out, const bitvector& in, const bitvector& bits) {
-  assert(out.size() == in.size());
+  uint32_t size = out.size();
+  assert(in.size() == size);
   CH_CHECK(bits.find_last() <= 31, "shift amount out of range");
   uint32_t dist = bits.word(0);
-  uint32_t fill_value = in[in.size() - 1] ? 0xffffffff : 0x0;
+  uint32_t fill_value = in[size - 1] ? 0xffffffff : 0x0;
   uint32_t num_words = in.num_words();
   if (1 == num_words) {
-    int value = sign_ext(in.word(0), in.size());
+    int value = sign_ext(in.word(0), size);
     out.word(0) = value >> dist;
+  } else
+  if (2 == num_words) {
+    int64_t value = sign_ext((bitcast<uint64_t>(in.word(1)) << 32) | in.word(0), size);
+    int64_t result = value >> dist;
+    out.word(0) = bitcast<uint32_t>(result);
+    out.word(1) = bitcast<uint32_t>(result >> 32);
   } else {
     uint32_t shift_words = dist >> bitvector::WORD_SIZE_LOG;
-    if (dist < in.size()) {
+    if (dist < size) {
       uint32_t shift_bits = dist & bitvector::WORD_MASK;
       uint32_t shift_bits_l = bitvector::WORD_SIZE - shift_bits;
       uint32_t prev = fill_value;

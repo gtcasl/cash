@@ -4,6 +4,8 @@
 #include <htl/xbar.h>
 #include <htl/arbiter.h>
 #include <htl/pipe.h>
+#include <htl/fixed.h>
+#include <htl/complex.h>
 #include "common.h"
 
 using namespace ch::core;
