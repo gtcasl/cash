@@ -30,13 +30,11 @@ public:
             CH_REQUIRE_0(std::is_integral_v<U>)>
   ch_scfixed(const U& other) : base(other) {}
 
-  ch_scfixed(const ch_scbit<N>& other) : base(other) {}
+  explicit ch_scfixed(float other) : base(static_cast<int32_t>(other * (1 << F))) {
+    static_assert(N <= 32, "invalid size");
+  }
 
-  template <typename U,
-            CH_REQUIRE_0(is_bitvector_extended_type_v<U>)>
-  explicit ch_scfixed(const U& other) : base(other) {}
-
-  explicit ch_scfixed(const ch_bit<N>& other) : base(other) {}
+  explicit ch_scfixed(const ch_scbit<N>& other) : base(other) {}
 
   ch_scfixed(const ch_scfixed& other) : base(other) {}
 
@@ -100,14 +98,10 @@ public:
     return ret.template as<ch_scfixed>();
   }
 
-  static auto fromInt(const ch_scint<I>& in) {
-    return ch_scfixed((in.template pad<N>() << F));
-  }
-
-  static auto fromReal(double in) {
-    static_assert(N <= 64, "invalid size");
-    auto value = (int64_t)(double(in) * (int64_t(1) << F));
-    return ch_scfixed(value);
+  explicit operator float() const {
+    static_assert(N <= 32, "invalid size");
+    float value(static_cast<int32_t>(*this));
+    return value / (1 << F);
   }
 };
 
@@ -127,11 +121,11 @@ public:
             CH_REQUIRE_0(std::is_integral_v<U>)>
   ch_fixed(const U& other, CH_SLOC) : base(other, sloc) {}
 
-  ch_fixed(const ch_scbit<N>& other, CH_SLOC) : base(other, sloc) {}
+  explicit ch_fixed(float other) : base(static_cast<int32_t>(other * (1 << F))) {
+    static_assert(N <= 32, "invalid size");
+  }
 
-  template <typename U,
-            CH_REQUIRE_0(is_bitvector_extended_type_v<U>)>
-  explicit ch_fixed(const U& other, CH_SLOC) : base(other, sloc) {}
+  explicit ch_fixed(const ch_scbit<N>& other, CH_SLOC) : base(other, sloc) {}
 
   explicit ch_fixed(const ch_bit<N>& other, CH_SLOC) : base(other, sloc) {}
 
@@ -195,16 +189,6 @@ public:
   friend auto operator/(ch_fixed lhs, const ch_fixed& rhs) {
     auto ret = ((lhs.as_int().template pad<N+F>() << F) / rhs.as_int()).template slice<N>();
     return ret.template as<ch_fixed>();
-  }
-
-  static auto fromInt(const ch_int<I>& in, CH_SLOC) {
-    return ch_fixed((in.template pad<N>() << F), sloc);
-  }
-
-  static auto fromReal(double in, CH_SLOC) {
-    static_assert(N <= 64, "invalid size");
-    auto value = (int64_t)(double(in) * (int64_t(1) << F));
-    return ch_fixed(value, sloc);
   }
 };
 
