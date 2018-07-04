@@ -241,7 +241,7 @@ public:
     
   //--
 
-  void build_run_list(std::vector<lnodeimpl*>& list);
+  void build_run_list(std::vector<lnodeimpl*>& runlist);
 
   //--
 

@@ -121,6 +121,18 @@ TEST_CASE("registers", "[registers]") {
     }, 4);
 
     TEST([]()->ch_bool {
+      ch_reg<ch_int4> a(0), b(0);
+      ch_int4 c = a + 1;
+      ch_int4 d = c - 1;
+      a <<= a + c;
+      b <<= b + d;
+      auto x = a + b + c + d;
+      auto e = ch_case<ch_int4>(ch_time(), 9, 0x9)(7, 0xa)(5, 0xb)(3, 0x4)(1);
+      // ch_print("t={0}, x={1}, e={2}", ch_time(), x, e);
+      return (x == e);
+    }, 4);
+
+    TEST([]()->ch_bool {
       ch_reg<ch_bit2> a;
       auto x = ch_case(ch_time(), 8, 11_b)(6, 0)(4, 2)(2, 1)(0);
       a <<= x;

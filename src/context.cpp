@@ -767,9 +767,9 @@ void context::bind_output(const lnode& dst,
   binding->bind_output(dst, output, sloc);
 }
 
-void context::build_run_list(std::vector<lnodeimpl*>& list) {
+void context::build_run_list(std::vector<lnodeimpl*>& runlist) {
   std::unordered_set<lnodeimpl*> visited, cycles;
-  std::vector<lnodeimpl*> update_list;  
+  std::unordered_set<lnodeimpl*> update_list;
   std::vector<lnodeimpl*> snodes;
   std::unordered_set<lnodeimpl*> uninitialized_regs;
 
@@ -777,32 +777,36 @@ void context::build_run_list(std::vector<lnodeimpl*>& list) {
     for (auto node : ctx->bindings()) {
       gather_snodes(node->module());
     }
-    auto& n = ctx->snodes();
-    snodes.reserve(snodes.size() + n.size());
-    snodes.insert(snodes.end(), n.begin(), n.end());
+    auto& list = ctx->snodes();
+    snodes.reserve(snodes.size() + list.size());
+    snodes.insert(snodes.end(), list.begin(), list.end());
   };
 
   std::function<bool (lnodeimpl*)> dfs_visit = [&](lnodeimpl* node)->bool {
-    if (visited.count(node))
-      return false;
+    if (visited.count(node)) {
+      // if a node depends on an update node, it also needs to be updated.
+      return (update_list.count(node) != 0);
+    }
 
     // check for cycles
     if (cycles.count(node)) {
       // handling register cycles
       switch (node->type()) {
       case type_reg:
+        // Detect uninitialized registers
         if (!reinterpret_cast<regimpl*>(node)->has_init())
           uninitialized_regs.insert(node);
         [[fallthrough]];
       case type_mwport:
       case type_udfs:
+        // we found a cycle, return 'true'
         return true;
       default:
         break;
       }
 #define LCOV_EXCL_START
       if (platform::self().cflags() | cflags::dump_ast) {
-        for (auto n : list) {
+        for (auto n : runlist) {
           std::cerr << n->ctx()->id() << ": ";
           n->print(std::cerr, platform::self().dbg_level());
           std::cerr << std::endl;
@@ -841,11 +845,12 @@ void context::build_run_list(std::vector<lnodeimpl*>& list) {
       update |= dfs_visit(src.impl());
     }
 
-    list.push_back(node);
+    runlist.push_back(node);
     visited.insert(node);
 
     if (update) {
-      update_list.push_back(node);
+      // a cycle exists in dependent path, this node should be updated
+      update_list.insert(node);
     }
 
     return update;
@@ -853,10 +858,10 @@ void context::build_run_list(std::vector<lnodeimpl*>& list) {
 
   DBG(2, "run list evaluation for %s (#%d) ...\n", this->name().c_str(), this->id());
 
-  // gather all sequential nodes
+  // gather sequential nodes from all contexts
   gather_snodes(this);
 
-  // enable cycle detection on sequential nodes
+  // enable cycle detection for sequential nodes
   for (auto node : snodes) {
     cycles.insert(node);
   }
@@ -868,38 +873,48 @@ void context::build_run_list(std::vector<lnodeimpl*>& list) {
     }
   }
 
+  // make a copy of the update list and empty it futur next DFS's
+  std::unordered_set<lnodeimpl*> update_list2;
+  std::swap(update_list2, update_list);
+
+  // disable cycle detection for sequential nodes
   for (auto node : snodes) {
     cycles.erase(node);
   }
 
   // insert sequential nodes
-  auto old_size = list.size();
+  auto old_size = runlist.size();
   for (auto node : snodes) {
     dfs_visit(node);
   }
-  // sort sequential node in reverse dependency order
-  std::reverse(list.begin() + old_size, list.begin() + list.size());
 
-  // insert all nodes with cycles
-  for (auto node : update_list) {
+  // sort recently inserted sequential node in reverse dependency order
+  std::reverse(runlist.begin() + old_size, runlist.begin() + runlist.size());
+
+  // invalidate all update nodes to force re-insertion
+  for (auto node : update_list2) {
     cycles.erase(node);
     visited.erase(node);
   }
+  update_list2.clear();
 
+  // insert output nodes
   for (auto node : outputs_) {
     dfs_visit(node);
   }
 
+  // insert tap nodes
   for (auto node : taps_) {
     dfs_visit(node);
   }
 
+  // insert debug nodes
   for (auto node : gtaps_) {
     dfs_visit(node);
   }
 
   if (platform::self().cflags() | cflags::dump_ast) {
-    for (auto node : list) {
+    for (auto node : runlist) {
       std::cerr << node->ctx()->id() << ": ";
       node->print(std::cerr, platform::self().dbg_level());
       std::cerr << std::endl;

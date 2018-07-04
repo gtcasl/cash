@@ -234,9 +234,11 @@ namespace extension {
   using ch::internal::logic_traits;
   using ch::internal::scalar_traits;
   using ch::internal::logic_buffer_ptr;
-  using ch::internal::scalar_buffer_ptr;
+  using ch::internal::scalar_buffer_ptr;  
   using ch::internal::make_logic_buffer;
   using ch::internal::make_scalar_buffer;
+  using ch::internal::scalar_accessor;
+  using ch::internal::logic_accessor;
   using ch::internal::udf_comb;
   using ch::internal::udf_seq;
   using ch::internal::udf_output;

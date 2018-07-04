@@ -449,7 +449,7 @@ constexpr uint32_t log2ceil(uint32_t x) {
 }
 
 template <typename Dst, typename Src>
-auto bitcast(const Src& src) {
+Dst bitcast(const Src& src) {
   union merged_t { Src src; Dst dst; };
   merged_t m;
   m.dst = 0;

@@ -20,10 +20,9 @@ struct fAdd : public udf_seq<Delay, false, ch_float32, ch_float32, ch_float32, c
   void eval(udf_output& dst, const udf_inputs& srcs) override {
     uint32_t enable = srcs[2].word(0);
     if (enable) {
-      uint32_t lhs = srcs[0].word(0);
-      uint32_t rhs = srcs[1].word(0);
-      float result = *(float*)&lhs + *(float*)&rhs;
-      dst.word(0) = *(uint32_t*)&result;
+      auto lhs = bitcast<float>(srcs[0].word(0));
+      auto rhs = bitcast<float>(srcs[1].word(0));
+      dst.word(0) = bitcast<uint32_t>(lhs + rhs);
     }
   }
 
@@ -39,10 +38,9 @@ struct fSub : public udf_seq<Delay, false, ch_float32, ch_float32, ch_float32, c
   void eval(udf_output& dst, const udf_inputs& srcs) override {
     uint32_t enable = srcs[2].word(0);
     if (enable) {
-      uint32_t lhs = srcs[0].word(0);
-      uint32_t rhs = srcs[1].word(0);
-      float result = *(float*)&lhs - *(float*)&rhs;
-      dst.word(0) = *(uint32_t*)&result;
+      auto lhs = bitcast<float>(srcs[0].word(0));
+      auto rhs = bitcast<float>(srcs[1].word(0));
+      dst.word(0) = bitcast<uint32_t>(lhs - rhs);
     }
   }
 
@@ -58,10 +56,9 @@ struct fMul : public udf_seq<Delay, false, ch_float32, ch_float32, ch_float32, c
   void eval(udf_output& dst, const udf_inputs& srcs) override {
     uint32_t enable = srcs[2].word(0);
     if (enable) {
-      uint32_t lhs = srcs[0].word(0);
-      uint32_t rhs = srcs[1].word(0);
-      float result = *(float*)&lhs * *(float*)&rhs;
-      dst.word(0) = *(uint32_t*)&result;
+      auto lhs = bitcast<float>(srcs[0].word(0));
+      auto rhs = bitcast<float>(srcs[1].word(0));
+      dst.word(0) = bitcast<uint32_t>(lhs * rhs);
     }
   }
 
@@ -74,19 +71,50 @@ struct fMul : public udf_seq<Delay, false, ch_float32, ch_float32, ch_float32, c
 template <unsigned Delay>
 struct fDiv : public udf_seq<Delay, false, ch_float32, ch_float32, ch_float32, ch_bool> {
 
-  void eval(udf_output& out, const udf_inputs& srcs) override {
+  void eval(udf_output& dst, const udf_inputs& srcs) override {
     uint32_t enable = srcs[2].word(0);
     if (enable) {
-      uint32_t lhs = srcs[0].word(0);
-      uint32_t rhs = srcs[1].word(0);
-      float result = *(float*)&lhs / *(float*)&rhs;
-      out.word(0) = *(uint32_t*)&result;
+      auto lhs = bitcast<float>(srcs[0].word(0));
+      auto rhs = bitcast<float>(srcs[1].word(0));
+      dst.word(0) = bitcast<uint32_t>(lhs / rhs);
     }
   }
 
   void to_verilog(std::ostream& out) override {
     out << "fp_div __fp_div$id(.clock($clock), .clk_en($src2), "
            ".dataa($src0), .datab($src1), .result($dst));";
+  }
+};
+
+struct cfAdd : public udf_comb<ch_float32, ch_float32, ch_float32> {
+  void eval(udf_output& dst, const udf_inputs& srcs) override {
+    auto lhs = bitcast<float>(srcs[0].word(0));
+    auto rhs = bitcast<float>(srcs[1].word(0));
+    dst.word(0) = bitcast<uint32_t>(lhs + rhs);
+  }
+};
+
+struct cfSub : public udf_comb<ch_float32, ch_float32, ch_float32> {
+  void eval(udf_output& dst, const udf_inputs& srcs) override {
+    auto lhs = bitcast<float>(srcs[0].word(0));
+    auto rhs = bitcast<float>(srcs[1].word(0));
+    dst.word(0) = bitcast<uint32_t>(lhs - rhs);
+  }
+};
+
+struct cfMul : public udf_comb<ch_float32, ch_float32, ch_float32> {
+  void eval(udf_output& dst, const udf_inputs& srcs) override {
+    auto lhs = bitcast<float>(srcs[0].word(0));
+    auto rhs = bitcast<float>(srcs[1].word(0));
+    dst.word(0) = bitcast<uint32_t>(lhs * rhs);
+  }
+};
+
+struct cfDiv : public udf_comb<ch_float32, ch_float32, ch_float32> {
+  void eval(udf_output& dst, const udf_inputs& srcs) override {
+    auto lhs = bitcast<float>(srcs[0].word(0));
+    auto rhs = bitcast<float>(srcs[1].word(0));
+    dst.word(0) = bitcast<uint32_t>(lhs / rhs);
   }
 };
 
@@ -121,28 +149,57 @@ public:
 
   CH_SCALAR_INTERFACE(ch_scfloat32)
 
-  friend bool operator==(const ch_scfloat32& lhs, const ch_scfloat32& rhs) {
+  friend auto operator==(const ch_scfloat32& lhs, const ch_scfloat32& rhs) {
     return (lhs.as_scint() == rhs.as_scint());
   }
 
-  friend bool operator!=(const ch_scfloat32& lhs, const ch_scfloat32& rhs) {
+  friend auto operator!=(const ch_scfloat32& lhs, const ch_scfloat32& rhs) {
     return (lhs.as_scint() != rhs.as_scint());
   }
 
-  friend bool operator<(const ch_scfloat32& lhs, const ch_scfloat32& rhs) {
+  friend auto operator<(const ch_scfloat32& lhs, const ch_scfloat32& rhs) {
     return (lhs.as_scint() < rhs.as_scint());
   }
 
-  friend bool operator<=(const ch_scfloat32& lhs, const ch_scfloat32& rhs) {
+  friend auto operator<=(const ch_scfloat32& lhs, const ch_scfloat32& rhs) {
     return (lhs.as_scint() <= rhs.as_scint());
   }
 
-  friend bool operator>(const ch_scfloat32& lhs, const ch_scfloat32& rhs) {
+  friend auto operator>(const ch_scfloat32& lhs, const ch_scfloat32& rhs) {
     return (lhs.as_scint() >= rhs.as_scint());
   }
 
-  friend bool operator>=(const ch_scfloat32& lhs, const ch_scfloat32& rhs) {
+  friend auto operator>=(const ch_scfloat32& lhs, const ch_scfloat32& rhs) {
     return (lhs.as_scint() >= rhs.as_scint());
+  }
+
+  friend auto operator-(const ch_scfloat32& self) {
+    auto f_self = bitcast<float>(scalar_accessor::data(self).word(0));
+    return ch_scfloat32(0.0f - f_self);
+  }
+
+  friend auto operator+(const ch_scfloat32& lhs, const ch_scfloat32& rhs) {
+    auto f_lhs = bitcast<float>(scalar_accessor::data(lhs).word(0));
+    auto f_rhs = bitcast<float>(scalar_accessor::data(rhs).word(0));
+    return ch_scfloat32(f_lhs + f_rhs);
+  }
+
+  friend auto operator-(const ch_scfloat32& lhs, const ch_scfloat32& rhs) {
+    auto f_lhs = bitcast<float>(scalar_accessor::data(lhs).word(0));
+    auto f_rhs = bitcast<float>(scalar_accessor::data(rhs).word(0));
+    return ch_scfloat32(f_lhs - f_rhs);
+  }
+
+  friend auto operator*(const ch_scfloat32& lhs, const ch_scfloat32& rhs) {
+    auto f_lhs = bitcast<float>(scalar_accessor::data(lhs).word(0));
+    auto f_rhs = bitcast<float>(scalar_accessor::data(rhs).word(0));
+    return ch_scfloat32(f_lhs * f_rhs);
+  }
+
+  friend auto operator/(const ch_scfloat32& lhs, const ch_scfloat32& rhs) {
+    auto f_lhs = bitcast<float>(scalar_accessor::data(lhs).word(0));
+    auto f_rhs = bitcast<float>(scalar_accessor::data(rhs).word(0));
+    return ch_scfloat32(f_lhs / f_rhs);
   }
 
   explicit operator float() const {
@@ -203,6 +260,26 @@ public:
 
   friend auto operator>=(ch_float32 lhs, const ch_float32& rhs) {
     return (lhs.as_int() >= rhs.as_int());
+  }
+
+  friend auto operator-(ch_float32 self) {
+    return ch_udf<cfSub>(0.0f, self);
+  }
+
+  friend auto operator+(ch_float32 lhs, const ch_float32& rhs) {
+    return ch_udf<cfAdd>(lhs, rhs);
+  }
+
+  friend auto operator-(ch_float32 lhs, const ch_float32& rhs) {
+    return ch_udf<cfSub>(lhs, rhs);
+  }
+
+  friend auto operator*(ch_float32 lhs, const ch_float32& rhs) {
+    return ch_udf<cfMul>(lhs, rhs);
+  }
+
+  friend auto operator/(ch_float32 lhs, const ch_float32& rhs) {
+    return ch_udf<cfDiv>(lhs, rhs);
   }
 };
 
