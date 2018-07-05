@@ -24,12 +24,12 @@
   m(xorr,  12 | op_unary  | op_reduce) \
   m(sll,   13 | op_binary | op_shift) \
   m(srl,   14 | op_binary | op_shift) \
-  m(neg,   15 | op_unary  | op_arithm) \
-  m(add,   16 | op_binary | op_arithm | op_symmetric) \
-  m(sub,   17 | op_binary | op_arithm) \
-  m(mul ,  18 | op_binary | op_arithm | op_symmetric) \
-  m(div,   19 | op_binary | op_arithm) \
-  m(mod,   20 | op_binary | op_arithm) \
+  m(neg,   15 | op_unary  | op_arithmetic) \
+  m(add,   16 | op_binary | op_arithmetic | op_symmetric) \
+  m(sub,   17 | op_binary | op_arithmetic) \
+  m(mul ,  18 | op_binary | op_arithmetic | op_symmetric) \
+  m(div,   19 | op_binary | op_arithmetic) \
+  m(mod,   20 | op_binary | op_arithmetic) \
   m(pad,   21 | op_unary  | op_misc)
 
 namespace ch {
@@ -41,11 +41,11 @@ enum op_flags {
   op_tenary  = 2 << 5,
   op_nary    = 3 << 5,
 
-  op_bitwise    = 0 << 7,
-  op_compare    = 1 << 7,
-  op_relational = 2 << 7,
-  op_arithm     = 3 << 7,
-  op_shift      = 4 << 7,
+  op_compare    = 0 << 7,
+  op_bitwise    = 1 << 7,
+  op_shift      = 2 << 7,
+  op_relational = 3 << 7,
+  op_arithmetic = 4 << 7,
   op_reduce     = 5 << 7,
   op_misc       = 6 << 7,
 

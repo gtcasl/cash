@@ -73,9 +73,9 @@ void aluimpl::initialize() {
   auto op_class = CH_OP_CLASS(op_);
   if (op_ary > 1
    && (op_compare == op_class
-    || op_relational == op_class
     || op_bitwise == op_class
-    || op_arithm == op_class)
+    || op_relational == op_class
+    || op_arithmetic == op_class)
    && src0_->size() != src1_->size()) {
     if (src0_->size() < src1_->size()) {
       t_src0_.resize(src1_->size());

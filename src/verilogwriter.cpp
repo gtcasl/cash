@@ -46,23 +46,24 @@ verilogwriter::~verilogwriter() {
 }
 
 bool verilogwriter::is_inline_subscript(lnodeimpl* node) const {
+  auto has_subscript = [](lnodeimpl* x) {
+    return type_proxy == x->type()
+        || type_mrport == x->type();
+  };
   assert(type_proxy == node->type());
   if (reinterpret_cast<proxyimpl*>(node)->ranges().size() > 1)
+    return false;
+  if (has_subscript(node->src(0).impl()))
     return false;
   auto it = uses_.find(node->id());
   if (it != uses_.end()) {
     for (lnodeimpl* use : it->second) {
-      if (type_proxy  == use->type()
-       || type_mrport == use->type()
-       || type_mwport == use->type())
+      if (has_subscript(use)
+       || (type_alu == use->type()
+        && op_pad == reinterpret_cast<aluimpl*>(use)->op()))
         return false;
     }
   }
-  lnodeimpl* src = node->src(0).impl();
-  if (type_proxy  == src->type()
-   || type_mrport == src->type()
-   || type_mwport == src->type())
-    return false;
   return true;
 }
 
@@ -406,6 +407,13 @@ void verilogwriter::print_proxy(std::ostream& out, proxyimpl* node) {
 }
 
 void verilogwriter::print_alu(std::ostream& out, aluimpl* node) {
+  auto print_signed_operand = [&](unsigned index) {
+    if (node->is_signed())
+      out << "$signed(";
+    this->print_name(out, node->src(index).impl());
+    if (node->is_signed())
+      out << ")";
+  };
   auto op = node->op();
   if (op == op_pad) {
     if (node->is_signed())
@@ -417,11 +425,25 @@ void verilogwriter::print_alu(std::ostream& out, aluimpl* node) {
     this->print_name(out, node);
     out << " = ";
     if (CH_OP_ARY(op) == op_binary) {
-      this->print_name(out, node->src(0).impl());
-      out << " ";
-      this->print_operator(out, op);
-      out << " ";
-      this->print_name(out, node->src(1).impl());
+      if (CH_OP_CLASS(op) == op_shift
+       || CH_OP_CLASS(op) == op_relational
+       || CH_OP_CLASS(op) == op_arithmetic) {
+        print_signed_operand(0);
+        out << " ";
+        this->print_operator(out, op);
+        out << " ";
+        if (op == op_sll || op == op_srl) {
+          this->print_name(out, node->src(1).impl());
+        } else {
+          print_signed_operand(1);
+        }
+      } else {
+        this->print_name(out, node->src(0).impl());
+        out << " ";
+        this->print_operator(out, op);
+        out << " ";
+        this->print_name(out, node->src(1).impl());
+      }
       out << ";" << std::endl;
     } else {
       assert(CH_OP_ARY(op) == op_unary);
@@ -808,6 +830,7 @@ void verilogwriter::print_operator(std::ostream& out, ch_op op) {
 
   case op_eq:    out << "=="; break;
   case op_ne:    out << "!="; break;
+
   case op_lt:    out << "<"; break;
   case op_gt:    out << ">"; break;
   case op_le:    out << "<="; break;
