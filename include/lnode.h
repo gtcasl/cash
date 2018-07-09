@@ -14,12 +14,19 @@ public:
 
   lnode();
 
-  lnode(const lnode& other);
+  lnode(lnodeimpl* impl);
 
-  explicit lnode(uint32_t size,
-                 const source_location& sloc,
-                 const std::string& name = "",
-                 uint32_t var_id = 0);
+  lnode(const bitvector& value);
+
+  lnode(uint32_t size,
+        const source_location& sloc,
+        const std::string& name = "",
+        uint32_t var_id = 0);
+
+  lnode(const lnode& src,
+        const source_location& sloc,
+        const std::string& name = "",
+        uint32_t var_id = 0);
 
   lnode(uint32_t size,
         const lnode& src,
@@ -28,9 +35,8 @@ public:
         const std::string& name = "",
         uint32_t var_id = 0);
 
-  lnode(lnodeimpl* impl);
+  lnode(const lnode& other);
 
-  lnode(const bitvector& value);
   ~lnode();
 
   lnode& operator=(const lnode& other);

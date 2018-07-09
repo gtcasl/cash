@@ -42,6 +42,12 @@ public:
 
   std::vector<lnode>::iterator erase_source(std::vector<lnode>::iterator iter);
 
+  virtual void write(uint32_t dst_offset,
+                     const lnode& src,
+                     uint32_t src_offset,
+                     uint32_t length,
+                     const source_location& sloc);
+
   bool equals(const lnodeimpl& other) const override;
 
   std::size_t hash() const override;
@@ -73,6 +79,30 @@ protected:
   ~proxyimpl() {}
 
   std::vector<range_t> ranges_;
+
+  friend class context;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+class refimpl : public proxyimpl {
+public:
+
+  void write(uint32_t dst_offset,
+             const lnode& src,
+             uint32_t src_offset,
+             uint32_t length,
+             const source_location& sloc) override;
+
+protected:
+
+  refimpl(context* ctx,
+          const lnode& src,
+          uint32_t offset,
+          uint32_t length,
+          const source_location& sloc,
+          const std::string& name = "",
+          uint32_t var_id = 0);
 
   friend class context;
 };

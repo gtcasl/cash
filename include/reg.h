@@ -5,22 +5,13 @@
 namespace ch {
 namespace internal {
 
-class reg_buffer : public logic_buffer {
-public:
-  using logic_buffer::value_;
+logic_buffer createRegNode(unsigned size, const source_location& sloc);
 
-  explicit reg_buffer(uint32_t size,
-                      const source_location& sloc);
+logic_buffer createRegNode(const lnode& init, const source_location& sloc);
 
-  explicit reg_buffer(const lnode& data,
-                      const source_location& sloc);
+logic_buffer copyRegNode(const lnode& node, const source_location& sloc);
 
-  void write(uint32_t dst_offset,
-             const lnode& data,
-             uint32_t src_offset,
-             uint32_t length,
-             const source_location& sloc) override;
-};
+logic_buffer createRegNextNode(const lnode& node);
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -29,29 +20,45 @@ class ch_reg_impl final : public T {
 public:  
   using traits = logic_traits<ch_width_v<T>, ch_signed_v<T>, ch_reg<T>, ch_scalar_t<T>>;
   using base = T;
+  
+  struct next_t {
+    next_t(const logic_buffer& buffer) : next(buffer) {}
+    T next;
+  };  
 
-  explicit ch_reg_impl(CH_SLOC)
-    : base(std::make_shared<reg_buffer>(ch_width_v<T>, sloc))
-  {}
+  std::unique_ptr<next_t> __next__;
+
+  ch_reg_impl(CH_SLOC)
+    : base(createRegNode(ch_width_v<T>, sloc)) {
+    __next__ = std::make_unique<next_t>(createRegNextNode(logic_accessor::data(*this)));
+  }
+
+  template <typename U,
+            CH_REQUIRE_0(std::is_convertible_v<U, T>)>
+  ch_reg_impl(const U& init, CH_SLOC)
+    : base(createRegNode(logic_accessor::data(T(init)), sloc)) {
+    __next__ = std::make_unique<next_t>(createRegNextNode(logic_accessor::data(*this)));
+  }
+
+  template <typename A0, typename... Args,
+            CH_REQUIRE_0(!std::is_convertible_v<A0, T> && std::is_constructible_v<T, A0, Args...>)>
+  explicit ch_reg_impl(const A0& init0, const Args&... inits)
+    : base(createRegNode(logic_accessor::data(T(init0, inits...)), source_location())) {
+    __next__ = std::make_unique<next_t>(createRegNextNode(logic_accessor::data(*this)));
+  }
 
   ch_reg_impl(const ch_reg_impl& other, CH_SLOC)
-    : base(std::make_shared<reg_buffer>(logic_accessor::data(other), sloc))
-  {}
+    : base(copyRegNode(logic_accessor::data(other), sloc)) {
+    __next__ = std::make_unique<next_t>(createRegNextNode(logic_accessor::data(*this)));
+  }
 
-  ch_reg_impl(ch_reg_impl&& other) : base(std::move(other.buffer_)) {}
+  ch_reg_impl(ch_reg_impl&& other)
+    : base(std::move(other.buffer_)) {
+    __next__ = std::make_unique<next_t>(createRegNextNode(logic_accessor::data(*this)));
+  }
 
-  template <typename... Args,
-            CH_REQUIRE_0(std::is_constructible_v<T, Args...>)>
-  ch_reg_impl(const Args&... args)
-    : base(std::make_shared<reg_buffer>(logic_accessor::data(T(args...)),
-                                        source_location()))
-  {}
-
-  template <typename U>
-  void operator <<=(const U& other) const {
-    static_assert(std::is_constructible_v<T, U>, "invalid type");
-    this->buffer()->write(0, to_lnode<T>(other, source_location()), 0, ch_width_v<T>,
-                          source_location());
+  auto& operator->() const {
+    return __next__;
   }  
 
 private:
@@ -83,7 +90,7 @@ auto ch_delay(const T& in, uint32_t delay = 1, CH_SLOC) {
   R ret(in, sloc);
   for (unsigned i = 0; i < delay; ++i) {
     ch_reg<R> reg(sloc);
-    reg <<= ch_clone(ret, sloc);
+    reg->next = ch_clone(ret, sloc);
     ret = reg;
   }
   return ret;
@@ -98,7 +105,7 @@ auto ch_delay(const T& in, uint32_t delay, const I& init, CH_SLOC) {
   R ret(in, sloc);
   for (unsigned i = 0; i < delay; ++i) {
     ch_reg<R> reg(init, sloc);
-    reg <<= ch_clone(ret, sloc);
+    reg->next = ch_clone(ret, sloc);
     ret = reg;
   }
   return ret;

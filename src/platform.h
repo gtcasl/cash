@@ -16,6 +16,10 @@ inline constexpr auto operator|(cflags lsh, cflags rhs) {
   return ((int)lsh | (int)rhs);
 }
 
+inline constexpr auto operator&(cflags lsh, cflags rhs) {
+  return ((int)lsh & (int)rhs);
+}
+
 class platform {
 public:
 

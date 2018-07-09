@@ -20,7 +20,7 @@ struct ch_pipe {
       T new_data;
       ch_bool new_valid;
       new_data  = ch_delay(ch_sel(io.deq.ready, ch_clone(data), new_data));
-      new_valid = ch_delay(ch_sel(io.deq.ready, ch_clone(valid), new_valid));
+      new_valid = ch_delay(ch_sel(io.deq.ready, ch_clone(valid), new_valid), 1, false);
       data  = new_data;
       valid = new_valid;
     }

@@ -19,28 +19,26 @@ struct GCD {
     io.in.ready = !p;
 
     __if (io.in.valid && io.in.ready) {
-      x <<= io.in.data[0];
-      y <<= io.in.data[1];
-      p <<= true;
+      x->next = io.in.data[0];
+      y->next = io.in.data[1];
+      p->next = true;
     };
 
     __if (p) {
       __if (x > y) {
-        x <<= y;
-        y <<= x;
+        x->next = y;
+        y->next = x;
       } __else {
-        y <<= y - x;
+        y->next = y - x;
       };
     };
 
     __if (io.out.valid) {
-      p <<= false;
+      p->next = false;
     };
 
     io.out.data  = x;
     io.out.valid = (0 == y) && p;
-
-    //ch_print("{0}: clk={1}, rst={2}, x={3}, y={4}, p={5}", ch_time(), ch_clock(), ch_reset(), x, y, p);
   }
 };
 

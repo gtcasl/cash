@@ -43,6 +43,8 @@ namespace utility {
   using ch::internal::ispow2;
   using ch::internal::ilog2;
   using ch::internal::log2ceil;  
+  using ch::internal::make_array;
+  using ch::internal::make_list;
 }
 
 //
@@ -233,9 +235,9 @@ namespace extension {
   using ch::internal::source_location;
   using ch::internal::logic_traits;
   using ch::internal::scalar_traits;
-  using ch::internal::logic_buffer_ptr;
+  using ch::internal::logic_buffer;
   using ch::internal::scalar_buffer_ptr;  
-  using ch::internal::make_logic_buffer;
+  using ch::internal::logic_buffer;
   using ch::internal::make_scalar_buffer;
   using ch::internal::scalar_accessor;
   using ch::internal::logic_accessor;

@@ -23,8 +23,8 @@ struct FiFo {
     auto reading = io.pop && !io.empty;
     auto writing = io.push && !io.full;
 
-    rd_ptr <<= ch_sel(reading, rd_ptr + 1, rd_ptr);
-    wr_ptr <<= ch_sel(writing, wr_ptr + 1, wr_ptr);
+    rd_ptr->next = ch_sel(reading, rd_ptr + 1, rd_ptr);
+    wr_ptr->next = ch_sel(writing, wr_ptr + 1, wr_ptr);
 
     ch_mem<T, N> mem;
     mem.write(wr_A, io.din, writing);

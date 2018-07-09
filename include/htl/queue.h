@@ -30,8 +30,8 @@ struct ch_queue {
     auto reading = io.deq.ready && io.deq.valid;
     auto writing = io.enq.valid && io.enq.ready;
 
-    rd_ptr <<= ch_sel(reading, rd_ptr + 1, rd_ptr);
-    wr_ptr <<= ch_sel(writing, wr_ptr + 1, wr_ptr);
+    rd_ptr->next = ch_sel(reading, rd_ptr + 1, rd_ptr);
+    wr_ptr->next = ch_sel(writing, wr_ptr + 1, wr_ptr);
 
     ch_mem<T, N> mem;
     mem.write(wr_A, io.enq.data, writing);

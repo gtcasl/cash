@@ -29,15 +29,14 @@ void registerEnumString(const lnode& node, void* callback);
 #define CH_ENUM_STRING(a, i, x) case CH_ENUM_STRING_(CH_NARG(CH_REM x))(CH_REM x, x)
 
 #define CH_ENUM_SCALAR_IMPL(enum_name) \
-  explicit enum_name(const std::shared_ptr<ch::internal::type_buffer_t<traits>>& buffer = \
-    std::make_shared<ch::internal::type_buffer_t<traits>>(traits::bitwidth)) : base(buffer) {} \
+  explicit enum_name(const ch::internal::scalar_buffer_ptr& buffer = \
+    ch::internal::make_scalar_buffer(traits::bitwidth)) : base(buffer) {} \
   enum_name(const enum_name& __other) : base(__other) {} \
   enum_name(enum_name&& __other) : base(std::move(__other)) {} \
   enum_name(enum_type __other) : base(static_cast<unsigned>(__other)) {}
 
 #define CH_ENUM_LOGIC_IMPL(enum_name) \
-  explicit enum_name(const std::shared_ptr<ch::internal::type_buffer_t<traits>>& buffer = \
-    std::make_shared<ch::internal::type_buffer_t<traits>>(traits::bitwidth, CH_CUR_SLOC)) \
+  explicit enum_name(const ch::internal::logic_buffer& buffer = ch::internal::logic_buffer(traits::bitwidth, CH_CUR_SLOC)) \
     : base(buffer) { ch::internal::registerEnumString(ch::internal::logic_accessor::data(*this), (void*)to_string); } \
   enum_name(const enum_name& __other, CH_SLOC) \
     : base(__other, sloc) { ch::internal::registerEnumString(ch::internal::logic_accessor::data(*this), (void*)to_string); } \

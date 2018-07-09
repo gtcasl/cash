@@ -167,8 +167,8 @@ public:
   using base::operator [];
   using base::items_;
 
-  explicit ch_vec(const logic_buffer_ptr& buffer = make_logic_buffer(traits::bitwidth, CH_CUR_SLOC))
-    : ch_vec(buffer, std::make_index_sequence<N>(), buffer->data().sloc())
+  explicit ch_vec(const logic_buffer& buffer = logic_buffer(traits::bitwidth, CH_CUR_SLOC))
+    : ch_vec(buffer, std::make_index_sequence<N>(), buffer.data().sloc())
   {}
 
   ch_vec(const ch_vec& other, CH_SLOC)
@@ -194,19 +194,19 @@ public:
   template <typename U,
             CH_REQUIRE_1(is_scalar_type_v<U>)>
   explicit ch_vec(const U& other, CH_SLOC)
-    : ch_vec(make_logic_buffer(scalar_accessor::data(other), sloc)) {
+    : ch_vec(logic_buffer(scalar_accessor::data(other), sloc)) {
     static_assert(ch_width_v<U> == N * ch_width_v<T>, "invalid size");
   }
 
   template <typename U,
             CH_REQUIRE_0(std::is_integral_v<U>)>
   explicit ch_vec(U other, CH_SLOC)
-    : ch_vec(make_logic_buffer(bitvector(traits::bitwidth, other), sloc))
+    : ch_vec(logic_buffer(bitvector(traits::bitwidth, other), sloc))
   {}
 
   template <typename U>
   explicit ch_vec(const std::initializer_list<U>& values, CH_SLOC)
-    : ch_vec(make_logic_buffer(traits::bitwidth, sloc)) {
+    : ch_vec(logic_buffer(traits::bitwidth, sloc)) {
     assert(values.size() == N);
     int i = N - 1;
     for (auto& value : values) {
@@ -228,7 +228,7 @@ public:
             CH_REQUIRE_0(is_scalar_type_v<U>)>
   ch_vec& operator=(const U& other) {
     static_assert(ch_width_v<U> == N * ch_width_v<T>, "invalid size");
-    this->buffer()->write(scalar_accessor::data(other));
+    this->buffer().write(scalar_accessor::data(other));
     return *this;
   }
 
@@ -245,12 +245,12 @@ public:
 protected:
 
   template <std::size_t...Is>
-  ch_vec(const logic_buffer_ptr& buffer, std::index_sequence<Is...>, const source_location& sloc)
-    : base(make_logic_buffer(ch_width_v<T>, buffer, Is * ch_width_v<T>, sloc)...)
+  ch_vec(const logic_buffer& buffer, std::index_sequence<Is...>, const source_location& sloc)
+    : base(logic_buffer(ch_width_v<T>, buffer, Is * ch_width_v<T>, sloc)...)
   {}
 
-  const logic_buffer_ptr& buffer() const {
-    return logic_accessor::buffer(items_[0])->source();
+  logic_buffer buffer() const {
+    return logic_accessor::buffer(items_[0]).source();
   }
 
   friend class logic_accessor;

@@ -54,28 +54,24 @@ template <typename T> using ch_reg = std::add_const_t<ch_reg_impl<T>>;
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class logic_buffer;
-
-using logic_buffer_ptr = std::shared_ptr<logic_buffer>;
-
 class logic_buffer {
 public:
-  explicit logic_buffer(uint32_t size,
-                        const source_location& sloc,
-                        const std::string& name = "");
 
-  explicit logic_buffer(const lnode& data,
-                        const source_location& sloc,
-                        const std::string& name = "");
+  explicit logic_buffer(const lnode& node);
+
+  logic_buffer(uint32_t size, const source_location& sloc, const std::string& name = "");
+
+  logic_buffer(const lnode& data, const source_location& sloc, const std::string& name = "");
 
   logic_buffer(uint32_t size,
-               const logic_buffer_ptr& buffer,
+               const logic_buffer& buffer,
                uint32_t offset,
                const source_location& sloc,
                const std::string& name = "");
 
-  logic_buffer(const logic_buffer& other,
-               const source_location& sloc);
+  logic_buffer(const logic_buffer& other, const source_location& sloc);
+
+  logic_buffer(const logic_buffer& other);
 
   logic_buffer(logic_buffer&& other);
 
@@ -85,85 +81,67 @@ public:
 
   logic_buffer& operator=(logic_buffer&& other);
 
-  uint32_t id() const {
-    return id_;
+  const lnode& data() const {
+    return node_;
   }
 
-  const lnode& data() const {
-    return value_;
-  }
+  logic_buffer source() const;
 
   uint32_t size() const {
-    return value_.size();
+    return node_.size();
   }
 
-  const logic_buffer_ptr& source() const {
-    return source_;
-  }
-
-  uint32_t offset() const {
-    return offset_;
-  }
-
-  virtual void write(uint32_t dst_offset,
-                     const lnode& data,
-                     uint32_t src_offset,
-                     uint32_t length,
-                     const source_location& sloc);
+  void write(uint32_t dst_offset,
+             const lnode& data,
+             uint32_t src_offset,
+             uint32_t length,
+             const source_location& sloc);
 
 protected:
 
-  uint32_t id_;
-  lnode value_;
-  logic_buffer_ptr source_;
-  uint32_t offset_;
+  lnode node_;
 };
-
-template <typename... Args>
-auto make_logic_buffer(Args&&... args) {
-  return std::make_shared<logic_buffer>(std::forward<Args>(args)...);
-}
 
 ///////////////////////////////////////////////////////////////////////////////
 
 class logic_accessor {
 public:
   template <typename T>
-  static const logic_buffer_ptr& buffer(const T& obj) {
+  static logic_buffer buffer(const T& obj) {
     return obj.buffer();
   }
 
   template <typename T>
-  static const lnode& data(const T& obj) {
-    assert(ch_width_v<T> == obj.buffer()->size());
-    return obj.buffer()->data();
+  static lnode data(const T& obj) {
+    assert(ch_width_v<T> == obj.buffer().size());
+    return obj.buffer().data();
   }
 
   template <typename T>
   static auto copy(const T& obj, const source_location& sloc) {
-    assert(ch_width_v<T> == obj.buffer()->size());
-    return make_logic_buffer(*obj.buffer(), sloc);
+    assert(ch_width_v<T> == obj.buffer().size());
+    return logic_buffer(obj.buffer(), sloc);
   }
 
   template <typename T>
   static auto move(T&& obj) {
-    assert(ch_width_v<T> == obj.buffer()->size());
-    return make_logic_buffer(std::move(*obj.buffer()));
+    assert(ch_width_v<T> == obj.buffer().size());
+    return logic_buffer(std::move(obj.buffer()));
   }
 
   template <typename U, typename V>
   static void copy(U& dst, const V& src) {
     static_assert(ch_width_v<U> == ch_width_v<V>, "invalid size");
-    assert(ch_width_v<U> == dst.buffer()->size());
-    assert(ch_width_v<V> == src.buffer()->size());
-    *dst.buffer() = *src.buffer();
+    assert(ch_width_v<U> == dst.buffer().size());
+    assert(ch_width_v<V> == src.buffer().size());
+    dst.buffer() = src.buffer();
   }
 
   template <typename U, typename V>
   static void move(U& dst, V&& src) {
     static_assert(ch_width_v<U> == ch_width_v<V>, "invalid size");
-    assert(ch_width_v<U> == dst.buffer()->size());
-    *dst.buffer() = std::move(*src.buffer());
+    assert(ch_width_v<U> == dst.buffer().size());
+    dst.buffer() = std::move(src.buffer());
   }
 
   template <typename U, typename V>
@@ -173,27 +151,27 @@ public:
                     uint32_t src_offset,
                     uint32_t length,
                     const source_location& sloc) {
-    auto data = src.buffer()->data();
-    dst.buffer()->write(dst_offset, data, src_offset, length, sloc);
+    auto data = src.buffer().data();
+    dst.buffer().write(dst_offset, data, src_offset, length, sloc);
   }
 
   template <typename T>
   static auto clone(const T& obj, const source_location& sloc) {
-    assert(ch_width_v<T> == obj.buffer()->size());
-    auto data = obj.buffer()->data().clone(sloc);
-    return T(make_logic_buffer(data, sloc));
+    assert(ch_width_v<T> == obj.buffer().size());
+    auto data = obj.buffer().data().clone(sloc);
+    return T(logic_buffer(data, sloc));
   }
 
   template <typename R, typename T>
   static auto cast(const T& obj) {
     static_assert(ch_width_v<T> == ch_width_v<R>, "invalid size");
-    assert(ch_width_v<T> == obj.buffer()->size());
+    assert(ch_width_v<T> == obj.buffer().size());
     return R(obj.buffer());
   }
 
   template <typename T>
   static const source_location& sloc(const T& obj) {
-    return obj.buffer()->data().sloc();
+    return obj.buffer().data().sloc();
   }
 };
 
@@ -233,7 +211,7 @@ lnode to_lnode(const T& obj, const source_location& sloc) {
 
 template <typename T>
 auto make_type(const lnode& node, const source_location& sloc) {
-  return T(make_logic_buffer(node, sloc));
+  return T(logic_buffer(node, sloc));
 }
 
 template <ch_op op, bool Signed, typename R, typename A>
@@ -247,9 +225,6 @@ auto make_logic_op(const A& a, const B& b, const source_location& sloc) {
   auto node = createAluNode(op, ch_width_v<R>, Signed, get_lnode(a), get_lnode(b), sloc);
   return make_type<R>(node, sloc);
 }
-
-template <typename T>
-using type_buffer_t = std::conditional_t<is_logic_traits_v<T>, logic_buffer, scalar_buffer>;
 
 template <typename T>
 using type_accessor_t = std::conditional_t<is_logic_traits_v<T>, logic_accessor, scalar_accessor>;

@@ -9,12 +9,12 @@
   std::max({CH_FOR_EACH(CH_UNION_SIZE_EACH, , CH_SEP_COMMA, __VA_ARGS__)})
 
 #define CH_UNION_SCALAR_CTOR(a, i, x) \
-  CH_PAIR_R(x)(std::make_shared<ch::internal::type_buffer_t<traits>>( \
+  CH_PAIR_R(x)(ch::internal::make_scalar_buffer( \
     ch_width_v<ch::internal::identity_t<CH_PAIR_L(x)>>, buffer, 0))
 
 #define CH_UNION_LOGIC_CTOR(a, i, x) \
-  CH_PAIR_R(x)(std::make_shared<ch::internal::type_buffer_t<traits>>( \
-    ch_width_v<ch::internal::identity_t<CH_PAIR_L(x)>>, buffer, 0, buffer->data().sloc(), CH_STRINGIZE(CH_PAIR_R(x))))
+  CH_PAIR_R(x)(ch::internal::logic_buffer( \
+    ch_width_v<ch::internal::identity_t<CH_PAIR_L(x)>>, buffer, 0, buffer.data().sloc(), CH_STRINGIZE(CH_PAIR_R(x))))
 
 #define CH_UNION_SCALAR_FIELD(a, i, x) \
   ch_scalar_t<ch::internal::identity_t<CH_PAIR_L(x)>> CH_PAIR_R(x)
@@ -30,14 +30,14 @@
 
 #define CH_UNION_LOGIC_FIELD_CTOR(type, i, x) \
   type(const ch_logic_t<ch::internal::identity_t<CH_PAIR_L(x)>>& CH_CONCAT(_,CH_PAIR_R(x)), CH_SLOC) \
-    : type(std::make_shared<ch::internal::type_buffer_t<traits>>(traits::bitwidth, sloc, CH_STRINGIZE(name))) { \
+    : type(ch::internal::logic_buffer(traits::bitwidth, sloc, CH_STRINGIZE(name))) { \
     this->operator =(CH_CONCAT(_,CH_PAIR_R(x)).as_bit().pad<traits::bitwidth>(sloc).as<type>()); \
   }
 
 #define CH_UNION_SCALAR_IMPL(union_name, field_body, ...) \
   CH_FOR_EACH(field_body, , CH_SEP_SEMICOLON, __VA_ARGS__); \
-  explicit union_name(const std::shared_ptr<ch::internal::type_buffer_t<traits>>& buffer = \
-    std::make_shared<ch::internal::type_buffer_t<traits>>(traits::bitwidth)) \
+  explicit union_name(const ch::internal::scalar_buffer_ptr& buffer = \
+  ch::internal::make_scalar_buffer(traits::bitwidth)) \
     : CH_FOR_EACH(CH_UNION_SCALAR_CTOR, , CH_SEP_COMMA, __VA_ARGS__) {} \
   union_name(const union_name& __other) \
     : union_name(ch::internal::type_accessor_t<traits>::copy(__other)) {} \
@@ -45,15 +45,15 @@
    : union_name(ch::internal::type_accessor_t<traits>::move(__other)) {} \
   CH_FOR_EACH(CH_UNION_SCALAR_FIELD_CTOR, union_name, CH_SEP_SPACE, __VA_ARGS__) \
 protected: \
-  const std::shared_ptr<ch::internal::type_buffer_t<traits>>& buffer() const { \
+  const ch::internal::scalar_buffer_ptr& buffer() const { \
     CH_STRUCT_GETBUFFER(0, CH_FIRST_ARG(__VA_ARGS__))->source(); \
   } \
 public:
 
 #define CH_UNION_LOGIC_IMPL(union_name, name, field_body, ...) \
   CH_FOR_EACH(field_body, , CH_SEP_SEMICOLON, __VA_ARGS__); \
-  explicit union_name(const std::shared_ptr<ch::internal::type_buffer_t<traits>>& buffer = \
-    std::make_shared<ch::internal::type_buffer_t<traits>>(traits::bitwidth, CH_CUR_SLOC, CH_STRINGIZE(name))) \
+  explicit union_name(const ch::internal::logic_buffer& buffer = \
+    ch::internal::logic_buffer(traits::bitwidth, CH_CUR_SLOC, CH_STRINGIZE(name))) \
     : CH_FOR_EACH(CH_UNION_LOGIC_CTOR, , CH_SEP_COMMA, __VA_ARGS__) {} \
   union_name(const union_name& __other, CH_SLOC) \
     : union_name(ch::internal::type_accessor_t<traits>::copy(__other, sloc)) {} \
@@ -61,8 +61,8 @@ public:
     : union_name(ch::internal::type_accessor_t<traits>::move(__other)) {} \
   CH_FOR_EACH(CH_UNION_LOGIC_FIELD_CTOR, union_name, CH_SEP_SPACE, __VA_ARGS__) \
 protected: \
-  const std::shared_ptr<ch::internal::type_buffer_t<traits>>& buffer() const { \
-    CH_STRUCT_GETBUFFER(0, CH_FIRST_ARG(__VA_ARGS__))->source(); \
+  ch::internal::logic_buffer buffer() const { \
+    CH_STRUCT_GETBUFFER(0, CH_FIRST_ARG(__VA_ARGS__)).source(); \
   }
 
 #define CH_UNION_ASSIGN_IMPL(union_name) \

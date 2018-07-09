@@ -39,10 +39,6 @@ public:
 
   explicit ch_scuint(const ch_scbit<N>& other) : base(other) {}
 
-  template <unsigned M,
-            CH_REQUIRE_0(M < N)>
-  explicit ch_scuint(const ch_scuint<M>& other) : base(other.template pad<N>()) {}
-
   ch_scuint(const ch_scuint& other) : base(other) {}
 
   ch_scuint(ch_scuint&& other) : base(std::move(other)) {}

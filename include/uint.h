@@ -23,7 +23,7 @@ public:
                         logic_op_relational<ch_uint, N,
                           logic_op_arithmetic<ch_uint, N, ch_bit<N>>>>>>>>;
 
-  explicit ch_uint(const logic_buffer_ptr& buffer = make_logic_buffer(N, CH_CUR_SLOC))
+  explicit ch_uint(const logic_buffer& buffer = logic_buffer(N, CH_CUR_SLOC))
     : base(buffer)
   {}
 
@@ -36,10 +36,6 @@ public:
   template <typename U,
             CH_REQUIRE_0(is_bitvector_extended_type_v<U>)>
   explicit ch_uint(const U& other, CH_SLOC) : base(other, sloc) {}
-
-  template <unsigned M,
-            CH_REQUIRE_0(M < N)>
-  explicit ch_uint(const ch_uint<M>& other, CH_SLOC) : base(other.template pad<N>(sloc), sloc) {}
 
   explicit ch_uint(const ch_bit<N>& other, CH_SLOC) : base(other, sloc) {}
 

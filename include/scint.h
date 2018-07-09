@@ -40,10 +40,6 @@ public:
 
   explicit ch_scint(const ch_scbit<N>& other) : base(other) {}
 
-  template <unsigned M,
-            CH_REQUIRE_0(M < N)>
-  explicit ch_scint(const ch_scint<M>& other) : base(other.template pad<N>()) {}
-
   ch_scint(const ch_scint& other) : base(other) {}
 
   ch_scint(ch_scint&& other) : base(std::move(other)) {}

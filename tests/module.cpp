@@ -215,8 +215,8 @@ struct MultiClk {
     ch_reg<ch_uint4> y(0);
     ch_popcd();
 
-    x <<= x + 1;
-    y <<= io.in;
+    x->next = x + 1;
+    y->next = io.in;
     io.out = x + y;
 
     //ch_print("{0}: clk={1}, rst={2}, in={3}, x={4}, y={5}, out={6}", ch_time(), ch_clock(), ch_reset(), io.in, x, y, io.out);
@@ -234,7 +234,7 @@ struct CustomClk {
     ch_reg<ch_uint4> x(io.in);
     ch_popcd();
 
-    x <<= x + 1;
+    x->next = x + 1;
     io.out = x;
 
     //ch_print("{0}: clk={1}, rst={2}, in={3}, out={4}", ch_time(), ch_clock(), ch_reset(), io.in, io.out);

@@ -41,10 +41,7 @@ protected:
 
   regimpl(context* ctx, const lnode& next, const source_location& sloc);
 
-  regimpl(context* ctx,
-          const lnode& next,
-          const lnode& init,
-          const source_location& sloc);
+  regimpl(context* ctx, const lnode& next, const lnode& init, const source_location& sloc);
 
   virtual ~regimpl();
 

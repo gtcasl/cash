@@ -195,13 +195,30 @@ struct inverter {
   }
 };
 
+struct TestAssign {
+  __io (
+    __in(ch_bit4) in,
+    __out(ch_bool) out
+  );
+  void describe() {
+    ch_bit4 w(io.in);
+    w = 0xB;
+    io.out = (io.in == 0xA);
+  }
+};
+
 struct Dogfood {
   __io (
     __in(ch_uint4) in,
     __out(ch_bool) out
   );
   void describe() {
-    io.out = true;
+    ch_bit2 a;
+    a = ch_delay(10_b, 4);
+    ch_bit2 e = ch_case(ch_time(), 7, 10_b)(a);
+    //ch_print("t={0}, a={1}, e={2}", ch_time(), a, e);
+    io.out = true; //(a == e);
+    //io.out = true;
   }
 };
 

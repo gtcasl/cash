@@ -38,33 +38,12 @@ public:
     : buffer_(make_scalar_buffer(bitvector(N , std::forward<U>(other))))
   {}
 
-  template <typename U,
-            CH_REQUIRE_0(is_scalar_type_v<U>),
-            CH_REQUIRE_0(ch_width_v<U> == N)>
-  explicit ch_scbit(const U& other)
-    : buffer_(scalar_accessor::copy(other))
-  {}
-
-  template <unsigned M,
-            CH_REQUIRE_0(M < N)>
-  explicit ch_scbit(const ch_scbit<M>& other)
-    : buffer_(scalar_accessor::copy(other.template pad<N>()))
-  {}
-
   ch_scbit(const ch_scbit& other)
     : base()
     , buffer_(scalar_accessor::copy(other))
   {}
 
   ch_scbit(ch_scbit&& other) : buffer_(std::move(other.buffer_)) {}
-
-  template <typename U,
-            CH_REQUIRE_0(is_scalar_type_v<U>),
-            CH_REQUIRE_0(ch_width_v<U> == N)>
-  ch_scbit& operator=(const U& other) {
-    scalar_accessor::copy(*this, other);
-    return *this;
-  }
 
   ch_scbit& operator=(const ch_scbit& other) {
     scalar_accessor::copy(*this, other);

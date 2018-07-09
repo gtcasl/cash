@@ -55,12 +55,12 @@ void compiler::run() {
   
 #ifndef NDEBUG
   // dump nodes
-  if (platform::self().cflags() | cflags::dump_ast) {
+  if (platform::self().cflags() & cflags::dump_ast) {
     ctx_->dump_ast(std::cerr, platform::self().dbg_level());
   }
 
   // dump tap's CFG
-  if (platform::self().cflags() | cflags::dump_cfg) {
+  if (platform::self().cflags() & cflags::dump_cfg) {
     for (auto node : ctx_->taps()) {
       std::cout << "CFG dump for tap variable: " << node->name() << std::endl;
       ctx_->dump_cfg(node, std::cout, platform::self().dbg_level());
@@ -274,7 +274,7 @@ void compiler::syntax_check() {
         auto ret = std::find_if(node->srcs().begin(), node->srcs().end(),
                      [undef](const lnode& x)->bool { return x.id() == undef->id(); });
         if (ret != node->srcs().end()) {
-          if (platform::self().cflags() | cflags::dump_ast) {
+          if (platform::self().cflags() & cflags::dump_ast) {
             ctx_->dump_ast(std::cerr, platform::self().dbg_level());
           }
           fprintf(stderr, "error: un-initialized variable %s\n", node->debug_info().c_str());

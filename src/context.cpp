@@ -805,7 +805,7 @@ void context::build_run_list(std::vector<lnodeimpl*>& runlist) {
         break;
       }
 #define LCOV_EXCL_START
-      if (platform::self().cflags() | cflags::dump_ast) {
+      if (platform::self().cflags() & cflags::dump_ast) {
         for (auto n : runlist) {
           std::cerr << n->ctx()->id() << ": ";
           n->print(std::cerr, platform::self().dbg_level());
@@ -913,7 +913,7 @@ void context::build_run_list(std::vector<lnodeimpl*>& runlist) {
     dfs_visit(node);
   }
 
-  if (platform::self().cflags() | cflags::dump_ast) {
+  if (platform::self().cflags() & cflags::dump_ast) {
     for (auto node : runlist) {
       std::cerr << node->ctx()->id() << ": ";
       node->print(std::cerr, platform::self().dbg_level());
@@ -922,7 +922,7 @@ void context::build_run_list(std::vector<lnodeimpl*>& runlist) {
   }
 
   if (!uninitialized_regs.empty()
-   && (platform::self().cflags() | cflags::check_reg_init)) {
+   && (platform::self().cflags() & cflags::check_reg_init)) {
     for (auto node : uninitialized_regs) {
       fprintf(stderr, "warning: uninitialized register %s\n",
               node->debug_info().c_str());

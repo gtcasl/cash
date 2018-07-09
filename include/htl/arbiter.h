@@ -17,20 +17,19 @@ struct ch_rrArbiter {
   );
 
   void describe() {
-    ch_reg<ch_bool> state[N][N];
-    ch_bit<N> dis[N];
-    ch_bit<N> grant;
+    ch_reg<ch_bit<N*N>> state(0);
+    ch_bit<N> dis[N], grant;
     for (unsigned i = 0; i < N; ++i) {
       for (unsigned j = 0; j < i; ++j) {
-        dis[j][i] = io.in[i] && ~state[j][i];
+        dis[j][i] = io.in[i] && ~state[j*N+i];
       }
       dis[i][i] = 0;
       for (unsigned j = i + 1; j < N; ++j) {
-        dis[j][i] = io.in[i] && state[i][j];
+        dis[j][i] = io.in[i] && state[i*N+j];
       }
       grant[i] = io.in[i] && ~ch_orr(dis[i]);
       for (unsigned j = i + 1; j < N; ++j) {
-        state[i][j] <<= (state[i][j] || grant[j]) && ~grant[i];
+        state->next[i*N+j] = (state[i*N+j] || grant[j]) && ~grant[i];
       }
     }
     io.grant = grant;

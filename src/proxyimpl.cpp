@@ -214,6 +214,25 @@ proxyimpl::erase_source(std::vector<lnode>::iterator iter) {
   return next;
 }
 
+void proxyimpl::write(uint32_t dst_offset,
+                      const lnode& src,
+                      uint32_t src_offset,
+                      uint32_t length,
+                      const source_location& sloc) {
+  assert(!src.empty());
+  assert(size() > dst_offset);
+  assert(size() >= dst_offset + length);
+  if (ctx_->conditional_enabled(this)) {
+    auto src_impl = src.impl();
+    if (src_offset != 0 || src.size() != length) {
+      src_impl = ctx_->create_node<proxyimpl>(src, src_offset, length, sloc);
+    }
+    ctx_->conditional_assign(this, dst_offset, length, src_impl, sloc);
+  } else {
+    this->add_source(dst_offset, src, src_offset, length);
+  }
+}
+
 bool proxyimpl::equals(const lnodeimpl& other) const {
   if (lnodeimpl::equals(other)) {
     auto _other = reinterpret_cast<const proxyimpl&>(other);
@@ -305,4 +324,35 @@ void proxyimpl::print(std::ostream& out, uint32_t level) const {
   if (2 == level) {
     out << " = " << value_;
   }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+refimpl::refimpl(
+    context* ctx,
+    const lnode& src,
+    uint32_t offset,
+    uint32_t length,
+    const source_location& sloc,
+    const std::string& name,
+    uint32_t var_id)
+  : proxyimpl(ctx, src, offset, length, sloc, name, var_id)
+{}
+
+void refimpl::write(
+    uint32_t dst_offset,
+    const lnode& src,
+    uint32_t src_offset,
+    uint32_t length,
+    const source_location& sloc) {
+  assert(1 == srcs_.size());
+  assert(type_proxy == srcs_[0].impl()->type());
+  assert(0 == ranges_[0].dst_offset);
+  assert(length <= ranges_[0].length);
+  reinterpret_cast<proxyimpl*>(srcs_[0].impl())->write(
+      ranges_[0].src_offset + dst_offset,
+      src,
+      src_offset,
+      length,
+      sloc);
 }

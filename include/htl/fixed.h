@@ -113,7 +113,7 @@ public:
   using base = ch_bit<N>;
   static constexpr unsigned I = N-F;
 
-  explicit ch_fixed(const logic_buffer_ptr& buffer = make_logic_buffer(N, CH_CUR_SLOC))
+  explicit ch_fixed(const logic_buffer& buffer = logic_buffer(N, CH_CUR_SLOC))
     : base(buffer)
   {}
 

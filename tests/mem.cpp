@@ -16,14 +16,14 @@ TEST_CASE("memory", "[memory]") {
       ch_bit4 q;
       ch_rom<ch_bit4, 3> rom({0xA, 0xB, 0xC});
       q = rom.read(a);
-      a <<= ch_min(a + 1, 2);
+      a->next = ch_min(a + 1, 2);
       ch_bit4 e = ch_case(ch_time(),
             2,  0xA_h)
            (4,  0xB_h)
            (6,  0xC_h)
            (8,  0xC_h)
                (q);
-      //ch_print("t={0}, a={1}, q={2}", ch_time(), a, q);
+      ch_print("t={0}, a={1}, q={2}", ch_time(), a, q);
       return (e == q);
     }, 4);
     TEST([]()->ch_bool {
@@ -31,7 +31,7 @@ TEST_CASE("memory", "[memory]") {
       ch_bit4 q;
       ch_rom<ch_bit4, 3> rom({0xA, 0xB, 0xC});
       q = ch_delay(rom.read(a));
-      a <<= ch_min(a + 1, 2);
+      a->next = ch_min(a + 1, 2);
       ch_bit4 e = ch_case(ch_time(),
             3,  0xA_h)
            (5,  0xB_h)

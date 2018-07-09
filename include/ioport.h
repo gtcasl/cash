@@ -123,7 +123,7 @@ public:
 
   template <typename U>
   explicit ch_in_impl(const ch_out<U>& out, CH_SLOC)
-    : base(make_logic_buffer(ch_width_v<T>, sloc)) {    
+    : base(logic_buffer(ch_width_v<T>, sloc)) {
     static_assert(is_logic_only_v<U>, "invalid type");
     static_assert(std::is_constructible_v<U, T>, "invalid type");
     input_ = logic_accessor::data(*this);
@@ -146,7 +146,7 @@ private:
 
   ch_in_impl(const lnode& src, const std::string& name,
              const source_location& sloc)
-    : base(make_logic_buffer(src, sloc, name))
+    : base(logic_buffer(src, sloc, name))
     , input_(src)
   {}
 
@@ -178,13 +178,13 @@ public:
   using base::operator=;
 
   explicit ch_out(const std::string& name = "io", CH_SLOC)
-    : base(make_logic_buffer(ch_width_v<T>, sloc, name)) {
+    : base(logic_buffer(ch_width_v<T>, sloc, name)) {
     output_ = createOutputNode(name, logic_accessor::data(*this), sloc);
   }
 
   template <typename U>
   explicit ch_out(const ch_in_impl<U>& in, CH_SLOC)
-    : base(make_logic_buffer(ch_width_v<T>, sloc)) {
+    : base(logic_buffer(ch_width_v<T>, sloc)) {
     static_assert(is_logic_only_v<U>, "invalid type");
     static_assert(std::is_constructible_v<U, T>, "invalid type");
     output_ = logic_accessor::data(*this);

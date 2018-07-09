@@ -19,38 +19,25 @@ public:
                      logic_op_shift<ch_bit, N,
                        logic_op_padding<ch_bit, N >>>>>;
 
-  explicit ch_bit(const logic_buffer_ptr& buffer = make_logic_buffer(N, CH_CUR_SLOC))
+  explicit ch_bit(const logic_buffer& buffer = logic_buffer(N, CH_CUR_SLOC))
     : buffer_(buffer) {
-    assert(N == buffer->size());
+    assert(N == buffer.size());
   }
 
   template <typename U,
             CH_REQUIRE_0(std::is_integral_v<U>)>
   ch_bit(const U& other, CH_SLOC)
-    : buffer_(make_logic_buffer(bitvector(N, other), sloc))
+    : buffer_(logic_buffer(bitvector(N, other), sloc))
   {}
 
   ch_bit(const ch_scbit<N>& other, CH_SLOC)
-    : buffer_(make_logic_buffer(scalar_accessor::data(other), sloc))
+    : buffer_(logic_buffer(scalar_accessor::data(other), sloc))
   {}
 
   template <typename U,
             CH_REQUIRE_0(is_bitvector_extended_type_v<U>)>
   explicit ch_bit(const U& other, CH_SLOC)
-    : buffer_(make_logic_buffer(bitvector(N, other), sloc))
-  {}
-
-  template <typename U,
-            CH_REQUIRE_0(is_logic_type_v<U>),
-            CH_REQUIRE_0(ch_width_v<U> == N)>
-  explicit ch_bit(const U& other, CH_SLOC)
-    : buffer_(logic_accessor::copy(other, sloc))
-  {}
-
-  template <unsigned M,
-            CH_REQUIRE_0(M < N)>
-  explicit ch_bit(const ch_bit<M>& other, CH_SLOC)
-    : buffer_(logic_accessor::copy(other.template pad<N>(sloc), sloc))
+    : buffer_(logic_buffer(bitvector(N, other), sloc))
   {}
 
   ch_bit(const ch_bit& other, CH_SLOC)
@@ -59,14 +46,6 @@ public:
   {}
 
   ch_bit(ch_bit&& other) : buffer_(std::move(other.buffer_)) {}
-
-  template <typename U,
-            CH_REQUIRE_0(is_logic_type_v<U>),
-            CH_REQUIRE_0(ch_width_v<U> == N)>
-  ch_bit& operator=(const U& other) {
-    logic_accessor::copy(*this, other);
-    return *this;
-  }
 
   ch_bit& operator=(const ch_bit& other) {
     logic_accessor::copy(*this, other);
@@ -82,12 +61,12 @@ public:
 
   const auto operator[](const sloc_arg<size_t>& index) const {
     assert(index.value < N);
-    return ch_bit<1>(make_logic_buffer(1, buffer_, index.value, index.sloc));
+    return ch_bit<1>(logic_buffer(1, buffer_, index.value, index.sloc));
   }
 
   auto operator[](const sloc_arg<size_t>& index) {
     assert(index.value < N);
-    return ch_bit<1>(make_logic_buffer(1, buffer_, index.value, index.sloc));
+    return ch_bit<1>(logic_buffer(1, buffer_, index.value, index.sloc));
   }
 
   // slicing operators
@@ -97,7 +76,7 @@ public:
     static_assert(is_logic_type_v<R>, "invalid type");
     static_assert(ch_width_v<R> <= N, "invalid size");
     assert((start + ch_width_v<R>) <= N);
-    return R(make_logic_buffer(ch_width_v<R>, buffer_, start, sloc));
+    return R(logic_buffer(ch_width_v<R>, buffer_, start, sloc));
   }
 
   template <typename R>
@@ -120,7 +99,7 @@ public:
     static_assert(is_logic_type_v<R>, "invalid type");
     static_assert(ch_width_v<R> <= N, "invalid size");
     assert((start + ch_width_v<R>) <= N);
-    return R(make_logic_buffer(ch_width_v<R>, buffer_, start, sloc));
+    return R(logic_buffer(ch_width_v<R>, buffer_, start, sloc));
   }
 
   template <typename R>
@@ -142,11 +121,11 @@ public:
 
 protected:
 
-  const logic_buffer_ptr& buffer() const {
+  logic_buffer buffer() const {
     return buffer_;
   }
 
-  logic_buffer_ptr buffer_;
+  logic_buffer buffer_;
 
   friend class logic_accessor;
 };
@@ -199,7 +178,7 @@ R ch_slice(const T& obj, size_t start = 0, CH_SLOC) {
       return R(obj, sloc);
     }
   } else {
-    ch_bit<ch_width_v<R>> ret(make_logic_buffer(ch_width_v<R>, sloc));
+    ch_bit<ch_width_v<R>> ret(logic_buffer(ch_width_v<R>, sloc));
     logic_accessor::write(ret, 0, obj, start, ch_width_v<R>, sloc);
     return ret.template as<R>();
   }
@@ -239,10 +218,9 @@ auto ch_shuffle(const ch_bit<N>& obj,
                const std::array<unsigned, M>& indices, CH_SLOC) {
   static_assert(0 == (N % M), "invalid indices size");
   static constexpr unsigned K = (N / M);
-  ch_bit<N> ret(make_logic_buffer(N, sloc));
+  ch_bit<N> ret(logic_buffer(N, sloc));
   for (unsigned i = 0; i < M; ++i) {
     auto j = indices[M - 1 - i];
-    assert(j < M);
     ret. template slice<K>(i * K, sloc) = ch_slice<K>(obj, j * K, sloc);
   }
   return ret;
@@ -253,10 +231,7 @@ auto ch_shuffle(const ch_bit<N>& obj,
 template <typename... Ts>
 class bind_impl {
 public:
-  bind_impl(const source_location& sloc, Ts&... args)
-    : sloc_(sloc)
-    , args_(args...)
-  {}
+  bind_impl(const source_location& sloc, Ts&... args) : sloc_(sloc), args_(args...) {}
 
   template <typename T>
   void operator=(const T& other) {
@@ -307,8 +282,7 @@ CH_VA_ARGS_MAP(CH_BIND)
 // concatenation
 
 template <typename U, typename T>
-void cat_impl(U& inout, uint32_t dst_offset, const source_location& sloc,
-              const T& arg) {
+void cat_impl(U& inout, uint32_t dst_offset, const source_location& sloc, const T& arg) {
   logic_accessor::write(inout, dst_offset - ch_width_v<T>, arg, 0, ch_width_v<T>, sloc);
 }
 
@@ -331,7 +305,7 @@ void cat_impl(U& inout, uint32_t dst_offset, const source_location& sloc,
     CH_FOR_EACH(CH_CAT_ASSERT, , CH_SEP_SEMICOLON, __VA_ARGS__); \
     static constexpr unsigned N = ch_width_v<CH_FOR_EACH(CH_CAT_TYPE, , CH_SEP_COMMA, __VA_ARGS__)>; \
     static_assert(ch_width_v<R> == N, "size mismatch"); \
-    R ret(make_logic_buffer(N, sloc)); \
+    R ret(logic_buffer(N, sloc)); \
     cat_impl(ret, N, sloc, CH_FOR_EACH(CH_CAT_ARG, , CH_SEP_COMMA, __VA_ARGS__)); \
     return ret; \
   } \
@@ -339,7 +313,7 @@ void cat_impl(U& inout, uint32_t dst_offset, const source_location& sloc,
   auto ch_cat(CH_FOR_EACH(CH_CAT_DECL, , CH_SEP_COMMA, __VA_ARGS__), CH_SLOC) { \
     CH_FOR_EACH(CH_CAT_ASSERT, , CH_SEP_SEMICOLON, __VA_ARGS__); \
     static constexpr unsigned N = ch_width_v<CH_FOR_EACH(CH_CAT_TYPE, , CH_SEP_COMMA, __VA_ARGS__)>; \
-    ch_bit<N> ret(make_logic_buffer(N, sloc)); \
+    ch_bit<N> ret(logic_buffer(N, sloc)); \
     cat_impl(ret, N, sloc, CH_FOR_EACH(CH_CAT_ARG, , CH_SEP_COMMA, __VA_ARGS__)); \
     return ret; \
   }
