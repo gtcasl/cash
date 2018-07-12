@@ -270,7 +270,7 @@ auto make_scalar_op(ScalarFunc2 func, const A& lhs, const B& rhs) {
     CH_REM body; \
   }
 
-CH_SCALAR_OPERATOR(scalar_op_compare)
+CH_SCALAR_OPERATOR(scalar_op_equality)
   CH_SCALAR_OPERATOR_IMPL(operator==, (return scalar_accessor::data(lhs) == scalar_accessor::data(rhs)))
   CH_SCALAR_OPERATOR_IMPL(operator!=, (return scalar_accessor::data(lhs) != scalar_accessor::data(rhs)))
 };
@@ -305,27 +305,16 @@ CH_SCALAR_OPERATOR(scalar_op_bitwise)
 
 CH_SCALAR_OPERATOR(scalar_op_shift)
   template <typename U,
-            CH_REQUIRE_0(std::is_integral_v<U>)>
+            CH_REQUIRE_0(std::is_convertible_v<U, ch_scbit<ch_width_v<U>>>)>
   friend auto operator<<(const Derived& lhs, const U& rhs) {
-    auto _rhs = ch_scbit<CH_WIDTH_OF(U)>(rhs);
-    return make_scalar_op<Derived>(bv_sll, lhs, _rhs);
-  }
-
-  template <unsigned M>
-  friend auto operator<<(const Derived& lhs, const ch_scbit<M>& rhs) {
-    return make_scalar_op<Derived>(bv_sll, lhs, rhs);
+    return make_scalar_op<Derived, Derived, ch_scbit<ch_width_v<U>>>(bv_sll, lhs, rhs);
   }
 
   template <typename U,
-            CH_REQUIRE_0(std::is_integral_v<U>)>
+            CH_REQUIRE_0(std::is_convertible_v<U, ch_scbit<ch_width_v<U>>>)>
   friend auto operator>>(const Derived& lhs, const U& rhs) {
-    auto _rhs = ch_scbit<CH_WIDTH_OF(U)>(rhs);
-    return make_scalar_op<Derived>(bv_srl, lhs, _rhs);
-  }
-
-  template <unsigned M>
-  friend auto operator>>(const Derived& lhs, const ch_scbit<M>& rhs) {
-    return make_scalar_op<Derived>(bv_srl, lhs, rhs);
+    return make_scalar_op<Derived, Derived, ch_scbit<ch_width_v<U>>>(
+                            (ch_signed_v<Derived> ? bv_sra : bv_srl), lhs, rhs);
   }
 };
 

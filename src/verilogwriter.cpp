@@ -108,13 +108,15 @@ void verilogwriter::print_header(std::ostream& out) {
   {
     auto_indent indent(out);
     auto_separator sep(",");
-    for (auto input : ctx_->inputs()) {
+
+    std::list<ioimpl*> ports;
+    ports.insert(ports.begin(), ctx_->inputs().begin(), ctx_->inputs().end());
+    ports.insert(ports.begin(), ctx_->outputs().begin(), ctx_->outputs().end());
+    ports.sort([](ioimpl* a, ioimpl*b) { return a->id() < b->id(); });
+
+    for (auto port : ports) {
       out << sep << std::endl;
-      this->print_port(out, input);
-    }
-    for (auto output : ctx_->outputs()) {
-      out << sep << std::endl;
-      this->print_port(out, output);
+      this->print_port(out, port);
     }
   }
   out << std::endl << ");" << std::endl;
@@ -214,7 +216,7 @@ bool verilogwriter::print_bindport(std::ostream& out, bindportimpl* node) {
   return true;
 }
 
-void verilogwriter::print_port(std::ostream& out, lnodeimpl* node) {
+void verilogwriter::print_port(std::ostream& out, ioimpl* node) {
   auto type = node->type();
   switch (type) {
   case type_input:
@@ -432,7 +434,7 @@ void verilogwriter::print_alu(std::ostream& out, aluimpl* node) {
         out << " ";
         this->print_operator(out, op);
         out << " ";
-        if (op == op_sll || op == op_srl) {
+        if (op == op_shl || op == op_shr) {
           this->print_name(out, node->src(1).impl());
         } else {
           print_signed_operand(1);
@@ -788,7 +790,7 @@ void verilogwriter::print_value(std::ostream& out,
   offset += (size -1);
 
   int word = 0;
-  int wsize = 0;
+  int wsize = size & 0x3;
 
   out << size << "'h";
   auto oldflags = out.flags();
@@ -825,8 +827,8 @@ void verilogwriter::print_operator(std::ostream& out, ch_op op) {
   case op_div:   out << "/"; break;
   case op_mod:   out << "%"; break;
 
-  case op_sll:   out << "<<"; break;
-  case op_srl:   out << ">>"; break;
+  case op_shl:   out << "<<"; break;
+  case op_shr:   out << ">>"; break;
 
   case op_eq:    out << "=="; break;
   case op_ne:    out << "!="; break;

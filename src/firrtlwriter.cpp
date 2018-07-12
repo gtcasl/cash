@@ -401,7 +401,7 @@ void firrtlwriter::print_alu(module_t& module, aluimpl* node) {
     this->print_name(node);
     out_ << " <= asUInt(_t" << dst << ")" << std::endl;
   } else
-  if (op == op_srl && node->is_signed()) {
+  if (op == op_shr && node->is_signed()) {
     auto dst = module.num_temps++;
     out_ << "node _t" << dst << " = asSInt(";
     this->print_name(node->src(0).impl());
@@ -619,8 +619,8 @@ void firrtlwriter::print_operator(ch_op op) {
   case op_div:   out_ << "div"; break;
   case op_mod:   out_ << "mod"; break;
 
-  case op_sll:   out_ << "dshl"; break;
-  case op_srl:   out_ << "dshr"; break;
+  case op_shl:   out_ << "dshl"; break;
+  case op_shr:   out_ << "dshr"; break;
 
   case op_eq:    out_ << "eq"; break;
   case op_ne:    out_ << "neq"; break;

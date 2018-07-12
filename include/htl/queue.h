@@ -16,8 +16,8 @@ struct ch_queue {
   static_assert(N > 1, "invalid size");
 
   __io (
-    (ch_deq_io<T>) enq,
-    (ch_enq_io<T>) deq,
+    (ch_enq_io<T>) enq,
+    (ch_deq_io<T>) deq,
     __out(ch_uint<addr_width+1>) size
   );
 

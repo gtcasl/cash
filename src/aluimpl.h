@@ -38,7 +38,7 @@ protected:
 
   ~aluimpl() {}
 
-  void update_proxies();
+  void update_shadow_buffers();
 
   const bitvector& src_arg(unsigned index);
 

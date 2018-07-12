@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cash.h>
+#include <math.h>
 
 namespace ch {
 namespace htl {
@@ -30,7 +31,7 @@ public:
             CH_REQUIRE_0(std::is_integral_v<U>)>
   ch_scfixed(const U& other) : base(other) {}
 
-  explicit ch_scfixed(float other) : base(static_cast<int32_t>(other * (1 << F))) {
+  explicit ch_scfixed(float other) : base(static_cast<int32_t>(floor(other * (1 << F) + 0.5f))) {
     static_assert(N <= 32, "invalid size");
   }
 
@@ -121,7 +122,7 @@ public:
             CH_REQUIRE_0(std::is_integral_v<U>)>
   ch_fixed(const U& other, CH_SLOC) : base(other, sloc) {}
 
-  explicit ch_fixed(float other) : base(static_cast<int32_t>(other * (1 << F))) {
+  explicit ch_fixed(float other) : base(static_cast<int32_t>(floor(other * (1 << F) + 0.5f))) {
     static_assert(N <= 32, "invalid size");
   }
 
@@ -182,12 +183,12 @@ public:
   }
 
   friend auto operator*(ch_fixed lhs, const ch_fixed& rhs) {
-    auto ret = ((lhs.as_int().template pad<N+F>() * rhs.as_int()) >> F).template slice<N>();
+    auto ret = ch_shr<N>(ch_mul<N+F>(lhs.as_int(), rhs.as_int()), F);
     return ret.template as<ch_fixed>();
   }
 
   friend auto operator/(ch_fixed lhs, const ch_fixed& rhs) {
-    auto ret = ((lhs.as_int().template pad<N+F>() << F) / rhs.as_int()).template slice<N>();
+    auto ret = (ch_shl<N+F>(lhs.as_int(), F) / rhs.as_int()).template slice<N>();
     return ret.template as<ch_fixed>();
   }
 };

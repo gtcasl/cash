@@ -117,19 +117,71 @@ TEST_CASE("scalars", "[scalars]") {
       x = force_move_assignment();
       return (x == 7);
     });
+  }
+  SECTION("arithmetic", "[arithmetic]") {
     TESTX([]()->bool {
-      ch_scuint<4> a((int)e2_t::done), b(1);
-
-      int ret = (a == 3);
-      ret &= ((a + b) == 4);
-      ret &= ((a - 1) == 2);
-      ret &= ((a & b) == 1);
-      ret &= ((a | 1) == 3);
+      ch_scbit<4> a(3);
+      ch_scbit<3> b(1);
+      RetCheck ret;
+      ret &= (a == 0011_b);
+      ret &= (b == 001_b);
       ret &= (~a == 1100_b);
-      ret &= (~b == 1110_b);
-      ret &= ((a >> 1) == 1);
-      ret &= ((b << 1) == 2);
-      return !!ret;
+      ret &= ((a & b) == 0001_b);
+      ret &= ((a | b) == 0011_b);
+      ret &= ((a ^ b) == 0010_b);
+      ret &= ((a >> b) == 1);
+      ret &= ((a << b) == 6);
+      return ret;
+    });
+    TESTX([]()->bool {
+      ch_scuint<4> a(3);
+      ch_scuint<3> b(1);
+      RetCheck ret;
+      ret &= (a == 0011_b);
+      ret &= (b == 001_b);
+      ret &= (a != b);
+      ret &= (a > b);
+      ret &= (a >= b);
+      ret &= (b < a);
+      ret &= (b <= a);
+      ret &= (~a == 1100_b);
+      ret &= ((a & b) == 0001_b);
+      ret &= ((a | b) == 0011_b);
+      ret &= ((a ^ b) == 0010_b);
+      ret &= ((a >> b) == 1);
+      ret &= ((a << b) == 6);
+      ret &= (-b == 111_b);
+      ret &= ((a + b) == 4);
+      ret &= ((a - b) == 2);
+      ret &= ((a * b) == 3);
+      ret &= ((a / b) == 3);
+      ret &= ((a % b) == 0);
+      return ret;
+    });
+    TESTX([]()->bool {
+      ch_scint<4> a(-3);
+      ch_scint<3> b(-1);
+      RetCheck ret;
+      ret &= (a == 1101_b);
+      ret &= (b == 111_b);
+      ret &= (a != b);
+      ret &= (a < b);
+      ret &= (a <= b);
+      ret &= (b > a);
+      ret &= (b >= a);
+      ret &= (~a == 0010_b);
+      ret &= ((a & b) == 1101_b);
+      ret &= ((a | b) == 1111_b);
+      ret &= ((a ^ b) == 0010_b);
+      ret &= ((a >> -b) == -2);
+      ret &= ((a << -b) == -6);
+      ret &= (-b == 1);
+      ret &= ((a + b) == -4);
+      ret &= ((a - b) == -2);
+      ret &= ((a * b) == 3);
+      ret &= ((a / b) == 3);
+      ret &= ((a % b) == 0);
+      return ret;
     });
   }
   SECTION("cast", "[cast]") {
@@ -244,13 +296,14 @@ TEST_CASE("scalars", "[scalars]") {
   SECTION("struct", "[struct]") {
     TESTX([]()->bool {
       ch_scalar_t<s2_4_t> s2(0101_b, 01_b);
-      int ret = (s2.a == 1);
+      RetCheck ret;
+      ret &= (s2.a == 1);
       ret &= (s2.b == 5);
       s2.b = 7;
       ret &= (s2.a == 1);
       s2.a = 0;
       ret &= (s2.b == 7);
-      return !!ret;
+      return ret;
     });
     TESTX([]()->bool {
       ch_scalar_t<s2_4_t> s;
@@ -320,15 +373,15 @@ TEST_CASE("scalars", "[scalars]") {
     TESTX([]()->bool {
       ch_scalar_t<sd3_t> s3{3_h, {1_b2, 2_h}};
       ch_scalar_t<sd1_t> x{10_b2, 5_h};
-
-      int ret = (s3.c.a == 2);
+      RetCheck ret;
+      ret &= (s3.c.a == 2);
       ret &= (s3.c.b == 1);
       ret &= (s3.d == 3);
       s3.c = x;
       ret &= (s3.c.a == 5);
       ret &= (s3.c.b == 2);
       ret &= (s3.d == 3);
-      return !!ret;
+      return ret;
     });
   }
   SECTION("vector", "[vector]") {

@@ -34,8 +34,6 @@ public:
   int dbg_node() const;
 
   ch::internal::cflags cflags() const;
-
-  const std::string& lib_path() const;
   
 protected:
   class Impl;

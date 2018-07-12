@@ -43,8 +43,8 @@ namespace utility {
   using ch::internal::ispow2;
   using ch::internal::ilog2;
   using ch::internal::log2ceil;  
-  using ch::internal::make_array;
-  using ch::internal::make_list;
+  using ch::internal::make_array_n;
+  using ch::internal::make_list_n;
 }
 
 //
@@ -165,6 +165,48 @@ namespace core {
   using ch::internal::ch_reset;
 
   //
+  // equality functions
+  //
+
+  using ch::internal::ch_eq;
+  using ch::internal::ch_ne;
+
+  //
+  // relational functions
+  //
+
+  using ch::internal::ch_lt;
+  using ch::internal::ch_le;
+  using ch::internal::ch_gt;
+  using ch::internal::ch_ge;
+
+  //
+  // binary functions
+  //
+
+  using ch::internal::ch_inv;
+  using ch::internal::ch_and;
+  using ch::internal::ch_or;
+
+  //
+  // shift functions
+  //
+
+  using ch::internal::ch_shl;
+  using ch::internal::ch_shr;
+
+  //
+  // arithmetic functions
+  //
+
+  using ch::internal::ch_neg;
+  using ch::internal::ch_add;
+  using ch::internal::ch_sub;
+  using ch::internal::ch_mul;
+  using ch::internal::ch_div;
+  using ch::internal::ch_mod;
+
+  //
   // reduce functions
   //
 
@@ -247,7 +289,7 @@ namespace extension {
   using ch::internal::udf_inputs;
   using ch::internal::lnode;
 
-  using ch::internal::scalar_op_compare;
+  using ch::internal::scalar_op_equality;
   using ch::internal::scalar_op_logical;
   using ch::internal::scalar_op_bitwise;
   using ch::internal::scalar_op_shift;
@@ -256,7 +298,7 @@ namespace extension {
   using ch::internal::scalar_op_relational;
   using ch::internal::scalar_op_arithmetic;
 
-  using ch::internal::logic_op_compare;
+  using ch::internal::logic_op_equality;
   using ch::internal::logic_op_logical;
   using ch::internal::logic_op_bitwise;
   using ch::internal::logic_op_shift;

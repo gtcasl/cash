@@ -92,8 +92,8 @@ struct FilterBlock {
 template <typename T, unsigned N>
 struct QueueWrapper {
   __io (
-    (ch_deq_io<T>) enq,
-    (ch_enq_io<T>) deq
+    (ch_enq_io<T>) enq,
+    (ch_deq_io<T>) deq
   );
   void describe() {
     queue_.io.enq(io.enq);

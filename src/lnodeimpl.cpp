@@ -18,7 +18,7 @@ lnodeimpl::lnodeimpl(context* ctx,
                      const std::string& name,
                      uint32_t var_id)
   : ctx_(ctx)
-  , id_(ctx->node_id())
+  , id_(ctx->node_id(name))
   , type_(type)
   , value_(size)
   , sloc_(sloc)

@@ -1,4 +1,5 @@
 #include "common.h"
+#include <limits>
 
 static void begin_test() {
   static int test_number = 0;
@@ -15,6 +16,12 @@ struct TestRunner {
   }
   const std::function<ch_bool()> test_;
 };
+
+RetCheck& RetCheck::operator&=(bool value) {
+  assert(value);
+  count_ = value ? (count_ + 1) : std::numeric_limits<int>::min();
+  return *this;
+}
 
 bool runtest(const std::function<ch_bool ()>& test, ch_tick cycles) {
   ch_device<TestRunner> device(test);

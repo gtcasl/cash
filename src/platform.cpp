@@ -6,7 +6,6 @@ class platform::Impl {
   int dbg_level_;
   int dbg_node_;
   int cflags_;
-  std::string lib_path_;
 
   Impl()
     : dbg_level_(0)
@@ -26,11 +25,6 @@ class platform::Impl {
     auto cflags = std::getenv("CASH_CFLAGS");
     if (cflags) {
       cflags_ = atol(cflags);
-    }
-
-    auto lib_path = std::getenv("CASH_HOME");
-    if (lib_path) {
-      lib_path_ = lib_path;
     }
   }
 
@@ -55,10 +49,6 @@ int platform::dbg_node() const {
 
 ch::internal::cflags platform::cflags() const {
   return ch::internal::cflags(impl_->cflags_);
-}
-
-const std::string& platform::lib_path() const {
-  return impl_->lib_path_;
 }
 
 const platform& platform::self() {

@@ -7,6 +7,7 @@
 #include <htl/fixed.h>
 #include <htl/complex.h>
 #include "common.h"
+#include <math.h>
 
 using namespace ch::core;
 using namespace ch::literals;
@@ -213,12 +214,7 @@ struct Dogfood {
     __out(ch_bool) out
   );
   void describe() {
-    ch_bit2 a;
-    a = ch_delay(10_b, 4);
-    ch_bit2 e = ch_case(ch_time(), 7, 10_b)(a);
-    //ch_print("t={0}, a={1}, e={2}", ch_time(), a, e);
-    io.out = true; //(a == e);
-    //io.out = true;
+    io.out = true;
   }
 };
 

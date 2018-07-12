@@ -2,15 +2,15 @@
 
 #include "lnode.h"
 
-#define CH_OP_ARY(x)   (x & (0x3 << 5))
-#define CH_OP_CLASS(x) (x & (0x7 << 7))
+#define CH_OP_ARY(x)   (x & (0x1 << 5))
+#define CH_OP_CLASS(x) (x & (0x7 << 6))
 
 #define CH_OP_TYPE(n, v) op_##n = v,
 #define CH_OP_NAME(n, v) #n,
 #define CH_OP_INDEX(op)  (op & 0x1f)
 #define CH_OP_ENUM(m) \
-  m(eq,     0 | op_binary | op_compare | op_symmetric) \
-  m(ne,     1 | op_binary | op_compare | op_symmetric) \
+  m(eq,     0 | op_binary | op_equality | op_symmetric) \
+  m(ne,     1 | op_binary | op_equality | op_symmetric) \
   m(lt,     2 | op_binary | op_relational) \
   m(gt,     3 | op_binary | op_relational) \
   m(le,     4 | op_binary | op_relational) \
@@ -22,8 +22,8 @@
   m(andr,  10 | op_unary  | op_reduce) \
   m(orr,   11 | op_unary  | op_reduce) \
   m(xorr,  12 | op_unary  | op_reduce) \
-  m(sll,   13 | op_binary | op_shift) \
-  m(srl,   14 | op_binary | op_shift) \
+  m(shl,   13 | op_binary | op_shift) \
+  m(shr,   14 | op_binary | op_shift) \
   m(neg,   15 | op_unary  | op_arithmetic) \
   m(add,   16 | op_binary | op_arithmetic | op_symmetric) \
   m(sub,   17 | op_binary | op_arithmetic) \
@@ -36,20 +36,18 @@ namespace ch {
 namespace internal {
 
 enum op_flags {
-  op_unary   = 0 << 5,
-  op_binary  = 1 << 5,
-  op_tenary  = 2 << 5,
-  op_nary    = 3 << 5,
+  op_unary      = 0 << 5,
+  op_binary     = 1 << 5,
 
-  op_compare    = 0 << 7,
-  op_bitwise    = 1 << 7,
-  op_shift      = 2 << 7,
-  op_relational = 3 << 7,
-  op_arithmetic = 4 << 7,
-  op_reduce     = 5 << 7,
-  op_misc       = 6 << 7,
+  op_equality   = 0 << 6,
+  op_relational = 1 << 6,
+  op_bitwise    = 2 << 6,
+  op_shift      = 3 << 6,
+  op_arithmetic = 4 << 6,
+  op_reduce     = 5 << 6,
+  op_misc       = 6 << 6,
 
-  op_symmetric = 1 << 10,
+  op_symmetric  = 1 << 9,
 };
 
 enum ch_op {

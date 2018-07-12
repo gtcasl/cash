@@ -9,8 +9,8 @@ using namespace ch::literals;
 template <unsigned N>
 struct GCD {
   __io (
-    (ch_deq_io<ch_vec<ch_uint<N>,2>>) in,
-    (ch_valid_io<ch_uint<N>>) out
+    (ch_enq_io<ch_vec<ch_uint<N>,2>>) in,
+    (ch_valid_out<ch_uint<N>>) out
   );
   void describe() {
     ch_reg<ch_uint<N>> x, y;

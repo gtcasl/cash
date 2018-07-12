@@ -16,6 +16,7 @@ class regimpl;
 class memimpl;
 class bindimpl;
 class bindportimpl;
+class ioimpl;
 class bitvector;
 class cdimpl;
 class udfimpl;
@@ -42,7 +43,7 @@ protected:
 
   void print_footer(std::ostream& out);
 
-  void print_port(std::ostream& out, lnodeimpl* node);
+  void print_port(std::ostream& out, ioimpl* node);
 
   bool print_decl(std::ostream& out,
                   lnodeimpl* node,

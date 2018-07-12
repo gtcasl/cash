@@ -111,47 +111,47 @@ void for_each_reverse(const F& f, Args&&... args) {
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T, std::size_t... Is>
-constexpr auto make_array_impl(T&& value, std::index_sequence<Is...>) {
+constexpr auto make_array_n_impl(T&& value, std::index_sequence<Is...>) {
   return std::array<std::decay_t<T>, sizeof...(Is) + 1>{
     std::forward<T>(value), (static_cast<void>(Is), value)...
   };
 }
 
 template <typename T>
-constexpr auto make_array_impl(T&&, std::integral_constant<std::size_t, 0>) {
+constexpr auto make_array_n_impl(T&&, std::integral_constant<std::size_t, 0>) {
   return std::array<std::decay_t<T>, 0>{};
 }
 
 template <typename T, std::size_t N>
-constexpr auto make_array_impl(T&& value, std::integral_constant<std::size_t, N>) {
-  return make_array_impl(std::forward<T>(value), std::make_index_sequence<N - 1>{});
+constexpr auto make_array_n_impl(T&& value, std::integral_constant<std::size_t, N>) {
+  return make_array_n_impl(std::forward<T>(value), std::make_index_sequence<N - 1>{});
 }
 
 template <std::size_t N, typename T>
-constexpr auto make_array(T&& value) {
-  return make_array_impl(std::forward<T>(value), std::integral_constant<std::size_t, N>{});
+constexpr auto make_array_n(T&& value) {
+  return make_array_n_impl(std::forward<T>(value), std::integral_constant<std::size_t, N>{});
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T, std::size_t... Is>
-constexpr std::initializer_list<T> make_list_impl(T&& value, std::index_sequence<Is...>) {
+constexpr std::initializer_list<T> make_list_n_impl(T&& value, std::index_sequence<Is...>) {
     return {std::forward<T>(value), (static_cast<void>(Is), value)...};
 }
 
 template <typename T>
-constexpr std::initializer_list<T> make_list_impl(T&&, std::integral_constant<std::size_t, 0>) {
+constexpr std::initializer_list<T> make_list_n_impl(T&&, std::integral_constant<std::size_t, 0>) {
     return {};
 }
 
 template <typename T, std::size_t N>
-constexpr auto make_list_impl(T&& value, std::integral_constant<std::size_t, N>) {
-    return make_list_impl(std::forward<T>(value), std::make_index_sequence<N - 1>{});
+constexpr auto make_list_n_impl(T&& value, std::integral_constant<std::size_t, N>) {
+    return make_list_n_impl(std::forward<T>(value), std::make_index_sequence<N - 1>{});
 }
 
 template <std::size_t N, typename T>
-constexpr auto make_list(T&& value) {
-    return make_list_impl(std::forward<T>(value), std::integral_constant<std::size_t, N>{});
+constexpr auto make_list_n(T&& value) {
+    return make_list_n_impl(std::forward<T>(value), std::integral_constant<std::size_t, N>{});
 }
 
 ///////////////////////////////////////////////////////////////////////////////

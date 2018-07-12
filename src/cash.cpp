@@ -77,10 +77,6 @@ void foo() {
     auto e = ch_fmul<1>(a, 0.1f);
   }
   {
-    ch_scbit<4> a(0);
-    ch_scbit<8> b(a);
-  }
-  {
     ch_scbit<4> a = 3;
     auto b = a & 1;
     auto c = 3 & a;
@@ -133,7 +129,7 @@ void foo() {
     ch_scint<2> b(-1);
     ch_scuint<2> c(1);
     auto q0 = a << 1;
-    auto q1 = b << 1;
+    auto q1 = b << 1_b;
     auto q3 = c << 1;
     auto q4 = b << b;
     auto q5 = c << c;
@@ -142,7 +138,6 @@ void foo() {
   }  
   {
     ch_bit4 a = 0, b = 0_b4;
-    ch_bit8 d(b);
   }
   {
     ch_bit4 a(0);
@@ -221,12 +216,65 @@ void foo() {
     ch_int<2> b(-1);
     ch_uint<2> c(1);
     auto q0 = a << 1;
-    auto q1 = b << 1;
+    auto q1 = b << 1_b;
     auto q3 = c << 1;
     auto q4 = b << b;
     auto q5 = c << c;
     auto q7 = a << c;
     auto q8 = a << b;
+  }
+
+  {
+    ch_bit4 a;
+    ch_bit8 b;
+    auto c1 = ch_eq(a, a);
+    auto c2 = ch_ne(a, a);
+    auto c3 = ch_eq(a, b);
+    auto c4 = ch_ne(b, a);
+    auto c5 = ch_eq(a, b);
+    auto c6 = ch_ne(a, 1_b);
+    auto c7 = ch_eq(1_b, a);
+    auto c8 = ch_ne(a, 1);
+    auto c9 = ch_eq(1, a);
+  }
+
+  {
+    ch_uint4 a;
+    ch_uint4 b;
+    auto c1 = ch_eq(a, a);
+    auto c2 = ch_ne(a, a);
+    auto c3 = ch_lt(a, b);
+    auto c4 = ch_le(b, a);
+    auto c5 = ch_gt(a, b);
+    auto c6 = ch_ge(a, 1_b);
+    auto c7 = ch_eq(1_b, a);
+    auto c8 = ch_eq(a, 1);
+    auto c9 = ch_eq(1, a);
+  }
+
+  {
+    ch_bit4 a;
+    ch_bit8 b;
+    auto c1 = ch_shr(a, a);
+    auto c2 = ch_shr<10>(a, a);
+    auto c3 = ch_shr(a, b);
+    auto c4 = ch_shr<10>(a, b);
+    auto c5 = ch_shr<10>(a, 1_b);
+    auto c6 = ch_shr<10>(a, 1);
+  }
+
+  {
+    ch_int4 a;
+    ch_int8 b;
+    auto c1 = ch_add(a, a);
+    auto c2 = ch_add<10>(a, a);
+    auto c3 = ch_add(a, b);
+    auto c4 = ch_add(b, a);
+    auto c5 = ch_add<10>(a, b);
+    auto c6 = ch_add<10>(a, 1_b);
+    auto c7 = ch_add<10>(1_b, a);
+    auto c8 = ch_add<10>(a, 1);
+    auto c9 = ch_add<10>(1, a);
   }
 }
 

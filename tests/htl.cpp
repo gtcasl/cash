@@ -13,8 +13,8 @@ namespace {
 template <typename T, unsigned Delay>
 struct PipeTest {
   __io (
-    (ch_deq_io<T>) enq,
-    (ch_enq_io<T>) deq,
+    (ch_enq_io<T>) enq,
+    (ch_deq_io<T>) deq,
     __out(T) value
   );
   void describe() {
@@ -52,13 +52,9 @@ TEST_CASE("htl", "[htl]") {
       t = sim.step(t, 1);
       ret &= !device.io.deq.valid;
       device.io.deq.ready = false;
-      t = sim.step(t, 3);
-      ret &= !device.io.deq.valid;
-      device.io.deq.ready = true;
       t = sim.step(t, 1);
       ret &= !!device.io.deq.valid;
       ret &= 0x3e4ccccd == device.io.deq.data;
-      device.io.deq.ready = false;
       t = sim.step(t, 1);
       ret &= !!device.io.deq.valid;
       ret &= 0x3e4ccccd == device.io.deq.data;
@@ -66,11 +62,6 @@ TEST_CASE("htl", "[htl]") {
       t = sim.step(t, 1);
       ret &= !!device.io.deq.valid;
       ret &= 0x3dcccccd == device.io.deq.data;
-      device.io.deq.ready = false;
-      t = sim.step(t, 1);
-      ret &= !!device.io.deq.valid;
-      ret &= 0x3dcccccd == device.io.deq.data;
-      device.io.deq.ready = true;
       t = sim.step(t, 1);
       ret &= !device.io.deq.valid;
       t = sim.step(t, 1);

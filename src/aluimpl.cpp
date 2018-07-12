@@ -61,6 +61,8 @@ std::size_t aluimpl::hash() const {
 
 void aluimpl::initialize() {
   // access source node data
+  src0_ = nullptr;
+  src1_ = nullptr;
   if (srcs_.size() > 0) {
     src0_ = &srcs_[0].data();
     if (srcs_.size() > 1) {
@@ -68,46 +70,65 @@ void aluimpl::initialize() {
     }
   }
 
-  // resize proxy arguments
-  auto op_ary = CH_OP_ARY(op_);
+  // allocate shadow buffers if needed
   auto op_class = CH_OP_CLASS(op_);
-  if (op_ary > 1
-   && (op_compare == op_class
-    || op_bitwise == op_class
-    || op_relational == op_class
-    || op_arithmetic == op_class)
-   && src0_->size() != src1_->size()) {
-    if (src0_->size() < src1_->size()) {
-      t_src0_.resize(src1_->size());
+  if (op_equality == op_class
+   || op_relational == op_class) {
+    if (src0_->size() != src1_->size()) {
+     if (src0_->size() < src1_->size()) {
+       t_src0_.resize(src1_->size());
+       src0_ = &t_src0_;
+     } else {
+       t_src1_.resize(src0_->size());
+       src1_ = &t_src1_;
+     }
+     need_resizing_ = true;
+   }
+  } else
+  if (op_bitwise == op_class
+   || op_arithmetic == op_class)
+  {
+    if (src0_->size() != this->size()) {
+      t_src0_.resize(this->size());
       src0_ = &t_src0_;
       need_resizing_ = true;
-    } else {
-      t_src1_.resize(src0_->size());
+    }
+    if (src1_ && src1_->size() != this->size()) {
+      t_src1_.resize(this->size());
       src1_ = &t_src1_;
       need_resizing_ = true;
     }
   }
 }
 
-void aluimpl::update_proxies() {
+void aluimpl::update_shadow_buffers() {
   if (src0_ == &t_src0_) {
-    if (is_signed_) {
-      bv_sext(t_src0_, srcs_[0].data());
+    if (t_src0_.size() > srcs_[0].size()) {
+      if (is_signed_) {
+        bv_sext(t_src0_, srcs_[0].data());
+      } else {
+        bv_zext(t_src0_, srcs_[0].data());
+      }
     } else {
-      bv_zext(t_src0_, srcs_[0].data());
+      t_src0_.copy(0, srcs_[0].data(), 0, t_src0_.size());
     }
-  } else {
-    if (is_signed_) {
-      bv_sext(t_src1_, srcs_[1].data());
+  }
+  if (src1_ == &t_src1_) {
+    if (t_src1_.size() > srcs_[1].size()) {
+      if (is_signed_) {
+        bv_sext(t_src1_, srcs_[1].data());
+      } else {
+        bv_zext(t_src1_, srcs_[1].data());
+      }
     } else {
-      bv_zext(t_src1_, srcs_[1].data());
+      t_src1_.copy(0, srcs_[1].data(), 0, t_src1_.size());
     }
   }
 }
 
 void aluimpl::eval() {
   if (need_resizing_) {
-    this->update_proxies();
+    this->update_shadow_buffers();
   }
 
   switch (op_) {
@@ -153,10 +174,10 @@ void aluimpl::eval() {
     value_.word(0) = bv_xorr(*src0_);
     break;
 
-  case op_sll:
+  case op_shl:
     bv_sll(value_, *src0_, *src1_);
     break;
-  case op_srl:
+  case op_shr:
     if (is_signed_ )
         bv_sra(value_, *src0_, *src1_);
     else

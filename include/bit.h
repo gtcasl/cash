@@ -6,14 +6,14 @@ namespace ch {
 namespace internal {
 
 template <unsigned N>
-class ch_bit : public logic_op_compare<ch_bit, N,
+class ch_bit : public logic_op_equality<ch_bit, N,
                         logic_op_logical<ch_bit, N,
                           logic_op_bitwise<ch_bit, N,
                             logic_op_shift<ch_bit, N,
                               logic_op_padding<ch_bit, N >>>>> {
 public:
   using traits = logic_traits<N, false, ch_bit, ch_scbit<N>>;
-  using base = logic_op_compare<ch_bit, N,
+  using base = logic_op_equality<ch_bit, N,
                  logic_op_logical<ch_bit, N,
                    logic_op_bitwise<ch_bit, N,
                      logic_op_shift<ch_bit, N,
@@ -132,7 +132,24 @@ protected:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-// reduce operators
+// equality functions
+
+CH_LOGIC_FUNCTION_EQUALITY(ch_eq, op_eq, ch_bit)
+CH_LOGIC_FUNCTION_EQUALITY(ch_ne, op_ne, ch_bit)
+
+// binary functions
+
+CH_LOGIC_FUNCTION_BINARY1(ch_inv, op_inv, ch_bit)
+CH_LOGIC_FUNCTION_BINARY2(ch_and, op_and, ch_bit)
+CH_LOGIC_FUNCTION_BINARY2(ch_or, op_or, ch_bit)
+CH_LOGIC_FUNCTION_BINARY2(ch_xor, op_xor, ch_bit)
+
+// shift functions
+
+CH_LOGIC_FUNCTION_SHIFT(ch_shl, op_shl, ch_bit)
+CH_LOGIC_FUNCTION_SHIFT(ch_shr, op_shr, ch_bit)
+
+// reduce functions
 
 template <unsigned N>
 inline auto ch_andr(const ch_bit<N>& in, CH_SLOC) {
@@ -149,7 +166,7 @@ inline auto ch_xorr(const ch_bit<N>& in, CH_SLOC) {
   return make_logic_op<op_xorr, false, ch_bit<1>>(in, sloc);
 }
 
-// rotate operators
+// rotate functions
 
 template <unsigned N>
 inline auto ch_rotl(const ch_bit<N>& lhs, unsigned rhs, CH_SLOC) {
@@ -163,7 +180,7 @@ inline auto ch_rotr(const ch_bit<N>& lhs, unsigned rhs, CH_SLOC) {
   return make_type<ch_bit<N>>(node, sloc);
 }
 
-// slicing
+// slicing functions
 
 template <typename R, typename T>
 R ch_slice(const T& obj, size_t start = 0, CH_SLOC) {
@@ -199,7 +216,7 @@ auto ch_aslice(const T& obj, size_t start = 0, CH_SLOC) {
   return ch_slice<ch_bit<N>>(obj, start * N, sloc);
 }
 
-// padding
+// padding function
 
 template <typename R, typename T>
 auto ch_pad(const T& obj, CH_SLOC) {
@@ -211,7 +228,7 @@ auto ch_pad(const T& obj, CH_SLOC) {
   return obj.template pad<M>(sloc);
 }
 
-// shuffle
+// shuffle function
 
 template <unsigned M, unsigned N>
 auto ch_shuffle(const ch_bit<N>& obj,
@@ -226,7 +243,7 @@ auto ch_shuffle(const ch_bit<N>& obj,
   return ret;
 }
 
-// tie
+// tie function
 
 template <typename... Ts>
 class bind_impl {
@@ -279,7 +296,7 @@ CH_VA_ARGS_MAP(CH_BIND)
 #undef CH_BIND_ARG
 #undef CH_BIND
 
-// concatenation
+// concatenation function
 
 template <typename U, typename T>
 void cat_impl(U& inout, uint32_t dst_offset, const source_location& sloc, const T& arg) {
@@ -325,7 +342,7 @@ CH_VA_ARGS_MAP(CH_CAT)
 #undef CH_CAT_ARG
 #undef CH_CAT
 
-// cloning
+// cloning function
 
 template <typename T>
 auto ch_clone(const T& obj, CH_SLOC) {
@@ -333,7 +350,7 @@ auto ch_clone(const T& obj, CH_SLOC) {
   return logic_accessor::clone(obj, sloc);
 }
 
-// tap
+// tap function
 
 template <typename T>
 void ch_tap(const std::string& name, const T& value, CH_SLOC) {
@@ -341,7 +358,7 @@ void ch_tap(const std::string& name, const T& value, CH_SLOC) {
   registerTap(name, get_lnode(value), sloc);
 }
 
-// print
+// print function
 
 ch_bit<64> ch_time(CH_SLOC);
 

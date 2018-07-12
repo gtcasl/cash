@@ -6,7 +6,7 @@ namespace ch {
 namespace internal {
 
 template <unsigned N = 32>
-class ch_scint : public scalar_op_compare<ch_scint, N,
+class ch_scint : public scalar_op_equality<ch_scint, N,
                           scalar_op_logical<ch_scint, N,
                             scalar_op_bitwise<ch_scint, N,
                               scalar_op_shift<ch_scint, N,
@@ -16,7 +16,7 @@ class ch_scint : public scalar_op_compare<ch_scint, N,
                                       scalar_op_arithmetic<ch_scint, N, ch_scbit<N>>>>>>>>> {
 public:
   using traits = scalar_traits<N, true, ch_scint, ch_int<N>>;
-  using base = scalar_op_compare<ch_scint, N,
+  using base = scalar_op_equality<ch_scint, N,
                 scalar_op_logical<ch_scint, N,
                   scalar_op_bitwise<ch_scint, N,
                     scalar_op_shift<ch_scint, N,

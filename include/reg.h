@@ -1,6 +1,7 @@
 #pragma once
 
 #include "bit.h"
+#include "if.h"
 
 namespace ch {
 namespace internal {
@@ -111,6 +112,39 @@ auto ch_delay(const T& in, uint32_t delay, const I& init, CH_SLOC) {
   return ret;
 }
 
+template <typename R, typename T>
+auto ch_delayEn(const T& in, const ch_bit<1>& enable, uint32_t delay = 1, CH_SLOC) {
+  CH_CHECK(delay > 0, "invalid value");
+  static_assert(is_logic_type_v<R>, "invalid type");
+  static_assert(std::is_constructible_v<R, T>, "invalid type");
+  R ret(in, sloc);
+  for (unsigned i = 0; i < delay; ++i) {
+    ch_reg<R> reg(sloc);
+    CH_IF (enable) {
+      reg->next = ch_clone(ret, sloc);
+    };
+    ret = reg;
+  }
+  return ret;
+}
+
+template <typename R, typename T, typename I>
+auto ch_delayEn(const T& in, const ch_bit<1>& enable, uint32_t delay, const I& init, CH_SLOC) {
+  CH_CHECK(delay > 0, "invalid value");
+  static_assert(is_logic_type_v<R>, "invalid type");
+  static_assert(std::is_constructible_v<R, T>, "invalid type");
+  static_assert(std::is_constructible_v<R, I>, "invalid type");
+  R ret(in, sloc);
+  for (unsigned i = 0; i < delay; ++i) {
+    ch_reg<R> reg(init, sloc);
+    CH_IF (enable) {
+      reg->next = ch_clone(ret, sloc);
+    };
+    ret = reg;
+  }
+  return ret;
+}
+
 template <typename T>
 auto ch_delay(const T& in, uint32_t delay = 1, CH_SLOC) {
   static_assert(is_object_type_v<T>, "invalid type");
@@ -121,6 +155,18 @@ template <typename T, typename I>
 auto ch_delay(const T& in, uint32_t delay, const I& init, CH_SLOC) {
   static_assert(is_object_type_v<T>, "invalid type");
   return ch_delay<ch_logic_t<T>, T>(in, delay, init, sloc);
+}
+
+template <typename T>
+auto ch_delayEn(const T& in, const ch_bit<1>& enable, uint32_t delay = 1, CH_SLOC) {
+  static_assert(is_object_type_v<T>, "invalid type");
+  return ch_delayEn<ch_logic_t<T>, T>(in, enable, delay, sloc);
+}
+
+template <typename T, typename I>
+auto ch_delayEn(const T& in, const ch_bit<1>& enable, uint32_t delay, const I& init, CH_SLOC) {
+  static_assert(is_object_type_v<T>, "invalid type");
+  return ch_delayEn<ch_logic_t<T>, T>(in, enable, delay, init, sloc);
 }
 
 }

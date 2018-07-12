@@ -312,7 +312,69 @@ struct sloc_arg {
     return make_logic_op<opcode, ch_signed_v<Derived>, rtype>(lhs, rhs, sloc); \
   }
 
-CH_LOGIC_OPERATOR(logic_op_compare)
+#define CH_LOGIC_FUNCTION_EQUALITY(func, op, type) \
+  template <unsigned N, unsigned M = N> \
+  auto func(const type<N>& lhs, const type<M>& rhs, CH_SLOC) { \
+    return make_logic_op<op, false, ch_bit<1>>(lhs, rhs, sloc); \
+  } \
+  template <unsigned N, typename U, \
+            CH_REQUIRE_0(std::is_convertible_v<U, type<ch_width_v<U>>>)> \
+  auto func(const type<N>& lhs, const U& rhs, CH_SLOC) { \
+    return make_logic_op<op, false, ch_bit<1>, type<N>, type<ch_width_v<U>>>(lhs, rhs, sloc); \
+  } \
+  template <unsigned N, typename U, \
+            CH_REQUIRE_0(std::is_convertible_v<U, type<ch_width_v<U>>>)> \
+  auto func(const U& lhs, const type<N>& rhs, CH_SLOC) { \
+    return make_logic_op<op, false, ch_bit<1>, type<ch_width_v<U>>, type<N>>(lhs, rhs, sloc); \
+  }
+
+#define CH_LOGIC_FUNCTION_RELATIONAL(func, op, type) \
+  CH_LOGIC_FUNCTION_EQUALITY(func, op, type)
+
+#define CH_LOGIC_FUNCTION_BINARY1(func, op, type) \
+  template <unsigned R = 0, unsigned N> \
+  auto func(const type<N>& in, CH_SLOC) { \
+    return make_logic_op<op, ch_signed_v<type<N>>, \
+                         std::conditional_t<(R != 0), type<R>, type<N>>>(in, sloc); \
+  }
+
+#define CH_LOGIC_FUNCTION_BINARY2(func, op, type) \
+  template <unsigned R = 0, unsigned N, unsigned M = N> \
+  auto func(const type<N>& lhs, const type<M>& rhs, CH_SLOC) { \
+    return make_logic_op<op, ch_signed_v<type<N>>, \
+                         std::conditional_t<(R != 0), type<R>, type<std::max(N, M)>>>(lhs, rhs, sloc); \
+  } \
+  template <unsigned R = 0, unsigned N, typename U, \
+            CH_REQUIRE_0(std::is_convertible_v<U, type<ch_width_v<U>>>)> \
+  auto func(const type<N>& lhs, const U& rhs, CH_SLOC) { \
+    return make_logic_op<op, ch_signed_v<type<N>>, \
+                         std::conditional_t<(R != 0), type<R>, type<std::max(N, ch_width_v<U>)>>, \
+                         type<N>, type<ch_width_v<U>>>(lhs, rhs, sloc); \
+  } \
+  template <unsigned R = 0, unsigned N, typename U, \
+            CH_REQUIRE_0(std::is_convertible_v<U, type<ch_width_v<U>>>)> \
+  auto func(const U& lhs, const type<N>& rhs, CH_SLOC) { \
+    return make_logic_op<op, ch_signed_v<type<N>>, \
+                         std::conditional_t<(R != 0), type<R>, type<std::max(N, ch_width_v<U>)>>, \
+                         type<ch_width_v<U>>, type<N>>(lhs, rhs, sloc); \
+  }
+
+#define CH_LOGIC_FUNCTION_SHIFT(func, op, type) \
+  template <unsigned R = 0, unsigned N, typename U, \
+            CH_REQUIRE_0(std::is_convertible_v<U, ch_bit<ch_width_v<U>>>)> \
+  auto func(const type<N>& lhs, const U& rhs, CH_SLOC) { \
+    return make_logic_op<op, ch_signed_v<type<N>>, \
+                         std::conditional_t<(R != 0), type<R>, type<N>>, \
+                         type<N>, ch_bit<ch_width_v<U>>>(lhs, rhs, sloc); \
+  }
+
+#define CH_LOGIC_FUNCTION_ARITHMETIC1(func, op, type) \
+  CH_LOGIC_FUNCTION_BINARY1(func, op, type)
+
+#define CH_LOGIC_FUNCTION_ARITHMETIC2(func, op, type) \
+  CH_LOGIC_FUNCTION_BINARY2(func, op, type)
+
+CH_LOGIC_OPERATOR(logic_op_equality)
   CH_LOGIC_OPERATOR_IMPL(operator==, op_eq, ch_bit<1>)
   CH_LOGIC_OPERATOR_IMPL(operator!=, op_ne, ch_bit<1>)
 };
@@ -349,31 +411,17 @@ CH_LOGIC_OPERATOR(logic_op_bitwise)
 
 CH_LOGIC_OPERATOR(logic_op_shift)
   template <typename U,
-            CH_REQUIRE_0(std::is_integral_v<U>)>
+            CH_REQUIRE_0(std::is_convertible_v<U, ch_bit<ch_width_v<U>>>)>
   friend auto operator<<(Derived lhs, const U& rhs) {
     auto sloc = logic_accessor::sloc(lhs);
-    auto _rhs = ch_bit<CH_WIDTH_OF(U)>(rhs);
-    return make_logic_op<op_sll, ch_signed_v<Derived>, Derived>(lhs, _rhs, sloc);
-  }
-
-  template <unsigned M>
-  friend auto operator<<(Derived lhs, const ch_bit<M>& rhs) {
-    auto sloc = logic_accessor::sloc(lhs);
-    return make_logic_op<op_sll, ch_signed_v<Derived>, Derived>(lhs, rhs, sloc);
+    return make_logic_op<op_shl, ch_signed_v<Derived>, Derived, Derived, ch_bit<ch_width_v<U>>>(lhs, rhs, sloc);
   }
 
   template <typename U,
-            CH_REQUIRE_0(std::is_integral_v<U>)>
+            CH_REQUIRE_0(std::is_convertible_v<U, ch_bit<ch_width_v<U>>>)>
   friend auto operator>>(Derived lhs, const U& rhs) {
     auto sloc = logic_accessor::sloc(lhs);
-    auto _rhs = ch_bit<CH_WIDTH_OF(U)>(rhs);
-    return make_logic_op<op_srl, ch_signed_v<Derived>, Derived>(lhs, _rhs, sloc);
-  }
-
-  template <unsigned M>
-  friend auto operator>>(Derived lhs, const ch_bit<M>& rhs) {
-    auto sloc = logic_accessor::sloc(lhs);
-    return make_logic_op<op_srl, ch_signed_v<Derived>, Derived>(lhs, rhs, sloc);
+    return make_logic_op<op_shr, ch_signed_v<Derived>, Derived, Derived, ch_bit<ch_width_v<U>>>(lhs, rhs, sloc);
   }
 };
 

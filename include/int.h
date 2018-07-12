@@ -6,7 +6,7 @@ namespace ch {
 namespace internal {
 
 template <unsigned N = 32>
-class ch_int : public logic_op_compare<ch_int, N,
+class ch_int : public logic_op_equality<ch_int, N,
                         logic_op_logical<ch_int, N,
                           logic_op_bitwise<ch_int, N,
                             logic_op_shift<ch_int, N,
@@ -15,7 +15,7 @@ class ch_int : public logic_op_compare<ch_int, N,
                                   logic_op_arithmetic<ch_int, N, ch_bit<N>>>>>>>> {
 public:
   using traits = logic_traits<N, true, ch_int, ch_scint<N>>;
-  using base = logic_op_compare<ch_int, N,
+  using base = logic_op_equality<ch_int, N,
                 logic_op_logical<ch_int, N,
                   logic_op_bitwise<ch_int, N,
                     logic_op_shift<ch_int, N,
@@ -55,5 +55,28 @@ public:
 
   CH_LOGIC_INTERFACE(ch_int)
 };
+
+CH_LOGIC_FUNCTION_EQUALITY(ch_eq, op_eq, ch_int)
+CH_LOGIC_FUNCTION_EQUALITY(ch_ne, op_ne, ch_int)
+
+CH_LOGIC_FUNCTION_RELATIONAL(ch_lt, op_lt, ch_int)
+CH_LOGIC_FUNCTION_RELATIONAL(ch_le, op_le, ch_int)
+CH_LOGIC_FUNCTION_RELATIONAL(ch_gt, op_gt, ch_int)
+CH_LOGIC_FUNCTION_RELATIONAL(ch_ge, op_ge, ch_int)
+
+CH_LOGIC_FUNCTION_BINARY1(ch_inv, op_inv, ch_int)
+CH_LOGIC_FUNCTION_BINARY2(ch_and, op_and, ch_int)
+CH_LOGIC_FUNCTION_BINARY2(ch_or, op_or, ch_int)
+CH_LOGIC_FUNCTION_BINARY2(ch_xor, op_xor, ch_int)
+
+CH_LOGIC_FUNCTION_SHIFT(ch_shl, op_shl, ch_int)
+CH_LOGIC_FUNCTION_SHIFT(ch_shr, op_shr, ch_int)
+
+CH_LOGIC_FUNCTION_ARITHMETIC1(ch_neg, op_neg, ch_int)
+CH_LOGIC_FUNCTION_ARITHMETIC2(ch_add, op_add, ch_int)
+CH_LOGIC_FUNCTION_ARITHMETIC2(ch_sub, op_sub, ch_int)
+CH_LOGIC_FUNCTION_ARITHMETIC2(ch_mul, op_mul, ch_int)
+CH_LOGIC_FUNCTION_ARITHMETIC2(ch_div, op_div, ch_int)
+CH_LOGIC_FUNCTION_ARITHMETIC2(ch_mod, op_mod, ch_int)
 
 }}

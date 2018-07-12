@@ -188,7 +188,7 @@ public:
 
   //--
 
-  uint32_t node_id();
+  uint32_t node_id(const std::string& name);
 
   template <typename T, typename... Ts>
   T* create_node(Ts&&... args) {

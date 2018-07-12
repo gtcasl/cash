@@ -115,6 +115,13 @@ udf_iface* ch::internal::registerUDF(const std::type_index& signature, udf_iface
 
 ///////////////////////////////////////////////////////////////////////////////
 
+enum sys_node_id {
+  sys_clock_id = 0,
+  sys_reset_id = 1,
+  sys_timer_id = 2,
+  sys_node_max,
+};
+
 static uint32_t make_id() {
   static uint32_t s_id(0);
   return s_id++;
@@ -123,7 +130,7 @@ static uint32_t make_id() {
 context::context(const std::string& name)
   : id_(make_id())
   , name_(name)
-  , node_ids_(0)
+  , node_ids_(sys_node_max)
   , block_idx_(0)
   , default_clk_(nullptr)
   , default_reset_(nullptr)
@@ -176,8 +183,17 @@ lnodeimpl* context::time(const source_location& sloc) {
   return time_;
 }
 
-uint32_t context::node_id() {
-  uint32_t nodeid = ++node_ids_;
+uint32_t context::node_id(const std::string& name) {
+  uint32_t nodeid;
+  if (name == "clk") {
+    nodeid = sys_clock_id;
+  } else if (name == "reset") {
+    nodeid = sys_reset_id;
+  } else if (name == "timer") {
+    nodeid = sys_timer_id;
+  } else {
+    nodeid = node_ids_++;
+  }
 #ifndef NDEBUG
   uint32_t dbg_nodeid = platform::self().dbg_node();
   if (dbg_nodeid) {
@@ -224,21 +240,7 @@ void context::add_node(lnodeimpl* node) {
     snodes_.emplace_back(node);
     break;
   case type_input:
-    {
-      // ensure clock and reset signals are ordered first
-      auto input = reinterpret_cast<inputimpl*>(node);
-      if (input->name() == "clk") {
-        inputs_.emplace_front(input);
-      } else if (input->name() == "reset") {
-        if (default_clk_) {
-          inputs_.emplace(std::next(inputs_.begin()), input);
-        } else {
-          inputs_.emplace_front(input);
-        }
-      } else {
-        inputs_.emplace_back(input);
-      }
-    }
+    inputs_.emplace_back((inputimpl*)node);
     break;  
   case type_output:
     outputs_.emplace_back((outputimpl*)node);

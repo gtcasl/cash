@@ -33,6 +33,30 @@ TEST_CASE("fixed", "[fixed]") {
     });
 
     TEST([]()->ch_bool {
+      ch_fixed<32, 16> a(0.1f), b(0.5f);
+      auto c = a * b;
+      auto e = ch_fixed<32, 16>(0.05f);
+      ch_print("c={0}, e={1}", c, e);
+      return (c == e);
+    });
+
+    TEST([]()->ch_bool {
+      ch_fixed<32, 16> a(-0.1f), b(0.5f);
+      auto c = a * b;
+      auto e = ch_fixed<32, 16>(-0.05f);
+      //ch_print("c={0}, e={1}", c, e);
+      return (c == e);
+    });
+
+    TEST([]()->ch_bool {
+      ch_fixed<32, 16> a(-0.25f), b(0.25f);
+      auto c = a * b;
+      auto e = ch_fixed<32, 16>(-0.0625f);
+      //ch_print("c={0}, e={1}", c, e);
+      return (c == e);
+    });
+
+    TEST([]()->ch_bool {
       ch_fixed<32, 16> a(0x18000), b(0x8000);
       auto c = a / b;
       //ch_print("a={0}, b={1}, c={0}", a, b, c);
