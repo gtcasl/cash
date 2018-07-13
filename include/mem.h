@@ -15,23 +15,29 @@ template <typename T>
 static auto toByteVector(const T& container,
                          uint32_t data_width,
                          uint32_t num_items) {
-  uint32_t src_width = CH_WIDTH_OF(typename T::value_type);
+  // the container has data elements size aligned to the buffer stride
+  uint32_t src_width = CH_WIDTH_OF(typename T::value_type);  
   CH_CHECK(container.size() == (CH_CEILDIV(data_width, src_width) * num_items), "invalid input size");
   std::vector<uint8_t> packed(CH_CEILDIV(data_width * num_items, 8));
   uint32_t word_size(std::min<uint32_t>(src_width, data_width));
   uint32_t curr_value(0), pos(0);
   for (auto item : container) {
-    for (std::size_t i = 0; i < word_size; ++i, ++pos) {
-      curr_value |= ((item >> i) & 0x1) << (pos & 0x7);
+    for (std::size_t i = 0; i < word_size; ++i) {
+      curr_value |= ((item >> i) & 0x1) << (pos & 0x7);      
       if (0x7 == (pos & 0x7)) {
         packed[pos >> 3] = curr_value;
         curr_value = 0;
       }
+      if ((++pos % data_width) == 0)
+        break;
     }
   }
   if (pos & 0x7) {
     packed[pos >> 3] = curr_value;
+    curr_value = 0;
   }
+  assert(0 == curr_value);
+  assert(pos == data_width * num_items);
   return packed;
 }
 

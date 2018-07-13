@@ -103,7 +103,7 @@ void scalar_buffer::read(uint32_t dst_offset,
   if (source_) {
     source_->read(dst_offset, out, out_cbsize, offset_ + src_offset, length);
   } else {
-    assert(dst_offset + length <= size_);
+    assert(src_offset + length <= size_);
     value_.read(dst_offset, out, out_cbsize, src_offset, length);
   }
 }
@@ -117,7 +117,6 @@ void scalar_buffer::write(uint32_t dst_offset,
     source_->write(offset_ + dst_offset, in, in_cbsize, src_offset, length);
   } else {
     assert(dst_offset + length <= size_);
-    assert(0 == offset_);
     value_.write(dst_offset, in, in_cbsize, src_offset, length);
   }
 }

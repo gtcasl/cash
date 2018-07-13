@@ -15,6 +15,22 @@ using namespace extension;
 template <unsigned N, unsigned F>
 class ch_fixed;
 
+template <unsigned I, unsigned F>
+int FloatToFixed(float value) {
+  static_assert(I >= 1 && (I + F) <= 32, "invalid size");
+  auto xOne = (1 << F);
+  int xvalue = static_cast<int>(floor(value * xOne + 0.5f));
+  if constexpr (I == 1) {    
+    if (xvalue == xOne) {
+      xvalue = xOne - 1;
+    }
+    if (xvalue < 0) {
+      xvalue += 2 * xOne;
+    }
+  }
+  return xvalue;
+}
+
 template <unsigned N, unsigned F>
 class ch_scfixed : public ch_scbit<N> {
 public:  
@@ -31,7 +47,7 @@ public:
             CH_REQUIRE_0(std::is_integral_v<U>)>
   ch_scfixed(const U& other) : base(other) {}
 
-  explicit ch_scfixed(float other) : base(static_cast<int32_t>(floor(other * (1 << F) + 0.5f))) {
+  explicit ch_scfixed(float other) : base(FloatToFixed<I, F>(other)) {
     static_assert(N <= 32, "invalid size");
   }
 
@@ -53,14 +69,6 @@ public:
 
   CH_SCALAR_INTERFACE(ch_scfixed)
 
-  friend auto operator==(const ch_scfixed& lhs, const ch_scfixed& rhs) {
-    return (lhs.as_scint() == rhs.as_scint());
-  }
-
-  friend auto operator!=(const ch_scfixed& lhs, const ch_scfixed& rhs) {
-    return (lhs.as_scint() != rhs.as_scint());
-  }
-
   friend auto operator<(const ch_scfixed& lhs, const ch_scfixed& rhs) {
     return (lhs.as_scint() < rhs.as_scint());
   }
@@ -75,6 +83,30 @@ public:
 
   friend auto operator>=(const ch_scfixed& lhs, const ch_scfixed& rhs) {
     return (lhs.as_scint() >= rhs.as_scint());
+  }
+
+  friend auto operator~(const ch_scfixed& self) {
+    return (~self.as_scint()).template as<ch_scfixed>();
+  }
+
+  friend auto operator&(const ch_scfixed& lhs, const ch_scfixed& rhs) {
+    return (lhs.as_scint() & rhs.as_scint()).template as<ch_scfixed>();
+  }
+
+  friend auto operator|(const ch_scfixed& lhs, const ch_scfixed& rhs) {
+    return (lhs.as_scint() | rhs.as_scint()).template as<ch_scfixed>();
+  }
+
+  template <typename U,
+            CH_REQUIRE_0(std::is_convertible_v<U, ch_scbit<ch_width_v<U>>>)>
+  friend auto operator<<(const ch_scfixed& lhs, const U& rhs) {
+    return (lhs.as_scint() << rhs).template as<ch_scfixed>();
+  }
+
+  template <typename U,
+            CH_REQUIRE_0(std::is_convertible_v<U, ch_scbit<ch_width_v<U>>>)>
+  friend auto operator>>(const ch_scfixed& lhs, const U& rhs) {
+    return (lhs.as_scint() >> rhs).template as<ch_scfixed>();
   }
 
   friend auto operator-(const ch_scfixed& self) {
@@ -99,10 +131,17 @@ public:
     return ret.template as<ch_scfixed>();
   }
 
+  template <typename U,
+            CH_REQUIRE_0(std::is_integral_v<U>)>
+  explicit operator U() const {
+    return static_cast<U>(this->as_scint());
+  }
+
   explicit operator float() const {
     static_assert(N <= 32, "invalid size");
-    float value(static_cast<int32_t>(*this));
-    return value / (1 << F);
+    int32_t ivalue = static_cast<int32_t>(*this);
+    auto value = float(ivalue) / (1 << F);
+    return value;
   }
 };
 
@@ -122,7 +161,7 @@ public:
             CH_REQUIRE_0(std::is_integral_v<U>)>
   ch_fixed(const U& other, CH_SLOC) : base(other, sloc) {}
 
-  explicit ch_fixed(float other) : base(static_cast<int32_t>(floor(other * (1 << F) + 0.5f))) {
+  explicit ch_fixed(float other) : base(FloatToFixed<I, F>(other)) {
     static_assert(N <= 32, "invalid size");
   }
 
@@ -146,48 +185,64 @@ public:
 
   CH_LOGIC_INTERFACE(ch_fixed)
 
-  friend auto operator==(ch_fixed lhs, const ch_fixed& rhs) {
-    return (lhs.as_int() == rhs.as_int());
-  }
-
-  friend auto operator!=(ch_fixed lhs, const ch_fixed& rhs) {
-    return (lhs.as_int() != rhs.as_int());
-  }
-
-  friend auto operator<(ch_fixed lhs, const ch_fixed& rhs) {
+  friend auto operator<(const ch_fixed& lhs, const ch_fixed& rhs) {
     return (lhs.as_int() < rhs.as_int());
   }
 
-  friend auto operator<=(ch_fixed lhs, const ch_fixed& rhs) {
+  friend auto operator<=(const ch_fixed& lhs, const ch_fixed& rhs) {
     return (lhs.as_int() <= rhs.as_int());
   }
 
-  friend auto operator>(ch_fixed lhs, const ch_fixed& rhs) {
+  friend auto operator>(const ch_fixed& lhs, const ch_fixed& rhs) {
     return (lhs.as_int() >= rhs.as_int());
   }
 
-  friend auto operator>=(ch_fixed lhs, const ch_fixed& rhs) {
+  friend auto operator>=(const ch_fixed& lhs, const ch_fixed& rhs) {
     return (lhs.as_int() >= rhs.as_int());
   }
 
-  friend auto operator-(ch_fixed self) {
+  friend auto operator~(const ch_fixed& self) {
+    return (~self.as_int()).template as<ch_fixed>();
+  }
+
+  friend auto operator&(const ch_fixed& lhs, const ch_fixed& rhs) {
+    return (lhs.as_int() & rhs.as_int()).template as<ch_fixed>();
+  }
+
+  friend auto operator|(const ch_fixed& lhs, const ch_fixed& rhs) {
+    return (lhs.as_int() | rhs.as_int()).template as<ch_fixed>();
+  }
+
+  template <typename U,
+            CH_REQUIRE_0(std::is_convertible_v<U, ch_bit<ch_width_v<U>>>)>
+  friend auto operator<<(const ch_fixed& lhs, const U& rhs) {
+    return (lhs.as_int() << rhs).template as<ch_fixed>();
+  }
+
+  template <typename U,
+            CH_REQUIRE_0(std::is_convertible_v<U, ch_bit<ch_width_v<U>>>)>
+  friend auto operator>>(const ch_fixed& lhs, const U& rhs) {
+    return (lhs.as_int() >> rhs).template as<ch_fixed>();
+  }
+
+  friend auto operator-(const ch_fixed& self) {
     return (-self.as_int()).template as<ch_fixed>();
   }
 
-  friend auto operator+(ch_fixed lhs, const ch_fixed& rhs) {
+  friend auto operator+(const ch_fixed& lhs, const ch_fixed& rhs) {
     return (lhs.as_int() + rhs.as_int()).template as<ch_fixed>();
   }
 
-  friend auto operator-(ch_fixed lhs, const ch_fixed& rhs) {
+  friend auto operator-(const ch_fixed& lhs, const ch_fixed& rhs) {
     return (lhs.as_int() - rhs.as_int()).template as<ch_fixed>();
   }
 
-  friend auto operator*(ch_fixed lhs, const ch_fixed& rhs) {
+  friend auto operator*(const ch_fixed& lhs, const ch_fixed& rhs) {
     auto ret = ch_shr<N>(ch_mul<N+F>(lhs.as_int(), rhs.as_int()), F);
     return ret.template as<ch_fixed>();
   }
 
-  friend auto operator/(ch_fixed lhs, const ch_fixed& rhs) {
+  friend auto operator/(const ch_fixed& lhs, const ch_fixed& rhs) {
     auto ret = (ch_shl<N+F>(lhs.as_int(), F) / rhs.as_int()).template slice<N>();
     return ret.template as<ch_fixed>();
   }

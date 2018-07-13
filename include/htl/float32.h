@@ -238,47 +238,47 @@ public:
 
   CH_LOGIC_INTERFACE(ch_float32)
 
-  friend auto operator==(ch_float32 lhs, const ch_float32& rhs) {
+  friend auto operator==(ch_float32& lhs, const ch_float32& rhs) {
     return (lhs.as_int() == rhs.as_int());
   }
 
-  friend auto operator!=(ch_float32 lhs, const ch_float32& rhs) {
+  friend auto operator!=(ch_float32& lhs, const ch_float32& rhs) {
     return (lhs.as_int() != rhs.as_int());
   }
 
-  friend auto operator<(ch_float32 lhs, const ch_float32& rhs) {
+  friend auto operator<(ch_float32& lhs, const ch_float32& rhs) {
     return (lhs.as_int() < rhs.as_int());
   }
 
-  friend auto operator<=(ch_float32 lhs, const ch_float32& rhs) {
+  friend auto operator<=(ch_float32& lhs, const ch_float32& rhs) {
     return (lhs.as_int() <= rhs.as_int());
   }
 
-  friend auto operator>(ch_float32 lhs, const ch_float32& rhs) {
+  friend auto operator>(ch_float32& lhs, const ch_float32& rhs) {
     return (lhs.as_int() >= rhs.as_int());
   }
 
-  friend auto operator>=(ch_float32 lhs, const ch_float32& rhs) {
+  friend auto operator>=(ch_float32& lhs, const ch_float32& rhs) {
     return (lhs.as_int() >= rhs.as_int());
   }
 
-  friend auto operator-(ch_float32 self) {
+  friend auto operator-(ch_float32& self) {
     return ch_udf<cfSub>(0.0f, self);
   }
 
-  friend auto operator+(ch_float32 lhs, const ch_float32& rhs) {
+  friend auto operator+(ch_float32& lhs, const ch_float32& rhs) {
     return ch_udf<cfAdd>(lhs, rhs);
   }
 
-  friend auto operator-(ch_float32 lhs, const ch_float32& rhs) {
+  friend auto operator-(ch_float32& lhs, const ch_float32& rhs) {
     return ch_udf<cfSub>(lhs, rhs);
   }
 
-  friend auto operator*(ch_float32 lhs, const ch_float32& rhs) {
+  friend auto operator*(ch_float32& lhs, const ch_float32& rhs) {
     return ch_udf<cfMul>(lhs, rhs);
   }
 
-  friend auto operator/(ch_float32 lhs, const ch_float32& rhs) {
+  friend auto operator/(ch_float32& lhs, const ch_float32& rhs) {
     return ch_udf<cfDiv>(lhs, rhs);
   }
 };

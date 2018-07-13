@@ -115,24 +115,6 @@ public:
     return this->slice<ch_scbit<M>>(start * M);
   }
 
-  // bits access
-
-  void read(uint32_t dst_offset,
-            void* out,
-            uint32_t out_cbsize,
-            uint32_t src_offset = 0,
-            uint32_t length = N) const {
-    buffer_->read(dst_offset, out, out_cbsize, src_offset, length);
-  }
-
-  void write(uint32_t dst_offset,
-             const void* in,
-             uint32_t in_cbsize,
-             uint32_t src_offset = 0,
-             uint32_t length = N) {
-    buffer_->write(dst_offset, in, in_cbsize, src_offset, length);
-  }
-
   CH_SCALAR_INTERFACE(ch_scbit)
 
 protected:

@@ -6,22 +6,18 @@ namespace ch {
 namespace internal {
 
 template <unsigned N = 32>
-class ch_int : public logic_op_equality<ch_int, N,
-                        logic_op_logical<ch_int, N,
-                          logic_op_bitwise<ch_int, N,
-                            logic_op_shift<ch_int, N,
-                              logic_op_padding<ch_int, N,
-                                logic_op_relational<ch_int, N,
-                                  logic_op_arithmetic<ch_int, N, ch_bit<N>>>>>>>> {
+class ch_int : public logic_op_relational<ch_int, N,
+                        logic_op_bitwise<ch_int, N,
+                          logic_op_shift<ch_int, N,
+                            logic_op_padding<ch_int, N,
+                              logic_op_arithmetic<ch_int, N, ch_bit<N>>>>>> {
 public:
   using traits = logic_traits<N, true, ch_int, ch_scint<N>>;
-  using base = logic_op_equality<ch_int, N,
-                logic_op_logical<ch_int, N,
-                  logic_op_bitwise<ch_int, N,
-                    logic_op_shift<ch_int, N,
-                      logic_op_padding<ch_int, N,
-                        logic_op_relational<ch_int, N,
-                          logic_op_arithmetic<ch_int, N, ch_bit<N>>>>>>>>;
+  using base = logic_op_relational<ch_int, N,
+                 logic_op_bitwise<ch_int, N,
+                   logic_op_shift<ch_int, N,
+                     logic_op_padding<ch_int, N,
+                       logic_op_arithmetic<ch_int, N, ch_bit<N>>>>>>;
 
   explicit ch_int(const logic_buffer& buffer = logic_buffer(N, CH_CUR_SLOC))
     : base(buffer)

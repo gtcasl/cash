@@ -6,24 +6,20 @@ namespace ch {
 namespace internal {
 
 template <unsigned N = 32>
-class ch_scuint : public scalar_op_equality<ch_scuint, N,
-                          scalar_op_logical<ch_scuint, N,
-                            scalar_op_bitwise<ch_scuint, N,
-                              scalar_op_shift<ch_scuint, N,
-                                scalar_op_padding<ch_scuint, N,
-                                  scalar_op_cast<ch_scuint, N,
-                                    scalar_op_relational<ch_scuint, N,
-                                      scalar_op_arithmetic<ch_scuint, N, ch_scbit<N>>>>>>>>> {
+class ch_scuint : public scalar_op_relational<ch_scuint, N,
+                           scalar_op_bitwise<ch_scuint, N,
+                             scalar_op_shift<ch_scuint, N,
+                               scalar_op_padding<ch_scuint, N,
+                                 scalar_op_cast<ch_scuint, N,
+                                    scalar_op_arithmetic<ch_scuint, N, ch_scbit<N>>>>>>> {
 public:
   using traits = scalar_traits<N, false, ch_scuint, ch_uint<N>>;
-  using base = scalar_op_equality<ch_scuint, N,
-                scalar_op_logical<ch_scuint, N,
-                  scalar_op_bitwise<ch_scuint, N,
-                    scalar_op_shift<ch_scuint, N,
-                      scalar_op_padding<ch_scuint, N,
-                        scalar_op_cast<ch_scuint, N,
-                          scalar_op_relational<ch_scuint, N,
-                            scalar_op_arithmetic<ch_scuint, N, ch_scbit<N>>>>>>>>>;
+  using base = scalar_op_relational<ch_scuint, N,
+                 scalar_op_bitwise<ch_scuint, N,
+                   scalar_op_shift<ch_scuint, N,
+                     scalar_op_padding<ch_scuint, N,
+                       scalar_op_cast<ch_scuint, N,
+                         scalar_op_arithmetic<ch_scuint, N, ch_scbit<N>>>>>>>;
 
   explicit ch_scuint(const scalar_buffer_ptr& buffer = make_scalar_buffer(N))
     : base(buffer)

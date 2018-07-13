@@ -369,7 +369,7 @@ void bitvector::read(
         tmp = 0;
       }
     }
-    if (tmp) {
+    if (end_rem) {
       uint32_t sel_mask = (~0UL << end_rem);
       *b_dst = CH_BLEND(sel_mask, tmp, *b_dst);
     }

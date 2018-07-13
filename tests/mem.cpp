@@ -23,8 +23,38 @@ TEST_CASE("memory", "[memory]") {
            (6,  0xC_h)
            (8,  0xC_h)
                (q);
-      ch_print("t={0}, a={1}, q={2}", ch_time(), a, q);
-      return (e == q);
+      //ch_print("t={0}, q={1}, e={2}", ch_time(), q, e);
+      return (q == e);
+    }, 4);
+    TEST([]()->ch_bool {
+      ch_reg<ch_uint2> a(0);
+      ch_bit<5> q;
+      ch_rom<ch_bit<5>, 3> rom({0xA, 0xB, 0xC});
+      q = rom.read(a);
+      a->next = ch_min(a + 1, 2);
+      auto e = ch_case<ch_bit<5>>(ch_time(),
+           2,  0xA_h5)
+          (4,  0xB_h5)
+          (6,  0xC_h5)
+          (8,  0xC_h5)
+              (q);
+      //ch_print("t={0}, q={1}, e={2}", ch_time(), q, e);
+      return (q == e);
+    }, 4);
+    TEST([]()->ch_bool {
+      std::array<uint8_t, 9> data = {0x1, 0x2, 0x1, 0x3, 0x4, 0x1, 0x5, 0x6, 0x1};
+      ch_reg<ch_uint2> a(0);
+      ch_bit<17> q;
+      ch_rom<ch_bit<17>, 3> rom(data);
+      q = rom.read(a);
+      a->next = ch_min(a + 1, 2);
+      auto e = ch_case<ch_bit<17>>(ch_time(),
+           2,  0x10201_h17)
+          (4,  0x10403_h17)
+          (6,  0x10605_h17)
+              (q);
+      //ch_print("t={0}, q={1}, e={2}", ch_time(), q, e);
+      return (q == e);
     }, 4);
     TEST([]()->ch_bool {
       ch_reg<ch_uint2> a(0);
@@ -38,8 +68,8 @@ TEST_CASE("memory", "[memory]") {
            (7,  0xC_h)
            (9,  0xC_h)
                (q);
-      //ch_print("t={0}, a={1}, q={2}", ch_time(), a, q);
-      return (e == q);
+      //ch_print("t={0}, a={1}, e={2}", ch_time(), q, e);
+      return (q == e);
     }, 4);
   }
   
