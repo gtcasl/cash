@@ -144,8 +144,9 @@ void bindinimpl::eval() {
 }
 
 void bindinimpl::print(std::ostream& out, uint32_t level) const {
-  out << "#" << id_ << " <- " << "bindin" << value_.size();
-  out << "(#" << src(0).id() << ", $" << ioport_.id() << ")";
+  out << "#" << id_ << " <- " << "bindin" << value_.size()
+      << "(" << ioport_.name()
+      << ", #" << src(0).id() << ", $" << ioport_.id() << ")";
   if (level == 2) {
     out << " = " << value_;
   }
@@ -181,8 +182,9 @@ void bindoutimpl::eval() {
 }
 
 void bindoutimpl::print(std::ostream& out, uint32_t level) const {
-  out << "#" << id_ << " <- " << "bindout" << value_.size();
-  out << "(#" << binding_->id() << ", $" << ioport_.id() << ")";
+  out << "#" << id_ << " <- " << "bindout" << value_.size()
+      << "(" << ioport_.name()
+      << ", #" << binding_->id() << ", $" << ioport_.id() << ")";
   if (level == 2) {
     out << " = " << value_;
   }

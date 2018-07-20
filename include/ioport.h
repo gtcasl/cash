@@ -100,7 +100,7 @@ template <typename T>
 inline constexpr ch_direction ch_direction_v = std::decay_t<T>::traits::direction;
 
 template <typename T>
-inline constexpr bool is_io_traits_v = is_true_v<(T::type & traits_io)>;
+inline constexpr bool is_io_traits_v = bool_constant_v<(T::type & traits_io)>;
 
 CH_DEF_SFINAE_CHECK(is_io_type, is_io_traits_v<typename std::decay_t<T>::traits>);
 

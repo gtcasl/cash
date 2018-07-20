@@ -34,17 +34,45 @@ public:
     __next__ = std::make_unique<next_t>(createRegNextNode(logic_accessor::data(*this)));
   }
 
-  template <typename U,
-            CH_REQUIRE_0(std::is_convertible_v<U, T>)>
-  ch_reg_impl(const U& init, CH_SLOC)
-    : base(createRegNode(logic_accessor::data(T(init)), sloc)) {
+  template <typename U0,
+            CH_REQUIRE_0(std::is_convertible_v<U0, T>)>
+  ch_reg_impl(const U0& init0, CH_SLOC)
+    : base(createRegNode(logic_accessor::data(T(init0)), sloc)) {
     __next__ = std::make_unique<next_t>(createRegNextNode(logic_accessor::data(*this)));
   }
 
-  template <typename A0, typename... Args,
-            CH_REQUIRE_0(!std::is_convertible_v<A0, T> && std::is_constructible_v<T, A0, Args...>)>
-  explicit ch_reg_impl(const A0& init0, const Args&... inits)
-    : base(createRegNode(logic_accessor::data(T(init0, inits...)), source_location())) {
+  template <typename U0,
+            CH_REQUIRE_0(!std::is_convertible_v<U0, T> && std::is_constructible_v<T, U0>)>
+  explicit ch_reg_impl(const U0& init0, CH_SLOC)
+    : base(createRegNode(logic_accessor::data(T(init0)), sloc)) {
+    __next__ = std::make_unique<next_t>(createRegNextNode(logic_accessor::data(*this)));
+  }
+
+  template <typename U0, typename U1,
+            CH_REQUIRE_0(std::is_constructible_v<T, U0, U1>)>
+  explicit ch_reg_impl(const U0& init0, const U1& init1, CH_SLOC)
+    : base(createRegNode(logic_accessor::data(T(init0, init1)), sloc)) {
+    __next__ = std::make_unique<next_t>(createRegNextNode(logic_accessor::data(*this)));
+  }
+
+  template <typename U0, typename U1, typename U2,
+            CH_REQUIRE_0(std::is_constructible_v<T, U0, U1, U2>)>
+  explicit ch_reg_impl(const U0& init0, const U1& init1, const U2& init2, CH_SLOC)
+    : base(createRegNode(logic_accessor::data(T(init0, init1, init2)), sloc)) {
+    __next__ = std::make_unique<next_t>(createRegNextNode(logic_accessor::data(*this)));
+  }
+
+  template <typename U0, typename U1, typename U2, typename U3,
+            CH_REQUIRE_0(std::is_constructible_v<T, U0, U1, U2, U3>)>
+  explicit ch_reg_impl(const U0& init0, const U1& init1, const U2& init2, const U3& init3, CH_SLOC)
+    : base(createRegNode(logic_accessor::data(T(init0, init1, init2, init3)), sloc)) {
+    __next__ = std::make_unique<next_t>(createRegNextNode(logic_accessor::data(*this)));
+  }
+
+  template <typename U0, typename U1, typename U2, typename U3, typename... Us,
+            CH_REQUIRE_0(std::is_constructible_v<T, U0, U1, U2, U3, Us...>)>
+  explicit ch_reg_impl(const U0& init0, const U1& init1, const U2& init2, const U3& init3, const Us&... inits)
+    : base(createRegNode(logic_accessor::data(T(init0, init1, init2, init3, inits...)), source_location())) {
     __next__ = std::make_unique<next_t>(createRegNextNode(logic_accessor::data(*this)));
   }
 
@@ -120,9 +148,7 @@ auto ch_delayEn(const T& in, const ch_bit<1>& enable, uint32_t delay = 1, CH_SLO
   R ret(in, sloc);
   for (unsigned i = 0; i < delay; ++i) {
     ch_reg<R> reg(sloc);
-    CH_IF (enable) {
-      reg->next = ch_clone(ret, sloc);
-    };
+    reg->next = ch_sel(enable, ch_clone(ret, sloc), reg, sloc);
     ret = reg;
   }
   return ret;
@@ -137,9 +163,7 @@ auto ch_delayEn(const T& in, const ch_bit<1>& enable, uint32_t delay, const I& i
   R ret(in, sloc);
   for (unsigned i = 0; i < delay; ++i) {
     ch_reg<R> reg(init, sloc);
-    CH_IF (enable) {
-      reg->next = ch_clone(ret, sloc);
-    };
+    reg->next = ch_sel(enable, ch_clone(ret, sloc), reg, sloc);
     ret = reg;
   }
   return ret;

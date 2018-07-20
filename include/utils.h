@@ -174,17 +174,8 @@ private:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <bool Pred>
-using is_true = std::conditional_t<Pred, std::true_type, std::false_type>;
-
-template <bool Pred>
-inline constexpr bool is_true_v = is_true<Pred>::value;
-
-template <bool Pred>
-using is_false = std::conditional_t<Pred, std::false_type, std::true_type>;
-
-template <bool Pred>
-inline constexpr bool is_false_v = is_false<Pred>::value;
+template <bool B>
+inline constexpr bool bool_constant_v = std::bool_constant<B>::value;
 
 ///////////////////////////////////////////////////////////////////////////////
 

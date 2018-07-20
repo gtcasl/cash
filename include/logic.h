@@ -37,9 +37,9 @@ template <typename T>
 using ch_logic_t = typename std::decay_t<T>::traits::logic_type;
 
 template <typename T>
-inline constexpr bool is_logic_traits_v = is_true_v<(T::type & traits_logic)>;
+inline constexpr bool is_logic_traits_v = bool_constant_v<(T::type & traits_logic)>;
 
-CH_DEF_SFINAE_CHECK(is_logic_only, is_true_v<(std::decay_t<T>::traits::type == traits_logic)>);
+CH_DEF_SFINAE_CHECK(is_logic_only, bool_constant_v<(std::decay_t<T>::traits::type == traits_logic)>);
 
 CH_DEF_SFINAE_CHECK(is_logic_type, is_logic_traits_v<typename std::decay_t<T>::traits>);
 

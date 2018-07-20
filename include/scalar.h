@@ -27,9 +27,9 @@ template <typename T>
 using ch_scalar_t = typename std::decay_t<T>::traits::scalar_type;
 
 template <typename T>
-inline constexpr bool is_scalar_traits_v = is_true_v<(T::type & traits_scalar)>;
+inline constexpr bool is_scalar_traits_v = bool_constant_v<(T::type & traits_scalar)>;
 
-CH_DEF_SFINAE_CHECK(is_scalar_only, is_true_v<(std::decay_t<T>::traits::type == traits_scalar)>);
+CH_DEF_SFINAE_CHECK(is_scalar_only, bool_constant_v<(std::decay_t<T>::traits::type == traits_scalar)>);
 
 CH_DEF_SFINAE_CHECK(is_scalar_type, is_scalar_traits_v<typename std::decay_t<T>::traits>);
 

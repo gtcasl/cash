@@ -99,7 +99,10 @@ public:
     , io(build(T(std::forward<Ts>(args)...)).io)
   {}
 
-  ch_device(ch_device&& other) : base(std::move(other)), io(std::move(other.io)) {}
+  ch_device(ch_device&& other)
+    : base(std::move(other))
+    , io(std::move(other.io))
+  {}
 
 protected:
 

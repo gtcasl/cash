@@ -79,7 +79,7 @@ struct udf_traits {
 };
 
 template <typename T>
-inline constexpr bool is_udf_traits_v = is_true_v<(T::type == traits_udf)>;
+inline constexpr bool is_udf_traits_v = bool_constant_v<(T::type == traits_udf)>;
 
 CH_DEF_SFINAE_CHECK(is_udf_type, is_udf_traits_v<typename std::decay_t<T>::traits>);
 

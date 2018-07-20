@@ -14,7 +14,7 @@ auto ch_counter(const ch_bool& inc) {
     auto value = ch_sel(count == End, 0x0, count + 0x1);
     count->next = ch_sel(inc, value, count);
   }
-  return count;
+  return std::tuple(count, count->next);
 }
 
 }

@@ -1,0 +1,22 @@
+
+template <typename T, typename U, typename = std::make_index_sequence<std::tuple_size<U>::value>>
+struct is_udf_compatible;
+
+template <typename T, typename ... Ts, std::size_t... Is>
+struct is_udf_compatible<T, std::tuple<Ts...>, std::index_sequence<Is...>>
+  : public std::bool_constant<std::is_convertible_v<std::tuple_element_t<Is, Ts>, std::tuple_element_t<Is, typename T::traits::Inputs>> && ...> {};
+
+
+template <typename T, typename... Args, std::size_t... Is>
+auto ch_udf_impl(const source_location& sloc, const Args&... args, std::index_sequence<Is...>) {
+  static_assert(is_udf_type_v<T>, "invalid type");
+  static_assert(sizeof...(Args) == std::tuple_size_v<typename T::traits::Inputs>, "number of inputs mismatch");
+  static_assert((std::is_convertible_v<Args, std::tuple_element_t<Is, typename T::traits::Inputs>> && ...), "invalid type for input");
+  auto node = createUDFNode(get_udf<T>(), {to_lnode<std::tuple_element_t<Is, typename T::traits::Inputs>>(args, sloc)...}, sloc);
+  return make_type<typename T::traits::Output>(node, sloc);
+}
+
+template <typename T, typename... Args, typename = void>
+auto ch_udf(const Args&... args, CH_SLOC) {
+  return ch_udf_impl<T, Args...>(sloc, args..., std::make_index_sequence<sizeof...(Args)>{});
+}

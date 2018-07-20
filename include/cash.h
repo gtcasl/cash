@@ -348,4 +348,6 @@ inline namespace literals {
 
 #define __sloc     CH_SLOC
 
+#define __unused   CH_UNUSED
+#define __count_of CH_COUNTOF
 #define __width_of CH_WIDTH_OF
