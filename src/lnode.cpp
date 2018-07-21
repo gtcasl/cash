@@ -89,11 +89,8 @@ void lnode::write(uint32_t dst_offset,
                   uint32_t src_offset,
                   uint32_t length,
                   const source_location& sloc) {
-  assert(impl_&& type_proxy == impl_->type());
-  assert(this != &src);
-  reinterpret_cast<proxyimpl*>(impl_)->write(
-    dst_offset, src, src_offset, length, sloc
-  );
+  assert(impl_);
+  impl_->write(dst_offset, src, src_offset, length, sloc);
 }
 
 uint32_t lnode::var_id() const {

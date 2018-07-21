@@ -595,7 +595,7 @@ void firrtlwriter::print_mem(memimpl* node) {
     for (uint32_t i = 0, n = node->num_items(); i < n; ++i) {
       this->print_name(node);
       out_ << "[" << i << "] <= ";
-      node->value().read(0, value.words(), data_cbsize, i * data_width, data_width);
+      node->value().read(i * data_width, value.words(), data_cbsize, 0, data_width);
       this->print_value(value);
       out_ << std::endl;
     }

@@ -90,21 +90,21 @@ const bitvector& scalar_buffer::data() const {
     if (value_.empty()) {
       value_.resize(size_, 0, true);
     }
-    source_->read(0, value_.words(), value_.cbsize(), offset_, size_);
+    source_->read(offset_, value_.words(), value_.cbsize(), 0, size_);
   }
   return value_;
 }
 
-void scalar_buffer::read(uint32_t dst_offset,
+void scalar_buffer::read(uint32_t src_offset,
                          void* out,
                          uint32_t out_cbsize,
-                         uint32_t src_offset,
+                         uint32_t dst_offset,
                          uint32_t length) const {
   if (source_) {
-    source_->read(dst_offset, out, out_cbsize, offset_ + src_offset, length);
+    source_->read(offset_ + src_offset, out, out_cbsize, dst_offset, length);
   } else {
     assert(src_offset + length <= size_);
-    value_.read(dst_offset, out, out_cbsize, src_offset, length);
+    value_.read(src_offset, out, out_cbsize, dst_offset, length);
   }
 }
 

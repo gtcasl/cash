@@ -140,10 +140,10 @@ void mrportimpl::eval() {
   // asynchronous read
   auto data_width = mem_->data_width();
   auto addr = this->addr().data().word(0);
-  mem_->value().read(0,
+  mem_->value().read(addr * data_width,
                      value_.words(),
                      value_.cbsize(),
-                     addr * data_width,
+                     0,
                      data_width);
 }
 

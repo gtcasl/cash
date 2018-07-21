@@ -13,14 +13,14 @@ __inout (ch_valid_in, (
   __in(ch_bool) valid
 ));
 
-template <typename T> using ch_valid_out = ch_flip_t<ch_valid_in<T>>;
+template <typename T> using ch_valid_out = ch_flip_io<ch_valid_in<T>>;
 
 template <typename T>
 __inout (ch_enq_io, ch_valid_in<T>, (
   __out(ch_bool) ready
 ));
 
-template <typename T> using ch_deq_io = ch_flip_t<ch_enq_io<T>>;
+template <typename T> using ch_deq_io = ch_flip_io<ch_enq_io<T>>;
 
 }
 }

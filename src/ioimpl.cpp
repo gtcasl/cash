@@ -50,18 +50,26 @@ void inputimpl::print(std::ostream& out, uint32_t level) const {
 ///////////////////////////////////////////////////////////////////////////////
 
 outputimpl::outputimpl(context* ctx,
-                       const lnode& src,
+                       uint32_t size,
                        const std::string& name,
                        const source_location& sloc)
-  : ioimpl(ctx, type_output, src.size(), sloc, name)
+  : ioimpl(ctx, type_output, size, sloc, name)
   , words_(nullptr) {
-  srcs_.emplace_back(src);
+  srcs_.emplace_back(size, sloc, name);
 }
 
 outputimpl::~outputimpl() {
   if (words_) {
     value_.words(words_);
   }
+}
+
+void outputimpl::write(uint32_t dst_offset,
+                       const lnode& src,
+                       uint32_t src_offset,
+                       uint32_t length,
+                       const source_location& sloc) {
+  srcs_[0].write(dst_offset, src, src_offset, length, sloc);
 }
 
 void outputimpl::initialize() {
@@ -128,7 +136,7 @@ lnodeimpl* ch::internal::createInputNode(const std::string& name,
 }
 
 lnodeimpl* ch::internal::createOutputNode(const std::string& name,
-                                          const lnode& src,
+                                          uint32_t size,
                                           const source_location& sloc) {
-  return src.impl()->ctx()->create_node<outputimpl>(src, name, sloc);
+  return ctx_curr()->create_node<outputimpl>(size, name, sloc);
 }

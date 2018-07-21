@@ -8,7 +8,7 @@ namespace internal {
 lnodeimpl* createInputNode(const std::string& name, uint32_t size,
                            const source_location& sloc);
 
-lnodeimpl* createOutputNode(const std::string& name, const lnode& src,
+lnodeimpl* createOutputNode(const std::string& name, uint32_t size,
                             const source_location& sloc);
 
 void bindInput(const lnode& src,
@@ -40,61 +40,61 @@ inline constexpr auto operator|(ch_direction lsh, ch_direction rhs) {
 }
 
 template <unsigned Bitwidth,
-          typename IoType,
+          typename LogicIO,
           ch_direction Direction,
-          typename FlipType,
-          typename DeviceType>
+          typename FlipIO,
+          typename ScalarIO>
 struct io_traits {
   static constexpr traits_type type = traits_io;
   static constexpr unsigned bitwidth = Bitwidth;
   static constexpr ch_direction direction = Direction;
-  using io_type     = IoType;
-  using flip_type   = FlipType;
-  using device_type = DeviceType;
+  using logic_io  = LogicIO;
+  using flip_io   = FlipIO;
+  using scalar_io = ScalarIO;
 };
 
-template <typename IoType,
+template <typename LogicIO,
           ch_direction Direction,
-          typename FlipType,
-          typename DeviceType,
+          typename FlipIO,
+          typename ScalarIO,
           typename LogicType>
 struct io_logic_traits {
   static constexpr traits_type type = traits_logic_io;
   static constexpr unsigned bitwidth = ch_width_v<LogicType>;
   static constexpr unsigned is_signed = ch_signed_v<LogicType>;
   static constexpr ch_direction direction = Direction;
-  using io_type     = IoType;
-  using flip_type   = FlipType;
-  using device_type = DeviceType;
+  using logic_io    = LogicIO;
+  using flip_io     = FlipIO;
+  using scalar_io   = ScalarIO;
   using logic_type  = LogicType;
   using scalar_type = ch_scalar_t<LogicType>;
 };
 
-template <typename IoType,
+template <typename LogicIO,
           ch_direction Direction,
-          typename FlipType,
-          typename DeviceType,
+          typename FlipIO,
+          typename ScalarIO,
           typename ScalarType>
 struct io_scalar_traits {
   static constexpr traits_type type = traits_scalar_io;
   static constexpr unsigned bitwidth = ch_width_v<ScalarType>;
   static constexpr unsigned is_signed = ch_signed_v<ScalarType>;
   static constexpr ch_direction direction = Direction;
-  using io_type     = IoType;
-  using flip_type   = FlipType;
-  using device_type = DeviceType;
+  using logic_io    = LogicIO;
+  using flip_io     = FlipIO;
+  using scalar_io   = ScalarIO;
   using scalar_type = ScalarType;
   using logic_type  = ch_logic_t<ScalarType>;
 };
 
 template <typename T>
-using ch_io_t = typename std::decay_t<T>::traits::io_type;
+using ch_logic_io = typename std::decay_t<T>::traits::logic_io;
 
 template <typename T>
-using ch_flip_t = typename std::decay_t<T>::traits::flip_type;
+using ch_scalar_io = typename std::decay_t<T>::traits::scalar_io;
 
 template <typename T>
-using device_type_t = typename std::decay_t<T>::traits::device_type;
+using ch_flip_io = typename std::decay_t<T>::traits::flip_io;
 
 template <typename T>
 inline constexpr ch_direction ch_direction_v = std::decay_t<T>::traits::direction;
@@ -118,16 +118,21 @@ public:
   using base = T;
 
   explicit ch_in_impl(const std::string& name = "io", CH_SLOC)
-     : ch_in_impl(createInputNode(name, ch_width_v<T>, sloc), name, sloc)
-  {}
+     : base(logic_buffer(createInputNode(name, ch_width_v<T>, sloc))) {
+    input_ = logic_accessor::data(*this);
+  }
 
   template <typename U>
   explicit ch_in_impl(const ch_out<U>& out, CH_SLOC)
     : base(logic_buffer(ch_width_v<T>, sloc)) {
     static_assert(is_logic_only_v<U>, "invalid type");
     static_assert(std::is_constructible_v<U, T>, "invalid type");
-    input_ = logic_accessor::data(*this);
-    bindOutput(input_, out.output_, sloc);
+    bindOutput(logic_accessor::data(*this), out.output_, sloc);
+  }
+
+  ch_in_impl(const ch_in_impl& other, CH_SLOC)
+    : base(logic_accessor::buffer(other)) {
+    CH_UNUSED(sloc);
   }
 
   ch_in_impl(const ch_in_impl&& other)
@@ -143,14 +148,6 @@ public:
   }
 
 private:
-
-  ch_in_impl(const lnode& src, const std::string& name,
-             const source_location& sloc)
-    : base(logic_buffer(src, sloc, name))
-    , input_(src)
-  {}
-
-  ch_in_impl(const ch_in_impl& out) = delete;
 
   ch_in_impl& operator=(const ch_in_impl&) = delete;
 
@@ -178,8 +175,8 @@ public:
   using base::operator=;
 
   explicit ch_out(const std::string& name = "io", CH_SLOC)
-    : base(logic_buffer(ch_width_v<T>, sloc, name)) {
-    output_ = createOutputNode(name, logic_accessor::data(*this), sloc);
+    : base(logic_buffer(createOutputNode(name, ch_width_v<T>, sloc))) {
+    output_ = logic_accessor::data(*this);
   }
 
   template <typename U>
@@ -187,8 +184,7 @@ public:
     : base(logic_buffer(ch_width_v<T>, sloc)) {
     static_assert(is_logic_only_v<U>, "invalid type");
     static_assert(std::is_constructible_v<U, T>, "invalid type");
-    output_ = logic_accessor::data(*this);
-    bindInput(output_, in.input_, sloc);
+    bindInput(logic_accessor::data(*this), in.input_, sloc);
   }
 
   ch_out(const ch_out& other, CH_SLOC) : base(other, sloc) {}
@@ -238,12 +234,12 @@ public:
     return io_.data();
   }
 
-  void read(uint32_t dst_offset,
+  void read(uint32_t src_offset,
             void* out,
             uint32_t out_cbsize,
-            uint32_t src_offset,
+            uint32_t dst_offset,
             uint32_t length) const override {
-    io_.data().read(dst_offset, out, out_cbsize, src_offset, length);
+    io_.data().read(src_offset, out, out_cbsize, dst_offset, length);
   }
 
   void write(uint32_t dst_offset,
@@ -313,11 +309,13 @@ public:
     static_assert(ch_width_v<T> == ch_width_v<U>, "invalid size");
   }
 
+  ch_scout_impl(const ch_scout_impl& other)
+    : base(scalar_accessor::buffer(other))
+  {}
+
   ch_scout_impl(const ch_scout_impl&& other) : base(std::move(other)) {}
 
 protected:
-
-  ch_scout_impl(const ch_scout_impl& out) = delete;
 
   ch_scout_impl& operator=(const ch_scout_impl&) = delete;
 

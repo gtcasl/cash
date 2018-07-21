@@ -74,17 +74,12 @@ protected:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename IoType>
-struct device_traits {
-  using io_type = typename IoType::traits::device_type;
-};
-
 template <typename T = void>
 class ch_device final : public device {
 public:  
   using base = device;
-  using traits = device_traits<decltype(T::io)>;
-  typename traits::io_type io;
+  using io_type = ch_scalar_io<decltype(T::io)>;
+  io_type io;
 
   template <typename... Ts>
   ch_device(const std::string& name, Ts&&... args)

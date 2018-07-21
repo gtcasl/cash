@@ -5,18 +5,13 @@
 namespace ch {
 namespace internal {
 
-template <typename IoType>
-struct module_traits {
-  using io_type = ch_flip_t<IoType>;
-};
-
 template <typename T>
 class ch_module final : private device {
 public:  
   using base = device;
-  using traits = module_traits<decltype(T::io)>;
+  using io_type = ch_flip_io<decltype(T::io)>;
 
-  typename traits::io_type io;
+  io_type io;
 
   ch_module(CH_SLOC)
     : device(std::type_index(typeid(T)), identifier_from_typeid(typeid(T).name()).c_str())

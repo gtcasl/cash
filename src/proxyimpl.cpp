@@ -346,10 +346,9 @@ void refimpl::write(
     uint32_t length,
     const source_location& sloc) {
   assert(1 == srcs_.size());
-  assert(type_proxy == srcs_[0].impl()->type());
   assert(0 == ranges_[0].dst_offset);
   assert(length <= ranges_[0].length);
-  reinterpret_cast<proxyimpl*>(srcs_[0].impl())->write(
+  srcs_[0].impl()->write(
       ranges_[0].src_offset + dst_offset,
       src,
       src_offset,

@@ -346,37 +346,39 @@ protected:
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T, unsigned N>
-class ch_vec_device_io : public vec_base<device_type_t<T>, N> {
+class ch_vec_scalar_io : public vec_base<ch_scalar_io<T>, N> {
 public:
   static_assert(is_io_type_v<T>, "invalid type");
   using traits = io_traits<N * ch_width_v<T>,
-                           ch_vec_device_io,
+                           ch_vec_scalar_io,
                            ch_direction_v<T>,
-                           ch_vec_device_io<ch_flip_t<T>, N>,
+                           ch_vec_scalar_io<ch_flip_io<T>, N>,
                            ch_vec<T, N>>;
 
-  using base = vec_base<device_type_t<T>, N>;
+  using base = vec_base<ch_scalar_io<T>, N>;
   using base::operator [];
 
-  explicit ch_vec_device_io(const ch_vec<T, N>& other)
-    : ch_vec_device_io(other, std::make_index_sequence<N>())
+  explicit ch_vec_scalar_io(const ch_vec<T, N>& other)
+    : ch_vec_scalar_io(other, std::make_index_sequence<N>())
   {}
 
-  ch_vec_device_io(ch_vec_device_io&& other) : base(std::move(other)) {}
+  ch_vec_scalar_io(const ch_vec_scalar_io& other)
+    : ch_vec_scalar_io(other, std::make_index_sequence<N>())
+  {}
 
-  ch_vec_device_io& operator=(ch_vec_device_io&& other) {
+  ch_vec_scalar_io(ch_vec_scalar_io&& other) : base(std::move(other)) {}
+
+  ch_vec_scalar_io& operator=(ch_vec_scalar_io&& other) {
     base::operator=(std::move(other));
     return *this;
   }
 
 protected:
 
-  ch_vec_device_io(const ch_vec_device_io& other) = delete;
-
-  ch_vec_device_io& operator=(const ch_vec_device_io& other) = delete;
+  ch_vec_scalar_io& operator=(const ch_vec_scalar_io& other) = delete;
 
   template <typename U, std::size_t...Is>
-  ch_vec_device_io(const vec_base<U, N>& other, std::index_sequence<Is...>)
+  ch_vec_scalar_io(const vec_base<U, N>& other, std::index_sequence<Is...>)
     : base(other[Is]...)
   {}
 };
@@ -390,8 +392,8 @@ public:
   using traits = io_traits<N * ch_width_v<T>,
                            ch_vec,
                            ch_direction_v<T>,
-                           ch_vec<ch_flip_t<T>, N>,
-                           ch_vec_device_io<T, N>>;
+                           ch_vec<ch_flip_io<T>, N>,
+                           ch_vec_scalar_io<T, N>>;
 
   using base = vec_base<T, N>;
   using base::operator [];
@@ -401,15 +403,19 @@ public:
     : ch_vec(name, sloc, std::make_index_sequence<N>())
   {}
 
-  explicit ch_vec(const ch_vec<ch_flip_t<T>, N>& other, CH_SLOC)
+  explicit ch_vec(const ch_vec<ch_flip_io<T>, N>& other, CH_SLOC)
     : ch_vec(other, sloc, std::make_index_sequence<N>())
   {}
 
-  void operator()(typename traits::flip_type& other) {
+  void operator()(typename traits::flip_io& other) {
     for (unsigned i = 0, n = items_.size(); i < n; ++i) {
       items_[i](other[i]);
     }
   }
+
+  ch_vec(const ch_vec& other, CH_SLOC)
+    : ch_vec(other, sloc, std::make_index_sequence<N>())
+  {}
 
   ch_vec(ch_vec&& other) : base(std::move(other)) {}
 
@@ -419,8 +425,6 @@ public:
   }
 
 protected:
-
-  ch_vec(const ch_vec& other) = delete;
 
   ch_vec& operator=(const ch_vec& other) = delete;
 

@@ -325,10 +325,10 @@ bool bitvector::empty() const {
 }
 
 void bitvector::read(
-    uint32_t dst_offset,
+    uint32_t src_offset,
     void* dst,
     uint32_t dst_cbsize,
-    uint32_t src_offset,
+    uint32_t dst_offset,
     uint32_t length) const {
   CH_CHECK(src_offset + length <= size_, "out of bound access");
   CH_CHECK(dst_offset + length <= dst_cbsize * 8, "out of bound access");

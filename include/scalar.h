@@ -93,10 +93,10 @@ public:
              uint32_t src_offset,
              uint32_t length);
 
-  virtual void read(uint32_t dst_offset,
+  virtual void read(uint32_t src_offset,
                     void* out,
                     uint32_t out_cbsize,
-                    uint32_t src_offset,
+                    uint32_t dst_offset,
                     uint32_t length) const;
 
   virtual void write(uint32_t dst_offset,
@@ -211,12 +211,12 @@ auto make_scalar_op(ScalarFunc2 func, const A& lhs, const B& rhs) {
 ///////////////////////////////////////////////////////////////////////////////
 
 #define CH_SCALAR_INTERFACE(type) \
-  void read(uint32_t dst_offset, \
+  void read(uint32_t src_offset, \
             void* out, \
             uint32_t out_cbsize, \
-            uint32_t src_offset = 0, \
+            uint32_t dst_offset = 0, \
             uint32_t length = type::traits::bitwidth) const { \
-    this->buffer()->read(dst_offset, out, out_cbsize, src_offset, length); \
+    this->buffer()->read(src_offset, out, out_cbsize, dst_offset, length); \
   } \
   void write(uint32_t dst_offset, \
              const void* in, \
@@ -343,6 +343,10 @@ CH_SCALAR_OPERATOR(scalar_op_cast)
     } else {
       return ret;
     }
+  }
+
+  explicit operator bitvector() const {
+    return scalar_accessor::data(reinterpret_cast<const Derived&>(*this));
   }
 };
 

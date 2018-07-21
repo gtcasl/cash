@@ -114,6 +114,12 @@ public:
                            uint32_t length,
                            const source_location& sloc);
 
+  virtual void write(uint32_t dst_offset,
+                     const lnode& src,
+                     uint32_t src_offset,
+                     uint32_t length,
+                     const source_location& sloc);
+
   virtual void print(std::ostream& out, uint32_t level) const;
 
   std::string debug_info() const;

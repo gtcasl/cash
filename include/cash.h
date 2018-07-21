@@ -77,16 +77,18 @@ namespace core {
 
   using ch::internal::ch_width_v;
   using ch::internal::ch_signed_v;
+  using ch::internal::ch_direction_v;
 
   using ch::internal::ch_scalar_t;
   using ch::internal::ch_logic_t;
-  using ch::internal::ch_flip_t;
-  using ch::internal::ch_io_t;
+
+  using ch::internal::ch_scalar_io;
+  using ch::internal::ch_logic_io;
+  using ch::internal::ch_flip_io;
 
   using ch::internal::ch_in;
   using ch::internal::ch_out;
   using ch::internal::ch_direction;
-  using ch::internal::ch_direction_v;
 
   using ch::internal::ch_module;
 
@@ -255,6 +257,8 @@ namespace sim {
   using ch::internal::ch_tracer;
   using ch::internal::ch_vcdtracer;
 
+  using ch::internal::bitvector;
+
   //
   // utility functions
   //
@@ -273,7 +277,6 @@ namespace extension {
   using ch::internal::is_scbit_convertible_v;
   using ch::internal::is_bitvector_extended_type_v;
 
-  using ch::internal::bitvector;
   using ch::internal::source_location;
   using ch::internal::logic_traits;
   using ch::internal::scalar_traits;

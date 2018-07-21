@@ -584,10 +584,10 @@ public:
             uint32_t src_offset,
             uint32_t length);
   
-  void read(uint32_t dst_offset,
+  void read(uint32_t src_offset,
             void* dst,
             uint32_t dst_cbsize,
-            uint32_t src_offset,
+            uint32_t dst_offset,
             uint32_t length) const;
   
   void write(uint32_t dst_offset,

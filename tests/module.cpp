@@ -62,7 +62,7 @@ __inout(plink_io, link_io<T>, (
 
 template <typename T>
 __inout(filter_io, (
-  (ch_flip_t<plink_io<T>>) x,
+  (ch_flip_io<plink_io<T>>) x,
   (plink_io<T>) y
 ));
 
