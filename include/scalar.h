@@ -10,29 +10,6 @@ template <unsigned N> class ch_scbit;
 template <unsigned N> class ch_scint;
 template <unsigned N> class ch_scuint;
 
-template <unsigned N> class ch_bit;
-template <unsigned N> class ch_int;
-template <unsigned N> class ch_uint;
-
-template <unsigned Bitwidth, bool Signed, typename ScalarType, typename LogicType>
-struct scalar_traits {
-  static constexpr traits_type type  = traits_scalar;
-  static constexpr unsigned bitwidth = Bitwidth;
-  static constexpr unsigned is_signed = Signed;
-  using scalar_type = ScalarType;
-  using logic_type  = LogicType;
-};
-
-template <typename T>
-using ch_scalar_t = typename std::decay_t<T>::traits::scalar_type;
-
-template <typename T>
-inline constexpr bool is_scalar_traits_v = bool_constant_v<(T::type & traits_scalar)>;
-
-CH_DEF_SFINAE_CHECK(is_scalar_only, bool_constant_v<(std::decay_t<T>::traits::type == traits_scalar)>);
-
-CH_DEF_SFINAE_CHECK(is_scalar_type, is_scalar_traits_v<typename std::decay_t<T>::traits>);
-
 template <typename T>
 inline constexpr bool is_scbit_base_v = std::is_base_of_v<ch_scbit<ch_width_v<T>>, T>;
 

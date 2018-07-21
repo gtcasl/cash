@@ -1,6 +1,7 @@
 #pragma once
 
 #include "scalar.h"
+#include "lnode.h"
 
 namespace ch {
 namespace internal {  
@@ -24,24 +25,9 @@ void createPrintNode(const std::string& format,
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <unsigned Bitwidth, bool Signed, typename LogicType, typename ScalarType>
-struct logic_traits {
-  static constexpr traits_type type = traits_logic;
-  static constexpr unsigned bitwidth = Bitwidth;
-  static constexpr unsigned is_signed = Signed;
-  using logic_type  = LogicType;
-  using scalar_type = ScalarType;
-};
-
-template <typename T>
-using ch_logic_t = typename std::decay_t<T>::traits::logic_type;
-
-template <typename T>
-inline constexpr bool is_logic_traits_v = bool_constant_v<(T::type & traits_logic)>;
-
-CH_DEF_SFINAE_CHECK(is_logic_only, bool_constant_v<(std::decay_t<T>::traits::type == traits_logic)>);
-
-CH_DEF_SFINAE_CHECK(is_logic_type, is_logic_traits_v<typename std::decay_t<T>::traits>);
+template <unsigned N> class ch_bit;
+template <unsigned N> class ch_int;
+template <unsigned N> class ch_uint;
 
 template <typename T>
 inline constexpr bool is_bit_base_v = std::is_base_of_v<ch_bit<ch_width_v<T>>, T>;
@@ -225,9 +211,6 @@ auto make_logic_op(const A& a, const B& b, const source_location& sloc) {
   auto node = createAluNode(op, ch_width_v<R>, Signed, get_lnode(a), get_lnode(b), sloc);
   return make_type<R>(node, sloc);
 }
-
-template <typename T>
-using type_accessor_t = std::conditional_t<is_logic_traits_v<T>, logic_accessor, scalar_accessor>;
 
 template <typename T>
 struct sloc_arg {

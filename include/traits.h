@@ -1,7 +1,5 @@
 #pragma once
 
-#include "lnode.h"
-
 #define CH_OP_ARY(x)   (x & (0x1 << 5))
 #define CH_OP_CLASS(x) (x & (0x7 << 6))
 
@@ -59,16 +57,34 @@ const char* to_string(ch_op op);
 ///////////////////////////////////////////////////////////////////////////////
 
 enum traits_type {
-  traits_none      = 0x0,
-  traits_logic     = 0x1,
-  traits_scalar    = 0x2,
-  traits_io        = 0x4,
-  traits_udf       = 0x8,
-  traits_logic_io  = traits_logic | traits_io,
-  traits_scalar_io = traits_scalar | traits_io,
+  traits_none      = 0x00,
+  traits_logic     = 0x01,
+  traits_scalar    = 0x02,
+  traits_logic_io  = 0x04,
+  traits_scalar_io = 0x08,
+  traits_udf       = 0x10,
 };
 
+inline constexpr auto operator|(traits_type lsh, traits_type rhs) {
+  return traits_type((int)lsh | (int)rhs);
+}
+
+enum class ch_direction {
+  in    = 0x1,
+  out   = 0x2,
+  inout = in | out,
+};
+
+inline constexpr auto operator|(ch_direction lsh, ch_direction rhs) {
+  return ch_direction((int)lsh | (int)rhs);
+}
+
+template <typename T>
+inline constexpr ch_direction ch_direction_v = std::decay_t<T>::traits::direction;
+
 CH_DEF_SFINAE_CHECK(is_object_type, (T::traits::type & (traits_logic | traits_scalar)));
+
+///////////////////////////////////////////////////////////////////////////////
 
 template <typename T, typename Enable = void>
 struct width_value_impl {
@@ -102,6 +118,8 @@ struct width_impl<T0, Ts...> {
 template <typename... Ts>
 inline constexpr uint32_t ch_width_v = width_impl<std::decay_t<Ts>...>::value;
 
+///////////////////////////////////////////////////////////////////////////////
+
 template <typename T, typename Enable = void>
 struct signed_impl {
   static constexpr bool value = false;
@@ -119,6 +137,138 @@ struct signed_impl<T, std::enable_if_t<is_object_type_v<T>>> {
 
 template <typename T>
 inline constexpr bool ch_signed_v = signed_impl<std::decay_t<T>>::value;
+
+///////////////////////////////////////////////////////////////////////////////
+
+template <unsigned Bitwidth, bool Signed, typename ScalarType, typename LogicType>
+struct scalar_traits {
+  static constexpr traits_type type  = traits_scalar;
+  static constexpr unsigned bitwidth = Bitwidth;
+  static constexpr unsigned is_signed = Signed;
+  using scalar_type = ScalarType;
+  using logic_type  = LogicType;
+};
+
+template <typename T>
+using ch_scalar_t = typename std::decay_t<T>::traits::scalar_type;
+
+template <typename T>
+inline constexpr bool is_scalar_traits_v = bool_constant_v<(T::type & traits_scalar)>;
+
+CH_DEF_SFINAE_CHECK(is_scalar_only, bool_constant_v<(std::decay_t<T>::traits::type == traits_scalar)>);
+
+CH_DEF_SFINAE_CHECK(is_scalar_type, is_scalar_traits_v<typename std::decay_t<T>::traits>);
+
+///////////////////////////////////////////////////////////////////////////////
+
+template <unsigned Bitwidth, bool Signed, typename LogicType, typename ScalarType>
+struct logic_traits {
+  static constexpr traits_type type = traits_logic;
+  static constexpr unsigned bitwidth = Bitwidth;
+  static constexpr unsigned is_signed = Signed;
+  using logic_type  = LogicType;
+  using scalar_type = ScalarType;
+};
+
+template <typename T>
+using ch_logic_t = typename std::decay_t<T>::traits::logic_type;
+
+template <typename T>
+inline constexpr bool is_logic_traits_v = bool_constant_v<(T::type & traits_logic)>;
+
+CH_DEF_SFINAE_CHECK(is_logic_only, bool_constant_v<(std::decay_t<T>::traits::type == traits_logic)>);
+
+CH_DEF_SFINAE_CHECK(is_logic_type, is_logic_traits_v<typename std::decay_t<T>::traits>);
+
+///////////////////////////////////////////////////////////////////////////////
+
+template <unsigned Bitwidth,
+          ch_direction Direction,
+          typename ScalarIO,
+          typename FlipIO,
+          typename LogicIO>
+struct scalar_io_traits {
+  static constexpr traits_type type  = traits_scalar_io;
+  static constexpr unsigned bitwidth = Bitwidth;
+  static constexpr ch_direction direction = Direction;
+  using scalar_io = ScalarIO;
+  using flip_io   = FlipIO;
+  using logic_io  = LogicIO;
+};
+
+template <unsigned Bitwidth,
+          ch_direction Direction,
+          typename LogicIO,
+          typename FlipIO,
+          typename ScalarIO>
+struct logic_io_traits {
+  static constexpr traits_type type  = traits_logic_io;
+  static constexpr unsigned bitwidth = Bitwidth;
+  static constexpr ch_direction direction = Direction;
+  using logic_io  = LogicIO;
+  using flip_io   = FlipIO;
+  using scalar_io = ScalarIO;
+};
+
+template <ch_direction Direction,
+          typename ScalarIO,
+          typename FlipIO,
+          typename LogicIO,
+          typename ScalarType>
+struct mixed_scalar_io_traits {
+  static constexpr traits_type type = traits_scalar_io | traits_scalar;
+  static constexpr unsigned bitwidth = ch_width_v<ScalarType>;
+  static constexpr unsigned is_signed = ch_signed_v<ScalarType>;
+  static constexpr ch_direction direction = Direction;
+  using scalar_io   = ScalarIO;
+  using flip_io     = FlipIO;
+  using logic_io    = LogicIO;
+  using scalar_type = ScalarType;
+  using logic_type  = ch_logic_t<ScalarType>;
+};
+
+template <ch_direction Direction,
+          typename LogicIO,
+          typename FlipIO,
+          typename ScalarIO,
+          typename LogicType>
+struct mixed_logic_io_traits {
+  static constexpr traits_type type = traits_logic_io | traits_logic;
+  static constexpr unsigned bitwidth = ch_width_v<LogicType>;
+  static constexpr unsigned is_signed = ch_signed_v<LogicType>;
+  static constexpr ch_direction direction = Direction;
+  using logic_io    = LogicIO;
+  using flip_io     = FlipIO;
+  using scalar_io   = ScalarIO;
+  using logic_type  = LogicType;
+  using scalar_type = ch_scalar_t<LogicType>;
+};
+
+template <typename T>
+using ch_logic_io = typename std::decay_t<T>::traits::logic_io;
+
+template <typename T>
+using ch_scalar_io = typename std::decay_t<T>::traits::scalar_io;
+
+template <typename T>
+using ch_flip_io = typename std::decay_t<T>::traits::flip_io;
+
+template <typename T>
+inline constexpr bool is_scalar_io_traits_v = bool_constant_v<(T::type & traits_scalar_io)>;
+
+template <typename T>
+inline constexpr bool is_logic_io_traits_v = bool_constant_v<(T::type & traits_logic_io)>;
+
+template <typename T>
+inline constexpr bool is_io_traits_v = bool_constant_v<(T::type & (traits_scalar_io | traits_logic_io))>;
+
+CH_DEF_SFINAE_CHECK(is_scalar_io, is_scalar_io_traits_v<typename std::decay_t<T>::traits>);
+
+CH_DEF_SFINAE_CHECK(is_logic_io, is_logic_io_traits_v<typename std::decay_t<T>::traits>);
+
+CH_DEF_SFINAE_CHECK(is_io, is_io_traits_v<typename std::decay_t<T>::traits>);
+
+///////////////////////////////////////////////////////////////////////////////
 
 struct non_ch_type {
   struct traits {

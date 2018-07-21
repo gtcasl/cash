@@ -21,193 +21,124 @@ void bindOutput(const lnode& dst,
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> class ch_in_impl;
-template <typename T> using ch_in = std::add_const_t<ch_in_impl<T>>;
-template <typename T> class ch_out;
+template <typename T> class ch_logic_in;
+template <typename T> class ch_logic_out;
 
-template <typename T> class ch_scout_impl;
-template <typename T> class ch_scin;
-template <typename T> using ch_scout = std::add_const_t<ch_scout_impl<T>>;
-
-enum class ch_direction {
-  in    = 1 << 0,
-  out   = 1 << 1,
-  inout = in | out,
-};
-
-inline constexpr auto operator|(ch_direction lsh, ch_direction rhs) {
-  return ch_direction((int)lsh | (int)rhs);
-}
-
-template <unsigned Bitwidth,
-          typename LogicIO,
-          ch_direction Direction,
-          typename FlipIO,
-          typename ScalarIO>
-struct io_traits {
-  static constexpr traits_type type = traits_io;
-  static constexpr unsigned bitwidth = Bitwidth;
-  static constexpr ch_direction direction = Direction;
-  using logic_io  = LogicIO;
-  using flip_io   = FlipIO;
-  using scalar_io = ScalarIO;
-};
-
-template <typename LogicIO,
-          ch_direction Direction,
-          typename FlipIO,
-          typename ScalarIO,
-          typename LogicType>
-struct io_logic_traits {
-  static constexpr traits_type type = traits_logic_io;
-  static constexpr unsigned bitwidth = ch_width_v<LogicType>;
-  static constexpr unsigned is_signed = ch_signed_v<LogicType>;
-  static constexpr ch_direction direction = Direction;
-  using logic_io    = LogicIO;
-  using flip_io     = FlipIO;
-  using scalar_io   = ScalarIO;
-  using logic_type  = LogicType;
-  using scalar_type = ch_scalar_t<LogicType>;
-};
-
-template <typename LogicIO,
-          ch_direction Direction,
-          typename FlipIO,
-          typename ScalarIO,
-          typename ScalarType>
-struct io_scalar_traits {
-  static constexpr traits_type type = traits_scalar_io;
-  static constexpr unsigned bitwidth = ch_width_v<ScalarType>;
-  static constexpr unsigned is_signed = ch_signed_v<ScalarType>;
-  static constexpr ch_direction direction = Direction;
-  using logic_io    = LogicIO;
-  using flip_io     = FlipIO;
-  using scalar_io   = ScalarIO;
-  using scalar_type = ScalarType;
-  using logic_type  = ch_logic_t<ScalarType>;
-};
+template <typename T> class ch_scalar_in;
+template <typename T> class ch_scalar_out;
 
 template <typename T>
-using ch_logic_io = typename std::decay_t<T>::traits::logic_io;
+using ch_in = std::conditional_t<is_logic_only_v<T>,
+                std::add_const_t<ch_logic_in<T>>, ch_scalar_in<T>>;
 
 template <typename T>
-using ch_scalar_io = typename std::decay_t<T>::traits::scalar_io;
-
-template <typename T>
-using ch_flip_io = typename std::decay_t<T>::traits::flip_io;
-
-template <typename T>
-inline constexpr ch_direction ch_direction_v = std::decay_t<T>::traits::direction;
-
-template <typename T>
-inline constexpr bool is_io_traits_v = bool_constant_v<(T::type & traits_io)>;
-
-CH_DEF_SFINAE_CHECK(is_io_type, is_io_traits_v<typename std::decay_t<T>::traits>);
+using ch_out = std::conditional_t<is_logic_only_v<T>,
+                  ch_logic_out<T>, std::add_const_t<ch_scalar_out<T>>>;
 
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T>
-class ch_in_impl final : public T {
+class ch_logic_in final : public T {
 public:
   static_assert(is_logic_only_v<T>, "invalid type");
-  using traits = io_logic_traits<ch_in<T>,
-                                 ch_direction::in,
-                                 ch_out<T>,
-                                 ch_scin<ch_scalar_t<T>>,
-                                 T>;
+  using traits = mixed_logic_io_traits<ch_direction::in,
+                                       ch_in<T>,
+                                       ch_out<T>,
+                                       ch_in<ch_scalar_t<T>>,
+                                       T>;
   using base = T;
 
-  explicit ch_in_impl(const std::string& name = "io", CH_SLOC)
+  explicit ch_logic_in(const std::string& name = "io", CH_SLOC)
      : base(logic_buffer(createInputNode(name, ch_width_v<T>, sloc))) {
     input_ = logic_accessor::data(*this);
   }
 
   template <typename U>
-  explicit ch_in_impl(const ch_out<U>& out, CH_SLOC)
+  explicit ch_logic_in(const ch_logic_out<U>& out, CH_SLOC)
     : base(logic_buffer(ch_width_v<T>, sloc)) {
     static_assert(is_logic_only_v<U>, "invalid type");
     static_assert(std::is_constructible_v<U, T>, "invalid type");
     bindOutput(logic_accessor::data(*this), out.output_, sloc);
   }
 
-  ch_in_impl(const ch_in_impl& other, CH_SLOC)
+  explicit ch_logic_in(const ch_logic_in& other, CH_SLOC)
     : base(logic_accessor::buffer(other)) {
     CH_UNUSED(sloc);
   }
 
-  ch_in_impl(const ch_in_impl&& other)
+  ch_logic_in(const ch_logic_in&& other)
     : base(std::move(other))
     , input_(std::move(other.input_))
   {}
 
   template <typename U>
-  void operator()(ch_out<U>& out) const {
-    static_assert(is_logic_only_v<U>, "invalid type");
+  void operator()(ch_logic_out<U>& out) const {
     static_assert(std::is_constructible_v<U, T>, "invalid type");
     out = *this;
   }
 
 private:
 
-  ch_in_impl& operator=(const ch_in_impl&) = delete;
+  ch_logic_in& operator=(const ch_logic_in&) = delete;
 
-  ch_in_impl& operator=(ch_in_impl&&) = delete;
+  ch_logic_in& operator=(ch_logic_in&&) = delete;
 
   lnode input_;
 
-  template <typename U> friend class ch_out;
-  template <typename U> friend class ch_scin;
+  template <typename U> friend class ch_logic_out;
+  template <typename U> friend class ch_scalar_in;
 };
-
 
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T>
-class ch_out final : public T {
+class ch_logic_out final : public T {
 public:
   static_assert(is_logic_only_v<T>, "invalid type");
-  using traits = io_logic_traits<ch_out,
-                                 ch_direction::out,
-                                 ch_in<T>,
-                                 ch_scout<ch_scalar_t<T>>,
-                                 T>;
+  using traits = mixed_logic_io_traits<ch_direction::out,
+                                       ch_out<T>,
+                                       ch_in<T>,
+                                       ch_out<ch_scalar_t<T>>,
+                                       T>;
   using base = T;
   using base::operator=;
 
-  explicit ch_out(const std::string& name = "io", CH_SLOC)
+  explicit ch_logic_out(const std::string& name = "io", CH_SLOC)
     : base(logic_buffer(createOutputNode(name, ch_width_v<T>, sloc))) {
     output_ = logic_accessor::data(*this);
   }
 
   template <typename U>
-  explicit ch_out(const ch_in_impl<U>& in, CH_SLOC)
+  explicit ch_logic_out(const ch_logic_in<U>& in, CH_SLOC)
     : base(logic_buffer(ch_width_v<T>, sloc)) {
     static_assert(is_logic_only_v<U>, "invalid type");
     static_assert(std::is_constructible_v<U, T>, "invalid type");
     bindInput(logic_accessor::data(*this), in.input_, sloc);
   }
 
-  ch_out(const ch_out& other, CH_SLOC) : base(other, sloc) {}
+  ch_logic_out(const ch_logic_out& other, CH_SLOC)
+    : base(logic_accessor::buffer(other)) {
+    CH_UNUSED(sloc);
+  }
 
-  ch_out(ch_out&& other)
+  ch_logic_out(ch_logic_out&& other)
     : base(std::move(other))
     , output_(std::move(other.output_))
   {}
 
-  ch_out& operator=(const ch_out& other) {
+  ch_logic_out& operator=(const ch_logic_out& other) {
     base::operator=(other);
     return *this;
   }
 
-  ch_out& operator=(ch_out&& other) {
+  ch_logic_out& operator=(ch_logic_out&& other) {
     base::operator=(std::move(other));
     output_ = std::move(other.output_);
     return *this;
   }
 
   template <typename U>
-  void operator()(const ch_in_impl<U>& in) {
-    static_assert(is_logic_only_v<U>, "invalid type");
+  void operator()(const ch_logic_in<U>& in) {
     static_assert(std::is_constructible_v<U, T>, "invalid type");
     *this = in;
   }
@@ -216,8 +147,8 @@ private:
 
   lnode output_;
 
-  template <typename U> friend class ch_in_impl;
-  template <typename U> friend class ch_scout_impl;
+  template <typename U> friend class ch_logic_in;
+  template <typename U> friend class ch_scalar_out;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -256,70 +187,84 @@ public:
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T>
-class ch_scin final : public T {
+class ch_scalar_in final : public T {
 public:
   static_assert(is_scalar_only_v<T>, "invalid type");
-  using traits = io_scalar_traits<ch_scin,
-                                  ch_direction::in,
-                                  ch_scout<T>,
-                                  ch_in<ch_logic_t<T>>,
-                                  T>;
+  using traits = mixed_scalar_io_traits<ch_direction::in,
+                                        ch_in<T>,
+                                        ch_out<T>,
+                                        ch_in<ch_logic_t<T>>,
+                                        T>;
   using base = T;
   using base::operator=;
 
   template <typename U>
-  explicit ch_scin(const ch_in_impl<U>& in)
+  explicit ch_scalar_in(const ch_logic_in<U>& in)
     : base(std::make_shared<scalar_io_buffer>(in.input_)) {
     static_assert(is_logic_only_v<U>, "invalid type");
     static_assert(ch_width_v<T> == ch_width_v<U>, "invalid size");
   }
 
-  ch_scin(const ch_scin& other) : base(other)  {}
+  ch_scalar_in(const ch_scalar_in& other)
+    : base(scalar_accessor::buffer(other))
+  {}
 
-  ch_scin(ch_scin&& other) : base(std::move(other)) {}
+  ch_scalar_in(ch_scalar_in&& other) : base(std::move(other)) {}
 
-  ch_scin& operator=(const ch_scin& other) {
+  ch_scalar_in& operator=(const ch_scalar_in& other) {
     base::operator=(other);
     return *this;
   }
 
-  ch_scin& operator=(ch_scin&& other) {
+  ch_scalar_in& operator=(ch_scalar_in&& other) {
     base::operator=(std::move(other));
     return *this;
+  }
+
+  template <typename U>
+  void operator()(const ch_scalar_out<U>& out) {
+    static_assert(std::is_constructible_v<U, T>, "invalid type");
+    *this = out;
   }
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T>
-class ch_scout_impl final : public T {
+class ch_scalar_out final : public T {
 public:
   static_assert(is_scalar_only_v<T>, "invalid type");
-  using traits = io_scalar_traits<ch_scout<T>,
-                                  ch_direction::out,
-                                  ch_scin<T>,
-                                  ch_out<ch_logic_t<T>>,
-                                  T>;
+  using traits = mixed_scalar_io_traits<ch_direction::out,
+                                        ch_out<T>,
+                                        ch_in<T>,
+                                        ch_out<ch_logic_t<T>>,
+                                        T>;
   using base = T;
 
   template <typename U>
-  explicit ch_scout_impl(const ch_out<U>& out)
+  explicit ch_scalar_out(const ch_logic_out<U>& out)
     : base(std::make_shared<scalar_io_buffer>(out.output_)) {
     static_assert(is_logic_only_v<U>, "invalid type");
     static_assert(ch_width_v<T> == ch_width_v<U>, "invalid size");
   }
 
-  ch_scout_impl(const ch_scout_impl& other)
+  explicit ch_scalar_out(const ch_scalar_out& other)
     : base(scalar_accessor::buffer(other))
   {}
 
-  ch_scout_impl(const ch_scout_impl&& other) : base(std::move(other)) {}
+  ch_scalar_out(const ch_scalar_out&& other) : base(std::move(other)) {}
+
+  template <typename U>
+  void operator()(ch_scalar_in<U>& out) const {
+    static_assert(std::is_constructible_v<U, T>, "invalid type");
+    out = *this;
+  }
 
 protected:
 
-  ch_scout_impl& operator=(const ch_scout_impl&) = delete;
+  ch_scalar_out& operator=(const ch_scalar_out&) = delete;
 
-  ch_scout_impl& operator=(ch_scout_impl&&) = delete;
+  ch_scalar_out& operator=(ch_scalar_out&&) = delete;
 };
 
 }

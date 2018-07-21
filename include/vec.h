@@ -156,8 +156,7 @@ class ch_vec {};
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T, unsigned N>
-class ch_vec<T, N, std::enable_if_t<is_logic_only_v<T>>>
-  : public vec_base<T, N> {
+class ch_vec<T, N, std::enable_if_t<is_logic_only_v<T>>> : public vec_base<T, N> {
 public:
   using traits = logic_traits<N * ch_width_v<T>,
                               false,
@@ -259,8 +258,7 @@ protected:
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T, unsigned N>
-class ch_vec<T, N, std::enable_if_t<is_scalar_only_v<T>>>
-  : public vec_base<T, N> {
+class ch_vec<T, N, std::enable_if_t<is_scalar_only_v<T>>> : public vec_base<T, N> {
 public:
   using traits = scalar_traits<N * ch_width_v<T>,
                                false,
@@ -346,55 +344,14 @@ protected:
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T, unsigned N>
-class ch_vec_scalar_io : public vec_base<ch_scalar_io<T>, N> {
+class ch_vec<T, N, std::enable_if_t<is_logic_io_v<T>>> : public vec_base<T, N> {
 public:
-  static_assert(is_io_type_v<T>, "invalid type");
-  using traits = io_traits<N * ch_width_v<T>,
-                           ch_vec_scalar_io,
-                           ch_direction_v<T>,
-                           ch_vec_scalar_io<ch_flip_io<T>, N>,
-                           ch_vec<T, N>>;
-
-  using base = vec_base<ch_scalar_io<T>, N>;
-  using base::operator [];
-
-  explicit ch_vec_scalar_io(const ch_vec<T, N>& other)
-    : ch_vec_scalar_io(other, std::make_index_sequence<N>())
-  {}
-
-  ch_vec_scalar_io(const ch_vec_scalar_io& other)
-    : ch_vec_scalar_io(other, std::make_index_sequence<N>())
-  {}
-
-  ch_vec_scalar_io(ch_vec_scalar_io&& other) : base(std::move(other)) {}
-
-  ch_vec_scalar_io& operator=(ch_vec_scalar_io&& other) {
-    base::operator=(std::move(other));
-    return *this;
-  }
-
-protected:
-
-  ch_vec_scalar_io& operator=(const ch_vec_scalar_io& other) = delete;
-
-  template <typename U, std::size_t...Is>
-  ch_vec_scalar_io(const vec_base<U, N>& other, std::index_sequence<Is...>)
-    : base(other[Is]...)
-  {}
-};
-
-///////////////////////////////////////////////////////////////////////////////
-
-template <typename T, unsigned N>
-class ch_vec<T, N, std::enable_if_t<is_io_type_v<T>>>
-  : public vec_base<T, N> {
-public:
-  using traits = io_traits<N * ch_width_v<T>,
-                           ch_vec,
-                           ch_direction_v<T>,
-                           ch_vec<ch_flip_io<T>, N>,
-                           ch_vec_scalar_io<T, N>>;
-
+  static_assert(is_logic_io_v<T>, "invalid type");
+  using traits = logic_io_traits<N * ch_width_v<T>,
+                                 ch_direction_v<T>,
+                                 ch_vec,
+                                 ch_vec<ch_flip_io<T>, N>,
+                                 ch_vec<ch_scalar_io<T>, N>>;
   using base = vec_base<T, N>;
   using base::operator [];
   using base::items_;
@@ -403,9 +360,15 @@ public:
     : ch_vec(name, sloc, std::make_index_sequence<N>())
   {}
 
-  explicit ch_vec(const ch_vec<ch_flip_io<T>, N>& other, CH_SLOC)
+  explicit ch_vec(const typename traits::flip_io& other, CH_SLOC)
     : ch_vec(other, sloc, std::make_index_sequence<N>())
   {}
+
+  explicit ch_vec(const ch_vec& other, CH_SLOC)
+    : ch_vec(other, sloc, std::make_index_sequence<N>())
+  {}
+
+  ch_vec(ch_vec&& other) : base(std::move(other)) {}
 
   void operator()(typename traits::flip_io& other) {
     for (unsigned i = 0, n = items_.size(); i < n; ++i) {
@@ -413,20 +376,10 @@ public:
     }
   }
 
-  ch_vec(const ch_vec& other, CH_SLOC)
-    : ch_vec(other, sloc, std::make_index_sequence<N>())
-  {}
-
-  ch_vec(ch_vec&& other) : base(std::move(other)) {}
-
-  ch_vec& operator=(ch_vec&& other) {
-    base::operator=(std::move(other));
-    return *this;
-  }
-
 protected:
 
   ch_vec& operator=(const ch_vec& other) = delete;
+  ch_vec& operator=(ch_vec&& other) = delete;
 
   template <std::size_t...Is>
   ch_vec(const std::string& name, const source_location& sloc, std::index_sequence<Is...>)
@@ -436,6 +389,48 @@ protected:
   template <typename U, std::size_t...Is>
   ch_vec(const vec_base<U, N>& other, const source_location& sloc, std::index_sequence<Is...>)
     : base(sloc, other[Is]...)
+  {}
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+template <typename T, unsigned N>
+class ch_vec<T, N, std::enable_if_t<is_scalar_io_v<T>>> : public vec_base<T, N> {
+public:
+  static_assert(is_scalar_io_v<T>, "invalid type");
+  using traits = scalar_io_traits<N * ch_width_v<T>,
+                                  ch_direction_v<T>,
+                                  ch_vec,
+                                  ch_vec<ch_flip_io<T>, N>,
+                                  ch_vec<ch_logic_io<T>, N>>;
+  using base = vec_base<T, N>;
+  using base::operator [];
+  using base::items_;
+
+  explicit ch_vec(const typename traits::logic_io& other)
+    : ch_vec(other, std::make_index_sequence<N>())
+  {}
+
+  explicit ch_vec(const ch_vec& other)
+    : ch_vec(other, std::make_index_sequence<N>())
+  {}
+
+  ch_vec(ch_vec&& other) : base(std::move(other)) {}
+
+  void operator()(typename traits::flip_io& other) {
+    for (unsigned i = 0, n = items_.size(); i < n; ++i) {
+      items_[i](other[i]);
+    }
+  }
+
+protected:
+
+  ch_vec& operator=(const ch_vec& other) = delete;
+  ch_vec& operator=(ch_vec&& other) = delete;
+
+  template <typename U, std::size_t...Is>
+  ch_vec(const vec_base<U, N>& other, std::index_sequence<Is...>)
+    : base(other[Is]...)
   {}
 };
 

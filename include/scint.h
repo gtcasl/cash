@@ -5,6 +5,8 @@
 namespace ch {
 namespace internal {
 
+template <unsigned N> class ch_int;
+
 template <unsigned N = 32>
 class ch_scint : public scalar_op_relational<ch_scint, N,
                           scalar_op_bitwise<ch_scint, N,

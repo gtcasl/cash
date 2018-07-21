@@ -565,11 +565,11 @@ constexpr uint32_t rotr(uint32_t value, uint32_t shift, uint32_t width) {
 
 #define CH_DEF_SFINAE_CHECK(type_name, predicate) \
   template<typename T, typename Enable = void> \
-  struct type_name : std::false_type {}; \
+  struct type_name##_impl : std::false_type {}; \
   template<typename T> \
-  struct type_name<T, std::enable_if_t<(predicate)>> : std::true_type {}; \
+  struct type_name##_impl<T, std::enable_if_t<(predicate)>> : std::true_type {}; \
   template <typename T> \
-  inline constexpr bool type_name##_v = type_name<T>::value
+  inline constexpr bool type_name##_v = type_name##_impl<T>::value
 
 template <unsigned N>
 struct requires_enum {

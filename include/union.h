@@ -40,14 +40,23 @@
   ch::internal::make_scalar_buffer(traits::bitwidth)) \
     : CH_FOR_EACH(CH_UNION_SCALAR_CTOR, , CH_SEP_COMMA, __VA_ARGS__) {} \
   union_name(const union_name& __other) \
-    : union_name(ch::internal::type_accessor_t<traits>::copy(__other)) {} \
+    : union_name(ch::internal::scalar_accessor::copy(__other)) {} \
   union_name(union_name&& __other) \
-   : union_name(ch::internal::type_accessor_t<traits>::move(__other)) {} \
+   : union_name(ch::internal::scalar_accessor::move(__other)) {} \
   CH_FOR_EACH(CH_UNION_SCALAR_FIELD_CTOR, union_name, CH_SEP_SPACE, __VA_ARGS__) \
+  union_name& operator=(const union_name& __other) { \
+    ch::internal::scalar_accessor::copy(*this, __other); \
+    return *this; \
+  } \
+  union_name& operator=(union_name&& __other) { \
+    ch::internal::scalar_accessor::move(*this, std::move(__other)); \
+    return *this; \
+  } \
 protected: \
   const ch::internal::scalar_buffer_ptr& buffer() const { \
-    CH_STRUCT_GETBUFFER(0, CH_FIRST_ARG(__VA_ARGS__))->source(); \
+    CH_STRUCT_SCALAR_GETBUFFER(0, CH_FIRST_ARG(__VA_ARGS__))->source(); \
   } \
+  friend class ch::internal::scalar_accessor; \
 public:
 
 #define CH_UNION_LOGIC_IMPL(union_name, name, field_body, ...) \
@@ -56,33 +65,24 @@ public:
     ch::internal::logic_buffer(traits::bitwidth, CH_CUR_SLOC, CH_STRINGIZE(name))) \
     : CH_FOR_EACH(CH_UNION_LOGIC_CTOR, , CH_SEP_COMMA, __VA_ARGS__) {} \
   union_name(const union_name& __other, CH_SLOC) \
-    : union_name(ch::internal::type_accessor_t<traits>::copy(__other, sloc)) {} \
+    : union_name(ch::internal::logic_accessor::copy(__other, sloc)) {} \
   union_name(union_name&& __other) \
-    : union_name(ch::internal::type_accessor_t<traits>::move(__other)) {} \
+    : union_name(ch::internal::logic_accessor::move(__other)) {} \
   CH_FOR_EACH(CH_UNION_LOGIC_FIELD_CTOR, union_name, CH_SEP_SPACE, __VA_ARGS__) \
-protected: \
-  ch::internal::logic_buffer buffer() const { \
-    CH_STRUCT_GETBUFFER(0, CH_FIRST_ARG(__VA_ARGS__)).source(); \
-  }
-
-#define CH_UNION_ASSIGN_IMPL(union_name) \
-public: \
   union_name& operator=(const union_name& __other) { \
-    ch::internal::type_accessor_t<traits>::copy(*this, __other); \
+    ch::internal::logic_accessor::copy(*this, __other); \
     return *this; \
   } \
   union_name& operator=(union_name&& __other) { \
-    ch::internal::type_accessor_t<traits>::move(*this, std::move(__other)); \
+    ch::internal::logic_accessor::move(*this, std::move(__other)); \
     return *this; \
-  }
-
-#define CH_UNION_SCALAR_FRIENDS_IMPL(enum_name) \
+  } \
 protected: \
-  friend class ch::internal::scalar_accessor;
-
-#define CH_UNION_LOGIC_FRIENDS_IMPL(enum_name) \
-protected: \
-  friend class ch::internal::logic_accessor;
+  ch::internal::logic_buffer buffer() const { \
+    CH_STRUCT_LOGIC_GETBUFFER(0, CH_FIRST_ARG(__VA_ARGS__)).source(); \
+  } \
+  friend class ch::internal::logic_accessor; \
+public:
 
 #define CH_UNION_IMPL(union_name, ...) \
   class union_name { \
@@ -91,16 +91,12 @@ protected: \
     public: \
       using traits = ch::internal::scalar_traits<CH_UNION_SIZE(__VA_ARGS__), false, __scalar_type__, union_name>; \
       CH_UNION_SCALAR_IMPL(__scalar_type__, CH_UNION_SCALAR_FIELD, __VA_ARGS__) \
-      CH_UNION_ASSIGN_IMPL(__scalar_type__) \
       CH_SCALAR_INTERFACE(__scalar_type__) \
-      CH_UNION_SCALAR_FRIENDS_IMPL(__scalar_type__) \
     }; \
   public: \
     using traits = ch::internal::logic_traits<CH_UNION_SIZE(__VA_ARGS__), false, union_name, __scalar_type__>; \
     CH_UNION_LOGIC_IMPL(union_name, union_name, CH_UNION_LOGIC_FIELD, __VA_ARGS__) \
-    CH_UNION_ASSIGN_IMPL(union_name) \
     CH_LOGIC_INTERFACE(union_name) \
-    CH_UNION_LOGIC_FRIENDS_IMPL(union_name) \
   }
 
 #define CH_UNION(name, body) \
