@@ -21,6 +21,10 @@ public:
 
   void remove_output(bindportimpl* output);
 
+  void bind_input(const lnode& src, const lnode& ioport, const source_location& sloc);
+
+  void bind_output(const lnode& dst, const lnode& ioport,const source_location& sloc);
+
   context* module() const {
     return module_;
   }
@@ -34,10 +38,6 @@ protected:
   bindimpl(context* ctx, context* module, const source_location& sloc);
 
   ~bindimpl();
-
-  void bind_input(const lnode& src, const lnode& ioport, const source_location& sloc);
-
-  void bind_output(const lnode& dst, const lnode& ioport,const source_location& sloc);
 
   context* module_;
   std::vector<lnode> outputs_;

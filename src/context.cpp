@@ -741,12 +741,6 @@ lnodeimpl* context::literal(const bitvector& value) {
   return this->create_node<litimpl>(value);
 }
 
-void context::register_tap(const std::string& name,
-                           const lnode& node,
-                           const source_location& sloc) {
-  this->create_node<tapimpl>(node, unique_tap_names_.get(name).c_str(), sloc);
-}
-
 bindimpl* context::find_binding(context* module, const source_location& sloc) {
   for (auto binding : bindings_) {
     if (binding->module() == module)
@@ -755,18 +749,10 @@ bindimpl* context::find_binding(context* module, const source_location& sloc) {
   return this->create_node<bindimpl>(module, sloc);
 }
 
-void context::bind_input(const lnode& src,
-                         const lnode& input,
-                         const source_location& sloc) {
-  auto binding = this->find_binding(input.impl()->ctx(), sloc);
-  binding->bind_input(src, input, sloc);
-}
-
-void context::bind_output(const lnode& dst,
-                          const lnode& output,
-                          const source_location& sloc) {
-  auto binding = this->find_binding(output.impl()->ctx(), sloc);
-  binding->bind_output(dst, output, sloc);
+void context::register_tap(const std::string& name,
+                           const lnode& node,
+                           const source_location& sloc) {
+  this->create_node<tapimpl>(node, unique_tap_names_.get(name).c_str(), sloc);
 }
 
 void context::build_run_list(std::vector<lnodeimpl*>& runlist) {
@@ -1062,18 +1048,6 @@ void ch::internal::registerTap(const std::string& name,
                                const lnode& node,
                                const source_location& sloc) {
   node.impl()->ctx()->register_tap(name, node, sloc);
-}
-
-void ch::internal::bindInput(const lnode& src,
-                             const lnode& input,
-                             const source_location& sloc) {
-  src.impl()->ctx()->bind_input(src, input, sloc);
-}
-
-void ch::internal::bindOutput(const lnode& dst,
-                              const lnode& output,
-                              const source_location& sloc) {
-  dst.impl()->ctx()->bind_output(dst, output, sloc);
 }
 
 void ch::internal::registerEnumString(const lnode& node, void* callback) {

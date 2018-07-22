@@ -231,6 +231,10 @@ public:
 
   //--
 
+  bindimpl* find_binding(context* module, const source_location& sloc);
+
+  //--
+
   void register_tap(const std::string& name,
                     const lnode& lnode,
                     const source_location& sloc);
@@ -259,16 +263,6 @@ public:
 
   //--
 
-  void bind_input(const lnode& src,
-                  const lnode& input,
-                  const source_location& sloc);
-
-  void bind_output(const lnode& dst,
-                   const lnode& output,
-                   const source_location& sloc);
-
-  //--
-
   void register_enum_string(const lnode& node, enum_string_cb callback);
 
   const char* enum_to_string(const lnode& node);
@@ -285,8 +279,6 @@ protected:
                                const cond_range_t& range,
                                const cond_defs_t& defs,
                                const cond_br_t* branch);
-
-  bindimpl* find_binding(context* module, const source_location& sloc);
 
   uint32_t    id_;
   std::string name_;

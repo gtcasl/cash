@@ -55,12 +55,6 @@ protected:
 class outputimpl : public ioimpl {
 public:
 
-  void write(uint32_t dst_offset,
-             const lnode& src,
-             uint32_t src_offset,
-             uint32_t length,
-             const source_location& sloc) override;
-
   void initialize() override;
 
   void eval() override;
@@ -70,7 +64,7 @@ public:
 protected:
 
   outputimpl(context* ctx,
-             uint32_t size,
+             const lnode& src,
              const std::string& name,
              const source_location& sloc);
 

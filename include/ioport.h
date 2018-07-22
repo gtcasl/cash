@@ -5,10 +5,12 @@
 namespace ch {
 namespace internal {
 
-lnodeimpl* createInputNode(const std::string& name, uint32_t size,
+lnodeimpl* createInputNode(const std::string& name,
+                           uint32_t size,
                            const source_location& sloc);
 
-lnodeimpl* createOutputNode(const std::string& name, uint32_t size,
+lnodeimpl* createOutputNode(const std::string& name,
+                            const lnode& src,
                             const source_location& sloc);
 
 void bindInput(const lnode& src,
@@ -104,8 +106,8 @@ public:
   using base::operator=;
 
   explicit ch_logic_out(const std::string& name = "io", CH_SLOC)
-    : base(logic_buffer(createOutputNode(name, ch_width_v<T>, sloc))) {
-    output_ = logic_accessor::data(*this);
+    : base(logic_buffer(ch_width_v<T>, sloc, name)) {
+    output_ = createOutputNode(name, logic_accessor::data(*this), sloc);
   }
 
   template <typename U>

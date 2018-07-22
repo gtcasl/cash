@@ -1,4 +1,5 @@
 #include "bindimpl.h"
+#include "ioport.h"
 #include "context.h"
 
 using namespace ch::internal;
@@ -188,4 +189,22 @@ void bindoutimpl::print(std::ostream& out, uint32_t level) const {
   if (level == 2) {
     out << " = " << value_;
   }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void ch::internal::bindInput(const lnode& src,
+                             const lnode& input,
+                             const source_location& sloc) {
+  auto ctx = src.impl()->ctx();
+  auto binding = ctx->find_binding(input.impl()->ctx(), sloc);
+  binding->bind_input(src, input, sloc);
+}
+
+void ch::internal::bindOutput(const lnode& dst,
+                              const lnode& output,
+                              const source_location& sloc) {
+  auto ctx = dst.impl()->ctx();
+  auto binding = ctx->find_binding(output.impl()->ctx(), sloc);
+  binding->bind_output(dst, output, sloc);
 }
