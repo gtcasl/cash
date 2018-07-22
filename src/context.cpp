@@ -759,6 +759,7 @@ void context::build_run_list(std::vector<lnodeimpl*>& runlist) {
   std::unordered_set<lnodeimpl*> visited, cycles;
   std::unordered_set<lnodeimpl*> update_list;
   std::vector<lnodeimpl*> snodes;
+  std::vector<lnodeimpl*> taps;
   std::unordered_set<lnodeimpl*> uninitialized_regs;
 
   std::function<void (context*)> gather_snodes = [&](context* ctx) {
@@ -768,6 +769,18 @@ void context::build_run_list(std::vector<lnodeimpl*>& runlist) {
     auto& list = ctx->snodes();
     snodes.reserve(snodes.size() + list.size());
     snodes.insert(snodes.end(), list.begin(), list.end());
+  };
+
+  std::function<void (context*)> gather_taps = [&](context* ctx) {
+    for (auto node : ctx->bindings()) {
+      gather_taps(node->module());
+    }
+    for (auto node : ctx->taps()) {
+      taps.push_back(node);
+    }
+    for (auto node : ctx->gtaps()) {
+      taps.push_back(node);
+    }
   };
 
   std::function<bool (lnodeimpl*)> dfs_visit = [&](lnodeimpl* node)->bool {
@@ -861,7 +874,7 @@ void context::build_run_list(std::vector<lnodeimpl*>& runlist) {
     }
   }
 
-  // make a copy of the update list and empty it futur next DFS's
+  // make a copy of the update list and empty it
   std::unordered_set<lnodeimpl*> update_list2;
   std::swap(update_list2, update_list);
 
@@ -875,6 +888,7 @@ void context::build_run_list(std::vector<lnodeimpl*>& runlist) {
   for (auto node : snodes) {
     dfs_visit(node);
   }
+  snodes.clear();
 
   // sort recently inserted sequential node in reverse dependency order
   std::reverse(runlist.begin() + old_size, runlist.begin() + runlist.size());
@@ -891,15 +905,14 @@ void context::build_run_list(std::vector<lnodeimpl*>& runlist) {
     dfs_visit(node);
   }
 
-  // insert tap nodes
-  for (auto node : taps_) {
-    dfs_visit(node);
-  }
+  // gather tap nodes accross all contexts
+  gather_taps(this);
 
-  // insert debug nodes
-  for (auto node : gtaps_) {
+  // insert tap nodes
+  for (auto node : taps) {
     dfs_visit(node);
   }
+  taps.clear();
 
   if (platform::self().cflags() & cflags::dump_ast) {
     for (auto node : runlist) {
