@@ -51,8 +51,8 @@ scalar_buffer::scalar_buffer(scalar_buffer&& other)
 
 scalar_buffer& scalar_buffer::operator=(const scalar_buffer& other) {
   this->write(0,
-              other.data().words(),
-              other.data().cbsize(),
+              other.data().data(),
+              other.data().num_bytes(),
               other.offset(),
               other.size());
   return *this;
@@ -73,7 +73,7 @@ void scalar_buffer::write(uint32_t dst_offset,
                           const bitvector& src,
                           uint32_t src_offset,
                           uint32_t length) {
-  this->write(dst_offset, src.words(), src.cbsize(), src_offset, length);
+  this->write(dst_offset, src.data(), src.num_bytes(), src_offset, length);
 }
 
 scalar_buffer::scalar_buffer(uint32_t size,
@@ -90,7 +90,7 @@ const bitvector& scalar_buffer::data() const {
     if (value_.empty()) {
       value_.resize(size_, 0, true);
     }
-    source_->read(offset_, value_.words(), value_.cbsize(), 0, size_);
+    source_->read(offset_, value_.data(), value_.num_bytes(), 0, size_);
   }
   return value_;
 }

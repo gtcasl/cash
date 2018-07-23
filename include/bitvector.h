@@ -561,13 +561,21 @@ public:
   uint32_t num_words() const {
     return (size_ + WORD_MASK) >> WORD_SIZE_LOG;
   }
+
+  uint32_t num_bytes() const {
+    return (num_words() << WORD_SIZE_LOG) / 8;
+  }
+
+  const void* data() const {
+    return words_;
+  }
+
+  void* data() {
+    return words_;
+  }
   
   uint32_t size() const {
     return size_;
-  }
-
-  uint32_t cbsize() const {
-    return (num_words() << WORD_SIZE_LOG) / 8;
   }
 
   void clear();

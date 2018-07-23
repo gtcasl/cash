@@ -141,8 +141,8 @@ void mrportimpl::eval() {
   auto data_width = mem_->data_width();
   auto addr = this->addr().data().word(0);
   mem_->value().read(addr * data_width,
-                     value_.words(),
-                     value_.cbsize(),
+                     value_.data(),
+                     value_.num_bytes(),
                      0,
                      data_width);
 }
@@ -186,8 +186,8 @@ void mwportimpl::eval() {
     auto addr = this->addr().data().word(0);
     auto& data = this->wdata().data();
     mem_->value().write(addr * data_width,
-                        data.words(),
-                        data.cbsize(),
+                        data.data(),
+                        data.num_bytes(),
                         0,
                         data_width);
   }
