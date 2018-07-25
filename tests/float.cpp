@@ -129,9 +129,9 @@ TEST_CASE("floats", "[floats]") {
       ch_device<FMultTest<2>> device;
       device.io.lhs = 0.5f;
       device.io.rhs = 0.5f;
-      ch_tracer tracer(std::cout, device);
-      tracer.run(2*2*4);
-      ch_verilog("fmulttest.v", device);
+      ch_simulator sim(device);
+      sim.run(2*2*4);
+      ch_toVerilog("fmulttest.v", device);
       float ret(device.io.out);
       //std::cout << "ret=" << ret << std::endl;
       return (0.25f == ret);

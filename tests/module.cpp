@@ -301,9 +301,9 @@ TEST_CASE("module", "[module]") {
       ret &= (12 == filter.io.y.data);
       ret &= !filter.io.y.parity;
 
-      ch_verilog("filter.v", filter);
+      ch_toVerilog("filter.v", filter);
       ret &= (checkVerilog("filter_tb.v"));
-      ch_firrtl("filter.fir", filter);
+      ch_toFirrtl("filter.fir", filter);
 
       return !!ret;
     });
@@ -337,22 +337,21 @@ TEST_CASE("module", "[module]") {
       t = sim.step(t, 4);
 
       ret &= !queue.io.deq.valid; // empty
-      ch_verilog("queue.v", queue);
+      ch_toVerilog("queue.v", queue);
       ret &= (checkVerilog("queue_tb.v"));
-      ch_firrtl("queue.fir", queue);
+      ch_toFirrtl("queue.fir", queue);
 
       return !!ret;
     });
 
     TESTX([]()->bool {
       ch_device<MultiClk> device;
-      ch_verilog("multi_clk.v", device);
+      ch_toVerilog("multi_clk.v", device);
 
       ch_simulator sim(device);
       device.io.in = 0xA;
       sim.run(10);
       std::cout << "out = "  << device.io.out << std::endl;
-      ch_vcdtracer tracer("multi_clk.vcd", device);
       int ret = (device.io.out == 0xe);
 
       return !!ret;
@@ -360,13 +359,12 @@ TEST_CASE("module", "[module]") {
 
     TESTX([]()->bool {
       ch_device<CustomClk> device;
-      ch_verilog("custom_clk.v", device);
+      ch_toVerilog("custom_clk.v", device);
 
       ch_simulator sim(device);
       device.io.in = 0xA;
       sim.run(10);
       std::cout << "out = "  << device.io.out << std::endl;
-      ch_vcdtracer tracer("custom_clk.vcd", device);
       int ret = (device.io.out == 0xe);
 
       return !!ret;
@@ -374,13 +372,13 @@ TEST_CASE("module", "[module]") {
 
     TESTX([]()->bool {
       ch_device<Loop> loop;
-      ch_verilog("loop.v", loop);
-      ch_firrtl("loop.fir", loop);
+      ch_toVerilog("loop.v", loop);
+      ch_toFirrtl("loop.fir", loop);
 
       loop.io.in1 = 1;
       loop.io.in2 = 2;
-      ch_vcdtracer tracer("loop.vcd", loop);
-      tracer.run();
+      ch_simulator sim(loop);
+      sim.run();
 
       std::cout << "out = "  << loop.io.out << std::endl;
       int ret = (loop.io.out == 3);

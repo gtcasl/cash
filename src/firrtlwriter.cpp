@@ -383,7 +383,7 @@ void firrtlwriter::print_proxy(module_t& module, proxyimpl* node) {
 
 void firrtlwriter::print_alu(module_t& module, aluimpl* node) {
   auto op = node->op();
-  if (op == op_sub) {
+  if (op == ch_op::sub) {
     auto dst = module.num_temps++;
     out_ << "node _t" << dst << " = sub(";
     this->print_name(node->src(0).impl());
@@ -393,7 +393,7 @@ void firrtlwriter::print_alu(module_t& module, aluimpl* node) {
     this->print_name(node);
     out_ << " <= asUInt(_t" << dst << ")" << std::endl;
   } else
-  if (op == op_neg) {
+  if (op == ch_op::neg) {
     auto dst = module.num_temps++;
     out_ << "node _t" << dst << " = neg(";
     this->print_name(node->src(0).impl());
@@ -401,7 +401,7 @@ void firrtlwriter::print_alu(module_t& module, aluimpl* node) {
     this->print_name(node);
     out_ << " <= asUInt(_t" << dst << ")" << std::endl;
   } else
-  if (op == op_shr && node->is_signed()) {
+  if (op == ch_op::shr && node->is_signed()) {
     auto dst = module.num_temps++;
     out_ << "node _t" << dst << " = asSInt(";
     this->print_name(node->src(0).impl());
@@ -411,7 +411,7 @@ void firrtlwriter::print_alu(module_t& module, aluimpl* node) {
     this->print_name(node->src(1).impl());
     out_ << ")" << std::endl;
   } else
-  if (op == op_pad) {
+  if (op == ch_op::pad) {
     if (node->is_signed()) {
       auto src = module.num_temps++;
       auto dst = module.num_temps++;
@@ -431,7 +431,7 @@ void firrtlwriter::print_alu(module_t& module, aluimpl* node) {
   } else {
     this->print_name(node);
     out_ << " <= ";
-    if (CH_OP_ARY(op) == op_binary) {
+    if (CH_OP_ARY(op) == op_flags::binary) {
       this->print_operator(op);
       out_ << "(";
       this->print_name(node->src(0).impl());
@@ -439,7 +439,7 @@ void firrtlwriter::print_alu(module_t& module, aluimpl* node) {
       this->print_name(node->src(1).impl());
       out_ << ")" << std::endl;
     } else {
-      assert(CH_OP_ARY(op) == op_unary);
+      assert(CH_OP_ARY(op) == op_flags::unary);
       this->print_operator(op);
       out_ << "(";
       this->print_name(node->src(0).impl());
@@ -604,30 +604,30 @@ void firrtlwriter::print_mem(memimpl* node) {
 
 void firrtlwriter::print_operator(ch_op op) {
   switch (op) {
-  case op_inv:   out_ << "not"; break;
-  case op_and:   out_ << "and"; break;
-  case op_or:    out_ << "or"; break;
-  case op_xor:   out_ << "xor"; break;
-  case op_andr:  out_ << "andr"; break;
-  case op_orr:   out_ << "orr"; break;
-  case op_xorr:  out_ << "xorr"; break;
+  case ch_op::inv:   out_ << "not"; break;
+  case ch_op::andl:  out_ << "and"; break;
+  case ch_op::orl:   out_ << "or"; break;
+  case ch_op::xorl:  out_ << "xor"; break;
+  case ch_op::andr:  out_ << "andr"; break;
+  case ch_op::orr:   out_ << "orr"; break;
+  case ch_op::xorr:  out_ << "xorr"; break;
 
-  case op_neg:   out_ << "neg"; break;
-  case op_add:   out_ << "add"; break;
-  case op_sub:   out_ << "sub"; break;
-  case op_mul:  out_ << "mul"; break;
-  case op_div:   out_ << "div"; break;
-  case op_mod:   out_ << "mod"; break;
+  case ch_op::neg:   out_ << "neg"; break;
+  case ch_op::add:   out_ << "add"; break;
+  case ch_op::sub:   out_ << "sub"; break;
+  case ch_op::mul:   out_ << "mul"; break;
+  case ch_op::div:   out_ << "div"; break;
+  case ch_op::mod:   out_ << "mod"; break;
 
-  case op_shl:   out_ << "dshl"; break;
-  case op_shr:   out_ << "dshr"; break;
+  case ch_op::shl:   out_ << "dshl"; break;
+  case ch_op::shr:   out_ << "dshr"; break;
 
-  case op_eq:    out_ << "eq"; break;
-  case op_ne:    out_ << "neq"; break;
-  case op_lt:    out_ << "lt"; break;
-  case op_gt:    out_ << "gt"; break;
-  case op_le:    out_ << "leq"; break;
-  case op_ge:    out_ << "geq"; break;
+  case ch_op::eq:    out_ << "eq"; break;
+  case ch_op::ne:    out_ << "neq"; break;
+  case ch_op::lt:    out_ << "lt"; break;
+  case ch_op::gt:    out_ << "gt"; break;
+  case ch_op::le:    out_ << "leq"; break;
+  case ch_op::ge:    out_ << "geq"; break;
   default:
     assert(false);
   }
@@ -834,7 +834,7 @@ void firrtlwriter::print_value(const bitvector& value,
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void ch::internal::ch_firrtl(std::ostream& out, const device& device) {
+void ch::internal::ch_toFirrtl(std::ostream& out, const device& device) {
   firrtlwriter writer(out);
   writer.print(device.impl()->ctx());
 }

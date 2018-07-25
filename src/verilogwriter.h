@@ -1,7 +1,6 @@
 #pragma once
 
 #include "common.h"
-#include "traits.h"
 
 namespace ch {
 namespace internal {
@@ -21,6 +20,7 @@ class bitvector;
 class cdimpl;
 class udfimpl;
 class udfsimpl;
+enum class ch_op;
 
 class verilogwriter {
 public:

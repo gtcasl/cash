@@ -60,7 +60,7 @@ bool verilogwriter::is_inline_subscript(lnodeimpl* node) const {
     for (lnodeimpl* use : it->second) {
       if (has_subscript(use)
        || (type_alu == use->type()
-        && op_pad == reinterpret_cast<aluimpl*>(use)->op()))
+        && ch_op::pad == reinterpret_cast<aluimpl*>(use)->op()))
         return false;
     }
   }
@@ -417,7 +417,7 @@ void verilogwriter::print_alu(std::ostream& out, aluimpl* node) {
       out << ")";
   };
   auto op = node->op();
-  if (op == op_pad) {
+  if (op == ch_op::pad) {
     if (node->is_signed())
       this->print_sext(out, node);
     else
@@ -426,15 +426,15 @@ void verilogwriter::print_alu(std::ostream& out, aluimpl* node) {
     out << "assign ";
     this->print_name(out, node);
     out << " = ";
-    if (CH_OP_ARY(op) == op_binary) {
-      if (CH_OP_CLASS(op) == op_shift
-       || CH_OP_CLASS(op) == op_relational
-       || CH_OP_CLASS(op) == op_arithmetic) {
+    if (CH_OP_ARY(op) == op_flags::binary) {
+      if (CH_OP_CLASS(op) == op_flags::shift
+       || CH_OP_CLASS(op) == op_flags::relational
+       || CH_OP_CLASS(op) == op_flags::arithmetic) {
         print_signed_operand(0);
         out << " ";
         this->print_operator(out, op);
         out << " ";
-        if (op == op_shl || op == op_shr) {
+        if (op == ch_op::shl || op == ch_op::shr) {
           this->print_name(out, node->src(1).impl());
         } else {
           print_signed_operand(1);
@@ -448,7 +448,7 @@ void verilogwriter::print_alu(std::ostream& out, aluimpl* node) {
       }
       out << ";" << std::endl;
     } else {
-      assert(CH_OP_ARY(op) == op_unary);
+      assert(CH_OP_ARY(op) == op_flags::unary);
       this->print_operator(out, op);
       this->print_name(out, node->src(0).impl());
       out << ";" << std::endl;
@@ -812,31 +812,31 @@ void verilogwriter::print_value(std::ostream& out,
 
 void verilogwriter::print_operator(std::ostream& out, ch_op op) {
   switch (op) {
-  case op_inv:   out << "~"; break;
-  case op_and:   out << "&"; break;
-  case op_or:    out << "|"; break;
-  case op_xor:   out << "^"; break;
-  case op_andr:  out << "&"; break;
-  case op_orr:   out << "|"; break;
-  case op_xorr:  out << "^"; break;
+  case ch_op::inv:   out << "~"; break;
+  case ch_op::andl:  out << "&"; break;
+  case ch_op::orl:   out << "|"; break;
+  case ch_op::xorl:  out << "^"; break;
+  case ch_op::andr:  out << "&"; break;
+  case ch_op::orr:   out << "|"; break;
+  case ch_op::xorr:  out << "^"; break;
 
-  case op_neg:   out << "-"; break;
-  case op_add:   out << "+"; break;
-  case op_sub:   out << "-"; break;
-  case op_mul:  out << "*"; break;
-  case op_div:   out << "/"; break;
-  case op_mod:   out << "%"; break;
+  case ch_op::neg:   out << "-"; break;
+  case ch_op::add:   out << "+"; break;
+  case ch_op::sub:   out << "-"; break;
+  case ch_op::mul:   out << "*"; break;
+  case ch_op::div:   out << "/"; break;
+  case ch_op::mod:   out << "%"; break;
 
-  case op_shl:   out << "<<"; break;
-  case op_shr:   out << ">>"; break;
+  case ch_op::shl:   out << "<<"; break;
+  case ch_op::shr:   out << ">>"; break;
 
-  case op_eq:    out << "=="; break;
-  case op_ne:    out << "!="; break;
+  case ch_op::eq:    out << "=="; break;
+  case ch_op::ne:    out << "!="; break;
 
-  case op_lt:    out << "<"; break;
-  case op_gt:    out << ">"; break;
-  case op_le:    out << "<="; break;
-  case op_ge:    out << ">="; break;
+  case ch_op::lt:    out << "<"; break;
+  case ch_op::gt:    out << ">"; break;
+  case ch_op::le:    out << "<="; break;
+  case ch_op::ge:    out << ">="; break;
   default:
     assert(false);
   }
@@ -844,7 +844,7 @@ void verilogwriter::print_operator(std::ostream& out, ch_op op) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void ch::internal::ch_verilog(std::ostream& out,
+void ch::internal::ch_toVerilog(std::ostream& out,
                                 const ch_device_list& devices) {
   {
     std::unordered_set<udf_iface*> visited;

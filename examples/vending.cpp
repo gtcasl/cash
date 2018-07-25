@@ -43,7 +43,7 @@ int main() {
 
   vending.io.coin = Coin::nickel;
 
-  ch_vcdtracer tracer("vending.vcd", vending);
+  ch_tracer tracer(vending);
   tracer.run(2*(1+4));
 
   std::cout << "result:" << std::endl;
@@ -51,8 +51,10 @@ int main() {
 
   assert(vending.io.valid);
 
-  ch_verilog("vending.v", vending);
-  ch_firrtl("vending.fir", vending);
+  tracer.toVCD("vending.vcd");
+
+  ch_toVerilog("vending.v", vending);
+  ch_toFirrtl("vending.fir", vending);
 
   int ret = system("iverilog vending_tb.v -o vending_tb.iv")
           | system("vvp vending_tb.iv");

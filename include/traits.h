@@ -1,60 +1,7 @@
 #pragma once
 
-#define CH_OP_ARY(x)   (x & (0x1 << 5))
-#define CH_OP_CLASS(x) (x & (0x7 << 6))
-
-#define CH_OP_TYPE(n, v) op_##n = v,
-#define CH_OP_NAME(n, v) #n,
-#define CH_OP_INDEX(op)  (op & 0x1f)
-#define CH_OP_ENUM(m) \
-  m(eq,     0 | op_binary | op_equality | op_symmetric) \
-  m(ne,     1 | op_binary | op_equality | op_symmetric) \
-  m(lt,     2 | op_binary | op_relational) \
-  m(gt,     3 | op_binary | op_relational) \
-  m(le,     4 | op_binary | op_relational) \
-  m(ge,     5 | op_binary | op_relational) \
-  m(inv,    6 | op_unary  | op_bitwise) \
-  m(and,    7 | op_binary | op_bitwise | op_symmetric) \
-  m(or,     8 | op_binary | op_bitwise | op_symmetric) \
-  m(xor,    9 | op_binary | op_bitwise | op_symmetric) \
-  m(andr,  10 | op_unary  | op_reduce) \
-  m(orr,   11 | op_unary  | op_reduce) \
-  m(xorr,  12 | op_unary  | op_reduce) \
-  m(shl,   13 | op_binary | op_shift) \
-  m(shr,   14 | op_binary | op_shift) \
-  m(neg,   15 | op_unary  | op_arithmetic) \
-  m(add,   16 | op_binary | op_arithmetic | op_symmetric) \
-  m(sub,   17 | op_binary | op_arithmetic) \
-  m(mul ,  18 | op_binary | op_arithmetic | op_symmetric) \
-  m(div,   19 | op_binary | op_arithmetic) \
-  m(mod,   20 | op_binary | op_arithmetic) \
-  m(pad,   21 | op_unary  | op_misc)
-
 namespace ch {
 namespace internal {
-
-enum op_flags {
-  op_unary      = 0 << 5,
-  op_binary     = 1 << 5,
-
-  op_equality   = 0 << 6,
-  op_relational = 1 << 6,
-  op_bitwise    = 2 << 6,
-  op_shift      = 3 << 6,
-  op_arithmetic = 4 << 6,
-  op_reduce     = 5 << 6,
-  op_misc       = 6 << 6,
-
-  op_symmetric  = 1 << 9,
-};
-
-enum ch_op {
-  CH_OP_ENUM(CH_OP_TYPE)
-};
-
-const char* to_string(ch_op op);
-
-///////////////////////////////////////////////////////////////////////////////
 
 enum traits_type {
   traits_none      = 0x00,

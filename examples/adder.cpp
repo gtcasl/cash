@@ -28,7 +28,7 @@ int main() {
   adder.io.lhs = 1;
   adder.io.rhs = 3;
 
-  ch_vcdtracer tracer("adder.vcd", adder);
+  ch_tracer tracer(adder);
   tracer.run();
   
   std::cout << "result:" << std::endl;
@@ -38,8 +38,11 @@ int main() {
   assert(adder.io.out == 1);
   assert(adder.io.cout == 1);
 
-  ch_verilog("adder.v", adder);
-  ch_firrtl("adder.fir", adder);
+  tracer.toText("adder.log");
+  tracer.toVCD("adder.vcd");
+
+  ch_toVerilog("adder.v", adder);
+  ch_toFirrtl("adder.fir", adder);
 
   int ret = system("iverilog adder_tb.v -o adder_tb.iv")
           | system("vvp adder_tb.iv");

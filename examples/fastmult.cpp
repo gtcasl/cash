@@ -28,7 +28,7 @@ int main() {
   fastmult.io.lhs = 2;
   fastmult.io.rhs = 3;
 
-  ch_vcdtracer tracer("fastmult.vcd", fastmult);
+  ch_tracer tracer(fastmult);
   tracer.run();
 
   std::cout << "result:" << std::endl;
@@ -38,8 +38,10 @@ int main() {
 
   assert(fastmult.io.out == 6);
 
-  ch_verilog("fastmult.v", fastmult);
-  ch_firrtl("fastmult.fir", fastmult);
+  tracer.toVCD("fastmult.vcd");
+
+  ch_toVerilog("fastmult.v", fastmult);
+  ch_toFirrtl("fastmult.fir", fastmult);
 
   int ret = system("iverilog fastmult_tb.v -o fastmult_tb.iv")
           | system("vvp fastmult_tb.iv");

@@ -2,7 +2,6 @@
 
 #include "lnodeimpl.h"
 #include "cdimpl.h"
-#include "traits.h"
 
 namespace ch {
 namespace internal {

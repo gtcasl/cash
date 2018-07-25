@@ -35,7 +35,7 @@ TEST_CASE("htl", "[htl]") {
     TESTX([]()->bool {
       int ret = 1;
       ch_device<PipeTest<ch_bit32, 4>> device;
-      ch_vcdtracer sim("pipe.vcd", device);
+      ch_simulator sim(device);
       ch_tick t = sim.reset(0);
       device.io.enq.data  = 0x3e4ccccd; // 0.2f
       device.io.enq.valid = true;

@@ -19,7 +19,7 @@ struct Counter {
 int main() {
   ch_device<Counter<4>> counter;
 
-  ch_vcdtracer tracer("counter.vcd", counter);
+  ch_tracer tracer(counter);
   tracer.run([&](ch_tick t)->bool {
     std::cout << "t" << t << ": out="  << counter.io.out << std::endl;
     return (t != 2*10);
@@ -27,8 +27,11 @@ int main() {
 
   assert(counter.io.out == 12);
 
-  ch_verilog("counter.v", counter);
-  ch_firrtl("counter.fir", counter);
+  tracer.toText("counter.log");
+  tracer.toVCD("counter.vcd");
+
+  ch_toVerilog("counter.v", counter);
+  ch_toFirrtl("counter.fir", counter);
 
   int ret = system("iverilog counter_tb.v -o counter_tb.iv")
           | system("vvp counter_tb.iv");

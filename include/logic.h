@@ -358,38 +358,38 @@ struct sloc_arg {
   CH_LOGIC_FUNCTION_BINARY2(func, op, type)
 
 CH_LOGIC_OPERATOR(logic_op_equality)
-  CH_LOGIC_OPERATOR_IMPL(operator==, op_eq, ch_bit<1>)
-  CH_LOGIC_OPERATOR_IMPL(operator!=, op_ne, ch_bit<1>)
+  CH_LOGIC_OPERATOR_IMPL(operator==, ch_op::eq, ch_bit<1>)
+  CH_LOGIC_OPERATOR_IMPL(operator!=, ch_op::ne, ch_bit<1>)
 };
 
 CH_LOGIC_OPERATOR(logic_op_logical)
   friend auto operator&&(Derived lhs, const Derived& rhs) {
     static_assert(1 == Derived::traits::bitwidth, "invalid size");
     auto sloc = logic_accessor::sloc(lhs);
-    return make_logic_op<op_and, false, ch_bit<1>>(lhs, rhs, sloc);
+    return make_logic_op<ch_op::andl, false, ch_bit<1>>(lhs, rhs, sloc);
   }
 
   friend auto operator||(Derived lhs, const Derived& rhs) {
     static_assert(1 == Derived::traits::bitwidth, "invalid size");
     auto sloc = logic_accessor::sloc(lhs);
-    return make_logic_op<op_or, false, ch_bit<1>>(lhs, rhs, sloc);
+    return make_logic_op<ch_op::orl, false, ch_bit<1>>(lhs, rhs, sloc);
   }
 
   friend auto operator!(Derived self) {
     auto sloc = logic_accessor::sloc(self);
-    return make_logic_op<op_eq, ch_signed_v<Derived>, ch_bit<1>>(self, Derived(0x0), sloc);
+    return make_logic_op<ch_op::eq, ch_signed_v<Derived>, ch_bit<1>>(self, Derived(0x0), sloc);
   }
 };
 
 CH_LOGIC_OPERATOR(logic_op_bitwise)
   friend auto operator~(Derived self) {
     auto sloc = logic_accessor::sloc(self);
-    return make_logic_op<op_inv, false, Derived>(self, sloc);
+    return make_logic_op<ch_op::inv, false, Derived>(self, sloc);
   }
 
-  CH_LOGIC_OPERATOR_IMPL(operator&, op_and, Derived)
-  CH_LOGIC_OPERATOR_IMPL(operator|, op_or, Derived)
-  CH_LOGIC_OPERATOR_IMPL(operator^, op_xor, Derived)
+  CH_LOGIC_OPERATOR_IMPL(operator&, ch_op::andl, Derived)
+  CH_LOGIC_OPERATOR_IMPL(operator|, ch_op::orl, Derived)
+  CH_LOGIC_OPERATOR_IMPL(operator^, ch_op::xorl, Derived)
 };
 
 CH_LOGIC_OPERATOR(logic_op_shift)
@@ -397,14 +397,14 @@ CH_LOGIC_OPERATOR(logic_op_shift)
             CH_REQUIRE_0(std::is_convertible_v<U, ch_bit<ch_width_v<U>>>)>
   friend auto operator<<(Derived lhs, const U& rhs) {
     auto sloc = logic_accessor::sloc(lhs);
-    return make_logic_op<op_shl, ch_signed_v<Derived>, Derived, Derived, ch_bit<ch_width_v<U>>>(lhs, rhs, sloc);
+    return make_logic_op<ch_op::shl, ch_signed_v<Derived>, Derived, Derived, ch_bit<ch_width_v<U>>>(lhs, rhs, sloc);
   }
 
   template <typename U,
             CH_REQUIRE_0(std::is_convertible_v<U, ch_bit<ch_width_v<U>>>)>
   friend auto operator>>(Derived lhs, const U& rhs) {
     auto sloc = logic_accessor::sloc(lhs);
-    return make_logic_op<op_shr, ch_signed_v<Derived>, Derived, Derived, ch_bit<ch_width_v<U>>>(lhs, rhs, sloc);
+    return make_logic_op<ch_op::shr, ch_signed_v<Derived>, Derived, Derived, ch_bit<ch_width_v<U>>>(lhs, rhs, sloc);
   }
 };
 
@@ -415,7 +415,7 @@ CH_LOGIC_OPERATOR(logic_op_padding)
     static_assert(ch_width_v<R> >= N, "invalid size");
     auto& self = reinterpret_cast<const Derived&>(*this);
     if constexpr (ch_width_v<R> > N) {
-      return make_logic_op<op_pad, ch_signed_v<Derived>, R>(self, sloc);
+      return make_logic_op<ch_op::pad, ch_signed_v<Derived>, R>(self, sloc);
     } else
     if constexpr (std::is_same_v<R, Derived>) {
       return self;
@@ -431,23 +431,23 @@ CH_LOGIC_OPERATOR(logic_op_padding)
 };
 
 CH_LOGIC_OPERATOR(logic_op_relational)
-  CH_LOGIC_OPERATOR_IMPL(operator<, op_lt, ch_bit<1>)
-  CH_LOGIC_OPERATOR_IMPL(operator<=, op_le, ch_bit<1>)
-  CH_LOGIC_OPERATOR_IMPL(operator>, op_gt, ch_bit<1>)
-  CH_LOGIC_OPERATOR_IMPL(operator>=, op_ge, ch_bit<1>)
+  CH_LOGIC_OPERATOR_IMPL(operator<, ch_op::lt, ch_bit<1>)
+  CH_LOGIC_OPERATOR_IMPL(operator<=, ch_op::le, ch_bit<1>)
+  CH_LOGIC_OPERATOR_IMPL(operator>, ch_op::gt, ch_bit<1>)
+  CH_LOGIC_OPERATOR_IMPL(operator>=, ch_op::ge, ch_bit<1>)
 };
 
 CH_LOGIC_OPERATOR(logic_op_arithmetic)
   friend auto operator-(Derived self) {
     auto sloc = logic_accessor::sloc(self);
-    return make_logic_op<op_neg, ch_signed_v<Derived>, Derived>(self, sloc);
+    return make_logic_op<ch_op::neg, ch_signed_v<Derived>, Derived>(self, sloc);
   }
 
-  CH_LOGIC_OPERATOR_IMPL(operator+, op_add, Derived)
-  CH_LOGIC_OPERATOR_IMPL(operator-, op_sub, Derived)
-  CH_LOGIC_OPERATOR_IMPL(operator*, op_mul, Derived)
-  CH_LOGIC_OPERATOR_IMPL(operator/, op_div, Derived)
-  CH_LOGIC_OPERATOR_IMPL(operator%, op_mod, Derived)
+  CH_LOGIC_OPERATOR_IMPL(operator+, ch_op::add, Derived)
+  CH_LOGIC_OPERATOR_IMPL(operator-, ch_op::sub, Derived)
+  CH_LOGIC_OPERATOR_IMPL(operator*, ch_op::mul, Derived)
+  CH_LOGIC_OPERATOR_IMPL(operator/, ch_op::div, Derived)
+  CH_LOGIC_OPERATOR_IMPL(operator%, ch_op::mod, Derived)
 };
 
 }

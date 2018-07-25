@@ -49,7 +49,7 @@ int main() {
   gcd.io.in.data[1] = 0x0030_h;
   gcd.io.in.valid = true;
 
-  ch_vcdtracer tracer("gcd.vcd", gcd);
+  ch_tracer tracer(gcd);
   auto ticks = tracer.run([&](ch_tick t)->bool {
     std::cout << "t" << t << ": in="  << gcd.io.in.ready
               << ", out="  << gcd.io.out.data << std::endl;
@@ -60,8 +60,10 @@ int main() {
 
   assert(gcd.io.out.data == 16);
 
-  ch_verilog("gcd.v", gcd);
-  ch_firrtl("gcd.fir", gcd);
+  tracer.toVCD("gcd.vcd");
+
+  ch_toVerilog("gcd.v", gcd);
+  ch_toFirrtl("gcd.fir", gcd);
 
   int ret = system("iverilog gcd_tb.v -o gcd_tb.iv")
           | system("vvp gcd_tb.iv");

@@ -27,7 +27,6 @@
 #include "assertion.h"
 #include "simulator.h"
 #include "tracer.h"
-#include "vcdtracer.h"
 #include "verilog.h"
 #include "firrtl.h"
 #include "udf.h"
@@ -255,7 +254,6 @@ namespace sim {
   using ch::internal::ch_device_list;
   using ch::internal::ch_simulator;
   using ch::internal::ch_tracer;
-  using ch::internal::ch_vcdtracer;
 
   using ch::internal::bitvector;
 
@@ -263,8 +261,8 @@ namespace sim {
   // utility functions
   //
 
-  using ch::internal::ch_verilog;
-  using ch::internal::ch_firrtl;
+  using ch::internal::ch_toVerilog;
+  using ch::internal::ch_toFirrtl;
   using ch::internal::ch_stats;
 }
 

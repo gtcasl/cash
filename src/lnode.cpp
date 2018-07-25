@@ -5,6 +5,15 @@
 
 using namespace ch::internal;
 
+const char* ch::internal::to_string(ch_op op) {
+  static const char* sc_names[] = {
+    CH_OP_ENUM(CH_OP_NAME)
+  };
+  return sc_names[CH_OP_INDEX(op)];
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 lnode::lnode() : impl_(nullptr) {}
 
 lnode::lnode(lnodeimpl* impl) : impl_(impl) {

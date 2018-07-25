@@ -134,36 +134,36 @@ protected:
 
 // equality functions
 
-CH_LOGIC_FUNCTION_EQUALITY(ch_eq, op_eq, ch_bit)
-CH_LOGIC_FUNCTION_EQUALITY(ch_ne, op_ne, ch_bit)
+CH_LOGIC_FUNCTION_EQUALITY(ch_eq, ch_op::eq, ch_bit)
+CH_LOGIC_FUNCTION_EQUALITY(ch_ne, ch_op::ne, ch_bit)
 
 // binary functions
 
-CH_LOGIC_FUNCTION_BINARY1(ch_inv, op_inv, ch_bit)
-CH_LOGIC_FUNCTION_BINARY2(ch_and, op_and, ch_bit)
-CH_LOGIC_FUNCTION_BINARY2(ch_or, op_or, ch_bit)
-CH_LOGIC_FUNCTION_BINARY2(ch_xor, op_xor, ch_bit)
+CH_LOGIC_FUNCTION_BINARY1(ch_inv, ch_op::inv, ch_bit)
+CH_LOGIC_FUNCTION_BINARY2(ch_and, ch_op::andl, ch_bit)
+CH_LOGIC_FUNCTION_BINARY2(ch_or, ch_op::orl, ch_bit)
+CH_LOGIC_FUNCTION_BINARY2(ch_xor, ch_op::xorl, ch_bit)
 
 // shift functions
 
-CH_LOGIC_FUNCTION_SHIFT(ch_shl, op_shl, ch_bit)
-CH_LOGIC_FUNCTION_SHIFT(ch_shr, op_shr, ch_bit)
+CH_LOGIC_FUNCTION_SHIFT(ch_shl, ch_op::shl, ch_bit)
+CH_LOGIC_FUNCTION_SHIFT(ch_shr, ch_op::shr, ch_bit)
 
 // reduce functions
 
 template <unsigned N>
 inline auto ch_andr(const ch_bit<N>& in, CH_SLOC) {
-  return make_logic_op<op_andr, false, ch_bit<1>>(in, sloc);
+  return make_logic_op<ch_op::andr, false, ch_bit<1>>(in, sloc);
 }
 
 template <unsigned N>
 inline auto ch_orr(const ch_bit<N>& in, CH_SLOC) {
-  return make_logic_op<op_orr, false, ch_bit<1>>(in, sloc);
+  return make_logic_op<ch_op::orr, false, ch_bit<1>>(in, sloc);
 }
 
 template <unsigned N>
 inline auto ch_xorr(const ch_bit<N>& in, CH_SLOC) {
-  return make_logic_op<op_xorr, false, ch_bit<1>>(in, sloc);
+  return make_logic_op<ch_op::xorr, false, ch_bit<1>>(in, sloc);
 }
 
 // rotate functions

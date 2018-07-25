@@ -631,16 +631,16 @@ context::emit_conditionals(lnodeimpl* dst,
           // combine predicates
           auto pred0 = values.front().first;
           if (key) {
-            pred0 = this->create_node<aluimpl>(op_eq, 1, false, key, pred0, branch->sloc);
+            pred0 = this->create_node<aluimpl>(ch_op::eq, 1, false, key, pred0, branch->sloc);
           }
           auto pred1 = _true->src(0);
           if (_true->has_key()) {
             // create predicate
-            pred1 = this->create_node<aluimpl>(op_eq, 1, false, pred1, _true->src(1), branch->sloc);
+            pred1 = this->create_node<aluimpl>(ch_op::eq, 1, false, pred1, _true->src(1), branch->sloc);
             // remove key from src list
             _true->remove_key();
           }
-          auto pred = this->create_node<aluimpl>(op_and, 1, false, pred0, pred1, branch->sloc);
+          auto pred = this->create_node<aluimpl>(ch_op::andl, 1, false, pred0, pred1, branch->sloc);
           _true->src(0) = pred;
           return _true;
         }

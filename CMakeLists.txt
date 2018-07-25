@@ -54,10 +54,11 @@ set(PROJECT_SOURCES
     src/logic.cpp
     src/context.cpp
     src/compile.cpp
-    src/deviceimpl.cpp
+    src/simref.cpp
+    src/simjit.cpp
+    src/deviceimpl.cpp    
     src/simulatorimpl.cpp
     src/tracerimpl.cpp
-    src/vcdtracerimpl.cpp
     src/verilogwriter.cpp
     src/firrtlwriter.cpp
 )

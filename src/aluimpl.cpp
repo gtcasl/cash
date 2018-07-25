@@ -5,15 +5,6 @@
 
 using namespace ch::internal;
 
-const char* ch::internal::to_string(ch_op op) {
-  static const char* sc_names[] = {
-    CH_OP_ENUM(CH_OP_NAME)
-  };
-  return sc_names[CH_OP_INDEX(op)];
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
 aluimpl::aluimpl(context* ctx, ch_op op, uint32_t size, bool is_signed,
                  const lnode& in, const source_location& sloc)
   : lnodeimpl(ctx, type_alu, size, sloc)
@@ -48,7 +39,7 @@ std::size_t aluimpl::hash() const {
   ret.fields.type = this->type();
   ret.fields.size = this->size();  
   auto n = this->srcs().size();  
-  ret.fields.arg0 = this->op();
+  ret.fields.arg0 = (int)this->op();
   if (n > 0) {
     ret.fields.srcs = n;
     ret.fields.arg1 = this->src(0).id();
@@ -72,8 +63,8 @@ void aluimpl::initialize() {
 
   // allocate shadow buffers if needed
   auto op_class = CH_OP_CLASS(op_);
-  if (op_equality == op_class
-   || op_relational == op_class) {
+  if (op_flags::equality == op_class
+   || op_flags::relational == op_class) {
     if (src0_->size() != src1_->size()) {
      if (src0_->size() < src1_->size()) {
        t_src0_.resize(src1_->size());
@@ -85,8 +76,8 @@ void aluimpl::initialize() {
      need_resizing_ = true;
    }
   } else
-  if (op_bitwise == op_class
-   || op_arithmetic == op_class)
+  if (op_flags::bitwise == op_class
+   || op_flags::arithmetic == op_class)
   {
     if (src0_->size() != this->size()) {
       t_src0_.resize(this->size());
@@ -132,84 +123,84 @@ void aluimpl::eval() {
   }
 
   switch (op_) {
-  case op_eq:
+  case ch_op::eq:
     value_.word(0) = (*src0_ == *src1_);
     break;
-  case op_ne:
+  case ch_op::ne:
     value_.word(0) = (*src0_ != *src1_);
     break;
-  case op_lt:
+  case ch_op::lt:
     value_.word(0) = is_signed_ ? bv_lts(*src0_, *src1_) : bv_ltu(*src0_, *src1_);
     break;
-  case op_gt:
+  case ch_op::gt:
     value_.word(0) = is_signed_ ? bv_lts(*src1_, *src0_) : bv_ltu(*src1_, *src0_);
     break;
-  case op_le:
+  case ch_op::le:
     value_.word(0) = !(is_signed_ ? bv_lts(*src1_, *src0_) : bv_ltu(*src1_, *src0_));
     break;
-  case op_ge:
+  case ch_op::ge:
     value_.word(0) = !(is_signed_ ? bv_lts(*src0_, *src1_) : bv_ltu(*src0_, *src1_));
     break;
 
-  case op_inv:
+  case ch_op::inv:
     bv_inv(value_, *src0_);
     break;
-  case op_and:
+  case ch_op::andl:
     bv_and(value_, *src0_, *src1_);
     break;
-  case op_or:
+  case ch_op::orl:
     bv_or(value_, *src0_, *src1_);
     break;
-  case op_xor:
+  case ch_op::xorl:
     bv_xor(value_, *src0_, *src1_);
     break;
 
-  case op_andr:
+  case ch_op::andr:
     value_.word(0) = bv_andr(*src0_);
     break;
-  case op_orr:
+  case ch_op::orr:
     value_.word(0) = bv_orr(*src0_);
     break;
-  case op_xorr:
+  case ch_op::xorr:
     value_.word(0) = bv_xorr(*src0_);
     break;
 
-  case op_shl:
+  case ch_op::shl:
     bv_sll(value_, *src0_, *src1_);
     break;
-  case op_shr:
+  case ch_op::shr:
     if (is_signed_ )
         bv_sra(value_, *src0_, *src1_);
     else
         bv_srl(value_, *src0_, *src1_);
     break;
 
-  case op_add:
+  case ch_op::add:
     bv_add(value_, *src0_, *src1_);
     break;
-  case op_sub:
+  case ch_op::sub:
     bv_sub(value_, *src0_, *src1_);
     break;
-  case op_neg:
+  case ch_op::neg:
     bv_neg(value_, *src0_);
     break;
-  case op_mul:
+  case ch_op::mul:
     bv_mul(value_, *src0_, *src1_);
     break;
-  case op_div:
+  case ch_op::div:
     if (is_signed_ )
       bv_divs(value_, *src0_, *src1_);
     else
       bv_divu(value_, *src0_, *src1_);
     break;
-  case op_mod:
+  case ch_op::mod:
     if (is_signed_ )
       bv_mods(value_, *src0_, *src1_);
     else
       bv_modu(value_, *src0_, *src1_);
     break;
 
-  case op_pad:
+  case ch_op::pad:
     if (is_signed_ )
         bv_sext(value_, *src0_);
     else

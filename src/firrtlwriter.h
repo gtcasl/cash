@@ -1,7 +1,6 @@
 #pragma once
 
 #include "common.h"
-#include "traits.h"
 
 namespace ch {
 namespace internal {
@@ -18,6 +17,7 @@ class bindimpl;
 class bindportimpl;
 class bitvector;
 class cdimpl;
+enum class ch_op;
 
 class firrtlwriter {
 public:

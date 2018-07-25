@@ -222,7 +222,7 @@ struct Dogfood {
 
 int main() {
   ch_device<Dogfood> device;
-  //ch_verilog("test.v", device);
+  //ch_toVerilog("test.v", device);
   ch_simulator sim(device);
   device.io.in = 0xA;
   sim.run([&](ch_tick t)->bool {
@@ -250,16 +250,6 @@ int main() {
     ch_scalar_t<s2_t> a{1, 0}, b;
     b = std::move(a);
     assert(b.b == 1);
-  }*/
-
-  /*{
-    ch_device<inverter> device;
-    device.io.in = 2;
-    ch_vcdtracer tracer(std::cout, device);
-    auto y = device.io.out ^ 3_h;
-    tracer.add_trace("y", y);
-    tracer.run();
-    return (1 == device.io.out);
   }*/
 
   /*{
@@ -325,16 +315,16 @@ int main() {
     t = sim.step(t, 4);
 
     ret &= !queue.io.deq.valid; // empty
-    ch_verilog("queue.v", queue);
+    ch_toVerilog("queue.v", queue);
     ret &= (checkVerilog("queue_tb.v"));
-    ch_firrtl("queue.fir", queue);
+    ch_toFirrtl("queue.fir", queue);
 
     assert(!!ret);
   }
 
   {
     ch_device<QueueWrapper<ch_bit4, 2>> queue;
-    ch_verilog("queue.v", queue);
+    ch_toVerilog("queue.v", queue);
   }
 
   {
@@ -343,7 +333,7 @@ int main() {
     foo.io.in2 = 2;
     ch_simulator sim(foo);
     sim.run(1);
-    ch_verilog("foo.v", foo);
+    ch_toVerilog("foo.v", foo);
     std::cout << "foo.io.out=" << foo.io.out << std::endl;
     assert(3 == foo.io.out);
   }

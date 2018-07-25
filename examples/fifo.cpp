@@ -38,7 +38,7 @@ struct FiFo {
 int main() {
   ch_device<FiFo<ch_bit<2>, 2>> fifo;
 
-  ch_vcdtracer tracer("fifo.vcd", fifo);
+  ch_tracer tracer(fifo);
   tracer.run([&](ch_tick t)->bool {
     std::cout << "t" << t
               << ": din=" << fifo.io.din
@@ -90,8 +90,10 @@ int main() {
     return (t <= 10);
   });
 
-  ch_verilog("fifo.v", fifo);
-  ch_firrtl("fifo.fir", fifo);
+  tracer.toVCD("fifo.vcd");
+
+  ch_toVerilog("fifo.v", fifo);
+  ch_toFirrtl("fifo.fir", fifo);
 
   int ret = system("iverilog fifo_tb.v -o fifo_tb.iv")
           | system("vvp fifo_tb.iv");

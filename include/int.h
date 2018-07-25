@@ -52,27 +52,27 @@ public:
   CH_LOGIC_INTERFACE(ch_int)
 };
 
-CH_LOGIC_FUNCTION_EQUALITY(ch_eq, op_eq, ch_int)
-CH_LOGIC_FUNCTION_EQUALITY(ch_ne, op_ne, ch_int)
+CH_LOGIC_FUNCTION_EQUALITY(ch_eq, ch_op::eq, ch_int)
+CH_LOGIC_FUNCTION_EQUALITY(ch_ne, ch_op::ne, ch_int)
 
-CH_LOGIC_FUNCTION_RELATIONAL(ch_lt, op_lt, ch_int)
-CH_LOGIC_FUNCTION_RELATIONAL(ch_le, op_le, ch_int)
-CH_LOGIC_FUNCTION_RELATIONAL(ch_gt, op_gt, ch_int)
-CH_LOGIC_FUNCTION_RELATIONAL(ch_ge, op_ge, ch_int)
+CH_LOGIC_FUNCTION_RELATIONAL(ch_lt, ch_op::lt, ch_int)
+CH_LOGIC_FUNCTION_RELATIONAL(ch_le, ch_op::le, ch_int)
+CH_LOGIC_FUNCTION_RELATIONAL(ch_gt, ch_op::gt, ch_int)
+CH_LOGIC_FUNCTION_RELATIONAL(ch_ge, ch_op::ge, ch_int)
 
-CH_LOGIC_FUNCTION_BINARY1(ch_inv, op_inv, ch_int)
-CH_LOGIC_FUNCTION_BINARY2(ch_and, op_and, ch_int)
-CH_LOGIC_FUNCTION_BINARY2(ch_or, op_or, ch_int)
-CH_LOGIC_FUNCTION_BINARY2(ch_xor, op_xor, ch_int)
+CH_LOGIC_FUNCTION_BINARY1(ch_inv, ch_op::inv, ch_int)
+CH_LOGIC_FUNCTION_BINARY2(ch_and, ch_op::andl, ch_int)
+CH_LOGIC_FUNCTION_BINARY2(ch_or, ch_op::orl, ch_int)
+CH_LOGIC_FUNCTION_BINARY2(ch_xor, ch_op::xorl, ch_int)
 
-CH_LOGIC_FUNCTION_SHIFT(ch_shl, op_shl, ch_int)
-CH_LOGIC_FUNCTION_SHIFT(ch_shr, op_shr, ch_int)
+CH_LOGIC_FUNCTION_SHIFT(ch_shl, ch_op::shl, ch_int)
+CH_LOGIC_FUNCTION_SHIFT(ch_shr, ch_op::shr, ch_int)
 
-CH_LOGIC_FUNCTION_ARITHMETIC1(ch_neg, op_neg, ch_int)
-CH_LOGIC_FUNCTION_ARITHMETIC2(ch_add, op_add, ch_int)
-CH_LOGIC_FUNCTION_ARITHMETIC2(ch_sub, op_sub, ch_int)
-CH_LOGIC_FUNCTION_ARITHMETIC2(ch_mul, op_mul, ch_int)
-CH_LOGIC_FUNCTION_ARITHMETIC2(ch_div, op_div, ch_int)
-CH_LOGIC_FUNCTION_ARITHMETIC2(ch_mod, op_mod, ch_int)
+CH_LOGIC_FUNCTION_ARITHMETIC1(ch_neg, ch_op::neg, ch_int)
+CH_LOGIC_FUNCTION_ARITHMETIC2(ch_add, ch_op::add, ch_int)
+CH_LOGIC_FUNCTION_ARITHMETIC2(ch_sub, ch_op::sub, ch_int)
+CH_LOGIC_FUNCTION_ARITHMETIC2(ch_mul, ch_op::mul, ch_int)
+CH_LOGIC_FUNCTION_ARITHMETIC2(ch_div, ch_op::div, ch_int)
+CH_LOGIC_FUNCTION_ARITHMETIC2(ch_mod, ch_op::mod, ch_int)
 
 }}

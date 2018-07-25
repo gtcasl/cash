@@ -26,8 +26,6 @@ class cdimpl;
 class udf_iface;
 class clock_event;
 
-using ch_tick = uint64_t;
-
 struct cond_block_t;
 
 struct cond_range_t {
