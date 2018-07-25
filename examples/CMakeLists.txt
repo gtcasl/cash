@@ -14,9 +14,6 @@ foreach(EXAMPLE ${EXAMPLES})
     # build executable
     add_executable(${EXAMPLE} ${EXAMPLE}.cpp)
 
-    # copy testbench
-    file(COPY ${EXAMPLE}_tb.v DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
-
     # define dependent libraries
     target_link_libraries(${EXAMPLE} ${PROJECT_NAME})
 

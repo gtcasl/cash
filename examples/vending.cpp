@@ -57,7 +57,7 @@ int main() {
   ch_toFirrtl("vending.fir", vending);
 
   int ret = system("iverilog vending_tb.v -o vending_tb.iv")
-          | system("vvp vending_tb.iv");
+          | system("! vvp vending_tb.iv | grep 'ERROR' || false");
   std::cout << "ret=" << ret << std::endl;
   return ret != 0;
 }

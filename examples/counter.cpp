@@ -34,6 +34,6 @@ int main() {
   tracer.toVCD("counter.vcd");  
   tracer.toTestBench("counter_tb.v", "counter.v");
   int ret = system("iverilog counter_tb.v -o counter_tb.iv")
-          | system("vvp counter_tb.iv");
+          | system("! vvp counter_tb.iv | grep 'ERROR' || false");
   return ret != 0;
 }

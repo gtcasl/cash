@@ -45,6 +45,6 @@ int main() {
   tracer.toVCD("fastmult.vcd");
   tracer.toTestBench("fastmult_tb.v", "fastmult.v");
   int ret = system("iverilog fastmult_tb.v -o fastmult_tb.iv")
-          | system("vvp fastmult_tb.iv");
+          | system("! vvp fastmult_tb.iv | grep 'ERROR' || false");
   return ret != 0;
 }

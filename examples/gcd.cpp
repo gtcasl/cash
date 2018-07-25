@@ -67,6 +67,6 @@ int main() {
   tracer.toVCD("gcd.vcd");
   tracer.toTestBench("gcd_tb.v", "gcd.v");
   int ret = system("iverilog gcd_tb.v -o gcd_tb.iv")
-          | system("vvp gcd_tb.iv");
+          | system("! vvp gcd_tb.iv | grep 'ERROR' || false");
   return ret != 0;
 }

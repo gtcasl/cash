@@ -52,7 +52,7 @@ bool runtestx(const std::function<bool()>& test) {
 
 bool checkVerilog(const std::string& file) {
   int ret = system(stringf("iverilog %s -o %s.iv", file.c_str(), file.c_str()).c_str())
-          | system(stringf("vvp %s.iv", file.c_str()).c_str());
+          | system(stringf("! vvp %s.iv | grep 'ERROR' || false", file.c_str()).c_str());
   assert(0 == ret );
   return (0 == ret);
 }

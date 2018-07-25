@@ -26,12 +26,6 @@ set(TEST_SOURCES
 add_executable(dogfood dogfood.cpp)
 add_executable(testsuite ${TEST_SOURCES})
 
-# copy testbench sources
-file (GLOB TB_FILES "*_tb.v")
-foreach(TB_FILE ${TB_FILES})
-    file(COPY ${TB_FILE} DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
-endforeach()
-
 # Define dependent libraries
 target_link_libraries(dogfood ${PROJECT_NAME})
 target_link_libraries(testsuite ${PROJECT_NAME})
