@@ -316,7 +316,6 @@ int main() {
 
     ret &= !queue.io.deq.valid; // empty
     ch_toVerilog("queue.v", queue);
-    ret &= (checkVerilog("queue_tb.v"));
     ch_toFirrtl("queue.fir", queue);
 
     assert(!!ret);

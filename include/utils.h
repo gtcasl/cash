@@ -168,8 +168,12 @@ public:
 
   std::string get(const std::string& name);
 
+  bool exits(const std::string& name) const {
+    return names_.count(name);
+  }
+
 private:
-  std::unordered_map<std::string, uint32_t> dups_;
+  std::unordered_map<std::string, uint32_t> names_;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

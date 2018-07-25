@@ -38,12 +38,12 @@ int main() {
   assert(adder.io.out == 1);
   assert(adder.io.cout == 1);
 
-  tracer.toText("adder.log");
-  tracer.toVCD("adder.vcd");
-
   ch_toVerilog("adder.v", adder);
   ch_toFirrtl("adder.fir", adder);
 
+  tracer.toText("adder.log");
+  tracer.toVCD("adder.vcd");
+  tracer.toTestBench("adder_tb.v", "adder.v");
   int ret = system("iverilog adder_tb.v -o adder_tb.iv")
           | system("vvp adder_tb.iv");
   return ret != 0;

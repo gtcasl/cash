@@ -38,11 +38,12 @@ int main() {
 
   assert(fastmult.io.out == 6);
 
-  tracer.toVCD("fastmult.vcd");
-
   ch_toVerilog("fastmult.v", fastmult);
   ch_toFirrtl("fastmult.fir", fastmult);
 
+  tracer.toText("fastmult.log");
+  tracer.toVCD("fastmult.vcd");
+  tracer.toTestBench("fastmult_tb.v", "fastmult.v");
   int ret = system("iverilog fastmult_tb.v -o fastmult_tb.iv")
           | system("vvp fastmult_tb.iv");
   return ret != 0;

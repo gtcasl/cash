@@ -6,6 +6,16 @@ using namespace ch::internal;
 
 #define NUM_BLOCKS 100
 
+auto is_system_signal = [](const std::string& name) {
+  return (name == "clk") || (name == "reset");
+};
+
+auto get_value = [](const bitvector& src, uint32_t size, uint32_t src_offset) {
+  bitvector value(size);
+  src.read(src_offset, value.data(), value.num_bytes(), 0, size);
+  return value;
+};
+
 tracerimpl::tracerimpl(const ch_device_list& devices)
   : simulatorimpl(devices)
   , trace_width_(0)
@@ -30,23 +40,33 @@ void tracerimpl::initialize() {
   for (auto ctx : contexts_) {
     // get inputs
     for (auto node : ctx->inputs()) {
-      trace_width_ += this->add_signal(node->name(), node);
+      trace_width_ += this->add_signal(node);
     }
 
     // get outputs
     for (auto node : ctx->outputs()) {
-      trace_width_ += this->add_signal(node->name(), node);
+      trace_width_ += this->add_signal(node);
     }
 
     // get taps
     for (auto node : ctx->taps()) {
-      trace_width_ += this->add_signal(node->name(), node);
+      trace_width_ += this->add_signal(node);
     }
   }
 }
 
-uint32_t tracerimpl::add_signal(const std::string& name, ioimpl* node) {
-  signals_.emplace_back(signal_t{unique_trace_names_.get(name), node});
+uint32_t tracerimpl::add_signal(ioimpl* node) {
+  auto name = node->name();
+  if (is_system_signal(name)) {
+    if (unique_names_.exits(name))
+      return 0;
+  } else {
+    if (contexts_.size() >= 2) {
+      name = node->ctx()->name() + "_" + name;
+    }    
+  }
+  name = unique_names_.get(name);
+  signals_.emplace_back(signal_t{name, node});
   return node->size();
 }
 
@@ -94,10 +114,9 @@ void tracerimpl::toText(const std::string& file) {
       auto src_offset = 0;
       auto_separator sep(",");
       for (auto& signal : signals_) {
-        bitvector tmp(signal.node->size());
-        block.read(src_offset, tmp.data(), tmp.num_bytes(), 0, tmp.size());
-        out << sep << " " << signal.name << "=" << tmp;
-        src_offset += tmp.size();
+        bitvector value = get_value(block, signal.node->size(), src_offset);
+        src_offset += value.size();
+        out << sep << " " << signal.name << "=" << value;
       }
       out << std::endl;
     }
@@ -148,8 +167,129 @@ void tracerimpl::toVCD(const std::string& file) {
   }
 }
 
-void tracerimpl::toTestBench(const std::string& /*file*/) {
+void tracerimpl::toTestBench(const std::string& file, const std::string& module) {
   //--
+  auto signal_name = [&](ioimpl* node) {
+    if (is_system_signal(node->name()))
+      return node->name();
+    for (auto& signal : signals_) {
+      if (signal.node->id() == node->id())
+        return signal.name;
+    }
+    return std::string();
+  };
+
+  //--
+  auto print_type = [](std::ostream& out, ioimpl* node) {
+    out << (type_input == node->type() ? "reg" : "wire");
+    if (node->size() > 1)
+      out << "[" << (node->size() - 1) << ":0]";
+  };
+
+  //--
+  auto print_value = [](std::ostream& out, const bitvector& value) {
+    std::ostringstream oss;
+    oss << value;
+    out << value.size() << "'h" << oss.str().substr(2);
+  };
+
+  //--
+  auto print_module = [&](std::ostream& out, context* ctx) {
+    auto_separator sep(", ");
+    out << ctx->name() << " __module" << ctx->id() << "__(";
+    for (auto input : ctx->inputs()) {
+      out << sep << "." << input->name() << "(" << signal_name(input) << ")";
+    }
+    for (auto output : ctx->outputs()) {
+      out << sep << "." << output->name() << "(" << signal_name(output) << ")";
+    }
+    out << ");" << std::endl;
+    return true;
+  };
+
+  std::ofstream out(file);
+
+  // log header
+  out << "`timescale 1ns/1ns" << std::endl;
+  out << "`include \"" << module << "\"" << std::endl << std::endl;
+  out << "`define check(x, y) if ((x == y) === 1'b0) $error(\"t%0t: ERROR! x=%h, expected=%h\", $time, x, y)" << std::endl << std::endl;
+  out << "module testbench();" << std::endl << std::endl;
+
+  {
+    auto_indent indent(out);
+    int has_clock = 0;
+
+    // declare signals
+    for (auto& signal : signals_) {
+      print_type(out, signal.node);
+      out << " " << signal.name << ";" << std::endl;
+      has_clock |= (signal.name == "clk");
+    }
+    out << std::endl;
+
+    // declare modules
+    for (auto ctx : contexts_) {
+      print_module(out, ctx);
+    }
+    out << std::endl;
+
+    // declare clock process
+    if (has_clock) {
+      out << "always begin" << std::endl;
+      {
+        auto_indent indent1(out);
+        out << "#1 clk = !clk;" << std::endl;
+      }
+      out << "end" << std::endl << std::endl;
+    }
+
+    // declare simulation process
+    out << "initial begin" << std::endl;
+    {
+      auto_indent indent1(out);
+
+      auto trace_block = trace_blocks_head_;
+      while (trace_block) {
+        for (uint32_t block_idx = 0; block_idx < trace_block->size; ++block_idx) {
+          auto& block = trace_block->data.at(block_idx);
+          {
+            out << "#0";
+            auto src_offset = 0;
+            for (auto& signal : signals_) {
+              if (type_input == signal.node->type()) {
+                auto value = get_value(block, signal.node->size(), src_offset);
+                out << " " << signal.name << "=";
+                print_value(out, value);
+                out << ";";
+              }
+              src_offset += signal.node->size();
+            }
+            out << std::endl;
+          }
+          {
+            out << "#1";
+            auto src_offset = 0;
+            for (auto& signal : signals_) {
+              if (type_input != signal.node->type()) {
+                auto value = get_value(block, signal.node->size(), src_offset);
+                out << " `check(" << signal.name << ", ";
+                print_value(out, value);
+                out << ");";
+              }
+              src_offset += signal.node->size();
+            }
+            out << std::endl;
+          }
+        }
+        trace_block = trace_block->next;
+      }
+      out << "#1 $finish;" << std::endl;
+    }
+    out << "end" << std::endl << std::endl;
+  }
+
+  // log footer
+  out << "endmodule" << std::endl;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -184,6 +324,6 @@ void ch_tracer::toVCD(const std::string& file) {
   return reinterpret_cast<tracerimpl*>(impl_)->toVCD(file);
 }
 
-void ch_tracer::toTestBench(const std::string& file) {
-  return reinterpret_cast<tracerimpl*>(impl_)->toTestBench(file);
+void ch_tracer::toTestBench(const std::string& file, const std::string& module) {
+  return reinterpret_cast<tracerimpl*>(impl_)->toTestBench(file, module);
 }

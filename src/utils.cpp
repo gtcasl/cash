@@ -75,12 +75,12 @@ std::string ch::internal::identifier_from_typeid(const std::string& name) {
 
 std::string unique_names::get(const std::string& name) {
   std::string unique_name(name);
-  uint32_t instances = dups_[name]++;
+  uint32_t instances = names_[name]++;
   if (instances != 0) {
     unique_name = stringf("%s_%d", name.c_str(), instances-1);
     // resolve collisions
-    while (dups_.count(unique_name) != 0) {
-      instances = dups_[name]++;
+    while (names_.count(unique_name) != 0) {
+      instances = names_[name]++;
       unique_name = stringf("%s_%d", name.c_str(), instances-1);
     }
   }

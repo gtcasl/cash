@@ -27,12 +27,12 @@ int main() {
 
   assert(counter.io.out == 12);
 
-  tracer.toText("counter.log");
-  tracer.toVCD("counter.vcd");
-
   ch_toVerilog("counter.v", counter);
   ch_toFirrtl("counter.fir", counter);
 
+  tracer.toText("counter.log");
+  tracer.toVCD("counter.vcd");  
+  tracer.toTestBench("counter_tb.v", "counter.v");
   int ret = system("iverilog counter_tb.v -o counter_tb.iv")
           | system("vvp counter_tb.iv");
   return ret != 0;

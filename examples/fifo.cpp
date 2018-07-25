@@ -90,11 +90,12 @@ int main() {
     return (t <= 10);
   });
 
-  tracer.toVCD("fifo.vcd");
-
   ch_toVerilog("fifo.v", fifo);
   ch_toFirrtl("fifo.fir", fifo);
 
+  tracer.toText("fifo.log");
+  tracer.toVCD("fifo.vcd");
+  tracer.toTestBench("fifo_tb.v", "fifo.v");
   int ret = system("iverilog fifo_tb.v -o fifo_tb.iv")
           | system("vvp fifo_tb.iv");
   return ret != 0;

@@ -47,7 +47,7 @@ int main() {
 
   gcd.io.in.data[0] = 0x0020_h;
   gcd.io.in.data[1] = 0x0030_h;
-  gcd.io.in.valid = true;
+  gcd.io.in.valid   = true;
 
   ch_tracer tracer(gcd);
   auto ticks = tracer.run([&](ch_tick t)->bool {
@@ -60,11 +60,12 @@ int main() {
 
   assert(gcd.io.out.data == 16);
 
-  tracer.toVCD("gcd.vcd");
-
   ch_toVerilog("gcd.v", gcd);
   ch_toFirrtl("gcd.fir", gcd);
 
+  tracer.toText("gcd.log");
+  tracer.toVCD("gcd.vcd");
+  tracer.toTestBench("gcd_tb.v", "gcd.v");
   int ret = system("iverilog gcd_tb.v -o gcd_tb.iv")
           | system("vvp gcd_tb.iv");
   return ret != 0;

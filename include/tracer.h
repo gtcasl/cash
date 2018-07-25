@@ -31,7 +31,7 @@ public:
 
   void toVCD(const std::string& file);
 
-  void toTestBench(const std::string& file);
+  void toTestBench(const std::string& file, const std::string& module);
 
 protected:
 

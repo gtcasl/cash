@@ -289,57 +289,62 @@ TEST_CASE("module", "[module]") {
 
     TESTX([]()->bool {
       ch_device<FilterBlock<ch_uint16>> filter;
-      ch_simulator sim(filter);
-      ch_tick t = sim.reset(0);
+      ch_tracer trace(filter);
+      ch_tick t = trace.reset(0);
 
       filter.io.x.data   = 3;
       filter.io.x.valid  = 1;
       filter.io.x.parity = 0;
-      t = sim.step(t, 2);
+      t = trace.step(t, 2);
 
       int ret(!!filter.io.y.valid);
       ret &= (12 == filter.io.y.data);
       ret &= !filter.io.y.parity;
 
-      ch_toVerilog("filter.v", filter);
-      ret &= (checkVerilog("filter_tb.v"));
       ch_toFirrtl("filter.fir", filter);
+      ch_toVerilog("filter.v", filter);
+
+      trace.toTestBench("filter_tb.v", "filter.v");
+      ret &= (checkVerilog("filter_tb.v"));      
 
       return !!ret;
     });
 
     TESTX([]()->bool {
       ch_device<QueueWrapper<ch_bit4, 2>> queue;
-      ch_simulator sim(queue);
-      ch_tick t = sim.reset(0);
+      ch_tracer trace(queue);
+      ch_tick t = trace.reset(0);
 
       int ret(!!queue.io.enq.ready);  // !full
       ret &= !queue.io.deq.valid; // empty
       queue.io.deq.ready = 0;
       queue.io.enq.data = 0xA;
       queue.io.enq.valid = 1; // push
-      t = sim.step(t);
+      t = trace.step(t);
 
       ret &= !!queue.io.deq.valid;  // !empty
       queue.io.enq.data = 0xB;
-      t = sim.step(t);
+      t = trace.step(t);
 
       ret &= !queue.io.enq.ready; // full
       ret &= !!queue.io.deq.valid;
       ret &= (0xA == queue.io.deq.data);
       queue.io.enq.valid = 0; // !push
       queue.io.deq.ready = 1; // pop
-      t = sim.step(t);
+      t = trace.step(t);
 
       ret &= !!queue.io.enq.ready;  // !full
       ret &= (0xB == queue.io.deq.data);
       queue.io.deq.ready = 1; // pop
-      t = sim.step(t, 4);
+      t = trace.step(t, 4);
 
       ret &= !queue.io.deq.valid; // empty
+
       ch_toVerilog("queue.v", queue);
-      ret &= (checkVerilog("queue_tb.v"));
       ch_toFirrtl("queue.fir", queue);
+
+      trace.toTestBench("queue_tb.v", "queue.v");
+      ret &= (checkVerilog("queue_tb.v"));
 
       return !!ret;
     });

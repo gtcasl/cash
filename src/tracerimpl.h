@@ -16,7 +16,7 @@ public:
 
   void toVCD(const std::string& file);
 
-  void toTestBench(const std::string& file);
+  void toTestBench(const std::string& file, const std::string& module);
 
 protected:
 
@@ -24,7 +24,7 @@ protected:
 
   void eval(ch_tick t) override;
 
-  uint32_t add_signal(const std::string& name, ioimpl* node);
+  uint32_t add_signal(ioimpl* node);
 
   struct signal_t {
     std::string name;
@@ -38,7 +38,7 @@ protected:
     trace_block_t* next;
   };
 
-  unique_names unique_trace_names_;
+  unique_names unique_names_;
   std::vector<signal_t> signals_;
   uint32_t trace_width_;
   trace_block_t* trace_blocks_head_;
