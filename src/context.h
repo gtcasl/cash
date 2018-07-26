@@ -233,8 +233,8 @@ public:
 
   //--
 
-  void register_tap(const std::string& name,
-                    const lnode& lnode,
+  void register_tap(const lnode& lnode,
+                    const std::string& name,
                     const source_location& sloc);
 
   //--

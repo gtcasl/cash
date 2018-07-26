@@ -353,9 +353,9 @@ auto ch_clone(const T& obj, CH_SLOC) {
 // tap function
 
 template <typename T>
-void ch_tap(const std::string& name, const T& value, CH_SLOC) {
+void ch_tap(const T& value, const std::string& name, CH_SLOC) {
   static_assert(is_logic_type_v<T>, "invalid type");
-  registerTap(name, get_lnode(value), sloc);
+  registerTap(get_lnode(value), name, sloc);
 }
 
 // print function

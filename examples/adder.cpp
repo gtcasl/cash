@@ -45,6 +45,6 @@ int main() {
   tracer.toVCD("adder.vcd");
   tracer.toTestBench("adder_tb.v", "adder.v");
   int ret = system("iverilog adder_tb.v -o adder_tb.iv")
-          | system("! vvp -n adder_tb.iv | grep 'ERROR' || false");
+          | system("! vvp adder_tb.iv | grep 'ERROR' || false");
   return ret != 0;
 }

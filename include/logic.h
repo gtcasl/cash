@@ -15,8 +15,8 @@ lnodeimpl* createAluNode(ch_op op, uint32_t size, bool is_signed, const lnode& l
 lnodeimpl* createRotateNode(const lnode& next, uint32_t dist, bool right,
                             const source_location& sloc);
 
-void registerTap(const std::string& name,
-                 const lnode& node,
+void registerTap(const lnode& node,
+                 const std::string& name,
                  const source_location& sloc);
 
 void createPrintNode(const std::string& format,
@@ -454,7 +454,7 @@ CH_LOGIC_OPERATOR(logic_op_arithmetic)
 }
 
 #ifndef NDEBUG
-  #define CH_TAP(x) ch_tap(#x, x)
+  #define CH_TAP(x) ch_tap(x, #x)
 #else
   #define CH_TAP(x)
 #endif

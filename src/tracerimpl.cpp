@@ -63,7 +63,7 @@ uint32_t tracerimpl::add_signal(ioimpl* node) {
   } else {
     if (contexts_.size() >= 2) {
       name = node->ctx()->name() + "_" + name;
-    }    
+    }
   }
   name = unique_names_.get(name);
   signals_.emplace_back(signal_t{name, node});
@@ -169,6 +169,18 @@ void tracerimpl::toVCD(const std::string& file) {
 
 void tracerimpl::toTestBench(const std::string& file, const std::string& module) {
   //--
+  auto node_name = [](const lnode& x) {
+    if (dynamic_cast<ioimpl*>(x.impl()))
+      return x.name();
+    return stringf("%s%d", x.name().c_str(), x.id());
+  };
+
+  //--
+  auto node_path = [&](const lnode& x) {
+    return stringf("__module%d__.%s", x.impl()->ctx()->id(), node_name(x).c_str());
+  };
+
+  //--
   auto signal_name = [&](ioimpl* node) {
     if (is_system_signal(node->name()))
       return node->name();
@@ -212,18 +224,20 @@ void tracerimpl::toTestBench(const std::string& file, const std::string& module)
   // log header
   out << "`timescale 1ns/1ns" << std::endl;
   out << "`include \"" << module << "\"" << std::endl << std::endl;
-  out << "`define check(x, y) if ((x == y) === 1'b0) $error(\"t%0t: ERROR! x=%h, expected=%h\", $time, x, y)" << std::endl << std::endl;
+  out << "`define check(x, y) if ((x == y) === 1'b0) $error(\"t%0t: x=%h, expected=%h\", $time, x, y)" << std::endl << std::endl;
   out << "module testbench();" << std::endl << std::endl;
 
   {
     auto_indent indent(out);
     int has_clock = 0;
+    int has_taps = 0;
 
     // declare signals
     for (auto& signal : signals_) {
       print_type(out, signal.node);
       out << " " << signal.name << ";" << std::endl;
       has_clock |= (signal.name == "clk");
+      has_taps |= (type_tap == signal.node->type());
     }
     out << std::endl;
 
@@ -232,6 +246,16 @@ void tracerimpl::toTestBench(const std::string& file, const std::string& module)
       print_module(out, ctx);
     }
     out << std::endl;
+
+    if (has_taps) {
+      // declare taps
+      for (auto& signal : signals_) {
+        if (type_tap != signal.node->type())
+          continue;
+        out << "assign " << signal.name << " = " << node_path(signal.node->src(0)) << ";" << std::endl;
+      }
+      out << std::endl;
+    }
 
     // declare clock process
     if (has_clock) {

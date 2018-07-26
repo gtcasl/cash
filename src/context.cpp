@@ -749,8 +749,8 @@ bindimpl* context::find_binding(context* module, const source_location& sloc) {
   return this->create_node<bindimpl>(module, sloc);
 }
 
-void context::register_tap(const std::string& name,
-                           const lnode& node,
+void context::register_tap(const lnode& node,
+                           const std::string& name,
                            const source_location& sloc) {
   this->create_node<tapimpl>(node, unique_tap_names_.get(name).c_str(), sloc);
 }
@@ -1057,10 +1057,10 @@ void context::dump_stats(std::ostream& out) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void ch::internal::registerTap(const std::string& name,
-                               const lnode& node,
+void ch::internal::registerTap(const lnode& node,
+                               const std::string& name,
                                const source_location& sloc) {
-  node.impl()->ctx()->register_tap(name, node, sloc);
+  node.impl()->ctx()->register_tap(node, name, sloc);
 }
 
 void ch::internal::registerEnumString(const lnode& node, void* callback) {
