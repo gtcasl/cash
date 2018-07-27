@@ -82,7 +82,7 @@ protected:
 
   void print_value(std::ostream& out,
                    const bitvector& value,
-                   bool skip_leading_zeros_enable = false,
+                   bool skip_zeros = false,
                    uint32_t offset = 0,
                    uint32_t size = 0);
 

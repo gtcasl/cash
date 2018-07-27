@@ -200,9 +200,28 @@ void tracerimpl::toTestBench(const std::string& file, const std::string& module)
 
   //--
   auto print_value = [](std::ostream& out, const bitvector& value) {
-    std::ostringstream oss;
-    oss << value;
-    out << value.size() << "'h" << oss.str().substr(2);
+    out << value.size() << "'h";
+    auto oldflags = out.flags();
+    out.setf(std::ios_base::hex, std::ios_base::basefield);
+
+    bool skip_zeros = true;
+    uint32_t word = 0;
+    auto size = value.size();
+
+    for (auto it = value.begin() + (size - 1); size;) {
+      word = (word << 0x1) | *it--;
+      if (0 == (--size & 0x3)) {
+        if (0 == size || (word != 0 ) || !skip_zeros) {
+          out << word;
+          skip_zeros = false;
+        }
+        word = 0;
+      }
+    }
+    if (0 != (size & 0x3)) {
+      out << word;
+    }
+    out.flags(oldflags);
   };
 
   //--
@@ -224,7 +243,9 @@ void tracerimpl::toTestBench(const std::string& file, const std::string& module)
   // log header
   out << "`timescale 1ns/1ns" << std::endl;
   out << "`include \"" << module << "\"" << std::endl << std::endl;
-  out << "`define check(x, y) if ((x == y) === 1'b0) $error(\"t%0t: x=%h, expected=%h\", $time, x, y)" << std::endl << std::endl;
+  out << "`define check(x, y) if ((x == y) !== 1'b1)"
+         " if ((x == y) === 1'b0) $error(\"x=%h, expected=%h\", x, y);"
+         " else $warning(\"x=%h, expected=%h\", x, y)" << std::endl << std::endl;
   out << "module testbench();" << std::endl << std::endl;
 
   {

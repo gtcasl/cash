@@ -142,8 +142,8 @@ TEST_CASE("misc", "[misc]") {
        return 0x7 == (int)x;
      });
      TESTX([]()->bool {
-       bitvector x(32, "0h");
-       x = "7h";
+       bitvector x(32, "0_h");
+       x = "7_h";
        return 0x7 == (int)x;
      });
    }

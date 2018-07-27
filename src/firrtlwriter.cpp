@@ -789,43 +789,29 @@ void firrtlwriter::print_dtype(lnodeimpl* node) {
 }
 
 void firrtlwriter::print_value(const bitvector& value,
-                               bool skip_leading_zeros_enable,
+                               bool skip_zeros,
                                uint32_t offset,
                                uint32_t size) {
-  //--
-  auto skip_leading_zeros = [&](int word)->bool {
-    if (skip_leading_zeros_enable) {
-      if (0 == word) {
-        return true;
-      } else {
-        skip_leading_zeros_enable = false;
-      }
-    }
-    return false;
-  };
-
   if (0 == size) {
     size = value.size();
   }
 
-  offset += (size -1);
-
-  int word = 0;
-  int wsize = 0;
-
   out_ << "UInt<" << size << ">(\"h";
   auto oldflags = out_.flags();
   out_.setf(std::ios_base::hex, std::ios_base::basefield);
-  for (auto it = value.begin() + offset; size--;) {
+
+  uint32_t word = 0;
+  for (auto it = value.begin() + offset + (size - 1); size;) {
     word = (word << 0x1) | *it--;
-    if (0 == (++wsize & 0x3)) {
-      if (0 == size || !skip_leading_zeros(word)) {
+    if (0 == (--size & 0x3)) {
+      if (0 == size || (word != 0 ) || !skip_zeros) {
         out_ << word;
+        skip_zeros = false;
       }
       word = 0;
     }
   }
-  if (0 != (wsize & 0x3)) {
+  if (0 != (size & 0x3)) {
     out_ << word;
   }
   out_.flags(oldflags);

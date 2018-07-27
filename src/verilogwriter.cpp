@@ -32,8 +32,7 @@ const auto is_inline_literal = [](lnodeimpl* node) {
 };
 
 verilogwriter::verilogwriter(context* ctx)
-  : ctx_(ctx)
-  , num_temps_(0) {
+  : ctx_(ctx) {
   for (auto node : ctx->nodes()) {
     for (auto& src : node->srcs()) {
       uses_[src.id()].insert(node);
@@ -59,6 +58,7 @@ bool verilogwriter::is_inline_subscript(lnodeimpl* node) const {
   if (it != uses_.end()) {
     for (lnodeimpl* use : it->second) {
       if (has_subscript(use)
+       || type_tap == use->type()
        || (type_alu == use->type()
         && ch_op::pad == reinterpret_cast<aluimpl*>(use)->op()))
         return false;
@@ -768,43 +768,29 @@ void verilogwriter::print_type(std::ostream& out, lnodeimpl* node) {
 
 void verilogwriter::print_value(std::ostream& out,
                                 const bitvector& value,
-                                bool skip_leading_zeros_enable,
+                                bool skip_zeros,
                                 uint32_t offset,
                                 uint32_t size) {
-  //--
-  auto skip_leading_zeros = [&](int word)->bool {
-    if (skip_leading_zeros_enable) {
-      if (0 == word) {
-        return true;
-      } else {
-        skip_leading_zeros_enable = false;
-      }
-    }
-    return false;
-  };
-
   if (0 == size) {
     size = value.size();
   }
 
-  offset += (size -1);
-
-  int word = 0;
-  int wsize = size & 0x3;
-
   out << size << "'h";
   auto oldflags = out.flags();
   out.setf(std::ios_base::hex, std::ios_base::basefield);
-  for (auto it = value.begin() + offset; size--;) {
+
+  uint32_t word = 0;
+  for (auto it = value.begin() + offset + (size - 1); size;) {
     word = (word << 0x1) | *it--;
-    if (0 == (++wsize & 0x3)) {
-      if (0 == size || !skip_leading_zeros(word)) {
+    if (0 == (--size & 0x3)) {
+      if (0 == size || (word != 0 ) || !skip_zeros) {
         out << word;
+        skip_zeros = false;
       }
       word = 0;
     }
   }
-  if (0 != (wsize & 0x3)) {
+  if (0 != (size & 0x3)) {
     out << word;
   }
   out.flags(oldflags);

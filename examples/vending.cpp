@@ -51,11 +51,12 @@ int main() {
 
   assert(vending.io.valid);
 
-  tracer.toVCD("vending.vcd");
-
   ch_toVerilog("vending.v", vending);
   ch_toFirrtl("vending.fir", vending);
 
+  tracer.toText("vending.log");
+  tracer.toVCD("vending.vcd");
+  tracer.toTestBench("vending_tb.v", "vending.v");
   int ret = system("iverilog vending_tb.v -o vending_tb.iv")
           | system("! vvp vending_tb.iv | grep 'ERROR' || false");
   std::cout << "ret=" << ret << std::endl;

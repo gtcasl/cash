@@ -197,7 +197,7 @@ bitvector& bitvector::operator=(const std::string& value) {
   }
   
   uint32_t log_base = log2ceil(base);
-  --len; // remove type character
+  len -= 2; // remove type info
   
   // calculate binary size
   uint32_t size = 0;  
@@ -428,12 +428,26 @@ void bitvector::deadbeef() {
 }
 
 std::ostream& ch::internal::operator<<(std::ostream& out, const bitvector& in) {
+  out << "0x";
   auto oldflags = out.flags();
   out.setf(std::ios_base::hex, std::ios_base::basefield);
-  out << "0x";
-  auto_separator sep("_");
-  for (int32_t i = in.num_words() - 1; i >= 0; --i) {
-    out << sep << in.word(i);
+
+  bool skip_zeros = true;
+  uint32_t word = 0;
+  auto size = in.size();
+
+  for (auto it = in.begin() + (size - 1); size;) {
+    word = (word << 0x1) | *it--;
+    if (0 == (--size & 0x3)) {
+      if (0 == size || (word != 0 ) || !skip_zeros) {
+        out << word;
+        skip_zeros = false;
+      }
+      word = 0;
+    }
+  }
+  if (0 != (size & 0x3)) {
+    out << word;
   }
   out.flags(oldflags);
   return out;
