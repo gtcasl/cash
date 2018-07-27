@@ -35,15 +35,7 @@ auto operator+(const ch_complex<T>& lhs, const ch_complex<T>& rhs) {
 
 template <typename T>
 auto operator-(const ch_complex<T>& lhs, const ch_complex<T>& rhs) {
-  auto im = lhs.im - rhs.im;
-  auto re = lhs.re - rhs.re;
-  ch_tap(lhs.im, "fx_lhs_im");
-  ch_tap(lhs.re, "fx_lhs_re");
-  ch_tap(rhs.im, "fx_rhs_im");
-  ch_tap(rhs.re, "fx_rhs_re");
-  ch_tap(im, "fx_sub_re");
-  ch_tap(re, "fx_sub_im");
-  return ch_complex<T>(im, re);
+  return ch_complex<T>(lhs.im - rhs.im, lhs.re - rhs.re);
 }
 
 template <typename T>
