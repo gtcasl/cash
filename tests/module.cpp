@@ -301,7 +301,7 @@ TEST_CASE("module", "[module]") {
       ret &= (12 == filter.io.y.data);
       ret &= !filter.io.y.parity;
 
-      ch_toFirrtl("filter.fir", filter);
+      ch_toFIRRTL("filter.fir", filter);
       ch_toVerilog("filter.v", filter);
 
       trace.toTestBench("filter_tb.v", "filter.v");
@@ -341,7 +341,7 @@ TEST_CASE("module", "[module]") {
       ret &= !queue.io.deq.valid; // empty
 
       ch_toVerilog("queue.v", queue);
-      ch_toFirrtl("queue.fir", queue);
+      ch_toFIRRTL("queue.fir", queue);
 
       trace.toTestBench("queue_tb.v", "queue.v");
       ret &= (checkVerilog("queue_tb.v"));
@@ -378,7 +378,7 @@ TEST_CASE("module", "[module]") {
     TESTX([]()->bool {
       ch_device<Loop> loop;
       ch_toVerilog("loop.v", loop);
-      ch_toFirrtl("loop.fir", loop);
+      ch_toFIRRTL("loop.fir", loop);
 
       loop.io.in1 = 1;
       loop.io.in2 = 2;

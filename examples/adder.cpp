@@ -39,7 +39,7 @@ int main() {
   assert(adder.io.cout == 1);
 
   ch_toVerilog("adder.v", adder);
-  ch_toFirrtl("adder.fir", adder);
+  ch_toFIRRTL("adder.fir", adder);
 
   tracer.toText("adder.log");
   tracer.toVCD("adder.vcd");

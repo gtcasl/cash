@@ -15,6 +15,8 @@ public:
           uint32_t data_width,
           uint32_t num_items,
           bool write_enable,
+          bool sync_read,
+          bool raw,
           const std::vector<uint8_t>& init_data,
           const source_location& sloc);
 
@@ -36,6 +38,14 @@ public:
     return write_enable_;
   }
 
+  bool is_sync_read() const {
+    return sync_read_;
+  }
+
+  bool is_raw() const {
+    return raw_;
+  }
+
   bool has_initdata() const {
     return has_initdata_;
   }
@@ -50,7 +60,9 @@ public:
 
   bool is_readwrite(memportimpl* port) const;
 
-  memportimpl* read(const lnode& addr, const source_location& sloc);
+  memportimpl* read(const lnode& addr,
+                    const lnode& enable,
+                    const source_location& sloc);
 
   void write(const lnode& addr,
              const lnode& data,
@@ -69,6 +81,8 @@ protected:
   uint32_t data_width_;
   uint32_t num_items_;
   bool write_enable_;
+  bool sync_read_;
+  bool raw_;
   bool has_initdata_;
   cdimpl* cd_;
 };
@@ -82,6 +96,7 @@ public:
               lnodetype type,
               memimpl* mem,
               const lnode& addr,
+              const lnode& enable,
               const source_location& sloc);
 
   ~memportimpl();
@@ -95,13 +110,28 @@ public:
   }
 
   const lnode& addr() const {
-    return srcs_[0];
+    if (type_mrport == type_
+     && !mem_->is_sync_read()) {
+      return this->src(addr_idx_);
+    } else {
+      return mem_->src(addr_idx_);
+    }
+  }
+
+  bool has_enable() const {
+    return (enable_idx_ != -1);
+  }
+
+  const lnode& enable() const {
+    return mem_->src(enable_idx_);
   }
 
 protected:
 
   memimpl* mem_;
   uint32_t index_;
+  int addr_idx_;  
+  int enable_idx_;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -113,12 +143,14 @@ public:
   mrportimpl(context* ctx,
              memimpl* mem,
              const lnode& addr,
+             const lnode& enable,
              const source_location& sloc);
 
   ~mrportimpl();
 
   void eval() override;
 };
+
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -134,27 +166,15 @@ public:
 
   ~mwportimpl();
 
-  const lnode& cd() const {
-    return srcs_[1];
-  }
-
   const lnode& wdata() const {
-    return srcs_[2];
-  }
-
-  bool has_wenable() const {
-    return (wenable_idx_ != -1);
-  }
-
-  const lnode& wenable() const {
-    return srcs_[wenable_idx_];
+    return mem_->src(wdata_idx_);
   }
 
   void eval() override;
 
 protected:
 
-  int wenable_idx_;
+  int wdata_idx_;
 };
 
 }

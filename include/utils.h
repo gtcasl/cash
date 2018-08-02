@@ -474,6 +474,18 @@ void unused(Args&&...) {}
 
 ///////////////////////////////////////////////////////////////////////////////
 
+template <auto Begin, class Func, decltype(Begin) ...Is>
+constexpr void static_for_impl(Func &&f, std::integer_sequence<decltype(Begin), Is...>) {
+  (f(std::integral_constant<decltype(Begin), Begin + Is>{} ),... );
+}
+
+template <auto Begin, auto End, class Func>
+constexpr void static_for(Func &&f) {
+  static_for_impl<Begin>(std::forward<Func>(f), std::make_integer_sequence<decltype(Begin), End - Begin>{});
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 // is power of two number ?
 constexpr bool ispow2(uint32_t value) {
   return value && !(value & (value - 1)); 

@@ -28,7 +28,7 @@ int main() {
   assert(counter.io.out == 12);
 
   ch_toVerilog("counter.v", counter);
-  ch_toFirrtl("counter.fir", counter);
+  ch_toFIRRTL("counter.fir", counter);
 
   tracer.toText("counter.log");
   tracer.toVCD("counter.vcd");  

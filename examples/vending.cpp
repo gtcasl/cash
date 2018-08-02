@@ -52,7 +52,7 @@ int main() {
   assert(vending.io.valid);
 
   ch_toVerilog("vending.v", vending);
-  ch_toFirrtl("vending.fir", vending);
+  ch_toFIRRTL("vending.fir", vending);
 
   tracer.toText("vending.log");
   tracer.toVCD("vending.vcd");

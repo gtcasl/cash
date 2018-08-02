@@ -39,7 +39,7 @@ int main() {
   assert(fastmult.io.out == 6);
 
   ch_toVerilog("fastmult.v", fastmult);
-  ch_toFirrtl("fastmult.fir", fastmult);
+  ch_toFIRRTL("fastmult.fir", fastmult);
 
   tracer.toText("fastmult.log");
   tracer.toVCD("fastmult.vcd");

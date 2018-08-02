@@ -44,6 +44,7 @@ namespace utility {
   using ch::internal::log2ceil;  
   using ch::internal::make_array_n;
   using ch::internal::make_list_n;
+  using ch::internal::static_for;
 }
 
 //
@@ -262,7 +263,7 @@ namespace sim {
   //
 
   using ch::internal::ch_toVerilog;
-  using ch::internal::ch_toFirrtl;
+  using ch::internal::ch_toFIRRTL;
   using ch::internal::ch_stats;
 }
 

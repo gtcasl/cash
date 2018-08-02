@@ -235,7 +235,7 @@ void context::add_node(lnodeimpl* node) {
     literals_.emplace_back((litimpl*)node);
     break;
   case type_reg:
-  case type_mwport:
+  case type_mem:
   case type_udfs:
     snodes_.emplace_back(node);
     break;
@@ -287,7 +287,7 @@ node_list_t::iterator context::delete_node(const node_list_t::iterator& it) {
     literals_.remove((litimpl*)node);
     break;
   case type_reg:
-  case type_mwport:
+  case type_mem:
   case type_udfs:
     snodes_.remove(node);
     break;
@@ -798,7 +798,7 @@ void context::build_run_list(std::vector<lnodeimpl*>& runlist) {
         if (!reinterpret_cast<regimpl*>(node)->has_init())
           uninitialized_regs.insert(node);
         [[fallthrough]];
-      case type_mwport:
+      case type_mem:
       case type_udfs:
         // we found a cycle, return 'true'
         return true;

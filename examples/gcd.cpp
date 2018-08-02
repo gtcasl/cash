@@ -61,7 +61,7 @@ int main() {
   assert(gcd.io.out.data == 16);
 
   ch_toVerilog("gcd.v", gcd);
-  ch_toFirrtl("gcd.fir", gcd);
+  ch_toFIRRTL("gcd.fir", gcd);
 
   tracer.toText("gcd.log");
   tracer.toVCD("gcd.vcd");

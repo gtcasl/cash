@@ -20,3 +20,46 @@ template <typename T, typename... Args, typename = void>
 auto ch_udf(const Args&... args, CH_SLOC) {
   return ch_udf_impl<T, Args...>(sloc, args..., std::make_index_sequence<sizeof...(Args)>{});
 }
+
+
+
+
+const auto is_sync_rom = [](memimpl* /*node*/) {
+  return false/*node->is_sync_read()
+      && (1 == node->ports().size())
+      && (type_mrport == node->ports()[0]->type())
+      && !node->ports()[0]->has_enable()*/;
+};
+
+
+
+//--
+if (is_sync_rom(node)) {
+  auto port = reinterpret_cast<mrportimpl*>(node->ports()[0]);
+  out << "always @ (";
+  this->print_cdomain(out, node->cd());
+  out << ") begin" << std::endl;
+  {
+    auto_indent indent(out);
+    out << "case (";
+    this->print_name(out, port->addr().impl());
+    out << ")" << std::endl;
+    {
+      const auto& value = node->value();
+      uint32_t num_items = node->num_items();
+      uint32_t addr_width = ilog2(num_items);
+      uint32_t data_width = node->data_width();
+      for (uint32_t i = 0; i < num_items; ++i) {
+        out << addr_width << "'d" << i << ": ";
+        this->print_name(out, port);
+        out << " = ";
+        uint32_t offset = i * data_width;
+        this->print_value(out, value, true, offset, data_width);
+        out << ";" << std::endl;
+      }
+    }
+    out << "endcase" << std::endl;
+  }
+  out << "end" << std::endl;
+  return;
+}

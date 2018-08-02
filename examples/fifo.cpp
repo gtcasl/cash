@@ -17,8 +17,8 @@ struct FiFo {
   void describe() {
     ch_reg<ch_uint<addr_width+1>> rd_ptr(0), wr_ptr(0);
 
-    auto rd_A = ch_slice<addr_width>(rd_ptr);
-    auto wr_A = ch_slice<addr_width>(wr_ptr);
+    auto rd_a = ch_slice<addr_width>(rd_ptr);
+    auto wr_a = ch_slice<addr_width>(wr_ptr);
 
     auto reading = io.pop && !io.empty;
     auto writing = io.push && !io.full;
@@ -27,11 +27,11 @@ struct FiFo {
     wr_ptr->next = ch_sel(writing, wr_ptr + 1, wr_ptr);
 
     ch_mem<T, N> mem;
-    mem.write(wr_A, io.din, writing);
+    mem.write(wr_a, io.din, writing);
 
-    io.dout  = mem.read(rd_A);
+    io.dout  = mem.read(rd_a);
     io.empty = (wr_ptr == rd_ptr);
-    io.full  = (wr_A == rd_A) && (wr_ptr[addr_width] != rd_ptr[addr_width]);    
+    io.full  = (wr_a == rd_a) && (wr_ptr[addr_width] != rd_ptr[addr_width]);
   }
 };
 
@@ -91,7 +91,7 @@ int main() {
   });
 
   ch_toVerilog("fifo.v", fifo);
-  ch_toFirrtl("fifo.fir", fifo);
+  ch_toFIRRTL("fifo.fir", fifo);
 
   tracer.toText("fifo.log");
   tracer.toVCD("fifo.vcd");

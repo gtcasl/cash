@@ -16,28 +16,29 @@ template <unsigned N, unsigned F>
 class ch_fixed;
 
 template <unsigned I, unsigned F>
-int FloatToFixed(float value) {
+int FloatToFixed(double value) {
   static_assert(I >= 1 && (I + F) <= 32, "invalid size");
-  auto xOne = (1 << F);
-  int xvalue = static_cast<int>(floor(value * xOne + 0.5f));
-  if constexpr (I == 1) {    
-    if (xvalue == xOne) {
-      xvalue = xOne - 1;
-    }
-    if (xvalue < 0) {
-      xvalue += 2 * xOne;
-    }
+  double step = 1.0 / (1 << F);
+  double min_value = -(1 << (I-1));
+  double max_value = (1 << (I-1)) - step;
+  if (value > max_value) {
+    value = max_value;
   }
+  if (value < min_value) {
+    value = min_value;
+  }
+  int xvalue = static_cast<int>(floor(value * (1 << F) + 0.5));
   return xvalue;
 }
 
 template <unsigned N, unsigned F>
 class ch_scfixed : public ch_scbit<N> {
 public:  
-  static_assert(N >= (F+1), "invalid size");
-  using traits = scalar_traits<N, true, ch_scfixed, ch_fixed<N, F>>;
+  static constexpr unsigned Intg = N-F;
+  static constexpr unsigned Frac = F;
+  static_assert(N >= (Frac+1), "invalid size");
+  using traits = scalar_traits<N, true, ch_scfixed, ch_fixed<N, Frac>>;
   using base = ch_scbit<N>;
-  static constexpr unsigned I = N-F;
 
   explicit ch_scfixed(const scalar_buffer_ptr& buffer = make_scalar_buffer(N))
     : base(buffer)
@@ -47,7 +48,7 @@ public:
             CH_REQUIRE_0(std::is_integral_v<U>)>
   ch_scfixed(const U& other) : base(other) {}
 
-  explicit ch_scfixed(float other) : base(FloatToFixed<I, F>(other)) {
+  explicit ch_scfixed(float other) : base(FloatToFixed<Intg, Frac>(other)) {
     static_assert(N <= 32, "invalid size");
   }
 
@@ -122,12 +123,12 @@ public:
   }
 
   friend auto operator*(const ch_scfixed& lhs, const ch_scfixed& rhs) {
-    auto ret = ((lhs.as_scint().template pad<N+F>() * rhs.as_scint()) >> F).template slice<N>();
+    auto ret = ((lhs.as_scint().template pad<N+Frac>() * rhs.as_scint()) >> Frac).template slice<N>();
     return ret.template as<ch_scfixed>();
   }
 
   friend auto operator/(const ch_scfixed& lhs, const ch_scfixed& rhs) {
-    auto ret = ((lhs.as_scint().template pad<N+F>() << F) / rhs.as_scint()).template slice<N>();
+    auto ret = ((lhs.as_scint().template pad<N+Frac>() << Frac) / rhs.as_scint()).template slice<N>();
     return ret.template as<ch_scfixed>();
   }
 
@@ -140,7 +141,7 @@ public:
   explicit operator float() const {
     static_assert(N <= 32, "invalid size");
     int32_t ivalue = static_cast<int32_t>(*this);
-    auto value = float(ivalue) / (1 << F);
+    auto value = float(ivalue) / (1 << Frac);
     return value;
   }
 };
@@ -148,10 +149,11 @@ public:
 template <unsigned N, unsigned F>
 class ch_fixed : public ch_bit<N> {
 public:  
-  static_assert(N >= (F+1), "invalid size");
-  using traits = logic_traits<N, true, ch_fixed, ch_scfixed<N, F>>;
+  static constexpr unsigned Intg = N-F;
+  static constexpr unsigned Frac = F;
+  static_assert(N >= (Frac+1), "invalid size");
+  using traits = logic_traits<N, true, ch_fixed, ch_scfixed<N, Frac>>;
   using base = ch_bit<N>;
-  static constexpr unsigned I = N-F;
 
   explicit ch_fixed(const logic_buffer& buffer = logic_buffer(N, CH_CUR_SLOC))
     : base(buffer)
@@ -161,7 +163,7 @@ public:
             CH_REQUIRE_0(std::is_integral_v<U>)>
   ch_fixed(const U& other, CH_SLOC) : base(other, sloc) {}
 
-  explicit ch_fixed(float other) : base(FloatToFixed<I, F>(other)) {
+  explicit ch_fixed(float other) : base(FloatToFixed<Intg, Frac>(other)) {
     static_assert(N <= 32, "invalid size");
   }
 
@@ -238,12 +240,12 @@ public:
   }
 
   friend auto operator*(const ch_fixed& lhs, const ch_fixed& rhs) {
-    auto ret = ch_shr<N>(ch_mul<N+F>(lhs.as_int(), rhs.as_int()), F);
+    auto ret = ch_shr<N>(ch_mul<N+Frac>(lhs.as_int(), rhs.as_int()), Frac);
     return ret.template as<ch_fixed>();
   }
 
   friend auto operator/(const ch_fixed& lhs, const ch_fixed& rhs) {
-    auto ret = (ch_shl<N+F>(lhs.as_int(), F) / rhs.as_int()).template slice<N>();
+    auto ret = (ch_shl<N+Frac>(lhs.as_int(), Frac) / rhs.as_int()).template slice<N>();
     return ret.template as<ch_fixed>();
   }
 };

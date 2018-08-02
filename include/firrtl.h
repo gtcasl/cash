@@ -5,11 +5,11 @@
 namespace ch {
 namespace internal {
 
-void ch_toFirrtl(std::ostream& out, const device& device);
+void ch_toFIRRTL(std::ostream& out, const device& device);
 
-inline void ch_toFirrtl(const std::string& file, const device& device) {
+inline void ch_toFIRRTL(const std::string& file, const device& device) {
   std::ofstream out(file);
-  ch_toFirrtl(out, device);
+  ch_toFIRRTL(out, device);
 }
 
 }

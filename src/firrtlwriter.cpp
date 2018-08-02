@@ -552,8 +552,8 @@ void firrtlwriter::print_mem(memimpl* node) {
 
       this->print_name(node);
       out_ << '.' << type << mwport->index() << ".en <= ";
-      if (mwport->has_wenable()) {
-        this->print_name(mwport->wenable().impl());
+      if (mwport->has_enable()) {
+        this->print_name(mwport->enable().impl());
       } else {
         out_ << "UInt<1>(\"h1\")";
       }
@@ -753,7 +753,7 @@ void firrtlwriter::print_dtype(lnodeimpl* node) {
       for (auto port : mem->ports()) {
         out_ << sep;
         if (mem->is_readwrite(port)) {
-          if (port->type() == type_mrport)
+          if (port->type() != type_mwport)
             continue;
           // read-write
           out_ << "readwriter => x" << port->index();
@@ -820,7 +820,7 @@ void firrtlwriter::print_value(const bitvector& value,
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void ch::internal::ch_toFirrtl(std::ostream& out, const device& device) {
+void ch::internal::ch_toFIRRTL(std::ostream& out, const device& device) {
   firrtlwriter writer(out);
   writer.print(device.impl()->ctx());
 }
