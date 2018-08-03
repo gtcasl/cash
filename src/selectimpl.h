@@ -36,8 +36,6 @@ protected:
              lnodeimpl* key,
              const source_location& sloc);
 
-  ~selectimpl();
-
   bool has_key_;
 
   friend class context;

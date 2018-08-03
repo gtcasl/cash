@@ -29,7 +29,7 @@ void proxyimpl::add_source(uint32_t dst_offset,
   assert(!src.empty());
   assert(this != src.impl());  
   assert(length != 0);
-  assert(dst_offset + length <= value_.size());
+  assert(dst_offset + length <= data_.size());
   assert(src_offset + length <= src.size());
 
   // update source location
@@ -262,7 +262,7 @@ std::size_t proxyimpl::hash() const {
 lnodeimpl* proxyimpl::slice(uint32_t offset,
                             uint32_t length,
                             const source_location& sloc) {
-  assert(length <= value_.size());
+  assert(length <= data_.size());
 
   // return the nested node if the offset/size match
   for (auto& range : ranges_) {
@@ -294,12 +294,12 @@ lnodeimpl* proxyimpl::slice(uint32_t offset,
 void proxyimpl::eval() {
   for (auto& range : ranges_) {
     auto& bits = srcs_[range.src_idx].data();
-    value_.copy(range.dst_offset, bits, range.src_offset, range.length);
+    data_.copy(range.dst_offset, bits, range.src_offset, range.length);
   }
 }
 
 void proxyimpl::print(std::ostream& out, uint32_t level) const {
-  out << "#" << id_ << " <- " << this->type() << value_.size();
+  out << "#" << id_ << " <- " << this->type() << data_.size();
   out << "(";
   uint32_t s(0);
   auto_separator sep(", ");
@@ -322,7 +322,7 @@ void proxyimpl::print(std::ostream& out, uint32_t level) const {
   }
   out << ")";
   if (2 == level) {
-    out << " = " << value_;
+    out << " = " << data_;
   }
 }
 

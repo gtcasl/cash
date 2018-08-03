@@ -19,8 +19,6 @@ protected:
              const std::string& msg,
              const source_location& sloc);
 
-  ~assertimpl() {}
-
   std::string msg_;
   bool predicated_;
   ch_tick tick_;

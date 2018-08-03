@@ -124,87 +124,87 @@ void aluimpl::eval() {
 
   switch (op_) {
   case ch_op::eq:
-    value_.word(0) = (*src0_ == *src1_);
+    data_.word(0) = (*src0_ == *src1_);
     break;
   case ch_op::ne:
-    value_.word(0) = (*src0_ != *src1_);
+    data_.word(0) = (*src0_ != *src1_);
     break;
   case ch_op::lt:
-    value_.word(0) = is_signed_ ? bv_lts(*src0_, *src1_) : bv_ltu(*src0_, *src1_);
+    data_.word(0) = is_signed_ ? bv_lts(*src0_, *src1_) : bv_ltu(*src0_, *src1_);
     break;
   case ch_op::gt:
-    value_.word(0) = is_signed_ ? bv_lts(*src1_, *src0_) : bv_ltu(*src1_, *src0_);
+    data_.word(0) = is_signed_ ? bv_lts(*src1_, *src0_) : bv_ltu(*src1_, *src0_);
     break;
   case ch_op::le:
-    value_.word(0) = !(is_signed_ ? bv_lts(*src1_, *src0_) : bv_ltu(*src1_, *src0_));
+    data_.word(0) = !(is_signed_ ? bv_lts(*src1_, *src0_) : bv_ltu(*src1_, *src0_));
     break;
   case ch_op::ge:
-    value_.word(0) = !(is_signed_ ? bv_lts(*src0_, *src1_) : bv_ltu(*src0_, *src1_));
+    data_.word(0) = !(is_signed_ ? bv_lts(*src0_, *src1_) : bv_ltu(*src0_, *src1_));
     break;
 
   case ch_op::inv:
-    bv_inv(value_, *src0_);
+    bv_inv(data_, *src0_);
     break;
   case ch_op::andl:
-    bv_and(value_, *src0_, *src1_);
+    bv_and(data_, *src0_, *src1_);
     break;
   case ch_op::orl:
-    bv_or(value_, *src0_, *src1_);
+    bv_or(data_, *src0_, *src1_);
     break;
   case ch_op::xorl:
-    bv_xor(value_, *src0_, *src1_);
+    bv_xor(data_, *src0_, *src1_);
     break;
 
   case ch_op::andr:
-    value_.word(0) = bv_andr(*src0_);
+    data_.word(0) = bv_andr(*src0_);
     break;
   case ch_op::orr:
-    value_.word(0) = bv_orr(*src0_);
+    data_.word(0) = bv_orr(*src0_);
     break;
   case ch_op::xorr:
-    value_.word(0) = bv_xorr(*src0_);
+    data_.word(0) = bv_xorr(*src0_);
     break;
 
   case ch_op::shl:
-    bv_sll(value_, *src0_, *src1_);
+    bv_sll(data_, *src0_, *src1_);
     break;
   case ch_op::shr:
     if (is_signed_ )
-        bv_sra(value_, *src0_, *src1_);
+        bv_sra(data_, *src0_, *src1_);
     else
-        bv_srl(value_, *src0_, *src1_);
+        bv_srl(data_, *src0_, *src1_);
     break;
 
   case ch_op::add:
-    bv_add(value_, *src0_, *src1_);
+    bv_add(data_, *src0_, *src1_);
     break;
   case ch_op::sub:
-    bv_sub(value_, *src0_, *src1_);
+    bv_sub(data_, *src0_, *src1_);
     break;
   case ch_op::neg:
-    bv_neg(value_, *src0_);
+    bv_neg(data_, *src0_);
     break;
   case ch_op::mul:
-    bv_mul(value_, *src0_, *src1_);
+    bv_mul(data_, *src0_, *src1_);
     break;
   case ch_op::div:
     if (is_signed_ )
-      bv_divs(value_, *src0_, *src1_);
+      bv_divs(data_, *src0_, *src1_);
     else
-      bv_divu(value_, *src0_, *src1_);
+      bv_divu(data_, *src0_, *src1_);
     break;
   case ch_op::mod:
     if (is_signed_ )
-      bv_mods(value_, *src0_, *src1_);
+      bv_mods(data_, *src0_, *src1_);
     else
-      bv_modu(value_, *src0_, *src1_);
+      bv_modu(data_, *src0_, *src1_);
     break;
 
   case ch_op::pad:
     if (is_signed_ )
-        bv_sext(value_, *src0_);
+        bv_sext(data_, *src0_);
     else
-        bv_zext(value_, *src0_);
+        bv_zext(data_, *src0_);
     break;
 
   default:
@@ -213,7 +213,7 @@ void aluimpl::eval() {
 }
 
 void aluimpl::print(std::ostream& out, uint32_t level) const {
-  out << "#" << id_ << " <- " << to_string(this->type()) << value_.size();
+  out << "#" << id_ << " <- " << to_string(this->type()) << data_.size();
   uint32_t n = srcs_.size();
   out << "(" << to_string(op_) << (is_signed_ ? "_s" : "_u") << ", ";
   for (uint32_t i = 0; i < n; ++i) {
@@ -223,7 +223,7 @@ void aluimpl::print(std::ostream& out, uint32_t level) const {
   }
   out << ")";
   if (level == 2) {
-    out << " = " << value_;
+    out << " = " << data_;
   }
 }
 

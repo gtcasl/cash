@@ -31,10 +31,8 @@ udfcimpl::udfcimpl(context* ctx,
   : udfimpl(ctx, type_udfc, udf, srcs, sloc)
 {}
 
-udfcimpl::~udfcimpl() {}
-
 void udfcimpl::eval() {
-  udf_->eval(value_, udf_srcs_);
+  udf_->eval(data_, udf_srcs_);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -55,20 +53,18 @@ udfsimpl::udfsimpl(context* ctx,
   pipe_.resize(udf->delta() - 1, bitvector(this->size()));
 }
 
-udfsimpl::~udfsimpl() {}
-
 void udfsimpl::eval() {
   // check clock transition
   auto cd = reinterpret_cast<cdimpl*>(this->cd().impl());
-  if (0 == cd->value().word(0))
+  if (0 == cd->data().word(0))
     return;
 
-  bitvector* value = &value_;
+  bitvector* value = &data_;
 
   // advance the pipeline
   if (!pipe_.empty()) {
     auto last = pipe_.size() - 1;
-    value_ = pipe_[last];
+    data_ = pipe_[last];
     for (int i = last; i > 0; --i) {
       pipe_[i] = pipe_[i-1];
     }

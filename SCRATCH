@@ -63,3 +63,7 @@ if (is_sync_rom(node)) {
   out << "end" << std::endl;
   return;
 }
+
+__if (ch_clock() && writing) {
+  ch_print("{0}: *** wr_a={1}, wr_dat={2}", ch_time(),  wr_a, io.enq.data);
+};

@@ -251,7 +251,7 @@ bool verilogwriter::print_decl(std::ostream& out,
     out << " ";
     this->print_name(out, node);
     out << " = ";
-    this->print_value(out, node->value(), true);
+    this->print_value(out, node->data(), true);
     out << ";" << std::endl;
     return true;
   case type_mem:
@@ -507,7 +507,7 @@ void verilogwriter::print_select(std::ostream& out, selectimpl* node) {
       {
         auto_indent indent2(out);
         for (; i < last; i += 2) {
-          print_value(out, node->src(i).impl()->value(), false);
+          print_value(out, node->src(i).impl()->data(), false);
           out << ": ";
           this->print_name(out, node);
           out << " = ";
@@ -591,7 +591,7 @@ void verilogwriter::print_mem(std::ostream& out, memimpl* node) {
     out << "initial begin" << std::endl;
     {
       auto_indent indent(out);
-      const auto& value = node->value();
+      const auto& value = node->data();
       uint32_t data_width = node->data_width();
       uint32_t num_items = node->num_items();
       for (uint32_t i = 0; i < num_items; ++i) {
@@ -763,7 +763,7 @@ void verilogwriter::print_name(std::ostream& out, lnodeimpl* node, bool force) {
     break;
   case type_lit:
     if (!force && is_inline_literal(node)) {
-      print_value(out, node->value(), true);
+      print_value(out, node->data(), true);
     } else {
       print_unique_name(node);
     }

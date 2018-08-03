@@ -16,8 +16,6 @@ protected:
 
   litimpl(context* ctx, const bitvector& value);
 
-  ~litimpl() {}
-
   friend class context;
 };
 

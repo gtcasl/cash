@@ -186,7 +186,7 @@ public:
 
   //--
 
-  uint32_t node_id(const std::string& name);
+  uint32_t node_id();
 
   template <typename T, typename... Ts>
   T* create_node(Ts&&... args) {
@@ -281,7 +281,6 @@ protected:
   uint32_t    id_;
   std::string name_;
 
-  uint32_t    node_ids_;
   uint32_t    block_idx_;
   inputimpl*  default_clk_;
   inputimpl*  default_reset_;

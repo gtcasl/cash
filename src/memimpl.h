@@ -20,10 +20,8 @@ public:
           const std::vector<uint8_t>& init_data,
           const source_location& sloc);
 
-  ~memimpl();
-
   uint32_t total_size() const {
-    return value_.size();
+    return data_.size();
   }
 
   uint32_t data_width() const {
@@ -146,8 +144,6 @@ public:
              const lnode& enable,
              const source_location& sloc);
 
-  ~mrportimpl();
-
   void eval() override;
 };
 
@@ -163,8 +159,6 @@ public:
              const lnode& data,
              const lnode& enable,
              const source_location& sloc);
-
-  ~mwportimpl();
 
   const lnode& wdata() const {
     return mem_->src(wdata_idx_);

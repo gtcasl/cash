@@ -113,8 +113,6 @@ void printimpl::eval() {
   std::cout << std::endl;
 }
 
-printimpl::~printimpl() {}
-
 void printimpl::print(std::ostream& out, uint32_t level) const {
   out << "#" << id_ << " <- " << this->type();
   uint32_t n = srcs_.size();
@@ -132,7 +130,7 @@ void printimpl::print(std::ostream& out, uint32_t level) const {
     out << ")";
   }
   if (level == 2) {
-    out << " = " << value_;
+    out << " = " << data_;
   }
 }
 

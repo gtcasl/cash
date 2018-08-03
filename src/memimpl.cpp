@@ -38,15 +38,13 @@ memimpl::memimpl(context* ctx,
     srcs_.emplace_back(cd_);
   }
   if (has_initdata_) {
-    assert(8 * init_data.size() >= value_.size());
-    value_.write(0, init_data.data(), init_data.size(), 0, value_.size());
+    assert(8 * init_data.size() >= data_.size());
+    data_.write(0, init_data.data(), init_data.size(), 0, data_.size());
   } else {
     // initialize with dirty content
-    value_.deadbeef();
+    data_.deadbeef();
   }
 }
-
-memimpl::~memimpl() {}
 
 void memimpl::remove_port(memportimpl* port) {
   for (auto it = ports_.begin(), end = ports_.end(); it != end; ++it) {
@@ -102,8 +100,8 @@ void memimpl::eval() {
 
     // memory read
     auto addr = port->addr().data().word(0);
-    auto& data = port->value();
-    value_.read(addr * data_width_,
+    auto& data = port->data();
+    data_.read(addr * data_width_,
                 data.data(),
                 data.num_bytes(),
                 0,
@@ -120,7 +118,7 @@ void memimpl::eval() {
     // memory write
     auto addr = port->addr().data().word(0);
     auto& data = port->wdata().data();
-    value_.write(addr * data_width_,
+    data_.write(addr * data_width_,
                  data.data(),
                  data.num_bytes(),
                  0,
@@ -128,7 +126,7 @@ void memimpl::eval() {
   };
 
   // check clock transition
-  if (nullptr == cd_ || 0 == cd_->value().word(0))
+  if (nullptr == cd_ || 0 == cd_->data().word(0))
     return;
 
   //--
@@ -169,7 +167,7 @@ void memimpl::eval() {
 
 void memimpl::print(std::ostream& out, uint32_t level) const {
   CH_UNUSED(level);
-  out << "#" << id_ << " <- " << this->type() << value_.size();
+  out << "#" << id_ << " <- " << this->type() << data_.size();
   uint32_t n = srcs_.size();
   if (n > 0) {
     out << "(";
@@ -181,7 +179,7 @@ void memimpl::print(std::ostream& out, uint32_t level) const {
     out << ")";
   }
   if (level == 2) {
-    out << " = " << value_;
+    out << " = " << data_;
   }
 }
 
@@ -212,7 +210,7 @@ memportimpl::memportimpl(context* ctx,
     enable_idx_ = mem_->add_src(enable);
   } else {
     // the constant value should be one
-    assert(1 == enable.impl()->value().word(0));
+    assert(1 == enable.impl()->data().word(0));
   }
 }
 
@@ -233,8 +231,6 @@ mrportimpl::mrportimpl(context* ctx,
   srcs_.emplace_back(mem);
 }
 
-mrportimpl::~mrportimpl() {}
-
 void mrportimpl::eval() {
   if (mem_->is_sync_read())
     return;
@@ -242,9 +238,9 @@ void mrportimpl::eval() {
   // memory read
   auto data_width = mem_->data_width();
   auto addr = this->addr().data().word(0);
-  mem_->value().read(addr * data_width,
-              value_.data(),
-              value_.num_bytes(),
+  mem_->data().read(addr * data_width,
+              data_.data(),
+              data_.num_bytes(),
               0,
               data_width);
 }
@@ -264,8 +260,6 @@ mwportimpl::mwportimpl(context* ctx,
   // add data source
   wdata_idx_ = mem_->add_src(data);
 }
-
-mwportimpl::~mwportimpl() {}
 
 void mwportimpl::eval() {}
 

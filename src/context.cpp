@@ -27,7 +27,7 @@ typedef std::unordered_map<std::type_index, udf_iface*> udfs_t;
 
 class context_manager {
 public:
-  context_manager() : ctx_(nullptr) {}
+  context_manager() : ctx_(nullptr), ctx_ids_(0), node_ids_(0) {}
 
   ~context_manager() {
     if (ctx_) {
@@ -80,12 +80,22 @@ public:
     return inst;
   }
 
+  uint32_t ctx_id() const {
+    return ++ctx_ids_;
+  }
+
+  uint32_t node_id() const {
+    return ++node_ids_;
+  }
+
 protected:
 
   mutable context* ctx_;
+  mutable uint32_t ctx_ids_;
+  mutable uint32_t node_ids_;
   std::unordered_map<std::type_index, std::string> module_names_;
   unique_names unique_names_;
-  udfs_t udfs_;
+  udfs_t udfs_;  
 };
 
 }
@@ -115,22 +125,9 @@ udf_iface* ch::internal::registerUDF(const std::type_index& signature, udf_iface
 
 ///////////////////////////////////////////////////////////////////////////////
 
-enum sys_node_id {
-  sys_clock_id = 0,
-  sys_reset_id = 1,
-  sys_timer_id = 2,
-  sys_node_max,
-};
-
-static uint32_t make_id() {
-  static uint32_t s_id(0);
-  return s_id++;
-}
-
 context::context(const std::string& name)
-  : id_(make_id())
+  : id_(context_manager::instance().ctx_id())
   , name_(name)
-  , node_ids_(sys_node_max)
   , block_idx_(0)
   , default_clk_(nullptr)
   , default_reset_(nullptr)
@@ -183,17 +180,8 @@ lnodeimpl* context::time(const source_location& sloc) {
   return time_;
 }
 
-uint32_t context::node_id(const std::string& name) {
-  uint32_t nodeid;
-  if (name == "clk") {
-    nodeid = sys_clock_id;
-  } else if (name == "reset") {
-    nodeid = sys_reset_id;
-  } else if (name == "timer") {
-    nodeid = sys_timer_id;
-  } else {
-    nodeid = node_ids_++;
-  }
+uint32_t context::node_id() {
+  auto nodeid = context_manager::instance().node_id();
 #ifndef NDEBUG
   uint32_t dbg_nodeid = platform::self().dbg_node();
   if (dbg_nodeid) {
@@ -734,7 +722,7 @@ lnodeimpl* context::create_predicate(const source_location& sloc) {
 lnodeimpl* context::literal(const bitvector& value) {
   // first lookup literals cache
   for (auto lit : literals_) {
-    if (lit->value() == value)
+    if (lit->data() == value)
       return lit;
   }
   // create new literal
@@ -756,7 +744,7 @@ void context::register_tap(const lnode& node,
 }
 
 void context::build_run_list(std::vector<lnodeimpl*>& runlist) {
-  std::unordered_set<lnodeimpl*> visited, cycles;
+  std::unordered_set<uint32_t> visited, cycles;
   std::unordered_set<lnodeimpl*> update_list;
   std::vector<lnodeimpl*> snodes;
   std::vector<lnodeimpl*> taps;
@@ -784,13 +772,13 @@ void context::build_run_list(std::vector<lnodeimpl*>& runlist) {
   };
 
   std::function<bool (lnodeimpl*)> dfs_visit = [&](lnodeimpl* node)->bool {
-    if (visited.count(node)) {
+    if (visited.count(node->id())) {
       // if a node depends on an update node, it also needs to be updated.
       return (update_list.count(node) != 0);
     }
 
     // check for cycles
-    if (cycles.count(node)) {
+    if (cycles.count(node->id())) {
       // handling register cycles
       switch (node->type()) {
       case type_reg:
@@ -818,14 +806,14 @@ void context::build_run_list(std::vector<lnodeimpl*>& runlist) {
       return false;
 #define LCOV_EXCL_END
     }
-    cycles.insert(node);
+    cycles.insert(node->id());
 
     bool update = false;
 
     // handling for special nodes
     switch (node->type()) {
     case type_bind:
-      visited.insert(node);
+      visited.insert(node->id());
       return false; // no following
     case type_input: {
       auto input = reinterpret_cast<inputimpl*>(node);
@@ -834,7 +822,7 @@ void context::build_run_list(std::vector<lnodeimpl*>& runlist) {
       }
     } break;
     case type_bindout: {
-      auto port = reinterpret_cast<bindoutimpl*>(node);
+      auto port = reinterpret_cast<bindportimpl*>(node);
       update |= dfs_visit(port->ioport().impl());
     } break;
     default:
@@ -846,13 +834,13 @@ void context::build_run_list(std::vector<lnodeimpl*>& runlist) {
       update |= dfs_visit(src.impl());
     }
 
-    runlist.push_back(node);
-    visited.insert(node);
-
     if (update) {
       // a cycle exists in dependent path, this node should be updated
       update_list.insert(node);
     }
+
+    runlist.push_back(node);
+    visited.insert(node->id());
 
     return update;
   };
@@ -864,7 +852,7 @@ void context::build_run_list(std::vector<lnodeimpl*>& runlist) {
 
   // enable cycle detection for sequential nodes
   for (auto node : snodes) {
-    cycles.insert(node);
+    cycles.insert(node->id());
   }
 
   // insert sequential nodes dependencies
@@ -880,7 +868,7 @@ void context::build_run_list(std::vector<lnodeimpl*>& runlist) {
 
   // disable cycle detection for sequential nodes
   for (auto node : snodes) {
-    cycles.erase(node);
+    cycles.erase(node->id());
   }
 
   // insert sequential nodes
@@ -895,8 +883,8 @@ void context::build_run_list(std::vector<lnodeimpl*>& runlist) {
 
   // invalidate all update nodes to force re-insertion
   for (auto node : update_list2) {
-    cycles.erase(node);
-    visited.erase(node);
+    cycles.erase(node->id());
+    visited.erase(node->id());
   }
   update_list2.clear();
 
@@ -961,11 +949,11 @@ void context::dump_ast(std::ostream& out, uint32_t level) {
 }
 
 void context::dump_cfg(lnodeimpl* node, std::ostream& out, uint32_t level) {
-  std::vector<bool> visits(node_ids_ + 1);
+  std::unordered_set<uint32_t> visits;
   std::unordered_map<uint32_t, tapimpl*> taps;
 
   std::function<void(lnodeimpl*)> dump_cfg_impl = [&](lnodeimpl* node) {
-    visits[node->id()] = true;
+    visits.insert(node->id());
     node->print(out, level);
 
     auto iter = taps.find(node->id());
@@ -977,7 +965,7 @@ void context::dump_cfg(lnodeimpl* node, std::ostream& out, uint32_t level) {
     out << std::endl;
 
     for (auto& src : node->srcs()) {
-      if (!visits[src.id()]) {
+      if (!visits.count(src.id())) {
         dump_cfg_impl(src.impl());
       }
     }
@@ -987,7 +975,7 @@ void context::dump_cfg(lnodeimpl* node, std::ostream& out, uint32_t level) {
     taps[tap->target().id()] = tap;
   }
   
-  visits[node->id()] = true;
+  visits.insert(node->id());
   
   if (type_tap == node->type()) {
     auto tap = reinterpret_cast<tapimpl*>(node);
@@ -999,7 +987,7 @@ void context::dump_cfg(lnodeimpl* node, std::ostream& out, uint32_t level) {
   }
   out << std::endl;    
   for (auto& src : node->srcs()) {
-    if (!visits[src.id()]) {
+    if (!visits.count(src.id())) {
       dump_cfg_impl(src.impl());
     }
   }

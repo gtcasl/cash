@@ -14,7 +14,7 @@ void timeimpl::initialize() {
 }
 
 void timeimpl::eval() {
-  value_ = tick_++;
+  data_ = tick_++;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

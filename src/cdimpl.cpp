@@ -15,11 +15,9 @@ cdimpl::cdimpl(context* ctx,
   srcs_.emplace_back(clk);
 }
 
-cdimpl::~cdimpl() {}
-
 void cdimpl::eval() {
   bool value = (this->clk().data().word(0) != 0);
-  value_.word(0) = (prev_val_ != value) && (0 == (value ^ posedge_));
+  data_.word(0) = (prev_val_ != value) && (0 == (value ^ posedge_));
   prev_val_ = value;
 }
 

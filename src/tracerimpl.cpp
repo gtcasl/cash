@@ -93,7 +93,7 @@ void tracerimpl::eval(ch_tick t) {
   auto& block = trace_blocks_tail_->data.at(block_idx);
   uint32_t dst_offset = 0;
   for (auto& trace : signals_) {
-    auto& value = trace.node->value();
+    auto& value = trace.node->data();
     block.write(dst_offset, value.data(), value.num_bytes(), 0, value.size());
     dst_offset += value.size();
   }

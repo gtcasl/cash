@@ -81,15 +81,15 @@ public:
   uint32_t add_src(const lnode& src);
   
   uint32_t size() const {
-    return value_.size();
+    return data_.size();
   }
   
-  const bitvector& value() const {
-    return value_;
+  const bitvector& data() const {
+    return data_;
   }
 
-  bitvector& value() {
-    return value_;
+  bitvector& data() {
+    return data_;
   }
 
   uint32_t var_id() const {
@@ -154,7 +154,7 @@ protected:
   uint32_t id_;  
   lnodetype type_;
   std::vector<lnode> srcs_;
-  bitvector value_;
+  bitvector data_;
   source_location sloc_;
   std::string name_;
   uint32_t var_id_;

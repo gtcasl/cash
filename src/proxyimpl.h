@@ -28,7 +28,7 @@ public:
 
   bool is_identity() const {
     return (1 == ranges_.size())
-        && (srcs_[0].size() == value_.size());
+        && (srcs_[0].size() == data_.size());
   }
 
   const std::vector<range_t>& ranges() const {
@@ -75,8 +75,6 @@ protected:
             const source_location& sloc,
             const std::string& name = "",
             uint32_t var_id = 0);
-
-  ~proxyimpl() {}
 
   std::vector<range_t> ranges_;
 

@@ -45,8 +45,6 @@ selectimpl::selectimpl(context* ctx,
   }
 }
 
-selectimpl::~selectimpl() {}
-
 bool selectimpl::equals(const lnodeimpl& other) const {
   if (lnodeimpl::equals(other)) {
     auto _other = reinterpret_cast<const selectimpl&>(other);
@@ -87,11 +85,11 @@ void selectimpl::eval() {
         break;
     }
   }
-  value_ = (i < last) ? srcs_[i+1].data() : srcs_[last].data();
+  data_ = (i < last) ? srcs_[i+1].data() : srcs_[last].data();
 }
 
 void selectimpl::print(std::ostream& out, uint32_t level) const {
-  out << "#" << id_ << " <- " << (has_key_ ? "case" : "sel") << value_.size();
+  out << "#" << id_ << " <- " << (has_key_ ? "case" : "sel") << data_.size();
   uint32_t n = srcs_.size();
   if (n > 0) {
     out << "(";
@@ -104,7 +102,7 @@ void selectimpl::print(std::ostream& out, uint32_t level) const {
     out << ")";
   }
   if (level == 2) {
-    out << " = " << value_;
+    out << " = " << data_;
   }
 }
 

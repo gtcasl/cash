@@ -300,7 +300,7 @@ bool firrtlwriter::print_logic(module_t& module, lnodeimpl* node) {
 void firrtlwriter::print_lit(litimpl* node) {
   this->print_name(node);
   out_ << " <= ";
-  this->print_value(node->value(), true);
+  this->print_value(node->data(), true);
   out_ << std::endl;
 }
 
@@ -595,7 +595,7 @@ void firrtlwriter::print_mem(memimpl* node) {
     for (uint32_t i = 0, n = node->num_items(); i < n; ++i) {
       this->print_name(node);
       out_ << "[" << i << "] <= ";
-      node->value().read(i * data_width, value.data(), data_cbsize, 0, data_width);
+      node->data().read(i * data_width, value.data(), data_cbsize, 0, data_width);
       this->print_value(value);
       out_ << std::endl;
     }
@@ -649,7 +649,7 @@ void firrtlwriter::print_name(lnodeimpl* node, bool force) {
     break;
   case type_lit:
     if (!force && is_inline_literal(node)) {
-      print_value(node->value(), true);
+      print_value(node->data(), true);
     } else {
       print_unique_name(node);
     }

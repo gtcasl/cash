@@ -27,8 +27,6 @@ protected:
          bool posedge,
          const source_location& sloc);
 
-  ~cdimpl();
-
   bool posedge_;
   bool prev_val_;
 

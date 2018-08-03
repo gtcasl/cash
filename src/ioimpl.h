@@ -16,8 +16,6 @@ protected:
     : lnodeimpl(ctx, type, size, sloc, name)
   {}
 
-  ~ioimpl() {}
-
   friend class context;
 };
 

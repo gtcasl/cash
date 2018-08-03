@@ -8,14 +8,14 @@
 using namespace ch::internal;
 
 void clock_driver::add_signal(lnodeimpl* node) {
-  node->value()[0] = value_;
+  node->data()[0] = value_;
   nodes_.push_back(node);
 }
 
 void clock_driver::flip() {
   value_ = !value_;
   for (auto node : nodes_) {
-    node->value()[0] = value_;
+    node->data()[0] = value_;
   }
 }
 
@@ -61,12 +61,12 @@ void simulatorimpl::initialize() {
   }
 
   // initialize all nodes
-  std::unordered_set<lnodeimpl*> visited;
+  std::unordered_set<uint32_t> visited;
   for (auto node : run_list_) {
-    if (visited.count(node))
+    if (visited.count(node->id()))
       continue;
     node->initialize();
-    visited.insert(node);
+    visited.insert(node->id());
   }
 }
 

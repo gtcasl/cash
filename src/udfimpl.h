@@ -47,8 +47,6 @@ protected:
           const std::initializer_list<lnode>& srcs,
           const source_location& sloc);
 
-  ~udfcimpl();
-
   friend class context;
 };
 
@@ -77,8 +75,6 @@ protected:
            udf_iface* udf,
            const std::initializer_list<lnode>& srcs,
            const source_location& sloc);
-
-  ~udfsimpl();
 
   int cd_idx_;
   int reset_idx_;

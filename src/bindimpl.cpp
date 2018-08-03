@@ -47,11 +47,17 @@ bindimpl::~bindimpl() {
   module_->release();
 }
 
-void bindimpl::remove_output(bindportimpl* output) {
+void bindimpl::remove_port(bindportimpl* port) {
+  for (auto it = srcs_.begin(), end = srcs_.end(); it != end; ++it) {
+    if (it->id() == port->id()) {
+      srcs_.erase(it);
+      return;
+    }
+  }
   for (auto it = outputs_.begin(), end = outputs_.end(); it != end; ++it) {
-    if (it->id() == output->id()) {
+    if (it->id() == port->id()) {
       outputs_.erase(it);
-      break;
+      return;
     }
   }
 }
@@ -63,7 +69,7 @@ void bindimpl::bind_input(const lnode& src,
   assert(ioport.impl()->ctx() != ctx_);
 
   // create bind port
-  auto input = ctx_->create_node<bindinimpl>(this, src, ioport, sloc);
+  auto input = ctx_->create_node<bindportimpl>(this, src, ioport, sloc);
   reinterpret_cast<inputimpl*>(ioport.impl())->bind(input);
 
   // add to list
@@ -77,16 +83,14 @@ void bindimpl::bind_output(const lnode& dst,
   assert(ioport.impl()->ctx() != ctx_);
 
   // create bind port
-  auto output = ctx_->create_node<bindoutimpl>(this, ioport, sloc);
+  auto output = ctx_->create_node<bindportimpl>(this, ioport, sloc);
   const_cast<lnode&>(dst).write(0, output, 0, dst.size(), sloc);
 
   // add to list
   add_port(output, outputs_);
 }
 
-void bindimpl::eval() {
-  //--
-}
+void bindimpl::eval() {}
 
 void bindimpl::print(std::ostream& out, uint32_t level) const {
   CH_UNUSED(level);
@@ -101,95 +105,47 @@ void bindimpl::print(std::ostream& out, uint32_t level) const {
 ///////////////////////////////////////////////////////////////////////////////
 
 bindportimpl::bindportimpl(context* ctx,
-                           lnodetype type,
                            bindimpl* binding,
+                           const lnode& src,
                            const lnode& ioport,
                            const source_location& sloc)
-  : ioimpl(ctx, type, ioport.size(), sloc)
+  : ioimpl(ctx, type_bindin, ioport.size(), sloc)
   , binding_(binding)
-  , ioport_(ioport) {
-  binding->acquire();
-}
-
-bindportimpl::~bindportimpl() {
-  binding_->release();
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-bindinimpl::bindinimpl(context* ctx,
-                       bindimpl* binding,
-                       const lnode& src,
-                       const lnode& ioport,
-                       const source_location& sloc)
-  : bindportimpl(ctx, type_bindin, binding, ioport, sloc)
+  , ioport_(ioport)
   , words_(nullptr) {
+  binding->acquire();
   srcs_.push_back(src);
 }
 
-bindinimpl::~bindinimpl() {
-  if (words_) {
-    value_.words(words_);
-  }
-}
-
-void bindinimpl::initialize() {
-  if (words_) {
-    value_.words(words_);
-  }
-  words_ = value_.words(srcs_[0].data().words());
-}
-
-void bindinimpl::eval() {
-  //--
-}
-
-void bindinimpl::print(std::ostream& out, uint32_t level) const {
-  out << "#" << id_ << " <- " << "bindin" << value_.size()
-      << "(" << ioport_.name()
-      << ", #" << src(0).id() << ", $" << ioport_.id() << ")";
-  if (level == 2) {
-    out << " = " << value_;
-  }
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-bindoutimpl::bindoutimpl(context* ctx,
-                         bindimpl* binding,
-                         const lnode& ioport,
-                         const source_location& sloc)
-  : bindportimpl(ctx, type_bindout, binding, ioport, sloc)
+bindportimpl::bindportimpl(context* ctx,
+                           bindimpl* binding,
+                           const lnode& ioport,
+                           const source_location& sloc)
+  : ioimpl(ctx, type_bindout, ioport.size(), sloc)
+  , binding_(binding)
+  , ioport_(ioport)
   , words_(nullptr) {
-  srcs_.push_back(binding); // make binding a source
+  binding->acquire();
+  srcs_.push_back(binding);
 }
 
-bindoutimpl::~bindoutimpl() {
-  binding_->remove_output(this);
+bindportimpl::~bindportimpl() {
   if (words_) {
-    value_.words(words_);
+    data_.words(words_);
   }
+  binding_->remove_port(this);
+  binding_->release();
 }
 
-void bindoutimpl::initialize() {
+void bindportimpl::initialize() {
   if (words_) {
-    value_.words(words_);
+    data_.words(words_);
   }
-  words_ = value_.words(ioport_.data().words());
+  auto& src_node = (type_bindin == type_) ? srcs_[0] : ioport_;
+  words_ = data_.words(src_node.data().words());
 }
 
-void bindoutimpl::eval() {
-  //--
-}
-
-void bindoutimpl::print(std::ostream& out, uint32_t level) const {
-  out << "#" << id_ << " <- " << "bindout" << value_.size()
-      << "(" << ioport_.name()
-      << ", #" << binding_->id() << ", $" << ioport_.id() << ")";
-  if (level == 2) {
-    out << " = " << value_;
-  }
-}
+void bindportimpl::eval() {}
 
 ///////////////////////////////////////////////////////////////////////////////
 

@@ -13,11 +13,19 @@ public:
     return srcs_[0];
   }
 
+  auto length() const {
+    return length_;
+  }
+
   const lnode& next() const {
     return srcs_[1];
   }
 
   lnode& next() {
+    return srcs_[1];
+  }
+
+  const lnode& enable() const {
     return srcs_[1];
   }
 
@@ -39,13 +47,21 @@ public:
   
 protected:
 
-  regimpl(context* ctx, const lnode& next, const source_location& sloc);
+  regimpl(context* ctx,
+          unsigned length,
+          const lnode& next,
+          const lnode& enable,
+          const source_location& sloc);
 
-  regimpl(context* ctx, const lnode& next, const lnode& init, const source_location& sloc);
-
-  virtual ~regimpl();
+  regimpl(context* ctx,
+          unsigned length,
+          const lnode& next,
+          const lnode& enable,
+          const lnode& init,
+          const source_location& sloc);
 
   int init_idx_;
+  unsigned length_;
 
   friend class context;
 };

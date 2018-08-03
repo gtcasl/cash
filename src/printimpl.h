@@ -19,8 +19,6 @@ protected:
             const std::initializer_list<lnode>& args,
             const source_location& sloc);
 
-  ~printimpl();
-
   std::string format_;  
   std::stringstream strbuf_;  
   bool predicated_;

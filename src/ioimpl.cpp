@@ -14,7 +14,7 @@ inputimpl::inputimpl(context* ctx,
 
 inputimpl::~inputimpl() {
   if (words_) {
-    value_.words(words_);
+    data_.words(words_);
   }
 }
 
@@ -25,25 +25,23 @@ void inputimpl::bind(const lnode& input) {
 void inputimpl::initialize() {
   if (!input_.empty()) {
     if (words_) {
-      value_.words(words_);
+      data_.words(words_);
     }
-    words_ = value_.words(input_.data().words());
+    words_ = data_.words(input_.data().words());
   }
 }
 
-void inputimpl::eval() {
-  //--
-}
+void inputimpl::eval() {}
 
 void inputimpl::print(std::ostream& out, uint32_t level) const {
-  out << "#" << id_ << " <- " << this->type() << value_.size();
+  out << "#" << id_ << " <- " << this->type() << data_.size();
   out << "(" << name_;
   if (!input_.empty()) {
     out << ", $" << input_.id();
   }
   out << ")";
   if (level == 2) {
-    out << " = " << value_;
+    out << " = " << data_;
   }
 }
 
@@ -60,26 +58,24 @@ outputimpl::outputimpl(context* ctx,
 
 outputimpl::~outputimpl() {
   if (words_) {
-    value_.words(words_);
+    data_.words(words_);
   }
 }
 
 void outputimpl::initialize() {
   if (words_) {
-    value_.words(words_);
+    data_.words(words_);
   }
-  words_ = value_.words(srcs_[0].data().words());
+  words_ = data_.words(srcs_[0].data().words());
 }
 
-void outputimpl::eval() {
-  //--
-}
+void outputimpl::eval() {}
 
 void outputimpl::print(std::ostream& out, uint32_t level) const {
-  out << "#" << id_ << " <- " << this->type() << value_.size();
+  out << "#" << id_ << " <- " << this->type() << data_.size();
   out << "(" << name_ << ", #" << srcs_[0].id() << ")";
   if (level == 2) {
-    out << " = " << value_;
+    out << " = " << data_;
   }
 }
 
@@ -96,26 +92,24 @@ tapimpl::tapimpl(context* ctx,
 
 tapimpl::~tapimpl() {
   if (words_) {
-    value_.words(words_);
+    data_.words(words_);
   }
 }
 
 void tapimpl::initialize() {
   if (words_) {
-    value_.words(words_);
+    data_.words(words_);
   }
-  words_ = value_.words(srcs_[0].data().words());
+  words_ = data_.words(srcs_[0].data().words());
 }
 
-void tapimpl::eval() {
-  //--
-}
+void tapimpl::eval() {}
 
 void tapimpl::print(std::ostream& out, uint32_t level) const {
-  out << "#" << id_ << " <- " << this->type() << value_.size();
+  out << "#" << id_ << " <- " << this->type() << data_.size();
   out << "(" << name_ << ", #" << srcs_[0].id() << ")";
   if (level == 2) {
-    out << " = " << value_;
+    out << " = " << data_;
   }
 }
 

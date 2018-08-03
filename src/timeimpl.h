@@ -16,8 +16,6 @@ protected:
 
   timeimpl(context* ctx, const source_location& sloc);
 
-  ~timeimpl() {}
-
   ch_tick tick_;
 
   friend class context;
