@@ -40,11 +40,6 @@ struct ch_queue {
     io.deq.valid = (wr_ptr != rd_ptr);
     io.enq.ready = (wr_a != rd_a) || (wr_ptr[addr_width] == rd_ptr[addr_width]);
     io.size      = (wr_ptr - rd_ptr);
-
-    __if (ch_clock()) {
-      ch_print("{0}: *** rd={1}, wr={2}, ra={3}, wa={4}, rv={5}, wv={6}",
-               ch_time(), reading, writing, rd_a, wr_a, io.deq.data, io.enq.data);
-    };
   }
 };
 
