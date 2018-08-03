@@ -63,13 +63,19 @@ outputimpl::~outputimpl() {
 }
 
 void outputimpl::initialize() {
-  if (words_) {
-    data_.words(words_);
+  if (!is_snode_type(srcs_[0].impl()->type())) {
+    if (words_) {
+      data_.words(words_);
+    }
+    words_ = data_.words(srcs_[0].data().words());
   }
-  words_ = data_.words(srcs_[0].data().words());
 }
 
-void outputimpl::eval() {}
+void outputimpl::eval() {
+  if (is_snode_type(srcs_[0].impl()->type())) {
+    data_ = srcs_[0].data();
+  }
+}
 
 void outputimpl::print(std::ostream& out, uint32_t level) const {
   out << "#" << id_ << " <- " << this->type() << data_.size();

@@ -813,8 +813,8 @@ void context::build_run_list(std::vector<lnodeimpl*>& runlist) {
     // handling for special nodes
     switch (node->type()) {
     case type_bind:
-      visited.insert(node->id());
-      return false; // no following
+      // do not follow bind inputs
+      break;
     case type_input: {
       auto input = reinterpret_cast<inputimpl*>(node);
       if (!input->input().empty()) {
@@ -826,12 +826,11 @@ void context::build_run_list(std::vector<lnodeimpl*>& runlist) {
       update |= dfs_visit(port->ioport().impl());
     } break;
     default:
+      // visit source nodes
+      for (auto& src : node->srcs()) {
+        update |= dfs_visit(src.impl());
+      }
       break;
-    }
-
-    // visit source nodes
-    for (auto& src : node->srcs()) {
-      update |= dfs_visit(src.impl());
     }
 
     if (update) {

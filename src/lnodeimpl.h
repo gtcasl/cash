@@ -37,6 +37,10 @@ enum lnodetype {
   CH_LNODE_ENUM(CH_LNODE_TYPE)
 };
 
+inline bool is_snode_type(lnodetype type) {
+  return type_reg == type || type_mem == type || type_udfs == type;
+}
+
 class lnodeimpl : public refcounted {
 public:
 
