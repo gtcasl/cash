@@ -263,7 +263,8 @@ TEST_CASE("scalars", "[scalars]") {
   SECTION("union", "[union]") {
     TESTX([]()->bool {
       ch_scalar_t<u2_4_t> u2(0101_b);
-      int ret = (u2.a == 1);
+      RetCheck ret;
+      ret &= (u2.a == 1);
       ret &= (u2.b == 5);
       u2.b = 7;
       ret &= (u2.a == 3);

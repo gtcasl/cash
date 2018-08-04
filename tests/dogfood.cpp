@@ -262,7 +262,8 @@ int main() {
     filter.io.x.parity = 0;
     t = sim.step(t, 2);
 
-    int ret(!!filter.io.y.valid);
+    RetCheck ret;
+    ret &= !!filter.io.y.valid;
     ret &= (12 == filter.io.y.data);
     ret &= !filter.io.y.parity;
 
@@ -279,7 +280,8 @@ int main() {
     filter.io.x.parity = 0;
     t = sim.step(t, 3);
 
-    int ret(!!filter.io.y.valid);
+    RetCheck ret;
+    ret &= !!filter.io.y.valid;
     ret &= (12 == filter.io.y.data);
     ret &= !filter.io.y.parity;
 
@@ -291,7 +293,8 @@ int main() {
     ch_simulator sim(queue);
     ch_tick t = sim.reset(0);
 
-    int ret(!!queue.io.enq.ready);  // !full
+    RetCheck ret;
+    ret &= !!queue.io.enq.ready;  // !full
     ret &= !queue.io.deq.valid; // empty
     queue.io.deq.ready = 0;
     queue.io.enq.data = 0xA;
@@ -352,7 +355,7 @@ int main() {
       foo.io.x[i].a = 2-i;
     }
     sim.run(1);
-    int ret = 1;
+    RetCheck ret;
     for (int i = 0; i < 2; ++i) {
       ret &= (2 == foo.io.z[i]);
       ret &= (2 == foo.io.x[i].b);

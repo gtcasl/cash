@@ -33,7 +33,7 @@ struct PipeTest {
 TEST_CASE("htl", "[htl]") {
   SECTION("pipe", "[pipe]") {
     TESTX([]()->bool {
-      int ret = 1;
+      RetCheck ret;
       ch_device<PipeTest<ch_bit32, 4>> device;
       ch_simulator sim(device);
       ch_tick t = sim.reset(0);
@@ -142,7 +142,8 @@ TEST_CASE("htl", "[htl]") {
       ch_tick t = sim.reset(0);
       device.io.sel = 1 + (1 << 3);
       t = sim.step(t);
-      int ret = (5 == device.io.out[1]);
+      RetCheck ret;
+      ret &= (5 == device.io.out[1]);
       device.io.sel = 1 + (0 << 3);
       t = sim.step(t);
       ret &= (5 == device.io.out[0]);
@@ -165,7 +166,8 @@ TEST_CASE("htl", "[htl]") {
       device.io.in[2] = false;
       device.io.in[3] = false;
       t = sim.step(t);
-      auto ret = 0 == device.io.grant;
+      RetCheck ret;
+      ret &= 0 == device.io.grant;
       device.io.in[1] = true;
       t = sim.step(t);
       ret &= 2 == device.io.grant;
@@ -199,7 +201,7 @@ TEST_CASE("htl", "[htl]") {
       device.io.in[1].valid = false;
       device.io.out.ready   = false;
       t = sim.step(t);
-      int ret = 1;
+      RetCheck ret;
       ret &= !device.io.out.valid;
       ret &= !device.io.in[0].ready;
       ret &= !device.io.in[1].ready;

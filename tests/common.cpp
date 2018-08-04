@@ -23,7 +23,7 @@ RetCheck& RetCheck::operator&=(bool value) {
   return *this;
 }
 
-bool runtest(const std::function<ch_bool ()>& test, ch_tick cycles) {
+bool TEST(const std::function<ch_bool ()>& test, ch_tick cycles) {
   ch_device<TestRunner> device(test);
   ch_simulator sim(device);
 
@@ -43,7 +43,7 @@ bool runtest(const std::function<ch_bool ()>& test, ch_tick cycles) {
   return bRet;
 }
 
-bool runtestx(const std::function<bool()>& test) {
+bool TESTX(const std::function<bool()>& test) {
   begin_test();
   bool bRet = test();
   assert(bRet);

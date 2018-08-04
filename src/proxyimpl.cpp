@@ -13,13 +13,22 @@ proxyimpl::proxyimpl(context* ctx,
 
 proxyimpl::proxyimpl(context* ctx,
                      const lnode& src,
+                     const source_location& sloc,
+                     const std::string& name,
+                     uint32_t var_id)
+  : lnodeimpl(ctx, type_proxy, src.size(), sloc, name, var_id) {
+  this->add_source(0, src, 0, src.size());
+}
+
+proxyimpl::proxyimpl(context* ctx,
+                     const lnode& src,
                      uint32_t offset,
                      uint32_t length,
                      const source_location& sloc,
                      const std::string& name,
                      uint32_t var_id)
   : lnodeimpl(ctx, type_proxy, length, sloc, name, var_id) {
-  this->add_source(0, src, offset, length);  
+  this->add_source(0, src, offset, length);
 }
 
 void proxyimpl::add_source(uint32_t dst_offset,

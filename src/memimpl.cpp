@@ -21,7 +21,6 @@ memimpl::memimpl(context* ctx,
                  uint32_t num_items,
                  bool write_enable,
                  bool sync_read,
-                 bool raw,
                  const std::vector<uint8_t>& init_data,
                  const source_location& sloc)
   : ioimpl(ctx, type_mem, data_width * num_items, sloc)
@@ -29,7 +28,6 @@ memimpl::memimpl(context* ctx,
   , num_items_(num_items)
   , write_enable_(write_enable)
   , sync_read_(sync_read)
-  , raw_(raw)
   , has_initdata_(!init_data.empty())
   , cd_(nullptr) {
   if (write_enable || sync_read) {
@@ -59,7 +57,8 @@ memportimpl* memimpl::read(const lnode& addr,
                            const lnode& enable,
                            const source_location& sloc) {
   for (auto port : ports_) {
-    if (port->addr().id() == addr.id() && port->type() != type_mwport) {
+    if (port->addr().id() == addr.id()
+     && port->type() != type_mwport) {
       return port;
     }
   }
@@ -91,26 +90,40 @@ bool memimpl::is_readwrite(memportimpl* port) const {
 }
 
 void memimpl::eval() {
-  //--
-  auto do_read = [&](mrportimpl* port) {
-    // check enable state
-    int enable = port->has_enable() ? port->enable().data().word(0) : 1;
-    if (!enable)
-      return;
+  // check clock transition
+  if (nullptr == cd_ || 0 == cd_->data().word(0))
+    return;
 
-    // memory read
-    auto addr = port->addr().data().word(0);
-    auto& data = port->data();
-    data_.read(addr * data_width_,
-                data.data(),
-                data.num_bytes(),
-                0,
-                data_width_);
-  };
+  if (sync_read_) {
+    // evaluate read ports
+    for (auto p : ports_) {
+      if (type_mrport != p->type())
+        continue;
 
-  //--
-  auto do_write = [&](mwportimpl* port) {
+      // check enable state
+      auto port = reinterpret_cast<mrportimpl*>(p);
+      int enable = port->has_enable() ? port->enable().data().word(0) : 1;
+      if (!enable)
+        return;
+
+      // memory read
+      auto addr = port->addr().data().word(0);
+      auto& data = port->data();
+      data_.read(addr * data_width_,
+                  data.data(),
+                  data.num_bytes(),
+                  0,
+                  data_width_);
+    }
+  }
+
+  // evaluate write ports
+  for (auto p : ports_) {
+    if (type_mwport != p->type())
+      continue;
+
     // check enable state
+    auto port = reinterpret_cast<mwportimpl*>(p);
     int enable = port->has_enable() ? port->enable().data().word(0) : 1;
     if (!enable)
       return;
@@ -123,45 +136,6 @@ void memimpl::eval() {
                  data.num_bytes(),
                  0,
                  data_width_);
-  };
-
-  // check clock transition
-  if (nullptr == cd_ || 0 == cd_->data().word(0))
-    return;
-
-  //--
-  if (raw_) {
-    // evaluate write ports
-    for (auto p : ports_) {
-      if (type_mwport != p->type())
-        continue;
-      do_write(reinterpret_cast<mwportimpl*>(p));
-    }
-
-    if (sync_read_) {
-      // evaluate read ports
-      for (auto p : ports_) {
-        if (type_mrport != p->type())
-          continue;
-        do_read(reinterpret_cast<mrportimpl*>(p));
-      }
-    }
-  } else {
-    if (sync_read_) {
-      // evaluate read ports
-      for (auto p : ports_) {
-        if (type_mrport != p->type())
-          continue;
-        do_read(reinterpret_cast<mrportimpl*>(p));
-      }
-    }
-
-    // evaluate write ports
-    for (auto p : ports_) {
-      if (type_mwport != p->type())
-        continue;
-      do_write(reinterpret_cast<mwportimpl*>(p));
-    }
   }
 }
 
@@ -269,12 +243,11 @@ memory::memory(uint32_t data_width,
                uint32_t num_items,
                bool write_enable,
                bool sync_read,
-               bool raw,
                const std::vector<uint8_t>& init_data,
                const source_location& sloc) {
   CH_CHECK(!ctx_curr()->conditional_enabled(), "memory objects cannot be nested inside a conditional block");
   impl_ = ctx_curr()->create_node<memimpl>(
-        data_width, num_items, write_enable, sync_read, raw, init_data, sloc);
+        data_width, num_items, write_enable, sync_read, init_data, sloc);
 }
 
 lnodeimpl* memory::read(const lnode& addr,

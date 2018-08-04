@@ -19,11 +19,10 @@ using namespace ch::internal;
 
 const auto IsRegType = [](lnodeimpl* node) {
   auto type = node->type();
-  return (type_reg == type)
-      || (type_mem == type)
+  return (type_reg == type && (1 == reinterpret_cast<regimpl*>(node)->length()))
       || (type_mrport == type && reinterpret_cast<mrportimpl*>(node)->mem()->is_sync_read())
-      || (type_sel == type
-       && !reinterpret_cast<selectimpl*>(node)->is_ternary());
+      || (type_mem == type)
+      || (type_sel == type && !reinterpret_cast<selectimpl*>(node)->is_ternary());
 };
 
 const auto is_inline_literal = [](lnodeimpl* node) {
@@ -254,14 +253,6 @@ bool verilogwriter::print_decl(std::ostream& out,
     this->print_value(out, node->data(), true);
     out << ";" << std::endl;
     return true;
-  case type_mem:
-    this->print_type(out, node);
-    out << " ";
-    this->print_name(out, node);
-    out << "[0:" << (reinterpret_cast<memimpl*>(node)->num_items() - 1) << "]";
-    out << ";" << std::endl;
-    visited.insert(node->id());
-    return true;
   case type_proxy:
     if (this->is_inline_subscript(node)) {
       visited.insert(node->id());
@@ -276,6 +267,7 @@ bool verilogwriter::print_decl(std::ostream& out,
   case type_mrport:
   case type_udfc:
   case type_udfs:
+  case type_mem:
     if (ref
      && (IsRegType(ref) != IsRegType(node)
       || ref->size() != node->size()))
@@ -287,6 +279,9 @@ bool verilogwriter::print_decl(std::ostream& out,
       out << " ";
     }
     this->print_name(out, node);
+    if (type_mem == type) {
+      out << "[0:" << (reinterpret_cast<memimpl*>(node)->num_items() - 1) << "]";
+    }
     visited.insert(node->id());
     if (!ref) {
       if (platform::self().cflags() & cflags::show_src_info) {
@@ -549,26 +544,120 @@ void verilogwriter::print_select(std::ostream& out, selectimpl* node) {
 }
 
 void verilogwriter::print_reg(std::ostream& out, regimpl* node) {
-  out << "always @ (";
-  auto cd = reinterpret_cast<cdimpl*>(node->cd().impl());
-  this->print_cdomain(out, cd);
-  out << ") begin" << std::endl;
-  {
-    auto_indent indent(out);
+  auto print_sr_name = [&]() {
     this->print_name(out, node);
-    out << " <= ";
-    if (node->has_init()) {
-      this->print_name(out, node->reset().impl());
-      out << " ? ";
-      this->print_name(out, node->init().impl());
-      out << " : ";
-      this->print_name(out, node->next().impl());
-    } else {
-      this->print_name(out, node->next().impl());
+    out << "_sr";
+  };
+  auto print_sr_iter = [&]() {
+    this->print_name(out, node);
+    out << "_i";
+  };
+  auto print_sr_loop_header = [&](unsigned start, unsigned end) {
+    out << "for (";
+    print_sr_iter();
+    out << " = " << start << "; ";
+    print_sr_iter();
+    out << " < " << end << "; ";
+    print_sr_iter();
+    out << " = ";
+    print_sr_iter();
+    out << " + 1) begin" << std::endl;
+  };
+  if (node->length() > 1) {
+    out << "reg";
+    if (node->size() > 1) {
+      out << "[" << (node->size() - 1) << ":0]";
     }
+    out << " ";
+    print_sr_name();
+    out << "[" << (node->length()-1) << ":0];" << std::endl;
+    out << "integer ";
+    print_sr_iter();
     out << ";" << std::endl;
+    out << "always @ (";
+    auto cd = reinterpret_cast<cdimpl*>(node->cd().impl());
+    this->print_cdomain(out, cd);
+    out << ") begin" << std::endl;
+    {
+      auto_indent indent(out);
+      if (node->has_init()) {
+        out << "if (";
+        this->print_name(out, node->reset().impl());
+        out << ") begin" << std::endl;
+        {
+          auto_indent indent1(out);
+          print_sr_loop_header(0, node->length());
+          {
+            auto_indent indent2(out);
+            print_sr_name();
+            out << "[";
+            print_sr_iter();
+            out << "] <= ";
+            this->print_name(out, node->init().impl());
+            out << ";" << std::endl;
+          }
+          out << "end" << std::endl;
+        }
+        out << "end" << std::endl;
+        out << "else" << std::endl;
+      }
+      if (node->has_enable()) {
+        out << "if (";
+        this->print_name(out, node->enable().impl());
+        out << ") begin" << std::endl;
+      } else {
+        out << "begin" << std::endl;
+      }
+      {
+        auto_indent indent1(out);
+        print_sr_loop_header(0, node->length()-1);
+        {
+          auto_indent indent2(out);
+          print_sr_name();
+          out << "[" << (node->length() - 1) << "-";
+          print_sr_iter();
+          out << "] <= ";
+          print_sr_name();
+          out << "[" << (node->length() - 2) << "-";
+          print_sr_iter();
+          out << "];" << std::endl;
+        }
+        out << "end" << std::endl;
+        print_sr_name();
+        out << "[0] <= ";
+        this->print_name(out, node->next().impl());
+        out << ";" << std::endl;
+      }
+      out << "end" << std::endl;
+    }
+    out << "end" << std::endl;
+    out << "assign ";
+    this->print_name(out, node);
+    out << " = ";
+    print_sr_name();
+    out << "[" << (node->length() - 1) << "];" << std::endl;
+  } else {
+    out << "always @ (";
+    auto cd = reinterpret_cast<cdimpl*>(node->cd().impl());
+    this->print_cdomain(out, cd);
+    out << ") begin" << std::endl;
+    {
+      auto_indent indent(out);
+      this->print_name(out, node);
+      out << " <= ";
+      if (node->has_init()) {
+        this->print_name(out, node->reset().impl());
+        out << " ? ";
+        this->print_name(out, node->init().impl());
+        out << " : ";
+        this->print_name(out, node->next().impl());
+      } else {
+        this->print_name(out, node->next().impl());
+      }
+      out << ";" << std::endl;
+    }
+    out << "end" << std::endl;
   }
-  out << "end" << std::endl;
 }
 
 void verilogwriter::print_cdomain(std::ostream& out, cdimpl* cd) {

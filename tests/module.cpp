@@ -89,17 +89,19 @@ struct FilterBlock {
   ch_module<Filter<T>> f1_, f2_;
 };
 
-template <typename T, unsigned N>
+template <typename T, unsigned N, bool SyncRead>
 struct QueueWrapper {
   __io (
     (ch_enq_io<T>) enq,
-    (ch_deq_io<T>) deq
+    (ch_deq_io<T>) deq,
+    __out(ch_uint<log2ceil(N+1)>) size
   );
   void describe() {
     queue_.io.enq(io.enq);
     queue_.io.deq(io.deq);
+    queue_.io.size(io.size);
   }
-  ch_module<ch_queue<T, N>> queue_;
+  ch_module<ch_queue<T, N, SyncRead>> queue_;
 };
 
 struct Adder {
@@ -262,7 +264,7 @@ TEST_CASE("module", "[module]") {
         foo.io.x[i].a = 2-i;
       }
       sim.run(1);
-      int ret(1);
+      RetCheck ret;
       for (int i = 0; i < 2; ++i) {
         ret &= (2 == foo.io.z[i]);
         ret &= (2 == foo.io.x[i].b);
@@ -297,7 +299,8 @@ TEST_CASE("module", "[module]") {
       filter.io.x.parity = 0;
       t = trace.step(t, 2);
 
-      int ret(!!filter.io.y.valid);
+      RetCheck ret;
+      ret &= !!filter.io.y.valid;
       ret &= (12 == filter.io.y.data);
       ret &= !filter.io.y.parity;
 
@@ -311,41 +314,72 @@ TEST_CASE("module", "[module]") {
     });
 
     TESTX([]()->bool {
-      ch_device<QueueWrapper<ch_bit4, 2>> queue;
-      ch_tracer trace(queue);
-      ch_tick t = trace.reset(0);
+      RetCheck ret;
+      ch_device<QueueWrapper<ch_bit4, 2, false>> queue1;
+      ch_device<QueueWrapper<ch_bit4, 2, true>> queue2;
+      auto queues = std::make_tuple(&queue1, &queue2);
 
-      int ret(!!queue.io.enq.ready);  // !full
-      ret &= !queue.io.deq.valid; // empty
-      queue.io.deq.ready = 0;
-      queue.io.enq.data = 0xA;
-      queue.io.enq.valid = 1; // push
-      t = trace.step(t);
+      static_for<0, 2>([&](auto I) {
+        auto& queue = *std::get<I>(queues);
 
-      ret &= !!queue.io.deq.valid;  // !empty
-      queue.io.enq.data = 0xB;
-      t = trace.step(t);
+        ch_toVerilog("queue.v", queue);
+        ch_toFIRRTL("queue.fir", queue);
 
-      ret &= !queue.io.enq.ready; // full
-      ret &= !!queue.io.deq.valid;
-      ret &= (0xA == queue.io.deq.data);
-      queue.io.enq.valid = 0; // !push
-      queue.io.deq.ready = 1; // pop
-      t = trace.step(t);
+        ch_tracer trace(queue);
+        ch_tick t = trace.reset(0);
 
-      ret &= !!queue.io.enq.ready;  // !full
-      ret &= (0xB == queue.io.deq.data);
-      queue.io.deq.ready = 1; // pop
-      t = trace.step(t, 4);
+        ret &= !queue.io.deq.valid;  // empty
+        ret &= !!queue.io.enq.ready; // !full
+        ret &= 0 == queue.io.size;   // 0
+        queue.io.enq.data = 0xA;
+        queue.io.enq.valid = true;   // push
+        queue.io.deq.ready = false;
+        t = trace.step(t);
 
-      ret &= !queue.io.deq.valid; // empty
+        ret &= (0xA == queue.io.deq.data);
+        ret &= !!queue.io.deq.valid; // !empty
+        ret &= !!queue.io.enq.ready; // !full
+        ret &= 1 == queue.io.size;   // 1
+        queue.io.enq.data = 0xB;
+        queue.io.enq.valid = true;   // push
+        queue.io.deq.ready = false;
+        t = trace.step(t);
 
-      ch_toVerilog("queue.v", queue);
-      ch_toFIRRTL("queue.fir", queue);
+        ret &= (0xA == queue.io.deq.data);
+        ret &= !!queue.io.deq.valid; // !empty
+        ret &= !queue.io.enq.ready;  // full
+        ret &= 2 == queue.io.size;   // 2
+        ret &= !!queue.io.deq.valid;
+        queue.io.enq.valid = false;
+        queue.io.deq.ready = true;   // pop
+        t = trace.step(t);
 
-      trace.toTestBench("queue_tb.v", "queue.v");
-      ret &= (checkVerilog("queue_tb.v"));
+        ret &= (0xB == queue.io.deq.data);
+        ret &= !!queue.io.deq.valid; // !empty
+        ret &= !!queue.io.enq.ready; // !full
+        ret &= 1 == queue.io.size;   // 1
+        ret &= !!queue.io.deq.valid;
+        queue.io.enq.data = 0xC;
+        queue.io.enq.valid = true;   // push
+        queue.io.deq.ready = true;   // pop
+        t = trace.step(t);
 
+        ret &= (0xC == queue.io.deq.data);
+        ret &= !!queue.io.deq.valid; // !empty
+        ret &= !!queue.io.enq.ready; // !full
+        ret &= 1 == queue.io.size;   // 1
+        ret &= !!queue.io.deq.valid;
+        queue.io.enq.valid = false;
+        queue.io.deq.ready = true;   // pop
+        t = trace.step(t);
+
+        ret &= !queue.io.deq.valid;  // empty
+        ret &= !!queue.io.enq.ready; // !full
+        ret &= 0 == queue.io.size;   // 0
+
+        trace.toTestBench("queue_tb.v", "queue.v");
+        ret &= (checkVerilog("queue_tb.v"));
+      });
       return !!ret;
     });
 
@@ -357,8 +391,8 @@ TEST_CASE("module", "[module]") {
       device.io.in = 0xA;
       sim.run(10);
       std::cout << "out = "  << device.io.out << std::endl;
-      int ret = (device.io.out == 0xe);
-
+      RetCheck ret;
+      ret &= device.io.out == 0xe;
       return !!ret;
     });
 
@@ -370,8 +404,8 @@ TEST_CASE("module", "[module]") {
       device.io.in = 0xA;
       sim.run(10);
       std::cout << "out = "  << device.io.out << std::endl;
-      int ret = (device.io.out == 0xe);
-
+      RetCheck ret;
+      ret &= device.io.out == 0xe;
       return !!ret;
     });
 
@@ -386,8 +420,9 @@ TEST_CASE("module", "[module]") {
       sim.run();
 
       std::cout << "out = "  << loop.io.out << std::endl;
-      int ret = (loop.io.out == 3);
 
+      RetCheck ret;
+      ret &= loop.io.out == 3;
       return !!ret;
     });
   }

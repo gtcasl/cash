@@ -70,6 +70,12 @@ protected:
 
   proxyimpl(context* ctx,
             const lnode& src,
+            const source_location& sloc,
+            const std::string& name = "",
+            uint32_t var_id = 0);
+
+  proxyimpl(context* ctx,
+            const lnode& src,
             uint32_t offset,
             uint32_t length,
             const source_location& sloc,

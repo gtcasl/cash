@@ -49,7 +49,6 @@ public:
          uint32_t num_items,
          bool write_enable,
          bool sync_read,
-         bool raw,
          const std::vector<uint8_t>& init_data,
          const source_location& sloc);
 
@@ -68,7 +67,7 @@ protected:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T, unsigned N, bool ReadSync = false>
+template <typename T, unsigned N, bool SyncRead = false>
 class ch_rom {
 public:
   static constexpr unsigned size = N;
@@ -77,22 +76,22 @@ public:
   using value_type = T;
 
   explicit ch_rom(const std::string& init_file, CH_SLOC)
-    : mem_(ch_width_v<T>, N, false, ReadSync, false, toByteVector(init_file, data_width, N), sloc)
+    : mem_(ch_width_v<T>, N, false, SyncRead, toByteVector(init_file, data_width, N), sloc)
   {}
 
   explicit ch_rom(const std::initializer_list<uint32_t>& init_data, CH_SLOC)
-    : mem_(ch_width_v<T>, N, false, ReadSync, false, toByteVector(init_data, data_width, N), sloc)
+    : mem_(ch_width_v<T>, N, false, SyncRead, toByteVector(init_data, data_width, N), sloc)
   {}
 
   template <typename U, std::size_t M>
   explicit ch_rom(const std::array<U, M>& init_data, CH_SLOC)
-    : mem_(ch_width_v<T>, N, false, ReadSync, false, toByteVector(init_data, data_width, N), sloc) {
+    : mem_(ch_width_v<T>, N, false, SyncRead, toByteVector(init_data, data_width, N), sloc) {
     static_assert(is_bitvector_array_type_v<U>, "invalid type");
   }
 
   template <typename U>
   explicit ch_rom(const std::vector<U>& init_data, CH_SLOC)
-    : mem_(ch_width_v<T>, N, false, ReadSync, false, toByteVector(init_data, data_width, N), sloc) {
+    : mem_(ch_width_v<T>, N, false, SyncRead, toByteVector(init_data, data_width, N), sloc) {
     static_assert(is_bitvector_array_type_v<U>, "invalid type");
   }
 
@@ -116,7 +115,7 @@ protected:
   memory mem_;
 };
 
-template <typename T, unsigned N, bool ReadSync = false, bool RAW = false>
+template <typename T, unsigned N, bool SyncRead = false>
 class ch_mem {
 public:
   static constexpr unsigned size = N;
@@ -124,7 +123,7 @@ public:
   static constexpr unsigned addr_width = log2ceil(N);
   using value_type = T;
 
-  ch_mem(CH_SLOC) : mem_(ch_width_v<T>, N, true, ReadSync, RAW, {}, sloc) {}
+  ch_mem(CH_SLOC) : mem_(ch_width_v<T>, N, true, SyncRead, {}, sloc) {}
 
   template <typename U>
   auto read(const U& addr, CH_SLOC) const {

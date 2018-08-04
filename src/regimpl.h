@@ -14,7 +14,7 @@ public:
   }
 
   auto length() const {
-    return length_;
+    return pipe_.size() + 1;
   }
 
   const lnode& next() const {
@@ -25,20 +25,24 @@ public:
     return srcs_[1];
   }
 
+  bool has_enable() const {
+    return (enable_idx_ != -1);
+  }
+
   const lnode& enable() const {
-    return srcs_[1];
+    return srcs_[enable_idx_];
   }
 
   bool has_init() const {
-    return (srcs_.size() > 2);
+    return (init_idx_ != -1);
   }
 
   const lnode& init() const {
-    return srcs_[2];
+    return srcs_[init_idx_];
   }
 
   const lnode& reset() const {
-    return srcs_[3];
+    return srcs_[reset_idx_];
   }
 
   std::size_t hash() const override;
@@ -60,8 +64,10 @@ protected:
           const lnode& init,
           const source_location& sloc);
 
+  int enable_idx_;
   int init_idx_;
-  unsigned length_;
+  int reset_idx_;
+  std::vector<bitvector> pipe_;
 
   friend class context;
 };

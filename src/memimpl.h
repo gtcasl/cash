@@ -16,7 +16,6 @@ public:
           uint32_t num_items,
           bool write_enable,
           bool sync_read,
-          bool raw,
           const std::vector<uint8_t>& init_data,
           const source_location& sloc);
 
@@ -38,10 +37,6 @@ public:
 
   bool is_sync_read() const {
     return sync_read_;
-  }
-
-  bool is_raw() const {
-    return raw_;
   }
 
   bool has_initdata() const {
@@ -80,7 +75,6 @@ protected:
   uint32_t num_items_;
   bool write_enable_;
   bool sync_read_;
-  bool raw_;
   bool has_initdata_;
   cdimpl* cd_;
 };

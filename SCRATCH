@@ -64,6 +64,54 @@ if (is_sync_rom(node)) {
   return;
 }
 
-__if (ch_clock() && writing) {
-  ch_print("{0}: *** wr_a={1}, wr_dat={2}", ch_time(),  wr_a, io.enq.data);
+__if (ch_clock()) {
+  ch_print("{0}: *** rd={0}, wr={1}, rd_a={2}, wr_a={3}, rd_val={4}, wr_val={5}, rd_dat={6}, wr_dat={7}",
+           ch_time(), reading, writing, rd_a, wr_a, io.deq.valid, io.enq.valid, io.deq.data, io.enq.data);
+};
+
+template <typename T, unsigned N>
+struct ch_queue {
+  using value_type = T;
+  static constexpr uint32_t max_size = N;
+  static constexpr uint32_t addr_width = log2ceil(N);
+  static constexpr uint32_t size_width = log2ceil(N+1);
+  static_assert(N > 1, "invalid size");
+
+  __io (
+    (ch_enq_io<T>) enq,
+    (ch_deq_io<T>) deq,
+    __out(ch_uint<size_width>) size
+  );
+
+  void describe() {
+    ch_reg<ch_uint<addr_width>> rd_ptr(0), wr_ptr(0);
+    ch_reg<ch_uint<size_width>> counter(0);
+    ch_reg<T> data_out;
+
+    auto reading = io.deq.ready && io.deq.valid;
+    auto writing = io.enq.valid && io.enq.ready;
+
+    rd_ptr->next = ch_sel(reading, rd_ptr + 1, rd_ptr);
+    wr_ptr->next = ch_sel(writing, wr_ptr + 1, wr_ptr);
+
+    __if (writing && !reading) {
+      counter->next = counter + 1;
+    }__elif (reading && !writing) {
+      counter->next = counter - 1;
+    };
+
+    auto rd_a = ch_slice<addr_width>(ch_sel(reading, rd_ptr + 1, rd_ptr));
+    auto wr_a = ch_slice<addr_width>(wr_ptr);
+
+    ch_mem<T, N> mem;
+    mem.write(wr_a, io.enq.data, writing);
+
+    auto first_write = writing && (0 == counter || (1 == counter && reading));
+    data_out->next = ch_sel(first_write, io.enq.data, mem.read(rd_a));
+
+    io.deq.data  = data_out;
+    io.deq.valid = (counter != 0);
+    io.enq.ready = (counter != N);
+    io.size      = counter;
+  }
 };
