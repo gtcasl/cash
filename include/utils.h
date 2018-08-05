@@ -423,6 +423,13 @@ public:
   ~basic_auto_indent() {
     out_.rdbuf(buf_);
   }
+  void push() {
+    indent_ *= 2;
+  }
+  void pop() {
+    assert(indent_ > 0);
+    indent_ /= 2;
+  }
 protected:
   virtual int overflow(int ch) override {
     if (add_indent_ && ch != '\n') {

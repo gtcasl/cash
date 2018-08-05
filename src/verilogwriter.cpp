@@ -300,7 +300,7 @@ bool verilogwriter::print_decl(std::ostream& out,
     }
     this->print_name(out, node);
     if (type_mem == type) {
-      out << "[0:" << (reinterpret_cast<memimpl*>(node)->num_items() - 1) << "]";
+      out << " [0:" << (reinterpret_cast<memimpl*>(node)->num_items() - 1) << "]";
     }
     visited.insert(node->id());
     if (!ref) {
@@ -590,7 +590,7 @@ void verilogwriter::print_reg(std::ostream& out, regimpl* node) {
     }
     out << " ";
     print_sr_name();
-    out << "[" << (node->length()-1) << ":0];" << std::endl;
+    out << " [" << (node->length()-1) << ":0];" << std::endl;
     out << "integer ";
     print_sr_iter();
     out << ";" << std::endl;
@@ -603,21 +603,19 @@ void verilogwriter::print_reg(std::ostream& out, regimpl* node) {
       if (node->has_init()) {
         out << "if (";
         this->print_name(out, node->reset().impl());
-        out << ") begin" << std::endl;
-        {
-          auto_indent indent1(out);
-          print_sr_loop_header(0, node->length());
-          {
-            auto_indent indent2(out);
-            print_sr_name();
-            out << "[";
-            print_sr_iter();
-            out << "] <= ";
-            this->print_name(out, node->init().impl());
-            out << ";" << std::endl;
-          }
-          out << "end" << std::endl;
-        }
+        out << ") begin" << std::endl;        
+        indent.push();
+        print_sr_loop_header(0, node->length());
+        indent.push();
+        print_sr_name();
+        out << "[";
+        print_sr_iter();
+        out << "] <= ";
+        this->print_name(out, node->init().impl());
+        out << ";" << std::endl;
+        indent.pop();
+        out << "end" << std::endl;
+        indent.pop();
         out << "end" << std::endl;
         out << "else" << std::endl;
       }
@@ -625,30 +623,33 @@ void verilogwriter::print_reg(std::ostream& out, regimpl* node) {
         out << "if (";
         this->print_name(out, node->enable().impl());
         out << ") begin" << std::endl;
+        indent.push();
       } else {
-        out << "begin" << std::endl;
-      }
-      {
-        auto_indent indent1(out);
-        print_sr_loop_header(0, node->length()-1);
-        {
-          auto_indent indent2(out);
-          print_sr_name();
-          out << "[" << (node->length() - 1) << "-";
-          print_sr_iter();
-          out << "] <= ";
-          print_sr_name();
-          out << "[" << (node->length() - 2) << "-";
-          print_sr_iter();
-          out << "];" << std::endl;
+        if (node->has_init()) {
+          out << "begin" << std::endl;
+          indent.push();
         }
-        out << "end" << std::endl;
-        print_sr_name();
-        out << "[0] <= ";
-        this->print_name(out, node->next().impl());
-        out << ";" << std::endl;
       }
+      print_sr_loop_header(0, node->length()-1);
+      indent.push();
+      print_sr_name();
+      out << "[" << (node->length() - 1) << "-";
+      print_sr_iter();
+      out << "] <= ";
+      print_sr_name();
+      out << "[" << (node->length() - 2) << "-";
+      print_sr_iter();
+      out << "];" << std::endl;
+      indent.pop();
       out << "end" << std::endl;
+      print_sr_name();
+      out << "[0] <= ";
+      this->print_name(out, node->next().impl());
+      out << ";" << std::endl;
+      if (node->has_init() || node->has_enable()) {
+        indent.pop();
+        out << "end" << std::endl;
+      }
     }
     out << "end" << std::endl;
     out << "assign ";
@@ -663,18 +664,35 @@ void verilogwriter::print_reg(std::ostream& out, regimpl* node) {
     out << ") begin" << std::endl;
     {
       auto_indent indent(out);
+      if (node->has_init()) {
+        out << "if (";
+        this->print_name(out, node->reset().impl());
+        out << ")" << std::endl;
+        indent.push();
+        this->print_name(out, node);
+        out << " <= ";
+        this->print_name(out, node->init().impl());
+        out << ";" << std::endl;
+        indent.pop();
+        out << "else" << std::endl;
+      }
+      if (node->has_enable()) {
+        out << "if (";
+        this->print_name(out, node->enable().impl());
+        out << ")" << std::endl;
+        indent.push();
+      } else {
+        if (node->has_init()) {
+          indent.push();
+        }
+      }
       this->print_name(out, node);
       out << " <= ";
-      if (node->has_init()) {
-        this->print_name(out, node->reset().impl());
-        out << " ? ";
-        this->print_name(out, node->init().impl());
-        out << " : ";
-        this->print_name(out, node->next().impl());
-      } else {
-        this->print_name(out, node->next().impl());
-      }
+      this->print_name(out, node->next().impl());
       out << ";" << std::endl;
+      if (node->has_init() || node->has_enable()) {
+        indent.pop();
+      }
     }
     out << "end" << std::endl;
   }
