@@ -105,10 +105,30 @@ void verilogwriter::print_header(std::ostream& out) {
     auto_indent indent(out);
     auto_separator sep(",");
 
-    std::list<ioimpl*> ports;
-    ports.insert(ports.begin(), ctx_->inputs().begin(), ctx_->inputs().end());
-    ports.insert(ports.begin(), ctx_->outputs().begin(), ctx_->outputs().end());
-    ports.sort([](ioimpl* a, ioimpl*b) { return a->id() < b->id(); });
+    std::vector<ioimpl*> ports;
+    ports.reserve(ctx_->inputs().size() + ctx_->outputs().size());
+
+    auto clk = ctx_->sys_clk();
+    auto reset = ctx_->sys_reset();
+    auto adjusted_port_id = [clk, reset](ioimpl* x)->uint32_t {
+      if (x == clk)
+        return 0;
+      if (x == reset)
+        return 1;
+      return x->id() + 2;
+    };
+
+    // gather all ports and sort them in user-defined order
+    // ensure system ports are written first
+    ports.insert(ports.end(), ctx_->inputs().begin(), ctx_->inputs().end());
+    ports.insert(ports.end(), ctx_->outputs().begin(), ctx_->outputs().end());
+    std::sort(ports.begin(),
+              ports.end(),
+              [adjusted_port_id](ioimpl* a, ioimpl*b) {
+                uint32_t a_id = adjusted_port_id(a);
+                uint32_t b_id = adjusted_port_id(b);
+                return a_id < b_id;
+              });
 
     for (auto port : ports) {
       out << sep << std::endl;
