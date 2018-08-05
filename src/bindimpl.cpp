@@ -27,15 +27,15 @@ bindimpl::bindimpl(context* ctx, context* module, const source_location& sloc)
   // acquire module instance
   module_->acquire();
 
-  // bind default clock
-  auto module_clk = module->default_clk();
+  // bind system clock
+  auto module_clk = module->sys_clk();
   if (module_clk) {
     auto cd = ctx->current_cd(sloc);
     this->bind_input(cd->clk(), module_clk, sloc);
   }
 
-  // bind default reset
-  auto module_reset = module->default_reset();
+  // bind system reset
+  auto module_reset = module->sys_reset();
   if (module_reset) {
     auto reset = ctx->current_reset(sloc);
     this->bind_input(reset, module_reset, sloc);

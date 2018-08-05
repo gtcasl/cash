@@ -151,12 +151,12 @@ public:
     return snodes_;
   }
 
-  auto default_clk() const {
-    return default_clk_;
+  auto sys_clk() const {
+    return sys_clk_;
   }
 
-  auto default_reset() const {
-    return default_reset_;
+  auto sys_reset() const {
+    return sys_reset_;
   }
 
   const auto& bindings() const {
@@ -282,8 +282,8 @@ protected:
   std::string name_;
 
   uint32_t    block_idx_;
-  inputimpl*  default_clk_;
-  inputimpl*  default_reset_;
+  inputimpl*  sys_clk_;
+  inputimpl*  sys_reset_;
   timeimpl*   time_;
   
   node_list_t             nodes_;

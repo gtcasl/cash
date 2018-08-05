@@ -129,8 +129,8 @@ context::context(const std::string& name)
   : id_(context_manager::instance().ctx_id())
   , name_(name)
   , block_idx_(0)
-  , default_clk_(nullptr)
-  , default_reset_(nullptr)
+  , sys_clk_(nullptr)
+  , sys_reset_(nullptr)
   , time_(nullptr)
 {}
 
@@ -157,20 +157,20 @@ cdimpl* context::current_cd(const source_location& sloc) {
   if (!cd_stack_.empty())
     return cd_stack_.top().first;
 
-  if (nullptr == default_clk_) {
-    default_clk_ = this->create_node<inputimpl>(1, "clk", sloc);
+  if (nullptr == sys_clk_) {
+    sys_clk_ = this->create_node<inputimpl>(1, "clk", sloc);
   }
-  return this->create_cd(default_clk_, true, sloc);
+  return this->create_cd(sys_clk_, true, sloc);
 }
 
 lnode context::current_reset(const source_location& sloc) {
   if (!cd_stack_.empty())
     return cd_stack_.top().second;
 
-  if (nullptr == default_reset_) {
-     default_reset_ = this->create_node<inputimpl>(1, "reset", sloc);
+  if (nullptr == sys_reset_) {
+     sys_reset_ = this->create_node<inputimpl>(1, "reset", sloc);
   }
-  return default_reset_;
+  return sys_reset_;
 }
 
 lnodeimpl* context::time(const source_location& sloc) {
@@ -280,11 +280,11 @@ node_list_t::iterator context::delete_node(const node_list_t::iterator& it) {
     snodes_.remove(node);
     break;
   case type_input:
-    if (node == default_clk_) {
-      default_clk_ = nullptr;
+    if (node == sys_clk_) {
+      sys_clk_ = nullptr;
     } else
-    if (node == default_reset_) {
-      default_reset_ = nullptr;
+    if (node == sys_reset_) {
+      sys_reset_ = nullptr;
     }
     inputs_.remove((inputimpl*)node);
     break;

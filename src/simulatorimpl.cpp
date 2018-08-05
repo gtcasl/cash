@@ -43,13 +43,13 @@ simulatorimpl::~simulatorimpl() {
 }
 
 void simulatorimpl::initialize() {
-  // bind default clocks to clock driver
+  // bind system clock to clock driver
   for (auto ctx : contexts_) {
-    auto clk = ctx->default_clk();
+    auto clk = ctx->sys_clk();
     if (clk) {
       clk_driver_.add_signal(clk);
     }
-    auto reset = ctx->default_reset();
+    auto reset = ctx->sys_reset();
     if (reset) {
       reset_driver_.add_signal(reset);
     }

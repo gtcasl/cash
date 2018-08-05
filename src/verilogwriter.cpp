@@ -109,6 +109,7 @@ void verilogwriter::print_header(std::ostream& out) {
     ports.reserve(ctx_->inputs().size() + ctx_->outputs().size());
 
     auto clk = ctx_->sys_clk();
+<<<<<<< HEAD
     auto reset = ctx_->sys_reset();
     auto adjusted_port_id = [clk, reset](ioimpl* x)->uint32_t {
       if (x == clk)
@@ -129,6 +130,25 @@ void verilogwriter::print_header(std::ostream& out) {
                 uint32_t b_id = adjusted_port_id(b);
                 return a_id < b_id;
               });
+=======
+    if (clk) {
+      ports.push_back(clk);
+    }
+    auto reset = ctx_->sys_reset();
+    if (reset) {
+      ports.push_back(reset);
+    }
+
+    for (auto input : ctx_->inputs()) {
+      if (input == clk || input == reset)
+        continue;
+      ports.push_back(input);
+    }
+
+    for (auto output : ctx_->outputs()) {
+      ports.push_back(output);
+    }
+>>>>>>> b38de61... backup
 
     for (auto port : ports) {
       out << sep << std::endl;
