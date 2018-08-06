@@ -72,7 +72,7 @@ void registerEnumString(const lnode& node, void* callback);
     CH_FOR_EACH(CH_ENUM_FIELD, , CH_SEP_COMMA, __VA_ARGS__) \
     , __MAX_VALUE__ \
     }; \
-    static_assert(ilog2(__MAX_VALUE__) <= size, "size mismatch"); \
+    static_assert(ilog2<int>(__MAX_VALUE__) <= size, "size mismatch"); \
     static const char* to_string(enum_type value) { \
       switch (value) { \
       CH_FOR_EACH(CH_ENUM_STRING, , CH_SEP_SEMICOLON, __VA_ARGS__); \

@@ -494,18 +494,24 @@ constexpr void static_for(Func &&f) {
 ///////////////////////////////////////////////////////////////////////////////
 
 // is power of two number ?
-constexpr bool ispow2(uint32_t value) {
+template <typename T = uint32_t>
+constexpr bool ispow2(T value) {
+  static_assert(std::is_integral_v<T>, "invalid type");
   return value && !(value & (value - 1)); 
 }
 
 // return ilog2
-constexpr uint32_t ilog2(uint32_t x) {
-  return (x <= 1) ? 0 : (ilog2(x >> 1) + 1);
+template <typename T = uint32_t>
+constexpr uint32_t ilog2(T x) {
+  static_assert(std::is_integral_v<T>, "invalid type");
+  return (x <= 1) ? 0 : (ilog2<T>(x >> 1) + 1);
 }
 
 // return ceil of log2
-constexpr uint32_t log2ceil(uint32_t x) {
-  return ispow2(x) ? ilog2(x) : (ilog2(x) + 1);
+template <typename T = uint32_t>
+constexpr uint32_t log2ceil(T x) {
+  static_assert(std::is_integral_v<T>, "invalid type");
+  return ispow2<T>(x) ? ilog2<T>(x) : (ilog2<T>(x) + 1);
 }
 
 template <typename Dst, typename Src>
