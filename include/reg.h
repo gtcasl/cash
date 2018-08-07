@@ -23,7 +23,7 @@ logic_buffer getRegNextNode(const lnode& node);
 template <typename T>
 class ch_reg_impl final : public T {
 public:  
-  using traits = logic_traits<ch_width_v<T>, ch_signed_v<T>, ch_reg<T>, ch_scalar_t<T>>;
+  using traits = logic_traits<ch_width_v<T>, ch_signed_v<T>, T, ch_scalar_t<T>>;
   using base = T;
 
   ch_reg_impl(CH_SLOC)
@@ -33,7 +33,7 @@ public:
 
   template <typename U0,
             CH_REQUIRE_0(std::is_convertible_v<U0, T>)>
-  ch_reg_impl(const U0& init0, CH_SLOC)
+  explicit ch_reg_impl(const U0& init0, CH_SLOC)
     : base(createRegNode(logic_accessor::data(T(init0)), sloc)) {
     __next__ = std::make_unique<next_t>(getRegNextNode(logic_accessor::data(*this)));
   }
