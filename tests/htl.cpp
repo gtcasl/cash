@@ -140,19 +140,21 @@ TEST_CASE("htl", "[htl]") {
       device.io.in[2] = 9;
       ch_simulator sim(device);
       ch_tick t = sim.reset(0);
-      device.io.sel = 1 + (1 << 3);
+      device.io.sel = (0x4 << 3) | (0x2 << 0);
       t = sim.step(t);
       RetCheck ret;
-      ret &= (5 == device.io.out[1]);
-      device.io.sel = 1 + (0 << 3);
+      ret &= (7 == device.io.out[0]);
+      ret &= (9 == device.io.out[1]);
+      device.io.sel = (0x0 << 3) | (0x1 << 0);
       t = sim.step(t);
       ret &= (5 == device.io.out[0]);
-      device.io.sel = 2 + (0 << 3);
+      device.io.sel = (0x2 << 3) | (0x0 << 0);
       t = sim.step(t);
-      ret &= (7 == device.io.out[0]);
-      device.io.sel = 4 + (0 << 3);
+      ret &= (7 == device.io.out[1]);
+      device.io.sel = (0x1 << 3) | (0x4 << 0);
       t = sim.step(t);
       ret &= (9 == device.io.out[0]);
+      ret &= (5 == device.io.out[1]);
       return !!ret;
     });
   }
