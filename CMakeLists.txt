@@ -31,7 +31,6 @@ include_directories("include")
 
 # set source files
 set(PROJECT_SOURCES
-    src/cash.cpp
     src/utils.cpp
     src/platform.cpp
     src/bitvector.cpp
@@ -61,6 +60,7 @@ set(PROJECT_SOURCES
     src/tracerimpl.cpp
     src/verilogwriter.cpp
     src/firrtlwriter.cpp
+    src/eda/altera/avalon_sim.cpp
 )
 
 # build library
