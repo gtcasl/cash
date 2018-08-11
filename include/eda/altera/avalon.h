@@ -76,9 +76,9 @@ public:
 
   void describe() {
     //--
+    ch_reg<ch_uint<AddrW>> address(0);
     ch_reg<ch_uint<log2ceil(Qsize+1)>> pending_reqs(0);
-    ch_reg<ch_uint32> remain_reqs(0);
-    ch_reg<ch_uint<AddrW>> address;
+    ch_reg<ch_uint32> remain_reqs(0);    
     ch_reg<ch_uint32> stalls(0);
 
     // determine if we can request the next data
@@ -194,8 +194,8 @@ public:
   );
 
   void describe() {
-    ch_reg<ch_uint<AddrW>> address;
-    ch_reg<ch_uint32>      remain_reqs;
+    ch_reg<ch_uint<AddrW>> address(0);
+    ch_reg<ch_uint32>      remain_reqs(0);
     ch_reg<burst_t>        burst_counter(0);
     ch_reg<ch_uint32>      stalls(0);
 
