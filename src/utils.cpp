@@ -4,9 +4,6 @@
 #include "common.h"
 #include "platform.h"
 
-#define BACKWARD_HAS_BFD 1
-#include "backward.h"
-
 using namespace ch::internal;
 
 std::string ch::internal::stringf(const char* format, ...) {
@@ -48,14 +45,6 @@ void ch::internal::dbprint(int level, const char* format, ...) {
   va_start(args, format);
   vfprintf(stderr, format, args);
   va_end(args);
-}
-
-void ch::internal::dump_stack_trace(FILE *out, uint32_t max_frames) {
-  using namespace backward;
-  StackTrace st;
-  st.load_here(max_frames);
-  Printer p; 
-  p.print(st, out);
 }
 
 std::string ch::internal::identifier_from_typeid(const std::string& name) {

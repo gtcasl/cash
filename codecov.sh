@@ -6,7 +6,7 @@ COV_PATH=$1
 lcov --capture --directory $COV_PATH --output-file coverage.info 2> /dev/null
 
 # remove external components
-lcov --remove coverage.info '/usr/include/*' '/usr/lib/*' '*/src/backward.h' '*/examples/*' '*/tests/*' --output-file coverage.info
+lcov --remove coverage.info '/usr/include/*' '/usr/lib/*' '*/examples/*' '*/tests/*' --output-file coverage.info
 
 # report summary
 lcov --list coverage.info

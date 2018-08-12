@@ -12,8 +12,6 @@ std::string stringf(const char* format, ...);
 
 void dbprint(int level, const char* format, ...);
 
-void dump_stack_trace(FILE* out, uint32_t max_frames = 32);
-
 std::string identifier_from_typeid(const std::string& name);
 
 int char2int(char x, int base);

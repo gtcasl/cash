@@ -23,7 +23,6 @@ set(LIBRARY_OUTPUT_PATH ${CMAKE_BINARY_DIR}/lib)
 set(PROJECT_CONFIG ${PROJECT_NAME}Config)
 
 # check dependent packages
-find_package(BFD REQUIRED)
 find_package(IVERILOG REQUIRED)
 
 # set include path
