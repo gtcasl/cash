@@ -8,7 +8,6 @@ addons:
         - ubuntu-toolchain-r-test
         packages:
         - iverilog
-        - binutils-dev
         - lcov
 
 before_install:
