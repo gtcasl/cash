@@ -23,7 +23,7 @@ struct ch_queue {
   );
 
   void describe() {
-    ch_reg<ch_uint<addr_width+1>> rd_ptr(0), wr_ptr(0);
+    ch_reg<ch_uint<addr_width>> rd_ptr(0), wr_ptr(0);
     ch_reg<ch_uint<size_width>> counter(0);
     ch_mem<T, N> mem;
 
@@ -55,8 +55,8 @@ struct ch_queue {
     }
 
     io.deq.data  = data_out;
-    io.deq.valid = (wr_ptr != rd_ptr);
-    io.enq.ready = (wr_a != rd_a) || (wr_ptr[addr_width] == rd_ptr[addr_width]);
+    io.deq.valid = (counter != 0);
+    io.enq.ready = (counter != N);
     io.size      = counter;
   }
 };
