@@ -743,9 +743,8 @@ void ch::internal::bv_neg(bitvector& out, const bitvector& in) {
 }
 
 void ch::internal::bv_mul(bitvector& out, const bitvector& lhs, const bitvector& rhs) {
-  uint32_t size = out.size();
-  assert(lhs.size() == size);
-  assert(rhs.size() == size);
+  assert(lhs.size() == out.size());
+  assert(rhs.size() == out.size());
   if (1 == lhs.num_words()
    && 1 == rhs.num_words()) {
     uint32_t a_w = lhs.word(0);
@@ -767,9 +766,8 @@ void ch::internal::bv_mul(bitvector& out, const bitvector& lhs, const bitvector&
 }
 
 void ch::internal::bv_divu(bitvector& out, const bitvector& lhs, const bitvector& rhs) {
-  uint32_t size = out.size();
-  assert(lhs.size() == size);
-  assert(rhs.size() == size);
+  assert(lhs.size() == out.size());
+  assert(rhs.size() == out.size());
   if (1 == lhs.num_words()
    && 1 == rhs.num_words()) {
     uint32_t a_w = lhs.word(0);
