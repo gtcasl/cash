@@ -15,20 +15,21 @@ using namespace extension;
 template <unsigned N, unsigned F>
 class ch_fixed;
 
-template <unsigned I, unsigned F>
-int FloatToFixed(double value) {
-  static_assert(I >= 1 && (I + F) <= 32, "invalid size");
-  double step = 1.0 / (1 << F);
-  double min_value = -(1 << (I-1));
-  double max_value = (1 << (I-1)) - step;
+template <typename T>
+inline T ToFixed(double value, unsigned I, unsigned F) {
+  assert(I >= 1 && (I + F) <= 8 * sizeof(T));
+  auto xOne = T(1) << F;
+  auto step = 1.0 / xOne;
+  auto uMax = double(T(1) << (I-1));
+  auto min_value = -uMax;
+  auto max_value = uMax - step;
   if (value > max_value) {
     value = max_value;
   }
   if (value < min_value) {
     value = min_value;
   }
-  int xvalue = static_cast<int>(floor(value * (1 << F) + 0.5));
-  return xvalue;
+  return static_cast<T>(floor(value * xOne + 0.5));
 }
 
 template <unsigned N, unsigned F>
@@ -48,7 +49,7 @@ public:
             CH_REQUIRE_0(std::is_integral_v<U>)>
   ch_scfixed(const U& other) : base(other) {}
 
-  explicit ch_scfixed(float other) : base(FloatToFixed<Intg, Frac>(other)) {
+  explicit ch_scfixed(double other) : base(ToFixed<int>(other, Intg, Frac)) {
     static_assert(N <= 32, "invalid size");
   }
 
@@ -144,6 +145,13 @@ public:
     auto value = float(ivalue) / (1 << Frac);
     return value;
   }
+
+  explicit operator double() const {
+    static_assert(N <= 32, "invalid size");
+    int32_t ivalue = static_cast<int32_t>(*this);
+    auto value = double(ivalue) / (1 << Frac);
+    return value;
+  }
 };
 
 template <unsigned N, unsigned F>
@@ -163,7 +171,7 @@ public:
             CH_REQUIRE_0(std::is_integral_v<U>)>
   ch_fixed(const U& other, CH_SLOC) : base(other, sloc) {}
 
-  explicit ch_fixed(float other) : base(FloatToFixed<Intg, Frac>(other)) {
+  explicit ch_fixed(double other) : base(ToFixed<int>(other, Intg, Frac)) {
     static_assert(N <= 32, "invalid size");
   }
 
