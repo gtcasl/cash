@@ -71,7 +71,7 @@ public:
     __out(ch_bool)        done,
     (ch_deq_io<ch_bit<DataW>>) deq,
     (avalon_mm_io<AVM>)   avm,
-    __out(ch_uint32)      stalls
+    __out(ch_uint64)      stalls
   );
 
   void describe() {
@@ -79,7 +79,6 @@ public:
     ch_reg<ch_uint<AddrW>> address(0);
     ch_reg<ch_uint<log2ceil(Qsize+1)>> pending_reqs(0);
     ch_reg<ch_uint32> remain_reqs(0);    
-    ch_reg<ch_uint32> stalls(0);
 
     // determine if we can request the next data
     auto fifo_almost_full = (ch_pad<log2ceil(Qsize+1)+1>(fifo_.io.size) + pending_reqs) > (Qsize - 2*MaxBurst); // assume inflight burst from previous cycle
@@ -129,9 +128,8 @@ public:
     };
 
     //--
-    __if (io.start) {
-      stalls->next = 0;
-    }__elif (read_enabled && io.avm.waitrequest) {
+    ch_reg<ch_uint64> stalls(0);
+    __if (read_enabled && io.avm.waitrequest) {
       stalls->next = stalls + 1;
     };
 
@@ -192,14 +190,13 @@ public:
     __out(ch_bool)        done,
     (ch_enq_io<ch_bit<DataW>>) enq,
     (avalon_mm_io<AVM>)   avm,
-    __out(ch_uint32)      stalls
+    __out(ch_uint64)      stalls
   );
 
   void describe() {
     ch_reg<ch_uint<AddrW>> address(0);
     ch_reg<ch_uint32>      remain_reqs(0);
     ch_reg<burst_t>        burst_counter(0);
-    ch_reg<ch_uint32>      stalls(0);
 
     // determine if we can submit the next data
     ch_bool write_enabled = (burst_counter != 0);
@@ -246,9 +243,8 @@ public:
     };
 
     //--
-    __if (io.start) {
-      stalls->next = 0;
-    }__elif (write_enabled && io.avm.waitrequest) {
+    ch_reg<ch_uint64> stalls(0);
+    __if (write_enabled && io.avm.waitrequest) {
       stalls->next = stalls + 1;
     };
 
