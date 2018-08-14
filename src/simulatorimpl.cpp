@@ -70,7 +70,7 @@ void simulatorimpl::initialize() {
   }
 }
 
-void simulatorimpl::eval(ch_tick) {
+void simulatorimpl::eval(ch_tick t) {
   // evaluate all nodes
   for (auto node : run_list_) {
     node->eval();

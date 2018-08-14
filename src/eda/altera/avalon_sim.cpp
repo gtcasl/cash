@@ -112,7 +112,6 @@ avm_slave_driver_impl::process_rd_rsp(uint64_t time) {
   for (auto it = rd_reqs_.begin(), end = rd_reqs_.end(); it != end; ++it) {
     auto& req = *it;
     if (req.rsp_time <= time) {
-      assert(time == req.rsp_time);
       rd_rsp_t rsp;
       rsp.master = req.master;
       rsp.data.resize(data_width_);
@@ -126,12 +125,13 @@ avm_slave_driver_impl::process_rd_rsp(uint64_t time) {
 
 std::optional<avm_slave_driver_impl::wr_rsp_t>
 avm_slave_driver_impl::process_wr_rsp(uint64_t time) {
+  if (burst_wr_cntr_ != 0)
+    return {};
   auto data_size = data_width_ / 8;
   auto full_mask = (1ull << data_size) - 1;
   for (auto it = wr_reqs_.begin(), end = wr_reqs_.end(); it != end; ++it) {
     auto& req = *it;
     if (req.rsp_time <= time) {
-      assert(time == req.rsp_time);
       wr_rsp_t rsp;
       rsp.master = req.master;
       if (full_mask == (req.bytemask & full_mask)) {

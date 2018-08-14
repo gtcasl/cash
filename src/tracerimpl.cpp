@@ -77,7 +77,7 @@ void tracerimpl::eval(ch_tick t) {
   // allocate trace new trace block
   if (nullptr == trace_blocks_tail_
    || trace_blocks_tail_->size == NUM_BLOCKS) {
-    auto trace_block = new trace_block_t(100, trace_width_);
+    auto trace_block = new trace_block_t(NUM_BLOCKS, trace_width_);
     if (nullptr == trace_blocks_head_) {
       trace_blocks_head_ = trace_block;
     }
