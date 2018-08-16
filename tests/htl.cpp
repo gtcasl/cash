@@ -132,6 +132,52 @@ TEST_CASE("htl", "[htl]") {
       return (y == 0xA_h);
     });
   }
+  SECTION("mux", "[mux]") {
+    TEST([]()->ch_bool {
+      ch_bit2 k(0);
+      auto y = ch_mux(k, 0xA_h, 0xB_h, 0xC_h, 0xD_h);
+      return (y == 0xD_h);
+    });
+    TEST([]()->ch_bool {
+      ch_bit2 k(1);
+      auto y = ch_mux(k, 0xA_h, 0xB_h, 0xC_h, 0xD_h);
+      return (y == 0xC_h);
+    });
+    TEST([]()->ch_bool {
+      ch_bit2 k(2);
+      auto y = ch_mux(k, 0xA_h, 0xB_h, 0xC_h, 0xD_h);
+      return (y == 0xB_h);
+    });
+    TEST([]()->ch_bool {
+      ch_bit2 k(3);
+      auto y = ch_mux(k, 0xA_h, 0xB_h, 0xC_h, 0xD_h);
+      return (y == 0xA_h);
+    });
+    TEST([]()->ch_bool {
+      ch_bit2 k(0);
+      ch_vec<ch_bit4, 4> x{0xA_h, 0xB_h, 0xC_h, 0xD_h};
+      auto y = ch_mux(k, x);
+      return (y == 0xD_h);
+    });
+    TEST([]()->ch_bool {
+      ch_bit2 k(1);
+      ch_vec<ch_bit4, 4> x{0xA_h, 0xB_h, 0xC_h, 0xD_h};
+      auto y = ch_mux(k, x);
+      return (y == 0xC_h);
+    });
+    TEST([]()->ch_bool {
+      ch_bit2 k(2);
+      ch_vec<ch_bit4, 4> x{0xA_h, 0xB_h, 0xC_h, 0xD_h};
+      auto y = ch_mux(k, x);
+      return (y == 0xB_h);
+    });
+    TEST([]()->ch_bool {
+      ch_bit2 k(3);
+      ch_vec<ch_bit4, 4> x{0xA_h, 0xB_h, 0xC_h, 0xD_h};
+      auto y = ch_mux(k, x);
+      return (y == 0xA_h);
+    });
+  }
   SECTION("hxbar", "[hxbar]") {
     TESTX([]()->bool {
       ch_device<ch_hxbar<ch_bit4, 3, 2>> device;
@@ -145,13 +191,43 @@ TEST_CASE("htl", "[htl]") {
       RetCheck ret;
       ret &= (7 == device.io.out[0]);
       ret &= (9 == device.io.out[1]);
-      device.io.sel = (0x0 << 3) | (0x1 << 0);
+      device.io.sel = (0x1 << 3) | (0x1 << 0);
       t = sim.step(t);
       ret &= (5 == device.io.out[0]);
-      device.io.sel = (0x2 << 3) | (0x0 << 0);
+      ret &= (5 == device.io.out[1]);
+      device.io.sel = (0x2 << 3) | (0x1 << 0);
       t = sim.step(t);
+      ret &= (5 == device.io.out[0]);
       ret &= (7 == device.io.out[1]);
       device.io.sel = (0x1 << 3) | (0x4 << 0);
+      t = sim.step(t);
+      ret &= (9 == device.io.out[0]);
+      ret &= (5 == device.io.out[1]);
+      return !!ret;
+    });
+  }
+  SECTION("xbar", "[xbar]") {
+    TESTX([]()->bool {
+      ch_device<ch_xbar<ch_bit4, 3, 2>> device;
+      device.io.in[0] = 5;
+      device.io.in[1] = 7;
+      device.io.in[2] = 9;
+      ch_simulator sim(device);
+      ch_tick t = sim.reset(0);
+      device.io.sel = (2 << 2) | (1 << 0);
+      t = sim.step(t);
+      RetCheck ret;
+      ret &= (7 == device.io.out[0]);
+      ret &= (9 == device.io.out[1]);
+      device.io.sel = (0 << 2) | (0 << 0);
+      t = sim.step(t);
+      ret &= (5 == device.io.out[0]);
+      ret &= (5 == device.io.out[1]);
+      device.io.sel = (1 << 2) | (0 << 0);
+      t = sim.step(t);
+      ret &= (5 == device.io.out[0]);
+      ret &= (7 == device.io.out[1]);
+      device.io.sel = (0 << 2) | (2 << 0);
       t = sim.step(t);
       ret &= (9 == device.io.out[0]);
       ret &= (5 == device.io.out[1]);

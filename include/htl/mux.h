@@ -33,5 +33,30 @@ auto ch_hmux(const ch_bit<N>& sel, const ch_vec<T, N>& args) {
   return cs(args[N-1]);
 }
 
+template <typename ArgN, typename ArgM, typename... Args>
+auto ch_mux(const ch_bit<(log2ceil(2+sizeof...(Args)))>& sel,
+            const ArgN& argN,
+            const ArgM& argM,
+            const Args&... args) {
+  static_assert((is_object_type_v<ArgN>), "invalid type");
+  static_assert((is_object_type_v<ArgM>), "invalid type");
+  static_assert((is_object_type_v<Args> && ...), "invalid type");
+  auto cs = ch_case(sel, sizeof...(Args), argM);
+  int i = 0;
+  for_each_reverse([&](auto arg){ cs(i++, arg); }, args...);
+  return cs(argN);
+}
+
+template <typename T, unsigned N>
+auto ch_mux(const ch_bit<log2ceil(N)>& sel, const ch_vec<T, N>& args) {
+  static_assert(is_object_type_v<T>, "invalid type");
+  static_assert(N >= 2, "invalid size");
+  auto cs = ch_case(sel, 0, args[0]);
+  for (unsigned i = 1; i < N-1; ++i) {
+    cs(i, args[i]);
+  }
+  return cs(args[N-1]);
+}
+
 }
 }
