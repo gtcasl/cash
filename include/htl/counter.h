@@ -15,7 +15,7 @@ auto ch_counter(const ch_bool& incr = 1, const ch_uint<log2ceil(N)>& init = 0) {
     auto next = ch_sel(count == (N-1), 0x0, count + 0x1);
     count->next = ch_sel(incr, next, count);
   }
-  return std::tuple(count, count->next);
+  return std::tuple<ch_uint<log2ceil(N)>, ch_uint<log2ceil(N)>>(count, count->next);
 }
 
 }

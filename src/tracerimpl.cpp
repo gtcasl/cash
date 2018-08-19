@@ -169,15 +169,8 @@ void tracerimpl::toVCD(const std::string& file) {
 
 void tracerimpl::toTestBench(const std::string& file, const std::string& module) {
   //--
-  auto node_name = [](const lnode& x) {
-    if (dynamic_cast<ioimpl*>(x.impl()))
-      return x.name();
-    return stringf("%s%d", x.name().c_str(), x.id());
-  };
-
-  //--
-  auto node_path = [&](const lnode& x) {
-    return stringf("__module%d__.%s", x.impl()->ctx()->id(), node_name(x).c_str());
+  auto full_name = [&](const lnode& x) {
+    return stringf("__module%d__.%s%d", x.impl()->ctx()->id(), x.name().c_str(), x.id());
   };
 
   //--
@@ -273,7 +266,7 @@ void tracerimpl::toTestBench(const std::string& file, const std::string& module)
       for (auto& signal : signals_) {
         if (type_tap != signal.node->type())
           continue;
-        out << "assign " << signal.name << " = " << node_path(signal.node->src(0)) << ";" << std::endl;
+        out << "assign " << signal.name << " = " << full_name(signal.node->src(0)) << ";" << std::endl;
       }
       out << std::endl;
     }

@@ -12,6 +12,8 @@ std::string stringf(const char* format, ...);
 
 void dbprint(int level, const char* format, ...);
 
+std::string identifier_from_string(const std::string& name);
+
 std::string identifier_from_typeid(const std::string& name);
 
 int char2int(char x, int base);
@@ -479,14 +481,16 @@ void unused(Args&&...) {}
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <auto Begin, class Func, decltype(Begin) ...Is>
-constexpr void static_for_impl(Func &&f, std::integer_sequence<decltype(Begin), Is...>) {
-  (f(std::integral_constant<decltype(Begin), Begin + Is>{} ),... );
+template <class Func, typename T, T Start, T ...Is>
+constexpr void static_for_impl(Func &&f, std::integer_sequence<T, Is...>) {
+  (f(std::integral_constant<T, Start + Is>{} ),... );
 }
 
-template <auto Begin, auto End, class Func>
+template <auto Start, auto End, class Func>
 constexpr void static_for(Func &&f) {
-  static_for_impl<Begin>(std::forward<Func>(f), std::make_integer_sequence<decltype(Begin), End - Begin>{});
+  using type_t = std::common_type_t<decltype(Start), decltype(End)>;
+  static_for_impl<Func, type_t, Start>(
+    std::forward<Func>(f), std::make_integer_sequence<type_t, (End - Start)>{});
 }
 
 ///////////////////////////////////////////////////////////////////////////////

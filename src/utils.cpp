@@ -47,6 +47,13 @@ void ch::internal::dbprint(int level, const char* format, ...) {
   va_end(args);
 }
 
+std::string ch::internal::identifier_from_string(const std::string& name) {
+  auto ret(name);
+  auto not_identifier = [&](auto x){ return !isalnum(x) && (x != '_'); };
+  std::replace_if(ret.begin(), ret.end(), not_identifier, '_');
+  return ret;
+}
+
 std::string ch::internal::identifier_from_typeid(const std::string& name) {
   int status;
   char* demangled = abi::__cxa_demangle(name.c_str(), 0, 0, &status);

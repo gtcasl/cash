@@ -740,7 +740,8 @@ bindimpl* context::find_binding(context* module, const source_location& sloc) {
 void context::register_tap(const lnode& node,
                            const std::string& name,
                            const source_location& sloc) {
-  this->create_node<tapimpl>(node, unique_tap_names_.get(name).c_str(), sloc);
+  auto s = identifier_from_string(name);
+  this->create_node<tapimpl>(node, unique_tap_names_.get(s).c_str(), sloc);
 }
 
 void context::build_run_list(std::vector<lnodeimpl*>& runlist) {
