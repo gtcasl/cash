@@ -25,6 +25,7 @@ struct ch_queue {
   void describe() {
     ch_reg<ch_uint<addr_width>> rd_ptr(0), wr_ptr(0);
     ch_reg<ch_uint<size_width>> counter(0);
+    ch_reg<ch_bool> full(false), empty(true);
     ch_mem<T, N> mem;
 
     auto reading = io.deq.ready && io.deq.valid;
@@ -54,9 +55,21 @@ struct ch_queue {
       data_out = mem.read(rd_a);
     }
 
+    __if (counter == (N-1) && writing && !reading) {
+      full->next = true;
+    }__elif (reading && !writing) {
+      full->next = false;
+    };
+
+    __if (counter == 1 && reading && !writing) {
+      empty->next = true;
+    }__elif (writing && !reading) {
+      empty->next = false;
+    };
+
     io.deq.data  = data_out;
-    io.deq.valid = (counter != 0);
-    io.enq.ready = (counter != N);
+    io.deq.valid = !empty;
+    io.enq.ready = !full;
     io.size      = counter;
   }
 };
