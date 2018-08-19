@@ -57,6 +57,10 @@ public:
     return source_;
   }
 
+  const bitvector& value() const {
+    return value_;
+  }
+
   uint32_t offset() const {
     return offset_;
   }
@@ -64,6 +68,11 @@ public:
   uint32_t size() const {
     return size_;
   }
+
+  void copy(uint32_t dst_offset,
+            const scalar_buffer& src,
+            uint32_t src_offset,
+            uint32_t length);
 
   void write(uint32_t dst_offset,
              const bitvector& src,
@@ -89,8 +98,8 @@ protected:
                 uint32_t offset,
                 uint32_t size);
 
-  mutable bitvector value_;
   scalar_buffer_ptr source_;
+  mutable bitvector value_;
   uint32_t offset_;
   uint32_t size_;
 };

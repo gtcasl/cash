@@ -14,8 +14,8 @@ scalar_buffer::scalar_buffer(const bitvector& value,
                              const scalar_buffer_ptr& source,
                              uint32_t offset,
                              uint32_t size)
-  : value_(value)
-  , source_(source)
+  : source_(source)
+  , value_(value)
   , offset_(offset)
   , size_(size)
 {}
@@ -32,6 +32,14 @@ scalar_buffer::scalar_buffer(bitvector&& data)
   , size_(value_.size())
 {}
 
+scalar_buffer::scalar_buffer(uint32_t size,
+                             const scalar_buffer_ptr& buffer,
+                             uint32_t offset)
+  : source_(buffer)
+  , offset_(offset)
+  , size_(size) {
+  assert(offset_ + size_ <= buffer->size());
+}
 
 scalar_buffer::scalar_buffer(const scalar_buffer& other)
   : source_(other.source_)
@@ -43,18 +51,14 @@ scalar_buffer::scalar_buffer(const scalar_buffer& other)
 }
 
 scalar_buffer::scalar_buffer(scalar_buffer&& other)
-  : value_(std::move(other.value_))
-  , source_(std::move(other.source_))
+  : source_(std::move(other.source_))
+  , value_(std::move(other.value_))
   , offset_(std::move(other.offset_))
   , size_(std::move(other.size_))
 {}
 
 scalar_buffer& scalar_buffer::operator=(const scalar_buffer& other) {
-  this->write(0,
-              other.data().data(),
-              other.data().num_bytes(),
-              other.offset(),
-              other.size());
+  this->copy(0, other, 0, size_);
   return *this;
 }
 
@@ -69,22 +73,6 @@ scalar_buffer& scalar_buffer::operator=(scalar_buffer&& other) {
   return *this;
 }
 
-void scalar_buffer::write(uint32_t dst_offset,
-                          const bitvector& src,
-                          uint32_t src_offset,
-                          uint32_t length) {
-  this->write(dst_offset, src.data(), src.num_bytes(), src_offset, length);
-}
-
-scalar_buffer::scalar_buffer(uint32_t size,
-                             const scalar_buffer_ptr& buffer,
-                             uint32_t offset)
-  : source_(buffer)
-  , offset_(offset)
-  , size_(size) {
-  assert(offset_ + size_ <= buffer->size());
-}
-
 const bitvector& scalar_buffer::data() const {
   if (source_) {
     if (value_.empty()) {
@@ -93,6 +81,21 @@ const bitvector& scalar_buffer::data() const {
     source_->read(offset_, value_.data(), value_.num_bytes(), 0, size_);
   }
   return value_;
+}
+
+void scalar_buffer::copy(uint32_t dst_offset,
+                         const scalar_buffer& src,
+                         uint32_t src_offset,
+                         uint32_t length) {
+  if (src.source()) {
+    this->copy(dst_offset, *src.source(), src.offset() + src_offset, length);
+  } else {
+    this->write(dst_offset,
+                src.data().data(),
+                src.data().num_bytes(),
+                src_offset,
+                length);
+  }
 }
 
 void scalar_buffer::read(uint32_t src_offset,
@@ -119,4 +122,11 @@ void scalar_buffer::write(uint32_t dst_offset,
     assert(dst_offset + length <= size_);
     value_.write(dst_offset, in, in_cbsize, src_offset, length);
   }
+}
+
+void scalar_buffer::write(uint32_t dst_offset,
+                          const bitvector& src,
+                          uint32_t src_offset,
+                          uint32_t length) {
+  this->write(dst_offset, src.data(), src.num_bytes(), src_offset, length);
 }
