@@ -43,7 +43,7 @@ protected:
   };
 
   std::default_random_engine rand_gen_;
-  std::vector<uint8_t*> buffers_;
+  std::vector<std::pair<uint8_t*, uint32_t>> buffers_;
   std::list<rd_req_t> rd_reqs_;
   std::list<wr_req_t> wr_reqs_;
   uint32_t data_width_;
@@ -89,7 +89,7 @@ protected:
 
 public:
 
-  void bind(uint32_t master, const void* buffer);
+  void bind(uint32_t master, const void* buffer, uint32_t size);
 
   void flush();
 };

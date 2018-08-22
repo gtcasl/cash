@@ -21,8 +21,8 @@ avm_slave_driver_impl::avm_slave_driver_impl(uint32_t data_width,
   , burst_wr_cntr_(0)
 {}
 
-void avm_slave_driver_impl::bind(uint32_t master, const void* buffer) {
-  buffers_[master] = (uint8_t*)buffer;
+void avm_slave_driver_impl::bind(uint32_t master, const void* buffer, uint32_t size) {
+  buffers_[master] = std::pair((uint8_t*)buffer, size);
 }
 
 void avm_slave_driver_impl::flush() {
@@ -108,14 +108,14 @@ bool avm_slave_driver_impl::process_wr_req(uint64_t time,
 
 std::optional<avm_slave_driver_impl::rd_rsp_t>
 avm_slave_driver_impl::process_rd_rsp(uint64_t time) {
-  auto data_size = data_width_ / 8;
   for (auto it = rd_reqs_.begin(), end = rd_reqs_.end(); it != end; ++it) {
     auto& req = *it;
     if (req.rsp_time <= time) {
       rd_rsp_t rsp;
       rsp.master = req.master;
       rsp.data.resize(data_width_);
-      rsp.data.write(0, buffers_[req.master] + req.address, data_size, 0, data_width_);
+      rsp.data.write(0, buffers_[req.master].first + req.address,
+          buffers_[req.master].second - req.address, 0, data_width_);
       rd_reqs_.erase(it);
       return std::optional(rsp);
     }
@@ -135,12 +135,14 @@ avm_slave_driver_impl::process_wr_rsp(uint64_t time) {
       wr_rsp_t rsp;
       rsp.master = req.master;
       if (full_mask == (req.bytemask & full_mask)) {
-        req.data.read(0, buffers_[req.master] + req.address, data_size, 0, data_width_);
+        req.data.read(0, buffers_[req.master].first + req.address,
+            buffers_[req.master].second - req.address, 0, data_width_);
       } else {
         for (uint32_t i = 0; i < data_size; ++i) {
           if (0 == (req.bytemask & (1ull << i)))
             continue;
-          req.data.read(i*8, buffers_[req.master] + req.address + i, 1, 0, 8);
+          req.data.read(i*8, buffers_[req.master].first + req.address + i,
+              buffers_[req.master].second - req.address, 0, 8);
         }
       }
       wr_reqs_.erase(it);

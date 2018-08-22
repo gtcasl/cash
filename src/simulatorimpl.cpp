@@ -72,8 +72,8 @@ void simulatorimpl::initialize() {
 
 void simulatorimpl::eval(ch_tick) {
   // evaluate all nodes
-  for (auto node : run_list_) {
-    node->eval();
+  for (unsigned i = 0; i < run_list_.size(); ++i) {
+    run_list_[i]->eval();
   }
 }
 
