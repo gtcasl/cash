@@ -16,9 +16,6 @@ inline constexpr bool is_bitvector_array_type_v = is_bitvector_array_type<T>::va
 
 template <typename T> struct is_bitvector_extended_type_impl : std::false_type {};
 
-template <>
-struct is_bitvector_extended_type_impl<std::initializer_list<uint32_t>> : std::true_type {};
-
 template <typename T, std::size_t N>
 struct is_bitvector_extended_type_impl<std::array<T, N>> : std::true_type {};
 
@@ -37,12 +34,12 @@ inline constexpr bool is_bitvector_extended_type_v = is_bitvector_extended_type_
 class bitvector {
 public:
   
-  enum { 
-    WORD_SIZE_LOG = 5, 
-    WORD_SIZE     = 1 << WORD_SIZE_LOG,
-    WORD_MASK     = WORD_SIZE - 1,
-    WORD_MAX      = 0xFFFFFFFF,
-  };
+  using word_t  = uint64_t;
+  using sword_t = std::make_signed_t<word_t>;
+  static constexpr int WORD_LOGSIZE = ilog2(std::numeric_limits<word_t>::digits + std::numeric_limits<word_t>::is_signed);
+  static constexpr int WORD_SIZE    = 1 << WORD_LOGSIZE;
+  static constexpr int WORD_MASK    = WORD_SIZE - 1;
+  static constexpr word_t WORD_MAX  = std::numeric_limits<word_t>::max();
   
   class const_iterator;
   class iterator;
@@ -67,11 +64,10 @@ public:
     
   protected:
     
-    reference(uint32_t& word, uint32_t mask)
-      : word_(word), mask_(mask) {}
+    reference(word_t& word, word_t mask) : word_(word), mask_(mask) {}
     
-    uint32_t& word_;
-    uint32_t  mask_;
+    word_t& word_;
+    word_t  mask_;
     
     friend class iterator;
     friend class bitvector;
@@ -90,7 +86,7 @@ public:
 
   protected:
 
-    iterator_base(const uint32_t* words, uint32_t offset)
+    iterator_base(const word_t* words, uint32_t offset)
       : words_(words)
       , offset_(offset)
     {}
@@ -119,22 +115,22 @@ public:
     void advance(int delta) {
       int offset = (offset_ & WORD_MASK) + delta;
       if (offset >= 0) {
-        words_ += (offset >> WORD_SIZE_LOG);
+        words_ += (offset >> WORD_LOGSIZE);
       } else {
-        words_ -= ((WORD_MASK - offset) >> WORD_SIZE_LOG);
+        words_ -= ((WORD_MASK - offset) >> WORD_LOGSIZE);
       }
       offset_ += delta;
     }
 
     const_reference const_ref() const {
-      return (*words_ & (1 << (offset_ & WORD_MASK))) != 0;
+      return (*words_ & (word_t(1) << (offset_ & WORD_MASK))) != 0;
     }
 
     reference ref() const {
-      return reference(const_cast<uint32_t&>(*words_), 1 << (offset_ & WORD_MASK));
+      return reference(const_cast<word_t&>(*words_), word_t(1) << (offset_ & WORD_MASK));
     }
 
-    const uint32_t* words_;
+    const word_t* words_;
     uint32_t offset_;
   };
     
@@ -142,9 +138,7 @@ public:
   public:
     using base = iterator_base;
 
-    const_iterator(const const_iterator& other)
-      : base(other)
-    {}
+    const_iterator(const const_iterator& other) : base(other) {}
     
     const_iterator& operator=(const const_iterator& other) {
       base::operator =(other);
@@ -201,7 +195,7 @@ public:
     
   protected:
     
-    const_iterator(const uint32_t* words, uint32_t offset)
+    const_iterator(const word_t* words, uint32_t offset)
       : iterator_base(words, offset)
     {}
     
@@ -267,8 +261,9 @@ public:
     
   protected:  
     
-    iterator(uint32_t* words, uint32_t offset)
-      : const_iterator(words, offset) {}
+    iterator(word_t* words, uint32_t offset)
+      : const_iterator(words, offset)
+    {}
     
     friend class bitvector;
   };
@@ -336,7 +331,7 @@ public:
 
   protected:
 
-    const_reverse_iterator(const uint32_t* words, uint32_t offset)
+    const_reverse_iterator(const word_t* words, uint32_t offset)
       : iterator_base(words, offset)
     {}
 
@@ -402,7 +397,7 @@ public:
 
   protected:
 
-    reverse_iterator(uint32_t* words, uint32_t offset)
+    reverse_iterator(word_t* words, uint32_t offset)
       : const_reverse_iterator(words, offset) {}
 
     friend class bitvector;
@@ -447,16 +442,14 @@ public:
   template <typename T, std::size_t N>
   explicit bitvector(uint32_t size, const std::array<T, N>& value) : bitvector(size) {
     static_assert(is_bitvector_array_type_v<T>, "invalid array type");
-    this->write(0, value.data(), N * sizeof(T), 0, N * CH_WIDTH_OF(T));
+    this->operator =(value);
   }
 
   template <typename T>
   explicit bitvector(uint32_t size, const std::vector<T>& value) : bitvector(size) {
     static_assert(is_bitvector_array_type_v<T>, "invalid array type");
-    this->write(0, value.data(), value.size() * sizeof(T), 0, value.size() * CH_WIDTH_OF(T));
+    this->operator =(value);
   }
-
-  explicit bitvector(uint32_t size, const std::initializer_list<uint32_t>& value);
 
   explicit bitvector(uint32_t size, const std::string& value);
 
@@ -497,62 +490,64 @@ public:
   template <typename T, std::size_t N>
   bitvector& operator=(const std::array<T, N>& value) {
     static_assert(is_bitvector_array_type_v<T>, "invalid array type");
-    this->write(0, value.data(), N * sizeof(T), 0, N * CH_WIDTH_OF(T));
+    std::vector<T> tmp(N);
+    std::reverse_copy(value.begin(), value.end(), tmp.begin());
+    this->write(0, tmp.data(), N * sizeof(T), 0, N * CH_WIDTH_OF(T));
     return *this;
   }
 
   template <typename T>
   bitvector& operator=(const std::vector<T>& value) {
     static_assert(is_bitvector_array_type_v<T>, "invalid array type");
-    this->write(0, value.data(), value.size() * sizeof(T), 0, value.size() * CH_WIDTH_OF(T));
+    std::vector<T> tmp(value.size);
+    std::reverse_copy(value.begin(), value.end(), tmp.begin());
+    this->write(0, tmp.data(), tmp.size() * sizeof(T), 0, tmp.size() * CH_WIDTH_OF(T));
     return *this;
   }
 
-  bitvector& operator=(const std::initializer_list<uint32_t>& value);
-
   bitvector& operator=(const std::string& value);
   
-  const_reference at(uint32_t idx) const;
+  const_reference at(uint32_t index) const;
   
-  reference at(uint32_t idx);
+  reference at(uint32_t index);
   
-  const_reference operator[](uint32_t idx) const {
-    return this->at(idx);
+  auto operator[](uint32_t index) const {
+    return this->at(index);
   }
   
-  reference operator[](uint32_t idx) {
-    return this->at(idx);
+  auto operator[](uint32_t index) {
+    return this->at(index);
   }
   
-  uint32_t word(uint32_t widx) const {
-    assert(widx < this->num_words());
-    return words_[widx];
+  auto word(uint32_t index) const {
+    assert(index < this->num_words());
+    return words_[index];
   }
   
-  uint32_t& word(uint32_t widx) {
-    assert(widx < this->num_words());
-    return words_[widx];
+  auto& word(uint32_t index) {
+    assert(index < this->num_words());
+    return words_[index];
   }
 
-  const uint32_t* words() const {
+  const auto* words() const {
     return words_;
   }
 
-  uint32_t* words() {
+  auto* words() {
     return words_;
   }
 
-  uint32_t* words(uint32_t* words) {
+  auto* words(word_t* words) {
     std::swap(words_, words);
     return words;
   }
   
   uint32_t num_words() const {
-    return (size_ + WORD_MASK) >> WORD_SIZE_LOG;
+    return (size_ + WORD_MASK) >> WORD_LOGSIZE;
   }
 
   uint32_t num_bytes() const {
-    return (num_words() << WORD_SIZE_LOG) / 8;
+    return (num_words() << WORD_LOGSIZE) / 8;
   }
 
   const void* data() const {
@@ -599,19 +594,19 @@ public:
   
   bool empty() const;
     
-  const_reference front() const {
+  auto front() const {
     return this->at(0);
   }
   
-  reference front() {
+  auto front() {
     return this->at(0);
   }
   
-  const_reference back() const {
+  auto back() const {
     return this->at(size_ - 1);
   }
   
-  reference back() {
+  auto back() {
     return this->at(size_ - 1);
   }
   
@@ -655,7 +650,7 @@ public:
 
 #define CH_DEF_CAST(type) \
   explicit operator type() const { \
-    CH_CHECK(CH_WIDTH_OF(type) >= size_, "invalid size cast"); \
+    CH_CHECK(CH_WIDTH_OF(type) >= size_, "invalid size"); \
     return bitcast<type>(words_[0]); \
   }
   CH_DEF_CAST(bool)
@@ -665,23 +660,16 @@ public:
   CH_DEF_CAST(uint16_t)
   CH_DEF_CAST(int32_t)
   CH_DEF_CAST(uint32_t)
+  CH_DEF_CAST(int64_t)
+  CH_DEF_CAST(uint64_t)
 #undef CH_DEF_CAST
-
-  explicit operator uint64_t() const {
-    CH_CHECK(CH_WIDTH_OF(uint64_t) >= size_, "invalid size cast");
-    return (static_cast<uint64_t>((size_ > 32) ? words_[1] : 0) << 32) | words_[0];
-  }
-
-  explicit operator int64_t() const {
-    return this->operator uint64_t();
-  }
 
   void deadbeef();
   
 protected:
   
-  uint32_t* words_;
-  uint32_t  size_;
+  word_t*  words_;
+  uint32_t size_;
 };
 
 std::ostream& operator<<(std::ostream& out, const bitvector& in);

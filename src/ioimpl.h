@@ -45,7 +45,7 @@ protected:
 
   lnode input_;
 
-  uint32_t* words_;
+  bitvector::word_t* words_;
 
   friend class context;
 };
@@ -68,7 +68,7 @@ protected:
 
   ~outputimpl();
 
-  uint32_t* words_;
+  bitvector::word_t* words_;
 
   friend class context;
 };
@@ -95,7 +95,7 @@ protected:
 
   ~tapimpl();
 
-  uint32_t* words_;
+  bitvector::word_t* words_;
 
   friend class context;
 };

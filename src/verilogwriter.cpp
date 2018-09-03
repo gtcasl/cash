@@ -943,7 +943,7 @@ void verilogwriter::print_value(std::ostream& out,
   auto oldflags = out.flags();
   out.setf(std::ios_base::hex, std::ios_base::basefield);
 
-  uint32_t word = 0;
+  uint32_t word(0);
   for (auto it = value.begin() + offset + (size - 1); size;) {
     word = (word << 0x1) | *it--;
     if (0 == (--size & 0x3)) {

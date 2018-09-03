@@ -79,7 +79,7 @@ protected:
 
   bindimpl* binding_;
   lnode ioport_;
-  uint32_t* words_;
+  bitvector::word_t* words_;
 
   friend class context;
 };

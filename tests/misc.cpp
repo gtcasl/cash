@@ -137,12 +137,12 @@ TEST_CASE("misc", "[misc]") {
 
    SECTION("bitvector", "[bitvector]") {
      TESTX([]()->bool {
-       bitvector x(32, {0x0, 0x0});
-       x = {0x0, 0x7};
+       bitvector x(32);
+       x = std::array<uint16_t, 2>{0x0, 0x7};
        return 0x7 == (int)x;
      });
      TESTX([]()->bool {
-       bitvector x(32, "0_h");
+       bitvector x(32);
        x = "7_h";
        return 0x7 == (int)x;
      });
