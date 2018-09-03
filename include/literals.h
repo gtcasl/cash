@@ -14,7 +14,7 @@ struct lit_size;
 
 template <typename T, unsigned N, char... Chars>
 struct lit_size<false, T, N, Chars...> {
-  static_assert(N > 0, "invalid scalar size");
+  static_assert(N > 0, "invalid size");
   static constexpr unsigned value = N;
 };
 

@@ -5,7 +5,7 @@
 namespace ch {
 namespace htl {
 
-using namespace ch::core;
+using namespace ch::logic;
 using namespace extension;
 
 template <typename ArgN, typename ArgM, typename... Args>

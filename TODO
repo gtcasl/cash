@@ -87,7 +87,7 @@ X*** Assignment rule: by constructor assignent is ignored during check
 - implement ch_make_device() to use compiler time binding
 - add C++ user defined literals for _b, _h, _d, _o convertion to bit<N> and bus<N>
 - create ../configure --prefix / make / make install scripts
-- implement cash namespaces ch::core, ch::sim, ch::stl
+- implement cash namespaces ch::logic, ch::system, ch::stl
 - to_verilog() renaming module arguments
 - investigate using std::bind and variadic functions for device creation
 - add mutex and fifo primitives for TML modelling

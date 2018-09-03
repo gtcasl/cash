@@ -23,7 +23,7 @@ logic_buffer getRegNextNode(const lnode& node);
 template <typename T>
 class ch_reg_impl final : public T {
 public:  
-  using traits = logic_traits<ch_width_v<T>, ch_signed_v<T>, T, ch_scalar_t<T>>;
+  using traits = logic_traits<ch_width_v<T>, ch_signed_v<T>, T, ch_system_t<T>>;
   using base = T;
 
   ch_reg_impl(CH_SLOC)

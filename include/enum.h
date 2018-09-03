@@ -28,9 +28,9 @@ void registerEnumString(const lnode& node, void* callback);
 #define CH_ENUM_STRING_(c) CH_CONCAT(CH_ENUM_STRING_, c)
 #define CH_ENUM_STRING(a, i, x) case CH_ENUM_STRING_(CH_NARG(CH_REM x))(CH_REM x, x)
 
-#define CH_ENUM_SCALAR_IMPL(enum_name) \
-  explicit enum_name(const ch::internal::scalar_buffer_ptr& buffer = \
-    ch::internal::make_scalar_buffer(traits::bitwidth)) : base(buffer) {} \
+#define CH_ENUM_SYSTEM_IMPL(enum_name) \
+  explicit enum_name(const ch::internal::system_buffer_ptr& buffer = \
+    ch::internal::make_system_buffer(traits::bitwidth)) : base(buffer) {} \
   enum_name(const enum_name& __other) : base(__other) {} \
   enum_name(enum_name&& __other) : base(std::move(__other)) {} \
   enum_name(enum_type __other) : base(static_cast<unsigned>(__other)) {}
@@ -81,16 +81,16 @@ void registerEnumString(const lnode& node, void* callback);
       } \
     }\
   private: \
-    class __scalar_type__ : public ch::internal::ch_scbit<size> { \
+    class __system_type__ : public ch::internal::ch_scbit<size> { \
     public: \
-      using traits = ch::internal::scalar_traits<size, false, __scalar_type__, enum_name>; \
+      using traits = ch::internal::system_traits<size, false, __system_type__, enum_name>; \
       using base = ch::internal::ch_scbit<size>; \
-      CH_ENUM_SCALAR_IMPL(__scalar_type__) \
-      CH_ENUM_COMMON_IMPL(__scalar_type__) \
-      CH_SCALAR_INTERFACE(__scalar_type__) \
+      CH_ENUM_SYSTEM_IMPL(__system_type__) \
+      CH_ENUM_COMMON_IMPL(__system_type__) \
+      CH_SYSTEM_INTERFACE(__system_type__) \
     }; \
   public: \
-    using traits = ch::internal::logic_traits<size, false, enum_name, __scalar_type__>; \
+    using traits = ch::internal::logic_traits<size, false, enum_name, __system_type__>; \
     using base = ch::internal::ch_bit<size>; \
     CH_ENUM_LOGIC_IMPL(enum_name) \
     CH_ENUM_COMMON_IMPL(enum_name) \

@@ -8,22 +8,22 @@ namespace internal {
 template <unsigned N> class ch_uint;
 
 template <unsigned N = 32>
-class ch_scuint : public scalar_op_relational<ch_scuint, N,
-                           scalar_op_bitwise<ch_scuint, N,
-                             scalar_op_shift<ch_scuint, N,
-                               scalar_op_padding<ch_scuint, N,
-                                 scalar_op_cast<ch_scuint, N,
-                                    scalar_op_arithmetic<ch_scuint, N, ch_scbit<N>>>>>>> {
+class ch_scuint : public system_op_relational<ch_scuint, N,
+                           system_op_bitwise<ch_scuint, N,
+                             system_op_shift<ch_scuint, N,
+                               system_op_padding<ch_scuint, N,
+                                 system_op_cast<ch_scuint, N,
+                                    system_op_arithmetic<ch_scuint, N, ch_scbit<N>>>>>>> {
 public:
-  using traits = scalar_traits<N, false, ch_scuint, ch_uint<N>>;
-  using base = scalar_op_relational<ch_scuint, N,
-                 scalar_op_bitwise<ch_scuint, N,
-                   scalar_op_shift<ch_scuint, N,
-                     scalar_op_padding<ch_scuint, N,
-                       scalar_op_cast<ch_scuint, N,
-                         scalar_op_arithmetic<ch_scuint, N, ch_scbit<N>>>>>>>;
+  using traits = system_traits<N, false, ch_scuint, ch_uint<N>>;
+  using base = system_op_relational<ch_scuint, N,
+                 system_op_bitwise<ch_scuint, N,
+                   system_op_shift<ch_scuint, N,
+                     system_op_padding<ch_scuint, N,
+                       system_op_cast<ch_scuint, N,
+                         system_op_arithmetic<ch_scuint, N, ch_scbit<N>>>>>>>;
 
-  explicit ch_scuint(const scalar_buffer_ptr& buffer = make_scalar_buffer(N))
+  explicit ch_scuint(const system_buffer_ptr& buffer = make_system_buffer(N))
     : base(buffer)
   {}
 
@@ -51,7 +51,7 @@ public:
     return *this;
   }
 
-  CH_SCALAR_INTERFACE(ch_scuint)
+  CH_SYSTEM_INTERFACE(ch_scuint)
 };
 
 }

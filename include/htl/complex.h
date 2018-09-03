@@ -5,7 +5,7 @@
 namespace ch {
 namespace htl {
 
-using namespace ch::core;
+using namespace ch::logic;
 
 template <typename T>
 __struct (ch_complex, (

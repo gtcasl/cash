@@ -74,6 +74,11 @@ private:
 
 ///////////////////////////////////////////////////////////////////////////////
 
+template<typename T>
+static constexpr bool is_number_v = std::is_integral_v<T> || std::is_enum_v<T>;
+
+///////////////////////////////////////////////////////////////////////////////
+
 template <typename F, typename Arg>
 void for_each_impl(const F& f, Arg&& arg) {
   f(std::forward<Arg>(arg));
@@ -498,22 +503,22 @@ constexpr void static_for(Func &&f) {
 // is power of two number ?
 template <typename T = uint32_t>
 constexpr bool ispow2(T value) {
-  static_assert(std::is_integral_v<T>, "invalid type");
+  static_assert(is_number_v<T>, "invalid type");
   return value && !(value & (value - 1)); 
 }
 
 // return ilog2
 template <typename T = uint32_t>
 constexpr uint32_t ilog2(T x) {
-  static_assert(std::is_integral_v<T>, "invalid type");
-  return (x <= 1) ? 0 : (ilog2<T>(x >> 1) + 1);
+  static_assert(is_number_v<T>, "invalid type");
+  return (x <= 1) ? 0 : (ilog2(x >> 1) + 1);
 }
 
 // return ceil of log2
 template <typename T = uint32_t>
 constexpr uint32_t log2ceil(T x) {
-  static_assert(std::is_integral_v<T>, "invalid type");
-  return ispow2<T>(x) ? ilog2<T>(x) : (ilog2<T>(x) + 1);
+  static_assert(is_number_v<T>, "invalid type");
+  return ispow2(x) ? ilog2(x) : (ilog2(x) + 1);
 }
 
 template <typename Dst, typename Src>

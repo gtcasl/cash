@@ -17,8 +17,8 @@ template <typename T, unsigned N>
 inline constexpr bool is_scbit_convertible_v = std::is_constructible_v<ch_scbit<N>, T>;
 
 template <unsigned N, typename T>
-auto to_scalar(T&& obj) {
-  if constexpr (is_scalar_type_v<T> && ch_width_v<T> == N) {
+auto to_system(T&& obj) {
+  if constexpr (is_system_type_v<T> && ch_width_v<T> == N) {
     return std::move(obj);
   } else {
     return ch_scbit<N>(std::forward<T>(obj));
@@ -27,33 +27,33 @@ auto to_scalar(T&& obj) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class scalar_buffer;
+class system_buffer;
 
-using scalar_buffer_ptr = std::shared_ptr<scalar_buffer>;
+using system_buffer_ptr = std::shared_ptr<system_buffer>;
 
-class scalar_buffer {
+class system_buffer {
 public:
-  explicit scalar_buffer(uint32_t size);
+  explicit system_buffer(uint32_t size);
 
-  explicit scalar_buffer(const bitvector& data);
+  explicit system_buffer(const bitvector& data);
 
-  explicit scalar_buffer(bitvector&& data);
+  explicit system_buffer(bitvector&& data);
 
-  scalar_buffer(uint32_t size, const scalar_buffer_ptr& buffer, uint32_t offset);
+  system_buffer(uint32_t size, const system_buffer_ptr& buffer, uint32_t offset);
 
-  scalar_buffer(const scalar_buffer& other);
+  system_buffer(const system_buffer& other);
 
-  scalar_buffer(scalar_buffer&& other);
+  system_buffer(system_buffer&& other);
 
-  virtual ~scalar_buffer() {}
+  virtual ~system_buffer() {}
 
-  scalar_buffer& operator=(const scalar_buffer& other);
+  system_buffer& operator=(const system_buffer& other);
 
-  scalar_buffer& operator=(scalar_buffer&& other);
+  system_buffer& operator=(system_buffer&& other);
 
   virtual const bitvector& data() const;
 
-  const scalar_buffer_ptr& source() const {
+  const system_buffer_ptr& source() const {
     return source_;
   }
 
@@ -70,7 +70,7 @@ public:
   }
 
   void copy(uint32_t dst_offset,
-            const scalar_buffer& src,
+            const system_buffer& src,
             uint32_t src_offset,
             uint32_t length);
 
@@ -93,25 +93,25 @@ public:
 
 protected:
 
-  scalar_buffer(const bitvector& value,
-                const scalar_buffer_ptr& source,
+  system_buffer(const bitvector& value,
+                const system_buffer_ptr& source,
                 uint32_t offset,
                 uint32_t size);
 
-  scalar_buffer_ptr source_;
+  system_buffer_ptr source_;
   mutable bitvector value_;
   uint32_t offset_;
   uint32_t size_;
 };
 
 template <typename... Args>
-auto make_scalar_buffer(Args&&... args) {
-  return std::make_shared<scalar_buffer>(std::forward<Args>(args)...);
+auto make_system_buffer(Args&&... args) {
+  return std::make_shared<system_buffer>(std::forward<Args>(args)...);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class scalar_accessor {
+class system_accessor {
 public:
   template <typename T>
   static const auto& buffer(const T& obj) {
@@ -134,13 +134,13 @@ public:
   template <typename T>
   static auto copy(const T& obj) {
     assert(ch_width_v<T> == obj.buffer()->size());
-    return make_scalar_buffer(*obj.buffer());
+    return make_system_buffer(*obj.buffer());
   }
 
   template <typename T>
   static auto move(T&& obj) {
     assert(ch_width_v<T> == obj.buffer()->size());
-    return make_scalar_buffer(std::move(*obj.buffer()));
+    return make_system_buffer(std::move(*obj.buffer()));
   }
 
   template <typename U, typename V>
@@ -171,32 +171,32 @@ public:
   template <typename R, typename T>
   static R cast(const T& obj) {
     static_assert(ch_width_v<T> == ch_width_v<R>, "invalid size");
-    return R(make_scalar_buffer(ch_width_v<T>, obj.buffer(), 0));
+    return R(make_system_buffer(ch_width_v<T>, obj.buffer(), 0));
   }
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
-typedef void (*ScalarFunc1)(bitvector& out, const bitvector& in);
-typedef void (*ScalarFunc2)(bitvector& out, const bitvector& lhs, const bitvector& rhs);
+typedef void (*SystemFunc1)(bitvector& out, const bitvector& in);
+typedef void (*SystemFunc2)(bitvector& out, const bitvector& lhs, const bitvector& rhs);
 
 template <typename R, typename A>
-auto make_scalar_op(ScalarFunc1 func, const A& in) {
+auto make_system_op(SystemFunc1 func, const A& in) {
   bitvector ret(ch_width_v<R>);
-  func(ret, scalar_accessor::data(in));
-  return R(make_scalar_buffer(std::move(ret)));
+  func(ret, system_accessor::data(in));
+  return R(make_system_buffer(std::move(ret)));
 }
 
 template <typename R, typename A, typename B>
-auto make_scalar_op(ScalarFunc2 func, const A& lhs, const B& rhs) {
+auto make_system_op(SystemFunc2 func, const A& lhs, const B& rhs) {
   bitvector ret(ch_width_v<R>);
-  func(ret, scalar_accessor::data(lhs), scalar_accessor::data(rhs));
-  return R(make_scalar_buffer(std::move(ret)));
+  func(ret, system_accessor::data(lhs), system_accessor::data(rhs));
+  return R(make_system_buffer(std::move(ret)));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-#define CH_SCALAR_INTERFACE(type) \
+#define CH_SYSTEM_INTERFACE(type) \
   void read(uint32_t src_offset, \
             void* out, \
             uint32_t out_cbsize, \
@@ -213,13 +213,13 @@ auto make_scalar_op(ScalarFunc2 func, const A& lhs, const B& rhs) {
   } \
   template <typename R> \
   const auto as() const { \
-    static_assert(ch::internal::is_scalar_type_v<R>, "invalid type"); \
-    return ch::internal::scalar_accessor::cast<R>(*this); \
+    static_assert(ch::internal::is_system_type_v<R>, "invalid type"); \
+    return ch::internal::system_accessor::cast<R>(*this); \
   } \
   template <typename R> \
   auto as() { \
-    static_assert(ch::internal::is_scalar_type_v<R>, "invalid type"); \
-    return ch::internal::scalar_accessor::cast<R>(*this); \
+    static_assert(ch::internal::is_system_type_v<R>, "invalid type"); \
+    return ch::internal::system_accessor::cast<R>(*this); \
   } \
   const auto as_scbit() const { \
     return this->as<ch_scbit<type::traits::bitwidth>>(); \
@@ -240,7 +240,7 @@ auto make_scalar_op(ScalarFunc2 func, const A& lhs, const B& rhs) {
     return this->as<ch::internal::ch_scuint<type::traits::bitwidth>>(); \
   }
 
-#define CH_SCALAR_OPERATOR(name) \
+#define CH_SYSTEM_OPERATOR(name) \
   template <template <unsigned> typename T, unsigned N, typename Next = empty_base> \
   struct name : Next { \
     using Derived = T<N>; \
@@ -255,7 +255,7 @@ auto make_scalar_op(ScalarFunc2 func, const A& lhs, const B& rhs) {
     name& operator=(const name& other) { Next::operator=(other); return *this; } \
     name& operator=(name&& other) { Next::operator=(std::move(other)); return *this; }
 
-#define CH_SCALAR_OPERATOR_IMPL(op, body) \
+#define CH_SYSTEM_OPERATOR_IMPL(op, body) \
   friend auto op(const Derived& lhs, const Derived& rhs) { \
     CH_REM body; \
   } \
@@ -270,21 +270,21 @@ auto make_scalar_op(ScalarFunc2 func, const A& lhs, const B& rhs) {
     CH_REM body; \
   }
 
-CH_SCALAR_OPERATOR(scalar_op_equality)
-  CH_SCALAR_OPERATOR_IMPL(operator==, (return scalar_accessor::data(lhs) == scalar_accessor::data(rhs)))
-  CH_SCALAR_OPERATOR_IMPL(operator!=, (return scalar_accessor::data(lhs) != scalar_accessor::data(rhs)))
+CH_SYSTEM_OPERATOR(system_op_equality)
+  CH_SYSTEM_OPERATOR_IMPL(operator==, (return system_accessor::data(lhs) == system_accessor::data(rhs)))
+  CH_SYSTEM_OPERATOR_IMPL(operator!=, (return system_accessor::data(lhs) != system_accessor::data(rhs)))
 };
 
-CH_SCALAR_OPERATOR(scalar_op_logical)
+CH_SYSTEM_OPERATOR(system_op_logical)
   friend auto operator&&(const Derived& lhs, const Derived& rhs) {
     static_assert(Derived::traits::bitwidth == 1, "invalid size");
-    auto ret = make_scalar_op<ch_scbit<1>>(bv_and, lhs, rhs);
+    auto ret = make_system_op<ch_scbit<1>>(bv_and, lhs, rhs);
     return static_cast<bool>(ret);
   }
 
   friend auto operator||(const Derived& lhs, const Derived& rhs) {
     static_assert(Derived::traits::bitwidth == 1, "invalid size");
-    auto ret = make_scalar_op<ch_scbit<1>>(bv_or, lhs, rhs);
+    auto ret = make_system_op<ch_scbit<1>>(bv_or, lhs, rhs);
     return static_cast<bool>(ret);
   }
 
@@ -293,37 +293,37 @@ CH_SCALAR_OPERATOR(scalar_op_logical)
   }
 };
 
-CH_SCALAR_OPERATOR(scalar_op_bitwise)
+CH_SYSTEM_OPERATOR(system_op_bitwise)
   friend auto operator~(const Derived& self) {
-    return make_scalar_op<Derived>(bv_inv, self);
+    return make_system_op<Derived>(bv_inv, self);
   }
 
-  CH_SCALAR_OPERATOR_IMPL(operator&, (return make_scalar_op<Derived>(bv_and, lhs, rhs)))
-  CH_SCALAR_OPERATOR_IMPL(operator|, (return make_scalar_op<Derived>(bv_or, lhs, rhs)))
-  CH_SCALAR_OPERATOR_IMPL(operator^, (return make_scalar_op<Derived>(bv_xor, lhs, rhs)))
+  CH_SYSTEM_OPERATOR_IMPL(operator&, (return make_system_op<Derived>(bv_and, lhs, rhs)))
+  CH_SYSTEM_OPERATOR_IMPL(operator|, (return make_system_op<Derived>(bv_or, lhs, rhs)))
+  CH_SYSTEM_OPERATOR_IMPL(operator^, (return make_system_op<Derived>(bv_xor, lhs, rhs)))
 };
 
-CH_SCALAR_OPERATOR(scalar_op_shift)
+CH_SYSTEM_OPERATOR(system_op_shift)
   template <typename U,
             CH_REQUIRE_0(std::is_convertible_v<U, ch_scbit<ch_width_v<U>>>)>
   friend auto operator<<(const Derived& lhs, const U& rhs) {
-    return make_scalar_op<Derived, Derived, ch_scbit<ch_width_v<U>>>(bv_sll, lhs, rhs);
+    return make_system_op<Derived, Derived, ch_scbit<ch_width_v<U>>>(bv_sll, lhs, rhs);
   }
 
   template <typename U,
             CH_REQUIRE_0(std::is_convertible_v<U, ch_scbit<ch_width_v<U>>>)>
   friend auto operator>>(const Derived& lhs, const U& rhs) {
-    return make_scalar_op<Derived, Derived, ch_scbit<ch_width_v<U>>>(
+    return make_system_op<Derived, Derived, ch_scbit<ch_width_v<U>>>(
                             (ch_signed_v<Derived> ? bv_sra : bv_srl), lhs, rhs);
   }
 };
 
-CH_SCALAR_OPERATOR(scalar_op_cast)
+CH_SYSTEM_OPERATOR(system_op_cast)
   template <typename U,
             CH_REQUIRE_0(std::is_integral_v<U>)>
   explicit operator U() const {
     static_assert(CH_WIDTH_OF(U) >= Derived::traits::bitwidth, "invalid size");
-    auto ret = static_cast<U>(scalar_accessor::data(reinterpret_cast<const Derived&>(*this)));
+    auto ret = static_cast<U>(system_accessor::data(reinterpret_cast<const Derived&>(*this)));
     if constexpr(ch_signed_v<Derived> && (CH_WIDTH_OF(U) > Derived::traits::bitwidth)) {
       return sign_ext(ret, Derived::traits::bitwidth);
     } else {
@@ -332,21 +332,21 @@ CH_SCALAR_OPERATOR(scalar_op_cast)
   }
 
   explicit operator bitvector() const {
-    return scalar_accessor::data(reinterpret_cast<const Derived&>(*this));
+    return system_accessor::data(reinterpret_cast<const Derived&>(*this));
   }
 };
 
-CH_SCALAR_OPERATOR(scalar_op_padding)
+CH_SYSTEM_OPERATOR(system_op_padding)
   template <typename R>
   R pad() const {
-    static_assert(is_scalar_type_v<R>, "invalid type");
+    static_assert(is_system_type_v<R>, "invalid type");
     static_assert(ch_width_v<R> >= N, "invalid size");
     auto& self = reinterpret_cast<const Derived&>(*this);
     if constexpr (ch_width_v<R> > N) {
       if constexpr (ch_signed_v<Derived>) {
-        return make_scalar_op<R>(bv_sext, self);
+        return make_system_op<R>(bv_sext, self);
       } else {
-        return make_scalar_op<R>(bv_zext, self);
+        return make_system_op<R>(bv_zext, self);
       }
     } else
     if constexpr (std::is_same_v<R, Derived>) {
@@ -361,35 +361,35 @@ CH_SCALAR_OPERATOR(scalar_op_padding)
   }
 };
 
-CH_SCALAR_OPERATOR(scalar_op_relational)
-  CH_SCALAR_OPERATOR_IMPL(operator<, (if constexpr (ch_signed_v<Derived>) {
+CH_SYSTEM_OPERATOR(system_op_relational)
+  CH_SYSTEM_OPERATOR_IMPL(operator<, (if constexpr (ch_signed_v<Derived>) {
                                         return bv_lts(lhs.buffer_->data(), rhs.buffer_->data());
                                       } else {
                                         return bv_ltu(lhs.buffer_->data(), rhs.buffer_->data());
                                       }))
-  CH_SCALAR_OPERATOR_IMPL(operator>=, (return !(lhs < rhs)))
-  CH_SCALAR_OPERATOR_IMPL(operator>, (return (rhs < lhs)))
-  CH_SCALAR_OPERATOR_IMPL(operator<=, (return !(rhs < lhs)))
+  CH_SYSTEM_OPERATOR_IMPL(operator>=, (return !(lhs < rhs)))
+  CH_SYSTEM_OPERATOR_IMPL(operator>, (return (rhs < lhs)))
+  CH_SYSTEM_OPERATOR_IMPL(operator<=, (return !(rhs < lhs)))
 };
 
-CH_SCALAR_OPERATOR(scalar_op_arithmetic)
+CH_SYSTEM_OPERATOR(system_op_arithmetic)
   friend auto operator-(const Derived& self) {
-    return make_scalar_op<Derived>(bv_neg, self);
+    return make_system_op<Derived>(bv_neg, self);
   }
-  CH_SCALAR_OPERATOR_IMPL(operator+, (return make_scalar_op<Derived>(bv_add, lhs, rhs)))
-  CH_SCALAR_OPERATOR_IMPL(operator-, (return make_scalar_op<Derived>(bv_sub, lhs, rhs)))
-  CH_SCALAR_OPERATOR_IMPL(operator*, (return make_scalar_op<Derived>(bv_mul, lhs, rhs)))
+  CH_SYSTEM_OPERATOR_IMPL(operator+, (return make_system_op<Derived>(bv_add, lhs, rhs)))
+  CH_SYSTEM_OPERATOR_IMPL(operator-, (return make_system_op<Derived>(bv_sub, lhs, rhs)))
+  CH_SYSTEM_OPERATOR_IMPL(operator*, (return make_system_op<Derived>(bv_mul, lhs, rhs)))
 
-  CH_SCALAR_OPERATOR_IMPL(operator/, (if constexpr (ch_signed_v<Derived>) {
-                                         return make_scalar_op<Derived>(bv_divs, lhs, rhs);
+  CH_SYSTEM_OPERATOR_IMPL(operator/, (if constexpr (ch_signed_v<Derived>) {
+                                         return make_system_op<Derived>(bv_divs, lhs, rhs);
                                       } else {
-                                         return make_scalar_op<Derived>(bv_divu, lhs, rhs);
+                                         return make_system_op<Derived>(bv_divu, lhs, rhs);
                                       }))
 
-  CH_SCALAR_OPERATOR_IMPL(operator%, (if constexpr (ch_signed_v<Derived>) {
-                                        return make_scalar_op<Derived>(bv_mods, lhs, rhs);
+  CH_SYSTEM_OPERATOR_IMPL(operator%, (if constexpr (ch_signed_v<Derived>) {
+                                        return make_system_op<Derived>(bv_mods, lhs, rhs);
                                      } else {
-                                        return make_scalar_op<Derived>(bv_modu, lhs, rhs);
+                                        return make_system_op<Derived>(bv_modu, lhs, rhs);
                                      }))
 };
 

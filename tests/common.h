@@ -4,9 +4,9 @@
 #include <cash.h>
 #include "catch.h"
 
-using namespace ch::core;
+using namespace ch::logic;
 using namespace ch::literals;
-using namespace ch::sim;
+using namespace ch::system;
 
 bool checkVerilog(const std::string& moduleName);
 

@@ -108,7 +108,7 @@ TEST_CASE("fixed", "[fixed]") {
     });
   }
 
-  SECTION("scalar", "[scalar]") {
+  SECTION("system", "[system]") {
     TESTX([]()->bool {
       ch_scfixed<32, 16> a(0x8000), b(0x10000);
       auto c = a + b;

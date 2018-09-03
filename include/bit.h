@@ -31,7 +31,7 @@ public:
   {}
 
   ch_bit(const ch_scbit<N>& other, CH_SLOC)
-    : buffer_(logic_buffer(scalar_accessor::data(other), sloc))
+    : buffer_(logic_buffer(system_accessor::data(other), sloc))
   {}
 
   template <typename U,

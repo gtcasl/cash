@@ -26,16 +26,16 @@ void bindOutput(const lnode& dst,
 template <typename T> class ch_logic_in;
 template <typename T> class ch_logic_out;
 
-template <typename T> class ch_scalar_in;
-template <typename T> class ch_scalar_out;
+template <typename T> class ch_system_in;
+template <typename T> class ch_system_out;
 
 template <typename T>
 using ch_in = std::conditional_t<is_logic_only_v<T>,
-                std::add_const_t<ch_logic_in<T>>, ch_scalar_in<T>>;
+                std::add_const_t<ch_logic_in<T>>, ch_system_in<T>>;
 
 template <typename T>
 using ch_out = std::conditional_t<is_logic_only_v<T>,
-                  ch_logic_out<T>, std::add_const_t<ch_scalar_out<T>>>;
+                  ch_logic_out<T>, std::add_const_t<ch_system_out<T>>>;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -46,7 +46,7 @@ public:
   using traits = mixed_logic_io_traits<ch_direction::in,
                                        ch_in<T>,
                                        ch_out<T>,
-                                       ch_in<ch_scalar_t<T>>,
+                                       ch_in<ch_system_t<T>>,
                                        T>;
   using base = T;
 
@@ -88,7 +88,7 @@ private:
   lnode input_;
 
   template <typename U> friend class ch_logic_out;
-  template <typename U> friend class ch_scalar_in;
+  template <typename U> friend class ch_system_in;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -100,7 +100,7 @@ public:
   using traits = mixed_logic_io_traits<ch_direction::out,
                                        ch_out<T>,
                                        ch_in<T>,
-                                       ch_out<ch_scalar_t<T>>,
+                                       ch_out<ch_system_t<T>>,
                                        T>;
   using base = T;
   using base::operator=;
@@ -150,16 +150,16 @@ private:
   lnode output_;
 
   template <typename U> friend class ch_logic_in;
-  template <typename U> friend class ch_scalar_out;
+  template <typename U> friend class ch_system_out;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class scalar_io_buffer : public scalar_buffer {
+class system_io_buffer : public system_buffer {
 public:
-  using base = scalar_buffer;
+  using base = system_buffer;
 
-  explicit scalar_io_buffer(const lnode& io)
+  explicit system_io_buffer(const lnode& io)
     : base(bitvector(), nullptr, 0, io.size()), io_(io)
   {}
 
@@ -189,10 +189,10 @@ public:
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T>
-class ch_scalar_in final : public T {
+class ch_system_in final : public T {
 public:
-  static_assert(is_scalar_only_v<T>, "invalid type");
-  using traits = mixed_scalar_io_traits<ch_direction::in,
+  static_assert(is_system_only_v<T>, "invalid type");
+  using traits = mixed_system_io_traits<ch_direction::in,
                                         ch_in<T>,
                                         ch_out<T>,
                                         ch_in<ch_logic_t<T>>,
@@ -201,30 +201,30 @@ public:
   using base::operator=;
 
   template <typename U>
-  explicit ch_scalar_in(const ch_logic_in<U>& in)
-    : base(std::make_shared<scalar_io_buffer>(in.input_)) {
+  explicit ch_system_in(const ch_logic_in<U>& in)
+    : base(std::make_shared<system_io_buffer>(in.input_)) {
     static_assert(is_logic_only_v<U>, "invalid type");
     static_assert(ch_width_v<T> == ch_width_v<U>, "invalid size");
   }
 
-  ch_scalar_in(const ch_scalar_in& other)
-    : base(scalar_accessor::buffer(other))
+  ch_system_in(const ch_system_in& other)
+    : base(system_accessor::buffer(other))
   {}
 
-  ch_scalar_in(ch_scalar_in&& other) : base(std::move(other)) {}
+  ch_system_in(ch_system_in&& other) : base(std::move(other)) {}
 
-  ch_scalar_in& operator=(const ch_scalar_in& other) {
+  ch_system_in& operator=(const ch_system_in& other) {
     base::operator=(other);
     return *this;
   }
 
-  ch_scalar_in& operator=(ch_scalar_in&& other) {
+  ch_system_in& operator=(ch_system_in&& other) {
     base::operator=(std::move(other));
     return *this;
   }
 
   template <typename U>
-  void operator()(const ch_scalar_out<U>& out) {
+  void operator()(const ch_system_out<U>& out) {
     static_assert(std::is_constructible_v<U, T>, "invalid type");
     *this = out;
   }
@@ -233,10 +233,10 @@ public:
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T>
-class ch_scalar_out final : public T {
+class ch_system_out final : public T {
 public:
-  static_assert(is_scalar_only_v<T>, "invalid type");
-  using traits = mixed_scalar_io_traits<ch_direction::out,
+  static_assert(is_system_only_v<T>, "invalid type");
+  using traits = mixed_system_io_traits<ch_direction::out,
                                         ch_out<T>,
                                         ch_in<T>,
                                         ch_out<ch_logic_t<T>>,
@@ -244,29 +244,29 @@ public:
   using base = T;
 
   template <typename U>
-  explicit ch_scalar_out(const ch_logic_out<U>& out)
-    : base(std::make_shared<scalar_io_buffer>(out.output_)) {
+  explicit ch_system_out(const ch_logic_out<U>& out)
+    : base(std::make_shared<system_io_buffer>(out.output_)) {
     static_assert(is_logic_only_v<U>, "invalid type");
     static_assert(ch_width_v<T> == ch_width_v<U>, "invalid size");
   }
 
-  explicit ch_scalar_out(const ch_scalar_out& other)
-    : base(scalar_accessor::buffer(other))
+  explicit ch_system_out(const ch_system_out& other)
+    : base(system_accessor::buffer(other))
   {}
 
-  ch_scalar_out(const ch_scalar_out&& other) : base(std::move(other)) {}
+  ch_system_out(const ch_system_out&& other) : base(std::move(other)) {}
 
   template <typename U>
-  void operator()(ch_scalar_in<U>& out) const {
+  void operator()(ch_system_in<U>& out) const {
     static_assert(std::is_constructible_v<U, T>, "invalid type");
     out = *this;
   }
 
 protected:
 
-  ch_scalar_out& operator=(const ch_scalar_out&) = delete;
+  ch_system_out& operator=(const ch_system_out&) = delete;
 
-  ch_scalar_out& operator=(ch_scalar_out&&) = delete;
+  ch_system_out& operator=(ch_system_out&&) = delete;
 };
 
 }

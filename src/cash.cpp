@@ -1,8 +1,8 @@
 /*#include "cash.h"
 #include <htl/float32.h>
 
-using namespace ch::core;
-using namespace ch::sim;
+using namespace ch::logic;
+using namespace ch::system;
 using namespace ch::literals;
 using namespace ch::htl;
 
@@ -279,13 +279,13 @@ void foo() {
 }
 
 void bar() {
-  ch_scalar_t<s4_t> a(0101_b);
-  ch_scalar_t<s2_4_t> b(0101_b, 01_b);
-  ch_scalar_t<s2_4_t> c(0101_b, 01_b);
-  ch_scalar_t<u2_4_t> d(0101_b);
-  ch_scalar_t<sd1_t> e{1_b2, 2_h};
-  ch_scalar_t<sd2_t> f{2_h, {1_b2, 2_h}};
-  ch_scalar_t<sd3_t> g{1_h, {1_b2, 2_h}};
+  ch_system_t<s4_t> a(0101_b);
+  ch_system_t<s2_4_t> b(0101_b, 01_b);
+  ch_system_t<s2_4_t> c(0101_b, 01_b);
+  ch_system_t<u2_4_t> d(0101_b);
+  ch_system_t<sd1_t> e{1_b2, 2_h};
+  ch_system_t<sd2_t> f{2_h, {1_b2, 2_h}};
+  ch_system_t<sd3_t> g{1_h, {1_b2, 2_h}};
 
   ch_reg<s2_4_t> h{0101_b, 01_b};
   ch_reg<u2_4_t> i{0101_b};

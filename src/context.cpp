@@ -678,7 +678,7 @@ context::emit_conditionals(lnodeimpl* dst,
       for (auto& value : values) {
         auto pred = value.first;
         if (pred) {
-          // the case predicate should be a scalar value
+          // the case predicate should be a literal value
           assert(!branch->key || type_lit == pred->type());
           sel->srcs().push_back(pred);
         }

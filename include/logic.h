@@ -1,6 +1,6 @@
 #pragma once
 
-#include "scalar.h"
+#include "system.h"
 #include "lnode.h"
 
 namespace ch {
@@ -183,8 +183,8 @@ lnode to_lnode(const T& obj, const source_location& sloc) {
     return logic_accessor::data(obj);
   } else
   if constexpr (is_scbit_convertible_v<T, ch_width_v<R>>) {
-    // directly convert scalars and integrals to lnodes
-    return lnode(scalar_accessor::data(to_scalar<ch_width_v<R>>(obj)));
+    // directly convert integrals to lnodes
+    return lnode(system_accessor::data(to_system<ch_width_v<R>>(obj)));
   } else {
     return logic_accessor::data(R(obj, sloc));
   }

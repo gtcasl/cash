@@ -5,7 +5,7 @@
 namespace ch {
 namespace htl {
 
-using namespace ch::core;
+using namespace ch::logic;
 
 template <unsigned N>
 const auto ch_hot2bin = [](const ch_bit<N>& onehot) {

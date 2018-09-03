@@ -1,7 +1,7 @@
 #include <cash.h>
 
-using namespace ch::core;
-using namespace ch::sim;
+using namespace ch::logic;
+using namespace ch::system;
 
 __enum (Coin, (dime, nickel));
 __enum (State, (idle, s5, s10, s15, sOk));

@@ -6,7 +6,7 @@
 namespace ch {
 namespace htl {
 
-using namespace core;
+using namespace logic;
 using namespace extension;
 
 // |1|<- N-F-1 bits ->|<--- F bits -->|
@@ -38,10 +38,10 @@ public:
   static constexpr unsigned Intg = N-F;
   static constexpr unsigned Frac = F;
   static_assert(N >= (Frac+1), "invalid size");
-  using traits = scalar_traits<N, true, ch_scfixed, ch_fixed<N, Frac>>;
+  using traits = system_traits<N, true, ch_scfixed, ch_fixed<N, Frac>>;
   using base = ch_scbit<N>;
 
-  explicit ch_scfixed(const scalar_buffer_ptr& buffer = make_scalar_buffer(N))
+  explicit ch_scfixed(const system_buffer_ptr& buffer = make_system_buffer(N))
     : base(buffer)
   {}
 
@@ -69,7 +69,7 @@ public:
     return *this;
   }
 
-  CH_SCALAR_INTERFACE(ch_scfixed)
+  CH_SYSTEM_INTERFACE(ch_scfixed)
 
   friend auto operator<(const ch_scfixed& lhs, const ch_scfixed& rhs) {
     return (lhs.as_scint() < rhs.as_scint());

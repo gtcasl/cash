@@ -5,7 +5,7 @@
 namespace ch {
 namespace htl {
 
-using namespace core;
+using namespace logic;
 using namespace extension;
 
 #define ALTFP_SP_ADD_SUB 7
@@ -122,10 +122,10 @@ class ch_float32;
 
 class ch_scfloat32 : public ch_scbit<32> {
 public:
-  using traits = scalar_traits<32, true, ch_scfloat32, ch_float32>;
+  using traits = system_traits<32, true, ch_scfloat32, ch_float32>;
   using base = ch_scbit<32>;
 
-  explicit ch_scfloat32(const scalar_buffer_ptr& buffer = make_scalar_buffer(32))
+  explicit ch_scfloat32(const system_buffer_ptr& buffer = make_system_buffer(32))
     : base(buffer)
   {}
 
@@ -147,7 +147,7 @@ public:
     return *this;
   }
 
-  CH_SCALAR_INTERFACE(ch_scfloat32)
+  CH_SYSTEM_INTERFACE(ch_scfloat32)
 
   friend auto operator==(const ch_scfloat32& lhs, const ch_scfloat32& rhs) {
     return (lhs.as_scint() == rhs.as_scint());
@@ -174,31 +174,31 @@ public:
   }
 
   friend auto operator-(const ch_scfloat32& self) {
-    auto f_self = bitcast<float>(scalar_accessor::data(self).word(0));
+    auto f_self = bitcast<float>(system_accessor::data(self).word(0));
     return ch_scfloat32(0.0f - f_self);
   }
 
   friend auto operator+(const ch_scfloat32& lhs, const ch_scfloat32& rhs) {
-    auto f_lhs = bitcast<float>(scalar_accessor::data(lhs).word(0));
-    auto f_rhs = bitcast<float>(scalar_accessor::data(rhs).word(0));
+    auto f_lhs = bitcast<float>(system_accessor::data(lhs).word(0));
+    auto f_rhs = bitcast<float>(system_accessor::data(rhs).word(0));
     return ch_scfloat32(f_lhs + f_rhs);
   }
 
   friend auto operator-(const ch_scfloat32& lhs, const ch_scfloat32& rhs) {
-    auto f_lhs = bitcast<float>(scalar_accessor::data(lhs).word(0));
-    auto f_rhs = bitcast<float>(scalar_accessor::data(rhs).word(0));
+    auto f_lhs = bitcast<float>(system_accessor::data(lhs).word(0));
+    auto f_rhs = bitcast<float>(system_accessor::data(rhs).word(0));
     return ch_scfloat32(f_lhs - f_rhs);
   }
 
   friend auto operator*(const ch_scfloat32& lhs, const ch_scfloat32& rhs) {
-    auto f_lhs = bitcast<float>(scalar_accessor::data(lhs).word(0));
-    auto f_rhs = bitcast<float>(scalar_accessor::data(rhs).word(0));
+    auto f_lhs = bitcast<float>(system_accessor::data(lhs).word(0));
+    auto f_rhs = bitcast<float>(system_accessor::data(rhs).word(0));
     return ch_scfloat32(f_lhs * f_rhs);
   }
 
   friend auto operator/(const ch_scfloat32& lhs, const ch_scfloat32& rhs) {
-    auto f_lhs = bitcast<float>(scalar_accessor::data(lhs).word(0));
-    auto f_rhs = bitcast<float>(scalar_accessor::data(rhs).word(0));
+    auto f_lhs = bitcast<float>(system_accessor::data(lhs).word(0));
+    auto f_rhs = bitcast<float>(system_accessor::data(rhs).word(0));
     return ch_scfloat32(f_lhs / f_rhs);
   }
 

@@ -8,10 +8,9 @@ namespace eda {
 namespace altera {
 namespace avalon {
 
-using namespace ch::core;
+using namespace ch::logic;
 using namespace ch::literals;
 using namespace ch::htl;
-using namespace ch::utility;
 
 __inout (avalon_st_io, (
   __in(ch_bool)  valid_in,  // inputs available

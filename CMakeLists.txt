@@ -33,7 +33,7 @@ set(PROJECT_SOURCES
     src/utils.cpp
     src/platform.cpp
     src/bitvector.cpp
-    src/scalar.cpp
+    src/system.cpp
     src/lnodeimpl.cpp
     src/ioimpl.cpp
     src/proxyimpl.cpp

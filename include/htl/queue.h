@@ -6,13 +6,12 @@
 namespace ch {
 namespace htl {
 
-using namespace ch::core;
+using namespace ch::logic;
 
-template <typename T, unsigned N, bool SyncRead = false>
+template <typename T, unsigned N, bool SyncRead = false, bool ShowAhead = true>
 struct ch_queue {
   using value_type = T;
-  static constexpr uint32_t max_size = N;
-  static constexpr uint32_t addr_width = log2ceil(N);
+  static constexpr uint32_t max_size   = N;
   static constexpr uint32_t size_width = log2ceil(N+1);
   static_assert(N > 1, "invalid size");
 
@@ -22,11 +21,11 @@ struct ch_queue {
     __out(ch_uint<size_width>) size
   );
 
-  void describe() {
+  void describe() {    
+    static constexpr uint32_t addr_width = log2ceil(N);
     ch_reg<ch_uint<addr_width>> rd_ptr(0), wr_ptr(0);
     ch_reg<ch_uint<size_width>> counter(0);
     ch_reg<ch_bool> full(false), empty(true);
-    ch_mem<T, N> mem;
 
     auto reading = io.deq.ready && io.deq.valid;
     auto writing = io.enq.valid && io.enq.ready;
@@ -40,19 +39,22 @@ struct ch_queue {
       counter->next = counter - 1;
     };
 
-    auto rd_a = ch_slice<addr_width>(rd_ptr);
-    auto wr_a = ch_slice<addr_width>(wr_ptr);
-    mem.write(wr_a, io.enq.data, writing);
+    ch_mem<T, N, SyncRead && !ShowAhead> mem;
+    mem.write(wr_ptr, io.enq.data, writing);
 
     T data_out;
-
-    if constexpr (SyncRead) {
+    if constexpr (SyncRead && ShowAhead) {
       ch_reg<T> r_data_out;
-      auto wr_bypass = writing && (0 == counter || (1 == counter && reading));
-      auto addr = ch_slice<addr_width>(ch_sel(reading, rd_ptr + 1, rd_ptr));
-      data_out = ch_delay(ch_sel(wr_bypass, io.enq.data, mem.read(addr)));
+      __if (writing && (empty || (1 == counter && reading))) {
+        r_data_out->next = io.enq.data;
+      }__elif (reading) {
+        r_data_out->next = mem.read(rd_ptr + 1);
+      }__else {
+        r_data_out->next = mem.read(rd_ptr);
+      };
+      data_out = r_data_out;
     } else {
-      data_out = mem.read(rd_a);
+      data_out = mem.read(rd_ptr);
     }
 
     __if (counter == (N-1) && writing && !reading) {

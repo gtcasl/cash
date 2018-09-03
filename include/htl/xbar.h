@@ -7,7 +7,7 @@
 namespace ch {
 namespace htl {
 
-using namespace ch::core;
+using namespace ch::logic;
 
 template <typename T, unsigned I, unsigned O>
 struct ch_hxbar {

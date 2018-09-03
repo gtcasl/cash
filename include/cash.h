@@ -4,7 +4,7 @@
 #include "bitvector.h"
 #include "traits.h"
 #include "lnode.h"
-#include "scalar.h"
+#include "system.h"
 #include "scbit.h"
 #include "scint.h"
 #include "scuint.h"
@@ -50,7 +50,7 @@ namespace utility {
 //
 // core namespace
 //
-namespace core {
+namespace logic {
 
   using namespace ch::utility;
 
@@ -79,10 +79,10 @@ namespace core {
   using ch::internal::ch_signed_v;
   using ch::internal::ch_direction_v;
 
-  using ch::internal::ch_scalar_t;
+  using ch::internal::ch_system_t;
   using ch::internal::ch_logic_t;
 
-  using ch::internal::ch_scalar_io;
+  using ch::internal::ch_system_io;
   using ch::internal::ch_logic_io;
   using ch::internal::ch_flip_io;
 
@@ -235,9 +235,9 @@ namespace core {
 }
 
 //
-// simulation namespace
+// system namespace
 //
-namespace sim {
+namespace system {
 
   using namespace ch::utility;
 
@@ -278,12 +278,12 @@ namespace extension {
 
   using ch::internal::source_location;
   using ch::internal::logic_traits;
-  using ch::internal::scalar_traits;
+  using ch::internal::system_traits;
   using ch::internal::logic_buffer;
-  using ch::internal::scalar_buffer_ptr;  
+  using ch::internal::system_buffer_ptr;
   using ch::internal::logic_buffer;
-  using ch::internal::make_scalar_buffer;
-  using ch::internal::scalar_accessor;
+  using ch::internal::make_system_buffer;
+  using ch::internal::system_accessor;
   using ch::internal::logic_accessor;
   using ch::internal::udf_comb;
   using ch::internal::udf_seq;
@@ -291,14 +291,14 @@ namespace extension {
   using ch::internal::udf_inputs;
   using ch::internal::lnode;
 
-  using ch::internal::scalar_op_equality;
-  using ch::internal::scalar_op_logical;
-  using ch::internal::scalar_op_bitwise;
-  using ch::internal::scalar_op_shift;
-  using ch::internal::scalar_op_padding;
-  using ch::internal::scalar_op_cast;
-  using ch::internal::scalar_op_relational;
-  using ch::internal::scalar_op_arithmetic;
+  using ch::internal::system_op_equality;
+  using ch::internal::system_op_logical;
+  using ch::internal::system_op_bitwise;
+  using ch::internal::system_op_shift;
+  using ch::internal::system_op_padding;
+  using ch::internal::system_op_cast;
+  using ch::internal::system_op_relational;
+  using ch::internal::system_op_arithmetic;
 
   using ch::internal::logic_op_equality;
   using ch::internal::logic_op_logical;

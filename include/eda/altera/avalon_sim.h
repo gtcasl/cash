@@ -9,9 +9,8 @@ namespace eda {
 namespace altera {
 namespace avalon {
 
-using namespace ch::sim;
+using namespace ch::system;
 using namespace ch::literals;
-using namespace ch::utility;
 
 class avm_slave_driver_impl {
 protected:
@@ -97,7 +96,7 @@ public:
 template <typename AVM>
 class avm_slave_driver : public avm_slave_driver_impl {
 public:
-  using io_type = ch_scalar_io<avalon_mm_io<AVM>>;
+  using io_type = ch_system_io<avalon_mm_io<AVM>>;
 
   avm_slave_driver(uint32_t max_rd_reqs,
                    uint32_t max_wr_reqs,

@@ -78,7 +78,7 @@ template <typename T = void>
 class ch_device final : public device {
 public:  
   using base = device;
-  using io_type = ch_scalar_io<decltype(T::io)>;
+  using io_type = ch_system_io<decltype(T::io)>;
   io_type io;
 
   template <typename... Ts>

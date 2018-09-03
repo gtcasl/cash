@@ -9,9 +9,9 @@
 #include "common.h"
 #include <math.h>
 
-using namespace ch::core;
+using namespace ch::logic;
 using namespace ch::literals;
-using namespace ch::sim;
+using namespace ch::system;
 using namespace ch::htl;
 
 namespace {
@@ -247,7 +247,7 @@ int main() {
     assert(b == 1);
   }
   {
-    ch_scalar_t<s2_t> a{1, 0}, b;
+    ch_system_t<s2_t> a{1, 0}, b;
     b = std::move(a);
     assert(b.b == 1);
   }*/

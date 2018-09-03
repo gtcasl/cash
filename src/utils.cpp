@@ -102,5 +102,5 @@ int ch::internal::char2int(char x, int base) {
       return (x - 'a') + 10;
     break;
   }
-  CH_ABORT("invalid scalar value");
+  CH_ABORT("invalid value");
 }

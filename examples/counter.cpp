@@ -1,7 +1,7 @@
 #include <cash.h>
 
-using namespace ch::core;
-using namespace ch::sim;
+using namespace ch::logic;
+using namespace ch::system;
 
 template <unsigned N>
 struct Counter {

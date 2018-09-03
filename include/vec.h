@@ -161,7 +161,7 @@ public:
   using traits = logic_traits<N * ch_width_v<T>,
                               false,
                               ch_vec,
-                              ch_vec<ch_scalar_t<T>, N>>;
+                              ch_vec<ch_system_t<T>, N>>;
   using base = vec_base<T, N>;
   using base::operator [];
   using base::items_;
@@ -191,9 +191,9 @@ public:
   }
 
   template <typename U,
-            CH_REQUIRE_1(is_scalar_type_v<U>)>
+            CH_REQUIRE_1(is_system_type_v<U>)>
   explicit ch_vec(const U& other, CH_SLOC)
-    : ch_vec(logic_buffer(scalar_accessor::data(other), sloc)) {
+    : ch_vec(logic_buffer(system_accessor::data(other), sloc)) {
     static_assert(ch_width_v<U> == N * ch_width_v<T>, "invalid size");
   }
 
@@ -224,10 +224,10 @@ public:
   }
 
   template <typename U,
-            CH_REQUIRE_0(is_scalar_type_v<U>)>
+            CH_REQUIRE_0(is_system_type_v<U>)>
   ch_vec& operator=(const U& other) {
     static_assert(ch_width_v<U> == N * ch_width_v<T>, "invalid size");
-    this->buffer().write(scalar_accessor::data(other));
+    this->buffer().write(system_accessor::data(other));
     return *this;
   }
 
@@ -258,9 +258,9 @@ protected:
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T, unsigned N>
-class ch_vec<T, N, std::enable_if_t<is_scalar_only_v<T>>> : public vec_base<T, N> {
+class ch_vec<T, N, std::enable_if_t<is_system_only_v<T>>> : public vec_base<T, N> {
 public:
-  using traits = scalar_traits<N * ch_width_v<T>,
+  using traits = system_traits<N * ch_width_v<T>,
                                false,
                                ch_vec,
                                ch_vec<ch_logic_t<T>, N>>;
@@ -268,12 +268,12 @@ public:
   using base::operator [];
   using base::items_;
 
-  explicit ch_vec(const scalar_buffer_ptr& buffer = make_scalar_buffer(traits::bitwidth))
+  explicit ch_vec(const system_buffer_ptr& buffer = make_system_buffer(traits::bitwidth))
     : ch_vec(buffer, std::make_index_sequence<N>())
   {}
 
   ch_vec(const ch_vec& other)
-    : ch_vec(scalar_accessor::copy(other))
+    : ch_vec(system_accessor::copy(other))
   {}
 
   ch_vec(ch_vec&& other) : base(std::move(other)) {}
@@ -281,25 +281,25 @@ public:
   template <typename U,
             CH_REQUIRE_0(std::is_constructible_v<T, U>)>
   explicit ch_vec(const vec_base<U, N>& other)
-    : ch_vec(scalar_accessor::copy(other))
+    : ch_vec(system_accessor::copy(other))
   {}
 
   template <typename U,
-              CH_REQUIRE_0(is_scalar_type_v<U>)>
+              CH_REQUIRE_0(is_system_type_v<U>)>
   explicit ch_vec(const U& other)
-    : ch_vec(scalar_accessor::copy(other)) {
+    : ch_vec(system_accessor::copy(other)) {
     static_assert(ch_width_v<U> == N * ch_width_v<T>, "invalid size");
   }
 
   template <typename U,
             CH_REQUIRE_0(std::is_integral_v<U>)>
   explicit ch_vec(U other)
-    : ch_vec(make_scalar_buffer(bitvector(traits::bitwidth, other)))
+    : ch_vec(make_system_buffer(bitvector(traits::bitwidth, other)))
   {}
 
   template <typename U>
   explicit ch_vec(const std::initializer_list<U>& values, CH_SLOC)
-    : ch_vec(make_scalar_buffer(traits::bitwidth)) {
+    : ch_vec(make_system_buffer(traits::bitwidth)) {
     assert(values.size() == N);
     int i = N - 1;
     for (auto& value : values) {
@@ -308,37 +308,37 @@ public:
   }
 
   ch_vec& operator=(const ch_vec& other) {
-    scalar_accessor::copy(*this, other);
+    system_accessor::copy(*this, other);
     return *this;
   }
 
   ch_vec& operator=(ch_vec&& other) {
-    scalar_accessor::move(*this, std::move(other));
+    system_accessor::move(*this, std::move(other));
     return *this;
   }
 
   template <typename U,
-            CH_REQUIRE_0(is_scalar_type_v<U>)>
+            CH_REQUIRE_0(is_system_type_v<U>)>
   ch_vec& operator=(const U& other) {
     static_assert(ch_width_v<U> == N * ch_width_v<T>, "invalid size");
-    scalar_accessor::copy(*this, other);
+    system_accessor::copy(*this, other);
     return *this;
   }
 
-  CH_SCALAR_INTERFACE(ch_vec)
+  CH_SYSTEM_INTERFACE(ch_vec)
 
 protected:
 
   template <std::size_t...Is>
-  ch_vec(const scalar_buffer_ptr& buffer, std::index_sequence<Is...>)
-    : base(make_scalar_buffer(ch_width_v<T>, buffer, Is * ch_width_v<T>)...)
+  ch_vec(const system_buffer_ptr& buffer, std::index_sequence<Is...>)
+    : base(make_system_buffer(ch_width_v<T>, buffer, Is * ch_width_v<T>)...)
   {}
 
-  const scalar_buffer_ptr& buffer() const {
-    return scalar_accessor::buffer(items_[0])->source();
+  const system_buffer_ptr& buffer() const {
+    return system_accessor::buffer(items_[0])->source();
   }
 
-  friend class scalar_accessor;
+  friend class system_accessor;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -351,7 +351,7 @@ public:
                                  ch_direction_v<T>,
                                  ch_vec,
                                  ch_vec<ch_flip_io<T>, N>,
-                                 ch_vec<ch_scalar_io<T>, N>>;
+                                 ch_vec<ch_system_io<T>, N>>;
   using base = vec_base<T, N>;
   using base::operator [];
   using base::items_;
@@ -395,10 +395,10 @@ protected:
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T, unsigned N>
-class ch_vec<T, N, std::enable_if_t<is_scalar_io_v<T>>> : public vec_base<T, N> {
+class ch_vec<T, N, std::enable_if_t<is_system_io_v<T>>> : public vec_base<T, N> {
 public:
-  static_assert(is_scalar_io_v<T>, "invalid type");
-  using traits = scalar_io_traits<N * ch_width_v<T>,
+  static_assert(is_system_io_v<T>, "invalid type");
+  using traits = system_io_traits<N * ch_width_v<T>,
                                   ch_direction_v<T>,
                                   ch_vec,
                                   ch_vec<ch_flip_io<T>, N>,

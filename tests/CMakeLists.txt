@@ -3,7 +3,7 @@
 set(TEST_SOURCES
     common.cpp
     basic.cpp
-    scalar.cpp
+    system.cpp
     literals.cpp
     proxies.cpp
     aggregates.cpp

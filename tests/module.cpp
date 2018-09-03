@@ -89,7 +89,7 @@ struct FilterBlock {
   ch_module<Filter<T>> f1_, f2_;
 };
 
-template <typename T, unsigned N, bool SyncRead>
+template <typename T, unsigned N, bool ShowAhead>
 struct QueueWrapper {
   __io (
     (ch_enq_io<T>) enq,
@@ -101,7 +101,7 @@ struct QueueWrapper {
     queue_.io.deq(io.deq);
     queue_.io.size(io.size);
   }
-  ch_module<ch_queue<T, N, SyncRead>> queue_;
+  ch_module<ch_queue<T, N, ShowAhead>> queue_;
 };
 
 struct Adder {
@@ -315,9 +315,9 @@ TEST_CASE("module", "[module]") {
 
     TESTX([]()->bool {
       RetCheck ret;
-      ch_device<QueueWrapper<ch_bit4, 2, false>> queue1;
-      ch_device<QueueWrapper<ch_bit4, 2, true>> queue2;
-      auto queues = std::make_tuple(&queue1, &queue2);
+      ch_device<QueueWrapper<ch_bit4, 2, false>> queue0;
+      ch_device<QueueWrapper<ch_bit4, 2, true>> queue1;
+      auto queues = std::make_tuple(&queue0, &queue1);
 
       static_for<0, 2>([&](auto I) {
         auto& queue = *std::get<I>(queues);
@@ -336,7 +336,10 @@ TEST_CASE("module", "[module]") {
         queue.io.deq.ready = false;
         t = trace.step(t);
 
-        ret &= (0xA == queue.io.deq.data);
+        if constexpr (I) {
+          ret &= (0xA == queue.io.deq.data);
+        }
+
         ret &= !!queue.io.deq.valid; // !empty
         ret &= !!queue.io.enq.ready; // !full
         ret &= 1 == queue.io.size;   // 1
@@ -345,7 +348,10 @@ TEST_CASE("module", "[module]") {
         queue.io.deq.ready = false;
         t = trace.step(t);
 
-        ret &= (0xA == queue.io.deq.data);
+        if constexpr (I) {
+          ret &= (0xA == queue.io.deq.data);
+        }
+
         ret &= !!queue.io.deq.valid; // !empty
         ret &= !queue.io.enq.ready;  // full
         ret &= 2 == queue.io.size;   // 2
@@ -354,7 +360,9 @@ TEST_CASE("module", "[module]") {
         queue.io.deq.ready = true;   // pop
         t = trace.step(t);
 
-        ret &= (0xB == queue.io.deq.data);
+        if constexpr (I) {
+          ret &= (0xB == queue.io.deq.data);
+        }
         ret &= !!queue.io.deq.valid; // !empty
         ret &= !!queue.io.enq.ready; // !full
         ret &= 1 == queue.io.size;   // 1
@@ -364,7 +372,9 @@ TEST_CASE("module", "[module]") {
         queue.io.deq.ready = true;   // pop
         t = trace.step(t);
 
-        ret &= (0xC == queue.io.deq.data);
+        if constexpr (I) {
+          ret &= (0xC == queue.io.deq.data);
+        }
         ret &= !!queue.io.deq.valid; // !empty
         ret &= !!queue.io.enq.ready; // !full
         ret &= 1 == queue.io.size;   // 1

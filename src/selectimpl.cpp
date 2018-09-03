@@ -115,7 +115,7 @@ lnodeimpl* select_impl::eval(const lnode& value) {
   auto sel = ctx_curr()->create_node<selectimpl>(stmt.value.size(), key, sloc_);
   while (!stmts.empty()) {
     const auto& stmt = stmts.top();
-    // the case predicate should be a scalar value
+    // the case predicate should be a literal value
     assert(!key || type_lit == stmt.pred.impl()->type());
     sel->srcs().push_back(stmt.pred);
     sel->srcs().push_back(stmt.value);
