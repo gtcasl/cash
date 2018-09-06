@@ -21,7 +21,7 @@ lnode::lnode(lnodeimpl* impl) : impl_(impl) {
 }
 
 lnode::lnode(const bitvector& value) {
-  impl_ = ctx_curr()->literal(value);
+  impl_ = ctx_curr()->create_literal(value);
 }
 
 lnode::lnode(uint32_t size,

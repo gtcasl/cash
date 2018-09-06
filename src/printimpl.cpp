@@ -83,7 +83,7 @@ printimpl::printimpl(context* ctx,
 }
 
 void printimpl::eval() {
-  if (predicated_ && 0 == srcs_[0].data().word(0))
+  if (predicated_ && !static_cast<bool>(srcs_[0].data()))
     return;
   if (format_ != "") {
     strbuf_.clear();
@@ -98,7 +98,7 @@ void printimpl::eval() {
           strbuf_ << src.data();
           break;
         case fmttype::Float:
-          strbuf_ << bitcast<float>(src.data().word(0));
+          strbuf_ << bitcast<float>(static_cast<int>(src.data()));
           break;
         case fmttype::String:
           strbuf_ << ctx_->enum_to_string(src);

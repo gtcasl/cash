@@ -33,8 +33,8 @@ void assertimpl::initialize() {
 }
 
 void assertimpl::eval() {
-  if (!predicated_ || srcs_[0].data().word(0)) {
-    auto pred = srcs_[predicated_ ? 1 : 0].data().word(0);
+  if (!predicated_ || static_cast<bool>(srcs_[0].data())) {
+    auto pred = static_cast<bool>(srcs_[predicated_ ? 1 : 0].data());
     if (!pred) {
       fprintf(stderr, "assertion failure at tick %ld, %s (%s:%d)\n", tick_, msg_.c_str(), sloc_.file(), sloc_.line());
       std::abort();

@@ -79,6 +79,11 @@ static constexpr bool is_number_v = std::is_integral_v<T> || std::is_enum_v<T>;
 
 ///////////////////////////////////////////////////////////////////////////////
 
+template<typename T>
+static constexpr int bitwidth_v = std::numeric_limits<T>::digits + std::numeric_limits<T>::is_signed;
+
+///////////////////////////////////////////////////////////////////////////////
+
 template <typename F, typename Arg>
 void for_each_impl(const F& f, Arg&& arg) {
   f(std::forward<Arg>(arg));
@@ -509,14 +514,14 @@ constexpr bool ispow2(T value) {
 
 // return ilog2
 template <typename T = uint32_t>
-constexpr uint32_t ilog2(T x) {
+constexpr unsigned ilog2(T x) {
   static_assert(is_number_v<T>, "invalid type");
   return (x <= 1) ? 0 : (ilog2(x >> 1) + 1);
 }
 
 // return ceil of log2
 template <typename T = uint32_t>
-constexpr uint32_t log2ceil(T x) {
+constexpr unsigned log2ceil(T x) {
   static_assert(is_number_v<T>, "invalid type");
   return ispow2(x) ? ilog2(x) : (ilog2(x) + 1);
 }
@@ -530,28 +535,40 @@ Dst bitcast(const Src& src) {
   return m.dst;  
 }
 
-constexpr uint32_t clz(uint32_t value) {
-  return value ? __builtin_clz(value) : 32;
+template <typename T = uint32_t>
+constexpr unsigned clz(T value) {
+  static_assert(std::is_integral_v<T>, "invalid type");
+  if (value) {
+    if constexpr (bitwidth_v<T> <= 32) {
+      return __builtin_clz(value) - (32 - bitwidth_v<T>);
+    } else {
+      return __builtin_clzll(value) - (64 - bitwidth_v<T>);
+    }
+  }
+  return bitwidth_v<T>;
 }
 
-constexpr uint32_t ctz(uint32_t value) {
-  return value ? __builtin_ctz(value) : 32;
+template <typename T = uint32_t>
+constexpr unsigned ctz(T value) {
+  static_assert(std::is_integral_v<T>, "invalid type");
+  if (value) {
+    if constexpr (bitwidth_v<T> <= 32) {
+      return __builtin_ctz(value);
+    } else {
+      return __builtin_ctzll(value);
+    }
+  }
+  return bitwidth_v<T>;
 }
 
-constexpr uint32_t clz(uint64_t value) {
-  return value ? __builtin_clzll(value) : 64;
-}
-
-constexpr uint32_t ctz(uint64_t value) {
-  return value ? __builtin_ctzll(value) : 64;
-}
-
-constexpr uint32_t ceilpow2(uint64_t value) {
-  return 64 - clz(value);
-}
-
-constexpr uint32_t ceilpow2(int64_t value) {
-  return value >= 0 ? (64 - clz(uint64_t(value))) : (65 - clz(uint64_t(~value)));
+template <typename T = uint32_t>
+constexpr unsigned ceilpow2(T value) {
+  static_assert(std::is_integral_v<T>, "invalid type");
+  if constexpr (std::numeric_limits<T>::is_signed) {
+    if (value < 0)
+      return bitwidth_v<T> - clz<T>(~value) + 1;
+  }
+  return bitwidth_v<T> - clz<T>(value);
 }
 
 constexpr uint32_t rotl(uint32_t value, uint32_t shift, uint32_t width) {

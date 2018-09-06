@@ -131,7 +131,7 @@ bindportimpl::bindportimpl(context* ctx,
 
 bindportimpl::~bindportimpl() {
   if (words_) {
-    data_.words(words_);
+    data_.emplace(words_);
   }
   binding_->remove_port(this);
   binding_->release();
@@ -140,10 +140,10 @@ bindportimpl::~bindportimpl() {
 void bindportimpl::initialize() {
   if (!is_snode_type(srcs_[0].impl()->type())) {
     if (words_) {
-      data_.words(words_);
+      data_.emplace(words_);
     }
     auto& src_node = (type_bindin == type_) ? srcs_[0] : ioport_;
-    words_ = data_.words(src_node.data().words());
+    words_ = data_.emplace(src_node.data().words());
   }
 }
 

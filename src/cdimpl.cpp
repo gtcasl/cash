@@ -16,8 +16,8 @@ cdimpl::cdimpl(context* ctx,
 }
 
 void cdimpl::eval() {
-  bool value = (this->clk().data().word(0) != 0);
-  data_.word(0) = (prev_val_ != value) && (0 == (value ^ posedge_));
+  auto value = static_cast<bool>(this->clk().data());
+  data_ = (prev_val_ != value) && (0 == (value ^ posedge_));
   prev_val_ = value;
 }
 

@@ -40,8 +40,7 @@ struct width_value_impl {
 
 template <typename T>
 struct width_value_impl<T, std::enable_if_t<std::is_arithmetic_v<T>>> {
-  static constexpr uint32_t value = std::numeric_limits<T>::digits +
-                                    std::numeric_limits<T>::is_signed;
+  static constexpr uint32_t value = bitwidth_v<T>;
 };
 
 template <typename T>

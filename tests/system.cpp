@@ -183,6 +183,40 @@ TEST_CASE("system", "[system]") {
       ret &= ((a % b) == 0);
       return ret;
     });
+    TESTX([]()->bool {
+      ch_scint<127> a(3100);
+      ch_scint<126> b(1010);
+      ch_scint<125> c(-1000);
+      RetCheck ret;
+      ret &= ((a + b) == 4110);
+      ret &= ((a + c) == 2100);
+      ret &= ((a - b) == 2090);
+      ret &= ((a - c) == 4100);
+      ret &= ((a * b) == 3131000);
+      ret &= ((b * c) ==-1010000);
+      ret &= ((a * c) ==-3100000);
+      ret &= ((a / b) == 3);
+      ret &= ((b / c) ==-1);
+      ret &= ((a / c) ==-3);
+      ret &= ((a % b) == 70);
+      ret &= ((b % c) == 10);
+      ret &= ((a % c) == 100);
+      return ret;
+    });
+    TESTX([]()->bool {
+      ch_scint<33> a(0x1ffffff8b);
+      ch_scint<33> b(0x00007fff);
+      RetCheck ret;
+      ret &= ((a * b) == 0x1FFC58075);
+      return ret;
+    });
+    TESTX([]()->bool {
+      ch_scint<33> a(0x58);
+      ch_scint<33> b(0x00);
+      RetCheck ret;
+      ret &= ((a * b) == 0x0);
+      return ret;
+    });
   }
   SECTION("cast", "[cast]") {
     TESTX([]()->bool {

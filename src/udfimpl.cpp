@@ -56,7 +56,7 @@ udfsimpl::udfsimpl(context* ctx,
 void udfsimpl::eval() {
   // check clock transition
   auto cd = reinterpret_cast<cdimpl*>(this->cd().impl());
-  if (0 == cd->data().word(0))
+  if (!static_cast<bool>(cd->data()))
     return;
 
   bitvector* value = &data_;
@@ -72,7 +72,7 @@ void udfsimpl::eval() {
   }
 
   // push new entry
-  if (this->has_init() && this->reset().data().word(0)) {
+  if (this->has_init() && static_cast<bool>(this->reset().data())) {
     udf_->reset(*value, udf_srcs_);
   } else {
     udf_->eval(*value, udf_srcs_);

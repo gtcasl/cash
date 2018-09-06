@@ -706,8 +706,8 @@ context::emit_conditionals(lnodeimpl* dst,
 }
 
 lnodeimpl* context::create_predicate(const source_location& sloc) {
-  auto zero = this->literal(bitvector(1, false));
-  auto one = this->literal(bitvector(1, true));
+  auto zero = this->create_literal(bitvector(1, false));
+  auto one = this->create_literal(bitvector(1, true));
 
   // create predicate variable
   auto predicate = this->create_node<proxyimpl>(zero, 0, 1, sloc);
@@ -719,7 +719,7 @@ lnodeimpl* context::create_predicate(const source_location& sloc) {
   return predicate;
 }
 
-lnodeimpl* context::literal(const bitvector& value) {
+lnodeimpl* context::create_literal(const bitvector& value) {
   // first lookup literals cache
   for (auto lit : literals_) {
     if (lit->data() == value)
@@ -936,7 +936,7 @@ void context::register_enum_string(const lnode& node, enum_string_cb callback) {
 const char* context::enum_to_string(const lnode& node) {
   auto iter = enum_strings_.find(node.var_id());
   if (iter != enum_strings_.end()) {
-    return iter->second(node.data().word(0));
+    return iter->second(static_cast<int>(node.data()));
   }
   return "undefined";
 }

@@ -34,12 +34,25 @@ inline constexpr bool is_bitvector_extended_type_v = is_bitvector_extended_type_
 class bitvector {
 public:
   
-  using word_t  = uint64_t;
-  using sword_t = std::make_signed_t<word_t>;
-  static constexpr int WORD_LOGSIZE = ilog2(std::numeric_limits<word_t>::digits + std::numeric_limits<word_t>::is_signed);
-  static constexpr int WORD_SIZE    = 1 << WORD_LOGSIZE;
-  static constexpr int WORD_MASK    = WORD_SIZE - 1;
-  static constexpr word_t WORD_MAX  = std::numeric_limits<word_t>::max();
+  using word_t   = uint64_t;
+
+  using xword_t  = std::conditional_t<sizeof(word_t) == 8, uint8_t,
+                     std::conditional_t<sizeof(word_t) == 16, uint16_t, uint32_t>>;
+  using yword_t  = std::conditional_t<sizeof(word_t) == 8, uint16_t,
+                      std::conditional_t<sizeof(word_t) == 16, uint32_t, uint64_t>>;
+
+  using sword_t  = std::make_signed_t<word_t>;
+  using syword_t = std::make_signed_t<yword_t>;
+
+  static constexpr unsigned WORD_LOGSIZE = ilog2(bitwidth_v<word_t>);
+  static constexpr unsigned WORD_SIZE    = 1 << WORD_LOGSIZE;
+  static constexpr unsigned WORD_MASK    = WORD_SIZE - 1;
+  static constexpr word_t   WORD_MAX     = std::numeric_limits<word_t>::max();
+
+  static constexpr unsigned XWORD_LOGSIZE = ilog2(bitwidth_v<xword_t>);
+  static constexpr unsigned XWORD_SIZE    = 1 << XWORD_LOGSIZE;
+  static constexpr unsigned XWORD_MASK    = XWORD_SIZE - 1;
+  static constexpr xword_t  XWORD_MAX     = std::numeric_limits<xword_t>::max();
   
   class const_iterator;
   class iterator;
@@ -537,8 +550,14 @@ public:
     return words_;
   }
 
-  auto* words(word_t* words) {
+  auto* emplace(word_t* words) {
     std::swap(words_, words);
+    return words;
+  }
+
+  auto* emplace(word_t* words, uint32_t size) {
+    std::swap(words_, words);
+    size_ = size;
     return words;
   }
   
@@ -563,6 +582,10 @@ public:
   }
 
   void clear();
+
+  bool empty() const {
+    return (0 == size_);
+  }
 
   void resize(uint32_t size,
               uint32_t value = 0x0,
@@ -592,8 +615,6 @@ public:
   
   int find_last() const;
   
-  bool empty() const;
-    
   auto front() const {
     return this->at(0);
   }
@@ -648,10 +669,26 @@ public:
     return !(*this == other);
   }
 
+  void set();
+
+  void reset();
+
+  bool is_zero() const;
+
+  bool is_neg() const {
+    return this->at(size_ - 1);
+  }
+
 #define CH_DEF_CAST(type) \
   explicit operator type() const { \
     CH_CHECK(CH_WIDTH_OF(type) >= size_, "invalid size"); \
-    return bitcast<type>(words_[0]); \
+    if constexpr (bitwidth_v<type> <= WORD_SIZE) { \
+      return bitcast<type>(words_[0]); \
+    } else { \
+      type ret(0); \
+      memcpy(&ret, words_, CH_CEILDIV(size_, 8)); \
+      return ret; \
+    } \
   }
   CH_DEF_CAST(bool)
   CH_DEF_CAST(int8_t)
@@ -688,24 +725,45 @@ bool bv_andr(const bitvector& in);
 bool bv_orr(const bitvector& in);
 bool bv_xorr(const bitvector& in);
 
-void bv_sll(bitvector& out, const bitvector& in, const bitvector& bits);
-void bv_srl(bitvector& out, const bitvector& in, const bitvector& bits);
-void bv_sra(bitvector& out, const bitvector& in, const bitvector& bits);
+void bv_slli(bitvector& out, const bitvector& in, uint32_t dist);
+void bv_srli(bitvector& out, const bitvector& in, uint32_t dist);
+void bv_srai(bitvector& out, const bitvector& in, uint32_t dist);
+
+inline void bv_sll(bitvector& out, const bitvector& in, const bitvector& rhs) {
+  CH_CHECK(rhs.find_last() <= 31, "shift amount out of range");
+  bv_slli(out, in, static_cast<uint32_t>(rhs));
+}
+
+inline void bv_srl(bitvector& out, const bitvector& in, const bitvector& rhs) {
+  CH_CHECK(rhs.find_last() <= 31, "shift amount out of range");
+  bv_srli(out, in, static_cast<uint32_t>(rhs));
+}
+
+inline void bv_sra(bitvector& out, const bitvector& in, const bitvector& rhs) {
+  CH_CHECK(rhs.find_last() <= 31, "shift amount out of range");
+  bv_srai(out, in, static_cast<uint32_t>(rhs));
+}
 
 void bv_neg(bitvector& out, const bitvector& in);
-void bv_add(bitvector& out, const bitvector& lhs, const bitvector& rhs, uint32_t cin);
-inline void bv_add(bitvector& out, const bitvector& lhs, const bitvector& rhs) {
-  bv_add(out, lhs, rhs, 0);
-}
+void bv_add(bitvector& out, const bitvector& lhs, const bitvector& rhs);
 void bv_sub(bitvector& out, const bitvector& lhs, const bitvector& rhs);
 void bv_mul(bitvector& out, const bitvector& lhs, const bitvector& rhs);
 void bv_divu(bitvector& out, const bitvector& lhs, const bitvector& rhs);
 void bv_divs(bitvector& out, const bitvector& lhs, const bitvector& rhs);
 void bv_modu(bitvector& out, const bitvector& lhs, const bitvector& rhs);
 void bv_mods(bitvector& out, const bitvector& lhs, const bitvector& rhs);
+void bv_divmodu(bitvector& quot, bitvector& rem, const bitvector& lhs, const bitvector& rhs);
 
 void bv_zext(bitvector& out, const bitvector& in);
 void bv_sext(bitvector& out, const bitvector& in);
+
+inline void bv_abs(bitvector& out, const bitvector& in) {
+  if (in.is_neg()) {
+    bv_neg(out, in);
+  } else {
+    out = in;
+  }
+}
 
 }
 }

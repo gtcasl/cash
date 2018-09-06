@@ -15,9 +15,9 @@ namespace {
     }
 
     void eval(udf_output& dst, const udf_inputs& srcs) override {
-      int32_t lhs = srcs[0].word(0);
-      int32_t rhs = srcs[1].word(0);
-      dst.word(0) = *(int32_t*)&lhs + *(int32_t*)&rhs;
+      auto lhs = static_cast<int32_t>(srcs[0]);
+      auto rhs = static_cast<int32_t>(srcs[1]);
+      dst = *(int32_t*)&lhs + *(int32_t*)&rhs;
     }
 
     void init_verilog(std::ostream& out) override {
@@ -37,13 +37,13 @@ namespace {
     }
 
     void reset(udf_output& dst, const udf_inputs&) {
-      dst.word(0) = 0;
+      dst = 0;
     }
 
     void eval(udf_output& dst, const udf_inputs& srcs) override {
-      int32_t lhs = srcs[0].word(0);
-      int32_t rhs = srcs[1].word(0);
-      dst.word(0) = *(int32_t*)&lhs + *(int32_t*)&rhs;
+      auto lhs = static_cast<int32_t>(srcs[0]);
+      auto rhs = static_cast<int32_t>(srcs[1]);
+      dst = *(int32_t*)&lhs + *(int32_t*)&rhs;
     }
 
     void init_verilog(std::ostream& out) override {

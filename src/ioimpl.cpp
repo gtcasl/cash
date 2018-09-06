@@ -14,7 +14,7 @@ inputimpl::inputimpl(context* ctx,
 
 inputimpl::~inputimpl() {
   if (words_) {
-    data_.words(words_);
+    data_.emplace(words_);
   }
 }
 
@@ -25,9 +25,9 @@ void inputimpl::bind(const lnode& input) {
 void inputimpl::initialize() {
   if (!input_.empty()) {
     if (words_) {
-      data_.words(words_);
+      data_.emplace(words_);
     }
-    words_ = data_.words(input_.data().words());
+    words_ = data_.emplace(input_.data().words());
   }
 }
 
@@ -58,16 +58,16 @@ outputimpl::outputimpl(context* ctx,
 
 outputimpl::~outputimpl() {
   if (words_) {
-    data_.words(words_);
+    data_.emplace(words_);
   }
 }
 
 void outputimpl::initialize() {
   if (!is_snode_type(srcs_[0].impl()->type())) {
     if (words_) {
-      data_.words(words_);
+      data_.emplace(words_);
     }
-    words_ = data_.words(srcs_[0].data().words());
+    words_ = data_.emplace(srcs_[0].data().words());
   }
 }
 
@@ -98,15 +98,15 @@ tapimpl::tapimpl(context* ctx,
 
 tapimpl::~tapimpl() {
   if (words_) {
-    data_.words(words_);
+    data_.emplace(words_);
   }
 }
 
 void tapimpl::initialize() {
   if (words_) {
-    data_.words(words_);
+    data_.emplace(words_);
   }
-  words_ = data_.words(srcs_[0].data().words());
+  words_ = data_.emplace(srcs_[0].data().words());
 }
 
 void tapimpl::eval() {}

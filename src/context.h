@@ -225,7 +225,7 @@ public:
 
   //--
   
-  lnodeimpl* literal(const bitvector& value);
+  lnodeimpl* create_literal(const bitvector& value);
 
   //--
 

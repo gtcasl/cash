@@ -124,22 +124,22 @@ void aluimpl::eval() {
 
   switch (op_) {
   case ch_op::eq:
-    data_.word(0) = (*src0_ == *src1_);
+    data_ = (*src0_ == *src1_);
     break;
   case ch_op::ne:
-    data_.word(0) = (*src0_ != *src1_);
+    data_ = (*src0_ != *src1_);
     break;
   case ch_op::lt:
-    data_.word(0) = is_signed_ ? bv_lts(*src0_, *src1_) : bv_ltu(*src0_, *src1_);
+    data_ = is_signed_ ? bv_lts(*src0_, *src1_) : bv_ltu(*src0_, *src1_);
     break;
   case ch_op::gt:
-    data_.word(0) = is_signed_ ? bv_lts(*src1_, *src0_) : bv_ltu(*src1_, *src0_);
+    data_ = is_signed_ ? bv_lts(*src1_, *src0_) : bv_ltu(*src1_, *src0_);
     break;
   case ch_op::le:
-    data_.word(0) = !(is_signed_ ? bv_lts(*src1_, *src0_) : bv_ltu(*src1_, *src0_));
+    data_ = !(is_signed_ ? bv_lts(*src1_, *src0_) : bv_ltu(*src1_, *src0_));
     break;
   case ch_op::ge:
-    data_.word(0) = !(is_signed_ ? bv_lts(*src0_, *src1_) : bv_ltu(*src0_, *src1_));
+    data_ = !(is_signed_ ? bv_lts(*src0_, *src1_) : bv_ltu(*src0_, *src1_));
     break;
 
   case ch_op::inv:
@@ -156,13 +156,13 @@ void aluimpl::eval() {
     break;
 
   case ch_op::andr:
-    data_.word(0) = bv_andr(*src0_);
+    data_ = bv_andr(*src0_);
     break;
   case ch_op::orr:
-    data_.word(0) = bv_orr(*src0_);
+    data_ = bv_orr(*src0_);
     break;
   case ch_op::xorr:
-    data_.word(0) = bv_xorr(*src0_);
+    data_ = bv_xorr(*src0_);
     break;
 
   case ch_op::shl:

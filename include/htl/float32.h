@@ -18,11 +18,11 @@ template <unsigned Delay = 1>
 struct fAdd : public udf_seq<Delay, false, ch_float32, ch_float32, ch_float32, ch_bool> {
 
   void eval(udf_output& dst, const udf_inputs& srcs) override {
-    uint32_t enable = srcs[2].word(0);
+    auto enable = static_cast<bool>(srcs[2]);
     if (enable) {
-      auto lhs = bitcast<float>(srcs[0].word(0));
-      auto rhs = bitcast<float>(srcs[1].word(0));
-      dst.word(0) = bitcast<uint32_t>(lhs + rhs);
+      auto lhs = bitcast<float>(static_cast<int32_t>(srcs[0]));
+      auto rhs = bitcast<float>(static_cast<int32_t>(srcs[1]));
+      dst = bitcast<int32_t>(lhs + rhs);
     }
   }
 
@@ -36,11 +36,11 @@ template <unsigned Delay = 1>
 struct fSub : public udf_seq<Delay, false, ch_float32, ch_float32, ch_float32, ch_bool> {
 
   void eval(udf_output& dst, const udf_inputs& srcs) override {
-    uint32_t enable = srcs[2].word(0);
+   auto enable = static_cast<bool>(srcs[2]);
     if (enable) {
-      auto lhs = bitcast<float>(srcs[0].word(0));
-      auto rhs = bitcast<float>(srcs[1].word(0));
-      dst.word(0) = bitcast<uint32_t>(lhs - rhs);
+      auto lhs = bitcast<float>(static_cast<int32_t>(srcs[0]));
+      auto rhs = bitcast<float>(static_cast<int32_t>(srcs[1]));
+      dst = bitcast<int32_t>(lhs - rhs);
     }
   }
 
@@ -54,11 +54,11 @@ template <unsigned Delay>
 struct fMul : public udf_seq<Delay, false, ch_float32, ch_float32, ch_float32, ch_bool> {
 
   void eval(udf_output& dst, const udf_inputs& srcs) override {
-    uint32_t enable = srcs[2].word(0);
+    auto enable = static_cast<bool>(srcs[2]);
     if (enable) {
-      auto lhs = bitcast<float>(srcs[0].word(0));
-      auto rhs = bitcast<float>(srcs[1].word(0));
-      dst.word(0) = bitcast<uint32_t>(lhs * rhs);
+      auto lhs = bitcast<float>(static_cast<int32_t>(srcs[0]));
+      auto rhs = bitcast<float>(static_cast<int32_t>(srcs[1]));
+      dst = bitcast<int32_t>(lhs * rhs);
     }
   }
 
@@ -72,11 +72,11 @@ template <unsigned Delay>
 struct fDiv : public udf_seq<Delay, false, ch_float32, ch_float32, ch_float32, ch_bool> {
 
   void eval(udf_output& dst, const udf_inputs& srcs) override {
-    uint32_t enable = srcs[2].word(0);
+    auto enable = static_cast<bool>(srcs[2]);
     if (enable) {
-      auto lhs = bitcast<float>(srcs[0].word(0));
-      auto rhs = bitcast<float>(srcs[1].word(0));
-      dst.word(0) = bitcast<uint32_t>(lhs / rhs);
+      auto lhs = bitcast<float>(static_cast<int32_t>(srcs[0]));
+      auto rhs = bitcast<float>(static_cast<int32_t>(srcs[1]));
+      dst = bitcast<int32_t>(lhs / rhs);
     }
   }
 
@@ -88,33 +88,33 @@ struct fDiv : public udf_seq<Delay, false, ch_float32, ch_float32, ch_float32, c
 
 struct cfAdd : public udf_comb<ch_float32, ch_float32, ch_float32> {
   void eval(udf_output& dst, const udf_inputs& srcs) override {
-    auto lhs = bitcast<float>(srcs[0].word(0));
-    auto rhs = bitcast<float>(srcs[1].word(0));
-    dst.word(0) = bitcast<uint32_t>(lhs + rhs);
+    auto lhs = bitcast<float>(static_cast<int32_t>(srcs[0]));
+    auto rhs = bitcast<float>(static_cast<int32_t>(srcs[1]));
+    dst = bitcast<int32_t>(lhs + rhs);
   }
 };
 
 struct cfSub : public udf_comb<ch_float32, ch_float32, ch_float32> {
   void eval(udf_output& dst, const udf_inputs& srcs) override {
-    auto lhs = bitcast<float>(srcs[0].word(0));
-    auto rhs = bitcast<float>(srcs[1].word(0));
-    dst.word(0) = bitcast<uint32_t>(lhs - rhs);
+    auto lhs = bitcast<float>(static_cast<int32_t>(srcs[0]));
+    auto rhs = bitcast<float>(static_cast<int32_t>(srcs[1]));
+    dst = bitcast<int32_t>(lhs - rhs);
   }
 };
 
 struct cfMul : public udf_comb<ch_float32, ch_float32, ch_float32> {
   void eval(udf_output& dst, const udf_inputs& srcs) override {
-    auto lhs = bitcast<float>(srcs[0].word(0));
-    auto rhs = bitcast<float>(srcs[1].word(0));
-    dst.word(0) = bitcast<uint32_t>(lhs * rhs);
+    auto lhs = bitcast<float>(static_cast<int32_t>(srcs[0]));
+    auto rhs = bitcast<float>(static_cast<int32_t>(srcs[1]));
+    dst = bitcast<int32_t>(lhs * rhs);
   }
 };
 
 struct cfDiv : public udf_comb<ch_float32, ch_float32, ch_float32> {
   void eval(udf_output& dst, const udf_inputs& srcs) override {
-    auto lhs = bitcast<float>(srcs[0].word(0));
-    auto rhs = bitcast<float>(srcs[1].word(0));
-    dst.word(0) = bitcast<uint32_t>(lhs / rhs);
+    auto lhs = bitcast<float>(static_cast<int32_t>(srcs[0]));
+    auto rhs = bitcast<float>(static_cast<int32_t>(srcs[1]));
+    dst = bitcast<int32_t>(lhs / rhs);
   }
 };
 
@@ -174,31 +174,31 @@ public:
   }
 
   friend auto operator-(const ch_scfloat32& self) {
-    auto f_self = bitcast<float>(system_accessor::data(self).word(0));
+    auto f_self = bitcast<float>(static_cast<int32_t>(system_accessor::data(self)));
     return ch_scfloat32(0.0f - f_self);
   }
 
   friend auto operator+(const ch_scfloat32& lhs, const ch_scfloat32& rhs) {
-    auto f_lhs = bitcast<float>(system_accessor::data(lhs).word(0));
-    auto f_rhs = bitcast<float>(system_accessor::data(rhs).word(0));
+    auto f_lhs = bitcast<float>(static_cast<int32_t>(system_accessor::data(lhs)));
+    auto f_rhs = bitcast<float>(static_cast<int32_t>(system_accessor::data(rhs)));
     return ch_scfloat32(f_lhs + f_rhs);
   }
 
   friend auto operator-(const ch_scfloat32& lhs, const ch_scfloat32& rhs) {
-    auto f_lhs = bitcast<float>(system_accessor::data(lhs).word(0));
-    auto f_rhs = bitcast<float>(system_accessor::data(rhs).word(0));
+    auto f_lhs = bitcast<float>(static_cast<int32_t>(system_accessor::data(lhs)));
+    auto f_rhs = bitcast<float>(static_cast<int32_t>(system_accessor::data(rhs)));
     return ch_scfloat32(f_lhs - f_rhs);
   }
 
   friend auto operator*(const ch_scfloat32& lhs, const ch_scfloat32& rhs) {
-    auto f_lhs = bitcast<float>(system_accessor::data(lhs).word(0));
-    auto f_rhs = bitcast<float>(system_accessor::data(rhs).word(0));
+    auto f_lhs = bitcast<float>(static_cast<int32_t>(system_accessor::data(lhs)));
+    auto f_rhs = bitcast<float>(static_cast<int32_t>(system_accessor::data(rhs)));
     return ch_scfloat32(f_lhs * f_rhs);
   }
 
   friend auto operator/(const ch_scfloat32& lhs, const ch_scfloat32& rhs) {
-    auto f_lhs = bitcast<float>(system_accessor::data(lhs).word(0));
-    auto f_rhs = bitcast<float>(system_accessor::data(rhs).word(0));
+    auto f_lhs = bitcast<float>(static_cast<int32_t>(system_accessor::data(lhs)));
+    auto f_rhs = bitcast<float>(static_cast<int32_t>(system_accessor::data(rhs)));
     return ch_scfloat32(f_lhs / f_rhs);
   }
 

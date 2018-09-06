@@ -91,7 +91,7 @@ bool memimpl::is_readwrite(memportimpl* port) const {
 
 void memimpl::eval() {
   // check clock transition
-  if (nullptr == cd_ || 0 == cd_->data().word(0))
+  if (nullptr == cd_ || !static_cast<bool>(cd_->data()))
     return;
 
   if (sync_read_) {
@@ -102,12 +102,12 @@ void memimpl::eval() {
 
       // check enable state
       auto port = reinterpret_cast<mrportimpl*>(p);
-      int enable = port->has_enable() ? port->enable().data().word(0) : 1;
+      int enable = port->has_enable() ? static_cast<bool>(port->enable().data()) : true;
       if (!enable)
         return;
 
       // memory read
-      auto addr = port->addr().data().word(0);
+      auto addr = static_cast<uint32_t>(port->addr().data());
       auto& data = port->data();
       data_.read(addr * data_width_,
                   data.data(),
@@ -124,12 +124,12 @@ void memimpl::eval() {
 
     // check enable state
     auto port = reinterpret_cast<mwportimpl*>(p);
-    int enable = port->has_enable() ? port->enable().data().word(0) : 1;
+    int enable = port->has_enable() ? static_cast<bool>(port->enable().data()) : true;
     if (!enable)
       return;
 
     // memory write
-    auto addr = port->addr().data().word(0);
+    auto addr = static_cast<uint32_t>(port->addr().data());
     auto& data = port->wdata().data();
     data_.write(addr * data_width_,
                  data.data(),
@@ -184,7 +184,7 @@ memportimpl::memportimpl(context* ctx,
     enable_idx_ = mem_->add_src(enable);
   } else {
     // the constant value should be one
-    assert(1 == enable.impl()->data().word(0));
+    assert(static_cast<bool>(enable.impl()->data()));
   }
 }
 
@@ -211,7 +211,7 @@ void mrportimpl::eval() {
 
   // memory read
   auto data_width = mem_->data_width();
-  auto addr = this->addr().data().word(0);
+  auto addr = static_cast<uint32_t>(this->addr().data());
   mem_->data().read(addr * data_width,
               data_.data(),
               data_.num_bytes(),

@@ -26,7 +26,7 @@ regimpl::regimpl(context* ctx,
     enable_idx_ = this->add_src(enable);
   } else {
     // the constant value should be one
-    assert(1 == enable.impl()->data().word(0));
+    assert(static_cast<bool>(enable.impl()->data()));
   }
 
   // initialize with dirty content
@@ -53,7 +53,7 @@ regimpl::regimpl(context* ctx,
     enable_idx_ = this->add_src(enable);
   } else {
     // the constant value should be one
-    assert(1 == enable.impl()->data().word(0));
+    assert(static_cast<bool>(enable.impl()->data()));
   }
 
   init_idx_ = this->add_src(init);
@@ -81,11 +81,11 @@ std::size_t regimpl::hash() const {
 void regimpl::eval() {
   // check clock transition
   auto cd = reinterpret_cast<cdimpl*>(this->cd().impl());
-  if (0 == cd->data().word(0))
+  if (!static_cast<bool>(cd->data()))
     return;
 
   // check reset state
-  if (this->has_init() && this->reset().data().word(0)) {
+  if (this->has_init() && static_cast<bool>(this->reset().data())) {
     data_ = this->init().data();
     for (auto& p : pipe_) {
       p = data_;
@@ -94,7 +94,7 @@ void regimpl::eval() {
   }
 
   // check enable state
-  int enable = this->has_enable() ? this->enable().data().word(0) : 1;
+  int enable = this->has_enable() ? static_cast<bool>(this->enable().data()) : true;
   if (!enable)
     return;
 

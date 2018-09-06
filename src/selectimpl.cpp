@@ -81,7 +81,7 @@ void selectimpl::eval() {
     }
   } else {
     for (i = 0; i < last; i += 2) {
-      if (srcs_[i].data().word(0))
+      if (static_cast<bool>(srcs_[i].data()))
         break;
     }
   }
