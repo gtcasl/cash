@@ -50,8 +50,8 @@ Cash documentation can be found in the [wiki](https://github.com/gtcasl/cash/wik
 
 ```C++
 #include <cash.h>
-using namespace ch::core;
-using namespace ch::sim;
+using namespace ch::logic;
+using namespace ch::system;
 
 // hardware description
 template <unsigned N>
