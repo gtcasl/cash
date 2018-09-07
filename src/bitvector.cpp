@@ -560,21 +560,26 @@ void ch::internal::bv_slli(bitvector& out, const bitvector& in, uint32_t dist) {
   uint32_t out_num_words = out.num_words();
   if (1 == out_num_words) {
     out.word(0) = in.word(0) << dist;
-  } else {
-    uint32_t in_num_words = in.num_words();
+  } else {    
     uint32_t shift_words = std::min(dist >> bitvector::WORD_LOGSIZE, out_num_words);
     std::fill_n(out.words(), shift_words, 0x0);
     uint32_t shift_bits = dist & bitvector::WORD_MASK;
     uint32_t shift_bits_r = bitvector::WORD_SIZE - shift_bits;
     bitvector::word_t carry_mask = shift_bits ? bitvector::WORD_MAX : 0;
     bitvector::word_t carry(0);
-    for (uint32_t i = 0, n = out_num_words - shift_words; i < n; ++i) {
-      auto curr = (i < in_num_words) ? in.word(i) : bitvector::word_t(0);
+    uint32_t count = out_num_words - shift_words;
+    uint32_t i = 0;
+    for (uint32_t n = std::min(in.num_words(), count); i < n; ++i) {
+      auto curr = in.word(i);
       out.word(i + shift_words) = (curr << shift_bits) | (carry & carry_mask);
       carry = curr >> shift_bits_r;
     }
+    if ((i < count)) {
+      out.word((i++) + shift_words) = carry & carry_mask;
+      std::fill_n(out.words() + i + shift_words, count - i, 0x0);
+    }
   }
-  out.clear_unused_bits(); // clear extra bits added by left shift
+  out.clear_unused_bits();
 }
 
 void ch::internal::bv_srli(bitvector& out, const bitvector& in, uint32_t dist) {    
@@ -584,8 +589,8 @@ void ch::internal::bv_srli(bitvector& out, const bitvector& in, uint32_t dist) {
     out.word(0) = in.word(0) >> dist;
   } else {
     uint32_t shift_words = std::min(dist >> bitvector::WORD_LOGSIZE, in_num_words);
-    uint32_t rem_words = in_num_words - shift_words;
-    uint32_t out_num_words = out.num_words();
+    int32_t rem_words = in_num_words - shift_words;
+    int32_t out_num_words = out.num_words();
     if (rem_words < out_num_words) {
       std::fill_n(out.words() + rem_words, out_num_words - rem_words, 0x0);
     }
@@ -593,11 +598,14 @@ void ch::internal::bv_srli(bitvector& out, const bitvector& in, uint32_t dist) {
     uint32_t shift_bits_l = bitvector::WORD_SIZE - shift_bits;
     bitvector::word_t carry_mask = shift_bits ? bitvector::WORD_MAX : 0;
     bitvector::word_t carry(0);
-    for (int32_t i = in_num_words - 1 - shift_words; i >= 0; --i) {
+    int32_t i = in_num_words - 1 - shift_words;
+    if (i >= out_num_words) {
+      carry = in.word(out_num_words + shift_words) << shift_bits_l;
+      i = out_num_words - 1;
+    }
+    for (; i >= 0; --i) {
       auto curr = in.word(i + shift_words);
-      if (uint32_t(i) < out_num_words) {
-        out.word(i) = (curr >> shift_bits) | (carry & carry_mask);
-      }
+      out.word(i) = (curr >> shift_bits) | (carry & carry_mask);
       carry = curr << shift_bits_l;
     }
   }
@@ -612,8 +620,8 @@ void ch::internal::bv_srai(bitvector& out, const bitvector& in, uint32_t dist) {
     out.word(0) = value >> dist;
   } else {
     uint32_t shift_words = std::min(dist >> bitvector::WORD_LOGSIZE, in_num_words);
-    uint32_t rem_words = in_num_words - shift_words;
-    uint32_t out_num_words = out.num_words();
+    int32_t rem_words = in_num_words - shift_words;
+    int32_t out_num_words = out.num_words();
     if (rem_words < out_num_words) {
       std::fill_n(out.words() + rem_words, out_num_words - rem_words, fill_value);
     }
@@ -621,11 +629,14 @@ void ch::internal::bv_srai(bitvector& out, const bitvector& in, uint32_t dist) {
     uint32_t shift_bits_l = bitvector::WORD_SIZE - shift_bits;
     bitvector::word_t carry_mask = shift_bits ? bitvector::WORD_MAX : 0;
     bitvector::word_t carry(fill_value << shift_bits_l);
-    for (int32_t i = in_num_words - 1 - shift_words; i >= 0; --i) {
+    int32_t i = in_num_words - 1 - shift_words;
+    if (i >= out_num_words) {
+      carry = in.word(out_num_words + shift_words) << shift_bits_l;
+      i = out_num_words - 1;
+    }
+    for (; i >= 0; --i) {
       auto curr = in.word(i + shift_words);
-      if (uint32_t(i) < out_num_words) {
-        out.word(i) = (curr >> shift_bits) | (carry & carry_mask);
-      }
+      out.word(i) = (curr >> shift_bits) | (carry & carry_mask);
       carry = curr << shift_bits_l;
     }
   }
@@ -687,17 +698,15 @@ void ch::internal::bv_mul(bitvector& out, const bitvector& lhs, const bitvector&
   } else {
     int m = CH_CEILDIV(lhs.find_last(), 8 * sizeof(bitvector::xword_t));
     int n = CH_CEILDIV(rhs.find_last(), 8 * sizeof(bitvector::xword_t));
-    int p = CH_CEILDIV(rhs.size(), 8 * sizeof(bitvector::xword_t));
+    int p = CH_CEILDIV(out.size(), 8 * sizeof(bitvector::xword_t));
     auto u = reinterpret_cast<const bitvector::xword_t*>(lhs.data());
     auto v = reinterpret_cast<const bitvector::xword_t*>(rhs.data());
     auto w = reinterpret_cast<bitvector::xword_t*>(out.data());
     out.reset();
     for (int i = 0; i < n; ++i) {
-      auto b = v[i];
       bitvector::xword_t tot(0);
-      for (uint32_t j = 0, k = std::min(m, p - i); j < k; ++j) {
-        auto a = u[j];
-        auto c = bitvector::yword_t(a) * b + w[i+j] + tot;
+      for (int j = 0, k = std::min(m, p - i); j < k; ++j) {
+        auto c = bitvector::yword_t(u[j]) * v[i] + w[i+j] + tot;
         tot = c >> bitvector::XWORD_SIZE;
         w[i+j] = c;
       }
@@ -710,21 +719,21 @@ void ch::internal::bv_mul(bitvector& out, const bitvector& lhs, const bitvector&
 }
 
 void ch::internal::bv_divmodu(bitvector& quot, bitvector& rem, const bitvector& lhs, const bitvector& rhs) {
-  int m = CH_CEILDIV(lhs.find_last(), 8 * sizeof(bitvector::xword_t));
-  int n = CH_CEILDIV(rhs.find_last(), 8 * sizeof(bitvector::xword_t));
+  int m  = CH_CEILDIV(lhs.find_last(), 8 * sizeof(bitvector::xword_t));
+  int n  = CH_CEILDIV(rhs.find_last(), 8 * sizeof(bitvector::xword_t));
+  int qn = CH_CEILDIV(quot.size(), 8 * sizeof(bitvector::xword_t));
+  int rn = CH_CEILDIV(rem.size(), 8 * sizeof(bitvector::xword_t));
 
-  CH_CHECK(n > 0, "invalid argument");
+  CH_CHECK(n >= 1, "invalid size");
 
   // reset the outputs
-  if (!quot.empty()) {
-    quot.reset();    
-  }
-  if (!rem.empty()) {
+  if (qn)
+    quot.reset();
+  if (rn)
     rem.reset();
-  }
 
-  // zero divident
-  if (m <= 0)
+  // early exit
+  if (m <= 0 || m < n)
     return;
 
   auto u = reinterpret_cast<const bitvector::xword_t*>(lhs.data());
@@ -732,59 +741,42 @@ void ch::internal::bv_divmodu(bitvector& quot, bitvector& rem, const bitvector& 
   auto q = reinterpret_cast<bitvector::xword_t*>(quot.data());
   auto r = reinterpret_cast<bitvector::xword_t*>(rem.data());
 
-  // single-digit divisor
-  if (1 == n) {
-    bitvector::yword_t k(0);
-    for (int j = m - 1; j >= 0; --j) {
-      auto w = k << bitvector::XWORD_SIZE;
-      auto t = (w + u[j]) / v[0];
-      k = (w + u[j]) - t * v[0];
-      if (q)
-        q[j] = t;
-    }
-    if (r)
-      r[0] = k;
-    return;
-  }
-
   std::vector<bitvector::xword_t> tu(2 * (m + 1), 0), tv(2 * n, 0);
   auto un = tu.data();
   auto vn = tv.data();
 
-  // normalize by shifting v left just enough so that its high-order bit is on,
-  // and shift u left the same amount.
-  // we may have to append a high-order digit on the dividend;
+  // normalize
   int s = clz<bitvector::xword_t>(v[n - 1]);
-
   un[m] = u[m - 1] >> (bitvector::XWORD_SIZE - s);
   for (int i = m - 1; i > 0; --i) {
     un[i] = (u[i] << s) | (u[i - 1] >> (bitvector::XWORD_SIZE - s));
   }
   un[0] = u[0] << s;
-
   for (int i = n - 1; i > 0; --i) {
     vn[i] = (v[i] << s) | (v[i - 1] >> (bitvector::XWORD_SIZE - s));
   }
   vn[0] = v[0] << s;
 
-  // compute estimate qhat of q[j]
+  auto h = vn[n - 1];
+
+  // estimate qhat
   for (int j = m - n; j >= 0; --j) {
-    auto w = (bitvector::yword_t(un[j + n]) << bitvector::XWORD_SIZE) + un[j + n - 1];
-    auto qhat = w / vn[n - 1];
-    auto rhat = w - qhat * vn[n - 1];
+    auto w = (bitvector::yword_t(un[j + n]) << bitvector::XWORD_SIZE) | un[j + n - 1];
+    auto qhat = w / h;
+    auto rhat = w - qhat * h;
 
     for (;;) {
-      if (0 != (qhat >> bitvector::XWORD_SIZE)
-       || (qhat * vn[n - 2]) > ((rhat << bitvector::XWORD_SIZE) + un[j + n - 2])) {
-        qhat = qhat - 1;
-        rhat = rhat + vn[n - 1];
-        if (0 == (rhat >> bitvector::XWORD_SIZE))
+      if ((qhat >> bitvector::XWORD_SIZE) != 0
+       || (qhat * vn[n - 2]) > ((rhat << bitvector::XWORD_SIZE) | un[j + n - 2])) {
+        --qhat;
+        rhat += vn[n - 1];
+        if ((rhat >> bitvector::XWORD_SIZE) == 0)
           continue;
       }
       break;
     }
 
-    // multiply and subtract.
+    // multiply and subtract
     bitvector::yword_t k(0);
     for (int i = 0; i < n; ++i) {
       auto p = qhat * vn[i];
@@ -795,26 +787,26 @@ void ch::internal::bv_divmodu(bitvector& quot, bitvector& rem, const bitvector& 
 
     bitvector::syword_t t(un[j + n] - k);
     un[j + n] = t;
-    if (q)
+    if (j < qn)
       q[j] = qhat;
 
-    // if we subtracted too, add back
+    // overflow handling
     if (t < 0) {
-      if (q)
-        q[j] = q[j] - 1;
+      if (j < qn)
+        --q[j];
       bitvector::yword_t k(0);
       for (int i = 0; i < n; ++i) {
         auto w = un[i + j] + k + vn[i];
         k = (w >> bitvector::XWORD_SIZE);
         un[i + j] = w;
       }
-      un[j + n] = un[j + n] + k;
+      un[j + n] += k;
     }
   }
 
   // unnormalize remainder
-  if (r) {
-    for (int i = 0; i < n; ++i) {
+  if (rn) {
+    for (int i = 0; i < std::min(n, rn); ++i) {
       r[i] = (un[i] >> s) | (un[i + 1] << (bitvector::XWORD_SIZE - s));
     }
   }
