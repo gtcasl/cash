@@ -642,7 +642,7 @@ struct requires_enum {
 
 #define CH_MAX(a,b) (((a) > (b)) ? (a) : (b))
 
-#define CH_CEILDIV(a, b) (((a) + (b) - 1) / b)
+#define CH_CEILDIV(a, b) (((a) + (b) - 1) / (b))
 
 #define CH_BLEND(m, a, b)  (a) ^ (((a) ^ (b)) & (m)) // 0->a, 1->b
 

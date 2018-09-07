@@ -696,13 +696,17 @@ void ch::internal::bv_mul(bitvector& out, const bitvector& lhs, const bitvector&
     auto b_w = rhs.word(0);
     out.word(0) = a_w * b_w;
   } else {
+    static_assert(8 * sizeof(bitvector::xword_t) == 32, "oops");
     int m = CH_CEILDIV(lhs.find_last(), 8 * sizeof(bitvector::xword_t));
     int n = CH_CEILDIV(rhs.find_last(), 8 * sizeof(bitvector::xword_t));
     int p = CH_CEILDIV(out.size(), 8 * sizeof(bitvector::xword_t));
+
     auto u = reinterpret_cast<const bitvector::xword_t*>(lhs.data());
     auto v = reinterpret_cast<const bitvector::xword_t*>(rhs.data());
     auto w = reinterpret_cast<bitvector::xword_t*>(out.data());
+
     out.reset();
+
     for (int i = 0; i < n; ++i) {
       bitvector::xword_t tot(0);
       for (int j = 0, k = std::min(m, p - i); j < k; ++j) {
