@@ -34,6 +34,10 @@ public:
   const std::vector<range_t>& ranges() const {
     return ranges_;
   }
+
+  std::vector<range_t>& ranges() {
+    return ranges_;
+  }
   
   void add_source(uint32_t dst_offset,
                   const lnode& src,

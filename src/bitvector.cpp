@@ -696,7 +696,6 @@ void ch::internal::bv_mul(bitvector& out, const bitvector& lhs, const bitvector&
     auto b_w = rhs.word(0);
     out.word(0) = a_w * b_w;
   } else {
-    static_assert(8 * sizeof(bitvector::xword_t) == 32, "oops");
     int m = CH_CEILDIV(lhs.find_last(), 8 * sizeof(bitvector::xword_t));
     int n = CH_CEILDIV(rhs.find_last(), 8 * sizeof(bitvector::xword_t));
     int p = CH_CEILDIV(out.size(), 8 * sizeof(bitvector::xword_t));
@@ -736,14 +735,20 @@ void ch::internal::bv_divmodu(bitvector& quot, bitvector& rem, const bitvector& 
   if (rn)
     rem.reset();
 
-  // early exit
-  if (m <= 0 || m < n)
-    return;
-
   auto u = reinterpret_cast<const bitvector::xword_t*>(lhs.data());
   auto v = reinterpret_cast<const bitvector::xword_t*>(rhs.data());
   auto q = reinterpret_cast<bitvector::xword_t*>(quot.data());
   auto r = reinterpret_cast<bitvector::xword_t*>(rem.data());
+
+  // early exit
+  if (bv_ltu(lhs, rhs)) {
+    if (rn) {
+      for (int i = 0; i < std::min(n, rn); ++i) {
+        r[i] = u[i];
+      }
+    }
+    return;
+  }
 
   std::vector<bitvector::xword_t> tu(2 * (m + 1), 0), tv(2 * n, 0);
   auto un = tu.data();
@@ -763,49 +768,24 @@ void ch::internal::bv_divmodu(bitvector& quot, bitvector& rem, const bitvector& 
 
   auto h = vn[n - 1];
 
-  // estimate qhat
   for (int j = m - n; j >= 0; --j) {
+    // estimate quotient
     auto w = (bitvector::yword_t(un[j + n]) << bitvector::XWORD_SIZE) | un[j + n - 1];
     auto qhat = w / h;
-    auto rhat = w - qhat * h;
-
-    for (;;) {
-      if ((qhat >> bitvector::XWORD_SIZE) != 0
-       || (qhat * vn[n - 2]) > ((rhat << bitvector::XWORD_SIZE) | un[j + n - 2])) {
-        --qhat;
-        rhat += vn[n - 1];
-        if ((rhat >> bitvector::XWORD_SIZE) == 0)
-          continue;
-      }
-      break;
-    }
 
     // multiply and subtract
-    bitvector::yword_t k(0);
+    bitvector::xword_t k(0);
     for (int i = 0; i < n; ++i) {
       auto p = qhat * vn[i];
       auto w = un[i + j] - k - (p & bitvector::XWORD_MAX);
       k = (p >> bitvector::XWORD_SIZE) - (w >> bitvector::XWORD_SIZE);
       un[i + j] = w;
     }
+    assert(un[j + n] >= k);
+    un[j + n] -= k;
 
-    bitvector::syword_t t(un[j + n] - k);
-    un[j + n] = t;
     if (j < qn)
       q[j] = qhat;
-
-    // overflow handling
-    if (t < 0) {
-      if (j < qn)
-        --q[j];
-      bitvector::yword_t k(0);
-      for (int i = 0; i < n; ++i) {
-        auto w = un[i + j] + k + vn[i];
-        k = (w >> bitvector::XWORD_SIZE);
-        un[i + j] = w;
-      }
-      un[j + n] += k;
-    }
   }
 
   // unnormalize remainder

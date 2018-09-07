@@ -16,13 +16,15 @@ protected:
 
   typedef std::unordered_map<uint32_t, std::list<const lnode*>> node_map_t;
 
+  void build_node_map();
+
   size_t dead_code_elimination();
 
-  size_t remove_identity_nodes();
+  size_t gates_optimization();
 
   size_t common_subexpressions_elimination();
 
-  void build_node_map();
+  size_t proxies_coalescing();
 
   void replace_map_sources(lnodeimpl* source, lnodeimpl* target);
 

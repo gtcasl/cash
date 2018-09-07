@@ -25,5 +25,5 @@ public:
   }
 
 private:
-  int count_;
+  int64_t count_;
 };

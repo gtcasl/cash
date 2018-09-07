@@ -247,21 +247,3 @@ lnodeimpl* ch::internal::createAluNode(
     const source_location& sloc) {
   return lhs.impl()->ctx()->create_node<aluimpl>(op, size, is_signed, lhs, rhs, sloc);
 }
-
-lnodeimpl* ch::internal::createRotateNode(
-    const lnode& next,
-    uint32_t dist,
-    bool right,
-    const source_location& sloc) {
-  auto N = next.size();
-  auto mod = dist % N;
-  auto ret = next.impl()->ctx()->create_node<proxyimpl>(N, sloc);
-  if (right) {
-    ret->add_source(0, next, mod, N - mod);
-    ret->add_source(N - mod, next, 0, mod);
-  } else {
-    ret->add_source(0, next, N - mod, mod);
-    ret->add_source(mod, next, 0, N - mod);
-  }
-  return ret;
-}

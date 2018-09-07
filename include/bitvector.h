@@ -33,7 +33,7 @@ inline constexpr bool is_bitvector_extended_type_v = is_bitvector_extended_type_
 
 class bitvector {
 public:
-  using word_t = uint64_t;
+  using word_t = uint8_t;
 
   using xword_t = std::conditional_t<sizeof(word_t) == 1, uint8_t,
                     std::conditional_t<sizeof(word_t) == 2, uint16_t, uint32_t>>;

@@ -15,6 +15,9 @@ lnodeimpl* createAluNode(ch_op op, uint32_t size, bool is_signed, const lnode& l
 lnodeimpl* createRotateNode(const lnode& next, uint32_t dist, bool right,
                             const source_location& sloc);
 
+lnodeimpl* createShuffleNode(const lnode& in, const std::vector<unsigned>& indices,
+                             const source_location& sloc);
+
 void registerTap(const lnode& node,
                  const std::string& name,
                  const source_location& sloc);

@@ -234,13 +234,11 @@ template <unsigned M, unsigned N>
 auto ch_shuffle(const ch_bit<N>& obj,
                const std::array<unsigned, M>& indices, CH_SLOC) {
   static_assert(0 == (N % M), "invalid indices size");
-  static constexpr unsigned K = (N / M);
-  ch_bit<N> ret(logic_buffer(N, sloc));
-  for (unsigned i = 0; i < M; ++i) {
-    auto j = indices[M - 1 - i];
-    ret. template slice<K>(i * K, sloc) = ch_slice<K>(obj, j * K, sloc);
-  }
-  return ret;
+  auto node = createShuffleNode(
+        get_lnode(obj),
+        std::vector<unsigned>(indices.begin(), indices.end()),
+        sloc);
+  return make_type<ch_bit<N>>(node, sloc);
 }
 
 // tie function

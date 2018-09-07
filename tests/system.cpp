@@ -205,18 +205,29 @@ TEST_CASE("system", "[system]") {
     });
     TESTX([]()->bool {
       ch_scint<33> a(0x1ffffff8b);
-      ch_scint<33> b(0x00007fff);
+      ch_scint<33> b(0x000007fff);
       RetCheck ret;
       ret &= ((a * b) == 0x1FFC58075);
       return ret;
     });
     TESTX([]()->bool {
-      ch_scint<33> a(0x58);
-      ch_scint<33> b(0x00);
+      ch_scuint<128> a(260);
+      ch_scuint<128> b(261);
       RetCheck ret;
-      ret &= ((a * b) == 0x0);
+      ret &= ((a / b) == 260/261);
       return ret;
     });
+    /*TESTX([]()->bool {
+      RetCheck ret;      
+      for (int i = 0; i < 32676; ++i) {
+        ch_scuint<128> a(i);
+        for (int j = 1; j < 32676; ++j) {
+          ch_scuint<128> b(j);
+          ret &= ((a / b) == int64_t(i) / j);
+        }
+      }
+      return ret;
+    });*/
   }
   SECTION("cast", "[cast]") {
     TESTX([]()->bool {

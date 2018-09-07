@@ -1,5 +1,6 @@
 #include "proxyimpl.h"
 #include "context.h"
+#include "logic.h"
 
 using namespace ch::internal;
 
@@ -363,4 +364,39 @@ void refimpl::write(
       src_offset,
       length,
       sloc);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+lnodeimpl* ch::internal::createRotateNode(
+    const lnode& next,
+    uint32_t dist,
+    bool right,
+    const source_location& sloc) {
+  auto N = next.size();
+  auto mod = dist % N;
+  auto ret = next.impl()->ctx()->create_node<proxyimpl>(N, sloc);
+  if (right) {
+    ret->add_source(0, next, mod, N - mod);
+    ret->add_source(N - mod, next, 0, mod);
+  } else {
+    ret->add_source(0, next, N - mod, mod);
+    ret->add_source(mod, next, 0, N - mod);
+  }
+  return ret;
+}
+
+lnodeimpl* ch::internal::createShuffleNode(
+    const lnode& in,
+    const std::vector<unsigned>& indices,
+    const source_location& sloc) {
+  auto ret = in.impl()->ctx()->create_node<proxyimpl>(in.size(), sloc);
+  auto stride = in.size() / indices.size();
+  CH_CHECK(stride * indices.size() == in.size(), "invalid size");
+  for (unsigned i = 0, n = indices.size(); i < n; ++i) {
+    auto j = indices[n - 1 - i];
+    CH_CHECK(j < n, "invalid index");
+    ret->add_source(i * stride, in, j * stride, stride);
+  }
+  return ret;
 }
