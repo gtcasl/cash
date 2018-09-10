@@ -14,12 +14,6 @@ const char* ch::internal::to_string(ch_op op) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-lnode::lnode() : impl_(nullptr) {}
-
-lnode::lnode(lnodeimpl* impl) : impl_(impl) {
-  assert(impl);
-}
-
 lnode::lnode(const bitvector& value) {
   impl_ = ctx_curr()->create_literal(value);
 }
@@ -49,19 +43,6 @@ lnode::lnode(uint32_t size,
              uint32_t var_id) {
   impl_ = src.impl()->ctx()->create_node<refimpl>(
             src, src_offset, size, sloc, name, var_id);
-}
-
-lnode::lnode(const lnode& other) : impl_(other.impl_) {}
-
-lnode::~lnode() {}
-
-lnode& lnode::operator=(const lnode& other) {
-  impl_ = other.impl_;
-  return *this;
-}
-
-bool lnode::empty() const {
-  return (nullptr == impl_);
 }
 
 uint32_t lnode::id() const {

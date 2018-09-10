@@ -236,50 +236,66 @@ size_t compiler::common_subexpressions_elimination() {
 size_t compiler::proxies_coalescing() {
   size_t deleted = 0;
   // coalesce identity proxies
-  for (auto it = ctx_->proxies().begin(),
-       end = ctx_->proxies().end(); it != end;) {
-    auto proxy = *it++;
-    if (proxy->is_identity()) {
-      // replace identity proxy's uses with proxy's source
-      this->replace_map_sources(proxy, proxy->src(0).impl());
-      // delete proxy
-      auto p_it = std::find(ctx_->nodes().begin(), ctx_->nodes().end(), proxy);
-      ctx_->delete_node(p_it);
-      ++deleted;
-    }
-  }  
-  /*// coalesce single range proxies
-  for (auto it = ctx_->proxies().begin(),
-       end = ctx_->proxies().end(); it != end;) {
-    auto proxy = *it++;
-    if (proxy->ranges().size() > 1)
-      continue;
-    unsigned count = 0;
-    auto& src = proxy->src(0);
-    auto& src_range = proxy->ranges()[0];
-    auto& uses = node_map_[proxy->id()];
-    for (auto use_it = uses.begin(), use_end = uses.end(); use_it != use_end;) {
-      auto& use_node = *use_it;
-      if (use_node->impl()->type() != type_proxy) {
-        ++use_it;
-        continue;
+  {
+    for (auto it = ctx_->proxies().begin(),
+         end = ctx_->proxies().end(); it != end;) {
+      auto proxy = *it++;
+      if (proxy->is_identity()) {
+        // replace identity proxy's uses with proxy's source
+        this->replace_map_sources(proxy, proxy->src(0).impl());
+        // delete proxy
+        auto p_it = std::find(ctx_->nodes().begin(), ctx_->nodes().end(), proxy);
+        ctx_->delete_node(p_it);
+        ++deleted;
       }
-      auto use = reinterpret_cast<proxyimpl*>(use_node->impl());
-      for (auto& range : use->ranges()) {
-        range.src_offset += src_range.src_offset;
-        use->src(range.src_idx) = src;
+    }
+  }
+
+  // coalesce single range proxies
+  {
+    std::set<proxyimpl*> detached_list;
+    for (auto it = ctx_->proxies().begin(),
+         end = ctx_->proxies().end(); it != end;) {
+      auto proxy = *it++;
+      for (unsigned srci = 0, srcn = proxy->srcs().size(); srci < srcn; ++srci) {
+        auto& src_node = proxy->src(srci);
+        if (type_proxy != src_node.impl()->type())
+          continue;
+        auto src_proxy = reinterpret_cast<proxyimpl*>(src_node.impl());
+        if (src_proxy->ranges().size() > 1)
+          continue;
+        auto& src_range = src_proxy->ranges()[0];
+        auto& src2_node = src_proxy->src(0);
+        // update src node
+        src_node = src2_node;
+        // update ranges
+        for (auto& range : proxy->ranges()) {
+          if (range.src_idx != srci)
+            continue;
+          assert(range.src_offset >= src_range.dst_offset);
+          range.src_offset = (range.src_offset - src_range.dst_offset) + src_range.src_offset;
+          assert(range.src_offset + range.length <= src_node.size());
+        }
+        // update nodes map
+        node_map_.at(src_node.impl()->id()).push_back(&src_node);
+        node_map_.at(src_proxy->id()).remove(&src_node);
+        detached_list.insert(src_proxy);
       }
-      node_map_[src.id()].push_back(use_node);
-      use_it = uses.erase(use_it);
-      ++count;
     }
-    if (count == uses.size()) {
-      // delete proxy
-      auto p_it = std::find(ctx_->nodes().begin(), ctx_->nodes().end(), proxy);
-      ctx_->delete_node(p_it);
-      ++deleted;
+    for (auto it = detached_list.rbegin(), end = detached_list.rend(); it != end;) {
+      auto d = *it++;
+      auto it2 = node_map_.find(d->id());
+      if (it2 != node_map_.end()) {
+        if (it2->second.empty()) {
+          node_map_.erase(it2);
+          auto d_it = std::find(ctx_->nodes().begin(), ctx_->nodes().end(), d);
+          ctx_->delete_node(d_it);
+          ++deleted;
+        }
+      }
     }
-  }*/
+  }
+
   return deleted;
 }
 

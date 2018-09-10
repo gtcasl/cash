@@ -139,6 +139,13 @@ TEST_CASE("basics", "[basics]") {
     });
     TEST([]()->ch_bool {
       s4_4_t a{0, 0};
+      a.y = 2;
+      auto w = a.y;
+      w[0]= 1;
+      return (w == 3);
+    });
+    TEST([]()->ch_bool {
+      s4_4_t a{0, 0};
       auto b = ch_clone(a);
       b.x = 1;
       a.x = 2;

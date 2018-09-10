@@ -77,9 +77,11 @@ class lnodeimpl;
 class lnode {
 public:
 
-  lnode();
+  lnode() : impl_(nullptr) {}
 
-  lnode(lnodeimpl* impl);
+  lnode(lnodeimpl* impl) : impl_(impl) {
+    assert(impl);
+  }
 
   lnode(const bitvector& value);
 
@@ -100,11 +102,12 @@ public:
         const std::string& name = "",
         uint32_t var_id = 0);
 
-  lnode(const lnode& other);
+  lnode(const lnode& other) : impl_(other.impl_) {}
 
-  ~lnode();
-
-  lnode& operator=(const lnode& other);
+  lnode& operator=(const lnode& other) {
+    impl_ = other.impl_;
+    return *this;
+  }
 
   void write(uint32_t dst_offset,
              const lnode& in,
@@ -112,7 +115,9 @@ public:
              uint32_t length,
              const source_location& sloc);
 
-  bool empty() const;
+  bool empty() const {
+    return (nullptr == impl_);
+  }
 
   lnodeimpl* impl() const;
   

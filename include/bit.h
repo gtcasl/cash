@@ -189,6 +189,7 @@ R ch_slice(const T& obj, size_t start = 0, CH_SLOC) {
   static_assert(ch_width_v<R> <= ch_width_v<T>, "invalid size");
   assert((start + ch_width_v<R>) <= ch_width_v<T>);
   if constexpr(ch_width_v<R> == ch_width_v<T>) {
+    CH_UNUSED(start);
     if constexpr(std::is_same_v<R, T>) {
       return obj;
     } else {
