@@ -19,6 +19,6 @@ void timeimpl::eval() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-ch_bit<64> ch::internal::ch_time(const source_location& sloc) {
-  return make_type<ch_bit<64>>(ctx_curr()->time(sloc), sloc);
+ch_bit<64> ch::internal::ch_now(const source_location& sloc) {
+  return make_type<ch_bit<64>>(ctx_curr()->create_time(sloc), sloc);
 }

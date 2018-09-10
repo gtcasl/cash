@@ -182,7 +182,7 @@ public:
 
   //--
 
-  lnodeimpl* time(const source_location& sloc);
+  lnodeimpl* create_time(const source_location& sloc);
 
   //--
 

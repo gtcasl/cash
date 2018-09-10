@@ -163,7 +163,7 @@ struct Filter {
     io.y.parity = tmp[ch_width_v<T>];
     auto q = ch_delay(io.x.valid);
     io.y.valid = q;
-    //ch_print("{0}: clk={1}, rst={2}, y.val={3}, x.val={4}", ch_time(), ch_clock(), ch_reset(), q, io.x.valid);
+    //ch_print("{0}: clk={1}, rst={2}, y.val={3}, x.val={4}", ch_now(), ch_clock(), ch_reset(), q, io.x.valid);
   }
 };
 
@@ -174,7 +174,7 @@ struct FilterBlock {
     f1_.io.x(io.x);
     f1_.io.y(f2_.io.x);
     f2_.io.y(io.y);
-    //ch_print("{0}: clk={1}, rst={2}, y={3}", ch_time(), ch_clock(), ch_reset(), io.y.valid);
+    //ch_print("{0}: clk={1}, rst={2}, y={3}", ch_now(), ch_clock(), ch_reset(), io.y.valid);
   }
   ch_module<Filter<T>> f1_, f2_;
 };

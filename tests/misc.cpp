@@ -90,7 +90,7 @@ TEST_CASE("misc", "[misc]") {
   
   SECTION("tick", "[tick]") {
     TEST([]()->ch_bool {
-      ch_print("tick={0}", ch_time());
+      ch_print("tick={0}", ch_now());
       return ch_true;
     });
   }

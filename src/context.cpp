@@ -173,7 +173,7 @@ lnode context::current_reset(const source_location& sloc) {
   return sys_reset_;
 }
 
-lnodeimpl* context::time(const source_location& sloc) {
+lnodeimpl* context::create_time(const source_location& sloc) {
   if (nullptr == time_) {
     time_ = this->create_node<timeimpl>(sloc);
   }

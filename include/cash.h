@@ -231,7 +231,7 @@ namespace logic {
   using ch::internal::ch_assert;
   using ch::internal::ch_tap;
   using ch::internal::ch_print;
-  using ch::internal::ch_time;
+  using ch::internal::ch_now;
 }
 
 //

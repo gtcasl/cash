@@ -359,7 +359,7 @@ void ch_tap(const T& value, const std::string& name, CH_SLOC) {
 
 // print function
 
-ch_bit<64> ch_time(CH_SLOC);
+ch_bit<64> ch_now(CH_SLOC);
 
 inline void ch_print(const std::string& format, CH_SLOC) {
   createPrintNode(format, {}, sloc);
