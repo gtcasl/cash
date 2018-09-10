@@ -19,19 +19,25 @@ install:
   # C++17
   - sudo apt-get install gcc-7 g++-7
   - sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-7 60 --slave /usr/bin/g++ g++ /usr/bin/g++-7
+  # valgrin
+  - sudo apt-get install valgrind
 
 script: 
-  # set test environment variables
+  # Build Release project
+  - mkdir -p build_rel
+  - pushd build_rel
+  - cmake -DCMAKE_BUILD_TYPE=Release ..
+  - make -j8 all test
+  - valgrind bin/testsuite 
+  - popd
+  # Build Debug project
   - export CASH_DEBUG_LEVEL=2
   - export CASH_CFLAGS=15
-
-  # Build project
-  - mkdir -p build
-  - cd build
+  - mkdir -p build_dbg
+  - pushd build_dbg
   - cmake -DCMAKE_BUILD_TYPE=Debug -DCODECOV=ON ..
-  - make -j8
-  # Run tests
-  - make test
+  - make -j8 all test
+  - valgrind bin/testsuite
   
 after_success:
   # Gather code coverage
