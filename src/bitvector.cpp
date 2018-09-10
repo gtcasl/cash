@@ -741,9 +741,9 @@ void ch::internal::bv_divmodu(bitvector& quot, bitvector& rem, const bitvector& 
   auto r = reinterpret_cast<bitvector::xword_t*>(rem.data());
 
   // early exit
-  if (bv_ltu(lhs, rhs)) {
+  if (m <= 0 || m < n || u[m] < v[n]) {
     if (rn) {
-      for (int i = 0; i < std::min(n, rn); ++i) {
+      for (int i = 0; i < std::min(m, rn); ++i) {
         r[i] = u[i];
       }
     }
@@ -780,13 +780,13 @@ void ch::internal::bv_divmodu(bitvector& quot, bitvector& rem, const bitvector& 
       auto w = un[i + j] - k - (p & bitvector::XWORD_MAX);
       k = (p >> bitvector::XWORD_SIZE) - (w >> bitvector::XWORD_SIZE);
       un[i + j] = w;
-    }
-
-    if (j < qn)
-      q[j] = qhat;
+    }    
 
     bitvector::syword_t t(un[j + n] - k);
     un[j + n] = t;
+
+    if (j < qn)
+      q[j] = qhat;
 
     // overflow handling
     if (t < 0) {
