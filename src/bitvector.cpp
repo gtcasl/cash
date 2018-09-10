@@ -781,11 +781,25 @@ void ch::internal::bv_divmodu(bitvector& quot, bitvector& rem, const bitvector& 
       k = (p >> bitvector::XWORD_SIZE) - (w >> bitvector::XWORD_SIZE);
       un[i + j] = w;
     }
-    assert(un[j + n] >= k);
-    un[j + n] -= k;
 
     if (j < qn)
       q[j] = qhat;
+
+    bitvector::syword_t t(un[j + n] - k);
+    un[j + n] = t;
+
+    // overflow handling
+    if (t < 0) {
+      if (j < qn)
+        --q[j];
+      bitvector::yword_t k(0);
+      for (int i = 0; i < n; ++i) {
+        auto w = un[i + j] + k + vn[i];
+        k = (w >> bitvector::XWORD_SIZE);
+        un[i + j] = w;
+      }
+      un[j + n] += k;
+    }
   }
 
   // unnormalize remainder

@@ -217,17 +217,13 @@ TEST_CASE("system", "[system]") {
       ret &= ((a / b) == 260/261);
       return ret;
     });
-    /*TESTX([]()->bool {
-      RetCheck ret;      
-      for (int i = 0; i < 32676; ++i) {
-        ch_scuint<128> a(i);
-        for (int j = 1; j < 32676; ++j) {
-          ch_scuint<128> b(j);
-          ret &= ((a / b) == int64_t(i) / j);
-        }
-      }
+    TESTX([]()->bool {
+      ch_scuint<128> a(512);
+      ch_scuint<128> b(257);
+      RetCheck ret;
+      ret &= ((a / b) == 512/257);
       return ret;
-    });*/
+    });
   }
   SECTION("cast", "[cast]") {
     TESTX([]()->bool {
