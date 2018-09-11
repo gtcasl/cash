@@ -51,7 +51,7 @@ bool avm_slave_driver_impl::process_rd_req(uint64_t time,
   if (!this->arbitration(master))
     return false;
 
-  // check request buffer
+  // check request buffer capacity
   if (rd_reqs_.size() == max_rd_reqs_)
     return false;
 
@@ -80,8 +80,9 @@ bool avm_slave_driver_impl::process_wr_req(uint64_t time,
   if (!this->arbitration(master))
     return false;
 
-  // check request buffer
-  if (wr_reqs_.size() == max_wr_reqs_)
+  // check request buffer capacity
+  assert(burstsize <= max_wr_reqs_);
+  if (0 == burst_wr_cntr_ && wr_reqs_.size() > (max_wr_reqs_ - burstsize))
     return false;
 
   // check random stall
@@ -125,8 +126,6 @@ avm_slave_driver_impl::process_rd_rsp(uint64_t time) {
 
 std::optional<avm_slave_driver_impl::wr_rsp_t>
 avm_slave_driver_impl::process_wr_rsp(uint64_t time) {
-  if (burst_wr_cntr_ != 0)
-    return {};
   auto data_size = data_width_ / 8;
   auto full_mask = (1ull << data_size) - 1;
   for (auto it = wr_reqs_.begin(), end = wr_reqs_.end(); it != end; ++it) {
