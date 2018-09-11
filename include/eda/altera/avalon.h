@@ -158,10 +158,10 @@ public:
     //--
     io.stalls = stalls;
 
-    __if (ch_clock()) {
+    /*__if (ch_clock()) {
       ch_print("{0}: AVMR: rd={1}, rdn={2}, wtrq={3}, rmq={4}, pnq={5}, ffs={6}, rsp={7}, addr={8}, burst={9}, done={10}",
              ch_now(), io.avm.read, read_complete, io.avm.waitrequest, remain_reqs, pending_reqs, fifo_.io.size, io.avm.readdatavalid, io.avm.address, io.avm.burstcount, io.done);
-    };
+    };*/
   }
 
 private:
@@ -284,10 +284,10 @@ public:
     //--
     io.stalls = stalls;
 
-    __if (ch_clock()) {
+    /*__if (ch_clock()) {
       ch_print("{0}: AVMW: wr0={1}, wr={2}, wrn={3}, wtrq={4}, rmq={5}, ffs={6}, addr={7}, burst={8}, burstv={9}, wdata={10}, done={11}",
              ch_now(), burst_begin, io.avm.write, write_complete, io.avm.waitrequest, remain_reqs, fifo_.io.size, io.avm.address, io.avm.burstcount, burst_count_val, io.avm.writedata, io.done);
-    };
+    };*/
   }
 
 private:
