@@ -1,6 +1,6 @@
 #include "common.h"
 
-TEST_CASE("proxies", "[proxies]") {
+TEST_CASE("proxies", "[proxies]") {  
   SECTION("subscript", "[subscript]") {
     TEST([]()->ch_bool {
       ch_bit4 a(1010_b);
@@ -68,28 +68,28 @@ TEST_CASE("proxies", "[proxies]") {
     });
     TEST([]()->ch_bool {
       ch_bit4 a;
-      a.slice<3>(0) = 0;
+      ch_sliceref<3>(a, 0) = 0;
       a[3] = 1;
       return a == 1000_b;
     });
     TEST([]()->ch_bool {
       ch_bit4 a;
       ch_bit4 b(a);
-      a.slice<3>(0) = 0;
+      a.sliceref<3>(0) = 0;
       a[3] = 1;
       return a == 1000_b;
     });
     TEST([]()->ch_bool {
       ch_bit4 a;
       ch_bit4 b(a);
-      a.aslice<3>(0) = 0;
+      a.asliceref<3>(0) = 0;
       a[3] = 1;
       return a == 1000_b;
     });
     TEST([]()->ch_bool {
       ch_bit4 a;
       ch_bit4 b(a);
-      a.slice<3>(0) = 0;
+      a.sliceref<3>(0) = 0;
       ch_bit1 x;
       a[3] = x;
       x = 1;
@@ -103,14 +103,14 @@ TEST_CASE("proxies", "[proxies]") {
       a[3] = 0;
       a[0] = 1;
       a[3] = 1;
-      a.slice<2>(1) = 0;
+      ch_sliceref<2>(a, 1) = 0;
       return a == 1001_b;
     });
     TEST([]()->ch_bool {
       ch_bit4 a(0);
       ch_bit2 x, y;
-      a.slice<2>(0) = x;
-      a.slice<2>(2) = y;
+      a.sliceref<2>(0) = x;
+      a.sliceref<2>(2) = y;
       x = 1;
       y = 1;
       return a == 0101_b;
@@ -118,8 +118,8 @@ TEST_CASE("proxies", "[proxies]") {
     TEST([]()->ch_bool {
       ch_bit4 a(0);
       ch_bit2 x, y;
-      a.aslice<2>(0) = x;
-      a.aslice<2>(1) = y;
+      a.asliceref<2>(0) = x;
+      a.asliceref<2>(1) = y;
       x = 1;
       y = 1;
       return a == 0101_b;
@@ -127,9 +127,9 @@ TEST_CASE("proxies", "[proxies]") {
     TEST([]()->ch_bool {
       ch_uint4 a, b(1);
       auto c = a + b;
-      a.slice<2>(0) = 1; // a = 0001
-      a.slice<2>(1) = 1; // a = 0011
-      a.slice<2>(2) = 1; // a = 0111
+      a.sliceref<2>(0) = 1; // a = 0001
+      a.sliceref<2>(1) = 1; // a = 0011
+      a.sliceref<2>(2) = 1; // a = 0111
       //ch_print("c={0}", c);
       return (c == 1000_b);
     });
@@ -140,7 +140,7 @@ TEST_CASE("proxies", "[proxies]") {
       ch_bit2 z;
 
       a[0] = x;
-      a.slice<2>(1) = y;
+      a.sliceref<2>(1) = y;
       a[3] = x;
       y = z;
 
@@ -156,7 +156,7 @@ TEST_CASE("proxies", "[proxies]") {
 
      a[0] = x;
      a[1] = y;
-     a.slice<3>(0) = z;
+     a.sliceref<3>(0) = z;
      a[3] = w;
 
      x = 0_b;
@@ -167,13 +167,49 @@ TEST_CASE("proxies", "[proxies]") {
     });
     TEST([]()->ch_bool {
       ch_bit4 x(0x0);
-      x.slice<3>(1).slice<2>() = 11_b;
+      x.sliceref<3>(1).sliceref<2>() = 11_b;
       return (x == 0110_b);
     });
     TEST([]()->ch_bool {
       ch_bit4 a(1100_b), b(0011_b);
-      b.slice<2>(2) = a.slice<2>(2);
+      b.sliceref<2>(2) = a.slice<2>(2);
       return (b == 1111_b);
+    });
+  }
+
+  SECTION("pad", "[pad]") {
+    TEST([]()->ch_bool {
+      ch_bit4 a(1100_b);
+      auto c = ch_pad<1>(a) << 1;
+      return (c == 11000_b);
+    });
+    TEST([]()->ch_bool {
+      ch_uint4 a(1100_b);
+      auto c = ch_pad<1>(a) << 1;
+      return (c == 11000_b);
+    });
+    TEST([]()->ch_bool {
+      ch_int4 a(1100_b);
+      auto c = ch_pad<1>(a);
+      return (c == 11100_b);
+    });
+  }
+
+  SECTION("resize", "[resize]") {
+    TEST([]()->ch_bool {
+      ch_bit4 a(1100_b);
+      auto c = ch_resize<3>(a);
+      return (c == 100_b);
+    });
+    TEST([]()->ch_bool {
+      ch_uint4 a(1100_b);
+      auto c = ch_resize<5>(a);
+      return (c == 01100_b);
+    });
+    TEST([]()->ch_bool {
+      ch_int4 a(1100_b);
+      auto c = ch_resize<5>(a);
+      return (c == 11100_b);
     });
   }
   

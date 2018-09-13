@@ -115,6 +115,20 @@ TEST_CASE("basics", "[basics]") {
       return m.io.out;
     });
   }
+  SECTION("ref", "[ref]") {
+    TEST([]()->ch_bool {
+      ch_bit4 a(1010_b);
+     auto b = a.ref();
+     b[0] = 1;
+      return (a == 1011_b);
+    });
+    TEST([]()->ch_bool {
+      ch_bit4 a(1010_b);
+     auto b = ch_ref(a);
+     b[0] = 1;
+      return (a == 1011_b);
+    });
+  }
   SECTION("clone", "[clone]") {
     TEST([]()->ch_bool {
       ch_bit4 a(0);

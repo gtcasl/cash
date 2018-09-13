@@ -102,19 +102,19 @@ public:
 
   template <typename T>
   static lnode data(const T& obj) {
-    assert(ch_width_v<T> == obj.buffer().size());
+    assert(obj.buffer().size() == ch_width_v<T>);
     return obj.buffer().data();
   }
 
   template <typename T>
   static auto copy(const T& obj, const source_location& sloc) {
-    assert(ch_width_v<T> == obj.buffer().size());
+    assert(obj.buffer().size() == ch_width_v<T>);
     return logic_buffer(obj.buffer(), sloc);
   }
 
   template <typename T>
   static auto move(T&& obj) {
-    assert(ch_width_v<T> == obj.buffer().size());
+    assert(obj.buffer().size() == ch_width_v<T>);
     return logic_buffer(std::move(obj.buffer()));
   }
 
@@ -146,15 +146,23 @@ public:
 
   template <typename T>
   static auto clone(const T& obj, const source_location& sloc) {
-    assert(ch_width_v<T> == obj.buffer().size());
+    assert(obj.buffer().size() == ch_width_v<T>);
     auto data = obj.buffer().data().clone(sloc);
     return T(logic_buffer(data, sloc));
   }
 
   template <typename R, typename T>
+  static auto ref(T& obj, size_t start, const source_location& sloc) {
+    static_assert(ch_width_v<R> <= ch_width_v<T>, "invalid size");
+    assert(start + ch_width_v<R> <= ch_width_v<T>);
+    assert(obj.buffer().size() == ch_width_v<T>);
+    return R(logic_buffer(ch_width_v<R>, obj.buffer(), start, sloc));
+  }
+
+  template <typename R, typename T>
   static auto cast(const T& obj) {
     static_assert(ch_width_v<T> == ch_width_v<R>, "invalid size");
-    assert(ch_width_v<T> == obj.buffer().size());
+    assert(obj.buffer().size() == ch_width_v<T>);
     return R(obj.buffer());
   }
 
@@ -265,6 +273,12 @@ struct sloc_arg {
     ch_reg<type> s(init, sloc); \
     (*this) = s; \
     return s; \
+  } \
+  auto ref(CH_SLOC) { \
+    return ch::internal::logic_accessor::ref<type>(*this, 0, sloc); \
+  } \
+  auto clone(CH_SLOC) const { \
+    return ch::internal::logic_accessor::clone(*this, sloc); \
   }
 
 #define CH_LOGIC_OPERATOR(name) \
@@ -411,28 +425,6 @@ CH_LOGIC_OPERATOR(logic_op_shift)
   }
 };
 
-CH_LOGIC_OPERATOR(logic_op_padding)
-  template <typename R>
-  R pad(CH_SLOC) const {
-    static_assert(is_logic_type_v<R>, "invalid type");
-    static_assert(ch_width_v<R> >= N, "invalid size");
-    auto& self = reinterpret_cast<const Derived&>(*this);
-    if constexpr (ch_width_v<R> > N) {
-      return make_logic_op<ch_op::pad, ch_signed_v<Derived>, R>(self, sloc);
-    } else
-    if constexpr (std::is_same_v<R, Derived>) {
-      return self;
-    } else {
-      return R(*this, sloc);
-    }
-  }
-
-  template <unsigned M>
-  auto pad(CH_SLOC) const {
-    return this->pad<T<M>>(sloc);
-  }
-};
-
 CH_LOGIC_OPERATOR(logic_op_relational)
   CH_LOGIC_OPERATOR_IMPL(operator<, ch_op::lt, ch_bit<1>)
   CH_LOGIC_OPERATOR_IMPL(operator<=, ch_op::le, ch_bit<1>)
@@ -451,6 +443,53 @@ CH_LOGIC_OPERATOR(logic_op_arithmetic)
   CH_LOGIC_OPERATOR_IMPL(operator*, ch_op::mul, Derived)
   CH_LOGIC_OPERATOR_IMPL(operator/, ch_op::div, Derived)
   CH_LOGIC_OPERATOR_IMPL(operator%, ch_op::mod, Derived)
+};
+
+CH_LOGIC_OPERATOR(logic_op_slice)
+  template <typename R>
+  const auto slice(size_t start = 0, CH_SLOC) const {
+    static_assert(ch_width_v<R> <= N, "invalid size");
+    assert(start + ch_width_v<R> <= N);
+    R ret(logic_buffer(ch_width_v<R>, sloc));
+    logic_accessor::write(ret, 0, reinterpret_cast<const Derived&>(*this), start, ch_width_v<R>, sloc);
+    return ret;
+  }
+
+  template <unsigned M>
+  const auto slice(size_t start = 0, CH_SLOC) const {
+    return this->slice<T<M>>(start, sloc);
+  }
+
+  template <typename R>
+  const auto aslice(size_t start = 0, CH_SLOC) const {
+    return this->slice<R>(start * ch_width_v<R>, sloc);
+  }
+
+  template <unsigned M>
+  const auto aslice(size_t start = 0, CH_SLOC) const {
+    return this->aslice<T<M>>(start, sloc);
+  }
+
+  template <typename R>
+  auto sliceref(size_t start = 0, CH_SLOC) {
+    auto& self = reinterpret_cast<const Derived&>(*this);
+    return logic_accessor::ref<R>(self, start, sloc);
+  }
+
+  template <unsigned M>
+  auto sliceref(size_t start = 0, CH_SLOC) {
+    return this->sliceref<T<M>>(start, sloc);
+  }
+
+  template <typename R>
+  auto asliceref(size_t start = 0, CH_SLOC) {
+    return this->sliceref<R>(start * ch_width_v<R>, sloc);
+  }
+
+  template <unsigned M>
+  auto asliceref(size_t start = 0, CH_SLOC) {
+    return this->asliceref<T<M>>(start, sloc);
+  }
 };
 
 }

@@ -124,12 +124,12 @@ public:
   }
 
   friend auto operator*(const ch_scfixed& lhs, const ch_scfixed& rhs) {
-    auto ret = ((lhs.as_scint().template pad<N+Frac>() * rhs.as_scint()) >> Frac).template slice<N>();
+    auto ret = ((ch_scint<N+Frac>(lhs) * rhs.as_scint()) >> Frac).template slice<N>();
     return ret.template as<ch_scfixed>();
   }
 
   friend auto operator/(const ch_scfixed& lhs, const ch_scfixed& rhs) {
-    auto ret = ((lhs.as_scint().template pad<N+Frac>() << Frac) / rhs.as_scint()).template slice<N>();
+    auto ret = ((ch_scint<N+Frac>(lhs) << Frac) / rhs.as_scint()).template slice<N>();
     return ret.template as<ch_scfixed>();
   }
 

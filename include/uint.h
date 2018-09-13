@@ -9,15 +9,15 @@ template <unsigned N = 32>
 class ch_uint : public logic_op_relational<ch_uint, N,
                         logic_op_bitwise<ch_uint, N,
                           logic_op_shift<ch_uint, N,
-                            logic_op_padding<ch_uint, N,
-                              logic_op_arithmetic<ch_uint, N, ch_bit<N>>>>>> {
+                            logic_op_arithmetic<ch_uint, N,
+                              logic_op_slice<ch_uint, N, ch_bit<N>>>>>> {
 public:
   using traits = logic_traits<N, false, ch_uint, ch_scuint<N>>;
   using base = logic_op_relational<ch_uint, N,
                  logic_op_bitwise<ch_uint, N,
                    logic_op_shift<ch_uint, N,
-                     logic_op_padding<ch_uint, N,
-                       logic_op_arithmetic<ch_uint, N, ch_bit<N>>>>>>;
+                     logic_op_arithmetic<ch_uint, N,
+                       logic_op_slice<ch_uint, N, ch_bit<N>>>>>>;
 
   explicit ch_uint(const logic_buffer& buffer = logic_buffer(N, CH_CUR_SLOC))
     : base(buffer)
@@ -35,6 +35,11 @@ public:
 
   explicit ch_uint(const ch_bit<N>& other, CH_SLOC) : base(other, sloc) {}
 
+  template <typename U,
+            CH_REQUIRE_0(is_bit_base_v<U>),
+            CH_REQUIRE_0(ch_width_v<U> < N)>
+  explicit ch_uint(const U& other, CH_SLOC) : base(other, sloc) {}
+
   ch_uint(const ch_uint& other, CH_SLOC) : base(other, sloc) {}
 
   ch_uint(ch_uint&& other) : base(std::move(other)) {}
@@ -51,6 +56,11 @@ public:
 
   CH_LOGIC_INTERFACE(ch_uint)
 };
+
+template <unsigned M, unsigned N>
+auto ch_pad(const ch_uint<N>& obj, CH_SLOC) {
+  return ch_uint<M+N>(obj, sloc);
+}
 
 CH_LOGIC_FUNCTION_EQUALITY(ch_eq, ch_op::eq, ch_uint)
 CH_LOGIC_FUNCTION_EQUALITY(ch_ne, ch_op::ne, ch_uint)

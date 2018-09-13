@@ -157,8 +157,8 @@ template <typename T>
 struct Filter {
   filter_io<T> io;
   void describe() {
-    auto tmp = (ch_pad<ch_width_v<T>+1>(io.x.data) << 1)
-              | ch_pad<ch_width_v<T>+1>(io.x.parity);
+    auto tmp = (ch_pad<1>(io.x.data) << 1)
+              | ch_pad<1>(io.x.parity);
     io.y.data   = ch_delay(ch_slice<T>(tmp));
     io.y.parity = tmp[ch_width_v<T>];
     auto q = ch_delay(io.x.valid);

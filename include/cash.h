@@ -135,38 +135,6 @@ namespace logic {
   const ch_scbit<1> ch_true(1);
 
   //
-  // subscript operators
-  //
-
-  using ch::internal::ch_clone;
-  using ch::internal::ch_slice;
-  using ch::internal::ch_aslice;
-  using ch::internal::ch_pad;
-  using ch::internal::ch_cat;
-  using ch::internal::ch_shuffle;
-
-  //
-  // conditional operators
-  //
-
-  using ch::internal::ch_sel;
-  using ch::internal::ch_case;
-  using ch::internal::ch_if;
-  using ch::internal::ch_switch;
-  using ch::internal::ch_min;
-  using ch::internal::ch_max;
-
-  //
-  // sequential functions
-  //
-
-  using ch::internal::ch_delay;
-  using ch::internal::ch_pushcd;
-  using ch::internal::ch_popcd;
-  using ch::internal::ch_clock;
-  using ch::internal::ch_reset;
-
-  //
   // equality functions
   //
 
@@ -224,14 +192,50 @@ namespace logic {
   using ch::internal::ch_rotr;
 
   //
+  // resize functions
+  //
+
+  using ch::internal::ch_slice;
+  using ch::internal::ch_aslice;
+  using ch::internal::ch_pad;
+  using ch::internal::ch_resize;
+  using ch::internal::ch_cat;
+  using ch::internal::ch_shuffle;
+
+  //
+  // conditional functions
+  //
+
+  using ch::internal::ch_sel;
+  using ch::internal::ch_case;
+  using ch::internal::ch_if;
+  using ch::internal::ch_switch;
+  using ch::internal::ch_min;
+  using ch::internal::ch_max;
+
+  //
+  // sequential functions
+  //
+
+  using ch::internal::ch_delay;
+  using ch::internal::ch_pushcd;
+  using ch::internal::ch_popcd;
+  using ch::internal::ch_clock;
+  using ch::internal::ch_reset;
+
+  //
   // utility functions
   //
 
+  using ch::internal::ch_ref;
+  using ch::internal::ch_sliceref;
+  using ch::internal::ch_asliceref;
+  using ch::internal::ch_clone;
   using ch::internal::ch_bind;
-  using ch::internal::ch_assert;
-  using ch::internal::ch_tap;
   using ch::internal::ch_print;
   using ch::internal::ch_now;
+  using ch::internal::ch_assert;
+  using ch::internal::ch_tap;
 }
 
 //
@@ -295,7 +299,6 @@ namespace extension {
   using ch::internal::system_op_logical;
   using ch::internal::system_op_bitwise;
   using ch::internal::system_op_shift;
-  using ch::internal::system_op_padding;
   using ch::internal::system_op_cast;
   using ch::internal::system_op_relational;
   using ch::internal::system_op_arithmetic;
@@ -304,7 +307,6 @@ namespace extension {
   using ch::internal::logic_op_logical;
   using ch::internal::logic_op_bitwise;
   using ch::internal::logic_op_shift;
-  using ch::internal::logic_op_padding;
   using ch::internal::logic_op_relational;
   using ch::internal::logic_op_arithmetic;
 }

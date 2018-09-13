@@ -86,10 +86,13 @@ inline constexpr bool ch_signed_v = signed_impl<std::decay_t<T>>::value;
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <unsigned Bitwidth, bool Signed, typename SystemType, typename LogicType>
+template <unsigned Bitwidth,
+          bool Signed,
+          typename SystemType,
+          typename LogicType>
 struct system_traits {
-  static constexpr traits_type type  = traits_system;
-  static constexpr unsigned bitwidth = Bitwidth;
+  static constexpr traits_type type   = traits_system;
+  static constexpr unsigned bitwidth  = Bitwidth;
   static constexpr unsigned is_signed = Signed;
   using system_type = SystemType;
   using logic_type  = LogicType;
@@ -109,8 +112,8 @@ CH_DEF_SFINAE_CHECK(is_system_type, is_system_traits_v<typename std::decay_t<T>:
 
 template <unsigned Bitwidth, bool Signed, typename LogicType, typename SystemType>
 struct logic_traits {
-  static constexpr traits_type type = traits_logic;
-  static constexpr unsigned bitwidth = Bitwidth;
+  static constexpr traits_type type   = traits_logic;
+  static constexpr unsigned bitwidth  = Bitwidth;
   static constexpr unsigned is_signed = Signed;
   using logic_type  = LogicType;
   using system_type = SystemType;

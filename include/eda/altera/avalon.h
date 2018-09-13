@@ -80,7 +80,7 @@ public:
     ch_reg<ch_bool> done(false);
 
     // determine if we can request the next data
-    auto fifo_almost_full = (ch_pad<log2ceil(Qsize+1)+1>(fifo_.io.size) + pending_reqs) > (Qsize - 2*MaxBurst); // assume inflight burst from previous cycle
+    auto fifo_almost_full = (ch_pad<1>(fifo_.io.size) + pending_reqs) > (Qsize - 2*MaxBurst); // assume inflight burst from previous cycle
     auto cur_remain_reqs = ch_sel(io.start, io.num_blocks, remain_reqs);
     auto read_enabled_next = (cur_remain_reqs != 0) && !fifo_almost_full;
     auto read_enabled = ch_delay(read_enabled_next, 1, false) && (remain_reqs != 0); // ensure no an extra request to be issued
@@ -102,7 +102,7 @@ public:
     __if (io.start) {
       address->next = io.base_addr;
     }__elif (read_complete) {
-      address->next = address + (ch_pad<AddrW>(burst_count) << LDataB);
+      address->next = address + (ch_resize<AddrW>(burst_count) << LDataB);
     };
 
     //--
@@ -150,7 +150,7 @@ public:
     io.avm.write      = false;
     io.avm.writedata  = 0;
     io.avm.byteenable = -1; // full word access
-    io.avm.burstcount = ch_pad<BurstW>(burst_count);
+    io.avm.burstcount = ch_resize<BurstW>(burst_count);
 
     //--
     io.done = done;
@@ -272,7 +272,7 @@ public:
     io.avm.write      = write_enabled;
     io.avm.writedata  = fifo_.io.deq.data;
     io.avm.byteenable = -1; // full word access
-    io.avm.burstcount = ch_pad<BurstW>(burst_count);
+    io.avm.burstcount = ch_resize<BurstW>(burst_count);
 
     //--
     fifo_.io.deq.ready = write_complete;

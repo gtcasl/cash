@@ -201,7 +201,7 @@ TEST_CASE("aggregates", "[aggregates]") {
       u3_t u3 = {0_b8};
       u3.b = 01010101_b;
       u3.a = 11_b;
-      u3.c.slice<2>(2) = 00_b;
+      u3.c.sliceref<2>(2) = 00_b;
       return (u3.as_bit() == 01010011_b);
     });    
     TEST([]()->ch_bool {

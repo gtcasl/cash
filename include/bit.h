@@ -10,14 +10,14 @@ class ch_bit : public logic_op_equality<ch_bit, N,
                         logic_op_logical<ch_bit, N,
                           logic_op_bitwise<ch_bit, N,
                             logic_op_shift<ch_bit, N,
-                              logic_op_padding<ch_bit, N >>>>> {
+                              logic_op_slice<ch_bit, N>>>>> {
 public:
   using traits = logic_traits<N, false, ch_bit, ch_scbit<N>>;
   using base = logic_op_equality<ch_bit, N,
                  logic_op_logical<ch_bit, N,
                    logic_op_bitwise<ch_bit, N,
                      logic_op_shift<ch_bit, N,
-                       logic_op_padding<ch_bit, N >>>>>;
+                       logic_op_slice<ch_bit, N>>>>>;
 
   explicit ch_bit(const logic_buffer& buffer = logic_buffer(N, CH_CUR_SLOC))
     : buffer_(buffer) {
@@ -38,6 +38,13 @@ public:
             CH_REQUIRE_0(is_bitvector_extended_type_v<U>)>
   explicit ch_bit(const U& other, CH_SLOC)
     : buffer_(logic_buffer(bitvector(N, other), sloc))
+  {}
+
+  template <typename U,
+            CH_REQUIRE_0(is_bit_base_v<U>),
+            CH_REQUIRE_0(ch_width_v<U> < N)>
+  explicit ch_bit(const U& other, CH_SLOC)
+    : buffer_(createAluNode(ch_op::pad, N, ch_signed_v<U>, get_lnode(other), sloc))
   {}
 
   ch_bit(const ch_bit& other, CH_SLOC)
@@ -67,54 +74,6 @@ public:
   auto operator[](const sloc_arg<size_t>& index) {
     assert(index.value < N);
     return ch_bit<1>(logic_buffer(1, buffer_, index.value, index.sloc));
-  }
-
-  // slicing operators
-
-  template <typename R>
-  const auto slice(size_t start = 0, CH_SLOC) const {
-    static_assert(is_logic_type_v<R>, "invalid type");
-    static_assert(ch_width_v<R> <= N, "invalid size");
-    assert((start + ch_width_v<R>) <= N);
-    return R(logic_buffer(ch_width_v<R>, buffer_, start, sloc));
-  }
-
-  template <typename R>
-  const auto aslice(size_t start = 0, CH_SLOC) const {
-    return this->slice<R>(start * ch_width_v<R>, sloc);
-  }
-
-  template <unsigned M>
-  const auto slice(size_t start = 0, CH_SLOC) const {
-    return this->slice<ch_bit<M>>(start, sloc);
-  }
-
-  template <unsigned M>
-  const auto aslice(size_t start = 0, CH_SLOC) const {
-    return this->slice<ch_bit<M>>(start * M, sloc);
-  }
-
-  template <typename R>
-  auto slice(size_t start = 0, CH_SLOC) {
-    static_assert(is_logic_type_v<R>, "invalid type");
-    static_assert(ch_width_v<R> <= N, "invalid size");
-    assert((start + ch_width_v<R>) <= N);
-    return R(logic_buffer(ch_width_v<R>, buffer_, start, sloc));
-  }
-
-  template <typename R>
-  auto aslice(size_t start = 0, CH_SLOC) {
-    return this->slice<R>(start * ch_width_v<R>, sloc);
-  }
-
-  template <unsigned M>
-  auto slice(size_t start = 0, CH_SLOC) {
-    return this->slice<ch_bit<M>>(start, sloc);
-  }
-
-  template <unsigned M>
-  auto aslice(size_t start = 0, CH_SLOC) {
-    return this->slice<ch_bit<M>>(start * M, sloc);
   }
 
   CH_LOGIC_INTERFACE(ch_bit)
@@ -183,50 +142,71 @@ inline auto ch_rotr(const ch_bit<N>& lhs, unsigned rhs, CH_SLOC) {
 // slicing functions
 
 template <typename R, typename T>
-R ch_slice(const T& obj, size_t start = 0, CH_SLOC) {
-  static_assert(is_logic_type_v<R>, "invalid type");
-  static_assert(is_logic_type_v<T>, "invalid type");
-  static_assert(ch_width_v<R> <= ch_width_v<T>, "invalid size");
-  assert((start + ch_width_v<R>) <= ch_width_v<T>);
-  if constexpr(ch_width_v<R> == ch_width_v<T>) {
-    CH_UNUSED(start);
-    if constexpr(std::is_same_v<R, T>) {
-      return obj;
-    } else {
-      return R(obj, sloc);
-    }
-  } else {
-    ch_bit<ch_width_v<R>> ret(logic_buffer(ch_width_v<R>, sloc));
-    logic_accessor::write(ret, 0, obj, start, ch_width_v<R>, sloc);
-    return ret.template as<R>();
-  }
+auto ch_slice(const T& obj, size_t start = 0, CH_SLOC) {
+  return obj.template slice<ch_width_v<R>>(start, sloc).template as<R>();
 }
 
 template <unsigned N, typename T>
 auto ch_slice(const T& obj, size_t start = 0, CH_SLOC) {
-  return ch_slice<ch_bit<N>>(obj, start, sloc);
+  return obj.template slice<N>(start, sloc);
 }
 
 template <typename R, typename T>
-R ch_aslice(const T& obj, size_t start = 0, CH_SLOC) {
-  return ch_slice<R>(obj, start * ch_width_v<R>, sloc);
+auto ch_aslice(const T& obj, size_t start = 0, CH_SLOC) {
+  return obj.template aslice<ch_width_v<R>>(start, sloc).template as<R>();
 }
 
 template <unsigned N, typename T>
 auto ch_aslice(const T& obj, size_t start = 0, CH_SLOC) {
-  return ch_slice<ch_bit<N>>(obj, start * N, sloc);
+  return obj.template aslice<N>(start, sloc);
+}
+
+template <typename R, typename T>
+auto ch_sliceref(T& obj, size_t start = 0, CH_SLOC) {
+  return obj.template sliceref<ch_width_v<R>>(start, sloc).template as<R>();
+}
+
+template <unsigned N, typename T>
+auto ch_sliceref(T& obj, size_t start = 0, CH_SLOC) {
+  return obj.template sliceref<N>(start, sloc);
+}
+
+template <typename R, typename T>
+auto ch_asliceref(T& obj, size_t start = 0, CH_SLOC) {
+  return obj.template asliceref<ch_width_v<R>>(start, sloc).template as<R>();
+}
+
+template <unsigned N, typename T>
+auto ch_asliceref(T& obj, size_t start = 0, CH_SLOC) {
+  return obj.template asliceref<N>(start, sloc);
 }
 
 // padding function
 
+template <unsigned M, unsigned N>
+auto ch_pad(const ch_bit<N>& obj, CH_SLOC) {
+  return ch_bit<M+N>(obj, sloc);
+}
+
+// resize function
+
 template <typename R, typename T>
-auto ch_pad(const T& obj, CH_SLOC) {
-  return obj.template pad<R>(sloc);
+auto ch_resize(const T& obj, CH_SLOC) {
+  static_assert(is_bit_base_v<T>, "invalid type");
+  if constexpr (ch_width_v<T> <= ch_width_v<R>) {
+    return ch_pad<ch_width_v<R>-ch_width_v<T>>(obj, sloc).template as<R>();
+  } else {
+    return ch_slice<R>(obj, 0, sloc);
+  }
 }
 
 template <unsigned M, typename T>
-auto ch_pad(const T& obj, CH_SLOC) {
-  return obj.template pad<M>(sloc);
+auto ch_resize(const T& obj, CH_SLOC) {
+  if constexpr (ch_width_v<T> <= M) {
+    return ch_pad<M-ch_width_v<T>>(obj, sloc);
+  } else {
+    return ch_slice<M>(obj, 0, sloc);
+  }
 }
 
 // shuffle function
@@ -339,14 +319,30 @@ CH_VA_ARGS_MAP(CH_CAT)
 #undef CH_CAT_ASSERT
 #undef CH_CAT_DECL
 #undef CH_CAT_ARG
-#undef CH_CAT
+#undef CH_CAT                         
 
-// cloning function
+// reference function
+
+template <typename R, typename T>
+auto ch_as(const T& obj, CH_SLOC) {
+  static_assert(is_logic_type_v<T>, "invalid type");
+  return obj.template as<R>(sloc);
+}
+
+// reference function
+
+template <typename T>
+auto ch_ref(T& obj, CH_SLOC) {
+  static_assert(is_logic_type_v<T>, "invalid type");
+  return obj.template ref(sloc);
+}
+
+// clone function
 
 template <typename T>
 auto ch_clone(const T& obj, CH_SLOC) {
   static_assert(is_logic_type_v<T>, "invalid type");
-  return logic_accessor::clone(obj, sloc);
+  return obj.template clone(sloc);
 }
 
 // tap function

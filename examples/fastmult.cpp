@@ -17,7 +17,7 @@ struct FastMult {
       }
     }
     ch_rom<ch_uint8, 256> rom(tbl_mult);
-    auto addr = (ch_pad<8>(io.lhs) << 4) | ch_pad<8>(io.rhs);
+    auto addr = (ch_pad<4>(io.lhs) << 4) | ch_pad<4>(io.rhs);
     io.out = rom.read(addr);
   }
 };

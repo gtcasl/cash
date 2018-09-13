@@ -11,17 +11,17 @@ template <unsigned N = 32>
 class ch_scuint : public system_op_relational<ch_scuint, N,
                            system_op_bitwise<ch_scuint, N,
                              system_op_shift<ch_scuint, N,
-                               system_op_padding<ch_scuint, N,
-                                 system_op_cast<ch_scuint, N,
-                                    system_op_arithmetic<ch_scuint, N, ch_scbit<N>>>>>>> {
+                               system_op_cast<ch_scuint, N,
+                                 system_op_arithmetic<ch_scuint, N,
+                                   system_op_slice<ch_scuint, N, ch_scbit<N>>>>>>> {
 public:
   using traits = system_traits<N, false, ch_scuint, ch_uint<N>>;
   using base = system_op_relational<ch_scuint, N,
                  system_op_bitwise<ch_scuint, N,
                    system_op_shift<ch_scuint, N,
-                     system_op_padding<ch_scuint, N,
-                       system_op_cast<ch_scuint, N,
-                         system_op_arithmetic<ch_scuint, N, ch_scbit<N>>>>>>>;
+                     system_op_cast<ch_scuint, N,
+                       system_op_arithmetic<ch_scuint, N,
+                         system_op_slice<ch_scuint, N, ch_scbit<N>>>>>>>;
 
   explicit ch_scuint(const system_buffer_ptr& buffer = make_system_buffer(N))
     : base(buffer)
@@ -33,6 +33,11 @@ public:
 
   template <typename U,
             CH_REQUIRE_0(is_bitvector_extended_type_v<U>)>
+  explicit ch_scuint(const U& other) : base(other) {}
+
+  template <typename U,
+            CH_REQUIRE_0(is_scbit_base_v<U>),
+            CH_REQUIRE_0(ch_width_v<U> < N)>
   explicit ch_scuint(const U& other) : base(other) {}
 
   explicit ch_scuint(const ch_scbit<N>& other) : base(other) {}

@@ -115,31 +115,25 @@ class system_accessor {
 public:
   template <typename T>
   static const auto& buffer(const T& obj) {
-    assert(ch_width_v<T> == obj.buffer()->size());
-    return obj.buffer();
-  }
-
-  template <typename T>
-  static auto& buffer(T& obj) {
-    assert(ch_width_v<T> == obj.buffer()->size());
+    assert(obj.buffer()->size() == ch_width_v<T>);
     return obj.buffer();
   }
 
   template <typename T>
   static const auto& data(const T& obj) {
-    assert(ch_width_v<T> == obj.buffer()->size());
+    assert(obj.buffer()->size() == ch_width_v<T>);
     return obj.buffer()->data();
   }
 
   template <typename T>
   static auto copy(const T& obj) {
-    assert(ch_width_v<T> == obj.buffer()->size());
+    assert(obj.buffer()->size() == ch_width_v<T>);
     return make_system_buffer(*obj.buffer());
   }
 
   template <typename T>
   static auto move(T&& obj) {
-    assert(ch_width_v<T> == obj.buffer()->size());
+    assert(obj.buffer()->size() == ch_width_v<T>);
     return make_system_buffer(std::move(*obj.buffer()));
   }
 
@@ -169,9 +163,18 @@ public:
   }
 
   template <typename R, typename T>
-  static R cast(const T& obj) {
+  static auto ref(const T& obj, size_t start) {
+    static_assert(ch_width_v<R> <= ch_width_v<T>, "invalid size");
+    assert(start + ch_width_v<R> <= ch_width_v<T>);
+    assert(obj.buffer()->size() == ch_width_v<T>);
+    return R(make_system_buffer(ch_width_v<R>, obj.buffer(), start));
+  }
+
+  template <typename R, typename T>
+  static auto cast(const T& obj) {
     static_assert(ch_width_v<T> == ch_width_v<R>, "invalid size");
-    return R(make_system_buffer(ch_width_v<T>, obj.buffer(), 0));
+    assert(obj.buffer()->size() == ch_width_v<T>);
+    return R(obj.buffer());
   }
 };
 
@@ -238,6 +241,9 @@ auto make_system_op(SystemFunc2 func, const A& lhs, const B& rhs) {
   } \
   auto as_scuint() { \
     return this->as<ch::internal::ch_scuint<type::traits::bitwidth>>(); \
+  } \
+  auto ref() { \
+    return ch::internal::system_accessor::ref<type>(*this, 0); \
   }
 
 #define CH_SYSTEM_OPERATOR(name) \
@@ -261,12 +267,12 @@ auto make_system_op(SystemFunc2 func, const A& lhs, const B& rhs) {
   } \
   template <unsigned M, CH_REQUIRE_0(M < N)> \
   friend auto op(const Derived& lhs, const T<M>& _rhs) { \
-    auto rhs = _rhs.template pad<N>(); \
+    T<N> rhs(_rhs); \
     CH_REM body; \
   } \
   template <unsigned M, CH_REQUIRE_0(M < N)> \
   friend auto op(const T<M>& _lhs, const Derived& rhs) { \
-    auto lhs = _lhs.template pad<N>(); \
+    T<N> lhs(_lhs); \
     CH_REM body; \
   }
 
@@ -336,31 +342,6 @@ CH_SYSTEM_OPERATOR(system_op_cast)
   }
 };
 
-CH_SYSTEM_OPERATOR(system_op_padding)
-  template <typename R>
-  R pad() const {
-    static_assert(is_system_type_v<R>, "invalid type");
-    static_assert(ch_width_v<R> >= N, "invalid size");
-    auto& self = reinterpret_cast<const Derived&>(*this);
-    if constexpr (ch_width_v<R> > N) {
-      if constexpr (ch_signed_v<Derived>) {
-        return make_system_op<R>(bv_sext, self);
-      } else {
-        return make_system_op<R>(bv_zext, self);
-      }
-    } else
-    if constexpr (std::is_same_v<R, Derived>) {
-      return self;
-    } else {
-      return R(self);
-    }
-  }
-  template <unsigned M>
-  auto pad() const {
-    return this->pad<T<M>>();
-  }
-};
-
 CH_SYSTEM_OPERATOR(system_op_relational)
   CH_SYSTEM_OPERATOR_IMPL(operator<, (if constexpr (ch_signed_v<Derived>) {
                                         return bv_lts(lhs.buffer_->data(), rhs.buffer_->data());
@@ -391,6 +372,54 @@ CH_SYSTEM_OPERATOR(system_op_arithmetic)
                                      } else {
                                         return make_system_op<Derived>(bv_modu, lhs, rhs);
                                      }))
+};
+
+CH_SYSTEM_OPERATOR(system_op_slice)
+  template <typename R>
+  const auto slice(size_t start = 0) const {
+    static_assert(ch_width_v<R> <= N, "invalid size");
+    assert(start + ch_width_v<R> <= N);
+    R ret;
+    auto& self = reinterpret_cast<const Derived&>(*this);
+    system_accessor::write(ret, 0, self, start, ch_width_v<R>);
+    return ret;
+  }
+
+  template <typename R>
+  const auto aslice(size_t start = 0) const {
+    return this->slice<R>(start * ch_width_v<R>);
+  }
+
+  template <unsigned M>
+  const auto slice(size_t start = 0) const {
+    return this->slice<T<M>>(start);
+  }
+
+  template <unsigned M>
+  const auto aslice(size_t start = 0) const {
+    return this->aslice<T<M>>(start);
+  }
+
+  template <typename R>
+    auto sliceref(size_t start = 0) {
+    auto& self = reinterpret_cast<const Derived&>(*this);
+    return system_accessor::ref<R>(self, start);
+  }
+
+  template <typename R>
+  auto asliceref(size_t start = 0) {
+    return this->sliceref<R>(start * ch_width_v<R>);
+  }
+
+  template <unsigned M>
+  auto sliceref(size_t start = 0) {
+    return this->sliceref<T<M>>(start);
+  }
+
+  template <unsigned M>
+  auto asliceref(size_t start = 0) {
+    return this->asliceref<T<M>>(start);
+  }
 };
 
 }

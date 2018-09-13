@@ -25,13 +25,13 @@
 #define CH_UNION_SYSTEM_FIELD_CTOR(type, i, x) \
   type(const ch_system_t<ch::internal::identity_t<CH_PAIR_L(x)>>& CH_CONCAT(_,CH_PAIR_R(x))) \
     : type() { \
-    this->operator =(CH_CONCAT(_,CH_PAIR_R(x)).as_scbit().pad<traits::bitwidth>().as<type>()); \
+    this->operator =(ch_scbit<traits::bitwidth>(CH_CONCAT(_,CH_PAIR_R(x)).as_scbit()).as<type>()); \
   }
 
 #define CH_UNION_LOGIC_FIELD_CTOR(type, i, x) \
   type(const ch_logic_t<ch::internal::identity_t<CH_PAIR_L(x)>>& CH_CONCAT(_,CH_PAIR_R(x)), CH_SLOC) \
     : type(ch::internal::logic_buffer(traits::bitwidth, sloc, CH_STRINGIZE(name))) { \
-    this->operator =(CH_CONCAT(_,CH_PAIR_R(x)).as_bit().pad<traits::bitwidth>(sloc).as<type>()); \
+    this->operator =(ch_bit<traits::bitwidth>(CH_CONCAT(_,CH_PAIR_R(x)).as_bit(), sloc).as<type>()); \
   }
 
 #define CH_UNION_SYSTEM_IMPL(union_name, field_body, ...) \
