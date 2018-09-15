@@ -628,7 +628,7 @@ context::emit_conditionals(lnodeimpl* dst,
             // remove key from src list
             _true->remove_key();
           }
-          auto pred = this->create_node<aluimpl>(ch_op::andl, 1, false, pred0, pred1, branch->sloc);
+          auto pred = this->create_node<aluimpl>(ch_op::andb, 1, false, pred0, pred1, branch->sloc);
           _true->src(0) = pred;
           return _true;
         }

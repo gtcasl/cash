@@ -139,6 +139,8 @@ TEST_CASE("system", "[system]") {
       RetCheck ret;
       ret &= (a == 0011_b);
       ret &= (b == 001_b);
+      ret &= (!a == false);
+      ret &= (!(a-a) == true);
       ret &= (a != b);
       ret &= (a > b);
       ret &= (a >= b);

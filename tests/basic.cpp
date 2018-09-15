@@ -128,6 +128,16 @@ TEST_CASE("basics", "[basics]") {
      b[0] = 1;
       return (a == 1011_b);
     });
+    TEST([]()->ch_bool {
+      ch_bit4 a(1000_b);
+      auto b = !a;
+      return !b;
+    });
+    TEST([]()->ch_bool {
+      ch_bit4 a(0);
+      auto b = !a;
+      return b;
+    });
   }
   SECTION("clone", "[clone]") {
     TEST([]()->ch_bool {

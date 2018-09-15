@@ -71,9 +71,9 @@ CH_LOGIC_FUNCTION_RELATIONAL(ch_gt, ch_op::gt, ch_uint)
 CH_LOGIC_FUNCTION_RELATIONAL(ch_ge, ch_op::ge, ch_uint)
 
 CH_LOGIC_FUNCTION_BINARY1(ch_inv, ch_op::inv, ch_uint)
-CH_LOGIC_FUNCTION_BINARY2(ch_and, ch_op::andl, ch_uint)
-CH_LOGIC_FUNCTION_BINARY2(ch_or, ch_op::orl, ch_uint)
-CH_LOGIC_FUNCTION_BINARY2(ch_xor, ch_op::xorl, ch_uint)
+CH_LOGIC_FUNCTION_BINARY2(ch_and, ch_op::andb, ch_uint)
+CH_LOGIC_FUNCTION_BINARY2(ch_or, ch_op::orb, ch_uint)
+CH_LOGIC_FUNCTION_BINARY2(ch_xor, ch_op::xorb, ch_uint)
 
 CH_LOGIC_FUNCTION_SHIFT(ch_shl, ch_op::shl, ch_uint)
 CH_LOGIC_FUNCTION_SHIFT(ch_shr, ch_op::shr, ch_uint)

@@ -35,8 +35,6 @@ protected:
 
   bool is_inline_subscript(lnodeimpl* node) const;
 
-  bool print_module(std::ostream& out);
-
   void print_header(std::ostream& out);
 
   void print_body(std::ostream& out);
@@ -91,7 +89,6 @@ protected:
   void print_sloc(std::ostream& out, const source_location& sloc);
 
   context* ctx_;
-  uint32_t num_temps_;
   std::unordered_map<uint32_t, std::unordered_set<lnodeimpl*>> uses_;
 };
 

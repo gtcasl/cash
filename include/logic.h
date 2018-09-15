@@ -380,6 +380,11 @@ CH_LOGIC_OPERATOR(logic_op_equality)
 };
 
 CH_LOGIC_OPERATOR(logic_op_logical)
+  friend auto operator!(Derived self) {
+    auto sloc = logic_accessor::sloc(self);
+    return make_logic_op<ch_op::notl, false, ch_bit<1>>(self, sloc);
+  }
+
   friend auto operator&&(Derived lhs, const Derived& rhs) {
     static_assert(1 == Derived::traits::bitwidth, "invalid size");
     auto sloc = logic_accessor::sloc(lhs);
@@ -391,11 +396,6 @@ CH_LOGIC_OPERATOR(logic_op_logical)
     auto sloc = logic_accessor::sloc(lhs);
     return make_logic_op<ch_op::orl, false, ch_bit<1>>(lhs, rhs, sloc);
   }
-
-  friend auto operator!(Derived self) {
-    auto sloc = logic_accessor::sloc(self);
-    return make_logic_op<ch_op::eq, ch_signed_v<Derived>, ch_bit<1>>(self, Derived(0x0), sloc);
-  }
 };
 
 CH_LOGIC_OPERATOR(logic_op_bitwise)
@@ -404,9 +404,9 @@ CH_LOGIC_OPERATOR(logic_op_bitwise)
     return make_logic_op<ch_op::inv, false, Derived>(self, sloc);
   }
 
-  CH_LOGIC_OPERATOR_IMPL(operator&, ch_op::andl, Derived)
-  CH_LOGIC_OPERATOR_IMPL(operator|, ch_op::orl, Derived)
-  CH_LOGIC_OPERATOR_IMPL(operator^, ch_op::xorl, Derived)
+  CH_LOGIC_OPERATOR_IMPL(operator&, ch_op::andb, Derived)
+  CH_LOGIC_OPERATOR_IMPL(operator|, ch_op::orb, Derived)
+  CH_LOGIC_OPERATOR_IMPL(operator^, ch_op::xorb, Derived)
 };
 
 CH_LOGIC_OPERATOR(logic_op_shift)

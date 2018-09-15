@@ -66,15 +66,15 @@ void aluimpl::initialize() {
   if (op_flags::equality == op_class
    || op_flags::relational == op_class) {
     if (src0_->size() != src1_->size()) {
-     if (src0_->size() < src1_->size()) {
-       t_src0_.resize(src1_->size());
-       src0_ = &t_src0_;
-     } else {
-       t_src1_.resize(src0_->size());
-       src1_ = &t_src1_;
-     }
-     need_resizing_ = true;
-   }
+      if (src0_->size() < src1_->size()) {
+        t_src0_.resize(src1_->size());
+        src0_ = &t_src0_;
+      } else {
+        t_src1_.resize(src0_->size());
+        src1_ = &t_src1_;
+      }
+      need_resizing_ = true;
+    }
   } else
   if (op_flags::bitwise == op_class
    || op_flags::arithmetic == op_class)
@@ -122,7 +122,7 @@ void aluimpl::eval() {
     this->update_shadow_buffers();
   }
 
-  switch (op_) {
+  switch (op_) {  
   case ch_op::eq:
     data_ = (*src0_ == *src1_);
     break;
@@ -142,16 +142,26 @@ void aluimpl::eval() {
     data_ = !(is_signed_ ? bv_lts(*src0_, *src1_) : bv_ltu(*src0_, *src1_));
     break;
 
+  case ch_op::notl:
+    data_ = !bv_orr(*src0_);
+    break;
+  case ch_op::andl:
+    data_ = bv_orr(*src0_) && bv_orr(*src1_);
+    break;
+  case ch_op::orl:
+    data_ = bv_orr(*src0_) || bv_orr(*src1_);
+    break;
+
   case ch_op::inv:
     bv_inv(data_, *src0_);
     break;
-  case ch_op::andl:
+  case ch_op::andb:
     bv_and(data_, *src0_, *src1_);
     break;
-  case ch_op::orl:
+  case ch_op::orb:
     bv_or(data_, *src0_, *src1_);
     break;
-  case ch_op::xorl:
+  case ch_op::xorb:
     bv_xor(data_, *src0_, *src1_);
     break;
 
@@ -169,10 +179,11 @@ void aluimpl::eval() {
     bv_sll(data_, *src0_, *src1_);
     break;
   case ch_op::shr:
-    if (is_signed_ )
-        bv_sra(data_, *src0_, *src1_);
-    else
-        bv_srl(data_, *src0_, *src1_);
+    if (is_signed_) {
+      bv_sra(data_, *src0_, *src1_);
+    } else {
+      bv_srl(data_, *src0_, *src1_);
+    }
     break;
 
   case ch_op::add:
@@ -188,23 +199,26 @@ void aluimpl::eval() {
     bv_mul(data_, *src0_, *src1_);
     break;
   case ch_op::div:
-    if (is_signed_ )
+    if (is_signed_) {
       bv_divs(data_, *src0_, *src1_);
-    else
+    } else {
       bv_divu(data_, *src0_, *src1_);
+    }
     break;
   case ch_op::mod:
-    if (is_signed_ )
+    if (is_signed_) {
       bv_mods(data_, *src0_, *src1_);
-    else
+    } else {
       bv_modu(data_, *src0_, *src1_);
+    }
     break;
 
   case ch_op::pad:
-    if (is_signed_ )
-        bv_sext(data_, *src0_);
-    else
-        bv_zext(data_, *src0_);
+    if (is_signed_) {
+      bv_sext(data_, *src0_);
+    } else {
+      bv_zext(data_, *src0_);
+    }
     break;
 
   default:

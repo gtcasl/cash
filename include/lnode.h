@@ -18,35 +18,37 @@ namespace internal {
   m(gt,     3 | op_flags::binary | op_flags::relational) \
   m(le,     4 | op_flags::binary | op_flags::relational) \
   m(ge,     5 | op_flags::binary | op_flags::relational) \
-  m(inv,    6 | op_flags::unary  | op_flags::bitwise) \
-  m(andl,   7 | op_flags::binary | op_flags::bitwise | op_flags::symmetric) \
-  m(orl,    8 | op_flags::binary | op_flags::bitwise | op_flags::symmetric) \
-  m(xorl,   9 | op_flags::binary | op_flags::bitwise | op_flags::symmetric) \
-  m(andr,  10 | op_flags::unary  | op_flags::reduce) \
-  m(orr,   11 | op_flags::unary  | op_flags::reduce) \
-  m(xorr,  12 | op_flags::unary  | op_flags::reduce) \
-  m(shl,   13 | op_flags::binary | op_flags::shift) \
-  m(shr,   14 | op_flags::binary | op_flags::shift) \
-  m(neg,   15 | op_flags::unary  | op_flags::arithmetic) \
-  m(add,   16 | op_flags::binary | op_flags::arithmetic | op_flags::symmetric) \
-  m(sub,   17 | op_flags::binary | op_flags::arithmetic) \
-  m(mul ,  18 | op_flags::binary | op_flags::arithmetic | op_flags::symmetric) \
-  m(div,   19 | op_flags::binary | op_flags::arithmetic) \
-  m(mod,   20 | op_flags::binary | op_flags::arithmetic) \
-  m(pad,   21 | op_flags::unary  | op_flags::misc)
+  m(notl,   6 | op_flags::unary  | op_flags::logical) \
+  m(andl,   7 | op_flags::binary | op_flags::logical | op_flags::symmetric) \
+  m(orl,    8 | op_flags::binary | op_flags::logical | op_flags::symmetric) \
+  m(inv,    9 | op_flags::unary  | op_flags::bitwise) \
+  m(andb,  10 | op_flags::binary | op_flags::bitwise | op_flags::symmetric) \
+  m(orb,   11 | op_flags::binary | op_flags::bitwise | op_flags::symmetric) \
+  m(xorb,  12 | op_flags::binary | op_flags::bitwise | op_flags::symmetric) \
+  m(andr,  13 | op_flags::unary  | op_flags::reduce) \
+  m(orr,   14 | op_flags::unary  | op_flags::reduce) \
+  m(xorr,  15 | op_flags::unary  | op_flags::reduce) \
+  m(shl,   16 | op_flags::binary | op_flags::shift) \
+  m(shr,   17 | op_flags::binary | op_flags::shift) \
+  m(neg,   18 | op_flags::unary  | op_flags::arithmetic) \
+  m(add,   19 | op_flags::binary | op_flags::arithmetic | op_flags::symmetric) \
+  m(sub,   20 | op_flags::binary | op_flags::arithmetic) \
+  m(mul ,  21 | op_flags::binary | op_flags::arithmetic | op_flags::symmetric) \
+  m(div,   22 | op_flags::binary | op_flags::arithmetic) \
+  m(mod,   23 | op_flags::binary | op_flags::arithmetic) \
+  m(pad,   24 | op_flags::unary  | op_flags::misc)
 
 enum class op_flags {
   unary      = 0 << 5,
   binary     = 1 << 5,
-
   equality   = 0 << 6,
   relational = 1 << 6,
-  bitwise    = 2 << 6,
-  shift      = 3 << 6,
-  arithmetic = 4 << 6,
-  reduce     = 5 << 6,
-  misc       = 6 << 6,
-
+  logical    = 2 << 6,
+  bitwise    = 3 << 6,
+  shift      = 4 << 6,
+  arithmetic = 5 << 6,
+  reduce     = 6 << 6,
+  misc       = 7 << 6,
   symmetric  = 1 << 9,
 };
 

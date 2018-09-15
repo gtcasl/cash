@@ -284,18 +284,16 @@ CH_SYSTEM_OPERATOR(system_op_equality)
 CH_SYSTEM_OPERATOR(system_op_logical)
   friend auto operator&&(const Derived& lhs, const Derived& rhs) {
     static_assert(Derived::traits::bitwidth == 1, "invalid size");
-    auto ret = make_system_op<ch_scbit<1>>(bv_and, lhs, rhs);
-    return static_cast<bool>(ret);
+    return bv_orr(system_accessor::data(lhs)) && bv_orr(system_accessor::data(rhs));
   }
 
   friend auto operator||(const Derived& lhs, const Derived& rhs) {
     static_assert(Derived::traits::bitwidth == 1, "invalid size");
-    auto ret = make_system_op<ch_scbit<1>>(bv_or, lhs, rhs);
-    return static_cast<bool>(ret);
+    return bv_orr(system_accessor::data(lhs)) || bv_orr(system_accessor::data(rhs));
   }
 
   friend auto operator!(const Derived& self) {
-    return (0x0 == self);
+    return !bv_orr(system_accessor::data(self));
   }
 };
 
@@ -343,11 +341,12 @@ CH_SYSTEM_OPERATOR(system_op_cast)
 };
 
 CH_SYSTEM_OPERATOR(system_op_relational)
-  CH_SYSTEM_OPERATOR_IMPL(operator<, (if constexpr (ch_signed_v<Derived>) {
-                                        return bv_lts(lhs.buffer_->data(), rhs.buffer_->data());
-                                      } else {
-                                        return bv_ltu(lhs.buffer_->data(), rhs.buffer_->data());
-                                      }))
+  CH_SYSTEM_OPERATOR_IMPL(operator<, (
+      if constexpr (ch_signed_v<Derived>) {
+        return bv_lts(system_accessor::data(lhs), system_accessor::data(rhs));
+      } else {
+        return bv_ltu(system_accessor::data(lhs), system_accessor::data(rhs));
+      }))
   CH_SYSTEM_OPERATOR_IMPL(operator>=, (return !(lhs < rhs)))
   CH_SYSTEM_OPERATOR_IMPL(operator>, (return (rhs < lhs)))
   CH_SYSTEM_OPERATOR_IMPL(operator<=, (return !(rhs < lhs)))

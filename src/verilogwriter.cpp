@@ -30,8 +30,7 @@ const auto is_inline_literal = [](lnodeimpl* node) {
   return (node->size() <= 64);
 };
 
-verilogwriter::verilogwriter(context* ctx)
-  : ctx_(ctx) {
+verilogwriter::verilogwriter(context* ctx) : ctx_(ctx) {
   for (auto node : ctx->nodes()) {
     for (auto& src : node->srcs()) {
       uses_[src.id()].insert(node);
@@ -39,9 +38,7 @@ verilogwriter::verilogwriter(context* ctx)
   }
 }
 
-verilogwriter::~verilogwriter() {
-  //--
-}
+verilogwriter::~verilogwriter() {}
 
 bool verilogwriter::is_inline_subscript(lnodeimpl* node) const {
   assert(type_proxy == node->type());
@@ -445,6 +442,7 @@ void verilogwriter::print_alu(std::ostream& out, aluimpl* node) {
     if (CH_OP_ARY(op) == op_flags::binary) {
       if (CH_OP_CLASS(op) == op_flags::shift
        || CH_OP_CLASS(op) == op_flags::relational
+       || CH_OP_CLASS(op) == op_flags::logical
        || CH_OP_CLASS(op) == op_flags::arithmetic) {
         print_signed_operand(0);
         out << " ";
@@ -962,23 +960,6 @@ void verilogwriter::print_value(std::ostream& out,
 
 void verilogwriter::print_operator(std::ostream& out, ch_op op) {
   switch (op) {
-  case ch_op::inv:   out << "~"; break;
-  case ch_op::andl:  out << "&"; break;
-  case ch_op::orl:   out << "|"; break;
-  case ch_op::xorl:  out << "^"; break;
-  case ch_op::andr:  out << "&"; break;
-  case ch_op::orr:   out << "|"; break;
-  case ch_op::xorr:  out << "^"; break;
-
-  case ch_op::neg:   out << "-"; break;
-  case ch_op::add:   out << "+"; break;
-  case ch_op::sub:   out << "-"; break;
-  case ch_op::mul:   out << "*"; break;
-  case ch_op::div:   out << "/"; break;
-  case ch_op::mod:   out << "%"; break;
-
-  case ch_op::shl:   out << "<<"; break;
-  case ch_op::shr:   out << ">>"; break;
 
   case ch_op::eq:    out << "=="; break;
   case ch_op::ne:    out << "!="; break;
@@ -987,6 +968,30 @@ void verilogwriter::print_operator(std::ostream& out, ch_op op) {
   case ch_op::gt:    out << ">"; break;
   case ch_op::le:    out << "<="; break;
   case ch_op::ge:    out << ">="; break;
+
+  case ch_op::notl:  out << "!"; break;
+  case ch_op::andl:  out << "&&"; break;
+  case ch_op::orl:   out << "||"; break;
+
+  case ch_op::inv:   out << "~"; break;
+  case ch_op::andb:  out << "&"; break;
+  case ch_op::orb:   out << "|"; break;
+  case ch_op::xorb:  out << "^"; break;
+
+  case ch_op::andr:  out << "&"; break;
+  case ch_op::orr:   out << "|"; break;
+  case ch_op::xorr:  out << "^"; break;
+
+  case ch_op::shl:   out << "<<"; break;
+  case ch_op::shr:   out << ">>"; break;
+
+  case ch_op::neg:   out << "-"; break;
+  case ch_op::add:   out << "+"; break;
+  case ch_op::sub:   out << "-"; break;
+  case ch_op::mul:   out << "*"; break;
+  case ch_op::div:   out << "/"; break;
+  case ch_op::mod:   out << "%"; break;
+
   default:
     assert(false);
   }

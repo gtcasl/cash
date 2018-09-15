@@ -99,9 +99,9 @@ CH_LOGIC_FUNCTION_EQUALITY(ch_ne, ch_op::ne, ch_bit)
 // binary functions
 
 CH_LOGIC_FUNCTION_BINARY1(ch_inv, ch_op::inv, ch_bit)
-CH_LOGIC_FUNCTION_BINARY2(ch_and, ch_op::andl, ch_bit)
-CH_LOGIC_FUNCTION_BINARY2(ch_or, ch_op::orl, ch_bit)
-CH_LOGIC_FUNCTION_BINARY2(ch_xor, ch_op::xorl, ch_bit)
+CH_LOGIC_FUNCTION_BINARY2(ch_and, ch_op::andb, ch_bit)
+CH_LOGIC_FUNCTION_BINARY2(ch_or, ch_op::orb, ch_bit)
+CH_LOGIC_FUNCTION_BINARY2(ch_xor, ch_op::xorb, ch_bit)
 
 // shift functions
 
