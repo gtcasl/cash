@@ -107,7 +107,7 @@ ch_bit<1> ch_reset(CH_SLOC);
 
 void ch_pushcd(const ch_bit<1>& clk,
                const ch_bit<1>& reset = ch_reset(),
-               bool posedge = true,
+               bool pos_edge = true,
                CH_SLOC);
 
 void ch_popcd();

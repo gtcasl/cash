@@ -6,16 +6,7 @@ using namespace ch::internal;
 
 timeimpl::timeimpl(context* ctx, const source_location& sloc)
   : ioimpl(ctx, type_time, 8 * sizeof(ch_tick), sloc)
-  , tick_(0)
 {}
-
-void timeimpl::initialize() {
-  tick_ = 0;
-}
-
-void timeimpl::eval() {
-  data_ = tick_++;
-}
 
 ///////////////////////////////////////////////////////////////////////////////
 

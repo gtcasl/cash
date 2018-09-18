@@ -159,30 +159,22 @@ class system_io_buffer : public system_buffer {
 public:
   using base = system_buffer;
 
-  explicit system_io_buffer(const lnode& io)
-    : base(bitvector(), nullptr, 0, io.size()), io_(io)
-  {}
+  explicit system_io_buffer(const lnode& io);
 
-  const bitvector& data() const override {
-    return io_.data();
-  }
+  const bitvector& data() const override;
 
   void read(uint32_t src_offset,
             void* out,
             uint32_t out_cbsize,
             uint32_t dst_offset,
-            uint32_t length) const override {
-    io_.data().read(src_offset, out, out_cbsize, dst_offset, length);
-  }
+            uint32_t length) const override;
 
   void write(uint32_t dst_offset,
              const void* in,
              uint32_t in_cbsize,
              uint32_t src_offset,
-             uint32_t length) override {
-    io_.data().write(dst_offset, in, in_cbsize, src_offset, length);
-  }
-
+             uint32_t length) override;
+protected:
   lnode io_;
 };
 

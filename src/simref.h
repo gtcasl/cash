@@ -1,23 +1,31 @@
 #pragma once
 
-#include "lnode.h"
+#include "simulatorimpl.h"
 
 namespace ch {
 namespace internal {
 
-struct instr_t {
-  ch_op op;
-  bitvector dst;
-  std::vector<bitvector> srcs;
+struct instr_base {
+
+  instr_base() {}
+  virtual ~instr_base() {}
+
+  virtual void eval() = 0;
 };
 
-class simref {
+class simref : public sim_driver {
 public:
 
-  void eval();
+  simref();
+  ~simref();
+
+  void initialize(const std::vector<lnodeimpl*>& eval_list) override;
+
+  void eval() override;
 
 private:
-  std::vector<instr_t*> instrs_;
+
+  std::vector<instr_base*> instrs_;
 };
 
 }}

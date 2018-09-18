@@ -30,7 +30,7 @@ TEST_CASE("simulation", "[sim]") {
       s2 = s1;
       ch_simulator s3(s2);
       ch_simulator s4(std::move(s3));
-      s4.eval(0);
+      s4.eval();
       return (1 == device.io.out);
     });
   }

@@ -17,11 +17,11 @@ auto get_value = [](const bitvector& src, uint32_t size, uint32_t src_offset) {
 };
 
 tracerimpl::tracerimpl(const ch_device_list& devices)
-  : simulatorimpl(devices)
-  , trace_width_(0)
+  : simulatorimpl(devices)  
   , trace_blocks_head_(nullptr)
   , trace_blocks_tail_(nullptr)
-  , num_trace_blocks_(0) {
+  , num_trace_blocks_(0)
+  , trace_width_(0) {
   // initialize
   this->initialize();
 }
@@ -55,7 +55,7 @@ void tracerimpl::initialize() {
   }
 }
 
-uint32_t tracerimpl::add_signal(ioimpl* node) {
+uint32_t tracerimpl::add_signal(ioportimpl* node) {
   auto name = node->name();
   if (is_system_signal(name)) {
     if (unique_names_.exits(name))
@@ -70,13 +70,13 @@ uint32_t tracerimpl::add_signal(ioimpl* node) {
   return node->size();
 }
 
-void tracerimpl::eval(ch_tick t) {
+void tracerimpl::eval() {
   // advance simulation
-  simulatorimpl::eval(t);
+  simulatorimpl::eval();
 
   // allocate trace new trace block
   if (nullptr == trace_blocks_tail_
-   || trace_blocks_tail_->size == NUM_BLOCKS) {
+   || NUM_BLOCKS == trace_blocks_tail_->size) {
     auto trace_block = new trace_block_t(NUM_BLOCKS, trace_width_);
     if (nullptr == trace_blocks_head_) {
       trace_blocks_head_ = trace_block;
@@ -93,7 +93,7 @@ void tracerimpl::eval(ch_tick t) {
   auto& block = trace_blocks_tail_->data.at(block_idx);
   uint32_t dst_offset = 0;
   for (auto& trace : signals_) {
-    auto& value = trace.node->data();
+    auto& value = trace.node->value();
     block.write(dst_offset, value.data(), value.num_bytes(), 0, value.size());
     dst_offset += value.size();
   }

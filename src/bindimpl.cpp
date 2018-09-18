@@ -84,16 +84,14 @@ void bindimpl::bind_output(const lnode& dst,
 
   // create bind port
   auto output = ctx_->create_node<bindportimpl>(this, ioport, sloc);
+  reinterpret_cast<outputimpl*>(ioport.impl())->bind(output);
   const_cast<lnode&>(dst).write(0, output, 0, dst.size(), sloc);
 
   // add to list
   add_port(output, outputs_);
 }
 
-void bindimpl::eval() {}
-
-void bindimpl::print(std::ostream& out, uint32_t level) const {
-  CH_UNUSED(level);
+void bindimpl::print(std::ostream& out) const {
   out << "#" << id_ << " <- " << this->type();
   out << "(" << module_->name();
   for (auto& src : srcs_) {
@@ -111,8 +109,7 @@ bindportimpl::bindportimpl(context* ctx,
                            const source_location& sloc)
   : ioimpl(ctx, type_bindin, ioport.size(), sloc)
   , binding_(binding)
-  , ioport_(ioport)
-  , words_(nullptr) {
+  , ioport_(ioport) {
   binding->acquire();
   srcs_.push_back(src);
 }
@@ -123,34 +120,28 @@ bindportimpl::bindportimpl(context* ctx,
                            const source_location& sloc)
   : ioimpl(ctx, type_bindout, ioport.size(), sloc)
   , binding_(binding)
-  , ioport_(ioport)
-  , words_(nullptr) {
+  , ioport_(ioport) {
   binding->acquire();
   srcs_.push_back(binding);
 }
 
 bindportimpl::~bindportimpl() {
-  if (words_) {
-    data_.emplace(words_);
-  }
   binding_->remove_port(this);
   binding_->release();
 }
 
-void bindportimpl::initialize() {
-  if (!is_snode_type(srcs_[0].impl()->type())) {
-    if (words_) {
-      data_.emplace(words_);
-    }
-    auto& src_node = (type_bindin == type_) ? srcs_[0] : ioport_;
-    words_ = data_.emplace(src_node.data().words());
+void bindportimpl::print(std::ostream& out) const {
+  out << "#" << id_ << " <- " << this->type() << size_;
+  out << "(";
+  if (type_bindout == type_) {
+    out << "#" << ioport_.id() << ", ";
   }
-}
-
-void bindportimpl::eval() {
-  if (is_snode_type(srcs_[0].impl()->type())) {
-    data_ = srcs_[0].data();
+  for (uint32_t i = 0; i < srcs_.size(); ++i) {
+    if (i)
+      out << ", ";
+    out << "#" << srcs_[i].id();
   }
+  out << ")";
 }
 
 ///////////////////////////////////////////////////////////////////////////////

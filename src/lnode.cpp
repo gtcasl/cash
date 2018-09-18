@@ -64,16 +64,6 @@ lnodeimpl* lnode::impl() const {
   return impl_;
 }
 
-const bitvector& lnode::data() const {
-  assert(impl_);
-  return impl_->data();
-}
-
-bitvector& lnode::data() {
-  assert(impl_);
-  return impl_->data();
-}
-
 void lnode::write(uint32_t dst_offset,
                   const lnode& src,
                   uint32_t src_offset,

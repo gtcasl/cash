@@ -129,10 +129,6 @@ public:
   
   uint32_t size() const;
 
-  const bitvector& data() const;
-
-  bitvector& data();
-
   uint32_t var_id() const;
 
   void set_var_id(uint32_t var_id);

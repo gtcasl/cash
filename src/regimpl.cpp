@@ -2,6 +2,7 @@
 #include "regimpl.h"
 #include "proxyimpl.h"
 #include "cdimpl.h"
+#include "litimpl.h"
 #include "select.h"
 #include "context.h"
 
@@ -13,51 +14,30 @@ regimpl::regimpl(context* ctx,
                  const lnode& enable,
                  const source_location& sloc)
   : lnodeimpl(ctx, type_reg, next.size(), sloc)
+  , length_(length)
   , enable_idx_(-1)
-  , init_idx_(-1)
   , reset_idx_(-1)
-  , pipe_(length - 1, bitvector(next.size())) {
+  , initdata_idx_(-1) {
   auto cd = ctx->current_cd(sloc);
   srcs_.emplace_back(cd);
   srcs_.emplace_back(next);
 
   // add enable predicate
-  if (enable.impl()->type() != type_lit) {
+  if (type_lit != enable.impl()->type()
+   || !static_cast<bool>(reinterpret_cast<litimpl*>(enable.impl())->value())) {
     enable_idx_ = this->add_src(enable);
-  } else {
-    // the constant value should be one
-    assert(static_cast<bool>(enable.impl()->data()));
   }
-
-  // initialize with dirty content
-  data_.deadbeef();
 }
 
 regimpl::regimpl(context* ctx,
                  unsigned length,
                  const lnode& next,                 
                  const lnode& enable,
-                 const lnode& init,
+                 const lnode& initdata,
                  const source_location& sloc)
-  : lnodeimpl(ctx, type_reg, next.size(), sloc)
-  , enable_idx_(-1)
-  , init_idx_(-1)
-  , reset_idx_(-1)
-  , pipe_(length - 1, bitvector(next.size())) {
-  auto cd = ctx->current_cd(sloc);
-  srcs_.emplace_back(cd);
-  srcs_.emplace_back(next);
-
-  // add enable predicate
-  if (enable.impl()->type() != type_lit) {
-    enable_idx_ = this->add_src(enable);
-  } else {
-    // the constant value should be one
-    assert(static_cast<bool>(enable.impl()->data()));
-  }
-
-  init_idx_ = this->add_src(init);
+  : regimpl(ctx, length, next, enable, sloc) {  
   reset_idx_ = this->add_src(ctx->current_reset(sloc));
+  initdata_idx_ = this->add_src(initdata);
 }
 
 std::size_t regimpl::hash() const {
@@ -78,49 +58,15 @@ std::size_t regimpl::hash() const {
   return ret.value;
 }
 
-void regimpl::eval() {
-  // check clock transition
-  auto cd = reinterpret_cast<cdimpl*>(this->cd().impl());
-  if (!static_cast<bool>(cd->data()))
-    return;
-
-  // check reset state
-  if (this->has_init() && static_cast<bool>(this->reset().data())) {
-    data_ = this->init().data();
-    for (auto& p : pipe_) {
-      p = data_;
-    }
-    return;
-  }
-
-  // check enable state
-  int enable = this->has_enable() ? static_cast<bool>(this->enable().data()) : true;
-  if (!enable)
-    return;
-
-  // advance pipeline
-  bitvector* value = &data_;
-  if (!pipe_.empty()) {
-    auto last = pipe_.size() - 1;
-    data_ = pipe_[last];
-    for (int i = last; i > 0; --i) {
-      pipe_[i] = pipe_[i-1];
-    }
-    value = &pipe_[0];
-  }
-  // push next value
-  *value = this->next().data();
-}
-
 ///////////////////////////////////////////////////////////////////////////////
 
 void ch::internal::ch_pushcd(const ch_bit<1>& clk,
                              const ch_bit<1>& reset,
-                             bool posedge,
+                             bool pos_edge,
                              const source_location& sloc) {
   auto lclk = get_lnode(clk);
   auto lrst = get_lnode(reset);
-  lclk.impl()->ctx()->push_cd(lclk, lrst, posedge, sloc);
+  lclk.impl()->ctx()->push_cd(lclk, lrst, pos_edge, sloc);
 }
 
 void ch::internal::ch_popcd() {
@@ -149,13 +95,13 @@ logic_buffer ch::internal::createRegNode(unsigned size,
   return ret;
 }
 
-logic_buffer ch::internal::createRegNode(const lnode& init,
+logic_buffer ch::internal::createRegNode(const lnode& initdata,
                                          const source_location& sloc) {
-  logic_buffer ret(init.size(), sloc);
-  auto ctx = init.impl()->ctx();
+  logic_buffer ret(initdata.size(), sloc);
+  auto ctx = initdata.impl()->ctx();
   auto next = ctx->create_node<proxyimpl>(ret.data(), sloc);
-  auto reg = ctx->create_node<regimpl>(1, next, bitvector(1,1), init, sloc);
-  ret.write(0, reg, 0, init.size(), sloc);
+  auto reg = ctx->create_node<regimpl>(1, next, bitvector(1,1), initdata, sloc);
+  ret.write(0, reg, 0, initdata.size(), sloc);
   return ret;
 }
 
@@ -171,10 +117,10 @@ logic_buffer ch::internal::createRegNode(const lnode& next,
 logic_buffer ch::internal::createRegNode(const lnode& next,
                                          unsigned length,
                                          const lnode& enable,
-                                         const lnode& init,
+                                         const lnode& initdata,
                                          const source_location& sloc) {
   auto ctx = next.impl()->ctx();
-  auto reg = ctx->create_node<regimpl>(length, next, enable, init, sloc);
+  auto reg = ctx->create_node<regimpl>(length, next, enable, initdata, sloc);
   return logic_buffer(reg, sloc);
 }
 
@@ -184,8 +130,8 @@ logic_buffer ch::internal::copyRegNode(const lnode& node, const source_location&
   auto ctx = proxy->ctx();
   regimpl* new_reg;
   auto enable = reg->has_enable() ? reg->enable() : lnode(bitvector(1,1));
-  if (reg->has_init()) {
-    new_reg = ctx->create_node<regimpl>(reg->length(), reg->next(), enable, reg->init(), sloc);
+  if (reg->has_initdata()) {
+    new_reg = ctx->create_node<regimpl>(reg->length(), reg->next(), enable, reg->initdata(), sloc);
   } else {
     new_reg = ctx->create_node<regimpl>(reg->length(), reg->next(), enable, sloc);
   }

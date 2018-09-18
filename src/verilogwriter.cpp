@@ -267,7 +267,7 @@ bool verilogwriter::print_decl(std::ostream& out,
     out << " ";
     this->print_name(out, node);
     out << " = ";
-    this->print_value(out, node->data(), true);
+    this->print_value(out, reinterpret_cast<litimpl*>(node)->value(), true);
     out << ";" << std::endl;
     return true;
   case type_proxy:
@@ -320,8 +320,8 @@ bool verilogwriter::print_decl(std::ostream& out,
   case type_input:
   case type_output:
   case type_cd:
-  case type_tap:
   case type_mwport:
+  case type_tap:
   case type_assert:
   case type_print:
   case type_time:
@@ -377,9 +377,9 @@ bool verilogwriter::print_logic(std::ostream& out, lnodeimpl* node) {
   case type_input:
   case type_output:
   case type_cd:
-  case type_tap:
   case type_mrport:
   case type_mwport:
+  case type_tap:
   case type_assert:
   case type_print:
   case type_time:
@@ -520,7 +520,9 @@ void verilogwriter::print_select(std::ostream& out, selectimpl* node) {
       {
         auto_indent indent2(out);
         for (; i < last; i += 2) {
-          print_value(out, node->src(i).impl()->data(), false);
+          assert(type_lit == node->src(i).impl()->type());
+          auto& value = reinterpret_cast<litimpl*>(node->src(i).impl())->value();
+          print_value(out, value, false);
           out << ": ";
           this->print_name(out, node);
           out << " = ";
@@ -598,7 +600,7 @@ void verilogwriter::print_reg(std::ostream& out, regimpl* node) {
     out << ") begin" << std::endl;
     {
       auto_indent indent(out);
-      if (node->has_init()) {
+      if (node->has_initdata()) {
         out << "if (";
         this->print_name(out, node->reset().impl());
         out << ") begin" << std::endl;        
@@ -609,7 +611,7 @@ void verilogwriter::print_reg(std::ostream& out, regimpl* node) {
         out << "[";
         print_sr_iter();
         out << "] <= ";
-        this->print_name(out, node->init().impl());
+        this->print_name(out, node->initdata().impl());
         out << ";" << std::endl;
         indent.pop();
         out << "end" << std::endl;
@@ -623,7 +625,7 @@ void verilogwriter::print_reg(std::ostream& out, regimpl* node) {
         out << ") begin" << std::endl;
         indent.push();
       } else {
-        if (node->has_init()) {
+        if (node->has_initdata()) {
           out << "begin" << std::endl;
           indent.push();
         }
@@ -644,7 +646,7 @@ void verilogwriter::print_reg(std::ostream& out, regimpl* node) {
       out << "[0] <= ";
       this->print_name(out, node->next().impl());
       out << ";" << std::endl;
-      if (node->has_init() || node->has_enable()) {
+      if (node->has_initdata() || node->has_enable()) {
         indent.pop();
         out << "end" << std::endl;
       }
@@ -662,14 +664,14 @@ void verilogwriter::print_reg(std::ostream& out, regimpl* node) {
     out << ") begin" << std::endl;
     {
       auto_indent indent(out);
-      if (node->has_init()) {
+      if (node->has_initdata()) {
         out << "if (";
         this->print_name(out, node->reset().impl());
         out << ")" << std::endl;
         indent.push();
         this->print_name(out, node);
         out << " <= ";
-        this->print_name(out, node->init().impl());
+        this->print_name(out, node->initdata().impl());
         out << ";" << std::endl;
         indent.pop();
         out << "else" << std::endl;
@@ -680,7 +682,7 @@ void verilogwriter::print_reg(std::ostream& out, regimpl* node) {
         out << ")" << std::endl;
         indent.push();
       } else {
-        if (node->has_init()) {
+        if (node->has_initdata()) {
           indent.push();
         }
       }
@@ -688,7 +690,7 @@ void verilogwriter::print_reg(std::ostream& out, regimpl* node) {
       out << " <= ";
       this->print_name(out, node->next().impl());
       out << ";" << std::endl;
-      if (node->has_init() || node->has_enable()) {
+      if (node->has_initdata() || node->has_enable()) {
         indent.pop();
       }
     }
@@ -697,7 +699,7 @@ void verilogwriter::print_reg(std::ostream& out, regimpl* node) {
 }
 
 void verilogwriter::print_cdomain(std::ostream& out, cdimpl* cd) {
-  out << (cd->posedge() ? "posedge" : "negedge") << " ";
+  out << (cd->pos_edge() ? "posedge" : "negedge") << " ";
   this->print_name(out, cd->clk().impl());
 }
 
@@ -716,7 +718,7 @@ void verilogwriter::print_mem(std::ostream& out, memimpl* node) {
     out << "initial begin" << std::endl;
     {
       auto_indent indent(out);
-      const auto& value = node->data();
+      const auto& value = node->initdata();
       uint32_t data_width = node->data_width();
       uint32_t num_items = node->num_items();
       for (uint32_t i = 0; i < num_items; ++i) {
@@ -731,73 +733,70 @@ void verilogwriter::print_mem(std::ostream& out, memimpl* node) {
   }
 
   //
-  // write ports logic
+  //  ports logic
   //
-  for (auto p : node->ports()) {
-    if (type_mrport == p->type()) {
-      auto mrport = reinterpret_cast<mrportimpl*>(p);
-      if (node->is_sync_read()) {
-        out << "always @ (";
-        this->print_cdomain(out, node->cd());
-        out << ") begin" << std::endl;
-        {
-          auto_indent indent1(out);
-          if (mrport->has_enable()) {
-            out << "if (";
-            this->print_name(out, mrport->enable().impl());
-            out << ") begin" << std::endl;
-            {
-              auto_indent indent2(out);
-              this->print_name(out, mrport);
-              out << " <= ";
-              print_port(out, mrport);
-              out << ";" << std::endl;
-            }
-            out << "end" << std::endl;
-          } else {
-            this->print_name(out, mrport);
-            out << " <= ";
-            print_port(out, mrport);
-            out << ";" << std::endl;
-          }
-        }
-        out << "end" << std::endl;
-      } else {
-        out << "assign ";
-        this->print_name(out, mrport);
-        out << " = ";
-        print_port(out, mrport);
-        out << ";" << std::endl;
-      }
-    } else
-    if (type_mwport == p->type()) {
-      auto mwport = reinterpret_cast<mwportimpl*>(p);
+  for (auto p : node->rdports()) {
+    if (node->is_sync_read()) {
       out << "always @ (";
-      this->print_cdomain(out, node->cd());
+      this->print_cdomain(out, reinterpret_cast<cdimpl*>(node->cd().impl()));
       out << ") begin" << std::endl;
       {
         auto_indent indent1(out);
-        if (mwport->has_enable()) {
+        if (p->has_enable()) {
           out << "if (";
-          this->print_name(out, mwport->enable().impl());
+          this->print_name(out, p->enable().impl());
           out << ") begin" << std::endl;
           {
             auto_indent indent2(out);
-            print_port(out, mwport);
+            this->print_name(out, p);
             out << " <= ";
-            this->print_name(out, mwport->wdata().impl());
+            print_port(out, p);
             out << ";" << std::endl;
           }
           out << "end" << std::endl;
         } else {
-          print_port(out, mwport);
+          this->print_name(out, p);
           out << " <= ";
-          this->print_name(out, mwport->wdata().impl());
+          print_port(out, p);
           out << ";" << std::endl;
         }
       }
       out << "end" << std::endl;
+    } else {
+      out << "assign ";
+      this->print_name(out, p);
+      out << " = ";
+      print_port(out, p);
+      out << ";" << std::endl;
     }
+  }
+
+  for (auto p : node->wrports()) {
+    out << "always @ (";
+    this->print_cdomain(out, reinterpret_cast<cdimpl*>(node->cd().impl()));
+    out << ") begin" << std::endl;
+    {
+      auto_indent indent1(out);
+      if (p->has_enable()) {
+        out << "if (";
+        this->print_name(out, p->enable().impl());
+        out << ") begin" << std::endl;
+        {
+          auto_indent indent2(out);
+          print_port(out, p);
+          out << " <= ";
+          this->print_name(out, p->wdata().impl());
+          out << ";" << std::endl;
+        }
+        out << "end" << std::endl;
+      } else {
+        print_port(out, p);
+        out << " <= ";
+        this->print_name(out, p->wdata().impl());
+        out << ";" << std::endl;
+      }
+    }
+    out << "end" << std::endl;
   }
 }
 
@@ -823,7 +822,7 @@ void verilogwriter::print_udf(std::ostream& out, udfimpl* node) {
     auto udfs = reinterpret_cast<udfsimpl*>(node);
     auto cd = reinterpret_cast<cdimpl*>(udfs->cd().impl());
     add_to_dic("clock", cd->clk().impl());
-    if (udfs->has_init()) {
+    if (udfs->has_initdata()) {
       add_to_dic("reset", udfs->reset().impl());
     }
   }
@@ -888,7 +887,8 @@ void verilogwriter::print_name(std::ostream& out, lnodeimpl* node, bool force) {
     break;
   case type_lit:
     if (!force && is_inline_literal(node)) {
-      print_value(out, node->data(), true);
+      auto& value = reinterpret_cast<litimpl*>(node)->value();
+      print_value(out, value, true);
     } else {
       print_unique_name(node);
     }

@@ -4,18 +4,20 @@
 #include "litimpl.h"
 #include "ioimpl.h"
 #include "cdimpl.h"
+#include "simref.h"
+#include "simjit.h"
 
 using namespace ch::internal;
 
-void clock_driver::add_signal(lnodeimpl* node) {
-  node->data()[0] = value_;
+void clock_driver::add_signal(inputimpl* node) {
+  node->value()[0] = value_;
   nodes_.push_back(node);
 }
 
 void clock_driver::flip() {
   value_ = !value_;
   for (auto node : nodes_) {
-    node->data()[0] = value_;
+    node->value()[0] = value_;
   }
 }
 
@@ -23,27 +25,29 @@ void clock_driver::flip() {
 
 simulatorimpl::simulatorimpl(const ch_device_list& devices)
   : clk_driver_(true)
-  , reset_driver_(false) {
+  , reset_driver_(false)
+  , sim_driver_(nullptr) {
   // enqueue all contexts
   for (auto dev : devices) {
     auto ctx = dev.impl()->ctx();
-    auto ret = contexts_.emplace(ctx);
-    if (ret.second) {
-      ctx->acquire();
-    }
+    contexts_.emplace_back(ctx);
+    ctx->acquire();
   }
   // initialize
   this->initialize();
 }
 
 simulatorimpl::~simulatorimpl() {
+  sim_driver_->release();
   for (auto ctx : contexts_) {
     ctx->release();
-  }
+  }  
 }
 
 void simulatorimpl::initialize() {
-  // bind system clock to clock driver
+  //--
+  std::vector<lnodeimpl*> eval_list;
+
   for (auto ctx : contexts_) {
     auto clk = ctx->sys_clk();
     if (clk) {
@@ -53,28 +57,19 @@ void simulatorimpl::initialize() {
     if (reset) {
       reset_driver_.add_signal(reset);
     }
+
+    // generate evaluation list
+    ctx->build_eval_list(eval_list);
   }
 
-  // build run list
-  for (auto ctx : contexts_) {
-    ctx->build_run_list(run_list_);
-  }
-
-  // initialize all nodes
-  std::unordered_set<uint32_t> visited;
-  for (auto node : run_list_) {
-    if (visited.count(node->id()))
-      continue;
-    node->initialize();
-    visited.insert(node->id());
-  }
+  // initialize driver
+  sim_driver_ = new simref();
+  sim_driver_->acquire();
+  sim_driver_->initialize(eval_list);
 }
 
-void simulatorimpl::eval(ch_tick) {
-  // evaluate all nodes
-  for (unsigned i = 0; i < run_list_.size(); ++i) {
-    run_list_[i]->eval();
-  }
+void simulatorimpl::eval() {
+  sim_driver_->eval();
 }
 
 ch_tick simulatorimpl::reset(ch_tick t) {
@@ -91,10 +86,12 @@ ch_tick simulatorimpl::step(ch_tick t) {
   if (!clk_driver_.empty()) {
     for (int i = 0; i < 2; ++i) {
       clk_driver_.flip();
-      this->eval(t++);
-    }
+      sim_driver_->eval();
+      ++t;
+    }   
   } else {
-    this->eval(t++);
+    sim_driver_->eval();
+    ++t;
   }
   return t;
 }
@@ -114,8 +111,8 @@ ch_tick simulatorimpl::run(const std::function<bool(ch_tick t)>& callback) {
   return t;
 }
 
-void simulatorimpl::run(ch_tick ticks) {
-  for (auto t = this->reset(0); t < ticks;) {
+void simulatorimpl::run(ch_tick num_ticks) {
+  for (auto t = this->reset(0); t < num_ticks;) {
     t = this->step(t);
   }
 }
@@ -174,8 +171,8 @@ ch_tick ch_simulator::run(const std::function<bool(ch_tick t)>& callback) {
   return impl_->run(callback);
 }
 
-void ch_simulator::run(ch_tick ticks) {
-  impl_->run(ticks);
+void ch_simulator::run(ch_tick num_ticks) {
+  impl_->run(num_ticks);
 }
 
 ch_tick ch_simulator::reset(ch_tick t) {
@@ -186,6 +183,6 @@ ch_tick ch_simulator::step(ch_tick t, uint32_t count) {
   return impl_->step(t, count);
 }
 
-void ch_simulator::eval(ch_tick t) {
-  impl_->eval(t);
+void ch_simulator::eval() {
+  impl_->eval();
 }

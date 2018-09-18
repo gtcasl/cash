@@ -9,26 +9,38 @@ using udf_output = bitvector;
 
 class udf_inputs {
 public:
-  udf_inputs(const std::vector<lnode>& container)
-    : container_(container)
-  {}
-
   const bitvector& operator[](size_t index) const {
-    return container_[index].data();
+    return *container_[index];
+  }
+
+  auto size() const {
+    return container_.size();
+  }
+
+  auto empty() const {
+    return container_.empty();
+  }
+
+  void reserve(size_t size) {
+    container_.reserve(size);
+  }
+
+  void emplace_back(const bitvector* node) {
+    container_.emplace_back(node);
   }
 
 protected:
-  const std::vector<lnode>& container_;
+  std::vector<const bitvector*> container_;
 };
 
 class udf_iface : public refcounted {
 public:
   udf_iface(uint32_t delta,
-            bool has_init,
+            bool has_initdata,
             uint32_t output_size,
             const std::initializer_list<uint32_t>& inputs_sizes)
     : delta_(delta)
-    , has_init_(has_init)
+    , has_init_(has_initdata)
     , output_size_(output_size)
     , inputs_size_(inputs_sizes)
   {}
@@ -39,7 +51,7 @@ public:
     return delta_;
   }
 
-  bool has_init() const {
+  bool has_initdata() const {
     return has_init_;
   }
 
@@ -73,7 +85,7 @@ template <unsigned Delta, bool Init, typename Output_, typename... Inputs_>
 struct udf_traits {
   static constexpr traits_type type  = traits_udf;
   static constexpr uint32_t delta  = Delta;
-  static constexpr bool has_init   = Init;
+  static constexpr bool has_initdata   = Init;
   using Output = Output_;
   using Inputs = std::tuple<Inputs_...>;
 };

@@ -29,9 +29,7 @@ public:
 
   void remove_port(bindportimpl* output);
 
-  void eval() override;
-
-  void print(std::ostream& out, uint32_t level) const override;
+  void print(std::ostream& out) const override;
 
 protected:
 
@@ -58,11 +56,9 @@ public:
     return ioport_;
   }
 
-  void initialize() override;
+  void print(std::ostream& out) const override;
 
-  void eval() override;
-
-protected:  
+protected:
 
   bindportimpl(context* ctx,
                bindimpl* bind,
@@ -79,7 +75,6 @@ protected:
 
   bindimpl* binding_;
   lnode ioport_;
-  bitvector::word_t* words_;
 
   friend class context;
 };

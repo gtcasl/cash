@@ -12,27 +12,56 @@ protected:
          lnodetype type,
          uint32_t size,
          const source_location& sloc,
-         const std::string& name = "")
-    : lnodeimpl(ctx, type, size, sloc, name)
-  {}
+         const std::string& name = "");
 
   friend class context;
 };
 
-class inputimpl : public ioimpl {
+///////////////////////////////////////////////////////////////////////////////
+
+class ioportimpl : public ioimpl {
 public:
 
-  const lnode& input() const {
-    return input_;
+  const bitvector& value() const {
+    return value_;
   }
 
-  void bind(const lnode& input);
+  bitvector& value() {
+    return value_;
+  }
 
-  void initialize() override;
+  bool is_bind() const {
+    return !binding_.empty();
+  }
 
-  void eval() override;
-  
-  void print(std::ostream& out, uint32_t level) const override;
+  void bind(const lnode& binding) {
+    binding_ = binding;
+  }
+
+  const lnode& binding() const {
+    return binding_;
+  }
+
+protected:
+
+  ioportimpl(context* ctx,
+             lnodetype type,
+             uint32_t size,
+             const source_location& sloc,
+             const std::string& name = "");
+
+  bitvector value_;
+  lnode binding_;
+
+  friend class context;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+class inputimpl : public ioportimpl {
+public:
+
+  void print(std::ostream& out) const override;
   
 protected:
 
@@ -41,23 +70,17 @@ protected:
             const std::string& name,
             const source_location& sloc);
 
-  ~inputimpl();
-
-  lnode input_;
-
-  bitvector::word_t* words_;
+  ~inputimpl();  
 
   friend class context;
 };
 
-class outputimpl : public ioimpl {
+///////////////////////////////////////////////////////////////////////////////
+
+class outputimpl : public ioportimpl {
 public:
 
-  void initialize() override;
-
-  void eval() override;
-  
-  void print(std::ostream& out, uint32_t level) const override;
+  void print(std::ostream& out) const override;
   
 protected:
 
@@ -68,23 +91,19 @@ protected:
 
   ~outputimpl();
 
-  bitvector::word_t* words_;
-
   friend class context;
 };
 
-class tapimpl : public ioimpl {
+///////////////////////////////////////////////////////////////////////////////
+
+class tapimpl : public ioportimpl {
 public:
 
   const lnode& target() const {
     return srcs_[0];
   }
 
-  void initialize() override;
-
-  void eval() override;
-  
-  void print(std::ostream& out, uint32_t level) const override;
+  void print(std::ostream& out) const override;
 
 protected:
 
@@ -94,8 +113,6 @@ protected:
           const source_location& sloc);
 
   ~tapimpl();
-
-  bitvector::word_t* words_;
 
   friend class context;
 };

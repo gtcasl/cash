@@ -51,12 +51,12 @@ set(PROJECT_SOURCES
     src/lnode.cpp
     src/logic.cpp
     src/context.cpp
-    src/compile.cpp
-    src/simref.cpp
-    src/simjit.cpp
-    src/deviceimpl.cpp    
+    src/deviceimpl.cpp
+    src/compile.cpp    
     src/simulatorimpl.cpp
     src/tracerimpl.cpp
+    src/simref.cpp
+    src/simjit.cpp
     src/verilogwriter.cpp
     src/firrtlwriter.cpp
     src/eda/altera/avalon_sim.cpp

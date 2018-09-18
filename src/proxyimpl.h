@@ -28,7 +28,7 @@ public:
 
   bool is_identity() const {
     return (1 == ranges_.size())
-        && (srcs_[0].size() == data_.size());
+        && (srcs_[0].size() == size_);
   }
 
   const std::vector<range_t>& ranges() const {
@@ -60,9 +60,7 @@ public:
                    uint32_t length,
                    const source_location& sloc) override;
 
-  void eval() override;
-
-  void print(std::ostream& out, uint32_t level) const override;
+  void print(std::ostream& out) const override;
   
 protected:
 

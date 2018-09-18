@@ -4,16 +4,11 @@
 using namespace ch::internal;
 
 litimpl::litimpl(context* ctx, const bitvector& value)
-  : lnodeimpl(ctx, type_lit, value.size(), source_location()) {
-  data_ = value;
-}
+  : lnodeimpl(ctx, type_lit, value.size(), source_location())
+  , value_(value)
+{}
 
-void litimpl::eval() {
-  //--
-}
-
-void litimpl::print(std::ostream& out, uint32_t level) const {
-  CH_UNUSED(level);
-  out << "#" << id_ << " <- " << this->type() << data_.size()
-      << "(" << data_ << ")";
+void litimpl::print(std::ostream& out) const {
+  out << "#" << id_ << " <- " << this->type() << size_
+      << "(" << value_ << ")";
 }

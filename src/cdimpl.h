@@ -12,23 +12,20 @@ public:
     return srcs_[0];
   }
 
-  bool posedge() const {
-    return posedge_;
+  bool pos_edge() const {
+    return pos_edge_;
   }
 
-  void eval() override;
-
-  void print(std::ostream& out, uint32_t level) const override;
+  void print(std::ostream& out) const override;
 
 protected:
   
   cdimpl(context* ctx,
          const lnode& clk,
-         bool posedge,
+         bool pos_edge,
          const source_location& sloc);
 
-  bool posedge_;
-  bool prev_val_;
+  bool pos_edge_;
 
   friend class context;
 };

@@ -42,6 +42,7 @@ protected:
 
 class ch_device_list {
 public:
+
   ch_device_list() {}
 
   ch_device_list(const std::initializer_list<device>& devices)
@@ -69,6 +70,7 @@ public:
   }
 
 protected:
+
   std::vector<device> container_;
 };
 
@@ -89,8 +91,8 @@ public:
 
   template <typename... Ts>
   ch_device(Ts&&... args)
-    : device(std::type_index(typeid(T)),
-             identifier_from_typeid(typeid(T).name()).c_str())
+    : device(std::type_index(typeid(T))
+    , identifier_from_typeid(typeid(T).name()).c_str())
     , io(build(T(std::forward<Ts>(args)...)).io)
   {}
 

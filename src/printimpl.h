@@ -5,12 +5,35 @@
 namespace ch {
 namespace internal {
 
+enum class fmttype {
+  Int,
+  Float,
+  String,
+};
+
+struct fmtinfo_t {
+  int index;
+  fmttype type;
+};
+
+const char* parse_format_index(fmtinfo_t* out, const char* str);
+
 class printimpl : public ioimpl {
 public:
 
-  void eval() override;
+  const std::string& format() const {
+    return format_;
+  }
 
-  void print(std::ostream& out, uint32_t level) const override;
+  bool is_predicated() const {
+    return (pred_idx_ != -1);
+  }
+
+  const auto& predicate() const {
+    return srcs_[pred_idx_];
+  }
+
+  void print(std::ostream& out) const override;
 
 protected:
 
@@ -19,9 +42,8 @@ protected:
             const std::initializer_list<lnode>& args,
             const source_location& sloc);
 
-  std::string format_;  
-  std::stringstream strbuf_;  
-  bool predicated_;
+  std::string format_;
+  int pred_idx_;
 
   friend class context;
 };

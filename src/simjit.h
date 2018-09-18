@@ -1,6 +1,6 @@
 #pragma once
 
-#include "lnodeimpl.h"
+#include "simulatorimpl.h"
 
 namespace ch {
 namespace internal {

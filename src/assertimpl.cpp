@@ -15,30 +15,14 @@ assertimpl::assertimpl(context* ctx,
                        const std::string& msg,
                        const source_location& sloc)
   : ioimpl(ctx, type_assert, 0, sloc)
-  , msg_(msg)
-  , predicated_(false)
-  , tick_(0) {
+  , message_(msg)
+  , pred_idx_(-1)
+  , cond_idx_(-1) {
   if (ctx_->conditional_enabled(this)) {
     auto pred = ctx_->create_predicate(sloc);
     if (pred) {
-      srcs_.emplace_back(pred);
-      predicated_ = true;
+      pred_idx_ = this->add_src(pred);
     }
   }
-  srcs_.emplace_back(cond);
-}
-
-void assertimpl::initialize() {
-  tick_ = 0;
-}
-
-void assertimpl::eval() {
-  if (!predicated_ || static_cast<bool>(srcs_[0].data())) {
-    auto pred = static_cast<bool>(srcs_[predicated_ ? 1 : 0].data());
-    if (!pred) {
-      fprintf(stderr, "assertion failure at tick %ld, %s (%s:%d)\n", tick_, msg_.c_str(), sloc_.file(), sloc_.line());
-      std::abort();
-    }
-  }
-  tick_++;
+  cond_idx_ = this->add_src(cond);
 }

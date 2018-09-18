@@ -11,7 +11,7 @@ public:
 
   clock_driver(bool value = false) : value_(value) {}
 
-  void add_signal(lnodeimpl* node);
+  void add_signal(inputimpl* node);
 
   void flip();
 
@@ -21,8 +21,20 @@ public:
 
 protected:
 
-  std::vector<lnodeimpl*> nodes_;
+  std::vector<inputimpl*> nodes_;
   bool value_;
+};
+
+class sim_driver : public refcounted {
+public:
+
+  sim_driver() {}
+
+  virtual ~sim_driver() {}
+
+  virtual void initialize(const std::vector<lnodeimpl*>&) = 0;
+
+  virtual void eval() = 0;
 };
 
 class simulatorimpl : public refcounted {
@@ -40,18 +52,18 @@ public:
 
   ch_tick step(ch_tick t, uint32_t count);
 
-  void run(ch_tick ticks);
+  void run(ch_tick num_ticks);
 
-  virtual void eval(ch_tick t);
+  virtual void eval();
 
 protected:
 
   void initialize();
 
-  std::unordered_set<context*> contexts_;
+  std::vector<context*> contexts_;
   clock_driver clk_driver_;
   clock_driver reset_driver_;
-  std::vector<lnodeimpl*> run_list_;
+  sim_driver* sim_driver_;
 };
 
 }

@@ -8,13 +8,17 @@ namespace internal {
 class litimpl : public lnodeimpl {
 public:
 
-  void eval() override;
+  const bitvector& value() const {
+    return value_;
+  }
 
-  void print(std::ostream& out, uint32_t level) const override;
+  void print(std::ostream& out) const override;
 
 protected:
 
   litimpl(context* ctx, const bitvector& value);
+
+  bitvector value_;
 
   friend class context;
 };

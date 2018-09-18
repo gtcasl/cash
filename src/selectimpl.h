@@ -25,9 +25,7 @@ public:
 
   std::size_t hash() const override;
 
-  void eval() override;
-
-  void print(std::ostream& out, uint32_t level) const override;
+  void print(std::ostream& out) const override;
 
 protected:
 

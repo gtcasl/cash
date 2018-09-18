@@ -23,7 +23,7 @@ public:
     stmts_.push({pred, value});
   }
   
-  lnodeimpl* eval(const lnode& value);
+  lnodeimpl* emit(const lnode& value);
 
   auto sloc() const {
     return sloc_;
@@ -62,7 +62,7 @@ public:
   template <typename V>
   auto operator()(const V& value) {
     static_assert(std::is_constructible_v<T, V>, "invalid type");
-    return make_type<T>(impl_.eval(to_lnode<T>(value, impl_.sloc())), impl_.sloc());
+    return make_type<T>(impl_.emit(to_lnode<T>(value, impl_.sloc())), impl_.sloc());
   }
   
 protected:
@@ -94,7 +94,7 @@ public:
   template <typename T>
   auto operator()(const T& value) {
     static_assert(std::is_constructible_v<V, T>, "invalid type");
-    return make_type<V>(impl_.eval(to_lnode<V>(value, impl_.sloc())),
+    return make_type<V>(impl_.emit(to_lnode<V>(value, impl_.sloc())),
                         impl_.sloc());
   }
   

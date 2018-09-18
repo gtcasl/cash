@@ -15,6 +15,7 @@ class proxyimpl;
 class aluimpl;
 class litimpl;
 class ioimpl;
+class ioportimpl;
 class inputimpl;
 class outputimpl;
 class bindimpl;
@@ -171,7 +172,7 @@ public:
 
   void push_cd(const lnode& clk,
                const lnode& reset,
-               bool posedge,
+               bool pos_edge,
                const source_location& sloc);
 
   void pop_cd();
@@ -196,7 +197,7 @@ public:
   }
 
   cdimpl* create_cd(const lnode& clk,
-                    bool posedge,
+                    bool pos_edge,
                     const source_location& sloc);
 
   node_list_t::iterator delete_node(const node_list_t::iterator& it);
@@ -243,7 +244,7 @@ public:
     
   //--
 
-  void build_run_list(std::vector<lnodeimpl*>& runlist);
+  void build_eval_list(std::vector<lnodeimpl*>& eval_list);
 
   //--
 
@@ -253,17 +254,17 @@ public:
 
   //--
   
-  void dump_ast(std::ostream& out, uint32_t level);
+  void dump_ast(std::ostream& out);
 
-  void dump_cfg(lnodeimpl* node, std::ostream& out, uint32_t level);  
+  void dump_cfg(lnodeimpl* node, std::ostream& out);
 
   void dump_stats(std::ostream& out);
 
   //--
 
-  void register_enum_string(const lnode& node, enum_string_cb callback);
+  void register_enum_string(uint32_t id, enum_string_cb callback);
 
-  const char* enum_to_string(const lnode& node);
+  enum_string_cb enum_to_string(uint32_t id);
   
 protected:
 

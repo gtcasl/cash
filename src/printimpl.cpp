@@ -3,19 +3,7 @@
 #include "logic.h"
 
 using namespace ch::internal;
-
-enum class fmttype {
-  Int,
-  Float,
-  String,
-};
-
-struct fmtinfo_t {
-  int index;
-  fmttype type;
-};
-
-static const char* parse_format_index(fmtinfo_t* out, const char* str) {
+const char* ch::internal::parse_format_index(fmtinfo_t* out, const char* str) {
   assert(str);
   
   // check starting bracket
@@ -69,12 +57,11 @@ printimpl::printimpl(context* ctx,
                      const source_location& sloc)
   : ioimpl(ctx, type_print, 0, sloc)
   , format_(format)
-  , predicated_(false) {
+  , pred_idx_(-1) {
   if (ctx_->conditional_enabled(this)) {
     auto pred = ctx_->create_predicate(sloc);
     if (pred) {
-      srcs_.emplace_back(pred);
-      predicated_ = true;
+      pred_idx_ = this->add_src(pred);
     }
   }
   for (auto arg : args) {
@@ -82,44 +69,13 @@ printimpl::printimpl(context* ctx,
   }
 }
 
-void printimpl::eval() {
-  if (predicated_ && !static_cast<bool>(srcs_[0].data()))
-    return;
-  if (format_ != "") {
-    strbuf_.clear();
-    for (const char *str = format_.c_str(); *str != '\0'; ++str) {
-      if (*str == '{') {
-        fmtinfo_t fmt;
-        str = parse_format_index(&fmt, str);
-        uint32_t args_offset_ = predicated_ ? 1 : 0;
-        auto& src = srcs_[args_offset_ + fmt.index];
-        switch (fmt.type) {
-        case fmttype::Int:
-          strbuf_ << src.data();
-          break;
-        case fmttype::Float:
-          strbuf_ << bitcast<float>(static_cast<int>(src.data()));
-          break;
-        case fmttype::String:
-          strbuf_ << ctx_->enum_to_string(src);
-          break;
-        }
-      } else {
-        strbuf_.put(*str);
-      }
-    }
-    std::cout << strbuf_.rdbuf();
-  }
-  std::cout << std::endl;
-}
-
-void printimpl::print(std::ostream& out, uint32_t level) const {
+void printimpl::print(std::ostream& out) const {
   out << "#" << id_ << " <- " << this->type();
   uint32_t n = srcs_.size();
   if (n > 0) {
     out << "(";
     uint32_t i = 0;
-    if (predicated_) {
+    if (this->is_predicated()) {
       out << "pred=" << srcs_[i++].id();
     }
     for (; i < n; ++i) {
@@ -128,9 +84,6 @@ void printimpl::print(std::ostream& out, uint32_t level) const {
       out << "#" << srcs_[i].id();
     }
     out << ")";
-  }
-  if (level == 2) {
-    out << " = " << data_;
   }
 }
 

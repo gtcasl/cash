@@ -222,9 +222,9 @@ bool firrtlwriter::print_decl(std::ostream& out,
   case type_input:
   case type_output:
   case type_cd:
-  case type_tap:
   case type_mrport:
   case type_mwport:
+  case type_tap:
   case type_assert:
   case type_print:
   case type_time:
@@ -268,9 +268,9 @@ bool firrtlwriter::print_logic(std::ostream& out, lnodeimpl* node) {
   case type_input:
   case type_output:
   case type_cd:
-  case type_tap:  
   case type_mrport:
   case type_mwport:
+  case type_tap:
   case type_assert:
   case type_print:
   case type_time:
@@ -284,7 +284,7 @@ bool firrtlwriter::print_logic(std::ostream& out, lnodeimpl* node) {
 void firrtlwriter::print_lit(std::ostream& out, litimpl* node) {
   this->print_name(out, node);
   out << " <= ";
-  this->print_value(out, node->data(), true);
+  this->print_value(out, node->value(), true);
   out << std::endl;
 }
 
@@ -558,11 +558,11 @@ void firrtlwriter::print_select(std::ostream& out, selectimpl* node) {
 void firrtlwriter::print_reg(std::ostream& out, regimpl* node) {
   this->print_name(out, node);
   out << " <= ";
-  if (node->has_init()) {
+  if (node->has_initdata()) {
     out << " mux(";
     this->print_name(out, node->reset().impl());
     out << ", ";
-    this->print_name(out, node->init().impl());
+    this->print_name(out, node->initdata().impl());
     out << ", ";
     this->print_name(out, node->next().impl());
     out << ")";
@@ -573,7 +573,7 @@ void firrtlwriter::print_reg(std::ostream& out, regimpl* node) {
 }
 
 void firrtlwriter::print_cdomain(std::ostream& out, cdimpl* cd) {
-  assert(cd->posedge());
+  assert(cd->pos_edge());
   this->print_name(out, cd->clk().impl());
 }
 
@@ -624,11 +624,10 @@ void firrtlwriter::print_mem(std::ostream& out, memimpl* node) {
     this->print_name(out, port->addr().impl());
     out << std::endl;
 
-    auto cd = node->cd();
-    if (cd) {
+    if (node->has_cd()) {
       this->print_name(out, node);
       out << '.' << type << port->index() << ".clk <= ";
-      this->print_cdomain(out, cd);
+      this->print_cdomain(out, reinterpret_cast<cdimpl*>(node->cd().impl()));
     }
     out << std::endl;
   };
@@ -636,7 +635,10 @@ void firrtlwriter::print_mem(std::ostream& out, memimpl* node) {
   if (node->is_write_enable()) {
     // initialization data not supported!
     assert(!node->has_initdata());
-    for (auto port : node->ports()) {      
+    for (auto port : node->rdports()) {
+      print_attributes(port);
+    }
+    for (auto port : node->wrports()) {
       print_attributes(port);
     }
   } else {
@@ -647,7 +649,7 @@ void firrtlwriter::print_mem(std::ostream& out, memimpl* node) {
     for (uint32_t i = 0, n = node->num_items(); i < n; ++i) {
       this->print_name(out, node);
       out << "[" << i << "] <= ";
-      node->data().read(i * data_width, value.data(), data_cbsize, 0, data_width);
+      node->initdata().read(i * data_width, value.data(), data_cbsize, 0, data_width);
       this->print_value(out, value);
       out << std::endl;
     }
@@ -708,7 +710,8 @@ void firrtlwriter::print_name(std::ostream& out, lnodeimpl* node, bool force) {
     break;
   case type_lit:
     if (!force && is_inline_literal(node)) {
-      print_value(out, node->data(), true);
+      auto& value = reinterpret_cast<litimpl*>(node)->value();
+      print_value(out, value, true);
     } else {
       print_unique_name(node);
     }
@@ -809,20 +812,21 @@ void firrtlwriter::print_dtype(std::ostream& out, lnodeimpl* node) {
       out << "read-under-write => undefined" << std::endl;
 
       auto_separator sep("\n");
-      for (auto port : mem->ports()) {
+      for (auto port : mem->rdports()) {
+        if (mem->is_readwrite(port))
+          continue;
+        out << sep;        
+        // read-only
+        out << "reader => r" << port->index();
+      }
+      for (auto port : mem->wrports()) {
         out << sep;
         if (mem->is_readwrite(port)) {
-          if (port->type() != type_mwport)
-            continue;
           // read-write
           out << "readwriter => x" << port->index();
-        } else
-        if (port->type() == type_mwport) {
+        } else {
           // write-only
           out << "writer => w" << port->index();
-        } else {
-          // read-only
-          out << "reader => r" << port->index();
         }
       }
     } else {

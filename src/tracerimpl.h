@@ -22,13 +22,13 @@ protected:
 
   void initialize();
 
-  void eval(ch_tick t) override;
+  void eval() override;
 
-  uint32_t add_signal(ioimpl* node);
+  uint32_t add_signal(ioportimpl* node);
 
   struct signal_t {
     std::string name;
-    ioimpl* node;
+    ioportimpl* node;
   };
 
   struct trace_block_t {
@@ -39,11 +39,11 @@ protected:
   };
 
   unique_names unique_names_;
-  std::vector<signal_t> signals_;
-  uint32_t trace_width_;
+  std::vector<signal_t> signals_;  
   trace_block_t* trace_blocks_head_;
   trace_block_t* trace_blocks_tail_;
   uint32_t num_trace_blocks_;
+  uint32_t trace_width_;
 };
 
 }

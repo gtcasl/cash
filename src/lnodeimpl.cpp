@@ -20,7 +20,7 @@ lnodeimpl::lnodeimpl(context* ctx,
   : ctx_(ctx)
   , id_(ctx->node_id())
   , type_(type)
-  , data_(size)
+  , size_(size)
   , sloc_(sloc)
   , name_(to_string(type))
   , var_id_(var_id) {
@@ -53,8 +53,8 @@ bool lnodeimpl::equals(const lnodeimpl& other) const {
 lnodeimpl* lnodeimpl::slice(uint32_t offset,
                             uint32_t length,
                             const source_location& sloc) {
-  assert(length <= data_.size());
-  if (data_.size() == length)
+  assert(length <= size_);
+  if (size_ == length)
     return this;
   return ctx_->create_node<proxyimpl>(this, offset, length, sloc);
 }
@@ -67,27 +67,21 @@ void lnodeimpl::write(uint32_t,
   assert(false);
 }
 
-void lnodeimpl::print(std::ostream& out, uint32_t level) const {
-  out << "#" << id_ << " <- " << this->type() << data_.size();
-  uint32_t n = srcs_.size();
-  if (n > 0) {
-    out << "(";
-    for (uint32_t i = 0; i < n; ++i) {
-      if (i > 0)
-        out << ", ";
-      out << "#" << srcs_[i].id();
-    }
-    out << ")";
+void lnodeimpl::print(std::ostream& out) const {
+  out << "#" << id_ << " <- " << this->type() << size_;
+  out << "(";
+  for (uint32_t i = 0; i < srcs_.size(); ++i) {
+    if (i)
+      out << ", ";
+    out << "#" << srcs_[i].id();
   }
-  if (level == 2) {
-    out << " = " << data_;
-  }
+  out << ")";
 }
 
 std::string lnodeimpl::debug_info() const {
   return stringf("%s%d (#%d) (@var%d) in module '%s (#%d)'  (%s:%d)",
                  name_.c_str(),
-                 data_.size(),
+                 size_,
                  id_,
                  var_id_,
                  ctx_->name().c_str(),

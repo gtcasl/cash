@@ -14,7 +14,7 @@ public:
   }
 
   auto length() const {
-    return pipe_.size() + 1;
+    return length_;
   }
 
   const lnode& next() const {
@@ -33,22 +33,20 @@ public:
     return srcs_[enable_idx_];
   }
 
-  bool has_init() const {
-    return (init_idx_ != -1);
-  }
-
-  const lnode& init() const {
-    return srcs_[init_idx_];
-  }
-
   const lnode& reset() const {
     return srcs_[reset_idx_];
   }
 
+  bool has_initdata() const {
+    return (initdata_idx_ != -1);
+  }
+
+  const lnode& initdata() const {
+    return srcs_[initdata_idx_];
+  }
+
   std::size_t hash() const override;
 
-  void eval() override;
-  
 protected:
 
   regimpl(context* ctx,
@@ -61,13 +59,13 @@ protected:
           unsigned length,
           const lnode& next,
           const lnode& enable,
-          const lnode& init,
+          const lnode& initdata,
           const source_location& sloc);
 
-  int enable_idx_;
-  int init_idx_;
+  unsigned length_;
+  int enable_idx_;  
   int reset_idx_;
-  std::vector<bitvector> pipe_;
+  int initdata_idx_;
 
   friend class context;
 };

@@ -13,10 +13,6 @@ public:
     return udf_;
   }
 
-  auto& udf_srcs() const {
-    return udf_srcs_;
-  }
-
 protected:
 
   udfimpl(context* ctx,
@@ -28,7 +24,6 @@ protected:
   ~udfimpl();
 
   udf_iface* udf_;
-  udf_inputs udf_srcs_;
 
   friend class context;
 };
@@ -36,10 +31,6 @@ protected:
 ///////////////////////////////////////////////////////////////////////////////
 
 class udfcimpl : public udfimpl {
-public:
-
-  void eval() override;
-
 protected:
 
   udfcimpl(context* ctx,
@@ -59,15 +50,13 @@ public:
     return srcs_[cd_idx_];
   }
 
-  bool has_init() const {
+  bool has_initdata() const {
     return (reset_idx_ != -1);
   }
 
   const lnode& reset() const {
     return srcs_[reset_idx_];
   }
-
-  void eval() override;
 
 protected:
 
@@ -78,7 +67,6 @@ protected:
 
   int cd_idx_;
   int reset_idx_;
-  std::vector<bitvector> pipe_;
 
   friend class context;
 };

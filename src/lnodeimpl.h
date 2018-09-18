@@ -11,9 +11,9 @@
   m(proxy) \
   m(input) \
   m(output) \
-  m(cd) \
   m(alu) \
   m(sel) \
+  m(cd) \
   m(reg) \
   m(mem) \
   m(mrport) \
@@ -85,15 +85,7 @@ public:
   uint32_t add_src(const lnode& src);
   
   uint32_t size() const {
-    return data_.size();
-  }
-  
-  const bitvector& data() const {
-    return data_;
-  }
-
-  bitvector& data() {
-    return data_;
+    return size_;
   }
 
   uint32_t var_id() const {
@@ -110,10 +102,6 @@ public:
     return 0;
   }
 
-  virtual void initialize() {}
-
-  virtual void eval() = 0;
-
   virtual lnodeimpl* slice(uint32_t offset,
                            uint32_t length,
                            const source_location& sloc);
@@ -124,7 +112,7 @@ public:
                      uint32_t length,
                      const source_location& sloc);
 
-  virtual void print(std::ostream& out, uint32_t level) const;
+  virtual void print(std::ostream& out) const;
 
   std::string debug_info() const;
 
@@ -157,8 +145,8 @@ protected:
   context* ctx_;
   uint32_t id_;  
   lnodetype type_;
-  std::vector<lnode> srcs_;
-  bitvector data_;
+  uint32_t size_;
+  std::vector<lnode> srcs_;  
   source_location sloc_;
   std::string name_;
   uint32_t var_id_;
@@ -169,9 +157,7 @@ protected:
 class undefimpl : public lnodeimpl {
 public:
 
-  undefimpl(context* ctx, uint32_t size, const source_location& sloc);
-
-  void eval() override {}
+  undefimpl(context* ctx, uint32_t size, const source_location& sloc);  
 };
 
 const char* to_string(lnodetype type);

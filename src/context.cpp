@@ -143,9 +143,9 @@ context::~context() {
 
 void context::push_cd(const lnode& clk,
                       const lnode& reset,
-                      bool posedge,
+                      bool pos_edge,
                       const source_location& sloc) {
-  auto cd = this->create_cd(clk, posedge, sloc);
+  auto cd = this->create_cd(clk, pos_edge, sloc);
   cd_stack_.emplace(cd, reset);
 }
 
@@ -194,15 +194,15 @@ uint32_t context::node_id() {
 }
 
 cdimpl* context::create_cd(const lnode& clk,
-                           bool posedge,
+                           bool pos_edge,
                            const source_location& sloc) {
   // return existing match
   for (auto cd : cdomains_) {
-    if (cd->clk() == clk && cd->posedge() == posedge)
+    if (cd->clk() == clk && cd->pos_edge() == pos_edge)
       return cd;
   }
   // allocate new cdomain
-  return this->create_node<cdimpl>(clk, posedge, sloc);
+  return this->create_node<cdimpl>(clk, pos_edge, sloc);
 }
 
 void context::add_node(lnodeimpl* node) {
@@ -216,25 +216,25 @@ void context::add_node(lnodeimpl* node) {
   case type_undef:
     undefs_.emplace_back((undefimpl*)node);
     break;
+  case type_lit:
+    literals_.emplace_back((litimpl*)node);
+    break;
   case type_proxy:
     proxies_.emplace_back((proxyimpl*)node);
     break;
-  case type_lit:
-    literals_.emplace_back((litimpl*)node);
+  case type_input:
+    inputs_.emplace_back((inputimpl*)node);
+    break;
+  case type_output:
+    outputs_.emplace_back((outputimpl*)node);
+    break;
+  case type_cd:
+    cdomains_.emplace_back((cdimpl*)node);
     break;
   case type_reg:
   case type_mem:
   case type_udfs:
     snodes_.emplace_back(node);
-    break;
-  case type_input:
-    inputs_.emplace_back((inputimpl*)node);
-    break;  
-  case type_output:
-    outputs_.emplace_back((outputimpl*)node);
-    break; 
-  case type_cd:
-    cdomains_.emplace_back((cdimpl*)node);
     break;
   case type_bind:
     bindings_.emplace_back((bindimpl*)node);
@@ -268,16 +268,11 @@ node_list_t::iterator context::delete_node(const node_list_t::iterator& it) {
   case type_undef:
     undefs_.remove((undefimpl*)node);
     break;
-  case type_proxy:
-    proxies_.remove((proxyimpl*)node);
-    break;
   case type_lit:
     literals_.remove((litimpl*)node);
     break;
-  case type_reg:
-  case type_mem:
-  case type_udfs:
-    snodes_.remove(node);
+  case type_proxy:
+    proxies_.remove((proxyimpl*)node);
     break;
   case type_input:
     if (node == sys_clk_) {
@@ -293,6 +288,11 @@ node_list_t::iterator context::delete_node(const node_list_t::iterator& it) {
     break;
   case type_cd:
     cdomains_.remove((cdimpl*)node);
+    break;
+  case type_reg:
+  case type_mem:
+  case type_udfs:
+    snodes_.remove(node);
     break;
   case type_bind:
     bindings_.remove((bindimpl*)node);
@@ -722,7 +722,7 @@ lnodeimpl* context::create_predicate(const source_location& sloc) {
 lnodeimpl* context::create_literal(const bitvector& value) {
   // first lookup literals cache
   for (auto lit : literals_) {
-    if (lit->data() == value)
+    if (lit->value() == value)
       return lit;
   }
   // create new literal
@@ -744,8 +744,9 @@ void context::register_tap(const lnode& node,
   this->create_node<tapimpl>(node, unique_tap_names_.get(s).c_str(), sloc);
 }
 
-void context::build_run_list(std::vector<lnodeimpl*>& runlist) {
-  std::unordered_set<uint32_t> visited, cycles;
+void context::build_eval_list(std::vector<lnodeimpl*>& eval_list) {
+  std::unordered_set<uint32_t> visited;
+  std::unordered_set<uint32_t> cycles;
   std::unordered_set<lnodeimpl*> update_list;
   std::vector<lnodeimpl*> snodes;
   std::vector<lnodeimpl*> taps;
@@ -784,7 +785,7 @@ void context::build_run_list(std::vector<lnodeimpl*>& runlist) {
       switch (node->type()) {
       case type_reg:
         // Detect uninitialized registers
-        if (!reinterpret_cast<regimpl*>(node)->has_init())
+        if (!reinterpret_cast<regimpl*>(node)->has_initdata())
           uninitialized_regs.insert(node);
         [[fallthrough]];
       case type_mem:
@@ -796,9 +797,9 @@ void context::build_run_list(std::vector<lnodeimpl*>& runlist) {
       }
 #define LCOV_EXCL_START
       if (platform::self().cflags() & cflags::dump_ast) {
-        for (auto n : runlist) {
+        for (auto n : eval_list) {
           std::cerr << n->ctx()->id() << ": ";
-          n->print(std::cerr, platform::self().dbg_level());
+          n->print(std::cerr);
           std::cerr << std::endl;
         }
       }
@@ -818,14 +819,19 @@ void context::build_run_list(std::vector<lnodeimpl*>& runlist) {
       break;
     case type_input: {
       auto input = reinterpret_cast<inputimpl*>(node);
-      if (!input->input().empty()) {
-        update |= dfs_visit(input->input().impl());
+      if (input->is_bind()) {
+        update |= dfs_visit(input->binding().impl());
       }
     } break;
-    case type_bindout: {
-      auto port = reinterpret_cast<bindportimpl*>(node);
-      update |= dfs_visit(port->ioport().impl());
-    } break;
+    case type_bindout:
+      {
+        auto port = reinterpret_cast<bindportimpl*>(node);
+        update |= dfs_visit(port->ioport().impl());
+      }
+      for (auto& src : node->srcs()) {
+        update |= dfs_visit(src.impl());
+      }
+      break;
     default:
       // visit source nodes
       for (auto& src : node->srcs()) {
@@ -839,7 +845,7 @@ void context::build_run_list(std::vector<lnodeimpl*>& runlist) {
       update_list.insert(node);
     }
 
-    runlist.push_back(node);
+    eval_list.push_back(node);
     visited.insert(node->id());
 
     return update;
@@ -872,14 +878,14 @@ void context::build_run_list(std::vector<lnodeimpl*>& runlist) {
   }
 
   // insert sequential nodes
-  auto old_size = runlist.size();
+  auto old_size = eval_list.size();
   for (auto node : snodes) {
     dfs_visit(node);
   }
   snodes.clear();
 
   // sort recently inserted sequential node in reverse dependency order
-  std::reverse(runlist.begin() + old_size, runlist.begin() + runlist.size());
+  std::reverse(eval_list.begin() + old_size, eval_list.begin() + eval_list.size());
 
   // invalidate all update nodes to force re-insertion
   for (auto node : update_list2) {
@@ -903,9 +909,9 @@ void context::build_run_list(std::vector<lnodeimpl*>& runlist) {
   taps.clear();
 
   if (platform::self().cflags() & cflags::dump_ast) {
-    for (auto node : runlist) {
+    for (auto node : eval_list) {
       std::cerr << node->ctx()->id() << ": ";
-      node->print(std::cerr, platform::self().dbg_level());
+      node->print(std::cerr);
       std::cerr << std::endl;
     }
   }
@@ -929,32 +935,32 @@ lnodeimpl* context::create_udf_node(udf_iface* udf,
   }
 }
 
-void context::register_enum_string(const lnode& node, enum_string_cb callback) {
-  enum_strings_.emplace(node.var_id(), callback);
+void context::register_enum_string(uint32_t id, enum_string_cb callback) {
+  enum_strings_.emplace(id, callback);
 }
 
-const char* context::enum_to_string(const lnode& node) {
-  auto iter = enum_strings_.find(node.var_id());
+enum_string_cb context::enum_to_string(uint32_t id) {
+  auto iter = enum_strings_.find(id);
   if (iter != enum_strings_.end()) {
-    return iter->second(static_cast<int>(node.data()));
+    return iter->second;
   }
-  return "undefined";
+  return nullptr;
 }
 
-void context::dump_ast(std::ostream& out, uint32_t level) {
+void context::dump_ast(std::ostream& out) {
   for (auto node : nodes_) {
-    node->print(out, level);
+    node->print(out);
     out << std::endl;
   }
 }
 
-void context::dump_cfg(lnodeimpl* node, std::ostream& out, uint32_t level) {
+void context::dump_cfg(lnodeimpl* node, std::ostream& out) {
   std::unordered_set<uint32_t> visits;
   std::unordered_map<uint32_t, tapimpl*> taps;
 
   std::function<void(lnodeimpl*)> dump_cfg_impl = [&](lnodeimpl* node) {
     visits.insert(node->id());
-    node->print(out, level);
+    node->print(out);
 
     auto iter = taps.find(node->id());
     if (iter != taps.end()) {
@@ -980,10 +986,10 @@ void context::dump_cfg(lnodeimpl* node, std::ostream& out, uint32_t level) {
   if (type_tap == node->type()) {
     auto tap = reinterpret_cast<tapimpl*>(node);
     node = tap->target().impl();
-    node->print(out, level);
+    node->print(out);
     out << " // " << tap->name();
   } else {  
-    node->print(out, level);
+    node->print(out);
   }
   out << std::endl;    
   for (auto& src : node->srcs()) {
@@ -1052,5 +1058,5 @@ void ch::internal::registerTap(const lnode& node,
 }
 
 void ch::internal::registerEnumString(const lnode& node, void* callback) {
-  node.impl()->ctx()->register_enum_string(node, (enum_string_cb)callback);
+  node.impl()->ctx()->register_enum_string(node.id(), (enum_string_cb)callback);
 }

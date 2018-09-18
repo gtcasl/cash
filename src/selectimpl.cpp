@@ -71,25 +71,8 @@ std::size_t selectimpl::hash() const {
   return ret.value;
 }
 
-void selectimpl::eval() {
-  uint32_t i, last(srcs_.size() - 1);
-  if (has_key_) {
-    auto& key = srcs_[0].data();
-    for (i = 1; i < last; i += 2) {
-      if (key == srcs_[i].data())
-        break;
-    }
-  } else {
-    for (i = 0; i < last; i += 2) {
-      if (static_cast<bool>(srcs_[i].data()))
-        break;
-    }
-  }
-  data_ = (i < last) ? srcs_[i+1].data() : srcs_[last].data();
-}
-
-void selectimpl::print(std::ostream& out, uint32_t level) const {
-  out << "#" << id_ << " <- " << (has_key_ ? "case" : "sel") << data_.size();
+void selectimpl::print(std::ostream& out) const {
+  out << "#" << id_ << " <- " << (has_key_ ? "case" : "sel") << size_;
   uint32_t n = srcs_.size();
   if (n > 0) {
     out << "(";
@@ -101,14 +84,11 @@ void selectimpl::print(std::ostream& out, uint32_t level) const {
     }
     out << ")";
   }
-  if (level == 2) {
-    out << " = " << data_;
-  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-lnodeimpl* select_impl::eval(const lnode& value) {
+lnodeimpl* select_impl::emit(const lnode& value) {
   auto& stmts = stmts_;
   const auto& stmt = stmts.top();
   auto key = key_.empty() ? nullptr : key_.impl();

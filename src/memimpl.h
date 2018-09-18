@@ -7,6 +7,8 @@ namespace ch {
 namespace internal {
 
 class memportimpl;
+class mrportimpl;
+class mwportimpl;
 
 class memimpl : public ioimpl {
 public:
@@ -20,7 +22,7 @@ public:
           const source_location& sloc);
 
   uint32_t total_size() const {
-    return data_.size();
+    return size_;
   }
 
   uint32_t data_width() const {
@@ -32,51 +34,65 @@ public:
   }
 
   bool is_write_enable() const {
-    return write_enable_;
+    return is_write_enable_;
   }
 
   bool is_sync_read() const {
-    return sync_read_;
+    return is_sync_read_;
   }
 
   bool has_initdata() const {
     return has_initdata_;
   }
 
-  cdimpl* cd() const {
-    return cd_;
+  const bitvector& initdata() const {
+    return initdata_;
   }
 
-  auto& ports() const {
-    return ports_;
+  bool has_cd() const {
+    return (cd_idx_ != -1);
+  }
+
+  auto& cd() const {
+    return srcs_[cd_idx_];
+  }
+
+  auto& rdports() const {
+    return rdports_;
+  }
+
+  auto& wrports() const {
+    return wrports_;
   }
 
   bool is_readwrite(memportimpl* port) const;
 
-  memportimpl* read(const lnode& addr,
-                    const lnode& enable,
-                    const source_location& sloc);
+  mrportimpl* create_port(const lnode& addr,
+                          const lnode& enable,
+                          const source_location& sloc);
 
-  void write(const lnode& addr,
-             const lnode& data,
-             const lnode& enable,
-             const source_location& sloc);
+  mwportimpl* create_port(const lnode& addr,
+                          const lnode& data,
+                          const lnode& enable,
+                          const source_location& sloc);
 
-  void remove_port(memportimpl* port);
+  void remove_port(mrportimpl* port);
 
-  void eval() override;
+  void remove_port(mwportimpl* port);
 
-  void print(std::ostream& out, uint32_t level) const override;
+  void print(std::ostream& out) const override;
 
 protected:
   
-  std::vector<memportimpl*> ports_;
+  std::vector<mrportimpl*> rdports_;
+  std::vector<mwportimpl*> wrports_;
+  bitvector initdata_;
+  int cd_idx_;
   uint32_t data_width_;
   uint32_t num_items_;
-  bool write_enable_;
-  bool sync_read_;
-  bool has_initdata_;
-  cdimpl* cd_;
+  bool is_write_enable_;
+  bool is_sync_read_;
+  bool has_initdata_;  
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -102,8 +118,7 @@ public:
   }
 
   const lnode& addr() const {
-    if (type_mrport == type_
-     && !mem_->is_sync_read()) {
+    if (type_mrport == type_ && !mem_->is_sync_read()) {
       return this->src(addr_idx_);
     } else {
       return mem_->src(addr_idx_);
@@ -128,7 +143,6 @@ protected:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-
 class mrportimpl : public memportimpl {
 public:  
 
@@ -136,11 +150,14 @@ public:
              memimpl* mem,
              const lnode& addr,
              const lnode& enable,
-             const source_location& sloc);
+             const source_location& sloc);  
 
-  void eval() override;
+  bool is_sync_read() const {
+    return mem_->is_sync_read();
+  }
+
+  ~mrportimpl();
 };
-
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -154,11 +171,11 @@ public:
              const lnode& enable,
              const source_location& sloc);
 
+  ~mwportimpl();
+
   const lnode& wdata() const {
     return mem_->src(wdata_idx_);
   }
-
-  void eval() override;
 
 protected:
 

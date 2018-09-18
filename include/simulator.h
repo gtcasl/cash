@@ -37,7 +37,7 @@ public:
 
   ch_tick step(ch_tick t, uint32_t count = 1);
 
-  void eval(ch_tick t);
+  void eval();
 
 protected:
 
