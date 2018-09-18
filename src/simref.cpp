@@ -578,7 +578,7 @@ struct instr_print : instr_base {
     for (unsigned i = 0; i < node->srcs().size(); ++i) {
       auto src = node->src(0).impl();
       srcs[i] = map.at(src->id());
-      auto cb = src->ctx()->enum_to_string(src->id());
+      auto cb = src->ctx()->enum_to_string(src->var_id());
       if (cb) {
         string_cbs[i] = cb;
       }

@@ -1058,5 +1058,5 @@ void ch::internal::registerTap(const lnode& node,
 }
 
 void ch::internal::registerEnumString(const lnode& node, void* callback) {
-  node.impl()->ctx()->register_enum_string(node.id(), (enum_string_cb)callback);
+  node.impl()->ctx()->register_enum_string(node.var_id(), (enum_string_cb)callback);
 }
