@@ -130,7 +130,7 @@ TEST_CASE("misc", "[misc]") {
     });
     TEST([]()->ch_bool {
       my_enum a(my_enum::done);
-      ch_print("a={0:s}", a);
+      ch_print("a={0:e}", a);
       return ch_true;
     });
   }

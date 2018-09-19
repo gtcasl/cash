@@ -565,23 +565,19 @@ struct instr_time : instr_base {
 ///////////////////////////////////////////////////////////////////////////////
 
 struct instr_print : instr_base {
-  std::vector<enum_string_cb> string_cbs;
+  std::vector<enum_string_cb> enum_strings;
   std::vector<const bitvector*> srcs;
   const bitvector* pred;
   std::string format;
 
   instr_print(printimpl* node, instr_map_t& map)
-    : pred(node->is_predicated() ? map.at(node->predicate().id()) : nullptr)
+    : enum_strings(node->enum_strings())
+    , pred(node->is_predicated() ? map.at(node->predicate().id()) : nullptr)
     , format(node->format()) {
-    string_cbs.resize(node->srcs().size());
-    srcs.resize(node->srcs().size());
-    for (unsigned i = 0; i < node->srcs().size(); ++i) {
-      auto src = node->src(0).impl();
-      srcs[i] = map.at(src->id());
-      auto cb = src->ctx()->enum_to_string(src->var_id());
-      if (cb) {
-        string_cbs[i] = cb;
-      }
+    srcs.reserve(node->enum_strings().size());
+    for (unsigned i = (pred ? 1 : 0), n = node->srcs().size(); i < n; ++i) {
+      auto src = node->src(i).impl();
+      srcs.emplace_back(map.at(src->id()));
     }
   }
 
@@ -602,14 +598,9 @@ struct instr_print : instr_base {
           case fmttype::Float:
             strbuf << bitcast<float>(static_cast<int>(*src));
             break;
-          case fmttype::String: {
-            auto cb = string_cbs[fmt.index];
-            if (cb) {
-              strbuf << cb(static_cast<int>(*src));
-            } else {
-              strbuf << "undefined";
-            }
-          } break;
+          case fmttype::Enum:
+            strbuf << enum_strings[fmt.index](static_cast<int>(*src));
+           break;
           }
         } else {
           strbuf.put(*str);

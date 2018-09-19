@@ -34,9 +34,11 @@ const char* ch::internal::parse_format_index(fmtinfo_t* out, const char* str) {
       case 'f':
         out->type = fmttype::Float;
         break;
-      case 's':
-        out->type = fmttype::String;
+      case 'e':
+        out->type = fmttype::Enum;
         break;
+      default:
+        CH_ABORT("invalid print argument type: %c", *str);
       }
       ++str; // advance pointer
     }    
@@ -64,8 +66,11 @@ printimpl::printimpl(context* ctx,
       pred_idx_ = this->add_src(pred);
     }
   }
+
   for (auto arg : args) {
-    srcs_.emplace_back(arg);
+    auto cb = arg.impl()->ctx()->enum_to_string(arg.id());
+    enum_strings_.emplace_back(cb);
+    srcs_.emplace_back(arg);    
   }
 }
 

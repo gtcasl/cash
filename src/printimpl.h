@@ -1,5 +1,6 @@
 #pragma once
 
+#include "context.h"
 #include "ioimpl.h"
 
 namespace ch {
@@ -8,7 +9,7 @@ namespace internal {
 enum class fmttype {
   Int,
   Float,
-  String,
+  Enum,
 };
 
 struct fmtinfo_t {
@@ -33,6 +34,10 @@ public:
     return srcs_[pred_idx_];
   }
 
+  const auto& enum_strings() const {
+    return enum_strings_;
+  }
+
   void print(std::ostream& out) const override;
 
 protected:
@@ -42,6 +47,7 @@ protected:
             const std::initializer_list<lnode>& args,
             const source_location& sloc);
 
+  std::vector<enum_string_cb> enum_strings_;
   std::string format_;
   int pred_idx_;
 

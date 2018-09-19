@@ -941,10 +941,9 @@ void context::register_enum_string(uint32_t id, enum_string_cb callback) {
 
 enum_string_cb context::enum_to_string(uint32_t id) {
   auto iter = enum_strings_.find(id);
-  if (iter != enum_strings_.end()) {
-    return iter->second;
-  }
-  return nullptr;
+  if (iter == enum_strings_.end())
+    return nullptr;
+  return iter->second;
 }
 
 void context::dump_ast(std::ostream& out) {
@@ -1058,5 +1057,5 @@ void ch::internal::registerTap(const lnode& node,
 }
 
 void ch::internal::registerEnumString(const lnode& node, void* callback) {
-  node.impl()->ctx()->register_enum_string(node.var_id(), (enum_string_cb)callback);
+  node.impl()->ctx()->register_enum_string(node.id(), (enum_string_cb)callback);
 }
