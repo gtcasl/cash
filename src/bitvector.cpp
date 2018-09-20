@@ -943,6 +943,7 @@ void ch::internal::bv_sext(bitvector& out, const bitvector& in) {
     } else {
       out.word(0) = in.word(0);
     }
+    return;
   }
 
   if (in.is_neg()) {
