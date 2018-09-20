@@ -70,8 +70,7 @@ struct instr_output : instr_base {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct instr_alu : instr_base {
-  ch_op op;
+struct instr_alu_base : instr_base {
   bool is_signed;
   bool need_resizing;
   const bitvector* o_src0;
@@ -82,9 +81,8 @@ struct instr_alu : instr_base {
   bitvector t_src1;
   bitvector dst;
 
-  instr_alu(aluimpl* node, instr_map_t& map)
-    : op(node->op())
-    , is_signed(node->is_signed())
+  instr_alu_base(aluimpl* node, instr_map_t& map)
+    : is_signed(node->is_signed())
     , need_resizing(false)
     , o_src0(nullptr)
     , o_src1(nullptr)
@@ -102,6 +100,7 @@ struct instr_alu : instr_base {
     src1 = o_src1;
 
     // allocate shadow buffers if needed
+    auto op = node->op();
     auto op_prop = CH_OP_PROP(op);
     if (op_prop & op_flags::eq_opd_size) {
       auto op_class = CH_OP_CLASS(op);
@@ -160,12 +159,18 @@ struct instr_alu : instr_base {
       }
     }
   }
+};
+
+template <ch_op op>
+struct instr_alu : instr_alu_base {
+  instr_alu(aluimpl* node, instr_map_t& map) : instr_alu_base(node, map) {}
 
   void eval() override {
-    if (need_resizing) {
-      this->update_shadow_buffers();
+    if constexpr (CH_OP_PROP(op) & op_flags::eq_opd_size) {
+      if (need_resizing) {
+        this->update_shadow_buffers();
+      }
     }
-
     switch (op) {
     case ch_op::eq:
       dst = bv_eq(*src0, *src1);
@@ -270,6 +275,40 @@ struct instr_alu : instr_base {
     }
   }
 };
+
+static instr_alu_base* create_alu_instr(aluimpl* node, instr_map_t& map) {
+#define CREATE_ALU_INST(op) case op: return new instr_alu<op>(node, map)
+  switch (node->op()) {
+  CREATE_ALU_INST(ch_op::eq);
+  CREATE_ALU_INST(ch_op::ne);
+  CREATE_ALU_INST(ch_op::lt);
+  CREATE_ALU_INST(ch_op::gt);
+  CREATE_ALU_INST(ch_op::le);
+  CREATE_ALU_INST(ch_op::ge);
+  CREATE_ALU_INST(ch_op::notl);
+  CREATE_ALU_INST(ch_op::andl);
+  CREATE_ALU_INST(ch_op::orl);
+  CREATE_ALU_INST(ch_op::inv);
+  CREATE_ALU_INST(ch_op::andb);
+  CREATE_ALU_INST(ch_op::orb);
+  CREATE_ALU_INST(ch_op::xorb);
+  CREATE_ALU_INST(ch_op::andr);
+  CREATE_ALU_INST(ch_op::orr);
+  CREATE_ALU_INST(ch_op::xorr);
+  CREATE_ALU_INST(ch_op::shl);
+  CREATE_ALU_INST(ch_op::shr);
+  CREATE_ALU_INST(ch_op::add);
+  CREATE_ALU_INST(ch_op::sub);
+  CREATE_ALU_INST(ch_op::neg);
+  CREATE_ALU_INST(ch_op::mul);
+  CREATE_ALU_INST(ch_op::div);
+  CREATE_ALU_INST(ch_op::mod);
+  CREATE_ALU_INST(ch_op::pad);
+  default:
+    CH_ABORT("invalid opcode");
+  }
+#undef CREATE_ALU_INST
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -751,7 +790,7 @@ void simref::initialize(const std::vector<lnodeimpl*>& eval_list) {
       }
     } break;
     case type_alu:
-      instrs_.emplace_back(new instr_alu(reinterpret_cast<aluimpl*>(node), instr_map));
+      instrs_.emplace_back(create_alu_instr(reinterpret_cast<aluimpl*>(node), instr_map));
       break;
     case type_sel:
       instrs_.emplace_back(new instr_select(reinterpret_cast<selectimpl*>(node), instr_map));
