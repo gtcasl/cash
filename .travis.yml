@@ -37,7 +37,6 @@ script:
   - pushd build_dbg
   - cmake -DCMAKE_BUILD_TYPE=Debug -DCODECOV=ON ..
   - make -j8 all test
-  - valgrind bin/testsuite
   
 after_success:
   # Gather code coverage
