@@ -277,8 +277,8 @@ auto make_system_op(SystemFunc2 func, const A& lhs, const B& rhs) {
   }
 
 CH_SYSTEM_OPERATOR(system_op_equality)
-  CH_SYSTEM_OPERATOR_IMPL(operator==, (return system_accessor::data(lhs) == system_accessor::data(rhs)))
-  CH_SYSTEM_OPERATOR_IMPL(operator!=, (return system_accessor::data(lhs) != system_accessor::data(rhs)))
+  CH_SYSTEM_OPERATOR_IMPL(operator==, (return bv_eq(system_accessor::data(lhs), system_accessor::data(rhs))))
+  CH_SYSTEM_OPERATOR_IMPL(operator!=, (return !bv_eq(system_accessor::data(lhs), system_accessor::data(rhs))))
 };
 
 CH_SYSTEM_OPERATOR(system_op_logical)

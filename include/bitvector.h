@@ -41,6 +41,7 @@ public:
                      std::conditional_t<sizeof(word_t) == 2, uint32_t, uint64_t>>;
 
   using sword_t  = std::make_signed_t<word_t>;
+  using sxword_t = std::make_signed_t<xword_t>;
   using syword_t = std::make_signed_t<yword_t>;
 
   static constexpr unsigned WORD_LOGSIZE = ilog2(bitwidth_v<word_t>);
@@ -591,7 +592,7 @@ public:
               bool initialize = false,
               bool preserve = false);
 
-  void clear_unused_bits();
+  void clear_extra_bits();
   
   void copy(uint32_t dst_offset,
             const bitvector& src,
@@ -711,6 +712,8 @@ protected:
 std::ostream& operator<<(std::ostream& out, const bitvector& in);
 
 ///////////////////////////////////////////////////////////////////////////////
+
+bool bv_eq(const bitvector& lhs, const bitvector& rhs);
 
 bool bv_ltu(const bitvector& lhs, const bitvector& rhs);
 bool bv_lts(const bitvector& lhs, const bitvector& rhs);

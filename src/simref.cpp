@@ -102,31 +102,34 @@ struct instr_alu : instr_base {
     src1 = o_src1;
 
     // allocate shadow buffers if needed
-    auto op_class = CH_OP_CLASS(op);
-    if (op_flags::equality == op_class
-     || op_flags::relational == op_class) {
-      if (src0->size() != src1->size()) {
-        if (src0->size() < src1->size()) {
-          t_src0.resize(src1->size());
-          src0 = &t_src0;
-        } else {
-          t_src1.resize(src0->size());
-          src1 = &t_src1;
+    auto op_prop = CH_OP_PROP(op);
+    if (op_prop & op_flags::eq_opd_size) {
+      auto op_class = CH_OP_CLASS(op);
+      if (op_flags::equality == op_class
+       || op_flags::relational == op_class) {
+        // resize source operands to match each other
+        if (src0->size() != src1->size()) {
+          if (src0->size() < src1->size()) {
+            t_src0.resize(src1->size());
+            src0 = &t_src0;
+          } else {
+            t_src1.resize(src0->size());
+            src1 = &t_src1;
+          }
+          need_resizing = true;
         }
-        need_resizing = true;
-      }
-    } else
-    if (op_flags::bitwise == op_class
-     || op_flags::arithmetic == op_class) {
-      if (src0->size() != node->size()) {
-        t_src0.resize(node->size());
-        src0 = &t_src0;
-        need_resizing = true;
-      }
-      if (src1 && src1->size() != node->size()) {
-        t_src1.resize(node->size());
-        src1 = &t_src1;
-        need_resizing = true;
+      } else {
+        // resize source operands to match destination
+        if (src0->size() != node->size()) {
+          t_src0.resize(node->size());
+          src0 = &t_src0;
+          need_resizing = true;
+        }
+        if (src1 && src1->size() != node->size()) {
+          t_src1.resize(node->size());
+          src1 = &t_src1;
+          need_resizing = true;
+        }
       }
     }
 
@@ -165,10 +168,10 @@ struct instr_alu : instr_base {
 
     switch (op) {
     case ch_op::eq:
-      dst = (*src0 == *src1);
+      dst = bv_eq(*src0, *src1);
       break;
     case ch_op::ne:
-      dst = (*src0 != *src1);
+      dst = !bv_eq(*src0, *src1);
       break;
     case ch_op::lt:
       dst = is_signed ? bv_lts(*src0, *src1) : bv_ltu(*src0, *src1);
