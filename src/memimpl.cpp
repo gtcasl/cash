@@ -9,7 +9,7 @@ using namespace ch::internal;
 std::vector<uint8_t> toByteVector(const std::string& init_file,
                                   uint32_t data_width,
                                   uint32_t num_items) {
-  std::vector<uint8_t> packed(CH_CEILDIV(data_width * num_items, 8));
+  std::vector<uint8_t> packed(ceildiv<int>(data_width * num_items, 8));
   std::ifstream in(init_file, std::ios::binary);
   in.read((char*)packed.data(), packed.size());
   return packed;
@@ -39,7 +39,7 @@ memimpl::memimpl(context* ctx,
   }
   if (has_initdata_) {
     assert(8 * init_data.size() >= size_);
-    initdata_.write(0, init_data.data(), init_data.size(), 0, size_);
+    initdata_.write(0, init_data.data(), 0, size_);
   } else {
     // initialize with dirty content
     initdata_.deadbeef();

@@ -20,9 +20,9 @@ struct fAdd : public udf_seq<Delay, false, ch_float32, ch_float32, ch_float32, c
   void eval(udf_output& dst, const udf_inputs& srcs) override {
     auto enable = static_cast<bool>(srcs[2]);
     if (enable) {
-      auto lhs = bitcast<float>(static_cast<int32_t>(srcs[0]));
-      auto rhs = bitcast<float>(static_cast<int32_t>(srcs[1]));
-      dst = bitcast<int32_t>(lhs + rhs);
+      auto lhs = bit_cast<float>(static_cast<int32_t>(srcs[0]));
+      auto rhs = bit_cast<float>(static_cast<int32_t>(srcs[1]));
+      dst = bit_cast<int32_t>(lhs + rhs);
     }
   }
 
@@ -38,9 +38,9 @@ struct fSub : public udf_seq<Delay, false, ch_float32, ch_float32, ch_float32, c
   void eval(udf_output& dst, const udf_inputs& srcs) override {
    auto enable = static_cast<bool>(srcs[2]);
     if (enable) {
-      auto lhs = bitcast<float>(static_cast<int32_t>(srcs[0]));
-      auto rhs = bitcast<float>(static_cast<int32_t>(srcs[1]));
-      dst = bitcast<int32_t>(lhs - rhs);
+      auto lhs = bit_cast<float>(static_cast<int32_t>(srcs[0]));
+      auto rhs = bit_cast<float>(static_cast<int32_t>(srcs[1]));
+      dst = bit_cast<int32_t>(lhs - rhs);
     }
   }
 
@@ -56,9 +56,9 @@ struct fMul : public udf_seq<Delay, false, ch_float32, ch_float32, ch_float32, c
   void eval(udf_output& dst, const udf_inputs& srcs) override {
     auto enable = static_cast<bool>(srcs[2]);
     if (enable) {
-      auto lhs = bitcast<float>(static_cast<int32_t>(srcs[0]));
-      auto rhs = bitcast<float>(static_cast<int32_t>(srcs[1]));
-      dst = bitcast<int32_t>(lhs * rhs);
+      auto lhs = bit_cast<float>(static_cast<int32_t>(srcs[0]));
+      auto rhs = bit_cast<float>(static_cast<int32_t>(srcs[1]));
+      dst = bit_cast<int32_t>(lhs * rhs);
     }
   }
 
@@ -74,9 +74,9 @@ struct fDiv : public udf_seq<Delay, false, ch_float32, ch_float32, ch_float32, c
   void eval(udf_output& dst, const udf_inputs& srcs) override {
     auto enable = static_cast<bool>(srcs[2]);
     if (enable) {
-      auto lhs = bitcast<float>(static_cast<int32_t>(srcs[0]));
-      auto rhs = bitcast<float>(static_cast<int32_t>(srcs[1]));
-      dst = bitcast<int32_t>(lhs / rhs);
+      auto lhs = bit_cast<float>(static_cast<int32_t>(srcs[0]));
+      auto rhs = bit_cast<float>(static_cast<int32_t>(srcs[1]));
+      dst = bit_cast<int32_t>(lhs / rhs);
     }
   }
 
@@ -88,33 +88,33 @@ struct fDiv : public udf_seq<Delay, false, ch_float32, ch_float32, ch_float32, c
 
 struct cfAdd : public udf_comb<ch_float32, ch_float32, ch_float32> {
   void eval(udf_output& dst, const udf_inputs& srcs) override {
-    auto lhs = bitcast<float>(static_cast<int32_t>(srcs[0]));
-    auto rhs = bitcast<float>(static_cast<int32_t>(srcs[1]));
-    dst = bitcast<int32_t>(lhs + rhs);
+    auto lhs = bit_cast<float>(static_cast<int32_t>(srcs[0]));
+    auto rhs = bit_cast<float>(static_cast<int32_t>(srcs[1]));
+    dst = bit_cast<int32_t>(lhs + rhs);
   }
 };
 
 struct cfSub : public udf_comb<ch_float32, ch_float32, ch_float32> {
   void eval(udf_output& dst, const udf_inputs& srcs) override {
-    auto lhs = bitcast<float>(static_cast<int32_t>(srcs[0]));
-    auto rhs = bitcast<float>(static_cast<int32_t>(srcs[1]));
-    dst = bitcast<int32_t>(lhs - rhs);
+    auto lhs = bit_cast<float>(static_cast<int32_t>(srcs[0]));
+    auto rhs = bit_cast<float>(static_cast<int32_t>(srcs[1]));
+    dst = bit_cast<int32_t>(lhs - rhs);
   }
 };
 
 struct cfMul : public udf_comb<ch_float32, ch_float32, ch_float32> {
   void eval(udf_output& dst, const udf_inputs& srcs) override {
-    auto lhs = bitcast<float>(static_cast<int32_t>(srcs[0]));
-    auto rhs = bitcast<float>(static_cast<int32_t>(srcs[1]));
-    dst = bitcast<int32_t>(lhs * rhs);
+    auto lhs = bit_cast<float>(static_cast<int32_t>(srcs[0]));
+    auto rhs = bit_cast<float>(static_cast<int32_t>(srcs[1]));
+    dst = bit_cast<int32_t>(lhs * rhs);
   }
 };
 
 struct cfDiv : public udf_comb<ch_float32, ch_float32, ch_float32> {
   void eval(udf_output& dst, const udf_inputs& srcs) override {
-    auto lhs = bitcast<float>(static_cast<int32_t>(srcs[0]));
-    auto rhs = bitcast<float>(static_cast<int32_t>(srcs[1]));
-    dst = bitcast<int32_t>(lhs / rhs);
+    auto lhs = bit_cast<float>(static_cast<int32_t>(srcs[0]));
+    auto rhs = bit_cast<float>(static_cast<int32_t>(srcs[1]));
+    dst = bit_cast<int32_t>(lhs / rhs);
   }
 };
 
@@ -129,7 +129,7 @@ public:
     : base(buffer)
   {}
 
-  ch_scfloat32(float other) : base(bitcast<uint32_t>(other)) {}
+  ch_scfloat32(float other) : base(bit_cast<uint32_t>(other)) {}
 
   explicit ch_scfloat32(const ch_scbit<32>& other) : base(other) {}
 
@@ -174,36 +174,36 @@ public:
   }
 
   friend auto operator-(const ch_scfloat32& self) {
-    auto f_self = bitcast<float>(static_cast<int32_t>(system_accessor::data(self)));
+    auto f_self = bit_cast<float>(static_cast<int32_t>(system_accessor::data(self)));
     return ch_scfloat32(0.0f - f_self);
   }
 
   friend auto operator+(const ch_scfloat32& lhs, const ch_scfloat32& rhs) {
-    auto f_lhs = bitcast<float>(static_cast<int32_t>(system_accessor::data(lhs)));
-    auto f_rhs = bitcast<float>(static_cast<int32_t>(system_accessor::data(rhs)));
+    auto f_lhs = bit_cast<float>(static_cast<int32_t>(system_accessor::data(lhs)));
+    auto f_rhs = bit_cast<float>(static_cast<int32_t>(system_accessor::data(rhs)));
     return ch_scfloat32(f_lhs + f_rhs);
   }
 
   friend auto operator-(const ch_scfloat32& lhs, const ch_scfloat32& rhs) {
-    auto f_lhs = bitcast<float>(static_cast<int32_t>(system_accessor::data(lhs)));
-    auto f_rhs = bitcast<float>(static_cast<int32_t>(system_accessor::data(rhs)));
+    auto f_lhs = bit_cast<float>(static_cast<int32_t>(system_accessor::data(lhs)));
+    auto f_rhs = bit_cast<float>(static_cast<int32_t>(system_accessor::data(rhs)));
     return ch_scfloat32(f_lhs - f_rhs);
   }
 
   friend auto operator*(const ch_scfloat32& lhs, const ch_scfloat32& rhs) {
-    auto f_lhs = bitcast<float>(static_cast<int32_t>(system_accessor::data(lhs)));
-    auto f_rhs = bitcast<float>(static_cast<int32_t>(system_accessor::data(rhs)));
+    auto f_lhs = bit_cast<float>(static_cast<int32_t>(system_accessor::data(lhs)));
+    auto f_rhs = bit_cast<float>(static_cast<int32_t>(system_accessor::data(rhs)));
     return ch_scfloat32(f_lhs * f_rhs);
   }
 
   friend auto operator/(const ch_scfloat32& lhs, const ch_scfloat32& rhs) {
-    auto f_lhs = bitcast<float>(static_cast<int32_t>(system_accessor::data(lhs)));
-    auto f_rhs = bitcast<float>(static_cast<int32_t>(system_accessor::data(rhs)));
+    auto f_lhs = bit_cast<float>(static_cast<int32_t>(system_accessor::data(lhs)));
+    auto f_rhs = bit_cast<float>(static_cast<int32_t>(system_accessor::data(rhs)));
     return ch_scfloat32(f_lhs / f_rhs);
   }
 
   explicit operator float() const {
-    return bitcast<float>(static_cast<uint32_t>(*this));
+    return bit_cast<float>(static_cast<uint32_t>(*this));
   }  
 };
 
@@ -216,7 +216,7 @@ public:
     : base(buffer)
   {}
 
-  ch_float32(float other, CH_SLOC) : base(bitcast<uint32_t>(other), sloc) {}
+  ch_float32(float other, CH_SLOC) : base(bit_cast<uint32_t>(other), sloc) {}
 
   explicit ch_float32(const ch_scbit<32>& other, CH_SLOC) : base(other, sloc) {}
 

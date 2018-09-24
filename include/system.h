@@ -74,20 +74,25 @@ public:
             uint32_t src_offset,
             uint32_t length);
 
-  void write(uint32_t dst_offset,
-             const bitvector& src,
-             uint32_t src_offset,
-             uint32_t length);
+  virtual void read(uint32_t src_offset,
+                    bitvector& dst,
+                    uint32_t dst_offset,
+                    uint32_t length) const;
+
+  virtual void write(uint32_t dst_offset,
+                     const bitvector& src,
+                     uint32_t src_offset,
+                     uint32_t length);
 
   virtual void read(uint32_t src_offset,
                     void* out,
-                    uint32_t out_cbsize,
+                    uint32_t byte_alignment,
                     uint32_t dst_offset,
                     uint32_t length) const;
 
   virtual void write(uint32_t dst_offset,
                      const void* in,
-                     uint32_t in_cbsize,
+                     uint32_t byte_alignment,
                      uint32_t src_offset,
                      uint32_t length);
 
@@ -200,19 +205,19 @@ auto make_system_op(SystemFunc2 func, const A& lhs, const B& rhs) {
 ///////////////////////////////////////////////////////////////////////////////
 
 #define CH_SYSTEM_INTERFACE(type) \
+  template <typename U, CH_REQUIRE_0(std::is_integral_v<U> && std::is_unsigned_v<U>)> \
   void read(uint32_t src_offset, \
-            void* out, \
-            uint32_t out_cbsize, \
+            U* out, \
             uint32_t dst_offset = 0, \
             uint32_t length = type::traits::bitwidth) const { \
-    this->buffer()->read(src_offset, out, out_cbsize, dst_offset, length); \
+    this->buffer()->read(src_offset, out, sizeof(U), dst_offset, length); \
   } \
+  template <typename U, CH_REQUIRE_0(std::is_integral_v<U> && std::is_unsigned_v<U>)> \
   void write(uint32_t dst_offset, \
-             const void* in, \
-             uint32_t in_cbsize, \
+             const U* in, \
              uint32_t src_offset = 0, \
              uint32_t length = type::traits::bitwidth) { \
-    this->buffer()->write(dst_offset, in, in_cbsize, src_offset, length); \
+    this->buffer()->write(dst_offset, in, sizeof(U), src_offset, length); \
   } \
   template <typename R> \
   const auto as() const { \
@@ -326,9 +331,9 @@ CH_SYSTEM_OPERATOR(system_op_cast)
   template <typename U,
             CH_REQUIRE_0(std::is_integral_v<U>)>
   explicit operator U() const {
-    static_assert(CH_WIDTH_OF(U) >= Derived::traits::bitwidth, "invalid size");
+    static_assert(bitwidth_v<U> >= Derived::traits::bitwidth, "invalid size");
     auto ret = static_cast<U>(system_accessor::data(reinterpret_cast<const Derived&>(*this)));
-    if constexpr(ch_signed_v<Derived> && (CH_WIDTH_OF(U) > Derived::traits::bitwidth)) {
+    if constexpr(ch_signed_v<Derived> && (bitwidth_v<U> > Derived::traits::bitwidth)) {
       return sign_ext(ret, Derived::traits::bitwidth);
     } else {
       return ret;

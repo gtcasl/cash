@@ -73,7 +73,7 @@ struct signed_impl {
 
 template <typename T>
 struct signed_impl<T, std::enable_if_t<std::is_arithmetic_v<T>>> {
-  static constexpr bool value = std::numeric_limits<T>::is_signed;
+  static constexpr bool value = std::is_signed_v<T>;
 };
 
 template <typename T>

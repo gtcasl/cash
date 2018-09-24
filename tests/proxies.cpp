@@ -268,6 +268,7 @@ TEST_CASE("proxies", "[proxies]") {
     TEST([]()->ch_bool {
       ch_bit16 a(0xabcd_h);
       auto b = a.slice<12>().slice<8>().slice<4>(4);
+      ch_print("{0}: b={1}", ch_now(), b);
       return b == 0xc_h;
     });
     TEST([]()->ch_bool {

@@ -56,9 +56,9 @@ public:
   static constexpr unsigned AddrW  = AVM::AddrW;
   static constexpr unsigned BurstW = AVM::BurstW;
 
-  static constexpr unsigned LDataW = ilog2(DataW);
+  static constexpr unsigned LDataW = log2floor(DataW);
   static constexpr unsigned DataB  = DataW/8;
-  static constexpr unsigned LDataB = ilog2(DataB);
+  static constexpr unsigned LDataB = log2floor(DataB);
 
   using burst_t = ch_uint<log2ceil(MaxBurst+1)>;
 
@@ -180,9 +180,9 @@ public:
   static constexpr unsigned AddrW  = AVM::AddrW;
   static constexpr unsigned BurstW = AVM::BurstW;
 
-  static constexpr unsigned LDataW = ilog2(DataW);
+  static constexpr unsigned LDataW = log2floor(DataW);
   static constexpr unsigned DataB  = DataW/8;
-  static constexpr unsigned LDataB = ilog2(DataB);
+  static constexpr unsigned LDataB = log2floor(DataB);
 
   using burst_t = ch_uint<log2ceil(MaxBurst+1)>;
 

@@ -71,7 +71,7 @@ struct lit_oct {
   }
   static constexpr unsigned sizex(char c, unsigned N) {
     return is_escape(c) ? N :
-           (N ? (N + 3) : (chr2int(c) ? (ilog2(chr2int(c)) + 1) : 0));
+           (N ? (N + 3) : (chr2int(c) ? log2ceil(chr2int(c) + 1) : 0));
   }
 };
 
@@ -93,7 +93,7 @@ struct lit_hex {
   static constexpr unsigned sizex(char c, unsigned N) {
     return (c == 'x' || c == 'X') ? 0 :
            (is_escape(c) ? N :
-           (N ? (N + 4) : (chr2int(c) ? (ilog2(chr2int(c)) + 1) : 0)));
+           (N ? (N + 4) : (chr2int(c) ? log2ceil(chr2int(c) + 1) : 0)));
   }
 };
 

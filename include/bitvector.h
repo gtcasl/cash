@@ -44,13 +44,13 @@ public:
   using sxword_t = std::make_signed_t<xword_t>;
   using syword_t = std::make_signed_t<yword_t>;
 
-  static constexpr unsigned WORD_LOGSIZE = ilog2(bitwidth_v<word_t>);
-  static constexpr unsigned WORD_SIZE    = 1 << WORD_LOGSIZE;
+  static constexpr unsigned WORD_SIZE    = bitwidth_v<word_t>;
+  static constexpr unsigned WORD_LOGSIZE = log2floor(WORD_SIZE);
   static constexpr unsigned WORD_MASK    = WORD_SIZE - 1;
   static constexpr word_t   WORD_MAX     = std::numeric_limits<word_t>::max();
 
-  static constexpr unsigned XWORD_LOGSIZE = ilog2(bitwidth_v<xword_t>);
-  static constexpr unsigned XWORD_SIZE    = 1 << XWORD_LOGSIZE;
+  static constexpr unsigned XWORD_SIZE    = bitwidth_v<xword_t>;
+  static constexpr unsigned XWORD_LOGSIZE = log2floor(XWORD_SIZE);
   static constexpr unsigned XWORD_MASK    = XWORD_SIZE - 1;
   static constexpr xword_t  XWORD_MAX     = std::numeric_limits<xword_t>::max();
   
@@ -500,21 +500,21 @@ public:
 
   bitvector& operator=(uint64_t value);
 
-  template <typename T, std::size_t N>
-  bitvector& operator=(const std::array<T, N>& value) {
-    static_assert(is_bitvector_array_type_v<T>, "invalid array type");
-    std::vector<T> tmp(N);
+  template <typename U, std::size_t N>
+  bitvector& operator=(const std::array<U, N>& value) {
+    static_assert(is_bitvector_array_type_v<U>, "invalid array type");
+    std::vector<U> tmp(N);
     std::reverse_copy(value.begin(), value.end(), tmp.begin());
-    this->write(0, tmp.data(), N * sizeof(T), 0, N * CH_WIDTH_OF(T));
+    this->write(0, tmp.data(), sizeof(U), 0, N * bitwidth_v<U>);
     return *this;
   }
 
-  template <typename T>
-  bitvector& operator=(const std::vector<T>& value) {
-    static_assert(is_bitvector_array_type_v<T>, "invalid array type");
-    std::vector<T> tmp(value.size);
+  template <typename U>
+  bitvector& operator=(const std::vector<U>& value) {
+    static_assert(is_bitvector_array_type_v<U>, "invalid array type");
+    std::vector<U> tmp(value.size);
     std::reverse_copy(value.begin(), value.end(), tmp.begin());
-    this->write(0, tmp.data(), tmp.size() * sizeof(T), 0, tmp.size() * CH_WIDTH_OF(T));
+    this->write(0, tmp.data(), sizeof(U), 0, tmp.size() * bitwidth_v<U>);
     return *this;
   }
 
@@ -565,10 +565,6 @@ public:
     return (size_ + WORD_MASK) >> WORD_LOGSIZE;
   }
 
-  uint32_t num_bytes() const {
-    return (num_words() << WORD_LOGSIZE) / 8;
-  }
-
   const void* data() const {
     return words_;
   }
@@ -593,23 +589,29 @@ public:
               bool preserve = false);
 
   void clear_extra_bits();
-  
+
   void copy(uint32_t dst_offset,
             const bitvector& src,
             uint32_t src_offset,
             uint32_t length);
-  
+
+  template <typename U,
+            CH_REQUIRE_0(std::is_integral_v<U> && std::is_unsigned_v<U>)>
   void read(uint32_t src_offset,
-            void* dst,
-            uint32_t dst_cbsize,
+            U* out,
             uint32_t dst_offset,
-            uint32_t length) const;
-  
+            uint32_t length) const {
+    this->read(src_offset, out, sizeof(U), dst_offset, length);
+  }
+
+  template <typename U,
+            CH_REQUIRE_0(std::is_integral_v<U> && std::is_unsigned_v<U>)>
   void write(uint32_t dst_offset,
-             const void* src,
-             uint32_t src_cbsize,
+             const U* in,
              uint32_t src_offset,
-             uint32_t length);
+             uint32_t length) {
+    this->write(dst_offset, in, sizeof(U), src_offset, length);
+  }
   
   int find_first() const;
   
@@ -681,12 +683,12 @@ public:
 
 #define CH_DEF_CAST(type) \
   explicit operator type() const { \
-    CH_CHECK(CH_WIDTH_OF(type) >= size_, "invalid size"); \
+    CH_CHECK(bitwidth_v<type> >= size_, "invalid size"); \
     if constexpr (bitwidth_v<type> <= WORD_SIZE) { \
-      return bitcast<type>(words_[0]); \
+      return bit_cast<type>(words_[0]); \
     } else { \
       type ret(0); \
-      memcpy(&ret, words_, CH_CEILDIV(size_, 8)); \
+      memcpy(&ret, words_, ceildiv<int>(size_, 8)); \
       return ret; \
     } \
   }
@@ -704,9 +706,24 @@ public:
   void deadbeef();
   
 protected:
+
+  void read(uint32_t src_offset,
+            void* dst,
+            uint32_t byte_alignment,
+            uint32_t dst_offset,
+            uint32_t length) const;
+
+  void write(uint32_t dst_offset,
+             const void* src,
+             uint32_t byte_alignment,
+             uint32_t src_offset,
+             uint32_t length);
   
   word_t*  words_;
   uint32_t size_;
+
+  friend class system_buffer;
+  friend class system_io_buffer;
 };
 
 std::ostream& operator<<(std::ostream& out, const bitvector& in);

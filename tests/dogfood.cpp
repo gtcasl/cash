@@ -214,22 +214,25 @@ struct Dogfood {
     __out(ch_bool) out
   );
   void describe() {
-    io.out = true;
+    ch_bit64 a(1);
+    auto c = ch_rotr(a, 48);
+    io.out = (c == 0x10000_h64);
+    //io.out = true;
   }
 };
 
 }
 
 int main() {
-  ch_device<Dogfood> device;
+  /*ch_device<Dogfood> device;
   //ch_toVerilog("test.v", device);
   ch_simulator sim(device);
   device.io.in = 0xA;
   sim.run([&](ch_tick t)->bool {
     std::cout << "t" << t << ": out="  << device.io.out << std::endl;
     //assert(!!device.io.out);
-    return (t != 8);
-  });
+    return t < 1;
+  });*/
 
   /*{
     ch_device<inverter> device;
@@ -370,6 +373,121 @@ int main() {
     assert(1 == a.slice<2>());
     assert(1 == a.slice<2>(2));
     assert((a[0] == a[2]) && (a.slice<2>() == a.slice<2>(2)));
+  }*/
+
+  #define COPY_REF(dst, dst_offset, src, src_offset, length) \
+    blend<uint32_t>(((1ull << length) - 1) << dst_offset, dst, ((src >> src_offset) << dst_offset))
+
+  auto shuffle = [](uint32_t x) {
+    x ^= x << 16;
+    x ^= x >> 8;
+    x ^= x << 1;
+    return x;
+  };
+
+  for (int dw = 1; dw <= 32; ++dw) {
+    for (int sw = 1; sw <= 32; ++sw) {
+
+      uint32_t d_value = 0x87654321;
+      uint32_t s_value = 0x12345678;
+
+      for (int j = 0; j < dw; ++j, d_value = shuffle(d_value)) {
+        d_value &= ((1ull << dw)-1);
+        for (int i = 0; i < sw; ++i, s_value = shuffle(s_value)) {
+          s_value &= ((1ull << sw)-1);
+          auto mw = std::min(dw, sw);
+          for (int l = 1; l <= mw; ++l) {
+            if (j + l > mw
+              ||i + l > mw)
+              continue;
+            bitvector y(dw, d_value);
+            bitvector x(sw, s_value);
+            y.copy(j, x, i, l);
+            uint32_t ret = (uint32_t)y;
+            uint32_t ref = COPY_REF(d_value, j, s_value, i, l);
+            assert(ret == ref);
+          }
+        }
+      }
+    }
+  }
+
+  /*{
+    bitvector x(32, 0x1122334f);
+    bitvector y(32, 0x50555555);
+    y.copy(1, x, 7, 16);
+    uint32_t ret = (uint32_t)y;
+    uint32_t ref = COPY_REF(0x50555555, 1, 0x1122334f, 7, 16);
+    assert(ret == ref);
+  }
+
+  {
+    bitvector x(32, 0x1122334f);
+    bitvector y(32, 0x50555555);
+    y.copy(0, x, 7, 16);
+    uint32_t ret = (uint32_t)y;
+    uint32_t ref = COPY_REF(0x50555555, 0, 0x1122334f, 7, 16);
+    assert(ret == ref);
+  }
+
+  {
+    bitvector x(32, 0x1122334f);
+    bitvector y(32, 0x50555555);
+    y.copy(3, x, 0, 6);
+    uint32_t ret = (uint32_t)y;
+    uint32_t ref = COPY_REF(0x50555555, 3, 0x1122334f, 0, 6);
+    assert(ret == ref);
+  }
+
+  {
+    bitvector x(32, 0x1122334f);
+    bitvector y(32, 0x50555555);
+    y.copy(3, x, 7, 6);
+    uint32_t ret = (uint32_t)y;
+    uint32_t ref = COPY_REF(0x50555555, 3, 0x1122334f, 7, 6);
+    assert(ret == ref);
+  }
+
+  {
+    bitvector x(32, 0x1122334f);
+    bitvector y(32, 0x50555555);
+    y.copy(0, x, 4, 4);
+    uint32_t ret = (uint32_t)y;
+    uint32_t ref = COPY_REF(0x50555555, 0, 0x1122334f, 4, 4);
+    assert(ret == ref);
+  }
+
+  {
+    bitvector x(32, 0x1122334f);
+    bitvector y(32, 0x50555555);
+    y.copy(0, x, 6, 4);
+    uint32_t ret = (uint32_t)y;
+    uint32_t ref = COPY_REF(0x50555555, 0, 0x1122334f, 6, 4);
+    assert(ret == ref);
+  }
+
+  {
+    bitvector x(32, 0x1122334f);
+    bitvector y(32, 0x50555555);
+    y.copy(3, x, 0, 22);
+    uint32_t ret = (uint32_t)y;
+    uint32_t ref = COPY_REF(0x50555555, 3, 0x1122334f, 0, 22);
+    assert(ret == ref);
+  }
+
+  {
+    bitvector x(32, 0x1122334f);
+    bitvector y(32, 0x50555555);
+    y.copy(3, x, 7, 23);
+    uint32_t ret = (uint32_t)y;
+    uint32_t ref = COPY_REF(0x50555555, 3, 0x1122334f, 7, 23);
+    assert(ret == ref);
+  }
+
+  {
+    ch_scbit<16> a(0xabcd_h);
+    auto b = a.slice<12>().slice<8>().slice<4>(4);
+    assert(b == 0xc_h);
   }*/
 
   return 0;

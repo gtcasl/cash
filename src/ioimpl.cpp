@@ -102,19 +102,35 @@ const bitvector& system_io_buffer::data() const {
 }
 
 void system_io_buffer::read(uint32_t src_offset,
-                            void* out,
-                            uint32_t out_cbsize,
+                            bitvector& dst,
                             uint32_t dst_offset,
                             uint32_t length) const {
   auto port = reinterpret_cast<ioportimpl*>(io_.impl());
-  return port->value().read(src_offset, out, out_cbsize, dst_offset, length);
+  return dst.copy(dst_offset, port->value(), src_offset, length);
+}
+
+void system_io_buffer::write(uint32_t dst_offset,
+                             const bitvector& src,
+                             uint32_t src_offset,
+                             uint32_t length) {
+  auto port = reinterpret_cast<ioportimpl*>(io_.impl());
+  port->value().copy(dst_offset, src, src_offset, length);
+}
+
+void system_io_buffer::read(uint32_t src_offset,
+                            void* out,
+                            uint32_t byte_alignment,
+                            uint32_t dst_offset,
+                            uint32_t length) const {
+  auto port = reinterpret_cast<ioportimpl*>(io_.impl());
+  return port->value().read(src_offset, out, byte_alignment, dst_offset, length);
 }
 
 void system_io_buffer::write(uint32_t dst_offset,
                              const void* in,
-                             uint32_t in_cbsize,
+                             uint32_t byte_alignment,
                              uint32_t src_offset,
                              uint32_t length) {
   auto port = reinterpret_cast<ioportimpl*>(io_.impl());
-  return port->value().write(dst_offset, in, in_cbsize, src_offset, length);
+  port->value().write(dst_offset, in, byte_alignment, src_offset, length);
 }

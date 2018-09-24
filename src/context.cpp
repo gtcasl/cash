@@ -910,17 +910,17 @@ void context::build_eval_list(std::vector<lnodeimpl*>& eval_list) {
 
   if (platform::self().cflags() & cflags::dump_ast) {
     for (auto node : eval_list) {
-      std::cerr << node->ctx()->id() << ": ";
+      std::cout << node->ctx()->id() << ": ";
       node->print(std::cerr);
-      std::cerr << std::endl;
+      std::cout << std::endl;
     }
+    std::cout << "total nodes: " << eval_list.size() << std::endl;
   }
 
   if (!uninitialized_regs.empty()
    && (platform::self().cflags() & cflags::check_reg_init)) {
     for (auto node : uninitialized_regs) {
-      fprintf(stderr, "warning: uninitialized register %s\n",
-              node->debug_info().c_str());
+      fprintf(stderr, "warning: uninitialized register %s\n", node->debug_info().c_str());
     }
   }
 }
@@ -951,6 +951,7 @@ void context::dump_ast(std::ostream& out) {
     node->print(out);
     out << std::endl;
   }
+  std::cout << "total nodes: " << nodes_.size() << std::endl;
 }
 
 void context::dump_cfg(lnodeimpl* node, std::ostream& out) {
@@ -990,7 +991,9 @@ void context::dump_cfg(lnodeimpl* node, std::ostream& out) {
   } else {  
     node->print(out);
   }
-  out << std::endl;    
+
+  out << std::endl;
+
   for (auto& src : node->srcs()) {
     if (!visits.count(src.id())) {
       dump_cfg_impl(src.impl());

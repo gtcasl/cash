@@ -16,9 +16,9 @@ static auto toByteVector(const T& container,
                          uint32_t data_width,
                          uint32_t num_items) {
   // the container has data elements size aligned to the buffer stride
-  uint32_t src_width = CH_WIDTH_OF(typename T::value_type);  
-  CH_CHECK(container.size() == (CH_CEILDIV(data_width, src_width) * num_items), "invalid input size");
-  std::vector<uint8_t> packed(CH_CEILDIV(data_width * num_items, 8));
+  uint32_t src_width = sizeof(typename T::value_type) * 8;
+  CH_CHECK(container.size() == (ceildiv(data_width, src_width) * num_items), "invalid input size");
+  std::vector<uint8_t> packed(ceildiv<int>(data_width * num_items, 8));
   uint32_t word_size(std::min<uint32_t>(src_width, data_width));
   uint32_t curr_value(0), pos(0);
   for (auto item : container) {

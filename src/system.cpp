@@ -77,7 +77,7 @@ const bitvector& system_buffer::data() const {
     if (value_.empty()) {
       value_.resize(size_, 0, true);
     }
-    source_->read(offset_, value_.data(), value_.num_bytes(), 0, size_);
+    source_->read(offset_, value_, 0, size_);
   }
   return value_;
 }
@@ -89,37 +89,18 @@ void system_buffer::copy(uint32_t dst_offset,
   if (src.source()) {
     this->copy(dst_offset, *src.source(), src.offset() + src_offset, length);
   } else {
-    this->write(dst_offset,
-                src.data().data(),
-                src.data().num_bytes(),
-                src_offset,
-                length);
+    this->write(dst_offset, src.data(), src_offset, length);
   }
 }
 
 void system_buffer::read(uint32_t src_offset,
-                         void* out,
-                         uint32_t out_cbsize,
+                         bitvector& dst,
                          uint32_t dst_offset,
                          uint32_t length) const {
   if (source_) {
-    source_->read(offset_ + src_offset, out, out_cbsize, dst_offset, length);
+    source_->read(offset_ + src_offset, dst, dst_offset, length);
   } else {
-    assert(src_offset + length <= size_);
-    value_.read(src_offset, out, out_cbsize, dst_offset, length);
-  }
-}
-
-void system_buffer::write(uint32_t dst_offset,
-                          const void* in,
-                          uint32_t in_cbsize,
-                          uint32_t src_offset,
-                          uint32_t length) {
-  if (source_) {
-    source_->write(offset_ + dst_offset, in, in_cbsize, src_offset, length);
-  } else {
-    assert(dst_offset + length <= size_);
-    value_.write(dst_offset, in, in_cbsize, src_offset, length);
+    dst.copy(dst_offset, value_, src_offset, length);
   }
 }
 
@@ -127,5 +108,33 @@ void system_buffer::write(uint32_t dst_offset,
                           const bitvector& src,
                           uint32_t src_offset,
                           uint32_t length) {
-  this->write(dst_offset, src.data(), src.num_bytes(), src_offset, length);
+  if (source_) {
+    source_->write(offset_ + dst_offset, src, src_offset, length);
+  } else {
+    value_.copy(dst_offset, src, src_offset, length);
+  }
+}
+
+void system_buffer::read(uint32_t src_offset,
+                         void* out,
+                         uint32_t byte_alignment,
+                         uint32_t dst_offset,
+                         uint32_t length) const {
+  if (source_) {
+    source_->read(offset_ + src_offset, out, byte_alignment, dst_offset, length);
+  } else {
+    value_.read(src_offset, out, byte_alignment, dst_offset, length);
+  }
+}
+
+void system_buffer::write(uint32_t dst_offset,
+                          const void* in,
+                          uint32_t byte_alignment,
+                          uint32_t src_offset,
+                          uint32_t length) {
+  if (source_) {
+    source_->write(offset_ + dst_offset, in, byte_alignment, src_offset, length);
+  } else {
+    value_.write(dst_offset, in, byte_alignment, src_offset, length);
+  }
 }

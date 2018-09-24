@@ -644,12 +644,11 @@ void firrtlwriter::print_mem(std::ostream& out, memimpl* node) {
   } else {
     assert(node->has_initdata());
     auto data_width = node->data_width();
-    auto data_cbsize = CH_CEILDIV(data_width, 8);
     bitvector value(data_width);
     for (uint32_t i = 0, n = node->num_items(); i < n; ++i) {
       this->print_name(out, node);
       out << "[" << i << "] <= ";
-      node->initdata().read(i * data_width, value.data(), data_cbsize, 0, data_width);
+      value.copy(0, node->initdata(), i * data_width, data_width);
       this->print_value(out, value);
       out << std::endl;
     }

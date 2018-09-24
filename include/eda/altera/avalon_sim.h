@@ -126,9 +126,9 @@ public:
     if (!rd_reqs_.empty()) {
       auto ret = this->process_rd_rsp(t);
       if (ret) {
-        auto& master = masters_.at(ret->master);
+        auto& master = masters_.at(ret->master);        
+        master->readdata.write(0, ret->data.words(), 0, data_width_);
         master->readdatavalid = true;
-        master->readdata.write(0, ret->data.data(), ret->data.num_bytes(), 0, data_width_);
       }
     }
 

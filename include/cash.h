@@ -36,12 +36,14 @@ namespace ch {
 //
 // utility namespace
 //
-namespace utility {
-  using ch::internal::bitcast;
-  using ch::internal::stringf;  
+namespace utility {  
   using ch::internal::ispow2;
-  using ch::internal::ilog2;
-  using ch::internal::log2ceil;  
+  using ch::internal::log2floor;
+  using ch::internal::log2ceil;
+  using ch::internal::blend;
+  using ch::internal::ceildiv;
+  using ch::internal::bit_cast;
+  using ch::internal::stringf;
   using ch::internal::make_array_n;
   using ch::internal::make_list_n;
   using ch::internal::static_for;
@@ -353,5 +355,3 @@ inline namespace literals {
 #define __sloc     CH_SLOC
 
 #define __unused   CH_UNUSED
-#define __count_of CH_COUNTOF
-#define __width_of CH_WIDTH_OF

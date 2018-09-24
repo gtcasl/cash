@@ -49,6 +49,14 @@ TEST_CASE("arithmetic", "[arithmetic]") {
       ch_bit4 a(1000_b);
       return (ch_xorr(a) == 1_b);
     });
+    TEST([]()->ch_bool {
+      ch_bit128 a(0x80000000000000008000000000000000_h128);
+      return (ch_xorr(a) == 0_b);
+    });
+    TEST([]()->ch_bool {
+      ch_bit128 a(0x80000000000000000000000000000000_h128);
+      return (ch_xorr(a) == 1_b);
+    });
   }
   
   SECTION("compare", "[compare]") {

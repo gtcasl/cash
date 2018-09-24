@@ -55,7 +55,7 @@ void compiler::run() {
 #ifndef NDEBUG
   // dump nodes
   if (platform::self().cflags() & cflags::dump_ast) {
-    ctx_->dump_ast(std::cerr);
+    ctx_->dump_ast(std::cout);
   }
 
   // dump tap's CFG

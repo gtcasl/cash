@@ -12,7 +12,7 @@ auto is_system_signal = [](const std::string& name) {
 
 auto get_value = [](const bitvector& src, uint32_t size, uint32_t src_offset) {
   bitvector value(size);
-  src.read(src_offset, value.data(), value.num_bytes(), 0, size);
+  value.copy(0, src, src_offset, size);
   return value;
 };
 
@@ -94,7 +94,7 @@ void tracerimpl::eval() {
   uint32_t dst_offset = 0;
   for (auto& trace : signals_) {
     auto& value = trace.node->value();
-    block.write(dst_offset, value.data(), value.num_bytes(), 0, value.size());
+    block.copy(dst_offset, value, 0, value.size());
     dst_offset += value.size();
   }
 }

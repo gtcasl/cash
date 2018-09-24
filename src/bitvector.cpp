@@ -79,7 +79,7 @@ void bitvector::clear_extra_bits() {
   uint32_t extra_bits = size_ & WORD_MASK;
   if (extra_bits) {
     uint32_t num_words = this->num_words();
-    words_[num_words-1] &= ~(word_t(~word_t(0)) << extra_bits);
+    words_[num_words-1] &= ~(WORD_MAX << extra_bits);
   }
 }
 
@@ -104,7 +104,12 @@ bitvector& bitvector::operator=(bitvector&& other) {
 bitvector& bitvector::operator=(int64_t value) {
   assert(size_);
   // check for extra bits
-  CH_CHECK(ceilpow2(value) <= size_, "value out of range");
+  if (value < 0) {
+    CH_CHECK(1 + log2ceil(~value + 1) <= size_, "value out of range");
+  } else {
+    CH_CHECK(log2ceil(value + 1) <= size_, "value out of range");
+  }
+
   // write the value
   if (value >= 0) {
     this->reset();
@@ -126,7 +131,7 @@ bitvector& bitvector::operator=(int64_t value) {
 bitvector& bitvector::operator=(uint64_t value) {
   assert(size_);
   // check for extra bits
-  CH_CHECK(ceilpow2(value) <= size_, "value out of range");  
+  CH_CHECK(log2ceil(value + 1) <= size_, "value out of range");
   // write the value
   this->reset();
   if constexpr (WORD_SIZE == 64) {
@@ -175,7 +180,7 @@ bitvector& bitvector::operator=(const std::string& value) {
        // calculate exact bit coverage for the first non zero character
        int v = char2int(chr, base);
        if (v) {
-         size += ilog2(v) + 1;
+         size += log2ceil(v+1);
        }
     } else {
       size += log_base;
@@ -244,12 +249,12 @@ int bitvector::find_first() const {
   assert(size_);
   auto w = words_[0];
   if (w)
-    return ctz<word_t>(w);
+    return count_trailing_zeros<word_t>(w);
 
   for (uint32_t i = 1, n = this->num_words(); i < n; ++i) {
     auto w = words_[i];
     if (w) {
-      int z = ctz<word_t>(w);
+      int z = count_trailing_zeros<word_t>(w);
       return z + i * WORD_SIZE;
     }
   }
@@ -261,7 +266,7 @@ int bitvector::find_last() const {
   int32_t i = this->num_words() - 1;
   auto w = words_[i];
   if (w) {
-    int z = clz<word_t>(w);
+    int z = count_leading_zeros<word_t>(w);
     return (WORD_SIZE - z) + i * WORD_SIZE;
   }
 
@@ -269,7 +274,7 @@ int bitvector::find_last() const {
   for (; i >= 0; --i) {
     auto w = words_[i];
     if (w) {
-      int z = clz<word_t>(w);
+      int z = count_leading_zeros<word_t>(w);
       return (WORD_SIZE - z) + i * WORD_SIZE;
     }
   }
@@ -301,124 +306,225 @@ bool bitvector::is_zero() const {
   return true;
 }
 
+template <typename T>
+void copy_bits(T* dst, uint32_t dst_offset, const T* src, uint32_t src_offset, uint32_t length) {
+  static_assert(std::is_integral_v<T> && std::is_unsigned_v<T>, "invalid type");
+  static unsigned constexpr WORD_SIZE = bitwidth_v<T>;
+  static constexpr unsigned WORD_MASK = WORD_SIZE - 1;
+  static constexpr T        WORD_MAX  = std::numeric_limits<T>::max();
+
+  uint32_t w_src_begin_idx = src_offset / WORD_SIZE;
+  uint32_t w_src_begin_rem = src_offset & WORD_MASK;
+  uint32_t src_end         = src_offset + length - 1;
+  uint32_t w_src_end_idx   = (src_end / WORD_SIZE) - w_src_begin_idx;
+  auto w_src               = src + w_src_begin_idx;
+
+  uint32_t w_dst_begin_idx = dst_offset / WORD_SIZE;
+  uint32_t w_dst_begin_rem = dst_offset & WORD_MASK;
+  uint32_t dst_end         = dst_offset + length - 1;
+  uint32_t w_dst_end_idx   = (dst_end / WORD_SIZE) - w_dst_begin_idx;
+  uint32_t w_dst_end_rem   = dst_end & WORD_MASK;
+  auto w_dst               = dst + w_dst_begin_idx;
+
+  if (length <= WORD_SIZE) {
+    T src_block = (w_src[0] >> w_src_begin_rem);
+    if (1 == w_src_end_idx) {
+      src_block |= (w_src[1] << (WORD_SIZE - w_src_begin_rem));
+    }
+    if (0 == w_dst_end_idx) {
+      T sel_mask = (WORD_MAX >> (WORD_SIZE - length)) << w_dst_begin_rem;
+      w_dst[0] = blend<T>(sel_mask, w_dst[0], (src_block << w_dst_begin_rem));
+    } else {
+      T sel_mask = WORD_MAX << w_dst_begin_rem;
+      w_dst[0] = blend<T>(sel_mask, w_dst[0], (src_block << w_dst_begin_rem));
+      T src_block_new = src_block >> (WORD_SIZE - w_dst_begin_rem);
+      sel_mask = ~((WORD_MAX << 1) << w_dst_end_rem);
+      w_dst[1] = blend<T>(sel_mask, w_dst[1], src_block_new);
+    }
+  } else
+  if (0 == w_dst_begin_rem
+   && 0 == w_src_begin_rem) {
+    // update aligned blocks
+    if (WORD_MASK == w_dst_end_rem) {
+      std::copy_n(w_src, w_dst_end_idx + 1, w_dst);
+    } else {
+      std::copy_n(w_src, w_dst_end_idx, w_dst);
+      // update remining block
+      T sel_mask = (WORD_MAX << 1) << w_dst_end_rem;
+      w_dst[w_dst_end_idx] = blend<T>(sel_mask, w_src[w_dst_end_idx], w_dst[w_dst_end_idx]);
+    }
+  } else
+  if (0 == w_dst_begin_rem) {
+    // update first block
+    T src_block = *w_src++ >> w_src_begin_rem;
+    src_block |= w_src[0] << (WORD_SIZE - w_src_begin_rem);
+    w_dst[0] = src_block;
+
+    // update intermediate blocks
+    auto w_dst_end = (w_dst++) + w_dst_end_idx;
+    while (w_dst < w_dst_end) {
+      T src_block_new = (w_src[0] >> w_src_begin_rem) | (w_src[1] << (WORD_SIZE - w_src_begin_rem));
+      ++w_src;
+      *w_dst++ = src_block_new;
+    }
+
+    // update remining blocks
+    T src_block_new = (w_src[0] >> w_src_begin_rem);
+    if (w_src_end_idx > w_dst_end_idx) {
+      src_block_new |= (w_src[1] << (WORD_SIZE - w_src_begin_rem));
+    }
+    T sel_mask = ~((WORD_MAX << 1) << w_dst_end_rem);
+    w_dst[0] = blend<T>(sel_mask, w_dst[0], src_block_new);
+  } else
+  if (0 == w_src_begin_rem) {
+    // update first block
+    T src_block = *w_src++;
+    T sel_mask = WORD_MAX << w_dst_begin_rem;
+    w_dst[0] = blend<T>(sel_mask, w_dst[0], (src_block << w_dst_begin_rem));
+
+    // update intermediate blocks
+    auto w_dst_end = (w_dst++) + w_src_end_idx;
+    while (w_dst < w_dst_end) {
+      T src_block_new = *w_src++;
+      *w_dst++ = (src_block_new << w_dst_begin_rem) | ((src_block >> 1) >> (WORD_MASK - w_dst_begin_rem));
+      src_block = src_block_new;
+    }
+
+    // update remining blocks
+    T src_block_new = (w_src[0] << w_dst_begin_rem) | ((src_block >> 1) >> (WORD_MASK - w_dst_begin_rem));
+    if (w_src_end_idx < w_dst_end_idx) {
+      *w_dst++ = src_block_new;
+      src_block_new = (w_src[0] >> 1) >> (WORD_MASK - w_dst_begin_rem);
+    }
+    sel_mask = ~((WORD_MAX << 1) << w_dst_end_rem);
+    w_dst[0] = blend<T>(sel_mask, w_dst[0], src_block_new);
+  } else {
+    // update first block
+    T src_block = *w_src++ >> w_src_begin_rem;
+    src_block |= w_src[0] << (WORD_SIZE - w_src_begin_rem);
+    T sel_mask = WORD_MAX << w_dst_begin_rem;
+    w_dst[0] = blend<T>(sel_mask, w_dst[0], (src_block << w_dst_begin_rem));
+
+    // update intermediate blocks
+    auto w_dst_end = (w_dst++) + std::min(w_src_end_idx, w_dst_end_idx);
+    while (w_dst < w_dst_end) {
+      T src_block_new = (w_src[0] >> w_src_begin_rem) | (w_src[1] << (WORD_SIZE - w_src_begin_rem));
+      ++w_src;
+      *w_dst++ = (src_block_new << w_dst_begin_rem) | ((src_block >> 1) >> (WORD_MASK - w_dst_begin_rem));      
+      src_block = src_block_new;
+    }
+
+    // update remining blocks
+    T src_block_new;
+    if (w_src_end_idx < w_dst_end_idx) {
+      T tmp = w_src[0] >> w_src_begin_rem;
+      src_block_new = (tmp << w_dst_begin_rem) | ((src_block >> 1) >> (WORD_MASK - w_dst_begin_rem));
+      *w_dst++ = src_block_new;
+      src_block_new = (tmp >> 1) >> (WORD_MASK - w_dst_begin_rem);
+    } else
+    if (w_src_end_idx == w_dst_end_idx) {
+      src_block_new = ((w_src[0] >> w_src_begin_rem) << w_dst_begin_rem) | ((src_block >> 1) >> (WORD_MASK - w_dst_begin_rem));
+    } else {
+      src_block_new = ((w_src[0] >> w_src_begin_rem) | (w_src[1] << (WORD_SIZE - w_src_begin_rem))) << w_dst_begin_rem;
+    }
+    sel_mask = ~((WORD_MAX << 1) << w_dst_end_rem);
+    w_dst[0] = blend<T>(sel_mask, w_dst[0], src_block_new);
+  }
+}
+
 void bitvector::copy(uint32_t dst_offset,
                      const bitvector& src,
                      uint32_t src_offset,
                      uint32_t length) {
   assert(size_ && src.size_);
   assert(src_offset + length <= src.size_);
-  assert(dst_offset + length <= size_);
-  if (length == size_ && src.size_ == size_) {
-    assert(0 == dst_offset && 0 == src_offset);
-    *this = src;
+  assert(dst_offset + length <= size_);  
+
+  if (size_ <= WORD_SIZE
+   && src.size() <= WORD_SIZE) {
+    word_t sel_mask =  (WORD_MAX >> (WORD_SIZE - length)) << dst_offset;
+    words_[0] = blend<word_t>(sel_mask, words_[0],  ((src.word(0) >> src_offset) << dst_offset));
   } else {
-    const_iterator iter_src(src.begin() + src_offset);
-    iterator iter_dst(this->begin() + dst_offset);
-    while (length--) {
-      *iter_dst++ = *iter_src++;
-    }
+    copy_bits<word_t>(words_, dst_offset, src.words(), src_offset, length);
   }
 }
 
 void bitvector::read(
     uint32_t src_offset,
     void* dst,
-    uint32_t dst_cbsize,
+    uint32_t byte_alignment,
     uint32_t dst_offset,
     uint32_t length) const {
   CH_CHECK(src_offset + length <= size_, "out of bound access");
-  CH_CHECK(dst_offset + length <= dst_cbsize * 8, "out of bound access");
+  assert(ispow2(byte_alignment) && byte_alignment <= 8);
 
-  uint32_t b_dst_offset = dst_offset / 8;
-  auto b_dst = reinterpret_cast<uint8_t*>(dst) + b_dst_offset;
-  uint32_t dst_rem = dst_offset & 0x7;
-  uint32_t src_rem = src_offset & 0x7;
-  uint32_t end_rem = (dst_offset + length) & 0x7;
+  byte_alignment = std::min<uint32_t>(byte_alignment, sizeof(word_t));
 
-  if (0 == src_rem
-   && 0 == dst_rem) {
-    // byte-aligned offsets
-    uint32_t b_length = CH_CEILDIV(length, 8);
-    uint32_t b_src_offset = src_offset / 8;
-    auto b_src = reinterpret_cast<uint8_t*>(words_) + b_src_offset;
-    if (0 == end_rem) {
-      std::copy_n(b_src, b_length, b_dst);
-    } else {
-      // copy all bytes except the last one
-      uint32_t end = b_length - 1;
-      std::copy_n(b_src, end, b_dst);
-      // only update set bits from source in the last byte
-      uint32_t sel_mask = (~0UL << end_rem);
-      b_dst[end] = CH_BLEND(sel_mask, b_src[end], b_dst[end]);
-    }
-  } else {
-    uint8_t tmp = 0;
-    auto iter = this->begin() + src_offset;
-    if (dst_rem) {
-      tmp = *b_dst & ~(~0UL << dst_rem);
-    }
-    for (uint32_t i = dst_offset, end = dst_offset + length; i < end; ++i) {
-      uint32_t shift = i & 0x7;
-      tmp |= (*iter++) << shift;
-      if (shift == 0x7) {
-        *b_dst++ = tmp;
-        tmp = 0;
-      }
-    }
-    if (end_rem) {
-      uint32_t sel_mask = (~0UL << end_rem);
-      *b_dst = CH_BLEND(sel_mask, tmp, *b_dst);
-    }
+  switch (byte_alignment) {
+  case 1:
+    copy_bits<uint8_t>(reinterpret_cast<uint8_t*>(dst), dst_offset,
+                       reinterpret_cast<const uint8_t*>(words_), src_offset,
+                       length);
+    break;
+  case 2:
+    copy_bits<uint16_t>(reinterpret_cast<uint16_t*>(dst), dst_offset,
+                        reinterpret_cast<const uint16_t*>(words_), src_offset,
+                        length);
+    break;
+  case 4:
+    copy_bits<uint32_t>(reinterpret_cast<uint32_t*>(dst), dst_offset,
+                        reinterpret_cast<const uint32_t*>(words_), src_offset,
+                        length);
+    break;
+  case 8:
+    copy_bits<uint64_t>(reinterpret_cast<uint64_t*>(dst), dst_offset,
+                        reinterpret_cast<const uint64_t*>(words_), src_offset,
+                        length);
+    break;
+  default:
+    CH_ABORT("invalid alignement value %d", byte_alignment);
   }
 }
 
 void bitvector::write(
     uint32_t dst_offset,
     const void* src,
-    uint32_t src_cbsize,
+    uint32_t byte_alignment,
     uint32_t src_offset,
     uint32_t length) {
   CH_CHECK(dst_offset + length <= size_, "out of bound access");
-  CH_CHECK(src_offset + length <= src_cbsize * 8, "out of bound access");
 
-  uint32_t b_src_offset = src_offset / 8;
-  auto b_src = reinterpret_cast<const uint8_t*>(src) + b_src_offset;
-  uint32_t dst_rem = dst_offset & 0x7;
-  uint32_t src_rem = src_offset & 0x7;
+  byte_alignment = std::min<uint32_t>(byte_alignment, sizeof(word_t));
 
-  if (0 == dst_rem
-   && 0 == src_rem) {
-    // byte-aligned offsets
-    uint32_t b_length = CH_CEILDIV(length, 8);
-    uint32_t b_dst_offset = dst_offset / 8;
-    auto b_dst = reinterpret_cast<uint8_t*>(words_) + b_dst_offset;
-    uint32_t end_rem = (src_offset + length) & 0x7;
-    if (0 == end_rem) {
-      std::copy_n(b_src, b_length, b_dst);
-    } else {
-      // copy all bytes except the last one
-      uint32_t end = b_length - 1;
-      std::copy_n(b_src, end, b_dst);
-      // only update set bits from source in the last byte
-      uint32_t sel_mask = (~0UL << end_rem);
-      b_dst[end] = CH_BLEND(sel_mask, b_src[end], b_dst[end]);
-    }
-  } else {
-    auto iter = this->begin() + dst_offset;
-    uint32_t tmp = 0;
-    for (uint32_t i = src_offset, end = src_offset + length; i < end; ++i) {
-      uint32_t shift = i & 0x7;
-      if (i == src_offset || 0 == shift) {
-        tmp = *b_src++;
-      }
-      *iter++ = (tmp >> shift) & 0x1;            
-    }
+  switch (byte_alignment) {
+  case 1:
+    copy_bits<uint8_t>(reinterpret_cast<uint8_t*>(words_), dst_offset,
+                       reinterpret_cast<const uint8_t*>(src), src_offset,
+                       length);
+    break;
+  case 2:
+    copy_bits<uint16_t>(reinterpret_cast<uint16_t*>(words_), dst_offset,
+                        reinterpret_cast<const uint16_t*>(src), src_offset,
+                        length);
+    break;
+  case 4:
+    copy_bits<uint32_t>(reinterpret_cast<uint32_t*>(words_), dst_offset,
+                        reinterpret_cast<const uint32_t*>(src), src_offset,
+                        length);
+    break;
+  case 8:
+    copy_bits<uint64_t>(reinterpret_cast<uint64_t*>(words_), dst_offset,
+                        reinterpret_cast<const uint64_t*>(src), src_offset,
+                        length);
+    break;
+  default:
+    CH_ABORT("invalid alignement value %d", byte_alignment);
   }
 }
 
 void bitvector::deadbeef() {
   for (uint32_t i = 0, n = this->num_words(); i < n; ++i) {
-    words_[i] = bitcast<word_t>(0xdeadbeefdeadbeef);
+    words_[i] = bit_cast<word_t>(0xdeadbeefdeadbeef);
   }
   this->clear_extra_bits();
 }
@@ -572,16 +678,16 @@ bool ch::internal::bv_orr(const bitvector& in) {
 
 bool ch::internal::bv_xorr(const bitvector& in) {
   assert(in.size());
-  auto in_w = in.word(0);
-  auto result = in_w & 0x1;
-  for (uint32_t i = 1, j = 1, n = in.size(); i < n; ++i) {
-    if (0 == (i % bitvector::WORD_SIZE)) {
-      in_w = in.word(j++);
-    }
-    in_w >>= 1;
-    result ^= (in_w & 0x1);
+  bool ret = false;
+  bitvector::word_t tmp = in.word(0);
+  for (uint32_t i = 1, n = in.num_words(); i < n; ++i) {
+    tmp ^= in.word(i);
   }
-  return (result != 0);
+  for (uint32_t i = 0, n = std::min(in.size(), bitvector::WORD_SIZE); i < n; ++i) {
+    ret ^= tmp & 0x1;
+    tmp >>= 1;
+  }
+  return ret;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -734,14 +840,14 @@ void ch::internal::bv_neg(bitvector& out, const bitvector& in) {
 
 void ch::internal::bv_mul(bitvector& out, const bitvector& lhs, const bitvector& rhs) {
   assert(lhs.size() && rhs.size() && out.size());
-  if (lhs.size() <= bitvector::WORD_SIZE
-   && rhs.size() <= bitvector::WORD_SIZE
-   && out.size() <= bitvector::WORD_SIZE) {
+  if (out.size() <= bitvector::WORD_SIZE) {
+    assert(lhs.size() <= bitvector::WORD_SIZE);
+    assert(rhs.size() <= bitvector::WORD_SIZE);
     out.word(0) = lhs.word(0) * rhs.word(0);
   } else {
-    int m = CH_CEILDIV(lhs.find_last(), 8 * sizeof(bitvector::xword_t));
-    int n = CH_CEILDIV(rhs.find_last(), 8 * sizeof(bitvector::xword_t));
-    int p = CH_CEILDIV(out.size(), 8 * sizeof(bitvector::xword_t));
+    auto m = ceildiv<int>(lhs.find_last(), 8 * sizeof(bitvector::xword_t));
+    auto n = ceildiv<int>(rhs.find_last(), 8 * sizeof(bitvector::xword_t));
+    auto p = ceildiv<int>(out.size(), 8 * sizeof(bitvector::xword_t));
 
     auto u = reinterpret_cast<const bitvector::xword_t*>(lhs.data());
     auto v = reinterpret_cast<const bitvector::xword_t*>(rhs.data());
@@ -767,10 +873,10 @@ void ch::internal::bv_mul(bitvector& out, const bitvector& lhs, const bitvector&
 
 void ch::internal::bv_divmodu(bitvector& quot, bitvector& rem, const bitvector& lhs, const bitvector& rhs) {
   assert(lhs.size() && rhs.size());
-  int m  = CH_CEILDIV(lhs.find_last(), 8 * sizeof(bitvector::xword_t));
-  int n  = CH_CEILDIV(rhs.find_last(), 8 * sizeof(bitvector::xword_t));
-  int qn = CH_CEILDIV(quot.size(), 8 * sizeof(bitvector::xword_t));
-  int rn = CH_CEILDIV(rem.size(), 8 * sizeof(bitvector::xword_t));
+  auto m  = ceildiv<int>(lhs.find_last(), 8 * sizeof(bitvector::xword_t));
+  auto n  = ceildiv<int>(rhs.find_last(), 8 * sizeof(bitvector::xword_t));
+  auto qn = ceildiv<int>(quot.size(), 8 * sizeof(bitvector::xword_t));
+  auto rn = ceildiv<int>(rem.size(), 8 * sizeof(bitvector::xword_t));
 
   CH_CHECK(n >= 1, "invalid size");
 
@@ -800,7 +906,7 @@ void ch::internal::bv_divmodu(bitvector& quot, bitvector& rem, const bitvector& 
   auto vn = tv.data();
 
   // normalize
-  int s = clz<bitvector::xword_t>(v[n - 1]);
+  int s = count_leading_zeros<bitvector::xword_t>(v[n - 1]);
   un[m] = u[m - 1] >> (bitvector::XWORD_SIZE - s);
   for (int i = m - 1; i > 0; --i) {
     un[i] = (u[i] << s) | (u[i - 1] >> (bitvector::XWORD_SIZE - s));

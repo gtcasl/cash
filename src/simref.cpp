@@ -508,7 +508,7 @@ struct instr_mem : instr_base {
           continue;
         // memory read
         auto addr = static_cast<uint32_t>(*p.addr);
-        dst.read(addr * p.data.size(), p.data.data(), p.data.num_bytes(), 0, p.data.size());
+        p.data.copy(0, dst, addr * p.data.size(), p.data.size());
       }
 
       // evaluate synchronous write ports
@@ -518,7 +518,7 @@ struct instr_mem : instr_base {
           continue;
         // memory write
         auto addr = static_cast<uint32_t>(*p.addr);
-        dst.write(addr * p.data->size(), p.data->data(), p.data->num_bytes(), 0, p.data->size());
+        dst.copy(addr * p.data->size(), *p.data, 0, p.data->size());
       }
     }
   }
@@ -540,7 +540,7 @@ struct instr_mrport : instr_base {
 
   void eval() override {
     auto a = static_cast<uint32_t>(*addr);
-    mem->read(a * dst.size(), dst.data(), dst.num_bytes(), 0, dst.size());
+    dst.copy(0, *mem, a * dst.size(), dst.size());
   }
 };
 
@@ -638,7 +638,7 @@ struct instr_print : instr_base {
             strbuf << *src;
             break;
           case fmttype::Float:
-            strbuf << bitcast<float>(static_cast<int>(*src));
+            strbuf << bit_cast<float>(static_cast<int>(*src));
             break;
           case fmttype::Enum:
             strbuf << enum_strings[fmt.index](static_cast<int>(*src));

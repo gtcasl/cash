@@ -80,7 +80,7 @@ static constexpr bool is_number_v = std::is_integral_v<T> || std::is_enum_v<T>;
 ///////////////////////////////////////////////////////////////////////////////
 
 template<typename T>
-static constexpr int bitwidth_v = std::numeric_limits<T>::digits + std::numeric_limits<T>::is_signed;
+static constexpr int bitwidth_v = std::numeric_limits<T>::digits + std::is_signed_v<T>;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -505,29 +505,8 @@ constexpr void static_for(Func &&f) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-// is power of two number ?
-template <typename T = uint32_t>
-constexpr bool ispow2(T value) {
-  static_assert(is_number_v<T>, "invalid type");
-  return value && !(value & (value - 1)); 
-}
-
-// return ilog2
-template <typename T = uint32_t>
-constexpr unsigned ilog2(T x) {
-  static_assert(is_number_v<T>, "invalid type");
-  return (x <= 1) ? 0 : (ilog2(x >> 1) + 1);
-}
-
-// return ceil of log2
-template <typename T = uint32_t>
-constexpr unsigned log2ceil(T x) {
-  static_assert(is_number_v<T>, "invalid type");
-  return ispow2(x) ? ilog2(x) : (ilog2(x) + 1);
-}
-
 template <typename Dst, typename Src>
-Dst bitcast(const Src& src) {
+Dst bit_cast(const Src& src) {
   union merged_t { Src src; Dst dst; };
   merged_t m;
   m.dst = 0;
@@ -536,7 +515,7 @@ Dst bitcast(const Src& src) {
 }
 
 template <typename T = uint32_t>
-constexpr unsigned clz(T value) {
+constexpr unsigned count_leading_zeros(T value) {
   static_assert(std::is_integral_v<T>, "invalid type");
   if (value) {
     if constexpr (bitwidth_v<T> <= 32) {
@@ -549,7 +528,7 @@ constexpr unsigned clz(T value) {
 }
 
 template <typename T = uint32_t>
-constexpr unsigned ctz(T value) {
+constexpr unsigned count_trailing_zeros(T value) {
   static_assert(std::is_integral_v<T>, "invalid type");
   if (value) {
     if constexpr (bitwidth_v<T> <= 32) {
@@ -562,22 +541,53 @@ constexpr unsigned ctz(T value) {
 }
 
 template <typename T = uint32_t>
-constexpr unsigned ceilpow2(T value) {
-  static_assert(std::is_integral_v<T>, "invalid type");
-  if constexpr (std::numeric_limits<T>::is_signed) {
-    if (value < 0)
-      return bitwidth_v<T> - clz<T>(~value) + 1;
-  }
-  return bitwidth_v<T> - clz<T>(value);
+constexpr bool ispow2(T value) {
+  static_assert(is_number_v<T>, "invalid type");
+  return value && !(value & (value - 1));
 }
 
-constexpr uint32_t rotl(uint32_t value, uint32_t shift, uint32_t width) {
-  assert(shift < width);
+template <typename T = uint32_t>
+constexpr unsigned log2ceil(T value) {
+  static_assert(std::is_integral_v<T>, "invalid type");
+  return bitwidth_v<T> - count_leading_zeros(value - 1);
+}
+
+template <typename T = uint32_t>
+constexpr unsigned log2floor(T value) {
+  static_assert(std::is_integral_v<T>, "invalid type");
+  return bitwidth_v<T> - count_leading_zeros(value) - 1;
+}
+
+template <typename T = uint32_t>
+constexpr unsigned ceil2(T value) {
+  return bitwidth_v<T> - count_leading_zeros<T>(value);
+}
+
+template <typename T = uint32_t>
+constexpr T ceildiv(T a, T b) {
+  static_assert(std::is_integral_v<T>, "invalid type");
+  return ((a + b - 1) / b);
+}
+
+template <typename T = uint32_t>
+constexpr T blend(T mask, T a, T b) {
+  static_assert(std::is_integral_v<T>, "invalid type");
+  return a ^ ((a ^ b) & mask); // = m ? b : a
+}
+
+template <typename T = uint32_t>
+constexpr T rotl(T value, uint32_t shift, uint32_t width) {
+  static_assert(std::is_integral_v<T>, "invalid type");
+  if (shift >= width)
+    shift = shift % width;
   return  (value << shift) | (value >> (width - shift));
 }
 
-constexpr uint32_t rotr(uint32_t value, uint32_t shift, uint32_t width) {
-  assert(shift < width);
+template <typename T = uint32_t>
+constexpr T rotr(T value, uint32_t shift, uint32_t width) {
+  static_assert(std::is_integral_v<T>, "invalid type");
+  if (shift > width)
+    shift = shift % width;
   return (value >> shift) | (value << (width  - shift));
 }
 
@@ -637,13 +647,3 @@ struct requires_enum {
 #define CH_UNUSED(...) ch::internal::unused(__VA_ARGS__)
 
 #define CH_TODO() CH_ABORT("Not yet implemented");
-
-#define CH_COUNTOF(a) (sizeof(a) / sizeof(a[0]))
-
-#define CH_MAX(a,b) (((a) > (b)) ? (a) : (b))
-
-#define CH_CEILDIV(a, b) (((a) + (b) - 1) / (b))
-
-#define CH_BLEND(m, a, b)  (a) ^ (((a) ^ (b)) & (m)) // 0->a, 1->b
-
-#define CH_WIDTH_OF(a) (sizeof(a) * 8)
