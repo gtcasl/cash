@@ -35,14 +35,13 @@ bool aluimpl::equals(const lnodeimpl& other) const {
 std::size_t aluimpl::hash() const {
   hash_t ret;
   ret.fields.type = this->type();
-  ret.fields.size = this->size();  
-  auto n = this->srcs().size();  
-  ret.fields.arg0 = (int)this->op();
+  ret.fields.size = this->size();    
+  ret.fields.op = (int)this->op();
+  auto n = this->srcs().size();
   if (n > 0) {
-    ret.fields.srcs = n;
-    ret.fields.arg1 = this->src(0).id();
+    ret.fields.arg0 = this->src(0).id();
     if (n > 1) {
-      ret.fields.arg2 = this->src(1).id();
+      ret.fields.arg1 = this->src(1).id();
     }
   }
   return ret.value;

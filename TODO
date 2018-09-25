@@ -185,6 +185,12 @@ $ valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes <app> <ar
 $ valgrind --tool=callgrind <app> <args...>
 $ kcachegrind
 
+// google perf tools
+
+$ CPUPROFILE_FREQUENCY=100000 CPUPROFILE=profiler.log ./aes.out -e
+$ google-pprof --callgrind ./aes.out profiler.log > profiler.callgrind
+$ kcachegrind profiler.callgrin
+
 // cmake build
 cmake -DCMAKE_BUILD_TYPE=Debug -DCODECOV=ON .. && make -j4 all test && ../codecov.sh .
 

@@ -337,9 +337,9 @@ void copy_bits(T* dst, uint32_t dst_offset, const T* src, uint32_t src_offset, u
     } else {
       T sel_mask = WORD_MAX << w_dst_begin_rem;
       w_dst[0] = blend<T>(sel_mask, w_dst[0], (src_block << w_dst_begin_rem));
-      T src_block_new = src_block >> (WORD_SIZE - w_dst_begin_rem);
-      sel_mask = ~((WORD_MAX << 1) << w_dst_end_rem);
-      w_dst[1] = blend<T>(sel_mask, w_dst[1], src_block_new);
+      src_block = src_block >> (WORD_SIZE - w_dst_begin_rem);
+      sel_mask = (WORD_MAX << 1) << w_dst_end_rem;
+      w_dst[1] = blend<T>(sel_mask, src_block, w_dst[1]);
     }
   } else
   if (0 == w_dst_begin_rem
@@ -350,8 +350,9 @@ void copy_bits(T* dst, uint32_t dst_offset, const T* src, uint32_t src_offset, u
     } else {
       std::copy_n(w_src, w_dst_end_idx, w_dst);
       // update remining block
+      T src_block = w_src[w_dst_end_idx];
       T sel_mask = (WORD_MAX << 1) << w_dst_end_rem;
-      w_dst[w_dst_end_idx] = blend<T>(sel_mask, w_src[w_dst_end_idx], w_dst[w_dst_end_idx]);
+      w_dst[w_dst_end_idx] = blend<T>(sel_mask, src_block, w_dst[w_dst_end_idx]);
     }
   } else
   if (0 == w_dst_begin_rem) {
@@ -363,18 +364,17 @@ void copy_bits(T* dst, uint32_t dst_offset, const T* src, uint32_t src_offset, u
     // update intermediate blocks
     auto w_dst_end = (w_dst++) + w_dst_end_idx;
     while (w_dst < w_dst_end) {
-      T src_block_new = (w_src[0] >> w_src_begin_rem) | (w_src[1] << (WORD_SIZE - w_src_begin_rem));
-      ++w_src;
-      *w_dst++ = src_block_new;
+      T tmp = *w_src++ >> w_src_begin_rem;
+      *w_dst++ = tmp | (w_src[0] << (WORD_SIZE - w_src_begin_rem));
     }
 
     // update remining blocks
-    T src_block_new = (w_src[0] >> w_src_begin_rem);
+    src_block = w_src[0] >> w_src_begin_rem;
     if (w_src_end_idx > w_dst_end_idx) {
-      src_block_new |= (w_src[1] << (WORD_SIZE - w_src_begin_rem));
+      src_block |= (w_src[1] << (WORD_SIZE - w_src_begin_rem));
     }
-    T sel_mask = ~((WORD_MAX << 1) << w_dst_end_rem);
-    w_dst[0] = blend<T>(sel_mask, w_dst[0], src_block_new);
+    T sel_mask = (WORD_MAX << 1) << w_dst_end_rem;
+    w_dst[0] = blend<T>(sel_mask, src_block, w_dst[0]);
   } else
   if (0 == w_src_begin_rem) {
     // update first block
@@ -385,50 +385,49 @@ void copy_bits(T* dst, uint32_t dst_offset, const T* src, uint32_t src_offset, u
     // update intermediate blocks
     auto w_dst_end = (w_dst++) + w_src_end_idx;
     while (w_dst < w_dst_end) {
-      T src_block_new = *w_src++;
-      *w_dst++ = (src_block_new << w_dst_begin_rem) | ((src_block >> 1) >> (WORD_MASK - w_dst_begin_rem));
-      src_block = src_block_new;
+      auto tmp = *w_src++;
+      *w_dst++ = (tmp << w_dst_begin_rem) | ((src_block >> 1) >> (WORD_MASK - w_dst_begin_rem));
+      src_block = tmp;
     }
 
     // update remining blocks
-    T src_block_new = (w_src[0] << w_dst_begin_rem) | ((src_block >> 1) >> (WORD_MASK - w_dst_begin_rem));
+    src_block = (w_src[0] << w_dst_begin_rem) | ((src_block >> 1) >> (WORD_MASK - w_dst_begin_rem));
     if (w_src_end_idx < w_dst_end_idx) {
-      *w_dst++ = src_block_new;
-      src_block_new = (w_src[0] >> 1) >> (WORD_MASK - w_dst_begin_rem);
+      *w_dst++ = src_block;
+      src_block = (w_src[0] >> 1) >> (WORD_MASK - w_dst_begin_rem);
     }
-    sel_mask = ~((WORD_MAX << 1) << w_dst_end_rem);
-    w_dst[0] = blend<T>(sel_mask, w_dst[0], src_block_new);
+    sel_mask = (WORD_MAX << 1) << w_dst_end_rem;
+    w_dst[0] = blend<T>(sel_mask, src_block, w_dst[0]);
   } else {
     // update first block
     T src_block = *w_src++ >> w_src_begin_rem;
-    src_block |= w_src[0] << (WORD_SIZE - w_src_begin_rem);
+    src_block |= (w_src[0] << (WORD_SIZE - w_src_begin_rem));
     T sel_mask = WORD_MAX << w_dst_begin_rem;
     w_dst[0] = blend<T>(sel_mask, w_dst[0], (src_block << w_dst_begin_rem));
 
     // update intermediate blocks
     auto w_dst_end = (w_dst++) + std::min(w_src_end_idx, w_dst_end_idx);
     while (w_dst < w_dst_end) {
-      T src_block_new = (w_src[0] >> w_src_begin_rem) | (w_src[1] << (WORD_SIZE - w_src_begin_rem));
-      ++w_src;
-      *w_dst++ = (src_block_new << w_dst_begin_rem) | ((src_block >> 1) >> (WORD_MASK - w_dst_begin_rem));      
-      src_block = src_block_new;
+      T tmp = *w_src++ >> w_src_begin_rem;
+      tmp |= (w_src[0] << (WORD_SIZE - w_src_begin_rem));
+      *w_dst++ = (tmp << w_dst_begin_rem) | ((src_block >> 1) >> (WORD_MASK - w_dst_begin_rem));
+      src_block = tmp;
     }
 
     // update remining blocks
-    T src_block_new;
+    T tmp = w_src[0] >> w_src_begin_rem;
     if (w_src_end_idx < w_dst_end_idx) {
-      T tmp = w_src[0] >> w_src_begin_rem;
-      src_block_new = (tmp << w_dst_begin_rem) | ((src_block >> 1) >> (WORD_MASK - w_dst_begin_rem));
-      *w_dst++ = src_block_new;
-      src_block_new = (tmp >> 1) >> (WORD_MASK - w_dst_begin_rem);
+      src_block = (tmp << w_dst_begin_rem) | ((src_block >> 1) >> (WORD_MASK - w_dst_begin_rem));
+      *w_dst++ = src_block;
+      src_block = (tmp >> 1) >> (WORD_MASK - w_dst_begin_rem);
     } else
     if (w_src_end_idx == w_dst_end_idx) {
-      src_block_new = ((w_src[0] >> w_src_begin_rem) << w_dst_begin_rem) | ((src_block >> 1) >> (WORD_MASK - w_dst_begin_rem));
+      src_block = (tmp << w_dst_begin_rem) | ((src_block >> 1) >> (WORD_MASK - w_dst_begin_rem));
     } else {
-      src_block_new = ((w_src[0] >> w_src_begin_rem) | (w_src[1] << (WORD_SIZE - w_src_begin_rem))) << w_dst_begin_rem;
+      src_block = (tmp | (w_src[1] << (WORD_SIZE - w_src_begin_rem))) << w_dst_begin_rem;
     }
-    sel_mask = ~((WORD_MAX << 1) << w_dst_end_rem);
-    w_dst[0] = blend<T>(sel_mask, w_dst[0], src_block_new);
+    sel_mask = (WORD_MAX << 1) << w_dst_end_rem;
+    w_dst[0] = blend<T>(sel_mask, src_block, w_dst[0]);
   }
 }
 

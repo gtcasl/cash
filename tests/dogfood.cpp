@@ -375,7 +375,7 @@ int main() {
     assert((a[0] == a[2]) && (a.slice<2>() == a.slice<2>(2)));
   }*/
 
-  #define COPY_REF(dst, dst_offset, src, src_offset, length) \
+  /*#define COPY_REF(dst, dst_offset, src, src_offset, length) \
     blend<uint32_t>(((1ull << length) - 1) << dst_offset, dst, ((src >> src_offset) << dst_offset))
 
   auto shuffle = [](uint32_t x) {
@@ -410,7 +410,7 @@ int main() {
         }
       }
     }
-  }
+  }*/
 
   /*{
     bitvector x(32, 0x1122334f);

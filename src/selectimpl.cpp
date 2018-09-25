@@ -59,12 +59,11 @@ std::size_t selectimpl::hash() const {
   ret.fields.size = this->size();
   auto n = this->srcs().size();  
   if (n > 0) {
-    ret.fields.srcs = n;
     ret.fields.arg0 = this->src(0).id();
     if (n > 1) {
       ret.fields.arg1 = this->src(1).id();
       if (n > 2) {
-        ret.fields.arg2 = this->src(2).id();
+        ret.fields.op = this->src(2).id();
       }
     }
   }

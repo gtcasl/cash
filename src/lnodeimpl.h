@@ -130,14 +130,13 @@ protected:
   struct hash_t {
     union {
       struct {
-        std::size_t type : 5;
-        std::size_t size : 10;
-        std::size_t srcs : 10;
-        std::size_t arg0 : 13;
-        std::size_t arg1 : 13;
-        std::size_t arg2 : 13;
+        uint64_t type : 5;
+        uint64_t size : 22;
+        uint64_t op   : 5;
+        uint64_t arg0 : 16;
+        uint64_t arg1 : 16;
       } fields;
-      std::size_t value;
+      uint64_t value;
     };
     hash_t() : value(0) {}
   };

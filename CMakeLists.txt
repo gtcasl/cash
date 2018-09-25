@@ -4,16 +4,24 @@ cmake_minimum_required(VERSION 3.5)
 project(cash VERSION 0.1.0 LANGUAGES CXX)
 
 option(CODECOV "Enable code coverage." ON)
+option(PPROF "Enable profiling." OFF)
+
+set(DEFAULT_BUILD_TYPE "Release")
 
 # use C++17 compiler
 add_compile_options(-std=c++17 -pedantic -Wall -Wextra -fmax-errors=1)
 
-set(DEFAULT_BUILD_TYPE "Release")
-
 if(CODECOV)
-    add_compile_options(--coverage)
+    message("Code coverage is enabled")
+    #add_compile_options(--coverage)
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} --coverage")
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} --coverage")
+endif()
+
+if (PPROF)
+  message("Google Profiler is enabled")
+  add_definitions(-DPPROF)
+  set(TARGET_LINK_FLAGS "-lprofiler")
 endif()
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake")
@@ -66,7 +74,7 @@ set(PROJECT_SOURCES
 add_library(${PROJECT_NAME} SHARED ${PROJECT_SOURCES})
 
 # add link libraries
-target_link_libraries(${PROJECT_NAME} ${BFD_LIBRARY_PATH})
+target_link_libraries(${PROJECT_NAME} ${TARGET_LINK_FLAGS})
 
 target_include_directories(${PROJECT_NAME} PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>

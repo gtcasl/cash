@@ -4,6 +4,30 @@
 
 using namespace ch::internal;
 
+interval_t interval_t::intersection(const interval_t& other) const {
+  interval_t ret{0, 0};
+  if (!overlaps(other))
+    return ret;
+  if (other.start <= this->start && other.end >= this->end) {
+    // rhs fully overlaps lhs
+    ret = *this;
+  } else if (other.start < this->start) {
+    // rhs overlaps on the left
+    ret.start = this->start;
+    ret.end = other.end;
+  } else if (other.end > this->end) {
+    // rhs overlaps on the right,
+    ret.start = other.start;
+    ret.end = this->end;
+  } else {
+    // rhs fully included
+    ret = other;
+  }
+  return ret;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 proxyimpl::proxyimpl(context* ctx,
                      uint32_t size,
                      const source_location& sloc,
@@ -48,7 +72,7 @@ void proxyimpl::add_source(uint32_t dst_offset,
   }
 
   // add new source
-  uint32_t new_srcidx = 0xffffffff;
+  uint32_t new_srcidx = srcs_.size();
   for (uint32_t i = 0, n = srcs_.size(); i < n; ++i) {
     if (srcs_[i].id() == src.id()) {
       new_srcidx = i;
@@ -56,22 +80,9 @@ void proxyimpl::add_source(uint32_t dst_offset,
     }
   }
 
-  if (0xffffffff == new_srcidx) {
-    new_srcidx = srcs_.size();    
-    srcs_.emplace_back(src);    
+  if (new_srcidx == srcs_.size()) {
+    new_srcidx = this->add_src(src);
   }
-  
-  auto merge_adjacent_ranges = [&](uint32_t idx)->bool {
-    assert(idx > 0);
-    if (ranges_[idx-1].src_idx == ranges_[idx].src_idx
-     && (ranges_[idx-1].dst_offset + ranges_[idx-1].length) == ranges_[idx].dst_offset
-     && ranges_[idx].src_offset == ranges_[idx-1].src_offset + ranges_[idx-1].length) {
-      ranges_[idx-1].length += ranges_[idx].length;
-      ranges_.erase(ranges_.begin() + idx);
-      return true;
-    }
-    return false;
-  };
 
   uint32_t n = ranges_.size();
   if (0 == n) {
@@ -171,7 +182,7 @@ void proxyimpl::add_source(uint32_t dst_offset,
       
       if (i > 0) {
         // try merging with previous range
-        if (merge_adjacent_ranges(i)) {
+        if (this->merge_adjacent_ranges(i)) {
           --i;
           --n;
         }
@@ -181,7 +192,7 @@ void proxyimpl::add_source(uint32_t dst_offset,
     assert(0 == length);
     if (i < n) {
       // try merging with previous range
-      merge_adjacent_ranges(i);
+      this->merge_adjacent_ranges(i);
     }
     
     // cleanup deleted nodes
@@ -201,6 +212,18 @@ void proxyimpl::add_source(uint32_t dst_offset,
       }
     }    
   }
+}
+
+bool proxyimpl::merge_adjacent_ranges(uint32_t index) {
+  if (index != 0
+   && ranges_[index-1].src_idx == ranges_[index].src_idx
+   && (ranges_[index-1].dst_offset + ranges_[index-1].length) == ranges_[index].dst_offset
+   && ranges_[index].src_offset == ranges_[index-1].src_offset + ranges_[index-1].length) {
+    ranges_[index-1].length += ranges_[index].length;
+    ranges_.erase(ranges_.begin() + index);
+    return true;
+  }
+  return false;
 }
 
 std::vector<lnode>::iterator
@@ -257,12 +280,11 @@ std::size_t proxyimpl::hash() const {
   ret.fields.size = this->size();
   auto n = this->srcs().size();  
   if (n > 0) {
-    ret.fields.srcs = n;
     ret.fields.arg0 = this->src(0).id();
     if (n > 1) {
       ret.fields.arg1 = this->src(1).id();
       if (n > 2) {
-        ret.fields.arg2 = this->src(2).id();
+        ret.fields.op = this->src(2).id();
       }
     }
   }

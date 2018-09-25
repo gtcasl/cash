@@ -14,7 +14,7 @@ public:
   
 protected:
 
-  typedef std::unordered_map<uint32_t, std::list<const lnode*>> node_map_t;
+  typedef std::unordered_map<uint32_t, std::unordered_set<const lnode*>> node_map_t;
 
   void build_node_map();
 
@@ -26,7 +26,9 @@ protected:
 
   size_t proxies_coalescing();
 
-  void replace_map_sources(lnodeimpl* source, lnodeimpl* target);
+  void map_replace_target(lnodeimpl* from, lnodeimpl* to);
+
+  void map_delete(lnodeimpl* node);
 
   void delete_map_source(lnodeimpl* node);
 

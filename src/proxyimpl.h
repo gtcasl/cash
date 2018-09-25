@@ -5,6 +5,17 @@
 namespace ch {
 namespace internal {
 
+struct interval_t {
+  uint32_t start;
+  uint32_t end;
+
+  bool overlaps(const interval_t& other) const {
+    return (other.start < this->end) && (this->start < other.end);
+  }
+
+  interval_t intersection(const interval_t& other) const;
+};
+
 class proxyimpl : public lnodeimpl {
 public:
 
@@ -23,12 +34,16 @@ public:
 
     bool operator!=(const range_t& other) const {
       return !(*this == other);
-    }
+    }    
   };
 
   bool is_identity() const {
     return (1 == ranges_.size())
         && (srcs_[0].size() == size_);
+  }
+
+  const range_t& range(uint32_t index) const {
+    return ranges_[index];
   }
 
   const std::vector<range_t>& ranges() const {
@@ -45,6 +60,8 @@ public:
                   uint32_t length = 0);
 
   std::vector<lnode>::iterator erase_source(std::vector<lnode>::iterator iter);
+
+  bool merge_adjacent_ranges(uint32_t index);
 
   void write(uint32_t dst_offset,
              const lnode& src,

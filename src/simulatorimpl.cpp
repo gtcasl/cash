@@ -7,6 +7,10 @@
 #include "simref.h"
 #include "simjit.h"
 
+#ifdef PPROF
+#include <gperftools/profiler.h>
+#endif
+
 using namespace ch::internal;
 
 void clock_driver::add_signal(inputimpl* node) {
@@ -104,17 +108,29 @@ ch_tick simulatorimpl::step(ch_tick t, uint32_t count) {
 }
 
 ch_tick simulatorimpl::run(const std::function<bool(ch_tick t)>& callback) {
+#ifdef PPROF
+  ProfilerStart("profiler.log");
+#endif
   auto t = this->reset(0);
   for (auto start = t; callback(t - start);) {
     t = this->step(t);
   }
+#ifdef PPROF
+  ProfilerStop();
+#endif
   return t;
 }
 
 void simulatorimpl::run(ch_tick num_ticks) {
+#ifdef PPROF
+  ProfilerStart("profiler.log");
+#endif
   for (auto t = this->reset(0); t < num_ticks;) {
     t = this->step(t);
   }
+#ifdef PPROF
+  ProfilerStop();
+#endif
 }
 
 ///////////////////////////////////////////////////////////////////////////////
