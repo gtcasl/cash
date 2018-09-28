@@ -123,7 +123,7 @@ auto ch_delay(const T& in, uint32_t delay = 1, CH_SLOC) {
   }
   return R(createRegNode(logic_accessor::data(R(in, sloc)),
                          delay,
-                         bitvector(1,1),
+                         sdata_type(1,1),
                          sloc));
 }
 
@@ -137,7 +137,7 @@ auto ch_delay(const T& in, uint32_t delay, const I& init, CH_SLOC) {
   }
   return R(createRegNode(logic_accessor::data(R(in, sloc)),
                          delay,
-                         bitvector(1,1),
+                         sdata_type(1,1),
                          logic_accessor::data(R(init, sloc)),
                          sloc));
 }

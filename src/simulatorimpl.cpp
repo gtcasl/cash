@@ -14,15 +14,29 @@
 using namespace ch::internal;
 
 void clock_driver::add_signal(inputimpl* node) {
-  node->value()[0] = value_;
+  node->value() = value_;
   nodes_.push_back(node);
 }
 
-void clock_driver::flip() {
+void clock_driver::eval() {
   value_ = !value_;
   for (auto node : nodes_) {
-    node->value()[0] = value_;
+    node->value() = value_;
   }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void time_driver::add_signal(inputimpl* node) {
+  node->value() = 0;
+  nodes_.push_back(node);
+}
+
+void time_driver::eval() {
+  for (auto node : nodes_) {
+    node->value() = value_;
+  }
+  ++value_;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -53,13 +67,20 @@ void simulatorimpl::initialize() {
   std::vector<lnodeimpl*> eval_list;
 
   for (auto ctx : contexts_) {
+
     auto clk = ctx->sys_clk();
     if (clk) {
       clk_driver_.add_signal(clk);
     }
+
     auto reset = ctx->sys_reset();
     if (reset) {
       reset_driver_.add_signal(reset);
+    }
+
+    auto time = ctx->sys_time();
+    if (time) {
+      time_driver_.add_signal(time);
     }
 
     // generate evaluation list
@@ -79,23 +100,34 @@ void simulatorimpl::eval() {
 ch_tick simulatorimpl::reset(ch_tick t) {
   // reset signal
   if (!reset_driver_.empty()) {
-    reset_driver_.flip();
+    reset_driver_.eval();
     t = this->step(t);
-    reset_driver_.flip();
+    reset_driver_.eval();
   }
   return t;
 }
 
 ch_tick simulatorimpl::step(ch_tick t) {
-  if (!clk_driver_.empty()) {
+  if (!clk_driver_.empty()
+   && time_driver_.empty()) {
     for (int i = 0; i < 2; ++i) {
-      clk_driver_.flip();
+      clk_driver_.eval();
       sim_driver_->eval();
       ++t;
-    }   
+    }
   } else {
-    sim_driver_->eval();
-    ++t;
+    if (!clk_driver_.empty()) {
+      for (int i = 0; i < 2; ++i) {
+        clk_driver_.eval();
+        time_driver_.eval();
+        sim_driver_->eval();
+        ++t;
+      }
+    } else {
+      time_driver_.eval();
+      sim_driver_->eval();
+      ++t;
+    }
   }
   return t;
 }

@@ -32,8 +32,8 @@ protected:
   };
 
   struct trace_block_t {
-    trace_block_t(uint32_t size, uint32_t width) : data(size, bitvector(width)), size(0), next(nullptr) {}
-    std::vector<bitvector> data;
+    trace_block_t(uint32_t size, uint32_t width) : data(size, sdata_type(width)), size(0), next(nullptr) {}
+    std::vector<sdata_type> data;
     uint32_t size;
     trace_block_t* next;
   };

@@ -89,7 +89,7 @@ logic_buffer ch::internal::createRegNode(unsigned size,
   logic_buffer ret(size, sloc);
   auto ctx = ctx_curr();
   auto next = ctx->create_node<proxyimpl>(ret.data(), sloc);
-  auto reg = ctx->create_node<regimpl>(1, next, bitvector(1,1), sloc);
+  auto reg = ctx->create_node<regimpl>(1, next, sdata_type(1,1), sloc);
   ret.write(0, reg, 0, size, sloc);
   return ret;
 }
@@ -99,7 +99,7 @@ logic_buffer ch::internal::createRegNode(const lnode& initdata,
   logic_buffer ret(initdata.size(), sloc);
   auto ctx = initdata.impl()->ctx();
   auto next = ctx->create_node<proxyimpl>(ret.data(), sloc);
-  auto reg = ctx->create_node<regimpl>(1, next, bitvector(1,1), initdata, sloc);
+  auto reg = ctx->create_node<regimpl>(1, next, sdata_type(1,1), initdata, sloc);
   ret.write(0, reg, 0, initdata.size(), sloc);
   return ret;
 }
@@ -128,7 +128,7 @@ logic_buffer ch::internal::copyRegNode(const lnode& node, const source_location&
   auto reg = reinterpret_cast<regimpl*>(proxy->src(0).impl());
   auto ctx = proxy->ctx();
   regimpl* new_reg;
-  auto enable = reg->has_enable() ? reg->enable() : lnode(bitvector(1,1));
+  auto enable = reg->has_enable() ? reg->enable() : lnode(sdata_type(1,1));
   if (reg->has_initdata()) {
     new_reg = ctx->create_node<regimpl>(reg->length(), reg->next(), enable, reg->initdata(), sloc);
   } else {

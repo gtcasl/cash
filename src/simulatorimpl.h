@@ -13,7 +13,7 @@ public:
 
   void add_signal(inputimpl* node);
 
-  void flip();
+  void eval();
 
   bool empty() const {
     return nodes_.empty();
@@ -23,6 +23,25 @@ protected:
 
   std::vector<inputimpl*> nodes_;
   bool value_;
+};
+
+class time_driver {
+public:
+
+  time_driver(bool value = false) : value_(value) {}
+
+  void add_signal(inputimpl* node);
+
+  void eval();
+
+  bool empty() const {
+    return nodes_.empty();
+  }
+
+protected:
+
+  std::vector<inputimpl*> nodes_;
+  uint64_t value_;
 };
 
 class sim_driver : public refcounted {
@@ -63,6 +82,7 @@ protected:
   std::vector<context*> contexts_;
   clock_driver clk_driver_;
   clock_driver reset_driver_;
+  time_driver time_driver_;
   sim_driver* sim_driver_;
 };
 

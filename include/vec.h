@@ -200,7 +200,7 @@ public:
   template <typename U,
             CH_REQUIRE_0(std::is_integral_v<U>)>
   explicit ch_vec(U other, CH_SLOC)
-    : ch_vec(logic_buffer(bitvector(traits::bitwidth, other), sloc))
+    : ch_vec(logic_buffer(sdata_type(traits::bitwidth, other), sloc))
   {}
 
   template <typename U>
@@ -294,7 +294,7 @@ public:
   template <typename U,
             CH_REQUIRE_0(std::is_integral_v<U>)>
   explicit ch_vec(U other)
-    : ch_vec(make_system_buffer(bitvector(traits::bitwidth, other)))
+    : ch_vec(make_system_buffer(sdata_type(traits::bitwidth, other)))
   {}
 
   template <typename U>

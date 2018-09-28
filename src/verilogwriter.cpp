@@ -12,7 +12,6 @@
 #include "memimpl.h"
 #include "aluimpl.h"
 #include "assertimpl.h"
-#include "timeimpl.h"
 #include "udfimpl.h"
 
 using namespace ch::internal;
@@ -324,7 +323,6 @@ bool verilogwriter::print_decl(std::ostream& out,
   case type_tap:
   case type_assert:
   case type_print:
-  case type_time:
     visited.insert(node->id());
     break;
   default:
@@ -382,7 +380,6 @@ bool verilogwriter::print_logic(std::ostream& out, lnodeimpl* node) {
   case type_tap:
   case type_assert:
   case type_print:
-  case type_time:
     break;
   default:
     assert(false);
@@ -905,9 +902,6 @@ void verilogwriter::print_name(std::ostream& out, lnodeimpl* node, bool force) {
   case type_udfs:
     print_unique_name(node);
     break;
-  case type_time:
-    out << "$time";
-    break;
   default:
     assert(false);
   }
@@ -929,7 +923,7 @@ void verilogwriter::print_type(std::ostream& out, lnodeimpl* node) {
 }
 
 void verilogwriter::print_value(std::ostream& out,
-                                const bitvector& value,
+                                const sdata_type& value,
                                 bool skip_zeros,
                                 uint32_t offset,
                                 uint32_t size) {
@@ -988,7 +982,7 @@ void verilogwriter::print_operator(std::ostream& out, ch_op op) {
   case ch_op::neg:   out << "-"; break;
   case ch_op::add:   out << "+"; break;
   case ch_op::sub:   out << "-"; break;
-  case ch_op::mul:   out << "*"; break;
+  case ch_op::mult:   out << "*"; break;
   case ch_op::div:   out << "/"; break;
   case ch_op::mod:   out << "%"; break;
 
@@ -999,40 +993,36 @@ void verilogwriter::print_operator(std::ostream& out, ch_op op) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void ch::internal::ch_toVerilog(std::ostream& out,
-                                const ch_device_list& devices) {
-  {
-    std::unordered_set<udf_iface*> visited;
+void ch::internal::ch_toVerilog(std::ostream& out, const device& device) {
 
-    std::function<void (context*)> print_includes = [&](context* ctx) {
-      for (auto node : ctx->bindings()) {
-        print_includes(node->module());
-      }
-      for (auto node : ctx->nodes()) {
-        if (type_udfc != node->type()
-         && type_udfs != node->type())
-          continue;
-        auto udf = reinterpret_cast<udfimpl*>(node)->udf();
-        if (0 == visited.count(udf)) {
-          udf->init_verilog(out);
-          out << std::endl;
-          visited.insert(udf);
-        }
-      }
-    };
-
-    for (auto dev : devices) {
-      auto ctx = dev.impl()->ctx();
-      print_includes(ctx);
+  std::function<void (context*, std::unordered_set<udf_iface*>&)> print_udf_dependencies = [&](
+      context* ctx, std::unordered_set<udf_iface*>& visited) {
+    for (auto node : ctx->bindings()) {
+      print_udf_dependencies(node->module(), visited);
     }
+    for (auto node : ctx->nodes()) {
+      if (type_udfc != node->type()
+       && type_udfs != node->type())
+        continue;
+      auto udf = reinterpret_cast<udfimpl*>(node)->udf();
+      if (0 == visited.count(udf)) {
+        udf->init_verilog(out);
+        out << std::endl;
+        visited.insert(udf);
+      }
+    }
+  };
+
+  auto ctx = device.impl()->ctx();
+
+  if (!ctx->udfs().empty()) {
+    std::unordered_set<udf_iface*> udf_visited;
+    print_udf_dependencies(ctx, udf_visited);
   }
 
   {
     std::unordered_set<std::string_view> visited;
-    for (auto dev : devices) {
-      auto ctx = dev.impl()->ctx();
-      verilogwriter writer(ctx);
-      writer.print(out, visited);
-    }
+    verilogwriter writer(ctx);
+    writer.print(out, visited);
   }
 }

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "bitvector.h"
+#include "traits.h"
 
 namespace ch {
 namespace internal {
@@ -34,7 +34,7 @@ namespace internal {
   m(neg,   18 | op_flags::unary  | op_flags::arithmetic) \
   m(add,   19 | op_flags::binary | op_flags::arithmetic | op_flags::symmetric | op_flags::eq_opd_size) \
   m(sub,   20 | op_flags::binary | op_flags::arithmetic | op_flags::eq_opd_size) \
-  m(mul ,  21 | op_flags::binary | op_flags::arithmetic | op_flags::symmetric | op_flags::eq_opd_size) \
+  m(mult,  21 | op_flags::binary | op_flags::arithmetic | op_flags::symmetric | op_flags::eq_opd_size) \
   m(div,   22 | op_flags::binary | op_flags::arithmetic) \
   m(mod,   23 | op_flags::binary | op_flags::arithmetic) \
   m(pad,   24 | op_flags::unary  | op_flags::misc)
@@ -93,7 +93,7 @@ public:
     assert(impl);
   }
 
-  lnode(const bitvector& value);
+  lnode(const sdata_type& value);
 
   lnode(uint32_t size,
         const source_location& sloc,

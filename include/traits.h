@@ -1,7 +1,13 @@
 #pragma once
 
+#include "bitvector.h"
+
 namespace ch {
 namespace internal {
+
+using block_type = uint64_t;
+
+using sdata_type = bitvector<block_type>;
 
 enum traits_type {
   traits_none      = 0x00,

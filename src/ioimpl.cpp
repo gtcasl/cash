@@ -94,15 +94,15 @@ lnodeimpl* ch::internal::createOutputNode(const std::string& name,
 ///////////////////////////////////////////////////////////////////////////////
 
 system_io_buffer::system_io_buffer(const lnode& io)
-  : base(bitvector(), nullptr, 0, io.size()), io_(io)
+  : base(sdata_type(), nullptr, 0, io.size()), io_(io)
 {}
 
-const bitvector& system_io_buffer::data() const {
+const sdata_type& system_io_buffer::data() const {
   return reinterpret_cast<ioportimpl*>(io_.impl())->value();
 }
 
 void system_io_buffer::read(uint32_t src_offset,
-                            bitvector& dst,
+                            sdata_type& dst,
                             uint32_t dst_offset,
                             uint32_t length) const {
   auto port = reinterpret_cast<ioportimpl*>(io_.impl());
@@ -110,7 +110,7 @@ void system_io_buffer::read(uint32_t src_offset,
 }
 
 void system_io_buffer::write(uint32_t dst_offset,
-                             const bitvector& src,
+                             const sdata_type& src,
                              uint32_t src_offset,
                              uint32_t length) {
   auto port = reinterpret_cast<ioportimpl*>(io_.impl());

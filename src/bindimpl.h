@@ -52,7 +52,7 @@ public:
     return binding_;
   }
 
-  const lnode& ioport() const {
+  const auto& ioport() const {
     return ioport_;
   }
 

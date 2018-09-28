@@ -5,33 +5,8 @@
 namespace ch {
 namespace internal {
 
-using udf_output = bitvector;
-
-class udf_inputs {
-public:
-  const bitvector& operator[](size_t index) const {
-    return *container_[index];
-  }
-
-  auto size() const {
-    return container_.size();
-  }
-
-  auto empty() const {
-    return container_.empty();
-  }
-
-  void reserve(size_t size) {
-    container_.reserve(size);
-  }
-
-  void emplace_back(const bitvector* node) {
-    container_.emplace_back(node);
-  }
-
-protected:
-  std::vector<const bitvector*> container_;
-};
+using udf_output = sdata_type;
+using udf_inputs = std::vector<sdata_type>;
 
 class udf_iface : public refcounted {
 public:

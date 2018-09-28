@@ -422,7 +422,7 @@ TEST_CASE("arithmetic", "[arithmetic]") {
     TEST([]()->ch_bool {
       ch_int128 a(0x6ABA8);
       ch_int128 b(0x335);
-      auto c = ch_mul(a, b);
+      auto c = ch_mult(a, b);
       return (c == 0x156481C8);
     });
     TEST([]()->ch_bool {

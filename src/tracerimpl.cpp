@@ -10,8 +10,8 @@ auto is_system_signal = [](const std::string& name) {
   return (name == "clk") || (name == "reset");
 };
 
-auto get_value = [](const bitvector& src, uint32_t size, uint32_t src_offset) {
-  bitvector value(size);
+auto get_value = [](const sdata_type& src, uint32_t size, uint32_t src_offset) {
+  sdata_type value(size);
   value.copy(0, src, src_offset, size);
   return value;
 };
@@ -114,7 +114,7 @@ void tracerimpl::toText(const std::string& file) {
       auto src_offset = 0;
       auto_separator sep(",");
       for (auto& signal : signals_) {
-        bitvector value = get_value(block, signal.node->size(), src_offset);
+        sdata_type value = get_value(block, signal.node->size(), src_offset);
         src_offset += value.size();
         out << sep << " " << signal.name << "=" << value;
       }
@@ -192,7 +192,7 @@ void tracerimpl::toTestBench(const std::string& file, const std::string& module)
   };
 
   //--
-  auto print_value = [](std::ostream& out, const bitvector& value) {
+  auto print_value = [](std::ostream& out, const sdata_type& value) {
     out << value.size() << "'h";
     auto oldflags = out.flags();
     out.setf(std::ios_base::hex, std::ios_base::basefield);

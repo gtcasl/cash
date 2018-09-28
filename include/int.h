@@ -81,7 +81,7 @@ CH_LOGIC_FUNCTION_SHIFT(ch_shr, ch_op::shr, ch_int)
 CH_LOGIC_FUNCTION_ARITHMETIC1(ch_neg, ch_op::neg, ch_int)
 CH_LOGIC_FUNCTION_ARITHMETIC2(ch_add, ch_op::add, ch_int)
 CH_LOGIC_FUNCTION_ARITHMETIC2(ch_sub, ch_op::sub, ch_int)
-CH_LOGIC_FUNCTION_ARITHMETIC2(ch_mul, ch_op::mul, ch_int)
+CH_LOGIC_FUNCTION_ARITHMETIC2(ch_mult, ch_op::mult, ch_int)
 CH_LOGIC_FUNCTION_ARITHMETIC2(ch_div, ch_op::div, ch_int)
 CH_LOGIC_FUNCTION_ARITHMETIC2(ch_mod, ch_op::mod, ch_int)
 

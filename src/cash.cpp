@@ -1,4 +1,4 @@
-/*#include "cash.h"
+#include "cash.h"
 #include <htl/float32.h>
 
 using namespace ch::logic;
@@ -72,9 +72,9 @@ void foo() {
   }
   {
     ch_float32 a, b;
-    auto c = ch_fmul<1>(a, b);
-    auto d = ch_fmul<1>(0.1f, b);
-    auto e = ch_fmul<1>(a, 0.1f);
+    auto c = ch_fmult<1>(a, b);
+    auto d = ch_fmult<1>(0.1f, b);
+    auto e = ch_fmult<1>(a, 0.1f);
   }
   {
     ch_scbit<4> a = 3;
@@ -289,4 +289,4 @@ void bar() {
 
   ch_reg<s2_4_t> h{0101_b, 01_b};
   ch_reg<u2_4_t> i{0101_b};
-}*/
+}

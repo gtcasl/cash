@@ -140,14 +140,14 @@ void copy_bits(T* dst, uint32_t dst_offset, const T* src, uint32_t src_offset, u
       src_block |= (w_src[1] << (WORD_SIZE - w_src_begin_rem));
     }
     if (0 == w_dst_end_idx) {
-      T sel_mask = (WORD_MAX >> (WORD_SIZE - length)) << w_dst_begin_rem;
-      w_dst[0] = blend<T>(sel_mask, w_dst[0], (src_block << w_dst_begin_rem));
+      T mask = (WORD_MAX >> (WORD_SIZE - length)) << w_dst_begin_rem;
+      w_dst[0] = blend<T>(mask, w_dst[0], (src_block << w_dst_begin_rem));
     } else {
-      T sel_mask = WORD_MAX << w_dst_begin_rem;
-      w_dst[0] = blend<T>(sel_mask, w_dst[0], (src_block << w_dst_begin_rem));
+      T mask = WORD_MAX << w_dst_begin_rem;
+      w_dst[0] = blend<T>(mask, w_dst[0], (src_block << w_dst_begin_rem));
       T src_block_new = src_block >> (WORD_SIZE - w_dst_begin_rem);
-      sel_mask = ~((WORD_MAX << 1) << w_dst_end_rem);
-      w_dst[1] = blend<T>(sel_mask, w_dst[1], src_block_new);
+      mask = ~((WORD_MAX << 1) << w_dst_end_rem);
+      w_dst[1] = blend<T>(mask, w_dst[1], src_block_new);
     }
   } else
   if (0 == w_dst_begin_rem
@@ -158,15 +158,15 @@ void copy_bits(T* dst, uint32_t dst_offset, const T* src, uint32_t src_offset, u
     } else {
       std::copy_n(w_src, w_dst_end_idx, w_dst);
       // update remining block
-      T sel_mask = (WORD_MAX << 1) << w_dst_end_rem;
-      w_dst[w_dst_end_idx] = blend<T>(sel_mask, w_src[w_dst_end_idx], w_dst[w_dst_end_idx]);
+      T mask = (WORD_MAX << 1) << w_dst_end_rem;
+      w_dst[w_dst_end_idx] = blend<T>(mask, w_src[w_dst_end_idx], w_dst[w_dst_end_idx]);
     }
   } else
   if (0 == w_src_begin_rem) {
     // update first block
     T src_block = w_src[0];
-    T sel_mask = WORD_MAX << w_dst_begin_rem;
-    w_dst[0] = blend<T>(sel_mask, w_dst[0], (src_block << w_dst_begin_rem));
+    T mask = WORD_MAX << w_dst_begin_rem;
+    w_dst[0] = blend<T>(mask, w_dst[0], (src_block << w_dst_begin_rem));
 
     // update intermediate blocks
     for (uint32_t i = 1, n = w_src_end_idx; i < n; ++i) {
@@ -182,14 +182,14 @@ void copy_bits(T* dst, uint32_t dst_offset, const T* src, uint32_t src_offset, u
       w_dst[w_dst_end_idx-1] = src_block_new;
       src_block_new = (tmp >> 1) >> (WORD_MASK - w_dst_begin_rem);
     }
-    sel_mask = ~((WORD_MAX << 1) << w_dst_end_rem);
-    w_dst[w_dst_end_idx] = blend<T>(sel_mask, w_dst[w_dst_end_idx], src_block_new);
+    mask = ~((WORD_MAX << 1) << w_dst_end_rem);
+    w_dst[w_dst_end_idx] = blend<T>(mask, w_dst[w_dst_end_idx], src_block_new);
   } else {
     // update first block
     T src_block = w_src[0] >> w_src_begin_rem;
     src_block |= w_src[1] << (WORD_SIZE - w_src_begin_rem);
-    T sel_mask = WORD_MAX << w_dst_begin_rem;
-    w_dst[0] = blend<T>(sel_mask, w_dst[0], (src_block << w_dst_begin_rem));
+    T mask = WORD_MAX << w_dst_begin_rem;
+    w_dst[0] = blend<T>(mask, w_dst[0], (src_block << w_dst_begin_rem));
 
     // update intermediate blocks
     for (uint32_t i = 1, n = std::min(w_src_end_idx, w_dst_end_idx); i < n; ++i) {
@@ -213,7 +213,7 @@ void copy_bits(T* dst, uint32_t dst_offset, const T* src, uint32_t src_offset, u
       src_block_new = ((w_src[w_src_end_idx-1] >> w_src_begin_rem) | (w_src[w_src_end_idx] << (WORD_SIZE - w_src_begin_rem))) << w_dst_begin_rem;
       src_block_new |= ((src_block >> 1) >> (WORD_MASK - w_dst_begin_rem));
     }
-    sel_mask = ~((WORD_MAX << 1) << w_dst_end_rem);
-    w_dst[w_dst_end_idx] = blend<T>(sel_mask, w_dst[w_dst_end_idx], src_block_new);
+    mask = ~((WORD_MAX << 1) << w_dst_end_rem);
+    w_dst[w_dst_end_idx] = blend<T>(mask, w_dst[w_dst_end_idx], src_block_new);
   }
 }

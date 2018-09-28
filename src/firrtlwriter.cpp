@@ -12,7 +12,6 @@
 #include "memimpl.h"
 #include "aluimpl.h"
 #include "assertimpl.h"
-#include "timeimpl.h"
 
 using namespace ch::internal;
 
@@ -227,7 +226,6 @@ bool firrtlwriter::print_decl(std::ostream& out,
   case type_tap:
   case type_assert:
   case type_print:
-  case type_time:
     break;
   default:
     assert(false);
@@ -273,7 +271,6 @@ bool firrtlwriter::print_logic(std::ostream& out, lnodeimpl* node) {
   case type_tap:
   case type_assert:
   case type_print:
-  case type_time:
     break;
   default:
     assert(false);
@@ -599,7 +596,7 @@ void firrtlwriter::print_mem(std::ostream& out, memimpl* node) {
       this->print_name(out, node);
       out << '.' << type << mwport->index() << ".mask <= ";
       std::string mask(mwport->wdata().size(), '1');
-      this->print_value(out, bitvector(mwport->wdata().size(), mask + "b"));
+      this->print_value(out, sdata_type(mwport->wdata().size(), mask + "b"));
       out << std::endl;
 
       this->print_name(out, node);
@@ -644,7 +641,7 @@ void firrtlwriter::print_mem(std::ostream& out, memimpl* node) {
   } else {
     assert(node->has_initdata());
     auto data_width = node->data_width();
-    bitvector value(data_width);
+    sdata_type value(data_width);
     for (uint32_t i = 0, n = node->num_items(); i < n; ++i) {
       this->print_name(out, node);
       out << "[" << i << "] <= ";
@@ -684,7 +681,7 @@ void firrtlwriter::print_operator(std::ostream& out, ch_op op) {
   case ch_op::neg:   out << "neg"; break;
   case ch_op::add:   out << "add"; break;
   case ch_op::sub:   out << "sub"; break;
-  case ch_op::mul:   out << "mul"; break;
+  case ch_op::mult:   out << "mul"; break;
   case ch_op::div:   out << "div"; break;
   case ch_op::mod:   out << "mod"; break;
 
@@ -851,7 +848,7 @@ void firrtlwriter::print_dtype(std::ostream& out, lnodeimpl* node) {
 }
 
 void firrtlwriter::print_value(std::ostream& out,
-                               const bitvector& value,
+                               const sdata_type& value,
                                bool skip_zeros,
                                uint32_t offset,
                                uint32_t size) {

@@ -400,8 +400,8 @@ int main() {
             if (j + l > mw
               ||i + l > mw)
               continue;
-            bitvector y(dw, d_value);
-            bitvector x(sw, s_value);
+            sdata_type y(dw, d_value);
+            sdata_type x(sw, s_value);
             y.copy(j, x, i, l);
             uint32_t ret = (uint32_t)y;
             uint32_t ref = COPY_REF(d_value, j, s_value, i, l);
@@ -413,8 +413,8 @@ int main() {
   }*/
 
   /*{
-    bitvector x(32, 0x1122334f);
-    bitvector y(32, 0x50555555);
+    sdata_type x(32, 0x1122334f);
+    sdata_type y(32, 0x50555555);
     y.copy(1, x, 7, 16);
     uint32_t ret = (uint32_t)y;
     uint32_t ref = COPY_REF(0x50555555, 1, 0x1122334f, 7, 16);
@@ -422,8 +422,8 @@ int main() {
   }
 
   {
-    bitvector x(32, 0x1122334f);
-    bitvector y(32, 0x50555555);
+    sdata_type x(32, 0x1122334f);
+    sdata_type y(32, 0x50555555);
     y.copy(0, x, 7, 16);
     uint32_t ret = (uint32_t)y;
     uint32_t ref = COPY_REF(0x50555555, 0, 0x1122334f, 7, 16);
@@ -431,8 +431,8 @@ int main() {
   }
 
   {
-    bitvector x(32, 0x1122334f);
-    bitvector y(32, 0x50555555);
+    sdata_type x(32, 0x1122334f);
+    sdata_type y(32, 0x50555555);
     y.copy(3, x, 0, 6);
     uint32_t ret = (uint32_t)y;
     uint32_t ref = COPY_REF(0x50555555, 3, 0x1122334f, 0, 6);
@@ -440,8 +440,8 @@ int main() {
   }
 
   {
-    bitvector x(32, 0x1122334f);
-    bitvector y(32, 0x50555555);
+    sdata_type x(32, 0x1122334f);
+    sdata_type y(32, 0x50555555);
     y.copy(3, x, 7, 6);
     uint32_t ret = (uint32_t)y;
     uint32_t ref = COPY_REF(0x50555555, 3, 0x1122334f, 7, 6);
@@ -449,8 +449,8 @@ int main() {
   }
 
   {
-    bitvector x(32, 0x1122334f);
-    bitvector y(32, 0x50555555);
+    sdata_type x(32, 0x1122334f);
+    sdata_type y(32, 0x50555555);
     y.copy(0, x, 4, 4);
     uint32_t ret = (uint32_t)y;
     uint32_t ref = COPY_REF(0x50555555, 0, 0x1122334f, 4, 4);
@@ -458,8 +458,8 @@ int main() {
   }
 
   {
-    bitvector x(32, 0x1122334f);
-    bitvector y(32, 0x50555555);
+    sdata_type x(32, 0x1122334f);
+    sdata_type y(32, 0x50555555);
     y.copy(0, x, 6, 4);
     uint32_t ret = (uint32_t)y;
     uint32_t ref = COPY_REF(0x50555555, 0, 0x1122334f, 6, 4);
@@ -467,8 +467,8 @@ int main() {
   }
 
   {
-    bitvector x(32, 0x1122334f);
-    bitvector y(32, 0x50555555);
+    sdata_type x(32, 0x1122334f);
+    sdata_type y(32, 0x50555555);
     y.copy(3, x, 0, 22);
     uint32_t ret = (uint32_t)y;
     uint32_t ref = COPY_REF(0x50555555, 3, 0x1122334f, 0, 22);
@@ -476,8 +476,8 @@ int main() {
   }
 
   {
-    bitvector x(32, 0x1122334f);
-    bitvector y(32, 0x50555555);
+    sdata_type x(32, 0x1122334f);
+    sdata_type y(32, 0x50555555);
     y.copy(3, x, 7, 23);
     uint32_t ret = (uint32_t)y;
     uint32_t ref = COPY_REF(0x50555555, 3, 0x1122334f, 7, 23);

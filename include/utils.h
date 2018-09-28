@@ -18,16 +18,6 @@ std::string identifier_from_typeid(const std::string& name);
 
 int char2int(char x, int base);
 
-template <typename T>
-T sign_ext(T x, unsigned bits) {
-  if (sizeof(T) * 8 <= bits)
-    return x;
-  T k = (T(1) << bits) - 1;
-  T m = T(1) << (bits - 1);
-  T n = x & k;
-  return (n ^ m) - m;
-}
-
 ///////////////////////////////////////////////////////////////////////////////
 
 class source_location {
@@ -71,11 +61,6 @@ private:
 #endif
 
 #define CH_SLOC const ch::internal::source_location& sloc = CH_CUR_SLOC
-
-///////////////////////////////////////////////////////////////////////////////
-
-template<typename T>
-static constexpr bool is_number_v = std::is_integral_v<T> || std::is_enum_v<T>;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -542,7 +527,7 @@ constexpr unsigned count_trailing_zeros(T value) {
 
 template <typename T = uint32_t>
 constexpr bool ispow2(T value) {
-  static_assert(is_number_v<T>, "invalid type");
+  static_assert(std::is_integral_v<T>, "invalid type");
   return value && !(value & (value - 1));
 }
 
@@ -589,6 +574,16 @@ constexpr T rotr(T value, uint32_t shift, uint32_t width) {
   if (shift > width)
     shift = shift % width;
   return (value >> shift) | (value << (width  - shift));
+}
+
+template <typename T>
+auto sign_ext(T value, unsigned width) {
+  static_assert(std::is_integral_v<T>, "invalid type");
+  assert(bitwidth_v<T> >= width);
+  T m = T(1) << (width - 1);
+  T k = std::numeric_limits<std::make_unsigned_t<T>>::max() >> (bitwidth_v<T> - width);
+  T n = value & k;
+  return std::make_signed_t<T>((n ^ m) - m);
 }
 
 }

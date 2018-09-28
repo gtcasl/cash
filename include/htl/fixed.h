@@ -248,7 +248,7 @@ public:
   }
 
   friend auto operator*(const ch_fixed& lhs, const ch_fixed& rhs) {
-    auto ret = ch_shr<N>(ch_mul<N+Frac>(lhs.as_int(), rhs.as_int()), Frac);
+    auto ret = ch_shr<N>(ch_mult<N+Frac>(lhs.as_int(), rhs.as_int()), Frac);
     return ret.template as<ch_fixed>();
   }
 

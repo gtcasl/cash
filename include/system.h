@@ -1,6 +1,5 @@
 #pragma once
 
-#include "bitvector.h"
 #include "traits.h"
 
 namespace ch {
@@ -35,9 +34,9 @@ class system_buffer {
 public:
   explicit system_buffer(uint32_t size);
 
-  explicit system_buffer(const bitvector& data);
+  explicit system_buffer(const sdata_type& data);
 
-  explicit system_buffer(bitvector&& data);
+  explicit system_buffer(sdata_type&& data);
 
   system_buffer(uint32_t size, const system_buffer_ptr& buffer, uint32_t offset);
 
@@ -51,13 +50,13 @@ public:
 
   system_buffer& operator=(system_buffer&& other);
 
-  virtual const bitvector& data() const;
+  virtual const sdata_type& data() const;
 
   const system_buffer_ptr& source() const {
     return source_;
   }
 
-  const bitvector& value() const {
+  const sdata_type& value() const {
     return value_;
   }
 
@@ -75,12 +74,12 @@ public:
             uint32_t length);
 
   virtual void read(uint32_t src_offset,
-                    bitvector& dst,
+                    sdata_type& dst,
                     uint32_t dst_offset,
                     uint32_t length) const;
 
   virtual void write(uint32_t dst_offset,
-                     const bitvector& src,
+                     const sdata_type& src,
                      uint32_t src_offset,
                      uint32_t length);
 
@@ -98,13 +97,13 @@ public:
 
 protected:
 
-  system_buffer(const bitvector& value,
+  system_buffer(const sdata_type& value,
                 const system_buffer_ptr& source,
                 uint32_t offset,
                 uint32_t size);
 
   system_buffer_ptr source_;
-  mutable bitvector value_;
+  mutable sdata_type value_;
   uint32_t offset_;
   uint32_t size_;
 };
@@ -185,20 +184,58 @@ public:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-typedef void (*SystemFunc1)(bitvector& out, const bitvector& in);
-typedef void (*SystemFunc2)(bitvector& out, const bitvector& lhs, const bitvector& rhs);
+typedef void (*SystemFunc1)(block_type* out,
+                            const block_type* in,
+                            uint32_t size);
+
+typedef void (*SystemFunc2)(block_type* out,
+                            const block_type* lhs,
+                            const block_type* rhs,
+                            uint32_t size);
+
+typedef void (*SystemFunc3)(block_type* out,
+                            uint32_t out_size,
+                            const block_type* lhs,
+                            uint32_t lhs_size,
+                            uint32_t rhs);
+
+typedef void (*SystemFunc4)(block_type* out,
+                            uint32_t out_size,
+                            const block_type* lhs,
+                            uint32_t lhs_size,
+                            const block_type* rhs,
+                            uint32_t rhs_size);
 
 template <typename R, typename A>
 auto make_system_op(SystemFunc1 func, const A& in) {
-  bitvector ret(ch_width_v<R>);
-  func(ret, system_accessor::data(in));
+  sdata_type ret(ch_width_v<R>);
+  func(ret.words(), system_accessor::data(in).words(), ch_width_v<R>);
   return R(make_system_buffer(std::move(ret)));
 }
 
 template <typename R, typename A, typename B>
 auto make_system_op(SystemFunc2 func, const A& lhs, const B& rhs) {
-  bitvector ret(ch_width_v<R>);
-  func(ret, system_accessor::data(lhs), system_accessor::data(rhs));
+  sdata_type ret(ch_width_v<R>);
+  auto& u = system_accessor::data(lhs);
+  auto& v = system_accessor::data(rhs);
+  func(ret.words(), u.words(), v.words(), ch_width_v<R>);
+  return R(make_system_buffer(std::move(ret)));
+}
+
+template <typename R, typename A, typename B>
+auto make_system_op(SystemFunc3 func, const A& lhs, const B& rhs) {
+  sdata_type ret(ch_width_v<R>);
+  auto& u = system_accessor::data(lhs);
+  func(ret.words(), ch_width_v<R>, u.words(), u.size(), static_cast<uint32_t>(rhs));
+  return R(make_system_buffer(std::move(ret)));
+}
+
+template <typename R, typename A, typename B>
+auto make_system_op(SystemFunc4 func, const A& lhs, const B& rhs) {
+  sdata_type ret(ch_width_v<R>);
+  auto& u = system_accessor::data(lhs);
+  auto& v = system_accessor::data(rhs);
+  func(ret.words(), ch_width_v<R>, u.words(), u.size(), v.words(), v.size());
   return R(make_system_buffer(std::move(ret)));
 }
 
@@ -282,23 +319,23 @@ auto make_system_op(SystemFunc2 func, const A& lhs, const B& rhs) {
   }
 
 CH_SYSTEM_OPERATOR(system_op_equality)
-  CH_SYSTEM_OPERATOR_IMPL(operator==, (return bv_eq(system_accessor::data(lhs), system_accessor::data(rhs))))
-  CH_SYSTEM_OPERATOR_IMPL(operator!=, (return !bv_eq(system_accessor::data(lhs), system_accessor::data(rhs))))
+  CH_SYSTEM_OPERATOR_IMPL(operator==, (return bv_eq(system_accessor::data(lhs).words(), system_accessor::data(rhs).words(), N)))
+  CH_SYSTEM_OPERATOR_IMPL(operator!=, (return !bv_eq(system_accessor::data(lhs).words(), system_accessor::data(rhs).words(), N)))
 };
 
 CH_SYSTEM_OPERATOR(system_op_logical)
   friend auto operator&&(const Derived& lhs, const Derived& rhs) {
     static_assert(Derived::traits::bitwidth == 1, "invalid size");
-    return bv_orr(system_accessor::data(lhs)) && bv_orr(system_accessor::data(rhs));
+    return bv_orr(system_accessor::data(lhs).words(), N) && bv_orr(system_accessor::data(rhs).words(), N);
   }
 
   friend auto operator||(const Derived& lhs, const Derived& rhs) {
     static_assert(Derived::traits::bitwidth == 1, "invalid size");
-    return bv_orr(system_accessor::data(lhs)) || bv_orr(system_accessor::data(rhs));
+    return bv_orr(system_accessor::data(lhs).words(), N) || bv_orr(system_accessor::data(rhs).words(), N);
   }
 
   friend auto operator!(const Derived& self) {
-    return !bv_orr(system_accessor::data(self));
+    return !bv_orr(system_accessor::data(self).words(), N);
   }
 };
 
@@ -322,8 +359,11 @@ CH_SYSTEM_OPERATOR(system_op_shift)
   template <typename U,
             CH_REQUIRE_0(std::is_convertible_v<U, ch_scbit<ch_width_v<U>>>)>
   friend auto operator>>(const Derived& lhs, const U& rhs) {
-    return make_system_op<Derived, Derived, ch_scbit<ch_width_v<U>>>(
-                            (ch_signed_v<Derived> ? bv_sra : bv_srl), lhs, rhs);
+    if constexpr (ch_signed_v<Derived>) {
+      return make_system_op<Derived, Derived, ch_scbit<ch_width_v<U>>>(bv_sra, lhs, rhs);
+    } else {
+      return make_system_op<Derived, Derived, ch_scbit<ch_width_v<U>>>(bv_srl, lhs, rhs);
+    }
   }
 };
 
@@ -340,7 +380,7 @@ CH_SYSTEM_OPERATOR(system_op_cast)
     }
   }
 
-  explicit operator bitvector() const {
+  explicit operator sdata_type() const {
     return system_accessor::data(reinterpret_cast<const Derived&>(*this));
   }
 };
@@ -348,9 +388,9 @@ CH_SYSTEM_OPERATOR(system_op_cast)
 CH_SYSTEM_OPERATOR(system_op_relational)
   CH_SYSTEM_OPERATOR_IMPL(operator<, (
       if constexpr (ch_signed_v<Derived>) {
-        return bv_lts(system_accessor::data(lhs), system_accessor::data(rhs));
+        return bv_slt(system_accessor::data(lhs).words(), system_accessor::data(rhs).words(), N);
       } else {
-        return bv_ltu(system_accessor::data(lhs), system_accessor::data(rhs));
+        return bv_ult(system_accessor::data(lhs).words(), system_accessor::data(rhs).words(), N);
       }))
   CH_SYSTEM_OPERATOR_IMPL(operator>=, (return !(lhs < rhs)))
   CH_SYSTEM_OPERATOR_IMPL(operator>, (return (rhs < lhs)))
@@ -363,18 +403,18 @@ CH_SYSTEM_OPERATOR(system_op_arithmetic)
   }
   CH_SYSTEM_OPERATOR_IMPL(operator+, (return make_system_op<Derived>(bv_add, lhs, rhs)))
   CH_SYSTEM_OPERATOR_IMPL(operator-, (return make_system_op<Derived>(bv_sub, lhs, rhs)))
-  CH_SYSTEM_OPERATOR_IMPL(operator*, (return make_system_op<Derived>(bv_mul, lhs, rhs)))
+  CH_SYSTEM_OPERATOR_IMPL(operator*, (return make_system_op<Derived>(bv_mult, lhs, rhs)))
 
   CH_SYSTEM_OPERATOR_IMPL(operator/, (if constexpr (ch_signed_v<Derived>) {
-                                         return make_system_op<Derived>(bv_divs, lhs, rhs);
+                                         return make_system_op<Derived>(bv_sdiv, lhs, rhs);
                                       } else {
-                                         return make_system_op<Derived>(bv_divu, lhs, rhs);
+                                         return make_system_op<Derived>(bv_udiv, lhs, rhs);
                                       }))
 
   CH_SYSTEM_OPERATOR_IMPL(operator%, (if constexpr (ch_signed_v<Derived>) {
-                                        return make_system_op<Derived>(bv_mods, lhs, rhs);
+                                        return make_system_op<Derived>(bv_smod, lhs, rhs);
                                      } else {
-                                        return make_system_op<Derived>(bv_modu, lhs, rhs);
+                                        return make_system_op<Derived>(bv_umod, lhs, rhs);
                                      }))
 };
 

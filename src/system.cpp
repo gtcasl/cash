@@ -10,7 +10,7 @@ system_buffer::system_buffer(uint32_t size)
   , size_(size)
 {}
 
-system_buffer::system_buffer(const bitvector& value,
+system_buffer::system_buffer(const sdata_type& value,
                              const system_buffer_ptr& source,
                              uint32_t offset,
                              uint32_t size)
@@ -20,13 +20,13 @@ system_buffer::system_buffer(const bitvector& value,
   , size_(size)
 {}
 
-system_buffer::system_buffer(const bitvector& data)
+system_buffer::system_buffer(const sdata_type& data)
   : value_(data)
   , offset_(0)
   , size_(data.size())
 {}
 
-system_buffer::system_buffer(bitvector&& data)
+system_buffer::system_buffer(sdata_type&& data)
   : value_(std::move(data))
   , offset_(0)
   , size_(value_.size())
@@ -72,10 +72,10 @@ system_buffer& system_buffer::operator=(system_buffer&& other) {
   return *this;
 }
 
-const bitvector& system_buffer::data() const {
+const sdata_type& system_buffer::data() const {
   if (source_) {
     if (value_.empty()) {
-      value_.resize(size_, 0, true);
+      value_.resize(size_);
     }
     source_->read(offset_, value_, 0, size_);
   }
@@ -94,7 +94,7 @@ void system_buffer::copy(uint32_t dst_offset,
 }
 
 void system_buffer::read(uint32_t src_offset,
-                         bitvector& dst,
+                         sdata_type& dst,
                          uint32_t dst_offset,
                          uint32_t length) const {
   if (source_) {
@@ -105,7 +105,7 @@ void system_buffer::read(uint32_t src_offset,
 }
 
 void system_buffer::write(uint32_t dst_offset,
-                          const bitvector& src,
+                          const sdata_type& src,
                           uint32_t src_offset,
                           uint32_t length) {
   if (source_) {

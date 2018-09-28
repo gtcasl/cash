@@ -18,7 +18,7 @@ static auto toByteVector(const T& container,
   // the container has data elements size aligned to the buffer stride
   uint32_t src_width = sizeof(typename T::value_type) * 8;
   CH_CHECK(container.size() == (ceildiv(data_width, src_width) * num_items), "invalid input size");
-  std::vector<uint8_t> packed(ceildiv<int>(data_width * num_items, 8));
+  std::vector<uint8_t> packed(ceildiv<uint32_t>(data_width * num_items, 8));
   uint32_t word_size(std::min<uint32_t>(src_width, data_width));
   uint32_t curr_value(0), pos(0);
   for (auto item : container) {
@@ -99,7 +99,7 @@ public:
   auto read(const U& addr, CH_SLOC) const {
     static_assert(is_bit_convertible_v<U, addr_width>, "invalid type");
     auto laddr = to_lnode<addr_width>(addr, sloc);
-    return make_type<T>(mem_.read(laddr, bitvector(1, 1), sloc), sloc);
+    return make_type<T>(mem_.read(laddr, sdata_type(1, 1), sloc), sloc);
   }
 
   template <typename U, typename E>
@@ -129,7 +129,7 @@ public:
   auto read(const U& addr, CH_SLOC) const {
     static_assert(is_bit_convertible_v<U, addr_width>, "invalid type");
     auto laddr = to_lnode<addr_width>(addr, sloc);
-    return make_type<T>(mem_.read(laddr, bitvector(1, 1), sloc), sloc);
+    return make_type<T>(mem_.read(laddr, sdata_type(1, 1), sloc), sloc);
   }
 
   template <typename U, typename E>
@@ -147,7 +147,7 @@ public:
     static_assert(std::is_constructible_v<T, V>, "invalid type");
     auto l_addr  = to_lnode<addr_width>(addr, sloc);
     auto l_value = to_lnode<T>(value, sloc);
-    mem_.write(l_addr, l_value, bitvector(1, 1), sloc);
+    mem_.write(l_addr, l_value, sdata_type(1, 1), sloc);
   }
 
   template <typename U, typename V, typename E>

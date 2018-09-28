@@ -1,6 +1,7 @@
 #pragma once
 
 #include "common.h"
+#include "traits.h"
 
 namespace ch {
 namespace internal {
@@ -16,7 +17,6 @@ class ioimpl;
 class memimpl;
 class bindimpl;
 class bindportimpl;
-class bitvector;
 class cdimpl;
 enum class ch_op;
 
@@ -56,7 +56,7 @@ protected:
   void print_dtype(std::ostream& out, lnodeimpl* node);
 
   void print_value(std::ostream& out,
-                   const bitvector& value,
+                   const sdata_type& value,
                    bool skip_zeros = false,
                    uint32_t offset = 0,
                    uint32_t size = 0);

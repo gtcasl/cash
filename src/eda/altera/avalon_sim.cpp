@@ -72,7 +72,7 @@ bool avm_slave_driver_impl::process_rd_req(uint64_t time,
 
 bool avm_slave_driver_impl::process_wr_req(uint64_t time,
                                     uint32_t master,
-                                    const bitvector& data,
+                                    const sdata_type& data,
                                     uint64_t address,
                                     uint64_t bytemask,
                                     uint32_t burstsize) {

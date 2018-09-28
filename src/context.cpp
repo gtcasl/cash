@@ -11,7 +11,6 @@
 #include "memimpl.h"
 #include "aluimpl.h"
 #include "assertimpl.h"
-#include "timeimpl.h"
 #include "cdimpl.h"
 #include "ioport.h"
 #include "traits.h"
@@ -131,7 +130,7 @@ context::context(const std::string& name)
   , block_idx_(0)
   , sys_clk_(nullptr)
   , sys_reset_(nullptr)
-  , time_(nullptr)
+  , sys_time_(nullptr)
 {}
 
 context::~context() {
@@ -139,45 +138,6 @@ context::~context() {
   for (auto node : nodes_) {
     node->release();
   }
-}
-
-void context::push_cd(const lnode& clk,
-                      const lnode& reset,
-                      bool pos_edge,
-                      const source_location& sloc) {
-  auto cd = this->create_cd(clk, pos_edge, sloc);
-  cd_stack_.emplace(cd, reset);
-}
-
-void context::pop_cd() {
-  cd_stack_.pop();
-}
-
-cdimpl* context::current_cd(const source_location& sloc) {
-  if (!cd_stack_.empty())
-    return cd_stack_.top().first;
-
-  if (nullptr == sys_clk_) {
-    sys_clk_ = this->create_node<inputimpl>(1, "clk", sloc);
-  }
-  return this->create_cd(sys_clk_, true, sloc);
-}
-
-lnode context::current_reset(const source_location& sloc) {
-  if (!cd_stack_.empty())
-    return cd_stack_.top().second;
-
-  if (nullptr == sys_reset_) {
-     sys_reset_ = this->create_node<inputimpl>(1, "reset", sloc);
-  }
-  return sys_reset_;
-}
-
-lnodeimpl* context::create_time(const source_location& sloc) {
-  if (nullptr == time_) {
-    time_ = this->create_node<timeimpl>(sloc);
-  }
-  return time_;
 }
 
 uint32_t context::node_id() {
@@ -191,18 +151,6 @@ uint32_t context::node_id() {
   }
 #endif
   return nodeid;
-}
-
-cdimpl* context::create_cd(const lnode& clk,
-                           bool pos_edge,
-                           const source_location& sloc) {
-  // return existing match
-  for (auto cd : cdomains_) {
-    if (cd->clk() == clk && cd->pos_edge() == pos_edge)
-      return cd;
-  }
-  // allocate new cdomain
-  return this->create_node<cdimpl>(clk, pos_edge, sloc);
 }
 
 void context::add_node(lnodeimpl* node) {
@@ -233,7 +181,6 @@ void context::add_node(lnodeimpl* node) {
     break;
   case type_reg:
   case type_mem:
-  case type_udfs:
     snodes_.emplace_back(node);
     break;
   case type_bind:
@@ -245,6 +192,13 @@ void context::add_node(lnodeimpl* node) {
   case type_assert:
   case type_print:
     gtaps_.emplace_back((ioimpl*)node);
+    break;
+  case type_udfc:
+  case type_udfs:
+    udfs_.emplace_back((udfimpl*)node);
+    if (type_udfs == type) {
+      snodes_.emplace_back(node);
+    }
     break;
   default:
     break;
@@ -264,7 +218,8 @@ node_list_t::iterator context::delete_node(const node_list_t::iterator& it) {
   auto node = *it;
   DBG(3, "*** deleting node: %s%d(#%d)\n", to_string(node->type()), node->size(), node->id());
   
-  switch (node->type()) {
+  auto type = node->type();
+  switch (type) {
   case type_undef:
     undefs_.remove((undefimpl*)node);
     break;
@@ -281,6 +236,9 @@ node_list_t::iterator context::delete_node(const node_list_t::iterator& it) {
     if (node == sys_reset_) {
       sys_reset_ = nullptr;
     }
+    if (node == sys_time_) {
+      sys_time_ = nullptr;
+    }
     inputs_.remove((inputimpl*)node);
     break;
   case type_output:
@@ -291,7 +249,6 @@ node_list_t::iterator context::delete_node(const node_list_t::iterator& it) {
     break;
   case type_reg:
   case type_mem:
-  case type_udfs:
     snodes_.remove(node);
     break;
   case type_bind:
@@ -303,10 +260,12 @@ node_list_t::iterator context::delete_node(const node_list_t::iterator& it) {
   case type_assert:
   case type_print:
     gtaps_.remove((ioimpl*)node);
-    break;
-  case type_time:
-    if (node == time_) {
-      time_ = nullptr;
+    break;  
+  case type_udfc:
+  case type_udfs:
+    udfs_.remove((udfimpl*)node);
+    if (type_udfs == type) {
+      snodes_.remove(node);
     }
     break;
   default:
@@ -316,6 +275,67 @@ node_list_t::iterator context::delete_node(const node_list_t::iterator& it) {
   // remove node from main list
   node->release();
   return nodes_.erase(it);
+}
+
+litimpl* context::create_literal(const sdata_type& value) {
+  // first lookup literals cache
+  for (auto lit : literals_) {
+    if (lit->value() == value)
+      return lit;
+  }
+  // create new literal
+  return this->create_node<litimpl>(value);
+}
+
+inputimpl* context::create_time(const source_location& sloc) {
+  if (nullptr == sys_time_) {
+    sys_time_ = this->create_node<inputimpl>(64, "time", sloc);
+  }
+  return sys_time_;
+}
+
+cdimpl* context::create_cd(const lnode& clk,
+                           bool pos_edge,
+                           const source_location& sloc) {
+  // return existing match
+  for (auto cd : cdomains_) {
+    if (cd->clk() == clk && cd->pos_edge() == pos_edge)
+      return cd;
+  }
+  // allocate new cdomain
+  return this->create_node<cdimpl>(clk, pos_edge, sloc);
+}
+
+lnodeimpl* context::current_reset(const source_location& sloc) {
+  if (!cd_stack_.empty())
+    return cd_stack_.top().second;
+
+  if (nullptr == sys_reset_) {
+     sys_reset_ = this->create_node<inputimpl>(1, "reset", sloc);
+  }
+  return sys_reset_;
+}
+
+void context::push_cd(const lnode& clk,
+                      const lnode& reset,
+                      bool pos_edge,
+                      const source_location& sloc) {
+  auto cd = this->create_cd(clk, pos_edge, sloc);
+  cd_stack_.emplace(cd, reset.impl());
+}
+
+void context::pop_cd() {
+  cd_stack_.pop();
+}
+
+cdimpl* context::current_cd(const source_location& sloc) {
+  if (!cd_stack_.empty())
+    return cd_stack_.top().first;
+
+  if (nullptr == sys_clk_) {
+    sys_clk_ = this->create_node<inputimpl>(1, "clk", sloc);
+  }
+  return this->create_cd(sys_clk_, true, sloc);
 }
 
 void context::begin_branch(lnodeimpl* key, const source_location& sloc) {
@@ -706,8 +726,8 @@ context::emit_conditionals(lnodeimpl* dst,
 }
 
 lnodeimpl* context::create_predicate(const source_location& sloc) {
-  auto zero = this->create_literal(bitvector(1, false));
-  auto one = this->create_literal(bitvector(1, true));
+  auto zero = this->create_literal(sdata_type(1, false));
+  auto one = this->create_literal(sdata_type(1, true));
 
   // create predicate variable
   auto predicate = this->create_node<proxyimpl>(zero, 0, 1, sloc);
@@ -717,16 +737,6 @@ lnodeimpl* context::create_predicate(const source_location& sloc) {
   this->conditional_assign(predicate, 0, 1, one, sloc);
 
   return predicate;
-}
-
-lnodeimpl* context::create_literal(const bitvector& value) {
-  // first lookup literals cache
-  for (auto lit : literals_) {
-    if (lit->value() == value)
-      return lit;
-  }
-  // create new literal
-  return this->create_node<litimpl>(value);
 }
 
 bindimpl* context::find_binding(context* module, const source_location& sloc) {
@@ -925,9 +935,9 @@ void context::build_eval_list(std::vector<lnodeimpl*>& eval_list) {
   }
 }
 
-lnodeimpl* context::create_udf_node(udf_iface* udf,
-                                    const std::initializer_list<lnode>& inputs,
-                                    const source_location& sloc) {
+udfimpl* context::create_udf_node(udf_iface* udf,
+                                  const std::initializer_list<lnode>& inputs,
+                                  const source_location& sloc) {
   if (udf->delta() != 0) {
     return this->create_node<udfsimpl>(udf, inputs, sloc);
   } else {

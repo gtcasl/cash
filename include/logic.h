@@ -440,7 +440,7 @@ CH_LOGIC_OPERATOR(logic_op_arithmetic)
 
   CH_LOGIC_OPERATOR_IMPL(operator+, ch_op::add, Derived)
   CH_LOGIC_OPERATOR_IMPL(operator-, ch_op::sub, Derived)
-  CH_LOGIC_OPERATOR_IMPL(operator*, ch_op::mul, Derived)
+  CH_LOGIC_OPERATOR_IMPL(operator*, ch_op::mult, Derived)
   CH_LOGIC_OPERATOR_IMPL(operator/, ch_op::div, Derived)
   CH_LOGIC_OPERATOR_IMPL(operator%, ch_op::mod, Derived)
 };

@@ -17,7 +17,7 @@ protected:
 
   struct rd_rsp_t {
     uint32_t master;
-    bitvector data;
+    sdata_type data;
   };
 
   struct wr_rsp_t {
@@ -35,7 +35,7 @@ protected:
   struct wr_req_t {
     uint32_t master;
     uint64_t address;
-    bitvector data;
+    sdata_type data;
     uint64_t bytemask;
     uint64_t req_time;
     uint64_t rsp_time;
@@ -63,7 +63,7 @@ protected:
 
   bool process_wr_req(uint64_t t,
                       uint32_t master,
-                      const bitvector& data,
+                      const sdata_type& data,
                       uint64_t address,
                       uint64_t bytemask,
                       uint32_t burstsize);
@@ -156,7 +156,7 @@ public:
       if (master->write) {
         if (!this->process_wr_req(t,
                                   i,
-                                  (bitvector)master->writedata,
+                                  (sdata_type)master->writedata,
                                   (uint64_t)master->address,
                                   (uint64_t)master->byteenable,
                                   (uint32_t)master->burstcount)) {

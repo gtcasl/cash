@@ -1,6 +1,7 @@
 #include "lnode.h"
 #include "lnodeimpl.h"
 #include "proxyimpl.h"
+#include "litimpl.h"
 #include "context.h"
 
 using namespace ch::internal;
@@ -14,7 +15,7 @@ const char* ch::internal::to_string(ch_op op) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-lnode::lnode(const bitvector& value) {
+lnode::lnode(const sdata_type& value) {
   impl_ = ctx_curr()->create_literal(value);
 }
 

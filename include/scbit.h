@@ -31,24 +31,24 @@ public:
   template <typename U,
             CH_REQUIRE_0(std::is_integral_v<U>)>
   ch_scbit(const U& other)
-    : buffer_(make_system_buffer(bitvector(N , other)))
+    : buffer_(make_system_buffer(sdata_type(N , other)))
   {}
 
   template <typename U,
-            CH_REQUIRE_0(is_bitvector_extended_type_v<std::decay_t<U>>)>
+            CH_REQUIRE_0(is_bitvector_extended_type_v<U>)>
   explicit ch_scbit(U&& other)
-    : buffer_(make_system_buffer(bitvector(N , std::forward<U>(other))))
+    : buffer_(make_system_buffer(sdata_type(N , std::forward<U>(other))))
   {}
 
   template <typename U,
             CH_REQUIRE_0(is_scbit_base_v<U>),
             CH_REQUIRE_0(ch_width_v<U> < N)>
   explicit ch_scbit(const U& other) {
-    bitvector ret(N);
+    sdata_type ret(N);
     if constexpr (ch_signed_v<U>) {
-      bv_sext(ret, system_accessor::data(other));
+      bv_sext(ret.words(), N, system_accessor::data(other).words(), ch_width_v<U>);
     } else {
-      bv_zext(ret, system_accessor::data(other));
+      bv_zext(ret.words(), N, system_accessor::data(other).words(), ch_width_v<U>);
     }
     buffer_ = make_system_buffer(std::move(ret));
   }

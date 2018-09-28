@@ -1,18 +1,18 @@
 #pragma once
 
-#include "common.h"
+#include "bv.h"
 
 namespace ch {
 namespace internal {
 
-template <typename T> struct is_bitvector_array_type : std::false_type {};
-template <> struct is_bitvector_array_type<uint8_t> : std::true_type {};
-template <> struct is_bitvector_array_type<uint16_t> : std::true_type {};
-template <> struct is_bitvector_array_type<uint32_t> : std::true_type {};
-template <> struct is_bitvector_array_type<uint64_t> : std::true_type {};
+template <typename T> struct is_bitvector_array_type_impl : std::false_type {};
+template <> struct is_bitvector_array_type_impl<uint8_t> : std::true_type {};
+template <> struct is_bitvector_array_type_impl<uint16_t> : std::true_type {};
+template <> struct is_bitvector_array_type_impl<uint32_t> : std::true_type {};
+template <> struct is_bitvector_array_type_impl<uint64_t> : std::true_type {};
 
 template <typename T>
-inline constexpr bool is_bitvector_array_type_v = is_bitvector_array_type<T>::value;
+inline constexpr bool is_bitvector_array_type_v = is_bitvector_array_type_impl<std::decay_t<T>>::value;
 
 template <typename T> struct is_bitvector_extended_type_impl : std::false_type {};
 
@@ -29,39 +29,29 @@ template <>
 struct is_bitvector_extended_type_impl<const char*> : std::true_type {};
 
 template <typename T>
-inline constexpr bool is_bitvector_extended_type_v = is_bitvector_extended_type_impl<T>::value;
+inline constexpr bool is_bitvector_extended_type_v = is_bitvector_extended_type_impl<std::decay_t<T>>::value;
 
+template <typename word_t = uint64_t,
+          typename alloc_t = std::allocator<word_t>>
 class bitvector {
 public:
-  using word_t = uint64_t;
+  static_assert(std::is_integral_v<word_t> && std::is_unsigned_v<word_t>, "invalid type");
+  typedef word_t  block_type;
+  typedef alloc_t allocator_type;
+  typedef size_t  size_type;
 
-  using xword_t = std::conditional_t<sizeof(word_t) == 1, uint8_t,
-                    std::conditional_t<sizeof(word_t) == 2, uint16_t, uint32_t>>;
-  using yword_t = std::conditional_t<sizeof(word_t) == 1, uint16_t,
-                     std::conditional_t<sizeof(word_t) == 2, uint32_t, uint64_t>>;
+  static constexpr uint32_t WORD_SIZE = bitwidth_v<word_t>;
+  static constexpr uint32_t WORD_MASK = WORD_SIZE - 1;
+  static constexpr word_t   WORD_MAX  = std::numeric_limits<word_t>::max();
 
-  using sword_t  = std::make_signed_t<word_t>;
-  using sxword_t = std::make_signed_t<xword_t>;
-  using syword_t = std::make_signed_t<yword_t>;
-
-  static constexpr unsigned WORD_SIZE    = bitwidth_v<word_t>;
-  static constexpr unsigned WORD_LOGSIZE = log2floor(WORD_SIZE);
-  static constexpr unsigned WORD_MASK    = WORD_SIZE - 1;
-  static constexpr word_t   WORD_MAX     = std::numeric_limits<word_t>::max();
-
-  static constexpr unsigned XWORD_SIZE    = bitwidth_v<xword_t>;
-  static constexpr unsigned XWORD_LOGSIZE = log2floor(XWORD_SIZE);
-  static constexpr unsigned XWORD_MASK    = XWORD_SIZE - 1;
-  static constexpr xword_t  XWORD_MAX     = std::numeric_limits<xword_t>::max();
-  
   class const_iterator;
   class iterator;
-  
+
   using const_reference = bool;
-  
+
   class reference {
-  public:    
-    
+  public:
+
     reference& operator=(bool other) {
       if (other) {
         word_ |= mask_;
@@ -70,21 +60,21 @@ public:
       }
       return *this;
     }
-    
+
     operator bool() const {
       return (word_ & mask_) != 0;
     }
-    
+
   protected:
-    
+
     reference(word_t& word, word_t mask) : word_(word), mask_(mask) {}
-    
+
     word_t& word_;
     word_t  mask_;
-    
+
     friend class iterator;
     friend class bitvector;
-  };  
+  };
 
   class iterator_base {
   public:
@@ -128,9 +118,9 @@ public:
     void advance(int delta) {
       int offset = (offset_ & WORD_MASK) + delta;
       if (offset >= 0) {
-        words_ += (offset >> WORD_LOGSIZE);
+        words_ += (offset / WORD_SIZE);
       } else {
-        words_ -= ((WORD_MASK - offset) >> WORD_LOGSIZE);
+        words_ -= ((WORD_MASK - offset) / WORD_SIZE);
       }
       offset_ += delta;
     }
@@ -146,138 +136,138 @@ public:
     const word_t* words_;
     uint32_t offset_;
   };
-    
+
   class const_iterator : public iterator_base {
   public:
     using base = iterator_base;
 
     const_iterator(const const_iterator& other) : base(other) {}
-    
+
     const_iterator& operator=(const const_iterator& other) {
       base::operator =(other);
       return *this;
     }
-    
+
     const_reference operator*() const {
       return this->const_ref();
     }
-    
+
     const_iterator& operator++() {
       this->increment();
       return *this;
     }
-    
+
     const_iterator& operator--() {
       this->decrement();
       return *this;
     }
-    
+
     const_iterator operator++(int) {
       const_iterator ret(*this);
       this->operator++();
       return ret;
     }
-    
+
     const_iterator operator--(int) {
       const_iterator ret(*this);
       this->operator--();
       return ret;
     }
-    
+
     const_iterator& operator+=(int incr) {
       this->advance(incr);
       return *this;
     }
-    
+
     const_iterator& operator-=(int dec) {
-      this->advance(-dec);      
+      this->advance(-dec);
       return *this;
     }
-    
+
     const_iterator operator+(int incr) const {
       const_iterator ret(*this);
       ret += incr;
       return ret;
     }
-    
+
     const_iterator operator-(int dec) const {
       const_iterator ret(*this);
       ret -= dec;
       return ret;
     }
-    
+
   protected:
-    
+
     const_iterator(const word_t* words, uint32_t offset)
       : iterator_base(words, offset)
     {}
-    
+
     friend class iterator;
     friend class bitvector;
   };
-  
+
   class iterator : public const_iterator {
   public:
     using base = const_iterator;
-    
+
     iterator(const iterator& other) : base(other) {}
-    
+
     iterator(const const_iterator& other) : base(other) {}
-    
+
     reference operator*() const {
       return this->ref();
     }
-    
+
     iterator& operator++() {
       this->increment();
       return *this;
-    } 
-    
+    }
+
     iterator& operator--() {
       this->decrement();
       return *this;
     }
-    
+
     iterator operator++(int) {
       iterator ret(*this);
       this->operator++();
       return ret;
     }
-    
+
     iterator operator--(int) {
       iterator ret(*this);
       this->operator--();
       return ret;
     }
-    
+
     iterator& operator+=(int incr) {
       this->advance(incr);
       return *this;
     }
-    
+
     iterator& operator-=(int dec) {
-      this->advance(-dec);      
+      this->advance(-dec);
       return *this;
     }
-    
+
     iterator operator+(int incr) const {
       iterator ret(*this);
       ret += incr;
       return ret;
     }
-    
+
     iterator operator-(int dec) const {
       iterator ret(*this);
       ret -= dec;
       return ret;
     }
-    
-  protected:  
-    
+
+  protected:
+
     iterator(word_t* words, uint32_t offset)
       : const_iterator(words, offset)
     {}
-    
+
     friend class bitvector;
   };
 
@@ -415,90 +405,78 @@ public:
 
     friend class bitvector;
   };
-  
-  bitvector() : words_(nullptr), size_(0) {}
-  
-  bitvector(const bitvector& other);
-  
-  bitvector(bitvector&& other);
-  
-  explicit bitvector(uint32_t size);
 
-  explicit bitvector(uint32_t size, int8_t value)
-    : bitvector(size, int64_t(value))
+  bitvector(const allocator_type& alloc = allocator_type())
+    : alloc_(alloc)
+    , size_(0)
+    , words_(nullptr)
   {}
 
-  explicit bitvector(uint32_t size, uint8_t value)
-    : bitvector(size, uint64_t(value))
-  {}
+  explicit bitvector(uint32_t size, const allocator_type& alloc = allocator_type())
+    : bitvector(alloc) {
+    this->resize(size);
+  }
 
-  explicit bitvector(uint32_t size, int16_t value)
-    : bitvector(size, int64_t(value))
-  {}
-
-  explicit bitvector(uint32_t size, uint16_t value)
-    : bitvector(size, uint64_t(value))
-  {}
-
-  explicit bitvector(uint32_t size, int32_t value)
-    : bitvector(size, int64_t(value))
-  {}
-
-  explicit bitvector(uint32_t size, uint32_t value)
-    : bitvector(size, uint64_t(value))
-  {}
-
-  explicit bitvector(uint32_t size, int64_t value);
-
-  explicit bitvector(uint32_t size, uint64_t value);
-
-  template <typename T, std::size_t N>
-  explicit bitvector(uint32_t size, const std::array<T, N>& value) : bitvector(size) {
-    static_assert(is_bitvector_array_type_v<T>, "invalid array type");
+  template <typename U,
+            CH_REQUIRE_0(std::is_integral_v<U> || is_bitvector_extended_type_v<U>)>
+  explicit bitvector(uint32_t size, U value, const allocator_type& alloc = allocator_type())
+    : bitvector(size, alloc) {
     this->operator =(value);
   }
 
-  template <typename T>
-  explicit bitvector(uint32_t size, const std::vector<T>& value) : bitvector(size) {
-    static_assert(is_bitvector_array_type_v<T>, "invalid array type");
-    this->operator =(value);
+  bitvector(const bitvector& other)
+    : bitvector(other.size_, other.alloc_) {
+    std::uninitialized_copy_n(other.words_, other.num_words(), words_);
   }
 
-  explicit bitvector(uint32_t size, const std::string& value);
-
-  ~bitvector();
-  
-  bitvector& operator=(const bitvector& other);
-  
-  bitvector& operator=(bitvector&& other);
-
-  bitvector& operator=(int8_t value) {
-    return this->operator=(int64_t(value));
+  bitvector(bitvector&& other) {
+    alloc_ = std::move(other.alloc_);
+    words_ = other.words_;
+    size_  = other.size_;
+    other.size_ = 0;
+    other.words_ = nullptr;
   }
 
-  bitvector& operator=(uint8_t value) {
-    return this->operator=(uint64_t(value));
+  ~bitvector() {
+    this->clear();
   }
 
-  bitvector& operator=(int16_t value) {
-    return this->operator=(int64_t(value));
+  bitvector& operator=(const bitvector& other) {
+    this->resize(other.size_);
+    std::uninitialized_copy_n(other.words_, other.num_words(), words_);
+    return *this;
   }
 
-  bitvector& operator=(uint16_t value) {
-    return this->operator=(uint64_t(value));
-  }
-  
-  bitvector& operator=(int32_t value) {
-    return this->operator=(int64_t(value));
+  bitvector& operator=(bitvector&& other) {
+    if (words_) {
+      alloc_.deallocate(words_, this->num_words());
+    }
+    alloc_ = std::move(other.alloc_);
+    size_  = other.size_;
+    words_ = other.words_;
+    other.size_ = 0;
+    other.words_ = nullptr;
+    return *this;
   }
 
-  bitvector& operator=(uint32_t value) {
-    return this->operator=(uint64_t(value));
+  template <typename U,
+            CH_REQUIRE_0(std::is_integral_v<U> && std::is_signed_v<U>)>
+  bitvector& operator=(U value) {
+    bv_assign<U>(words_, size_, value);
+    return *this;
   }
 
-  bitvector& operator=(int64_t value);
+  template <typename U,
+            CH_REQUIRE_0(std::is_integral_v<U> && std::is_unsigned_v<U>)>
+  bitvector& operator=(U value) {
+    bv_assign<U>(words_, size_, value);
+    return *this;
+  }
 
-  bitvector& operator=(uint64_t value);
+  bitvector& operator=(const std::string& value) {
+    bv_assign(words_, size_, value);
+    return *this;
+  }
 
   template <typename U, std::size_t N>
   bitvector& operator=(const std::array<U, N>& value) {
@@ -506,6 +484,9 @@ public:
     std::vector<U> tmp(N);
     std::reverse_copy(value.begin(), value.end(), tmp.begin());
     this->write(0, tmp.data(), sizeof(U), 0, N * bitwidth_v<U>);
+    auto src_num_words = ceildiv<uint32_t>(N * bitwidth_v<U>, WORD_SIZE);
+    auto num_words = this->num_words();
+    std::uninitialized_fill_n(words_ + src_num_words, num_words - src_num_words, 0);
     return *this;
   }
 
@@ -515,28 +496,41 @@ public:
     std::vector<U> tmp(value.size);
     std::reverse_copy(value.begin(), value.end(), tmp.begin());
     this->write(0, tmp.data(), sizeof(U), 0, tmp.size() * bitwidth_v<U>);
+    auto src_num_words = ceildiv<uint32_t>(tmp.size() * bitwidth_v<U>, WORD_SIZE);
+    auto num_words = this->num_words();
+    std::uninitialized_fill_n(words_ + src_num_words, num_words - src_num_words, 0);
     return *this;
   }
 
-  bitvector& operator=(const std::string& value);
-  
-  const_reference at(uint32_t index) const;
-  
-  reference at(uint32_t index);
-  
+  const_reference at(uint32_t index) const {
+    assert(index < size_);
+    uint32_t widx = index / WORD_SIZE;
+    uint32_t wbit = index & WORD_MASK;
+    auto mask = word_t(1) << wbit;
+    return (words_[widx] & mask) != 0;
+  }
+
+  reference at(uint32_t index) {
+    assert(index < size_);
+    uint32_t widx = index / WORD_SIZE;
+    uint32_t wbit = index & WORD_MASK;
+    auto mask = word_t(1) << wbit;
+    return reference(words_[widx], mask);
+  }
+
   auto operator[](uint32_t index) const {
     return this->at(index);
   }
-  
+
   auto operator[](uint32_t index) {
     return this->at(index);
   }
-  
+
   auto word(uint32_t index) const {
     assert(index < this->num_words());
     return words_[index];
   }
-  
+
   auto& word(uint32_t index) {
     assert(index < this->num_words());
     return words_[index];
@@ -560,9 +554,9 @@ public:
     size_ = size;
     return words;
   }
-  
+
   uint32_t num_words() const {
-    return (size_ + WORD_MASK) >> WORD_LOGSIZE;
+    return ceildiv(size_, WORD_SIZE);
   }
 
   const void* data() const {
@@ -572,28 +566,59 @@ public:
   void* data() {
     return words_;
   }
-  
+
   uint32_t size() const {
     return size_;
   }
-
-  void clear();
 
   bool empty() const {
     return (0 == size_);
   }
 
-  void resize(uint32_t size,
-              uint32_t value = 0x0,
-              bool initialize = false,
-              bool preserve = false);
+  void clear() {
+    if (words_) {
+      alloc_.deallocate(words_, this->num_words());
+      words_ = nullptr;
+    }
+    size_ = 0;
+  }
 
-  void clear_extra_bits();
+  void resize(uint32_t size) {
+    uint32_t old_num_words = ceildiv(size_, WORD_SIZE);
+    uint32_t new_num_words = ceildiv(size, WORD_SIZE);
+    if (new_num_words != old_num_words) {
+      auto words = alloc_.allocate(new_num_words);
+      if (words_) {
+        alloc_.deallocate(words_, this->num_words());
+      }
+      words_ = words;      
+    }
+    size_ = size;
 
+    // clear extra bits to zero
+    uint32_t extra_bits = size & WORD_MASK;
+    if (extra_bits) {
+      words_[new_num_words-1] = ~(WORD_MAX << extra_bits);
+    }
+  }
+
+  template <typename A>
   void copy(uint32_t dst_offset,
-            const bitvector& src,
+            const bitvector<word_t, A>& src,
             uint32_t src_offset,
-            uint32_t length);
+            uint32_t length) {
+    assert(size_ && src.size_);
+    assert(src_offset + length <= src.size_);
+    assert(dst_offset + length <= size_);
+
+    if (size_ <= WORD_SIZE
+     && src.size() <= WORD_SIZE) {
+      word_t mask =  (WORD_MAX >> (WORD_SIZE - length)) << dst_offset;
+      words_[0] = blend<word_t>(mask, words_[0],  ((src.word(0) >> src_offset) << dst_offset));
+    } else {
+      bv_copy<word_t>(words_, dst_offset, src.words(), src_offset, length);
+    }
+  }
 
   template <typename U,
             CH_REQUIRE_0(std::is_integral_v<U> && std::is_unsigned_v<U>)>
@@ -612,39 +637,43 @@ public:
              uint32_t length) {
     this->write(dst_offset, in, sizeof(U), src_offset, length);
   }
-  
-  int find_first() const;
-  
-  int find_last() const;
-  
+
+  int find_first() const {
+    return bv_lsb(words_, size_);
+  }
+
+  int find_last() const {
+    return bv_msb(words_, size_);
+  }
+
   auto front() const {
     return this->at(0);
   }
-  
+
   auto front() {
     return this->at(0);
   }
-  
+
   auto back() const {
     return this->at(size_ - 1);
   }
-  
+
   auto back() {
     return this->at(size_ - 1);
   }
-  
+
   auto begin() {
     return iterator(words_, 0);
   }
-  
+
   auto end() {
     return iterator(nullptr, size_);
   }
-  
+
   auto begin() const {
     return const_iterator(words_, 0);
   }
-  
+
   auto end() const {
     return const_iterator(nullptr, size_);
   }
@@ -665,17 +694,37 @@ public:
     return const_reverse_iterator(nullptr, -1);
   }
 
-  bool operator==(const bitvector& other) const;
+  bool operator==(const bitvector& other) const {
+    if (size_ != other.size_)
+      return false;
+    for (uint32_t i = 0, n = other.num_words(); i < n; ++i) {
+      if (words_[i] != other.words_[i])
+        return false;
+    }
+    return true;
+  }
 
-  bool operator!=(const bitvector& other) const {
+  template <typename A>
+  bool operator!=(const bitvector<word_t, A>& other) const {
     return !(*this == other);
   }
 
-  void set();
+  void set() {
+    std::uninitialized_fill_n(words_, this->num_words(), WORD_MAX);
+    bv_clear_extra_bits(words_, size_);
+  }
 
-  void reset();
+  void reset() {
+    std::uninitialized_fill_n(words_, this->num_words(), 0);
+  }
 
-  bool is_zero() const;
+  bool is_zero() const {
+    for (uint32_t i = 0, n = this->num_words(); i < n; ++i) {
+      if (words_[i])
+        return false;
+    }
+    return true;
+  }
 
   bool is_neg() const {
     return this->at(size_ - 1);
@@ -683,14 +732,7 @@ public:
 
 #define CH_DEF_CAST(type) \
   explicit operator type() const { \
-    CH_CHECK(bitwidth_v<type> >= size_, "invalid size"); \
-    if constexpr (bitwidth_v<type> <= WORD_SIZE) { \
-      return bit_cast<type>(words_[0]); \
-    } else { \
-      type ret(0); \
-      memcpy(&ret, words_, ceildiv<int>(size_, 8)); \
-      return ret; \
-    } \
+    return bv_cast<type, word_t>(words_, size_); \
   }
   CH_DEF_CAST(bool)
   CH_DEF_CAST(int8_t)
@@ -703,86 +745,111 @@ public:
   CH_DEF_CAST(uint64_t)
 #undef CH_DEF_CAST
 
-  void deadbeef();
-  
+  friend std::ostream& ch::internal::operator<<(std::ostream& out, const bitvector& in) {
+    out << "0x";
+    auto oldflags = out.flags();
+    out.setf(std::ios_base::hex, std::ios_base::basefield);
+
+    int quad(0);
+    bool skip_zeros = true;
+    uint32_t size = in.size();
+
+    for (auto it = in.begin() + (size - 1); size;) {
+      quad = (quad << 0x1) | *it--;
+      if (0 == (--size & 0x3)) {
+        if (0 == size || (quad != 0 ) || !skip_zeros) {
+          out << quad;
+          skip_zeros = false;
+        }
+        quad = 0;
+      }
+    }
+    if (0 != (size & 0x3)) {
+      out << quad;
+    }
+    out.flags(oldflags);
+    return out;
+  }
+
 protected:
 
   void read(uint32_t src_offset,
             void* dst,
             uint32_t byte_alignment,
             uint32_t dst_offset,
-            uint32_t length) const;
+            uint32_t length) const {
+    CH_CHECK(src_offset + length <= size_, "out of bound access");
+    assert(ispow2(byte_alignment) && byte_alignment <= 8);
+
+    byte_alignment = std::min<uint32_t>(byte_alignment, sizeof(word_t));
+
+    switch (byte_alignment) {
+    case 1:
+      bv_copy<uint8_t>(reinterpret_cast<uint8_t*>(dst), dst_offset,
+                         reinterpret_cast<const uint8_t*>(words_), src_offset,
+                         length);
+      break;
+    case 2:
+      bv_copy<uint16_t>(reinterpret_cast<uint16_t*>(dst), dst_offset,
+                          reinterpret_cast<const uint16_t*>(words_), src_offset,
+                          length);
+      break;
+    case 4:
+      bv_copy<uint32_t>(reinterpret_cast<uint32_t*>(dst), dst_offset,
+                          reinterpret_cast<const uint32_t*>(words_), src_offset,
+                          length);
+      break;
+    case 8:
+      bv_copy<uint64_t>(reinterpret_cast<uint64_t*>(dst), dst_offset,
+                          reinterpret_cast<const uint64_t*>(words_), src_offset,
+                          length);
+      break;
+    default:
+      CH_ABORT("invalid alignement value %d", byte_alignment);
+    }
+  }
 
   void write(uint32_t dst_offset,
              const void* src,
              uint32_t byte_alignment,
              uint32_t src_offset,
-             uint32_t length);
-  
-  word_t*  words_;
+             uint32_t length) {
+    CH_CHECK(dst_offset + length <= size_, "out of bound access");
+    byte_alignment = std::min<uint32_t>(byte_alignment, sizeof(word_t));
+
+    switch (byte_alignment) {
+    case 1:
+      bv_copy<uint8_t>(reinterpret_cast<uint8_t*>(words_), dst_offset,
+                         reinterpret_cast<const uint8_t*>(src), src_offset,
+                         length);
+      break;
+    case 2:
+      bv_copy<uint16_t>(reinterpret_cast<uint16_t*>(words_), dst_offset,
+                          reinterpret_cast<const uint16_t*>(src), src_offset,
+                          length);
+      break;
+    case 4:
+      bv_copy<uint32_t>(reinterpret_cast<uint32_t*>(words_), dst_offset,
+                          reinterpret_cast<const uint32_t*>(src), src_offset,
+                          length);
+      break;
+    case 8:
+      bv_copy<uint64_t>(reinterpret_cast<uint64_t*>(words_), dst_offset,
+                          reinterpret_cast<const uint64_t*>(src), src_offset,
+                          length);
+      break;
+    default:
+      CH_ABORT("invalid alignement value %d", byte_alignment);
+    }
+  }
+
+  allocator_type alloc_;
   uint32_t size_;
+  word_t* words_;
 
   friend class system_buffer;
   friend class system_io_buffer;
 };
-
-std::ostream& operator<<(std::ostream& out, const bitvector& in);
-
-///////////////////////////////////////////////////////////////////////////////
-
-bool bv_eq(const bitvector& lhs, const bitvector& rhs);
-
-bool bv_ltu(const bitvector& lhs, const bitvector& rhs);
-bool bv_lts(const bitvector& lhs, const bitvector& rhs);
-
-void bv_inv(bitvector& out, const bitvector& in);
-void bv_and(bitvector& out, const bitvector& lhs, const bitvector& rhs);
-void bv_or(bitvector& out, const bitvector& lhs, const bitvector& rhs);
-void bv_xor(bitvector& out, const bitvector& lhs, const bitvector& rhs);
-
-bool bv_andr(const bitvector& in);
-bool bv_orr(const bitvector& in);
-bool bv_xorr(const bitvector& in);
-
-void bv_slli(bitvector& out, const bitvector& in, uint32_t dist);
-void bv_srli(bitvector& out, const bitvector& in, uint32_t dist);
-void bv_srai(bitvector& out, const bitvector& in, uint32_t dist);
-
-inline void bv_sll(bitvector& out, const bitvector& in, const bitvector& rhs) {
-  CH_CHECK(rhs.find_last() <= 31, "shift amount out of range");
-  bv_slli(out, in, static_cast<uint32_t>(rhs));
-}
-
-inline void bv_srl(bitvector& out, const bitvector& in, const bitvector& rhs) {
-  CH_CHECK(rhs.find_last() <= 31, "shift amount out of range");
-  bv_srli(out, in, static_cast<uint32_t>(rhs));
-}
-
-inline void bv_sra(bitvector& out, const bitvector& in, const bitvector& rhs) {
-  CH_CHECK(rhs.find_last() <= 31, "shift amount out of range");
-  bv_srai(out, in, static_cast<uint32_t>(rhs));
-}
-
-void bv_neg(bitvector& out, const bitvector& in);
-void bv_add(bitvector& out, const bitvector& lhs, const bitvector& rhs);
-void bv_sub(bitvector& out, const bitvector& lhs, const bitvector& rhs);
-void bv_mul(bitvector& out, const bitvector& lhs, const bitvector& rhs);
-void bv_divu(bitvector& out, const bitvector& lhs, const bitvector& rhs);
-void bv_divs(bitvector& out, const bitvector& lhs, const bitvector& rhs);
-void bv_modu(bitvector& out, const bitvector& lhs, const bitvector& rhs);
-void bv_mods(bitvector& out, const bitvector& lhs, const bitvector& rhs);
-void bv_divmodu(bitvector& quot, bitvector& rem, const bitvector& lhs, const bitvector& rhs);
-
-void bv_zext(bitvector& out, const bitvector& in);
-void bv_sext(bitvector& out, const bitvector& in);
-
-inline void bv_abs(bitvector& out, const bitvector& in) {
-  if (in.is_neg()) {
-    bv_neg(out, in);
-  } else {
-    out = in;
-  }
-}
 
 }
 }

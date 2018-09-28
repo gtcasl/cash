@@ -161,15 +161,15 @@ public:
 
   explicit system_io_buffer(const lnode& io);
 
-  const bitvector& data() const override;
+  const sdata_type& data() const override;
 
   void read(uint32_t src_offset,
-            bitvector& dst,
+            sdata_type& dst,
             uint32_t dst_offset,
             uint32_t length) const override;
 
   void write(uint32_t dst_offset,
-             const bitvector& src,
+             const sdata_type& src,
              uint32_t src_offset,
              uint32_t length) override;
 

@@ -10,6 +10,8 @@ struct instr_base {
   instr_base() {}
   virtual ~instr_base() {}
 
+  virtual void destroy() = 0;
+
   virtual void eval() = 0;
 };
 

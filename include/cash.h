@@ -1,14 +1,9 @@
 #pragma once
 
-#include "common.h"
-#include "bitvector.h"
-#include "traits.h"
-#include "lnode.h"
-#include "system.h"
+#include "literals.h"
 #include "scbit.h"
 #include "scint.h"
 #include "scuint.h"
-#include "literals.h"
 #include "logic.h"
 #include "bit.h"
 #include "int.h"
@@ -174,7 +169,7 @@ namespace logic {
   using ch::internal::ch_neg;
   using ch::internal::ch_add;
   using ch::internal::ch_sub;
-  using ch::internal::ch_mul;
+  using ch::internal::ch_mult;
   using ch::internal::ch_div;
   using ch::internal::ch_mod;
 
@@ -262,7 +257,7 @@ namespace system {
   using ch::internal::ch_simulator;
   using ch::internal::ch_tracer;
 
-  using ch::internal::bitvector;
+  using ch::internal::sdata_type;
 
   //
   // utility functions

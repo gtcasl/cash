@@ -22,11 +22,11 @@ protected:
 class ioportimpl : public ioimpl {
 public:
 
-  const bitvector& value() const {
+  const sdata_type& value() const {
     return value_;
   }
 
-  bitvector& value() {
+  sdata_type& value() {
     return value_;
   }
 
@@ -50,7 +50,7 @@ protected:
              const source_location& sloc,
              const std::string& name = "");
 
-  bitvector value_;
+  sdata_type value_;
   lnode binding_;
 
   friend class context;

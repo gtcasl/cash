@@ -45,7 +45,7 @@ public:
     return has_initdata_;
   }
 
-  const bitvector& initdata() const {
+  const sdata_type& initdata() const {
     return initdata_;
   }
 
@@ -86,7 +86,7 @@ protected:
   
   std::vector<mrportimpl*> rdports_;
   std::vector<mwportimpl*> wrports_;
-  bitvector initdata_;
+  sdata_type initdata_;
   int cd_idx_;
   uint32_t data_width_;
   uint32_t num_items_;

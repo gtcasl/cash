@@ -10,263 +10,281 @@
 #include "aluimpl.h"
 #include "assertimpl.h"
 #include "printimpl.h"
-#include "timeimpl.h"
 #include "udfimpl.h"
 
 using namespace ch::internal;
 
-using instr_map_t = std::unordered_map<uint32_t, const bitvector*>;
+using instr_map_t = std::unordered_map<uint32_t, const block_type*>;
 
-struct instr_proxy : instr_base {
+class instr_proxy : public instr_base {
+private:
 
   struct range_t {
-    const bitvector* src_data;
+    const block_type* src_data;
     uint32_t src_offset;
     uint32_t dst_offset;
     uint32_t length;
   };
 
-  std::vector<range_t> ranges;
-  bitvector dst;
+  const range_t* ranges_;
+  uint32_t num_ranges_;
+  block_type* dst_;
 
-  instr_proxy(proxyimpl* node, instr_map_t& map)
-    : dst(node->size()) {
-    ranges.reserve(node->ranges().size());
-    for (auto& range : node->ranges()) {
-      range_t new_range = {
-        map.at(node->src(range.src_idx).id()),
-        range.src_offset,
-        range.dst_offset,
-        range.length
-      };
-      ranges.emplace_back(new_range);
-    }
-    map[node->id()] = &dst;
-  }
-
-  void eval() override {
-    for (auto& range : ranges) {
-      dst.copy(range.dst_offset, *range.src_data, range.src_offset, range.length);
-    }
-  }
-};
-
-
-///////////////////////////////////////////////////////////////////////////////
-
-struct instr_output : instr_base {
-  const bitvector* src;
-  bitvector* dst;
-
-  instr_output(outputimpl* node, instr_map_t& map)
-    : src(map.at(node->src(0).id()))
-    , dst(&node->value())
+  instr_proxy(const range_t* ranges, uint32_t num_ranges, block_type* dst)
+    : ranges_(ranges)
+    , num_ranges_(num_ranges)
+    , dst_(dst)
   {}
 
-  void eval() override {
-    *dst = *src;
+public:
+
+  static instr_proxy* create(proxyimpl* node, instr_map_t& map) {
+    uint32_t dst_bytes = sizeof(block_type) * ceildiv<uint32_t>(node->size(), bitwidth_v<block_type>);
+
+    uint32_t num_ranges = node->ranges().size();
+
+    uint32_t range_bytes = 0;
+    for (uint32_t i = 0; i < num_ranges; ++i) {
+      range_bytes += sizeof(range_t);
+    }
+
+    auto buf = new uint8_t[sizeof(instr_proxy) + dst_bytes + range_bytes]();
+    auto buf_cur = buf + sizeof(instr_proxy);
+    auto dst = (block_type*)buf_cur;
+    map[node->id()] = dst;
+
+    buf_cur += dst_bytes;
+
+    auto ranges = (range_t*)buf_cur;
+    for (uint32_t i = 0; i < num_ranges; ++i) {
+      auto& dst_range = ranges[i];
+      auto& src_range = node->range(i);
+      dst_range.src_data   = map.at(node->src(src_range.src_idx).id());
+      dst_range.src_offset = src_range.src_offset;
+      dst_range.dst_offset = src_range.dst_offset;
+      dst_range.length     = src_range.length;
+    }
+
+    return new (buf) instr_proxy(ranges, num_ranges, dst);
   }
+
+  void destroy () override {
+    this->~instr_base();
+    ::operator delete [](this);
+  }
+
+  void eval() override {
+    for (uint32_t i = 0; i < num_ranges_; ++i) {
+      auto& range = ranges_[i];
+      bv_copy(dst_, range.dst_offset, range.src_data, range.src_offset, range.length);
+    }
+  }
+};
+
+
+///////////////////////////////////////////////////////////////////////////////
+
+class instr_output : public instr_base {
+public:
+
+  static instr_output* create(outputimpl* node, instr_map_t& map) {
+    return new instr_output(node, map);
+  }
+
+  void destroy () override {
+    delete this;
+  }
+
+  void eval() override {
+    std::uninitialized_copy_n(src_, nblocks_, dst_);
+  }
+
+private:
+
+  instr_output(outputimpl* node, instr_map_t& map)
+    : src_(map.at(node->src(0).id()))
+    , dst_(node->value().words()) {
+    nblocks_ = ceildiv<uint32_t>(node->size(), bitwidth_v<block_type>);
+  }
+
+  const block_type* src_;
+  block_type* dst_;
+  uint32_t nblocks_;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct instr_alu_base : instr_base {
-  bool is_signed;
-  bool need_resizing;
-  const bitvector* o_src0;
-  const bitvector* o_src1;
-  const bitvector* src0;
-  const bitvector* src1;
-  bitvector t_src0;
-  bitvector t_src1;
-  bitvector dst;
+class instr_alu_base : public instr_base {
+public:
 
-  instr_alu_base(aluimpl* node, instr_map_t& map)
-    : is_signed(node->is_signed())
-    , need_resizing(false)
-    , o_src0(nullptr)
-    , o_src1(nullptr)
-    , src0(nullptr)
-    , src1(nullptr)
-    , dst(node->size()){
-    // access source node data
-    if (node->srcs().size() > 0) {
-      o_src0 = map.at(node->src(0).id());
-      if (node->srcs().size() > 1) {
-        o_src1 = map.at(node->src(1).id());
-      }
-    }
-    src0 = o_src0;
-    src1 = o_src1;
+  static instr_alu_base* create(aluimpl* node, instr_map_t& map);
 
-    // allocate shadow buffers if needed
-    auto op = node->op();
-    auto op_prop = CH_OP_PROP(op);
-    if (op_prop & op_flags::eq_opd_size) {
-      auto op_class = CH_OP_CLASS(op);
-      if (op_flags::equality == op_class
-       || op_flags::relational == op_class) {
-        // resize source operands to match each other
-        if (src0->size() != src1->size()) {
-          if (src0->size() < src1->size()) {
-            t_src0.resize(src1->size());
-            src0 = &t_src0;
-          } else {
-            t_src1.resize(src0->size());
-            src1 = &t_src1;
-          }
-          need_resizing = true;
-        }
-      } else {
-        // resize source operands to match destination
-        if (src0->size() != node->size()) {
-          t_src0.resize(node->size());
-          src0 = &t_src0;
-          need_resizing = true;
-        }
-        if (src1 && src1->size() != node->size()) {
-          t_src1.resize(node->size());
-          src1 = &t_src1;
-          need_resizing = true;
-        }
-      }
-    }
+protected:
 
-    map[node->id()] = &dst;
-  }
+  instr_alu_base(bool need_resizing,
+                 const block_type* o_src0,
+                 uint32_t o_src0_size,
+                 const block_type* o_src1,
+                 uint32_t o_src1_size,
+                 block_type* src0,
+                 uint32_t src0_size,
+                 block_type* src1,
+                 uint32_t src1_size,
+                 block_type* dst,
+                 uint32_t dst_size)
+    : need_resizing_(need_resizing)
+    , o_src0_(o_src0)
+    , o_src0_size_(o_src0_size)
+    , o_src1_(o_src1)
+    , o_src1_size_(o_src1_size)
+    , src0_(src0)
+    , src0_size_(src0_size)
+    , src1_(src1)
+    , src1_size_(src1_size)
+    , dst_(dst)
+    , dst_size_(dst_size)
+  {}
 
-  void update_shadow_buffers() {
-    if (src0 == &t_src0) {
-      if (t_src0.size() > o_src0->size()) {
-        if (is_signed) {
-          bv_sext(t_src0, *o_src0);
-        } else {
-          bv_zext(t_src0, *o_src0);
-        }
-      } else {
-        t_src0.copy(0, *o_src0, 0, t_src0.size());
-      }
-    }
-    if (src1 == &t_src1) {
-      if (t_src1.size() > o_src1->size()) {
-        if (is_signed) {
-          bv_sext(t_src1, *o_src1);
-        } else {
-          bv_zext(t_src1, *o_src1);
-        }
-      } else {
-        t_src1.copy(0, *o_src1, 0, t_src1.size());
-      }
-    }
-  }
+  bool need_resizing_;
+  const block_type* o_src0_;
+  uint32_t o_src0_size_;
+  const block_type* o_src1_;
+  uint32_t o_src1_size_;
+  block_type* src0_;
+  uint32_t src0_size_;
+  block_type* src1_;
+  uint32_t src1_size_;
+  block_type* dst_;
+  uint32_t dst_size_;
 };
 
-template <ch_op op>
-struct instr_alu : instr_alu_base {
-  instr_alu(aluimpl* node, instr_map_t& map) : instr_alu_base(node, map) {}
+template <ch_op op, bool is_signed>
+class instr_alu : instr_alu_base {
+public:
+
+  void destroy () override {
+    this->~instr_alu();
+    ::operator delete [](this);
+  }
 
   void eval() override {
     if constexpr (CH_OP_PROP(op) & op_flags::eq_opd_size) {
-      if (need_resizing) {
+      if (need_resizing_) {
         this->update_shadow_buffers();
       }
     }
     switch (op) {
     case ch_op::eq:
-      dst = bv_eq(*src0, *src1);
+      bv_assign(dst_, dst_size_, bv_eq(src0_,  src1_, src0_size_));
       break;
     case ch_op::ne:
-      dst = !bv_eq(*src0, *src1);
+      bv_assign(dst_, dst_size_, !bv_eq(src0_,  src1_, src0_size_));
       break;
     case ch_op::lt:
-      dst = is_signed ? bv_lts(*src0, *src1) : bv_ltu(*src0, *src1);
+      if constexpr (is_signed) {
+        bv_assign(dst_, dst_size_, bv_slt(src0_,  src1_, src0_size_));
+      } else {
+        bv_assign(dst_, dst_size_, bv_ult(src0_,  src1_, src0_size_));
+      }
       break;
     case ch_op::gt:
-      dst = is_signed ? bv_lts(*src1, *src0) : bv_ltu(*src1, *src0);
+      if constexpr (is_signed) {
+        bv_assign(dst_, dst_size_, bv_slt(src1_,  src0_, src0_size_));
+      } else {
+        bv_assign(dst_, dst_size_, bv_ult(src1_,  src0_, src0_size_));
+      }
       break;
     case ch_op::le:
-      dst = !(is_signed ? bv_lts(*src1, *src0) : bv_ltu(*src1, *src0));
+      if constexpr (is_signed) {
+        bv_assign(dst_, dst_size_, !bv_slt(src1_,  src0_, src0_size_));
+      } else {
+        bv_assign(dst_, dst_size_, !bv_ult(src1_,  src0_, src0_size_));
+      }
       break;
     case ch_op::ge:
-      dst = !(is_signed ? bv_lts(*src0, *src1) : bv_ltu(*src0, *src1));
+      if constexpr (is_signed) {
+        bv_assign(dst_, dst_size_, !bv_slt(src0_,  src1_, src0_size_));
+      } else {
+        bv_assign(dst_, dst_size_, !bv_ult(src0_,  src1_, src0_size_));
+      }
       break;
 
     case ch_op::notl:
-      dst = !bv_orr(*src0);
+      bv_assign(dst_, dst_size_, !bv_orr(src0_, src0_size_));
       break;
     case ch_op::andl:
-      dst = bv_orr(*src0) && bv_orr(*src1);
+      bv_assign(dst_, dst_size_, bv_orr(src0_, src0_size_) && bv_orr(src1_, src1_size_));
       break;
     case ch_op::orl:
-      dst = bv_orr(*src0) || bv_orr(*src1);
+      bv_assign(dst_, dst_size_, bv_orr(src0_, src0_size_) || bv_orr(src1_, src1_size_));
       break;
 
     case ch_op::inv:
-      bv_inv(dst, *src0);
+      bv_inv(dst_, src0_, dst_size_);
       break;
     case ch_op::andb:
-      bv_and(dst, *src0, *src1);
+      bv_and(dst_, src0_, src1_, dst_size_);
       break;
     case ch_op::orb:
-      bv_or(dst, *src0, *src1);
+      bv_or(dst_, src0_, src1_, dst_size_);
       break;
     case ch_op::xorb:
-      bv_xor(dst, *src0, *src1);
+      bv_xor(dst_, src0_, src1_, dst_size_);
       break;
 
     case ch_op::andr:
-      dst = bv_andr(*src0);
+      bv_assign(dst_, dst_size_, bv_andr(src0_, src0_size_));
       break;
     case ch_op::orr:
-      dst = bv_orr(*src0);
+      bv_assign(dst_, dst_size_, bv_orr(src0_, src0_size_));
       break;
     case ch_op::xorr:
-      dst = bv_xorr(*src0);
+      bv_assign(dst_, dst_size_, bv_xorr(src0_, src0_size_));
       break;
 
     case ch_op::shl:
-      bv_sll(dst, *src0, *src1);
+      bv_sll(dst_, dst_size_, src0_, src0_size_, bv_cast<uint32_t>(src1_, src1_size_));
       break;
     case ch_op::shr:
-      if (is_signed) {
-        bv_sra(dst, *src0, *src1);
+      if constexpr (is_signed) {
+        bv_sra(dst_, dst_size_, src0_, src0_size_, bv_cast<uint32_t>(src1_, src1_size_));
       } else {
-        bv_srl(dst, *src0, *src1);
+        bv_srl(dst_, dst_size_, src0_, src0_size_, bv_cast<uint32_t>(src1_, src1_size_));
       }
       break;
 
     case ch_op::add:
-      bv_add(dst, *src0, *src1);
+      bv_add(dst_, src0_, src1_, dst_size_);
       break;
     case ch_op::sub:
-      bv_sub(dst, *src0, *src1);
+      bv_sub(dst_, src0_, src1_, dst_size_);
       break;
     case ch_op::neg:
-      bv_neg(dst, *src0);
+      bv_neg(dst_, src0_, dst_size_);
       break;
-    case ch_op::mul:
-      bv_mul(dst, *src0, *src1);
+    case ch_op::mult:
+      bv_mult(dst_, dst_size_, src0_, src0_size_, src1_, src1_size_);
       break;
     case ch_op::div:
-      if (is_signed) {
-        bv_divs(dst, *src0, *src1);
+      if constexpr (is_signed) {
+        bv_sdiv(dst_, dst_size_, src0_, src0_size_, src1_, src1_size_);
       } else {
-        bv_divu(dst, *src0, *src1);
+        bv_udiv(dst_, dst_size_, src0_, src0_size_, src1_, src1_size_);
       }
       break;
     case ch_op::mod:
-      if (is_signed) {
-        bv_mods(dst, *src0, *src1);
+      if constexpr (is_signed) {
+        bv_smod(dst_, dst_size_, src0_, src0_size_, src1_, src1_size_);
       } else {
-        bv_modu(dst, *src0, *src1);
+        bv_umod(dst_, dst_size_, src0_, src0_size_, src1_, src1_size_);
       }
       break;
 
     case ch_op::pad:
-      if (is_signed) {
-        bv_sext(dst, *src0);
+      if constexpr (is_signed) {
+        bv_sext(dst_, dst_size_, src0_, src0_size_);
       } else {
-        bv_zext(dst, *src0);
+        bv_zext(dst_, dst_size_, src0_, src0_size_);
       }
       break;
 
@@ -274,10 +292,150 @@ struct instr_alu : instr_alu_base {
       CH_ABORT("invalid opcode");
     }
   }
+
+private:
+
+  instr_alu(bool need_resizing,
+            const block_type* o_src0,
+            uint32_t o_src0_size_,
+            const block_type* o_src1,
+            uint32_t o_src1_size,
+            block_type* src0,
+            uint32_t src0_size_,
+            block_type* src1,
+            uint32_t src1_size,
+            block_type* dst,
+            uint32_t dst_size_)
+    : instr_alu_base(need_resizing,
+                     o_src0, o_src0_size_,
+                     o_src1, o_src1_size,
+                     src0, src0_size_,
+                     src1, src1_size,
+                     dst, dst_size_)
+    {}
+
+
+
+  void update_shadow_buffers() {
+    if (src0_size_ != o_src0_size_) {
+      if constexpr (is_signed) {
+        bv_sext(src0_, src0_size_, o_src0_, o_src0_size_);
+      } else {
+        bv_zext(src0_, src0_size_, o_src0_, o_src0_size_);
+      }
+    }
+    if (src1_size_ != o_src1_size_) {
+      if constexpr (is_signed) {
+        bv_sext(src1_, src1_size_, o_src1_, o_src1_size_);
+      } else {
+        bv_zext(src1_, src1_size_, o_src1_, o_src1_size_);
+      }
+    }
+  }
+
+  friend class instr_alu_base;
 };
 
-static instr_alu_base* create_alu_instr(aluimpl* node, instr_map_t& map) {
-#define CREATE_ALU_INST(op) case op: return new instr_alu<op>(node, map)
+instr_alu_base* instr_alu_base::create(aluimpl* node, instr_map_t& map) {
+  uint32_t dst_size = node->size();
+
+  const block_type* o_src0 = nullptr;
+  uint32_t o_src0_size = 0;
+  const block_type* o_src1 = nullptr;
+  uint32_t o_src1_size = 0;
+
+  // access source node data
+  if (node->srcs().size() > 0) {
+    o_src0 = map.at(node->src(0).id());
+    o_src0_size = node->src(0).size();
+    if (node->srcs().size() > 1) {
+      o_src1 = map.at(node->src(1).id());
+      o_src1_size = node->src(1).size();
+    }
+  }
+
+  block_type* src0 = (block_type*)o_src0;
+  uint32_t src0_size = o_src0_size;
+  block_type* src1 = (block_type*)o_src1;
+  uint32_t src1_size = o_src1_size;
+
+  bool need_resizing = false;
+
+  // allocate shadow buffers if needed
+  auto op = node->op();
+  auto op_prop = CH_OP_PROP(op);
+  if (op_prop & op_flags::eq_opd_size) {
+    auto op_class = CH_OP_CLASS(op);
+    if (op_flags::equality == op_class
+     || op_flags::relational == op_class) {
+      // resize source operands to match each other
+      if (src0_size != src1_size) {
+        if (src0_size < src1_size) {
+          src0_size = src1_size;
+        } else {
+          src1_size = src0_size;
+        }
+        need_resizing = true;
+      }
+    } else {
+      // resize source operands to match destination
+      if (src0_size != dst_size) {
+        if (src0_size < dst_size) {
+          need_resizing = true;
+        }
+        src0_size = dst_size;
+      }
+      if (src1 && src1_size != dst_size) {
+        if (src1_size < dst_size) {
+          need_resizing = true;
+        }
+        src1_size = dst_size;
+      }
+    }
+  }
+
+  uint32_t dst_bytes = sizeof(block_type) * ceildiv<uint32_t>(dst_size, bitwidth_v<block_type>);
+
+  uint32_t t_src0_bytes = 0;
+  if (src0_size != o_src0_size) {
+    t_src0_bytes = sizeof(block_type) * ceildiv<uint32_t>(src0_size, bitwidth_v<block_type>);
+  }
+
+  uint32_t t_src1_bytes = 0;
+  if (src1_size != o_src1_size) {
+    t_src1_bytes = sizeof(block_type) * ceildiv<uint32_t>(src1_size, bitwidth_v<block_type>);
+  }
+
+  auto buf = new uint8_t[sizeof(instr_alu_base) + dst_bytes + t_src0_bytes + t_src1_bytes]();
+  auto buf_cur = buf + sizeof(instr_alu_base);
+  auto dst = (block_type*)buf_cur;
+  map[node->id()] = dst;
+
+  buf_cur += dst_bytes;
+
+  if (t_src0_bytes) {
+    src0 = (block_type*)buf_cur;
+    buf_cur += t_src0_bytes;
+  }
+
+  if (t_src1_bytes) {
+    src1 = (block_type*)buf_cur;
+    buf_cur += t_src1_bytes;
+  }
+
+#define CREATE_ALU_INST(op) \
+  case op: \
+    if (is_signed) { \
+      return new (buf) instr_alu<op, true>(need_resizing, o_src0, o_src0_size, \
+                                           o_src1, o_src1_size, src0, src0_size, \
+                                           src1, src1_size, dst, dst_size); \
+    } else { \
+      return new (buf) instr_alu<op, false>(need_resizing, o_src0, o_src0_size, \
+                                            o_src1, o_src1_size, src0, src0_size, \
+                                            src1, src1_size, dst, dst_size); \
+    }
+
+  bool is_signed = node->is_signed();
   switch (node->op()) {
   CREATE_ALU_INST(ch_op::eq);
   CREATE_ALU_INST(ch_op::ne);
@@ -300,7 +458,7 @@ static instr_alu_base* create_alu_instr(aluimpl* node, instr_map_t& map) {
   CREATE_ALU_INST(ch_op::add);
   CREATE_ALU_INST(ch_op::sub);
   CREATE_ALU_INST(ch_op::neg);
-  CREATE_ALU_INST(ch_op::mul);
+  CREATE_ALU_INST(ch_op::mult);
   CREATE_ALU_INST(ch_op::div);
   CREATE_ALU_INST(ch_op::mod);
   CREATE_ALU_INST(ch_op::pad);
@@ -312,213 +470,367 @@ static instr_alu_base* create_alu_instr(aluimpl* node, instr_map_t& map) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct instr_select : instr_base {
-  bool has_key;
-  std::vector<const bitvector*> srcs;
-  bitvector dst;
+class instr_select : public instr_base {
+public:
 
-  instr_select(selectimpl* node, instr_map_t& map)
-    : has_key(node->has_key())
-    , dst(node->size()) {
-    srcs.reserve(node->srcs().size());
-    for (auto src : node->srcs()) {
-      srcs.emplace_back(map.at(src.id()));
+  static instr_select* create(selectimpl* node, instr_map_t& map) {
+    uint32_t dst_size = node->size();
+    uint32_t nblocks  = ceildiv<uint32_t>(dst_size, bitwidth_v<block_type>);
+    bool has_key      = node->has_key();
+    uint32_t key_size = node->src(0).size();
+    uint32_t num_srcs = node->srcs().size();
+
+    uint32_t dst_bytes = sizeof(block_type) * nblocks;
+    uint32_t src_bytes = sizeof(block_type*) * node->srcs().size();
+
+    auto buf = new uint8_t[sizeof(selectimpl) + dst_bytes + src_bytes]();
+
+    auto buf_cur = buf + sizeof(selectimpl);
+    auto dst = (block_type*)buf_cur;
+    map[node->id()] = dst;
+
+    buf_cur += dst_bytes;
+
+    auto srcs = (const block_type**)buf_cur;
+    for (uint32_t i = 0; i < num_srcs; ++i) {
+      srcs[i] = map.at(node->src(i).id());
     }
-    map[node->id()] = &dst;
+
+    return new (buf) instr_select(has_key, key_size, dst, nblocks, srcs, num_srcs);
+  }
+
+  void destroy () override {
+    this->~instr_select();
+    ::operator delete [](this);
   }
 
   void eval() override {
-    uint32_t i, last(srcs.size() - 1);
-    if (has_key) {
-      auto key = srcs[0];
+    uint32_t i, last(num_srcs_ - 1);
+    if (has_key_) {
       for (i = 1; i < last; i += 2) {
-        if (*key == *srcs[i])
+        if (bv_eq(srcs_[0], srcs_[i], key_size_))
           break;
       }
     } else {
       for (i = 0; i < last; i += 2) {
-        if (static_cast<bool>(*srcs[i]))
+        if (static_cast<bool>(srcs_[i][0]))
           break;
       }
     }
-    dst = (i < last) ? *srcs[i+1] : *srcs[last];
+
+    auto src = (i < last) ? srcs_[i+1] : srcs_[last];
+    std::uninitialized_copy_n(src, nblocks_, dst_);
   }
+
+private:
+
+  instr_select(bool has_key, uint32_t key_size,
+               block_type* dst, uint32_t nblocks,
+               const block_type** srcs, uint32_t num_srcs)
+    : has_key_(has_key)
+    , key_size_(key_size)
+    , dst_(dst)
+    , nblocks_(nblocks)
+    , srcs_(srcs)
+    , num_srcs_(num_srcs)
+  {}
+
+  bool has_key_;
+  uint32_t key_size_;
+  block_type* dst_;
+  uint32_t nblocks_;
+  const block_type** srcs_;
+  uint32_t num_srcs_;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct instr_cd : instr_base {
-  const bitvector* clk;
-  bool prev_val;
-  bool pos_edge;
-  bitvector dst;
+class instr_cd : public instr_base {
+public:
 
-  instr_cd(cdimpl* node, instr_map_t& map)
-    : clk(map.at(node->clk().id()))
-    , prev_val(false)
-    , pos_edge(node->pos_edge())
-    , dst(node->size()) {
-    map[node->id()] = &dst;
+  static instr_cd* create(cdimpl* node, instr_map_t& map) {
+    uint32_t dst_size  = node->size();
+    uint32_t nblocks   = ceildiv<uint32_t>(dst_size, bitwidth_v<block_type>);
+    uint32_t dst_bytes = sizeof(block_type) * nblocks;
+
+    auto buf = new uint8_t[sizeof(cdimpl) + dst_bytes]();
+    auto buf_cur = buf + sizeof(cdimpl);
+    auto dst = (block_type*)buf_cur;
+    map[node->id()] = dst;
+
+    return new (buf) instr_cd(node, map, dst);
+  }
+
+  void destroy () override {
+    this->~instr_cd();
+    ::operator delete [](this);
   }
 
   void eval() override {
-    auto value = static_cast<bool>(*clk);
-    dst = (prev_val != value) && (0 == (value ^ pos_edge));
-    prev_val = value;
+    auto value = static_cast<bool>(clk_[0]);
+    dst_[0] = (prev_val_ != value) && (0 == (value ^ pos_edge_));
+    prev_val_ = value;
   }
+
+private:
+
+  instr_cd(cdimpl* node, instr_map_t& map, block_type* dst)
+    : clk_(map.at(node->clk().id()))
+    , prev_val_(false)
+    , pos_edge_(node->pos_edge())
+    , dst_(dst)
+  {}
+
+  const block_type* clk_;
+  bool prev_val_;
+  bool pos_edge_;
+  block_type* dst_;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct instr_reg : instr_base {
-  std::vector<bitvector> pipe;
-  const bitvector* cd;
-  const bitvector* next;
-  const bitvector* enable;
-  const bitvector* reset;
-  const bitvector* initdata;
-  bitvector dst;
+class instr_reg : public instr_base {
+public:
 
-  instr_reg(regimpl* node, instr_map_t& map)
-    : pipe(node->length() - 1, bitvector(node->next().size()))
-    , cd(nullptr)
-    , next(nullptr)
-    , enable(nullptr)
-    , reset(nullptr)
-    , initdata(nullptr)
-    , dst(node->size()) {
-    map[node->id()] = &dst;
+  static instr_reg* create(regimpl* node, instr_map_t& map) {
+    uint32_t dst_size    = node->size();
+    uint32_t nblocks     = ceildiv<uint32_t>(dst_size, bitwidth_v<block_type>);
+    uint32_t dst_bytes   = sizeof(block_type) * nblocks;
+
+    uint32_t pipe_length = node->length() - 1;
+    uint32_t pipe_array_bytes = 0;
+    uint32_t pipe_data_bytes = 0;
+    for (uint32_t i = 0; i < pipe_length; ++i) {
+      pipe_array_bytes += sizeof(block_type*);
+      pipe_data_bytes += dst_bytes;
+    }
+
+    auto buf = new uint8_t[sizeof(instr_reg) + dst_bytes + pipe_array_bytes + pipe_data_bytes]();
+    auto buf_cur = buf + sizeof(instr_reg);
+    auto dst = (block_type*)buf_cur;
+    map[node->id()] = dst;
+
+    buf_cur += dst_bytes;
+
+    auto pipe = (block_type**)buf_cur;
+    buf_cur += pipe_array_bytes;
+
+    for (uint32_t i = 0; i < pipe_length; ++i) {
+      pipe[i] = (block_type*)(buf_cur + i * dst_bytes);
+    }
+
+    return new (buf) instr_reg(pipe, pipe_length, dst, nblocks);
+  }
+
+  void destroy () override {
+    this->~instr_reg();
+    ::operator delete [](this);
   }
 
   void init(regimpl* node, instr_map_t& map) {
-    cd = map.at(node->cd().id());
-    next = map.at(node->next().id());
-    enable = node->has_enable() ? map.at(node->enable().id()) : nullptr;
-    reset = node->has_initdata() ? map.at(node->reset().id()) : nullptr;
-    initdata = node->has_initdata() ? map.at(node->initdata().id()) : nullptr;
+    cd_       = map.at(node->cd().id());
+    next_     = map.at(node->next().id());
+    enable_   = node->has_enable() ? map.at(node->enable().id()) : nullptr;
+    reset_    = node->has_initdata() ? map.at(node->reset().id()) : nullptr;
+    initdata_ = node->has_initdata() ? map.at(node->initdata().id()) : nullptr;
   }
+
+private:
+
+  instr_reg(block_type** pipe, uint32_t pipe_length, block_type* dst, uint32_t nblocks)
+    : initdata_(nullptr)
+    , cd_(nullptr)
+    , reset_(nullptr)
+    , enable_(nullptr)
+    , next_(nullptr)
+    , pipe_(pipe)
+    , pipe_length_(pipe_length)
+    , dst_(dst)
+    , nblocks_(nblocks)
+  {}
 
   void eval() override {
     // check clock transition
-    if (!static_cast<bool>(*cd))
+    if (!static_cast<bool>(cd_[0]))
       return;
 
     // check reset state
-    if (reset && static_cast<bool>(*reset)) {
-      dst = *initdata;
-      for (auto& p : pipe) {
-        p = dst;
+    if (reset_ && static_cast<bool>(reset_[0])) {
+      std::uninitialized_copy_n(initdata_, nblocks_, dst_);
+      for (uint32_t i = 0; i < pipe_length_; ++i) {
+        std::uninitialized_copy_n(initdata_, nblocks_, pipe_[i]);
       }
       return;
     }
 
     // check enable state
-    if (enable && !static_cast<bool>(*enable))
+    if (enable_ && !static_cast<bool>(enable_[0]))
       return;
 
     // advance pipeline
-    bitvector* value = &dst;
-    if (!pipe.empty()) {
-      auto last = pipe.size() - 1;
-      dst = pipe[last];
+    block_type* value = dst_;
+    if (pipe_length_) {
+      auto last = pipe_length_ - 1;
+      std::uninitialized_copy_n(pipe_[last], nblocks_, dst_);
       for (int i = last; i > 0; --i) {
-        pipe[i] = pipe[i-1];
+        std::uninitialized_copy_n(pipe_[i-1], nblocks_, pipe_[i]);
       }
-      value = &pipe[0];
+      value = pipe_[0];
     }
     // push next value
-    *value = *next;
+    std::uninitialized_copy_n(next_, nblocks_, value);
   }
+
+  const block_type* initdata_;
+  const block_type* cd_;
+  const block_type* reset_;
+  const block_type* enable_;
+  const block_type* next_;
+  block_type** pipe_;
+  uint32_t pipe_length_;
+  block_type* dst_;
+  uint32_t nblocks_;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct instr_mem : instr_base {
+class instr_mem : public instr_base {
+private:
 
   struct rdport_t {
-    bitvector data;
-    const bitvector* addr;
-    const bitvector* enable;
-
-    rdport_t(unsigned size, const bitvector* addr, const bitvector* enable)
-      : data(size)
-      , addr(addr)
-      , enable(enable)
-    {}
+          block_type* data;
+    const block_type* addr;
+    const block_type* enable;
   };
 
   struct wrport_t {
-    const bitvector* data;
-    const bitvector* addr;
-    const bitvector* enable;
-
-    wrport_t(const bitvector* data, const bitvector* addr, const bitvector* enable)
-      : data(data)
-      , addr(addr)
-      , enable(enable)
-    {}
+    const block_type* data;
+    const block_type* addr;
+    const block_type* enable;
   };
 
-  std::vector<rdport_t> rdports;
-  std::vector<wrport_t> wrports;
-  bitvector dst;
-  const bitvector* cd;
-  uint32_t num_items;
-  bool is_write_enable;
+  rdport_t* rdports_;
+  uint32_t num_rdports_;
+  wrport_t* wrports_;
+  uint32_t num_wrports_;
+  const block_type* cd_;
+  block_type* dst_;
+  uint32_t data_size_;
+  uint32_t addr_size_;
 
-  instr_mem(memimpl* node, instr_map_t& map)
-    : dst(node->size())
-    , cd(nullptr)
-    , is_write_enable(node->is_write_enable()) {
-    if (node->is_sync_read()) {
-      rdports.reserve(node->rdports().size());
-      for (auto p : node->rdports()) {
-        rdports.emplace_back(p->size(), nullptr, nullptr);
-        map[p->id()] = &rdports.back().data;
-      }
+  instr_mem(rdport_t* rdports,
+            uint32_t num_rdports,
+            wrport_t* wrports,
+            uint32_t num_wrports,
+            block_type* dst,
+            uint32_t data_size,
+            uint32_t addr_size)
+    : rdports_(rdports)
+    , num_rdports_(num_rdports)
+    , wrports_(wrports)
+    , num_wrports_(num_wrports)
+    , cd_(nullptr)
+    , dst_(dst)
+    , data_size_(data_size)
+    , addr_size_(addr_size)
+  {}
+
+public:
+
+  static instr_mem* create(memimpl* node, instr_map_t& map) {
+    uint32_t dst_size  = node->size();
+    uint32_t dst_nblocks = ceildiv<uint32_t>(dst_size, bitwidth_v<block_type>);
+    uint32_t dst_bytes = sizeof(block_type) * dst_nblocks;
+    uint32_t data_size = node->data_width();
+    uint32_t data_bytes = sizeof(block_type) * ceildiv<uint32_t>(data_size, bitwidth_v<block_type>);
+    uint32_t addr_size = log2ceil(node->num_items());
+
+    uint32_t num_rdports = node->is_sync_read() ? node->rdports().size() : 0;
+    uint32_t rdports_bytes = 0;
+    uint32_t rdports_data_bytes = 0;
+    for (uint32_t i = 0; i < num_rdports; ++i) {
+      rdports_bytes += sizeof(rdport_t);
+      rdports_data_bytes += data_bytes;
     }
+
+    uint32_t num_wrports = node->wrports().size();
+    uint32_t wrports_bytes = 0;
+    for (uint32_t i = 0; i < num_wrports; ++i) {
+      wrports_bytes += sizeof(wrport_t);
+    }
+
+    auto buf = new uint8_t[sizeof(instr_mem) + dst_bytes + rdports_bytes + rdports_data_bytes + wrports_bytes]();
+    auto buf_cur = buf + sizeof(instr_mem);
+    auto dst = (block_type*)buf_cur;
+    map[node->id()] = dst;
+
+    buf_cur += dst_bytes;
+
+    auto rdports = (rdport_t*)buf_cur;
+    buf_cur += rdports_bytes;
+
+    for (uint32_t i = 0; i < num_rdports; ++i) {
+      auto p = node->rdports()[i];
+      rdports[i].data = (block_type*)(buf_cur + i * data_bytes);
+      map[p->id()] = rdports[i].data;
+    }
+
+    buf_cur += rdports_data_bytes;
+    auto wrports = (wrport_t*)buf_cur;
+
     if (node->has_initdata()) {
-      dst = node->initdata();
+      std::uninitialized_copy_n(node->initdata().words(), dst_nblocks, dst);
     }
-    map[node->id()] = &dst;
+
+    return new (buf) instr_mem(rdports, num_rdports, wrports, num_wrports,
+                               dst, data_size, addr_size);
+  }
+
+  void destroy () override {
+    this->~instr_mem();
+    ::operator delete [](this);
   }
 
   void init(memimpl* node, instr_map_t& map) {
-    cd = node->has_cd() ? map.at(node->cd().id()) : nullptr;    
-    for (unsigned i = 0, n = rdports.size(); i < n; ++i) {
+    cd_ = node->has_cd() ? map.at(node->cd().id()) : nullptr;
+
+    for (uint32_t i = 0; i < num_rdports_; ++i) {
       auto p = node->rdports()[i];
-      rdports[i].addr   = map.at(p->addr().id());
-      rdports[i].enable = p->has_enable() ? map.at(p->enable().id()) : nullptr;
+      rdports_[i].addr   = map.at(p->addr().id());
+      rdports_[i].enable = p->has_enable() ? map.at(p->enable().id()) : nullptr;
     }
-    wrports.reserve(node->wrports().size());
-    for (auto p : node->wrports()) {
-      wrports.emplace_back(map.at(p->wdata().id()),
-                           map.at(p->addr().id()),
-                           p->has_enable() ? map.at(p->enable().id()) : nullptr);
+
+    for (uint32_t i = 0; i < num_wrports_; ++i) {
+      auto p = node->wrports()[i];
+      wrports_[i].data = map.at(p->wdata().id());
+      wrports_[i].addr = map.at(p->addr().id());
+      wrports_[i].enable = p->has_enable() ? map.at(p->enable().id()) : nullptr;
     }
   }
 
   void eval() override {
     // check clock transition
-    if (cd && static_cast<bool>(*cd)) {
+    if (cd_ && static_cast<bool>(cd_[0])) {
       // evaluate synchronous read ports
-      for (auto& p : rdports) {
+      for (uint32_t i = 0; i < num_rdports_; ++i) {
+        auto& p = rdports_[i];
         // check enable state
-        if (p.enable && !static_cast<bool>(*p.enable))
+        if (p.enable && !static_cast<bool>(p.enable[0]))
           continue;
         // memory read
-        auto addr = static_cast<uint32_t>(*p.addr);
-        p.data.copy(0, dst, addr * p.data.size(), p.data.size());
+        auto addr = bv_cast<uint32_t>(p.addr, addr_size_);
+        bv_copy(p.data, 0, dst_, addr * data_size_, data_size_);
       }
 
       // evaluate synchronous write ports
-      for (auto& p : wrports) {
+      for (uint32_t i = 0; i < num_wrports_; ++i) {
+        auto& p = wrports_[i];
         // check enable state
-        if (p.enable && !static_cast<bool>(*p.enable))
+        if (p.enable && !static_cast<bool>(p.enable[0]))
           continue;
         // memory write
-        auto addr = static_cast<uint32_t>(*p.addr);
-        dst.copy(addr * p.data->size(), *p.data, 0, p.data->size());
+        auto addr = bv_cast<uint32_t>(p.addr, addr_size_);
+        bv_copy(dst_, addr * data_size_, p.data, 0, data_size_);
       }
     }
   }
@@ -526,113 +838,150 @@ struct instr_mem : instr_base {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct instr_mrport : instr_base {
-  const bitvector* mem;
-  const bitvector* addr;
-  bitvector dst;
+class instr_mrport : public instr_base {
+public:
 
-  instr_mrport(mrportimpl* node, instr_map_t& map)
-    : mem(map.at(node->mem()->id()))
-    , addr(map.at(node->addr().id()))
-    , dst(node->size()) {
-    map[node->id()] = &dst;
+  static instr_mrport* create(mrportimpl* node, instr_map_t& map) {
+    uint32_t dst_size  = node->size();
+    uint32_t nblocks   = ceildiv<uint32_t>(dst_size, bitwidth_v<block_type>);
+    uint32_t dst_bytes = sizeof(block_type) * nblocks;
+
+    auto buf = new uint8_t[sizeof(mrportimpl) + dst_bytes]();
+    auto buf_cur = buf + sizeof(mrportimpl);
+    auto dst = (block_type*)buf_cur;
+    map[node->id()] = dst;
+
+    auto store = map.at(node->mem()->id());
+    auto addr = map.at(node->addr().id());
+    auto addr_size = node->addr().size();
+
+    return new (buf) instr_mrport(store, addr, dst, dst_size, addr_size);
+  }
+
+  void destroy () override {
+    this->~instr_mrport();
+    ::operator delete [](this);
   }
 
   void eval() override {
-    auto a = static_cast<uint32_t>(*addr);
-    dst.copy(0, *mem, a * dst.size(), dst.size());
+    auto a = bv_cast<uint32_t>(addr_, addr_size_);
+    bv_copy(dst_, 0, store_, a * dst_size_, dst_size_);
   }
+
+private:
+
+  instr_mrport(const block_type* store,
+              const block_type* addr,
+              block_type* dst,
+              uint32_t dst_size,
+              uint32_t addr_size)
+    : store_(store)
+    , addr_(addr)
+    , dst_(dst)
+    , dst_size_(dst_size)
+    , addr_size_(addr_size)
+  {}
+
+  const block_type* store_;
+  const block_type* addr_;
+  block_type* dst_;
+  uint32_t dst_size_;
+  uint32_t addr_size_;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct instr_tap : instr_base {
-  const bitvector* src;
-  bitvector* dst;
+class instr_tap : public instr_base {
+public:
+
+  static instr_tap* create(tapimpl* node, instr_map_t& map) {
+    return new instr_tap(node, map);
+  }
+
+  void destroy () override {
+    delete this;
+  }
+
+  void eval() override {
+    std::uninitialized_copy_n(src_, nblocks_, dst_);
+  }
+
+private:
 
   instr_tap(tapimpl* node, instr_map_t& map)
-    : src(map.at(node->src(0).id()))
-    , dst(&node->value())
-  {}
-
-  void eval() override {
-    *dst = *src;
+    : src_(map.at(node->src(0).id()))
+    , dst_(node->value().words()) {
+    nblocks_ = ceildiv<uint32_t>(node->size(), bitwidth_v<block_type>);
   }
+
+  const block_type* src_;
+  block_type* dst_;
+  uint32_t nblocks_;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct instr_assert : instr_base {
-  const bitvector* cond;
-  const bitvector* pred;
-  std::string message;
-  source_location sloc;
-  ch_tick tick;
+class instr_assert : public instr_base {
+public:
 
-  instr_assert(assertimpl* node, instr_map_t& map)
-    : cond(map.at(node->condition().id()))
-    , pred(node->is_predicated() ? map.at(node->predicate().id()) : nullptr)    
-    , message(node->message())
-    , sloc(node->sloc())
-    , tick(0)
-  {}
+  static instr_assert* create(assertimpl* node, instr_map_t& map) {
+    return new instr_assert(node, map);
+  }
+
+  void destroy () override {
+    delete this;
+  }
 
   void eval() override {
-    if ((!pred || static_cast<bool>(*pred))
-     && !static_cast<bool>(*cond)) {
-      fprintf(stderr, "assertion failure at tick %ld, %s (%s:%d)\n", tick, message.c_str(), sloc.file(), sloc.line());
+    if ((!pred_ || static_cast<bool>(pred_[0]))
+     && !static_cast<bool>(*cond_)) {
+      fprintf(stderr, "assertion failure at tick %ld, %s (%s:%d)\n",
+              tick_, msg_.c_str(), sloc_.file(), sloc_.line());
       std::abort();
     }
-    ++tick;
+    ++tick_;
   }
+
+private:
+
+  instr_assert(assertimpl* node, instr_map_t& map)
+    : cond_(map.at(node->condition().id()))
+    , pred_(node->is_predicated() ? map.at(node->predicate().id()) : nullptr)
+    , msg_(node->message())
+    , sloc_(node->sloc())
+    , tick_(0)
+  {}
+
+  const block_type* cond_;
+  const block_type* pred_;
+  std::string msg_;
+  source_location sloc_;
+  ch_tick tick_;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct instr_time : instr_base {
-  ch_tick tick;
-  bitvector dst;
+class instr_print : public instr_base {
+public:
 
-  instr_time(timeimpl* node, instr_map_t& map)
-    : tick(0)
-    , dst(node->size()) {
-    map[node->id()] = &dst;
+  static instr_print* create(printimpl* node, instr_map_t& map) {
+    return new instr_print(node, map);
+  }
+
+  void destroy () override {
+    delete this;
   }
 
   void eval() override {
-    dst = tick++;
-  }
-};
-
-///////////////////////////////////////////////////////////////////////////////
-
-struct instr_print : instr_base {
-  std::vector<enum_string_cb> enum_strings;
-  std::vector<const bitvector*> srcs;
-  const bitvector* pred;
-  std::string format;
-
-  instr_print(printimpl* node, instr_map_t& map)
-    : enum_strings(node->enum_strings())
-    , pred(node->is_predicated() ? map.at(node->predicate().id()) : nullptr)
-    , format(node->format()) {
-    srcs.reserve(node->enum_strings().size());
-    for (unsigned i = (pred ? 1 : 0), n = node->srcs().size(); i < n; ++i) {
-      auto src = node->src(i).impl();
-      srcs.emplace_back(map.at(src->id()));
-    }
-  }
-
-  void eval() override {
-    if (pred && !static_cast<bool>(*pred))
+    if (pred_ && !static_cast<bool>(*pred_))
       return;
-    if (format != "") {
+    if (format_ != "") {
       std::stringstream strbuf;
-      for (const char *str = format.c_str(); *str != '\0'; ++str) {
+      for (const char *str = format_.c_str(); *str != '\0'; ++str) {
         if (*str == '{') {
           fmtinfo_t fmt;
           str = parse_format_index(&fmt, str);
-          auto src = srcs[fmt.index];
+          auto src = srcs_[fmt.index];
           switch (fmt.type) {
           case fmttype::Int:
             strbuf << *src;
@@ -641,7 +990,7 @@ struct instr_print : instr_base {
             strbuf << bit_cast<float>(static_cast<int>(*src));
             break;
           case fmttype::Enum:
-            strbuf << enum_strings[fmt.index](static_cast<int>(*src));
+            strbuf << enum_strings_[fmt.index](static_cast<int>(*src));
            break;
           }
         } else {
@@ -652,82 +1001,138 @@ struct instr_print : instr_base {
     }
     std::cout << std::endl;
   }
+
+private:
+
+  instr_print(printimpl* node, instr_map_t& map)
+    : enum_strings_(node->enum_strings())
+    , pred_(node->is_predicated() ? map.at(node->predicate().id()) : nullptr)
+    , format_(node->format()) {
+    srcs_.reserve(node->enum_strings().size());
+    for (uint32_t i = (pred_ ? 1 : 0), n = node->srcs().size(); i < n; ++i) {
+      auto src = node->src(i).impl();
+      srcs_.emplace_back(map.at(src->id()));
+    }
+  }
+
+  std::vector<enum_string_cb> enum_strings_;
+  std::vector<const block_type*> srcs_;
+  const block_type* pred_;
+  std::string format_;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct instr_udfc : instr_base {
-  udf_iface* udf;
-  udf_inputs srcs;
-  bitvector dst;
+class instr_udfc : public instr_base {
+public:
 
-  instr_udfc(udfcimpl* node, instr_map_t& map)
-    : udf(node->udf())
-    , dst(node->size()) {
-    srcs.reserve(node->srcs().size());
-    for (auto src : node->srcs()) {
-      srcs.emplace_back(map.at(src.id()));
-    }
-    map[node->id()] = &dst;
+  static instr_udfc* create(udfcimpl* node, instr_map_t& map) {
+    return new instr_udfc(node, map);
+  }
+
+  void destroy () override {
+    delete this;
   }
 
   void eval() override {
-    udf->eval(dst, srcs);
+    udf_->eval(dst_, srcs_);
   }
+
+private:
+
+  instr_udfc(udfcimpl* node, instr_map_t& map)
+    : udf_(node->udf())
+    , dst_(node->size()) {
+    srcs_.resize(node->srcs().size());
+    for (uint32_t i = 0, n = srcs_.size(); i < n; ++i) {
+      auto& src = node->src(i);
+      srcs_[i].emplace(const_cast<block_type*>(map.at(src.id())), src.size());
+    }
+    map[node->id()] = dst_.words();
+  }
+
+  ~instr_udfc() {
+    for (auto& src : srcs_) {
+      src.emplace(nullptr);
+    }
+  }
+
+  udf_iface* udf_;
+  udf_inputs srcs_;
+  sdata_type dst_;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct instr_udfs : instr_base {
-  std::vector<bitvector> pipe;
-  udf_iface* udf;
-  udf_inputs srcs;
-  const bitvector* cd;
-  const bitvector* reset;
-  bitvector dst;
+class instr_udfs : public instr_base {
+public:
 
-  instr_udfs(udfsimpl* node, instr_map_t& map)
-    : udf(node->udf())
-    , cd(nullptr)
-    , reset(nullptr)
-    , dst(node->size()) {
-    srcs.reserve(node->srcs().size());    
-    pipe.resize(udf->delta() - 1, bitvector(dst.size()));
-    map[node->id()] = &dst;
+  static instr_udfs* create(udfsimpl* node, instr_map_t& map) {
+    return new instr_udfs(node, map);
+  }
+
+  void destroy () override {
+    delete this;
   }
 
   void init(udfsimpl* node, instr_map_t& map) {
-    cd = map.at(node->cd().id());
-    reset = node->has_initdata() ? map.at(node->reset().id()) : nullptr;
-    for (auto src : node->srcs()) {
-      srcs.emplace_back(map.at(src.id()));
+    cd_ = map.at(node->cd().id());
+    reset_ = node->has_initdata() ? map.at(node->reset().id()) : nullptr;
+    for (uint32_t i = 0, n = srcs_.size(); i < n; ++i) {
+      auto& src = node->src(i);
+      srcs_[i].emplace(const_cast<block_type*>(map.at(src.id())), src.size());
     }
   }
 
   void eval() override {
     // check clock transition
-    if (!static_cast<bool>(*cd))
+    if (!static_cast<bool>(cd_[0]))
       return;
 
-    bitvector* value = &dst;
+    sdata_type* value = &dst_;
 
     // advance the pipeline
-    if (!pipe.empty()) {
-      auto last = pipe.size() - 1;
-      dst = pipe[last];
+    if (!pipe_.empty()) {
+      auto last = pipe_.size() - 1;
+      dst_ = pipe_[last];
       for (int i = last; i > 0; --i) {
-        pipe[i] = pipe[i-1];
+        pipe_[i] = pipe_[i-1];
       }
-      value = &pipe[0];
+      value = &pipe_[0];
     }
 
     // push new entry
-    if (reset && static_cast<bool>(*reset)) {
-      udf->reset(*value, srcs);
+    if (reset_ && static_cast<bool>(reset_[0])) {
+      udf_->reset(*value, srcs_);
     } else {
-      udf->eval(*value, srcs);
+      udf_->eval(*value, srcs_);
     }
   }
+
+private:
+
+  instr_udfs(udfsimpl* node, instr_map_t& map)
+    : udf_(node->udf())
+    , cd_(nullptr)
+    , reset_(nullptr)
+    , dst_(node->size()) {
+    srcs_.resize(node->srcs().size());
+    pipe_.resize(udf_->delta() - 1, sdata_type(dst_.size()));
+    map[node->id()] = dst_.words();
+  }
+
+  ~instr_udfs() {
+    for (auto& src : srcs_) {
+      src.emplace(nullptr);
+    }
+  }
+
+  std::vector<sdata_type> pipe_;
+  udf_iface* udf_;
+  udf_inputs srcs_;
+  const block_type* cd_;
+  const block_type* reset_;
+  sdata_type dst_;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -736,7 +1141,7 @@ simref::simref() {}
 
 simref::~simref() {
   for (auto instr : instrs_) {
-    delete instr;
+    instr->destroy();
   }
 }
 
@@ -749,13 +1154,13 @@ void simref::initialize(const std::vector<lnodeimpl*>& eval_list) {
   for (auto node : eval_list) {
     switch (node->type()) {
     case type_reg:
-      snodes[node->id()] = new instr_reg(reinterpret_cast<regimpl*>(node), instr_map);
+      snodes[node->id()] = instr_reg::create(reinterpret_cast<regimpl*>(node), instr_map);
       break;
     case type_mem:
-      snodes[node->id()] = new instr_mem(reinterpret_cast<memimpl*>(node), instr_map);
+      snodes[node->id()] = instr_mem::create(reinterpret_cast<memimpl*>(node), instr_map);
       break;
     case type_udfs:
-      snodes[node->id()] = new instr_udfs(reinterpret_cast<udfsimpl*>(node), instr_map);
+      snodes[node->id()] = instr_udfs::create(reinterpret_cast<udfsimpl*>(node), instr_map);
       break;
     default:
       break;
@@ -769,34 +1174,34 @@ void simref::initialize(const std::vector<lnodeimpl*>& eval_list) {
       assert(false);
       break;
     case type_lit:
-      instr_map[node->id()] = &reinterpret_cast<litimpl*>(node)->value();
+      instr_map[node->id()] = reinterpret_cast<litimpl*>(node)->value().words();
       break;
     case type_proxy:
-      instrs_.emplace_back(new instr_proxy(reinterpret_cast<proxyimpl*>(node), instr_map));
+      instrs_.emplace_back(instr_proxy::create(reinterpret_cast<proxyimpl*>(node), instr_map));
       break;
     case type_input: {
       auto input = reinterpret_cast<inputimpl*>(node);
       if (input->is_bind()) {
         instr_map[node->id()] = instr_map.at(input->binding().id());
       } else {
-        instr_map[node->id()] = &input->value();
+        instr_map[node->id()] = input->value().words();
       }
     } break;
     case type_output: {
       auto output = reinterpret_cast<outputimpl*>(node);
       instr_map[node->id()] = instr_map.at(output->src(0).id());
       if (!output->is_bind()) {
-        instrs_.emplace_back(new instr_output(output, instr_map));
+        instrs_.emplace_back(instr_output::create(output, instr_map));
       }
     } break;
     case type_alu:
-      instrs_.emplace_back(create_alu_instr(reinterpret_cast<aluimpl*>(node), instr_map));
+      instrs_.emplace_back(instr_alu_base::create(reinterpret_cast<aluimpl*>(node), instr_map));
       break;
     case type_sel:
-      instrs_.emplace_back(new instr_select(reinterpret_cast<selectimpl*>(node), instr_map));
+      instrs_.emplace_back(instr_select::create(reinterpret_cast<selectimpl*>(node), instr_map));
       break;
     case type_cd:
-      instrs_.emplace_back(new instr_cd(reinterpret_cast<cdimpl*>(node), instr_map));
+      instrs_.emplace_back(instr_cd::create(reinterpret_cast<cdimpl*>(node), instr_map));
       break;
     case type_reg: {
       auto instr = reinterpret_cast<instr_reg*>(snodes.at(node->id()));
@@ -811,7 +1216,7 @@ void simref::initialize(const std::vector<lnodeimpl*>& eval_list) {
     case type_mrport: {
       auto port = reinterpret_cast<mrportimpl*>(node);
       if (!port->is_sync_read()) {
-        instrs_.emplace_back(new instr_mrport(port, instr_map));
+        instrs_.emplace_back(instr_mrport::create(port, instr_map));
       }
     } break;
     case type_mwport:
@@ -825,19 +1230,16 @@ void simref::initialize(const std::vector<lnodeimpl*>& eval_list) {
       instr_map[node->id()] = instr_map.at(reinterpret_cast<bindportimpl*>(node)->ioport().id());
       break;
     case type_tap:
-      instrs_.emplace_back(new instr_tap(reinterpret_cast<tapimpl*>(node), instr_map));
+      instrs_.emplace_back(instr_tap::create(reinterpret_cast<tapimpl*>(node), instr_map));
       break;
     case type_assert:
-      instrs_.emplace_back(new instr_assert(reinterpret_cast<assertimpl*>(node), instr_map));
-      break;
-    case type_time:
-      instrs_.emplace_back(new instr_time(reinterpret_cast<timeimpl*>(node), instr_map));
+      instrs_.emplace_back(instr_assert::create(reinterpret_cast<assertimpl*>(node), instr_map));
       break;
     case type_print:
-      instrs_.emplace_back(new instr_print(reinterpret_cast<printimpl*>(node), instr_map));
+      instrs_.emplace_back(instr_print::create(reinterpret_cast<printimpl*>(node), instr_map));
       break;
     case type_udfc:
-      instrs_.emplace_back(new instr_udfc(reinterpret_cast<udfcimpl*>(node), instr_map));
+      instrs_.emplace_back(instr_udfc::create(reinterpret_cast<udfcimpl*>(node), instr_map));
       break;
     case type_udfs: {
       auto instr = reinterpret_cast<instr_udfs*>(snodes.at(node->id()));

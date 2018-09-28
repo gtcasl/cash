@@ -8,7 +8,7 @@ namespace internal {
 class litimpl : public lnodeimpl {
 public:
 
-  const bitvector& value() const {
+  const sdata_type& value() const {
     return value_;
   }
 
@@ -16,9 +16,9 @@ public:
 
 protected:
 
-  litimpl(context* ctx, const bitvector& value);
+  litimpl(context* ctx, const sdata_type& value);
 
-  bitvector value_;
+  sdata_type value_;
 
   friend class context;
 };

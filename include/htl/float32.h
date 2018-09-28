@@ -294,7 +294,7 @@ auto ch_fsub(const ch_float32& lhs, const ch_float32& rhs, const ch_bool& enable
 }
 
 template <unsigned Delay>
-auto ch_fmul(const ch_float32& lhs, const ch_float32& rhs, const ch_bool& enable = true, __sloc) {
+auto ch_fmult(const ch_float32& lhs, const ch_float32& rhs, const ch_bool& enable = true, __sloc) {
   return ch_udf<fMul<Delay>>(lhs, rhs, enable, sloc);
 }
 

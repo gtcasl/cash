@@ -27,7 +27,7 @@ template <typename K>
 class switch_body_t {
 public:
 
-  switch_body_t(const switch_ptr& p_switch, const bitvector& value)
+  switch_body_t(const switch_ptr& p_switch, const sdata_type& value)
     : switch_(p_switch)
     , value_(value)
   {}
@@ -37,7 +37,7 @@ public:
 protected:
 
   switch_ptr switch_;
-  bitvector value_;
+  sdata_type value_;
 };
 
 template <typename K>
@@ -50,7 +50,11 @@ public:
             CH_REQUIRE_0(!std::is_convertible_v<V, fvoid_t>)>
   switch_body_t<K> operator,(const V& value) {
     static_assert(is_equality_comparable_v<K, V>, "invalid type");
-    return switch_body_t<K>(switch_, bitvector(ch_width_v<K>, value));
+    if constexpr (std::is_enum_v<V>) {
+      return switch_body_t<K>(switch_, sdata_type(ch_width_v<K>, (int)value));
+    } else {
+      return switch_body_t<K>(switch_, sdata_type(ch_width_v<K>, value));
+    }
   }
 
   void operator,(const fvoid_t& body) {

@@ -2,11 +2,11 @@
 
 #include "common.h"
 #include "platform.h"
+#include "traits.h"
 
 namespace ch {
 namespace internal {
 
-class bitvector;
 class lnode;
 class nodelist;
 class lnodeimpl;
@@ -14,6 +14,7 @@ class undefimpl;
 class proxyimpl;
 class aluimpl;
 class litimpl;
+class cdimpl;
 class ioimpl;
 class ioportimpl;
 class inputimpl;
@@ -22,8 +23,7 @@ class bindimpl;
 class selectimpl;
 class tapimpl;
 class assertimpl;
-class timeimpl;
-class cdimpl;
+class udfimpl;
 class udf_iface;
 class clock_event;
 
@@ -99,7 +99,7 @@ typedef const char* (*enum_string_cb)(uint32_t value);
 
 typedef std::unordered_map<uint32_t, enum_string_cb> enum_strings_t;
 
-typedef std::stack<std::pair<cdimpl*, lnode>> cd_stack_t;
+typedef std::stack<std::pair<cdimpl*, lnodeimpl*>> cd_stack_t;
 
 class context : public refcounted {
 public:
@@ -144,6 +144,10 @@ public:
     return gtaps_;
   }
 
+  const auto& udfs() const {
+    return udfs_;
+  }
+
   const auto& literals() const {
     return literals_;
   }
@@ -160,6 +164,10 @@ public:
     return sys_reset_;
   }
 
+  auto sys_time() const {
+    return sys_time_;
+  }
+
   const auto& bindings() const {
     return bindings_;
   }
@@ -167,23 +175,6 @@ public:
   const auto& cdomains() const {
     return cdomains_;
   }
-
-  //--
-
-  void push_cd(const lnode& clk,
-               const lnode& reset,
-               bool pos_edge,
-               const source_location& sloc);
-
-  void pop_cd();
-
-  cdimpl* current_cd(const source_location& sloc);
-
-  lnode current_reset(const source_location& sloc);
-
-  //--
-
-  lnodeimpl* create_time(const source_location& sloc);
 
   //--
 
@@ -196,11 +187,32 @@ public:
     return node;
   }
 
+  node_list_t::iterator delete_node(const node_list_t::iterator& it);
+
+  //--
+
+  litimpl* create_literal(const sdata_type& value);
+
+  //--
+
+  inputimpl* create_time(const source_location& sloc);
+
+  //--
+
   cdimpl* create_cd(const lnode& clk,
                     bool pos_edge,
                     const source_location& sloc);
 
-  node_list_t::iterator delete_node(const node_list_t::iterator& it);
+  lnodeimpl* current_reset(const source_location& sloc);
+
+  void push_cd(const lnode& clk,
+               const lnode& reset,
+               bool pos_edge,
+               const source_location& sloc);
+
+  void pop_cd();
+
+  cdimpl* current_cd(const source_location& sloc);
   
   //--
 
@@ -225,10 +237,6 @@ public:
   void remove_local_variable(lnodeimpl* src, lnodeimpl* dst);
 
   //--
-  
-  lnodeimpl* create_literal(const bitvector& value);
-
-  //--
 
   bindimpl* find_binding(context* module, const source_location& sloc);
 
@@ -239,18 +247,14 @@ public:
                     const source_location& sloc);
 
   //--
-  
-  void syntax_check();
-    
-  //--
 
   void build_eval_list(std::vector<lnodeimpl*>& eval_list);
 
   //--
 
-  lnodeimpl* create_udf_node(udf_iface* udf,
-                             const std::initializer_list<lnode>& inputs,
-                             const source_location& sloc);
+  udfimpl* create_udf_node(udf_iface* udf,
+                           const std::initializer_list<lnode>& inputs,
+                           const source_location& sloc);
 
   //--
   
@@ -285,7 +289,7 @@ protected:
   uint32_t    block_idx_;
   inputimpl*  sys_clk_;
   inputimpl*  sys_reset_;
-  timeimpl*   time_;
+  inputimpl*  sys_time_;
   
   node_list_t             nodes_;
   std::list<undefimpl*>   undefs_;
@@ -298,6 +302,7 @@ protected:
   std::list<litimpl*>     literals_;
   std::list<cdimpl*>      cdomains_;
   std::list<bindimpl*>    bindings_;
+  std::list<udfimpl*>     udfs_;
 
   std::stack<cond_br_t*>  cond_branches_;
   cond_vars_t             cond_vars_;

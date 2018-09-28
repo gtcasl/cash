@@ -38,9 +38,9 @@ include_directories("include")
 
 # set source files
 set(PROJECT_SOURCES
+    src/cash.cpp
     src/utils.cpp
     src/platform.cpp
-    src/bitvector.cpp
     src/system.cpp
     src/lnodeimpl.cpp
     src/ioimpl.cpp
@@ -52,8 +52,7 @@ set(PROJECT_SOURCES
     src/selectimpl.cpp
     src/aluimpl.cpp
     src/bindimpl.cpp
-    src/assertimpl.cpp
-    src/timeimpl.cpp
+    src/assertimpl.cpp    
     src/printimpl.cpp
     src/udfimpl.cpp
     src/lnode.cpp
