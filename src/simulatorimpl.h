@@ -82,7 +82,6 @@ protected:
   std::vector<context*> contexts_;
   clock_driver clk_driver_;
   clock_driver reset_driver_;
-  time_driver time_driver_;
   sim_driver* sim_driver_;
 };
 

@@ -323,6 +323,7 @@ bool verilogwriter::print_decl(std::ostream& out,
   case type_tap:
   case type_assert:
   case type_print:
+  case type_time:
     visited.insert(node->id());
     break;
   default:
@@ -380,6 +381,7 @@ bool verilogwriter::print_logic(std::ostream& out, lnodeimpl* node) {
   case type_tap:
   case type_assert:
   case type_print:
+  case type_time:
     break;
   default:
     assert(false);
@@ -901,6 +903,9 @@ void verilogwriter::print_name(std::ostream& out, lnodeimpl* node, bool force) {
   case type_udfc:
   case type_udfs:
     print_unique_name(node);
+    break;
+  case type_time:
+    out << "$time";
     break;
   default:
     assert(false);

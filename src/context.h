@@ -23,6 +23,7 @@ class bindimpl;
 class selectimpl;
 class tapimpl;
 class assertimpl;
+class timeimpl;
 class udfimpl;
 class udf_iface;
 class clock_event;
@@ -195,7 +196,7 @@ public:
 
   //--
 
-  inputimpl* create_time(const source_location& sloc);
+  timeimpl* create_time(const source_location& sloc);
 
   //--
 
@@ -289,7 +290,7 @@ protected:
   uint32_t    block_idx_;
   inputimpl*  sys_clk_;
   inputimpl*  sys_reset_;
-  inputimpl*  sys_time_;
+  timeimpl*   sys_time_;
   
   node_list_t             nodes_;
   std::list<undefimpl*>   undefs_;

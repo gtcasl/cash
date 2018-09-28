@@ -226,6 +226,7 @@ bool firrtlwriter::print_decl(std::ostream& out,
   case type_tap:
   case type_assert:
   case type_print:
+  case type_time:
     break;
   default:
     assert(false);
@@ -271,6 +272,7 @@ bool firrtlwriter::print_logic(std::ostream& out, lnodeimpl* node) {
   case type_tap:
   case type_assert:
   case type_print:
+  case type_time:
     break;
   default:
     assert(false);

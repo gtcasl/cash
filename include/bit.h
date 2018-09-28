@@ -353,6 +353,10 @@ void ch_tap(const T& value, const std::string& name, CH_SLOC) {
   registerTap(get_lnode(value), name, sloc);
 }
 
+// time function
+
+ch_bit<64> ch_now(CH_SLOC);
+
 // print function
 
 inline void ch_print(const std::string& format, CH_SLOC) {

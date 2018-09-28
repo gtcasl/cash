@@ -32,6 +32,7 @@ struct FiFo {
     io.dout  = mem.read(rd_a);
     io.empty = (wr_ptr == rd_ptr);
     io.full  = (wr_a == rd_a) && (wr_ptr[addr_width] != rd_ptr[addr_width]);
+    ch_print("{0}: rd_a={1}, wr_a={2}, rd_ptr={3}, wr_ptr={4}, x={5}, y={6}, full={7}", ch_now(), rd_a, wr_a, rd_ptr, wr_ptr, rd_ptr[addr_width], wr_ptr[addr_width], io.full);
   }
 };
 
@@ -51,8 +52,9 @@ int main() {
     case 0:
       assert(fifo.io.empty == true);
       assert(fifo.io.full == false);
-      fifo.io.din = 1;
+      fifo.io.din  = 1;
       fifo.io.push = 1;
+      fifo.io.pop  = 0;
       break;      
     case 2:
       assert(fifo.io.empty == false);

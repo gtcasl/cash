@@ -140,8 +140,6 @@ public:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-ch_bit<64> ch_now(CH_SLOC);
-
 void ch_stats(std::ostream& out, const device& device);
 
 }

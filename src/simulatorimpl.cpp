@@ -27,20 +27,6 @@ void clock_driver::eval() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void time_driver::add_signal(inputimpl* node) {
-  node->value() = 0;
-  nodes_.push_back(node);
-}
-
-void time_driver::eval() {
-  for (auto node : nodes_) {
-    node->value() = value_;
-  }
-  ++value_;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
 simulatorimpl::simulatorimpl(const ch_device_list& devices)
   : clk_driver_(true)
   , reset_driver_(false)
@@ -78,11 +64,6 @@ void simulatorimpl::initialize() {
       reset_driver_.add_signal(reset);
     }
 
-    auto time = ctx->sys_time();
-    if (time) {
-      time_driver_.add_signal(time);
-    }
-
     // generate evaluation list
     ctx->build_eval_list(eval_list);
   }
@@ -108,27 +89,14 @@ ch_tick simulatorimpl::reset(ch_tick t) {
 }
 
 ch_tick simulatorimpl::step(ch_tick t) {
-  if (!clk_driver_.empty()
-   && time_driver_.empty()) {
-    for (int i = 0; i < 2; ++i) {
-      clk_driver_.eval();
-      sim_driver_->eval();
-      ++t;
-    }
-  } else {
-    if (!clk_driver_.empty()) {
-      for (int i = 0; i < 2; ++i) {
-        clk_driver_.eval();
-        time_driver_.eval();
-        sim_driver_->eval();
-        ++t;
-      }
-    } else {
-      time_driver_.eval();
-      sim_driver_->eval();
-      ++t;
-    }
+  if (!clk_driver_.empty()) {
+    clk_driver_.eval();
+    sim_driver_->eval();
+    clk_driver_.eval();
+    ++t;
   }
+  sim_driver_->eval();
+  ++t;
   return t;
 }
 

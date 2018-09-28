@@ -10,6 +10,7 @@
 #include "proxyimpl.h"
 #include "memimpl.h"
 #include "aluimpl.h"
+#include "timeimpl.h"
 #include "assertimpl.h"
 #include "cdimpl.h"
 #include "ioport.h"
@@ -287,9 +288,9 @@ litimpl* context::create_literal(const sdata_type& value) {
   return this->create_node<litimpl>(value);
 }
 
-inputimpl* context::create_time(const source_location& sloc) {
+timeimpl* context::create_time(const source_location& sloc) {
   if (nullptr == sys_time_) {
-    sys_time_ = this->create_node<inputimpl>(64, "time", sloc);
+    sys_time_ = this->create_node<timeimpl>(sloc);
   }
   return sys_time_;
 }

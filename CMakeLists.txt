@@ -52,6 +52,7 @@ set(PROJECT_SOURCES
     src/selectimpl.cpp
     src/aluimpl.cpp
     src/bindimpl.cpp
+    src/timeimpl.cpp
     src/assertimpl.cpp    
     src/printimpl.cpp
     src/udfimpl.cpp

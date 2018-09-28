@@ -23,6 +23,7 @@
   m(bindout) \
   m(tap) \
   m(assert) \
+  m(time) \
   m(print) \
   m(udfc) \
   m(udfs)

@@ -10,6 +10,7 @@
 #include "aluimpl.h"
 #include "assertimpl.h"
 #include "printimpl.h"
+#include "timeimpl.h"
 #include "udfimpl.h"
 
 using namespace ch::internal;
@@ -961,6 +962,35 @@ private:
 
 ///////////////////////////////////////////////////////////////////////////////
 
+class instr_time : public instr_base {
+public:
+
+  static instr_time* create(timeimpl* node, instr_map_t& map) {
+    return new instr_time(node, map);
+  }
+
+  void destroy () override {
+    delete this;
+  }
+
+  void eval() override {
+    dst_ = tick_++;
+  }
+
+private:
+
+  ch_tick tick_;
+  sdata_type dst_;
+
+  instr_time(timeimpl* node, instr_map_t& map)
+    : tick_(0)
+    , dst_(node->size()) {
+    map[node->id()] = dst_.words();
+  }
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
 class instr_print : public instr_base {
 public:
 
@@ -1234,6 +1264,9 @@ void simref::initialize(const std::vector<lnodeimpl*>& eval_list) {
       break;
     case type_assert:
       instrs_.emplace_back(instr_assert::create(reinterpret_cast<assertimpl*>(node), instr_map));
+      break;
+    case type_time:
+      instrs_.emplace_back(instr_time::create(reinterpret_cast<timeimpl*>(node), instr_map));
       break;
     case type_print:
       instrs_.emplace_back(instr_print::create(reinterpret_cast<printimpl*>(node), instr_map));
