@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.5)
 
 project(cash VERSION 0.1.0 LANGUAGES CXX)
 
-option(CODECOV "Enable code coverage." ON)
+option(CODECOV "Enable code coverage." OFF)
 option(PPROF "Enable profiling." OFF)
 
 set(DEFAULT_BUILD_TYPE "Release")

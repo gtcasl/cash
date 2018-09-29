@@ -54,7 +54,7 @@ private:
   int line_;
 };
 
-#if defined(__GNUC__)
+#if !defined(__clang__)
   #define CH_CUR_SLOC ch::internal::source_location(__builtin_FILE(), __builtin_LINE())
 #else
   #define CH_CUR_SLOC ch::internal::source_location(__FILE__, __LINE__)

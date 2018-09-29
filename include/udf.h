@@ -58,7 +58,7 @@ private:
 
 template <unsigned Delta, bool Init, typename Output_, typename... Inputs_>
 struct udf_traits {
-  static constexpr traits_type type  = traits_udf;
+  static constexpr int type = traits_udf;
   static constexpr uint32_t delta  = Delta;
   static constexpr bool has_initdata   = Init;
   using Output = Output_;

@@ -298,7 +298,7 @@ public:
   {}
 
   template <typename U>
-  explicit ch_vec(const std::initializer_list<U>& values, CH_SLOC)
+  explicit ch_vec(const std::initializer_list<U>& values)
     : ch_vec(make_system_buffer(traits::bitwidth)) {
     assert(values.size() == N);
     int i = N - 1;

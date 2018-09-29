@@ -206,7 +206,7 @@ public:
   explicit ch_system_in(const ch_logic_in<U>& in)
     : base(std::make_shared<system_io_buffer>(in.input_)) {
     static_assert(is_logic_only_v<U>, "invalid type");
-    static_assert(ch_width_v<T> == ch_width_v<U>, "invalid size");
+    static_assert(ch_width_v<U> == ch_width_v<T>, "invalid size");
   }
 
   ch_system_in(const ch_system_in& other)

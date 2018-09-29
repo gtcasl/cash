@@ -66,14 +66,14 @@ public:
 
   // subscript operators
 
-  const auto operator[](const sloc_arg<size_t>& index) const {
+  auto operator[](const sloc_arg<size_t>& index) const {
     assert(index.value < N);
-    return ch_bit<1>(logic_buffer(1, buffer_, index.value, index.sloc));
+    return this->template slice<1>(index.value, index.sloc);
   }
 
   auto operator[](const sloc_arg<size_t>& index) {
     assert(index.value < N);
-    return ch_bit<1>(logic_buffer(1, buffer_, index.value, index.sloc));
+    return this->template sliceref<1>(index.value, index.sloc);
   }
 
   CH_LOGIC_INTERFACE(ch_bit)

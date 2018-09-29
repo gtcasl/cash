@@ -426,7 +426,7 @@ public:
 
   bitvector(const bitvector& other)
     : bitvector(other.size_, other.alloc_) {
-    std::uninitialized_copy_n(other.words_, other.num_words(), words_);
+    std::copy_n(other.words_, other.num_words(), words_);
   }
 
   bitvector(bitvector&& other) {
@@ -443,7 +443,7 @@ public:
 
   bitvector& operator=(const bitvector& other) {
     this->resize(other.size_);
-    std::uninitialized_copy_n(other.words_, other.num_words(), words_);
+    std::copy_n(other.words_, other.num_words(), words_);
     return *this;
   }
 
@@ -486,7 +486,7 @@ public:
     this->write(0, tmp.data(), sizeof(U), 0, N * bitwidth_v<U>);
     auto src_num_words = ceildiv<uint32_t>(N * bitwidth_v<U>, WORD_SIZE);
     auto num_words = this->num_words();
-    std::uninitialized_fill_n(words_ + src_num_words, num_words - src_num_words, 0);
+    std::fill_n(words_ + src_num_words, num_words - src_num_words, 0);
     return *this;
   }
 
@@ -498,7 +498,7 @@ public:
     this->write(0, tmp.data(), sizeof(U), 0, tmp.size() * bitwidth_v<U>);
     auto src_num_words = ceildiv<uint32_t>(tmp.size() * bitwidth_v<U>, WORD_SIZE);
     auto num_words = this->num_words();
-    std::uninitialized_fill_n(words_ + src_num_words, num_words - src_num_words, 0);
+    std::fill_n(words_ + src_num_words, num_words - src_num_words, 0);
     return *this;
   }
 
@@ -595,11 +595,9 @@ public:
     }
     size_ = size;
 
-    // clear extra bits to zero
-    uint32_t extra_bits = size & WORD_MASK;
-    if (extra_bits) {
-      words_[new_num_words-1] = ~(WORD_MAX << extra_bits);
-    }
+    // initialize content
+    std::fill_n(words_, new_num_words, 0xCD);
+    bv_clear_extra_bits(words_, size);
   }
 
   template <typename A>
@@ -610,14 +608,7 @@ public:
     assert(size_ && src.size_);
     assert(src_offset + length <= src.size_);
     assert(dst_offset + length <= size_);
-
-    if (size_ <= WORD_SIZE
-     && src.size() <= WORD_SIZE) {
-      word_t mask =  (WORD_MAX >> (WORD_SIZE - length)) << dst_offset;
-      words_[0] = blend<word_t>(mask, words_[0],  ((src.word(0) >> src_offset) << dst_offset));
-    } else {
-      bv_copy<word_t>(words_, dst_offset, src.words(), src_offset, length);
-    }
+    bv_copy<word_t>(words_, dst_offset, src.words(), src_offset, length);
   }
 
   template <typename U,
@@ -710,12 +701,12 @@ public:
   }
 
   void set() {
-    std::uninitialized_fill_n(words_, this->num_words(), WORD_MAX);
+    std::fill_n(words_, this->num_words(), WORD_MAX);
     bv_clear_extra_bits(words_, size_);
   }
 
   void reset() {
-    std::uninitialized_fill_n(words_, this->num_words(), 0);
+    std::fill_n(words_, this->num_words(), 0);
   }
 
   bool is_zero() const {
@@ -744,32 +735,6 @@ public:
   CH_DEF_CAST(int64_t)
   CH_DEF_CAST(uint64_t)
 #undef CH_DEF_CAST
-
-  friend std::ostream& ch::internal::operator<<(std::ostream& out, const bitvector& in) {
-    out << "0x";
-    auto oldflags = out.flags();
-    out.setf(std::ios_base::hex, std::ios_base::basefield);
-
-    int quad(0);
-    bool skip_zeros = true;
-    uint32_t size = in.size();
-
-    for (auto it = in.begin() + (size - 1); size;) {
-      quad = (quad << 0x1) | *it--;
-      if (0 == (--size & 0x3)) {
-        if (0 == size || (quad != 0 ) || !skip_zeros) {
-          out << quad;
-          skip_zeros = false;
-        }
-        quad = 0;
-      }
-    }
-    if (0 != (size & 0x3)) {
-      out << quad;
-    }
-    out.flags(oldflags);
-    return out;
-  }
 
 protected:
 
@@ -850,6 +815,33 @@ protected:
   friend class system_buffer;
   friend class system_io_buffer;
 };
+
+template <typename word_t, typename alloc_t>
+std::ostream& operator<<(std::ostream& out, const bitvector<word_t, alloc_t>& in) {
+  out << "0x";
+  auto oldflags = out.flags();
+  out.setf(std::ios_base::hex, std::ios_base::basefield);
+
+  uint32_t quad(0);
+  bool skip_zeros = true;
+  uint32_t size = in.size();
+
+  for (auto it = in.begin() + (size - 1); size;) {
+    quad = (quad << 0x1) | *it--;
+    if (0 == (--size & 0x3)) {
+      if (0 == size || (quad != 0 ) || !skip_zeros) {
+        out << quad;
+        skip_zeros = false;
+      }
+      quad = 0;
+    }
+  }
+  if (0 != (size & 0x3)) {
+    out << quad;
+  }
+  out.flags(oldflags);
+  return out;
+}
 
 }
 }

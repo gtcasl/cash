@@ -144,7 +144,7 @@ TEST_CASE("registers", "[registers]") {
       b->next = b + d;
       auto x = a + b + c + d;
       auto e = ch_case<ch_int4>(ch_now(), 9, 0x9)(7, 0xa)(5, 0xb)(3, 0x4)(1);
-      // ch_print("t={0}, x={1}, e={2}", ch_now(), x, e);
+      //ch_print("t={0}, x={1}, e={2}", ch_now(), x, e);
       return (x == e);
     }, 4);
 
@@ -153,7 +153,7 @@ TEST_CASE("registers", "[registers]") {
       auto x = ch_case(ch_now(), 8, 11_b)(6, 0)(4, 2)(2, 1)(0);
       a->next = x;
       auto e = ch_delay(x);
-      ch_print("t={0}, clk={1}, x={2}, a={3}, e={4}", ch_now(), ch_clock(), x, a, e);
+      //ch_print("t={0}, clk={1}, x={2}, a={3}, e={4}", ch_now(), ch_clock(), x, a, e);
       return (a == e);
     }, 4);
 

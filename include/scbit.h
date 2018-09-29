@@ -22,6 +22,7 @@ public:
                     system_op_shift<ch_scbit, N,
                       system_op_cast<ch_scbit, N,
                         system_op_slice<ch_scbit, N>>>>>>;
+  using Q = bool;
 
   explicit ch_scbit(const system_buffer_ptr& buffer = make_system_buffer(N))
     : buffer_(buffer) {
@@ -72,14 +73,14 @@ public:
 
   // subscript operators
 
-  const auto operator[](size_t index) const {
+  auto operator[](size_t index) const {
     assert(index < N);
-    return ch_scbit<1>(make_system_buffer(1, buffer_, index));
+    return this->template slice<1>(index);
   }
 
   auto operator[](size_t index) {
     assert(index < N);
-    return ch_scbit<1>(make_system_buffer(1, buffer_, index));
+    return this->template sliceref<1>(index);
   }
 
   CH_SYSTEM_INTERFACE(ch_scbit)

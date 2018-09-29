@@ -10,11 +10,9 @@ void bv_clear_extra_bits(T* in, uint32_t size) {
   static constexpr uint32_t WORD_SIZE = bitwidth_v<T>;
   static constexpr uint32_t WORD_MASK = WORD_SIZE - 1;
   static constexpr T        WORD_MAX  = std::numeric_limits<T>::max();
-  uint32_t num_words = ceildiv(size, WORD_SIZE);
-
   uint32_t extra_bits = size & WORD_MASK;
   if (extra_bits) {
-    in[num_words-1] &= ~(WORD_MAX << extra_bits);
+    in[size / WORD_SIZE] &= ~(WORD_MAX << extra_bits);
   }
 }
 
@@ -32,17 +30,17 @@ void bv_assign(T* in, uint32_t size, U value) {
   } else {
     uint32_t num_words = ceildiv(size, WORD_SIZE);
     if (0 == value) {
-      std::uninitialized_fill_n(in, num_words, 0);
+      std::fill_n(in, num_words, 0);
       return;
     }
 
     if constexpr (bitwidth_v<U> <= WORD_SIZE) {
       in[0] = value;
-      std::uninitialized_fill_n(in + 1, num_words - 1, 0);
+      std::fill_n(in + 1, num_words - 1, 0);
     } else {
       auto len = std::min<uint32_t>(num_words, bitwidth_v<U> / WORD_SIZE);
-      std::uninitialized_copy_n(reinterpret_cast<const T*>(&value), len, in);
-      std::uninitialized_fill_n(in + len, num_words - len, 0);
+      std::copy_n(reinterpret_cast<const T*>(&value), len, in);
+      std::fill_n(in + len, num_words - len, 0);
     }
   }
 }
@@ -68,11 +66,11 @@ void bv_assign(T* in, uint32_t size, U value) {
     T ext_value  = ((value >= 0) ? 0 : WORD_MAX);
     if constexpr (bitwidth_v<U> <= WORD_SIZE) {
       in[0] = value;
-      std::uninitialized_fill_n(in + 1, num_words - 1, ext_value);
+      std::fill_n(in + 1, num_words - 1, ext_value);
     } else {
       auto len = std::min<uint32_t>(num_words, bitwidth_v<U> / WORD_SIZE);
-      std::uninitialized_copy_n(reinterpret_cast<const T*>(&value), len, in);
-      std::uninitialized_fill_n(in + len, num_words - len, ext_value);
+      std::copy_n(reinterpret_cast<const T*>(&value), len, in);
+      std::fill_n(in + len, num_words - len, ext_value);
     }
   }
 
@@ -129,7 +127,7 @@ void bv_assign(T* in, uint32_t size, const std::string& value) {
   uint32_t num_words = ceildiv(size, WORD_SIZE);
   uint32_t src_num_words = ceildiv(src_size, WORD_SIZE);
   if (src_num_words < num_words) {
-    std::uninitialized_fill_n(in + src_num_words, num_words - src_num_words, 0x0);
+    std::fill_n(in + src_num_words, num_words - src_num_words, 0x0);
   }
 
   // write the value
@@ -169,14 +167,13 @@ bool bv_is_neg(const T* in, uint32_t size) {
 template <typename T>
 int bv_lsb(const T* in, uint32_t size) {
   static constexpr uint32_t WORD_SIZE = bitwidth_v<T>;
-  uint32_t num_words = ceildiv(size, WORD_SIZE);
-  assert(num_words);
 
   auto w = in[0];
   if (w) {
     return count_trailing_zeros<T>(w);
   }
 
+  uint32_t num_words = ceildiv(size, WORD_SIZE);
   for (uint32_t i = 1; i < num_words; ++i) {
     auto w = in[i];
     if (w) {
@@ -191,7 +188,6 @@ template <typename T>
 int bv_msb(const T* in, uint32_t size) {
   static constexpr uint32_t WORD_SIZE = bitwidth_v<T>;
   uint32_t num_words = ceildiv(size, WORD_SIZE);
-  assert(num_words);
 
   int32_t i = num_words - 1;
   auto w = in[i];
@@ -212,7 +208,7 @@ int bv_msb(const T* in, uint32_t size) {
 }
 
 template <typename U, typename T>
-T bv_cast(const T* in, uint32_t size) {
+U bv_cast(const T* in, uint32_t size) {
   static_assert(std::is_integral_v<T>, "invalid type");
   CH_CHECK(bitwidth_v<U> >= size, "invalid size");
   if constexpr (bitwidth_v<U> <= bitwidth_v<T>) {
@@ -229,8 +225,8 @@ void bv_copy(T* dst, uint32_t dst_offset,
              const T* src, uint32_t src_offset,
              uint32_t length) {
   static_assert(std::is_integral_v<T> && std::is_unsigned_v<T>, "invalid type");
-  static constexpr uint32_t WORD_SIZE = bitwidth_v<T>;
-  static constexpr uint32_t WORD_MASK = WORD_SIZE - 1;
+  static unsigned constexpr WORD_SIZE = bitwidth_v<T>;
+  static constexpr unsigned WORD_MASK = WORD_SIZE - 1;
   static constexpr T        WORD_MAX  = std::numeric_limits<T>::max();
 
   uint32_t w_src_begin_idx = src_offset / WORD_SIZE;
@@ -251,27 +247,25 @@ void bv_copy(T* dst, uint32_t dst_offset,
     if (1 == w_src_end_idx) {
       src_block |= (w_src[1] << (WORD_SIZE - w_src_begin_rem));
     }
-    if (0 == w_dst_end_idx) {
-      T mask = (WORD_MAX >> (WORD_SIZE - length)) << w_dst_begin_rem;
-      w_dst[0] = blend<T>(mask, w_dst[0], (src_block << w_dst_begin_rem));
-    } else {
-      T mask = WORD_MAX << w_dst_begin_rem;
-      w_dst[0] = blend<T>(mask, w_dst[0], (src_block << w_dst_begin_rem));
-      T src_block_new = src_block >> (WORD_SIZE - w_dst_begin_rem);
-      mask = ~((WORD_MAX << 1) << w_dst_end_rem);
-      w_dst[1] = blend<T>(mask, w_dst[1], src_block_new);
+    T mask = (WORD_MAX >> (WORD_SIZE - length)) << w_dst_begin_rem;
+    w_dst[0] = blend<T>(mask, w_dst[0], (src_block << w_dst_begin_rem));
+    if (1 == w_dst_end_idx) {
+      src_block >>= (WORD_SIZE - w_dst_begin_rem);
+      mask = (WORD_MAX << 1) << w_dst_end_rem;
+      w_dst[1] = blend<T>(mask, src_block, w_dst[1]);
     }
   } else
   if (0 == w_dst_begin_rem
    && 0 == w_src_begin_rem) {
     // update aligned blocks
     if (WORD_MASK == w_dst_end_rem) {
-      std::uninitialized_copy_n(w_src, w_dst_end_idx + 1, w_dst);
+      std::copy_n(w_src, w_dst_end_idx + 1, w_dst);
     } else {
-      std::uninitialized_copy_n(w_src, w_dst_end_idx, w_dst);
+      std::copy_n(w_src, w_dst_end_idx, w_dst);
       // update remining block
+      T src_block = w_src[w_dst_end_idx];
       T mask = (WORD_MAX << 1) << w_dst_end_rem;
-      w_dst[w_dst_end_idx] = blend<T>(mask, w_src[w_dst_end_idx], w_dst[w_dst_end_idx]);
+      w_dst[w_dst_end_idx] = blend<T>(mask, src_block, w_dst[w_dst_end_idx]);
     }
   } else
   if (0 == w_dst_begin_rem) {
@@ -283,18 +277,17 @@ void bv_copy(T* dst, uint32_t dst_offset,
     // update intermediate blocks
     auto w_dst_end = (w_dst++) + w_dst_end_idx;
     while (w_dst < w_dst_end) {
-      T src_block_new = (w_src[0] >> w_src_begin_rem) | (w_src[1] << (WORD_SIZE - w_src_begin_rem));
-      ++w_src;
-      *w_dst++ = src_block_new;
+      T tmp = *w_src++ >> w_src_begin_rem;
+      *w_dst++ = tmp | (w_src[0] << (WORD_SIZE - w_src_begin_rem));
     }
 
     // update remining blocks
-    T src_block_new = (w_src[0] >> w_src_begin_rem);
+    src_block = w_src[0] >> w_src_begin_rem;
     if (w_src_end_idx > w_dst_end_idx) {
-      src_block_new |= (w_src[1] << (WORD_SIZE - w_src_begin_rem));
+      src_block |= (w_src[1] << (WORD_SIZE - w_src_begin_rem));
     }
-    T mask = ~((WORD_MAX << 1) << w_dst_end_rem);
-    w_dst[0] = blend<T>(mask, w_dst[0], src_block_new);
+    T mask = (WORD_MAX << 1) << w_dst_end_rem;
+    w_dst[0] = blend<T>(mask, src_block, w_dst[0]);
   } else
   if (0 == w_src_begin_rem) {
     // update first block
@@ -305,50 +298,49 @@ void bv_copy(T* dst, uint32_t dst_offset,
     // update intermediate blocks
     auto w_dst_end = (w_dst++) + w_src_end_idx;
     while (w_dst < w_dst_end) {
-      T src_block_new = *w_src++;
-      *w_dst++ = (src_block_new << w_dst_begin_rem) | ((src_block >> 1) >> (WORD_MASK - w_dst_begin_rem));
-      src_block = src_block_new;
+      auto tmp = *w_src++;
+      *w_dst++ = (tmp << w_dst_begin_rem) | ((src_block >> 1) >> (WORD_MASK - w_dst_begin_rem));
+      src_block = tmp;
     }
 
     // update remining blocks
-    T src_block_new = (w_src[0] << w_dst_begin_rem) | ((src_block >> 1) >> (WORD_MASK - w_dst_begin_rem));
+    src_block = (w_src[0] << w_dst_begin_rem) | ((src_block >> 1) >> (WORD_MASK - w_dst_begin_rem));
     if (w_src_end_idx < w_dst_end_idx) {
-      *w_dst++ = src_block_new;
-      src_block_new = (w_src[0] >> 1) >> (WORD_MASK - w_dst_begin_rem);
+      *w_dst++ = src_block;
+      src_block = (w_src[0] >> 1) >> (WORD_MASK - w_dst_begin_rem);
     }
-    mask = ~((WORD_MAX << 1) << w_dst_end_rem);
-    w_dst[0] = blend<T>(mask, w_dst[0], src_block_new);
+    mask = (WORD_MAX << 1) << w_dst_end_rem;
+    w_dst[0] = blend<T>(mask, src_block, w_dst[0]);
   } else {
     // update first block
     T src_block = *w_src++ >> w_src_begin_rem;
-    src_block |= w_src[0] << (WORD_SIZE - w_src_begin_rem);
+    src_block |= (w_src[0] << (WORD_SIZE - w_src_begin_rem));
     T mask = WORD_MAX << w_dst_begin_rem;
     w_dst[0] = blend<T>(mask, w_dst[0], (src_block << w_dst_begin_rem));
 
     // update intermediate blocks
     auto w_dst_end = (w_dst++) + std::min(w_src_end_idx, w_dst_end_idx);
     while (w_dst < w_dst_end) {
-      T src_block_new = (w_src[0] >> w_src_begin_rem) | (w_src[1] << (WORD_SIZE - w_src_begin_rem));
-      ++w_src;
-      *w_dst++ = (src_block_new << w_dst_begin_rem) | ((src_block >> 1) >> (WORD_MASK - w_dst_begin_rem));
-      src_block = src_block_new;
+      T tmp = *w_src++ >> w_src_begin_rem;
+      tmp |= (w_src[0] << (WORD_SIZE - w_src_begin_rem));
+      *w_dst++ = (tmp << w_dst_begin_rem) | ((src_block >> 1) >> (WORD_MASK - w_dst_begin_rem));
+      src_block = tmp;
     }
 
     // update remining blocks
-    T src_block_new;
+    T tmp = w_src[0] >> w_src_begin_rem;
     if (w_src_end_idx < w_dst_end_idx) {
-      T tmp = w_src[0] >> w_src_begin_rem;
-      src_block_new = (tmp << w_dst_begin_rem) | ((src_block >> 1) >> (WORD_MASK - w_dst_begin_rem));
-      *w_dst++ = src_block_new;
-      src_block_new = (tmp >> 1) >> (WORD_MASK - w_dst_begin_rem);
+      src_block = (tmp << w_dst_begin_rem) | ((src_block >> 1) >> (WORD_MASK - w_dst_begin_rem));
+      *w_dst++ = src_block;
+      src_block = (tmp >> 1) >> (WORD_MASK - w_dst_begin_rem);
     } else
     if (w_src_end_idx == w_dst_end_idx) {
-      src_block_new = ((w_src[0] >> w_src_begin_rem) << w_dst_begin_rem) | ((src_block >> 1) >> (WORD_MASK - w_dst_begin_rem));
+      src_block = (tmp << w_dst_begin_rem) | ((src_block >> 1) >> (WORD_MASK - w_dst_begin_rem));
     } else {
-      src_block_new = ((w_src[0] >> w_src_begin_rem) | (w_src[1] << (WORD_SIZE - w_src_begin_rem))) << w_dst_begin_rem;
+      src_block = (tmp | (w_src[1] << (WORD_SIZE - w_src_begin_rem))) << w_dst_begin_rem;
     }
-    mask = ~((WORD_MAX << 1) << w_dst_end_rem);
-    w_dst[0] = blend<T>(mask, w_dst[0], src_block_new);
+    mask = (WORD_MAX << 1) << w_dst_end_rem;
+    w_dst[0] = blend<T>(mask, src_block, w_dst[0]);
   }
 }
 
@@ -522,7 +514,7 @@ void bv_sll(T* out, uint32_t out_size,
     out[0] = in[0] << dist;
   } else {
     uint32_t shift_words = std::min(dist / WORD_SIZE, out_num_words);
-    std::uninitialized_fill_n(out, shift_words, 0x0);
+    std::fill_n(out, shift_words, 0x0);
     uint32_t shift_bits = dist & WORD_MASK;
     uint32_t shift_bits_r = WORD_SIZE - shift_bits;
     T carry(0), carry_mask(shift_bits ? WORD_MAX : 0);
@@ -535,7 +527,7 @@ void bv_sll(T* out, uint32_t out_size,
     }
     if ((i < count)) {
       out[(i++) + shift_words] = carry & carry_mask;
-      std::uninitialized_fill_n(out + i + shift_words, count - i, 0x0);
+      std::fill_n(out + i + shift_words, count - i, 0x0);
     }
   }
   bv_clear_extra_bits(out, out_size);
@@ -557,7 +549,7 @@ void bv_srl(T* out, uint32_t out_size,
     int32_t shift_words = std::min<int32_t>(dist / WORD_SIZE, in_num_words);
     int32_t rem_words = in_num_words - shift_words;
     if (rem_words < out_num_words) {
-      std::uninitialized_fill_n(out + rem_words, out_num_words - rem_words, 0x0);
+      std::fill_n(out + rem_words, out_num_words - rem_words, 0x0);
     }
     int32_t shift_bits = dist & WORD_MASK;
     int32_t shift_bits_l = WORD_SIZE - shift_bits;
@@ -593,7 +585,7 @@ void bv_sra(T* out, uint32_t out_size,
     int32_t shift_words = std::min<int32_t>(dist / WORD_SIZE, in_num_words);
     int32_t rem_words = in_num_words - shift_words;
     if (rem_words < out_num_words) {
-      std::uninitialized_fill_n(out + rem_words, out_num_words - rem_words, fill_value);
+      std::fill_n(out + rem_words, out_num_words - rem_words, fill_value);
     }
     int32_t shift_bits = dist & WORD_MASK;
     int32_t shift_bits_l = WORD_SIZE - shift_bits;
@@ -683,7 +675,7 @@ void bv_abs(T* out, const T* in, uint32_t size) {
   if (bv_is_neg(in, size)) {
     bv_neg(out, in, size);
   } else {
-    std::uninitialized_copy_n(in, num_words, out);
+    std::copy_n(in, num_words, out);
   }
 }
 
@@ -712,7 +704,7 @@ void bv_mult(T* out, uint32_t out_size,
     auto v = reinterpret_cast<const xword_t*>(rhs);
     auto w = reinterpret_cast<xword_t*>(out);
 
-    std::uninitialized_fill_n(w, p, 0);
+    std::fill_n(w, p, 0);
 
     for (int i = 0; i < n; ++i) {
       xword_t tot(0);
@@ -759,11 +751,11 @@ void bv_udiv(T* quot, uint32_t quot_size,
 
   // reset the outputs
   if (qn) {
-    std::uninitialized_fill_n(q, qn, 0);
+    std::fill_n(q, qn, 0);
   }
 
   if (rn) {
-    std::uninitialized_fill_n(r, rn, 0);
+    std::fill_n(r, rn, 0);
   }
 
   // early exit
@@ -936,8 +928,8 @@ void bv_zext(T* out, uint32_t out_size, const T* in, uint32_t in_size) {
     return;
   }
 
-  std::uninitialized_copy_n(in, in_num_words, out);
-  std::uninitialized_fill(out + in_num_words, out + out_num_words, 0);
+  std::copy_n(in, in_num_words, out);
+  std::fill(out + in_num_words, out + out_num_words, 0);
 }
 
 template <typename T>
@@ -966,13 +958,13 @@ void bv_sext(T* out, uint32_t out_size, const T* in, uint32_t in_size) {
     uint32_t msb_blk_idx = msb / WORD_SIZE;
     uint32_t msb_blk_rem = msb & WORD_MASK;
     auto msb_blk = in[msb_blk_idx];
-    std::uninitialized_copy_n(in, in_num_words, out);
+    std::copy_n(in, in_num_words, out);
     out[msb_blk_idx] = msb_blk | (WORD_MAX << msb_blk_rem);
-    std::uninitialized_fill(out + in_num_words, out + out_num_words, WORD_MAX);
+    std::fill(out + in_num_words, out + out_num_words, WORD_MAX);
     bv_clear_extra_bits(out, out_size);
   } else {
-    std::uninitialized_copy_n(in, in_num_words, out);
-    std::uninitialized_fill(out + in_num_words, out + out_num_words, 0);
+    std::copy_n(in, in_num_words, out);
+    std::fill(out + in_num_words, out + out_num_words, 0);
   }
 }
 

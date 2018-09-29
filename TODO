@@ -199,7 +199,7 @@ cmake -DCMAKE_BUILD_TYPE=Debug -DCODECOV=ON .. && make -j4 all test && ../codeco
 
 
 // debugging C macros
-g++ -std=c++17 -O0 -g -Wall -Wextra -Werror -fmax-errors=5 -E -dD dogfood.cpp > dogfood.log
+g++ -std=c++17 -O0 -g -Wall -Wextra -Werror -E -dD dogfood.cpp > dogfood.log
 clang-format-5.0 dogfood.log -i
 
 // Detecting Cycles in CASH?

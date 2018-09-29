@@ -60,7 +60,8 @@ public:
     for (uint32_t i = 0; i < num_ranges; ++i) {
       auto& dst_range = ranges[i];
       auto& src_range = node->range(i);
-      dst_range.src_data   = map.at(node->src(src_range.src_idx).id());
+      auto& src = node->src(src_range.src_idx);
+      dst_range.src_data   = map.at(src.id());
       dst_range.src_offset = src_range.src_offset;
       dst_range.dst_offset = src_range.dst_offset;
       dst_range.length     = src_range.length;
@@ -70,14 +71,13 @@ public:
   }
 
   void destroy () override {
-    this->~instr_base();
+    this->~instr_proxy();
     ::operator delete [](this);
   }
 
   void eval() override {
-    for (uint32_t i = 0; i < num_ranges_; ++i) {
-      auto& range = ranges_[i];
-      bv_copy(dst_, range.dst_offset, range.src_data, range.src_offset, range.length);
+    for (const range_t *r = ranges_, *r_end = r + num_ranges_ ;r != r_end; ++r) {
+      bv_copy(dst_, r->dst_offset, r->src_data, r->src_offset, r->length);
     }
   }
 };
@@ -97,7 +97,7 @@ public:
   }
 
   void eval() override {
-    std::uninitialized_copy_n(src_, nblocks_, dst_);
+    std::copy_n(src_, nblocks_, dst_);
   }
 
 private:
@@ -122,8 +122,7 @@ public:
 
 protected:
 
-  instr_alu_base(bool need_resizing,
-                 const block_type* o_src0,
+  instr_alu_base(const block_type* o_src0,
                  uint32_t o_src0_size,
                  const block_type* o_src1,
                  uint32_t o_src1_size,
@@ -133,8 +132,7 @@ protected:
                  uint32_t src1_size,
                  block_type* dst,
                  uint32_t dst_size)
-    : need_resizing_(need_resizing)
-    , o_src0_(o_src0)
+    : o_src0_(o_src0)
     , o_src0_size_(o_src0_size)
     , o_src1_(o_src1)
     , o_src1_size_(o_src1_size)
@@ -146,7 +144,6 @@ protected:
     , dst_size_(dst_size)
   {}
 
-  bool need_resizing_;
   const block_type* o_src0_;
   uint32_t o_src0_size_;
   const block_type* o_src1_;
@@ -159,7 +156,7 @@ protected:
   uint32_t dst_size_;
 };
 
-template <ch_op op, bool is_signed>
+template <ch_op op, bool is_signed, bool resize_opds>
 class instr_alu : instr_alu_base {
 public:
 
@@ -169,11 +166,23 @@ public:
   }
 
   void eval() override {
-    if constexpr (CH_OP_PROP(op) & op_flags::eq_opd_size) {
-      if (need_resizing_) {
-        this->update_shadow_buffers();
+    if constexpr (resize_opds) {
+      if (src0_size_ != o_src0_size_) {
+        if constexpr (is_signed) {
+          bv_sext(src0_, src0_size_, o_src0_, o_src0_size_);
+        } else {
+          bv_zext(src0_, src0_size_, o_src0_, o_src0_size_);
+        }
+      }
+      if (src1_size_ != o_src1_size_) {
+        if constexpr (is_signed) {
+          bv_sext(src1_, src1_size_, o_src1_, o_src1_size_);
+        } else {
+          bv_zext(src1_, src1_size_, o_src1_, o_src1_size_);
+        }
       }
     }
+
     switch (op) {
     case ch_op::eq:
       bv_assign(dst_, dst_size_, bv_eq(src0_,  src1_, src0_size_));
@@ -296,8 +305,7 @@ public:
 
 private:
 
-  instr_alu(bool need_resizing,
-            const block_type* o_src0,
+  instr_alu(const block_type* o_src0,
             uint32_t o_src0_size_,
             const block_type* o_src1,
             uint32_t o_src1_size,
@@ -307,32 +315,12 @@ private:
             uint32_t src1_size,
             block_type* dst,
             uint32_t dst_size_)
-    : instr_alu_base(need_resizing,
-                     o_src0, o_src0_size_,
+    : instr_alu_base(o_src0, o_src0_size_,
                      o_src1, o_src1_size,
                      src0, src0_size_,
                      src1, src1_size,
                      dst, dst_size_)
     {}
-
-
-
-  void update_shadow_buffers() {
-    if (src0_size_ != o_src0_size_) {
-      if constexpr (is_signed) {
-        bv_sext(src0_, src0_size_, o_src0_, o_src0_size_);
-      } else {
-        bv_zext(src0_, src0_size_, o_src0_, o_src0_size_);
-      }
-    }
-    if (src1_size_ != o_src1_size_) {
-      if constexpr (is_signed) {
-        bv_sext(src1_, src1_size_, o_src1_, o_src1_size_);
-      } else {
-        bv_zext(src1_, src1_size_, o_src1_, o_src1_size_);
-      }
-    }
-  }
 
   friend class instr_alu_base;
 };
@@ -360,7 +348,7 @@ instr_alu_base* instr_alu_base::create(aluimpl* node, instr_map_t& map) {
   block_type* src1 = (block_type*)o_src1;
   uint32_t src1_size = o_src1_size;
 
-  bool need_resizing = false;
+  bool resize_opds = false;
 
   // allocate shadow buffers if needed
   auto op = node->op();
@@ -376,19 +364,19 @@ instr_alu_base* instr_alu_base::create(aluimpl* node, instr_map_t& map) {
         } else {
           src1_size = src0_size;
         }
-        need_resizing = true;
+        resize_opds = true;
       }
     } else {
       // resize source operands to match destination
       if (src0_size != dst_size) {
         if (src0_size < dst_size) {
-          need_resizing = true;
+          resize_opds = true;
         }
         src0_size = dst_size;
       }
       if (src1 && src1_size != dst_size) {
         if (src1_size < dst_size) {
-          need_resizing = true;
+          resize_opds = true;
         }
         src1_size = dst_size;
       }
@@ -424,45 +412,58 @@ instr_alu_base* instr_alu_base::create(aluimpl* node, instr_map_t& map) {
     buf_cur += t_src1_bytes;
   }
 
-#define CREATE_ALU_INST(op) \
+  bool is_signed = node->is_signed();
+
+#define CREATE_ALU_INST(op, sign_enable, resize_enable) \
   case op: \
-    if (is_signed) { \
-      return new (buf) instr_alu<op, true>(need_resizing, o_src0, o_src0_size, \
-                                           o_src1, o_src1_size, src0, src0_size, \
-                                           src1, src1_size, dst, dst_size); \
+    if (sign_enable && is_signed) { \
+      if (resize_enable && resize_opds) { \
+        return new (buf) instr_alu<op, true, true>(o_src0, o_src0_size, \
+                                                   o_src1, o_src1_size, src0, src0_size, \
+                                                   src1, src1_size, dst, dst_size); \
+      } else { \
+        return new (buf) instr_alu<op, true, false>(o_src0, o_src0_size, \
+                                                    o_src1, o_src1_size, src0, src0_size, \
+                                                    src1, src1_size, dst, dst_size); \
+      }  \
     } else { \
-      return new (buf) instr_alu<op, false>(need_resizing, o_src0, o_src0_size, \
-                                            o_src1, o_src1_size, src0, src0_size, \
-                                            src1, src1_size, dst, dst_size); \
+      if (resize_enable && resize_opds) { \
+        return new (buf) instr_alu<op, false, true>(o_src0, o_src0_size, \
+                                                    o_src1, o_src1_size, src0, src0_size, \
+                                                    src1, src1_size, dst, dst_size); \
+      } else { \
+        return new (buf) instr_alu<op, false, false>(o_src0, o_src0_size, \
+                                                     o_src1, o_src1_size, src0, src0_size, \
+                                                     src1, src1_size, dst, dst_size); \
+      } \
     }
 
-  bool is_signed = node->is_signed();
   switch (node->op()) {
-  CREATE_ALU_INST(ch_op::eq);
-  CREATE_ALU_INST(ch_op::ne);
-  CREATE_ALU_INST(ch_op::lt);
-  CREATE_ALU_INST(ch_op::gt);
-  CREATE_ALU_INST(ch_op::le);
-  CREATE_ALU_INST(ch_op::ge);
-  CREATE_ALU_INST(ch_op::notl);
-  CREATE_ALU_INST(ch_op::andl);
-  CREATE_ALU_INST(ch_op::orl);
-  CREATE_ALU_INST(ch_op::inv);
-  CREATE_ALU_INST(ch_op::andb);
-  CREATE_ALU_INST(ch_op::orb);
-  CREATE_ALU_INST(ch_op::xorb);
-  CREATE_ALU_INST(ch_op::andr);
-  CREATE_ALU_INST(ch_op::orr);
-  CREATE_ALU_INST(ch_op::xorr);
-  CREATE_ALU_INST(ch_op::shl);
-  CREATE_ALU_INST(ch_op::shr);
-  CREATE_ALU_INST(ch_op::add);
-  CREATE_ALU_INST(ch_op::sub);
-  CREATE_ALU_INST(ch_op::neg);
-  CREATE_ALU_INST(ch_op::mult);
-  CREATE_ALU_INST(ch_op::div);
-  CREATE_ALU_INST(ch_op::mod);
-  CREATE_ALU_INST(ch_op::pad);
+  CREATE_ALU_INST(ch_op::eq, true, true);
+  CREATE_ALU_INST(ch_op::ne, true, true);
+  CREATE_ALU_INST(ch_op::lt, true, true);
+  CREATE_ALU_INST(ch_op::gt, true, true);
+  CREATE_ALU_INST(ch_op::le, true, true);
+  CREATE_ALU_INST(ch_op::ge, true, true);
+  CREATE_ALU_INST(ch_op::notl, false, false);
+  CREATE_ALU_INST(ch_op::andl, true, true);
+  CREATE_ALU_INST(ch_op::orl, true, true);
+  CREATE_ALU_INST(ch_op::inv, false, false);
+  CREATE_ALU_INST(ch_op::andb, true, true);
+  CREATE_ALU_INST(ch_op::orb, true, true);
+  CREATE_ALU_INST(ch_op::xorb, true, true);
+  CREATE_ALU_INST(ch_op::andr, false, false);
+  CREATE_ALU_INST(ch_op::orr, false, false);
+  CREATE_ALU_INST(ch_op::xorr, false, false);
+  CREATE_ALU_INST(ch_op::shl, false, false);
+  CREATE_ALU_INST(ch_op::shr, true, false);
+  CREATE_ALU_INST(ch_op::add, true, true);
+  CREATE_ALU_INST(ch_op::sub, true, true);
+  CREATE_ALU_INST(ch_op::neg, false, false);
+  CREATE_ALU_INST(ch_op::mult, true, true);
+  CREATE_ALU_INST(ch_op::div, true, false);
+  CREATE_ALU_INST(ch_op::mod, true, false);
+  CREATE_ALU_INST(ch_op::pad, true, false);
   default:
     CH_ABORT("invalid opcode");
   }
@@ -520,7 +521,7 @@ public:
     }
 
     auto src = (i < last) ? srcs_[i+1] : srcs_[last];
-    std::uninitialized_copy_n(src, nblocks_, dst_);
+    std::copy_n(src, nblocks_, dst_);
   }
 
 private:
@@ -657,9 +658,9 @@ private:
 
     // check reset state
     if (reset_ && static_cast<bool>(reset_[0])) {
-      std::uninitialized_copy_n(initdata_, nblocks_, dst_);
+      std::copy_n(initdata_, nblocks_, dst_);
       for (uint32_t i = 0; i < pipe_length_; ++i) {
-        std::uninitialized_copy_n(initdata_, nblocks_, pipe_[i]);
+        std::copy_n(initdata_, nblocks_, pipe_[i]);
       }
       return;
     }
@@ -672,14 +673,14 @@ private:
     block_type* value = dst_;
     if (pipe_length_) {
       auto last = pipe_length_ - 1;
-      std::uninitialized_copy_n(pipe_[last], nblocks_, dst_);
+      std::copy_n(pipe_[last], nblocks_, dst_);
       for (int i = last; i > 0; --i) {
-        std::uninitialized_copy_n(pipe_[i-1], nblocks_, pipe_[i]);
+        std::copy_n(pipe_[i-1], nblocks_, pipe_[i]);
       }
       value = pipe_[0];
     }
     // push next value
-    std::uninitialized_copy_n(next_, nblocks_, value);
+    std::copy_n(next_, nblocks_, value);
   }
 
   const block_type* initdata_;
@@ -780,7 +781,7 @@ public:
     auto wrports = (wrport_t*)buf_cur;
 
     if (node->has_initdata()) {
-      std::uninitialized_copy_n(node->initdata().words(), dst_nblocks, dst);
+      std::copy_n(node->initdata().words(), dst_nblocks, dst);
     }
 
     return new (buf) instr_mem(rdports, num_rdports, wrports, num_wrports,
@@ -811,28 +812,27 @@ public:
 
   void eval() override {
     // check clock transition
-    if (cd_ && static_cast<bool>(cd_[0])) {
-      // evaluate synchronous read ports
-      for (uint32_t i = 0; i < num_rdports_; ++i) {
-        auto& p = rdports_[i];
-        // check enable state
-        if (p.enable && !static_cast<bool>(p.enable[0]))
-          continue;
-        // memory read
-        auto addr = bv_cast<uint32_t>(p.addr, addr_size_);
-        bv_copy(p.data, 0, dst_, addr * data_size_, data_size_);
-      }
+    if (!cd_ || !static_cast<bool>(cd_[0]))
+      return;
 
-      // evaluate synchronous write ports
-      for (uint32_t i = 0; i < num_wrports_; ++i) {
-        auto& p = wrports_[i];
-        // check enable state
-        if (p.enable && !static_cast<bool>(p.enable[0]))
-          continue;
-        // memory write
-        auto addr = bv_cast<uint32_t>(p.addr, addr_size_);
-        bv_copy(dst_, addr * data_size_, p.data, 0, data_size_);
-      }
+    // evaluate synchronous read ports
+    for (const rdport_t *p = rdports_, *p_end = p + num_rdports_ ; p != p_end; ++p) {
+      // check enable state
+      if (p->enable && !static_cast<bool>(p->enable[0]))
+        continue;
+      // memory read
+      auto addr = bv_cast<uint32_t>(p->addr, addr_size_);
+      bv_copy(p->data, 0, dst_, addr * data_size_, data_size_);
+    }
+
+    // evaluate synchronous write ports
+    for (wrport_t *p = wrports_, *p_end = p + num_wrports_ ; p != p_end; ++p) {
+      // check enable state
+      if (p->enable && !static_cast<bool>(p->enable[0]))
+        continue;
+      // memory write
+      auto addr = bv_cast<uint32_t>(p->addr, addr_size_);
+      bv_copy(dst_, addr * data_size_, p->data, 0, data_size_);
     }
   }
 };
@@ -904,7 +904,7 @@ public:
   }
 
   void eval() override {
-    std::uninitialized_copy_n(src_, nblocks_, dst_);
+    std::copy_n(src_, nblocks_, dst_);
   }
 
 private:
@@ -935,7 +935,7 @@ public:
 
   void eval() override {
     if ((!pred_ || static_cast<bool>(pred_[0]))
-     && !static_cast<bool>(*cond_)) {
+     && !static_cast<bool>(cond_[0])) {
       fprintf(stderr, "assertion failure at tick %ld, %s (%s:%d)\n",
               tick_, msg_.c_str(), sloc_.file(), sloc_.line());
       std::abort();
@@ -1003,7 +1003,7 @@ public:
   }
 
   void eval() override {
-    if (pred_ && !static_cast<bool>(*pred_))
+    if (pred_ && !static_cast<bool>(pred_[0]))
       return;
     if (format_ != "") {
       std::stringstream strbuf;
@@ -1011,16 +1011,16 @@ public:
         if (*str == '{') {
           fmtinfo_t fmt;
           str = parse_format_index(&fmt, str);
-          auto src = srcs_[fmt.index];
+          auto& src = srcs_[fmt.index];
           switch (fmt.type) {
           case fmttype::Int:
-            strbuf << *src;
+            strbuf << src;
             break;
           case fmttype::Float:
-            strbuf << bit_cast<float>(static_cast<int>(*src));
+            strbuf << bit_cast<float>(static_cast<int>(src));
             break;
           case fmttype::Enum:
-            strbuf << enum_strings_[fmt.index](static_cast<int>(*src));
+            strbuf << enum_strings_[fmt.index](static_cast<int>(src));
            break;
           }
         } else {
@@ -1038,15 +1038,21 @@ private:
     : enum_strings_(node->enum_strings())
     , pred_(node->is_predicated() ? map.at(node->predicate().id()) : nullptr)
     , format_(node->format()) {
-    srcs_.reserve(node->enum_strings().size());
-    for (uint32_t i = (pred_ ? 1 : 0), n = node->srcs().size(); i < n; ++i) {
+    srcs_.resize(node->enum_strings().size());
+    for (uint32_t i = (pred_ ? 1 : 0), j = 0, n = node->srcs().size(); i < n; ++i, ++j) {
       auto src = node->src(i).impl();
-      srcs_.emplace_back(map.at(src->id()));
+      srcs_[j].emplace(const_cast<block_type*>(map.at(src->id())), src->size());
+    }
+  }
+
+  ~instr_print() {
+    for (auto& src : srcs_) {
+      src.emplace(nullptr);
     }
   }
 
   std::vector<enum_string_cb> enum_strings_;
-  std::vector<const block_type*> srcs_;
+  std::vector<sdata_type> srcs_;
   const block_type* pred_;
   std::string format_;
 };
@@ -1107,7 +1113,7 @@ public:
 
   void init(udfsimpl* node, instr_map_t& map) {
     cd_ = map.at(node->cd().id());
-    reset_ = node->has_initdata() ? map.at(node->reset().id()) : nullptr;
+    reset_ = node->has_initdata() ? map.at(node->reset().id()) : nullptr;    
     for (uint32_t i = 0, n = srcs_.size(); i < n; ++i) {
       auto& src = node->src(i);
       srcs_[i].emplace(const_cast<block_type*>(map.at(src.id())), src.size());
@@ -1178,6 +1184,7 @@ simref::~simref() {
 void simref::initialize(const std::vector<lnodeimpl*>& eval_list) {
   instr_map_t instr_map;
   std::unordered_map<uint32_t, instr_base*> snodes;
+  snodes.reserve(eval_list.size());
   instrs_.reserve(eval_list.size());
 
   // lower synchronous nodes

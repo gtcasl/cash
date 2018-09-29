@@ -237,7 +237,7 @@ struct sloc_arg {
 
 #define CH_LOGIC_INTERFACE(type) \
   template <typename R> \
-  const auto as() const { \
+  std::add_const_t<R> as() const { \
   static_assert(ch::internal::is_logic_type_v<R>, "invalid type"); \
     return ch::internal::logic_accessor::cast<R>(*this); \
   } \
@@ -246,19 +246,19 @@ struct sloc_arg {
     static_assert(ch::internal::is_logic_type_v<R>, "invalid type"); \
     return ch::internal::logic_accessor::cast<R>(*this); \
   } \
-  const auto as_bit() const { \
+  auto as_bit() const { \
     return this->as<ch::internal::ch_bit<type::traits::bitwidth>>(); \
   } \
   auto as_bit() { \
     return this->as<ch::internal::ch_bit<type::traits::bitwidth>>(); \
   } \
-  const auto as_int() const { \
+  auto as_int() const { \
     return this->as<ch::internal::ch_int<type::traits::bitwidth>>(); \
   } \
   auto as_int() { \
     return this->as<ch::internal::ch_int<type::traits::bitwidth>>(); \
   } \
-  const auto as_uint() const { \
+  auto as_uint() const { \
     return this->as<ch::internal::ch_uint<type::traits::bitwidth>>(); \
   } \
   auto as_uint() { \
@@ -447,7 +447,7 @@ CH_LOGIC_OPERATOR(logic_op_arithmetic)
 
 CH_LOGIC_OPERATOR(logic_op_slice)
   template <typename R>
-  const auto slice(size_t start = 0, CH_SLOC) const {
+  std::add_const_t<R> slice(size_t start = 0, CH_SLOC) const {
     static_assert(ch_width_v<R> <= N, "invalid size");
     assert(start + ch_width_v<R> <= N);
     R ret(logic_buffer(ch_width_v<R>, sloc));
@@ -456,17 +456,17 @@ CH_LOGIC_OPERATOR(logic_op_slice)
   }
 
   template <unsigned M>
-  const auto slice(size_t start = 0, CH_SLOC) const {
+  auto slice(size_t start = 0, CH_SLOC) const {
     return this->slice<T<M>>(start, sloc);
   }
 
   template <typename R>
-  const auto aslice(size_t start = 0, CH_SLOC) const {
+  auto aslice(size_t start = 0, CH_SLOC) const {
     return this->slice<R>(start * ch_width_v<R>, sloc);
   }
 
   template <unsigned M>
-  const auto aslice(size_t start = 0, CH_SLOC) const {
+  auto aslice(size_t start = 0, CH_SLOC) const {
     return this->aslice<T<M>>(start, sloc);
   }
 

@@ -257,7 +257,7 @@ auto make_system_op(SystemFunc4 func, const A& lhs, const B& rhs) {
     this->buffer()->write(dst_offset, in, sizeof(U), src_offset, length); \
   } \
   template <typename R> \
-  const auto as() const { \
+  std::add_const_t<R> as() const { \
     static_assert(ch::internal::is_system_type_v<R>, "invalid type"); \
     return ch::internal::system_accessor::cast<R>(*this); \
   } \
@@ -266,19 +266,19 @@ auto make_system_op(SystemFunc4 func, const A& lhs, const B& rhs) {
     static_assert(ch::internal::is_system_type_v<R>, "invalid type"); \
     return ch::internal::system_accessor::cast<R>(*this); \
   } \
-  const auto as_scbit() const { \
+  auto as_scbit() const { \
     return this->as<ch_scbit<type::traits::bitwidth>>(); \
   } \
   auto as_scbit() { \
     return this->as<ch_scbit<type::traits::bitwidth>>(); \
   } \
-  const auto as_scint() const { \
+  auto as_scint() const { \
     return this->as<ch::internal::ch_scint<type::traits::bitwidth>>(); \
   } \
   auto as_scint() { \
     return this->as<ch::internal::ch_scint<type::traits::bitwidth>>(); \
   } \
-  const auto as_scuint() const { \
+  auto as_scuint() const { \
     return this->as<ch::internal::ch_scuint<type::traits::bitwidth>>(); \
   } \
   auto as_scuint() { \
@@ -420,7 +420,7 @@ CH_SYSTEM_OPERATOR(system_op_arithmetic)
 
 CH_SYSTEM_OPERATOR(system_op_slice)
   template <typename R>
-  const auto slice(size_t start = 0) const {
+  std::add_const_t<R> slice(size_t start = 0) const {
     static_assert(ch_width_v<R> <= N, "invalid size");
     assert(start + ch_width_v<R> <= N);
     R ret;
@@ -430,17 +430,17 @@ CH_SYSTEM_OPERATOR(system_op_slice)
   }
 
   template <typename R>
-  const auto aslice(size_t start = 0) const {
+  auto aslice(size_t start = 0) const {
     return this->slice<R>(start * ch_width_v<R>);
   }
 
   template <unsigned M>
-  const auto slice(size_t start = 0) const {
+  auto slice(size_t start = 0) const {
     return this->slice<T<M>>(start);
   }
 
   template <unsigned M>
-  const auto aslice(size_t start = 0) const {
+  auto aslice(size_t start = 0) const {
     return this->aslice<T<M>>(start);
   }
 

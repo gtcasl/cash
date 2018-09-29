@@ -18,10 +18,6 @@ enum traits_type {
   traits_udf       = 0x10,
 };
 
-inline constexpr auto operator|(traits_type lsh, traits_type rhs) {
-  return traits_type((int)lsh | (int)rhs);
-}
-
 enum class ch_direction {
   in    = 0x1,
   out   = 0x2,
@@ -35,7 +31,7 @@ inline constexpr auto operator|(ch_direction lsh, ch_direction rhs) {
 template <typename T>
 inline constexpr ch_direction ch_direction_v = std::decay_t<T>::traits::direction;
 
-CH_DEF_SFINAE_CHECK(is_object_type, (T::traits::type & (traits_logic | traits_system)));
+CH_DEF_SFINAE_CHECK(is_object_type, (T::traits::type & traits_logic) || (T::traits::type & traits_system));
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -92,12 +88,9 @@ inline constexpr bool ch_signed_v = signed_impl<std::decay_t<T>>::value;
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <unsigned Bitwidth,
-          bool Signed,
-          typename SystemType,
-          typename LogicType>
+template <unsigned Bitwidth, bool Signed, typename SystemType, typename LogicType>
 struct system_traits {
-  static constexpr traits_type type   = traits_system;
+  static constexpr int type = traits_system;
   static constexpr unsigned bitwidth  = Bitwidth;
   static constexpr unsigned is_signed = Signed;
   using system_type = SystemType;
@@ -118,7 +111,7 @@ CH_DEF_SFINAE_CHECK(is_system_type, is_system_traits_v<typename std::decay_t<T>:
 
 template <unsigned Bitwidth, bool Signed, typename LogicType, typename SystemType>
 struct logic_traits {
-  static constexpr traits_type type   = traits_logic;
+  static constexpr int type = traits_logic;
   static constexpr unsigned bitwidth  = Bitwidth;
   static constexpr unsigned is_signed = Signed;
   using logic_type  = LogicType;
@@ -143,7 +136,7 @@ template <unsigned Bitwidth,
           typename FlipIO,
           typename LogicIO>
 struct system_io_traits {
-  static constexpr traits_type type  = traits_system_io;
+  static constexpr int type = traits_system_io;
   static constexpr unsigned bitwidth = Bitwidth;
   static constexpr ch_direction direction = Direction;
   using system_io = SystemIO;
@@ -157,7 +150,7 @@ template <unsigned Bitwidth,
           typename FlipIO,
           typename SystemIO>
 struct logic_io_traits {
-  static constexpr traits_type type  = traits_logic_io;
+  static constexpr int type = traits_logic_io;
   static constexpr unsigned bitwidth = Bitwidth;
   static constexpr ch_direction direction = Direction;
   using logic_io  = LogicIO;
@@ -171,7 +164,7 @@ template <ch_direction Direction,
           typename LogicIO,
           typename SystemType>
 struct mixed_system_io_traits {
-  static constexpr traits_type type = traits_system_io | traits_system;
+  static constexpr int type = traits_system_io | traits_system;
   static constexpr unsigned bitwidth = ch_width_v<SystemType>;
   static constexpr unsigned is_signed = ch_signed_v<SystemType>;
   static constexpr ch_direction direction = Direction;
@@ -188,7 +181,7 @@ template <ch_direction Direction,
           typename SystemIO,
           typename LogicType>
 struct mixed_logic_io_traits {
-  static constexpr traits_type type = traits_logic_io | traits_logic;
+  static constexpr int type = traits_logic_io | traits_logic;
   static constexpr unsigned bitwidth = ch_width_v<LogicType>;
   static constexpr unsigned is_signed = ch_signed_v<LogicType>;
   static constexpr ch_direction direction = Direction;
@@ -227,7 +220,7 @@ CH_DEF_SFINAE_CHECK(is_io, is_io_traits_v<typename std::decay_t<T>::traits>);
 
 struct non_ch_type {
   struct traits {
-    static constexpr traits_type type = traits_none;
+    static constexpr int type = traits_none;
     static constexpr unsigned bitwidth = 0;
     static constexpr bool is_signed = false;
   };

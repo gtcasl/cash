@@ -128,6 +128,10 @@ protected:
   virtual ~lnodeimpl();
 
   struct hash_t {
+#if defined(__clang__)
+  #pragma clang diagnostic push
+  #pragma clang diagnostic ignored "-Wnested-anon-types"
+#endif
     union {
       struct {
         uint64_t type : 5;
@@ -138,6 +142,9 @@ protected:
       } fields;
       uint64_t value;
     };
+#if defined(__clang__)
+  #pragma clang diagnostic pop
+#endif
     hash_t() : value(0) {}
   };
 
