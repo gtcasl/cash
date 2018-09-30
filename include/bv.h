@@ -10,6 +10,7 @@ void bv_clear_extra_bits(T* in, uint32_t size) {
   static constexpr uint32_t WORD_SIZE = bitwidth_v<T>;
   static constexpr uint32_t WORD_MASK = WORD_SIZE - 1;
   static constexpr T        WORD_MAX  = std::numeric_limits<T>::max();
+
   uint32_t extra_bits = size & WORD_MASK;
   if (extra_bits) {
     in[size / WORD_SIZE] &= ~(WORD_MAX << extra_bits);
@@ -17,31 +18,60 @@ void bv_clear_extra_bits(T* in, uint32_t size) {
 }
 
 template <typename U, typename T,
+          CH_REQUIRE_0(std::is_integral_v<U>)>
+void bv_assign_scalar(T* in, U value) {
+  in[0] = value;
+}
+
+template <typename U, typename T,
           CH_REQUIRE_0(std::is_integral_v<U> && std::is_unsigned_v<U>)>
-void bv_assign(T* in, uint32_t size, U value) {
+void bv_assign_vector(T* in, uint32_t size, U value) {
   static constexpr uint32_t WORD_SIZE = bitwidth_v<T>;
 
-  if constexpr (std::numeric_limits<U>::digits > 1) {
-    CH_CHECK(log2ceil(value + 1) <= size, "value out of range");
-  }
-
-  if (size <= WORD_SIZE) {
+  uint32_t num_words = ceildiv(size, WORD_SIZE);
+  if constexpr (bitwidth_v<U> <= WORD_SIZE) {
     in[0] = value;
+    std::fill_n(in + 1, num_words - 1, 0);
   } else {
-    uint32_t num_words = ceildiv(size, WORD_SIZE);
     if (0 == value) {
       std::fill_n(in, num_words, 0);
       return;
     }
+    auto len = std::min<uint32_t>(num_words, bitwidth_v<U> / WORD_SIZE);
+    std::copy_n(reinterpret_cast<const T*>(&value), len, in);
+    std::fill_n(in + len, num_words - len, 0);
+  }
+}
 
-    if constexpr (bitwidth_v<U> <= WORD_SIZE) {
-      in[0] = value;
-      std::fill_n(in + 1, num_words - 1, 0);
-    } else {
-      auto len = std::min<uint32_t>(num_words, bitwidth_v<U> / WORD_SIZE);
-      std::copy_n(reinterpret_cast<const T*>(&value), len, in);
-      std::fill_n(in + len, num_words - len, 0);
-    }
+template <typename U, typename T,
+          CH_REQUIRE_0(std::is_integral_v<U> && std::is_signed_v<U>)>
+void bv_assign_vector(T* in, uint32_t size, U value) {
+  static constexpr uint32_t WORD_SIZE = bitwidth_v<T>;
+  static constexpr T        WORD_MAX  = std::numeric_limits<T>::max();
+
+  uint32_t num_words = ceildiv(size, WORD_SIZE);
+  T ext_value  = ((value >= 0) ? 0 : WORD_MAX);
+  if constexpr (bitwidth_v<U> <= WORD_SIZE) {
+    in[0] = value;
+    std::fill_n(in + 1, num_words - 1, ext_value);
+  } else {
+    auto len = std::min<uint32_t>(num_words, bitwidth_v<U> / WORD_SIZE);
+    std::copy_n(reinterpret_cast<const T*>(&value), len, in);
+    std::fill_n(in + len, num_words - len, ext_value);
+  }
+}
+
+template <typename U, typename T,
+          CH_REQUIRE_0(std::is_integral_v<U> && std::is_unsigned_v<U>)>
+void bv_assign(T* in, uint32_t size, U value) {
+  static constexpr uint32_t WORD_SIZE = bitwidth_v<T>;  
+  if constexpr (std::numeric_limits<U>::digits > 1) {
+    CH_CHECK(log2ceil(value + 1) <= size, "value out of range");
+  }  
+  if (size <= WORD_SIZE) {
+    bv_assign_scalar(in, value);
+  } else {
+    bv_assign_vector(in, size, value);
   }
 }
 
@@ -49,42 +79,31 @@ template <typename U, typename T,
           CH_REQUIRE_0(std::is_integral_v<U> && std::is_signed_v<U>)>
 void bv_assign(T* in, uint32_t size, U value) {
   static constexpr uint32_t WORD_SIZE = bitwidth_v<T>;
-  static constexpr T        WORD_MAX  = std::numeric_limits<T>::max();
   static_assert(std::numeric_limits<U>::digits > 1, "inavlid size");
 
   if (value >= 0) {
-    bv_assign(in, size, std::make_unsigned_t<U>(value));
-    return;
-  }
-
-  CH_CHECK(1 + log2ceil(~value + 1) <= size, "value out of range");
-
-  if (size <= WORD_SIZE) {
-    in[0] = value;
-  } else {
-    uint32_t num_words = ceildiv(size, WORD_SIZE);
-    T ext_value  = ((value >= 0) ? 0 : WORD_MAX);
-    if constexpr (bitwidth_v<U> <= WORD_SIZE) {
-      in[0] = value;
-      std::fill_n(in + 1, num_words - 1, ext_value);
-    } else {
-      auto len = std::min<uint32_t>(num_words, bitwidth_v<U> / WORD_SIZE);
-      std::copy_n(reinterpret_cast<const T*>(&value), len, in);
-      std::fill_n(in + len, num_words - len, ext_value);
+    auto u_value = std::make_unsigned_t<U>(value);
+    if constexpr (std::numeric_limits<U>::digits > 1) {
+      CH_CHECK(log2ceil(u_value + 1) <= size, "value out of range");
     }
+    if (size <= WORD_SIZE) {
+      bv_assign_scalar(in, u_value);
+    } else {
+      bv_assign_vector(in, size, u_value);
+    }
+  } else {
+    CH_CHECK(1 + log2ceil(~value + 1) <= size, "value out of range");
+    if (size <= WORD_SIZE) {
+      bv_assign_scalar(in, value);
+    } else {
+      bv_assign_vector(in, size, value);
+    }
+    bv_clear_extra_bits(in, size);
   }
-
-  bv_clear_extra_bits(in, size);
 }
 
-template <typename T>
-void bv_assign(T* in, uint32_t size, const std::string& value) {
-  static constexpr uint32_t WORD_SIZE = bitwidth_v<T>;
-
+inline int get_string_base(const char* value, int len) {
   int base = 0;
-  int start = 0;
-  size_t len = value.length();
-
   switch (value[len-1]) {
   case 'b':
     base = 2;
@@ -94,38 +113,57 @@ void bv_assign(T* in, uint32_t size, const std::string& value) {
     break;
   case 'h':
     base = 16;
-    if (len > 1 && (value[1] == 'x' || value[1] == 'X')) {
-      start = 2;
-    }
     break;
   default:
     CH_ABORT("invalid binary format, missing encoding base type.");
   }
+  return base;
+}
 
-  uint32_t log_base = log2ceil(base);
-  len -= 2; // remove type info
-
-  // calculate binary size
-  uint32_t src_size = 0;
-  for (uint32_t i = start; i < len; ++i) {
-    char chr = value[i];
+inline int get_string_size(const char* value, int log_base, int len) {
+  int size = 0;
+  for (const char *cur = value, *end = value + len; cur < end;) {
+    char chr = *cur++;
     if (chr == '\'')
       continue; // skip separator character
-    if (0 == src_size) {
+    if (0 == size) {
        // calculate exact bit coverage for the first non zero character
-       int v = char2int(chr, base);
+       int v = char2int(chr, (1 << log_base));
        if (v) {
-         src_size += log2ceil(v+1);
+         size += log2ceil(v+1);
        }
     } else {
-      src_size += log_base;
+      size += log_base;
     }
   }
-  CH_CHECK(size >= src_size, "value out of range");
+  return size;
+}
+
+template <typename T>
+void bv_assign(T* in, uint32_t size, const std::string& value) {
+  static constexpr uint32_t WORD_SIZE = bitwidth_v<T>;
+
+  size_t len = value.length();
+  CH_CHECK(len >= 3, "invalid string format");
+
+  const char* buf = value.c_str();
+  int base = get_string_base(buf, len);
+
+  len -= 2; // remove base postfix
+  if (16 == base && value[0] == '0' && len > 1 && value[1] == 'x') {
+    buf += 2; // remove hex prefix
+    len -= 2;
+  }
+
+  uint32_t log_base = log2ceil(base);
+
+  uint32_t str_size = get_string_size(buf, log_base, len);
+  CH_CHECK(str_size >= 0, "invalid string size");
+  CH_CHECK(size >= str_size, "value out of range");
 
   // clear remaining words
   uint32_t num_words = ceildiv(size, WORD_SIZE);
-  uint32_t src_num_words = ceildiv(src_size, WORD_SIZE);
+  uint32_t src_num_words = ceildiv(str_size, WORD_SIZE);
   if (src_num_words < num_words) {
     std::fill_n(in + src_num_words, num_words - src_num_words, 0x0);
   }
@@ -133,14 +171,14 @@ void bv_assign(T* in, uint32_t size, const std::string& value) {
   // write the value
   T w(0);
   T* dst = in;
-  for (uint32_t i = 0, j = 0, n = len - start; i < n; ++i) {
-    char chr = value[len - i - 1];
+  for (int32_t i = len - 1, j = 0; i >= 0; --i) {
+    char chr = buf[i];
     if (chr == '\'')
       continue; // skip separator character
     T v = char2int(chr, base);
     w |= v << j;
     j += log_base;
-    if (j >= WORD_SIZE) {
+    if (j >= int32_t(WORD_SIZE)) {
       *dst++ = w;
       j -= WORD_SIZE;
       w = v >> (log_base - j);
@@ -165,16 +203,20 @@ bool bv_is_neg(const T* in, uint32_t size) {
 }
 
 template <typename T>
-int bv_lsb(const T* in, uint32_t size) {
-  static constexpr uint32_t WORD_SIZE = bitwidth_v<T>;
-
+int bv_lsb_scalar(const T* in) {
   auto w = in[0];
   if (w) {
     return count_trailing_zeros<T>(w);
   }
+  return -1;
+}
+
+template <typename T>
+int bv_lsb_vector(const T* in, uint32_t size) {
+  static constexpr uint32_t WORD_SIZE = bitwidth_v<T>;
 
   uint32_t num_words = ceildiv(size, WORD_SIZE);
-  for (uint32_t i = 1; i < num_words; ++i) {
+  for (uint32_t i = 0; i < num_words; ++i) {
     auto w = in[i];
     if (w) {
       int z = count_trailing_zeros<T>(w);
@@ -185,19 +227,34 @@ int bv_lsb(const T* in, uint32_t size) {
 }
 
 template <typename T>
-int bv_msb(const T* in, uint32_t size) {
+int bv_lsb(const T* in, uint32_t size) {
   static constexpr uint32_t WORD_SIZE = bitwidth_v<T>;
-  uint32_t num_words = ceildiv(size, WORD_SIZE);
 
-  int32_t i = num_words - 1;
-  auto w = in[i];
+  if (size <= WORD_SIZE) {
+    return bv_lsb_scalar(in);
+  } else {
+    return bv_lsb_vector(in, size);
+  }
+}
+
+template <typename T>
+int bv_msb_scalar(const T* in) {
+  static constexpr uint32_t WORD_SIZE = bitwidth_v<T>;
+
+  auto w = in[0];
   if (w) {
     int z = count_leading_zeros<T>(w);
-    return (WORD_SIZE - z) + i * WORD_SIZE;
+    return (WORD_SIZE - z);
   }
+  return -1;
+}
 
-  --i;
-  for (; i >= 0; --i) {
+template <typename T>
+int bv_msb_vector(const T* in, uint32_t size) {
+  static constexpr uint32_t WORD_SIZE = bitwidth_v<T>;
+
+  uint32_t num_words = ceildiv(size, WORD_SIZE);
+  for (int32_t i = num_words - 1; i >= 0; --i) {
     auto w = in[i];
     if (w) {
       int z = count_leading_zeros<T>(w);
@@ -207,11 +264,23 @@ int bv_msb(const T* in, uint32_t size) {
   return -1;
 }
 
+template <typename T>
+int bv_msb(const T* in, uint32_t size) {
+  static constexpr uint32_t WORD_SIZE = bitwidth_v<T>;
+
+  if (size <= WORD_SIZE) {
+    return bv_msb_scalar(in);
+  } else {
+    return bv_msb_vector(in, size);
+  }
+}
+
 template <typename U, typename T>
 U bv_cast(const T* in, uint32_t size) {
   static_assert(std::is_integral_v<T>, "invalid type");
   CH_CHECK(bitwidth_v<U> >= size, "invalid size");
   if constexpr (bitwidth_v<U> <= bitwidth_v<T>) {
+    CH_UNUSED(size);
     return bit_cast<U>(in[0]);
   } else {
     U ret(0);
@@ -221,126 +290,236 @@ U bv_cast(const T* in, uint32_t size) {
 }
 
 template <typename T>
+void bv_copy(T* out, const T* in, uint32_t size) {
+  static constexpr uint32_t WORD_SIZE = bitwidth_v<T>;
+
+  if (size <= WORD_SIZE) {
+    out[0] = in[0];
+  } else {
+    uint32_t num_words = ceildiv(size, WORD_SIZE);
+    std::copy_n(in, num_words, out);
+  }
+}
+
+template <typename T>
+void bv_copy_scalar(T* w_dst, uint32_t w_dst_begin_rem,
+                    const T* w_src, uint32_t w_src_begin_rem,
+                    uint32_t length) {
+  static_assert(std::is_integral_v<T> && std::is_unsigned_v<T>, "invalid type");
+  static unsigned constexpr WORD_SIZE = bitwidth_v<T>;
+  static constexpr T        WORD_MAX  = std::numeric_limits<T>::max();
+
+  T src_block = (w_src[0] >> w_src_begin_rem) << w_dst_begin_rem;
+  T mask = (WORD_MAX >> (WORD_SIZE - length)) << w_dst_begin_rem;
+  w_dst[0] = blend<T>(mask, w_dst[0], src_block);
+}
+
+template <typename T>
+void bv_copy_vector_small(T* w_dst, uint32_t w_dst_begin_rem,
+                          const T* w_src, uint32_t w_src_begin_rem,
+                          uint32_t length) {
+  static_assert(std::is_integral_v<T> && std::is_unsigned_v<T>, "invalid type");
+  static unsigned constexpr WORD_SIZE = bitwidth_v<T>;
+  static constexpr unsigned WORD_MASK = WORD_SIZE - 1;
+  static constexpr T        WORD_MAX  = std::numeric_limits<T>::max();
+
+  uint32_t src_end       = w_src_begin_rem + length - 1;
+  uint32_t w_src_end_idx = (src_end / WORD_SIZE);
+  uint32_t dst_end       = w_dst_begin_rem + length - 1;
+  uint32_t w_dst_end_idx = (dst_end / WORD_SIZE);
+  uint32_t w_dst_end_rem = dst_end & WORD_MASK;
+
+  T src_block = w_src[0] >> w_src_begin_rem;
+  if (1 == w_src_end_idx) {
+    src_block |= (w_src[1] << (WORD_SIZE - w_src_begin_rem));
+  }
+  T mask = (WORD_MAX >> (WORD_SIZE - length)) << w_dst_begin_rem;
+  w_dst[0] = blend<T>(mask, w_dst[0], (src_block << w_dst_begin_rem));
+  if (1 == w_dst_end_idx) {
+    src_block >>= (WORD_SIZE - w_dst_begin_rem);
+    mask = (WORD_MAX << 1) << w_dst_end_rem;
+    w_dst[1] = blend<T>(mask, src_block, w_dst[1]);
+  }
+}
+
+template <typename T>
+void bv_copy_vector_aligned(T* w_dst, uint32_t w_dst_begin_rem,
+                            const T* w_src, uint32_t length) {
+  static_assert(std::is_integral_v<T> && std::is_unsigned_v<T>, "invalid type");
+  static unsigned constexpr WORD_SIZE = bitwidth_v<T>;
+  static constexpr unsigned WORD_MASK = WORD_SIZE - 1;
+  static constexpr T        WORD_MAX  = std::numeric_limits<T>::max();
+
+  uint32_t dst_end       = w_dst_begin_rem + length - 1;
+  uint32_t w_dst_end_idx = (dst_end / WORD_SIZE);
+  uint32_t w_dst_end_rem = dst_end & WORD_MASK;
+
+  // update aligned blocks
+  if (WORD_MASK == w_dst_end_rem) {
+    std::copy_n(w_src, w_dst_end_idx + 1, w_dst);
+  } else {
+    std::copy_n(w_src, w_dst_end_idx, w_dst);
+    // update remining block
+    T src_block = w_src[w_dst_end_idx];
+    T mask = (WORD_MAX << 1) << w_dst_end_rem;
+    w_dst[w_dst_end_idx] = blend<T>(mask, src_block, w_dst[w_dst_end_idx]);
+  }
+}
+
+template <typename T>
+void bv_copy_vector_aligned_dst(T* w_dst, uint32_t w_dst_begin_rem,
+                                const T* w_src, uint32_t w_src_begin_rem,
+                                uint32_t length) {
+  static_assert(std::is_integral_v<T> && std::is_unsigned_v<T>, "invalid type");
+  static unsigned constexpr WORD_SIZE = bitwidth_v<T>;
+  static constexpr unsigned WORD_MASK = WORD_SIZE - 1;
+  static constexpr T        WORD_MAX  = std::numeric_limits<T>::max();
+
+  uint32_t src_end       = w_src_begin_rem + length - 1;
+  uint32_t w_src_end_idx = (src_end / WORD_SIZE);
+  uint32_t dst_end       = w_dst_begin_rem + length - 1;
+  uint32_t w_dst_end_idx = (dst_end / WORD_SIZE);
+  uint32_t w_dst_end_rem = dst_end & WORD_MASK;
+
+  // update first block
+  T src_block = *w_src++ >> w_src_begin_rem;
+  src_block |= w_src[0] << (WORD_SIZE - w_src_begin_rem);
+  w_dst[0] = src_block;
+
+  // update intermediate blocks
+  auto w_dst_end = (w_dst++) + w_dst_end_idx;
+  while (w_dst < w_dst_end) {
+    T tmp = *w_src++ >> w_src_begin_rem;
+    *w_dst++ = tmp | (w_src[0] << (WORD_SIZE - w_src_begin_rem));
+  }
+
+  // update remining blocks
+  src_block = w_src[0] >> w_src_begin_rem;
+  if (w_src_end_idx > w_dst_end_idx) {
+    src_block |= (w_src[1] << (WORD_SIZE - w_src_begin_rem));
+  }
+  T mask = (WORD_MAX << 1) << w_dst_end_rem;
+  w_dst[0] = blend<T>(mask, src_block, w_dst[0]);
+}
+
+template <typename T>
+void bv_copy_vector_aligned_src(T* w_dst, uint32_t w_dst_begin_rem,
+                                const T* w_src, uint32_t w_src_begin_rem,
+                                uint32_t length) {
+  static_assert(std::is_integral_v<T> && std::is_unsigned_v<T>, "invalid type");
+  static unsigned constexpr WORD_SIZE = bitwidth_v<T>;
+  static constexpr unsigned WORD_MASK = WORD_SIZE - 1;
+  static constexpr T        WORD_MAX  = std::numeric_limits<T>::max();
+
+  uint32_t src_end       = w_src_begin_rem + length - 1;
+  uint32_t w_src_end_idx = (src_end / WORD_SIZE);
+  uint32_t dst_end       = w_dst_begin_rem + length - 1;
+  uint32_t w_dst_end_idx = (dst_end / WORD_SIZE);
+  uint32_t w_dst_end_rem = dst_end & WORD_MASK;
+
+  // update first block
+  T src_block = *w_src++;
+  T mask = WORD_MAX << w_dst_begin_rem;
+  w_dst[0] = blend<T>(mask, w_dst[0], (src_block << w_dst_begin_rem));
+
+  // update intermediate blocks
+  auto w_dst_end = (w_dst++) + w_src_end_idx;
+  while (w_dst < w_dst_end) {
+    auto tmp = *w_src++;
+    *w_dst++ = (tmp << w_dst_begin_rem) | ((src_block >> 1) >> (WORD_MASK - w_dst_begin_rem));
+    src_block = tmp;
+  }
+
+  // update remining blocks
+  src_block = (w_src[0] << w_dst_begin_rem) | ((src_block >> 1) >> (WORD_MASK - w_dst_begin_rem));
+  if (w_src_end_idx < w_dst_end_idx) {
+    *w_dst++ = src_block;
+    src_block = (w_src[0] >> 1) >> (WORD_MASK - w_dst_begin_rem);
+  }
+  mask = (WORD_MAX << 1) << w_dst_end_rem;
+  w_dst[0] = blend<T>(mask, src_block, w_dst[0]);
+}
+
+template <typename T>
+void bv_copy_vector_unaligned(T* w_dst, uint32_t w_dst_begin_rem,
+                              const T* w_src, uint32_t w_src_begin_rem,
+                              uint32_t length) {
+  static_assert(std::is_integral_v<T> && std::is_unsigned_v<T>, "invalid type");
+  static unsigned constexpr WORD_SIZE = bitwidth_v<T>;
+  static constexpr unsigned WORD_MASK = WORD_SIZE - 1;
+  static constexpr T        WORD_MAX  = std::numeric_limits<T>::max();
+
+  uint32_t src_end       = w_src_begin_rem + length - 1;
+  uint32_t w_src_end_idx = (src_end / WORD_SIZE);
+  uint32_t dst_end       = w_dst_begin_rem + length - 1;
+  uint32_t w_dst_end_idx = (dst_end / WORD_SIZE);
+  uint32_t w_dst_end_rem = dst_end & WORD_MASK;
+
+  // update first block
+  T src_block = *w_src++ >> w_src_begin_rem;
+  src_block |= (w_src[0] << (WORD_SIZE - w_src_begin_rem));
+  T mask = WORD_MAX << w_dst_begin_rem;
+  w_dst[0] = blend<T>(mask, w_dst[0], (src_block << w_dst_begin_rem));
+
+  // update intermediate blocks
+  auto w_dst_end = (w_dst++) + std::min(w_src_end_idx, w_dst_end_idx);
+  while (w_dst < w_dst_end) {
+    T tmp = *w_src++ >> w_src_begin_rem;
+    tmp |= (w_src[0] << (WORD_SIZE - w_src_begin_rem));
+    *w_dst++ = (tmp << w_dst_begin_rem) | ((src_block >> 1) >> (WORD_MASK - w_dst_begin_rem));
+    src_block = tmp;
+  }
+
+  // update remining blocks
+  T tmp = w_src[0] >> w_src_begin_rem;
+  if (w_src_end_idx < w_dst_end_idx) {
+    src_block = (tmp << w_dst_begin_rem) | ((src_block >> 1) >> (WORD_MASK - w_dst_begin_rem));
+    *w_dst++ = src_block;
+    src_block = (tmp >> 1) >> (WORD_MASK - w_dst_begin_rem);
+  } else
+  if (w_src_end_idx == w_dst_end_idx) {
+    src_block = (tmp << w_dst_begin_rem) | ((src_block >> 1) >> (WORD_MASK - w_dst_begin_rem));
+  } else {
+    src_block = (tmp | (w_src[1] << (WORD_SIZE - w_src_begin_rem))) << w_dst_begin_rem;
+  }
+  mask = (WORD_MAX << 1) << w_dst_end_rem;
+  w_dst[0] = blend<T>(mask, src_block, w_dst[0]);
+}
+
+template <typename T>
 void bv_copy(T* dst, uint32_t dst_offset,
              const T* src, uint32_t src_offset,
              uint32_t length) {
   static_assert(std::is_integral_v<T> && std::is_unsigned_v<T>, "invalid type");
   static unsigned constexpr WORD_SIZE = bitwidth_v<T>;
   static constexpr unsigned WORD_MASK = WORD_SIZE - 1;
-  static constexpr T        WORD_MAX  = std::numeric_limits<T>::max();
 
-  uint32_t w_src_begin_idx = src_offset / WORD_SIZE;
-  uint32_t w_src_begin_rem = src_offset & WORD_MASK;
-  uint32_t src_end         = src_offset + length - 1;
-  uint32_t w_src_end_idx   = (src_end / WORD_SIZE) - w_src_begin_idx;
-  auto w_src               = src + w_src_begin_idx;
+  if ((dst_offset + length) <= WORD_SIZE
+   && (src_offset + length) <= WORD_SIZE) {
+    bv_copy_scalar(dst, dst_offset, src, src_offset, length);
+    return;
+  }
 
   uint32_t w_dst_begin_idx = dst_offset / WORD_SIZE;
   uint32_t w_dst_begin_rem = dst_offset & WORD_MASK;
-  uint32_t dst_end         = dst_offset + length - 1;
-  uint32_t w_dst_end_idx   = (dst_end / WORD_SIZE) - w_dst_begin_idx;
-  uint32_t w_dst_end_rem   = dst_end & WORD_MASK;
   auto w_dst               = dst + w_dst_begin_idx;
+  uint32_t w_src_begin_idx = src_offset / WORD_SIZE;
+  uint32_t w_src_begin_rem = src_offset & WORD_MASK;
+  auto w_src               = src + w_src_begin_idx;
 
   if (length <= WORD_SIZE) {
-    T src_block = (w_src[0] >> w_src_begin_rem);
-    if (1 == w_src_end_idx) {
-      src_block |= (w_src[1] << (WORD_SIZE - w_src_begin_rem));
-    }
-    T mask = (WORD_MAX >> (WORD_SIZE - length)) << w_dst_begin_rem;
-    w_dst[0] = blend<T>(mask, w_dst[0], (src_block << w_dst_begin_rem));
-    if (1 == w_dst_end_idx) {
-      src_block >>= (WORD_SIZE - w_dst_begin_rem);
-      mask = (WORD_MAX << 1) << w_dst_end_rem;
-      w_dst[1] = blend<T>(mask, src_block, w_dst[1]);
-    }
+    bv_copy_vector_small(w_dst, w_dst_begin_rem, w_src, w_src_begin_rem, length);
   } else
-  if (0 == w_dst_begin_rem
-   && 0 == w_src_begin_rem) {
-    // update aligned blocks
-    if (WORD_MASK == w_dst_end_rem) {
-      std::copy_n(w_src, w_dst_end_idx + 1, w_dst);
-    } else {
-      std::copy_n(w_src, w_dst_end_idx, w_dst);
-      // update remining block
-      T src_block = w_src[w_dst_end_idx];
-      T mask = (WORD_MAX << 1) << w_dst_end_rem;
-      w_dst[w_dst_end_idx] = blend<T>(mask, src_block, w_dst[w_dst_end_idx]);
-    }
+  if (0 == (w_dst_begin_rem | w_src_begin_rem)) {
+    bv_copy_vector_aligned(w_dst, w_dst_begin_rem, w_src, length);
   } else
   if (0 == w_dst_begin_rem) {
-    // update first block
-    T src_block = *w_src++ >> w_src_begin_rem;
-    src_block |= w_src[0] << (WORD_SIZE - w_src_begin_rem);
-    w_dst[0] = src_block;
-
-    // update intermediate blocks
-    auto w_dst_end = (w_dst++) + w_dst_end_idx;
-    while (w_dst < w_dst_end) {
-      T tmp = *w_src++ >> w_src_begin_rem;
-      *w_dst++ = tmp | (w_src[0] << (WORD_SIZE - w_src_begin_rem));
-    }
-
-    // update remining blocks
-    src_block = w_src[0] >> w_src_begin_rem;
-    if (w_src_end_idx > w_dst_end_idx) {
-      src_block |= (w_src[1] << (WORD_SIZE - w_src_begin_rem));
-    }
-    T mask = (WORD_MAX << 1) << w_dst_end_rem;
-    w_dst[0] = blend<T>(mask, src_block, w_dst[0]);
+    bv_copy_vector_aligned_dst(w_dst, w_dst_begin_rem, w_src, w_src_begin_rem, length);
   } else
   if (0 == w_src_begin_rem) {
-    // update first block
-    T src_block = *w_src++;
-    T mask = WORD_MAX << w_dst_begin_rem;
-    w_dst[0] = blend<T>(mask, w_dst[0], (src_block << w_dst_begin_rem));
-
-    // update intermediate blocks
-    auto w_dst_end = (w_dst++) + w_src_end_idx;
-    while (w_dst < w_dst_end) {
-      auto tmp = *w_src++;
-      *w_dst++ = (tmp << w_dst_begin_rem) | ((src_block >> 1) >> (WORD_MASK - w_dst_begin_rem));
-      src_block = tmp;
-    }
-
-    // update remining blocks
-    src_block = (w_src[0] << w_dst_begin_rem) | ((src_block >> 1) >> (WORD_MASK - w_dst_begin_rem));
-    if (w_src_end_idx < w_dst_end_idx) {
-      *w_dst++ = src_block;
-      src_block = (w_src[0] >> 1) >> (WORD_MASK - w_dst_begin_rem);
-    }
-    mask = (WORD_MAX << 1) << w_dst_end_rem;
-    w_dst[0] = blend<T>(mask, src_block, w_dst[0]);
+    bv_copy_vector_aligned_src(w_dst, w_dst_begin_rem, w_src, w_src_begin_rem, length);
   } else {
-    // update first block
-    T src_block = *w_src++ >> w_src_begin_rem;
-    src_block |= (w_src[0] << (WORD_SIZE - w_src_begin_rem));
-    T mask = WORD_MAX << w_dst_begin_rem;
-    w_dst[0] = blend<T>(mask, w_dst[0], (src_block << w_dst_begin_rem));
-
-    // update intermediate blocks
-    auto w_dst_end = (w_dst++) + std::min(w_src_end_idx, w_dst_end_idx);
-    while (w_dst < w_dst_end) {
-      T tmp = *w_src++ >> w_src_begin_rem;
-      tmp |= (w_src[0] << (WORD_SIZE - w_src_begin_rem));
-      *w_dst++ = (tmp << w_dst_begin_rem) | ((src_block >> 1) >> (WORD_MASK - w_dst_begin_rem));
-      src_block = tmp;
-    }
-
-    // update remining blocks
-    T tmp = w_src[0] >> w_src_begin_rem;
-    if (w_src_end_idx < w_dst_end_idx) {
-      src_block = (tmp << w_dst_begin_rem) | ((src_block >> 1) >> (WORD_MASK - w_dst_begin_rem));
-      *w_dst++ = src_block;
-      src_block = (tmp >> 1) >> (WORD_MASK - w_dst_begin_rem);
-    } else
-    if (w_src_end_idx == w_dst_end_idx) {
-      src_block = (tmp << w_dst_begin_rem) | ((src_block >> 1) >> (WORD_MASK - w_dst_begin_rem));
-    } else {
-      src_block = (tmp | (w_src[1] << (WORD_SIZE - w_src_begin_rem))) << w_dst_begin_rem;
-    }
-    mask = (WORD_MAX << 1) << w_dst_end_rem;
-    w_dst[0] = blend<T>(mask, src_block, w_dst[0]);
+    bv_copy_vector_unaligned(w_dst, w_dst_begin_rem, w_src, w_src_begin_rem, length);
   }
 }
 
@@ -351,10 +530,12 @@ bool bv_eq(const T* lhs, const T* rhs, uint32_t size) {
 
   if (lhs[0] != rhs[0])
     return false;
+
   for (uint32_t i = 1; i < num_words; ++i) {
     if (lhs[i] != rhs[i])
       return false;
   }
+
   return true;
 }
 
@@ -363,10 +544,38 @@ bool bv_ult(const T* lhs, const T* rhs, uint32_t size) {
   static constexpr uint32_t WORD_SIZE = bitwidth_v<T>;
   uint32_t num_words = ceildiv(size, WORD_SIZE);
 
-  if (size <= WORD_SIZE) {
+  if (size <= WORD_SIZE)
     return lhs[0] < rhs[0];
+
+  for (int32_t i = num_words - 1; i >= 0; --i) {
+    if (lhs[i] < rhs[i])
+      return true;
+    if (lhs[i] > rhs[i])
+      return false;
   }
 
+  return false;
+}
+
+template <typename T>
+bool bv_slt_scalar(const T* lhs, const T* rhs, uint32_t size) {
+  auto u = sign_ext(lhs[0], size);
+  auto v = sign_ext(rhs[0], size);
+  return u < v;
+}
+
+template <typename T>
+bool bv_slt_vector(const T* lhs, const T* rhs, uint32_t size) {
+  static constexpr uint32_t WORD_SIZE = bitwidth_v<T>;
+
+  // compare most signicant bits
+  bool lhs_is_neg = bv_is_neg(lhs, size);
+  bool rhs_is_neg = bv_is_neg(rhs, size);
+  if (lhs_is_neg != rhs_is_neg)
+    return lhs_is_neg;
+
+  // same-sign words comparison
+  uint32_t num_words = ceildiv(size, WORD_SIZE);
   for (int32_t i = num_words - 1; i >= 0; --i) {
     if (lhs[i] < rhs[i])
       return true;
@@ -380,30 +589,12 @@ bool bv_ult(const T* lhs, const T* rhs, uint32_t size) {
 template <typename T>
 bool bv_slt(const T* lhs, const T* rhs, uint32_t size) {
   static constexpr uint32_t WORD_SIZE = bitwidth_v<T>;
-  uint32_t num_words = ceildiv(size, WORD_SIZE);
 
   if (size <= WORD_SIZE) {
-    auto u = sign_ext(lhs[0], size);
-    auto v = sign_ext(rhs[0], size);
-    return u < v;
+    return bv_slt_scalar(lhs, rhs, size);
+  } else {
+    return bv_slt_vector(lhs, rhs, size);
   }
-
-  // compare most signicant bits
-  uint32_t msb_idx = size - 1;
-  bool lhs_is_neg = lhs[msb_idx];
-  bool rhs_is_neg = rhs[msb_idx];
-  if (lhs_is_neg != rhs_is_neg)
-    return lhs_is_neg;
-
-  // same-sign words comparison
-  for (int32_t i = num_words - 1; i >= 0; --i) {
-    if (lhs[i] < rhs[i])
-      return true;
-    if (lhs[i] > rhs[i])
-      return false;
-  }
-
-  return false;
 }
 
 template <typename T>
@@ -501,36 +692,82 @@ bool bv_xorr(const T* in, uint32_t size) {
 }
 
 template <typename T>
+void bv_sll_scalar(T* out, const T* in, uint32_t dist) {
+  out[0] = in[0] << dist;
+}
+
+template <typename T>
+void bv_sll_vector(T* out, uint32_t out_size,
+                   const T* in, uint32_t in_size,
+                   uint32_t dist) {
+  static constexpr uint32_t WORD_SIZE = bitwidth_v<T>;
+  static constexpr uint32_t WORD_MASK = WORD_SIZE - 1;
+  static constexpr T        WORD_MAX  = std::numeric_limits<T>::max();
+
+  uint32_t in_num_words  = ceildiv(in_size, WORD_SIZE);
+  uint32_t out_num_words = ceildiv(out_size, WORD_SIZE);
+  uint32_t shift_words   = std::min(dist / WORD_SIZE, out_num_words);
+
+  std::fill_n(out, out_num_words, 0x0);
+
+  uint32_t shift_bits = dist & WORD_MASK;
+  uint32_t shift_bits_r = WORD_SIZE - shift_bits;
+  uint32_t count = out_num_words - shift_words;
+  uint32_t i = 0;
+  T carry(0), carry_mask(shift_bits ? WORD_MAX : 0);
+  for (uint32_t n = std::min(in_num_words, count); i < n; ++i) {
+    auto curr = in[i];
+    out[i + shift_words] = (curr << shift_bits) | (carry & carry_mask);
+    carry = curr >> shift_bits_r;
+  }
+  if (i < count) {
+    out[i + shift_words] = carry & carry_mask;
+  }
+
+  bv_clear_extra_bits(out, out_size);
+}
+
+template <typename T>
 void bv_sll(T* out, uint32_t out_size,
             const T* in, uint32_t in_size,
             uint32_t dist) {
   static constexpr uint32_t WORD_SIZE = bitwidth_v<T>;
-  static constexpr uint32_t WORD_MASK = WORD_SIZE - 1;
-  static constexpr T        WORD_MAX  = std::numeric_limits<T>::max();
-  uint32_t in_num_words = ceildiv(in_size, WORD_SIZE);
-  uint32_t out_num_words = ceildiv(out_size, WORD_SIZE);
 
-  if (1 == out_num_words) {
-    out[0] = in[0] << dist;
+  if (out_size <= WORD_SIZE) {
+    bv_sll_scalar(out, in, dist);
   } else {
-    uint32_t shift_words = std::min(dist / WORD_SIZE, out_num_words);
-    std::fill_n(out, shift_words, 0x0);
-    uint32_t shift_bits = dist & WORD_MASK;
-    uint32_t shift_bits_r = WORD_SIZE - shift_bits;
-    T carry(0), carry_mask(shift_bits ? WORD_MAX : 0);
-    uint32_t count = out_num_words - shift_words;
-    uint32_t i = 0;
-    for (uint32_t n = std::min(in_num_words, count); i < n; ++i) {
-      auto curr = in[i];
-      out[i + shift_words] = (curr << shift_bits) | (carry & carry_mask);
-      carry = curr >> shift_bits_r;
-    }
-    if ((i < count)) {
-      out[(i++) + shift_words] = carry & carry_mask;
-      std::fill_n(out + i + shift_words, count - i, 0x0);
-    }
+    bv_sll_vector(out, out_size, in, in_size, dist);
   }
   bv_clear_extra_bits(out, out_size);
+}
+
+template <typename T>
+void bv_srl_scalar(T* out, const T* in, uint32_t dist) {
+  out[0] = in[0] >> dist;
+}
+
+template <typename T>
+void bv_srl_vector(T* out, uint32_t out_size,
+                   const T* in, uint32_t in_size,
+                   uint32_t dist) {
+  static constexpr uint32_t WORD_SIZE = bitwidth_v<T>;
+  static constexpr uint32_t WORD_MASK = WORD_SIZE - 1;
+  static constexpr T        WORD_MAX  = std::numeric_limits<T>::max();
+
+  uint32_t in_num_words  = ceildiv(in_size, WORD_SIZE);
+  uint32_t out_num_words = ceildiv(out_size, WORD_SIZE);
+
+  uint32_t shift_words = std::min<int32_t>(dist / WORD_SIZE, in_num_words);
+  int32_t rem_words = in_num_words - shift_words;
+  uint32_t shift_bits = dist & WORD_MASK;
+  uint32_t shift_bits_l = WORD_SIZE - shift_bits;
+
+  T prev(0 << shift_bits_l), prev_mask(shift_bits ? WORD_MAX : 0);
+  for (int32_t i = out_num_words - 1; i >= 0; --i) {
+    auto curr = (i < rem_words) ? in[i + shift_words] : 0;
+    out[i] = (curr >> shift_bits) | (prev & prev_mask);
+    prev = curr << shift_bits_l;
+  }
 }
 
 template <typename T>
@@ -538,32 +775,41 @@ void bv_srl(T* out, uint32_t out_size,
             const T* in, uint32_t in_size,
             uint32_t dist) {
   static constexpr uint32_t WORD_SIZE = bitwidth_v<T>;
+
+  if (in_size <= WORD_SIZE) {
+    bv_srl_scalar(out, in, dist);
+  } else {
+    bv_srl_vector(out, out_size, in, in_size, dist);
+  }
+}
+
+template <typename T>
+void bv_sra_scalar(T* out, const T* in, uint32_t in_size, uint32_t dist) {
+  auto value = sign_ext(in[0], in_size);
+  out[0] = value >> dist;
+}
+
+template <typename T>
+void bv_sra_vector(T* out, uint32_t out_size,
+                   const T* in, uint32_t in_size,
+                   uint32_t dist) {
+  static constexpr uint32_t WORD_SIZE = bitwidth_v<T>;
   static constexpr uint32_t WORD_MASK = WORD_SIZE - 1;
   static constexpr T        WORD_MAX  = std::numeric_limits<T>::max();
-  int32_t in_num_words = ceildiv(in_size, WORD_SIZE);
-  int32_t out_num_words = ceildiv(out_size, WORD_SIZE);
 
-  if (1 == in_num_words) {
-    out[0] = in[0] >> dist;
-  } else {
-    int32_t shift_words = std::min<int32_t>(dist / WORD_SIZE, in_num_words);
-    int32_t rem_words = in_num_words - shift_words;
-    if (rem_words < out_num_words) {
-      std::fill_n(out + rem_words, out_num_words - rem_words, 0x0);
-    }
-    int32_t shift_bits = dist & WORD_MASK;
-    int32_t shift_bits_l = WORD_SIZE - shift_bits;
-    T carry(0), carry_mask(shift_bits ? WORD_MAX : 0);
-    int32_t i = in_num_words - 1 - shift_words;
-    if (i >= out_num_words) {
-      carry = in[out_num_words + shift_words] << shift_bits_l;
-      i = out_num_words - 1;
-    }
-    for (; i >= 0; --i) {
-      auto curr = in[i + shift_words];
-      out[i] = (curr >> shift_bits) | (carry & carry_mask);
-      carry = curr << shift_bits_l;
-    }
+  uint32_t in_num_words  = ceildiv(in_size, WORD_SIZE);
+  uint32_t out_num_words = ceildiv(out_size, WORD_SIZE);
+
+  uint32_t shift_words = std::min<int32_t>(dist / WORD_SIZE, in_num_words);
+  int32_t rem_words = in_num_words - shift_words;
+  uint32_t shift_bits = dist & WORD_MASK;
+  uint32_t shift_bits_l = WORD_SIZE - shift_bits;
+  T ext = bv_is_neg(in, in_size) ? WORD_MAX : 0;
+  T prev(ext << shift_bits_l), prev_mask(shift_bits ? WORD_MAX : 0);
+  for (int32_t i = out_num_words - 1; i >= 0; --i) {
+    auto curr = (i < rem_words) ? in[i + shift_words] : ext;
+    out[i] = (curr >> shift_bits) | (prev & prev_mask);
+    prev = curr << shift_bits_l;
   }
 }
 
@@ -572,110 +818,157 @@ void bv_sra(T* out, uint32_t out_size,
             const T* in, uint32_t in_size,
             uint32_t dist) {
   static constexpr uint32_t WORD_SIZE = bitwidth_v<T>;
-  static constexpr uint32_t WORD_MASK = WORD_SIZE - 1;
-  static constexpr T        WORD_MAX  = std::numeric_limits<T>::max();
-  int32_t in_num_words = ceildiv(in_size, WORD_SIZE);
-  int32_t out_num_words = ceildiv(out_size, WORD_SIZE);
 
-  T fill_value = bv_is_neg(in, in_size) ? WORD_MAX : 0;
-  if (1 == in_num_words) {
-    auto value = sign_ext(in[0], in_size);
-    out[0] = value >> dist;
+  if (in_size <= WORD_SIZE) {
+    bv_sra_scalar(out, in, in_size, dist);
   } else {
-    int32_t shift_words = std::min<int32_t>(dist / WORD_SIZE, in_num_words);
-    int32_t rem_words = in_num_words - shift_words;
-    if (rem_words < out_num_words) {
-      std::fill_n(out + rem_words, out_num_words - rem_words, fill_value);
-    }
-    int32_t shift_bits = dist & WORD_MASK;
-    int32_t shift_bits_l = WORD_SIZE - shift_bits;
-    T carry(fill_value << shift_bits_l), carry_mask(shift_bits ? WORD_MAX : 0);
-    int32_t i = in_num_words - 1 - shift_words;
-    if (i >= out_num_words) {
-      carry = in[out_num_words + shift_words] << shift_bits_l;
-      i = out_num_words - 1;
-    }
-    for (; i >= 0; --i) {
-      auto curr = in[i + shift_words];
-      out[i] = (curr >> shift_bits) | (carry & carry_mask);
-      carry = curr << shift_bits_l;
-    }
+    bv_sra_vector(out, out_size, in, in_size, dist);
   }
-  if (fill_value) {
-    bv_clear_extra_bits(out, out_size);
+  bv_clear_extra_bits(out, out_size);
+}
+
+template <typename T>
+void bv_add_scalar(T* out, const T* lhs, const T* rhs) {
+  out[0] = lhs[0] + rhs[0];
+}
+
+template <typename T>
+void bv_add_vector(T* out, const T* lhs, const T* rhs, uint32_t size) {
+  static constexpr uint32_t WORD_SIZE = bitwidth_v<T>;
+
+  T carry(0);
+  uint32_t num_words = ceildiv(size, WORD_SIZE);
+  for (uint32_t i = 0; i < num_words; ++i) {
+    auto a = lhs[i];
+    auto b = rhs[i];
+    T c = a + b;
+    T d = c + carry;
+    carry = (c < a) || (d < carry);
+    out[i] = d;
   }
 }
 
 template <typename T>
 void bv_add(T* out, const T* lhs, const T* rhs, uint32_t size) {
   static constexpr uint32_t WORD_SIZE = bitwidth_v<T>;
-  uint32_t num_words = ceildiv(size, WORD_SIZE);
 
   if (size <= WORD_SIZE) {
-    out[0] = lhs[0] + rhs[0];
+    bv_add_scalar(out, lhs, rhs);
   } else {
-    T carry(0);
-    for (uint32_t i = 0; i < num_words; ++i) {
-      auto a = lhs[i];
-      auto b = rhs[i];
-      T c = a + b;
-      T d = c + carry;
-      carry = (c < a) || (d < carry);
-      out[i] = d;
-    }
+    bv_add_vector(out, lhs, rhs, size);
   }
   bv_clear_extra_bits(out, size);
+}
+
+template <typename T>
+void bv_sub_scalar(T* out, const T* lhs, const T* rhs) {
+  out[0] = lhs[0] - rhs[0];
+}
+
+template <typename T>
+void bv_sub_vector(T* out, const T* lhs, const T* rhs, uint32_t size) {
+  static constexpr uint32_t WORD_SIZE = bitwidth_v<T>;
+
+  T borrow(0);
+  uint32_t num_words = ceildiv(size, WORD_SIZE);
+  for (uint32_t i = 0; i < num_words; ++i) {
+    auto a = lhs[i];
+    auto b = rhs[i];
+    T c = a - b;
+    T d = c - borrow;
+    borrow = (a < c) || (c < d);
+    out[i] = d;
+  }
 }
 
 template <typename T>
 void bv_sub(T* out, const T* lhs, const T* rhs, uint32_t size) {
   static constexpr uint32_t WORD_SIZE = bitwidth_v<T>;
-  uint32_t num_words = ceildiv(size, WORD_SIZE);
 
   if (size <= WORD_SIZE) {
-    out[0] = lhs[0] - rhs[0];
+    bv_sub_scalar(out, lhs, rhs);
   } else {
-    T borrow(0);
-    for (uint32_t i = 0; i < num_words; ++i) {
-      auto a = lhs[i];
-      auto b = rhs[i];
-      T c = a - b;
-      T d = c - borrow;
-      borrow = (a < c) || (c < d);
-      out[i] = d;
-    }
+    bv_sub_vector(out, lhs, rhs, size);
   }
   bv_clear_extra_bits(out, size);
 }
 
 template <typename T>
+void bv_neg_scalar(T* out, const T* in) {
+  out[0] = -in[0];
+}
+
+template <typename T>
+void bv_neg_vector(T* out, const T* in, uint32_t size) {
+  static constexpr uint32_t WORD_SIZE = bitwidth_v<T>;
+
+  T borrow(0);
+  uint32_t num_words = ceildiv(size, WORD_SIZE);
+  for (uint32_t i = 0; i < num_words; ++i) {
+    auto a = in[i];
+    T b = -a - borrow;
+    borrow = (a != 0) || (b != 0);
+    out[i] = b;
+  }
+}
+
+template <typename T>
 void bv_neg(T* out, const T* in, uint32_t size) {
   static constexpr uint32_t WORD_SIZE = bitwidth_v<T>;
-  uint32_t num_words = ceildiv(size, WORD_SIZE);
 
   if (size <= WORD_SIZE) {
-    out[0] = -in[0];
+    bv_neg_scalar(out, in);
   } else {
-    T borrow(0);
-    for (uint32_t i = 0; i < num_words; ++i) {
-      auto a = in[i];
-      T b = -a - borrow;
-      borrow = (a != 0) || (b != 0);
-      out[i] = b;
-    }
+    bv_neg_vector(out, in, size);
   }
   bv_clear_extra_bits(out, size);
 }
 
 template <typename T>
 void bv_abs(T* out, const T* in, uint32_t size) {
-  static constexpr uint32_t WORD_SIZE = bitwidth_v<T>;
-  uint32_t num_words = ceildiv(size, WORD_SIZE);
-
   if (bv_is_neg(in, size)) {
     bv_neg(out, in, size);
   } else {
-    std::copy_n(in, num_words, out);
+    bv_copy(out, in, size);
+  }
+}
+
+template <typename T>
+void bv_mult_scalar(T* out, const T* lhs, const T* rhs) {
+  out[0] = lhs[0] * rhs[0];
+}
+
+template <typename T>
+void bv_mult_vector(T* out, uint32_t out_size,
+                    const T* lhs, uint32_t lhs_size,
+                    const T* rhs, uint32_t rhs_size) {
+  using xword_t = std::conditional_t<sizeof(T) == 1, uint8_t,
+                    std::conditional_t<sizeof(T) == 2, uint16_t, uint32_t>>;
+  using yword_t = std::conditional_t<sizeof(T) == 1, uint16_t,
+                     std::conditional_t<sizeof(T) == 2, uint32_t, uint64_t>>;
+  assert(out_size <= lhs_size + rhs_size);
+  static constexpr uint32_t XWORD_SIZE = bitwidth_v<xword_t>;
+
+  auto m = ceildiv<int>(lhs_size, XWORD_SIZE);
+  auto n = ceildiv<int>(rhs_size, XWORD_SIZE);
+  auto p = ceildiv<int>(out_size, XWORD_SIZE);
+
+  auto u = reinterpret_cast<const xword_t*>(lhs);
+  auto v = reinterpret_cast<const xword_t*>(rhs);
+  auto w = reinterpret_cast<xword_t*>(out);
+
+  std::fill_n(w, p, 0);
+
+  for (int i = 0; i < n; ++i) {
+    xword_t tot(0);
+    for (int j = 0, k = std::min(m, p - i); j < k; ++j) {
+      auto c = yword_t(u[j]) * v[i] + w[i+j] + tot;
+      tot = c >> XWORD_SIZE;
+      w[i+j] = c;
+    }
+    if (i+m < p) {
+      w[i+m] = tot;
+    }
   }
 }
 
@@ -683,50 +976,28 @@ template <typename T>
 void bv_mult(T* out, uint32_t out_size,
              const T* lhs, uint32_t lhs_size,
              const T* rhs, uint32_t rhs_size) {
-  using xword_t = std::conditional_t<sizeof(T) == 1, uint8_t,
-                    std::conditional_t<sizeof(T) == 2, uint16_t, uint32_t>>;
-  using yword_t = std::conditional_t<sizeof(T) == 1, uint16_t,
-                     std::conditional_t<sizeof(T) == 2, uint32_t, uint64_t>>;
-  assert(out_size <= lhs_size + rhs_size);
   static constexpr uint32_t WORD_SIZE  = bitwidth_v<T>;
-  static constexpr uint32_t XWORD_SIZE = bitwidth_v<xword_t>;
 
   if (out_size <= WORD_SIZE) {
     assert(lhs_size <= WORD_SIZE);
     assert(rhs_size <= WORD_SIZE);
-    out[0] = lhs[0] * rhs[0];
+    bv_mult_scalar(out, lhs, rhs);
   } else {
-    auto m = ceildiv<int>(lhs_size, XWORD_SIZE);
-    auto n = ceildiv<int>(rhs_size, XWORD_SIZE);
-    auto p = ceildiv<int>(out_size, XWORD_SIZE);
-
-    auto u = reinterpret_cast<const xword_t*>(lhs);
-    auto v = reinterpret_cast<const xword_t*>(rhs);
-    auto w = reinterpret_cast<xword_t*>(out);
-
-    std::fill_n(w, p, 0);
-
-    for (int i = 0; i < n; ++i) {
-      xword_t tot(0);
-      for (int j = 0, k = std::min(m, p - i); j < k; ++j) {
-        auto c = yword_t(u[j]) * v[i] + w[i+j] + tot;
-        tot = c >> XWORD_SIZE;
-        w[i+j] = c;
-      }
-      if (i+m < p) {
-        w[i+m] = tot;
-      }
-    }
+    bv_mult_vector(out, out_size, lhs, lhs_size, rhs, rhs_size);
   }
-
   bv_clear_extra_bits(out, out_size);
 }
 
 template <typename T>
-void bv_udiv(T* quot, uint32_t quot_size,
-             T* rem, uint32_t rem_size,
-             const T* lhs, uint32_t lhs_size,
-             const T* rhs, uint32_t rhs_size) {
+void bv_udiv_scalar(T* out, const T* lhs, const T* rhs) {
+  out[0] = lhs[0] / rhs[0];
+}
+
+template <typename T>
+void bv_udiv_vector(T* quot, uint32_t quot_size,
+                    T* rem, uint32_t rem_size,
+                    const T* lhs, uint32_t lhs_size,
+                    const T* rhs, uint32_t rhs_size) {
   assert(lhs_size && rhs_size);
   using xword_t = std::conditional_t<sizeof(T) == 1, uint8_t,
                     std::conditional_t<sizeof(T) == 2, uint16_t, uint32_t>>;
@@ -829,7 +1100,8 @@ void bv_udiv(T* quot, uint32_t quot_size,
 }
 
 template <typename T>
-void bv_udiv(T* out, uint32_t out_size, const T* lhs, uint32_t lhs_size,
+void bv_udiv(T* out, uint32_t out_size,
+             const T* lhs, uint32_t lhs_size,
              const T* rhs, uint32_t rhs_size) {
   static constexpr uint32_t WORD_SIZE  = bitwidth_v<T>;
   assert(lhs_size && rhs_size && out_size);
@@ -837,11 +1109,21 @@ void bv_udiv(T* out, uint32_t out_size, const T* lhs, uint32_t lhs_size,
   if (lhs_size <= WORD_SIZE
    && rhs_size <= WORD_SIZE
    && out_size <= WORD_SIZE) {
-    out[0] = lhs[0] / rhs[0];
+    bv_udiv_scalar(out, lhs, rhs);
   } else {
     T* r = nullptr;
-    bv_udiv(out, out_size, r, 0, lhs, lhs_size, rhs, rhs_size);
+    bv_udiv_vector(out, out_size, r, 0, lhs, lhs_size, rhs, rhs_size);
   }
+}
+
+template <typename T>
+void bv_sdiv_scalar(T* out, uint32_t out_size,
+                    const T* lhs, uint32_t lhs_size,
+                    const T* rhs, uint32_t rhs_size) {
+  auto u = sign_ext(lhs[0], lhs_size);
+  auto v = sign_ext(rhs[0], rhs_size);
+  out[0] = u / v;
+  bv_clear_extra_bits(out, out_size);
 }
 
 template <typename T>
@@ -854,21 +1136,23 @@ void bv_sdiv(T* out, uint32_t out_size,
   if (lhs_size <= WORD_SIZE
    && rhs_size <= WORD_SIZE
    && out_size <= WORD_SIZE) {
-    auto u = sign_ext(lhs[0], lhs_size);
-    auto v = sign_ext(rhs[0], rhs_size);
-    out[0] = u / v;
-    bv_clear_extra_bits(out, out_size);
+    bv_sdiv_scalar(out, out_size, lhs, lhs_size, rhs, rhs_size);
   } else {
     std::vector<T> u(ceildiv<uint32_t>(lhs_size, WORD_SIZE));
     std::vector<T> v(ceildiv<uint32_t>(rhs_size, WORD_SIZE));
     bv_abs(u.data(), lhs, lhs_size);
     bv_abs(v.data(), rhs, rhs_size);
     T* r = nullptr;
-    bv_udiv(out, out_size, r, 0, u.data(), lhs_size, v.data(), rhs_size);
+    bv_udiv_vector(out, out_size, r, 0, u.data(), lhs_size, v.data(), rhs_size);
     if (bv_is_neg(lhs, lhs_size) ^ bv_is_neg(rhs, rhs_size)) {
       bv_neg(out, out, out_size);
     }
   }
+}
+
+template <typename T>
+void bv_umod_scalar(T* out, const T* lhs, const T* rhs) {
+  out[0] = lhs[0] % rhs[0];
 }
 
 template <typename T>
@@ -881,11 +1165,21 @@ void bv_umod(T* out, uint32_t out_size,
   if (lhs_size <= WORD_SIZE
    && rhs_size <= WORD_SIZE
    && out_size <= WORD_SIZE) {
-    out[0] = lhs[0] % rhs[0];
+    bv_umod_scalar(out, lhs, rhs);
   } else {
     T* q = nullptr;
-    bv_udiv(q, 0, out, out_size, lhs, lhs_size, rhs, rhs_size);
+    bv_udiv_vector(q, 0, out, out_size, lhs, lhs_size, rhs, rhs_size);
   }
+}
+
+template <typename T>
+void bv_smod_scalar(T* out, uint32_t out_size,
+                    const T* lhs, uint32_t lhs_size,
+                    const T* rhs, uint32_t rhs_size) {
+  auto u = sign_ext(lhs[0], lhs_size);
+  auto v = sign_ext(rhs[0], rhs_size);
+  out[0] = u % v;
+  bv_clear_extra_bits(out, out_size);
 }
 
 template <typename T>
@@ -898,17 +1192,14 @@ void bv_smod(T* out, uint32_t out_size,
   if (lhs_size <= WORD_SIZE
    && rhs_size <= WORD_SIZE
    && out_size <= WORD_SIZE) {
-    auto u = sign_ext(lhs[0], lhs_size);
-    auto v = sign_ext(rhs[0], rhs_size);
-    out[0] = u % v;
-    bv_clear_extra_bits(out, out_size);
+    bv_smod_scalar(out, out_size, lhs, lhs_size, rhs, rhs_size);
   } else {
     std::vector<T> u(ceildiv<uint32_t>(lhs_size, WORD_SIZE));
     std::vector<T> v(ceildiv<uint32_t>(rhs_size, WORD_SIZE));
     bv_abs(u.data(), lhs, lhs_size);
     bv_abs(v.data(), rhs, rhs_size);
     T* q = nullptr;
-    bv_udiv(q, 0, out, out_size, u.data(), lhs_size, v.data(), rhs_size);
+    bv_udiv_vector(q, 0, out, out_size, u.data(), lhs_size, v.data(), rhs_size);
     if (bv_is_neg(lhs, lhs_size)) {
       bv_neg(out, out, out_size);
     }
@@ -916,43 +1207,48 @@ void bv_smod(T* out, uint32_t out_size,
 }
 
 template <typename T>
-void bv_zext(T* out, uint32_t out_size, const T* in, uint32_t in_size) {
+void bv_zext_scalar(T* out, const T* in) {
+  out[0] = in[0];
+}
+
+template <typename T>
+void bv_zext_vector(T* out, uint32_t out_size, const T* in, uint32_t in_size) {
   static constexpr uint32_t WORD_SIZE  = bitwidth_v<T>;
-  assert(in_size <= out_size);
 
   uint32_t in_num_words = ceildiv(in_size, WORD_SIZE);
   uint32_t out_num_words = ceildiv(out_size, WORD_SIZE);
-
-  if (out_size <= WORD_SIZE) {
-    out[0] = in[0];
-    return;
-  }
 
   std::copy_n(in, in_num_words, out);
   std::fill(out + in_num_words, out + out_num_words, 0);
 }
 
 template <typename T>
-void bv_sext(T* out, uint32_t out_size, const T* in, uint32_t in_size) {
+void bv_zext(T* out, uint32_t out_size, const T* in, uint32_t in_size) {
+  static constexpr uint32_t WORD_SIZE  = bitwidth_v<T>;
+  assert(in_size <= out_size);
+  if (out_size <= WORD_SIZE) {
+    bv_zext_scalar(out, in);
+  } else {
+    bv_zext_vector(out, out_size, in , in_size);
+  }
+}
+
+template <typename T>
+void bv_sext_scalar(T* out, uint32_t out_size, const T* in, uint32_t in_size) {
+  out[0] = sign_ext(in[0], in_size);
+  bv_clear_extra_bits(out, out_size);
+}
+
+template <typename T>
+void bv_sext_vector(T* out, uint32_t out_size, const T* in, uint32_t in_size) {
   static constexpr uint32_t WORD_SIZE = bitwidth_v<T>;
   static constexpr uint32_t WORD_MASK = WORD_SIZE - 1;
   static constexpr T        WORD_MAX  = std::numeric_limits<T>::max();
-  assert(in_size <= out_size);
 
   uint32_t in_num_words = ceildiv(in_size, WORD_SIZE);
   uint32_t out_num_words = ceildiv(out_size, WORD_SIZE);
+
   auto is_neg = bv_is_neg(in, in_size);
-
-  if (out_size <= WORD_SIZE) {
-    if (is_neg) {
-      out[0] = sign_ext(in[0], in_size);
-      bv_clear_extra_bits(out, out_size);
-    } else {
-      out[0] = in[0];
-    }
-    return;
-  }
-
   if (is_neg) {
     uint32_t msb = in_size - 1;
     uint32_t msb_blk_idx = msb / WORD_SIZE;
@@ -965,6 +1261,18 @@ void bv_sext(T* out, uint32_t out_size, const T* in, uint32_t in_size) {
   } else {
     std::copy_n(in, in_num_words, out);
     std::fill(out + in_num_words, out + out_num_words, 0);
+  }
+}
+
+template <typename T>
+void bv_sext(T* out, uint32_t out_size, const T* in, uint32_t in_size) {
+  static constexpr uint32_t WORD_SIZE = bitwidth_v<T>;
+  assert(in_size <= out_size);
+
+  if (out_size <= WORD_SIZE) {
+    bv_sext_scalar(out, out_size, in , in_size);
+  } else {
+    bv_sext_vector(out, out_size, in , in_size);
   }
 }
 

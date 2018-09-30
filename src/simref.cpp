@@ -40,8 +40,9 @@ private:
 public:
 
   static instr_proxy* create(proxyimpl* node, instr_map_t& map) {
-    uint32_t dst_bytes = sizeof(block_type) * ceildiv<uint32_t>(node->size(), bitwidth_v<block_type>);
-
+    uint32_t dst_size = node->size();
+    uint32_t dst_nblocks = ceildiv<uint32_t>(dst_size, bitwidth_v<block_type>);
+    uint32_t dst_bytes = sizeof(block_type) * dst_nblocks;
     uint32_t num_ranges = node->ranges().size();
 
     uint32_t range_bytes = 0;
@@ -97,20 +98,20 @@ public:
   }
 
   void eval() override {
-    std::copy_n(src_, nblocks_, dst_);
+    bv_copy(dst_, src_, size_);
   }
 
 private:
 
   instr_output(outputimpl* node, instr_map_t& map)
     : src_(map.at(node->src(0).id()))
-    , dst_(node->value().words()) {
-    nblocks_ = ceildiv<uint32_t>(node->size(), bitwidth_v<block_type>);
-  }
+    , dst_(node->value().words())
+    , size_(node->size())
+  {}
 
   const block_type* src_;
   block_type* dst_;
-  uint32_t nblocks_;
+  uint32_t size_;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -477,12 +478,12 @@ public:
 
   static instr_select* create(selectimpl* node, instr_map_t& map) {
     uint32_t dst_size = node->size();
-    uint32_t nblocks  = ceildiv<uint32_t>(dst_size, bitwidth_v<block_type>);
+    uint32_t dst_nblocks = ceildiv<uint32_t>(dst_size, bitwidth_v<block_type>);
     bool has_key      = node->has_key();
     uint32_t key_size = node->src(0).size();
     uint32_t num_srcs = node->srcs().size();
 
-    uint32_t dst_bytes = sizeof(block_type) * nblocks;
+    uint32_t dst_bytes = sizeof(block_type) * dst_nblocks;
     uint32_t src_bytes = sizeof(block_type*) * node->srcs().size();
 
     auto buf = new uint8_t[sizeof(selectimpl) + dst_bytes + src_bytes]();
@@ -498,7 +499,7 @@ public:
       srcs[i] = map.at(node->src(i).id());
     }
 
-    return new (buf) instr_select(has_key, key_size, dst, nblocks, srcs, num_srcs);
+    return new (buf) instr_select(has_key, key_size, srcs, num_srcs, dst, dst_size);
   }
 
   void destroy () override {
@@ -521,28 +522,28 @@ public:
     }
 
     auto src = (i < last) ? srcs_[i+1] : srcs_[last];
-    std::copy_n(src, nblocks_, dst_);
+    bv_copy(dst_, src, size_);
   }
 
 private:
 
   instr_select(bool has_key, uint32_t key_size,
-               block_type* dst, uint32_t nblocks,
-               const block_type** srcs, uint32_t num_srcs)
+               const block_type** srcs, uint32_t num_srcs,
+               block_type* dst, uint32_t size)
     : has_key_(has_key)
-    , key_size_(key_size)
-    , dst_(dst)
-    , nblocks_(nblocks)
+    , key_size_(key_size)    
     , srcs_(srcs)
     , num_srcs_(num_srcs)
+    , dst_(dst)
+    , size_(size)
   {}
 
   bool has_key_;
   uint32_t key_size_;
-  block_type* dst_;
-  uint32_t nblocks_;
   const block_type** srcs_;
   uint32_t num_srcs_;
+  block_type* dst_;
+  uint32_t size_;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -595,9 +596,9 @@ class instr_reg : public instr_base {
 public:
 
   static instr_reg* create(regimpl* node, instr_map_t& map) {
-    uint32_t dst_size    = node->size();
-    uint32_t nblocks     = ceildiv<uint32_t>(dst_size, bitwidth_v<block_type>);
-    uint32_t dst_bytes   = sizeof(block_type) * nblocks;
+    uint32_t dst_size  = node->size();
+    uint32_t nblocks   = ceildiv<uint32_t>(dst_size, bitwidth_v<block_type>);
+    uint32_t dst_bytes = sizeof(block_type) * nblocks;
 
     uint32_t pipe_length = node->length() - 1;
     uint32_t pipe_array_bytes = 0;
@@ -621,7 +622,7 @@ public:
       pipe[i] = (block_type*)(buf_cur + i * dst_bytes);
     }
 
-    return new (buf) instr_reg(pipe, pipe_length, dst, nblocks);
+    return new (buf) instr_reg(pipe, pipe_length, dst, dst_size);
   }
 
   void destroy () override {
@@ -639,7 +640,7 @@ public:
 
 private:
 
-  instr_reg(block_type** pipe, uint32_t pipe_length, block_type* dst, uint32_t nblocks)
+  instr_reg(block_type** pipe, uint32_t pipe_length, block_type* dst, uint32_t size)
     : initdata_(nullptr)
     , cd_(nullptr)
     , reset_(nullptr)
@@ -648,7 +649,7 @@ private:
     , pipe_(pipe)
     , pipe_length_(pipe_length)
     , dst_(dst)
-    , nblocks_(nblocks)
+    , size_(size)
   {}
 
   void eval() override {
@@ -658,9 +659,9 @@ private:
 
     // check reset state
     if (reset_ && static_cast<bool>(reset_[0])) {
-      std::copy_n(initdata_, nblocks_, dst_);
+      bv_copy(dst_, initdata_, size_);
       for (uint32_t i = 0; i < pipe_length_; ++i) {
-        std::copy_n(initdata_, nblocks_, pipe_[i]);
+        bv_copy(pipe_[i], initdata_, size_);
       }
       return;
     }
@@ -673,14 +674,14 @@ private:
     block_type* value = dst_;
     if (pipe_length_) {
       auto last = pipe_length_ - 1;
-      std::copy_n(pipe_[last], nblocks_, dst_);
+      bv_copy(dst_, pipe_[last], size_);
       for (int i = last; i > 0; --i) {
-        std::copy_n(pipe_[i-1], nblocks_, pipe_[i]);
+        bv_copy(pipe_[i], pipe_[i-1], size_);
       }
       value = pipe_[0];
     }
     // push next value
-    std::copy_n(next_, nblocks_, value);
+    bv_copy(value, next_, size_);
   }
 
   const block_type* initdata_;
@@ -691,7 +692,7 @@ private:
   block_type** pipe_;
   uint32_t pipe_length_;
   block_type* dst_;
-  uint32_t nblocks_;
+  uint32_t size_;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -781,7 +782,7 @@ public:
     auto wrports = (wrport_t*)buf_cur;
 
     if (node->has_initdata()) {
-      std::copy_n(node->initdata().words(), dst_nblocks, dst);
+      bv_copy(dst, node->initdata().words(), dst_size);
     }
 
     return new (buf) instr_mem(rdports, num_rdports, wrports, num_wrports,
@@ -904,20 +905,20 @@ public:
   }
 
   void eval() override {
-    std::copy_n(src_, nblocks_, dst_);
+    bv_copy(dst_, src_, size_);
   }
 
 private:
 
   instr_tap(tapimpl* node, instr_map_t& map)
     : src_(map.at(node->src(0).id()))
-    , dst_(node->value().words()) {
-    nblocks_ = ceildiv<uint32_t>(node->size(), bitwidth_v<block_type>);
-  }
+    , dst_(node->value().words())
+    , size_(node->size())
+  {}
 
   const block_type* src_;
   block_type* dst_;
-  uint32_t nblocks_;
+  uint32_t size_;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

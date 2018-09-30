@@ -1,23 +1,49 @@
 #CXX = clang-6.0
-CXX = g++-7.3
+#CXX = g++-7.3
+
 PREFIX ?= /usr/local
+
 CXXFLAGS += -fPIC -std=c++17 -O3 -DNDEBUG -I$(CASH_HOME)/include -Wall -Wextra -pedantic
 #CXXFLAGS += -fPIC -std=c++17 -O0 -g -I$(CASH_HOME)/include -Wall -Wextra -pedantic
-LDFLAGS += -shared -L$(CASH_HOME)/build/lib
+
+LDFLAGS += -shared -L$(CURDIR)/lib
 
 # Target
 TARGET_DIR := lib
 
 PROJECT = libcash
 
-SRCS = utils.cpp platform.cpp bitvector.cpp system.cpp lnodeimpl.cpp ioimpl.cpp \
-       proxyimpl.cpp cdimpl.cpp litimpl.cpp regimpl.cpp memimpl.cpp selectimpl.cpp \
-       aluimpl.cpp bindimpl.cpp assertimpl.cpp timeimpl.cpp printimpl.cpp \
-       udfimpl.cpp lnode.cpp logic.cpp context.cpp compile.cpp simref.cpp \
-       simjit.cpp deviceimpl.cpp simulatorimpl.cpp tracerimpl.cpp \
-       verilogwriter.cpp firrtlwriter.cpp avalon_sim.cpp
+SRCS = ../src/utils.cpp \
+       ../src/platform.cpp \
+       ../src/system.cpp \
+       ../src/lnodeimpl.cpp \
+       ../src/ioimpl.cpp \
+       ../src/proxyimpl.cpp \
+       ../src/cdimpl.cpp \
+       ../src/litimpl.cpp \
+       ../src/regimpl.cpp \
+       ../src/memimpl.cpp \
+       ../src/selectimpl.cpp \
+       ../src/aluimpl.cpp \
+       ../src/bindimpl.cpp \
+       ../src/assertimpl.cpp \
+       ../src/timeimpl.cpp \
+       ../src/printimpl.cpp \
+       ../src/udfimpl.cpp \
+       ../src/lnode.cpp \
+       ../src/logic.cpp \
+       ../src/context.cpp \
+       ../src/compile.cpp \
+       ../src/simref.cpp \
+       ../src/simjit.cpp \
+       ../src/deviceimpl.cpp \
+       ../src/simulatorimpl.cpp \
+       ../src/tracerimpl.cpp \
+       ../src/verilogwriter.cpp \
+       ../src/firrtlwriter.cpp \
+       ../src/eda/altera/avalon_sim.cpp
 
-OBJS := $(notdir $(SRCS:.cpp=.o))
+OBJS := $(SRCS:.cpp=.o)
 
 all : $(TARGET_DIR) $(TARGET_DIR)/$(PROJECT).so
 
@@ -27,10 +53,7 @@ $(TARGET_DIR) :
 $(TARGET_DIR)/$(PROJECT).so : $(OBJS)
   $(CXX) $^ $(LDFLAGS) -o $@
 
-avalon_sim.o : ../src/eda/altera/avalon_sim.cpp
-  $(CXX) $(CXXFLAGS) -c $< -o $@
-
-%.o : ../src/%.cpp
+%.o :   %.cpp
   $(CXX) $(CXXFLAGS) -c $< -o $@
 
 .depend: $(SRCS)

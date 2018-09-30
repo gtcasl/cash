@@ -194,9 +194,8 @@ $ kcachegrind profiler.callgrin
 // cmake build
 cmake -DCMAKE_BUILD_TYPE=Debug -DCODECOV=ON .. && make -j4 all test && ../codecov.sh .
 
-// FIRRTL codegen
-
-
+// dump assembly
+objdump -d a.out > a.asm
 
 // debugging C macros
 g++ -std=c++17 -O0 -g -Wall -Wextra -Werror -E -dD dogfood.cpp > dogfood.log

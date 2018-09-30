@@ -94,6 +94,7 @@ void printimpl::print(std::ostream& out) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+#ifndef NDEBUG
 static int getFormatMaxIndex(const char* format) {
   int max_index = -1;
   for (const char *str = format; *str != '\0'; ++str) {
@@ -105,6 +106,7 @@ static int getFormatMaxIndex(const char* format) {
   }
   return max_index;
 }
+#endif
 
 void ch::internal::createPrintNode(
     const std::string& format,
@@ -114,10 +116,11 @@ void ch::internal::createPrintNode(
   if (0 == platform::self().dbg_level())
     return;
 
+#ifndef NDEBUG
   // check format
   auto max_index = getFormatMaxIndex(format.c_str());
   CH_CHECK(max_index < (int)args.size(), "print format index out of range");
-
+#endif
   // create print node
   ctx_curr()->create_node<printimpl>(format, args, sloc);
 }
