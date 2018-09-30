@@ -64,10 +64,10 @@ void bv_assign_vector(T* in, uint32_t size, U value) {
 template <typename U, typename T,
           CH_REQUIRE_0(std::is_integral_v<U> && std::is_unsigned_v<U>)>
 void bv_assign(T* in, uint32_t size, U value) {
-  static constexpr uint32_t WORD_SIZE = bitwidth_v<T>;  
+  static constexpr uint32_t WORD_SIZE = bitwidth_v<T>;
   if constexpr (std::numeric_limits<U>::digits > 1) {
     CH_CHECK(log2ceil(value + 1) <= size, "value out of range");
-  }  
+  }
   if (size <= WORD_SIZE) {
     bv_assign_scalar(in, value);
   } else {

@@ -5,7 +5,7 @@
 namespace ch {
 namespace internal {
 
-using block_type = uint8_t;
+using block_type = uint64_t;
 
 using sdata_type = bitvector<block_type>;
 
