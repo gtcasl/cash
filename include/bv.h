@@ -723,8 +723,6 @@ void bv_sll_vector(T* out, uint32_t out_size,
   if (i < count) {
     out[i + shift_words] = carry & carry_mask;
   }
-
-  bv_clear_extra_bits(out, out_size);
 }
 
 template <typename T>
