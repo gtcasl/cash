@@ -592,43 +592,10 @@ private:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class instr_reg : public instr_base {
+class instr_reg_base : public instr_base {
 public:
 
-  static instr_reg* create(regimpl* node, instr_map_t& map) {
-    uint32_t dst_size  = node->size();
-    uint32_t nblocks   = ceildiv<uint32_t>(dst_size, bitwidth_v<block_type>);
-    uint32_t dst_bytes = sizeof(block_type) * nblocks;
-
-    uint32_t pipe_length = node->length() - 1;
-    uint32_t pipe_array_bytes = 0;
-    uint32_t pipe_data_bytes = 0;
-    for (uint32_t i = 0; i < pipe_length; ++i) {
-      pipe_array_bytes += sizeof(block_type*);
-      pipe_data_bytes += dst_bytes;
-    }
-
-    auto buf = new uint8_t[sizeof(instr_reg) + dst_bytes + pipe_array_bytes + pipe_data_bytes]();
-    auto buf_cur = buf + sizeof(instr_reg);
-    auto dst = (block_type*)buf_cur;
-    map[node->id()] = dst;
-
-    buf_cur += dst_bytes;
-
-    auto pipe = (block_type**)buf_cur;
-    buf_cur += pipe_array_bytes;
-
-    for (uint32_t i = 0; i < pipe_length; ++i) {
-      pipe[i] = (block_type*)(buf_cur + i * dst_bytes);
-    }
-
-    return new (buf) instr_reg(pipe, pipe_length, dst, dst_size);
-  }
-
-  void destroy () override {
-    this->~instr_reg();
-    ::operator delete [](this);
-  }
+  static instr_reg_base* create(regimpl* node, instr_map_t& map);
 
   void init(regimpl* node, instr_map_t& map) {
     cd_       = map.at(node->cd().id());
@@ -638,62 +605,130 @@ public:
     initdata_ = node->has_initdata() ? map.at(node->initdata().id()) : nullptr;
   }
 
-private:
+protected:
 
-  instr_reg(block_type** pipe, uint32_t pipe_length, block_type* dst, uint32_t size)
+  instr_reg_base(block_type* pipe, uint32_t pipe_size, block_type* dst, uint32_t size)
     : initdata_(nullptr)
+    , pipe_(pipe)
+    , pipe_size_(pipe_size)
     , cd_(nullptr)
     , reset_(nullptr)
     , enable_(nullptr)
     , next_(nullptr)
-    , pipe_(pipe)
-    , pipe_length_(pipe_length)
     , dst_(dst)
     , size_(size)
   {}
+
+  const block_type* initdata_;
+  block_type* pipe_;
+  uint32_t pipe_size_;
+  const block_type* cd_;
+  const block_type* reset_;
+  const block_type* enable_;
+  const block_type* next_;
+  block_type* dst_;
+  uint32_t size_;
+};
+
+template <bool is_pipe, bool has_init, bool has_enable>
+class instr_reg : public instr_reg_base {
+public:
+
+  void destroy () override {
+    this->~instr_reg();
+    ::operator delete [](this);
+  }
 
   void eval() override {
     // check clock transition
     if (!static_cast<bool>(cd_[0]))
       return;
 
-    // check reset state
-    if (reset_ && static_cast<bool>(reset_[0])) {
-      bv_copy(dst_, initdata_, size_);
-      for (uint32_t i = 0; i < pipe_length_; ++i) {
-        bv_copy(pipe_[i], initdata_, size_);
+    if constexpr (has_init) {
+      // check reset state
+      if (reset_ && static_cast<bool>(reset_[0])) {
+        bv_copy(dst_, initdata_, size_);
+        if constexpr (is_pipe) {
+          for (uint32_t i = 0; i < pipe_size_; i+= size_) {
+            bv_copy(pipe_, i, initdata_, 0, size_);
+          }
+        }
+        return;
       }
-      return;
     }
 
-    // check enable state
-    if (enable_ && !static_cast<bool>(enable_[0]))
-      return;
-
-    // advance pipeline
-    block_type* value = dst_;
-    if (pipe_length_) {
-      auto last = pipe_length_ - 1;
-      bv_copy(dst_, pipe_[last], size_);
-      for (int i = last; i > 0; --i) {
-        bv_copy(pipe_[i], pipe_[i-1], size_);
-      }
-      value = pipe_[0];
+    if constexpr (has_enable) {
+      // check enable state
+      if (enable_ && !static_cast<bool>(enable_[0]))
+        return;
     }
-    // push next value
-    bv_copy(value, next_, size_);
+
+    if constexpr (is_pipe) {
+      // advance pipeline
+      bv_slice(dst_, size_, pipe_, 0);
+      bv_srl(pipe_, pipe_size_, pipe_, pipe_size_, size_);
+      bv_copy(pipe_, pipe_size_ - size_, next_, 0, size_);
+    } else {
+      // push next value
+      bv_copy(dst_, next_, size_);
+    }
   }
 
-  const block_type* initdata_;
-  const block_type* cd_;
-  const block_type* reset_;
-  const block_type* enable_;
-  const block_type* next_;
-  block_type** pipe_;
-  uint32_t pipe_length_;
-  block_type* dst_;
-  uint32_t size_;
+protected:
+
+  instr_reg(block_type* pipe, uint32_t pipe_size, block_type* dst, uint32_t size)
+    : instr_reg_base(pipe, pipe_size, dst, size)
+  {}
+
+  friend class instr_reg_base;
 };
+
+instr_reg_base* instr_reg_base::create(regimpl* node, instr_map_t& map) {
+  uint32_t dst_size  = node->size();
+  uint32_t nblocks   = ceildiv<uint32_t>(dst_size, bitwidth_v<block_type>);
+  uint32_t dst_bytes = sizeof(block_type) * nblocks;
+
+  uint32_t pipe_size = dst_size * (node->length() - 1);
+  uint32_t pipe_bytes = sizeof(block_type) * ceildiv<uint32_t>(pipe_size, bitwidth_v<block_type>);
+
+  auto buf = new uint8_t[sizeof(instr_reg_base) + dst_bytes + pipe_bytes]();
+  auto buf_cur = buf + sizeof(instr_reg_base);
+  auto dst = (block_type*)buf_cur;
+  map[node->id()] = dst;
+
+  buf_cur += dst_bytes;
+  auto pipe = (block_type*)buf_cur;
+
+  if (1 == node->length()) {
+    if (node->reset().empty()) {
+      if (node->enable().empty()) {
+        return new (buf) instr_reg<false, false, false>(pipe, pipe_size, dst, dst_size);
+      } else {
+        return new (buf) instr_reg<false, false, true>(pipe, pipe_size, dst, dst_size);
+      }
+    } else {
+      if (node->enable().empty()) {
+        return new (buf) instr_reg<false, true, false>(pipe, pipe_size, dst, dst_size);
+      } else {
+        return new (buf) instr_reg<false, true, true>(pipe, pipe_size, dst, dst_size);
+      }
+    }
+  } else {
+    if (node->reset().empty()) {
+      if (node->enable().empty()) {
+        return new (buf) instr_reg<true, false, false>(pipe, pipe_size, dst, dst_size);
+      } else {
+        return new (buf) instr_reg<true, false, true>(pipe, pipe_size, dst, dst_size);
+      }
+    } else {
+      if (node->enable().empty()) {
+        return new (buf) instr_reg<true, true, false>(pipe, pipe_size, dst, dst_size);
+      } else {
+        return new (buf) instr_reg<true, true, true>(pipe, pipe_size, dst, dst_size);
+      }
+    }
+  }
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -823,7 +858,7 @@ public:
         continue;
       // memory read
       auto addr = bv_cast<uint32_t>(p->addr, addr_size_);
-      bv_copy(p->data, 0, dst_, addr * data_size_, data_size_);
+      bv_slice(p->data, data_size_, dst_, addr * data_size_);
     }
 
     // evaluate synchronous write ports
@@ -867,7 +902,7 @@ public:
 
   void eval() override {
     auto a = bv_cast<uint32_t>(addr_, addr_size_);
-    bv_copy(dst_, 0, store_, a * dst_size_, dst_size_);
+    bv_slice(dst_, dst_size_, store_, a * dst_size_);
   }
 
 private:
@@ -1192,7 +1227,7 @@ void simref::initialize(const std::vector<lnodeimpl*>& eval_list) {
   for (auto node : eval_list) {
     switch (node->type()) {
     case type_reg:
-      snodes[node->id()] = instr_reg::create(reinterpret_cast<regimpl*>(node), instr_map);
+      snodes[node->id()] = instr_reg_base::create(reinterpret_cast<regimpl*>(node), instr_map);
       break;
     case type_mem:
       snodes[node->id()] = instr_mem::create(reinterpret_cast<memimpl*>(node), instr_map);
@@ -1242,7 +1277,7 @@ void simref::initialize(const std::vector<lnodeimpl*>& eval_list) {
       instrs_.emplace_back(instr_cd::create(reinterpret_cast<cdimpl*>(node), instr_map));
       break;
     case type_reg: {
-      auto instr = reinterpret_cast<instr_reg*>(snodes.at(node->id()));
+      auto instr = reinterpret_cast<instr_reg_base*>(snodes.at(node->id()));
       instr->init(reinterpret_cast<regimpl*>(node), instr_map);
       instrs_.emplace_back(instr);
     } break;

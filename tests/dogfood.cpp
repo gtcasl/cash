@@ -214,9 +214,21 @@ struct Dogfood {
     __out(ch_bool) out
   );
   void describe() {
-    ch_bit64 a(1);
-    auto c = ch_rotr(a, 48);
-    io.out = (c == 0x10000_h64);
+    ch_bit<32> x(0xFEDCBA98_h);
+    auto y1 = ch_shl<48>(x, 5);
+    auto y2 = ch_shl<32>(x, 8);
+    auto y3 = ch_shr<32>(x, 5);
+    auto y4 = ch_shr<16>(x, 8);
+    ch_print("t={0}, x={1}, y1={2}, y2={3}, y3={4}, y4={5}", ch_now(), x, y1, y2, y3, y4);
+    io.out = (y1 == 0x1FDB975300_h48
+           && y2 == 0xDCBA9800_h32
+           && y3 == 0x7F6E5D4_h32
+           && y4 == 0xDCBA_h16);
+
+    //auto a = ch_delay(0xFEDCBA98_h, 3);
+    //auto e = ch_case(ch_now(), 2*3-1, 0xFEDCBA98_h)(a);
+    //ch_print("t={0}, a={1}, e={2}", ch_now(), a, e);
+    //io.out = (a == e);
     //io.out = true;
   }
 };
@@ -224,15 +236,15 @@ struct Dogfood {
 }
 
 int main() {
-  /*ch_device<Dogfood> device;
+  ch_device<Dogfood> device;
   //ch_toVerilog("test.v", device);
   ch_simulator sim(device);
   device.io.in = 0xA;
   sim.run([&](ch_tick t)->bool {
     std::cout << "t" << t << ": out="  << device.io.out << std::endl;
     //assert(!!device.io.out);
-    return t < 1;
-  });*/
+    return (t < 2*3);
+  });
 
   /*{
     ch_device<inverter> device;

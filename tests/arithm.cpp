@@ -223,11 +223,13 @@ TEST_CASE("arithmetic", "[arithmetic]") {
     TEST([]()->ch_bool {
      ch_uint<128> a(0x10000000000000001_h128);
      auto c = a << 63;
+     ch_print("{0}: c={1}", ch_now(), c);
      return (c == 0x80000000000000008000000000000000_h128);
     });
     TEST([]()->ch_bool {
       ch_uint<128> a(0xf010000000000000000_h128);
       auto c = a >> 63;
+      ch_print("{0}: c={1}", ch_now(), c);
       return (c == 0x1e02_h128);
     });
     TEST([]()->ch_bool {

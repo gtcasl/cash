@@ -31,10 +31,17 @@ TEST_CASE("registers", "[registers]") {
     TEST([]()->ch_bool {
       ch_bit2 a;
       a = ch_delay(10_b, 4);
-      ch_bit2 e = ch_case(ch_now(), 7, 10_b)(a);
-      // ch_print("t={0}, a={1}, e={2}", ch_now(), a, e);
+      ch_bit2 e = ch_case(ch_now(), 4*2-1, 10_b)(a);
+      //ch_print("t={0}, a={1}, e={2}", ch_now(), a, e);
       return (a == e);
     }, 4);
+
+    TEST([]()->ch_bool {
+      auto a = ch_delay(0xFEDCBA98_h, 7);
+      auto e = ch_case(ch_now(), 2*7-1, 0xFEDCBA98_h)(a);
+      //ch_print("t={0}, a={1}, e={2}", ch_now(), a, e);
+      return (a == e);
+    }, 7);
 
     TEST([]()->ch_bool {
       ch_bit2 a;
