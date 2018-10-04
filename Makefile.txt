@@ -48,19 +48,19 @@ OBJS := $(SRCS:.cpp=.o)
 all : $(TARGET_DIR) $(TARGET_DIR)/$(PROJECT).so
 
 $(TARGET_DIR) :
-  mkdir $(TARGET_DIR)
+	mkdir $(TARGET_DIR)
 
 $(TARGET_DIR)/$(PROJECT).so : $(OBJS)
-  $(CXX) $^ $(LDFLAGS) -o $@
+	$(CXX) $^ $(LDFLAGS) -o $@
 
 %.o :   %.cpp
-  $(CXX) $(CXXFLAGS) -c $< -o $@
+	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 .depend: $(SRCS)
-  $(CXX) $(CXXFLAGS) -MM $^ > .depend;
+	$(CXX) $(CXXFLAGS) -MM $^ > .depend;
 
 clean:
-  rm -rf $(PROJECT).so $(OBJS) lib *.gcda *.gcno .depend *~ *\#
+	rm -rf $(PROJECT).so $(OBJS) lib *.gcda *.gcno .depend *~ *\#
 
 ifneq ($(MAKECMDGOALS),clean)
     -include .depend
