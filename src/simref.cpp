@@ -773,6 +773,12 @@ private:
     , addr_size_(addr_size)
   {}
 
+  ~instr_mem() {
+    for (uint32_t i = 0; i < num_rdports_; ++i) {
+      delete [] rdports_[i].data;
+    }
+  }
+
 public:
 
   static instr_mem* create(memimpl* node, instr_map_t& map) {
@@ -785,10 +791,8 @@ public:
 
     uint32_t num_rdports = node->is_sync_read() ? node->rdports().size() : 0;
     uint32_t rdports_bytes = 0;
-    uint32_t rdports_data_bytes = 0;
     for (uint32_t i = 0; i < num_rdports; ++i) {
       rdports_bytes += sizeof(rdport_t);
-      rdports_data_bytes += data_bytes;
     }
 
     uint32_t num_wrports = node->wrports().size();
@@ -797,23 +801,22 @@ public:
       wrports_bytes += sizeof(wrport_t);
     }
 
-    auto buf = new uint8_t[sizeof(instr_mem) + dst_bytes + rdports_bytes + rdports_data_bytes + wrports_bytes]();
+    auto buf = new uint8_t[sizeof(instr_mem) + dst_bytes + rdports_bytes + wrports_bytes]();
     auto buf_cur = buf + sizeof(instr_mem);
     auto dst = (block_type*)buf_cur;
     map[node->id()] = dst;
 
     buf_cur += dst_bytes;
-
     auto rdports = (rdport_t*)buf_cur;
-    buf_cur += rdports_bytes;
+
 
     for (uint32_t i = 0; i < num_rdports; ++i) {
       auto p = node->rdports()[i];
-      rdports[i].data = (block_type*)(buf_cur + i * data_bytes);
+      rdports[i].data = new block_type[data_bytes]();
       map[p->id()] = rdports[i].data;
     }
 
-    buf_cur += rdports_data_bytes;
+    buf_cur += rdports_bytes;
     auto wrports = (wrport_t*)buf_cur;
 
     if (node->has_init_data()) {
