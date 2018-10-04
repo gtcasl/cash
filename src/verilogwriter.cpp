@@ -196,7 +196,9 @@ void verilogwriter::print_footer(std::ostream& out) {
 bool verilogwriter::print_binding(std::ostream& out, bindimpl* node) {
   auto_separator sep(", ");
   auto m = node->module();
-  out << m->name() << " " << m->name() << m->id() << "__(";
+  out << m->name() << " ";
+  print_name(out, node);
+  out << "(";
   for (auto& input : node->inputs()) {
     auto b = reinterpret_cast<bindportimpl*>(input.impl());
     auto p = reinterpret_cast<ioimpl*>(b->ioport().impl());
@@ -905,10 +907,15 @@ void verilogwriter::print_name(std::ostream& out, lnodeimpl* node, bool force) {
   case type_time:
     out << "$time";
     break;
+  case type_bind: {
+    auto bind = reinterpret_cast<bindimpl*>(node);
+    out << bind->module()->name() << bind->id();
+  }  break;
   case type_bindin:
   case type_bindout: {
     auto bindport = reinterpret_cast<bindportimpl*>(node);
-    out << bindport->binding()->module()->name() << bindport->binding()->module()->id() << "_" << bindport->ioport().name();
+    print_name(out, bindport->binding());
+    out << "_" << bindport->ioport().name();
   } break;
   default:
     assert(false);
