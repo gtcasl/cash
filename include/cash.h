@@ -105,6 +105,8 @@ namespace logic {
   using ch_bit32  = ch_bit<32>;
   using ch_bit64  = ch_bit<64>;
   using ch_bit128 = ch_bit<128>;
+  using ch_bit256 = ch_bit<256>;
+  using ch_bit512 = ch_bit<512>;
 
   using ch_int1   = ch_int<1>;
   using ch_int2   = ch_int<2>;
@@ -114,6 +116,8 @@ namespace logic {
   using ch_int32  = ch_int<32>;
   using ch_int64  = ch_int<64>;
   using ch_int128 = ch_int<128>;
+  using ch_int256 = ch_int<256>;
+  using ch_int512 = ch_int<512>;
 
   using ch_uint1  = ch_uint<1>;
   using ch_uint2  = ch_uint<2>;
@@ -123,6 +127,8 @@ namespace logic {
   using ch_uint32 = ch_uint<32>;
   using ch_uint64 = ch_uint<64>;
   using ch_uint128= ch_uint<128>;
+  using ch_uint256= ch_uint<256>;
+  using ch_uint512= ch_uint<512>;
 
   //
   // constants
