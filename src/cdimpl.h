@@ -8,13 +8,15 @@ namespace internal {
 class cdimpl : public ioimpl {
 public:
 
-  const auto& clk() const {
+  auto& clk() const {
     return srcs_[0];
   }
 
   bool pos_edge() const {
     return pos_edge_;
   }
+
+  virtual lnodeimpl* clone(context* ctx, const clone_map& cloned_nodes) override;
 
   void print(std::ostream& out) const override;
 

@@ -132,7 +132,7 @@ public:
       return it->second;
     }
     auto it2 = list_.insert(position, val);
-    map_.emplace(val, it2);
+    map_[val] = it2;
     return it2;
   }
 

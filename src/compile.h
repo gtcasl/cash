@@ -9,8 +9,12 @@ class compiler {
 public:  
 
   compiler(context* ctx);
-  
-  void run();
+
+  void compile();
+
+  void build_eval_context(context* eval_ctx);
+
+  void build_eval_list(std::vector<lnodeimpl*>& eval_list);
   
 protected:
 

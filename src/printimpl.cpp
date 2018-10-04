@@ -55,9 +55,11 @@ const char* ch::internal::parse_format_index(fmtinfo_t* out, const char* str) {
 
 printimpl::printimpl(context* ctx,
                      const std::string& format,
-                     const std::initializer_list<lnode>& args,
+                     const std::vector<lnode>& args,
+                     const std::vector<enum_string_cb>& enum_strings,
                      const source_location& sloc)
   : ioimpl(ctx, type_print, 0, sloc)
+  , enum_strings_(enum_strings)
   , format_(format)
   , pred_idx_(-1) {
   if (ctx_->conditional_enabled(this)) {
@@ -68,10 +70,40 @@ printimpl::printimpl(context* ctx,
   }
 
   for (auto arg : args) {
-    auto cb = arg.impl()->ctx()->enum_to_string(arg.id());
-    enum_strings_.emplace_back(cb);
     srcs_.emplace_back(arg);    
   }
+}
+
+printimpl::printimpl(context* ctx,
+                     const std::string& format,
+                     const std::vector<lnode>& args,
+                     const std::vector<enum_string_cb>& enum_strings,
+                     lnodeimpl* pred,
+                     const source_location& sloc)
+  : ioimpl(ctx, type_print, 0, sloc)
+  , enum_strings_(enum_strings)
+  , format_(format)
+  , pred_idx_(-1) {
+  if (pred) {
+    pred_idx_ = this->add_src(pred);
+  }
+
+  for (auto arg : args) {
+    srcs_.emplace_back(arg);
+  }
+}
+
+lnodeimpl* printimpl::clone(context* ctx, const clone_map& cloned_nodes) {
+  lnodeimpl* pred = nullptr;
+  if (this->has_pred()) {
+    pred = cloned_nodes.at(this->pred().id());
+  }
+  std::vector<lnode> args;
+  for (uint32_t i = pred_idx_ + 1; i < srcs_.size(); ++i) {
+    auto& src = cloned_nodes.at(srcs_[i].id());
+    args.emplace_back(src);
+  }
+  return ctx->create_node<printimpl>(format_, args, enum_strings_, pred, sloc_);
 }
 
 void printimpl::print(std::ostream& out) const {
@@ -80,7 +112,7 @@ void printimpl::print(std::ostream& out) const {
   if (n > 0) {
     out << "(";
     uint32_t i = 0;
-    if (this->is_predicated()) {
+    if (this->has_pred()) {
       out << "pred=" << srcs_[i++].id();
     }
     for (; i < n; ++i) {
@@ -110,7 +142,7 @@ static int getFormatMaxIndex(const char* format) {
 
 void ch::internal::createPrintNode(
     const std::string& format,
-    const std::initializer_list<lnode>& args,
+    const std::vector<lnode>& args,
     const source_location& sloc) {
   // printing is only enabled in debug mode
   if (0 == platform::self().dbg_level())
@@ -122,5 +154,10 @@ void ch::internal::createPrintNode(
   CH_CHECK(max_index < (int)args.size(), "print format index out of range");
 #endif
   // create print node
-  ctx_curr()->create_node<printimpl>(format, args, sloc);
+  std::vector<enum_string_cb> enum_strings;
+  for (auto arg : args) {
+    auto cb = arg.impl()->ctx()->enum_to_string(arg.id());
+    enum_strings.emplace_back(cb);
+  }
+  ctx_curr()->create_node<printimpl>(format, args, enum_strings, sloc);
 }

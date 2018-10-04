@@ -53,8 +53,15 @@ public:
          const source_location& sloc);
 
   lnodeimpl* read(const lnode& addr,
+                  const source_location& sloc) const;
+
+  lnodeimpl* read(const lnode& addr,
                   const lnode& enable,
                   const source_location& sloc) const;
+
+  void write(const lnode& addr,
+             const lnode& value,
+             const source_location& sloc);
 
   void write(const lnode& addr,
              const lnode& value,
@@ -99,7 +106,7 @@ public:
   auto read(const U& addr, CH_SLOC) const {
     static_assert(is_bit_convertible_v<U, addr_width>, "invalid type");
     auto laddr = to_lnode<addr_width>(addr, sloc);
-    return make_type<T>(mem_.read(laddr, sdata_type(1, 1), sloc), sloc);
+    return make_type<T>(mem_.read(laddr, sloc), sloc);
   }
 
   template <typename U, typename E>
@@ -129,7 +136,7 @@ public:
   auto read(const U& addr, CH_SLOC) const {
     static_assert(is_bit_convertible_v<U, addr_width>, "invalid type");
     auto laddr = to_lnode<addr_width>(addr, sloc);
-    return make_type<T>(mem_.read(laddr, sdata_type(1, 1), sloc), sloc);
+    return make_type<T>(mem_.read(laddr, sloc), sloc);
   }
 
   template <typename U, typename E>
@@ -147,7 +154,7 @@ public:
     static_assert(std::is_constructible_v<T, V>, "invalid type");
     auto l_addr  = to_lnode<addr_width>(addr, sloc);
     auto l_value = to_lnode<T>(value, sloc);
-    mem_.write(l_addr, l_value, sdata_type(1, 1), sloc);
+    mem_.write(l_addr, l_value, sloc);
   }
 
   template <typename U, typename V, typename E>

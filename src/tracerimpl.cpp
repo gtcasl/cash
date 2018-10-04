@@ -93,9 +93,9 @@ void tracerimpl::eval() {
   auto& block = trace_blocks_tail_->data.at(block_idx);
   uint32_t dst_offset = 0;
   for (auto& trace : signals_) {
-    auto& value = trace.node->value();
-    block.copy(dst_offset, value, 0, value.size());
-    dst_offset += value.size();
+    auto value = trace.node->value();
+    block.copy(dst_offset, *value, 0, value->size());
+    dst_offset += value->size();
   }
 }
 

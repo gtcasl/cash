@@ -5,8 +5,12 @@
 using namespace ch::internal;
 
 timeimpl::timeimpl(context* ctx, const source_location& sloc)
-  : ioimpl(ctx, type_time, 8 * sizeof(ch_tick), sloc)
+  : ioimpl(ctx, type_time, 8 * sizeof(ch_tick), sloc, "time")
 {}
+
+lnodeimpl* timeimpl::clone(context* ctx, const clone_map&) {
+  return ctx->create_time(sloc_);
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 

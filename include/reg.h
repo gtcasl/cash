@@ -10,13 +10,21 @@ logic_buffer createRegNode(unsigned size, const source_location& sloc);
 
 logic_buffer createRegNode(const lnode& init, const source_location& sloc);
 
-logic_buffer createRegNode(const lnode& next, unsigned length, const lnode& enable, const source_location& sloc);
-
-logic_buffer createRegNode(const lnode& next, unsigned length, const lnode& enable, const lnode& init, const source_location& sloc);
-
 logic_buffer copyRegNode(const lnode& node, const source_location& sloc);
 
 logic_buffer getRegNextNode(const lnode& node);
+
+logic_buffer createRegNext(const lnode& next, unsigned length,
+                           const source_location& sloc);
+
+logic_buffer createRegNext(const lnode& next, unsigned length,
+                           const lnode& enable, const source_location& sloc);
+
+logic_buffer createRegNext(const lnode& next, const lnode& init, unsigned length,
+                           const source_location& sloc);
+
+logic_buffer createRegNext(const lnode& next, const lnode& init, unsigned length,
+                           const lnode& enable, const source_location& sloc);
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -121,10 +129,7 @@ auto ch_delay(const T& in, uint32_t delay = 1, CH_SLOC) {
   if (0 == delay) {
     return R(in, sloc);
   }
-  return R(createRegNode(logic_accessor::data(R(in, sloc)),
-                         delay,
-                         sdata_type(1,1),
-                         sloc));
+  return R(createRegNext(logic_accessor::data(R(in, sloc)), delay, sloc));
 }
 
 template <typename R, typename T, typename I>
@@ -135,10 +140,9 @@ auto ch_delay(const T& in, uint32_t delay, const I& init, CH_SLOC) {
   if (0 == delay) {
     return R(in, sloc);
   }
-  return R(createRegNode(logic_accessor::data(R(in, sloc)),
-                         delay,
-                         sdata_type(1,1),
+  return R(createRegNext(logic_accessor::data(R(in, sloc)),
                          logic_accessor::data(R(init, sloc)),
+                         delay,
                          sloc));
 }
 
@@ -164,9 +168,9 @@ auto ch_delayEn(const T& in, const ch_bit<1>& enable, uint32_t delay, const I& i
     return R(in, sloc);
   }
   return R(createRegNode(logic_accessor::data(R(in, sloc)),
-                         delay,
-                         logic_accessor::data(enable),
                          logic_accessor::data(R(init, sloc)),
+                         delay,
+                         logic_accessor::data(enable),                         
                          sloc));
 }
 

@@ -37,6 +37,8 @@ template <typename T>
 using ch_out = std::conditional_t<is_logic_only_v<T>,
                   ch_logic_out<T>, std::add_const_t<ch_system_out<T>>>;
 
+using io_value_t = std::shared_ptr<sdata_type>;
+
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T>
@@ -185,7 +187,7 @@ public:
              uint32_t src_offset,
              uint32_t length) override;
 protected:
-  lnode io_;
+  io_value_t io_;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

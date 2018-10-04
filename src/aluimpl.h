@@ -17,6 +17,8 @@ public:
     return is_signed_;
   }
 
+  virtual lnodeimpl* clone(context* ctx, const clone_map& cloned_nodes) override;
+
   bool equals(const lnodeimpl& other) const override;
 
   std::size_t hash() const override;
@@ -26,10 +28,10 @@ public:
 protected:
 
   aluimpl(context* ctx, ch_op op, uint32_t size, bool is_signed,
-          const lnode& lhs, const source_location& sloc);
+          lnodeimpl* lhs, const source_location& sloc);
 
   aluimpl(context* ctx, ch_op op, uint32_t size, bool is_signed,
-          const lnode& lhs, const lnode& rhs, const source_location& sloc);
+          lnodeimpl* lhs, lnodeimpl* rhs, const source_location& sloc);
 
   ~aluimpl() {}
 

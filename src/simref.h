@@ -29,6 +29,9 @@ public:
 
 private:
 
+  block_type* create_constants(litimpl* node);
+
+  std::vector<block_type*> constants_;
   std::vector<instr_base*> instrs_;
 };
 

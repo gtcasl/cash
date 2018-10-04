@@ -26,17 +26,19 @@ public:
     return format_;
   }
 
-  bool is_predicated() const {
+  bool has_pred() const {
     return (pred_idx_ != -1);
   }
 
-  const auto& predicate() const {
+  auto& pred() const {
     return srcs_[pred_idx_];
   }
 
-  const auto& enum_strings() const {
+  auto& enum_strings() const {
     return enum_strings_;
   }
+
+  virtual lnodeimpl* clone(context* ctx, const clone_map& cloned_nodes) override;
 
   void print(std::ostream& out) const override;
 
@@ -44,7 +46,15 @@ protected:
 
   printimpl(context* ctx,
             const std::string& format,
-            const std::initializer_list<lnode>& args,
+            const std::vector<lnode>& args,
+            const std::vector<enum_string_cb>& enum_strings,
+            const source_location& sloc);
+
+  printimpl(context* ctx,
+            const std::string& format,
+            const std::vector<lnode>& args,
+            const std::vector<enum_string_cb>& enum_strings,
+            lnodeimpl* pred,
             const source_location& sloc);
 
   std::vector<enum_string_cb> enum_strings_;

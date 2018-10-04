@@ -180,10 +180,6 @@ void context::add_node(lnodeimpl* node) {
   case type_cd:
     cdomains_.emplace_back((cdimpl*)node);
     break;
-  case type_reg:
-  case type_mem:
-    snodes_.emplace_back(node);
-    break;
   case type_bind:
     bindings_.emplace_back((bindimpl*)node);
     break;
@@ -197,12 +193,13 @@ void context::add_node(lnodeimpl* node) {
   case type_udfc:
   case type_udfs:
     udfs_.emplace_back((udfimpl*)node);
-    if (type_udfs == type) {
-      snodes_.emplace_back(node);
-    }
     break;
   default:
     break;
+  }
+
+  if (is_snode_type(type)) {
+    snodes_.emplace_back(node);
   }
 
   // register local nodes, io objects & literals have global scope
@@ -248,10 +245,6 @@ node_list_t::iterator context::delete_node(const node_list_t::iterator& it) {
   case type_cd:
     cdomains_.remove((cdimpl*)node);
     break;
-  case type_reg:
-  case type_mem:
-    snodes_.remove(node);
-    break;
   case type_bind:
     bindings_.remove((bindimpl*)node);
     break;
@@ -265,12 +258,13 @@ node_list_t::iterator context::delete_node(const node_list_t::iterator& it) {
   case type_udfc:
   case type_udfs:
     udfs_.remove((udfimpl*)node);
-    if (type_udfs == type) {
-      snodes_.remove(node);
-    }
     break;
   default:
     break;
+  }
+
+  if (is_snode_type(type)) {
+    snodes_.remove(node);
   }
 
   // remove node from main list
@@ -312,7 +306,8 @@ lnodeimpl* context::current_reset(const source_location& sloc) {
     return cd_stack_.top().second;
 
   if (nullptr == sys_reset_) {
-     sys_reset_ = this->create_node<inputimpl>(1, "reset", sloc);
+    auto value = std::make_shared<sdata_type>(1);
+    sys_reset_ = this->create_node<inputimpl>(1, value, "reset", sloc);
   }
   return sys_reset_;
 }
@@ -334,7 +329,8 @@ cdimpl* context::current_cd(const source_location& sloc) {
     return cd_stack_.top().first;
 
   if (nullptr == sys_clk_) {
-    sys_clk_ = this->create_node<inputimpl>(1, "clk", sloc);
+    auto value = std::make_shared<sdata_type>(1);
+    sys_clk_ = this->create_node<inputimpl>(1, value, "clk", sloc);
   }
   return this->create_cd(sys_clk_, true, sloc);
 }
@@ -469,7 +465,7 @@ void context::conditional_assign(
 
     // create split list for partially overlapping definitions
     for (auto it = slices.begin(), end = slices.end(); it != end;) {
-      const auto& curr  = it->first;
+      auto& curr  = it->first;
       uint32_t curr_end = curr.offset + curr.length;
       uint32_t var_end  = offset + length;
 
@@ -547,7 +543,7 @@ void context::conditional_assign(
   // add new definitions to current block
   for (auto it = slices.begin(), end = slices.end();
        length != 0 && it != end; ++it) {
-    const auto& curr = it->first;
+    auto& curr = it->first;
     uint32_t curr_end = curr.offset + curr.length;
     uint32_t var_end  = offset + length;
 
@@ -642,10 +638,10 @@ context::emit_conditionals(lnodeimpl* dst,
           if (key) {
             pred0 = this->create_node<aluimpl>(ch_op::eq, 1, false, key, pred0, branch->sloc);
           }
-          auto pred1 = _true->src(0);
+          auto pred1 = _true->src(0).impl();
           if (_true->has_key()) {
             // create predicate
-            pred1 = this->create_node<aluimpl>(ch_op::eq, 1, false, pred1, _true->src(1), branch->sloc);
+            pred1 = this->create_node<aluimpl>(ch_op::eq, 1, false, pred1, _true->src(1).impl(), branch->sloc);
             // remove key from src list
             _true->remove_key();
           }
@@ -752,202 +748,22 @@ void context::register_tap(const lnode& node,
                            const std::string& name,
                            const source_location& sloc) {
   auto s = identifier_from_string(name);
-  this->create_node<tapimpl>(node, unique_tap_names_.get(s).c_str(), sloc);
-}
-
-void context::build_eval_list(std::vector<lnodeimpl*>& eval_list) {
-  std::unordered_set<uint32_t> visited;
-  std::unordered_set<uint32_t> cycles;
-  std::unordered_set<lnodeimpl*> update_list;
-  std::vector<lnodeimpl*> snodes;
-  std::vector<lnodeimpl*> taps;
-  std::unordered_set<lnodeimpl*> uninitialized_regs;
-
-  std::function<void (context*)> gather_snodes = [&](context* ctx) {
-    for (auto node : ctx->bindings()) {
-      gather_snodes(node->module());
-    }
-    auto& list = ctx->snodes();
-    snodes.reserve(snodes.size() + list.size());
-    snodes.insert(snodes.end(), list.begin(), list.end());
-  };
-
-  std::function<void (context*)> gather_taps = [&](context* ctx) {
-    for (auto node : ctx->bindings()) {
-      gather_taps(node->module());
-    }
-    for (auto node : ctx->taps()) {
-      taps.push_back(node);
-    }
-    for (auto node : ctx->gtaps()) {
-      taps.push_back(node);
-    }
-  };
-
-  std::function<bool (lnodeimpl*)> dfs_visit = [&](lnodeimpl* node)->bool {
-    if (visited.count(node->id())) {
-      // if a node depends on an update node, it also needs to be updated.
-      return (update_list.count(node) != 0);
-    }
-
-    // check for cycles
-    if (cycles.count(node->id())) {
-      // handling register cycles
-      switch (node->type()) {
-      case type_reg:
-        // Detect uninitialized registers
-        if (!reinterpret_cast<regimpl*>(node)->has_initdata())
-          uninitialized_regs.insert(node);
-        [[fallthrough]];
-      case type_mem:
-      case type_udfs:
-        // we found a cycle, return 'true'
-        return true;
-      default:
-        break;
-      }
-#define LCOV_EXCL_START
-      if (platform::self().cflags() & cflags::dump_ast) {
-        for (auto n : eval_list) {
-          std::cerr << n->ctx()->id() << ": ";
-          n->print(std::cerr);
-          std::cerr << std::endl;
-        }
-      }
-      fprintf(stderr, "error: found cycle on variable %s\n", node->debug_info().c_str());
-      std::abort();      
-      return false;
-#define LCOV_EXCL_END
-    }
-    cycles.insert(node->id());
-
-    bool update = false;
-
-    // handling for special nodes
-    switch (node->type()) {
-    case type_bind:
-      // do not follow bind inputs
-      break;
-    case type_input: {
-      auto input = reinterpret_cast<inputimpl*>(node);
-      if (input->is_bind()) {
-        update |= dfs_visit(input->binding().impl());
-      }
-    } break;
-    case type_bindout:
-      {
-        auto port = reinterpret_cast<bindportimpl*>(node);
-        update |= dfs_visit(port->ioport().impl());
-      }
-      for (auto& src : node->srcs()) {
-        update |= dfs_visit(src.impl());
-      }
-      break;
-    default:
-      // visit source nodes
-      for (auto& src : node->srcs()) {
-        update |= dfs_visit(src.impl());
-      }
-      break;
-    }
-
-    if (update) {
-      // a cycle exists in dependent path, this node should be updated
-      update_list.insert(node);
-    }
-
-    eval_list.push_back(node);
-    visited.insert(node->id());
-
-    return update;
-  };
-
-  DBG(2, "run list evaluation for %s (#%d) ...\n", this->name().c_str(), this->id());
-
-  // gather sequential nodes from all contexts
-  gather_snodes(this);
-
-  // enable cycle detection for sequential nodes
-  for (auto node : snodes) {
-    cycles.insert(node->id());
-  }
-
-  // insert sequential nodes dependencies
-  for (auto node : snodes) {
-    for (auto& src : node->srcs()) {
-      dfs_visit(src.impl());
-    }
-  }
-
-  // make a copy of the update list and empty it
-  std::unordered_set<lnodeimpl*> update_list2;
-  std::swap(update_list2, update_list);
-
-  // disable cycle detection for sequential nodes
-  for (auto node : snodes) {
-    cycles.erase(node->id());
-  }
-
-  // insert sequential nodes
-  auto old_size = eval_list.size();
-  for (auto node : snodes) {
-    dfs_visit(node);
-  }
-  snodes.clear();
-
-  // sort recently inserted sequential node in reverse dependency order
-  std::reverse(eval_list.begin() + old_size, eval_list.begin() + eval_list.size());
-
-  // invalidate all update nodes to force re-insertion
-  for (auto node : update_list2) {
-    cycles.erase(node->id());
-    visited.erase(node->id());
-  }
-  update_list2.clear();
-
-  // insert output nodes
-  for (auto node : outputs_) {
-    dfs_visit(node);
-  }
-
-  // gather tap nodes accross all contexts
-  gather_taps(this);
-
-  // insert tap nodes
-  for (auto node : taps) {
-    dfs_visit(node);
-  }
-  taps.clear();
-
-  if (platform::self().cflags() & cflags::dump_ast) {
-    for (auto node : eval_list) {
-      std::cout << node->ctx()->id() << ": ";
-      node->print(std::cerr);
-      std::cout << std::endl;
-    }
-    std::cout << "total nodes: " << eval_list.size() << std::endl;
-  }
-
-  if (!uninitialized_regs.empty()
-   && (platform::self().cflags() & cflags::check_reg_init)) {
-    for (auto node : uninitialized_regs) {
-      fprintf(stderr, "warning: uninitialized register %s\n", node->debug_info().c_str());
-    }
-  }
+  auto value = std::make_shared<sdata_type>(node.size());
+  this->create_node<tapimpl>(node, value, unique_tap_names_.get(s).c_str(), sloc);
 }
 
 udfimpl* context::create_udf_node(udf_iface* udf,
-                                  const std::initializer_list<lnode>& inputs,
+                                  const std::vector<lnode>& inputs,
                                   const source_location& sloc) {
   if (udf->delta() != 0) {
-    return this->create_node<udfsimpl>(udf, inputs, sloc);
+    return this->create_node<udfsimpl>(udf, inputs, nullptr, nullptr, sloc);
   } else {
     return this->create_node<udfcimpl>(udf, inputs, sloc);
   }
 }
 
 void context::register_enum_string(uint32_t id, enum_string_cb callback) {
-  enum_strings_.emplace(id, callback);
+  enum_strings_[id] = callback;
 }
 
 enum_string_cb context::enum_to_string(uint32_t id) {

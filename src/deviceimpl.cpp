@@ -26,7 +26,7 @@ void deviceimpl::end_context() {
 
 void deviceimpl::compile() {
   compiler compiler(ctx_);
-  compiler.run();
+  compiler.compile();
 }
 
 ///////////////////////////////////////////////////////////////////////////////

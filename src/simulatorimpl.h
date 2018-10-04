@@ -21,7 +21,7 @@ public:
 
 protected:
 
-  std::vector<inputimpl*> nodes_;
+  std::vector<io_value_t> nodes_;
   bool value_;
 };
 
@@ -40,7 +40,7 @@ public:
 
 protected:
 
-  std::vector<inputimpl*> nodes_;
+  std::vector<io_value_t> nodes_;
   uint64_t value_;
 };
 

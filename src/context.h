@@ -105,15 +105,19 @@ typedef std::stack<std::pair<cdimpl*, lnodeimpl*>> cd_stack_t;
 class context : public refcounted {
 public:
 
+  context(const std::string& name);
+
+  ~context();
+
   uint32_t id() const {
     return id_;
   }
 
-  const std::string& name() const {
+  auto& name() const {
     return name_;
   }
 
-  const auto& nodes() const {
+  auto& nodes() const {
     return nodes_;
   }
 
@@ -121,39 +125,39 @@ public:
     return nodes_;
   }
 
-  const auto& undefs() const {
+  auto& undefs() const {
     return undefs_;
   }
 
-  const auto& proxies() const {
+  auto& proxies() const {
     return proxies_;
   }
 
-  const auto& inputs() const {
+  auto& inputs() const {
     return inputs_;
   }
 
-  const auto& outputs() const {
+  auto& outputs() const {
     return outputs_;
   }
 
-  const auto& taps() const {
+  auto& taps() const {
     return taps_;
   }
 
-  const auto& gtaps() const {
+  auto& gtaps() const {
     return gtaps_;
   }
 
-  const auto& udfs() const {
+  auto& udfs() const {
     return udfs_;
   }
 
-  const auto& literals() const {
+  auto& literals() const {
     return literals_;
   }
 
-  const auto& snodes() const {
+  auto& snodes() const {
     return snodes_;
   }
 
@@ -169,11 +173,11 @@ public:
     return sys_time_;
   }
 
-  const auto& bindings() const {
+  auto& bindings() const {
     return bindings_;
   }
 
-  const auto& cdomains() const {
+  auto& cdomains() const {
     return cdomains_;
   }
 
@@ -249,12 +253,8 @@ public:
 
   //--
 
-  void build_eval_list(std::vector<lnodeimpl*>& eval_list);
-
-  //--
-
   udfimpl* create_udf_node(udf_iface* udf,
-                           const std::initializer_list<lnode>& inputs,
+                           const std::vector<lnode>& inputs,
                            const source_location& sloc);
 
   //--
@@ -272,10 +272,6 @@ public:
   enum_string_cb enum_to_string(uint32_t id);
   
 protected:
-
-  context(const std::string& name);
-
-  ~context();
 
   void add_node(lnodeimpl* node);
 
@@ -314,8 +310,6 @@ protected:
   unique_names            unique_tap_names_;
 
   enum_strings_t          enum_strings_;
-
-  friend class context_manager;
 };
 
 context* ctx_create(const std::type_index& signature, const std::string& name);

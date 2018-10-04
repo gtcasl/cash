@@ -14,6 +14,11 @@ cdimpl::cdimpl(context* ctx,
   srcs_.emplace_back(clk);
 }
 
+lnodeimpl* cdimpl::clone(context* ctx, const clone_map& cloned_nodes) {
+  auto clk = cloned_nodes.at(this->clk().id());
+  return ctx->create_node<cdimpl>(clk, pos_edge_, sloc_);
+}
+
 void cdimpl::print(std::ostream& out) const {
   out << "#" << id_ << " <- " << this->type() << "("
       << (pos_edge_ ? "pos_edge" : "negedge")

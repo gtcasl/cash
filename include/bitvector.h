@@ -493,7 +493,7 @@ public:
   template <typename U>
   bitvector& operator=(const std::vector<U>& value) {
     static_assert(is_bitvector_array_type_v<U>, "invalid array type");
-    std::vector<U> tmp(value.size);
+    std::vector<U> tmp(value.size());
     std::reverse_copy(value.begin(), value.end(), tmp.begin());
     this->write(0, tmp.data(), sizeof(U), 0, tmp.size() * bitwidth_v<U>);
     auto src_num_words = ceildiv<uint32_t>(tmp.size() * bitwidth_v<U>, WORD_SIZE);
@@ -536,7 +536,7 @@ public:
     return words_[index];
   }
 
-  const auto* words() const {
+  auto* words() const {
     return words_;
   }
 

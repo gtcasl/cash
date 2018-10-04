@@ -6,7 +6,7 @@
 using namespace ch::internal;
 
 aluimpl::aluimpl(context* ctx, ch_op op, uint32_t size, bool is_signed,
-                 const lnode& in, const source_location& sloc)
+                 lnodeimpl* in, const source_location& sloc)
   : lnodeimpl(ctx, type_alu, size, sloc)
   , op_(op)
   , is_signed_(is_signed) {
@@ -15,13 +15,23 @@ aluimpl::aluimpl(context* ctx, ch_op op, uint32_t size, bool is_signed,
 }
 
 aluimpl::aluimpl(context* ctx, ch_op op, uint32_t size, bool is_signed,
-                 const lnode& lhs, const lnode& rhs, const source_location& sloc)
+                 lnodeimpl* lhs, lnodeimpl* rhs, const source_location& sloc)
   : lnodeimpl(ctx, type_alu, size, sloc)
   , op_(op)
   , is_signed_(is_signed) {
   name_ = to_string(op);
   srcs_.push_back(lhs);
   srcs_.push_back(rhs);
+}
+
+lnodeimpl* aluimpl::clone(context* ctx, const clone_map& cloned_nodes) {
+  auto src0 = cloned_nodes.at(srcs_[0].id());
+  if (srcs_.size() == 2) {
+    auto src1 = cloned_nodes.at(srcs_[1].id());
+    return ctx->create_node<aluimpl>(op_, size_, is_signed_, src0, src1, sloc_);
+  } else {
+    return ctx->create_node<aluimpl>(op_, size_, is_signed_, src0, sloc_);
+  }
 }
 
 bool aluimpl::equals(const lnodeimpl& other) const {
@@ -67,7 +77,7 @@ lnodeimpl* ch::internal::createAluNode(
     bool is_signed,
     const lnode& in,
     const source_location& sloc) {
-  return in.impl()->ctx()->create_node<aluimpl>(op, size, is_signed, in, sloc);
+  return in.impl()->ctx()->create_node<aluimpl>(op, size, is_signed, in.impl(), sloc);
 }
 
 lnodeimpl* ch::internal::createAluNode(
@@ -77,5 +87,5 @@ lnodeimpl* ch::internal::createAluNode(
     const lnode& lhs,
     const lnode& rhs,
     const source_location& sloc) {
-  return lhs.impl()->ctx()->create_node<aluimpl>(op, size, is_signed, lhs, rhs, sloc);
+  return lhs.impl()->ctx()->create_node<aluimpl>(op, size, is_signed, lhs.impl(), rhs.impl(), sloc);
 }

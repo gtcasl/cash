@@ -41,6 +41,8 @@ inline bool is_snode_type(lnodetype type) {
   return type_reg == type || type_mem == type || type_udfs == type;
 }
 
+using clone_map = std::unordered_map<uint32_t, lnodeimpl*>;
+
 class lnodeimpl : public refcounted {
 public:
 
@@ -95,6 +97,8 @@ public:
   const source_location& sloc() const {
     return sloc_;
   }
+
+  virtual lnodeimpl* clone(context* ctx, const clone_map& cloned_nodes) = 0;
 
   virtual bool equals(const lnodeimpl& other) const;
 
@@ -164,6 +168,10 @@ class undefimpl : public lnodeimpl {
 public:
 
   undefimpl(context* ctx, uint32_t size, const source_location& sloc);  
+
+  virtual lnodeimpl* clone(context*, const clone_map&) override {
+    return nullptr;
+  }
 };
 
 const char* to_string(lnodetype type);

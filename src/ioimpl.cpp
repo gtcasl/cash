@@ -1,5 +1,4 @@
 #include "ioimpl.h"
-#include "ioport.h"
 #include "context.h"
 
 using namespace ch::internal;
@@ -17,22 +16,28 @@ ioimpl::ioimpl(context* ctx,
 ioportimpl::ioportimpl(context* ctx,
                        lnodetype type,
                        uint32_t size,
+                       const io_value_t& value,
                        const source_location& sloc,
                        const std::string& name)
   : ioimpl(ctx, type, size, sloc, name)
-  , value_(size)
+  , value_(value)
 {}
 
 ///////////////////////////////////////////////////////////////////////////////
 
 inputimpl::inputimpl(context* ctx,
                      uint32_t size,
+                     const io_value_t& value,
                      const std::string& name,
                      const source_location& sloc)
-  : ioportimpl(ctx, type_input, size, sloc, name)
+  : ioportimpl(ctx, type_input, size, value, sloc, name)
 {}
 
 inputimpl::~inputimpl() {}
+
+lnodeimpl* inputimpl::clone(context* ctx, const clone_map&) {
+  return ctx->create_node<inputimpl>(size_, value_, name_, sloc_);
+}
 
 void inputimpl::print(std::ostream& out) const {
   out << "#" << id_ << " <- " << this->type() << size_;
@@ -47,13 +52,19 @@ void inputimpl::print(std::ostream& out) const {
 
 outputimpl::outputimpl(context* ctx,
                        const lnode& src,
+                       const io_value_t& value,
                        const std::string& name,
                        const source_location& sloc)
-  : ioportimpl(ctx, type_output, src.size(), sloc, name) {
+  : ioportimpl(ctx, type_output, src.size(), value, sloc, name) {
   srcs_.emplace_back(src);
 }
 
 outputimpl::~outputimpl() {}
+
+lnodeimpl* outputimpl::clone(context* ctx, const clone_map& cloned_nodes) {
+  auto src = cloned_nodes.at(this->src(0).id());
+  return ctx->create_node<outputimpl>(src, value_, name_, sloc_);
+}
 
 void outputimpl::print(std::ostream& out) const {
   out << "#" << id_ << " <- " << this->type() << size_;
@@ -64,13 +75,19 @@ void outputimpl::print(std::ostream& out) const {
 
 tapimpl::tapimpl(context* ctx,
                  const lnode& src,
+                 const io_value_t& value,
                  const std::string& name,
                  const source_location& sloc)
-  : ioportimpl(ctx, type_tap, src.size(), sloc, name) {
+  : ioportimpl(ctx, type_tap, src.size(), value, sloc, name) {
   srcs_.emplace_back(src);
 }
 
 tapimpl::~tapimpl() {}
+
+lnodeimpl* tapimpl::clone(context* ctx, const clone_map& cloned_nodes) {
+  auto src = cloned_nodes.at(this->src(0).id());
+  return ctx->create_node<tapimpl>(src, value_, name_, sloc_);
+}
 
 void tapimpl::print(std::ostream& out) const {
   out << "#" << id_ << " <- " << this->type() << size_;
@@ -82,39 +99,40 @@ void tapimpl::print(std::ostream& out) const {
 lnodeimpl* ch::internal::createInputNode(const std::string& name,
                                          uint32_t size,
                                          const source_location& sloc) {
-  return ctx_curr()->create_node<inputimpl>(size, name, sloc);
+  auto value = std::make_shared<sdata_type>(size);
+  return ctx_curr()->create_node<inputimpl>(size, value, name, sloc);
 }
 
 lnodeimpl* ch::internal::createOutputNode(const std::string& name,
                                           const lnode& src,
                                           const source_location& sloc) {
-  return ctx_curr()->create_node<outputimpl>(src, name, sloc);
+  auto value = std::make_shared<sdata_type>(src.size());
+  return ctx_curr()->create_node<outputimpl>(src, value, name, sloc);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 system_io_buffer::system_io_buffer(const lnode& io)
-  : base(sdata_type(), nullptr, 0, io.size()), io_(io)
+  : base(sdata_type(), nullptr, 0, io.size())
+  , io_(reinterpret_cast<ioportimpl*>(io.impl())->value())
 {}
 
 const sdata_type& system_io_buffer::data() const {
-  return reinterpret_cast<ioportimpl*>(io_.impl())->value();
+  return *io_;
 }
 
 void system_io_buffer::read(uint32_t src_offset,
                             sdata_type& dst,
                             uint32_t dst_offset,
                             uint32_t length) const {
-  auto port = reinterpret_cast<ioportimpl*>(io_.impl());
-  return dst.copy(dst_offset, port->value(), src_offset, length);
+  return dst.copy(dst_offset, *io_, src_offset, length);
 }
 
 void system_io_buffer::write(uint32_t dst_offset,
                              const sdata_type& src,
                              uint32_t src_offset,
                              uint32_t length) {
-  auto port = reinterpret_cast<ioportimpl*>(io_.impl());
-  port->value().copy(dst_offset, src, src_offset, length);
+  io_->copy(dst_offset, src, src_offset, length);
 }
 
 void system_io_buffer::read(uint32_t src_offset,
@@ -122,8 +140,7 @@ void system_io_buffer::read(uint32_t src_offset,
                             uint32_t byte_alignment,
                             uint32_t dst_offset,
                             uint32_t length) const {
-  auto port = reinterpret_cast<ioportimpl*>(io_.impl());
-  return port->value().read(src_offset, out, byte_alignment, dst_offset, length);
+  return io_->read(src_offset, out, byte_alignment, dst_offset, length);
 }
 
 void system_io_buffer::write(uint32_t dst_offset,
@@ -131,6 +148,5 @@ void system_io_buffer::write(uint32_t dst_offset,
                              uint32_t byte_alignment,
                              uint32_t src_offset,
                              uint32_t length) {
-  auto port = reinterpret_cast<ioportimpl*>(io_.impl());
-  port->value().write(dst_offset, in, byte_alignment, src_offset, length);
+  io_->write(dst_offset, in, byte_alignment, src_offset, length);
 }

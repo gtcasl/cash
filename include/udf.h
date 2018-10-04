@@ -11,13 +11,13 @@ using udf_inputs = std::vector<sdata_type>;
 class udf_iface : public refcounted {
 public:
   udf_iface(uint32_t delta,
-            bool has_initdata,
+            bool has_init_data,
             uint32_t output_size,
-            const std::initializer_list<uint32_t>& inputs_sizes)
+            const std::initializer_list<uint32_t>& inputs_size)
     : delta_(delta)
-    , has_init_(has_initdata)
+    , has_init_(has_init_data)
     , output_size_(output_size)
-    , inputs_size_(inputs_sizes)
+    , inputs_size_(inputs_size)
   {}
 
   virtual ~udf_iface() {}
@@ -26,7 +26,7 @@ public:
     return delta_;
   }
 
-  bool has_initdata() const {
+  bool has_init_data() const {
     return has_init_;
   }
 
@@ -34,7 +34,7 @@ public:
     return output_size_;
   }
 
-  const std::vector<uint32_t>& inputs_sizes() const {
+  const std::vector<uint32_t>& inputs_size() const {
     return inputs_size_;
   }
 
@@ -60,7 +60,7 @@ template <unsigned Delta, bool Init, typename Output_, typename... Inputs_>
 struct udf_traits {
   static constexpr int type = traits_udf;
   static constexpr uint32_t delta  = Delta;
-  static constexpr bool has_initdata   = Init;
+  static constexpr bool has_init_data   = Init;
   using Output = Output_;
   using Inputs = std::tuple<Inputs_...>;
 };
@@ -108,7 +108,7 @@ udf_iface* lookupUDF(const std::type_index& signature);
 udf_iface* registerUDF(const std::type_index& signature, udf_iface* udf);
 
 lnodeimpl* createUDFNode(udf_iface* udf,
-                         const std::initializer_list<lnode>& inputs,
+                         const std::vector<lnode>& inputs,
                          const source_location& sloc);
 
 template <typename T>

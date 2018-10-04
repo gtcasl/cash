@@ -38,12 +38,25 @@ selectimpl::selectimpl(context* ctx,
                        lnodeimpl* key,
                        const source_location& sloc)
   : lnodeimpl(ctx, type_sel, size, sloc)
-  , has_key_(false) {
+  , key_idx_(-1) {
   if (key) {
-    has_key_ = true;
-    srcs_.emplace_back(key);
+    key_idx_ = this->add_src(key);
   }
 }
+
+lnodeimpl* selectimpl::clone(context* ctx, const clone_map& cloned_nodes) {
+  lnodeimpl* key = nullptr;
+  if (this->has_key()) {
+    key = cloned_nodes.at(this->key().id());
+  }
+  auto node = ctx->create_node<selectimpl>(size_, key, sloc_);
+  for (uint32_t i = key_idx_ + 1; i < srcs_.size(); ++i) {
+    auto src = cloned_nodes.at(srcs_[i].id());
+    node->add_src(src);
+  }
+  return node;
+}
+
 
 bool selectimpl::equals(const lnodeimpl& other) const {
   if (lnodeimpl::equals(other)) {
@@ -71,7 +84,7 @@ std::size_t selectimpl::hash() const {
 }
 
 void selectimpl::print(std::ostream& out) const {
-  out << "#" << id_ << " <- " << (has_key_ ? "case" : "sel") << size_;
+  out << "#" << id_ << " <- " << (this->has_key() ? "case" : "sel") << size_;
   uint32_t n = srcs_.size();
   if (n > 0) {
     out << "(";

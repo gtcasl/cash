@@ -452,7 +452,7 @@ public:
     : sep_(sep)
     , enabled_(false)
   {}
-  const auto& data() const {
+  auto& data() const {
     const auto& ret = enabled_ ? sep_ : empty_;
     enabled_ = true;
     return ret;

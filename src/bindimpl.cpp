@@ -47,6 +47,10 @@ bindimpl::~bindimpl() {
   module_->release();
 }
 
+lnodeimpl* bindimpl::clone(context*, const clone_map&) {
+  return nullptr;
+}
+
 void bindimpl::remove_port(bindportimpl* port) {
   for (auto it = srcs_.begin(), end = srcs_.end(); it != end; ++it) {
     if (it->id() == port->id()) {
@@ -128,6 +132,10 @@ bindportimpl::bindportimpl(context* ctx,
 bindportimpl::~bindportimpl() {
   binding_->remove_port(this);
   binding_->release();
+}
+
+lnodeimpl* bindportimpl::clone(context*, const clone_map&) {
+  return nullptr;
 }
 
 void bindportimpl::print(std::ostream& out) const {

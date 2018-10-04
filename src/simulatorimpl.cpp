@@ -1,5 +1,6 @@
 ﻿#include "simulatorimpl.h"
 #include "simulator.h"
+#include "compile.h"
 #include "deviceimpl.h"
 #include "litimpl.h"
 #include "ioimpl.h"
@@ -14,14 +15,14 @@
 using namespace ch::internal;
 
 void clock_driver::add_signal(inputimpl* node) {
-  node->value() = value_;
-  nodes_.push_back(node);
+  *node->value() = value_;
+  nodes_.push_back(node->value());
 }
 
 void clock_driver::eval() {
   value_ = !value_;
   for (auto node : nodes_) {
-    node->value() = value_;
+    *node = value_;
   }
 }
 
@@ -42,18 +43,42 @@ simulatorimpl::simulatorimpl(const ch_device_list& devices)
 }
 
 simulatorimpl::~simulatorimpl() {
-  sim_driver_->release();
+  if (sim_driver_)
+    sim_driver_->release();
   for (auto ctx : contexts_) {
     ctx->release();
   }  
 }
 
 void simulatorimpl::initialize() {
-  //--
-  std::vector<lnodeimpl*> eval_list;
+  {
+    auto eval_ctx = new context("eval");
+    eval_ctx->acquire();
 
+    // build evaluation context
+    for (auto ctx : contexts_) {
+      compiler compiler(ctx);
+      compiler.build_eval_context(eval_ctx);
+    }
+
+    // build evaluation list
+    std::vector<lnodeimpl*> eval_list;
+    {
+      compiler compiler(eval_ctx);
+      compiler.compile();
+      compiler.build_eval_list(eval_list);
+    }
+
+    // initialize driver
+    sim_driver_ = new simref();
+    sim_driver_->acquire();
+    sim_driver_->initialize(eval_list);
+
+    eval_ctx->release();
+  }
+
+  // bind system signals
   for (auto ctx : contexts_) {
-
     auto clk = ctx->sys_clk();
     if (clk) {
       clk_driver_.add_signal(clk);
@@ -63,15 +88,7 @@ void simulatorimpl::initialize() {
     if (reset) {
       reset_driver_.add_signal(reset);
     }
-
-    // generate evaluation list
-    ctx->build_eval_list(eval_list);
   }
-
-  // initialize driver
-  sim_driver_ = new simref();
-  sim_driver_->acquire();
-  sim_driver_->initialize(eval_list);
 }
 
 void simulatorimpl::eval() {

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "lnodeimpl.h"
+#include "ioport.h"
 
 namespace ch {
 namespace internal {
@@ -22,15 +23,15 @@ protected:
 class ioportimpl : public ioimpl {
 public:
 
-  const sdata_type& value() const {
+  const io_value_t& value() const {
     return value_;
   }
 
-  sdata_type& value() {
+  io_value_t& value() {
     return value_;
   }
 
-  bool is_bind() const {
+  bool has_binding() const {
     return !binding_.empty();
   }
 
@@ -40,17 +41,18 @@ public:
 
   const lnode& binding() const {
     return binding_;
-  }
+  }  
 
 protected:
 
   ioportimpl(context* ctx,
              lnodetype type,
              uint32_t size,
+             const io_value_t& value,
              const source_location& sloc,
              const std::string& name = "");
 
-  sdata_type value_;
+  io_value_t value_;
   lnode binding_;
 
   friend class context;
@@ -61,12 +63,15 @@ protected:
 class inputimpl : public ioportimpl {
 public:
 
+  virtual lnodeimpl* clone(context* ctx, const clone_map& cloned_nodes) override;
+
   void print(std::ostream& out) const override;
   
 protected:
 
   inputimpl(context* ctx,
             uint32_t size,
+            const io_value_t& value,
             const std::string& name,
             const source_location& sloc);
 
@@ -80,12 +85,15 @@ protected:
 class outputimpl : public ioportimpl {
 public:
 
+  virtual lnodeimpl* clone(context* ctx, const clone_map& cloned_nodes) override;
+
   void print(std::ostream& out) const override;
   
 protected:
 
   outputimpl(context* ctx,
              const lnode& src,
+             const io_value_t& value,
              const std::string& name,
              const source_location& sloc);
 
@@ -103,12 +111,15 @@ public:
     return srcs_[0];
   }
 
+  virtual lnodeimpl* clone(context* ctx, const clone_map& cloned_nodes) override;
+
   void print(std::ostream& out) const override;
 
 protected:
 
   tapimpl(context* ctx,
           const lnode& src,
+          const io_value_t& value,
           const std::string& name,
           const source_location& sloc);
 

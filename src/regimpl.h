@@ -37,13 +37,15 @@ public:
     return srcs_[reset_idx_];
   }
 
-  bool has_initdata() const {
+  bool has_init_data() const {
     return (initdata_idx_ != -1);
   }
 
-  const lnode& initdata() const {
+  const lnode& init_data() const {
     return srcs_[initdata_idx_];
   }
+
+  virtual lnodeimpl* clone(context* ctx, const clone_map& cloned_nodes) override;
 
   std::size_t hash() const override;
 
@@ -51,15 +53,11 @@ protected:
 
   regimpl(context* ctx,
           unsigned length,
-          const lnode& next,
-          const lnode& enable,
-          const source_location& sloc);
-
-  regimpl(context* ctx,
-          unsigned length,
-          const lnode& next,
-          const lnode& enable,
-          const lnode& initdata,
+          lnodeimpl* next,
+          lnodeimpl* enable,
+          lnodeimpl* init_data,
+          lnodeimpl* cd,
+          lnodeimpl* reset,
           const source_location& sloc);
 
   unsigned length_;

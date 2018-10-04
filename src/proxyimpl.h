@@ -53,25 +53,27 @@ public:
   std::vector<range_t>& ranges() {
     return ranges_;
   }
-  
+
   void add_source(uint32_t dst_offset,
                   const lnode& src,
-                  uint32_t src_offset = 0,
-                  uint32_t length = 0);
+                  uint32_t src_offset,
+                  uint32_t length);
 
   std::vector<lnode>::iterator erase_source(std::vector<lnode>::iterator iter);
 
   bool merge_adjacent_ranges(uint32_t index);
+
+  virtual lnodeimpl* clone(context* ctx, const clone_map& cloned_nodes) override;
+
+  bool equals(const lnodeimpl& other) const override;
+
+  std::size_t hash() const override;
 
   void write(uint32_t dst_offset,
              const lnode& src,
              uint32_t src_offset,
              uint32_t length,
              const source_location& sloc) override;
-
-  bool equals(const lnodeimpl& other) const override;
-
-  std::size_t hash() const override;
 
   lnodeimpl* slice(uint32_t offset,
                    uint32_t length,

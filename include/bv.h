@@ -529,8 +529,13 @@ template <typename T>
 void bv_slice_vector_small(T* dst, uint32_t dst_size, const T* w_src, uint32_t w_src_begin_rem) {
   static unsigned constexpr WORD_SIZE = bitwidth_v<T>;
 
+  uint32_t src_end       = w_src_begin_rem + dst_size - 1;
+  uint32_t w_src_end_idx = (src_end / WORD_SIZE);
+
   T src_block = w_src[0] >> w_src_begin_rem;
-  src_block |= w_src[1] << (WORD_SIZE - w_src_begin_rem);
+  if (1 == w_src_end_idx) {
+    src_block |= w_src[1] << (WORD_SIZE - w_src_begin_rem);
+  }
   uint32_t rem = (WORD_SIZE - dst_size);
   dst[0] = T(src_block << rem) >> rem;
 }
@@ -805,7 +810,7 @@ void bv_sll_vector(T* out, uint32_t out_size,
   }
 
   if (shift_bits) {
-    T prev = in[i + 1 - shift_words] << shift_bits;
+    T prev = (out_num_words < m) ? (in[i + 1 - shift_words] << shift_bits) : 0;
     for (; i >= shift_words; --i) {
       auto curr = in[i - shift_words];
       out[i] = (curr >> (WORD_SIZE - shift_bits)) | prev;

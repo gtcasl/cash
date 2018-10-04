@@ -9,17 +9,23 @@ class selectimpl : public lnodeimpl {
 public:
 
   bool has_key() const {
-    return has_key_;
+    return key_idx_ != -1;
+  }
+
+  auto& key() const {
+    return srcs_[key_idx_];
   }
 
   void remove_key() {
     this->srcs().erase(this->srcs().begin());
-    has_key_ = false;
+    key_idx_ = -1;
   }
 
   bool is_ternary() const {
-    return (srcs_.size() == (has_key_ ? 4 : 3));
+    return srcs_.size() == (has_key() ? 4 : 3);
   }
+
+  virtual lnodeimpl* clone(context* ctx, const clone_map& cloned_nodes) override;
 
   bool equals(const lnodeimpl& other) const override;
 
@@ -34,7 +40,7 @@ protected:
              lnodeimpl* key,
              const source_location& sloc);
 
-  bool has_key_;
+  int key_idx_;
 
   friend class context;
 };

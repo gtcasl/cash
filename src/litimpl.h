@@ -12,6 +12,8 @@ public:
     return value_;
   }
 
+  virtual lnodeimpl* clone(context* ctx, const clone_map& cloned_nodes) override;
+
   void print(std::ostream& out) const override;
 
 protected:

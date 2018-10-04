@@ -23,7 +23,7 @@ void registerTap(const lnode& node,
                  const source_location& sloc);
 
 void createPrintNode(const std::string& format,
-                     const std::initializer_list<lnode>& args,
+                     const std::vector<lnode>& args,
                      const source_location& sloc);
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -557,11 +557,11 @@ void firrtlwriter::print_select(std::ostream& out, selectimpl* node) {
 void firrtlwriter::print_reg(std::ostream& out, regimpl* node) {
   this->print_name(out, node);
   out << " <= ";
-  if (node->has_initdata()) {
+  if (node->has_init_data()) {
     out << " mux(";
     this->print_name(out, node->reset().impl());
     out << ", ";
-    this->print_name(out, node->initdata().impl());
+    this->print_name(out, node->init_data().impl());
     out << ", ";
     this->print_name(out, node->next().impl());
     out << ")";
@@ -577,32 +577,33 @@ void firrtlwriter::print_cdomain(std::ostream& out, cdimpl* cd) {
 }
 
 void firrtlwriter::print_mem(std::ostream& out, memimpl* node) {
-  auto print_attributes = [&](memportimpl* port) {
+
+  auto print_attributes = [&](memportimpl* port, uint32_t port_index) {
     char type;
     if (port->type() == type_mwport) {
       auto mwport = reinterpret_cast<mwportimpl*>(port);
       if (node->is_readwrite(mwport)) {
         type = 'x';
         this->print_name(out, node);
-        out << '.' << type << mwport->index() << ".wmode <= UInt<1>(\"h1\")";
+        out << '.' << type << port_index << ".wmode <= UInt<1>(\"h1\")";
         out << std::endl;
       } else {
         type = 'w';
       }
 
       this->print_name(out, node);
-      out << '.' << type << mwport->index() << ".data <= ";
+      out << '.' << type << port_index << ".data <= ";
       this->print_name(out, mwport->wdata().impl());
       out << std::endl;
 
       this->print_name(out, node);
-      out << '.' << type << mwport->index() << ".mask <= ";
+      out << '.' << type << port_index << ".mask <= ";
       std::string mask(mwport->wdata().size(), '1');
       this->print_value(out, sdata_type(mwport->wdata().size(), mask + "b"));
       out << std::endl;
 
       this->print_name(out, node);
-      out << '.' << type << mwport->index() << ".en <= ";
+      out << '.' << type << port_index << ".en <= ";
       if (mwport->has_enable()) {
         this->print_name(out, mwport->enable().impl());
       } else {
@@ -614,18 +615,18 @@ void firrtlwriter::print_mem(std::ostream& out, memimpl* node) {
         return;
       type = 'r';
       this->print_name(out, node);
-      out << '.' << type << port->index() << ".en <= UInt<1>(\"h1\")";
+      out << '.' << type << port_index << ".en <= UInt<1>(\"h1\")";
       out << std::endl;
     }
 
     this->print_name(out, node);
-    out << '.' << type << port->index() << ".addr <= ";
+    out << '.' << type << port_index << ".addr <= ";
     this->print_name(out, port->addr().impl());
     out << std::endl;
 
     if (node->has_cd()) {
       this->print_name(out, node);
-      out << '.' << type << port->index() << ".clk <= ";
+      out << '.' << type << port_index << ".clk <= ";
       this->print_cdomain(out, reinterpret_cast<cdimpl*>(node->cd().impl()));
     }
     out << std::endl;
@@ -633,21 +634,21 @@ void firrtlwriter::print_mem(std::ostream& out, memimpl* node) {
 
   if (node->is_write_enable()) {
     // initialization data not supported!
-    assert(!node->has_initdata());
-    for (auto port : node->rdports()) {
-      print_attributes(port);
+    assert(!node->has_init_data());
+    for (uint32_t i = 0, n = node->rdports().size(); i < n; ++i) {
+      print_attributes(node->rdport(i), i);
     }
-    for (auto port : node->wrports()) {
-      print_attributes(port);
+    for (uint32_t i = 0, n = node->wrports().size(); i < n; ++i) {
+      print_attributes(node->wrport(i), i);
     }
   } else {
-    assert(node->has_initdata());
+    assert(node->has_init_data());
     auto data_width = node->data_width();
     sdata_type value(data_width);
     for (uint32_t i = 0, n = node->num_items(); i < n; ++i) {
       this->print_name(out, node);
       out << "[" << i << "] <= ";
-      value.copy(0, node->initdata(), i * data_width, data_width);
+      value.copy(0, node->init_data(), i * data_width, data_width);
       this->print_value(out, value);
       out << std::endl;
     }
@@ -728,16 +729,17 @@ void firrtlwriter::print_name(std::ostream& out, lnodeimpl* node, bool force) {
     auto mem = port->mem();
     this->print_name(out, mem);
     if (mem->is_write_enable()) {
+      auto port_index = mem->port_index(port);
       if (mem->is_readwrite(port)) {
         // read-write
-        out << ".x" << port->index() << ".rdata";
+        out << ".x" << port_index << ".rdata";
       } else
       if (port->type() == type_mwport) {
         // write-only
-        out << ".w" << port->index() << ".data";
+        out << ".w" << port_index << ".data";
       } else {
         // read-only
-        out << ".r" << port->index() << ".data";
+        out << ".r" << port_index << ".data";
       }
     } else {
       out << "[";
@@ -810,21 +812,21 @@ void firrtlwriter::print_dtype(std::ostream& out, lnodeimpl* node) {
       out << "read-under-write => undefined" << std::endl;
 
       auto_separator sep("\n");
-      for (auto port : mem->rdports()) {
-        if (mem->is_readwrite(port))
+      for (uint32_t i = 0, n = mem->rdports().size(); i < n; ++i) {
+        if (mem->is_readwrite(mem->rdport(i)))
           continue;
         out << sep;        
         // read-only
-        out << "reader => r" << port->index();
+        out << "reader => r" << i;
       }
-      for (auto port : mem->wrports()) {
+      for (uint32_t i = 0, n = mem->wrports().size(); i < n; ++i) {
         out << sep;
-        if (mem->is_readwrite(port)) {
+        if (mem->is_readwrite(mem->wrport(i))) {
           // read-write
-          out << "readwriter => x" << port->index();
+          out << "readwriter => x" << i;
         } else {
           // write-only
-          out << "writer => w" << port->index();
+          out << "writer => w" << i;
         }
       }
     } else {

@@ -105,7 +105,7 @@ private:
 
   instr_output(outputimpl* node, instr_map_t& map)
     : src_(map.at(node->src(0).id()))
-    , dst_(node->value().words())
+    , dst_(node->value()->words())
     , size_(node->size())
   {}
 
@@ -601,8 +601,8 @@ public:
     cd_       = map.at(node->cd().id());
     next_     = map.at(node->next().id());
     enable_   = node->has_enable() ? map.at(node->enable().id()) : nullptr;
-    reset_    = node->has_initdata() ? map.at(node->reset().id()) : nullptr;
-    initdata_ = node->has_initdata() ? map.at(node->initdata().id()) : nullptr;
+    reset_    = node->has_init_data() ? map.at(node->reset().id()) : nullptr;
+    initdata_ = node->has_init_data() ? map.at(node->init_data().id()) : nullptr;
   }
 
 protected:
@@ -700,31 +700,31 @@ instr_reg_base* instr_reg_base::create(regimpl* node, instr_map_t& map) {
   auto pipe = (block_type*)buf_cur;
 
   if (1 == node->length()) {
-    if (node->reset().empty()) {
-      if (node->enable().empty()) {
-        return new (buf) instr_reg<false, false, false>(pipe, pipe_size, dst, dst_size);
+    if (node->has_init_data()) {
+      if (node->has_enable()) {
+        return new (buf) instr_reg<false, true, true>(pipe, pipe_size, dst, dst_size);
       } else {
-        return new (buf) instr_reg<false, false, true>(pipe, pipe_size, dst, dst_size);
+        return new (buf) instr_reg<false, true, false>(pipe, pipe_size, dst, dst_size);
       }
     } else {
-      if (node->enable().empty()) {
-        return new (buf) instr_reg<false, true, false>(pipe, pipe_size, dst, dst_size);
+      if (node->has_enable()) {
+        return new (buf) instr_reg<false, false, true>(pipe, pipe_size, dst, dst_size);
       } else {
-        return new (buf) instr_reg<false, true, true>(pipe, pipe_size, dst, dst_size);
+        return new (buf) instr_reg<false, false, false>(pipe, pipe_size, dst, dst_size);
       }
     }
   } else {
-    if (node->reset().empty()) {
-      if (node->enable().empty()) {
-        return new (buf) instr_reg<true, false, false>(pipe, pipe_size, dst, dst_size);
+    if (node->has_init_data()) {
+      if (node->has_enable()) {
+        return new (buf) instr_reg<true, true, true>(pipe, pipe_size, dst, dst_size);
       } else {
-        return new (buf) instr_reg<true, false, true>(pipe, pipe_size, dst, dst_size);
+        return new (buf) instr_reg<true, true, false>(pipe, pipe_size, dst, dst_size);
       }
     } else {
-      if (node->enable().empty()) {
-        return new (buf) instr_reg<true, true, false>(pipe, pipe_size, dst, dst_size);
+      if (node->has_enable()) {
+        return new (buf) instr_reg<true, false, true>(pipe, pipe_size, dst, dst_size);
       } else {
-        return new (buf) instr_reg<true, true, true>(pipe, pipe_size, dst, dst_size);
+        return new (buf) instr_reg<true, false, false>(pipe, pipe_size, dst, dst_size);
       }
     }
   }
@@ -816,8 +816,8 @@ public:
     buf_cur += rdports_data_bytes;
     auto wrports = (wrport_t*)buf_cur;
 
-    if (node->has_initdata()) {
-      bv_copy(dst, node->initdata().words(), dst_size);
+    if (node->has_init_data()) {
+      bv_copy(dst, node->init_data().words(), dst_size);
     }
 
     return new (buf) instr_mem(rdports, num_rdports, wrports, num_wrports,
@@ -947,7 +947,7 @@ private:
 
   instr_tap(tapimpl* node, instr_map_t& map)
     : src_(map.at(node->src(0).id()))
-    , dst_(node->value().words())
+    , dst_(node->value()->words())
     , size_(node->size())
   {}
 
@@ -982,9 +982,9 @@ public:
 private:
 
   instr_assert(assertimpl* node, instr_map_t& map)
-    : cond_(map.at(node->condition().id()))
-    , pred_(node->is_predicated() ? map.at(node->predicate().id()) : nullptr)
-    , msg_(node->message())
+    : cond_(map.at(node->cond().id()))
+    , pred_(node->has_pred() ? map.at(node->pred().id()) : nullptr)
+    , msg_(node->msg())
     , sloc_(node->sloc())
     , tick_(0)
   {}
@@ -1072,7 +1072,7 @@ private:
 
   instr_print(printimpl* node, instr_map_t& map)
     : enum_strings_(node->enum_strings())
-    , pred_(node->is_predicated() ? map.at(node->predicate().id()) : nullptr)
+    , pred_(node->has_pred() ? map.at(node->pred().id()) : nullptr)
     , format_(node->format()) {
     srcs_.resize(node->enum_strings().size());
     for (uint32_t i = (pred_ ? 1 : 0), j = 0, n = node->srcs().size(); i < n; ++i, ++j) {
@@ -1149,7 +1149,7 @@ public:
 
   void init(udfsimpl* node, instr_map_t& map) {
     cd_ = map.at(node->cd().id());
-    reset_ = node->has_initdata() ? map.at(node->reset().id()) : nullptr;    
+    reset_ = node->has_init_data() ? map.at(node->reset().id()) : nullptr;    
     for (uint32_t i = 0, n = srcs_.size(); i < n; ++i) {
       auto& src = node->src(i);
       srcs_[i].emplace(const_cast<block_type*>(map.at(src.id())), src.size());
@@ -1215,6 +1215,9 @@ simref::~simref() {
   for (auto instr : instrs_) {
     instr->destroy();
   }
+  for (auto constant : constants_) {
+    delete [] constant;
+  }
 }
 
 void simref::initialize(const std::vector<lnodeimpl*>& eval_list) {
@@ -1247,23 +1250,23 @@ void simref::initialize(const std::vector<lnodeimpl*>& eval_list) {
       assert(false);
       break;
     case type_lit:
-      instr_map[node->id()] = reinterpret_cast<litimpl*>(node)->value().words();
+      instr_map[node->id()] = this->create_constants(reinterpret_cast<litimpl*>(node));
       break;
     case type_proxy:
       instrs_.emplace_back(instr_proxy::create(reinterpret_cast<proxyimpl*>(node), instr_map));
       break;
     case type_input: {
       auto input = reinterpret_cast<inputimpl*>(node);
-      if (input->is_bind()) {
+      if (input->has_binding()) {
         instr_map[node->id()] = instr_map.at(input->binding().id());
       } else {
-        instr_map[node->id()] = input->value().words();
+        instr_map[node->id()] = input->value()->words();
       }
     } break;
     case type_output: {
       auto output = reinterpret_cast<outputimpl*>(node);
       instr_map[node->id()] = instr_map.at(output->src(0).id());
-      if (!output->is_bind()) {
+      if (!output->has_binding()) {
         instrs_.emplace_back(instr_output::create(output, instr_map));
       }
     } break;
@@ -1324,6 +1327,14 @@ void simref::initialize(const std::vector<lnodeimpl*>& eval_list) {
     } break;
     }
   }
+}
+
+block_type* simref::create_constants(litimpl* node) {
+  auto num_words = ceildiv<uint32_t>(node->size(), bitwidth_v<block_type>);
+  auto constant = new block_type[num_words];
+  std::copy_n(node->value().words(), num_words, constant);
+  constants_.push_back(constant);
+  return constant;
 }
 
 void simref::eval() {
