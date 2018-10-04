@@ -321,19 +321,16 @@ void bv_copy_vector_small(T* w_dst, uint32_t w_dst_begin_rem,
   static constexpr unsigned WORD_MASK = WORD_SIZE - 1;
   static constexpr T        WORD_MAX  = std::numeric_limits<T>::max();
 
-  uint32_t src_end       = w_src_begin_rem + length - 1;
-  uint32_t w_src_end_idx = (src_end / WORD_SIZE);
   uint32_t dst_end       = w_dst_begin_rem + length - 1;
-  uint32_t w_dst_end_idx = (dst_end / WORD_SIZE);
   uint32_t w_dst_end_rem = dst_end & WORD_MASK;
 
   T src_block = w_src[0] >> w_src_begin_rem;
-  if (1 == w_src_end_idx) {
+  if (w_src_begin_rem + length > WORD_SIZE) {
     src_block |= (w_src[1] << (WORD_SIZE - w_src_begin_rem));
   }
   T mask = (WORD_MAX >> (WORD_SIZE - length)) << w_dst_begin_rem;
   w_dst[0] = blend<T>(mask, w_dst[0], (src_block << w_dst_begin_rem));
-  if (1 == w_dst_end_idx) {
+  if (w_dst_begin_rem + length > WORD_SIZE) {
     src_block >>= (WORD_SIZE - w_dst_begin_rem);
     mask = (WORD_MAX << 1) << w_dst_end_rem;
     w_dst[1] = blend<T>(mask, src_block, w_dst[1]);
@@ -529,11 +526,8 @@ template <typename T>
 void bv_slice_vector_small(T* dst, uint32_t dst_size, const T* w_src, uint32_t w_src_begin_rem) {
   static unsigned constexpr WORD_SIZE = bitwidth_v<T>;
 
-  uint32_t src_end       = w_src_begin_rem + dst_size - 1;
-  uint32_t w_src_end_idx = (src_end / WORD_SIZE);
-
   T src_block = w_src[0] >> w_src_begin_rem;
-  if (1 == w_src_end_idx) {
+  if (w_src_begin_rem + dst_size > WORD_SIZE) {
     src_block |= w_src[1] << (WORD_SIZE - w_src_begin_rem);
   }
   uint32_t rem = (WORD_SIZE - dst_size);
@@ -597,8 +591,7 @@ void bv_slice(T* dst, uint32_t dst_size, const T* src, uint32_t src_offset) {
   static constexpr uint32_t WORD_SIZE = bitwidth_v<T>;
   static constexpr unsigned WORD_MASK = WORD_SIZE - 1;
 
-  if (dst_size <= WORD_SIZE
-   && src_offset + dst_size <= WORD_SIZE) {
+  if (src_offset + dst_size <= WORD_SIZE) {
     bv_slice_scalar(dst, dst_size, src, src_offset);
     return;
   }

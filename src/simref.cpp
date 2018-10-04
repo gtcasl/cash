@@ -17,7 +17,47 @@ using namespace ch::internal;
 
 using instr_map_t = std::unordered_map<uint32_t, const block_type*>;
 
-class instr_proxy : public instr_base {
+class instr_proxy_base : public instr_base {
+public:
+
+  static instr_proxy_base* create(proxyimpl* node, instr_map_t& map);
+
+protected:
+
+  instr_proxy_base(block_type* dst) : dst_(dst) {}
+
+  block_type* dst_;
+};
+
+class instr_slice : public instr_proxy_base {
+public:
+
+  void destroy () override {
+    this->~instr_slice();
+    ::operator delete [](this);
+  }
+
+  void eval() override {
+    bv_slice(dst_, dst_size_, src_data_, src_offset_);
+  }
+
+private:
+
+  instr_slice(block_type* dst, uint32_t dst_size, const block_type* src_data, uint32_t src_offset)
+    : instr_proxy_base(dst)
+    , dst_size_(dst_size)
+    , src_data_(src_data)
+    , src_offset_(src_offset)
+  {}
+
+  uint32_t dst_size_;
+  const block_type* src_data_;
+  uint32_t src_offset_;
+
+  friend class instr_proxy_base;
+};
+
+class instr_proxy : public instr_proxy_base {
 private:
 
   struct range_t {
@@ -29,47 +69,16 @@ private:
 
   const range_t* ranges_;
   uint32_t num_ranges_;
-  block_type* dst_;
 
-  instr_proxy(const range_t* ranges, uint32_t num_ranges, block_type* dst)
-    : ranges_(ranges)
+  instr_proxy(block_type* dst, const range_t* ranges, uint32_t num_ranges)
+    : instr_proxy_base(dst)
+    , ranges_(ranges)
     , num_ranges_(num_ranges)
-    , dst_(dst)
   {}
 
+  friend class instr_proxy_base;
+
 public:
-
-  static instr_proxy* create(proxyimpl* node, instr_map_t& map) {
-    uint32_t dst_size = node->size();
-    uint32_t dst_nblocks = ceildiv<uint32_t>(dst_size, bitwidth_v<block_type>);
-    uint32_t dst_bytes = sizeof(block_type) * dst_nblocks;
-    uint32_t num_ranges = node->ranges().size();
-
-    uint32_t range_bytes = 0;
-    for (uint32_t i = 0; i < num_ranges; ++i) {
-      range_bytes += sizeof(range_t);
-    }
-
-    auto buf = new uint8_t[sizeof(instr_proxy) + dst_bytes + range_bytes]();
-    auto buf_cur = buf + sizeof(instr_proxy);
-    auto dst = (block_type*)buf_cur;
-    map[node->id()] = dst;
-
-    buf_cur += dst_bytes;
-
-    auto ranges = (range_t*)buf_cur;
-    for (uint32_t i = 0; i < num_ranges; ++i) {
-      auto& dst_range = ranges[i];
-      auto& src_range = node->range(i);
-      auto& src = node->src(src_range.src_idx);
-      dst_range.src_data   = map.at(src.id());
-      dst_range.src_offset = src_range.src_offset;
-      dst_range.dst_offset = src_range.dst_offset;
-      dst_range.length     = src_range.length;
-    }
-
-    return new (buf) instr_proxy(ranges, num_ranges, dst);
-  }
 
   void destroy () override {
     this->~instr_proxy();
@@ -83,6 +92,52 @@ public:
   }
 };
 
+instr_proxy_base* instr_proxy_base::create(proxyimpl* node, instr_map_t& map) {
+  uint32_t dst_size = node->size();
+  uint32_t dst_nblocks = ceildiv<uint32_t>(dst_size, bitwidth_v<block_type>);
+  uint32_t dst_bytes = sizeof(block_type) * dst_nblocks;
+  uint32_t num_ranges = node->ranges().size();
+
+  if (1 == num_ranges
+   && node->range(0).length == dst_size) {
+    auto buf = new uint8_t[sizeof(instr_slice) + dst_bytes]();
+    auto buf_cur = buf + sizeof(instr_slice);
+    auto dst = (block_type*)buf_cur;
+    map[node->id()] = dst;
+
+    auto& src_range = node->range(0);
+    auto& src = node->src(src_range.src_idx);
+    auto src_data = map.at(src.id());
+    auto src_offset = src_range.src_offset;
+
+    return new (buf) instr_slice(dst, dst_size, src_data, src_offset);
+  } else {
+    uint32_t range_bytes = 0;
+    for (uint32_t i = 0; i < num_ranges; ++i) {
+      range_bytes += sizeof(instr_proxy::range_t);
+    }
+
+    auto buf = new uint8_t[sizeof(instr_proxy) + dst_bytes + range_bytes]();
+    auto buf_cur = buf + sizeof(instr_proxy);
+    auto dst = (block_type*)buf_cur;
+    map[node->id()] = dst;
+
+    buf_cur += dst_bytes;
+
+    auto ranges = (instr_proxy::range_t*)buf_cur;
+    for (uint32_t i = 0; i < num_ranges; ++i) {
+      auto& dst_range = ranges[i];
+      auto& src_range = node->range(i);
+      auto& src = node->src(src_range.src_idx);
+      dst_range.src_data   = map.at(src.id());
+      dst_range.src_offset = src_range.src_offset;
+      dst_range.dst_offset = src_range.dst_offset;
+      dst_range.length     = src_range.length;
+    }
+
+    return new (buf) instr_proxy(dst, ranges, num_ranges);
+  }
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
