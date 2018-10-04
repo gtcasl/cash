@@ -53,7 +53,8 @@ simulatorimpl::~simulatorimpl() {
 void simulatorimpl::initialize() {
   {
     context* eval_ctx = nullptr;
-    if (1 == contexts_.size()) {
+    if (1 == contexts_.size()
+     && 0 == contexts_[0]->bindings().size()) {
       eval_ctx = contexts_[0];
       eval_ctx->acquire();
     } else {
