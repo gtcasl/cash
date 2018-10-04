@@ -52,20 +52,29 @@ simulatorimpl::~simulatorimpl() {
 
 void simulatorimpl::initialize() {
   {
-    auto eval_ctx = new context("eval");
-    eval_ctx->acquire();
+    context* eval_ctx = nullptr;
+    if (1 == contexts_.size()) {
+      eval_ctx = contexts_[0];
+      eval_ctx->acquire();
+    } else {
+      eval_ctx = new context("eval");
+      eval_ctx->acquire();
 
-    // build evaluation context
-    for (auto ctx : contexts_) {
-      compiler compiler(ctx);
-      compiler.build_eval_context(eval_ctx);
+      // build evaluation context
+      for (auto ctx : contexts_) {
+        compiler compiler(ctx);
+        compiler.build_eval_context(eval_ctx);
+      }
+
+      // compile evaluation context
+      compiler compiler(eval_ctx);
+      compiler.compile();
     }
 
     // build evaluation list
     std::vector<lnodeimpl*> eval_list;
     {
       compiler compiler(eval_ctx);
-      compiler.compile();
       compiler.build_eval_list(eval_list);
     }
 

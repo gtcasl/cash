@@ -153,7 +153,7 @@ auto ch_delayEn(const T& in, const ch_bit<1>& enable, uint32_t delay = 1, CH_SLO
   if (0 == delay) {
     return R(in, sloc);
   }
-  return R(createRegNode(logic_accessor::data(R(in, sloc)),
+  return R(createRegNext(logic_accessor::data(R(in, sloc)),
                          delay,
                          logic_accessor::data(enable),
                          sloc));
@@ -167,7 +167,7 @@ auto ch_delayEn(const T& in, const ch_bit<1>& enable, uint32_t delay, const I& i
   if (0 == delay) {
     return R(in, sloc);
   }
-  return R(createRegNode(logic_accessor::data(R(in, sloc)),
+  return R(createRegNext(logic_accessor::data(R(in, sloc)),
                          logic_accessor::data(R(init, sloc)),
                          delay,
                          logic_accessor::data(enable),                         
