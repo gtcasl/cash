@@ -45,7 +45,7 @@ struct ch_rv_hxbar {
   using in_io  = ch_vec<ch_enq_io<T>, I>;
   using out_io = ch_deq_io<T>;
   __io(
-    __in(ch_bit<log2ceil(I)>) sel,
+    __in(ch_bit<I>) sel,
     (in_io)  in,
     (out_io) out
   );
@@ -56,7 +56,7 @@ struct ch_rv_hxbar {
     }
     io.out.data  = xbar_.io.out[0].data;
     io.out.valid = xbar_.io.out[0].valid;
-    xbar_.io.sel = ch_bit<I>(1) << io.sel;
+    xbar_.io.sel = io.sel;
     for (unsigned i = 0; i < I; ++i) {
       io.in[i].ready = io.out.ready && (i == io.sel);
     }

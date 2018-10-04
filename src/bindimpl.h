@@ -25,9 +25,9 @@ public:
 
   virtual lnodeimpl* clone(context* ctx, const clone_map& cloned_nodes) override;
 
-  void bind_input(const lnode& src, const lnode& ioport, const source_location& sloc);
+  void bind_input(lnodeimpl* src, inputimpl* ioport, const source_location& sloc);
 
-  void bind_output(const lnode& dst, const lnode& ioport,const source_location& sloc);
+  void bind_output(lnodeimpl* dst, outputimpl* ioport,const source_location& sloc);
 
   void remove_port(bindportimpl* output);
 
@@ -66,13 +66,13 @@ protected:
 
   bindportimpl(context* ctx,
                bindimpl* bind,
-               const lnode& src,
-               const lnode& ioport,
+               lnodeimpl* src,
+               inputimpl* ioport,
                const source_location& sloc);
 
   bindportimpl(context* ctx,
               bindimpl* bind,
-              const lnode& ioport,
+              outputimpl* ioport,
               const source_location& sloc);
 
   ~bindportimpl();
