@@ -49,7 +49,7 @@ public:
 
   void eval() override {
     if constexpr (is_scalar) {
-      bv_slice_scalar(dst_, dst_size_, src_data_, src_offset_);
+      bv_slice_vector_small(dst_, dst_size_, src_data_, src_offset_);
     } else {
       bv_slice_vector(dst_, dst_size_, src_data_, src_offset_);
     }
@@ -137,7 +137,7 @@ instr_proxy_base* instr_proxy_base::create(proxyimpl* node, instr_map_t& map) {
     auto src_data = map.at(src.id()) + src_range.src_offset / bitwidth_v<block_type>;
     auto src_offset = src_range.src_offset % bitwidth_v<block_type>;
 
-    bool is_scalar = (src_offset + dst_size <= bitwidth_v<block_type>);
+    bool is_scalar = (dst_size <= bitwidth_v<block_type>);
     if (is_scalar) {
       return new (buf) instr_slice<true>(dst, dst_size, src_data, src_offset);
     } else {
@@ -156,7 +156,7 @@ instr_proxy_base* instr_proxy_base::create(proxyimpl* node, instr_map_t& map) {
 
     buf_cur += dst_bytes;
 
-    bool is_scalar = true;
+    bool is_scalar = (dst_size <= bitwidth_v<block_type>);
 
     uint32_t src_length = 0;
     auto ranges = (instr_proxy_base::range_t*)buf_cur;
@@ -169,7 +169,7 @@ instr_proxy_base* instr_proxy_base::create(proxyimpl* node, instr_map_t& map) {
       dst_range.dst_offset = src_range.dst_offset;
       dst_range.length     = src_range.length;
 
-      is_scalar &= (dst_range.dst_offset + dst_range.length) <= bitwidth_v<block_type>;
+      is_scalar &= (dst_range.src_offset + dst_range.length) <= bitwidth_v<block_type>;
       src_length += src_range.length;
     }
     is_scalar &= (src_length == dst_size);
@@ -1190,25 +1190,35 @@ public:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class instr_mrport : public instr_base {
+class instr_mrport_base : public instr_base {
 public:
 
-  static instr_mrport* create(mrportimpl* node, instr_map_t& map) {
-    uint32_t dst_size  = node->size();
-    uint32_t nblocks   = ceildiv<uint32_t>(dst_size, bitwidth_v<block_type>);
-    uint32_t dst_bytes = sizeof(block_type) * nblocks;
+  static instr_mrport_base* create(mrportimpl* node, instr_map_t& map) ;
 
-    auto buf = new uint8_t[__aligned_sizeof(instr_mrport) + dst_bytes]();
-    auto buf_cur = buf + __aligned_sizeof(instr_mrport);
-    auto dst = (block_type*)buf_cur;
-    map[node->id()] = dst;
+protected:
 
-    auto store = map.at(node->mem()->id());
-    auto addr = map.at(node->addr().id());
-    auto addr_size = node->addr().size();
+  instr_mrport_base(const block_type* store,
+                    block_type* dst,
+                    uint32_t dst_size,
+                    const block_type* addr,
+                    uint32_t addr_size)
+    : store_(store)
+    , dst_(dst)
+    , dst_size_(dst_size)
+    , addr_(addr)
+    , addr_size_(addr_size)
+  {}
 
-    return new (buf) instr_mrport(store, addr, dst, dst_size, addr_size);
-  }
+  const block_type* store_;
+  block_type* dst_;
+  uint32_t dst_size_;  
+  const block_type* addr_;
+  uint32_t addr_size_;
+};
+
+template <bool is_scalar>
+class instr_mrport : public instr_mrport_base {
+public:
 
   void destroy () override {
     this->~instr_mrport();
@@ -1216,30 +1226,50 @@ public:
   }
 
   void eval() override {
-    auto a = bv_cast<uint32_t>(addr_, addr_size_);
-    bv_slice(dst_, dst_size_, store_, a * dst_size_);
+    auto src_offset = bv_cast<uint32_t>(addr_, addr_size_) * dst_size_;
+    auto src = store_ + (src_offset / bitwidth_v<block_type>);
+    auto src_begin_rem = src_offset % bitwidth_v<block_type>;
+    if constexpr (is_scalar) {
+      bv_slice_vector_small(dst_, dst_size_, src, src_begin_rem);
+    } else {
+      bv_slice_vector(dst_, dst_size_, src, src_begin_rem);
+    }
   }
 
 private:
 
   instr_mrport(const block_type* store,
-              const block_type* addr,
-              block_type* dst,
-              uint32_t dst_size,
-              uint32_t addr_size)
-    : store_(store)
-    , addr_(addr)
-    , dst_(dst)
-    , dst_size_(dst_size)
-    , addr_size_(addr_size)
+               block_type* dst,
+               uint32_t dst_size,
+               const block_type* addr,
+               uint32_t addr_size)
+    : instr_mrport_base(store, dst, dst_size, addr, addr_size)
   {}
 
-  const block_type* store_;
-  const block_type* addr_;
-  block_type* dst_;
-  uint32_t dst_size_;
-  uint32_t addr_size_;
+  friend class instr_mrport_base;
 };
+
+instr_mrport_base* instr_mrport_base::create(mrportimpl* node, instr_map_t& map) {
+  uint32_t dst_size  = node->size();
+  uint32_t nblocks   = ceildiv<uint32_t>(dst_size, bitwidth_v<block_type>);
+  uint32_t dst_bytes = sizeof(block_type) * nblocks;
+
+  auto buf = new uint8_t[__aligned_sizeof(instr_mrport_base) + dst_bytes]();
+  auto buf_cur = buf + __aligned_sizeof(instr_mrport_base);
+  auto dst = (block_type*)buf_cur;
+  map[node->id()] = dst;
+
+  auto store = map.at(node->mem()->id());
+  auto addr = map.at(node->addr().id());
+  auto addr_size = node->addr().size();
+
+  bool is_scalar = (dst_size <= bitwidth_v<block_type>);
+  if (is_scalar) {
+    return new (buf) instr_mrport<true>(store, dst, dst_size, addr, addr_size);
+  } else {
+    return new (buf) instr_mrport<false>(store, dst, dst_size, addr, addr_size);
+  }
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -1577,7 +1607,7 @@ void simref::initialize(const std::vector<lnodeimpl*>& eval_list) {
     case type_mrport: {
       auto port = reinterpret_cast<mrportimpl*>(node);
       if (!port->is_sync_read()) {
-        instrs_.emplace_back(instr_mrport::create(port, instr_map));
+        instrs_.emplace_back(instr_mrport_base::create(port, instr_map));
       }
     } break;
     case type_mwport:
