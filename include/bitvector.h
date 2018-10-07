@@ -40,10 +40,6 @@ public:
   typedef alloc_t allocator_type;
   typedef size_t  size_type;
 
-  static constexpr uint32_t WORD_SIZE = bitwidth_v<word_t>;
-  static constexpr uint32_t WORD_MASK = WORD_SIZE - 1;
-  static constexpr word_t   WORD_MAX  = std::numeric_limits<word_t>::max();
-
   class const_iterator;
   class iterator;
 
@@ -106,31 +102,31 @@ public:
     }
 
     void increment() {
-      if (0 == (++offset_ & WORD_MASK))
+      if (0 == (++offset_ % bitwidth_v<word_t>))
         ++words_;
     }
 
     void decrement() {
-      if (0 == (offset_-- & WORD_MASK))
+      if (0 == (offset_-- % bitwidth_v<word_t>))
         --words_;
     }
 
     void advance(int delta) {
-      int offset = (offset_ & WORD_MASK) + delta;
+      int offset = (offset_ % bitwidth_v<word_t>) + delta;
       if (offset >= 0) {
-        words_ += (offset / WORD_SIZE);
+        words_ += (offset / bitwidth_v<word_t>);
       } else {
-        words_ -= ((WORD_MASK - offset) / WORD_SIZE);
+        words_ -= ((bitwidth_v<word_t> - 1 - offset) / bitwidth_v<word_t>);
       }
       offset_ += delta;
     }
 
     const_reference const_ref() const {
-      return (*words_ & (word_t(1) << (offset_ & WORD_MASK))) != 0;
+      return (*words_ & (word_t(1) << (offset_ % bitwidth_v<word_t>))) != 0;
     }
 
     reference ref() const {
-      return reference(const_cast<word_t&>(*words_), word_t(1) << (offset_ & WORD_MASK));
+      return reference(const_cast<word_t&>(*words_), word_t(1) << (offset_ % bitwidth_v<word_t>));
     }
 
     const word_t* words_;
@@ -484,7 +480,7 @@ public:
     std::vector<U> tmp(N);
     std::reverse_copy(value.begin(), value.end(), tmp.begin());
     this->write(0, tmp.data(), sizeof(U), 0, N * bitwidth_v<U>);
-    auto src_num_words = ceildiv<uint32_t>(N * bitwidth_v<U>, WORD_SIZE);
+    auto src_num_words = ceildiv<uint32_t>(N * bitwidth_v<U>, bitwidth_v<word_t>);
     auto num_words = this->num_words();
     std::fill_n(words_ + src_num_words, num_words - src_num_words, 0);
     return *this;
@@ -496,7 +492,7 @@ public:
     std::vector<U> tmp(value.size());
     std::reverse_copy(value.begin(), value.end(), tmp.begin());
     this->write(0, tmp.data(), sizeof(U), 0, tmp.size() * bitwidth_v<U>);
-    auto src_num_words = ceildiv<uint32_t>(tmp.size() * bitwidth_v<U>, WORD_SIZE);
+    auto src_num_words = ceildiv<uint32_t>(tmp.size() * bitwidth_v<U>, bitwidth_v<word_t>);
     auto num_words = this->num_words();
     std::fill_n(words_ + src_num_words, num_words - src_num_words, 0);
     return *this;
@@ -504,16 +500,16 @@ public:
 
   const_reference at(uint32_t index) const {
     assert(index < size_);
-    uint32_t widx = index / WORD_SIZE;
-    uint32_t wbit = index & WORD_MASK;
+    uint32_t widx = index / bitwidth_v<word_t>;
+    uint32_t wbit = index % bitwidth_v<word_t>;
     auto mask = word_t(1) << wbit;
     return (words_[widx] & mask) != 0;
   }
 
   reference at(uint32_t index) {
     assert(index < size_);
-    uint32_t widx = index / WORD_SIZE;
-    uint32_t wbit = index & WORD_MASK;
+    uint32_t widx = index / bitwidth_v<word_t>;
+    uint32_t wbit = index % bitwidth_v<word_t>;
     auto mask = word_t(1) << wbit;
     return reference(words_[widx], mask);
   }
@@ -556,7 +552,7 @@ public:
   }
 
   uint32_t num_words() const {
-    return ceildiv(size_, WORD_SIZE);
+    return ceildiv(size_, bitwidth_v<word_t>);
   }
 
   const void* data() const {
@@ -584,8 +580,8 @@ public:
   }
 
   void resize(uint32_t size) {
-    uint32_t old_num_words = ceildiv(size_, WORD_SIZE);
-    uint32_t new_num_words = ceildiv(size, WORD_SIZE);
+    uint32_t old_num_words = ceildiv(size_, bitwidth_v<word_t>);
+    uint32_t new_num_words = ceildiv(size, bitwidth_v<word_t>);
     if (new_num_words != old_num_words) {
       auto words = alloc_.allocate(new_num_words);
       if (words_) {
@@ -698,11 +694,6 @@ public:
   template <typename A>
   bool operator!=(const bitvector<word_t, A>& other) const {
     return !(*this == other);
-  }
-
-  void set() {
-    std::fill_n(words_, this->num_words(), WORD_MAX);
-    bv_clear_extra_bits(words_, size_);
   }
 
   void reset() {

@@ -1,5 +1,7 @@
 #include "common.h"
 
+static constexpr uint32_t WS = bitwidth_v<sdata_type::block_type>;
+
 namespace {
 
 __enum (e2_t, 2, (
@@ -161,6 +163,32 @@ TEST_CASE("system", "[system]") {
       return ret;
     });
     TESTX([]()->bool {
+      ch_scuint<WS> a(3);
+      ch_scuint<WS> b(1);
+      RetCheck ret;
+      ret &= (a == 0011_b);
+      ret &= (b == 001_b);
+      ret &= (!a == false);
+      ret &= (!(a-a) == true);
+      ret &= (a != b);
+      ret &= (a > b);
+      ret &= (a >= b);
+      ret &= (b < a);
+      ret &= (b <= a);
+      ret &= ((a & b) == 0001_b);
+      ret &= ((a | b) == 0011_b);
+      ret &= ((a ^ b) == 0010_b);
+      ret &= ((a >> b) == 1);
+      ret &= ((a << b) == 6);
+      ret &= (-b == -1);
+      ret &= ((a + b) == 4);
+      ret &= ((a - b) == 2);
+      ret &= ((a * b) == 3);
+      ret &= ((a / b) == 3);
+      ret &= ((a % b) == 0);
+      return ret;
+    });
+    TESTX([]()->bool {
       ch_scint<4> a(-3);
       ch_scint<3> b(-1);
       RetCheck ret;
@@ -186,9 +214,52 @@ TEST_CASE("system", "[system]") {
       return ret;
     });
     TESTX([]()->bool {
+      ch_scint<WS> a(-3);
+      ch_scint<WS> b(-1);
+      RetCheck ret;
+      ret &= (a == -3);
+      ret &= (b == -1);
+      ret &= (a != b);
+      ret &= (a < b);
+      ret &= (a <= b);
+      ret &= (b > a);
+      ret &= (b >= a);
+      ret &= (~a == 2);
+      ret &= ((a ^ b) == 2);
+      ret &= ((a >> -b) == -2);
+      ret &= ((a << -b) == -6);
+      ret &= (-b == 1);
+      ret &= ((a + b) == -4);
+      ret &= ((a - b) == -2);
+      ret &= ((a * b) == 3);
+      ret &= ((a / b) == 3);
+      ret &= ((a % b) == 0);
+      return ret;
+    });
+    TESTX([]()->bool {
       ch_scint<127> a(3100);
       ch_scint<126> b(1010);
       ch_scint<125> c(-1000);
+      RetCheck ret;
+      ret &= ((a + b) == 4110);
+      ret &= ((a + c) == 2100);
+      ret &= ((a - b) == 2090);
+      ret &= ((a - c) == 4100);
+      ret &= ((a * b) == 3131000);
+      ret &= ((b * c) ==-1010000);
+      ret &= ((a * c) ==-3100000);
+      ret &= ((a / b) == 3);
+      ret &= ((b / c) ==-1);
+      ret &= ((a / c) ==-3);
+      ret &= ((a % b) == 70);
+      ret &= ((b % c) == 10);
+      ret &= ((a % c) == 100);
+      return ret;
+    });
+    TESTX([]()->bool {
+      ch_scint<128> a(3100);
+      ch_scint<128> b(1010);
+      ch_scint<128> c(-1000);
       RetCheck ret;
       ret &= ((a + b) == 4110);
       ret &= ((a + c) == 2100);

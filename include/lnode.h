@@ -22,7 +22,7 @@ namespace internal {
   m(notl,   6 | op_flags::unary  | op_flags::logical) \
   m(andl,   7 | op_flags::binary | op_flags::logical | op_flags::symmetric) \
   m(orl,    8 | op_flags::binary | op_flags::logical | op_flags::symmetric) \
-  m(inv,    9 | op_flags::unary  | op_flags::bitwise) \
+  m(inv,    9 | op_flags::unary  | op_flags::bitwise | op_flags::eq_opd_size) \
   m(andb,  10 | op_flags::binary | op_flags::bitwise | op_flags::symmetric | op_flags::eq_opd_size) \
   m(orb,   11 | op_flags::binary | op_flags::bitwise | op_flags::symmetric | op_flags::eq_opd_size) \
   m(xorb,  12 | op_flags::binary | op_flags::bitwise | op_flags::symmetric | op_flags::eq_opd_size) \
@@ -31,10 +31,10 @@ namespace internal {
   m(xorr,  15 | op_flags::unary  | op_flags::reduce) \
   m(shl,   16 | op_flags::binary | op_flags::shift) \
   m(shr,   17 | op_flags::binary | op_flags::shift) \
-  m(neg,   18 | op_flags::unary  | op_flags::arithmetic) \
+  m(neg,   18 | op_flags::unary  | op_flags::arithmetic | op_flags::eq_opd_size) \
   m(add,   19 | op_flags::binary | op_flags::arithmetic | op_flags::symmetric | op_flags::eq_opd_size) \
   m(sub,   20 | op_flags::binary | op_flags::arithmetic | op_flags::eq_opd_size) \
-  m(mult,  21 | op_flags::binary | op_flags::arithmetic | op_flags::symmetric | op_flags::eq_opd_size) \
+  m(mult,  21 | op_flags::binary | op_flags::arithmetic | op_flags::symmetric) \
   m(div,   22 | op_flags::binary | op_flags::arithmetic) \
   m(mod,   23 | op_flags::binary | op_flags::arithmetic) \
   m(pad,   24 | op_flags::unary  | op_flags::misc)

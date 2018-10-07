@@ -212,7 +212,7 @@ protected:
   uint32_t dst_size_;
 };
 
-template <ch_op op, bool is_signed, bool resize_opds>
+template <ch_op op, bool is_signed, bool is_scalar, bool resize_opds>
 class instr_alu : instr_alu_base {
 public:
 
@@ -222,135 +222,221 @@ public:
   }
 
   void eval() override {
-    if constexpr (resize_opds) {
+    if constexpr (resize_opds && !is_scalar) {
       if (src0_size_ != o_src0_size_) {
-        if constexpr (is_signed) {
-          bv_sext(src0_, src0_size_, o_src0_, o_src0_size_);
-        } else {
-          bv_zext(src0_, src0_size_, o_src0_, o_src0_size_);
-        }
+        bv_pad<is_signed>(src0_, src0_size_, o_src0_, o_src0_size_);
       }
       if (src1_size_ != o_src1_size_) {
-        if constexpr (is_signed) {
-          bv_sext(src1_, src1_size_, o_src1_, o_src1_size_);
-        } else {
-          bv_zext(src1_, src1_size_, o_src1_, o_src1_size_);
-        }
+        bv_pad<is_signed>(src1_, src1_size_, o_src1_, o_src1_size_);
       }
     }
 
     switch (op) {
     case ch_op::eq:
-      bv_assign(dst_, dst_size_, bv_eq(src0_,  src1_, src0_size_));
+      if constexpr (is_scalar) {
+        block_type u = resize_opds ? sign_ext(src0_[0], src0_size_) : src0_[0];
+        block_type v = resize_opds ? sign_ext(src1_[0], src1_size_) : src1_[0];
+        bv_assign(dst_, dst_size_, bv_eq_scalar(&u, &v));
+      } else {
+        bv_assign(dst_, dst_size_, bv_eq_vector(src0_,  src1_, src0_size_));
+      }
       break;
     case ch_op::ne:
-      bv_assign(dst_, dst_size_, !bv_eq(src0_,  src1_, src0_size_));
+      if constexpr (is_scalar) {
+        block_type u = resize_opds ? sign_ext(src0_[0], src0_size_) : src0_[0];
+        block_type v = resize_opds ? sign_ext(src1_[0], src1_size_) : src1_[0];
+        bv_assign(dst_, dst_size_, !bv_eq_scalar(&u, &v));
+      } else {
+        bv_assign(dst_, dst_size_, !bv_eq_vector(src0_,  src1_, src0_size_));
+      }
       break;
     case ch_op::lt:
-      if constexpr (is_signed) {
-        bv_assign(dst_, dst_size_, bv_slt(src0_,  src1_, src0_size_));
+      if constexpr (is_scalar) {
+        block_type u = resize_opds ? sign_ext(src0_[0], src0_size_) : src0_[0];
+        block_type v = resize_opds ? sign_ext(src1_[0], src1_size_) : src1_[0];
+        bv_assign(dst_, dst_size_, bv_lt_scalar<is_signed>(&u, &v, src0_size_));
       } else {
-        bv_assign(dst_, dst_size_, bv_ult(src0_,  src1_, src0_size_));
+        bv_assign(dst_, dst_size_, bv_lt_vector<is_signed>(src0_,  src1_, src0_size_));
       }
       break;
     case ch_op::gt:
-      if constexpr (is_signed) {
-        bv_assign(dst_, dst_size_, bv_slt(src1_,  src0_, src0_size_));
+      if constexpr (is_scalar) {
+        block_type u = resize_opds ? sign_ext(src0_[0], src0_size_) : src0_[0];
+        block_type v = resize_opds ? sign_ext(src1_[0], src1_size_) : src1_[0];
+        bv_assign(dst_, dst_size_, bv_lt_scalar<is_signed>(&v, &u, src0_size_));
       } else {
-        bv_assign(dst_, dst_size_, bv_ult(src1_,  src0_, src0_size_));
+        bv_assign(dst_, dst_size_, bv_lt_vector<is_signed>(src1_,  src0_, src0_size_));
       }
       break;
     case ch_op::le:
-      if constexpr (is_signed) {
-        bv_assign(dst_, dst_size_, !bv_slt(src1_,  src0_, src0_size_));
+      if constexpr (is_scalar) {
+        block_type u = resize_opds ? sign_ext(src0_[0], src0_size_) : src0_[0];
+        block_type v = resize_opds ? sign_ext(src1_[0], src1_size_) : src1_[0];
+        bv_assign(dst_, dst_size_, !bv_lt_scalar<is_signed>(&v, &u, src0_size_));
       } else {
-        bv_assign(dst_, dst_size_, !bv_ult(src1_,  src0_, src0_size_));
+        bv_assign(dst_, dst_size_, !bv_lt_vector<is_signed>(src1_,  src0_, src0_size_));
       }
       break;
     case ch_op::ge:
-      if constexpr (is_signed) {
-        bv_assign(dst_, dst_size_, !bv_slt(src0_,  src1_, src0_size_));
+      if constexpr (is_scalar) {
+        block_type u = resize_opds ? sign_ext(src0_[0], src0_size_) : src0_[0];
+        block_type v = resize_opds ? sign_ext(src1_[0], src1_size_) : src1_[0];
+        bv_assign(dst_, dst_size_, !bv_lt_scalar<is_signed>(&u, &v, src0_size_));
       } else {
-        bv_assign(dst_, dst_size_, !bv_ult(src0_,  src1_, src0_size_));
+        bv_assign(dst_, dst_size_, !bv_lt_vector<is_signed>(src0_,  src1_, src0_size_));
       }
       break;
 
     case ch_op::notl:
-      bv_assign(dst_, dst_size_, !bv_orr(src0_, src0_size_));
+      if constexpr (is_scalar) {
+        bv_assign(dst_, dst_size_, !bv_orr_scalar(src0_));
+      } else {
+        bv_assign(dst_, dst_size_, !bv_orr_vector(src0_, src0_size_));
+      }
       break;
     case ch_op::andl:
-      bv_assign(dst_, dst_size_, bv_orr(src0_, src0_size_) && bv_orr(src1_, src1_size_));
+      if constexpr (is_scalar) {
+        bv_assign(dst_, dst_size_, bv_orr_scalar(src0_) && bv_orr_scalar(src1_));
+      } else {
+        bv_assign(dst_, dst_size_, bv_orr_vector(src0_, src0_size_) && bv_orr_vector(src1_, src1_size_));
+      }
       break;
     case ch_op::orl:
-      bv_assign(dst_, dst_size_, bv_orr(src0_, src0_size_) || bv_orr(src1_, src1_size_));
+      if constexpr (is_scalar) {
+        bv_assign(dst_, dst_size_, bv_orr_scalar(src0_) || bv_orr_scalar(src1_));
+      } else {
+        bv_assign(dst_, dst_size_, bv_orr_vector(src0_, src0_size_) || bv_orr_vector(src1_, src1_size_));
+      }
       break;
 
     case ch_op::inv:
-      bv_inv(dst_, src0_, dst_size_);
+      if constexpr (is_scalar) {
+        block_type u = resize_opds ? sign_ext(src0_[0], src0_size_) : src0_[0];
+        bv_inv_scalar(dst_, &u, dst_size_);
+      } else {
+        bv_inv_vector(dst_, src0_, dst_size_);
+      }
       break;
     case ch_op::andb:
-      bv_and(dst_, src0_, src1_, dst_size_);
+      if constexpr (is_scalar) {
+        block_type u = resize_opds ? sign_ext(src0_[0], src0_size_) : src0_[0];
+        block_type v = resize_opds ? sign_ext(src1_[0], src1_size_) : src1_[0];
+        bv_and_scalar(dst_, &u, &v);
+      } else {
+        bv_and_vector(dst_, src0_, src1_, dst_size_);
+      }
       break;
     case ch_op::orb:
-      bv_or(dst_, src0_, src1_, dst_size_);
+      if constexpr (is_scalar) {
+        block_type u = resize_opds ? sign_ext(src0_[0], src0_size_) : src0_[0];
+        block_type v = resize_opds ? sign_ext(src1_[0], src1_size_) : src1_[0];
+        bv_or_scalar(dst_, &u, &v);
+      } else {
+        bv_or_vector(dst_, src0_, src1_, dst_size_);
+      }
       break;
     case ch_op::xorb:
-      bv_xor(dst_, src0_, src1_, dst_size_);
+      if constexpr (is_scalar) {
+        block_type u = resize_opds ? sign_ext(src0_[0], src0_size_) : src0_[0];
+        block_type v = resize_opds ? sign_ext(src1_[0], src1_size_) : src1_[0];
+        bv_xor_scalar(dst_, &u, &v);
+      } else {
+        bv_xor_vector(dst_, src0_, src1_, dst_size_);
+      }
       break;
 
     case ch_op::andr:
-      bv_assign(dst_, dst_size_, bv_andr(src0_, src0_size_));
+      if constexpr (is_scalar) {
+        bv_assign(dst_, dst_size_, bv_andr_scalar(src0_, src0_size_));
+      } else {
+        bv_assign(dst_, dst_size_, bv_andr_vector(src0_, src0_size_));
+      }
       break;
     case ch_op::orr:
-      bv_assign(dst_, dst_size_, bv_orr(src0_, src0_size_));
+      if constexpr (is_scalar) {
+        bv_assign(dst_, dst_size_, bv_orr_scalar(src0_));
+      } else {
+        bv_assign(dst_, dst_size_, bv_orr_vector(src0_, src0_size_));
+      }
       break;
     case ch_op::xorr:
-      bv_assign(dst_, dst_size_, bv_xorr(src0_, src0_size_));
+      if constexpr (is_scalar) {
+        bv_assign(dst_, dst_size_, bv_xorr_scalar(src0_));
+      } else {
+        bv_assign(dst_, dst_size_, bv_xorr_vector(src0_, src0_size_));
+      }
       break;
 
     case ch_op::shl:
-      bv_sll(dst_, dst_size_, src0_, src0_size_, bv_cast<uint32_t>(src1_, src1_size_));
+      if constexpr (is_scalar) {
+        bv_shl_scalar(dst_, dst_size_, src0_, bv_cast<uint32_t>(src1_, src1_size_));
+     } else {
+        bv_shl_vector(dst_, dst_size_, src0_, src0_size_, bv_cast<uint32_t>(src1_, src1_size_));
+      }
       break;
     case ch_op::shr:
-      if constexpr (is_signed) {
-        bv_sra(dst_, dst_size_, src0_, src0_size_, bv_cast<uint32_t>(src1_, src1_size_));
+      if constexpr (is_scalar) {
+        auto dist = bv_cast<uint64_t>(src1_, src1_size_);
+        bv_shr_scalar<is_signed>(dst_, dst_size_, src0_, src0_size_, dist);
       } else {
-        bv_srl(dst_, dst_size_, src0_, src0_size_, bv_cast<uint32_t>(src1_, src1_size_));
+        auto dist = bv_cast<uint64_t>(src1_, src1_size_);
+        bv_shr_vector<is_signed>(dst_, dst_size_, src0_, src0_size_, dist);
       }
       break;
 
     case ch_op::add:
-      bv_add(dst_, src0_, src1_, dst_size_);
+      if constexpr (is_scalar) {
+        block_type u = resize_opds ? sign_ext(src0_[0], src0_size_) : src0_[0];
+        block_type v = resize_opds ? sign_ext(src1_[0], src1_size_) : src1_[0];
+        bv_add_scalar(dst_, &u, &v, dst_size_);
+      } else {
+        bv_add_vector(dst_, src0_, src1_, dst_size_);
+      }
       break;
     case ch_op::sub:
-      bv_sub(dst_, src0_, src1_, dst_size_);
+      if constexpr (is_scalar) {
+        block_type u = resize_opds ? sign_ext(src0_[0], src0_size_) : src0_[0];
+        block_type v = resize_opds ? sign_ext(src1_[0], src1_size_) : src1_[0];
+        bv_sub_scalar(dst_, &u, &v, dst_size_);
+      } else {
+        bv_sub_vector(dst_, src0_, src1_, dst_size_);
+      }
       break;
     case ch_op::neg:
-      bv_neg(dst_, src0_, dst_size_);
+      if constexpr (is_scalar) {
+        block_type u = resize_opds ? sign_ext(src0_[0], src0_size_) : src0_[0];
+        bv_neg_scalar(dst_, &u, dst_size_);
+      } else {
+        bv_neg_vector(dst_, src0_, dst_size_);
+      }
       break;
     case ch_op::mult:
-      bv_mult(dst_, dst_size_, src0_, src0_size_, src1_, src1_size_);
+      if constexpr (is_scalar) {
+        bv_mult_scalar<is_signed>(dst_, dst_size_, src0_, src0_size_, src1_, src1_size_);
+      } else {
+        bv_mult_vector<is_signed>(dst_, dst_size_, src0_, src0_size_, src1_, src1_size_);
+      }
       break;
     case ch_op::div:
-      if constexpr (is_signed) {
-        bv_sdiv(dst_, dst_size_, src0_, src0_size_, src1_, src1_size_);
+      if constexpr (is_scalar) {
+        bv_div_scalar<is_signed>(dst_, dst_size_, src0_, src0_size_, src1_, src1_size_);
       } else {
-        bv_udiv(dst_, dst_size_, src0_, src0_size_, src1_, src1_size_);
+        bv_div_vector<is_signed>(dst_, dst_size_, src0_, src0_size_, src1_, src1_size_);
       }
       break;
     case ch_op::mod:
-      if constexpr (is_signed) {
-        bv_smod(dst_, dst_size_, src0_, src0_size_, src1_, src1_size_);
+      if constexpr (is_scalar) {
+        bv_mod_scalar<is_signed>(dst_, dst_size_, src0_, src0_size_, src1_, src1_size_);
       } else {
-        bv_umod(dst_, dst_size_, src0_, src0_size_, src1_, src1_size_);
+        bv_mod_vector<is_signed>(dst_, dst_size_, src0_, src0_size_, src1_, src1_size_);
       }
       break;
 
     case ch_op::pad:
-      if constexpr (is_signed) {
-        bv_sext(dst_, dst_size_, src0_, src0_size_);
+      if constexpr (is_scalar) {
+        bv_pad_scalar<is_signed>(dst_, dst_size_, src0_, src0_size_);
       } else {
-        bv_zext(dst_, dst_size_, src0_, src0_size_);
+        bv_pad_vector<is_signed>(dst_, dst_size_, src0_, src0_size_);
       }
       break;
 
@@ -389,13 +475,17 @@ instr_alu_base* instr_alu_base::create(aluimpl* node, instr_map_t& map) {
   const block_type* o_src1 = nullptr;
   uint32_t o_src1_size = 0;
 
+  bool is_scalar = (dst_size <= bitwidth_v<block_type>);
+
   // access source node data
   if (node->srcs().size() > 0) {
     o_src0 = map.at(node->src(0).id());
     o_src0_size = node->src(0).size();
+    is_scalar &= (o_src0_size <= bitwidth_v<block_type>);
     if (node->srcs().size() > 1) {
       o_src1 = map.at(node->src(1).id());
       o_src1_size = node->src(1).size();
+      is_scalar &= (o_src1_size <= bitwidth_v<block_type>);
     }
   }
 
@@ -415,10 +505,12 @@ instr_alu_base* instr_alu_base::create(aluimpl* node, instr_map_t& map) {
      || op_flags::relational == op_class) {
       // resize source operands to match each other
       if (src0_size != src1_size) {
-        if (src0_size < src1_size) {
-          src0_size = src1_size;
-        } else {
-          src1_size = src0_size;
+        if (!is_scalar) {
+          if (src0_size < src1_size) {
+            src0_size = src1_size;
+          } else {
+            src1_size = src0_size;
+          }
         }
         resize_opds = true;
       }
@@ -428,13 +520,17 @@ instr_alu_base* instr_alu_base::create(aluimpl* node, instr_map_t& map) {
         if (src0_size < dst_size) {
           resize_opds = true;
         }
-        src0_size = dst_size;
+        if (!is_scalar) {
+          src0_size = dst_size;
+        }
       }
       if (src1 && src1_size != dst_size) {
         if (src1_size < dst_size) {
           resize_opds = true;
         }
-        src1_size = dst_size;
+        if (!is_scalar) {
+          src1_size = dst_size;
+        }
       }
     }
   }
@@ -470,27 +566,55 @@ instr_alu_base* instr_alu_base::create(aluimpl* node, instr_map_t& map) {
 
   bool is_signed = node->is_signed();
 
+  // disable resize for unsigned scalars
+  if (is_scalar && !is_signed && resize_opds)
+    resize_opds = false;
+
 #define CREATE_ALU_INST(op, sign_enable, resize_enable) \
   case op: \
     if (sign_enable && is_signed) { \
-      if (resize_enable && resize_opds) { \
-        return new (buf) instr_alu<op, true, true>(o_src0, o_src0_size, \
-                                                   o_src1, o_src1_size, src0, src0_size, \
-                                                   src1, src1_size, dst, dst_size); \
+      if (is_scalar) { \
+        if (resize_enable && resize_opds) { \
+          return new (buf) instr_alu<op, true, true, true>(o_src0, o_src0_size, \
+                                                           o_src1, o_src1_size, src0, src0_size, \
+                                                           src1, src1_size, dst, dst_size); \
+        } else { \
+          return new (buf) instr_alu<op, true, true, false>(o_src0, o_src0_size, \
+                                                            o_src1, o_src1_size, src0, src0_size, \
+                                                            src1, src1_size, dst, dst_size); \
+        }  \
       } else { \
-        return new (buf) instr_alu<op, true, false>(o_src0, o_src0_size, \
-                                                    o_src1, o_src1_size, src0, src0_size, \
-                                                    src1, src1_size, dst, dst_size); \
-      }  \
+        if (resize_enable && resize_opds) { \
+          return new (buf) instr_alu<op, true, false, true>(o_src0, o_src0_size, \
+                                                            o_src1, o_src1_size, src0, src0_size, \
+                                                            src1, src1_size, dst, dst_size); \
+        } else { \
+          return new (buf) instr_alu<op, true, false, false>(o_src0, o_src0_size, \
+                                                             o_src1, o_src1_size, src0, src0_size, \
+                                                             src1, src1_size, dst, dst_size); \
+        }  \
+      } \
     } else { \
-      if (resize_enable && resize_opds) { \
-        return new (buf) instr_alu<op, false, true>(o_src0, o_src0_size, \
-                                                    o_src1, o_src1_size, src0, src0_size, \
-                                                    src1, src1_size, dst, dst_size); \
+      if (is_scalar) { \
+        if (resize_enable && resize_opds) { \
+          return new (buf) instr_alu<op, false, true, true>(o_src0, o_src0_size, \
+                                                            o_src1, o_src1_size, src0, src0_size, \
+                                                            src1, src1_size, dst, dst_size); \
+        } else { \
+          return new (buf) instr_alu<op, false, true, false>(o_src0, o_src0_size, \
+                                                             o_src1, o_src1_size, src0, src0_size, \
+                                                             src1, src1_size, dst, dst_size); \
+        } \
       } else { \
-        return new (buf) instr_alu<op, false, false>(o_src0, o_src0_size, \
-                                                     o_src1, o_src1_size, src0, src0_size, \
-                                                     src1, src1_size, dst, dst_size); \
+        if (resize_enable && resize_opds) { \
+          return new (buf) instr_alu<op, false, false, true>(o_src0, o_src0_size, \
+                                                             o_src1, o_src1_size, src0, src0_size, \
+                                                             src1, src1_size, dst, dst_size); \
+        } else { \
+          return new (buf) instr_alu<op, false, false, false>(o_src0, o_src0_size, \
+                                                              o_src1, o_src1_size, src0, src0_size, \
+                                                              src1, src1_size, dst, dst_size); \
+        } \
       } \
     }
 
@@ -502,9 +626,9 @@ instr_alu_base* instr_alu_base::create(aluimpl* node, instr_map_t& map) {
   CREATE_ALU_INST(ch_op::le, true, true);
   CREATE_ALU_INST(ch_op::ge, true, true);
   CREATE_ALU_INST(ch_op::notl, false, false);
-  CREATE_ALU_INST(ch_op::andl, true, true);
-  CREATE_ALU_INST(ch_op::orl, true, true);
-  CREATE_ALU_INST(ch_op::inv, false, false);
+  CREATE_ALU_INST(ch_op::andl, false, false);
+  CREATE_ALU_INST(ch_op::orl, false, false);
+  CREATE_ALU_INST(ch_op::inv, true, true);
   CREATE_ALU_INST(ch_op::andb, true, true);
   CREATE_ALU_INST(ch_op::orb, true, true);
   CREATE_ALU_INST(ch_op::xorb, true, true);
@@ -515,8 +639,8 @@ instr_alu_base* instr_alu_base::create(aluimpl* node, instr_map_t& map) {
   CREATE_ALU_INST(ch_op::shr, true, false);
   CREATE_ALU_INST(ch_op::add, true, true);
   CREATE_ALU_INST(ch_op::sub, true, true);
-  CREATE_ALU_INST(ch_op::neg, false, false);
-  CREATE_ALU_INST(ch_op::mult, true, true);
+  CREATE_ALU_INST(ch_op::neg, true, true);
+  CREATE_ALU_INST(ch_op::mult, true, false);
   CREATE_ALU_INST(ch_op::div, true, false);
   CREATE_ALU_INST(ch_op::mod, true, false);
   CREATE_ALU_INST(ch_op::pad, true, false);
@@ -721,7 +845,7 @@ public:
     if constexpr (is_pipe) {
       // advance pipeline
       bv_slice(dst_, size_, pipe_, 0);
-      bv_srl(pipe_, pipe_size_, pipe_, pipe_size_, size_);
+      bv_shr<false>(pipe_, pipe_size_, pipe_, pipe_size_, size_);
       bv_copy(pipe_, pipe_size_ - size_, next_, 0, size_);
     } else {
       // push next value

@@ -146,4 +146,11 @@ TEST_CASE("misc", "[misc]") {
        return 0x7 == (int)x;
      });
    }
+
+   SECTION("sign_ext", "[sign_ext]") {
+     CHECK(sign_ext<uint32_t>(0x0555, 16) == 0x00000555);
+     CHECK(sign_ext<uint32_t>(0xf555, 16) == 0xfffff555);
+     CHECK(sign_ext<uint32_t>(0x05555555, 32) == 0x05555555);
+     CHECK(sign_ext<uint32_t>(0xf5555555, 32) == 0xf5555555);
+   }
 }

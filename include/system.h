@@ -197,7 +197,7 @@ typedef void (*SystemFunc3)(block_type* out,
                             uint32_t out_size,
                             const block_type* lhs,
                             uint32_t lhs_size,
-                            uint32_t rhs);
+                            uint64_t rhs);
 
 typedef void (*SystemFunc4)(block_type* out,
                             uint32_t out_size,
@@ -226,7 +226,7 @@ template <typename R, typename A, typename B>
 auto make_system_op(SystemFunc3 func, const A& lhs, const B& rhs) {
   sdata_type ret(ch_width_v<R>);
   auto& u = system_accessor::data(lhs);
-  func(ret.words(), ch_width_v<R>, u.words(), u.size(), static_cast<uint32_t>(rhs));
+  func(ret.words(), ch_width_v<R>, u.words(), u.size(), static_cast<uint64_t>(rhs));
   return R(make_system_buffer(std::move(ret)));
 }
 
@@ -353,17 +353,13 @@ CH_SYSTEM_OPERATOR(system_op_shift)
   template <typename U,
             CH_REQUIRE_0(std::is_convertible_v<U, ch_scbit<ch_width_v<U>>>)>
   friend auto operator<<(const Derived& lhs, const U& rhs) {
-    return make_system_op<Derived, Derived, ch_scbit<ch_width_v<U>>>(bv_sll, lhs, rhs);
+    return make_system_op<Derived, Derived, ch_scbit<ch_width_v<U>>>(bv_shl, lhs, rhs);
   }
 
   template <typename U,
             CH_REQUIRE_0(std::is_convertible_v<U, ch_scbit<ch_width_v<U>>>)>
   friend auto operator>>(const Derived& lhs, const U& rhs) {
-    if constexpr (ch_signed_v<Derived>) {
-      return make_system_op<Derived, Derived, ch_scbit<ch_width_v<U>>>(bv_sra, lhs, rhs);
-    } else {
-      return make_system_op<Derived, Derived, ch_scbit<ch_width_v<U>>>(bv_srl, lhs, rhs);
-    }
+    return make_system_op<Derived, Derived, ch_scbit<ch_width_v<U>>>(bv_shr<ch_signed_v<Derived>>, lhs, rhs);
   }
 };
 
@@ -386,12 +382,7 @@ CH_SYSTEM_OPERATOR(system_op_cast)
 };
 
 CH_SYSTEM_OPERATOR(system_op_relational)
-  CH_SYSTEM_OPERATOR_IMPL(operator<, (
-      if constexpr (ch_signed_v<Derived>) {
-        return bv_slt(system_accessor::data(lhs).words(), system_accessor::data(rhs).words(), N);
-      } else {
-        return bv_ult(system_accessor::data(lhs).words(), system_accessor::data(rhs).words(), N);
-      }))
+  CH_SYSTEM_OPERATOR_IMPL(operator<, (return bv_lt<ch_signed_v<Derived>>(system_accessor::data(lhs).words(), system_accessor::data(rhs).words(), N);))
   CH_SYSTEM_OPERATOR_IMPL(operator>=, (return !(lhs < rhs)))
   CH_SYSTEM_OPERATOR_IMPL(operator>, (return (rhs < lhs)))
   CH_SYSTEM_OPERATOR_IMPL(operator<=, (return !(rhs < lhs)))
@@ -403,19 +394,11 @@ CH_SYSTEM_OPERATOR(system_op_arithmetic)
   }
   CH_SYSTEM_OPERATOR_IMPL(operator+, (return make_system_op<Derived>(bv_add, lhs, rhs)))
   CH_SYSTEM_OPERATOR_IMPL(operator-, (return make_system_op<Derived>(bv_sub, lhs, rhs)))
-  CH_SYSTEM_OPERATOR_IMPL(operator*, (return make_system_op<Derived>(bv_mult, lhs, rhs)))
+  CH_SYSTEM_OPERATOR_IMPL(operator*, (return make_system_op<Derived>(bv_mult<ch_signed_v<Derived>>, lhs, rhs)))
 
-  CH_SYSTEM_OPERATOR_IMPL(operator/, (if constexpr (ch_signed_v<Derived>) {
-                                         return make_system_op<Derived>(bv_sdiv, lhs, rhs);
-                                      } else {
-                                         return make_system_op<Derived>(bv_udiv, lhs, rhs);
-                                      }))
+  CH_SYSTEM_OPERATOR_IMPL(operator/, (return make_system_op<Derived>(bv_div<ch_signed_v<Derived>>, lhs, rhs);))
 
-  CH_SYSTEM_OPERATOR_IMPL(operator%, (if constexpr (ch_signed_v<Derived>) {
-                                        return make_system_op<Derived>(bv_smod, lhs, rhs);
-                                     } else {
-                                        return make_system_op<Derived>(bv_umod, lhs, rhs);
-                                     }))
+  CH_SYSTEM_OPERATOR_IMPL(operator%, (return make_system_op<Derived>(bv_mod<ch_signed_v<Derived>>, lhs, rhs);))
 };
 
 CH_SYSTEM_OPERATOR(system_op_slice)

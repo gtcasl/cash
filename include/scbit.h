@@ -46,11 +46,7 @@ public:
             CH_REQUIRE_0(ch_width_v<U> < N)>
   explicit ch_scbit(const U& other) {
     sdata_type ret(N);
-    if constexpr (ch_signed_v<U>) {
-      bv_sext(ret.words(), N, system_accessor::data(other).words(), ch_width_v<U>);
-    } else {
-      bv_zext(ret.words(), N, system_accessor::data(other).words(), ch_width_v<U>);
-    }
+    bv_pad<ch_signed_v<U>>(ret.words(), N, system_accessor::data(other).words(), ch_width_v<U>);
     buffer_ = make_system_buffer(std::move(ret));
   }
 

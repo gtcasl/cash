@@ -4,6 +4,7 @@
 #include <cash.h>
 #include "catch.h"
 
+using namespace ch::internal;
 using namespace ch::logic;
 using namespace ch::literals;
 using namespace ch::system;
