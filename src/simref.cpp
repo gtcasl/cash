@@ -17,6 +17,8 @@ using namespace ch::internal;
 
 using instr_map_t = std::unordered_map<uint32_t, const block_type*>;
 
+#define __aligned_sizeof(x) (4*((sizeof(x) + 3)/4))
+
 class instr_proxy_base : public instr_base {
 public:
 
@@ -100,8 +102,8 @@ instr_proxy_base* instr_proxy_base::create(proxyimpl* node, instr_map_t& map) {
 
   if (1 == num_ranges
    && node->range(0).length == dst_size) {
-    auto buf = new uint8_t[sizeof(instr_slice) + dst_bytes]();
-    auto buf_cur = buf + sizeof(instr_slice);
+    auto buf = new uint8_t[__aligned_sizeof(instr_slice) + dst_bytes]();
+    auto buf_cur = buf + __aligned_sizeof(instr_slice);
     auto dst = (block_type*)buf_cur;
     map[node->id()] = dst;
 
@@ -114,11 +116,11 @@ instr_proxy_base* instr_proxy_base::create(proxyimpl* node, instr_map_t& map) {
   } else {
     uint32_t range_bytes = 0;
     for (uint32_t i = 0; i < num_ranges; ++i) {
-      range_bytes += sizeof(instr_proxy::range_t);
+      range_bytes += __aligned_sizeof(instr_proxy::range_t);
     }
 
-    auto buf = new uint8_t[sizeof(instr_proxy) + dst_bytes + range_bytes]();
-    auto buf_cur = buf + sizeof(instr_proxy);
+    auto buf = new uint8_t[__aligned_sizeof(instr_proxy) + dst_bytes + range_bytes]();
+    auto buf_cur = buf + __aligned_sizeof(instr_proxy);
     auto dst = (block_type*)buf_cur;
     map[node->id()] = dst;
 
@@ -547,8 +549,8 @@ instr_alu_base* instr_alu_base::create(aluimpl* node, instr_map_t& map) {
     t_src1_bytes = sizeof(block_type) * ceildiv<uint32_t>(src1_size, bitwidth_v<block_type>);
   }
 
-  auto buf = new uint8_t[sizeof(instr_alu_base) + dst_bytes + t_src0_bytes + t_src1_bytes]();
-  auto buf_cur = buf + sizeof(instr_alu_base);
+  auto buf = new uint8_t[__aligned_sizeof(instr_alu_base) + dst_bytes + t_src0_bytes + t_src1_bytes]();
+  auto buf_cur = buf + __aligned_sizeof(instr_alu_base);
   auto dst = (block_type*)buf_cur;
   map[node->id()] = dst;
 
@@ -665,9 +667,9 @@ public:
     uint32_t dst_bytes = sizeof(block_type) * dst_nblocks;
     uint32_t src_bytes = sizeof(block_type*) * node->srcs().size();
 
-    auto buf = new uint8_t[sizeof(selectimpl) + dst_bytes + src_bytes]();
+    auto buf = new uint8_t[__aligned_sizeof(instr_select) + dst_bytes + src_bytes]();
 
-    auto buf_cur = buf + sizeof(selectimpl);
+    auto buf_cur = buf + __aligned_sizeof(instr_select);
     auto dst = (block_type*)buf_cur;
     map[node->id()] = dst;
 
@@ -735,8 +737,8 @@ public:
     uint32_t nblocks   = ceildiv<uint32_t>(dst_size, bitwidth_v<block_type>);
     uint32_t dst_bytes = sizeof(block_type) * nblocks;
 
-    auto buf = new uint8_t[sizeof(cdimpl) + dst_bytes]();
-    auto buf_cur = buf + sizeof(cdimpl);
+    auto buf = new uint8_t[__aligned_sizeof(instr_cd) + dst_bytes]();
+    auto buf_cur = buf + __aligned_sizeof(instr_cd);
     auto dst = (block_type*)buf_cur;
     map[node->id()] = dst;
 
@@ -870,8 +872,8 @@ instr_reg_base* instr_reg_base::create(regimpl* node, instr_map_t& map) {
   uint32_t pipe_size = dst_size * (node->length() - 1);
   uint32_t pipe_bytes = sizeof(block_type) * ceildiv<uint32_t>(pipe_size, bitwidth_v<block_type>);
 
-  auto buf = new uint8_t[sizeof(instr_reg_base) + dst_bytes + pipe_bytes]();
-  auto buf_cur = buf + sizeof(instr_reg_base);
+  auto buf = new uint8_t[__aligned_sizeof(instr_reg_base) + dst_bytes + pipe_bytes]();
+  auto buf_cur = buf + __aligned_sizeof(instr_reg_base);
   auto dst = (block_type*)buf_cur;
   map[node->id()] = dst;
 
@@ -980,8 +982,8 @@ public:
       wrports_bytes += sizeof(wrport_t);
     }
 
-    auto buf = new uint8_t[sizeof(instr_mem) + dst_bytes + rdports_bytes + wrports_bytes]();
-    auto buf_cur = buf + sizeof(instr_mem);
+    auto buf = new uint8_t[__aligned_sizeof(instr_mem) + dst_bytes + rdports_bytes + wrports_bytes]();
+    auto buf_cur = buf + __aligned_sizeof(instr_mem);
     auto dst = (block_type*)buf_cur;
     map[node->id()] = dst;
 
@@ -1065,8 +1067,8 @@ public:
     uint32_t nblocks   = ceildiv<uint32_t>(dst_size, bitwidth_v<block_type>);
     uint32_t dst_bytes = sizeof(block_type) * nblocks;
 
-    auto buf = new uint8_t[sizeof(mrportimpl) + dst_bytes]();
-    auto buf_cur = buf + sizeof(mrportimpl);
+    auto buf = new uint8_t[__aligned_sizeof(instr_mrport) + dst_bytes]();
+    auto buf_cur = buf + __aligned_sizeof(instr_mrport);
     auto dst = (block_type*)buf_cur;
     map[node->id()] = dst;
 
