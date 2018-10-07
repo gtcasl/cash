@@ -26,11 +26,19 @@ public:
 
 protected:
 
+  struct range_t {
+    const block_type* src_data;
+    uint32_t src_offset;
+    uint32_t dst_offset;
+    uint32_t length;
+  };
+
   instr_proxy_base(block_type* dst) : dst_(dst) {}
 
   block_type* dst_;
 };
 
+template <bool is_scalar>
 class instr_slice : public instr_proxy_base {
 public:
 
@@ -40,7 +48,11 @@ public:
   }
 
   void eval() override {
-    bv_slice(dst_, dst_size_, src_data_, src_offset_);
+    if constexpr (is_scalar) {
+      bv_slice_scalar(dst_, dst_size_, src_data_, src_offset_);
+    } else {
+      bv_slice_vector(dst_, dst_size_, src_data_, src_offset_);
+    }
   }
 
 private:
@@ -59,15 +71,9 @@ private:
   friend class instr_proxy_base;
 };
 
+template <bool is_scalar>
 class instr_proxy : public instr_proxy_base {
 private:
-
-  struct range_t {
-    const block_type* src_data;
-    uint32_t src_offset;
-    uint32_t dst_offset;
-    uint32_t length;
-  };
 
   const range_t* ranges_;
   uint32_t num_ranges_;
@@ -88,8 +94,27 @@ public:
   }
 
   void eval() override {
-    for (const range_t *r = ranges_, *r_end = r + num_ranges_ ;r != r_end; ++r) {
-      bv_copy(dst_, r->dst_offset, r->src_data, r->src_offset, r->length);
+    if constexpr (is_scalar) {
+      block_type src_block;
+      uint32_t dst_offset;
+      const range_t *r0 = ranges_;
+      {
+        uint32_t lr = (bitwidth_v<block_type> - r0->length);
+        src_block = ((r0->src_data[0] >> r0->src_offset) << lr) >> lr;
+        dst_offset = r0->length;
+      }
+      for (const range_t *r = r0 + 1, *r_end = r0 + num_ranges_ ;r != r_end; ++r) {
+        uint32_t lr = (bitwidth_v<block_type> - r->length);
+        src_block |= (((r->src_data[0] >> r->src_offset) << lr) >> lr) << dst_offset;
+        dst_offset += r->length;
+      }
+      dst_[0] = src_block;
+    } else {
+      for (const range_t *r = ranges_, *r_end = r + num_ranges_ ;r != r_end; ++r) {
+        auto dst = dst_ + (r->dst_offset / bitwidth_v<block_type>);
+        auto dst_offset = r->dst_offset % bitwidth_v<block_type>;
+        bv_copy_vector(dst, dst_offset, r->src_data, r->src_offset, r->length);
+      }
     }
   }
 };
@@ -102,74 +127,116 @@ instr_proxy_base* instr_proxy_base::create(proxyimpl* node, instr_map_t& map) {
 
   if (1 == num_ranges
    && node->range(0).length == dst_size) {
-    auto buf = new uint8_t[__aligned_sizeof(instr_slice) + dst_bytes]();
-    auto buf_cur = buf + __aligned_sizeof(instr_slice);
+    auto buf = new uint8_t[__aligned_sizeof(instr_slice<false>) + dst_bytes]();
+    auto buf_cur = buf + __aligned_sizeof(instr_slice<false>);
     auto dst = (block_type*)buf_cur;
     map[node->id()] = dst;
 
     auto& src_range = node->range(0);
     auto& src = node->src(src_range.src_idx);
-    auto src_data = map.at(src.id());
-    auto src_offset = src_range.src_offset;
+    auto src_data = map.at(src.id()) + src_range.src_offset / bitwidth_v<block_type>;
+    auto src_offset = src_range.src_offset % bitwidth_v<block_type>;
 
-    return new (buf) instr_slice(dst, dst_size, src_data, src_offset);
+    bool is_scalar = (src_offset + dst_size <= bitwidth_v<block_type>);
+    if (is_scalar) {
+      return new (buf) instr_slice<true>(dst, dst_size, src_data, src_offset);
+    } else {
+      return new (buf) instr_slice<false>(dst, dst_size, src_data, src_offset);
+    }
   } else {
     uint32_t range_bytes = 0;
     for (uint32_t i = 0; i < num_ranges; ++i) {
-      range_bytes += __aligned_sizeof(instr_proxy::range_t);
+      range_bytes += __aligned_sizeof(instr_proxy_base::range_t);
     }
 
-    auto buf = new uint8_t[__aligned_sizeof(instr_proxy) + dst_bytes + range_bytes]();
-    auto buf_cur = buf + __aligned_sizeof(instr_proxy);
+    auto buf = new uint8_t[__aligned_sizeof(instr_proxy<false>) + dst_bytes + range_bytes]();
+    auto buf_cur = buf + __aligned_sizeof(instr_proxy<false>);
     auto dst = (block_type*)buf_cur;
     map[node->id()] = dst;
 
     buf_cur += dst_bytes;
 
-    auto ranges = (instr_proxy::range_t*)buf_cur;
+    bool is_scalar = true;
+
+    uint32_t src_length = 0;
+    auto ranges = (instr_proxy_base::range_t*)buf_cur;
     for (uint32_t i = 0; i < num_ranges; ++i) {
       auto& dst_range = ranges[i];
       auto& src_range = node->range(i);
       auto& src = node->src(src_range.src_idx);
-      dst_range.src_data   = map.at(src.id());
-      dst_range.src_offset = src_range.src_offset;
+      dst_range.src_data   = map.at(src.id()) + (src_range.src_offset / bitwidth_v<block_type>);
+      dst_range.src_offset = src_range.src_offset % bitwidth_v<block_type>;
       dst_range.dst_offset = src_range.dst_offset;
       dst_range.length     = src_range.length;
-    }
 
-    return new (buf) instr_proxy(dst, ranges, num_ranges);
+      is_scalar &= (dst_range.dst_offset + dst_range.length) <= bitwidth_v<block_type>;
+      src_length += src_range.length;
+    }
+    is_scalar &= (src_length == dst_size);
+
+    if (is_scalar) {
+      return new (buf) instr_proxy<true>(dst, ranges, num_ranges);
+    } else {
+      return new (buf) instr_proxy<false>(dst, ranges, num_ranges);
+    }
   }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class instr_output : public instr_base {
+class instr_output_base : public instr_base {
 public:
 
-  static instr_output* create(outputimpl* node, instr_map_t& map) {
-    return new instr_output(node, map);
-  }
+  static instr_output_base* create(ioportimpl* node, instr_map_t& map);
+
+protected:
+
+  instr_output_base(block_type* dst, const block_type* src, uint32_t size)
+    : dst_(dst)
+    , src_(src)
+    , size_(size)
+  {}
+
+  block_type* dst_;
+  const block_type* src_;
+  uint32_t size_;
+};
+
+template <bool is_scalar>
+class instr_output : public instr_output_base {
+public:
 
   void destroy () override {
     delete this;
   }
 
   void eval() override {
-    bv_copy(dst_, src_, size_);
+    if constexpr (is_scalar) {
+      bv_copy_scalar(dst_, src_);
+    } else {
+      bv_copy_vector(dst_, src_, size_);
+    }
   }
 
 private:
 
-  instr_output(outputimpl* node, instr_map_t& map)
-    : src_(map.at(node->src(0).id()))
-    , dst_(node->value()->words())
-    , size_(node->size())
+  instr_output(block_type* dst, const block_type* src, uint32_t size)
+    : instr_output_base(dst, src, size)
   {}
 
-  const block_type* src_;
-  block_type* dst_;
-  uint32_t size_;
+  friend class instr_output_base;
 };
+
+instr_output_base* instr_output_base::create(ioportimpl* node, instr_map_t& map) {
+  auto dst  = node->value()->words();
+  auto src  = map.at(node->src(0).id());
+  auto size = node->size();
+  if (size <= bitwidth_v<block_type>) {
+    return new instr_output<true>(dst, src, size);
+  } else {
+    return new instr_output<false>(dst, src, size);
+  }
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -574,8 +641,8 @@ instr_alu_base* instr_alu_base::create(aluimpl* node, instr_map_t& map) {
 
 #define CREATE_ALU_INST(op, sign_enable, resize_enable) \
   case op: \
-    if (sign_enable && is_signed) { \
-      if (is_scalar) { \
+    if (is_scalar) { \
+      if (sign_enable && is_signed) { \
         if (resize_enable && resize_opds) { \
           return new (buf) instr_alu<op, true, true, true>(o_src0, o_src0_size, \
                                                            o_src1, o_src1_size, src0, src0_size, \
@@ -587,18 +654,6 @@ instr_alu_base* instr_alu_base::create(aluimpl* node, instr_map_t& map) {
         }  \
       } else { \
         if (resize_enable && resize_opds) { \
-          return new (buf) instr_alu<op, true, false, true>(o_src0, o_src0_size, \
-                                                            o_src1, o_src1_size, src0, src0_size, \
-                                                            src1, src1_size, dst, dst_size); \
-        } else { \
-          return new (buf) instr_alu<op, true, false, false>(o_src0, o_src0_size, \
-                                                             o_src1, o_src1_size, src0, src0_size, \
-                                                             src1, src1_size, dst, dst_size); \
-        }  \
-      } \
-    } else { \
-      if (is_scalar) { \
-        if (resize_enable && resize_opds) { \
           return new (buf) instr_alu<op, false, true, true>(o_src0, o_src0_size, \
                                                             o_src1, o_src1_size, src0, src0_size, \
                                                             src1, src1_size, dst, dst_size); \
@@ -607,6 +662,18 @@ instr_alu_base* instr_alu_base::create(aluimpl* node, instr_map_t& map) {
                                                              o_src1, o_src1_size, src0, src0_size, \
                                                              src1, src1_size, dst, dst_size); \
         } \
+      } \
+    } else { \
+      if (sign_enable && is_signed) { \
+        if (resize_enable && resize_opds) { \
+          return new (buf) instr_alu<op, true, false, true>(o_src0, o_src0_size, \
+                                                            o_src1, o_src1_size, src0, src0_size, \
+                                                            src1, src1_size, dst, dst_size); \
+        } else { \
+          return new (buf) instr_alu<op, true, false, false>(o_src0, o_src0_size, \
+                                                             o_src1, o_src1_size, src0, src0_size, \
+                                                             src1, src1_size, dst, dst_size); \
+        }  \
       } else { \
         if (resize_enable && resize_opds) { \
           return new (buf) instr_alu<op, false, false, true>(o_src0, o_src0_size, \
@@ -811,7 +878,7 @@ protected:
   uint32_t size_;
 };
 
-template <bool is_pipe, bool has_init, bool has_enable>
+template <bool is_scalar, bool is_pipe, bool has_init, bool has_enable>
 class instr_reg : public instr_reg_base {
 public:
 
@@ -825,33 +892,64 @@ public:
     if (!static_cast<bool>(cd_[0]))
       return;
 
-    if constexpr (has_init) {
-      // check reset state
-      if (reset_ && static_cast<bool>(reset_[0])) {
-        bv_copy(dst_, initdata_, size_);
-        if constexpr (is_pipe) {
-          for (uint32_t i = 0; i < pipe_size_; i+= size_) {
-            bv_copy(pipe_, i, initdata_, 0, size_);
+    if constexpr (is_scalar) {
+      if constexpr (has_init) {
+        // check reset state
+        if (reset_ && static_cast<bool>(reset_[0])) {
+          bv_copy_scalar(dst_, initdata_);
+          if constexpr (is_pipe) {
+            for (uint32_t i = 0; i < pipe_size_; i+= size_) {
+              bv_copy_scalar(pipe_, i, initdata_, 0, size_);
+            }
           }
+          return;
         }
-        return;
       }
-    }
 
-    if constexpr (has_enable) {
-      // check enable state
-      if (enable_ && !static_cast<bool>(enable_[0]))
-        return;
-    }
+      if constexpr (has_enable) {
+        // check enable state
+        if (enable_ && !static_cast<bool>(enable_[0]))
+          return;
+      }
 
-    if constexpr (is_pipe) {
-      // advance pipeline
-      bv_slice(dst_, size_, pipe_, 0);
-      bv_shr<false>(pipe_, pipe_size_, pipe_, pipe_size_, size_);
-      bv_copy(pipe_, pipe_size_ - size_, next_, 0, size_);
+      if constexpr (is_pipe) {
+        // advance pipeline
+        bv_slice_scalar(dst_, size_, pipe_, 0);
+        bv_shr_scalar<false>(pipe_, pipe_size_, pipe_, pipe_size_, size_);
+        bv_copy_scalar(pipe_, pipe_size_ - size_, next_, 0, size_);
+      } else {
+        // push next value
+        bv_copy_scalar(dst_, next_);
+      }
     } else {
-      // push next value
-      bv_copy(dst_, next_, size_);
+      if constexpr (has_init) {
+        // check reset state
+        if (reset_ && static_cast<bool>(reset_[0])) {
+          bv_copy(dst_, initdata_, size_);
+          if constexpr (is_pipe) {
+            for (uint32_t i = 0; i < pipe_size_; i+= size_) {
+              bv_copy(pipe_, i, initdata_, 0, size_);
+            }
+          }
+          return;
+        }
+      }
+
+      if constexpr (has_enable) {
+        // check enable state
+        if (enable_ && !static_cast<bool>(enable_[0]))
+          return;
+      }
+
+      if constexpr (is_pipe) {
+        // advance pipeline
+        bv_slice(dst_, size_, pipe_, 0);
+        bv_shr<false>(pipe_, pipe_size_, pipe_, pipe_size_, size_);
+        bv_copy(pipe_, pipe_size_ - size_, next_, 0, size_);
+      } else {
+        // push next value
+        bv_copy(dst_, next_, size_);
+      }
     }
   }
 
@@ -880,32 +978,65 @@ instr_reg_base* instr_reg_base::create(regimpl* node, instr_map_t& map) {
   buf_cur += dst_bytes;
   auto pipe = (block_type*)buf_cur;
 
-  if (1 == node->length()) {
-    if (node->has_init_data()) {
-      if (node->has_enable()) {
-        return new (buf) instr_reg<false, true, true>(pipe, pipe_size, dst, dst_size);
+  bool is_scalar = (dst_size <= sizeof(block_type)) && (pipe_size <= sizeof(block_type));
+  if (is_scalar) {
+    if (1 == node->length()) {
+      if (node->has_init_data()) {
+        if (node->has_enable()) {
+          return new (buf) instr_reg<true, false, true, true>(pipe, pipe_size, dst, dst_size);
+        } else {
+          return new (buf) instr_reg<true, false, true, false>(pipe, pipe_size, dst, dst_size);
+        }
       } else {
-        return new (buf) instr_reg<false, true, false>(pipe, pipe_size, dst, dst_size);
+        if (node->has_enable()) {
+          return new (buf) instr_reg<true, false, false, true>(pipe, pipe_size, dst, dst_size);
+        } else {
+          return new (buf) instr_reg<true, false, false, false>(pipe, pipe_size, dst, dst_size);
+        }
       }
     } else {
-      if (node->has_enable()) {
-        return new (buf) instr_reg<false, false, true>(pipe, pipe_size, dst, dst_size);
+      if (node->has_init_data()) {
+        if (node->has_enable()) {
+          return new (buf) instr_reg<true, true, true, true>(pipe, pipe_size, dst, dst_size);
+        } else {
+          return new (buf) instr_reg<true, true, true, false>(pipe, pipe_size, dst, dst_size);
+        }
       } else {
-        return new (buf) instr_reg<false, false, false>(pipe, pipe_size, dst, dst_size);
+        if (node->has_enable()) {
+          return new (buf) instr_reg<true, true, false, true>(pipe, pipe_size, dst, dst_size);
+        } else {
+          return new (buf) instr_reg<true, true, false, false>(pipe, pipe_size, dst, dst_size);
+        }
       }
     }
   } else {
-    if (node->has_init_data()) {
-      if (node->has_enable()) {
-        return new (buf) instr_reg<true, true, true>(pipe, pipe_size, dst, dst_size);
+    if (1 == node->length()) {
+      if (node->has_init_data()) {
+        if (node->has_enable()) {
+          return new (buf) instr_reg<false, false, true, true>(pipe, pipe_size, dst, dst_size);
+        } else {
+          return new (buf) instr_reg<false, false, true, false>(pipe, pipe_size, dst, dst_size);
+        }
       } else {
-        return new (buf) instr_reg<true, true, false>(pipe, pipe_size, dst, dst_size);
+        if (node->has_enable()) {
+          return new (buf) instr_reg<false, false, false, true>(pipe, pipe_size, dst, dst_size);
+        } else {
+          return new (buf) instr_reg<false, false, false, false>(pipe, pipe_size, dst, dst_size);
+        }
       }
     } else {
-      if (node->has_enable()) {
-        return new (buf) instr_reg<true, false, true>(pipe, pipe_size, dst, dst_size);
+      if (node->has_init_data()) {
+        if (node->has_enable()) {
+          return new (buf) instr_reg<false, true, true, true>(pipe, pipe_size, dst, dst_size);
+        } else {
+          return new (buf) instr_reg<false, true, true, false>(pipe, pipe_size, dst, dst_size);
+        }
       } else {
-        return new (buf) instr_reg<true, false, false>(pipe, pipe_size, dst, dst_size);
+        if (node->has_enable()) {
+          return new (buf) instr_reg<false, true, false, true>(pipe, pipe_size, dst, dst_size);
+        } else {
+          return new (buf) instr_reg<false, true, false, false>(pipe, pipe_size, dst, dst_size);
+        }
       }
     }
   }
@@ -1108,36 +1239,6 @@ private:
   block_type* dst_;
   uint32_t dst_size_;
   uint32_t addr_size_;
-};
-
-///////////////////////////////////////////////////////////////////////////////
-
-class instr_tap : public instr_base {
-public:
-
-  static instr_tap* create(tapimpl* node, instr_map_t& map) {
-    return new instr_tap(node, map);
-  }
-
-  void destroy () override {
-    delete this;
-  }
-
-  void eval() override {
-    bv_copy(dst_, src_, size_);
-  }
-
-private:
-
-  instr_tap(tapimpl* node, instr_map_t& map)
-    : src_(map.at(node->src(0).id()))
-    , dst_(node->value()->words())
-    , size_(node->size())
-  {}
-
-  const block_type* src_;
-  block_type* dst_;
-  uint32_t size_;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1437,7 +1538,7 @@ void simref::initialize(const std::vector<lnodeimpl*>& eval_list) {
       instr_map[node->id()] = this->create_constants(reinterpret_cast<litimpl*>(node));
       break;
     case type_proxy:
-      instrs_.emplace_back(instr_proxy::create(reinterpret_cast<proxyimpl*>(node), instr_map));
+      instrs_.emplace_back(instr_proxy_base::create(reinterpret_cast<proxyimpl*>(node), instr_map));
       break;
     case type_input: {
       auto input = reinterpret_cast<inputimpl*>(node);
@@ -1451,7 +1552,7 @@ void simref::initialize(const std::vector<lnodeimpl*>& eval_list) {
       auto output = reinterpret_cast<outputimpl*>(node);
       instr_map[node->id()] = instr_map.at(output->src(0).id());
       if (!output->has_binding()) {
-        instrs_.emplace_back(instr_output::create(output, instr_map));
+        instrs_.emplace_back(instr_output_base::create(output, instr_map));
       }
     } break;
     case type_alu:
@@ -1490,7 +1591,7 @@ void simref::initialize(const std::vector<lnodeimpl*>& eval_list) {
       instr_map[node->id()] = instr_map.at(reinterpret_cast<bindportimpl*>(node)->ioport().id());
       break;
     case type_tap:
-      instrs_.emplace_back(instr_tap::create(reinterpret_cast<tapimpl*>(node), instr_map));
+      instrs_.emplace_back(instr_output_base::create(reinterpret_cast<tapimpl*>(node), instr_map));
       break;
     case type_assert:
       instrs_.emplace_back(instr_assert::create(reinterpret_cast<assertimpl*>(node), instr_map));

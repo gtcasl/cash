@@ -357,14 +357,26 @@ void bv_pad(T* out, uint32_t out_size, const T* in, uint32_t in_size) {
 }
 
 template <typename T>
+void bv_copy_scalar(T* out, const T* in) {
+  out[0] = in[0];
+}
+
+template <typename T>
+void bv_copy_vector(T* out, const T* in, uint32_t size) {
+  static constexpr uint32_t WORD_SIZE = bitwidth_v<T>;
+
+  uint32_t num_words = ceildiv(size, WORD_SIZE);
+  std::copy_n(in, num_words, out);
+}
+
+template <typename T>
 void bv_copy(T* out, const T* in, uint32_t size) {
   static constexpr uint32_t WORD_SIZE = bitwidth_v<T>;
 
   if (size <= WORD_SIZE) {
-    out[0] = in[0];
+    bv_copy_scalar(out , in);
   } else {
-    uint32_t num_words = ceildiv(size, WORD_SIZE);
-    std::copy_n(in, num_words, out);
+    bv_copy_vector(out , in, size);
   }
 }
 
@@ -374,6 +386,7 @@ void bv_copy_scalar(T* w_dst, uint32_t w_dst_begin_rem,
                     uint32_t length) {
   static unsigned constexpr WORD_SIZE = bitwidth_v<T>;
   static constexpr T        WORD_MAX  = std::numeric_limits<T>::max();
+  assert(w_src_begin_rem < WORD_SIZE);
 
   T src_block = (w_src[0] >> w_src_begin_rem) << w_dst_begin_rem;
   T mask = (WORD_MAX >> (WORD_SIZE - length)) << w_dst_begin_rem;
@@ -386,6 +399,8 @@ void bv_copy_vector_small(T* w_dst, uint32_t w_dst_begin_rem,
                           uint32_t length) {
   static unsigned constexpr WORD_SIZE = bitwidth_v<T>;
   static constexpr T        WORD_MAX  = std::numeric_limits<T>::max();
+  assert(w_dst_begin_rem < WORD_SIZE);
+  assert(w_src_begin_rem < WORD_SIZE);
 
   uint32_t dst_end       = w_dst_begin_rem + length - 1;
   uint32_t w_dst_end_rem = dst_end % WORD_SIZE;
@@ -409,6 +424,7 @@ void bv_copy_vector_aligned(T* w_dst, uint32_t w_dst_begin_rem,
   static unsigned constexpr WORD_SIZE = bitwidth_v<T>;
   static constexpr unsigned WORD_MASK = WORD_SIZE - 1;
   static constexpr T        WORD_MAX  = std::numeric_limits<T>::max();
+  assert(w_dst_begin_rem < WORD_SIZE);
 
   uint32_t dst_end       = w_dst_begin_rem + length - 1;
   uint32_t w_dst_end_idx = (dst_end / WORD_SIZE);
@@ -432,9 +448,12 @@ void bv_copy_vector_aligned_dst(T* w_dst, uint32_t w_dst_begin_rem,
                                 uint32_t length) {
   static unsigned constexpr WORD_SIZE = bitwidth_v<T>;
   static constexpr T        WORD_MAX  = std::numeric_limits<T>::max();
+  assert(w_dst_begin_rem < WORD_SIZE);
+  assert(w_src_begin_rem < WORD_SIZE);
 
   uint32_t src_end       = w_src_begin_rem + length - 1;
   uint32_t w_src_end_idx = (src_end / WORD_SIZE);
+
   uint32_t dst_end       = w_dst_begin_rem + length - 1;
   uint32_t w_dst_end_idx = (dst_end / WORD_SIZE);
   uint32_t w_dst_end_rem = dst_end % WORD_SIZE;
@@ -467,9 +486,12 @@ void bv_copy_vector_aligned_src(T* w_dst, uint32_t w_dst_begin_rem,
   static unsigned constexpr WORD_SIZE = bitwidth_v<T>;
   static constexpr unsigned WORD_MASK = WORD_SIZE - 1;
   static constexpr T        WORD_MAX  = std::numeric_limits<T>::max();
+  assert(w_dst_begin_rem < WORD_SIZE);
+  assert(w_src_begin_rem < WORD_SIZE);
 
   uint32_t src_end       = w_src_begin_rem + length - 1;
   uint32_t w_src_end_idx = (src_end / WORD_SIZE);
+
   uint32_t dst_end       = w_dst_begin_rem + length - 1;
   uint32_t w_dst_end_idx = (dst_end / WORD_SIZE);
   uint32_t w_dst_end_rem = dst_end % WORD_SIZE;
@@ -504,9 +526,12 @@ void bv_copy_vector_unaligned(T* w_dst, uint32_t w_dst_begin_rem,
   static unsigned constexpr WORD_SIZE = bitwidth_v<T>;
   static constexpr unsigned WORD_MASK = WORD_SIZE - 1;
   static constexpr T        WORD_MAX  = std::numeric_limits<T>::max();
+  assert(w_dst_begin_rem < WORD_SIZE);
+  assert(w_src_begin_rem < WORD_SIZE);
 
   uint32_t src_end       = w_src_begin_rem + length - 1;
   uint32_t w_src_end_idx = (src_end / WORD_SIZE);
+
   uint32_t dst_end       = w_dst_begin_rem + length - 1;
   uint32_t w_dst_end_idx = (dst_end / WORD_SIZE);
   uint32_t w_dst_end_rem = dst_end % WORD_SIZE;
@@ -543,23 +568,10 @@ void bv_copy_vector_unaligned(T* w_dst, uint32_t w_dst_begin_rem,
 }
 
 template <typename T>
-void bv_copy(T* dst, uint32_t dst_offset,
-             const T* src, uint32_t src_offset,
-             uint32_t length) {
+void bv_copy_vector(T* w_dst, uint32_t w_dst_begin_rem,
+                    const T* w_src, uint32_t w_src_begin_rem,
+                    uint32_t length) {
   static unsigned constexpr WORD_SIZE = bitwidth_v<T>;
-
-  if ((dst_offset + length) <= WORD_SIZE
-   && (src_offset + length) <= WORD_SIZE) {
-    bv_copy_scalar(dst, dst_offset, src, src_offset, length);
-    return;
-  }
-
-  uint32_t w_dst_begin_idx = dst_offset / WORD_SIZE;
-  uint32_t w_dst_begin_rem = dst_offset % WORD_SIZE;
-  auto w_dst               = dst + w_dst_begin_idx;
-  uint32_t w_src_begin_idx = src_offset / WORD_SIZE;
-  uint32_t w_src_begin_rem = src_offset % WORD_SIZE;
-  auto w_src               = src + w_src_begin_idx;
 
   if (length <= WORD_SIZE) {
     bv_copy_vector_small(w_dst, w_dst_begin_rem, w_src, w_src_begin_rem, length);
@@ -578,10 +590,42 @@ void bv_copy(T* dst, uint32_t dst_offset,
 }
 
 template <typename T>
-void bv_slice_scalar(T* dst, uint32_t dst_size, const T* src, uint32_t src_offset) {
+void bv_copy(T* dst, uint32_t dst_offset,
+             const T* src, uint32_t src_offset,
+             uint32_t length) {
   static unsigned constexpr WORD_SIZE = bitwidth_v<T>;
 
-  T src_block = src[0] >> src_offset;
+  if ((dst_offset + length) <= WORD_SIZE
+   && (src_offset + length) <= WORD_SIZE) {
+    bv_copy_scalar(dst, dst_offset, src, src_offset, length);
+  } else {
+    auto w_dst = dst + (dst_offset / WORD_SIZE);
+    uint32_t w_dst_begin_rem = dst_offset % WORD_SIZE;
+    auto w_src = src + (src_offset / WORD_SIZE);
+    uint32_t w_src_begin_rem = src_offset % WORD_SIZE;
+    if (length <= WORD_SIZE) {
+      bv_copy_vector_small(w_dst, w_dst_begin_rem, w_src, w_src_begin_rem, length);
+    } else
+    if (0 == (w_dst_begin_rem | w_src_begin_rem)) {
+      bv_copy_vector_aligned(w_dst, w_dst_begin_rem, w_src, length);
+    } else
+    if (0 == w_dst_begin_rem) {
+      bv_copy_vector_aligned_dst(w_dst, w_dst_begin_rem, w_src, w_src_begin_rem, length);
+    } else
+    if (0 == w_src_begin_rem) {
+      bv_copy_vector_aligned_src(w_dst, w_dst_begin_rem, w_src, w_src_begin_rem, length);
+    } else {
+      bv_copy_vector_unaligned(w_dst, w_dst_begin_rem, w_src, w_src_begin_rem, length);
+    }
+  }
+}
+
+template <typename T>
+void bv_slice_scalar(T* dst, uint32_t dst_size, const T* w_src, uint32_t w_src_begin_rem) {
+  static unsigned constexpr WORD_SIZE = bitwidth_v<T>;
+  assert(w_src_begin_rem < WORD_SIZE);
+
+  T src_block = w_src[0] >> w_src_begin_rem;
   uint32_t rem = (WORD_SIZE - dst_size);
   dst[0] = T(src_block << rem) >> rem;
 }
@@ -589,6 +633,7 @@ void bv_slice_scalar(T* dst, uint32_t dst_size, const T* src, uint32_t src_offse
 template <typename T>
 void bv_slice_vector_small(T* dst, uint32_t dst_size, const T* w_src, uint32_t w_src_begin_rem) {
   static unsigned constexpr WORD_SIZE = bitwidth_v<T>;
+  assert(w_src_begin_rem < WORD_SIZE);
 
   T src_block = w_src[0] >> w_src_begin_rem;
   if (w_src_begin_rem + dst_size > WORD_SIZE) {
@@ -621,9 +666,11 @@ void bv_slice_vector_aligned(T* dst, uint32_t dst_size, const T* w_src) {
 template <typename T>
 void bv_slice_vector_unaligned(T* dst, uint32_t dst_size, const T* w_src, uint32_t w_src_begin_rem) {
   static unsigned constexpr WORD_SIZE = bitwidth_v<T>;
+  assert(w_src_begin_rem < WORD_SIZE);
 
   uint32_t src_end       = w_src_begin_rem + dst_size - 1;
   uint32_t w_src_end_idx = (src_end / WORD_SIZE);
+
   uint32_t dst_end       = dst_size - 1;
   uint32_t w_dst_end_idx = (dst_end / WORD_SIZE);
   uint32_t w_dst_end_rem = dst_end % WORD_SIZE;
@@ -650,17 +697,9 @@ void bv_slice_vector_unaligned(T* dst, uint32_t dst_size, const T* w_src, uint32
 }
 
 template <typename T>
-void bv_slice(T* dst, uint32_t dst_size, const T* src, uint32_t src_offset) {
+void bv_slice_vector(T* dst, uint32_t dst_size, const T* w_src, uint32_t w_src_begin_rem) {
   static constexpr uint32_t WORD_SIZE = bitwidth_v<T>;
-
-  if (src_offset + dst_size <= WORD_SIZE) {
-    bv_slice_scalar(dst, dst_size, src, src_offset);
-    return;
-  }
-
-  uint32_t w_src_begin_idx = src_offset / WORD_SIZE;
-  uint32_t w_src_begin_rem = src_offset % WORD_SIZE;
-  auto w_src               = src + w_src_begin_idx;
+  assert(w_src_begin_rem < WORD_SIZE);
 
   if (dst_size <= WORD_SIZE) {
     bv_slice_vector_small(dst, dst_size, w_src, w_src_begin_rem);
@@ -669,6 +708,26 @@ void bv_slice(T* dst, uint32_t dst_size, const T* src, uint32_t src_offset) {
     bv_slice_vector_aligned(dst, dst_size, w_src);
   } else {
     bv_slice_vector_unaligned(dst, dst_size, w_src, w_src_begin_rem);
+  }
+}
+
+template <typename T>
+void bv_slice(T* dst, uint32_t dst_size, const T* src, uint32_t src_offset) {
+  static constexpr uint32_t WORD_SIZE = bitwidth_v<T>;
+
+  if (src_offset + dst_size <= WORD_SIZE) {
+    bv_slice_scalar(dst, dst_size, src, src_offset);
+  } else {
+    auto w_src = src + (src_offset / WORD_SIZE);
+    uint32_t w_src_begin_rem = src_offset % WORD_SIZE;
+    if (dst_size <= WORD_SIZE) {
+      bv_slice_vector_small(dst, dst_size, w_src, w_src_begin_rem);
+    } else
+    if (0 == w_src_begin_rem) {
+      bv_slice_vector_aligned(dst, dst_size, w_src);
+    } else {
+      bv_slice_vector_unaligned(dst, dst_size, w_src, w_src_begin_rem);
+    }
   }
 }
 
@@ -1203,7 +1262,7 @@ void bv_abs_vector(T* out, const T* in, uint32_t size) {
   if (bv_is_neg_vector(in, size)) {
     bv_neg_vector(out, in, size);
   } else {
-    bv_copy(out, in, size);
+    bv_copy_vector(out, in, size);
   }
 }
 
