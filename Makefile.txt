@@ -1,5 +1,5 @@
 #CXX = clang-6.0
-#CXX = g++-7.3
+CXX = g++-7.3
 
 PREFIX ?= /usr/local
 
@@ -8,59 +8,69 @@ CXXFLAGS += -fPIC -std=c++17 -O3 -DNDEBUG -I$(CASH_HOME)/include -Wall -Wextra -
 
 LDFLAGS += -shared -L$(CURDIR)/lib
 
-# Target
-TARGET_DIR := lib
-
 PROJECT = libcash
 
-SRCS = ../src/utils.cpp \
-       ../src/platform.cpp \
-       ../src/system.cpp \
-       ../src/lnodeimpl.cpp \
-       ../src/ioimpl.cpp \
-       ../src/proxyimpl.cpp \
-       ../src/cdimpl.cpp \
-       ../src/litimpl.cpp \
-       ../src/regimpl.cpp \
-       ../src/memimpl.cpp \
-       ../src/selectimpl.cpp \
-       ../src/aluimpl.cpp \
-       ../src/bindimpl.cpp \
-       ../src/assertimpl.cpp \
-       ../src/timeimpl.cpp \
-       ../src/printimpl.cpp \
-       ../src/udfimpl.cpp \
-       ../src/lnode.cpp \
-       ../src/logic.cpp \
-       ../src/context.cpp \
-       ../src/compile.cpp \
-       ../src/simref.cpp \
-       ../src/simjit.cpp \
-       ../src/deviceimpl.cpp \
-       ../src/simulatorimpl.cpp \
-       ../src/tracerimpl.cpp \
-       ../src/verilogwriter.cpp \
-       ../src/firrtlwriter.cpp \
-       ../src/eda/altera/avalon_sim.cpp
+# Target
+TARGET_DIR = lib
 
-OBJS := $(SRCS:.cpp=.o)
+# Source
+SOURCE_DIR = ../src
 
-all : $(TARGET_DIR) $(TARGET_DIR)/$(PROJECT).so
+SRCS = utils.cpp \
+       platform.cpp \
+       system.cpp \
+       lnodeimpl.cpp \
+       ioimpl.cpp \
+       proxyimpl.cpp \
+       cdimpl.cpp \
+       litimpl.cpp \
+       regimpl.cpp \
+       memimpl.cpp \
+       selectimpl.cpp \
+       aluimpl.cpp \
+       bindimpl.cpp \
+       assertimpl.cpp \
+       timeimpl.cpp \
+       printimpl.cpp \
+       udfimpl.cpp \
+       lnode.cpp \
+       logic.cpp \
+       context.cpp \
+       compile.cpp \
+       simref.cpp \
+       simjit.cpp \
+       deviceimpl.cpp \
+       simulatorimpl.cpp \
+       tracerimpl.cpp \
+       verilogwriter.cpp \
+       firrtlwriter.cpp \
+       eda/altera/avalon_sim.cpp
 
-$(TARGET_DIR) :
-	mkdir $(TARGET_DIR)
+OBJS = $(SRCS:.cpp=.o)
+#$(info objs=$(OBJS))
 
-$(TARGET_DIR)/$(PROJECT).so : $(OBJS)
+.PHONY: all
+
+all: $(TARGET_DIR)/$(PROJECT).so
+
+$(TARGET_DIR)/$(PROJECT).so: $(OBJS)
+	@mkdir -p $(dir $@)
 	$(CXX) $^ $(LDFLAGS) -o $@
 
-%.o :   %.cpp
+$(OBJS): %.o: $(SOURCE_DIR)/%.cpp
+	@mkdir -p $(dir $@)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
+	
+.depend: $(addsuffix .depend,$(SRCS:.cpp=))
 
-.depend: $(SRCS)
-	$(CXX) $(CXXFLAGS) -MM $^ > .depend;
+clean-depend:
+	rm -f .depend
+
+%.depend: clean-depend
+	$(CXX) $(CXXFLAGS) -MM -MT $*.o $(SOURCE_DIR)/$*.cpp >> .depend
 
 clean:
-	rm -rf $(PROJECT).so $(OBJS) lib *.gcda *.gcno .depend *~ *\#
+	rm -rf $(OBJS) *.gcda *.gcno .depend *~ *\# $(TARGET_DIR)
 
 ifneq ($(MAKECMDGOALS),clean)
     -include .depend
