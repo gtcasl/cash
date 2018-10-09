@@ -346,6 +346,7 @@ void compiler::build_eval_list(std::vector<lnodeimpl*>& eval_list) {
 
     // sort recently inserted sequential node in reverse dependency order
     std::reverse(eval_list.begin() + old_size, eval_list.end());
+
     // invalidate all update nodes to force re-insertion
     for (auto node : update_list2) {
       cycles.erase(node->id());

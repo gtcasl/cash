@@ -1,6 +1,6 @@
 #include "timeimpl.h"
 #include "context.h"
-#include "bit.h"
+#include "uint.h"
 
 using namespace ch::internal;
 
@@ -14,6 +14,6 @@ lnodeimpl* timeimpl::clone(context* ctx, const clone_map&) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-ch_bit<64> ch::internal::ch_now(const source_location& sloc) {
-  return make_type<ch_bit<64>>(ctx_curr()->create_time(sloc), sloc);
+ch_uint<64> ch::internal::ch_now(const source_location& sloc) {
+  return make_type<ch_uint<64>>(ctx_curr()->create_time(sloc), sloc);
 }

@@ -355,7 +355,7 @@ void ch_tap(const T& value, const std::string& name, CH_SLOC) {
 
 // time function
 
-ch_bit<64> ch_now(CH_SLOC);
+ch_uint<64> ch_now(CH_SLOC);
 
 // print function
 
