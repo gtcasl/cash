@@ -1596,14 +1596,10 @@ void simref::initialize(const std::vector<lnodeimpl*>& eval_list) {
     } break;
     case type_mwport:
     case type_bind:
-      // skip
-      break;
     case type_bindin:
-      data_map[node->id()] = data_map.at(reinterpret_cast<bindportimpl*>(node)->src(0).id());
-      break;
     case type_bindout:
-      data_map[node->id()] = data_map.at(reinterpret_cast<bindportimpl*>(node)->ioport().id());
-      break;
+      // skip
+      break;    
     case type_tap:
       instr = instr_output_base::create(reinterpret_cast<tapimpl*>(node), data_map);
       break;
