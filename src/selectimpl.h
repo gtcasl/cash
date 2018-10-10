@@ -29,7 +29,7 @@ public:
 
   bool equals(const lnodeimpl& other) const override;
 
-  std::size_t hash() const override;
+  uint64_t hash() const override;
 
   void print(std::ostream& out) const override;
 

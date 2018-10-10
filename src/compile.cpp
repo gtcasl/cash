@@ -37,8 +37,8 @@ struct cse_hash_t {
 compiler::compiler(context* ctx) : ctx_(ctx) {}
 
 void compiler::build_eval_context(context* eval_ctx) {
-  std::unordered_set<uint32_t> visited;
-  std::unordered_set<uint32_t> cycles;
+  std::unordered_set<uint32_t> visited_nodes;
+  std::unordered_set<uint32_t> cyclic_nodes;
   clone_map cloned_nodes;
 
   std::function<void (std::vector<lnodeimpl*>&, context*)>
@@ -65,11 +65,11 @@ void compiler::build_eval_context(context* eval_ctx) {
   };
 
   std::function<void (lnodeimpl*)> dfs_visit = [&](lnodeimpl* node) {
-    if (visited.count(node->id()))
+    if (visited_nodes.count(node->id()))
       return;
 
     // check for cycles
-    if (cycles.count(node->id())) {
+    if (cyclic_nodes.count(node->id())) {
       // handling register cycles
       switch (node->type()) {
       case type_reg:
@@ -93,7 +93,7 @@ void compiler::build_eval_context(context* eval_ctx) {
       return;
 #define LCOV_EXCL_END
     }
-    cycles.insert(node->id());
+    cyclic_nodes.insert(node->id());
 
     // handling for special nodes
     switch (node->type()) {
@@ -147,7 +147,7 @@ void compiler::build_eval_context(context* eval_ctx) {
       }
     }
 
-    visited.insert(node->id());
+    visited_nodes.insert(node->id());
   };
 
   DBG(2, "build evaluation context for %s (#%d) ...\n", ctx_->name().c_str(), ctx_->id());
@@ -159,7 +159,7 @@ void compiler::build_eval_context(context* eval_ctx) {
 
     // enable cycle detection for sequential nodes
     for (auto node : snodes) {
-      cycles.insert(node->id());
+      cyclic_nodes.insert(node->id());
     }
 
     // create snode proxies
@@ -177,7 +177,7 @@ void compiler::build_eval_context(context* eval_ctx) {
 
     // disable cycle detection for sequential nodes
     for (auto node : snodes) {
-      cycles.erase(node->id());
+      cyclic_nodes.erase(node->id());
     }
 
     // visit sequential nodes
@@ -202,42 +202,19 @@ void compiler::build_eval_context(context* eval_ctx) {
 }
 
 void compiler::build_eval_list(std::vector<lnodeimpl*>& eval_list) {
-  std::unordered_set<uint32_t> visited;
-  std::unordered_set<uint32_t> cycles;
+  std::unordered_set<uint32_t> visited_nodes;
+  std::unordered_set<uint32_t> cyclic_nodes;
   std::unordered_set<lnodeimpl*> update_list;
   std::unordered_set<lnodeimpl*> uninitialized_regs;
 
-  std::function<void (std::vector<lnodeimpl*>&, context*)>
-      gather_all_snodes = [&](std::vector<lnodeimpl*>& snodes, context* ctx) {
-    for (auto node : ctx->bindings()) {
-      gather_all_snodes(snodes, node->module());
-    }
-    auto& list = ctx->snodes();
-    snodes.reserve(snodes.size() + list.size());
-    snodes.insert(snodes.end(), list.begin(), list.end());
-  };
-
-  std::function<void (std::vector<lnodeimpl*>&, context*)>
-      gather_all_taps = [&](std::vector<lnodeimpl*>& taps, context* ctx) {
-    for (auto node : ctx->bindings()) {
-      gather_all_taps(taps, node->module());
-    }
-    for (auto node : ctx->taps()) {
-      taps.push_back(node);
-    }
-    for (auto node : ctx->gtaps()) {
-      taps.push_back(node);
-    }
-  };
-
   std::function<bool (lnodeimpl*)> dfs_visit = [&](lnodeimpl* node)->bool {
-    if (visited.count(node->id())) {
+    if (visited_nodes.count(node->id())) {
       // if a node depends on an update node, it also needs to be updated.
       return (update_list.count(node) != 0);
     }
 
     // check for cycles
-    if (cycles.count(node->id())) {
+    if (cyclic_nodes.count(node->id())) {
       // handling register cycles
       switch (node->type()) {
       case type_reg:
@@ -265,65 +242,41 @@ void compiler::build_eval_list(std::vector<lnodeimpl*>& eval_list) {
       return false;
 #define LCOV_EXCL_END
     }
-    cycles.insert(node->id());
+    cyclic_nodes.insert(node->id());
 
+    // visit source nodes
     bool update = false;
-
-    // handling for special nodes
-    switch (node->type()) {
-    case type_bind:
-      // do not follow bind inputs
-      break;
-    case type_input: {
-      auto input = reinterpret_cast<inputimpl*>(node);
-      if (input->has_binding()) {
-        update |= dfs_visit(input->binding().impl());
-      }
-    } break;
-    case type_bindout:
-      // visit source nodes
-      for (auto& src : node->srcs()) {
-        update |= dfs_visit(src.impl());
-      }
-      // visit ioport source node
-      {
-        auto port = reinterpret_cast<bindportimpl*>(node);
-        update |= dfs_visit(port->ioport().impl());
-      }
-      break;
-    default:
-      // visit source nodes
-      for (auto& src : node->srcs()) {
-        update |= dfs_visit(src.impl());
-      }
-      break;
+    for (auto& src : node->srcs()) {
+      update |= dfs_visit(src.impl());
     }
-
     if (update) {
       // a cycle exists in dependent path, this node should be updated
       update_list.insert(node);
     }
 
     eval_list.push_back(node);
-    visited.insert(node->id());
+    visited_nodes.insert(node->id());
 
     return update;
   };
 
   DBG(2, "build evaluation list for %s (#%d) ...\n", ctx_->name().c_str(), ctx_->id());
 
-  {
-    // gather sequential nodes from all contexts
-    std::vector<lnodeimpl*> snodes;
-    gather_all_snodes(snodes, ctx_);
+  assert(0 == ctx_->bindings().size());
 
+  {
     // enable cycle detection for sequential nodes
-    for (auto node : snodes) {
-      cycles.insert(node->id());
+    for (auto node : ctx_->snodes()) {
+      cyclic_nodes.insert(node->id());
+    }
+
+    // visit clock cdomain nodes
+    for (auto node : ctx_->cdomains()) {
+      dfs_visit(node);
     }
 
     // visit sequential nodes dependencies
-    for (auto node : snodes) {
+    for (auto node : ctx_->snodes()) {
       for (auto& src : node->srcs()) {
         dfs_visit(src.impl());
       }
@@ -334,13 +287,13 @@ void compiler::build_eval_list(std::vector<lnodeimpl*>& eval_list) {
     std::swap(update_list2, update_list);
 
     // disable cycle detection for sequential nodes
-    for (auto node : snodes) {
-      cycles.erase(node->id());
+    for (auto node : ctx_->snodes()) {
+      cyclic_nodes.erase(node->id());
     }
 
     // visit sequential nodes
     auto old_size = eval_list.size();
-    for (auto node : snodes) {
+    for (auto node : ctx_->snodes()) {
       dfs_visit(node);
     }
 
@@ -349,8 +302,8 @@ void compiler::build_eval_list(std::vector<lnodeimpl*>& eval_list) {
 
     // invalidate all update nodes to force re-insertion
     for (auto node : update_list2) {
-      cycles.erase(node->id());
-      visited.erase(node->id());
+      cyclic_nodes.erase(node->id());
+      visited_nodes.erase(node->id());
     }
     update_list2.clear();
   }
@@ -359,14 +312,11 @@ void compiler::build_eval_list(std::vector<lnodeimpl*>& eval_list) {
   for (auto node : ctx_->outputs()) {
     dfs_visit(node);
   }
-
-  // visit tap nodes
-  {
-    std::vector<lnodeimpl*> taps;
-    gather_all_taps(taps, ctx_);
-    for (auto node : taps) {
-      dfs_visit(node);
-    }
+  for (auto node : ctx_->taps()) {
+    dfs_visit(node);
+  }
+  for (auto node : ctx_->gtaps()) {
+    dfs_visit(node);
   }
 
   if (platform::self().cflags() & cflags::dump_ast) {

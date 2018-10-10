@@ -42,7 +42,7 @@ bool aluimpl::equals(const lnodeimpl& other) const {
   return false;
 }
 
-std::size_t aluimpl::hash() const {
+uint64_t aluimpl::hash() const {
   hash_t ret;
   ret.fields.type = this->type();
   ret.fields.size = this->size();    

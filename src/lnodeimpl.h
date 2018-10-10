@@ -102,7 +102,7 @@ public:
 
   virtual bool equals(const lnodeimpl& other) const;
 
-  virtual std::size_t hash() const {
+  virtual uint64_t hash() const {
     return 0;
   }
 

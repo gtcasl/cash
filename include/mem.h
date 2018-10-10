@@ -22,7 +22,7 @@ static auto toByteVector(const T& container,
   uint32_t word_size(std::min<uint32_t>(src_width, data_width));
   uint32_t curr_value(0), pos(0);
   for (auto item : container) {
-    for (std::size_t i = 0; i < word_size; ++i) {
+    for (uint32_t i = 0; i < word_size; ++i) {
       curr_value |= ((item >> i) & 0x1) << (pos & 0x7);      
       if (0x7 == (pos & 0x7)) {
         packed[pos >> 3] = curr_value;

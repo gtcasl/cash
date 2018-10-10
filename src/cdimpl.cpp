@@ -16,7 +16,7 @@ cdimpl::cdimpl(context* ctx,
 
 lnodeimpl* cdimpl::clone(context* ctx, const clone_map& cloned_nodes) {
   auto clk = cloned_nodes.at(this->clk().id());
-  return ctx->create_node<cdimpl>(clk, pos_edge_, sloc_);
+  return ctx->create_cd(clk, pos_edge_, sloc_);
 }
 
 void cdimpl::print(std::ostream& out) const {

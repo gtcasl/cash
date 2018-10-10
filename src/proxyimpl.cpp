@@ -283,7 +283,7 @@ bool proxyimpl::equals(const lnodeimpl& other) const {
   return false;
 }
 
-std::size_t proxyimpl::hash() const {
+uint64_t proxyimpl::hash() const {
   hash_t ret;
   ret.fields.type = this->type();
   ret.fields.size = this->size();

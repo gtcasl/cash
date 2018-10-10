@@ -167,7 +167,7 @@ TEST_CASE("registers", "[registers]") {
     TEST([]()->ch_bool {
       ch_reg<ch_bit2> a, e;
       auto b = ch_case(ch_now(), 9, 11_b)(7, 0)(5, 2)(3, 1)(0);
-      e->next = ch_case(ch_now(), 9, 11_b)(7, 1)(5, 0)(3, 2)(1, 1)(0);
+      e->next = ch_case(ch_now(), 9, 11_b)(7, 1)(5, 0)(3, 2)(1, 1)(1);
 
       __if (b == 1) {
         a->next = 2;
@@ -186,7 +186,7 @@ TEST_CASE("registers", "[registers]") {
     TEST([]()->ch_bool {
       ch_reg<ch_bit2> a, e;
       auto b = ch_case(ch_now(), 11, 11_b)(9, 3)(7, 0)(5, 2)(3, 1)(0);
-      e->next = ch_case(ch_now(), 11, 01_b)(9, 1)(7, 1)(5, 0)(3, 2)(1, 1)(0);
+      e->next = ch_case(ch_now(), 11, 01_b)(9, 1)(7, 1)(5, 0)(3, 2)(1, 1)(1);
 
       __if (b == 1) {
         a->next = 2;
@@ -205,7 +205,7 @@ TEST_CASE("registers", "[registers]") {
     TEST([]()->ch_bool {
       ch_reg<ch_bit2> a, e;
       auto b = ch_case(ch_now(), 9, 11_b)(7, 0)(5, 2)(3, 1)(0);
-      e->next = ch_case(ch_now(), 9, 01_b)(7, 1)(5, 0)(3, 2)(1, 1)(0);
+      e->next = ch_case(ch_now(), 9, 01_b)(7, 1)(5, 0)(3, 2)(1, 1)(1);
 
       __switch (b)
       __case (1) { a->next = 2; }
@@ -277,9 +277,7 @@ TEST_CASE("registers", "[registers]") {
       auto e = ch_case(ch_now(), 8, 11_b)(7, 0)(6, 0)(5, 2)(4, 2)(3, 1)(2, 1)(r);
 
       //ch_print("t={0}, clk={1}, rst={2}, next={3}, out={4}, expected={5}", ch_now(), clk, reset, next, r, e);
-
       ch_popcd();
-
       return (r == e);
     }, 4);
   }

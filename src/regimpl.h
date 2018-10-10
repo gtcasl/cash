@@ -47,7 +47,7 @@ public:
 
   virtual lnodeimpl* clone(context* ctx, const clone_map& cloned_nodes) override;
 
-  std::size_t hash() const override;
+  uint64_t hash() const override;
 
 protected:
 
