@@ -80,7 +80,7 @@ void simulatorimpl::initialize() {
     }
 
     // initialize driver
-    sim_driver_ = new simref();
+    sim_driver_ = new simref::driver();
     sim_driver_->acquire();
     sim_driver_->initialize(eval_list);
 

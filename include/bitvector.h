@@ -477,9 +477,9 @@ public:
   template <typename U, std::size_t N>
   bitvector& operator=(const std::array<U, N>& value) {
     static_assert(is_bitvector_array_type_v<U>, "invalid array type");
-    std::vector<U> tmp(N);
-    std::reverse_copy(value.begin(), value.end(), tmp.begin());
-    this->write(0, tmp.data(), sizeof(U), 0, N * bitwidth_v<U>);
+    for (std::size_t i = 0; i < N; ++i) {
+      this->write(i * bitwidth_v<U>, value.data(), sizeof(U), (N - 1 - i) * bitwidth_v<U>, bitwidth_v<U>);
+    }
     auto src_num_words = ceildiv<uint32_t>(N * bitwidth_v<U>, bitwidth_v<word_t>);
     auto num_words = this->num_words();
     std::fill_n(words_ + src_num_words, num_words - src_num_words, 0);
@@ -489,10 +489,10 @@ public:
   template <typename U>
   bitvector& operator=(const std::vector<U>& value) {
     static_assert(is_bitvector_array_type_v<U>, "invalid array type");
-    std::vector<U> tmp(value.size());
-    std::reverse_copy(value.begin(), value.end(), tmp.begin());
-    this->write(0, tmp.data(), sizeof(U), 0, tmp.size() * bitwidth_v<U>);
-    auto src_num_words = ceildiv<uint32_t>(tmp.size() * bitwidth_v<U>, bitwidth_v<word_t>);
+    for (std::size_t i = 0, n = value.size(); i < n; ++i) {
+      this->write(i * bitwidth_v<U>, value.data(), sizeof(U), (n - 1 - i) * bitwidth_v<U>, bitwidth_v<U>);
+    }
+    auto src_num_words = ceildiv<uint32_t>(value.size() * bitwidth_v<U>, bitwidth_v<word_t>);
     auto num_words = this->num_words();
     std::fill_n(words_ + src_num_words, num_words - src_num_words, 0);
     return *this;

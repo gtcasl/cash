@@ -12,32 +12,14 @@ using namespace ch::logic;
 using namespace ch::literals;
 using namespace ch::htl;
 
-  template <unsigned Bitwidth, bool Signed, typename SystemType, typename LogicType>
-  struct my_traits {
-    static constexpr int type = ch::internal::traits_system;
-    static constexpr unsigned bitwidth  = Bitwidth;
-    static constexpr unsigned is_signed = Signed;
-    using system_type = SystemType;
-    using logic_type  = LogicType;
-  };
-
-  struct Y;
-
-  struct X {
-    using traits = my_traits<1, true, Y, X>;
-  };
-
-  struct Y {
-    using traits = ch::internal::logic_traits<1, true, Y, X>;
-  };
-
-
-//static_assert( (ch_scbit<1>::traits::type & (ch::internal::traits_type::traits_logic | ch::internal::traits_type::traits_system)) , "oops!");
-//static_assert(type_check_v<ch_scbit<1>>, "oops!");
-
-
-static_assert(ch::internal::is_object_type_v<Y> == 1, "oops!");
-static_assert(ch::internal::is_object_type_v<X> == 1, "oops!");
+template <unsigned Bitwidth, bool Signed, typename SystemType, typename LogicType>
+struct my_traits {
+  static constexpr int type = ch::internal::traits_system;
+  static constexpr unsigned bitwidth  = Bitwidth;
+  static constexpr unsigned is_signed = Signed;
+  using system_type = SystemType;
+  using logic_type  = LogicType;
+};
 
 __inout (avalon_st_io, (
   __in(ch_bool)  valid_in,  // inputs available

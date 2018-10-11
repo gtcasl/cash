@@ -14,8 +14,7 @@
 #include "udfimpl.h"
 
 using namespace ch::internal;
-
-using data_map_t = std::unordered_map<uint32_t, const block_type*>;
+using namespace ch::internal::simref;
 
 #define __aligned_sizeof(x) (4*((sizeof(x) + 3)/4))
 
@@ -1506,18 +1505,18 @@ private:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-simref::simref() {}
+driver::driver() {}
 
-simref::~simref() {
+driver::~driver() {
   for (auto instr : instrs_) {
     instr->destroy();
   }
   for (auto constant : constants_) {
-    delete [] constant;
+    free(constant.first);
   }
 }
 
-void simref::initialize(const std::vector<lnodeimpl*>& eval_list) {
+void driver::initialize(const std::vector<lnodeimpl*>& eval_list) {
   data_map_t data_map;
   std::unordered_map<uint32_t, instr_base*> instr_map;
   std::unordered_map<uint32_t, uint32_t> node_map;
@@ -1525,6 +1524,9 @@ void simref::initialize(const std::vector<lnodeimpl*>& eval_list) {
   instrs_.reserve(eval_list.size());
 
   auto ctx = eval_list.back()->ctx();
+
+  // setup constants
+  this->setup_constants(ctx, data_map);
 
   // lower synchronous nodes
   for (auto node : ctx->snodes()) {
@@ -1547,12 +1549,6 @@ void simref::initialize(const std::vector<lnodeimpl*>& eval_list) {
   for (auto node : eval_list) {
     instr_base* instr = nullptr;
     switch (node->type()) {
-    case type_undef:
-      assert(false);
-      break;
-    case type_lit:
-      data_map[node->id()] = this->create_constants(reinterpret_cast<litimpl*>(node));
-      break;
     case type_proxy:
       instr = instr_proxy_base::create(reinterpret_cast<proxyimpl*>(node), data_map);
       break;
@@ -1594,12 +1590,6 @@ void simref::initialize(const std::vector<lnodeimpl*>& eval_list) {
         instr = instr_mrport_base::create(port, data_map);
       }
     } break;
-    case type_mwport:
-    case type_bind:
-    case type_bindin:
-    case type_bindout:
-      // skip
-      break;    
     case type_tap:
       instr = instr_output_base::create(reinterpret_cast<tapimpl*>(node), data_map);
       break;
@@ -1618,6 +1608,8 @@ void simref::initialize(const std::vector<lnodeimpl*>& eval_list) {
     case type_udfs:
       instr = instr_map.at(node->id());
       reinterpret_cast<instr_udfs*>(instr)->init(reinterpret_cast<udfsimpl*>(node), data_map);
+      break;
+    default:
       break;
     }
 
@@ -1658,7 +1650,39 @@ void simref::initialize(const std::vector<lnodeimpl*>& eval_list) {
   }
 }
 
-void simref::generate_clk_bypass_list(std::unordered_set<uint32_t>& out, context* ctx, uint32_t cd_id) {
+void driver::setup_constants(context* ctx, data_map_t& data_map) {
+  for (auto node : ctx->literals())  {
+    auto num_words = ceildiv<uint32_t>(node->size(), bitwidth_v<block_type>);
+    for (auto& constant : constants_) {
+      if (constant.second >= num_words) {
+        if (bv_eq(constant.first, node->value().words(), num_words * bitwidth_v<block_type>)) {
+          data_map[node->id()] = constant.first;
+          break;
+        }
+      } else {
+        if (bv_eq(constant.first, node->value().words(), constant.second * bitwidth_v<block_type>)) {
+          auto buf = reinterpret_cast<block_type*>(realloc(constant.first, num_words * sizeof(block_type)));
+          std::copy_n(node->value().words(), num_words, buf);
+          for (auto& data : data_map) {
+            if (data.second == constant.first)
+              data.second = buf;
+          }
+          data_map[node->id()] = buf;
+          constant.first = buf;
+          break;
+        }
+      }
+    }
+    if (0 == data_map.count(node->id())) {
+      auto buf = reinterpret_cast<block_type*>(malloc(num_words * sizeof(block_type)));
+      std::copy_n(node->value().words(), num_words, buf);
+      constants_.emplace_back(buf, num_words);
+      data_map[node->id()] = buf;
+    }
+  }
+}
+
+void driver::generate_clk_bypass_list(std::unordered_set<uint32_t>& out, context* ctx, uint32_t cd_id) {
   std::unordered_set<uint32_t> visited_nodes;
   std::unordered_set<uint32_t> changed_nodes;
 
@@ -1730,15 +1754,7 @@ void simref::generate_clk_bypass_list(std::unordered_set<uint32_t>& out, context
   }
 }
 
-block_type* simref::create_constants(litimpl* node) {
-  auto num_words = ceildiv<uint32_t>(node->size(), bitwidth_v<block_type>);
-  auto constant = new block_type[num_words];
-  std::copy_n(node->value().words(), num_words, constant);
-  constants_.push_back(constant);
-  return constant;
-}
-
-void simref::eval() {
+void driver::eval() {
   for (uint32_t i = 0, n = instrs_.size(); i < n;) {
     instrs_[i]->eval();
     i += instrs_[i]->step;

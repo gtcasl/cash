@@ -569,21 +569,7 @@ void verilogwriter::print_reg(std::ostream& out, regimpl* node) {
     this->print_name(out, node);
     out << "_sr";
   };
-  auto print_sr_iter = [&]() {
-    this->print_name(out, node);
-    out << "_i";
-  };
-  auto print_sr_loop_header = [&](unsigned start, unsigned end) {
-    out << "for (";
-    print_sr_iter();
-    out << " = " << start << "; ";
-    print_sr_iter();
-    out << " < " << end << "; ";
-    print_sr_iter();
-    out << " = ";
-    print_sr_iter();
-    out << " + 1) begin" << std::endl;
-  };
+
   if (node->length() > 1) {
     out << "reg";
     if (node->size() > 1) {
@@ -592,34 +578,29 @@ void verilogwriter::print_reg(std::ostream& out, regimpl* node) {
     out << " ";
     print_sr_name();
     out << " [" << (node->length()-1) << ":0];" << std::endl;
-    out << "integer ";
-    print_sr_iter();
-    out << ";" << std::endl;
     out << "always @ (";
     auto cd = reinterpret_cast<cdimpl*>(node->cd().impl());
     this->print_cdomain(out, cd);
     out << ") begin" << std::endl;
     {
       auto_indent indent(out);
+
       if (node->has_init_data()) {
         out << "if (";
         this->print_name(out, node->reset().impl());
         out << ") begin" << std::endl;        
         indent.push();
-        print_sr_loop_header(0, node->length());
-        indent.push();
-        print_sr_name();
-        out << "[";
-        print_sr_iter();
-        out << "] <= ";
-        this->print_name(out, node->init_data().impl());
-        out << ";" << std::endl;
-        indent.pop();
-        out << "end" << std::endl;
+        for (uint32_t i = 0, n = node->length(); i < n; ++i) {
+          print_sr_name();
+          out << "[" << i << "] <= ";
+          this->print_name(out, node->init_data().impl());
+          out << ";" << std::endl;
+        }
         indent.pop();
         out << "end" << std::endl;
         out << "else" << std::endl;
       }
+
       if (node->has_enable()) {
         out << "if (";
         this->print_name(out, node->enable().impl());
@@ -631,18 +612,14 @@ void verilogwriter::print_reg(std::ostream& out, regimpl* node) {
           indent.push();
         }
       }
-      print_sr_loop_header(0, node->length()-1);
-      indent.push();
-      print_sr_name();
-      out << "[" << (node->length() - 1) << "-";
-      print_sr_iter();
-      out << "] <= ";
-      print_sr_name();
-      out << "[" << (node->length() - 2) << "-";
-      print_sr_iter();
-      out << "];" << std::endl;
-      indent.pop();
-      out << "end" << std::endl;
+
+      for (uint32_t i = 0, n = node->length() - 1; i < n; ++i) {
+        print_sr_name();
+        out << "[" << (node->length() - i - 1) << "] <= ";
+        print_sr_name();
+        out << "[" << (node->length() - i - 2) << "];" << std::endl;
+      }
+
       print_sr_name();
       out << "[0] <= ";
       this->print_name(out, node->next().impl());
@@ -665,6 +642,7 @@ void verilogwriter::print_reg(std::ostream& out, regimpl* node) {
     out << ") begin" << std::endl;
     {
       auto_indent indent(out);
+
       if (node->has_init_data()) {
         out << "if (";
         this->print_name(out, node->reset().impl());
@@ -677,6 +655,7 @@ void verilogwriter::print_reg(std::ostream& out, regimpl* node) {
         indent.pop();
         out << "else" << std::endl;
       }
+
       if (node->has_enable()) {
         out << "if (";
         this->print_name(out, node->enable().impl());
@@ -687,6 +666,7 @@ void verilogwriter::print_reg(std::ostream& out, regimpl* node) {
           indent.push();
         }
       }
+
       this->print_name(out, node);
       out << " <= ";
       this->print_name(out, node->next().impl());
