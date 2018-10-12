@@ -89,7 +89,7 @@ public:
     ch_reg<ch_bool> done(false);
 
     // determine if we can request the next data
-    auto fifo_almost_full = (ch_pad<1>(fifo_.io.size) + pending_reqs) > (Qsize - 2*MaxBurst); // assume inflight burst from previous cycle
+    auto fifo_almost_full = (ch_pad<1>(fifo_.io.size) + pending_reqs) > (Qsize - 2*MaxBurst); // assume inflight burst from previous cycle    
     auto cur_remain_reqs = ch_sel(io.start, io.num_blocks, remain_reqs);
     auto read_enabled_next = (cur_remain_reqs != 0) && !fifo_almost_full;
     auto read_enabled = ch_delay(read_enabled_next, 1, false) && (remain_reqs != 0); // ensure no an extra request to be issued

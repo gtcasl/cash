@@ -1276,9 +1276,10 @@ private:
 instr_mem_base* instr_mem_base::create(memimpl* node, data_map_t& map) {
   uint32_t dst_size  = node->size();
   uint32_t dst_nblocks = ceildiv<uint32_t>(dst_size, bitwidth_v<block_type>);
-  uint32_t dst_bytes = sizeof(block_type) * dst_nblocks;
+  uint32_t dst_bytes = dst_nblocks * sizeof(block_type);
+
   uint32_t data_size = node->data_width();
-  uint32_t data_bytes = sizeof(block_type) * ceildiv<uint32_t>(data_size, bitwidth_v<block_type>);
+  uint32_t data_nblocks = ceildiv<uint32_t>(data_size, bitwidth_v<block_type>);
   uint32_t addr_size = log2ceil(node->num_items());
 
   uint32_t num_rdports = node->is_sync_read() ? node->rdports().size() : 0;
@@ -1301,11 +1302,11 @@ instr_mem_base* instr_mem_base::create(memimpl* node, data_map_t& map) {
   buf_cur += dst_bytes;
   auto rdports = (rdport_t*)buf_cur;
 
-
   for (uint32_t i = 0; i < num_rdports; ++i) {
     auto p = node->rdports()[i];
-    rdports[i].data = new block_type[data_bytes]();
-    map[p->id()] = rdports[i].data;
+    auto b = new block_type[data_nblocks]();;
+    rdports[i].data = b;
+    map[p->id()] = b;
   }
 
   buf_cur += rdports_bytes;
@@ -1314,6 +1315,7 @@ instr_mem_base* instr_mem_base::create(memimpl* node, data_map_t& map) {
   if (node->has_init_data()) {
     bv_copy(dst, node->init_data().words(), dst_size);
   }
+
   bool is_scalar = (data_size <= bitwidth_v<block_type>);
   if (is_scalar) {
     return new (buf) instr_mem<true>(dst, data_size, addr_size,
@@ -1794,6 +1796,7 @@ void driver::setup_constants(context* ctx, data_map_t& data_map) {
           }
           data_map[node->id()] = buf;
           constant.first = buf;
+          constant.second = num_words;
           break;
         }
       }

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cash.h>
+#include <htl/counter.h>
 #include <htl/decoupled.h>
 
 namespace ch {
@@ -21,17 +22,15 @@ struct ch_queue {
     __out(ch_uint<size_width>) size
   );
 
-  void describe() {    
-    static constexpr uint32_t addr_width = log2ceil(N);
-    ch_reg<ch_uint<addr_width>> rd_ptr(0), wr_ptr(0);
+  void describe() {
     ch_reg<ch_uint<size_width>> counter(0);
     ch_reg<ch_bool> full(false), empty(true);
 
     auto reading = io.deq.ready && io.deq.valid;
     auto writing = io.enq.valid && io.enq.ready;
 
-    rd_ptr->next = ch_sel(reading, rd_ptr + 1, rd_ptr);
-    wr_ptr->next = ch_sel(writing, wr_ptr + 1, wr_ptr);
+    ch_counter<N> rd_ptr(reading);
+    ch_counter<N> wr_ptr(writing);
 
     __if (writing && !reading) {
       counter->next = counter + 1;
@@ -40,7 +39,7 @@ struct ch_queue {
     };
 
     ch_mem<T, N, SyncRead && !ShowAhead> mem;
-    mem.write(wr_ptr, io.enq.data, writing);
+    mem.write(wr_ptr.value, io.enq.data, writing);
 
     T data_out;
     if constexpr (SyncRead && ShowAhead) {
@@ -48,13 +47,13 @@ struct ch_queue {
       __if (writing && (empty || (1 == counter && reading))) {
         r_data_out->next = io.enq.data;
       }__elif (reading) {
-        r_data_out->next = mem.read(rd_ptr + 1);
+        r_data_out->next = mem.read(rd_ptr.value + 1);
       }__else {
-        r_data_out->next = mem.read(rd_ptr);
+        r_data_out->next = mem.read(rd_ptr.value);
       };
       data_out = r_data_out;
     } else {
-      data_out = mem.read(rd_ptr);
+      data_out = mem.read(rd_ptr.value);
     }
 
     __if (counter == (N-1) && writing && !reading) {

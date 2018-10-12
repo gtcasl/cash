@@ -49,9 +49,8 @@ struct ch_xbar_switch {
     (out_io) out
   );
   void describe() {
-    auto [counter, counter_next] = ch_counter<I>(io.out.ready);
-    __unused(counter_next);
-    auto grant = ch_bit<I>(1) << counter;
+    ch_counter<I> counter(io.out.ready);
+    auto grant = ch_bit<I>(1) << counter.value;
     for (unsigned i = 0; i < I; ++i) {
       xbar_.io.in[i].data  = io.in[i].data;
       xbar_.io.in[i].valid = io.in[i].valid;

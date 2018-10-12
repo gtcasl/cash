@@ -473,5 +473,35 @@ TEST_CASE("conditionals", "[conditionals]") {
       };
       return (a == 3);
     });
+
+    TEST([]()->ch_bool {
+      ch_bit128 k(2), c1(3), c2(2), c3(1), a;
+      __switch (k)
+      __case (1) {
+         a = c1;
+       }
+      __case (2) {
+        a = c2;
+      }
+      __default {
+        a = c3;
+      };
+      return (a == c2);
+    });
+
+    TEST([]()->ch_bool {
+      ch_bit128 k(0), c1(3), c2(2), c3(1), a;
+      __switch (k)
+      __case (1) {
+        a = c1;
+      }
+      __case (2) {
+        a = c2;
+      }
+      __default {
+        a = c3;
+      };
+      return (a == c3);
+    });
   }
 }
