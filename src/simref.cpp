@@ -56,7 +56,8 @@ public:
 
 private:
 
-  instr_slice(block_type* dst, uint32_t dst_size, const block_type* src_data, uint32_t src_offset)
+  instr_slice(block_type* dst, uint32_t dst_size,
+              const block_type* src_data, uint32_t src_offset)
     : instr_proxy_base(dst)
     , dst_size_(dst_size)
     , src_data_(src_data)
@@ -72,19 +73,6 @@ private:
 
 template <bool is_scalar>
 class instr_proxy : public instr_proxy_base {
-private:
-
-  const range_t* ranges_;
-  uint32_t num_ranges_;
-
-  instr_proxy(block_type* dst, const range_t* ranges, uint32_t num_ranges)
-    : instr_proxy_base(dst)
-    , ranges_(ranges)
-    , num_ranges_(num_ranges)
-  {}
-
-  friend class instr_proxy_base;
-
 public:
 
   void destroy() override {
@@ -96,26 +84,39 @@ public:
     if constexpr (is_scalar) {
       block_type src_block;
       uint32_t dst_offset;
-      const range_t *r0 = ranges_;
+      auto r0 = ranges_;
       {
         uint32_t lr = (bitwidth_v<block_type> - r0->length);
         src_block = ((r0->src_data[0] >> r0->src_offset) << lr) >> lr;
         dst_offset = r0->length;
       }
-      for (const range_t *r = r0 + 1, *r_end = r0 + num_ranges_ ;r != r_end; ++r) {
+      for (auto *r = r0 + 1, *r_end = r0 + num_ranges_ ;r != r_end; ++r) {
         uint32_t lr = (bitwidth_v<block_type> - r->length);
         src_block |= (((r->src_data[0] >> r->src_offset) << lr) >> lr) << dst_offset;
         dst_offset += r->length;
       }
       dst_[0] = src_block;
     } else {
-      for (const range_t *r = ranges_, *r_end = r + num_ranges_ ;r != r_end; ++r) {
+      for (auto *r = ranges_, *r_end = r + num_ranges_ ;r != r_end; ++r) {
         auto dst = dst_ + (r->dst_offset / bitwidth_v<block_type>);
         auto dst_offset = r->dst_offset % bitwidth_v<block_type>;
         bv_copy_vector(dst, dst_offset, r->src_data, r->src_offset, r->length);
       }
     }
   }
+
+private:
+
+  instr_proxy(block_type* dst, const range_t* ranges, uint32_t num_ranges)
+    : instr_proxy_base(dst)
+    , ranges_(ranges)
+    , num_ranges_(num_ranges)
+  {}
+
+  const range_t* ranges_;
+  uint32_t num_ranges_;
+
+  friend class instr_proxy_base;
 };
 
 instr_proxy_base* instr_proxy_base::create(proxyimpl* node, data_map_t& map) {
@@ -246,17 +247,19 @@ public:
 
 protected:
 
-  instr_alu_base(const block_type* o_src0,
+  instr_alu_base(block_type* dst,
+                 uint32_t dst_size,
+                 const block_type* o_src0,
                  uint32_t o_src0_size,
                  const block_type* o_src1,
                  uint32_t o_src1_size,
                  block_type* src0,
                  uint32_t src0_size,
                  block_type* src1,
-                 uint32_t src1_size,
-                 block_type* dst,
-                 uint32_t dst_size)
-    : o_src0_(o_src0)
+                 uint32_t src1_size)
+    : dst_(dst)
+    , dst_size_(dst_size)
+    , o_src0_(o_src0)
     , o_src0_size_(o_src0_size)
     , o_src1_(o_src1)
     , o_src1_size_(o_src1_size)
@@ -264,10 +267,10 @@ protected:
     , src0_size_(src0_size)
     , src1_(src1)
     , src1_size_(src1_size)
-    , dst_(dst)
-    , dst_size_(dst_size)
   {}
 
+  block_type* dst_;
+  uint32_t dst_size_;
   const block_type* o_src0_;
   uint32_t o_src0_size_;
   const block_type* o_src1_;
@@ -276,8 +279,6 @@ protected:
   uint32_t src0_size_;
   block_type* src1_;
   uint32_t src1_size_;
-  block_type* dst_;
-  uint32_t dst_size_;
 };
 
 template <ch_op op, bool is_signed, bool is_scalar, bool resize_opds>
@@ -515,21 +516,16 @@ public:
 
 private:
 
-  instr_alu(const block_type* o_src0,
-            uint32_t o_src0_size_,
-            const block_type* o_src1,
-            uint32_t o_src1_size,
-            block_type* src0,
-            uint32_t src0_size_,
-            block_type* src1,
-            uint32_t src1_size,
-            block_type* dst,
-            uint32_t dst_size_)
-    : instr_alu_base(o_src0, o_src0_size_,
+  instr_alu(block_type* dst, uint32_t dst_size_,
+            const block_type* o_src0, uint32_t o_src0_size_,
+            const block_type* o_src1, uint32_t o_src1_size,
+            block_type* src0, uint32_t src0_size_,
+            block_type* src1, uint32_t src1_size)
+    : instr_alu_base(dst, dst_size_,
+                     o_src0, o_src0_size_,
                      o_src1, o_src1_size,
                      src0, src0_size_,
-                     src1, src1_size,
-                     dst, dst_size_)
+                     src1, src1_size)
     {}
 
   friend class instr_alu_base;
@@ -643,45 +639,45 @@ instr_alu_base* instr_alu_base::create(aluimpl* node, data_map_t& map) {
     if (is_scalar) { \
       if (sign_enable && is_signed) { \
         if (resize_enable && resize_opds) { \
-          return new (buf) instr_alu<op, true, true, true>(o_src0, o_src0_size, \
+          return new (buf) instr_alu<op, true, true, true>(dst, dst_size, o_src0, o_src0_size, \
                                                            o_src1, o_src1_size, src0, src0_size, \
-                                                           src1, src1_size, dst, dst_size); \
+                                                           src1, src1_size); \
         } else { \
-          return new (buf) instr_alu<op, true, true, false>(o_src0, o_src0_size, \
+          return new (buf) instr_alu<op, true, true, false>(dst, dst_size, o_src0, o_src0_size, \
                                                             o_src1, o_src1_size, src0, src0_size, \
-                                                            src1, src1_size, dst, dst_size); \
+                                                            src1, src1_size); \
         }  \
       } else { \
         if (resize_enable && resize_opds) { \
-          return new (buf) instr_alu<op, false, true, true>(o_src0, o_src0_size, \
+          return new (buf) instr_alu<op, false, true, true>(dst, dst_size, o_src0, o_src0_size, \
                                                             o_src1, o_src1_size, src0, src0_size, \
-                                                            src1, src1_size, dst, dst_size); \
+                                                            src1, src1_size); \
         } else { \
-          return new (buf) instr_alu<op, false, true, false>(o_src0, o_src0_size, \
+          return new (buf) instr_alu<op, false, true, false>(dst, dst_size, o_src0, o_src0_size, \
                                                              o_src1, o_src1_size, src0, src0_size, \
-                                                             src1, src1_size, dst, dst_size); \
+                                                             src1, src1_size); \
         } \
       } \
     } else { \
       if (sign_enable && is_signed) { \
         if (resize_enable && resize_opds) { \
-          return new (buf) instr_alu<op, true, false, true>(o_src0, o_src0_size, \
+          return new (buf) instr_alu<op, true, false, true>(dst, dst_size, o_src0, o_src0_size, \
                                                             o_src1, o_src1_size, src0, src0_size, \
-                                                            src1, src1_size, dst, dst_size); \
+                                                            src1, src1_size); \
         } else { \
-          return new (buf) instr_alu<op, true, false, false>(o_src0, o_src0_size, \
+          return new (buf) instr_alu<op, true, false, false>(dst, dst_size, o_src0, o_src0_size, \
                                                              o_src1, o_src1_size, src0, src0_size, \
-                                                             src1, src1_size, dst, dst_size); \
+                                                             src1, src1_size); \
         }  \
       } else { \
         if (resize_enable && resize_opds) { \
-          return new (buf) instr_alu<op, false, false, true>(o_src0, o_src0_size, \
+          return new (buf) instr_alu<op, false, false, true>(dst, dst_size, o_src0, o_src0_size, \
                                                              o_src1, o_src1_size, src0, src0_size, \
-                                                             src1, src1_size, dst, dst_size); \
+                                                             src1, src1_size); \
         } else { \
-          return new (buf) instr_alu<op, false, false, false>(o_src0, o_src0_size, \
+          return new (buf) instr_alu<op, false, false, false>(dst, dst_size, o_src0, o_src0_size, \
                                                               o_src1, o_src1_size, src0, src0_size, \
-                                                              src1, src1_size, dst, dst_size); \
+                                                              src1, src1_size); \
         } \
       } \
     }
@@ -720,34 +716,30 @@ instr_alu_base* instr_alu_base::create(aluimpl* node, data_map_t& map) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class instr_select : public instr_base {
+class instr_select_base : public instr_base {
 public:
 
-  static instr_select* create(selectimpl* node, data_map_t& map) {
-    uint32_t dst_size = node->size();
-    uint32_t dst_nblocks = ceildiv<uint32_t>(dst_size, bitwidth_v<block_type>);
-    bool has_key      = node->has_key();
-    uint32_t key_size = node->src(0).size();
-    uint32_t num_srcs = node->srcs().size();
+  static instr_select_base* create(selectimpl* node, data_map_t& map);
 
-    uint32_t dst_bytes = sizeof(block_type) * dst_nblocks;
-    uint32_t src_bytes = sizeof(block_type*) * node->srcs().size();
+protected:
 
-    auto buf = new uint8_t[__aligned_sizeof(instr_select) + dst_bytes + src_bytes]();
+  instr_select_base(block_type* dst, uint32_t size,
+                    const block_type** srcs, uint32_t num_srcs)
+    : dst_(dst)
+    , size_(size)
+    , srcs_(srcs)
+    , srcs_last_(srcs + num_srcs - 1)
+  {}
 
-    auto buf_cur = buf + __aligned_sizeof(instr_select);
-    auto dst = (block_type*)buf_cur;
-    map[node->id()] = dst;
+  block_type* dst_;
+  uint32_t size_;
+  const block_type** srcs_;
+  const block_type** srcs_last_;
+};
 
-    buf_cur += dst_bytes;
-
-    auto srcs = (const block_type**)buf_cur;
-    for (uint32_t i = 0; i < num_srcs; ++i) {
-      srcs[i] = map.at(node->src(i).id());
-    }
-
-    return new (buf) instr_select(has_key, key_size, srcs, num_srcs, dst, dst_size);
-  }
+template <bool is_scalar>
+class instr_select : public instr_select_base {
+public:
 
   void destroy() override {
     this->~instr_select();
@@ -755,43 +747,123 @@ public:
   }
 
   void eval() override {
-    uint32_t i, last(num_srcs_ - 1);
-    if (has_key_) {
-      for (i = 1; i < last; i += 2) {
-        if (bv_eq(srcs_[0], srcs_[i], key_size_))
-          break;
-      }
-    } else {
-      for (i = 0; i < last; i += 2) {
-        if (static_cast<bool>(srcs_[i][0]))
-          break;
+    auto *src = srcs_, *last = srcs_last_;
+    for (;src < last; src += 2) {
+      if (static_cast<bool>(**src)) {
+        ++src;
+        break;
       }
     }
-
-    auto src = (i < last) ? srcs_[i+1] : srcs_[last];
-    bv_copy(dst_, src, size_);
+    if constexpr (is_scalar) {
+      bv_copy_scalar(dst_, *src);
+    } else {
+      bv_copy_vector(dst_, *src, size_);
+    }
   }
 
 private:
 
-  instr_select(bool has_key, uint32_t key_size,
-               const block_type** srcs, uint32_t num_srcs,
-               block_type* dst, uint32_t size)
-    : has_key_(has_key)
-    , key_size_(key_size)    
-    , srcs_(srcs)
-    , num_srcs_(num_srcs)
-    , dst_(dst)
-    , size_(size)
+  instr_select(block_type* dst, uint32_t size,
+               const block_type** srcs, uint32_t num_srcs)
+    : instr_select_base(dst, size, srcs, num_srcs)
   {}
 
-  bool has_key_;
-  uint32_t key_size_;
-  const block_type** srcs_;
-  uint32_t num_srcs_;
-  block_type* dst_;
-  uint32_t size_;
+  friend class instr_select_base;
 };
+
+template <bool is_scalar>
+class instr_case : public instr_select_base {
+public:
+
+  void destroy() override {
+    this->~instr_case();
+    ::operator delete [](this);
+  }
+
+  void eval() override {
+    auto *key = srcs_, *src = srcs_ + 1, *last = srcs_last_;
+    for (;src < last; src += 2) {
+      if constexpr (is_scalar) {
+        if (bv_eq_scalar(*key, *src)) {
+          ++src;
+          break;
+        }
+      } else {
+        if (bv_eq_vector(*key, *src, key_size_)) {
+          ++src;
+          break;
+        }
+      }
+    }
+    if constexpr (is_scalar) {
+      bv_copy_scalar(dst_, *src);
+    } else {
+      bv_copy_vector(dst_, *src, size_);
+    }
+  }
+
+private:
+
+  instr_case(block_type* dst, uint32_t size,
+             const block_type** srcs, uint32_t num_srcs,
+             uint32_t key_size)
+    : instr_select_base(dst, size, srcs, num_srcs)
+    , key_size_(key_size)
+  {}
+
+  uint32_t key_size_;
+
+  friend class instr_select_base;
+};
+
+instr_select_base* instr_select_base::create(selectimpl* node, data_map_t& map) {
+  uint32_t dst_size = node->size();
+  uint32_t dst_nblocks = ceildiv<uint32_t>(dst_size, bitwidth_v<block_type>);
+  uint32_t dst_bytes = sizeof(block_type) * dst_nblocks;
+
+  uint32_t num_srcs = node->srcs().size();
+  uint32_t src_bytes = sizeof(block_type*) * num_srcs;
+
+  bool is_scalar = dst_size <= bitwidth_v<block_type>;
+  if (node->has_key()) {
+    uint32_t key_size = node->src(0).size();
+    is_scalar &= key_size <= bitwidth_v<block_type>;
+
+    auto buf = new uint8_t[__aligned_sizeof(instr_case<false>) + dst_bytes + src_bytes]();
+    auto buf_cur = buf + __aligned_sizeof(instr_case<false>);
+    auto dst = (block_type*)buf_cur;
+    map[node->id()] = dst;
+    buf_cur += dst_bytes;
+
+    auto srcs = (const block_type**)buf_cur;
+    for (uint32_t i = 0; i < num_srcs; ++i) {
+      srcs[i] = map.at(node->src(i).id());
+    }
+
+    if (is_scalar) {
+      return new (buf) instr_case<true>(dst, dst_size, srcs, num_srcs, key_size);
+    } else {
+      return new (buf) instr_case<false>(dst, dst_size, srcs, num_srcs, key_size);
+    }
+  } else {
+    auto buf = new uint8_t[__aligned_sizeof(instr_select<false>) + dst_bytes + src_bytes]();
+    auto buf_cur = buf + __aligned_sizeof(instr_select<false>);
+    auto dst = (block_type*)buf_cur;
+    map[node->id()] = dst;
+    buf_cur += dst_bytes;
+
+    auto srcs = (const block_type**)buf_cur;
+    for (uint32_t i = 0; i < num_srcs; ++i) {
+      srcs[i] = map.at(node->src(i).id());
+    }
+
+    if (is_scalar) {
+      return new (buf) instr_select<true>(dst, dst_size, srcs, num_srcs);
+    } else {
+      return new (buf) instr_select<false>(dst, dst_size, srcs, num_srcs);
+    }
+  }
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -856,15 +928,13 @@ public:
 
 protected:
 
-  instr_reg_base(block_type* dst, uint32_t size, block_type* pipe, uint32_t pipe_size)
+  instr_reg_base(block_type* dst, uint32_t size)
     : initdata_(nullptr)
     , reset_(nullptr)
     , enable_(nullptr)
     , next_(nullptr)
     , dst_(dst)
     , size_(size)
-    , pipe_(pipe)
-    , pipe_size_(pipe_size)
   {}
 
   const block_type* initdata_;
@@ -873,11 +943,9 @@ protected:
   const block_type* next_;
   block_type* dst_;
   uint32_t size_;
-  block_type* pipe_;
-  uint32_t pipe_size_;
 };
 
-template <bool is_scalar, bool is_pipe, bool has_init, bool has_enable>
+template <bool is_scalar, bool has_init, bool has_enable>
 class instr_reg : public instr_reg_base {
 public:
 
@@ -889,72 +957,105 @@ public:
   void eval() override {
     if constexpr (is_scalar) {
       if constexpr (has_init) {
-        // check reset state
         if (static_cast<bool>(reset_[0])) {
           bv_copy_scalar(dst_, initdata_);
-          if constexpr (is_pipe) {
-            for (uint32_t i = 0; i < pipe_size_; i+= size_) {
-              bv_copy_scalar(pipe_, i, initdata_, 0, size_);
-            }
-          }
           return;
         }
       }
 
       if constexpr (has_enable) {
-        // check enable state
         if (!static_cast<bool>(enable_[0]))
           return;
       }
 
-      if constexpr (is_pipe) {
-        // advance pipeline
-        bv_slice_scalar(dst_, size_, pipe_, 0);
-        bv_shr_scalar<false>(pipe_, pipe_size_, pipe_, pipe_size_, size_);
-        bv_copy_scalar(pipe_, pipe_size_ - size_, next_, 0, size_);
-      } else {
-        // push next value
-        bv_copy_scalar(dst_, next_);
-      }
+      bv_copy_scalar(dst_, next_);
     } else {
       if constexpr (has_init) {
-        // check reset state
         if (static_cast<bool>(reset_[0])) {
-          if constexpr (is_pipe) {
-            for (uint32_t i = 0; i < pipe_size_; i+= size_) {
-              bv_copy(pipe_, i, initdata_, 0, size_);
-            }
-            bv_copy(dst_, initdata_, size_);
-          } else {
-            bv_copy_vector(dst_, initdata_, size_);
-          }
+          bv_copy_vector(dst_, initdata_, size_);
           return;
         }
       }
 
       if constexpr (has_enable) {
-        // check enable state
         if (!static_cast<bool>(enable_[0]))
           return;
       }
 
-      if constexpr (is_pipe) {
-        // advance pipeline
-        bv_slice(dst_, size_, pipe_, 0);
-        bv_shr_vector<false>(pipe_, pipe_size_, pipe_, pipe_size_, size_);
-        bv_copy(pipe_, pipe_size_ - size_, next_, 0, size_);
-      } else {
-        // push next value
-        bv_copy_vector(dst_, next_, size_);
-      }
+      bv_copy_vector(dst_, next_, size_);
     }
   }
 
 protected:
 
-  instr_reg(block_type* pipe, uint32_t pipe_size, block_type* dst, uint32_t size)
-    : instr_reg_base(pipe, pipe_size, dst, size)
+  instr_reg(block_type* dst, uint32_t size)
+    : instr_reg_base(dst, size)
   {}
+
+  friend class instr_reg_base;
+};
+
+template <bool is_scalar, bool has_init, bool has_enable>
+class instr_pipe : public instr_reg_base {
+public:
+
+  void destroy() override {
+    this->~instr_pipe();
+    ::operator delete [](this);
+  }
+
+  void eval() override {
+    if constexpr (is_scalar) {
+      if constexpr (has_init) {
+        if (static_cast<bool>(reset_[0])) {
+          bv_copy_scalar(dst_, initdata_);
+          for (uint32_t i = 0; i < pipe_size_; i += size_) {
+            bv_copy_scalar(pipe_, i, initdata_, 0, size_);
+          }
+          return;
+        }
+      }
+
+      if constexpr (has_enable) {
+        if (!static_cast<bool>(enable_[0]))
+          return;
+      }
+
+      bv_slice_scalar(dst_, size_, pipe_, 0);
+      bv_shr_scalar<false>(pipe_, pipe_size_, pipe_, pipe_size_, size_);
+      bv_copy_scalar(pipe_, pipe_size_ - size_, next_, 0, size_);
+    } else {
+      if constexpr (has_init) {
+        if (static_cast<bool>(reset_[0])) {
+          bv_copy(dst_, initdata_, size_);
+          for (uint32_t i = 0; i < pipe_size_; i += size_) {
+            bv_copy(pipe_, i, initdata_, 0, size_);
+          }
+          return;
+        }
+      }
+
+      if constexpr (has_enable) {
+        if (!static_cast<bool>(enable_[0]))
+          return;
+      }
+
+      bv_slice(dst_, size_, pipe_, 0);
+      bv_shr_vector<false>(pipe_, pipe_size_, pipe_, pipe_size_, size_);
+      bv_copy(pipe_, pipe_size_ - size_, next_, 0, size_);
+    }
+  }
+
+protected:
+
+  instr_pipe(block_type* dst, uint32_t size, block_type* pipe, uint32_t pipe_size)
+    : instr_reg_base(dst, size)
+    , pipe_(pipe)
+    , pipe_size_(pipe_size)
+  {}
+
+  block_type* pipe_;
+  uint32_t pipe_size_;
 
   friend class instr_reg_base;
 };
@@ -964,75 +1065,84 @@ instr_reg_base* instr_reg_base::create(regimpl* node, data_map_t& map) {
   uint32_t nblocks   = ceildiv<uint32_t>(dst_size, bitwidth_v<block_type>);
   uint32_t dst_bytes = sizeof(block_type) * nblocks;
 
-  uint32_t pipe_size = dst_size * (node->length() - 1);
-  uint32_t pipe_bytes = sizeof(block_type) * ceildiv<uint32_t>(pipe_size, bitwidth_v<block_type>);
+  bool is_scalar = (dst_size <= bitwidth_v<block_type>);
+  uint8_t *buf, *buf_cur;
 
-  auto buf = new uint8_t[__aligned_sizeof(instr_reg<false, false, false, false>) + dst_bytes + pipe_bytes]();
-  auto buf_cur = buf + __aligned_sizeof(instr_reg<false, false, false, false>);
+  uint32_t pipe_size = dst_size * (node->length() - 1);
+  if (pipe_size) {
+    is_scalar &= (pipe_size <= bitwidth_v<block_type>);
+
+    uint32_t pipe_bytes = sizeof(block_type) * ceildiv<uint32_t>(pipe_size, bitwidth_v<block_type>);
+    buf = new uint8_t[__aligned_sizeof(instr_pipe<false, false, false>) + dst_bytes + pipe_bytes]();
+    buf_cur = buf + __aligned_sizeof(instr_pipe<false, false, false>);
+  } else {
+    buf = new uint8_t[__aligned_sizeof(instr_reg<false, false, false>) + dst_bytes]();
+    buf_cur = buf + __aligned_sizeof(instr_reg<false, false, false>);
+  }
+
   auto dst = (block_type*)buf_cur;
   map[node->id()] = dst;
 
   buf_cur += dst_bytes;
   auto pipe = (block_type*)buf_cur;
 
-  bool is_scalar = (dst_size <= bitwidth_v<block_type>) && (pipe_size <= bitwidth_v<block_type>);
-  if (is_scalar) {
-    if (1 == node->length()) {
+  if (1 == node->length()) {
+    if (is_scalar) {
       if (node->has_init_data()) {
         if (node->has_enable()) {
-          return new (buf) instr_reg<true, false, true, true>(dst, dst_size, pipe, pipe_size);
+          return new (buf) instr_reg<true, true, true>(dst, dst_size);
         } else {
-          return new (buf) instr_reg<true, false, true, false>(dst, dst_size, pipe, pipe_size);
+          return new (buf) instr_reg<true, true, false>(dst, dst_size);
         }
       } else {
         if (node->has_enable()) {
-          return new (buf) instr_reg<true, false, false, true>(dst, dst_size, pipe, pipe_size);
+          return new (buf) instr_reg<true, false, true>(dst, dst_size);
         } else {
-          return new (buf) instr_reg<true, false, false, false>(dst, dst_size, pipe, pipe_size);
+          return new (buf) instr_reg<true, false, false>(dst, dst_size);
         }
       }
     } else {
       if (node->has_init_data()) {
         if (node->has_enable()) {
-          return new (buf) instr_reg<true, true, true, true>(dst, dst_size, pipe, pipe_size);
+          return new (buf) instr_reg<false, true, true>(dst, dst_size);
         } else {
-          return new (buf) instr_reg<true, true, true, false>(dst, dst_size, pipe, pipe_size);
+          return new (buf) instr_reg<false, true, false>(dst, dst_size);
         }
       } else {
         if (node->has_enable()) {
-          return new (buf) instr_reg<true, true, false, true>(dst, dst_size, pipe, pipe_size);
+          return new (buf) instr_reg<false, false, true>(dst, dst_size);
         } else {
-          return new (buf) instr_reg<true, true, false, false>(dst, dst_size, pipe, pipe_size);
+          return new (buf) instr_reg<false, false, false>(dst, dst_size);
         }
       }
     }
   } else {
-    if (1 == node->length()) {
+    if (is_scalar) {
       if (node->has_init_data()) {
         if (node->has_enable()) {
-          return new (buf) instr_reg<false, false, true, true>(dst, dst_size, pipe, pipe_size);
+          return new (buf) instr_pipe<true, true, true>(dst, dst_size, pipe, pipe_size);
         } else {
-          return new (buf) instr_reg<false, false, true, false>(dst, dst_size, pipe, pipe_size);
+          return new (buf) instr_pipe<true, true, false>(dst, dst_size, pipe, pipe_size);
         }
       } else {
         if (node->has_enable()) {
-          return new (buf) instr_reg<false, false, false, true>(dst, dst_size, pipe, pipe_size);
+          return new (buf) instr_pipe<true, false, true>(dst, dst_size, pipe, pipe_size);
         } else {
-          return new (buf) instr_reg<false, false, false, false>(dst, dst_size, pipe, pipe_size);
+          return new (buf) instr_pipe<true, false, false>(dst, dst_size, pipe, pipe_size);
         }
       }
     } else {
       if (node->has_init_data()) {
         if (node->has_enable()) {
-          return new (buf) instr_reg<false, true, true, true>(dst, dst_size, pipe, pipe_size);
+          return new (buf) instr_pipe<false, true, true>(dst, dst_size, pipe, pipe_size);
         } else {
-          return new (buf) instr_reg<false, true, true, false>(dst, dst_size, pipe, pipe_size);
+          return new (buf) instr_pipe<false, true, false>(dst, dst_size, pipe, pipe_size);
         }
       } else {
         if (node->has_enable()) {
-          return new (buf) instr_reg<false, true, false, true>(dst, dst_size, pipe, pipe_size);
+          return new (buf) instr_pipe<false, false, true>(dst, dst_size, pipe, pipe_size);
         } else {
-          return new (buf) instr_reg<false, true, false, false>(dst, dst_size, pipe, pipe_size);
+          return new (buf) instr_pipe<false, false, false>(dst, dst_size, pipe, pipe_size);
         }
       }
     }
@@ -1041,103 +1151,10 @@ instr_reg_base* instr_reg_base::create(regimpl* node, data_map_t& map) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class instr_mem : public instr_base {
-private:
-
-  struct rdport_t {
-          block_type* data;
-    const block_type* addr;
-    const block_type* enable;
-  };
-
-  struct wrport_t {
-    const block_type* data;
-    const block_type* addr;
-    const block_type* enable;
-  };
-
-  rdport_t* rdports_;
-  uint32_t num_rdports_;
-  wrport_t* wrports_;
-  uint32_t num_wrports_;
-  block_type* dst_;
-  uint32_t data_size_;
-  uint32_t addr_size_;
-
-  instr_mem(rdport_t* rdports,
-            uint32_t num_rdports,
-            wrport_t* wrports,
-            uint32_t num_wrports,
-            block_type* dst,
-            uint32_t data_size,
-            uint32_t addr_size)
-    : rdports_(rdports)
-    , num_rdports_(num_rdports)
-    , wrports_(wrports)
-    , num_wrports_(num_wrports)
-    , dst_(dst)
-    , data_size_(data_size)
-    , addr_size_(addr_size)
-  {}
-
-  ~instr_mem() {
-    for (uint32_t i = 0; i < num_rdports_; ++i) {
-      delete [] rdports_[i].data;
-    }
-  }
-
+class instr_mem_base : public instr_base {
 public:
 
-  static instr_mem* create(memimpl* node, data_map_t& map) {
-    uint32_t dst_size  = node->size();
-    uint32_t dst_nblocks = ceildiv<uint32_t>(dst_size, bitwidth_v<block_type>);
-    uint32_t dst_bytes = sizeof(block_type) * dst_nblocks;
-    uint32_t data_size = node->data_width();
-    uint32_t data_bytes = sizeof(block_type) * ceildiv<uint32_t>(data_size, bitwidth_v<block_type>);
-    uint32_t addr_size = log2ceil(node->num_items());
-
-    uint32_t num_rdports = node->is_sync_read() ? node->rdports().size() : 0;
-    uint32_t rdports_bytes = 0;
-    for (uint32_t i = 0; i < num_rdports; ++i) {
-      rdports_bytes += sizeof(rdport_t);
-    }
-
-    uint32_t num_wrports = node->wrports().size();
-    uint32_t wrports_bytes = 0;
-    for (uint32_t i = 0; i < num_wrports; ++i) {
-      wrports_bytes += sizeof(wrport_t);
-    }
-
-    auto buf = new uint8_t[__aligned_sizeof(instr_mem) + dst_bytes + rdports_bytes + wrports_bytes]();
-    auto buf_cur = buf + __aligned_sizeof(instr_mem);
-    auto dst = (block_type*)buf_cur;
-    map[node->id()] = dst;
-
-    buf_cur += dst_bytes;
-    auto rdports = (rdport_t*)buf_cur;
-
-
-    for (uint32_t i = 0; i < num_rdports; ++i) {
-      auto p = node->rdports()[i];
-      rdports[i].data = new block_type[data_bytes]();
-      map[p->id()] = rdports[i].data;
-    }
-
-    buf_cur += rdports_bytes;
-    auto wrports = (wrport_t*)buf_cur;
-
-    if (node->has_init_data()) {
-      bv_copy(dst, node->init_data().words(), dst_size);
-    }
-
-    return new (buf) instr_mem(rdports, num_rdports, wrports, num_wrports,
-                               dst, data_size, addr_size);
-  }
-
-  void destroy() override {
-    this->~instr_mem();
-    ::operator delete [](this);
-  }
+  static instr_mem_base* create(memimpl* node, data_map_t& map);
 
   void init(memimpl* node, data_map_t& map) {
     for (uint32_t i = 0; i < num_rdports_; ++i) {
@@ -1154,28 +1171,158 @@ public:
     }
   }
 
+protected:
+
+  struct rdport_t {
+          block_type* data;
+    const block_type* addr;
+    const block_type* enable;
+  };
+
+  struct wrport_t {
+    const block_type* data;
+    const block_type* addr;
+    const block_type* enable;
+  };
+
+  instr_mem_base(block_type* dst,
+                 uint32_t data_size,
+                 uint32_t addr_size,
+                 rdport_t* rdports,
+                 uint32_t num_rdports,
+                 wrport_t* wrports,
+                 uint32_t num_wrports)
+    : dst_(dst)
+    , data_size_(data_size)
+    , addr_size_(addr_size)
+    , rdports_(rdports)
+    , num_rdports_(num_rdports)
+    , wrports_(wrports)
+    , num_wrports_(num_wrports)
+  {}
+
+  ~instr_mem_base() {
+    for (uint32_t i = 0; i < num_rdports_; ++i) {
+      delete [] rdports_[i].data;
+    }
+  }
+
+  block_type* dst_;
+  uint32_t data_size_;
+  uint32_t addr_size_;
+  rdport_t* rdports_;
+  uint32_t num_rdports_;
+  wrport_t* wrports_;
+  uint32_t num_wrports_;
+};
+
+template <bool is_scalar>
+class instr_mem : public instr_mem_base {
+public:
+
+  void destroy() override {
+    this->~instr_mem();
+    ::operator delete [](this);
+  }
+
   void eval() override {
     // evaluate synchronous read ports
-    for (const rdport_t *p = rdports_, *p_end = p + num_rdports_ ; p != p_end; ++p) {
-      // check enable state
+    for (auto *p = rdports_, *p_end = p + num_rdports_; p != p_end; ++p) {
       if (p->enable && !static_cast<bool>(p->enable[0]))
         continue;
-      // memory read
       auto addr = bv_cast<uint32_t>(p->addr, addr_size_);
-      bv_slice(p->data, data_size_, dst_, addr * data_size_);
+      auto src_offset = addr * data_size_;
+      auto src = dst_ + (src_offset / bitwidth_v<block_type>);
+      auto src_begin_rem = src_offset % bitwidth_v<block_type>;
+      if constexpr (is_scalar) {
+        bv_slice_vector_small(p->data, data_size_, src, src_begin_rem);
+      } else {
+        bv_slice_vector(p->data, data_size_, src, src_begin_rem);
+      }
     }
 
     // evaluate synchronous write ports
-    for (wrport_t *p = wrports_, *p_end = p + num_wrports_ ; p != p_end; ++p) {
-      // check enable state
+    for (auto *p = wrports_, *p_end = p + num_wrports_; p != p_end; ++p) {
       if (p->enable && !static_cast<bool>(p->enable[0]))
         continue;
-      // memory write
       auto addr = bv_cast<uint32_t>(p->addr, addr_size_);
-      bv_copy(dst_, addr * data_size_, p->data, 0, data_size_);
+      auto dst_offset = addr * data_size_;
+      auto dst = dst_ + (dst_offset / bitwidth_v<block_type>);
+      auto dst_begin_rem = dst_offset % bitwidth_v<block_type>;
+      if constexpr (is_scalar) {
+        bv_copy_vector_small(dst, dst_begin_rem, p->data, 0, data_size_);
+      } else {
+        bv_copy_vector(dst, dst_begin_rem, p->data, 0, data_size_);
+      }
     }
   }
+
+private:
+
+  instr_mem(block_type* dst,
+            uint32_t data_size,
+            uint32_t addr_size,
+            rdport_t* rdports,
+            uint32_t num_rdports,
+            wrport_t* wrports,
+            uint32_t num_wrports)
+    : instr_mem_base(dst, data_size, addr_size,
+                     rdports, num_rdports, wrports, num_wrports)
+  {}
+
+  friend class instr_mem_base;
 };
+
+instr_mem_base* instr_mem_base::create(memimpl* node, data_map_t& map) {
+  uint32_t dst_size  = node->size();
+  uint32_t dst_nblocks = ceildiv<uint32_t>(dst_size, bitwidth_v<block_type>);
+  uint32_t dst_bytes = sizeof(block_type) * dst_nblocks;
+  uint32_t data_size = node->data_width();
+  uint32_t data_bytes = sizeof(block_type) * ceildiv<uint32_t>(data_size, bitwidth_v<block_type>);
+  uint32_t addr_size = log2ceil(node->num_items());
+
+  uint32_t num_rdports = node->is_sync_read() ? node->rdports().size() : 0;
+  uint32_t rdports_bytes = 0;
+  for (uint32_t i = 0; i < num_rdports; ++i) {
+    rdports_bytes += sizeof(rdport_t);
+  }
+
+  uint32_t num_wrports = node->wrports().size();
+  uint32_t wrports_bytes = 0;
+  for (uint32_t i = 0; i < num_wrports; ++i) {
+    wrports_bytes += sizeof(wrport_t);
+  }
+
+  auto buf = new uint8_t[__aligned_sizeof(instr_mem<false>) + dst_bytes + rdports_bytes + wrports_bytes]();
+  auto buf_cur = buf + __aligned_sizeof(instr_mem<false>);
+  auto dst = (block_type*)buf_cur;
+  map[node->id()] = dst;
+
+  buf_cur += dst_bytes;
+  auto rdports = (rdport_t*)buf_cur;
+
+
+  for (uint32_t i = 0; i < num_rdports; ++i) {
+    auto p = node->rdports()[i];
+    rdports[i].data = new block_type[data_bytes]();
+    map[p->id()] = rdports[i].data;
+  }
+
+  buf_cur += rdports_bytes;
+  auto wrports = (wrport_t*)buf_cur;
+
+  if (node->has_init_data()) {
+    bv_copy(dst, node->init_data().words(), dst_size);
+  }
+  bool is_scalar = (data_size <= bitwidth_v<block_type>);
+  if (is_scalar) {
+    return new (buf) instr_mem<true>(dst, data_size, addr_size,
+                                     rdports, num_rdports, wrports, num_wrports);
+  } else {
+    return new (buf) instr_mem<false>(dst, data_size, addr_size,
+                                      rdports, num_rdports, wrports, num_wrports);
+  }
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -1215,7 +1362,8 @@ public:
   }
 
   void eval() override {
-    auto src_offset = bv_cast<uint32_t>(addr_, addr_size_) * dst_size_;
+    auto addr = bv_cast<uint32_t>(addr_, addr_size_);
+    auto src_offset = addr * dst_size_;
     auto src = store_ + (src_offset / bitwidth_v<block_type>);
     auto src_begin_rem = src_offset % bitwidth_v<block_type>;
     if constexpr (is_scalar) {
@@ -1538,7 +1686,7 @@ void driver::initialize(const std::vector<lnodeimpl*>& eval_list) {
       instr_map[node->id()] = instr_reg_base::create(reinterpret_cast<regimpl*>(node), data_map);
       break;
     case type_mem:
-      instr_map[node->id()] = instr_mem::create(reinterpret_cast<memimpl*>(node), data_map);
+      instr_map[node->id()] = instr_mem_base::create(reinterpret_cast<memimpl*>(node), data_map);
       break;
     case type_udfs:
       instr_map[node->id()] = instr_udfs::create(reinterpret_cast<udfsimpl*>(node), data_map);
@@ -1574,7 +1722,7 @@ void driver::initialize(const std::vector<lnodeimpl*>& eval_list) {
       instr = instr_alu_base::create(reinterpret_cast<aluimpl*>(node), data_map);
       break;
     case type_sel:
-      instr = instr_select::create(reinterpret_cast<selectimpl*>(node), data_map);
+      instr = instr_select_base::create(reinterpret_cast<selectimpl*>(node), data_map);
       break;
     case type_cd:
       instr = instr_cd::create(reinterpret_cast<cdimpl*>(node), data_map);
@@ -1585,7 +1733,7 @@ void driver::initialize(const std::vector<lnodeimpl*>& eval_list) {
       break;
     case type_mem:
       instr = instr_map.at(node->id());
-      reinterpret_cast<instr_mem*>(instr)->init(reinterpret_cast<memimpl*>(node), data_map);
+      reinterpret_cast<instr_mem_base*>(instr)->init(reinterpret_cast<memimpl*>(node), data_map);
       break;
     case type_mrport: {
       auto port = reinterpret_cast<mrportimpl*>(node);

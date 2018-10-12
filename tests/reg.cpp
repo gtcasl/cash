@@ -47,7 +47,7 @@ TEST_CASE("registers", "[registers]") {
       ch_bit2 a;
       a = ch_delay(10_b, 4, 1);
       ch_bit2 e = ch_case(ch_now(), 9, 10_b)(1);
-      //ch_print("t={0}, a={1}, e={2}", ch_now(), a, e);
+      ch_print("t={0}, a={1}, e={2}", ch_now(), a, e);
       return (a == e);
     }, 4);
 
