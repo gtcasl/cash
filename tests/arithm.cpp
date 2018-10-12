@@ -249,17 +249,32 @@ TEST_CASE("arithmetic", "[arithmetic]") {
     });    
     TEST([]()->ch_bool {
       ch_uint<1>  a(1);
-      auto c = ch_shl<66>(a, 32);
+      auto c = ch_shl<255>(a, 32);
       return (c == 0x100000000);
     });
     TEST([]()->ch_bool {
-      ch_uint<66> a(0x100000000);
+      ch_uint<1>  a(1);
+      auto c = ch_shl<64>(a, 33);
+      return (c == 0x200000000);
+    });
+    TEST([]()->ch_bool {
+      ch_uint<255> a(0x100000000);
       auto c = ch_shr<1>(a, 32);
       return (c == 0x1);
     });
     TEST([]()->ch_bool {
-      ch_int<66> a(0x100000000);
+      ch_uint<64> a(0x200000000);
+      auto c = ch_shr<1>(a, 33);
+      return (c == 0x1);
+    });
+    TEST([]()->ch_bool {
+      ch_int<255> a(0x100000000);
       auto c = ch_shr<1>(a, 32);
+      return (c == 0x1);
+    });
+    TEST([]()->ch_bool {
+      ch_int<64> a(0x200000000);
+      auto c = ch_shr<1>(a, 33);
       return (c == 0x1);
     });
   }

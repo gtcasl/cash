@@ -603,20 +603,7 @@ void bv_copy(T* dst, uint32_t dst_offset,
     uint32_t w_dst_begin_rem = dst_offset % WORD_SIZE;
     auto w_src = src + (src_offset / WORD_SIZE);
     uint32_t w_src_begin_rem = src_offset % WORD_SIZE;
-    if (length <= WORD_SIZE) {
-      bv_copy_vector_small(w_dst, w_dst_begin_rem, w_src, w_src_begin_rem, length);
-    } else
-    if (0 == (w_dst_begin_rem | w_src_begin_rem)) {
-      bv_copy_vector_aligned(w_dst, w_dst_begin_rem, w_src, length);
-    } else
-    if (0 == w_dst_begin_rem) {
-      bv_copy_vector_aligned_dst(w_dst, w_dst_begin_rem, w_src, w_src_begin_rem, length);
-    } else
-    if (0 == w_src_begin_rem) {
-      bv_copy_vector_aligned_src(w_dst, w_dst_begin_rem, w_src, w_src_begin_rem, length);
-    } else {
-      bv_copy_vector_unaligned(w_dst, w_dst_begin_rem, w_src, w_src_begin_rem, length);
-    }
+    bv_copy_vector(w_dst, w_dst_begin_rem, w_src, w_src_begin_rem, length);
   }
 }
 
@@ -720,14 +707,7 @@ void bv_slice(T* dst, uint32_t dst_size, const T* src, uint32_t src_offset) {
   } else {
     auto w_src = src + (src_offset / WORD_SIZE);
     uint32_t w_src_begin_rem = src_offset % WORD_SIZE;
-    if (dst_size <= WORD_SIZE) {
-      bv_slice_vector_small(dst, dst_size, w_src, w_src_begin_rem);
-    } else
-    if (0 == w_src_begin_rem) {
-      bv_slice_vector_aligned(dst, dst_size, w_src);
-    } else {
-      bv_slice_vector_unaligned(dst, dst_size, w_src, w_src_begin_rem);
-    }
+    bv_slice_vector(dst, dst_size, w_src, w_src_begin_rem);
   }
 }
 
@@ -1096,21 +1076,23 @@ void bv_shr_vector(T* out, uint32_t out_size,
                    uint64_t dist) {
 
   static constexpr uint32_t WORD_SIZE = bitwidth_v<T>;
-  static constexpr T        WORD_MAX  = std::numeric_limits<T>::max();
   assert(out_size <= in_size);
 
   uint32_t in_num_words  = ceildiv(in_size, WORD_SIZE);
   uint32_t out_num_words = ceildiv(out_size, WORD_SIZE);
 
   uint32_t shift_words = std::min(ceildiv<uint32_t>(dist, WORD_SIZE), in_num_words);
-  uint32_t rem_words = in_num_words - shift_words;
+  uint32_t rem_words = std::min(in_num_words - shift_words, out_num_words);
   uint32_t shift_bits = dist % WORD_SIZE;
 
-  T ext = (is_signed && bv_is_neg_vector(in, in_size)) ? WORD_MAX : 0;
-  uint32_t i = 0;
+  T ext = 0;
+  if constexpr (is_signed) {
+    ext = bv_is_neg_vector(in, in_size) ? std::numeric_limits<T>::max() : 0;
+  }
 
   if (shift_bits) {
     T prev = in[shift_words-1] >> shift_bits;
+    uint32_t i = 0;
     for (; i < rem_words; ++i) {
       auto curr = in[i + shift_words];
       out[i] = (curr << (WORD_SIZE - shift_bits)) | prev;
@@ -1121,6 +1103,7 @@ void bv_shr_vector(T* out, uint32_t out_size,
       prev = ext;
     }
   } else {
+    uint32_t i = 0;
     for (; i < rem_words; ++i) {
       out[i] = in[i + shift_words];
     }

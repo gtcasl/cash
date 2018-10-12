@@ -37,7 +37,7 @@ SRCS = utils.cpp \
        logic.cpp \
        context.cpp \
        compile.cpp \
-       driver.cpp \
+       simref.cpp \
        simjit.cpp \
        deviceimpl.cpp \
        simulatorimpl.cpp \

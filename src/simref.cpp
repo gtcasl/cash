@@ -16,7 +16,7 @@
 using namespace ch::internal;
 using namespace ch::internal::simref;
 
-#define __aligned_sizeof(x) (4*((sizeof(x) + 3)/4))
+#define __aligned_sizeof(...) (4*((sizeof(__VA_ARGS__) + 3)/4))
 
 class instr_proxy_base : public instr_base {
 public:
@@ -848,33 +848,33 @@ public:
   static instr_reg_base* create(regimpl* node, data_map_t& map);
 
   void init(regimpl* node, data_map_t& map) {
-    next_     = map.at(node->next().id());
-    enable_   = node->has_enable() ? map.at(node->enable().id()) : nullptr;
-    reset_    = node->has_init_data() ? map.at(node->reset().id()) : nullptr;
     initdata_ = node->has_init_data() ? map.at(node->init_data().id()) : nullptr;
+    reset_    = node->has_init_data() ? map.at(node->reset().id()) : nullptr;
+    enable_   = node->has_enable() ? map.at(node->enable().id()) : nullptr;
+    next_     = map.at(node->next().id());
   }
 
 protected:
 
-  instr_reg_base(block_type* pipe, uint32_t pipe_size, block_type* dst, uint32_t size)
+  instr_reg_base(block_type* dst, uint32_t size, block_type* pipe, uint32_t pipe_size)
     : initdata_(nullptr)
-    , pipe_(pipe)
-    , pipe_size_(pipe_size)
     , reset_(nullptr)
     , enable_(nullptr)
     , next_(nullptr)
     , dst_(dst)
     , size_(size)
+    , pipe_(pipe)
+    , pipe_size_(pipe_size)
   {}
 
   const block_type* initdata_;
-  block_type* pipe_;
-  uint32_t pipe_size_;
   const block_type* reset_;
   const block_type* enable_;
   const block_type* next_;
   block_type* dst_;
   uint32_t size_;
+  block_type* pipe_;
+  uint32_t pipe_size_;
 };
 
 template <bool is_scalar, bool is_pipe, bool has_init, bool has_enable>
@@ -890,7 +890,7 @@ public:
     if constexpr (is_scalar) {
       if constexpr (has_init) {
         // check reset state
-        if (reset_ && static_cast<bool>(reset_[0])) {
+        if (static_cast<bool>(reset_[0])) {
           bv_copy_scalar(dst_, initdata_);
           if constexpr (is_pipe) {
             for (uint32_t i = 0; i < pipe_size_; i+= size_) {
@@ -903,7 +903,7 @@ public:
 
       if constexpr (has_enable) {
         // check enable state
-        if (enable_ && !static_cast<bool>(enable_[0]))
+        if (!static_cast<bool>(enable_[0]))
           return;
       }
 
@@ -919,12 +919,14 @@ public:
     } else {
       if constexpr (has_init) {
         // check reset state
-        if (reset_ && static_cast<bool>(reset_[0])) {
-          bv_copy(dst_, initdata_, size_);
+        if (static_cast<bool>(reset_[0])) {
           if constexpr (is_pipe) {
             for (uint32_t i = 0; i < pipe_size_; i+= size_) {
               bv_copy(pipe_, i, initdata_, 0, size_);
             }
+            bv_copy(dst_, initdata_, size_);
+          } else {
+            bv_copy_vector(dst_, initdata_, size_);
           }
           return;
         }
@@ -932,18 +934,18 @@ public:
 
       if constexpr (has_enable) {
         // check enable state
-        if (enable_ && !static_cast<bool>(enable_[0]))
+        if (!static_cast<bool>(enable_[0]))
           return;
       }
 
       if constexpr (is_pipe) {
         // advance pipeline
         bv_slice(dst_, size_, pipe_, 0);
-        bv_shr<false>(pipe_, pipe_size_, pipe_, pipe_size_, size_);
+        bv_shr_vector<false>(pipe_, pipe_size_, pipe_, pipe_size_, size_);
         bv_copy(pipe_, pipe_size_ - size_, next_, 0, size_);
       } else {
         // push next value
-        bv_copy(dst_, next_, size_);
+        bv_copy_vector(dst_, next_, size_);
       }
     }
   }
@@ -965,42 +967,42 @@ instr_reg_base* instr_reg_base::create(regimpl* node, data_map_t& map) {
   uint32_t pipe_size = dst_size * (node->length() - 1);
   uint32_t pipe_bytes = sizeof(block_type) * ceildiv<uint32_t>(pipe_size, bitwidth_v<block_type>);
 
-  auto buf = new uint8_t[__aligned_sizeof(instr_reg_base) + dst_bytes + pipe_bytes]();
-  auto buf_cur = buf + __aligned_sizeof(instr_reg_base);
+  auto buf = new uint8_t[__aligned_sizeof(instr_reg<false, false, false, false>) + dst_bytes + pipe_bytes]();
+  auto buf_cur = buf + __aligned_sizeof(instr_reg<false, false, false, false>);
   auto dst = (block_type*)buf_cur;
   map[node->id()] = dst;
 
   buf_cur += dst_bytes;
   auto pipe = (block_type*)buf_cur;
 
-  bool is_scalar = (dst_size <= sizeof(block_type)) && (pipe_size <= sizeof(block_type));
+  bool is_scalar = (dst_size <= bitwidth_v<block_type>) && (pipe_size <= bitwidth_v<block_type>);
   if (is_scalar) {
     if (1 == node->length()) {
       if (node->has_init_data()) {
         if (node->has_enable()) {
-          return new (buf) instr_reg<true, false, true, true>(pipe, pipe_size, dst, dst_size);
+          return new (buf) instr_reg<true, false, true, true>(dst, dst_size, pipe, pipe_size);
         } else {
-          return new (buf) instr_reg<true, false, true, false>(pipe, pipe_size, dst, dst_size);
+          return new (buf) instr_reg<true, false, true, false>(dst, dst_size, pipe, pipe_size);
         }
       } else {
         if (node->has_enable()) {
-          return new (buf) instr_reg<true, false, false, true>(pipe, pipe_size, dst, dst_size);
+          return new (buf) instr_reg<true, false, false, true>(dst, dst_size, pipe, pipe_size);
         } else {
-          return new (buf) instr_reg<true, false, false, false>(pipe, pipe_size, dst, dst_size);
+          return new (buf) instr_reg<true, false, false, false>(dst, dst_size, pipe, pipe_size);
         }
       }
     } else {
       if (node->has_init_data()) {
         if (node->has_enable()) {
-          return new (buf) instr_reg<true, true, true, true>(pipe, pipe_size, dst, dst_size);
+          return new (buf) instr_reg<true, true, true, true>(dst, dst_size, pipe, pipe_size);
         } else {
-          return new (buf) instr_reg<true, true, true, false>(pipe, pipe_size, dst, dst_size);
+          return new (buf) instr_reg<true, true, true, false>(dst, dst_size, pipe, pipe_size);
         }
       } else {
         if (node->has_enable()) {
-          return new (buf) instr_reg<true, true, false, true>(pipe, pipe_size, dst, dst_size);
+          return new (buf) instr_reg<true, true, false, true>(dst, dst_size, pipe, pipe_size);
         } else {
-          return new (buf) instr_reg<true, true, false, false>(pipe, pipe_size, dst, dst_size);
+          return new (buf) instr_reg<true, true, false, false>(dst, dst_size, pipe, pipe_size);
         }
       }
     }
@@ -1008,29 +1010,29 @@ instr_reg_base* instr_reg_base::create(regimpl* node, data_map_t& map) {
     if (1 == node->length()) {
       if (node->has_init_data()) {
         if (node->has_enable()) {
-          return new (buf) instr_reg<false, false, true, true>(pipe, pipe_size, dst, dst_size);
+          return new (buf) instr_reg<false, false, true, true>(dst, dst_size, pipe, pipe_size);
         } else {
-          return new (buf) instr_reg<false, false, true, false>(pipe, pipe_size, dst, dst_size);
+          return new (buf) instr_reg<false, false, true, false>(dst, dst_size, pipe, pipe_size);
         }
       } else {
         if (node->has_enable()) {
-          return new (buf) instr_reg<false, false, false, true>(pipe, pipe_size, dst, dst_size);
+          return new (buf) instr_reg<false, false, false, true>(dst, dst_size, pipe, pipe_size);
         } else {
-          return new (buf) instr_reg<false, false, false, false>(pipe, pipe_size, dst, dst_size);
+          return new (buf) instr_reg<false, false, false, false>(dst, dst_size, pipe, pipe_size);
         }
       }
     } else {
       if (node->has_init_data()) {
         if (node->has_enable()) {
-          return new (buf) instr_reg<false, true, true, true>(pipe, pipe_size, dst, dst_size);
+          return new (buf) instr_reg<false, true, true, true>(dst, dst_size, pipe, pipe_size);
         } else {
-          return new (buf) instr_reg<false, true, true, false>(pipe, pipe_size, dst, dst_size);
+          return new (buf) instr_reg<false, true, true, false>(dst, dst_size, pipe, pipe_size);
         }
       } else {
         if (node->has_enable()) {
-          return new (buf) instr_reg<false, true, false, true>(pipe, pipe_size, dst, dst_size);
+          return new (buf) instr_reg<false, true, false, true>(dst, dst_size, pipe, pipe_size);
         } else {
-          return new (buf) instr_reg<false, true, false, false>(pipe, pipe_size, dst, dst_size);
+          return new (buf) instr_reg<false, true, false, false>(dst, dst_size, pipe, pipe_size);
         }
       }
     }
@@ -1518,8 +1520,9 @@ driver::~driver() {
 
 void driver::initialize(const std::vector<lnodeimpl*>& eval_list) {
   data_map_t data_map;
-  std::unordered_map<uint32_t, instr_base*> instr_map;
-  std::unordered_map<uint32_t, uint32_t> node_map;
+  instr_map_t instr_map;
+  node_map_t node_map;
+
   instr_map.reserve(eval_list.size());
   instrs_.reserve(eval_list.size());
 
@@ -1621,33 +1624,7 @@ void driver::initialize(const std::vector<lnodeimpl*>& eval_list) {
   }
 
   // setup clock domains bypass
-  for (auto cd : ctx->cdomains()) {
-    std::unordered_set<uint32_t> bypass_nodes;
-    this->generate_clk_bypass_list(bypass_nodes, ctx, cd->id());
-    auto cd_instr = reinterpret_cast<instr_cd*>(instr_map.at(cd->id()));
-    uint32_t i = 0, n = instrs_.size();
-    for (; i < n;) {
-      if (instrs_[i++] == cd_instr)
-        break;
-    }
-    bool skip_enabled = false;
-    uint32_t skip_start = 0;
-    for (;i < n; ++i) {
-      auto node_id = node_map.at(i);
-      bool bypass = bypass_nodes.count(node_id);
-      if (bypass && !skip_enabled) {
-        skip_enabled = true;
-        skip_start = i;
-      } else
-      if (!bypass && skip_enabled) {
-        skip_enabled = false;
-        cd_instr->add_bypass(instrs_[skip_start-1], i - skip_start + 1);
-      }
-    }
-    if (skip_enabled) {
-      cd_instr->add_bypass(instrs_[skip_start-1], i - skip_start + 1);
-    }
-  }
+  this->cdomain_bypass(ctx, instr_map, node_map);
 }
 
 void driver::setup_constants(context* ctx, data_map_t& data_map) {
@@ -1682,7 +1659,37 @@ void driver::setup_constants(context* ctx, data_map_t& data_map) {
   }
 }
 
-void driver::generate_clk_bypass_list(std::unordered_set<uint32_t>& out, context* ctx, uint32_t cd_id) {
+void driver::cdomain_bypass(context* ctx, instr_map_t& instr_map, node_map_t& node_map) {
+  for (auto cd : ctx->cdomains()) {
+    std::unordered_set<uint32_t> bypass_nodes;
+    this->build_bypass_list(bypass_nodes, ctx, cd->id());
+    auto cd_instr = reinterpret_cast<instr_cd*>(instr_map.at(cd->id()));
+    uint32_t i = 0, n = instrs_.size();
+    for (; i < n;) {
+      if (instrs_[i++] == cd_instr)
+        break;
+    }
+    bool skip_enabled = false;
+    uint32_t skip_start = 0;
+    for (;i < n; ++i) {
+      auto node_id = node_map.at(i);
+      bool bypass = bypass_nodes.count(node_id);
+      if (bypass && !skip_enabled) {
+        skip_enabled = true;
+        skip_start = i;
+      } else
+      if (!bypass && skip_enabled) {
+        skip_enabled = false;
+        cd_instr->add_bypass(instrs_[skip_start-1], i - skip_start + 1);
+      }
+    }
+    if (skip_enabled) {
+      cd_instr->add_bypass(instrs_[skip_start-1], i - skip_start + 1);
+    }
+  }
+}
+
+void driver::build_bypass_list(std::unordered_set<uint32_t>& out, context* ctx, uint32_t cd_id) {
   std::unordered_set<uint32_t> visited_nodes;
   std::unordered_set<uint32_t> changed_nodes;
 
@@ -1702,13 +1709,12 @@ void driver::generate_clk_bypass_list(std::unordered_set<uint32_t>& out, context
         && reinterpret_cast<memimpl*>(node)->has_cd()
         && cd_id == reinterpret_cast<memimpl*>(node)->cd().id())
        || (type_udfs == type
-        && cd_id == reinterpret_cast<udfsimpl*>(node)->cd().id()))
+           && cd_id == reinterpret_cast<udfsimpl*>(node)->cd().id())) {
         return false;
+      }
 
-      if (type_reg == type
-       || (type_mem == type && reinterpret_cast<memimpl*>(node)->has_cd())
-       || type_udfs == type) {
-        // update changeset here in case there is a cycle with the source nodes
+      // update changeset here in case there is a cycle with the source nodes
+      if (type != type_mem|| reinterpret_cast<memimpl*>(node)->has_cd()) {
         changed_nodes.emplace(node->id());
         changed = true;
       }
