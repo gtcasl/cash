@@ -892,8 +892,14 @@ public:
         b.first->step = 1;
       }
     } else {
-      for (auto& b : bypass_nodes_) {
-        b.first->step = b.second;
+      if (first_call_) {
+        for (auto& b : init_nodes_) {
+          b.first->step = b.second;
+        }
+      } else {
+        for (auto& b : bypass_nodes_) {
+          b.first->step = b.second;
+        }
       }
     }
   }
@@ -904,12 +910,15 @@ private:
     : clk_(clk)
     , pos_edge_(pos_edge)
     , prev_val_(false)
+    , first_call_(false)
   {}
 
+  std::vector<std::pair<instr_base*, uint32_t>> init_nodes_;
   std::vector<std::pair<instr_base*, uint32_t>> bypass_nodes_;
   const block_type* clk_;  
   bool pos_edge_;
   bool prev_val_;
+  bool first_call_;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

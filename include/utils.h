@@ -599,8 +599,7 @@ auto sign_ext(T value, unsigned width) {
       std::abort(); \
     } while (false)
 
-  #define DBG(level, format, ...)
-  #define CH_CHECK(pred, ...)
+  #define DBG(level, format, ...)  
 #else
   #define CH_ABORT(...) \
     do { \
@@ -611,18 +610,18 @@ auto sign_ext(T value, unsigned width) {
     } while (false)
 
   #define DBG(level, ...) \
-    dbprint(level, __VA_ARGS__)
-
-  #define CH_CHECK(pred, ...) \
-    do { \
-      if (!(pred)) { \
-        fprintf(stderr, "ERROR: assertion `" CH_STRINGIZE(pred) "' failed, "); \
-        fprintf(stderr, __VA_ARGS__); \
-        fprintf(stderr, " (" __FILE__ ":" CH_STRINGIZE(__LINE__) ")\n"); \
-        std::abort(); \
-      } \
-    } while (false)
+    dbprint(level, __VA_ARGS__)  
 #endif
+
+#define CH_CHECK(pred, ...) \
+  do { \
+    if (!(pred)) { \
+      fprintf(stderr, "ERROR: assertion `" CH_STRINGIZE(pred) "' failed, "); \
+      fprintf(stderr, __VA_ARGS__); \
+      fprintf(stderr, " (" __FILE__ ":" CH_STRINGIZE(__LINE__) ")\n"); \
+      std::abort(); \
+    } \
+  } while (false)
 
 #define CH_DEF_SFINAE_CHECK(type_name, predicate) \
   template<typename T, typename Enable = void> \

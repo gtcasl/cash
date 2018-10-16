@@ -337,7 +337,7 @@ void compiler::build_eval_list(std::vector<lnodeimpl*>& eval_list) {
 }
 
 void compiler::compile() {
-  size_t orig_num_nodes, dce_nodes, cse_nodes, pxc_nodes;
+  size_t orig_num_nodes, dce_nodes(0), cse_nodes(0), pxc_nodes(0);
 
   DBG(2, "compiling %s (#%d) ...\n", ctx_->name().c_str(), ctx_->id());
 

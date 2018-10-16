@@ -325,12 +325,10 @@ CH_SYSTEM_OPERATOR(system_op_equality)
 
 CH_SYSTEM_OPERATOR(system_op_logical)
   friend auto operator&&(const Derived& lhs, const Derived& rhs) {
-    static_assert(Derived::traits::bitwidth == 1, "invalid size");
     return bv_orr(system_accessor::data(lhs).words(), N) && bv_orr(system_accessor::data(rhs).words(), N);
   }
 
   friend auto operator||(const Derived& lhs, const Derived& rhs) {
-    static_assert(Derived::traits::bitwidth == 1, "invalid size");
     return bv_orr(system_accessor::data(lhs).words(), N) || bv_orr(system_accessor::data(rhs).words(), N);
   }
 

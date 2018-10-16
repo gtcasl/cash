@@ -298,7 +298,11 @@ bool verilogwriter::print_decl(std::ostream& out,
     }
     this->print_name(out, node);
     if (type_mem == type) {
-      out << " [0:" << (reinterpret_cast<memimpl*>(node)->num_items() - 1) << "]";
+      auto mem = reinterpret_cast<memimpl*>(node);
+      out << " [0:" << (mem->num_items() - 1) << "]";
+      if (mem->wrports().empty()) {
+        out << " /* synthesis ramstyle = \"M20K, no_rw_check\" */";
+      }
     }
     visited.insert(node->id());
     if (!ref) {

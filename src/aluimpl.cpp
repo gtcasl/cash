@@ -1,5 +1,6 @@
 #include "aluimpl.h"
 #include "proxyimpl.h"
+#include "litimpl.h"
 #include "logic.h"
 #include "context.h"
 
@@ -87,5 +88,15 @@ lnodeimpl* ch::internal::createAluNode(
     const lnode& lhs,
     const lnode& rhs,
     const source_location& sloc) {
+  if (op == ch_op::ne || op == ch_op::eq) {
+    if (type_lit == lhs.impl()->type() && reinterpret_cast<litimpl*>(lhs.impl())->is_zero()) {
+      op = (op == ch_op::eq) ? ch_op::notl : ch_op::orr;
+      return rhs.impl()->ctx()->create_node<aluimpl>(op, size, is_signed, rhs.impl(), sloc);
+    } else
+    if (type_lit == lhs.impl()->type() && reinterpret_cast<litimpl*>(rhs.impl())->is_zero()) {
+      op = (op == ch_op::eq) ? ch_op::notl : ch_op::orr;
+      return lhs.impl()->ctx()->create_node<aluimpl>(op, size, is_signed, lhs.impl(), sloc);
+    }
+  }
   return lhs.impl()->ctx()->create_node<aluimpl>(op, size, is_signed, lhs.impl(), rhs.impl(), sloc);
 }

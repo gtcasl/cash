@@ -733,10 +733,9 @@ protected:
             void* dst,
             uint32_t byte_alignment,
             uint32_t dst_offset,
-            uint32_t length) const {
+            uint32_t length) const {    
     CH_CHECK(src_offset + length <= size_, "out of bound access");
     assert(ispow2(byte_alignment) && byte_alignment <= 8);
-
     byte_alignment = std::min<uint32_t>(byte_alignment, sizeof(word_t));
 
     switch (byte_alignment) {

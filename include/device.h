@@ -38,41 +38,7 @@ protected:
   template <typename T> friend class device_base;
 };
 
-///////////////////////////////////////////////////////////////////////////////
-
-class ch_device_list {
-public:
-
-  ch_device_list() {}
-
-  ch_device_list(const std::initializer_list<device>& devices)
-    : container_(devices)
-  {}
-
-  void push_back(const device& device) {
-    container_.push_back(device);
-  }
-
-  const device& operator[](size_t index) const {
-    return container_[index];
-  }
-
-  auto begin() const {
-    return container_.begin();
-  }
-
-  auto end() const {
-    return container_.end();
-  }
-
-  auto size() const {
-    return container_.size();
-  }
-
-protected:
-
-  std::vector<device> container_;
-};
+using ch_device_list = std::vector<device>;
 
 ///////////////////////////////////////////////////////////////////////////////
 

@@ -89,7 +89,7 @@ struct FilterBlock {
   ch_module<Filter<T>> f1_, f2_;
 };
 
-template <typename T, unsigned N, bool ShowAhead>
+template <typename T, unsigned N, bool SyncRead = false, bool ShowAhead = false>
 struct QueueWrapper {
   __io (
     (ch_enq_io<T>) enq,
@@ -101,7 +101,20 @@ struct QueueWrapper {
     queue_.io.deq(io.deq);
     queue_.io.size(io.size);
   }
-  ch_module<ch_queue<T, N, ShowAhead>> queue_;
+  ch_module<ch_queue<T, N, SyncRead, ShowAhead>> queue_;
+};
+
+template <typename T, unsigned N>
+struct llQueueWrapper {
+  __io (
+    (ch_enq_io<T>) enq,
+    (ch_deq_io<T>) deq
+  );
+  void describe() {
+    queue_.io.enq(io.enq);
+    queue_.io.deq(io.deq);
+  }
+  ch_module<ch_llqueue<T, N>> queue_;
 };
 
 struct Adder {
@@ -315,9 +328,11 @@ TEST_CASE("module", "[module]") {
 
     TESTX([]()->bool {
       RetCheck ret;
-      ch_device<QueueWrapper<ch_bit4, 2, false>> queue0;
-      ch_device<QueueWrapper<ch_bit4, 2, true>> queue1;
-      auto queues = std::make_tuple(&queue0, &queue1);
+      ch_device<QueueWrapper<ch_bit4, 2, true, false>> queue0;
+      ch_device<QueueWrapper<ch_bit4, 2, true, true>> queue1;
+      ch_device<QueueWrapper<ch_bit4, 2, false>> queue2;
+      ch_device<QueueWrapper<ch_bit4, 2>> queue3;
+      auto queues = std::make_tuple(&queue0, &queue1, &queue2, &queue3);
 
       static_for<0, 2>([&](auto I) {
         auto& queue = *std::get<I>(queues);

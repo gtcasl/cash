@@ -47,7 +47,7 @@ simulatorimpl::~simulatorimpl() {
     sim_driver_->release();
   for (auto ctx : contexts_) {
     ctx->release();
-  }  
+  }
 }
 
 void simulatorimpl::initialize() {
@@ -118,11 +118,11 @@ ch_tick simulatorimpl::reset(ch_tick t) {
 ch_tick simulatorimpl::step(ch_tick t) {
   if (!clk_driver_.empty()) {
     clk_driver_.eval();
-    sim_driver_->eval();
+    this->eval();
     clk_driver_.eval();
     ++t;
   }
-  sim_driver_->eval();
+  this->eval();
   ++t;
   return t;
 }

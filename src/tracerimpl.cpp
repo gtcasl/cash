@@ -74,7 +74,7 @@ void tracerimpl::eval() {
   // advance simulation
   simulatorimpl::eval();
 
-  // allocate trace new trace block
+  // allocate new trace block
   if (nullptr == trace_blocks_tail_
    || NUM_BLOCKS == trace_blocks_tail_->size) {
     auto trace_block = new trace_block_t(NUM_BLOCKS, trace_width_);

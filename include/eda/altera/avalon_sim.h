@@ -9,20 +9,15 @@ namespace eda {
 namespace altera {
 namespace avalon {
 
+using namespace ch::logic;
 using namespace ch::system;
 using namespace ch::literals;
 
 class avm_slave_driver_impl {
 protected:
 
-  struct rd_rsp_t {
-    uint32_t master;
-    sdata_type data;
-  };
-
-  struct wr_rsp_t {
-    uint32_t master;
-  };
+  using rd_rsp_t = std::pair<uint32_t, sdata_type>;
+  using wr_rsp_t = uint32_t;
 
   struct rd_req_t {
     uint32_t master;
@@ -126,8 +121,8 @@ public:
     if (!rd_reqs_.empty()) {
       auto ret = this->process_rd_rsp(t);
       if (ret) {
-        auto& master = masters_.at(ret->master);        
-        master->readdata.write(0, ret->data.words(), 0, data_width_);
+        auto& master = masters_.at(ret->first);
+        master->readdata.write(0, ret->second.words(), 0, data_width_);
         master->readdatavalid = true;
       }
     }
@@ -136,7 +131,7 @@ public:
     if (!wr_reqs_.empty()) {
       auto ret = this->process_wr_rsp(t);
       if (ret) {
-        auto& master = masters_.at(ret->master);
+        auto& master = masters_.at(*ret);
         master->writeack = true;
       }
     }
