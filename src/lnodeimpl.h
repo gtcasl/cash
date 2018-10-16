@@ -41,6 +41,10 @@ inline bool is_snode_type(lnodetype type) {
   return type_reg == type || type_mem == type || type_udfs == type;
 }
 
+inline bool is_output_type(lnodetype type) {
+  return type_output == type || type_tap == type || type_assert == type  || type_print == type;
+}
+
 using clone_map = std::unordered_map<uint32_t, lnodeimpl*>;
 
 class lnodeimpl : public refcounted {
