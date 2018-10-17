@@ -151,7 +151,7 @@ public:
 
     //--
     ch_reg<ch_uint64> stalls(0);
-    __if (read_enabled && io.avm.waitrequest) {
+    __if ((remain_bursts != 0) && (pending_size > (Qsize - MaxBurst))) {
       stalls->next = stalls + 1;
     };
 
@@ -173,8 +173,6 @@ public:
 
     //--
     io.stalls = stalls;
-
-    __tap(read_granted);
 
     /*__if (ch_clock()) {
       ch_print("{0}: AVMR: start={1}, rd={2}, addr={3}, burst={4}, rdg={5}, rmbs={6}, pns={7}, rsp={8}, pop={9}, ffs={10}, done={11}",
