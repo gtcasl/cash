@@ -16,24 +16,18 @@ using namespace ch::literals;
 class avm_slave_driver_impl {
 protected:
 
-  using rd_rsp_t = std::pair<uint32_t, sdata_type>;
-  using wr_rsp_t = uint32_t;
-
-  struct rd_req_t {
+  struct req_t {
+    bool is_write;
     uint32_t master;
     uint64_t address;
-    uint64_t bytemask;
+    uint64_t byteenable;
     uint64_t req_time;
     uint64_t rsp_time;
   };
 
-  struct wr_req_t {
+  struct rsp_t {
     uint32_t master;
-    uint64_t address;
-    sdata_type data;
-    uint64_t bytemask;
-    uint64_t req_time;
-    uint64_t rsp_time;
+    uint8_t* data;
   };
 
   struct wr_burst_t {
@@ -42,36 +36,38 @@ protected:
     uint32_t address;
   };
 
+  using rd_rsp_t = std::pair<uint32_t, sdata_type>;
+  using wr_rsp_t = uint32_t;
+
   std::default_random_engine rand_gen_;
   std::vector<std::pair<uint8_t*, uint32_t>> buffers_;
-  std::list<rd_req_t> rd_reqs_;
-  std::list<wr_req_t> wr_reqs_;
-  uint32_t data_width_;
-  uint32_t arb_idx_;
-  uint32_t max_rd_reqs_;
-  uint32_t max_wr_reqs_;
+  std::list<req_t> reqs_;
+  std::list<sdata_type> wr_data_;
+  uint32_t data_size_;
+  uint32_t max_burst_size_;
+  uint32_t reqs_queue_size_;
   uint32_t rd_latency_;
   uint32_t wr_latency_;
-  uint32_t active_masters_;
+  uint32_t arb_idx_;  
   uint64_t last_rsp_time_;
   wr_burst_t wr_burst_;
 
-  bool process_rd_req(uint64_t t,
+  bool check_channel(uint64_t t, uint32_t master);
+
+  void process_rd_req(uint64_t t,
                       uint32_t master,
                       uint64_t address,
                       uint64_t bytemask,
                       uint32_t burstsize);
 
-  bool process_wr_req(uint64_t t,
+  void process_wr_req(uint64_t t,
                       uint32_t master,
                       const sdata_type& data,
                       uint64_t address,
                       uint64_t bytemask,
                       uint32_t burstsize);
 
-  std::optional<rd_rsp_t> process_rd_rsp(uint64_t t);
-
-  std::optional<wr_rsp_t> process_wr_rsp(uint64_t t);
+  std::optional<rsp_t> process_rsp(uint64_t t);
 
   bool arbitration(uint32_t master);
 
@@ -81,9 +77,9 @@ protected:
 
 protected:
 
-  avm_slave_driver_impl(uint32_t data_width,
-                        uint32_t max_rd_reqs,
-                        uint32_t max_wr_reqs,
+  avm_slave_driver_impl(uint32_t data_size,
+                        uint32_t max_burst_size,
+                        uint32_t reqs_queue_size,
                         uint32_t rd_latency,
                         uint32_t wr_latency);
 
@@ -99,77 +95,76 @@ class avm_slave_driver : public avm_slave_driver_impl {
 public:
   using io_type = ch_system_io<avalon_mm_io<AVM>>;
 
-  avm_slave_driver(uint32_t max_rd_reqs,
-                   uint32_t max_wr_reqs,
+  avm_slave_driver(uint32_t reqs_queue_size,
                    uint32_t rd_latency,
                    uint32_t wr_latency)
-    : avm_slave_driver_impl(AVM::DataW,
-                            max_rd_reqs,
-                            max_wr_reqs,
+    : avm_slave_driver_impl(AVM::DataW / 8,
+                            (1 << (AVM::BurstW-1)),
+                            reqs_queue_size,
                             rd_latency,
                             wr_latency)
   {}
 
   void connect(const io_type& io) {
-    masters_.emplace_back(new io_type(io));
-    buffers_.resize(++active_masters_);
+    auto port = new io_type(io);
+    ports_.emplace_back(port);
+    buffers_.resize(ports_.size());
+
+    // reset output signals
+    port->waitrequest = false;
+    port->readdatavalid = false;
+    port->writeack = false;
   }
 
   void tick(ch_tick t) {
-    // default output signals
-    for (auto& master : masters_) {
-      master->waitrequest   = false;
-      master->readdatavalid = false;
-      master->writeack      = false;
+    // update output signals
+    for (unsigned i = 0; i < ports_.size(); ++i) {
+      auto& port = ports_[i];
+      port->waitrequest = !this->check_channel(t, i);
+      port->readdatavalid = false;
+      port->writeack = false;
     }
 
-    // process read responses
-    if (!rd_reqs_.empty()) {
-      auto ret = this->process_rd_rsp(t);
-      if (ret) {
-        auto& master = masters_.at(ret->first);
-        master->readdata.write(0, ret->second.words(), 0, data_width_);
-        master->readdatavalid = true;
-      }
-    }
-
-    // process write responses
-    if (!wr_reqs_.empty()) {
-      auto ret = this->process_wr_rsp(t);
-      if (ret) {
-        auto& master = masters_.at(*ret);
-        master->writeack = true;
+    // process responses
+    if (!reqs_.empty()) {      
+      auto rsp = this->process_rsp(t);
+      if (rsp) {
+        auto& port = ports_.at(rsp->master);
+        if (rsp->data) {
+          port->readdata.write(0, rsp->data, 0, data_size_ * 8);
+          port->readdatavalid = true;
+        } else {
+          port->writeack = true;
+        }
       }
     }
 
     // process requests
-    for (unsigned i = 0; i < masters_.size(); ++i) {
-      auto& master = masters_[i];
-      if (master->read) {
-        if (!this->process_rd_req(t,
-                                  i,
-                                  (uint64_t)master->address,
-                                  (uint64_t)master->byteenable,
-                                  (uint32_t)master->burstcount)) {
-          master->waitrequest = true;
-        }
+    for (unsigned i = 0; i < ports_.size(); ++i) {
+      auto& port = ports_[i];
+      if (port->waitrequest)
+        continue;
+      if (port->read) {
+        this->process_rd_req(t,
+                             i,
+                             (uint64_t)port->address,
+                             (uint64_t)port->byteenable,
+                             (uint32_t)port->burstcount);
       } else
-      if (master->write) {
-        if (!this->process_wr_req(t,
-                                  i,
-                                  (sdata_type)master->writedata,
-                                  (uint64_t)master->address,
-                                  (uint64_t)master->byteenable,
-                                  (uint32_t)master->burstcount)) {
-          master->waitrequest = true;
-        }
+      if (port->write) {
+        this->process_wr_req(t,
+                             i,
+                             (sdata_type)port->writedata,
+                             (uint64_t)port->address,
+                             (uint64_t)port->byteenable,
+                             (uint32_t)port->burstcount);
       }
     }
   }
 
 protected:
 
-  std::vector<std::unique_ptr<io_type>> masters_;
+  std::vector<std::unique_ptr<io_type>> ports_;
 };
 
 }

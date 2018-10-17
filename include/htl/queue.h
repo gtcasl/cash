@@ -9,7 +9,7 @@ namespace htl {
 
 using namespace ch::logic;
 
-template <typename T, unsigned N, bool SyncRead = false, bool ShowAhead = false>
+template <typename T, unsigned N>
 struct ch_queue {
   using value_type = T;
   static constexpr uint32_t max_size   = N;
@@ -50,23 +50,17 @@ struct ch_queue {
     ch_counter<N> rd_ptr(reading);
     ch_counter<N> wr_ptr(writing);
 
-    ch_mem<T, N, SyncRead && !ShowAhead> mem;
+    ch_mem<T, N> mem;
     mem.write(wr_ptr.value, io.enq.data, writing);
 
-    T data_out;
-    if constexpr (SyncRead && ShowAhead) {
-      ch_reg<T> r_data_out;
-      __if (writing && (empty || (1 == counter && reading))) {
-        r_data_out->next = io.enq.data;
-      }__elif (reading) {
-        r_data_out->next = mem.read(rd_ptr.value + 1);
-      }__else {
-        r_data_out->next = mem.read(rd_ptr.value);
-      };
-      data_out = r_data_out;
-    } else {
-      data_out = mem.read(rd_ptr.value);
-    }
+    ch_reg<T> data_out;
+    __if (writing && (empty || (1 == counter && reading))) {
+      data_out->next = io.enq.data;
+    }__elif (reading) {
+      data_out->next = mem.read(rd_ptr.value + 1);
+    }__else {
+      data_out->next = mem.read(rd_ptr.value);
+    };
 
     io.deq.data  = data_out;
     io.deq.valid = !empty;

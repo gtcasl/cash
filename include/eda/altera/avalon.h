@@ -86,7 +86,7 @@ public:
     //--
     ch_reg<ch_uint<AddrW>> address(0);
     ch_reg<ch_uint<log2ceil(Qsize+1)>> pending_size(0);
-    ch_reg<ch_uint<32-LMaxBurst>> remain_bursts(0);
+    ch_reg<ch_uint<32-LMaxBurst>> remain_reqs(0);
     ch_reg<ch_bool> read_enabled(false);
     ch_reg<burst_t> burst_count(0);
     ch_reg<ch_bool> done(false);
@@ -105,10 +105,10 @@ public:
     //--
     __if (io.start) {
       read_enabled->next = (io.num_blocks != 0);
-    }__elif (read_granted && (1 == remain_bursts)) {
+    }__elif (read_granted && (1 == remain_reqs)) {
       read_enabled->next = false;
     }__else {
-      read_enabled->next = (remain_bursts != 0) && (pending_size->next <= (Qsize - MaxBurst));
+      read_enabled->next = (remain_reqs != 0) && (pending_size->next <= (Qsize - MaxBurst));
     };
 
     //--
@@ -130,9 +130,9 @@ public:
 
     //--
     __if (io.start) {
-      remain_bursts->next = ch_shr<32-LMaxBurst>(io.num_blocks + MaxBurst - 1, LMaxBurst);
+      remain_reqs->next = ch_shr<32-LMaxBurst>(io.num_blocks + MaxBurst - 1, LMaxBurst);
     }__elif (read_granted) {
-      remain_bursts->next = remain_bursts - 1;
+      remain_reqs->next = remain_reqs - 1;
     };
 
     //--
@@ -145,13 +145,13 @@ public:
     //--
     __if (io.start) {
       done->next = (0 == io.num_blocks);
-    }__elif (read_granted && (1 == remain_bursts)) {
+    }__elif (read_granted && (1 == remain_reqs)) {
       done->next = true;
     };
 
     //--
     ch_reg<ch_uint64> stalls(0);
-    __if ((remain_bursts != 0) && (pending_size > (Qsize - MaxBurst))) {
+    __if ((remain_reqs != 0) && !io.avm.waitrequest && !io.avm.read) {
       stalls->next = stalls + 1;
     };
 
@@ -175,9 +175,9 @@ public:
     io.stalls = stalls;
 
     /*__if (ch_clock()) {
-      ch_print("{0}: AVMR: start={1}, rd={2}, addr={3}, burst={4}, rdg={5}, rmbs={6}, pns={7}, rsp={8}, pop={9}, ffs={10}, done={11}",
+      ch_print("{0}: AVMR: start={1}, rd={2}, addr={3}, burst={4}, rdg={5}, rmqs={6}, pns={7}, rsp={8}, pop={9}, ffs={10}, done={11}",
              ch_now(), io.start, io.avm.read, io.avm.address, io.avm.burstcount,
-               read_granted, remain_bursts, pending_size, io.avm.readdatavalid,
+               read_granted, remain_reqs, pending_size, io.avm.readdatavalid,
                out_fifo_.io.deq.ready, out_fifo_.io.size, io.done);
     };*/
   }
@@ -206,7 +206,6 @@ public:
 
   __io(
     __in(ch_uint<AddrW>)  base_addr,
-    __in(ch_uint32)       num_blocks,
     __in(ch_bool)         start,
     __out(ch_bool)        done,
     (ch_enq_io<ch_bit<DataW>>) enq,
@@ -216,71 +215,55 @@ public:
 
   void describe() {
     ch_reg<ch_uint<AddrW>> address(0);
-    ch_reg<ch_uint32> remain_reqs(0);
     ch_reg<burst_t> burst_counter(0);
     ch_reg<ch_bool> write_enabled(false);
     ch_reg<ch_bool> done(false);
 
     // determine if we can submit the next data
-    auto write_complete = write_enabled && !io.avm.waitrequest;
+    auto write_granted = write_enabled && !io.avm.waitrequest;
 
     // determine when to start the next burst transaction
-    auto full_burst_ready = (in_fifo_.io.size > MaxBurst)
-                        ||	((in_fifo_.io.size == MaxBurst) && (0 == burst_counter));
-    auto last_burst_enable = (remain_reqs < MaxBurst);
-    auto last_burst_count  = ch_slice<burst_t>(remain_reqs);
-    auto last_burst_ready  = (in_fifo_.io.size > last_burst_count)
-                          || ((in_fifo_.io.size == last_burst_count) && (0 == burst_counter));
-    auto burst_begin = (remain_reqs != 0)
-                    && ((last_burst_enable && last_burst_ready) || full_burst_ready)
-                    && ((0 == burst_counter) || ((1 == burst_counter) && !io.avm.waitrequest));
+    auto burst_begin = ((0 == burst_counter) && in_fifo_.io.deq.valid)
+                    || ((1 == burst_counter) && !io.avm.waitrequest && (in_fifo_.io.size > 1));
 
     // compute the burst size
-    auto burst_count_val = ch_sel(last_burst_enable, last_burst_count, MaxBurst);
-
-    //--
-    auto burst_count = ch_delay(burst_count_val);
+    auto full_burst_enable = (in_fifo_.io.size > MaxBurst)
+                          || ((in_fifo_.io.size == MaxBurst) && (0 == burst_counter));
+    auto partial_burst_value = ch_slice<burst_t>(in_fifo_.io.size) -  (burst_counter != 0).as_uint();
+    auto burst_count_val = ch_sel(full_burst_enable, MaxBurst, partial_burst_value);
+    auto burst_count = ch_delayEn(burst_count_val, burst_begin);
 
     //--
     __if (io.start) {
       address->next = io.base_addr;
-    }__elif (write_complete) {
+    }__elif (write_granted) {
       address->next = address + DataB;
     };
 
     //--
-    __if (io.start) {
-      remain_reqs->next = io.num_blocks;
-    }__elif (write_complete) {
-      remain_reqs->next = remain_reqs - 1;
-    };
-
-    //--
-    __if (io.start) {
-      burst_counter->next = 0;
-    }__elif (burst_begin) {
+    __if (burst_begin) {
       burst_counter->next = burst_count_val;
-    }__elif (write_complete) {
+    }__elif (write_granted) {
       burst_counter->next = burst_counter - 1;
     };
 
     //--
     __if (burst_begin) {
       write_enabled->next = true;
-    }__elif (1 == burst_counter && write_complete) {
+    }__elif (write_granted && (1 == burst_counter)) {
       write_enabled->next = false;
     };
 
     //--
-    __if (io.start) {
-      done->next = (0 == io.num_blocks);
-    }__elif ((0 == remain_reqs) || (1 == remain_reqs && write_complete)) {
+    __if (in_fifo_.io.enq.ready && in_fifo_.io.enq.valid) {
+      done->next = false;
+    }__elif (write_granted && (1 == in_fifo_.io.size)) {
       done->next = true;
     };
 
     //--
     ch_reg<ch_uint64> stalls(0);
-    __if (write_enabled && io.avm.waitrequest) {
+    __if (in_fifo_.io.deq.valid && !io.avm.waitrequest && !io.avm.write) {
       stalls->next = stalls + 1;
     };
 
@@ -293,7 +276,7 @@ public:
     io.avm.burstcount = burst_count;
 
     //--
-    in_fifo_.io.deq.ready = write_complete;
+    in_fifo_.io.deq.ready = write_granted;
     in_fifo_.io.enq(io.enq);
 
     //--
@@ -303,9 +286,9 @@ public:
     io.stalls = stalls;
 
     /*__if (ch_clock()) {
-      ch_print("{0}: AVMW: wr0={1}, wr={2}, wrn={3}, wtrq={4}, rmq={5}, ffs={6}, addr={7}, burst={8}, burstv={9}, wdata={10}, done={11}",
-             ch_now(), burst_begin, io.avm.write, write_complete, io.avm.waitrequest, remain_reqs, in_fifo_.io.size,
-               io.avm.address, io.avm.burstcount, burst_count_val, io.avm.writedata, io.done);
+      ch_print("{0}: AVMW: bbg={1}, wr={2}, wrg={3}, wtrq={4}, ffs={5}, addr={6}, burst={7}, burstctr={8}, wdata={9}, done={10}",
+             ch_now(), burst_begin, io.avm.write, write_granted, io.avm.waitrequest, in_fifo_.io.size,
+               io.avm.address, io.avm.burstcount, burst_counter, io.avm.writedata, io.done);
     };*/
   }
 

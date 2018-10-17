@@ -300,9 +300,9 @@ bool verilogwriter::print_decl(std::ostream& out,
     if (type_mem == type) {
       auto mem = reinterpret_cast<memimpl*>(node);
       out << " [0:" << (mem->num_items() - 1) << "]";
-      if (mem->wrports().empty()) {
-        out << " /* synthesis ramstyle = \"M20K, no_rw_check\" */";
-      }
+      //if (mem->wrports().empty()) {
+      //  out << " /* synthesis ramstyle = \"M20K, no_rw_check\" */";
+      //}
     }
     visited.insert(node->id());
     if (!ref) {

@@ -89,30 +89,32 @@ struct FilterBlock {
   ch_module<Filter<T>> f1_, f2_;
 };
 
-template <typename T, unsigned N, bool SyncRead = false, bool ShowAhead = false>
+template <typename T, unsigned N>
 struct QueueWrapper {
   __io (
     (ch_enq_io<T>) enq,
     (ch_deq_io<T>) deq,
-    __out(ch_uint<log2ceil(N+1)>) size
+    __out(ch_uint<ch_queue<T, N>::size_width>) size
   );
   void describe() {
     queue_.io.enq(io.enq);
     queue_.io.deq(io.deq);
     queue_.io.size(io.size);
   }
-  ch_module<ch_queue<T, N, SyncRead, ShowAhead>> queue_;
+  ch_module<ch_queue<T, N>> queue_;
 };
 
 template <typename T, unsigned N>
 struct llQueueWrapper {
   __io (
     (ch_enq_io<T>) enq,
-    (ch_deq_io<T>) deq
+    (ch_deq_io<T>) deq,
+    __out(ch_uint<ch_llqueue<T, N>::size_width>) size
   );
   void describe() {
     queue_.io.enq(io.enq);
     queue_.io.deq(io.deq);
+    queue_.io.size(io.size);
   }
   ch_module<ch_llqueue<T, N>> queue_;
 };
@@ -328,11 +330,9 @@ TEST_CASE("module", "[module]") {
 
     TESTX([]()->bool {
       RetCheck ret;
-      ch_device<QueueWrapper<ch_bit4, 2, true, false>> queue0;
-      ch_device<QueueWrapper<ch_bit4, 2, true, true>> queue1;
-      ch_device<QueueWrapper<ch_bit4, 2, false>> queue2;
-      ch_device<QueueWrapper<ch_bit4, 2>> queue3;
-      auto queues = std::make_tuple(&queue0, &queue1, &queue2, &queue3);
+      ch_device<QueueWrapper<ch_bit4, 2>> queue0;
+      ch_device<llQueueWrapper<ch_bit4, 2>> queue1;
+      auto queues = std::make_tuple(&queue0, &queue1);
 
       static_for<0, 2>([&](auto I) {
         auto& queue = *std::get<I>(queues);
@@ -351,10 +351,7 @@ TEST_CASE("module", "[module]") {
         queue.io.deq.ready = false;
         t = trace.step(t);
 
-        if constexpr (I) {
-          ret &= (0xA == queue.io.deq.data);
-        }
-
+        ret &= (0xA == queue.io.deq.data);
         ret &= !!queue.io.deq.valid; // !empty
         ret &= !!queue.io.enq.ready; // !full
         ret &= 1 == queue.io.size;   // 1
@@ -363,10 +360,7 @@ TEST_CASE("module", "[module]") {
         queue.io.deq.ready = false;
         t = trace.step(t);
 
-        if constexpr (I) {
-          ret &= (0xA == queue.io.deq.data);
-        }
-
+        ret &= (0xA == queue.io.deq.data);
         ret &= !!queue.io.deq.valid; // !empty
         ret &= !queue.io.enq.ready;  // full
         ret &= 2 == queue.io.size;   // 2
@@ -375,9 +369,7 @@ TEST_CASE("module", "[module]") {
         queue.io.deq.ready = true;   // pop
         t = trace.step(t);
 
-        if constexpr (I) {
-          ret &= (0xB == queue.io.deq.data);
-        }
+        ret &= (0xB == queue.io.deq.data);
         ret &= !!queue.io.deq.valid; // !empty
         ret &= !!queue.io.enq.ready; // !full
         ret &= 1 == queue.io.size;   // 1
@@ -387,9 +379,7 @@ TEST_CASE("module", "[module]") {
         queue.io.deq.ready = true;   // pop
         t = trace.step(t);
 
-        if constexpr (I) {
-          ret &= (0xC == queue.io.deq.data);
-        }
+        ret &= (0xC == queue.io.deq.data);
         ret &= !!queue.io.deq.valid; // !empty
         ret &= !!queue.io.enq.ready; // !full
         ret &= 1 == queue.io.size;   // 1
