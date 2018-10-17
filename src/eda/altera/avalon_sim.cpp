@@ -18,7 +18,7 @@ avm_slave_driver_impl::avm_slave_driver_impl(uint32_t data_width,
   , wr_latency_(wr_latency)
   , active_masters_(0)
   , last_rsp_time_(0)
-  , burst_wr_cntr_(0)
+  , wr_burst_({})
 {}
 
 void avm_slave_driver_impl::bind(uint32_t master, const void* buffer, uint32_t size) {
@@ -81,7 +81,7 @@ bool avm_slave_driver_impl::process_wr_req(uint64_t time,
 
   // check request buffer capacity
   assert(burstsize <= max_wr_reqs_);
-  if (0 == burst_wr_cntr_ && wr_reqs_.size() > (max_wr_reqs_ - burstsize))
+  if (0 == wr_burst_.counter && wr_reqs_.size() > (max_wr_reqs_ - burstsize))
     return false;
 
   // check random stall
@@ -91,15 +91,20 @@ bool avm_slave_driver_impl::process_wr_req(uint64_t time,
   // submit new request
   assert(burstsize >= 1);
   auto data_size = data_width_ / 8;
-  if (burst_wr_cntr_ != 0) {
+  if (wr_burst_.counter != 0) {
+    assert(wr_burst_.master == master);
     auto rsp_time = this->calc_response_time(time + 2 * wr_latency_);
-    const wr_req_t& prev_req = wr_reqs_.back();
-    wr_reqs_.push_back({master, prev_req.address + data_size, data, bytemask, time, rsp_time});
-    --burst_wr_cntr_;
+    wr_reqs_.push_back({master, wr_burst_.address, data, bytemask, time, rsp_time});
+    wr_burst_.address += data_size;
+    --wr_burst_.counter;
   } else {
     auto rsp_time = this->calc_response_time(time + 2 * wr_latency_);
-    wr_reqs_.push_back({master, address, data, bytemask, time, rsp_time});
-    burst_wr_cntr_ = burstsize - 1;
+    wr_reqs_.push_back({master, address, data, bytemask, time, rsp_time});    
+    if (burstsize > 1) {
+      wr_burst_.counter = burstsize - 1;
+      wr_burst_.master  = master;
+      wr_burst_.address = address + data_size;
+    }
   }
   return true;
 }
@@ -154,8 +159,8 @@ bool avm_slave_driver_impl::ramdom_stall(uint64_t /*time*/) {
 }
 
 bool avm_slave_driver_impl::arbitration(uint32_t master) {
-  if (burst_wr_cntr_ != 0) {
-    return (master == wr_reqs_.back().master);
+  if (wr_burst_.counter != 0) {
+    return (master == wr_burst_.master);
   }
   if (arb_idx_ == active_masters_)
     arb_idx_ = 0;

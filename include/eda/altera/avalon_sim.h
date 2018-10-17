@@ -36,6 +36,12 @@ protected:
     uint64_t rsp_time;
   };
 
+  struct wr_burst_t {
+    uint32_t counter;
+    uint32_t master;
+    uint32_t address;
+  };
+
   std::default_random_engine rand_gen_;
   std::vector<std::pair<uint8_t*, uint32_t>> buffers_;
   std::list<rd_req_t> rd_reqs_;
@@ -48,7 +54,7 @@ protected:
   uint32_t wr_latency_;
   uint32_t active_masters_;
   uint64_t last_rsp_time_;
-  uint32_t burst_wr_cntr_;
+  wr_burst_t wr_burst_;
 
   bool process_rd_req(uint64_t t,
                       uint32_t master,
