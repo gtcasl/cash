@@ -79,7 +79,8 @@ public:
     __out(ch_bool)        done,
     (ch_deq_io<ch_bit<DataW>>) deq,
     (avalon_mm_io<AVM>)   avm,
-    __out(ch_uint64)      stalls
+    __out(ch_uint64)      req_stalls,
+    __out(ch_uint64)      mem_stalls
   );
 
   void describe() {
@@ -150,9 +151,15 @@ public:
     };
 
     //--
-    ch_reg<ch_uint64> stalls(0);
-    __if ((remain_reqs != 0) && !io.avm.waitrequest && !io.avm.read) {
-      stalls->next = stalls + 1;
+    ch_reg<ch_uint64> req_stalls(0);
+    __if ((remain_reqs != 0) && !io.avm.read && !io.avm.waitrequest) {
+      req_stalls->next = req_stalls + 1;
+    };
+
+    //--
+    ch_reg<ch_uint64> mem_stalls(0);
+    __if (io.avm.read && io.avm.waitrequest) {
+      mem_stalls->next = mem_stalls + 1;
     };
 
     //--
@@ -172,7 +179,8 @@ public:
     io.done = done;
 
     //--
-    io.stalls = stalls;
+    io.req_stalls = req_stalls;
+    io.mem_stalls = mem_stalls;
 
     /*__if (ch_clock()) {
       ch_print("{0}: AVMR: start={1}, rd={2}, addr={3}, burst={4}, rdg={5}, rmqs={6}, pns={7}, rsp={8}, pop={9}, ffs={10}, done={11}",
@@ -210,7 +218,8 @@ public:
     __out(ch_bool)        done,
     (ch_enq_io<ch_bit<DataW>>) enq,
     (avalon_mm_io<AVM>)   avm,
-    __out(ch_uint64)      stalls
+    __out(ch_uint64)      req_stalls,
+    __out(ch_uint64)      mem_stalls
   );
 
   void describe() {
@@ -262,9 +271,15 @@ public:
     };
 
     //--
-    ch_reg<ch_uint64> stalls(0);
-    __if (in_fifo_.io.deq.valid && !io.avm.waitrequest && !io.avm.write) {
-      stalls->next = stalls + 1;
+    ch_reg<ch_uint64> req_stalls(0);
+    __if (!in_fifo_.io.enq.ready) {
+      req_stalls->next = req_stalls + 1;
+    };
+
+    //--
+    ch_reg<ch_uint64> mem_stalls(0);
+    __if (io.avm.write && io.avm.waitrequest) {
+      mem_stalls->next = mem_stalls + 1;
     };
 
     //--
@@ -283,7 +298,8 @@ public:
     io.done = done;
 
     //--
-    io.stalls = stalls;
+    io.req_stalls = req_stalls;
+    io.mem_stalls = mem_stalls;
 
     /*__if (ch_clock()) {
       ch_print("{0}: AVMW: bbg={1}, wr={2}, wrg={3}, wtrq={4}, ffs={5}, addr={6}, burst={7}, burstctr={8}, wdata={9}, done={10}",

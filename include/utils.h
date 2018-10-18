@@ -591,28 +591,6 @@ auto sign_ext(T value, unsigned width) {
 }
 }
 
-#ifdef NDEBUG
-  #define CH_ABORT(...) \
-    do { \
-      fprintf(stderr, "ERROR: "); \
-      fprintf(stderr, __VA_ARGS__); \
-      std::abort(); \
-    } while (false)
-
-  #define DBG(level, format, ...)  
-#else
-  #define CH_ABORT(...) \
-    do { \
-      fprintf(stderr, "ERROR: "); \
-      fprintf(stderr, __VA_ARGS__); \
-      fprintf(stderr, " (" __FILE__ ":" CH_STRINGIZE(__LINE__) ")\n"); \
-      std::abort(); \
-    } while (false)
-
-  #define DBG(level, ...) \
-    dbprint(level, __VA_ARGS__)  
-#endif
-
 #define CH_CHECK(pred, ...) \
   do { \
     if (!(pred)) { \
@@ -622,6 +600,29 @@ auto sign_ext(T value, unsigned width) {
       std::abort(); \
     } \
   } while (false)
+
+#ifdef NDEBUG
+  #define CH_ABORT(...) \
+    do { \
+      fprintf(stderr, "ERROR: "); \
+      fprintf(stderr, __VA_ARGS__); \
+      std::abort(); \
+    } while (false)
+
+  #define CH_DBGCHECK(pred, ...)
+  #define DBG(level, format, ...)
+#else
+  #define CH_ABORT(...) \
+    do { \
+      fprintf(stderr, "ERROR: "); \
+      fprintf(stderr, __VA_ARGS__); \
+      fprintf(stderr, " (" __FILE__ ":" CH_STRINGIZE(__LINE__) ")\n"); \
+      std::abort(); \
+    } while (false)
+
+  #define CH_DBGCHECK CH_CHECK
+  #define DBG(level, ...) dbprint(level, __VA_ARGS__)
+#endif
 
 #define CH_DEF_SFINAE_CHECK(type_name, predicate) \
   template<typename T, typename Enable = void> \

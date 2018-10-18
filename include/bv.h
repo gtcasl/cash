@@ -93,7 +93,7 @@ template <typename U, typename T,
 void bv_assign(T* dst, uint32_t size, U value) {
   static constexpr uint32_t WORD_SIZE = bitwidth_v<T>;
   if constexpr (std::numeric_limits<U>::digits > 1) {
-    CH_CHECK(log2ceil(value + 1) <= size, "value out of range");
+    CH_DBGCHECK(log2ceil(value + 1) <= size, "value out of range");
   }
   if (size <= WORD_SIZE) {
     bv_assign_scalar(dst, value);
@@ -111,7 +111,7 @@ void bv_assign(T* dst, uint32_t size, U value) {
   if (value >= 0) {
     auto u_value = std::make_unsigned_t<U>(value);
     if constexpr (std::numeric_limits<U>::digits > 1) {
-      CH_CHECK(log2ceil(u_value + 1) <= size, "value out of range");
+      CH_DBGCHECK(log2ceil(u_value + 1) <= size, "value out of range");
     }
     if (size <= WORD_SIZE) {
       bv_assign_scalar(dst, u_value);
@@ -119,7 +119,7 @@ void bv_assign(T* dst, uint32_t size, U value) {
       bv_assign_vector(dst, size, u_value);
     }
   } else {
-    CH_CHECK(1 + log2ceil(~value + 1) <= size, "value out of range");
+    CH_DBGCHECK(1 + log2ceil(~value + 1) <= size, "value out of range");
     if (size <= WORD_SIZE) {
       bv_assign_scalar(dst, value);
     } else {
@@ -171,7 +171,7 @@ void bv_assign(T* dst, uint32_t size, const std::string& value) {
   static constexpr uint32_t WORD_SIZE = bitwidth_v<T>;
 
   size_t len = value.length();
-  CH_CHECK(len >= 3, "invalid string format");
+  CH_DBGCHECK(len >= 3, "invalid string format");
 
   const char* buf = value.c_str();
   int base = string_literal_base(buf, len);
@@ -185,8 +185,8 @@ void bv_assign(T* dst, uint32_t size, const std::string& value) {
   uint32_t log_base = log2ceil(base);
 
   uint32_t str_size = string_literal_size(buf, log_base, len);
-  CH_CHECK(str_size >= 0, "invalid string size");
-  CH_CHECK(size >= str_size, "value out of range");
+  CH_DBGCHECK(str_size >= 0, "invalid string size");
+  CH_DBGCHECK(size >= str_size, "value out of range");
 
   // clear remaining words
   uint32_t num_words = ceildiv(size, WORD_SIZE);
@@ -293,7 +293,7 @@ int bv_msb(const T* in, uint32_t size) {
 template <typename U, typename T>
 U bv_cast(const T* in, uint32_t size) {
   static_assert(std::is_integral_v<T>, "invalid type");
-  CH_CHECK(bitwidth_v<U> >= size, "invalid size");
+  CH_DBGCHECK(bitwidth_v<U> >= size, "invalid size");
   if constexpr (bitwidth_v<U> <= bitwidth_v<T>) {
     CH_UNUSED(size);
     return bit_cast<U>(in[0]);

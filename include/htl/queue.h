@@ -1,7 +1,6 @@
 #pragma once
 
 #include <cash.h>
-#include <htl/counter.h>
 #include <htl/decoupled.h>
 
 namespace ch {
@@ -14,7 +13,7 @@ struct ch_queue {
   using value_type = T;
   static constexpr uint32_t max_size   = N;
   static constexpr uint32_t size_width = log2ceil(N+1);
-  static_assert(N > 1, "invalid size");
+  static_assert(ispow2(N), "invalid size");
 
   __io (
     (ch_enq_io<T>) enq,
@@ -47,19 +46,32 @@ struct ch_queue {
       full->next = false;
     };
 
-    ch_counter<N> rd_ptr(reading);
-    ch_counter<N> wr_ptr(writing);
+    ch_reg<ch_uint<log2ceil(N)>> wr_ptr(0);
+    __if (writing) {
+      wr_ptr->next = wr_ptr + 1;
+    };
+
+    ch_reg<ch_uint<log2ceil(N)>> rd_ptr(0), rd_next_ptr(1);
+    __if (reading) {      
+      if constexpr (N > 2) {
+        rd_ptr->next = rd_next_ptr;
+        rd_next_ptr->next = rd_ptr + 2;
+      } else {
+        rd_ptr->next = rd_ptr + 1;
+        rd_next_ptr->next = rd_ptr + 1;
+      }
+    };
 
     ch_mem<T, N> mem;
-    mem.write(wr_ptr.value, io.enq.data, writing);
+    mem.write(wr_ptr, io.enq.data, writing);
 
     ch_reg<T> data_out;
     __if (writing && (empty || (1 == counter && reading))) {
       data_out->next = io.enq.data;
     }__elif (reading) {
-      data_out->next = mem.read(rd_ptr.value + 1);
+      data_out->next = mem.read(rd_next_ptr);
     }__else {
-      data_out->next = mem.read(rd_ptr.value);
+      data_out->next = mem.read(rd_ptr);
     };
 
     io.deq.data  = data_out;

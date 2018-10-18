@@ -13,13 +13,13 @@ struct ch_counter {
   ch_uint<log2ceil(N)> value;
   ch_uint<log2ceil(N)> next;
 
-  ch_counter(const ch_bool& incr = true, const ch_uint<log2ceil(N)>& init = 0) {
+  ch_counter(const ch_bool& incr = true, const ch_uint<log2ceil(N)>& init = 0, uint32_t step = 1) {
     static_assert(N >= 2, "invalid size");
     ch_reg<ch_uint<log2ceil(N)>> count(init);
     if constexpr (ispow2(N)) {
-      count->next = ch_sel(incr, count + 0x1, count);
+      count->next = ch_sel(incr, count + step, count);
     } else {
-      auto next = ch_sel(count == (N-1), 0x0, count + 0x1);
+      auto next = ch_sel(count >= (N-step), count - (N-step), count + step);
       count->next = ch_sel(incr, next, count);
     }
     this->value = count;
