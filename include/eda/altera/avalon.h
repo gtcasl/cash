@@ -55,12 +55,12 @@ using avm_v0 = avm_properties<512, 64, 5>;
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename AVM, unsigned Latency = 0>
+template <typename AVM, unsigned Qsize = (1 << (AVM::BurstW - 1))>
 class avm_reader {
 public:
   static constexpr unsigned LMaxBurst = AVM::BurstW - 1;
   static constexpr unsigned MaxBurst = 1 << LMaxBurst;
-  static constexpr unsigned Qsize = 1 << log2ceil(MaxBurst + Latency);
+  static_assert(Qsize >= MaxBurst && ispow2(Qsize));
 
   static constexpr unsigned DataW  = AVM::DataW;
   static constexpr unsigned AddrW  = AVM::AddrW;
@@ -76,7 +76,7 @@ public:
     __in(ch_uint<AddrW>)  base_addr,
     __in(ch_uint32)       num_blocks,
     __in(ch_bool)         start,
-    __out(ch_bool)        done,
+    __out(ch_bool)        buzy,
     (ch_deq_io<ch_bit<DataW>>) deq,
     (avalon_mm_io<AVM>)   avm,
     __out(ch_uint64)      req_stalls,
@@ -90,20 +90,22 @@ public:
     ch_reg<ch_uint<32-LMaxBurst>> remain_reqs(0);
     ch_reg<ch_bool> read_enabled(false);
     ch_reg<burst_t> burst_count(0);
-    ch_reg<ch_bool> done(false);
+    ch_reg<ch_bool> buzy(false);
 
-    //--
+    // the read request was granted
     auto read_granted = read_enabled && !io.avm.waitrequest;
+
+    // the output queue was popped
     auto fifo_dequeued = out_fifo_.io.deq.valid && out_fifo_.io.deq.ready;
 
-    //--
+    // track the request burst size
     __if (io.start) {
       burst_count->next = (ch_slice<burst_t>(io.num_blocks - 1) & (MaxBurst - 1)) + 1;
     }__elif (read_granted) {
       burst_count->next = MaxBurst;
     };
 
-    //--
+    // assert a read request when the queue has enough space for the next burst
     __if (io.start) {
       read_enabled->next = (io.num_blocks != 0);
     }__elif (read_granted && (1 == remain_reqs)) {
@@ -112,7 +114,7 @@ public:
       read_enabled->next = (remain_reqs != 0) && (pending_size->next <= (Qsize - MaxBurst));
     };
 
-    //--
+    // track the pending queue size
     __if (io.start) {
       pending_size->next = 0;
     }__elif (read_granted) {
@@ -129,34 +131,34 @@ public:
       };
     };
 
-    //--
+    // track remaining burst requests
     __if (io.start) {
       remain_reqs->next = ch_shr<32-LMaxBurst>(io.num_blocks + MaxBurst - 1, LMaxBurst);
     }__elif (read_granted) {
       remain_reqs->next = remain_reqs - 1;
     };
 
-    //--
+    // advance the address when a read is granted
     __if (io.start) {
       address->next = io.base_addr;
     }__elif (read_granted) {
       address->next = address + (ch_resize<AddrW>(burst_count) << LDataB);
     };
 
-    //--
+    // the device is buzy until all requests are submitted
     __if (io.start) {
-      done->next = (0 == io.num_blocks);
+      buzy->next = (io.num_blocks != 0);
     }__elif (read_granted && (1 == remain_reqs)) {
-      done->next = true;
+      buzy->next = false;
     };
 
-    //--
+    // we have a request stall when we have pending requests with the Avalon bus ready but the request deasserted
     ch_reg<ch_uint64> req_stalls(0);
-    __if ((remain_reqs != 0) && !io.avm.read && !io.avm.waitrequest) {
+    __if ((remain_reqs != 0) && !io.avm.waitrequest && !io.avm.read) {
       req_stalls->next = req_stalls + 1;
     };
 
-    //--
+    // we have a memory stall when we a request is asserted but he Avalon bus is buzy
     ch_reg<ch_uint64> mem_stalls(0);
     __if (io.avm.read && io.avm.waitrequest) {
       mem_stalls->next = mem_stalls + 1;
@@ -176,17 +178,17 @@ public:
     io.avm.burstcount = burst_count;
 
     //--
-    io.done = done;
+    io.buzy = buzy;
 
     //--
     io.req_stalls = req_stalls;
     io.mem_stalls = mem_stalls;
 
     /*__if (ch_clock()) {
-      ch_print("{0}: AVMR: start={1}, rd={2}, addr={3}, burst={4}, rdg={5}, rmqs={6}, pns={7}, rsp={8}, pop={9}, ffs={10}, done={11}",
+      ch_print("{0}: AVMR: start={1}, rd={2}, addr={3}, burst={4}, rdg={5}, rmqs={6}, pns={7}, rsp={8}, pop={9}, ffs={10}, buzy={11}",
              ch_now(), io.start, io.avm.read, io.avm.address, io.avm.burstcount,
                read_granted, remain_reqs, pending_size, io.avm.readdatavalid,
-               out_fifo_.io.deq.ready, out_fifo_.io.size, io.done);
+               out_fifo_.io.deq.ready, out_fifo_.io.size, io.buzy);
     };*/
   }
 
@@ -196,11 +198,11 @@ private:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename AVM, unsigned Latency = 0>
+template <typename AVM, unsigned Qsize = (1 << (AVM::BurstW - 1))>
 class avm_writer {
 public:
   static constexpr unsigned MaxBurst = 1 << (AVM::BurstW - 1);
-  static constexpr unsigned Qsize = 1 << log2ceil(MaxBurst + Latency);
+  static_assert(Qsize >= MaxBurst && ispow2(Qsize));
 
   static constexpr unsigned DataW  = AVM::DataW;
   static constexpr unsigned AddrW  = AVM::AddrW;
@@ -215,7 +217,7 @@ public:
   __io(
     __in(ch_uint<AddrW>)  base_addr,
     __in(ch_bool)         start,
-    __out(ch_bool)        done,
+    __out(ch_bool)        buzy,
     (ch_enq_io<ch_bit<DataW>>) enq,
     (avalon_mm_io<AVM>)   avm,
     __out(ch_uint64)      req_stalls,
@@ -226,13 +228,13 @@ public:
     ch_reg<ch_uint<AddrW>> address(0);
     ch_reg<burst_t> burst_counter(0);
     ch_reg<ch_bool> write_enabled(false);
-    ch_reg<ch_bool> done(false);
+    ch_reg<ch_bool> buzy(false);
 
-    // determine if we can submit the next data
+    // the write request was granted
     auto write_granted = write_enabled && !io.avm.waitrequest;
 
-    // determine when to start the next burst transaction
-    auto burst_begin = ((0 == burst_counter) && in_fifo_.io.deq.valid)
+    // determine when to begin the next write transaction
+    auto write_begin = ((0 == burst_counter) && in_fifo_.io.deq.valid)
                     || ((1 == burst_counter) && !io.avm.waitrequest && (in_fifo_.io.size > 1));
 
     // compute the burst size
@@ -240,43 +242,43 @@ public:
                           || ((in_fifo_.io.size == MaxBurst) && (0 == burst_counter));
     auto partial_burst_value = ch_slice<burst_t>(in_fifo_.io.size) -  (burst_counter != 0).as_uint();
     auto burst_count_val = ch_sel(full_burst_enable, MaxBurst, partial_burst_value);
-    auto burst_count = ch_delayEn(burst_count_val, burst_begin);
+    auto burst_count = ch_delayEn(burst_count_val, write_begin);
 
-    //--
+    // assert the write request until active transaction complete
+    __if (write_begin) {
+      write_enabled->next = true;
+    }__elif (write_granted && (1 == burst_counter)) {
+      write_enabled->next = false;
+    };
+
+    // track remaining blocks in active write transaction
+    __if (write_begin) {
+      burst_counter->next = burst_count_val;
+    }__elif (write_granted) {
+      burst_counter->next = burst_counter - 1;
+    };
+
+    // advance the address when a write is granted
     __if (io.start) {
       address->next = io.base_addr;
     }__elif (write_granted) {
       address->next = address + DataB;
     };
 
-    //--
-    __if (burst_begin) {
-      burst_counter->next = burst_count_val;
-    }__elif (write_granted) {
-      burst_counter->next = burst_counter - 1;
-    };
-
-    //--
-    __if (burst_begin) {
-      write_enabled->next = true;
-    }__elif (write_granted && (1 == burst_counter)) {
-      write_enabled->next = false;
-    };
-
-    //--
+    // the device is buzy until all requests are submitted
     __if (in_fifo_.io.enq.ready && in_fifo_.io.enq.valid) {
-      done->next = false;
+      buzy->next = true;
     }__elif (write_granted && (1 == in_fifo_.io.size)) {
-      done->next = true;
+      buzy->next = false;
     };
 
-    //--
+    // we have a requet stall when the input queue is full
     ch_reg<ch_uint64> req_stalls(0);
     __if (!in_fifo_.io.enq.ready) {
       req_stalls->next = req_stalls + 1;
     };
 
-    //--
+    // we have a memory stall when a write is asserted but the Avalon bus is buzy
     ch_reg<ch_uint64> mem_stalls(0);
     __if (io.avm.write && io.avm.waitrequest) {
       mem_stalls->next = mem_stalls + 1;
@@ -295,16 +297,16 @@ public:
     in_fifo_.io.enq(io.enq);
 
     //--
-    io.done = done;
+    io.buzy = buzy;
 
     //--
     io.req_stalls = req_stalls;
     io.mem_stalls = mem_stalls;
 
-    /*__if (ch_clock()) {
-      ch_print("{0}: AVMW: bbg={1}, wr={2}, wrg={3}, wtrq={4}, ffs={5}, addr={6}, burst={7}, burstctr={8}, wdata={9}, done={10}",
+    /*_if (ch_clock()) {
+      ch_print("{0}: AVMW: bbg={1}, wr={2}, wrg={3}, wtrq={4}, ffs={5}, addr={6}, burst={7}, burstctr={8}, wdata={9}, buzy={10}",
              ch_now(), burst_begin, io.avm.write, write_granted, io.avm.waitrequest, in_fifo_.io.size,
-               io.avm.address, io.avm.burstcount, burst_counter, io.avm.writedata, io.done);
+               io.avm.address, io.avm.burstcount, burst_counter, io.avm.writedata, io.buzy);
     };*/
   }
 

@@ -8,7 +8,7 @@ namespace htl {
 
 using namespace ch::logic;
 
-template <typename T, unsigned N>
+template <typename T, unsigned N, bool SyncRead = false>
 struct ch_queue {
   using value_type = T;
   static constexpr uint32_t max_size   = N;
@@ -51,28 +51,33 @@ struct ch_queue {
       wr_ptr->next = wr_ptr + 1;
     };
 
-    ch_reg<ch_uint<log2ceil(N)>> rd_ptr(0), rd_next_ptr(1);
-    __if (reading) {      
-      if constexpr (N > 2) {
-        rd_ptr->next = rd_next_ptr;
-        rd_next_ptr->next = rd_ptr + 2;
-      } else {
-        rd_ptr->next = rd_ptr + 1;
-        rd_next_ptr->next = rd_ptr + 1;
-      }
-    };
-
     ch_mem<T, N> mem;
     mem.write(wr_ptr, io.enq.data, writing);
 
-    ch_reg<T> data_out;
-    __if (writing && (empty || (1 == counter && reading))) {
-      data_out->next = io.enq.data;
-    }__elif (reading) {
-      data_out->next = mem.read(rd_next_ptr);
-    }__else {
-      data_out->next = mem.read(rd_ptr);
-    };
+    T data_out;
+    if constexpr (SyncRead) {
+      ch_reg<ch_uint<log2ceil(N)>> rd_ptr(0);
+      __if (reading) {
+        rd_ptr->next = rd_ptr + 1;
+      };
+      data_out = mem.read(rd_ptr);
+    } else {
+      ch_reg<ch_uint<log2ceil(N)>> rd_ptr(0), rd_next_ptr(1);
+      __if (reading) {
+        if constexpr (N > 2) {
+          rd_ptr->next = rd_next_ptr;
+          rd_next_ptr->next = rd_ptr + 2;
+        } else {
+          rd_ptr->next = rd_ptr + 1;
+          rd_next_ptr->next = rd_ptr->next;
+        }
+      };
+
+      auto show_new = ch_delay(writing && (empty || (1 == counter && reading)), 1, false);
+      auto data_new = ch_delay(io.enq.data);
+      auto data_old = ch_delay(mem.read(ch_sel(reading, rd_next_ptr, rd_ptr)));
+           data_out = ch_sel(show_new, data_new, data_old);
+    }
 
     io.deq.data  = data_out;
     io.deq.valid = !empty;
