@@ -188,7 +188,7 @@ public:
       ch_print("{0}: AVMR: start={1}, rd={2}, addr={3}, burst={4}, rdg={5}, rmqs={6}, pns={7}, rsp={8}, pop={9}, ffs={10}, buzy={11}",
              ch_now(), io.start, io.avm.read, io.avm.address, io.avm.burstcount,
                read_granted, remain_reqs, pending_size, io.avm.readdatavalid,
-               out_fifo_.io.deq.ready, out_fifo_.io.size, io.buzy);
+               fifo_dequeued, out_fifo_.io.size, io.buzy);
     };*/
   }
 
@@ -303,9 +303,9 @@ public:
     io.req_stalls = req_stalls;
     io.mem_stalls = mem_stalls;
 
-    /*_if (ch_clock()) {
-      ch_print("{0}: AVMW: bbg={1}, wr={2}, wrg={3}, wtrq={4}, ffs={5}, addr={6}, burst={7}, burstctr={8}, wdata={9}, buzy={10}",
-             ch_now(), burst_begin, io.avm.write, write_granted, io.avm.waitrequest, in_fifo_.io.size,
+    /*__if (ch_clock()) {
+      ch_print("{0}: AVMW: wbg={1}, wr={2}, wrg={3}, wtrq={4}, ffs={5}, addr={6}, burst={7}, burstctr={8}, wdata={9}, buzy={10}",
+             ch_now(), write_begin, io.avm.write, write_granted, io.avm.waitrequest, in_fifo_.io.size,
                io.avm.address, io.avm.burstcount, burst_counter, io.avm.writedata, io.buzy);
     };*/
   }

@@ -43,8 +43,7 @@ protected:
   avm_slave_driver_base(uint32_t data_size,
                         uint32_t max_burst_size,
                         uint32_t reqs_queue_size,
-                        uint32_t rd_latency,
-                        uint32_t wr_latency);
+                        uint32_t latency);
 
   void create_channel();
 
@@ -61,14 +60,11 @@ class avm_slave_driver : public avm_slave_driver_base {
 public:
   using io_type = ch_system_io<avalon_mm_io<AVM>>;
 
-  avm_slave_driver(uint32_t reqs_queue_size,
-                   uint32_t rd_latency,
-                   uint32_t wr_latency)
+  avm_slave_driver(uint32_t reqs_queue_size, uint32_t latency)
     : avm_slave_driver_base(AVM::DataW / 8,
                             (1 << (AVM::BurstW-1)),
                             reqs_queue_size,
-                            rd_latency,
-                            wr_latency)
+                            latency)
   {}
 
   void connect(const io_type& io) {

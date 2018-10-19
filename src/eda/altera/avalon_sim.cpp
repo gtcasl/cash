@@ -14,7 +14,6 @@ protected:
     bool is_write;
     uint64_t address;
     uint64_t byteenable;
-    uint64_t req_time;
     uint64_t rsp_time;
   };
 
@@ -34,23 +33,14 @@ protected:
   uint32_t data_size_;
   uint32_t max_burst_size_;
   uint32_t reqs_queue_size_;
-  uint32_t rd_latency_;
-  uint32_t wr_latency_;
+  uint32_t latency_;
   uint64_t curr_time_;
-  uint64_t last_rsp_time_;
   uint32_t arbiter_idx_;
   wr_burst_t wr_burst_;
 
   bool ramdom_stall() {
-    return (std::rand() % 100) > 80;
-  }
-
-  uint64_t calc_response_time(uint64_t rsp_time) {
-    if (rsp_time <= last_rsp_time_) {
-      rsp_time = last_rsp_time_ + 2;
-    }
-    last_rsp_time_ = rsp_time;
-    return rsp_time;
+    auto sample = rand() / double(RAND_MAX);
+    return (sample > 0.7);
   }
 
   uint32_t arbitration() {
@@ -65,16 +55,15 @@ protected:
     auto req = instance_->get_request_info(channel);
     assert(req.burstcount >= 1);
     assert(req.burstcount <= max_burst_size_);
+    auto rsp_time = curr_time_ + latency_;
     if (req.write) {
       if (wr_burst_.counter != 0) {
-        assert(wr_burst_.channel == channel);
-        auto rsp_time = this->calc_response_time(curr_time_ + 2 * wr_latency_);
-        reqs_.push_back({channel, true, wr_burst_.address, req.byteenable, curr_time_, rsp_time});
+        assert(wr_burst_.channel == channel);        
+        reqs_.push_back({channel, true, wr_burst_.address, req.byteenable, rsp_time});
         wr_burst_.address += data_size_;
         --wr_burst_.counter;
       } else {
-        auto rsp_time = this->calc_response_time(curr_time_ + 2 * wr_latency_);
-        reqs_.push_back({channel, true, req.address, req.byteenable, curr_time_, rsp_time});
+        reqs_.push_back({channel, true, req.address, req.byteenable, rsp_time});
         if (req.burstcount > 1) {
           wr_burst_.counter = req.burstcount - 1;
           wr_burst_.channel  = channel;
@@ -84,8 +73,7 @@ protected:
       wr_data_.push_back(req.wdata);
     } else {
       for (uint32_t i = 0; i < req.burstcount; ++i) {
-        auto rsp_time = this->calc_response_time(curr_time_ + 2 * rd_latency_);
-        reqs_.push_back({channel, false, req.address + i * data_size_, req.byteenable, curr_time_, rsp_time});
+        reqs_.push_back({channel, false, req.address + i * data_size_, req.byteenable, rsp_time});
       }
     }
   }
@@ -130,16 +118,13 @@ public:
                         uint32_t data_size,
                         uint32_t max_burst_size,
                         uint32_t reqs_queue_size,
-                        uint32_t rd_latency,
-                        uint32_t wr_latency)
+                        uint32_t latency)
     : instance_(instance)
     , data_size_(data_size)
     , max_burst_size_(max_burst_size)
     , reqs_queue_size_(reqs_queue_size)
-    , rd_latency_(rd_latency)
-    , wr_latency_(wr_latency)
+    , latency_(latency)
     , curr_time_(0)
-    , last_rsp_time_(0)
     , arbiter_idx_(0)
     , wr_burst_({}) {
     assert(reqs_queue_size >= 2 * max_burst_size);
@@ -204,10 +189,9 @@ public:
 avm_slave_driver_base::avm_slave_driver_base(uint32_t data_size,
                                              uint32_t max_burst_size,
                                              uint32_t reqs_queue_size,
-                                             uint32_t rd_latency,
-                                             uint32_t wr_latency) {
+                                             uint32_t latency) {
   impl_ = new avm_slave_driver_impl(
-        this, data_size, max_burst_size, reqs_queue_size, rd_latency, wr_latency);
+        this, data_size, max_burst_size, reqs_queue_size, latency);
 }
 
 avm_slave_driver_base::~avm_slave_driver_base() {
