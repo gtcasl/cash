@@ -63,10 +63,6 @@ public:
 
   void write(const lnode& addr,
              const lnode& value,
-             const source_location& sloc);
-
-  void write(const lnode& addr,
-             const lnode& value,
              const lnode& enable,
              const source_location& sloc);
 protected:
@@ -163,6 +159,13 @@ public:
     return make_type<T>(mem_.aread(laddr, sloc), sloc);
   }
 
+  template <typename U>
+  auto sread(const U& addr, CH_SLOC) const {
+    static_assert(is_bit_convertible_v<U, addr_width>, "invalid type");
+    auto laddr = to_lnode<addr_width>(addr, sloc);
+    return make_type<T>(mem_.sread(laddr, sdata_type(1,1), sloc), sloc);
+  }
+
   template <typename U, typename E>
   auto sread(const U& addr, const E& enable, CH_SLOC) const {
     static_assert(is_bit_convertible_v<U, addr_width>, "invalid type");
@@ -178,7 +181,7 @@ public:
     static_assert(std::is_constructible_v<T, V>, "invalid type");
     auto l_addr  = to_lnode<addr_width>(addr, sloc);
     auto l_value = to_lnode<T>(value, sloc);
-    mem_.write(l_addr, l_value, sloc);
+    mem_.write(l_addr, l_value, sdata_type(1,1), sloc);
   }
 
   template <typename U, typename V, typename E>

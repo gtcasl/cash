@@ -22,6 +22,9 @@ set(TEST_SOURCES
     main.cpp
 )
 
+# copy resource directory
+file(COPY "res" DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+
 # build executables
 add_executable(dogfood dogfood.cpp)
 add_executable(testsuite ${TEST_SOURCES})

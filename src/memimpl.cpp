@@ -6,44 +6,54 @@
 
 using namespace ch::internal;
 
-sdata_type loadInitData(const std::string& file,
-                        uint32_t data_width,
-                        uint32_t num_items) {
+sdata_type ch::internal::loadInitData(const std::string& file,
+                                      uint32_t data_width,
+                                      uint32_t num_items) {
 
   auto skip_space_or_comment = [](const char* str, uint32_t len) {
-    while (len && std::isspace(str[0])) {
-      ++str;
-      --len;
-    }
-    if (len && str[0] == '/') {
-      CH_CHECK(len > 1, "invalid character");
-      if (str[1] == '/')
-        return str + len;
-      CH_CHECK(str[1] == '*', "invalid character");
-      str += 2;
-      len -= 2;
-      while (!(len > 1 && str[0] == '*' && str[1] == '/')) {
+    while (len) {
+      if (std::isspace(str[0])) {
         ++str;
         --len;
+      } else
+      if (len && str[0] == '/') {
+        CH_CHECK(len > 1, "invalid character");
+        if (str[1] == '/')
+          return str + len; // return end of string
+
+        CH_CHECK(str[1] == '*', "invalid character");
+        str += 2;
+        len -= 2;
+        while (!(len > 1 && str[0] == '*' && str[1] == '/')) {
+          ++str;
+          --len;
+        }
+        CH_CHECK(len > 1, "invalid character");
+        str += 2;
+        len -= 2;
+      } else {
+        break;
       }
-      CH_CHECK(len > 1, "invalid character");
     }
     return str;
   };
 
   auto skip_next = [](const char* str, uint32_t len) {
-    while (len && !std::isspace(str[0])) {
+    while (len && !(std::isspace(str[0]) || str[0] == '/')) {
       ++str;
       --len;
     }
     return str;
   };
 
+  auto addr_width = log2ceil(num_items);
   sdata_type out(data_width * num_items);
-  sdata_type word(data_width);
+  sdata_type sword(data_width);
+  sdata_type saddr(addr_width);
   std::ifstream in(file, std::ios::binary);
   std::string line;
   uint32_t addr = 0;
+
   while (std::getline(in, line)) {
     auto str_orig = line.c_str();
     uint32_t len_orig = line.length();
@@ -52,25 +62,34 @@ sdata_type loadInitData(const std::string& file,
       uint32_t len = len_orig - (str - str_orig);
       if (0 == len)
         break;
+
+      bool is_address = false;
       if (str[0] == '@') {
         CH_CHECK(len > 1, "invalid character");
         ++str;
         --len;
-        str_orig = skip_next(str, len);
-        uint32_t wlen = str_orig - str;
-        len_orig = len - wlen;
-        bv_assign(word.words(), data_width, str, wlen, 4);
-        addr += bv_cast<uint32_t>(word.words(), data_width);
-        break;
-      } else {
-        str_orig = skip_next(str, len);
-        uint32_t wlen = str_orig - str;
-        len_orig = len - wlen;
-        bv_assign(word.words(), data_width, str, wlen, 4);
+        is_address = true;
       }
-      out.copy(addr, word, 0, data_width);
+
+      str_orig = skip_next(str, len);
+      uint32_t wlen = str_orig - str;
+
+      if (is_address) {
+        bv_assign(saddr.words(), data_width, str, wlen, 4);
+        addr = bv_cast<uint32_t>(saddr.words(), data_width);
+      } else {
+        bv_assign(sword.words(), data_width, str, wlen, 4);
+        out.copy(addr * data_width, sword, 0, data_width);
+        ++addr;
+      }
+
+      str += wlen;
+      len -= wlen;
+      str_orig = str;
+      len_orig = len;
     }
   }
+
   return out;
 }
 
@@ -243,7 +262,9 @@ memportimpl::memportimpl(context* ctx,
   addr_idx_ = this->add_src(addr);
 
   // add enable predicate
-  if (enable) {
+  if (enable
+   && !(type_lit == enable->type()
+    && (bool)reinterpret_cast<litimpl*>(enable)->value())) {
     enable_idx_ = this->add_src(enable);
   }
 }
@@ -361,11 +382,6 @@ lnodeimpl* memory::sread(const lnode& addr,
                          const lnode& enable,
                          const source_location& sloc) const {
   return impl_->create_srport(nullptr, addr.impl(), enable.impl(), sloc);
-}
-
-void memory::write(const lnode& addr, const lnode& value, const source_location& sloc) {
-  CH_CHECK(!ctx_curr()->conditional_enabled(), "memory access disallowed inside conditional blocks");
-  impl_->create_wport(nullptr, addr.impl(), value.impl(), nullptr, sloc);
 }
 
 void memory::write(const lnode& addr,
