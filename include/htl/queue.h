@@ -60,7 +60,7 @@ struct ch_queue {
       __if (reading) {
         rd_ptr->next = rd_ptr + 1;
       };
-      data_out = mem.read(rd_ptr);
+      data_out = mem.aread(rd_ptr);
     } else {
       ch_reg<ch_uint<log2ceil(N)>> rd_ptr(0), rd_next_ptr(1);
       __if (reading) {
@@ -75,7 +75,7 @@ struct ch_queue {
 
       auto show_new = ch_delay(writing && (empty || (1 == counter && reading)), 1, false);
       auto data_new = ch_delay(io.enq.data);
-      auto data_old = ch_delay(mem.read(ch_sel(reading, rd_next_ptr, rd_ptr)));
+      auto data_old = ch_delay(mem.aread(ch_sel(reading, rd_next_ptr, rd_ptr)));
            data_out = ch_sel(show_new, data_new, data_old);
     }
 

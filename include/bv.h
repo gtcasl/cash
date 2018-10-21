@@ -93,7 +93,7 @@ template <typename U, typename T,
 void bv_assign(T* dst, uint32_t size, U value) {
   static constexpr uint32_t WORD_SIZE = bitwidth_v<T>;
   if constexpr (std::numeric_limits<U>::digits > 1) {
-    CH_DBGCHECK(log2ceil(value + 1) <= size, "value out of range");
+    CH_CHECK(log2ceil(value + 1) <= size, "value out of range");
   }
   if (size <= WORD_SIZE) {
     bv_assign_scalar(dst, value);
@@ -111,7 +111,7 @@ void bv_assign(T* dst, uint32_t size, U value) {
   if (value >= 0) {
     auto u_value = std::make_unsigned_t<U>(value);
     if constexpr (std::numeric_limits<U>::digits > 1) {
-      CH_DBGCHECK(log2ceil(u_value + 1) <= size, "value out of range");
+      CH_CHECK(log2ceil(u_value + 1) <= size, "value out of range");
     }
     if (size <= WORD_SIZE) {
       bv_assign_scalar(dst, u_value);
@@ -119,7 +119,7 @@ void bv_assign(T* dst, uint32_t size, U value) {
       bv_assign_vector(dst, size, u_value);
     }
   } else {
-    CH_DBGCHECK(1 + log2ceil(~value + 1) <= size, "value out of range");
+    CH_CHECK(1 + log2ceil(~value + 1) <= size, "value out of range");
     if (size <= WORD_SIZE) {
       bv_assign_scalar(dst, value);
     } else {
@@ -133,13 +133,13 @@ inline int string_literal_base(const char* value, int len) {
   int base = 0;
   switch (value[len-1]) {
   case 'b':
-    base = 2;
+    base = 1;
     break;
   case 'o':
-    base = 8;
+    base = 3;
     break;
   case 'h':
-    base = 16;
+    base = 4;
     break;
   default:
     CH_ABORT("invalid binary format, missing encoding base type.");
@@ -147,46 +147,38 @@ inline int string_literal_base(const char* value, int len) {
   return base;
 }
 
-inline int string_literal_size(const char* value, int log_base, int len) {
+inline int string_literal_size(const char* value, int len, int base) {
   int size = 0;
   for (const char *cur = value, *end = value + len; cur < end;) {
     char chr = *cur++;
-    if (chr == '\'')
-      continue; // skip separator character
+    if (chr == '\'' || chr == '_') // skip number separator
+      continue;
     if (0 == size) {
        // calculate exact bit coverage for the first non zero character
-       int v = char2int(chr, (1 << log_base));
+       int v = char2int(chr, 1 << base);
        if (v) {
          size += log2ceil(v+1);
        }
     } else {
-      size += log_base;
+      size += base;
     }
   }
   return size;
 }
 
 template <typename T>
-void bv_assign(T* dst, uint32_t size, const std::string& value) {
+void bv_assign(T* dst, uint32_t size, const char* value, uint32_t length, int base) {
   static constexpr uint32_t WORD_SIZE = bitwidth_v<T>;
 
-  size_t len = value.length();
-  CH_DBGCHECK(len >= 3, "invalid string format");
-
-  const char* buf = value.c_str();
-  int base = string_literal_base(buf, len);
-
-  len -= 2; // remove base postfix
-  if (16 == base && value[0] == '0' && len > 1 && value[1] == 'x') {
+  const char* buf = value;
+  if (4 == base && value[0] == '0' && length > 1 && value[1] == 'x') {
     buf += 2; // remove hex prefix
-    len -= 2;
+    length -= 2;
   }
 
-  uint32_t log_base = log2ceil(base);
-
-  uint32_t str_size = string_literal_size(buf, log_base, len);
-  CH_DBGCHECK(str_size >= 0, "invalid string size");
-  CH_DBGCHECK(size >= str_size, "value out of range");
+  uint32_t str_size = string_literal_size(buf, length, base);
+  CH_CHECK(str_size >= 0, "invalid string size");
+  CH_CHECK(size >= str_size, "value out of range");
 
   // clear remaining words
   uint32_t num_words = ceildiv(size, WORD_SIZE);
@@ -198,23 +190,34 @@ void bv_assign(T* dst, uint32_t size, const std::string& value) {
   // write the value
   T w(0);
   T* d = dst;
-  for (int32_t i = len - 1, j = 0; i >= 0; --i) {
+  for (int32_t i = length - 1, j = 0; i >= 0; --i) {
     char chr = buf[i];
-    if (chr == '\'')
-      continue; // skip separator character
-    T v = char2int(chr, base);
+    if (chr == '\'' || chr == '_') // skip number separator
+      continue;
+    T v = char2int(chr, 1 << base);
     w |= v << j;
-    j += log_base;
+    j += base;
     if (j >= int32_t(WORD_SIZE)) {
       *d++ = w;
       j -= WORD_SIZE;
-      w = v >> (log_base - j);
+      w = v >> (base - j);
     }
   }
 
   if (w) {
     *d = w;
   }
+}
+
+template <typename T>
+void bv_assign(T* dst, uint32_t size, const std::string& value) {
+  size_t len = value.length();
+  CH_CHECK(len >= 3, "invalid string size");
+
+  const char* buf = value.c_str();
+  int base = string_literal_base(buf, len);
+  len -= 2; // remove base postfix
+  bv_assign(dst, size, buf, len, base);
 }
 
 template <typename T>
@@ -292,12 +295,12 @@ int bv_msb(const T* in, uint32_t size) {
 
 template <typename U, typename T>
 U bv_cast(const T* in, uint32_t size) {
-  static_assert(std::is_integral_v<T>, "invalid type");
+  static_assert(std::is_integral_v<T>, "invalid type");  
   CH_DBGCHECK(bitwidth_v<U> >= size, "invalid size");
   if constexpr (bitwidth_v<U> <= bitwidth_v<T>) {
     CH_UNUSED(size);
     return bit_cast<U>(in[0]);
-  } else {
+  } else {    
     U ret(0);
     memcpy(&ret, in, ceildiv<uint32_t>(size, 8));
     return ret;

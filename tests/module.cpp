@@ -236,7 +236,7 @@ struct MultiClk {
     y->next = io.in;
     io.out = x + y;
 
-    //ch_print("{0}: clk={1}, rst={2}, in={3}, x={4}, y={5}, out={6}", ch_now(), ch_clock(), ch_reset(), io.in, x, y, io.out);
+    ch_print("{0}: clk={1}, rst={2}, in={3}, x={4}, y={5}, out={6}", ch_now(), ch_clock(), ch_reset(), io.in, x, y, io.out);
   }
 };
 

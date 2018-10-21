@@ -71,15 +71,8 @@ void compiler::build_eval_context(context* eval_ctx) {
     // check for cycles
     if (cyclic_nodes.count(node->id())) {
       // handling register cycles
-      switch (node->type()) {
-      case type_reg:
-      case type_mem:
-      case type_udfs:
-        // we found an expected cycle
+      if (is_snode_type(node->type()))
         return;
-      default:
-        break;
-      }
 #define LCOV_EXCL_START
       if (platform::self().cflags() & cflags::dump_ast) {
         for (auto _node : eval_ctx->nodes()) {
@@ -216,18 +209,12 @@ void compiler::build_eval_list(std::vector<lnodeimpl*>& eval_list) {
     // check for cycles
     if (cyclic_nodes.count(node->id())) {
       // handling register cycles
-      switch (node->type()) {
-      case type_reg:
+      if (is_snode_type(node->type())) {
         // Detect uninitialized registers
-        if (!reinterpret_cast<regimpl*>(node)->has_init_data())
+        if (type_reg == node->type()
+         && !reinterpret_cast<regimpl*>(node)->has_init_data())
           uninitialized_regs.insert(node);
-        [[fallthrough]];
-      case type_mem:
-      case type_udfs:
-        // we found an expected cycle, return 'true'
         return true;
-      default:
-        break;
       }
 #define LCOV_EXCL_START
       if (platform::self().cflags() & cflags::dump_ast) {

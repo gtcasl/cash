@@ -842,7 +842,7 @@ void context::dump_stats(std::ostream& out) {
     for (lnodeimpl* node : ctx->nodes()) {
       switch (node->type()) {
       case type_mem:
-        memory_bits += reinterpret_cast<memimpl*>(node)->total_size();
+        memory_bits += reinterpret_cast<memimpl*>(node)->size();
         ++num_memories;
         break;
       case type_reg:

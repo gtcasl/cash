@@ -221,7 +221,8 @@ bool firrtlwriter::print_decl(std::ostream& out,
   case type_input:
   case type_output:
   case type_cd:
-  case type_mrport:
+  case type_marport:
+  case type_msrport:
   case type_mwport:
   case type_tap:
   case type_assert:
@@ -267,7 +268,8 @@ bool firrtlwriter::print_logic(std::ostream& out, lnodeimpl* node) {
   case type_input:
   case type_output:
   case type_cd:
-  case type_mrport:
+  case type_marport:
+  case type_msrport:
   case type_mwport:
   case type_tap:
   case type_assert:
@@ -624,24 +626,15 @@ void firrtlwriter::print_mem(std::ostream& out, memimpl* node) {
     this->print_name(out, port->addr().impl());
     out << std::endl;
 
-    if (node->has_cd()) {
+    if (port->has_cd()) {
       this->print_name(out, node);
       out << '.' << type << port_index << ".clk <= ";
-      this->print_cdomain(out, reinterpret_cast<cdimpl*>(node->cd().impl()));
+      this->print_cdomain(out, reinterpret_cast<cdimpl*>(port->cd().impl()));
     }
     out << std::endl;
   };
 
-  if (node->is_write_enable()) {
-    // initialization data not supported!
-    assert(!node->has_init_data());
-    for (uint32_t i = 0, n = node->rdports().size(); i < n; ++i) {
-      print_attributes(node->rdport(i), i);
-    }
-    for (uint32_t i = 0, n = node->wrports().size(); i < n; ++i) {
-      print_attributes(node->wrport(i), i);
-    }
-  } else {
+  if (node->is_logic_rom()) {
     assert(node->has_init_data());
     auto data_width = node->data_width();
     sdata_type value(data_width);
@@ -651,6 +644,14 @@ void firrtlwriter::print_mem(std::ostream& out, memimpl* node) {
       value.copy(0, node->init_data(), i * data_width, data_width);
       this->print_value(out, value);
       out << std::endl;
+    }
+  } else {
+    CH_CHECK(!node->has_init_data(), "initialization data not supported!");
+    for (uint32_t i = 0, n = node->rdports().size(); i < n; ++i) {
+      print_attributes(node->rdport(i), i);
+    }
+    for (uint32_t i = 0, n = node->wrports().size(); i < n; ++i) {
+      print_attributes(node->wrport(i), i);
     }
   }
 }
@@ -723,12 +724,17 @@ void firrtlwriter::print_name(std::ostream& out, lnodeimpl* node, bool force) {
   case type_bindout:
     print_unique_name(node);
     break;
-  case type_mrport:
+  case type_marport:
+  case type_msrport:
   case type_mwport: {
     auto port = reinterpret_cast<memportimpl*>(node);
     auto mem = port->mem();
     this->print_name(out, mem);
-    if (mem->is_write_enable()) {
+    if (mem->is_logic_rom()) {
+      out << "[";
+      print_unique_name(port->addr().impl());
+      out << "]";
+    } else {
       auto port_index = mem->port_index(port);
       if (mem->is_readwrite(port)) {
         // read-write
@@ -741,10 +747,6 @@ void firrtlwriter::print_name(std::ostream& out, lnodeimpl* node, bool force) {
         // read-only
         out << ".r" << port_index << ".data";
       }
-    } else {
-      out << "[";
-      print_unique_name(port->addr().impl());
-      out << "]";
     }
   } break;
   default:
@@ -768,7 +770,8 @@ void firrtlwriter::print_type(std::ostream& out, lnodeimpl* node) {
   case type_alu:
   case type_bindin:
   case type_bindout:
-  case type_mrport:
+  case type_marport:
+  case type_msrport:
   case type_mwport:
     out << "wire";
     break;
@@ -777,7 +780,7 @@ void firrtlwriter::print_type(std::ostream& out, lnodeimpl* node) {
     break;
   case type_mem: {
     auto mem = reinterpret_cast<memimpl*>(node);
-    out << (mem->is_write_enable() ? "mem" : "wire");
+    out << (mem->is_logic_rom() ? "wire" : "mem");
   } break;
   default:
     assert(false);
@@ -802,7 +805,10 @@ void firrtlwriter::print_dtype(std::ostream& out, lnodeimpl* node) {
   } break;
   case type_mem: {    
     auto mem = reinterpret_cast<memimpl*>(node);
-    if (mem->is_write_enable()) {
+    if (mem->is_logic_rom()) {
+      out << "UInt<" << mem->data_width() << ">"
+           << "[" << mem->num_items() << "]";
+    } else {
       auto_indent indent(out);
       out << std::endl;
       out << "data-type => UInt<" << mem->data_width() << ">" << std::endl;
@@ -829,9 +835,6 @@ void firrtlwriter::print_dtype(std::ostream& out, lnodeimpl* node) {
           out << "writer => w" << i;
         }
       }
-    } else {
-      out << "UInt<" << mem->data_width() << ">"
-           << "[" << mem->num_items() << "]";
     }
   } break;
   case type_bindin:

@@ -29,7 +29,7 @@ struct FiFo {
     ch_mem<T, N> mem;
     mem.write(wr_a, io.din, writing);
 
-    io.dout  = mem.read(rd_a);
+    io.dout  = mem.aread(rd_a);
     io.empty = (wr_ptr == rd_ptr);
     io.full  = (wr_a == rd_a) && (wr_ptr[addr_width] != rd_ptr[addr_width]);
   }

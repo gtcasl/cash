@@ -19,7 +19,7 @@ using namespace ch::internal;
 const auto IsRegType = [](lnodeimpl* node) {
   auto type = node->type();
   return (type_reg == type && (1 == reinterpret_cast<regimpl*>(node)->length()))
-      || (type_mrport == type && reinterpret_cast<mrportimpl*>(node)->mem()->is_sync_read())
+      || (type_msrport == type)
       || (type_mem == type)
       || (type_sel == type && !reinterpret_cast<selectimpl*>(node)->is_ternary());
 };
@@ -282,7 +282,8 @@ bool verilogwriter::print_decl(std::ostream& out,
   case type_alu:
   case type_sel:
   case type_reg:
-  case type_mrport:
+  case type_msrport:
+  case type_marport:
   case type_udfc:
   case type_udfs:
   case type_mem:
@@ -382,7 +383,8 @@ bool verilogwriter::print_logic(std::ostream& out, lnodeimpl* node) {
   case type_input:
   case type_output:
   case type_cd:
-  case type_mrport:
+  case type_msrport:
+  case type_marport:
   case type_mwport:
   case type_tap:
   case type_assert:
@@ -704,13 +706,12 @@ void verilogwriter::print_mem(std::ostream& out, memimpl* node) {
     {
       auto_indent indent(out);
       const auto& value = node->init_data();
-      uint32_t data_width = node->data_width();
-      uint32_t num_items = node->num_items();
+      auto data_width = node->data_width();
+      auto num_items = node->num_items();
       for (uint32_t i = 0; i < num_items; ++i) {
         this->print_name(out, node);
         out << "[" << i << "] = ";
-        uint32_t offset = i * data_width;
-        this->print_value(out, value, true, offset, data_width);
+        this->print_value(out, value, true, i * data_width, data_width);
         out << ";" << std::endl;
       }
     }
@@ -721,9 +722,9 @@ void verilogwriter::print_mem(std::ostream& out, memimpl* node) {
   //  ports logic
   //
   for (auto p : node->rdports()) {
-    if (node->is_sync_read()) {
+    if (type_msrport == node->type()) {
       out << "always @ (";
-      this->print_cdomain(out, reinterpret_cast<cdimpl*>(node->cd().impl()));
+      this->print_cdomain(out, reinterpret_cast<cdimpl*>(p->cd().impl()));
       out << ") begin" << std::endl;
       {
         auto_indent indent1(out);
@@ -758,7 +759,7 @@ void verilogwriter::print_mem(std::ostream& out, memimpl* node) {
 
   for (auto p : node->wrports()) {
     out << "always @ (";
-    this->print_cdomain(out, reinterpret_cast<cdimpl*>(node->cd().impl()));
+    this->print_cdomain(out, reinterpret_cast<cdimpl*>(p->cd().impl()));
     out << ") begin" << std::endl;
     {
       auto_indent indent1(out);
@@ -882,7 +883,8 @@ void verilogwriter::print_name(std::ostream& out, lnodeimpl* node, bool force) {
   case type_alu:
   case type_reg:
   case type_mem:
-  case type_mrport:
+  case type_msrport:
+  case type_marport:
   case type_mwport:  
   case type_udfc:
   case type_udfs:
@@ -910,7 +912,8 @@ void verilogwriter::print_type(std::ostream& out, lnodeimpl* node) {
   out << (IsRegType(node) ? "reg" : "wire");
   auto type = node->type();
   if (type == type_mem) {
-    auto data_width = reinterpret_cast<memimpl*>(node)->data_width();
+    auto mem = reinterpret_cast<memimpl*>(node);
+    auto data_width = mem->data_width();
     if (data_width > 1) {
       out << "[" << (data_width - 1) << ":0]";
     }
@@ -953,37 +956,36 @@ void verilogwriter::print_value(std::ostream& out,
 
 void verilogwriter::print_operator(std::ostream& out, ch_op op) {
   switch (op) {
+  case ch_op::eq:   out << "=="; break;
+  case ch_op::ne:   out << "!="; break;
 
-  case ch_op::eq:    out << "=="; break;
-  case ch_op::ne:    out << "!="; break;
+  case ch_op::lt:   out << "<"; break;
+  case ch_op::gt:   out << ">"; break;
+  case ch_op::le:   out << "<="; break;
+  case ch_op::ge:   out << ">="; break;
 
-  case ch_op::lt:    out << "<"; break;
-  case ch_op::gt:    out << ">"; break;
-  case ch_op::le:    out << "<="; break;
-  case ch_op::ge:    out << ">="; break;
+  case ch_op::notl: out << "!"; break;
+  case ch_op::andl: out << "&&"; break;
+  case ch_op::orl:  out << "||"; break;
 
-  case ch_op::notl:  out << "!"; break;
-  case ch_op::andl:  out << "&&"; break;
-  case ch_op::orl:   out << "||"; break;
+  case ch_op::inv:  out << "~"; break;
+  case ch_op::andb: out << "&"; break;
+  case ch_op::orb:  out << "|"; break;
+  case ch_op::xorb: out << "^"; break;
 
-  case ch_op::inv:   out << "~"; break;
-  case ch_op::andb:  out << "&"; break;
-  case ch_op::orb:   out << "|"; break;
-  case ch_op::xorb:  out << "^"; break;
+  case ch_op::andr: out << "&"; break;
+  case ch_op::orr:  out << "|"; break;
+  case ch_op::xorr: out << "^"; break;
 
-  case ch_op::andr:  out << "&"; break;
-  case ch_op::orr:   out << "|"; break;
-  case ch_op::xorr:  out << "^"; break;
+  case ch_op::shl:  out << "<<"; break;
+  case ch_op::shr:  out << ">>"; break;
 
-  case ch_op::shl:   out << "<<"; break;
-  case ch_op::shr:   out << ">>"; break;
-
-  case ch_op::neg:   out << "-"; break;
-  case ch_op::add:   out << "+"; break;
-  case ch_op::sub:   out << "-"; break;
-  case ch_op::mult:   out << "*"; break;
-  case ch_op::div:   out << "/"; break;
-  case ch_op::mod:   out << "%"; break;
+  case ch_op::neg:  out << "-"; break;
+  case ch_op::add:  out << "+"; break;
+  case ch_op::sub:  out << "-"; break;
+  case ch_op::mult: out << "*"; break;
+  case ch_op::div:  out << "/"; break;
+  case ch_op::mod:  out << "%"; break;
 
   default:
     assert(false);

@@ -1,5 +1,8 @@
 #include "lnodeimpl.h"
 #include "proxyimpl.h"
+#include "regimpl.h"
+#include "memimpl.h"
+#include "udfimpl.h"
 #include "context.h"
 
 using namespace ch::internal;
@@ -9,6 +12,26 @@ const char* ch::internal::to_string(lnodetype type) {
     CH_LNODE_ENUM(CH_LNODE_NAME)
   };
   return sc_names[CH_LNODE_INDEX(type)];
+}
+
+cdimpl* ch::internal::get_snode_cd(lnodeimpl* node) {
+  switch (node->type()) {
+  case type_reg:
+    return reinterpret_cast<cdimpl*>(
+          reinterpret_cast<regimpl*>(node)->cd().impl());
+  case type_msrport:
+    return reinterpret_cast<cdimpl*>(
+          reinterpret_cast<memportimpl*>(node)->cd().impl());
+  case type_mwport:
+    return reinterpret_cast<cdimpl*>(
+          reinterpret_cast<memportimpl*>(node)->cd().impl());
+  case type_udfs:
+    return reinterpret_cast<cdimpl*>(
+          reinterpret_cast<udfsimpl*>(node)->cd().impl());
+  default:
+    std::abort();
+  }
+  return nullptr;
 }
 
 lnodeimpl::lnodeimpl(context* ctx,

@@ -7,15 +7,14 @@ namespace ch {
 namespace internal {
 
 class memportimpl;
-class mrportimpl;
+class marportimpl;
+class msrportimpl;
 class mwportimpl;
 
 class memimpl : public ioimpl {
 public:
 
-  uint32_t total_size() const {
-    return size_;
-  }
+  bool is_logic_rom() const;
 
   uint32_t data_width() const {
     return data_width_;
@@ -25,28 +24,12 @@ public:
     return num_items_;
   }
 
-  bool is_write_enable() const {
-    return is_write_enable_;
-  }
-
-  bool is_sync_read() const {
-    return is_sync_read_;
-  }
-
   bool has_init_data() const {
-    return init_data_.size() != 0;
+    return !init_data_.empty();
   }
 
   const sdata_type& init_data() const {
     return init_data_;
-  }
-
-  bool has_cd() const {
-    return (cd_idx_ != -1);
-  }
-
-  auto& cd() const {
-    return srcs_[cd_idx_];
   }
 
   auto& rdports() const {
@@ -71,18 +54,21 @@ public:
 
   virtual lnodeimpl* clone(context* ctx, const clone_map& cloned_nodes) override;
 
-  mrportimpl* create_rdport(lnodeimpl* addr,
-                            lnodeimpl* enable,
-                            const source_location& sloc);
+  memportimpl* create_arport(lnodeimpl* addr,
+                             const source_location& sloc);
 
-  mwportimpl* create_wrport(lnodeimpl* addr,
-                            lnodeimpl* data,
-                            lnodeimpl* enable,
-                            const source_location& sloc);
+  memportimpl* create_srport(lnodeimpl* cd,
+                             lnodeimpl* addr,
+                             lnodeimpl* enable,
+                             const source_location& sloc);
 
-  void remove_port(mrportimpl* port);
+  mwportimpl* create_wport(lnodeimpl* cd,
+                           lnodeimpl* addr,
+                           lnodeimpl* wdata,
+                           lnodeimpl* enable,
+                           const source_location& sloc);
 
-  void remove_port(mwportimpl* port);
+  void remove_port(memportimpl* port);
 
   void print(std::ostream& out) const override;
 
@@ -91,20 +77,14 @@ protected:
   memimpl(context* ctx,
           uint32_t data_width,
           uint32_t num_items,
-          bool write_enable,
-          bool sync_read,
           const sdata_type& init_data,
-          lnodeimpl* cd,
           const source_location& sloc);
   
-  std::vector<mrportimpl*> rdports_;
-  std::vector<mwportimpl*> wrports_;
+  std::vector<memportimpl*> rdports_;
+  std::vector<mwportimpl*>  wrports_;
   sdata_type init_data_;
-  int cd_idx_;
   uint32_t data_width_;
   uint32_t num_items_;
-  bool is_write_enable_;
-  bool is_sync_read_;
 
   friend class context;
 };
@@ -119,11 +99,7 @@ public:
   }
 
   const lnode& addr() const {
-    if (type_mrport == type_ && !mem_->is_sync_read()) {
-      return this->src(addr_idx_);
-    } else {
-      return mem_->src(addr_idx_);
-    }
+    return srcs_[addr_idx_];
   }
 
   bool has_enable() const {
@@ -131,46 +107,71 @@ public:
   }
 
   const lnode& enable() const {
-    return mem_->src(enable_idx_);
-  }  
+    return srcs_[enable_idx_];
+  }
 
-  void init(memimpl* mem, lnodeimpl* addr, lnodeimpl* enable);
+  bool has_cd() const {
+    return (cd_idx_ != -1);
+  }
+
+  auto& cd() const {
+    return srcs_[cd_idx_];
+  }
 
 protected:
 
-  memportimpl(context* ctx, lnodetype type, uint32_t size, const source_location& sloc);
+  memportimpl(context* ctx,
+              lnodetype type,
+              memimpl* mem,
+              lnodeimpl* cd,
+              lnodeimpl* addr,
+              lnodeimpl* enable,
+              const source_location& sloc);
 
   ~memportimpl();
 
   memimpl* mem_;
+  int cd_idx_;
   int addr_idx_;  
   int enable_idx_;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class mrportimpl : public memportimpl {
+class marportimpl : public memportimpl {
 public:
-
-  bool is_sync_read() const {
-    return mem_->is_sync_read();
-  }  
-
-  void init(memimpl* mem, lnodeimpl* addr, lnodeimpl* enable);
 
   virtual lnodeimpl* clone(context* ctx, const clone_map& cloned_nodes) override;
 
 protected:
 
-  mrportimpl(context* ctx,
-             memimpl* mem,
-             lnodeimpl* addr,
-             lnodeimpl* enable,
-             const source_location& sloc);
+  marportimpl(context* ctx,
+              memimpl* mem,
+              lnodeimpl* addr,
+              const source_location& sloc);
 
-  mrportimpl(context* ctx, uint32_t size, const source_location& sloc);
+  ~marportimpl();
 
-  ~mrportimpl();
+  friend class context;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+class msrportimpl : public memportimpl {
+public:
+
+  virtual lnodeimpl* clone(context* ctx, const clone_map& cloned_nodes) override;
+
+protected:
+
+  msrportimpl(context* ctx,
+              memimpl* mem,
+              lnodeimpl* cd,
+              lnodeimpl* addr,
+              lnodeimpl* enable,
+              const source_location& sloc);
+
+  ~msrportimpl();
 
   friend class context;
 };
@@ -181,10 +182,8 @@ class mwportimpl : public memportimpl {
 public:
 
   const lnode& wdata() const {
-    return mem_->src(wdata_idx_);
+    return srcs_[wdata_idx_];
   }
-
-  void init(memimpl* mem, lnodeimpl* addr, lnodeimpl* wdata, lnodeimpl* enable);
 
   virtual lnodeimpl* clone(context* ctx, const clone_map& cloned_nodes) override;
 
@@ -194,6 +193,7 @@ protected:
 
   mwportimpl(context* ctx,
              memimpl* mem,
+             lnodeimpl* cd,
              lnodeimpl* addr,
              lnodeimpl* wdata,
              lnodeimpl* enable,

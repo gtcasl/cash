@@ -16,7 +16,8 @@
   m(cd) \
   m(reg) \
   m(mem) \
-  m(mrport) \
+  m(marport) \
+  m(msrport) \
   m(mwport) \
   m(bind) \
   m(bindin) \
@@ -38,12 +39,15 @@ enum lnodetype {
 };
 
 inline bool is_snode_type(lnodetype type) {
-  return type_reg == type || type_mem == type || type_udfs == type;
+  return type_reg == type || type_mwport == type || type_msrport == type || type_udfs == type;
 }
 
 inline bool is_output_type(lnodetype type) {
   return type_output == type || type_tap == type || type_assert == type  || type_print == type;
 }
+
+class cdimpl;
+cdimpl* get_snode_cd(lnodeimpl* node);
 
 using clone_map = std::unordered_map<uint32_t, lnodeimpl*>;
 

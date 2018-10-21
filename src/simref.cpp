@@ -87,12 +87,12 @@ public:
       auto r0 = ranges_;
       {
         uint32_t lr = (bitwidth_v<block_type> - r0->length);
-        src_block = ((r0->src_data[0] >> r0->src_offset) << lr) >> lr;
+        src_block = block_type((r0->src_data[0] >> r0->src_offset) << lr) >> lr;
         dst_offset = r0->length;
       }
       for (auto *r = r0 + 1, *r_end = r0 + num_ranges_ ;r != r_end; ++r) {
         uint32_t lr = (bitwidth_v<block_type> - r->length);
-        src_block |= (((r->src_data[0] >> r->src_offset) << lr) >> lr) << dst_offset;
+        src_block |= (block_type((r->src_data[0] >> r->src_offset) << lr) >> lr) << dst_offset;
         dst_offset += r->length;
       }
       dst_[0] = src_block;
@@ -305,76 +305,76 @@ public:
       if constexpr (is_scalar) {
         block_type u = resize_opds ? sign_ext(src0_[0], src0_size_) : src0_[0];
         block_type v = resize_opds ? sign_ext(src1_[0], src1_size_) : src1_[0];
-        bv_assign(dst_, dst_size_, bv_eq_scalar(&u, &v));
+        bv_assign_scalar(dst_, bv_eq_scalar(&u, &v));
       } else {
-        bv_assign(dst_, dst_size_, bv_eq_vector(src0_,  src1_, src0_size_));
+        bv_assign_scalar(dst_, bv_eq_vector(src0_,  src1_, src0_size_));
       }
       break;
     case ch_op::ne:
       if constexpr (is_scalar) {
         block_type u = resize_opds ? sign_ext(src0_[0], src0_size_) : src0_[0];
         block_type v = resize_opds ? sign_ext(src1_[0], src1_size_) : src1_[0];
-        bv_assign(dst_, dst_size_, !bv_eq_scalar(&u, &v));
+        bv_assign_scalar(dst_, !bv_eq_scalar(&u, &v));
       } else {
-        bv_assign(dst_, dst_size_, !bv_eq_vector(src0_,  src1_, src0_size_));
+        bv_assign_scalar(dst_, !bv_eq_vector(src0_,  src1_, src0_size_));
       }
       break;
     case ch_op::lt:
       if constexpr (is_scalar) {
         block_type u = resize_opds ? sign_ext(src0_[0], src0_size_) : src0_[0];
         block_type v = resize_opds ? sign_ext(src1_[0], src1_size_) : src1_[0];
-        bv_assign(dst_, dst_size_, bv_lt_scalar<is_signed>(&u, &v, src0_size_));
+        bv_assign_scalar(dst_, bv_lt_scalar<is_signed>(&u, &v, src0_size_));
       } else {
-        bv_assign(dst_, dst_size_, bv_lt_vector<is_signed>(src0_,  src1_, src0_size_));
+        bv_assign_scalar(dst_, bv_lt_vector<is_signed>(src0_,  src1_, src0_size_));
       }
       break;
     case ch_op::gt:
       if constexpr (is_scalar) {
         block_type u = resize_opds ? sign_ext(src0_[0], src0_size_) : src0_[0];
         block_type v = resize_opds ? sign_ext(src1_[0], src1_size_) : src1_[0];
-        bv_assign(dst_, dst_size_, bv_lt_scalar<is_signed>(&v, &u, src0_size_));
+        bv_assign_scalar(dst_, bv_lt_scalar<is_signed>(&v, &u, src0_size_));
       } else {
-        bv_assign(dst_, dst_size_, bv_lt_vector<is_signed>(src1_,  src0_, src0_size_));
+        bv_assign_scalar(dst_, bv_lt_vector<is_signed>(src1_,  src0_, src0_size_));
       }
       break;
     case ch_op::le:
       if constexpr (is_scalar) {
         block_type u = resize_opds ? sign_ext(src0_[0], src0_size_) : src0_[0];
         block_type v = resize_opds ? sign_ext(src1_[0], src1_size_) : src1_[0];
-        bv_assign(dst_, dst_size_, !bv_lt_scalar<is_signed>(&v, &u, src0_size_));
+        bv_assign_scalar(dst_, !bv_lt_scalar<is_signed>(&v, &u, src0_size_));
       } else {
-        bv_assign(dst_, dst_size_, !bv_lt_vector<is_signed>(src1_,  src0_, src0_size_));
+        bv_assign_scalar(dst_, !bv_lt_vector<is_signed>(src1_,  src0_, src0_size_));
       }
       break;
     case ch_op::ge:
       if constexpr (is_scalar) {
         block_type u = resize_opds ? sign_ext(src0_[0], src0_size_) : src0_[0];
         block_type v = resize_opds ? sign_ext(src1_[0], src1_size_) : src1_[0];
-        bv_assign(dst_, dst_size_, !bv_lt_scalar<is_signed>(&u, &v, src0_size_));
+        bv_assign_scalar(dst_, !bv_lt_scalar<is_signed>(&u, &v, src0_size_));
       } else {
-        bv_assign(dst_, dst_size_, !bv_lt_vector<is_signed>(src0_,  src1_, src0_size_));
+        bv_assign_scalar(dst_, !bv_lt_vector<is_signed>(src0_,  src1_, src0_size_));
       }
       break;
 
     case ch_op::notl:
       if constexpr (is_scalar) {
-        bv_assign(dst_, dst_size_, !bv_orr_scalar(src0_));
+        bv_assign_scalar(dst_, !bv_orr_scalar(src0_));
       } else {
-        bv_assign(dst_, dst_size_, !bv_orr_vector(src0_, src0_size_));
+        bv_assign_scalar(dst_, !bv_orr_vector(src0_, src0_size_));
       }
       break;
     case ch_op::andl:
       if constexpr (is_scalar) {
-        bv_assign(dst_, dst_size_, bv_orr_scalar(src0_) && bv_orr_scalar(src1_));
+        bv_assign_scalar(dst_, bv_orr_scalar(src0_) && bv_orr_scalar(src1_));
       } else {
-        bv_assign(dst_, dst_size_, bv_orr_vector(src0_, src0_size_) && bv_orr_vector(src1_, src1_size_));
+        bv_assign_scalar(dst_, bv_orr_vector(src0_, src0_size_) && bv_orr_vector(src1_, src1_size_));
       }
       break;
     case ch_op::orl:
       if constexpr (is_scalar) {
-        bv_assign(dst_, dst_size_, bv_orr_scalar(src0_) || bv_orr_scalar(src1_));
+        bv_assign_scalar(dst_, bv_orr_scalar(src0_) || bv_orr_scalar(src1_));
       } else {
-        bv_assign(dst_, dst_size_, bv_orr_vector(src0_, src0_size_) || bv_orr_vector(src1_, src1_size_));
+        bv_assign_scalar(dst_, bv_orr_vector(src0_, src0_size_) || bv_orr_vector(src1_, src1_size_));
       }
       break;
 
@@ -416,23 +416,23 @@ public:
 
     case ch_op::andr:
       if constexpr (is_scalar) {
-        bv_assign(dst_, dst_size_, bv_andr_scalar(src0_, src0_size_));
+        bv_assign_scalar(dst_, bv_andr_scalar(src0_, src0_size_));
       } else {
-        bv_assign(dst_, dst_size_, bv_andr_vector(src0_, src0_size_));
+        bv_assign_scalar(dst_, bv_andr_vector(src0_, src0_size_));
       }
       break;
     case ch_op::orr:
       if constexpr (is_scalar) {
-        bv_assign(dst_, dst_size_, bv_orr_scalar(src0_));
+        bv_assign_scalar(dst_, bv_orr_scalar(src0_));
       } else {
-        bv_assign(dst_, dst_size_, bv_orr_vector(src0_, src0_size_));
+        bv_assign_scalar(dst_, bv_orr_vector(src0_, src0_size_));
       }
       break;
     case ch_op::xorr:
       if constexpr (is_scalar) {
-        bv_assign(dst_, dst_size_, bv_xorr_scalar(src0_));
+        bv_assign_scalar(dst_, bv_xorr_scalar(src0_));
       } else {
-        bv_assign(dst_, dst_size_, bv_xorr_vector(src0_, src0_size_));
+        bv_assign_scalar(dst_, bv_xorr_vector(src0_, src0_size_));
       }
       break;
 
@@ -1151,262 +1151,257 @@ instr_reg_base* instr_reg_base::create(regimpl* node, data_map_t& map) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class instr_mem_base : public instr_base {
+class instr_mport_base : public instr_base {
 public:
 
-  static instr_mem_base* create(memimpl* node, data_map_t& map);
-
-  void init(memimpl* node, data_map_t& map) {
-    for (uint32_t i = 0; i < num_rdports_; ++i) {
-      auto p = node->rdports()[i];
-      rdports_[i].addr   = map.at(p->addr().id());
-      rdports_[i].enable = p->has_enable() ? map.at(p->enable().id()) : nullptr;
-    }
-
-    for (uint32_t i = 0; i < num_wrports_; ++i) {
-      auto p = node->wrports()[i];
-      wrports_[i].data = map.at(p->wdata().id());
-      wrports_[i].addr = map.at(p->addr().id());
-      wrports_[i].enable = p->has_enable() ? map.at(p->enable().id()) : nullptr;
+  ~instr_mport_base() {
+    if (own_store_) {
+      delete [] store_;
     }
   }
 
 protected:
 
-  struct rdport_t {
-          block_type* data;
-    const block_type* addr;
-    const block_type* enable;
-  };
-
-  struct wrport_t {
-    const block_type* data;
-    const block_type* addr;
-    const block_type* enable;
-  };
-
-  instr_mem_base(block_type* dst,
-                 uint32_t data_size,
-                 uint32_t addr_size,
-                 rdport_t* rdports,
-                 uint32_t num_rdports,
-                 wrport_t* wrports,
-                 uint32_t num_wrports)
-    : dst_(dst)
+  instr_mport_base(uint32_t data_size)
+    : own_store_(false)
+    , store_(nullptr)
+    , addr_(nullptr)
+    , addr_size_(0)
     , data_size_(data_size)
-    , addr_size_(addr_size)
-    , rdports_(rdports)
-    , num_rdports_(num_rdports)
-    , wrports_(wrports)
-    , num_wrports_(num_wrports)
   {}
 
-  ~instr_mem_base() {
-    for (uint32_t i = 0; i < num_rdports_; ++i) {
-      delete [] rdports_[i].data;
-    }
-  }
-
-  block_type* dst_;
-  uint32_t data_size_;
-  uint32_t addr_size_;
-  rdport_t* rdports_;
-  uint32_t num_rdports_;
-  wrport_t* wrports_;
-  uint32_t num_wrports_;
-};
-
-template <bool is_scalar>
-class instr_mem : public instr_mem_base {
-public:
-
-  void destroy() override {
-    this->~instr_mem();
-    ::operator delete [](this);
-  }
-
-  void eval() override {
-    // evaluate synchronous read ports
-    for (auto *p = rdports_, *p_end = p + num_rdports_; p != p_end; ++p) {
-      if (p->enable && !static_cast<bool>(p->enable[0]))
-        continue;
-      auto addr = bv_cast<uint32_t>(p->addr, addr_size_);
-      auto src_offset = addr * data_size_;
-      auto src = dst_ + (src_offset / bitwidth_v<block_type>);
-      auto src_begin_rem = src_offset % bitwidth_v<block_type>;
-      if constexpr (is_scalar) {
-        bv_slice_vector_small(p->data, data_size_, src, src_begin_rem);
-      } else {
-        bv_slice_vector(p->data, data_size_, src, src_begin_rem);
+  void init(memportimpl* node, data_map_t& map) {
+    auto mem = node->mem();
+    auto it = map.find(mem->id());
+    if (it != map.end()) {
+      store_ = const_cast<block_type*>(it->second);
+    } else {
+      uint32_t nblocks = ceildiv<uint32_t>(mem->size(), bitwidth_v<block_type>);
+      store_ = new block_type[nblocks];
+      if (mem->has_init_data()) {
+        bv_copy(store_, mem->init_data().words(), mem->size());
       }
+      map[mem->id()] = store_;
+      own_store_ = true;
     }
-
-    // evaluate synchronous write ports
-    for (auto *p = wrports_, *p_end = p + num_wrports_; p != p_end; ++p) {
-      if (p->enable && !static_cast<bool>(p->enable[0]))
-        continue;
-      auto addr = bv_cast<uint32_t>(p->addr, addr_size_);
-      auto dst_offset = addr * data_size_;
-      auto dst = dst_ + (dst_offset / bitwidth_v<block_type>);
-      auto dst_begin_rem = dst_offset % bitwidth_v<block_type>;
-      if constexpr (is_scalar) {
-        bv_copy_vector_small(dst, dst_begin_rem, p->data, 0, data_size_);
-      } else {
-        bv_copy_vector(dst, dst_begin_rem, p->data, 0, data_size_);
-      }
-    }
+    addr_ = map.at(node->addr().id());
+    addr_size_ = node->addr().size();
   }
 
-private:
-
-  instr_mem(block_type* dst,
-            uint32_t data_size,
-            uint32_t addr_size,
-            rdport_t* rdports,
-            uint32_t num_rdports,
-            wrport_t* wrports,
-            uint32_t num_wrports)
-    : instr_mem_base(dst, data_size, addr_size,
-                     rdports, num_rdports, wrports, num_wrports)
-  {}
-
-  friend class instr_mem_base;
-};
-
-instr_mem_base* instr_mem_base::create(memimpl* node, data_map_t& map) {
-  uint32_t dst_size  = node->size();
-  uint32_t dst_nblocks = ceildiv<uint32_t>(dst_size, bitwidth_v<block_type>);
-  uint32_t dst_bytes = dst_nblocks * sizeof(block_type);
-
-  uint32_t data_size = node->data_width();
-  uint32_t data_nblocks = ceildiv<uint32_t>(data_size, bitwidth_v<block_type>);
-  uint32_t addr_size = log2ceil(node->num_items());
-
-  uint32_t num_rdports = node->is_sync_read() ? node->rdports().size() : 0;
-  uint32_t rdports_bytes = 0;
-  for (uint32_t i = 0; i < num_rdports; ++i) {
-    rdports_bytes += sizeof(rdport_t);
-  }
-
-  uint32_t num_wrports = node->wrports().size();
-  uint32_t wrports_bytes = 0;
-  for (uint32_t i = 0; i < num_wrports; ++i) {
-    wrports_bytes += sizeof(wrport_t);
-  }
-
-  auto buf = new uint8_t[__aligned_sizeof(instr_mem<false>) + dst_bytes + rdports_bytes + wrports_bytes]();
-  auto buf_cur = buf + __aligned_sizeof(instr_mem<false>);
-  auto dst = (block_type*)buf_cur;
-  map[node->id()] = dst;
-
-  buf_cur += dst_bytes;
-  auto rdports = (rdport_t*)buf_cur;
-
-  for (uint32_t i = 0; i < num_rdports; ++i) {
-    auto p = node->rdports()[i];
-    auto b = new block_type[data_nblocks]();;
-    rdports[i].data = b;
-    map[p->id()] = b;
-  }
-
-  buf_cur += rdports_bytes;
-  auto wrports = (wrport_t*)buf_cur;
-
-  if (node->has_init_data()) {
-    bv_copy(dst, node->init_data().words(), dst_size);
-  }
-
-  bool is_scalar = (data_size <= bitwidth_v<block_type>);
-  if (is_scalar) {
-    return new (buf) instr_mem<true>(dst, data_size, addr_size,
-                                     rdports, num_rdports, wrports, num_wrports);
-  } else {
-    return new (buf) instr_mem<false>(dst, data_size, addr_size,
-                                      rdports, num_rdports, wrports, num_wrports);
-  }
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-class instr_mrport_base : public instr_base {
-public:
-
-  static instr_mrport_base* create(mrportimpl* node, data_map_t& map) ;
-
-protected:
-
-  instr_mrport_base(const block_type* store,
-                    block_type* dst,
-                    uint32_t dst_size,
-                    const block_type* addr,
-                    uint32_t addr_size)
-    : store_(store)
-    , dst_(dst)
-    , dst_size_(dst_size)
-    , addr_(addr)
-    , addr_size_(addr_size)
-  {}
-
-  const block_type* store_;
-  block_type* dst_;
-  uint32_t dst_size_;  
+  bool own_store_;
+  block_type* store_;
   const block_type* addr_;
   uint32_t addr_size_;
+  uint32_t data_size_;
+};
+
+class instr_marport_base : public instr_mport_base {
+public:
+
+  static instr_marport_base* create(marportimpl* node, data_map_t& map) ;
+
+protected:
+
+  instr_marport_base(block_type* dst, uint32_t dst_size)
+    : instr_mport_base(dst_size)
+    , dst_(dst)
+  {}
+
+  block_type* dst_;
 };
 
 template <bool is_scalar>
-class instr_mrport : public instr_mrport_base {
+class instr_marport : public instr_marport_base {
 public:
 
   void destroy() override {
-    this->~instr_mrport();
+    this->~instr_marport();
     ::operator delete [](this);
   }
 
   void eval() override {
     auto addr = bv_cast<uint32_t>(addr_, addr_size_);
-    auto src_offset = addr * dst_size_;
+    auto src_offset = addr * data_size_;
     auto src = store_ + (src_offset / bitwidth_v<block_type>);
     auto src_begin_rem = src_offset % bitwidth_v<block_type>;
     if constexpr (is_scalar) {
-      bv_slice_vector_small(dst_, dst_size_, src, src_begin_rem);
+      bv_slice_vector_small(dst_, data_size_, src, src_begin_rem);
     } else {
-      bv_slice_vector(dst_, dst_size_, src, src_begin_rem);
+      bv_slice_vector(dst_, data_size_, src, src_begin_rem);
     }
   }
 
 private:
 
-  instr_mrport(const block_type* store,
-               block_type* dst,
-               uint32_t dst_size,
-               const block_type* addr,
-               uint32_t addr_size)
-    : instr_mrport_base(store, dst, dst_size, addr, addr_size)
+  instr_marport(block_type* dst, uint32_t dst_size)
+    : instr_marport_base(dst, dst_size)
   {}
 
-  friend class instr_mrport_base;
+  friend class instr_marport_base;
 };
 
-instr_mrport_base* instr_mrport_base::create(mrportimpl* node, data_map_t& map) {
+instr_marport_base* instr_marport_base::create(marportimpl* node, data_map_t& map) {
   uint32_t dst_size  = node->size();
   uint32_t nblocks   = ceildiv<uint32_t>(dst_size, bitwidth_v<block_type>);
   uint32_t dst_bytes = sizeof(block_type) * nblocks;
 
-  auto buf = new uint8_t[__aligned_sizeof(instr_mrport_base) + dst_bytes]();
-  auto buf_cur = buf + __aligned_sizeof(instr_mrport_base);
+  auto buf = new uint8_t[__aligned_sizeof(instr_marport_base) + dst_bytes]();
+  auto buf_cur = buf + __aligned_sizeof(instr_marport_base);
   auto dst = (block_type*)buf_cur;
   map[node->id()] = dst;
 
-  auto store = map.at(node->mem()->id());
-  auto addr = map.at(node->addr().id());
-  auto addr_size = node->addr().size();
+  instr_marport_base* instr;
+  bool is_scalar = (dst_size <= bitwidth_v<block_type>);
+  if (is_scalar) {
+    instr = new (buf) instr_marport<true>(dst, dst_size);
+  } else {
+    instr = new (buf) instr_marport<false>(dst, dst_size);
+  }
+  instr->init(node, map);
+  return instr;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+class instr_msrport_base : public instr_mport_base {
+public:
+
+  static instr_msrport_base* create(msrportimpl* node, data_map_t& map) ;
+
+  void init(msrportimpl* node, data_map_t& map) {
+    instr_mport_base::init(node, map);
+    if (node->has_enable()) {
+      enable_ = map.at(node->enable().id());
+    }
+  }
+
+protected:
+
+  instr_msrport_base(block_type* dst, uint32_t dst_size)
+    : instr_mport_base(dst_size)
+    , dst_(dst)
+    , enable_(nullptr)
+  {}
+
+  block_type* dst_;
+  const block_type* enable_;
+};
+
+template <bool is_scalar>
+class instr_msrport : public instr_msrport_base {
+public:
+
+  void destroy() override {
+    this->~instr_msrport();
+    ::operator delete [](this);
+  }
+
+  void eval() override {
+    if (enable_ && !static_cast<bool>(enable_[0]))
+      return;
+    auto addr = bv_cast<uint32_t>(addr_, addr_size_);
+    auto src_offset = addr * data_size_;
+    auto src = store_ + (src_offset / bitwidth_v<block_type>);
+    auto src_begin_rem = src_offset % bitwidth_v<block_type>;
+    if constexpr (is_scalar) {
+      bv_slice_vector_small(dst_, data_size_, src, src_begin_rem);
+    } else {
+      bv_slice_vector(dst_, data_size_, src, src_begin_rem);
+    }
+  }
+
+private:
+
+  instr_msrport(block_type* dst, uint32_t dst_size)
+    : instr_msrport_base(dst, dst_size)
+  {}
+
+  friend class instr_msrport_base;
+};
+
+instr_msrport_base* instr_msrport_base::create(msrportimpl* node, data_map_t& map) {
+  uint32_t dst_size  = node->size();
+  uint32_t nblocks   = ceildiv<uint32_t>(dst_size, bitwidth_v<block_type>);
+  uint32_t dst_bytes = sizeof(block_type) * nblocks;
+
+  auto buf = new uint8_t[__aligned_sizeof(instr_msrport_base) + dst_bytes]();
+  auto buf_cur = buf + __aligned_sizeof(instr_msrport_base);
+  auto dst = (block_type*)buf_cur;
+  map[node->id()] = dst;
 
   bool is_scalar = (dst_size <= bitwidth_v<block_type>);
   if (is_scalar) {
-    return new (buf) instr_mrport<true>(store, dst, dst_size, addr, addr_size);
+    return new (buf) instr_msrport<true>(dst, dst_size);
   } else {
-    return new (buf) instr_mrport<false>(store, dst, dst_size, addr, addr_size);
+    return new (buf) instr_msrport<false>(dst, dst_size);
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+class instr_mwport_base : public instr_mport_base {
+public:
+
+  static instr_mwport_base* create(mwportimpl* node, data_map_t& map) ;
+
+  void init(mwportimpl* node, data_map_t& map) {
+    instr_mport_base::init(node, map);
+    wdata_ = map.at(node->wdata().id());
+    if (node->has_enable()) {
+      enable_ = map.at(node->enable().id());
+    }
+  }
+
+protected:
+
+  instr_mwport_base(uint32_t data_size)
+    : instr_mport_base(data_size)
+    , wdata_(nullptr)
+    , enable_(nullptr)
+  {}
+
+  const block_type* wdata_;
+  const block_type* enable_;
+};
+
+template <bool is_scalar>
+class instr_mwport : public instr_mwport_base {
+public:
+
+  void destroy() override {
+    this->~instr_mwport();
+    ::operator delete [](this);
+  }
+
+  void eval() override {
+    if (enable_ && !static_cast<bool>(enable_[0]))
+      return;
+    auto addr = bv_cast<uint32_t>(addr_, addr_size_);
+    auto dst_offset = addr * data_size_;
+    auto dst = store_ + (dst_offset / bitwidth_v<block_type>);
+    auto dst_begin_rem = dst_offset % bitwidth_v<block_type>;
+    if constexpr (is_scalar) {
+      bv_copy_vector_small(dst, dst_begin_rem, wdata_, 0, data_size_);
+    } else {
+      bv_copy_vector(dst, dst_begin_rem, wdata_, 0, data_size_);
+    }
+  }
+
+private:
+
+  instr_mwport(uint32_t data_size) : instr_mwport_base(data_size) {}
+
+  friend class instr_mwport_base;
+};
+
+instr_mwport_base* instr_mwport_base::create(mwportimpl* node, data_map_t&) {
+  auto buf = new uint8_t[__aligned_sizeof(instr_mwport_base)]();
+  uint32_t data_size = node->size();
+  bool is_scalar = (data_size <= bitwidth_v<block_type>);
+  if (is_scalar) {
+    return new (buf) instr_mwport<true>(data_size);
+  } else {
+    return new (buf) instr_mwport<false>(data_size);
   }
 }
 
@@ -1687,8 +1682,11 @@ void driver::initialize(const std::vector<lnodeimpl*>& eval_list) {
     case type_reg:
       instr_map[node->id()] = instr_reg_base::create(reinterpret_cast<regimpl*>(node), data_map);
       break;
-    case type_mem:
-      instr_map[node->id()] = instr_mem_base::create(reinterpret_cast<memimpl*>(node), data_map);
+    case type_msrport:
+      instr_map[node->id()] = instr_msrport_base::create(reinterpret_cast<msrportimpl*>(node), data_map);
+      break;
+    case type_mwport:
+      instr_map[node->id()] = instr_mwport_base::create(reinterpret_cast<mwportimpl*>(node), data_map);
       break;
     case type_udfs:
       instr_map[node->id()] = instr_udfs::create(reinterpret_cast<udfsimpl*>(node), data_map);
@@ -1733,16 +1731,17 @@ void driver::initialize(const std::vector<lnodeimpl*>& eval_list) {
       instr = instr_map.at(node->id());
       reinterpret_cast<instr_reg_base*>(instr)->init(reinterpret_cast<regimpl*>(node), data_map);
       break;
-    case type_mem:
-      instr = instr_map.at(node->id());
-      reinterpret_cast<instr_mem_base*>(instr)->init(reinterpret_cast<memimpl*>(node), data_map);
+    case type_marport:
+      instr = instr_marport_base::create(reinterpret_cast<marportimpl*>(node), data_map);
       break;
-    case type_mrport: {
-      auto port = reinterpret_cast<mrportimpl*>(node);
-      if (!port->is_sync_read()) {
-        instr = instr_mrport_base::create(port, data_map);
-      }
-    } break;
+    case type_msrport:
+      instr = instr_map.at(node->id());
+      reinterpret_cast<instr_msrport_base*>(instr)->init(reinterpret_cast<msrportimpl*>(node), data_map);
+      break;
+    case type_mwport:
+      instr = instr_map.at(node->id());
+      reinterpret_cast<instr_mwport_base*>(instr)->init(reinterpret_cast<mwportimpl*>(node), data_map);
+      break;
     case type_tap:
       instr = instr_output_base::create(reinterpret_cast<tapimpl*>(node), data_map);
       break;
@@ -1854,21 +1853,11 @@ void driver::build_bypass_list(std::unordered_set<uint32_t>& out, context* ctx, 
     bool changed = false;
 
     if (is_snode_type(type)) {
-      if ((type_reg == type
-        && cd_id == reinterpret_cast<regimpl*>(node)->cd().id())
-       || (type_mem == type
-        && reinterpret_cast<memimpl*>(node)->has_cd()
-        && cd_id == reinterpret_cast<memimpl*>(node)->cd().id())
-       || (type_udfs == type
-           && cd_id == reinterpret_cast<udfsimpl*>(node)->cd().id())) {
+      if (cd_id == get_snode_cd(node)->id())
         return false;
-      }
-
       // update changeset here in case there is a cycle with the source nodes
-      if (type != type_mem|| reinterpret_cast<memimpl*>(node)->has_cd()) {
-        changed_nodes.emplace(node->id());
-        changed = true;
-      }
+      changed_nodes.emplace(node->id());
+      changed = true;
     } else
     if (is_output_type(type)) {
       // mark constant outputs as changed

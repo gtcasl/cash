@@ -79,7 +79,7 @@ TEST_CASE("memory", "[memory]") {
       ch_bit4 d, q;
       ch_bool en;
       ch_mem<ch_bit4, 4> mem;
-      q = mem.read(a);
+      q = mem.aread(a);
       mem.write(a, d, en);
       ch_bind(a, d, en) = ch_delay(
         ch_case(ch_now(),
@@ -109,7 +109,7 @@ TEST_CASE("memory", "[memory]") {
       ch_uint4 d, q;
       ch_bool en;
       ch_mem<ch_uint4, 4> mem;
-      q = (mem.read(a) + 1) - 1;
+      q = (mem.aread(a) + 1) - 1;
       mem.write(a, d, en);
       ch_bind(a, d, en) = ch_delay(
         ch_case(ch_now(),
@@ -137,7 +137,7 @@ TEST_CASE("memory", "[memory]") {
     TEST([]()->ch_bool {
       ch_mem<Q_t, 2> mem;
       mem.write(0, Q_t(11_b, 01_b));
-      auto x = mem.read(0).as_bit();
+      auto x = mem.aread(0).as_bit();
       auto e = ch_delay(1101_b);
       //ch_print("t={0}, x={1}, e={2}", ch_now(), x, e);
       return (x == e);
