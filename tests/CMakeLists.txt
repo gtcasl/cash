@@ -33,5 +33,10 @@ add_executable(testsuite ${TEST_SOURCES})
 target_link_libraries(dogfood PRIVATE ${PROJECT_NAME})
 target_link_libraries(testsuite PRIVATE ${PROJECT_NAME})
 
+if (CODECOV)
+    target_compile_options(testsuite PRIVATE --coverage)
+    target_link_libraries(testsuite PRIVATE --coverage)
+endif()
+
 # register test
 add_test(NAME testsuite COMMAND ${EXECUTABLE_OUTPUT_PATH}/testsuite)
