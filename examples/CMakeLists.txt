@@ -15,7 +15,7 @@ foreach(EXAMPLE ${EXAMPLES})
     add_executable(${EXAMPLE} ${EXAMPLE}.cpp)
 
     # define dependent libraries
-    target_link_libraries(${EXAMPLE} ${PROJECT_NAME})
+    target_link_libraries(${EXAMPLE} PRIVATE ${PROJECT_NAME})
 
     # register test
     add_test(NAME ${EXAMPLE} COMMAND ${EXECUTABLE_OUTPUT_PATH}/${EXAMPLE})

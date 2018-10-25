@@ -122,6 +122,7 @@ protected:
 
   memportimpl(context* ctx,
               lnodetype type,
+              uint32_t size,
               memimpl* mem,
               lnodeimpl* cd,
               lnodeimpl* addr,

@@ -1,0 +1,3 @@
+[submodule "third_party/libjit"]
+	path = third_party/libjit
+	url = https://git.savannah.gnu.org/git/libjit.git

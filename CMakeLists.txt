@@ -3,6 +3,9 @@ cmake_minimum_required(VERSION 3.5)
 
 project(cash VERSION 0.1.0 LANGUAGES CXX)
 
+include(ExternalProject)
+
+option(LIBJIT "Enable libjit." OFF)
 option(CODECOV "Enable code coverage." OFF)
 option(PPROF "Enable profiling." OFF)
 
@@ -11,22 +14,30 @@ set(DEFAULT_BUILD_TYPE "Release")
 # use C++17 compiler
 add_compile_options(-std=c++17 -pedantic -Wall -Wextra -fmax-errors=1)
 
-if(CODECOV)
-    message("Code coverage is enabled")
-    #add_compile_options(--coverage)
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} --coverage")
-    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} --coverage")
-endif()
+set(LIBJIT_DIR ${CMAKE_CURRENT_SOURCE_DIR}/third_party/libjit)
 
-if (PPROF)
-  message("Google Profiler is enabled")
-  add_definitions(-DPPROF)
-  set(TARGET_LINK_FLAGS "-lprofiler")
-endif()
+ExternalProject_Add(libjit_ext
+    INSTALL_DIR ${LIBJIT_DIR}
+    SOURCE_DIR ${LIBJIT_DIR}
+    CONFIGURE_COMMAND ${LIBJIT_DIR}/configure --with-pic
+    BUILD_IN_SOURCE 1 # libjit is building source files, so we have to do that :/
+    BUILD_COMMAND ${MAKE}
+    BUILD_BYPRODUCTS ${LIBJIT_DIR}/jit/.libs/libjit.a
+    INSTALL_COMMAND ""
+)
+
+ExternalProject_Add_Step(libjit_ext
+    bootstrap
+    COMMAND ./bootstrap
+    DEPENDEES download
+    DEPENDERS configure
+    WORKING_DIRECTORY ${LIBJIT_DIR}
+)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake")
 set(EXECUTABLE_OUTPUT_PATH ${CMAKE_BINARY_DIR}/bin)
 set(LIBRARY_OUTPUT_PATH ${CMAKE_BINARY_DIR}/lib)
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 set(PROJECT_CONFIG ${PROJECT_NAME}Config)
 
@@ -73,8 +84,32 @@ set(PROJECT_SOURCES
 # build library
 add_library(${PROJECT_NAME} SHARED ${PROJECT_SOURCES})
 
-# add link libraries
-target_link_libraries(${PROJECT_NAME} ${TARGET_LINK_FLAGS})
+# link pthreads
+find_package(Threads)
+target_link_libraries(${PROJECT_NAME} PRIVATE ${CMAKE_THREAD_LIBS_INIT})
+
+if (LIBJIT)
+    message("LIBJIT compiler is enabled")
+    add_library(libjit STATIC IMPORTED GLOBAL)
+    set_target_properties(libjit PROPERTIES INTERFACE_INCLUDE_DIRECTORIES "${LIBJIT_DIR}/include")
+    set_target_properties(libjit PROPERTIES IMPORTED_LOCATION ${LIBJIT_DIR}/jit/.libs/libjit.a)
+    target_link_libraries(${PROJECT_NAME} PRIVATE libjit)
+    add_dependencies(libjit libjit_ext)
+else()
+    add_definitions(-DNLIBJIT)
+endif()
+
+if (CODECOV)
+    message("Code coverage is enabled")
+    target_compile_options(${PROJECT_NAME} PRIVATE --coverage)
+    target_link_libraries(${PROJECT_NAME} PRIVATE --coverage)
+endif()
+
+if (PPROF)
+    message("Google Profiler is enabled")
+    add_definitions(-DPPROF)
+    target_link_libraries(${PROJECT_NAME} PRIVATE -lprofiler)
+endif()
 
 target_include_directories(${PROJECT_NAME} PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>

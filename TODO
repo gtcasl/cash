@@ -195,7 +195,8 @@ $ google-pprof --callgrind ./aes.out profiler.log > profiler.callgrind
 $ kcachegrind profiler.callgrin
 
 // cmake build
-cmake -DCMAKE_BUILD_TYPE=Debug -DCODECOV=ON .. && make -j4 all test && ../codecov.sh .
+cmake -DCMAKE_BUILD_TYPE=Debug -DLIBJIT=ON .. && make -j4 all
+cmake -DCMAKE_BUILD_TYPE=Debug -DLIBJIT=ON -DCODECOV=ON .. && make -j4 all test && ../codecov.sh .
 
 // dump assembly
 objdump -d a.out > a.asm

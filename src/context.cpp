@@ -180,6 +180,12 @@ void context::add_node(lnodeimpl* node) {
   case type_cd:
     cdomains_.emplace_back((cdimpl*)node);
     break;
+  case type_mem:
+    mems_.emplace_back((memimpl*)node);
+    break;
+  case type_reg:
+    regs_.emplace_back((regimpl*)node);
+    break;
   case type_bind:
     bindings_.emplace_back((bindimpl*)node);
     break;
@@ -244,6 +250,12 @@ node_list_t::iterator context::delete_node(const node_list_t::iterator& it) {
     break;
   case type_cd:
     cdomains_.remove((cdimpl*)node);
+    break;
+  case type_mem:
+    mems_.remove((memimpl*)node);
+    break;
+  case type_reg:
+    regs_.remove((regimpl*)node);
     break;
   case type_bind:
     bindings_.remove((bindimpl*)node);

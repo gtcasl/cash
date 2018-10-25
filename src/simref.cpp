@@ -14,9 +14,30 @@
 #include "udfimpl.h"
 
 using namespace ch::internal;
-using namespace ch::internal::simref;
+//using namespace ch::internal::simref;
+
+namespace ch::internal::simref {
+
+struct instr_base {
+
+  instr_base() : step(1) {}
+
+  virtual ~instr_base() {}
+
+  virtual void destroy() = 0;
+
+  virtual void eval() = 0;
+
+  uint32_t step;
+};
+
+using data_map_t  = std::unordered_map<uint32_t, const block_type*>;
+using instr_map_t = std::unordered_map<uint32_t, instr_base*>;
+using node_map_t  = std::unordered_map<uint32_t, uint32_t>;
 
 #define __aligned_sizeof(...) (4*((sizeof(__VA_ARGS__) + 3)/4))
+
+///////////////////////////////////////////////////////////////////////////////
 
 class instr_proxy_base : public instr_base {
 public:
@@ -1396,7 +1417,7 @@ private:
 
 instr_mwport_base* instr_mwport_base::create(mwportimpl* node, data_map_t&) {
   auto buf = new uint8_t[__aligned_sizeof(instr_mwport_base)]();
-  uint32_t data_size = node->size();
+  uint32_t data_size = node->mem()->data_width();
   bool is_scalar = (data_size <= bitwidth_v<block_type>);
   if (is_scalar) {
     return new (buf) instr_mwport<true>(data_size);
@@ -1652,140 +1673,155 @@ private:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-driver::driver() {}
+struct sim_ctx_t {
+  sim_ctx_t() {}
 
-driver::~driver() {
-  for (auto instr : instrs_) {
-    instr->destroy();
-  }
-  for (auto constant : constants_) {
-    free(constant.first);
-  }
-}
-
-void driver::initialize(const std::vector<lnodeimpl*>& eval_list) {
-  data_map_t data_map;
-  instr_map_t instr_map;
-  node_map_t node_map;
-
-  instr_map.reserve(eval_list.size());
-  instrs_.reserve(eval_list.size());
-
-  auto ctx = eval_list.back()->ctx();
-
-  // setup constants
-  this->setup_constants(ctx, data_map);
-
-  // lower synchronous nodes
-  for (auto node : ctx->snodes()) {
-    switch (node->type()) {
-    case type_reg:
-      instr_map[node->id()] = instr_reg_base::create(reinterpret_cast<regimpl*>(node), data_map);
-      break;
-    case type_msrport:
-      instr_map[node->id()] = instr_msrport_base::create(reinterpret_cast<msrportimpl*>(node), data_map);
-      break;
-    case type_mwport:
-      instr_map[node->id()] = instr_mwport_base::create(reinterpret_cast<mwportimpl*>(node), data_map);
-      break;
-    case type_udfs:
-      instr_map[node->id()] = instr_udfs::create(reinterpret_cast<udfsimpl*>(node), data_map);
-      break;
-    default:
-      break;
+  ~sim_ctx_t() {
+    for (auto instr : instrs) {
+      instr->destroy();
+    }
+    for (auto constant : constants) {
+      free(constant.first);
     }
   }
 
-  // lower all nodes
-  for (auto node : eval_list) {
-    instr_base* instr = nullptr;
-    switch (node->type()) {
-    case type_proxy:
-      instr = instr_proxy_base::create(reinterpret_cast<proxyimpl*>(node), data_map);
-      break;
-    case type_input: {
-      auto input = reinterpret_cast<inputimpl*>(node);
-      if (input->has_binding()) {
-        data_map[node->id()] = data_map.at(input->binding().id());
-      } else {
-        data_map[node->id()] = input->value()->words();
+  std::vector<std::pair<block_type*, uint32_t>> constants;
+  std::vector<instr_base*> instrs;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+class compiler {
+public:
+  compiler(sim_ctx_t* ctx) : sim_ctx_(ctx) {}
+
+  ~compiler() {}
+
+  void build(const std::vector<lnodeimpl*>& eval_list) {
+    data_map_t data_map;
+    instr_map_t instr_map;
+    node_map_t node_map;
+
+    instr_map.reserve(eval_list.size());
+    sim_ctx_->instrs.reserve(eval_list.size());
+
+    auto ctx = eval_list.back()->ctx();
+
+    // setup constants
+    this->setup_constants(ctx, data_map);
+
+    // lower synchronous nodes
+    for (auto node : ctx->snodes()) {
+      switch (node->type()) {
+      case type_reg:
+        instr_map[node->id()] = instr_reg_base::create(reinterpret_cast<regimpl*>(node), data_map);
+        break;
+      case type_msrport:
+        instr_map[node->id()] = instr_msrport_base::create(reinterpret_cast<msrportimpl*>(node), data_map);
+        break;
+      case type_mwport:
+        instr_map[node->id()] = instr_mwport_base::create(reinterpret_cast<mwportimpl*>(node), data_map);
+        break;
+      case type_udfs:
+        instr_map[node->id()] = instr_udfs::create(reinterpret_cast<udfsimpl*>(node), data_map);
+        break;
+      default:
+        break;
       }
-    } break;
-    case type_output: {
-      auto output = reinterpret_cast<outputimpl*>(node);
-      data_map[node->id()] = data_map.at(output->src(0).id());
-      if (!output->has_binding()) {
-        instr = instr_output_base::create(output, data_map);
-      }
-    } break;
-    case type_alu:
-      instr = instr_alu_base::create(reinterpret_cast<aluimpl*>(node), data_map);
-      break;
-    case type_sel:
-      instr = instr_select_base::create(reinterpret_cast<selectimpl*>(node), data_map);
-      break;
-    case type_cd:
-      instr = instr_cd::create(reinterpret_cast<cdimpl*>(node), data_map);
-      break;
-    case type_reg:
-      instr = instr_map.at(node->id());
-      reinterpret_cast<instr_reg_base*>(instr)->init(reinterpret_cast<regimpl*>(node), data_map);
-      break;
-    case type_marport:
-      instr = instr_marport_base::create(reinterpret_cast<marportimpl*>(node), data_map);
-      break;
-    case type_msrport:
-      instr = instr_map.at(node->id());
-      reinterpret_cast<instr_msrport_base*>(instr)->init(reinterpret_cast<msrportimpl*>(node), data_map);
-      break;
-    case type_mwport:
-      instr = instr_map.at(node->id());
-      reinterpret_cast<instr_mwport_base*>(instr)->init(reinterpret_cast<mwportimpl*>(node), data_map);
-      break;
-    case type_tap:
-      instr = instr_output_base::create(reinterpret_cast<tapimpl*>(node), data_map);
-      break;
-    case type_assert:
-      instr = instr_assert::create(reinterpret_cast<assertimpl*>(node), data_map);
-      break;
-    case type_time:
-      instr = instr_time::create(reinterpret_cast<timeimpl*>(node), data_map);
-      break;
-    case type_print:
-      instr = instr_print::create(reinterpret_cast<printimpl*>(node), data_map);
-      break;
-    case type_udfc:
-      instr = instr_udfc::create(reinterpret_cast<udfcimpl*>(node), data_map);
-      break;
-    case type_udfs:
-      instr = instr_map.at(node->id());
-      reinterpret_cast<instr_udfs*>(instr)->init(reinterpret_cast<udfsimpl*>(node), data_map);
-      break;
-    default:
-      break;
     }
 
-    if (instr) {
-      instr_map[node->id()] = instr;
-      node_map[instrs_.size()] = node->id();
-      instrs_.emplace_back(instr);
-    }
-  }
-
-  // setup clock domains bypass
-  this->cdomain_bypass(ctx, instr_map, node_map);
-}
-
-void driver::setup_constants(context* ctx, data_map_t& data_map) {
-  for (auto node : ctx->literals())  {
-    auto num_words = ceildiv<uint32_t>(node->size(), bitwidth_v<block_type>);
-    for (auto& constant : constants_) {
-      if (constant.second >= num_words) {
-        if (bv_eq(constant.first, node->value().words(), num_words * bitwidth_v<block_type>)) {
-          data_map[node->id()] = constant.first;
-          break;
+    // lower all nodes
+    for (auto node : eval_list) {
+      instr_base* instr = nullptr;
+      switch (node->type()) {
+      case type_proxy:
+        instr = instr_proxy_base::create(reinterpret_cast<proxyimpl*>(node), data_map);
+        break;
+      case type_input: {
+        auto input = reinterpret_cast<inputimpl*>(node);
+        if (input->has_binding()) {
+          data_map[node->id()] = data_map.at(input->binding().id());
+        } else {
+          data_map[node->id()] = input->value()->words();
         }
-      } else {
+      } break;
+      case type_output: {
+        auto output = reinterpret_cast<outputimpl*>(node);
+        data_map[node->id()] = data_map.at(output->src(0).id());
+        if (!output->has_binding()) {
+          instr = instr_output_base::create(output, data_map);
+        }
+      } break;
+      case type_alu:
+        instr = instr_alu_base::create(reinterpret_cast<aluimpl*>(node), data_map);
+        break;
+      case type_sel:
+        instr = instr_select_base::create(reinterpret_cast<selectimpl*>(node), data_map);
+        break;
+      case type_cd:
+        instr = instr_cd::create(reinterpret_cast<cdimpl*>(node), data_map);
+        break;
+      case type_reg:
+        instr = instr_map.at(node->id());
+        reinterpret_cast<instr_reg_base*>(instr)->init(reinterpret_cast<regimpl*>(node), data_map);
+        break;
+      case type_marport:
+        instr = instr_marport_base::create(reinterpret_cast<marportimpl*>(node), data_map);
+        break;
+      case type_msrport:
+        instr = instr_map.at(node->id());
+        reinterpret_cast<instr_msrport_base*>(instr)->init(reinterpret_cast<msrportimpl*>(node), data_map);
+        break;
+      case type_mwport:
+        instr = instr_map.at(node->id());
+        reinterpret_cast<instr_mwport_base*>(instr)->init(reinterpret_cast<mwportimpl*>(node), data_map);
+        break;
+      case type_tap:
+        instr = instr_output_base::create(reinterpret_cast<tapimpl*>(node), data_map);
+        break;
+      case type_assert:
+        instr = instr_assert::create(reinterpret_cast<assertimpl*>(node), data_map);
+        break;
+      case type_time:
+        instr = instr_time::create(reinterpret_cast<timeimpl*>(node), data_map);
+        break;
+      case type_print:
+        instr = instr_print::create(reinterpret_cast<printimpl*>(node), data_map);
+        break;
+      case type_udfc:
+        instr = instr_udfc::create(reinterpret_cast<udfcimpl*>(node), data_map);
+        break;
+      case type_udfs:
+        instr = instr_map.at(node->id());
+        reinterpret_cast<instr_udfs*>(instr)->init(reinterpret_cast<udfsimpl*>(node), data_map);
+        break;
+      default:
+        break;
+      }
+
+      if (instr) {
+        instr_map[node->id()] = instr;
+        node_map[sim_ctx_->instrs.size()] = node->id();
+        sim_ctx_->instrs.emplace_back(instr);
+      }
+    }
+
+    // setup clock domains bypass
+    this->cdomain_bypass(ctx, instr_map, node_map);
+  }
+
+private:
+
+  void setup_constants(context* ctx, data_map_t& data_map) {
+    for (auto node : ctx->literals())  {
+      auto num_words = ceildiv<uint32_t>(node->size(), bitwidth_v<block_type>);
+      for (auto& constant : sim_ctx_->constants) {
+        if (constant.second >= num_words) {
+          if (bv_eq(constant.first, node->value().words(), num_words * bitwidth_v<block_type>)) {
+            data_map[node->id()] = constant.first;
+            break;
+          }
+        } else
         if (bv_eq(constant.first, node->value().words(), constant.second * bitwidth_v<block_type>)) {
           auto buf = reinterpret_cast<block_type*>(realloc(constant.first, num_words * sizeof(block_type)));
           std::copy_n(node->value().words(), num_words, buf);
@@ -1799,114 +1835,133 @@ void driver::setup_constants(context* ctx, data_map_t& data_map) {
           break;
         }
       }
-    }
-    if (0 == data_map.count(node->id())) {
-      auto buf = reinterpret_cast<block_type*>(malloc(num_words * sizeof(block_type)));
-      std::copy_n(node->value().words(), num_words, buf);
-      constants_.emplace_back(buf, num_words);
-      data_map[node->id()] = buf;
+      if (0 == data_map.count(node->id())) {
+        auto buf = reinterpret_cast<block_type*>(malloc(num_words * sizeof(block_type)));
+        std::copy_n(node->value().words(), num_words, buf);
+        sim_ctx_->constants.emplace_back(buf, num_words);
+        data_map[node->id()] = buf;
+      }
     }
   }
-}
 
-void driver::cdomain_bypass(context* ctx, instr_map_t& instr_map, node_map_t& node_map) {
-  for (auto cd : ctx->cdomains()) {
-    std::unordered_set<uint32_t> bypass_nodes;
-    this->build_bypass_list(bypass_nodes, ctx, cd->id());
-    auto cd_instr = reinterpret_cast<instr_cd*>(instr_map.at(cd->id()));
-    uint32_t i = 0, n = instrs_.size();
-    for (; i < n;) {
-      if (instrs_[i++] == cd_instr)
-        break;
+  void cdomain_bypass(context* ctx, instr_map_t& instr_map, node_map_t& node_map) {
+    for (auto cd : ctx->cdomains()) {
+      std::unordered_set<uint32_t> bypass_nodes;
+      this->build_bypass_list(bypass_nodes, ctx, cd->id());
+      auto cd_instr = reinterpret_cast<instr_cd*>(instr_map.at(cd->id()));
+      uint32_t i = 0, n = sim_ctx_->instrs.size();
+      for (; i < n;) {
+        if (sim_ctx_->instrs[i++] == cd_instr)
+          break;
+      }
+      bool skip_enabled = false;
+      uint32_t skip_start = 0;
+      for (;i < n; ++i) {
+        auto node_id = node_map.at(i);
+        bool bypass = bypass_nodes.count(node_id);
+        if (bypass && !skip_enabled) {
+          skip_enabled = true;
+          skip_start = i;
+        } else
+        if (!bypass && skip_enabled) {
+          skip_enabled = false;
+          cd_instr->add_bypass(sim_ctx_->instrs[skip_start-1], i - skip_start + 1);
+        }
+      }
+      if (skip_enabled) {
+        cd_instr->add_bypass(sim_ctx_->instrs[skip_start-1], i - skip_start + 1);
+      }
     }
-    bool skip_enabled = false;
-    uint32_t skip_start = 0;
-    for (;i < n; ++i) {
-      auto node_id = node_map.at(i);
-      bool bypass = bypass_nodes.count(node_id);
-      if (bypass && !skip_enabled) {
-        skip_enabled = true;
-        skip_start = i;
+  }
+
+  void build_bypass_list(std::unordered_set<uint32_t>& out, context* ctx, uint32_t cd_id) {
+    std::unordered_set<uint32_t> visited_nodes;
+    std::unordered_set<uint32_t> changed_nodes;
+
+    std::function<bool (lnodeimpl*)> dfs_visit = [&](lnodeimpl* node)->bool {
+      if (visited_nodes.count(node->id())) {
+        return (changed_nodes.count(node->id()) != 0);
+      }
+      visited_nodes.emplace(node->id());
+
+      auto type = node->type();
+      bool changed = false;
+
+      if (is_snode_type(type)) {
+        if (cd_id == get_snode_cd(node)->id())
+          return false;
+        // update changeset here in case there is a cycle with the source nodes
+        changed_nodes.emplace(node->id());
+        changed = true;
       } else
-      if (!bypass && skip_enabled) {
-        skip_enabled = false;
-        cd_instr->add_bypass(instrs_[skip_start-1], i - skip_start + 1);
+      if (is_output_type(type)) {
+        // mark constant outputs as changed
+        changed = (type_lit == node->src(0).impl()->type());
       }
+
+      switch (type) {
+      case type_cd:
+      case type_input:
+      case type_time:
+      case type_print:
+        changed = true;
+        [[fallthrough]];
+      default:
+        // visit source nodes
+        for (auto& src : node->srcs()) {
+          changed |= dfs_visit(src.impl());
+        }
+        break;
+      }
+
+      if (changed) {
+        changed_nodes.emplace(node->id());
+      }
+
+      return changed;
+    };
+
+    // visit output nodes`
+    for (auto node : ctx->outputs()) {
+      dfs_visit(node);
     }
-    if (skip_enabled) {
-      cd_instr->add_bypass(instrs_[skip_start-1], i - skip_start + 1);
+    for (auto node : ctx->taps()) {
+      dfs_visit(node);
+    }
+    for (auto node : ctx->gtaps()) {
+      dfs_visit(node);
+    }
+
+    // create bypass list
+    for (auto node : ctx->nodes()) {
+      if (!changed_nodes.count(node->id()))
+        out.emplace(node->id());
     }
   }
+
+  sim_ctx_t* sim_ctx_;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+driver::driver() {
+  sim_ctx_ = new sim_ctx_t();
 }
 
-void driver::build_bypass_list(std::unordered_set<uint32_t>& out, context* ctx, uint32_t cd_id) {
-  std::unordered_set<uint32_t> visited_nodes;
-  std::unordered_set<uint32_t> changed_nodes;
+driver::~driver() {
+  delete sim_ctx_;
+}
 
-  std::function<bool (lnodeimpl*)> dfs_visit = [&](lnodeimpl* node)->bool {
-    if (visited_nodes.count(node->id())) {
-      return (changed_nodes.count(node->id()) != 0);
-    }
-    visited_nodes.emplace(node->id());
-
-    auto type = node->type();
-    bool changed = false;
-
-    if (is_snode_type(type)) {
-      if (cd_id == get_snode_cd(node)->id())
-        return false;
-      // update changeset here in case there is a cycle with the source nodes
-      changed_nodes.emplace(node->id());
-      changed = true;
-    } else
-    if (is_output_type(type)) {
-      // mark constant outputs as changed
-      changed = (type_lit == node->src(0).impl()->type());
-    }
-
-    switch (type) {
-    case type_cd:
-    case type_input:
-    case type_time:
-    case type_print:
-      changed = true;
-      [[fallthrough]];
-    default:
-      // visit source nodes
-      for (auto& src : node->srcs()) {
-        changed |= dfs_visit(src.impl());
-      }
-      break;
-    }
-
-    if (changed) {
-      changed_nodes.emplace(node->id());
-    }
-
-    return changed;
-  };
-
-  // visit output nodes
-  for (auto node : ctx->outputs()) {
-    dfs_visit(node);
-  }
-  for (auto node : ctx->taps()) {
-    dfs_visit(node);
-  }
-  for (auto node : ctx->gtaps()) {
-    dfs_visit(node);
-  }
-
-  // create bypass list
-  for (auto node : ctx->nodes()) {
-    if (!changed_nodes.count(node->id()))
-      out.emplace(node->id());
-  }
+void driver::initialize(const std::vector<lnodeimpl*>& eval_list) {
+  compiler compiler(sim_ctx_);
+  compiler.build(eval_list);
 }
 
 void driver::eval() {
-  for (uint32_t i = 0, n = instrs_.size(); i < n;) {
-    instrs_[i]->eval();
-    i += instrs_[i]->step;
+  for (auto it = sim_ctx_->instrs.begin(), end = sim_ctx_->instrs.end(); it != end;) {
+    (*it)->eval();
+    it += (*it)->step;
   }
+}
+
 }

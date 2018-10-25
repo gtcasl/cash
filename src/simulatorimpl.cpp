@@ -80,7 +80,11 @@ void simulatorimpl::initialize() {
     }
 
     // initialize driver
+  #ifndef NLIBJIT
+    /*sim_driver_ = new simjit::driver();
+  #else*/
     sim_driver_ = new simref::driver();
+  #endif
     sim_driver_->acquire();
     sim_driver_->initialize(eval_list);
 

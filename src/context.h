@@ -16,6 +16,8 @@ class aluimpl;
 class litimpl;
 class cdimpl;
 class ioimpl;
+class memimpl;
+class regimpl;
 class ioportimpl;
 class inputimpl;
 class outputimpl;
@@ -139,6 +141,14 @@ public:
 
   auto& outputs() const {
     return outputs_;
+  }
+
+  auto& regs() const {
+    return regs_;
+  }
+
+  auto& mems() const {
+    return mems_;
   }
 
   auto& taps() const {
@@ -290,16 +300,20 @@ protected:
   
   node_list_t             nodes_;
   std::list<undefimpl*>   undefs_;
+  std::list<litimpl*>     literals_;
   std::list<proxyimpl*>   proxies_;
-  std::list<lnodeimpl*>   snodes_;
   std::list<inputimpl*>   inputs_;
-  std::list<outputimpl*>  outputs_;  
+  std::list<outputimpl*>  outputs_;
+  std::list<memimpl*>     mems_;
+  std::list<regimpl*>     regs_;
   std::list<tapimpl*>     taps_;
   std::list<ioimpl*>      gtaps_;
-  std::list<litimpl*>     literals_;
+
   std::list<cdimpl*>      cdomains_;
   std::list<bindimpl*>    bindings_;
   std::list<udfimpl*>     udfs_;
+
+  std::list<lnodeimpl*>   snodes_;
 
   std::stack<cond_br_t*>  cond_branches_;
   cond_vars_t             cond_vars_;

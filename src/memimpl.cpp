@@ -236,12 +236,13 @@ void memimpl::print(std::ostream& out) const {
 
 memportimpl::memportimpl(context* ctx,
                          lnodetype type,
+                         uint32_t size,
                          memimpl* mem,
                          lnodeimpl* cd,
                          lnodeimpl* addr,
                          lnodeimpl* enable,
                          const source_location& sloc)
-  : ioimpl(ctx, type, mem->data_width(), sloc)
+  : ioimpl(ctx, type, size, sloc)
   , mem_(mem)
   , cd_idx_(-1)
   , addr_idx_(-1)
@@ -279,7 +280,7 @@ marportimpl::marportimpl(context* ctx,
                          memimpl* mem,
                          lnodeimpl* addr,
                          const source_location& sloc)
-  : memportimpl(ctx, type_marport, mem, nullptr, addr, nullptr, sloc) {
+  : memportimpl(ctx, type_marport, mem->data_width(), mem, nullptr, addr, nullptr, sloc) {
   // add memory as source
   srcs_.emplace_back(mem);
 }
@@ -302,7 +303,7 @@ msrportimpl::msrportimpl(context* ctx,
                          lnodeimpl* addr,
                          lnodeimpl* enable,
                          const source_location& sloc)
-  : memportimpl(ctx, type_msrport, mem, cd, addr, enable, sloc) {
+  : memportimpl(ctx, type_msrport, mem->data_width(), mem, cd, addr, enable, sloc) {
   // add memory as source
   srcs_.emplace_back(mem);
 }
@@ -331,7 +332,7 @@ mwportimpl::mwportimpl(context* ctx,
                        lnodeimpl* wdata,
                        lnodeimpl* enable,
                        const source_location& sloc)
-  : memportimpl(ctx, type_mwport, mem, cd, addr, enable, sloc) {
+  : memportimpl(ctx, type_mwport, 0, mem, cd, addr, enable, sloc) {
   // add as memory source
   mem->srcs().emplace_back(this);
 

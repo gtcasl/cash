@@ -30,8 +30,8 @@ add_executable(dogfood dogfood.cpp)
 add_executable(testsuite ${TEST_SOURCES})
 
 # Define dependent libraries
-target_link_libraries(dogfood ${PROJECT_NAME})
-target_link_libraries(testsuite ${PROJECT_NAME})
+target_link_libraries(dogfood PRIVATE ${PROJECT_NAME})
+target_link_libraries(testsuite PRIVATE ${PROJECT_NAME})
 
 # register test
 add_test(NAME testsuite COMMAND ${EXECUTABLE_OUTPUT_PATH}/testsuite)

@@ -130,16 +130,14 @@ void compiler::build_eval_context(context* eval_ctx) {
     if (it == cloned_nodes.end()) {
       auto eval_node = node->clone(eval_ctx, cloned_nodes);
       cloned_nodes[node->id()] = eval_node;
-    } else {
-      if (is_snode_type(node->type())) {
-        assert(type_proxy == it->second->type());
-        auto proxy = reinterpret_cast<proxyimpl*>(it->second);
-        auto eval_node = node->clone(eval_ctx, cloned_nodes);
-        proxy->add_source(0, eval_node, 0, eval_node->size());
-        cloned_nodes[node->id()] = eval_node;
-      }
+    } else
+    if (is_snode_type(node->type())) {
+      assert(type_proxy == it->second->type());
+      auto proxy = reinterpret_cast<proxyimpl*>(it->second);
+      auto eval_node = node->clone(eval_ctx, cloned_nodes);
+      proxy->add_source(0, eval_node, 0, eval_node->size());
+      cloned_nodes[node->id()] = eval_node;
     }
-
     visited_nodes.insert(node->id());
   };
 
@@ -157,6 +155,8 @@ void compiler::build_eval_context(context* eval_ctx) {
 
     // create snode proxies
     for (auto node : snodes) {
+      if (type_mwport == node->type())
+        continue;
       auto proxy = eval_ctx->create_node<proxyimpl>(node->size(), node->sloc());
       cloned_nodes[node->id()] = proxy;
     }

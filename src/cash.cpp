@@ -1,4 +1,4 @@
-#include "cash.h"
+/*#include "cash.h"
 #include <htl/float32.h>
 
 using namespace ch::logic;
@@ -289,4 +289,4 @@ void bar() {
 
   ch_reg<s2_4_t> h{0101_b, 01_b};
   ch_reg<u2_4_t> i{0101_b};
-}
+}*/
