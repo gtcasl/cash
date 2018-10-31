@@ -70,7 +70,7 @@ uint64_t selectimpl::hash() const {
   hash_t ret;
   ret.fields.type = this->type();
   ret.fields.size = this->size();
-  ret.fields.op   = this->has_key();
+  ret.fields.op = this->has_key();
   auto n = this->srcs().size();  
   if (n > 0) {
     ret.fields.arg0 = this->src(0).id();

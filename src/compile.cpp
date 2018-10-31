@@ -332,13 +332,18 @@ void compiler::compile() {
 
   dce_nodes = this->dead_code_elimination();
 
+  this->check_undefs();
+
   this->build_node_map();
 
-  cse_nodes = this->common_subexpressions_elimination();
-
-  pxc_nodes = this->proxies_coalescing();
-
-  this->syntax_check();
+  for (;;) {
+    auto n1 = this->common_subexpressions_elimination();
+    auto n2 = this->proxies_coalescing();
+    if (0 == n1 && 0 == n2)
+      break;
+    cse_nodes += n1;
+    pxc_nodes += n2;
+  }
 
 #ifndef NDEBUG
   // dump nodes
@@ -404,11 +409,10 @@ size_t compiler::dead_code_elimination() {
 
       // skip unused proxy sources
       if (proxy) {
-        if (used_proxy_sources.count(proxy) != 0) {
-          auto& uses = used_proxy_sources.at(proxy);
-          if (0 == uses.count(i))
-            continue;
-         }
+        auto it = used_proxy_sources.find(proxy);
+        if (it != used_proxy_sources.end()
+         && 0 == it->second.count(i))
+          continue;
       }
 
       // gather used proxy sources
@@ -540,7 +544,7 @@ size_t compiler::proxies_coalescing() {
     ++deleted;
   }
 
-  // coalesce single range proxies
+  // coalesce consecutive proxies
   std::set<proxyimpl*> detached_list;
   bool changed;
   do {
@@ -665,7 +669,7 @@ void compiler::map_delete(lnodeimpl* node) {
   node_map_.erase(it);
 }
 
-void compiler::syntax_check() {
+void compiler::check_undefs() {
   // check for un-initialized nodes
   auto& undefs = ctx_->undefs();
   if (undefs.size()) {
@@ -686,5 +690,63 @@ void compiler::syntax_check() {
     }
     std::abort();
 #define LCOV_EXCL_END
+  }
+}
+
+void compiler::build_bypass_list(std::unordered_set<uint32_t>& out, context* ctx, uint32_t cd_id) {
+  std::unordered_set<uint32_t> visited_nodes;
+
+  std::function<bool (lnodeimpl*)> dfs_visit = [&](lnodeimpl* node)->bool {
+    if (visited_nodes.count(node->id())) {
+      return (out.count(node->id()) != 0);
+    }
+    visited_nodes.emplace(node->id());
+
+    auto type = node->type();
+    bool changed = false;
+
+    if (is_snode_type(type)) {
+      if (cd_id == get_snode_cd(node)->id())
+        return false;
+      // update changeset here in case there is a cycle with the source nodes
+      out.emplace(node->id());
+      changed = true;
+    } else
+    if (is_output_type(type)) {
+      // mark constant outputs as changed
+      changed = (type_lit == node->src(0).impl()->type());
+    }
+
+    switch (type) {
+    case type_cd:
+    case type_input:
+    case type_time:
+    case type_print:
+      changed = true;
+      [[fallthrough]];
+    default:
+      // visit source nodes
+      for (auto& src : node->srcs()) {
+        changed |= dfs_visit(src.impl());
+      }
+      break;
+    }
+
+    if (changed) {
+      out.emplace(node->id());
+    }
+
+    return changed;
+  };
+
+  // visit output nodes`
+  for (auto node : ctx->outputs()) {
+    dfs_visit(node);
+  }
+  for (auto node : ctx->taps()) {
+    dfs_visit(node);
+  }
+  for (auto node : ctx->gtaps()) {
+    dfs_visit(node);
   }
 }

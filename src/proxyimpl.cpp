@@ -287,14 +287,12 @@ uint64_t proxyimpl::hash() const {
   hash_t ret;
   ret.fields.type = this->type();
   ret.fields.size = this->size();
+  ret.fields.op = this->ranges().size();
   auto n = this->srcs().size();  
   if (n > 0) {
     ret.fields.arg0 = this->src(0).id();
     if (n > 1) {
       ret.fields.arg1 = this->src(1).id();
-      if (n > 2) {
-        ret.fields.op = this->src(2).id();
-      }
     }
   }
   return ret.value;
@@ -355,6 +353,14 @@ void proxyimpl::print(std::ostream& out) const {
     }
   }
   out << ")";
+}
+
+bool proxyimpl::check_full() const {
+  uint32_t dst_offset = 0;
+  for (auto& r : ranges_) {
+    dst_offset += r.length;
+  }
+  return (dst_offset == size_);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

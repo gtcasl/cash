@@ -623,13 +623,14 @@ void bv_slice_scalar(T* dst, uint32_t dst_size, const T* w_src, uint32_t w_src_b
 template <typename T>
 void bv_slice_vector_small(T* dst, uint32_t dst_size, const T* w_src, uint32_t w_src_begin_rem) {
   static unsigned constexpr WORD_SIZE = bitwidth_v<T>;
+  assert(dst_size <= WORD_SIZE);
   assert(w_src_begin_rem < WORD_SIZE);
 
   T src_block = w_src[0] >> w_src_begin_rem;
-  if (w_src_begin_rem + dst_size > WORD_SIZE) {
-    src_block |= w_src[1] << (WORD_SIZE - w_src_begin_rem);
-  }
   uint32_t rem = (WORD_SIZE - dst_size);
+  if (w_src_begin_rem > rem) {
+    src_block |= w_src[1] << (WORD_SIZE - w_src_begin_rem);
+  }  
   dst[0] = T(src_block << rem) >> rem;
 }
 

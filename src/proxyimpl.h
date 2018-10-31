@@ -42,6 +42,8 @@ public:
         && (srcs_[0].size() == size_);
   }
 
+  bool check_full() const;
+
   const range_t& range(uint32_t index) const {
     return ranges_[index];
   }

@@ -33,7 +33,7 @@ lnode::lnode(const lnode& src,
              const std::string& name,
              uint32_t var_id) {
   impl_ = src.impl()->ctx()->create_node<proxyimpl>(
-                src, 0, src.size(), sloc, name, var_id);
+            src, 0, src.size(), sloc, name, var_id);
 }
 
 lnode::lnode(uint32_t size,

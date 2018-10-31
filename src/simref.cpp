@@ -12,6 +12,7 @@
 #include "printimpl.h"
 #include "timeimpl.h"
 #include "udfimpl.h"
+#include "compile.h"
 
 using namespace ch::internal;
 //using namespace ch::internal::simref;
@@ -47,9 +48,8 @@ public:
 protected:
 
   struct range_t {
-    const block_type* src_data;
-    uint32_t src_offset;
-    uint32_t dst_offset;
+    const block_type* data;
+    uint32_t offset;
     uint32_t length;
   };
 
@@ -108,20 +108,22 @@ public:
       auto r0 = ranges_;
       {
         uint32_t lr = (bitwidth_v<block_type> - r0->length);
-        src_block = block_type((r0->src_data[0] >> r0->src_offset) << lr) >> lr;
+        src_block = block_type((r0->data[0] >> r0->offset) << lr) >> lr;
         dst_offset = r0->length;
       }
       for (auto *r = r0 + 1, *r_end = r0 + num_ranges_ ;r != r_end; ++r) {
         uint32_t lr = (bitwidth_v<block_type> - r->length);
-        src_block |= (block_type((r->src_data[0] >> r->src_offset) << lr) >> lr) << dst_offset;
+        src_block |= (block_type((r->data[0] >> r->offset) << lr) >> lr) << dst_offset;
         dst_offset += r->length;
       }
       dst_[0] = src_block;
     } else {
+      uint32_t dst_offset(0);
       for (auto *r = ranges_, *r_end = r + num_ranges_ ;r != r_end; ++r) {
-        auto dst = dst_ + (r->dst_offset / bitwidth_v<block_type>);
-        auto dst_offset = r->dst_offset % bitwidth_v<block_type>;
-        bv_copy_vector(dst, dst_offset, r->src_data, r->src_offset, r->length);
+        auto dst_idx = dst_offset / bitwidth_v<block_type>;
+        auto dst_lsb = dst_offset % bitwidth_v<block_type>;
+        dst_offset += r->length;
+        bv_copy_vector(dst_ + dst_idx, dst_lsb, r->data, r->offset, r->length);
       }
     }
   }
@@ -145,6 +147,7 @@ instr_proxy_base* instr_proxy_base::create(proxyimpl* node, data_map_t& map) {
   uint32_t dst_nblocks = ceildiv<uint32_t>(dst_size, bitwidth_v<block_type>);
   uint32_t dst_bytes = sizeof(block_type) * dst_nblocks;
   uint32_t num_ranges = node->ranges().size();
+  assert(node->check_full());
 
   if (1 == num_ranges
    && node->range(0).length == dst_size) {
@@ -185,12 +188,12 @@ instr_proxy_base* instr_proxy_base::create(proxyimpl* node, data_map_t& map) {
       auto& dst_range = ranges[i];
       auto& src_range = node->range(i);
       auto& src = node->src(src_range.src_idx);
-      dst_range.src_data   = map.at(src.id()) + (src_range.src_offset / bitwidth_v<block_type>);
-      dst_range.src_offset = src_range.src_offset % bitwidth_v<block_type>;
-      dst_range.dst_offset = src_range.dst_offset;
-      dst_range.length     = src_range.length;
-
-      is_scalar &= (dst_range.src_offset + dst_range.length) <= bitwidth_v<block_type>;
+      uint32_t src_idx = src_range.src_offset / bitwidth_v<block_type>;
+      uint32_t src_lsb = src_range.src_offset % bitwidth_v<block_type>;
+      dst_range.data   = map.at(src.id()) + src_idx;
+      dst_range.offset = src_lsb;
+      dst_range.length = src_range.length;
+      is_scalar &= (dst_range.offset + dst_range.length) <= bitwidth_v<block_type>;
       src_length += src_range.length;
     }
     is_scalar &= (src_length == dst_size);
@@ -1216,6 +1219,8 @@ protected:
   uint32_t data_size_;
 };
 
+///////////////////////////////////////////////////////////////////////////////
+
 class instr_marport_base : public instr_mport_base {
 public:
 
@@ -1365,14 +1370,6 @@ public:
 
   static instr_mwport_base* create(mwportimpl* node, data_map_t& map) ;
 
-  void init(mwportimpl* node, data_map_t& map) {
-    instr_mport_base::init(node, map);
-    wdata_ = map.at(node->wdata().id());
-    if (node->has_enable()) {
-      enable_ = map.at(node->enable().id());
-    }
-  }
-
 protected:
 
   instr_mwport_base(uint32_t data_size)
@@ -1380,6 +1377,14 @@ protected:
     , wdata_(nullptr)
     , enable_(nullptr)
   {}
+
+  void init(mwportimpl* node, data_map_t& map) {
+    instr_mport_base::init(node, map);
+    wdata_ = map.at(node->wdata().id());
+    if (node->has_enable()) {
+      enable_ = map.at(node->enable().id());
+    }
+  }
 
   const block_type* wdata_;
   const block_type* enable_;
@@ -1415,15 +1420,18 @@ private:
   friend class instr_mwport_base;
 };
 
-instr_mwport_base* instr_mwport_base::create(mwportimpl* node, data_map_t&) {
+instr_mwport_base* instr_mwport_base::create(mwportimpl* node, data_map_t& map) {
   auto buf = new uint8_t[__aligned_sizeof(instr_mwport_base)]();
   uint32_t data_size = node->mem()->data_width();
   bool is_scalar = (data_size <= bitwidth_v<block_type>);
+  instr_mwport_base* instr;
   if (is_scalar) {
-    return new (buf) instr_mwport<true>(data_size);
+    instr = new (buf) instr_mwport<true>(data_size);
   } else {
-    return new (buf) instr_mwport<false>(data_size);
+    instr = new (buf) instr_mwport<false>(data_size);
   }
+  instr->init(node, map);
+  return instr;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1719,9 +1727,6 @@ public:
       case type_msrport:
         instr_map[node->id()] = instr_msrport_base::create(reinterpret_cast<msrportimpl*>(node), data_map);
         break;
-      case type_mwport:
-        instr_map[node->id()] = instr_mwport_base::create(reinterpret_cast<mwportimpl*>(node), data_map);
-        break;
       case type_udfs:
         instr_map[node->id()] = instr_udfs::create(reinterpret_cast<udfsimpl*>(node), data_map);
         break;
@@ -1771,10 +1776,9 @@ public:
       case type_msrport:
         instr = instr_map.at(node->id());
         reinterpret_cast<instr_msrport_base*>(instr)->init(reinterpret_cast<msrportimpl*>(node), data_map);
-        break;
+        break;        
       case type_mwport:
-        instr = instr_map.at(node->id());
-        reinterpret_cast<instr_mwport_base*>(instr)->init(reinterpret_cast<mwportimpl*>(node), data_map);
+        instr = instr_mwport_base::create(reinterpret_cast<mwportimpl*>(node), data_map);
         break;
       case type_tap:
         instr = instr_output_base::create(reinterpret_cast<tapimpl*>(node), data_map);
@@ -1795,7 +1799,11 @@ public:
         instr = instr_map.at(node->id());
         reinterpret_cast<instr_udfs*>(instr)->init(reinterpret_cast<udfsimpl*>(node), data_map);
         break;
+      case type_lit:
+      case type_mem:
+        break;
       default:
+        std::abort();
         break;
       }
 
@@ -1847,7 +1855,7 @@ private:
   void cdomain_bypass(context* ctx, instr_map_t& instr_map, node_map_t& node_map) {
     for (auto cd : ctx->cdomains()) {
       std::unordered_set<uint32_t> bypass_nodes;
-      this->build_bypass_list(bypass_nodes, ctx, cd->id());
+      ch::internal::compiler::build_bypass_list(bypass_nodes, ctx, cd->id());
       auto cd_instr = reinterpret_cast<instr_cd*>(instr_map.at(cd->id()));
       uint32_t i = 0, n = sim_ctx_->instrs.size();
       for (; i < n;) {
@@ -1859,11 +1867,11 @@ private:
       for (;i < n; ++i) {
         auto node_id = node_map.at(i);
         bool bypass = bypass_nodes.count(node_id);
-        if (bypass && !skip_enabled) {
+        if (!bypass && !skip_enabled) {
           skip_enabled = true;
           skip_start = i;
         } else
-        if (!bypass && skip_enabled) {
+        if (bypass && skip_enabled) {
           skip_enabled = false;
           cd_instr->add_bypass(sim_ctx_->instrs[skip_start-1], i - skip_start + 1);
         }
@@ -1871,71 +1879,6 @@ private:
       if (skip_enabled) {
         cd_instr->add_bypass(sim_ctx_->instrs[skip_start-1], i - skip_start + 1);
       }
-    }
-  }
-
-  void build_bypass_list(std::unordered_set<uint32_t>& out, context* ctx, uint32_t cd_id) {
-    std::unordered_set<uint32_t> visited_nodes;
-    std::unordered_set<uint32_t> changed_nodes;
-
-    std::function<bool (lnodeimpl*)> dfs_visit = [&](lnodeimpl* node)->bool {
-      if (visited_nodes.count(node->id())) {
-        return (changed_nodes.count(node->id()) != 0);
-      }
-      visited_nodes.emplace(node->id());
-
-      auto type = node->type();
-      bool changed = false;
-
-      if (is_snode_type(type)) {
-        if (cd_id == get_snode_cd(node)->id())
-          return false;
-        // update changeset here in case there is a cycle with the source nodes
-        changed_nodes.emplace(node->id());
-        changed = true;
-      } else
-      if (is_output_type(type)) {
-        // mark constant outputs as changed
-        changed = (type_lit == node->src(0).impl()->type());
-      }
-
-      switch (type) {
-      case type_cd:
-      case type_input:
-      case type_time:
-      case type_print:
-        changed = true;
-        [[fallthrough]];
-      default:
-        // visit source nodes
-        for (auto& src : node->srcs()) {
-          changed |= dfs_visit(src.impl());
-        }
-        break;
-      }
-
-      if (changed) {
-        changed_nodes.emplace(node->id());
-      }
-
-      return changed;
-    };
-
-    // visit output nodes`
-    for (auto node : ctx->outputs()) {
-      dfs_visit(node);
-    }
-    for (auto node : ctx->taps()) {
-      dfs_visit(node);
-    }
-    for (auto node : ctx->gtaps()) {
-      dfs_visit(node);
-    }
-
-    // create bypass list
-    for (auto node : ctx->nodes()) {
-      if (!changed_nodes.count(node->id()))
-        out.emplace(node->id());
     }
   }
 

@@ -60,14 +60,12 @@ uint64_t regimpl::hash() const {
   hash_t ret;
   ret.fields.type = this->type();
   ret.fields.size = this->size();
+  ret.fields.op = this->length();
   auto n = this->srcs().size();
   if (n > 0) {
     ret.fields.arg0 = this->src(0).id();
     if (n > 1) {
       ret.fields.arg1 = this->src(1).id();
-      if (n > 2) {
-        ret.fields.op = this->src(2).id();
-      }
     }
   }
   return ret.value;
