@@ -29,6 +29,22 @@ TEST_CASE("registers", "[registers]") {
     }, 1);
 
     TEST([]()->ch_bool {
+      auto en = ch_case<ch_bool>(ch_now(), 7, 1)(5, 1)(3, 0)(0);
+      auto a = ch_delayEn<ch_bit4>(3, en, 1, 2);
+      auto e = ch_case<ch_bit4>(ch_now(), 7, 3)(5, 3)(3, 2)(a);
+      //ch_print("t={0}, a={1}, en={2}, e={3}", ch_now(), a, en, e);
+      return (a == e);
+    }, 4);
+
+    TEST([]()->ch_bool {
+      auto en = ch_case<ch_bool>(ch_now(), 7, 1)(5, 1)(3, 0)(0);
+      auto a = ch_delayEn<ch_bit128>(0x55, en, 1, 1);
+      auto e = ch_case<ch_bit8>(ch_now(), 7, 0x55)(5, 0x55)(3, 1)(a.slice<8>());
+      //ch_print("t={0}, a={1}, en={2}, e={3}", ch_now(), a, en, e);
+      return (a.slice<8>() == e);
+    }, 4);
+
+    TEST([]()->ch_bool {
       ch_bit2 a;
       a = ch_delay(10_b, 4);
       ch_bit2 e = ch_case(ch_now(), 4*2-1, 10_b)(a);
@@ -47,7 +63,7 @@ TEST_CASE("registers", "[registers]") {
       ch_bit2 a;
       a = ch_delay(10_b, 4, 1);
       ch_bit2 e = ch_case(ch_now(), 9, 10_b)(1);
-      ch_print("t={0}, a={1}, e={2}", ch_now(), a, e);
+      //ch_print("t={0}, a={1}, e={2}", ch_now(), a, e);
       return (a == e);
     }, 4);
 

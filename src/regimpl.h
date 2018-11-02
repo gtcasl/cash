@@ -17,6 +17,10 @@ public:
     return length_;
   }
 
+  bool is_pipe() const {
+    return length_ > 1;
+  }
+
   const lnode& next() const {
     return srcs_[1];
   }

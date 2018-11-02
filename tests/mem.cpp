@@ -166,7 +166,7 @@ TEST_CASE("memory", "[memory]") {
       auto q = mem.sread(ra);
       auto e = ch_delay(ch_case<ch_bit4>(ch_now(), 3, 0xC)(2, 0xA)(q));
       //ch_print("t={0}, wa={1}, v={2}, ra={3}, q={4}, e={5}", ch_now(), wa, v, ra, q, e);
-      return (q == e);
+      return (ch_now() <= 1 || q == e);
     }, 1);
   }
 }

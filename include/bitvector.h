@@ -592,8 +592,7 @@ public:
     size_ = size;
 
     // initialize content
-    std::fill_n(words_, new_num_words, 0xCD);
-    bv_clear_extra_bits(words_, size);
+    bv_init(words_, size);
   }
 
   template <typename A>

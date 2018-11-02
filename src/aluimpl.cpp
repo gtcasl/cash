@@ -70,6 +70,37 @@ void aluimpl::print(std::ostream& out) const {
   out << ")";
 }
 
+int aluimpl::should_resize_opds() const {
+  uint32_t src0_size = 0;
+  uint32_t src1_size = 0;
+
+  if (srcs_.size() > 0) {
+    src0_size = srcs_[0].size();
+    if (srcs_.size() > 1) {
+      src1_size = srcs_[1].size();
+    }
+  }
+
+  auto op_prop = CH_OP_PROP(op_);
+  if (op_prop & op_flags::eq_opd_size) {
+    auto op_class = CH_OP_CLASS(op_);
+    if (op_flags::equality == op_class
+     || op_flags::relational == op_class) {
+      // source operand sizes should match
+      if (src0_size < src1_size)
+        return src1_size;
+      if (src1_size < src0_size)
+        return src0_size;
+    } else {
+      // source operand and destination sizes should match
+      if (src0_size < size_
+       || (src1_size && src1_size < size_))
+        return size_;
+    }
+  }
+  return -1;
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 lnodeimpl* ch::internal::createAluNode(

@@ -15,11 +15,13 @@ public:
 
   void initialize(const std::vector<lnodeimpl*>& eval_list) override;
 
-  void eval() override;
+  void eval() override;  
 
 private:
 
   sim_ctx_t* sim_ctx_;
 };
+
+bool check_compatible(context* ctx);
 
 }

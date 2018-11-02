@@ -175,6 +175,20 @@ TEST_CASE("proxies", "[proxies]") {
       b.sliceref<2>(2) = a.slice<2>(2);
       return (b == 1111_b);
     });
+    TEST([]()->ch_bool {
+      ch_bit128 a(0xd0000000'c0000000'b0000000'a0000000_h128);
+      ch_bit8 b(0x01);
+      b.asliceref<4>(1) = a.aslice<4>(8*3-1);
+      return (b == 0xc1_h);
+    });
+    TEST([]()->ch_bool {
+      ch_bit8 a(0xBA), b(0xDC);
+      ch_bit128 c(0x0);
+      c.sliceref<8>(60) = a;
+      c.sliceref<8>(68) = b;
+      auto w = c | 1;
+      return (w.slice<16>(60) == 0xDCBA);
+    });
   }
 
   SECTION("pad", "[pad]") {

@@ -10,6 +10,8 @@ enum class cflags {
   dump_ast =       (1 << 1),
   dump_cfg =       (1 << 2),
   check_reg_init = (1 << 3),
+  dump_jit       = (1 << 4),
+  dump_asm       = (1 << 5),
 };
 
 inline constexpr auto operator|(cflags lsh, cflags rhs) {

@@ -44,6 +44,15 @@ void bv_clear_extra_bits(T* dst, uint32_t size) {
   }
 }
 
+template <typename T>
+void bv_init(T* dst, uint32_t size) {
+  static constexpr uint32_t WORD_SIZE = bitwidth_v<T>;
+
+  uint32_t num_words = ceildiv(size, WORD_SIZE);
+  std::fill_n(dst, num_words, 0xCD);
+  bv_clear_extra_bits(dst, size);
+}
+
 template <typename U, typename T,
           CH_REQUIRE_0(std::is_integral_v<U>)>
 void bv_assign_scalar(T* dst, U value) {
@@ -1136,6 +1145,38 @@ void bv_shr(T* out, uint32_t out_size,
 }
 
 template <typename T>
+void bv_neg_scalar(T* out, const T* in, uint32_t size) {
+  out[0] = -in[0];
+  bv_clear_extra_bits(out, size);
+}
+
+template <typename T>
+void bv_neg_vector(T* out, const T* in, uint32_t size) {
+  static constexpr uint32_t WORD_SIZE = bitwidth_v<T>;
+
+  T borrow(0);
+  uint32_t num_words = ceildiv(size, WORD_SIZE);
+  for (uint32_t i = 0; i < num_words; ++i) {
+    auto a = in[i];
+    T b = -a - borrow;
+    borrow = (a != 0) || (b != 0);
+    out[i] = b;
+  }
+  bv_clear_extra_bits(out, size);
+}
+
+template <typename T>
+void bv_neg(T* out, const T* in, uint32_t size) {
+  static constexpr uint32_t WORD_SIZE = bitwidth_v<T>;
+
+  if (size <= WORD_SIZE) {
+    bv_neg_scalar(out, in, size);
+  } else {
+    bv_neg_vector(out, in, size);
+  }
+}
+
+template <typename T>
 void bv_add_scalar(T* out, const T* lhs, const T* rhs, uint32_t size) {
   out[0] = lhs[0] + rhs[0];
   bv_clear_extra_bits(out, size);
@@ -1200,38 +1241,6 @@ void bv_sub(T* out, const T* lhs, const T* rhs, uint32_t size) {
     bv_sub_scalar(out, lhs, rhs, size);
   } else {
     bv_sub_vector(out, lhs, rhs, size);
-  }
-}
-
-template <typename T>
-void bv_neg_scalar(T* out, const T* in, uint32_t size) {
-  out[0] = -in[0];
-  bv_clear_extra_bits(out, size);
-}
-
-template <typename T>
-void bv_neg_vector(T* out, const T* in, uint32_t size) {
-  static constexpr uint32_t WORD_SIZE = bitwidth_v<T>;
-
-  T borrow(0);
-  uint32_t num_words = ceildiv(size, WORD_SIZE);
-  for (uint32_t i = 0; i < num_words; ++i) {
-    auto a = in[i];
-    T b = -a - borrow;
-    borrow = (a != 0) || (b != 0);
-    out[i] = b;
-  }
-  bv_clear_extra_bits(out, size);
-}
-
-template <typename T>
-void bv_neg(T* out, const T* in, uint32_t size) {
-  static constexpr uint32_t WORD_SIZE = bitwidth_v<T>;
-
-  if (size <= WORD_SIZE) {
-    bv_neg_scalar(out, in, size);
-  } else {
-    bv_neg_vector(out, in, size);
   }
 }
 

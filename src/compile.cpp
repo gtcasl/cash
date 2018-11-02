@@ -5,6 +5,7 @@
 #include "proxyimpl.h"
 #include "ioimpl.h"
 #include "bindimpl.h"
+#include "timeimpl.h"
 #include "context.h"
 #include "ordered_set.h"
 #include "mem.h"
@@ -251,24 +252,30 @@ void compiler::build_eval_list(std::vector<lnodeimpl*>& eval_list) {
 
   assert(0 == ctx_->bindings().size());
 
+  // move system time evaluation to the end
+  auto sys_time = ctx_->sys_time();
+  if (sys_time) {
+    visited_nodes.insert(sys_time->id());
+  }
+
+  // enable cycle detection for sequential nodes
+  for (auto node : ctx_->snodes()) {
+    cyclic_nodes.insert(node->id());
+  }
+
+  // visit clock cdomain nodes
+  for (auto node : ctx_->cdomains()) {
+    dfs_visit(node);
+  }
+
+  // visit sequential nodes dependencies
+  for (auto node : ctx_->snodes()) {
+    for (auto& src : node->srcs()) {
+      dfs_visit(src.impl());
+    }
+  }
+
   {
-    // enable cycle detection for sequential nodes
-    for (auto node : ctx_->snodes()) {
-      cyclic_nodes.insert(node->id());
-    }
-
-    // visit clock cdomain nodes
-    for (auto node : ctx_->cdomains()) {
-      dfs_visit(node);
-    }
-
-    // visit sequential nodes dependencies
-    for (auto node : ctx_->snodes()) {
-      for (auto& src : node->srcs()) {
-        dfs_visit(src.impl());
-      }
-    }
-
     // make a copy of the update list and empty it
     std::unordered_set<lnodeimpl*> update_list2;
     std::swap(update_list2, update_list);
@@ -304,6 +311,11 @@ void compiler::build_eval_list(std::vector<lnodeimpl*>& eval_list) {
   }
   for (auto node : ctx_->gtaps()) {
     dfs_visit(node);
+  }
+
+  if (sys_time) {
+    visited_nodes.erase(sys_time->id());
+    dfs_visit(sys_time);
   }
 
   if (platform::self().cflags() & cflags::dump_ast) {

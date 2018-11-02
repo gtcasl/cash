@@ -18,7 +18,7 @@ using namespace ch::internal;
 
 const auto IsRegType = [](lnodeimpl* node) {
   auto type = node->type();
-  return (type_reg == type && (1 == reinterpret_cast<regimpl*>(node)->length()))
+  return (type_reg == type && !reinterpret_cast<regimpl*>(node)->is_pipe())
       || (type_msrport == type)
       || (type_mem == type)
       || (type_sel == type && !reinterpret_cast<selectimpl*>(node)->is_ternary());
@@ -576,7 +576,7 @@ void verilogwriter::print_reg(std::ostream& out, regimpl* node) {
     out << "_sr";
   };
 
-  if (node->length() > 1) {
+  if (node->is_pipe()) {
     out << "reg";
     if (node->size() > 1) {
       out << "[" << (node->size() - 1) << ":0]";

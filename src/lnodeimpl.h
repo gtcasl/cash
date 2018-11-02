@@ -23,8 +23,8 @@
   m(bindin) \
   m(bindout) \
   m(tap) \
-  m(assert) \
   m(time) \
+  m(assert) \
   m(print) \
   m(udfc) \
   m(udfs)

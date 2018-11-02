@@ -77,7 +77,11 @@ void simulatorimpl::initialize() {
 
     // initialize driver
   #ifndef NLIBJIT
-    sim_driver_ = new simjit::driver();
+    if (simjit::check_compatible(eval_ctx)) {
+      sim_driver_ = new simjit::driver();
+    } else {
+      sim_driver_ = new simref::driver();
+    }
   #else
     sim_driver_ = new simref::driver();
   #endif

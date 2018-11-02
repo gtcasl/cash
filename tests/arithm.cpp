@@ -22,6 +22,21 @@ TEST_CASE("arithmetic", "[arithmetic]") {
       auto c = a ^ 0101_b;
       return (c == 1001_b);
     });
+    TEST([]()->ch_bool {
+      ch_bit128 a(0xBA), b(0xDC);
+      auto c = a ^ b;
+      return (c.slice<8>() == 0x66);
+    });
+    TEST([]()->ch_bool {
+      ch_bit128 a(0xBA), b(0xDC);
+      auto c = a | b;
+      return (c.slice<8>() == 0xFE);
+    });
+    TEST([]()->ch_bool {
+      ch_bit128 a(0xBA), b(0xDC);
+      auto c = a & b;
+      return (c.slice<8>() == 0x98);
+    });
   }
   
   SECTION("reduce", "[reduce]") {
@@ -223,13 +238,13 @@ TEST_CASE("arithmetic", "[arithmetic]") {
     TEST([]()->ch_bool {
      ch_uint<128> a(0x10000000000000001_h128);
      auto c = a << 63;
-     ch_print("{0}: c={1}", ch_now(), c);
+     //ch_print("{0}: c={1}", ch_now(), c);
      return (c == 0x80000000000000008000000000000000_h128);
     });
     TEST([]()->ch_bool {
       ch_uint<128> a(0xf010000000000000000_h128);
       auto c = a >> 63;
-      ch_print("{0}: c={1}", ch_now(), c);
+      //ch_print("{0}: c={1}", ch_now(), c);
       return (c == 0x1e02_h128);
     });
     TEST([]()->ch_bool {
@@ -453,6 +468,12 @@ TEST_CASE("arithmetic", "[arithmetic]") {
       ch_int8 b(2);
       auto c = a / b;
       return (c == 8);
+    });
+    TEST([]()->ch_bool {
+      ch_uint8 a(16);
+      ch_uint8 b(4);
+      auto c = a / b;
+      return (c == 4);
     });
     TEST([]()->ch_bool {
       ch_int8 a(16);

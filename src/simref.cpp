@@ -155,6 +155,7 @@ instr_proxy_base* instr_proxy_base::create(proxyimpl* node, data_map_t& map) {
     auto buf_cur = buf + __aligned_sizeof(instr_slice<false>);
     auto dst = (block_type*)buf_cur;
     map[node->id()] = dst;
+    bv_init(dst, dst_size);
 
     auto& src_range = node->range(0);
     auto& src = node->src(src_range.src_idx);
@@ -177,6 +178,7 @@ instr_proxy_base* instr_proxy_base::create(proxyimpl* node, data_map_t& map) {
     auto buf_cur = buf + __aligned_sizeof(instr_proxy<false>);
     auto dst = (block_type*)buf_cur;
     map[node->id()] = dst;
+    bv_init(dst, dst_size);
 
     buf_cur += dst_bytes;
 
@@ -343,6 +345,7 @@ public:
         bv_assign_scalar(dst_, !bv_eq_vector(src0_,  src1_, src0_size_));
       }
       break;
+
     case ch_op::lt:
       if constexpr (is_scalar) {
         block_type u = resize_opds ? sign_ext(src0_[0], src0_size_) : src0_[0];
@@ -477,6 +480,14 @@ public:
       }
       break;
 
+    case ch_op::neg:
+      if constexpr (is_scalar) {
+        block_type u = resize_opds ? sign_ext(src0_[0], src0_size_) : src0_[0];
+        bv_neg_scalar(dst_, &u, dst_size_);
+      } else {
+        bv_neg_vector(dst_, src0_, dst_size_);
+      }
+      break;
     case ch_op::add:
       if constexpr (is_scalar) {
         block_type u = resize_opds ? sign_ext(src0_[0], src0_size_) : src0_[0];
@@ -495,14 +506,7 @@ public:
         bv_sub_vector(dst_, src0_, src1_, dst_size_);
       }
       break;
-    case ch_op::neg:
-      if constexpr (is_scalar) {
-        block_type u = resize_opds ? sign_ext(src0_[0], src0_size_) : src0_[0];
-        bv_neg_scalar(dst_, &u, dst_size_);
-      } else {
-        bv_neg_vector(dst_, src0_, dst_size_);
-      }
-      break;
+
     case ch_op::mult:
       if constexpr (is_scalar) {
         bv_mult_scalar<is_signed>(dst_, dst_size_, src0_, src0_size_, src1_, src1_size_);
@@ -557,6 +561,7 @@ private:
 
 instr_alu_base* instr_alu_base::create(aluimpl* node, data_map_t& map) {
   uint32_t dst_size = node->size();
+  bool is_signed = node->is_signed();
 
   const block_type* o_src0 = nullptr;
   uint32_t o_src0_size = 0;
@@ -585,41 +590,17 @@ instr_alu_base* instr_alu_base::create(aluimpl* node, data_map_t& map) {
   bool resize_opds = false;
 
   // allocate shadow buffers if needed
-  auto op = node->op();
-  auto op_prop = CH_OP_PROP(op);
-  if (op_prop & op_flags::eq_opd_size) {
-    auto op_class = CH_OP_CLASS(op);
-    if (op_flags::equality == op_class
-     || op_flags::relational == op_class) {
-      // resize source operands to match each other
-      if (src0_size != src1_size) {
-        if (!is_scalar) {
-          if (src0_size < src1_size) {
-            src0_size = src1_size;
-          } else {
-            src1_size = src0_size;
-          }
-        }
-        resize_opds = true;
-      }
+  int new_size = node->should_resize_opds();
+  if (new_size != -1) {
+    if (is_scalar) {
+      // resize only needed for signed ops
+      resize_opds = is_signed;
     } else {
-      // resize source operands to match destination
-      if (src0_size != dst_size) {
-        if (src0_size < dst_size) {
-          resize_opds = true;
-        }
-        if (!is_scalar) {
-          src0_size = dst_size;
-        }
+      src0_size = new_size;
+      if (src1) {
+        src1_size = new_size;
       }
-      if (src1 && src1_size != dst_size) {
-        if (src1_size < dst_size) {
-          resize_opds = true;
-        }
-        if (!is_scalar) {
-          src1_size = dst_size;
-        }
-      }
+      resize_opds = true;
     }
   }
 
@@ -639,6 +620,7 @@ instr_alu_base* instr_alu_base::create(aluimpl* node, data_map_t& map) {
   auto buf_cur = buf + __aligned_sizeof(instr_alu_base);
   auto dst = (block_type*)buf_cur;
   map[node->id()] = dst;
+  bv_init(dst, dst_size);
 
   buf_cur += dst_bytes;
 
@@ -651,12 +633,6 @@ instr_alu_base* instr_alu_base::create(aluimpl* node, data_map_t& map) {
     src1 = (block_type*)buf_cur;
     buf_cur += t_src1_bytes;
   }
-
-  bool is_signed = node->is_signed();
-
-  // disable resize for unsigned scalars
-  if (is_scalar && !is_signed && resize_opds)
-    resize_opds = false;
 
 #define CREATE_ALU_INST(op, sign_enable, resize_enable) \
   case op: \
@@ -725,9 +701,9 @@ instr_alu_base* instr_alu_base::create(aluimpl* node, data_map_t& map) {
   CREATE_ALU_INST(ch_op::xorr, false, false);
   CREATE_ALU_INST(ch_op::shl, false, false);
   CREATE_ALU_INST(ch_op::shr, true, false);
-  CREATE_ALU_INST(ch_op::add, true, true);
-  CREATE_ALU_INST(ch_op::sub, true, true);
   CREATE_ALU_INST(ch_op::neg, true, true);
+  CREATE_ALU_INST(ch_op::add, true, true);
+  CREATE_ALU_INST(ch_op::sub, true, true);  
   CREATE_ALU_INST(ch_op::mult, true, false);
   CREATE_ALU_INST(ch_op::div, true, false);
   CREATE_ALU_INST(ch_op::mod, true, false);
@@ -857,6 +833,7 @@ instr_select_base* instr_select_base::create(selectimpl* node, data_map_t& map) 
     auto buf_cur = buf + __aligned_sizeof(instr_case<false>);
     auto dst = (block_type*)buf_cur;
     map[node->id()] = dst;
+    bv_init(dst, dst_size);
     buf_cur += dst_bytes;
 
     auto srcs = (const block_type**)buf_cur;
@@ -874,6 +851,7 @@ instr_select_base* instr_select_base::create(selectimpl* node, data_map_t& map) 
     auto buf_cur = buf + __aligned_sizeof(instr_select<false>);
     auto dst = (block_type*)buf_cur;
     map[node->id()] = dst;
+    bv_init(dst, dst_size);
     buf_cur += dst_bytes;
 
     auto srcs = (const block_type**)buf_cur;
@@ -908,9 +886,9 @@ public:
   }
 
   void eval() override {
-    auto value = static_cast<bool>(clk_[0]);
-    bool changed = (prev_val_ != value) && (0 == (value ^ pos_edge_));
-    prev_val_ = value;
+    auto clk = static_cast<bool>(clk_[0]);
+    bool changed = 0 != (clk ^ prev_clk_) && 0 != (clk ^ neg_edge_);
+    prev_clk_ = clk;
     if (changed) {
       for (auto& b : bypass_nodes_) {
         b.first->step = 1;
@@ -926,14 +904,14 @@ private:
 
   instr_cd(const block_type* clk, bool pos_edge)
     : clk_(clk)
-    , pos_edge_(pos_edge)
-    , prev_val_(false)
+    , neg_edge_(!pos_edge)
+    , prev_clk_(false)
   {}
 
   std::vector<std::pair<instr_base*, uint32_t>> bypass_nodes_;
   const block_type* clk_;
-  bool pos_edge_;
-  bool prev_val_;
+  bool neg_edge_;
+  bool prev_clk_;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1106,11 +1084,13 @@ instr_reg_base* instr_reg_base::create(regimpl* node, data_map_t& map) {
 
   auto dst = (block_type*)buf_cur;
   map[node->id()] = dst;
+  bv_init(dst, dst_size);
 
   buf_cur += dst_bytes;
   auto pipe = (block_type*)buf_cur;
+  bv_init(pipe, pipe_size);
 
-  if (1 == node->length()) {
+  if (!node->is_pipe()) {
     if (is_scalar) {
       if (node->has_init_data()) {
         if (node->has_enable()) {
@@ -1204,6 +1184,8 @@ protected:
       store_ = new block_type[nblocks];
       if (mem->has_init_data()) {
         bv_copy(store_, mem->init_data().words(), mem->size());
+      } else {
+        bv_init(store_, mem->size());
       }
       map[mem->id()] = store_;
       own_store_ = true;
@@ -1275,6 +1257,7 @@ instr_marport_base* instr_marport_base::create(marportimpl* node, data_map_t& ma
   auto buf_cur = buf + __aligned_sizeof(instr_marport_base);
   auto dst = (block_type*)buf_cur;
   map[node->id()] = dst;
+  bv_init(dst, dst_size);
 
   instr_marport_base* instr;
   bool is_scalar = (dst_size <= bitwidth_v<block_type>);
@@ -1354,6 +1337,7 @@ instr_msrport_base* instr_msrport_base::create(msrportimpl* node, data_map_t& ma
   auto buf_cur = buf + __aligned_sizeof(instr_msrport_base);
   auto dst = (block_type*)buf_cur;
   map[node->id()] = dst;
+  bv_init(dst, dst_size);
 
   bool is_scalar = (dst_size <= bitwidth_v<block_type>);
   if (is_scalar) {
@@ -1488,7 +1472,7 @@ public:
   }
 
   void eval() override {
-    dst_ = tick_++;
+    dst_ = ++tick_;
   }
 
 private:
@@ -1498,7 +1482,7 @@ private:
 
   instr_time(timeimpl* node, data_map_t& map)
     : tick_(0)
-    , dst_(node->size()) {
+    , dst_(node->size(), 0) {
     map[node->id()] = dst_.words();
   }
 };
@@ -1718,6 +1702,11 @@ public:
     // setup constants
     this->setup_constants(ctx, data_map);
 
+    auto sys_time = ctx->sys_time();
+    if (sys_time) {
+      instr_map[sys_time->id()] = instr_time::create(reinterpret_cast<timeimpl*>(sys_time), data_map);
+    }
+
     // lower synchronous nodes
     for (auto node : ctx->snodes()) {
       switch (node->type()) {
@@ -1783,11 +1772,11 @@ public:
       case type_tap:
         instr = instr_output_base::create(reinterpret_cast<tapimpl*>(node), data_map);
         break;
+      case type_time:
+        instr = instr_map.at(node->id());
+        break;
       case type_assert:
         instr = instr_assert::create(reinterpret_cast<assertimpl*>(node), data_map);
-        break;
-      case type_time:
-        instr = instr_time::create(reinterpret_cast<timeimpl*>(node), data_map);
         break;
       case type_print:
         instr = instr_print::create(reinterpret_cast<printimpl*>(node), data_map);
