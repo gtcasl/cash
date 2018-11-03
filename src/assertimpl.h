@@ -17,11 +17,11 @@ public:
   }
 
   bool has_pred() const {
-    return (pred_idx_ != -1);
+    return predicated_;
   }
 
   auto& pred() const {
-    return srcs_[pred_idx_];
+    return srcs_[0];
   }
 
   virtual lnodeimpl* clone(context* ctx, const clone_map& cloned_nodes) override;
@@ -40,7 +40,7 @@ protected:
              const source_location& sloc);
 
   std::string msg_;
-  int pred_idx_;
+  bool predicated_;
   int cond_idx_;
 
   friend class context;

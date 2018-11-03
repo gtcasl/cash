@@ -16,11 +16,12 @@ assertimpl::assertimpl(context* ctx,
                        const source_location& sloc)
   : ioimpl(ctx, type_assert, 0, sloc)
   , msg_(msg)
-  , pred_idx_(-1) {
+  , predicated_(false) {
   if (ctx_->conditional_enabled(this)) {
     auto pred = ctx_->create_predicate(sloc);
     if (pred) {
-      pred_idx_ = this->add_src(pred);
+      this->add_src(pred);
+      predicated_ = true;
     }
   }
   cond_idx_ = this->add_src(cond);
@@ -33,11 +34,12 @@ assertimpl::assertimpl(context* ctx,
                        const source_location& sloc)
   : ioimpl(ctx, type_assert, 0, sloc)
   , msg_(msg)
-  , pred_idx_(-1) {
-  cond_idx_ = this->add_src(cond);
+  , predicated_(false) {
   if (pred) {
-    pred_idx_ = this->add_src(pred);
+    this->add_src(pred);
+    predicated_ = false;
   }
+  cond_idx_ = this->add_src(cond);
 }
 
 lnodeimpl* assertimpl::clone(context* ctx, const clone_map& cloned_nodes) {
