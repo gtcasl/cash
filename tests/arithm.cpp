@@ -253,6 +253,11 @@ TEST_CASE("arithmetic", "[arithmetic]") {
       return (c == 0xffffffffc0000003);
     });
     TEST([]()->ch_bool {
+      ch_uint64 a(0xf0000000f0000000_h64);
+      auto c = a.as_int() >> 30;
+      return (c == 0xffffffffc0000003);
+    });
+    TEST([]()->ch_bool {
       ch_int64 a(0xf0000000f0000000_h64);
       auto c = a >> 32;
       return (c == 0xfffffffff0000000);

@@ -268,37 +268,37 @@ int main() {
   }*/
 
   /*{
-    ch_device<FilterBlock<ch_uint16>> filter;
-    ch_simulator sim(filter);
+    ch_device<FilterBlock<ch_uint16>> device;
+    ch_simulator sim(device);
     ch_tick t = sim.reset(0);
 
-    filter.io.x.data   = 3;
-    filter.io.x.valid  = 1;
-    filter.io.x.parity = 0;
+    device.io.x.data   = 3;
+    device.io.x.valid  = 1;
+    device.io.x.parity = 0;
     t = sim.step(t, 2);
 
     RetCheck ret;
-    ret &= !!filter.io.y.valid;
-    ret &= (12 == filter.io.y.data);
-    ret &= !filter.io.y.parity;
+    ret &= !!device.io.y.valid;
+    ret &= (12 == device.io.y.data);
+    ret &= !device.io.y.parity;
 
     assert(!!ret);
   }*/
 
   /*{
-    ch_device<FilterBlock<ch_uint16>> filter;
-    ch_simulator sim(filter);
+    ch_device<FilterBlock<ch_uint16>> device;
+    ch_simulator sim(device);
     ch_tick t = sim.reset(0);
 
-    filter.io.x.data   = 3;
-    filter.io.x.valid  = 1;
-    filter.io.x.parity = 0;
+    device.io.x.data   = 3;
+    device.io.x.valid  = 1;
+    device.io.x.parity = 0;
     t = sim.step(t, 3);
 
     RetCheck ret;
-    ret &= !!filter.io.y.valid;
-    ret &= (12 == filter.io.y.data);
-    ret &= !filter.io.y.parity;
+    ret &= !!device.io.y.valid;
+    ret &= (12 == device.io.y.data);
+    ret &= !device.io.y.parity;
 
     assert(!!ret);
   }*/
@@ -345,35 +345,35 @@ int main() {
   }
 
   {
-    ch_device<Foo1> foo;
-    foo.io.in1 = 1;
-    foo.io.in2 = 2;
-    ch_simulator sim(foo);
+    ch_device<Foo1> device;
+    device.io.in1 = 1;
+    device.io.in2 = 2;
+    ch_simulator sim(device);
     sim.run(1);
-    ch_toVerilog("foo.v", foo);
-    std::cout << "foo.io.out=" << foo.io.out << std::endl;
-    assert(3 == foo.io.out);
+    ch_toVerilog("foo.v", device);
+    std::cout << "foo.io.out=" << device.io.out << std::endl;
+    assert(3 == device.io.out);
   }
 
   {
-    ch_device<Foo2> foo;
-    ch_simulator sim(foo);
+    ch_device<Foo2> device;
+    ch_simulator sim(device);
     sim.run(1);
-    assert(foo.io);
+    assert(device.io);
   }
 
   {
-    ch_device<Foo3> foo;
-    ch_simulator sim(foo);
+    ch_device<Foo3> device;
+    ch_simulator sim(device);
     for (int i = 0; i < 2; ++i) {
-      foo.io.y[i] = i;
-      foo.io.x[i].a = 2-i;
+      device.io.y[i] = i;
+      device.io.x[i].a = 2-i;
     }
     sim.run(1);
     RetCheck ret;
     for (int i = 0; i < 2; ++i) {
-      ret &= (2 == foo.io.z[i]);
-      ret &= (2 == foo.io.x[i].b);
+      ret &= (2 == device.io.z[i]);
+      ret &= (2 == device.io.x[i].b);
     }
     assert(!!ret);
   }

@@ -35,31 +35,33 @@ static constexpr block_type WORD_MAX = std::numeric_limits<block_type>::max();
 #define __source_location() jit_insn_mark_offset(j_func_, __LINE__)
 
 struct sim_state_t {
+  block_type** ports;
   uint8_t*     vars;
-  block_type** inputs;
-  block_type** outputs;
+
+  sim_state_t() : ports(nullptr), vars(nullptr) {}
+
+  ~sim_state_t() {
+    delete [] vars;
+    delete [] ports;
+  }
 };
 
 typedef void (*pfn_entry)(sim_state_t*);
 
 struct sim_ctx_t {
-  sim_ctx_t() : state{}, entry(nullptr) {
-    // create JIT context
-    jit = jit_context_create();
+  sim_ctx_t() : entry(nullptr) {
+    j_ctx = jit_context_create();
   }
 
   ~sim_ctx_t() {
-    if (jit) {
-      jit_context_build_end(jit);
+    if (j_ctx) {
+      jit_context_build_end(j_ctx);
     }
-    delete [] state.vars;
-    delete [] state.inputs;
-    delete [] state.outputs;
   }
 
   sim_state_t state;
   pfn_entry entry;
-  jit_context_t jit;
+  jit_context_t j_ctx;
 };
 
 class compiler {
@@ -74,7 +76,7 @@ public:
     assert(ctx->cdomains().size() <= 1);
 
     // begin build
-    jit_context_build_start(sim_ctx_->jit);
+    jit_context_build_start(sim_ctx_->j_ctx);
 
     // create JIT function
     this->create_function();
@@ -156,7 +158,7 @@ public:
     jit_function_compile(j_func_);
 
     // end build
-    jit_context_build_end(sim_ctx_->jit);
+    jit_context_build_end(sim_ctx_->j_ctx);
 
     // dump JIT assembly code
     if (platform::self().cflags() & cflags::dump_asm) {
@@ -252,7 +254,7 @@ private:
           auto addr = cp->addr_map_.at(src.id());
           switch (src.impl()->type()) {
           case type_input:
-            src_value->ptr = cp->sim_ctx_->state.inputs[addr];
+            src_value->ptr = cp->sim_ctx_->state.ports[addr];
             break;
           default:
             src_value->ptr = reinterpret_cast<block_type*>(cp->sim_ctx_->state.vars + addr);
@@ -322,11 +324,10 @@ private:
   void create_function() {
     jit_type_t params[1] = {jit_type_void_ptr};
     auto sig = jit_type_create_signature(jit_abi_cdecl, jit_type_void, params, 1, 1);
-    j_func_ = jit_function_create(sim_ctx_->jit, sig);
+    j_func_ = jit_function_create(sim_ctx_->j_ctx, sig);
     auto j_state = jit_value_get_param(j_func_, 0);
     j_vars_ = jit_insn_load_relative(j_func_, j_state, offsetof(sim_state_t, vars), jit_type_void_ptr);
-    j_inputs_ = jit_insn_load_relative(j_func_, j_state, offsetof(sim_state_t, inputs), jit_type_void_ptr);
-    j_outputs_ = jit_insn_load_relative(j_func_, j_state, offsetof(sim_state_t, outputs), jit_type_void_ptr);
+    j_ports_ = jit_insn_load_relative(j_func_, j_state, offsetof(sim_state_t, ports), jit_type_void_ptr);
     j_block_logsize_ = jit_value_create_nint_constant(j_func_, jit_type_uint, WORD_LOGSIZE);
     j_block_mask_ = jit_value_create_nint_constant(j_func_, jit_type_uint, WORD_MASK);
   }
@@ -353,16 +354,7 @@ private:
       for (uint i = 0, n = node->ranges().size(); i < n; ++i) {
         auto& range = node->range(i);
         auto& src = node->src(range.src_idx);
-        jit_value_t j_src;
-        if  (src.size() <= WORD_SIZE) {
-          if (src.size() != range.length) {
-            j_src = this->slice_scalar(scalar_map_.at(src.id()), range.src_offset, range.length);
-          } else {
-            j_src = scalar_map_.at(src.id());
-          }
-        } else {
-          j_src = this->slice_vsmall(src.impl()->type(), addr_map_.at(src.id()), range.src_offset, range.length);
-        }
+        jit_value_t j_src = this->slice_scalar(src.impl(), range.src_offset, range.length);
 
         jit_value_t j_src_s;
         if (0 == range.dst_offset) {
@@ -389,26 +381,21 @@ private:
         auto dst_lsb = dst_offset % WORD_SIZE;
         auto dst_msb = (dst_lsb + range.length - 1) % WORD_SIZE;
         if (range.length <= WORD_SIZE) {
-          jit_value_t j_src;
-          if  (src.size() <= WORD_SIZE) {
-            j_src = this->slice_scalar_source(scalar_map_.at(src.id()), range.src_offset);
-          } else {
-            j_src = this->slice_vsmall_source(src.impl()->type(), addr_map_.at(src.id()), range.src_offset, range.length);
-          }
+          jit_value_t j_src = this->slice_scalar_source(src.impl(), range.src_offset, range.length);
           auto j_dst_lsb = jit_value_create_nint_constant(j_func_, jit_type_uint, dst_lsb);
           auto j_tmp1 = jit_insn_shl(j_func_, j_src, j_dst_lsb);
           auto dst_addr = addr_map_.at(node->id());
-          auto j_dst_value0 = jit_insn_load_relative(j_func_, this->buffer(node->type()), dst_addr + dst_idx * sizeof(block_type), jit_type_ulong);
+          auto j_dst_value0 = jit_insn_load_relative(j_func_, j_vars_, dst_addr + dst_idx * sizeof(block_type), jit_type_ulong);
           auto j_mask0 = jit_value_create_long_constant(j_func_, jit_type_ulong, (WORD_MAX >> (WORD_SIZE - range.length)) << dst_lsb);
           auto j_tmp2 = this->blend(j_mask0, j_dst_value0, j_tmp1);
-          jit_insn_store_relative(j_func_, this->buffer(node->type()), dst_addr + dst_idx * sizeof(block_type), j_tmp2);
+          jit_insn_store_relative(j_func_, j_vars_, dst_addr + dst_idx * sizeof(block_type), j_tmp2);
           if (dst_lsb + range.length > WORD_SIZE) {
-            auto j_dst_value1 = jit_insn_load_relative(j_func_, this->buffer(node->type()), dst_addr + (dst_idx + 1) * sizeof(block_type), jit_type_ulong);
+            auto j_dst_value1 = jit_insn_load_relative(j_func_, j_vars_, dst_addr + (dst_idx + 1) * sizeof(block_type), jit_type_ulong);
             auto j_mask1 = jit_value_create_long_constant(j_func_, jit_type_ulong, (WORD_MAX << 1) << dst_msb);
             auto j_tmp3 = jit_value_create_nint_constant(j_func_, jit_type_uint, WORD_SIZE - dst_lsb);
             auto j_tmp4 = jit_insn_ushr(j_func_, j_src, j_tmp3);
             auto j_tmp5 = this->blend(j_mask1, j_tmp4, j_dst_value1);
-            jit_insn_store_relative(j_func_, this->buffer(node->type()), dst_addr + (dst_idx + 1) * sizeof(block_type), j_tmp5);
+            jit_insn_store_relative(j_func_, j_vars_, dst_addr + (dst_idx + 1) * sizeof(block_type), j_tmp5);
           }
         } else {
           CH_TODO();
@@ -423,12 +410,12 @@ private:
     this->create_node_label(node);
     uint32_t dst_width = node->size();
     uint32_t addr = addr_map_.at(node->id());
-    auto j_src_ptr = jit_insn_load_relative(j_func_, j_inputs_, addr * sizeof(block_type*), jit_type_void_ptr);
+    auto j_ptr = jit_insn_load_relative(j_func_, j_ports_, addr * sizeof(block_type*), jit_type_void_ptr);
     if (dst_width <= WORD_SIZE) {
-      auto j_src_value = jit_insn_load_relative(j_func_, j_src_ptr, 0, jit_type_ulong);
-      scalar_map_[node->id()] = j_src_value;
+      auto j_value = jit_insn_load_relative(j_func_, j_ptr, 0, jit_type_ulong);
+      scalar_map_[node->id()] = j_value;
     } else {
-      scalar_map_[node->id()] = j_src_ptr;
+      scalar_map_[node->id()] = j_ptr;
     }
   }
 
@@ -437,15 +424,14 @@ private:
     this->create_node_label(node);
     uint32_t dst_width = node->size();
     uint32_t addr = addr_map_.at(node->id());
-    auto j_dst_ptr = jit_insn_load_relative(j_func_, j_outputs_, addr * sizeof(block_type*), jit_type_void_ptr);
+    auto j_dst_ptr = jit_insn_load_relative(j_func_, j_ports_, addr * sizeof(block_type*), jit_type_void_ptr);
     if (dst_width <= WORD_SIZE) {
       auto j_src_value = scalar_map_.at(node->src(0).id());
       jit_insn_store_relative(j_func_, j_dst_ptr, 0, j_src_value);
     } else {
       auto num_words = ceildiv<uint32_t>(dst_width, WORD_SIZE);
       auto j_size = jit_value_create_nint_constant(j_func_, jit_type_uint, num_words * sizeof(block_type));
-      auto src_addr = addr_map_.at(node->src(0).id());
-      auto j_src_ptr = jit_insn_add_relative(j_func_, this->buffer(node->src(0).impl()->type()), src_addr);
+      auto j_src_ptr = this->load_address(node->src(0).impl());
       jit_insn_memcpy(j_func_, j_dst_ptr, j_src_ptr, j_size);
     }
   }
@@ -579,13 +565,11 @@ private:
         assert(-1 == node->should_resize_opds());
         uint32_t num_words = ceildiv(dst_width, WORD_SIZE);
         for (uint32_t i = 0; i < num_words; ++i) {
-          auto src0_addr = addr_map_.at(node->src(0).id());
-          auto j_src0 = jit_insn_load_relative(j_func_, this->buffer(node->src(0).impl()->type()), src0_addr + i * sizeof(block_type), jit_type_ulong);
-          auto src1_addr = addr_map_.at(node->src(1).id());
-          auto j_src1 = jit_insn_load_relative(j_func_, this->buffer(node->src(1).impl()->type()), src1_addr + i * sizeof(block_type), jit_type_ulong);
+          auto j_src0 = this->load_scalar(node->src(0).impl(), i);
+          auto j_src1 = this->load_scalar(node->src(1).impl(), i);
           auto j_dst  = jit_insn_and(j_func_, j_src0, j_src1);
           auto dst_addr = addr_map_.at(node->id());
-          jit_insn_store_relative(j_func_, this->buffer(node->type()), dst_addr + i * sizeof(block_type), j_dst);
+          jit_insn_store_relative(j_func_, j_vars_, dst_addr + i * sizeof(block_type), j_dst);
         }
       }
       break;
@@ -600,13 +584,11 @@ private:
         assert(-1 == node->should_resize_opds());
         uint32_t num_words = ceildiv(dst_width, WORD_SIZE);
         for (uint32_t i = 0; i < num_words; ++i) {
-          auto src0_addr = addr_map_.at(node->src(0).id());
-          auto j_src0 = jit_insn_load_relative(j_func_, this->buffer(node->src(0).impl()->type()), src0_addr + i * sizeof(block_type), jit_type_ulong);
-          auto src1_addr = addr_map_.at(node->src(1).id());
-          auto j_src1 = jit_insn_load_relative(j_func_, this->buffer(node->src(1).impl()->type()), src1_addr + i * sizeof(block_type), jit_type_ulong);
+          auto j_src0 = this->load_scalar(node->src(0).impl(), i);
+          auto j_src1 = this->load_scalar(node->src(1).impl(), i);
           auto j_dst  = jit_insn_or(j_func_, j_src0, j_src1);
           auto dst_addr = addr_map_.at(node->id());
-          jit_insn_store_relative(j_func_, this->buffer(node->type()), dst_addr + i * sizeof(block_type), j_dst);
+          jit_insn_store_relative(j_func_, j_vars_, dst_addr + i * sizeof(block_type), j_dst);
         }
       }
       break;
@@ -621,13 +603,11 @@ private:
         assert(-1 == node->should_resize_opds());
         uint32_t num_words = ceildiv(dst_width, WORD_SIZE);
         for (uint32_t i = 0; i < num_words; ++i) {
-          auto src0_addr = addr_map_.at(node->src(0).id());
-          auto j_src0 = jit_insn_load_relative(j_func_, this->buffer(node->src(0).impl()->type()), src0_addr + i * sizeof(block_type), jit_type_ulong);
-          auto src1_addr = addr_map_.at(node->src(1).id());
-          auto j_src1 = jit_insn_load_relative(j_func_, this->buffer(node->src(1).impl()->type()), src1_addr + i * sizeof(block_type), jit_type_ulong);
+          auto j_src0 = this->load_scalar(node->src(0).impl(), i);
+          auto j_src1 = this->load_scalar(node->src(1).impl(), i);
           auto j_dst  = jit_insn_xor(j_func_, j_src0, j_src1);
           auto dst_addr = addr_map_.at(node->id());
-          jit_insn_store_relative(j_func_, this->buffer(node->type()), dst_addr + i * sizeof(block_type), j_dst);
+          jit_insn_store_relative(j_func_, j_vars_, dst_addr + i * sizeof(block_type), j_dst);
         }
       }
       break;
@@ -809,7 +789,7 @@ private:
     __source_location();
     ch::internal::compiler::build_bypass_list(bypass_nodes_, node->ctx(), node->id());
     auto addr = addr_map_.at(node->id());
-    auto j_prev_clk = jit_insn_load_relative(j_func_, this->buffer(node->type()), addr, jit_type_uint);
+    auto j_prev_clk = jit_insn_load_relative(j_func_, j_vars_, addr, jit_type_uint);
     auto j_clk = this->cast(scalar_map_.at(node->src(0).id()), jit_type_uint);
     auto j_clk_changed = jit_insn_xor(j_func_, j_clk, j_prev_clk);
     jit_value_t j_changed ;
@@ -819,7 +799,7 @@ private:
       auto j_clk_n = jit_insn_not(j_func_, j_clk);
       j_changed = jit_insn_and(j_func_, j_clk_changed, j_clk_n);
     }
-    jit_insn_store_relative(j_func_, this->buffer(node->type()), addr, j_clk);
+    jit_insn_store_relative(j_func_, j_vars_, addr, j_clk);
     jit_label_t j_label = jit_label_undefined;
     jit_insn_branch_if_not(j_func_, j_changed, &j_label);
     j_bypass_ = j_label;
@@ -848,7 +828,60 @@ private:
 
     auto dst_addr = addr_map_.at(node->id());
     uint32_t dst_width = node->size();
-    if (!node->is_pipe()) {
+
+    if (node->is_pipe()) {
+      auto pipe_addr = dst_addr + sizeof(block_type);
+      bool is_scalar = ((node->length() - 1) * dst_width <= WORD_SIZE);
+      if (node->has_init_data()) {
+        jit_label_t l_skip = jit_label_undefined;
+        auto j_reset = scalar_map_.at(node->reset().id());        
+        jit_insn_branch_if_not(j_func_, j_reset, &l_skip);
+        if (is_scalar) {
+          // reset pipe
+          if (type_lit == node->init_data().impl()->type()) {
+            auto lit = reinterpret_cast<litimpl*>(node->init_data().impl());
+            block_type init_data(0);
+            block_type init_value = lit->value().word(0);
+            for (uint32_t i = 0, n = node->length() - 1; i < n; ++i) {
+              init_data |= init_value << (i * dst_width);
+            }
+            auto j_init_data = jit_value_create_long_constant(j_func_, jit_type_ulong, init_data);
+            jit_insn_store_relative(j_func_, j_vars_, pipe_addr, j_init_data);
+          } else {
+            CH_TODO();
+          }
+          // reset base register
+          auto j_init_data = scalar_map_.at(node->init_data().id());
+          auto j_dst = scalar_map_.at(node->id());
+          jit_insn_store(j_func_, j_dst, j_init_data);
+          jit_insn_store_relative(j_func_, j_vars_, dst_addr, j_init_data);
+        } else {
+          CH_TODO();
+        }
+        jit_insn_branch(j_func_, &l_exit);
+        jit_insn_label(j_func_, &l_skip);
+      }
+
+      if (node->has_enable()) {
+        auto j_enable = scalar_map_.at(node->enable().id());
+        jit_insn_branch_if_not(j_func_, j_enable, &l_exit);
+      }
+
+      if (is_scalar) {
+        auto j_pipe = jit_insn_load_relative(j_func_, j_vars_, pipe_addr, jit_type_ulong);
+        auto j_tmp1 = this->slice_scalar(j_pipe, 0, dst_width);
+        auto j_dst = scalar_map_.at(node->id());
+        jit_insn_store(j_func_, j_dst, j_tmp1);
+        jit_insn_store_relative(j_func_, j_vars_, dst_addr, j_tmp1);
+        auto j_shift = jit_value_create_nint_constant(j_func_, jit_type_uint, dst_width);
+        auto j_tmp2 = jit_insn_ushr(j_func_, j_pipe, j_shift);
+        auto j_next = scalar_map_.at(node->next().id());
+        auto j_tmp3 = this->copy_scalar(j_tmp2, (node->length() - 2) * dst_width, j_next, 0, dst_width);
+        jit_insn_store_relative(j_func_, j_vars_, pipe_addr, j_tmp3);
+      } else {
+        CH_TODO();
+      }
+    } else {
       bool is_scalar = (dst_width <= WORD_SIZE);
       if (node->has_init_data()) {
         jit_label_t l_skip = jit_label_undefined;
@@ -858,80 +891,34 @@ private:
           auto j_init_data = scalar_map_.at(node->init_data().id());
           auto j_dst = scalar_map_.at(node->id());
           jit_insn_store(j_func_, j_dst, j_init_data);
-          jit_insn_store_relative(j_func_, this->buffer(node->type()), dst_addr, j_init_data);
+          jit_insn_store_relative(j_func_, j_vars_, dst_addr, j_init_data);
         } else {
           auto num_words = ceildiv<uint32_t>(dst_width, WORD_SIZE);
           auto j_size = jit_value_create_nint_constant(j_func_, jit_type_uint, num_words * sizeof(block_type));
-          auto init_addr = addr_map_.at(node->init_data().id());
-          auto j_init_ptr = jit_insn_add_relative(j_func_, this->buffer(node->init_data().impl()->type()), init_addr);
-          auto j_dst_ptr = jit_insn_add_relative(j_func_, this->buffer(node->type()), dst_addr);
+          auto j_init_ptr = this->load_address(node->init_data().impl());
+          auto j_dst_ptr = jit_insn_add_relative(j_func_, j_vars_, dst_addr);
           jit_insn_memcpy(j_func_, j_dst_ptr, j_init_ptr, j_size);
         }
         jit_insn_branch(j_func_, &l_exit);
         jit_insn_label(j_func_, &l_skip);
       }
+
       if (node->has_enable()) {
         auto j_enable = scalar_map_.at(node->enable().id());
         jit_insn_branch_if_not(j_func_, j_enable, &l_exit);
       }
+
       if (is_scalar) {
         auto j_next = scalar_map_.at(node->next().id());
         auto j_dst = scalar_map_.at(node->id());
         jit_insn_store(j_func_, j_dst, j_next);
-        jit_insn_store_relative(j_func_, this->buffer(node->type()), dst_addr, j_next);
+        jit_insn_store_relative(j_func_, j_vars_, dst_addr, j_next);
       } else {
         auto num_words = ceildiv<uint32_t>(dst_width, WORD_SIZE);
         auto j_size = jit_value_create_nint_constant(j_func_, jit_type_uint, num_words * sizeof(block_type));
-        auto next_addr = addr_map_.at(node->next().id());
-        auto j_next_ptr = jit_insn_add_relative(j_func_, this->buffer(node->next().impl()->type()), next_addr);
-        auto j_dst_ptr = jit_insn_add_relative(j_func_, this->buffer(node->type()), dst_addr);
+        auto j_next_ptr = this->load_address(node->next().impl());
+        auto j_dst_ptr = jit_insn_add_relative(j_func_, j_vars_, dst_addr);
         jit_insn_memcpy(j_func_, j_dst_ptr, j_next_ptr, j_size);
-      }
-    } else {
-      bool is_scalar = ((node->length() - 1) * dst_width <= WORD_SIZE);
-      if (node->has_init_data()) {
-        jit_label_t l_skip = jit_label_undefined;
-        auto j_reset = scalar_map_.at(node->reset().id());
-        jit_insn_branch_if_not(j_func_, j_reset, &l_skip);
-        if (is_scalar) {
-          jit_value_t j_init_data;
-          if (type_lit == node->init_data().impl()->type()) {
-            auto lit = reinterpret_cast<litimpl*>(node->init_data().impl());
-            block_type init_data(0);
-            block_type init_value = lit->value().word(0);
-            for (uint32_t i = 0, n = node->length() - 1; i < n; ++i) {
-              init_data |= init_value << (i * dst_width);
-            }
-            j_init_data = jit_value_create_long_constant(j_func_, jit_type_ulong, init_data);
-          } else {
-            CH_TODO();
-          }
-          auto j_dst = scalar_map_.at(node->id());
-          jit_insn_store(j_func_, j_dst, j_init_data);
-          jit_insn_store_relative(j_func_, this->buffer(node->type()), dst_addr + sizeof(block_type), j_init_data);
-        } else {
-          CH_TODO();
-        }
-        jit_insn_branch(j_func_, &l_exit);
-        jit_insn_label(j_func_, &l_skip);
-      }
-      if (node->has_enable()) {
-        auto j_enable = scalar_map_.at(node->enable().id());
-        jit_insn_branch_if_not(j_func_, j_enable, &l_exit);
-      }
-      if (is_scalar) {
-        auto j_pipe = jit_insn_load_relative(j_func_, this->buffer(node->type()), dst_addr + sizeof(block_type), jit_type_ulong);
-        auto j_tmp1 = this->slice_scalar(j_pipe, 0, dst_width);
-        auto j_dst = scalar_map_.at(node->id());
-        jit_insn_store(j_func_, j_dst, j_tmp1);
-        jit_insn_store_relative(j_func_, this->buffer(node->type()), dst_addr, j_tmp1);
-        auto j_shift = jit_value_create_nint_constant(j_func_, jit_type_uint, dst_width);
-        auto j_tmp2 = jit_insn_ushr(j_func_, j_pipe, j_shift);
-        auto j_next = scalar_map_.at(node->next().id());
-        auto j_tmp3 = this->copy_scalar(j_tmp2, (node->length() - 2) * dst_width, j_next, 0, dst_width);
-        jit_insn_store_relative(j_func_, this->buffer(node->type()), dst_addr + sizeof(block_type), j_tmp3);
-      } else {
-        CH_TODO();
       }
     }
 
@@ -949,16 +936,16 @@ private:
       auto j_src_idx = jit_insn_ushr(j_func_, j_src_off, j_block_logsize_);
       auto j_src_lsb = jit_insn_and(j_func_, j_src_off, j_block_mask_);
       auto mem_addr = addr_map_.at(node->mem()->id());
-      auto mem_base_ptr = jit_insn_add_relative(j_func_, this->buffer(node->mem()->type()), mem_addr);
+      auto mem_base_ptr = jit_insn_add_relative(j_func_, j_vars_, mem_addr);
       auto j_mem_ptr = jit_insn_load_elem_address(j_func_, mem_base_ptr, j_src_idx, jit_type_ulong);
       auto j_src_value0 = jit_insn_load_relative(j_func_, j_mem_ptr, 0, jit_type_ulong);
       auto j_src_value = jit_insn_ushr(j_func_, j_src_value0, j_src_lsb);
       auto j_dst_rem = jit_value_create_nint_constant(j_func_, jit_type_uint, WORD_SIZE - data_width);
-      if (node->mem()->size() >= WORD_SIZE) {
+      if (node->mem()->size() > WORD_SIZE) {
         jit_label_t l_skip = jit_label_undefined;
         auto j_src_inclusive = jit_insn_le(j_func_, j_src_lsb, j_dst_rem);
-
         jit_insn_branch_if(j_func_, j_src_inclusive, &l_skip);
+
         auto j_src_value1 = jit_insn_load_relative(j_func_, j_mem_ptr, sizeof(block_type), jit_type_ulong);
         auto j_block_size = jit_value_create_nint_constant(j_func_, jit_type_uint, WORD_SIZE);
         auto j_tmp1 = jit_insn_sub(j_func_, j_block_size, j_src_lsb);
@@ -994,7 +981,7 @@ private:
       auto j_src_idx = jit_insn_ushr(j_func_, j_src_off, j_block_logsize_);
       auto j_src_lsb = jit_insn_and(j_func_, j_src_off, j_block_mask_);
       auto mem_addr = addr_map_.at(node->mem()->id());
-      auto mem_base_ptr = jit_insn_add_relative(j_func_, this->buffer(node->mem()->type()), mem_addr);
+      auto mem_base_ptr = jit_insn_add_relative(j_func_, j_vars_, mem_addr);
       auto j_mem_ptr = jit_insn_load_elem_address(j_func_, mem_base_ptr, j_src_idx, jit_type_ulong);
       auto j_src_value0 = jit_insn_load_relative(j_func_, j_mem_ptr, 0, jit_type_ulong);
       auto j_src_value = jit_insn_ushr(j_func_, j_src_value0, j_src_lsb);
@@ -1002,8 +989,8 @@ private:
       if (node->mem()->size() >= WORD_SIZE) {
         jit_label_t l_skip = jit_label_undefined;
         auto j_src_inclusive = jit_insn_le(j_func_, j_src_lsb, j_dst_rem);
-
         jit_insn_branch_if(j_func_, j_src_inclusive, &l_skip);
+
         auto j_src_value1 = jit_insn_load_relative(j_func_, j_mem_ptr, sizeof(block_type), jit_type_ulong);
         auto j_block_size = jit_value_create_nint_constant(j_func_, jit_type_uint, WORD_SIZE);
         auto j_tmp1 = jit_insn_sub(j_func_, j_block_size, j_src_lsb);
@@ -1046,7 +1033,7 @@ private:
       auto j_wdata = this->slice_scalar_source(scalar_map_.at(node->wdata().id()), 0);
 
       auto mem_addr = addr_map_.at(node->mem()->id());
-      auto mem_base_ptr = jit_insn_add_relative(j_func_, this->buffer(node->mem()->type()), mem_addr);
+      auto mem_base_ptr = jit_insn_add_relative(j_func_, j_vars_, mem_addr);
       auto j_mem_ptr = jit_insn_load_elem_address(j_func_, mem_base_ptr, j_dst_idx, jit_type_ulong);
 
       auto j_dst_value0 = jit_insn_load_relative(j_func_, j_mem_ptr, 0, jit_type_ulong);
@@ -1058,7 +1045,7 @@ private:
 
       auto j_dst_rem = jit_value_create_nint_constant(j_func_, jit_type_uint, WORD_SIZE - data_width);
 
-      if (node->mem()->size() >= WORD_SIZE) {
+      if (node->mem()->size() > WORD_SIZE) {
         jit_label_t l_skip = jit_label_undefined;
         auto j_dst_inclusive = jit_insn_le(j_func_, j_dst_lsb, j_dst_rem);
         jit_insn_branch_if(j_func_, j_dst_inclusive, &l_skip);
@@ -1086,7 +1073,7 @@ private:
     auto j_value = scalar_map_.at(node->id());
     auto j_one = jit_value_create_long_constant(j_func_, jit_type_ulong, 1);
     auto j_incr = jit_insn_add(j_func_, j_value, j_one);
-    jit_insn_store_relative(j_func_, this->buffer(node->type()), addr, j_incr);
+    jit_insn_store_relative(j_func_, j_vars_, addr, j_incr);
   }
 
   void emit_node(printimpl* node) {
@@ -1098,13 +1085,13 @@ private:
     for (auto& src : node->srcs()) {
       auto it = scalar_map_.find(src.id());
       if (it != scalar_map_.end()) {
-        auto values_ptr = jit_insn_load_relative(j_func_, this->buffer(node->type()), addr + offsetof(print_data_t, src_values), jit_type_void_ptr);
+        auto values_ptr = jit_insn_load_relative(j_func_, j_vars_, addr + offsetof(print_data_t, src_values), jit_type_void_ptr);
         jit_insn_store_relative(j_func_, values_ptr, src_idx * sizeof(data_t), it->second);
       }
       ++src_idx;
     }
     // call native function
-    auto j_data_ptr = jit_insn_add_relative(j_func_, this->buffer(node->type()), addr);
+    auto j_data_ptr = jit_insn_add_relative(j_func_, j_vars_, addr);
     jit_type_t params[] = {jit_type_void_ptr};
     jit_type_t j_sig = jit_type_create_signature(jit_abi_cdecl, jit_type_void, params, __countof(params), 1);
     jit_value_t args[] = {j_data_ptr};
@@ -1113,8 +1100,7 @@ private:
 
   void allocate_nodes(context* ctx) {
     uint32_t var_addr = 0;
-    uint32_t input_addr = 0;
-    uint32_t output_addr = 0;
+    uint32_t port_addr = 0;
 
     for (auto node : ctx->nodes()) {
       uint32_t dst_width = node->size();
@@ -1123,11 +1109,9 @@ private:
       case type_lit:
         break;
       case type_input:
-        addr_map_[node->id()] = input_addr++;
-        break;
       case type_output:
       case type_tap:
-        addr_map_[node->id()] = output_addr++;
+        addr_map_[node->id()] = port_addr++;
         break;
       case type_cd:
         addr_map_[node->id()] = var_addr;
@@ -1176,12 +1160,8 @@ private:
       }
     }
 
-    if (input_addr) {
-      sim_ctx_->state.inputs = new block_type*[input_addr];
-    }
-
-    if (output_addr) {
-      sim_ctx_->state.outputs = new block_type*[output_addr];
+    if (port_addr) {
+      sim_ctx_->state.ports = new block_type*[port_addr];
     }
 
     this->init_variables(ctx);
@@ -1195,16 +1175,12 @@ private:
       switch (type) {
       case type_lit:
         break;
-      case type_input: {
-        auto addr = addr_map_.at(node->id());
-        auto input = reinterpret_cast<inputimpl*>(node);
-        sim_ctx_->state.inputs[addr] = input->value()->words();
-      } break;
+      case type_input:
       case type_output:
       case type_tap: {
         auto addr = addr_map_.at(node->id());
         auto ioport = reinterpret_cast<ioportimpl*>(node);
-        sim_ctx_->state.outputs[addr] = ioport->value()->words();
+        sim_ctx_->state.ports[addr] = ioport->value()->words();
       } break;
       case type_cd: {
         auto addr = addr_map_.at(node->id());
@@ -1224,7 +1200,7 @@ private:
           // preload scalar value
           __source_location();
           auto addr = addr_map_.at(node->id());
-          auto j_dst = jit_insn_load_relative(j_func_, this->buffer(node->type()), addr, jit_type_ulong);
+          auto j_dst = jit_insn_load_relative(j_func_, j_vars_, addr, jit_type_ulong);
           scalar_map_[node->id()] = j_dst;
         }
       } break;
@@ -1245,7 +1221,7 @@ private:
         if (dst_width <= WORD_SIZE) {
           // preload scalar value
           __source_location();
-          auto j_dst = jit_insn_load_relative(j_func_, this->buffer(node->type()), addr, jit_type_ulong);
+          auto j_dst = jit_insn_load_relative(j_func_, j_vars_, addr, jit_type_ulong);
           scalar_map_[node->id()] = j_dst;
         }
       } break;
@@ -1254,7 +1230,7 @@ private:
         reinterpret_cast<time_data_t*>(sim_ctx_->state.vars + addr)->init();
         // preload scalar value
         __source_location();
-        auto j_dst = jit_insn_load_relative(j_func_, this->buffer(node->type()), addr, jit_type_ulong);
+        auto j_dst = jit_insn_load_relative(j_func_, j_vars_, addr, jit_type_ulong);
         scalar_map_[node->id()] = j_dst;
       } break;
       case type_print: {
@@ -1325,40 +1301,53 @@ private:
     assert((addr - offset) == size);
   }
 
-  jit_value_t slice_scalar_source(const jit_value_t& j_src_value, uint32_t offset) {
+  jit_value_t slice_scalar_source(const jit_value_t& j_value, uint32_t offset) {
     auto src_lsb = offset % WORD_SIZE;
     auto j_src_lsb = jit_value_create_nint_constant(j_func_, jit_type_uint, src_lsb);
-    return src_lsb ? jit_insn_ushr(j_func_, j_src_value, j_src_lsb) : j_src_value;
+    return src_lsb ? jit_insn_ushr(j_func_, j_value, j_src_lsb) : j_value;
   }
 
-  jit_value_t slice_vsmall_source(lnodetype type, uint32_t src_addr, uint32_t offset, uint32_t length) {
-    auto src_idx = offset / WORD_SIZE;
-    auto src_lsb = offset % WORD_SIZE;
-    auto j_src_lsb = jit_value_create_nint_constant(j_func_, jit_type_uint, src_lsb);
-    auto j_src_value0 = jit_insn_load_relative(j_func_, this->buffer(type), src_addr + src_idx * sizeof(block_type), jit_type_ulong);
-    auto j_src = src_lsb ? jit_insn_ushr(j_func_, j_src_value0, j_src_lsb) : j_src_value0;
-    if (src_lsb + length > WORD_SIZE) {
-      auto j_src_value1 = jit_insn_load_relative(j_func_, this->buffer(type), src_addr + (src_idx + 1) * sizeof(block_type), jit_type_ulong);
-      auto j_tmp1 = jit_value_create_nint_constant(j_func_, jit_type_uint, WORD_SIZE - src_lsb);
-      auto j_tmp2 = jit_insn_shl(j_func_, j_src_value1, j_tmp1);
-      return jit_insn_or(j_func_, j_src, j_tmp2);
+  jit_value_t slice_scalar(const jit_value_t& j_value, uint32_t offset, uint32_t length) {
+    auto j_src = this->slice_scalar_source(j_value, offset);
+    auto j_cut = jit_value_create_nint_constant(j_func_, jit_type_uint, WORD_SIZE - length);
+    auto j_tmp1 = jit_insn_shl(j_func_, j_src, j_cut);
+    return jit_insn_ushr(j_func_, j_tmp1, j_cut);
+  }
+
+  jit_value_t slice_scalar_source(lnodeimpl* node, uint32_t offset, uint32_t length) {
+    assert(length <= WORD_SIZE);
+    if (node->size() <= WORD_SIZE) {
+      auto src_lsb = offset % WORD_SIZE;
+      auto j_src_value = scalar_map_.at(node->id());
+      auto j_src_lsb = jit_value_create_nint_constant(j_func_, jit_type_uint, src_lsb);
+      return src_lsb ? jit_insn_ushr(j_func_, j_src_value, j_src_lsb) : j_src_value;
     } else {
-      return j_src;
+      auto src_idx = offset / WORD_SIZE;
+      auto src_lsb = offset % WORD_SIZE;
+      auto j_src_lsb = jit_value_create_nint_constant(j_func_, jit_type_uint, src_lsb);
+      auto j_src_value0 = this->load_scalar(node, src_idx);
+      auto j_src = src_lsb ? jit_insn_ushr(j_func_, j_src_value0, j_src_lsb) : j_src_value0;
+      if (src_lsb + length > WORD_SIZE) {
+        auto j_src_value1 = this->load_scalar(node, src_idx + 1);
+        auto j_tmp1 = jit_value_create_nint_constant(j_func_, jit_type_uint, WORD_SIZE - src_lsb);
+        auto j_tmp2 = jit_insn_shl(j_func_, j_src_value1, j_tmp1);
+        return jit_insn_or(j_func_, j_src, j_tmp2);
+      } else {
+        return j_src;
+      }
     }
   }
 
-  jit_value_t slice_scalar(const jit_value_t& j_src_value, uint32_t src_offset, uint32_t src_length) {
-    auto j_src = this->slice_scalar_source(j_src_value, src_offset);
-    auto j_dst_rem = jit_value_create_nint_constant(j_func_, jit_type_uint, WORD_SIZE - src_length);
-    auto j_tmp1 = jit_insn_shl(j_func_, j_src, j_dst_rem);
-    return jit_insn_ushr(j_func_, j_tmp1, j_dst_rem);
-  }
-
-  jit_value_t slice_vsmall(lnodetype type, uint32_t src_addr, uint32_t src_offset, uint32_t src_length) {
-    auto j_src = this->slice_vsmall_source(type, src_addr, src_offset, src_length);
-    auto j_dst_rem = jit_value_create_nint_constant(j_func_, jit_type_uint, WORD_SIZE - src_length);
-    auto j_tmp1 = jit_insn_shl(j_func_, j_src, j_dst_rem);
-    return jit_insn_ushr(j_func_, j_tmp1, j_dst_rem);
+  jit_value_t slice_scalar(lnodeimpl* node, uint32_t offset, uint32_t length) {
+    assert(length <= WORD_SIZE);
+    if (node->size() != length) {
+      auto j_src = this->slice_scalar_source(node, offset, length);
+      auto j_cut = jit_value_create_nint_constant(j_func_, jit_type_uint, WORD_SIZE - length);
+      auto j_tmp1 = jit_insn_shl(j_func_, j_src, j_cut);
+      return jit_insn_ushr(j_func_, j_tmp1, j_cut);
+    } else {
+      return scalar_map_.at(node->id());
+    }
   }
 
   jit_value_t copy_scalar(const jit_value_t& j_dst_value,
@@ -1388,6 +1377,30 @@ private:
     }
   }
 
+  jit_value_t load_address(lnodeimpl* node, uint32_t offset = 0) {
+    switch (node->type()) {
+    case type_input: {
+      auto j_ptr = scalar_map_.at(node->id());
+      return offset ? jit_insn_add_relative(j_func_, j_ptr, offset) : j_ptr;
+    }
+    default: {
+      auto addr = addr_map_.at(node->id()) + offset;
+      return addr ? jit_insn_add_relative(j_func_, j_vars_, addr) : j_vars_;
+    }}
+  }
+
+  jit_value_t load_scalar(lnodeimpl* node, uint32_t index = 0) {
+    switch (node->type()) {
+    case type_input: {
+      auto j_ptr = scalar_map_.at(node->id());
+      return jit_insn_load_relative(j_func_, j_ptr, index * sizeof(block_type), jit_type_ulong);
+    }
+    default: {
+      auto addr = addr_map_.at(node->id()) + index * sizeof(block_type);
+      return jit_insn_load_relative(j_func_, j_vars_, addr, jit_type_ulong);
+    }}
+  }
+
   jit_value_t blend(const jit_value_t& mask, const jit_value_t& a, const jit_value_t& b) {
     auto j_tmp1 = jit_insn_xor(j_func_, a, b);
     auto j_tmp2 = jit_insn_and(j_func_, j_tmp1, mask);
@@ -1402,17 +1415,6 @@ private:
     return j_ret;
   }
 
-  jit_value_t buffer(lnodetype type) {
-    switch (type) {
-    case type_input:
-      return j_inputs_;
-    case type_output:
-      return j_outputs_;
-    default:
-      return j_vars_;
-    }
-  }
-
   sim_ctx_t*      sim_ctx_;
   alloc_map_t     addr_map_;
   var_map_t       scalar_map_;
@@ -1421,8 +1423,7 @@ private:
   bool            bypass_enable_;
   jit_function_t  j_func_;
   jit_value_t     j_vars_;
-  jit_value_t     j_inputs_;
-  jit_value_t     j_outputs_;  
+  jit_value_t     j_ports_;
   jit_value_t     j_block_logsize_;
   jit_value_t     j_block_mask_;
 };

@@ -28,6 +28,20 @@ TEST_CASE("memory", "[memory]") {
     }, 4);
     TEST([]()->ch_bool {
       ch_reg<ch_uint2> a(0);
+      ch_rom<ch_bit32, 3> rom({0xA, 0xB, 0xC});
+      auto q = rom.read(a);
+      a->next = ch_min(a + 1, 2);
+      auto e = ch_case<ch_bit32>(ch_now(),
+            2,  0xA)
+           (4,  0xB)
+           (6,  0xC)
+           (8,  0xC)
+               (q);
+      //ch_print("t={0}, a={1}, q={2}, e={3}", ch_now(), a, q, e);
+      return (q == e);
+    }, 4);
+    TEST([]()->ch_bool {
+      ch_reg<ch_uint2> a(0);
       ch_bit<5> q;
       ch_rom<ch_bit<5>, 3> rom({0xA, 0xB, 0xC});
       q = rom.read(a);
@@ -154,19 +168,30 @@ TEST_CASE("memory", "[memory]") {
       auto x = mem.aread(0).as_bit();
       auto e = ch_delay(1101_b);
       //ch_print("t={0}, x={1}, e={2}", ch_now(), x, e);
-      return (x == e);
-    }, 1);
+      return (ch_now() <= 1 || x == e);
+    }, 2);
+
+    TEST([]()->ch_bool {
+      ch_mem<ch_bit32, 3> mem;
+      mem.write(1, 0x55);
+      auto x = mem.aread(1).as_bit();
+      auto e = ch_delay<ch_bit32>(0x55);
+      //ch_print("t={0}, x={1}, e={2}", ch_now(), x, e);
+      return (ch_now() <= 1 || x == e);
+    }, 2);
 
     TEST([]()->ch_bool {
       ch_mem<ch_bit4, 4> mem;
-      auto wa = ch_delay(ch_case<ch_bit2>(ch_now(), 3, 3)(2, 2)(1, 1)(0));
-      auto ra = ch_delay(ch_case<ch_bit2>(ch_now(), 3, 2)(2, 2)(1, 0)(0));
-      auto v  = ch_delay(ch_case<ch_bit4>(ch_now(), 3, 0xD)(2, 0xC)(1, 0xB)(0xA));
-      mem.write(wa, v);
-      auto q = mem.sread(ra);
-      auto e = ch_delay(ch_case<ch_bit4>(ch_now(), 3, 0xC)(2, 0xA)(q));
-      //ch_print("t={0}, wa={1}, v={2}, ra={3}, q={4}, e={5}", ch_now(), wa, v, ra, q, e);
+      auto we = ch_case<ch_bool>(ch_now(), 7, 1)(5, 0)(3, 1)(1, 1)(1);
+      auto wa = ch_case<ch_bit2>(ch_now(), 7, 3)(5, 0)(3, 2)(1, 0)(0);
+      auto wv = ch_case<ch_bit4>(ch_now(), 7, 3)(5, 3)(3, 2)(1, 1)(0);
+      auto re = ch_case<ch_bool>(ch_now(), 7, 1)(5, 0)(3, 1)(1, 1)(0);
+      auto ra = ch_case<ch_bit2>(ch_now(), 7, 2)(5, 2)(3, 0)(1, 0)(0);
+      mem.write(wa, wv, we);
+      auto q = mem.sread(ra, re);
+      auto e = ch_case<ch_bit4>(ch_now(), 7, 2)(5, 1)(3, 1)(q);
+      //ch_print("t={0}, we={1}, wa={2}, wv={3}, re={4}, ra={5}, q={6}, e={7}", ch_now(), we, wa, wv, re, ra, q, e);
       return (ch_now() <= 1 || q == e);
-    }, 1);
+    }, 4);
   }
 }

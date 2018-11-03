@@ -761,4 +761,8 @@ void compiler::build_bypass_list(std::unordered_set<uint32_t>& out, context* ctx
   for (auto node : ctx->gtaps()) {
     dfs_visit(node);
   }
+  auto sys_time = ctx->sys_time();
+  if (sys_time) {
+    dfs_visit(sys_time);
+  }
 }

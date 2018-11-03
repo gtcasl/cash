@@ -174,6 +174,17 @@ struct Foo3 {
   }
 };
 
+struct Foo4 {
+  __io(
+    __in(ch_uint128) in,
+    __out(ch_uint128) out
+  );
+
+  void describe() {
+    io.out = io.in ^ 0x55;
+  }
+};
+
 struct Loop {
   __io (
     __in(ch_uint4)  in1,
@@ -258,69 +269,96 @@ struct CustomClk {
   }
 };
 
+struct CustomClk2 {
+  __io (
+    __in(ch_uint4) in,
+    __out(ch_uint4) out
+  );
+
+  void describe() {
+    auto reset = ch_case<ch_bool>(ch_now(), 3, 1)(2, 1)(0);
+    ch_pushcd(ch_clock(), reset, false);
+    ch_reg<ch_uint4> x(io.in);
+    ch_popcd();
+
+    x->next = x + 1;
+    io.out = x;
+
+    //ch_print("{0}: clk={1}, rst={2}, in={3}, out={4}", ch_now(), ch_clock(), reset, io.in, io.out);
+  }
+};
+
 }
 
 TEST_CASE("module", "[module]") {
   SECTION("sim", "[sim]") {
     TESTX([]()->bool {
-      ch_device<Adder> adder;
-      adder.io.in1 = 1;
-      adder.io.in2 = 2;
-      ch_simulator sim(adder);
+      ch_device<Adder> device;
+      device.io.in1 = 1;
+      device.io.in2 = 2;
+      ch_simulator sim(device);
       sim.run(1);
-      return (3 == adder.io.out);
+      return (3 == device.io.out);
     });
 
     TESTX([]()->bool {
-      ch_device<Foo3> foo;
-      ch_simulator sim(foo);
+      ch_device<Foo3> device;
+      ch_simulator sim(device);
       for (int i = 0; i < 2; ++i) {
-        foo.io.y[i] = i;
-        foo.io.x[i].a = 2-i;
+        device.io.y[i] = i;
+        device.io.x[i].a = 2-i;
       }
       sim.run(1);
       RetCheck ret;
       for (int i = 0; i < 2; ++i) {
-        ret &= (2 == foo.io.z[i]);
-        ret &= (2 == foo.io.x[i].b);
+        ret &= (2 == device.io.z[i]);
+        ret &= (2 == device.io.x[i].b);
       }
       return !!ret;
+    });
+
+    TESTX([]()->bool {
+      ch_device<Foo4> device;
+      device.io.in = 0x00000000'00000000'00000000'00005500_h128;
+      ch_simulator sim(device);
+      sim.run(1);
+      return (device.io.out == 0x5555);
     });
   }
   SECTION("emplace", "[emplace]") {
     TESTX([]()->bool {
-      ch_device<Foo1> foo;
-      foo.io.in1 = 1;
-      foo.io.in2 = 2;
-      ch_simulator sim(foo);
+      ch_device<Foo1> device;
+      device.io.in1 = 1;
+      device.io.in2 = 2;
+      ch_simulator sim(device);
       sim.run(1);
-      return (3 == foo.io.out);
+      return (3 == device.io.out);
     });
 
     TESTX([]()->bool {
-      ch_device<Foo2> foo;
-      ch_simulator sim(foo);
+      ch_device<Foo2> device;
+      ch_simulator sim(device);
       sim.run(1);
-      return (bool)foo.io;
+      return (bool)device.io;
     });
 
     TESTX([]()->bool {
-      ch_device<FilterBlock<ch_uint16>> filter;
-      ch_tracer trace(filter);
+      ch_device<FilterBlock<ch_uint16>> device;
+      ch_tracer trace(device);
       ch_tick t = trace.reset(0);
 
-      filter.io.x.data   = 3;
-      filter.io.x.valid  = 1;
-      filter.io.x.parity = 0;
+      device.io.x.data   = 3;
+      device.io.x.valid  = 1;
+      device.io.x.parity = 0;
       t = trace.step(t, 2);
 
       RetCheck ret;
-      ret &= !!filter.io.y.valid;
-      ret &= (12 == filter.io.y.data);
-      ret &= !filter.io.y.parity;
+      ret &= !!device.io.y.valid;
+      ret &= (12 == device.io.y.data);
+      ret &= !device.io.y.parity;
 
-      ch_toFIRRTL("filter.fir", filter);
-      ch_toVerilog("filter.v", filter);
+      ch_toFIRRTL("filter.fir", device);
+      ch_toVerilog("filter.v", device);
 
       trace.toTestBench("filter_tb.v", "filter.v");
       ret &= (checkVerilog("filter_tb.v"));      
@@ -425,19 +463,32 @@ TEST_CASE("module", "[module]") {
     });
 
     TESTX([]()->bool {
-      ch_device<Loop> loop;
-      ch_toVerilog("loop.v", loop);
-      ch_toFIRRTL("loop.fir", loop);
+      ch_device<CustomClk2> device;
+      ch_toVerilog("custom_clk2.v", device);
 
-      loop.io.in1 = 1;
-      loop.io.in2 = 2;
-      ch_simulator sim(loop);
+      ch_simulator sim(device);
+      device.io.in = 0xA;
+      sim.run(10);
+      std::cout << "out = "  << device.io.out << std::endl;
+      RetCheck ret;
+      ret &= device.io.out == 0xd;
+      return !!ret;
+    });
+
+    TESTX([]()->bool {
+      ch_device<Loop> device;
+      ch_toVerilog("loop.v", device);
+      ch_toFIRRTL("loop.fir", device);
+
+      device.io.in1 = 1;
+      device.io.in2 = 2;
+      ch_simulator sim(device);
       sim.run();
 
-      std::cout << "out = "  << loop.io.out << std::endl;
+      std::cout << "out = "  << device.io.out << std::endl;
 
       RetCheck ret;
-      ret &= loop.io.out == 3;
+      ret &= device.io.out == 3;
       return !!ret;
     });
   }
