@@ -21,6 +21,9 @@ install:
   - sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-7 60 --slave /usr/bin/g++ g++ /usr/bin/g++-7
   # valgrin
   - sudo apt-get install valgrind
+  # autotools
+  - sudo apt-get install autoconf
+  - sudo apt-get install automake
 
 script: 
   # Build Release project

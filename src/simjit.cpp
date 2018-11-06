@@ -1742,12 +1742,12 @@ bool check_compatible(context* ctx) {
 
       case ch_op::shl:
         if (!is_scalar(alu))
-          return error_out("invalid alu size");;
+          return error_out("invalid alu size");
         break;
       case ch_op::shr:
         if (!is_scalar(alu)
          || alu->is_signed())
-          return error_out("invalid alu size");;
+          return error_out("invalid alu size");
         break;
 
       case ch_op::neg:
@@ -1755,7 +1755,7 @@ bool check_compatible(context* ctx) {
       case ch_op::sub:
         if (!is_scalar(alu)
          || (-1 != alu->should_resize_opds() && alu->is_signed()))
-          return error_out("invalid alu size");;
+          return error_out("invalid alu size");
         break;
 
       case ch_op::mult:
@@ -1763,13 +1763,13 @@ bool check_compatible(context* ctx) {
       case ch_op::mod:
         if (!is_scalar(alu)
          || alu->is_signed())
-          return error_out("invalid alu size");;
+          return error_out("invalid alu size");
         break;
 
       case ch_op::pad:
         if (!is_scalar(alu)
          || alu->is_signed())
-          return error_out("invalid alu size");;
+          return error_out("invalid alu size");
         break;
       default:
         std::abort();
@@ -1778,20 +1778,20 @@ bool check_compatible(context* ctx) {
     } break;
     case type_sel: {
       if (dst_width > WORD_SIZE)
-        return false;
+        return error_out("invalid select size");
       auto sel = reinterpret_cast<selectimpl*>(node);
       if (sel->has_key()
        && sel->key().size() > WORD_SIZE)
-        return error_out("invalid select size");;
+        return error_out("invalid case key size");
     } break;
     case type_reg: {
       auto reg = reinterpret_cast<regimpl*>(node);
       if (reg->is_pipe()) {
        if (((reg->length() - 1) * dst_width) > WORD_SIZE)
-          return error_out("invalid pipe size");;
+          return error_out("invalid pipe size");
        if (reg->has_init_data()
         && type_lit != reg->init_data().impl()->type())
-         return error_out("invalid pipe init data");;
+         return error_out("invalid pipe init data");
       }
     } break;
     case type_mem:
@@ -1799,20 +1799,20 @@ bool check_compatible(context* ctx) {
     case type_marport:
     case type_msrport:
       if (dst_width > WORD_SIZE)
-        return error_out("invalid port size");;
+        return error_out("invalid port size");
       break;
     case type_mwport: {
       auto mport = reinterpret_cast<memportimpl*>(node);
       if (mport->mem()->data_width() > WORD_SIZE)
-        return error_out("invalid port size");;
+        return error_out("invalid port size");
     } break;
     case type_assert:
     case type_udfc:
     case type_udfs:
-      return error_out("invalid node type");;
+      return error_out("invalid node type");
     default:
       if (dst_width > WORD_SIZE)
-        return error_out("invalid node size");;
+        return error_out("invalid node size");
       break;
     }
   }
