@@ -5,7 +5,7 @@ project(cash VERSION 0.1.0 LANGUAGES CXX)
 
 include(ExternalProject)
 
-option(LIBJIT "Enable libjit." OFF)
+option(LIBJIT "Enable libjit." ON)
 option(CODECOV "Enable code coverage." OFF)
 
 set(DEFAULT_BUILD_TYPE "Release")

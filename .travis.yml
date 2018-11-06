@@ -27,8 +27,11 @@ script:
   - mkdir -p build_rel
   - pushd build_rel
   - cmake -DCMAKE_BUILD_TYPE=Release ..
-  - make -j8 all test
-  - valgrind bin/testsuite 
+  - make -j8 all
+  - make test
+  - CASH_CFLAGS=256 make test
+  - valgrind bin/testsuite
+  - CASH_CFLAGS=256 valgrind bin/testsuite
   - popd
   # Build Debug project
   - export CASH_DEBUG_LEVEL=2
@@ -36,7 +39,9 @@ script:
   - mkdir -p build_dbg
   - pushd build_dbg
   - cmake -DCMAKE_BUILD_TYPE=Debug -DCODECOV=ON ..
-  - make -j8 all test
+  - make -j8 all 
+  - make test
+  - CASH_CFLAGS=271 make test
   
 after_success:
   # Gather code coverage
