@@ -79,14 +79,14 @@ if (LIBJIT)
         BUILD_BYPRODUCTS ${LIBJIT_DIR}/jit/.libs/libjit.a
         INSTALL_COMMAND ""
     )
-
-    ExternalProject_Add_Step(libjit_ext
-        bootstrap
-        COMMAND ./bootstrap
-        DEPENDEES download
-        DEPENDERS configure
-        WORKING_DIRECTORY ${LIBJIT_DIR}
-    )
+ 
+    # ExternalProject_Add_Step(libjit_ext
+    #    bootstrap
+    #    COMMAND ./bootstrap
+    #    DEPENDEES download
+    #    DEPENDERS configure
+    #    WORKING_DIRECTORY ${LIBJIT_DIR}
+    #)
     add_library(libjit STATIC IMPORTED GLOBAL)
     set_target_properties(libjit PROPERTIES INTERFACE_INCLUDE_DIRECTORIES "${LIBJIT_DIR}/include")
     set_target_properties(libjit PROPERTIES IMPORTED_LOCATION ${LIBJIT_DIR}/jit/.libs/libjit.a)
