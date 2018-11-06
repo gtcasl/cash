@@ -189,5 +189,12 @@ TEST_CASE("basics", "[basics]") {
       a.x = 2;
       return (a.x == 2 && b.x == 1);
     });
+    TEST([]()->ch_bool {
+      ch_bit<66> x(0x1);
+      ch_bit<200> y(0x1);
+      ch_bit<65> z(0x1);
+      return (x.slice<8>() == y.slice<8>())
+          && (x.slice<8>() == z.slice<8>());
+    });
   }
 }

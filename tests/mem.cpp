@@ -42,6 +42,20 @@ TEST_CASE("memory", "[memory]") {
     }, 4);
     TEST([]()->ch_bool {
       ch_reg<ch_uint2> a(0);
+      ch_rom<ch_bit<33>, 3> rom({0x0, 0xA, 0x0, 0xB, 0x0, 0xC});
+      auto q = rom.read(a);
+      a->next = ch_min(a + 1, 2);
+      auto e = ch_case<ch_bit<33>>(ch_now(),
+            2,  0xA)
+           (4,  0xB)
+           (6,  0xC)
+           (8,  0xC)
+               (q);
+      //ch_print("t={0}, a={1}, q={2}, e={3}", ch_now(), a, q, e);
+      return (q == e);
+    }, 4);
+    TEST([]()->ch_bool {
+      ch_reg<ch_uint2> a(0);
       ch_bit<5> q;
       ch_rom<ch_bit<5>, 3> rom({0xA, 0xB, 0xC});
       q = rom.read(a);
@@ -176,6 +190,15 @@ TEST_CASE("memory", "[memory]") {
       mem.write(1, 0x55);
       auto x = mem.aread(1).as_bit();
       auto e = ch_delay<ch_bit32>(0x55);
+      //ch_print("t={0}, x={1}, e={2}", ch_now(), x, e);
+      return (ch_now() <= 1 || x == e);
+    }, 2);
+
+    TEST([]()->ch_bool {
+      ch_mem<ch_bit<33>, 3> mem;
+      mem.write(1, 0x55);
+      auto x = mem.aread(1).as_bit();
+      auto e = ch_delay<ch_bit<33>>(0x55);
       //ch_print("t={0}, x={1}, e={2}", ch_now(), x, e);
       return (ch_now() <= 1 || x == e);
     }, 2);

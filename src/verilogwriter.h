@@ -20,6 +20,7 @@ class ioimpl;
 class cdimpl;
 class udfimpl;
 class udfsimpl;
+class source_location;
 enum class ch_op;
 
 class verilogwriter {

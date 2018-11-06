@@ -29,7 +29,8 @@ class timeimpl;
 class udfimpl;
 class udf_iface;
 class clock_event;
-
+class source_location;
+struct cond_br_t;
 struct cond_block_t;
 
 struct cond_range_t {
@@ -59,42 +60,6 @@ typedef std::map<cond_range_t, cond_defs_t> cond_slices_t;
 typedef std::unordered_map<lnodeimpl*, cond_slices_t> cond_vars_t;
 
 typedef std::list<lnodeimpl*> node_list_t;
-
-struct cond_block_t;
-
-struct cond_br_t {
-  cond_br_t(lnodeimpl* p_key, cond_block_t* p_parent, const source_location& p_sloc)
-    : key(p_key)
-    , parent(p_parent)
-    , sloc(p_sloc)
-  {}
-
-  ~cond_br_t();
-
-  lnodeimpl* key;
-  cond_block_t* parent;
-  const source_location sloc;
-  std::list<cond_block_t*> blocks;
-};
-
-struct cond_block_t {
-  cond_block_t(uint32_t p_id, lnodeimpl* p_pred, cond_br_t* p_branch)
-    : id(p_id)
-    , pred(p_pred)
-    , branch(p_branch)
-  {}
-
-  uint32_t id;
-  lnodeimpl* pred;
-  cond_br_t* branch;
-  std::list<cond_br_t*> branches;
-};
-
-inline cond_br_t::~cond_br_t() {
-  for (auto block : blocks) {
-    delete block;
-  }
-}
 
 typedef std::unordered_map<uint32_t, cond_block_t*> cond_inits_t;
 
@@ -321,7 +286,7 @@ protected:
 
   cd_stack_t              cd_stack_;
 
-  unique_names            unique_tap_names_;
+  dup_tracker<std::string> dup_tap_names_;
 
   enum_strings_t          enum_strings_;
 };

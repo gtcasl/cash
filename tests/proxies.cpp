@@ -186,8 +186,19 @@ TEST_CASE("proxies", "[proxies]") {
       ch_bit128 c(0x0);
       c.sliceref<8>(60) = a;
       c.sliceref<8>(68) = b;
-      auto w = c | 1;
-      return (w.slice<16>(60) == 0xDCBA);
+      auto w = c | 0x1;
+      auto y = w.slice<16>(60);
+      //ch_print("c={0}, w={1}, y={2}", c, w, y);
+      return (y == 0xDCBA);
+    });
+    TEST([]()->ch_bool {
+      ch_bit64 a(0x3333'2222'1111'0000_h64);
+      ch_bit128 c(0x0);
+      c.sliceref<64>(4) = a;
+      auto w = c | 0x1;
+      auto y = w.slice<64>(4);
+      //ch_print("c={0}, w={1}, y={2}", c, w, y);
+      return (y == a);
     });
   }
 

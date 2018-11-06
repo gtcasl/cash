@@ -144,7 +144,7 @@ private:
 
 instr_proxy_base* instr_proxy_base::create(proxyimpl* node, data_map_t& map) {
   uint32_t dst_size = node->size();
-  uint32_t dst_nblocks = ceildiv<uint32_t>(dst_size, bitwidth_v<block_type>);
+  uint32_t dst_nblocks = ceildiv(dst_size, bitwidth_v<block_type>);
   uint32_t dst_bytes = sizeof(block_type) * dst_nblocks;
   uint32_t num_ranges = node->ranges().size();
   assert(node->check_full());
@@ -604,16 +604,16 @@ instr_alu_base* instr_alu_base::create(aluimpl* node, data_map_t& map) {
     }
   }
 
-  uint32_t dst_bytes = sizeof(block_type) * ceildiv<uint32_t>(dst_size, bitwidth_v<block_type>);
+  uint32_t dst_bytes = sizeof(block_type) * ceildiv(dst_size, bitwidth_v<block_type>);
 
   uint32_t t_src0_bytes = 0;
   if (src0_size != o_src0_size) {
-    t_src0_bytes = sizeof(block_type) * ceildiv<uint32_t>(src0_size, bitwidth_v<block_type>);
+    t_src0_bytes = sizeof(block_type) * ceildiv(src0_size, bitwidth_v<block_type>);
   }
 
   uint32_t t_src1_bytes = 0;
   if (src1_size != o_src1_size) {
-    t_src1_bytes = sizeof(block_type) * ceildiv<uint32_t>(src1_size, bitwidth_v<block_type>);
+    t_src1_bytes = sizeof(block_type) * ceildiv(src1_size, bitwidth_v<block_type>);
   }
 
   auto buf = new uint8_t[__aligned_sizeof(instr_alu_base) + dst_bytes + t_src0_bytes + t_src1_bytes]();
@@ -818,7 +818,7 @@ private:
 
 instr_select_base* instr_select_base::create(selectimpl* node, data_map_t& map) {
   uint32_t dst_size = node->size();
-  uint32_t dst_nblocks = ceildiv<uint32_t>(dst_size, bitwidth_v<block_type>);
+  uint32_t dst_nblocks = ceildiv(dst_size, bitwidth_v<block_type>);
   uint32_t dst_bytes = sizeof(block_type) * dst_nblocks;
 
   uint32_t num_srcs = node->srcs().size();
@@ -1025,7 +1025,7 @@ public:
 
       bv_slice_scalar(dst_, size_, pipe_, 0);
       bv_shr_scalar<false>(pipe_, pipe_size_, pipe_, pipe_size_, size_);
-      bv_copy_scalar(pipe_, pipe_size_ - size_, next_, 0, size_);
+      pipe_[0] |= next_[0] << (pipe_size_ - size_);
     } else {
       if constexpr (has_init) {
         if (static_cast<bool>(reset_[0])) {
@@ -1064,7 +1064,7 @@ protected:
 
 instr_reg_base* instr_reg_base::create(regimpl* node, data_map_t& map) {
   uint32_t dst_size  = node->size();
-  uint32_t nblocks   = ceildiv<uint32_t>(dst_size, bitwidth_v<block_type>);
+  uint32_t nblocks   = ceildiv(dst_size, bitwidth_v<block_type>);
   uint32_t dst_bytes = sizeof(block_type) * nblocks;
 
   bool is_scalar = (dst_size <= bitwidth_v<block_type>);
@@ -1074,7 +1074,7 @@ instr_reg_base* instr_reg_base::create(regimpl* node, data_map_t& map) {
   if (pipe_size) {
     is_scalar &= (pipe_size <= bitwidth_v<block_type>);
 
-    uint32_t pipe_bytes = sizeof(block_type) * ceildiv<uint32_t>(pipe_size, bitwidth_v<block_type>);
+    uint32_t pipe_bytes = sizeof(block_type) * ceildiv(pipe_size, bitwidth_v<block_type>);
     buf = new uint8_t[__aligned_sizeof(instr_pipe<false, false, false>) + dst_bytes + pipe_bytes]();
     buf_cur = buf + __aligned_sizeof(instr_pipe<false, false, false>);
   } else {
@@ -1180,7 +1180,7 @@ protected:
     if (it != map.end()) {
       store_ = const_cast<block_type*>(it->second);
     } else {
-      uint32_t nblocks = ceildiv<uint32_t>(mem->size(), bitwidth_v<block_type>);
+      uint32_t nblocks = ceildiv(mem->size(), bitwidth_v<block_type>);
       store_ = new block_type[nblocks];
       if (mem->has_init_data()) {
         bv_copy(store_, mem->init_data().words(), mem->size());
@@ -1250,7 +1250,7 @@ private:
 
 instr_marport_base* instr_marport_base::create(marportimpl* node, data_map_t& map) {
   uint32_t dst_size  = node->size();
-  uint32_t nblocks   = ceildiv<uint32_t>(dst_size, bitwidth_v<block_type>);
+  uint32_t nblocks   = ceildiv(dst_size, bitwidth_v<block_type>);
   uint32_t dst_bytes = sizeof(block_type) * nblocks;
 
   auto buf = new uint8_t[__aligned_sizeof(instr_marport_base) + dst_bytes]();
@@ -1330,7 +1330,7 @@ private:
 
 instr_msrport_base* instr_msrport_base::create(msrportimpl* node, data_map_t& map) {
   uint32_t dst_size  = node->size();
-  uint32_t nblocks   = ceildiv<uint32_t>(dst_size, bitwidth_v<block_type>);
+  uint32_t nblocks   = ceildiv(dst_size, bitwidth_v<block_type>);
   uint32_t dst_bytes = sizeof(block_type) * nblocks;
 
   auto buf = new uint8_t[__aligned_sizeof(instr_msrport_base) + dst_bytes]();
@@ -1811,7 +1811,7 @@ private:
 
   void setup_constants(context* ctx, data_map_t& data_map) {
     for (auto node : ctx->literals())  {
-      auto num_words = ceildiv<uint32_t>(node->size(), bitwidth_v<block_type>);
+      auto num_words = ceildiv(node->size(), bitwidth_v<block_type>);
       for (auto& constant : sim_ctx_->constants) {
         if (constant.second >= num_words) {
           if (bv_eq(constant.first, node->value().words(), num_words * bitwidth_v<block_type>)) {

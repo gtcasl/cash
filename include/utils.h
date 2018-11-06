@@ -8,6 +8,16 @@
 namespace ch {
 namespace internal {
 
+template <unsigned N>
+struct requires_enum {
+  enum class type {};
+};
+
+#define CH_REQUIRE_0(...) std::enable_if_t<(__VA_ARGS__), typename ch::internal::requires_enum<0>::type>* = nullptr
+#define CH_REQUIRE_1(...) std::enable_if_t<(__VA_ARGS__), typename ch::internal::requires_enum<1>::type>* = nullptr
+#define CH_REQUIRE_2(...) std::enable_if_t<(__VA_ARGS__), typename ch::internal::requires_enum<2>::type>* = nullptr
+#define CH_REQUIRE_3(...) std::enable_if_t<(__VA_ARGS__), typename ch::internal::requires_enum<3>::type>* = nullptr
+
 std::string stringf(const char* format, ...);
 
 void dbprint(int level, const char* format, ...);
@@ -17,50 +27,6 @@ std::string identifier_from_string(const std::string& name);
 std::string identifier_from_typeid(const std::string& name);
 
 int char2int(char x, int base);
-
-///////////////////////////////////////////////////////////////////////////////
-
-class source_location {
-public:
-  constexpr source_location() noexcept
-    : file_(nullptr)
-    , line_(0)
-  {}
-
-  constexpr source_location(const char* file, int line) noexcept
-    : file_(file)
-    , line_(line)
-  {}
-
-  constexpr const char* file() const noexcept {
-    return file_;
-  }
-
-  constexpr int line() const noexcept {
-    return line_;
-  }
-
-  bool empty() const {
-    return (nullptr == file_);
-  }
-
-  void clear() {
-    file_ = nullptr;
-    line_ = 0;
-  }
-
-private:
-  const char* file_;
-  int line_;
-};
-
-#if !defined(__clang__)
-  #define CH_CUR_SLOC ch::internal::source_location(__builtin_FILE(), __builtin_LINE())
-#else
-  #define CH_CUR_SLOC ch::internal::source_location(__FILE__, __LINE__)
-#endif
-
-#define CH_SLOC const ch::internal::source_location& sloc = CH_CUR_SLOC
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -157,18 +123,31 @@ constexpr inline std::size_t hash_combine(std::size_t hash1, std::size_t hash2) 
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class unique_names {
+template <typename T, typename S = std::size_t, typename H = std::hash<T>>
+class dup_tracker {
 public:
-  unique_names() {}
+  using value_type = T;
+  using size_type  = S;
+  using hash_type  = H;
 
-  std::string get(const std::string& name);
+  auto insert(const T& obj) {
+    return instances_[obj]++;
+  }
 
-  bool exits(const std::string& name) const {
-    return names_.count(name);
+  auto count(const T& obj) const {
+    auto it = instances_.find(obj);
+    if (it != instances_.end()) {
+      return it->second;
+    }
+    return 0;
+  }
+
+  bool exists(const T& obj) const {
+    return instances_.count(obj);
   }
 
 private:
-  std::unordered_map<std::string, uint32_t> names_;
+  std::unordered_map<T, S, H> instances_;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -548,10 +527,20 @@ constexpr unsigned ceil2(T value) {
   return bitwidth_v<T> - count_leading_zeros<T>(value);
 }
 
-template <typename T = uint32_t>
-constexpr T ceildiv(T a, T b) {
+template <typename R, typename T, typename U,
+          CH_REQUIRE_0(!std::is_same_v<R, T>)>
+constexpr R ceildiv(T a, U b) {
+  static_assert(std::is_integral_v<R>, "invalid type");
   static_assert(std::is_integral_v<T>, "invalid type");
-  return ((a + b - 1) / b);
+  static_assert(std::is_integral_v<U>, "invalid type");
+  return R((a + b - 1) / b);
+}
+
+template <typename T, typename U>
+constexpr T ceildiv(T a, U b) {
+  static_assert(std::is_integral_v<T>, "invalid type");
+  static_assert(std::is_integral_v<U>, "invalid type");
+  return T((a + b - 1) / b);
 }
 
 template <typename T = uint32_t>
@@ -621,7 +610,7 @@ auto sign_ext(T value, unsigned width) {
     } while (false)
 
   #define CH_DBGCHECK CH_CHECK
-  #define DBG(level, ...) dbprint(level, __VA_ARGS__)
+  #define DBG(level, ...) ch::internal::dbprint(level, __VA_ARGS__)
 #endif
 
 #define CH_DEF_SFINAE_CHECK(type_name, predicate) \
@@ -631,16 +620,6 @@ auto sign_ext(T value, unsigned width) {
   struct type_name##_impl<T, std::enable_if_t<(predicate)>> : std::true_type {}; \
   template <typename T> \
   inline constexpr bool type_name##_v = type_name##_impl<T>::value
-
-template <unsigned N>
-struct requires_enum {
-  enum class type {};
-};
-
-#define CH_REQUIRE_0(...) std::enable_if_t<(__VA_ARGS__), typename requires_enum<0>::type>* = nullptr
-#define CH_REQUIRE_1(...) std::enable_if_t<(__VA_ARGS__), typename requires_enum<1>::type>* = nullptr
-#define CH_REQUIRE_2(...) std::enable_if_t<(__VA_ARGS__), typename requires_enum<2>::type>* = nullptr
-#define CH_REQUIRE_3(...) std::enable_if_t<(__VA_ARGS__), typename requires_enum<3>::type>* = nullptr
 
 #define CH_UNUSED(...) ch::internal::unused(__VA_ARGS__)
 

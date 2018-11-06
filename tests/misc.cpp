@@ -18,6 +18,18 @@ namespace {
   auto sbind(const T& a, const T& b) {
     return std::tuple(a + b, a - b);
   }
+
+  template <typename T>
+  struct Print {
+    __io (
+      __in(T)  in,
+      __out(T) out
+    );
+    void describe() {
+      io.out = io.in;
+      ch_print("io.in={0}", io.in);
+    }
+  };
 }
 
 TEST_CASE("misc", "[misc]") {
@@ -104,6 +116,18 @@ TEST_CASE("misc", "[misc]") {
       ch_print("a={0}", a);
       return ch_true;
     });    
+    TEST([]()->ch_bool {
+      ch_bit128 a(0x5555);
+      ch_print("a={0}", a);
+      return ch_true;
+    });
+    TESTX([]()->bool {
+      ch_device<Print<ch_bit128>> device;
+      device.io.in = 0x5555;
+      ch_simulator sim(device);
+      sim.run();
+      return (device.io.out == 0x5555);
+    });
     TEST([]()->ch_bool {
       ch_bit8 a(255), b(0);
       ch_print("a={0}, b={1}", a, b);

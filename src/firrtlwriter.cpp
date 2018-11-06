@@ -291,19 +291,8 @@ void firrtlwriter::print_lit(std::ostream& out, litimpl* node) {
 
 void firrtlwriter::print_proxy(std::ostream& out, proxyimpl* node) {
   //--
-  struct range_hash {
-      std::size_t operator()(const proxyimpl::range_t& range) const noexcept {
-        auto h0 = std::hash<uint32_t>{}(range.src_idx);
-        auto h1 = std::hash<uint32_t>{}(range.dst_offset);
-        auto h2 = std::hash<uint32_t>{}(range.src_offset);
-        auto h3 = std::hash<uint32_t>{}(range.length);
-        return hash_combine(h0, hash_combine(h1, hash_combine(h2, h3)));
-      }
-  };
-
-  //--
   const auto& ranges = node->ranges();  
-  std::unordered_map<proxyimpl::range_t, uint32_t, range_hash> tmps;
+  std::unordered_map<proxyimpl::range_t, uint32_t, proxyimpl::range_t::hash_t> tmps;
 
   //--
   auto alloc_tmp = [&](const proxyimpl::range_t& range)->uint32_t {

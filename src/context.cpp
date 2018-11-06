@@ -20,8 +20,7 @@
 #include "udf.h"
 #include "udfimpl.h"
 
-namespace ch {
-namespace internal {
+using namespace ch::internal;
 
 typedef std::unordered_map<std::type_index, udf_iface*> udfs_t;
 
@@ -44,8 +43,12 @@ public:
     if (it != module_names_.end()) {
       unique_name = it->second;
     } else {
-      unique_name = unique_names_.get(unique_name.c_str());
-      module_names_[signature] = unique_name;
+      auto count = dup_names_.insert(unique_name.c_str());
+      if (count) {
+        module_names_[signature] = stringf("%s_%ld", name.c_str(), count);
+      } else {
+        module_names_[signature] = unique_name.c_str();
+      }
     }
     return new context(unique_name.c_str());
   }
@@ -75,6 +78,15 @@ public:
     return udf;
   }
 
+  source_location get_source_location(const char* file, int line) {
+    source_location sloc(file, line);
+    auto count = dup_slocs_.insert(sloc);
+    if (count) {
+      sloc = source_location(file, line, count);
+    }
+    return sloc;
+  }
+
   static context_manager& instance(){
     static context_manager inst;
     return inst;
@@ -94,14 +106,10 @@ protected:
   mutable uint32_t ctx_ids_;
   mutable uint32_t node_ids_;
   std::unordered_map<std::type_index, std::string> module_names_;
-  unique_names unique_names_;
+  dup_tracker<std::string> dup_names_;
+  dup_tracker<source_location, std::size_t, source_location::hash_t> dup_slocs_;
   udfs_t udfs_;  
 };
-
-}
-}
-
-using namespace ch::internal;
 
 context* ch::internal::ctx_create(const std::type_index& signature, const std::string& name) {
   return context_manager::instance().create(signature, name);
@@ -121,6 +129,48 @@ udf_iface* ch::internal::lookupUDF(const std::type_index& signature) {
 
 udf_iface* ch::internal::registerUDF(const std::type_index& signature, udf_iface* udf) {
   return context_manager::instance().register_udf(signature, udf);
+}
+
+source_location ch::internal::get_source_location(const char* file, int line) {
+  return context_manager::instance().get_source_location(file, line);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+namespace ch::internal {
+
+struct cond_block_t {
+  cond_block_t(uint32_t p_id, lnodeimpl* p_pred, cond_br_t* p_branch)
+    : id(p_id)
+    , pred(p_pred)
+    , branch(p_branch)
+  {}
+
+  uint32_t id;
+  lnodeimpl* pred;
+  cond_br_t* branch;
+  std::list<cond_br_t*> branches;
+};
+
+struct cond_br_t {
+  cond_br_t(lnodeimpl* p_key, cond_block_t* p_parent, const source_location& p_sloc)
+    : key(p_key)
+    , parent(p_parent)
+    , sloc(p_sloc)
+  {}
+
+  ~cond_br_t() {
+    for (auto block : blocks) {
+      delete block;
+    }
+  }
+
+  lnodeimpl* key;
+  cond_block_t* parent;
+  const source_location sloc;
+  std::list<cond_block_t*> blocks;
+};
+
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -759,9 +809,13 @@ bindimpl* context::find_binding(context* module, const source_location& sloc) {
 void context::register_tap(const lnode& node,
                            const std::string& name,
                            const source_location& sloc) {
-  auto s = identifier_from_string(name);
+  auto sid = identifier_from_string(name);
   auto value = std::make_shared<sdata_type>(node.size());
-  this->create_node<tapimpl>(node, value, unique_tap_names_.get(s).c_str(), sloc);
+  auto count = dup_tap_names_.insert(sid);
+  if (count) {
+    sid = stringf("%s_%ld", sid.c_str(), count);
+  }
+  this->create_node<tapimpl>(node, value, sid, sloc);
 }
 
 udfimpl* context::create_udf_node(udf_iface* udf,

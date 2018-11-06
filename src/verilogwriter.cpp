@@ -311,7 +311,7 @@ bool verilogwriter::print_decl(std::ostream& out,
         out << ";";
         auto& sloc = node->sloc();
         if (!sloc.empty()) {
-          this->print_sloc(out, sloc);
+          out << sloc;
         }
         out << std::endl;
       } else {        
@@ -337,11 +337,6 @@ bool verilogwriter::print_decl(std::ostream& out,
     assert(false);
   }  
   return false;
-}
-
-void verilogwriter::print_sloc(std::ostream& out, const source_location& sloc) {
-  out << " // " << (sloc.file() ? sloc.file() : "unknown")
-      << "(" << sloc.line() << ")";
 }
 
 bool verilogwriter::print_logic(std::ostream& out, lnodeimpl* node) {

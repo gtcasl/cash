@@ -34,7 +34,15 @@ public:
 
     bool operator!=(const range_t& other) const {
       return !(*this == other);
-    }    
+    }
+
+    struct hash_t {
+      std::size_t operator()(const range_t& key) const {
+        uint32_t h0 = (key.length << 16) | key.src_offset;
+        uint32_t h1 = (key.src_idx << 16) | key.dst_offset;
+        return hash_combine(h0, h1);
+      }
+    };
   };
 
   bool is_identity() const {

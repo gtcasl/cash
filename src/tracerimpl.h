@@ -38,7 +38,7 @@ protected:
     trace_block_t* next;
   };
 
-  unique_names unique_names_;
+  dup_tracker<std::string> dup_names_;
   std::vector<signal_t> signals_;  
   trace_block_t* trace_blocks_head_;
   trace_block_t* trace_blocks_tail_;

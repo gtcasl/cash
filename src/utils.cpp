@@ -69,20 +69,6 @@ std::string ch::internal::identifier_from_typeid(const std::string& name) {
   return ret;
 }
 
-std::string unique_names::get(const std::string& name) {
-  std::string unique_name(name);
-  uint32_t instances = names_[name]++;
-  if (instances != 0) {
-    unique_name = stringf("%s_%d", name.c_str(), instances-1);
-    // resolve collisions
-    while (names_.count(unique_name) != 0) {
-      instances = names_[name]++;
-      unique_name = stringf("%s_%d", name.c_str(), instances-1);
-    }
-  }
-  return unique_name;
-}
-
 int ch::internal::char2int(char x, int base) {
   switch (base) {
   case 2:

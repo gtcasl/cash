@@ -58,14 +58,17 @@ void tracerimpl::initialize() {
 uint32_t tracerimpl::add_signal(ioportimpl* node) {
   auto name = node->name();
   if (is_system_signal(name)) {
-    if (unique_names_.exits(name))
+    if (dup_names_.exists(name))
       return 0;
   } else {
     if (contexts_.size() >= 2) {
       name = node->ctx()->name() + "_" + name;
     }
   }
-  name = unique_names_.get(name);
+  auto count = dup_names_.insert(name);
+  if (count)  {
+    name = stringf("%s_%ld", name.c_str(), count);
+  }
   signals_.emplace_back(signal_t{name, node});
   return node->size();
 }

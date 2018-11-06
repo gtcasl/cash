@@ -52,8 +52,6 @@ enum class op_flags {
   misc       = 7 << 6,
   symmetric  = 1 << 9,
   eq_opd_size= 1 << 10,
-
-
 };
 
 inline constexpr auto operator|(op_flags lsh, op_flags rhs) {
@@ -78,9 +76,92 @@ enum class ch_op {
 
 const char* to_string(ch_op op);
 
+using ch_tick = uint64_t;
+
 ///////////////////////////////////////////////////////////////////////////////
 
-using ch_tick = uint64_t;
+class source_location {
+public:
+
+  struct hash_t {
+    std::size_t operator()(const source_location& key) const {
+      auto h0 = std::hash<std::string_view>{}(key.file_);
+      auto h1 = (key.index_ << 16) | key.line_;
+      return hash_combine(h0, h1);
+    }
+  };
+
+  constexpr source_location() noexcept
+    : file_(nullptr)
+    , line_(0)
+    , index_(0)
+  {}
+
+  constexpr source_location(const char* file, int line, int index = 0) noexcept
+    : file_(file)
+    , line_(line)
+    , index_(index)
+  {}
+
+  constexpr const char* file() const noexcept {
+    return file_;
+  }
+
+  constexpr int line() const noexcept {
+    return line_;
+  }
+
+  constexpr int index() const noexcept {
+    return index_;
+  }
+
+  bool empty() const {
+    return (nullptr == file_);
+  }
+
+  void clear() {
+    file_ = nullptr;
+    line_ = 0;
+    index_ = 0;
+  }
+
+  bool operator==(const source_location& other) const {
+    return (nullptr == file_
+         && nullptr == other.file_)
+        || (file_
+         && other.file_
+         && 0 == strcmp(file_, other.file_)
+         && line_ == other.line_
+         && index_ == other.index_);
+  }
+
+  bool operator!=(const source_location& other) const {
+    return !(*this == other);
+  }
+
+  friend std::ostream& operator<<(std::ostream& out, const source_location& sloc) {
+    out << " // " << (sloc.file() ? sloc.file() : "unknown")
+        << "(" << sloc.line() << ":" << sloc.index() << ")";
+    return out;
+  }
+
+private:
+  const char* file_;
+  int line_;
+  int index_;
+};
+
+source_location get_source_location(const char* file, int line);
+
+#if !defined(__clang__)
+  #define CH_CUR_SLOC ch::internal::get_source_location(__builtin_FILE(), __builtin_LINE())
+#else
+  #define CH_CUR_SLOC ch::internal::get_source_location(__FILE__, __LINE__)
+#endif
+
+#define CH_SLOC const ch::internal::source_location& sloc = CH_CUR_SLOC
+
+///////////////////////////////////////////////////////////////////////////////
 
 class lnodeimpl;
 

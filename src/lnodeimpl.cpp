@@ -102,7 +102,7 @@ void lnodeimpl::print(std::ostream& out) const {
 }
 
 std::string lnodeimpl::debug_info() const {
-  return stringf("%s%d (#%d) (@var%d) in module '%s (#%d)'  (%s:%d)",
+  return stringf("%s%d (#%d) (@var%d) in module '%s (#%d)'  (%s:%d:%d)",
                  name_.c_str(),
                  size_,
                  id_,
@@ -110,7 +110,8 @@ std::string lnodeimpl::debug_info() const {
                  ctx_->name().c_str(),
                  ctx_->id(),
                  sloc_.file(),
-                 sloc_.line());
+                 sloc_.line(),
+                 sloc_.index());
 }
 
 ///////////////////////////////////////////////////////////////////////////////
