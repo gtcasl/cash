@@ -38,11 +38,15 @@ public:
     size_ = ctx->nodes().size();
   }
 
-  size_t deleted_count() {
+  size_t deleted() {
     auto cur_size = ctx_->nodes().size();
     auto count = size_ - cur_size;
     size_ = cur_size;
     return count;
+  }
+
+  size_t current() {
+    return size_;
   }
 
 private:
@@ -361,12 +365,11 @@ void compiler::compile() {
 
   DBG(2, "compiling %s (#%d) ...\n", ctx_->name().c_str(), ctx_->id());
 
-  size_t orig_num_nodes = ctx_->nodes().size();
-
   node_tracker tracker(ctx_);
+  size_t orig_num_nodes = tracker.current();
 
   this->dead_code_elimination();
-  dce_total = tracker.deleted_count();
+  dce_total = tracker.deleted();
 
   this->check_undefs();
 
@@ -375,11 +378,11 @@ void compiler::compile() {
   for (;;) {
     bool changed = false;
     changed |= this->subexpressions_elimination();
-    auto cse = tracker.deleted_count();
+    auto cse = tracker.deleted();
     changed |= this->prune_identity_proxies();
-    auto pip = tracker.deleted_count();
+    auto pip = tracker.deleted();
     changed |= this->proxies_coalescing();
-    auto pcx = tracker.deleted_count();
+    auto pcx = tracker.deleted();
 
     if (!changed)
       break;
@@ -402,7 +405,7 @@ void compiler::compile() {
     }
   }
 #else
-  CH_UNUSED(orig_num_nodes, dce_nodes, cse_nodes, pxc_nodes);
+  CH_UNUSED(orig_num_nodes, dce_total);
 #endif
 
   DBG(2, "*** deleted %lu DCE nodes\n", dce_total);
@@ -411,7 +414,7 @@ void compiler::compile() {
   DBG(2, "*** deleted %lu PCX nodes\n", pcx_total);
 
   DBG(2, "Before optimization: %lu\n", orig_num_nodes);
-  DBG(2, "After optimization: %lu\n", ctx_->nodes().size());
+  DBG(2, "After optimization: %lu\n", tracker.current());
 }
 
 void compiler::build_node_map() {
