@@ -412,12 +412,13 @@ private:
         auto& range = node->range(i);
         auto& src = node->src(range.src_idx);
         auto j_src = this->load_slice_scalar<true>(src.impl(), range.src_offset, range.length);
+        auto jsrc_n = this->type_cast(j_src, to_native_type(dst_width));
         if (0 == i) {
           assert(0 == range.dst_offset);
-          jit_insn_store(j_func_, j_dst, j_src);
+          jit_insn_store(j_func_, j_dst, jsrc_n);
         } else {
           auto j_dst_lsb = jit_value_create_nint_constant(j_func_, jit_type_uint, range.dst_offset);
-          auto j_src_s = jit_insn_shl(j_func_, j_src, j_dst_lsb);
+          auto j_src_s = jit_insn_shl(j_func_, jsrc_n, j_dst_lsb);
           auto j_tmp = jit_insn_or(j_func_, j_dst, j_src_s);
           jit_insn_store(j_func_, j_dst, j_tmp);
         }
@@ -1360,7 +1361,8 @@ private:
 
     if (0 == (length % 8)) {
       auto j_array_ptr = jit_insn_add_relative(j_func_, j_vars_, array_addr);
-      return jit_insn_load_elem(j_func_, j_array_ptr, j_src_index, to_value_type(length));
+      auto j_src_value =  jit_insn_load_elem(j_func_, j_array_ptr, j_src_index, to_value_type(length));
+      return this->type_cast(j_src_value, to_native_type(length));
     } else {
       auto word_type = to_value_type(WORD_SIZE);
       auto j_data_size = jit_value_create_nint_constant(j_func_, jit_type_uint, length);
@@ -1495,32 +1497,22 @@ private:
 
   jit_value_t load_scalar_relative(lnodeimpl* node,
                                    uint32_t offset,
-                                   const jit_type_t& j_type = jit_type_void) {
-    jit_type_t j_type_final = j_type;
-    if (JIT_TYPE_VOID == jit_type_get_kind(j_type)) {
-      j_type_final = to_native_type(node->size());
-    }
-
+                                   const jit_type_t& j_type) {
     switch (node->type()) {
     case type_input: {
       auto j_ptr = scalar_map_.at(node->id());
-      return jit_insn_load_relative(j_func_, j_ptr, offset, j_type_final);
+      return jit_insn_load_relative(j_func_, j_ptr, offset, j_type);
     }
     default: {
       auto addr = addr_map_.at(node->id()) + offset;
-      return jit_insn_load_relative(j_func_, j_vars_, addr, j_type_final);
+      return jit_insn_load_relative(j_func_, j_vars_, addr, j_type);
     }}
   }
 
-  jit_value_t load_scalar_elem(lnodeimpl* node,
-                               uint32_t index,
-                               const jit_type_t& j_type = jit_type_void) {
-    jit_type_t j_type_final = j_type;
-    if (JIT_TYPE_VOID == jit_type_get_kind(j_type)) {
-      j_type_final = to_native_type(node->size());
-    }
-    auto size_in_bytes = get_type_size(j_type_final) / 8;
-    return this->load_scalar_relative(node, index * size_in_bytes, j_type_final);
+  jit_value_t load_scalar_elem(lnodeimpl* node, uint32_t index) {
+    auto j_type = to_native_type(node->size());
+    auto size_in_bytes = get_type_size(j_type) / 8;
+    return this->load_scalar_relative(node, index * size_in_bytes, j_type);
   }
 
   jit_value_t blend(const jit_value_t& mask, const jit_value_t& a, const jit_value_t& b) {
@@ -1580,8 +1572,13 @@ bool check_compatible(context* ctx) {
     return true;
   };
 
-  if (ctx->cdomains().size() > 1)
+  auto error_out = [](const char* msg) {
+    DBG(2, "warning: JIT not supported, %s", msg);
     return false;
+  };
+
+  if (ctx->cdomains().size() > 1)
+    return error_out("multiple clock domains");
 
   for (auto node : ctx->nodes()) {
     uint32_t dst_width = node->size();
@@ -1595,7 +1592,7 @@ bool check_compatible(context* ctx) {
       auto proxy = reinterpret_cast<proxyimpl*>(node);
       for (auto& range : proxy->ranges()) {
         if (range.length > WORD_SIZE)
-          return false;
+          return error_out("proxy ranges size too big");
       }
     } break;
     case type_alu: {
@@ -1605,7 +1602,7 @@ bool check_compatible(context* ctx) {
       case ch_op::ne:
         if (!is_scalar(alu)
          || (-1 != alu->should_resize_opds() && alu->is_signed()))
-          return false;
+          return error_out("invalid alu size");
         break;
       case ch_op::lt:
       case ch_op::gt:
@@ -1613,7 +1610,7 @@ bool check_compatible(context* ctx) {
       case ch_op::ge:
         if (!is_scalar(alu)
          || alu->is_signed())
-          return false;
+          return error_out("invalid alu size");
         break;
 
       case ch_op::notl:
@@ -1624,29 +1621,29 @@ bool check_compatible(context* ctx) {
       case ch_op::inv:
         if (!is_scalar(alu)
          || (-1 != alu->should_resize_opds() && alu->is_signed()))
-          return false;
+          return error_out("invalid alu size");
         break;
       case ch_op::andb:
       case ch_op::orb:
       case ch_op::xorb:
         if ((is_scalar(alu) && -1 != alu->should_resize_opds() && alu->is_signed())
          || (!is_scalar(alu) && -1 != alu->should_resize_opds()))
-          return false;
+          return error_out("invalid alu size");
         break;
 
       case ch_op::andr:
       case ch_op::orr:
       case ch_op::xorr:
-        return false;
+        return error_out("invalid alu type");
 
       case ch_op::shl:
         if (!is_scalar(alu))
-          return false;
+          return error_out("invalid alu size");;
         break;
       case ch_op::shr:
         if (!is_scalar(alu)
          || alu->is_signed())
-          return false;
+          return error_out("invalid alu size");;
         break;
 
       case ch_op::neg:
@@ -1654,7 +1651,7 @@ bool check_compatible(context* ctx) {
       case ch_op::sub:
         if (!is_scalar(alu)
          || (-1 != alu->should_resize_opds() && alu->is_signed()))
-          return false;
+          return error_out("invalid alu size");;
         break;
 
       case ch_op::mult:
@@ -1662,13 +1659,13 @@ bool check_compatible(context* ctx) {
       case ch_op::mod:
         if (!is_scalar(alu)
          || alu->is_signed())
-          return false;
+          return error_out("invalid alu size");;
         break;
 
       case ch_op::pad:
         if (!is_scalar(alu)
          || alu->is_signed())
-          return false;
+          return error_out("invalid alu size");;
         break;
       default:
         std::abort();
@@ -1681,16 +1678,16 @@ bool check_compatible(context* ctx) {
       auto sel = reinterpret_cast<selectimpl*>(node);
       if (sel->has_key()
        && sel->key().size() > WORD_SIZE)
-        return false;
+        return error_out("invalid select size");;
     } break;
     case type_reg: {
       auto reg = reinterpret_cast<regimpl*>(node);
       if (reg->is_pipe()) {
        if (((reg->length() - 1) * dst_width) > WORD_SIZE)
-          return false;
+          return error_out("invalid pipe size");;
        if (reg->has_init_data()
         && type_lit != reg->init_data().impl()->type())
-         return false;
+         return error_out("invalid pipe init data");;
       }
     } break;
     case type_mem:
@@ -1698,20 +1695,20 @@ bool check_compatible(context* ctx) {
     case type_marport:
     case type_msrport:
       if (dst_width > WORD_SIZE)
-        return false;
+        return error_out("invalid port size");;
       break;
     case type_mwport: {
       auto mport = reinterpret_cast<memportimpl*>(node);
       if (mport->mem()->data_width() > WORD_SIZE)
-        return false;
+        return error_out("invalid port size");;
     } break;
     case type_assert:
     case type_udfc:
     case type_udfs:
-      return false;
+      return error_out("invalid node type");;
     default:
       if (dst_width > WORD_SIZE)
-        return false;
+        return error_out("invalid node size");;
       break;
     }
   }
