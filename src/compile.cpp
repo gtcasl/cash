@@ -32,6 +32,24 @@ struct cse_hash_t {
   }
 };
 
+class node_tracker {
+public:
+  node_tracker(context* ctx) : ctx_(ctx) {
+    size_ = ctx->nodes().size();
+  }
+
+  size_t deleted_count() {
+    auto cur_size = ctx_->nodes().size();
+    auto count = size_ - cur_size;
+    size_ = cur_size;
+    return count;
+  }
+
+private:
+  context* ctx_;
+  size_t size_;
+};
+
 }
 }
 
@@ -336,25 +354,38 @@ void compiler::build_eval_list(std::vector<lnodeimpl*>& eval_list) {
 }
 
 void compiler::compile() {
-  size_t orig_num_nodes, dce_nodes(0), cse_nodes(0), pxc_nodes(0);
+  size_t dce_total(0);
+  size_t cse_total(0);
+  size_t pip_total(0);
+  size_t pcx_total(0);
 
   DBG(2, "compiling %s (#%d) ...\n", ctx_->name().c_str(), ctx_->id());
 
-  orig_num_nodes = ctx_->nodes().size();
+  size_t orig_num_nodes = ctx_->nodes().size();
 
-  dce_nodes = this->dead_code_elimination();
+  node_tracker tracker(ctx_);
+
+  this->dead_code_elimination();
+  dce_total = tracker.deleted_count();
 
   this->check_undefs();
 
   this->build_node_map();
 
   for (;;) {
-    auto n1 = this->common_subexpressions_elimination();
-    auto n2 = this->proxies_coalescing();
-    if (0 == n1 && 0 == n2)
+    bool changed = false;
+    changed |= this->subexpressions_elimination();
+    auto cse = tracker.deleted_count();
+    changed |= this->prune_identity_proxies();
+    auto pip = tracker.deleted_count();
+    changed |= this->proxies_coalescing();
+    auto pcx = tracker.deleted_count();
+
+    if (!changed)
       break;
-    cse_nodes += n1;
-    pxc_nodes += n2;
+    cse_total += cse;
+    pip_total += pip;
+    pcx_total += pcx;
   }
 
 #ifndef NDEBUG
@@ -374,9 +405,10 @@ void compiler::compile() {
   CH_UNUSED(orig_num_nodes, dce_nodes, cse_nodes, pxc_nodes);
 #endif
 
-  DBG(2, "*** deleted %lu DCE nodes\n", dce_nodes);
-  DBG(2, "*** deleted %lu CSE nodes\n", cse_nodes);
-  DBG(2, "*** deleted %lu PXC nodes\n", pxc_nodes);
+  DBG(2, "*** deleted %lu DCE nodes\n", dce_total);
+  DBG(2, "*** deleted %lu CSE nodes\n", cse_total);
+  DBG(2, "*** deleted %lu PIP nodes\n", pip_total);
+  DBG(2, "*** deleted %lu PCX nodes\n", pcx_total);
 
   DBG(2, "Before optimization: %lu\n", orig_num_nodes);
   DBG(2, "After optimization: %lu\n", ctx_->nodes().size());
@@ -390,7 +422,9 @@ void compiler::build_node_map() {
   }
 }
 
-size_t compiler::dead_code_elimination() {
+bool compiler::dead_code_elimination() {
+  bool changed = false;
+
   ordered_set<lnodeimpl*> live_nodes;
   std::unordered_map<proxyimpl*, std::unordered_set<uint32_t>> used_proxy_sources;
 
@@ -481,29 +515,28 @@ size_t compiler::dead_code_elimination() {
   }
 
   // delete dead nodes
-  size_t deleted = 0;
   for (auto it = ctx_->nodes().begin(),
             end = ctx_->nodes().end(); it != end;) {
     if (0 == live_nodes.count(*it)) {
       it = ctx_->delete_node(it);
-      ++deleted;
+      changed = true;
     } else {
       ++it;
     }
   }
 
   assert(ctx_->nodes().size() == live_nodes.size());
-
-  return deleted;
+  return changed;
 }
 
-size_t compiler::common_subexpressions_elimination() {
-  size_t deleted = 0;
+bool compiler::subexpressions_elimination() {
+  bool changed = false;
+
   typedef std::decay_t<decltype(ctx_->nodes())> nodes_type;
   std::vector<nodes_type::iterator> deleted_list;
   std::unordered_set<cse_key_t, cse_hash_t> cse_table;
 
-  auto find_cse = [&](const nodes_type::iterator& it)->bool {
+  auto apply_cse = [&](const nodes_type::iterator& it)->bool {
     auto node = *it;
     if (0 == node->hash())
       return false;
@@ -518,30 +551,26 @@ size_t compiler::common_subexpressions_elimination() {
     return false;
   };
 
-  bool changed;
-  do {
-    changed = false;
-    auto& nodes = ctx_->nodes();
-    for (auto it = nodes.begin(), end = nodes.end(); it != end;) {
-      changed |= find_cse(it++);
-    }
-    if (changed) {
-      deleted += deleted_list.size();
-      for (auto it = deleted_list.rbegin(), end = deleted_list.rend(); it != end;) {
-        ctx_->delete_node(*it++);
-      }
-      deleted_list.clear();
-      cse_table.clear();
-    }
-  } while (changed);
+  auto& nodes = ctx_->nodes();
 
-  return deleted;
+  for (auto it = nodes.begin(), end = nodes.end(); it != end;) {
+    changed |= apply_cse(it++);
+  }
+
+  if (changed) {
+    for (auto it = deleted_list.rbegin(), end = deleted_list.rend(); it != end;) {
+      ctx_->delete_node(*it++);
+    }
+    deleted_list.clear();
+    cse_table.clear();
+  }
+
+  return changed;
 }
 
-size_t compiler::proxies_coalescing() {
-  size_t deleted = 0;
+bool compiler::prune_identity_proxies() {
+  bool changed = false;
 
-  // coalesce identity proxies
   for (auto it = ctx_->proxies().begin(),
        end = ctx_->proxies().end(); it != end;) {
     auto proxy = *it++;
@@ -553,16 +582,21 @@ size_t compiler::proxies_coalescing() {
     // delete proxy
     auto p_it = std::find(ctx_->nodes().begin(), ctx_->nodes().end(), proxy);
     ctx_->delete_node(p_it);
-    ++deleted;
+    changed = true;
   }
 
-  // coalesce consecutive proxies
+  return changed;
+}
+
+bool compiler::proxies_coalescing() {
+  bool changed = false;
+
   std::set<proxyimpl*> detached_list;
-  bool changed;
+  bool found;
   do {
     std::unordered_map<proxyimpl*, std::vector<proxyimpl::range_t>> src_proxies;
     std::unordered_map<const lnode*, lnodeimpl*> src_nodes;
-    changed = false;
+    found = false;
 
     for (auto it = ctx_->proxies().begin(),
          end = ctx_->proxies().end(); it != end;) {
@@ -639,10 +673,11 @@ size_t compiler::proxies_coalescing() {
           node_map_.at(src_p.second->id()).erase(src_p.first);
         }
 
+        found = true;
         changed = true;
       }
     }
-  } while (changed);
+  } while (found);
 
   for (auto d_it = detached_list.rbegin(), end = detached_list.rend(); d_it != end;) {
     auto node = *d_it++;
@@ -652,12 +687,11 @@ size_t compiler::proxies_coalescing() {
         this->map_delete(node);
         auto d_it = std::find(ctx_->nodes().begin(), ctx_->nodes().end(), node);
         ctx_->delete_node(d_it);
-        ++deleted;
       }
     }
-  }
+  }  
 
-  return deleted;
+  return changed;
 }
 
 void compiler::map_replace_target(lnodeimpl* from, lnodeimpl* to) {

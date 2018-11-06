@@ -24,15 +24,15 @@ protected:
 
   void build_node_map();
 
-  size_t dead_code_elimination();
-
   void check_undefs();
 
-  size_t gates_optimization();
+  bool dead_code_elimination();
 
-  size_t common_subexpressions_elimination();
+  bool subexpressions_elimination();
 
-  size_t proxies_coalescing();
+  bool prune_identity_proxies();
+
+  bool proxies_coalescing();
 
   void map_replace_target(lnodeimpl* from, lnodeimpl* to);
 

@@ -133,7 +133,11 @@ struct sim_ctx_t {
 class compiler {
 public:
 
-  compiler(sim_ctx_t* ctx) : sim_ctx_(ctx), bypass_enable_(false) {}
+  compiler(sim_ctx_t* ctx)
+    : sim_ctx_(ctx)
+    , bypass_enable_(false)
+  {}
+
   ~compiler() {}
 
   void build(const std::vector<lnodeimpl*>& eval_list) {
@@ -867,9 +871,10 @@ private:
     }
     jit_insn_store_relative(j_func_, j_vars_, addr, j_clk);
 
-    bypass_enable_ = ch::internal::compiler::build_bypass_list(
+    bool bypass_enable = ch::internal::compiler::build_bypass_list(
           bypass_nodes_, node->ctx(), node->id());
-    if (bypass_enable_) {
+    if (bypass_enable) {
+      bypass_enable_ = true;
       jit_label_t j_label = jit_label_undefined;
       jit_insn_branch_if_not(j_func_, j_changed, &j_label);
       j_bypass_ = j_label;
@@ -1352,7 +1357,11 @@ private:
       }
       addr += constant.size * sizeof(block_type);      
     }
+  #ifndef NDEBUG
     assert((addr - offset) == size);
+  #else
+    CH_UNUSED(size);
+  #endif
   }
 
   jit_value_t load_slice_scalar(jit_value_t j_value, uint32_t offset, uint32_t length) {
@@ -1669,8 +1678,9 @@ bool check_compatible(context* ctx) {
     return true;
   };
 
-  auto error_out = [](const char* msg) {
+  auto error_out = [](const char* msg) {    
     DBG(2, "warning: JIT not supported, %s", msg);
+    CH_UNUSED(msg);
     return false;
   };
 
