@@ -71,7 +71,7 @@ if (LIBJIT)
     message("LIBJIT compiler is enabled")
     find_package(PkgConfig REQUIRED)
     set(PKGCONFIGDIR ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
-    set(LIBJIT_DIR ${CMAK_CURRENT_SOURCE_DIR}/third_party/libjit)
+    set(LIBJIT_DIR ${CMAKE_CURRENT_SOURCE_DIR}/third_party/libjit)
     ExternalProject_Add(libjit_ext
         INSTALL_DIR ${LIBJIT_DIR}
         SOURCE_DIR ${LIBJIT_DIR}
