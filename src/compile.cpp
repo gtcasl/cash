@@ -705,8 +705,9 @@ void compiler::check_undefs() {
   }
 }
 
-void compiler::build_bypass_list(std::unordered_set<uint32_t>& out, context* ctx, uint32_t cd_id) {
+bool compiler::build_bypass_list(std::unordered_set<uint32_t>& out, context* ctx, uint32_t cd_id) {
   std::unordered_set<uint32_t> visited_nodes;
+  bool has_data_nodes = false;
 
   std::function<bool (lnodeimpl*)> dfs_visit = [&](lnodeimpl* node)->bool {
     if (visited_nodes.count(node->id())) {
@@ -746,6 +747,18 @@ void compiler::build_bypass_list(std::unordered_set<uint32_t>& out, context* ctx
 
     if (changed) {
       out.emplace(node->id());
+
+      switch (node->type()) {
+      case type_output:
+      case type_tap:
+      case type_time:
+      case type_assert:
+      case type_print:
+        break;
+      default:
+        has_data_nodes = true;
+        break;
+      }
     }
 
     return changed;
@@ -765,4 +778,6 @@ void compiler::build_bypass_list(std::unordered_set<uint32_t>& out, context* ctx
   if (sys_time) {
     dfs_visit(sys_time);
   }
+
+  return !has_data_nodes;
 }

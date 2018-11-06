@@ -1733,18 +1733,12 @@ public:
         break;
       case type_input: {
         auto input = reinterpret_cast<inputimpl*>(node);
-        if (input->has_binding()) {
-          data_map[node->id()] = data_map.at(input->binding().id());
-        } else {
-          data_map[node->id()] = input->value()->words();
-        }
+        data_map[node->id()] = input->value()->words();
       } break;
       case type_output: {
         auto output = reinterpret_cast<outputimpl*>(node);
         data_map[node->id()] = data_map.at(output->src(0).id());
-        if (!output->has_binding()) {
-          instr = instr_output_base::create(output, data_map);
-        }
+        instr = instr_output_base::create(output, data_map);
       } break;
       case type_alu:
         instr = instr_alu_base::create(reinterpret_cast<aluimpl*>(node), data_map);

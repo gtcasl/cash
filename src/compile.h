@@ -16,7 +16,7 @@ public:
 
   void build_eval_list(std::vector<lnodeimpl*>& eval_list);
 
-  static void build_bypass_list(std::unordered_set<uint32_t>& out, context* ctx, uint32_t cd_id);
+  static bool build_bypass_list(std::unordered_set<uint32_t>& out, context* ctx, uint32_t cd_id);
   
 protected:
 
