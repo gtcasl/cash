@@ -290,9 +290,6 @@ node_list_t::iterator context::delete_node(const node_list_t::iterator& it) {
     if (node == sys_reset_) {
       sys_reset_ = nullptr;
     }
-    if (node == sys_time_) {
-      sys_time_ = nullptr;
-    }
     inputs_.remove((inputimpl*)node);
     break;
   case type_output:
@@ -312,6 +309,11 @@ node_list_t::iterator context::delete_node(const node_list_t::iterator& it) {
     break;
   case type_tap:
     taps_.remove((tapimpl*)node);
+    break;
+  case type_time:
+    if (node == sys_time_) {
+      sys_time_ = nullptr;
+    }
     break;
   case type_assert:
   case type_print:
