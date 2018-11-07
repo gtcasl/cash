@@ -73,7 +73,7 @@ if (LIBJIT)
     ExternalProject_Add(libjit_ext
         INSTALL_DIR ${LIBJIT_DIR}
         SOURCE_DIR ${LIBJIT_DIR}
-        CONFIGURE_COMMAND ${LIBJIT_DIR}/configure --with-pic
+        CONFIGURE_COMMAND ${LIBJIT_DIR}/configure --prefix=${LIBJIT_DIR} --with-pic
         BUILD_IN_SOURCE 1
         BUILD_COMMAND ${MAKE}
         BUILD_BYPRODUCTS ${LIBJIT_DIR}/jit/.libs/libjit.a
