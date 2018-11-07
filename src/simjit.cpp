@@ -91,6 +91,26 @@ static uint32_t get_value_size(jit_value_t j_value) {
   return get_type_size(j_type);
 }
 
+static jit_type_t to_signed_type(jit_type_t j_type) {
+  auto kind = jit_type_get_kind(j_type);
+  switch (kind) {
+  case JIT_TYPE_UBYTE:
+  case JIT_TYPE_SBYTE:
+    return jit_type_sbyte;
+  case JIT_TYPE_USHORT:
+  case JIT_TYPE_SHORT:
+    return jit_type_short;
+  case JIT_TYPE_UINT:
+  case JIT_TYPE_INT:
+    return jit_type_int;
+  case JIT_TYPE_ULONG:
+  case JIT_TYPE_LONG:
+    return jit_type_long;
+  default:
+    std::abort();
+  }
+}
+
 static void error_handler(int error_code) {
   switch (error_code) {
   case 1:
@@ -753,10 +773,17 @@ private:
       break;
 
     case ch_op::mult:
-      if (dst_width <= WORD_SIZE) {
-        assert(!node->is_signed());
-        auto j_src0 = scalar_map_.at(node->src(0).id());
-        auto j_src1 = scalar_map_.at(node->src(1).id());
+      if (dst_width <= WORD_SIZE) {        
+        jit_value_t j_src0, j_src1;
+        if (node->is_signed()) {
+          auto j_tmp0 = scalar_map_.at(node->src(0).id());
+          auto j_tmp1 = scalar_map_.at(node->src(1).id());
+          j_src0 = this->sign_ext(j_tmp0, node->src(0).size());
+          j_src1 = this->sign_ext(j_tmp1, node->src(1).size());
+        } else {
+          j_src0 = scalar_map_.at(node->src(0).id());
+          j_src1 = scalar_map_.at(node->src(1).id());
+        }
         auto j_dst  = jit_insn_mul(j_func_, j_src0, j_src1);
         scalar_map_[node->id()] = j_dst;
       } else {
@@ -766,9 +793,16 @@ private:
       break;
     case ch_op::div:
       if (dst_width <= WORD_SIZE) {
-        assert(!node->is_signed());
-        auto j_src0 = scalar_map_.at(node->src(0).id());
-        auto j_src1 = scalar_map_.at(node->src(1).id());
+        jit_value_t j_src0, j_src1;
+        if (node->is_signed()) {
+          auto j_tmp0 = scalar_map_.at(node->src(0).id());
+          auto j_tmp1 = scalar_map_.at(node->src(1).id());
+          j_src0 = this->sign_ext(j_tmp0, node->src(0).size());
+          j_src1 = this->sign_ext(j_tmp1, node->src(1).size());
+        } else {
+          j_src0 = scalar_map_.at(node->src(0).id());
+          j_src1 = scalar_map_.at(node->src(1).id());
+        }
         auto j_dst  = jit_insn_div(j_func_, j_src0, j_src1);
         scalar_map_[node->id()] = j_dst;
       } else {
@@ -778,9 +812,16 @@ private:
       break;
     case ch_op::mod:
       if (dst_width <= WORD_SIZE) {
-        assert(!node->is_signed());
-        auto j_src0 = scalar_map_.at(node->src(0).id());
-        auto j_src1 = scalar_map_.at(node->src(1).id());
+        jit_value_t j_src0, j_src1;
+        if (node->is_signed()) {
+          auto j_tmp0 = scalar_map_.at(node->src(0).id());
+          auto j_tmp1 = scalar_map_.at(node->src(1).id());
+          j_src0 = this->sign_ext(j_tmp0, node->src(0).size());
+          j_src1 = this->sign_ext(j_tmp1, node->src(1).size());
+        } else {
+          j_src0 = scalar_map_.at(node->src(0).id());
+          j_src1 = scalar_map_.at(node->src(1).id());
+        }
         auto j_dst  = jit_insn_rem(j_func_, j_src0, j_src1);
         scalar_map_[node->id()] = j_dst;
       } else {
@@ -1595,19 +1636,31 @@ private:
     return this->load_scalar_relative(node, index * size_in_bytes, j_type);
   }
 
-  jit_value_t blend(jit_value_t mask, jit_value_t a, jit_value_t b) {
-    auto j_tmp1 = jit_insn_xor(j_func_, a, b);
-    auto j_tmp2 = jit_insn_and(j_func_, j_tmp1, mask);
-    return jit_insn_xor(j_func_, j_tmp2, a);
+  jit_value_t sign_ext(jit_value_t j_value, uint32_t width) {
+    auto j_type = jit_value_get_type(j_value);
+    auto j_stype = to_signed_type(j_type);
+    auto value_size = get_type_size(j_type);
+    auto j_mask1 = this->constant(WORD_MAX >> (value_size - width), j_type);
+    auto j_mask2 = this->constant(1ull << (width - 1), j_type);
+    auto j_tmp1 = jit_insn_and(j_func_, j_value, j_mask1);
+    auto j_tmp2 = jit_insn_xor(j_func_, j_tmp1, j_mask2);
+    auto j_tmp3 = jit_insn_sub(j_func_, j_tmp2, j_mask2);
+    return this->type_cast(j_tmp3, j_stype);
   }
 
-  jit_value_t type_cast(jit_value_t value, jit_type_t to_type) {
-    auto from_kind = jit_type_get_kind(jit_value_get_type(value));
+  jit_value_t blend(jit_value_t j_mask, jit_value_t j_false, jit_value_t j_true) {
+    auto j_tmp1 = jit_insn_xor(j_func_, j_false, j_true);
+    auto j_tmp2 = jit_insn_and(j_func_, j_tmp1, j_mask);
+    return jit_insn_xor(j_func_, j_tmp2, j_false);
+  }
+
+  jit_value_t type_cast(jit_value_t j_value, jit_type_t to_type) {
+    auto from_kind = jit_type_get_kind(jit_value_get_type(j_value));
     auto to_kind = jit_type_get_kind(to_type);
     if (from_kind == to_kind)
-      return value;
+      return j_value;
     auto j_ret = jit_value_create(j_func_, to_type);
-    jit_insn_store(j_func_, j_ret, value);
+    jit_insn_store(j_func_, j_ret, j_value);
     return j_ret;
   }
 
@@ -1761,8 +1814,7 @@ bool check_compatible(context* ctx) {
       case ch_op::mult:
       case ch_op::div:
       case ch_op::mod:
-        if (!is_scalar(alu)
-         || alu->is_signed())
+        if (!is_scalar(alu))
           return error_out("invalid alu size");
         break;
 

@@ -7,10 +7,11 @@ TEST_CASE("arithmetic", "[arithmetic]") {
       auto c = ~a;
       return (c == 0011_b) && (c == 3);
     });
-    TEST([]()->ch_bool {
-      ch_bit4 a(1100_b);
-      auto c = a & 0101_b;
-      return (c == 0100_b);
+    TESTX([]()->bool {
+      auto ret = TestFunction([](const ch_bit4& a, const ch_bit4& b)->ch_bit4 {
+        return a & b;
+      }, 1100_b, 0101_b);
+      return (ret == 0100_b);
     });
     TEST([]()->ch_bool {
       ch_bit4 a(1100_b);
