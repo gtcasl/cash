@@ -110,7 +110,8 @@ public:
         uint32_t dst_offset = 0;
         for (auto *r = ranges_, *r_end = r + num_ranges_ ;r != r_end; ++r) {
           uint32_t lr = (bitwidth_v<block_type> - r->length);
-          dst_block |= (block_type((r->data[0] >> r->offset) << lr) >> lr) << dst_offset;
+          auto src_block = (block_type((r->data[0] >> r->offset) << lr) >> lr);
+          dst_block |= src_block << dst_offset;
           dst_offset += r->length;
         }
         dst_[0] = dst_block;
@@ -119,19 +120,18 @@ public:
         block_type dst_block = 0;
         uint32_t dst_offset = 0;
         for (auto *r = ranges_, *r_end = r + num_ranges_ ;r != r_end; ++r) {
-          auto dst_idx = dst_offset / bitwidth_v<block_type>;
           auto dst_lsb = dst_offset % bitwidth_v<block_type>;
           uint32_t lr = (bitwidth_v<block_type> - r->length);
           auto src_block = (block_type((r->data[0] >> r->offset) << lr) >> lr);
-          dst_block |= src_block << dst_offset;
+          dst_block |= src_block << dst_lsb;
           if (dst_lsb >= lr) {
-            dst[dst_idx] = dst_block; // flush current block
-            dst_block = 0;
-            if (dst_lsb > lr) {
-              dst_block = src_block >> (bitwidth_v<block_type> - dst_lsb);
-            }
+            *dst++ = dst_block; // flush current block
+            dst_block = dst_lsb ? (src_block >> (bitwidth_v<block_type> - dst_lsb)) : 0;
           }
           dst_offset += r->length;
+        }
+        if (dst_block) {
+          *dst = dst_block; // flush last block
         }
       }
     } else {

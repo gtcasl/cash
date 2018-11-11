@@ -775,12 +775,12 @@ public:
     : value_(value)
     , end_(size / bitwidth_v<T>)
     , size_(size) {
-    resize_vector_ = (size < other_size);
-    resize_scalar_ = resize_vector_ & Signed;
+    resize_vector_ = Resize && (size < other_size);
+    resize_scalar_ = resize_vector_ && Signed;
   }
 
   T get() const {
-    if (Resize && resize_scalar_) {
+    if (resize_scalar_) {
       return sign_ext(value_[0], size_);
     } else {
       return value_[0];
@@ -788,7 +788,7 @@ public:
   }
 
   T get(uint32_t index) const {
-    if (Resize && resize_vector_) {
+    if (resize_vector_) {
       if constexpr (Signed) {
         if (index < end_) {
           return value_[index];
@@ -825,7 +825,7 @@ public:
     , end_(size / bitwidth_v<T>)
     , size_(size) {
     resize_vector_ = (size < other_size);
-    resize_scalar_ = resize_vector_ & Signed;
+    resize_scalar_ = resize_vector_ && Signed;
   }
 
   T get() const {
