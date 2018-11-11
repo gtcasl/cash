@@ -478,7 +478,7 @@ TEST_CASE("conditionals", "[conditionals]") {
       ch_bit128 k(2), c1(3), c2(2), c3(1), a;
       __switch (k)
       __case (1) {
-         a = c1;
+        a = c1;
        }
       __case (2) {
         a = c2;
@@ -486,6 +486,7 @@ TEST_CASE("conditionals", "[conditionals]") {
       __default {
         a = c3;
       };
+      //ch_print("a={0}, c2={1}", a, c2);
       return (a == c2);
     });
 

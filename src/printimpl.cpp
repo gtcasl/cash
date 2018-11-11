@@ -61,12 +61,11 @@ printimpl::printimpl(context* ctx,
   : ioimpl(ctx, type_print, 0, sloc)
   , enum_strings_(enum_strings)
   , format_(format)
-  , predicated_(false) {
+  , pred_idx_(-1) {
   if (ctx_->conditional_enabled(this)) {
     auto pred = ctx_->create_predicate(sloc);
     if (pred) {
-      this->add_src(pred);
-      predicated_ = true;
+      pred_idx_ = this->add_src(pred);
     }
   }
 
@@ -84,12 +83,10 @@ printimpl::printimpl(context* ctx,
   : ioimpl(ctx, type_print, 0, sloc)
   , enum_strings_(enum_strings)
   , format_(format)
-  , predicated_(false) {
+  , pred_idx_(-1) {
   if (pred) {
-    this->add_src(pred);
-    predicated_ = true;
+    pred_idx_ = this->add_src(pred);
   }
-
   for (auto arg : args) {
     srcs_.emplace_back(arg);
   }
@@ -101,7 +98,7 @@ lnodeimpl* printimpl::clone(context* ctx, const clone_map& cloned_nodes) {
     pred = cloned_nodes.at(this->pred().id());
   }
   std::vector<lnode> args;
-  for (uint32_t i = (predicated_ ? 1 : 0); i < srcs_.size(); ++i) {
+  for (uint32_t i = pred_idx_ + 1; i < srcs_.size(); ++i) {
     auto& src = cloned_nodes.at(srcs_[i].id());
     args.emplace_back(src);
   }

@@ -27,11 +27,11 @@ public:
   }
 
   bool has_pred() const {
-    return predicated_;
+    return (pred_idx_ != -1);
   }
 
   auto& pred() const {
-    return srcs_[0];
+    return srcs_[pred_idx_];
   }
 
   auto& enum_strings() const {
@@ -59,7 +59,7 @@ protected:
 
   std::vector<enum_string_cb> enum_strings_;
   std::string format_;
-  bool predicated_;
+  int pred_idx_;
 
   friend class context;
 };

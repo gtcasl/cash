@@ -8,7 +8,7 @@ TEST_CASE("fixed", "[fixed]") {
     TEST([]()->ch_bool {
       ch_fixed<32, 16> a(0x8000), b(0x10000);
       auto c = a + b;
-      //ch_print("a={0}, b={1}, c={0}", a, b, c);
+      //ch_print("a={0}, b={1}, c={2}", a, b, c);
       return (c == 0x18000);
     });
 
@@ -21,15 +21,16 @@ TEST_CASE("fixed", "[fixed]") {
     TEST([]()->ch_bool {
       ch_fixed<32, 16> a(0x8000), b(0x8000);
       auto c = a * b;
-      //ch_print("a={0}, b={1}, c={0}", a, b, c);
+      //ch_print("a={0}, b={1}, c={2}", a, b, c);
       return (c == 0x4000);
     });
 
     TEST([]()->ch_bool {
       ch_fixed<32, 16> a(-0x8000), b(0x8000);
       auto c = a * b;
-      //ch_print("a={0}, b={1}, c={0}", a, b, c);
-      return (c == -0x4000);
+      ch_int32 e = -0x4000;
+      //ch_print("a={0}, b={1}, c={2}, e={3}", a, b, c, e);
+      return (c == e);
     });
 
     TEST([]()->ch_bool {
@@ -91,7 +92,7 @@ TEST_CASE("fixed", "[fixed]") {
     TEST([]()->ch_bool {
       ch_fixed<32, 16> a(0x18000), b(0x8000);
       auto c = a / b;
-      //ch_print("a={0}, b={1}, c={0}", a, b, c);
+      //ch_print("a={0}, b={1}, c={2}", a, b, c);
       return (c == 0x30000);
     });
 

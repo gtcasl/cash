@@ -81,22 +81,23 @@ int aluimpl::should_resize_opds() const {
     }
   }
 
-  auto op_prop = CH_OP_PROP(op_);
-  if (op_prop & op_flags::eq_opd_size) {
-    auto op_class = CH_OP_CLASS(op_);
-    if (op_flags::equality == op_class
-     || op_flags::relational == op_class) {
-      // source operand sizes should match
-      if (src0_size < src1_size)
-        return src1_size;
-      if (src1_size < src0_size)
-        return src0_size;
-    } else {
-      // source operand and destination sizes should match
-      if (src0_size < size_
-       || (src1_size && src1_size < size_))
-        return size_;
-    }
+  auto op_resize = CH_OP_RESIZE(op_);
+  switch (op_resize) {
+  case op_flags::resize_src:
+    // source operand sizes should match
+    if (src0_size < src1_size)
+      return src1_size;
+    if (src1_size < src0_size)
+      return src0_size;
+    break;
+  case op_flags::resize_dst:
+    // source operand and destination sizes should match
+    if (src0_size != size_
+     || (src1_size && src1_size != size_))
+      return size_;
+    break;
+  default:
+    break;
   }
   return -1;
 }

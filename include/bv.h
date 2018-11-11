@@ -6,6 +6,29 @@ namespace ch {
 namespace internal {
 
 template <typename T>
+void bv_clear_extra_bits(T* dst, uint32_t size) {
+  static constexpr uint32_t WORD_SIZE = bitwidth_v<T>;
+  static constexpr T        WORD_MAX  = std::numeric_limits<T>::max();
+
+  uint32_t extra_bits = size % WORD_SIZE;
+  if (extra_bits) {
+    dst[size / WORD_SIZE] &= ~(WORD_MAX << extra_bits);
+  }
+}
+
+template <typename T>
+void bv_init(T* dst, uint32_t size) {
+  static constexpr uint32_t WORD_SIZE = bitwidth_v<T>;
+  static constexpr T        WORD_MAX  = std::numeric_limits<T>::max();
+
+  uint32_t num_words = ceildiv(size, WORD_SIZE);
+  std::fill_n(dst, num_words, (0xCDCDCDCDCDCDCDCD & WORD_MAX));
+  bv_clear_extra_bits(dst, size);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+template <typename T>
 bool bv_is_neg_scalar(const T* in, uint32_t size) {
   auto mask = T(1) << (size - 1);
   return (in[0] & mask) != 0;
@@ -33,25 +56,7 @@ bool bv_is_neg(const T* in, uint32_t size) {
   }
 }
 
-template <typename T>
-void bv_clear_extra_bits(T* dst, uint32_t size) {
-  static constexpr uint32_t WORD_SIZE = bitwidth_v<T>;
-  static constexpr T        WORD_MAX  = std::numeric_limits<T>::max();
-
-  uint32_t extra_bits = size % WORD_SIZE;
-  if (extra_bits) {
-    dst[size / WORD_SIZE] &= ~(WORD_MAX << extra_bits);
-  }
-}
-
-template <typename T>
-void bv_init(T* dst, uint32_t size) {
-  static constexpr uint32_t WORD_SIZE = bitwidth_v<T>;
-
-  uint32_t num_words = ceildiv(size, WORD_SIZE);
-  std::fill_n(dst, num_words, 0xCD);
-  bv_clear_extra_bits(dst, size);
-}
+///////////////////////////////////////////////////////////////////////////////
 
 template <typename U, typename T,
           CH_REQUIRE_0(std::is_integral_v<U>)>
@@ -137,6 +142,8 @@ void bv_assign(T* dst, uint32_t size, U value) {
     bv_clear_extra_bits(dst, size);
   }
 }
+
+///////////////////////////////////////////////////////////////////////////////
 
 inline int string_literal_base(const char* value, int len) {
   int base = 0;
@@ -229,6 +236,8 @@ void bv_assign(T* dst, uint32_t size, const std::string& value) {
   bv_assign(dst, size, buf, len, base);
 }
 
+///////////////////////////////////////////////////////////////////////////////
+
 template <typename T>
 int bv_lsb_scalar(const T* in) {
   auto w = in[0];
@@ -263,6 +272,8 @@ int bv_lsb(const T* in, uint32_t size) {
     return bv_lsb_vector(in, size);
   }
 }
+
+///////////////////////////////////////////////////////////////////////////////
 
 template <typename T>
 int bv_msb_scalar(const T* in) {
@@ -302,6 +313,8 @@ int bv_msb(const T* in, uint32_t size) {
   }
 }
 
+///////////////////////////////////////////////////////////////////////////////
+
 template <typename U, typename T>
 U bv_cast(const T* in, uint32_t size) {
   static_assert(std::is_integral_v<T>, "invalid type");  
@@ -315,6 +328,8 @@ U bv_cast(const T* in, uint32_t size) {
     return ret;
   }
 }
+
+///////////////////////////////////////////////////////////////////////////////
 
 template <bool is_signed, typename T>
 void bv_pad_scalar(T* out, uint32_t out_size, const T* in, uint32_t in_size) {
@@ -368,6 +383,8 @@ void bv_pad(T* out, uint32_t out_size, const T* in, uint32_t in_size) {
   }
 }
 
+///////////////////////////////////////////////////////////////////////////////
+
 template <typename T>
 void bv_copy_scalar(T* out, const T* in) {
   out[0] = in[0];
@@ -392,366 +409,494 @@ void bv_copy(T* out, const T* in, uint32_t size) {
   }
 }
 
+///////////////////////////////////////////////////////////////////////////////
+
 template <typename T>
 void bv_copy_scalar(T* w_dst,
-                    uint32_t w_dst_begin_rem,
+                    uint32_t w_dst_lsb,
                     const T* w_src,
-                    uint32_t w_src_begin_rem,
+                    uint32_t w_src_lsb,
                     uint32_t length) {
   static unsigned constexpr WORD_SIZE = bitwidth_v<T>;
   static constexpr T        WORD_MAX  = std::numeric_limits<T>::max();
-  assert(w_src_begin_rem < WORD_SIZE);
+  assert(w_src_lsb < WORD_SIZE);
 
-  T src_block = (w_src[0] >> w_src_begin_rem) << w_dst_begin_rem;
-  T mask = (WORD_MAX >> (WORD_SIZE - length)) << w_dst_begin_rem;
+  T src_block = (w_src[0] >> w_src_lsb) << w_dst_lsb;
+  T mask = (WORD_MAX >> (WORD_SIZE - length)) << w_dst_lsb;
   w_dst[0] = blend<T>(mask, w_dst[0], src_block);
 }
 
 template <typename T>
 void bv_copy_vector_small(T* w_dst,
-                          uint32_t w_dst_begin_rem,
+                          uint32_t w_dst_lsb,
                           const T* w_src,
-                          uint32_t w_src_begin_rem,
+                          uint32_t w_src_lsb,
                           uint32_t length) {
   static unsigned constexpr WORD_SIZE = bitwidth_v<T>;
   static constexpr T        WORD_MAX  = std::numeric_limits<T>::max();
   assert(length <= WORD_SIZE);
-  assert(w_dst_begin_rem < WORD_SIZE);
-  assert(w_src_begin_rem < WORD_SIZE);
+  assert(w_dst_lsb < WORD_SIZE);
+  assert(w_src_lsb < WORD_SIZE);
 
-  T src_block0 = w_src[0] >> w_src_begin_rem;
-  if (w_src_begin_rem + length > WORD_SIZE) {
-    src_block0 |= (w_src[1] << (WORD_SIZE - w_src_begin_rem));
+  T src_block0 = w_src[0] >> w_src_lsb;
+  if (w_src_lsb + length > WORD_SIZE) {
+    src_block0 |= (w_src[1] << (WORD_SIZE - w_src_lsb));
   }
-  T mask0 = (WORD_MAX >> (WORD_SIZE - length)) << w_dst_begin_rem;
-  w_dst[0] = blend<T>(mask0, w_dst[0], (src_block0 << w_dst_begin_rem));
-  if (w_dst_begin_rem > (WORD_SIZE - length)) {
-    T src_block1 = src_block0 >> (WORD_SIZE - w_dst_begin_rem);
+  T mask0 = (WORD_MAX >> (WORD_SIZE - length)) << w_dst_lsb;
+  w_dst[0] = blend<T>(mask0, w_dst[0], (src_block0 << w_dst_lsb));
+  if (w_dst_lsb > (WORD_SIZE - length)) {
+    T src_block1 = src_block0 >> (WORD_SIZE - w_dst_lsb);
     T mask1 = ~mask0 >> (WORD_SIZE - length);
     w_dst[1] = blend<T>(mask1, w_dst[1], src_block1);
   }
 }
 
 template <typename T>
-void bv_copy_vector_aligned(T* w_dst, const T* w_src, uint32_t length) {
-  static unsigned constexpr WORD_SIZE = bitwidth_v<T>;
-  static constexpr unsigned WORD_MASK = WORD_SIZE - 1;
-  static constexpr T        WORD_MAX  = std::numeric_limits<T>::max();
+void bv_copy_vector_aligned8(T* w_dst, const T* w_src, uint32_t length) {
+  auto b_dst = reinterpret_cast<uint8_t*>(w_dst);
+  auto b_src = reinterpret_cast<const uint8_t*>(w_src);
 
   uint32_t dst_end       = length - 1;
-  uint32_t w_dst_end_idx = (dst_end / WORD_SIZE);
-  uint32_t w_dst_end_rem = dst_end % WORD_SIZE;
+  uint32_t b_dst_end_idx = dst_end / 8;
+  uint32_t b_dst_msb     = dst_end % 8;
 
   // update aligned blocks
-  if (WORD_MASK == w_dst_end_rem) {
-    std::copy_n(w_src, w_dst_end_idx + 1, w_dst);
+  if (0x7 == b_dst_msb) {
+    memcpy(b_dst, b_src, b_dst_end_idx + 1);
   } else {
-    std::copy_n(w_src, w_dst_end_idx, w_dst);
+    memcpy(b_dst, b_src, b_dst_end_idx);
     // update remining block
-    T src_block = w_src[w_dst_end_idx];
-    T mask = (WORD_MAX << 1) << w_dst_end_rem;
-    w_dst[w_dst_end_idx] = blend<T>(mask, src_block, w_dst[w_dst_end_idx]);
+    auto mask = (0x255 << 1) << b_dst_msb;
+    w_dst[b_dst_end_idx] = blend<uint8_t>(mask, b_src[b_dst_end_idx], b_dst[b_dst_end_idx]);
   }
 }
 
 template <typename T>
 void bv_copy_vector_aligned_dst(T* w_dst,
                                 const T* w_src,
-                                uint32_t w_src_begin_rem,
+                                uint32_t w_src_lsb,
                                 uint32_t length) {
   static unsigned constexpr WORD_SIZE = bitwidth_v<T>;
   static constexpr T        WORD_MAX  = std::numeric_limits<T>::max();
-  assert(w_src_begin_rem < WORD_SIZE);
+  assert(w_src_lsb < WORD_SIZE);
 
-  uint32_t src_end       = w_src_begin_rem + length - 1;
+  uint32_t src_end       = w_src_lsb + length - 1;
   uint32_t w_src_end_idx = (src_end / WORD_SIZE);
 
   uint32_t dst_end       = length - 1;
   uint32_t w_dst_end_idx = (dst_end / WORD_SIZE);
-  uint32_t w_dst_end_rem = dst_end % WORD_SIZE;
+  uint32_t w_dst_msb     = dst_end % WORD_SIZE;
 
   // update first block
-  T src_block = *w_src++ >> w_src_begin_rem;
-  src_block |= w_src[0] << (WORD_SIZE - w_src_begin_rem);
+  T src_block = *w_src++ >> w_src_lsb;
+  src_block |= w_src[0] << (WORD_SIZE - w_src_lsb);
   w_dst[0] = src_block;
 
   // update intermediate blocks
   auto w_dst_end = (w_dst++) + w_dst_end_idx;
   while (w_dst < w_dst_end) {
-    T tmp = *w_src++ >> w_src_begin_rem;
-    *w_dst++ = tmp | (w_src[0] << (WORD_SIZE - w_src_begin_rem));
+    T tmp = *w_src++ >> w_src_lsb;
+    *w_dst++ = tmp | (w_src[0] << (WORD_SIZE - w_src_lsb));
   }
 
   // update remining blocks
-  src_block = w_src[0] >> w_src_begin_rem;
+  src_block = w_src[0] >> w_src_lsb;
   if (w_src_end_idx > w_dst_end_idx) {
-    src_block |= (w_src[1] << (WORD_SIZE - w_src_begin_rem));
+    src_block |= (w_src[1] << (WORD_SIZE - w_src_lsb));
   }
-  T mask = (WORD_MAX << 1) << w_dst_end_rem;
+  T mask = (WORD_MAX << 1) << w_dst_msb;
   w_dst[0] = blend<T>(mask, src_block, w_dst[0]);
 }
 
 template <typename T>
 void bv_copy_vector_aligned_src(T* w_dst,
-                                uint32_t w_dst_begin_rem,
+                                uint32_t w_dst_lsb,
                                 const T* w_src,
                                 uint32_t length) {
   static unsigned constexpr WORD_SIZE = bitwidth_v<T>;
   static constexpr unsigned WORD_MASK = WORD_SIZE - 1;
   static constexpr T        WORD_MAX  = std::numeric_limits<T>::max();
-  assert(w_dst_begin_rem < WORD_SIZE);
+  assert(w_dst_lsb < WORD_SIZE);
 
   uint32_t src_end       = length - 1;
   uint32_t w_src_end_idx = (src_end / WORD_SIZE);
 
-  uint32_t dst_end       = w_dst_begin_rem + length - 1;
+  uint32_t dst_end       = w_dst_lsb + length - 1;
   uint32_t w_dst_end_idx = (dst_end / WORD_SIZE);
-  uint32_t w_dst_end_rem = dst_end % WORD_SIZE;
+  uint32_t w_dst_msb     = dst_end % WORD_SIZE;
 
   // update first block
   T src_block = *w_src++;
-  T mask = WORD_MAX << w_dst_begin_rem;
-  w_dst[0] = blend<T>(mask, w_dst[0], (src_block << w_dst_begin_rem));
+  T mask = WORD_MAX << w_dst_lsb;
+  w_dst[0] = blend<T>(mask, w_dst[0], (src_block << w_dst_lsb));
 
   // update intermediate blocks
   auto w_dst_end = (w_dst++) + w_src_end_idx;
   while (w_dst < w_dst_end) {
     auto tmp = *w_src++;
-    *w_dst++ = (tmp << w_dst_begin_rem) | ((src_block >> 1) >> (WORD_MASK - w_dst_begin_rem));
+    *w_dst++ = (tmp << w_dst_lsb) | ((src_block >> 1) >> (WORD_MASK - w_dst_lsb));
     src_block = tmp;
   }
 
   // update remining blocks
-  src_block = (w_src[0] << w_dst_begin_rem) | ((src_block >> 1) >> (WORD_MASK - w_dst_begin_rem));
+  src_block = (w_src[0] << w_dst_lsb) | ((src_block >> 1) >> (WORD_MASK - w_dst_lsb));
   if (w_src_end_idx < w_dst_end_idx) {
     *w_dst++ = src_block;
-    src_block = (w_src[0] >> 1) >> (WORD_MASK - w_dst_begin_rem);
+    src_block = (w_src[0] >> 1) >> (WORD_MASK - w_dst_lsb);
   }
-  mask = (WORD_MAX << 1) << w_dst_end_rem;
+  mask = (WORD_MAX << 1) << w_dst_msb;
   w_dst[0] = blend<T>(mask, src_block, w_dst[0]);
 }
 
 template <typename T>
 void bv_copy_vector_unaligned(T* w_dst,
-                              uint32_t w_dst_begin_rem,
+                              uint32_t w_dst_lsb,
                               const T* w_src,
-                              uint32_t w_src_begin_rem,
+                              uint32_t w_src_lsb,
                               uint32_t length) {
   static unsigned constexpr WORD_SIZE = bitwidth_v<T>;
   static constexpr unsigned WORD_MASK = WORD_SIZE - 1;
   static constexpr T        WORD_MAX  = std::numeric_limits<T>::max();
-  assert(w_dst_begin_rem < WORD_SIZE);
-  assert(w_src_begin_rem < WORD_SIZE);
+  assert(w_dst_lsb < WORD_SIZE);
+  assert(w_src_lsb < WORD_SIZE);
 
-  uint32_t src_end       = w_src_begin_rem + length - 1;
+  uint32_t src_end       = w_src_lsb + length - 1;
   uint32_t w_src_end_idx = (src_end / WORD_SIZE);
 
-  uint32_t dst_end       = w_dst_begin_rem + length - 1;
+  uint32_t dst_end       = w_dst_lsb + length - 1;
   uint32_t w_dst_end_idx = (dst_end / WORD_SIZE);
-  uint32_t w_dst_end_rem = dst_end % WORD_SIZE;
+  uint32_t w_dst_msb     = dst_end % WORD_SIZE;
 
   // update first block
-  T src_block = *w_src++ >> w_src_begin_rem;
-  src_block |= (w_src[0] << (WORD_SIZE - w_src_begin_rem));
-  T mask = WORD_MAX << w_dst_begin_rem;
-  w_dst[0] = blend<T>(mask, w_dst[0], (src_block << w_dst_begin_rem));
+  T src_block = *w_src++ >> w_src_lsb;
+  src_block |= (w_src[0] << (WORD_SIZE - w_src_lsb));
+  T mask = WORD_MAX << w_dst_lsb;
+  w_dst[0] = blend<T>(mask, w_dst[0], (src_block << w_dst_lsb));
 
   // update intermediate blocks
   auto w_dst_end = (w_dst++) + std::min(w_src_end_idx, w_dst_end_idx);
   while (w_dst < w_dst_end) {
-    T tmp = *w_src++ >> w_src_begin_rem;
-    tmp |= (w_src[0] << (WORD_SIZE - w_src_begin_rem));
-    *w_dst++ = (tmp << w_dst_begin_rem) | ((src_block >> 1) >> (WORD_MASK - w_dst_begin_rem));
+    T tmp = *w_src++ >> w_src_lsb;
+    tmp |= (w_src[0] << (WORD_SIZE - w_src_lsb));
+    *w_dst++ = (tmp << w_dst_lsb) | ((src_block >> 1) >> (WORD_MASK - w_dst_lsb));
     src_block = tmp;
   }
 
   // update remining blocks
-  T tmp = w_src[0] >> w_src_begin_rem;
+  T tmp = w_src[0] >> w_src_lsb;
   if (w_src_end_idx < w_dst_end_idx) {
-    src_block = (tmp << w_dst_begin_rem) | ((src_block >> 1) >> (WORD_MASK - w_dst_begin_rem));
+    src_block = (tmp << w_dst_lsb) | ((src_block >> 1) >> (WORD_MASK - w_dst_lsb));
     *w_dst++ = src_block;
-    src_block = (tmp >> 1) >> (WORD_MASK - w_dst_begin_rem);
+    src_block = (tmp >> 1) >> (WORD_MASK - w_dst_lsb);
   } else
   if (w_src_end_idx == w_dst_end_idx) {
-    src_block = (tmp << w_dst_begin_rem) | ((src_block >> 1) >> (WORD_MASK - w_dst_begin_rem));
+    src_block = (tmp << w_dst_lsb) | ((src_block >> 1) >> (WORD_MASK - w_dst_lsb));
   } else {
-    src_block = (tmp | (w_src[1] << (WORD_SIZE - w_src_begin_rem))) << w_dst_begin_rem;
+    src_block = (tmp | (w_src[1] << (WORD_SIZE - w_src_lsb))) << w_dst_lsb;
   }
-  mask = (WORD_MAX << 1) << w_dst_end_rem;
+  mask = (WORD_MAX << 1) << w_dst_msb;
   w_dst[0] = blend<T>(mask, src_block, w_dst[0]);
 }
 
 template <typename T>
-void bv_copy_vector(T* w_dst, uint32_t w_dst_begin_rem,
-                    const T* w_src, uint32_t w_src_begin_rem,
+void bv_copy_vector(T* w_dst, uint32_t w_dst_lsb,
+                    const T* w_src, uint32_t w_src_lsb,
                     uint32_t length) {
   static unsigned constexpr WORD_SIZE = bitwidth_v<T>;
 
   if (length <= WORD_SIZE) {
-    bv_copy_vector_small(w_dst, w_dst_begin_rem, w_src, w_src_begin_rem, length);
+    bv_copy_vector_small(w_dst, w_dst_lsb, w_src, w_src_lsb, length);
   } else
-  if (0 == (w_dst_begin_rem | w_src_begin_rem)) {
-    bv_copy_vector_aligned(w_dst, w_src, length);
+  if (0 == ((w_dst_lsb % 8) | (w_src_lsb % 8))) {
+    bv_copy_vector_aligned8(w_dst, w_src, length);
   } else
-  if (0 == w_dst_begin_rem) {
-    bv_copy_vector_aligned_dst(w_dst, w_src, w_src_begin_rem, length);
+  if (0 == w_dst_lsb) {
+    bv_copy_vector_aligned_dst(w_dst, w_src, w_src_lsb, length);
   } else
-  if (0 == w_src_begin_rem) {
-    bv_copy_vector_aligned_src(w_dst, w_dst_begin_rem, w_src, length);
+  if (0 == w_src_lsb) {
+    bv_copy_vector_aligned_src(w_dst, w_dst_lsb, w_src, length);
   } else {
-    bv_copy_vector_unaligned(w_dst, w_dst_begin_rem, w_src, w_src_begin_rem, length);
+    bv_copy_vector_unaligned(w_dst, w_dst_lsb, w_src, w_src_lsb, length);
   }
 }
 
 template <typename T>
-void bv_copy(T* dst, uint32_t dst_offset,
-             const T* src, uint32_t src_offset,
+void bv_copy(T* w_dst, uint32_t dst_offset,
+             const T* w_src, uint32_t src_offset,
              uint32_t length) {
   static unsigned constexpr WORD_SIZE = bitwidth_v<T>;
 
   if ((dst_offset + length) <= WORD_SIZE
    && (src_offset + length) <= WORD_SIZE) {
-    bv_copy_scalar(dst, dst_offset, src, src_offset, length);
+    bv_copy_scalar(w_dst, dst_offset, w_src, src_offset, length);
   } else {
-    auto w_dst = dst + (dst_offset / WORD_SIZE);
-    uint32_t w_dst_begin_rem = dst_offset % WORD_SIZE;
-    auto w_src = src + (src_offset / WORD_SIZE);
-    uint32_t w_src_begin_rem = src_offset % WORD_SIZE;
-    bv_copy_vector(w_dst, w_dst_begin_rem, w_src, w_src_begin_rem, length);
+    auto w_dst_idx = dst_offset / WORD_SIZE;
+    auto w_dst_lsb = dst_offset % WORD_SIZE;
+    auto w_src_idx = src_offset / WORD_SIZE;
+    auto w_src_lsb = src_offset % WORD_SIZE;
+    bv_copy_vector(w_dst + w_dst_idx, w_dst_lsb, w_src + w_src_idx, w_src_lsb, length);
   }
 }
 
-template <typename T>
-void bv_slice_scalar(T* dst, uint32_t dst_size, const T* w_src, uint32_t w_src_begin_rem) {
-  static unsigned constexpr WORD_SIZE = bitwidth_v<T>;
-  assert(w_src_begin_rem < WORD_SIZE);
+///////////////////////////////////////////////////////////////////////////////
 
-  T src_block = w_src[0] >> w_src_begin_rem;
-  uint32_t rem = (WORD_SIZE - dst_size);
-  dst[0] = T(src_block << rem) >> rem;
+template <typename T>
+void bv_slice_scalar(T* w_dst, uint32_t dst_size, const T* w_src, uint32_t w_src_lsb) {
+  static unsigned constexpr WORD_SIZE = bitwidth_v<T>;
+  assert(w_src_lsb < WORD_SIZE);
+
+  T src_block = w_src[0] >> w_src_lsb;
+  uint32_t clamp = (WORD_SIZE - dst_size);
+  w_dst[0] = T(src_block << clamp) >> clamp;
 }
 
 template <typename T>
-void bv_slice_vector_small(T* dst, uint32_t dst_size, const T* w_src, uint32_t w_src_begin_rem) {
+void bv_slice_vector_small(T* w_dst, uint32_t dst_size, const T* w_src, uint32_t w_src_lsb) {
   static unsigned constexpr WORD_SIZE = bitwidth_v<T>;
   assert(dst_size <= WORD_SIZE);
-  assert(w_src_begin_rem < WORD_SIZE);
+  assert(w_src_lsb < WORD_SIZE);
 
-  T src_block = w_src[0] >> w_src_begin_rem;
-  uint32_t rem = (WORD_SIZE - dst_size);
-  if (w_src_begin_rem > rem) {
-    src_block |= w_src[1] << (WORD_SIZE - w_src_begin_rem);
+  T src_block = w_src[0] >> w_src_lsb;
+  uint32_t clamp = (WORD_SIZE - dst_size);
+  if (w_src_lsb > clamp) {
+    src_block |= w_src[1] << (WORD_SIZE - w_src_lsb);
   }  
-  dst[0] = T(src_block << rem) >> rem;
+  w_dst[0] = T(src_block << clamp) >> clamp;
 }
 
 template <typename T>
-void bv_slice_vector_aligned(T* dst, uint32_t dst_size, const T* w_src) {
-  static unsigned constexpr WORD_SIZE = bitwidth_v<T>;
-  static constexpr unsigned WORD_MASK = WORD_SIZE - 1;
+void bv_slice_vector_aligned8(T* w_dst, uint32_t dst_size, const T* w_src) {
+  auto b_dst = reinterpret_cast<uint8_t*>(w_dst);
+  auto b_src = reinterpret_cast<const uint8_t*>(w_src);
 
   uint32_t dst_end       = dst_size - 1;
-  uint32_t w_dst_end_idx = (dst_end / WORD_SIZE);
-  uint32_t w_dst_end_rem = dst_end % WORD_SIZE;
+  uint32_t b_dst_end_idx = dst_end / 8;
+  uint32_t b_dst_msb     = dst_end % 8;
 
   // update aligned blocks
-  if (WORD_MASK == w_dst_end_rem) {
-    std::copy_n(w_src, w_dst_end_idx + 1, dst);
+  if (0x7 == b_dst_msb) {
+    memcpy(b_dst, b_src, b_dst_end_idx + 1);
   } else {
-    std::copy_n(w_src, w_dst_end_idx, dst);
+    memcpy(b_dst, b_src, b_dst_end_idx);
     // update remining block
-    uint32_t rem = (WORD_SIZE - w_dst_end_rem);
-    dst[w_dst_end_idx] = T(w_src[w_dst_end_idx] << rem) >> rem;
+    uint32_t clamp = (0x8 - b_dst_msb);
+    w_dst[b_dst_end_idx] = uint8_t(b_src[b_dst_end_idx] << clamp) >> clamp;
   }
 }
 
 template <typename T>
-void bv_slice_vector_unaligned(T* dst, uint32_t dst_size, const T* w_src, uint32_t w_src_begin_rem) {
+void bv_slice_vector_unaligned(T* w_dst, uint32_t dst_size, const T* w_src, uint32_t w_src_lsb) {
   static unsigned constexpr WORD_SIZE = bitwidth_v<T>;
-  assert(w_src_begin_rem < WORD_SIZE);
+  assert(w_src_lsb < WORD_SIZE);
 
-  uint32_t src_end       = w_src_begin_rem + dst_size - 1;
+  uint32_t src_end       = w_src_lsb + dst_size - 1;
   uint32_t w_src_end_idx = (src_end / WORD_SIZE);
 
   uint32_t dst_end       = dst_size - 1;
   uint32_t w_dst_end_idx = (dst_end / WORD_SIZE);
-  uint32_t w_dst_end_rem = dst_end % WORD_SIZE;
+  uint32_t w_dst_msb     = dst_end % WORD_SIZE;
 
   // update first block
-  T src_block = *w_src++ >> w_src_begin_rem;
-  src_block |= w_src[0] << (WORD_SIZE - w_src_begin_rem);
-  dst[0] = src_block;
+  T src_block = *w_src++ >> w_src_lsb;
+  src_block |= w_src[0] << (WORD_SIZE - w_src_lsb);
+  w_dst[0] = src_block;
 
   // update intermediate blocks
-  auto w_dst_end = (dst++) + w_dst_end_idx;
-  while (dst < w_dst_end) {
-    T tmp = *w_src++ >> w_src_begin_rem;
-    *dst++ = tmp | (w_src[0] << (WORD_SIZE - w_src_begin_rem));
+  auto w_dst_end = (w_dst++) + w_dst_end_idx;
+  while (w_dst < w_dst_end) {
+    T tmp = *w_src++ >> w_src_lsb;
+    *w_dst++ = tmp | (w_src[0] << (WORD_SIZE - w_src_lsb));
   }
 
   // update remining blocks
-  src_block = w_src[0] >> w_src_begin_rem;
+  src_block = w_src[0] >> w_src_lsb;
   if (w_src_end_idx > w_dst_end_idx) {
-    src_block |= w_src[1] << (WORD_SIZE - w_src_begin_rem);
+    src_block |= w_src[1] << (WORD_SIZE - w_src_lsb);
   }
-  uint32_t rem = (WORD_SIZE - w_dst_end_rem);
-  dst[0] = T(src_block << rem) >> rem;
+  uint32_t clamp = (WORD_SIZE - w_dst_msb);
+  w_dst[0] = T(src_block << clamp) >> clamp;
 }
 
 template <typename T>
-void bv_slice_vector(T* dst, uint32_t dst_size, const T* w_src, uint32_t w_src_begin_rem) {
+void bv_slice_vector(T* w_dst, uint32_t dst_size, const T* w_src, uint32_t w_src_lsb) {
   static constexpr uint32_t WORD_SIZE = bitwidth_v<T>;
-  assert(w_src_begin_rem < WORD_SIZE);
+  assert(w_src_lsb < WORD_SIZE);
 
   if (dst_size <= WORD_SIZE) {
-    bv_slice_vector_small(dst, dst_size, w_src, w_src_begin_rem);
+    bv_slice_vector_small(w_dst, dst_size, w_src, w_src_lsb);
   } else
-  if (0 == w_src_begin_rem) {
-    bv_slice_vector_aligned(dst, dst_size, w_src);
+  if (0 == (w_src_lsb % 8)) {
+    bv_slice_vector_aligned8(w_dst, dst_size, w_src);
   } else {
-    bv_slice_vector_unaligned(dst, dst_size, w_src, w_src_begin_rem);
+    bv_slice_vector_unaligned(w_dst, dst_size, w_src, w_src_lsb);
   }
 }
 
 template <typename T>
-void bv_slice(T* dst, uint32_t dst_size, const T* src, uint32_t src_offset) {
+void bv_slice(T* w_dst, uint32_t dst_size, const T* w_src, uint32_t src_offset) {
   static constexpr uint32_t WORD_SIZE = bitwidth_v<T>;
 
   if (src_offset + dst_size <= WORD_SIZE) {
-    bv_slice_scalar(dst, dst_size, src, src_offset);
+    bv_slice_scalar(w_dst, dst_size, w_src, src_offset);
   } else {
-    auto w_src = src + (src_offset / WORD_SIZE);
-    uint32_t w_src_begin_rem = src_offset % WORD_SIZE;
-    bv_slice_vector(dst, dst_size, w_src, w_src_begin_rem);
+    auto w_src_idx = src_offset / WORD_SIZE;
+    auto w_src_lsb = src_offset % WORD_SIZE;
+    bv_slice_vector(w_dst, dst_size, w_src + w_src_idx, w_src_lsb);
   }
 }
 
+///////////////////////////////////////////////////////////////////////////////
+
 template <typename T>
-bool bv_eq_scalar(const T* lhs, const T* rhs) {
-  return (lhs[0] == rhs[0]);
+class ClearBitAccessor {
+public:
+  ClearBitAccessor(const T* value, uint32_t, uint32_t)
+    : value_(value) {
+  }
+
+  T get() const {
+    return value_[0];
+  }
+
+  T get(uint32_t index) const {
+    return value_[index];
+  }
+
+private:
+  const T* value_;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+template <bool Signed, bool Resize, typename T>
+class StaticBitAccessor {
+public:
+  StaticBitAccessor(const T* value, uint32_t size, uint32_t other_size)
+    : value_(value)
+    , end_(size / bitwidth_v<T>)
+    , size_(size) {
+    resize_vector_ = (size < other_size);
+    resize_scalar_ = resize_vector_ & Signed;
+  }
+
+  T get() const {
+    if (Resize && resize_scalar_) {
+      return sign_ext(value_[0], size_);
+    } else {
+      return value_[0];
+    }
+  }
+
+  T get(uint32_t index) const {
+    if (Resize && resize_vector_) {
+      if constexpr (Signed) {
+        if (index < end_) {
+          return value_[index];
+        } else {
+          if (index == end_) {
+            return sign_ext(value_[index], size_);
+          } else {
+            return std::numeric_limits<T>::max();
+          }
+        }
+      } else {
+        return (index <= end_) ? value_[index] : 0;
+      }
+    } else {
+      return value_[index];
+    }
+  }
+
+private:
+  bool resize_scalar_;
+  bool resize_vector_;
+  const T* value_;
+  uint32_t end_;
+  uint32_t size_;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+template <typename T, bool Signed>
+class DefaultBitAccessor {
+public:
+  DefaultBitAccessor(const T* value, uint32_t size, uint32_t other_size)
+    : value_(value)
+    , end_(size / bitwidth_v<T>)
+    , size_(size) {
+    resize_vector_ = (size < other_size);
+    resize_scalar_ = resize_vector_ & Signed;
+  }
+
+  T get() const {
+    if (resize_scalar_) {
+      return sign_ext(value_[0], size_);
+    } else {
+      return value_[0];
+    }
+  }
+
+  T get(uint32_t index) const {
+    if (resize_vector_) {
+      if constexpr (Signed) {
+        if (index < end_) {
+          return value_[index];
+        } else {
+          if (index == end_) {
+            return sign_ext(value_[index], size_);
+          } else {
+            return std::numeric_limits<T>::max();
+          }
+        }
+      } else {
+        return (index <= end_) ? value_[index] : 0;
+      }
+    } else {
+      return value_[index];
+    }
+  }
+
+private:
+  bool resize_scalar_;
+  bool resize_vector_;
+  const T* value_;
+  uint32_t end_;
+  uint32_t size_;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+template <bool Signed, typename T, typename BitAccessor = DefaultBitAccessor<T, Signed>>
+bool bv_eq_scalar(const T* lhs, uint32_t lhs_size, const T* rhs, uint32_t rhs_size) {
+  BitAccessor arg0(lhs, lhs_size, rhs_size);
+  BitAccessor arg1(rhs, rhs_size, lhs_size);
+  return (arg0.get() == arg1.get());
 }
 
-template <typename T>
-bool bv_eq_vector(const T* lhs, const T* rhs, uint32_t size) {
-  static constexpr uint32_t WORD_SIZE = bitwidth_v<T>;
-
-  uint32_t num_words = ceildiv(size, WORD_SIZE);
+template <bool Signed, typename T, typename BitAccessor = DefaultBitAccessor<T, Signed>>
+bool bv_eq_vector(const T* lhs, uint32_t lhs_size, const T* rhs, uint32_t rhs_size) {
+  BitAccessor arg0(lhs, lhs_size, rhs_size);
+  BitAccessor arg1(rhs, rhs_size, lhs_size);
+  auto num_words = ceildiv(std::max(lhs_size, rhs_size), bitwidth_v<T>);
   for (uint32_t i = 0; i < num_words; ++i) {
-    if (lhs[i] != rhs[i])
+    if (arg0.get(i) != arg1.get(i))
       return false;
   }
   return true;
 }
 
-template <typename T>
-bool bv_eq(const T* lhs, const T* rhs, uint32_t size) {
+template <bool Signed, typename T, typename BitAccessor = DefaultBitAccessor<T, Signed>>
+bool bv_eq(const T* lhs, uint32_t lhs_size, const T* rhs, uint32_t rhs_size) {
   static constexpr uint32_t WORD_SIZE = bitwidth_v<T>;
-  if (size <= WORD_SIZE) {
-    return bv_eq_scalar<T>(lhs, rhs);
+  if (lhs_size <= WORD_SIZE
+   && rhs_size <= WORD_SIZE) {
+    return bv_eq_scalar<Signed, T, BitAccessor>(lhs, lhs_size, rhs, rhs_size);
   } else {
-    return bv_eq_vector<T>(lhs, rhs, size);
+    return bv_eq_vector<Signed, T, BitAccessor>(lhs, lhs_size, rhs, rhs_size);
   }
 }
+
+///////////////////////////////////////////////////////////////////////////////
 
 template <bool is_signed, typename T>
 bool bv_lt_scalar(const T* lhs, const T* rhs, uint32_t size) {
@@ -761,11 +906,9 @@ bool bv_lt_scalar(const T* lhs, const T* rhs, uint32_t size) {
     bool rhs_is_neg = bv_is_neg_scalar(rhs, size);
     if (lhs_is_neg != rhs_is_neg)
       return lhs_is_neg;
-    return (lhs[0] < rhs[0]);
-  } else {
-    CH_UNUSED(size);
-    return (lhs[0] < rhs[0]);
   }
+  CH_UNUSED(size);
+  return (lhs[0] < rhs[0]);
 }
 
 template <bool is_signed, typename T>
@@ -801,6 +944,8 @@ bool bv_lt(const T* lhs, const T* rhs, uint32_t size) {
   }
 }
 
+///////////////////////////////////////////////////////////////////////////////
+
 template <typename T>
 void bv_inv_scalar(T* out, const T* in, uint32_t size) {
   out[0] = ~in[0];
@@ -829,6 +974,8 @@ void bv_inv(T* out, const T* in, uint32_t size) {
   }
 }
 
+///////////////////////////////////////////////////////////////////////////////
+
 template <typename T>
 void bv_and_scalar(T* out, const T* lhs, const T* rhs) {
   out[0] = lhs[0] & rhs[0];
@@ -854,6 +1001,8 @@ void bv_and(T* out, const T* lhs, const T* rhs, uint32_t size) {
     return bv_and_vector<T>(out, lhs, rhs, size);
   }
 }
+
+///////////////////////////////////////////////////////////////////////////////
 
 template <typename T>
 void bv_or_scalar(T* out, const T* lhs, const T* rhs) {
@@ -881,6 +1030,8 @@ void bv_or(T* out, const T* lhs, const T* rhs, uint32_t size) {
   }
 }
 
+///////////////////////////////////////////////////////////////////////////////
+
 template <typename T>
 void bv_xor_scalar(T* out, const T* lhs, const T* rhs) {
   out[0] = lhs[0] ^ rhs[0];
@@ -906,6 +1057,8 @@ void bv_xor(T* out, const T* lhs, const T* rhs, uint32_t size) {
     return bv_xor_vector<T>(out, lhs, rhs, size);
   }
 }
+
+///////////////////////////////////////////////////////////////////////////////
 
 template <typename T>
 bool bv_andr_scalar(const T* in, uint32_t size) {
@@ -944,6 +1097,8 @@ bool bv_andr(const T* in, uint32_t size) {
   }
 }
 
+///////////////////////////////////////////////////////////////////////////////
+
 template <typename T>
 bool bv_orr_scalar(const T* in) {
   return in[0];
@@ -971,6 +1126,8 @@ bool bv_orr(const T* in, uint32_t size) {
     return bv_orr_vector<T>(in, size);
   }
 }
+
+///////////////////////////////////////////////////////////////////////////////
 
 template <typename T>
 bool bv_xorr_scalar(const T* in) {
@@ -1011,6 +1168,8 @@ bool bv_xorr(const T* in, uint32_t size) {
     return bv_xorr_vector<T>(in, size);
   }
 }
+
+///////////////////////////////////////////////////////////////////////////////
 
 template <typename T>
 void bv_shl_scalar(T* out, uint32_t out_size, const T* in, uint64_t dist) {
@@ -1072,6 +1231,8 @@ void bv_shl(T* out, uint32_t out_size,
     bv_shl_vector(out, out_size, in, in_size, dist);
   }
 }
+
+///////////////////////////////////////////////////////////////////////////////
 
 template <bool is_signed, typename T>
 void bv_shr_scalar(T* out, uint32_t out_size, const T* in, uint32_t in_size, uint64_t dist) {
@@ -1146,6 +1307,8 @@ void bv_shr(T* out, uint32_t out_size,
   }
 }
 
+///////////////////////////////////////////////////////////////////////////////
+
 template <typename T>
 void bv_neg_scalar(T* out, const T* in, uint32_t size) {
   out[0] = -in[0];
@@ -1177,6 +1340,8 @@ void bv_neg(T* out, const T* in, uint32_t size) {
     bv_neg_vector(out, in, size);
   }
 }
+
+///////////////////////////////////////////////////////////////////////////////
 
 template <typename T>
 void bv_add_scalar(T* out, const T* lhs, const T* rhs, uint32_t size) {
@@ -1212,6 +1377,8 @@ void bv_add(T* out, const T* lhs, const T* rhs, uint32_t size) {
   }  
 }
 
+///////////////////////////////////////////////////////////////////////////////
+
 template <typename T>
 void bv_sub_scalar(T* out, const T* lhs, const T* rhs, uint32_t size) {
   out[0] = lhs[0] - rhs[0];
@@ -1246,6 +1413,8 @@ void bv_sub(T* out, const T* lhs, const T* rhs, uint32_t size) {
   }
 }
 
+///////////////////////////////////////////////////////////////////////////////
+
 template <typename T>
 void bv_abs_scalar(T* out, const T* in, uint32_t size) {
   if (bv_is_neg_scalar(in, size)) {
@@ -1263,6 +1432,8 @@ void bv_abs_vector(T* out, const T* in, uint32_t size) {
     bv_copy_vector(out, in, size);
   }
 }
+
+///////////////////////////////////////////////////////////////////////////////
 
 template <typename T>
 void bv_umult(T* out, uint32_t out_size,
@@ -1361,6 +1532,8 @@ void bv_mult(T* out, uint32_t out_size,
     bv_mult_vector<is_signed>(out, out_size, lhs, lhs_size, rhs, rhs_size);
   }
 }
+
+///////////////////////////////////////////////////////////////////////////////
 
 template <typename T>
 void bv_udiv(T* quot, uint32_t quot_size,
@@ -1532,6 +1705,8 @@ void bv_div(T* out, uint32_t out_size,
     bv_div_vector<is_signed>(out, out_size, lhs, lhs_size, rhs, rhs_size);
   }
 }
+
+///////////////////////////////////////////////////////////////////////////////
 
 template <bool is_signed, typename T>
 void bv_mod_scalar(T* out, uint32_t out_size,

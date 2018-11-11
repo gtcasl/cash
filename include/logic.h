@@ -334,6 +334,7 @@ struct sloc_arg {
 #define CH_LOGIC_FUNCTION_BINARY1(func, op, type) \
   template <unsigned R = 0, unsigned N> \
   auto func(const type<N>& in, CH_SLOC) { \
+    static_assert((0 == R) || (op_flags::resize_free == CH_OP_RESIZE(op)) || (R >= N), "invalid type"); \
     return make_logic_op<op, ch_signed_v<type<N>>, \
                          std::conditional_t<(R != 0), type<R>, type<N>>>(in, sloc); \
   }
@@ -341,31 +342,35 @@ struct sloc_arg {
 #define CH_LOGIC_FUNCTION_BINARY2(func, op, type) \
   template <unsigned R = 0, unsigned N, unsigned M = N> \
   auto func(const type<N>& lhs, const type<M>& rhs, CH_SLOC) { \
+    static_assert((op_flags::resize_free == CH_OP_RESIZE(op)) || (0 == R) || ((R >= N) && (R >= M)), "invalid type"); \
     return make_logic_op<op, ch_signed_v<type<N>>, \
                          std::conditional_t<(R != 0), type<R>, type<std::max(N, M)>>>(lhs, rhs, sloc); \
   } \
   template <unsigned R = 0, unsigned N, typename U, \
             CH_REQUIRE_0(std::is_convertible_v<U, type<ch_width_v<U>>>)> \
   auto func(const type<N>& lhs, const U& rhs, CH_SLOC) { \
+    static_assert((op_flags::resize_free == CH_OP_RESIZE(op)) || (0 == R) || ((R >= N) && (R >= ch_width_v<U>)), "invalid type"); \
     return make_logic_op<op, ch_signed_v<type<N>>, \
                          std::conditional_t<(R != 0), type<R>, type<std::max(N, ch_width_v<U>)>>, \
-                         type<N>, type<ch_width_v<U>>>(lhs, rhs, sloc); \
+                            type<N>, type<ch_width_v<U>>>(lhs, rhs, sloc); \
   } \
   template <unsigned R = 0, unsigned N, typename U, \
             CH_REQUIRE_0(std::is_convertible_v<U, type<ch_width_v<U>>>)> \
   auto func(const U& lhs, const type<N>& rhs, CH_SLOC) { \
+    static_assert((op_flags::resize_free == CH_OP_RESIZE(op)) || (0 == R) || ((R >= N) && (R >= ch_width_v<U>)), "invalid type"); \
     return make_logic_op<op, ch_signed_v<type<N>>, \
                          std::conditional_t<(R != 0), type<R>, type<std::max(N, ch_width_v<U>)>>, \
-                         type<ch_width_v<U>>, type<N>>(lhs, rhs, sloc); \
+                            type<ch_width_v<U>>, type<N>>(lhs, rhs, sloc); \
   }
 
 #define CH_LOGIC_FUNCTION_SHIFT(func, op, type) \
   template <unsigned R = 0, unsigned N, typename U, \
             CH_REQUIRE_0(std::is_convertible_v<U, ch_bit<ch_width_v<U>>>)> \
   auto func(const type<N>& lhs, const U& rhs, CH_SLOC) { \
+    static_assert((op_flags::resize_free == CH_OP_RESIZE(op)) || (0 == R) || ((R >= N) && (R >= ch_width_v<U>)), "invalid type"); \
     return make_logic_op<op, ch_signed_v<type<N>>, \
                          std::conditional_t<(R != 0), type<R>, type<N>>, \
-                         type<N>, ch_bit<ch_width_v<U>>>(lhs, rhs, sloc); \
+                            type<N>, ch_bit<ch_width_v<U>>>(lhs, rhs, sloc); \
   }
 
 #define CH_LOGIC_FUNCTION_ARITHMETIC1(func, op, type) \
@@ -414,14 +419,22 @@ CH_LOGIC_OPERATOR(logic_op_shift)
             CH_REQUIRE_0(std::is_convertible_v<U, ch_bit<ch_width_v<U>>>)>
   friend auto operator<<(Derived lhs, const U& rhs) {
     auto sloc = logic_accessor::sloc(lhs);
-    return make_logic_op<ch_op::shl, ch_signed_v<Derived>, Derived, Derived, ch_bit<ch_width_v<U>>>(lhs, rhs, sloc);
+    return make_logic_op<ch_op::shl,
+                        ch_signed_v<Derived>,
+                        Derived,
+                        Derived,
+                        ch_bit<ch_width_v<U>>>(lhs, rhs, sloc);
   }
 
   template <typename U,
             CH_REQUIRE_0(std::is_convertible_v<U, ch_bit<ch_width_v<U>>>)>
   friend auto operator>>(Derived lhs, const U& rhs) {
     auto sloc = logic_accessor::sloc(lhs);
-    return make_logic_op<ch_op::shr, ch_signed_v<Derived>, Derived, Derived, ch_bit<ch_width_v<U>>>(lhs, rhs, sloc);
+    return make_logic_op<ch_op::shr,
+                        ch_signed_v<Derived>,
+                        Derived,
+                        Derived,
+                        ch_bit<ch_width_v<U>>>(lhs, rhs, sloc);
   }
 };
 
@@ -451,7 +464,8 @@ CH_LOGIC_OPERATOR(logic_op_slice)
     static_assert(ch_width_v<R> <= N, "invalid size");
     assert(start + ch_width_v<R> <= N);
     R ret(logic_buffer(ch_width_v<R>, sloc));
-    logic_accessor::write(ret, 0, reinterpret_cast<const Derived&>(*this), start, ch_width_v<R>, sloc);
+    auto& self = reinterpret_cast<const Derived&>(*this);
+    logic_accessor::write(ret, 0, self, start, ch_width_v<R>, sloc);
     return ret;
   }
 

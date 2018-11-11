@@ -45,20 +45,58 @@ TEST_CASE("registers", "[registers]") {
     }, 4);
 
     TEST([]()->ch_bool {
-      auto en = ch_case<ch_bool>(ch_now(), 7, 1)(5, 1)(3, 0)(0);
-      auto a = ch_delayEn<ch_bit128>(0x55, en, 1, 1);
-      auto e = ch_case<ch_bit8>(ch_now(), 7, 0x55)(5, 0x55)(3, 1)(a.slice<8>());
-      //ch_print("t={0}, a={1}, en={2}, e={3}", ch_now(), a, en, e);
-      return (a.slice<8>() == e);
-    }, 4);
-
-    TEST([]()->ch_bool {
       ch_bit2 a;
       a = ch_delay(10_b, 4);
       ch_bit2 e = ch_case(ch_now(), 4*2-1, 10_b)(a);
       //ch_print("t={0}, a={1}, e={2}", ch_now(), a, e);
       return (a == e);
     }, 4);
+
+    TEST([]()->ch_bool {
+      auto v = ch_case<ch_bit4>(ch_now(), 7, 2)(5, 1)(3, 0)(1, 3)(0);
+      auto a = ch_delay(v, 4);
+      auto e = ch_case<ch_bit4>(ch_now(), 13, 2)(11, 1)(9, 0)(7, 3)(a);
+      //ch_print("t={0}, a={1}, e={2}", ch_now(), a, e);
+      return (a == e);
+    }, 8);
+
+    TEST([]()->ch_bool {
+      auto x = 0xAA'00330012_h45;
+      auto v = ch_case<ch_bit<45>>(ch_now(), 7, 2)(5, 1)(3, 0)(1, x)(0);
+      auto a = ch_delay(v, 4);
+      auto e = ch_case<ch_bit<45>>(ch_now(), 13, 2)(11, 1)(9, 0)(7, x)(a);
+      //ch_print("t={0}, a={1}, e={2}", ch_now(), a, e);
+      return (a == e);
+    }, 8);
+
+    TEST([]()->ch_bool {
+      auto x = 0xAA'00330012_h45;
+      auto i = 0x66'00000000_h45;
+      auto v = ch_case<ch_bit<45>>(ch_now(), 9, 2)(7, 1)(5, 0)(3, x)(0);
+      auto a = ch_delay(v, 4, i);
+      auto e = ch_case<ch_bit<45>>(ch_now(), 15, 2)(13, 1)(11, 0)(9, x)(7, i)(5, i)(3, i)(1, i)(a);
+      //ch_print("t={0}, a={1}, e={2}", ch_now(), a, e);
+      return (a == e);
+    }, 8);
+
+    TEST([]()->ch_bool {
+      auto x = 0xaadddadd'ffff1105'dddcc070_h128;
+      auto v = ch_case<ch_bit128>(ch_now(), 7, 2)(5, 1)(3, 0)(1, x)(0);
+      auto a = ch_delay(v, 4);
+      auto e = ch_case<ch_bit128>(ch_now(), 13, 2)(11, 1)(9, 0)(7, x)(a);
+      //ch_print("t={0}, a={1}, e={2}", ch_now(), a, e);
+      return (a == e);
+    }, 8);
+
+    TEST([]()->ch_bool {
+      auto x = 0xaadddadd'ffff1105'dddcc070_h128;
+      auto i = 0x22222222'55555555'11111111_h128;
+      auto v = ch_case<ch_bit128>(ch_now(), 9, 2)(7, 1)(5, 0)(3, x)(0);
+      auto a = ch_delay(v, 4, i);
+      auto e = ch_case<ch_bit128>(ch_now(), 15, 2)(13, 1)(11, 0)(9, x)(7, i)(5, i)(3, i)(1, i)(a);
+      //ch_print("t={0}, a={1}, e={2}", ch_now(), a, e);
+      return (a == e);
+    }, 8);
 
     TEST([]()->ch_bool {
       auto a = ch_delay(0xFEDCBA98_h, 7);

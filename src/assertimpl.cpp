@@ -1,4 +1,5 @@
 #include "assertimpl.h"
+#include "timeimpl.h"
 #include "assertion.h"
 #include "context.h"
 
@@ -16,15 +17,16 @@ assertimpl::assertimpl(context* ctx,
                        const source_location& sloc)
   : ioimpl(ctx, type_assert, 0, sloc)
   , msg_(msg)
-  , predicated_(false) {
+  , pred_idx_(-1) {
+  this->add_src(cond);
+  auto sys_time = ctx->create_time(sloc);
+  this->add_src(sys_time);
   if (ctx_->conditional_enabled(this)) {
     auto pred = ctx_->create_predicate(sloc);
     if (pred) {
-      this->add_src(pred);
-      predicated_ = true;
+      pred_idx_ = this->add_src(pred);
     }
   }
-  cond_idx_ = this->add_src(cond);
 }
 
 assertimpl::assertimpl(context* ctx,
@@ -34,12 +36,13 @@ assertimpl::assertimpl(context* ctx,
                        const source_location& sloc)
   : ioimpl(ctx, type_assert, 0, sloc)
   , msg_(msg)
-  , predicated_(false) {
+  , pred_idx_(-1) {
+  this->add_src(cond);
+  auto sys_time = ctx->create_time(sloc);
+  this->add_src(sys_time);
   if (pred) {
-    this->add_src(pred);
-    predicated_ = false;
-  }
-  cond_idx_ = this->add_src(cond);
+    pred_idx_ = this->add_src(pred);
+  }  
 }
 
 lnodeimpl* assertimpl::clone(context* ctx, const clone_map& cloned_nodes) {
