@@ -172,7 +172,13 @@ struct sim_state_t {
   char* dbg;
 #endif
 
-  sim_state_t() : ports(nullptr), vars(nullptr), dbg(nullptr) {}
+  sim_state_t()
+    : ports(nullptr)
+    , vars(nullptr)
+  #ifndef NDEBUG
+    , dbg(nullptr)
+  #endif
+  {}
 
   ~sim_state_t() {
     delete [] vars;
