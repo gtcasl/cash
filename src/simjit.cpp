@@ -34,20 +34,24 @@ static constexpr block_type WORD_MAX = std::numeric_limits<block_type>::max();
 #define __countof(arr) (sizeof(arr) / sizeof(arr[0]))
 #define __source_location() jit_insn_mark_offset(j_func_, __LINE__)
 
-#define __alu_call_relational(pfn, ...) \
-  if (is_signed) { \
-    if (is_resize) { \
-      j_dst = this->emit_alu_call_relational(reinterpret_cast<void*>(pfn<true, block_type, StaticBitAccessor<true, true, block_type>>), #pfn, __VA_ARGS__); \
+#define __alu_call_relational(fname, ...) \
+  [&]()->jit_value_t { \
+    void* pfn; \
+    if (is_signed) { \
+      if (is_resize) { \
+        pfn = reinterpret_cast<void*>(fname<true, block_type, StaticBitAccessor<true, true, block_type>>); \
+      } else { \
+        pfn = reinterpret_cast<void*>(fname<true, block_type, StaticBitAccessor<true, false, block_type>>); \
+      } \
     } else { \
-      j_dst = this->emit_alu_call_relational(reinterpret_cast<void*>(pfn<true, block_type, StaticBitAccessor<true, false, block_type>>), #pfn, __VA_ARGS__); \
+      if (is_resize) { \
+        pfn = reinterpret_cast<void*>(fname<false, block_type, StaticBitAccessor<false, true, block_type>>); \
+      } else { \
+        pfn = reinterpret_cast<void*>(fname<false, block_type, StaticBitAccessor<false, false, block_type>>); \
+      } \
     } \
-  } else { \
-    if (is_resize) { \
-      j_dst = this->emit_alu_call_relational(reinterpret_cast<void*>(pfn<false, block_type, StaticBitAccessor<false, true, block_type>>), #pfn, __VA_ARGS__); \
-    } else { \
-      j_dst = this->emit_alu_call_relational(reinterpret_cast<void*>(pfn<false, block_type, StaticBitAccessor<false, false, block_type>>), #pfn, __VA_ARGS__); \
-    } \
-  }
+    return this->emit_alu_call_relational(pfn, #fname, __VA_ARGS__); \
+  }()
 
 static uint32_t to_value_size(uint32_t size) {
   uint32_t bytes = ceildiv(size, 8);
@@ -625,7 +629,11 @@ private:
         scalar_map_[node->id()] = this->emit_cast(j_dst, j_type);
       } else {
         jit_value_t j_dst;
-        __alu_call_relational(bv_eq_vector, j_src0, node->src(0).size(), j_src1, node->src(1).size());
+        if (is_resize) {
+          j_dst = this->emit_eq_vector(j_src0, j_src1, node->src(1).size());
+        } else {
+          j_dst = __alu_call_relational(bv_eq_vector, j_src0, node->src(0).size(), j_src1, node->src(1).size());
+        }
         scalar_map_[node->id()] = this->emit_cast(j_dst, j_type);
       }
       break;
@@ -635,7 +643,11 @@ private:
         scalar_map_[node->id()] = this->emit_cast(j_dst, j_type);
       } else {
         jit_value_t j_dst;
-        __alu_call_relational(bv_eq_vector, j_src0, node->src(0).size(), j_src1, node->src(1).size());
+        if (is_resize) {
+          j_dst = this->emit_eq_vector(j_src0, j_src1, node->src(1).size());
+        } else {
+          j_dst = __alu_call_relational(bv_eq_vector, j_src0, node->src(0).size(), j_src1, node->src(1).size());
+        }
         auto j_dst_n = jit_insn_not(j_func_, j_dst);
         scalar_map_[node->id()] = this->emit_cast(j_dst_n, j_type);
       }
@@ -877,7 +889,8 @@ private:
           scalar_map_[node->id()]= j_src0;
         }
       } else {
-        CH_TODO();
+        auto j_dst = this->emit_store_address(node);
+        this->emit_pad_vector(j_dst, node->size(), j_src0, node->src(0).size());
       }
       break;
     default:
@@ -967,7 +980,7 @@ private:
         } else {
           auto j_key_ptr = this->emit_store_address(node->src(0).impl());
           auto j_val_ptr = this->emit_load_address(node->src(i).impl());
-          auto j_eq = this->emit_bv_eq_vector(j_key_ptr, j_val_ptr, dst_width);
+          auto j_eq = this->emit_eq_vector(j_key_ptr, j_val_ptr, dst_width);
           jit_insn_branch_if_not(j_func_, j_eq, &l_skip);
         }
         if (is_scalar) {
@@ -1680,7 +1693,7 @@ private:
 
   /////////////////////////////////////////////////////////////////////////////
 
-  jit_value_t emit_bv_eq_vector(jit_value_t j_ptr1, jit_value_t j_ptr2, uint32_t length) {
+  jit_value_t emit_eq_vector(jit_value_t j_ptr1, jit_value_t j_ptr2, uint32_t length) {
     auto j_num_words = this->emit_constant(ceildiv(length, WORD_SIZE), jit_type_uint);
     auto j_ret = jit_value_create(j_func_, jit_type_uint);
     auto j_idx = jit_value_create(j_func_, jit_type_uint);
@@ -1702,6 +1715,14 @@ private:
 
     jit_insn_branch_if(j_func_, j_continue, &l_loop);
     return j_ret;
+  }
+
+  jit_value_t emit_pad_vector(jit_value_t j_dst_ptr,
+                              uint32_t dst_size,
+                              jit_value_t j_src_ptr,
+                              uint32_t src_size) {
+    CH_UNUSED(j_dst_ptr, dst_size, j_src_ptr, src_size);
+    CH_TODO();
   }
 
   /////////////////////////////////////////////////////////////////////////////
