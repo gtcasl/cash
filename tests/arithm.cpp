@@ -524,6 +524,12 @@ TEST_CASE("arithmetic", "[arithmetic]") {
       return (c == 3);
     });
     TEST([]()->ch_bool {
+      ch_int8 a(-1);
+      ch_int8 b(-2);
+      auto c = a + b;
+      return (c == -3);
+    });
+    TEST([]()->ch_bool {
       ch_uint64 a(0xffffffff), b(0x1);
       auto c = a + b;
       return (c == 0x100000000_h64);
@@ -547,6 +553,12 @@ TEST_CASE("arithmetic", "[arithmetic]") {
       return (c == 1);
     });
     TEST([]()->ch_bool {
+      ch_int8 a(-1);
+      ch_int8 b(-2);
+      auto c = b - a;
+      return (c == -1);
+    });
+    TEST([]()->ch_bool {
       ch_uint<65> a(0x1);
       ch_uint<66> b(0x2);
       auto c = b - a;
@@ -561,6 +573,11 @@ TEST_CASE("arithmetic", "[arithmetic]") {
       ch_uint4 a(1);
       auto b = -a;
       return (b == 0xf);
+    });
+    TEST([]()->ch_bool {
+      ch_int4 a(-1);
+      auto b = -a;
+      return (b == 0x1);
     });
     TEST([]()->ch_bool {
       ch_uint<65> a(1);

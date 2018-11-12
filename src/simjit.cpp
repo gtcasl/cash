@@ -807,8 +807,7 @@ private:
 
     case ch_op::neg:
       if (is_scalar) {
-        auto j_src0_s = is_signed ? this->emit_sign_ext(j_src0, node->src(0).size()) : j_src0;
-        auto j_dst = jit_insn_neg(j_func_, j_src0_s);
+        auto j_dst = jit_insn_neg(j_func_, j_src0);
         scalar_map_[node->id()] = this->emit_cast(j_dst, j_type);
         this->emit_clear_extra_bits(node);
       } else {
@@ -817,9 +816,7 @@ private:
       break;
     case ch_op::add:
       if (is_scalar) {
-        auto j_src0_s = is_signed ? this->emit_sign_ext(j_src0, node->src(0).size()) : j_src0;
-        auto j_src1_s = is_signed ? this->emit_sign_ext(j_src1, node->src(1).size()) : j_src1;
-        auto j_dst = jit_insn_add(j_func_, j_src0_s, j_src1_s);
+        auto j_dst = jit_insn_add(j_func_, j_src0, j_src1);
         scalar_map_[node->id()] = this->emit_cast(j_dst, j_type);
         this->emit_clear_extra_bits(node);
       } else {
@@ -828,9 +825,7 @@ private:
       break;
     case ch_op::sub:
       if (is_scalar) {
-        auto j_src0_s = is_signed ? this->emit_sign_ext(j_src0, node->src(0).size()) : j_src0;
-        auto j_src1_s = is_signed ? this->emit_sign_ext(j_src1, node->src(1).size()) : j_src1;
-        auto j_dst = jit_insn_sub(j_func_, j_src0_s, j_src1_s);
+        auto j_dst = jit_insn_sub(j_func_, j_src0, j_src1);
         scalar_map_[node->id()] = this->emit_cast(j_dst, j_type);
         this->emit_clear_extra_bits(node);
       } else {
@@ -900,9 +895,8 @@ private:
     auto src = node->src(opd).impl();
     auto is_signed = node->is_signed();
     if (is_scalar) {
-      bool signed_op = CH_OP_PROP(node->op()) & op_flags::is_signed;
       auto j_value = scalar_map_.at(src->id());
-      if (resize && is_signed && !signed_op) {
+      if (resize && is_signed) {
         auto j_value_s = this->emit_sign_ext(j_value, src->size());
         jit_insn_store(j_func_, j_value, j_value_s);
       }
