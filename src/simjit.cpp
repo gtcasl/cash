@@ -562,8 +562,13 @@ private:
         for (uint i = 0, n = node->ranges().size(); i < n; ++i) {
           auto& range = node->range(i);
           auto& src = node->src(range.src_idx);
-          auto j_src_ptr = this->emit_load_address(src.impl());
-          this->emit_copy_vector(j_dst_ptr, range.dst_offset, j_src_ptr, range.src_offset, range.length);
+          auto it = scalar_map_.find(src.id());
+          if (it != scalar_map_.end()) {
+            this->emit_copy_scalar(j_dst_ptr, range.dst_offset, it->second, range.src_offset, range.length);
+          } else {
+            auto j_src_ptr = this->emit_load_address(src.impl());
+            this->emit_copy_vector(j_dst_ptr, range.dst_offset, j_src_ptr, range.src_offset, range.length);
+          }
         }
       }
     }
@@ -638,7 +643,9 @@ private:
 
     case ch_op::lt:
       if (is_scalar) {
-        auto j_dst = jit_insn_lt(j_func_, j_src0, j_src1);
+        auto j_src0_s = is_signed ? this->emit_sign_ext(j_src0, node->src(0).size()) : j_src0;
+        auto j_src1_s = is_signed ? this->emit_sign_ext(j_src1, node->src(1).size()) : j_src1;
+        auto j_dst = jit_insn_lt(j_func_, j_src0_s, j_src1_s);
         scalar_map_[node->id()] = this->emit_cast(j_dst, j_type);
       } else {
         CH_TODO();
@@ -646,7 +653,9 @@ private:
       break;
     case ch_op::gt:
       if (is_scalar) {
-        auto j_dst = jit_insn_gt(j_func_, j_src0, j_src1);
+        auto j_src0_s = is_signed ? this->emit_sign_ext(j_src0, node->src(0).size()) : j_src0;
+        auto j_src1_s = is_signed ? this->emit_sign_ext(j_src1, node->src(1).size()) : j_src1;
+        auto j_dst = jit_insn_gt(j_func_, j_src0_s, j_src1_s);
         scalar_map_[node->id()] = this->emit_cast(j_dst, j_type);
       } else {
         CH_TODO();
@@ -654,7 +663,9 @@ private:
       break;
     case ch_op::le:
       if (is_scalar) {
-        auto j_dst = jit_insn_le(j_func_, j_src0, j_src1);
+        auto j_src0_s = is_signed ? this->emit_sign_ext(j_src0, node->src(0).size()) : j_src0;
+        auto j_src1_s = is_signed ? this->emit_sign_ext(j_src1, node->src(1).size()) : j_src1;
+        auto j_dst = jit_insn_le(j_func_, j_src0_s, j_src1_s);
         scalar_map_[node->id()] = this->emit_cast(j_dst, j_type);
       } else {
         CH_TODO();
@@ -662,7 +673,9 @@ private:
       break;
     case ch_op::ge:
       if (is_scalar) {
-        auto j_dst = jit_insn_ge(j_func_, j_src0, j_src1);
+        auto j_src0_s = is_signed ? this->emit_sign_ext(j_src0, node->src(0).size()) : j_src0;
+        auto j_src1_s = is_signed ? this->emit_sign_ext(j_src1, node->src(1).size()) : j_src1;
+        auto j_dst = jit_insn_ge(j_func_, j_src0_s, j_src1_s);
         scalar_map_[node->id()] = this->emit_cast(j_dst, j_type);
       } else {
         CH_TODO();
@@ -794,7 +807,8 @@ private:
 
     case ch_op::neg:
       if (is_scalar) {
-        auto j_dst = jit_insn_neg(j_func_, j_src0);
+        auto j_src0_s = is_signed ? this->emit_sign_ext(j_src0, node->src(0).size()) : j_src0;
+        auto j_dst = jit_insn_neg(j_func_, j_src0_s);
         scalar_map_[node->id()] = this->emit_cast(j_dst, j_type);
         this->emit_clear_extra_bits(node);
       } else {
@@ -803,7 +817,9 @@ private:
       break;
     case ch_op::add:
       if (is_scalar) {
-        auto j_dst = jit_insn_add(j_func_, j_src0, j_src1);
+        auto j_src0_s = is_signed ? this->emit_sign_ext(j_src0, node->src(0).size()) : j_src0;
+        auto j_src1_s = is_signed ? this->emit_sign_ext(j_src1, node->src(1).size()) : j_src1;
+        auto j_dst = jit_insn_add(j_func_, j_src0_s, j_src1_s);
         scalar_map_[node->id()] = this->emit_cast(j_dst, j_type);
         this->emit_clear_extra_bits(node);
       } else {
@@ -812,7 +828,9 @@ private:
       break;
     case ch_op::sub:
       if (is_scalar) {
-        auto j_dst = jit_insn_sub(j_func_, j_src0, j_src1);
+        auto j_src0_s = is_signed ? this->emit_sign_ext(j_src0, node->src(0).size()) : j_src0;
+        auto j_src1_s = is_signed ? this->emit_sign_ext(j_src1, node->src(1).size()) : j_src1;
+        auto j_dst = jit_insn_sub(j_func_, j_src0_s, j_src1_s);
         scalar_map_[node->id()] = this->emit_cast(j_dst, j_type);
         this->emit_clear_extra_bits(node);
       } else {
@@ -882,8 +900,9 @@ private:
     auto src = node->src(opd).impl();
     auto is_signed = node->is_signed();
     if (is_scalar) {
+      bool signed_op = CH_OP_PROP(node->op()) & op_flags::is_signed;
       auto j_value = scalar_map_.at(src->id());
-      if (resize && is_signed) {
+      if (resize && is_signed && !signed_op) {
         auto j_value_s = this->emit_sign_ext(j_value, src->size());
         jit_insn_store(j_func_, j_value, j_value_s);
       }
@@ -1899,6 +1918,36 @@ private:
     }
   }
 
+  void emit_copy_scalar(jit_value_t j_dst_ptr,
+                        uint32_t dst_offset,
+                        jit_value_t j_src,
+                        uint32_t src_offset,
+                        uint32_t length) {
+    auto w_dst_idx = dst_offset / WORD_SIZE;
+    auto w_dst_lsb = dst_offset % WORD_SIZE;
+
+    block_type mask0 = (WORD_MAX >> (WORD_SIZE - length)) << w_dst_lsb;
+    block_type mask1 = ~mask0 >> (WORD_SIZE - length);
+
+    auto j_src_offset = this->emit_constant(src_offset, jit_type_uint);
+    auto j_dst_lsb = this->emit_constant(w_dst_lsb, jit_type_uint);
+    auto j_src_s = jit_insn_ushr(j_func_, j_src, j_src_offset);
+    auto j_src_w = this->emit_cast(j_src_s, word_type_);
+    auto j_src_0 = jit_insn_shl(j_func_, j_src_w, j_dst_lsb);
+    auto j_dst_0 = jit_insn_load_relative(j_func_, j_dst_ptr, w_dst_idx * sizeof(block_type), word_type_);
+    auto j_mask0 = this->emit_constant(mask0, word_type_);
+    auto j_blend0 = this->emit_blend(j_mask0, j_dst_0, j_src_0);
+    jit_insn_store_relative(j_func_, j_dst_ptr, w_dst_idx * sizeof(block_type), j_blend0);
+    if (w_dst_lsb > (WORD_SIZE - length)) {
+      auto j_dst_1 = jit_insn_load_relative(j_func_, j_dst_ptr, (w_dst_idx + 1) * sizeof(block_type), word_type_);
+      auto j_rem = this->emit_constant(WORD_SIZE - w_dst_lsb, jit_type_uint);
+      auto j_src_1 = jit_insn_ushr(j_func_, j_src_w, j_rem);
+      auto j_mask1 = this->emit_constant(mask1, word_type_);
+      auto j_blend1 = this->emit_blend(j_mask1, j_dst_1, j_src_1);
+      jit_insn_store_relative(j_func_, j_dst_ptr, (w_dst_idx + 1) * sizeof(block_type), j_blend1);
+    }
+  }
+
   void emit_copy_vector(jit_value_t j_dst_ptr,
                         uint32_t dst_offset,
                         jit_value_t j_src_ptr,
@@ -1911,7 +1960,12 @@ private:
       this->emit_memcpy(j_dst_ptr8, j_src_ptr8, length / 8);
       uint32_t rem = length % 8;
       if (rem) {
-        CH_TODO();
+        auto offset = length / 8;
+        auto j_src_value = jit_insn_load_relative(j_func_, j_src_ptr8, offset, jit_type_ubyte);
+        auto j_dst_value = jit_insn_load_relative(j_func_, j_dst_ptr8, offset, jit_type_ubyte);
+        auto j_mask = this->emit_constant(0xff << rem, jit_type_ubyte);
+        auto j_dst = this->emit_blend(j_mask, j_src_value, j_dst_value);
+        jit_insn_store_relative(j_func_, j_dst_ptr8, offset, j_dst);
       }
     } else {
       auto j_dst_offset = this->emit_constant(dst_offset, jit_type_uint);
@@ -2207,26 +2261,24 @@ bool check_compatible(context* ctx) {
       case ch_op::gt:
       case ch_op::le:
       case ch_op::ge:
-        if (!is_scalar(alu)
-         || alu->is_signed())
+        if (!is_scalar(alu))
           return error_out("invalid alu size");
         break;
 
       case ch_op::notl:
       case ch_op::andl:
       case ch_op::orl:
+        if (!is_scalar(alu))
+          return error_out("invalid alu size");
         break;
-
       case ch_op::inv:
-        if (!is_scalar(alu)
-         || (-1 != alu->should_resize_opds() && alu->is_signed()))
+        if (!is_scalar(alu))
           return error_out("invalid alu size");
         break;
       case ch_op::andb:
       case ch_op::orb:
       case ch_op::xorb:
-        if ((is_scalar(alu) && -1 != alu->should_resize_opds() && alu->is_signed())
-         || (!is_scalar(alu) && -1 != alu->should_resize_opds()))
+        if (!is_scalar(alu) && -1 != alu->should_resize_opds())
           return error_out("invalid alu size");
         break;
 
@@ -2247,8 +2299,7 @@ bool check_compatible(context* ctx) {
       case ch_op::neg:
       case ch_op::add:
       case ch_op::sub:
-        if (!is_scalar(alu)
-         || (-1 != alu->should_resize_opds() && alu->is_signed()))
+        if (!is_scalar(alu))
           return error_out("invalid alu size");
         break;
 
