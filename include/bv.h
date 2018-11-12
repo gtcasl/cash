@@ -452,22 +452,24 @@ void bv_copy_vector_small(T* w_dst,
 }
 
 template <typename T>
-void bv_copy_vector_aligned8(T* w_dst, const T* w_src, uint32_t length) {
-  auto b_dst = reinterpret_cast<uint8_t*>(w_dst);
-  auto b_src = reinterpret_cast<const uint8_t*>(w_src);
+void bv_copy_vector_aligned(T* w_dst, const T* w_src, uint32_t length) {
+  static unsigned constexpr WORD_SIZE = bitwidth_v<T>;
+  static constexpr unsigned WORD_MASK = WORD_SIZE - 1;
+  static constexpr T        WORD_MAX  = std::numeric_limits<T>::max();
 
   uint32_t dst_end       = length - 1;
-  uint32_t b_dst_end_idx = dst_end / 8;
-  uint32_t b_dst_msb     = dst_end % 8;
+  uint32_t w_dst_end_idx = (dst_end / WORD_SIZE);
+  uint32_t w_dst_msb     = dst_end % WORD_SIZE;
 
   // update aligned blocks
-  if (0x7 == b_dst_msb) {
-    memcpy(b_dst, b_src, b_dst_end_idx + 1);
+  if (WORD_MASK == w_dst_msb) {
+    std::copy_n(w_src, w_dst_end_idx + 1, w_dst);
   } else {
-    memcpy(b_dst, b_src, b_dst_end_idx);
+    std::copy_n(w_src, w_dst_end_idx, w_dst);
     // update remining block
-    auto mask = (0x255 << 1) << b_dst_msb;
-    w_dst[b_dst_end_idx] = blend<uint8_t>(mask, b_src[b_dst_end_idx], b_dst[b_dst_end_idx]);
+    T src_block = w_src[w_dst_end_idx];
+    T mask = (WORD_MAX << 1) << w_dst_msb;
+    w_dst[w_dst_end_idx] = blend<T>(mask, src_block, w_dst[w_dst_end_idx]);
   }
 }
 
@@ -608,7 +610,9 @@ void bv_copy_vector(T* w_dst, uint32_t w_dst_lsb,
     bv_copy_vector_small(w_dst, w_dst_lsb, w_src, w_src_lsb, length);
   } else
   if (0 == ((w_dst_lsb % 8) | (w_src_lsb % 8))) {
-    bv_copy_vector_aligned8(w_dst, w_src, length);
+    auto b_dst = reinterpret_cast<uint8_t*>(w_dst) + (w_dst_lsb / 8);
+    auto b_src = reinterpret_cast<const uint8_t*>(w_src) + (w_src_lsb / 8);
+    bv_copy_vector_aligned(b_dst, b_src, length);
   } else
   if (0 == w_dst_lsb) {
     bv_copy_vector_aligned_dst(w_dst, w_src, w_src_lsb, length);
@@ -665,28 +669,29 @@ void bv_slice_vector_small(T* w_dst, uint32_t dst_size, const T* w_src, uint32_t
 }
 
 template <typename T>
-void bv_slice_vector_aligned8(T* w_dst, uint32_t dst_size, const T* w_src) {
-  auto b_dst = reinterpret_cast<uint8_t*>(w_dst);
-  auto b_src = reinterpret_cast<const uint8_t*>(w_src);
+void bv_slice_vector_aligned(T* dst, uint32_t dst_size, const T* w_src) {
+  static unsigned constexpr WORD_SIZE = bitwidth_v<T>;
+  static constexpr unsigned WORD_MASK = WORD_SIZE - 1;
 
   uint32_t dst_end       = dst_size - 1;
-  uint32_t b_dst_end_idx = dst_end / 8;
-  uint32_t b_dst_msb     = dst_end % 8;
+  uint32_t w_dst_end_idx = (dst_end / WORD_SIZE);
+  uint32_t w_dst_msb     = dst_end % WORD_SIZE;
 
   // update aligned blocks
-  if (0x7 == b_dst_msb) {
-    memcpy(b_dst, b_src, b_dst_end_idx + 1);
+  if (WORD_MASK == w_dst_msb) {
+    std::copy_n(w_src, w_dst_end_idx + 1, dst);
   } else {
-    memcpy(b_dst, b_src, b_dst_end_idx);
+    std::copy_n(w_src, w_dst_end_idx, dst);
     // update remining block
-    uint32_t clamp = (0x8 - b_dst_msb);
-    w_dst[b_dst_end_idx] = uint8_t(b_src[b_dst_end_idx] << clamp) >> clamp;
+    uint32_t clamp = (WORD_MASK - w_dst_msb);
+    dst[w_dst_end_idx] = T(w_src[w_dst_end_idx] << clamp) >> clamp;
   }
 }
 
 template <typename T>
 void bv_slice_vector_unaligned(T* w_dst, uint32_t dst_size, const T* w_src, uint32_t w_src_lsb) {
   static unsigned constexpr WORD_SIZE = bitwidth_v<T>;
+  static constexpr unsigned WORD_MASK = WORD_SIZE - 1;
   assert(w_src_lsb < WORD_SIZE);
 
   uint32_t src_end       = w_src_lsb + dst_size - 1;
@@ -713,7 +718,7 @@ void bv_slice_vector_unaligned(T* w_dst, uint32_t dst_size, const T* w_src, uint
   if (w_src_end_idx > w_dst_end_idx) {
     src_block |= w_src[1] << (WORD_SIZE - w_src_lsb);
   }
-  uint32_t clamp = (WORD_SIZE - w_dst_msb);
+  uint32_t clamp = (WORD_MASK - w_dst_msb);
   w_dst[0] = T(src_block << clamp) >> clamp;
 }
 
@@ -726,7 +731,9 @@ void bv_slice_vector(T* w_dst, uint32_t dst_size, const T* w_src, uint32_t w_src
     bv_slice_vector_small(w_dst, dst_size, w_src, w_src_lsb);
   } else
   if (0 == (w_src_lsb % 8)) {
-    bv_slice_vector_aligned8(w_dst, dst_size, w_src);
+    auto b_dst = reinterpret_cast<uint8_t*>(w_dst);
+    auto b_src = reinterpret_cast<const uint8_t*>(w_src) + (w_src_lsb / 8);
+    bv_slice_vector_aligned(b_dst, dst_size, b_src);
   } else {
     bv_slice_vector_unaligned(w_dst, dst_size, w_src, w_src_lsb);
   }
@@ -1188,7 +1195,7 @@ void bv_shl_vector(T* out, uint32_t out_size,
   int32_t out_num_words = ceildiv(out_size, WORD_SIZE);
 
   auto shift_words = std::min(ceildiv<int32_t>(dist, WORD_SIZE), out_num_words);
-  uint32_t shift_bits = dist % WORD_SIZE;
+  int32_t shift_bits = dist % WORD_SIZE;
   int32_t m = in_num_words + shift_words;
 
   int32_t i = out_num_words - 1;
@@ -1254,12 +1261,13 @@ void bv_shr_vector(T* out, uint32_t out_size,
   static constexpr uint32_t WORD_SIZE = bitwidth_v<T>;
   assert(out_size <= in_size);
 
-  uint32_t in_num_words  = ceildiv(in_size, WORD_SIZE);
-  uint32_t out_num_words = ceildiv(out_size, WORD_SIZE);
+  int32_t in_num_words  = ceildiv(in_size, WORD_SIZE);
+  int32_t out_num_words = ceildiv(out_size, WORD_SIZE);
 
-  uint32_t shift_words = std::min(ceildiv<uint32_t>(dist, WORD_SIZE), in_num_words);
-  uint32_t rem_words = std::min(in_num_words - shift_words, out_num_words);
-  uint32_t shift_bits = dist % WORD_SIZE;
+  int32_t shift_words = std::min(ceildiv<int32_t>(dist, WORD_SIZE), in_num_words);
+  int32_t rem_words = std::min(in_num_words - shift_words, out_num_words);
+
+  int32_t shift_bits = dist % WORD_SIZE;
 
   T ext = 0;
   if constexpr (is_signed) {
@@ -1268,20 +1276,45 @@ void bv_shr_vector(T* out, uint32_t out_size,
 
   if (shift_bits) {
     T prev = in[shift_words-1] >> shift_bits;
-    uint32_t i = 0;
-    for (; i < rem_words; ++i) {
-      auto curr = in[i + shift_words];
-      out[i] = (curr << (WORD_SIZE - shift_bits)) | prev;
+    int32_t i = 0;
+    if constexpr (is_signed) {
+      for (; i < rem_words - 1; ++i) {
+        auto curr = in[i + shift_words];
+        out[i] = (curr << (WORD_SIZE - shift_bits)) | prev;
+        prev = curr >> shift_bits;
+      }
+      auto src = in[i + shift_words];
+      auto rem = in_size % WORD_SIZE;
+      auto curr = rem ? sign_ext(src, rem) : src;
+      out[i++] = (curr << (WORD_SIZE - shift_bits)) | prev;
       prev = curr >> shift_bits;
+    } else {
+      for (; i < rem_words; ++i) {
+        auto curr = in[i + shift_words];
+        out[i] = (curr << (WORD_SIZE - shift_bits)) | prev;
+        prev = curr >> shift_bits;
+      }
     }
     for (; i < out_num_words; ++i) {
       out[i] = (ext << (WORD_SIZE - shift_bits)) | prev;
       prev = ext;
     }
   } else {
-    uint32_t i = 0;
-    for (; i < rem_words; ++i) {
-      out[i] = in[i + shift_words];
+    int32_t i = 0;
+    if constexpr (is_signed) {
+      if (rem_words) {
+        for (; i < rem_words - 1; ++i) {
+          out[i] = in[i + shift_words];
+        }
+        auto src = in[i + shift_words];
+        auto rem = in_size % WORD_SIZE;
+        auto curr = rem ? sign_ext(src, rem) : src;
+        out[i++] = curr;
+      }
+    } else {
+      for (; i < rem_words; ++i) {
+        out[i] = in[i + shift_words];
+      }
     }
     for (; i < out_num_words; ++i) {
       out[i] = ext;

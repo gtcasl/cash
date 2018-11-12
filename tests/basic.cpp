@@ -114,6 +114,12 @@ TEST_CASE("basics", "[basics]") {
       m.io.in = 0xA;
       return m.io.out;
     });
+
+    TEST([]()->ch_bool {
+      ch_bit<65> a = 0xf, b = 0xe, c = 0x3, d = 0x2;
+      auto s = ch_sel(a != b, c, d);
+      return (s == c);
+    });
   }
   SECTION("ref", "[ref]") {
     TEST([]()->ch_bool {

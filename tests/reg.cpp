@@ -114,6 +114,34 @@ TEST_CASE("registers", "[registers]") {
     }, 4);
 
     TEST([]()->ch_bool {
+      auto v = 0x555555557777777733333333_h;
+      auto a = ch_delay(v);
+      auto e = ch_case(ch_now(), 3, v)(1, v)(a);
+      //ch_print("t={0}, a={1}, e={2}", ch_now(), a, e);
+      return (a == e);
+    }, 1);
+
+    TEST([]()->ch_bool {
+      auto v = 0x555555557777777733333333_h;
+      auto i = 0x111111112222222233333333_h;
+      auto en = ch_case<ch_bool>(ch_now(), 3, 0)(1, 0)(0);
+      auto a = ch_delayEn(v, en, 1, i);
+      auto e = ch_case(ch_now(), 3, i)(1, i)(a);
+      //ch_print("t={0}, a={1}, e={2}", ch_now(), a, e);
+      return (a == e);
+    }, 1);
+
+    TEST([]()->ch_bool {
+      auto v = 0x555555557777777733333333_h;
+      auto i = 0x111111112222222233333333_h;
+      auto en = ch_case<ch_bool>(ch_now(), 7, 1)(5, 1)(3, 0)(1, 0)(0);
+      auto a = ch_delayEn(v, en, 2, i);
+      auto e = ch_case(ch_now(), 7, v)(5, i)(3, i)(1, i)(a);
+      //ch_print("t={0}, a={1}, e={2}", ch_now(), a, e);
+      return (a == e);
+    }, 4);
+
+    TEST([]()->ch_bool {
       auto a = ch_delay(V2{3, 1});
       auto e = ch_case(ch_now(), 3, 1101_b)(a.as_uint());
       //ch_print("t={0}, a={1}, e={2}", ch_now(), a, e);

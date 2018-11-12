@@ -390,14 +390,12 @@ CH_LOGIC_OPERATOR(logic_op_logical)
     return make_logic_op<ch_op::notl, false, ch_bit<1>>(self, sloc);
   }
 
-  friend auto operator&&(Derived lhs, const Derived& rhs) {
-    static_assert(1 == Derived::traits::bitwidth, "invalid size");
+  friend auto operator&&(Derived lhs, const Derived& rhs) {    
     auto sloc = logic_accessor::sloc(lhs);
     return make_logic_op<ch_op::andl, false, ch_bit<1>>(lhs, rhs, sloc);
   }
 
   friend auto operator||(Derived lhs, const Derived& rhs) {
-    static_assert(1 == Derived::traits::bitwidth, "invalid size");
     auto sloc = logic_accessor::sloc(lhs);
     return make_logic_op<ch_op::orl, false, ch_bit<1>>(lhs, rhs, sloc);
   }

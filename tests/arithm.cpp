@@ -1,7 +1,7 @@
 #include "common.h"
 
 TEST_CASE("arithmetic", "[arithmetic]") {
-  SECTION("logic", "[logic]") {
+  SECTION("binary", "[binary]") {
     TEST([]()->ch_bool {
       ch_bit4 a(1100_b);
       auto c = ~a;
@@ -22,6 +22,11 @@ TEST_CASE("arithmetic", "[arithmetic]") {
       ch_bit4 a(1100_b);
       auto c = a ^ 0101_b;
       return (c == 1001_b);
+    });
+    TEST([]()->ch_bool {
+      ch_bit<65> a(0x0'ffffffff'00000000_h65);
+      auto c = ~a;
+      return (c == 0x1'00000000'ffffffff_h65);
     });
     TEST([]()->ch_bool {
       ch_bit128 a(0xBA), b(0xDC);
@@ -73,6 +78,22 @@ TEST_CASE("arithmetic", "[arithmetic]") {
       ch_bit128 a(0x80000000000000000000000000000000_h128);
       return (ch_xorr(a) == 1_b);
     });
+    TEST([]()->ch_bool {
+      ch_bit<65> a(0x1'00000000'00000000_h65);
+      return (ch_orr(a) == 1_b);
+    });
+    TEST([]()->ch_bool {
+      ch_bit<65> a(0x0'00000000'00000000_h65);
+      return (ch_orr(a) == 0_b);
+    });
+    TEST([]()->ch_bool {
+      ch_bit<65> a(0x1'ffffffff'fffffff0_h65);
+      return (ch_andr(a) == 0_b);
+    });
+    TEST([]()->ch_bool {
+      ch_bit<65> a(0x1'ffffffff'ffffffff_h65);
+      return (ch_andr(a) == 1_b);
+    });
   }
   
   SECTION("compare", "[compare]") {
@@ -81,20 +102,55 @@ TEST_CASE("arithmetic", "[arithmetic]") {
       return (x == 0100_b);
     });
     TEST([]()->ch_bool {
+      ch_bit128 x(0x111111100000001111111_h128);
+      ch_bit128 y = x >> 64;
+      ch_bit128 e = 0x11111_h128;
+      //ch_print("y={0}, e={1}", y, e);
+      return (y == e);
+    });
+    TEST([]()->ch_bool {
       ch_bit4 x(0101_b);
       return (x != 0100_b);
+    });
+    TEST([]()->ch_bool {
+      ch_bit128 x(0x111111100000001111111_h128);
+      ch_bit128 y = x << 64;
+      ch_bit128 e = 0;
+      //ch_print("y={0}, e={1}", y, e);
+      return (y != e);
     });
     TEST([]()->ch_bool {
       ch_uint4 x(0001_b);
       return (x < 0100_b);
     });
     TEST([]()->ch_bool {
+      ch_uint128 x(0x111111100000001111111_h128);
+      ch_uint128 y = x >> 64;
+      ch_uint128 e = 0x11112_h128;
+      //ch_print("y={0}, e={1}", y, e);
+      return (y < e);
+    });
+    TEST([]()->ch_bool {
       ch_uint4 x(0100_b);
       return (x > 0010_b);
     });
     TEST([]()->ch_bool {
+      ch_uint128 x(0x111111100000001111111_h128);
+      ch_uint128 y = x >> 64;
+      ch_uint128 e = 0x11110_h128;
+      //ch_print("y={0}, e={1}", y, e);
+      return (y > e);
+    });
+    TEST([]()->ch_bool {
       ch_uint4 x(0100_b);
       return (x <= 1100_b);
+    });
+    TEST([]()->ch_bool {
+      ch_uint128 x(0x111111100000001111111_h128);
+      ch_uint128 y = x >> 64;
+      ch_uint128 e = 0x11111_h128;
+      //ch_print("y={0}, e={1}", y, e);
+      return (y <= e);
     });
     TEST([]()->ch_bool {
       ch_uint4 x(1100_b);
@@ -103,6 +159,13 @@ TEST_CASE("arithmetic", "[arithmetic]") {
     TEST([]()->ch_bool {
       ch_uint4 x(1100_b);
       return (x >= 0100_b);
+    });
+    TEST([]()->ch_bool {
+      ch_uint128 x(0x111111100000001111111_h128);
+      ch_uint128 y = x >> 64;
+      ch_uint128 e = 0x11111_h128;
+      //ch_print("y={0}, e={1}", y, e);
+      return (y >= e);
     });
     TEST([]()->ch_bool {
       ch_uint4 x(0100_b);
@@ -140,6 +203,35 @@ TEST_CASE("arithmetic", "[arithmetic]") {
       ch_int4 x(0100_b);
       return (x <= 0100_b);
     });
+    TEST([]()->ch_bool {
+      ch_int<84> x(0xf11111100000001111111_h84);
+      ch_int<84> y = x << 1;
+      ch_int<84> e = 0xe22222200000002222223_h84;
+      //ch_print("y={0}, e={1}", y, e);
+      return (y < e);
+    });
+    TEST([]()->ch_bool {
+      ch_int<84> x(0xf11111100000001111111_h84);
+      ch_int<84> y = x << 1;
+      ch_int<84> e = 0xe22222200000002222221_h84;
+      //ch_print("y={0}, e={1}", y, e);
+      return (y > e);
+    });
+    TEST([]()->ch_bool {
+      ch_int<84> x(0);
+      ch_bool y = !x;
+      return y;
+    });
+    TEST([]()->ch_bool {
+      ch_int<84> x(0xf11111100000001111111_h84);
+      ch_int<84> y(0xf111111fffffff1111111_h84);
+      return x && y;
+    });
+    TEST([]()->ch_bool {
+      ch_int<84> x(0);
+      ch_int<84> y(0xf111111fffffff1111111_h84);
+      return x || y;
+    });
   }
   
   SECTION("shift", "[shift]") {
@@ -176,7 +268,9 @@ TEST_CASE("arithmetic", "[arithmetic]") {
     TEST([]()->ch_bool {
       ch_uint8 a(5*4);
       auto c = ch_int32(0xf0000000_h) >> a;
-      return (c == 0xffffff00_h);
+      ch_int32 e = 0xffffff00_h;
+      //ch_print("c={0}, e={1}", c, e);
+      return (c == e);
     });
     TEST([]()->ch_bool {
       ch_uint8 a(13*4);
@@ -298,6 +392,34 @@ TEST_CASE("arithmetic", "[arithmetic]") {
       auto c = ch_shr<1>(a, 33);
       return (c == 0x1);
     });
+    TEST([]()->ch_bool {
+      ch_uint<148> x(0xf111111000000011111110000000000000000_h148);
+      ch_uint<148> y = x >> 128;
+      ch_uint<148> e = 0x0000000000000000f1111_h148;
+      //ch_print("y={0}, e={1}", y, e);
+      return (y == e);
+    });
+    TEST([]()->ch_bool {
+      ch_int<148> x(0xf111111000000011111110000000000000000_h148);
+      ch_int<148> y = x >> 128;
+      ch_int<148> e = 0xfffffffffffffffffffffffffffffffff1111_h148;
+      //ch_print("y={0}, e={1}", y, e);
+      return (y == e);
+    });
+    TEST([]()->ch_bool {
+      ch_int<148> x(0xf111111000000011111110000000000000000_h148);
+      ch_int<148> y = x >> 124;
+      ch_int<148> e = 0xffffffffffffffffffffffffffffffff11111_h148;
+      //ch_print("y={0}, e={1}", y, e);
+      return (y == e);
+    });
+    TEST([]()->ch_bool {
+      ch_int<65> x(0x10100000001111111_h65);
+      ch_int<65> y = x >> 32;
+      ch_int<65> e = 0x1ffffffff01000000_h65;
+      //ch_print("y={0}, e={1}", y, e);
+      return (y == e);
+    });
   }
   SECTION("rotate", "[rotate]") {
     TEST([]()->ch_bool {
@@ -384,6 +506,12 @@ TEST_CASE("arithmetic", "[arithmetic]") {
       return (c == 3);
     });
     TEST([]()->ch_bool {
+      ch_uint<65> a(0x1);
+      ch_uint<68> b(0x2);
+      auto c = a + b;
+      return (c == 3);
+    });
+    TEST([]()->ch_bool {
       ch_int8 a(0x1);
       ch_int4 b(0x2);
       auto c = a + b;
@@ -401,7 +529,8 @@ TEST_CASE("arithmetic", "[arithmetic]") {
       return (c == 0x100000000_h64);
     });
     TEST([]()->ch_bool {
-      ch_int4 a(0x1), b(0x2);
+      ch_int4 a(0x1);
+      ch_int4 b(0x2);
       auto c = b - a;
       return (c == 1);
     });
@@ -418,6 +547,12 @@ TEST_CASE("arithmetic", "[arithmetic]") {
       return (c == 1);
     });
     TEST([]()->ch_bool {
+      ch_uint<65> a(0x1);
+      ch_uint<66> b(0x2);
+      auto c = b - a;
+      return (c == 1);
+    });
+    TEST([]()->ch_bool {
       ch_uint4 a(0x1), b(0x2);
       auto c = a - b;
       return (c == 0xf);
@@ -426,6 +561,11 @@ TEST_CASE("arithmetic", "[arithmetic]") {
       ch_uint4 a(1);
       auto b = -a;
       return (b == 0xf);
+    });
+    TEST([]()->ch_bool {
+      ch_uint<65> a(1);
+      auto b = -a;
+      return (b == 0x1'ffffffff'ffffffff_h65);
     });
     TEST([]()->ch_bool {
       ch_int4 a(1);
@@ -458,8 +598,20 @@ TEST_CASE("arithmetic", "[arithmetic]") {
       return (c == 2);
     });
     TEST([]()->ch_bool {
-      ch_int128 a(0x6ABA8);
-      ch_int128 b(0x335);
+      ch_int<100> a(-0x6ABA8);
+      ch_int<102> b(0x335);
+      auto c = ch_mult<127>(a, b);
+      return (c == -0x156481C8);
+    });
+    TEST([]()->ch_bool {
+      ch_int128 a(-0x6ABA8);
+      ch_int<65> b(-0x335);
+      auto c = ch_mult<128>(a, b);
+      return (c == 0x156481C8);
+    });
+    TEST([]()->ch_bool {
+      ch_uint128 a(0x6ABA8);
+      ch_uint128 b(0x335);
       auto c = ch_mult(a, b);
       return (c == 0x156481C8);
     });
@@ -500,8 +652,20 @@ TEST_CASE("arithmetic", "[arithmetic]") {
       return (c == 8);
     });
     TEST([]()->ch_bool {
-      ch_int128 a(0x15648431);
-      ch_int128 b(0x335);
+      ch_int<127> a(-0x15648431);
+      ch_int<65> b(0x335);
+      auto c = ch_div<128>(a, b);
+      return (c == -0x6ABA8);
+    });
+    TEST([]()->ch_bool {
+      ch_int128 a(-0x15648431);
+      ch_int64 b(-0x335);
+      auto c = ch_div(a, b);
+      return (c == 0x6ABA8);
+    });
+    TEST([]()->ch_bool {
+      ch_uint128 a(0x15648431);
+      ch_uint128 b(0x335);
       auto c = ch_div(a, b);
       return (c == 0x6ABA8);
     });
@@ -542,8 +706,14 @@ TEST_CASE("arithmetic", "[arithmetic]") {
       return (c == -1);
     });
     TEST([]()->ch_bool {
-      ch_int128 a(0x15648431);
+      ch_int128 a(-0x15648431);
       ch_int128 b(0x335);
+      auto c = ch_mod(a, b);
+      return (c == -0x269);
+    });
+    TEST([]()->ch_bool {
+      ch_uint128 a(0x15648431);
+      ch_uint128 b(0x335);
       auto c = ch_mod(a, b);
       return (c == 0x269);
     });

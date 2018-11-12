@@ -130,7 +130,7 @@ public:
           }
           dst_offset += r->length;
         }
-        if (dst_block) {
+        if ((dst_size_ % bitwidth_v<block_type>) != 0) {
           *dst = dst_block; // flush last block
         }
       }

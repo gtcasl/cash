@@ -1904,12 +1904,15 @@ private:
                         jit_value_t j_src_ptr,
                         uint32_t src_offset,
                         uint32_t length) {
-    if (0 == (length % 8)
-     && 0 == (dst_offset % 8)
+    if (0 == (dst_offset % 8)
      && 0 == (src_offset % 8)) {
       auto j_dst_ptr8 = jit_insn_add_relative(j_func_, j_dst_ptr, dst_offset / 8);
       auto j_src_ptr8 = jit_insn_add_relative(j_func_, j_src_ptr, src_offset / 8);
       this->emit_memcpy(j_dst_ptr8, j_src_ptr8, length / 8);
+      uint32_t rem = length % 8;
+      if (rem) {
+        CH_TODO();
+      }
     } else {
       auto j_dst_offset = this->emit_constant(dst_offset, jit_type_uint);
       auto j_src_offset = this->emit_constant(src_offset, jit_type_uint);
