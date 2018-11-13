@@ -32,12 +32,7 @@ static constexpr block_type WORD_MAX = std::numeric_limits<block_type>::max();
 
 #define __align_word_size(...) ((((__VA_ARGS__) + WORD_MASK) / WORD_SIZE) * sizeof(block_type))
 #define __countof(arr) (sizeof(arr) / sizeof(arr[0]))
-
-#ifdef NDEBUG
-  #define __source_location()
-#else
-  #define __source_location() jit_insn_mark_offset(j_func_, __LINE__)
-#endif
+#define __source_location() jit_insn_mark_offset(j_func_, __LINE__)
 
 #define __alu_call_relational(fname, ...) \
   [&]()->jit_value_t { \
@@ -125,7 +120,8 @@ static jit_type_t to_native_type(uint32_t size) {
 }
 
 static uint32_t get_type_size(jit_type_t j_type) {
-  return jit_type_get_size(j_type) * 8;
+  uint32_t nbytes = jit_type_get_size(j_type);
+  return nbytes * 8;
 }
 
 static uint32_t get_value_size(jit_value_t j_value) {
@@ -552,15 +548,14 @@ private:
     __source_location();
     assert(node->check_full());    
     uint32_t dst_width = node->size();
+    auto j_type = to_native_type(dst_width);
     if (dst_width <= WORD_SIZE) {
-      auto j_type = to_native_type(dst_width);
       jit_value_t j_dst = nullptr;
       for (uint i = 0, n = node->ranges().size(); i < n; ++i) {
         auto& range = node->range(i);
         auto& src = node->src(range.src_idx);
-        auto j_src = this->emit_load_slice_scalar(src.impl(), range.src_offset, range.length);
-        auto j_src_d = this->emit_cast(j_src, j_type);
-        j_dst = this->emit_append_slice_scalar(j_dst, range.dst_offset, j_src_d);
+        auto j_src = this->emit_load_slice_scalar(src.impl(), range.src_offset, range.length, j_type);
+        j_dst = this->emit_append_slice_scalar(j_dst, range.dst_offset, j_src);
       }
       scalar_map_[node->id()] = j_dst;
     } else {
@@ -575,10 +570,9 @@ private:
         for (uint i = 0, n = node->ranges().size(); i < n; ++i) {
           auto& range = node->range(i);
           auto& src = node->src(range.src_idx);
-          auto j_src = this->emit_load_slice_scalar(src.impl(), range.src_offset, range.length);
-          auto j_src_w = this->emit_cast(j_src, word_type_);
+          auto j_src = this->emit_load_slice_scalar(src.impl(), range.src_offset, range.length, word_type_);
           j_dst_tmp = this->emit_append_slice_vector(
-                j_dst_tmp, dst_addr, dst_width, range.dst_offset, j_src_w, range.length);
+                j_dst_tmp, dst_addr, dst_width, range.dst_offset, j_src, range.length);
         }
       } else {
         auto j_dst_ptr = this->emit_store_address(node);
@@ -600,10 +594,10 @@ private:
   void emit_node(inputimpl* node) {
     __source_location();
     uint32_t dst_width = node->size();
+    auto j_type = to_native_type(dst_width);
     uint32_t addr = addr_map_.at(node->id());
     auto j_ptr = jit_insn_load_relative(j_func_, j_ports_, addr * sizeof(block_type*), jit_type_void_ptr);
     if (dst_width <= WORD_SIZE) {
-      auto j_type = to_native_type(dst_width);
       auto j_value = jit_insn_load_relative(j_func_, j_ptr, 0, j_type);
       scalar_map_[node->id()] = j_value;
     } else {
@@ -931,7 +925,7 @@ private:
     if (is_scalar) {
       auto j_value = scalar_map_.at(src->id());
       if (resize && is_signed) {
-        return this->emit_sign_ext(j_value, src->size());
+        j_value = this->emit_sign_ext(j_value, src->size());
       }
       return j_value;
     } else {
@@ -1097,11 +1091,17 @@ private:
     __source_location();
     jit_label_t l_exit = jit_label_undefined;
 
-    auto dst_addr = addr_map_.at(node->id());    
     uint32_t dst_width = node->size();
-    bool is_scalar = (dst_width <= WORD_SIZE);
+    auto j_type = to_native_type(dst_width);
+    auto is_scalar = (dst_width <= WORD_SIZE);
+    auto dst_addr = addr_map_.at(node->id());
 
-    jit_value_t j_dst, j_next, j_enable, j_init_data, j_reset;
+    jit_value_t j_dst = nullptr;
+    jit_value_t j_next = nullptr;
+    jit_value_t j_enable = nullptr;
+    jit_value_t j_init_data = nullptr;
+    jit_value_t j_reset = nullptr;
+
     if (is_scalar) {
       j_dst = scalar_map_.at(node->id());
       j_next = scalar_map_.at(node->next().id());
@@ -1109,9 +1109,11 @@ private:
         j_init_data = scalar_map_.at(node->init_data().id());
       }
     }
+
     if (node->has_init_data()) {
       j_reset = scalar_map_.at(node->reset().id());
     }
+
     if (node->has_enable()) {
       j_enable = scalar_map_.at(node->enable().id());
     }
@@ -1125,7 +1127,7 @@ private:
       uint32_t pipe_width = (node->length() - 1) * dst_width;
       auto j_pipe_type = to_native_type(pipe_width);
       auto pipe_addr = dst_addr + __align_word_size(dst_width);
-      bool is_pipe_scalar = (pipe_width <= WORD_SIZE);
+      auto is_pipe_scalar = (pipe_width <= WORD_SIZE);
 
       if (node->has_init_data()) {
         jit_label_t l_skip = jit_label_undefined;
@@ -1185,7 +1187,7 @@ private:
         assert(is_scalar);
         // dst <- pipe[0]
         auto j_pipe = jit_insn_load_relative(j_func_, j_vars_, pipe_addr, j_pipe_type);
-        auto j_pipe_0 = this->emit_load_slice_scalar(j_pipe, 0, dst_width);
+        auto j_pipe_0 = this->emit_load_slice_scalar(j_pipe, 0, dst_width, j_type);
         jit_insn_store_relative(j_func_, j_vars_, dst_addr, j_pipe_0);
         jit_insn_store(j_func_, j_dst, j_pipe_0);
 
@@ -1202,11 +1204,11 @@ private:
         // load pipe index
         auto pipe_index_addr = pipe_addr + __align_word_size(pipe_width);
         auto j_pipe_index = jit_insn_load_relative(j_func_, j_vars_, pipe_index_addr, jit_type_uint);
-
         auto j_pipe_ptr = jit_insn_add_relative(j_func_, j_vars_, pipe_addr);
+
         if (is_scalar) {
           // pop pipe data          
-          auto j_data = this->emit_load_array_scalar(j_pipe_ptr, pipe_width, j_pipe_index, dst_width);
+          auto j_data = this->emit_load_array_scalar(j_pipe_ptr, pipe_width, j_pipe_index, dst_width, j_type);
           jit_insn_store_relative(j_func_, j_vars_, dst_addr, j_data);
           jit_insn_store(j_func_, j_dst, j_data);
 
@@ -1266,6 +1268,7 @@ private:
   void emit_node(marportimpl* node) {
     __source_location();
     auto dst_width = node->size();
+    auto j_type = to_native_type(dst_width);
     bool is_scalar = (dst_width <= WORD_SIZE);
 
     auto j_src_addr = scalar_map_.at(node->addr().id());
@@ -1276,7 +1279,7 @@ private:
     uint32_t array_width = node->mem()->size();
 
     if (is_scalar) {
-      auto j_src = this->emit_load_array_scalar(j_array_ptr, array_width, j_src_addr, dst_width);
+      auto j_src = this->emit_load_array_scalar(j_array_ptr, array_width, j_src_addr, dst_width, j_type);
       scalar_map_[node->id()] = j_src;
     } else {
        auto j_dst_ptr = this->emit_store_address(node);
@@ -1287,9 +1290,11 @@ private:
   void emit_node(msrportimpl* node) {
     __source_location();
     jit_label_t l_exit = jit_label_undefined;
-    auto dst_addr = addr_map_.at(node->id());
+
     auto dst_width = node->size();
+    auto j_type = to_native_type(dst_width);
     bool is_scalar = (dst_width <= WORD_SIZE);
+    auto dst_addr = addr_map_.at(node->id());
 
     auto predicated = node->has_enable() || !bypass_enable_;
     if (predicated) {
@@ -1316,7 +1321,7 @@ private:
     uint32_t array_width = node->mem()->size();
 
     if (is_scalar) {
-      jit_value_t j_src = this->emit_load_array_scalar(j_array_ptr, array_width, j_src_addr, dst_width);
+      auto j_src = this->emit_load_array_scalar(j_array_ptr, array_width, j_src_addr, dst_width, j_type);
       jit_insn_store_relative(j_func_, j_vars_, dst_addr, j_src);
       auto j_dst = scalar_map_.at(node->id());
       jit_insn_store(j_func_, j_dst, j_src);
@@ -1755,83 +1760,77 @@ private:
 
   jit_value_t emit_load_slice_scalar(jit_value_t j_value,
                                      uint32_t offset,
-                                     uint32_t length) {
+                                     uint32_t length,
+                                     jit_type_t j_type) {
     __source_location();
     assert(length <= WORD_SIZE);
     assert(offset < WORD_SIZE);
 
-    jit_value_t j_src;
+    jit_value_t j_src = j_value;
     if (offset) {
       auto j_offset = this->emit_constant(offset, jit_type_uint);
       j_src = jit_insn_ushr(j_func_, j_value, j_offset);
-    } else {
-      j_src = j_value;
-    }      
+    }
     int clamp = get_value_size(j_src) - length;
     if (clamp) {
       assert(clamp > 0);
       auto j_clamp = this->emit_constant(clamp, jit_type_uint);
       auto j_src_c = jit_insn_shl(j_func_, j_src, j_clamp);
-      return jit_insn_ushr(j_func_, j_src_c, j_clamp);
-    } else {
-      return j_src;
+      j_src = jit_insn_ushr(j_func_, j_src_c, j_clamp);
     }
+    return this->emit_cast(j_src, j_type);
   }
 
   jit_value_t emit_load_slice_scalar(lnodeimpl* node,
                                      uint32_t offset,
-                                     uint32_t length) {
+                                     uint32_t length,
+                                     jit_type_t j_type) {
     __source_location();
     assert(length <= WORD_SIZE);
-    auto j_type = to_native_type(length);
     uint32_t src_width = node->size();
     if (src_width != length) {
       if (src_width <= WORD_SIZE) {
         auto j_src_value = scalar_map_.at(node->id());
-        return this->emit_load_slice_scalar(j_src_value, offset, length);
+        return this->emit_load_slice_scalar(j_src_value, offset, length, j_type);
       } else {
         auto src_lsb8 = offset % 8;
         auto src_end8 = src_lsb8 + length;
-        if (0 == src_lsb8) {
-          auto src_idx = offset / 8;
-          auto j_src_value = this->emit_load_scalar_relative(node, src_idx, j_type);
-          return this->emit_load_slice_scalar(j_src_value, 0, length);
-        } else
         if (src_end8 <= WORD_SIZE) {
-          auto value_size = to_value_size(src_end8);
-          auto src_idx = ceildiv(offset + length, 8) - value_size / 8;
+          auto block_size = to_value_size(src_end8);
+          auto src_idx = ceildiv(offset + length, 8) - block_size / 8;
           auto src_lsb = offset - src_idx * 8;
-          auto j_src_value = this->emit_load_scalar_relative(node, src_idx, to_value_type(value_size));
-          auto j_src_value_c = this->emit_load_slice_scalar(j_src_value, src_lsb, length);
-          return this->emit_cast(j_src_value_c, j_type);
+          auto j_src_value = this->emit_load_scalar_relative(node, src_idx, to_value_type(block_size));
+          return this->emit_load_slice_scalar(j_src_value, src_lsb, length, j_type);
         } else {
           auto src_idx = offset / WORD_SIZE;
           auto src_lsb = offset % WORD_SIZE;
+          auto j_ntype = to_native_type(length);
           auto j_src_lsb = this->emit_constant(src_lsb, jit_type_uint);
           auto j_src_value0 = this->emit_load_scalar_relative(node, src_idx * sizeof(block_type), word_type_);
           auto j_src_value0_s = jit_insn_ushr(j_func_, j_src_value0, j_src_lsb);
-          auto j_src_value0_n = this->emit_cast(j_src_value0_s, j_type);
-          auto j_src_value1 = this->emit_load_scalar_relative(node, (src_idx + 1) * sizeof(block_type), j_type);
+          auto j_src_value0_n = this->emit_cast(j_src_value0_s, j_ntype);
+          auto j_src_value1 = this->emit_load_scalar_relative(node, (src_idx + 1) * sizeof(block_type), j_ntype);
           auto j_rem = this->emit_constant(get_value_size(j_src_value1) - src_lsb, jit_type_uint);
           auto j_src_value1_s = jit_insn_shl(j_func_, j_src_value1, j_rem);
           auto j_src_value = jit_insn_or(j_func_, j_src_value1_s, j_src_value0_n);
-          return this->emit_load_slice_scalar(j_src_value, 0, length);
+          return this->emit_load_slice_scalar(j_src_value, 0, length, j_type);
         }
       }
     } else {
-      return scalar_map_.at(node->id());
+      auto j_src_value = scalar_map_.at(node->id());
+      return this->emit_cast(j_src_value, j_type);
     }
   }
 
   jit_value_t emit_load_array_scalar(jit_value_t j_array_ptr,
                                      uint32_t array_width,
                                      jit_value_t j_index,
-                                     uint32_t length) {
+                                     uint32_t length,
+                                     jit_type_t j_type) {
     __source_location();
     assert(length <= WORD_SIZE);
-    auto j_type = to_native_type(length);
 
-    if (0 == (length % 8)) {
+    if (is_value_size(length)) {
       auto j_src_value = jit_insn_load_elem(j_func_, j_array_ptr, j_index, to_value_type(length));
       return this->emit_cast(j_src_value, j_type);
     } else {
@@ -1842,25 +1841,26 @@ private:
         auto j_src_value = jit_insn_load_relative(j_func_, j_array_ptr, 0, word_type_);
         j_src = jit_insn_ushr(j_func_, j_src_value, j_src_offset);
       } else {
+        auto j_ntype = to_native_type(length);
         auto j_src_idx = jit_insn_ushr(j_func_, j_src_offset, j_block_logsize_);
         auto j_src_lsb = jit_insn_and(j_func_, j_src_offset, j_block_mask_);
 
         auto j_src_ptr = jit_insn_load_elem_address(j_func_, j_array_ptr, j_src_idx, word_type_);
         auto j_src_value0 = jit_insn_load_relative(j_func_, j_src_ptr, 0, word_type_);
-        j_src = jit_insn_ushr(j_func_, j_src_value0, j_src_lsb);
+        auto j_src0_s = jit_insn_ushr(j_func_, j_src_value0, j_src_lsb);
+        j_src = this->emit_cast(j_src0_s, j_ntype);
 
         jit_label_t l_skip = jit_label_undefined;
         auto j_src_rem = this->emit_constant(WORD_SIZE - length, jit_type_uint);
         auto j_src_inclusive = jit_insn_le(j_func_, j_src_lsb, j_src_rem);
         jit_insn_branch_if(j_func_, j_src_inclusive, &l_skip);
 
-        auto j_src_n = this->emit_cast(j_src, j_type);
-        auto j_src_value1 = jit_insn_load_relative(j_func_, j_src_ptr, sizeof(block_type), j_type);
+        auto j_src_value1 = jit_insn_load_relative(j_func_, j_src_ptr, sizeof(block_type), j_ntype);
         auto j_block_size = this->emit_constant(get_value_size(j_src_value1), jit_type_uint);
-        auto j_tmp1 = jit_insn_sub(j_func_, j_block_size, j_src_lsb);
-        auto j_tmp2 = jit_insn_shl(j_func_, j_src_value1, j_tmp1);
-        auto j_tmp3 = jit_insn_or(j_func_, j_src_n, j_tmp2);
-        jit_insn_store(j_func_, j_src, j_tmp3);
+        auto j_rem = jit_insn_sub(j_func_, j_block_size, j_src_lsb);
+        auto j_src1_s = jit_insn_shl(j_func_, j_src_value1, j_rem);
+        auto j_or = jit_insn_or(j_func_, j_src, j_src1_s);
+        jit_insn_store(j_func_, j_src, j_or);
 
         jit_insn_label(j_func_, &l_skip);
       }
@@ -1885,7 +1885,7 @@ private:
     __source_location();
     assert(length <= WORD_SIZE);
 
-    if (0 == (length % 8)) {
+    if (is_value_size(length)) {
       auto j_wdata_n = this->emit_cast(j_data, to_value_type(length));
       jit_insn_store_elem(j_func_, j_array_ptr, j_index, j_wdata_n);
     } else {
@@ -2140,8 +2140,9 @@ private:
     auto j_stype = to_signed_type(j_type);
     auto value_size = get_type_size(j_type);
     assert(value_size >= width);
-    if (value_size == width)
+    if (value_size == width) {
       return this->emit_cast(j_value, j_stype);
+    }
     if (is_value_size(width)) {
       auto j_otype = to_signed_type(to_value_type(width));
       auto j_tmp = this->emit_cast(j_value, j_otype);
@@ -2185,10 +2186,10 @@ private:
   }
 
   jit_value_t emit_constant(long value, jit_type_t j_type) {
-    auto size = jit_type_get_size(j_type);
-    if (size <= 4) {
+    auto nbytes = jit_type_get_size(j_type);
+    if (nbytes <= 4) {
       return jit_value_create_nint_constant(j_func_, j_type, value);
-    } else if (size <= 8) {
+    } else if (nbytes <= 8) {
       return jit_value_create_long_constant(j_func_, j_type, value);
     } else {
       std::abort();
