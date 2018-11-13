@@ -753,8 +753,8 @@ private:
         assert(-1 == node->should_resize_opds());
         uint32_t num_words = ceildiv(dst_width, WORD_SIZE);
         for (uint32_t i = 0; i < num_words; ++i) {
-          auto j_src0 = this->emit_load_scalar_elem(node->src(0).impl(), i);
-          auto j_src1 = this->emit_load_scalar_elem(node->src(1).impl(), i);
+          auto j_src0 = this->emit_load_scalar_elem(node->src(0).impl(), i, word_type_);
+          auto j_src1 = this->emit_load_scalar_elem(node->src(1).impl(), i, word_type_);
           auto j_dst  = jit_insn_and(j_func_, j_src0, j_src1);
           auto dst_addr = addr_map_.at(node->id());
           jit_insn_store_relative(j_func_, j_vars_, dst_addr + i * sizeof(block_type), j_dst);
@@ -770,8 +770,8 @@ private:
         auto dst_addr = addr_map_.at(node->id());
         uint32_t num_words = ceildiv(dst_width, WORD_SIZE);
         for (uint32_t i = 0; i < num_words; ++i) {
-          auto j_src0 = this->emit_load_scalar_elem(node->src(0).impl(), i);
-          auto j_src1 = this->emit_load_scalar_elem(node->src(1).impl(), i);
+          auto j_src0 = this->emit_load_scalar_elem(node->src(0).impl(), i, word_type_);
+          auto j_src1 = this->emit_load_scalar_elem(node->src(1).impl(), i, word_type_);
           auto j_dst  = jit_insn_or(j_func_, j_src0, j_src1);          
           jit_insn_store_relative(j_func_, j_vars_, dst_addr + i * sizeof(block_type), j_dst);
         }
@@ -786,8 +786,8 @@ private:
         auto dst_addr = addr_map_.at(node->id());
         uint32_t num_words = ceildiv(dst_width, WORD_SIZE);
         for (uint32_t i = 0; i < num_words; ++i) {
-          auto j_src0 = this->emit_load_scalar_elem(node->src(0).impl(), i);
-          auto j_src1 = this->emit_load_scalar_elem(node->src(1).impl(), i);
+          auto j_src0 = this->emit_load_scalar_elem(node->src(0).impl(), i, word_type_);
+          auto j_src1 = this->emit_load_scalar_elem(node->src(1).impl(), i, word_type_);
           auto j_dst  = jit_insn_xor(j_func_, j_src0, j_src1);
           jit_insn_store_relative(j_func_, j_vars_, dst_addr + i * sizeof(block_type), j_dst);
         }
@@ -976,7 +976,7 @@ private:
     bool is_scalar = (dst_width <= WORD_SIZE);
     auto j_type = to_native_type(dst_width);
 
-    jit_value_t j_dst;
+    jit_value_t j_dst = nullptr;
     if (is_scalar) {
       j_dst = jit_value_create(j_func_, j_type);
       scalar_map_[node->id()] = j_dst;
@@ -1965,6 +1965,7 @@ private:
                         jit_value_t j_src,
                         uint32_t src_offset,
                         uint32_t length) {
+    assert(length <= WORD_SIZE);
     auto w_dst_idx = dst_offset / WORD_SIZE;
     auto w_dst_lsb = dst_offset % WORD_SIZE;
 
@@ -2073,8 +2074,19 @@ private:
     } else {
       assert(j_dst != nullptr);
       assert(get_value_size(j_dst) == get_value_size(j_src));
+
+      if (jit_value_is_constant(j_src)
+      &&  0 == this->get_constant_value(j_src)) {
+        return j_dst;
+      }
+
       auto j_dst_lsb = this->emit_constant(dst_offset, jit_type_uint);
       auto j_src_s = jit_insn_shl(j_func_, j_src, j_dst_lsb);
+      if (jit_value_is_constant(j_dst)
+      &&  0 == this->get_constant_value(j_dst)) {
+        return j_src_s;
+      }
+
       return jit_insn_or(j_func_, j_src_s, j_dst);
     }
   }
@@ -2124,10 +2136,9 @@ private:
     }}
   }
 
-  jit_value_t emit_load_scalar_elem(lnodeimpl* node, uint32_t index) {
-    auto j_type = to_native_type(node->size());
-    auto size_in_bytes = get_type_size(j_type) / 8;
-    return this->emit_load_scalar_relative(node, index * size_in_bytes, j_type);
+  jit_value_t emit_load_scalar_elem(lnodeimpl* node, uint32_t index, jit_type_t j_type) {
+    auto nbytes = jit_type_get_size(j_type);
+    return this->emit_load_scalar_relative(node, index * nbytes, j_type);
   }
 
   void emit_memcpy(jit_value_t j_dst_ptr, jit_value_t j_src_ptr, uint32_t length) {
@@ -2191,6 +2202,18 @@ private:
       return jit_value_create_nint_constant(j_func_, j_type, value);
     } else if (nbytes <= 8) {
       return jit_value_create_long_constant(j_func_, j_type, value);
+    } else {
+      std::abort();
+    }
+  }
+
+  long get_constant_value(jit_value_t j_value) {
+    assert(jit_value_is_constant(j_value));
+    auto size = get_value_size(j_value);
+    if (size <= 32) {
+      return jit_value_get_nint_constant(j_value);
+    } else if (size <= 64) {
+      return jit_value_get_long_constant(j_value);
     } else {
       std::abort();
     }
