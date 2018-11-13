@@ -633,6 +633,12 @@ TEST_CASE("arithmetic", "[arithmetic]") {
       return (c == 0x156481C8);
     });
     TEST([]()->ch_bool {
+      ch_uint32 a(0x10000);
+      ch_uint32 b(0x10000);
+      auto c = ch_mult<33>(a, b);
+      return (c == 0x100000000);
+    });
+    TEST([]()->ch_bool {
       ch_int4 a(1);
       ch_int8 b(2);
       auto c = a / b;

@@ -180,6 +180,9 @@ z = ch_pipeline(x * y, 2); => z = ch_delay(mult1(x,y,ch_delay(mult0(x,y)));
 // AOCL profiling report
 aocl report jpeg_decoder.aocx profile.mon
 
+// sync submodules
+git submodule update --init --recursive
+
 // Detecting leaks using valgrind
 $ valgrind --leak-check=yes <app> <args...> > valgrind.log 2>&1
 $ valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes <app> <args...> > valgrind.log 2>&1
