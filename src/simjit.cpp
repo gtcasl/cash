@@ -1867,10 +1867,10 @@ private:
       int clamp = get_value_size(j_src) - length;
       if (clamp) {
         assert(clamp > 0);
-        auto j_clamp = this->emit_constant(clamp, jit_type_uint);
-        auto j_src_c = jit_insn_shl(j_func_, j_src, j_clamp);
-        auto j_src_u = jit_insn_ushr(j_func_, j_src_c, j_clamp);
-        return this->emit_cast(j_src_u, j_type);
+        uint64_t mask = (1ull << length) - 1;
+        auto j_mask = this->emit_constant(mask, jit_value_get_type(j_src));
+        auto j_src_c = jit_insn_and(j_func_, j_src, j_mask);
+        return this->emit_cast(j_src_c, j_type);
       } else {
         return this->emit_cast(j_src, j_type);
       }
