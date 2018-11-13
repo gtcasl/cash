@@ -208,7 +208,7 @@ TEST_CASE("memory", "[memory]") {
       mem.write(1, 0x55);
       auto x = mem.sread(1).as_bit();
       auto e = ch_delay<ch_bit<65>>(0x55, 2);
-      ch_print("t={0}, x={1}, e={2}", ch_now(), x, e);
+      //ch_print("t={0}, x={1}, e={2}", ch_now(), x, e);
       return (ch_now() < 3 || x == e);
     }, 3);
 

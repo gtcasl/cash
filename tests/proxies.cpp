@@ -361,9 +361,17 @@ TEST_CASE("proxies", "[proxies]") {
     });
     TEST([]()->ch_bool {
        ch_bit<33> a(0x11112222);
-       ch_bit<3> b(0);
+       ch_bit<7> b(0x78);
        auto c = ch_cat(b, a, b, a, b, a);
-       ch_bit<108> e = 0x011112222011112222011112222_h108;
+       ch_bit<120> e = 0xf011112222f011112222f011112222_h120;
+       //ch_print("c={0}, e={1}", c, e);
+       return (c == e);
+    });
+    TEST([]()->ch_bool {
+       ch_bit<65> a(0x1'55555555'33333333_h65);
+       ch_bit<64> b(0x22222222'11111111_h64);
+       auto c = ch_cat(b, a);
+       ch_bit<129> e = 0x44444444222222235555555533333333_h129;
        //ch_print("c={0}, e={1}", c, e);
        return (c == e);
     });

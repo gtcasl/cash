@@ -68,6 +68,25 @@ TEST_CASE("registers", "[registers]") {
     }, 66);
 
     TEST([]()->ch_bool {
+      auto v = 0x55555555;
+      auto i = 0x12345678;
+      auto a = ch_delay<ch_bit32>(v, 2, i);
+      auto e = ch_case<ch_bit32>(ch_now(), 9, v)(7, v)(5, v)(0, a)(i);
+      //ch_print("t={0}, a={1}, e={2}", ch_now(), a, e);
+      return (a == e);
+    }, 4);
+
+
+    TEST([]()->ch_bool {
+      auto v = 0x1'55555555'00000000_h65;
+      auto i = 0x1'12345678'00000000_h65;
+      auto a = ch_delay<ch_bit<65>>(v, 2, i);
+      auto e = ch_case<ch_bit<65>>(ch_now(), 9, v)(7, v)(5, v)(0, a)(i);
+      //ch_print("t={0}, a={1}, e={2}", ch_now(), a, e);
+      return (a == e);
+    }, 4);
+
+    TEST([]()->ch_bool {
       auto x = 0xAA'00330012_h45;
       auto v = ch_case<ch_bit<45>>(ch_now(), 7, 2)(5, 1)(3, 0)(1, x)(0);
       auto a = ch_delay(v, 4);

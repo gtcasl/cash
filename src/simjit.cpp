@@ -1197,51 +1197,72 @@ private:
 
       if (is_pipe_scalar) {
         assert(is_scalar);
-        // dst <- pipe[0]
-        auto j_pipe = jit_insn_load_relative(j_func_, j_vars_, pipe_addr, j_pipe_type);
-        auto j_pipe_0 = this->emit_load_slice_scalar(j_pipe, 0, dst_width, j_type);
-        jit_insn_store_relative(j_func_, j_vars_, dst_addr, j_pipe_0);
-        jit_insn_store(j_func_, j_dst, j_pipe_0);
+        if (pipe_width == dst_width) {
+          // dst <- pipe
+          auto j_pipe = jit_insn_load_relative(j_func_, j_vars_, pipe_addr, j_pipe_type);
+          jit_insn_store_relative(j_func_, j_vars_, dst_addr, j_pipe);
+          jit_insn_store(j_func_, j_dst, j_pipe);
 
-        // pipe >>= dst_width
-        auto j_shift = this->emit_constant(dst_width, jit_type_uint);
-        auto j_pipe_s = jit_insn_ushr(j_func_, j_pipe, j_shift);
-
-        // pipe[n-1] <- next
-        auto j_shfn1  = this->emit_constant((node->length() - 2) * dst_width, jit_type_uint);
-        auto j_next_p = this->emit_cast(j_next, j_pipe_type);
-        auto j_next_s = jit_insn_shl(j_func_, j_next_p, j_shfn1);
-        auto j_or     = jit_insn_or(j_func_, j_next_s, j_pipe_s);
-        jit_insn_store_relative(j_func_, j_vars_, pipe_addr, j_or);
-      } else {
-        // load pipe index
-        auto pipe_index_addr = pipe_addr + __align_word_size(pipe_width);
-        auto j_pipe_index = jit_insn_load_relative(j_func_, j_vars_, pipe_index_addr, jit_type_uint);
-        auto j_pipe_ptr = jit_insn_add_relative(j_func_, j_vars_, pipe_addr);
-
-        if (is_scalar) {
-          // pop pipe data          
-          auto j_data = this->emit_load_array_scalar(j_pipe_ptr, pipe_width, j_pipe_index, dst_width, j_type);
-          jit_insn_store_relative(j_func_, j_vars_, dst_addr, j_data);
-          jit_insn_store(j_func_, j_dst, j_data);
-
-          // push next data
-          this->emit_store_array_scalar(j_pipe_ptr, pipe_width, j_pipe_index, j_next, dst_width);
+          // pipe <- next
+          jit_insn_store_relative(j_func_, j_vars_, pipe_addr, j_next);
         } else {
-          // pop pipe data
-          auto j_dst_ptr = jit_insn_add_relative(j_func_, j_vars_, dst_addr);
-          this->emit_load_array_vector(j_dst_ptr, dst_width, j_pipe_ptr, j_pipe_index);
+          // dst <- pipe[0]
+          auto j_pipe = jit_insn_load_relative(j_func_, j_vars_, pipe_addr, j_pipe_type);
+          auto j_pipe_0 = this->emit_load_slice_scalar(j_pipe, 0, dst_width, j_type);
+          jit_insn_store_relative(j_func_, j_vars_, dst_addr, j_pipe_0);
+          jit_insn_store(j_func_, j_dst, j_pipe_0);
 
-          // push next data
-          auto j_next_ptr = this->emit_load_address(node->next().impl());
-          this->emit_store_array_vector(j_pipe_ptr, j_pipe_index, j_next_ptr, dst_width);
+          // pipe >>= dst_width
+          auto j_shift = this->emit_constant(dst_width, jit_type_uint);
+          auto j_pipe_s = jit_insn_ushr(j_func_, j_pipe, j_shift);
+
+          // pipe[n-1] <- next
+          auto j_shfn1  = this->emit_constant((node->length() - 2) * dst_width, jit_type_uint);
+          auto j_next_p = this->emit_cast(j_next, j_pipe_type);
+          auto j_next_s = jit_insn_shl(j_func_, j_next_p, j_shfn1);
+          auto j_or     = jit_insn_or(j_func_, j_next_s, j_pipe_s);
+          jit_insn_store_relative(j_func_, j_vars_, pipe_addr, j_or);
         }
+      } else {
+        if (pipe_width == dst_width) {
+          // dst <- pipe
+          auto j_pipe_ptr = jit_insn_add_relative(j_func_, j_vars_, pipe_addr);
+          auto j_dst_ptr = jit_insn_add_relative(j_func_, j_vars_, dst_addr);
+          this->emit_memcpy(j_dst_ptr, j_pipe_ptr, ceildiv(dst_width, 8));
 
-        // advance pipe index
-        auto j_max  = this->emit_constant(node->length() - 2, jit_type_uint);
-        auto j_sub = jit_insn_sub(j_func_, j_pipe_index, j_one_);
-        auto j_min = jit_insn_min(j_func_, j_sub, j_max);
-        jit_insn_store_relative(j_func_, j_vars_, pipe_index_addr, j_min);
+          // pipe <- next
+          auto j_next_ptr = this->emit_load_address(node->next().impl());
+          this->emit_memcpy(j_pipe_ptr, j_next_ptr, ceildiv(dst_width, 8));
+        } else {
+          // load pipe index
+          auto pipe_index_addr = pipe_addr + __align_word_size(pipe_width);
+          auto j_pipe_index = jit_insn_load_relative(j_func_, j_vars_, pipe_index_addr, jit_type_uint);
+          auto j_pipe_ptr = jit_insn_add_relative(j_func_, j_vars_, pipe_addr);
+
+          if (is_scalar) {
+            // pop pipe data
+            auto j_data = this->emit_load_array_scalar(j_pipe_ptr, pipe_width, j_pipe_index, dst_width, j_type);
+            jit_insn_store_relative(j_func_, j_vars_, dst_addr, j_data);
+            jit_insn_store(j_func_, j_dst, j_data);
+
+            // push next data
+            this->emit_store_array_scalar(j_pipe_ptr, pipe_width, j_pipe_index, j_next, dst_width);
+          } else {
+            // pop pipe data
+            auto j_dst_ptr = jit_insn_add_relative(j_func_, j_vars_, dst_addr);
+            this->emit_load_array_vector(j_dst_ptr, dst_width, j_pipe_ptr, j_pipe_index);
+
+            // push next data
+            auto j_next_ptr = this->emit_load_address(node->next().impl());
+            this->emit_store_array_vector(j_pipe_ptr, j_pipe_index, j_next_ptr, dst_width);
+          }
+
+          // advance pipe index
+          auto j_max  = this->emit_constant(node->length() - 2, jit_type_uint);
+          auto j_sub = jit_insn_sub(j_func_, j_pipe_index, j_one_);
+          auto j_min = jit_insn_min(j_func_, j_sub, j_max);
+          jit_insn_store_relative(j_func_, j_vars_, pipe_index_addr, j_min);
+        }
       }
     } else {      
       if (node->has_init_data()) {
