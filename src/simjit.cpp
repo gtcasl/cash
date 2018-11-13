@@ -129,6 +129,19 @@ static uint32_t get_value_size(jit_value_t j_value) {
   return get_type_size(j_type);
 }
 
+static bool is_signed_type(jit_type_t j_type) {
+  auto kind = jit_type_get_kind(j_type);
+  switch (kind) {
+  case JIT_TYPE_SBYTE:
+  case JIT_TYPE_SHORT:
+  case JIT_TYPE_INT:
+  case JIT_TYPE_LONG:
+    return true;
+  default:
+    return false;
+  }
+}
+
 static jit_type_t to_signed_type(jit_type_t j_type) {
   auto kind = jit_type_get_kind(j_type);
   switch (kind) {
@@ -931,8 +944,7 @@ private:
     } else {
       auto it = scalar_map_.find(src->id());
       if (it != scalar_map_.end()) {
-         auto j_value = this->emit_cast(it->second, word_type_);
-         return jit_insn_address_of(j_func_, j_value);
+         return this->emit_address_of(it->second, word_type_);
       } else {
         return this->emit_load_address(src);
       }
@@ -1196,10 +1208,11 @@ private:
         auto j_pipe_s = jit_insn_ushr(j_func_, j_pipe, j_shift);
 
         // pipe[n-1] <- next
-        auto j_shfn1 = this->emit_constant((node->length() - 2) * dst_width, jit_type_uint);
-        auto j_next_s = jit_insn_shl(j_func_, j_next, j_shfn1);
-        auto j_pipe_n1 = jit_insn_or(j_func_, j_next_s, j_pipe_s);
-        jit_insn_store_relative(j_func_, j_vars_, pipe_addr, j_pipe_n1);
+        auto j_shfn1  = this->emit_constant((node->length() - 2) * dst_width, jit_type_uint);
+        auto j_next_p = this->emit_cast(j_next, j_pipe_type);
+        auto j_next_s = jit_insn_shl(j_func_, j_next_p, j_shfn1);
+        auto j_or     = jit_insn_or(j_func_, j_next_s, j_pipe_s);
+        jit_insn_store_relative(j_func_, j_vars_, pipe_addr, j_or);
       } else {
         // load pipe index
         auto pipe_index_addr = pipe_addr + __align_word_size(pipe_width);
@@ -1408,9 +1421,8 @@ private:
                                                  j_vars_,
                                                  addr + offsetof(print_data_t, src_values),
                                                  jit_type_void_ptr);
-        auto j_value = this->emit_cast(it->second, word_type_);
-        auto j_value_addr = jit_insn_address_of(j_func_, j_value);
-        jit_insn_store_relative(j_func_, values_ptr, src_idx * sizeof(data_t), j_value_addr);
+        auto j_value = this->emit_address_of(it->second, word_type_);
+        jit_insn_store_relative(j_func_, values_ptr, src_idx * sizeof(data_t), j_value);
       }
       ++src_idx;
     }
@@ -1456,9 +1468,8 @@ private:
                                              j_vars_,
                                              addr + offsetof(assert_data_t, time),
                                              jit_type_void_ptr);
-      auto j_value = this->emit_cast(it->second, word_type_);
-      auto j_value_addr = jit_insn_address_of(j_func_, j_value);
-      jit_insn_store_relative(j_func_, time_ptr, 0, j_value_addr);
+      auto j_value = this->emit_address_of(it->second, word_type_);
+      jit_insn_store_relative(j_func_, time_ptr, 0, j_value);
     }
     // call native function
     auto j_data_ptr = jit_insn_add_relative(j_func_, j_vars_, addr);
@@ -2069,26 +2080,35 @@ private:
   jit_value_t emit_append_slice_scalar(jit_value_t j_dst,
                                        uint32_t dst_offset,
                                        jit_value_t j_src) {
-    if (0 == dst_offset) {
+    if (0 == dst_offset)
       return j_src;
-    } else {
-      assert(j_dst != nullptr);
-      assert(get_value_size(j_dst) == get_value_size(j_src));
 
-      if (jit_value_is_constant(j_src)
-      &&  0 == this->get_constant_value(j_src)) {
+    assert(j_dst != nullptr);
+    assert(get_value_size(j_dst) == get_value_size(j_src));
+
+    if (jit_value_is_constant(j_src)) {
+      auto src = this->get_constant_value(j_src);
+      if (0 == src)
         return j_dst;
+      src <<= dst_offset;
+      if (jit_value_is_constant(j_dst)) {
+        auto dst = this->get_constant_value(j_dst);
+        return this->emit_constant(src | dst, jit_value_get_type(j_src));
+      } else {
+        auto j_tmp = this->emit_constant(src, jit_value_get_type(j_src));
+        return jit_insn_or(j_func_, j_tmp, j_dst);
       }
-
-      auto j_dst_lsb = this->emit_constant(dst_offset, jit_type_uint);
-      auto j_src_s = jit_insn_shl(j_func_, j_src, j_dst_lsb);
-      if (jit_value_is_constant(j_dst)
-      &&  0 == this->get_constant_value(j_dst)) {
-        return j_src_s;
-      }
-
-      return jit_insn_or(j_func_, j_src_s, j_dst);
     }
+
+    auto j_dst_lsb = this->emit_constant(dst_offset, jit_type_uint);
+    auto j_src_s = jit_insn_shl(j_func_, j_src, j_dst_lsb);
+
+    if (jit_value_is_constant(j_dst)
+    &&  0 == this->get_constant_value(j_dst)) {
+      return j_src_s;
+    }
+
+    return jit_insn_or(j_func_, j_src_s, j_dst);
   }
 
   void emit_clear_extra_bits(lnodeimpl* node) {
@@ -2174,14 +2194,30 @@ private:
     return jit_insn_xor(j_func_, j_tmp2, j_false);
   }
 
+  jit_value_t emit_address_of(jit_value_t j_value, jit_type_t j_type) {
+    auto from_kind = jit_type_get_kind(jit_value_get_type(j_value));
+    auto to_kind = jit_type_get_kind(j_type);
+    if (from_kind == to_kind) {
+      return jit_insn_address_of(j_func_, j_value);
+    }
+    auto j_tmp = jit_value_create(j_func_, j_type);
+    jit_insn_store(j_func_, j_tmp, j_value);
+    return jit_insn_address_of(j_func_, j_tmp);
+  }
+
   jit_value_t emit_cast(jit_value_t j_value, jit_type_t to_type) {
     auto from_kind = jit_type_get_kind(jit_value_get_type(j_value));
     auto to_kind = jit_type_get_kind(to_type);
     if (from_kind == to_kind)
       return j_value;    
-    auto j_ret = jit_value_create(j_func_, to_type);
-    jit_insn_store(j_func_, j_ret, j_value);
-    return j_ret;
+    if (jit_value_is_constant(j_value)) {
+      auto value = this->get_constant_value(j_value);
+      return this->emit_constant(value, to_type);
+    } else {
+      auto j_ret = jit_value_create(j_func_, to_type);
+      jit_insn_store(j_func_, j_ret, j_value);
+      return j_ret;
+    }
   }
 
   void emit_range_check(jit_value_t j_value, uint32_t start, uint32_t end) {
@@ -2211,7 +2247,22 @@ private:
     assert(jit_value_is_constant(j_value));
     auto size = get_value_size(j_value);
     if (size <= 32) {
-      return jit_value_get_nint_constant(j_value);
+      uint32_t value = jit_value_get_nint_constant(j_value);
+      auto j_type = jit_value_get_type(j_value);
+      if (is_signed_type(j_type)) {
+        auto nbytes = jit_type_get_size(j_type);
+        switch (nbytes) {
+        case 1:
+          return static_cast<int8_t>(value);
+        case 2:
+          return static_cast<int16_t>(value);
+        case 4:
+          return static_cast<int32_t>(value);
+        default:
+          std::abort();
+        }
+      }
+      return value;
     } else if (size <= 64) {
       return jit_value_get_long_constant(j_value);
     } else {
