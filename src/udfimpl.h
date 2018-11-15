@@ -54,14 +54,6 @@ public:
     return srcs_[cd_idx_];
   }
 
-  bool has_init_data() const {
-    return (reset_idx_ != -1);
-  }
-
-  const lnode& reset() const {
-    return srcs_[reset_idx_];
-  }
-
   virtual lnodeimpl* clone(context* ctx, const clone_map& cloned_nodes) override;
 
 protected:
@@ -70,11 +62,9 @@ protected:
            udf_iface* udf,
            const std::vector<lnode>& srcs,
            lnodeimpl* cd,
-           lnodeimpl* reset,
            const source_location& sloc);
 
   int cd_idx_;
-  int reset_idx_;
 
   friend class context;
 };

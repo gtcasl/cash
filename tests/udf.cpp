@@ -5,14 +5,6 @@ using namespace ch::extension;
 namespace {
 
   struct CombAdd : public udf_comb<ch_int32, ch_int32, ch_int32> {
-    
-    void initialize() {
-      //--
-    }    
-
-    void reset(udf_output&, const udf_inputs&) {
-      //--
-    }
 
     void eval(udf_output& dst, const udf_inputs& srcs) override {
       auto lhs = static_cast<int32_t>(srcs[0]);
@@ -29,16 +21,7 @@ namespace {
     }
   };
 
-  template <unsigned Delay = 1>
-  struct SeqAdd : public udf_seq<Delay, true, ch_int32, ch_int32, ch_int32> {
-
-    void initialize() {
-      //--
-    }
-
-    void reset(udf_output& dst, const udf_inputs&) {
-      dst = 0;
-    }
+  struct SeqAdd : public udf_seq<ch_int32, ch_int32, ch_int32> {
 
     void eval(udf_output& dst, const udf_inputs& srcs) override {
       auto lhs = static_cast<int32_t>(srcs[0]);
@@ -68,7 +51,7 @@ TEST_CASE("udf", "[udf]") {
   SECTION("udf_seq", "[udf_seq]") {
     TEST([]()->ch_bool {
        ch_int32 a(1), b(2);
-       auto c = ch_udf<SeqAdd<1>>(a, b);
+       auto c = ch_udf<SeqAdd>(a, b);
        return (c == 3);
     }, 1);
   }

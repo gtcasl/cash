@@ -757,8 +757,9 @@ void bv_slice(T* w_dst, uint32_t dst_size, const T* w_src, uint32_t src_offset) 
 template <typename T>
 class ClearBitAccessor {
 public:
-  ClearBitAccessor(const T* value, uint32_t, uint32_t)
-    : value_(value) {
+  ClearBitAccessor(const T* value, uint32_t size, uint32_t other_size)
+    : value_(value) {    
+    CH_DBGCHECK(size == other_size, "invalid size");
   }
 
   T get() const {
@@ -767,6 +768,10 @@ public:
 
   T get(uint32_t index) const {
     return value_[index];
+  }
+
+  bool need_resize() const {
+    return false;
   }
 
 private:
@@ -780,7 +785,7 @@ class StaticBitAccessor {
 public:
   StaticBitAccessor(const T* value, uint32_t size, uint32_t other_size)
     : value_(value)
-    , end_(size / bitwidth_v<T>)
+    , end_((size - 1) / bitwidth_v<T>)
     , size_(size) {
     resize_vector_ = Resize && (size < other_size);
     resize_scalar_ = resize_vector_ && is_signed;
@@ -814,6 +819,10 @@ public:
     }
   }
 
+  bool need_resize() const {
+    return Resize;
+  }
+
 private:
   bool resize_scalar_;
   bool resize_vector_;
@@ -829,7 +838,7 @@ class DefaultBitAccessor {
 public:
   DefaultBitAccessor(const T* value, uint32_t size, uint32_t other_size)
     : value_(value)
-    , end_(size / bitwidth_v<T>)
+    , end_((size - 1) / bitwidth_v<T>)
     , size_(size) {
     resize_vector_ = (size < other_size);
     resize_scalar_ = resize_vector_ && is_signed;
@@ -861,6 +870,10 @@ public:
     } else {
       return value_[index];
     }
+  }
+
+  bool need_resize() const {
+    return resize_scalar_ || resize_vector_;
   }
 
 private:
@@ -959,120 +972,6 @@ bool bv_lt(const T* lhs, uint32_t lhs_size, const T* rhs, uint32_t rhs_size) {
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T>
-void bv_inv_scalar(T* out, const T* in, uint32_t size) {
-  out[0] = ~in[0];
-  bv_clear_extra_bits(out, size);
-}
-
-template <typename T>
-void bv_inv_vector(T* out, const T* in, uint32_t size) {
-  static constexpr uint32_t WORD_SIZE = bitwidth_v<T>;
-
-  uint32_t num_words = ceildiv(size, WORD_SIZE);
-  for (uint32_t i = 0; i < num_words; ++i) {
-    out[i] = ~in[i];
-  }
-  bv_clear_extra_bits(out, size);
-}
-
-template <typename T>
-void bv_inv(T* out, const T* in, uint32_t size) {
-  static constexpr uint32_t WORD_SIZE = bitwidth_v<T>;
-
-  if (size <= WORD_SIZE) {
-    return bv_inv_scalar<T>(out, in, size);
-  } else {
-    return bv_inv_vector<T>(out, in, size);
-  }
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-template <typename T>
-void bv_and_scalar(T* out, const T* lhs, const T* rhs) {
-  out[0] = lhs[0] & rhs[0];
-}
-
-template <typename T>
-void bv_and_vector(T* out, const T* lhs, const T* rhs, uint32_t size) {
-  static constexpr uint32_t WORD_SIZE = bitwidth_v<T>;
-
-  uint32_t num_words = ceildiv(size, WORD_SIZE);
-  for (uint32_t i = 0; i < num_words; ++i) {
-    out[i] = lhs[i] & rhs[i];
-  }
-}
-
-template <typename T>
-void bv_and(T* out, const T* lhs, const T* rhs, uint32_t size) {
-  static constexpr uint32_t WORD_SIZE = bitwidth_v<T>;
-
-  if (size <= WORD_SIZE) {
-    return bv_and_scalar<T>(out, lhs, rhs);
-  } else {
-    return bv_and_vector<T>(out, lhs, rhs, size);
-  }
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-template <typename T>
-void bv_or_scalar(T* out, const T* lhs, const T* rhs) {
-  out[0] = lhs[0] | rhs[0];
-}
-
-template <typename T>
-void bv_or_vector(T* out, const T* lhs, const T* rhs, uint32_t size) {
-  static constexpr uint32_t WORD_SIZE = bitwidth_v<T>;
-
-  uint32_t num_words = ceildiv(size, WORD_SIZE);
-  for (uint32_t i = 0; i < num_words; ++i) {
-    out[i] = lhs[i] | rhs[i];
-  }
-}
-
-template <typename T>
-void bv_or(T* out, const T* lhs, const T* rhs, uint32_t size) {
-  static constexpr uint32_t WORD_SIZE = bitwidth_v<T>;
-
-  if (size <= WORD_SIZE) {
-    return bv_or_scalar<T>(out, lhs, rhs);
-  } else {
-    return bv_or_vector<T>(out, lhs, rhs, size);
-  }
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-template <typename T>
-void bv_xor_scalar(T* out, const T* lhs, const T* rhs) {
-  out[0] = lhs[0] ^ rhs[0];
-}
-
-template <typename T>
-void bv_xor_vector(T* out, const T* lhs, const T* rhs, uint32_t size) {
-  static constexpr uint32_t WORD_SIZE = bitwidth_v<T>;
-
-  uint32_t num_words = ceildiv(size, WORD_SIZE);
-  for (uint32_t i = 0; i < num_words; ++i) {
-    out[i] = lhs[i] ^ rhs[i];
-  }
-}
-
-template <typename T>
-void bv_xor(T* out, const T* lhs, const T* rhs, uint32_t size) {
-  static constexpr uint32_t WORD_SIZE = bitwidth_v<T>;
-
-  if (size <= WORD_SIZE) {
-    return bv_xor_scalar<T>(out, lhs, rhs);
-  } else {
-    return bv_xor_vector<T>(out, lhs, rhs, size);
-  }
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-template <typename T>
 bool bv_andr_scalar(const T* in, uint32_t size) {
   static constexpr uint32_t WORD_SIZE = bitwidth_v<T>;
   static constexpr T WORD_MAX = std::numeric_limits<T>::max();
@@ -1143,13 +1042,28 @@ bool bv_orr(const T* in, uint32_t size) {
 
 template <typename T>
 bool bv_xorr_scalar(const T* in) {
-  bool ret = false;
+  static constexpr uint32_t WORD_SIZE = bitwidth_v<T>;
+
   T tmp = in[0];
-  while (tmp) {
-    ret ^= tmp & 0x1;
-    tmp >>= 1;
+  if constexpr (WORD_SIZE > 32) {
+    tmp ^= tmp >> 32;
   }
-  return ret;
+  if constexpr (WORD_SIZE > 16) {
+    tmp ^= tmp >> 16;
+  }
+  if constexpr (WORD_SIZE > 8) {
+    tmp ^= tmp >> 8;
+  }
+  if constexpr (WORD_SIZE > 4) {
+    tmp ^= tmp >> 4;
+  }
+  if constexpr (WORD_SIZE > 2) {
+    tmp ^= tmp >> 2;
+  }
+  if constexpr (WORD_SIZE > 1) {
+    tmp ^= tmp >> 1;
+  }
+  return tmp & 0x1;
 }
 
 template <typename T>
@@ -1184,7 +1098,234 @@ bool bv_xorr(const T* in, uint32_t size) {
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T>
-void bv_shl_scalar(T* out, uint32_t out_size, const T* in, uint64_t dist) {
+bool bv_notl_scalar(const T* in) {
+  return !bv_orr_scalar(in);
+}
+
+template <typename T>
+bool bv_notl_vector(const T* in, uint32_t size) {
+  return !bv_orr_vector(in, size);
+}
+
+template <typename T>
+bool bv_notl(const T* in, uint32_t size) {
+  static constexpr uint32_t WORD_SIZE = bitwidth_v<T>;
+
+  if (size <= WORD_SIZE) {
+    return bv_notl_scalar<T>(in);
+  } else {
+    return bv_notl_vector<T>(in, size);
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+template <typename T>
+bool bv_andl_scalar(const T* lhs, const T* rhs) {
+  return bv_orr_scalar(lhs) && bv_orr_scalar(rhs);
+}
+
+template <typename T>
+bool bv_andl_vector(const T* lhs, uint32_t lhs_size, const T* rhs, uint32_t rhs_size) {
+  return bv_orr_vector(lhs, lhs_size) && bv_orr_vector(rhs, rhs_size);
+}
+
+template <typename T>
+bool bv_andl(const T* lhs, uint32_t lhs_size, const T* rhs, uint32_t rhs_size) {
+  static constexpr uint32_t WORD_SIZE = bitwidth_v<T>;
+
+  if (lhs_size <= WORD_SIZE
+   && rhs_size <= WORD_SIZE) {
+    return bv_andl_scalar<T>(lhs, rhs);
+  } else {
+    return bv_andl_vector<T>(lhs, lhs_size, rhs, rhs_size);
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+template <typename T>
+bool bv_orl_scalar(const T* lhs, const T* rhs) {
+  return bv_orr_scalar(lhs) || bv_orr_scalar(rhs);
+}
+
+template <typename T>
+bool bv_orl_vector(const T* lhs, uint32_t lhs_size, const T* rhs, uint32_t rhs_size) {
+  return bv_orr_vector(lhs, lhs_size) || bv_orr_vector(rhs, rhs_size);
+}
+
+template <typename T>
+bool bv_orl(const T* lhs, uint32_t lhs_size, const T* rhs, uint32_t rhs_size) {
+  static constexpr uint32_t WORD_SIZE = bitwidth_v<T>;
+
+  if (lhs_size <= WORD_SIZE
+   && rhs_size <= WORD_SIZE) {
+    return bv_orl_scalar<T>(lhs, rhs);
+  } else {
+    return bv_orl_vector<T>(lhs, lhs_size, rhs, rhs_size);
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+template <bool is_signed, typename T, typename BitAccessor = DefaultBitAccessor<T, is_signed>>
+void bv_inv_scalar(T* out, uint32_t out_size, const T* in, uint32_t in_size) {
+  BitAccessor arg0(in, in_size, out_size);
+
+  out[0] = ~arg0.get();
+
+  bv_clear_extra_bits(out, out_size);
+}
+
+template <bool is_signed, typename T, typename BitAccessor = DefaultBitAccessor<T, is_signed>>
+void bv_inv_vector(T* out, uint32_t out_size, const T* in, uint32_t in_size) {
+  static constexpr uint32_t WORD_SIZE = bitwidth_v<T>;
+
+  BitAccessor arg0(in, in_size, out_size);
+
+  uint32_t num_words = ceildiv(out_size, WORD_SIZE);
+  for (uint32_t i = 0; i < num_words; ++i) {
+    out[i] = ~arg0.get(i);
+  }
+  bv_clear_extra_bits(out, out_size);
+}
+
+template <bool is_signed, typename T, typename BitAccessor = DefaultBitAccessor<T, is_signed>>
+void bv_inv(T* out, uint32_t out_size, const T* in, uint32_t in_size) {
+  static constexpr uint32_t WORD_SIZE = bitwidth_v<T>;
+
+  if (out_size <= WORD_SIZE
+   && in_size <= WORD_SIZE) {
+    return bv_inv_scalar<is_signed, T, BitAccessor>(out, out_size, in, in_size);
+  } else {
+    return bv_inv_vector<is_signed, T, BitAccessor>(out, out_size, in, in_size);
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+template <bool is_signed, typename T, typename BitAccessor = DefaultBitAccessor<T, is_signed>>
+void bv_and_scalar(T* out, uint32_t out_size, const T* lhs, uint32_t lhs_size, const T* rhs, uint32_t rhs_size) {
+  BitAccessor arg0(lhs, lhs_size, out_size);
+  BitAccessor arg1(rhs, rhs_size, out_size);
+
+  out[0] = arg0.get() & arg1.get();
+
+  if (is_signed && (arg0.need_resize() || arg1.need_resize())) {
+    bv_clear_extra_bits(out, out_size);
+  }
+}
+
+template <bool is_signed, typename T, typename BitAccessor = DefaultBitAccessor<T, is_signed>>
+void bv_and_vector(T* out, uint32_t out_size, const T* lhs, uint32_t lhs_size, const T* rhs, uint32_t rhs_size) {
+  static constexpr uint32_t WORD_SIZE = bitwidth_v<T>;
+
+  BitAccessor arg0(lhs, lhs_size, out_size);
+  BitAccessor arg1(rhs, rhs_size, out_size);
+
+  uint32_t num_words = ceildiv(out_size, WORD_SIZE);
+  for (uint32_t i = 0; i < num_words; ++i) {
+    out[i] = arg0.get(i) & arg1.get(i);
+  }
+}
+
+template <bool is_signed, typename T, typename BitAccessor = DefaultBitAccessor<T, is_signed>>
+void bv_and(T* out, uint32_t out_size, const T* lhs, uint32_t lhs_size, const T* rhs, uint32_t rhs_size) {
+  static constexpr uint32_t WORD_SIZE = bitwidth_v<T>;
+
+  if (out_size <= WORD_SIZE
+   && lhs_size <= WORD_SIZE
+   && rhs_size <= WORD_SIZE) {
+    return bv_and_scalar<is_signed, T, BitAccessor>(out, out_size, lhs, lhs_size, rhs, rhs_size);
+  } else {
+    return bv_and_vector<is_signed, T, BitAccessor>(out, out_size, lhs, lhs_size, rhs, rhs_size);
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+template <bool is_signed, typename T, typename BitAccessor = DefaultBitAccessor<T, is_signed>>
+void bv_or_scalar(T* out, uint32_t out_size, const T* lhs, uint32_t lhs_size, const T* rhs, uint32_t rhs_size) {
+  BitAccessor arg0(lhs, lhs_size, out_size);
+  BitAccessor arg1(rhs, rhs_size, out_size);
+
+  out[0] = arg0.get() | arg1.get();
+
+  if (is_signed && (arg0.need_resize() || arg1.need_resize())) {
+    bv_clear_extra_bits(out, out_size);
+  }
+}
+
+template <bool is_signed, typename T, typename BitAccessor = DefaultBitAccessor<T, is_signed>>
+void bv_or_vector(T* out, uint32_t out_size, const T* lhs, uint32_t lhs_size, const T* rhs, uint32_t rhs_size) {
+  static constexpr uint32_t WORD_SIZE = bitwidth_v<T>;
+
+  BitAccessor arg0(lhs, lhs_size, out_size);
+  BitAccessor arg1(rhs, rhs_size, out_size);
+
+  uint32_t num_words = ceildiv(out_size, WORD_SIZE);
+  for (uint32_t i = 0; i < num_words; ++i) {
+    out[i] = arg0.get(i) | arg1.get(i);
+  }
+}
+
+template <bool is_signed, typename T, typename BitAccessor = DefaultBitAccessor<T, is_signed>>
+void bv_or(T* out, uint32_t out_size, const T* lhs, uint32_t lhs_size, const T* rhs, uint32_t rhs_size) {
+  static constexpr uint32_t WORD_SIZE = bitwidth_v<T>;
+
+  if (out_size <= WORD_SIZE
+   && lhs_size <= WORD_SIZE
+   && rhs_size <= WORD_SIZE) {
+    return bv_or_scalar<is_signed, T, BitAccessor>(out, out_size, lhs, lhs_size, rhs, rhs_size);
+  } else {
+    return bv_or_vector<is_signed, T, BitAccessor>(out, out_size, lhs, lhs_size, rhs, rhs_size);
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+template <bool is_signed, typename T, typename BitAccessor = DefaultBitAccessor<T, is_signed>>
+void bv_xor_scalar(T* out, uint32_t out_size, const T* lhs, uint32_t lhs_size, const T* rhs, uint32_t rhs_size) {
+  BitAccessor arg0(lhs, lhs_size, out_size);
+  BitAccessor arg1(rhs, rhs_size, out_size);
+
+  out[0] = arg0.get() ^ arg1.get();
+
+  if (is_signed && (arg0.need_resize() || arg1.need_resize())) {
+    bv_clear_extra_bits(out, out_size);
+  }
+}
+
+template <bool is_signed, typename T, typename BitAccessor = DefaultBitAccessor<T, is_signed>>
+void bv_xor_vector(T* out, uint32_t out_size, const T* lhs, uint32_t lhs_size, const T* rhs, uint32_t rhs_size) {
+  static constexpr uint32_t WORD_SIZE = bitwidth_v<T>;
+
+  BitAccessor arg0(lhs, lhs_size, out_size);
+  BitAccessor arg1(rhs, rhs_size, out_size);
+
+  uint32_t num_words = ceildiv(out_size, WORD_SIZE);
+  for (uint32_t i = 0; i < num_words; ++i) {
+    out[i] = arg0.get(i) ^ arg1.get(i);
+  }
+}
+
+template <bool is_signed, typename T, typename BitAccessor = DefaultBitAccessor<T, is_signed>>
+void bv_xor(T* out, uint32_t out_size, const T* lhs, uint32_t lhs_size, const T* rhs, uint32_t rhs_size) {
+  static constexpr uint32_t WORD_SIZE = bitwidth_v<T>;
+
+  if (out_size <= WORD_SIZE
+   && lhs_size <= WORD_SIZE
+   && rhs_size <= WORD_SIZE) {
+    return bv_xor_scalar<is_signed, T, BitAccessor>(out, out_size, lhs, lhs_size, rhs, rhs_size);
+  } else {
+    return bv_xor_vector<is_signed, T, BitAccessor>(out, out_size, lhs, lhs_size, rhs, rhs_size);
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+template <typename T>
+void bv_shl_scalar(T* out, uint32_t out_size, const T* in, uint32_t dist) {
   out[0] = in[0] << dist;
   bv_clear_extra_bits(out, out_size);
 }
@@ -1192,18 +1333,18 @@ void bv_shl_scalar(T* out, uint32_t out_size, const T* in, uint64_t dist) {
 template <typename T>
 void bv_shl_vector(T* out, uint32_t out_size,
                    const T* in, uint32_t in_size,
-                   uint64_t dist) {
+                   uint32_t dist) {
   static constexpr uint32_t WORD_SIZE = bitwidth_v<T>;
   assert(out_size >= in_size);
 
-  int32_t in_num_words  = ceildiv(in_size, WORD_SIZE);
-  int32_t out_num_words = ceildiv(out_size, WORD_SIZE);
+  auto in_num_words  = ceildiv<int32_t>(in_size, WORD_SIZE);
+  auto out_num_words = ceildiv<int32_t>(out_size, WORD_SIZE);
 
   auto shift_words = std::min(ceildiv<int32_t>(dist, WORD_SIZE), out_num_words);
-  int32_t shift_bits = dist % WORD_SIZE;
-  int32_t m = in_num_words + shift_words;
+  auto shift_bits = dist % WORD_SIZE;
+  auto m = in_num_words + shift_words;
 
-  int32_t i = out_num_words - 1;
+  auto i = out_num_words - 1;
   for (; i >= m;) {
     out[i--] = 0;
   }
@@ -1233,7 +1374,7 @@ void bv_shl_vector(T* out, uint32_t out_size,
 template <typename T>
 void bv_shl(T* out, uint32_t out_size,
             const T* in, uint32_t in_size,
-            uint64_t dist) {
+            uint32_t dist) {
   static constexpr uint32_t WORD_SIZE = bitwidth_v<T>;
   assert(out_size >= in_size);
 
@@ -1247,7 +1388,7 @@ void bv_shl(T* out, uint32_t out_size,
 ///////////////////////////////////////////////////////////////////////////////
 
 template <bool is_signed, typename T>
-void bv_shr_scalar(T* out, uint32_t out_size, const T* in, uint32_t in_size, uint64_t dist) {
+void bv_shr_scalar(T* out, uint32_t out_size, const T* in, uint32_t in_size, uint32_t dist) {
   if constexpr (is_signed) {
     auto value = sign_ext(in[0], in_size);
     out[0] = value >> dist;
@@ -1261,18 +1402,18 @@ void bv_shr_scalar(T* out, uint32_t out_size, const T* in, uint32_t in_size, uin
 template <bool is_signed, typename T>
 void bv_shr_vector(T* out, uint32_t out_size,
                    const T* in, uint32_t in_size,
-                   uint64_t dist) {
+                   uint32_t dist) {
 
   static constexpr uint32_t WORD_SIZE = bitwidth_v<T>;
   assert(out_size <= in_size);
 
-  int32_t in_num_words  = ceildiv(in_size, WORD_SIZE);
-  int32_t out_num_words = ceildiv(out_size, WORD_SIZE);
+  auto in_num_words  = ceildiv<int32_t>(in_size, WORD_SIZE);
+  auto out_num_words = ceildiv<int32_t>(out_size, WORD_SIZE);
 
-  int32_t shift_words = std::min(ceildiv<int32_t>(dist, WORD_SIZE), in_num_words);
-  int32_t rem_words = std::min(in_num_words - shift_words, out_num_words);
+  auto shift_words = std::min(ceildiv<int32_t>(dist, WORD_SIZE), in_num_words);
+  auto rem_words = std::min(in_num_words - shift_words, out_num_words);
 
-  int32_t shift_bits = dist % WORD_SIZE;
+  auto shift_bits = dist % WORD_SIZE;
 
   T ext = 0;
   if constexpr (is_signed) {
@@ -1334,7 +1475,7 @@ void bv_shr_vector(T* out, uint32_t out_size,
 template <bool is_signed, typename T>
 void bv_shr(T* out, uint32_t out_size,
             const T* in, uint32_t in_size,
-            uint64_t dist) {
+            uint32_t dist) {
   static constexpr uint32_t WORD_SIZE = bitwidth_v<T>;
   assert(out_size <= in_size);
 
@@ -1347,127 +1488,131 @@ void bv_shr(T* out, uint32_t out_size,
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T>
-void bv_neg_scalar(T* out, const T* in, uint32_t size) {
-  out[0] = -in[0];
-  bv_clear_extra_bits(out, size);
+template <bool is_signed, typename T, typename BitAccessor = DefaultBitAccessor<T, is_signed>>
+void bv_neg_scalar(T* out, uint32_t out_size, const T* in, uint32_t in_size) {
+  BitAccessor arg(in, in_size, out_size);
+
+  out[0] = -arg.get();
+
+  bv_clear_extra_bits(out, out_size);
 }
 
-template <typename T>
-void bv_neg_vector(T* out, const T* in, uint32_t size) {
+template <bool is_signed, typename T, typename BitAccessor = DefaultBitAccessor<T, is_signed>>
+void bv_neg_vector(T* out, uint32_t out_size, const T* in, uint32_t in_size) {
   static constexpr uint32_t WORD_SIZE = bitwidth_v<T>;
 
+  BitAccessor arg(in, in_size, out_size);
+
   T borrow(0);
-  uint32_t num_words = ceildiv(size, WORD_SIZE);
+  uint32_t num_words = ceildiv(out_size, WORD_SIZE);
   for (uint32_t i = 0; i < num_words; ++i) {
-    auto a = in[i];
+    auto a = arg.get(i);
     T b = -a - borrow;
     borrow = (a != 0) || (b != 0);
     out[i] = b;
   }
-  bv_clear_extra_bits(out, size);
+  bv_clear_extra_bits(out, out_size);
 }
 
-template <typename T>
-void bv_neg(T* out, const T* in, uint32_t size) {
+template <bool is_signed, typename T, typename BitAccessor = DefaultBitAccessor<T, is_signed>>
+void bv_neg(T* out, uint32_t out_size, const T* in, uint32_t in_size) {
   static constexpr uint32_t WORD_SIZE = bitwidth_v<T>;
 
-  if (size <= WORD_SIZE) {
-    bv_neg_scalar(out, in, size);
+  if (out_size <= WORD_SIZE
+   && in_size <= WORD_SIZE) {
+    bv_neg_scalar<is_signed, T, BitAccessor>(out, out_size, in, in_size);
   } else {
-    bv_neg_vector(out, in, size);
+    bv_neg_vector<is_signed, T, BitAccessor>(out, out_size, in, in_size);
   }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T>
-void bv_add_scalar(T* out, const T* lhs, const T* rhs, uint32_t size) {
-  out[0] = lhs[0] + rhs[0];
-  bv_clear_extra_bits(out, size);
+template <bool is_signed, typename T, typename BitAccessor = DefaultBitAccessor<T, is_signed>>
+void bv_add_scalar(T* out, uint32_t out_size, const T* lhs, uint32_t lhs_size, const T* rhs, uint32_t rhs_size) {
+  BitAccessor arg0(lhs, lhs_size, out_size);
+  BitAccessor arg1(rhs, rhs_size, out_size);
+
+  out[0] = arg0.get() + arg1.get();
+
+  bv_clear_extra_bits(out, out_size);
 }
 
-template <typename T>
-void bv_add_vector(T* out, const T* lhs, const T* rhs, uint32_t size) {
+template <bool is_signed, typename T, typename BitAccessor = DefaultBitAccessor<T, is_signed>>
+void bv_add_vector(T* out, uint32_t out_size, const T* lhs, uint32_t lhs_size, const T* rhs, uint32_t rhs_size) {
   static constexpr uint32_t WORD_SIZE = bitwidth_v<T>;
 
+  BitAccessor arg0(lhs, lhs_size, out_size);
+  BitAccessor arg1(rhs, rhs_size, out_size);
+
   T carry(0);
-  uint32_t num_words = ceildiv(size, WORD_SIZE);
+  uint32_t num_words = ceildiv(out_size, WORD_SIZE);
   for (uint32_t i = 0; i < num_words; ++i) {
-    auto a = lhs[i];
-    auto b = rhs[i];
+    auto a = arg0.get(i);
+    auto b = arg1.get(i);
     T c = a + b;
     T d = c + carry;
     carry = (c < a) || (d < carry);
     out[i] = d;
   }
-  bv_clear_extra_bits(out, size);
+  bv_clear_extra_bits(out, out_size);
 }
 
-template <typename T>
-void bv_add(T* out, const T* lhs, const T* rhs, uint32_t size) {
+template <bool is_signed, typename T, typename BitAccessor = DefaultBitAccessor<T, is_signed>>
+void bv_add(T* out, uint32_t out_size, const T* lhs, uint32_t lhs_size, const T* rhs, uint32_t rhs_size) {
   static constexpr uint32_t WORD_SIZE = bitwidth_v<T>;
 
-  if (size <= WORD_SIZE) {
-    bv_add_scalar(out, lhs, rhs,  size);
+  if (out_size <= WORD_SIZE
+   && lhs_size <= WORD_SIZE
+   && rhs_size <= WORD_SIZE) {
+    bv_add_scalar<is_signed, T, BitAccessor>(out, out_size, lhs, lhs_size, rhs, rhs_size);
   } else {
-    bv_add_vector(out, lhs, rhs, size);
+    bv_add_vector<is_signed, T, BitAccessor>(out, out_size, lhs, lhs_size, rhs, rhs_size);
   }  
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T>
-void bv_sub_scalar(T* out, const T* lhs, const T* rhs, uint32_t size) {
-  out[0] = lhs[0] - rhs[0];
-  bv_clear_extra_bits(out, size);
+template <bool is_signed, typename T, typename BitAccessor = DefaultBitAccessor<T, is_signed>>
+void bv_sub_scalar(T* out, uint32_t out_size, const T* lhs, uint32_t lhs_size, const T* rhs, uint32_t rhs_size) {
+  BitAccessor arg0(lhs, lhs_size, out_size);
+  BitAccessor arg1(rhs, rhs_size, out_size);
+
+  out[0] = arg0.get() - arg1.get();
+
+  bv_clear_extra_bits(out, out_size);
 }
 
-template <typename T>
-void bv_sub_vector(T* out, const T* lhs, const T* rhs, uint32_t size) {
+template <bool is_signed, typename T, typename BitAccessor = DefaultBitAccessor<T, is_signed>>
+void bv_sub_vector(T* out, uint32_t out_size, const T* lhs, uint32_t lhs_size, const T* rhs, uint32_t rhs_size) {
   static constexpr uint32_t WORD_SIZE = bitwidth_v<T>;
 
+  BitAccessor arg0(lhs, lhs_size, out_size);
+  BitAccessor arg1(rhs, rhs_size, out_size);
+
   T borrow(0);
-  uint32_t num_words = ceildiv(size, WORD_SIZE);
+  uint32_t num_words = ceildiv(out_size, WORD_SIZE);
   for (uint32_t i = 0; i < num_words; ++i) {
-    auto a = lhs[i];
-    auto b = rhs[i];
+    auto a = arg0.get(i);
+    auto b = arg1.get(i);
     T c = a - b;
     T d = c - borrow;
     borrow = (a < c) || (c < d);
     out[i] = d;
   }
-  bv_clear_extra_bits(out, size);
+  bv_clear_extra_bits(out, out_size);
 }
 
-template <typename T>
-void bv_sub(T* out, const T* lhs, const T* rhs, uint32_t size) {
+template <bool is_signed, typename T, typename BitAccessor = DefaultBitAccessor<T, is_signed>>
+void bv_sub(T* out, uint32_t out_size, const T* lhs, uint32_t lhs_size, const T* rhs, uint32_t rhs_size) {
   static constexpr uint32_t WORD_SIZE = bitwidth_v<T>;
 
-  if (size <= WORD_SIZE) {
-    bv_sub_scalar(out, lhs, rhs, size);
+  if (out_size <= WORD_SIZE
+   && lhs_size <= WORD_SIZE
+   && rhs_size <= WORD_SIZE) {
+    bv_sub_scalar<is_signed, T, BitAccessor>(out, out_size, lhs, lhs_size, rhs, rhs_size);
   } else {
-    bv_sub_vector(out, lhs, rhs, size);
-  }
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-template <typename T>
-void bv_abs_scalar(T* out, const T* in, uint32_t size) {
-  if (bv_is_neg_scalar(in, size)) {
-    bv_neg_scalar(out, in, size);
-  } else {
-    bv_copy_scalar(out, in, size);
-  }
-}
-
-template <typename T>
-void bv_abs_vector(T* out, const T* in, uint32_t size) {
-  if (bv_is_neg_vector(in, size)) {
-    bv_neg_vector(out, in, size);
-  } else {
-    bv_copy_vector(out, in, size);
+    bv_sub_vector<is_signed, T, BitAccessor>(out, out_size, lhs, lhs_size, rhs, rhs_size);
   }
 }
 
@@ -1707,20 +1852,20 @@ void bv_div_vector(T* out, uint32_t out_size,
 
     if (bv_is_neg(u, lhs_size)) {
       uv.resize(ceildiv(lhs_size, WORD_SIZE));
-      bv_neg_vector(uv.data(), u, lhs_size);
+      bv_neg_vector<is_signed, T, ClearBitAccessor<T>>(uv.data(), lhs_size, u, lhs_size);
       u = uv.data();
     }
 
     if (bv_is_neg(v, rhs_size)) {
       vv.resize(ceildiv(rhs_size, WORD_SIZE));
-      bv_neg_vector(vv.data(), v, rhs_size);
+      bv_neg_vector<is_signed, T, ClearBitAccessor<T>>(vv.data(), rhs_size, v, rhs_size);
       v = vv.data();
     }
 
     T* r = nullptr;
     bv_udiv(out, out_size, r, 0, u, lhs_size, v, rhs_size);
     if (bv_is_neg_vector(lhs, lhs_size) ^ bv_is_neg_vector(rhs, rhs_size)) {
-      bv_neg_vector(out, out, out_size);
+      bv_neg_vector<is_signed, T, ClearBitAccessor<T>>(out, out_size, out, out_size);
     }
   } else {
     T* r = nullptr;
@@ -1773,20 +1918,20 @@ void bv_mod_vector(T* out, uint32_t out_size,
 
     if (bv_is_neg(u, lhs_size)) {
       uv.resize(ceildiv(lhs_size, WORD_SIZE));
-      bv_neg_vector(uv.data(), u, lhs_size);
+      bv_neg_vector<is_signed, T, ClearBitAccessor<T>>(uv.data(), lhs_size, u, lhs_size);
       u = uv.data();
     }
 
     if (bv_is_neg(v, rhs_size)) {
       vv.resize(ceildiv(rhs_size, WORD_SIZE));
-      bv_neg_vector(vv.data(), v, rhs_size);
+      bv_neg_vector<is_signed, T, ClearBitAccessor<T>>(vv.data(), rhs_size, v, rhs_size);
       v = vv.data();
     }
 
     T* q = nullptr;
     bv_udiv(q, 0, out, out_size, u, lhs_size, v, rhs_size);
     if (bv_is_neg_vector(lhs, lhs_size)) {
-      bv_neg_vector(out, out, out_size);
+      bv_neg_vector<is_signed, T, ClearBitAccessor<T>>(out,out_size,  out, out_size);
     }
   } else {
     T* q = nullptr;

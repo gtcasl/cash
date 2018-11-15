@@ -77,8 +77,7 @@ void simulatorimpl::initialize() {
 
     // initialize driver
   #ifndef NLIBJIT
-    if (0 == (platform::self().cflags() & cflags::disable_jit)
-     && simjit::check_compatible(eval_ctx)) {
+    if (0 == (platform::self().cflags() & cflags::disable_jit)) {
       sim_driver_ = new simjit::driver();
     } else {
       sim_driver_ = new simref::driver();

@@ -31,13 +31,11 @@ struct is_bitvector_extended_type_impl<const char*> : std::true_type {};
 template <typename T>
 inline constexpr bool is_bitvector_extended_type_v = is_bitvector_extended_type_impl<std::decay_t<T>>::value;
 
-template <typename word_t = uint64_t,
-          typename alloc_t = std::allocator<word_t>>
+template <typename word_t = uint64_t>
 class bitvector {
 public:
   static_assert(std::is_integral_v<word_t> && std::is_unsigned_v<word_t>, "invalid type");
   typedef word_t  block_type;
-  typedef alloc_t allocator_type;
   typedef size_t  size_type;
 
   class const_iterator;
@@ -402,31 +400,26 @@ public:
     friend class bitvector;
   };
 
-  bitvector(const allocator_type& alloc = allocator_type())
-    : alloc_(alloc)
-    , size_(0)
-    , words_(nullptr)
-  {}
+  bitvector() : words_(nullptr), size_(0) {}
 
-  explicit bitvector(uint32_t size, const allocator_type& alloc = allocator_type())
-    : bitvector(alloc) {
+  explicit bitvector(uint32_t size)
+    : bitvector() {
     this->resize(size);
   }
 
   template <typename U,
             CH_REQUIRE_0(std::is_integral_v<U> || is_bitvector_extended_type_v<U>)>
-  explicit bitvector(uint32_t size, U value, const allocator_type& alloc = allocator_type())
-    : bitvector(size, alloc) {
+  explicit bitvector(uint32_t size, U value)
+    : bitvector(size) {
     this->operator =(value);
   }
 
   bitvector(const bitvector& other)
-    : bitvector(other.size_, other.alloc_) {
+    : bitvector(other.size_) {
     std::copy_n(other.words_, other.num_words(), words_);
   }
 
   bitvector(bitvector&& other) {
-    alloc_ = std::move(other.alloc_);
     words_ = other.words_;
     size_  = other.size_;
     other.size_ = 0;
@@ -445,9 +438,8 @@ public:
 
   bitvector& operator=(bitvector&& other) {
     if (words_) {
-      alloc_.deallocate(words_, this->num_words());
+      delete [] words_;
     }
-    alloc_ = std::move(other.alloc_);
     size_  = other.size_;
     words_ = other.words_;
     other.size_ = 0;
@@ -572,10 +564,7 @@ public:
   }
 
   void clear() {
-    if (words_) {
-      alloc_.deallocate(words_, this->num_words());
-      words_ = nullptr;
-    }
+    delete [] words_;
     size_ = 0;
   }
 
@@ -583,9 +572,9 @@ public:
     uint32_t old_num_words = ceildiv(size_, bitwidth_v<word_t>);
     uint32_t new_num_words = ceildiv(size, bitwidth_v<word_t>);
     if (new_num_words != old_num_words) {
-      auto words = alloc_.allocate(new_num_words);
+      auto words = new word_t[new_num_words];
       if (words_) {
-        alloc_.deallocate(words_, this->num_words());
+        delete [] words_;
       }
       words_ = words;      
     }
@@ -595,9 +584,8 @@ public:
     bv_init(words_, size);
   }
 
-  template <typename A>
   void copy(uint32_t dst_offset,
-            const bitvector<word_t, A>& src,
+            const bitvector<word_t>& src,
             uint32_t src_offset,
             uint32_t length) {
     assert(size_ && src.size_);
@@ -690,8 +678,7 @@ public:
     return true;
   }
 
-  template <typename A>
-  bool operator!=(const bitvector<word_t, A>& other) const {
+  bool operator!=(const bitvector<word_t>& other) const {
     return !(*this == other);
   }
 
@@ -797,16 +784,15 @@ protected:
     }
   }
 
-  allocator_type alloc_;
-  uint32_t size_;
   word_t* words_;
+  uint32_t size_;
 
   friend class system_buffer;
   friend class system_io_buffer;
 };
 
-template <typename word_t, typename alloc_t>
-std::ostream& operator<<(std::ostream& out, const bitvector<word_t, alloc_t>& in) {
+template <typename word_t>
+std::ostream& operator<<(std::ostream& out, const bitvector<word_t>& in) {
   out << "0x";
   auto oldflags = out.flags();
   out.setf(std::ios_base::hex, std::ios_base::basefield);

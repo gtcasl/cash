@@ -416,6 +416,7 @@ CH_LOGIC_OPERATOR(logic_op_shift)
   template <typename U,
             CH_REQUIRE_0(std::is_convertible_v<U, ch_bit<ch_width_v<U>>>)>
   friend auto operator<<(Derived lhs, const U& rhs) {
+    static_assert(ch_width_v<U> <= 32, "invalid size");
     auto sloc = logic_accessor::sloc(lhs);
     return make_logic_op<ch_op::shl,
                         ch_signed_v<Derived>,
@@ -427,6 +428,7 @@ CH_LOGIC_OPERATOR(logic_op_shift)
   template <typename U,
             CH_REQUIRE_0(std::is_convertible_v<U, ch_bit<ch_width_v<U>>>)>
   friend auto operator>>(Derived lhs, const U& rhs) {
+    static_assert(ch_width_v<U> <= 32, "invalid size");
     auto sloc = logic_accessor::sloc(lhs);
     return make_logic_op<ch_op::shr,
                         ch_signed_v<Derived>,

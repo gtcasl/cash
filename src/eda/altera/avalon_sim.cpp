@@ -95,7 +95,7 @@ protected:
           data.read(0, buffer.first + req.address, 0, data_size_ * 8);
         } else {
           for (uint32_t i = 0; i < data_size_; ++i) {
-            if (0 == (req.byteenable & (1ull << i)))
+            if (0 == ((req.byteenable >> i) & 0x1))
               continue;
             CH_CHECK(req.address + i + 1 <= buffer.second, "out of bound access");
             data.read(i * 8, buffer.first + req.address + i, 0, 8);

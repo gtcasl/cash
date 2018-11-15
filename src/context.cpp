@@ -823,8 +823,8 @@ void context::register_tap(const lnode& node,
 udfimpl* context::create_udf_node(udf_iface* udf,
                                   const std::vector<lnode>& inputs,
                                   const source_location& sloc) {
-  if (udf->delta() != 0) {
-    return this->create_node<udfsimpl>(udf, inputs, nullptr, nullptr, sloc);
+  if (udf->is_seq()) {
+    return this->create_node<udfsimpl>(udf, inputs, nullptr, sloc);
   } else {
     return this->create_node<udfcimpl>(udf, inputs, sloc);
   }

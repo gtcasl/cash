@@ -178,8 +178,8 @@ TEST_CASE("system", "[system]") {
       ret &= ((a & b) == 0001_b);
       ret &= ((a | b) == 0011_b);
       ret &= ((a ^ b) == 0010_b);
-      ret &= ((a >> b) == 1);
-      ret &= ((a << b) == 6);
+      ret &= ((a >> 1) == 1);
+      ret &= ((a << 1) == 6);
       ret &= (-b == -1);
       ret &= ((a + b) == 4);
       ret &= ((a - b) == 2);
@@ -226,8 +226,8 @@ TEST_CASE("system", "[system]") {
       ret &= (b >= a);
       ret &= (~a == 2);
       ret &= ((a ^ b) == 2);
-      ret &= ((a >> -b) == -2);
-      ret &= ((a << -b) == -6);
+      ret &= ((a >> 1) == -2);
+      ret &= ((a << 1) == -6);
       ret &= (-b == 1);
       ret &= ((a + b) == -4);
       ret &= ((a - b) == -2);

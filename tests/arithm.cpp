@@ -32,12 +32,14 @@ TEST_CASE("arithmetic", "[arithmetic]") {
       ch_bit<65> a(0x1'ffffffff'00000000_h65);
       auto c = ~a;
       ch_bit<64> d = 0x00000000'ffffffff_h64;
+      //ch_print("c={0}, d={1}", c, d);
       return (c == d);
     });
     TEST([]()->ch_bool {
       ch_bit<65> a(0x0'ffffffff'00000000_h65);
       auto c = ~a;
       ch_bit<64> d = 0x00000000'ffffffff_h64;
+      //ch_print("c={0}, d={1}", c, d);
       return (c != d);
     });
     TEST([]()->ch_bool {

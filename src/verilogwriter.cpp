@@ -784,7 +784,7 @@ void verilogwriter::print_mem(std::ostream& out, memimpl* node) {
 void verilogwriter::print_udf(std::ostream& out, udfimpl* node) {
   std::unordered_map<std::string, std::string> dic;
 
-  auto add_to_dic = [&](const std::string& key, lnodeimpl* value) {
+  auto dict_add = [&](const std::string& key, lnodeimpl* value) {
     std::ostringstream os;
     this->print_name(os, value);
     dic[key] = os.str();
@@ -793,19 +793,16 @@ void verilogwriter::print_udf(std::ostream& out, udfimpl* node) {
   auto udf = node->udf();
 
   dic["id"] = std::to_string(node->id());
-  add_to_dic("dst", node);
+  dict_add("dst", node);
 
   for (uint32_t i = 0, n = udf->inputs_size().size(); i < n; ++i) {
-    add_to_dic("src" + std::to_string(i), node->src(i).impl());
+    dict_add("src" + std::to_string(i), node->src(i).impl());
   }
 
-  if (udf->delta() != 0) {
+  if (udf->is_seq()) {
     auto udfs = reinterpret_cast<udfsimpl*>(node);
     auto cd = reinterpret_cast<cdimpl*>(udfs->cd().impl());
-    add_to_dic("clock", cd->clk().impl());
-    if (udfs->has_init_data()) {
-      add_to_dic("reset", udfs->reset().impl());
-    }
+    dict_add("clock", cd->clk().impl());
   }
 
   std::string code;

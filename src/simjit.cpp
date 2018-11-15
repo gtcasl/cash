@@ -30,6 +30,8 @@ static constexpr uint32_t WORD_LOGSIZE = log2floor(WORD_SIZE);
 static constexpr uint32_t WORD_MASK = bitwidth_v<block_type> - 1;
 static constexpr block_type WORD_MAX = std::numeric_limits<block_type>::max();
 
+static constexpr uint32_t INLINE_MAX_SIZE = 8 * WORD_SIZE;
+
 #define __align_word_size(...) ((((__VA_ARGS__) + WORD_MASK) / WORD_SIZE) * sizeof(block_type))
 #define __countof(arr) (sizeof(arr) / sizeof(arr[0]))
 #define __source_location() jit_insn_mark_offset(j_func_, __LINE__)
@@ -38,13 +40,13 @@ static constexpr block_type WORD_MAX = std::numeric_limits<block_type>::max();
   [&]()->jit_value_t { \
     void* pfn; \
     if (is_signed) { \
-      if (is_resize) { \
+      if (need_resize) { \
         pfn = reinterpret_cast<void*>(fname<true, block_type, StaticBitAccessor<true, true, block_type>>); \
       } else { \
         pfn = reinterpret_cast<void*>(fname<true, block_type, StaticBitAccessor<true, false, block_type>>); \
       } \
     } else { \
-      if (is_resize) { \
+      if (need_resize) { \
         pfn = reinterpret_cast<void*>(fname<false, block_type, StaticBitAccessor<false, true, block_type>>); \
       } else { \
         pfn = reinterpret_cast<void*>(fname<false, block_type, StaticBitAccessor<false, false, block_type>>); \
@@ -52,6 +54,47 @@ static constexpr block_type WORD_MAX = std::numeric_limits<block_type>::max();
     } \
     return this->emit_alu_call_relational(pfn, #fname, __VA_ARGS__); \
   }()
+
+#define __alu_call_logical(fname, ...) \
+  this->emit_alu_call_relational(reinterpret_cast<void*>(fname<block_type>), #fname, __VA_ARGS__)
+
+#define __alu_call_binary(fname, ...) \
+  void* pfn; \
+  if (is_signed) { \
+    if (need_resize) { \
+      pfn = reinterpret_cast<void*>(fname<true, block_type, StaticBitAccessor<true, true, block_type>>); \
+    } else { \
+      pfn = reinterpret_cast<void*>(fname<true, block_type, StaticBitAccessor<true, false, block_type>>); \
+    } \
+  } else { \
+    if (need_resize) { \
+      pfn = reinterpret_cast<void*>(fname<false, block_type, StaticBitAccessor<false, true, block_type>>); \
+    } else { \
+      pfn = reinterpret_cast<void*>(fname<false, block_type, StaticBitAccessor<false, false, block_type>>); \
+    } \
+  } \
+  this->emit_alu_call_binary(pfn, #fname, __VA_ARGS__)
+
+#define __alu_call_reduce(fname, ...) \
+  [&]()->jit_value_t { \
+    auto pfn = reinterpret_cast<void*>(fname<block_type>); \
+    return this->emit_alu_call_relational(pfn, #fname, __VA_ARGS__); \
+  }()
+
+#define __alu_call_shl(fname, ...) \
+  auto pfn = reinterpret_cast<void*>(fname<block_type>); \
+  this->emit_alu_call_shift(pfn, #fname, __VA_ARGS__)
+
+#define __alu_call_shr(fname, ...) \
+  auto pfn = is_signed ? fname<true, block_type> : fname<false, block_type>; \
+  this->emit_alu_call_shift(reinterpret_cast<void*>(pfn), #fname, __VA_ARGS__)
+
+#define __alu_call_arithmetic(fname, ...) \
+  __alu_call_binary(fname, __VA_ARGS__)
+
+#define __alu_call_arithmetic2(fname, ...) \
+  auto pfn = is_signed ? fname<true, block_type> : fname<false, block_type>; \
+  this->emit_alu_call_binary(reinterpret_cast<void*>(pfn), #fname, __VA_ARGS__)
 
 static uint32_t to_value_size(uint32_t size) {
   uint32_t bytes = ceildiv(size, 8);
@@ -312,10 +355,10 @@ public:
         this->emit_node(reinterpret_cast<printimpl*>(node));
         break;
       case type_udfc:
-        CH_TODO();
+        this->emit_node(reinterpret_cast<udfcimpl*>(node));
         break;
       case type_udfs:
-        CH_TODO();
+        this->emit_node(reinterpret_cast<udfsimpl*>(node));
         break;
       case type_mem:
         break;
@@ -369,37 +412,6 @@ private:
     std::vector<uint32_t> nodes;
   };
 
-  struct data_t {
-    block_type* value;
-    uint32_t size;
-
-    void  init(lnodeimpl* node, const compiler* cp) {
-      auto it = cp->addr_map_.find(node->id());
-      if (it != cp->addr_map_.end()) {
-        auto addr = it->second;
-        switch (node->type()) {
-        case type_input:
-          value = cp->sim_ctx_->state.ports[addr];
-          break;
-        default:
-          value = reinterpret_cast<block_type*>(cp->sim_ctx_->state.vars + addr);
-          break;
-        }
-      }
-      size = node->size();
-    }
-  };
-
-  struct eval_data_t {
-    eval_data_t(data_t& data) {
-      value.emplace(data.value, data.size);
-    }
-    ~eval_data_t() {
-      value.emplace(nullptr, 0);
-    }
-    sdata_type value;
-  };
-
   struct cd_data_t {
     int prev_value;
 
@@ -417,14 +429,14 @@ private:
   struct print_data_t {
     char* format;
     enum_string_cb* enum_strings;
-    data_t* src_values;
+    sdata_type* srcs;
 
     static uint32_t size(printimpl* node) {
       auto num_srcs = node->srcs().size() + (node->has_pred() ? -1 : 0);
       uint32_t size = sizeof(print_data_t);
       size += node->format().size() + 1; // format
       size += node->enum_strings().size() * sizeof(enum_string_cb); // enum_strings
-      size += num_srcs * sizeof(data_t); // src_values
+      size += num_srcs * sizeof(sdata_type); // src_values
       return size;
     }
 
@@ -436,22 +448,15 @@ private:
       memcpy(format, node->format().c_str(), fmt_len);
       buf += fmt_len;
 
-      this->enum_strings = reinterpret_cast<enum_string_cb*>(buf);
-      auto e = this->enum_strings;
-      for (auto cb : node->enum_strings()) {
-        *e++ = cb;
+      enum_strings = reinterpret_cast<enum_string_cb*>(buf);
+      for (uint32_t i = 0, n = node->enum_strings().size(); i < n; ++i) {
+        enum_strings[i] =  node->enum_string(i);
       }
       buf += node->enum_strings().size() * sizeof(enum_string_cb);
 
-      auto num_srcs = node->srcs().size() + (node->has_pred() ? -1 : 0);
-      this->src_values = reinterpret_cast<data_t*>(buf);
-      buf += num_srcs * sizeof(data_t);
-
-      auto src_value = this->src_values;
+      srcs = reinterpret_cast<sdata_type*>(buf);
       for (uint32_t i = (node->has_pred() ? 1 : 0), n = node->srcs().size(); i < n; ++i) {
-        auto src = node->src(i).impl();
-        src_value->init(src, cp);
-        ++src_value;
+        cp->init_sdata(&srcs[i], node->src(i).impl());
       }
     }
 
@@ -461,16 +466,16 @@ private:
         if (*str == '{') {
           fmtinfo_t fmt;
           str = parse_format_index(&fmt, str);
-          eval_data_t src(self->src_values[fmt.index]);
+          auto& src = self->srcs[fmt.index];
           switch (fmt.type) {
           case fmttype::Int:
-            strbuf << src.value;
+            strbuf << src;
            break;
           case fmttype::Float:
-            strbuf << bit_cast<float>(static_cast<int>(src.value));
+            strbuf << bit_cast<float>(static_cast<int>(src));
            break;
           case fmttype::Enum:
-            strbuf << self->enum_strings[fmt.index](static_cast<int>(src.value));
+            strbuf << self->enum_strings[fmt.index](static_cast<int>(src));
            break;
           }
         } else {
@@ -496,13 +501,12 @@ private:
 
   struct assert_data_t {
     char* msg;
-    data_t* time;
+    sdata_type time;
     source_location sloc;
 
     static uint32_t size(assertimpl* node) {
       uint32_t size = sizeof(assert_data_t);
       size += node->msg().size() + 1; // msg
-      size += sizeof(data_t);  // time
       return size;
     }
 
@@ -514,18 +518,45 @@ private:
       memcpy(msg, node->msg().c_str(), msg_len);
       buf += msg_len;
 
-      time = reinterpret_cast<data_t*>(buf);
-      time->init(node->time().impl(), cp);
-      buf += sizeof(data_t);
+      cp->init_sdata(&time, node->time().impl());
 
       sloc = node->sloc();
     }
 
     static void eval(assert_data_t* self) {
-      eval_data_t tick(*self->time);
       fprintf(stderr, "assertion failure at tick %ld, %s (%s:%d)\n",
-              static_cast<uint64_t>(tick.value), self->msg, self->sloc.file(), self->sloc.line());
+              static_cast<uint64_t>(self->time), self->msg, self->sloc.file(), self->sloc.line());
       std::abort();
+    }
+  };
+
+  struct udf_data_t {
+    uint32_t dst_width;
+    udf_iface* udf;
+    sdata_type* srcs;
+
+    static uint32_t size(udfimpl* node) {
+      auto udf = node->udf();
+      uint32_t size = sizeof(udf_data_t);
+      size += udf->inputs_size().size() * sizeof(sdata_type); // srcs
+      return size;
+    }
+
+    void init(udfimpl* node, const compiler* cp) {
+      auto buf = reinterpret_cast<uint8_t*>(this) + sizeof(udf_data_t);
+      dst_width = node->size();
+      udf = node->udf();
+      srcs = reinterpret_cast<sdata_type*>(buf);
+      for (uint32_t i = 0, n = udf->inputs_size().size(); i < n; ++i) {
+        cp->init_sdata(&srcs[i], node->src(i).impl());
+      }
+    }
+
+    static void eval(block_type* out, udf_data_t* self) {
+      sdata_type dst;
+      dst.emplace(out, self->dst_width);
+      self->udf->eval(dst, self->srcs);
+      dst.emplace(nullptr);
     }
   };
 
@@ -644,9 +675,9 @@ private:
       is_scalar &= (src.size() <= bitwidth_v<block_type>);
     }
 
-    auto is_resize = (node->should_resize_opds() != -1);
-    auto j_src0 = this->emit_alu_operand(node, 0, is_scalar, is_resize);
-    auto j_src1 = this->emit_alu_operand(node, 1, is_scalar, is_resize);
+    auto need_resize = node->should_resize_opds();
+    auto j_src0 = this->emit_alu_operand(node, 0, is_scalar, need_resize);
+    auto j_src1 = this->emit_alu_operand(node, 1, is_scalar, need_resize);
 
     switch (node->op()) {
     case ch_op::eq:
@@ -655,10 +686,11 @@ private:
         scalar_map_[node->id()] = this->emit_cast(j_dst, j_type);
       } else {
         jit_value_t j_dst;
-        if (is_resize) {
+        if (need_resize
+         || node->src(0).size() > INLINE_MAX_SIZE) {
           j_dst = __alu_call_relational(bv_eq_vector, j_src0, node->src(0).size(), j_src1, node->src(1).size());
         } else {
-          j_dst = this->emit_eq_vector(j_src0, j_src1, node->src(1).size());
+          j_dst = this->emit_eq_vector(j_src0, j_src1, node->src(0).size());
         }
         scalar_map_[node->id()] = this->emit_cast(j_dst, j_type);
       }
@@ -669,10 +701,11 @@ private:
         scalar_map_[node->id()] = this->emit_cast(j_dst, j_type);
       } else {
         jit_value_t j_dst;
-        if (is_resize) {
+        if (need_resize
+         || node->src(0).size() > INLINE_MAX_SIZE) {
           j_dst = __alu_call_relational(bv_eq_vector, j_src0, node->src(0).size(), j_src1, node->src(1).size());
         } else {
-          j_dst = this->emit_eq_vector(j_src0, j_src1, node->src(1).size());
+          j_dst = this->emit_eq_vector(j_src0, j_src1, node->src(0).size());
         }
         auto j_dst_n = jit_insn_not(j_func_, j_dst);
         scalar_map_[node->id()] = this->emit_cast(j_dst_n, j_type);
@@ -731,7 +764,8 @@ private:
         auto j_dst = jit_insn_to_not_bool(j_func_, j_src0);
         scalar_map_[node->id()] = this->emit_cast(j_dst, j_type);
       } else {
-        CH_TODO();
+        auto j_dst = __alu_call_logical(bv_notl_vector, j_src0, node->src(0).size());
+        scalar_map_[node->id()] = this->emit_cast(j_dst, j_type);
       }
       break;
     case ch_op::andl:
@@ -741,7 +775,8 @@ private:
         auto j_dst = jit_insn_and(j_func_, j_src0_b, j_src1_b);
         scalar_map_[node->id()] = this->emit_cast(j_dst, j_type);
       } else {
-        CH_TODO();
+        auto j_dst = __alu_call_logical(bv_andl_vector, j_src0, node->src(0).size(), j_src1, node->src(1).size());
+        scalar_map_[node->id()] = this->emit_cast(j_dst, j_type);
       }
       break;
     case ch_op::orl:
@@ -751,7 +786,8 @@ private:
         auto j_dst = jit_insn_or(j_func_, j_src0_b, j_src1_b);
         scalar_map_[node->id()] = this->emit_cast(j_dst, j_type);
       } else {
-        CH_TODO();
+        auto j_dst = __alu_call_logical(bv_orl_vector, j_src0, node->src(0).size(), j_src1, node->src(1).size());
+        scalar_map_[node->id()] = this->emit_cast(j_dst, j_type);
       }
       break;
 
@@ -761,7 +797,8 @@ private:
         scalar_map_[node->id()] = this->emit_cast(j_dst, j_type);
         this->emit_clear_extra_bits(node);
       } else {
-        CH_TODO();
+        auto j_dst = this->emit_store_address(node);
+        __alu_call_binary(bv_inv_vector, j_dst, dst_width, j_src0, node->src(0).size());
       }      
       break;
     case ch_op::andb:
@@ -769,14 +806,19 @@ private:
         auto j_dst = jit_insn_and(j_func_, j_src0, j_src1);
         scalar_map_[node->id()] = this->emit_cast(j_dst, j_type);
       } else {
-        assert(-1 == node->should_resize_opds());
-        uint32_t num_words = ceildiv(dst_width, WORD_SIZE);
-        for (uint32_t i = 0; i < num_words; ++i) {
-          auto j_src0 = this->emit_load_scalar_elem(node->src(0).impl(), i, word_type_);
-          auto j_src1 = this->emit_load_scalar_elem(node->src(1).impl(), i, word_type_);
-          auto j_dst  = jit_insn_and(j_func_, j_src0, j_src1);
-          auto dst_addr = addr_map_.at(node->id());
-          jit_insn_store_relative(j_func_, j_vars_, dst_addr + i * sizeof(block_type), j_dst);
+        if (need_resize
+         || dst_width > INLINE_MAX_SIZE) {
+          auto j_dst = this->emit_store_address(node);
+          __alu_call_binary(bv_and_vector, j_dst, dst_width, j_src0, node->src(0).size(), j_src1, node->src(1).size());
+        } else {
+          uint32_t num_words = ceildiv(dst_width, WORD_SIZE);
+          for (uint32_t i = 0; i < num_words; ++i) {
+            auto j_src0 = this->emit_load_scalar_elem(node->src(0).impl(), i, word_type_);
+            auto j_src1 = this->emit_load_scalar_elem(node->src(1).impl(), i, word_type_);
+            auto j_dst  = jit_insn_and(j_func_, j_src0, j_src1);
+            auto dst_addr = addr_map_.at(node->id());
+            jit_insn_store_relative(j_func_, j_vars_, dst_addr + i * sizeof(block_type), j_dst);
+          }
         }
       }
       break;
@@ -785,14 +827,19 @@ private:
         auto j_dst = jit_insn_or(j_func_, j_src0, j_src1);
         scalar_map_[node->id()] = this->emit_cast(j_dst, j_type);
       } else {
-        assert(-1 == node->should_resize_opds());
-        auto dst_addr = addr_map_.at(node->id());
-        uint32_t num_words = ceildiv(dst_width, WORD_SIZE);
-        for (uint32_t i = 0; i < num_words; ++i) {
-          auto j_src0 = this->emit_load_scalar_elem(node->src(0).impl(), i, word_type_);
-          auto j_src1 = this->emit_load_scalar_elem(node->src(1).impl(), i, word_type_);
-          auto j_dst  = jit_insn_or(j_func_, j_src0, j_src1);          
-          jit_insn_store_relative(j_func_, j_vars_, dst_addr + i * sizeof(block_type), j_dst);
+        if (need_resize
+         || dst_width > INLINE_MAX_SIZE) {
+          auto j_dst = this->emit_store_address(node);
+          __alu_call_binary(bv_or_vector, j_dst, dst_width, j_src0, node->src(0).size(), j_src1, node->src(1).size());
+        } else {
+          auto dst_addr = addr_map_.at(node->id());
+          uint32_t num_words = ceildiv(dst_width, WORD_SIZE);
+          for (uint32_t i = 0; i < num_words; ++i) {
+            auto j_src0 = this->emit_load_scalar_elem(node->src(0).impl(), i, word_type_);
+            auto j_src1 = this->emit_load_scalar_elem(node->src(1).impl(), i, word_type_);
+            auto j_dst  = jit_insn_or(j_func_, j_src0, j_src1);
+            jit_insn_store_relative(j_func_, j_vars_, dst_addr + i * sizeof(block_type), j_dst);
+          }
         }
       }
       break;
@@ -801,26 +848,53 @@ private:
         auto j_dst = jit_insn_xor(j_func_, j_src0, j_src1);
         scalar_map_[node->id()] = this->emit_cast(j_dst, j_type);
       } else {
-        assert(-1 == node->should_resize_opds());
-        auto dst_addr = addr_map_.at(node->id());
-        uint32_t num_words = ceildiv(dst_width, WORD_SIZE);
-        for (uint32_t i = 0; i < num_words; ++i) {
-          auto j_src0 = this->emit_load_scalar_elem(node->src(0).impl(), i, word_type_);
-          auto j_src1 = this->emit_load_scalar_elem(node->src(1).impl(), i, word_type_);
-          auto j_dst  = jit_insn_xor(j_func_, j_src0, j_src1);
-          jit_insn_store_relative(j_func_, j_vars_, dst_addr + i * sizeof(block_type), j_dst);
+        if (need_resize
+         || dst_width > INLINE_MAX_SIZE) {
+          auto j_dst = this->emit_store_address(node);
+          __alu_call_binary(bv_xor_vector, j_dst, dst_width, j_src0, node->src(0).size(), j_src1, node->src(1).size());
+        } else {
+          auto dst_addr = addr_map_.at(node->id());
+          uint32_t num_words = ceildiv(dst_width, WORD_SIZE);
+          for (uint32_t i = 0; i < num_words; ++i) {
+            auto j_src0 = this->emit_load_scalar_elem(node->src(0).impl(), i, word_type_);
+            auto j_src1 = this->emit_load_scalar_elem(node->src(1).impl(), i, word_type_);
+            auto j_dst  = jit_insn_xor(j_func_, j_src0, j_src1);
+            jit_insn_store_relative(j_func_, j_vars_, dst_addr + i * sizeof(block_type), j_dst);
+          }
         }
       }
       break;
 
     case ch_op::andr:
-      CH_TODO();
+      if (is_scalar) {
+        auto j_max = this->emit_constant(WORD_MAX >> (WORD_SIZE - node->src(0).size()), j_type);
+        auto j_dst = jit_insn_eq(j_func_, j_src0, j_max);
+        scalar_map_[node->id()] = this->emit_cast(j_dst, j_type);
+        this->emit_clear_extra_bits(node);
+      } else {
+        auto j_dst = __alu_call_reduce(bv_andr_vector, j_src0, node->src(0).size());
+        scalar_map_[node->id()] = this->emit_cast(j_dst, j_type);
+      }
       break;
     case ch_op::orr:
-      CH_TODO();
+      if (is_scalar) {
+        auto j_dst = jit_insn_to_bool(j_func_, j_src0);
+        scalar_map_[node->id()] = this->emit_cast(j_dst, j_type);
+        this->emit_clear_extra_bits(node);
+      } else {
+        auto j_dst = __alu_call_reduce(bv_orr_vector, j_src0, node->src(0).size());
+        scalar_map_[node->id()] = this->emit_cast(j_dst, j_type);
+      }
       break;
     case ch_op::xorr:
-      CH_TODO();
+      if (is_scalar) {
+        auto j_dst = this->emit_xorr_scalar(j_src0, node->src(0).size());
+        scalar_map_[node->id()] = this->emit_cast(j_dst, j_type);
+        this->emit_clear_extra_bits(node);
+      } else {
+        auto j_dst = __alu_call_reduce(bv_xorr_vector, j_src0, node->src(0).size());
+        scalar_map_[node->id()] = this->emit_cast(j_dst, j_type);
+      }
       break;
 
     case ch_op::shl:
@@ -830,7 +904,8 @@ private:
         scalar_map_[node->id()] = this->emit_cast(j_dst, j_type);
         this->emit_clear_extra_bits(node);
       } else {
-        CH_TODO();
+        auto j_dst = this->emit_store_address(node);
+        __alu_call_shl(bv_shl_vector, j_dst, dst_width, j_src0, node->src(0).size(), j_src1);
       }
       break;
     case ch_op::shr:
@@ -845,7 +920,8 @@ private:
           scalar_map_[node->id()] = this->emit_cast(j_dst, j_type);
         }
       } else {
-        CH_TODO();
+        auto j_dst = this->emit_store_address(node);
+        __alu_call_shr(bv_shr_vector, j_dst, dst_width, j_src0, node->src(0).size(), j_src1);
       }
       break;
 
@@ -855,7 +931,8 @@ private:
         scalar_map_[node->id()] = this->emit_cast(j_dst, j_type);
         this->emit_clear_extra_bits(node);
       } else {
-        CH_TODO();
+        auto j_dst = this->emit_store_address(node);
+        __alu_call_arithmetic(bv_neg_vector, j_dst, dst_width, j_src0, node->src(0).size());
       }
       break;
     case ch_op::add:
@@ -864,7 +941,8 @@ private:
         scalar_map_[node->id()] = this->emit_cast(j_dst, j_type);
         this->emit_clear_extra_bits(node);
       } else {
-        CH_TODO();
+        auto j_dst = this->emit_store_address(node);
+        __alu_call_arithmetic(bv_add_vector, j_dst, dst_width, j_src0, node->src(0).size(), j_src1, node->src(1).size());
       }
       break;
     case ch_op::sub:
@@ -873,7 +951,8 @@ private:
         scalar_map_[node->id()] = this->emit_cast(j_dst, j_type);
         this->emit_clear_extra_bits(node);
       } else {
-        CH_TODO();
+        auto j_dst = this->emit_store_address(node);
+        __alu_call_arithmetic(bv_sub_vector, j_dst, dst_width, j_src0, node->src(0).size(), j_src1, node->src(1).size());
       }
       break;
 
@@ -887,7 +966,8 @@ private:
         scalar_map_[node->id()] = this->emit_cast(j_dst, j_type);
         this->emit_clear_extra_bits(node);
       } else {
-        CH_TODO();
+        auto j_dst = this->emit_store_address(node);
+        __alu_call_arithmetic2(bv_mult_vector, j_dst, dst_width, j_src0, node->src(0).size(), j_src1, node->src(1).size());
       }
       break;
     case ch_op::div:
@@ -898,7 +978,8 @@ private:
         scalar_map_[node->id()] = this->emit_cast(j_dst, j_type);
         this->emit_clear_extra_bits(node);
       } else {
-        CH_TODO();
+        auto j_dst = this->emit_store_address(node);
+        __alu_call_arithmetic2(bv_div_vector, j_dst, dst_width, j_src0, node->src(0).size(), j_src1, node->src(1).size());
       }
       break;
     case ch_op::mod:
@@ -909,7 +990,8 @@ private:
         scalar_map_[node->id()] = this->emit_cast(j_dst, j_type);
         this->emit_clear_extra_bits(node);
       } else {
-        CH_TODO();
+        auto j_dst = this->emit_store_address(node);
+        __alu_call_arithmetic2(bv_mod_vector, j_dst, dst_width, j_src0, node->src(0).size(), j_src1, node->src(1).size());
       }
       break;
 
@@ -924,7 +1006,7 @@ private:
         }
       } else {
         auto j_dst = this->emit_store_address(node);
-        this->emit_pad_vector(j_dst, node->size(), j_src0, node->src(0).size());
+        __alu_call_arithmetic2(bv_pad_vector, j_dst, dst_width, j_src0, node->src(0).size());
       }
       break;
     default:
@@ -936,47 +1018,54 @@ private:
   jit_value_t emit_alu_operand(aluimpl* node,
                                uint32_t opd,
                                bool is_scalar,
-                               bool resize) {
+                               bool need_resize) {
     if (opd >= node->srcs().size())
       return nullptr;
     auto src = node->src(opd).impl();
     auto is_signed = node->is_signed();
     if (is_scalar) {
       auto j_value = scalar_map_.at(src->id());
-      if (resize && is_signed) {
+      if (need_resize && is_signed) {
         j_value = this->emit_sign_ext(j_value, src->size());
       }
       return j_value;
     } else {
       auto it = scalar_map_.find(src->id());
       if (it != scalar_map_.end()) {
-         return this->emit_address_of(it->second, word_type_);
+        if (op_flags::shift == CH_OP_CLASS(node->op())
+         && 1 == opd) {
+          return this->emit_cast(it->second, jit_type_uint);
+        } else {
+          return this->emit_address_of(it->second, word_type_);
+        }
       } else {
-        return this->emit_load_address(src);
+        if (op_flags::shift == CH_OP_CLASS(node->op())
+         && 1 == opd) {
+          return this->emit_load_scalar_relative(src, 0, jit_type_uint);
+        } else {
+          return this->emit_load_address(src);
+        }
       }
     }
   }
 
   jit_value_t emit_alu_call_relational(void* pfn,
                                        const char* name,
-                                       jit_value_t j_arg0,
-                                       uint32_t arg0_size,
-                                       jit_value_t j_arg1,
-                                       uint32_t arg1_size) {
+                                       jit_value_t j_in,
+                                       uint32_t in_size) {
     __source_location();
 
     // setup arguments
-    auto j_arg0_size = this->emit_constant(arg0_size, jit_type_uint);
-    auto j_arg1_size = this->emit_constant(arg1_size, jit_type_uint);
+    auto j_in_size = this->emit_constant(in_size, jit_type_uint);
 
     // call native function
-    jit_type_t params[] = {jit_type_void_ptr, jit_type_uint, jit_type_void_ptr, jit_type_uint};
+    jit_type_t params[] = {jit_type_void_ptr, jit_type_uint};
     jit_type_t j_sig = jit_type_create_signature(jit_abi_cdecl,
                                                  jit_type_uint,
                                                  params,
                                                  __countof(params),
                                                  1);
-    jit_value_t args[] = {j_arg0, j_arg0_size, j_arg1, j_arg1_size};
+    jit_value_t args[] = {j_in, j_in_size};
     return jit_insn_call_native(j_func_,
                                 name,
                                 pfn,
@@ -984,6 +1073,134 @@ private:
                                 args,
                                 __countof(args),
                                 JIT_CALL_NOTHROW);
+  }
+
+  jit_value_t emit_alu_call_relational(void* pfn,
+                                       const char* name,
+                                       jit_value_t j_lhs,
+                                       uint32_t lhs_size,
+                                       jit_value_t j_rhs,
+                                       uint32_t rhs_size) {
+    __source_location();
+
+    // setup arguments
+    auto j_lhs_size = this->emit_constant(lhs_size, jit_type_uint);
+    auto j_rhs_size = this->emit_constant(rhs_size, jit_type_uint);
+
+    // call native function
+    jit_type_t params[] = {jit_type_void_ptr, jit_type_uint,
+                           jit_type_void_ptr, jit_type_uint};
+    jit_type_t j_sig = jit_type_create_signature(jit_abi_cdecl,
+                                                 jit_type_uint,
+                                                 params,
+                                                 __countof(params),
+                                                 1);
+    jit_value_t args[] = {j_lhs, j_lhs_size, j_rhs, j_rhs_size};
+    return jit_insn_call_native(j_func_,
+                                name,
+                                pfn,
+                                j_sig,
+                                args,
+                                __countof(args),
+                                JIT_CALL_NOTHROW);
+  }
+
+  void emit_alu_call_binary(void* pfn,
+                            const char* name,
+                            jit_value_t j_out,
+                            uint32_t out_size,
+                            jit_value_t j_in,
+                            uint32_t in_size) {
+    __source_location();
+
+    // setup arguments
+    auto j_out_size = this->emit_constant(out_size, jit_type_uint);
+    auto j_in_size = this->emit_constant(in_size, jit_type_uint);
+
+    // call native function
+    jit_type_t params[] = {jit_type_void_ptr, jit_type_uint,
+                           jit_type_void_ptr, jit_type_uint};
+    jit_type_t j_sig = jit_type_create_signature(jit_abi_cdecl,
+                                                 jit_type_void,
+                                                 params,
+                                                 __countof(params),
+                                                 1);
+    jit_value_t args[] = {j_out, j_out_size, j_in, j_in_size};
+    jit_insn_call_native(j_func_,
+                         name,
+                         pfn,
+                         j_sig,
+                         args,
+                         __countof(args),
+                         JIT_CALL_NOTHROW);
+  }
+
+  void emit_alu_call_binary(void* pfn,
+                            const char* name,
+                            jit_value_t j_out,
+                            uint32_t out_size,
+                            jit_value_t j_lhs,
+                            uint32_t lhs_size,
+                            jit_value_t j_rhs,
+                            uint32_t rhs_size) {
+    __source_location();
+
+    // setup arguments
+    auto j_out_size = this->emit_constant(out_size, jit_type_uint);
+    auto j_lhs_size = this->emit_constant(lhs_size, jit_type_uint);
+    auto j_rhs_size = this->emit_constant(rhs_size, jit_type_uint);
+
+    // call native function
+    jit_type_t params[] = {jit_type_void_ptr, jit_type_uint,
+                           jit_type_void_ptr, jit_type_uint,
+                           jit_type_void_ptr, jit_type_uint};
+    jit_type_t j_sig = jit_type_create_signature(jit_abi_cdecl,
+                                                 jit_type_void,
+                                                 params,
+                                                 __countof(params),
+                                                 1);
+    jit_value_t args[] = {j_out, j_out_size, j_lhs, j_lhs_size, j_rhs, j_rhs_size};
+    jit_insn_call_native(j_func_,
+                         name,
+                         pfn,
+                         j_sig,
+                         args,
+                         __countof(args),
+                         JIT_CALL_NOTHROW);
+  }
+
+  void emit_alu_call_shift(void* pfn,
+                           const char* name,
+                           jit_value_t j_out,
+                           uint32_t out_size,
+                           jit_value_t j_lhs,
+                           uint32_t lhs_size,
+                           jit_value_t j_rhs) {
+   __source_location();
+
+   // setup arguments
+   auto j_out_size = this->emit_constant(out_size, jit_type_uint);
+   auto j_lhs_size = this->emit_constant(lhs_size, jit_type_uint);
+   assert(32 == get_value_size(j_rhs));
+
+   // call native function
+   jit_type_t params[] = {jit_type_void_ptr, jit_type_uint,
+                          jit_type_void_ptr, jit_type_uint,
+                          jit_type_uint};
+   jit_type_t j_sig = jit_type_create_signature(jit_abi_cdecl,
+                                                jit_type_void,
+                                                params,
+                                                __countof(params),
+                                                1);
+   jit_value_t args[] = {j_out, j_out_size, j_lhs, j_lhs_size, j_rhs};
+   jit_insn_call_native(j_func_,
+                        name,
+                        pfn,
+                        j_sig,
+                        args,
+                        __countof(args),
+                        JIT_CALL_NOTHROW);
+
   }
 
   void emit_node(selectimpl* node) {
@@ -1012,7 +1229,14 @@ private:
         } else {
           auto j_key_ptr = this->emit_store_address(node->src(0).impl());
           auto j_val_ptr = this->emit_load_address(node->src(i).impl());
-          auto j_eq = this->emit_eq_vector(j_key_ptr, j_val_ptr, dst_width);
+
+          jit_value_t j_eq;
+          if (dst_width > INLINE_MAX_SIZE) {
+            auto pfn = reinterpret_cast<void*>(bv_eq_vector<false, block_type, ClearBitAccessor<block_type>>);
+            j_eq = this->emit_alu_call_relational(pfn, "bv_eq_vector", j_key_ptr, dst_width, j_val_ptr, dst_width);
+          } else {
+            j_eq = this->emit_eq_vector(j_key_ptr, j_val_ptr, dst_width);
+          }
           jit_insn_branch_if_not(j_func_, j_eq, &l_skip);
         }
         if (is_scalar) {
@@ -1338,19 +1562,19 @@ private:
 
     auto predicated = node->has_enable() || !bypass_enable_;
     if (predicated) {
-      jit_value_t j_predicate = nullptr;
+      jit_value_t j_pred = nullptr;
       if (node->has_enable()) {
-        j_predicate = scalar_map_.at(node->enable().id());
+        j_pred = scalar_map_.at(node->enable().id());
       }
       if (!bypass_enable_) {
         auto j_cd = scalar_map_.at(node->cd().id());
-        if (j_predicate) {
-          j_predicate = jit_insn_and(j_func_, j_predicate, j_cd);
+        if (j_pred) {
+          j_pred = jit_insn_and(j_func_, j_pred, j_cd);
         } else {
-          j_predicate = j_cd;
+          j_pred = j_cd;
         }
       }
-      jit_insn_branch_if_not(j_func_, j_predicate, &l_exit);
+      jit_insn_branch_if_not(j_func_, j_pred, &l_exit);
     }
 
     auto j_src_addr = scalar_map_.at(node->addr().id());
@@ -1383,20 +1607,20 @@ private:
 
     auto predicated = node->has_enable() || !bypass_enable_;
     if (predicated) {
-      jit_value_t j_predicate = nullptr;
+      jit_value_t j_pred = nullptr;
       if (node->has_enable()) {
-        j_predicate = scalar_map_.at(node->enable().id());
+        j_pred = scalar_map_.at(node->enable().id());
       }
       if (!bypass_enable_) {
         auto j_cd = scalar_map_.at(node->cd().id());
-        if (j_predicate) {
-          auto j_and = jit_insn_and(j_func_, j_predicate, j_cd);
-          jit_insn_store(j_func_, j_predicate, j_and);
+        if (j_pred) {
+          auto j_and = jit_insn_and(j_func_, j_pred, j_cd);
+          jit_insn_store(j_func_, j_pred, j_and);
         } else {
-          j_predicate = j_cd;
+          j_pred = j_cd;
         }
       }
-      jit_insn_branch_if_not(j_func_, j_predicate, &l_exit);
+      jit_insn_branch_if_not(j_func_, j_pred, &l_exit);
     }
 
     auto j_dst_addr = scalar_map_.at(node->addr().id());
@@ -1433,8 +1657,8 @@ private:
 
     auto predicated = node->has_pred();
     if (predicated) {
-      auto j_predicate = scalar_map_.at(node->pred().id());
-      jit_insn_branch_if_not(j_func_, j_predicate, &l_exit);
+      auto j_pred = scalar_map_.at(node->pred().id());
+      jit_insn_branch_if_not(j_func_, j_pred, &l_exit);
     }
 
     // copy scalar arguments
@@ -1444,12 +1668,12 @@ private:
       auto src = node->src(i).impl();
       auto it = scalar_map_.find(src->id());
       if (it != scalar_map_.end()) {
-        auto values_ptr = jit_insn_load_relative(j_func_,
-                                                 j_vars_,
-                                                 addr + offsetof(print_data_t, src_values),
-                                                 jit_type_void_ptr);
-        auto j_value = this->emit_address_of(it->second, word_type_);
-        jit_insn_store_relative(j_func_, values_ptr, src_idx * sizeof(data_t), j_value);
+        auto srcs_ptr = jit_insn_load_relative(j_func_,
+                                               j_vars_,
+                                               addr + offsetof(print_data_t, srcs),
+                                               jit_type_void_ptr);
+        auto j_src = this->emit_address_of(it->second, word_type_);
+        jit_insn_store_relative(j_func_, srcs_ptr, src_idx * sizeof(sdata_type), j_src);
       }
       ++src_idx;
     }
@@ -1495,8 +1719,8 @@ private:
                                              j_vars_,
                                              addr + offsetof(assert_data_t, time),
                                              jit_type_void_ptr);
-      auto j_value = this->emit_address_of(it->second, word_type_);
-      jit_insn_store_relative(j_func_, time_ptr, 0, j_value);
+      auto j_time = this->emit_address_of(it->second, word_type_);
+      jit_insn_store_relative(j_func_, time_ptr, 0, j_time);
     }
     // call native function
     auto j_data_ptr = jit_insn_add_relative(j_func_, j_vars_, addr);
@@ -1516,6 +1740,109 @@ private:
                          JIT_CALL_NOTHROW);
 
     jit_insn_label(j_func_, &l_exit);
+  }
+
+  void emit_node(udfcimpl* node) {
+    __source_location();
+    auto dst_width = node->size();
+    auto j_type = to_native_type(dst_width);
+    auto udf = node->udf();
+
+    // copy scalar arguments
+    auto addr = addr_map_.at(node->id());
+    uint32_t src_idx = 0;
+    for (uint32_t i = 0, n = udf->inputs_size().size(); i < n; ++i) {
+      auto src = node->src(i).impl();
+      auto it = scalar_map_.find(src->id());
+      if (it != scalar_map_.end()) {
+        auto srcs_ptr = jit_insn_load_relative(j_func_,
+                                               j_vars_,
+                                               addr + offsetof(udf_data_t, srcs),
+                                               jit_type_void_ptr);
+        auto j_src = this->emit_address_of(it->second, word_type_);
+        jit_insn_store_relative(j_func_, srcs_ptr, src_idx * sizeof(sdata_type), j_src);
+      }
+      ++src_idx;
+    }
+    // call native function
+    auto j_data_ptr = jit_insn_add_relative(j_func_, j_vars_, addr);
+    jit_value_t j_dst_ptr;
+    jit_value_t j_dst_tmp;
+    if (dst_width <= WORD_SIZE) {
+      j_dst_tmp = jit_value_create(j_func_, word_type_);
+      j_dst_ptr = this->emit_address_of(j_dst_tmp, word_type_);
+    } else {
+      j_dst_ptr = this->emit_store_address(node);
+    }
+
+    jit_type_t params[] = {jit_type_void_ptr, jit_type_void_ptr};
+    jit_type_t j_sig = jit_type_create_signature(jit_abi_cdecl,
+                                                 jit_type_void,
+                                                 params,
+                                                 __countof(params),
+                                                 1);
+    jit_value_t args[] = {j_dst_ptr, j_data_ptr};
+    jit_insn_call_native(j_func_,
+                         "udf_data_t::eval",
+                         (void*)udf_data_t::eval,
+                         j_sig,
+                         args,
+                         __countof(args),
+                         JIT_CALL_NOTHROW);
+
+    if (dst_width <= WORD_SIZE) {
+      scalar_map_[node->id()] = this->emit_cast(j_dst_tmp, j_type);
+    }
+  }
+
+  void emit_node(udfsimpl* node) {
+    __source_location();
+    jit_label_t l_exit = jit_label_undefined;
+    auto udf = node->udf();
+
+    auto predicated = !bypass_enable_;
+    if (predicated) {
+      auto j_pred = scalar_map_.at(node->cd().id());
+      jit_insn_branch_if_not(j_func_, j_pred, &l_exit);
+    }
+
+    // copy scalar arguments
+    auto addr = addr_map_.at(node->id());
+    uint32_t src_idx = 0;
+    for (uint32_t i = 0, n = udf->inputs_size().size(); i < n; ++i) {
+      auto src = node->src(i).impl();
+      auto it = scalar_map_.find(src->id());
+      if (it != scalar_map_.end()) {
+        auto srcs_ptr = jit_insn_load_relative(j_func_,
+                                               j_vars_,
+                                               addr + offsetof(udf_data_t, srcs),
+                                               jit_type_void_ptr);
+        auto j_src = this->emit_address_of(it->second, word_type_);
+        jit_insn_store_relative(j_func_, srcs_ptr, src_idx * sizeof(sdata_type), j_src);
+      }
+      ++src_idx;
+    }
+    // call native function
+    auto j_dst_ptr = this->emit_store_address(node);
+    auto j_data_ptr = jit_insn_add_relative(j_func_, j_vars_, addr);
+    jit_type_t params[] = {jit_type_void_ptr, jit_type_void_ptr};
+    jit_type_t j_sig = jit_type_create_signature(jit_abi_cdecl,
+                                                 jit_type_void,
+                                                 params,
+                                                 __countof(params),
+                                                 1);
+    jit_value_t args[] = {j_dst_ptr, j_data_ptr};
+    jit_insn_call_native(j_func_,
+                         "udf_data_t::eval",
+                         (void*)udf_data_t::eval,
+                         j_sig,
+                         args,
+                         __countof(args),
+                         JIT_CALL_NOTHROW);
+
+    if (predicated) {
+      jit_insn_label(j_func_, &l_exit);
+    }
   }
 
   /////////////////////////////////////////////////////////////////////////////
@@ -1553,7 +1880,6 @@ private:
       } break;
       case type_mem:
       case type_msrport:
-      case type_udfs:
         addr_map_[node->id()] = var_addr;
         var_addr += __align_word_size(dst_width);
         break;
@@ -1570,6 +1896,16 @@ private:
         addr_map_[node->id()] = var_addr;
         auto p = reinterpret_cast<printimpl*>(node);
         var_addr += __align_word_size(print_data_t::size(p) * 8);
+      } break;
+      case type_udfc:
+      case type_udfs: {
+        if (type_udfs == type
+         || dst_width > WORD_SIZE) {
+          addr_map_[node->id()] = var_addr;
+          var_addr += __align_word_size(dst_width);
+        }
+        auto u = reinterpret_cast<udfimpl*>(node);
+        var_addr += __align_word_size(udf_data_t::size(u) * 8);
       } break;
       default:
         // only allocate nodes with size bigger than WORD_SIZE bits
@@ -1656,8 +1992,7 @@ private:
           bv_init(buf, dst_width);
         }
       } break;
-      case type_msrport:
-      case type_udfs: {
+      case type_msrport: {
         auto addr = addr_map_.at(node->id());
         bv_init(reinterpret_cast<block_type*>(sim_ctx_->state.vars + addr), dst_width);
         if (dst_width <= WORD_SIZE) {
@@ -1684,6 +2019,24 @@ private:
         auto addr = addr_map_.at(node->id());
         auto p = reinterpret_cast<printimpl*>(node);
         reinterpret_cast<print_data_t*>(sim_ctx_->state.vars + addr)->init(p, this);
+      } break;
+      case type_udfc:
+      case type_udfs: {
+        auto addr = addr_map_.at(node->id());
+        if (type_udfs == type
+         || dst_width > WORD_SIZE) {
+          bv_init(reinterpret_cast<block_type*>(sim_ctx_->state.vars + addr), dst_width);
+          addr += __align_word_size(dst_width);
+        }
+        if (type_udfs == type
+         && dst_width <= WORD_SIZE) {
+          // preload scalar value
+          __source_location();
+          auto j_dst = jit_insn_load_relative(j_func_, j_vars_, addr, j_type);
+          scalar_map_[node->id()] = j_dst;
+        }
+        auto u = reinterpret_cast<udfimpl*>(node);
+        reinterpret_cast<udf_data_t*>(sim_ctx_->state.vars + addr)->init(u, this);
       } break;
       default:
         if (dst_width > WORD_SIZE) {
@@ -1753,45 +2106,50 @@ private:
       }
       addr += constant.size * sizeof(block_type);      
     }
-  #ifndef NDEBUG
-    assert((addr - offset) == size);
-  #else
-    CH_UNUSED(size);
-  #endif
+    CH_DBGCHECK((addr - offset) == size, "invalid size");
+  }
+
+  void init_sdata(sdata_type* data, lnodeimpl* node) const {
+    block_type* value = nullptr;
+    auto it = addr_map_.find(node->id());
+    if (it != addr_map_.end()) {
+      auto addr = it->second;
+      switch (node->type()) {
+      case type_input:
+        value = sim_ctx_->state.ports[addr];
+        break;
+      default:
+        value = reinterpret_cast<block_type*>(sim_ctx_->state.vars + addr);
+        break;
+      }
+    }
+    data->emplace(value, node->size());
   }
 
   /////////////////////////////////////////////////////////////////////////////
 
-  jit_value_t emit_eq_vector(jit_value_t j_ptr1, jit_value_t j_ptr2, uint32_t length) {
-    auto j_num_words = this->emit_constant(ceildiv(length, WORD_SIZE), jit_type_uint);
-    auto j_ret = jit_value_create(j_func_, jit_type_uint);
-    auto j_idx = jit_value_create(j_func_, jit_type_uint);
-
-    jit_insn_store(j_func_, j_ret, j_zero_);
-    jit_insn_store(j_func_, j_idx, j_zero_);
-
-    jit_label_t l_loop = jit_label_undefined;
-    jit_insn_label(j_func_, &l_loop);
-
-    auto j_value1 = jit_insn_load_elem(j_func_, j_ptr1, j_idx, word_type_);
-    auto j_value2 = jit_insn_load_elem(j_func_, j_ptr2, j_idx, word_type_);
-    auto j_eq = jit_insn_eq(j_func_, j_value1, j_value2);
-    jit_insn_store(j_func_, j_ret, j_eq);
-    auto j_idx_next = jit_insn_add(j_func_, j_idx, j_one_);
-    jit_insn_store(j_func_, j_idx, j_idx_next);
-    auto j_not_done = jit_insn_lt(j_func_, j_idx_next, j_num_words);
-    auto j_continue = jit_insn_and(j_func_, j_not_done, j_eq);
-
-    jit_insn_branch_if(j_func_, j_continue, &l_loop);
+  jit_value_t emit_eq_vector(jit_value_t j_lhs, jit_value_t j_rhs, uint32_t length) {
+    jit_value_t j_ret;
+    uint32_t num_words = ceildiv(length, WORD_SIZE);
+    for (uint32_t i = 0; i < num_words; ++i) {
+      auto j_value1 = jit_insn_load_relative(j_func_, j_lhs, i * sizeof(block_type), word_type_);
+      auto j_value2 = jit_insn_load_relative(j_func_, j_rhs, i * sizeof(block_type), word_type_);
+      auto j_eq = jit_insn_eq(j_func_, j_value1, j_value2);
+      j_ret = i ? jit_insn_and(j_func_, j_ret, j_eq) : j_eq;
+    }
     return j_ret;
   }
 
-  jit_value_t emit_pad_vector(jit_value_t j_dst_ptr,
-                              uint32_t dst_size,
-                              jit_value_t j_src_ptr,
-                              uint32_t src_size) {
-    CH_UNUSED(j_dst_ptr, dst_size, j_src_ptr, src_size);
-    CH_TODO();
+  jit_value_t emit_xorr_scalar(jit_value_t j_value, uint32_t width) {
+    auto j_type = to_native_type(width);
+    jit_value_t j_ret = j_value;
+    for (uint32_t i = (WORD_SIZE / 2); i != 0; i /= 2){
+      auto j_shift = this->emit_constant(i, j_type);
+      auto j_tmp = jit_insn_ushr(j_func_, j_ret, j_shift);
+      j_ret = jit_insn_xor(j_func_, j_ret, j_tmp);
+    }
+    j_ret = jit_insn_and(j_func_, j_ret, j_one_);
+    return j_ret;
   }
 
   /////////////////////////////////////////////////////////////////////////////
@@ -1834,10 +2192,10 @@ private:
         auto src_lsb8 = offset % 8;
         auto src_end8 = src_lsb8 + length;
         if (src_end8 <= WORD_SIZE) {
-          auto block_size = to_value_size(src_end8);
-          auto src_idx = ceildiv(offset + length, 8) - block_size / 8;
+          auto block_width = to_value_size(src_end8);
+          auto src_idx = ceildiv(offset + length, 8) - block_width / 8;
           auto src_lsb = offset - src_idx * 8;
-          auto j_src_value = this->emit_load_scalar_relative(node, src_idx, to_value_type(block_size));
+          auto j_src_value = this->emit_load_scalar_relative(node, src_idx, to_value_type(block_width));
           return this->emit_load_slice_scalar(j_src_value, src_lsb, length, j_type);
         } else {
           auto src_idx = offset / WORD_SIZE;
@@ -2365,117 +2723,6 @@ void driver::eval() {
   if (ret) {
     error_handler(ret);
   }
-}
-
-bool check_compatible(context* ctx) {
-  auto is_scalar = [](lnodeimpl* node) {
-    if (node->size() > WORD_SIZE)
-      return false;
-    for (auto& src : node->srcs()) {
-      if (src.size() > WORD_SIZE)
-        return false;
-    }
-    return true;
-  };
-
-  auto error_out = [](const char* msg) {    
-    DBG(2, "warning: JIT not supported, %s", msg);
-    CH_UNUSED(msg);
-    return false;
-  };
-
-  for (auto node : ctx->nodes()) {
-    switch (node->type()) {
-    case type_lit:
-    case type_proxy:
-    case type_input:
-    case type_output:
-    case type_sel:
-    case type_cd:
-    case type_reg:
-    case type_mem:
-    case type_marport:
-    case type_msrport:
-    case type_mwport:
-    case type_time:
-    case type_assert:
-    case type_print:
-    case type_tap:
-      break;
-    case type_alu: {
-      auto alu = reinterpret_cast<aluimpl*>(node);
-      switch (alu->op()) {
-      case ch_op::eq:
-      case ch_op::ne:
-      case ch_op::lt:
-      case ch_op::gt:
-      case ch_op::le:
-      case ch_op::ge:
-        break;
-
-      case ch_op::notl:
-      case ch_op::andl:
-      case ch_op::orl:
-        if (!is_scalar(alu))
-          return error_out("invalid alu size");
-        break;
-      case ch_op::inv:
-        if (!is_scalar(alu))
-          return error_out("invalid alu size");
-        break;
-      case ch_op::andb:
-      case ch_op::orb:
-      case ch_op::xorb:
-        if (!is_scalar(alu) && -1 != alu->should_resize_opds())
-          return error_out("invalid alu size");
-        break;
-
-      case ch_op::andr:
-      case ch_op::orr:
-      case ch_op::xorr:
-        return error_out("invalid alu type");
-
-      case ch_op::shl:
-        if (!is_scalar(alu))
-          return error_out("invalid alu size");
-        break;
-      case ch_op::shr:
-        if (!is_scalar(alu))
-          return error_out("invalid alu size");
-        break;
-
-      case ch_op::neg:
-      case ch_op::add:
-      case ch_op::sub:
-        if (!is_scalar(alu))
-          return error_out("invalid alu size");
-        break;
-
-      case ch_op::mult:
-      case ch_op::div:
-      case ch_op::mod:
-        if (!is_scalar(alu))
-          return error_out("invalid alu size");
-        break;
-
-      case ch_op::pad:
-        if (!is_scalar(alu))
-          return error_out("invalid alu size");
-        break;
-      default:
-        std::abort();
-        break;
-      }
-    } break;
-
-    case type_udfc:
-    case type_udfs:
-      return error_out("invalid node type");
-    default:
-      std::abort();
-    }
-  }
-  return true;
 }
 
 }

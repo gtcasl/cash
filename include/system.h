@@ -185,31 +185,28 @@ public:
 ///////////////////////////////////////////////////////////////////////////////
 
 typedef void (*SystemFunc1)(block_type* out,
+                            uint32_t out_size,
                             const block_type* in,
-                            uint32_t size);
+                            uint32_t in_size);
 
 typedef void (*SystemFunc2)(block_type* out,
-                            const block_type* lhs,
-                            const block_type* rhs,
-                            uint32_t size);
-
-typedef void (*SystemFunc3)(block_type* out,
-                            uint32_t out_size,
-                            const block_type* lhs,
-                            uint32_t lhs_size,
-                            uint64_t rhs);
-
-typedef void (*SystemFunc4)(block_type* out,
                             uint32_t out_size,
                             const block_type* lhs,
                             uint32_t lhs_size,
                             const block_type* rhs,
                             uint32_t rhs_size);
 
+typedef void (*SystemFunc3)(block_type* out,
+                            uint32_t out_size,
+                            const block_type* lhs,
+                            uint32_t lhs_size,
+                            uint32_t rhs);
+
 template <typename R, typename A>
 auto make_system_op(SystemFunc1 func, const A& in) {
   sdata_type ret(ch_width_v<R>);
-  func(ret.words(), system_accessor::data(in).words(), ch_width_v<R>);
+  auto& u = system_accessor::data(in);
+  func(ret.words(), ch_width_v<R>, u.words(), ch_width_v<A>);
   return R(make_system_buffer(std::move(ret)));
 }
 
@@ -218,7 +215,7 @@ auto make_system_op(SystemFunc2 func, const A& lhs, const B& rhs) {
   sdata_type ret(ch_width_v<R>);
   auto& u = system_accessor::data(lhs);
   auto& v = system_accessor::data(rhs);
-  func(ret.words(), u.words(), v.words(), ch_width_v<R>);
+  func(ret.words(), ch_width_v<R>, u.words(), ch_width_v<A>, v.words(), ch_width_v<B>);
   return R(make_system_buffer(std::move(ret)));
 }
 
@@ -226,16 +223,8 @@ template <typename R, typename A, typename B>
 auto make_system_op(SystemFunc3 func, const A& lhs, const B& rhs) {
   sdata_type ret(ch_width_v<R>);
   auto& u = system_accessor::data(lhs);
-  func(ret.words(), ch_width_v<R>, u.words(), u.size(), static_cast<uint64_t>(rhs));
-  return R(make_system_buffer(std::move(ret)));
-}
-
-template <typename R, typename A, typename B>
-auto make_system_op(SystemFunc4 func, const A& lhs, const B& rhs) {
-  sdata_type ret(ch_width_v<R>);
-  auto& u = system_accessor::data(lhs);
-  auto& v = system_accessor::data(rhs);
-  func(ret.words(), ch_width_v<R>, u.words(), u.size(), v.words(), v.size());
+  auto v = static_cast<uint32_t>(rhs);
+  func(ret.words(), ch_width_v<R>, u.words(), u.size(), v);
   return R(make_system_buffer(std::move(ret)));
 }
 
@@ -351,12 +340,13 @@ CH_SYSTEM_OPERATOR(system_op_logical)
 
 CH_SYSTEM_OPERATOR(system_op_bitwise)
   friend auto operator~(const Derived& self) {
-    return make_system_op<Derived>(bv_inv, self);
+    auto func = bv_inv<ch_signed_v<Derived>, block_type, ClearBitAccessor<block_type>>;
+    return make_system_op<Derived>(func, self);
   }
 
-  CH_SYSTEM_OPERATOR_IMPL(operator&, (return make_system_op<Derived>(bv_and, lhs, rhs)))
-  CH_SYSTEM_OPERATOR_IMPL(operator|, (return make_system_op<Derived>(bv_or, lhs, rhs)))
-  CH_SYSTEM_OPERATOR_IMPL(operator^, (return make_system_op<Derived>(bv_xor, lhs, rhs)))
+  CH_SYSTEM_OPERATOR_IMPL(operator&, (return make_system_op<Derived>(bv_and<ch_signed_v<Derived>, block_type, ClearBitAccessor<block_type>>, lhs, rhs)))
+  CH_SYSTEM_OPERATOR_IMPL(operator|, (return make_system_op<Derived>(bv_or<ch_signed_v<Derived>, block_type, ClearBitAccessor<block_type>>, lhs, rhs)))
+  CH_SYSTEM_OPERATOR_IMPL(operator^, (return make_system_op<Derived>(bv_xor<ch_signed_v<Derived>, block_type, ClearBitAccessor<block_type>>, lhs, rhs)))
 };
 
 CH_SYSTEM_OPERATOR(system_op_shift)
@@ -406,13 +396,13 @@ CH_SYSTEM_OPERATOR(system_op_relational)
 
 CH_SYSTEM_OPERATOR(system_op_arithmetic)
   friend auto operator-(const Derived& self) {
-    return make_system_op<Derived>(bv_neg, self);
+    return make_system_op<Derived>(bv_neg<ch_signed_v<Derived>, block_type, ClearBitAccessor<block_type>>, self);
   }
   CH_SYSTEM_OPERATOR_IMPL(operator+, (
-    return make_system_op<Derived>(bv_add, lhs, rhs))
+    return make_system_op<Derived>(bv_add<ch_signed_v<Derived>, block_type, ClearBitAccessor<block_type>>, lhs, rhs))
   )
   CH_SYSTEM_OPERATOR_IMPL(operator-, (
-    return make_system_op<Derived>(bv_sub, lhs, rhs))
+    return make_system_op<Derived>(bv_sub<ch_signed_v<Derived>, block_type, ClearBitAccessor<block_type>>, lhs, rhs))
   )
   CH_SYSTEM_OPERATOR_IMPL(operator*, (
     return make_system_op<Derived>(bv_mult<ch_signed_v<Derived>>, lhs, rhs))

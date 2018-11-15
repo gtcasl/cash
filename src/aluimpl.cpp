@@ -70,36 +70,19 @@ void aluimpl::print(std::ostream& out) const {
   out << ")";
 }
 
-int aluimpl::should_resize_opds() const {
-  uint32_t src0_size = 0;
-  uint32_t src1_size = 0;
-
-  if (srcs_.size() > 0) {
-    src0_size = srcs_[0].size();
-    if (srcs_.size() > 1) {
-      src1_size = srcs_[1].size();
-    }
-  }
-
+bool aluimpl::should_resize_opds() const {
   auto op_resize = CH_OP_RESIZE(op_);
   switch (op_resize) {
   case op_flags::resize_src:
     // source operand sizes should match
-    if (src0_size < src1_size)
-      return src1_size;
-    if (src1_size < src0_size)
-      return src0_size;
-    break;
+    return (srcs_[0].size() != srcs_[1].size());
   case op_flags::resize_dst:
     // source operand and destination sizes should match
-    if (src0_size != size_
-     || (src1_size && src1_size != size_))
-      return size_;
-    break;
+    return ((srcs_[0].size() < size_)
+        || ((srcs_.size() > 1) && srcs_[1].size() < size_));
   default:
-    break;
+    return false;
   }
-  return -1;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

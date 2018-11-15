@@ -14,16 +14,12 @@ using namespace extension;
 
 class ch_float32;
 
-template <unsigned Delay = 1>
-struct fAdd : public udf_seq<Delay, false, ch_float32, ch_float32, ch_float32, ch_bool> {
+struct sfAdd : public udf_seq<ch_float32, ch_float32, ch_float32> {
 
   void eval(udf_output& dst, const udf_inputs& srcs) override {
-    auto enable = static_cast<bool>(srcs[2]);
-    if (enable) {
-      auto lhs = bit_cast<float>(static_cast<int32_t>(srcs[0]));
-      auto rhs = bit_cast<float>(static_cast<int32_t>(srcs[1]));
-      dst = bit_cast<int32_t>(lhs + rhs);
-    }
+    auto lhs = bit_cast<float>(static_cast<int32_t>(srcs[0]));
+    auto rhs = bit_cast<float>(static_cast<int32_t>(srcs[1]));
+    dst = bit_cast<int32_t>(lhs + rhs);
   }
 
   void to_verilog(std::ostream& out) override {
@@ -32,16 +28,12 @@ struct fAdd : public udf_seq<Delay, false, ch_float32, ch_float32, ch_float32, c
   }
 };
 
-template <unsigned Delay = 1>
-struct fSub : public udf_seq<Delay, false, ch_float32, ch_float32, ch_float32, ch_bool> {
+struct sfSub : public udf_seq<ch_float32, ch_float32, ch_float32> {
 
   void eval(udf_output& dst, const udf_inputs& srcs) override {
-   auto enable = static_cast<bool>(srcs[2]);
-    if (enable) {
-      auto lhs = bit_cast<float>(static_cast<int32_t>(srcs[0]));
-      auto rhs = bit_cast<float>(static_cast<int32_t>(srcs[1]));
-      dst = bit_cast<int32_t>(lhs - rhs);
-    }
+    auto lhs = bit_cast<float>(static_cast<int32_t>(srcs[0]));
+    auto rhs = bit_cast<float>(static_cast<int32_t>(srcs[1]));
+    dst = bit_cast<int32_t>(lhs - rhs);
   }
 
   void to_verilog(std::ostream& out) override {
@@ -50,16 +42,12 @@ struct fSub : public udf_seq<Delay, false, ch_float32, ch_float32, ch_float32, c
   }
 };
 
-template <unsigned Delay>
-struct fMul : public udf_seq<Delay, false, ch_float32, ch_float32, ch_float32, ch_bool> {
+struct sfMul : public udf_seq<ch_float32, ch_float32, ch_float32> {
 
   void eval(udf_output& dst, const udf_inputs& srcs) override {
-    auto enable = static_cast<bool>(srcs[2]);
-    if (enable) {
-      auto lhs = bit_cast<float>(static_cast<int32_t>(srcs[0]));
-      auto rhs = bit_cast<float>(static_cast<int32_t>(srcs[1]));
-      dst = bit_cast<int32_t>(lhs * rhs);
-    }
+    auto lhs = bit_cast<float>(static_cast<int32_t>(srcs[0]));
+    auto rhs = bit_cast<float>(static_cast<int32_t>(srcs[1]));
+    dst = bit_cast<int32_t>(lhs * rhs);
   }
 
   void to_verilog(std::ostream& out) override {
@@ -68,8 +56,7 @@ struct fMul : public udf_seq<Delay, false, ch_float32, ch_float32, ch_float32, c
   }
 };
 
-template <unsigned Delay>
-struct fDiv : public udf_seq<Delay, false, ch_float32, ch_float32, ch_float32, ch_bool> {
+struct sfDiv : public udf_seq<ch_float32, ch_float32, ch_float32> {
 
   void eval(udf_output& dst, const udf_inputs& srcs) override {
     auto enable = static_cast<bool>(srcs[2]);
@@ -285,22 +272,22 @@ public:
 
 template <unsigned Delay>
 auto ch_fadd(const ch_float32& lhs, const ch_float32& rhs, const ch_bool& enable = true, __sloc) {
-  return ch_udf<fAdd<Delay>>(lhs, rhs, enable, sloc);
+  return ch_delayEn(ch_udf<sfAdd>(lhs, rhs, sloc), enable, Delay - 1);
 }
 
 template <unsigned Delay>
 auto ch_fsub(const ch_float32& lhs, const ch_float32& rhs, const ch_bool& enable = true, __sloc) {
-  return ch_udf<fSub<Delay>>(lhs, rhs, enable, sloc);
+  return ch_delayEn(ch_udf<sfSub>(lhs, rhs, sloc), enable, Delay - 1);
 }
 
 template <unsigned Delay>
 auto ch_fmult(const ch_float32& lhs, const ch_float32& rhs, const ch_bool& enable = true, __sloc) {
-  return ch_udf<fMul<Delay>>(lhs, rhs, enable, sloc);
+  return ch_delayEn(ch_udf<sfMul>(lhs, rhs, sloc), enable, Delay - 1);
 }
 
 template <unsigned Delay>
 auto ch_fdiv(const ch_float32& lhs, const ch_float32& rhs, const ch_bool& enable = true, __sloc) {
-  return ch_udf<fDiv<Delay>>(lhs, rhs, enable, sloc);
+  return ch_delayEn(ch_udf<sfDiv>(lhs, rhs, sloc), enable, Delay - 1);
 }
 
 }

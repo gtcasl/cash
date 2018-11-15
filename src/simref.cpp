@@ -288,20 +288,12 @@ protected:
 
   instr_alu_base(block_type* dst,
                  uint32_t dst_size,
-                 const block_type* o_src0,
-                 uint32_t o_src0_size,
-                 const block_type* o_src1,
-                 uint32_t o_src1_size,
-                 block_type* src0,
+                 const block_type* src0,
                  uint32_t src0_size,
-                 block_type* src1,
+                 const block_type* src1,
                  uint32_t src1_size)
     : dst_(dst)
     , dst_size_(dst_size)
-    , o_src0_(o_src0)
-    , o_src0_size_(o_src0_size)
-    , o_src1_(o_src1)
-    , o_src1_size_(o_src1_size)
     , src0_(src0)
     , src0_size_(src0_size)
     , src1_(src1)
@@ -310,13 +302,9 @@ protected:
 
   block_type* dst_;
   uint32_t dst_size_;
-  const block_type* o_src0_;
-  uint32_t o_src0_size_;
-  const block_type* o_src1_;
-  uint32_t o_src1_size_;
-  block_type* src0_;
+  const block_type* src0_;
   uint32_t src0_size_;
-  block_type* src1_;
+  const block_type* src1_;
   uint32_t src1_size_;
 };
 
@@ -330,15 +318,7 @@ public:
   }
 
   void eval() override {
-    if constexpr (resize_opds && !is_scalar) {
-      if (src0_size_ != o_src0_size_) {
-        bv_pad<is_signed>(src0_, src0_size_, o_src0_, o_src0_size_);
-      }
-      if (src1_size_ != o_src1_size_) {
-        bv_pad<is_signed>(src1_, src1_size_, o_src1_, o_src1_size_);
-      }
-    }
-
+    //--
     using bit_accessor_t = StaticBitAccessor<is_signed, resize_opds, block_type>;
 
     switch (op) {
@@ -388,59 +368,52 @@ public:
 
     case ch_op::notl:
       if constexpr (is_scalar) {
-        bv_assign_scalar(dst_, !bv_orr_scalar(src0_));
+        bv_assign_scalar(dst_, bv_notl_scalar(src0_));
       } else {
-        bv_assign_scalar(dst_, !bv_orr_vector(src0_, src0_size_));
+        bv_assign_scalar(dst_, bv_notl_vector(src0_, src0_size_));
       }
       break;
     case ch_op::andl:
       if constexpr (is_scalar) {
-        bv_assign_scalar(dst_, bv_orr_scalar(src0_) && bv_orr_scalar(src1_));
+        bv_assign_scalar(dst_, bv_andl_scalar(src0_, src1_));
       } else {
-        bv_assign_scalar(dst_, bv_orr_vector(src0_, src0_size_) && bv_orr_vector(src1_, src1_size_));
+        bv_assign_scalar(dst_, bv_andl_vector(src0_, src0_size_, src1_, src1_size_));
       }
       break;
     case ch_op::orl:
       if constexpr (is_scalar) {
-        bv_assign_scalar(dst_, bv_orr_scalar(src0_) || bv_orr_scalar(src1_));
+        bv_assign_scalar(dst_, bv_orl_scalar(src0_, src1_));
       } else {
-        bv_assign_scalar(dst_, bv_orr_vector(src0_, src0_size_) || bv_orr_vector(src1_, src1_size_));
+        bv_assign_scalar(dst_, bv_orl_vector(src0_, src0_size_, src1_, src1_size_));
       }
       break;
 
     case ch_op::inv:
       if constexpr (is_scalar) {
-        block_type u = resize_opds ? sign_ext(src0_[0], src0_size_) : src0_[0];
-        bv_inv_scalar(dst_, &u, dst_size_);
+        bv_inv_scalar<is_signed, block_type, bit_accessor_t>(dst_, dst_size_, src0_, src0_size_);
       } else {
-        bv_inv_vector(dst_, src0_, dst_size_);
+        bv_inv_vector<is_signed, block_type, bit_accessor_t>(dst_, dst_size_, src0_, src0_size_);
       }
       break;
     case ch_op::andb:
       if constexpr (is_scalar) {
-        block_type u = resize_opds ? sign_ext(src0_[0], src0_size_) : src0_[0];
-        block_type v = resize_opds ? sign_ext(src1_[0], src1_size_) : src1_[0];
-        bv_and_scalar(dst_, &u, &v);
+        bv_and_scalar<is_signed, block_type, bit_accessor_t>(dst_, dst_size_, src0_, src0_size_, src1_, src1_size_);
       } else {
-        bv_and_vector(dst_, src0_, src1_, dst_size_);
+        bv_and_vector<is_signed, block_type, bit_accessor_t>(dst_, dst_size_, src0_, src0_size_, src1_, src1_size_);
       }
       break;
     case ch_op::orb:
       if constexpr (is_scalar) {
-        block_type u = resize_opds ? sign_ext(src0_[0], src0_size_) : src0_[0];
-        block_type v = resize_opds ? sign_ext(src1_[0], src1_size_) : src1_[0];
-        bv_or_scalar(dst_, &u, &v);
+        bv_or_scalar<is_signed, block_type, bit_accessor_t>(dst_, dst_size_, src0_, src0_size_, src1_, src1_size_);
       } else {
-        bv_or_vector(dst_, src0_, src1_, dst_size_);
+        bv_or_vector<is_signed, block_type, bit_accessor_t>(dst_, dst_size_, src0_, src0_size_, src1_, src1_size_);
       }
       break;
     case ch_op::xorb:
       if constexpr (is_scalar) {
-        block_type u = resize_opds ? sign_ext(src0_[0], src0_size_) : src0_[0];
-        block_type v = resize_opds ? sign_ext(src1_[0], src1_size_) : src1_[0];
-        bv_xor_scalar(dst_, &u, &v);
+        bv_xor_scalar<is_signed, block_type, bit_accessor_t>(dst_, dst_size_, src0_, src0_size_, src1_, src1_size_);
       } else {
-        bv_xor_vector(dst_, src0_, src1_, dst_size_);
+        bv_xor_vector<is_signed, block_type, bit_accessor_t>(dst_, dst_size_, src0_, src0_size_, src1_, src1_size_);
       }
       break;
 
@@ -468,45 +441,42 @@ public:
 
     case ch_op::shl:
       if constexpr (is_scalar) {
-        bv_shl_scalar(dst_, dst_size_, src0_, bv_cast<uint32_t>(src1_, src1_size_));
+        auto dist = bv_cast<uint32_t>(src1_, src1_size_);
+        bv_shl_scalar(dst_, dst_size_, src0_, dist);
      } else {
-        bv_shl_vector(dst_, dst_size_, src0_, src0_size_, bv_cast<uint32_t>(src1_, src1_size_));
+        auto dist = bv_cast<uint32_t>(src1_, src1_size_);
+        bv_shl_vector(dst_, dst_size_, src0_, src0_size_, dist);
       }
       break;
     case ch_op::shr:
       if constexpr (is_scalar) {
-        auto dist = bv_cast<uint64_t>(src1_, src1_size_);
+        auto dist = bv_cast<uint32_t>(src1_, src1_size_);
         bv_shr_scalar<is_signed>(dst_, dst_size_, src0_, src0_size_, dist);
       } else {
-        auto dist = bv_cast<uint64_t>(src1_, src1_size_);
+        auto dist = bv_cast<uint32_t>(src1_, src1_size_);
         bv_shr_vector<is_signed>(dst_, dst_size_, src0_, src0_size_, dist);
       }
       break;
 
     case ch_op::neg:
       if constexpr (is_scalar) {
-        block_type u = resize_opds ? sign_ext(src0_[0], src0_size_) : src0_[0];
-        bv_neg_scalar(dst_, &u, dst_size_);
+        bv_neg_scalar<is_signed, block_type, bit_accessor_t>(dst_, dst_size_, src0_, src0_size_);
       } else {
-        bv_neg_vector(dst_, src0_, dst_size_);
+        bv_neg_vector<is_signed, block_type, bit_accessor_t>(dst_, dst_size_, src0_, src0_size_);
       }
       break;
     case ch_op::add:
       if constexpr (is_scalar) {
-        block_type u = resize_opds ? sign_ext(src0_[0], src0_size_) : src0_[0];
-        block_type v = resize_opds ? sign_ext(src1_[0], src1_size_) : src1_[0];
-        bv_add_scalar(dst_, &u, &v, dst_size_);
+        bv_add_scalar<is_signed, block_type, bit_accessor_t>(dst_, dst_size_, src0_, src0_size_, src1_, src1_size_);
       } else {
-        bv_add_vector(dst_, src0_, src1_, dst_size_);
+        bv_add_vector<is_signed, block_type, bit_accessor_t>(dst_, dst_size_, src0_, src0_size_, src1_, src1_size_);
       }
       break;
     case ch_op::sub:
       if constexpr (is_scalar) {
-        block_type u = resize_opds ? sign_ext(src0_[0], src0_size_) : src0_[0];
-        block_type v = resize_opds ? sign_ext(src1_[0], src1_size_) : src1_[0];
-        bv_sub_scalar(dst_, &u, &v, dst_size_);
+        bv_sub_scalar<is_signed, block_type, bit_accessor_t>(dst_, dst_size_, src0_, src0_size_, src1_, src1_size_);
       } else {
-        bv_sub_vector(dst_, src0_, src1_, dst_size_);
+        bv_sub_vector<is_signed, block_type, bit_accessor_t>(dst_, dst_size_, src0_, src0_size_, src1_, src1_size_);
       }
       break;
 
@@ -548,13 +518,9 @@ public:
 private:
 
   instr_alu(block_type* dst, uint32_t dst_size_,
-            const block_type* o_src0, uint32_t o_src0_size_,
-            const block_type* o_src1, uint32_t o_src1_size,
-            block_type* src0, uint32_t src0_size_,
-            block_type* src1, uint32_t src1_size)
+            const block_type* src0, uint32_t src0_size_,
+            const block_type* src1, uint32_t src1_size)
     : instr_alu_base(dst, dst_size_,
-                     o_src0, o_src0_size_,
-                     o_src1, o_src1_size,
                      src0, src0_size_,
                      src1, src1_size)
     {}
@@ -566,121 +532,64 @@ instr_alu_base* instr_alu_base::create(aluimpl* node, data_map_t& map) {
   uint32_t dst_size = node->size();
   bool is_signed = node->is_signed();
 
-  const block_type* o_src0 = nullptr;
-  uint32_t o_src0_size = 0;
-  const block_type* o_src1 = nullptr;
-  uint32_t o_src1_size = 0;
+  const block_type* src0 = nullptr;
+  uint32_t src0_size = 0;
+  const block_type* src1 = nullptr;
+  uint32_t src1_size = 0;
 
   bool is_scalar = (dst_size <= bitwidth_v<block_type>);
 
   // access source node data
   if (node->srcs().size() > 0) {
-    o_src0 = map.at(node->src(0).id());
-    o_src0_size = node->src(0).size();
-    is_scalar &= (o_src0_size <= bitwidth_v<block_type>);
+    src0 = map.at(node->src(0).id());
+    src0_size = node->src(0).size();
+    is_scalar &= (src0_size <= bitwidth_v<block_type>);
     if (node->srcs().size() > 1) {
-      o_src1 = map.at(node->src(1).id());
-      o_src1_size = node->src(1).size();
-      is_scalar &= (o_src1_size <= bitwidth_v<block_type>);
+      src1 = map.at(node->src(1).id());
+      src1_size = node->src(1).size();
+      is_scalar &= (src1_size <= bitwidth_v<block_type>);
     }
   }
 
-  block_type* src0 = (block_type*)o_src0;
-  uint32_t src0_size = o_src0_size;
-  block_type* src1 = (block_type*)o_src1;
-  uint32_t src1_size = o_src1_size;
-
-  bool resize_opds = false;
-
-  // allocate shadow buffers if needed
-  int new_size = node->should_resize_opds();
-  if (new_size != -1) {
-    if (is_scalar) {
-      // resize only needed for signed ops
-      resize_opds = is_signed;
-    } else {
-      src0_size = new_size;
-      if (src1) {
-        src1_size = new_size;
-      }
-      resize_opds = true;
-    }
-  }
+  // determine is operands need resizing
+  bool resize_opds = node->should_resize_opds();
 
   uint32_t dst_bytes = sizeof(block_type) * ceildiv(dst_size, bitwidth_v<block_type>);
 
-  uint32_t t_src0_bytes = 0;
-  if (src0_size != o_src0_size) {
-    t_src0_bytes = sizeof(block_type) * ceildiv(src0_size, bitwidth_v<block_type>);
-  }
-
-  uint32_t t_src1_bytes = 0;
-  if (src1_size != o_src1_size) {
-    t_src1_bytes = sizeof(block_type) * ceildiv(src1_size, bitwidth_v<block_type>);
-  }
-
-  auto buf = new uint8_t[__aligned_sizeof(instr_alu_base) + dst_bytes + t_src0_bytes + t_src1_bytes]();
+  auto buf = new uint8_t[__aligned_sizeof(instr_alu_base) + dst_bytes]();
   auto buf_cur = buf + __aligned_sizeof(instr_alu_base);
   auto dst = (block_type*)buf_cur;
   map[node->id()] = dst;
   bv_init(dst, dst_size);
-
-  buf_cur += dst_bytes;
-
-  if (t_src0_bytes) {
-    src0 = (block_type*)buf_cur;
-    buf_cur += t_src0_bytes;
-  }
-
-  if (t_src1_bytes) {
-    src1 = (block_type*)buf_cur;
-    buf_cur += t_src1_bytes;
-  }
 
 #define CREATE_ALU_INST(op, sign_enable, resize_enable) \
   case op: \
     if (is_scalar) { \
       if (sign_enable && is_signed) { \
         if (resize_enable && resize_opds) { \
-          return new (buf) instr_alu<op, true, true, true>(dst, dst_size, o_src0, o_src0_size, \
-                                                           o_src1, o_src1_size, src0, src0_size, \
-                                                           src1, src1_size); \
+          return new (buf) instr_alu<op, true, true, true>(dst, dst_size, src0, src0_size, src1, src1_size); \
         } else { \
-          return new (buf) instr_alu<op, true, true, false>(dst, dst_size, o_src0, o_src0_size, \
-                                                            o_src1, o_src1_size, src0, src0_size, \
-                                                            src1, src1_size); \
+          return new (buf) instr_alu<op, true, true, false>(dst, dst_size, src0, src0_size, src1, src1_size); \
         }  \
       } else { \
         if (resize_enable && resize_opds) { \
-          return new (buf) instr_alu<op, false, true, true>(dst, dst_size, o_src0, o_src0_size, \
-                                                            o_src1, o_src1_size, src0, src0_size, \
-                                                            src1, src1_size); \
+          return new (buf) instr_alu<op, false, true, true>(dst, dst_size, src0, src0_size, src1, src1_size); \
         } else { \
-          return new (buf) instr_alu<op, false, true, false>(dst, dst_size, o_src0, o_src0_size, \
-                                                             o_src1, o_src1_size, src0, src0_size, \
-                                                             src1, src1_size); \
+          return new (buf) instr_alu<op, false, true, false>(dst, dst_size, src0, src0_size, src1, src1_size); \
         } \
       } \
     } else { \
       if (sign_enable && is_signed) { \
         if (resize_enable && resize_opds) { \
-          return new (buf) instr_alu<op, true, false, true>(dst, dst_size, o_src0, o_src0_size, \
-                                                            o_src1, o_src1_size, src0, src0_size, \
-                                                            src1, src1_size); \
+          return new (buf) instr_alu<op, true, false, true>(dst, dst_size, src0, src0_size, src1, src1_size); \
         } else { \
-          return new (buf) instr_alu<op, true, false, false>(dst, dst_size, o_src0, o_src0_size, \
-                                                             o_src1, o_src1_size, src0, src0_size, \
-                                                             src1, src1_size); \
+          return new (buf) instr_alu<op, true, false, false>(dst, dst_size, src0, src0_size, src1, src1_size); \
         }  \
       } else { \
         if (resize_enable && resize_opds) { \
-          return new (buf) instr_alu<op, false, false, true>(dst, dst_size, o_src0, o_src0_size, \
-                                                             o_src1, o_src1_size, src0, src0_size, \
-                                                             src1, src1_size); \
+          return new (buf) instr_alu<op, false, false, true>(dst, dst_size, src0, src0_size, src1, src1_size); \
         } else { \
-          return new (buf) instr_alu<op, false, false, false>(dst, dst_size, o_src0, o_src0_size, \
-                                                              o_src1, o_src1_size, src0, src0_size, \
-                                                              src1, src1_size); \
+          return new (buf) instr_alu<op, false, false, false>(dst, dst_size, src0, src0_size, src1, src1_size); \
         } \
       } \
     }
@@ -1562,11 +1471,24 @@ private:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class instr_udfc : public instr_base {
+class instr_udf : public instr_base {
 public:
 
-  static instr_udfc* create(udfcimpl* node, data_map_t& map) {
-    return new instr_udfc(node, map);
+  static instr_udf* create(udfcimpl* node, data_map_t& map) {
+    auto instr = new instr_udf(node, map);
+    instr->init(node, map);
+    return instr;
+  }
+
+  static instr_udf* create(udfsimpl* node, data_map_t& map) {
+    return new instr_udf(node, map);
+  }
+
+  void init(udfimpl* node, data_map_t& map) {
+    for (uint32_t i = 0, n = udf_->inputs_size().size(); i < n; ++i) {
+      auto& src = node->src(i);
+      srcs_[i].emplace(const_cast<block_type*>(map.at(src.id())), src.size());
+    }
   }
 
   void destroy() override {
@@ -1574,97 +1496,26 @@ public:
   }
 
   void eval() override {
-    udf_->eval(dst_, srcs_);
+    udf_->eval(dst_, srcs_.data());
   }
 
 private:
 
-  instr_udfc(udfcimpl* node, data_map_t& map)
+  instr_udf(udfimpl* node, data_map_t& map)
     : udf_(node->udf())
     , dst_(node->size()) {
     srcs_.resize(node->srcs().size());
-    for (uint32_t i = 0, n = udf_->inputs_size().size(); i < n; ++i) {
-      auto& src = node->src(i);
-      srcs_[i].emplace(const_cast<block_type*>(map.at(src.id())), src.size());
-    }
     map[node->id()] = dst_.words();
   }
 
-  ~instr_udfc() {
+  ~instr_udf() {
     for (auto& src : srcs_) {
       src.emplace(nullptr);
     }
   }
 
   udf_iface* udf_;
-  udf_inputs srcs_;
-  sdata_type dst_;
-};
-
-///////////////////////////////////////////////////////////////////////////////
-
-class instr_udfs : public instr_base {
-public:
-
-  static instr_udfs* create(udfsimpl* node, data_map_t& map) {
-    return new instr_udfs(node, map);
-  }
-
-  void destroy() override {
-    delete this;
-  }
-
-  void init(udfsimpl* node, data_map_t& map) {
-    reset_ = node->has_init_data() ? map.at(node->reset().id()) : nullptr;    
-    for (uint32_t i = 0, n = udf_->inputs_size().size(); i < n; ++i) {
-      auto& src = node->src(i);
-      srcs_[i].emplace(const_cast<block_type*>(map.at(src.id())), src.size());
-    }
-  }
-
-  void eval() override {
-    sdata_type* value = &dst_;
-
-    // advance the pipeline
-    if (!pipe_.empty()) {
-      auto last = pipe_.size() - 1;
-      dst_ = pipe_[last];
-      for (int i = last; i > 0; --i) {
-        pipe_[i] = pipe_[i-1];
-      }
-      value = &pipe_[0];
-    }
-
-    // push new entry
-    if (reset_ && static_cast<bool>(reset_[0])) {
-      udf_->reset(*value, srcs_);
-    } else {
-      udf_->eval(*value, srcs_);
-    }
-  }
-
-private:
-
-  instr_udfs(udfsimpl* node, data_map_t& map)
-    : udf_(node->udf())
-    , reset_(nullptr)
-    , dst_(node->size()) {
-    srcs_.resize(node->srcs().size());
-    pipe_.resize(udf_->delta() - 1, sdata_type(dst_.size()));
-    map[node->id()] = dst_.words();
-  }
-
-  ~instr_udfs() {
-    for (auto& src : srcs_) {
-      src.emplace(nullptr);
-    }
-  }
-
-  std::vector<sdata_type> pipe_;
-  udf_iface* udf_;
-  udf_inputs srcs_;
-  const block_type* cd_;
-  const block_type* reset_;
+  std::vector<sdata_type> srcs_;
   sdata_type dst_;
 };
 
@@ -1722,7 +1573,7 @@ public:
         instr_map[node->id()] = instr_msrport_base::create(reinterpret_cast<msrportimpl*>(node), data_map);
         break;
       case type_udfs:
-        instr_map[node->id()] = instr_udfs::create(reinterpret_cast<udfsimpl*>(node), data_map);
+        instr_map[node->id()] = instr_udf::create(reinterpret_cast<udfsimpl*>(node), data_map);
         break;
       default:
         break;
@@ -1781,11 +1632,11 @@ public:
         instr = instr_print::create(reinterpret_cast<printimpl*>(node), data_map);
         break;
       case type_udfc:
-        instr = instr_udfc::create(reinterpret_cast<udfcimpl*>(node), data_map);
+        instr = instr_udf::create(reinterpret_cast<udfcimpl*>(node), data_map);
         break;
       case type_udfs:
         instr = instr_map.at(node->id());
-        reinterpret_cast<instr_udfs*>(instr)->init(reinterpret_cast<udfsimpl*>(node), data_map);
+        reinterpret_cast<instr_udf*>(instr)->init(reinterpret_cast<udfsimpl*>(node), data_map);
         break;
       case type_lit:
       case type_mem:

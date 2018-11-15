@@ -17,7 +17,7 @@ public:
     return is_signed_;
   }
 
-  int should_resize_opds() const;
+  bool should_resize_opds() const;
 
   virtual lnodeimpl* clone(context* ctx, const clone_map& cloned_nodes) override;
 

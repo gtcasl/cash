@@ -6,28 +6,22 @@ namespace ch {
 namespace internal {
 
 using udf_output = sdata_type;
-using udf_inputs = std::vector<sdata_type>;
+using udf_inputs = const sdata_type*;
 
 class udf_iface : public refcounted {
 public:
-  udf_iface(uint32_t delta,
-            bool has_init_data,
+  udf_iface(bool is_seq,
             uint32_t output_size,
             const std::initializer_list<uint32_t>& inputs_size)
-    : delta_(delta)
-    , has_init_(has_init_data)
+    : is_seq_(is_seq)
     , output_size_(output_size)
     , inputs_size_(inputs_size)
   {}
 
   virtual ~udf_iface() {}
 
-  uint32_t delta() const {
-    return delta_;
-  }
-
-  bool has_init_data() const {
-    return has_init_;
+  bool is_seq() const {
+    return is_seq_;
   }
 
   uint32_t output_size() const {
@@ -38,10 +32,6 @@ public:
     return inputs_size_;
   }
 
-  virtual void initialize() = 0;
-
-  virtual void reset(udf_output&, const udf_inputs&) = 0;
-
   virtual void eval(udf_output&, const udf_inputs&) = 0;
 
   virtual void init_verilog(std::ostream& out) = 0;
@@ -50,17 +40,15 @@ public:
 
 private:
 
-  uint32_t delta_;
-  bool has_init_;
+  bool is_seq_;
   uint32_t output_size_;
   std::vector<uint32_t> inputs_size_;
 };
 
-template <unsigned Delta, bool Init, typename Output_, typename... Inputs_>
+template <bool Seq, typename Output_, typename... Inputs_>
 struct udf_traits {
   static constexpr int type = traits_udf;
-  static constexpr uint32_t delta  = Delta;
-  static constexpr bool has_init_data   = Init;
+  static constexpr bool is_seq = Seq;
   using Output = Output_;
   using Inputs = std::tuple<Inputs_...>;
 };
@@ -73,30 +61,21 @@ CH_DEF_SFINAE_CHECK(is_udf_type, is_udf_traits_v<typename std::decay_t<T>::trait
 template <typename Output, typename... Inputs>
 class udf_comb : public udf_iface {
 public:
-  using traits = udf_traits<0, false, Output, Inputs...>;
+  using traits = udf_traits<false, Output, Inputs...>;
 
-  udf_comb() : udf_iface(0, false, ch_width_v<Output>, {ch_width_v<Inputs>...}) {}
-
-  void initialize() override {}
-
-  void reset(udf_output&, const udf_inputs&) override {}
+  udf_comb() : udf_iface(false, ch_width_v<Output>, {ch_width_v<Inputs>...}) {}
 
   void init_verilog(std::ostream&) override {}
 
   void to_verilog(std::ostream&) override {}
 };
 
-template <unsigned Delta, bool Init, typename Output, typename... Inputs>
+template <typename Output, typename... Inputs>
 class udf_seq : public udf_iface {
 public:
-  static_assert(Delta != 0, "invalid delta value");
-  using traits = udf_traits<Delta, Init, Output, Inputs...>;
+  using traits = udf_traits<true, Output, Inputs...>;
 
-  udf_seq() : udf_iface(Delta, Init, ch_width_v<Output>, {ch_width_v<Inputs>...}) {}
-
-  void initialize() override {}
-
-  void reset(udf_output&, const udf_inputs&) override {}
+  udf_seq() : udf_iface(true, ch_width_v<Output>, {ch_width_v<Inputs>...}) {}
 
   void init_verilog(std::ostream&) override {}
 

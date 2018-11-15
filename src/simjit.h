@@ -22,6 +22,4 @@ private:
   sim_ctx_t* sim_ctx_;
 };
 
-bool check_compatible(context* ctx);
-
 }
