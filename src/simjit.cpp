@@ -924,6 +924,7 @@ private:
         jit_value_t j_dst, j_dst_tmp = nullptr;
         if (dst_width <= WORD_SIZE) {
           j_dst_tmp = jit_value_create(j_func_, word_type_);
+          jit_insn_store(j_func_, j_dst_tmp, j_zero_);
           j_dst = this->emit_address_of(j_dst_tmp, word_type_);
         } else {
           j_dst = this->emit_store_address(node);
@@ -1767,6 +1768,7 @@ private:
     jit_value_t j_dst_ptr, j_dst_tmp = nullptr;
     if (dst_width <= WORD_SIZE) {
       j_dst_tmp = jit_value_create(j_func_, word_type_);
+      jit_insn_store(j_func_, j_dst_tmp, j_zero_);
       j_dst_ptr = this->emit_address_of(j_dst_tmp, word_type_);
     } else {
       j_dst_ptr = this->emit_store_address(node);
@@ -1925,9 +1927,9 @@ private:
       } break;
       case type_udfc:
       case type_udfs: {
+        addr_map_[node->id()] = var_addr;
         if (type_udfs == type
-         || dst_width > WORD_SIZE) {
-          addr_map_[node->id()] = var_addr;
+         || dst_width > WORD_SIZE) {          
           var_addr += __align_word_size(dst_width);
         }
         auto u = reinterpret_cast<udfimpl*>(node);
@@ -2051,15 +2053,15 @@ private:
         auto addr = addr_map_.at(node->id());
         if (type_udfs == type
          || dst_width > WORD_SIZE) {
-          bv_init(reinterpret_cast<block_type*>(sim_ctx_->state.vars + addr), dst_width);
+          bv_init(reinterpret_cast<block_type*>(sim_ctx_->state.vars + addr), dst_width);          
+          if (type_udfs == type
+           && dst_width <= WORD_SIZE) {
+            // preload scalar value
+            __source_location();
+            auto j_dst = jit_insn_load_relative(j_func_, j_vars_, addr, j_type);
+            scalar_map_[node->id()] = j_dst;
+          }
           addr += __align_word_size(dst_width);
-        }
-        if (type_udfs == type
-         && dst_width <= WORD_SIZE) {
-          // preload scalar value
-          __source_location();
-          auto j_dst = jit_insn_load_relative(j_func_, j_vars_, addr, j_type);
-          scalar_map_[node->id()] = j_dst;
         }
         auto u = reinterpret_cast<udfimpl*>(node);
         reinterpret_cast<udf_data_t*>(sim_ctx_->state.vars + addr)->init(u, this);
