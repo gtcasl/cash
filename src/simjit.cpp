@@ -1671,8 +1671,10 @@ private:
       jit_insn_branch_if_not(j_func_, j_pred, &l_exit);
     }
 
-    // copy scalar arguments
     auto addr = addr_map_.at(node->id());
+    auto j_data_ptr = jit_insn_add_relative(j_func_, j_vars_, addr);
+
+    // copy scalar arguments    
     uint32_t src_idx = 0;
     for (uint32_t i = (node->has_pred() ? 1 : 0), n = node->srcs().size(); i < n; ++i) {
       auto src = node->src(i).impl();
@@ -1687,8 +1689,8 @@ private:
       }
       ++src_idx;
     }
-    // call native function
-    auto j_data_ptr = jit_insn_add_relative(j_func_, j_vars_, addr);
+
+    // call native function    
     jit_type_t params[] = {jit_type_void_ptr};
     jit_type_t j_sig = jit_type_create_signature(jit_abi_cdecl,
                                                  jit_type_void,
@@ -1721,8 +1723,10 @@ private:
     }
     jit_insn_branch_if(j_func_, j_cond, &l_exit);
 
-    // copy scalar arguments
     auto addr = addr_map_.at(node->id());
+    auto j_data_ptr = jit_insn_add_relative(j_func_, j_vars_, addr);
+
+    // copy scalar arguments    
     auto it = scalar_map_.find(node->time().id());
     if (it != scalar_map_.end()) {
       auto time_ptr = jit_insn_load_relative(j_func_,
@@ -1732,8 +1736,8 @@ private:
       auto j_time = this->emit_address_of(it->second, word_type_);
       jit_insn_store_relative(j_func_, time_ptr, 0, j_time);
     }
-    // call native function
-    auto j_data_ptr = jit_insn_add_relative(j_func_, j_vars_, addr);
+
+    // call native function    
     jit_type_t params[] = {jit_type_void_ptr};
     jit_type_t j_sig = jit_type_create_signature(jit_abi_cdecl,
                                                  jit_type_void,
@@ -1758,8 +1762,19 @@ private:
     auto j_type = to_native_type(dst_width);
     auto udf = node->udf();
 
-    // copy scalar arguments
     auto addr = addr_map_.at(node->id());
+    auto data_addr = addr;
+    jit_value_t j_dst_ptr, j_dst_tmp = nullptr;
+    if (dst_width <= WORD_SIZE) {
+      j_dst_tmp = jit_value_create(j_func_, word_type_);
+      j_dst_ptr = this->emit_address_of(j_dst_tmp, word_type_);
+    } else {
+      j_dst_ptr = this->emit_store_address(node);
+      data_addr += __align_word_size(dst_width);
+    }
+    auto j_data_ptr = jit_insn_add_relative(j_func_, j_vars_, data_addr);
+
+    // copy scalar arguments
     uint32_t src_idx = 0;
     for (uint32_t i = 0, n = udf->inputs_size().size(); i < n; ++i) {
       auto src = node->src(i).impl();
@@ -1767,24 +1782,15 @@ private:
       if (it != scalar_map_.end()) {
         auto srcs_ptr = jit_insn_load_relative(j_func_,
                                                j_vars_,
-                                               addr + offsetof(udf_data_t, srcs),
+                                               data_addr + offsetof(udf_data_t, srcs),
                                                jit_type_void_ptr);
         auto j_src = this->emit_address_of(it->second, word_type_);
         jit_insn_store_relative(j_func_, srcs_ptr, src_idx * sizeof(sdata_type), j_src);
       }
       ++src_idx;
     }
-    // call native function
-    jit_value_t j_dst_ptr, j_dst_tmp = nullptr;
-    if (dst_width <= WORD_SIZE) {
-      j_dst_tmp = jit_value_create(j_func_, word_type_);
-      j_dst_ptr = this->emit_address_of(j_dst_tmp, word_type_);
-    } else {
-      j_dst_ptr = this->emit_store_address(node);
-      addr += __align_word_size(dst_width);
-    }
-    auto j_data_ptr = jit_insn_add_relative(j_func_, j_vars_, addr);
 
+    // call native function    
     jit_type_t params[] = {jit_type_void_ptr, jit_type_void_ptr};
     jit_type_t j_sig = jit_type_create_signature(jit_abi_cdecl,
                                                  jit_type_void,
@@ -1809,6 +1815,7 @@ private:
     __source_location();
     jit_label_t l_exit = jit_label_undefined;
     auto dst_width = node->size();
+    auto j_type = to_native_type(dst_width);
     auto udf = node->udf();
 
     auto predicated = !bypass_enable_;
@@ -1817,8 +1824,12 @@ private:
       jit_insn_branch_if_not(j_func_, j_pred, &l_exit);
     }
 
-    // copy scalar arguments
     auto addr = addr_map_.at(node->id());
+    auto data_addr = addr + __align_word_size(dst_width);
+    auto j_dst_ptr = this->emit_store_address(node);
+    auto j_data_ptr = jit_insn_add_relative(j_func_, j_vars_, data_addr);
+
+    // copy scalar arguments
     uint32_t src_idx = 0;
     for (uint32_t i = 0, n = udf->inputs_size().size(); i < n; ++i) {
       auto src = node->src(i).impl();
@@ -1826,16 +1837,15 @@ private:
       if (it != scalar_map_.end()) {
         auto srcs_ptr = jit_insn_load_relative(j_func_,
                                                j_vars_,
-                                               addr + offsetof(udf_data_t, srcs),
+                                               data_addr + offsetof(udf_data_t, srcs),
                                                jit_type_void_ptr);
         auto j_src = this->emit_address_of(it->second, word_type_);
         jit_insn_store_relative(j_func_, srcs_ptr, src_idx * sizeof(sdata_type), j_src);
       }
       ++src_idx;
     }
+
     // call native function
-    auto j_dst_ptr = this->emit_store_address(node);
-    auto j_data_ptr = jit_insn_add_relative(j_func_, j_vars_, addr + __align_word_size(dst_width));
     jit_type_t params[] = {jit_type_void_ptr, jit_type_void_ptr};
     jit_type_t j_sig = jit_type_create_signature(jit_abi_cdecl,
                                                  jit_type_void,
@@ -1850,6 +1860,11 @@ private:
                          args,
                          __countof(args),
                          JIT_CALL_NOTHROW);
+
+    if (dst_width <= WORD_SIZE) {
+      auto j_dst = jit_insn_load_relative(j_func_, j_vars_, addr, j_type);
+      scalar_map_[node->id()] = j_dst;
+    }
 
     if (predicated) {
       jit_insn_label(j_func_, &l_exit);
