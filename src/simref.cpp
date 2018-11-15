@@ -359,38 +359,30 @@ public:
 
     case ch_op::lt:
       if constexpr (is_scalar) {
-        block_type u = resize_opds ? sign_ext(src0_[0], src0_size_) : src0_[0];
-        block_type v = resize_opds ? sign_ext(src1_[0], src1_size_) : src1_[0];
-        bv_assign_scalar(dst_, bv_lt_scalar<is_signed>(&u, &v, src0_size_));
+        bv_assign_scalar(dst_, bv_lt_scalar<is_signed, block_type, bit_accessor_t>(src0_, src0_size_, src1_, src1_size_));
       } else {
-        bv_assign_scalar(dst_, bv_lt_vector<is_signed>(src0_,  src1_, src0_size_));
+        bv_assign_scalar(dst_, bv_lt_vector<is_signed, block_type, bit_accessor_t>(src0_, src0_size_, src1_, src1_size_));
       }
       break;
     case ch_op::gt:
       if constexpr (is_scalar) {
-        block_type u = resize_opds ? sign_ext(src0_[0], src0_size_) : src0_[0];
-        block_type v = resize_opds ? sign_ext(src1_[0], src1_size_) : src1_[0];
-        bv_assign_scalar(dst_, bv_lt_scalar<is_signed>(&v, &u, src0_size_));
+        bv_assign_scalar(dst_, bv_lt_scalar<is_signed, block_type, bit_accessor_t>(src1_, src1_size_, src0_, src0_size_));
       } else {
-        bv_assign_scalar(dst_, bv_lt_vector<is_signed>(src1_,  src0_, src0_size_));
+        bv_assign_scalar(dst_, bv_lt_vector<is_signed, block_type, bit_accessor_t>(src1_, src1_size_, src0_, src0_size_));
       }
       break;
     case ch_op::le:
       if constexpr (is_scalar) {
-        block_type u = resize_opds ? sign_ext(src0_[0], src0_size_) : src0_[0];
-        block_type v = resize_opds ? sign_ext(src1_[0], src1_size_) : src1_[0];
-        bv_assign_scalar(dst_, !bv_lt_scalar<is_signed>(&v, &u, src0_size_));
+        bv_assign_scalar(dst_, !bv_lt_scalar<is_signed, block_type, bit_accessor_t>(src1_, src1_size_, src0_, src0_size_));
       } else {
-        bv_assign_scalar(dst_, !bv_lt_vector<is_signed>(src1_,  src0_, src0_size_));
+        bv_assign_scalar(dst_, !bv_lt_vector<is_signed, block_type, bit_accessor_t>(src1_, src1_size_, src0_, src0_size_));
       }
       break;
     case ch_op::ge:
       if constexpr (is_scalar) {
-        block_type u = resize_opds ? sign_ext(src0_[0], src0_size_) : src0_[0];
-        block_type v = resize_opds ? sign_ext(src1_[0], src1_size_) : src1_[0];
-        bv_assign_scalar(dst_, !bv_lt_scalar<is_signed>(&u, &v, src0_size_));
+        bv_assign_scalar(dst_, !bv_lt_scalar<is_signed, block_type, bit_accessor_t>(src0_, src0_size_, src1_, src1_size_));
       } else {
-        bv_assign_scalar(dst_, !bv_lt_vector<is_signed>(src0_,  src1_, src0_size_));
+        bv_assign_scalar(dst_, !bv_lt_vector<is_signed, block_type, bit_accessor_t>(src0_, src0_size_, src1_, src1_size_));
       }
       break;
 

@@ -656,9 +656,9 @@ private:
       } else {
         jit_value_t j_dst;
         if (is_resize) {
-          j_dst = this->emit_eq_vector(j_src0, j_src1, node->src(1).size());
-        } else {
           j_dst = __alu_call_relational(bv_eq_vector, j_src0, node->src(0).size(), j_src1, node->src(1).size());
+        } else {
+          j_dst = this->emit_eq_vector(j_src0, j_src1, node->src(1).size());
         }
         scalar_map_[node->id()] = this->emit_cast(j_dst, j_type);
       }
@@ -670,9 +670,9 @@ private:
       } else {
         jit_value_t j_dst;
         if (is_resize) {
-          j_dst = this->emit_eq_vector(j_src0, j_src1, node->src(1).size());
-        } else {
           j_dst = __alu_call_relational(bv_eq_vector, j_src0, node->src(0).size(), j_src1, node->src(1).size());
+        } else {
+          j_dst = this->emit_eq_vector(j_src0, j_src1, node->src(1).size());
         }
         auto j_dst_n = jit_insn_not(j_func_, j_dst);
         scalar_map_[node->id()] = this->emit_cast(j_dst_n, j_type);
@@ -686,7 +686,8 @@ private:
         auto j_dst = jit_insn_lt(j_func_, j_src0_s, j_src1_s);
         scalar_map_[node->id()] = this->emit_cast(j_dst, j_type);
       } else {
-        CH_TODO();
+        auto j_dst = __alu_call_relational(bv_lt_vector, j_src0, node->src(0).size(), j_src1, node->src(1).size());
+        scalar_map_[node->id()] = this->emit_cast(j_dst, j_type);
       }
       break;
     case ch_op::gt:
@@ -696,7 +697,8 @@ private:
         auto j_dst = jit_insn_gt(j_func_, j_src0_s, j_src1_s);
         scalar_map_[node->id()] = this->emit_cast(j_dst, j_type);
       } else {
-        CH_TODO();
+        auto j_dst = __alu_call_relational(bv_lt_vector, j_src1, node->src(1).size(), j_src0, node->src(0).size());
+        scalar_map_[node->id()] = this->emit_cast(j_dst, j_type);
       }
       break;
     case ch_op::le:
@@ -706,7 +708,9 @@ private:
         auto j_dst = jit_insn_le(j_func_, j_src0_s, j_src1_s);
         scalar_map_[node->id()] = this->emit_cast(j_dst, j_type);
       } else {
-        CH_TODO();
+        auto j_dst = __alu_call_relational(bv_lt_vector, j_src1, node->src(1).size(), j_src0, node->src(0).size());
+        auto j_dst_n = jit_insn_not(j_func_, j_dst);
+        scalar_map_[node->id()] = this->emit_cast(j_dst_n, j_type);
       }
       break;
     case ch_op::ge:
@@ -716,7 +720,9 @@ private:
         auto j_dst = jit_insn_ge(j_func_, j_src0_s, j_src1_s);
         scalar_map_[node->id()] = this->emit_cast(j_dst, j_type);
       } else {
-        CH_TODO();
+        auto j_dst = __alu_call_relational(bv_lt_vector, j_src0, node->src(0).size(), j_src1, node->src(1).size());
+        auto j_dst_n = jit_insn_not(j_func_, j_dst);
+        scalar_map_[node->id()] = this->emit_cast(j_dst_n, j_type);
       }
       break;
 
@@ -2401,14 +2407,10 @@ bool check_compatible(context* ctx) {
       switch (alu->op()) {
       case ch_op::eq:
       case ch_op::ne:
-        break;
-
       case ch_op::lt:
       case ch_op::gt:
       case ch_op::le:
       case ch_op::ge:
-        if (!is_scalar(alu))
-          return error_out("invalid alu size");
         break;
 
       case ch_op::notl:

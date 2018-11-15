@@ -775,7 +775,7 @@ private:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <bool Signed, bool Resize, typename T>
+template <bool is_signed, bool Resize, typename T>
 class StaticBitAccessor {
 public:
   StaticBitAccessor(const T* value, uint32_t size, uint32_t other_size)
@@ -783,7 +783,7 @@ public:
     , end_(size / bitwidth_v<T>)
     , size_(size) {
     resize_vector_ = Resize && (size < other_size);
-    resize_scalar_ = resize_vector_ && Signed;
+    resize_scalar_ = resize_vector_ && is_signed;
   }
 
   T get() const {
@@ -796,7 +796,7 @@ public:
 
   T get(uint32_t index) const {
     if (resize_vector_) {
-      if constexpr (Signed) {
+      if constexpr (is_signed) {
         if (index < end_) {
           return value_[index];
         } else {
@@ -824,7 +824,7 @@ private:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T, bool Signed>
+template <typename T, bool is_signed>
 class DefaultBitAccessor {
 public:
   DefaultBitAccessor(const T* value, uint32_t size, uint32_t other_size)
@@ -832,7 +832,7 @@ public:
     , end_(size / bitwidth_v<T>)
     , size_(size) {
     resize_vector_ = (size < other_size);
-    resize_scalar_ = resize_vector_ && Signed;
+    resize_scalar_ = resize_vector_ && is_signed;
   }
 
   T get() const {
@@ -845,7 +845,7 @@ public:
 
   T get(uint32_t index) const {
     if (resize_vector_) {
-      if constexpr (Signed) {
+      if constexpr (is_signed) {
         if (index < end_) {
           return value_[index];
         } else {
@@ -873,14 +873,14 @@ private:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <bool Signed, typename T, typename BitAccessor = DefaultBitAccessor<T, Signed>>
+template <bool is_signed, typename T, typename BitAccessor = DefaultBitAccessor<T, is_signed>>
 bool bv_eq_scalar(const T* lhs, uint32_t lhs_size, const T* rhs, uint32_t rhs_size) {
   BitAccessor arg0(lhs, lhs_size, rhs_size);
   BitAccessor arg1(rhs, rhs_size, lhs_size);
   return (arg0.get() == arg1.get());
 }
 
-template <bool Signed, typename T, typename BitAccessor = DefaultBitAccessor<T, Signed>>
+template <bool is_signed, typename T, typename BitAccessor = DefaultBitAccessor<T, is_signed>>
 bool bv_eq_vector(const T* lhs, uint32_t lhs_size, const T* rhs, uint32_t rhs_size) {
   BitAccessor arg0(lhs, lhs_size, rhs_size);
   BitAccessor arg1(rhs, rhs_size, lhs_size);
@@ -892,62 +892,67 @@ bool bv_eq_vector(const T* lhs, uint32_t lhs_size, const T* rhs, uint32_t rhs_si
   return true;
 }
 
-template <bool Signed, typename T, typename BitAccessor = DefaultBitAccessor<T, Signed>>
+template <bool is_signed, typename T, typename BitAccessor = DefaultBitAccessor<T, is_signed>>
 bool bv_eq(const T* lhs, uint32_t lhs_size, const T* rhs, uint32_t rhs_size) {
   static constexpr uint32_t WORD_SIZE = bitwidth_v<T>;
   if (lhs_size <= WORD_SIZE
    && rhs_size <= WORD_SIZE) {
-    return bv_eq_scalar<Signed, T, BitAccessor>(lhs, lhs_size, rhs, rhs_size);
+    return bv_eq_scalar<is_signed, T, BitAccessor>(lhs, lhs_size, rhs, rhs_size);
   } else {
-    return bv_eq_vector<Signed, T, BitAccessor>(lhs, lhs_size, rhs, rhs_size);
+    return bv_eq_vector<is_signed, T, BitAccessor>(lhs, lhs_size, rhs, rhs_size);
   }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <bool is_signed, typename T>
-bool bv_lt_scalar(const T* lhs, const T* rhs, uint32_t size) {
+template <bool is_signed, typename T, typename BitAccessor = DefaultBitAccessor<T, is_signed>>
+bool bv_lt_scalar(const T* lhs, uint32_t lhs_size, const T* rhs, uint32_t rhs_size) {
   if constexpr (is_signed) {
     // compare most signicant bits
-    bool lhs_is_neg = bv_is_neg_scalar(lhs, size);
-    bool rhs_is_neg = bv_is_neg_scalar(rhs, size);
+    bool lhs_is_neg = bv_is_neg_scalar(lhs, lhs_size);
+    bool rhs_is_neg = bv_is_neg_scalar(rhs, rhs_size);
     if (lhs_is_neg != rhs_is_neg)
       return lhs_is_neg;
   }
-  CH_UNUSED(size);
-  return (lhs[0] < rhs[0]);
+  BitAccessor arg0(lhs, lhs_size, rhs_size);
+  BitAccessor arg1(rhs, rhs_size, lhs_size);
+  return (arg0.get() < arg1.get());
 }
 
-template <bool is_signed, typename T>
-bool bv_lt_vector(const T* lhs, const T* rhs, uint32_t size) {
+template <bool is_signed, typename T, typename BitAccessor = DefaultBitAccessor<T, is_signed>>
+bool bv_lt_vector(const T* lhs, uint32_t lhs_size, const T* rhs, uint32_t rhs_size) {
   static constexpr uint32_t WORD_SIZE = bitwidth_v<T>;
 
   if constexpr (is_signed) {
     // compare most signicant bits
-    bool lhs_is_neg = bv_is_neg_vector(lhs, size);
-    bool rhs_is_neg = bv_is_neg_vector(rhs, size);
+    bool lhs_is_neg = bv_is_neg_vector(lhs, lhs_size);
+    bool rhs_is_neg = bv_is_neg_vector(rhs, rhs_size);
     if (lhs_is_neg != rhs_is_neg)
       return lhs_is_neg;
   }
 
+  BitAccessor arg0(lhs, lhs_size, rhs_size);
+  BitAccessor arg1(rhs, rhs_size, lhs_size);
+
   // same-sign words comparison
-  uint32_t num_words = ceildiv(size, WORD_SIZE);
+  uint32_t num_words = ceildiv(std::max(lhs_size, rhs_size), WORD_SIZE);
   for (int32_t i = num_words - 1; i >= 0; --i) {
-    if (lhs[i] != rhs[i])
-      return (lhs[i] < rhs[i]);
+    if (arg0.get(i) != arg1.get(i))
+      return (arg0.get(i) < arg1.get(i));
   }
 
   return false;
 }
 
-template <bool is_signed, typename T>
-bool bv_lt(const T* lhs, const T* rhs, uint32_t size) {
+template <bool is_signed, typename T, typename BitAccessor = DefaultBitAccessor<T, is_signed>>
+bool bv_lt(const T* lhs, uint32_t lhs_size, const T* rhs, uint32_t rhs_size) {
   static constexpr uint32_t WORD_SIZE = bitwidth_v<T>;
 
-  if (size <= WORD_SIZE) {
-    return bv_lt_scalar<is_signed>(lhs, rhs, size);
+  if (lhs_size <= WORD_SIZE
+   && rhs_size <= WORD_SIZE) {
+    return bv_lt_scalar<is_signed, T, BitAccessor>(lhs, lhs_size, rhs, rhs_size);
   } else {
-    return bv_lt_vector<is_signed>(lhs, rhs, size);
+    return bv_lt_vector<is_signed, T, BitAccessor>(lhs, lhs_size, rhs, rhs_size);
   }
 }
 

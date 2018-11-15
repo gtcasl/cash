@@ -397,7 +397,7 @@ CH_SYSTEM_OPERATOR(system_op_relational)
   CH_SYSTEM_OPERATOR_IMPL(operator<, (
     auto lhs_w = system_accessor::data(lhs).words();
     auto rhs_w = system_accessor::data(rhs).words();
-    return bv_lt<ch_signed_v<Derived>>(lhs_w, rhs_w, N);)
+    return bv_lt<ch_signed_v<Derived>, block_type, ClearBitAccessor<block_type>>(lhs_w, N, rhs_w, N);)
   )
   CH_SYSTEM_OPERATOR_IMPL(operator>=, (return !(lhs < rhs)))
   CH_SYSTEM_OPERATOR_IMPL(operator>, (return (rhs < lhs)))

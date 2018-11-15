@@ -29,6 +29,18 @@ TEST_CASE("arithmetic", "[arithmetic]") {
       return (c == 0x1'00000000'ffffffff_h65);
     });
     TEST([]()->ch_bool {
+      ch_bit<65> a(0x1'ffffffff'00000000_h65);
+      auto c = ~a;
+      ch_bit<64> d = 0x00000000'ffffffff_h64;
+      return (c == d);
+    });
+    TEST([]()->ch_bool {
+      ch_bit<65> a(0x0'ffffffff'00000000_h65);
+      auto c = ~a;
+      ch_bit<64> d = 0x00000000'ffffffff_h64;
+      return (c != d);
+    });
+    TEST([]()->ch_bool {
       ch_bit128 a(0xBA), b(0xDC);
       auto c = a ^ b;
       return (c.slice<8>() == 0x66);
