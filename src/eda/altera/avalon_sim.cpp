@@ -39,8 +39,12 @@ protected:
   wr_burst_t wr_burst_;
 
   bool ramdom_stall() {
+  #ifndef NDEBUG
     auto sample = rand() / double(RAND_MAX);
     return (sample > 0.7);
+  #else
+    return false;
+  #endif
   }
 
   uint32_t arbitration() {
@@ -87,7 +91,7 @@ protected:
       if (req.rsp_time > curr_time_)
         continue;
       rsp_channel = req.channel;
-      auto& buffer = buffers_[rsp_channel];
+      auto& buffer = buffers_.at(rsp_channel);
       if (req.is_write) {
         auto& data = wr_data_.front();
         if (full_writemask == (req.byteenable & full_writemask)) {
