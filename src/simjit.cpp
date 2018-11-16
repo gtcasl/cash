@@ -209,7 +209,7 @@ static jit_type_t to_signed_type(jit_type_t j_type) {
 static void ext_watch(uint64_t value, char* name) {
   auto oldflags = std::cout.flags();
   std::cout.setf(std::ios_base::hex, std::ios_base::basefield);
-  std::cout << "DBG:" << name << " = " << value << std::endl;
+  std::cout << "WATCH:" << name << " = " << value << std::endl;
   std::cout.flags(oldflags);
 }
 #define __watch(x) this->emit_watch(x, #x)
@@ -2157,7 +2157,7 @@ private:
   /////////////////////////////////////////////////////////////////////////////
 
   jit_value_t emit_eq_vector(jit_value_t j_lhs, jit_value_t j_rhs, uint32_t length) {
-    jit_value_t j_ret;
+    jit_value_t j_ret = nullptr;
     uint32_t num_words = ceildiv(length, WORD_SIZE);
     for (uint32_t i = 0; i < num_words; ++i) {
       auto j_value1 = jit_insn_load_relative(j_func_, j_lhs, i * sizeof(block_type), word_type_);

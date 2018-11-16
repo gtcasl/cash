@@ -598,8 +598,8 @@ auto sign_ext(T value, unsigned width) {
       std::abort(); \
     } while (false)
 
-  #define CH_DBGCHECK(pred, ...)
-  #define DBG(level, format, ...)
+  #define CH_DBGCHECK(pred, ...) CH_UNUSED(pred, __VA_ARGS__)
+  #define CH_DBG(level, format, ...) CH_UNUSED(level, format, __VA_ARGS__)
 #else
   #define CH_ABORT(...) \
     do { \
@@ -610,7 +610,7 @@ auto sign_ext(T value, unsigned width) {
     } while (false)
 
   #define CH_DBGCHECK CH_CHECK
-  #define DBG(level, ...) ch::internal::dbprint(level, __VA_ARGS__)
+  #define CH_DBG(level, ...) ch::internal::dbprint(level, __VA_ARGS__)
 #endif
 
 #define CH_DEF_SFINAE_CHECK(type_name, predicate) \

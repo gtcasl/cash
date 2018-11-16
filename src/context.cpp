@@ -270,7 +270,7 @@ void context::add_node(lnodeimpl* node) {
 
 node_list_t::iterator context::delete_node(const node_list_t::iterator& it) {
   auto node = *it;
-  DBG(3, "*** deleting node: %s%d(#%d)\n", to_string(node->type()), node->size(), node->id());
+  CH_DBG(3, "*** deleting node: %s%d(#%d)\n", to_string(node->type()), node->size(), node->id());
   
   auto type = node->type();
   switch (type) {

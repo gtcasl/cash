@@ -164,7 +164,7 @@ void compiler::build_eval_context(context* eval_ctx) {
     visited_nodes.insert(node->id());
   };
 
-  DBG(2, "build evaluation context for %s (#%d) ...\n", ctx_->name().c_str(), ctx_->id());
+  CH_DBG(2, "build evaluation context for %s (#%d) ...\n", ctx_->name().c_str(), ctx_->id());
 
   {
     // gather sequential nodes from all contexts
@@ -270,7 +270,7 @@ void compiler::build_eval_list(std::vector<lnodeimpl*>& eval_list) {
     return update;
   };
 
-  DBG(2, "build evaluation list for %s (#%d) ...\n", ctx_->name().c_str(), ctx_->id());
+  CH_DBG(2, "build evaluation list for %s (#%d) ...\n", ctx_->name().c_str(), ctx_->id());
 
   assert(0 == ctx_->bindings().size());
 
@@ -363,7 +363,7 @@ void compiler::compile() {
   size_t pip_total(0);
   size_t pcx_total(0);
 
-  DBG(2, "compiling %s (#%d) ...\n", ctx_->name().c_str(), ctx_->id());
+  CH_DBG(2, "compiling %s (#%d) ...\n", ctx_->name().c_str(), ctx_->id());
 
   node_tracker tracker(ctx_);
   size_t orig_num_nodes = tracker.current();
@@ -408,13 +408,13 @@ void compiler::compile() {
   CH_UNUSED(orig_num_nodes, dce_total);
 #endif
 
-  DBG(2, "*** deleted %lu DCE nodes\n", dce_total);
-  DBG(2, "*** deleted %lu CSE nodes\n", cse_total);
-  DBG(2, "*** deleted %lu PIP nodes\n", pip_total);
-  DBG(2, "*** deleted %lu PCX nodes\n", pcx_total);
+  CH_DBG(2, "*** deleted %lu DCE nodes\n", dce_total);
+  CH_DBG(2, "*** deleted %lu CSE nodes\n", cse_total);
+  CH_DBG(2, "*** deleted %lu PIP nodes\n", pip_total);
+  CH_DBG(2, "*** deleted %lu PCX nodes\n", pcx_total);
 
-  DBG(2, "Before optimization: %lu\n", orig_num_nodes);
-  DBG(2, "After optimization: %lu\n", tracker.current());
+  CH_DBG(2, "Before optimization: %lu\n", orig_num_nodes);
+  CH_DBG(2, "After optimization: %lu\n", tracker.current());
 }
 
 void compiler::build_node_map() {
