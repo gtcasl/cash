@@ -15,7 +15,7 @@ Cash requires C++17 compiler to build with support for inline variables.
 It has been tested with GCC 7 and Clang 5.
 
 Other dependencies include:
-  - [Backward](https://github.com/bombela/backward-cpp)
+  - [LIBJIT](https://www.gnu.org/software/libjit)
   - [Catch](https://github.com/catchorg/Catch2)
 
 # Build Status
