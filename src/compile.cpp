@@ -533,6 +533,9 @@ bool compiler::dead_code_elimination() {
 }
 
 bool compiler::subexpressions_elimination() {
+  if (platform::self().cflags() & cflags::disable_cse)
+    return false;
+
   bool changed = false;
 
   typedef std::decay_t<decltype(ctx_->nodes())> nodes_type;
@@ -572,6 +575,9 @@ bool compiler::subexpressions_elimination() {
 }
 
 bool compiler::prune_identity_proxies() {
+  if (platform::self().cflags() & cflags::disable_pip)
+    return false;
+
   bool changed = false;
 
   for (auto it = ctx_->proxies().begin(),
@@ -592,6 +598,9 @@ bool compiler::prune_identity_proxies() {
 }
 
 bool compiler::proxies_coalescing() {
+  if (platform::self().cflags() & cflags::disable_pcx)
+    return false;
+
   bool changed = false;
 
   std::set<proxyimpl*> detached_list;
