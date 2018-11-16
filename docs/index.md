@@ -29,7 +29,7 @@ The master branch has been added to [travis](https://travis-ci.org)'s continuous
 
 To install Cash you must clone the repository and create a build directory:
 
-    $ git clone https://github.com/gtcasl/cash.git && cd cash
+    $ git clone --recursive https://github.com/gtcasl/cash.git && cd cash
     $ mkdir build && cd build
 
 Then use run cmake to generate the makefile and export the package informations:
