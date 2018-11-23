@@ -646,7 +646,7 @@ private:
       auto j_value = jit_insn_load_relative(j_func_, j_ptr, 0, j_type);
       scalar_map_[node->id()] = j_value;
     } else {
-      scalar_map_[node->id()] = j_ptr;
+      input_map_[node->id()] = j_ptr;
     }
   }
 
@@ -2548,7 +2548,7 @@ private:
   jit_value_t emit_load_address(lnodeimpl* node, uint32_t offset = 0) {
     switch (node->type()) {
     case type_input: {
-      auto j_ptr = scalar_map_.at(node->id());
+      auto j_ptr = input_map_.at(node->id());
       return offset ? jit_insn_add_relative(j_func_, j_ptr, offset) : j_ptr;
     }
     default: {
@@ -2560,7 +2560,7 @@ private:
   jit_value_t emit_load_scalar_relative(lnodeimpl* node, uint32_t offset, jit_type_t j_type) {
     switch (node->type()) {
     case type_input: {
-      auto j_ptr = scalar_map_.at(node->id());
+      auto j_ptr = input_map_.at(node->id());
       return jit_insn_load_relative(j_func_, j_ptr, offset, j_type);
     }
     default: {
@@ -2714,7 +2714,8 @@ private:
 
   sim_ctx_t*      sim_ctx_;
   alloc_map_t     addr_map_;
-  var_map_t       scalar_map_;
+  var_map_t       input_map_;
+  var_map_t       scalar_map_;  
   jit_label_t     j_bypass_;
   bypass_set_t    bypass_nodes_;
   bool            bypass_enable_;
