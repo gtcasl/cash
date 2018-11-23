@@ -6,8 +6,6 @@ layout: default
 
 Cash is a C++ embedded domain specific library (EDSL) for hardware design and simulation. It uses template metaprogramming and macro-based reflection to extend the C++ language with hardware specific constructs. Cash enables developpers to describe and simulate their hardware modules from a single source program, leveraging the large C++ ecosystem.
 
-Cash designs can be exported to [FIRRTL](https://github.com/freechipsproject/firrtl) IR or Verilog HDL for synthesis on FPGAs.
-
 # Requirements
 
 Cash requires C++17 compiler to build with support for inline variables.
@@ -15,7 +13,7 @@ Cash requires C++17 compiler to build with support for inline variables.
 It has been tested with GCC 7 and Clang 5.
 
 Other dependencies include:
-  - [Backward](https://github.com/bombela/backward-cpp)
+  - [LIBJIT](https://www.gnu.org/software/libjit)
   - [Catch](https://github.com/catchorg/Catch2)
 
 # Build Status
@@ -29,7 +27,7 @@ The master branch has been added to [travis](https://travis-ci.org)'s continuous
 
 To install Cash you must clone the repository and create a build directory:
 
-    $ git clone https://github.com/gtcasl/cash.git && cd cash
+    $ git clone --recursive https://github.com/gtcasl/cash.git && cd cash
     $ mkdir build && cd build
 
 Then use run cmake to generate the makefile and export the package informations:
