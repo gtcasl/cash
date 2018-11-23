@@ -164,7 +164,6 @@ instr_proxy_base* instr_proxy_base::create(proxyimpl* node, data_map_t& map) {
   uint32_t dst_nblocks = ceildiv(dst_size, bitwidth_v<block_type>);
   uint32_t dst_bytes = sizeof(block_type) * dst_nblocks;
   uint32_t num_ranges = node->ranges().size();
-  assert(node->check_full());
 
   if (1 == num_ranges
    && node->range(0).length == dst_size) {

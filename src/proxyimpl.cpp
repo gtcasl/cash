@@ -4,30 +4,6 @@
 
 using namespace ch::internal;
 
-interval_t interval_t::intersection(const interval_t& other) const {
-  interval_t ret{0, 0};
-  if (!overlaps(other))
-    return ret;
-  if (other.start <= this->start && other.end >= this->end) {
-    // rhs fully overlaps lhs
-    ret = *this;
-  } else if (other.start < this->start) {
-    // rhs overlaps on the left
-    ret.start = this->start;
-    ret.end = other.end;
-  } else if (other.end > this->end) {
-    // rhs overlaps on the right,
-    ret.start = other.start;
-    ret.end = this->end;
-  } else {
-    // rhs fully included
-    ret = other;
-  }
-  return ret;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
 proxyimpl::proxyimpl(context* ctx,
                      uint32_t size,
                      const source_location& sloc,
@@ -217,7 +193,7 @@ void proxyimpl::add_source(uint32_t dst_offset,
         }
       }
       if (!in_use) {
-        this->erase_source(srcs_.begin() + idx);
+        this->erase_source(idx);
       }
     }    
   }
@@ -235,25 +211,30 @@ bool proxyimpl::merge_adjacent_ranges(uint32_t index) {
   return false;
 }
 
-std::vector<lnode>::iterator
-proxyimpl::erase_source(std::vector<lnode>::iterator iter) {
+void proxyimpl::erase_source(uint32_t index, bool resize) {
   // remove src
-  auto next = srcs_.erase(iter);
+  srcs_.erase(srcs_.begin() + index);
 
   // update ranges
-  uint32_t idx = iter - srcs_.begin();
+  uint32_t d = 0;
   for (uint32_t i = 0, n = ranges_.size(); i < n; ++i) {
-    if (ranges_[i].src_idx == idx) {
-      ranges_.erase(ranges_.begin() + i);
-      --i;
-      --n;
-    } else
-    if (ranges_[i].src_idx > idx) {
-      ranges_[i].src_idx -= 1;
+    auto& range = ranges_[i];
+    if (range.src_idx >= index) {
+      if (range.src_idx > index) {
+        range.dst_offset = d;
+        range.src_idx -= 1;
+      } else {
+        if (resize) {
+          size_ -= range.length;
+        }
+        ranges_.erase(ranges_.begin() + i);
+        --i;
+        --n;
+        continue;
+      }
     }
+    d += range.length;
   }
-
-  return next;
 }
 
 void proxyimpl::write(uint32_t dst_offset,
@@ -333,15 +314,12 @@ lnodeimpl* proxyimpl::slice(uint32_t offset,
 void proxyimpl::print(std::ostream& out) const {
   out << "#" << id_ << " <- " << this->type() << size_;
   out << "(";
-  uint32_t s(0);
+  uint32_t d(0);
   auto_separator sep(", ");
   for (auto& range : ranges_) {
     out << sep;
-    if (s != range.dst_offset) {
-      s = range.dst_offset;
-      out << range.dst_offset << ":";
-    }
-    s += range.length;
+    assert(d == range.dst_offset);
+    d += range.length;
     auto& src = srcs_[range.src_idx];
     out << "#" << src.id();
     if (range.length < src.size()) {
@@ -353,14 +331,6 @@ void proxyimpl::print(std::ostream& out) const {
     }
   }
   out << ")";
-}
-
-bool proxyimpl::check_full() const {
-  uint32_t dst_offset = 0;
-  for (auto& r : ranges_) {
-    dst_offset += r.length;
-  }
-  return (dst_offset == size_);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -591,7 +591,6 @@ private:
 
   void emit_node(proxyimpl* node) {
     __source_location();
-    assert(node->check_full());    
     uint32_t dst_width = node->size();
     auto j_type = to_native_type(dst_width);
     if (dst_width <= WORD_SIZE) {
@@ -2486,6 +2485,7 @@ private:
      || (dst_offset + length) == dst_width) {
       // flush current block
       jit_insn_store_relative(j_func_, j_vars_, dst_addr + dst_idx * sizeof(block_type), j_dst);
+      j_dst = nullptr;
     }
     return j_dst;
   }
@@ -2493,7 +2493,7 @@ private:
   jit_value_t emit_append_slice_scalar(jit_value_t j_dst,
                                        uint32_t dst_offset,
                                        jit_value_t j_src) {
-    if (0 == dst_offset)
+    if (nullptr == j_dst)
       return j_src;
 
     assert(j_dst != nullptr);

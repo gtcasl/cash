@@ -54,6 +54,39 @@ private:
   size_t size_;
 };
 
+struct interval_t {
+  uint32_t start;
+  uint32_t end;
+
+  interval_t(uint32_t start, uint32_t end) : start(start), end(end) {}
+
+  bool overlaps(const interval_t& other) const {
+    return (other.start < this->end) && (this->start < other.end);
+  }
+
+  auto intersection(const interval_t& other) const {
+    interval_t ret{0, 0};
+    if (!overlaps(other))
+      return ret;
+    if (other.start <= this->start && other.end >= this->end) {
+      // rhs fully overlaps lhs
+      ret = *this;
+    } else if (other.start < this->start) {
+      // rhs overlaps on the left
+      ret.start = this->start;
+      ret.end = other.end;
+    } else if (other.end > this->end) {
+      // rhs overlaps on the right,
+      ret.start = other.start;
+      ret.end = this->end;
+    } else {
+      // rhs fully included
+      ret = other;
+    }
+    return ret;
+  }
+};
+
 }
 }
 
@@ -430,6 +463,41 @@ bool compiler::dead_code_elimination() {
 
   ordered_set<lnodeimpl*> live_nodes;
   std::unordered_map<proxyimpl*, std::unordered_set<uint32_t>> used_proxy_sources;
+  std::unordered_map<uint32_t, std::unordered_set<proxyimpl*>> proxy_users;
+
+  auto remove_unused_proxy_sources = [&](proxyimpl* proxy, uint32_t src_idx) {
+    // gather unused source positions
+    std::vector<interval_t> unused_pos;
+    for (auto& range : proxy->ranges()) {
+      if (range.src_idx == src_idx) {
+        unused_pos.emplace_back(range.dst_offset, range.dst_offset + range.length);
+      }
+    }
+
+    // remove unused source
+    proxy->erase_source(src_idx, true);
+
+    // update proxy users' ranges
+    for (auto use : proxy_users.at(proxy->id())) {
+      uint32_t i = 0;
+      for (uint32_t n = use->srcs().size(); i < n; ++i) {
+        if (use->src(i).id() == proxy->id())
+          break;
+      }
+      assert(i != use->srcs().size());
+      for (auto& range : use->ranges()) {
+        if (range.src_idx == i) {
+          uint32_t r = 0;
+          for (auto& pos : unused_pos) {
+            if (range.src_offset >= pos.end) {
+              r += (pos.end - pos.start);
+            }
+          }
+          range.src_offset -= r;
+        }
+      }
+    }
+  };
 
   // get permanent live nodes
   for (auto node : ctx_->inputs()) {
@@ -467,9 +535,10 @@ bool compiler::dead_code_elimination() {
       // gather used proxy sources
       bool new_proxy_source = false;      
       if (type_proxy == src_impl->type()) {
-        auto src_proxy = reinterpret_cast<proxyimpl*>(src_impl);
+        auto src_proxy = reinterpret_cast<proxyimpl*>(src_impl);        
         auto& uses = used_proxy_sources[src_proxy];
         if (proxy) {
+          proxy_users[src_proxy->id()].insert(proxy);
           for (auto& curr : src_proxy->ranges()) {
             uint32_t curr_end = curr.dst_offset + curr.length;
             for (auto& range : proxy->ranges()) {
@@ -509,10 +578,10 @@ bool compiler::dead_code_elimination() {
   for (auto p : used_proxy_sources) {
     auto proxy = reinterpret_cast<proxyimpl*>(p.first);
     auto& srcs = proxy->srcs();
-    // traverse the sources in reverse order
+    // traverse the sources in reverse order (for efficiency)
     for (int i = srcs.size() - 1; i >= 0; --i) {
       if (0 == p.second.count(i)) {
-        proxy->erase_source(srcs.begin() + i);
+        remove_unused_proxy_sources(proxy, i);
       };
     }
   }
