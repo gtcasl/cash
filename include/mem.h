@@ -116,7 +116,7 @@ protected:
   memory mem_;
 };
 
-template <typename T, unsigned N>
+template <typename T, unsigned N, bool SyncRead = false>
 class ch_mem {
 public:
   static constexpr unsigned size = N;
@@ -153,21 +153,19 @@ public:
   }
 
   template <typename U>
-  auto aread(const U& addr, CH_SLOC) const {
+  auto read(const U& addr, CH_SLOC) const {
     static_assert(is_bit_convertible_v<U, addr_width>, "invalid type");
     auto laddr = to_lnode<addr_width>(addr, sloc);
-    return make_type<T>(mem_.aread(laddr, sloc), sloc);
-  }
-
-  template <typename U>
-  auto sread(const U& addr, CH_SLOC) const {
-    static_assert(is_bit_convertible_v<U, addr_width>, "invalid type");
-    auto laddr = to_lnode<addr_width>(addr, sloc);
-    return make_type<T>(mem_.sread(laddr, sdata_type(1,1), sloc), sloc);
+    if constexpr (SyncRead) {
+      return make_type<T>(mem_.sread(laddr, sdata_type(1,1), sloc), sloc);
+    } else {
+      return make_type<T>(mem_.aread(laddr, sloc), sloc);
+    }
   }
 
   template <typename U, typename E>
-  auto sread(const U& addr, const E& enable, CH_SLOC) const {
+  auto read(const U& addr, const E& enable, CH_SLOC) const {
+    static_assert(SyncRead, "invalid memory type");
     static_assert(is_bit_convertible_v<U, addr_width>, "invalid type");
     static_assert(is_bit_convertible_v<E, 1>, "invalid type");
     auto laddr = to_lnode<addr_width>(addr, sloc);
