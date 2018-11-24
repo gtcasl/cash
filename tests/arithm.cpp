@@ -632,7 +632,9 @@ TEST_CASE("arithmetic", "[arithmetic]") {
       ch_int<100> a(-0x6ABA8);
       ch_int<102> b(0x335);
       auto c = ch_mult<127>(a, b);
-      return (c == -0x156481C8);
+      ch_bit<127> e = -0x156481C8;
+      //ch_print("c={0}, e={1}", c, e);
+      return (c == e);
     });
     TEST([]()->ch_bool {
       ch_int128 a(-0x6ABA8);

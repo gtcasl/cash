@@ -29,12 +29,27 @@ static constexpr uint32_t WORD_SIZE = bitwidth_v<block_type>;
 static constexpr uint32_t WORD_LOGSIZE = log2floor(WORD_SIZE);
 static constexpr uint32_t WORD_MASK = bitwidth_v<block_type> - 1;
 static constexpr block_type WORD_MAX = std::numeric_limits<block_type>::max();
-
 static constexpr uint32_t INLINE_MAX_SIZE = 8 * WORD_SIZE;
+
+class SrcLogger {
+public:
+  SrcLogger(jit_function_t func, const char* name) : func_(func) {
+    jit_insn_new_block(func);
+    auto block = jit_function_get_current(func);
+    jit_block_set_meta(block, 0, (void*)name, nullptr);
+  }
+  ~SrcLogger() {
+    jit_insn_new_block(func_);
+    auto block = jit_function_get_current(func_);
+    jit_block_set_meta(block, 0, (void*)"", nullptr);
+  }
+private:
+  jit_function_t func_;
+};
 
 #define __align_word_size(...) ((((__VA_ARGS__) + WORD_MASK) / WORD_SIZE) * sizeof(block_type))
 #define __countof(arr) (sizeof(arr) / sizeof(arr[0]))
-#define __source_location() jit_insn_mark_offset(j_func_, __LINE__)
+#define __source_location() SrcLogger slogger(j_func_, __PRETTY_FUNCTION__)
 
 #define __alu_call_relational(fname, ...) \
   [&]()->jit_value_t { \
@@ -309,7 +324,7 @@ public:
 
     // lower all nodes
     for (auto node : eval_list) {
-      this->create_node_label(node);
+      this->create_bypass_label(node);
       switch (node->type()) {
       case type_lit:
         this->emit_node(reinterpret_cast<litimpl*>(node));
@@ -368,8 +383,8 @@ public:
       }
     }
 
-    // create end label
-    this->create_node_label(nullptr);
+    // create bypass label
+    this->create_bypass_label(nullptr);
 
     // return 0
     jit_insn_return(j_func_, j_zero_);
@@ -377,7 +392,7 @@ public:
     // dump JIT assembly code
     if (platform::self().cflags() & cflags::dump_jit) {
       auto file = fopen("simjit.tac", "w");
-      jit_dump_function(file, j_func_, "simjit");
+      this->dump_ast(file, "simjit");
       fclose(file);
     }
 
@@ -1029,6 +1044,7 @@ private:
                                uint32_t opd,
                                bool is_scalar,
                                bool need_resize) {
+    __source_location();
     if (opd >= node->srcs().size())
       return nullptr;
     auto src = node->src(opd).impl();
@@ -1215,6 +1231,7 @@ private:
 
   void emit_node(selectimpl* node) {
     __source_location();
+
     jit_label_t l_exit = jit_label_undefined;
 
     uint32_t dst_width = node->size();   
@@ -1299,6 +1316,7 @@ private:
 
   void emit_node(cdimpl* node) {
     __source_location();
+
     auto addr = addr_map_.at(node->id());
     auto j_prev_clk = jit_insn_load_relative(j_func_, j_vars_, addr, jit_type_uint);
     auto j_clk = scalar_map_.at(node->src(0).id());
@@ -1324,23 +1342,23 @@ private:
     }
   }
 
-  void create_node_label(lnodeimpl* node) {    
-    if (!bypass_enable_)
-      return;
-    if (node) {
-      if (!bypass_nodes_.empty()
-       && bypass_nodes_.count(node->id())) {
-        jit_insn_label(j_func_, &j_bypass_);
-        bypass_enable_ = false;
-      }
-    } else {
-      jit_insn_label(j_func_, &j_bypass_);
-      bypass_enable_ = false;
-    }
-  }
+  void create_bypass_label(lnodeimpl* node) {
+     if (!bypass_enable_)
+       return;
+     if (node) {
+       if (bypass_nodes_.count(node->id())) {
+         jit_insn_label(j_func_, &j_bypass_);
+         bypass_enable_ = false;
+       }
+     } else {
+       jit_insn_label(j_func_, &j_bypass_);
+       bypass_enable_ = false;
+     }
+   }
 
   void emit_node(regimpl* node) {
     __source_location();
+
     jit_label_t l_exit = jit_label_undefined;
 
     uint32_t dst_width = node->size();
@@ -1541,6 +1559,7 @@ private:
 
   void emit_node(marportimpl* node) {
     __source_location();
+
     auto dst_width = node->size();
     auto j_type = to_native_type(dst_width);
     bool is_scalar = (dst_width <= WORD_SIZE);
@@ -1563,6 +1582,7 @@ private:
 
   void emit_node(msrportimpl* node) {
     __source_location();
+
     jit_label_t l_exit = jit_label_undefined;
 
     auto dst_width = node->size();
@@ -1611,6 +1631,7 @@ private:
 
   void emit_node(mwportimpl* node) {
     __source_location();
+
     jit_label_t l_exit = jit_label_undefined;
     auto data_width = node->mem()->data_width();
     bool is_scalar = (data_width <= WORD_SIZE);
@@ -1655,6 +1676,7 @@ private:
 
   void emit_node(timeimpl* node) {
     __source_location();
+
     auto addr = addr_map_.at(node->id());
     auto j_value = scalar_map_.at(node->id());
     auto j_incr = jit_insn_add(j_func_, j_value, j_one_);
@@ -1663,6 +1685,7 @@ private:
 
   void emit_node(printimpl* node) {
     __source_location();
+
     jit_label_t l_exit = jit_label_undefined;
 
     auto predicated = node->has_pred();
@@ -1713,6 +1736,7 @@ private:
 
   void emit_node(assertimpl* node) {
     __source_location();
+
     jit_label_t l_exit = jit_label_undefined;
 
     auto j_cond = scalar_map_.at(node->cond().id());
@@ -1758,6 +1782,7 @@ private:
 
   void emit_node(udfcimpl* node) {
     __source_location();
+
     auto dst_width = node->size();
     auto j_type = to_native_type(dst_width);
     auto udf = node->udf();
@@ -1814,6 +1839,7 @@ private:
 
   void emit_node(udfsimpl* node) {
     __source_location();
+
     jit_label_t l_exit = jit_label_undefined;
     auto dst_width = node->size();
     auto j_type = to_native_type(dst_width);
@@ -2156,6 +2182,8 @@ private:
   /////////////////////////////////////////////////////////////////////////////
 
   jit_value_t emit_eq_vector(jit_value_t j_lhs, jit_value_t j_rhs, uint32_t length) {
+    __source_location();
+
     jit_value_t j_ret = nullptr;
     uint32_t num_words = ceildiv(length, WORD_SIZE);
     for (uint32_t i = 0; i < num_words; ++i) {
@@ -2168,6 +2196,8 @@ private:
   }
 
   jit_value_t emit_xorr_scalar(jit_value_t j_value, uint32_t width) {
+    __source_location();
+
     auto j_type = to_native_type(width);
     auto native_width = to_native_size(width);
     jit_value_t j_ret = j_value;
@@ -2179,13 +2209,11 @@ private:
     return jit_insn_and(j_func_, j_ret, j_one_);
   }
 
-  /////////////////////////////////////////////////////////////////////////////
-
   jit_value_t emit_load_slice_scalar(jit_value_t j_value,
                                      uint32_t offset,
                                      uint32_t length,
                                      jit_type_t j_type) {
-    __source_location();
+    __source_location();    
     assert(length <= WORD_SIZE);
     assert(offset < WORD_SIZE);
 
@@ -2208,8 +2236,9 @@ private:
                                      uint32_t offset,
                                      uint32_t length,
                                      jit_type_t j_type) {
-    __source_location();
+    __source_location();    
     assert(length <= WORD_SIZE);
+
     uint32_t src_width = node->size();
     if (src_width != length) {
       if (src_width <= WORD_SIZE) {
@@ -2250,7 +2279,7 @@ private:
                                      jit_value_t j_index,
                                      uint32_t length,
                                      jit_type_t j_type) {
-    __source_location();
+    __source_location();    
     assert(length <= WORD_SIZE);
 
     if (is_value_size(length)) {
@@ -2355,6 +2384,8 @@ private:
                               uint32_t dst_width,
                               jit_value_t j_array_ptr,
                               jit_value_t j_index) {
+    __source_location();
+
     if (0 == (dst_width % 8)) {
       auto j_size = this->emit_constant(dst_width / 8, jit_type_uint);
       auto j_src_offset = jit_insn_mul(j_func_, j_index, j_size);
@@ -2371,6 +2402,8 @@ private:
                                jit_value_t j_index,
                                jit_value_t j_src_ptr,
                                uint32_t src_width) {
+    __source_location();
+
     if (0 == (src_width % 8)) {
       auto j_size = this->emit_constant(src_width / 8, jit_type_uint);
       auto j_dst_offset = jit_insn_mul(j_func_, j_index, j_size);
@@ -2388,7 +2421,9 @@ private:
                         jit_value_t j_src,
                         uint32_t src_offset,
                         uint32_t length) {
+    __source_location();
     assert(length <= WORD_SIZE);
+
     auto w_dst_idx = dst_offset / WORD_SIZE;
     auto w_dst_lsb = dst_offset % WORD_SIZE;
 
@@ -2419,6 +2454,8 @@ private:
                         jit_value_t j_src_ptr,
                         uint32_t src_offset,
                         uint32_t length) {
+    __source_location();
+
     if (0 == (dst_offset % 8)
      && 0 == (src_offset % 8)) {
       auto j_dst_ptr8 = jit_insn_add_relative(j_func_, j_dst_ptr, dst_offset / 8);
@@ -2431,7 +2468,8 @@ private:
         auto j_dst_value = jit_insn_load_relative(j_func_, j_dst_ptr8, offset, jit_type_ubyte);
         auto j_mask = this->emit_constant(0xff << rem, jit_type_ubyte);
         auto j_dst = this->emit_blend(j_mask, j_src_value, j_dst_value);
-        jit_insn_store_relative(j_func_, j_dst_ptr8, offset, j_dst);
+        auto j_dst_b = this->emit_cast(j_dst, jit_type_ubyte);
+        jit_insn_store_relative(j_func_, j_dst_ptr8, offset, j_dst_b);
       }
     } else {
       auto j_dst_offset = this->emit_constant(dst_offset, jit_type_uint);
@@ -2445,6 +2483,8 @@ private:
                         jit_value_t j_src_ptr,
                         jit_value_t j_src_offset,
                         uint32_t length) {
+    __source_location();
+
     auto j_length = this->emit_constant(length, jit_type_uint);
 
     // call native function
@@ -2470,6 +2510,8 @@ private:
                                        uint32_t dst_offset,
                                        jit_value_t j_src,
                                        uint32_t length) {
+    __source_location();
+
     auto dst_idx = dst_offset / WORD_SIZE;
     auto dst_lsb = dst_offset % WORD_SIZE;
     j_dst = this->emit_append_slice_scalar(j_dst, dst_lsb, j_src);
@@ -2493,6 +2535,8 @@ private:
   jit_value_t emit_append_slice_scalar(jit_value_t j_dst,
                                        uint32_t dst_offset,
                                        jit_value_t j_src) {
+    __source_location();
+
     if (nullptr == j_dst)
       return j_src;
 
@@ -2526,6 +2570,7 @@ private:
 
   void emit_clear_extra_bits(lnodeimpl* node) {
     __source_location();
+
     uint32_t dst_width = node->size();
     assert(dst_width <= WORD_SIZE);
     auto j_type = to_native_type(dst_width);
@@ -2539,11 +2584,12 @@ private:
     scalar_map_[node->id()] = j_and;
   }
 
+  /////////////////////////////////////////////////////////////////////////////
+
   jit_value_t emit_store_address(lnodeimpl* node, uint32_t offset = 0) {
     auto dst_addr = addr_map_.at(node->id()) + offset;
     return jit_insn_add_relative(j_func_, j_vars_, dst_addr);
   }
-
 
   jit_value_t emit_load_address(lnodeimpl* node, uint32_t offset = 0) {
     switch (node->type()) {
@@ -2682,6 +2728,65 @@ private:
     } else {
       std::abort();
     }
+  }
+
+  void dump_ast(FILE *stream, const char *name) {
+    fprintf(stream, "function %s(", name);
+
+    // dump signature
+    auto signature = jit_function_get_signature(j_func_);
+    uint32_t num_params = jit_type_num_params(signature);
+    for (uint32_t param = 0; param < num_params; ++param) {
+      if (param != 0) {
+        fputs(", ", stream);
+      }
+      auto value = jit_value_get_param(j_func_, param);
+      jit_dump_value(stream, j_func_, value, 0);
+      fputs(" : ", stream);
+      jit_dump_type(stream, jit_type_get_param(signature, param));
+    }
+
+    fprintf(stream, ") : ");
+    jit_dump_type(stream, jit_type_get_return(signature));
+    putc('\n', stream);
+
+    // dump blocks
+    jit_block_t block = nullptr;
+    while ((block = jit_block_next(j_func_, block)) != nullptr) {
+      auto meta = jit_block_get_meta(block, 0);
+      if (meta) {
+        if (((char*)meta)[0] != '\0') {
+          fprintf(stream, "# </sref %s\n", (const char*)(meta));
+        } else {
+          fprintf(stream, "# sref/>\n");
+        }
+      }
+      // dump label if present
+      auto label = jit_block_get_label(block);
+      if (label != jit_label_undefined) {
+        for (;;) {
+          fprintf(stream, ".L%ld:", (long) label);
+          label = jit_block_get_next_label(block, label);
+          if (label == jit_label_undefined) {
+            fprintf(stream, "\n");
+            break;
+          }
+          fprintf(stream, " ");
+        }
+      }
+
+      // dump the instructions
+      jit_insn_iter_t iter;
+      jit_insn_iter_init(&iter, block);
+      jit_insn_t insn = nullptr;
+      while ((insn = jit_insn_iter_next(&iter)) != nullptr) {
+        putc('\t', stream);
+        jit_dump_insn(stream, j_func_, insn);
+        putc('\n', stream);
+      }
+    }
+    fprintf(stream, "end\n\n");
+    fflush(stream);
   }
 
 #ifndef NDEBUG

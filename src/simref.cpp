@@ -21,15 +21,13 @@ namespace ch::internal::simref {
 
 struct instr_base {
 
-  instr_base() : step(1) {}
+  instr_base() {}
 
   virtual ~instr_base() {}
 
   virtual void destroy() = 0;
 
   virtual void eval() = 0;
-
-  uint32_t step;
 };
 
 using data_map_t  = std::unordered_map<uint32_t, const block_type*>;
@@ -784,12 +782,7 @@ class instr_cd : public instr_base {
 public:
 
   static instr_cd* create(cdimpl* node, data_map_t& map) {
-    auto clk = map.at(node->clk().id());
-    return new instr_cd(clk, node->pos_edge());
-  }
-
-  void add_bypass(instr_base* instr, uint32_t step) {
-    bypass_nodes_.emplace_back(instr, step);
+    return new instr_cd(node, map);
   }
 
   void destroy() override {
@@ -798,31 +791,24 @@ public:
 
   void eval() override {
     auto clk = static_cast<bool>(clk_[0]);
-    bool changed = 0 != (clk ^ prev_clk_) && 0 != (clk ^ neg_edge_);
+    dst_ = (clk ^ prev_clk_) && (clk ^ neg_edge_);
     prev_clk_ = clk;
-    if (changed) {
-      for (auto& b : bypass_nodes_) {
-        b.first->step = 1;
-      }
-    } else {
-      for (auto& b : bypass_nodes_) {
-        b.first->step = b.second;
-      }
-    }
   }
 
 private:
 
-  instr_cd(const block_type* clk, bool pos_edge)
-    : clk_(clk)
-    , neg_edge_(!pos_edge)
-    , prev_clk_(false)
-  {}
+  instr_cd(cdimpl* node, data_map_t& map)
+    : dst_(1, false)
+    , clk_(map.at(node->clk().id()))
+    , neg_edge_(!node->pos_edge())
+    , prev_clk_(false) {
+    map[node->id()] = dst_.words();
+  }
 
-  std::vector<std::pair<instr_base*, uint32_t>> bypass_nodes_;
+  sdata_type dst_;
   const block_type* clk_;
   bool neg_edge_;
-  bool prev_clk_;
+  bool prev_clk_;  
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -833,6 +819,7 @@ public:
   static instr_reg_base* create(regimpl* node, data_map_t& map);
 
   void init(regimpl* node, data_map_t& map) {
+    cd_       = map.at(node->cd().id());
     initdata_ = node->has_init_data() ? map.at(node->init_data().id()) : nullptr;
     reset_    = node->has_init_data() ? map.at(node->reset().id()) : nullptr;
     enable_   = node->has_enable() ? map.at(node->enable().id()) : nullptr;
@@ -842,7 +829,8 @@ public:
 protected:
 
   instr_reg_base(block_type* dst, uint32_t size)
-    : initdata_(nullptr)
+    : cd_(nullptr)
+    , initdata_(nullptr)
     , reset_(nullptr)
     , enable_(nullptr)
     , next_(nullptr)
@@ -850,6 +838,7 @@ protected:
     , size_(size)
   {}
 
+  const block_type* cd_;
   const block_type* initdata_;
   const block_type* reset_;
   const block_type* enable_;
@@ -868,6 +857,9 @@ public:
   }
 
   void eval() override {
+    if (!static_cast<bool>(cd_[0]))
+      return;
+
     if constexpr (is_scalar) {
       if constexpr (has_init) {
         if (static_cast<bool>(reset_[0])) {
@@ -918,6 +910,9 @@ public:
   }
 
   void eval() override {
+    if (!static_cast<bool>(cd_[0]))
+      return;
+
     if constexpr (is_scalar) {
       if constexpr (has_init) {
         if (static_cast<bool>(reset_[0])) {
@@ -1102,13 +1097,13 @@ protected:
       }
       map[mem->id()] = store_;
       own_store_ = true;
-    }
+    }    
     addr_ = map.at(node->addr().id());
     addr_size_ = node->addr().size();
   }
 
   bool own_store_;
-  block_type* store_;
+  block_type* store_;  
   const block_type* addr_;
   uint32_t addr_size_;
   uint32_t data_size_;
@@ -1192,6 +1187,7 @@ public:
 
   void init(msrportimpl* node, data_map_t& map) {
     instr_mport_base::init(node, map);
+    cd_ = map.at(node->cd().id());
     if (node->has_enable()) {
       enable_ = map.at(node->enable().id());
     }
@@ -1202,10 +1198,12 @@ protected:
   instr_msrport_base(block_type* dst, uint32_t dst_size)
     : instr_mport_base(dst_size)
     , dst_(dst)
+    , cd_(nullptr)
     , enable_(nullptr)
   {}
 
   block_type* dst_;
+  const block_type* cd_;
   const block_type* enable_;
 };
 
@@ -1219,7 +1217,8 @@ public:
   }
 
   void eval() override {
-    if (enable_ && !static_cast<bool>(enable_[0]))
+    if (!static_cast<bool>(cd_[0])
+     || (enable_ && !static_cast<bool>(enable_[0])))
       return;
     auto addr = bv_cast<uint32_t>(addr_, addr_size_);
     auto src_offset = addr * data_size_;
@@ -1271,20 +1270,23 @@ protected:
 
   instr_mwport_base(uint32_t data_size)
     : instr_mport_base(data_size)
-    , wdata_(nullptr)
+    , cd_(nullptr)
     , enable_(nullptr)
+    , wdata_(nullptr)
   {}
 
   void init(mwportimpl* node, data_map_t& map) {
     instr_mport_base::init(node, map);
-    wdata_ = map.at(node->wdata().id());
+    cd_ = map.at(node->cd().id());
     if (node->has_enable()) {
       enable_ = map.at(node->enable().id());
     }
+    wdata_ = map.at(node->wdata().id());
   }
 
-  const block_type* wdata_;
+  const block_type* cd_;
   const block_type* enable_;
+  const block_type* wdata_;
 };
 
 template <bool is_scalar>
@@ -1297,7 +1299,8 @@ public:
   }
 
   void eval() override {
-    if (enable_ && !static_cast<bool>(enable_[0]))
+    if (!static_cast<bool>(cd_[0])
+     || (enable_ && !static_cast<bool>(enable_[0])))
       return;
     auto addr = bv_cast<uint32_t>(addr_, addr_size_);
     auto dst_offset = addr * data_size_;
@@ -1319,8 +1322,8 @@ private:
 
 instr_mwport_base* instr_mwport_base::create(mwportimpl* node, data_map_t& map) {
   auto buf = new uint8_t[__aligned_sizeof(instr_mwport_base)]();
-  uint32_t data_size = node->mem()->data_width();
-  bool is_scalar = (data_size <= bitwidth_v<block_type>);
+  auto data_size = node->mem()->data_width();
+  auto is_scalar = (data_size <= bitwidth_v<block_type>);
   instr_mwport_base* instr;
   if (is_scalar) {
     instr = new (buf) instr_mwport<true>(data_size);
@@ -1470,24 +1473,11 @@ private:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class instr_udf : public instr_base {
+class instr_udfc : public instr_base {
 public:
 
-  static instr_udf* create(udfcimpl* node, data_map_t& map) {
-    auto instr = new instr_udf(node, map);
-    instr->init(node, map);
-    return instr;
-  }
-
-  static instr_udf* create(udfsimpl* node, data_map_t& map) {
-    return new instr_udf(node, map);
-  }
-
-  void init(udfimpl* node, data_map_t& map) {
-    for (uint32_t i = 0, n = udf_->inputs_size().size(); i < n; ++i) {
-      auto& src = node->src(i);
-      srcs_[i].emplace(const_cast<block_type*>(map.at(src.id())), src.size());
-    }
+  static instr_udfc* create(udfcimpl* node, data_map_t& map) {
+    return new instr_udfc(node, map);
   }
 
   void destroy() override {
@@ -1500,22 +1490,75 @@ public:
 
 private:
 
-  instr_udf(udfimpl* node, data_map_t& map)
+  instr_udfc(udfcimpl* node, data_map_t& map)
     : udf_(node->udf())
     , dst_(node->size()) {
     srcs_.resize(node->srcs().size());
+    for (uint32_t i = 0, n = udf_->inputs_size().size(); i < n; ++i) {
+      auto& src = node->src(i);
+      srcs_[i].emplace(const_cast<block_type*>(map.at(src.id())), src.size());
+    }
     map[node->id()] = dst_.words();
   }
 
-  ~instr_udf() {
+  ~instr_udfc() {
     for (auto& src : srcs_) {
       src.emplace(nullptr);
     }
   }
 
   udf_iface* udf_;
-  std::vector<sdata_type> srcs_;
   sdata_type dst_;
+  std::vector<sdata_type> srcs_;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+class instr_udfs : public instr_base {
+public:
+
+  static instr_udfs* create(udfsimpl* node, data_map_t& map) {
+    return new instr_udfs(node, map);
+  }
+
+  void init(udfsimpl* node, data_map_t& map) {
+    cd_ = map.at(node->cd().id());
+    for (uint32_t i = 0, n = udf_->inputs_size().size(); i < n; ++i) {
+      auto& src = node->src(i);
+      srcs_[i].emplace(const_cast<block_type*>(map.at(src.id())), src.size());
+    }
+  }
+
+  void destroy() override {
+    delete this;
+  }
+
+  void eval() override {
+    if (!static_cast<bool>(cd_[0]))
+      return;
+    udf_->eval(dst_, srcs_.data());
+  }
+
+private:
+
+  instr_udfs(udfsimpl* node, data_map_t& map)
+    : cd_(nullptr)
+    , udf_(node->udf())
+    , dst_(node->size()) {
+    srcs_.resize(node->srcs().size());
+    map[node->id()] = dst_.words();
+  }
+
+  ~instr_udfs() {
+    for (auto& src : srcs_) {
+      src.emplace(nullptr);
+    }
+  }
+
+  const block_type* cd_;
+  udf_iface* udf_;
+  sdata_type dst_;
+  std::vector<sdata_type> srcs_;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1572,7 +1615,7 @@ public:
         instr_map[node->id()] = instr_msrport_base::create(reinterpret_cast<msrportimpl*>(node), data_map);
         break;
       case type_udfs:
-        instr_map[node->id()] = instr_udf::create(reinterpret_cast<udfsimpl*>(node), data_map);
+        instr_map[node->id()] = instr_udfs::create(reinterpret_cast<udfsimpl*>(node), data_map);
         break;
       default:
         break;
@@ -1631,11 +1674,11 @@ public:
         instr = instr_print::create(reinterpret_cast<printimpl*>(node), data_map);
         break;
       case type_udfc:
-        instr = instr_udf::create(reinterpret_cast<udfcimpl*>(node), data_map);
+        instr = instr_udfc::create(reinterpret_cast<udfcimpl*>(node), data_map);
         break;
       case type_udfs:
         instr = instr_map.at(node->id());
-        reinterpret_cast<instr_udf*>(instr)->init(reinterpret_cast<udfsimpl*>(node), data_map);
+        reinterpret_cast<instr_udfs*>(instr)->init(reinterpret_cast<udfsimpl*>(node), data_map);
         break;
       case type_lit:
       case type_mem:
@@ -1651,9 +1694,6 @@ public:
         sim_ctx_->instrs.emplace_back(instr);
       }
     }
-
-    // setup clock domains bypass
-    this->cdomain_bypass(ctx, instr_map, node_map);
   }
 
 private:
@@ -1696,36 +1736,6 @@ private:
     }
   }
 
-  void cdomain_bypass(context* ctx, instr_map_t& instr_map, node_map_t& node_map) {
-    for (auto cd : ctx->cdomains()) {
-      std::unordered_set<uint32_t> bypass_nodes;
-      ch::internal::compiler::build_bypass_list(bypass_nodes, ctx, cd->id());
-      auto cd_instr = reinterpret_cast<instr_cd*>(instr_map.at(cd->id()));
-      uint32_t i = 0, n = sim_ctx_->instrs.size();
-      for (; i < n;) {
-        if (sim_ctx_->instrs[i++] == cd_instr)
-          break;
-      }
-      bool skip_enabled = false;
-      uint32_t skip_start = 0;
-      for (;i < n; ++i) {
-        auto node_id = node_map.at(i);
-        bool bypass = bypass_nodes.count(node_id);
-        if (!bypass && !skip_enabled) {
-          skip_enabled = true;
-          skip_start = i;
-        } else
-        if (bypass && skip_enabled) {
-          skip_enabled = false;
-          cd_instr->add_bypass(sim_ctx_->instrs[skip_start-1], i - skip_start + 1);
-        }
-      }
-      if (skip_enabled) {
-        cd_instr->add_bypass(sim_ctx_->instrs[skip_start-1], i - skip_start + 1);
-      }
-    }
-  }
-
   sim_ctx_t* sim_ctx_;
 };
 
@@ -1745,9 +1755,8 @@ void driver::initialize(const std::vector<lnodeimpl*>& eval_list) {
 }
 
 void driver::eval() {
-  for (auto it = sim_ctx_->instrs.begin(), end = sim_ctx_->instrs.end(); it != end;) {
-    (*it)->eval();
-    it += (*it)->step;
+  for (auto instr : sim_ctx_->instrs) {
+    instr->eval();
   }
 }
 
