@@ -10,7 +10,7 @@ aluimpl::aluimpl(context* ctx, ch_op op, uint32_t size, bool is_signed,
                  lnodeimpl* in, const source_location& sloc)
   : lnodeimpl(ctx, type_alu, size, sloc)
   , op_(op)
-  , is_signed_(is_signed) {
+  , signed_(is_signed) {
   name_ = to_string(op);
   srcs_.push_back(in);
 }
@@ -19,7 +19,7 @@ aluimpl::aluimpl(context* ctx, ch_op op, uint32_t size, bool is_signed,
                  lnodeimpl* lhs, lnodeimpl* rhs, const source_location& sloc)
   : lnodeimpl(ctx, type_alu, size, sloc)
   , op_(op)
-  , is_signed_(is_signed) {
+  , signed_(is_signed) {
   name_ = to_string(op);
   srcs_.push_back(lhs);
   srcs_.push_back(rhs);
@@ -29,16 +29,16 @@ lnodeimpl* aluimpl::clone(context* ctx, const clone_map& cloned_nodes) {
   auto src0 = cloned_nodes.at(srcs_[0].id());
   if (srcs_.size() == 2) {
     auto src1 = cloned_nodes.at(srcs_[1].id());
-    return ctx->create_node<aluimpl>(op_, size_, is_signed_, src0, src1, sloc_);
+    return ctx->create_node<aluimpl>(op_, size_, signed_, src0, src1, sloc_);
   } else {
-    return ctx->create_node<aluimpl>(op_, size_, is_signed_, src0, sloc_);
+    return ctx->create_node<aluimpl>(op_, size_, signed_, src0, sloc_);
   }
 }
 
 bool aluimpl::equals(const lnodeimpl& other) const {
   if (lnodeimpl::equals(other)) {
     auto _other = reinterpret_cast<const aluimpl&>(other);
-    return (this->op() == _other.op());
+    return (op_ == _other.op_) && (signed_ == _other.signed_);
   }
   return false;
 }
@@ -61,7 +61,7 @@ uint64_t aluimpl::hash() const {
 void aluimpl::print(std::ostream& out) const {
   out << "#" << id_ << " <- " << to_string(this->type()) << size_;
   uint32_t n = srcs_.size();
-  out << "(" << to_string(op_) << (is_signed_ ? "_s" : "_u") << ", ";
+  out << "(" << to_string(op_) << (signed_ ? "_s" : "_u") << ", ";
   for (uint32_t i = 0; i < n; ++i) {
     if (i > 0)
       out << ", ";

@@ -56,6 +56,14 @@ lnodeimpl* regimpl::clone(context* ctx, const clone_map& cloned_nodes) {
   return ctx->create_node<regimpl>(length_, next, enable, init_data, cd, reset, sloc_);
 }
 
+bool regimpl::equals(const lnodeimpl& other) const {
+  if (lnodeimpl::equals(other)) {
+    auto _other = reinterpret_cast<const regimpl&>(other);
+    return (length_ == _other.length_);
+  }
+  return false;
+}
+
 uint64_t regimpl::hash() const {
   hash_t ret;
   ret.fields.type = this->type();

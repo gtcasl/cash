@@ -49,6 +49,8 @@ public:
     return srcs_[initdata_idx_];
   }
 
+  bool equals(const lnodeimpl& other) const override;
+
   virtual lnodeimpl* clone(context* ctx, const clone_map& cloned_nodes) override;
 
   uint64_t hash() const override;

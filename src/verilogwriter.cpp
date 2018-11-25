@@ -1,6 +1,7 @@
 ﻿#include "verilogwriter.h"
 #include "verilog.h"
 #include "context.h"
+#include "compile.h"
 #include "deviceimpl.h"
 #include "bindimpl.h"
 #include "litimpl.h"
@@ -986,7 +987,7 @@ void verilogwriter::print_operator(std::ostream& out, ch_op op) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void ch::internal::ch_toVerilog(std::ostream& out, const device& device) {
+void ch::internal::ch_toVerilog(std::ostream& out, const device& device, bool flatten) {
 
   std::function<void (context*, std::unordered_set<udf_iface*>&)> print_udf_dependencies = [&](
       context* ctx, std::unordered_set<udf_iface*>& visited) {
@@ -1007,6 +1008,15 @@ void ch::internal::ch_toVerilog(std::ostream& out, const device& device) {
   };
 
   auto ctx = device.impl()->ctx();
+  if (!flatten || 0 == ctx->bindings().size()) {
+    ctx->acquire();
+  } else {
+    auto flatten_ctx = new context(ctx->name());
+    flatten_ctx->acquire();
+    compiler compiler(ctx);
+    compiler.build_eval_context(flatten_ctx);
+    ctx = flatten_ctx;
+  }
 
   if (!ctx->udfs().empty()) {
     std::unordered_set<udf_iface*> udf_visited;
@@ -1018,4 +1028,6 @@ void ch::internal::ch_toVerilog(std::ostream& out, const device& device) {
     verilogwriter writer(ctx);
     writer.print(out, visited);
   }
+
+  ctx->release();
 }

@@ -14,7 +14,7 @@ public:
   }  
 
   bool is_signed() const {
-    return is_signed_;
+    return signed_;
   }
 
   bool should_resize_opds() const;
@@ -38,7 +38,7 @@ protected:
   ~aluimpl() {}
 
   ch_op op_;
-  bool is_signed_;
+  bool signed_;
 
   friend class context;
 };

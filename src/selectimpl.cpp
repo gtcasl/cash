@@ -61,7 +61,7 @@ lnodeimpl* selectimpl::clone(context* ctx, const clone_map& cloned_nodes) {
 bool selectimpl::equals(const lnodeimpl& other) const {
   if (lnodeimpl::equals(other)) {
     auto _other = reinterpret_cast<const selectimpl&>(other);
-    return (this->has_key() == _other.has_key());
+    return (key_idx_ == _other.key_idx_);
   }
   return false;
 }
