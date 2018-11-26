@@ -27,11 +27,30 @@ public:
 
   ch_tracer& operator=(ch_tracer&& other);
 
-  void toText(const std::string& file);
+  void toText(std::ofstream& out);
 
-  void toVCD(const std::string& file);
+  void toText(const std::string& file) {
+    std::ofstream out(file);
+    toText(out);
+  }
 
-  void toTestBench(const std::string& file, const std::string& module);
+  void toVCD(std::ofstream& out);
+
+  void toVCD(const std::string& file) {
+    std::ofstream out(file);
+    toVCD(out);
+  }
+
+  void toTestBench(std::ofstream& out,
+                   const std::string& module,
+                   bool passthru = false);
+
+  void toTestBench(const std::string& file,
+                   const std::string& module,
+                   bool passthru = false) {
+    std::ofstream out(file);
+    toTestBench(out, module, passthru);
+  }
 
 protected:
 

@@ -29,6 +29,29 @@ void bv_init(T* dst, uint32_t size) {
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T>
+bool bv_get(const T* bv, uint32_t offset) {
+  static unsigned constexpr WORD_SIZE = bitwidth_v<T>;
+  auto idx = offset / WORD_SIZE;
+  auto lsb = offset % WORD_SIZE;
+  return (bv[idx] >> lsb) & 0x1;
+}
+
+template <typename T>
+void bv_set(T* bv, uint32_t offset, bool value) {
+  static unsigned constexpr WORD_SIZE = bitwidth_v<T>;
+  auto idx = offset / WORD_SIZE;
+  auto lsb = offset % WORD_SIZE;
+  auto mask = T(1) << lsb;
+  if (value) {
+    bv[idx] |= mask;
+  } else {
+    bv[idx] &= ~mask;
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+template <typename T>
 bool bv_is_neg_scalar(const T* in, uint32_t size) {
   auto mask = T(1) << (size - 1);
   return (in[0] & mask) != 0;
@@ -419,7 +442,8 @@ void bv_copy_scalar(T* w_dst,
                     uint32_t length) {
   static unsigned constexpr WORD_SIZE = bitwidth_v<T>;
   static constexpr T        WORD_MAX  = std::numeric_limits<T>::max();
-  assert(w_src_lsb < WORD_SIZE);
+  assert((w_dst_lsb + length) <= WORD_SIZE);
+  assert((w_src_lsb + length) <= WORD_SIZE);
 
   T src_block = (w_src[0] >> w_src_lsb) << w_dst_lsb;
   T mask = (WORD_MAX >> (WORD_SIZE - length)) << w_dst_lsb;
@@ -456,6 +480,7 @@ void bv_copy_vector_aligned(T* w_dst, const T* w_src, uint32_t length) {
   static unsigned constexpr WORD_SIZE = bitwidth_v<T>;
   static constexpr unsigned WORD_MASK = WORD_SIZE - 1;
   static constexpr T        WORD_MAX  = std::numeric_limits<T>::max();
+  assert(length > WORD_SIZE);
 
   uint32_t dst_end       = length - 1;
   uint32_t w_dst_end_idx = (dst_end / WORD_SIZE);
@@ -480,6 +505,7 @@ void bv_copy_vector_aligned_dst(T* w_dst,
                                 uint32_t length) {
   static unsigned constexpr WORD_SIZE = bitwidth_v<T>;
   static constexpr T        WORD_MAX  = std::numeric_limits<T>::max();
+  assert(length > WORD_SIZE);
   assert(w_src_lsb < WORD_SIZE);
 
   uint32_t src_end       = w_src_lsb + length - 1;
@@ -518,6 +544,7 @@ void bv_copy_vector_aligned_src(T* w_dst,
   static unsigned constexpr WORD_SIZE = bitwidth_v<T>;
   static constexpr unsigned WORD_MASK = WORD_SIZE - 1;
   static constexpr T        WORD_MAX  = std::numeric_limits<T>::max();
+  assert(length > WORD_SIZE);
   assert(w_dst_lsb < WORD_SIZE);
 
   uint32_t src_end       = length - 1;
@@ -559,8 +586,9 @@ void bv_copy_vector_unaligned(T* w_dst,
   static unsigned constexpr WORD_SIZE = bitwidth_v<T>;
   static constexpr unsigned WORD_MASK = WORD_SIZE - 1;
   static constexpr T        WORD_MAX  = std::numeric_limits<T>::max();
-  assert(w_dst_lsb < WORD_SIZE);
-  assert(w_src_lsb < WORD_SIZE);
+  assert(length > WORD_SIZE);
+  assert(w_dst_lsb && w_dst_lsb < WORD_SIZE);
+  assert(w_src_lsb && w_src_lsb < WORD_SIZE);
 
   uint32_t src_end       = w_src_lsb + length - 1;
   uint32_t w_src_end_idx = (src_end / WORD_SIZE);
@@ -605,6 +633,8 @@ void bv_copy_vector(T* w_dst, uint32_t w_dst_lsb,
                     const T* w_src, uint32_t w_src_lsb,
                     uint32_t length) {
   static unsigned constexpr WORD_SIZE = bitwidth_v<T>;
+  assert(w_dst_lsb < WORD_SIZE);
+  assert(w_src_lsb < WORD_SIZE);
 
   if (length <= WORD_SIZE) {
     bv_copy_vector_small(w_dst, w_dst_lsb, w_src, w_src_lsb, length);
@@ -647,7 +677,7 @@ void bv_copy(T* w_dst, uint32_t dst_offset,
 template <typename T>
 void bv_slice_scalar(T* w_dst, uint32_t dst_size, const T* w_src, uint32_t w_src_lsb) {
   static unsigned constexpr WORD_SIZE = bitwidth_v<T>;
-  assert(w_src_lsb < WORD_SIZE);
+  assert((w_src_lsb + dst_size) <= WORD_SIZE);
 
   T src_block = w_src[0] >> w_src_lsb;
   uint32_t clamp = (WORD_SIZE - dst_size);
@@ -672,6 +702,7 @@ template <typename T>
 void bv_slice_vector_aligned(T* dst, uint32_t dst_size, const T* w_src) {
   static unsigned constexpr WORD_SIZE = bitwidth_v<T>;
   static constexpr unsigned WORD_MASK = WORD_SIZE - 1;
+  assert(dst_size > WORD_SIZE);
 
   uint32_t dst_end       = dst_size - 1;
   uint32_t w_dst_end_idx = (dst_end / WORD_SIZE);
@@ -692,7 +723,8 @@ template <typename T>
 void bv_slice_vector_unaligned(T* w_dst, uint32_t dst_size, const T* w_src, uint32_t w_src_lsb) {
   static unsigned constexpr WORD_SIZE = bitwidth_v<T>;
   static constexpr unsigned WORD_MASK = WORD_SIZE - 1;
-  assert(w_src_lsb < WORD_SIZE);
+  assert(dst_size > WORD_SIZE);
+  assert(w_src_lsb && w_src_lsb < WORD_SIZE);
 
   uint32_t src_end       = w_src_lsb + dst_size - 1;
   uint32_t w_src_end_idx = (src_end / WORD_SIZE);
@@ -755,6 +787,194 @@ void bv_slice(T* w_dst, uint32_t dst_size, const T* w_src, uint32_t src_offset) 
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T>
+int bv_cmp_scalar(const T* lhs,
+                  uint32_t lhs_lsb,
+                  const T* rhs,
+                  uint32_t rhs_lsb,
+                  uint32_t length) {
+  static unsigned constexpr WORD_SIZE = bitwidth_v<T>;
+  assert((lhs_lsb + length) <= WORD_SIZE);
+  assert((rhs_lsb + length) <= WORD_SIZE);
+
+  uint32_t clamp = WORD_SIZE - length;
+  T lhs_block = T((lhs[0] >> lhs_lsb) << clamp) >> clamp;
+  T rhs_block = T((rhs[0] >> rhs_lsb) << clamp) >> clamp;
+  return lhs_block - rhs_block;
+}
+
+template <typename T>
+int bv_cmp_vector_small(const T* lhs, uint32_t lhs_lsb,
+                        const T* rhs, uint32_t rhs_lsb,
+                        uint32_t length) {
+  static unsigned constexpr WORD_SIZE = bitwidth_v<T>;
+  assert(length <= WORD_SIZE);
+  assert(lhs_lsb < WORD_SIZE);
+  assert(rhs_lsb < WORD_SIZE);
+
+  uint32_t clamp = WORD_SIZE - length;
+
+  T lhs_block = lhs[0] >> lhs_lsb;
+  if (lhs_lsb + length > WORD_SIZE) {
+    lhs_block |= (lhs[1] << (WORD_SIZE - lhs_lsb));
+  }
+  lhs_block = T(lhs_block << clamp) >> clamp;
+
+  T rhs_block = rhs[0] >> rhs_lsb;
+  if (rhs_lsb + length > WORD_SIZE) {
+    rhs_block |= (rhs[1] << (WORD_SIZE - rhs_lsb));
+  }
+  rhs_block = T(rhs_block << clamp) >> clamp;
+
+  return lhs_block - rhs_block;
+}
+
+template <typename T>
+int bv_cmp_vector_aligned(const T* lhs, const T* rhs, uint32_t length) {
+  static unsigned constexpr WORD_SIZE = bitwidth_v<T>;
+  assert(length > WORD_SIZE);
+
+  uint32_t wcount = length / WORD_SIZE;
+  uint32_t rem    = length % WORD_SIZE;
+
+  // update aligned blocks
+  if (0 == rem) {
+    return memcmp(lhs, rhs, wcount * sizeof(T));
+  } else {
+    auto test = memcmp(lhs, rhs, (wcount - 1) * sizeof(T));
+    if (test)
+      return test;
+    // compare remining block
+    return bv_cmp_scalar(lhs + wcount, 0, rhs + wcount, 0, rem);
+  }
+}
+
+template <typename T>
+int bv_cmp_vector_aligned_lhs(const T* lhs,
+                              const T* rhs, uint32_t rhs_lsb,
+                              uint32_t length) {
+  static unsigned constexpr WORD_SIZE = bitwidth_v<T>;
+  assert(length > WORD_SIZE);
+  assert(rhs_lsb && rhs_lsb < WORD_SIZE);
+
+  uint32_t wcount = length / WORD_SIZE;
+  uint32_t rem    = length % WORD_SIZE;
+
+  // compare intermediate blocks
+  for (uint32_t n = wcount; n--;) {
+    T lhs_block = *lhs++;
+    T rhs_block = *rhs++ >> rhs_lsb;
+    rhs_block |= (rhs[0] << (WORD_SIZE - rhs_lsb));
+    auto test = lhs_block - rhs_block;
+    if (test)
+      return test;
+  }
+  if (0 == rem)
+    return 0;
+  // compare remining block
+  return bv_cmp_vector_small(lhs, 0, rhs, rhs_lsb, rem);
+}
+
+template <typename T>
+int bv_cmp_vector_aligned_rhs(const T* lhs, uint32_t lhs_lsb,
+                              const T* rhs,
+                              uint32_t length) {
+  static unsigned constexpr WORD_SIZE = bitwidth_v<T>;
+  assert(length > WORD_SIZE);
+  assert(lhs_lsb && lhs_lsb < WORD_SIZE);
+
+  uint32_t wcount = length / WORD_SIZE;
+  uint32_t rem    = length % WORD_SIZE;
+
+  // compare intermediate blocks
+  for (uint32_t n = wcount; n--;) {
+    T lhs_block = *lhs++ >> lhs_lsb;
+    lhs_block |= (lhs[0] << (WORD_SIZE - lhs_lsb));
+    T rhs_block = *rhs++;
+    auto test = lhs_block - rhs_block;
+    if (test)
+      return test;
+  }
+  if (0 == rem)
+    return 0;
+  // compare remining block
+  return bv_cmp_vector_small(lhs, lhs_lsb, rhs, 0, rem);
+}
+
+template <typename T>
+int bv_cmp_vector_unaligned(const T* lhs, uint32_t lhs_lsb,
+                            const T* rhs, uint32_t rhs_lsb,
+                            uint32_t length) {
+  static unsigned constexpr WORD_SIZE = bitwidth_v<T>;
+  assert(length > WORD_SIZE);
+  assert(lhs_lsb && lhs_lsb < WORD_SIZE);
+  assert(rhs_lsb && rhs_lsb < WORD_SIZE);
+
+  uint32_t wcount = length / WORD_SIZE;
+  uint32_t rem    = length % WORD_SIZE;
+
+  // compare intermediate blocks
+  for (uint32_t n = wcount; n--;) {
+    T lhs_block = *lhs++ >> lhs_lsb;
+    lhs_block |= (lhs[0] << (WORD_SIZE - lhs_lsb));
+    T rhs_block = *rhs++ >> rhs_lsb;
+    rhs_block |= (rhs[0] << (WORD_SIZE - rhs_lsb));
+    auto test = lhs_block - rhs_block;
+    if (test)
+      return test;
+  }
+  if (0 == rem)
+    return 0;
+  // compare remining block
+  return bv_cmp_vector_small(lhs, lhs_lsb, rhs, rhs_lsb, rem);
+}
+
+template <typename T>
+int bv_cmp_vector(const T* lhs, uint32_t lhs_lsb,
+                  const T* rhs, uint32_t rhs_lsb,
+                  uint32_t length) {
+  static unsigned constexpr WORD_SIZE = bitwidth_v<T>;
+  assert(lhs_lsb < WORD_SIZE);
+  assert(rhs_lsb < WORD_SIZE);
+
+  if (length <= WORD_SIZE) {
+    return bv_cmp_vector_small(lhs, lhs_lsb, rhs, rhs_lsb, length);
+  } else
+  if (0 == ((lhs_lsb % 8) | (rhs_lsb % 8))) {
+    auto b_lhs = reinterpret_cast<const uint8_t*>(lhs) + (lhs_lsb / 8);
+    auto b_rhs = reinterpret_cast<const uint8_t*>(rhs) + (rhs_lsb / 8);
+    return bv_cmp_vector_aligned(b_lhs, b_rhs, length);
+  } else
+  if (0 == lhs_lsb) {
+    return bv_cmp_vector_aligned_lhs(lhs, rhs, rhs_lsb, length);
+  } else
+  if (0 == rhs_lsb) {
+    return bv_cmp_vector_aligned_rhs(lhs, lhs_lsb, rhs, length);
+  } else {
+    return bv_cmp_vector_unaligned(lhs, lhs_lsb, rhs, rhs_lsb, length);
+  }
+}
+
+template <typename T>
+int bv_cmp(const T* lhs, uint32_t lhs_offset,
+           const T* rhs, uint32_t rhs_offset,
+           uint32_t length) {
+  static unsigned constexpr WORD_SIZE = bitwidth_v<T>;
+
+  if ((lhs_offset + length) <= WORD_SIZE
+   && (rhs_offset + length) <= WORD_SIZE) {
+    return bv_cmp_scalar(lhs, lhs_offset, rhs, rhs_offset, length);
+  } else {
+    auto lhs_idx = lhs_offset / WORD_SIZE;
+    auto lhs_lsb = lhs_offset % WORD_SIZE;
+    auto rhs_idx = rhs_offset / WORD_SIZE;
+    auto rhs_lsb = rhs_offset % WORD_SIZE;
+    return bv_cmp_vector(lhs + lhs_idx, lhs_lsb, rhs + rhs_idx, rhs_lsb, length);
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+template <typename T>
 class ClearBitAccessor {
 public:
   ClearBitAccessor(const T* value, uint32_t size, uint32_t other_size)
@@ -780,39 +1000,46 @@ private:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <bool is_signed, bool Resize, typename T>
+template <bool is_signed, bool is_resize, typename T>
 class StaticBitAccessor {
 public:
   StaticBitAccessor(const T* value, uint32_t size, uint32_t other_size)
     : value_(value)
-    , end_((size - 1) / bitwidth_v<T>)
-    , size_(size) {
-    resize_vector_ = Resize && (size < other_size);
-    resize_scalar_ = resize_vector_ && is_signed;
+    , size_(size)
+    , end_((size - 1) / bitwidth_v<T>) {
+    resize_ = (size < other_size);
   }
 
   T get() const {
-    if (resize_scalar_) {
-      return sign_ext(value_[0], size_);
+    if constexpr (is_resize && is_signed) {
+      if (resize_) {
+        return sign_ext(value_[0], size_);
+      } else {
+        return value_[0];
+      }
     } else {
       return value_[0];
     }
   }
 
   T get(uint32_t index) const {
-    if (resize_vector_) {
-      if constexpr (is_signed) {
-        if (index < end_) {
-          return value_[index];
-        } else {
-          if (index == end_) {
-            return sign_ext(value_[index], size_);
+    if constexpr (is_resize) {
+      if (resize_) {
+        if constexpr (is_signed) {
+          if (index < end_) {
+            return value_[index];
           } else {
-            return std::numeric_limits<T>::max();
+            if (index == end_) {
+              return sign_ext(value_[index], size_);
+            } else {
+              return std::numeric_limits<T>::max();
+            }
           }
+        } else {
+          return (index <= end_) ? value_[index] : 0;
         }
       } else {
-        return (index <= end_) ? value_[index] : 0;
+        return value_[index];
       }
     } else {
       return value_[index];
@@ -820,15 +1047,14 @@ public:
   }
 
   bool need_resize() const {
-    return Resize;
+    return is_resize;
   }
 
-private:
-  bool resize_scalar_;
-  bool resize_vector_;
-  const T* value_;
-  uint32_t end_;
+private:  
+  const T* value_;  
   uint32_t size_;
+  uint32_t end_;
+  bool resize_;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -838,22 +1064,25 @@ class DefaultBitAccessor {
 public:
   DefaultBitAccessor(const T* value, uint32_t size, uint32_t other_size)
     : value_(value)
-    , end_((size - 1) / bitwidth_v<T>)
-    , size_(size) {
-    resize_vector_ = (size < other_size);
-    resize_scalar_ = resize_vector_ && is_signed;
+    , size_(size)
+    , end_((size - 1) / bitwidth_v<T>) {
+    resize_ = (size < other_size);
   }
 
   T get() const {
-    if (resize_scalar_) {
-      return sign_ext(value_[0], size_);
+    if constexpr (is_signed) {
+      if (resize_) {
+        return sign_ext(value_[0], size_);
+      } else {
+        return value_[0];
+      }
     } else {
       return value_[0];
     }
   }
 
   T get(uint32_t index) const {
-    if (resize_vector_) {
+    if (resize_) {
       if constexpr (is_signed) {
         if (index < end_) {
           return value_[index];
@@ -873,15 +1102,14 @@ public:
   }
 
   bool need_resize() const {
-    return resize_scalar_ || resize_vector_;
+    return resize_;
   }
 
-private:
-  bool resize_scalar_;
-  bool resize_vector_;
+private:  
   const T* value_;
-  uint32_t end_;
   uint32_t size_;
+  uint32_t end_;
+  bool resize_;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1211,8 +1439,10 @@ void bv_and_scalar(T* out, uint32_t out_size, const T* lhs, uint32_t lhs_size, c
 
   out[0] = arg0.get() & arg1.get();
 
-  if (is_signed && (arg0.need_resize() || arg1.need_resize())) {
-    bv_clear_extra_bits(out, out_size);
+  if constexpr (is_signed) {
+    if (arg0.need_resize() || arg1.need_resize()) {
+      bv_clear_extra_bits(out, out_size);
+    }
   }
 }
 
@@ -1251,8 +1481,10 @@ void bv_or_scalar(T* out, uint32_t out_size, const T* lhs, uint32_t lhs_size, co
 
   out[0] = arg0.get() | arg1.get();
 
-  if (is_signed && (arg0.need_resize() || arg1.need_resize())) {
-    bv_clear_extra_bits(out, out_size);
+  if constexpr (is_signed) {
+    if (arg0.need_resize() || arg1.need_resize()) {
+      bv_clear_extra_bits(out, out_size);
+    }
   }
 }
 
@@ -1291,8 +1523,10 @@ void bv_xor_scalar(T* out, uint32_t out_size, const T* lhs, uint32_t lhs_size, c
 
   out[0] = arg0.get() ^ arg1.get();
 
-  if (is_signed && (arg0.need_resize() || arg1.need_resize())) {
-    bv_clear_extra_bits(out, out_size);
+  if constexpr (is_signed) {
+    if (arg0.need_resize() || arg1.need_resize()) {
+      bv_clear_extra_bits(out, out_size);
+    }
   }
 }
 

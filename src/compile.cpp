@@ -248,6 +248,11 @@ void compiler::build_eval_context(context* eval_ctx) {
       dfs_visit(node);
     }
   }
+
+  // visit input nodes
+  for (auto node : ctx_->inputs()) {
+    dfs_visit(node);
+  }
 }
 
 void compiler::build_eval_list(std::vector<lnodeimpl*>& eval_list) {

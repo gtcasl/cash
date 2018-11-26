@@ -4,55 +4,62 @@
 
 using namespace ch::internal;
 
-#define NUM_BLOCKS 100
+#define NUM_TRACES 100
 
 auto is_system_signal = [](const std::string& name) {
   return (name == "clk") || (name == "reset");
 };
 
-auto get_value = [](const sdata_type& src, uint32_t size, uint32_t src_offset) {
+auto get_value = [](const block_type* src, uint32_t size, uint32_t src_offset) {
   sdata_type value(size);
-  value.copy(0, src, src_offset, size);
+  bv_copy(value.words(), 0, src, src_offset, size);
   return value;
 };
 
 tracerimpl::tracerimpl(const ch_device_list& devices)
-  : simulatorimpl(devices)  
-  , trace_blocks_head_(nullptr)
-  , trace_blocks_tail_(nullptr)
-  , num_trace_blocks_(0)
-  , trace_width_(0) {
+  : simulatorimpl(devices)
+  , trace_width_(0)
+  , ticks_(0)
+  , trace_head_(nullptr)
+  , trace_tail_(nullptr)
+  , num_traces_(0) {
   // initialize
   this->initialize();
 }
 
 tracerimpl::~tracerimpl() {
-  auto block = trace_blocks_head_;
+  auto block = trace_head_;
   while (block) {
     auto next = block->next;
-    delete block;
+    block->~trace_block_t();
+    ::operator delete [](block);
     block = next;
   }
 }
 
 void tracerimpl::initialize() {
   // register signals
+  uint32_t trace_width = 0;
   for (auto ctx : contexts_) {
     // get inputs
     for (auto node : ctx->inputs()) {
-      trace_width_ += this->add_signal(node);
+      trace_width += this->add_signal(node);
     }
 
     // get outputs
     for (auto node : ctx->outputs()) {
-      trace_width_ += this->add_signal(node);
+      trace_width += this->add_signal(node);
     }
 
     // get taps
     for (auto node : ctx->taps()) {
-      trace_width_ += this->add_signal(node);
+      trace_width += this->add_signal(node);
     }
   }
+
+  trace_width_ = trace_width + signals_.size();
+  prev_values.resize(signals_.size());
+  valid_mask_.resize(signals_.size());
 }
 
 uint32_t tracerimpl::add_signal(ioportimpl* node) {
@@ -78,56 +85,104 @@ void tracerimpl::eval() {
   simulatorimpl::eval();
 
   // allocate new trace block
-  if (nullptr == trace_blocks_tail_
-   || NUM_BLOCKS == trace_blocks_tail_->size) {
-    auto trace_block = new trace_block_t(NUM_BLOCKS, trace_width_);
-    if (nullptr == trace_blocks_head_) {
-      trace_blocks_head_ = trace_block;
-    }
-    if (trace_blocks_tail_) {
-      trace_blocks_tail_->next = trace_block;
-    }
-    trace_blocks_tail_ = trace_block;
-    ++num_trace_blocks_;
+  auto block_width = NUM_TRACES * trace_width_;
+  if (nullptr == trace_tail_
+   || (trace_tail_->size + trace_width_) > block_width) {
+    this->allocate_trace(block_width);
   }
 
   // log trace data
-  uint32_t block_idx = trace_blocks_tail_->size++;
-  auto& block = trace_blocks_tail_->data.at(block_idx);
-  uint32_t dst_offset = 0;
-  for (auto& trace : signals_) {
-    auto value = trace.node->value();
-    block.copy(dst_offset, *value, 0, value->size());
-    dst_offset += value->size();
+  valid_mask_.reset();
+  auto dst_block = trace_tail_->data;
+  auto dst_offset = trace_tail_->size;
+  dst_offset += valid_mask_.size();
+  for (uint32_t i = 0, n = signals_.size(); i < n; ++i) {
+    auto value = signals_.at(i).node->value();
+    auto& prev = prev_values.at(i);
+    if (prev.first) {
+      if (0 == bv_cmp(prev.first, prev.second, value->words(), 0, value->size()))
+        continue;
+    }
+    prev.first = dst_block;
+    prev.second = dst_offset;
+    bv_copy(dst_block, dst_offset, value->words(), 0, value->size());
+    dst_offset += value->size();    
+    valid_mask_[i] = true;
   }
+  // set valid mask
+  bv_copy(dst_block, trace_tail_->size, valid_mask_.words(), 0, valid_mask_.size());
+
+  // updsate offset
+  trace_tail_->size = dst_offset;
+
+  ++ticks_;
 }
 
-void tracerimpl::toText(const std::string& file) {
-  // log trace data
-  std::ofstream out(file);
+void tracerimpl::allocate_trace(uint32_t block_width) {
+  auto block_size = (bitwidth_v<block_type> / 8) * ceildiv(block_width, bitwidth_v<block_type>);
+  auto buf = new uint8_t[sizeof(trace_block_t) + block_size]();
+  auto data = reinterpret_cast<block_type*>(buf + sizeof(trace_block_t));
+  auto trace_block = new (buf) trace_block_t(data);
+  if (nullptr == trace_head_) {
+    trace_head_ = trace_block;
+  }
+  if (trace_tail_) {
+    trace_tail_->next = trace_block;
+  }
+  trace_tail_ = trace_block;
+  ++num_traces_;
+}
+
+void tracerimpl::toText(std::ofstream& out) {
   uint32_t t = 0;
-  uint32_t max_traces = NUM_BLOCKS * (num_trace_blocks_ - 1) +
-                          (trace_blocks_tail_ ? trace_blocks_tail_->size : 0);
-  auto indices_width = std::to_string(max_traces).length();
-  auto trace_block = trace_blocks_head_;
+  auto mask_width = valid_mask_.size();
+  auto indices_width = std::to_string(ticks_).length();
+
+  for (uint32_t i = 0, n = signals_.size(); i < n; ++i) {
+    prev_values[i] = std::make_pair<block_type*, uint32_t>(nullptr, 0);
+  }
+
+  auto trace_block = trace_head_;
   while (trace_block) {
-    for (uint32_t block_idx = 0; block_idx < trace_block->size; ++block_idx) {
-      auto& block = trace_block->data.at(block_idx);
-      out << std::setw(indices_width) << t++ << ":";
-      auto src_offset = 0;
+    auto src_block = trace_block->data;
+    auto src_width = trace_block->size;
+    uint32_t src_offset = 0;
+    while (src_offset < src_width) {
+      uint32_t mask_offset = src_offset;
+      src_offset += mask_width;
+      out << std::setw(indices_width) << t << ":";
       auto_separator sep(",");
-      for (auto& signal : signals_) {
-        sdata_type value = get_value(block, signal.node->size(), src_offset);
-        src_offset += value.size();
-        out << sep << " " << signal.name << "=" << value;
+      for (uint32_t i = 0, n = signals_.size(); i < n; ++i) {
+        auto& signal = signals_.at(i);
+        auto signal_type = signal.node->type();
+        auto signal_size = signal.node->size();
+        bool valid = bv_get(src_block, mask_offset + i);
+        if (valid) {
+          auto value = get_value(src_block, signal_size, src_offset);
+          out << sep << " " << signal.name << "=" << value;
+          if (type_input != signal_type) {
+            auto& prev = prev_values.at(i);
+            prev.first = src_block;
+            prev.second = src_offset;
+          }
+          src_offset += signal_size;
+        } else {
+          if (type_input != signal_type) {
+            auto& prev = prev_values.at(i);
+            assert(prev.first);
+            auto value = get_value(prev.first, signal_size, prev.second);
+            out << sep << " " << signal.name << "=" << value;
+          }
+        }
       }
       out << std::endl;
+      ++t;
     }
     trace_block = trace_block->next;
   }
 }
 
-void tracerimpl::toVCD(const std::string& file) {
+void tracerimpl::toVCD(std::ofstream& out) {
   // remove [] from signal name
   auto fixup_name = [&](const std::string name) {
     std::string ret(name);
@@ -136,7 +191,6 @@ void tracerimpl::toVCD(const std::string& file) {
     return ret;
   };
 
-  std::ofstream out(file);
   // log trace header
   out << "$timescale 1 ns $end" << std::endl;
   for (auto& tap : signals_) {
@@ -148,29 +202,50 @@ void tracerimpl::toVCD(const std::string& file) {
 
   // log trace data
   uint32_t t = 0;
-  auto trace_block = trace_blocks_head_;
+  auto mask_width = valid_mask_.size();
+
+  auto trace_block = trace_head_;
   while (trace_block) {
-    for (uint32_t block_idx = 0; block_idx < trace_block->size; ++block_idx) {
-      auto& block = trace_block->data.at(block_idx);
-      out << '#' << t++ << std::endl;
-      auto value_iter = block.begin();
-      for (auto& signal : signals_) {
-        auto signal_size = signal.node->size();
-        if (signal_size > 1)
-          out << 'b';
-        for (int j = signal_size-1; j >= 0; --j) {
-          out << (*value_iter++ ? '1' : '0');
+    auto src_block = trace_block->data;
+    auto src_width = trace_block->size;
+    uint32_t src_offset = 0;
+    while (src_offset < src_width) {
+      uint32_t mask_offset = src_offset;
+      src_offset += mask_width;
+      bool new_trace = false;
+      for (uint32_t i = 0, n = signals_.size(); i < n; ++i) {
+        bool valid = bv_get(src_block, mask_offset + i);
+        if (valid) {
+          if (!new_trace) {
+            out << '#' << t << std::endl;
+            new_trace = true;
+          }
+          auto& signal = signals_.at(i);
+          auto signal_size = signal.node->size();
+          auto value = get_value(src_block, signal_size, src_offset);
+          src_offset += signal_size;
+
+          if (signal_size > 1)
+            out << 'b';
+          for (auto it = value.begin(), end = value.end(); it != end;) {
+            out << (*it++ ? '1' : '0');
+          }
+          if (signal_size > 1)
+            out << ' ';
+          out << fixup_name(signal.name) << std::endl;
         }
-        if (signal_size > 1)
-          out << ' ';
-        out << fixup_name(signal.name) << std::endl;
       }
+      if (new_trace)
+        out << std::endl;
+      ++t;
     }
     trace_block = trace_block->next;
   }
 }
 
-void tracerimpl::toTestBench(const std::string& file, const std::string& module) {
+void tracerimpl::toTestBench(std::ofstream& out,
+                             const std::string& module,
+                             bool passthru) {
   //--
   auto full_name = [&](const lnode& x) {
     return stringf("__module%d__.%s%d", x.impl()->ctx()->id(), x.name().c_str(), x.id());
@@ -234,8 +309,6 @@ void tracerimpl::toTestBench(const std::string& file, const std::string& module)
     return true;
   };
 
-  std::ofstream out(file);
-
   // log header
   out << "`timescale 1ns/1ns" << std::endl;
   out << "`include \"" << module << "\"" << std::endl << std::endl;
@@ -289,38 +362,115 @@ void tracerimpl::toTestBench(const std::string& file, const std::string& module)
     {
       auto_indent indent1(out);
 
-      auto trace_block = trace_blocks_head_;
+      uint64_t tc = 0, tp = 0;
+      auto mask_width = valid_mask_.size();
+
+      for (uint32_t i = 0, n = signals_.size(); i < n; ++i) {
+        prev_values[i] = std::make_pair<block_type*, uint32_t>(nullptr, 0);
+      }
+
+      auto trace_block = trace_head_;
       while (trace_block) {
-        for (uint32_t block_idx = 0; block_idx < trace_block->size; ++block_idx) {
-          auto& block = trace_block->data.at(block_idx);
+        auto src_block = trace_block->data;
+        auto src_width = trace_block->size;
+        uint32_t src_offset = 0;
+        while (src_offset < src_width) {
+          uint32_t mask_offset = src_offset;
+          auto in_offset = mask_offset + mask_width;
+          auto out_offset = mask_offset + mask_width;
+          bool in_trace = false;
+          bool out_trace = false;
           {
-            out << "#0";
-            auto src_offset = 0;
-            for (auto& signal : signals_) {
-              if (type_input == signal.node->type()) {
-                auto value = get_value(block, signal.node->size(), src_offset);
+            for (uint32_t i = 0, n = signals_.size(); i < n; ++i) {
+              bool valid = bv_get(src_block, mask_offset + i);
+              if (valid) {
+                auto& signal = signals_.at(i);
+                auto signal_type = signal.node->type();
+                auto signal_size = signal.node->size();
+                if ((tc != 0 && signal.name == "clk")
+                 || (type_input != signal_type)) {
+                  in_offset += signal_size;
+                  continue;
+                }
+                if (!in_trace) {
+                  out << "#" << (tc - tp);
+                  tp = tc;
+                  in_trace = true;
+                }
+                auto value = get_value(src_block, signal_size, in_offset);
+                in_offset += signal_size;
                 out << " " << signal.name << "=";
                 print_value(out, value);
                 out << ";";
               }
-              src_offset += signal.node->size();
             }
-            out << std::endl;
+            if (in_trace) {
+              out << std::endl;
+            }
           }
+
           {
-            out << "#1";
-            auto src_offset = 0;
-            for (auto& signal : signals_) {
-              if (type_input != signal.node->type()) {
-                auto value = get_value(block, signal.node->size(), src_offset);
+            for (uint32_t i = 0, n = signals_.size(); i < n; ++i) {
+              auto& signal = signals_.at(i);
+              auto signal_type = signal.node->type();
+              auto signal_size = signal.node->size();
+              bool valid = bv_get(src_block, mask_offset + i);
+              if (valid) {
+                if (type_input == signal_type) {
+                  out_offset += signal_size;
+                  continue;
+                }
+
+                auto& prev = prev_values.at(i);
+                prev.first = src_block;
+                prev.second = out_offset;
+
+                if (passthru
+                 && (tc + 1) < ticks_) {
+                  out_offset += signal_size;
+                  continue;
+                }
+
+                if (!out_trace) {
+                  out << "#" << (tc - tp + 1);
+                  tp = tc + 1;
+                  out_trace = true;
+                }
+
+                auto value = get_value(src_block, signal_size, out_offset);
+                out_offset += signal_size;
+                out << " `check(" << signal.name << ", ";
+                print_value(out, value);
+                out << ");";
+              } else {
+                if (type_input == signal_type)
+                  continue;
+
+                if (passthru
+                 && (tc + 1) < ticks_)
+                  continue;
+
+                if (!out_trace) {
+                  out << "#" << (tc - tp  + 1);
+                  tp = tc + 1;
+                  out_trace = true;
+                }
+
+                auto& prev = prev_values.at(i);
+                assert(prev.first);
+                auto value = get_value(prev.first, signal_size, prev.second);
                 out << " `check(" << signal.name << ", ";
                 print_value(out, value);
                 out << ");";
               }
-              src_offset += signal.node->size();
             }
-            out << std::endl;
+            if (out_trace) {
+              out << std::endl;
+            }
           }
+
+          src_offset = in_offset;
+          ++tc;
         }
         trace_block = trace_block->next;
       }
@@ -357,14 +507,16 @@ ch_tracer& ch_tracer::operator=(ch_tracer&& other) {
   return *this;
 }
 
-void ch_tracer::toText(const std::string& file) {
-  return reinterpret_cast<tracerimpl*>(impl_)->toText(file);
+void ch_tracer::toText(std::ofstream& out) {
+  return reinterpret_cast<tracerimpl*>(impl_)->toText(out);
 }
 
-void ch_tracer::toVCD(const std::string& file) {
-  return reinterpret_cast<tracerimpl*>(impl_)->toVCD(file);
+void ch_tracer::toVCD(std::ofstream& out) {
+  return reinterpret_cast<tracerimpl*>(impl_)->toVCD(out);
 }
 
-void ch_tracer::toTestBench(const std::string& file, const std::string& module) {
-  return reinterpret_cast<tracerimpl*>(impl_)->toTestBench(file, module);
+void ch_tracer::toTestBench(std::ofstream& out,
+                            const std::string& module,
+                            bool passthru) {
+  return reinterpret_cast<tracerimpl*>(impl_)->toTestBench(out, module, passthru);
 }

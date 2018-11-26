@@ -47,24 +47,25 @@ public:
   public:
 
     reference& operator=(bool other) {
+      auto mask = word_t(1) << lsb_;
       if (other) {
-        word_ |= mask_;
+        word_ |= mask;
       } else {
-        word_ &= ~mask_;
+        word_ &= ~mask;
       }
       return *this;
     }
 
     operator bool() const {
-      return (word_ & mask_) != 0;
+      return (word_ >> lsb_) & 0x1;
     }
 
   protected:
 
-    reference(word_t& word, word_t mask) : word_(word), mask_(mask) {}
+    reference(word_t& word, uint32_t lsb) : word_(word), lsb_(lsb) {}
 
     word_t& word_;
-    word_t  mask_;
+    uint32_t lsb_;
 
     friend class iterator;
     friend class bitvector;
@@ -120,11 +121,13 @@ public:
     }
 
     const_reference const_ref() const {
-      return (*words_ & (word_t(1) << (offset_ % bitwidth_v<word_t>))) != 0;
+      uint32_t lsb = offset_ % bitwidth_v<word_t>;
+      return (*words_ >> lsb) & 0x1;
     }
 
     reference ref() const {
-      return reference(const_cast<word_t&>(*words_), word_t(1) << (offset_ % bitwidth_v<word_t>));
+      uint32_t lsb = offset_ % bitwidth_v<word_t>;
+      return reference(const_cast<word_t&>(*words_), lsb);
     }
 
     const word_t* words_;
@@ -492,18 +495,16 @@ public:
 
   const_reference at(uint32_t index) const {
     assert(index < size_);
-    uint32_t widx = index / bitwidth_v<word_t>;
-    uint32_t wbit = index % bitwidth_v<word_t>;
-    auto mask = word_t(1) << wbit;
-    return (words_[widx] & mask) != 0;
+    uint32_t idx = index / bitwidth_v<word_t>;
+    uint32_t lsb = index % bitwidth_v<word_t>;
+    return (words_[idx] >> lsb) & 0x1;
   }
 
   reference at(uint32_t index) {
     assert(index < size_);
-    uint32_t widx = index / bitwidth_v<word_t>;
-    uint32_t wbit = index % bitwidth_v<word_t>;
-    auto mask = word_t(1) << wbit;
-    return reference(words_[widx], mask);
+    uint32_t idx = index / bitwidth_v<word_t>;
+    uint32_t lsb = index % bitwidth_v<word_t>;
+    return reference(words_[idx], lsb);
   }
 
   auto operator[](uint32_t index) const {
