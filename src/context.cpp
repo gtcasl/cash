@@ -45,10 +45,9 @@ public:
     } else {
       auto count = dup_names_.insert(unique_name.c_str());
       if (count) {
-        module_names_[signature] = stringf("%s_%ld", name.c_str(), count);
-      } else {
-        module_names_[signature] = unique_name.c_str();
+        unique_name = stringf("%s_%ld", name.c_str(), count);
       }
+      module_names_[signature] = unique_name.c_str();
     }
     return new context(unique_name.c_str());
   }
