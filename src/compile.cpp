@@ -464,6 +464,8 @@ void compiler::build_node_map() {
 }
 
 bool compiler::dead_code_elimination() {
+  CH_DBG(3, "Begin Compiler::DCE\n");
+
   bool changed = false;
 
   ordered_set<lnodeimpl*> live_nodes;
@@ -603,12 +605,17 @@ bool compiler::dead_code_elimination() {
   }
 
   assert(ctx_->nodes().size() == live_nodes.size());
+
+  CH_DBG(3, "End Compiler::DCE\n");
+
   return changed;
 }
 
 bool compiler::subexpressions_elimination() {
   if (platform::self().cflags() & cflags::disable_cse)
     return false;
+
+  CH_DBG(3, "Begin Compiler::CSE\n");
 
   bool changed = false;
 
@@ -621,7 +628,7 @@ bool compiler::subexpressions_elimination() {
     if (0 == node->hash())
       return false;
     auto p_it = cse_table.find(node);
-    if (p_it != cse_table.end()) {
+    if (p_it != cse_table.end()) {      
       this->map_replace_target(node, p_it->node);
       this->map_delete(node);
       deleted_list.push_back(it);
@@ -645,12 +652,16 @@ bool compiler::subexpressions_elimination() {
     cse_table.clear();
   }
 
+  CH_DBG(3, "End Compiler::CSE\n");
+
   return changed;
 }
 
 bool compiler::prune_identity_proxies() {
   if (platform::self().cflags() & cflags::disable_pip)
     return false;
+
+  CH_DBG(3, "Begin Compiler::PIP\n");
 
   bool changed = false;
 
@@ -668,12 +679,41 @@ bool compiler::prune_identity_proxies() {
     changed = true;
   }
 
+  CH_DBG(3, "End Compiler::PIP\n");
+
   return changed;
 }
 
 bool compiler::proxies_coalescing() {
   if (platform::self().cflags() & cflags::disable_pcx)
     return false;
+
+  CH_DBG(3, "Begin Compiler::PCX\n");
+
+  auto is_multi_range = [&](proxyimpl* proxy, uint32_t offset, uint length) {
+    assert(offset + length <= proxy->size());
+    auto end = offset + length;
+    for (auto& range : proxy->ranges()) {
+      auto range_end = range.dst_offset + range.length;
+      if (range_end <= offset
+      || end <= range.dst_offset)
+        continue;
+      return (offset < range.dst_offset || end > range_end);
+    }
+    return false;
+  };
+
+  auto is_useful_proxy = [&](proxyimpl* proxy, proxyimpl* src_proxy) {
+    for (uint32_t i = 0, n = proxy->ranges().size(); i < n; ++i) {
+      auto& range = proxy->range(i);
+      if (proxy->src(range.src_idx).id() != src_proxy->id())
+        continue;
+      if (range.length != src_proxy->size()
+       && !is_multi_range(src_proxy, range.src_offset, range.length))
+        return false;
+    }
+    return true;
+  };
 
   bool changed = false;
 
@@ -692,15 +732,22 @@ bool compiler::proxies_coalescing() {
 
       for (auto& src : dst_proxy->srcs()) {
         if (type_proxy != src.impl()->type())
-          continue;
+          continue;        
+
         auto src_proxy = reinterpret_cast<proxyimpl*>(src.impl());
         if (src_proxies.count(src_proxy))
           continue;
+
+        // skip useful proxies
+        auto use_count = node_map_.at(src_proxy->id()).size();
+        if (use_count > 1
+         && is_useful_proxy(dst_proxy, src_proxy))
+          continue;
+
         auto& upd_ranges = src_proxies[src_proxy];
         for (auto& dst_range : dst_proxy->ranges()) {
           if (dst_proxy->src(dst_range.src_idx).id() != src_proxy->id())
             continue;
-
           for (auto& src_range : src_proxy->ranges()) {
             int32_t delta  = src_range.dst_offset - dst_range.src_offset;
             uint32_t start = std::max<int32_t>(dst_range.dst_offset + delta, 0);
@@ -754,6 +801,7 @@ bool compiler::proxies_coalescing() {
             node_map_.at(src.id()).emplace(&src);
           }
         }
+
         // unregister remaining deleted nodes
         for (auto& src_p : src_nodes) {
           node_map_.at(src_p.second->id()).erase(src_p.first);
@@ -776,6 +824,8 @@ bool compiler::proxies_coalescing() {
       }
     }
   }  
+
+  CH_DBG(3, "End Compiler::PCX\n");
 
   return changed;
 }

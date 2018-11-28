@@ -49,7 +49,12 @@ private:
 
 #define __align_word_size(...) ((((__VA_ARGS__) + WORD_MASK) / WORD_SIZE) * sizeof(block_type))
 #define __countof(arr) (sizeof(arr) / sizeof(arr[0]))
-#define __source_location() SrcLogger slogger(j_func_, __PRETTY_FUNCTION__)
+
+#ifndef NDEBUG
+  #define __source_location() SrcLogger slogger(j_func_, __PRETTY_FUNCTION__)
+#else
+  #define __source_location()
+#endif
 
 #define __alu_call_relational(fname, ...) \
   [&]()->jit_value_t { \
@@ -1311,7 +1316,9 @@ private:
         this->emit_memcpy(j_dst_ptr, j_src_ptr, ceildiv(dst_width, 8));
       }
     }
-    jit_insn_label(j_func_, &l_exit);
+    if (l_exit != jit_label_undefined) {
+      jit_insn_label(j_func_, &l_exit);
+    }
   }
 
   void emit_node(cdimpl* node) {
@@ -1554,7 +1561,9 @@ private:
       }
     }
 
-    jit_insn_label(j_func_, &l_exit);
+    if (l_exit != jit_label_undefined) {
+      jit_insn_label(j_func_, &l_exit);
+    }
   }
 
   void emit_node(marportimpl* node) {
@@ -1624,7 +1633,7 @@ private:
       this->emit_load_array_vector(j_dst_ptr, dst_width, j_array_ptr, j_src_addr);
     }
 
-    if (predicated) {
+    if (l_exit != jit_label_undefined) {
       jit_insn_label(j_func_, &l_exit);
     }
   }
@@ -1669,7 +1678,7 @@ private:
       this->emit_store_array_vector(j_array_ptr, j_dst_addr, j_wdata_ptr, data_width);
     }
 
-    if (predicated) {
+    if (l_exit != jit_label_undefined) {
       jit_insn_label(j_func_, &l_exit);
     }
   }
@@ -1729,7 +1738,7 @@ private:
                          __countof(args),
                          JIT_CALL_NOTHROW);
 
-    if (predicated) {
+    if (l_exit != jit_label_undefined) {
       jit_insn_label(j_func_, &l_exit);
     }
   }
@@ -1777,7 +1786,9 @@ private:
                          __countof(args),
                          JIT_CALL_NOTHROW);
 
-    jit_insn_label(j_func_, &l_exit);
+    if (l_exit != jit_label_undefined) {
+      jit_insn_label(j_func_, &l_exit);
+    }
   }
 
   void emit_node(udfcimpl* node) {
@@ -1893,7 +1904,7 @@ private:
       scalar_map_[node->id()] = j_dst;
     }
 
-    if (predicated) {
+    if (l_exit != jit_label_undefined) {
       jit_insn_label(j_func_, &l_exit);
     }
   }
