@@ -302,9 +302,38 @@ bool verilogwriter::print_decl(std::ostream& out,
     if (type_mem == type) {
       auto mem = reinterpret_cast<memimpl*>(node);
       out << " [0:" << (mem->num_items() - 1) << "]";
-      //if (mem->wrports().empty()) {
-      //  out << " /* synthesis ramstyle = \"M20K, no_rw_check\" */";
-      //}
+      if (mem->is_logic_rom()
+       && mem->force_logic_ram()) {
+        out << " /* synthesis";
+        if (mem->size() >= 20*1024) {
+          out << " ramstyle = \"M20K\"";
+        } else {
+          out << " ramstyle = \"MLAB\"";
+        }
+        if (mem->has_init_data()) {
+          const auto& value = mem->init_data();
+          auto data_width = mem->data_width();
+          auto num_items = mem->num_items();
+
+          auto filename = stringf("%s%d.mif", mem->name().c_str(), mem->id());
+          out << ", ram_init_file = \"" + filename  + "\"";
+
+          std::ofstream out_mif(filename);
+          out_mif << "WIDTH = " << data_width << ";" << std::endl;
+          out_mif << "DEPTH = " << num_items << ";" << std::endl;
+          out_mif << "ADDRESS_RADIX = HEX;" << std::endl;
+          out_mif << "DATA_RADIX = HEX;" << std::endl;
+          out_mif << "CONTENT BEGIN" << std::endl;
+          out_mif << std::hex;
+          for (uint32_t i = 0; i < num_items; ++i) {
+            out_mif << i << " : ";
+            this->print_value(out_mif, value, true, i * data_width, data_width, true);
+            out_mif << ";" << std::endl;
+          }
+          out_mif << "END;"<< std::endl;
+        }
+        out << " */";
+      }
     }
     visited.insert(node->id());
     if (!ref) {
@@ -697,7 +726,8 @@ void verilogwriter::print_mem(std::ostream& out, memimpl* node) {
   //
   // initialization data
   //
-  if (node->has_init_data()) {
+  if (node->has_init_data()
+   && !node->force_logic_ram()) {
     out << "initial begin" << std::endl;
     {
       auto_indent indent(out);
@@ -921,12 +951,16 @@ void verilogwriter::print_value(std::ostream& out,
                                 const sdata_type& value,
                                 bool skip_zeros,
                                 uint32_t offset,
-                                uint32_t size) {
+                                uint32_t size,
+                                bool digit_only) {
   if (0 == size) {
     size = value.size();
   }
 
-  out << size << "'h";
+  if (!digit_only) {
+    out << size << "'h";
+  }
+
   auto oldflags = out.flags();
   out.setf(std::ios_base::hex, std::ios_base::basefield);
 

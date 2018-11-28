@@ -704,6 +704,8 @@ bool compiler::proxies_coalescing() {
   };
 
   auto is_useful_proxy = [&](proxyimpl* proxy, proxyimpl* src_proxy) {
+    if (src_proxy->is_identity())
+      return false;
     for (uint32_t i = 0, n = proxy->ranges().size(); i < n; ++i) {
       auto& range = proxy->range(i);
       if (proxy->src(range.src_idx).id() != src_proxy->id())

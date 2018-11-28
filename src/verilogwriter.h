@@ -83,7 +83,8 @@ protected:
                    const sdata_type& value,
                    bool skip_zeros = false,
                    uint32_t offset = 0,
-                   uint32_t size = 0);
+                   uint32_t size = 0,
+                   bool digit_only = false);
 
   void print_operator(std::ostream& out, ch_op op);
 

@@ -52,6 +52,7 @@ public:
   memory(uint32_t data_width,
          uint32_t num_items,
          const sdata_type& init_data,
+         bool force_logic_ram,
          const source_location& sloc);
 
   lnodeimpl* aread(const lnode& addr,
@@ -71,7 +72,7 @@ protected:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T, unsigned N>
+template <typename T, unsigned N, bool ForceLogicRAM = false>
 class ch_rom {
 public:
   static constexpr unsigned size = N;
@@ -80,28 +81,28 @@ public:
   using value_type = T;
 
   explicit ch_rom(const std::string& init_file, CH_SLOC)
-    : mem_(ch_width_v<T>, N, loadInitData(init_file, data_width, N), sloc)
+    : mem_(ch_width_v<T>, N, loadInitData(init_file, data_width, N), ForceLogicRAM, sloc)
   {}
 
   explicit ch_rom(const std::initializer_list<uint32_t>& init_data, CH_SLOC)
-    : mem_(ch_width_v<T>, N, loadInitData(init_data, data_width, N), sloc)
+    : mem_(ch_width_v<T>, N, loadInitData(init_data, data_width, N), ForceLogicRAM, sloc)
   {}
 
   template <typename U, std::size_t M>
   explicit ch_rom(const std::array<U, M>& init_data, CH_SLOC)
-    : mem_(ch_width_v<T>, N, loadInitData(init_data, data_width, N), sloc) {
+    : mem_(ch_width_v<T>, N, loadInitData(init_data, data_width, N), ForceLogicRAM, sloc) {
     static_assert(is_bitvector_array_type_v<U>, "invalid type");
   }
 
   template <typename U>
   explicit ch_rom(const std::vector<U>& init_data, CH_SLOC)
-    : mem_(ch_width_v<T>, N, loadInitData(init_data, data_width, N), sloc) {
+    : mem_(ch_width_v<T>, N, loadInitData(init_data, data_width, N), ForceLogicRAM, sloc) {
     static_assert(is_bitvector_array_type_v<U>, "invalid type");
   }
 
   template <typename U>
   explicit ch_rom(const sdata_type& init_data, CH_SLOC)
-    : mem_(ch_width_v<T>, N, init_data, sloc) {
+    : mem_(ch_width_v<T>, N, init_data, ForceLogicRAM, sloc) {
     static_assert(is_bitvector_array_type_v<U>, "invalid type");
   }
 
@@ -124,31 +125,31 @@ public:
   static constexpr unsigned addr_width = log2ceil(N);
   using value_type = T;
 
-  ch_mem(CH_SLOC) : mem_(ch_width_v<T>, N, {}, sloc) {}
+  ch_mem(CH_SLOC) : mem_(ch_width_v<T>, N, {}, false, sloc) {}
 
   explicit ch_mem(const std::string& init_file, CH_SLOC)
-    : mem_(ch_width_v<T>, N, loadInitData(init_file, data_width, N), sloc)
+    : mem_(ch_width_v<T>, N, loadInitData(init_file, data_width, N), false, sloc)
   {}
 
   explicit ch_mem(const std::initializer_list<uint32_t>& init_data, CH_SLOC)
-    : mem_(ch_width_v<T>, N, loadInitData(init_data, data_width, N), sloc)
+    : mem_(ch_width_v<T>, N, loadInitData(init_data, data_width, N), false, sloc)
   {}
 
   template <typename U, std::size_t M>
   explicit ch_mem(const std::array<U, M>& init_data, CH_SLOC)
-    : mem_(ch_width_v<T>, N, loadInitData(init_data, data_width, N), sloc) {
+    : mem_(ch_width_v<T>, N, loadInitData(init_data, data_width, N), false, sloc) {
     static_assert(is_bitvector_array_type_v<U>, "invalid type");
   }
 
   template <typename U>
   explicit ch_mem(const std::vector<U>& init_data, CH_SLOC)
-    : mem_(ch_width_v<T>, N, loadInitData(init_data, data_width, N), sloc) {
+    : mem_(ch_width_v<T>, N, loadInitData(init_data, data_width, N), false, sloc) {
     static_assert(is_bitvector_array_type_v<U>, "invalid type");
   }
 
   template <typename U>
   explicit ch_mem(const sdata_type& init_data, CH_SLOC)
-    : mem_(ch_width_v<T>, N, init_data, sloc) {
+    : mem_(ch_width_v<T>, N, init_data, false, sloc) {
     static_assert(is_bitvector_array_type_v<U>, "invalid type");
   }
 

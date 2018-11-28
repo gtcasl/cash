@@ -99,15 +99,17 @@ memimpl::memimpl(context* ctx,
                  uint32_t data_width,
                  uint32_t num_items,
                  const sdata_type& init_data,
+                 bool force_logic_ram,
                  const source_location& sloc)
   : ioimpl(ctx, type_mem, data_width * num_items, sloc)
   , init_data_(init_data)
   , data_width_(data_width)
   , num_items_(num_items)
+  , force_logic_ram_(force_logic_ram)
 {}
 
 lnodeimpl* memimpl::clone(context* ctx, const clone_map&) {
-  return ctx->create_node<memimpl>(data_width_, num_items_, init_data_, sloc_);
+  return ctx->create_node<memimpl>(data_width_, num_items_, init_data_, force_logic_ram_, sloc_);
 }
 
 memportimpl* memimpl::create_arport(lnodeimpl* addr,
@@ -370,9 +372,10 @@ lnodeimpl* mwportimpl::clone(context* ctx, const clone_map& cloned_nodes) {
 memory::memory(uint32_t data_width,
                uint32_t num_items,
                const sdata_type& init_data,
+               bool is_logic_rom,
                const source_location& sloc) {
   CH_CHECK(!ctx_curr()->conditional_enabled(), "memory objects disallowed inside conditional blocks");
-  impl_ = ctx_curr()->create_node<memimpl>(data_width, num_items, init_data, sloc);
+  impl_ = ctx_curr()->create_node<memimpl>(data_width, num_items, init_data, is_logic_rom, sloc);
 }
 
 lnodeimpl* memory::aread(const lnode& addr, const source_location& sloc) const {

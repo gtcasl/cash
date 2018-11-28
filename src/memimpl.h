@@ -52,6 +52,10 @@ public:
 
   bool is_readwrite(memportimpl* port) const;
 
+  bool force_logic_ram() const {
+    return force_logic_ram_;
+  }
+
   virtual lnodeimpl* clone(context* ctx, const clone_map& cloned_nodes) override;
 
   memportimpl* create_arport(lnodeimpl* addr,
@@ -78,6 +82,7 @@ protected:
           uint32_t data_width,
           uint32_t num_items,
           const sdata_type& init_data,
+          bool force_logic_ram,
           const source_location& sloc);
   
   std::vector<memportimpl*> rdports_;
@@ -85,6 +90,7 @@ protected:
   sdata_type init_data_;
   uint32_t data_width_;
   uint32_t num_items_;
+  bool force_logic_ram_;
 
   friend class context;
 };
