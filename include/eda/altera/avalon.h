@@ -217,7 +217,8 @@ public:
   __io(
     __in(ch_uint<AddrW>)  base_addr,
     __in(ch_bool)         start,
-    __out(ch_bool)        buzy,
+    __in(ch_bool)         flush,
+    __out(ch_bool)        busy,
     (ch_enq_io<ch_bit<DataW>>) enq,
     (avalon_mm_io<AVM>)   avm,
     __out(ch_uint64)      req_stalls,
@@ -228,14 +229,16 @@ public:
     ch_reg<ch_uint<AddrW>> address(0);
     ch_reg<burst_t> burst_counter(0);
     ch_reg<ch_bool> write_enabled(false);
-    ch_reg<ch_bool> buzy(false);
+    ch_reg<ch_bool> busy(false);
 
     // the write request was granted
     auto write_granted = write_enabled && !io.avm.waitrequest;
 
     // determine when to begin the next write transaction
-    auto write_begin = ((0 == burst_counter) && in_fifo_.io.deq.valid)
-                    || ((1 == burst_counter) && !io.avm.waitrequest && (in_fifo_.io.size > 1));
+    auto input_valid_curr = (in_fifo_.io.deq.valid && io.flush) || (in_fifo_.io.size >= MaxBurst && !io.flush);
+    auto input_valid_next = (in_fifo_.io.size > 1 && io.flush) || (in_fifo_.io.size > MaxBurst && !io.flush);
+    auto write_begin = ((0 == burst_counter) && input_valid_curr)
+                    || ((1 == burst_counter) && !io.avm.waitrequest && input_valid_next);
 
     // compute the burst size
     auto full_burst_enable = (in_fifo_.io.size > MaxBurst)
@@ -267,9 +270,9 @@ public:
 
     // the device is buzy until all requests are submitted
     __if (in_fifo_.io.enq.ready && in_fifo_.io.enq.valid) {
-      buzy->next = true;
+      busy->next = true;
     }__elif (write_granted && (1 == in_fifo_.io.size)) {
-      buzy->next = false;
+      busy->next = false;
     };
 
     // we have a requet stall when the input queue is full
@@ -297,7 +300,7 @@ public:
     in_fifo_.io.enq(io.enq);
 
     //--
-    io.buzy = buzy;
+    io.busy = busy;
 
     //--
     io.req_stalls = req_stalls;

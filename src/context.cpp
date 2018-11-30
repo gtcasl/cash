@@ -49,7 +49,7 @@ public:
       }
       module_names_[signature] = unique_name.c_str();
     }
-    return new context(unique_name.c_str());
+    return new context(unique_name.c_str(), ctx_);
   }
 
   context* ctx() const {
@@ -174,13 +174,14 @@ struct cond_br_t {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-context::context(const std::string& name)
+context::context(const std::string& name, context* parent)
   : id_(context_manager::instance().ctx_id())
   , name_(name)
+  , parent_(parent)
   , block_idx_(0)
   , sys_clk_(nullptr)
   , sys_reset_(nullptr)
-  , sys_time_(nullptr)
+  , sys_time_(nullptr)  
 {}
 
 context::~context() {
@@ -896,34 +897,52 @@ void context::dump_cfg(lnodeimpl* node, std::ostream& out) {
 }
 
 void context::dump_stats(std::ostream& out) {
-  uint64_t num_memories = 0;
+  uint64_t num_inputs = 0;
+  uint64_t num_outputs = 0;
   uint64_t num_registers = 0;
-  uint64_t num_muxes = 0;
+  uint64_t num_memories = 0;
+  uint64_t num_literals = 0;
   uint64_t num_alus = 0;
-  uint64_t num_lits = 0;
+  uint64_t num_muxes = 0;
 
-  uint64_t memory_bits = 0;
+  uint64_t input_bits = 0;
+  uint64_t output_bits = 0;
   uint64_t register_bits = 0;
+  uint64_t memory_bits = 0;
+  uint64_t literal_bits = 0;
 
   std::function<void(context*)> calc_stats = [&](context* ctx) {
     for (lnodeimpl* node : ctx->nodes()) {
       switch (node->type()) {
-      case type_mem:
-        memory_bits += reinterpret_cast<memimpl*>(node)->size();
-        ++num_memories;
+      case type_input:
+        if (nullptr == ctx->parent()) {
+          input_bits += node->size();
+          ++num_inputs;
+        }
+        break;
+      case type_output:
+        if (nullptr == ctx->parent()) {
+          output_bits += node->size();
+          ++num_outputs;
+        }
         break;
       case type_reg:
         register_bits += node->size();
         ++num_registers;
         break;
-      case type_sel:
-        ++num_muxes;
+      case type_mem:
+        memory_bits += node->size();
+        ++num_memories;
+        break;
+      case type_lit:
+        literal_bits += node->size();
+        ++num_literals;
         break;
       case type_alu:
         ++num_alus;
         break;
-      case type_lit:
-        ++num_lits;
+      case type_sel:
+        ++num_muxes;
         break;
       case type_bind:
         calc_stats(reinterpret_cast<bindimpl*>(node)->module());
@@ -936,13 +955,13 @@ void context::dump_stats(std::ostream& out) {
 
   calc_stats(this);
 
-  out << "ch-stats: total memory bits = " << memory_bits << std::endl;
-  out << "ch-stats: total register bits = " << register_bits << std::endl;
-  out << "ch-stats: total memories = " << num_memories << std::endl;
-  out << "ch-stats: total registers = " << num_registers << std::endl;
-  out << "ch-stats: total muxes = " << num_muxes << std::endl;
+  out << "ch-stats: total inputs = " << num_inputs << " (" << input_bits << " bits)" << std::endl;
+  out << "ch-stats: total outputs = " << num_outputs << " (" << output_bits << " bits)" << std::endl;
+  out << "ch-stats: total registers = " << num_registers << " (" << register_bits << " bits)" << std::endl;
+  out << "ch-stats: total memories = " << num_memories << " (" << memory_bits << " bits)" << std::endl;
+  out << "ch-stats: total literals = " << num_literals << " (" << literal_bits << " bits)" << std::endl;
   out << "ch-stats: total alus = " << num_alus << std::endl;
-  out << "ch-stats: total literals = " << num_lits << std::endl;
+  out << "ch-stats: total muxes = " << num_muxes << std::endl;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

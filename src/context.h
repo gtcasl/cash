@@ -72,7 +72,7 @@ typedef std::stack<std::pair<cdimpl*, lnodeimpl*>> cd_stack_t;
 class context : public refcounted {
 public:
 
-  context(const std::string& name);
+  context(const std::string& name, context* parent = nullptr);
 
   ~context();
 
@@ -82,6 +82,10 @@ public:
 
   auto& name() const {
     return name_;
+  }
+
+  auto parent() const {
+    return parent_;
   }
 
   auto& nodes() const {
@@ -257,6 +261,7 @@ protected:
 
   uint32_t    id_;
   std::string name_;
+  context*    parent_;
 
   uint32_t    block_idx_;
   inputimpl*  sys_clk_;
@@ -288,7 +293,7 @@ protected:
 
   dup_tracker<std::string> dup_tap_names_;
 
-  enum_strings_t          enum_strings_;
+  enum_strings_t          enum_strings_;  
 };
 
 context* ctx_create(const std::type_index& signature, const std::string& name);
