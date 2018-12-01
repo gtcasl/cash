@@ -42,10 +42,6 @@ inline bool is_snode_type(lnodetype type) {
   return type_reg == type || type_mwport == type || type_msrport == type || type_udfs == type;
 }
 
-inline bool is_output_type(lnodetype type) {
-  return type_output == type || type_tap == type || type_assert == type  || type_print == type;
-}
-
 class cdimpl;
 cdimpl* get_snode_cd(lnodeimpl* node);
 

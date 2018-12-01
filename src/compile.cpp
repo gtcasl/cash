@@ -897,8 +897,9 @@ bool compiler::build_bypass_list(std::unordered_set<uint32_t>& out, context* ctx
       out.emplace(node->id());
       changed = true;
     } else
-    if (is_output_type(type)) {
-      // mark constant outputs as changed
+    if (type_output == type
+     || type_tap == type) {
+      // mark constant outputs as changed      
       changed = (type_lit == node->src(0).impl()->type());
     }
 
