@@ -22,7 +22,8 @@ void bv_init(T* dst, uint32_t size) {
   static constexpr T        WORD_MAX  = std::numeric_limits<T>::max();
 
   uint32_t num_words = ceildiv(size, WORD_SIZE);
-  std::fill_n(dst, num_words, (0xCDCDCDCDCDCDCDCD & WORD_MAX));
+  //std::fill_n(dst, num_words, (0xCDCDCDCDCDCDCDCD & WORD_MAX));
+  std::fill_n(dst, num_words, 0);
   bv_clear_extra_bits(dst, size);
 }
 

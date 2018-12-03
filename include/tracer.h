@@ -52,6 +52,15 @@ public:
     toTestBench(out, module, passthru);
   }
 
+  void toVerilator(std::ofstream& out,
+                   const std::string& module);
+
+  void toVerilator(const std::string& file,
+                   const std::string& module) {
+    std::ofstream out(file);
+    toVerilator(out, module);
+  }
+
 protected:
 
   ch_tracer(simulatorimpl* impl);

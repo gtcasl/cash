@@ -50,7 +50,7 @@ bool verilogwriter::is_inline_subscript(lnodeimpl* node) const {
   if (it != uses_.end()) {
     for (lnodeimpl* use : it->second) {
       if (type_proxy == use->type()
-       || type_mem == use->type()
+       || type_marport == use->type()
        || type_tap == use->type()
        || (type_alu == use->type()
         && ch_op::pad == reinterpret_cast<aluimpl*>(use)->op()))

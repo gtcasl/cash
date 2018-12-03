@@ -483,6 +483,144 @@ void tracerimpl::toTestBench(std::ofstream& out,
   out << "endmodule" << std::endl;
 }
 
+void tracerimpl::toVerilator(std::ofstream& out,
+                             const std::string& module) {
+  //--
+  auto print_value = [](std::ostream& out, const sdata_type& value) {
+    out << "0x";
+    auto oldflags = out.flags();
+    out.setf(std::ios_base::hex, std::ios_base::basefield);
+
+    bool skip_zeros = true;
+    uint32_t word = 0;
+    auto size = value.size();
+
+    for (auto it = value.begin() + (size - 1); size;) {
+      word = (word << 0x1) | *it--;
+      if (0 == (--size & 0x3)) {
+        if (0 == size || (word != 0 ) || !skip_zeros) {
+          out << word;
+          skip_zeros = false;
+        }
+        word = 0;
+      }
+    }
+    if (0 != (size & 0x3)) {
+      out << word;
+    }
+    out.flags(oldflags);
+  };
+
+
+  uint64_t tc = 0;
+  auto mask_width = valid_mask_.size();
+
+  for (uint32_t i = 0, n = signals_.size(); i < n; ++i) {
+    prev_values[i] = std::make_pair<block_type*, uint32_t>(nullptr, 0);
+  }
+
+  out << "bool eval(" << module << "* device, uint64_t tick) {" << std::endl;
+  out << "switch (tick) {" << std::endl;
+  auto trace_block = trace_head_;
+  while (trace_block) {
+    auto src_block = trace_block->data;
+    auto src_width = trace_block->size;
+    uint32_t src_offset = 0;
+    while (src_offset < src_width) {
+      uint32_t mask_offset = src_offset;
+      auto in_offset = mask_offset + mask_width;
+      auto out_offset = mask_offset + mask_width;
+      bool trace_enable = false;
+      {
+        for (uint32_t i = 0, n = signals_.size(); i < n; ++i) {
+          bool valid = bv_get(src_block, mask_offset + i);
+          if (valid) {
+            auto& signal = signals_.at(i);
+            auto signal_type = signal.node->type();
+            auto signal_size = signal.node->size();
+            if ((tc != 0 && signal.name == "clk")
+             || (type_input != signal_type)) {
+              in_offset += signal_size;
+              continue;
+            }
+            if (!trace_enable) {
+              out << "case " << tc << ":" << std::endl;
+              trace_enable = true;
+            }
+            auto value = get_value(src_block, signal_size, in_offset);
+            in_offset += signal_size;
+            out << "device->" << signal.name << "=";
+            print_value(out, value);
+            out << ";";
+          }
+        }
+      }
+
+      {
+        for (uint32_t i = 0, n = signals_.size(); i < n; ++i) {
+          auto& signal = signals_.at(i);
+          auto signal_type = signal.node->type();
+          auto signal_size = signal.node->size();
+          bool valid = bv_get(src_block, mask_offset + i);
+          if (valid) {
+            if (type_input == signal_type) {
+              out_offset += signal_size;
+              continue;
+            }
+
+            auto& prev = prev_values.at(i);
+            prev.first = src_block;
+            prev.second = out_offset;
+
+            if ((tc + 1) < ticks_) {
+              out_offset += signal_size;
+              continue;
+            }
+
+            if (!trace_enable) {
+              out << "case " << (tc + 1) << ":" << std::endl;
+              trace_enable = true;
+            }
+
+            auto value = get_value(src_block, signal_size, out_offset);
+            out_offset += signal_size;
+            out << "assert(device->" << signal.name << " == ";
+            print_value(out, value);
+            out << ");";
+          } else {
+            if (type_input == signal_type)
+              continue;
+
+            if ((tc + 1) < ticks_)
+              continue;
+
+            if (!trace_enable) {
+              out << "case " << (tc + 1) << ":" << std::endl;
+              trace_enable = true;
+            }
+
+            auto& prev = prev_values.at(i);
+            assert(prev.first);
+            auto value = get_value(prev.first, signal_size, prev.second);
+            out << "assert(device->" << signal.name << " == ";
+            print_value(out, value);
+            out << ");";
+          }
+        }
+      }
+      if (trace_enable) {
+        out << "break;" << std::endl;
+      }
+      src_offset = in_offset;
+      ++tc;
+    }
+    trace_block = trace_block->next;
+  }
+  out << "}" << std::endl;
+  out << "return (tick < " << ticks_ << ");" << std::endl;
+  out << "}" << std::endl;
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 ch_tracer::ch_tracer(const ch_device_list& devices)
@@ -519,4 +657,9 @@ void ch_tracer::toTestBench(std::ofstream& out,
                             const std::string& module,
                             bool passthru) {
   return reinterpret_cast<tracerimpl*>(impl_)->toTestBench(out, module, passthru);
+}
+
+void ch_tracer::toVerilator(std::ofstream& out,
+                            const std::string& module) {
+  return reinterpret_cast<tracerimpl*>(impl_)->toVerilator(out, module);
 }

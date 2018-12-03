@@ -20,6 +20,9 @@ public:
                    const std::string& module,
                    bool passthru);
 
+  void toVerilator(std::ofstream& out,
+                   const std::string& module);
+
 protected:
 
   void initialize();
