@@ -37,6 +37,11 @@ protected:
 
   ~aluimpl() {}
 
+  void init(ch_op op,
+            bool is_signed,
+            lnodeimpl* lhs = nullptr,
+            lnodeimpl* rhs = nullptr);
+
   ch_op op_;
   bool signed_;
 

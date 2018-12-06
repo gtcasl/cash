@@ -11,10 +11,10 @@ namespace internal {
 #define CH_OP_ENUM(m) \
   m(eq,     0 | op_flags::binary | op_flags::equality | op_flags::symmetric | op_flags::resize_src) \
   m(ne,     1 | op_flags::binary | op_flags::equality | op_flags::symmetric | op_flags::resize_src) \
-  m(lt,     2 | op_flags::binary | op_flags::relational | op_flags::symmetric | op_flags::resize_src) \
-  m(gt,     3 | op_flags::binary | op_flags::relational | op_flags::symmetric | op_flags::resize_src) \
-  m(le,     4 | op_flags::binary | op_flags::relational | op_flags::symmetric | op_flags::resize_src) \
-  m(ge,     5 | op_flags::binary | op_flags::relational | op_flags::symmetric | op_flags::resize_src) \
+  m(lt,     2 | op_flags::binary | op_flags::relational | op_flags::symmetric | op_flags::resize_src | op_flags::is_signed) \
+  m(gt,     3 | op_flags::binary | op_flags::relational | op_flags::symmetric | op_flags::resize_src | op_flags::is_signed) \
+  m(le,     4 | op_flags::binary | op_flags::relational | op_flags::symmetric | op_flags::resize_src | op_flags::is_signed) \
+  m(ge,     5 | op_flags::binary | op_flags::relational | op_flags::symmetric | op_flags::resize_src | op_flags::is_signed) \
   m(notl,   6 | op_flags::unary  | op_flags::logical) \
   m(andl,   7 | op_flags::binary | op_flags::logical | op_flags::symmetric) \
   m(orl,    8 | op_flags::binary | op_flags::logical | op_flags::symmetric) \
@@ -26,14 +26,14 @@ namespace internal {
   m(orr,   14 | op_flags::unary  | op_flags::reduce) \
   m(xorr,  15 | op_flags::unary  | op_flags::reduce) \
   m(shl,   16 | op_flags::binary | op_flags::shift) \
-  m(shr,   17 | op_flags::binary | op_flags::shift) \
-  m(neg,   18 | op_flags::unary  | op_flags::arithmetic | op_flags::resize_dst) \
-  m(add,   19 | op_flags::binary | op_flags::arithmetic | op_flags::symmetric | op_flags::resize_dst) \
-  m(sub,   20 | op_flags::binary | op_flags::arithmetic | op_flags::resize_dst) \
-  m(mult,  21 | op_flags::binary | op_flags::arithmetic | op_flags::symmetric) \
-  m(div,   22 | op_flags::binary | op_flags::arithmetic) \
-  m(mod,   23 | op_flags::binary | op_flags::arithmetic) \
-  m(pad,   24 | op_flags::unary  | op_flags::misc)
+  m(shr,   17 | op_flags::binary | op_flags::shift | op_flags::is_signed) \
+  m(neg,   18 | op_flags::unary  | op_flags::arithmetic | op_flags::resize_dst | op_flags::is_signed) \
+  m(add,   19 | op_flags::binary | op_flags::arithmetic | op_flags::symmetric | op_flags::resize_dst | op_flags::is_signed) \
+  m(sub,   20 | op_flags::binary | op_flags::arithmetic | op_flags::resize_dst | op_flags::is_signed) \
+  m(mult,  21 | op_flags::binary | op_flags::arithmetic | op_flags::symmetric | op_flags::is_signed) \
+  m(div,   22 | op_flags::binary | op_flags::arithmetic | op_flags::is_signed) \
+  m(mod,   23 | op_flags::binary | op_flags::arithmetic | op_flags::is_signed) \
+  m(pad,   24 | op_flags::unary  | op_flags::misc | op_flags::is_signed)
 
 enum class op_flags {
   unary      = 0 << 5,
@@ -50,6 +50,7 @@ enum class op_flags {
   resize_src = 1 << 9,
   resize_dst = 2 << 9,
   symmetric  = 1 << 11,
+  is_signed  = 1 << 12,
 };
 
 #define CH_OP_ARY(x)    op_flags((int)x & (0x1 << 5))

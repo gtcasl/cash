@@ -8,21 +8,32 @@ using namespace ch::internal;
 
 aluimpl::aluimpl(context* ctx, ch_op op, uint32_t size, bool is_signed,
                  lnodeimpl* in, const source_location& sloc)
-  : lnodeimpl(ctx, type_alu, size, sloc)
-  , op_(op)
-  , signed_(is_signed) {
-  name_ = to_string(op);
-  srcs_.push_back(in);
+  : lnodeimpl(ctx, type_alu, size, sloc) {
+  this->init(op, is_signed, in);
 }
 
 aluimpl::aluimpl(context* ctx, ch_op op, uint32_t size, bool is_signed,
                  lnodeimpl* lhs, lnodeimpl* rhs, const source_location& sloc)
-  : lnodeimpl(ctx, type_alu, size, sloc)
-  , op_(op)
-  , signed_(is_signed) {
+  : lnodeimpl(ctx, type_alu, size, sloc) {
+  this->init(op, is_signed, lhs, rhs);
+}
+
+void aluimpl::init(ch_op op, bool is_signed, lnodeimpl* lhs, lnodeimpl* rhs) {
+  op_ = op;
   name_ = to_string(op);
-  srcs_.push_back(lhs);
-  srcs_.push_back(rhs);
+  if (lhs) {
+    srcs_.push_back(lhs);
+  }
+  if (rhs) {
+    srcs_.push_back(rhs);
+  }
+  // disable the sign if not applicable
+  if (is_signed
+   && (0 == (CH_OP_PROP(op) & op_flags::is_signed))
+   && !this->should_resize_opds()) {
+    is_signed = false;
+  }
+  signed_ = is_signed;
 }
 
 lnodeimpl* aluimpl::clone(context* ctx, const clone_map& cloned_nodes) {
