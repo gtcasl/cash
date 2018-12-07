@@ -703,6 +703,28 @@ bool compiler::proxies_coalescing() {
     return false;
   };
 
+  auto are_adjacent_sources = [&](proxyimpl* proxy,
+                                  const proxyimpl::range_t& r0,
+                                  const proxyimpl::range_t& r1) {
+    if (r0.src_idx == r1.src_idx)
+      return false;
+    auto s0 = proxy->src(r0.src_idx).impl();
+    auto s1 = proxy->src(r1.src_idx).impl();
+    auto p0 = reinterpret_cast<proxyimpl*>(s0);
+    auto p1 = reinterpret_cast<proxyimpl*>(s1);
+    if (s0->type() != type_proxy
+     || s1->type() != type_proxy
+     || p0->ranges().size() > 1
+     || p1->ranges().size() > 1)
+      return false;
+    auto& p0r = p0->range(0);
+    auto& p1r = p1->range(0);
+    return (p0->src(p0r.src_idx).id() == p1->src(p1r.src_idx).id()
+         && r0.src_offset + r0.length == p0->size()
+         && 0 == r1.src_offset
+         && p0r.src_offset + p0r.length == p1r.src_offset);
+  };
+
   auto is_useful_proxy = [&](proxyimpl* proxy, proxyimpl* src_proxy) {
     if (src_proxy->is_identity())
       return false;
@@ -713,6 +735,14 @@ bool compiler::proxies_coalescing() {
       if (range.length != src_proxy->size()
        && !is_multi_range(src_proxy, range.src_offset, range.length))
         return false;
+      if (i > 0) {
+        if (are_adjacent_sources(proxy, proxy->range(i-1), range))
+          return false;
+      }
+      if (i + 1 < n) {
+        if (are_adjacent_sources(proxy, range, proxy->range(i+1)))
+          return false;
+      }
     }
     return true;
   };

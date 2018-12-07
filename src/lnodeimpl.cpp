@@ -34,6 +34,41 @@ cdimpl* ch::internal::get_snode_cd(lnodeimpl* node) {
   return nullptr;
 }
 
+lnodeimpl* ch::internal::get_snode_enable(lnodeimpl* node) {
+  switch (node->type()) {
+  case type_reg: {
+    auto reg = reinterpret_cast<regimpl*>(node);
+    return reg->has_enable() ? reg->enable().impl() : nullptr;
+  }
+  case type_msrport:
+  case type_mwport: {
+     auto mport = reinterpret_cast<memportimpl*>(node);
+     return mport->has_enable() ? mport->enable().impl() : nullptr;
+   }
+  case type_udfs:
+    return nullptr;
+  default:
+    std::abort();
+  }
+  return nullptr;
+}
+
+lnodeimpl* ch::internal::get_snode_reset(lnodeimpl* node) {
+  switch (node->type()) {
+  case type_reg: {
+    auto reg = reinterpret_cast<regimpl*>(node);
+    return reg->has_init_data() ? reg->reset().impl() : nullptr;
+  }
+  case type_msrport:
+  case type_mwport:
+  case type_udfs:
+    return nullptr;
+  default:
+    std::abort();
+  }
+  return nullptr;
+}
+
 lnodeimpl::lnodeimpl(context* ctx,
                      lnodetype type,
                      uint32_t size,                     

@@ -167,8 +167,9 @@ void proxyimpl::add_source(uint32_t dst_offset,
       
       if (i > 0) {
         // try merging with previous range
-        if (this->merge_adjacent_ranges(i)) {
-          --i;
+        auto d = this->merge_adjacent_ranges(i);
+        if (d) {
+          i -= (d < 0) ? 1 : 0;
           --n;
         }
       }       
@@ -199,16 +200,24 @@ void proxyimpl::add_source(uint32_t dst_offset,
   }
 }
 
-bool proxyimpl::merge_adjacent_ranges(uint32_t index) {
-  if (index != 0
+int proxyimpl::merge_adjacent_ranges(uint32_t index) {
+  if (index > 0
    && ranges_[index-1].src_idx == ranges_[index].src_idx
    && (ranges_[index-1].dst_offset + ranges_[index-1].length) == ranges_[index].dst_offset
    && ranges_[index].src_offset == ranges_[index-1].src_offset + ranges_[index-1].length) {
     ranges_[index-1].length += ranges_[index].length;
     ranges_.erase(ranges_.begin() + index);
-    return true;
+    return -1;
   }
-  return false;
+  if (index + 1 < ranges_.size()
+   && ranges_[index].src_idx == ranges_[index+1].src_idx
+   && (ranges_[index].dst_offset + ranges_[index].length) == ranges_[index+1].dst_offset
+   && ranges_[index+1].src_offset == ranges_[index].src_offset + ranges_[index].length) {
+    ranges_[index].length += ranges_[index+1].length;
+    ranges_.erase(ranges_.begin() + index + 1);
+    return 1;
+  }
+  return 0;
 }
 
 void proxyimpl::erase_source(uint32_t index, bool resize) {

@@ -45,6 +45,10 @@ inline bool is_snode_type(lnodetype type) {
 class cdimpl;
 cdimpl* get_snode_cd(lnodeimpl* node);
 
+lnodeimpl* get_snode_enable(lnodeimpl* node);
+
+lnodeimpl* get_snode_reset(lnodeimpl* node);
+
 using clone_map = std::unordered_map<uint32_t, lnodeimpl*>;
 
 class lnodeimpl : public refcounted {

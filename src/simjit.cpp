@@ -31,6 +31,22 @@ static constexpr uint32_t WORD_MASK = bitwidth_v<block_type> - 1;
 static constexpr block_type WORD_MAX = std::numeric_limits<block_type>::max();
 static constexpr uint32_t INLINE_MAX_SIZE = 8 * WORD_SIZE;
 
+struct sblock_t {
+  sblock_t() {
+    this->clear();
+  }
+
+  void clear() {
+    cd = nullptr;
+    reset = nullptr;
+    nodes.clear();
+  }
+
+  lnodeimpl* cd;
+  lnodeimpl* reset;
+  std::vector<lnodeimpl*> nodes;
+};
+
 class SrcLogger {
 public:
   SrcLogger(jit_function_t func, const char* name) : func_(func) {
@@ -329,7 +345,7 @@ public:
 
     // lower all nodes
     for (auto node : eval_list) {
-      this->create_bypass_label(node);
+      this->resolve_branch(node);
       switch (node->type()) {
       case type_lit:
         this->emit_node(reinterpret_cast<litimpl*>(node));
@@ -389,7 +405,7 @@ public:
     }
 
     // create bypass label
-    this->create_bypass_label(nullptr);
+    this->resolve_branch(nullptr);
 
     // return 0
     jit_insn_return(j_func_, j_zero_);
@@ -580,7 +596,6 @@ private:
       dst.emplace(nullptr);
     }
   };
-
 
   void create_function() {
     jit_type_t params[1] = {jit_type_void_ptr};
@@ -1349,24 +1364,201 @@ private:
     }
   }
 
-  void create_bypass_label(lnodeimpl* node) {
+  void resolve_branch(lnodeimpl* node) {
+    if (sblock_.cd
+     && ((node
+       && (!is_snode_type(node->type())
+        || node->type() != type_reg
+        || get_snode_reset(node) != sblock_.reset))
+      || !node)) {
+      this->flush_sblock();
+    }
      if (!bypass_enable_)
        return;
      if (node) {
        if (bypass_nodes_.count(node->id())) {
-         jit_insn_label(j_func_, &j_bypass_);
+         jit_insn_label_tight(j_func_, &j_bypass_);
          bypass_enable_ = false;
        }
      } else {
-       jit_insn_label(j_func_, &j_bypass_);
+       jit_insn_label_tight(j_func_, &j_bypass_);
        bypass_enable_ = false;
      }
    }
 
-  void emit_node(regimpl* node) {
+  void flush_sblock() {
     __source_location();
 
     jit_label_t l_exit = jit_label_undefined;
+
+    // emit clock domain
+    bool merge_cd_enable = false;
+    if (!bypass_enable_) {
+      if (!sblock_.reset) {
+        auto it = sblock_.nodes.begin();
+        auto end = sblock_.nodes.end();
+        auto enable = get_snode_enable(*it++);
+        if (enable) {
+          merge_cd_enable = true;
+          while (it != end) {
+            if (get_snode_enable(*it++) != enable) {
+              merge_cd_enable = false;
+              break;
+            }
+          }
+        }
+      }
+      if (!merge_cd_enable) {
+        auto j_cd = scalar_map_.at(sblock_.cd->id());
+        jit_insn_branch_if_not(j_func_, j_cd, &l_exit);
+      }
+    }
+
+    if (sblock_.reset) {
+      // emit reset nodes
+      jit_label_t l_skip = jit_label_undefined;
+      auto j_reset = scalar_map_.at(sblock_.reset->id());
+      jit_insn_branch_if_not(j_func_, j_reset, &l_skip);
+
+      for (auto node : sblock_.nodes) {
+        if (node->type() != type_reg)
+          continue;
+        this->emit_snode_init(reinterpret_cast<regimpl*>(node));
+      }
+
+      jit_insn_branch(j_func_, &l_exit);
+      jit_insn_label(j_func_, &l_skip);
+    }
+
+    // emit enable nodes
+    jit_label_t l_skip = jit_label_undefined;
+    lnodeimpl* cur_enable = nullptr;
+    for (auto node : sblock_.nodes) {
+      auto enable = get_snode_enable(node);
+      if (enable != cur_enable) {
+        if (cur_enable) {
+          jit_insn_label(j_func_, &l_skip);
+        };
+        if (enable) {
+          auto j_enable = scalar_map_.at(enable->id());
+          if (merge_cd_enable) {
+            auto j_cd = scalar_map_.at(sblock_.cd->id());
+            auto j_pred = jit_insn_and(j_func_, j_cd, j_enable);
+            jit_insn_branch_if_not(j_func_, j_pred, &l_skip);
+          } else {
+            jit_insn_branch_if_not(j_func_, j_enable, &l_skip);
+          }
+        }
+        cur_enable = enable;
+      }
+      switch (node->type()) {
+      case type_reg:
+        this->emit_snode_value(reinterpret_cast<regimpl*>(node));
+        break;
+      case type_msrport:
+        this->emit_snode_value(reinterpret_cast<msrportimpl*>(node));
+        break;
+      case type_mwport:
+        this->emit_snode_value(reinterpret_cast<mwportimpl*>(node));
+        break;
+      case type_udfs:
+        this->emit_snode_value(reinterpret_cast<udfsimpl*>(node));
+        break;
+      default:
+        std::abort();
+      }
+    }
+    if (cur_enable) {
+      jit_insn_label(j_func_, &l_skip);
+    };
+    if (l_exit != jit_label_undefined) {
+      jit_insn_label_tight(j_func_, &l_exit);
+    }
+    sblock_.clear();
+  }
+
+  void emit_node(regimpl* node) {
+    sblock_.cd = node->cd().impl();
+    sblock_.reset = get_snode_reset(node);
+    sblock_.nodes.push_back(node);
+  }
+
+  void emit_snode_init(regimpl* node) {
+    assert(node->has_init_data());
+
+    uint32_t dst_width = node->size();
+    auto is_scalar = (dst_width <= WORD_SIZE);
+    auto dst_addr = addr_map_.at(node->id());
+
+    jit_value_t j_dst = nullptr;
+    jit_value_t j_init_data = nullptr;
+
+    if (is_scalar) {
+      j_dst = scalar_map_.at(node->id());
+      if (node->has_init_data()) {
+        j_init_data = scalar_map_.at(node->init_data().id());
+      }
+    }
+
+    if (node->is_pipe()) {
+      uint32_t pipe_width = (node->length() - 1) * dst_width;
+      auto j_pipe_type = to_native_type(pipe_width);
+      auto pipe_addr = dst_addr + __align_word_size(dst_width);
+      auto is_pipe_scalar = (pipe_width <= WORD_SIZE);
+      if (is_pipe_scalar) {
+        assert(is_scalar);
+        // reset dst register
+        auto j_init_data_p = this->emit_cast(j_init_data, j_pipe_type);
+        jit_insn_store(j_func_, j_dst, j_init_data);
+        jit_insn_store_relative(j_func_, j_vars_, dst_addr, j_init_data);
+
+        // reset pipe registers
+        jit_value_t j_pipe_init_data = nullptr;
+        for (uint32_t i = 0, n = node->length() - 1; i < n; ++i) {
+          j_pipe_init_data = this->emit_append_slice_scalar(
+                j_pipe_init_data, i * dst_width, j_init_data_p);
+        }
+        jit_insn_store_relative(j_func_, j_vars_, pipe_addr, j_pipe_init_data);
+      } else {
+        if (is_scalar) {
+          // reset dst register
+          jit_insn_store(j_func_, j_dst, j_init_data);
+          jit_insn_store_relative(j_func_, j_vars_, dst_addr, j_init_data);
+
+          // reset pipe registers
+          auto j_init_data_w = this->emit_cast(j_init_data, word_type_);
+          jit_value_t j_pipe_tmp = nullptr;
+          for (uint32_t i = 0, n = node->length() - 1; i < n; ++i) {
+            j_pipe_tmp = this->emit_append_slice_vector(
+                  j_pipe_tmp, pipe_addr, pipe_width, i * dst_width, j_init_data_w, dst_width);
+          }
+        } else {
+          // reset dst register
+          auto j_dst_ptr = jit_insn_add_relative(j_func_, j_vars_, dst_addr);
+          auto j_init_ptr = this->emit_load_address(node->init_data().impl());
+          this->emit_memcpy(j_dst_ptr, j_init_ptr, ceildiv(dst_width, 8));
+
+          // reset pipe registers
+          auto j_pipe_ptr = jit_insn_add_relative(j_func_, j_vars_, pipe_addr);
+          for (uint32_t i = 0, n = node->length() - 1; i < n; ++i) {
+            this->emit_copy_vector(j_pipe_ptr, i * dst_width, j_init_ptr, 0, dst_width);
+          }
+        }
+      }
+    } else {
+      if (is_scalar) {
+        jit_insn_store(j_func_, j_dst, j_init_data);
+        jit_insn_store_relative(j_func_, j_vars_, dst_addr, j_init_data);
+      } else {
+        auto j_dst_ptr = jit_insn_add_relative(j_func_, j_vars_, dst_addr);
+        auto j_init_ptr = this->emit_load_address(node->init_data().impl());
+        this->emit_memcpy(j_dst_ptr, j_init_ptr, ceildiv(dst_width, 8));
+      }
+    }
+  }
+
+  void emit_snode_value(regimpl* node) {
+    __source_location();
 
     uint32_t dst_width = node->size();
     auto j_type = to_native_type(dst_width);
@@ -1375,29 +1567,10 @@ private:
 
     jit_value_t j_dst = nullptr;
     jit_value_t j_next = nullptr;
-    jit_value_t j_enable = nullptr;
-    jit_value_t j_init_data = nullptr;
-    jit_value_t j_reset = nullptr;
 
     if (is_scalar) {
       j_dst = scalar_map_.at(node->id());
       j_next = scalar_map_.at(node->next().id());
-      if (node->has_init_data()) {
-        j_init_data = scalar_map_.at(node->init_data().id());
-      }
-    }
-
-    if (node->has_init_data()) {
-      j_reset = scalar_map_.at(node->reset().id());
-    }
-
-    if (node->has_enable()) {
-      j_enable = scalar_map_.at(node->enable().id());
-    }
-
-    if (!bypass_enable_) {
-      auto j_cd = scalar_map_.at(node->cd().id());
-      jit_insn_branch_if_not(j_func_, j_cd, &l_exit);
     }
 
     if (node->is_pipe()) {
@@ -1405,60 +1578,6 @@ private:
       auto j_pipe_type = to_native_type(pipe_width);
       auto pipe_addr = dst_addr + __align_word_size(dst_width);
       auto is_pipe_scalar = (pipe_width <= WORD_SIZE);
-
-      if (node->has_init_data()) {
-        jit_label_t l_skip = jit_label_undefined;
-        auto j_reset = scalar_map_.at(node->reset().id());
-        jit_insn_branch_if_not(j_func_, j_reset, &l_skip);
-
-        if (is_pipe_scalar) {
-          assert(is_scalar);
-          // reset dst register
-          auto j_init_data_p = this->emit_cast(j_init_data, j_pipe_type);
-          jit_insn_store(j_func_, j_dst, j_init_data);
-          jit_insn_store_relative(j_func_, j_vars_, dst_addr, j_init_data);
-
-          // reset pipe registers
-          jit_value_t j_pipe_init_data = nullptr;
-          for (uint32_t i = 0, n = node->length() - 1; i < n; ++i) {
-            j_pipe_init_data = this->emit_append_slice_scalar(
-                  j_pipe_init_data, i * dst_width, j_init_data_p);
-          }
-          jit_insn_store_relative(j_func_, j_vars_, pipe_addr, j_pipe_init_data);
-        } else {
-          if (is_scalar) {
-            // reset dst register
-            jit_insn_store(j_func_, j_dst, j_init_data);
-            jit_insn_store_relative(j_func_, j_vars_, dst_addr, j_init_data);
-
-            // reset pipe registers
-            auto j_init_data_w = this->emit_cast(j_init_data, word_type_);
-            jit_value_t j_pipe_tmp = nullptr;
-            for (uint32_t i = 0, n = node->length() - 1; i < n; ++i) {
-              j_pipe_tmp = this->emit_append_slice_vector(
-                    j_pipe_tmp, pipe_addr, pipe_width, i * dst_width, j_init_data_w, dst_width);
-            }
-          } else {
-            // reset dst register
-            auto j_dst_ptr = jit_insn_add_relative(j_func_, j_vars_, dst_addr);
-            auto j_init_ptr = this->emit_load_address(node->init_data().impl());
-            this->emit_memcpy(j_dst_ptr, j_init_ptr, ceildiv(dst_width, 8));
-
-            // reset pipe registers
-            auto j_pipe_ptr = jit_insn_add_relative(j_func_, j_vars_, pipe_addr);
-            for (uint32_t i = 0, n = node->length() - 1; i < n; ++i) {
-              this->emit_copy_vector(j_pipe_ptr, i * dst_width, j_init_ptr, 0, dst_width);
-            }
-          }
-        }
-
-        jit_insn_branch(j_func_, &l_exit);
-        jit_insn_label(j_func_, &l_skip);
-      }
-
-      if (node->has_enable()) {
-        jit_insn_branch_if_not(j_func_, j_enable, &l_exit);
-      }
 
       if (is_pipe_scalar) {
         assert(is_scalar);
@@ -1529,28 +1648,7 @@ private:
           jit_insn_store_relative(j_func_, j_vars_, pipe_index_addr, j_min);
         }
       }
-    } else {      
-      if (node->has_init_data()) {
-        jit_label_t l_skip = jit_label_undefined;
-        jit_insn_branch_if_not(j_func_, j_reset, &l_skip);
-
-        if (is_scalar) {
-          jit_insn_store(j_func_, j_dst, j_init_data);
-          jit_insn_store_relative(j_func_, j_vars_, dst_addr, j_init_data);
-        } else {
-          auto j_dst_ptr = jit_insn_add_relative(j_func_, j_vars_, dst_addr);
-          auto j_init_ptr = this->emit_load_address(node->init_data().impl());
-          this->emit_memcpy(j_dst_ptr, j_init_ptr, ceildiv(dst_width, 8));
-        }
-
-        jit_insn_branch(j_func_, &l_exit);
-        jit_insn_label(j_func_, &l_skip);
-      }
-
-      if (node->has_enable()) {
-        jit_insn_branch_if_not(j_func_, j_enable, &l_exit);
-      }
-
+    } else {
       if (is_scalar) {
         jit_insn_store_relative(j_func_, j_vars_, dst_addr, j_next);
         jit_insn_store(j_func_, j_dst, j_next);
@@ -1559,10 +1657,6 @@ private:
         auto j_next_ptr = this->emit_load_address(node->next().impl());
         this->emit_memcpy(j_dst_ptr, j_next_ptr, ceildiv(dst_width, 8));
       }
-    }
-
-    if (l_exit != jit_label_undefined) {
-      jit_insn_label(j_func_, &l_exit);
     }
   }
 
@@ -1590,31 +1684,18 @@ private:
   }
 
   void emit_node(msrportimpl* node) {
-    __source_location();
+    sblock_.cd = node->cd().impl();
+    sblock_.reset = get_snode_reset(node);
+    sblock_.nodes.push_back(node);
+  }
 
-    jit_label_t l_exit = jit_label_undefined;
+  void emit_snode_value(msrportimpl* node) {
+    __source_location();
 
     auto dst_width = node->size();
     auto j_type = to_native_type(dst_width);
     bool is_scalar = (dst_width <= WORD_SIZE);
     auto dst_addr = addr_map_.at(node->id());
-
-    auto predicated = node->has_enable() || !bypass_enable_;
-    if (predicated) {
-      jit_value_t j_pred = nullptr;
-      if (node->has_enable()) {
-        j_pred = scalar_map_.at(node->enable().id());
-      }
-      if (!bypass_enable_) {
-        auto j_cd = scalar_map_.at(node->cd().id());
-        if (j_pred) {
-          j_pred = jit_insn_and(j_func_, j_pred, j_cd);
-        } else {
-          j_pred = j_cd;
-        }
-      }
-      jit_insn_branch_if_not(j_func_, j_pred, &l_exit);
-    }
 
     auto j_src_addr = scalar_map_.at(node->addr().id());
   #ifndef NDEBUG
@@ -1632,36 +1713,19 @@ private:
        auto j_dst_ptr = this->emit_store_address(node);
       this->emit_load_array_vector(j_dst_ptr, dst_width, j_array_ptr, j_src_addr);
     }
-
-    if (l_exit != jit_label_undefined) {
-      jit_insn_label(j_func_, &l_exit);
-    }
   }
 
   void emit_node(mwportimpl* node) {
+    sblock_.cd = node->cd().impl();
+    sblock_.reset = get_snode_reset(node);
+    sblock_.nodes.push_back(node);
+  }
+
+  void emit_snode_value(mwportimpl* node) {
     __source_location();
 
-    jit_label_t l_exit = jit_label_undefined;
     auto data_width = node->mem()->data_width();
     bool is_scalar = (data_width <= WORD_SIZE);
-
-    auto predicated = node->has_enable() || !bypass_enable_;
-    if (predicated) {
-      jit_value_t j_pred = nullptr;
-      if (node->has_enable()) {
-        j_pred = scalar_map_.at(node->enable().id());
-      }
-      if (!bypass_enable_) {
-        auto j_cd = scalar_map_.at(node->cd().id());
-        if (j_pred) {
-          auto j_and = jit_insn_and(j_func_, j_pred, j_cd);
-          jit_insn_store(j_func_, j_pred, j_and);
-        } else {
-          j_pred = j_cd;
-        }
-      }
-      jit_insn_branch_if_not(j_func_, j_pred, &l_exit);
-    }
 
     auto j_dst_addr = scalar_map_.at(node->addr().id());
   #ifndef NDEBUG
@@ -1676,10 +1740,6 @@ private:
     } else {
       auto j_wdata_ptr = this->emit_load_address(node->wdata().impl());
       this->emit_store_array_vector(j_array_ptr, j_dst_addr, j_wdata_ptr, data_width);
-    }
-
-    if (l_exit != jit_label_undefined) {
-      jit_insn_label(j_func_, &l_exit);
     }
   }
 
@@ -1849,18 +1909,17 @@ private:
   }
 
   void emit_node(udfsimpl* node) {
+    sblock_.cd = node->cd().impl();
+    sblock_.reset = get_snode_reset(node);
+    sblock_.nodes.push_back(node);
+  }
+
+  void emit_snode_value(udfsimpl* node) {
     __source_location();
 
-    jit_label_t l_exit = jit_label_undefined;
     auto dst_width = node->size();
     auto j_type = to_native_type(dst_width);
     auto udf = node->udf();
-
-    auto predicated = !bypass_enable_;
-    if (predicated) {
-      auto j_pred = scalar_map_.at(node->cd().id());
-      jit_insn_branch_if_not(j_func_, j_pred, &l_exit);
-    }
 
     auto addr = addr_map_.at(node->id());
     auto data_addr = addr + __align_word_size(dst_width);
@@ -1902,10 +1961,6 @@ private:
     if (dst_width <= WORD_SIZE) {
       auto j_dst = jit_insn_load_relative(j_func_, j_vars_, addr, j_type);
       scalar_map_[node->id()] = j_dst;
-    }
-
-    if (l_exit != jit_label_undefined) {
-      jit_insn_label(j_func_, &l_exit);
     }
   }
 
@@ -2835,6 +2890,7 @@ private:
   jit_label_t     j_bypass_;
   bypass_set_t    bypass_nodes_;
   bool            bypass_enable_;
+  sblock_t        sblock_;
   jit_type_t      word_type_;
   jit_function_t  j_func_;
   jit_value_t     j_vars_;
