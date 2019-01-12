@@ -5,7 +5,15 @@
 namespace ch {
 namespace internal {
 
-using block_type = uint64_t;
+#ifndef BLOCK_SIZE
+  #define BLOCK_SIZE 4
+#endif
+
+using block_type = std::conditional_t<BLOCK_SIZE == 1, uint8_t,
+                     std::conditional_t<BLOCK_SIZE == 2, uint16_t,
+                       std::conditional_t<BLOCK_SIZE == 4, uint32_t,
+                         std::conditional_t<BLOCK_SIZE == 8, uint64_t,
+                           std::nullptr_t>>>>;
 
 using sdata_type = bitvector<block_type>;
 

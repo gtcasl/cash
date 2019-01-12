@@ -25,6 +25,27 @@ public:
 
 protected:
 
+  struct signal_t {
+    std::string name;
+    ioportimpl* node;
+  };
+
+  using block_t = uint64_t;
+  using bv_t = bitvector<block_t>;
+  static_assert(bitwidth_v<block_t> >= bitwidth_v<block_type>);
+
+  struct trace_block_t {
+    trace_block_t(block_t* data)
+      : data(data)
+      , size(0)
+      , next(nullptr)
+    {}
+
+    block_t* data;
+    uint32_t size;
+    trace_block_t* next;
+  };
+
   void initialize();
 
   void eval() override;
@@ -33,27 +54,20 @@ protected:
 
   void allocate_trace(uint32_t block_width);
 
-  struct signal_t {
-    std::string name;
-    ioportimpl* node;
-  };
+  static auto is_system_signal(const std::string& name) {
+    return (name == "clk") || (name == "reset");
+  }
 
-  struct trace_block_t {
-    trace_block_t(block_type* data)
-      : data(data)
-      , size(0)
-      , next(nullptr)
-    {}
-
-    block_type* data;
-    uint32_t size;
-    trace_block_t* next;
-  };
+  static auto get_value(const block_t* src, uint32_t size, uint32_t src_offset) {
+    bv_t value(size);
+    bv_copy(value.words(), 0, src, src_offset, size);
+    return value;
+  }
 
   dup_tracker<std::string> dup_names_;
   std::vector<signal_t> signals_;  
-  std::vector<std::pair<block_type*, uint32_t>> prev_values;
-  sdata_type valid_mask_;
+  std::vector<std::pair<block_t*, uint32_t>> prev_values_;
+  bv_t valid_mask_;
   uint32_t trace_width_;
   uint32_t ticks_;
   trace_block_t* trace_head_;

@@ -569,12 +569,10 @@ template <typename T>
 auto sign_ext(T value, unsigned width) {
   static_assert(std::is_integral_v<T>, "invalid type");
   using U = std::make_unsigned_t<T>;
-  static constexpr U WORD_MAX  = std::numeric_limits<U>::max();
   assert(bitwidth_v<U> >= width);
-  U k = WORD_MAX >> (bitwidth_v<U> - width);
-  U n = value & k;
-  U m = U(1) << (width - 1);
-  return std::make_signed_t<T>((n ^ m) - m);
+  assert(0 == (value & ~((1ull << width) - 1)));
+  auto m = U(1) << (width - 1);
+  return std::make_signed_t<T>((value ^ m) - m);
 }
 
 }

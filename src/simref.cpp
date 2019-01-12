@@ -544,7 +544,9 @@ instr_alu_base* instr_alu_base::create(aluimpl* node, data_map_t& map) {
     if (node->srcs().size() > 1) {
       src1 = map.at(node->src(1).id());
       src1_size = node->src(1).size();
-      is_scalar &= (src1_size <= bitwidth_v<block_type>);
+      if (CH_OP_CLASS(node->op()) != op_flags::shift) {
+        is_scalar &= (src1_size <= bitwidth_v<block_type>);
+      }
     }
   }
 

@@ -55,6 +55,8 @@ public:
 
   uint64_t hash() const override;
 
+  void print(std::ostream& out) const override;
+
 protected:
 
   regimpl(context* ctx,

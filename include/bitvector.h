@@ -31,7 +31,7 @@ struct is_bitvector_extended_type_impl<const char*> : std::true_type {};
 template <typename T>
 inline constexpr bool is_bitvector_extended_type_v = is_bitvector_extended_type_impl<std::decay_t<T>>::value;
 
-template <typename word_t = uint64_t>
+template <typename word_t>
 class bitvector {
 public:
   static_assert(std::is_integral_v<word_t> && std::is_unsigned_v<word_t>, "invalid type");
@@ -684,7 +684,7 @@ public:
   }
 
   void reset() {
-    std::fill_n(words_, this->num_words(), 0);
+    bv_reset(words_, size_);
   }
 
   bool is_zero() const {

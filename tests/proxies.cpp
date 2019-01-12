@@ -244,7 +244,9 @@ TEST_CASE("proxies", "[proxies]") {
     TEST([]()->ch_bool {
       ch_int4 a(1100_b);
       auto c = ch_pad<1>(a);
-      return (c == 11100_b);
+      ch_int<5> e = 11100_b;
+      //ch_print("c={0}, e={1}", c, e);
+      return (c == e);
     });
     TEST([]()->ch_bool {
       ch_uint16 a(8000_h);

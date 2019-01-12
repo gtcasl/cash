@@ -235,6 +235,9 @@ struct sloc_arg {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+template <unsigned N, typename T>
+auto ch_slice(const T& obj, size_t start, ch::internal::source_location& sloc);
+
 #define CH_LOGIC_INTERFACE(type) \
   template <typename R> \
   std::add_const_t<R> as() const { \
@@ -331,53 +334,105 @@ struct sloc_arg {
 #define CH_LOGIC_FUNCTION_RELATIONAL(func, op, type) \
   CH_LOGIC_FUNCTION_EQUALITY(func, op, type)
 
-#define CH_LOGIC_FUNCTION_BINARY1(func, op, type) \
+#define CH_LOGIC_FUNCTION_BITWISE1(func, op, type) \
   template <unsigned R = 0, unsigned N> \
   auto func(const type<N>& in, CH_SLOC) { \
-    static_assert((0 == R) || (op_flags::resize_free == CH_OP_RESIZE(op)) || (R >= N), "invalid type"); \
-    return make_logic_op<op, ch_signed_v<type<N>>, \
-                         std::conditional_t<(R != 0), type<R>, type<N>>>(in, sloc); \
+    if constexpr (R && R < N) { \
+      return make_logic_op<op, ch_signed_v<type<N>>, type<R>>(ch_slice<R>(in, 0, sloc), sloc); \
+    } else { \
+      return make_logic_op<op, ch_signed_v<type<N>>, \
+                std::conditional_t<(R != 0), type<R>, type<N>>>(in, sloc); \
+    } \
   }
 
-#define CH_LOGIC_FUNCTION_BINARY2(func, op, type) \
+#define CH_LOGIC_FUNCTION_BITWISE2(func, op, type) \
   template <unsigned R = 0, unsigned N, unsigned M = N> \
   auto func(const type<N>& lhs, const type<M>& rhs, CH_SLOC) { \
-    static_assert((op_flags::resize_free == CH_OP_RESIZE(op)) || (0 == R) || ((R >= N) && (R >= M)), "invalid type"); \
-    return make_logic_op<op, ch_signed_v<type<N>>, \
+    if constexpr (R && R < N && R < M) { \
+      return make_logic_op<op, ch_signed_v<type<N>>, type<R>>( \
+                            ch_slice<R>(lhs, 0, sloc), ch_slice<R>(rhs, 0, sloc), sloc); \
+    } else \
+    if constexpr (R && R < N) { \
+      return make_logic_op<op, ch_signed_v<type<N>>, type<R>>(ch_slice<R>(lhs, 0, sloc), rhs, sloc); \
+    } else \
+    if constexpr (R && R < M) { \
+      return make_logic_op<op, ch_signed_v<type<N>>, type<R>>(lhs, ch_slice<R>(rhs, 0, sloc), sloc); \
+    } else { \
+      return make_logic_op<op, ch_signed_v<type<N>>, \
                          std::conditional_t<(R != 0), type<R>, type<std::max(N, M)>>>(lhs, rhs, sloc); \
+    } \
   } \
   template <unsigned R = 0, unsigned N, typename U, \
             CH_REQUIRE_0(std::is_convertible_v<U, type<ch_width_v<U>>>)> \
   auto func(const type<N>& lhs, const U& rhs, CH_SLOC) { \
-    static_assert((op_flags::resize_free == CH_OP_RESIZE(op)) || (0 == R) || ((R >= N) && (R >= ch_width_v<U>)), "invalid type"); \
-    return make_logic_op<op, ch_signed_v<type<N>>, \
+    if constexpr (R && R < N && R < ch_width_v<U>) { \
+      return make_logic_op<op, ch_signed_v<type<N>>, type<R>>( \
+                            ch_slice<R>(lhs, 0, sloc), ch_slice<R>(rhs, 0, sloc), sloc); \
+    } else \
+    if constexpr (R && R < N) { \
+      return make_logic_op<op, ch_signed_v<type<N>>, type<R>>(ch_slice<R>(lhs, 0, sloc), rhs, sloc); \
+    } else \
+    if constexpr (R && R < ch_width_v<U>) { \
+      return make_logic_op<op, ch_signed_v<type<N>>, type<R>>(lhs, ch_slice<R>(rhs, 0, sloc), sloc); \
+    } else { \
+      return make_logic_op<op, ch_signed_v<type<N>>, \
                          std::conditional_t<(R != 0), type<R>, type<std::max(N, ch_width_v<U>)>>, \
                             type<N>, type<ch_width_v<U>>>(lhs, rhs, sloc); \
+    } \
   } \
-  template <unsigned R = 0, unsigned N, typename U, \
+  template <unsigned R = 0, typename U, unsigned N, \
             CH_REQUIRE_0(std::is_convertible_v<U, type<ch_width_v<U>>>)> \
   auto func(const U& lhs, const type<N>& rhs, CH_SLOC) { \
-    static_assert((op_flags::resize_free == CH_OP_RESIZE(op)) || (0 == R) || ((R >= N) && (R >= ch_width_v<U>)), "invalid type"); \
-    return make_logic_op<op, ch_signed_v<type<N>>, \
+    if constexpr (R && R < ch_width_v<U> && R < N) { \
+      return make_logic_op<op, ch_signed_v<type<N>>, type<R>>(ch_slice<R>(lhs), ch_slice<R>(rhs), sloc); \
+    } else \
+    if constexpr (R && R < ch_width_v<U>) { \
+      return make_logic_op<op, ch_signed_v<type<N>>, type<R>>(ch_slice<R>(lhs), rhs, sloc); \
+    } else \
+    if constexpr (R && R < N) { \
+      return make_logic_op<op, ch_signed_v<type<N>>, type<R>>(lhs, ch_slice<R>(rhs), sloc); \
+    } else { \
+      return make_logic_op<op, ch_signed_v<type<N>>, \
                          std::conditional_t<(R != 0), type<R>, type<std::max(N, ch_width_v<U>)>>, \
                             type<ch_width_v<U>>, type<N>>(lhs, rhs, sloc); \
+    } \
   }
 
 #define CH_LOGIC_FUNCTION_SHIFT(func, op, type) \
   template <unsigned R = 0, unsigned N, typename U, \
             CH_REQUIRE_0(std::is_convertible_v<U, ch_bit<ch_width_v<U>>>)> \
   auto func(const type<N>& lhs, const U& rhs, CH_SLOC) { \
-    static_assert((op_flags::resize_free == CH_OP_RESIZE(op)) || (0 == R) || ((R >= N) && (R >= ch_width_v<U>)), "invalid type"); \
     return make_logic_op<op, ch_signed_v<type<N>>, \
                          std::conditional_t<(R != 0), type<R>, type<N>>, \
                             type<N>, ch_bit<ch_width_v<U>>>(lhs, rhs, sloc); \
   }
 
 #define CH_LOGIC_FUNCTION_ARITHMETIC1(func, op, type) \
-  CH_LOGIC_FUNCTION_BINARY1(func, op, type)
+  CH_LOGIC_FUNCTION_BITWISE1(func, op, type)
 
 #define CH_LOGIC_FUNCTION_ARITHMETIC2(func, op, type) \
-  CH_LOGIC_FUNCTION_BINARY2(func, op, type)
+  CH_LOGIC_FUNCTION_BITWISE2(func, op, type)
+
+#define CH_LOGIC_FUNCTION_ARITHMETIC3(func, op, type) \
+  template <unsigned R = 0, unsigned N, unsigned M = N> \
+  auto func(const type<N>& lhs, const type<M>& rhs, CH_SLOC) { \
+    return make_logic_op<op, ch_signed_v<type<N>>, \
+                         std::conditional_t<(R != 0), type<R>, type<std::max(N, M)>>>(lhs, rhs, sloc); \
+  } \
+  template <unsigned R = 0, unsigned N, typename U, \
+            CH_REQUIRE_0(std::is_convertible_v<U, type<ch_width_v<U>>>)> \
+  auto func(const type<N>& lhs, const U& rhs, CH_SLOC) { \
+    return make_logic_op<op, ch_signed_v<type<N>>, \
+                         std::conditional_t<(R != 0), type<R>, type<std::max(N, ch_width_v<U>)>>, \
+                            type<N>, type<ch_width_v<U>>>(lhs, rhs, sloc); \
+  } \
+  template <unsigned R = 0, typename U, unsigned N, \
+            CH_REQUIRE_0(std::is_convertible_v<U, type<ch_width_v<U>>>)> \
+  auto func(const U& lhs, const type<N>& rhs, CH_SLOC) { \
+    return make_logic_op<op, ch_signed_v<type<N>>, \
+                         std::conditional_t<(R != 0), type<R>, type<std::max(N, ch_width_v<U>)>>, \
+                            type<ch_width_v<U>>, type<N>>(lhs, rhs, sloc); \
+  }
 
 CH_LOGIC_OPERATOR(logic_op_equality)
   CH_LOGIC_OPERATOR_IMPL(operator==, ch_op::eq, ch_bit<1>)

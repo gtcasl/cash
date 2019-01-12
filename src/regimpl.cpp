@@ -79,6 +79,21 @@ uint64_t regimpl::hash() const {
   return ret.value;
 }
 
+void regimpl::print(std::ostream& out) const {
+  if (length_ > 1) {
+    out << "#" << id_ << " <- pipe" << size_;
+    out << "(" << length_;
+    for (uint32_t i = 0; i < srcs_.size(); ++i) {
+      out << ", ";
+      out << "#" << srcs_[i].id();
+    }
+    out << ")";
+  } else {
+    lnodeimpl::print(out);
+  }
+}
+
+
 ///////////////////////////////////////////////////////////////////////////////
 
 void ch::internal::ch_pushcd(const ch_bit<1>& clk,

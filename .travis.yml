@@ -34,6 +34,10 @@ script:
   - make -j8 all
   - make test
   - CASH_CFLAGS=256 make test
+  - CFLAGS=-DBLOCK_SIZE=2 make -j8 clean all test
+  - CASH_CFLAGS=256 make test
+  - CFLAGS=-DBLOCK_SIZE=4 make -j8 clean all test
+  - CASH_CFLAGS=256 make test
   - valgrind bin/testsuite
   - CASH_CFLAGS=256 valgrind bin/testsuite
   - popd
@@ -45,6 +49,10 @@ script:
   - cmake -DCMAKE_BUILD_TYPE=Debug -DCODECOV=ON ..
   - make -j8 all 
   - make test
+  - CASH_CFLAGS=271 make test
+  - CFLAGS=-DBLOCK_SIZE=2 make -j8 clean all test
+  - CASH_CFLAGS=271 make test
+  - CFLAGS=-DBLOCK_SIZE=4 make -j8 clean all test
   - CASH_CFLAGS=271 make test
   
 after_success:

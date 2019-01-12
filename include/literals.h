@@ -135,17 +135,17 @@ namespace literals {
 #define CH_DEF_LITERALS_IMPL(a, i, x) \
   template <char... Chars> \
   auto operator "" _b##x() { \
-    static_assert(x >= lit_bin_sizex_v<Chars...>, "value out of range"); \
+    static_assert(x >= lit_bin_sizex_v<Chars...>, "literal out of range"); \
     return ch_scuint<x>(std::string{Chars..., '_', 'b'}); \
   } \
   template <char... Chars> \
   auto operator "" _o##x() { \
-    static_assert(x >= lit_oct_sizex_v<Chars...>, "value out of range"); \
+    static_assert(x >= lit_oct_sizex_v<Chars...>, "literal out of range"); \
     return ch_scuint<x>(std::string{Chars..., '_', 'o'}); \
   } \
   template <char... Chars> \
   auto operator "" _h##x() { \
-    static_assert(x >= lit_hex_sizex_v<Chars...>, "value out of range"); \
+    static_assert(x >= lit_hex_sizex_v<Chars...>, "literal out of range"); \
     return ch_scuint<x>(std::string{Chars..., '_', 'h'}); \
   }
 

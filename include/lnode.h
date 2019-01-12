@@ -46,7 +46,6 @@ enum class op_flags {
   arithmetic = 5 << 6,
   reduce     = 6 << 6,
   misc       = 7 << 6,
-  resize_free= 0 << 9,
   resize_src = 1 << 9,
   resize_dst = 2 << 9,
   symmetric  = 1 << 11,

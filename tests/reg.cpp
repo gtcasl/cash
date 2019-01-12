@@ -56,7 +56,7 @@ TEST_CASE("registers", "[registers]") {
       auto v = ch_case<ch_bit4>(ch_now(), 7, 2)(5, 1)(3, 0)(1, 3)(0);
       auto a = ch_delay(v, 4);
       auto e = ch_case<ch_bit4>(ch_now(), 13, 2)(11, 1)(9, 0)(7, 3)(a);
-      //ch_print("t={0}, a={1}, e={2}", ch_now(), a, e);
+      //ch_print("t={0}, a={1}, v={2}, e={3}", ch_now(), a, v, e);
       return (a == e);
     }, 8);
 

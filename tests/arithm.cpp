@@ -48,6 +48,16 @@ TEST_CASE("arithmetic", "[arithmetic]") {
       return (c.slice<8>() == 0x66);
     });
     TEST([]()->ch_bool {
+      ch_bit128 a(0xBA);
+      auto c = ch_inv<8>(a);
+      return (c == 0x45);
+    });
+    TEST([]()->ch_bool {
+      ch_bit128 a(0xBA), b(0xDC);
+      auto c = ch_xor<8>(a, b);
+      return (c == 0x66);
+    });
+    TEST([]()->ch_bool {
       ch_bit128 a(0xBA), b(0xDC);
       auto c = a | b;
       return (c.slice<8>() == 0xFE);
@@ -220,6 +230,13 @@ TEST_CASE("arithmetic", "[arithmetic]") {
     TEST([]()->ch_bool {
       ch_int<84> x(0xf11111100000001111111_h84);
       ch_int<84> y = x << 1;
+      ch_int<84> e = 0xe22222200000002222222_h84;
+      //ch_print("y={0}, e={1}", y, e);
+      return (y == e);
+    });
+    TEST([]()->ch_bool {
+      ch_int<84> x(0xf11111100000001111111_h84);
+      ch_int<84> y = x << 1;
       ch_int<84> e = 0xe22222200000002222223_h84;
       //ch_print("y={0}, e={1}", y, e);
       return (y < e);
@@ -250,6 +267,244 @@ TEST_CASE("arithmetic", "[arithmetic]") {
   
   SECTION("shift", "[shift]") {
     TEST([]()->ch_bool {
+      ch_uint32 a(0x55555555_h);
+      auto c = a << 1;
+      return (c == 0xAAAAAAAA_h);
+    });
+    TEST([]()->ch_bool {
+      ch_uint32 a(0x55555555_h);
+      auto c = a << 16;
+      return (c == 0x55550000_h);
+    });
+    TEST([]()->ch_bool {
+      ch_uint32 a(0x55555555_h);
+      auto c = a << 17;
+      return (c == 0xAAAA0000_h);
+    });
+    TEST([]()->ch_bool {
+      ch_uint16 a(0x5555_h);
+      auto c = a << 16;
+      return (c == 0);
+    });
+    TEST([]()->ch_bool {
+      ch_uint16 a(0x5555_h);
+      auto c = a << 17;
+      return (c == 0);
+    });
+    TEST([]()->ch_bool {
+      ch_uint32 a(0x55555555_h);
+      auto c = a << 32;
+      return (c == 0);
+    });
+    TEST([]()->ch_bool {
+      ch_uint32 a(0x55555555_h);
+      auto c = a << 33;
+      return (c == 0);
+    });
+    TEST([]()->ch_bool {
+      ch_uint64 a(0x5555555555555555);
+      auto c = a << 64;
+      return (c == 0);
+    });
+    TEST([]()->ch_bool {
+      ch_uint64 a(0x5555555555555555);
+      auto c = a << 65;
+      return (c == 0);
+    });
+    TEST([]()->ch_bool {
+      ch_uint32 a(0x55555555_h);
+      auto c = ch_shl<48>(a, 1);
+      return (c == 0x0000AAAAAAAA_h48);
+    });
+    TEST([]()->ch_bool {
+      ch_uint32 a(0x55555555_h);
+      auto c = ch_shl<48>(a, 4);
+      return (c == 0x000555555550_h48);
+    });
+    TEST([]()->ch_bool {
+      ch_uint32 a(0x55555555_h);
+      auto c = ch_shl<48>(a, 16);
+      return (c == 0x555555550000_h48);
+    });
+    TEST([]()->ch_bool {
+      ch_uint32 a(0x55555555_h);
+      auto c = ch_shl<24>(a, 16);
+      return (c == 0x550000_h24);
+    });
+    TEST([]()->ch_bool {
+      ch_uint32 a(0x55555555_h);
+      auto c = ch_shl<48>(a, 17);
+      return (c == 0xAAAAAAAA0000_h48);
+    });
+    TEST([]()->ch_bool {
+      ch_uint32 a(0x55555555_h);
+      auto c = ch_shl<24>(a, 17);
+      return (c == 0xAA0000_h24);
+    });
+
+    TEST([]()->ch_bool {
+      ch_uint32 a(0x55555555_h);
+      auto c = a >> 1;
+      return (c == 0x2AAAAAAA_h);
+    });
+    TEST([]()->ch_bool {
+      ch_uint32 a(0x55555555_h);
+      auto c = a >> 16;
+      return (c == 0x00005555_h);
+    });
+    TEST([]()->ch_bool {
+      ch_uint32 a(0x55555555_h);
+      auto c = a >> 17;
+      return (c == 0x00002AAA_h);
+    });
+    TEST([]()->ch_bool {
+      ch_uint16 a(0x5555_h);
+      auto c = a >> 16;
+      return (c == 0);
+    });
+    TEST([]()->ch_bool {
+      ch_uint16 a(0x5555_h);
+      auto c = a >> 17;
+      return (c == 0);
+    });
+    TEST([]()->ch_bool {
+      ch_uint32 a(0x55555555_h);
+      auto c = a >> 32;
+      return (c == 0);
+    });
+    TEST([]()->ch_bool {
+      ch_uint32 a(0x55555555_h);
+      auto c = a >> 33;
+      return (c == 0);
+    });
+    TEST([]()->ch_bool {
+      ch_uint64 a(0x5555555555555555);
+      auto c = a >> 65;
+      return (c == 0);
+    });
+    TEST([]()->ch_bool {
+      ch_uint64 a(0x5555555555555555);
+      auto c = a >> 65;
+      return (c == 0);
+    });
+    TEST([]()->ch_bool {
+      ch_uint32 a(0x55555555_h);
+      auto c = ch_shr<48>(a, 1);
+      return (c == 0x00002AAAAAAA_h48);
+    });
+    TEST([]()->ch_bool {
+      ch_uint32 a(0x55555555_h);
+      auto c = ch_shr<48>(a, 4);
+      return (c == 0x000005555555_h48);
+    });
+    TEST([]()->ch_bool {
+      ch_uint32 a(0x55555555_h);
+      auto c = ch_shr<48>(a, 16);
+      return (c == 0x000000005555_h48);
+    });
+    TEST([]()->ch_bool {
+      ch_uint32 a(0x55555555_h);
+      auto c = ch_shr<24>(a, 16);
+      return (c == 0x005555_h24);
+    });
+    TEST([]()->ch_bool {
+      ch_uint32 a(0x55555555_h);
+      auto c = ch_shr<48>(a, 17);
+      return (c == 0x000000002AAA_h48);
+    });
+    TEST([]()->ch_bool {
+      ch_uint32 a(0x55555555_h);
+      auto c = ch_shr<24>(a, 17);
+      return (c == 0x002AAA_h24);
+    });
+
+    TEST([]()->ch_bool {
+      ch_int32 a(0xD5555555_h);
+      auto c = a >> 1;
+      return (c == 0xEAAAAAAA_h);
+    });
+    TEST([]()->ch_bool {
+      ch_int32 a(0xD5555555_h);
+      auto c = a >> 16;
+      return (c == 0xFFFFD555_h);
+    });
+    TEST([]()->ch_bool {
+      ch_int32 a(0xD5555555_h);
+      auto c = a >> 17;
+      return (c == 0xFFFFEAAA_h);
+    });
+    TEST([]()->ch_bool {
+      ch_int16 a(0xd555_h);
+      auto c = a >> 16;
+      return (c == 0xFFFF_h);
+    });
+    TEST([]()->ch_bool {
+      ch_int16 a(0xd555_h);
+      auto c = a >> 17;
+      return (c == 0xFFFF_h);
+    });
+    TEST([]()->ch_bool {
+      ch_int32 a(0xd5555555_h);
+      auto c = a >> 32;
+      return (c == 0xFFFFFFFF_h);
+    });
+    TEST([]()->ch_bool {
+      ch_int32 a(0xd5555555_h);
+      auto c = a >> 33;
+      return (c == 0xFFFFFFFF_h);
+    });
+    TEST([]()->ch_bool {
+      ch_int64 a(0xd555555555555555);
+      auto c = a >> 64;
+      return (c == 0xffffffffffffffff);
+    });
+    TEST([]()->ch_bool {
+      ch_int64 a(0xd555555555555555);
+      auto c = a >> 65;
+      return (c == 0xffffffffffffffff);
+    });
+    TEST([]()->ch_bool {
+      ch_int32 a(0xd5555555_h);
+      auto c = ch_shr<48>(a, 1);
+      return (c == 0xFFFFEAAAAAAA_h48);
+    });
+    TEST([]()->ch_bool {
+      ch_int32 a(0xd5555555_h);
+      auto c = ch_shr<48>(a, 4);
+      return (c == 0xFFFFFD555555_h48);
+    });
+    TEST([]()->ch_bool {
+      ch_int32 a(0xd5555555_h);
+      auto c = ch_shr<48>(a, 16);
+      return (c == 0xFFFFFFFFD555_h48);
+    });
+    TEST([]()->ch_bool {
+      ch_int32 a(0xd5555555_h);
+      auto c = ch_shr<24>(a, 16);
+      return (c == 0xFFD555_h24);
+    });
+    TEST([]()->ch_bool {
+      ch_int32 a(0xd5555555_h);
+      auto c = ch_shr<48>(a, 17);
+      return (c == 0xFFFFFFFFEAAA_h48);
+    });
+    TEST([]()->ch_bool {
+      ch_int32 a(0xd5555555_h);
+      auto c = ch_shr<24>(a, 17);
+      return (c == 0xFFEAAA_h24);
+    });
+    TEST([]()->ch_bool {
+      ch_int<40> a(0xfffc000000_h40);
+      auto c = ch_shr<25>(a, 16);
+      return (c == 0x1fffc00);
+    });
+    TEST([]()->ch_bool {
+      ch_int<40> a(0xfffc000000_h40);
+      auto c = ch_shr<25>(a, 15);
+      return (c == 0x1fff800);
+    });
+
+    TEST([]()->ch_bool {
       ch_uint4 a(1010_b);
       auto c = a << 2;
       return (c == 1000_b);
@@ -277,7 +532,9 @@ TEST_CASE("arithmetic", "[arithmetic]") {
     TEST([]()->ch_bool {
       ch_uint4 a(2);
       auto c = ch_uint32(1100_b32) >> a;
-      return (c == 0011_b32);
+      ch_int32 e = 0011_b32;
+      //ch_print("c={0}, e={1}", c, e);
+      return (c == e);
     });
     TEST([]()->ch_bool {
       ch_uint8 a(5*4);
@@ -377,6 +634,11 @@ TEST_CASE("arithmetic", "[arithmetic]") {
       return (c == 0x10000000000000000_h128);
     });    
     TEST([]()->ch_bool {
+      ch_uint<68> a(0xf0000000000000012_h68);
+      auto c = ch_shl<16>(a, 4);
+      return (c == 0x120);
+    });
+    TEST([]()->ch_bool {
       ch_uint<1>  a(1);
       auto c = ch_shl<255>(a, 32);
       return (c == 0x100000000);
@@ -404,6 +666,11 @@ TEST_CASE("arithmetic", "[arithmetic]") {
     TEST([]()->ch_bool {
       ch_int<64> a(0x200000000);
       auto c = ch_shr<1>(a, 33);
+      return (c == 0x1);
+    });
+    TEST([]()->ch_bool {
+      ch_int<64> a(0x200000000);
+      auto c = ch_shr<65>(a, 33);
       return (c == 0x1);
     });
     TEST([]()->ch_bool {
@@ -523,6 +790,12 @@ TEST_CASE("arithmetic", "[arithmetic]") {
       ch_uint<65> a(0x1);
       ch_uint<68> b(0x2);
       auto c = a + b;
+      return (c == 3);
+    });
+    TEST([]()->ch_bool {
+      ch_uint<65> a(0x1);
+      ch_uint<68> b(0x2);
+      auto c = ch_add<32>(a, b);
       return (c == 3);
     });
     TEST([]()->ch_bool {

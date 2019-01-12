@@ -6,16 +6,6 @@ using namespace ch::internal;
 
 #define NUM_TRACES 100
 
-auto is_system_signal = [](const std::string& name) {
-  return (name == "clk") || (name == "reset");
-};
-
-auto get_value = [](const block_type* src, uint32_t size, uint32_t src_offset) {
-  sdata_type value(size);
-  bv_copy(value.words(), 0, src, src_offset, size);
-  return value;
-};
-
 tracerimpl::tracerimpl(const ch_device_list& devices)
   : simulatorimpl(devices)
   , trace_width_(0)
@@ -58,7 +48,7 @@ void tracerimpl::initialize() {
   }
 
   trace_width_ = trace_width + signals_.size();
-  prev_values.resize(signals_.size());
+  prev_values_.resize(signals_.size());
   valid_mask_.resize(signals_.size());
 }
 
@@ -98,14 +88,16 @@ void tracerimpl::eval() {
   dst_offset += valid_mask_.size();
   for (uint32_t i = 0, n = signals_.size(); i < n; ++i) {
     auto value = signals_.at(i).node->value();
-    auto& prev = prev_values.at(i);
+    auto& prev = prev_values_.at(i);
     if (prev.first) {
-      if (0 == bv_cmp(prev.first, prev.second, value->words(), 0, value->size()))
+      if (0 == bv_cmp(reinterpret_cast<const block_type*>(prev.first),
+                      prev.second, value->words(), 0, value->size()))
         continue;
     }
     prev.first = dst_block;
     prev.second = dst_offset;
-    bv_copy(dst_block, dst_offset, value->words(), 0, value->size());
+    bv_copy(reinterpret_cast<block_type*>(dst_block),
+            dst_offset, value->words(), 0, value->size());
     dst_offset += value->size();    
     valid_mask_[i] = true;
   }
@@ -119,9 +111,9 @@ void tracerimpl::eval() {
 }
 
 void tracerimpl::allocate_trace(uint32_t block_width) {
-  auto block_size = (bitwidth_v<block_type> / 8) * ceildiv(block_width, bitwidth_v<block_type>);
+  auto block_size = (bitwidth_v<block_t> / 8) * ceildiv(block_width, bitwidth_v<block_t>);
   auto buf = new uint8_t[sizeof(trace_block_t) + block_size]();
-  auto data = reinterpret_cast<block_type*>(buf + sizeof(trace_block_t));
+  auto data = reinterpret_cast<block_t*>(buf + sizeof(trace_block_t));
   auto trace_block = new (buf) trace_block_t(data);
   if (nullptr == trace_head_) {
     trace_head_ = trace_block;
@@ -139,7 +131,7 @@ void tracerimpl::toText(std::ofstream& out) {
   auto indices_width = std::to_string(ticks_).length();
 
   for (uint32_t i = 0, n = signals_.size(); i < n; ++i) {
-    prev_values[i] = std::make_pair<block_type*, uint32_t>(nullptr, 0);
+    prev_values_[i] = std::make_pair<block_t*, uint32_t>(nullptr, 0);
   }
 
   auto trace_block = trace_head_;
@@ -161,14 +153,14 @@ void tracerimpl::toText(std::ofstream& out) {
           auto value = get_value(src_block, signal_size, src_offset);
           out << sep << " " << signal.name << "=" << value;
           if (type_input != signal_type) {
-            auto& prev = prev_values.at(i);
+            auto& prev = prev_values_.at(i);
             prev.first = src_block;
             prev.second = src_offset;
           }
           src_offset += signal_size;
         } else {
           if (type_input != signal_type) {
-            auto& prev = prev_values.at(i);
+            auto& prev = prev_values_.at(i);
             assert(prev.first);
             auto value = get_value(prev.first, signal_size, prev.second);
             out << sep << " " << signal.name << "=" << value;
@@ -270,7 +262,7 @@ void tracerimpl::toTestBench(std::ofstream& out,
   };
 
   //--
-  auto print_value = [](std::ostream& out, const sdata_type& value) {
+  auto print_value = [](std::ostream& out, const bv_t& value) {
     out << value.size() << "'h";
     auto oldflags = out.flags();
     out.setf(std::ios_base::hex, std::ios_base::basefield);
@@ -366,7 +358,7 @@ void tracerimpl::toTestBench(std::ofstream& out,
       auto mask_width = valid_mask_.size();
 
       for (uint32_t i = 0, n = signals_.size(); i < n; ++i) {
-        prev_values[i] = std::make_pair<block_type*, uint32_t>(nullptr, 0);
+        prev_values_[i] = std::make_pair<block_t*, uint32_t>(nullptr, 0);
       }
 
       auto trace_block = trace_head_;
@@ -421,7 +413,7 @@ void tracerimpl::toTestBench(std::ofstream& out,
                   continue;
                 }
 
-                auto& prev = prev_values.at(i);
+                auto& prev = prev_values_.at(i);
                 prev.first = src_block;
                 prev.second = out_offset;
 
@@ -456,7 +448,7 @@ void tracerimpl::toTestBench(std::ofstream& out,
                   out_trace = true;
                 }
 
-                auto& prev = prev_values.at(i);
+                auto& prev = prev_values_.at(i);
                 assert(prev.first);
                 auto value = get_value(prev.first, signal_size, prev.second);
                 out << " `check(" << signal.name << ", ";
@@ -486,7 +478,7 @@ void tracerimpl::toTestBench(std::ofstream& out,
 void tracerimpl::toVerilator(std::ofstream& out,
                              const std::string& module) {
   //--
-  auto print_value = [](std::ostream& out, const sdata_type& value) {
+  auto print_value = [](std::ostream& out, const bv_t& value) {
     out << "0x";
     auto oldflags = out.flags();
     out.setf(std::ios_base::hex, std::ios_base::basefield);
@@ -516,7 +508,7 @@ void tracerimpl::toVerilator(std::ofstream& out,
   auto mask_width = valid_mask_.size();
 
   for (uint32_t i = 0, n = signals_.size(); i < n; ++i) {
-    prev_values[i] = std::make_pair<block_type*, uint32_t>(nullptr, 0);
+    prev_values_[i] = std::make_pair<block_t*, uint32_t>(nullptr, 0);
   }
 
   out << "bool eval(" << module << "* device, uint64_t tick) {" << std::endl;
@@ -568,7 +560,7 @@ void tracerimpl::toVerilator(std::ofstream& out,
               continue;
             }
 
-            auto& prev = prev_values.at(i);
+            auto& prev = prev_values_.at(i);
             prev.first = src_block;
             prev.second = out_offset;
 
@@ -599,7 +591,7 @@ void tracerimpl::toVerilator(std::ofstream& out,
               trace_enable = true;
             }
 
-            auto& prev = prev_values.at(i);
+            auto& prev = prev_values_.at(i);
             assert(prev.first);
             auto value = get_value(prev.first, signal_size, prev.second);
             out << "assert(device->" << signal.name << " == ";
