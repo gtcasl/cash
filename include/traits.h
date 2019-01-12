@@ -6,7 +6,7 @@ namespace ch {
 namespace internal {
 
 #ifndef BLOCK_SIZE
-  #define BLOCK_SIZE 4
+  #define BLOCK_SIZE 8
 #endif
 
 using block_type = std::conditional_t<BLOCK_SIZE == 1, uint8_t,

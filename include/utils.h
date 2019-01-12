@@ -570,7 +570,7 @@ auto sign_ext(T value, unsigned width) {
   static_assert(std::is_integral_v<T>, "invalid type");
   using U = std::make_unsigned_t<T>;
   assert(bitwidth_v<U> >= width);
-  assert(0 == (value & ~((1ull << width) - 1)));
+  assert(0 == (value & ~(0xffffffffffffffff >> (64 - width))));
   auto m = U(1) << (width - 1);
   return std::make_signed_t<T>((value ^ m) - m);
 }

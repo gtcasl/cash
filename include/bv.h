@@ -10,9 +10,9 @@ void bv_clear_extra_bits(T* dst, uint32_t size) {
   static constexpr uint32_t WORD_SIZE = bitwidth_v<T>;
   static constexpr T        WORD_MAX  = std::numeric_limits<T>::max();
 
-  uint32_t extra_bits = size % WORD_SIZE;
-  if (extra_bits) {
-    dst[size / WORD_SIZE] &= ~(WORD_MAX << extra_bits);
+  uint32_t rem = size % WORD_SIZE;
+  if (rem) {
+    dst[size / WORD_SIZE] &= ~(WORD_MAX << rem);
   }
 }
 

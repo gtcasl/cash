@@ -319,6 +319,7 @@ TEST_CASE("arithmetic", "[arithmetic]") {
     TEST([]()->ch_bool {
       ch_uint32 a(0x55555555_h);
       auto c = ch_shl<48>(a, 4);
+      //ch_print("c={0}", c);
       return (c == 0x000555555550_h48);
     });
     TEST([]()->ch_bool {
@@ -466,6 +467,7 @@ TEST_CASE("arithmetic", "[arithmetic]") {
     TEST([]()->ch_bool {
       ch_int32 a(0xd5555555_h);
       auto c = ch_shr<48>(a, 1);
+      //ch_print("c={0}", c);
       return (c == 0xFFFFEAAAAAAA_h48);
     });
     TEST([]()->ch_bool {
@@ -656,6 +658,7 @@ TEST_CASE("arithmetic", "[arithmetic]") {
     TEST([]()->ch_bool {
       ch_uint<64> a(0x200000000);
       auto c = ch_shr<1>(a, 33);
+      //ch_print("{0}: c={1}", ch_now(), c);
       return (c == 0x1);
     });
     TEST([]()->ch_bool {
