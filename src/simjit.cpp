@@ -1380,9 +1380,6 @@ private:
   void emit_node(cdimpl* node) {
     __source_location();
 
-    uint32_t dst_width = node->size();
-    assert(dst_width <= WORD_SIZE);
-
     auto j_clk = scalar_map_.at(node->src(0).id());
     auto addr = addr_map_.at(node->id());
     auto j_prev_clk = jit_insn_load_relative(j_func_, j_vars_, addr, jit_type_uint);
