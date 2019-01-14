@@ -1723,6 +1723,7 @@ private:
           if (is_scalar) {
             // pop pipe data
             auto j_data = this->emit_load_array_scalar(j_pipe_ptr, pipe_width, j_pipe_index, dst_width);
+
             auto j_data_v = this->emit_cast(j_data, j_vtype);
             auto j_data_n = this->emit_cast(j_data, j_ntype);
             jit_insn_store_relative(j_func_, j_vars_, dst_addr, j_data_v);
@@ -2509,7 +2510,7 @@ private:
         jit_insn_branch_if(j_func_, j_src_inclusive, &l_skip);
 
         auto j_src_value1 = jit_insn_load_relative(j_func_, j_src_ptr, sizeof(block_type), word_type_);
-        auto j_block_size = this->emit_constant(get_value_size(j_src_value1), jit_type_uint);
+        auto j_block_size = this->emit_constant(WORD_SIZE, jit_type_uint);
         auto j_rem = jit_insn_sub(j_func_, j_block_size, j_src_lsb);
         auto j_src1_s = jit_insn_shl(j_func_, j_src_value1, j_rem);
         auto j_or = jit_insn_or(j_func_, j_src, j_src1_s);
@@ -2562,15 +2563,15 @@ private:
         auto j_dst_new_v = this->emit_cast(j_dst_new, j_array_type);
         jit_insn_store_relative(j_func_, j_array_ptr, 0, j_dst_new_v);
       } else {
-        auto j_mask = this->emit_constant(WORD_MAX >> (WORD_SIZE - length), j_ntype);
-        auto j_data_n = this->emit_cast(j_data, j_ntype);
+        auto j_mask = this->emit_constant(WORD_MAX >> (WORD_SIZE - length), word_type_);
+        auto j_data_w = this->emit_cast(j_data, word_type_);
         auto j_dst_idx = jit_insn_ushr(j_func_, j_dst_offset, j_block_logsize_);
         auto j_dst_lsb = jit_insn_and(j_func_, j_dst_offset, j_block_mask_);
 
         auto j_dst_ptr = jit_insn_load_elem_address(j_func_, j_array_ptr, j_dst_idx, word_type_);
         auto j_dst_value0 = jit_insn_load_relative(j_func_, j_dst_ptr, 0, word_type_);
         auto j_mask0_s = jit_insn_shl(j_func_, j_mask, j_dst_lsb);
-        auto j_data0_s = jit_insn_shl(j_func_, j_data_n, j_dst_lsb);
+        auto j_data0_s = jit_insn_shl(j_func_, j_data_w, j_dst_lsb);
         auto j_dst0 = this->emit_blend(j_mask0_s, j_dst_value0, j_data0_s);
         auto j_dst0_w = this->emit_cast(j_dst0, word_type_);
         jit_insn_store_relative(j_func_, j_dst_ptr, 0, j_dst0_w);
@@ -2583,7 +2584,7 @@ private:
         auto j_dst_value1 = jit_insn_load_relative(j_func_, j_dst_ptr, sizeof(block_type), word_type_);
         auto j_mask1 = jit_insn_not(j_func_, j_mask0_s);
         auto j_mask1_s = jit_insn_ushr(j_func_, j_mask1, j_dst_rem);
-        auto j_data1_s = jit_insn_ushr(j_func_, j_data_n, j_dst_rem);
+        auto j_data1_s = jit_insn_ushr(j_func_, j_data_w, j_dst_rem);
         auto j_dst1 = this->emit_blend(j_mask1_s, j_dst_value1, j_data1_s);
         auto j_dst1_w = this->emit_cast(j_dst1, word_type_);
         jit_insn_store_relative(j_func_, j_dst_ptr, sizeof(block_type), j_dst1_w);
