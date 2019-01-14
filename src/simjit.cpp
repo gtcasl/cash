@@ -54,9 +54,16 @@ struct sblock_t {
 
 class SrcLogger {
 public:
-  SrcLogger(jit_function_t func, const char* name) : func_(func) {
+  SrcLogger(jit_function_t func, const char* fname, const char* vname = nullptr) : func_(func) {
     jit_insn_new_block(func);
     auto block = jit_function_get_current(func);
+    auto name = fname;
+    if (vname) {
+      auto tmp = stringf("%s @var=%s", fname, vname);
+      auto tmp2 = new char[tmp.length() + 1]();
+      strncpy(tmp2, tmp.c_str(), tmp.length());
+      name = tmp2;
+    }
     jit_block_set_meta(block, 0, (void*)name, nullptr);
   }
   ~SrcLogger() {
@@ -72,9 +79,15 @@ private:
 #define __countof(arr) (sizeof(arr) / sizeof(arr[0]))
 
 #ifndef NDEBUG
-  #define __source_location() SrcLogger slogger(j_func_, __PRETTY_FUNCTION__)
+  #define __source_info() SrcLogger logger(j_func_, __PRETTY_FUNCTION__)
 #else
-  #define __source_location()
+  #define __source_info()
+#endif
+
+#ifndef NDEBUG
+  #define __source_info_ex(x) SrcLogger logger(j_func_, __PRETTY_FUNCTION__, x)
+#else
+  #define __source_info_ex(x)
 #endif
 
 #define __alu_call_relational(fname, ...) \
@@ -620,7 +633,7 @@ private:
   }
 
   void emit_node(litimpl* node) {
-    __source_location();
+    __source_info();
 
     uint32_t dst_width = node->size();
     if (dst_width <= WORD_SIZE) {
@@ -631,7 +644,7 @@ private:
   }
 
   void emit_node(proxyimpl* node) {
-    __source_location();
+    __source_info();
     uint32_t dst_width = node->size();    
     auto j_ntype = to_native_type(dst_width);
     if (dst_width <= WORD_SIZE) {      
@@ -663,7 +676,7 @@ private:
   }
 
   void emit_node(inputimpl* node) {
-    __source_location();
+    __source_info_ex(node->name().c_str());
     uint32_t dst_width = node->size();    
     uint32_t addr = addr_map_.at(node->id());
     auto j_ptr = jit_insn_load_relative(j_func_, j_ports_, addr * sizeof(block_type*), jit_type_void_ptr);
@@ -678,7 +691,7 @@ private:
   }
 
   void emit_node(ioportimpl* node) {
-    __source_location();
+    __source_info_ex(node->name().c_str());
     uint32_t dst_width = node->size();
     uint32_t addr = addr_map_.at(node->id());
     auto j_dst_ptr = jit_insn_load_relative(j_func_, j_ports_, addr * sizeof(block_type*), jit_type_void_ptr);
@@ -693,7 +706,7 @@ private:
   }
 
   void emit_node(aluimpl* node) {
-    __source_location();
+    __source_info();
 
     struct auto_store_addr_t {
       compiler* C;
@@ -1105,7 +1118,7 @@ private:
                                uint32_t opd,
                                bool is_scalar,
                                bool need_resize) {
-    __source_location();
+    __source_info();
     if (opd >= node->srcs().size())
       return nullptr;
     auto src = node->src(opd).impl();
@@ -1146,7 +1159,7 @@ private:
                                        const char* name,
                                        jit_value_t j_in,
                                        uint32_t in_size) {
-    __source_location();
+    __source_info();
 
     // setup arguments
     auto j_in_size = this->emit_constant(in_size, jit_type_uint);
@@ -1174,7 +1187,7 @@ private:
                                        uint32_t lhs_size,
                                        jit_value_t j_rhs,
                                        uint32_t rhs_size) {
-    __source_location();
+    __source_info();
 
     // setup arguments
     auto j_lhs_size = this->emit_constant(lhs_size, jit_type_uint);
@@ -1204,7 +1217,7 @@ private:
                             uint32_t out_size,
                             jit_value_t j_in,
                             uint32_t in_size) {
-    __source_location();
+    __source_info();
 
     // setup arguments
     auto j_out_size = this->emit_constant(out_size, jit_type_uint);
@@ -1236,7 +1249,7 @@ private:
                             uint32_t lhs_size,
                             jit_value_t j_rhs,
                             uint32_t rhs_size) {
-    __source_location();
+    __source_info();
 
     // setup arguments
     auto j_out_size = this->emit_constant(out_size, jit_type_uint);
@@ -1269,7 +1282,7 @@ private:
                            jit_value_t j_lhs,
                            uint32_t lhs_size,
                            jit_value_t j_rhs) {
-   __source_location();
+   __source_info();
 
    // setup arguments
    auto j_out_size = this->emit_constant(out_size, jit_type_uint);
@@ -1297,7 +1310,7 @@ private:
   }
 
   void emit_node(selectimpl* node) {
-    __source_location();
+    __source_info();
 
     jit_label_t l_exit = jit_label_undefined;
 
@@ -1378,7 +1391,7 @@ private:
   }
 
   void emit_node(cdimpl* node) {
-    __source_location();
+    __source_info();
 
     auto j_clk = scalar_map_.at(node->src(0).id());
     auto addr = addr_map_.at(node->id());
@@ -1428,7 +1441,7 @@ private:
    }
 
   void flush_sblock() {
-    __source_location();
+    __source_info();
 
     jit_label_t l_exit = jit_label_undefined;
 
@@ -1634,7 +1647,7 @@ private:
   }
 
   void emit_snode_value(regimpl* node) {
-    __source_location();
+    __source_info();
 
     uint32_t dst_width = node->size();
     auto j_vtype = to_value_type(dst_width);
@@ -1748,7 +1761,7 @@ private:
   }
 
   void emit_node(marportimpl* node) {
-    __source_location();
+    __source_info();
 
     auto dst_width = node->size();
     auto j_ntype = to_native_type(dst_width);
@@ -1777,7 +1790,7 @@ private:
   }
 
   void emit_snode_value(msrportimpl* node) {
-    __source_location();
+    __source_info();
 
     auto dst_width = node->size();    
     bool is_scalar = (dst_width <= WORD_SIZE);
@@ -1812,7 +1825,7 @@ private:
   }
 
   void emit_snode_value(mwportimpl* node) {
-    __source_location();
+    __source_info();
 
     auto data_width = node->mem()->data_width();
     bool is_scalar = (data_width <= WORD_SIZE);
@@ -1834,7 +1847,7 @@ private:
   }
 
   void emit_node(timeimpl* node) {
-    __source_location();
+    __source_info();
 
     auto dst_width = node->size();
     bool is_scalar = (dst_width <= WORD_SIZE);
@@ -1853,7 +1866,7 @@ private:
   }
 
   void emit_node(printimpl* node) {
-    __source_location();
+    __source_info();
 
     jit_label_t l_exit = jit_label_undefined;
 
@@ -1904,7 +1917,7 @@ private:
   }
 
   void emit_node(assertimpl* node) {
-    __source_location();
+    __source_info();
 
     jit_label_t l_exit = jit_label_undefined;
 
@@ -1952,7 +1965,7 @@ private:
   }
 
   void emit_node(udfcimpl* node) {
-    __source_location();
+    __source_info();
 
     auto dst_width = node->size();
     auto j_ntype = to_native_type(dst_width);
@@ -2015,7 +2028,7 @@ private:
   }
 
   void emit_snode_value(udfsimpl* node) {
-    __source_location();
+    __source_info();
 
     auto dst_width = node->size();    
     auto udf = node->udf();
@@ -2198,7 +2211,7 @@ private:
         }
         if (dst_width <= WORD_SIZE) {
           // preload scalar value
-          __source_location();
+          __source_info();
           auto addr = addr_map_.at(node->id());
           auto j_dst = jit_insn_load_relative(j_func_, j_vars_, addr, j_vtype);
           scalar_map_[node->id()] = this->emit_cast(j_dst, j_ntype);;
@@ -2219,7 +2232,7 @@ private:
         bv_init(reinterpret_cast<block_type*>(sim_ctx_->state.vars + addr), dst_width);
         if (dst_width <= WORD_SIZE) {
           // preload scalar value
-          __source_location();
+          __source_info();
           auto j_dst = jit_insn_load_relative(j_func_, j_vars_, addr, j_vtype);
           scalar_map_[node->id()] = this->emit_cast(j_dst, j_ntype);;
         }
@@ -2229,7 +2242,7 @@ private:
         bv_reset(reinterpret_cast<block_type*>(sim_ctx_->state.vars + addr), dst_width);
         if (dst_width <= WORD_SIZE) {
           // preload scalar value
-          __source_location();
+          __source_info();
           auto j_dst = jit_insn_load_relative(j_func_, j_vars_, addr, j_vtype);
           scalar_map_[node->id()] = j_dst;
         }
@@ -2253,7 +2266,7 @@ private:
           if (type_udfs == type
            && dst_width <= WORD_SIZE) {
             // preload scalar value
-            __source_location();
+            __source_info();
             auto j_dst = jit_insn_load_relative(j_func_, j_vars_, addr, j_vtype);
             scalar_map_[node->id()] = this->emit_cast(j_dst, j_ntype);;
           }
@@ -2355,7 +2368,7 @@ private:
   jit_value_t emit_eq_vector(jit_value_t j_lhs, uint32_t lhs_size,
                              jit_value_t j_rhs, uint32_t rhs_size,
                              bool is_signed) {
-    __source_location();
+    __source_info();
     assert(lhs_size > WORD_SIZE || rhs_size > WORD_SIZE);
 
     jit_value_t j_ret = nullptr;
@@ -2376,7 +2389,7 @@ private:
   }
 
   jit_value_t emit_xorr_scalar(jit_value_t j_value, uint32_t width) {
-    __source_location();
+    __source_info();
 
     auto native_width = to_native_size(width);
     jit_value_t j_ret = j_value;
@@ -2391,7 +2404,7 @@ private:
   jit_value_t emit_scalar_slice(jit_value_t j_value,
                                 uint32_t offset,
                                 uint32_t length) {
-    __source_location();    
+    __source_info();
     assert(length <= WORD_SIZE);
     assert(offset < WORD_SIZE);
 
@@ -2440,7 +2453,7 @@ private:
   jit_value_t emit_load_slice_scalar(lnodeimpl* node,
                                      uint32_t offset,
                                      uint32_t length) {
-    __source_location();    
+    __source_info();
     assert(length <= WORD_SIZE);
 
     uint32_t src_width = node->size();
@@ -2461,7 +2474,7 @@ private:
                                      uint32_t array_width,
                                      jit_value_t j_index,
                                      uint32_t length) {
-    __source_location();    
+    __source_info();
     assert(length <= WORD_SIZE);
 
     jit_value_t j_src;
@@ -2513,7 +2526,7 @@ private:
                                jit_value_t j_index,
                                jit_value_t j_data,
                                uint32_t length) {
-    __source_location();
+    __source_info();
     assert(length <= WORD_SIZE);
 
     auto j_vtype = to_value_type(length);
@@ -2584,7 +2597,7 @@ private:
                               uint32_t dst_width,
                               jit_value_t j_array_ptr,
                               jit_value_t j_index) {
-    __source_location();
+    __source_info();
 
     if (0 == (dst_width % 8)) {
       auto j_size = this->emit_constant(dst_width / 8, jit_type_uint);
@@ -2602,7 +2615,7 @@ private:
                                jit_value_t j_index,
                                jit_value_t j_src_ptr,
                                uint32_t src_width) {
-    __source_location();
+    __source_info();
 
     if (0 == (src_width % 8)) {
       auto j_size = this->emit_constant(src_width / 8, jit_type_uint);
@@ -2621,7 +2634,7 @@ private:
                         jit_value_t j_src,
                         uint32_t src_offset,
                         uint32_t length) {
-    __source_location();
+    __source_info();
     assert(length <= WORD_SIZE);
 
     auto j_vtype = to_value_type(length);
@@ -2659,7 +2672,7 @@ private:
                         jit_value_t j_src_ptr,
                         uint32_t src_offset,
                         uint32_t length) {
-    __source_location();
+    __source_info();
 
     if (0 == (dst_offset % 8)
      && 0 == (src_offset % 8)) {
@@ -2688,7 +2701,7 @@ private:
                         jit_value_t j_src_ptr,
                         jit_value_t j_src_offset,
                         uint32_t length) {
-    __source_location();
+    __source_info();
 
     auto j_length = this->emit_constant(length, jit_type_uint);
 
@@ -2715,7 +2728,7 @@ private:
                                        uint32_t dst_width,
                                        jit_value_t j_src,
                                        uint32_t length) {
-    __source_location();
+    __source_info();
 
     assert(dst_width > WORD_SIZE);
     auto dst_idx = dst_offset / WORD_SIZE;
@@ -2753,7 +2766,7 @@ private:
                                        memaddr_t src_addr,
                                        uint32_t src_offset,
                                        uint32_t length) {
-    __source_location();
+    __source_info();
 
     if (length <= INLINE_THRESHOLD * WORD_SIZE) {
       while (length) {
@@ -2803,7 +2816,7 @@ private:
                                        uint32_t dst_offset,
                                        jit_value_t j_src,
                                        jit_type_t j_ntype) {
-    __source_location();
+    __source_info();
 
     if (nullptr == j_cur)
       return this->emit_cast(j_src, j_ntype);
@@ -2839,7 +2852,7 @@ private:
   }
 
   void emit_clear_extra_bits(lnodeimpl* node) {
-    __source_location();
+    __source_info();
 
     uint32_t dst_width = node->size();
     assert(dst_width <= WORD_SIZE);
@@ -3026,7 +3039,11 @@ private:
       auto meta = jit_block_get_meta(block, 0);
       if (meta) {
         if (((char*)meta)[0] != '\0') {
-          fprintf(stream, "# </sref %s\n", (const char*)(meta));
+          auto sinfo = (const char*)(meta);
+          fprintf(stream, "# </sref %s\n", sinfo);
+          if (strchr(sinfo, '@')) {
+            delete sinfo; // release allocation
+          }
         } else {
           fprintf(stream, "# sref/>\n");
         }

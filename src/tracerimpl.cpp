@@ -1,6 +1,7 @@
 #include "tracerimpl.h"
 #include "tracer.h"
 #include "ioimpl.h"
+#include "bindimpl.h"
 
 using namespace ch::internal;
 
@@ -239,8 +240,24 @@ void tracerimpl::toTestBench(std::ofstream& out,
                              const std::string& module,
                              bool passthru) {
   //--
-  auto full_name = [&](const lnode& x) {
-    return stringf("__module%d__.%s%d", x.impl()->ctx()->id(), x.name().c_str(), x.id());
+  auto full_name = [&](lnodeimpl* node) {
+    auto type = node->type();
+    switch (type) {
+    case type_input:
+    case type_output:
+      return stringf("__module%d__.%s", node->ctx()->id(), node->name().c_str());
+      break;
+    case type_bindin:
+    case type_bindout: {
+      auto bindport = reinterpret_cast<bindportimpl*>(node);
+      return stringf("__module%d__.%s%d_%s", node->ctx()->id(),
+                     bindport->binding()->module()->name().c_str(),
+                     bindport->binding()->id(),
+                     bindport->ioport().name().c_str());
+    } break;
+    default:
+      return stringf("__module%d__.%s%d", node->ctx()->id(), node->name().c_str(), node->id());
+    }
   };
 
   //--
@@ -334,7 +351,7 @@ void tracerimpl::toTestBench(std::ofstream& out,
       for (auto& signal : signals_) {
         if (type_tap != signal.node->type())
           continue;
-        out << "assign " << signal.name << " = " << full_name(signal.node->src(0)) << ";" << std::endl;
+        out << "assign " << signal.name << " = " << full_name(signal.node->src(0).impl()) << ";" << std::endl;
       }
       out << std::endl;
     }
