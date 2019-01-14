@@ -3042,7 +3042,7 @@ private:
           auto sinfo = (const char*)(meta);
           fprintf(stream, "# </sref %s\n", sinfo);
           if (strchr(sinfo, '@')) {
-            delete sinfo; // release allocation
+            delete [] sinfo; // release allocation
           }
         } else {
           fprintf(stream, "# sref/>\n");
