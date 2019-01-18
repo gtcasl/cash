@@ -9,6 +9,14 @@ namespace internal {
   #define CASH_BLOCK_SIZE 8
 #endif
 
+template <unsigned N> class ch_scbit;
+template <unsigned N> class ch_scint;
+template <unsigned N> class ch_scuint;
+
+template <unsigned N> class ch_bit;
+template <unsigned N> class ch_int;
+template <unsigned N> class ch_uint;
+
 using block_type = std::conditional_t<CASH_BLOCK_SIZE == 1, uint8_t,
                      std::conditional_t<CASH_BLOCK_SIZE == 2, uint16_t,
                        std::conditional_t<CASH_BLOCK_SIZE == 4, uint32_t,
@@ -105,8 +113,21 @@ struct system_traits {
   using logic_type  = LogicType;
 };
 
+template <typename T, typename Enable = void>
+struct system_t_impl {};
+
 template <typename T>
-using ch_system_t = typename std::decay_t<T>::traits::system_type;
+struct system_t_impl<T, std::enable_if_t<std::is_arithmetic_v<T>>> {
+  using type = std::conditional_t<std::is_signed_v<T>, ch_scint<ch_width_v<T>>, ch_scuint<ch_width_v<T>>>;
+};
+
+template <typename T>
+struct system_t_impl<T, std::enable_if_t<is_object_type_v<T>>> {
+  using type = typename std::decay_t<T>::traits::system_type;
+};
+
+template <typename T>
+using ch_system_t = typename system_t_impl<std::decay_t<T>>::type;
 
 template <typename T>
 inline constexpr bool is_system_traits_v = bool_constant_v<(T::type & traits_system)>;
@@ -126,8 +147,21 @@ struct logic_traits {
   using system_type = SystemType;
 };
 
+template <typename T, typename Enable = void>
+struct logic_t_impl {};
+
 template <typename T>
-using ch_logic_t = typename std::decay_t<T>::traits::logic_type;
+struct logic_t_impl<T, std::enable_if_t<std::is_arithmetic_v<T>>> {
+  using type = std::conditional_t<std::is_signed_v<T>, ch_int<ch_width_v<T>>, ch_uint<ch_width_v<T>>>;
+};
+
+template <typename T>
+struct logic_t_impl<T, std::enable_if_t<is_object_type_v<T>>> {
+  using type = typename std::decay_t<T>::traits::logic_type;
+};
+
+template <typename T>
+using ch_logic_t = typename logic_t_impl<std::decay_t<T>>::type;
 
 template <typename T>
 inline constexpr bool is_logic_traits_v = bool_constant_v<(T::type & traits_logic)>;

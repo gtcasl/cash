@@ -53,7 +53,10 @@ struct TestAssign3 {
 TEST_CASE("basics", "[basics]") {
   SECTION("assign", "[assign]") {
     TEST([]()->ch_bool {
-      ch_bit4 a(0), b(1_b4), c(b);
+      ch_bit4 a(0);
+      ch_bit32 e(64);
+      auto b = ch_shr<4>(0x10000000000000000_h65, e);
+      ch_bit4 c(b);
       auto d = a << b;
       a = b;
       return (d == 2);

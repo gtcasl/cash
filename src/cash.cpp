@@ -1,4 +1,4 @@
-#if 0
+#if 1
 
 #include "cash.h"
 #include <htl/float32.h>

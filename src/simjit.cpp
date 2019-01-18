@@ -196,6 +196,7 @@ static jit_type_t to_value_type(uint32_t size) {
   }
 }
 
+
 static uint32_t to_native_size(uint32_t size) {
   uint32_t bytes = ceildiv(size, 8);
   switch (bytes) {
@@ -214,6 +215,13 @@ static uint32_t to_native_size(uint32_t size) {
 static jit_type_t to_native_type(uint32_t size) {
   uint32_t native_size = to_native_size(size);
   return to_value_type(native_size);
+}
+
+static jit_type_t to_native_or_word_type(uint32_t size) {
+  uint32_t native_size = to_native_size(size);
+  if (native_size <= WORD_SIZE)
+    return to_value_type(native_size);
+  return to_value_type(WORD_SIZE);
 }
 
 static uint32_t get_type_size(jit_type_t j_type) {
@@ -267,6 +275,26 @@ static jit_type_t to_signed_type(jit_type_t j_type) {
   case JIT_TYPE_ULONG:
   case JIT_TYPE_LONG:
     return jit_type_long;
+  default:
+    std::abort();
+  }
+}
+
+static jit_type_t to_unsigned_type(jit_type_t j_type) {
+  auto kind = jit_type_get_kind(j_type);
+  switch (kind) {
+  case JIT_TYPE_UBYTE:
+  case JIT_TYPE_SBYTE:
+    return jit_type_ubyte;
+  case JIT_TYPE_USHORT:
+  case JIT_TYPE_SHORT:
+    return jit_type_ushort;
+  case JIT_TYPE_UINT:
+  case JIT_TYPE_INT:
+    return jit_type_uint;
+  case JIT_TYPE_ULONG:
+  case JIT_TYPE_LONG:
+    return jit_type_ulong;
   default:
     std::abort();
   }
@@ -681,9 +709,9 @@ private:
     uint32_t addr = addr_map_.at(node->id());
     auto j_ptr = jit_insn_load_relative(j_func_, j_ports_, addr * sizeof(block_type*), jit_type_void_ptr);
     if (dst_width <= WORD_SIZE) {
-      auto j_vtype = to_value_type(dst_width);
+      auto j_nwtype = to_native_or_word_type(dst_width);
       auto j_ntype = to_native_type(dst_width);
-      auto j_value = jit_insn_load_relative(j_func_, j_ptr, 0, j_vtype);
+      auto j_value = jit_insn_load_relative(j_func_, j_ptr, 0, j_nwtype);
       scalar_map_[node->id()] = this->emit_cast(j_value, j_ntype);
     } else {
       input_map_[node->id()] = j_ptr;
@@ -821,7 +849,7 @@ private:
 
     case ch_op::notl:
       if (is_scalar) {
-        auto j_dst = jit_insn_to_not_bool(j_func_, j_src0);
+        auto j_dst = jit_insn_eq(j_func_, j_src0, j_zero_);
         scalar_map_[node->id()] = this->emit_cast(j_dst, j_ntype);
       } else {
         auto j_dst = __alu_call_logical(bv_notl_vector, j_src0, node->src(0).size());
@@ -1541,7 +1569,7 @@ private:
     assert(node->has_init_data());
 
     uint32_t dst_width = node->size();
-    auto j_vtype = to_value_type(dst_width);
+    auto j_vtype = to_native_or_word_type(dst_width);
     auto is_scalar = (dst_width <= WORD_SIZE);
     auto dst_addr = addr_map_.at(node->id());
 
@@ -1556,7 +1584,7 @@ private:
     if (node->is_pipe()) {
       uint32_t pipe_length = node->length() - 1;
       uint32_t pipe_width = pipe_length * dst_width;
-      auto j_pipe_vtype = to_value_type(pipe_width);
+      auto j_pipe_vtype = to_native_or_word_type(pipe_width);
       auto j_pipe_ntype = to_native_type(pipe_width);
       uint32_t pipe_addr = dst_addr + __align_word_size(dst_width);
       auto is_pipe_scalar = (pipe_width <= WORD_SIZE);
@@ -1650,7 +1678,7 @@ private:
     __source_info();
 
     uint32_t dst_width = node->size();
-    auto j_vtype = to_value_type(dst_width);
+    auto j_vtype = to_native_or_word_type(dst_width);
     auto j_ntype = to_native_type(dst_width);
     auto is_scalar = (dst_width <= WORD_SIZE);
     auto dst_addr = addr_map_.at(node->id());
@@ -1671,8 +1699,8 @@ private:
 
       if (is_pipe_scalar) {
         assert(is_scalar);
-        auto j_pipe_vtype = to_value_type(pipe_width);
-        auto j_pipe_ntype = to_value_type(pipe_width);
+        auto j_pipe_vtype = to_native_or_word_type(pipe_width);
+        auto j_pipe_ntype = to_native_type(pipe_width);
         if (pipe_width == dst_width) {
           // dst <- pipe
           auto j_pipe = jit_insn_load_relative(j_func_, j_vars_, pipe_addr, j_vtype);
@@ -1806,7 +1834,7 @@ private:
 
     if (is_scalar) {
       auto j_dst = scalar_map_.at(node->id());
-      auto j_vtype = to_value_type(dst_width);
+      auto j_vtype = to_native_or_word_type(dst_width);
       auto j_ntype = to_native_type(dst_width);
       auto j_src = this->emit_load_array_scalar(j_array_ptr, array_width, j_src_addr, dst_width);
       auto j_src_v = this->emit_cast(j_src, j_vtype);
@@ -1852,7 +1880,7 @@ private:
 
     auto dst_width = node->size();
     bool is_scalar = (dst_width <= WORD_SIZE);
-    auto j_vtype = to_value_type(dst_width);
+    auto j_vtype = to_native_or_word_type(dst_width);
 
     auto addr = addr_map_.at(node->id());
     jit_value_t j_value;
@@ -2072,7 +2100,7 @@ private:
                          JIT_CALL_NOTHROW);
 
     if (dst_width <= WORD_SIZE) {
-      auto j_vtype = to_value_type(dst_width);
+      auto j_vtype = to_native_or_word_type(dst_width);
       auto j_ntype = to_native_type(dst_width);
       auto j_dst = jit_insn_load_relative(j_func_, j_vars_, addr, j_vtype);
       scalar_map_[node->id()] = this->emit_cast(j_dst, j_ntype);
@@ -2177,7 +2205,7 @@ private:
   void init_variables(context* ctx) {
     for (auto node : ctx->nodes()) {
       uint32_t dst_width = node->size();
-      auto j_vtype = to_value_type(dst_width);
+      auto j_vtype = to_native_or_word_type(dst_width);
       auto j_ntype = to_native_type(dst_width);
       auto type = node->type();
 
@@ -2439,7 +2467,7 @@ private:
     } else {
       auto src_idx = offset / WORD_SIZE;
       auto src_lsb = offset % WORD_SIZE;
-      auto j_vtype = to_value_type(length);
+      auto j_vtype = to_native_or_word_type(length);
       auto j_src_lsb = this->emit_constant(src_lsb, jit_type_uint);
       auto j_src_value0 = jit_insn_load_relative(j_func_, src_ptr.base, src_ptr.offset + src_idx * sizeof(block_type), j_vtype);
       auto j_src_value0_s = jit_insn_ushr(j_func_, j_src_value0, j_src_lsb);
@@ -2478,22 +2506,35 @@ private:
     __source_info();
     assert(length <= WORD_SIZE);
 
-    jit_value_t j_src;
-    auto j_vtype = to_value_type(length);
-    if (0 == (length % 8)) {      
+    jit_value_t j_src;    
+    if (0 == (length % 8)) {
+      auto j_vtype = to_value_type(length);
       if (is_value_size(length)) {
         j_src = jit_insn_load_elem(j_func_, j_array_ptr, j_index, j_vtype);
       } else {
-        auto j_data_size = this->emit_constant(length / 8, jit_type_uint);
-        auto j_offset = jit_insn_mul(j_func_, j_index, j_data_size);
-        auto j_addr = jit_insn_load_elem_address(j_func_, j_array_ptr, j_offset, jit_type_ubyte);
-        j_src = jit_insn_load_relative(j_func_, j_addr, 0, j_vtype);
+        if (array_width <= WORD_SIZE) {
+          auto j_data_width = this->emit_constant(length, jit_type_uint);
+          auto j_src_offset = jit_insn_mul(j_func_, j_index, j_data_width);
+          auto j_array_type = to_native_or_word_type(array_width);
+          auto j_value = jit_insn_load_relative(j_func_, j_array_ptr, 0, j_array_type);
+          j_src = jit_insn_ushr(j_func_, j_value, j_src_offset);
+        } else {
+          auto value_size = to_value_size(length);
+          auto j_ovf = this->emit_constant(value_size - length, jit_type_uint);
+          auto j_ovf_b = this->emit_constant((value_size - length) / 8, jit_type_uint);
+          auto j_data_size = this->emit_constant(length / 8, jit_type_uint);
+          auto j_offset = jit_insn_mul(j_func_, j_index, j_data_size);
+          auto j_offset_d = jit_insn_sub(j_func_, j_offset, j_ovf_b);
+          auto j_addr = jit_insn_load_elem_address(j_func_, j_array_ptr, j_offset_d, jit_type_ubyte);
+          auto j_tmp = jit_insn_load_relative(j_func_, j_addr, 0, j_vtype);
+          j_src = jit_insn_ushr(j_func_, j_tmp, j_ovf);
+        }
       }
     } else {
       auto j_data_width = this->emit_constant(length, jit_type_uint);
       auto j_src_offset = jit_insn_mul(j_func_, j_index, j_data_width);
       if (array_width <= WORD_SIZE) {
-        auto j_array_type = to_value_type(array_width);
+        auto j_array_type = to_native_or_word_type(array_width);
         auto j_value = jit_insn_load_relative(j_func_, j_array_ptr, 0, j_array_type);
         j_src = jit_insn_ushr(j_func_, j_value, j_src_offset);
       } else {
@@ -2530,10 +2571,10 @@ private:
     __source_info();
     assert(length <= WORD_SIZE);
 
-    auto j_vtype = to_value_type(length);
+    auto j_vtype = to_native_or_word_type(length);
     auto j_ntype = to_native_type(length);
 
-    if (0 == (length % 8)) {      
+    if (0 == (length % 8)) {
       if (is_value_size(length)) {
         auto j_data_v = this->emit_cast(j_data, j_vtype);
         jit_insn_store_elem(j_func_, j_array_ptr, j_index, j_data_v);
@@ -2552,7 +2593,7 @@ private:
       auto j_dst_offset = jit_insn_mul(j_func_, j_index, j_data_width);
 
       if (array_width <= WORD_SIZE) {
-        auto j_array_type = to_value_type(array_width);
+        auto j_array_type = to_native_or_word_type(array_width);
         auto j_array_ntype = to_native_type(array_width);
         auto j_mask = this->emit_constant(WORD_MAX >> (WORD_SIZE - length), j_array_ntype);
         auto j_data_n = this->emit_cast(j_data, j_array_ntype);
@@ -2638,7 +2679,7 @@ private:
     __source_info();
     assert(length <= WORD_SIZE);
 
-    auto j_vtype = to_value_type(length);
+    auto j_vtype = to_native_or_word_type(length);
     auto j_ntype = to_native_type(length);
 
     auto w_dst_idx = dst_offset / WORD_SIZE;
@@ -2950,7 +2991,8 @@ private:
   }
 
   jit_value_t emit_cast(jit_value_t j_value, jit_type_t to_type) {
-    auto from_kind = jit_type_get_kind(jit_value_get_type(j_value));
+    auto from_type = jit_value_get_type(j_value);
+    auto from_kind = jit_type_get_kind(from_type);
     auto to_kind = jit_type_get_kind(to_type);
     if (from_kind == to_kind)
       return j_value;    
@@ -2991,7 +3033,7 @@ private:
     assert(jit_value_is_constant(j_value));
     auto size = get_value_size(j_value);
     if (size <= 32) {
-      uint32_t value = jit_value_get_nint_constant(j_value);
+      int32_t value = jit_value_get_nint_constant(j_value);
       auto j_type = jit_value_get_type(j_value);
       if (is_signed_type(j_type)) {
         auto nbytes = jit_type_get_size(j_type);
@@ -3001,7 +3043,7 @@ private:
         case 2:
           return static_cast<int16_t>(value);
         case 4:
-          return static_cast<int32_t>(value);
+          return value;
         default:
           std::abort();
         }

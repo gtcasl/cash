@@ -5,8 +5,6 @@
 namespace ch {
 namespace internal {
 
-template <unsigned N> class ch_bit;
-
 template <unsigned N>
 class ch_scbit : public system_op_equality<ch_scbit, N,
                           system_op_logical<ch_scbit, N,

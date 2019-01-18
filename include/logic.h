@@ -366,14 +366,16 @@ auto ch_slice(const T& obj, size_t start, ch::internal::source_location& sloc);
             CH_REQUIRE_0(std::is_convertible_v<U, type<ch_width_v<U>>>)> \
   auto func(const type<N>& lhs, const U& rhs, CH_SLOC) { \
     if constexpr (R && R < N && R < ch_width_v<U>) { \
-      return make_logic_op<op, ch_signed_v<type<N>>, type<R>>( \
-                            ch_slice<R>(lhs, 0, sloc), ch_slice<R>(rhs, 0, sloc), sloc); \
+      return make_logic_op<op, ch_signed_v<type<N>>, type<R>, type<R>, type<R>>( \
+                            ch_slice<R>(lhs, 0, sloc), ch_slice<R>(type<ch_width_v<U>>(rhs), 0, sloc), sloc); \
     } else \
     if constexpr (R && R < N) { \
-      return make_logic_op<op, ch_signed_v<type<N>>, type<R>>(ch_slice<R>(lhs, 0, sloc), rhs, sloc); \
+      return make_logic_op<op, ch_signed_v<type<N>>, type<R>, type<R>, type<ch_width_v<U>>>(\
+        ch_slice<R>(lhs, 0, sloc), rhs, sloc); \
     } else \
     if constexpr (R && R < ch_width_v<U>) { \
-      return make_logic_op<op, ch_signed_v<type<N>>, type<R>>(lhs, ch_slice<R>(rhs, 0, sloc), sloc); \
+      return make_logic_op<op, ch_signed_v<type<N>>, type<R>, type<N>, type<R>>( \
+                             lhs, ch_slice<R>(type<ch_width_v<U>>(rhs), 0, sloc), sloc); \
     } else { \
       return make_logic_op<op, ch_signed_v<type<N>>, \
                          std::conditional_t<(R != 0), type<R>, type<std::max(N, ch_width_v<U>)>>, \
@@ -384,13 +386,16 @@ auto ch_slice(const T& obj, size_t start, ch::internal::source_location& sloc);
             CH_REQUIRE_0(std::is_convertible_v<U, type<ch_width_v<U>>>)> \
   auto func(const U& lhs, const type<N>& rhs, CH_SLOC) { \
     if constexpr (R && R < ch_width_v<U> && R < N) { \
-      return make_logic_op<op, ch_signed_v<type<N>>, type<R>>(ch_slice<R>(lhs), ch_slice<R>(rhs), sloc); \
+      return make_logic_op<op, ch_signed_v<type<N>>, type<R>, type<R>, type<R>>( \
+                            ch_slice<R>(type<ch_width_v<U>>(lhs)), ch_slice<R>(rhs), sloc); \
     } else \
     if constexpr (R && R < ch_width_v<U>) { \
-      return make_logic_op<op, ch_signed_v<type<N>>, type<R>>(ch_slice<R>(lhs), rhs, sloc); \
+      return make_logic_op<op, ch_signed_v<type<N>>, type<R>, type<R>, type<N>>( \
+                            ch_slice<R>(type<ch_width_v<U>>(lhs)), rhs, sloc); \
     } else \
     if constexpr (R && R < N) { \
-      return make_logic_op<op, ch_signed_v<type<N>>, type<R>>(lhs, ch_slice<R>(rhs), sloc); \
+      return make_logic_op<op, ch_signed_v<type<N>>, type<R>, type<ch_width_v<U>>, type<R>>( \
+                            lhs, ch_slice<R>(rhs), sloc); \
     } else { \
       return make_logic_op<op, ch_signed_v<type<N>>, \
                          std::conditional_t<(R != 0), type<R>, type<std::max(N, ch_width_v<U>)>>, \
@@ -399,12 +404,25 @@ auto ch_slice(const T& obj, size_t start, ch::internal::source_location& sloc);
   }
 
 #define CH_LOGIC_FUNCTION_SHIFT(func, op, type) \
+  template <unsigned R = 0, unsigned N, unsigned M = N> \
+  auto func(const type<N>& lhs, const type<M>& rhs, CH_SLOC) { \
+    return make_logic_op<op, ch_signed_v<type<N>>, \
+                         std::conditional_t<(R != 0), type<R>, type<N>>, \
+                            type<N>, type<M>>(lhs, rhs, sloc); \
+  } \
   template <unsigned R = 0, unsigned N, typename U, \
             CH_REQUIRE_0(std::is_convertible_v<U, ch_bit<ch_width_v<U>>>)> \
   auto func(const type<N>& lhs, const U& rhs, CH_SLOC) { \
     return make_logic_op<op, ch_signed_v<type<N>>, \
                          std::conditional_t<(R != 0), type<R>, type<N>>, \
-                            type<N>, ch_bit<ch_width_v<U>>>(lhs, rhs, sloc); \
+                            type<N>, ch_logic_t<U>>(lhs, rhs, sloc); \
+  } \
+  template <unsigned R = 0, typename U, unsigned N, \
+            CH_REQUIRE_0(std::is_convertible_v<U, ch_bit<ch_width_v<U>>>)> \
+  auto func(const U& lhs, const type<N>& rhs, CH_SLOC) { \
+    return make_logic_op<op, ch_signed_v<U>, \
+                         std::conditional_t<(R != 0), type<R>, ch_logic_t<U>>, \
+                            ch_logic_t<U>, type<N>>(lhs, rhs, sloc); \
   }
 
 #define CH_LOGIC_FUNCTION_ARITHMETIC1(func, op, type) \
