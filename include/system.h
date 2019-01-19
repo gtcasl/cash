@@ -36,7 +36,7 @@ public:
 
   explicit system_buffer(const sdata_type& data);
 
-  explicit system_buffer(sdata_type&& data);
+  system_buffer(sdata_type&& data);
 
   system_buffer(uint32_t size, const system_buffer_ptr& buffer, uint32_t offset);
 

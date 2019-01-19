@@ -197,7 +197,7 @@ TEST_CASE("proxies", "[proxies]") {
       c.sliceref<64>(4) = a;
       auto w = c | 0x1;
       auto y = w.slice<64>(4);
-      //ch_print("c={0}, w={1}, y={2}", c, w, y);
+      ch_print("c={0}, w={1}, y={2}", c, w, y);
       return (y == a);
     });
     TEST([]()->ch_bool {
