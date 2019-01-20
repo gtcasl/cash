@@ -1597,14 +1597,15 @@ private:
           jit_insn_store_relative(j_func_, j_vars_, dst_addr, j_init_data_x);
 
           // reset pipe registers
-          //if (node->length() <= INLINE_THRESHOLD) {
+          if (node->length() <= INLINE_THRESHOLD
+           || jit_value_is_constant(j_init_data)) {
             auto j_init_data_w = this->emit_cast(j_init_data, word_type_);
             jit_value_t j_tmp = nullptr;
             for (uint32_t i = 0; i < pipe_length; ++i) {
               j_tmp = this->emit_append_slice_vector(
                     j_tmp, memaddr_t{j_vars_, pipe_addr}, i * dst_width, pipe_width, j_init_data_w, dst_width);
             }
-          /*} else {
+          } else {
             jit_label_t l_loop = jit_label_undefined;
             jit_label_t l_exit = jit_label_undefined;
             auto j_pipe_ptr = jit_insn_add_relative(j_func_, j_vars_, pipe_addr);
@@ -1618,7 +1619,7 @@ private:
             jit_insn_store(j_func_, j_index, j_sub);
             jit_insn_branch(j_func_, &l_loop);
             jit_insn_label(j_func_, &l_exit);
-          }*/
+          }
         } else {
           // reset dst register
           auto j_dst_ptr = jit_insn_add_relative(j_func_, j_vars_, dst_addr);
@@ -1627,11 +1628,11 @@ private:
 
           // reset pipe registers
           auto j_pipe_ptr = jit_insn_add_relative(j_func_, j_vars_, pipe_addr);
-          //if (node->length() <= INLINE_THRESHOLD) {
+          if (node->length() <= INLINE_THRESHOLD) {
             for (uint32_t i = 0; i < pipe_length; ++i) {
               this->emit_copy_vector(j_pipe_ptr, i * dst_width, j_init_ptr, 0, dst_width);
             }
-          /*} else {
+          } else {
             jit_label_t l_loop = jit_label_undefined;
             jit_label_t l_exit = jit_label_undefined;
             auto j_index = jit_value_create(j_func_, jit_type_uint);
@@ -1644,7 +1645,7 @@ private:
             jit_insn_store(j_func_, j_index, j_sub);
             jit_insn_branch(j_func_, &l_loop);
             jit_insn_label(j_func_, &l_exit);
-          }*/
+          }
         }
       }
     } else {
