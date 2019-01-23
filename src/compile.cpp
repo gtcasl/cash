@@ -2,6 +2,7 @@
 #include "litimpl.h"
 #include "regimpl.h"
 #include "aluimpl.h"
+#include "selectimpl.h"
 #include "proxyimpl.h"
 #include "ioimpl.h"
 #include "bindimpl.h"
@@ -91,6 +92,920 @@ struct interval_t {
 }
 
 compiler::compiler(context* ctx) : ctx_(ctx) {}
+
+void compiler::compile() {
+  size_t cfo_total(0);
+  size_t dce_total(0);
+  size_t cse_total(0);
+  size_t pip_total(0);
+  size_t pcx_total(0);
+
+  CH_DBG(2, "compiling %s (#%d) ...\n", ctx_->name().c_str(), ctx_->id());
+
+  node_tracker tracker(ctx_);
+  size_t orig_num_nodes = tracker.current();
+
+  this->dead_code_elimination();
+  dce_total = tracker.deleted();
+
+  this->check_undefs();
+
+  this->build_node_map();
+
+  for (;;) {
+    bool changed = false;
+    changed |= this->constant_folding();
+    auto cfo = tracker.deleted();
+    changed |= this->subexpressions_elimination();
+    auto cse = tracker.deleted();
+    changed |= this->prune_identity_proxies();
+    auto pip = tracker.deleted();
+    changed |= this->proxies_coalescing();
+    auto pcx = tracker.deleted();
+
+    if (!changed)
+      break;
+
+    cfo_total += cfo;
+    cse_total += cse;
+    pip_total += pip;
+    pcx_total += pcx;
+  }
+
+#ifndef NDEBUG
+  // dump nodes
+  if (platform::self().cflags() & cflags::dump_ast) {
+    ctx_->dump_ast(std::cout);
+  }
+
+  // dump tap's CFG
+  if (platform::self().cflags() & cflags::dump_cfg) {
+    for (auto node : ctx_->taps()) {
+      std::cout << "CFG dump for tap variable: " << node->name() << std::endl;
+      ctx_->dump_cfg(node, std::cout);
+    }
+  }
+#else
+  CH_UNUSED(orig_num_nodes, dce_total);
+#endif
+
+  CH_DBG(2, "*** deleted %lu DCE nodes\n", dce_total);
+  CH_DBG(2, "*** deleted %lu CFO nodes\n", cfo_total);
+  CH_DBG(2, "*** deleted %lu CSE nodes\n", cse_total);
+  CH_DBG(2, "*** deleted %lu PIP nodes\n", pip_total);
+  CH_DBG(2, "*** deleted %lu PCX nodes\n", pcx_total);
+
+  CH_DBG(2, "Before optimization: %lu\n", orig_num_nodes);
+  CH_DBG(2, "After optimization: %lu\n", tracker.current());
+}
+
+void compiler::build_node_map(lnodeimpl* node) {
+  for (auto& src : node->srcs()) {
+    node_map_[src.id()].emplace(&src);
+  }
+}
+
+void compiler::build_node_map() {
+  for (auto node : ctx_->nodes()) {
+    build_node_map(node);
+  }
+}
+
+bool compiler::dead_code_elimination() {
+  CH_DBG(3, "Begin Compiler::DCE\n");
+
+  bool changed = false;
+
+  ordered_set<lnodeimpl*> live_nodes;
+  std::unordered_map<proxyimpl*, std::unordered_set<uint32_t>> used_proxy_sources;
+  std::unordered_map<uint32_t, std::unordered_set<proxyimpl*>> proxy_users;
+
+  auto remove_unused_proxy_sources = [&](proxyimpl* proxy, uint32_t src_idx) {
+    // gather unused source positions
+    std::vector<interval_t> unused_pos;
+    for (auto& range : proxy->ranges()) {
+      if (range.src_idx == src_idx) {
+        unused_pos.emplace_back(range.dst_offset, range.dst_offset + range.length);
+      }
+    }
+
+    // remove unused source
+    proxy->erase_source(src_idx, true);
+
+    // update proxy users' ranges
+    for (auto use : proxy_users.at(proxy->id())) {
+      uint32_t i = 0;
+      for (uint32_t n = use->srcs().size(); i < n; ++i) {
+        if (use->src(i).id() == proxy->id())
+          break;
+      }
+      assert(i != use->srcs().size());
+      for (auto& range : use->ranges()) {
+        if (range.src_idx == i) {
+          uint32_t r = 0;
+          for (auto& pos : unused_pos) {
+            if (range.src_offset >= pos.end) {
+              r += (pos.end - pos.start);
+            }
+          }
+          range.src_offset -= r;
+        }
+      }
+    }
+  };
+
+  // get permanent live nodes
+  for (auto node : ctx_->inputs()) {
+    live_nodes.insert(node);
+  }
+  for (auto node : ctx_->outputs()) {
+    live_nodes.insert(node);
+  }
+  for (auto node : ctx_->taps()) {
+    live_nodes.insert(node);
+  }
+  for (auto node : ctx_->gtaps()) {
+    live_nodes.insert(node);
+  }
+
+  // build live nodes set
+  std::list<lnodeimpl*> working_set(live_nodes.begin(), live_nodes.end());
+  while (!working_set.empty()) {
+    auto node = working_set.front();
+    auto proxy = dynamic_cast<proxyimpl*>(node);
+
+    auto& srcs = node->srcs();
+    for (uint32_t i = 0, n = srcs.size(); i < n; ++i) {
+      auto src_impl = srcs[i].impl();
+      assert(src_impl->ctx() == ctx_);
+
+      // skip unused proxy sources
+      if (proxy) {
+        auto it = used_proxy_sources.find(proxy);
+        if (it != used_proxy_sources.end()
+         && 0 == it->second.count(i))
+          continue;
+      }
+
+      // gather used proxy sources
+      bool new_proxy_source = false;      
+      if (type_proxy == src_impl->type()) {
+        auto src_proxy = reinterpret_cast<proxyimpl*>(src_impl);        
+        auto& uses = used_proxy_sources[src_proxy];
+        if (proxy) {
+          proxy_users[src_proxy->id()].insert(proxy);
+          for (auto& curr : src_proxy->ranges()) {
+            uint32_t curr_end = curr.dst_offset + curr.length;
+            for (auto& range : proxy->ranges()) {
+              if (range.src_idx == i) {
+                // do ranges overlap?
+                uint32_t src_end = range.src_offset + range.length;
+                if (range.src_offset < curr_end && src_end > curr.dst_offset) {
+                  auto ret = uses.insert(curr.src_idx);
+                  if (ret.second) {
+                    new_proxy_source = true;
+                  }
+                }
+              }
+            }
+          }
+        } else {
+          for (auto& curr : src_proxy->ranges()) {
+            auto ret = uses.insert(curr.src_idx);
+            if (ret.second) {
+              new_proxy_source = true;
+            }
+          }
+        }
+      }
+
+      // add to live list
+      auto ret = live_nodes.insert(src_impl);
+      if (ret.second || new_proxy_source) {
+        // we have a new live node, add it to working set
+        working_set.emplace_back(src_impl);
+      }
+    }
+    working_set.pop_front();
+  }
+
+  // remove unused proxy sources
+  for (auto p : used_proxy_sources) {
+    auto proxy = reinterpret_cast<proxyimpl*>(p.first);
+    auto& srcs = proxy->srcs();
+    // traverse the sources in reverse order (for efficiency)
+    for (int i = srcs.size() - 1; i >= 0; --i) {
+      if (0 == p.second.count(i)) {
+        remove_unused_proxy_sources(proxy, i);
+      };
+    }
+  }
+
+  // delete dead nodes
+  for (auto it = ctx_->nodes().begin(),
+            end = ctx_->nodes().end(); it != end;) {
+    if (0 == live_nodes.count(*it)) {
+      it = ctx_->delete_node(it);
+      changed = true;
+    } else {
+      ++it;
+    }
+  }
+
+  assert(ctx_->nodes().size() == live_nodes.size());
+
+  CH_DBG(3, "End Compiler::DCE\n");
+
+  return changed;
+}
+
+bool compiler::constant_folding() {
+  if (platform::self().cflags() & cflags::disable_cfo)
+    return false;
+
+  CH_DBG(3, "Begin Compiler::CFO\n");
+
+  std::set<lnodeimpl*> deleted_list;
+  std::unordered_set<uint32_t> visited_nodes;
+
+  auto replace_constant = [&](lnodeimpl* from, lnodeimpl* to) {
+    if (nullptr == to)
+      return;
+    this->map_replace_target(from, to);
+    this->map_delete(from);
+    deleted_list.insert(from);
+    for (auto& src : from->srcs()) {
+      deleted_list.insert(src.impl());
+    }
+  };
+
+  std::function<void (lnodeimpl*)> dfs_visit = [&](lnodeimpl* node) {
+    if (visited_nodes.count(node->id()))
+      return;
+    visited_nodes.emplace(node->id());
+
+    bool is_constant = true;
+    for (auto& src : node->srcs()) {
+      auto src_impl = src.impl();
+      dfs_visit(src_impl);
+      is_constant &= (type_lit == src_impl->type());
+    }
+
+    switch (node->type()) {
+    case type_sel: {
+      auto sel = reinterpret_cast<selectimpl*>(node);
+      if (!is_constant) {
+        if (sel->has_key()) {
+          is_constant = (type_lit == sel->key().impl()->type());
+        } else {
+          is_constant = true;
+          for (uint32_t i = 0, l = sel->srcs().size() - 1; i < l; i += 2) {
+            is_constant &= (type_lit == sel->src(i).impl()->type());
+          }
+        }
+      }
+      if (is_constant) {
+        replace_constant(sel, this->constant_fold(sel));
+      }
+      break;
+    }
+    case type_proxy: {
+      if (is_constant) {
+        auto proxy = reinterpret_cast<proxyimpl*>(node);
+        replace_constant(proxy, this->constant_fold(proxy));
+      }
+      break;
+    }
+    case type_alu: {
+      auto alu = reinterpret_cast<aluimpl*>(node);
+      if (is_constant) {
+        replace_constant(alu, this->constant_fold(alu));
+      } else
+      if (op_flags::bitwise == CH_OP_CLASS(alu->op())
+       && op_flags::binary == CH_OP_ARY(alu->op())) {
+        replace_constant(alu, this->constant_fold_bitwise(alu));
+      }
+      break;
+    }
+    default:
+      break;
+    }
+  };
+
+  // visit output nodes
+  for (auto node : ctx_->outputs()) {
+    dfs_visit(node);
+  }
+  for (auto node : ctx_->taps()) {
+    dfs_visit(node);
+  }
+  for (auto node : ctx_->gtaps()) {
+    dfs_visit(node);
+  }
+
+  // process deleted nodes
+  for (auto dn : deleted_list) {
+    auto m_it = node_map_.find(dn->id());
+    if (m_it != node_map_.end()) {
+      if (!m_it->second.empty())
+        continue;
+      this->map_delete(dn);
+    }
+    auto n_it = std::find(ctx_->nodes().begin(), ctx_->nodes().end(), dn);
+    ctx_->delete_node(n_it);
+  }
+
+  CH_DBG(3, "End Compiler::CFO\n");
+
+  return deleted_list.size();
+}
+
+lnodeimpl* compiler::constant_fold(proxyimpl* node) {
+  sdata_type tmp(node->size());
+  for (auto& range : node->ranges()) {
+    auto dst_idx = range.dst_offset / bitwidth_v<block_type>;
+    auto dst_lsb = range.dst_offset % bitwidth_v<block_type>;
+    auto src_impl = node->src(range.src_idx).impl();
+    assert(type_lit == src_impl->type());
+    auto src_data = reinterpret_cast<litimpl*>(src_impl)->value().words();
+    bv_copy(tmp.words() + dst_idx, dst_lsb, src_data, range.src_offset, range.length);
+  }
+  return ctx_->create_literal(tmp);
+}
+
+lnodeimpl* compiler::constant_fold(aluimpl* node) {
+  sdata_type tmp(node->size());
+
+  const block_type* src0_data = nullptr;
+  uint32_t src0_size = 0;
+  const block_type* src1_data = nullptr;
+  uint32_t src1_size = 0;
+
+  // access source node data
+  if (node->srcs().size() > 0) {
+    auto src0_impl = node->src(0).impl();
+    assert(type_lit == src0_impl->type());
+    src0_data = reinterpret_cast<litimpl*>(src0_impl)->value().words();
+    src0_size = node->src(0).size();
+    if (node->srcs().size() > 1) {
+      auto src1_impl = node->src(1).impl();
+      assert(type_lit == src1_impl->type());
+      src1_data = reinterpret_cast<litimpl*>(src1_impl)->value().words();
+      src1_size = node->src(1).size();
+    }
+  }
+
+  using SDBA = DefaultBitAccessor<block_type, true>;
+  using UDBA = DefaultBitAccessor<block_type, false>;
+
+  bool is_signed = node->is_signed();
+
+  switch (node->op()) {
+  case ch_op::eq:
+    if (is_signed) {
+      bv_assign_scalar(tmp.words(), bv_eq<true, block_type, SDBA>(src0_data, src0_size, src1_data, src1_size));
+    } else {
+     bv_assign_scalar(tmp.words(), bv_eq<false, block_type, UDBA>(src0_data, src0_size, src1_data, src1_size));
+    }
+    break;
+  case ch_op::ne:
+    if (is_signed) {
+      bv_assign_scalar(tmp.words(), !bv_eq<true, block_type, SDBA>(src0_data, src0_size, src1_data, src1_size));
+    } else {
+     bv_assign_scalar(tmp.words(), !bv_eq<false, block_type, UDBA>(src0_data, src0_size, src1_data, src1_size));
+    }
+    break;
+  case ch_op::lt:
+    if (is_signed) {
+      bv_assign_scalar(tmp.words(), bv_lt<true, block_type, SDBA>(src0_data, src0_size, src1_data, src1_size));
+    } else {
+     bv_assign_scalar(tmp.words(), bv_lt<false, block_type, UDBA>(src0_data, src0_size, src1_data, src1_size));
+    }
+    break;
+  case ch_op::gt:
+    if (is_signed) {
+      bv_assign_scalar(tmp.words(), bv_lt<true, block_type, SDBA>(src1_data, src1_size, src0_data, src0_size));
+    } else {
+     bv_assign_scalar(tmp.words(), bv_lt<false, block_type, UDBA>(src1_data, src1_size, src0_data, src0_size));
+    }
+    break;
+  case ch_op::le:
+    if (is_signed) {
+      bv_assign_scalar(tmp.words(), !bv_lt<true, block_type, SDBA>(src1_data, src1_size, src0_data, src0_size));
+    } else {
+     bv_assign_scalar(tmp.words(), !bv_lt<false, block_type, UDBA>(src1_data, src1_size, src0_data, src0_size));
+    }
+    break;
+  case ch_op::ge:
+    if (is_signed) {
+      bv_assign_scalar(tmp.words(), !bv_lt<true, block_type, SDBA>(src0_data, src0_size, src1_data, src1_size));
+    } else {
+     bv_assign_scalar(tmp.words(), !bv_lt<false, block_type, UDBA>(src0_data, src0_size, src1_data, src1_size));
+    }
+    break;
+  case ch_op::notl:
+    bv_assign_scalar(tmp.words(), bv_notl(src0_data, src0_size));
+    break;
+  case ch_op::andl:
+    bv_assign_scalar(tmp.words(), bv_andl(src0_data, src0_size, src1_data, src1_size));
+    break;
+  case ch_op::orl:
+    bv_assign_scalar(tmp.words(), bv_orl(src0_data, src0_size, src1_data, src1_size));
+    break;
+  case ch_op::inv:
+    if (is_signed) {
+      bv_inv<true, block_type, SDBA>(tmp.words(), tmp.size(), src0_data, src0_size);
+    } else {
+      bv_inv<false, block_type, UDBA>(tmp.words(), tmp.size(), src0_data, src0_size);
+    }
+    break;
+  case ch_op::andb:
+    if (is_signed) {
+      bv_and<true, block_type, SDBA>(tmp.words(), tmp.size(), src0_data, src0_size, src1_data, src1_size);
+    } else {
+      bv_and<false, block_type, UDBA>(tmp.words(), tmp.size(), src0_data, src0_size, src1_data, src1_size);
+    }
+    break;
+  case ch_op::orb:
+    if (is_signed) {
+      bv_or<true, block_type, SDBA>(tmp.words(), tmp.size(), src0_data, src0_size, src1_data, src1_size);
+    } else {
+      bv_or<false, block_type, UDBA>(tmp.words(), tmp.size(), src0_data, src0_size, src1_data, src1_size);
+    }
+    break;
+  case ch_op::xorb:
+    if (is_signed) {
+      bv_xor<true, block_type, SDBA>(tmp.words(), tmp.size(), src0_data, src0_size, src1_data, src1_size);
+    } else {
+      bv_xor<false, block_type, UDBA>(tmp.words(), tmp.size(), src0_data, src0_size, src1_data, src1_size);
+    }
+    break;
+  case ch_op::andr:
+    bv_assign_scalar(tmp.words(), bv_andr_vector(src0_data, src0_size));
+    break;
+  case ch_op::orr:
+    bv_assign_scalar(tmp.words(), bv_orr_vector(src0_data, src0_size));
+    break;
+  case ch_op::xorr:
+    bv_assign_scalar(tmp.words(), bv_xorr_vector(src0_data, src0_size));
+    break;
+  case ch_op::shl: {
+    auto dist = bv_cast<uint32_t>(src1_data, src1_size);
+    bv_shl_vector(tmp.words(), tmp.size(), src0_data, src0_size, dist);
+  } break;
+  case ch_op::shr: {
+    auto dist = bv_cast<uint32_t>(src1_data, src1_size);
+    if (is_signed) {
+      bv_shr<true>(tmp.words(), tmp.size(), src0_data, src0_size, dist);
+    } else {
+      bv_shr<false>(tmp.words(), tmp.size(), src0_data, src0_size, dist);
+    }
+  } break;
+  case ch_op::neg:
+    if (is_signed) {
+      bv_neg<true, block_type, SDBA>(tmp.words(), tmp.size(), src0_data, src0_size);
+    } else {
+      bv_neg<false, block_type, UDBA>(tmp.words(), tmp.size(), src0_data, src0_size);
+    }
+    break;
+  case ch_op::add:
+    if (is_signed) {
+      bv_add<true, block_type, SDBA>(tmp.words(), tmp.size(), src0_data, src0_size, src1_data, src1_size);
+    } else {
+      bv_add<false, block_type, UDBA>(tmp.words(), tmp.size(), src0_data, src0_size, src1_data, src1_size);
+    }
+    break;
+  case ch_op::sub:
+    if (is_signed) {
+      bv_sub<true, block_type, SDBA>(tmp.words(), tmp.size(), src0_data, src0_size, src1_data, src1_size);
+    } else {
+      bv_sub<false, block_type, UDBA>(tmp.words(), tmp.size(), src0_data, src0_size, src1_data, src1_size);
+    }
+    break;
+  case ch_op::mult:
+    if (is_signed) {
+      bv_mult<true>(tmp.words(), tmp.size(), src0_data, src0_size, src1_data, src1_size);
+    } else {
+      bv_mult<false>(tmp.words(), tmp.size(), src0_data, src0_size, src1_data, src1_size);
+    }
+    break;
+  case ch_op::div:
+    if (is_signed) {
+      bv_div<true>(tmp.words(), tmp.size(), src0_data, src0_size, src1_data, src1_size);
+    } else {
+      bv_div<false>(tmp.words(), tmp.size(), src0_data, src0_size, src1_data, src1_size);
+    }
+    break;
+  case ch_op::mod:
+    if (is_signed) {
+      bv_mod<true>(tmp.words(), tmp.size(), src0_data, src0_size, src1_data, src1_size);
+    } else {
+      bv_mod<false>(tmp.words(), tmp.size(), src0_data, src0_size, src1_data, src1_size);
+    }
+    break;
+  case ch_op::pad:
+    if (is_signed) {
+      bv_pad<true>(tmp.words(), tmp.size(), src0_data, src0_size);
+    } else {
+      bv_pad<false>(tmp.words(), tmp.size(), src0_data, src0_size);
+    }
+    break;
+
+  default:
+    CH_ABORT("invalid opcode");
+  }
+  return ctx_->create_literal(tmp);
+}
+
+lnodeimpl* compiler::constant_fold_bitwise(aluimpl* node) {
+  auto src0 = node->src(0).impl();
+  auto src1 = node->src(1).impl();
+
+  bool src0_is_zero = (type_lit == src0->type()) && reinterpret_cast<litimpl*>(src0)->value().is_zero();
+  bool src0_is_ones = (type_lit == src0->type()) && reinterpret_cast<litimpl*>(src0)->value().is_ones();
+  bool src1_is_zero = (type_lit == src1->type()) && reinterpret_cast<litimpl*>(src1)->value().is_zero();
+  bool src1_is_ones = (type_lit == src1->type()) && reinterpret_cast<litimpl*>(src1)->value().is_ones();
+
+  switch (node->op()) {
+  case ch_op::andb:
+    if (node->size() == src0->size() && src0_is_zero) {
+      return src0;
+    } else
+    if (node->size() == src1->size() && src1_is_zero) {
+      return src1;
+    } else
+    if (node->size() == src0->size() && node->size() == src1->size() && src0_is_ones) {
+      return src1;
+    } else
+    if (node->size() == src0->size() && node->size() == src1->size() && src1_is_ones) {
+      return src0;
+    }
+    break;
+  case ch_op::orb:
+    if (node->size() == src1->size() && src0_is_zero) {
+      return src1;
+    } else
+    if (node->size() == src0->size() && src1_is_zero) {
+      return src0;
+    } else
+    if (node->size() == src0->size() && node->size() == src1->size() && src0_is_ones) {
+      return src0;
+    } else
+    if (node->size() == src0->size() && node->size() == src1->size() && src1_is_ones) {
+      return src1;
+    }
+    break;
+  case ch_op::xorb:
+    if (node->size() == src1->size() && src0_is_zero) {
+      return src1;
+    } else
+    if (node->size() == src0->size() && src1_is_zero) {
+      return src0;
+    } else
+    if (node->size() == src0->size() && node->size() == src1->size() && src0_is_ones) {
+      auto inv = ctx_->create_node<aluimpl>(ch_op::inv, node->size(), false, src1, node->sloc());
+      this->build_node_map(inv);
+      return inv;
+    } else
+    if (node->size() == src0->size() && node->size() == src1->size() && src1_is_ones) {
+      auto inv = ctx_->create_node<aluimpl>(ch_op::inv, node->size(), false, src0, node->sloc());
+      this->build_node_map(inv);
+      return inv;
+    }
+    break;
+  default:
+    break;
+  }
+  return nullptr;
+}
+
+lnodeimpl* compiler::constant_fold(selectimpl* node) {
+  if (node->has_key()) {
+    auto key_impl = node->key().impl();
+    assert(type_lit == key_impl->type());
+    auto key_data = reinterpret_cast<litimpl*>(key_impl)->value().words();
+    auto key_size = key_impl->size();
+
+    uint32_t i = 1;
+    for (uint32_t l = node->srcs().size() - 1; i < l; i += 2) {
+      auto src_impl = node->src(i).impl();
+      assert(type_lit == src_impl->type());
+      assert(key_size == src_impl->size());
+      auto src_data = reinterpret_cast<litimpl*>(src_impl)->value().words();
+      if (bv_eq<false, block_type, ClearBitAccessor<block_type>>(key_data, key_size, src_data, key_size)) {
+        return node->src(i+1).impl();
+      }
+    }
+    return node->src(i).impl();
+  } else {
+    uint32_t i = 0;
+    for (uint32_t l = node->srcs().size() - 1; i < l; i += 2) {
+      auto src_impl = node->src(i).impl();
+      assert(type_lit == src_impl->type());
+      auto src_data = reinterpret_cast<litimpl*>(src_impl)->value().words();
+      if (static_cast<bool>(src_data[0])) {
+        return node->src(i+1).impl();
+      }
+    }
+    return node->src(i).impl();
+  }
+}
+
+bool compiler::subexpressions_elimination() {
+  if (platform::self().cflags() & cflags::disable_cse)
+    return false;
+
+  CH_DBG(3, "Begin Compiler::CSE\n");
+
+  bool changed = false;
+
+  typedef std::decay_t<decltype(ctx_->nodes())> nodes_type;
+  std::vector<nodes_type::iterator> deleted_list;
+  std::unordered_set<cse_key_t, cse_hash_t> cse_table;
+
+  auto apply_cse = [&](const nodes_type::iterator& it)->bool {
+    auto node = *it;
+    if (0 == node->hash())
+      return false;
+    auto p_it = cse_table.find(node);
+    if (p_it != cse_table.end()) {      
+      this->map_replace_target(node, p_it->node);
+      this->map_delete(node);
+      deleted_list.push_back(it);
+      return true;
+    }
+    cse_table.insert(node);
+    return false;
+  };
+
+  auto& nodes = ctx_->nodes();
+
+  for (auto it = nodes.begin(), end = nodes.end(); it != end;) {
+    changed |= apply_cse(it++);
+  }
+
+  if (changed) {
+    for (auto it = deleted_list.rbegin(), end = deleted_list.rend(); it != end;) {
+      ctx_->delete_node(*it++);
+    }
+    deleted_list.clear();
+    cse_table.clear();
+  }
+
+  CH_DBG(3, "End Compiler::CSE\n");
+
+  return changed;
+}
+
+bool compiler::prune_identity_proxies() {
+  if (platform::self().cflags() & cflags::disable_pip)
+    return false;
+
+  CH_DBG(3, "Begin Compiler::PIP\n");
+
+  bool changed = false;
+
+  for (auto it = ctx_->proxies().begin(),
+       end = ctx_->proxies().end(); it != end;) {
+    auto proxy = *it++;
+    if (!proxy->is_identity())
+      continue;
+    // replace identity proxy's uses with proxy's source
+    this->map_replace_target(proxy, proxy->src(0).impl());
+    this->map_delete(proxy);
+    // delete proxy
+    auto p_it = std::find(ctx_->nodes().begin(), ctx_->nodes().end(), proxy);
+    ctx_->delete_node(p_it);
+    changed = true;
+  }
+
+  CH_DBG(3, "End Compiler::PIP\n");
+
+  return changed;
+}
+
+bool compiler::proxies_coalescing() {
+  if (platform::self().cflags() & cflags::disable_pcx)
+    return false;
+
+  CH_DBG(3, "Begin Compiler::PCX\n");
+
+  auto is_multi_range = [&](proxyimpl* proxy, uint32_t offset, uint length) {
+    assert(offset + length <= proxy->size());
+    auto end = offset + length;
+    for (auto& range : proxy->ranges()) {
+      auto range_end = range.dst_offset + range.length;
+      if (range_end <= offset
+      || end <= range.dst_offset)
+        continue;
+      return (offset < range.dst_offset || end > range_end);
+    }
+    return false;
+  };
+
+  auto are_adjacent_sources = [&](proxyimpl* proxy,
+                                  const proxyimpl::range_t& r0,
+                                  const proxyimpl::range_t& r1) {
+    if (r0.src_idx == r1.src_idx)
+      return false;
+    auto s0 = proxy->src(r0.src_idx).impl();
+    auto s1 = proxy->src(r1.src_idx).impl();
+    auto p0 = reinterpret_cast<proxyimpl*>(s0);
+    auto p1 = reinterpret_cast<proxyimpl*>(s1);
+    if (s0->type() != type_proxy
+     || s1->type() != type_proxy
+     || p0->ranges().size() > 1
+     || p1->ranges().size() > 1)
+      return false;
+    auto& p0r = p0->range(0);
+    auto& p1r = p1->range(0);
+    return (p0->src(p0r.src_idx).id() == p1->src(p1r.src_idx).id()
+         && r0.src_offset + r0.length == p0->size()
+         && 0 == r1.src_offset
+         && p0r.src_offset + p0r.length == p1r.src_offset);
+  };
+
+  auto is_useful_proxy = [&](proxyimpl* proxy, proxyimpl* src_proxy) {
+    if (src_proxy->is_identity())
+      return false;
+    for (uint32_t i = 0, n = proxy->ranges().size(); i < n; ++i) {
+      auto& range = proxy->range(i);
+      if (proxy->src(range.src_idx).id() != src_proxy->id())
+        continue;
+      if (range.length != src_proxy->size()
+       && !is_multi_range(src_proxy, range.src_offset, range.length))
+        return false;
+      if (i > 0) {
+        if (are_adjacent_sources(proxy, proxy->range(i-1), range))
+          return false;
+      }
+      if (i + 1 < n) {
+        if (are_adjacent_sources(proxy, range, proxy->range(i+1)))
+          return false;
+      }
+    }
+    return true;
+  };
+
+  bool changed = false;
+
+  std::set<proxyimpl*> detached_list;
+  bool found;
+  do {
+    std::unordered_map<proxyimpl*, std::vector<proxyimpl::range_t>> src_proxies;
+    std::unordered_map<const lnode*, lnodeimpl*> src_nodes;
+    found = false;
+
+    for (auto it = ctx_->proxies().begin(),
+         end = ctx_->proxies().end(); it != end;) {
+      auto dst_proxy = *it++;
+
+      src_proxies.clear();
+
+      for (auto& src : dst_proxy->srcs()) {
+        if (type_proxy != src.impl()->type())
+          continue;        
+
+        auto src_proxy = reinterpret_cast<proxyimpl*>(src.impl());
+        if (src_proxies.count(src_proxy))
+          continue;
+
+        // skip useful proxies
+        auto use_count = node_map_.at(src_proxy->id()).size();
+        if (use_count > 1
+         && is_useful_proxy(dst_proxy, src_proxy))
+          continue;
+
+        auto& upd_ranges = src_proxies[src_proxy];
+        for (auto& dst_range : dst_proxy->ranges()) {
+          if (dst_proxy->src(dst_range.src_idx).id() != src_proxy->id())
+            continue;
+          for (auto& src_range : src_proxy->ranges()) {
+            int32_t delta  = src_range.dst_offset - dst_range.src_offset;
+            uint32_t start = std::max<int32_t>(dst_range.dst_offset + delta, 0);
+            uint32_t end   = std::max<int32_t>(dst_range.dst_offset + delta + src_range.length, 0);
+            interval_t src_iv{start, end};
+            interval_t dst_iv{dst_range.dst_offset, dst_range.dst_offset + dst_range.length};
+            auto shared_iv = dst_iv.intersection(src_iv);
+            if (shared_iv.start == shared_iv.end)
+              continue;
+            proxyimpl::range_t upd_range;
+            upd_range.src_idx    = src_range.src_idx;
+            upd_range.dst_offset = shared_iv.start;
+            upd_range.src_offset = src_range.src_offset - std::min(delta, 0);
+            upd_range.length     = shared_iv.end - shared_iv.start;
+            upd_ranges.emplace_back(upd_range);
+          }
+        }
+      }
+
+      if (!src_proxies.empty()) {
+        // capture source nodes
+        src_nodes.clear();
+        for (auto& src : dst_proxy->srcs()) {
+          src_nodes[&src] = src.impl();
+        }
+
+        for (auto src_proxy_p : src_proxies) {
+          auto src_proxy = src_proxy_p.first;
+          for (auto range : src_proxy_p.second) {
+            dst_proxy->add_source(
+              range.dst_offset,
+              src_proxy->src(range.src_idx),
+              range.src_offset,
+              range.length);
+          }
+          detached_list.insert(src_proxy);
+        }
+
+        // update node map to reflect modified nodes
+        for (auto& src : dst_proxy->srcs()) {
+          auto it = src_nodes.find(&src);
+          if (it != src_nodes.end()) {
+            if (src.impl() != it->second) {
+              // src still exists but its value changed
+              node_map_.at(it->second->id()).erase(&src);
+              node_map_.at(src.id()).emplace(&src);
+            }
+            src_nodes.erase(it); // remove from list
+          } else {
+            // new src was added
+            node_map_.at(src.id()).emplace(&src);
+          }
+        }
+
+        // unregister remaining deleted nodes
+        for (auto& src_p : src_nodes) {
+          node_map_.at(src_p.second->id()).erase(src_p.first);
+        }
+
+        found = true;
+        changed = true;
+      }
+    }
+  } while (found);
+
+  for (auto d_it = detached_list.rbegin(), end = detached_list.rend(); d_it != end;) {
+    auto node = *d_it++;
+    auto m_it = node_map_.find(node->id());
+    if (m_it != node_map_.end()) {
+      if (m_it->second.empty()) {
+        this->map_delete(node);
+        auto d_it = std::find(ctx_->nodes().begin(), ctx_->nodes().end(), node);
+        ctx_->delete_node(d_it);
+      }
+    }
+  }  
+
+  CH_DBG(3, "End Compiler::PCX\n");
+
+  return changed;
+}
+
+void compiler::map_replace_target(lnodeimpl* from, lnodeimpl* to) {
+  // update all nodes pointing to source to now point to target
+  // and unregister source's references
+  auto from_it = node_map_.find(from->id());
+  assert(from_it != node_map_.end());
+  auto& to_refs = node_map_[to->id()];
+  for (auto node : from_it->second) {
+    *const_cast<lnode*>(node) = to;
+    to_refs.emplace(node);
+  }
+}
+
+void compiler::map_delete(lnodeimpl* node) {
+  auto it = node_map_.find(node->id());
+  assert(it != node_map_.end());
+  for (auto& src : node->srcs()) {
+    node_map_[src.id()].erase(&src);
+  }
+  node_map_.erase(it);
+}
+
+void compiler::check_undefs() {
+  // check for un-initialized nodes
+  auto& undefs = ctx_->undefs();
+  if (undefs.size()) {
+#define LCOV_EXCL_START
+    ctx_->dump_ast(std::cerr);
+    for (auto undef : undefs) {
+      for (auto node : ctx_->nodes()) {
+        auto ret = std::find_if(node->srcs().begin(), node->srcs().end(),
+                     [undef](const lnode& x)->bool { return x.id() == undef->id(); });
+        if (ret != node->srcs().end()) {
+          if (platform::self().cflags() & cflags::dump_ast) {
+            ctx_->dump_ast(std::cerr);
+          }
+          fprintf(stderr, "error: un-initialized variable %s\n", node->debug_info().c_str());
+          break;
+        }
+      }
+    }
+    std::abort();
+#define LCOV_EXCL_END
+  }
+}
 
 void compiler::build_eval_context(context* eval_ctx) {
   std::unordered_set<uint32_t> visited_nodes;
@@ -392,518 +1307,6 @@ void compiler::build_eval_list(std::vector<lnodeimpl*>& eval_list) {
     for (auto node : uninitialized_regs) {
       fprintf(stderr, "warning: uninitialized register %s\n", node->debug_info().c_str());
     }
-  }
-}
-
-void compiler::compile() {
-  size_t dce_total(0);
-  size_t cse_total(0);
-  size_t pip_total(0);
-  size_t pcx_total(0);
-
-  CH_DBG(2, "compiling %s (#%d) ...\n", ctx_->name().c_str(), ctx_->id());
-
-  node_tracker tracker(ctx_);
-  size_t orig_num_nodes = tracker.current();
-
-  this->dead_code_elimination();
-  dce_total = tracker.deleted();
-
-  this->check_undefs();
-
-  this->build_node_map();
-
-  for (;;) {
-    bool changed = false;
-    changed |= this->subexpressions_elimination();
-    auto cse = tracker.deleted();
-    changed |= this->prune_identity_proxies();
-    auto pip = tracker.deleted();
-    changed |= this->proxies_coalescing();
-    auto pcx = tracker.deleted();
-
-    if (!changed)
-      break;
-    cse_total += cse;
-    pip_total += pip;
-    pcx_total += pcx;
-  }
-
-#ifndef NDEBUG
-  // dump nodes
-  if (platform::self().cflags() & cflags::dump_ast) {
-    ctx_->dump_ast(std::cout);
-  }
-
-  // dump tap's CFG
-  if (platform::self().cflags() & cflags::dump_cfg) {
-    for (auto node : ctx_->taps()) {
-      std::cout << "CFG dump for tap variable: " << node->name() << std::endl;
-      ctx_->dump_cfg(node, std::cout);
-    }
-  }
-#else
-  CH_UNUSED(orig_num_nodes, dce_total);
-#endif
-
-  CH_DBG(2, "*** deleted %lu DCE nodes\n", dce_total);
-  CH_DBG(2, "*** deleted %lu CSE nodes\n", cse_total);
-  CH_DBG(2, "*** deleted %lu PIP nodes\n", pip_total);
-  CH_DBG(2, "*** deleted %lu PCX nodes\n", pcx_total);
-
-  CH_DBG(2, "Before optimization: %lu\n", orig_num_nodes);
-  CH_DBG(2, "After optimization: %lu\n", tracker.current());
-}
-
-void compiler::build_node_map() {
-  for (auto node : ctx_->nodes()) {
-    for (auto& src : node->srcs()) {
-      node_map_[src.id()].emplace(&src);
-    }
-  }
-}
-
-bool compiler::dead_code_elimination() {
-  CH_DBG(3, "Begin Compiler::DCE\n");
-
-  bool changed = false;
-
-  ordered_set<lnodeimpl*> live_nodes;
-  std::unordered_map<proxyimpl*, std::unordered_set<uint32_t>> used_proxy_sources;
-  std::unordered_map<uint32_t, std::unordered_set<proxyimpl*>> proxy_users;
-
-  auto remove_unused_proxy_sources = [&](proxyimpl* proxy, uint32_t src_idx) {
-    // gather unused source positions
-    std::vector<interval_t> unused_pos;
-    for (auto& range : proxy->ranges()) {
-      if (range.src_idx == src_idx) {
-        unused_pos.emplace_back(range.dst_offset, range.dst_offset + range.length);
-      }
-    }
-
-    // remove unused source
-    proxy->erase_source(src_idx, true);
-
-    // update proxy users' ranges
-    for (auto use : proxy_users.at(proxy->id())) {
-      uint32_t i = 0;
-      for (uint32_t n = use->srcs().size(); i < n; ++i) {
-        if (use->src(i).id() == proxy->id())
-          break;
-      }
-      assert(i != use->srcs().size());
-      for (auto& range : use->ranges()) {
-        if (range.src_idx == i) {
-          uint32_t r = 0;
-          for (auto& pos : unused_pos) {
-            if (range.src_offset >= pos.end) {
-              r += (pos.end - pos.start);
-            }
-          }
-          range.src_offset -= r;
-        }
-      }
-    }
-  };
-
-  // get permanent live nodes
-  for (auto node : ctx_->inputs()) {
-    live_nodes.insert(node);
-  }
-  for (auto node : ctx_->outputs()) {
-    live_nodes.insert(node);
-  }
-  for (auto node : ctx_->taps()) {
-    live_nodes.insert(node);
-  }
-  for (auto node : ctx_->gtaps()) {
-    live_nodes.insert(node);
-  }
-
-  // build live nodes set
-  std::list<lnodeimpl*> working_set(live_nodes.begin(), live_nodes.end());
-  while (!working_set.empty()) {
-    auto node = working_set.front();
-    auto proxy = dynamic_cast<proxyimpl*>(node);
-
-    auto& srcs = node->srcs();
-    for (uint32_t i = 0, n = srcs.size(); i < n; ++i) {
-      auto src_impl = srcs[i].impl();
-      assert(src_impl->ctx() == ctx_);
-
-      // skip unused proxy sources
-      if (proxy) {
-        auto it = used_proxy_sources.find(proxy);
-        if (it != used_proxy_sources.end()
-         && 0 == it->second.count(i))
-          continue;
-      }
-
-      // gather used proxy sources
-      bool new_proxy_source = false;      
-      if (type_proxy == src_impl->type()) {
-        auto src_proxy = reinterpret_cast<proxyimpl*>(src_impl);        
-        auto& uses = used_proxy_sources[src_proxy];
-        if (proxy) {
-          proxy_users[src_proxy->id()].insert(proxy);
-          for (auto& curr : src_proxy->ranges()) {
-            uint32_t curr_end = curr.dst_offset + curr.length;
-            for (auto& range : proxy->ranges()) {
-              if (range.src_idx == i) {
-                // do ranges overlap?
-                uint32_t src_end = range.src_offset + range.length;
-                if (range.src_offset < curr_end && src_end > curr.dst_offset) {
-                  auto ret = uses.insert(curr.src_idx);
-                  if (ret.second) {
-                    new_proxy_source = true;
-                  }
-                }
-              }
-            }
-          }
-        } else {
-          for (auto& curr : src_proxy->ranges()) {
-            auto ret = uses.insert(curr.src_idx);
-            if (ret.second) {
-              new_proxy_source = true;
-            }
-          }
-        }
-      }
-
-      // add to live list
-      auto ret = live_nodes.insert(src_impl);
-      if (ret.second || new_proxy_source) {
-        // we have a new live node, add it to working set
-        working_set.emplace_back(src_impl);
-      }
-    }
-    working_set.pop_front();
-  }
-
-  // remove unused proxy sources
-  for (auto p : used_proxy_sources) {
-    auto proxy = reinterpret_cast<proxyimpl*>(p.first);
-    auto& srcs = proxy->srcs();
-    // traverse the sources in reverse order (for efficiency)
-    for (int i = srcs.size() - 1; i >= 0; --i) {
-      if (0 == p.second.count(i)) {
-        remove_unused_proxy_sources(proxy, i);
-      };
-    }
-  }
-
-  // delete dead nodes
-  for (auto it = ctx_->nodes().begin(),
-            end = ctx_->nodes().end(); it != end;) {
-    if (0 == live_nodes.count(*it)) {
-      it = ctx_->delete_node(it);
-      changed = true;
-    } else {
-      ++it;
-    }
-  }
-
-  assert(ctx_->nodes().size() == live_nodes.size());
-
-  CH_DBG(3, "End Compiler::DCE\n");
-
-  return changed;
-}
-
-bool compiler::subexpressions_elimination() {
-  if (platform::self().cflags() & cflags::disable_cse)
-    return false;
-
-  CH_DBG(3, "Begin Compiler::CSE\n");
-
-  bool changed = false;
-
-  typedef std::decay_t<decltype(ctx_->nodes())> nodes_type;
-  std::vector<nodes_type::iterator> deleted_list;
-  std::unordered_set<cse_key_t, cse_hash_t> cse_table;
-
-  auto apply_cse = [&](const nodes_type::iterator& it)->bool {
-    auto node = *it;
-    if (0 == node->hash())
-      return false;
-    auto p_it = cse_table.find(node);
-    if (p_it != cse_table.end()) {      
-      this->map_replace_target(node, p_it->node);
-      this->map_delete(node);
-      deleted_list.push_back(it);
-      return true;
-    }
-    cse_table.insert(node);
-    return false;
-  };
-
-  auto& nodes = ctx_->nodes();
-
-  for (auto it = nodes.begin(), end = nodes.end(); it != end;) {
-    changed |= apply_cse(it++);
-  }
-
-  if (changed) {
-    for (auto it = deleted_list.rbegin(), end = deleted_list.rend(); it != end;) {
-      ctx_->delete_node(*it++);
-    }
-    deleted_list.clear();
-    cse_table.clear();
-  }
-
-  CH_DBG(3, "End Compiler::CSE\n");
-
-  return changed;
-}
-
-bool compiler::prune_identity_proxies() {
-  if (platform::self().cflags() & cflags::disable_pip)
-    return false;
-
-  CH_DBG(3, "Begin Compiler::PIP\n");
-
-  bool changed = false;
-
-  for (auto it = ctx_->proxies().begin(),
-       end = ctx_->proxies().end(); it != end;) {
-    auto proxy = *it++;
-    if (!proxy->is_identity())
-      continue;
-    // replace identity proxy's uses with proxy's source
-    this->map_replace_target(proxy, proxy->src(0).impl());
-    this->map_delete(proxy);
-    // delete proxy
-    auto p_it = std::find(ctx_->nodes().begin(), ctx_->nodes().end(), proxy);
-    ctx_->delete_node(p_it);
-    changed = true;
-  }
-
-  CH_DBG(3, "End Compiler::PIP\n");
-
-  return changed;
-}
-
-bool compiler::proxies_coalescing() {
-  if (platform::self().cflags() & cflags::disable_pcx)
-    return false;
-
-  CH_DBG(3, "Begin Compiler::PCX\n");
-
-  auto is_multi_range = [&](proxyimpl* proxy, uint32_t offset, uint length) {
-    assert(offset + length <= proxy->size());
-    auto end = offset + length;
-    for (auto& range : proxy->ranges()) {
-      auto range_end = range.dst_offset + range.length;
-      if (range_end <= offset
-      || end <= range.dst_offset)
-        continue;
-      return (offset < range.dst_offset || end > range_end);
-    }
-    return false;
-  };
-
-  auto are_adjacent_sources = [&](proxyimpl* proxy,
-                                  const proxyimpl::range_t& r0,
-                                  const proxyimpl::range_t& r1) {
-    if (r0.src_idx == r1.src_idx)
-      return false;
-    auto s0 = proxy->src(r0.src_idx).impl();
-    auto s1 = proxy->src(r1.src_idx).impl();
-    auto p0 = reinterpret_cast<proxyimpl*>(s0);
-    auto p1 = reinterpret_cast<proxyimpl*>(s1);
-    if (s0->type() != type_proxy
-     || s1->type() != type_proxy
-     || p0->ranges().size() > 1
-     || p1->ranges().size() > 1)
-      return false;
-    auto& p0r = p0->range(0);
-    auto& p1r = p1->range(0);
-    return (p0->src(p0r.src_idx).id() == p1->src(p1r.src_idx).id()
-         && r0.src_offset + r0.length == p0->size()
-         && 0 == r1.src_offset
-         && p0r.src_offset + p0r.length == p1r.src_offset);
-  };
-
-  auto is_useful_proxy = [&](proxyimpl* proxy, proxyimpl* src_proxy) {
-    if (src_proxy->is_identity())
-      return false;
-    for (uint32_t i = 0, n = proxy->ranges().size(); i < n; ++i) {
-      auto& range = proxy->range(i);
-      if (proxy->src(range.src_idx).id() != src_proxy->id())
-        continue;
-      if (range.length != src_proxy->size()
-       && !is_multi_range(src_proxy, range.src_offset, range.length))
-        return false;
-      if (i > 0) {
-        if (are_adjacent_sources(proxy, proxy->range(i-1), range))
-          return false;
-      }
-      if (i + 1 < n) {
-        if (are_adjacent_sources(proxy, range, proxy->range(i+1)))
-          return false;
-      }
-    }
-    return true;
-  };
-
-  bool changed = false;
-
-  std::set<proxyimpl*> detached_list;
-  bool found;
-  do {
-    std::unordered_map<proxyimpl*, std::vector<proxyimpl::range_t>> src_proxies;
-    std::unordered_map<const lnode*, lnodeimpl*> src_nodes;
-    found = false;
-
-    for (auto it = ctx_->proxies().begin(),
-         end = ctx_->proxies().end(); it != end;) {
-      auto dst_proxy = *it++;
-
-      src_proxies.clear();
-
-      for (auto& src : dst_proxy->srcs()) {
-        if (type_proxy != src.impl()->type())
-          continue;        
-
-        auto src_proxy = reinterpret_cast<proxyimpl*>(src.impl());
-        if (src_proxies.count(src_proxy))
-          continue;
-
-        // skip useful proxies
-        auto use_count = node_map_.at(src_proxy->id()).size();
-        if (use_count > 1
-         && is_useful_proxy(dst_proxy, src_proxy))
-          continue;
-
-        auto& upd_ranges = src_proxies[src_proxy];
-        for (auto& dst_range : dst_proxy->ranges()) {
-          if (dst_proxy->src(dst_range.src_idx).id() != src_proxy->id())
-            continue;
-          for (auto& src_range : src_proxy->ranges()) {
-            int32_t delta  = src_range.dst_offset - dst_range.src_offset;
-            uint32_t start = std::max<int32_t>(dst_range.dst_offset + delta, 0);
-            uint32_t end   = std::max<int32_t>(dst_range.dst_offset + delta + src_range.length, 0);
-            interval_t src_iv{start, end};
-            interval_t dst_iv{dst_range.dst_offset, dst_range.dst_offset + dst_range.length};
-            auto shared_iv = dst_iv.intersection(src_iv);
-            if (shared_iv.start == shared_iv.end)
-              continue;
-            proxyimpl::range_t upd_range;
-            upd_range.src_idx    = src_range.src_idx;
-            upd_range.dst_offset = shared_iv.start;
-            upd_range.src_offset = src_range.src_offset - std::min(delta, 0);
-            upd_range.length     = shared_iv.end - shared_iv.start;
-            upd_ranges.emplace_back(upd_range);
-          }
-        }
-      }
-
-      if (!src_proxies.empty()) {
-        // capture source nodes
-        src_nodes.clear();
-        for (auto& src : dst_proxy->srcs()) {
-          src_nodes[&src] = src.impl();
-        }
-
-        for (auto src_proxy_p : src_proxies) {
-          auto src_proxy = src_proxy_p.first;
-          for (auto range : src_proxy_p.second) {
-            dst_proxy->add_source(
-              range.dst_offset,
-              src_proxy->src(range.src_idx),
-              range.src_offset,
-              range.length);
-          }
-          detached_list.insert(src_proxy);
-        }
-
-        // update node map to reflect modified nodes
-        for (auto& src : dst_proxy->srcs()) {
-          auto it = src_nodes.find(&src);
-          if (it != src_nodes.end()) {
-            if (src.impl() != it->second) {
-              // src still exists but its value changed
-              node_map_.at(it->second->id()).erase(&src);
-              node_map_.at(src.id()).emplace(&src);
-            }
-            src_nodes.erase(it); // remove from list
-          } else {
-            // new src was added
-            node_map_.at(src.id()).emplace(&src);
-          }
-        }
-
-        // unregister remaining deleted nodes
-        for (auto& src_p : src_nodes) {
-          node_map_.at(src_p.second->id()).erase(src_p.first);
-        }
-
-        found = true;
-        changed = true;
-      }
-    }
-  } while (found);
-
-  for (auto d_it = detached_list.rbegin(), end = detached_list.rend(); d_it != end;) {
-    auto node = *d_it++;
-    auto m_it = node_map_.find(node->id());
-    if (m_it != node_map_.end()) {
-      if (m_it->second.empty()) {
-        this->map_delete(node);
-        auto d_it = std::find(ctx_->nodes().begin(), ctx_->nodes().end(), node);
-        ctx_->delete_node(d_it);
-      }
-    }
-  }  
-
-  CH_DBG(3, "End Compiler::PCX\n");
-
-  return changed;
-}
-
-void compiler::map_replace_target(lnodeimpl* from, lnodeimpl* to) {
-  // update all nodes pointing to source to now point to target
-  // and unregister source's references
-  auto from_it = node_map_.find(from->id());
-  assert(from_it != node_map_.end());
-  auto& to_refs = node_map_.at(to->id());
-  for (auto node : from_it->second) {
-    *const_cast<lnode*>(node) = to;
-    to_refs.emplace(node);
-  }
-}
-
-void compiler::map_delete(lnodeimpl* node) {
-  auto it = node_map_.find(node->id());
-  assert(it != node_map_.end());
-  for (auto& src : node->srcs()) {
-    node_map_[src.id()].erase(&src);
-  }
-  node_map_.erase(it);
-}
-
-void compiler::check_undefs() {
-  // check for un-initialized nodes
-  auto& undefs = ctx_->undefs();
-  if (undefs.size()) {
-#define LCOV_EXCL_START
-    ctx_->dump_ast(std::cerr);
-    for (auto undef : undefs) {
-      for (auto node : ctx_->nodes()) {
-        auto ret = std::find_if(node->srcs().begin(), node->srcs().end(),
-                     [undef](const lnode& x)->bool { return x.id() == undef->id(); });
-        if (ret != node->srcs().end()) {
-          if (platform::self().cflags() & cflags::dump_ast) {
-            ctx_->dump_ast(std::cerr);
-          }
-          fprintf(stderr, "error: un-initialized variable %s\n", node->debug_info().c_str());
-          break;
-        }
-      }
-    }
-    std::abort();
-#define LCOV_EXCL_END
   }
 }
 

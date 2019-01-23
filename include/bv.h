@@ -89,6 +89,100 @@ bool bv_is_neg(const T* in, uint32_t size) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+template <typename T>
+bool bv_is_zero_scalar(const T* in) {
+  return (0 == in[0]);
+}
+
+template <typename T>
+bool bv_is_zero_vector(const T* in, uint32_t size) {
+  static constexpr uint32_t WORD_SIZE = bitwidth_v<T>;
+
+  uint32_t num_words = ceildiv(size, WORD_SIZE);
+  for (uint32_t i = 0; i < num_words; ++i) {
+    if (in[i])
+      return false;
+  }
+  return true;
+}
+
+template <typename T>
+bool bv_is_zero(const T* in, uint32_t size) {
+  static constexpr uint32_t WORD_SIZE = bitwidth_v<T>;
+
+  if (size <= WORD_SIZE) {
+    return bv_is_zero_scalar(in);
+  } else {
+    return bv_is_zero_vector(in, size);
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+template <typename T>
+bool bv_is_one_scalar(const T* in) {
+  return (1 == in[0]);
+}
+
+template <typename T>
+bool bv_is_one_vector(const T* in, uint32_t size) {
+  static constexpr uint32_t WORD_SIZE = bitwidth_v<T>;
+
+  uint32_t num_words = ceildiv(size, WORD_SIZE);
+  for (uint32_t i = num_words - 1; i > 0; --i) {
+    if (in[i])
+      return false;
+  }
+  return (1 == in[0]);
+}
+
+template <typename T>
+bool bv_is_one(const T* in, uint32_t size) {
+  static constexpr uint32_t WORD_SIZE = bitwidth_v<T>;
+
+  if (size <= WORD_SIZE) {
+    return bv_is_one_scalar(in);
+  } else {
+    return bv_is_one_vector(in, size);
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+template <typename T>
+bool bv_is_ones_scalar(const T* in, uint32_t size) {
+  auto max = std::numeric_limits<uint64_t>::max() >> (64 - size);
+  return (max == in[0]);
+}
+
+template <typename T>
+bool bv_is_ones_vector(const T* in, uint32_t size) {
+  static constexpr uint32_t WORD_SIZE = bitwidth_v<T>;
+
+  uint32_t num_words = ceildiv(size, WORD_SIZE);
+  for (uint32_t i = 0; i < num_words - 1; ++i) {
+    if (in[i] != std::numeric_limits<T>::max())
+      return false;
+  }
+
+  auto rem = size % WORD_SIZE;
+  auto max = std::numeric_limits<uint64_t>::max() >> (64 - rem);
+  return (max == in[num_words - 1]);
+}
+
+template <typename T>
+bool bv_is_ones(const T* in, uint32_t size) {
+  static constexpr uint32_t WORD_SIZE = bitwidth_v<T>;
+
+  if (size <= WORD_SIZE) {
+    return bv_is_ones_scalar(in, size);
+  } else {
+    return bv_is_ones_vector(in, size);
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 template <typename U, typename T,
           CH_REQUIRE_0(std::is_integral_v<U>)>
 void bv_assign_scalar(T* dst, U value) {
@@ -1620,7 +1714,8 @@ void bv_shl(T* out, uint32_t out_size,
             uint32_t dist) {
   static constexpr uint32_t WORD_SIZE = bitwidth_v<T>;
 
-  if (out_size <= WORD_SIZE) {
+  if (out_size <= WORD_SIZE
+   && in_size <= WORD_SIZE) {
     bv_shl_scalar(out, out_size, in, dist);
   } else {
     bv_shl_vector(out, out_size, in, in_size, dist);
@@ -1719,7 +1814,8 @@ void bv_shr(T* out, uint32_t out_size,
             uint32_t dist) {
   static constexpr uint32_t WORD_SIZE = bitwidth_v<T>;
 
-  if (in_size <= WORD_SIZE) {
+  if (out_size <= WORD_SIZE
+   && in_size <= WORD_SIZE) {
     bv_shr_scalar<is_signed>(out, out_size, in, in_size, dist);
   } else {
     bv_shr_vector<is_signed>(out, out_size, in, in_size, dist);

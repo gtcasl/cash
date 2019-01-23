@@ -24,9 +24,13 @@ protected:
 
   void build_node_map();
 
+  void build_node_map(lnodeimpl* node);
+
   void check_undefs();
 
   bool dead_code_elimination();
+
+  bool constant_folding();
 
   bool subexpressions_elimination();
 
@@ -34,11 +38,13 @@ protected:
 
   bool proxies_coalescing();
 
+  lnodeimpl* constant_fold(proxyimpl* node);
+  lnodeimpl* constant_fold(aluimpl* node);
+  lnodeimpl* constant_fold_bitwise(aluimpl* node);
+  lnodeimpl* constant_fold(selectimpl* node);
+
   void map_replace_target(lnodeimpl* from, lnodeimpl* to);
-
   void map_delete(lnodeimpl* node);
-
-  void delete_map_source(lnodeimpl* node);  
 
   node_map_t node_map_;
 

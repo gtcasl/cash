@@ -687,16 +687,20 @@ public:
     bv_reset(words_, size_);
   }
 
-  bool is_zero() const {
-    for (uint32_t i = 0, n = this->num_words(); i < n; ++i) {
-      if (words_[i])
-        return false;
-    }
-    return true;
+  bool is_zero() const {    
+    return bv_is_zero(words_, size_);
+  }
+
+  bool is_one() const {
+    return bv_is_one(words_, size_);
+  }
+
+  bool is_ones() const {
+    return bv_is_ones(words_, size_);
   }
 
   bool is_neg() const {
-    return this->at(size_ - 1);
+    return bv_is_neg(words_, size_);
   }
 
 #define CH_DEF_CAST(type) \

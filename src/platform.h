@@ -13,9 +13,10 @@ enum class cflags {
   dump_jit    = (1 << 4),
   dump_asm    = (1 << 5),
   disable_jit = (1 << 8),
-  disable_cse = (1 << 9),
-  disable_pip = (1 << 10),
-  disable_pcx = (1 << 11)
+  disable_cfo = (1 << 9),
+  disable_cse = (1 << 10),
+  disable_pip = (1 << 11),
+  disable_pcx = (1 << 12)
 };
 
 inline constexpr auto operator|(cflags lsh, cflags rhs) {
