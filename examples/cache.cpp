@@ -178,21 +178,27 @@ struct Cache {
     std::array<ch_module<CacheWay<Cfg>>, Cfg::num_ways> ways;
     ch_module<ReplacePLRU<Cfg>> plru;
     ch_reg<State> state(State::idle);
-    std::array<ch_bit<Cfg::block_bits>, Cfg::num_ways> rd_data;
+    std::array<ch_bit<Cfg::block_bits>, Cfg::num_ways> rd_data_set;
+    std::array<ch_bit<Cfg::baddr_bits>, Cfg::num_ways> wb_addr_set;
     ch_bit<Cfg::num_ways> hit_set, valid_set, dirty_set;
-    ch_reg<ch_bit<Cfg::num_ways>> r_mem_write_set(false), r_cpu_write_set(false);
+    ch_reg<ch_bit<Cfg::addr_bits>> r_cpu_address;
+    ch_reg<ch_bit<Cfg::data_bits>> r_cpu_writedata;
+    ch_reg<ch_bit<Cfg::word_sel>> r_cpu_word_en;
+    ch_reg<ch_bool> r_cpu_rw;
+    ch_reg<ch_bit<Cfg::num_ways>> r_mem_write_set(false), r_cpu_write_set(false), r_invalidate_set(false);
 
     //--
-    auto index        = ch_slice<Cfg::index_bits>(io.cpu.address, Cfg::offset_bits);
-    auto tag          = ch_slice<Cfg::tag_bits>(io.cpu.address, Cfg::offset_bits + Cfg::index_bits);
-    auto cpu_writedata= ch_dup<Cfg::data_sel>(io.cpu.writedata);
+    auto cpu_address= ch_sel(state == State::idle, io.cpu.address, r_cpu_address);
+    auto index        = ch_slice<Cfg::index_bits>(cpu_address, Cfg::offset_bits);
+    auto tag          = ch_slice<Cfg::tag_bits>(cpu_address, Cfg::offset_bits + Cfg::index_bits);
+    auto cpu_writeblock= ch_dup<Cfg::data_sel>(r_cpu_writedata);
     auto is_mem_write = ch_orr(r_mem_write_set);
-    auto write_data   = ch_sel(is_mem_write, io.mem.readdata, cpu_writedata);
-    auto data_en_cpu  = ch_slice<Cfg::offset_bits>(io.cpu.address);
+    auto write_data   = ch_sel(is_mem_write, io.mem.readdata, cpu_writeblock);
+    auto data_en_cpu  = ch_slice<Cfg::offset_bits>(cpu_address);
     auto data_en_mem  = (1 << Cfg::offset_bits) - 1;
     auto data_en      = ch_bit<Cfg::data_sel>(1) << ch_sel(is_mem_write, data_en_mem, data_en_cpu);
     auto word_en_mem  = (1 << Cfg::word_sel) - 1;
-    auto word_en      = ch_sel(is_mem_write, word_en_mem, io.cpu.word_en);
+    auto word_en      = ch_sel(is_mem_write, word_en_mem, r_cpu_word_en);
 
     // bind cache ways
     for (unsigned i = 0; i < Cfg::num_ways; ++i) {
@@ -203,8 +209,10 @@ struct Cache {
       way.io.data_en = data_en;
       way.io.word_en = word_en;
       way.io.write   = ch_sel(r_mem_write_set[i], io.mem.readdatavalid, r_cpu_write_set[i]);
+      way.io.invalidate = r_invalidate_set[i];
 
-      rd_data[i]   = way.io.rd_data;
+      rd_data_set[i] = way.io.rd_data;
+      wb_addr_set[i] = way.io.wb_addr;
       hit_set[i]   = way.io.hit;
       valid_set[i] = way.io.valid;
       dirty_set[i] = way.io.dirty;
@@ -232,15 +240,22 @@ struct Cache {
     __switch (state)
     __case (State::idle) {
       __if (io.cpu.read || io.cpu.write) {
+        //--
+        r_cpu_address->next = io.cpu.address;
+        r_cpu_writedata->next = io.cpu.writedata;
+        r_cpu_word_en->next = io.cpu.word_en;
+        r_cpu_rw->next = io.cpu.write;
+
+        //--
         state->next = State::request;
       };
     }
     __case (State::request) {
-      __if (is_hit && io.cpu.read) {
-        cpu_readdata->next = ch_mux(data_en_cpu, ch_hmux(hit_idx, rd_data));
+      __if (is_hit && !r_cpu_rw) {
+        cpu_readdata->next = ch_mux(data_en_cpu, ch_hmux(hit_idx, rd_data_set));
         cpu_readdatavalid->next = true;
         state->next = State::idle;
-      }__elif (is_hit && io.cpu.write) {
+      }__elif (is_hit && r_cpu_rw) {
         r_cpu_write_set->next = hit_idx;
       }__else {
         __if (!io.mem.waitrequest) {
