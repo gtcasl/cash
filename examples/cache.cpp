@@ -185,7 +185,7 @@ struct Cache {
     //--
     auto index        = ch_slice<Cfg::index_bits>(io.cpu.address, Cfg::offset_bits);
     auto tag          = ch_slice<Cfg::tag_bits>(io.cpu.address, Cfg::offset_bits + Cfg::index_bits);
-    auto cpu_writedata= ch_dup<Cfg::data_sel>(io.cpu.writedata).as_bit();
+    auto cpu_writedata= ch_dup<Cfg::data_sel>(io.cpu.writedata);
     auto is_mem_write = ch_orr(r_mem_write_set);
     auto write_data   = ch_sel(is_mem_write, io.mem.readdata, cpu_writedata);
     auto data_en_cpu  = ch_slice<Cfg::offset_bits>(io.cpu.address);

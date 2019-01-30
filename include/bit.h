@@ -327,9 +327,9 @@ CH_VA_ARGS_MAP(CH_CAT)
 template <unsigned N, typename T>
 auto ch_dup(const T& obj) {
   static_assert(is_logic_type_v<T>, "invalid type");
-  ch_vec<ch_logic_t<T>, N> out;
-  for (auto& x : out) {
-    x = obj;
+  ch_bit<ch_width_v<T> * N> out;
+  for (unsigned i = 0; i < N; ++i) {
+    ch_asliceref<ch_width_v<T>>(out, i) = obj;
   }
   return out;
 }

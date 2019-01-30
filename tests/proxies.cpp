@@ -286,6 +286,21 @@ TEST_CASE("proxies", "[proxies]") {
     });
     TEST([]()->ch_bool {
       ch_bit4 a(1100_b);
+      auto c = ch_dup<2>(a);
+      return (c == 11001100_b);
+    });
+    TEST([]()->ch_bool {
+      ch_bit4 a(1100_b);
+      auto c = ch_dup<1>(a);
+      return (c == 1100_b);
+    });
+    TEST([]()->ch_bool {
+      ch_bit4 a(1100_b);
+      auto c = ch_dup<3>(a);
+      return (c == 110011001100_b);
+    });
+    TEST([]()->ch_bool {
+      ch_bit4 a(1100_b);
       auto c = ch_cat(1_b, a);
       return (c == 11100_b);
     });
