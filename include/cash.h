@@ -203,6 +203,7 @@ namespace logic {
   using ch::internal::ch_pad;
   using ch::internal::ch_resize;
   using ch::internal::ch_cat;
+  using ch::internal::ch_dup;
   using ch::internal::ch_shuffle;
 
   //

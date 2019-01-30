@@ -353,13 +353,17 @@ CH_SYSTEM_OPERATOR(system_op_shift)
   template <typename U,
             CH_REQUIRE_0(std::is_convertible_v<U, ch_scbit<ch_width_v<U>>>)>
   friend auto operator<<(const Derived& lhs, const U& rhs) {
-    return make_system_op<Derived, Derived, ch_scbit<ch_width_v<U>>>(bv_shl, lhs, rhs);
+    static_assert(ch_width_v<U> <= 32, "invalid size");
+    return make_system_op<Derived, Derived, ch_scbit<ch_width_v<U>>>(
+      bv_shl, lhs, rhs
+    );
   }
 
   template <typename U,
             CH_REQUIRE_0(std::is_convertible_v<U, ch_scbit<ch_width_v<U>>>)>
   friend auto operator>>(const Derived& lhs, const U& rhs) {
-    return make_system_op<Derived, Derived, ch_scbit<ch_width_v<U>>>(
+    static_assert(ch_width_v<U> <= 32, "invalid size");
+    return make_system_op<Derived, Derived, ch_scbit<ch_width_v<U>>>(      
       bv_shr<ch_signed_v<Derived>>, lhs, rhs
     );
   }

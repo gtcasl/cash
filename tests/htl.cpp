@@ -87,19 +87,23 @@ TEST_CASE("htl", "[htl]") {
   }
   SECTION("onehot", "[onehot]") {
     TEST([]()->ch_bool {
-      auto y = ch_hot2bin<4>(0001_b);
+      ch_bit4 x(0001_b);
+      auto y = ch_hot2bin(x);
       return (y == 0);
     });
     TEST([]()->ch_bool {
-      auto y = ch_hot2bin<4>(1000_b);
+      ch_bit4 x(1000_b);
+      auto y = ch_hot2bin(x);
       return (y == 3);
     });
     TEST([]()->ch_bool {
-    auto y = ch_bin2hot<4>(00_b);
+      ch_bit2 x(00_b);
+      auto y = ch_bin2hot(x);
       return (y == 0001_b);
     });
     TEST([]()->ch_bool {
-      auto y = ch_bin2hot<4>(11_b);
+      ch_bit2 x(11_b);
+      auto y = ch_bin2hot(x);
       return (y == 1000_b);
     });
   }

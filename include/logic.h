@@ -315,6 +315,19 @@ auto ch_slice(const T& obj, size_t start, ch::internal::source_location& sloc);
     return make_logic_op<opcode, ch_signed_v<Derived>, rtype>(lhs, rhs, sloc); \
   }
 
+#define CH_LOGIC_ASSIGN_IMPL(op, opcode, rtype) \
+  auto op(Derived rhs) { \
+    auto sloc = logic_accessor::sloc(rhs); \
+    auto lhs = reinterpret_cast<const Derived*>(this)->clone(); \
+    return make_logic_op<opcode, ch_signed_v<Derived>, rtype>(lhs, rhs, sloc); \
+  } \
+  template <unsigned M, CH_REQUIRE_0(M < N)> \
+  auto op(T<M> rhs) { \
+    auto sloc = logic_accessor::sloc(rhs); \
+    auto lhs = reinterpret_cast<const Derived*>(this)->clone(); \
+    return make_logic_op<opcode, ch_signed_v<Derived>, rtype>(lhs, rhs, sloc); \
+  }
+
 #define CH_LOGIC_FUNCTION_EQUALITY(func, op, type) \
   template <unsigned N, unsigned M = N> \
   auto func(const type<N>& lhs, const type<M>& rhs, CH_SLOC) { \
@@ -483,6 +496,10 @@ CH_LOGIC_OPERATOR(logic_op_bitwise)
   CH_LOGIC_OPERATOR_IMPL(operator&, ch_op::andb, Derived)
   CH_LOGIC_OPERATOR_IMPL(operator|, ch_op::orb, Derived)
   CH_LOGIC_OPERATOR_IMPL(operator^, ch_op::xorb, Derived)
+
+  CH_LOGIC_ASSIGN_IMPL(operator&=, ch_op::andb, Derived)
+  CH_LOGIC_ASSIGN_IMPL(operator|=, ch_op::orb, Derived)
+  CH_LOGIC_ASSIGN_IMPL(operator^=, ch_op::xorb, Derived)
 };
 
 CH_LOGIC_OPERATOR(logic_op_shift)
@@ -509,6 +526,46 @@ CH_LOGIC_OPERATOR(logic_op_shift)
                         Derived,
                         ch_bit<ch_width_v<U>>>(lhs, rhs, sloc);
   }
+
+  template <unsigned M>
+  auto operator<<=(T<M> rhs) {
+    static_assert(M <= 32, "invalid size");
+    auto sloc = logic_accessor::sloc(rhs);
+    auto lhs = reinterpret_cast<const Derived*>(this)->clone();
+    return make_logic_op<ch_op::shl,
+                        ch_signed_v<Derived>,
+                        Derived>(lhs, rhs, sloc);
+  }
+
+  auto operator<<=(const sloc_arg<uint32_t>& rhs) {
+    auto sloc = logic_accessor::sloc(rhs.sloc);
+    auto lhs = reinterpret_cast<const Derived*>(this)->clone();
+    return make_logic_op<ch_op::shl,
+                        ch_signed_v<Derived>,
+                        Derived,
+                        Derived,
+                        ch_uint<32>>(lhs, rhs.value, sloc);
+  }
+
+  template <unsigned M>
+  auto operator>>=(T<M> rhs) {
+    static_assert(M <= 32, "invalid size");
+    auto sloc = logic_accessor::sloc(rhs);
+    auto lhs = reinterpret_cast<const Derived*>(this)->clone();
+    return make_logic_op<ch_op::shr,
+                        ch_signed_v<Derived>,
+                        Derived>(lhs, rhs, sloc);
+  }
+
+  auto operator>>=(const sloc_arg<uint32_t>& rhs) {
+    auto sloc = logic_accessor::sloc(rhs.sloc);
+    auto lhs = reinterpret_cast<const Derived*>(this)->clone();
+    return make_logic_op<ch_op::shr,
+                        ch_signed_v<Derived>,
+                        Derived,
+                        Derived,
+                        ch_uint<32>>(lhs, rhs.value, sloc);
+  }
 };
 
 CH_LOGIC_OPERATOR(logic_op_relational)
@@ -529,6 +586,12 @@ CH_LOGIC_OPERATOR(logic_op_arithmetic)
   CH_LOGIC_OPERATOR_IMPL(operator*, ch_op::mult, Derived)
   CH_LOGIC_OPERATOR_IMPL(operator/, ch_op::div, Derived)
   CH_LOGIC_OPERATOR_IMPL(operator%, ch_op::mod, Derived)
+
+  CH_LOGIC_ASSIGN_IMPL(operator+=, ch_op::add, Derived)
+  CH_LOGIC_ASSIGN_IMPL(operator-=, ch_op::sub, Derived)
+  CH_LOGIC_ASSIGN_IMPL(operator*=, ch_op::mult, Derived)
+  CH_LOGIC_ASSIGN_IMPL(operator/=, ch_op::div, Derived)
+  CH_LOGIC_ASSIGN_IMPL(operator%=, ch_op::mod, Derived)
 };
 
 CH_LOGIC_OPERATOR(logic_op_slice)

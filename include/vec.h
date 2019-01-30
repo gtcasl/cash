@@ -6,148 +6,40 @@ namespace ch {
 namespace internal {
 
 template <typename T, unsigned N>
-class vec_base {
-public:
-  vec_base() {}
-  vec_base(const vec_base& other) : items_(other.items_) {}
-  vec_base(vec_base&& other) : items_(std::move(other.items_)) {}
-
-  vec_base& operator=(const vec_base& other) {
-    items_ = other.items_;
-    return *this;
-  }
-
-  vec_base& operator=(vec_base&& other) {
-    for (unsigned i = 0; i < N; ++i) {
-      items_[i] = std::move(other.items_[i]);
-    }
-    return *this;
-  }
-
-  template <typename U>
-  vec_base& operator=(const vec_base<U, N>& other) {
-    static_assert(std::is_constructible_v<T, U>, "invalid type");
-    for (unsigned i = 0; i < N; ++i) {
-      items_[i] = other.items_[i];
-    }
-    return *this;
-  }
-
-  const T& at(size_t i) const {
-    CH_CHECK(i < N, "invalid subscript index");
-    return items_[i];
-  }
-
-  T& at(size_t i) {
-    CH_CHECK(i < N, "invalid subscript index");
-    return items_[i];
-  }
-
-  const T& operator[](size_t i) const {
-    return this->at(i);
-  }
-
-  T& operator[](size_t i) {
-    return this->at(i);
-  }
-
-  auto front() const {
-    return items_.front();
-  }
-
-  auto back() const {
-    return items_.back();
-  }
-
-  auto begin() const {
-    return items_.cbegin();
-  }
-
-  auto begin() {
-    return items_.begin();
-  }
-
-  auto cbegin() const {
-    return items_.cbegin();
-  }
-
-  auto end() const {
-    return items_.cend();
-  }
-
-  auto end() {
-    return items_.end();
-  }
-
-  auto cend() const {
-    return items_.cend();
-  }
-
-  auto rbegin() const {
-    return items_.crbegin();
-  }
-
-  auto rbegin() {
-    return items_.rbegin();
-  }
-
-  auto crbegin() const {
-    return items_.crbegin();
-  }
-
-  auto rend() const {
-    return items_.crend();
-  }
-
-  auto rend() {
-    return items_.rend();
-  }
-
-  auto crend() const {
-    return items_.crend();
-  }
-
-  auto size() const {
-    return items_.size();
-  }
-
-  auto empty() const {
-    return items_.empty();
-  }auto front() {
-    return items_.front();
-  }
-
-  auto back() {
-    return items_.back();
-  }
-
-  template <typename U>
-  void fill(const U& value) {
-    for (unsigned i = 0; i < N; ++i) {
-      items_[i] = value;
-    }
-  }
-
+class vec_base : public std::array<T, N> {
 protected:
+  using base = std::array<T, N>;
 
   template <typename... Ts,
             CH_REQUIRE_0(sizeof...(Ts) == N && are_all_constructible_v<T, Ts...>)>
   vec_base(Ts&&... values)
-    : items_{T(std::forward<Ts>(values))...}
+    : base{T(std::forward<Ts>(values))...}
   {}
 
   template <typename... Ts,
             CH_REQUIRE_0(sizeof...(Ts) == N && are_all_constructible_v<T, Ts...>)>
   vec_base(const source_location& sloc, Ts&&... values)
-    : items_{T(std::forward<Ts>(values), sloc)...}
+    : base{T(std::forward<Ts>(values), sloc)...}
   {}
 
   template <typename U, std::size_t...Is>
   vec_base(const U& other, std::index_sequence<Is...>)
-    : items_{T(other[Is])...}
+    : base{T(other[Is])...}
   {}
-  
-  std::array<T, N> items_;
+
+public:
+  vec_base() {}
+  vec_base(const vec_base& other) : base(other) {}
+  vec_base(vec_base&& other) : base(std::move(other)) {}
+
+  template <typename U>
+  vec_base& operator=(const vec_base<U, N>& other) {
+    static_assert(std::is_constructible_v<T, U>, "invalid type");
+    for (unsigned i = 0; i < N; ++i) {
+      this->at(i) = other.at(i);
+    }
+    return *this;
+  }
 };
 
 template <typename T, unsigned N, typename Enable = void>
@@ -164,7 +56,6 @@ public:
                               ch_vec<ch_system_t<T>, N>>;
   using base = vec_base<T, N>;
   using base::operator [];
-  using base::items_;
 
   explicit ch_vec(const logic_buffer& buffer = logic_buffer(traits::bitwidth, CH_CUR_SLOC))
     : ch_vec(buffer, std::make_index_sequence<N>(), buffer.data().sloc())
@@ -209,7 +100,7 @@ public:
     assert(values.size() == N);
     int i = N - 1;
     for (auto& value : values) {
-      items_[i--] = value;
+      this->at(i--) = value;
     }
   }
 
@@ -249,7 +140,7 @@ protected:
   {}
 
   logic_buffer buffer() const {
-    return logic_accessor::buffer(items_[0]).source();
+    return logic_accessor::buffer(this->at(0)).source();
   }
 
   friend class logic_accessor;
@@ -266,7 +157,6 @@ public:
                                ch_vec<ch_logic_t<T>, N>>;
   using base = vec_base<T, N>;
   using base::operator [];
-  using base::items_;
 
   explicit ch_vec(const system_buffer_ptr& buffer = make_system_buffer(traits::bitwidth))
     : ch_vec(buffer, std::make_index_sequence<N>())
@@ -303,7 +193,7 @@ public:
     assert(values.size() == N);
     int i = N - 1;
     for (auto& value : values) {
-      items_[i--] = value;
+      this->at(i--) = value;
     }
   }
 
@@ -335,7 +225,7 @@ protected:
   {}
 
   const system_buffer_ptr& buffer() const {
-    return system_accessor::buffer(items_[0])->source();
+    return system_accessor::buffer(this->at(0))->source();
   }
 
   friend class system_accessor;
@@ -354,7 +244,6 @@ public:
                                  ch_vec<ch_system_io<T>, N>>;
   using base = vec_base<T, N>;
   using base::operator [];
-  using base::items_;
 
   explicit ch_vec(const std::string& name = "io", CH_SLOC)
     : ch_vec(name, sloc, std::make_index_sequence<N>())
@@ -371,8 +260,8 @@ public:
   ch_vec(ch_vec&& other) : base(std::move(other)) {}
 
   void operator()(typename traits::flip_io& other) {
-    for (unsigned i = 0, n = items_.size(); i < n; ++i) {
-      items_[i](other[i]);
+    for (unsigned i = 0; i < N; ++i) {
+      this->at(i)(other[i]);
     }
   }
 
@@ -405,7 +294,6 @@ public:
                                   ch_vec<ch_logic_io<T>, N>>;
   using base = vec_base<T, N>;
   using base::operator [];
-  using base::items_;
 
   explicit ch_vec(const typename traits::logic_io& other)
     : ch_vec(other, std::make_index_sequence<N>())
@@ -418,8 +306,8 @@ public:
   ch_vec(ch_vec&& other) : base(std::move(other)) {}
 
   void operator()(typename traits::flip_io& other) {
-    for (unsigned i = 0, n = items_.size(); i < n; ++i) {
-      items_[i](other[i]);
+    for (unsigned i = 0; i < N; ++i) {
+      this->at(i)(other[i]);
     }
   }
 

@@ -100,11 +100,11 @@ public:
     static_assert(is_bitvector_array_type_v<U>, "invalid type");
   }
 
-  template <typename U>
-  explicit ch_rom(const sdata_type& init_data, CH_SLOC)
-    : mem_(ch_width_v<T>, N, init_data, ForceLogicRAM, sloc) {
-    static_assert(is_bitvector_array_type_v<U>, "invalid type");
-  }
+  template <typename U,
+            CH_REQUIRE_0(std::is_integral_v<U>)>
+  explicit ch_rom(const U& value, CH_SLOC)
+    : mem_(ch_width_v<T>, N, sdata_type(N, value), ForceLogicRAM, sloc)
+  {}
 
   template <typename U>
   auto read(const U& addr, CH_SLOC) const {
@@ -147,11 +147,11 @@ public:
     static_assert(is_bitvector_array_type_v<U>, "invalid type");
   }
 
-  template <typename U>
-  explicit ch_mem(const sdata_type& init_data, CH_SLOC)
-    : mem_(ch_width_v<T>, N, init_data, false, sloc) {
-    static_assert(is_bitvector_array_type_v<U>, "invalid type");
-  }
+  template <typename U,
+            CH_REQUIRE_0(std::is_integral_v<U>)>
+  explicit ch_mem(const U& value, CH_SLOC)
+    : mem_(ch_width_v<T>, N, sdata_type(N, value), false, sloc)
+  {}
 
   template <typename U>
   auto read(const U& addr, CH_SLOC) const {
