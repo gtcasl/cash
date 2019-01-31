@@ -34,7 +34,7 @@ struct CacheConfig {
   static constexpr unsigned index_bits  = log2ceil(num_sets);
   static constexpr unsigned offset_bits = log2ceil(data_sel);
   static constexpr unsigned tag_bits    = addr_bits - index_bits - offset_bits;
-  static constexpr unsigned baddr_bits  = addr_bits - offset_bits;  
+  static constexpr unsigned maddr_bits  = addr_bits - offset_bits;
 
   __inout (cpu_req_io, (
     __in (ch_bit<addr_bits>)  address,
@@ -48,7 +48,7 @@ struct CacheConfig {
   ));
 
   __inout (mem_req_io, (
-    __out (ch_bit<addr_bits>)  address,
+    __out (ch_bit<maddr_bits>) address,
     __out (ch_bit<block_bits>) writedata,
     __out (ch_bool)            read,
     __out (ch_bool)            write,
@@ -119,7 +119,7 @@ struct CacheWay {
     __in (ch_bool)                  write,
     __in (ch_bool)                  invalidate,
     __out (ch_bit<Cfg::block_bits>) rd_data,
-    __out (ch_bit<Cfg::baddr_bits>) wb_addr,
+    __out (ch_bit<Cfg::maddr_bits>) wb_addr,
     __out (ch_bool)                 hit,
     __out (ch_bool)                 valid,
     __out (ch_bool)                 dirty
@@ -163,23 +163,23 @@ struct Cache {
     (typename Cfg::mem_req_io) mem
   );
 
-  __enum (State, (idle, request, fetch, update, writeback));
+  __enum (State, (idle, request, write, mfetch, mreply, writeback));
 
   void describe() {
     // declare output registers
-    auto cpu_readdata = io.cpu.readdata.as_reg();
-    auto cpu_readdatavalid = io.cpu.readdatavalid.as_reg(false);
-    auto mem_address = io.mem.address.as_reg();
-    auto mem_read  = io.mem.read.as_reg(false);
-    auto mem_write = io.mem.write.as_reg(false);
-    auto mem_writedata = io.mem.writedata.as_reg();
+    auto r_cpu_readdata = io.cpu.readdata.as_reg();
+    auto r_cpu_readdatavalid = io.cpu.readdatavalid.as_reg(false);
+    auto r_mem_address = io.mem.address.as_reg();
+    auto r_mem_read  = io.mem.read.as_reg(false);
+    auto r_mem_write = io.mem.write.as_reg(false);
+    auto r_mem_writedata = io.mem.writedata.as_reg();
 
     //--
     std::array<ch_module<CacheWay<Cfg>>, Cfg::num_ways> ways;
     ch_module<ReplacePLRU<Cfg>> plru;
     ch_reg<State> state(State::idle);
     std::array<ch_bit<Cfg::block_bits>, Cfg::num_ways> rd_data_set;
-    std::array<ch_bit<Cfg::baddr_bits>, Cfg::num_ways> wb_addr_set;
+    std::array<ch_bit<Cfg::maddr_bits>, Cfg::num_ways> wb_addr_set;
     ch_bit<Cfg::num_ways> hit_set, valid_set, dirty_set;
     ch_reg<ch_bit<Cfg::addr_bits>> r_cpu_address;
     ch_reg<ch_bit<Cfg::data_bits>> r_cpu_writedata;
@@ -239,51 +239,79 @@ struct Cache {
     //--
     __switch (state)
     __case (State::idle) {
+      r_cpu_readdatavalid->next = false;
+
       __if (io.cpu.read || io.cpu.write) {
         //--
-        r_cpu_address->next = io.cpu.address;
+        r_cpu_address->next   = io.cpu.address;
         r_cpu_writedata->next = io.cpu.writedata;
-        r_cpu_word_en->next = io.cpu.word_en;
-        r_cpu_rw->next = io.cpu.write;
+        r_cpu_word_en->next   = io.cpu.word_en;
+        r_cpu_rw->next        = io.cpu.write;
 
         //--
         state->next = State::request;
       };
     }
     __case (State::request) {
-      __if (is_hit && !r_cpu_rw) {
-        cpu_readdata->next = ch_mux(data_en_cpu, ch_hmux(hit_idx, rd_data_set));
-        cpu_readdatavalid->next = true;
-        state->next = State::idle;
-      }__elif (is_hit && r_cpu_rw) {
-        r_cpu_write_set->next = hit_idx;
+      __if (is_hit) {
+        __if (r_cpu_rw) {
+          r_cpu_write_set->next = hit_idx;
+          state->next = State::write;
+        }__else {
+          r_cpu_readdata->next = ch_mux(data_en_cpu, ch_hmux(hit_idx, rd_data_set));
+          r_cpu_readdatavalid->next = true;
+          state->next = State::idle;
+        };
       }__else {
-        __if (!io.mem.waitrequest) {
-          __if (has_invalid) {
-            mem_address->next = 0;
-            mem_read->next = true;
-            state->next = State::fetch;
-          }__elif (is_dirty) {
-            mem_address->next = 0;
-            mem_writedata->next = 0;
-            mem_write->next = true;
-            state->next = State::writeback;
-          }__else {
-            mem_address->next = 0;
-            mem_write->next = false;
-            state->next = State::fetch;
-          };
+        __if (has_invalid) {
+          r_mem_address->next = ch_slice<Cfg::maddr_bits>(r_cpu_address);
+          r_mem_write_set->next = invalid_idx;
+          r_mem_read->next = true;
+          state->next = State::mfetch;
+        }__elif (is_dirty) {
+          r_mem_address->next   = ch_hmux(victim_idx, wb_addr_set);
+          r_mem_writedata->next = ch_hmux(victim_idx, rd_data_set);
+          r_mem_write_set->next = victim_idx;
+          r_mem_write->next = true;
+          state->next = State::writeback;
+        }__else {
+          r_mem_address->next = ch_slice<Cfg::maddr_bits>(r_cpu_address);
+          r_mem_write_set->next = victim_idx;
+          r_mem_read->next = true;
+          state->next = State::mfetch;
         };
       };
     }
-    __case (State::fetch) {
-      //--
+    __case (State::write) {
+      r_cpu_write_set->next = 0;
+      state->next = State::idle;
     }
-    __case (State::update) {
-      //--
+    __case (State::mfetch) {
+      __if (!io.mem.waitrequest) {
+        r_mem_read->next = false;
+        state->next = State::mreply;
+      };
+    }
+    __case (State::mreply) {
+      __if (io.mem.readdatavalid) {
+        r_mem_write_set->next = 0;
+        __if (r_cpu_rw) {
+          r_cpu_write_set->next = r_mem_write_set;
+          state->next = State::write;
+        }__else {
+          r_cpu_readdata->next = ch_mux(data_en_cpu, io.mem.readdata);
+          r_cpu_readdatavalid->next = true;
+          state->next = State::idle;
+        };
+      };
     }
     __case (State::writeback) {
-      //--
+      __if (!io.mem.waitrequest) {
+        r_mem_write->next = false;
+        r_mem_address->next = ch_slice<Cfg::maddr_bits>(r_cpu_address);
+        r_mem_read->next = true;
+        state->next = State::mfetch;
+      };
     };
 
     //--
