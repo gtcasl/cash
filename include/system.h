@@ -311,12 +311,12 @@ CH_SYSTEM_OPERATOR(system_op_equality)
   CH_SYSTEM_OPERATOR_IMPL(operator==, (
     auto lhs_w = system_accessor::data(lhs).words();
     auto rhs_w = system_accessor::data(rhs).words();
-    return bv_eq<false, block_type, ClearBitAccessor<block_type>>(lhs_w, N, rhs_w, N))
+    return bv_eq<false, block_type, ClearBitAccessor<block_type>>(lhs_w, N, rhs_w, N));
   )
   CH_SYSTEM_OPERATOR_IMPL(operator!=, (
     auto lhs_w = system_accessor::data(lhs).words();
     auto rhs_w = system_accessor::data(rhs).words();
-    return !bv_eq<false, block_type, ClearBitAccessor<block_type>>(lhs_w, N, rhs_w, N))
+    return !bv_eq<false, block_type, ClearBitAccessor<block_type>>(lhs_w, N, rhs_w, N));
   )
 };
 
@@ -327,10 +327,30 @@ CH_SYSTEM_OPERATOR(system_op_logical)
     return bv_orr(lhs_w, N) && bv_orr(rhs_w, N);
   }
 
+  friend auto operator&&(const Derived& lhs, bool rhs) {
+    auto lhs_w = system_accessor::data(lhs).words();
+    return bv_orr(lhs_w, N) && rhs;
+  }
+
+  friend auto operator&&(bool lhs, const Derived& rhs) {
+    auto rhs_w = system_accessor::data(rhs).words();
+    return lhs && bv_orr(rhs_w, N);
+  }
+
   friend auto operator||(const Derived& lhs, const Derived& rhs) {
     auto lhs_w = system_accessor::data(lhs).words();
     auto rhs_w = system_accessor::data(rhs).words();
     return bv_orr(lhs_w, N) || bv_orr(rhs_w, N);
+  }
+
+  friend auto operator||(const Derived& lhs, bool rhs) {
+    auto lhs_w = system_accessor::data(lhs).words();
+    return bv_orr(lhs_w, N) || rhs;
+  }
+
+  friend auto operator||(bool lhs, const Derived& rhs) {
+    auto rhs_w = system_accessor::data(rhs).words();
+    return lhs || bv_orr(rhs_w, N);
   }
 
   friend auto operator!(const Derived& self) {
@@ -384,6 +404,10 @@ CH_SYSTEM_OPERATOR(system_op_cast)
 
   explicit operator sdata_type() const {
     return system_accessor::data(reinterpret_cast<const Derived&>(*this));
+  }
+
+  explicit operator bool() const {
+    return bv_orr(system_accessor::data(reinterpret_cast<const Derived&>(*this)).words(), N);;
   }
 };
 

@@ -20,7 +20,6 @@ public:
                     system_op_shift<ch_scbit, N,
                       system_op_cast<ch_scbit, N,
                         system_op_slice<ch_scbit, N>>>>>>;
-  using Q = bool;
 
   explicit ch_scbit(const system_buffer_ptr& buffer = make_system_buffer(N))
     : buffer_(buffer) {

@@ -545,10 +545,11 @@ private:
 
     static void eval(print_data_t* self) {
       std::stringstream strbuf;
+      fmtparser parser;
       for (const char *str = self->format; *str != '\0'; ++str) {
         if (*str == '{') {
           fmtinfo_t fmt;
-          str = parse_format_index(&fmt, str);
+          str = parser.parse(&fmt, str);
           auto& src = self->srcs[fmt.index];
           switch (fmt.type) {
           case fmttype::Int:

@@ -3,21 +3,34 @@
 #include "logic.h"
 
 using namespace ch::internal;
-const char* ch::internal::parse_format_index(fmtinfo_t* out, const char* str) {
+
+fmtparser::fmtparser() : index_(0) {}
+
+const char* fmtparser::parse(fmtinfo_t* out, const char* str) {
   assert(str);
   
   // check starting bracket
   assert(*str == '{');
   
   ++str; // advance to next char
-  
+
+  // skip leading spaces
+  while (isspace(*str)) {
+    ++str;
+  }
+
   // parse index value
   const char *str_idx_end = str;
-  out->index = strtoul(str, (char**)&str_idx_end, 0);
-  if (str_idx_end == str || errno == ERANGE) {
-    CH_ABORT("print format invalid index value");
-    return str;
+  if (*str == ':' || *str == '}') {
+    out->index = index_;
+  } else {
+    out->index = strtoul(str, (char**)&str_idx_end, 0);
+    if (str_idx_end == str || errno == ERANGE) {
+      CH_ABORT("print format invalid index value");
+      return str;
+    }
   }
+  index_ = out->index + 1;
   
   // advance pointer
   str = str_idx_end;
@@ -127,10 +140,11 @@ void printimpl::print(std::ostream& out) const {
 
 static int getFormatMaxIndex(const char* format) {
   int max_index = -1;
+  fmtparser parser;
   for (const char *str = format; *str != '\0'; ++str) {
     if (*str == '{') {
       fmtinfo_t fmt;
-      str = parse_format_index(&fmt, str);
+      str = parser.parse(&fmt, str);
       max_index = std::max(fmt.index, max_index);
     }
   }

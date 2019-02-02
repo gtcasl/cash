@@ -1423,10 +1423,11 @@ public:
       return;
     if (format_ != "") {
       std::stringstream strbuf;
+      fmtparser parser;
       for (const char *str = format_.c_str(); *str != '\0'; ++str) {
         if (*str == '{') {
           fmtinfo_t fmt;
-          str = parse_format_index(&fmt, str);
+          str = parser.parse(&fmt, str);
           auto& src = srcs_.at(fmt.index);
           switch (fmt.type) {
           case fmttype::Int:

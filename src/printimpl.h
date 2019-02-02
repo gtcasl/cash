@@ -17,7 +17,14 @@ struct fmtinfo_t {
   fmttype type;
 };
 
-const char* parse_format_index(fmtinfo_t* out, const char* str);
+class fmtparser {
+public:
+  fmtparser();
+  const char* parse(fmtinfo_t* out, const char* str);
+
+private:
+  int index_;
+};
 
 class printimpl : public ioimpl {
 public:

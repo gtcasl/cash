@@ -20,7 +20,7 @@ public:
   ~select_impl() {}
   
   void push(const lnode& pred, const lnode& value) {
-    stmts_.push({pred, value});
+    stmts_.emplace_back(pred, value);
   }
   
   lnodeimpl* emit(const lnode& value);
@@ -31,13 +31,8 @@ public:
 
 protected:
 
-  struct stmt_t {
-    lnode pred;
-    lnode value;
-  };
-
   lnode key_;
-  std::stack<stmt_t> stmts_;
+  std::vector<std::pair<lnode, lnode>> stmts_;
   source_location sloc_;
 };
 

@@ -62,7 +62,6 @@ __struct (sd3_t, (
   (ch_bit4) d
 ));
 
-
 void foo() {
   {
     auto d1 = ch_device<TestModule>();
@@ -83,6 +82,11 @@ void foo() {
     auto b = a & 1;
     auto c = 3 & a;
     c = a;
+  }
+  {
+    ch_scint<4> a = 3;
+    auto b = a + 1;
+    auto c = 3 + a;
   }
   {
     ch_scbit<4> a = 1, k;

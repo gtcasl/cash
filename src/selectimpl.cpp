@@ -100,16 +100,12 @@ void selectimpl::print(std::ostream& out) const {
 
 lnodeimpl* select_impl::emit(const lnode& value) {
   auto& stmts = stmts_;
-  const auto& stmt = stmts.top();
   auto key = key_.empty() ? nullptr : key_.impl();
-  auto sel = ctx_curr()->create_node<selectimpl>(stmt.value.size(), key, sloc_);
-  while (!stmts.empty()) {
-    const auto& stmt = stmts.top();
-    // the case predicate should be a literal value
-    assert(!key || type_lit == stmt.pred.impl()->type());
-    sel->srcs().push_back(stmt.pred);
-    sel->srcs().push_back(stmt.value);
-    stmts.pop();
+  auto sel = ctx_curr()->create_node<selectimpl>(value.size(), key, sloc_);
+  for (auto& stmt : stmts) {
+    assert(!key || type_lit == stmt.first.impl()->type()); // case's predicate should be literal
+    sel->srcs().push_back(stmt.first);
+    sel->srcs().push_back(stmt.second);
   }
   sel->srcs().push_back(value);
   return sel;

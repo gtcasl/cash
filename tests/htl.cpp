@@ -5,6 +5,7 @@
 #include <htl/pipe.h>
 #include <htl/float32.h>
 #include <htl/counter.h>
+#include <htl/enc.h>
 #include "common.h"
 
 using namespace ch::htl;
@@ -197,6 +198,58 @@ TEST_CASE("htl", "[htl]") {
       ch_vec<ch_bit4, 4> x{0xA_h, 0xB_h, 0xC_h, 0xD_h};
       auto y = ch_mux(k, x);
       return (y == 0xA_h);
+    });
+  }
+  SECTION("pri_enc", "[mux]") {
+    TEST([]()->ch_bool {
+      ch_bit4 k(0x0);
+      auto y = ch_pri_enc(k);
+      return (y == 0);
+    });
+    TEST([]()->ch_bool {
+      ch_bit4 k(0x1);
+      auto y = ch_pri_enc(k);
+      return (y == 0);
+    });
+    TEST([]()->ch_bool {
+      ch_bit4 k(0x2);
+      auto y = ch_pri_enc(k);
+      return (y == 1);
+    });
+    TEST([]()->ch_bool {
+      ch_bit4 k(0x3);
+      auto y = ch_pri_enc(k);
+      return (y == 1);
+    });
+    TEST([]()->ch_bool {
+      ch_bit4 k(0x4);
+      auto y = ch_pri_enc(k);
+      return (y == 2);
+    });
+    TEST([]()->ch_bool {
+      ch_bit4 k(0x5);
+      auto y = ch_pri_enc(k);
+      return (y == 2);
+    });
+    TEST([]()->ch_bool {
+      ch_bit4 k(0x6);
+      auto y = ch_pri_enc(k);
+      return (y == 2);
+    });
+    TEST([]()->ch_bool {
+      ch_bit4 k(0x7);
+      auto y = ch_pri_enc(k);
+      return (y == 2);
+    });
+    TEST([]()->ch_bool {
+      ch_bit4 k(0x8);
+      auto y = ch_pri_enc(k);
+      return (y == 3);
+    });
+    TEST([]()->ch_bool {
+      ch_bit4 k(0xf);
+      auto y = ch_pri_enc(k);
+      return (y == 3);
     });
   }
   SECTION("hxbar", "[hxbar]") {

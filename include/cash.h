@@ -130,6 +130,41 @@ namespace logic {
   using ch_uint256= ch_uint<256>;
   using ch_uint512= ch_uint<512>;
 
+  using ch_scbool   = ch_scbit<1>;
+
+  using ch_scbit1   = ch_scbit<1>;
+  using ch_scbit2   = ch_scbit<2>;
+  using ch_scbit4   = ch_scbit<4>;
+  using ch_scbit8   = ch_scbit<8>;
+  using ch_scbit16  = ch_scbit<16>;
+  using ch_scbit32  = ch_scbit<32>;
+  using ch_scbit64  = ch_scbit<64>;
+  using ch_scbit128 = ch_scbit<128>;
+  using ch_scbit256 = ch_scbit<256>;
+  using ch_scbit512 = ch_scbit<512>;
+
+  using ch_scint1   = ch_scint<1>;
+  using ch_scint2   = ch_scint<2>;
+  using ch_scint4   = ch_scint<4>;
+  using ch_scint8   = ch_scint<8>;
+  using ch_scint16  = ch_scint<16>;
+  using ch_scint32  = ch_scint<32>;
+  using ch_scint64  = ch_scint<64>;
+  using ch_scint128 = ch_scint<128>;
+  using ch_scint256 = ch_scint<256>;
+  using ch_scint512 = ch_scint<512>;
+
+  using ch_scuint1  = ch_scuint<1>;
+  using ch_scuint2  = ch_scuint<2>;
+  using ch_scuint4  = ch_scuint<4>;
+  using ch_scuint8  = ch_scuint<8>;
+  using ch_scuint16 = ch_scuint<16>;
+  using ch_scuint32 = ch_scuint<32>;
+  using ch_scuint64 = ch_scuint<64>;
+  using ch_scuint128= ch_scuint<128>;
+  using ch_scuint256= ch_scuint<256>;
+  using ch_scuint512= ch_scuint<512>;
+
   //
   // constants
   //
@@ -254,7 +289,7 @@ namespace system {
   //
 
   using ch::internal::ch_tick;
-  
+
   //
   // objects
   //
