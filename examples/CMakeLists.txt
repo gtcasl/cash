@@ -7,7 +7,6 @@ set(EXAMPLES
     fifo 
     gcd 
     vending
-    cache
 )
 
 foreach(EXAMPLE ${EXAMPLES})

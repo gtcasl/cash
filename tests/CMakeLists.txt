@@ -19,6 +19,7 @@ set(TEST_SOURCES
     udf.cpp
     fixed.cpp
     complex.cpp
+    cache.cpp
     main.cpp
 )
 

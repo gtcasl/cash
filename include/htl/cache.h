@@ -1,12 +1,14 @@
+#pragma once
+
 #include <cash.h>
 #include <htl/decoupled.h>
 #include <htl/mux.h>
 #include <htl/enc.h>
 
+namespace ch {
+namespace htl {
+
 using namespace ch::logic;
-using namespace ch::system;
-using namespace ch::literals;
-using namespace ch::htl;
 
 template <unsigned NumBlocks,
           unsigned BlockBits,
@@ -30,7 +32,7 @@ struct CacheConfig {
 
   static constexpr unsigned data_sel    = block_bits / data_bits;
   static constexpr unsigned word_sel    = data_bits / word_bits;
-  static constexpr unsigned num_sets    = num_blocks / num_ways;  
+  static constexpr unsigned num_sets    = num_blocks / num_ways;
   static constexpr unsigned index_bits  = log2ceil(num_sets);
   static constexpr unsigned offset_bits = log2ceil(data_sel);
   static constexpr unsigned tag_bits    = addr_bits - index_bits - offset_bits;
@@ -71,21 +73,14 @@ struct ReplacePLRU {
   using data_t = ch_bit<use_bits>;
 
   void describe() {
-    // allocate use-bit store
-    ch_mem<data_t, Cfg::num_sets> use_store(0); // zero initialized
-
     //--
+    ch_mem<data_t, Cfg::num_sets> use_store(0); // zero initialized
     auto rstate = use_store.read(io.set_idx);
     auto wstate = this->update_state(io.way_idx, rstate);
     use_store.write(io.set_idx, wstate, io.update);
 
-    __if (io.update) {
-      ch_print("*** PLRU: way_idx={}, rstate={}, wstate={}", io.way_idx, rstate, wstate);
-    };
-
     //--
-    auto tree_root = use_bits - 1;
-    io.victim_idx = this->get_replace_index(rstate, tree_root);
+    io.victim_idx = this->get_replace_index(rstate, use_bits - 1);
   }
 
   ch_bit<log2ceil(Cfg::num_ways)> get_replace_index(const data_t& state, unsigned index) {
@@ -144,9 +139,6 @@ struct CacheWay {
       ch_asliceref<Cfg::word_bits>(io.rd_data, i) = data_store[i].read(io.index);
       auto wdata = ch_aslice<Cfg::word_bits>(io.wr_data, i);
       auto wenable = io.write && io.data_en[i / Cfg::word_sel] && io.word_en[i % Cfg::word_sel];
-      //__if (wenable) {
-      //  ch_print(stringf("*** Way: b%d : rd_data={}, wdata={}, wenable={}", i), io.rd_data, wdata, wenable);
-      //};
       data_store[i].write(io.index, wdata, wenable);
     }
 
@@ -154,10 +146,6 @@ struct CacheWay {
     auto tag_wdata = ch_sel(io.readmiss, ch_cat(0_b, 1_b, io.tag), ch_cat(1_b, 1_b, tag));
     ch_bind(dirty, valid, tag) = tag_store.read(io.index);
     tag_store.write(io.index, tag_wdata, io.write);
-
-    //__if (io.write) {
-    //  ch_print("*** WagTag: wdata={}, write={}", tag_wdata, io.write);
-    //};
 
     //--
     io.wb_addr = ch_cat(tag, io.index);
@@ -250,14 +238,12 @@ struct Cache {
     __switch (state)
     __case (State::idle) {
       r_cpu_readdatavalid->next = false;
-
       __if (io.cpu.read || io.cpu.write) {
         //--
         r_cpu_address->next   = io.cpu.address;
         r_cpu_writedata->next = io.cpu.writedata;
         r_cpu_worden->next    = io.cpu.worden;
         r_cpu_write->next     = io.cpu.write;
-
         //--
         state->next = State::request;
       };
@@ -303,7 +289,7 @@ struct Cache {
       };
     }
     __case (State::mreply) {
-      __if (io.mem.readdatavalid) {        
+      __if (io.mem.readdatavalid) {
         __if (r_cpu_write) {
           r_cpu_write_set->next = r_mem_write_set;
           state->next = State::write;
@@ -327,395 +313,12 @@ struct Cache {
     //--
     io.cpu.waitrequest = (state != State::idle);
 
-    __if (ch_clock()) {
+    /*__if (ch_clock()) {
       ch_print("{0}: state={}, is_hit={}, has_invalid={}, is_dirty={}, hit_idx={}, invalid_idx={}, victim_idx={}, index={}, tag={}, write_data={}, data_en={}, word_en={}, r_mem_write_set={}, mem_rvalid={}, mem_rdata={}, write_data={}, r_cpu_address={}",
                ch_now(), state, is_hit, has_invalid, is_dirty, hit_idx, invalid_idx, victim_idx, index, tag, write_data, data_en, word_en, r_mem_write_set, io.mem.readdatavalid, io.mem.readdata, write_data, r_cpu_address);
-    };
+    };*/
   }
 };
 
-/*template <typename Cfg>
-class processor {
-  int step_;
-
-  void read(int step, int addr, int value) {
-
-  }
-
-  void write(int step, int addr, int value) {
-
-  }
-
-public:
-  processor() : step_(0) {}
-
-  void eval(ch_device<Cache<Cfg>>* cache, ch_tick t) {
-    this->read();
-  }
-};
-
-template <typename Cfg>
-class memory {
-public:
-  void eval(ch_device<Cache<Cfg>>* cache, ch_tick t) {
-    //--
-  }
-};*/
-
-int main() {
-  using Cfg = CacheConfig<64, 64, 4, 20, 32, 8>;
-
-  ch_device<Cache<Cfg>> cache;
-  ch_tracer tracer(cache);
-
-  cache.io.cpu.address = 0;
-  cache.io.cpu.writedata = 0;
-  cache.io.cpu.worden = 0;
-  cache.io.cpu.read = false;
-  cache.io.cpu.write = false;
-  cache.io.mem.readdata = 0;
-  cache.io.mem.readdatavalid = false;
-  cache.io.mem.waitrequest = true;
-
-  tracer.run([&](ch_tick t)->bool {
-    std::cout << "t" << t             
-              << ", cpu_rdata=" << cache.io.cpu.readdata
-              << ", cpu_rvalid=" << cache.io.cpu.readdatavalid
-              << ", cpu_wait=" << cache.io.cpu.waitrequest
-              << ": mem_addr=" << cache.io.mem.address
-              << ", mem_wdata=" << cache.io.mem.writedata
-              << ", mem_read=" << cache.io.mem.read
-              << ", mem_write=" << cache.io.mem.write
-              << std::endl;
-    switch (t) {
-    case 0:
-      assert(cache.io.cpu.readdatavalid == false);
-      assert(cache.io.cpu.waitrequest == false);
-      assert(cache.io.mem.read == false);
-      assert(cache.io.mem.write == false);
-      break;
-
-    // read miss
-
-    case 2:
-      assert(cache.io.cpu.waitrequest == false);
-      cache.io.cpu.address = 4;
-      cache.io.cpu.worden = 0xf;
-      cache.io.cpu.read = true;
-      break;
-
-    case 4:
-      cache.io.cpu.address = 0;
-      cache.io.cpu.worden = 0;
-      cache.io.cpu.read = false;
-      break;
-
-    case 6:
-      assert(cache.io.mem.read == true);
-      assert(cache.io.mem.address == 2);
-      break;
-
-    case 8:
-      cache.io.mem.waitrequest = false;
-      break;
-
-    case 10:
-      cache.io.mem.waitrequest = true;
-      break;
-
-    case 12:
-      assert(cache.io.mem.read == false);
-      cache.io.mem.readdata = 256;
-      cache.io.mem.readdatavalid = true;
-      break;
-
-    case 14:
-      assert(cache.io.cpu.readdatavalid == true);
-      assert(cache.io.cpu.readdata == 256);
-      cache.io.mem.readdata = 0;
-      cache.io.mem.readdatavalid = false;
-      break;
-
-    // read hit
-
-    case 16:
-      cache.io.cpu.address = 4;
-      cache.io.cpu.worden = 0xf;
-      cache.io.cpu.read = true;
-      break;
-
-    case 18:
-      cache.io.cpu.address = 0;
-      cache.io.cpu.worden = 0;
-      cache.io.cpu.read = false;
-      break;
-
-    case 20:
-      assert(cache.io.cpu.readdatavalid == true);
-      assert(cache.io.cpu.readdata == 256);
-      break;
-
-    // write hit
-
-    case 22:
-      assert(cache.io.cpu.waitrequest == false);
-      cache.io.cpu.address = 4;
-      cache.io.cpu.worden = 0x1;
-      cache.io.cpu.writedata = 16;
-      cache.io.cpu.write = true;
-      break;
-
-    case 24:
-      cache.io.cpu.address = 0;
-      cache.io.cpu.worden = 0;
-      cache.io.cpu.write = false;
-      break;
-
-    case 26:
-      break;
-
-    // read hit
-
-    case 28:
-      assert(cache.io.cpu.waitrequest == false);
-      cache.io.cpu.address = 4;
-      cache.io.cpu.worden = 0xf;
-      cache.io.cpu.read = true;
-      break;
-
-    case 30:
-      cache.io.cpu.address = 0;
-      cache.io.cpu.worden = 0;
-      cache.io.cpu.read = false;
-      break;
-
-    case 32:
-      assert(cache.io.cpu.readdatavalid == true);
-      assert(cache.io.cpu.readdata == 272);
-      cache.io.cpu.address = 0;
-      cache.io.cpu.worden = 0;
-      cache.io.cpu.read = false;
-      break;
-
-    // write miss
-
-    case 34:
-      assert(cache.io.cpu.waitrequest == false);
-      cache.io.cpu.address = 2 * Cfg::num_sets + 4;;
-      cache.io.cpu.worden = 0x1;
-      cache.io.cpu.writedata = 16;
-      cache.io.cpu.write = true;
-      break;
-
-    case 36:
-      cache.io.cpu.address = 0;
-      cache.io.cpu.worden = 0;
-      cache.io.cpu.write = false;
-      break;
-
-    case 38:
-      assert(cache.io.mem.read == true);
-      assert(cache.io.mem.address == (2 * Cfg::num_sets + 4)/2);
-      break;
-
-    case 40:
-      cache.io.mem.waitrequest = false;
-      break;
-
-    case 42:
-      cache.io.mem.waitrequest = true;
-      break;
-
-    case 44:
-      assert(cache.io.mem.read == false);
-      cache.io.mem.readdata = 64;
-      cache.io.mem.readdatavalid = true;
-      break;
-
-    case 46:
-      cache.io.mem.readdata = 0;
-      cache.io.mem.readdatavalid = false;
-      break;
-
-    // read miss
-
-    case 48:
-      assert(cache.io.cpu.waitrequest == false);
-      cache.io.cpu.address = 4 * Cfg::num_sets + 4;
-      cache.io.cpu.worden = 0xf;
-      cache.io.cpu.read = true;
-      break;
-
-    case 50:
-      cache.io.cpu.address = 0;
-      cache.io.cpu.worden = 0;
-      cache.io.cpu.read = false;
-      break;
-
-    case 52:
-      assert(cache.io.mem.read == true);
-      assert(cache.io.mem.address == (4 * Cfg::num_sets + 4)/2);
-      break;
-
-    case 54:
-      cache.io.mem.waitrequest = false;
-      break;
-
-    case 56:
-      cache.io.mem.waitrequest = true;
-      break;
-
-    case 58:
-      assert(cache.io.mem.read == false);
-      cache.io.mem.readdata = 128;
-      cache.io.mem.readdatavalid = true;
-      break;
-
-    case 60:
-      assert(cache.io.cpu.readdatavalid == true);
-      assert(cache.io.cpu.readdata == 128);
-      cache.io.mem.readdata = 0;
-      cache.io.mem.readdatavalid = false;
-      break;
-
-    // write miss
-
-    case 62:
-      assert(cache.io.cpu.waitrequest == false);
-      cache.io.cpu.address = 8 * Cfg::num_sets + 4;
-      cache.io.cpu.worden = 0x1;
-      cache.io.cpu.writedata = 16;
-      cache.io.cpu.write = true;
-      break;
-
-    case 64:
-      cache.io.cpu.address = 0;
-      cache.io.cpu.worden = 0;
-      cache.io.cpu.write = false;
-      break;
-
-    case 66:
-      assert(cache.io.mem.read == true);
-      assert(cache.io.mem.address == (8 * Cfg::num_sets + 4)/2);
-      break;
-
-    case 68:
-      cache.io.mem.waitrequest = false;
-      break;
-
-    case 70:
-      cache.io.mem.waitrequest = true;
-      break;
-
-    case 72:
-      assert(cache.io.mem.read == false);
-      cache.io.mem.readdata = 512;
-      cache.io.mem.readdatavalid = true;
-      break;
-
-    case 80:
-      cache.io.mem.readdata = 0;
-      cache.io.mem.readdatavalid = false;
-      break;
-
-    // write miss with writeback
-
-    case 82:
-      assert(cache.io.cpu.waitrequest == false);
-      cache.io.cpu.address = 16 * Cfg::num_sets + 4;
-      cache.io.cpu.worden = 0x1;
-      cache.io.cpu.writedata = 16;
-      cache.io.cpu.write = true;
-      break;
-
-    case 84:
-      cache.io.cpu.address = 0;
-      cache.io.cpu.worden = 0;
-      cache.io.cpu.write = false;
-      break;
-
-    case 86:
-      assert(cache.io.mem.write == true);
-      assert(cache.io.mem.address == 2);
-      assert(cache.io.mem.writedata == 272);
-      cache.io.mem.waitrequest = false;
-      break;
-
-    case 88:
-      assert(cache.io.mem.read == true);
-      assert(cache.io.mem.address == (16 * Cfg::num_sets + 4)/2);
-      cache.io.mem.waitrequest = true;
-      break;
-
-    case 90:
-      cache.io.mem.waitrequest = false;
-      break;
-
-    case 92:
-      cache.io.mem.waitrequest = true;
-      break;
-
-    case 94:
-      assert(cache.io.mem.read == false);
-      cache.io.mem.readdata = 1024;
-      cache.io.mem.readdatavalid = true;
-      break;
-
-    case 96:
-      cache.io.mem.readdata = 0;
-      cache.io.mem.readdatavalid = false;
-      break;
-
-    // write miss with no writeback
-
-    case 98:
-      assert(cache.io.cpu.waitrequest == false);
-      cache.io.cpu.address = 32 * Cfg::num_sets + 4;
-      cache.io.cpu.worden = 0x1;
-      cache.io.cpu.writedata = 16;
-      cache.io.cpu.write = true;
-      break;
-
-    case 100:
-      cache.io.cpu.address = 0;
-      cache.io.cpu.worden = 0;
-      cache.io.cpu.write = false;
-      break;
-
-    case 102:
-      assert(cache.io.mem.read == true);
-      assert(cache.io.mem.address == (32 * Cfg::num_sets + 4)/2);
-      break;
-
-    case 104:
-      cache.io.mem.waitrequest = false;
-      break;
-
-    case 106:
-      cache.io.mem.waitrequest = true;
-      break;
-
-    case 108:
-      assert(cache.io.mem.read == false);
-      cache.io.mem.readdata = 2048;
-      cache.io.mem.readdatavalid = true;
-      break;
-
-    case 110:
-      cache.io.mem.readdata = 0;
-      cache.io.mem.readdatavalid = false;
-      break;
-    }
-
-    return (t <= 114);
-  });
-
-  ch_toVerilog("cache.v", cache);
-
-  tracer.toText("cache.log");
-  tracer.toVCD("cache.vcd");
-  tracer.toTestBench("cache_tb.v", "cache.v");
-  int ret = system("iverilog cache_tb.v -o cache_tb.iv")
-          | system("! vvp cache_tb.iv | grep 'ERROR' || false");
-  return ret != 0;
+}
 }
