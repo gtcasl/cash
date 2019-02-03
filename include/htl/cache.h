@@ -10,26 +10,27 @@ namespace htl {
 
 using namespace ch::logic;
 
-template <unsigned NumBlocks,
-          unsigned BlockBits,
+template <unsigned CacheSize,
+          unsigned BlockSize,
           unsigned NumWays,
           unsigned AddrBits,
           unsigned DataBits,
           unsigned WordBits>
 struct CacheConfig {
-  static_assert(ispow2(NumBlocks), "invalid NumBlocks");
-  static_assert(ispow2(BlockBits), "invalid BlockBits");
-  static_assert(ispow2(NumWays) && (NumWays <= NumBlocks),   "invalid NumWays");
-  static_assert(ispow2(DataBits) && (DataBits <= BlockBits), "invalid DataBits");
+  static_assert(ispow2(CacheSize), "invalid CacheSize");
+  static_assert(ispow2(BlockSize), "invalid BlockSize");
+  static_assert(BlockSize*(CacheSize/BlockSize) == CacheSize, "invalid BlockSize");
+  static_assert(ispow2(NumWays) && (NumWays <= CacheSize/BlockSize), "invalid NumWays");
+  static_assert(ispow2(DataBits) && (DataBits <= BlockSize*8), "invalid DataBits");
   static_assert(ispow2(WordBits) && (WordBits <= DataBits),  "invalid WordBits");
 
-  static constexpr unsigned num_blocks = NumBlocks;
-  static constexpr unsigned block_bits = BlockBits;
   static constexpr unsigned num_ways   = NumWays;
   static constexpr unsigned addr_bits  = AddrBits;
   static constexpr unsigned data_bits  = DataBits;
   static constexpr unsigned word_bits  = WordBits;
 
+  static constexpr unsigned num_blocks  = CacheSize / BlockSize;
+  static constexpr unsigned block_bits  = BlockSize * 8;
   static constexpr unsigned data_sel    = block_bits / data_bits;
   static constexpr unsigned word_sel    = data_bits / word_bits;
   static constexpr unsigned num_sets    = num_blocks / num_ways;
@@ -63,36 +64,27 @@ struct CacheConfig {
 template <typename Cfg>
 struct ReplacePLRU {
   __io (
-    __in (ch_bit<Cfg::index_bits>) set_idx,
+    __in (ch_bit<Cfg::index_bits>) index,
     __in (ch_bool) update,
-    __in (ch_bit<Cfg::num_ways>) way_idx,
+    __in (ch_bit<Cfg::num_ways>) h_way_idx,
     __out (ch_bit<log2ceil(Cfg::num_ways)>) victim_idx
   );
+
+private:
 
   static constexpr unsigned use_bits = Cfg::num_ways - 1;
   using data_t = ch_bit<use_bits>;
 
-  void describe() {
-    //--
-    ch_mem<data_t, Cfg::num_sets> use_store(0); // zero initialized
-    auto rstate = use_store.read(io.set_idx);
-    auto wstate = this->update_state(io.way_idx, rstate);
-    use_store.write(io.set_idx, wstate, io.update);
-
-    //--
-    io.victim_idx = this->get_replace_index(rstate, use_bits - 1);
-  }
-
-  ch_bit<log2ceil(Cfg::num_ways)> get_replace_index(const data_t& state, unsigned index) {
-    if (2 * index >= Cfg::num_ways) {
-      return ch_sel(state[index], get_replace_index(state, index - 2), get_replace_index(state, index - 1));
+  ch_bit<log2ceil(Cfg::num_ways)> get_replace_index(const data_t& state, unsigned tree_idx) {
+    if (2 * tree_idx >= Cfg::num_ways) {
+      return ch_sel(state[tree_idx], get_replace_index(state, tree_idx - 2), get_replace_index(state, tree_idx - 1));
     } else {
-      int k = Cfg::num_ways - 2 * index - 1;
-      return ch_sel<ch_bit<log2ceil(Cfg::num_ways)>>(state[index], k, k - 1);
+      int k = Cfg::num_ways - 2 * tree_idx - 1;
+      return ch_sel<ch_bit<log2ceil(Cfg::num_ways)>>(state[tree_idx], k, k - 1);
     }
   }
 
-  auto update_state(const ch_bit<Cfg::num_ways>& select, const data_t& state) {
+  auto update_state(const ch_bit<Cfg::num_ways>& h_select, const data_t& state) {
     std::array<data_t, Cfg::num_ways> next_states;
     for (unsigned w = 0; w < Cfg::num_ways; ++w) {
       next_states[w] = state;
@@ -103,7 +95,20 @@ struct ReplacePLRU {
         i = (i << 1) | b;
       }
     }
-    return ch_hmux(select, next_states);
+    return ch_hmux(h_select, next_states);
+  }
+
+public:
+
+  void describe() {
+    //--
+    ch_mem<data_t, Cfg::num_sets> use_store(0); // zero initialized
+    auto rstate = use_store.read(io.index);
+    auto wstate = this->update_state(io.h_way_idx, rstate);
+    use_store.write(io.index, wstate, io.update);
+
+    //--
+    io.victim_idx = this->get_replace_index(rstate, use_bits - 1);
   }
 };
 
@@ -125,16 +130,9 @@ struct CacheWay {
   );
 
   void describe() {
-    static constexpr unsigned tag_bits = Cfg::tag_bits + 2; // valid + dirty
+    //--
     static constexpr unsigned words_per_block = Cfg::block_bits / Cfg::word_bits;
-
-    //--
     std::array<ch_mem<ch_bit<Cfg::word_bits>, Cfg::num_sets>, words_per_block> data_store;
-    ch_mem<ch_bit<tag_bits>, Cfg::num_sets> tag_store(0); // zero initialized
-    ch_bool valid, dirty;
-    ch_bit<Cfg::tag_bits> tag;
-
-    //--
     for (unsigned i = 0; i < words_per_block; ++i) {
       ch_asliceref<Cfg::word_bits>(io.rd_data, i) = data_store[i].read(io.index);
       auto wdata = ch_aslice<Cfg::word_bits>(io.wr_data, i);
@@ -143,6 +141,9 @@ struct CacheWay {
     }
 
     //--
+    ch_mem<ch_bit<Cfg::tag_bits + 2>, Cfg::num_sets> tag_store(0); // zero initialized
+    ch_bool valid, dirty;
+    ch_bit<Cfg::tag_bits> tag;
     auto tag_wdata = ch_sel(io.readmiss, ch_cat(0_b, 1_b, io.tag), ch_cat(1_b, 1_b, tag));
     ch_bind(dirty, valid, tag) = tag_store.read(io.index);
     tag_store.write(io.index, tag_wdata, io.write);
@@ -166,11 +167,11 @@ struct Cache {
 
   void describe() {
     // declare output registers
-    auto r_cpu_readdata = io.cpu.readdata.as_reg();
+    auto r_cpu_readdata  = io.cpu.readdata.as_reg();
     auto r_cpu_readdatavalid = io.cpu.readdatavalid.as_reg(false);
-    auto r_mem_address = io.mem.address.as_reg();
-    auto r_mem_read  = io.mem.read.as_reg(false);
-    auto r_mem_write = io.mem.write.as_reg(false);
+    auto r_mem_address   = io.mem.address.as_reg();
+    auto r_mem_read      = io.mem.read.as_reg(false);
+    auto r_mem_write     = io.mem.write.as_reg(false);
     auto r_mem_writedata = io.mem.writedata.as_reg();
 
     //--
@@ -187,15 +188,15 @@ struct Cache {
     ch_reg<ch_bit<Cfg::num_ways>> r_mem_write_set(false), r_cpu_write_set(false);
 
     //--
-    auto cpu_address= ch_sel(state == State::idle, io.cpu.address, r_cpu_address);
+    auto cpu_address  = ch_sel(state == State::idle, io.cpu.address, r_cpu_address);
+    auto offset       = ch_slice<Cfg::offset_bits>(cpu_address);
     auto index        = ch_slice<Cfg::index_bits>(cpu_address, Cfg::offset_bits);
     auto tag          = ch_slice<Cfg::tag_bits>(cpu_address, Cfg::offset_bits + Cfg::index_bits);
     auto cpu_writeblock= ch_dup<Cfg::data_sel>(r_cpu_writedata);
     auto is_mem_write = ch_orr(r_mem_write_set);
-    auto write_data   = ch_sel(is_mem_write, io.mem.readdata, cpu_writeblock);
-    auto data_en_cpu  = ch_slice<Cfg::offset_bits>(cpu_address);
+    auto write_data   = ch_sel(is_mem_write, io.mem.readdata, cpu_writeblock);    
     auto data_en_mem  = (1 << Cfg::data_sel) - 1;
-    auto data_en      = ch_sel(is_mem_write, data_en_mem, (ch_bit<Cfg::data_sel>(1) << data_en_cpu));
+    auto data_en      = ch_sel(is_mem_write, data_en_mem, (ch_bit<Cfg::data_sel>(1) << offset));
     auto word_en_mem  = (1 << Cfg::word_sel) - 1;
     auto word_en      = ch_sel(is_mem_write, word_en_mem, r_cpu_worden);
 
@@ -218,20 +219,20 @@ struct Cache {
     }
 
     // bind replacement module
-    plru.io.set_idx  = index;
-    plru.io.update   = (state == State::request);
-    auto hit_idx     = ch_delay(hit_set);
-    auto invalid_idx = ch_bit<Cfg::num_ways>(1) << ch_delay(ch_pri_enc(~valid_set));
-    auto victim_idx  = ch_bit<Cfg::num_ways>(1) << ch_delay(plru.io.victim_idx);
-    auto is_hit      = ch_orr(hit_idx);
-    auto has_invalid = ch_delay(~ch_andr(valid_set));
-    auto is_dirty    = ch_orr(ch_delay(dirty_set) & victim_idx);
+    plru.io.index      = index;
+    plru.io.update     = (state == State::request);
+    auto h_hit_idx     = ch_delay(hit_set);
+    auto h_invalid_idx = ch_bit<Cfg::num_ways>(1) << ch_delay(ch_pri_enc(~valid_set));
+    auto h_victim_idx  = ch_bit<Cfg::num_ways>(1) << ch_delay(plru.io.victim_idx);
+    auto is_hit        = ch_orr(h_hit_idx);
+    auto has_invalid   = ch_delay(~ch_andr(valid_set));
+    auto is_dirty      = ch_orr(ch_delay(dirty_set) & h_victim_idx);
     __if (is_hit) {
-      plru.io.way_idx = hit_idx;
+      plru.io.h_way_idx = h_hit_idx;
     }__elif (has_invalid) {
-      plru.io.way_idx = invalid_idx;
+      plru.io.h_way_idx = h_invalid_idx;
     }__else {
-      plru.io.way_idx = victim_idx;
+      plru.io.h_way_idx = h_victim_idx;
     };
 
     //--
@@ -251,28 +252,28 @@ struct Cache {
     __case (State::request) {
       __if (is_hit) {
         __if (r_cpu_write) {
-          r_cpu_write_set->next = hit_idx;
+          r_cpu_write_set->next = h_hit_idx;
           state->next = State::write;
         }__else {
-          r_cpu_readdata->next = ch_mux(data_en_cpu, ch_hmux(hit_idx, rd_data_set));
+          r_cpu_readdata->next = ch_mux(offset, ch_hmux(h_hit_idx, rd_data_set));
           r_cpu_readdatavalid->next = true;
           state->next = State::idle;
         };
       }__else {
         __if (has_invalid) {
           r_mem_address->next = ch_slice<Cfg::maddr_bits>(r_cpu_address, Cfg::offset_bits);
-          r_mem_write_set->next = invalid_idx;
+          r_mem_write_set->next = h_invalid_idx;
           r_mem_read->next = true;
           state->next = State::mfetch;
         }__elif (is_dirty) {
-          r_mem_address->next   = ch_hmux(victim_idx, wb_addr_set);
-          r_mem_writedata->next = ch_hmux(victim_idx, rd_data_set);
-          r_mem_write_set->next = victim_idx;
+          r_mem_address->next   = ch_hmux(h_victim_idx, wb_addr_set);
+          r_mem_writedata->next = ch_hmux(h_victim_idx, rd_data_set);
+          r_mem_write_set->next = h_victim_idx;
           r_mem_write->next = true;
           state->next = State::writeback;
         }__else {
           r_mem_address->next = ch_slice<Cfg::maddr_bits>(r_cpu_address, Cfg::offset_bits);
-          r_mem_write_set->next = victim_idx;
+          r_mem_write_set->next = h_victim_idx;
           r_mem_read->next = true;
           state->next = State::mfetch;
         };
@@ -294,7 +295,7 @@ struct Cache {
           r_cpu_write_set->next = r_mem_write_set;
           state->next = State::write;
         }__else {
-          r_cpu_readdata->next = ch_mux(data_en_cpu, io.mem.readdata);
+          r_cpu_readdata->next = ch_mux(offset, io.mem.readdata);
           r_cpu_readdatavalid->next = true;
           state->next = State::idle;
         };

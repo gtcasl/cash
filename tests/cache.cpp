@@ -6,11 +6,12 @@ using namespace ch::htl;
 TEST_CASE("cache", "[cache]") {
   SECTION("basic", "[basic]") {
     TESTX([]()->bool {
-      using Cfg = CacheConfig<64, 64, 4, 20, 32, 8>;
-
+      using Cfg = CacheConfig<512, 8, 4, 20, 32, 8>;
       ch_device<Cache<Cfg>> cache;
-      ch_tracer tracer(cache);
 
+      ch_toVerilog("cache.v", cache);
+
+      ch_tracer tracer(cache);
       cache.io.cpu.address = 0;
       cache.io.cpu.writedata = 0;
       cache.io.cpu.worden = 0;
@@ -352,8 +353,6 @@ TEST_CASE("cache", "[cache]") {
 
         return (t <= 114);
       });
-
-      ch_toVerilog("cache.v", cache);
 
       tracer.toText("cache.log");
       tracer.toVCD("cache.vcd");
