@@ -1660,6 +1660,55 @@ void bv_xor(T* out, uint32_t out_size, const T* lhs, uint32_t lhs_size, const T*
 
 ///////////////////////////////////////////////////////////////////////////////
 
+template <bool is_signed, typename T, typename BitAccessor = DefaultBitAccessor<T, is_signed>>
+void bv_blend_scalar(T* out, uint32_t out_size,
+                     const T* mask, uint32_t mask_size,
+                     const T* lhs, uint32_t lhs_size,
+                     const T* rhs, uint32_t rhs_size) {
+  BitAccessor arg0(mask, mask_size, out_size);
+  BitAccessor arg1(lhs, lhs_size, out_size);
+  BitAccessor arg2(rhs, rhs_size, out_size);
+
+  out[0] = arg1.get() ^ ((arg1.get() ^ arg2.get()) & arg0.get());
+
+  if constexpr (is_signed) {
+    if (arg0.need_resize() || arg1.need_resize() || arg2.need_resize()) {
+      bv_clear_extra_bits(out, out_size);
+    }
+  }
+}
+
+template <bool is_signed, typename T, typename BitAccessor = DefaultBitAccessor<T, is_signed>>
+void bv_blend_vector(T* out, uint32_t out_size,
+                     const T* mask, uint32_t mask_size,
+                     const T* lhs, uint32_t lhs_size,
+                     const T* rhs, uint32_t rhs_size) {
+  bv_xor_vector<is_signed, T, BitAccessor>(out, out_size, lhs, lhs_size, rhs, rhs_size);
+  bv_and_vector<is_signed, T, BitAccessor>(out, out_size, out, out_size, mask, mask_size);
+  bv_xor_vector<is_signed, T, BitAccessor>(out, out_size, out, out_size, lhs, lhs_size);
+}
+
+template <bool is_signed, typename T, typename BitAccessor = DefaultBitAccessor<T, is_signed>>
+void bv_blend(T* out, uint32_t out_size,
+              const T* mask, uint32_t mask_size,
+              const T* lhs, uint32_t lhs_size,
+              const T* rhs, uint32_t rhs_size) {
+  static constexpr uint32_t WORD_SIZE = bitwidth_v<T>;
+
+  if (out_size <= WORD_SIZE
+   && mask_size <= WORD_SIZE
+   && lhs_size <= WORD_SIZE
+   && rhs_size <= WORD_SIZE) {
+    return bv_blend_scalar<is_signed, T, BitAccessor>(
+          out, out_size, mask, mask_size, lhs, lhs_size, rhs, rhs_size);
+  } else {
+    return bv_blend_vector<is_signed, T, BitAccessor>(
+          out, out_size, mask, mask_size, lhs, lhs_size, rhs, rhs_size);
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 template <typename T>
 void bv_shl_scalar(T* out, uint32_t out_size, const T* in, uint32_t dist) {
   out[0] = (dist < bitwidth_v<T>) ? (in[0] << dist) : 0;

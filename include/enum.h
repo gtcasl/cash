@@ -16,7 +16,7 @@ void registerEnumString(const lnode& node, void* callback);
 #define CH_ENUM_VALUE(a, i, x) CH_ENUM_VALUE_(CH_NARG(CH_REM x))(CH_REM x, i)
 
 #define CH_ENUM_SIZE(...) \
-  log2ceil(std::max({1, CH_FOR_EACH(CH_ENUM_VALUE, , CH_SEP_COMMA, __VA_ARGS__)}) + 1)
+  log2up(std::max({1, CH_FOR_EACH(CH_ENUM_VALUE, , CH_SEP_COMMA, __VA_ARGS__)}) + 1)
 
 #define CH_ENUM_FIELD_1(x, y) y
 #define CH_ENUM_FIELD_2(x, y) CH_PAIR_FIRST(x) = CH_PAIR_SECOND(x)

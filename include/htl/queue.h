@@ -2,6 +2,7 @@
 
 #include <cash.h>
 #include <htl/decoupled.h>
+#include <htl/counter.h>
 
 namespace ch {
 namespace htl {
@@ -13,7 +14,6 @@ struct ch_queue {
   using value_type = T;
   static constexpr uint32_t max_size   = N;
   static constexpr uint32_t size_width = log2ceil(N+1);
-  static_assert(ispow2(N), "invalid size");
 
   __io (
     (ch_enq_io<T>) enq,
@@ -25,64 +25,64 @@ struct ch_queue {
     auto reading = io.deq.ready && io.deq.valid;
     auto writing = io.enq.valid && io.enq.ready;
 
-    ch_reg<ch_uint<size_width>> counter(0);
+    ch_reg<ch_uint<size_width>> size(0);
     __if (writing && !reading) {
-      counter->next = counter + 1;
+      size->next = size + 1;
     }__elif (reading && !writing) {
-      counter->next = counter - 1;
+      size->next = size - 1;
     };
 
     ch_reg<ch_bool> empty(true);
-    __if (counter == 1 && reading && !writing) {
+    __if (size == 1 && reading && !writing) {
       empty->next = true;
     }__elif (writing && !reading) {
       empty->next = false;
     };
 
     ch_reg<ch_bool> full(false);
-    __if (counter == (N-1) && writing && !reading) {
+    __if (size == (N-1) && writing && !reading) {
       full->next = true;
     }__elif (reading && !writing) {
       full->next = false;
     };
 
-    ch_reg<ch_uint<log2ceil(N)>> wr_ptr(0);
-    __if (writing) {
-      wr_ptr->next = wr_ptr + 1;
-    };
-
+    ch_counter<N> wr_ctr(writing);
     ch_mem<T, N> mem;
-    mem.write(wr_ptr, io.enq.data, writing);
+    mem.write(wr_ctr.value, io.enq.data, writing);
 
     T data_out;
     if constexpr (SyncRead) {
-      ch_reg<ch_uint<log2ceil(N)>> rd_ptr(0);
-      __if (reading) {
-        rd_ptr->next = rd_ptr + 1;
-      };
-      data_out = mem.read(rd_ptr);
+      ch_counter<N> rd_ctr(reading);
+      data_out = mem.read(rd_ctr.value);
     } else {
-      ch_reg<ch_uint<log2ceil(N)>> rd_ptr(0), rd_next_ptr(1);
-      __if (reading) {
-        if constexpr (N > 2) {
-          rd_ptr->next = rd_next_ptr;
-          rd_next_ptr->next = rd_ptr + 2;
+      ch_uint<log2up(N)> rd_ptr, rd_next_ptr;
+      if constexpr (N > 2) {
+        rd_ptr = ch_nextEn(rd_next_ptr, reading, 0);
+        if constexpr (ispow2(N)) {
+          rd_next_ptr = ch_nextEn(rd_ptr + 2, reading, 1);
         } else {
-          rd_ptr->next = rd_ptr + 1;
-          rd_next_ptr->next = rd_ptr->next;
+          auto next = ch_sel(rd_ptr >= (N-2), rd_ptr - (N-2), rd_ptr + 2);
+          rd_next_ptr = ch_nextEn(next, reading, 1);
         }
-      };
+      } else
+      if constexpr (N == 2) {
+        rd_ptr = ch_nextEn(rd_next_ptr, reading, 0);
+        rd_next_ptr = ch_nextEn(~rd_next_ptr, reading, 1);
+      } else {
+        rd_ptr = 0;
+        rd_next_ptr = 0;
+      }
 
-      auto show_new = ch_delay(writing && (empty || (1 == counter && reading)), 1, false);
-      auto data_new = ch_delay(io.enq.data);
-      auto data_old = ch_delay(mem.read(ch_sel(reading, rd_next_ptr, rd_ptr)));
-           data_out = ch_sel(show_new, data_new, data_old);
+      auto bypass = ch_delay(writing && (empty || (1 == size && reading)), 1, false);
+      auto curr   = ch_delay(io.enq.data);
+      auto head   = ch_delay(mem.read(ch_sel(reading, rd_next_ptr, rd_ptr)));
+      data_out    = ch_sel(bypass, curr, head);
     }
 
     io.deq.data  = data_out;
     io.deq.valid = !empty;
     io.enq.ready = !full;
-    io.size      = counter;
+    io.size      = size;
   }
 };
 
@@ -102,7 +102,7 @@ struct ch_llqueue {
     auto reading = io.deq.ready && io.deq.valid;
     auto writing = io.enq.valid && io.enq.ready;
 
-    if constexpr (N == 1) {
+    if constexpr (N == 1) {      
       ch_reg<ch_uint1> size(0);
 
       __if (writing && !reading) {
@@ -111,10 +111,7 @@ struct ch_llqueue {
         size->next = 0;
       };
 
-      ch_reg<T> data;
-      __if (writing) {
-        data->next = io.enq.data;
-      };
+      auto data = ch_nextEn(io.enq.data, writing);
 
       io.deq.data  = data;
       io.deq.valid = size;

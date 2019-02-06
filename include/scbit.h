@@ -12,7 +12,7 @@ class ch_scbit : public system_op_equality<ch_scbit, N,
                               system_op_shift<ch_scbit, N,
                                 system_op_cast<ch_scbit, N,
                                   system_op_slice<ch_scbit, N>>>>>> {
-public:
+public:  
   using traits = system_traits<N, false, ch_scbit, ch_bit<N>>;
   using base = system_op_equality<ch_scbit, N,
                 system_op_logical<ch_scbit, N,

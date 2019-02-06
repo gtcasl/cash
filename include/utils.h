@@ -455,16 +455,36 @@ void unused(Args&&...) {}
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <class Func, typename T, T Start, T ...Is>
+template <class Func, auto Step, typename T, T Start, T ...Is>
 constexpr void static_for_impl(Func &&f, std::integer_sequence<T, Is...>) {
-  (f(std::integral_constant<T, Start + Is>{} ),... );
+  (f(std::integral_constant<T, Start + Is * Step>{}), ...);
 }
 
-template <auto Start, auto End, class Func>
+template <auto Stop, class Func>
 constexpr void static_for(Func &&f) {
-  using type_t = std::common_type_t<decltype(Start), decltype(End)>;
-  static_for_impl<Func, type_t, Start>(
-    std::forward<Func>(f), std::make_integer_sequence<type_t, (End - Start)>{});
+  static_assert(Stop > 0, "invalid size");
+  using type_t = decltype(Stop);
+  static_for_impl<Func, 1, type_t, 0>(
+    std::forward<Func>(f), std::make_integer_sequence<type_t, (Stop - 0)>{}
+  );
+}
+
+template <auto Start, auto Stop, class Func>
+constexpr void static_for(Func &&f) {
+  static_assert((Stop - Start) > 0, "invalid size");
+  using type_t = std::common_type_t<decltype(Start), decltype(Stop)>;
+  static_for_impl<Func, 1, type_t, Start>(
+    std::forward<Func>(f), std::make_integer_sequence<type_t, (Stop - Start)>{}
+  );
+}
+
+template <auto Start, auto Stop, auto Step, class Func>
+constexpr void static_for(Func &&f) {
+  static_assert(((Stop - Start) / Step) > 0, "invalid size");
+  using type_t = std::common_type_t<decltype(Start), decltype(Stop)>;
+  static_for_impl<Func, Step, type_t, Start>(
+    std::forward<Func>(f), std::make_integer_sequence<type_t, (Stop - Start) / Step>{}
+  );
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -514,6 +534,12 @@ template <typename T = uint32_t>
 constexpr unsigned log2ceil(T value) {
   static_assert(std::is_integral_v<T>, "invalid type");
   return bitwidth_v<T> - count_leading_zeros(value - 1);
+}
+
+template <typename T = uint32_t>
+constexpr unsigned log2up(T value) {
+  static_assert(std::is_integral_v<T>, "invalid type");
+  return std::max<T>(1, log2ceil(value));
 }
 
 template <typename T = uint32_t>

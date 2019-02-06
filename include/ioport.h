@@ -45,11 +45,11 @@ template <typename T>
 class ch_logic_in final : public T {
 public:
   static_assert(is_logic_only_v<T>, "invalid type");
-  using traits = mixed_logic_io_traits<ch_direction::in,
-                                       ch_in<T>,
-                                       ch_out<T>,
-                                       ch_in<ch_system_t<T>>,
-                                       T>;
+  using traits = base_logic_io_traits<ch_direction::in,
+                                      ch_in<T>,
+                                      ch_out<T>,
+                                      ch_in<ch_system_t<T>>,
+                                      T>;
   using base = T;
 
   explicit ch_logic_in(const std::string& name = "io", CH_SLOC)
@@ -99,11 +99,11 @@ template <typename T>
 class ch_logic_out final : public T {
 public:
   static_assert(is_logic_only_v<T>, "invalid type");
-  using traits = mixed_logic_io_traits<ch_direction::out,
-                                       ch_out<T>,
-                                       ch_in<T>,
-                                       ch_out<ch_system_t<T>>,
-                                       T>;
+  using traits = base_logic_io_traits<ch_direction::out,
+                                      ch_out<T>,
+                                      ch_in<T>,
+                                      ch_out<ch_system_t<T>>,
+                                      T>;
   using base = T;
   using base::operator=;
 
@@ -196,7 +196,7 @@ template <typename T>
 class ch_system_in final : public T {
 public:
   static_assert(is_system_only_v<T>, "invalid type");
-  using traits = mixed_system_io_traits<ch_direction::in,
+  using traits = base_system_io_traits<ch_direction::in,
                                         ch_in<T>,
                                         ch_out<T>,
                                         ch_in<ch_logic_t<T>>,
@@ -240,7 +240,7 @@ template <typename T>
 class ch_system_out final : public T {
 public:
   static_assert(is_system_only_v<T>, "invalid type");
-  using traits = mixed_system_io_traits<ch_direction::out,
+  using traits = base_system_io_traits<ch_direction::out,
                                         ch_out<T>,
                                         ch_in<T>,
                                         ch_out<ch_logic_t<T>>,

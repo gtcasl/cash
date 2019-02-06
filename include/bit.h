@@ -13,6 +13,7 @@ class ch_bit : public logic_op_equality<ch_bit, N,
                             logic_op_shift<ch_bit, N,
                               logic_op_slice<ch_bit, N>>>>> {
 public:
+  static_assert(N != 0, "invalid size");
   using traits = logic_traits<N, false, ch_bit, ch_scbit<N>>;
   using base = logic_op_equality<ch_bit, N,
                  logic_op_logical<ch_bit, N,

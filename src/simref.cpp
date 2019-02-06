@@ -1282,6 +1282,7 @@ protected:
     cd_ = map.at(node->cd().id());
     if (node->has_enable()) {
       enable_ = map.at(node->enable().id());
+      enable_size_ = node->enable().size();
     }
     wdata_ = map.at(node->wdata().id());
   }
@@ -1289,6 +1290,7 @@ protected:
   const block_type* cd_;
   const block_type* enable_;
   const block_type* wdata_;
+  uint32_t enable_size_;
 };
 
 template <bool is_scalar>
@@ -1302,16 +1304,51 @@ public:
 
   void eval() override {
     if (!static_cast<bool>(cd_[0])
-     || (enable_ && !static_cast<bool>(enable_[0])))
+     || (enable_ && bv_is_zero(enable_, enable_size_)))
       return;
     auto addr = bv_cast<uint32_t>(addr_, addr_size_);
     auto dst_offset = addr * data_size_;
     auto dst_idx = dst_offset / bitwidth_v<block_type>;
     auto dst_lsb = dst_offset % bitwidth_v<block_type>;
+
+    block_type* wdata = const_cast<block_type*>(wdata_);
+    sdata_type tmp1;
+    if (enable_size_ > 1) {
+      sdata_type tmp2, tmp3;
+      tmp1.resize(data_size_);
+      tmp2.resize(data_size_);
+      wdata = tmp1.words();
+      auto rdata = tmp2.words();
+
+      auto enable = const_cast<block_type*>(enable_);
+      if (enable_size_ < data_size_) {
+        tmp3.resize(data_size_);
+        enable = tmp3.words();
+        tmp3.reset();
+        auto w = data_size_ / enable_size_;
+        for (uint32_t i = 0; i < enable_size_; ++i) {
+          if (bv_get(enable_, i)) {
+            for (uint32_t j = 0; j < w; ++j) {
+              bv_set(enable, j + i * w, true);
+            }
+          }
+        }
+      }
+
+      if constexpr (is_scalar) {
+        bv_slice_vector_small(rdata, data_size_, store_ + dst_idx, dst_lsb);
+      } else {
+        bv_slice_vector(rdata, data_size_, store_ + dst_idx, dst_lsb);
+      }
+
+      bv_blend<false, block_type, ClearBitAccessor<block_type>>(
+            wdata, data_size_, enable, data_size_, rdata, data_size_, wdata, data_size_);
+    }
+
     if constexpr (is_scalar) {
-      bv_copy_vector_small(store_ + dst_idx, dst_lsb, wdata_, 0, data_size_);
+      bv_copy_vector_small(store_ + dst_idx, dst_lsb, wdata, 0, data_size_);
     } else {
-      bv_copy_vector(store_ + dst_idx, dst_lsb, wdata_, 0, data_size_);
+      bv_copy_vector(store_ + dst_idx, dst_lsb, wdata, 0, data_size_);
     }
   }
 

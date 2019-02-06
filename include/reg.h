@@ -123,6 +123,78 @@ void ch_popcd();
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename R, typename T>
+auto ch_next(const T& in, CH_SLOC) {
+  static_assert(is_logic_type_v<R>, "invalid type");
+  static_assert(std::is_constructible_v<R, T>, "invalid type");
+  return R(createRegNext(logic_accessor::data(R(in, sloc)),
+                         1,
+                         sloc));
+}
+
+template <typename T>
+auto ch_next(const T& in, CH_SLOC) {
+  static_assert(is_object_type_v<T>, "invalid type");
+  return ch_next<ch_logic_t<T>, T>(in, sloc);
+}
+
+template <typename R, typename T, typename I>
+auto ch_next(const T& in, const I& init, CH_SLOC) {
+  static_assert(is_logic_type_v<R>, "invalid type");
+  static_assert(std::is_constructible_v<R, T>, "invalid type");
+  static_assert(std::is_constructible_v<R, I>, "invalid type");
+  return R(createRegNext(logic_accessor::data(R(in, sloc)),
+                         logic_accessor::data(R(init, sloc)),
+                         1,
+                         sloc));
+}
+
+template <typename T, typename I>
+auto ch_next(const T& in, const I& init, CH_SLOC) {
+  static_assert(is_object_type_v<T>, "invalid type");
+  static_assert(std::is_constructible_v<T, I>, "invalid type");
+  return ch_next<ch_logic_t<T>, T>(in, init, sloc);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+template <typename R, typename T>
+auto ch_nextEn(const T& in, const ch_bit<1>& enable, CH_SLOC) {
+  static_assert(is_logic_type_v<R>, "invalid type");
+  static_assert(std::is_constructible_v<R, T>, "invalid type");
+  return R(createRegNext(logic_accessor::data(R(in, sloc)),
+                         1,
+                         logic_accessor::data(enable),
+                         sloc));
+}
+
+template <typename T>
+auto ch_nextEn(const T& in, const ch_bit<1>& enable, CH_SLOC) {
+  static_assert(is_object_type_v<T>, "invalid type");
+  return ch_nextEn<ch_logic_t<T>, T>(in, enable, sloc);
+}
+
+template <typename R, typename T, typename I>
+auto ch_nextEn(const T& in, const ch_bit<1>& enable, const I& init, CH_SLOC) {
+  static_assert(is_logic_type_v<R>, "invalid type");
+  static_assert(std::is_constructible_v<R, T>, "invalid type");
+  static_assert(std::is_constructible_v<R, I>, "invalid type");
+  return R(createRegNext(logic_accessor::data(R(in, sloc)),
+                         logic_accessor::data(R(init, sloc)),
+                         1,
+                         logic_accessor::data(enable),
+                         sloc));
+}
+
+template <typename T, typename I>
+auto ch_nextEn(const T& in, const ch_bit<1>& enable, const I& init, CH_SLOC) {
+  static_assert(is_object_type_v<T>, "invalid type");
+  static_assert(std::is_constructible_v<T, I>, "invalid type");
+  return ch_nextEn<ch_logic_t<T>, T>(in, enable, init, sloc);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+template <typename R, typename T>
 auto ch_delay(const T& in, uint32_t delay = 1, CH_SLOC) {
   static_assert(is_logic_type_v<R>, "invalid type");
   static_assert(std::is_constructible_v<R, T>, "invalid type");
@@ -130,6 +202,12 @@ auto ch_delay(const T& in, uint32_t delay = 1, CH_SLOC) {
     return R(in, sloc);
   }
   return R(createRegNext(logic_accessor::data(R(in, sloc)), delay, sloc));
+}
+
+template <typename T>
+auto ch_delay(const T& in, uint32_t delay = 1, CH_SLOC) {
+  static_assert(is_object_type_v<T>, "invalid type");
+  return ch_delay<ch_logic_t<T>, T>(in, delay, sloc);
 }
 
 template <typename R, typename T, typename I>
@@ -146,6 +224,15 @@ auto ch_delay(const T& in, uint32_t delay, const I& init, CH_SLOC) {
                          sloc));
 }
 
+template <typename T, typename I>
+auto ch_delay(const T& in, uint32_t delay, const I& init, CH_SLOC) {
+  static_assert(is_object_type_v<T>, "invalid type");
+  static_assert(std::is_constructible_v<T, I>, "invalid type");
+  return ch_delay<ch_logic_t<T>, T>(in, delay, init, sloc);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 template <typename R, typename T>
 auto ch_delayEn(const T& in, const ch_bit<1>& enable, uint32_t delay = 1, CH_SLOC) {
   static_assert(is_logic_type_v<R>, "invalid type");
@@ -157,6 +244,12 @@ auto ch_delayEn(const T& in, const ch_bit<1>& enable, uint32_t delay = 1, CH_SLO
                          delay,
                          logic_accessor::data(enable),
                          sloc));
+}
+
+template <typename T>
+auto ch_delayEn(const T& in, const ch_bit<1>& enable, uint32_t delay = 1, CH_SLOC) {
+  static_assert(is_object_type_v<T>, "invalid type");
+  return ch_delayEn<ch_logic_t<T>, T>(in, enable, delay, sloc);
 }
 
 template <typename R, typename T, typename I>
@@ -174,27 +267,10 @@ auto ch_delayEn(const T& in, const ch_bit<1>& enable, uint32_t delay, const I& i
                          sloc));
 }
 
-template <typename T>
-auto ch_delay(const T& in, uint32_t delay = 1, CH_SLOC) {
-  static_assert(is_object_type_v<T>, "invalid type");
-  return ch_delay<ch_logic_t<T>, T>(in, delay, sloc);
-}
-
-template <typename T, typename I>
-auto ch_delay(const T& in, uint32_t delay, const I& init, CH_SLOC) {
-  static_assert(is_object_type_v<T>, "invalid type");
-  return ch_delay<ch_logic_t<T>, T>(in, delay, init, sloc);
-}
-
-template <typename T>
-auto ch_delayEn(const T& in, const ch_bit<1>& enable, uint32_t delay = 1, CH_SLOC) {
-  static_assert(is_object_type_v<T>, "invalid type");
-  return ch_delayEn<ch_logic_t<T>, T>(in, enable, delay, sloc);
-}
-
 template <typename T, typename I>
 auto ch_delayEn(const T& in, const ch_bit<1>& enable, uint32_t delay, const I& init, CH_SLOC) {
   static_assert(is_object_type_v<T>, "invalid type");
+  static_assert(std::is_constructible_v<T, I>, "invalid type");
   return ch_delayEn<ch_logic_t<T>, T>(in, enable, delay, init, sloc);
 }
 

@@ -89,7 +89,7 @@ struct FilterBlock {
   ch_module<Filter<T>> f1_, f2_;
 };
 
-template <typename T, unsigned N>
+template <typename T, unsigned N, bool SyncRead>
 struct QueueWrapper {
   __io (
     (ch_enq_io<T>) enq,
@@ -101,7 +101,7 @@ struct QueueWrapper {
     queue_.io.deq(io.deq);
     queue_.io.size(io.size);
   }
-  ch_module<ch_queue<T, N>> queue_;
+  ch_module<ch_queue<T, N, SyncRead>> queue_;
 };
 
 template <typename T, unsigned N>
@@ -368,15 +368,113 @@ TEST_CASE("module", "[module]") {
 
     TESTX([]()->bool {
       RetCheck ret;
-      ch_device<QueueWrapper<ch_bit4, 2>> queue0;
-      ch_device<llQueueWrapper<ch_bit4, 2>> queue1;
+
+      static_for<1, 5>([&](auto N) {              
+        ch_device<llQueueWrapper<ch_bit4, N>> queue0;
+        ch_device<QueueWrapper<ch_bit4, N, false>> queue1;
+        auto queues = std::make_tuple(&queue0, &queue1);
+
+        static_for<std::tuple_size_v<decltype(queues)>>([&](auto I) {
+          auto& queue = *std::get<I>(queues);
+
+          ch_toVerilog("queue.v", queue);
+          ch_toFIRRTL("queue.fir", queue);
+
+          ch_tracer trace(queue);
+          ch_tick t = trace.reset(0);
+
+          for (int i = 0; i < N; ++i) {
+            if (i != 0) {
+              ret &= (0xA == queue.io.deq.data);
+            }
+            ret &= (queue.io.deq.valid == (i != 0)); // ?empty
+            ret &= !!queue.io.enq.ready;    // !full
+            ret &= i == queue.io.size;      // i
+            queue.io.enq.data = (0xA + i);
+            queue.io.enq.valid = true;      // push
+            queue.io.deq.ready = false;
+            t = trace.step(t);
+          }
+
+          for (int i = 0; i < N; ++i) {
+            ret &= ((0xA + i) == queue.io.deq.data);
+            ret &= !!queue.io.deq.valid;    // !empty
+            ret &= (queue.io.enq.ready == (i != 0));  // ?full
+            ret &= (N-i) == queue.io.size;  // N-i
+            queue.io.enq.valid = false;
+            queue.io.deq.ready = true;      // pop
+            t = trace.step(t);
+          }
+
+          for (int i = 0; i < N; ++i) {
+            if (i != 0) {
+              ret &= (0xA == queue.io.deq.data);
+            }
+            ret &= (queue.io.deq.valid == (i != 0)); // ?empty
+            ret &= !!queue.io.enq.ready;    // !full
+            ret &= i == queue.io.size;      // i
+            queue.io.enq.data = (0xA + i);
+            queue.io.enq.valid = true;      // push
+            queue.io.deq.ready = false;
+            t = trace.step(t);
+          }
+
+          for (int i = 0; i < N-1; ++i) {
+            ret &= ((0xA + i) == queue.io.deq.data);
+            ret &= !!queue.io.deq.valid;    // !empty
+            ret &= (queue.io.enq.ready == (i != 0));  // ?full
+            ret &= (N-i) == queue.io.size;  // N-i
+            queue.io.enq.valid = false;
+            queue.io.deq.ready = true;      // pop
+            t = trace.step(t);
+          }
+
+          if (N == 1) {
+            ret &= (0xA == queue.io.deq.data);
+            ret &= !!queue.io.deq.valid;    // !empty
+            ret &= !queue.io.enq.ready;     // full
+            ret &= 1 == queue.io.size;      // 1
+            queue.io.enq.valid = false;
+            queue.io.deq.ready = true;      // pop
+            t = trace.step(t);
+          } else {
+            ret &= ((0xA + N-1) == queue.io.deq.data);
+            ret &= !!queue.io.deq.valid; // !empty
+            ret &= (queue.io.enq.ready == (N != 1)); // ?full
+            ret &= 1 == queue.io.size;   // 1
+            queue.io.enq.data = (0xA + N);
+            queue.io.enq.valid = true;   // push
+            queue.io.deq.ready = true;   // pop
+            t = trace.step(t);
+
+            ret &= ((0xA + N) == queue.io.deq.data);
+            ret &= !!queue.io.deq.valid; // !empty
+            ret &= !!queue.io.enq.ready; // !full
+            ret &= 1 == queue.io.size;   // 1
+            queue.io.enq.valid = false;
+            queue.io.deq.ready = true;   // pop
+            t = trace.step(t);
+          }
+
+          ret &= !queue.io.deq.valid;  // empty
+          ret &= !!queue.io.enq.ready; // !full
+          ret &= 0 == queue.io.size;   // 0
+
+          trace.toTestBench("queue_tb.v", "queue.v");
+          ret &= (checkVerilog("queue_tb.v"));
+        });
+      });
+      return !!ret;
+    });
+
+    /*TESTX([]()->bool {
+      RetCheck ret;
+      ch_device<QueueWrapper<ch_bit4, 3, false>> queue0;
+      ch_device<llQueueWrapper<ch_bit4, 3>> queue1;
       auto queues = std::make_tuple(&queue0, &queue1);
 
       static_for<0, 2>([&](auto I) {
         auto& queue = *std::get<I>(queues);
-
-        ch_toVerilog("queue.v", queue);
-        ch_toFIRRTL("queue.fir", queue);
 
         ch_tracer trace(queue);
         ch_tick t = trace.reset(0);
@@ -400,20 +498,26 @@ TEST_CASE("module", "[module]") {
 
         ret &= (0xA == queue.io.deq.data);
         ret &= !!queue.io.deq.valid; // !empty
-        ret &= !queue.io.enq.ready;  // full
+        ret &= !!queue.io.enq.ready; // !full
         ret &= 2 == queue.io.size;   // 2
-        ret &= !!queue.io.deq.valid;
+        queue.io.enq.data = 0xC;
+        queue.io.enq.valid = true;   // push
+        queue.io.deq.ready = false;
+        t = trace.step(t);
+
+        ret &= (0xA == queue.io.deq.data);
+        ret &= !!queue.io.deq.valid; // !empty
+        ret &= !queue.io.enq.ready;  // full
+        ret &= 3 == queue.io.size;   // 3
         queue.io.enq.valid = false;
         queue.io.deq.ready = true;   // pop
         t = trace.step(t);
 
         ret &= (0xB == queue.io.deq.data);
         ret &= !!queue.io.deq.valid; // !empty
-        ret &= !!queue.io.enq.ready; // !full
-        ret &= 1 == queue.io.size;   // 1
-        ret &= !!queue.io.deq.valid;
-        queue.io.enq.data = 0xC;
-        queue.io.enq.valid = true;   // push
+        ret &= !!queue.io.enq.ready;  // !full
+        ret &= 2 == queue.io.size;   // 2
+        queue.io.enq.valid = false;
         queue.io.deq.ready = true;   // pop
         t = trace.step(t);
 
@@ -421,7 +525,15 @@ TEST_CASE("module", "[module]") {
         ret &= !!queue.io.deq.valid; // !empty
         ret &= !!queue.io.enq.ready; // !full
         ret &= 1 == queue.io.size;   // 1
-        ret &= !!queue.io.deq.valid;
+        queue.io.enq.data = 0xD;
+        queue.io.enq.valid = true;   // push
+        queue.io.deq.ready = true;   // pop
+        t = trace.step(t);
+
+        ret &= (0xD == queue.io.deq.data);
+        ret &= !!queue.io.deq.valid; // !empty
+        ret &= !!queue.io.enq.ready; // !full
+        ret &= 1 == queue.io.size;   // 1
         queue.io.enq.valid = false;
         queue.io.deq.ready = true;   // pop
         t = trace.step(t);
@@ -434,7 +546,7 @@ TEST_CASE("module", "[module]") {
         ret &= (checkVerilog("queue_tb.v"));
       });
       return !!ret;
-    });
+    });*/
 
     TESTX([]()->bool {
       ch_device<MultiClk> device;

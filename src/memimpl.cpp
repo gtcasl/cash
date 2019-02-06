@@ -267,7 +267,7 @@ memportimpl::memportimpl(context* ctx,
   // add enable predicate
   if (enable
    && !(type_lit == enable->type()
-    && (bool)reinterpret_cast<litimpl*>(enable)->value())) {
+    && reinterpret_cast<litimpl*>(enable)->value().is_ones())) {
     enable_idx_ = this->add_src(enable);
   }
 }

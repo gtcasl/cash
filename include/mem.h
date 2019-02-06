@@ -77,7 +77,7 @@ class ch_rom {
 public:
   static constexpr unsigned size = N;
   static constexpr unsigned data_width = ch_width_v<T>;
-  static constexpr unsigned addr_width = log2ceil(N);
+  static constexpr unsigned addr_width = log2up(N);
   using value_type = T;
 
   explicit ch_rom(const std::string& init_file, CH_SLOC)
@@ -122,7 +122,7 @@ class ch_mem {
 public:
   static constexpr unsigned size = N;
   static constexpr unsigned data_width = ch_width_v<T>;
-  static constexpr unsigned addr_width = log2ceil(N);
+  static constexpr unsigned addr_width = log2up(N);
   using value_type = T;
 
   ch_mem(CH_SLOC) : mem_(ch_width_v<T>, N, {}, false, sloc) {}
@@ -185,9 +185,10 @@ public:
 
   template <typename U, typename V, typename E>
   void write(const U& addr, const V& value, const E& enable, CH_SLOC) {
-    static_assert(is_bit_convertible_v<U, addr_width>, "invalid type");
-    static_assert(std::is_constructible_v<T, V>, "invalid type");
-    static_assert(is_bit_convertible_v<E, 1>, "invalid type");
+    static_assert(is_bit_convertible_v<U, addr_width>, "invalid address type");
+    static_assert(std::is_constructible_v<T, V>, "invalidvalue  type");
+    static_assert(is_bit_convertible_v<E>, "invalid enable type");
+    static_assert(ch_width_v<E> * (ch_width_v<T> / ch_width_v<E>) == ch_width_v<T>, "invalid enable size");
     auto l_addr   = to_lnode<addr_width>(addr, sloc);
     auto l_value  = to_lnode<T>(value, sloc);
     auto l_enable = get_lnode(enable);
