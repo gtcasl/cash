@@ -22,8 +22,8 @@ namespace {
   template <typename T>
   struct Print {
     __io (
-      __in(T)  in,
-      __out(T) out
+      __in (T)  in,
+      __out (T) out
     );
     void describe() {
       io.out = io.in;

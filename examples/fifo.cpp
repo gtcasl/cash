@@ -7,12 +7,12 @@ template <typename T, unsigned N>
 struct FiFo {
   static constexpr unsigned addr_width = log2ceil(N);
   __io(
-    __in(T)        din,
-    __in(ch_bool)  push,
-    __in(ch_bool)  pop,
-    __out(T)       dout,
-    __out(ch_bool) empty,
-    __out(ch_bool) full
+    __in (T)        din,
+    __in (ch_bool)  push,
+    __in (ch_bool)  pop,
+    __out (T)       dout,
+    __out (ch_bool) empty,
+    __out (ch_bool) full
   );
   void describe() {
     ch_reg<ch_uint<addr_width+1>> rd_ptr(0), wr_ptr(0);

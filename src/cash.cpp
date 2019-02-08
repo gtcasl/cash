@@ -10,9 +10,9 @@ using namespace ch::htl;
 
 struct TestModule {
   __io (
-    __in(ch_uint4)  lhs,
-    __in(ch_uint4)  rhs,
-    __out(ch_uint4) out
+    __in (ch_uint4)  lhs,
+    __in (ch_uint4)  rhs,
+    __out (ch_uint4) out
   );
   void describe() {
     io.out = io.lhs + io.rhs;

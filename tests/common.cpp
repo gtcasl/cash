@@ -8,7 +8,7 @@ static void begin_test() {
 
 struct TestRunner {
   __io (
-    __out(ch_bool) out
+    __out (ch_bool) out
   );
   TestRunner(const std::function<ch_bool ()>& test) : test_(test) {}
   void describe() {

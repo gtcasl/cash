@@ -2,7 +2,7 @@
 
 namespace {
 
-__struct(X, (
+__struct (X, (
   (ch_bit2) q,
   (ch_bit2) p
 ));

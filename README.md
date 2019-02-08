@@ -59,9 +59,9 @@ using namespace ch::system;
 template <unsigned N>
 struct Adder {
   __io (
-    __in(ch_uint<N>)  lhs,
-    __in(ch_uint<N>)  rhs,
-    __out(ch_uint<N>) out
+    __in (ch_uint<N>)  lhs,
+    __in (ch_uint<N>)  rhs,
+    __out (ch_uint<N>) out
   );
 
   void describe() {

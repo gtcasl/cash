@@ -22,24 +22,24 @@ struct my_traits {
 };
 
 __inout (avalon_st_io, (
-  __in(ch_bool)  valid_in,  // inputs available
-  __out(ch_bool) ready_out, // can receive inputs
-  __out(ch_bool) valid_out, // outputs available
-  __in(ch_bool)  ready_in   // can receive outputs
+  __in (ch_bool)  valid_in,  // inputs available
+  __out (ch_bool) ready_out, // can receive inputs
+  __out (ch_bool) valid_out, // outputs available
+  __in (ch_bool)  ready_in   // can receive outputs
 ));
 
 template <typename T>
 __inout (avalon_mm_io, (
-  __in(ch_bit<T::DataW>)    readdata,
-  __in(ch_bool)             readdatavalid,
-  __in(ch_bool)             waitrequest,
-  __out(ch_bit<T::AddrW>)   address,
-  __out(ch_bool)            read,
-  __out(ch_bool)            write,
-  __in(ch_bool)             writeack,
-  __out(ch_bit<T::DataW>)   writedata,
-  __out(ch_bit<T::DataW/8>) byteenable,
-  __out(ch_bit<T::BurstW>)  burstcount
+  __in (ch_bit<T::DataW>)    readdata,
+  __in (ch_bool)             readdatavalid,
+  __in (ch_bool)             waitrequest,
+  __out (ch_bit<T::AddrW>)   address,
+  __out (ch_bool)            read,
+  __out (ch_bool)            write,
+  __in (ch_bool)             writeack,
+  __out (ch_bit<T::DataW>)   writedata,
+  __out (ch_bit<T::DataW/8>) byteenable,
+  __out (ch_bit<T::BurstW>)  burstcount
 ));
 
 template <unsigned D, unsigned A, unsigned B>
@@ -73,14 +73,14 @@ public:
   using burst_t = ch_uint<AVM::BurstW>;
 
   __io(
-    __in(ch_uint<AddrW>)  base_addr,
-    __in(ch_uint32)       num_blocks,
-    __in(ch_bool)         start,
-    __out(ch_bool)        buzy,
+    __in (ch_uint<AddrW>)  base_addr,
+    __in (ch_uint32)       num_blocks,
+    __in (ch_bool)         start,
+    __out (ch_bool)        buzy,
     (ch_deq_io<ch_bit<DataW>>) deq,
     (avalon_mm_io<AVM>)   avm,
-    __out(ch_uint64)      req_stalls,
-    __out(ch_uint64)      mem_stalls
+    __out (ch_uint64)      req_stalls,
+    __out (ch_uint64)      mem_stalls
   );
 
   void describe() {
@@ -215,14 +215,14 @@ public:
   using burst_t = ch_uint<AVM::BurstW>;
 
   __io(
-    __in(ch_uint<AddrW>)  base_addr,
-    __in(ch_bool)         start,
-    __in(ch_bool)         flush,
-    __out(ch_bool)        busy,
+    __in (ch_uint<AddrW>)  base_addr,
+    __in (ch_bool)         start,
+    __in (ch_bool)         flush,
+    __out (ch_bool)        busy,
     (ch_enq_io<ch_bit<DataW>>) enq,
     (avalon_mm_io<AVM>)   avm,
-    __out(ch_uint64)      req_stalls,
-    __out(ch_uint64)      mem_stalls
+    __out (ch_uint64)      req_stalls,
+    __out (ch_uint64)      mem_stalls
   );
 
   void describe() {

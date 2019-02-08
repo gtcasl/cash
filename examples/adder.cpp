@@ -7,11 +7,11 @@ using namespace ch::literals;
 template <unsigned N>
 struct Adder {
   __io (
-    __in(ch_uint1)    cin,
-    __in(ch_uint<N>)  lhs,
-    __in(ch_uint<N>)  rhs,
-    __out(ch_uint<N>) out,
-    __out(ch_uint1)   cout
+    __in (ch_uint1)    cin,
+    __in (ch_uint<N>)  lhs,
+    __in (ch_uint<N>)  rhs,
+    __out (ch_uint<N>) out,
+    __out (ch_uint1)   cout
   );
 
   void describe() {

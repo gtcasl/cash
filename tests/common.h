@@ -16,7 +16,7 @@ template <typename F>
 struct GenericFunction<F> {
   using return_type = std::invoke_result_t<F>;
   __io (
-    __out(return_type) out
+    __out (return_type) out
   );
   GenericFunction(const F& func) : func_(func) {}
   void describe() {
@@ -29,8 +29,8 @@ template <typename F, typename T0>
 struct GenericFunction<F, T0> {
   using return_type = std::invoke_result_t<F, T0>;
   __io (
-    __in(T0) in,
-    __out(return_type) out
+    __in (T0) in,
+    __out (return_type) out
   );
   GenericFunction(const F& func) : func_(func) {}
   void describe() {
@@ -43,9 +43,9 @@ template <typename F, typename T0, typename T1>
 struct GenericFunction<F, T0, T1> {
   using return_type = std::invoke_result_t<F, T0, T1>;
   __io (
-    __in(T0) in0,
-    __in(T1) in1,
-    __out(return_type) out
+    __in (T0) in0,
+    __in (T1) in1,
+    __out (return_type) out
   );
   GenericFunction(const F& func) : func_(func) {}
   void describe() {
@@ -58,10 +58,10 @@ template <typename F, typename T0, typename T1, typename T2>
 struct GenericFunction<F, T0, T1, T2> {
   using return_type = std::invoke_result_t<F, T0, T1, T2>;
   __io (
-    __in(T0) in0,
-    __in(T1) in1,
-    __in(T2) in2,
-    __out(return_type) out
+    __in (T0) in0,
+    __in (T1) in1,
+    __in (T2) in2,
+    __out (return_type) out
   );
   GenericFunction(const F& func) : func_(func) {}
   void describe() {
@@ -74,11 +74,11 @@ template <typename F, typename T0, typename T1, typename T2, typename T3>
 struct GenericFunction<F, T0, T1, T2, T3> {
   using return_type = std::invoke_result_t<F, T0, T1, T2, T3>;
   __io (
-    __in(T0) in0,
-    __in(T1) in1,
-    __in(T2) in2,
-    __in(T3) in3,
-    __out(std::invoke_result_t<F, T0, T1, T2, T3>) out
+    __in (T0) in0,
+    __in (T1) in1,
+    __in (T2) in2,
+    __in (T3) in3,
+    __out (std::invoke_result_t<F, T0, T1, T2, T3>) out
   );
   GenericFunction(const F& func) : func_(func) {}
   void describe() {

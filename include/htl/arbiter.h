@@ -12,8 +12,8 @@ using namespace ch::logic;
 template <unsigned N>
 struct ch_rrArbiter {
   __io (
-    __in(ch_vec<ch_bool, N>) in,
-    __out(ch_bit<N>) grant
+    __in (ch_vec<ch_bool, N>) in,
+    __out (ch_bit<N>) grant
   );
 
   void describe() {
@@ -42,7 +42,7 @@ struct ch_xbar_switch {
   using arbiter_type = Arbiter;
   using in_io = ch_vec<ch_enq_io<T>, I>;
   __inout (out_io, ch_deq_io<T>, (
-    __out(ch_bit<I>) grant
+    __out (ch_bit<I>) grant
   ));
   __io (
     (in_io)  in,

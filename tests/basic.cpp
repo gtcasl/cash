@@ -16,8 +16,8 @@ using v4x2_t = ch_vec<ch_bit4, 2>;
 
 struct TestAssign {
   __io (
-    __in(ch_bit4) in,
-    __out(ch_bool) out
+    __in (ch_bit4) in,
+    __out (ch_bool) out
   );
   void describe() {
     ch_bit4 w(io.in);
@@ -28,8 +28,8 @@ struct TestAssign {
 
 struct TestAssign2 {
   __io (
-    __in(ch_bit4) in,
-    __out(ch_bool) out
+    __in (ch_bit4) in,
+    __out (ch_bool) out
   );
   void describe() {
     ch_bool x = io.out;
@@ -40,8 +40,8 @@ struct TestAssign2 {
 
 struct TestAssign3 {
   __io (
-    __in(ch_bit4) in,
-    __out(ch_bool) out
+    __in (ch_bit4) in,
+    __out (ch_bool) out
   );
   void describe() {
     io.out.as_bit() = (io.in.as_bit() == 0xA);

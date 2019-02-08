@@ -8,21 +8,21 @@ namespace {
 static_assert(ch_direction_v<ch_in<ch_bool>> == ch_direction::in, "invalid direction");
 static_assert(ch_direction_v<ch_out<ch_bool>> == ch_direction::out, "invalid direction");
 
-__inout(io_bundle2_io, (
-  __in(ch_bool) x,
-  __in(ch_bool) y
+__inout (io_bundle2_io, (
+  __in (ch_bool) x,
+  __in (ch_bool) y
 ));
 static_assert(ch_direction_v<io_bundle2_io> == ch_direction::in, "invalid direction");
 
-__inout(io_bundle1_io, (
-  __out(ch_bool) x,
-  __out(ch_bool) y
+__inout (io_bundle1_io, (
+  __out (ch_bool) x,
+  __out (ch_bool) y
 ));
 static_assert(ch_direction_v<io_bundle1_io> == ch_direction::out, "invalid direction");
 
-__inout(io_bundle3_io, (
-  __in(ch_bool) x,
-  __out(ch_bool) y
+__inout (io_bundle3_io, (
+  __in (ch_bool) x,
+  __out (ch_bool) y
 ));
 static_assert(ch_direction_v<io_bundle3_io> == ch_direction::inout, "invalid direction");
 
@@ -40,28 +40,28 @@ __struct (u4_2_t, (
   (ch_bit2) b
 ));
 
-__inout(bundle4_io, (
-  __in(e2_t) x,
-  __in(s4_2_t) y,
-  __out(u4_2_t) z,
-  __out(ch_vec<ch_bool, 2>) w,
+__inout (bundle4_io, (
+  __in (e2_t) x,
+  __in (s4_2_t) y,
+  __out (u4_2_t) z,
+  __out (ch_vec<ch_bool, 2>) w,
   (ch_enq_io<s4_2_t>) eq,
   (ch_deq_io<s4_2_t>) dq
 ));
 
 template <typename T>
-__inout(link_io, (
-  __out(T) data,
-  __out(ch_bool) valid
+__inout (link_io, (
+  __out (T) data,
+  __out (ch_bool) valid
 ));
 
 template <typename T>
-__inout(plink_io, link_io<T>, (
-  __out(ch_bool) parity
+__inout (plink_io, link_io<T>, (
+  __out (ch_bool) parity
 ));
 
 template <typename T>
-__inout(filter_io, (
+__inout (filter_io, (
   (ch_flip_io<plink_io<T>>) x,
   (plink_io<T>) y
 ));
@@ -94,7 +94,7 @@ struct QueueWrapper {
   __io (
     (ch_enq_io<T>) enq,
     (ch_deq_io<T>) deq,
-    __out(ch_uint<ch_queue<T, N>::size_width>) size
+    __out (ch_uint<ch_queue<T, N>::size_width>) size
   );
   void describe() {
     queue_.io.enq(io.enq);
@@ -109,7 +109,7 @@ struct llQueueWrapper {
   __io (
     (ch_enq_io<T>) enq,
     (ch_deq_io<T>) deq,
-    __out(ch_uint<ch_llqueue<T, N>::size_width>) size
+    __out (ch_uint<ch_llqueue<T, N>::size_width>) size
   );
   void describe() {
     queue_.io.enq(io.enq);
@@ -121,9 +121,9 @@ struct llQueueWrapper {
 
 struct Adder {
   __io (
-    __in(ch_uint2)  in1,
-    __in(ch_uint2)  in2,
-    __out(ch_uint2) out
+    __in (ch_uint2)  in1,
+    __in (ch_uint2)  in2,
+    __out (ch_uint2) out
   );
   void describe() {
     io.out = io.in1 + io.in2;
@@ -132,9 +132,9 @@ struct Adder {
 
 struct Foo1 {
   __io (
-    __in(ch_uint2)  in1,
-    __in(ch_uint2)  in2,
-    __out(ch_uint2) out
+    __in (ch_uint2)  in1,
+    __in (ch_uint2)  in2,
+    __out (ch_uint2) out
   );
   void describe() {
     adder_.io.in1(io.in1);
@@ -155,9 +155,9 @@ struct Foo2 {
 };
 
 struct Foo3 {
-  __inout(io_ab_t, (
-    __in(ch_uint2) a,
-    __out(ch_uint2) b
+  __inout (io_ab_t, (
+    __in (ch_uint2) a,
+    __out (ch_uint2) b
   ));
 
   __io(
@@ -176,8 +176,8 @@ struct Foo3 {
 
 struct Foo4 {
   __io(
-    __in(ch_uint128) in,
-    __out(ch_uint128) out
+    __in (ch_uint128) in,
+    __out (ch_uint128) out
   );
 
   void describe() {
@@ -187,9 +187,9 @@ struct Foo4 {
 
 struct Loop {
   __io (
-    __in(ch_uint4)  in1,
-    __in(ch_uint4)  in2,
-    __out(ch_uint4) out
+    __in (ch_uint4)  in1,
+    __in (ch_uint4)  in2,
+    __out (ch_uint4) out
   );
 
   void describe() {
@@ -202,11 +202,11 @@ struct Loop {
 
   struct M1 {
     __io (
-      __in(ch_uint4)  in1,
-      __in(ch_uint4)  in2,
-      __in(ch_uint4)  in3,
-      __out(ch_uint4) out1,
-      __out(ch_uint4) out2
+      __in (ch_uint4)  in1,
+      __in (ch_uint4)  in2,
+      __in (ch_uint4)  in3,
+      __out (ch_uint4) out1,
+      __out (ch_uint4) out2
     );
 
     void describe() {
@@ -217,8 +217,8 @@ struct Loop {
 
   struct M2 {
     __io (
-      __in(ch_uint4)  in,
-      __out(ch_uint4) out
+      __in (ch_uint4)  in,
+      __out (ch_uint4) out
     );
 
     void describe() {
@@ -232,8 +232,8 @@ struct Loop {
 
 struct MultiClk {
   __io (
-    __in(ch_uint4) in,
-    __out(ch_uint4) out
+    __in (ch_uint4) in,
+    __out (ch_uint4) out
   );
 
   void describe() {
@@ -253,8 +253,8 @@ struct MultiClk {
 
 struct CustomClk {
   __io (
-    __in(ch_uint4) in,
-    __out(ch_uint4) out
+    __in (ch_uint4) in,
+    __out (ch_uint4) out
   );
 
   void describe() {
@@ -271,8 +271,8 @@ struct CustomClk {
 
 struct CustomClk2 {
   __io (
-    __in(ch_uint4) in,
-    __out(ch_uint4) out
+    __in (ch_uint4) in,
+    __out (ch_uint4) out
   );
 
   void describe() {

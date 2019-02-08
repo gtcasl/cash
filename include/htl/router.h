@@ -13,7 +13,7 @@ namespace router {
 using namespace ch::logic;
 using namespace ch::literals;
 
-__enum (Direction, (East, South, West, North, Local));
+__enum (Direction, (Local, East, South, West, North));
 
 template <unsigned NumTileRows,
           unsigned NumTileCols,
@@ -116,10 +116,10 @@ public:
   using outportid_t= ch_uint<log2ceil(Cfg::num_output_ports)>;
 
   __io(
-    __in(vFlitIn)     flit_in,
-    __in(vCreditIn)   credit_in,
-    __out(vFlitOut)   flit_out,
-    __out(vCreditOut) credit_out
+    __in (vFlitIn)     flit_in,
+    __in (vCreditIn)   credit_in,
+    __out (vFlitOut)   flit_out,
+    __out (vCreditOut) credit_out
   );
 
   Router(unsigned x, unsigned y) : x_(x), y_(y) {}
@@ -134,7 +134,7 @@ public:
       queue.io.enq.data  = io.flit_in[i].data;
       queue.io.enq.valid = io.flit_in[i].valid;
       queue.io.deq.ready = fifo_out_ready[i];
-      fifo_in_ready[i]   = queue.io.enq.ready;
+      fifo_in_ready[i]  = queue.io.enq.ready;
       fifo_out[i].data  = queue.io.deq.data;
       fifo_out[i].valid = queue.io.deq.valid;
 

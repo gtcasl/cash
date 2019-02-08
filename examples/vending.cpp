@@ -8,8 +8,8 @@ __enum (State, (idle, s5, s10, s15, sOk));
 
 struct VendingMachine {
   __io (
-    __in(Coin)     coin,
-    __out(ch_bool) valid
+    __in (Coin)     coin,
+    __out (ch_bool) valid
   );
 
   void describe() {

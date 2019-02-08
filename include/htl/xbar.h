@@ -12,9 +12,9 @@ using namespace ch::logic;
 template <typename T, unsigned I, unsigned O>
 struct ch_hxbar {
   __io(
-    __in(ch_bit<I * O>) sel,
-    __in(ch_vec<T, I>)  in,
-    __out(ch_vec<T, O>) out
+    __in (ch_bit<I * O>) sel,
+    __in (ch_vec<T, I>)  in,
+    __out (ch_vec<T, O>) out
   );
 
   void describe() {
@@ -27,9 +27,9 @@ struct ch_hxbar {
 template <typename T, unsigned I, unsigned O>
 struct ch_xbar {
   __io(
-    __in(ch_bit<log2ceil(I) * O>) sel,
-    __in(ch_vec<T, I>)  in,
-    __out(ch_vec<T, O>) out
+    __in (ch_bit<log2ceil(I) * O>) sel,
+    __in (ch_vec<T, I>)  in,
+    __out (ch_vec<T, O>) out
   );
 
   void describe() {
@@ -45,7 +45,7 @@ struct ch_rv_hxbar {
   using in_io  = ch_vec<ch_enq_io<T>, I>;
   using out_io = ch_deq_io<T>;
   __io(
-    __in(ch_bit<I>) sel,
+    __in (ch_bit<I>) sel,
     (in_io)  in,
     (out_io) out
   );
@@ -75,7 +75,7 @@ struct ch_rv_xbar {
   using in_io  = ch_vec<ch_enq_io<T>, I>;
   using out_io = ch_deq_io<T>;
   __io(
-    __in(ch_bit<log2ceil(I)>) sel,
+    __in (ch_bit<log2ceil(I)>) sel,
     (in_io)  in,
     (out_io) out
   );

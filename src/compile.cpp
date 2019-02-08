@@ -991,8 +991,11 @@ void compiler::check_undefs() {
     ctx_->dump_ast(std::cerr);
     for (auto undef : undefs) {
       for (auto node : ctx_->nodes()) {
-        auto ret = std::find_if(node->srcs().begin(), node->srcs().end(),
-                     [undef](const lnode& x)->bool { return x.id() == undef->id(); });
+        auto ret = std::find_if(
+          node->srcs().begin(),
+          node->srcs().end(),
+          [undef](const lnode& x)->bool { return x.id() == undef->id(); }
+        );
         if (ret != node->srcs().end()) {
           if (platform::self().cflags() & cflags::dump_ast) {
             ctx_->dump_ast(std::cerr);

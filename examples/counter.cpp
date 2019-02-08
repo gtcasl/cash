@@ -6,7 +6,7 @@ using namespace ch::system;
 template <unsigned N>
 struct Counter {
   __io (
-    __out(ch_uint<N>) out
+    __out (ch_uint<N>) out
   );
 
   void describe() {    

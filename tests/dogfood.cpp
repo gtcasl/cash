@@ -35,11 +35,11 @@ __struct (u4_2_t, (
   (ch_bit2) b
 ));
 
-__inout(bundle4_io, (
-  __in(e2_t) x,
-  __in(s4_2_t) y,
-  __out(u4_2_t) z,
-  __out(ch_vec<ch_bool, 2>) w,
+__inout (bundle4_io, (
+  __in (e2_t) x,
+  __in (s4_2_t) y,
+  __out (u4_2_t) z,
+  __out (ch_vec<ch_bool, 2>) w,
   (ch_enq_io<s4_2_t>) eq,
   (ch_deq_io<s4_2_t>) dq
 ));
@@ -69,9 +69,9 @@ __struct (s2_4_t, (
 
 struct Adder {
   __io (
-    __in(ch_uint2)  in1,
-    __in(ch_uint2)  in2,
-    __out(ch_uint2) out
+    __in (ch_uint2)  in1,
+    __in (ch_uint2)  in2,
+    __out (ch_uint2) out
   );
   void describe() {
     io.out = io.in1 + io.in2;
@@ -80,9 +80,9 @@ struct Adder {
 
 struct Foo1 {
   __io (
-    __in(ch_uint2)  in1,
-    __in(ch_uint2)  in2,
-    __out(ch_uint2) out
+    __in (ch_uint2)  in1,
+    __in (ch_uint2)  in2,
+    __out (ch_uint2) out
   );
   void describe() {
     adder_.io.in1(io.in1);
@@ -103,9 +103,9 @@ struct Foo2 {
 };
 
 struct Foo3 {
-  __inout(io_ab_t, (
-    __in(ch_uint2) a,
-    __out(ch_uint2) b
+  __inout (io_ab_t, (
+    __in (ch_uint2) a,
+    __out (ch_uint2) b
   ));
 
   __io(
@@ -137,18 +137,18 @@ struct QueueWrapper {
 };
 
 template <typename T>
-__inout(link_io, (
-  __out(T) data,
-  __out(ch_bool) valid
+__inout (link_io, (
+  __out (T) data,
+  __out (ch_bool) valid
 ));
 
 template <typename T>
-__inout(plink_io, link_io<T>, (
-  __out(ch_bool) parity
+__inout (plink_io, link_io<T>, (
+  __out (ch_bool) parity
 ));
 
 template <typename T>
-__inout(filter_io, (
+__inout (filter_io, (
   (ch_flip_io<plink_io<T>>) x,
   (plink_io<T>) y
 ));
@@ -186,8 +186,8 @@ __union(U_t, (
 
 struct inverter {
   __io (
-    __in(ch_bit2)  in,
-    __out(ch_bit2) out
+    __in (ch_bit2)  in,
+    __out (ch_bit2) out
   );
   void describe() {
     auto x = ~io.in;
@@ -198,8 +198,8 @@ struct inverter {
 
 struct TestAssign {
   __io (
-    __in(ch_bit4) in,
-    __out(ch_bool) out
+    __in (ch_bit4) in,
+    __out (ch_bool) out
   );
   void describe() {
     ch_bit4 w(io.in);
@@ -210,8 +210,8 @@ struct TestAssign {
 
 struct Dogfood {
   __io (
-    __in(ch_uint4) in,
-    __out(ch_bool) out
+    __in (ch_uint4) in,
+    __out (ch_bool) out
   );
   void describe() {
     ch_bit<32> x(0xFEDCBA98_h);

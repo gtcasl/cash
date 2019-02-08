@@ -18,7 +18,7 @@ struct ch_queue {
   __io (
     (ch_enq_io<T>) enq,
     (ch_deq_io<T>) deq,
-    __out(ch_uint<size_width>) size
+    __out (ch_uint<size_width>) size
   );
 
   void describe() {    
@@ -95,7 +95,7 @@ struct ch_llqueue {
   __io (
     (ch_enq_io<T>) enq,
     (ch_deq_io<T>) deq,
-    __out(ch_uint<size_width>) size
+    __out (ch_uint<size_width>) size
   );
 
   void describe() {

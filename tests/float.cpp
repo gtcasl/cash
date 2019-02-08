@@ -8,9 +8,9 @@ namespace {
   template <unsigned Delay>
   struct FMultTest {
     __io(
-      __in(ch_float32) lhs,
-      __in(ch_float32) rhs,
-      __out(ch_float32) out
+      __in (ch_float32) lhs,
+      __in (ch_float32) rhs,
+      __out (ch_float32) out
     );
 
     void describe() {

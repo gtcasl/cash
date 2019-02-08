@@ -5,9 +5,9 @@ using namespace ch::system;
 
 struct FastMult {
   __io (
-    __in(ch_uint4)  lhs,
-    __in(ch_uint4)  rhs,
-    __out(ch_uint8) out
+    __in (ch_uint4)  lhs,
+    __in (ch_uint4)  rhs,
+    __out (ch_uint8) out
   );
   void describe() {
     std::array<uint8_t, 256> tbl_mult;
