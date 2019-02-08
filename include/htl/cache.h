@@ -7,6 +7,7 @@
 
 namespace ch {
 namespace htl {
+namespace cache {
 
 using namespace ch::logic;
 
@@ -321,5 +322,6 @@ struct Cache {
   }
 };
 
+}
 }
 }

@@ -33,7 +33,7 @@ void registerEnumString(const lnode& node, void* callback);
     ch::internal::make_system_buffer(traits::bitwidth)) : base(buffer) {} \
   enum_name(const enum_name& __other) : base(__other) {} \
   enum_name(enum_name&& __other) : base(std::move(__other)) {} \
-  enum_name(enum_type __other) : base(static_cast<unsigned>(__other)) {}
+  enum_name(type __other) : base(static_cast<unsigned>(__other)) {}
 
 #define CH_ENUM_LOGIC_IMPL(enum_name) \
   explicit enum_name(const ch::internal::logic_buffer& buffer = ch::internal::logic_buffer(traits::bitwidth, CH_CUR_SLOC)) \
@@ -42,7 +42,7 @@ void registerEnumString(const lnode& node, void* callback);
     : base(__other, sloc) { ch::internal::registerEnumString(ch::internal::logic_accessor::data(*this), (void*)to_string); } \
   enum_name(enum_name&& __other) \
     : base(std::move(__other)) { ch::internal::registerEnumString(ch::internal::logic_accessor::data(*this), (void*)to_string); } \
-  enum_name(enum_type __other, CH_SLOC) \
+  enum_name(type __other, CH_SLOC) \
     : base(static_cast<unsigned>(__other), sloc) { ch::internal::registerEnumString(ch::internal::logic_accessor::data(*this), (void*)to_string); }
 
 #define CH_ENUM_COMMON_IMPL(enum_name) \
@@ -54,7 +54,7 @@ void registerEnumString(const lnode& node, void* callback);
     base::operator=(std::move(__other)); \
     return *this; \
   } \
-  enum_name& operator=(enum_type __other) { \
+  enum_name& operator=(type __other) { \
     base::operator=(static_cast<unsigned>(__other)); \
     return *this; \
   } \
@@ -68,12 +68,12 @@ void registerEnumString(const lnode& node, void* callback);
 #define CH_ENUM_IMPL(enum_name, size, ...) \
   class enum_name : public ch::internal::ch_bit<size> { \
   public: \
-    enum enum_type { \
+    enum type { \
     CH_FOR_EACH(CH_ENUM_FIELD, , CH_SEP_COMMA, __VA_ARGS__) \
     , __MAX_VALUE__ \
     }; \
     static_assert(log2floor<int>(__MAX_VALUE__) <= size, "size mismatch"); \
-    static const char* to_string(enum_type value) { \
+    static const char* to_string(type value) { \
       switch (value) { \
       CH_FOR_EACH(CH_ENUM_STRING, , CH_SEP_SEMICOLON, __VA_ARGS__); \
       default: \
@@ -88,6 +88,10 @@ void registerEnumString(const lnode& node, void* callback);
       CH_ENUM_SYSTEM_IMPL(__system_type__) \
       CH_ENUM_COMMON_IMPL(__system_type__) \
       CH_SYSTEM_INTERFACE(__system_type__) \
+    protected: \
+      friend std::ostream& operator<<(std::ostream& __out, const __system_type__& __in) { \
+        return __out << to_string((type)static_cast<int>(__in)); \
+      } \
     }; \
   public: \
     using traits = ch::internal::logic_traits<size, false, enum_name, __system_type__>; \

@@ -45,8 +45,9 @@ system_buffer::system_buffer(const system_buffer& other)
   : source_(other.source_)
   , offset_(other.offset_)
   , size_(other.size_) {  
-  if (!other.source_)
+  if (!other.source_) {
     value_ = other.value_;
+  }
 }
 
 system_buffer::system_buffer(system_buffer&& other)
@@ -63,8 +64,9 @@ system_buffer& system_buffer::operator=(const system_buffer& other) {
 
 system_buffer& system_buffer::operator=(system_buffer&& other) {
   // disable move for indirect nodes
-  if (source_ || value_.size() != size_)
+  if (source_ || value_.size() != size_) {
     return this->operator=(other);
+  }
   value_  = std::move(other.value_);
   source_ = std::move(other.source_);
   offset_ = std::move(other.offset_);

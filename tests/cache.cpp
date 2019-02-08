@@ -1,7 +1,7 @@
 #include <htl/cache.h>
 #include "common.h"
 
-using namespace ch::htl;
+using namespace ch::htl::cache;
 
 TEST_CASE("cache", "[cache]") {
   SECTION("basic", "[basic]") {

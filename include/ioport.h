@@ -81,7 +81,7 @@ public:
     out = *this;
   }
 
-private:
+protected:
 
   ch_logic_in& operator=(const ch_logic_in&) = delete;
 
@@ -147,7 +147,7 @@ public:
     *this = in;
   }
 
-private:
+protected:
 
   lnode output_;
 
@@ -187,6 +187,7 @@ public:
              uint32_t src_offset,
              uint32_t length) override;
 protected:
+
   io_value_t io_;
 };
 
@@ -258,7 +259,9 @@ public:
     : base(system_accessor::buffer(other))
   {}
 
-  ch_system_out(const ch_system_out&& other) : base(std::move(other)) {}
+  ch_system_out(const ch_system_out&& other)
+    : base(std::move(other))
+  {}
 
   template <typename U>
   void operator()(ch_system_in<U>& out) const {

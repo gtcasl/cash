@@ -87,7 +87,7 @@ public:
   }
 
   ch_reg_impl(ch_reg_impl&& other)
-    : base(std::move(other.buffer_)) {
+    : base(std::move(logic_accessor::buffer(other))) {
     __next__ = std::make_unique<next_t>(getRegNextNode(logic_accessor::data(*this)));
   }
 

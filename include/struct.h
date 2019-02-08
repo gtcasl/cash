@@ -43,6 +43,12 @@
 #define CH_STRUCT_CLONE(a, i, x) \
   CH_PAIR_R(x).clone()
 
+#define CH_STRUCT_OSTREAM(a, i, x) \
+  if (i) { \
+    __out << ",";  \
+  } \
+  __out << __in.CH_PAIR_R(x)
+
 #define CH_BASIC_STRUCT_SYSTEM_IMPL(struct_name, field_body, ...) \
 private: \
   enum { __field_offset0 = 0, \
@@ -74,6 +80,12 @@ public: \
 protected: \
   const ch::internal::system_buffer_ptr& buffer() const { \
     CH_STRUCT_SYSTEM_GETBUFFER(0, CH_FIRST_ARG(__VA_ARGS__))->source(); \
+  } \
+  friend std::ostream& operator<<(std::ostream& __out, const struct_name& __in) { \
+    __out << "("; \
+    CH_FOR_EACH(CH_STRUCT_OSTREAM, , CH_SEP_SEMICOLON, __VA_ARGS__); \
+    __out << ")"; \
+    return __out; \
   } \
   friend class ch::internal::system_accessor; \
 public:
@@ -146,6 +158,14 @@ public: \
 protected: \
   const ch::internal::system_buffer_ptr& buffer() const { \
     return base::buffer(); \
+  } \
+  friend std::ostream& operator<<(std::ostream& __out, const struct_name& __in) { \
+    __out << "("; \
+    __out << reinterpret_cast<const base&>(__in); \
+    __out << ","; \
+    CH_FOR_EACH(CH_STRUCT_OSTREAM, , CH_SEP_SEMICOLON, __VA_ARGS__); \
+    __out << ")"; \
+    return __out; \
   } \
   friend class ch::internal::system_accessor; \
 public:

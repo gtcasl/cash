@@ -220,7 +220,7 @@ void tracerimpl::toVCD(std::ofstream& out) {
 
           if (signal_size > 1)
             out << 'b';
-          for (auto it = value.begin(), end = value.end(); it != end;) {
+          for (auto it = value.rbegin(), end = value.rend(); it != end;) {
             out << (*it++ ? '1' : '0');
           }
           if (signal_size > 1)

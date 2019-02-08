@@ -8,6 +8,12 @@ namespace htl {
 using namespace ch::logic;
 
 template <typename T>
+__struct (ch_valid_t, (
+  (T) data,
+  (ch_bool) valid
+));
+
+template <typename T>
 __inout (ch_valid_in, (
   __in(T) data,
   __in(ch_bool) valid

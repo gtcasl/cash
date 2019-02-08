@@ -48,7 +48,9 @@ logic_buffer::logic_buffer(const logic_buffer& other)
   : node_(other.node_)
 {}
 
-logic_buffer::logic_buffer(logic_buffer&& other) : node_(std::move(other.node_)) {}
+logic_buffer::logic_buffer(logic_buffer&& other)
+  : node_(std::move(other.node_))
+{}
 
 logic_buffer& logic_buffer::operator=(const logic_buffer& other) {
   this->write(0, other.data(), 0, other.size(), source_location());

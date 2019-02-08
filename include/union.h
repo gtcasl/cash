@@ -34,6 +34,12 @@
     this->operator =(ch_bit<traits::bitwidth>(CH_CONCAT(_,CH_PAIR_R(x)).as_bit(), sloc).as<type>()); \
   }
 
+#define CH_UNION_OSTREAM(a, i, x) \
+  if (i) { \
+    __out << ",";  \
+  } \
+  __out << __in.CH_PAIR_R(x)
+
 #define CH_UNION_SYSTEM_IMPL(union_name, field_body, ...) \
   CH_FOR_EACH(field_body, , CH_SEP_SEMICOLON, __VA_ARGS__); \
   explicit union_name(const ch::internal::system_buffer_ptr& buffer = \
@@ -55,6 +61,12 @@
 protected: \
   const ch::internal::system_buffer_ptr& buffer() const { \
     CH_STRUCT_SYSTEM_GETBUFFER(0, CH_FIRST_ARG(__VA_ARGS__))->source(); \
+  } \
+  friend std::ostream& operator<<(std::ostream& __out, const union_name& __in) { \
+    __out << "("; \
+    CH_FOR_EACH(CH_UNION_OSTREAM, , CH_SEP_SEMICOLON, __VA_ARGS__); \
+    __out << ")"; \
+    return __out; \
   } \
   friend class ch::internal::system_accessor; \
 public:

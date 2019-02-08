@@ -41,6 +41,12 @@
 #define CH_INOUT_MOVE_CTOR(a, i, x) \
   CH_PAIR_R(x)(std::move(__other.CH_PAIR_R(x)))
 
+#define CH_INOUT_OSTREAM(a, i, x) \
+  if (i) { \
+    __out << ",";  \
+  } \
+  __out << __in.CH_PAIR_R(x)
+
 #define CH_BASIC_INOUT_SYSTEM_IMPL(inout_name, field_body, ...) \
   CH_FOR_EACH(field_body, , CH_SEP_SEMICOLON, __VA_ARGS__); \
   explicit inout_name(const typename traits::logic_io& __other) \
@@ -54,7 +60,13 @@
   } \
 protected: \
   inout_name& operator=(const inout_name&) = delete; \
-  inout_name& operator=(inout_name&&) = delete;
+  inout_name& operator=(inout_name&&) = delete; \
+  friend std::ostream& operator<<(std::ostream& __out, const inout_name& __in) { \
+    __out << "("; \
+    CH_FOR_EACH(CH_INOUT_OSTREAM, , CH_SEP_SEMICOLON, __VA_ARGS__); \
+    __out << ")"; \
+    return __out; \
+  }
 
 #define CH_BASIC_INOUT_LOGIC_IMPL(inout_name, field_body, ...) \
   CH_FOR_EACH(field_body, , CH_SEP_SEMICOLON, __VA_ARGS__); \
@@ -89,7 +101,15 @@ protected: \
   } \
 protected: \
   inout_name& operator=(const inout_name&) = delete; \
-  inout_name& operator=(inout_name&&) = delete;
+  inout_name& operator=(inout_name&&) = delete; \
+  friend std::ostream& operator<<(std::ostream& __out, const inout_name& __in) { \
+    __out << "("; \
+    __out << reinterpret_cast<const base&>(__in); \
+    __out << ","; \
+    CH_FOR_EACH(CH_INOUT_OSTREAM, , CH_SEP_SEMICOLON, __VA_ARGS__); \
+    __out << ")"; \
+    return __out; \
+  }
 
 #define CH_DERIVED_INOUT_LOGIC_IMPL(inout_name, field_body, ...) \
   CH_FOR_EACH(field_body, , CH_SEP_SEMICOLON, __VA_ARGS__); \

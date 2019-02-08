@@ -228,6 +228,18 @@ protected:
     return system_accessor::buffer(this->at(0))->source();
   }
 
+  friend std::ostream& operator<<(std::ostream& out, const ch_vec& in) {
+    out << "(";
+    for (unsigned i = 0; i < N; ++i) {
+      if (i) {
+        out << ",";
+      }
+      out << in[i];
+    }
+    out << ")";
+    return out;
+  }
+
   friend class system_accessor;
 };
 
@@ -320,6 +332,18 @@ protected:
   ch_vec(const vec_base<U, N>& other, std::index_sequence<Is...>)
     : base(other[Is]...)
   {}
+
+  friend std::ostream& operator<<(std::ostream& out, const ch_vec& in) {
+    out << "(";
+    for (unsigned i = 0; i < N; ++i) {
+      if (i) {
+        out << ",";
+      }
+      out << in[i];
+    }
+    out << ")";
+    return out;
+  }
 };
 
 }
