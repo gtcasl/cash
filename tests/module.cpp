@@ -369,7 +369,7 @@ TEST_CASE("module", "[module]") {
     TESTX([]()->bool {
       RetCheck ret;
 
-      static_for<1, 5>([&](auto N) {              
+      static_for<1, 5>([&](auto N) {
         ch_device<llQueueWrapper<ch_bit4, N>> queue0;
         ch_device<QueueWrapper<ch_bit4, N, false>> queue1;
         auto queues = std::make_tuple(&queue0, &queue1);

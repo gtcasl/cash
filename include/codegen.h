@@ -14,5 +14,15 @@ inline void ch_toVerilog(const std::string& file,
   ch_toVerilog(out, device, flatten);
 }
 
+///////////////////////////////////////////////////////////////////////////////
+
+void ch_toFIRRTL(std::ostream& out, const device& device);
+
+inline void ch_toFIRRTL(const std::string& file, const device& device) {
+  std::ofstream out(file);
+  ch_toFIRRTL(out, device);
+}
+
+
 }
 }

@@ -177,11 +177,11 @@ struct cond_br_t {
 context::context(const std::string& name, context* parent)
   : id_(context_manager::instance().ctx_id())
   , name_(name)
-  , parent_(parent)
-  , block_idx_(0)
+  , parent_(parent)  
   , sys_clk_(nullptr)
   , sys_reset_(nullptr)
-  , sys_time_(nullptr)  
+  , sys_time_(nullptr)
+  , cond_blk_idx_(0)
 {}
 
 context::~context() {
@@ -189,6 +189,18 @@ context::~context() {
   for (auto node : nodes_) {
     node->release();
   }
+}
+
+context* context::clone() const {
+  clone_map cloned_nodes;
+  auto ctx = new context(name_, parent_);
+  for (auto node : nodes_) {
+    node->clone(ctx, cloned_nodes);
+  }
+  for (auto node : ctx->snodes()) {
+    node->clone(ctx, cloned_nodes);
+  }
+  return ctx;
 }
 
 uint32_t context::node_id() {
@@ -444,14 +456,14 @@ void context::end_branch() {
     delete_branch(curr_branch);
     cond_vars_.clear();
     cond_inits_.clear();
-    block_idx_ = 0;
+    cond_blk_idx_ = 0;
   }
 }
 
 void context::begin_block(lnodeimpl* pred) {
   // insert new conditional block  
   auto curr_branch = cond_branches_.top();
-  auto new_block = new cond_block_t(++block_idx_, pred, curr_branch);
+  auto new_block = new cond_block_t(++cond_blk_idx_, pred, curr_branch);
   curr_branch->blocks.push_back(new_block);
 }
 
@@ -824,7 +836,8 @@ udfimpl* context::create_udf_node(udf_iface* udf,
                                   const std::vector<lnode>& inputs,
                                   const source_location& sloc) {
   if (udf->is_seq()) {
-    return this->create_node<udfsimpl>(udf, inputs, nullptr, sloc);
+    auto cd = this->current_cd(sloc);
+    return this->create_node<udfsimpl>(udf, cd, inputs, sloc);
   } else {
     return this->create_node<udfcimpl>(udf, inputs, sloc);
   }

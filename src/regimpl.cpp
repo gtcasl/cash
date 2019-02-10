@@ -9,33 +9,28 @@
 using namespace ch::internal;
 
 regimpl::regimpl(context* ctx,
-                 unsigned length,
-                 lnodeimpl* next,
-                 lnodeimpl* enable,
-                 lnodeimpl* init_data,
+                 uint32_t size,
+                 uint32_t length,
                  lnodeimpl* cd,
                  lnodeimpl* reset,
+                 lnodeimpl* enable,
+                 lnodeimpl* next,                 
+                 lnodeimpl* init_data,
                  const source_location& sloc)
-  : lnodeimpl(ctx, type_reg, next->size(), sloc)
+  : lnodeimpl(ctx, type_reg, size, sloc)
   , length_(length)
-  , enable_idx_(-1)
   , reset_idx_(-1)
+  , enable_idx_(-1)
   , initdata_idx_(-1) {
-  if (nullptr == cd) {
-    cd = ctx->current_cd(sloc);
-  }
   srcs_.emplace_back(cd);
   srcs_.emplace_back(next);
-
+  if (reset) {
+    reset_idx_ = this->add_src(reset);
+  }
   if (enable) {
     enable_idx_ = this->add_src(enable);
   }
-
   if (init_data) {
-    if (nullptr == reset) {
-      reset = ctx->current_reset(sloc);
-    }
-    reset_idx_ = this->add_src(reset);
     initdata_idx_ = this->add_src(init_data);
   }
 }
@@ -43,17 +38,20 @@ regimpl::regimpl(context* ctx,
 lnodeimpl* regimpl::clone(context* ctx, const clone_map& cloned_nodes) {
   auto cd = cloned_nodes.at(this->cd().id());
   auto next = cloned_nodes.at(this->next().id());
+  lnodeimpl* reset = nullptr;
   lnodeimpl* enable = nullptr;
+  lnodeimpl* init_data = nullptr;
+  if (this->has_reset()) {
+    reset = cloned_nodes.at(this->reset().id());
+  }
   if (this->has_enable()) {
     enable = cloned_nodes.at(this->enable().id());
   }
-  lnodeimpl* init_data = nullptr;
-  lnodeimpl* reset = nullptr;
   if (this->has_init_data()) {
     init_data = cloned_nodes.at(this->init_data().id());
-    reset = cloned_nodes.at(this->reset().id());
   }
-  return ctx->create_node<regimpl>(length_, next, enable, init_data, cd, reset, sloc_);
+  return ctx->create_node<regimpl>(
+        size_, length_, cd, reset, enable, next, init_data, sloc_);
 }
 
 bool regimpl::equals(const lnodeimpl& other) const {
@@ -125,8 +123,10 @@ logic_buffer ch::internal::createRegNode(unsigned size,
                                          const source_location& sloc) {
   logic_buffer ret(size, sloc);
   auto ctx = ctx_curr();
+  auto cd   = ctx->current_cd(sloc);
   auto next = ctx->create_node<proxyimpl>(ret.data(), sloc);
-  auto reg = ctx->create_node<regimpl>(1, next, nullptr, nullptr, nullptr, nullptr, sloc);
+  auto reg  = ctx->create_node<regimpl>(
+        size, 1, cd, nullptr, nullptr, next, nullptr, sloc);
   ret.write(0, reg, 0, size, sloc);
   return ret;
 }
@@ -134,9 +134,12 @@ logic_buffer ch::internal::createRegNode(unsigned size,
 logic_buffer ch::internal::createRegNode(const lnode& init_data,
                                          const source_location& sloc) {
   logic_buffer ret(init_data.size(), sloc);
-  auto ctx = init_data.impl()->ctx();
+  auto ctx  = init_data.impl()->ctx();
+  auto cd   = ctx->current_cd(sloc);
+  auto reset= ctx->current_reset(sloc);
   auto next = ctx->create_node<proxyimpl>(ret.data(), sloc);
-  auto reg = ctx->create_node<regimpl>(1, next, nullptr, init_data.impl(), nullptr, nullptr, sloc);
+  auto reg  = ctx->create_node<regimpl>(
+        next->size(), 1, cd, reset, nullptr, next, init_data.impl(), sloc);
   ret.write(0, reg, 0, init_data.size(), sloc);
   return ret;
 }
@@ -144,11 +147,14 @@ logic_buffer ch::internal::createRegNode(const lnode& init_data,
 logic_buffer ch::internal::copyRegNode(const lnode& node, const source_location& sloc) {
   auto proxy = reinterpret_cast<proxyimpl*>(node.impl());
   auto reg = reinterpret_cast<regimpl*>(proxy->src(0).impl());
-  auto ctx = proxy->ctx();
+  auto ctx  = proxy->ctx();
+  auto cd   = ctx->current_cd(sloc);
+  auto reset= ctx->current_reset(sloc);
   auto next = reg->next().impl();
   auto enable = reg->has_enable() ? reg->enable().impl() : nullptr;
   auto init_data = reg->has_init_data() ? reg->init_data().impl() : nullptr;
-  auto new_reg = ctx->create_node<regimpl>(reg->length(), next, enable, init_data, nullptr, nullptr, sloc);
+  auto new_reg = ctx->create_node<regimpl>(
+        next->size(), reg->length(), cd, reset, enable, next, init_data, sloc);
   return logic_buffer(new_reg, sloc);
 }
 
@@ -163,7 +169,9 @@ logic_buffer ch::internal::createRegNext(const lnode& next,
                                          unsigned length,
                                          const source_location& sloc) {
   auto ctx = next.impl()->ctx();
-  auto reg = ctx->create_node<regimpl>(length, next.impl(), nullptr, nullptr, nullptr, nullptr, sloc);
+  auto cd  = ctx->current_cd(sloc);
+  auto reg = ctx->create_node<regimpl>(
+        next.size(), length, cd, nullptr, nullptr, next.impl(), nullptr, sloc);
   return logic_buffer(reg, sloc);
 }
 
@@ -172,7 +180,9 @@ logic_buffer ch::internal::createRegNext(const lnode& next,
                                          const lnode& enable,
                                          const source_location& sloc) {
   auto ctx = next.impl()->ctx();
-  auto reg = ctx->create_node<regimpl>(length, next.impl(), enable.impl(), nullptr, nullptr, nullptr, sloc);
+  auto cd  = ctx->current_cd(sloc);
+  auto reg = ctx->create_node<regimpl>(
+        next.size(), length, cd, nullptr, enable.impl(), next.impl(), nullptr, sloc);
   return logic_buffer(reg, sloc);
 }
 
@@ -180,8 +190,11 @@ logic_buffer ch::internal::createRegNext(const lnode& next,
                                          const lnode& init_data,
                                          unsigned length,
                                          const source_location& sloc) {
-  auto ctx = next.impl()->ctx();
-  auto reg = ctx->create_node<regimpl>(length, next.impl(), nullptr, init_data.impl(), nullptr, nullptr, sloc);
+  auto ctx  = next.impl()->ctx();
+  auto cd   = ctx->current_cd(sloc);
+  auto reset= ctx->current_reset(sloc);
+  auto reg  = ctx->create_node<regimpl>(
+        next.size(), length, cd, reset, nullptr, next.impl(), init_data.impl(), sloc);
   return logic_buffer(reg, sloc);
 }
 
@@ -190,7 +203,10 @@ logic_buffer ch::internal::createRegNext(const lnode& next,
                                          unsigned length,
                                          const lnode& enable,
                                          const source_location& sloc) {
-  auto ctx = next.impl()->ctx();
-  auto reg = ctx->create_node<regimpl>(length, next.impl(), enable.impl(), init_data.impl(), nullptr, nullptr, sloc);
+  auto ctx  = next.impl()->ctx();
+  auto cd   = ctx->current_cd(sloc);
+  auto reset= ctx->current_reset(sloc);
+  auto reg  = ctx->create_node<regimpl>(
+        next.size(), length, cd, reset, enable.impl(), next.impl(), init_data.impl(), sloc);
   return logic_buffer(reg, sloc);
 }

@@ -11,7 +11,7 @@ public:
 
   udf_iface* udf() const {
     return udf_;
-  }  
+  }
 
 protected:
 
@@ -60,8 +60,8 @@ protected:
 
   udfsimpl(context* ctx,
            udf_iface* udf,
-           const std::vector<lnode>& srcs,
            lnodeimpl* cd,
+           const std::vector<lnode>& srcs,
            const source_location& sloc);
 
   int cd_idx_;

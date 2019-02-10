@@ -1,5 +1,5 @@
 #include "firrtlwriter.h"
-#include "firrtl.h"
+#include "codegen.h"
 #include "context.h"
 #include "deviceimpl.h"
 #include "bindimpl.h"

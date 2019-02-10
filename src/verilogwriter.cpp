@@ -1,5 +1,5 @@
 ﻿#include "verilogwriter.h"
-#include "verilog.h"
+#include "codegen.h"
 #include "context.h"
 #include "compile.h"
 #include "deviceimpl.h"

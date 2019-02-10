@@ -15,19 +15,20 @@ using namespace ch::literals;
 
 __enum (Direction, (Local, East, South, West, North));
 
-template <unsigned NumTileRows,
-          unsigned NumTileCols,
+template <unsigned NumTileX,
+          unsigned NumTileY,
           unsigned FlitBits,
           unsigned ParityBits,
           unsigned TimeBits>
 struct DefaultFlit {
-  using TileId   = ch_uint<log2ceil(NumTileRows * NumTileCols)>;
+  static_assert(NumTileX * NumTileY > 1, "invalid tile size");
+  using TileId   = ch_uint<log2up(NumTileX * NumTileY)>;
   using FlitTime = ch_uint<TimeBits>;
   using Parity   = ch_uint<ParityBits>;
 
   __struct (TilePos, (
-    (ch_uint<log2ceil(NumTileCols)>) x,
-    (ch_uint<log2ceil(NumTileRows)>) y
+    (ch_uint<log2up(NumTileX)>) x,
+    (ch_uint<log2up(NumTileY)>) y
   ));
 
   static constexpr int P = FlitBits - 1 - ch_width_v<TileId> - ch_width_v<TilePos> - TimeBits - ParityBits;
@@ -95,6 +96,7 @@ template <unsigned NumInPorts,
           typename FlitType,
           typename Routing = DefaultRouting<FlitType>>
 struct RouterConfig {
+  static_assert(NumInPorts * NumOutPorts > 1, "invalid ports size");
   static constexpr unsigned num_input_ports   = NumInPorts;
   static constexpr unsigned num_output_ports  = NumOutPorts;
   static constexpr unsigned num_input_buffers = NumInBufs;
@@ -113,7 +115,7 @@ public:
   using vCreditOut = ch_vec<ch_bool, Cfg::num_input_ports>;
   using bits_in_t  = ch_bit<Cfg::num_input_ports>;
   using bits_out_t = ch_bit<Cfg::num_output_ports>;
-  using outportid_t= ch_uint<log2ceil(Cfg::num_output_ports)>;
+  using outportid_t= ch_uint<log2up(Cfg::num_output_ports)>;
 
   __io(
     __in (vFlitIn)     flit_in,
@@ -138,11 +140,11 @@ public:
       fifo_out[i].data  = queue.io.deq.data;
       fifo_out[i].valid = queue.io.deq.valid;
 
-      ch_tap(io.flit_in[i].valid, stringf("io.flit_in_%d.valid", i));
-      ch_tap(fifo_in_ready[i], stringf("fifo_in_ready_%d", i));
-      ch_tap(fifo_out[i].valid, stringf("fifo_out_%d.valid", i));
-      ch_tap(fifo_out[i].data.dest_pos, stringf("fifo_out_%d.dest_pos", i));
-      ch_tap(fifo_out_ready[i], stringf("fifo_out_ready_%d", i));
+      ch_tap(io.flit_in[i].valid, stringf("io.flit_in%d.valid", i));
+      ch_tap(fifo_in_ready[i], stringf("fifo_in_ready%d", i));
+      ch_tap(fifo_out[i].valid, stringf("fifo_out%d.valid", i));
+      ch_tap(fifo_out[i].data.dest_pos, stringf("fifo_out%d.dest_pos", i));
+      ch_tap(fifo_out_ready[i], stringf("fifo_out_ready%d", i));
     }
 
     // routing logic
@@ -150,7 +152,7 @@ public:
     ch_vec<outportid_t, Cfg::num_input_ports> output_port_id;
     for(unsigned i = 0; i < Cfg::num_input_ports; ++i) {
       output_port_id[i] = routing(fifo_out[i].data, i, x_, y_);
-      ch_tap(output_port_id[i], stringf("output_port_id_%d", i));
+      ch_tap(output_port_id[i], stringf("output_port_id%d", i));
     }
 
     // switch allocation request input
@@ -160,7 +162,7 @@ public:
             fifo_out[i].valid,
             (ch_bit<ch_width_v<bits_out_t>>(1) << output_port_id[i]),
             0x0);
-      ch_tap(sa_req_input[i], stringf("sa_req_input_%d", i));
+      ch_tap(sa_req_input[i], stringf("sa_req_input%d", i));
     }
 
     // switch allocation request
@@ -177,8 +179,8 @@ public:
       ch_module<ch_rrArbiter<Cfg::num_input_ports>> arbiter;
       arbiter.io.in = sa_req[i];
       sa_resp[i] = arbiter.io.grant;
-      ch_tap(sa_req[i], stringf("sa_req_%d", i));
-      ch_tap(sa_resp[i], stringf("sa_resp_%d", i));
+      ch_tap(sa_req[i], stringf("sa_req%d", i));
+      ch_tap(sa_resp[i], stringf("sa_resp%d", i));
     }
 
     // input port responses
@@ -187,7 +189,7 @@ public:
       for (unsigned j = 0; j < Cfg::num_output_ports; ++j) {
         sa_resp_input[i][j] = sa_resp[j][i];
       }
-      ch_tap(sa_resp_input[i], stringf("sa_resp_input_%d", i));
+      ch_tap(sa_resp_input[i], stringf("sa_resp_input%d", i));
     }
 
     // can read next flit from the FIFO
@@ -200,15 +202,16 @@ public:
     xbar.io.sel = sa_resp.as_bit();
     xbar.io.in = fifo_out;
 
-    // outgoing credit
-    for (unsigned i = 0; i < Cfg::num_input_ports; ++i) {
-      io.credit_out[i] = fifo_in_ready[i];
-    }
-
     // outgoing flit
     for (unsigned i = 0; i < Cfg::num_output_ports; ++i) {
       io.flit_out[i] = xbar.io.out[i];
-      ch_tap(io.flit_out[i].valid, stringf("io.flit_out_%d.valid", i));
+      ch_tap(io.flit_out[i].valid, stringf("io.flit_out%d.valid", i));
+    }
+
+    // outgoing credit
+    for (unsigned i = 0; i < Cfg::num_input_ports; ++i) {
+      io.credit_out[i] = fifo_in_ready[i];
+      ch_tap(io.credit_out[i], stringf("io.credit_out%d", i));
     }
   }
 

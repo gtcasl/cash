@@ -31,7 +31,7 @@ protected:
 
   device(const std::type_index& signature, const std::string& name);
 
-  void compile();
+  void optimize();
 
   deviceimpl* impl_;
 
@@ -44,7 +44,7 @@ using ch_device_list = std::vector<device>;
 
 template <typename T = void>
 class ch_device final : public device {
-public:  
+public:
   using base = device;
   using io_type = ch_system_io<decltype(T::io)>;
   io_type io;
@@ -71,7 +71,7 @@ protected:
 
   auto&& build(T&& obj) {
     obj.describe();
-    this->compile();
+    this->optimize();
     return obj;
   }
 

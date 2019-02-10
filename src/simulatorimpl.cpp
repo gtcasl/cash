@@ -63,9 +63,9 @@ void simulatorimpl::initialize() {
         compiler.build_eval_context(eval_ctx);
       }
 
-      // compile evaluation context
+      // optimize evaluation context
       compiler compiler(eval_ctx);
-      compiler.compile();
+      compiler.optimize();
     }
 
     // build evaluation list

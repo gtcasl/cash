@@ -10,7 +10,7 @@ public:
 
   compiler(context* ctx);
 
-  void compile();
+  void optimize();
 
   void build_eval_context(context* eval_ctx);
 
@@ -39,9 +39,9 @@ protected:
   bool proxies_coalescing();
 
   lnodeimpl* constant_fold(proxyimpl* node);
+  lnodeimpl* constant_fold(selectimpl* node);
   lnodeimpl* constant_fold(aluimpl* node);
   lnodeimpl* constant_fold_bitwise(aluimpl* node);
-  lnodeimpl* constant_fold(selectimpl* node);
 
   void map_replace_target(lnodeimpl* from, lnodeimpl* to);
   void map_delete(lnodeimpl* node);

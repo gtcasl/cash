@@ -93,12 +93,8 @@ struct interval_t {
 
 compiler::compiler(context* ctx) : ctx_(ctx) {}
 
-void compiler::compile() {
-  size_t cfo_total(0);
-  size_t dce_total(0);
-  size_t cse_total(0);
-  size_t pip_total(0);
-  size_t pcx_total(0);
+void compiler::optimize() {
+  size_t cfo_total(0), dce_total(0), cse_total(0), pip_total(0), pcx_total(0);
 
   CH_DBG(2, "compiling %s (#%d) ...\n", ctx_->name().c_str(), ctx_->id());
 
@@ -109,7 +105,6 @@ void compiler::compile() {
   dce_total = tracker.deleted();
 
   this->check_undefs();
-
   this->build_node_map();
 
   for (;;) {
@@ -154,7 +149,6 @@ void compiler::compile() {
   CH_DBG(2, "*** deleted %lu CSE nodes\n", cse_total);
   CH_DBG(2, "*** deleted %lu PIP nodes\n", pip_total);
   CH_DBG(2, "*** deleted %lu PCX nodes\n", pcx_total);
-
   CH_DBG(2, "Before optimization: %lu\n", orig_num_nodes);
   CH_DBG(2, "After optimization: %lu\n", tracker.current());
 }

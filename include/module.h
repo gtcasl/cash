@@ -7,7 +7,7 @@ namespace internal {
 
 template <typename T>
 class ch_module final : private device {
-public:  
+public:
   using base = device;
   using io_type = ch_flip_io<decltype(T::io)>;
 
@@ -72,7 +72,7 @@ protected:
 
   auto&& build(T&& obj) {
     obj.describe();
-    this->compile();
+    this->optimize();
     return obj;
   }
 

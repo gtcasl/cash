@@ -39,7 +39,10 @@ enum lnodetype {
 };
 
 inline bool is_snode_type(lnodetype type) {
-  return type_reg == type || type_mwport == type || type_msrport == type || type_udfs == type;
+  return type == type_reg
+      || type == type_mwport
+      || type == type_msrport
+      || type == type_udfs;
 }
 
 class cdimpl;

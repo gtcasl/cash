@@ -19,7 +19,7 @@ public:
 
   void end_context();
 
-  void compile();
+  void optimize();
 
   context* ctx() const {
     return ctx_;

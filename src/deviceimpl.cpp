@@ -24,9 +24,9 @@ void deviceimpl::end_context() {
   ctx_swap(old_ctx_);
 }
 
-void deviceimpl::compile() {
+void deviceimpl::optimize() {
   compiler compiler(ctx_);
-  compiler.compile();
+  compiler.optimize();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -71,8 +71,8 @@ device& device::operator=(device&& other) {
   return *this;
 }
 
-void device::compile() {
-  impl_->compile();
+void device::optimize() {
+  impl_->optimize();
   impl_->end_context();
 }
 

@@ -37,6 +37,10 @@ public:
     return srcs_[enable_idx_];
   }
 
+  bool has_reset() const {
+    return (reset_idx_ != -1);
+  }
+
   const lnode& reset() const {
     return srcs_[reset_idx_];
   }
@@ -60,17 +64,18 @@ public:
 protected:
 
   regimpl(context* ctx,
-          unsigned length,
-          lnodeimpl* next,
-          lnodeimpl* enable,
-          lnodeimpl* init_data,
+          uint32_t size,
+          uint32_t length,
           lnodeimpl* cd,
           lnodeimpl* reset,
+          lnodeimpl* enable,
+          lnodeimpl* next,
+          lnodeimpl* init_data,
           const source_location& sloc);
 
-  unsigned length_;
-  int enable_idx_;  
+  uint32_t length_;
   int reset_idx_;
+  int enable_idx_;
   int initdata_idx_;
 
   friend class context;

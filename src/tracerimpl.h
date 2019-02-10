@@ -25,11 +25,6 @@ public:
 
 protected:
 
-  struct signal_t {
-    std::string name;
-    ioportimpl* node;
-  };
-
   using block_t = uint64_t;
   using bv_t = bitvector<block_t>;
   static_assert(bitwidth_v<block_t> >= bitwidth_v<block_type>);
@@ -50,8 +45,6 @@ protected:
 
   void eval() override;
 
-  uint32_t add_signal(ioportimpl* node);
-
   void allocate_trace(uint32_t block_width);
 
   static auto is_system_signal(const std::string& name) {
@@ -64,8 +57,9 @@ protected:
     return value;
   }
 
-  dup_tracker<std::string> dup_names_;
-  std::vector<signal_t> signals_;  
+  std::vector<context*> get_module_path(uint32_t ctx_id);
+
+  std::vector<ioportimpl*> signals_;
   std::vector<std::pair<block_t*, uint32_t>> prev_values_;
   bv_t valid_mask_;
   uint32_t trace_width_;

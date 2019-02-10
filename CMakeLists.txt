@@ -11,7 +11,7 @@ option(CODECOV "Enable code coverage." OFF)
 set(DEFAULT_BUILD_TYPE "Release")
 
 # use C++17 compiler
-add_compile_options(-std=c++17 -pedantic -Wall -Wextra -fmax-errors=1)
+add_compile_options(-std=c++17 -pedantic -Wall -Wextra -fmax-errors=5)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake")
 set(EXECUTABLE_OUTPUT_PATH ${CMAKE_BINARY_DIR}/bin)

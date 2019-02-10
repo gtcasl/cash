@@ -252,12 +252,8 @@ memportimpl::memportimpl(context* ctx,
   mem_ = mem;
   mem->acquire();
 
-  if (type_mwport == type
-   || type_msrport == type) {
-    // allocate clock domain
-    if (nullptr == cd) {
-      cd = ctx->current_cd(sloc);
-    }
+  // allocate clock domain
+  if (cd) {
     cd_idx_ = this->add_src(cd);
   }
 
@@ -385,7 +381,8 @@ lnodeimpl* memory::aread(const lnode& addr, const source_location& sloc) const {
 lnodeimpl* memory::sread(const lnode& addr,
                          const lnode& enable,
                          const source_location& sloc) const {
-  return impl_->create_srport(nullptr, addr.impl(), enable.impl(), sloc);
+  auto cd = ctx_curr()->current_cd(sloc);
+  return impl_->create_srport(cd, addr.impl(), enable.impl(), sloc);
 }
 
 void memory::write(const lnode& addr,
@@ -393,5 +390,6 @@ void memory::write(const lnode& addr,
                    const lnode& enable,
                    const source_location& sloc) {
   CH_CHECK(!ctx_curr()->conditional_enabled(), "memory access disallowed inside conditional blocks");
-  impl_->create_wport(nullptr, addr.impl(), value.impl(), enable.impl(), sloc);
+  auto cd = ctx_curr()->current_cd(sloc);
+  impl_->create_wport(cd, addr.impl(), value.impl(), enable.impl(), sloc);
 }

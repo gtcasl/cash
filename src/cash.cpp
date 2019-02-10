@@ -68,10 +68,6 @@ void foo() {
     ch_device d2;
     d2 = d1;
   }
-  /*{
-    ch_device<TestModule> d1, d2;
-    d2 = d1;
-  }*/
   {
     ch_scbit<4> x("5h");
   }

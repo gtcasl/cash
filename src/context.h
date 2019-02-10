@@ -249,6 +249,8 @@ public:
   void register_enum_string(uint32_t id, enum_string_cb callback);
 
   enum_string_cb enum_to_string(uint32_t id);
+
+  context* clone() const;
   
 protected:
 
@@ -263,7 +265,6 @@ protected:
   std::string name_;
   context*    parent_;
 
-  uint32_t    block_idx_;
   inputimpl*  sys_clk_;
   inputimpl*  sys_reset_;
   timeimpl*   sys_time_;
@@ -285,15 +286,14 @@ protected:
 
   std::list<lnodeimpl*>   snodes_;
 
-  std::stack<cond_br_t*>  cond_branches_;
-  cond_vars_t             cond_vars_;
-  cond_inits_t            cond_inits_;
+  enum_strings_t          enum_strings_;
 
   cd_stack_t              cd_stack_;
-
   dup_tracker<std::string> dup_tap_names_;
-
-  enum_strings_t          enum_strings_;  
+  uint32_t                cond_blk_idx_;
+  std::stack<cond_br_t*>  cond_branches_;
+  cond_vars_t             cond_vars_;
+  cond_inits_t            cond_inits_;  
 };
 
 context* ctx_create(const std::type_index& signature, const std::string& name);

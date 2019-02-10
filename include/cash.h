@@ -22,8 +22,7 @@
 #include "assertion.h"
 #include "simulator.h"
 #include "tracer.h"
-#include "verilog.h"
-#include "firrtl.h"
+#include "codegen.h"
 #include "udf.h"
 
 namespace ch {
@@ -303,12 +302,17 @@ namespace system {
   using ch::internal::sdata_type;
 
   //
-  // utility functions
+  // diagnosis functions
+  //
+
+  using ch::internal::ch_stats;
+
+  //
+  // codegen functions
   //
 
   using ch::internal::ch_toVerilog;
   using ch::internal::ch_toFIRRTL;
-  using ch::internal::ch_stats;
 }
 
 //
