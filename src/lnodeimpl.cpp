@@ -80,12 +80,9 @@ lnodeimpl::lnodeimpl(context* ctx,
   , type_(type)
   , size_(size)
   , sloc_(sloc)
-  , name_(to_string(type))
-  , var_id_(var_id) {
-  if (!name.empty()) {
-    name_ = name;
-  }
-}
+  , name_(name.empty() ? to_string(type) : name)
+  , var_id_(var_id)
+{}
 
 lnodeimpl::~lnodeimpl() {}
 

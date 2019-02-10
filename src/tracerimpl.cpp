@@ -122,46 +122,27 @@ void tracerimpl::allocate_trace(uint32_t block_width) {
   ++num_traces_;
 }
 
-std::vector<context*> tracerimpl::get_module_path(uint32_t ctx_id) {
-  //--
-  std::function<bool (std::vector<context*>&, context*, uint32_t)>
-      find_submodule = [&](std::vector<context*>& path, context* curr, uint32_t ctx_id) {
-    for (auto binding : curr->bindings()) {
-      auto child_ctx = binding->module();
-      if (child_ctx->id() == ctx_id) {
-        path.push_back(child_ctx);
-        return true;
-      } else {
-        if (find_submodule(path, child_ctx, ctx_id)) {
-          path.push_back(child_ctx);
-          return true;
-        } else {
-          return false;
-        }
-      }
-    }
-    return false;
-  };
-
+std::vector<context*> tracerimpl::get_module_path(context* ctx) {
   std::vector<context*> path;
-  for (auto curr : contexts_) {
-    if (curr->id() == ctx_id
-     || find_submodule(path, curr, ctx_id)) {
-      if (contexts_.size() != 1) {
-        path.push_back(curr);
-      }
-      break;
-    }
+  context* curr = ctx;
+  while (curr) {
+    path.push_back(curr);
+    curr = curr->parent();
   }
-  std::reverse(path.begin(), path.end());
+  std::reverse(path.begin(), path.end());  
   return path;
 }
 
 void tracerimpl::toText(std::ofstream& out) {
   //--
   auto full_name = [&](ioportimpl* node) {
+    // ignore scope for single context
+    if ((1 == contexts_.size())
+     && (0 == contexts_.front()->bindings().size())) {
+      return node->name();
+    }
     std::stringstream ss;
-    auto path = this->get_module_path(node->ctx()->id());
+    auto path = this->get_module_path(node->ctx());
     for (auto ctx : path) {
       ss << ctx->name() << ".";
     }
@@ -227,17 +208,19 @@ void tracerimpl::toVCD(std::ofstream& out) {
     return ret;
   };
 
+  dup_tracker<std::string> dup_mod_names;
+
   // log trace header
   out << "$timescale 1 ns $end" << std::endl;
-  auto is_scope_less = (1 == contexts_.size()) && (0 == contexts_.front()->bindings().size());
+  auto ignore_scope = (1 == contexts_.size()) && (0 == contexts_.front()->bindings().size());
   std::list<context*> ctx_stack;
   for (auto node : signals_) {
     auto name = fixup_name(node->name());
-    if (is_scope_less) {
+    if (ignore_scope) {
       out << "$var reg " << node->size() << ' ' << node->id() << ' '
           << name << " $end" << std::endl;
     } else {
-      auto path = this->get_module_path(node->ctx()->id());
+      auto path = this->get_module_path(node->ctx());
       auto path_it = path.begin();
       auto ctx_stack_it = ctx_stack.begin();
       while (path_it != path.end()) {
@@ -255,7 +238,12 @@ void tracerimpl::toVCD(std::ofstream& out) {
       }
       while (path_it != path.end()) {
         auto ctx = *path_it++;
-        out << "$scope module " << ctx->name() << "$end" << std::endl;
+        std::string mod_name = ctx->name();
+        auto num_dups = dup_mod_names.insert(mod_name);
+        if (num_dups) {
+          mod_name = stringf("%s_%ld", mod_name.c_str(), num_dups);
+        }
+        out << "$scope module " << mod_name << " $end" << std::endl;
         ctx_stack.push_back(ctx);
       }
       out << "$var reg " << node->size() << ' ' << node->id() << ' '

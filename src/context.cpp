@@ -43,13 +43,13 @@ public:
     if (it != module_names_.end()) {
       unique_name = it->second;
     } else {
-      auto count = dup_names_.insert(unique_name.c_str());
-      if (count) {
-        unique_name = stringf("%s_%ld", name.c_str(), count);
+      auto num_dups = dup_names_.insert(unique_name);
+      if (num_dups) {
+        unique_name = stringf("%s_%ld", unique_name.c_str(), num_dups);
       }
-      module_names_[signature] = unique_name.c_str();
+      module_names_[signature] = unique_name;
     }
-    return new context(unique_name.c_str(), ctx_);
+    return new context(unique_name, ctx_);
   }
 
   context* ctx() const {
@@ -825,9 +825,9 @@ void context::register_tap(const lnode& node,
                            const source_location& sloc) {
   auto sid = identifier_from_string(name);
   auto value = std::make_shared<sdata_type>(node.size());
-  auto count = dup_tap_names_.insert(sid);
-  if (count) {
-    sid = stringf("%s_%ld", sid.c_str(), count);
+  auto num_dups = dup_tap_names_.insert(sid);
+  if (num_dups) {
+    sid = stringf("%s_%ld", sid.c_str(), num_dups);
   }
   this->create_node<tapimpl>(node, value, sid, sloc);
 }

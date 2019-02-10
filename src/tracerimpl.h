@@ -57,7 +57,7 @@ protected:
     return value;
   }
 
-  std::vector<context*> get_module_path(uint32_t ctx_id);
+  std::vector<context*> get_module_path(context* ctx);
 
   std::vector<ioportimpl*> signals_;
   std::vector<std::pair<block_t*, uint32_t>> prev_values_;
