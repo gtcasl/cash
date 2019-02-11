@@ -151,7 +151,7 @@ auto ch_next(const T& in, const I& init, CH_SLOC) {
 template <typename T, typename I>
 auto ch_next(const T& in, const I& init, CH_SLOC) {
   static_assert(is_object_type_v<T>, "invalid type");
-  static_assert(std::is_constructible_v<T, I>, "invalid type");
+  static_assert(std::is_constructible_v<ch_logic_t<T>, I>, "invalid type");
   return ch_next<ch_logic_t<T>, T>(in, init, sloc);
 }
 
@@ -188,7 +188,7 @@ auto ch_nextEn(const T& in, const ch_bit<1>& enable, const I& init, CH_SLOC) {
 template <typename T, typename I>
 auto ch_nextEn(const T& in, const ch_bit<1>& enable, const I& init, CH_SLOC) {
   static_assert(is_object_type_v<T>, "invalid type");
-  static_assert(std::is_constructible_v<T, I>, "invalid type");
+  static_assert(std::is_constructible_v<ch_logic_t<T>, I>, "invalid type");
   return ch_nextEn<ch_logic_t<T>, T>(in, enable, init, sloc);
 }
 
@@ -227,7 +227,7 @@ auto ch_delay(const T& in, uint32_t delay, const I& init, CH_SLOC) {
 template <typename T, typename I>
 auto ch_delay(const T& in, uint32_t delay, const I& init, CH_SLOC) {
   static_assert(is_object_type_v<T>, "invalid type");
-  static_assert(std::is_constructible_v<T, I>, "invalid type");
+  static_assert(std::is_constructible_v<ch_logic_t<T>, I>, "invalid type");
   return ch_delay<ch_logic_t<T>, T>(in, delay, init, sloc);
 }
 
@@ -270,7 +270,7 @@ auto ch_delayEn(const T& in, const ch_bit<1>& enable, uint32_t delay, const I& i
 template <typename T, typename I>
 auto ch_delayEn(const T& in, const ch_bit<1>& enable, uint32_t delay, const I& init, CH_SLOC) {
   static_assert(is_object_type_v<T>, "invalid type");
-  static_assert(std::is_constructible_v<T, I>, "invalid type");
+  static_assert(std::is_constructible_v<ch_logic_t<T>, I>, "invalid type");
   return ch_delayEn<ch_logic_t<T>, T>(in, enable, delay, init, sloc);
 }
 

@@ -47,10 +47,6 @@ protected:
 
   void allocate_trace(uint32_t block_width);
 
-  static auto is_system_signal(const std::string& name) {
-    return (name == "clk") || (name == "reset");
-  }
-
   static auto get_value(const block_t* src, uint32_t size, uint32_t src_offset) {
     bv_t value(size);
     bv_copy(value.words(), 0, src, src_offset, size);

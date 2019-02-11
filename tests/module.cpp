@@ -72,9 +72,9 @@ struct Filter {
   void describe() {
     auto tmp = (ch_pad<1>(io.x.data) << 1)
               | ch_pad<1>(io.x.parity);
-    io.y.data   = ch_delay(ch_slice<T>(tmp));
-    io.y.parity = tmp[ch_width_v<T>];
-    io.y.valid  = ch_delay(io.x.valid);
+    io.y.data   = ch_delay(ch_slice<T>(tmp), 1, 0);
+    io.y.parity = ch_delay(io.x.data[ch_width_v<T>-1], 1, 0);
+    io.y.valid  = ch_delay(io.x.valid, 1, 0);
   }
 };
 
