@@ -405,10 +405,6 @@ CH_SYSTEM_OPERATOR(system_op_cast)
   explicit operator sdata_type() const {
     return system_accessor::data(reinterpret_cast<const Derived&>(*this));
   }
-
-  explicit operator bool() const {
-    return bv_orr(system_accessor::data(reinterpret_cast<const Derived&>(*this)).words(), N);;
-  }
 };
 
 CH_SYSTEM_OPERATOR(system_op_relational)
@@ -490,6 +486,8 @@ CH_SYSTEM_OPERATOR(system_op_slice)
     return this->asliceref<T<M>>(start);
   }
 };
+
+sdata_type sdata_from_fill(uint64_t value, uint32_t size, uint32_t count);
 
 }
 }

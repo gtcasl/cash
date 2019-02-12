@@ -103,7 +103,7 @@ public:
   template <typename U,
             CH_REQUIRE_0(std::is_integral_v<U>)>
   explicit ch_rom(const U& value, CH_SLOC)
-    : mem_(ch_width_v<T>, N, sdata_type(N, value), ForceLogicRAM, sloc)
+    : mem_(ch_width_v<T>, N, sdata_from_fill(value, data_width, N), ForceLogicRAM, sloc)
   {}
 
   template <typename U>
@@ -150,7 +150,7 @@ public:
   template <typename U,
             CH_REQUIRE_0(std::is_integral_v<U>)>
   explicit ch_mem(const U& value, CH_SLOC)
-    : mem_(ch_width_v<T>, N, sdata_type(N, value), false, sloc)
+    : mem_(ch_width_v<T>, N, sdata_from_fill(value, data_width, N), false, sloc)
   {}
 
   template <typename U>

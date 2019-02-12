@@ -6,9 +6,13 @@ namespace ch {
 namespace internal {
 
 template <typename T> struct is_bitvector_array_type_impl : std::false_type {};
+template <> struct is_bitvector_array_type_impl<int8_t> : std::true_type {};
 template <> struct is_bitvector_array_type_impl<uint8_t> : std::true_type {};
+template <> struct is_bitvector_array_type_impl<int16_t> : std::true_type {};
 template <> struct is_bitvector_array_type_impl<uint16_t> : std::true_type {};
+template <> struct is_bitvector_array_type_impl<int32_t> : std::true_type {};
 template <> struct is_bitvector_array_type_impl<uint32_t> : std::true_type {};
+template <> struct is_bitvector_array_type_impl<int64_t> : std::true_type {};
 template <> struct is_bitvector_array_type_impl<uint64_t> : std::true_type {};
 
 template <typename T>

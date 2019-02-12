@@ -47,6 +47,10 @@ __struct (sd3_t, (
   (ch_bit4) d
 ));
 
+__struct (sq_t, (
+  (ch_bool) v
+));
+
 using v2_1_t = ch_vec<ch_bit2, 1>;
 using v2_2_t = ch_vec<ch_bit2, 2>;
 using v2_3_t = ch_vec<ch_bit2, 3>;
@@ -55,6 +59,18 @@ using v2_3_t = ch_vec<ch_bit2, 3>;
 
 TEST_CASE("system", "[system]") {
   SECTION("basics", "[basics]") {
+    TESTX([]()->bool {
+      ch_scbit<1> a(1), b(0);
+      bool ret = false;
+      if (a) {
+        if (b) {
+          ret = false;
+        } else {
+          ret = true;
+        }
+      }
+      return ret;
+    });
     TESTX([]()->bool {
       ch_scbit<4> a(0xb);
       ch_scbit<4> b(0x5);

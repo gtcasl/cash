@@ -140,3 +140,14 @@ void system_buffer::write(uint32_t dst_offset,
     value_.write(dst_offset, in, byte_alignment, src_offset, length);
   }
 }
+
+///////////////////////////////////////////////////////////////////////////////
+
+sdata_type ch::internal::sdata_from_fill(uint64_t value, uint32_t size, uint32_t count) {
+  sdata_type src(size, value);
+  sdata_type out(size * count);
+  for (uint32_t i = 0; i < count; ++i) {
+    out.copy(i * size, src, 0, size);
+  }
+  return out;
+}
