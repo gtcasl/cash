@@ -966,9 +966,9 @@ int bv_cmp_vector_aligned_lhs(const T* lhs,
     T lhs_block = *lhs++;
     T rhs_block = *rhs++ >> rhs_lsb;
     rhs_block |= (rhs[0] << (WORD_SIZE - rhs_lsb));
-    auto test = lhs_block - rhs_block;
+    std::make_signed_t<T> test = lhs_block - rhs_block;
     if (test)
-      return test;
+      return (test > 0) ? 1 : -1;
   }
   if (0 == rem)
     return 0;
@@ -992,9 +992,9 @@ int bv_cmp_vector_aligned_rhs(const T* lhs, uint32_t lhs_lsb,
     T lhs_block = *lhs++ >> lhs_lsb;
     lhs_block |= (lhs[0] << (WORD_SIZE - lhs_lsb));
     T rhs_block = *rhs++;
-    auto test = lhs_block - rhs_block;
+    std::make_signed_t<T> test = lhs_block - rhs_block;
     if (test)
-      return test;
+      return (test > 0) ? 1 : -1;
   }
   if (0 == rem)
     return 0;
@@ -1020,9 +1020,9 @@ int bv_cmp_vector_unaligned(const T* lhs, uint32_t lhs_lsb,
     lhs_block |= (lhs[0] << (WORD_SIZE - lhs_lsb));
     T rhs_block = *rhs++ >> rhs_lsb;
     rhs_block |= (rhs[0] << (WORD_SIZE - rhs_lsb));
-    auto test = lhs_block - rhs_block;
+    std::make_signed_t<T> test = lhs_block - rhs_block;
     if (test)
-      return test;
+      return (test > 0) ? 1 : -1;
   }
   if (0 == rem)
     return 0;
@@ -2004,7 +2004,7 @@ void bv_sub(T* out, uint32_t out_size, const T* lhs, uint32_t lhs_size, const T*
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T>
-void bv_umult(T* out, uint32_t out_size,
+void bv_umul(T* out, uint32_t out_size,
               const T* lhs, uint32_t lhs_size,
               const T* rhs, uint32_t rhs_size) {
   using xword_t = std::conditional_t<sizeof(T) == 1, uint8_t,
@@ -2039,7 +2039,7 @@ void bv_umult(T* out, uint32_t out_size,
 }
 
 template <bool is_signed, typename T>
-void bv_mult_scalar(T* out, uint32_t out_size,
+void bv_mul_scalar(T* out, uint32_t out_size,
                     const T* lhs, uint32_t lhs_size,
                     const T* rhs, uint32_t rhs_size) {
   if constexpr (is_signed) {
@@ -2054,7 +2054,7 @@ void bv_mult_scalar(T* out, uint32_t out_size,
 }
 
 template <bool is_signed, typename T>
-void bv_mult_vector(T* out, uint32_t out_size,
+void bv_mul_vector(T* out, uint32_t out_size,
                     const T* lhs, uint32_t lhs_size,
                     const T* rhs, uint32_t rhs_size) {
   if constexpr (is_signed) {
@@ -2079,14 +2079,14 @@ void bv_mult_vector(T* out, uint32_t out_size,
       rhs_size = out_size;
     }
 
-    bv_umult(out, out_size, u, lhs_size, v, rhs_size);
+    bv_umul(out, out_size, u, lhs_size, v, rhs_size);
   } else {
-    bv_umult(out, out_size, lhs, lhs_size, rhs, rhs_size);
+    bv_umul(out, out_size, lhs, lhs_size, rhs, rhs_size);
   }
 }
 
 template <bool is_signed, typename T>
-void bv_mult(T* out, uint32_t out_size,
+void bv_mul(T* out, uint32_t out_size,
              const T* lhs, uint32_t lhs_size,
              const T* rhs, uint32_t rhs_size) {
   static constexpr uint32_t WORD_SIZE  = bitwidth_v<T>;
@@ -2095,9 +2095,9 @@ void bv_mult(T* out, uint32_t out_size,
   if (out_size <= WORD_SIZE
    && lhs_size <= WORD_SIZE
    && rhs_size <= WORD_SIZE) {
-    bv_mult_scalar<is_signed>(out, out_size, lhs, lhs_size, rhs, rhs_size);
+    bv_mul_scalar<is_signed>(out, out_size, lhs, lhs_size, rhs, rhs_size);
   } else {
-    bv_mult_vector<is_signed>(out, out_size, lhs, lhs_size, rhs, rhs_size);
+    bv_mul_vector<is_signed>(out, out_size, lhs, lhs_size, rhs, rhs_size);
   }
 }
 
@@ -2173,7 +2173,7 @@ void bv_udiv(T* quot, uint32_t quot_size,
     auto w = (yword_t(un[j + n]) << XWORD_SIZE) | un[j + n - 1];
     auto qhat = w / h;
 
-    // multiply and subtract
+    // muliply and subtract
     xword_t k(0);
     for (int i = 0; i < n; ++i) {
       auto p = qhat * vn[i];

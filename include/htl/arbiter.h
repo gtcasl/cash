@@ -50,7 +50,7 @@ struct ch_xbar_switch {
   );
   void describe() {
     ch_counter<I> counter(io.out.ready);
-    auto grant = ch_bit<I>(1) << counter.value;
+    auto grant = ch_bit<I>(1) << counter.value();
     for (unsigned i = 0; i < I; ++i) {
       xbar_.io.in[i].data  = io.in[i].data;
       xbar_.io.in[i].valid = io.in[i].valid;

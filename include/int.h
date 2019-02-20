@@ -62,6 +62,11 @@ auto ch_pad(const ch_int<N>& obj, CH_SLOC) {
   return ch_int<M+N>(obj, sloc);
 }
 
+template <unsigned N>
+auto ch_abs(const ch_int<N>& obj, CH_SLOC) {
+  return ch_sel(obj[N-1], -obj, obj, sloc);
+}
+
 CH_LOGIC_FUNCTION_EQUALITY(ch_eq, ch_op::eq, ch_int)
 CH_LOGIC_FUNCTION_EQUALITY(ch_ne, ch_op::ne, ch_int)
 
@@ -81,7 +86,7 @@ CH_LOGIC_FUNCTION_SHIFT(ch_shr, ch_op::shr, ch_int)
 CH_LOGIC_FUNCTION_ARITHMETIC1(ch_neg, ch_op::neg, ch_int)
 CH_LOGIC_FUNCTION_ARITHMETIC2(ch_add, ch_op::add, ch_int)
 CH_LOGIC_FUNCTION_ARITHMETIC2(ch_sub, ch_op::sub, ch_int)
-CH_LOGIC_FUNCTION_ARITHMETIC3(ch_mult, ch_op::mult, ch_int)
+CH_LOGIC_FUNCTION_ARITHMETIC3(ch_mul, ch_op::mul, ch_int)
 CH_LOGIC_FUNCTION_ARITHMETIC3(ch_div, ch_op::div, ch_int)
 CH_LOGIC_FUNCTION_ARITHMETIC3(ch_mod, ch_op::mod, ch_int)
 

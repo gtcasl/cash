@@ -313,13 +313,13 @@ void tracerimpl::toTestBench(std::ofstream& out,
   std::set<context*> root_ctx_map(contexts_.begin(), contexts_.end());
 
   //--
-  auto get_full_name = [&](lnodeimpl* node) {
+  auto get_signal_path = [&](ioportimpl* node) {
     std::stringstream ss;
     auto path = this->get_module_path(node->ctx());
     for (uint32_t i = 0; i < path.size(); ++i) {
       auto ctx = path.at(i);
       if (i == 0) {
-        ss << "__module" << ctx->id() << "__";
+        ss << "__module" << ctx->id();
       } else {
         uint32_t bind_id = 0;
         for (auto bind : ctx->parent()->bindings()) {
@@ -333,50 +333,40 @@ void tracerimpl::toTestBench(std::ofstream& out,
     }
 
     auto module_path = ss.str();
-
-    switch (node->type()) {
-    case type_input:
-    case type_output:
-      return stringf("%s.%s", module_path.c_str(), node->name().c_str());
-      break;
-    case type_bindin:
-    case type_bindout: {
-      auto bindport = reinterpret_cast<bindportimpl*>(node);
-      return stringf("%s.%s%d_%s", module_path.c_str(),
-                     bindport->binding()->module()->name().c_str(),
-                     bindport->binding()->id(),
-                     bindport->ioport().name().c_str());
-    } break;
-    default:
-      return stringf("%s.%s%d", module_path.c_str(), node->name().c_str(), node->id());
-    }
+    return stringf("%s.%s", module_path.c_str(), node->name().c_str());
   };
 
   //--
-  auto get_signal_name = [&](ioportimpl* node) {
-    auto type = node->type();
-    switch (type) {
-    default:
-      assert(false);
-    case type_input:
-    case type_output:
-      if (0 == root_ctx_map.count(node->ctx())) {
-        return get_full_name(node);
-      } else {
+  auto get_signal_name = [&](lnodeimpl* node) {
+    std::stringstream ss;
+    auto path = this->get_module_path(node->ctx());
+    for (uint32_t i = 0; i < path.size(); ++i) {
+      auto ctx = path.at(i);
+      if (0 == i) {
         if (contexts_.size() != 1) {
-          return stringf("__module%d__%", node->ctx()->id(), node->name());
-        } else {
-          return node->name();
+          ss << "__module" << ctx->id();
         }
+      } else {
+        uint32_t bind_id = 0;
+        for (auto bind : ctx->parent()->bindings()) {
+          if (bind->module()->id() == ctx->id()) {
+            bind_id = bind->id();
+            break;
+          }
+        }
+        ss << "_" << ctx->name() << bind_id;
       }
-      break;
-    case type_tap:
-      return get_full_name(node->src(0).impl());
+    }
+    auto module_path = ss.str();
+    if (module_path.empty()) {
+      return node->name();
+    } else {
+      return stringf("%s_%s", module_path.c_str(), node->name().c_str());
     }
   };
 
   //--
-  auto get_port_name = [&](ioimpl* node) {
+  auto find_signal_name = [&](ioimpl* node) {
     if ((node->name() == "clk")
      || (node->name() == "reset"))
       return node->name();
@@ -423,12 +413,12 @@ void tracerimpl::toTestBench(std::ofstream& out,
   //--
   auto print_module = [&](std::ostream& out, context* ctx) {
     auto_separator sep(", ");
-    out << ctx->name() << " __module" << ctx->id() << "__(";
+    out << ctx->name() << " __module" << ctx->id() << "(";
     for (auto input : ctx->inputs()) {
-      out << sep << "." << input->name() << "(" << get_port_name(input) << ")";
+      out << sep << "." << input->name() << "(" << find_signal_name(input) << ")";
     }
     for (auto output : ctx->outputs()) {
-      out << sep << "." << output->name() << "(" << get_port_name(output) << ")";
+      out << sep << "." << output->name() << "(" << find_signal_name(output) << ")";
     }
     out << ");" << std::endl;
     return true;
@@ -445,25 +435,33 @@ void tracerimpl::toTestBench(std::ofstream& out,
   {
     auto_indent indent(out);
     int has_clock = 0;
-    int has_taps = 0;
+    int has_internal_signals = 0;
 
     // declare signals
     for (auto signal : signals_) {
-      // skip nested signals
-      if (0 == root_ctx_map.count(signal->ctx()))
-        continue;
       print_type(out, signal);
-      out << " " << signal->name() << ";" << std::endl;
+      out << " " << get_signal_name(signal) << ";" << std::endl;
       has_clock |= (signal->name() == "clk");
-      has_taps |= (type_tap == signal->type());
+      has_internal_signals |= (type_tap == signal->type()
+                            || 0 == root_ctx_map.count(signal->ctx()));
     }
     out << std::endl;
 
     // declare modules
     for (auto ctx : contexts_) {
       print_module(out, ctx);
+      out << std::endl;
     }
-    out << std::endl;
+
+    if (has_internal_signals) {
+      for (auto signal : signals_) {
+        if (type_tap != signal->type()
+         && root_ctx_map.count(signal->ctx()))
+          continue;
+        out << "assign " << get_signal_name(signal) << " = " << get_signal_path(signal) << ";" << std::endl;
+      }
+      out << std::endl;
+    }
 
     // declare clock process
     if (has_clock) {

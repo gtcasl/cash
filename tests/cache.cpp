@@ -6,7 +6,7 @@ using namespace ch::htl::cache;
 TEST_CASE("cache", "[cache]") {
   SECTION("basic", "[basic]") {
     TESTX([]()->bool {
-      using Cfg = CacheConfig<512, 8, 4, 20, 32, 8>;
+      using Cfg = Config<512, 8, 4, 20, 32, 8>;
       ch_device<Cache<Cfg>> cache;
 
       ch_toVerilog("cache.v", cache);

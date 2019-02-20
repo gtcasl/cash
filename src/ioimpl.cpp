@@ -99,14 +99,14 @@ void tapimpl::print(std::ostream& out) const {
 lnodeimpl* ch::internal::createInputNode(const std::string& name,
                                          uint32_t size,
                                          const source_location& sloc) {
-  auto value = std::make_shared<sdata_type>(size);
+  auto value = smart_ptr<sdata_type>::make(size);
   return ctx_curr()->create_node<inputimpl>(size, value, name, sloc);
 }
 
 lnodeimpl* ch::internal::createOutputNode(const std::string& name,
                                           const lnode& src,
                                           const source_location& sloc) {
-  auto value = std::make_shared<sdata_type>(src.size());
+  auto value = smart_ptr<sdata_type>::make(src.size());
   return ctx_curr()->create_node<outputimpl>(src, value, name, sloc);
 }
 
@@ -149,4 +149,8 @@ void system_io_buffer::write(uint32_t dst_offset,
                              uint32_t src_offset,
                              uint32_t length) {
   io_->write(dst_offset, in, byte_alignment, src_offset, length);
+}
+
+void system_io_buffer::bind(system_io_buffer* out) {
+  out->io_.reset_all(io_);
 }

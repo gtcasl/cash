@@ -3,10 +3,11 @@
 set(EXAMPLES 
     adder 
     counter 
-    fastmult 
+    fastmul 
     fifo 
     gcd 
     vending
+    matmul
 )
 
 foreach(EXAMPLE ${EXAMPLES})

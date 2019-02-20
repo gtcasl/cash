@@ -210,9 +210,10 @@ namespace logic {
   using ch::internal::ch_neg;
   using ch::internal::ch_add;
   using ch::internal::ch_sub;
-  using ch::internal::ch_mult;
+  using ch::internal::ch_mul;
   using ch::internal::ch_div;
   using ch::internal::ch_mod;
+  using ch::internal::ch_abs;
 
   //
   // reduce functions
@@ -256,6 +257,8 @@ namespace logic {
   // sequential functions
   //
 
+  using ch::internal::ch_next;
+  using ch::internal::ch_nextEn;
   using ch::internal::ch_delay;
   using ch::internal::ch_pushcd;
   using ch::internal::ch_popcd;

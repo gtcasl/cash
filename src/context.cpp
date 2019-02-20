@@ -382,7 +382,7 @@ lnodeimpl* context::current_reset(const source_location& sloc) {
     return cd_stack_.top().second;
 
   if (nullptr == sys_reset_) {
-    auto value = std::make_shared<sdata_type>(1);
+    auto value = smart_ptr<sdata_type>::make(1);
     sys_reset_ = this->create_node<inputimpl>(1, value, "reset", sloc);
   }
   return sys_reset_;
@@ -405,7 +405,7 @@ cdimpl* context::current_cd(const source_location& sloc) {
     return cd_stack_.top().first;
 
   if (nullptr == sys_clk_) {
-    auto value = std::make_shared<sdata_type>(1);
+    auto value = smart_ptr<sdata_type>::make(1);
     sys_clk_ = this->create_node<inputimpl>(1, value, "clk", sloc);
   }
   return this->create_cd(sys_clk_, true, sloc);
@@ -824,10 +824,12 @@ void context::register_tap(const lnode& node,
                            const std::string& name,
                            const source_location& sloc) {
   auto sid = identifier_from_string(name);
-  auto value = std::make_shared<sdata_type>(node.size());
+  auto value = smart_ptr<sdata_type>::make(node.size());
   auto num_dups = dup_tap_names_.insert(sid);
   if (num_dups) {
-    sid = stringf("%s_%ld", sid.c_str(), num_dups);
+    sid = stringf("tap_%s_%ld", sid.c_str(), num_dups);
+  } else {
+    sid = stringf("tap_%s", sid.c_str());
   }
   this->create_node<tapimpl>(node, value, sid, sloc);
 }

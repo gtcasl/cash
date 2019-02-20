@@ -17,7 +17,7 @@ template <unsigned CacheSize,
           unsigned AddrBits,
           unsigned DataBits,
           unsigned WordBits>
-struct CacheConfig {
+struct Config {
   static_assert(ispow2(CacheSize), "invalid CacheSize");
   static_assert(ispow2(BlockSize), "invalid BlockSize");
   static_assert(BlockSize*(CacheSize/BlockSize) == CacheSize, "invalid BlockSize");

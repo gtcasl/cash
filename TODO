@@ -173,9 +173,9 @@ export CASH_DEBUG_NODE=32
 export CASH_DEBUG_LEVEL=2
 export CASH_DUMP_AST=1
 
-// infering multiple cycles operations
+// infering muliple cycles operations
 y = ch_pipeline(x, 2) = ch_delay(ch_delay(x));
-z = ch_pipeline(x * y, 2); => z = ch_delay(mult1(x,y,ch_delay(mult0(x,y)));
+z = ch_pipeline(x * y, 2); => z = ch_delay(mul1(x,y,ch_delay(mul0(x,y)));
 
 // AOCL profiling report
 aocl report jpeg_decoder.aocx profile.mon

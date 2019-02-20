@@ -334,12 +334,12 @@ auto ch_slice(const T& obj, size_t start, ch::internal::source_location& sloc);
     return make_logic_op<op, false, ch_bit<1>>(lhs, rhs, sloc); \
   } \
   template <unsigned N, typename U, \
-            CH_REQUIRE_0(std::is_convertible_v<U, type<ch_width_v<U>>>)> \
+            CH_REQUIRE_0(is_strictly_constructible_v<type<ch_width_v<U>>, U>)> \
   auto func(const type<N>& lhs, const U& rhs, CH_SLOC) { \
     return make_logic_op<op, false, ch_bit<1>, type<N>, type<ch_width_v<U>>>(lhs, rhs, sloc); \
   } \
   template <unsigned N, typename U, \
-            CH_REQUIRE_0(std::is_convertible_v<U, type<ch_width_v<U>>>)> \
+            CH_REQUIRE_0(is_strictly_constructible_v<type<ch_width_v<U>>, U>)> \
   auto func(const U& lhs, const type<N>& rhs, CH_SLOC) { \
     return make_logic_op<op, false, ch_bit<1>, type<ch_width_v<U>>, type<N>>(lhs, rhs, sloc); \
   }
@@ -376,7 +376,7 @@ auto ch_slice(const T& obj, size_t start, ch::internal::source_location& sloc);
     } \
   } \
   template <unsigned R = 0, unsigned N, typename U, \
-            CH_REQUIRE_0(std::is_convertible_v<U, type<ch_width_v<U>>>)> \
+            CH_REQUIRE_0(is_strictly_constructible_v<type<ch_width_v<U>>, U>)> \
   auto func(const type<N>& lhs, const U& rhs, CH_SLOC) { \
     if constexpr (R && R < N && R < ch_width_v<U>) { \
       return make_logic_op<op, ch_signed_v<type<N>>, type<R>, type<R>, type<R>>( \
@@ -396,7 +396,7 @@ auto ch_slice(const T& obj, size_t start, ch::internal::source_location& sloc);
     } \
   } \
   template <unsigned R = 0, typename U, unsigned N, \
-            CH_REQUIRE_0(std::is_convertible_v<U, type<ch_width_v<U>>>)> \
+            CH_REQUIRE_0(is_strictly_constructible_v<type<ch_width_v<U>>, U>)> \
   auto func(const U& lhs, const type<N>& rhs, CH_SLOC) { \
     if constexpr (R && R < ch_width_v<U> && R < N) { \
       return make_logic_op<op, ch_signed_v<type<N>>, type<R>, type<R>, type<R>>( \
@@ -424,14 +424,14 @@ auto ch_slice(const T& obj, size_t start, ch::internal::source_location& sloc);
                             type<N>, type<M>>(lhs, rhs, sloc); \
   } \
   template <unsigned R = 0, unsigned N, typename U, \
-            CH_REQUIRE_0(std::is_convertible_v<U, ch_bit<ch_width_v<U>>>)> \
+            CH_REQUIRE_0(is_strictly_constructible_v<ch_bit<ch_width_v<U>>, U>)> \
   auto func(const type<N>& lhs, const U& rhs, CH_SLOC) { \
     return make_logic_op<op, ch_signed_v<type<N>>, \
                          std::conditional_t<(R != 0), type<R>, type<N>>, \
                             type<N>, ch_logic_t<U>>(lhs, rhs, sloc); \
   } \
   template <unsigned R = 0, typename U, unsigned N, \
-            CH_REQUIRE_0(std::is_convertible_v<U, ch_bit<ch_width_v<U>>>)> \
+            CH_REQUIRE_0(is_strictly_constructible_v<ch_bit<ch_width_v<U>>, U>)> \
   auto func(const U& lhs, const type<N>& rhs, CH_SLOC) { \
     return make_logic_op<op, ch_signed_v<U>, \
                          std::conditional_t<(R != 0), type<R>, ch_logic_t<U>>, \
@@ -451,14 +451,14 @@ auto ch_slice(const T& obj, size_t start, ch::internal::source_location& sloc);
                          std::conditional_t<(R != 0), type<R>, type<std::max(N, M)>>>(lhs, rhs, sloc); \
   } \
   template <unsigned R = 0, unsigned N, typename U, \
-            CH_REQUIRE_0(std::is_convertible_v<U, type<ch_width_v<U>>>)> \
+            CH_REQUIRE_0(is_strictly_constructible_v<type<ch_width_v<U>>, U>)> \
   auto func(const type<N>& lhs, const U& rhs, CH_SLOC) { \
     return make_logic_op<op, ch_signed_v<type<N>>, \
                          std::conditional_t<(R != 0), type<R>, type<std::max(N, ch_width_v<U>)>>, \
                             type<N>, type<ch_width_v<U>>>(lhs, rhs, sloc); \
   } \
   template <unsigned R = 0, typename U, unsigned N, \
-            CH_REQUIRE_0(std::is_convertible_v<U, type<ch_width_v<U>>>)> \
+            CH_REQUIRE_0(is_strictly_constructible_v<type<ch_width_v<U>>, U>)> \
   auto func(const U& lhs, const type<N>& rhs, CH_SLOC) { \
     return make_logic_op<op, ch_signed_v<type<N>>, \
                          std::conditional_t<(R != 0), type<R>, type<std::max(N, ch_width_v<U>)>>, \
@@ -583,13 +583,13 @@ CH_LOGIC_OPERATOR(logic_op_arithmetic)
 
   CH_LOGIC_OPERATOR_IMPL(operator+, ch_op::add, Derived)
   CH_LOGIC_OPERATOR_IMPL(operator-, ch_op::sub, Derived)
-  CH_LOGIC_OPERATOR_IMPL(operator*, ch_op::mult, Derived)
+  CH_LOGIC_OPERATOR_IMPL(operator*, ch_op::mul, Derived)
   CH_LOGIC_OPERATOR_IMPL(operator/, ch_op::div, Derived)
   CH_LOGIC_OPERATOR_IMPL(operator%, ch_op::mod, Derived)
 
   CH_LOGIC_ASSIGN_IMPL(operator+=, ch_op::add, Derived)
   CH_LOGIC_ASSIGN_IMPL(operator-=, ch_op::sub, Derived)
-  CH_LOGIC_ASSIGN_IMPL(operator*=, ch_op::mult, Derived)
+  CH_LOGIC_ASSIGN_IMPL(operator*=, ch_op::mul, Derived)
   CH_LOGIC_ASSIGN_IMPL(operator/=, ch_op::div, Derived)
   CH_LOGIC_ASSIGN_IMPL(operator%=, ch_op::mod, Derived)
 };

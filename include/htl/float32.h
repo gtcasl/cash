@@ -51,7 +51,7 @@ struct sfMul : public udf_seq<ch_float32, ch_float32, ch_float32> {
   }
 
   void to_verilog(std::ostream& out) override {
-    out << "fp_mult __fp_mult$id(.clock($clock), .clk_en($src2), "
+    out << "fp_mul __fp_mul$id(.clock($clock), .clk_en($src2), "
            ".dataa($src0), .datab($src1), .result($dst));";
   }
 };
@@ -281,7 +281,7 @@ auto ch_fsub(const ch_float32& lhs, const ch_float32& rhs, const ch_bool& enable
 }
 
 template <unsigned Delay>
-auto ch_fmult(const ch_float32& lhs, const ch_float32& rhs, const ch_bool& enable = true, __sloc) {
+auto ch_fmul(const ch_float32& lhs, const ch_float32& rhs, const ch_bool& enable = true, __sloc) {
   return ch_delayEn(ch_udf<sfMul>(lhs, rhs, sloc), enable, Delay - 1);
 }
 

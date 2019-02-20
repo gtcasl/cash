@@ -576,11 +576,11 @@ lnodeimpl* compiler::constant_fold(aluimpl* node) {
       bv_sub<false, block_type, UDBA>(tmp.words(), tmp.size(), src0_data, src0_size, src1_data, src1_size);
     }
     break;
-  case ch_op::mult:
+  case ch_op::mul:
     if (is_signed) {
-      bv_mult<true>(tmp.words(), tmp.size(), src0_data, src0_size, src1_data, src1_size);
+      bv_mul<true>(tmp.words(), tmp.size(), src0_data, src0_size, src1_data, src1_size);
     } else {
-      bv_mult<false>(tmp.words(), tmp.size(), src0_data, src0_size, src1_data, src1_size);
+      bv_mul<false>(tmp.words(), tmp.size(), src0_data, src0_size, src1_data, src1_size);
     }
     break;
   case ch_op::div:
@@ -784,7 +784,7 @@ bool compiler::proxies_coalescing() {
 
   CH_DBG(3, "Begin Compiler::PCX\n");
 
-  auto is_multi_range = [&](proxyimpl* proxy, uint32_t offset, uint length) {
+  auto is_muli_range = [&](proxyimpl* proxy, uint32_t offset, uint length) {
     assert(offset + length <= proxy->size());
     auto end = offset + length;
     for (auto& range : proxy->ranges()) {
@@ -827,7 +827,7 @@ bool compiler::proxies_coalescing() {
       if (proxy->src(range.src_idx).id() != src_proxy->id())
         continue;
       if (range.length != src_proxy->size()
-       && !is_multi_range(src_proxy, range.src_offset, range.length))
+       && !is_muli_range(src_proxy, range.src_offset, range.length))
         return false;
       if (i > 0) {
         if (are_adjacent_sources(proxy, proxy->range(i-1), range))

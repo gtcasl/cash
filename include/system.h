@@ -429,7 +429,7 @@ CH_SYSTEM_OPERATOR(system_op_arithmetic)
     return make_system_op<Derived>(bv_sub<ch_signed_v<Derived>, block_type, ClearBitAccessor<block_type>>, lhs, rhs))
   )
   CH_SYSTEM_OPERATOR_IMPL(operator*, (
-    return make_system_op<Derived>(bv_mult<ch_signed_v<Derived>>, lhs, rhs))
+    return make_system_op<Derived>(bv_mul<ch_signed_v<Derived>>, lhs, rhs))
   )
   CH_SYSTEM_OPERATOR_IMPL(operator/, (
     return make_system_op<Derived>(bv_div<ch_signed_v<Derived>>, lhs, rhs);)

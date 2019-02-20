@@ -1070,7 +1070,7 @@ private:
       }
       break;
 
-    case ch_op::mult:
+    case ch_op::mul:
       if (is_scalar) {
         auto j_src0_d = this->emit_cast(j_src0, j_ntype);
         auto j_src1_d = this->emit_cast(j_src1, j_ntype);
@@ -1081,7 +1081,7 @@ private:
         this->emit_clear_extra_bits(node);
       } else {
         auto_store_addr_t auto_dst(this, node);
-        __alu_call_arithmetic2(bv_mult_vector, auto_dst.ptr, dst_width, j_src0, node->src(0).size(), j_src1, node->src(1).size());
+        __alu_call_arithmetic2(bv_mul_vector, auto_dst.ptr, dst_width, j_src0, node->src(0).size(), j_src1, node->src(1).size());
       }
       break;
     case ch_op::div:

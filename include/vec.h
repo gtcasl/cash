@@ -11,13 +11,13 @@ protected:
   using base = std::array<T, N>;
 
   template <typename... Ts,
-            CH_REQUIRE_0(sizeof...(Ts) == N && are_all_constructible_v<T, Ts...>)>
+            CH_REQUIRE_0(sizeof...(Ts) == N && is_fold_constructible_v<T, Ts...>)>
   vec_base(Ts&&... values)
     : base{T(std::forward<Ts>(values))...}
   {}
 
   template <typename... Ts,
-            CH_REQUIRE_0(sizeof...(Ts) == N && are_all_constructible_v<T, Ts...>)>
+            CH_REQUIRE_0(sizeof...(Ts) == N && is_fold_constructible_v<T, Ts...>)>
   vec_base(const source_location& sloc, Ts&&... values)
     : base{T(std::forward<Ts>(values), sloc)...}
   {}

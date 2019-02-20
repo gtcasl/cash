@@ -48,12 +48,12 @@ struct ch_queue {
 
     ch_counter<N> wr_ctr(writing);
     ch_mem<T, N> mem;
-    mem.write(wr_ctr.value, io.enq.data, writing);
+    mem.write(wr_ctr.value(), io.enq.data, writing);
 
     T data_out;
     if constexpr (SyncRead) {
       ch_counter<N> rd_ctr(reading);
-      data_out = mem.read(rd_ctr.value);
+      data_out = mem.read(rd_ctr.value());
     } else {
       ch_uint<log2up(N)> rd_ptr, rd_next_ptr;
       if constexpr (N > 2) {

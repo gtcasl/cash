@@ -37,7 +37,7 @@ template <typename T>
 using ch_out = std::conditional_t<is_logic_only_v<T>,
                   ch_logic_out<T>, std::add_const_t<ch_system_out<T>>>;
 
-using io_value_t = std::shared_ptr<sdata_type>;
+using io_value_t = smart_ptr<sdata_type>;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -186,6 +186,9 @@ public:
              uint32_t byte_alignment,
              uint32_t src_offset,
              uint32_t length) override;
+
+  void bind(system_io_buffer* out);
+
 protected:
 
   io_value_t io_;
@@ -231,7 +234,9 @@ public:
   template <typename U>
   void operator()(const ch_system_out<U>& out) {
     static_assert(std::is_constructible_v<U, T>, "invalid type");
-    *this = out;
+    auto this_buf = reinterpret_cast<system_io_buffer*>(system_accessor::buffer(*this).get());
+    auto out_buf = reinterpret_cast<system_io_buffer*>(system_accessor::buffer(out).get());
+    this_buf->bind(out_buf);
   }
 };
 
@@ -266,7 +271,9 @@ public:
   template <typename U>
   void operator()(ch_system_in<U>& out) const {
     static_assert(std::is_constructible_v<U, T>, "invalid type");
-    out = *this;
+    auto this_buf = reinterpret_cast<system_io_buffer*>(system_accessor::buffer(*this).get());
+    auto out_buf = reinterpret_cast<system_io_buffer*>(system_accessor::buffer(out).get());
+    out_buf->bind(this_buf);
   }
 
 protected:

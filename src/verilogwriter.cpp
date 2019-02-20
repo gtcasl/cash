@@ -51,7 +51,6 @@ bool verilogwriter::is_inline_subscript(lnodeimpl* node) const {
     for (lnodeimpl* use : it->second) {
       if (type_proxy == use->type()
        || type_marport == use->type()
-       || type_tap == use->type()
        || (type_alu == use->type()
         && ch_op::pad == reinterpret_cast<aluimpl*>(use)->op()))
         return false;
@@ -60,25 +59,18 @@ bool verilogwriter::is_inline_subscript(lnodeimpl* node) const {
   return true;
 }
 
-bool verilogwriter::print(std::ostream& out,
-                          std::unordered_set<std::string_view>& visited) {
-  // ensure single instantiation
-  if (visited.count(ctx_->name()))
-    return false;
-  visited.insert(ctx_->name());
-
-  {
-    // print dependent modules
-    auto_separator sep("\n");
-    int written = 0;    
-    for (auto binding : ctx_->bindings()) {
-      out << sep;
-      verilogwriter child_module(binding->module());
-      written |= child_module.print(out, visited);
-    }
-    if (written) {
-      out << std::endl;
-    }
+void verilogwriter::print(std::ostream& out,
+                          std::unordered_set<std::string_view>& visited) {  
+  // print dependent modules
+  for (auto binding : ctx_->bindings()) {
+    auto module = binding->module();
+    // ensure single instantiation
+    if (visited.count(module->name()))
+      continue;
+    visited.insert(module->name());
+    verilogwriter child_module(module);
+    child_module.print(out, visited);
+    out << std::endl;
   }
 
   // print header
@@ -89,8 +81,6 @@ bool verilogwriter::print(std::ostream& out,
 
   // print footer
   this->print_footer(out);
-
-  return true;
 }
 
 void verilogwriter::print_header(std::ostream& out) {
@@ -228,6 +218,7 @@ bool verilogwriter::print_bindport(std::ostream& out, bindportimpl* node) {
   out << " = ";
   this->print_name(out, node->src(0).impl());
   out << ";" << std::endl;
+  std::flush(out);
   return true;
 }
 
@@ -238,7 +229,6 @@ void verilogwriter::print_port(std::ostream& out, ioimpl* node) {
     out << "input";
     break;
   case type_output:
-  case type_tap:
     out << "output";
     break;
   default:
@@ -288,6 +278,7 @@ bool verilogwriter::print_decl(std::ostream& out,
   case type_udfc:
   case type_udfs:
   case type_mem:
+  case type_tap:
     if (ref
      && (IsRegType(ref) != IsRegType(node)
       || ref->size() != node->size()))
@@ -356,8 +347,7 @@ bool verilogwriter::print_decl(std::ostream& out,
   case type_input:
   case type_output:
   case type_cd:
-  case type_mwport:
-  case type_tap:
+  case type_mwport:  
   case type_assert:
   case type_print:
   case type_time:
@@ -373,56 +363,53 @@ bool verilogwriter::print_logic(std::ostream& out, lnodeimpl* node) {
   auto type = node->type();
   switch (type) {
   case type_proxy:
-    if (this->is_inline_subscript(node))
-      return false;
-    out << "assign ";
-    this->print_name(out, node);
-    out << " = ";
-    this->print_proxy(out, reinterpret_cast<proxyimpl*>(node));
-    out << ";" << std::endl;
-    return true;
+    return this->print_proxy(out, reinterpret_cast<proxyimpl*>(node));
   case type_alu:
-    this->print_alu(out, reinterpret_cast<aluimpl*>(node));
-    return true;
+    return this->print_alu(out, reinterpret_cast<aluimpl*>(node));
   case type_sel:
-    this->print_select(out, reinterpret_cast<selectimpl*>(node));
-    return true;
+    return this->print_select(out, reinterpret_cast<selectimpl*>(node));
   case type_reg:
-    this->print_reg(out, reinterpret_cast<regimpl*>(node));
-    return true;
+    return this->print_reg(out, reinterpret_cast<regimpl*>(node));
   case type_mem:
-    this->print_mem(out, reinterpret_cast<memimpl*>(node));
-    return true;
+    return this->print_mem(out, reinterpret_cast<memimpl*>(node));
   case type_bind:
-    this->print_binding(out, reinterpret_cast<bindimpl*>(node));
-    return true;
+    return this->print_binding(out, reinterpret_cast<bindimpl*>(node));
   case type_bindin:
   case type_bindout:
-    this->print_bindport(out, reinterpret_cast<bindportimpl*>(node));
-    return true;  
+    return this->print_bindport(out, reinterpret_cast<bindportimpl*>(node));
   case type_udfc:
   case type_udfs:
-    this->print_udf(out, reinterpret_cast<udfimpl*>(node));
-    return true;
+    return this->print_udf(out, reinterpret_cast<udfimpl*>(node));
+  case type_tap:
+    return this->print_tap(out, reinterpret_cast<tapimpl*>(node));
+  default:
+    assert(false);
   case type_lit:
   case type_input:
   case type_output:
   case type_cd:
   case type_msrport:
   case type_marport:
-  case type_mwport:
-  case type_tap:
+  case type_mwport:  
   case type_assert:
   case type_print:
   case type_time:
-    break;
-  default:
-    assert(false);
-  }
-  return false;
+    return false;
+  }  
 }
 
-void verilogwriter::print_proxy(std::ostream& out, proxyimpl* node) {
+bool verilogwriter::print_proxy(std::ostream& out, proxyimpl* node) {
+  if (this->is_inline_subscript(node))
+    return false;
+  out << "assign ";
+  this->print_name(out, node);
+  out << " = ";
+  this->print_proxy_value(out, node);
+  out << ";" << std::endl;
+  return true;
+}
+
+void verilogwriter::print_proxy_value(std::ostream& out, proxyimpl* node) {
   const auto& ranges = node->ranges();
   uint32_t dst_offset = node->size();
   auto print_range = [&](const proxyimpl::range_t& range) {
@@ -453,7 +440,7 @@ void verilogwriter::print_proxy(std::ostream& out, proxyimpl* node) {
   }
 }
 
-void verilogwriter::print_alu(std::ostream& out, aluimpl* node) {
+bool verilogwriter::print_alu(std::ostream& out, aluimpl* node) {
   auto print_signed_operand = [&](unsigned index) {
     if (node->is_signed())
       out << "$signed(";
@@ -500,17 +487,19 @@ void verilogwriter::print_alu(std::ostream& out, aluimpl* node) {
       out << ";" << std::endl;
     }
   }
+  return true;
 }
 
-void verilogwriter::print_zext(std::ostream& out, aluimpl* node) {
+bool verilogwriter::print_zext(std::ostream& out, aluimpl* node) {
   out << "assign ";
   this->print_name(out, node);
   out << " = {{" << node->size() - node->src(0).size() << "{1'b0}}, ";
   this->print_name(out, node->src(0).impl());
   out << "};" << std::endl;
+  return true;
 }
 
-void verilogwriter::print_sext(std::ostream& out, aluimpl* node) {
+bool verilogwriter::print_sext(std::ostream& out, aluimpl* node) {
   out << "assign ";
   this->print_name(out, node);
   out << " = {{" << node->size() - node->src(0).size() << "{";
@@ -518,9 +507,10 @@ void verilogwriter::print_sext(std::ostream& out, aluimpl* node) {
   out << "[" << (node->src(0).size() - 1) << "]}}, ";
   this->print_name(out, node->src(0).impl());
   out << "};" << std::endl;
+  return true;
 }
 
-void verilogwriter::print_select(std::ostream& out, selectimpl* node) {
+bool verilogwriter::print_select(std::ostream& out, selectimpl* node) {
   bool has_key = node->has_key();
   uint32_t i = has_key ? 1 : 0;  
   if (node->is_ternary()) {
@@ -593,9 +583,10 @@ void verilogwriter::print_select(std::ostream& out, selectimpl* node) {
     }
     out << "end" << std::endl;
   }
+  return true;
 }
 
-void verilogwriter::print_reg(std::ostream& out, regimpl* node) {
+bool verilogwriter::print_reg(std::ostream& out, regimpl* node) {
   auto print_sr_name = [&]() {
     this->print_name(out, node);
     out << "_sr";
@@ -708,14 +699,16 @@ void verilogwriter::print_reg(std::ostream& out, regimpl* node) {
     }
     out << "end" << std::endl;
   }
+  return true;
 }
 
-void verilogwriter::print_cdomain(std::ostream& out, cdimpl* cd) {
+bool verilogwriter::print_cdomain(std::ostream& out, cdimpl* cd) {
   out << (cd->pos_edge() ? "posedge" : "negedge") << " ";
   this->print_name(out, cd->clk().impl());
+  return true;
 }
 
-void verilogwriter::print_mem(std::ostream& out, memimpl* node) {
+bool verilogwriter::print_mem(std::ostream& out, memimpl* node) {
   auto print_port = [&](std::ostream& out, memportimpl* p) {
     this->print_name(out, p->mem());
     out << "[";
@@ -810,9 +803,10 @@ void verilogwriter::print_mem(std::ostream& out, memimpl* node) {
     }
     out << "end" << std::endl;
   }
+  return true;
 }
 
-void verilogwriter::print_udf(std::ostream& out, udfimpl* node) {
+bool verilogwriter::print_udf(std::ostream& out, udfimpl* node) {
   std::unordered_map<std::string, std::string> dic;
 
   auto dict_add = [&](const std::string& key, lnodeimpl* value) {
@@ -874,6 +868,16 @@ void verilogwriter::print_udf(std::ostream& out, udfimpl* node) {
     out << code.substr(start);
   }
   out << std::endl;
+  return true;
+}
+
+bool verilogwriter::print_tap(std::ostream& out, tapimpl* node) {
+  out << "assign ";
+  this->print_name(out, node);
+  out << " = ";
+  this->print_name(out, node->src(0).impl());
+  out << ";" << std::endl;
+  return true;
 }
 
 void verilogwriter::print_name(std::ostream& out, lnodeimpl* node, bool force) {
@@ -885,11 +889,12 @@ void verilogwriter::print_name(std::ostream& out, lnodeimpl* node, bool force) {
   switch (type) {
   case type_input:
   case type_output:
+  case type_tap:
     out << node->name();
     break;
   case type_proxy:    
     if (!force && this->is_inline_subscript(node)) {
-      this->print_proxy(out, reinterpret_cast<proxyimpl*>(node));
+      this->print_proxy_value(out, reinterpret_cast<proxyimpl*>(node));
     } else {
       print_unique_name(node);
     }
@@ -1010,7 +1015,7 @@ void verilogwriter::print_operator(std::ostream& out, ch_op op) {
   case ch_op::neg:  out << "-"; break;
   case ch_op::add:  out << "+"; break;
   case ch_op::sub:  out << "-"; break;
-  case ch_op::mult: out << "*"; break;
+  case ch_op::mul: out << "*"; break;
   case ch_op::div:  out << "/"; break;
   case ch_op::mod:  out << "%"; break;
 

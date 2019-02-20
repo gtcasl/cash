@@ -875,6 +875,11 @@ TEST_CASE("arithmetic", "[arithmetic]") {
       return (b == 0x1'ffffffff'ffffffff_h65);
     });
     TEST([]()->ch_bool {
+      ch_int<4> a(-2);
+      auto b = ch_abs(a);
+      return (b == 2);
+    });
+    TEST([]()->ch_bool {
       ch_int4 a(1);
       ch_int8 b(2);
       auto c = a * b;
@@ -907,7 +912,7 @@ TEST_CASE("arithmetic", "[arithmetic]") {
     TEST([]()->ch_bool {
       ch_int<100> a(-0x6ABA8);
       ch_int<102> b(0x335);
-      auto c = ch_mult<127>(a, b);
+      auto c = ch_mul<127>(a, b);
       ch_bit<127> e = -0x156481C8;
       //ch_print("c={0}, e={1}", c, e);
       return (c == e);
@@ -915,19 +920,19 @@ TEST_CASE("arithmetic", "[arithmetic]") {
     TEST([]()->ch_bool {
       ch_int128 a(-0x6ABA8);
       ch_int<65> b(-0x335);
-      auto c = ch_mult<128>(a, b);
+      auto c = ch_mul<128>(a, b);
       return (c == 0x156481C8);
     });
     TEST([]()->ch_bool {
       ch_uint128 a(0x6ABA8);
       ch_uint128 b(0x335);
-      auto c = ch_mult(a, b);
+      auto c = ch_mul(a, b);
       return (c == 0x156481C8);
     });
     TEST([]()->ch_bool {
       ch_uint32 a(0x10000);
       ch_uint32 b(0x10000);
-      auto c = ch_mult<33>(a, b);
+      auto c = ch_mul<33>(a, b);
       return (c == 0x100000000);
     });
     TEST([]()->ch_bool {

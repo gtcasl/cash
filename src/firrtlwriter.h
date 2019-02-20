@@ -27,7 +27,7 @@ public:
 
   ~firrtlwriter();
 
-  bool print(std::ostream& out, std::unordered_set<std::string_view>& visited);
+  void print(std::ostream& out, std::unordered_set<std::string_view>& visited);
 
 protected:
 
@@ -61,19 +61,19 @@ protected:
                    uint32_t offset = 0,
                    uint32_t size = 0);
 
-  void print_lit(std::ostream& out, litimpl* node);
+  bool print_lit(std::ostream& out, litimpl* node);
 
-  void print_proxy(std::ostream& out, proxyimpl* node);
+  bool print_proxy(std::ostream& out, proxyimpl* node);
 
-  void print_alu(std::ostream& out, aluimpl* node);
+  bool print_alu(std::ostream& out, aluimpl* node);
 
-  void print_select(std::ostream& out, selectimpl* node);
+  bool print_select(std::ostream& out, selectimpl* node);
 
-  void print_reg(std::ostream& out, regimpl* node);
+  bool print_reg(std::ostream& out, regimpl* node);
 
-  void print_cdomain(std::ostream& out, cdimpl* cd);
+  bool print_cdomain(std::ostream& out, cdimpl* cd);
 
-  void print_mem(std::ostream& out, memimpl* node);
+  bool print_mem(std::ostream& out, memimpl* node);
 
   void print_operator(std::ostream& out, ch_op op);
 

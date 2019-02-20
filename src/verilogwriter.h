@@ -20,6 +20,7 @@ class ioimpl;
 class cdimpl;
 class udfimpl;
 class udfsimpl;
+class tapimpl;
 class source_location;
 enum class ch_op;
 
@@ -30,7 +31,7 @@ public:
 
   ~verilogwriter();
 
-  bool print(std::ostream& out, std::unordered_set<std::string_view>& visited);
+  void print(std::ostream& out, std::unordered_set<std::string_view>& visited);
 
 protected:
 
@@ -55,23 +56,27 @@ protected:
 
   bool print_logic(std::ostream& out, lnodeimpl* node);
 
-  void print_proxy(std::ostream& out, proxyimpl* node);
+  bool print_proxy(std::ostream& out, proxyimpl* node);
 
-  void print_alu(std::ostream& out, aluimpl* node);
+  void print_proxy_value(std::ostream& out, proxyimpl* node);
 
-  void print_zext(std::ostream& out, aluimpl* node);
+  bool print_alu(std::ostream& out, aluimpl* node);
 
-  void print_sext(std::ostream& out, aluimpl* node);
+  bool print_zext(std::ostream& out, aluimpl* node);
 
-  void print_select(std::ostream& out, selectimpl* node);
+  bool print_sext(std::ostream& out, aluimpl* node);
 
-  void print_reg(std::ostream& out, regimpl* node);
+  bool print_select(std::ostream& out, selectimpl* node);
 
-  void print_cdomain(std::ostream& out, cdimpl* cd);
+  bool print_reg(std::ostream& out, regimpl* node);
 
-  void print_mem(std::ostream& out, memimpl* node);
+  bool print_cdomain(std::ostream& out, cdimpl* cd);
 
-  void print_udf(std::ostream& out, udfimpl* node);
+  bool print_mem(std::ostream& out, memimpl* node);
+
+  bool print_udf(std::ostream& out, udfimpl* node);
+
+  bool print_tap(std::ostream& out, tapimpl* node);
 
   void print_name(std::ostream& out,
                   lnodeimpl* node,

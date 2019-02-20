@@ -73,9 +73,9 @@ void foo() {
   }
   {
     ch_float32 a, b;
-    auto c = ch_fmult<1>(a, b);
-    auto d = ch_fmult<1>(0.1f, b);
-    auto e = ch_fmult<1>(a, 0.1f);
+    auto c = ch_fmul<1>(a, b);
+    auto d = ch_fmul<1>(0.1f, b);
+    auto e = ch_fmul<1>(a, 0.1f);
   }
   {
     ch_scbit<4> a = 3;
@@ -246,7 +246,8 @@ void foo() {
 
   {
     ch_uint4 a;
-    ch_uint4 b;
+    ch_uint8 b;
+    ch_module<TestModule> m;
     auto c1 = ch_eq(a, a);
     auto c2 = ch_ne(a, a);
     auto c3 = ch_lt(a, b);
@@ -256,22 +257,30 @@ void foo() {
     auto c7 = ch_eq(1_b, a);
     auto c8 = ch_eq(a, 1);
     auto c9 = ch_eq(1, a);
+    auto c10 = ch_eq(m.io.lhs, m.io.rhs);
+    auto c11 = ch_eq(a, m.io.rhs);
+    auto c12 = ch_eq(m.io.rhs, a);
   }
 
   {
-    ch_bit4 a;
-    ch_bit8 b;
+    ch_uint4 a;
+    ch_uint8 b;
+    ch_module<TestModule> m;
     auto c1 = ch_shr(a, a);
     auto c2 = ch_shr<10>(a, a);
     auto c3 = ch_shr(a, b);
     auto c4 = ch_shr<10>(a, b);
     auto c5 = ch_shr<10>(a, 1_b);
-    auto c6 = ch_shr<10>(a, 1);
+    auto c6 = ch_shr<10>(a, 1);    
+    auto c7 = ch_shr<10>(m.io.lhs, m.io.rhs);
+    auto c8 = ch_shr<10>(a, m.io.rhs);
+    auto c9 = ch_shr<10>(m.io.rhs, a);
   }
 
   {
-    ch_int4 a;
-    ch_int8 b;
+    ch_uint4 a;
+    ch_uint8 b;
+    ch_module<TestModule> m;
     auto c1 = ch_add(a, a);
     auto c2 = ch_add<10>(a, a);
     auto c3 = ch_add(a, b);
@@ -281,6 +290,27 @@ void foo() {
     auto c7 = ch_add<10>(1_b, a);
     auto c8 = ch_add<10>(a, 1);
     auto c9 = ch_add<10>(1, a);
+    auto c10 = ch_add<10>(m.io.lhs, m.io.rhs);
+    auto c11 = ch_add<10>(a, m.io.rhs);
+    auto c12 = ch_add<10>(m.io.rhs, a);
+  }
+
+  {
+    ch_uint4 a;
+    ch_uint8 b;
+    ch_module<TestModule> m;
+    auto c1 = ch_mul(a, a);
+    auto c2 = ch_mul<10>(a, a);
+    auto c3 = ch_mul(a, b);
+    auto c4 = ch_mul(b, a);
+    auto c5 = ch_mul<10>(a, b);
+    auto c6 = ch_mul<10>(a, 1_b);
+    auto c7 = ch_mul<10>(1_b, a);
+    auto c8 = ch_mul<10>(a, 1);
+    auto c9 = ch_mul<10>(1, a);
+    auto c10 = ch_mul<10>(m.io.lhs, m.io.rhs);
+    auto c11 = ch_mul<10>(a, m.io.rhs);
+    auto c12 = ch_mul<10>(m.io.rhs, a);
   }
 }
 

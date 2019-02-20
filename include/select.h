@@ -117,7 +117,7 @@ auto ch_sel(const ch_bit<1>& pred, const U& _true, const V& _false, CH_SLOC) {
 }
 
 template <typename U, typename V>
-auto ch_sel(const ch_bit<1>& pred, const U& _true, const V& _false, CH_SLOC) {  
+auto ch_sel(const ch_bit<1>& pred, const U& _true, const V& _false, CH_SLOC) {
   static_assert(ch_width_v<deduce_type_t<false, U, V>> != 0, "invalid type");
   return ch_sel<ch_logic_t<deduce_first_type_t<U, V>>, U, V>(pred, _true, _false, sloc);
 }

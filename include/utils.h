@@ -158,7 +158,16 @@ inline constexpr bool bool_constant_v = std::bool_constant<B>::value;
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename To, typename... Froms>
-inline constexpr bool are_all_constructible_v = std::conjunction_v<std::is_constructible<To, Froms>...>;
+inline constexpr bool is_fold_constructible_v = std::conjunction_v<std::is_constructible<To, Froms>...>;
+
+///////////////////////////////////////////////////////////////////////////////
+
+template <typename To, typename From>
+struct is_strictly_constructible : std::bool_constant<
+  std::is_constructible_v<To, From> && !std::is_base_of_v<To, From>> {};
+
+template<typename To, typename From>
+inline constexpr bool is_strictly_constructible_v = is_strictly_constructible<To, From>::value;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -176,9 +185,6 @@ template<typename A, typename B>
 inline constexpr bool is_equality_comparable_v = is_equality_comparable<A, B>::value;
 
 ///////////////////////////////////////////////////////////////////////////////
-
-//template <typename T>
-//using identity_t = T;
 
 template<typename T>
 struct identity_impl {
@@ -248,14 +254,22 @@ protected:
 protected:
   
   mutable long refcount_;
-  
-  template <typename T> friend class refcounted_ptr;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T>
 class refcounted_ptr {
+protected:
+
+  struct managed_obj_t : refcounted {
+    template <typename... Ts>
+    managed_obj_t(Ts&&... args) : obj(std::forward<Ts>(args)...) {}
+    T obj;
+  };
+
+  managed_obj_t* ptr_;
+
 public:
   
   refcounted_ptr() : ptr_(nullptr) {}
@@ -265,11 +279,12 @@ public:
       ptr_->release();
   }
   
-  refcounted_ptr(const refcounted_ptr& other) : refcounted_ptr(other.ptr_) {}
+  refcounted_ptr(const refcounted_ptr& other) : refcounted_ptr() {
+    this->operator=(other);
+  }
   
-  refcounted_ptr(refcounted_ptr&& other) {
-    ptr_ = other.ptr_;
-    other.ptr_ == nullptr;
+  refcounted_ptr(refcounted_ptr&& other) : refcounted_ptr() {
+    this->operator=(std::move(other));
   }
   
   refcounted_ptr& operator=(const refcounted_ptr& other) {
@@ -282,10 +297,9 @@ public:
   }
   
   refcounted_ptr& operator=(refcounted_ptr&& other) {
-    if (other.ptr_)
-      other.ptr_->release();
     ptr_ = other.ptr_;
     other.ptr_ == nullptr;
+    return *this;
   }
   
   T& operator*() const {
@@ -300,29 +314,16 @@ public:
     return ptr_;
   }
   
-  T* release() const {
-    T* ret(ptr_);
-    if (ret)
-     ret->release();    
-    ptr_ = nullptr;
-    return ret;
-  }
-  
-  bool is_unique() const {
-    return ptr_ ? (ptr_->refcount() == 1) : false;
-  }
-  
   uint32_t use_count() const {
-    return ptr_ ? (ptr_->refcount() == 1) : false;
+    return ptr_ ? ptr_->refcount() : 0;
   }
   
-  void reset(T* ptr = nullptr) {
+  void reset(T* ptr) {
     if (ptr)
       ptr->acquire();
     if (ptr_)
       ptr_->release();
-    ptr_ = ptr;    
-    return *this;
+    ptr_ = ptr;
   }
   
   bool operator==(const refcounted_ptr& other) const {
@@ -334,26 +335,165 @@ public:
   }
   
   operator bool() const {
-    return this->use_count() != 0;
+    return (ptr_ != nullptr);
   }
-  
-protected:    
-  
-  refcounted_ptr(refcounted* ptr) : ptr_(ptr) {
-    if (ptr)
-      ptr->acquire();
+
+  template <typename... Ts>
+  static auto make(Ts&&... args) {
+    refcounted_ptr sp;
+    sp.ptr_ = new managed_obj_t(std::forward<Ts>(args)...);
+    sp.ptr_->acquire();
+    return sp;
   }
-  
-  refcounted* ptr_;
-  
-  template <typename T_, typename... Args>
-  friend refcounted_ptr<T_> make_ptr(const Args&... args);
 };
 
-template <typename T, typename... Args>
-refcounted_ptr<T> make_ptr(const Args&... args) {
-  return refcounted_ptr<T>(new T(args...));
-} 
+///////////////////////////////////////////////////////////////////////////////
+
+template <class T>
+class smart_ptr {
+public:
+    smart_ptr(T* ptr = nullptr) : ptr_(ptr), next_(nullptr) {}
+
+    smart_ptr(const smart_ptr& other) : smart_ptr() {
+      this->operator=(other);
+    }
+
+    smart_ptr(smart_ptr&& other) : smart_ptr() {
+      this->operator=(std::move(other));
+    }
+
+    ~smart_ptr() {
+      this->release();
+    }
+
+    smart_ptr& operator=(const smart_ptr& other) {
+      this->release();
+      if (other.ptr_) {
+        ptr_ = other.ptr_;
+        auto otherNext = other.next_;
+        other.next_ = this;
+        next_ = otherNext ? otherNext : &other;
+      }
+      return *this;
+    }
+
+    smart_ptr& operator=(smart_ptr&& other) {
+      ptr_ = other.ptr_;
+      next_ = other.next_;
+      other.ptr_ = nullptr;
+      other.next_ = nullptr;
+      return *this;
+    }
+
+    T& operator*() const {
+      return *ptr_;
+    }
+
+    T* operator->() const {
+      return ptr_;
+    }
+
+    T* get() const {
+      return ptr_;
+    }
+
+    uint32_t use_count() const {
+      if (nullptr == ptr_)
+        return 0;
+      if (nullptr == next_)
+        return 1;
+      uint32_t count = 1;
+      auto entry = next_;
+      while (entry != this) {
+        ++count;
+        entry = entry->next_;
+      }
+      return count;
+    }
+
+    void reset(T* ptr) {
+      this->release();
+      ptr_ = ptr;
+    }
+
+    void reset_all(T* ptr) {
+      auto entry = next_;
+      if (entry) {
+        if (ptr) {
+          while (entry != this) {
+            entry->ptr_ = ptr;
+            entry = entry->next_;
+          }
+        } else {
+          while (entry != this) {
+            auto next = entry->next_;
+            const_cast<smart_ptr*>(entry)->reset(ptr);
+            entry = next;
+          }
+        }
+      }
+      delete ptr_;
+      ptr_ = ptr;
+    }
+
+    void reset_all(const smart_ptr& other) {
+      this->reset_all(other.ptr_);
+      // merge lists
+      auto otherNext = other.next_ ? other.next_ : &other;
+      other.next_ = this;
+      auto entry = next_;
+      if (entry) {
+        while (entry->next_ != this) {
+          entry = entry->next_;
+        }
+        entry->next_ = otherNext;
+      } else {
+        next_ = otherNext;
+      }
+    }
+
+    bool operator==(const smart_ptr& other) const {
+      return (ptr_ == other.ptr_);
+    }
+
+    bool operator==(const T* other) const {
+      return (ptr_ == other);
+    }
+
+    operator bool() const {
+      return (ptr_ != nullptr);
+    }
+
+    template <typename... Ts>
+    static auto make(Ts&&... args) {
+      return smart_ptr(new T(std::forward<Ts>(args)...));
+    }
+
+protected:
+
+    void release() {
+      if (nullptr == ptr_)
+        return;
+      auto entry = next_;
+      if (entry) {
+        while (entry->next_ != this) {
+          entry = entry->next_;
+        }
+        if (entry == entry->next_->next_) {
+          entry->next_ = nullptr; // single entry
+        } else {
+          entry->next_ = next_; // multiple entries
+        }
+        next_ = nullptr;
+      } else {
+        delete ptr_;
+      }
+      ptr_ = nullptr;
+    }
+
+    mutable T* ptr_;
+    mutable const smart_ptr<T>* next_;
+};
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -603,6 +743,8 @@ auto sign_ext(T value, unsigned width) {
 
 }
 }
+
+///////////////////////////////////////////////////////////////////////////////
 
 #define CH_CHECK(pred, ...) \
   do { \

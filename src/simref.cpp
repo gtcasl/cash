@@ -477,11 +477,11 @@ public:
       }
       break;
 
-    case ch_op::mult:
+    case ch_op::mul:
       if constexpr (is_scalar) {
-        bv_mult_scalar<is_signed>(dst_, dst_size_, src0_, src0_size_, src1_, src1_size_);
+        bv_mul_scalar<is_signed>(dst_, dst_size_, src0_, src0_size_, src1_, src1_size_);
       } else {
-        bv_mult_vector<is_signed>(dst_, dst_size_, src0_, src0_size_, src1_, src1_size_);
+        bv_mul_vector<is_signed>(dst_, dst_size_, src0_, src0_size_, src1_, src1_size_);
       }
       break;
     case ch_op::div:
@@ -615,7 +615,7 @@ instr_alu_base* instr_alu_base::create(aluimpl* node, data_map_t& map) {
   CREATE_ALU_INST(ch_op::neg, true, true);
   CREATE_ALU_INST(ch_op::add, true, true);
   CREATE_ALU_INST(ch_op::sub, true, true);  
-  CREATE_ALU_INST(ch_op::mult, true, false);
+  CREATE_ALU_INST(ch_op::mul, true, false);
   CREATE_ALU_INST(ch_op::div, true, false);
   CREATE_ALU_INST(ch_op::mod, true, false);
   CREATE_ALU_INST(ch_op::pad, true, false);

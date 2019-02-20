@@ -224,3 +224,150 @@ void copy_bits(T* dst, uint32_t dst_offset, const T* src, uint32_t src_offset, u
     w_dst[w_dst_end_idx] = blend<T>(mask, w_dst[w_dst_end_idx], src_block_new);
   }
 }
+
+
+template <class T>
+class smart_ptr {
+public:
+    smart_ptr(T* ptr = nullptr) : ptr_(ptr), next_(nullptr) {}
+
+    smart_ptr(const smart_ptr& other) : smart_ptr() {
+      this->operator=(other);
+    }
+
+    smart_ptr(smart_ptr&& other) : smart_ptr() {
+      this->operator=(std::move(other));
+    }
+
+    ~smart_ptr() {
+      this->release();
+    }
+
+    smart_ptr& operator=(const smart_ptr& other) {
+      this->release();
+      if (other.ptr_) {
+        ptr_ = other.ptr_;
+        if (other.next_) {
+          auto entry = &other;
+          while (entry->next_ != &other) {
+            entry = entry->next_;
+          }
+          next_ = &other;
+          entry->next_ = this;
+        } else {
+          next_ = &other;
+          other.next_ = this;
+        }
+      }
+      return *this;
+    }
+
+    smart_ptr& operator=(smart_ptr&& other) {
+      ptr_ = other.ptr_;
+      next_ = other.next_;
+      other.ptr_ = nullptr;
+      other.next_ = nullptr;
+      return *this;
+    }
+
+    T& operator*() const {
+      return *ptr_;
+    }
+
+    T* operator->() const {
+      return ptr_;
+    }
+
+    T* get() const {
+      return ptr_;
+    }
+
+    uint32_t use_count() const {
+      if (nullptr == ptr_)
+        return 0;
+      if (nullptr == next_)
+        return 1;
+      uint32_t count = 1;
+      auto entry = next_;
+      while (entry != this) {
+        ++count;
+        entry = entry->next_;
+      }
+      return count;
+    }
+
+    void reset(T* ptr) {
+      this->release();
+      ptr_ = ptr;
+    }
+
+    void reset_all(T* ptr) {
+      if (next_) {
+        auto entry = next_;
+        while (entry != this) {
+          const_cast<smart_ptr*>(entry)->ptr_ = ptr;
+          entry = entry->next_;
+        }
+      }
+      delete ptr_;
+      ptr_ = ptr;
+    }
+
+    void reset_all(const smart_ptr& other) {
+      this->reset_all(other.ptr_);
+      auto otherNext = other.next_ ? other.next_ : &other;
+      other.next_ = this;
+      if (next_) {
+        auto entry = next_;
+        while (entry->next_ != this) {
+          entry = entry->next_;
+        }
+        entry->next_ = otherNext;
+      } else {
+        next_ = otherNext;
+      }
+    }
+
+    bool operator==(const smart_ptr& other) const {
+      return (ptr_ == other.ptr_);
+    }
+
+    bool operator==(const T* other) const {
+      return (ptr_ == other);
+    }
+
+    operator bool() const {
+      return (ptr_ != nullptr);
+    }
+
+protected:
+
+    bool releaseOwnership() {
+      if (next_) {
+        auto entry = next_;
+        while (entry->next_ != this) {
+          entry = entry->next_;
+        }
+        if (entry == entry->next_->next_) {
+          entry->next_ = nullptr; // single entry
+        } else {
+          entry->next_ = next_; // muliple entries
+        }
+        ptr_ = nullptr;
+        next_ = nullptr;
+        return false;
+      }
+      return true;
+    }
+
+    void release() {
+      if (ptr_) {
+        if (this->releaseOwnership())
+          delete ptr_;
+      }
+      ptr_ = nullptr;
+    }
+
+    T* ptr_;
+    mutable const smart_ptr<T>* next_;
+};

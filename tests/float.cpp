@@ -16,8 +16,8 @@ namespace {
     void describe() {
       auto a = ch_fadd<Delay>(io.lhs, io.rhs);
       auto b = ch_fsub<Delay>(a, io.rhs);
-      auto c = ch_fmult<Delay>(b, io.lhs);
-      auto d = ch_fmult<Delay>(c, a);
+      auto c = ch_fmul<Delay>(b, io.lhs);
+      auto d = ch_fmul<Delay>(c, a);
       io.out = d;
       //ch_print("{0}: clk={1}, rst={2}, a={3}, b={4}, c={5}, d={6}", ch_now(), ch_clock(), ch_reset(), a, b, c, d);
     }
@@ -67,26 +67,26 @@ TEST_CASE("floats", "[floats]") {
   SECTION("arithmetic test", "[math]") {
     TEST([]()->ch_bool {
       ch_float32 x(0.5f), y(0.0f), z;
-      z = ch_fmult<1>(x, y);      
+      z = ch_fmul<1>(x, y);      
       return (z == 0.0f);
     }, 1);
     
     TEST([]()->ch_bool {
       ch_float32 x(0.5f), y(0.5f), z;
-      z = ch_fmult<1>(x, y);
+      z = ch_fmul<1>(x, y);
       //ch_print("{0}: clk={1}, rst={2}, z={3}", ch_now(), ch_clock(), ch_reset(), z);
       return (z == 0x3e800000_h);
     }, 1);
 
     TEST([]()->ch_bool {
       ch_float32 x(0.5f), y(1.0f), z;
-      z = ch_fmult<1>(x, y);
+      z = ch_fmul<1>(x, y);
       return (z == 0x3f000000_h);
     }, 1);
     
     TEST([]()->ch_bool {
       ch_float32 x(0.5f), y(2.0f), z;
-      z = ch_fmult<1>(x, y);
+      z = ch_fmul<1>(x, y);
       return (z == 0x3f800000_h);
     }, 1);
     
@@ -104,7 +104,7 @@ TEST_CASE("floats", "[floats]") {
 
     TEST([]()->ch_bool {
       ch_float32 x(0.5f), y(0.5f), z, e;
-      z = ch_fmult<5>(x, y);
+      z = ch_fmul<5>(x, y);
       e = ch_case<ch_float32>(ch_now(), (2+5*2), 0x3e800000_h)(z);
       //ch_print("{0}: clk={1}, rst={2}, z={3}, e={4}", ch_now(), ch_clock(), ch_reset(), z, e);
       return (z == e);
@@ -132,7 +132,7 @@ TEST_CASE("floats", "[floats]") {
       device.io.rhs = 0.5f;
       ch_simulator sim(device);
       sim.run(2*2*4);
-      ch_toVerilog("fmulttest.v", device);
+      ch_toVerilog("fmultest.v", device);
       float ret(device.io.out);
       //std::cout << "ret=" << ret << std::endl;
       return (0.25f == ret);

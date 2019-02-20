@@ -32,25 +32,17 @@ firrtlwriter::firrtlwriter(context* ctx)
 
 firrtlwriter::~firrtlwriter() {}
 
-bool firrtlwriter::print(std::ostream& out,
+void firrtlwriter::print(std::ostream& out,
                          std::unordered_set<std::string_view>& visited) {
-  // ensure single instantiation
-  if (visited.count(ctx_->name()))
-    return false;
-  visited.insert(ctx_->name());
-
-  {
-    // print dependent modules
-    auto_separator sep("\n");
-    int written = 0;
-    for (auto binding : ctx_->bindings()) {
-      out << sep;
-      firrtlwriter child_module(binding->module());
-      written |= child_module.print(out, visited);
-    }
-    if (written) {
-      out << std::endl;
-    }
+  // print dependent modules
+  for (auto binding : ctx_->bindings()) {
+    // ensure single instantiation
+    if (visited.count(ctx_->name()))
+      continue;
+    visited.insert(ctx_->name());
+    firrtlwriter child_module(binding->module());
+    child_module.print(out, visited);
+    out << std::endl;
   }
 
   out << "module " << ctx_->name() << ':' << std::endl;
@@ -66,8 +58,6 @@ bool firrtlwriter::print(std::ostream& out,
     // print footer
     this->print_footer(out);
   }
-
-  return true;
 }
 
 void firrtlwriter::print_header(std::ostream& out) {
@@ -239,32 +229,24 @@ bool firrtlwriter::print_logic(std::ostream& out, lnodeimpl* node) {
   auto type = node->type();
   switch (type) {
   case type_lit:
-    if (is_inline_literal(node))
-      return false;
-    this->print_lit(out, reinterpret_cast<litimpl*>(node));
-    return true;
+    return this->print_lit(out, reinterpret_cast<litimpl*>(node));
   case type_proxy:
-    this->print_proxy(out, reinterpret_cast<proxyimpl*>(node));
-    return true;
+    return this->print_proxy(out, reinterpret_cast<proxyimpl*>(node));
   case type_alu:
-    this->print_alu(out, reinterpret_cast<aluimpl*>(node));
-    return true;
+    return this->print_alu(out, reinterpret_cast<aluimpl*>(node));
   case type_sel:
-    this->print_select(out, reinterpret_cast<selectimpl*>(node));
-    return true;
+    return this->print_select(out, reinterpret_cast<selectimpl*>(node));
   case type_reg:
-    this->print_reg(out, reinterpret_cast<regimpl*>(node));
-    return true;
+    return this->print_reg(out, reinterpret_cast<regimpl*>(node));
   case type_mem:
-    this->print_mem(out, reinterpret_cast<memimpl*>(node));
-    return true;
+    return this->print_mem(out, reinterpret_cast<memimpl*>(node));
   case type_bind:
-    this->print_binding(out, reinterpret_cast<bindimpl*>(node));
-    return true;
+    return this->print_binding(out, reinterpret_cast<bindimpl*>(node));
   case type_bindin:
   case type_bindout:
-    this->print_bindport(out, reinterpret_cast<bindportimpl*>(node));
-    return true;
+    return this->print_bindport(out, reinterpret_cast<bindportimpl*>(node));
+  default:
+    assert(false);
   case type_input:
   case type_output:
   case type_cd:
@@ -275,21 +257,21 @@ bool firrtlwriter::print_logic(std::ostream& out, lnodeimpl* node) {
   case type_assert:
   case type_print:
   case type_time:
-    break;
-  default:
-    assert(false);
+    return false;
   }
-  return false;
 }
 
-void firrtlwriter::print_lit(std::ostream& out, litimpl* node) {
+bool firrtlwriter::print_lit(std::ostream& out, litimpl* node) {
+  if (is_inline_literal(node))
+    return false;
   this->print_name(out, node);
   out << " <= ";
   this->print_value(out, node->value(), true);
   out << std::endl;
+  return true;
 }
 
-void firrtlwriter::print_proxy(std::ostream& out, proxyimpl* node) {
+bool firrtlwriter::print_proxy(std::ostream& out, proxyimpl* node) {
   //--
   const auto& ranges = node->ranges();  
   std::unordered_map<proxyimpl::range_t, uint32_t, proxyimpl::range_t::hash_t> tmps;
@@ -353,9 +335,10 @@ void firrtlwriter::print_proxy(std::ostream& out, proxyimpl* node) {
     print_range(ranges[0]);
   }
   out << std::endl;
+  return true;
 }
 
-void firrtlwriter::print_alu(std::ostream& out, aluimpl* node) {
+bool firrtlwriter::print_alu(std::ostream& out, aluimpl* node) {
   //--
   auto op = node->op();
 
@@ -488,9 +471,10 @@ void firrtlwriter::print_alu(std::ostream& out, aluimpl* node) {
    print_default();
    break;
   }
+  return true;
 }
 
-void firrtlwriter::print_select(std::ostream& out, selectimpl* node) {
+bool firrtlwriter::print_select(std::ostream& out, selectimpl* node) {
   bool has_key = node->has_key();
   if (!has_key && node->is_ternary()) {
     this->print_name(out, node);
@@ -543,9 +527,10 @@ void firrtlwriter::print_select(std::ostream& out, selectimpl* node) {
       out << std::endl;
     }
   }
+  return true;
 }
 
-void firrtlwriter::print_reg(std::ostream& out, regimpl* node) {
+bool firrtlwriter::print_reg(std::ostream& out, regimpl* node) {
   this->print_name(out, node);
   out << " <= ";
   if (node->has_init_data()) {
@@ -560,15 +545,16 @@ void firrtlwriter::print_reg(std::ostream& out, regimpl* node) {
     this->print_name(out, node->next().impl());
   }
   out << std::endl;
+  return true;
 }
 
-void firrtlwriter::print_cdomain(std::ostream& out, cdimpl* cd) {
+bool firrtlwriter::print_cdomain(std::ostream& out, cdimpl* cd) {
   assert(cd->pos_edge());
   this->print_name(out, cd->clk().impl());
+  return true;
 }
 
-void firrtlwriter::print_mem(std::ostream& out, memimpl* node) {
-
+bool firrtlwriter::print_mem(std::ostream& out, memimpl* node) {
   auto print_attributes = [&](memportimpl* port, uint32_t port_index) {
     char type;
     if (port->type() == type_mwport) {
@@ -643,6 +629,7 @@ void firrtlwriter::print_mem(std::ostream& out, memimpl* node) {
       print_attributes(node->wrport(i), i);
     }
   }
+  return true;
 }
 
 void firrtlwriter::print_operator(std::ostream& out, ch_op op) {
@@ -674,7 +661,7 @@ void firrtlwriter::print_operator(std::ostream& out, ch_op op) {
   case ch_op::neg:   out << "neg"; break;
   case ch_op::add:   out << "add"; break;
   case ch_op::sub:   out << "sub"; break;
-  case ch_op::mult:   out << "mul"; break;
+  case ch_op::mul:   out << "mul"; break;
   case ch_op::div:   out << "div"; break;
   case ch_op::mod:   out << "mod"; break;
 

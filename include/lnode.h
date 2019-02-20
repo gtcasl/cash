@@ -30,7 +30,7 @@ namespace internal {
   m(neg,   18 | op_flags::unary  | op_flags::arithmetic | op_flags::resize_dst | op_flags::is_signed) \
   m(add,   19 | op_flags::binary | op_flags::arithmetic | op_flags::symmetric | op_flags::resize_dst | op_flags::is_signed) \
   m(sub,   20 | op_flags::binary | op_flags::arithmetic | op_flags::resize_dst | op_flags::is_signed) \
-  m(mult,  21 | op_flags::binary | op_flags::arithmetic | op_flags::symmetric | op_flags::is_signed) \
+  m(mul,   21 | op_flags::binary | op_flags::arithmetic | op_flags::symmetric | op_flags::is_signed) \
   m(div,   22 | op_flags::binary | op_flags::arithmetic | op_flags::is_signed) \
   m(mod,   23 | op_flags::binary | op_flags::arithmetic | op_flags::is_signed) \
   m(pad,   24 | op_flags::unary  | op_flags::misc | op_flags::is_signed)

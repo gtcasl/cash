@@ -8,64 +8,63 @@ namespace htl {
 using namespace ch::logic;
 
 template <std::size_t N>
-struct ch_counter {
+class ch_counter {
+public:
 
-  ch_uint<log2up(N)> value;
-  ch_uint<log2up(N)> next;
-
-  ch_counter(const ch_bool& incr = true) {
+  template <typename S, typename I>
+  ch_counter(const ch_bool& incr, const S& step, const I& init) {
+    incr_ = incr;
+    step_ = step;
+    init_ = init;
     if constexpr (N == 1) {
-      this->value = 0;
-      this->next = 0;
+      value_ = 0;
+      next_ = 0;
     } else {
-      ch_reg<ch_uint<log2ceil(N)>> count(0);
+      static_assert(std::is_constructible_v<ch_uint<log2ceil(N)>, I>, "invalid type");
+      ch_reg<ch_uint<log2ceil(N)>> count(init_);
       if constexpr (ispow2(N)) {
-        count->next = ch_sel(incr, count + 1, count);
+        count->next = ch_sel(incr_, count + step_, count);
       } else {
-        auto next = ch_sel(count >= (N-1), count - (N-1), count + 1);
-        count->next = ch_sel(incr, next, count);
+        auto next = ch_sel(count >= (N-step_), count - (N-step_), count + step_);
+        count->next = ch_sel(incr_, next, count);
       }
-      this->value = count;
-      this->next  = count->next;
+      value_ = count;
+      next_  = count->next;
     }
   }
 
   template <typename S>
-  ch_counter(const ch_bool& incr, const S& step) {
-    if constexpr (N == 1) {
-      this->value = 0;
-      this->next = 0;
-    } else {
-      ch_reg<ch_uint<log2ceil(N)>> count(0);
-      if constexpr (ispow2(N)) {
-        count->next = ch_sel(incr, count + step, count);
-      } else {
-        auto next = ch_sel(count >= (N-step), count - (N-step), count + step);
-        count->next = ch_sel(incr, next, count);
-      }
-      this->value = count;
-      this->next  = count->next;
-    }
+  ch_counter(const ch_bool& incr, const S& step) : ch_counter(incr, step, 0) {}
+
+  ch_counter(const ch_bool& incr = true) : ch_counter(incr, 1) {}
+
+  const auto& value() const {
+    return value_;
   }
 
-  template <typename S, typename I>
-  ch_counter(const ch_bool& incr, const S& step, const I& init) {
-    if constexpr (N == 1) {
-      this->value = 0;
-      this->next = 0;
-    } else {
-      static_assert(std::is_constructible_v<ch_uint<log2ceil(N)>, I>, "invalid type");
-      ch_reg<ch_uint<log2ceil(N)>> count(init);
-      if constexpr (ispow2(N)) {
-        count->next = ch_sel(incr, count + step, count);
-      } else {
-        auto next = ch_sel(count >= (N-step), count - (N-step), count + step);
-        count->next = ch_sel(incr, next, count);
-      }
-      this->value = count;
-      this->next  = count->next;
-    }
+  const auto& next() const {
+    return next_;
   }
+
+  auto& init() {
+    return init_;
+  }
+
+  auto& step() {
+    return step_;
+  }
+
+  auto& incr() {
+    return incr_;
+  }
+
+protected:
+
+  ch_uint<log2up(N)> value_;
+  ch_uint<log2up(N)> next_;
+  ch_uint<log2up(N)> init_;
+  ch_uint<log2up(N)> step_;
+  ch_bool incr_;
 };
 
 }
