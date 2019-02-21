@@ -73,23 +73,22 @@ public:
   bool operator!=(const Matrix& other) const {
     return !this->operator ==(other);
   }
-};
 
-template <typename T>
-auto cpuMatMul(const Matrix<T>& a, const Matrix<T>& b) {
-  assert(a.width() == b.height());
-  Matrix<T> out(b.width(), a.height());
-  for (size_t j = 0; j < a.height(); ++j)  {
-    for (size_t i = 0; i < b.width(); ++i) {
-      int sum = 0;
-      for (size_t m = 0; m < a.width(); ++m) {
-          sum += a.at(m, j) * b.at(i, m);
+  friend Matrix<T> operator*(const Matrix<T>& lhs, const Matrix<T>& rhs) {
+    assert(lhs.width() == rhs.height());
+    Matrix<T> out(rhs.width(), lhs.height());
+    for (size_t j = 0; j < lhs.height(); ++j)  {
+      for (size_t i = 0; i < rhs.width(); ++i) {
+        int sum = 0;
+        for (size_t m = 0; m < lhs.width(); ++m) {
+            sum += lhs.at(m, j) * rhs.at(i, m);
+        }
+        out.at(i, j) = sum;
       }
-      out.at(i, j) = sum;
     }
+    return out;
   }
-  return out;
-}
+};
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -155,28 +154,25 @@ int main() {
   }
 
   ch_device<MatMul<8, 24, 4, 4, 4>> matmul;
-  size_t d = 0;
-
-  matmul.io.valid_in = false;
 
   ch_tracer tracer(matmul);
   tracer.run([&](ch_tick t)->bool {
     matmul.io.valid_in = true;
+    auto j = t / 2;
     for (size_t i = 0; i < a.height(); ++i) {
-      matmul.io.a_in[i] = (d < a.width()) ? a.at(d, i) : 0;
+      matmul.io.a_in[i] = (j < a.width()) ? a.at(j, i) : 0;
     }
     for (size_t i = 0; i < b.width(); ++i) {
-      matmul.io.b_in[i] = (d < a.width()) ? b.at(i, d) : 0;
+      matmul.io.b_in[i] = (j < a.width()) ? b.at(i, j) : 0;
     }
-    ++d;
     return (!matmul.io.valid_out) && (t < 100000);
   });
 
   std::cout << "result:" << std::endl;
   std::cout << "out = "  << matmul.io.c_out << std::endl;
 
-  auto c = cpuMatMul(a, b);
-  std::cout << "ref = " << std::hex << c << std::endl;
+  // Verify
+  auto c = a * b;
   for (size_t j = 0; j < c.height(); ++j)  {
     for (size_t i = 0; i < c.width(); ++i) {
       assert(c.at(i, j) == matmul.io.c_out[j][i]);
