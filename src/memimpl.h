@@ -56,7 +56,7 @@ public:
     return force_logic_ram_;
   }
 
-  virtual lnodeimpl* clone(context* ctx, const clone_map& cloned_nodes) override;
+  virtual lnodeimpl* clone(context* ctx, const clone_map& cloned_nodes) const override;
 
   memportimpl* create_arport(lnodeimpl* addr,
                              const source_location& sloc);
@@ -105,7 +105,7 @@ public:
   }
 
   const lnode& addr() const {
-    return srcs_[addr_idx_];
+    return this->src(addr_idx_);
   }
 
   bool has_enable() const {
@@ -113,7 +113,7 @@ public:
   }
 
   const lnode& enable() const {
-    return srcs_[enable_idx_];
+    return this->src(enable_idx_);
   }
 
   bool has_cd() const {
@@ -121,7 +121,7 @@ public:
   }
 
   auto& cd() const {
-    return srcs_[cd_idx_];
+    return this->src(cd_idx_);
   }
 
 protected:
@@ -148,7 +148,7 @@ protected:
 class marportimpl : public memportimpl {
 public:
 
-  virtual lnodeimpl* clone(context* ctx, const clone_map& cloned_nodes) override;
+  virtual lnodeimpl* clone(context* ctx, const clone_map& cloned_nodes) const override;
 
 protected:
 
@@ -167,7 +167,7 @@ protected:
 class msrportimpl : public memportimpl {
 public:
 
-  virtual lnodeimpl* clone(context* ctx, const clone_map& cloned_nodes) override;
+  virtual lnodeimpl* clone(context* ctx, const clone_map& cloned_nodes) const override;
 
 protected:
 
@@ -189,10 +189,10 @@ class mwportimpl : public memportimpl {
 public:
 
   const lnode& wdata() const {
-    return srcs_[wdata_idx_];
+    return this->src(wdata_idx_);
   }
 
-  virtual lnodeimpl* clone(context* ctx, const clone_map& cloned_nodes) override;
+  virtual lnodeimpl* clone(context* ctx, const clone_map& cloned_nodes) const override;
 
   friend class context;
 

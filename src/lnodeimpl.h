@@ -77,10 +77,6 @@ public:
     return srcs_;
   }
   
-  std::vector<lnode>& srcs() {
-    return srcs_;
-  }
-
   uint32_t num_srcs() const {
     return srcs_.size();
   }
@@ -90,13 +86,6 @@ public:
     return srcs_[index];
   }
 
-  lnode& src(uint32_t index) {
-    assert(index < srcs_.size());
-    return srcs_[index];
-  }
-
-  uint32_t add_src(const lnode& src);
-  
   uint32_t size() const {
     return size_;
   }
@@ -105,21 +94,29 @@ public:
     return var_id_;
   }
 
+  size_t hash() const;
+
   const source_location& sloc() const {
     return sloc_;
   }
 
-  virtual lnodeimpl* clone(context* ctx, const clone_map& cloned_nodes) = 0;
+  std::vector<lnode>& srcs();
+
+  lnode& src(uint32_t index);
+
+  uint32_t add_src(const lnode& src);
+
+  void remove_src(uint32_t index);
+
+  void resize(uint32_t size);
+
+  virtual lnodeimpl* clone(context* ctx, const clone_map& cloned_nodes) const = 0;
 
   virtual bool equals(const lnodeimpl& other) const;
 
-  virtual uint64_t hash() const {
-    return 0;
-  }
-
   virtual lnodeimpl* slice(uint32_t offset,
                            uint32_t length,
-                           const source_location& sloc);
+                           const source_location& sloc) const;
 
   virtual void write(uint32_t dst_offset,
                      const lnode& src,
@@ -142,35 +139,18 @@ protected:
 
   virtual ~lnodeimpl();
 
-  struct hash_t {
-#if defined(__clang__)
-  #pragma clang diagnostic push
-  #pragma clang diagnostic ignored "-Wnested-anon-types"
-#endif
-    union {
-      struct {
-        uint64_t type : 5;
-        uint64_t size : 22;
-        uint64_t op   : 5;
-        uint64_t arg0 : 16;
-        uint64_t arg1 : 16;
-      } fields;
-      uint64_t value;
-    };
-#if defined(__clang__)
-  #pragma clang diagnostic pop
-#endif
-    hash_t() : value(0) {}
-  };
-
   context* ctx_;
-  uint32_t id_;  
-  lnodetype type_;
-  uint32_t size_;
-  std::vector<lnode> srcs_;  
-  source_location sloc_;
   std::string name_;
-  uint32_t var_id_;
+  source_location sloc_;
+  const uint32_t id_;
+  const lnodetype type_;
+  const uint32_t var_id_;
+  mutable size_t hash_;
+
+private:
+
+  std::vector<lnode> srcs_;
+  uint32_t size_;
 
   friend class context;
 };
@@ -180,7 +160,7 @@ public:
 
   undefimpl(context* ctx, uint32_t size, const source_location& sloc);  
 
-  virtual lnodeimpl* clone(context*, const clone_map&) override {
+  virtual lnodeimpl* clone(context*, const clone_map&) const override {
     return nullptr;
   }
 };

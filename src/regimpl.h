@@ -10,7 +10,7 @@ class regimpl : public lnodeimpl {
 public:
 
   const lnode& cd() const {
-    return srcs_[0];
+    return this->src(0);
   }
 
   auto length() const {
@@ -22,11 +22,11 @@ public:
   }
 
   const lnode& next() const {
-    return srcs_[1];
+    return this->src(1);
   }
 
   lnode& next() {
-    return srcs_[1];
+    return this->src(1);
   }
 
   bool has_enable() const {
@@ -34,7 +34,7 @@ public:
   }
 
   const lnode& enable() const {
-    return srcs_[enable_idx_];
+    return this->src(enable_idx_);
   }
 
   bool has_reset() const {
@@ -42,7 +42,7 @@ public:
   }
 
   const lnode& reset() const {
-    return srcs_[reset_idx_];
+    return this->src(reset_idx_);
   }
 
   bool has_init_data() const {
@@ -50,14 +50,12 @@ public:
   }
 
   const lnode& init_data() const {
-    return srcs_[initdata_idx_];
+    return this->src(initdata_idx_);
   }
 
   bool equals(const lnodeimpl& other) const override;
 
-  virtual lnodeimpl* clone(context* ctx, const clone_map& cloned_nodes) override;
-
-  uint64_t hash() const override;
+  virtual lnodeimpl* clone(context* ctx, const clone_map& cloned_nodes) const override;
 
   void print(std::ostream& out) const override;
 

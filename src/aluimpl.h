@@ -19,11 +19,9 @@ public:
 
   bool should_resize_opds() const;
 
-  virtual lnodeimpl* clone(context* ctx, const clone_map& cloned_nodes) override;
+  virtual lnodeimpl* clone(context* ctx, const clone_map& cloned_nodes) const override;
 
   bool equals(const lnodeimpl& other) const override;
-
-  uint64_t hash() const override;
 
   void print(std::ostream& out) const override;
   

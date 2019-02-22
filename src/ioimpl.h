@@ -63,7 +63,7 @@ protected:
 class inputimpl : public ioportimpl {
 public:
 
-  virtual lnodeimpl* clone(context* ctx, const clone_map& cloned_nodes) override;
+  virtual lnodeimpl* clone(context* ctx, const clone_map& cloned_nodes) const override;
 
   void print(std::ostream& out) const override;
   
@@ -85,7 +85,7 @@ protected:
 class outputimpl : public ioportimpl {
 public:
 
-  virtual lnodeimpl* clone(context* ctx, const clone_map& cloned_nodes) override;
+  virtual lnodeimpl* clone(context* ctx, const clone_map& cloned_nodes) const override;
 
   void print(std::ostream& out) const override;
   
@@ -108,10 +108,10 @@ class tapimpl : public ioportimpl {
 public:
 
   const lnode& target() const {
-    return srcs_[0];
+    return this->src(0);
   }
 
-  virtual lnodeimpl* clone(context* ctx, const clone_map& cloned_nodes) override;
+  virtual lnodeimpl* clone(context* ctx, const clone_map& cloned_nodes) const override;
 
   void print(std::ostream& out) const override;
 

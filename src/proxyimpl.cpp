@@ -32,8 +32,8 @@ proxyimpl::proxyimpl(context* ctx,
   this->add_source(0, src, offset, length);
 }
 
-lnodeimpl* proxyimpl::clone(context* ctx, const clone_map& cloned_nodes) {
-  auto node = ctx->create_node<proxyimpl>(size_, sloc_, name_, var_id_);
+lnodeimpl* proxyimpl::clone(context* ctx, const clone_map& cloned_nodes) const {
+  auto node = ctx->create_node<proxyimpl>(this->size(), sloc_, name_, var_id_);
   for (auto& range : ranges_) {
     auto src = cloned_nodes.at(this->src(range.src_idx).id());
     node->add_source(range.dst_offset, src, range.src_offset, range.length);
@@ -48,7 +48,7 @@ void proxyimpl::add_source(uint32_t dst_offset,
   assert(!src.empty());
   assert(this != src.impl());  
   assert(length != 0);
-  assert(dst_offset + length <= size_);
+  assert(dst_offset + length <= this->size());
   assert(src_offset + length <= src.size());
 
   // update source location
@@ -57,15 +57,16 @@ void proxyimpl::add_source(uint32_t dst_offset,
   }
 
   // add new source
-  uint32_t new_srcidx = srcs_.size();
-  for (uint32_t i = 0, n = srcs_.size(); i < n; ++i) {
-    if (srcs_[i].id() == src.id()) {
+  auto size = srcs().size();
+  uint32_t new_srcidx = size;
+  for (uint32_t i = 0, n = size; i < n; ++i) {
+    if (this->src(i).id() == src.id()) {
       new_srcidx = i;
       break;
     }
   }
 
-  if (new_srcidx == srcs_.size()) {
+  if (new_srcidx == size) {
     new_srcidx = this->add_src(src);
   }
 
@@ -221,10 +222,8 @@ int proxyimpl::merge_adjacent_ranges(uint32_t index) {
 }
 
 void proxyimpl::erase_source(uint32_t index, bool resize) {
-  // remove src
-  srcs_.erase(srcs_.begin() + index);
-
   // update ranges
+  auto size = this->size();
   uint32_t d = 0;
   for (uint32_t i = 0, n = ranges_.size(); i < n; ++i) {
     auto& range = ranges_[i];
@@ -234,7 +233,7 @@ void proxyimpl::erase_source(uint32_t index, bool resize) {
         range.src_idx -= 1;
       } else {
         if (resize) {
-          size_ -= range.length;
+          size -= range.length;
         }
         ranges_.erase(ranges_.begin() + i);
         --i;
@@ -244,6 +243,9 @@ void proxyimpl::erase_source(uint32_t index, bool resize) {
     }
     d += range.length;
   }
+  // remove src
+  this->remove_src(index);
+  this->resize(size);
 }
 
 void proxyimpl::write(uint32_t dst_offset,
@@ -273,33 +275,18 @@ bool proxyimpl::equals(const lnodeimpl& other) const {
   return false;
 }
 
-uint64_t proxyimpl::hash() const {
-  hash_t ret;
-  ret.fields.type = this->type();
-  ret.fields.size = this->size();
-  ret.fields.op = this->ranges().size();
-  auto n = this->srcs().size();  
-  if (n > 0) {
-    ret.fields.arg0 = this->src(0).id();
-    if (n > 1) {
-      ret.fields.arg1 = this->src(1).id();
-    }
-  }
-  return ret.value;
-}
-
 lnodeimpl* proxyimpl::slice(uint32_t offset,
                             uint32_t length,
-                            const source_location& sloc) {
-  assert(length <= size_);
+                            const source_location& sloc) const {
+  assert(length <= this->size());
 
   // return the nested node if the offset/size match
   for (auto& range : ranges_) {
     if (range.length == length
      && range.dst_offset == offset
      && range.src_offset == 0
-     && srcs_[range.src_idx].size() == length) {
-      return srcs_[range.src_idx].impl();
+     && this->src(range.src_idx).size() == length) {
+      return this->src(range.src_idx).impl();
     }
   }
 
@@ -313,7 +300,7 @@ lnodeimpl* proxyimpl::slice(uint32_t offset,
       uint32_t sub_end = std::min(src_end, r_end);
       uint32_t dst_offset = sub_start - offset;
       uint32_t src_offset = range.src_offset + (sub_start - range.dst_offset);
-      proxy->add_source(dst_offset, srcs_[range.src_idx], src_offset, sub_end - sub_start);
+      proxy->add_source(dst_offset, this->src(range.src_idx), src_offset, sub_end - sub_start);
     }
   }
 
@@ -321,7 +308,7 @@ lnodeimpl* proxyimpl::slice(uint32_t offset,
 }
 
 void proxyimpl::print(std::ostream& out) const {
-  out << "#" << id_ << " <- " << this->type() << size_;
+  out << "#" << id_ << " <- " << this->type() << this->size();
   out << "(";
   uint32_t d(0);
   auto_separator sep(", ");
@@ -329,7 +316,7 @@ void proxyimpl::print(std::ostream& out) const {
     out << sep;
     assert(d == range.dst_offset);
     d += range.length;
-    auto& src = srcs_[range.src_idx];
+    auto& src = this->src(range.src_idx);
     out << "#" << src.id();
     if (range.length < src.size()) {
       out << "[" << range.src_offset;
@@ -361,10 +348,10 @@ void refimpl::write(
     uint32_t src_offset,
     uint32_t length,
     const source_location& sloc) {
-  assert(1 == srcs_.size());
+  assert(1 == this->srcs().size());
   assert(0 == ranges_[0].dst_offset);
   assert(length <= ranges_[0].length);
-  srcs_[0].impl()->write(
+  this->src(0).impl()->write(
       ranges_[0].src_offset + dst_offset,
       src,
       src_offset,

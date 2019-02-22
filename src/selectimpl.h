@@ -13,7 +13,7 @@ public:
   }
 
   auto& key() const {
-    return srcs_[key_idx_];
+    return this->src(key_idx_);
   }
 
   void remove_key() {
@@ -22,14 +22,12 @@ public:
   }
 
   bool is_ternary() const {
-    return srcs_.size() == (has_key() ? 4 : 3);
+    return this->srcs().size() == (has_key() ? 4 : 3);
   }
 
-  virtual lnodeimpl* clone(context* ctx, const clone_map& cloned_nodes) override;
+  virtual lnodeimpl* clone(context* ctx, const clone_map& cloned_nodes) const override;
 
   bool equals(const lnodeimpl& other) const override;
-
-  uint64_t hash() const override;
 
   void print(std::ostream& out) const override;
 

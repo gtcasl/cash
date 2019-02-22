@@ -108,7 +108,7 @@ memimpl::memimpl(context* ctx,
   , force_logic_ram_(force_logic_ram)
 {}
 
-lnodeimpl* memimpl::clone(context* ctx, const clone_map&) {
+lnodeimpl* memimpl::clone(context* ctx, const clone_map&) const {
   return ctx->create_node<memimpl>(data_width_, num_items_, init_data_, force_logic_ram_, sloc_);
 }
 
@@ -221,14 +221,14 @@ bool memimpl::is_logic_rom() const {
 }
 
 void memimpl::print(std::ostream& out) const {
-  out << "#" << id_ << " <- " << this->type() << size_;
-  uint32_t n = srcs_.size();
+  out << "#" << id_ << " <- " << this->type() << this->size();
+  uint32_t n = this->srcs().size();
   if (n > 0) {
     out << "(";
     for (uint32_t i = 0; i < n; ++i) {
       if (i > 0)
         out << ", ";
-      out << "#" << srcs_[i].id();
+      out << "#" << this->src(i).id();
     }
     out << ")";
   }
@@ -280,14 +280,14 @@ marportimpl::marportimpl(context* ctx,
                          const source_location& sloc)
   : memportimpl(ctx, type_marport, mem->data_width(), mem, nullptr, addr, nullptr, sloc) {
   // add memory as source
-  srcs_.emplace_back(mem);
+  this->add_src(mem);
 }
 
 marportimpl::~marportimpl() {
   mem_->remove_port(this);
 }
 
-lnodeimpl* marportimpl::clone(context*, const clone_map& cloned_nodes) {
+lnodeimpl* marportimpl::clone(context*, const clone_map& cloned_nodes) const {
   auto mem = reinterpret_cast<memimpl*>(cloned_nodes.at(mem_->id()));
   auto addr = cloned_nodes.at(this->addr().id());
   return mem->create_arport(addr, sloc_);
@@ -303,14 +303,14 @@ msrportimpl::msrportimpl(context* ctx,
                          const source_location& sloc)
   : memportimpl(ctx, type_msrport, mem->data_width(), mem, cd, addr, enable, sloc) {
   // add memory as source
-  srcs_.emplace_back(mem);
+  this->add_src(mem);
 }
 
 msrportimpl::~msrportimpl() {
   mem_->remove_port(this);
 }
 
-lnodeimpl* msrportimpl::clone(context*, const clone_map& cloned_nodes) {
+lnodeimpl* msrportimpl::clone(context*, const clone_map& cloned_nodes) const {
   auto mem = reinterpret_cast<memimpl*>(cloned_nodes.at(mem_->id()));
   auto addr = cloned_nodes.at(this->addr().id());
   auto cd = cloned_nodes.at(this->cd().id());
@@ -332,7 +332,7 @@ mwportimpl::mwportimpl(context* ctx,
                        const source_location& sloc)
   : memportimpl(ctx, type_mwport, 0, mem, cd, addr, enable, sloc) {
   // add as memory source
-  mem->srcs().emplace_back(this);
+  mem->add_src(this);
 
   // add data source
   wdata_idx_ = this->add_src(wdata);
@@ -342,7 +342,7 @@ mwportimpl::~mwportimpl() {
   mem_->remove_port(this);
 }
 
-lnodeimpl* mwportimpl::clone(context* ctx, const clone_map& cloned_nodes) {
+lnodeimpl* mwportimpl::clone(context* ctx, const clone_map& cloned_nodes) const {
   memimpl* mem;
   auto it = cloned_nodes.find(mem_->id());
   if (it == cloned_nodes.end()) {

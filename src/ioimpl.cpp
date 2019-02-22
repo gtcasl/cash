@@ -35,12 +35,12 @@ inputimpl::inputimpl(context* ctx,
 
 inputimpl::~inputimpl() {}
 
-lnodeimpl* inputimpl::clone(context* ctx, const clone_map&) {
-  return ctx->create_node<inputimpl>(size_, value_, name_, sloc_);
+lnodeimpl* inputimpl::clone(context* ctx, const clone_map&) const {
+  return ctx->create_node<inputimpl>(this->size(), value_, name_, sloc_);
 }
 
 void inputimpl::print(std::ostream& out) const {
-  out << "#" << id_ << " <- " << this->type() << size_;
+  out << "#" << id_ << " <- " << this->type() << this->size();
   out << "(" << name_;
   if (!binding_.empty()) {
     out << ", $" << binding_.id();
@@ -56,19 +56,19 @@ outputimpl::outputimpl(context* ctx,
                        const std::string& name,
                        const source_location& sloc)
   : ioportimpl(ctx, type_output, src.size(), value, sloc, name) {
-  srcs_.emplace_back(src);
+  this->add_src(src);
 }
 
 outputimpl::~outputimpl() {}
 
-lnodeimpl* outputimpl::clone(context* ctx, const clone_map& cloned_nodes) {
+lnodeimpl* outputimpl::clone(context* ctx, const clone_map& cloned_nodes) const {
   auto src = cloned_nodes.at(this->src(0).id());
   return ctx->create_node<outputimpl>(src, value_, name_, sloc_);
 }
 
 void outputimpl::print(std::ostream& out) const {
-  out << "#" << id_ << " <- " << this->type() << size_;
-  out << "(" << name_ << ", #" << srcs_[0].id() << ")";
+  out << "#" << id_ << " <- " << this->type() << this->size();
+  out << "(" << name_ << ", #" << this->src(0).id() << ")";
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -79,19 +79,19 @@ tapimpl::tapimpl(context* ctx,
                  const std::string& name,
                  const source_location& sloc)
   : ioportimpl(ctx, type_tap, src.size(), value, sloc, name) {
-  srcs_.emplace_back(src);
+  this->add_src(src);
 }
 
 tapimpl::~tapimpl() {}
 
-lnodeimpl* tapimpl::clone(context* ctx, const clone_map& cloned_nodes) {
+lnodeimpl* tapimpl::clone(context* ctx, const clone_map& cloned_nodes) const {
   auto src = cloned_nodes.at(this->src(0).id());
   return ctx->create_node<tapimpl>(src, value_, name_, sloc_);
 }
 
 void tapimpl::print(std::ostream& out) const {
-  out << "#" << id_ << " <- " << this->type() << size_;
-  out << "(" << name_ << ", #" << srcs_[0].id() << ")";
+  out << "#" << id_ << " <- " << this->type() << this->size();
+  out << "(" << name_ << ", #" << this->src(0).id() << ")";
 }
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -16,14 +16,14 @@ public:
   }
 
   auto& inputs() {
-    return srcs_;
+    return this->srcs();
   }
 
   auto& outputs() {
     return outputs_;
   }
 
-  virtual lnodeimpl* clone(context* ctx, const clone_map& cloned_nodes) override;
+  virtual lnodeimpl* clone(context* ctx, const clone_map& cloned_nodes) const override;
 
   void bind_input(lnodeimpl* src, inputimpl* ioport, const source_location& sloc);
 
@@ -58,7 +58,7 @@ public:
     return ioport_;
   }
 
-  virtual lnodeimpl* clone(context* ctx, const clone_map& cloned_nodes) override;
+  virtual lnodeimpl* clone(context* ctx, const clone_map& cloned_nodes) const override;
 
   void print(std::ostream& out) const override;
 

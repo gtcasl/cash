@@ -22,8 +22,8 @@ regimpl::regimpl(context* ctx,
   , reset_idx_(-1)
   , enable_idx_(-1)
   , initdata_idx_(-1) {
-  srcs_.emplace_back(cd);
-  srcs_.emplace_back(next);
+  this->add_src(cd);
+  this->add_src(next);
   if (reset) {
     reset_idx_ = this->add_src(reset);
   }
@@ -35,7 +35,7 @@ regimpl::regimpl(context* ctx,
   }
 }
 
-lnodeimpl* regimpl::clone(context* ctx, const clone_map& cloned_nodes) {
+lnodeimpl* regimpl::clone(context* ctx, const clone_map& cloned_nodes) const {
   auto cd = cloned_nodes.at(this->cd().id());
   auto next = cloned_nodes.at(this->next().id());
   lnodeimpl* reset = nullptr;
@@ -51,7 +51,7 @@ lnodeimpl* regimpl::clone(context* ctx, const clone_map& cloned_nodes) {
     init_data = cloned_nodes.at(this->init_data().id());
   }
   return ctx->create_node<regimpl>(
-        size_, length_, cd, reset, enable, next, init_data, sloc_);
+        this->size(), length_, cd, reset, enable, next, init_data, sloc_);
 }
 
 bool regimpl::equals(const lnodeimpl& other) const {
@@ -62,28 +62,13 @@ bool regimpl::equals(const lnodeimpl& other) const {
   return false;
 }
 
-uint64_t regimpl::hash() const {
-  hash_t ret;
-  ret.fields.type = this->type();
-  ret.fields.size = this->size();
-  ret.fields.op = this->length();
-  auto n = this->srcs().size();
-  if (n > 0) {
-    ret.fields.arg0 = this->src(0).id();
-    if (n > 1) {
-      ret.fields.arg1 = this->src(1).id();
-    }
-  }
-  return ret.value;
-}
-
 void regimpl::print(std::ostream& out) const {
   if (length_ > 1) {
-    out << "#" << id_ << " <- pipe" << size_;
+    out << "#" << id_ << " <- pipe" << this->size();
     out << "(" << length_;
-    for (uint32_t i = 0; i < srcs_.size(); ++i) {
+    for (uint32_t i = 0; i < this->srcs().size(); ++i) {
       out << ", ";
-      out << "#" << srcs_[i].id();
+      out << "#" << this->src(i).id();
     }
     out << ")";
   } else {

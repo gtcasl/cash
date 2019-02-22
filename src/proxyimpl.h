@@ -36,7 +36,7 @@ public:
 
   bool is_identity() const {
     return (1 == ranges_.size())
-        && (srcs_[0].size() == size_);
+        && (this->src(0).size() == this->size());
   }
 
   const range_t& range(uint32_t index) const {
@@ -60,11 +60,9 @@ public:
 
   int merge_adjacent_ranges(uint32_t index);
 
-  virtual lnodeimpl* clone(context* ctx, const clone_map& cloned_nodes) override;
+  virtual lnodeimpl* clone(context* ctx, const clone_map& cloned_nodes) const override;
 
   bool equals(const lnodeimpl& other) const override;
-
-  uint64_t hash() const override;
 
   void write(uint32_t dst_offset,
              const lnode& src,
@@ -74,7 +72,7 @@ public:
 
   lnodeimpl* slice(uint32_t offset,
                    uint32_t length,
-                   const source_location& sloc) override;
+                   const source_location& sloc) const override;
 
   void print(std::ostream& out) const override;
   

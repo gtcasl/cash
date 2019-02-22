@@ -44,14 +44,14 @@ selectimpl::selectimpl(context* ctx,
   }
 }
 
-lnodeimpl* selectimpl::clone(context* ctx, const clone_map& cloned_nodes) {
+lnodeimpl* selectimpl::clone(context* ctx, const clone_map& cloned_nodes) const {
   lnodeimpl* key = nullptr;
   if (this->has_key()) {
     key = cloned_nodes.at(this->key().id());
   }
-  auto node = ctx->create_node<selectimpl>(size_, key, sloc_);
-  for (uint32_t i = key_idx_ + 1; i < srcs_.size(); ++i) {
-    auto src = cloned_nodes.at(srcs_[i].id());
+  auto node = ctx->create_node<selectimpl>(this->size(), key, sloc_);
+  for (uint32_t i = key_idx_ + 1; i < this->srcs().size(); ++i) {
+    auto src = cloned_nodes.at(this->src(i).id());
     node->add_src(src);
   }
   return node;
@@ -66,31 +66,16 @@ bool selectimpl::equals(const lnodeimpl& other) const {
   return false;
 }
 
-uint64_t selectimpl::hash() const {
-  hash_t ret;
-  ret.fields.type = this->type();
-  ret.fields.size = this->size();
-  ret.fields.op = this->has_key();
-  auto n = this->srcs().size();  
-  if (n > 0) {
-    ret.fields.arg0 = this->src(0).id();
-    if (n > 1) {
-      ret.fields.arg1 = this->src(1).id();
-    }
-  }
-  return ret.value;
-}
-
 void selectimpl::print(std::ostream& out) const {
-  out << "#" << id_ << " <- " << (this->has_key() ? "case" : "sel") << size_;
-  uint32_t n = srcs_.size();
+  out << "#" << id_ << " <- " << (this->has_key() ? "case" : "sel") << this->size();
+  auto n = this->srcs().size();
   if (n > 0) {
     out << "(";
     for (uint32_t i = 0; i < n; ++i) {
       if (i > 0) {
         out << ", ";
       }
-      out << "#" << srcs_[i].id();
+      out << "#" << this->src(i).id();
     }
     out << ")";
   }

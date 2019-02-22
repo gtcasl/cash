@@ -8,7 +8,7 @@ namespace internal {
 class timeimpl : public ioimpl {
 public:
 
-  virtual lnodeimpl* clone(context* ctx, const clone_map& cloned_nodes) override;
+  virtual lnodeimpl* clone(context* ctx, const clone_map& cloned_nodes) const override;
 
 protected:
 

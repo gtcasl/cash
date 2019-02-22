@@ -69,6 +69,8 @@ lnodeimpl* ch::internal::get_snode_reset(lnodeimpl* node) {
   return nullptr;
 }
 
+///////////////////////////////////////////////////////////////////////////////
+
 lnodeimpl::lnodeimpl(context* ctx,
                      lnodetype type,
                      uint32_t size,                     
@@ -76,20 +78,53 @@ lnodeimpl::lnodeimpl(context* ctx,
                      const std::string& name,
                      uint32_t var_id)
   : ctx_(ctx)
-  , id_(ctx->node_id())
-  , type_(type)
-  , size_(size)
-  , sloc_(sloc)
   , name_(name.empty() ? to_string(type) : name)
+  , sloc_(sloc)
+  , id_(ctx->node_id())
+  , type_(type)    
   , var_id_(var_id)
+  , hash_(0)
+  , size_(size)
 {}
 
 lnodeimpl::~lnodeimpl() {}
 
+std::vector<lnode>& lnodeimpl::srcs() {
+  hash_ = 0;
+  return srcs_;
+}
+
+lnode& lnodeimpl::src(uint32_t index) {
+  assert(index < srcs_.size());
+  hash_ = 0;
+  return srcs_[index];
+}
+
 uint32_t lnodeimpl::add_src(const lnode& src) {
-  uint32_t index = srcs_.size();
+  auto index = srcs_.size();
   srcs_.push_back(src);
+  hash_ = 0;
   return index;
+}
+
+void lnodeimpl::remove_src(uint32_t index) {
+  srcs_.erase(srcs_.begin() + index);
+  hash_ = 0;
+}
+
+void lnodeimpl::resize(uint32_t size) {
+  size_ = size;
+  hash_ = 0;
+}
+
+size_t lnodeimpl::hash() const {
+  if (!hash_) {
+    hash_ = type_ ^ size_;
+    for (auto& src : srcs_) {
+      hash_ ^= src.impl()->hash();
+    }
+  }
+  return hash_;
 }
 
 bool lnodeimpl::equals(const lnodeimpl& other) const {
@@ -107,11 +142,12 @@ bool lnodeimpl::equals(const lnodeimpl& other) const {
 
 lnodeimpl* lnodeimpl::slice(uint32_t offset,
                             uint32_t length,
-                            const source_location& sloc) {
+                            const source_location& sloc) const {
   assert(length <= size_);
+  auto self = const_cast<lnodeimpl*>(this);
   if (size_ == length)
-    return this;
-  return ctx_->create_node<proxyimpl>(this, offset, length, sloc);
+    return self;
+  return ctx_->create_node<proxyimpl>(self, offset, length, sloc);
 }
 
 void lnodeimpl::write(uint32_t,
@@ -128,7 +164,7 @@ void lnodeimpl::print(std::ostream& out) const {
   for (uint32_t i = 0; i < srcs_.size(); ++i) {
     if (i)
       out << ", ";
-    out << "#" << srcs_[i].id();
+    out << "#" << this->src(i).id();
   }
   out << ")";
 }

@@ -83,7 +83,7 @@ printimpl::printimpl(context* ctx,
   }
 
   for (auto arg : args) {
-    srcs_.emplace_back(arg);    
+    this->add_src(arg);
   }
 }
 
@@ -101,18 +101,18 @@ printimpl::printimpl(context* ctx,
     pred_idx_ = this->add_src(pred);
   }
   for (auto arg : args) {
-    srcs_.emplace_back(arg);
+    this->add_src(arg);
   }
 }
 
-lnodeimpl* printimpl::clone(context* ctx, const clone_map& cloned_nodes) {
+lnodeimpl* printimpl::clone(context* ctx, const clone_map& cloned_nodes) const {
   lnodeimpl* pred = nullptr;
   if (this->has_pred()) {
     pred = cloned_nodes.at(this->pred().id());
   }
   std::vector<lnode> args;
-  for (uint32_t i = pred_idx_ + 1; i < srcs_.size(); ++i) {
-    auto& src = cloned_nodes.at(srcs_[i].id());
+  for (uint32_t i = pred_idx_ + 1; i < this->srcs().size(); ++i) {
+    auto& src = cloned_nodes.at(this->src(i).id());
     args.emplace_back(src);
   }
   return ctx->create_node<printimpl>(format_, args, enum_strings_, pred, sloc_);
@@ -120,17 +120,17 @@ lnodeimpl* printimpl::clone(context* ctx, const clone_map& cloned_nodes) {
 
 void printimpl::print(std::ostream& out) const {
   out << "#" << id_ << " <- " << this->type();
-  uint32_t n = srcs_.size();
+  uint32_t n = this->srcs().size();
   if (n > 0) {
     out << "(";
     uint32_t i = 0;
     if (this->has_pred()) {
-      out << "pred=" << srcs_[i++].id();
+      out << "pred=" << this->src(i++).id();
     }
     for (; i < n; ++i) {
       if (i > 0)
         out << ", ";
-      out << "#" << srcs_[i].id();
+      out << "#" << this->src(i).id();
     }
     out << ")";
   }

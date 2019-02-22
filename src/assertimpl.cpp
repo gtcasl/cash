@@ -45,7 +45,7 @@ assertimpl::assertimpl(context* ctx,
   }  
 }
 
-lnodeimpl* assertimpl::clone(context* ctx, const clone_map& cloned_nodes) {
+lnodeimpl* assertimpl::clone(context* ctx, const clone_map& cloned_nodes) const {
   auto cond = cloned_nodes.at(this->cond().id());
   lnodeimpl* pred = nullptr;
   if (this->has_pred()) {

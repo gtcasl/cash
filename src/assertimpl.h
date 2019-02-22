@@ -9,11 +9,11 @@ class assertimpl : public ioimpl {
 public:
 
   auto& cond() const {
-    return srcs_[0];
+    return this->src(0);
   }
 
   auto& time() const {
-    return srcs_[1];
+    return this->src(1);
   }
 
   const std::string& msg() const {
@@ -25,10 +25,10 @@ public:
   }
 
   auto& pred() const {
-    return srcs_[pred_idx_];
+    return this->src(pred_idx_);
   }
 
-  virtual lnodeimpl* clone(context* ctx, const clone_map& cloned_nodes) override;
+  virtual lnodeimpl* clone(context* ctx, const clone_map& cloned_nodes) const override;
 
 protected:
 

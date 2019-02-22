@@ -38,7 +38,7 @@ public:
   }
 
   auto& pred() const {
-    return srcs_[pred_idx_];
+    return this->src(pred_idx_);
   }
 
   auto& enum_strings() const {
@@ -49,7 +49,7 @@ public:
     return enum_strings_[index];
   }
 
-  virtual lnodeimpl* clone(context* ctx, const clone_map& cloned_nodes) override;
+  virtual lnodeimpl* clone(context* ctx, const clone_map& cloned_nodes) const override;
 
   void print(std::ostream& out) const override;
 

@@ -22,10 +22,10 @@ void aluimpl::init(ch_op op, bool is_signed, lnodeimpl* lhs, lnodeimpl* rhs) {
   op_ = op;
   name_ = to_string(op);
   if (lhs) {
-    srcs_.push_back(lhs);
+    this->add_src(lhs);
   }
   if (rhs) {
-    srcs_.push_back(rhs);
+    this->add_src(rhs);
   }
   // disable the sign if not applicable
   if (is_signed
@@ -36,13 +36,13 @@ void aluimpl::init(ch_op op, bool is_signed, lnodeimpl* lhs, lnodeimpl* rhs) {
   signed_ = is_signed;
 }
 
-lnodeimpl* aluimpl::clone(context* ctx, const clone_map& cloned_nodes) {
-  auto src0 = cloned_nodes.at(srcs_[0].id());
-  if (srcs_.size() == 2) {
-    auto src1 = cloned_nodes.at(srcs_[1].id());
-    return ctx->create_node<aluimpl>(op_, size_, signed_, src0, src1, sloc_);
+lnodeimpl* aluimpl::clone(context* ctx, const clone_map& cloned_nodes) const {
+  auto src0 = cloned_nodes.at(this->src(0).id());
+  if (this->srcs().size() == 2) {
+    auto src1 = cloned_nodes.at(this->src(1).id());
+    return ctx->create_node<aluimpl>(op_, this->size(), signed_, src0, src1, sloc_);
   } else {
-    return ctx->create_node<aluimpl>(op_, size_, signed_, src0, sloc_);
+    return ctx->create_node<aluimpl>(op_, this->size(), signed_, src0, sloc_);
   }
 }
 
@@ -54,29 +54,14 @@ bool aluimpl::equals(const lnodeimpl& other) const {
   return false;
 }
 
-uint64_t aluimpl::hash() const {
-  hash_t ret;
-  ret.fields.type = this->type();
-  ret.fields.size = this->size();    
-  ret.fields.op = (int)this->op();
-  auto n = this->srcs().size();
-  if (n > 0) {
-    ret.fields.arg0 = this->src(0).id();
-    if (n > 1) {
-      ret.fields.arg1 = this->src(1).id();
-    }
-  }
-  return ret.value;
-}
-
 void aluimpl::print(std::ostream& out) const {
-  out << "#" << id_ << " <- " << to_string(this->type()) << size_;
-  uint32_t n = srcs_.size();
+  out << "#" << id_ << " <- " << to_string(this->type()) << this->size();
+  auto n = this->srcs().size();
   out << "(" << to_string(op_) << (signed_ ? "_s" : "_u") << ", ";
   for (uint32_t i = 0; i < n; ++i) {
     if (i > 0)
       out << ", ";
-    out << "#" << srcs_[i].id();
+    out << "#" << this->src(i).id();
   }
   out << ")";
 }
@@ -86,11 +71,11 @@ bool aluimpl::should_resize_opds() const {
   switch (op_resize) {
   case op_flags::resize_src:
     // source operand sizes should match
-    return (srcs_[0].size() != srcs_[1].size());
+    return (this->src(0).size() != this->src(1).size());
   case op_flags::resize_dst:
     // source operand and destination sizes should match
-    return ((srcs_[0].size() < size_)
-        || ((srcs_.size() > 1) && srcs_[1].size() < size_));
+    return ((this->src(0).size() < this->size())
+        || ((this->srcs().size() > 1) && this->src(1).size() < this->size()));
   default:
     return false;
   }

@@ -13,7 +13,7 @@ udfimpl::udfimpl(context* ctx,
   , udf_(udf) {
   udf->acquire();
   for (auto src : srcs) {
-    srcs_.push_back(src);
+    this->add_src(src);
   }
 }
 
@@ -30,7 +30,7 @@ udfcimpl::udfcimpl(context* ctx,
   : udfimpl(ctx, type_udfc, udf, srcs, sloc)
 {}
 
-lnodeimpl* udfcimpl::clone(context* ctx, const clone_map& cloned_nodes) {
+lnodeimpl* udfcimpl::clone(context* ctx, const clone_map& cloned_nodes) const {
   std::vector<lnode> srcs;
   srcs.resize(udf_->inputs_size().size());
   for (uint32_t i = 0, n = srcs.size(); i < n; ++i) {
@@ -50,7 +50,7 @@ udfsimpl::udfsimpl(context* ctx,
   cd_idx_ = this->add_src(cd);
 }
 
-lnodeimpl* udfsimpl::clone(context* ctx, const clone_map& cloned_nodes) {
+lnodeimpl* udfsimpl::clone(context* ctx, const clone_map& cloned_nodes) const {
   std::vector<lnode> srcs;
   srcs.resize(udf_->inputs_size().size());
   for (uint32_t i = 0, n = srcs.size(); i < n; ++i) {

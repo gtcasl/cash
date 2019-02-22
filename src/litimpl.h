@@ -16,7 +16,7 @@ public:
     return is_zero_;
   }
 
-  virtual lnodeimpl* clone(context* ctx, const clone_map& cloned_nodes) override;
+  virtual lnodeimpl* clone(context* ctx, const clone_map& cloned_nodes) const override;
 
   void print(std::ostream& out) const override;
 

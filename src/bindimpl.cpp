@@ -47,14 +47,14 @@ bindimpl::~bindimpl() {
   module_->release();
 }
 
-lnodeimpl* bindimpl::clone(context*, const clone_map&) {
+lnodeimpl* bindimpl::clone(context*, const clone_map&) const {
   return nullptr;
 }
 
 void bindimpl::remove_port(bindportimpl* port) {
-  for (auto it = srcs_.begin(), end = srcs_.end(); it != end; ++it) {
+  for (auto it = this->srcs().begin(), end = this->srcs().end(); it != end; ++it) {
     if (it->id() == port->id()) {
-      srcs_.erase(it);
+      this->remove_src(it - this->srcs().begin());
       return;
     }
   }
@@ -77,7 +77,7 @@ void bindimpl::bind_input(lnodeimpl* src,
   ioport->bind(input);
 
   // add to list
-  add_port(input, srcs_);
+  add_port(input, this->srcs());
 }
 
 void bindimpl::bind_output(lnodeimpl* dst,
@@ -98,7 +98,7 @@ void bindimpl::bind_output(lnodeimpl* dst,
 void bindimpl::print(std::ostream& out) const {
   out << "#" << id_ << " <- " << this->type();
   out << "(" << module_->name();
-  for (auto& src : srcs_) {
+  for (auto& src : this->srcs()) {
     out << ", #" << src.id();
   }
   out << ")";
@@ -115,7 +115,7 @@ bindportimpl::bindportimpl(context* ctx,
   , binding_(binding)
   , ioport_(ioport) {
   binding->acquire();
-  srcs_.push_back(src);
+  this->add_src(src);
 }
 
 bindportimpl::bindportimpl(context* ctx,
@@ -126,7 +126,7 @@ bindportimpl::bindportimpl(context* ctx,
   , binding_(binding)
   , ioport_(ioport) {
   binding->acquire();
-  srcs_.push_back(binding);
+  this->add_src(binding);
 }
 
 bindportimpl::~bindportimpl() {
@@ -134,20 +134,20 @@ bindportimpl::~bindportimpl() {
   binding_->release();
 }
 
-lnodeimpl* bindportimpl::clone(context*, const clone_map&) {
+lnodeimpl* bindportimpl::clone(context*, const clone_map&) const {
   return nullptr;
 }
 
 void bindportimpl::print(std::ostream& out) const {
-  out << "#" << id_ << " <- " << this->type() << size_;
+  out << "#" << id_ << " <- " << this->type() << this->size();
   out << "(";
   if (type_bindout == type_) {
     out << "#" << ioport_.id() << ", ";
   }
-  for (uint32_t i = 0; i < srcs_.size(); ++i) {
+  for (uint32_t i = 0; i < this->srcs().size(); ++i) {
     if (i)
       out << ", ";
-    out << "#" << srcs_[i].id();
+    out << "#" << this->src(i).id();
   }
   out << ")";
 }

@@ -719,8 +719,15 @@ bool compiler::subexpressions_elimination() {
 
   auto apply_cse = [&](const nodes_type::iterator& it)->bool {
     auto node = *it;
-    if (0 == node->hash())
+    switch (node->type()) {
+    default:
       return false;
+    case type_proxy:
+    case type_sel:
+    case type_alu:
+    case type_reg:
+      break;
+    }
     auto p_it = cse_table.find(node);
     if (p_it != cse_table.end()) {      
       this->map_replace_target(node, p_it->node);

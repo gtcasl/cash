@@ -6,15 +6,15 @@
 using namespace ch::internal;
 
 cdimpl::cdimpl(context* ctx,
-               const lnode& clk,
+               lnodeimpl* clk,
                bool pos_edge,
                const source_location& sloc)
   : ioimpl(ctx, type_cd, 1, sloc)
   , pos_edge_(pos_edge) {
-  srcs_.emplace_back(clk);
+  this->add_src(clk);
 }
 
-lnodeimpl* cdimpl::clone(context* ctx, const clone_map& cloned_nodes) {
+lnodeimpl* cdimpl::clone(context* ctx, const clone_map& cloned_nodes) const {
   auto clk = cloned_nodes.at(this->clk().id());
   return ctx->create_cd(clk, pos_edge_, sloc_);
 }
@@ -22,5 +22,5 @@ lnodeimpl* cdimpl::clone(context* ctx, const clone_map& cloned_nodes) {
 void cdimpl::print(std::ostream& out) const {
   out << "#" << id_ << " <- " << this->type() << "("
       << (pos_edge_ ? "pos_edge" : "negedge")
-      << ", #" << srcs_[0].id() << ")";
+      << ", #" << this->src(0).id() << ")";
 }

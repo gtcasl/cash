@@ -216,7 +216,7 @@ bool nandimpl::eval(ch_tick t) {
         CASH_ABBORT("found cycle");
 	}
     tick_ = t + 1;
-    cval_ = !(srcs_[0].eval(t) && srcs_[1].eval(t));
+    cval_ = !(this->src(0).eval(t) && this->src(1).eval(t));
     tick_  = t;
   }
   return cval_;

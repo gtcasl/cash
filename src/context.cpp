@@ -374,7 +374,7 @@ cdimpl* context::create_cd(const lnode& clk,
       return cd;
   }
   // allocate new cdomain
-  return this->create_node<cdimpl>(clk, pos_edge, sloc);
+  return this->create_node<cdimpl>(clk.impl(), pos_edge, sloc);
 }
 
 lnodeimpl* context::current_reset(const source_location& sloc) {
