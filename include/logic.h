@@ -509,10 +509,10 @@ CH_LOGIC_OPERATOR(logic_op_shift)
     static_assert(ch_width_v<U> <= 32, "invalid size");
     auto sloc = logic_accessor::sloc(lhs);
     return make_logic_op<ch_op::shl,
-                        ch_signed_v<Derived>,
-                        Derived,
-                        Derived,
-                        ch_bit<ch_width_v<U>>>(lhs, rhs, sloc);
+                         ch_signed_v<Derived>,
+                         Derived,
+                         Derived,
+                         ch_bit<ch_width_v<U>>>(lhs, rhs, sloc);
   }
 
   template <typename U,
@@ -521,10 +521,10 @@ CH_LOGIC_OPERATOR(logic_op_shift)
     static_assert(ch_width_v<U> <= 32, "invalid size");
     auto sloc = logic_accessor::sloc(lhs);
     return make_logic_op<ch_op::shr,
-                        ch_signed_v<Derived>,
-                        Derived,
-                        Derived,
-                        ch_bit<ch_width_v<U>>>(lhs, rhs, sloc);
+                         ch_signed_v<Derived>,
+                         Derived,
+                         Derived,
+                         ch_bit<ch_width_v<U>>>(lhs, rhs, sloc);
   }
 
   template <unsigned M>
@@ -533,18 +533,18 @@ CH_LOGIC_OPERATOR(logic_op_shift)
     auto sloc = logic_accessor::sloc(rhs);
     auto lhs = reinterpret_cast<const Derived*>(this)->clone();
     return make_logic_op<ch_op::shl,
-                        ch_signed_v<Derived>,
-                        Derived>(lhs, rhs, sloc);
+                         ch_signed_v<Derived>,
+                         Derived>(lhs, rhs, sloc);
   }
 
   auto operator<<=(const sloc_arg<uint32_t>& rhs) {
     auto sloc = logic_accessor::sloc(rhs.sloc);
     auto lhs = reinterpret_cast<const Derived*>(this)->clone();
     return make_logic_op<ch_op::shl,
-                        ch_signed_v<Derived>,
-                        Derived,
-                        Derived,
-                        ch_uint<32>>(lhs, rhs.value, sloc);
+                         ch_signed_v<Derived>,
+                         Derived,
+                         Derived,
+                         ch_uint<32>>(lhs, rhs.value, sloc);
   }
 
   template <unsigned M>
@@ -553,18 +553,18 @@ CH_LOGIC_OPERATOR(logic_op_shift)
     auto sloc = logic_accessor::sloc(rhs);
     auto lhs = reinterpret_cast<const Derived*>(this)->clone();
     return make_logic_op<ch_op::shr,
-                        ch_signed_v<Derived>,
-                        Derived>(lhs, rhs, sloc);
+                         ch_signed_v<Derived>,
+                         Derived>(lhs, rhs, sloc);
   }
 
   auto operator>>=(const sloc_arg<uint32_t>& rhs) {
     auto sloc = logic_accessor::sloc(rhs.sloc);
     auto lhs = reinterpret_cast<const Derived*>(this)->clone();
     return make_logic_op<ch_op::shr,
-                        ch_signed_v<Derived>,
-                        Derived,
-                        Derived,
-                        ch_uint<32>>(lhs, rhs.value, sloc);
+                         ch_signed_v<Derived>,
+                         Derived,
+                         Derived,
+                         ch_uint<32>>(lhs, rhs.value, sloc);
   }
 };
 

@@ -2,6 +2,7 @@
 # set source files
 set(TEST_SOURCES
     common.cpp
+    static.cpp
     basic.cpp
     system.cpp
     literals.cpp

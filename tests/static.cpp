@@ -1,5 +1,3 @@
-#if 1
-
 #include "cash.h"
 #include <htl/float32.h>
 
@@ -10,9 +8,9 @@ using namespace ch::htl;
 
 struct TestModule {
   __io (
-    __in (ch_uint4)  lhs,
-    __in (ch_uint4)  rhs,
-    __out (ch_uint4) out
+    __in (ch_int4)  lhs,
+    __in (ch_int4)  rhs,
+    __out (ch_int4) out
   );
   void describe() {
     io.out = io.lhs + io.rhs;
@@ -141,7 +139,8 @@ void foo() {
     auto q5 = c << c;
     auto q7 = a << c;
     auto q8 = a << b;
-  }  
+  }
+  /////////////////////////////////////////////////////////////////////////////
   {
     ch_bit4 a = 0, b = 0_b4;
   }
@@ -165,7 +164,11 @@ void foo() {
   {
     ch_int2 a(0);
     ch_int4 b(1);
+    ch_module<TestModule> m;
     auto c = a + b;
+    auto d = m.io.lhs + a;
+    auto e = m.io.lhs + m.io.rhs;
+    auto f = a + m.io.rhs;
   }
 
   {
@@ -180,10 +183,14 @@ void foo() {
     auto d = a & b;
   }
   {
-    ch_int<4> a = 7;
+    ch_int<2> a = 7;
     ch_int<6> b = 8;
+    ch_module<TestModule> m;
     auto c = b + a;
     auto d = a + b;
+    auto e = m.io.lhs & a;
+    auto f = m.io.lhs & m.io.rhs;
+    auto g = a & m.io.rhs;
   }
   {
     ch_uint<4> a = 7;
@@ -210,6 +217,24 @@ void foo() {
     ch_int2 a(0);
     ch_int4 b(1);
     auto c = a + b;
+  }
+  {
+    ch_int2 a(0);
+    ch_int4 b(1);
+    ch_module<TestModule> m;
+    auto c = a * b;
+    auto d = m.io.lhs * a;
+    auto e = m.io.lhs * m.io.rhs;
+    auto f = a * m.io.rhs;
+  }
+  {
+    ch_int2 a(0);
+    ch_int4 b(1);
+    ch_module<TestModule> m;
+    auto c = a << b;
+    auto d = m.io.lhs << a;
+    auto e = m.io.lhs << m.io.rhs;
+    auto f = a << m.io.rhs;
   }
   {
     ch_int<4> a(-1);
@@ -245,8 +270,8 @@ void foo() {
   }
 
   {
-    ch_uint4 a;
-    ch_uint8 b;
+    ch_int4 a;
+    ch_int8 b;
     ch_module<TestModule> m;
     auto c1 = ch_eq(a, a);
     auto c2 = ch_ne(a, a);
@@ -263,23 +288,23 @@ void foo() {
   }
 
   {
-    ch_uint4 a;
-    ch_uint8 b;
+    ch_int4 a;
+    ch_int8 b;
     ch_module<TestModule> m;
     auto c1 = ch_shr(a, a);
     auto c2 = ch_shr<10>(a, a);
     auto c3 = ch_shr(a, b);
     auto c4 = ch_shr<10>(a, b);
     auto c5 = ch_shr<10>(a, 1_b);
-    auto c6 = ch_shr<10>(a, 1);    
+    auto c6 = ch_shr<10>(a, 1);
     auto c7 = ch_shr<10>(m.io.lhs, m.io.rhs);
     auto c8 = ch_shr<10>(a, m.io.rhs);
     auto c9 = ch_shr<10>(m.io.rhs, a);
   }
 
   {
-    ch_uint4 a;
-    ch_uint8 b;
+    ch_int4 a;
+    ch_int8 b;
     ch_module<TestModule> m;
     auto c1 = ch_add(a, a);
     auto c2 = ch_add<10>(a, a);
@@ -296,8 +321,8 @@ void foo() {
   }
 
   {
-    ch_uint4 a;
-    ch_uint8 b;
+    ch_int4 a;
+    ch_int8 b;
     ch_module<TestModule> m;
     auto c1 = ch_mul(a, a);
     auto c2 = ch_mul<10>(a, a);
@@ -326,5 +351,3 @@ void bar() {
   ch_reg<s2_4_t> h{0101_b, 01_b};
   ch_reg<u2_4_t> i{0101_b};
 }
-
-#endif

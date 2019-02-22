@@ -28,7 +28,6 @@ include_directories("include")
 
 # set source files
 set(PROJECT_SOURCES
-    src/cash.cpp
     src/utils.cpp
     src/platform.cpp
     src/system.cpp
