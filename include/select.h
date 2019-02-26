@@ -47,9 +47,11 @@ public:
     impl_.push(pred, value);
   }
 
-  template <typename V>
-  select_t<T>& operator()(const ch_bit<1>& pred, const V& value) {
-    static_assert(std::is_constructible_v<T, V>, "invalid type");
+  template <typename V, typename P>
+  select_t<T>& operator()(const P& pred, const V& value) {
+    static_assert(std::is_constructible_v<T, V>, "invalid type");    
+    static_assert(is_bit_base_v<P>, "invalid type");
+    static_assert(ch_width_v<P> == 1, "invalid size");
     impl_.push(get_lnode(pred), to_lnode<T>(value, impl_.sloc()));
     return *this;
   }
@@ -77,10 +79,10 @@ public:
     impl_.push(pred, value);
   }
 
-  template <typename P, typename T>
-  case_t& operator()(const P& pred, const T& value) {
-    static_assert(is_equality_comparable_v<P, K>, "invalid type");
+  template <typename T, typename P>
+  case_t& operator()(const P& pred, const T& value) {    
     static_assert(std::is_constructible_v<V, T>, "invalid type");
+    static_assert(is_equality_comparable_v<P, K>, "invalid type");
     impl_.push(to_lnode<ch_width_v<K>>(pred, impl_.sloc()),
                to_lnode<V>(value, impl_.sloc()));
     return *this;
@@ -98,28 +100,29 @@ protected:
   select_impl impl_;
 };
 
-template <typename R, typename T>
-auto ch_sel(const ch_bit<1>& pred, const T& value, CH_SLOC) {
+template <typename R, typename T, typename P>
+auto ch_sel(const P& pred, const T& value, CH_SLOC) {
   static_assert(is_logic_type_v<R>, "invalid type");
   static_assert(std::is_constructible_v<R, T>, "invalid type");
+  static_assert(is_bit_base_v<P>, "invalid type");
+  static_assert(ch_width_v<P> == 1, "invalid size");
   return select_t<R>(get_lnode(pred), to_lnode<R>(value, sloc), sloc);
 }
 
-template <typename T>
-auto ch_sel(const ch_bit<1>& pred, const T& value, CH_SLOC) {
-  static_assert(is_object_type_v<T>, "invalid type");
-  return select_t<ch_logic_t<T>>(get_lnode(pred), to_lnode<ch_width_v<T>>(value, sloc), sloc);
+template <typename T, typename P>
+auto ch_sel(const P& pred, const T& value, CH_SLOC) {
+  return ch_sel<ch_logic_t<T>, T, P>(pred, value, sloc);
 }
 
-template <typename R, typename U, typename V>
-auto ch_sel(const ch_bit<1>& pred, const U& _true, const V& _false, CH_SLOC) {
-  return ch_sel<R, U>(pred, _true, sloc)(_false);
+template <typename R, typename U, typename V, typename P>
+auto ch_sel(const P& pred, const U& _true, const V& _false, CH_SLOC) {
+  return ch_sel<R, U, P>(pred, _true, sloc)(_false);
 }
 
-template <typename U, typename V>
-auto ch_sel(const ch_bit<1>& pred, const U& _true, const V& _false, CH_SLOC) {
+template <typename U, typename V, typename P>
+auto ch_sel(const P& pred, const U& _true, const V& _false, CH_SLOC) {
   static_assert(ch_width_v<deduce_type_t<false, U, V>> != 0, "invalid type");
-  return ch_sel<ch_logic_t<deduce_first_type_t<U, V>>, U, V>(pred, _true, _false, sloc);
+  return ch_sel<ch_logic_t<deduce_first_type_t<U, V>>, U, V, P>(pred, _true, _false, sloc);
 }
 
 template <typename U, typename V>
@@ -132,22 +135,22 @@ auto ch_max(const U& lhs, const V& rhs, CH_SLOC) {
   return ch_sel(lhs > rhs, lhs, rhs, sloc);
 }
 
-template <typename R, typename K, typename V, typename P>
+template <typename R, typename V, typename K, typename P>
 auto ch_case(const K& key, const P& pred, const V& value, CH_SLOC) {
+  static_assert(std::is_constructible_v<R, V>, "invalid type");
   static_assert(is_logic_type_v<K>, "invalid type");
   static_assert(is_scbit_convertible_v<P, ch_width_v<K>>, "invalid type");
-  static_assert(is_equality_comparable_v<P, K>, "invalid type");
-  static_assert(std::is_constructible_v<R, V>, "invalid type");
+  static_assert(is_equality_comparable_v<P, K>, "invalid type");  
   return case_t<K, R>(get_lnode(key),
                       to_lnode<ch_width_v<K>>(pred, sloc),
                       to_lnode<R>(value, sloc),
                       sloc);
 }
 
-template <typename K, typename V, typename P>
+template <typename V, typename K, typename P>
 auto ch_case(const K& key, const P& pred, const V& value, CH_SLOC) {
   static_assert(is_object_type_v<V>, "invalid type");
-  return ch_case<ch_logic_t<V>, K, V, P>(key, pred, value, sloc);
+  return ch_case<ch_logic_t<V>, V, K, P>(key, pred, value, sloc);
 }
 
 }

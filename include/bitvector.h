@@ -105,13 +105,15 @@ public:
     }
 
     void increment() {
-      if (0 == (++offset_ % bitwidth_v<word_t>))
+      if (0 == (++offset_ % bitwidth_v<word_t>)) {
         ++words_;
+      }
     }
 
     void decrement() {
-      if (0 == (offset_-- % bitwidth_v<word_t>))
+      if (0 == (offset_-- % bitwidth_v<word_t>)) {
         --words_;
+      }
     }
 
     void advance(int delta) {
@@ -323,13 +325,13 @@ public:
 
     const_reverse_iterator operator+(int dec) const {
       const_reverse_iterator ret(*this);
-      ret -= dec;
+      ret += dec;
       return ret;
     }
 
     const_reverse_iterator operator-(int incr) const {
       const_reverse_iterator ret(*this);
-      ret += incr;
+      ret -= incr;
       return ret;
     }
 
@@ -389,13 +391,13 @@ public:
 
     reverse_iterator operator+(int dec) const {
       reverse_iterator ret(*this);
-      ret -= dec;
+      ret += dec;
       return ret;
     }
 
     reverse_iterator operator-(int incr) const {
       reverse_iterator ret(*this);
-      ret += incr;
+      ret -= incr;
       return ret;
     }
 
@@ -658,7 +660,7 @@ public:
   }
 
   auto rbegin() {
-    return reverse_iterator(words_, size_ - 1);
+    return reverse_iterator(words_, 0) - (size_-1);
   }
 
   auto rend() {

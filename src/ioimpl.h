@@ -6,6 +6,8 @@
 namespace ch {
 namespace internal {
 
+class bindportimpl;
+
 class ioimpl : public lnodeimpl {
 protected:
 
@@ -27,22 +29,6 @@ public:
     return value_;
   }
 
-  io_value_t& value() {
-    return value_;
-  }
-
-  bool has_binding() const {
-    return !binding_.empty();
-  }
-
-  void bind(const lnode& binding) {
-    binding_ = binding;
-  }
-
-  const lnode& binding() const {
-    return binding_;
-  }  
-
 protected:
 
   ioportimpl(context* ctx,
@@ -53,7 +39,6 @@ protected:
              const std::string& name = "");
 
   io_value_t value_;
-  lnode binding_;
 
   friend class context;
 };
@@ -63,7 +48,19 @@ protected:
 class inputimpl : public ioportimpl {
 public:
 
-  virtual lnodeimpl* clone(context* ctx, const clone_map& cloned_nodes) const override;
+  lnodeimpl* clone(context* ctx, const clone_map& cloned_nodes) const override;
+
+  bool has_bindport() const {
+    return !bindports_.empty();
+  }
+
+  void add_bindport(bindportimpl* bindport) {
+    bindports_.push_back(bindport);
+  }
+
+  const auto bindports() const {
+    return bindports_;
+  }
 
   void print(std::ostream& out) const override;
   
@@ -77,6 +74,8 @@ protected:
 
   ~inputimpl();  
 
+  std::vector<bindportimpl*> bindports_;
+
   friend class context;
 };
 
@@ -85,7 +84,7 @@ protected:
 class outputimpl : public ioportimpl {
 public:
 
-  virtual lnodeimpl* clone(context* ctx, const clone_map& cloned_nodes) const override;
+  lnodeimpl* clone(context* ctx, const clone_map& cloned_nodes) const override;
 
   void print(std::ostream& out) const override;
   
@@ -111,7 +110,7 @@ public:
     return this->src(0);
   }
 
-  virtual lnodeimpl* clone(context* ctx, const clone_map& cloned_nodes) const override;
+  lnodeimpl* clone(context* ctx, const clone_map& cloned_nodes) const override;
 
   void print(std::ostream& out) const override;
 
@@ -119,7 +118,6 @@ protected:
 
   tapimpl(context* ctx,
           const lnode& src,
-          const io_value_t& value,
           const std::string& name,
           const source_location& sloc);
 

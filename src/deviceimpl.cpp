@@ -7,13 +7,16 @@
 
 using namespace ch::internal;
 
-deviceimpl::deviceimpl(const std::type_index& signature, const std::string& name) {
-  ctx_ = ctx_create(signature, name);
+deviceimpl::deviceimpl(const std::type_index& signature,
+                       bool has_args,
+                       const std::string& name) {
+  ctx_ = ctx_create(signature, has_args, name);
   ctx_->acquire();
+  initialized_ = (ctx_->nodes().size() != 0);
 }
 
 deviceimpl::~deviceimpl() {
-  ctx_->release();
+  ctx_->release();  
 }
 
 void deviceimpl::begin_context() {
@@ -22,19 +25,30 @@ void deviceimpl::begin_context() {
 
 void deviceimpl::end_context() {
   ctx_swap(old_ctx_);
+  if (old_ctx_) {
+    old_ctx_->create_binding(ctx_);
+  }
 }
 
-void deviceimpl::optimize() {
-  compiler compiler(ctx_);
-  compiler.optimize();
+bool deviceimpl::begin_build() const {
+  return !initialized_;
+}
+
+void deviceimpl::end_build() {
+  if (!initialized_) {
+    compiler compiler(ctx_);
+    compiler.optimize();
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 device::device() : impl_(nullptr) {}
 
-device::device(const std::type_index& signature, const std::string& name) {
-  impl_ = new deviceimpl(signature, name);
+device::device(const std::type_index& signature,
+               bool has_args,
+               const std::string& name) {
+  impl_ = new deviceimpl(signature, has_args, name);
   impl_->acquire();
   impl_->begin_context();
 }
@@ -50,8 +64,9 @@ device::device(device&& other) : impl_(std::move(other.impl_)) {
 }
 
 device::~device() {
-  if (impl_)
+  if (impl_) {
     impl_->release();
+  }
 }
 
 device& device::operator=(const device& device) {
@@ -71,8 +86,12 @@ device& device::operator=(device&& other) {
   return *this;
 }
 
-void device::optimize() {
-  impl_->optimize();
+bool device::begin_build() const {
+  return impl_->begin_build();
+}
+
+void device::end_build() {
+  impl_->end_build();
   impl_->end_context();
 }
 

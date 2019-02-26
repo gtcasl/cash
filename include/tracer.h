@@ -42,23 +42,23 @@ public:
   }
 
   void toTestBench(std::ofstream& out,
-                   const std::string& module,
+                   const std::string& moduleFileName,
                    bool passthru = false);
 
   void toTestBench(const std::string& file,
-                   const std::string& module,
+                   const std::string& moduleFileName,
                    bool passthru = false) {
     std::ofstream out(file);
-    toTestBench(out, module, passthru);
+    toTestBench(out, moduleFileName, passthru);
   }
 
   void toVerilator(std::ofstream& out,
-                   const std::string& module);
+                   const std::string& moduleTypeName);
 
   void toVerilator(const std::string& file,
-                   const std::string& module) {
+                   const std::string& moduleTypeName) {
     std::ofstream out(file);
-    toVerilator(out, module);
+    toVerilator(out, moduleTypeName);
   }
 
 protected:

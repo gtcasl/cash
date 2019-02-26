@@ -11,7 +11,9 @@ class lnodeimpl;
 class deviceimpl : public refcounted {
 public:
 
-  deviceimpl(const std::type_index& signature, const std::string& name);
+  deviceimpl(const std::type_index& signature,
+             bool has_args,
+             const std::string& name);
 
   ~deviceimpl();
 
@@ -19,7 +21,9 @@ public:
 
   void end_context();
 
-  void optimize();
+  bool begin_build() const;
+
+  void end_build();
 
   context* ctx() const {
     return ctx_;
@@ -29,6 +33,7 @@ protected:
 
   context* ctx_;
   context* old_ctx_;
+  bool initialized_;
 };
 
 }

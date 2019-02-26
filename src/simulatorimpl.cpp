@@ -25,7 +25,8 @@ void clock_driver::eval() {
 ///////////////////////////////////////////////////////////////////////////////
 
 simulatorimpl::simulatorimpl(const ch_device_list& devices)
-  : clk_driver_(true)
+  : eval_ctx_(nullptr)
+  , clk_driver_(true)
   , reset_driver_(false)
   , sim_driver_(nullptr) {
   // enqueue all contexts
@@ -39,8 +40,12 @@ simulatorimpl::simulatorimpl(const ch_device_list& devices)
 }
 
 simulatorimpl::~simulatorimpl() {
-  if (sim_driver_)
+  if (sim_driver_) {
     sim_driver_->release();
+  }
+  if (eval_ctx_) {
+    eval_ctx_->release();
+  }
   for (auto ctx : contexts_) {
     ctx->release();
   }
@@ -48,30 +53,33 @@ simulatorimpl::~simulatorimpl() {
 
 void simulatorimpl::initialize() {
   {
-    context* eval_ctx = nullptr;
     if (1 == contexts_.size()
      && 0 == contexts_[0]->bindings().size()) {
-      eval_ctx = contexts_[0];
-      eval_ctx->acquire();
+      eval_ctx_ = contexts_[0];
+      eval_ctx_->acquire();
     } else {
-      eval_ctx = new context("eval");
-      eval_ctx->acquire();
+      eval_ctx_ = new context("eval");
+      eval_ctx_->acquire();
 
       // build evaluation context
-      for (auto ctx : contexts_) {
-        compiler compiler(ctx);
-        compiler.build_eval_context(eval_ctx);
+      {
+        compiler compiler(eval_ctx_);
+        for (auto ctx : contexts_) {
+          compiler.create_merged_context(ctx);
+        }
       }
 
       // optimize evaluation context
-      compiler compiler(eval_ctx);
-      compiler.optimize();
+      {
+        compiler compiler(eval_ctx_);
+        compiler.optimize();
+      }
     }
 
     // build evaluation list
     std::vector<lnodeimpl*> eval_list;
     {
-      compiler compiler(eval_ctx);
+      compiler compiler(eval_ctx_);
       compiler.build_eval_list(eval_list);
     }
 
@@ -87,21 +95,16 @@ void simulatorimpl::initialize() {
   #endif
     sim_driver_->acquire();
     sim_driver_->initialize(eval_list);
-
-    eval_ctx->release();
   }
 
   // bind system signals
-  for (auto ctx : contexts_) {
-    auto clk = ctx->sys_clk();
-    if (clk) {
-      clk_driver_.add_signal(clk);
-    }
-
-    auto reset = ctx->sys_reset();
-    if (reset) {
-      reset_driver_.add_signal(reset);
-    }
+  auto clk = eval_ctx_->sys_clk();
+  if (clk) {
+    clk_driver_.add_signal(clk);
+  }
+  auto reset = eval_ctx_->sys_reset();
+  if (reset) {
+    reset_driver_.add_signal(reset);
   }
 }
 

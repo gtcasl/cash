@@ -72,7 +72,10 @@ inline if_cond_t if_body_t::operator,(const fvoid_t& body) {
   return if_cond_t(if_);
 }
 
-inline if_body_t ch_if(const ch_bit<1>& pred, CH_SLOC) {
+template <typename P>
+inline if_body_t ch_if(const P& pred, CH_SLOC) {
+  static_assert(is_bit_base_v<P>, "invalid type");
+  static_assert(ch_width_v<P> == 1, "invalid size");
   return if_body_t(std::make_shared<if_t>(sloc), get_lnode(pred));
 }
 

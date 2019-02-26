@@ -35,8 +35,9 @@ proxyimpl::proxyimpl(context* ctx,
 lnodeimpl* proxyimpl::clone(context* ctx, const clone_map& cloned_nodes) const {
   auto node = ctx->create_node<proxyimpl>(this->size(), sloc_, name_, var_id_);
   for (auto& range : ranges_) {
-    auto src = cloned_nodes.at(this->src(range.src_idx).id());
-    node->add_source(range.dst_offset, src, range.src_offset, range.length);
+    auto& src = this->src(range.src_idx);
+    auto c_src = cloned_nodes.at(src.id());
+    node->add_source(range.dst_offset, c_src, range.src_offset, range.length);
   }
   return node;
 }

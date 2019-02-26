@@ -185,6 +185,7 @@ int main() {
   tracer.toText("matmul.log");
   tracer.toVCD("matmul.vcd");
   tracer.toTestBench("matmul_tb.v", "matmul.v");
+  tracer.toVerilator("matmul_tb.h", "MatMul");
   int ret = system("iverilog matmul_tb.v -o matmul_tb.iv")
           | system("! vvp matmul_tb.iv | grep 'ERROR' || false");
   return ret != 0;

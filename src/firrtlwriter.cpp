@@ -64,6 +64,16 @@ void firrtlwriter::print_header(std::ostream& out) {
   //
   // ports declaration
   //  
+  auto clk = ctx_->sys_clk();
+  if (clk) {
+    this->print_port(out, clk);
+    out << std::endl;
+  }
+  auto reset = ctx_->sys_reset();
+  if (reset) {
+    this->print_port(out, reset);
+    out << std::endl;
+  }
   for (auto input : ctx_->inputs()) {
     this->print_port(out, input);
     out << std::endl;

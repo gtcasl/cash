@@ -28,7 +28,7 @@ public:
     return this->src(pred_idx_);
   }
 
-  virtual lnodeimpl* clone(context* ctx, const clone_map& cloned_nodes) const override;
+  lnodeimpl* clone(context* ctx, const clone_map& cloned_nodes) const override;
 
 protected:
 

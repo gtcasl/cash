@@ -56,7 +56,7 @@ public:
     return force_logic_ram_;
   }
 
-  virtual lnodeimpl* clone(context* ctx, const clone_map& cloned_nodes) const override;
+  lnodeimpl* clone(context* ctx, const clone_map& cloned_nodes) const override;
 
   memportimpl* create_arport(lnodeimpl* addr,
                              const source_location& sloc);
@@ -148,7 +148,7 @@ protected:
 class marportimpl : public memportimpl {
 public:
 
-  virtual lnodeimpl* clone(context* ctx, const clone_map& cloned_nodes) const override;
+  lnodeimpl* clone(context* ctx, const clone_map& cloned_nodes) const override;
 
 protected:
 
@@ -167,7 +167,7 @@ protected:
 class msrportimpl : public memportimpl {
 public:
 
-  virtual lnodeimpl* clone(context* ctx, const clone_map& cloned_nodes) const override;
+  lnodeimpl* clone(context* ctx, const clone_map& cloned_nodes) const override;
 
 protected:
 
@@ -192,7 +192,7 @@ public:
     return this->src(wdata_idx_);
   }
 
-  virtual lnodeimpl* clone(context* ctx, const clone_map& cloned_nodes) const override;
+  lnodeimpl* clone(context* ctx, const clone_map& cloned_nodes) const override;
 
   friend class context;
 

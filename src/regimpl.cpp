@@ -79,13 +79,11 @@ void regimpl::print(std::ostream& out) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void ch::internal::ch_pushcd(const ch_bit<1>& clk,
-                             const ch_bit<1>& reset,
-                             bool pos_edge,
-                             const source_location& sloc) {
-  auto lclk = get_lnode(clk);
-  auto lrst = get_lnode(reset);
-  lclk.impl()->ctx()->push_cd(lclk, lrst, pos_edge, sloc);
+void ch::internal::pushClockDomain(const lnode& clock,
+                                   const lnode& reset,
+                                   bool pos_edge,
+                                   const source_location& sloc) {
+  clock.impl()->ctx()->push_cd(clock, reset, pos_edge, sloc);
 }
 
 void ch::internal::ch_popcd() {
@@ -93,8 +91,8 @@ void ch::internal::ch_popcd() {
 }
 
 ch_bit<1> ch::internal::ch_clock(const source_location& sloc) {
-  auto cd = ctx_curr()->current_cd(sloc);
-  return make_type<ch_bit<1>>(cd->clk(), sloc);
+  auto clk = ctx_curr()->current_clock(sloc);
+  return make_type<ch_bit<1>>(clk, sloc);
 }
 
 ch_bit<1> ch::internal::ch_reset(const source_location& sloc) {

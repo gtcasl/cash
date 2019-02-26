@@ -80,6 +80,7 @@ protected:
   void initialize();
 
   std::vector<context*> contexts_;
+  context* eval_ctx_;
   clock_driver clk_driver_;
   clock_driver reset_driver_;
   sim_driver* sim_driver_;

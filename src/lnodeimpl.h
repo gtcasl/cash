@@ -64,6 +64,10 @@ public:
   const std::string& name() const {
     return name_;
   }
+
+  std::string& name() {
+    return name_;
+  }
   
   lnodetype type() const {
     return type_;
@@ -160,9 +164,7 @@ public:
 
   undefimpl(context* ctx, uint32_t size, const source_location& sloc);  
 
-  virtual lnodeimpl* clone(context*, const clone_map&) const override {
-    return nullptr;
-  }
+  lnodeimpl* clone(context* ctx, const clone_map& ) const override;
 };
 
 const char* to_string(lnodetype type);

@@ -1,4 +1,6 @@
 #include "ioimpl.h"
+#include "bindimpl.h"
+#include "proxyimpl.h"
 #include "context.h"
 
 using namespace ch::internal;
@@ -42,8 +44,8 @@ lnodeimpl* inputimpl::clone(context* ctx, const clone_map&) const {
 void inputimpl::print(std::ostream& out) const {
   out << "#" << id_ << " <- " << this->type() << this->size();
   out << "(" << name_;
-  if (!binding_.empty()) {
-    out << ", $" << binding_.id();
+  for (auto bindport : bindports_) {
+    out << ", $" << bindport->id();
   }
   out << ")";
 }
@@ -75,10 +77,9 @@ void outputimpl::print(std::ostream& out) const {
 
 tapimpl::tapimpl(context* ctx,
                  const lnode& src,
-                 const io_value_t& value,
                  const std::string& name,
                  const source_location& sloc)
-  : ioportimpl(ctx, type_tap, src.size(), value, sloc, name) {
+  : ioportimpl(ctx, type_tap, src.size(), smart_ptr<sdata_type>::make(src.size()), sloc, name) {
   this->add_src(src);
 }
 
@@ -86,7 +87,7 @@ tapimpl::~tapimpl() {}
 
 lnodeimpl* tapimpl::clone(context* ctx, const clone_map& cloned_nodes) const {
   auto src = cloned_nodes.at(this->src(0).id());
-  return ctx->create_node<tapimpl>(src, value_, name_, sloc_);
+  return ctx->create_node<tapimpl>(src, name_, sloc_);
 }
 
 void tapimpl::print(std::ostream& out) const {
@@ -99,15 +100,18 @@ void tapimpl::print(std::ostream& out) const {
 lnodeimpl* ch::internal::createInputNode(const std::string& name,
                                          uint32_t size,
                                          const source_location& sloc) {
-  auto value = smart_ptr<sdata_type>::make(size);
-  return ctx_curr()->create_node<inputimpl>(size, value, name, sloc);
+  return ctx_curr()->create_input(size, name, sloc);
 }
 
 lnodeimpl* ch::internal::createOutputNode(const std::string& name,
-                                          const lnode& src,
+                                          uint32_t size,
                                           const source_location& sloc) {
-  auto value = smart_ptr<sdata_type>::make(src.size());
-  return ctx_curr()->create_node<outputimpl>(src, value, name, sloc);
+  auto output = ctx_curr()->create_output(size, name, sloc);
+  return output->src(0).impl();
+}
+
+lnodeimpl* ch::internal::getOutputNode(const lnode& src) {
+  return ctx_curr()->get_output(src);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

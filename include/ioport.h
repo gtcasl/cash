@@ -10,8 +10,10 @@ lnodeimpl* createInputNode(const std::string& name,
                            const source_location& sloc);
 
 lnodeimpl* createOutputNode(const std::string& name,
-                            const lnode& src,
+                            uint32_t size,
                             const source_location& sloc);
+
+lnodeimpl* getOutputNode(const lnode& src);
 
 void bindInput(const lnode& src,
                const lnode& input,
@@ -108,8 +110,8 @@ public:
   using base::operator=;
 
   explicit ch_logic_out(const std::string& name = "io", CH_SLOC)
-    : base(logic_buffer(ch_width_v<T>, sloc, name)) {
-    output_ = createOutputNode(name, logic_accessor::data(*this), sloc);
+     : base(logic_buffer(createOutputNode(name, ch_width_v<T>, sloc))) {
+    output_ = getOutputNode(logic_accessor::data(*this));
   }
 
   template <typename U>

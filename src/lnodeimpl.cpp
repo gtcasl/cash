@@ -121,7 +121,7 @@ size_t lnodeimpl::hash() const {
   if (!hash_) {
     hash_ = type_ ^ size_;
     for (auto& src : srcs_) {
-      hash_ ^= src.impl()->hash();
+      hash_ = hash_combine(hash_, src.impl()->hash());
     }
   }
   return hash_;
@@ -187,3 +187,7 @@ std::string lnodeimpl::debug_info() const {
 undefimpl::undefimpl(context* ctx, uint32_t size, const source_location& sloc)
   : lnodeimpl(ctx, type_undef, size, sloc)
 {}
+
+lnodeimpl* undefimpl::clone(context* ctx, const clone_map&) const {
+  return ctx->create_node<undefimpl>(this->size(), sloc_);
+}

@@ -16,7 +16,7 @@ public:
     return pos_edge_;
   }
 
-  virtual lnodeimpl* clone(context* ctx, const clone_map& cloned_nodes) const override;
+  lnodeimpl* clone(context* ctx, const clone_map& cloned_nodes) const override;
 
   void print(std::ostream& out) const override;
 

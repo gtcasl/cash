@@ -33,7 +33,7 @@ protected:
 class udfcimpl : public udfimpl {
 public:
 
-  virtual lnodeimpl* clone(context* ctx, const clone_map& cloned_nodes) const override;
+  lnodeimpl* clone(context* ctx, const clone_map& cloned_nodes) const override;
 
 protected:
 
@@ -54,7 +54,7 @@ public:
     return this->src(cd_idx_);
   }
 
-  virtual lnodeimpl* clone(context* ctx, const clone_map& cloned_nodes) const override;
+  lnodeimpl* clone(context* ctx, const clone_map& cloned_nodes) const override;
 
 protected:
 

@@ -17,11 +17,11 @@ public:
   void toVCD(std::ofstream& out);
 
   void toTestBench(std::ofstream& out,
-                   const std::string& module,
+                   const std::string& moduleFileName,
                    bool passthru);
 
   void toVerilator(std::ofstream& out,
-                   const std::string& module);
+                   const std::string& moduleTypeName);
 
 protected:
 
@@ -53,8 +53,6 @@ protected:
     return value;
   }
 
-  std::vector<context*> get_module_path(context* ctx);
-
   std::vector<ioportimpl*> signals_;
   std::vector<std::pair<block_t*, uint32_t>> prev_values_;
   bv_t valid_mask_;
@@ -63,6 +61,7 @@ protected:
   trace_block_t* trace_head_;
   trace_block_t* trace_tail_;
   uint32_t num_traces_;
+  bool is_merged_context_;
 };
 
 }

@@ -5,13 +5,11 @@
 namespace ch {
 namespace internal {
 
-void ch_toVerilog(std::ostream& out, const device& device, bool flatten = false);
+void ch_toVerilog(std::ostream& out, const device& device);
 
-inline void ch_toVerilog(const std::string& file,
-                         const device& device,
-                         bool flatten = false) {
+inline void ch_toVerilog(const std::string& file, const device& device) {
   std::ofstream out(file);
-  ch_toVerilog(out, device, flatten);
+  ch_toVerilog(out, device);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

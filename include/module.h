@@ -6,62 +6,41 @@ namespace ch {
 namespace internal {
 
 template <typename T>
-class ch_module final : private device {
+class ch_module final : public device {
 public:
   using base = device;
   using io_type = ch_flip_io<decltype(T::io)>;
 
-  io_type io;
+protected:
+  std::shared_ptr<io_type> _;
+
+public:
+  io_type& io;
 
   ch_module(CH_SLOC)
-    : device(std::type_index(typeid(T)), identifier_from_typeid(typeid(T).name()).c_str())
-    , io(build(T()).io, sloc)
+    : device(std::type_index(typeid(T)), false, typeid(T).name())
+    , _(build(sloc))
+    , io(*_)
   {}
 
-  template <typename U0,
-            CH_REQUIRE_0(std::is_constructible_v<T, U0>)>
-  ch_module(U0&& arg0, CH_SLOC)
-    : device(std::type_index(typeid(T)), identifier_from_typeid(typeid(T).name()).c_str())
-    , io(build(T(std::forward<U0>(arg0))).io, sloc)
+#define CH_MODULE_TMPL(a, i, x) typename __U##i
+#define CH_MODULE_REQUIRE(a, i, x) __U##i
+#define CH_MODULE_DECL(a, i, x) const __U##i& arg##i
+#define CH_MODULE_ARG(a, i, x) arg##i
+#define CH_MODULE(...) \
+  template <CH_FOR_EACH(CH_MODULE_TMPL, , CH_SEP_COMMA, __VA_ARGS__), \
+            CH_REQUIRE_0(std::is_constructible_v<T, CH_FOR_EACH(CH_MODULE_REQUIRE, , CH_SEP_COMMA, __VA_ARGS__)>)> \
+  ch_module(CH_FOR_EACH(CH_MODULE_DECL, , CH_SEP_COMMA, __VA_ARGS__), CH_SLOC) \
+    : device(std::type_index(typeid(T)), true, typeid(T).name()) \
+    , _(build(sloc, CH_FOR_EACH(CH_MODULE_ARG, , CH_SEP_COMMA, __VA_ARGS__))) \
+    , io(*_) \
   {}
-
-  template <typename U0, typename U1,
-            CH_REQUIRE_0(std::is_constructible_v<T, U0, U1>)>
-  ch_module(U0&& arg0, U1&& arg1, CH_SLOC)
-    : device(std::type_index(typeid(T)), identifier_from_typeid(typeid(T).name()).c_str())
-    , io(build(T(std::forward<U0>(arg0),
-                 std::forward<U1>(arg1))).io, sloc)
-  {}
-
-  template <typename U0, typename U1, typename U2,
-            CH_REQUIRE_0(std::is_constructible_v<T, U0, U1, U2>)>
-  ch_module(U0&& arg0, U1&& arg1, U2&& arg2, CH_SLOC)
-    : device(std::type_index(typeid(T)), identifier_from_typeid(typeid(T).name()).c_str())
-    , io(build(T(std::forward<U0>(arg0),
-                 std::forward<U1>(arg1),
-                 std::forward<U2>(arg2))).io, sloc)
-  {}
-
-  template <typename U0, typename U1, typename U2, typename U3,
-            CH_REQUIRE_0(std::is_constructible_v<T, U0, U1, U2, U3>)>
-  ch_module(U0&& arg0, U1&& arg1, U2&& arg2, U3&& arg3, CH_SLOC)
-    : device(std::type_index(typeid(T)), identifier_from_typeid(typeid(T).name()).c_str())
-    , io(build(T(std::forward<U0>(arg0),
-                 std::forward<U1>(arg1),
-                 std::forward<U2>(arg2),
-                 std::forward<U3>(arg3))).io, sloc)
-  {}
-
-  template <typename U0, typename U1, typename U2, typename U3, typename... Us,
-            CH_REQUIRE_0(std::is_constructible_v<T, U0, U1, U2, U3, Us...>)>
-  ch_module(U0&& arg0, U1&& arg1, U2&& arg2, U3&& arg3, Us&&... args)
-    : device(std::type_index(typeid(T)), identifier_from_typeid(typeid(T).name()).c_str())
-    , io(build(T(std::forward<U0>(arg0),
-                 std::forward<U1>(arg1),
-                 std::forward<U2>(arg2),
-                 std::forward<U3>(arg3),
-                 std::forward<Us>(args)...)).io, source_location())
-  {}
+CH_VA_ARGS_MAP(CH_MODULE)
+#undef CH_MODULE_TMPL
+#undef CH_MODULE_REQUIRE
+#undef CH_MODULE_DECL
+#undef CH_MODULE_ARG
+#undef CH_MODULE
 
   ch_module(ch_module&& other)
     : base(std::move(other))
@@ -70,10 +49,20 @@ public:
 
 protected:
 
-  auto&& build(T&& obj) {
-    obj.describe();
-    this->optimize();
-    return obj;
+  template <typename... Us>
+  auto build(const source_location& sloc, Us&&... args) {
+    std::shared_ptr<io_type> out;
+    if (this->begin_build()) {
+      T obj(std::forward<Us>(args)...);
+      obj.describe();
+      this->end_build();
+      out = std::make_shared<io_type>(obj.io, sloc);
+    } else {
+      decltype(T::io) obj_io(sloc);
+      this->end_build();
+      out = std::make_shared<io_type>(obj_io, sloc);
+    }
+    return out;
   }
 
   ch_module(const ch_module& other) = delete;

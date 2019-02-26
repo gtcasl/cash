@@ -12,7 +12,7 @@ public:
 
   void optimize();
 
-  void build_eval_context(context* eval_ctx);
+  void create_merged_context(context* ctx);
 
   void build_eval_list(std::vector<lnodeimpl*>& eval_list);
 

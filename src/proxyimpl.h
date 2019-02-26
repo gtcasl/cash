@@ -60,7 +60,7 @@ public:
 
   int merge_adjacent_ranges(uint32_t index);
 
-  virtual lnodeimpl* clone(context* ctx, const clone_map& cloned_nodes) const override;
+  lnodeimpl* clone(context* ctx, const clone_map& cloned_nodes) const override;
 
   bool equals(const lnodeimpl& other) const override;
 

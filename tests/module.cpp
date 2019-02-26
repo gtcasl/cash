@@ -84,7 +84,7 @@ struct FilterBlock {
   void describe() {
     f1_.io.x(io.x);
     f1_.io.y(f2_.io.x);
-    f2_.io.y(io.y);
+    f2_.io.y(io.y);    
   }
   ch_module<Filter<T>> f1_, f2_;
 };
@@ -357,8 +357,8 @@ TEST_CASE("module", "[module]") {
       ret &= (12 == device.io.y.data);
       ret &= !device.io.y.parity;
 
-      ch_toFIRRTL("filter.fir", device);
       ch_toVerilog("filter.v", device);
+      ch_toFIRRTL("filter.fir", device);
 
       trace.toTestBench("filter_tb.v", "filter.v");
       ret &= (checkVerilog("filter_tb.v"));      

@@ -1011,167 +1011,124 @@ void compiler::check_undefs() {
   }
 }
 
-void compiler::build_eval_context(context* eval_ctx) {
-  std::unordered_set<uint32_t> visited_nodes;
-  std::unordered_set<uint32_t> cyclic_nodes;
-  clone_map cloned_nodes;
+void compiler::create_merged_context(context* ctx) {
+  //--
+  std::list<std::string> node_path;
 
-  std::function<void (std::vector<lnodeimpl*>&, context*)>
-      gather_all_snodes = [&](std::vector<lnodeimpl*>& snodes, context* ctx) {
-    for (auto node : ctx->bindings()) {
-      gather_all_snodes(snodes, node->module());
+  //--
+  auto full_name = [&](lnodeimpl* node) {
+    std::stringstream ss;
+    for (auto p : node_path) {
+      ss << p << ".";
     }
-    auto& list = ctx->snodes();
-    snodes.reserve(snodes.size() + list.size());
-    snodes.insert(snodes.end(), list.begin(), list.end());
+    ss << node->name();
+    return ss.str();
   };
 
-  std::function<void (std::vector<lnodeimpl*>&, context*)>
-      gather_all_taps = [&](std::vector<lnodeimpl*>& taps, context* ctx) {
-    for (auto node : ctx->bindings()) {
-      gather_all_taps(taps, node->module());
-    }
-    for (auto node : ctx->taps()) {
-      taps.push_back(node);
-    }
-    for (auto node : ctx->gtaps()) {
-      taps.push_back(node);
-    }
-  };
-
-  std::function<void (lnodeimpl*)> dfs_visit = [&](lnodeimpl* node) {
-    if (visited_nodes.count(node->id()))
-      return;
-
-    // check for cycles
-    if (cyclic_nodes.count(node->id())) {
-      // handling register cycles
-      if (is_snode_type(node->type()))
+  //--
+  std::function<void (context*, clone_map&)> visit = [&](context* curr, clone_map& map) {
+    //--
+    std::unordered_map<proxyimpl*, lnodeimpl*> placeholders;
+    auto ensure_placeholder = [&](const lnode& node) {
+      //assert(node.impl()->type() != type_undef);
+      if (map.count(node.id()) != 0)
         return;
-#define LCOV_EXCL_START
-      if (platform::self().cflags() & cflags::dump_ast) {
-        for (auto _node : eval_ctx->nodes()) {
-          std::cerr << _node->ctx()->id() << ": ";
-          _node->print(std::cerr);
-          std::cerr << std::endl;
+      auto placeholder = ctx_->create_node<proxyimpl>(node.size(), node.sloc());
+      placeholders[placeholder] = node.impl();
+      map[node.id()] = placeholder;
+    };
+
+    //--
+    for (auto node : curr->nodes()) {
+      switch (node->type()) {
+      case type_bind: {
+        auto bind = reinterpret_cast<bindimpl*>(node);
+        clone_map sub_map;
+        for (auto& s : bind->srcs()) {
+          auto bs = reinterpret_cast<bindportimpl*>(s.impl());
+          ensure_placeholder(bs->src(0));
+          sub_map[s.id()] = map.at(bs->src(0).id());
         }
+        node_path.push_back(stringf("%s%d", bind->module()->name().c_str(), bind->id()));
+        visit(bind->module(), sub_map);
+        node_path.pop_back();
+        for (auto& o : bind->outputs()) {
+          auto bo = reinterpret_cast<bindportimpl*>(o.impl());
+          map[o.id()] = sub_map.at(bo->ioport().id());
+        }
+      } break;
+      case type_input: {
+        auto input = reinterpret_cast<inputimpl*>(node);
+        if (curr->parent()) {
+          for (auto p : input->bindports()) {
+            auto it = map.find(p->id());
+            if (it != map.end()) {
+              map[input->id()] = it->second;
+              break;
+            }
+          }
+        } else {
+          lnodeimpl* eval_node;
+          if (input->name() == "clk") {
+            eval_node = ctx_->current_clock(input->sloc());
+          } else if (input->name() == "reset") {
+            eval_node = ctx_->current_reset(input->sloc());
+          } else {
+            eval_node = input->clone(ctx_, map);
+            eval_node->name() = full_name(eval_node);
+          }
+          map[input->id()] = eval_node;
+        }
+      } break;
+      case type_output: {
+        auto output = reinterpret_cast<outputimpl*>(node);
+        ensure_placeholder(output->src(0));
+        if (curr->parent()) {
+          map[output->id()] = map.at(output->src(0).id());
+        } else {
+          auto eval_node = output->clone(ctx_, map);
+          eval_node->name() = full_name(eval_node);
+          map[output->id()] = eval_node;
+        }
+      } break;
+      case type_mem: {
+        auto eval_node = node->clone(ctx_, map);
+        map[node->id()] = eval_node;
+      } break;
+      case type_tap: {
+        auto tap = reinterpret_cast<tapimpl*>(node);
+        ensure_placeholder(tap->src(0));
+        auto eval_node = tap->clone(ctx_, map);
+        eval_node->name() = full_name(eval_node);
+        map[tap->id()] = eval_node;
+      } break;
+      case type_bindin:
+      case type_bindout:
+        // skip
+        break;
+      default: {
+        // assign placeholders
+        for (auto& src : node->srcs()) {
+          ensure_placeholder(src);
+        }
+        auto eval_node = node->clone(ctx_, map);
+        map[node->id()] = eval_node;
+      } break;
       }
-      fprintf(stderr, "error: found cycle on variable %s\n", node->debug_info().c_str());
-      std::abort();
-      return;
-#define LCOV_EXCL_END
     }
-    cyclic_nodes.insert(node->id());
 
-    // handling for special nodes
-    switch (node->type()) {
-    case type_bind:
-      // do not follow bind inputs
-      break;
-    case type_input: {
-      auto input = reinterpret_cast<inputimpl*>(node);
-      if (input->has_binding()) {
-        // visit source node
-        auto src = reinterpret_cast<bindportimpl*>(input->binding().impl())->src(0).impl();
-        dfs_visit(src);
-        // point input directly to the source node
-        cloned_nodes[node->id()] = cloned_nodes.at(src->id());
-      }
-    } break;
-    case type_bindout:
-      // visit source nodes
-      for (auto& src : node->srcs()) {
-        dfs_visit(src.impl());
-      }
-      // visit ioport source node
-      {
-        auto port = reinterpret_cast<bindportimpl*>(node)->ioport().impl();
-        auto src = reinterpret_cast<outputimpl*>(port)->src(0).impl();
-        dfs_visit(src);
-        // point bindport directly to the source node
-        cloned_nodes[node->id()] = cloned_nodes.at(src->id());
-      }
-      break;
-    default:
-      // visit source nodes
-      for (auto& src : node->srcs()) {
-        dfs_visit(src.impl());
-      }
-      break;
+    // resolve placeholders
+    for (auto placeholder : placeholders) {
+      auto src = map.at(placeholder.second->id());
+      placeholder.first->add_source(0, src, 0, src->size());
     }
-
-    // create eval node
-    auto it = cloned_nodes.find(node->id());
-    if (it == cloned_nodes.end()) {
-      auto eval_node = node->clone(eval_ctx, cloned_nodes);
-      cloned_nodes[node->id()] = eval_node;
-    } else
-    if (is_snode_type(node->type())) {
-      assert(type_proxy == it->second->type());
-      auto proxy = reinterpret_cast<proxyimpl*>(it->second);
-      auto eval_node = node->clone(eval_ctx, cloned_nodes);
-      proxy->add_source(0, eval_node, 0, eval_node->size());
-      cloned_nodes[node->id()] = eval_node;
-    }
-    visited_nodes.insert(node->id());
   };
 
-  CH_DBG(2, "build evaluation context for %s (#%d) ...\n", ctx_->name().c_str(), ctx_->id());
-
-  {
-    // gather sequential nodes from all contexts
-    std::vector<lnodeimpl*> snodes;
-    gather_all_snodes(snodes, ctx_);
-
-    // enable cycle detection for sequential nodes
-    for (auto node : snodes) {
-      cyclic_nodes.insert(node->id());
-    }
-
-    // create snode proxies
-    for (auto node : snodes) {
-      if (type_mwport == node->type())
-        continue;
-      auto proxy = eval_ctx->create_node<proxyimpl>(node->size(), node->sloc());
-      cloned_nodes[node->id()] = proxy;
-    }
-
-    // visit sequential nodes dependencies
-    for (auto node : snodes) {
-      for (auto& src : node->srcs()) {
-        dfs_visit(src.impl());
-      }
-    }
-
-    // disable cycle detection for sequential nodes
-    for (auto node : snodes) {
-      cyclic_nodes.erase(node->id());
-    }
-
-    // visit sequential nodes
-    for (auto node : snodes) {
-      dfs_visit(node);
-    }
-  }
-
-  // visit output nodes
-  for (auto node : ctx_->outputs()) {
-    dfs_visit(node);
-  }
-
-  // visit tap nodes
-  {
-    std::vector<lnodeimpl*> taps;
-    gather_all_taps(taps, ctx_);
-    for (auto node : taps) {
-      dfs_visit(node);
-    }
-  }
-
-  // visit input nodes
-  for (auto node : ctx_->inputs()) {
-    dfs_visit(node);
-  }
+  CH_DBG(2, "create merged context for %s (#%d) ...\n", ctx->name().c_str(), ctx->id());
+  clone_map map;
+  node_path.push_back(stringf("%s%d", ctx->name().c_str(), ctx->id()));
+  visit(ctx, map);
+  node_path.pop_back();
 }
 
 void compiler::build_eval_list(std::vector<lnodeimpl*>& eval_list) {
@@ -1204,7 +1161,7 @@ void compiler::build_eval_list(std::vector<lnodeimpl*>& eval_list) {
           std::cerr << std::endl;
         }
       }
-      fprintf(stderr, "error: found cycle on variable %s\n", node->debug_info().c_str());
+      fprintf(stderr, "error: found a cycle on variable %s\n", node->debug_info().c_str());
       std::abort();
       return false;
 #define LCOV_EXCL_END

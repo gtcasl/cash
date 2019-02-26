@@ -92,31 +92,26 @@ void verilogwriter::print_header(std::ostream& out) {
     auto_indent indent(out);
     auto_separator sep(",");
 
-    std::vector<ioimpl*> ports;
-    ports.reserve(ctx_->inputs().size() + ctx_->outputs().size());
-
     auto clk = ctx_->sys_clk();
+    if (clk) {
+      out << sep << std::endl;
+      this->print_port(out, clk);
+    }
     auto reset = ctx_->sys_reset();
-    auto adjusted_port_id = [clk, reset](ioimpl* x)->uint32_t {
-      if (x == clk)
-        return 0;
-      if (x == reset)
-        return 1;
-      return x->id() + 2;
-    };
+    if (reset) {
+      out << sep << std::endl;
+      this->print_port(out, reset);
+    }
 
     // gather all ports and sort them in user-defined order
-    // ensure system ports are written first
+    std::vector<ioimpl*> ports;
+    ports.reserve(ctx_->inputs().size() + ctx_->outputs().size());
     ports.insert(ports.end(), ctx_->inputs().begin(), ctx_->inputs().end());
     ports.insert(ports.end(), ctx_->outputs().begin(), ctx_->outputs().end());
     std::sort(ports.begin(),
               ports.end(),
-              [adjusted_port_id](ioimpl* a, ioimpl*b) {
-                uint32_t a_id = adjusted_port_id(a);
-                uint32_t b_id = adjusted_port_id(b);
-                return a_id < b_id;
-              });
-
+              [](ioimpl* a, ioimpl*b) {return a->id() < b->id();}
+      );
     for (auto port : ports) {
       out << sep << std::endl;
       this->print_port(out, port);
@@ -1026,7 +1021,7 @@ void verilogwriter::print_operator(std::ostream& out, ch_op op) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void ch::internal::ch_toVerilog(std::ostream& out, const device& device, bool flatten) {
+void ch::internal::ch_toVerilog(std::ostream& out, const device& device) {
 
   std::function<void (context*, std::unordered_set<udf_iface*>&)> print_udf_dependencies = [&](
       context* ctx, std::unordered_set<udf_iface*>& visited) {
@@ -1047,26 +1042,12 @@ void ch::internal::ch_toVerilog(std::ostream& out, const device& device, bool fl
   };
 
   auto ctx = device.impl()->ctx();
-  if (!flatten || 0 == ctx->bindings().size()) {
-    ctx->acquire();
-  } else {
-    auto flatten_ctx = new context(ctx->name());
-    flatten_ctx->acquire();
-    compiler compiler(ctx);
-    compiler.build_eval_context(flatten_ctx);
-    ctx = flatten_ctx;
-  }
-
   if (!ctx->udfs().empty()) {
     std::unordered_set<udf_iface*> udf_visited;
     print_udf_dependencies(ctx, udf_visited);
   }
 
-  {
-    std::unordered_set<std::string_view> visited;
-    verilogwriter writer(ctx);
-    writer.print(out, visited);
-  }
-
-  ctx->release();
+  std::unordered_set<std::string_view> visited;
+  verilogwriter writer(ctx);
+  writer.print(out, visited);
 }

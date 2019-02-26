@@ -74,7 +74,7 @@ void bindimpl::bind_input(lnodeimpl* src,
 
   // create bind port
   auto input = ctx_->create_node<bindportimpl>(this, src, ioport, sloc);
-  ioport->bind(input);
+  ioport->add_bindport(input);
 
   // add to list
   add_port(input, this->srcs());
@@ -87,8 +87,7 @@ void bindimpl::bind_output(lnodeimpl* dst,
   assert(ioport->ctx() != ctx_);
 
   // create bind port
-  auto output = ctx_->create_node<bindportimpl>(this, ioport, sloc);
-  ioport->bind(output);
+  auto output = ctx_->create_node<bindportimpl>(this, ioport, sloc);  
   dst->write(0, output, 0, dst->size(), sloc);
 
   // add to list
@@ -158,7 +157,7 @@ void ch::internal::bindInput(const lnode& src,
                              const lnode& input,
                              const source_location& sloc) {
   auto ctx = src.impl()->ctx();
-  auto binding = ctx->find_binding(input.impl()->ctx(), sloc);
+  auto binding = ctx->current_binding();
   binding->bind_input(src.impl(), reinterpret_cast<inputimpl*>(input.impl()), sloc);
 }
 
@@ -166,6 +165,6 @@ void ch::internal::bindOutput(const lnode& dst,
                               const lnode& output,
                               const source_location& sloc) {
   auto ctx = dst.impl()->ctx();
-  auto binding = ctx->find_binding(output.impl()->ctx(), sloc);
+  auto binding = ctx->current_binding();
   binding->bind_output(dst.impl(), reinterpret_cast<outputimpl*>(output.impl()), sloc);
 }

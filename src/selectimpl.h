@@ -25,7 +25,7 @@ public:
     return this->srcs().size() == (has_key() ? 4 : 3);
   }
 
-  virtual lnodeimpl* clone(context* ctx, const clone_map& cloned_nodes) const override;
+  lnodeimpl* clone(context* ctx, const clone_map& cloned_nodes) const override;
 
   bool equals(const lnodeimpl& other) const override;
 

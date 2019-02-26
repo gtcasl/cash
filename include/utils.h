@@ -20,6 +20,9 @@ struct requires_enum {
 
 std::string stringf(const char* format, ...);
 
+std::vector<std::string> split(const std::string& str, char delimiter);
+
+
 void dbprint(int level, const char* format, ...);
 
 std::string identifier_from_string(const std::string& name);
@@ -358,10 +361,6 @@ public:
       this->operator=(other);
     }
 
-    smart_ptr(smart_ptr&& other) : smart_ptr() {
-      this->operator=(std::move(other));
-    }
-
     ~smart_ptr() {
       this->release();
     }
@@ -374,14 +373,6 @@ public:
         other.next_ = this;
         next_ = otherNext ? otherNext : &other;
       }
-      return *this;
-    }
-
-    smart_ptr& operator=(smart_ptr&& other) {
-      ptr_ = other.ptr_;
-      next_ = other.next_;
-      other.ptr_ = nullptr;
-      other.next_ = nullptr;
       return *this;
     }
 

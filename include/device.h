@@ -29,9 +29,11 @@ public:
 
 protected:
 
-  device(const std::type_index& signature, const std::string& name);
+  device(const std::type_index& signature, bool has_args, const std::string& name);
 
-  void optimize();
+  bool begin_build() const;
+
+  void end_build();
 
   deviceimpl* impl_;
 
@@ -47,19 +49,25 @@ class ch_device final : public device {
 public:
   using base = device;
   using io_type = ch_system_io<decltype(T::io)>;
-  io_type io;
 
-  template <typename... Ts>
-  ch_device(const std::string& name, Ts&&... args)
+protected:
+  std::shared_ptr<io_type> _;
+
+public:
+  io_type& io;
+
+  template <typename... Us>
+  ch_device(const std::string& name, Us&&... args)
     : device(std::type_index(typeid(T)), name)
-    , io(build(T(std::forward<Ts>(args)...)).io)
+    , _(build(std::forward<Us>(args)...))
+    , io(*_)
   {}
 
-  template <typename... Ts>
-  ch_device(Ts&&... args)
-    : device(std::type_index(typeid(T))
-    , identifier_from_typeid(typeid(T).name()).c_str())
-    , io(build(T(std::forward<Ts>(args)...)).io)
+  template <typename... Us>
+  ch_device(Us&&... args)
+    : device(std::type_index(typeid(T)), (sizeof...(Us) != 0), typeid(T).name())
+    , _(build(std::forward<Us>(args)...))
+    , io(*_)
   {}
 
   ch_device(ch_device&& other)
@@ -69,10 +77,20 @@ public:
 
 protected:
 
-  auto&& build(T&& obj) {
-    obj.describe();
-    this->optimize();
-    return obj;
+  template <typename... Us>
+  auto build(Us&&... args) {
+    std::shared_ptr<io_type> out;
+    if (this->begin_build()) {
+      T obj(std::forward<Us>(args)...);
+      obj.describe();
+      this->end_build();
+      out = std::make_shared<io_type>(obj.io);
+    } else {
+      decltype(T::io) obj_io;
+      this->end_build();
+      out = std::make_shared<io_type>(obj_io);
+    }
+    return out;
   }
 
   ch_device(const ch_device& other) = delete;

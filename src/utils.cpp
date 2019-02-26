@@ -38,6 +38,21 @@ std::string ch::internal::stringf(const char* format, ...) {
   return result;
 }
 
+std::vector<std::string> ch::internal::split(const std::string& str, char delimiter) {
+  std::vector<std::string> out;
+  size_t pos = 0;
+  while (pos < str.size()) {
+    auto index = str.find(delimiter, pos);
+    if (index == std::string::npos)
+      break;
+    out.push_back(str.substr(pos, index - pos));
+    pos = index + 1;
+  }
+  out.push_back(str.substr(pos));
+  return out;
+}
+
+
 void ch::internal::dbprint(int level, const char* format, ...) {
   if (level > platform::self().dbg_level())
     return;

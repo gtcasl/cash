@@ -160,6 +160,8 @@ public:
     return cdomains_;
   }
 
+  size_t hash() const;
+
   //--
 
   uint32_t node_id();
@@ -175,6 +177,20 @@ public:
 
   //--
 
+  void create_binding(context* ctx);
+
+  inputimpl* create_input(uint32_t size,
+                          const std::string& name,
+                          const source_location& sloc);
+
+  outputimpl* create_output(uint32_t size,
+                            const std::string& name,
+                            const source_location& sloc);
+
+  outputimpl* get_output(const lnode& src);
+
+  //--
+
   litimpl* create_literal(const sdata_type& value);
 
   //--
@@ -186,6 +202,8 @@ public:
   cdimpl* create_cd(const lnode& clk,
                     bool pos_edge,
                     const source_location& sloc);
+
+  lnodeimpl* current_clock(const source_location& sloc);
 
   lnodeimpl* current_reset(const source_location& sloc);
 
@@ -222,7 +240,7 @@ public:
 
   //--
 
-  bindimpl* find_binding(context* module, const source_location& sloc);
+  bindimpl* current_binding();
 
   //--
 
@@ -296,11 +314,15 @@ protected:
   cond_inits_t            cond_inits_;  
 };
 
-context* ctx_create(const std::type_index& signature, const std::string& name);
+context* ctx_create(const std::type_index& signature,
+                    bool has_args,
+                    const std::string& name);
 
 context* ctx_swap(context* ctx);
 
 context* ctx_curr();
+
+context* ctx_find(context* ctx);
 
 }
 }
