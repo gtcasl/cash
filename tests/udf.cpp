@@ -43,7 +43,8 @@ TEST_CASE("udf", "[udf]") {
   SECTION("udf_comb", "[udf_comb]") {
     TEST([]()->ch_bool {
       ch_int32 a(1), b(2);
-      auto c = ch_udf<CombAdd>(a, b);
+      ch_udf<CombAdd> f;
+      auto c = f(a, b);
       return (c == 3);
     });
   }
@@ -51,7 +52,8 @@ TEST_CASE("udf", "[udf]") {
   SECTION("udf_seq", "[udf_seq]") {
     TEST([]()->ch_bool {
        ch_int32 a(1), b(2);
-       auto c = ch_udf<SeqAdd>(a, b);
+       ch_udf<SeqAdd> f;
+       auto c = f(a, b);
        return (c == 3);
     }, 1);
   }

@@ -250,44 +250,44 @@ public:
   }
 
   friend auto operator-(ch_float32& self) {
-    return ch_udf<cfSub>(0.0f, self);
+    return ch_udf<cfSub>()(0.0f, self);
   }
 
   friend auto operator+(ch_float32& lhs, const ch_float32& rhs) {
-    return ch_udf<cfAdd>(lhs, rhs);
+    return ch_udf<cfAdd>()(lhs, rhs);
   }
 
   friend auto operator-(ch_float32& lhs, const ch_float32& rhs) {
-    return ch_udf<cfSub>(lhs, rhs);
+    return ch_udf<cfSub>()(lhs, rhs);
   }
 
   friend auto operator*(ch_float32& lhs, const ch_float32& rhs) {
-    return ch_udf<cfMul>(lhs, rhs);
+    return ch_udf<cfMul>()(lhs, rhs);
   }
 
   friend auto operator/(ch_float32& lhs, const ch_float32& rhs) {
-    return ch_udf<cfDiv>(lhs, rhs);
+    return ch_udf<cfDiv>()(lhs, rhs);
   }
 };
 
 template <unsigned Delay>
 auto ch_fadd(const ch_float32& lhs, const ch_float32& rhs, const ch_bool& enable = true, __sloc) {
-  return ch_delayEn(ch_udf<sfAdd>(lhs, rhs, sloc), enable, Delay - 1);
+  return ch_delayEn(ch_udf<sfAdd>()(lhs, rhs, sloc), enable, Delay - 1);
 }
 
 template <unsigned Delay>
 auto ch_fsub(const ch_float32& lhs, const ch_float32& rhs, const ch_bool& enable = true, __sloc) {
-  return ch_delayEn(ch_udf<sfSub>(lhs, rhs, sloc), enable, Delay - 1);
+  return ch_delayEn(ch_udf<sfSub>()(lhs, rhs, sloc), enable, Delay - 1);
 }
 
 template <unsigned Delay>
 auto ch_fmul(const ch_float32& lhs, const ch_float32& rhs, const ch_bool& enable = true, __sloc) {
-  return ch_delayEn(ch_udf<sfMul>(lhs, rhs, sloc), enable, Delay - 1);
+  return ch_delayEn(ch_udf<sfMul>()(lhs, rhs, sloc), enable, Delay - 1);
 }
 
 template <unsigned Delay>
 auto ch_fdiv(const ch_float32& lhs, const ch_float32& rhs, const ch_bool& enable = true, __sloc) {
-  return ch_delayEn(ch_udf<sfDiv>(lhs, rhs, sloc), enable, Delay - 1);
+  return ch_delayEn(ch_udf<sfDiv>()(lhs, rhs, sloc), enable, Delay - 1);
 }
 
 }

@@ -85,19 +85,33 @@ public:
     return ctx;
   }
 
-  udf_iface* lookup_udf(const std::type_index& signature) {
-    auto it = udfs_.find(signature);
-    if (it != udfs_.end()) {
-      return it->second;
+  udf_iface* lookup_udf(const std::type_index& signature, bool has_args) {
+    udf_iface* udf = nullptr;
+    if (!has_args) {
+      auto key = std::make_pair(signature, 0);
+      auto it = udfs_.find(key);
+      if (it != udfs_.end()) {
+        udf = it->second;
+      }
     }
-    return nullptr;
+    return udf;
   }
 
-  udf_iface* register_udf(const std::type_index& signature, udf_iface* udf) {
-    assert(0 == udfs_.count(signature));
-    udfs_[signature] = udf;
+  void register_udf(const std::type_index& signature, bool has_args, udf_iface* udf) {
+    uint32_t instances = 0;
+    if (has_args) {
+      instances = 1;
+      for (auto& item : udfs_) {
+        if (item.first.first == signature) {
+          instances = item.first.second + 1;
+          break;
+        }
+      }
+    }
+    auto key = std::make_pair(signature, instances);
+    auto status = udfs_.insert({key, udf});
+    assert(status.second);
     udf->acquire();
-    return udf;
   }
 
   source_location get_source_location(const char* file, int line) {
@@ -124,19 +138,21 @@ public:
 
 protected:
 
-  struct ctx_hash_t {
-     std::size_t operator()(const std::pair<std::type_index, uint32_t>& key) const {
-      std::hash<std::type_index> hidx;
-      return hash_combine(hidx(key.first), key.second);
+  using user_key = std::pair<std::type_index, uint32_t>;
+
+  struct user_hash_t {
+     std::size_t operator()(const user_key& key) const {
+      std::hash<std::type_index> idx;
+      return hash_combine(idx(key.first), key.second);
     }
   };
 
   mutable context* ctx_;
   mutable uint32_t ctx_ids_;
   mutable uint32_t node_ids_;  
-  std::unordered_map<std::pair<std::type_index, uint32_t>, context*, ctx_hash_t> contexts_;
+  std::unordered_map<user_key, context*, user_hash_t> contexts_;
+  std::unordered_map<user_key, udf_iface*, user_hash_t> udfs_;
   dup_tracker<source_location, std::size_t, source_location::hash_t> dup_slocs_;
-  std::unordered_map<std::type_index, udf_iface*> udfs_;
 };
 
 context* ch::internal::ctx_create(const std::type_index& signature,
@@ -153,12 +169,12 @@ context* ch::internal::ctx_curr() {
   return context_manager::instance().current();
 }
 
-udf_iface* ch::internal::lookupUDF(const std::type_index& signature) {
-  return context_manager::instance().lookup_udf(signature);
+udf_iface* ch::internal::lookupUDF(const std::type_index& signature, bool has_args) {
+  return context_manager::instance().lookup_udf(signature, has_args);
 }
 
-udf_iface* ch::internal::registerUDF(const std::type_index& signature, udf_iface* udf) {
-  return context_manager::instance().register_udf(signature, udf);
+void ch::internal::registerUDF(const std::type_index& signature, bool has_args, udf_iface* udf) {
+  context_manager::instance().register_udf(signature, has_args, udf);
 }
 
 source_location ch::internal::get_source_location(const char* file, int line) {
