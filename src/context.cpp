@@ -70,9 +70,10 @@ public:
     for (auto it = contexts_.begin(), end = contexts_.end(); it != end; ++it) {
       if (it->second->id() == ctx->id()) {
         contexts_.erase(it);
-        break;
+        return;
       }
     }
+    assert(ctx->name() == "eval");
   }
 
   context* current() const {

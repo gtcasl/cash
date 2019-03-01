@@ -49,11 +49,11 @@ CH_VA_ARGS_MAP(CH_MODULE)
 
 protected:
 
-  template <typename... Us>
-  auto build(const source_location& sloc, Us&&... args) {
+  template <typename... Args>
+  auto build(const source_location& sloc, Args&&... args) {
     std::shared_ptr<io_type> out;
     if (this->begin_build()) {
-      T obj(std::forward<Us>(args)...);
+      T obj(std::forward<Args>(args)...);
       obj.describe();
       this->end_build();
       out = std::make_shared<io_type>(obj.io, sloc);

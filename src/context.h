@@ -166,9 +166,9 @@ public:
 
   uint32_t node_id();
 
-  template <typename T, typename... Ts>
-  T* create_node(Ts&&... args) {
-    auto node = new T(this, std::forward<Ts>(args)...);
+  template <typename T, typename... Args>
+  T* create_node(Args&&... args) {
+    auto node = new T(this, std::forward<Args>(args)...);
     this->add_node(node);
     return node;
   }

@@ -56,17 +56,17 @@ protected:
 public:
   io_type& io;
 
-  template <typename... Us>
-  ch_device(const std::string& name, Us&&... args)
+  template <typename... Args>
+  ch_device(const std::string& name, Args&&... args)
     : device(std::type_index(typeid(T)), name)
-    , _(build(std::forward<Us>(args)...))
+    , _(build(std::forward<Args>(args)...))
     , io(*_)
   {}
 
-  template <typename... Us>
-  ch_device(Us&&... args)
-    : device(std::type_index(typeid(T)), (sizeof...(Us) != 0), typeid(T).name())
-    , _(build(std::forward<Us>(args)...))
+  template <typename... Args>
+  ch_device(Args&&... args)
+    : device(std::type_index(typeid(T)), (sizeof...(Args) != 0), typeid(T).name())
+    , _(build(std::forward<Args>(args)...))
     , io(*_)
   {}
 
@@ -77,11 +77,11 @@ public:
 
 protected:
 
-  template <typename... Us>
-  auto build(Us&&... args) {
+  template <typename... Args>
+  auto build(Args&&... args) {
     std::shared_ptr<io_type> out;
     if (this->begin_build()) {
-      T obj(std::forward<Us>(args)...);
+      T obj(std::forward<Args>(args)...);
       obj.describe();
       this->end_build();
       out = std::make_shared<io_type>(obj.io);

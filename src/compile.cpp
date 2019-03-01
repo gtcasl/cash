@@ -1049,7 +1049,7 @@ void compiler::create_merged_context(context* ctx) {
           ensure_placeholder(bs->src(0));
           sub_map[s.id()] = map.at(bs->src(0).id());
         }
-        node_path.push_back(stringf("%s%d", bind->module()->name().c_str(), bind->id()));
+        node_path.push_back(stringf("%s_%d", bind->module()->name().c_str(), bind->id()));
         visit(bind->module(), sub_map);
         node_path.pop_back();
         for (auto& o : bind->outputs()) {
@@ -1126,7 +1126,7 @@ void compiler::create_merged_context(context* ctx) {
 
   CH_DBG(2, "create merged context for %s (#%d) ...\n", ctx->name().c_str(), ctx->id());
   clone_map map;
-  node_path.push_back(stringf("%s%d", ctx->name().c_str(), ctx->id()));
+  node_path.push_back(stringf("%s_%d", ctx->name().c_str(), ctx->id()));
   visit(ctx, map);
   node_path.pop_back();
 }

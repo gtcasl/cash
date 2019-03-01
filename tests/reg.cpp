@@ -7,14 +7,14 @@ __struct (X, (
   (ch_bit2) p
 ));
 
-__union(U, (
+__union (U, (
   (ch_bit1) q,
   (ch_bit2) p
 ));
 
 using V2 = ch_vec<ch_bit2, 2>;
 
-__enum(E, 2, (a, b, c, d));
+__enum (E, 2, (a, b, c, d));
 
 }
 

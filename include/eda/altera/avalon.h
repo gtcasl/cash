@@ -72,7 +72,7 @@ public:
 
   using burst_t = ch_uint<AVM::BurstW>;
 
-  __io(
+  __io (
     __in (ch_uint<AddrW>)  base_addr,
     __in (ch_uint32)       num_blocks,
     __in (ch_bool)         start,
@@ -214,7 +214,7 @@ public:
 
   using burst_t = ch_uint<AVM::BurstW>;
 
-  __io(
+  __io (
     __in (ch_uint<AddrW>)  base_addr,
     __in (ch_bool)         start,
     __in (ch_bool)         flush,

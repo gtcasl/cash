@@ -226,38 +226,38 @@ auto ch_shuffle(const ch_bit<N>& obj,
 
 // tie function
 
-template <typename... Ts>
+template <typename... Args>
 class bind_impl {
 public:
-  bind_impl(const source_location& sloc, Ts&... args) : sloc_(sloc), args_(args...) {}
+  bind_impl(const source_location& sloc, Args&... args) : sloc_(sloc), args_(args...) {}
 
-  template <typename T>
-  void operator=(const T& other) {
-    static_assert(is_bit_convertible_v<T, ch_width_v<Ts...>>, "invalid type");
-    this->assign(to_logic<ch_width_v<Ts...>>(other, sloc_),
-                 std::index_sequence_for<Ts...>());
+  template <typename U>
+  void operator=(const U& other) {
+    static_assert(is_bit_convertible_v<U, ch_width_v<Args...>>, "invalid type");
+    this->assign(to_logic<ch_width_v<Args...>>(other, sloc_),
+                 std::index_sequence_for<Args...>());
   }
 
 protected:
 
-  template <typename T, typename U>
-  void assign_impl(uint32_t src_offset, const T& src, U& dst) {
-    dst = ch_slice<U>(src, src_offset, sloc_);
+  template <typename U, typename V>
+  void assign_impl(uint32_t src_offset, const U& src, V& dst) {
+    dst = ch_slice<V>(src, src_offset, sloc_);
   }
 
-  template <typename T, typename U0, typename... Us>
-  void assign_impl(uint32_t src_offset, const T& src, U0& dst0, Us&... dsts) {
+  template <typename U, typename V0, typename... Vs>
+  void assign_impl(uint32_t src_offset, const U& src, V0& dst0, Vs&... dsts) {
     this->assign_impl(src_offset, src, dst0);
-    this->assign_impl(src_offset + ch_width_v<U0>, src, dsts...);
+    this->assign_impl(src_offset + ch_width_v<V0>, src, dsts...);
   }
 
-  template <typename T, size_t... I>
-  void assign(const T& src, std::index_sequence<I...>) {
-    this->assign_impl(0, src, std::get<sizeof...(Ts) - 1 - I>(args_)...);
+  template <typename U, size_t... I>
+  void assign(const U& src, std::index_sequence<I...>) {
+    this->assign_impl(0, src, std::get<sizeof...(Args) - 1 - I>(args_)...);
   }
 
   source_location sloc_;
-  std::tuple<Ts&...> args_;
+  std::tuple<Args&...> args_;
 };
 
 #define CH_BIND_TMPL(a, i, x) typename __T##i
@@ -279,16 +279,16 @@ CH_VA_ARGS_MAP(CH_BIND)
 
 // concatenation function
 
-template <typename U, typename T>
-void cat_impl(U& inout, uint32_t dst_offset, const source_location& sloc, const T& arg) {
-  logic_accessor::write(inout, dst_offset - ch_width_v<T>, arg, 0, ch_width_v<T>, sloc);
+template <typename O, typename I>
+void cat_impl(O& inout, uint32_t dst_offset, const source_location& sloc, const I& arg) {
+  logic_accessor::write(inout, dst_offset - ch_width_v<I>, arg, 0, ch_width_v<I>, sloc);
 }
 
-template <typename U, typename T0, typename... Ts>
-void cat_impl(U& inout, uint32_t dst_offset, const source_location& sloc,
-              const T0& arg0, const Ts&... args) {
+template <typename O, typename I0, typename... Is>
+void cat_impl(O& inout, uint32_t dst_offset, const source_location& sloc,
+              const I0& arg0, const Is&... args) {
   cat_impl(inout, dst_offset, sloc, arg0);
-  cat_impl(inout, dst_offset - ch_width_v<T0>, sloc, args...);
+  cat_impl(inout, dst_offset - ch_width_v<I0>, sloc, args...);
 }
 
 #define CH_CAT_TYPE(a, i, x) __T##i

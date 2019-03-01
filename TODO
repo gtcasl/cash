@@ -5,7 +5,7 @@ CH_TODO list:
 
 sample:
 
-__enum(state, 2, (
+__enum (state, 2, (
   idle,
   startup,
   execute,

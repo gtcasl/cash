@@ -34,7 +34,7 @@ struct DefaultFlit {
   static constexpr int P = FlitBits - 1 - ch_width_v<TileId> - ch_width_v<TilePos> - TimeBits - ParityBits;
   static_assert(P >= 0, "invalid flit size");
 
-  __struct (type, (
+  __struct (Type, (
     (TileId)    src_id,
     (TilePos)   dest_pos,
     (FlitTime)  gen_time,
@@ -109,12 +109,12 @@ class Router {
 public:
   using flit_t = ch_valid_t<typename Cfg::flit_type>;
 
-  __inout(port_io, (
+  __inout (port_io, (
     __in (flit_t)   flit,
     __out (ch_bool) credit
   ));
 
-  __io(
+  __io (
     (ch_vec<port_io, Cfg::num_input_ports>) in_ports,
     (ch_vec<ch_flip_io<port_io>, Cfg::num_output_ports>) out_ports
   );

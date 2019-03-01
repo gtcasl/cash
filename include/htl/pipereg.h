@@ -6,7 +6,7 @@ namespace ch {
 namespace htl {
 
 template <typename T, unsigned N>
-struct ch_pipe {
+struct ch_pipereg {
   using value_type = T;
   __io (
     (ch_enq_io<T>) enq,

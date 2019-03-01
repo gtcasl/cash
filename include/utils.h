@@ -266,8 +266,8 @@ class refcounted_ptr {
 protected:
 
   struct managed_obj_t : refcounted {
-    template <typename... Ts>
-    managed_obj_t(Ts&&... args) : obj(std::forward<Ts>(args)...) {}
+    template <typename... Args>
+    managed_obj_t(Args&&... args) : obj(std::forward<Args>(args)...) {}
     T obj;
   };
 
@@ -341,10 +341,10 @@ public:
     return (ptr_ != nullptr);
   }
 
-  template <typename... Ts>
-  static auto make(Ts&&... args) {
+  template <typename... Args>
+  static auto make(Args&&... args) {
     refcounted_ptr sp;
-    sp.ptr_ = new managed_obj_t(std::forward<Ts>(args)...);
+    sp.ptr_ = new managed_obj_t(std::forward<Args>(args)...);
     sp.ptr_->acquire();
     return sp;
   }
@@ -455,9 +455,9 @@ public:
       return (ptr_ != nullptr);
     }
 
-    template <typename... Ts>
-    static auto make(Ts&&... args) {
-      return smart_ptr(new T(std::forward<Ts>(args)...));
+    template <typename... Args>
+    static auto make(Args&&... args) {
+      return smart_ptr(new T(std::forward<Args>(args)...));
     }
 
 protected:
@@ -504,13 +504,13 @@ find_distance(InputIt first, InputIt last, const T& value) {
 
 class scope_exit {
 public:
-  scope_exit(const std::function<void()>& f) : f_(f) {}
-  ~scope_exit() { f_(); }
+  scope_exit(const std::function<void()>& func) : func_(func) {}
+  ~scope_exit() { func_(); }
   // force stack only allocation!
   static void *operator new   (size_t) = delete;
   static void *operator new[] (size_t) = delete;
 protected:
-  std::function<void()> f_;
+  std::function<void()> func_;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -586,35 +586,35 @@ void unused(Args&&...) {}
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <class Func, auto Step, typename T, T Start, T ...Is>
-constexpr void static_for_impl(Func &&f, std::integer_sequence<T, Is...>) {
-  (f(std::integral_constant<T, Start + Is * Step>{}), ...);
+template <typename Func, auto Step, typename T, T Start, T ...Is>
+constexpr void static_for_impl(Func&& func, std::integer_sequence<T, Is...>) {
+  (func(std::integral_constant<T, Start + Is * Step>{}), ...);
 }
 
-template <auto Stop, class Func>
-constexpr void static_for(Func &&f) {
+template <auto Stop, typename Func>
+constexpr void static_for(Func&& func) {
   static_assert(Stop > 0, "invalid size");
   using type_t = decltype(Stop);
   static_for_impl<Func, 1, type_t, 0>(
-    std::forward<Func>(f), std::make_integer_sequence<type_t, (Stop - 0)>{}
+    std::forward<Func>(func), std::make_integer_sequence<type_t, (Stop - 0)>{}
   );
 }
 
-template <auto Start, auto Stop, class Func>
-constexpr void static_for(Func &&f) {
+template <auto Start, auto Stop, typename Func>
+constexpr void static_for(Func&& func) {
   static_assert((Stop - Start) > 0, "invalid size");
   using type_t = std::common_type_t<decltype(Start), decltype(Stop)>;
   static_for_impl<Func, 1, type_t, Start>(
-    std::forward<Func>(f), std::make_integer_sequence<type_t, (Stop - Start)>{}
+    std::forward<Func>(func), std::make_integer_sequence<type_t, (Stop - Start)>{}
   );
 }
 
-template <auto Start, auto Stop, auto Step, class Func>
-constexpr void static_for(Func &&f) {
+template <auto Start, auto Stop, auto Step, typename Func>
+constexpr void static_for(Func&& func) {
   static_assert(((Stop - Start) / Step) > 0, "invalid size");
   using type_t = std::common_type_t<decltype(Start), decltype(Stop)>;
   static_for_impl<Func, Step, type_t, Start>(
-    std::forward<Func>(f), std::make_integer_sequence<type_t, (Stop - Start) / Step>{}
+    std::forward<Func>(func), std::make_integer_sequence<type_t, (Stop - Start) / Step>{}
   );
 }
 

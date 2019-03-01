@@ -51,7 +51,8 @@ bool verilogwriter::is_inline_subscript(lnodeimpl* node) const {
     for (lnodeimpl* use : it->second) {
       if (type_proxy == use->type()
        || type_marport == use->type()
-       || (type_alu == use->type()
+       || type_tap == use->type()
+       || (type_alu == use->type()       
         && ch_op::pad == reinterpret_cast<aluimpl*>(use)->op()))
         return false;
     }
@@ -272,8 +273,7 @@ bool verilogwriter::print_decl(std::ostream& out,
   case type_marport:
   case type_udfc:
   case type_udfs:
-  case type_mem:
-  case type_tap:
+  case type_mem:  
     if (ref
      && (IsRegType(ref) != IsRegType(node)
       || ref->size() != node->size()))
@@ -346,6 +346,7 @@ bool verilogwriter::print_decl(std::ostream& out,
   case type_assert:
   case type_print:
   case type_time:
+  case type_tap:
     visited.insert(node->id());
     break;
   default:
@@ -375,8 +376,6 @@ bool verilogwriter::print_logic(std::ostream& out, lnodeimpl* node) {
   case type_udfc:
   case type_udfs:
     return this->print_udf(out, reinterpret_cast<udfimpl*>(node));
-  case type_tap:
-    return this->print_tap(out, reinterpret_cast<tapimpl*>(node));
   default:
     assert(false);
   case type_lit:
@@ -389,6 +388,7 @@ bool verilogwriter::print_logic(std::ostream& out, lnodeimpl* node) {
   case type_assert:
   case type_print:
   case type_time:
+  case type_tap:
     return false;
   }  
 }
@@ -866,15 +866,6 @@ bool verilogwriter::print_udf(std::ostream& out, udfimpl* node) {
   return true;
 }
 
-bool verilogwriter::print_tap(std::ostream& out, tapimpl* node) {
-  out << "assign ";
-  this->print_name(out, node);
-  out << " = ";
-  this->print_name(out, node->src(0).impl());
-  out << ";" << std::endl;
-  return true;
-}
-
 void verilogwriter::print_name(std::ostream& out, lnodeimpl* node, bool force) {
   auto print_unique_name = [&](const lnode& node) {
     out << node.name() << node.id();
@@ -884,7 +875,6 @@ void verilogwriter::print_name(std::ostream& out, lnodeimpl* node, bool force) {
   switch (type) {
   case type_input:
   case type_output:
-  case type_tap:
     out << node->name();
     break;
   case type_proxy:    
@@ -908,7 +898,7 @@ void verilogwriter::print_name(std::ostream& out, lnodeimpl* node, bool force) {
   case type_mem:
   case type_msrport:
   case type_marport:
-  case type_mwport:  
+  case type_mwport:
   case type_udfc:
   case type_udfs:
     print_unique_name(node);
@@ -918,8 +908,8 @@ void verilogwriter::print_name(std::ostream& out, lnodeimpl* node, bool force) {
     break;
   case type_bind: {
     auto bind = reinterpret_cast<bindimpl*>(node);
-    out << bind->module()->name() << bind->id();
-  }  break;
+    out << bind->module()->name() << "_" << bind->id();
+  } break;
   case type_bindin:
   case type_bindout: {
     auto bindport = reinterpret_cast<bindportimpl*>(node);

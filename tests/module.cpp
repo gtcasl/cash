@@ -160,7 +160,7 @@ struct Foo3 {
     __out (ch_uint2) b
   ));
 
-  __io(
+  __io (
     (ch_vec<io_ab_t, 2>) x,
     (ch_vec<ch_in<ch_uint2>, 2>) y,
     (ch_vec<ch_out<ch_uint2>, 2>) z
@@ -175,7 +175,7 @@ struct Foo3 {
 };
 
 struct Foo4 {
-  __io(
+  __io (
     __in (ch_uint128) in,
     __out (ch_uint128) out
   );

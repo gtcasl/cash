@@ -181,14 +181,6 @@ void tracerimpl::toText(std::ofstream& out) {
 }
 
 void tracerimpl::toVCD(std::ofstream& out) {
-  // remove [] from signal name
-  auto fixup_name = [&](const std::string name) {
-    std::string ret(name);
-    ret.erase(std::remove(ret.begin(), ret.end(), '['), ret.end());
-    ret.erase(std::remove(ret.begin(), ret.end(), ']'), ret.end());
-    return ret;
-  };
-
   dup_tracker<std::string> dup_mod_names;
 
   // log trace header
@@ -196,13 +188,12 @@ void tracerimpl::toVCD(std::ofstream& out) {
   std::list<std::string> mod_stack;
   for (auto node : signals_) {
     if (!is_merged_context_) {
-      auto name = fixup_name(node->name());
       out << "$var reg " << node->size() << ' ' << node->id() << ' '
-          << name << " $end" << std::endl;
+          << node->name() << " $end" << std::endl;
     } else {
       auto path = split(node->name(), '.');
-      auto name = fixup_name(path.back());
-      path.pop_back();
+      auto name = path.back(); // get name
+      path.pop_back(); // remove name
       if (path.empty()) {
         path.push_back("sys");
       }
@@ -290,8 +281,76 @@ void tracerimpl::toTestBench(std::ofstream& out,
                              const std::string& moduleFileName,
                              bool passthru) {
   //--
-  auto is_root_signal = [&](ioportimpl* node) {
-    return (std::count(node->name().begin(), node->name().end(), '.') <= 1);
+  auto id_from_name = [&](const std::string& name)->uint32_t {
+    auto pos = name.find_last_of('_');
+    assert(pos != std::string::npos);
+    return std::stoul(name.substr(pos+1).c_str(), nullptr);
+  };
+
+  //--
+  auto find_ctx = [&](const std::string& name)->context* {
+    auto id = id_from_name(name);
+    for (auto ctx : contexts_) {
+      if (ctx->id() == id)
+        return ctx;
+    }
+    return nullptr;
+  };
+
+  //--
+  auto find_module = [&](context* ctx, const std::string& name)->context* {
+    auto id = id_from_name(name);
+    for (auto binding : ctx->bindings()) {
+      if (binding->id() == id)
+        return binding->module();
+    }
+    return nullptr;
+  };
+
+  //--
+  auto find_tap = [&](context* ctx, const std::string& name)->tapimpl* {
+    for (auto tap : ctx->taps()) {
+      if (tap->name() == name)
+        return tap;
+    }
+    return nullptr;
+  };
+
+  //--
+  auto netlist_name = [&](lnodeimpl* node) {
+    switch (node->type()) {
+    case type_bindin:
+    case type_bindout: {
+      auto bindport = reinterpret_cast<bindportimpl*>(node);
+      return stringf("%s_%d_%s",
+                     bindport->binding()->module()->name().c_str(),
+                     bindport->binding()->id(),
+                     bindport->ioport().name().c_str());
+    }
+    default:
+      return stringf("%s%d", node->name().c_str(), node->id());
+    }
+  };
+
+  //--
+  auto get_tap_path = [&](tapimpl* node) {
+    if (is_merged_context_) {
+      auto path = split(node->name(), '.');
+      auto name = path.back(); // get name
+      path.pop_back(); // remove name
+      assert(!path.empty());
+      context* ctx = find_ctx(path[0]);
+      for (uint32_t i = 1; i < path.size(); ++i) {
+        ctx = find_module(ctx, path[i]);
+      }
+      auto tap = find_tap(ctx, name);
+      auto pos = node->name().find_last_of('.');
+      auto sname = netlist_name(tap->src(0).impl());
+      return stringf("%s.%s", node->name().substr(0, pos).c_str(), sname.c_str());
+    } else {
+      auto tap = find_tap(contexts_[0], node->name());
+      return netlist_name(tap->src(0).impl());
+    }
   };
 
   //--
@@ -315,7 +374,7 @@ void tracerimpl::toTestBench(std::ofstream& out,
       return node->name();
     auto name = node->name();
     if (is_merged_context_) {
-      name = stringf("%s%d.%s", node->ctx()->name().c_str(), node->ctx()->id(), name.c_str());
+      name = stringf("%s_%d.%s", node->ctx()->name().c_str(), node->ctx()->id(), name.c_str());
     }
     for (auto signal : signals_) {      
       if (signal->name() == name)
@@ -361,7 +420,7 @@ void tracerimpl::toTestBench(std::ofstream& out,
   //--
   auto print_module = [&](std::ostream& out, context* ctx) {
     auto_separator sep(", ");
-    out << ctx->name() << " " << ctx->name() << ctx->id() << "(";
+    out << ctx->name() << " " << ctx->name() << "_" << ctx->id() << "(";
     auto clk = ctx->sys_clk();
     if (clk) {
       out << sep << "." << clk->name() << "(" << find_signal_name(clk) << ")";
@@ -391,7 +450,7 @@ void tracerimpl::toTestBench(std::ofstream& out,
   {
     auto_indent indent(out);
     int has_clock = 0;
-    int has_internal_signals = 0;
+    int has_taps = 0;
 
     // declare signals
     for (auto signal : signals_) {
@@ -399,7 +458,7 @@ void tracerimpl::toTestBench(std::ofstream& out,
       auto name = get_signal_name(signal);
       out << " " << name << ";" << std::endl;
       has_clock |= (name == "clk");
-      has_internal_signals |= (type_tap == signal->type() || !is_root_signal(signal));
+      has_taps |= (type_tap == signal->type());
     }
     out << std::endl;
 
@@ -409,12 +468,12 @@ void tracerimpl::toTestBench(std::ofstream& out,
       out << std::endl;
     }
 
-    if (has_internal_signals) {
+    if (has_taps) {
       for (auto signal : signals_) {
-        if (type_tap != signal->type()
-         && is_root_signal(signal))
+        if (type_tap != signal->type())
           continue;
-        out << "assign " << get_signal_name(signal) << " = " << signal->name() << ";" << std::endl;
+        out << "assign " << get_signal_name(signal) << " = "
+            << get_tap_path(reinterpret_cast<tapimpl*>(signal)) << ";" << std::endl;
       }
       out << std::endl;
     }
@@ -460,9 +519,8 @@ void tracerimpl::toTestBench(std::ofstream& out,
                 auto signal_type = signal->type();
                 auto signal_size = signal->size();
                 auto signal_name = get_signal_name(signal);
-                if (!is_root_signal(signal)  // is nested signal
-                 || (tc != 0 && signal_name == "clk")    // is not clk signal initialization
-                 || (type_input != signal_type)) {          // is not an input signal
+                if ((type_input != signal_type) // is not an input signal
+                 || (tc != 0 && signal_name == "clk")) {  // is not clk signal initialization
                   in_offset += signal_size;
                   continue;
                 }

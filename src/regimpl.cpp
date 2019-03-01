@@ -96,8 +96,8 @@ ch_bit<1> ch::internal::ch_clock(const source_location& sloc) {
 }
 
 ch_bit<1> ch::internal::ch_reset(const source_location& sloc) {
-  auto reset = ctx_curr()->current_reset(sloc);
-  return make_type<ch_bit<1>>(reset, sloc);
+  auto rst = ctx_curr()->current_reset(sloc);
+  return make_type<ch_bit<1>>(rst, sloc);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -105,7 +105,7 @@ ch_bit<1> ch::internal::ch_reset(const source_location& sloc) {
 logic_buffer ch::internal::createRegNode(unsigned size,
                                          const source_location& sloc) {
   logic_buffer ret(size, sloc);
-  auto ctx = ctx_curr();
+  auto ctx  = ctx_curr();
   auto cd   = ctx->current_cd(sloc);
   auto next = ctx->create_node<proxyimpl>(ret.data(), sloc);
   auto reg  = ctx->create_node<regimpl>(
@@ -119,25 +119,25 @@ logic_buffer ch::internal::createRegNode(const lnode& init_data,
   logic_buffer ret(init_data.size(), sloc);
   auto ctx  = init_data.impl()->ctx();
   auto cd   = ctx->current_cd(sloc);
-  auto reset= ctx->current_reset(sloc);
+  auto rst  = ctx->current_reset(sloc);
   auto next = ctx->create_node<proxyimpl>(ret.data(), sloc);
   auto reg  = ctx->create_node<regimpl>(
-        next->size(), 1, cd, reset, nullptr, next, init_data.impl(), sloc);
+        next->size(), 1, cd, rst  , nullptr, next, init_data.impl(), sloc);
   ret.write(0, reg, 0, init_data.size(), sloc);
   return ret;
 }
 
 logic_buffer ch::internal::copyRegNode(const lnode& node, const source_location& sloc) {
   auto proxy = reinterpret_cast<proxyimpl*>(node.impl());
-  auto reg = reinterpret_cast<regimpl*>(proxy->src(0).impl());
-  auto ctx  = proxy->ctx();
-  auto cd   = ctx->current_cd(sloc);
-  auto reset= ctx->current_reset(sloc);
-  auto next = reg->next().impl();
+  auto reg   = reinterpret_cast<regimpl*>(proxy->src(0).impl());
+  auto ctx   = proxy->ctx();
+  auto cd    = ctx->current_cd(sloc);
+  auto rst   = ctx->current_reset(sloc);
+  auto next  = reg->next().impl();
   auto enable = reg->has_enable() ? reg->enable().impl() : nullptr;
   auto init_data = reg->has_init_data() ? reg->init_data().impl() : nullptr;
   auto new_reg = ctx->create_node<regimpl>(
-        next->size(), reg->length(), cd, reset, enable, next, init_data, sloc);
+        next->size(), reg->length(), cd, rst, enable, next, init_data, sloc);
   return logic_buffer(new_reg, sloc);
 }
 
@@ -173,11 +173,11 @@ logic_buffer ch::internal::createRegNext(const lnode& next,
                                          const lnode& init_data,
                                          unsigned length,
                                          const source_location& sloc) {
-  auto ctx  = next.impl()->ctx();
-  auto cd   = ctx->current_cd(sloc);
-  auto reset= ctx->current_reset(sloc);
-  auto reg  = ctx->create_node<regimpl>(
-        next.size(), length, cd, reset, nullptr, next.impl(), init_data.impl(), sloc);
+  auto ctx = next.impl()->ctx();
+  auto cd  = ctx->current_cd(sloc);
+  auto rst = ctx->current_reset(sloc);
+  auto reg = ctx->create_node<regimpl>(
+        next.size(), length, cd, rst , nullptr, next.impl(), init_data.impl(), sloc);
   return logic_buffer(reg, sloc);
 }
 
@@ -186,10 +186,20 @@ logic_buffer ch::internal::createRegNext(const lnode& next,
                                          unsigned length,
                                          const lnode& enable,
                                          const source_location& sloc) {
-  auto ctx  = next.impl()->ctx();
-  auto cd   = ctx->current_cd(sloc);
-  auto reset= ctx->current_reset(sloc);
-  auto reg  = ctx->create_node<regimpl>(
-        next.size(), length, cd, reset, enable.impl(), next.impl(), init_data.impl(), sloc);
+  auto ctx = next.impl()->ctx();
+  auto cd  = ctx->current_cd(sloc);
+  auto rst = ctx->current_reset(sloc);
+  auto reg = ctx->create_node<regimpl>(
+        next.size(), length, cd, rst, enable.impl(), next.impl(), init_data.impl(), sloc);
   return logic_buffer(reg, sloc);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void ch::internal::beginPipe(const std::vector<int>& latencies) {
+  //--
+}
+
+void ch::internal::endPipe() {
+  //--
 }
