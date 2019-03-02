@@ -3,7 +3,7 @@
 #include <htl/mux.h>
 #include <htl/xbar.h>
 #include <htl/arbiter.h>
-#include <htl/pipe.h>
+#include <htl/pipereg.h>
 #include <htl/fixed.h>
 #include <htl/complex.h>
 #include "common.h"
@@ -108,7 +108,7 @@ struct Foo3 {
     __out (ch_uint2) b
   ));
 
-  __io(
+  __io (
     (ch_vec<io_ab_t, 2>) x,
     (ch_vec<ch_in<ch_uint2>, 2>) y,
     (ch_vec<ch_out<ch_uint2>, 2>) z
@@ -179,7 +179,7 @@ struct FilterBlock {
   ch_module<Filter<T>> f1_, f2_;
 };
 
-__union(U_t, (
+__union (U_t, (
   (ch_bit1) q,
   (ch_bit2) p
 ));

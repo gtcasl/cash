@@ -17,6 +17,7 @@
 #include <assert.h>
 #include <atomic>
 #include <functional>
+#include <variant>
 #include <fstream>
 #include <sstream>
 #include <memory>

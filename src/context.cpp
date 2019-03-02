@@ -70,9 +70,10 @@ public:
     for (auto it = contexts_.begin(), end = contexts_.end(); it != end; ++it) {
       if (it->second->id() == ctx->id()) {
         contexts_.erase(it);
-        break;
+        return;
       }
     }
+    assert(ctx->name() == "eval");
   }
 
   context* current() const {
@@ -228,7 +229,12 @@ context::context(const std::string& name, context* parent)
   , sys_clk_(nullptr)
   , sys_reset_(nullptr)
   , sys_time_(nullptr)
-  , cond_blk_idx_(0)  
+  , nodes_(&undefs_, &literals_, &proxies_, &inputs_, &outputs_, &alus_,
+           &cdomains_, &regs_, &mems_, &marports_, &msrports_, &mwports_,
+           &bindings_, &bindports_, &taps_, &gtaps_, &udfseqs_, &udfcombs_)
+  , snodes_(&regs_, &msrports_, &mwports_, &udfseqs_)
+  , udfs_(&udfcombs_, &udfseqs_)
+  , cond_blk_idx_(0)    
 {}
 
 context::~context() {
@@ -262,65 +268,79 @@ uint32_t context::node_id() {
 }
 
 void context::add_node(lnodeimpl* node) {
-  // add node to main list
-  nodes_.emplace_back(node);
+  //--
   node->acquire();
 
-  // add node to special containers
+  //--
   auto type = node->type();
   switch (type) {
   case type_undef:
-    undefs_.emplace_back((undefimpl*)node);
+    undefs_.emplace_back(node);
     break;
   case type_lit:
-    literals_.emplace_back((litimpl*)node);
+    literals_.emplace_back(node);
     break;
   case type_proxy:
-    proxies_.emplace_back((proxyimpl*)node);
+    proxies_.emplace_back(node);
     break;
   case type_input:
     if (node->name() == "clk") {
       assert(sys_clk_ == nullptr);
-      sys_clk_ = (inputimpl*)node;
+      sys_clk_ = reinterpret_cast<inputimpl*>(node);
     } else if (node->name() == "reset") {
       assert(sys_reset_ == nullptr);
-      sys_reset_ = (inputimpl*)node;
-    } else {
-      inputs_.emplace_back((inputimpl*)node);
+      sys_reset_ = reinterpret_cast<inputimpl*>(node);
     }
+    inputs_.emplace_back(node);
     break;
   case type_output:
-    outputs_.emplace_back((outputimpl*)node);
+    outputs_.emplace_back(node);
+    break;
+  case type_alu:
+  case type_sel:
+    alus_.emplace_back(node);
     break;
   case type_cd:
-    cdomains_.emplace_back((cdimpl*)node);
-    break;
-  case type_mem:
-    mems_.emplace_back((memimpl*)node);
+    cdomains_.emplace_back(node);
     break;
   case type_reg:
-    regs_.emplace_back((regimpl*)node);
+    regs_.emplace_back(node);
+    break;
+  case type_mem:
+    mems_.emplace_back(node);
+    break;
+  case type_marport:
+    marports_.emplace_back(node);
+    break;
+  case type_msrport:
+    msrports_.emplace_back(node);
+    break;
+  case type_mwport:
+    mwports_.emplace_back(node);
     break;
   case type_bind:
-    bindings_.emplace_back((bindimpl*)node);
+    bindings_.emplace_back(node);
+    break;
+  case type_bindin:
+  case type_bindout:
+    bindports_.emplace_back(node);
     break;
   case type_tap:
-    taps_.emplace_back((tapimpl*)node);
+    taps_.emplace_back(node);
     break;
   case type_assert:
   case type_print:
-    gtaps_.emplace_back((ioimpl*)node);
+  case type_time:
+    gtaps_.emplace_back(node);
     break;
   case type_udfc:
+    udfcombs_.emplace_back(node);
+    break;
   case type_udfs:
-    udfs_.emplace_back((udfimpl*)node);
+    udfseqs_.emplace_back(node);
     break;
   default:
-    break;
-  }
-
-  if (is_snode_type(type)) {
-    snodes_.emplace_back(node);
+    assert(false);
   }
 
   // register local nodes, io objects & literals have global scope
@@ -333,69 +353,29 @@ void context::add_node(lnodeimpl* node) {
   }  
 }
 
-node_list_t::iterator context::delete_node(const node_list_t::iterator& it) {
+node_list_view::iterator context::delete_node(const node_list_view::iterator& it) {
   auto node = *it;
   CH_DBG(3, "*** deleting node: %s%d(#%d)\n", to_string(node->type()), node->size(), node->id());
   
   auto type = node->type();
   switch (type) {
-  case type_undef:
-    undefs_.remove((undefimpl*)node);
-    break;
-  case type_lit:
-    literals_.remove((litimpl*)node);
-    break;
-  case type_proxy:
-    proxies_.remove((proxyimpl*)node);
-    break;
   case type_input:
     if (node->name() == "clk") {
       assert(sys_clk_->id() == node->id());
       sys_clk_ = nullptr;
-    } else if (node->name() == "reset") {
+    } else
+    if (node->name() == "reset") {
       assert(sys_reset_->id() == node->id());
       sys_reset_ = nullptr;
-    } else {
-      inputs_.remove((inputimpl*)node);
     }
-    break;
-  case type_output:
-    outputs_.remove((outputimpl*)node);
-    break;
-  case type_cd:
-    cdomains_.remove((cdimpl*)node);
-    break;
-  case type_mem:
-    mems_.remove((memimpl*)node);
-    break;
-  case type_reg:
-    regs_.remove((regimpl*)node);
-    break;
-  case type_bind:
-    bindings_.remove((bindimpl*)node);
-    break;
-  case type_tap:
-    taps_.remove((tapimpl*)node);
     break;
   case type_time:
     if (node == sys_time_) {
       sys_time_ = nullptr;
     }
     break;
-  case type_assert:
-  case type_print:
-    gtaps_.remove((ioimpl*)node);
-    break;  
-  case type_udfc:
-  case type_udfs:
-    udfs_.remove((udfimpl*)node);
-    break;
   default:
     break;
-  }
-
-  if (is_snode_type(type)) {
-    snodes_.remove(node);
   }
 
   // remove node from main list
@@ -410,7 +390,8 @@ void context::create_binding(context* ctx) {
 inputimpl* context::create_input(uint32_t size,
                                  const std::string& name,
                                  const source_location& sloc) {
-  for (auto input : inputs_) {
+  for (auto node : inputs_) {
+    auto input = reinterpret_cast<inputimpl*>(node);
     if (input->name() == name) {
       return input;
     }
@@ -422,7 +403,8 @@ inputimpl* context::create_input(uint32_t size,
 outputimpl* context::create_output(uint32_t size,
                                    const std::string& name,
                                    const source_location& sloc) {
-  for (auto output : outputs_) {
+  for (auto node : outputs_) {
+    auto output = reinterpret_cast<outputimpl*>(node);
     if (output->name() == name) {
       return output;
     }
@@ -435,7 +417,8 @@ outputimpl* context::create_output(uint32_t size,
 }
 
 outputimpl* context::get_output(const lnode& src) {
-  for (auto output : outputs_) {
+  for (auto node : outputs_) {
+    auto output = reinterpret_cast<outputimpl*>(node);
     if (output->src(0).id() == src.id()) {
       return output;
     }
@@ -446,7 +429,8 @@ outputimpl* context::get_output(const lnode& src) {
 
 litimpl* context::create_literal(const sdata_type& value) {
   // first lookup literals cache
-  for (auto lit : literals_) {
+  for (auto node : literals_) {
+    auto lit = reinterpret_cast<litimpl*>(node);
     if (lit->value() == value)
       return lit;
   }
@@ -465,7 +449,8 @@ cdimpl* context::create_cd(const lnode& clk,
                            bool pos_edge,
                            const source_location& sloc) {
   // return existing match
-  for (auto cd : cdomains_) {
+  for (auto node : cdomains_) {
+    auto cd = reinterpret_cast<cdimpl*>(node);
     if (cd->clk() == clk && cd->pos_edge() == pos_edge)
       return cd;
   }
@@ -913,7 +898,7 @@ lnodeimpl* context::create_predicate(const source_location& sloc) {
 }
 
 bindimpl* context::current_binding() {
-  return bindings_.back();
+  return reinterpret_cast<bindimpl*>(bindings_.back());
 }
 
 void context::register_tap(const lnode& node,
@@ -959,12 +944,12 @@ void context::dump_ast(std::ostream& out) {
   std::cout << "total nodes: " << nodes_.size() << std::endl;
 }
 
-void context::dump_cfg(lnodeimpl* node, std::ostream& out) {
-  std::unordered_set<uint32_t> visits;
+void context::dump_cfg(lnodeimpl* target, std::ostream& out) {
+  std::unordered_set<uint32_t> visited_nodes;
   std::unordered_map<uint32_t, tapimpl*> taps;
 
-  std::function<void(lnodeimpl*)> dump_cfg_impl = [&](lnodeimpl* node) {
-    visits.insert(node->id());
+  std::function<void(lnodeimpl*)> dfs_visit = [&](lnodeimpl* node) {
+    visited_nodes.insert(node->id());
     node->print(out);
 
     auto iter = taps.find(node->id());
@@ -976,32 +961,33 @@ void context::dump_cfg(lnodeimpl* node, std::ostream& out) {
     out << std::endl;
 
     for (auto& src : node->srcs()) {
-      if (!visits.count(src.id())) {
-        dump_cfg_impl(src.impl());
+      if (!visited_nodes.count(src.id())) {
+        dfs_visit(src.impl());
       }
     }
   };
   
-  for (auto tap : taps_) {
+  for (auto node : taps_) {
+    auto tap = reinterpret_cast<tapimpl*>(node);
     taps[tap->target().id()] = tap;
   }
   
-  visits.insert(node->id());
+  visited_nodes.insert(target->id());
   
-  if (type_tap == node->type()) {
-    auto tap = reinterpret_cast<tapimpl*>(node);
-    node = tap->target().impl();
-    node->print(out);
+  if (type_tap == target->type()) {
+    auto tap = reinterpret_cast<tapimpl*>(target);
+    target = tap->target().impl();
+    target->print(out);
     out << " // " << tap->name();
   } else {  
-    node->print(out);
+    target->print(out);
   }
 
   out << std::endl;
 
-  for (auto& src : node->srcs()) {
-    if (!visits.count(src.id())) {
-      dump_cfg_impl(src.impl());
+  for (auto& src : target->srcs()) {
+    if (!visited_nodes.count(src.id())) {
+      dfs_visit(src.impl());
     }
   }
 }

@@ -6,7 +6,7 @@ using namespace ch::system;
 template <typename T, unsigned N>
 struct FiFo {
   static constexpr unsigned addr_width = log2ceil(N);
-  __io(
+  __io (
     __in (T)        din,
     __in (ch_bool)  push,
     __in (ch_bool)  pop,

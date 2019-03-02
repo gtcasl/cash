@@ -2316,7 +2316,8 @@ private:
   uint32_t alloc_constants(context* ctx, std::vector<const_alloc_t>& constants) {
     uint32_t total_words = 0;
     for (auto node : ctx->literals()) {
-      uint32_t dst_width = node->size();
+      auto lit = reinterpret_cast<litimpl*>(node);
+      uint32_t dst_width = lit->size();
       if (dst_width <= WORD_SIZE)
         continue;
       // allocate literals with size bigger than WORD_SIZE bits
@@ -2326,22 +2327,22 @@ private:
         if (constant.size >= num_words) {
           uint32_t width = num_words * WORD_SIZE;
           if (bv_eq<false, block_type, ClearBitAccessor<block_type>>(
-                constant.data, width, node->value().words(), width)) {
-            constant.nodes.push_back(node->id());
+                constant.data, width, lit->value().words(), width)) {
+            constant.nodes.push_back(lit->id());
             found = true;
             break;
           }
         } else {
           uint32_t width = constant.size * WORD_SIZE;
           if (bv_eq<false, block_type, ClearBitAccessor<block_type>>(
-                constant.data, width, node->value().words(), width)) {
+                constant.data, width, lit->value().words(), width)) {
             auto buf = reinterpret_cast<block_type*>(
                   std::realloc(constant.data, num_words * sizeof(block_type)));
-            std::copy_n(node->value().words(), num_words, buf);
+            std::copy_n(lit->value().words(), num_words, buf);
             total_words += (num_words - constant.size);
             constant.data = buf;
             constant.size = num_words;
-            constant.nodes.push_back(node->id());
+            constant.nodes.push_back(lit->id());
             found = true;
             break;
           }
@@ -2349,8 +2350,8 @@ private:
       }
       if (!found) {
         auto buf = reinterpret_cast<block_type*>(std::malloc(num_words * sizeof(block_type)));
-        std::copy_n(node->value().words(), num_words, buf);
-        constants.emplace_back(buf, num_words, node->id());
+        std::copy_n(lit->value().words(), num_words, buf);
+        constants.emplace_back(buf, num_words, lit->id());
         total_words += num_words;
       }
     }

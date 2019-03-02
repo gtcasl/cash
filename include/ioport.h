@@ -61,7 +61,7 @@ public:
 
   template <typename U>
   explicit ch_logic_in(const ch_logic_out<U>& out, CH_SLOC)
-    : base(logic_buffer(ch_width_v<T>, sloc)) {
+    : base(logic_buffer(ch_width_v<T>, sloc, out.output_.name())) {
     static_assert(is_logic_only_v<U>, "invalid type");
     static_assert(std::is_constructible_v<U, T>, "invalid type");
     bindOutput(logic_accessor::data(*this), out.output_, sloc);
@@ -116,7 +116,7 @@ public:
 
   template <typename U>
   explicit ch_logic_out(const ch_logic_in<U>& in, CH_SLOC)
-    : base(logic_buffer(ch_width_v<T>, sloc)) {
+    : base(logic_buffer(ch_width_v<T>, sloc, in.input_.name())) {
     static_assert(is_logic_only_v<U>, "invalid type");
     static_assert(std::is_constructible_v<U, T>, "invalid type");
     bindInput(logic_accessor::data(*this), in.input_, sloc);

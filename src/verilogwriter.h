@@ -76,8 +76,6 @@ protected:
 
   bool print_udf(std::ostream& out, udfimpl* node);
 
-  bool print_tap(std::ostream& out, tapimpl* node);
-
   void print_name(std::ostream& out,
                   lnodeimpl* node,
                   bool force = false);

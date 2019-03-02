@@ -713,11 +713,10 @@ bool compiler::subexpressions_elimination() {
 
   bool changed = false;
 
-  typedef std::decay_t<decltype(ctx_->nodes())> nodes_type;
-  std::vector<nodes_type::iterator> deleted_list;
+  std::vector<node_list_view::iterator> deleted_list;
   std::unordered_set<cse_key_t, cse_hash_t> cse_table;
 
-  auto apply_cse = [&](const nodes_type::iterator& it)->bool {
+  auto apply_cse = [&](const node_list_view::iterator& it)->bool {
     auto node = *it;
     switch (node->type()) {
     default:
@@ -768,7 +767,7 @@ bool compiler::prune_identity_proxies() {
 
   for (auto it = ctx_->proxies().begin(),
        end = ctx_->proxies().end(); it != end;) {
-    auto proxy = *it++;
+    auto proxy = reinterpret_cast<proxyimpl*>(*it++);
     if (!proxy->is_identity())
       continue;
     // replace identity proxy's uses with proxy's source
@@ -859,7 +858,7 @@ bool compiler::proxies_coalescing() {
 
     for (auto it = ctx_->proxies().begin(),
          end = ctx_->proxies().end(); it != end;) {
-      auto dst_proxy = *it++;
+      auto dst_proxy = reinterpret_cast<proxyimpl*>(*it++);
 
       src_proxies.clear();
 
@@ -1049,7 +1048,7 @@ void compiler::create_merged_context(context* ctx) {
           ensure_placeholder(bs->src(0));
           sub_map[s.id()] = map.at(bs->src(0).id());
         }
-        node_path.push_back(stringf("%s%d", bind->module()->name().c_str(), bind->id()));
+        node_path.push_back(stringf("%s_%d", bind->module()->name().c_str(), bind->id()));
         visit(bind->module(), sub_map);
         node_path.pop_back();
         for (auto& o : bind->outputs()) {
@@ -1126,7 +1125,7 @@ void compiler::create_merged_context(context* ctx) {
 
   CH_DBG(2, "create merged context for %s (#%d) ...\n", ctx->name().c_str(), ctx->id());
   clone_map map;
-  node_path.push_back(stringf("%s%d", ctx->name().c_str(), ctx->id()));
+  node_path.push_back(stringf("%s_%d", ctx->name().c_str(), ctx->id()));
   visit(ctx, map);
   node_path.pop_back();
 }

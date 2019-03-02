@@ -1740,38 +1740,39 @@ private:
 
   void setup_constants(context* ctx, data_map_t& data_map) {
     for (auto node : ctx->literals())  {
-      auto num_words = ceildiv(node->size(), bitwidth_v<block_type>);
+      auto lit = reinterpret_cast<litimpl*>(node);
+      auto num_words = ceildiv(lit->size(), bitwidth_v<block_type>);
       for (auto& constant : sim_ctx_->constants) {
         if (constant.second >= num_words) {
           uint32_t width = num_words * bitwidth_v<block_type>;
           if (bv_eq<false, block_type, ClearBitAccessor<block_type>>(
-                constant.first, width, node->value().words(), width)) {
-            data_map[node->id()] = constant.first;
+                constant.first, width, lit->value().words(), width)) {
+            data_map[lit->id()] = constant.first;
             break;
           }
         } else {
           uint32_t width = constant.second * bitwidth_v<block_type>;
           if (bv_eq<false, block_type, ClearBitAccessor<block_type>>(
-                constant.first, width, node->value().words(), width)) {
+                constant.first, width, lit->value().words(), width)) {
             auto buf = reinterpret_cast<block_type*>(
                   realloc(constant.first, num_words * sizeof(block_type)));
-            std::copy_n(node->value().words(), num_words, buf);
+            std::copy_n(lit->value().words(), num_words, buf);
             for (auto& data : data_map) {
               if (data.second == constant.first)
                 data.second = buf;
             }
-            data_map[node->id()] = buf;
+            data_map[lit->id()] = buf;
             constant.first = buf;
             constant.second = num_words;
             break;
           }
         }
       }
-      if (0 == data_map.count(node->id())) {
+      if (0 == data_map.count(lit->id())) {
         auto buf = reinterpret_cast<block_type*>(malloc(num_words * sizeof(block_type)));
-        std::copy_n(node->value().words(), num_words, buf);
+        std::copy_n(lit->value().words(), num_words, buf);
         sim_ctx_->constants.emplace_back(buf, num_words);
-        data_map[node->id()] = buf;
+        data_map[lit->id()] = buf;
       }
     }
   }

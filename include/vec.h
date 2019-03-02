@@ -10,16 +10,16 @@ class vec_base : public std::array<T, N> {
 protected:
   using base = std::array<T, N>;
 
-  template <typename... Ts,
-            CH_REQUIRE_0(sizeof...(Ts) == N && is_fold_constructible_v<T, Ts...>)>
-  vec_base(Ts&&... values)
-    : base{T(std::forward<Ts>(values))...}
+  template <typename... Us,
+            CH_REQUIRE_0(sizeof...(Us) == N && is_fold_constructible_v<T, Us...>)>
+  vec_base(Us&&... values)
+    : base{T(std::forward<Us>(values))...}
   {}
 
-  template <typename... Ts,
-            CH_REQUIRE_0(sizeof...(Ts) == N && is_fold_constructible_v<T, Ts...>)>
-  vec_base(const source_location& sloc, Ts&&... values)
-    : base{T(std::forward<Ts>(values), sloc)...}
+  template <typename... Us,
+            CH_REQUIRE_0(sizeof...(Us) == N && is_fold_constructible_v<T, Us...>)>
+  vec_base(const source_location& sloc, Us&&... values)
+    : base{T(std::forward<Us>(values), sloc)...}
   {}
 
   template <typename U, std::size_t...Is>

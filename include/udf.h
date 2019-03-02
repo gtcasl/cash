@@ -95,12 +95,12 @@ class ch_udf {
 public:
   static_assert(is_udf_type_v<T>, "invalid type"); \
 
-  template <typename... Us>
-  ch_udf(Us&&... args) {
-    udf_ = lookupUDF(std::type_index(typeid(T)), (sizeof...(Us) != 0));
+  template <typename... Args>
+  ch_udf(Args&&... args) {
+    udf_ = lookupUDF(std::type_index(typeid(T)), (sizeof...(Args) != 0));
     if (udf_ == nullptr) {
-      udf_ = new T(std::forward<Us>(args)...);
-      registerUDF(std::type_index(typeid(T)), (sizeof...(Us) != 0), udf_);
+      udf_ = new T(std::forward<Args>(args)...);
+      registerUDF(std::type_index(typeid(T)), (sizeof...(Args) != 0), udf_);
     }
     udf_->acquire();
   }

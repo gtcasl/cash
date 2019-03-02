@@ -3,6 +3,7 @@
 #include "common.h"
 #include "platform.h"
 #include "traits.h"
+#include "nodelistview.h"
 
 namespace ch {
 namespace internal {
@@ -59,8 +60,6 @@ typedef std::map<cond_range_t, cond_defs_t> cond_slices_t;
 
 typedef std::unordered_map<lnodeimpl*, cond_slices_t> cond_vars_t;
 
-typedef std::list<lnodeimpl*> node_list_t;
-
 typedef std::unordered_map<uint32_t, cond_block_t*> cond_inits_t;
 
 typedef const char* (*enum_string_cb)(uint32_t value);
@@ -110,10 +109,6 @@ public:
 
   auto& outputs() const {
     return outputs_;
-  }
-
-  auto& regs() const {
-    return regs_;
   }
 
   auto& mems() const {
@@ -166,14 +161,14 @@ public:
 
   uint32_t node_id();
 
-  template <typename T, typename... Ts>
-  T* create_node(Ts&&... args) {
-    auto node = new T(this, std::forward<Ts>(args)...);
+  template <typename T, typename... Args>
+  T* create_node(Args&&... args) {
+    auto node = new T(this, std::forward<Args>(args)...);
     this->add_node(node);
     return node;
   }
 
-  node_list_t::iterator delete_node(const node_list_t::iterator& it);
+  node_list_view::iterator delete_node(const node_list_view::iterator& it);
 
   //--
 
@@ -258,7 +253,7 @@ public:
   
   void dump_ast(std::ostream& out);
 
-  void dump_cfg(lnodeimpl* node, std::ostream& out);
+  void dump_cfg(lnodeimpl* target, std::ostream& out);
 
   void dump_stats(std::ostream& out);
 
@@ -287,22 +282,28 @@ protected:
   inputimpl*  sys_reset_;
   timeimpl*   sys_time_;
   
-  node_list_t             nodes_;
-  std::list<undefimpl*>   undefs_;
-  std::list<litimpl*>     literals_;
-  std::list<proxyimpl*>   proxies_;
-  std::list<inputimpl*>   inputs_;
-  std::list<outputimpl*>  outputs_;
-  std::list<memimpl*>     mems_;
-  std::list<regimpl*>     regs_;
-  std::list<tapimpl*>     taps_;
-  std::list<ioimpl*>      gtaps_;
+  std::list<lnodeimpl*>   undefs_;
+  std::list<lnodeimpl*>   literals_;
+  std::list<lnodeimpl*>   proxies_;
+  std::list<lnodeimpl*>   inputs_;
+  std::list<lnodeimpl*>   outputs_;
+  std::list<lnodeimpl*>   alus_;
+  std::list<lnodeimpl*>   cdomains_;
+  std::list<lnodeimpl*>   regs_;
+  std::list<lnodeimpl*>   mems_;
+  std::list<lnodeimpl*>   marports_;
+  std::list<lnodeimpl*>   msrports_;
+  std::list<lnodeimpl*>   mwports_;
+  std::list<lnodeimpl*>   bindings_;
+  std::list<lnodeimpl*>   bindports_;
+  std::list<lnodeimpl*>   taps_;
+  std::list<lnodeimpl*>   gtaps_;
+  std::list<lnodeimpl*>   udfseqs_;
+  std::list<lnodeimpl*>   udfcombs_;
 
-  std::list<cdimpl*>      cdomains_;
-  std::list<bindimpl*>    bindings_;
-  std::list<udfimpl*>     udfs_;
-
-  std::list<lnodeimpl*>   snodes_;
+  node_list_view          nodes_;
+  node_list_view          snodes_;
+  node_list_view          udfs_;
 
   enum_strings_t          enum_strings_;
 

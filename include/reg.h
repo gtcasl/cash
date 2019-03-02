@@ -29,6 +29,12 @@ logic_buffer createRegNext(const lnode& next, const lnode& init, unsigned length
 void pushClockDomain(const lnode& clock, const lnode& reset, bool pos_edge,
                      const source_location& sloc);
 
+void beginPipe(const std::vector<int>& latencies);
+
+void beginPipe(const lnode& enable, const std::vector<int>& latencies);
+
+void endPipe();
+
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T>
@@ -129,6 +135,16 @@ void ch_pushcd(const C& clk,
 }
 
 void ch_popcd();
+
+template <typename Func, typename C, typename R = ch_bit<1>>
+void ch_cd(Func&& func,
+           const C& clk,
+           const R& reset = ch_reset(),
+           bool pos_edge = true) {
+  ch_pushcd(clk, reset, pos_edge);
+  func;
+  ch_popcd();
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -279,6 +295,24 @@ auto ch_delayEn(const T& in, const E& enable, uint32_t delay, const I& init, CH_
 template <typename T, typename I, typename E>
 auto ch_delayEn(const T& in, const E& enable, uint32_t delay, const I& init, CH_SLOC) {
   return ch_delayEn<ch_logic_t<T>, T, I, E>(in, enable, delay, init, sloc);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+template <typename Func, typename... Bs>
+auto ch_pipe(Func&& func, uint32_t length, Bs&&... bounds) {
+  beginPipe({std::forward<Bs>(bounds)...});
+  func;
+  endPipe();
+}
+
+template <typename Func, typename E, typename... Bs>
+auto ch_pipeEn(Func&& func, const E& enable, uint32_t length, Bs&&... bounds) {
+  static_assert(is_bit_base_v<E>, "invalid type");
+  static_assert(ch_width_v<E> == 1, "invalid size");
+  beginPipe(logic_accessor::data(enable), {std::forward<Bs>(bounds)...});
+  func;
+  endPipe();
 }
 
 }
