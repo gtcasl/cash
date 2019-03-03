@@ -43,20 +43,19 @@ void tracerimpl::initialize() {
 
   //--
   auto trace_width = 0;
-  ioportimpl* clk = nullptr;
-  ioportimpl* reset = nullptr;
+  auto clk = eval_ctx_->sys_clk();
+  if (clk) {
+    trace_width += add_signal(clk);
+  }
+
+  auto reset = eval_ctx_->sys_reset();
+  if (reset) {
+    trace_width += add_signal(reset);
+  }
   for (auto node : eval_ctx_->inputs()) {
     auto signal = reinterpret_cast<ioportimpl*>(node);
-    if (signal->name() == "clk") {
-      if (clk)
-        continue;
-      clk = signal;
-    } else
-    if (signal->name() == "reset") {
-      if (reset)
-        continue;
-      reset = signal;
-    }
+    if (signal == clk || signal == reset)
+      continue;
     trace_width += add_signal(signal);
   }
   for (auto node : eval_ctx_->outputs()) {

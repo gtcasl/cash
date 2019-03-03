@@ -196,10 +196,16 @@ logic_buffer ch::internal::createRegNext(const lnode& next,
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void ch::internal::beginPipe(const std::vector<int>& latencies) {
-  //--
+void ch::internal::beginPipe(uint32_t length, const std::vector<int>& bounds) {
+  CH_UNUSED(length, bounds);
+  CH_TODO();
+}
+
+void ch::internal::beginPipe(uint32_t length, const lnode& enable, const std::vector<int>& bounds) {
+  CH_UNUSED(length, enable, bounds);
+  CH_TODO();
 }
 
 void ch::internal::endPipe() {
-  //--
+  CH_TODO();
 }
