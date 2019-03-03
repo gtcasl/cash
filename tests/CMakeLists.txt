@@ -21,6 +21,7 @@ set(TEST_SOURCES
     fixed.cpp
     complex.cpp
     cache.cpp
+    router.cpp
     main.cpp
 )
 
