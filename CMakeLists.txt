@@ -29,8 +29,7 @@ include_directories("include")
 # set source files
 set(PROJECT_SOURCES
     src/utils.cpp
-    src/platform.cpp
-    src/system.cpp
+    src/platform.cpp    
     src/lnodeimpl.cpp
     src/ioimpl.cpp
     src/proxyimpl.cpp
@@ -47,6 +46,7 @@ set(PROJECT_SOURCES
     src/udfimpl.cpp
     src/lnode.cpp
     src/logic.cpp
+    src/system.cpp
     src/context.cpp
     src/deviceimpl.cpp
     src/compile.cpp    

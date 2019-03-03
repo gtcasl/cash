@@ -881,7 +881,21 @@ void firrtlwriter::print_value(std::ostream& out,
 void ch::internal::ch_toFIRRTL(std::ostream& out, const device& device) {
   std::unordered_set<std::string_view> visited;
   auto ctx = device.impl()->ctx();
+  visited.insert(ctx->name());
   out << "circuit " << ctx->name() << ":" << std::endl;
-  firrtlwriter writer(ctx);
+  firrtlwriter writer(ctx);  
   writer.print(out, visited);
+}
+
+void ch_toFIRRTL(std::ostream& out, const ch_device_list& devices) {
+  std::unordered_set<std::string_view> visited;
+
+  for (auto& device : devices) {
+    auto ctx = device.impl()->ctx();
+    if (visited.count(ctx->name()))
+      continue;
+    out << "circuit " << ctx->name() << ":" << std::endl;
+    firrtlwriter writer(ctx);
+    writer.print(out, visited);
+  }
 }

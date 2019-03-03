@@ -1525,7 +1525,7 @@ public:
   }
 
   void eval() override {
-    udf_->eval(dst_, srcs_.data());
+    udf_->impl()->eval(dst_, srcs_.data());
   }
 
 private:
@@ -1576,7 +1576,7 @@ public:
   void eval() override {
     if (!static_cast<bool>(cd_[0]))
       return;
-    udf_->eval(dst_, srcs_.data());
+    udf_->impl()->eval(dst_, srcs_.data());
   }
 
 private:

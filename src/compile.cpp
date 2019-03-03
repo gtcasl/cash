@@ -405,8 +405,7 @@ bool compiler::constant_folding() {
         continue;
       this->map_delete(dn);
     }
-    auto n_it = std::find(ctx_->nodes().begin(), ctx_->nodes().end(), dn);
-    ctx_->delete_node(n_it);
+    ctx_->delete_node(dn);
   }
 
   CH_DBG(3, "End Compiler::CFO\n");
@@ -774,8 +773,7 @@ bool compiler::prune_identity_proxies() {
     this->map_replace_target(proxy, proxy->src(0).impl());
     this->map_delete(proxy);
     // delete proxy
-    auto p_it = std::find(ctx_->nodes().begin(), ctx_->nodes().end(), proxy);
-    ctx_->delete_node(p_it);
+    ctx_->delete_node(proxy);
     changed = true;
   }
 
@@ -951,8 +949,7 @@ bool compiler::proxies_coalescing() {
     if (m_it != node_map_.end()) {
       if (m_it->second.empty()) {
         this->map_delete(node);
-        auto d_it = std::find(ctx_->nodes().begin(), ctx_->nodes().end(), node);
-        ctx_->delete_node(d_it);
+        ctx_->delete_node(node);
       }
     }
   }  

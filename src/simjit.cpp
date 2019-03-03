@@ -627,7 +627,7 @@ private:
     static void eval(block_type* out, udf_data_t* self) {
       sdata_type dst;
       dst.emplace(out, self->dst_width);
-      self->udf->eval(dst, self->srcs);
+      self->udf->impl()->eval(dst, self->srcs);
       dst.emplace(nullptr);
     }
   };

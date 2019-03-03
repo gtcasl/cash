@@ -4,6 +4,31 @@
 
 using namespace ch::internal;
 
+udf_iface::udf_iface(uint32_t id,
+                     bool is_seq,
+                     uint32_t output_size,
+                     const std::initializer_list<uint32_t>& inputs_size,
+                     udf_base* impl)
+  : id_(id)
+  , is_managed_(false)
+  , is_seq_(is_seq)
+  , output_size_(output_size)
+  , inputs_size_(inputs_size)
+  , impl_(impl) {
+  impl_->acquire();
+}
+
+udf_iface::~udf_iface() {
+  if (impl_) {
+    impl_->release();
+    if (is_managed_) {
+      destroyUDF(id_);
+    }
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 udfimpl::udfimpl(context* ctx,
                  lnodetype type,
                  udf_iface* udf,
@@ -62,8 +87,9 @@ lnodeimpl* udfsimpl::clone(context* ctx, const clone_map& cloned_nodes) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-lnodeimpl* ch::internal::createUDFNode(udf_iface* udf,
+lnodeimpl* ch::internal::createUDFNode(refcounted* handle,
                                        const std::vector<lnode>& inputs,
                                        const source_location& sloc) {
+  auto udf = reinterpret_cast<udf_iface*>(handle);
   return ctx_curr()->create_udf_node(udf, inputs, sloc);
 }

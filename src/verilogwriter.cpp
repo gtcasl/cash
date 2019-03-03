@@ -834,7 +834,7 @@ bool verilogwriter::print_udf(std::ostream& out, udfimpl* node) {
   {
     // load code template
     std::ostringstream os;
-    udf->to_verilog(os);
+    udf->impl()->to_verilog(os);
     code = os.str();
   }
 
@@ -1016,34 +1016,53 @@ void verilogwriter::print_operator(std::ostream& out, ch_op op) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void ch::internal::ch_toVerilog(std::ostream& out, const device& device) {
+std::function<void (std::ostream& out, context*, std::unordered_set<udf_iface*>&)>
+  print_udf_dependencies = [](std::ostream& out, context* ctx, std::unordered_set<udf_iface*>& visited) {
+  for (auto node : ctx->bindings()) {
+    auto binding = reinterpret_cast<bindimpl*>(node);
+    print_udf_dependencies(out, binding->module(), visited);
+  }
+  for (auto node : ctx->nodes()) {
+    if (type_udfc != node->type()
+     && type_udfs != node->type())
+      continue;
+    auto udf = reinterpret_cast<udfimpl*>(node)->udf();
+    if (0 == visited.count(udf)) {
+      udf->impl()->init_verilog(out);
+      out << std::endl;
+      visited.insert(udf);
+    }
+  }
+};
 
-  std::function<void (context*, std::unordered_set<udf_iface*>&)> print_udf_dependencies = [&](
-      context* ctx, std::unordered_set<udf_iface*>& visited) {
-    for (auto node : ctx->bindings()) {
-      auto binding = reinterpret_cast<bindimpl*>(node);
-      print_udf_dependencies(binding->module(), visited);
-    }
-    for (auto node : ctx->nodes()) {
-      if (type_udfc != node->type()
-       && type_udfs != node->type())
-        continue;
-      auto udf = reinterpret_cast<udfimpl*>(node)->udf();
-      if (0 == visited.count(udf)) {
-        udf->init_verilog(out);
-        out << std::endl;
-        visited.insert(udf);
-      }
-    }
-  };
+void ch::internal::ch_toVerilog(std::ostream& out, const device& device) {
+  //--
+  std::unordered_set<std::string_view> visited;
+  std::unordered_set<udf_iface*> udf_visited;
 
   auto ctx = device.impl()->ctx();
-  if (!ctx->udfs().empty()) {
-    std::unordered_set<udf_iface*> udf_visited;
-    print_udf_dependencies(ctx, udf_visited);
-  }
-
-  std::unordered_set<std::string_view> visited;
-  verilogwriter writer(ctx);
+  visited.insert(ctx->name());
+  if (!ctx->udfs().empty()) {    
+    print_udf_dependencies(out, ctx, udf_visited);
+  }  
+  verilogwriter writer(ctx);  
   writer.print(out, visited);
+}
+
+void ch::internal::ch_toVerilog(std::ostream& out, const ch_device_list& devices) {
+  //--
+  std::unordered_set<std::string_view> visited;
+  std::unordered_set<udf_iface*> udf_visited;
+
+  for (auto& device : devices) {
+    auto ctx = device.impl()->ctx();
+    if (visited.count(ctx->name()))
+      continue;
+    visited.insert(ctx->name());
+    if (!ctx->udfs().empty()) {
+      print_udf_dependencies(out, ctx, udf_visited);
+    }
+    verilogwriter writer(ctx);
+    writer.print(out, visited);
+  }
 }

@@ -28,6 +28,7 @@ class tapimpl;
 class assertimpl;
 class timeimpl;
 class udfimpl;
+class udf_base;
 class udf_iface;
 class clock_event;
 class source_location;
@@ -155,6 +156,14 @@ public:
     return cdomains_;
   }
 
+  void set_managed(bool value) {
+    is_managed_ = value;
+  }
+
+  bool is_managed() const {
+    return is_managed_;
+  }
+
   size_t hash() const;
 
   //--
@@ -169,6 +178,8 @@ public:
   }
 
   node_list_view::iterator delete_node(const node_list_view::iterator& it);
+
+  void delete_node(lnodeimpl* node);
 
   //--
 
@@ -277,6 +288,7 @@ protected:
   uint32_t    id_;
   std::string name_;
   context*    parent_;
+  bool        is_managed_;
 
   inputimpl*  sys_clk_;
   inputimpl*  sys_reset_;
@@ -324,6 +336,8 @@ context* ctx_swap(context* ctx);
 context* ctx_curr();
 
 context* ctx_find(context* ctx);
+
+void destroyUDF(uint32_t id);
 
 }
 }

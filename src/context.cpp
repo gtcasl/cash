@@ -27,53 +27,44 @@ public:
   context_manager() : ctx_(nullptr), ctx_ids_(0), node_ids_(0) {}
 
   ~context_manager() {
-    if (ctx_) {
-      ctx_->release();
-    }
-    for (auto item : udfs_) {
-      item.second->release();
-    }
+    assert(ctx_ == nullptr);
+    assert(pod_contexts_.empty());
+    assert(pod_udfs_.empty());
   }
 
-  context* create(const std::type_index& signature,
-                  bool has_args,
-                  const std::string& name) {
+  context* create_context(const std::type_index& signature,
+                          bool has_args,
+                          const std::string& name) {
     context* ctx;
-    if (has_args) {
-      uint32_t instances = 1;
-      for (auto& item : contexts_) {
-        if (item.first.first == signature) {
-          instances = item.first.second + 1;
-          break;
+    if (!has_args) {
+      auto it = ctx_signatures_.find(signature);
+      if (it != ctx_signatures_.end()) {
+        auto it2 = pod_contexts_.find(it->second);
+        if (it2 != pod_contexts_.end()) {
+          return it2->second;
         }
+        ctx_signatures_.erase(it);
       }
-      auto key = std::make_pair(signature, instances);
-      auto unique_name = identifier_from_typeid(name);
-      unique_name = stringf("%s_%ld", unique_name.c_str(), instances);
-      ctx = new context(unique_name, ctx_);
-      contexts_[key] = ctx;
-    } else {
-      auto key = std::make_pair(signature, 0);
-      auto it = contexts_.find(key);
-      if (it != contexts_.end()) {
-        ctx = it->second;
-      } else {
-        auto unique_name = identifier_from_typeid(name);
-        ctx = new context(unique_name, ctx_);
-        contexts_[key] = ctx;
-      }
+    }
+    auto unique_name = identifier_from_typeid(name);
+    auto instances = dup_ctx_names_.insert(unique_name);
+    if (instances) {
+       unique_name = stringf("%s_%ld", unique_name.c_str(), instances);
+    }
+    ctx = new context(unique_name, ctx_);
+    if (!has_args) {
+      pod_contexts_.emplace(ctx->id(), ctx);
+      auto status = ctx_signatures_.emplace(signature, ctx->id());
+      assert(status.second);
+      ctx->set_managed(true);
     }
     return ctx;
   }
 
-  void destroy(const context* ctx) {
-    for (auto it = contexts_.begin(), end = contexts_.end(); it != end; ++it) {
-      if (it->second->id() == ctx->id()) {
-        contexts_.erase(it);
-        return;
-      }
-    }
-    assert(ctx->name() == "eval");
+  void destroy_context(uint32_t id) {
+    auto it = pod_contexts_.find(id);
+    assert(it != pod_contexts_.end());
+    pod_contexts_.erase(it);
   }
 
   context* current() const {
@@ -89,30 +80,39 @@ public:
   udf_iface* lookup_udf(const std::type_index& signature, bool has_args) {
     udf_iface* udf = nullptr;
     if (!has_args) {
-      auto key = std::make_pair(signature, 0);
-      auto it = udfs_.find(key);
-      if (it != udfs_.end()) {
-        udf = it->second;
+      auto it = udf_signatures_.find(signature);
+      if (it != udf_signatures_.end()) {
+        auto it2 = pod_udfs_.find(it->second);
+        if (it2 != pod_udfs_.end()) {
+          return it2->second;
+        }
+        udf_signatures_.erase(it);
       }
     }
     return udf;
   }
 
-  void register_udf(const std::type_index& signature, bool has_args, udf_iface* udf) {
-    uint32_t instances = 0;
-    if (has_args) {
-      instances = 1;
-      for (auto& item : udfs_) {
-        if (item.first.first == signature) {
-          instances = item.first.second + 1;
-          break;
-        }
-      }
+  udf_iface* create_udf(const std::type_index& signature,
+                        bool has_args,
+                        bool is_seq,
+                        uint32_t output_size,
+                        const std::initializer_list<uint32_t>& inputs_size,
+                        udf_base* udf) {
+    uint32_t id = this->udf_id();
+    auto iface = new udf_iface(id, is_seq, output_size, inputs_size, udf);
+    if (!has_args) {
+      pod_udfs_.emplace(id, iface);
+      auto status = udf_signatures_.emplace(signature, id);
+      assert(status.second);
+      iface->set_managed(true);
     }
-    auto key = std::make_pair(signature, instances);
-    auto status = udfs_.insert({key, udf});
-    assert(status.second);
-    udf->acquire();
+    return iface;
+  }
+
+  void destroy_udf(uint32_t id) {
+    auto it = pod_udfs_.find(id);
+    assert(it != pod_udfs_.end());
+    pod_udfs_.erase(it);
   }
 
   source_location get_source_location(const char* file, int line) {
@@ -137,29 +137,28 @@ public:
     return ++node_ids_;
   }
 
+  uint32_t udf_id() const {
+    return ++udf_ids_;
+  }
+
 protected:
-
-  using user_key = std::pair<std::type_index, uint32_t>;
-
-  struct user_hash_t {
-     std::size_t operator()(const user_key& key) const {
-      std::hash<std::type_index> idx;
-      return hash_combine(idx(key.first), key.second);
-    }
-  };
 
   mutable context* ctx_;
   mutable uint32_t ctx_ids_;
   mutable uint32_t node_ids_;  
-  std::unordered_map<user_key, context*, user_hash_t> contexts_;
-  std::unordered_map<user_key, udf_iface*, user_hash_t> udfs_;
+  mutable uint32_t udf_ids_;
+  std::unordered_map<std::type_index, uint32_t> ctx_signatures_;
+  std::unordered_map<uint32_t, context*> pod_contexts_;
+  dup_tracker<std::string> dup_ctx_names_;
+  std::unordered_map<std::type_index, uint32_t> udf_signatures_;
+  std::unordered_map<uint32_t, udf_iface*> pod_udfs_;
   dup_tracker<source_location, std::size_t, source_location::hash_t> dup_slocs_;
 };
 
 context* ch::internal::ctx_create(const std::type_index& signature,
                                   bool has_args,
                                   const std::string& name) {
-  return context_manager::instance().create(signature, has_args, name);
+  return context_manager::instance().create_context(signature, has_args, name);
 }
 
 context* ch::internal::ctx_swap(context* ctx) {
@@ -170,12 +169,22 @@ context* ch::internal::ctx_curr() {
   return context_manager::instance().current();
 }
 
-udf_iface* ch::internal::lookupUDF(const std::type_index& signature, bool has_args) {
+refcounted* ch::internal::lookupUDF(const std::type_index& signature, bool has_args) {
   return context_manager::instance().lookup_udf(signature, has_args);
 }
 
-void ch::internal::registerUDF(const std::type_index& signature, bool has_args, udf_iface* udf) {
-  context_manager::instance().register_udf(signature, has_args, udf);
+refcounted* ch::internal::createUDF(const std::type_index& signature,
+                                    bool has_args,
+                                    bool is_seq,
+                                    uint32_t output_size,
+                                    const std::initializer_list<uint32_t>& inputs_size,
+                                    udf_base* udf) {
+  return context_manager::instance().create_udf(
+        signature, has_args, is_seq, output_size, inputs_size, udf);
+}
+
+void ch::internal::destroyUDF(uint32_t id) {
+  context_manager::instance().destroy_udf(id);
 }
 
 source_location ch::internal::get_source_location(const char* file, int line) {
@@ -225,7 +234,8 @@ struct cond_br_t {
 context::context(const std::string& name, context* parent)
   : id_(context_manager::instance().ctx_id())
   , name_(name)
-  , parent_(parent)  
+  , parent_(parent)
+  , is_managed_(false)
   , sys_clk_(nullptr)
   , sys_reset_(nullptr)
   , sys_time_(nullptr)
@@ -242,7 +252,9 @@ context::~context() {
   for (auto node : nodes_) {
     node->release();
   }
-  context_manager::instance().destroy(this);
+  if (is_managed_) {
+    context_manager::instance().destroy_context(id_);
+  }
 }
 
 context* context::clone() const {
@@ -284,13 +296,6 @@ void context::add_node(lnodeimpl* node) {
     proxies_.emplace_back(node);
     break;
   case type_input:
-    if (node->name() == "clk") {
-      assert(sys_clk_ == nullptr);
-      sys_clk_ = reinterpret_cast<inputimpl*>(node);
-    } else if (node->name() == "reset") {
-      assert(sys_reset_ == nullptr);
-      sys_reset_ = reinterpret_cast<inputimpl*>(node);
-    }
     inputs_.emplace_back(node);
     break;
   case type_output:
@@ -353,6 +358,88 @@ void context::add_node(lnodeimpl* node) {
   }  
 }
 
+void context::delete_node(lnodeimpl* node) {
+  CH_DBG(3, "*** deleting node: %s%d(#%d)\n", to_string(node->type()), node->size(), node->id());
+
+  // remove from list
+  auto type = node->type();
+  switch (type) {
+  case type_undef:
+    undefs_.remove(node);
+    break;
+  case type_lit:
+    literals_.remove(node);
+    break;
+  case type_proxy:
+    proxies_.remove(node);
+    break;
+  case type_input:
+    if (node == sys_clk_) {
+      sys_clk_ = nullptr;
+    } else
+    if (node == sys_reset_) {
+      sys_reset_ = nullptr;
+    }
+    inputs_.remove(node);
+    break;
+  case type_output:
+    outputs_.remove(node);
+    break;
+  case type_alu:
+  case type_sel:
+    alus_.remove(node);
+    break;
+  case type_cd:
+    cdomains_.remove(node);
+    break;
+  case type_reg:
+    regs_.remove(node);
+    break;
+  case type_mem:
+    mems_.remove(node);
+    break;
+  case type_marport:
+    marports_.remove(node);
+    break;
+  case type_msrport:
+    msrports_.remove(node);
+    break;
+  case type_mwport:
+    mwports_.remove(node);
+    break;
+  case type_bind:
+    bindings_.remove(node);
+    break;
+  case type_bindin:
+  case type_bindout:
+    bindports_.remove(node);
+    break;
+  case type_tap:
+    taps_.remove(node);
+    break;
+  case type_time:
+    if (node == sys_time_) {
+      sys_time_ = nullptr;
+    }
+    [[fallthrough]];
+  case type_assert:
+  case type_print:
+    gtaps_.remove(node);
+    break;
+  case type_udfc:
+    udfcombs_.remove(node);
+    break;
+  case type_udfs:
+    udfseqs_.remove(node);
+    break;
+  default:
+    assert(false);
+  }
+
+  // destroy object
+  node->release();
+}
+
 node_list_view::iterator context::delete_node(const node_list_view::iterator& it) {
   auto node = *it;
   CH_DBG(3, "*** deleting node: %s%d(#%d)\n", to_string(node->type()), node->size(), node->id());
@@ -360,12 +447,10 @@ node_list_view::iterator context::delete_node(const node_list_view::iterator& it
   auto type = node->type();
   switch (type) {
   case type_input:
-    if (node->name() == "clk") {
-      assert(sys_clk_->id() == node->id());
+    if (node == sys_clk_) {
       sys_clk_ = nullptr;
     } else
-    if (node->name() == "reset") {
-      assert(sys_reset_->id() == node->id());
+    if (node == sys_reset_) {
       sys_reset_ = nullptr;
     }
     break;
@@ -378,8 +463,10 @@ node_list_view::iterator context::delete_node(const node_list_view::iterator& it
     break;
   }
 
-  // remove node from main list
+  // destroy object
   node->release();
+
+  // remove node from list
   return nodes_.erase(it);
 }
 
@@ -476,7 +563,7 @@ cdimpl* context::current_cd(const source_location& sloc) {
 
   if (nullptr == sys_clk_) {
     auto value = smart_ptr<sdata_type>::make(1);
-    this->create_node<inputimpl>(1, value, "clk", sloc);
+    sys_clk_ = this->create_node<inputimpl>(1, value, "clk", sloc);
   }
   return this->create_cd(sys_clk_, true, sloc);
 }
@@ -491,7 +578,7 @@ lnodeimpl* context::current_reset(const source_location& sloc) {
 
   if (nullptr == sys_reset_) {
     auto value = smart_ptr<sdata_type>::make(1);
-    this->create_node<inputimpl>(1, value, "reset", sloc);
+    sys_reset_ = this->create_node<inputimpl>(1, value, "reset", sloc);
   }
   return sys_reset_;
 }
