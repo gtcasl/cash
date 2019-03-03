@@ -23,7 +23,7 @@ TEST_CASE("memory", "[memory]") {
            (6,  0xC_h)
            (8,  0xC_h)
                (q);
-      //ch_print("t={0}, a={1}, q={2}, e={3}", ch_now(), a, q, e);
+      //ch_println("t={0}, a={1}, q={2}, e={3}", ch_now(), a, q, e);
       return (q == e);
     }, 4);
     TEST([]()->ch_bool {
@@ -37,7 +37,7 @@ TEST_CASE("memory", "[memory]") {
            (6,  0xC)
            (8,  0xC)
                (q);
-      //ch_print("t={0}, a={1}, q={2}, e={3}", ch_now(), a, q, e);
+      //ch_println("t={0}, a={1}, q={2}, e={3}", ch_now(), a, q, e);
       return (q == e);
     }, 4);
     TEST([]()->ch_bool {
@@ -51,7 +51,7 @@ TEST_CASE("memory", "[memory]") {
            (6,  0xC)
            (8,  0xC)
                (q);
-      //ch_print("t={0}, a={1}, q={2}, e={3}", ch_now(), a, q, e);
+      //ch_println("t={0}, a={1}, q={2}, e={3}", ch_now(), a, q, e);
       return (q == e);
     }, 4);
     TEST([]()->ch_bool {
@@ -66,7 +66,7 @@ TEST_CASE("memory", "[memory]") {
           (6,  0xC_h5)
           (8,  0xC_h5)
               (q);
-      //ch_print("t={0}, a={1}, q={2}, e={3}", ch_now(), a, q, e);
+      //ch_println("t={0}, a={1}, q={2}, e={3}", ch_now(), a, q, e);
       return (q == e);
     }, 4);
     TEST([]()->ch_bool {
@@ -81,7 +81,7 @@ TEST_CASE("memory", "[memory]") {
           (4,  0x10403_h17)
           (6,  0x10605_h17)
               (q);
-      //ch_print("t={0}, a={1}, q={2}, e={3}", ch_now(), a, q, e);
+      //ch_println("t={0}, a={1}, q={2}, e={3}", ch_now(), a, q, e);
       return (q == e);
     }, 4);
     TEST([]()->ch_bool {
@@ -96,7 +96,7 @@ TEST_CASE("memory", "[memory]") {
            (7,  0xC_h)
            (9,  0xC_h)
                (q);
-      //ch_print("t={0}, a={1}, q={2}, e={3}", ch_now(), a, q, e);
+      //ch_println("t={0}, a={1}, q={2}, e={3}", ch_now(), a, q, e);
       return (q == e);
     }, 4);
     TEST([]()->ch_bool {
@@ -110,7 +110,7 @@ TEST_CASE("memory", "[memory]") {
            (7,  0xB_h)
            (9,  0xC_h)
                (q);
-      //ch_print("t={0}, a={1}, q={2}, e={3}", ch_now(), a, q, e);
+      //ch_println("t={0}, a={1}, q={2}, e={3}", ch_now(), a, q, e);
       return (q == e);
     }, 4);
   }
@@ -142,7 +142,7 @@ TEST_CASE("memory", "[memory]") {
            (17, 0xE_h)
            (19, 0xD_h)
                (q);
-      //ch_print("t={0}, clk={1}, rst={2}, a={3}, d={4}, en={5}, q={6}, e={7}", ch_now(), ch_clock(), ch_reset(), a, d, en, q, e);
+      //ch_println("t={0}, clk={1}, rst={2}, a={3}, d={4}, en={5}, q={6}, e={7}", ch_now(), ch_clock(), ch_reset(), a, d, en, q, e);
       return (q == e);
     }, 5);
 
@@ -172,7 +172,7 @@ TEST_CASE("memory", "[memory]") {
            (17, 0xE_h)
            (19, 0xD_h)
                (q);
-      //ch_print("t={0}, clk={1}, rst={2}, a={3}, d={4}, en={5}, q={6}, e={7}", ch_now(), ch_clock(), ch_reset(), a, d, en, q, e);
+      //ch_println("t={0}, clk={1}, rst={2}, a={3}, d={4}, en={5}, q={6}, e={7}", ch_now(), ch_clock(), ch_reset(), a, d, en, q, e);
       return (q == e);
     }, 5);
 
@@ -181,7 +181,7 @@ TEST_CASE("memory", "[memory]") {
       mem.write(0, Q_t(11_b, 01_b));
       auto x = mem.read(0).as_bit();
       auto e = ch_delay(1101_b);
-      //ch_print("t={0}, x={1}, e={2}", ch_now(), x, e);
+      //ch_println("t={0}, x={1}, e={2}", ch_now(), x, e);
       return (ch_now() < 1 || x == e);
     }, 2);
 
@@ -190,7 +190,7 @@ TEST_CASE("memory", "[memory]") {
       mem.write(1, 0x55);
       auto x = mem.read(1).as_bit();
       auto e = ch_delay<ch_bit32>(0x55);
-      //ch_print("t={0}, x={1}, e={2}", ch_now(), x, e);
+      //ch_println("t={0}, x={1}, e={2}", ch_now(), x, e);
       return (ch_now() < 1 || x == e);
     }, 2);
 
@@ -199,7 +199,7 @@ TEST_CASE("memory", "[memory]") {
       mem.write(1, 0x55);
       auto x = mem.read(1).as_bit();
       auto e = ch_delay<ch_bit<65>>(0x55);
-      //ch_print("t={0}, x={1}, e={2}", ch_now(), x, e);
+      //ch_println("t={0}, x={1}, e={2}", ch_now(), x, e);
       return (ch_now() < 1 || x == e);
     }, 2);
 
@@ -208,7 +208,7 @@ TEST_CASE("memory", "[memory]") {
       mem.write(1, 0x55);
       auto x = mem.read(1).as_bit();
       auto e = ch_delay<ch_bit<65>>(0x55, 2);
-      //ch_print("t={0}, x={1}, e={2}", ch_now(), x, e);
+      //ch_println("t={0}, x={1}, e={2}", ch_now(), x, e);
       return (ch_now() < 3 || x == e);
     }, 3);
 
@@ -217,7 +217,7 @@ TEST_CASE("memory", "[memory]") {
       mem.write(1, 0x55);
       auto x = mem.read(1).as_bit();
       auto e = ch_delay<ch_bit<33>>(0x55);
-      //ch_print("t={0}, x={1}, e={2}", ch_now(), x, e);
+      //ch_println("t={0}, x={1}, e={2}", ch_now(), x, e);
       return (ch_now() < 1 || x == e);
     }, 2);
 
@@ -231,7 +231,7 @@ TEST_CASE("memory", "[memory]") {
       mem.write(wa, wv, we);
       auto q = mem.read(ra, re);
       auto e = ch_case<ch_bit4>(ch_now(), 7, 2)(5, 1)(3, 1)(q);
-      //ch_print("t={0}, we={1}, wa={2}, wv={3}, re={4}, ra={5}, q={6}, e={7}", ch_now(), we, wa, wv, re, ra, q, e);
+      //ch_println("t={0}, we={1}, wa={2}, wv={3}, re={4}, ra={5}, q={6}, e={7}", ch_now(), we, wa, wv, re, ra, q, e);
       return (ch_now() < 1 || q == e);
     }, 4);
   }

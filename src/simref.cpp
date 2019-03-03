@@ -1483,7 +1483,6 @@ public:
       }
       std::cout << strbuf.rdbuf();
     }
-    std::cout << std::endl;
   }
 
 private:

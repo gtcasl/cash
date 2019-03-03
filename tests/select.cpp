@@ -92,7 +92,7 @@ TEST_CASE("conditionals", "[conditionals]") {
       } __else {
         c = d;
       };
-      //ch_print("c={0}, d={1}", c, d);
+      //ch_println("c={0}, d={1}", c, d);
       return (c == 5 && d == 0);
     });
     TEST([]()->ch_bool {
@@ -148,7 +148,7 @@ TEST_CASE("conditionals", "[conditionals]") {
       } __else {
         c = 2;
       };
-      //ch_print("c={0}", c);
+      //ch_println("c={0}", c);
       return (c == 0);
     });
     TEST([]()->ch_bool {
@@ -179,7 +179,7 @@ TEST_CASE("conditionals", "[conditionals]") {
       } __else {
         x = 4;
       };
-      //ch_print("x={0}", x);
+      //ch_println("x={0}", x);
       return (x == 2);
     });
     TEST([]()->ch_bool {
@@ -196,7 +196,7 @@ TEST_CASE("conditionals", "[conditionals]") {
       } __else {
         x = 4;
       };
-      //ch_print("x={0}", x);
+      //ch_println("x={0}", x);
       return (x == 2);
     });
     TEST([]()->ch_bool {
@@ -213,7 +213,7 @@ TEST_CASE("conditionals", "[conditionals]") {
       } __else {
         x = 4;
       };
-      //ch_print("x={0}", x);
+      //ch_println("x={0}", x);
       return (x == 1);
     });
     TEST([]()->ch_bool {
@@ -230,7 +230,7 @@ TEST_CASE("conditionals", "[conditionals]") {
       } __else {
         x = 4;
       };
-      //ch_print("x={0}", x);
+      //ch_println("x={0}", x);
       return (x == 3);
     });
     TEST([]()->ch_bool {
@@ -245,7 +245,7 @@ TEST_CASE("conditionals", "[conditionals]") {
       } __else {
         x = 4;
       };
-      //ch_print("x={0}", x);
+      //ch_println("x={0}", x);
       return (x == 0);
     });
     TEST([]()->ch_bool {
@@ -261,7 +261,7 @@ TEST_CASE("conditionals", "[conditionals]") {
       } __else {
         x = 4;
       };
-      //ch_print("x={0}", x);
+      //ch_println("x={0}", x);
       return (x == 3);
     });
     TEST([]()->ch_bool {
@@ -277,7 +277,7 @@ TEST_CASE("conditionals", "[conditionals]") {
         x = 4;
         y = 5;
       };
-      //ch_print("x={0}, y={1}", x, y);
+      //ch_println("x={0}, y={1}", x, y);
       return (x == 1 && y == 1);
     });
 
@@ -321,7 +321,7 @@ TEST_CASE("conditionals", "[conditionals]") {
         c = 1;
         c = 2;
       };
-      //ch_print("b={0}, c={1}", b, c);
+      //ch_println("b={0}, c={1}", b, c);
       return (b == 2 && c == 2);
     });
     TEST([]()->ch_bool {
@@ -333,7 +333,7 @@ TEST_CASE("conditionals", "[conditionals]") {
       } __else {
         b = 1000_b;
       };
-      //ch_print("b={0}", b);
+      //ch_println("b={0}", b);
       return (b == 0010_b);
     });
     TEST([]()->ch_bool {
@@ -347,7 +347,7 @@ TEST_CASE("conditionals", "[conditionals]") {
       } __else {
         b = 1000_b;
       };
-      //ch_print("b={0}", b);
+      //ch_println("b={0}", b);
       return (b == 0100_b);
     });
   }
@@ -486,7 +486,7 @@ TEST_CASE("conditionals", "[conditionals]") {
       __default {
         a = c3;
       };
-      //ch_print("a={0}, c2={1}", a, c2);
+      //ch_println("a={0}, c2={1}", a, c2);
       return (a == c2);
     });
 

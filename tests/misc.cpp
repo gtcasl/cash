@@ -27,7 +27,7 @@ namespace {
     );
     void describe() {
       io.out = io.in;
-      ch_print("io.in={0}", io.in);
+      ch_println("io.in={0}", io.in);
     }
   };
 }
@@ -101,24 +101,24 @@ TEST_CASE("misc", "[misc]") {
   
   SECTION("tick", "[tick]") {
     TEST([]()->ch_bool {
-      ch_print("tick={0}", ch_now());
+      ch_println("tick={0}", ch_now());
       return ch_true;
     });
   }
   
   SECTION("print", "[print]") {
     TEST([]()->ch_bool {
-      ch_print("hello world");
+      ch_println("hello world");
       return ch_true;
     });
     TEST([]()->ch_bool {
       ch_bit8 a(255);
-      ch_print("a={0}", a);
+      ch_println("a={0}", a);
       return ch_true;
     });    
     TEST([]()->ch_bool {
       ch_bit128 a(0x5555);
-      ch_print("a={0}", a);
+      ch_println("a={0}", a);
       return ch_true;
     });
     TESTX([]()->bool {
@@ -130,30 +130,30 @@ TEST_CASE("misc", "[misc]") {
     });
     TEST([]()->ch_bool {
       ch_bit8 a(255), b(0);
-      ch_print("a={0}, b={1}", a, b);
+      ch_println("a={0}, b={1}", a, b);
       return ch_true;
     });  
     TEST([]()->ch_bool {
       ch_bit8 a(255);
       ch_bool b(1);
       __if (b) {
-        ch_print("a={0}", a);
+        ch_println("a={0}", a);
       };
       return ch_true;
     });
     TEST([]()->ch_bool {
       ch_int4 a(-1);
-      ch_print("a={0:i}", a);
+      ch_println("a={0:i}", a);
       return ch_true;
     });
     TEST([]()->ch_bool {
       ch_int32 a(0x3e800000_h);
-      ch_print("a={0:f}", a);
+      ch_println("a={0:f}", a);
       return ch_true;
     });
     TEST([]()->ch_bool {
       my_enum a(my_enum::done);
-      ch_print("a={0:e}", a);
+      ch_println("a={0:e}", a);
       return ch_true;
     });
   }

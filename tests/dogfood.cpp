@@ -163,7 +163,7 @@ struct Filter {
     io.y.parity = tmp[ch_width_v<T>];
     auto q = ch_delay(io.x.valid);
     io.y.valid = q;
-    //ch_print("{0}: clk={1}, rst={2}, y.val={3}, x.val={4}", ch_now(), ch_clock(), ch_reset(), q, io.x.valid);
+    //ch_println("{0}: clk={1}, rst={2}, y.val={3}, x.val={4}", ch_now(), ch_clock(), ch_reset(), q, io.x.valid);
   }
 };
 
@@ -174,7 +174,7 @@ struct FilterBlock {
     f1_.io.x(io.x);
     f1_.io.y(f2_.io.x);
     f2_.io.y(io.y);
-    //ch_print("{0}: clk={1}, rst={2}, y={3}", ch_now(), ch_clock(), ch_reset(), io.y.valid);
+    //ch_println("{0}: clk={1}, rst={2}, y={3}", ch_now(), ch_clock(), ch_reset(), io.y.valid);
   }
   ch_module<Filter<T>> f1_, f2_;
 };
@@ -219,7 +219,7 @@ struct Dogfood {
     auto y2 = ch_shl<32>(x, 8);
     auto y3 = ch_shr<32>(x, 5);
     auto y4 = ch_shr<16>(x, 8);
-    ch_print("t={0}, x={1}, y1={2}, y2={3}, y3={4}, y4={5}", ch_now(), x, y1, y2, y3, y4);
+    ch_println("t={0}, x={1}, y1={2}, y2={3}, y3={4}, y4={5}", ch_now(), x, y1, y2, y3, y4);
     io.out = (y1 == 0x1FDB975300_h48
            && y2 == 0xDCBA9800_h32
            && y3 == 0x7F6E5D4_h32
@@ -227,7 +227,7 @@ struct Dogfood {
 
     //auto a = ch_delay(0xFEDCBA98_h, 3);
     //auto e = ch_case(ch_now(), 2*3-1, 0xFEDCBA98_h)(a);
-    //ch_print("t={0}, a={1}, e={2}", ch_now(), a, e);
+    //ch_println("t={0}, a={1}, e={2}", ch_now(), a, e);
     //io.out = (a == e);
     //io.out = true;
   }

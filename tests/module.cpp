@@ -247,7 +247,7 @@ struct MultiClk {
     y->next = io.in;
     io.out = x + y;
 
-    //ch_print("{0}: clk={1}, rst={2}, in={3}, x={4}, y={5}, out={6}", ch_now(), ch_clock(), ch_reset(), io.in, x, y, io.out);
+    //ch_println("{0}: clk={1}, rst={2}, in={3}, x={4}, y={5}, out={6}", ch_now(), ch_clock(), ch_reset(), io.in, x, y, io.out);
   }
 };
 
@@ -265,7 +265,7 @@ struct CustomClk {
     x->next = x + 1;
     io.out = x;
 
-    //ch_print("{0}: clk={1}, rst={2}, in={3}, out={4}", ch_now(), ch_clock(), ch_reset(), io.in, io.out);
+    //ch_println("{0}: clk={1}, rst={2}, in={3}, out={4}", ch_now(), ch_clock(), ch_reset(), io.in, io.out);
   }
 };
 
@@ -284,7 +284,7 @@ struct CustomClk2 {
     x->next = x + 1;
     io.out = x;
 
-    //ch_print("{0}: clk={1}, rst={2}, in={3}, out={4}", ch_now(), ch_clock(), reset, io.in, io.out);
+    //ch_println("{0}: clk={1}, rst={2}, in={3}, out={4}", ch_now(), ch_clock(), reset, io.in, io.out);
   }
 };
 

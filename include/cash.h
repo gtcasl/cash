@@ -277,6 +277,7 @@ namespace logic {
   using ch::internal::ch_clone;
   using ch::internal::ch_bind;
   using ch::internal::ch_print;
+  using ch::internal::ch_println;
   using ch::internal::ch_now;
   using ch::internal::ch_assert;
   using ch::internal::ch_tap;  

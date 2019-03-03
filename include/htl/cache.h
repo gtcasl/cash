@@ -316,7 +316,7 @@ struct Cache {
     io.cpu.waitrequest = (state != State::idle);
 
     /*__if (ch_clock()) {
-      ch_print("{0}: state={}, is_hit={}, has_invalid={}, is_dirty={}, hit_idx={}, invalid_idx={}, victim_idx={}, index={}, tag={}, write_data={}, data_en={}, word_en={}, r_mem_write_set={}, mem_rvalid={}, mem_rdata={}, write_data={}, r_cpu_address={}",
+      ch_println("{0}: state={}, is_hit={}, has_invalid={}, is_dirty={}, hit_idx={}, invalid_idx={}, victim_idx={}, index={}, tag={}, write_data={}, data_en={}, word_en={}, r_mem_write_set={}, mem_rvalid={}, mem_rdata={}, write_data={}, r_cpu_address={}",
                ch_now(), state, is_hit, has_invalid, is_dirty, hit_idx, invalid_idx, victim_idx, index, tag, write_data, data_en, word_en, r_mem_write_set, io.mem.readdatavalid, io.mem.readdata, write_data, r_cpu_address);
     };*/
   }

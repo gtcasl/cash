@@ -377,6 +377,10 @@ inline void ch_print(const std::string& format, CH_SLOC) {
   createPrintNode(format, {}, sloc);
 }
 
+inline void ch_println(const std::string& format, CH_SLOC) {
+  createPrintNode(format + '\n', {}, sloc);
+}
+
 #define CH_PRINT_TMPL(a, i, x) typename __T##i
 #define CH_PRINT_ASSERT(a, i, x) static_assert(is_logic_type_v<__T##i>, "invalid type for argument"#i)
 #define CH_PRINT_DECL(a, i, x) const __T##i& arg##i
@@ -386,6 +390,11 @@ inline void ch_print(const std::string& format, CH_SLOC) {
   void ch_print(const std::string& format, CH_FOR_EACH(CH_PRINT_DECL, , CH_SEP_COMMA, __VA_ARGS__), CH_SLOC) { \
     CH_FOR_EACH(CH_PRINT_ASSERT, , CH_SEP_SEMICOLON, __VA_ARGS__); \
     createPrintNode(format, {CH_FOR_EACH(CH_PRINT_ARG, , CH_SEP_COMMA, __VA_ARGS__)}, sloc); \
+  } \
+  template <CH_FOR_EACH(CH_PRINT_TMPL, , CH_SEP_COMMA, __VA_ARGS__)> \
+    void ch_println(const std::string& format, CH_FOR_EACH(CH_PRINT_DECL, , CH_SEP_COMMA, __VA_ARGS__), CH_SLOC) { \
+    CH_FOR_EACH(CH_PRINT_ASSERT, , CH_SEP_SEMICOLON, __VA_ARGS__); \
+    createPrintNode(format + '\n', {CH_FOR_EACH(CH_PRINT_ARG, , CH_SEP_COMMA, __VA_ARGS__)}, sloc); \
   }
 CH_VA_ARGS_MAP(CH_PRINT)
 #undef CH_PRINT_TMPL

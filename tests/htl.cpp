@@ -75,14 +75,14 @@ TEST_CASE("htl", "[htl]") {
       ch_counter<4> a;
       auto e = ch_case<ch_bit<2>>(ch_now(), 11, 1)(9, 0)(7, 3)(5, 2)(3, 1)(0);
       auto e_next = ch_case<ch_bit<2>>(ch_now(), 11, 2)(9, 1)(7, 0)(5, 3)(3, 2)(0);
-      //ch_print("{0}: clk={1}, rst={2}, a={3}, e={4}, a_n={5}, e_n={6}", ch_now(), ch_clock(), ch_reset(), a, e, a_next, e_next);
+      //ch_println("{0}: clk={1}, rst={2}, a={3}, e={4}, a_n={5}, e_n={6}", ch_now(), ch_clock(), ch_reset(), a, e, a_next, e_next);
       return (a.value() == e && a.next() == e_next);
     }, 5);
     TEST([]()->ch_bool {
       ch_counter<5> a;
       auto e = ch_case<ch_bit<3>>(ch_now(), 11, 0)(9, 4)(7, 3)(5, 2)(3, 1)(0);
       auto e_next = ch_case<ch_bit<3>>(ch_now(), 11, 1)(9, 0)(7, 4)(5, 3)(3, 2)(0);
-      //ch_print("{0}: clk={1}, rst={2}, a={3}, e={4}, a_n={5}, e_n={6}", ch_now(), ch_clock(), ch_reset(), a, e, a_next, e_next);
+      //ch_println("{0}: clk={1}, rst={2}, a={3}, e={4}, a_n={5}, e_n={6}", ch_now(), ch_clock(), ch_reset(), a, e, a_next, e_next);
       return (a.value() == e && a.next() == e_next);
     }, 5);
   }

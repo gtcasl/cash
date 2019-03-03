@@ -567,7 +567,6 @@ private:
         }
       }
       std::cout << strbuf.rdbuf();
-      std::cout << std::endl;
     }
   };
 

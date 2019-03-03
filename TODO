@@ -78,7 +78,7 @@ X*** Assignment rule: by constructor assignent is ignored during check
 *** add support for ch_reg implace operators ++(), --(), >>=(), <<=(), &=(), |=(), ^=(), +=(), -=(), *=(), \=()
 *** test ch_shuffle
 *** printing struct, union, enum values using reflection 
-*** allow ch_print() to use __if and __switch 
+*** allow ch_println() to use __if and __switch 
 *** handshking valid/ready signals
 
 - implement ch_call(function, args...) using variadic template to generate modules binding 

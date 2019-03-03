@@ -32,14 +32,14 @@ TEST_CASE("arithmetic", "[arithmetic]") {
       ch_bit<65> a(0x1'ffffffff'00000000_h65);
       auto c = ~a;
       ch_bit<64> d = 0x00000000'ffffffff_h64;
-      //ch_print("c={0}, d={1}", c, d);
+      //ch_println("c={0}, d={1}", c, d);
       return (c == d);
     });
     TEST([]()->ch_bool {
       ch_bit<65> a(0x0'ffffffff'00000000_h65);
       auto c = ~a;
       ch_bit<64> d = 0x00000000'ffffffff_h64;
-      //ch_print("c={0}, d={1}", c, d);
+      //ch_println("c={0}, d={1}", c, d);
       return (c != d);
     });
     TEST([]()->ch_bool {
@@ -129,7 +129,7 @@ TEST_CASE("arithmetic", "[arithmetic]") {
       ch_bit128 x(0x111111100000001111111_h128);
       ch_bit128 y = x >> 64;
       ch_bit128 e = 0x11111_h128;
-      //ch_print("y={0}, e={1}", y, e);
+      //ch_println("y={0}, e={1}", y, e);
       return (y == e);
     });
     TEST([]()->ch_bool {
@@ -140,7 +140,7 @@ TEST_CASE("arithmetic", "[arithmetic]") {
       ch_bit128 x(0x111111100000001111111_h128);
       ch_bit128 y = x << 64;
       ch_bit128 e = 0;
-      //ch_print("y={0}, e={1}", y, e);
+      //ch_println("y={0}, e={1}", y, e);
       return (y != e);
     });
     TEST([]()->ch_bool {
@@ -151,7 +151,7 @@ TEST_CASE("arithmetic", "[arithmetic]") {
       ch_uint128 x(0x111111100000001111111_h128);
       ch_uint128 y = x >> 64;
       ch_uint128 e = 0x11112_h128;
-      //ch_print("y={0}, e={1}", y, e);
+      //ch_println("y={0}, e={1}", y, e);
       return (y < e);
     });
     TEST([]()->ch_bool {
@@ -162,7 +162,7 @@ TEST_CASE("arithmetic", "[arithmetic]") {
       ch_uint128 x(0x111111100000001111111_h128);
       ch_uint128 y = x >> 64;
       ch_uint128 e = 0x11110_h128;
-      //ch_print("y={0}, e={1}", y, e);
+      //ch_println("y={0}, e={1}", y, e);
       return (y > e);
     });
     TEST([]()->ch_bool {
@@ -173,7 +173,7 @@ TEST_CASE("arithmetic", "[arithmetic]") {
       ch_uint128 x(0x111111100000001111111_h128);
       ch_uint128 y = x >> 64;
       ch_uint128 e = 0x11111_h128;
-      //ch_print("y={0}, e={1}", y, e);
+      //ch_println("y={0}, e={1}", y, e);
       return (y <= e);
     });
     TEST([]()->ch_bool {
@@ -188,7 +188,7 @@ TEST_CASE("arithmetic", "[arithmetic]") {
       ch_uint128 x(0x111111100000001111111_h128);
       ch_uint128 y = x >> 64;
       ch_uint128 e = 0x11111_h128;
-      //ch_print("y={0}, e={1}", y, e);
+      //ch_println("y={0}, e={1}", y, e);
       return (y >= e);
     });
     TEST([]()->ch_bool {
@@ -231,21 +231,21 @@ TEST_CASE("arithmetic", "[arithmetic]") {
       ch_int<84> x(0xf11111100000001111111_h84);
       ch_int<84> y = x << 1;
       ch_int<84> e = 0xe22222200000002222222_h84;
-      //ch_print("y={0}, e={1}", y, e);
+      //ch_println("y={0}, e={1}", y, e);
       return (y == e);
     });
     TEST([]()->ch_bool {
       ch_int<84> x(0xf11111100000001111111_h84);
       ch_int<84> y = x << 1;
       ch_int<84> e = 0xe22222200000002222223_h84;
-      //ch_print("y={0}, e={1}", y, e);
+      //ch_println("y={0}, e={1}", y, e);
       return (y < e);
     });
     TEST([]()->ch_bool {
       ch_int<84> x(0xf11111100000001111111_h84);
       ch_int<84> y = x << 1;
       ch_int<84> e = 0xe22222200000002222221_h84;
-      //ch_print("y={0}, e={1}", y, e);
+      //ch_println("y={0}, e={1}", y, e);
       return (y > e);
     });
     TEST([]()->ch_bool {
@@ -319,7 +319,7 @@ TEST_CASE("arithmetic", "[arithmetic]") {
     TEST([]()->ch_bool {
       ch_uint32 a(0x55555555_h);
       auto c = ch_shl<48>(a, 4);
-      //ch_print("c={0}", c);
+      //ch_println("c={0}", c);
       return (c == 0x000555555550_h48);
     });
     TEST([]()->ch_bool {
@@ -467,7 +467,7 @@ TEST_CASE("arithmetic", "[arithmetic]") {
     TEST([]()->ch_bool {
       ch_int32 a(0xd5555555_h);
       auto c = ch_shr<48>(a, 1);
-      //ch_print("c={0}", c);
+      //ch_println("c={0}", c);
       return (c == 0xFFFFEAAAAAAA_h48);
     });
     TEST([]()->ch_bool {
@@ -535,14 +535,14 @@ TEST_CASE("arithmetic", "[arithmetic]") {
       ch_uint4 a(2);
       auto c = ch_uint32(1100_b32) >> a;
       ch_int32 e = 0011_b32;
-      //ch_print("c={0}, e={1}", c, e);
+      //ch_println("c={0}, e={1}", c, e);
       return (c == e);
     });
     TEST([]()->ch_bool {
       ch_uint8 a(5*4);
       auto c = ch_int32(0xf0000000_h) >> a;
       ch_int32 e = 0xffffff00_h;
-      //ch_print("c={0}, e={1}", c, e);
+      //ch_println("c={0}, e={1}", c, e);
       return (c == e);
     });
     TEST([]()->ch_bool {
@@ -563,7 +563,7 @@ TEST_CASE("arithmetic", "[arithmetic]") {
     TEST([]()->ch_bool {
       ch_uint4 a(1010_b);
       auto c = a >> 2;
-      //ch_print("a={0}, c={0}", a, c);
+      //ch_println("a={0}, c={0}", a, c);
       return (c == 0010_b);
     });
     TEST([]()->ch_bool {
@@ -606,13 +606,13 @@ TEST_CASE("arithmetic", "[arithmetic]") {
     TEST([]()->ch_bool {
      ch_uint<128> a(0x10000000000000001_h128);
      auto c = a << 63;
-     //ch_print("{0}: c={1}", ch_now(), c);
+     //ch_println("{0}: c={1}", ch_now(), c);
      return (c == 0x80000000000000008000000000000000_h128);
     });
     TEST([]()->ch_bool {
       ch_uint<128> a(0xf010000000000000000_h128);
       auto c = a >> 63;
-      //ch_print("{0}: c={1}", ch_now(), c);
+      //ch_println("{0}: c={1}", ch_now(), c);
       return (c == 0x1e02_h128);
     });
     TEST([]()->ch_bool {
@@ -658,7 +658,7 @@ TEST_CASE("arithmetic", "[arithmetic]") {
     TEST([]()->ch_bool {
       ch_uint<64> a(0x200000000);
       auto c = ch_shr<1>(a, 33);
-      //ch_print("{0}: c={1}", ch_now(), c);
+      //ch_println("{0}: c={1}", ch_now(), c);
       return (c == 0x1);
     });
     TEST([]()->ch_bool {
@@ -680,28 +680,28 @@ TEST_CASE("arithmetic", "[arithmetic]") {
       ch_uint<148> x(0xf111111000000011111110000000000000000_h148);
       ch_uint<148> y = x >> 128;
       ch_uint<148> e = 0x0000000000000000f1111_h148;
-      //ch_print("y={0}, e={1}", y, e);
+      //ch_println("y={0}, e={1}", y, e);
       return (y == e);
     });
     TEST([]()->ch_bool {
       ch_int<148> x(0xf111111000000011111110000000000000000_h148);
       ch_int<148> y = x >> 128;
       ch_int<148> e = 0xfffffffffffffffffffffffffffffffff1111_h148;
-      //ch_print("y={0}, e={1}", y, e);
+      //ch_println("y={0}, e={1}", y, e);
       return (y == e);
     });
     TEST([]()->ch_bool {
       ch_int<148> x(0xf111111000000011111110000000000000000_h148);
       ch_int<148> y = x >> 124;
       ch_int<148> e = 0xffffffffffffffffffffffffffffffff11111_h148;
-      //ch_print("y={0}, e={1}", y, e);
+      //ch_println("y={0}, e={1}", y, e);
       return (y == e);
     });
     TEST([]()->ch_bool {
       ch_int<65> x(0x10100000001111111_h65);
       ch_int<65> y = x >> 32;
       ch_int<65> e = 0x1ffffffff01000000_h65;
-      //ch_print("y={0}, e={1}", y, e);
+      //ch_println("y={0}, e={1}", y, e);
       return (y == e);
     });
   }
@@ -914,7 +914,7 @@ TEST_CASE("arithmetic", "[arithmetic]") {
       ch_int<102> b(0x335);
       auto c = ch_mul<127>(a, b);
       ch_bit<127> e = -0x156481C8;
-      //ch_print("c={0}, e={1}", c, e);
+      //ch_println("c={0}, e={1}", c, e);
       return (c == e);
     });
     TEST([]()->ch_bool {

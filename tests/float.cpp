@@ -19,7 +19,7 @@ namespace {
       auto c = ch_fmul<Delay>(b, io.lhs);
       auto d = ch_fmul<Delay>(c, a);
       io.out = d;
-      //ch_print("{0}: clk={1}, rst={2}, a={3}, b={4}, c={5}, d={6}", ch_now(), ch_clock(), ch_reset(), a, b, c, d);
+      //ch_println("{0}: clk={1}, rst={2}, a={3}, b={4}, c={5}, d={6}", ch_now(), ch_clock(), ch_reset(), a, b, c, d);
     }
   };
 }
@@ -74,7 +74,7 @@ TEST_CASE("floats", "[floats]") {
     TEST([]()->ch_bool {
       ch_float32 x(0.5f), y(0.5f), z;
       z = ch_fmul<1>(x, y);
-      //ch_print("{0}: clk={1}, rst={2}, z={3}", ch_now(), ch_clock(), ch_reset(), z);
+      //ch_println("{0}: clk={1}, rst={2}, z={3}", ch_now(), ch_clock(), ch_reset(), z);
       return (z == 0x3e800000_h);
     }, 1);
 
@@ -106,7 +106,7 @@ TEST_CASE("floats", "[floats]") {
       ch_float32 x(0.5f), y(0.5f), z, e;
       z = ch_fmul<5>(x, y);
       e = ch_case<ch_float32>(ch_now(), (2+5*2), 0x3e800000_h)(z);
-      //ch_print("{0}: clk={1}, rst={2}, z={3}, e={4}", ch_now(), ch_clock(), ch_reset(), z, e);
+      //ch_println("{0}: clk={1}, rst={2}, z={3}, e={4}", ch_now(), ch_clock(), ch_reset(), z, e);
       return (z == e);
     }, 5);
 
@@ -114,13 +114,13 @@ TEST_CASE("floats", "[floats]") {
       ch_float32 x(0.5f), y(0.5f), z, e;
       z = ch_fadd<7>(x, y);
       e = ch_case<ch_float32>(ch_now(), (2+7*2), 0x3e800000_h)(z);
-      //ch_print("{0}: clk={1}, rst={2}, z={3}, e={4}", ch_now(), ch_clock(), ch_reset(), z, e);
+      //ch_println("{0}: clk={1}, rst={2}, z={3}, e={4}", ch_now(), ch_clock(), ch_reset(), z, e);
       return (z == e);
     }, 7);
 
     TEST([]()->ch_bool {
       ch_float32 a(0.1f);
-      //ch_print("a={0:f}", a);
+      //ch_println("a={0:f}", a);
       return ch_true;
     });
   }

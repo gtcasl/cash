@@ -232,6 +232,8 @@ public:
 protected:
 
   mutable lnodeimpl* impl_;
+  lnode* parent_;
+  lnode* children_;
 
   inline friend bool operator==(const lnode& lhs, const lnode& rhs) {
     return lhs.id() == rhs.id();

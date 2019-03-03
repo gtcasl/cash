@@ -130,7 +130,7 @@ TEST_CASE("proxies", "[proxies]") {
       a.sliceref<2>(0) = 1; // a = 0001
       a.sliceref<2>(1) = 1; // a = 0011
       a.sliceref<2>(2) = 1; // a = 0111
-      //ch_print("c={0}", c);
+      //ch_println("c={0}", c);
       return (c == 1000_b);
     });
     TEST([]()->ch_bool {
@@ -188,7 +188,7 @@ TEST_CASE("proxies", "[proxies]") {
       c.sliceref<8>(68) = b;
       auto w = c | 0x1;
       auto y = w.slice<16>(60);
-      //ch_print("c={0}, w={1}, y={2}", c, w, y);
+      //ch_println("c={0}, w={1}, y={2}", c, w, y);
       return (y == 0xDCBA);
     });
     TEST([]()->ch_bool {
@@ -197,35 +197,35 @@ TEST_CASE("proxies", "[proxies]") {
       c.sliceref<64>(4) = a;
       auto w = c | 0x1;
       auto y = w.slice<64>(4);
-      //ch_print("c={0}, w={1}, y={2}", c, w, y);
+      //ch_println("c={0}, w={1}, y={2}", c, w, y);
       return (y == a);
     });
     TEST([]()->ch_bool {
       ch_bit128 a(0xffff'f333'2222'1111'0000_h128);
       auto b = a.slice<63>(0) | 0x5555;
       ch_bit<63> e = 0x7333'2222'1111'5555_h63;
-      //ch_print("b={0}, e={1}", b, e);
+      //ch_println("b={0}, e={1}", b, e);
       return (b == e);
     });
     TEST([]()->ch_bool {
       ch_bit128 a(0x4440'3333'2222'1111'0000_h128);
       auto b = a.slice<65>(0) | 0x5555;
       ch_bit<65> e = 0x3333'2222'1111'5555_h65;
-      //ch_print("b={0}, e={1}", b, e);
+      //ch_println("b={0}, e={1}", b, e);
       return (b == e);
     });
     TEST([]()->ch_bool {
       ch_bit128 a(0xffff'3333'2222'1111'0000_h128);
       auto b = a.slice<65>(0) | 0x5555;
       ch_bit<65> e = 0x1'3333'2222'1111'5555_h65;
-      //ch_print("b={0}, e={1}", b, e);
+      //ch_println("b={0}, e={1}", b, e);
       return (b == e);
     });
     TEST([]()->ch_bool {
       ch_bit128 a(0xffff'3333'2222'1111'0000_h128);
       auto b = a.slice<65>(4) | 0x555;
       ch_bit<65> e = 0x1f'3333'2222'1111'555_h65;
-      //ch_print("b={0}, e={1}", b, e);
+      //ch_println("b={0}, e={1}", b, e);
       return (b == e);
     });
   }
@@ -245,7 +245,7 @@ TEST_CASE("proxies", "[proxies]") {
       ch_int4 a(1100_b);
       auto c = ch_pad<1>(a);
       ch_int<5> e = 11100_b;
-      //ch_print("c={0}, e={1}", c, e);
+      //ch_println("c={0}, e={1}", c, e);
       return (c == e);
     });
     TEST([]()->ch_bool {
@@ -325,19 +325,19 @@ TEST_CASE("proxies", "[proxies]") {
     TEST([]()->ch_bool {
       ch_bit2 x(0), y(0);
       ch_bind(y, x) = 0101_b;
-      //ch_print("x={0}", x);
+      //ch_println("x={0}", x);
       return (x == 01_b && y == 01_b);
     });
     TEST([]()->ch_bool {
       ch_bit2 x(0), y(0), z(0);
       ch_bind(z, y, x) = 010101_b;
-      //ch_print("x={0}, y={1}, z={2}", x, y, z);
+      //ch_println("x={0}, y={1}, z={2}", x, y, z);
       return (x == 01_b && y == 01_b && z == 01_b);
     });
     TEST([]()->ch_bool {
       ch_bit2 x, y;
       ch_bind(x, y) = ch_cat(01_b, 00_b);
-      //ch_print("x={0}, y={1}", x, y);
+      //ch_println("x={0}, y={1}", x, y);
       return (x == 1 && y == 0);
     });
     TEST([]()->ch_bool {
@@ -348,7 +348,7 @@ TEST_CASE("proxies", "[proxies]") {
     TEST([]()->ch_bool {
       ch_bit16 a(0xabcd_h);
       auto b = a.slice<12>().slice<8>().slice<4>(4);
-      //ch_print("{0}: b={1}", ch_now(), b);
+      //ch_println("{0}: b={1}", ch_now(), b);
       return b == 0xc_h;
     });
     TEST([]()->ch_bool {
@@ -381,7 +381,7 @@ TEST_CASE("proxies", "[proxies]") {
        ch_bit<7> b(0x78);
        auto c = ch_cat(b, a, b, a, b, a);
        ch_bit<120> e = 0xf011112222f011112222f011112222_h120;
-       //ch_print("c={0}, e={1}", c, e);
+       //ch_println("c={0}, e={1}", c, e);
        return (c == e);
     });
     TEST([]()->ch_bool {
@@ -389,7 +389,7 @@ TEST_CASE("proxies", "[proxies]") {
        ch_bit<64> b(0x22222222'11111111_h64);
        auto c = ch_cat(b, a);
        ch_bit<129> e = 0x44444444222222235555555533333333_h129;
-       //ch_print("c={0}, e={1}", c, e);
+       //ch_println("c={0}, e={1}", c, e);
        return (c == e);
     });
     TEST([]()->ch_bool {
@@ -397,7 +397,7 @@ TEST_CASE("proxies", "[proxies]") {
        ch_bit<3> b(0);
        auto c = ch_cat(b, a, b, a, b, a);
        ch_bit<204> e = 0x011112222555555550111122225555555501111222255555555_h204;
-       //ch_print("c={0}, e={1}", c, e);
+       //ch_println("c={0}, e={1}", c, e);
        return (c == e);
     });
     TEST([]()->ch_bool {
@@ -405,7 +405,7 @@ TEST_CASE("proxies", "[proxies]") {
        ch_bit<5> b(0x1f);
        auto c = ch_cat(a.slice<65>(4), b);
        ch_bit<70> e = 0x22224444AAAAAAABF_h70;
-       //ch_print("c={0}, e={1}", c, e);
+       //ch_println("c={0}, e={1}", c, e);
        return (c == e);
     });
     TEST([]()->ch_bool {
@@ -413,7 +413,7 @@ TEST_CASE("proxies", "[proxies]") {
        ch_bit<5> b(0x1f);
        auto c = ch_cat(b, a.slice<65>(4));
        ch_bit<70> e = 0x3E1111222255555555_h70;
-       //ch_print("c={0}, e={1}", c, e);
+       //ch_println("c={0}, e={1}", c, e);
        return (c == e);
     });
   }
