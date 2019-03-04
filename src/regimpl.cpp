@@ -206,6 +206,7 @@ void ch::internal::beginPipe(uint32_t length, const lnode& enable, const std::ve
   CH_TODO();
 }
 
-void ch::internal::endPipe() {
+void ch::internal::endPipe(const lnode& ret) {
+  CH_UNUSED(ret);
   CH_TODO();
 }

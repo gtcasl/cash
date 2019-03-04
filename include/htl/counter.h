@@ -12,16 +12,19 @@ class ch_counter {
 public:
 
   template <typename S, typename I>
-  ch_counter(const ch_bool& incr, const S& step, const I& init) {
+  ch_counter(const ch_bool& incr, const S& step, const I& init, const ch_bool& reset = ch_reset()) {
     incr_ = incr;
     step_ = step;
     init_ = init;
+    reset_ = reset;
     if constexpr (N == 1) {
       value_ = 0;
       next_ = 0;
     } else {
       static_assert(std::is_constructible_v<ch_uint<log2ceil(N)>, I>, "invalid type");
+      ch_pushcd(ch_clock(), reset_);
       ch_reg<ch_uint<log2ceil(N)>> count(init_);
+      ch_popcd();
       if constexpr (ispow2(N)) {
         count->next = ch_sel(incr_, count + step_, count);
       } else {
@@ -58,6 +61,10 @@ public:
     return incr_;
   }
 
+  auto& reset() {
+    return reset_;
+  }
+
 protected:
 
   ch_uint<log2up(N)> value_;
@@ -65,6 +72,7 @@ protected:
   ch_uint<log2up(N)> init_;
   ch_uint<log2up(N)> step_;
   ch_bool incr_;
+  ch_bool reset_;
 };
 
 }

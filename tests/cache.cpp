@@ -22,7 +22,7 @@ TEST_CASE("cache", "[cache]") {
       cache.io.mem.waitrequest = true;
 
       tracer.run([&](ch_tick t)->bool {
-        std::cout << "t" << t
+        /*std::cout << "t" << t
                   << ", cpu_rdata=" << cache.io.cpu.readdata
                   << ", cpu_rvalid=" << cache.io.cpu.readdatavalid
                   << ", cpu_wait=" << cache.io.cpu.waitrequest
@@ -30,7 +30,7 @@ TEST_CASE("cache", "[cache]") {
                   << ", mem_wdata=" << cache.io.mem.writedata
                   << ", mem_read=" << cache.io.mem.read
                   << ", mem_write=" << cache.io.mem.write
-                  << std::endl;
+                  << std::endl;*/
         switch (t) {
         case 0:
           assert(cache.io.cpu.readdatavalid == false);

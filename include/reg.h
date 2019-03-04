@@ -33,7 +33,7 @@ void beginPipe(uint32_t length, const std::vector<int>& bounds);
 
 void beginPipe(uint32_t length, const lnode& enable, const std::vector<int>& bounds);
 
-void endPipe();
+void endPipe(const lnode& ret);
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -302,8 +302,9 @@ auto ch_delayEn(const T& in, const E& enable, uint32_t delay, const I& init, CH_
 template <typename Func, typename... Bs>
 auto ch_pipe(Func&& func, uint32_t length, Bs&&... bounds) {
   beginPipe(length, {std::forward<Bs>(bounds)...});
-  func;
-  endPipe();
+  auto ret = func;
+  endPipe(logic_accessor::data(ret));
+  return ret;
 }
 
 template <typename Func, typename E, typename... Bs>
@@ -311,8 +312,9 @@ auto ch_pipeEn(Func&& func, const E& enable, uint32_t length, Bs&&... bounds) {
   static_assert(is_bit_base_v<E>, "invalid type");
   static_assert(ch_width_v<E> == 1, "invalid size");
   beginPipe(length, logic_accessor::data(enable), {std::forward<Bs>(bounds)...});
-  func;
-  endPipe();
+  auto ret = func;
+  endPipe(logic_accessor::data(ret));
+  return ret;
 }
 
 }

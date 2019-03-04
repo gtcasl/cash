@@ -208,28 +208,23 @@ struct TestAssign {
   }
 };
 
+__struct (dooh_t, (
+  (ch_uint4) a,
+  (ch_uint4) b
+));
+
 struct Dogfood {
   __io (
     __in (ch_uint4) in,
     __out (ch_bool) out
   );
   void describe() {
-    ch_bit<32> x(0xFEDCBA98_h);
-    auto y1 = ch_shl<48>(x, 5);
-    auto y2 = ch_shl<32>(x, 8);
-    auto y3 = ch_shr<32>(x, 5);
-    auto y4 = ch_shr<16>(x, 8);
-    ch_println("t={0}, x={1}, y1={2}, y2={3}, y3={4}, y4={5}", ch_now(), x, y1, y2, y3, y4);
-    io.out = (y1 == 0x1FDB975300_h48
-           && y2 == 0xDCBA9800_h32
-           && y3 == 0x7F6E5D4_h32
-           && y4 == 0xDCBA_h16);
-
-    //auto a = ch_delay(0xFEDCBA98_h, 3);
-    //auto e = ch_case(ch_now(), 2*3-1, 0xFEDCBA98_h)(a);
-    //ch_println("t={0}, a={1}, e={2}", ch_now(), a, e);
-    //io.out = (a == e);
-    //io.out = true;
+    dooh_t x;
+    ch_uint4 b, c;
+    ch_uint4 d;
+    d[1] = 0;
+    ch_vec<ch_uint4, 2> e;
+    io.out = (x.a + b + c + d + e[0] + io.in) > 0;
   }
 };
 
