@@ -21,29 +21,24 @@ lnode::lnode(const sdata_type& value) {
 
 lnode::lnode(uint32_t size,
              const source_location& sloc,
-             const std::string& name,
-             uint32_t var_id) {
-  impl_ = ctx_curr()->create_node<proxyimpl>(
-            ctx_curr()->create_node<undefimpl>(size, sloc),
-            0, size, sloc, name, var_id);
+             const std::string& name) {
+  impl_ = ctx_curr()->create_node<proxyimpl>(size, sloc, name);
 }
 
 lnode::lnode(const lnode& src,
              const source_location& sloc,
-             const std::string& name,
-             uint32_t var_id) {
+             const std::string& name) {
   impl_ = src.impl()->ctx()->create_node<proxyimpl>(
-            src, 0, src.size(), sloc, name, var_id);
+              src, 0, src.size(), sloc, name);
 }
 
 lnode::lnode(uint32_t size,
              const lnode& src,
              uint32_t src_offset,
              const source_location& sloc,
-             const std::string& name,
-             uint32_t var_id) {
+             const std::string& name) {
   impl_ = src.impl()->ctx()->create_node<refimpl>(
-            src, src_offset, size, sloc, name, var_id);
+            src, src_offset, size, sloc, name);
 }
 
 uint32_t lnode::id() const {
@@ -74,17 +69,12 @@ void lnode::write(uint32_t dst_offset,
   impl_->write(dst_offset, src, src_offset, length, sloc);
 }
 
-uint32_t lnode::var_id() const {
-  assert(impl_);
-  return impl_->var_id();
-}
-
 const source_location& lnode::sloc() const {
   assert(impl_);
   return impl_->sloc();
 }
 
-lnodeimpl* lnode::clone(const source_location& sloc) const {
+lnode lnode::clone(const source_location& sloc) const {
   assert(impl_);
   return impl_->slice(0, impl_->size(), sloc);
 }

@@ -198,19 +198,8 @@ bool firrtlwriter::print_decl(std::ostream& out,
     out << " : ";
     this->print_dtype(out, node);
     auto& sloc = node->sloc();
-    if (!sloc.empty() || node->var_id() != 0) {
-      out << " @[";
-      if (node->var_id() != 0) {
-        out << "v" << node->var_id();
-        if (!sloc.empty()) {
-          out << " - ";
-        }
-      }
-      if (!sloc.empty()) {
-        out << (sloc.file() ? sloc.file() : "unknown")
-             << "(" << sloc.line() << ")";
-      }
-      out << "]";
+    if (!sloc.empty()) {
+      out << " @[" << sloc << "]";
     }
     out << std::endl;
     return true;

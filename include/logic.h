@@ -6,17 +6,17 @@
 namespace ch {
 namespace internal {  
 
-lnodeimpl* createAluNode(ch_op op, uint32_t size, bool is_signed, const lnode& in,
-                         const source_location& sloc);
+lnode createAluNode(ch_op op, uint32_t size, bool is_signed, const lnode& in,
+                    const source_location& sloc);
 
-lnodeimpl* createAluNode(ch_op op, uint32_t size, bool is_signed, const lnode& lhs,
-                         const lnode& rhs, const source_location& sloc);
+lnode createAluNode(ch_op op, uint32_t size, bool is_signed, const lnode& lhs,
+                    const lnode& rhs, const source_location& sloc);
 
-lnodeimpl* createRotateNode(const lnode& next, uint32_t dist, bool right,
-                            const source_location& sloc);
+lnode createRotateNode(const lnode& next, uint32_t dist, bool right,
+                       const source_location& sloc);
 
-lnodeimpl* createShuffleNode(const lnode& in, const std::vector<unsigned>& indices,
-                             const source_location& sloc);
+lnode createShuffleNode(const lnode& in, const std::vector<unsigned>& indices,
+                        const source_location& sloc);
 
 void registerTap(const lnode& node,
                  const std::string& name,
@@ -48,9 +48,13 @@ public:
 
   explicit logic_buffer(const lnode& node);
 
-  logic_buffer(uint32_t size, const source_location& sloc, const std::string& name = "");
+  logic_buffer(uint32_t size,
+               const source_location& sloc,
+               const std::string& name = "");
 
-  logic_buffer(const lnode& data, const source_location& sloc, const std::string& name = "");
+  logic_buffer(const lnode& data,
+               const source_location& sloc,
+               const std::string& name = "");
 
   logic_buffer(uint32_t size,
                const logic_buffer& buffer,
@@ -65,6 +69,8 @@ public:
   logic_buffer(logic_buffer&& other);
 
   virtual ~logic_buffer() {}
+
+  logic_buffer& operator=(const sdata_type& other);
 
   logic_buffer& operator=(const logic_buffer& other);
 
@@ -118,6 +124,12 @@ public:
     return logic_buffer(std::move(obj.buffer()));
   }
 
+  template <typename U>
+  static void copy(U& dst, const sdata_type& src) {
+    assert(ch_width_v<U> == src.size());
+    dst.buffer() = src;
+  }
+
   template <typename U, typename V>
   static void copy(U& dst, const V& src) {
     static_assert(ch_width_v<U> == ch_width_v<V>, "invalid size");
@@ -149,6 +161,16 @@ public:
     assert(obj.buffer().size() == ch_width_v<T>);
     auto data = obj.buffer().data().clone(sloc);
     return T(logic_buffer(data, sloc));
+  }
+
+  template <typename R, typename T>
+  static auto slice(T& obj, size_t start, const source_location& sloc) {
+    static_assert(ch_width_v<R> <= ch_width_v<T>, "invalid size");
+    assert(start + ch_width_v<R> <= ch_width_v<T>);
+    assert(obj.buffer().size() == ch_width_v<T>);
+    logic_buffer buffer(ch_width_v<R>, sloc);
+    buffer.write(0, obj.buffer().data(), start, ch_width_v<R>, sloc);
+    return R(buffer);
   }
 
   template <typename R, typename T>
@@ -599,10 +621,8 @@ CH_LOGIC_OPERATOR(logic_op_slice)
   std::add_const_t<R> slice(size_t start = 0, CH_SLOC) const {
     static_assert(ch_width_v<R> <= N, "invalid size");
     assert(start + ch_width_v<R> <= N);
-    R ret(logic_buffer(ch_width_v<R>, sloc));
     auto& self = reinterpret_cast<const Derived&>(*this);
-    logic_accessor::write(ret, 0, self, start, ch_width_v<R>, sloc);
-    return ret;
+    return logic_accessor::slice<R>(self, start, sloc);
   }
 
   template <unsigned M>
@@ -622,6 +642,8 @@ CH_LOGIC_OPERATOR(logic_op_slice)
 
   template <typename R>
   auto sliceref(size_t start = 0, CH_SLOC) {
+    static_assert(ch_width_v<R> <= N, "invalid size");
+    assert(start + ch_width_v<R> <= N);
     auto& self = reinterpret_cast<const Derived&>(*this);
     return logic_accessor::ref<R>(self, start, sloc);
   }

@@ -44,6 +44,18 @@ public:
 
   ch_uint(ch_uint&& other) : base(std::move(other)) {}
 
+  template <typename U,
+            CH_REQUIRE_0(std::is_integral_v<U>)>
+  ch_uint& operator=(const U& other) {
+    base::operator=(other);
+    return *this;
+  }
+
+  ch_uint& operator=(const ch_scbit<N>& other) {
+    base::operator=(other);
+    return *this;
+  }
+
   ch_uint& operator=(const ch_uint& other) {
     base::operator=(other);
     return *this;

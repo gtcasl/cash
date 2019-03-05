@@ -6,7 +6,6 @@
 #define CH_LNODE_NAME(n) #n,
 #define CH_LNODE_INDEX(op) ((int)op)
 #define CH_LNODE_ENUM(m) \
-  m(undef) \
   m(lit) \
   m(proxy) \
   m(input) \
@@ -94,10 +93,6 @@ public:
     return size_;
   }
 
-  uint32_t var_id() const {
-    return var_id_;
-  }
-
   size_t hash() const;
 
   const source_location& sloc() const {
@@ -138,8 +133,7 @@ protected:
             lnodetype type,
             uint32_t size,
             const source_location& sloc,
-            const std::string& name = "",
-            uint32_t var_id = 0);
+            const std::string& name = "");
 
   virtual ~lnodeimpl();
 
@@ -148,7 +142,6 @@ protected:
   source_location sloc_;
   const uint32_t id_;
   const lnodetype type_;
-  const uint32_t var_id_;
   mutable size_t hash_;
 
 private:
@@ -157,14 +150,6 @@ private:
   uint32_t size_;
 
   friend class context;
-};
-
-class undefimpl : public lnodeimpl {
-public:
-
-  undefimpl(context* ctx, uint32_t size, const source_location& sloc);  
-
-  lnodeimpl* clone(context* ctx, const clone_map& ) const override;
 };
 
 const char* to_string(lnodetype type);

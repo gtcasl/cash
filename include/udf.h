@@ -18,9 +18,9 @@ refcounted* createUDF(const std::type_index& signature,
                       const std::initializer_list<uint32_t>& inputs_size,
                       udf_base* udf);
 
-lnodeimpl* createUDFNode(refcounted* handle,
-                         const std::vector<lnode>& inputs,
-                         const source_location& sloc);
+lnode createUDFNode(refcounted* handle,
+                    const std::vector<lnode>& inputs,
+                    const source_location& sloc);
 
 ///////////////////////////////////////////////////////////////////////////////
 

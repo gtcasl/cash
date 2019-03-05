@@ -5,24 +5,18 @@
 
 using namespace ch::internal;
 
-static uint32_t make_id() {
-  static uint32_t s_id(0);
-  uint32_t var_id = ++s_id;
-  return var_id;
-}
-
 logic_buffer::logic_buffer(const lnode& node) : node_(node) {}
 
 logic_buffer::logic_buffer(uint32_t size,
                            const source_location& sloc,
                            const std::string& name)
-  : node_(size, sloc, name, make_id())
+  : node_(size, sloc, name)
 {}
 
 logic_buffer::logic_buffer(const lnode& data,
                            const source_location& sloc,
                            const std::string& name)
-  : node_(data, sloc, name, make_id())
+  : node_(data, sloc, name)
 {}
 
 logic_buffer::logic_buffer(uint32_t size,
@@ -34,14 +28,13 @@ logic_buffer::logic_buffer(uint32_t size,
            buffer.data(),
            offset,
            sloc,
-           (name.empty() ? "" : stringf("%s_%s", buffer.data().name().c_str(), name.c_str())),
-           make_id()) {
+           (name.empty() ? "" : stringf("%s_%s", buffer.data().name().c_str(), name.c_str()))) {
   assert(offset + size <= buffer.size());
 }
 
 logic_buffer::logic_buffer(const logic_buffer& other,
                            const source_location& sloc)
-  : node_(other.data(), sloc, other.data().name(), make_id())
+  : node_(other.data(), sloc, other.data().name())
 {}
 
 logic_buffer::logic_buffer(const logic_buffer& other)
@@ -51,6 +44,11 @@ logic_buffer::logic_buffer(const logic_buffer& other)
 logic_buffer::logic_buffer(logic_buffer&& other)
   : node_(std::move(other.node_))
 {}
+
+logic_buffer& logic_buffer::operator=(const sdata_type& other) {
+  this->write(0, other, 0, other.size(), source_location());
+  return *this;
+}
 
 logic_buffer& logic_buffer::operator=(const logic_buffer& other) {
   this->write(0, other.data(), 0, other.size(), source_location());

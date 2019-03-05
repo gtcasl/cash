@@ -55,12 +55,12 @@ public:
          bool force_logic_ram,
          const source_location& sloc);
 
-  lnodeimpl* aread(const lnode& addr,
-                   const source_location& sloc) const;
+  lnode aread(const lnode& addr,
+              const source_location& sloc) const;
 
-  lnodeimpl* sread(const lnode& addr,
-                   const lnode& enable,
-                   const source_location& sloc) const;
+  lnode sread(const lnode& addr,
+              const lnode& enable,
+              const source_location& sloc) const;
 
   void write(const lnode& addr,
              const lnode& value,

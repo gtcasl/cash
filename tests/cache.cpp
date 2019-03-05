@@ -6,7 +6,17 @@ using namespace ch::htl::cache;
 TEST_CASE("cache", "[cache]") {
   SECTION("basic", "[basic]") {
     TESTX([]()->bool {
+      //  blocks=64, ways=4, sets=16
       using Cfg = Config<512, 8, 4, 20, 32, 8>;
+
+      auto cpu_address = [&](uint32_t tag, uint32_t index, uint32_t offset)  {
+        return offset | (index << Cfg::offset_bits) | (tag << (Cfg::offset_bits + Cfg::index_bits));
+      };
+
+      auto mem_address = [&](uint32_t tag, uint32_t index, uint32_t offset)  {
+        return cpu_address(tag, index, offset) / Cfg::data_sel;
+      };
+
       ch_device<Cache<Cfg>> cache;
 
       ch_toVerilog("cache.v", cache);
@@ -43,7 +53,7 @@ TEST_CASE("cache", "[cache]") {
 
         case 2:
           assert(cache.io.cpu.waitrequest == false);
-          cache.io.cpu.address = 4;
+          cache.io.cpu.address = cpu_address(1,1,0);
           cache.io.cpu.worden = 0xf;
           cache.io.cpu.read = true;
           break;
@@ -56,7 +66,7 @@ TEST_CASE("cache", "[cache]") {
 
         case 6:
           assert(cache.io.mem.read == true);
-          assert(cache.io.mem.address == 2);
+          assert(cache.io.mem.address == mem_address(1,1,0));
           break;
 
         case 8:
@@ -83,7 +93,7 @@ TEST_CASE("cache", "[cache]") {
         // read hit
 
         case 16:
-          cache.io.cpu.address = 4;
+          cache.io.cpu.address = cpu_address(1,1,0);
           cache.io.cpu.worden = 0xf;
           cache.io.cpu.read = true;
           break;
@@ -103,7 +113,7 @@ TEST_CASE("cache", "[cache]") {
 
         case 22:
           assert(cache.io.cpu.waitrequest == false);
-          cache.io.cpu.address = 4;
+          cache.io.cpu.address = cpu_address(1,1,0);
           cache.io.cpu.worden = 0x1;
           cache.io.cpu.writedata = 16;
           cache.io.cpu.write = true;
@@ -122,7 +132,7 @@ TEST_CASE("cache", "[cache]") {
 
         case 28:
           assert(cache.io.cpu.waitrequest == false);
-          cache.io.cpu.address = 4;
+          cache.io.cpu.address = cpu_address(1,1,0);
           cache.io.cpu.worden = 0xf;
           cache.io.cpu.read = true;
           break;
@@ -145,7 +155,7 @@ TEST_CASE("cache", "[cache]") {
 
         case 34:
           assert(cache.io.cpu.waitrequest == false);
-          cache.io.cpu.address = 2 * Cfg::num_sets + 4;;
+          cache.io.cpu.address = cpu_address(2,1,0);
           cache.io.cpu.worden = 0x1;
           cache.io.cpu.writedata = 16;
           cache.io.cpu.write = true;
@@ -159,7 +169,7 @@ TEST_CASE("cache", "[cache]") {
 
         case 38:
           assert(cache.io.mem.read == true);
-          assert(cache.io.mem.address == (2 * Cfg::num_sets + 4)/2);
+          assert(cache.io.mem.address == mem_address(2,1,0));
           break;
 
         case 40:
@@ -185,7 +195,7 @@ TEST_CASE("cache", "[cache]") {
 
         case 48:
           assert(cache.io.cpu.waitrequest == false);
-          cache.io.cpu.address = 4 * Cfg::num_sets + 4;
+          cache.io.cpu.address = cpu_address(3,1,0);
           cache.io.cpu.worden = 0xf;
           cache.io.cpu.read = true;
           break;
@@ -198,7 +208,7 @@ TEST_CASE("cache", "[cache]") {
 
         case 52:
           assert(cache.io.mem.read == true);
-          assert(cache.io.mem.address == (4 * Cfg::num_sets + 4)/2);
+          assert(cache.io.mem.address == mem_address(3,1,0));
           break;
 
         case 54:
@@ -226,7 +236,7 @@ TEST_CASE("cache", "[cache]") {
 
         case 62:
           assert(cache.io.cpu.waitrequest == false);
-          cache.io.cpu.address = 8 * Cfg::num_sets + 4;
+          cache.io.cpu.address = cpu_address(4,1,0);
           cache.io.cpu.worden = 0x1;
           cache.io.cpu.writedata = 16;
           cache.io.cpu.write = true;
@@ -240,7 +250,7 @@ TEST_CASE("cache", "[cache]") {
 
         case 66:
           assert(cache.io.mem.read == true);
-          assert(cache.io.mem.address == (8 * Cfg::num_sets + 4)/2);
+          assert(cache.io.mem.address == mem_address(4,1,0));
           break;
 
         case 68:
@@ -266,7 +276,7 @@ TEST_CASE("cache", "[cache]") {
 
         case 82:
           assert(cache.io.cpu.waitrequest == false);
-          cache.io.cpu.address = 16 * Cfg::num_sets + 4;
+          cache.io.cpu.address = cpu_address(5,1,0);
           cache.io.cpu.worden = 0x1;
           cache.io.cpu.writedata = 16;
           cache.io.cpu.write = true;
@@ -287,7 +297,7 @@ TEST_CASE("cache", "[cache]") {
 
         case 88:
           assert(cache.io.mem.read == true);
-          assert(cache.io.mem.address == (16 * Cfg::num_sets + 4)/2);
+          assert(cache.io.mem.address == mem_address(5,1,0));
           cache.io.mem.waitrequest = true;
           break;
 
@@ -314,7 +324,7 @@ TEST_CASE("cache", "[cache]") {
 
         case 98:
           assert(cache.io.cpu.waitrequest == false);
-          cache.io.cpu.address = 32 * Cfg::num_sets + 4;
+          cache.io.cpu.address = cpu_address(6,1,0);
           cache.io.cpu.worden = 0x1;
           cache.io.cpu.writedata = 16;
           cache.io.cpu.write = true;
@@ -328,7 +338,7 @@ TEST_CASE("cache", "[cache]") {
 
         case 102:
           assert(cache.io.mem.read == true);
-          assert(cache.io.mem.address == (32 * Cfg::num_sets + 4)/2);
+          assert(cache.io.mem.address == mem_address(6,1,0));
           break;
 
         case 104:

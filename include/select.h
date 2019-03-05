@@ -23,7 +23,7 @@ public:
     stmts_.emplace_back(pred, value);
   }
   
-  lnodeimpl* emit(const lnode& value);
+  lnode emit(const lnode& value);
 
   auto sloc() const {
     return sloc_;

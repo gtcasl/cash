@@ -11,12 +11,12 @@ namespace cache {
 
 using namespace ch::logic;
 
-template <unsigned CacheSize,
-          unsigned BlockSize,
-          unsigned NumWays,
-          unsigned AddrBits,
-          unsigned DataBits,
-          unsigned WordBits>
+template <unsigned CacheSize, // cache size (Bytes)
+          unsigned BlockSize, // block size (Bytes)
+          unsigned NumWays,   // number of ways
+          unsigned AddrBits,  // cpu address bus bits
+          unsigned DataBits,  // cpu data bus bits
+          unsigned WordBits>  // cpu data word select bits
 struct Config {
   static_assert(ispow2(CacheSize), "invalid CacheSize");
   static_assert(ispow2(BlockSize), "invalid BlockSize");
@@ -228,6 +228,7 @@ struct Cache {
     auto is_hit        = ch_orr(h_hit_idx);
     auto has_invalid   = ch_delay(~ch_andr(valid_set));
     auto is_dirty      = ch_orr(ch_delay(dirty_set) & h_victim_idx);
+
     __if (is_hit) {
       plru.io.h_way_idx = h_hit_idx;
     }__elif (has_invalid) {
@@ -240,6 +241,8 @@ struct Cache {
     __switch (state)
     __case (State::idle) {
       r_cpu_readdatavalid->next = false;
+      r_mem_read->next = false;
+      r_mem_write->next = false;
       __if (io.cpu.read || io.cpu.write) {
         //--
         r_cpu_address->next   = io.cpu.address;
@@ -316,8 +319,8 @@ struct Cache {
     io.cpu.waitrequest = (state != State::idle);
 
     /*__if (ch_clock()) {
-      ch_println("{0}: state={}, is_hit={}, has_invalid={}, is_dirty={}, hit_idx={}, invalid_idx={}, victim_idx={}, index={}, tag={}, write_data={}, data_en={}, word_en={}, r_mem_write_set={}, mem_rvalid={}, mem_rdata={}, write_data={}, r_cpu_address={}",
-               ch_now(), state, is_hit, has_invalid, is_dirty, hit_idx, invalid_idx, victim_idx, index, tag, write_data, data_en, word_en, r_mem_write_set, io.mem.readdatavalid, io.mem.readdata, write_data, r_cpu_address);
+      ch_println("{0}: state={}, cpu_wr={}, index={}, offset={}, tag={}, cpu_wdata={}, cpu_wen={}, is_hit={}, has_invalid={}, is_dirty={}, hit_idx={}, invalid_idx={}, victim_idx={}, index={}, tag={}, write_data={}, data_en={}, word_en={}, r_mem_write_set={}, mem_rvalid={}, mem_rdata={}, write_data={}",
+               ch_now(), state, r_cpu_write, index, offset, tag, r_cpu_writedata, r_cpu_worden, is_hit, has_invalid, is_dirty, h_hit_idx, h_invalid_idx, h_victim_idx, index, tag, write_data, data_en, word_en, r_mem_write_set, io.mem.readdatavalid, io.mem.readdata, write_data);
     };*/
   }
 };

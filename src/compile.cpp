@@ -104,7 +104,6 @@ void compiler::optimize() {
   this->dead_code_elimination();
   dce_total = tracker.deleted();
 
-  this->check_undefs();
   this->build_node_map();
 
   for (;;) {
@@ -170,10 +169,12 @@ bool compiler::dead_code_elimination() {
 
   bool changed = false;
 
+  std::vector<lnodeimpl*> undefs;
   ordered_set<lnodeimpl*> live_nodes;
   std::unordered_map<proxyimpl*, std::unordered_set<uint32_t>> used_proxy_sources;
   std::unordered_map<uint32_t, std::unordered_set<proxyimpl*>> proxy_users;
 
+  //--
   auto remove_unused_proxy_sources = [&](proxyimpl* proxy, uint32_t src_idx) {
     // gather unused source positions
     std::vector<interval_t> unused_pos;
@@ -242,7 +243,7 @@ bool compiler::dead_code_elimination() {
       }
 
       // gather used proxy sources
-      bool new_proxy_source = false;      
+      bool is_new_proxy_src = false;
       if (type_proxy == src_impl->type()) {
         auto src_proxy = reinterpret_cast<proxyimpl*>(src_impl);        
         auto& uses = used_proxy_sources[src_proxy];
@@ -257,7 +258,7 @@ bool compiler::dead_code_elimination() {
                 if (range.src_offset < curr_end && src_end > curr.dst_offset) {
                   auto ret = uses.insert(curr.src_idx);
                   if (ret.second) {
-                    new_proxy_source = true;
+                    is_new_proxy_src = true;
                   }
                 }
               }
@@ -267,7 +268,7 @@ bool compiler::dead_code_elimination() {
           for (auto& curr : src_proxy->ranges()) {
             auto ret = uses.insert(curr.src_idx);
             if (ret.second) {
-              new_proxy_source = true;
+              is_new_proxy_src = true;
             }
           }
         }
@@ -275,9 +276,16 @@ bool compiler::dead_code_elimination() {
 
       // add to live list
       auto ret = live_nodes.insert(src_impl);
-      if (ret.second || new_proxy_source) {
+      if (ret.second || is_new_proxy_src) {
         // we have a new live node, add it to working set
         working_set.emplace_back(src_impl);
+
+        // check for undefined proxies
+        if (!is_new_proxy_src
+         && type_proxy == src_impl->type()
+         && !reinterpret_cast<proxyimpl*>(src_impl)->check_fully_initialized()) {
+          undefs.push_back(src_impl);
+        }
       }
     }
     working_set.pop_front();
@@ -304,6 +312,23 @@ bool compiler::dead_code_elimination() {
     } else {
       ++it;
     }
+  }
+
+  // check for un-initialized nodes
+  if (!undefs.empty()) {
+#define LCOV_EXCL_START
+    bool found = false;
+    for (auto node : undefs) {
+      auto proxy = reinterpret_cast<proxyimpl*>(node);
+      if (proxy->check_fully_initialized())
+        continue;
+      fprintf(stderr, "error: un-initialized variable %s\n", proxy->debug_info().c_str());
+      found = true;
+    }
+    if (found) {
+      std::abort();
+    }
+#define LCOV_EXCL_END
   }
 
   assert(ctx_->nodes().size() == live_nodes.size());
@@ -978,33 +1003,6 @@ void compiler::map_delete(lnodeimpl* node) {
     node_map_[src.id()].erase(&src);
   }
   node_map_.erase(it);
-}
-
-void compiler::check_undefs() {
-  // check for un-initialized nodes
-  auto& undefs = ctx_->undefs();
-  if (undefs.size()) {
-#define LCOV_EXCL_START
-    ctx_->dump_ast(std::cerr);
-    for (auto undef : undefs) {
-      for (auto node : ctx_->nodes()) {
-        auto ret = std::find_if(
-          node->srcs().begin(),
-          node->srcs().end(),
-          [undef](const lnode& x)->bool { return x.id() == undef->id(); }
-        );
-        if (ret != node->srcs().end()) {
-          if (platform::self().cflags() & cflags::dump_ast) {
-            ctx_->dump_ast(std::cerr);
-          }
-          fprintf(stderr, "error: un-initialized variable %s\n", node->debug_info().c_str());
-          break;
-        }
-      }
-    }
-    std::abort();
-#define LCOV_EXCL_END
-  }
 }
 
 void compiler::create_merged_context(context* ctx) {

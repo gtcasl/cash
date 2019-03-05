@@ -7,7 +7,9 @@ namespace internal {
 
 using fvoid_t = std::function<void ()>;
 
-void begin_branch(lnodeimpl* key, const source_location& sloc);
+void begin_branch(const source_location& sloc);
+
+void begin_branch(const lnode& key, const source_location& sloc);
 
 void end_branch();
 
@@ -19,7 +21,7 @@ class if_t {
 public:
 
   if_t(const source_location& sloc) {
-    begin_branch(nullptr, sloc);
+    begin_branch(sloc);
   }
 
   ~if_t() {

@@ -83,7 +83,7 @@ bool aluimpl::should_resize_opds() const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-lnodeimpl* ch::internal::createAluNode(
+lnode ch::internal::createAluNode(
     ch_op op,
     uint32_t size,
     bool is_signed,
@@ -92,7 +92,7 @@ lnodeimpl* ch::internal::createAluNode(
   return in.impl()->ctx()->create_node<aluimpl>(op, size, is_signed, in.impl(), sloc);
 }
 
-lnodeimpl* ch::internal::createAluNode(
+lnode ch::internal::createAluNode(
     ch_op op,
     uint32_t size,
     bool is_signed,

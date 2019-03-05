@@ -39,6 +39,8 @@ public:
         && (this->src(0).size() == this->size());
   }
 
+  bool check_fully_initialized() const;
+
   const range_t& range(uint32_t index) const {
     return ranges_[index];
   }
@@ -81,22 +83,19 @@ protected:
   proxyimpl(context* ctx,
             uint32_t size,
             const source_location& sloc,
-            const std::string& name = "",
-            uint32_t var_id = 0);
+            const std::string& name = "");
 
   proxyimpl(context* ctx,
             const lnode& src,
             const source_location& sloc,
-            const std::string& name = "",
-            uint32_t var_id = 0);
+            const std::string& name = "");
 
   proxyimpl(context* ctx,
             const lnode& src,
             uint32_t offset,
             uint32_t length,
             const source_location& sloc,
-            const std::string& name = "",
-            uint32_t var_id = 0);
+            const std::string& name = "");
 
   std::vector<range_t> ranges_;
 
@@ -121,8 +120,7 @@ protected:
           uint32_t offset,
           uint32_t length,
           const source_location& sloc,
-          const std::string& name = "",
-          uint32_t var_id = 0);
+          const std::string& name = "");
 
   friend class context;
 };

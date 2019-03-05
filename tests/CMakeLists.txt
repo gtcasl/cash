@@ -2,6 +2,7 @@
 # set source files
 set(TEST_SOURCES
     common.cpp
+    main.cpp
     static.cpp
     basic.cpp
     system.cpp
@@ -19,10 +20,9 @@ set(TEST_SOURCES
     float.cpp
     udf.cpp
     fixed.cpp
-    complex.cpp
-    cache.cpp
+    complex.cpp    
     router.cpp
-    main.cpp
+    cache.cpp
 )
 
 # copy resource directory

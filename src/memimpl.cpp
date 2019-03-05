@@ -374,13 +374,13 @@ memory::memory(uint32_t data_width,
   impl_ = ctx_curr()->create_node<memimpl>(data_width, num_items, init_data, is_logic_rom, sloc);
 }
 
-lnodeimpl* memory::aread(const lnode& addr, const source_location& sloc) const {
+lnode memory::aread(const lnode& addr, const source_location& sloc) const {
   return impl_->create_arport(addr.impl(), sloc);
 }
 
-lnodeimpl* memory::sread(const lnode& addr,
-                         const lnode& enable,
-                         const source_location& sloc) const {
+lnode memory::sread(const lnode& addr,
+                    const lnode& enable,
+                    const source_location& sloc) const {
   auto cd = ctx_curr()->current_cd(sloc);
   return impl_->create_srport(cd, addr.impl(), enable.impl(), sloc);
 }

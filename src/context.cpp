@@ -239,7 +239,7 @@ context::context(const std::string& name, context* parent)
   , sys_clk_(nullptr)
   , sys_reset_(nullptr)
   , sys_time_(nullptr)
-  , nodes_(&undefs_, &literals_, &proxies_, &inputs_, &outputs_, &alus_,
+  , nodes_(&literals_, &proxies_, &inputs_, &outputs_, &alus_,
            &cdomains_, &regs_, &mems_, &marports_, &msrports_, &mwports_,
            &bindings_, &bindports_, &taps_, &gtaps_, &udfseqs_, &udfcombs_)
   , snodes_(&regs_, &msrports_, &mwports_, &udfseqs_)
@@ -286,9 +286,6 @@ void context::add_node(lnodeimpl* node) {
   //--
   auto type = node->type();
   switch (type) {
-  case type_undef:
-    undefs_.emplace_back(node);
-    break;
   case type_lit:
     literals_.emplace_back(node);
     break;
@@ -364,9 +361,6 @@ void context::delete_node(lnodeimpl* node) {
   // remove from list
   auto type = node->type();
   switch (type) {
-  case type_undef:
-    undefs_.remove(node);
-    break;
   case type_lit:
     literals_.remove(node);
     break;
@@ -496,9 +490,7 @@ outputimpl* context::create_output(uint32_t size,
       return output;
     }
   }
-  auto src = this->create_node<proxyimpl>(
-              this->create_node<undefimpl>(size, sloc),
-                0, size, sloc, name, 0);
+  auto src = this->create_node<proxyimpl>(size, sloc, name);
   auto value = smart_ptr<sdata_type>::make(size);
   return this->create_node<outputimpl>(src, value, name, sloc);
 }

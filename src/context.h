@@ -11,7 +11,6 @@ namespace internal {
 class lnode;
 class nodelist;
 class lnodeimpl;
-class undefimpl;
 class proxyimpl;
 class aluimpl;
 class litimpl;
@@ -94,10 +93,6 @@ public:
 
   auto& nodes() {
     return nodes_;
-  }
-
-  auto& undefs() const {
-    return undefs_;
   }
 
   auto& proxies() const {
@@ -294,7 +289,6 @@ protected:
   inputimpl*  sys_reset_;
   timeimpl*   sys_time_;
   
-  std::list<lnodeimpl*>   undefs_;
   std::list<lnodeimpl*>   literals_;
   std::list<lnodeimpl*>   proxies_;
   std::list<lnodeimpl*>   inputs_;

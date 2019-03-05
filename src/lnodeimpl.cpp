@@ -75,14 +75,12 @@ lnodeimpl::lnodeimpl(context* ctx,
                      lnodetype type,
                      uint32_t size,                     
                      const source_location& sloc,
-                     const std::string& name,
-                     uint32_t var_id)
+                     const std::string& name)
   : ctx_(ctx)
   , name_(name.empty() ? to_string(type) : name)
   , sloc_(sloc)
   , id_(ctx->node_id())
-  , type_(type)    
-  , var_id_(var_id)
+  , type_(type)
   , hash_(0)
   , size_(size)
 {}
@@ -170,24 +168,13 @@ void lnodeimpl::print(std::ostream& out) const {
 }
 
 std::string lnodeimpl::debug_info() const {
-  return stringf("%s%d (#%d) (@var%d) in module '%s (#%d)'  (%s:%d:%d)",
+  return stringf("'%s#%d (%d)' in module '%s (%d)' (%s:%d:%d)",
                  name_.c_str(),
                  size_,
                  id_,
-                 var_id_,
                  ctx_->name().c_str(),
                  ctx_->id(),
                  sloc_.file(),
                  sloc_.line(),
                  sloc_.index());
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-undefimpl::undefimpl(context* ctx, uint32_t size, const source_location& sloc)
-  : lnodeimpl(ctx, type_undef, size, sloc)
-{}
-
-lnodeimpl* undefimpl::clone(context* ctx, const clone_map&) const {
-  return ctx->create_node<undefimpl>(this->size(), sloc_);
 }

@@ -9,8 +9,12 @@ using namespace ch::internal;
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void ch::internal::begin_branch(lnodeimpl* key, const source_location& sloc) {
-  ctx_curr()->begin_branch(key, sloc);
+void ch::internal::begin_branch(const lnode& key, const source_location& sloc) {
+  ctx_curr()->begin_branch(key.impl(), sloc);
+}
+
+void ch::internal::begin_branch(const source_location& sloc) {
+  ctx_curr()->begin_branch(nullptr, sloc);
 }
 
 void ch::internal::end_branch() {
@@ -83,7 +87,7 @@ void selectimpl::print(std::ostream& out) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-lnodeimpl* select_impl::emit(const lnode& value) {
+lnode select_impl::emit(const lnode& value) {
   auto& stmts = stmts_;
   auto key = key_.empty() ? nullptr : key_.impl();
   auto sel = ctx_curr()->create_node<selectimpl>(value.size(), key, sloc_);

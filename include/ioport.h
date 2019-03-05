@@ -5,15 +5,15 @@
 namespace ch {
 namespace internal {
 
-lnodeimpl* createInputNode(const std::string& name,
-                           uint32_t size,
-                           const source_location& sloc);
+lnode createInputNode(const std::string& name,
+                      uint32_t size,
+                      const source_location& sloc);
 
-lnodeimpl* createOutputNode(const std::string& name,
-                            uint32_t size,
-                            const source_location& sloc);
+lnode createOutputNode(const std::string& name,
+                       uint32_t size,
+                       const source_location& sloc);
 
-lnodeimpl* getOutputNode(const lnode& src);
+lnode getOutputNode(const lnode& src);
 
 void bindInput(const lnode& src,
                const lnode& input,

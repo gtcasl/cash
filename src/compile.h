@@ -26,8 +26,6 @@ protected:
 
   void build_node_map(lnodeimpl* node);
 
-  void check_undefs();
-
   bool dead_code_elimination();
 
   bool constant_folding();

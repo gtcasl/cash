@@ -7,17 +7,15 @@ using namespace ch::internal;
 proxyimpl::proxyimpl(context* ctx,
                      uint32_t size,
                      const source_location& sloc,
-                     const std::string& name,
-                     uint32_t var_id)
-  : lnodeimpl(ctx, type_proxy, size, sloc, name, var_id)
+                     const std::string& name)
+  : lnodeimpl(ctx, type_proxy, size, sloc, name)
 {}
 
 proxyimpl::proxyimpl(context* ctx,
                      const lnode& src,
                      const source_location& sloc,
-                     const std::string& name,
-                     uint32_t var_id)
-  : lnodeimpl(ctx, type_proxy, src.size(), sloc, name, var_id) {
+                     const std::string& name)
+  : lnodeimpl(ctx, type_proxy, src.size(), sloc, name) {
   this->add_source(0, src, 0, src.size());
 }
 
@@ -26,14 +24,21 @@ proxyimpl::proxyimpl(context* ctx,
                      uint32_t offset,
                      uint32_t length,
                      const source_location& sloc,
-                     const std::string& name,
-                     uint32_t var_id)
-  : lnodeimpl(ctx, type_proxy, length, sloc, name, var_id) {
+                     const std::string& name)
+  : lnodeimpl(ctx, type_proxy, length, sloc, name) {
   this->add_source(0, src, offset, length);
 }
 
+bool proxyimpl::check_fully_initialized() const {
+  uint32_t size = 0;
+  for (auto& range : ranges_) {
+    size += range.length;
+  }
+  return (size == this->size());
+}
+
 lnodeimpl* proxyimpl::clone(context* ctx, const clone_map& cloned_nodes) const {
-  auto node = ctx->create_node<proxyimpl>(this->size(), sloc_, name_, var_id_);
+  auto node = ctx->create_node<proxyimpl>(this->size(), sloc_, name_);
   for (auto& range : ranges_) {
     auto& src = this->src(range.src_idx);
     auto c_src = cloned_nodes.at(src.id());
@@ -177,7 +182,12 @@ void proxyimpl::add_source(uint32_t dst_offset,
       }       
     }
 
-    assert(0 == length);
+    if (length != 0) {
+      // add remaining range
+      ranges_.push_back({new_srcidx, dst_offset, src_offset, length});
+      ++n;
+    }
+
     if (i < n) {
       // try merging with previous range
       this->merge_adjacent_ranges(i);
@@ -292,7 +302,7 @@ lnodeimpl* proxyimpl::slice(uint32_t offset,
   }
 
   // return new slice
-  auto proxy = ctx_->create_node<proxyimpl>(length, sloc, name_, var_id_);
+  auto proxy = ctx_->create_node<proxyimpl>(length, sloc, name_);
   for (auto& range : ranges_) {
     uint32_t r_end = range.dst_offset + range.length;
     uint32_t src_end = offset + length;
@@ -338,9 +348,8 @@ refimpl::refimpl(
     uint32_t offset,
     uint32_t length,
     const source_location& sloc,
-    const std::string& name,
-    uint32_t var_id)
-  : proxyimpl(ctx, src, offset, length, sloc, name, var_id)
+    const std::string& name)
+  : proxyimpl(ctx, src, offset, length, sloc, name)
 {}
 
 void refimpl::write(
@@ -362,7 +371,7 @@ void refimpl::write(
 
 ///////////////////////////////////////////////////////////////////////////////
 
-lnodeimpl* ch::internal::createRotateNode(
+lnode ch::internal::createRotateNode(
     const lnode& next,
     uint32_t dist,
     bool right,
@@ -380,7 +389,7 @@ lnodeimpl* ch::internal::createRotateNode(
   return ret;
 }
 
-lnodeimpl* ch::internal::createShuffleNode(
+lnode ch::internal::createShuffleNode(
     const lnode& in,
     const std::vector<unsigned>& indices,
     const source_location& sloc) {
