@@ -290,7 +290,7 @@ TEST_CASE("cache", "[cache]") {
 
         case 86:
           assert(cache.io.mem.write == true);
-          assert(cache.io.mem.address == 2);
+          assert(cache.io.mem.address == mem_address(1,1,0));
           assert(cache.io.mem.writedata == 272);
           cache.io.mem.waitrequest = false;
           break;

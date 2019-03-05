@@ -839,21 +839,29 @@ context::emit_conditionals(lnodeimpl* dst,
   typedef std::list<std::pair<lnodeimpl*, lnodeimpl*>> branch_info_t;
 
   //--
-  auto branch_optimizer = [&](lnodeimpl* key,
-                              branch_info_t& values,
-                              lnodeimpl* current)->lnodeimpl* {
-    // ensure default argument
-    if (values.back().first) {
-       values.emplace_back(nullptr, current);
-    }
+  auto branch_optimizer = [&](lnodeimpl* key, branch_info_t& values)->lnodeimpl* {
+    // ensure default value exist
+    assert(nullptr == values.back().first && values.back().second);
 
     {
       // skip paths with value equal to default value
       auto df_value = values.back().second;
+      lnodeimpl* skip_pred = nullptr;
       for (auto it = values.begin(), end = values.end(); it != end;) {
         if (it->first && it->second == df_value) {
+          if (nullptr == key) {
+            if (skip_pred) {
+              skip_pred = this->create_node<aluimpl>(ch_op::orb, 1, false, skip_pred, it->first, branch->sloc);
+            } else {
+              skip_pred = it->first;
+            }
+          }
           it = values.erase(it);
         } else {
+          if (skip_pred && it->first) {
+            auto not_skip_pred = this->create_node<aluimpl>(ch_op::inv, 1, false, skip_pred, branch->sloc);
+            it->first = this->create_node<aluimpl>(ch_op::andb, 1, false, it->first, not_skip_pred, branch->sloc);
+          }
           ++it;
         }
       }
@@ -924,8 +932,13 @@ context::emit_conditionals(lnodeimpl* dst,
     }
 
     if (changed) {
+      // add default value if not provided
+      if (values.back().first) {
+         values.emplace_back(nullptr, current);
+      }
+
       // optimize the branch
-      auto ret = branch_optimizer(branch->key, values, current);
+      auto ret = branch_optimizer(branch->key, values);
       if (ret)
         return ret;
 

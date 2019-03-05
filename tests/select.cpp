@@ -139,6 +139,17 @@ TEST_CASE("conditionals", "[conditionals]") {
       return (b == 2);
     });
     TEST([]()->ch_bool {
+      ch_bit4 a(3), b;
+      __if (a == 1) {
+        b = 2;
+      }__elif (a == 3) {
+        b = 1;
+      }__else {
+        b = 2;
+      };
+      return (b == 1);
+    });
+    TEST([]()->ch_bool {
       ch_bit4 a(1), b(0), c;
       __if (a == 1) {
         c = 0;
