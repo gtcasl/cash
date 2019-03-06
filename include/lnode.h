@@ -79,6 +79,8 @@ enum class ch_op {
 
 const char* to_string(ch_op op);
 
+std::ostream& operator<<(std::ostream& out, ch_op op);
+
 using ch_tick = uint64_t;
 
 ///////////////////////////////////////////////////////////////////////////////

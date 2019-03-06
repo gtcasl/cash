@@ -83,7 +83,8 @@ protected:
           uint32_t num_items,
           const sdata_type& init_data,
           bool force_logic_ram,
-          const source_location& sloc);
+          const source_location& sloc,
+          const std::string& name);
   
   std::vector<memportimpl*> rdports_;
   std::vector<mwportimpl*>  wrports_;

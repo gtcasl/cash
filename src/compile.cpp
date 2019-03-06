@@ -285,6 +285,9 @@ bool compiler::dead_code_elimination() {
          && type_proxy == src_impl->type()
          && !reinterpret_cast<proxyimpl*>(src_impl)->check_fully_initialized()) {
           undefs.push_back(src_impl);
+          if (proxy) {
+            undefs.push_back(proxy);
+          }
         }
       }
     }
@@ -316,19 +319,31 @@ bool compiler::dead_code_elimination() {
 
   // check for un-initialized nodes
   if (!undefs.empty()) {
-#define LCOV_EXCL_START
     bool found = false;
     for (auto node : undefs) {
       auto proxy = reinterpret_cast<proxyimpl*>(node);
-      if (proxy->check_fully_initialized())
-        continue;
-      fprintf(stderr, "error: un-initialized variable %s\n", proxy->debug_info().c_str());
-      found = true;
+      if (!proxy->check_fully_initialized()) {
+        found = true;
+        break;
+      }
     }
     if (found) {
+    #define LCOV_EXCL_START
+    #ifndef NDEBUG
+      // dump nodes
+      if (platform::self().cflags() & cflags::dump_ast) {
+        ctx_->dump_ast(std::cout);
+      }
+    #endif
+      for (auto node : undefs) {
+        auto proxy = reinterpret_cast<proxyimpl*>(node);
+        if (proxy->check_fully_initialized())
+          continue;
+        fprintf(stderr, "error: un-initialized variable %s\n", proxy->debug_info().c_str());
+      }
       std::abort();
+    #define LCOV_EXCL_END
     }
-#define LCOV_EXCL_END
   }
 
   assert(ctx_->nodes().size() == live_nodes.size());

@@ -13,6 +13,11 @@ const char* ch::internal::to_string(ch_op op) {
   return sc_names[CH_OP_INDEX(op)];
 }
 
+std::ostream& ch::internal::operator<<(std::ostream& out, ch_op op) {
+  out << to_string(op);
+  return out;
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 lnode::lnode(const sdata_type& value) {

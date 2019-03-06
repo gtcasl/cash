@@ -13,6 +13,7 @@ refcounted* lookupUDF(const std::type_index& signature, bool has_args);
 
 refcounted* createUDF(const std::type_index& signature,
                       bool has_args,
+                      const std::string& name,
                       bool is_seq,
                       uint32_t output_size,
                       const std::initializer_list<uint32_t>& inputs_size,
@@ -102,6 +103,7 @@ public:
       auto udf = new T(std::forward<Args>(args)...);
       handle_ = createUDF(std::type_index(typeid(T)),
                           (sizeof...(Args) != 0),
+                          typeid(T).name(),
                           T::traits::is_seq,
                           ch_width_v<typename T::traits::Output>,
                           udf_inputs_size<typename T::traits::Inputs>(),

@@ -306,7 +306,7 @@ bool verilogwriter::print_decl(std::ostream& out,
           auto data_width = mem->data_width();
           auto num_items = mem->num_items();
 
-          auto filename = stringf("%s%d.mif", mem->name().c_str(), mem->id());
+          auto filename = stringf("%s%d.mif", to_string(mem->type()), mem->id());
           out << ", ram_init_file = \"" + filename  + "\"";
 
           std::ofstream out_mif(filename);
@@ -872,8 +872,12 @@ bool verilogwriter::print_udf(std::ostream& out, udfimpl* node) {
 }
 
 void verilogwriter::print_name(std::ostream& out, lnodeimpl* node, bool force) {
-  auto print_unique_name = [&](const lnode& node) {
-    out << node.name() << node.id();
+  //--
+  auto print_unique_name = [&](lnodeimpl* node) {
+    out << node->type() << node->id();
+    if (!node->name().empty()) {
+      out << "_" << node->name();
+    }
   };
 
   auto type = node->type();

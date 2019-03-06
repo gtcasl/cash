@@ -19,7 +19,7 @@ public:
                      logic_op_arithmetic<ch_int, N,
                        logic_op_slice<ch_int, N, ch_bit<N>>>>>>;
 
-  explicit ch_int(const logic_buffer& buffer = logic_buffer(N, CH_CUR_SLOC))
+  explicit ch_int(const logic_buffer& buffer = logic_buffer(N, CH_CUR_SLOC, "ch_int"))
     : base(buffer)
   {}
 

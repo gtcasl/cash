@@ -325,7 +325,6 @@ void proxyimpl::print(std::ostream& out) const {
   auto_separator sep(", ");
   for (auto& range : ranges_) {
     out << sep;
-    assert(d == range.dst_offset);
     d += range.length;
     auto& src = this->src(range.src_idx);
     out << "#" << src.id();
@@ -360,6 +359,7 @@ void refimpl::write(
     const source_location& sloc) {
   assert(1 == this->srcs().size());
   assert(0 == ranges_[0].dst_offset);
+  assert(this->size() == ranges_[0].length);
   assert(length <= ranges_[0].length);
   this->src(0).impl()->write(
       ranges_[0].src_offset + dst_offset,
@@ -367,6 +367,36 @@ void refimpl::write(
       src_offset,
       length,
       sloc);
+}
+
+bool refimpl::check_fully_initialized() const {
+  auto start = ranges_[0].src_offset;
+  auto end = start + this->size();
+  for (auto& range : reinterpret_cast<proxyimpl*>(this->src(0).impl())->ranges()) {
+    auto src_start = range.dst_offset;
+    auto src_end = range.dst_offset + range.length;
+    // check overlap
+    if (src_start < end && start < src_end) {
+      if (src_start <= start && src_end >= end) {
+        // source fully overlaps
+        return true;
+      } else if (src_start < start) {
+        // source overlaps on the left
+        auto delta = src_end - start;
+        start +=  delta;
+      } else if (src_end > end) {
+        // source overlaps on the right
+        auto delta = end - src_start;
+        end -= delta;
+      } else {
+        // source fully included
+        assert(src_start == start); // no overlap on left
+        auto delta = src_end - start;
+        start += delta;
+      }
+    }
+  }
+  return (start == end);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

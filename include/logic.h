@@ -102,12 +102,12 @@ protected:
 class logic_accessor {
 public:
   template <typename T>
-  static logic_buffer buffer(const T& obj) {
+  static auto buffer(const T& obj) {
     return obj.buffer();
   }
 
   template <typename T>
-  static lnode data(const T& obj) {
+  static auto data(const T& obj) {
     assert(obj.buffer().size() == ch_width_v<T>);
     return obj.buffer().data();
   }
@@ -189,8 +189,13 @@ public:
   }
 
   template <typename T>
-  static const source_location& sloc(const T& obj) {
+  static const auto sloc(const T& obj) {
     return obj.buffer().data().sloc();
+  }
+
+  template <typename T>
+  static const auto name(const T& obj) {
+    return obj.buffer().data().name();
   }
 };
 
@@ -560,13 +565,12 @@ CH_LOGIC_OPERATOR(logic_op_shift)
   }
 
   auto operator<<=(const sloc_arg<uint32_t>& rhs) {
-    auto sloc = logic_accessor::sloc(rhs.sloc);
     auto lhs = reinterpret_cast<const Derived*>(this)->clone();
     return make_logic_op<ch_op::shl,
                          ch_signed_v<Derived>,
                          Derived,
                          Derived,
-                         ch_uint<32>>(lhs, rhs.value, sloc);
+                         ch_uint<32>>(lhs, rhs.value, rhs.sloc);
   }
 
   template <unsigned M>
@@ -580,13 +584,12 @@ CH_LOGIC_OPERATOR(logic_op_shift)
   }
 
   auto operator>>=(const sloc_arg<uint32_t>& rhs) {
-    auto sloc = logic_accessor::sloc(rhs.sloc);
     auto lhs = reinterpret_cast<const Derived*>(this)->clone();
     return make_logic_op<ch_op::shr,
                          ch_signed_v<Derived>,
                          Derived,
                          Derived,
-                         ch_uint<32>>(lhs, rhs.value, sloc);
+                         ch_uint<32>>(lhs, rhs.value, rhs.sloc);
   }
 };
 

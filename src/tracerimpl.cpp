@@ -325,18 +325,27 @@ void tracerimpl::toTestBench(std::ofstream& out,
   };
 
   //--
-  auto netlist_name = [&](lnodeimpl* node) {
+  auto netlist_name = [&](lnodeimpl* node)->std::string {
     switch (node->type()) {
     case type_bindin:
     case type_bindout: {
-      auto bindport = reinterpret_cast<bindportimpl*>(node);
-      return stringf("%s_%d_%s",
-                     bindport->binding()->module()->name().c_str(),
-                     bindport->binding()->id(),
-                     bindport->ioport().name().c_str());
+      std::stringstream ss;
+      auto p = reinterpret_cast<bindportimpl*>(node);
+      ss << p->binding()->module()->name() << "_"
+         << p->binding()->id() << "_"
+         << p->ioport().name();
+      return ss.str();
     }
-    default:
-      return stringf("%s%d", node->name().c_str(), node->id());
+    case type_time:
+      return "$time";
+    default: {
+      std::stringstream ss;
+      ss << node->type() << node->id();
+      if (!node->name().empty()) {
+        ss << "_" << node->name();
+      }
+      return ss.str();
+    }
     }
   };
 

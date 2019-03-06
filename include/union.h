@@ -71,10 +71,10 @@ protected: \
   friend class ch::internal::system_accessor; \
 public:
 
-#define CH_UNION_LOGIC_IMPL(union_name, name, field_body, ...) \
+#define CH_UNION_LOGIC_IMPL(union_name, field_body, ...) \
   CH_FOR_EACH(field_body, , CH_SEP_SEMICOLON, __VA_ARGS__); \
   explicit union_name(const ch::internal::logic_buffer& buffer = \
-    ch::internal::logic_buffer(traits::bitwidth, CH_CUR_SLOC, CH_STRINGIZE(name))) \
+    ch::internal::logic_buffer(traits::bitwidth, CH_CUR_SLOC, CH_STRINGIZE(union_name))) \
     : CH_FOR_EACH(CH_UNION_LOGIC_CTOR, , CH_SEP_COMMA, __VA_ARGS__) {} \
   union_name(const union_name& __other, CH_SLOC) \
     : union_name(ch::internal::logic_accessor::copy(__other, sloc)) {} \
@@ -107,7 +107,7 @@ public:
     }; \
   public: \
     using traits = ch::internal::logic_traits<CH_UNION_SIZE(__VA_ARGS__), false, union_name, __system_type__>; \
-    CH_UNION_LOGIC_IMPL(union_name, union_name, CH_UNION_LOGIC_FIELD, __VA_ARGS__) \
+    CH_UNION_LOGIC_IMPL(union_name, CH_UNION_LOGIC_FIELD, __VA_ARGS__) \
     CH_LOGIC_INTERFACE(union_name) \
   }
 

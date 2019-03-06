@@ -213,6 +213,8 @@ __struct (dooh_t, (
   (ch_uint4) b
 ));
 
+__enum (WSS, (X, Q, W));
+
 struct Dogfood {
   __io (
     __in (ch_uint4) in,
@@ -220,11 +222,13 @@ struct Dogfood {
   );
   void describe() {
     dooh_t x;
+    WSS w;
+    ch_reg<ch_uint4> r;
     ch_uint4 b, c;
     ch_uint4 d;
     d[1] = 0;
     ch_vec<ch_uint4, 2> e;
-    io.out = (x.a + b + c + d + e[0] + io.in) > 0;
+    io.out = ((x.a + r + b + c + d + e[0] + io.in) & w) != 0;
   }
 };
 

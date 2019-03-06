@@ -5,11 +5,13 @@
 using namespace ch::internal;
 
 udf_iface::udf_iface(uint32_t id,
+                     const std::string& name,
                      bool is_seq,
                      uint32_t output_size,
                      const std::initializer_list<uint32_t>& inputs_size,
                      udf_base* impl)
   : id_(id)
+  , name_(name)
   , is_managed_(false)
   , is_seq_(is_seq)
   , output_size_(output_size)
@@ -34,7 +36,7 @@ udfimpl::udfimpl(context* ctx,
                  udf_iface* udf,
                  const std::vector<lnode>& srcs,
                  const source_location& sloc)
-  : lnodeimpl(ctx, type, udf->output_size(), sloc)
+  : lnodeimpl(ctx, type, udf->output_size(), sloc, udf->name())
   , udf_(udf) {
   udf->acquire();
   for (auto src : srcs) {

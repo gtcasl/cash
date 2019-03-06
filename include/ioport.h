@@ -54,7 +54,7 @@ public:
                                       T>;
   using base = T;
 
-  explicit ch_logic_in(const std::string& name = "io", CH_SLOC)
+  explicit ch_logic_in(const std::string& name = "in", CH_SLOC)
      : base(logic_buffer(createInputNode(name, ch_width_v<T>, sloc))) {
     input_ = logic_accessor::data(*this);
   }
@@ -109,8 +109,8 @@ public:
   using base = T;
   using base::operator=;
 
-  explicit ch_logic_out(const std::string& name = "io", CH_SLOC)
-     : base(logic_buffer(createOutputNode(name, ch_width_v<T>, sloc))) {
+  explicit ch_logic_out(const std::string& name = "out", CH_SLOC)
+    : base(logic_buffer(createOutputNode(name, ch_width_v<T>, sloc))) {
     output_ = getOutputNode(logic_accessor::data(*this));
   }
 

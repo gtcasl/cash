@@ -39,7 +39,7 @@ public:
         && (this->src(0).size() == this->size());
   }
 
-  bool check_fully_initialized() const;
+  virtual bool check_fully_initialized() const;
 
   const range_t& range(uint32_t index) const {
     return ranges_[index];
@@ -112,6 +112,8 @@ public:
              uint32_t src_offset,
              uint32_t length,
              const source_location& sloc) override;
+
+  bool check_fully_initialized() const override;
 
 protected:
 

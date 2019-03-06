@@ -10,6 +10,7 @@ class udf_iface : public refcounted {
 public:
 
   udf_iface(uint32_t id,
+            const std::string& name,
             bool is_seq,
             uint32_t output_size,
             const std::initializer_list<uint32_t>& inputs_size,
@@ -19,6 +20,10 @@ public:
 
   uint32_t id() const {
     return id_;
+  }
+
+  const auto& name() const {
+    return name_;
   }
 
   void set_managed(bool value) {
@@ -48,6 +53,7 @@ public:
 private:
 
   uint32_t id_;
+  std::string name_;
   bool is_managed_;
   bool is_seq_;
   uint32_t output_size_;

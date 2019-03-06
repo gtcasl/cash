@@ -70,6 +70,13 @@ TEST_CASE("basics", "[basics]") {
     });
 
     TEST([]()->ch_bool {
+      ch_int4 a(0);
+      ch_int8 b(a);
+      b = 1;
+      return (b == 1);
+    });
+
+    TEST([]()->ch_bool {
       ch_uint4 a(0), b(1_b4), c(b);
       auto d = a << b;
       a = b;

@@ -94,12 +94,13 @@ public:
 
   udf_iface* create_udf(const std::type_index& signature,
                         bool has_args,
+                        const std::string& name,
                         bool is_seq,
                         uint32_t output_size,
                         const std::initializer_list<uint32_t>& inputs_size,
                         udf_base* udf) {
     uint32_t id = this->udf_id();
-    auto iface = new udf_iface(id, is_seq, output_size, inputs_size, udf);
+    auto iface = new udf_iface(id, name, is_seq, output_size, inputs_size, udf);
     if (!has_args) {
       pod_udfs_.emplace(id, iface);
       auto status = udf_signatures_.emplace(signature, id);
@@ -175,12 +176,13 @@ refcounted* ch::internal::lookupUDF(const std::type_index& signature, bool has_a
 
 refcounted* ch::internal::createUDF(const std::type_index& signature,
                                     bool has_args,
+                                    const std::string& name,
                                     bool is_seq,
                                     uint32_t output_size,
                                     const std::initializer_list<uint32_t>& inputs_size,
                                     udf_base* udf) {
   return context_manager::instance().create_udf(
-        signature, has_args, is_seq, output_size, inputs_size, udf);
+        signature, has_args, name, is_seq, output_size, inputs_size, udf);
 }
 
 void ch::internal::destroyUDF(uint32_t id) {

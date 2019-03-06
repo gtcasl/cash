@@ -16,7 +16,7 @@ logic_buffer::logic_buffer(uint32_t size,
 logic_buffer::logic_buffer(const lnode& data,
                            const source_location& sloc,
                            const std::string& name)
-  : node_(data, sloc, name)
+  : node_(data, sloc, (name.empty() ? data.name() : name))
 {}
 
 logic_buffer::logic_buffer(uint32_t size,
@@ -25,10 +25,10 @@ logic_buffer::logic_buffer(uint32_t size,
                            const source_location& sloc,
                            const std::string& name)
   : node_(size,
-           buffer.data(),
-           offset,
-           sloc,
-           (name.empty() ? "" : stringf("%s_%s", buffer.data().name().c_str(), name.c_str()))) {
+          buffer.data(),
+          offset,
+          sloc,
+          ((!buffer.data().name().empty() && !name.empty()) ? (buffer.data().name() + "_" + name) : name)) {
   assert(offset + size <= buffer.size());
 }
 

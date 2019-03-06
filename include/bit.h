@@ -21,7 +21,7 @@ public:
                      logic_op_shift<ch_bit, N,
                        logic_op_slice<ch_bit, N>>>>>;
 
-  explicit ch_bit(const logic_buffer& buffer = logic_buffer(N, CH_CUR_SLOC))
+  explicit ch_bit(const logic_buffer& buffer = logic_buffer(N, CH_CUR_SLOC, "ch_bit"))
     : buffer_(buffer) {
     assert(N == buffer.size());
   }
@@ -46,7 +46,7 @@ public:
             CH_REQUIRE_0(is_bit_base_v<U>),
             CH_REQUIRE_0(ch_width_v<U> < N)>
   explicit ch_bit(const U& other, CH_SLOC)
-    : buffer_(createAluNode(ch_op::pad, N, ch_signed_v<U>, get_lnode(other), sloc))
+    : buffer_(logic_buffer(createAluNode(ch_op::pad, N, ch_signed_v<U>, get_lnode(other), sloc), sloc))
   {}
 
   ch_bit(const ch_bit& other, CH_SLOC)

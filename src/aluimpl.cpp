@@ -55,9 +55,9 @@ bool aluimpl::equals(const lnodeimpl& other) const {
 }
 
 void aluimpl::print(std::ostream& out) const {
-  out << "#" << id_ << " <- " << to_string(this->type()) << this->size();
+  out << "#" << id_ << " <- " << this->type() << this->size();
   auto n = this->srcs().size();
-  out << "(" << to_string(op_) << (signed_ ? "_s" : "_u") << ", ";
+  out << "(" << op_ << (signed_ ? "_s" : "_u") << ", ";
   for (uint32_t i = 0; i < n; ++i) {
     if (i > 0)
       out << ", ";

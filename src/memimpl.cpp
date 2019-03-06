@@ -100,8 +100,9 @@ memimpl::memimpl(context* ctx,
                  uint32_t num_items,
                  const sdata_type& init_data,
                  bool force_logic_ram,
-                 const source_location& sloc)
-  : ioimpl(ctx, type_mem, data_width * num_items, sloc)
+                 const source_location& sloc,
+                 const std::string& name)
+  : ioimpl(ctx, type_mem, data_width * num_items, sloc, name)
   , init_data_(init_data)
   , data_width_(data_width)
   , num_items_(num_items)
@@ -109,7 +110,7 @@ memimpl::memimpl(context* ctx,
 {}
 
 lnodeimpl* memimpl::clone(context* ctx, const clone_map&) const {
-  return ctx->create_node<memimpl>(data_width_, num_items_, init_data_, force_logic_ram_, sloc_);
+  return ctx->create_node<memimpl>(data_width_, num_items_, init_data_, force_logic_ram_, sloc_, name_);
 }
 
 memportimpl* memimpl::create_arport(lnodeimpl* addr,
@@ -244,7 +245,7 @@ memportimpl::memportimpl(context* ctx,
                          lnodeimpl* addr,
                          lnodeimpl* enable,
                          const source_location& sloc)
-  : ioimpl(ctx, type, size, sloc)
+  : ioimpl(ctx, type, size, sloc, mem->name())
   , mem_(mem)
   , cd_idx_(-1)
   , addr_idx_(-1)
@@ -369,9 +370,11 @@ memory::memory(uint32_t data_width,
                uint32_t num_items,
                const sdata_type& init_data,
                bool is_logic_rom,
-               const source_location& sloc) {
+               const source_location& sloc,
+               const std::string& name) {
   CH_CHECK(!ctx_curr()->conditional_enabled(), "memory objects disallowed inside conditional blocks");
-  impl_ = ctx_curr()->create_node<memimpl>(data_width, num_items, init_data, is_logic_rom, sloc);
+  auto id = identifier_from_typeid(name);
+  impl_ = ctx_curr()->create_node<memimpl>(data_width, num_items, init_data, is_logic_rom, sloc, id);
 }
 
 lnode memory::aread(const lnode& addr, const source_location& sloc) const {

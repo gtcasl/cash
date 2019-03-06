@@ -77,7 +77,7 @@ lnodeimpl::lnodeimpl(context* ctx,
                      const source_location& sloc,
                      const std::string& name)
   : ctx_(ctx)
-  , name_(name.empty() ? to_string(type) : name)
+  , name_(name)
   , sloc_(sloc)
   , id_(ctx->node_id())
   , type_(type)

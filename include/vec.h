@@ -57,7 +57,10 @@ public:
   using base = vec_base<T, N>;
   using base::operator [];
 
-  explicit ch_vec(const logic_buffer& buffer = logic_buffer(traits::bitwidth, CH_CUR_SLOC))
+  explicit ch_vec(const logic_buffer& buffer = logic_buffer(
+        traits::bitwidth,
+        CH_CUR_SLOC,
+        stringf("ch_vec%d_%s", N, identifier_from_typeid(typeid(T).name()).c_str())))
     : ch_vec(buffer, std::make_index_sequence<N>(), buffer.data().sloc())
   {}
 
@@ -136,7 +139,7 @@ protected:
 
   template <std::size_t...Is>
   ch_vec(const logic_buffer& buffer, std::index_sequence<Is...>, const source_location& sloc)
-    : base(logic_buffer(ch_width_v<T>, buffer, Is * ch_width_v<T>, sloc)...)
+    : base(logic_buffer(ch_width_v<T>, buffer, Is * ch_width_v<T>, sloc, stringf("%d", Is))...)
   {}
 
   logic_buffer buffer() const {
