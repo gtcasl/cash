@@ -331,19 +331,19 @@ void tracerimpl::toTestBench(std::ofstream& out,
     case type_bindout: {
       std::stringstream ss;
       auto p = reinterpret_cast<bindportimpl*>(node);
-      ss << p->binding()->module()->name() << "_"
-         << p->binding()->id() << "_"
-         << p->ioport().name();
+      ss << p->binding()->type() << "_" << p->binding()->name() << "_"
+         << p->binding()->id() << "_" << p->ioport().name();
       return ss.str();
     }
     case type_time:
       return "$time";
     default: {
       std::stringstream ss;
-      ss << node->type() << node->id();
+      ss << node->type();
       if (!node->name().empty()) {
         ss << "_" << node->name();
       }
+      ss << "_" << node->id();
       return ss.str();
     }
     }

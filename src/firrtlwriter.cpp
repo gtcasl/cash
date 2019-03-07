@@ -670,10 +670,11 @@ void firrtlwriter::print_operator(std::ostream& out, ch_op op) {
 void firrtlwriter::print_name(std::ostream& out, lnodeimpl* node, bool force) {
   //--
   auto print_unique_name = [&](lnodeimpl* node) {
-    out << node->type() << node->id();
+    out << node->type();
     if (!node->name().empty()) {
       out << "_" << node->name();
     }
+    out << "_" << node->id();
   };
 
   auto type = node->type();
@@ -697,6 +698,7 @@ void firrtlwriter::print_name(std::ostream& out, lnodeimpl* node, bool force) {
   case type_alu:
   case type_reg:
   case type_mem:
+  case type_bind:
     print_unique_name(node);
     break;
   case type_marport:
@@ -723,10 +725,6 @@ void firrtlwriter::print_name(std::ostream& out, lnodeimpl* node, bool force) {
         out << ".r" << port_index << ".data";
       }
     }
-  } break;
-  case type_bind: {
-    auto bind = reinterpret_cast<bindimpl*>(node);
-    out << bind->module()->name() << "_" << bind->id();
   } break;
   case type_bindin:
   case type_bindout: {

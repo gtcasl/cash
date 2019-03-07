@@ -306,8 +306,12 @@ bool verilogwriter::print_decl(std::ostream& out,
           auto data_width = mem->data_width();
           auto num_items = mem->num_items();
 
-          auto filename = stringf("%s%d.mif", to_string(mem->type()), mem->id());
-          out << ", ram_init_file = \"" + filename  + "\"";
+          std::stringstream ss;
+          this->print_name(ss, mem);
+          ss << ".mif";
+          auto filename = ss.str();
+
+          out << ", ram_init_file = \"" << filename  << "\"";
 
           std::ofstream out_mif(filename);
           out_mif << "WIDTH = " << data_width << ";" << std::endl;
@@ -874,10 +878,11 @@ bool verilogwriter::print_udf(std::ostream& out, udfimpl* node) {
 void verilogwriter::print_name(std::ostream& out, lnodeimpl* node, bool force) {
   //--
   auto print_unique_name = [&](lnodeimpl* node) {
-    out << node->type() << node->id();
+    out << node->type();
     if (!node->name().empty()) {
       out << "_" << node->name();
     }
+    out << "_" << node->id();
   };
 
   auto type = node->type();
@@ -910,15 +915,12 @@ void verilogwriter::print_name(std::ostream& out, lnodeimpl* node, bool force) {
   case type_mwport:
   case type_udfc:
   case type_udfs:
+  case type_bind:
     print_unique_name(node);
     break;
   case type_time:
     out << "$time";
     break;
-  case type_bind: {
-    auto bind = reinterpret_cast<bindimpl*>(node);
-    out << bind->module()->name() << "_" << bind->id();
-  } break;
   case type_bindin:
   case type_bindout: {
     auto bindport = reinterpret_cast<bindportimpl*>(node);

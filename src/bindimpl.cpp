@@ -22,7 +22,7 @@ static void add_port(bindportimpl* bindport, std::vector<lnode>& list) {
 }
 
 bindimpl::bindimpl(context* ctx, context* module, const source_location& sloc)
-  : ioimpl(ctx, type_bind, 0, sloc)
+  : ioimpl(ctx, type_bind, 0, sloc, module->name())
   , module_(module) {
   // acquire module instance
   module_->acquire();
