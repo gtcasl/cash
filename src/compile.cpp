@@ -278,7 +278,7 @@ bool compiler::dead_code_elimination() {
       auto ret = live_nodes.insert(src_impl);
       if (ret.second || is_new_proxy_src) {
         // we have a new live node, add it to working set
-        working_set.emplace_back(src_impl);
+        working_set.push_back(src_impl);
 
         // check for undefined proxies
         if (!is_new_proxy_src
@@ -784,7 +784,7 @@ bool compiler::subexpressions_elimination() {
   }
 
   if (changed) {
-    for (auto it = deleted_list.rbegin(), end = deleted_list.rend(); it != end;) {
+    for (auto it = deleted_list.begin(), end = deleted_list.end(); it != end;) {
       ctx_->delete_node(*it++);
     }
     deleted_list.clear();

@@ -76,7 +76,9 @@ lnodeimpl::lnodeimpl(context* ctx,
                      uint32_t size,                     
                      const source_location& sloc,
                      const std::string& name)
-  : ctx_(ctx)
+  : prev_(nullptr)
+  , next_(nullptr)
+  , ctx_(ctx)
   , name_(name)
   , sloc_(sloc)
   , id_(ctx->node_id())
@@ -177,4 +179,37 @@ std::string lnodeimpl::debug_info() const {
                  sloc_.file(),
                  sloc_.line(),
                  sloc_.index());
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void node_list::push_back(lnodeimpl* node) {
+  if (tail_) {
+    node->prev_ = tail_;
+    tail_->next_ = node;
+  }
+  tail_ = node;
+  if (head_ == nullptr) {
+    head_ = node;
+  }
+  ++size_;
+}
+
+node_list::iterator node_list::erase(const node_list::iterator& it) {
+  auto node = it.node_;
+  assert(node);
+  auto prev = node->prev_;
+  auto next = node->next_;
+  if (prev) {
+    prev->next_ = next;
+  } else {
+    head_ = next;
+  }
+  if (next) {
+    next->prev_ = prev;
+  } else {
+    tail_ = prev;
+  }
+  --size_;
+  return iterator(next);
 }

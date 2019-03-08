@@ -137,6 +137,9 @@ protected:
 
   virtual ~lnodeimpl();
 
+  lnodeimpl* prev_;
+  lnodeimpl* next_;
+
   context* ctx_;
   std::string name_;
   source_location sloc_;
@@ -150,6 +153,7 @@ private:
   uint32_t size_;
 
   friend class context;
+  friend class node_list;
 };
 
 const char* to_string(lnodetype type);

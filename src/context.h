@@ -9,7 +9,7 @@ namespace ch {
 namespace internal {
 
 class lnode;
-class nodelist;
+class node_list;
 class lnodeimpl;
 class proxyimpl;
 class aluimpl;
@@ -285,33 +285,33 @@ protected:
   context*    parent_;
   bool        is_managed_;
 
-  inputimpl*  sys_clk_;
-  inputimpl*  sys_reset_;
-  timeimpl*   sys_time_;
+  inputimpl* sys_clk_;
+  inputimpl* sys_reset_;
+  timeimpl*  sys_time_;
   
-  std::list<lnodeimpl*>   literals_;
-  std::list<lnodeimpl*>   proxies_;
-  std::list<lnodeimpl*>   inputs_;
-  std::list<lnodeimpl*>   outputs_;
-  std::list<lnodeimpl*>   alus_;
-  std::list<lnodeimpl*>   cdomains_;
-  std::list<lnodeimpl*>   regs_;
-  std::list<lnodeimpl*>   mems_;
-  std::list<lnodeimpl*>   marports_;
-  std::list<lnodeimpl*>   msrports_;
-  std::list<lnodeimpl*>   mwports_;
-  std::list<lnodeimpl*>   bindings_;
-  std::list<lnodeimpl*>   bindports_;
-  std::list<lnodeimpl*>   taps_;
-  std::list<lnodeimpl*>   gtaps_;
-  std::list<lnodeimpl*>   udfseqs_;
-  std::list<lnodeimpl*>   udfcombs_;
+  node_list literals_;
+  node_list proxies_;
+  node_list inputs_;
+  node_list outputs_;
+  node_list alus_;
+  node_list cdomains_;
+  node_list regs_;
+  node_list mems_;
+  node_list marports_;
+  node_list msrports_;
+  node_list mwports_;
+  node_list bindings_;
+  node_list bindports_;
+  node_list taps_;
+  node_list gtaps_;
+  node_list udfseqs_;
+  node_list udfcombs_;
 
-  node_list_view          nodes_;
-  node_list_view          snodes_;
-  node_list_view          udfs_;
+  node_list_view nodes_;
+  node_list_view snodes_;
+  node_list_view udfs_;
 
-  enum_strings_t          enum_strings_;
+  enum_strings_t enum_strings_;
 
   cd_stack_t              cd_stack_;
   dup_tracker<std::string> dup_tap_names_;

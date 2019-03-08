@@ -251,7 +251,8 @@ context::context(const std::string& name, context* parent)
 
 context::~context() {
   // delete allocated nodes
-  for (auto node : nodes_) {
+  for (auto it = nodes_.begin(), end = nodes_.end(); it != end;) {
+    auto node = *it++;
     node->release();
   }
   if (is_managed_) {
@@ -289,59 +290,59 @@ void context::add_node(lnodeimpl* node) {
   auto type = node->type();
   switch (type) {
   case type_lit:
-    literals_.emplace_back(node);
+    literals_.push_back(node);
     break;
   case type_proxy:
-    proxies_.emplace_back(node);
+    proxies_.push_back(node);
     break;
   case type_input:
-    inputs_.emplace_back(node);
+    inputs_.push_back(node);
     break;
   case type_output:
-    outputs_.emplace_back(node);
+    outputs_.push_back(node);
     break;
   case type_alu:
   case type_sel:
-    alus_.emplace_back(node);
+    alus_.push_back(node);
     break;
   case type_cd:
-    cdomains_.emplace_back(node);
+    cdomains_.push_back(node);
     break;
   case type_reg:
-    regs_.emplace_back(node);
+    regs_.push_back(node);
     break;
   case type_mem:
-    mems_.emplace_back(node);
+    mems_.push_back(node);
     break;
   case type_marport:
-    marports_.emplace_back(node);
+    marports_.push_back(node);
     break;
   case type_msrport:
-    msrports_.emplace_back(node);
+    msrports_.push_back(node);
     break;
   case type_mwport:
-    mwports_.emplace_back(node);
+    mwports_.push_back(node);
     break;
   case type_bind:
-    bindings_.emplace_back(node);
+    bindings_.push_back(node);
     break;
   case type_bindin:
   case type_bindout:
-    bindports_.emplace_back(node);
+    bindports_.push_back(node);
     break;
   case type_tap:
-    taps_.emplace_back(node);
+    taps_.push_back(node);
     break;
   case type_assert:
   case type_print:
   case type_time:
-    gtaps_.emplace_back(node);
+    gtaps_.push_back(node);
     break;
   case type_udfc:
-    udfcombs_.emplace_back(node);
+    udfcombs_.push_back(node);
     break;
   case type_udfs:
-    udfseqs_.emplace_back(node);
+    udfseqs_.push_back(node);
     break;
   default:
     assert(false);
@@ -459,11 +460,13 @@ node_list_view::iterator context::delete_node(const node_list_view::iterator& it
     break;
   }
 
+  // remove node from list
+  auto next = nodes_.erase(it);
+
   // destroy object
   node->release();
 
-  // remove node from list
-  return nodes_.erase(it);
+  return next;
 }
 
 void context::create_binding(context* ctx) {

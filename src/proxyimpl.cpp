@@ -52,7 +52,7 @@ void proxyimpl::add_source(uint32_t dst_offset,
                            uint32_t src_offset,
                            uint32_t length) {
   assert(!src.empty());
-  assert(this != src.impl());  
+  assert(this != src.impl());
   assert(length != 0);
   assert(dst_offset + length <= this->size());
   assert(src_offset + length <= src.size());
