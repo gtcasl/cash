@@ -38,7 +38,7 @@ set(PROJECT_SOURCES
     src/regimpl.cpp
     src/memimpl.cpp
     src/selectimpl.cpp
-    src/aluimpl.cpp
+    src/opimpl.cpp
     src/bindimpl.cpp
     src/timeimpl.cpp
     src/assertimpl.cpp    

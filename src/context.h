@@ -12,7 +12,7 @@ class lnode;
 class node_list;
 class lnodeimpl;
 class proxyimpl;
-class aluimpl;
+class opimpl;
 class litimpl;
 class cdimpl;
 class ioimpl;

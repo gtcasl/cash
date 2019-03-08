@@ -7,7 +7,7 @@
 #include "selectimpl.h"
 #include "proxyimpl.h"
 #include "memimpl.h"
-#include "aluimpl.h"
+#include "opimpl.h"
 #include "assertimpl.h"
 #include "printimpl.h"
 #include "timeimpl.h"
@@ -276,14 +276,14 @@ instr_output_base* instr_output_base::create(ioportimpl* node, data_map_t& map) 
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class instr_alu_base : public instr_base {
+class instr_op_base : public instr_base {
 public:
 
-  static instr_alu_base* create(aluimpl* node, data_map_t& map);
+  static instr_op_base* create(opimpl* node, data_map_t& map);
 
 protected:
 
-  instr_alu_base(block_type* dst,
+  instr_op_base(block_type* dst,
                  uint32_t dst_size,
                  const block_type* src0,
                  uint32_t src0_size,
@@ -306,11 +306,11 @@ protected:
 };
 
 template <ch_op op, bool is_signed, bool is_scalar, bool resize_opds>
-class instr_alu : instr_alu_base {
+class instr_op : instr_op_base {
 public:
 
   void destroy() override {
-    this->~instr_alu();
+    this->~instr_op();
     ::operator delete [](this);
   }
 
@@ -514,18 +514,18 @@ public:
 
 private:
 
-  instr_alu(block_type* dst, uint32_t dst_size_,
+  instr_op(block_type* dst, uint32_t dst_size_,
             const block_type* src0, uint32_t src0_size_,
             const block_type* src1, uint32_t src1_size)
-    : instr_alu_base(dst, dst_size_,
+    : instr_op_base(dst, dst_size_,
                      src0, src0_size_,
                      src1, src1_size)
     {}
 
-  friend class instr_alu_base;
+  friend class instr_op_base;
 };
 
-instr_alu_base* instr_alu_base::create(aluimpl* node, data_map_t& map) {
+instr_op_base* instr_op_base::create(opimpl* node, data_map_t& map) {
   uint32_t dst_size = node->size();
   bool is_signed = node->is_signed();
 
@@ -555,74 +555,74 @@ instr_alu_base* instr_alu_base::create(aluimpl* node, data_map_t& map) {
 
   uint32_t dst_bytes = sizeof(block_type) * ceildiv(dst_size, bitwidth_v<block_type>);
 
-  auto buf = new uint8_t[__aligned_sizeof(instr_alu_base) + dst_bytes]();
-  auto buf_cur = buf + __aligned_sizeof(instr_alu_base);
+  auto buf = new uint8_t[__aligned_sizeof(instr_op_base) + dst_bytes]();
+  auto buf_cur = buf + __aligned_sizeof(instr_op_base);
   auto dst = (block_type*)buf_cur;
   map[node->id()] = dst;
   bv_init(dst, dst_size);
 
-#define CREATE_ALU_INST(op, sign_enable, resize_enable) \
+#define CREATE_OP_INST(op, sign_enable, resize_enable) \
   case op: \
     if (is_scalar) { \
       if (sign_enable && is_signed) { \
         if (resize_enable && resize_opds) { \
-          return new (buf) instr_alu<op, true, true, true>(dst, dst_size, src0, src0_size, src1, src1_size); \
+          return new (buf) instr_op<op, true, true, true>(dst, dst_size, src0, src0_size, src1, src1_size); \
         } else { \
-          return new (buf) instr_alu<op, true, true, false>(dst, dst_size, src0, src0_size, src1, src1_size); \
+          return new (buf) instr_op<op, true, true, false>(dst, dst_size, src0, src0_size, src1, src1_size); \
         }  \
       } else { \
         if (resize_enable && resize_opds) { \
-          return new (buf) instr_alu<op, false, true, true>(dst, dst_size, src0, src0_size, src1, src1_size); \
+          return new (buf) instr_op<op, false, true, true>(dst, dst_size, src0, src0_size, src1, src1_size); \
         } else { \
-          return new (buf) instr_alu<op, false, true, false>(dst, dst_size, src0, src0_size, src1, src1_size); \
+          return new (buf) instr_op<op, false, true, false>(dst, dst_size, src0, src0_size, src1, src1_size); \
         } \
       } \
     } else { \
       if (sign_enable && is_signed) { \
         if (resize_enable && resize_opds) { \
-          return new (buf) instr_alu<op, true, false, true>(dst, dst_size, src0, src0_size, src1, src1_size); \
+          return new (buf) instr_op<op, true, false, true>(dst, dst_size, src0, src0_size, src1, src1_size); \
         } else { \
-          return new (buf) instr_alu<op, true, false, false>(dst, dst_size, src0, src0_size, src1, src1_size); \
+          return new (buf) instr_op<op, true, false, false>(dst, dst_size, src0, src0_size, src1, src1_size); \
         }  \
       } else { \
         if (resize_enable && resize_opds) { \
-          return new (buf) instr_alu<op, false, false, true>(dst, dst_size, src0, src0_size, src1, src1_size); \
+          return new (buf) instr_op<op, false, false, true>(dst, dst_size, src0, src0_size, src1, src1_size); \
         } else { \
-          return new (buf) instr_alu<op, false, false, false>(dst, dst_size, src0, src0_size, src1, src1_size); \
+          return new (buf) instr_op<op, false, false, false>(dst, dst_size, src0, src0_size, src1, src1_size); \
         } \
       } \
     }
 
   switch (node->op()) {
-  CREATE_ALU_INST(ch_op::eq, true, true);
-  CREATE_ALU_INST(ch_op::ne, true, true);
-  CREATE_ALU_INST(ch_op::lt, true, true);
-  CREATE_ALU_INST(ch_op::gt, true, true);
-  CREATE_ALU_INST(ch_op::le, true, true);
-  CREATE_ALU_INST(ch_op::ge, true, true);
-  CREATE_ALU_INST(ch_op::notl, false, false);
-  CREATE_ALU_INST(ch_op::andl, false, false);
-  CREATE_ALU_INST(ch_op::orl, false, false);
-  CREATE_ALU_INST(ch_op::inv, true, true);
-  CREATE_ALU_INST(ch_op::andb, true, true);
-  CREATE_ALU_INST(ch_op::orb, true, true);
-  CREATE_ALU_INST(ch_op::xorb, true, true);
-  CREATE_ALU_INST(ch_op::andr, false, false);
-  CREATE_ALU_INST(ch_op::orr, false, false);
-  CREATE_ALU_INST(ch_op::xorr, false, false);
-  CREATE_ALU_INST(ch_op::shl, false, false);
-  CREATE_ALU_INST(ch_op::shr, true, false);
-  CREATE_ALU_INST(ch_op::neg, true, true);
-  CREATE_ALU_INST(ch_op::add, true, true);
-  CREATE_ALU_INST(ch_op::sub, true, true);  
-  CREATE_ALU_INST(ch_op::mul, true, false);
-  CREATE_ALU_INST(ch_op::div, true, false);
-  CREATE_ALU_INST(ch_op::mod, true, false);
-  CREATE_ALU_INST(ch_op::pad, true, false);
+  CREATE_OP_INST(ch_op::eq, true, true);
+  CREATE_OP_INST(ch_op::ne, true, true);
+  CREATE_OP_INST(ch_op::lt, true, true);
+  CREATE_OP_INST(ch_op::gt, true, true);
+  CREATE_OP_INST(ch_op::le, true, true);
+  CREATE_OP_INST(ch_op::ge, true, true);
+  CREATE_OP_INST(ch_op::notl, false, false);
+  CREATE_OP_INST(ch_op::andl, false, false);
+  CREATE_OP_INST(ch_op::orl, false, false);
+  CREATE_OP_INST(ch_op::inv, true, true);
+  CREATE_OP_INST(ch_op::andb, true, true);
+  CREATE_OP_INST(ch_op::orb, true, true);
+  CREATE_OP_INST(ch_op::xorb, true, true);
+  CREATE_OP_INST(ch_op::andr, false, false);
+  CREATE_OP_INST(ch_op::orr, false, false);
+  CREATE_OP_INST(ch_op::xorr, false, false);
+  CREATE_OP_INST(ch_op::shl, false, false);
+  CREATE_OP_INST(ch_op::shr, true, false);
+  CREATE_OP_INST(ch_op::neg, true, true);
+  CREATE_OP_INST(ch_op::add, true, true);
+  CREATE_OP_INST(ch_op::sub, true, true);
+  CREATE_OP_INST(ch_op::mul, true, false);
+  CREATE_OP_INST(ch_op::div, true, false);
+  CREATE_OP_INST(ch_op::mod, true, false);
+  CREATE_OP_INST(ch_op::pad, true, false);
   default:
     CH_ABORT("invalid opcode");
   }
-#undef CREATE_ALU_INST
+#undef CREATE_OP_INST
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1677,8 +1677,8 @@ public:
         data_map[node->id()] = data_map.at(output->src(0).id());
         instr = instr_output_base::create(output, data_map);
       } break;
-      case type_alu:
-        instr = instr_alu_base::create(reinterpret_cast<aluimpl*>(node), data_map);
+      case type_op:
+        instr = instr_op_base::create(reinterpret_cast<opimpl*>(node), data_map);
         break;
       case type_sel:
         instr = instr_select_base::create(reinterpret_cast<selectimpl*>(node), data_map);

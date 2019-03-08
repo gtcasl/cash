@@ -38,8 +38,8 @@ protected:
 
   lnodeimpl* constant_fold(proxyimpl* node);
   lnodeimpl* constant_fold(selectimpl* node);
-  lnodeimpl* constant_fold(aluimpl* node);
-  lnodeimpl* constant_fold_bitwise(aluimpl* node);
+  lnodeimpl* constant_fold(opimpl* node);
+  lnodeimpl* constant_fold_bitwise(opimpl* node);
 
   void map_replace_target(lnodeimpl* from, lnodeimpl* to);
   void map_delete(lnodeimpl* node);

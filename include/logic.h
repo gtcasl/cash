@@ -6,11 +6,11 @@
 namespace ch {
 namespace internal {  
 
-lnode createAluNode(ch_op op, uint32_t size, bool is_signed, const lnode& in,
-                    const source_location& sloc);
+lnode createOpNode(ch_op op, uint32_t size, bool is_signed, const lnode& in,
+                   const source_location& sloc);
 
-lnode createAluNode(ch_op op, uint32_t size, bool is_signed, const lnode& lhs,
-                    const lnode& rhs, const source_location& sloc);
+lnode createOpNode(ch_op op, uint32_t size, bool is_signed, const lnode& lhs,
+                   const lnode& rhs, const source_location& sloc);
 
 lnode createRotateNode(const lnode& next, uint32_t dist, bool right,
                        const source_location& sloc);
@@ -240,13 +240,13 @@ auto make_type(const lnode& node, const source_location& sloc) {
 
 template <ch_op op, bool Signed, typename R, typename A>
 auto make_logic_op(const A& a, const source_location& sloc) {
-  auto node = createAluNode(op, ch_width_v<R>, Signed, get_lnode(a), sloc);
+  auto node = createOpNode(op, ch_width_v<R>, Signed, get_lnode(a), sloc);
   return make_type<R>(node, sloc);
 }
 
 template <ch_op op, bool Signed, typename R, typename A, typename B>
 auto make_logic_op(const A& a, const B& b, const source_location& sloc) {
-  auto node = createAluNode(op, ch_width_v<R>, Signed, get_lnode(a), get_lnode(b), sloc);
+  auto node = createOpNode(op, ch_width_v<R>, Signed, get_lnode(a), get_lnode(b), sloc);
   return make_type<R>(node, sloc);
 }
 

@@ -10,7 +10,7 @@
   m(proxy) \
   m(input) \
   m(output) \
-  m(alu) \
+  m(op) \
   m(sel) \
   m(cd) \
   m(reg) \

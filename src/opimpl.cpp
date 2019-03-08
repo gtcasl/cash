@@ -1,4 +1,4 @@
-#include "aluimpl.h"
+#include "opimpl.h"
 #include "proxyimpl.h"
 #include "litimpl.h"
 #include "logic.h"
@@ -6,19 +6,19 @@
 
 using namespace ch::internal;
 
-aluimpl::aluimpl(context* ctx, ch_op op, uint32_t size, bool is_signed,
+opimpl::opimpl(context* ctx, ch_op op, uint32_t size, bool is_signed,
                  lnodeimpl* in, const source_location& sloc)
-  : lnodeimpl(ctx, type_alu, size, sloc) {
+  : lnodeimpl(ctx, type_op, size, sloc) {
   this->init(op, is_signed, in);
 }
 
-aluimpl::aluimpl(context* ctx, ch_op op, uint32_t size, bool is_signed,
+opimpl::opimpl(context* ctx, ch_op op, uint32_t size, bool is_signed,
                  lnodeimpl* lhs, lnodeimpl* rhs, const source_location& sloc)
-  : lnodeimpl(ctx, type_alu, size, sloc) {
+  : lnodeimpl(ctx, type_op, size, sloc) {
   this->init(op, is_signed, lhs, rhs);
 }
 
-void aluimpl::init(ch_op op, bool is_signed, lnodeimpl* lhs, lnodeimpl* rhs) {
+void opimpl::init(ch_op op, bool is_signed, lnodeimpl* lhs, lnodeimpl* rhs) {
   op_ = op;
   name_ = to_string(op);
   if (lhs) {
@@ -36,25 +36,25 @@ void aluimpl::init(ch_op op, bool is_signed, lnodeimpl* lhs, lnodeimpl* rhs) {
   signed_ = is_signed;
 }
 
-lnodeimpl* aluimpl::clone(context* ctx, const clone_map& cloned_nodes) const {
+lnodeimpl* opimpl::clone(context* ctx, const clone_map& cloned_nodes) const {
   auto src0 = cloned_nodes.at(this->src(0).id());
   if (this->srcs().size() == 2) {
     auto src1 = cloned_nodes.at(this->src(1).id());
-    return ctx->create_node<aluimpl>(op_, this->size(), signed_, src0, src1, sloc_);
+    return ctx->create_node<opimpl>(op_, this->size(), signed_, src0, src1, sloc_);
   } else {
-    return ctx->create_node<aluimpl>(op_, this->size(), signed_, src0, sloc_);
+    return ctx->create_node<opimpl>(op_, this->size(), signed_, src0, sloc_);
   }
 }
 
-bool aluimpl::equals(const lnodeimpl& other) const {
+bool opimpl::equals(const lnodeimpl& other) const {
   if (lnodeimpl::equals(other)) {
-    auto _other = reinterpret_cast<const aluimpl&>(other);
+    auto _other = reinterpret_cast<const opimpl&>(other);
     return (op_ == _other.op_) && (signed_ == _other.signed_);
   }
   return false;
 }
 
-void aluimpl::print(std::ostream& out) const {
+void opimpl::print(std::ostream& out) const {
   out << "#" << id_ << " <- " << this->type() << this->size();
   auto n = this->srcs().size();
   out << "(" << op_ << (signed_ ? "_s" : "_u") << ", ";
@@ -66,7 +66,7 @@ void aluimpl::print(std::ostream& out) const {
   out << ")";
 }
 
-bool aluimpl::should_resize_opds() const {
+bool opimpl::should_resize_opds() const {
   auto op_resize = CH_OP_RESIZE(op_);
   switch (op_resize) {
   case op_flags::resize_src:
@@ -83,16 +83,16 @@ bool aluimpl::should_resize_opds() const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-lnode ch::internal::createAluNode(
+lnode ch::internal::createOpNode(
     ch_op op,
     uint32_t size,
     bool is_signed,
     const lnode& in,
     const source_location& sloc) {
-  return in.impl()->ctx()->create_node<aluimpl>(op, size, is_signed, in.impl(), sloc);
+  return in.impl()->ctx()->create_node<opimpl>(op, size, is_signed, in.impl(), sloc);
 }
 
-lnode ch::internal::createAluNode(
+lnode ch::internal::createOpNode(
     ch_op op,
     uint32_t size,
     bool is_signed,
@@ -102,12 +102,12 @@ lnode ch::internal::createAluNode(
   if (op == ch_op::ne || op == ch_op::eq) {
     if (type_lit == lhs.impl()->type() && reinterpret_cast<litimpl*>(lhs.impl())->is_zero()) {
       op = (op == ch_op::eq) ? ch_op::notl : ch_op::orr;
-      return rhs.impl()->ctx()->create_node<aluimpl>(op, size, is_signed, rhs.impl(), sloc);
+      return rhs.impl()->ctx()->create_node<opimpl>(op, size, is_signed, rhs.impl(), sloc);
     } else
     if (type_lit == lhs.impl()->type() && reinterpret_cast<litimpl*>(rhs.impl())->is_zero()) {
       op = (op == ch_op::eq) ? ch_op::notl : ch_op::orr;
-      return lhs.impl()->ctx()->create_node<aluimpl>(op, size, is_signed, lhs.impl(), sloc);
+      return lhs.impl()->ctx()->create_node<opimpl>(op, size, is_signed, lhs.impl(), sloc);
     }
   }
-  return lhs.impl()->ctx()->create_node<aluimpl>(op, size, is_signed, lhs.impl(), rhs.impl(), sloc);
+  return lhs.impl()->ctx()->create_node<opimpl>(op, size, is_signed, lhs.impl(), rhs.impl(), sloc);
 }

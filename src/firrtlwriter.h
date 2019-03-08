@@ -10,7 +10,7 @@ class context;
 class lnodeimpl;
 class litimpl;
 class proxyimpl;
-class aluimpl;
+class opimpl;
 class selectimpl;
 class regimpl;
 class ioimpl;
@@ -65,7 +65,7 @@ protected:
 
   bool print_proxy(std::ostream& out, proxyimpl* node);
 
-  bool print_alu(std::ostream& out, aluimpl* node);
+  bool print_op(std::ostream& out, opimpl* node);
 
   bool print_select(std::ostream& out, selectimpl* node);
 

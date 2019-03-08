@@ -9,7 +9,7 @@
 #include "selectimpl.h"
 #include "proxyimpl.h"
 #include "memimpl.h"
-#include "aluimpl.h"
+#include "opimpl.h"
 #include "timeimpl.h"
 #include "assertimpl.h"
 #include "cdimpl.h"
@@ -301,7 +301,7 @@ void context::add_node(lnodeimpl* node) {
   case type_output:
     outputs_.push_back(node);
     break;
-  case type_alu:
+  case type_op:
   case type_sel:
     alus_.push_back(node);
     break;
@@ -382,7 +382,7 @@ void context::delete_node(lnodeimpl* node) {
   case type_output:
     outputs_.remove(node);
     break;
-  case type_alu:
+  case type_op:
   case type_sel:
     alus_.remove(node);
     break;
@@ -856,7 +856,7 @@ context::emit_conditionals(lnodeimpl* dst,
         if (it->first && it->second == df_value) {
           if (nullptr == key) {
             if (skip_pred) {
-              skip_pred = this->create_node<aluimpl>(ch_op::orb, 1, false, skip_pred, it->first, branch->sloc);
+              skip_pred = this->create_node<opimpl>(ch_op::orb, 1, false, skip_pred, it->first, branch->sloc);
             } else {
               skip_pred = it->first;
             }
@@ -864,8 +864,8 @@ context::emit_conditionals(lnodeimpl* dst,
           it = values.erase(it);
         } else {
           if (skip_pred && it->first) {
-            auto not_skip_pred = this->create_node<aluimpl>(ch_op::inv, 1, false, skip_pred, branch->sloc);
-            it->first = this->create_node<aluimpl>(ch_op::andb, 1, false, it->first, not_skip_pred, branch->sloc);
+            auto not_skip_pred = this->create_node<opimpl>(ch_op::inv, 1, false, skip_pred, branch->sloc);
+            it->first = this->create_node<opimpl>(ch_op::andb, 1, false, it->first, not_skip_pred, branch->sloc);
           }
           ++it;
         }
@@ -889,16 +889,16 @@ context::emit_conditionals(lnodeimpl* dst,
           // combine predicates
           auto pred0 = values.front().first;
           if (key) {
-            pred0 = this->create_node<aluimpl>(ch_op::eq, 1, false, key, pred0, branch->sloc);
+            pred0 = this->create_node<opimpl>(ch_op::eq, 1, false, key, pred0, branch->sloc);
           }
           auto pred1 = _true->src(0).impl();
           if (_true->has_key()) {
             // create predicate
-            pred1 = this->create_node<aluimpl>(ch_op::eq, 1, false, pred1, _true->src(1).impl(), branch->sloc);
+            pred1 = this->create_node<opimpl>(ch_op::eq, 1, false, pred1, _true->src(1).impl(), branch->sloc);
             // remove key from src list
             _true->remove_key();
           }
-          auto pred = this->create_node<aluimpl>(ch_op::andb, 1, false, pred0, pred1, branch->sloc);
+          auto pred = this->create_node<opimpl>(ch_op::andb, 1, false, pred0, pred1, branch->sloc);
           _true->src(0) = pred;
           return _true;
         }
@@ -1095,7 +1095,7 @@ void context::dump_stats(std::ostream& out) {
   uint64_t num_registers = 0;
   uint64_t num_memories = 0;
   uint64_t num_literals = 0;
-  uint64_t num_alus = 0;
+  uint64_t num_ops = 0;
   uint64_t num_muxes = 0;
 
   uint64_t input_bits = 0;
@@ -1131,8 +1131,8 @@ void context::dump_stats(std::ostream& out) {
         literal_bits += node->size();
         ++num_literals;
         break;
-      case type_alu:
-        ++num_alus;
+      case type_op:
+        ++num_ops;
         break;
       case type_sel:
         ++num_muxes;
@@ -1153,7 +1153,7 @@ void context::dump_stats(std::ostream& out) {
   out << "ch-stats: total registers = " << num_registers << " (" << register_bits << " bits)" << std::endl;
   out << "ch-stats: total memories = " << num_memories << " (" << memory_bits << " bits)" << std::endl;
   out << "ch-stats: total literals = " << num_literals << " (" << literal_bits << " bits)" << std::endl;
-  out << "ch-stats: total alus = " << num_alus << std::endl;
+  out << "ch-stats: total ops = " << num_ops << std::endl;
   out << "ch-stats: total muxes = " << num_muxes << std::endl;
 }
 

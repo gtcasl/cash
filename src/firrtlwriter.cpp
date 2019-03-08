@@ -10,7 +10,7 @@
 #include "selectimpl.h"
 #include "proxyimpl.h"
 #include "memimpl.h"
-#include "aluimpl.h"
+#include "opimpl.h"
 #include "assertimpl.h"
 
 using namespace ch::internal;
@@ -188,7 +188,7 @@ bool firrtlwriter::print_decl(std::ostream& out,
   case type_proxy:
   case type_bindin:
   case type_bindout:
-  case type_alu:
+  case type_op:
   case type_sel:
   case type_reg:
   case type_mem: {
@@ -229,8 +229,8 @@ bool firrtlwriter::print_logic(std::ostream& out, lnodeimpl* node) {
     return this->print_lit(out, reinterpret_cast<litimpl*>(node));
   case type_proxy:
     return this->print_proxy(out, reinterpret_cast<proxyimpl*>(node));
-  case type_alu:
-    return this->print_alu(out, reinterpret_cast<aluimpl*>(node));
+  case type_op:
+    return this->print_op(out, reinterpret_cast<opimpl*>(node));
   case type_sel:
     return this->print_select(out, reinterpret_cast<selectimpl*>(node));
   case type_reg:
@@ -335,7 +335,7 @@ bool firrtlwriter::print_proxy(std::ostream& out, proxyimpl* node) {
   return true;
 }
 
-bool firrtlwriter::print_alu(std::ostream& out, aluimpl* node) {
+bool firrtlwriter::print_op(std::ostream& out, opimpl* node) {
   //--
   auto op = node->op();
 
@@ -695,7 +695,7 @@ void firrtlwriter::print_name(std::ostream& out, lnodeimpl* node, bool force) {
     }
     break;
   case type_sel:
-  case type_alu:
+  case type_op:
   case type_reg:
   case type_mem:
   case type_bind:
@@ -749,7 +749,7 @@ void firrtlwriter::print_type(std::ostream& out, lnodeimpl* node) {
   case type_lit:
   case type_proxy:
   case type_sel:
-  case type_alu:
+  case type_op:
   case type_bindin:
   case type_bindout:
   case type_marport:

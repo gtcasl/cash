@@ -27,7 +27,7 @@ SRCS = utils.cpp \
        regimpl.cpp \
        memimpl.cpp \
        selectimpl.cpp \
-       aluimpl.cpp \
+       opimpl.cpp \
        bindimpl.cpp \
        assertimpl.cpp \
        timeimpl.cpp \

@@ -1,7 +1,7 @@
 #include "compile.h"
 #include "litimpl.h"
 #include "regimpl.h"
-#include "aluimpl.h"
+#include "opimpl.h"
 #include "selectimpl.h"
 #include "proxyimpl.h"
 #include "ioimpl.h"
@@ -410,8 +410,8 @@ bool compiler::constant_folding() {
       }
       break;
     }
-    case type_alu: {
-      auto alu = reinterpret_cast<aluimpl*>(node);
+    case type_op: {
+      auto alu = reinterpret_cast<opimpl*>(node);
       if (is_constant) {
         replace_constant(alu, this->constant_fold(alu));
       } else
@@ -466,7 +466,7 @@ lnodeimpl* compiler::constant_fold(proxyimpl* node) {
   return ctx_->create_literal(tmp);
 }
 
-lnodeimpl* compiler::constant_fold(aluimpl* node) {
+lnodeimpl* compiler::constant_fold(opimpl* node) {
   sdata_type tmp(node->size());
 
   const block_type* src0_data = nullptr;
@@ -650,7 +650,7 @@ lnodeimpl* compiler::constant_fold(aluimpl* node) {
   return ctx_->create_literal(tmp);
 }
 
-lnodeimpl* compiler::constant_fold_bitwise(aluimpl* node) {
+lnodeimpl* compiler::constant_fold_bitwise(opimpl* node) {
   auto src0 = node->src(0).impl();
   auto src1 = node->src(1).impl();
 
@@ -696,12 +696,12 @@ lnodeimpl* compiler::constant_fold_bitwise(aluimpl* node) {
       return src0;
     } else
     if (node->size() == src0->size() && node->size() == src1->size() && src0_is_ones) {
-      auto inv = ctx_->create_node<aluimpl>(ch_op::inv, node->size(), false, src1, node->sloc());
+      auto inv = ctx_->create_node<opimpl>(ch_op::inv, node->size(), false, src1, node->sloc());
       this->build_node_map(inv);
       return inv;
     } else
     if (node->size() == src0->size() && node->size() == src1->size() && src1_is_ones) {
-      auto inv = ctx_->create_node<aluimpl>(ch_op::inv, node->size(), false, src0, node->sloc());
+      auto inv = ctx_->create_node<opimpl>(ch_op::inv, node->size(), false, src0, node->sloc());
       this->build_node_map(inv);
       return inv;
     }
@@ -762,7 +762,7 @@ bool compiler::subexpressions_elimination() {
       return false;
     case type_proxy:
     case type_sel:
-    case type_alu:
+    case type_op:
     case type_reg:
       break;
     }

@@ -46,7 +46,7 @@ public:
             CH_REQUIRE_0(is_bit_base_v<U>),
             CH_REQUIRE_0(ch_width_v<U> < N)>
   explicit ch_bit(const U& other, CH_SLOC)
-    : buffer_(logic_buffer(createAluNode(ch_op::pad, N, ch_signed_v<U>, get_lnode(other), sloc), sloc))
+    : buffer_(logic_buffer(createOpNode(ch_op::pad, N, ch_signed_v<U>, get_lnode(other), sloc), sloc))
   {}
 
   ch_bit(const ch_bit& other, CH_SLOC)

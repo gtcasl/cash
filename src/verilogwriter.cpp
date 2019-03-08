@@ -11,7 +11,7 @@
 #include "selectimpl.h"
 #include "proxyimpl.h"
 #include "memimpl.h"
-#include "aluimpl.h"
+#include "opimpl.h"
 #include "assertimpl.h"
 #include "udfimpl.h"
 
@@ -52,8 +52,8 @@ bool verilogwriter::is_inline_subscript(lnodeimpl* node) const {
       if (type_proxy == use->type()
        || type_marport == use->type()
        || type_tap == use->type()
-       || (type_alu == use->type()       
-        && ch_op::pad == reinterpret_cast<aluimpl*>(use)->op()))
+       || (type_op == use->type()       
+        && ch_op::pad == reinterpret_cast<opimpl*>(use)->op()))
         return false;
     }
   }
@@ -271,7 +271,7 @@ bool verilogwriter::print_decl(std::ostream& out,
     [[fallthrough]];
   case type_bindin:
   case type_bindout:
-  case type_alu:
+  case type_op:
   case type_sel:
   case type_reg:
   case type_msrport:
@@ -369,8 +369,8 @@ bool verilogwriter::print_logic(std::ostream& out, lnodeimpl* node) {
   switch (type) {
   case type_proxy:
     return this->print_proxy(out, reinterpret_cast<proxyimpl*>(node));
-  case type_alu:
-    return this->print_alu(out, reinterpret_cast<aluimpl*>(node));
+  case type_op:
+    return this->print_op(out, reinterpret_cast<opimpl*>(node));
   case type_sel:
     return this->print_select(out, reinterpret_cast<selectimpl*>(node));
   case type_reg:
@@ -444,7 +444,7 @@ void verilogwriter::print_proxy_value(std::ostream& out, proxyimpl* node) {
   }
 }
 
-bool verilogwriter::print_alu(std::ostream& out, aluimpl* node) {
+bool verilogwriter::print_op(std::ostream& out, opimpl* node) {
   auto print_signed_operand = [&](unsigned index) {
     if (node->is_signed())
       out << "$signed(";
@@ -494,7 +494,7 @@ bool verilogwriter::print_alu(std::ostream& out, aluimpl* node) {
   return true;
 }
 
-bool verilogwriter::print_zext(std::ostream& out, aluimpl* node) {
+bool verilogwriter::print_zext(std::ostream& out, opimpl* node) {
   out << "assign ";
   this->print_name(out, node);
   out << " = {{" << node->size() - node->src(0).size() << "{1'b0}}, ";
@@ -503,7 +503,7 @@ bool verilogwriter::print_zext(std::ostream& out, aluimpl* node) {
   return true;
 }
 
-bool verilogwriter::print_sext(std::ostream& out, aluimpl* node) {
+bool verilogwriter::print_sext(std::ostream& out, opimpl* node) {
   out << "assign ";
   this->print_name(out, node);
   out << " = {{" << node->size() - node->src(0).size() << "{";
@@ -907,7 +907,7 @@ void verilogwriter::print_name(std::ostream& out, lnodeimpl* node, bool force) {
     }
     break;
   case type_sel:
-  case type_alu:
+  case type_op:
   case type_reg:
   case type_mem:
   case type_msrport:

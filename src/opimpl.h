@@ -6,7 +6,7 @@
 namespace ch {
 namespace internal {
 
-class aluimpl : public lnodeimpl {
+class opimpl : public lnodeimpl {
 public:
 
   ch_op op() const {
@@ -27,13 +27,13 @@ public:
   
 protected:
 
-  aluimpl(context* ctx, ch_op op, uint32_t size, bool is_signed,
+  opimpl(context* ctx, ch_op op, uint32_t size, bool is_signed,
           lnodeimpl* lhs, const source_location& sloc);
 
-  aluimpl(context* ctx, ch_op op, uint32_t size, bool is_signed,
+  opimpl(context* ctx, ch_op op, uint32_t size, bool is_signed,
           lnodeimpl* lhs, lnodeimpl* rhs, const source_location& sloc);
 
-  ~aluimpl() {}
+  ~opimpl() {}
 
   void init(ch_op op,
             bool is_signed,
