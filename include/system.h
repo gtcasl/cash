@@ -130,6 +130,12 @@ public:
   }
 
   template <typename T>
+  static const auto& source(const T& obj) {
+    assert(obj.buffer()->size() == ch_width_v<T>);
+    return obj.buffer()->source();
+  }
+
+  template <typename T>
   static auto copy(const T& obj) {
     assert(obj.buffer()->size() == ch_width_v<T>);
     return make_system_buffer(*obj.buffer());

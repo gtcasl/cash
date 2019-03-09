@@ -78,6 +78,7 @@ lnodeimpl::lnodeimpl(context* ctx,
                      const std::string& name)
   : prev_(nullptr)
   , next_(nullptr)
+  , users_(nullptr)
   , ctx_(ctx)
   , name_(name)
   , sloc_(sloc)

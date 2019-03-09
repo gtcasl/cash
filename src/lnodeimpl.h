@@ -139,6 +139,7 @@ protected:
 
   lnodeimpl* prev_;
   lnodeimpl* next_;
+  const lnode* users_;
 
   context* ctx_;
   std::string name_;

@@ -98,6 +98,8 @@ void compiler::optimize() {
 
   CH_DBG(2, "compiling %s (#%d) ...\n", ctx_->name().c_str(), ctx_->id());
 
+  ctx_->dump_ast(std::cout);
+
   node_tracker tracker(ctx_);
   size_t orig_num_nodes = tracker.current();
 

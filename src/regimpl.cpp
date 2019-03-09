@@ -110,7 +110,7 @@ logic_buffer ch::internal::createRegNode(unsigned size,
   logic_buffer ret(size, sloc, "ch_reg_" + id);
   auto ctx  = ctx_curr();
   auto cd   = ctx->current_cd(sloc);
-  auto next = ctx->create_node<proxyimpl>(ret.data(), sloc, "ch_reg_next_" + id);
+  auto next = ctx->create_node<proxyimpl>(ret, sloc, "ch_reg_next_" + id);
   auto reg  = ctx->create_node<regimpl>(
         size, 1, cd, nullptr, nullptr, next, nullptr, sloc, id);
   ret.write(0, reg, 0, size, sloc);
@@ -125,7 +125,7 @@ logic_buffer ch::internal::createRegNode(const lnode& init_data,
   auto ctx  = init_data.impl()->ctx();
   auto cd   = ctx->current_cd(sloc);
   auto rst  = ctx->current_reset(sloc);
-  auto next = ctx->create_node<proxyimpl>(ret.data(), sloc, "ch_reg_next_" + id);
+  auto next = ctx->create_node<proxyimpl>(ret, sloc, "ch_reg_next_" + id);
   auto reg  = ctx->create_node<regimpl>(
         next->size(), 1, cd, rst  , nullptr, next, init_data.impl(), sloc, id);
   ret.write(0, reg, 0, init_data.size(), sloc);

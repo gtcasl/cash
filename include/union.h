@@ -14,7 +14,7 @@
 
 #define CH_UNION_LOGIC_CTOR(a, i, x) \
   CH_PAIR_R(x)(ch::internal::logic_buffer( \
-    ch_width_v<ch::internal::identity_t<CH_PAIR_L(x)>>, buffer, 0, buffer.data().sloc(), CH_STRINGIZE(CH_PAIR_R(x))))
+    ch_width_v<ch::internal::identity_t<CH_PAIR_L(x)>>, buffer, 0, buffer.sloc(), CH_STRINGIZE(CH_PAIR_R(x))))
 
 #define CH_UNION_SYSTEM_FIELD(a, i, x) \
   ch_system_t<ch::internal::identity_t<CH_PAIR_L(x)>> CH_PAIR_R(x)
@@ -60,7 +60,7 @@
   } \
 protected: \
   const ch::internal::system_buffer_ptr& buffer() const { \
-    CH_STRUCT_SYSTEM_GETBUFFER(0, CH_FIRST_ARG(__VA_ARGS__))->source(); \
+    CH_STRUCT_SYSTEM_SOURCE(0, CH_FIRST_ARG(__VA_ARGS__)); \
   } \
   friend std::ostream& operator<<(std::ostream& __out, const union_name& __in) { \
     __out << "("; \
@@ -90,8 +90,8 @@ public:
     return *this; \
   } \
 protected: \
-  ch::internal::logic_buffer buffer() const { \
-    CH_STRUCT_LOGIC_GETBUFFER(0, CH_FIRST_ARG(__VA_ARGS__)).source(); \
+  const ch::internal::logic_buffer& buffer() const { \
+    CH_STRUCT_LOGIC_SOURCE(0, CH_FIRST_ARG(__VA_ARGS__)); \
   } \
   friend class ch::internal::logic_accessor; \
 public:

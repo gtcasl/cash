@@ -61,7 +61,7 @@ public:
         traits::bitwidth,
         CH_CUR_SLOC,
         stringf("ch_vec%d_%s", N, identifier_from_typeid(typeid(T).name()).c_str())))
-    : ch_vec(buffer, std::make_index_sequence<N>(), buffer.data().sloc())
+    : ch_vec(buffer, std::make_index_sequence<N>(), buffer.sloc())
   {}
 
   ch_vec(const ch_vec& other, CH_SLOC)
@@ -142,8 +142,8 @@ protected:
     : base(logic_buffer(ch_width_v<T>, buffer, Is * ch_width_v<T>, sloc, stringf("%d", Is))...)
   {}
 
-  logic_buffer buffer() const {
-    return logic_accessor::buffer(this->at(0)).source();
+  const logic_buffer& buffer() const {
+    return logic_accessor::source(this->at(0));
   }
 
   friend class logic_accessor;
@@ -228,7 +228,7 @@ protected:
   {}
 
   const system_buffer_ptr& buffer() const {
-    return system_accessor::buffer(this->at(0))->source();
+    return system_accessor::source(this->at(0));
   }
 
   friend std::ostream& operator<<(std::ostream& out, const ch_vec& in) {

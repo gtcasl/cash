@@ -209,6 +209,8 @@ public:
   }
 
   lnodeimpl* impl() const;
+
+  const lnode& source() const;
   
   uint32_t id() const;
 

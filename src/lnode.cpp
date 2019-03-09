@@ -34,7 +34,7 @@ lnode::lnode(const lnode& src,
              const source_location& sloc,
              const std::string& name) {
   impl_ = src.impl()->ctx()->create_node<proxyimpl>(
-              src, 0, src.size(), sloc, name);
+              src, 0, src.size(), sloc, (name.empty() ? src.name() : name));
 }
 
 lnode::lnode(uint32_t size,
@@ -42,8 +42,9 @@ lnode::lnode(uint32_t size,
              uint32_t src_offset,
              const source_location& sloc,
              const std::string& name) {
+  auto full_name = (!src.name().empty() && !name.empty()) ? (src.name() + "_" + name) : name;
   impl_ = src.impl()->ctx()->create_node<refimpl>(
-            src, src_offset, size, sloc, name);
+            src, src_offset, size, sloc, full_name);
 }
 
 uint32_t lnode::id() const {
@@ -63,6 +64,11 @@ uint32_t lnode::size() const {
 lnodeimpl* lnode::impl() const {
   assert(impl_);
   return impl_;
+}
+
+const lnode& lnode::source() const {
+  assert(impl_);
+  return impl_->src(0);
 }
 
 void lnode::write(uint32_t dst_offset,

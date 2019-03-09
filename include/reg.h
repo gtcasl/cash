@@ -63,59 +63,59 @@ public:
 
   ch_reg_impl(CH_SLOC)
     : base(createRegNode(ch_width_v<T>, sloc, typeid(T).name())) {
-    __next__ = std::make_unique<next_t>(getRegNextNode(logic_accessor::data(*this)));
+    __next__ = std::make_unique<next_t>(getRegNextNode(logic_accessor::buffer(*this)));
   }
 
   template <typename U0,
             CH_REQUIRE_0(std::is_convertible_v<U0, T>)>
   explicit ch_reg_impl(const U0& init0, CH_SLOC)
-    : base(createRegNode(logic_accessor::data(T(init0)), sloc, typeid(T).name())) {
-    __next__ = std::make_unique<next_t>(getRegNextNode(logic_accessor::data(*this)));
+    : base(createRegNode(logic_accessor::buffer(T(init0)), sloc, typeid(T).name())) {
+    __next__ = std::make_unique<next_t>(getRegNextNode(logic_accessor::buffer(*this)));
   }
 
   template <typename U0,
             CH_REQUIRE_0(!std::is_convertible_v<U0, T> && std::is_constructible_v<T, U0>)>
   explicit ch_reg_impl(const U0& init0, CH_SLOC)
-    : base(createRegNode(logic_accessor::data(T(init0)), sloc, typeid(T).name())) {
-    __next__ = std::make_unique<next_t>(getRegNextNode(logic_accessor::data(*this)));
+    : base(createRegNode(logic_accessor::buffer(T(init0)), sloc, typeid(T).name())) {
+    __next__ = std::make_unique<next_t>(getRegNextNode(logic_accessor::buffer(*this)));
   }
 
   template <typename U0, typename U1,
             CH_REQUIRE_0(std::is_constructible_v<T, U0, U1>)>
   explicit ch_reg_impl(const U0& init0, const U1& init1, CH_SLOC)
-    : base(createRegNode(logic_accessor::data(T(init0, init1)), sloc, typeid(T).name())) {
-    __next__ = std::make_unique<next_t>(getRegNextNode(logic_accessor::data(*this)));
+    : base(createRegNode(logic_accessor::buffer(T(init0, init1)), sloc, typeid(T).name())) {
+    __next__ = std::make_unique<next_t>(getRegNextNode(logic_accessor::buffer(*this)));
   }
 
   template <typename U0, typename U1, typename U2,
             CH_REQUIRE_0(std::is_constructible_v<T, U0, U1, U2>)>
   explicit ch_reg_impl(const U0& init0, const U1& init1, const U2& init2, CH_SLOC)
-    : base(createRegNode(logic_accessor::data(T(init0, init1, init2)), sloc, typeid(T).name())) {
-    __next__ = std::make_unique<next_t>(getRegNextNode(logic_accessor::data(*this)));
+    : base(createRegNode(logic_accessor::buffer(T(init0, init1, init2)), sloc, typeid(T).name())) {
+    __next__ = std::make_unique<next_t>(getRegNextNode(logic_accessor::buffer(*this)));
   }
 
   template <typename U0, typename U1, typename U2, typename U3,
             CH_REQUIRE_0(std::is_constructible_v<T, U0, U1, U2, U3>)>
   explicit ch_reg_impl(const U0& init0, const U1& init1, const U2& init2, const U3& init3, CH_SLOC)
-    : base(createRegNode(logic_accessor::data(T(init0, init1, init2, init3)), sloc, typeid(T).name())) {
-    __next__ = std::make_unique<next_t>(getRegNextNode(logic_accessor::data(*this)));
+    : base(createRegNode(logic_accessor::buffer(T(init0, init1, init2, init3)), sloc, typeid(T).name())) {
+    __next__ = std::make_unique<next_t>(getRegNextNode(logic_accessor::buffer(*this)));
   }
 
   template <typename U0, typename U1, typename U2, typename U3, typename... Us,
             CH_REQUIRE_0(std::is_constructible_v<T, U0, U1, U2, U3, Us...>)>
   explicit ch_reg_impl(const U0& init0, const U1& init1, const U2& init2, const U3& init3, const Us&... inits)
-    : base(createRegNode(logic_accessor::data(T(init0, init1, init2, init3, inits...)), source_location(), typeid(T).name())) {
-    __next__ = std::make_unique<next_t>(getRegNextNode(logic_accessor::data(*this)));
+    : base(createRegNode(logic_accessor::buffer(T(init0, init1, init2, init3, inits...)), source_location(), typeid(T).name())) {
+    __next__ = std::make_unique<next_t>(getRegNextNode(logic_accessor::buffer(*this)));
   }
 
   ch_reg_impl(const ch_reg_impl& other, CH_SLOC)
-    : base(copyRegNode(logic_accessor::data(other), sloc, typeid(T).name())) {
-    __next__ = std::make_unique<next_t>(getRegNextNode(logic_accessor::data(*this)));
+    : base(copyRegNode(logic_accessor::buffer(other), sloc, typeid(T).name())) {
+    __next__ = std::make_unique<next_t>(getRegNextNode(logic_accessor::buffer(*this)));
   }
 
   ch_reg_impl(ch_reg_impl&& other)
     : base(std::move(logic_accessor::buffer(other))) {
-    __next__ = std::make_unique<next_t>(getRegNextNode(logic_accessor::data(*this)));
+    __next__ = std::make_unique<next_t>(getRegNextNode(logic_accessor::buffer(*this)));
   }
 
   auto& operator->() const {
@@ -170,7 +170,7 @@ template <typename R, typename T>
 auto ch_next(const T& in, CH_SLOC) {
   static_assert(is_logic_type_v<R>, "invalid type");
   static_assert(std::is_constructible_v<R, T>, "invalid type");
-  return R(createRegNext(logic_accessor::data(R(in, sloc)),
+  return R(createRegNext(logic_accessor::buffer(R(in, sloc)),
                          1,
                          sloc,
                          typeid(T).name()));
@@ -187,8 +187,8 @@ auto ch_next(const T& in, const I& init, CH_SLOC) {
   static_assert(is_logic_type_v<R>, "invalid type");
   static_assert(std::is_constructible_v<R, T>, "invalid type");
   static_assert(std::is_constructible_v<R, I>, "invalid type");
-  return R(createRegNext(logic_accessor::data(R(in, sloc)),
-                         logic_accessor::data(R(init, sloc)),
+  return R(createRegNext(logic_accessor::buffer(R(in, sloc)),
+                         logic_accessor::buffer(R(init, sloc)),
                          1,
                          sloc,
                          typeid(T).name()));
@@ -207,9 +207,9 @@ auto ch_nextEn(const T& in, const E& enable, CH_SLOC) {
   static_assert(std::is_constructible_v<R, T>, "invalid type");
   static_assert(is_bit_base_v<E>, "invalid type");
   static_assert(ch_width_v<E> == 1, "invalid size");
-  return R(createRegNext(logic_accessor::data(R(in, sloc)),
+  return R(createRegNext(logic_accessor::buffer(R(in, sloc)),
                          1,
-                         logic_accessor::data(enable),
+                         logic_accessor::buffer(enable),
                          sloc,
                          typeid(T).name()));
 }
@@ -226,10 +226,10 @@ auto ch_nextEn(const T& in, const E& enable, const I& init, CH_SLOC) {
   static_assert(std::is_constructible_v<R, I>, "invalid type");  
   static_assert(is_bit_base_v<E>, "invalid type");
   static_assert(ch_width_v<E> == 1, "invalid size");
-  return R(createRegNext(logic_accessor::data(R(in, sloc)),
-                         logic_accessor::data(R(init, sloc)),
+  return R(createRegNext(logic_accessor::buffer(R(in, sloc)),
+                         logic_accessor::buffer(R(init, sloc)),
                          1,
-                         logic_accessor::data(enable),
+                         logic_accessor::buffer(enable),
                          sloc,
                          typeid(T).name()));
 }
@@ -248,7 +248,7 @@ auto ch_delay(const T& in, uint32_t delay = 1, CH_SLOC) {
   if (0 == delay) {
     return R(in, sloc);
   }
-  return R(createRegNext(logic_accessor::data(R(in, sloc)),
+  return R(createRegNext(logic_accessor::buffer(R(in, sloc)),
                          delay,
                          sloc,
                          typeid(T).name()));
@@ -267,8 +267,8 @@ auto ch_delay(const T& in, uint32_t delay, const I& init, CH_SLOC) {
   if (0 == delay) {
     return R(in, sloc);
   }
-  return R(createRegNext(logic_accessor::data(R(in, sloc)),
-                         logic_accessor::data(R(init, sloc)),
+  return R(createRegNext(logic_accessor::buffer(R(in, sloc)),
+                         logic_accessor::buffer(R(init, sloc)),
                          delay,
                          sloc,
                          typeid(T).name()));
@@ -290,9 +290,9 @@ auto ch_delayEn(const T& in, const E& enable, uint32_t delay = 1, CH_SLOC) {
   if (0 == delay) {
     return R(in, sloc);
   }
-  return R(createRegNext(logic_accessor::data(R(in, sloc)),
+  return R(createRegNext(logic_accessor::buffer(R(in, sloc)),
                          delay,
-                         logic_accessor::data(enable),
+                         logic_accessor::buffer(enable),
                          sloc,
                          typeid(T).name()));
 }
@@ -312,10 +312,10 @@ auto ch_delayEn(const T& in, const E& enable, uint32_t delay, const I& init, CH_
   if (0 == delay) {
     return R(in, sloc);
   }
-  return R(createRegNext(logic_accessor::data(R(in, sloc)),
-                         logic_accessor::data(R(init, sloc)),
+  return R(createRegNext(logic_accessor::buffer(R(in, sloc)),
+                         logic_accessor::buffer(R(init, sloc)),
                          delay,
-                         logic_accessor::data(enable),                         
+                         logic_accessor::buffer(enable),                         
                          sloc,
                          typeid(T).name()));
 }
@@ -331,7 +331,7 @@ template <typename Func, typename... Bs>
 auto ch_pipe(Func&& func, uint32_t length, Bs&&... bounds) {
   beginPipe(length, {std::forward<Bs>(bounds)...});
   auto ret = func;
-  endPipe(logic_accessor::data(ret));
+  endPipe(logic_accessor::buffer(ret));
   return ret;
 }
 
@@ -339,9 +339,9 @@ template <typename Func, typename E, typename... Bs>
 auto ch_pipeEn(Func&& func, const E& enable, uint32_t length, Bs&&... bounds) {
   static_assert(is_bit_base_v<E>, "invalid type");
   static_assert(ch_width_v<E> == 1, "invalid size");
-  beginPipe(length, logic_accessor::data(enable), {std::forward<Bs>(bounds)...});
+  beginPipe(length, logic_accessor::buffer(enable), {std::forward<Bs>(bounds)...});
   auto ret = func;
-  endPipe(logic_accessor::data(ret));
+  endPipe(logic_accessor::buffer(ret));
   return ret;
 }
 

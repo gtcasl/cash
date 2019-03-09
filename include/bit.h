@@ -82,19 +82,19 @@ public:
 
   auto operator[](const sloc_arg<size_t>& index) const {
     assert(index.value < N);
-    return this->template slice<1>(index.value, index.sloc);
+    return this->template slice<1>(index);
   }
 
   auto operator[](const sloc_arg<size_t>& index) {
     assert(index.value < N);
-    return this->template sliceref<1>(index.value, index.sloc);
+    return this->template sliceref<1>(index);
   }
 
   CH_LOGIC_INTERFACE(ch_bit)
 
 protected:
 
-  logic_buffer buffer() const {
+  const logic_buffer& buffer() const {
     return buffer_;
   }
 
@@ -104,6 +104,48 @@ protected:
 };
 
 ///////////////////////////////////////////////////////////////////////////////
+
+// slicing functions
+
+template <typename R, typename T>
+auto ch_slice(const T& obj, const sloc_arg<size_t>& start = 0) {
+  return obj.template slice<ch_width_v<R>>(start).template as<R>();
+}
+
+template <unsigned N, typename T>
+auto ch_slice(const T& obj, const sloc_arg<size_t>& start = 0) {
+  return obj.template slice<N>(start);
+}
+
+template <typename R, typename T>
+auto ch_aslice(const T& obj, const sloc_arg<size_t>& start = 0) {
+  return obj.template aslice<ch_width_v<R>>(start).template as<R>();
+}
+
+template <unsigned N, typename T>
+auto ch_aslice(const T& obj, const sloc_arg<size_t>& start = 0) {
+  return obj.template aslice<N>(start);
+}
+
+template <typename R, typename T>
+auto ch_sliceref(T& obj, const sloc_arg<size_t>& start = 0) {
+  return obj.template sliceref<ch_width_v<R>>(start).template as<R>();
+}
+
+template <unsigned N, typename T>
+auto ch_sliceref(T& obj, const sloc_arg<size_t>& start = 0) {
+  return obj.template sliceref<N>(start);
+}
+
+template <typename R, typename T>
+auto ch_asliceref(T& obj, const sloc_arg<size_t>& start = 0) {
+  return obj.template asliceref<ch_width_v<R>>(start).template as<R>();
+}
+
+template <unsigned N, typename T>
+auto ch_asliceref(T& obj, const sloc_arg<size_t>& start = 0) {
+  return obj.template asliceref<N>(start);
+}
 
 // equality functions
 
@@ -153,48 +195,6 @@ inline auto ch_rotr(const ch_bit<N>& lhs, unsigned rhs, CH_SLOC) {
   return make_type<ch_bit<N>>(node, sloc);
 }
 
-// slicing functions
-
-template <typename R, typename T>
-auto ch_slice(const T& obj, size_t start = 0, CH_SLOC) {
-  return obj.template slice<ch_width_v<R>>(start, sloc).template as<R>();
-}
-
-template <unsigned N, typename T>
-auto ch_slice(const T& obj, size_t start = 0, CH_SLOC) {
-  return obj.template slice<N>(start, sloc);
-}
-
-template <typename R, typename T>
-auto ch_aslice(const T& obj, size_t start = 0, CH_SLOC) {
-  return obj.template aslice<ch_width_v<R>>(start, sloc).template as<R>();
-}
-
-template <unsigned N, typename T>
-auto ch_aslice(const T& obj, size_t start = 0, CH_SLOC) {
-  return obj.template aslice<N>(start, sloc);
-}
-
-template <typename R, typename T>
-auto ch_sliceref(T& obj, size_t start = 0, CH_SLOC) {
-  return obj.template sliceref<ch_width_v<R>>(start, sloc).template as<R>();
-}
-
-template <unsigned N, typename T>
-auto ch_sliceref(T& obj, size_t start = 0, CH_SLOC) {
-  return obj.template sliceref<N>(start, sloc);
-}
-
-template <typename R, typename T>
-auto ch_asliceref(T& obj, size_t start = 0, CH_SLOC) {
-  return obj.template asliceref<ch_width_v<R>>(start, sloc).template as<R>();
-}
-
-template <unsigned N, typename T>
-auto ch_asliceref(T& obj, size_t start = 0, CH_SLOC) {
-  return obj.template asliceref<N>(start, sloc);
-}
-
 // padding function
 
 template <unsigned M, unsigned N>
@@ -210,7 +210,7 @@ auto ch_resize(const T& obj, CH_SLOC) {
   if constexpr (ch_width_v<T> <= ch_width_v<R>) {
     return ch_pad<ch_width_v<R>-ch_width_v<T>>(obj, sloc).template as<R>();
   } else {
-    return ch_slice<R>(obj, 0, sloc);
+    return ch_slice<R>(obj, {0, sloc});
   }
 }
 
@@ -219,7 +219,7 @@ auto ch_resize(const T& obj, CH_SLOC) {
   if constexpr (ch_width_v<T> <= M) {
     return ch_pad<M-ch_width_v<T>>(obj, sloc);
   } else {
-    return ch_slice<M>(obj, 0, sloc);
+    return ch_slice<M>(obj, {0, sloc});
   }
 }
 
@@ -254,7 +254,7 @@ protected:
 
   template <typename U, typename V>
   void assign_impl(uint32_t src_offset, const U& src, V& dst) {
-    dst = ch_slice<V>(src, src_offset, sloc_);
+    dst = ch_slice<V>(src, {src_offset, sloc_});
   }
 
   template <typename U, typename V0, typename... Vs>
