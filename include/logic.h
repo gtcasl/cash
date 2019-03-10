@@ -182,8 +182,8 @@ lnode to_lnode(const T& obj, const source_location& sloc) {
 }
 
 template <typename T>
-auto make_type(const lnode& node, const source_location& /*sloc*/) {
-  return T(logic_buffer(node));
+auto make_type(const lnode& node, const source_location& sloc) {
+  return T(logic_buffer(node, sloc));
 }
 
 template <ch_op op, bool Signed, typename R, typename A>
