@@ -6,17 +6,17 @@
 namespace ch {
 namespace internal {  
 
-lnode createOpNode(ch_op op, uint32_t size, bool is_signed, const lnode& in,
-                   const source_location& sloc);
-
-lnode createOpNode(ch_op op, uint32_t size, bool is_signed, const lnode& lhs,
-                   const lnode& rhs, const source_location& sloc);
-
-lnode createRotateNode(const lnode& next, uint32_t dist, bool right,
-                       const source_location& sloc);
-
-lnode createShuffleNode(const lnode& in, const std::vector<unsigned>& indices,
+lnodeimpl* createOpNode(ch_op op, uint32_t size, bool is_signed, const lnode& in,
                         const source_location& sloc);
+
+lnodeimpl* createOpNode(ch_op op, uint32_t size, bool is_signed, const lnode& lhs,
+                        const lnode& rhs, const source_location& sloc);
+
+lnodeimpl* createRotateNode(const lnode& next, uint32_t dist, bool right,
+                            const source_location& sloc);
+
+lnodeimpl* createShuffleNode(const lnode& in, const std::vector<unsigned>& indices,
+                             const source_location& sloc);
 
 void registerTap(const lnode& node,
                  const std::string& name,
@@ -72,14 +72,14 @@ public:
   }
 
   template <typename U>
-  static void copy(U& dst, const sdata_type& src) {
+  static void assign(U& dst, const sdata_type& src) {
     assert(ch_width_v<U> == src.size());
     const_cast<logic_buffer&>(dst.buffer()).write(
           0, src, 0, ch_width_v<U>, source_location());
   }
 
   template <typename U, typename V>
-  static void copy(U& dst, const V& src) {
+  static void assign(U& dst, const V& src) {
     static_assert(ch_width_v<U> == ch_width_v<V>, "invalid size");
     assert(ch_width_v<U> == dst.buffer().size());
     assert(ch_width_v<V> == src.buffer().size());
@@ -89,7 +89,7 @@ public:
 
   template <typename U, typename V>
   static void move(U& dst, V&& src) {
-    logic_accessor::copy(dst, src);
+    logic_accessor::assign(dst, src);
   }
 
   template <typename U, typename V>
@@ -111,7 +111,7 @@ public:
   }
 
   template <typename R, typename T>
-  static auto slice(T& obj, size_t start, const source_location& sloc) {
+  static auto slice(const T& obj, size_t start, const source_location& sloc) {
     static_assert(ch_width_v<R> <= ch_width_v<T>, "invalid size");
     assert(start + ch_width_v<R> <= ch_width_v<T>);
     assert(obj.buffer().size() == ch_width_v<T>);
@@ -121,11 +121,12 @@ public:
   }
 
   template <typename R, typename T>
-  static auto ref(T& obj, size_t start, const source_location& sloc) {
+  static auto ref(const T& obj, size_t start, const source_location& sloc) {
     static_assert(ch_width_v<R> <= ch_width_v<T>, "invalid size");
     assert(start + ch_width_v<R> <= ch_width_v<T>);
     assert(obj.buffer().size() == ch_width_v<T>);
-    return R(logic_buffer(ch_width_v<R>, obj.buffer(), start, sloc));
+    logic_buffer buffer(ch_width_v<R>, obj.buffer(), start, sloc);
+    return R(buffer);
   }
 
   template <typename R, typename T>
@@ -181,8 +182,8 @@ lnode to_lnode(const T& obj, const source_location& sloc) {
 }
 
 template <typename T>
-auto make_type(const lnode& node, const source_location& sloc) {
-  return T(logic_buffer(node, sloc));
+auto make_type(const lnode& node, const source_location& /*sloc*/) {
+  return T(logic_buffer(node));
 }
 
 template <ch_op op, bool Signed, typename R, typename A>
@@ -201,21 +202,12 @@ auto make_logic_op(const A& a, const B& b, const source_location& sloc) {
 
 template <typename T>
 struct sloc_arg {
-  const T value;
+  const T& value;
   source_location sloc;
 
   sloc_arg(const T& p_value, const source_location& p_sloc = CH_CUR_SLOC)
-    : value(p_value), sloc(p_sloc)
-  {}
-};
-
-struct sloc_larg {
-  lnode value;
-  source_location sloc;
-
-  template <typename T>
-  sloc_larg(const T& p_value, const source_location& p_sloc = CH_CUR_SLOC)
-    : sloc(p_sloc)
+    : value(p_value)
+    , sloc(p_sloc)
   {}
 };
 
@@ -268,32 +260,14 @@ struct sloc_larg {
   }
 
 #define CH_LOGIC_OPERATOR(name) \
-  template <template <unsigned> typename T, unsigned N, typename Next = empty_base> \
-  struct name : Next { \
+  template <template <unsigned> typename T, unsigned N, typename Base = empty_base> \
+  struct name : Base { \
     using Derived = T<N>; \
-    using Next::Next; \
-    using Next::operator=; \
-    name(const Next& other, CH_SLOC) : Next(other, sloc) {} \
-    name(Next&& other) : Next(std::move(other)) {} \
-    name& operator=(const Next& other) { Next::operator=(other); return *this; } \
-    name& operator=(Next&& other) { Next::operator=(std::move(other)); return *this; } \
-    name(const name& other, CH_SLOC) : Next(other, sloc) {} \
-    name(name&& other) : Next(std::move(other)) {} \
-    name& operator=(const name& other) { Next::operator=(other); return *this; } \
-    name& operator=(name&& other) { Next::operator=(std::move(other)); return *this; }
+    using Base::Base; \
+    using Base::operator=;
 
 #define CH_LOGIC_OPERATOR_IMPL(op, opcode, rtype) \
-  friend auto op(Derived lhs, const Derived& rhs) { \
-    auto sloc = logic_accessor::sloc(lhs); \
-    return make_logic_op<opcode, ch_signed_v<Derived>, rtype>(lhs, rhs, sloc); \
-  } \
-  template <unsigned M, CH_REQUIRE_0(M < N)> \
-  friend auto op(Derived lhs, const T<M>& rhs) { \
-    auto sloc = logic_accessor::sloc(lhs); \
-    return make_logic_op<opcode, ch_signed_v<Derived>, rtype>(lhs, rhs, sloc); \
-  } \
-  template <unsigned M, CH_REQUIRE_0(M < N)> \
-  friend auto op(T<M> lhs, const Derived& rhs) { \
+  friend auto op(const Derived lhs, const Derived& rhs) { \
     auto sloc = logic_accessor::sloc(lhs); \
     return make_logic_op<opcode, ch_signed_v<Derived>, rtype>(lhs, rhs, sloc); \
   }
@@ -459,7 +433,7 @@ CH_LOGIC_OPERATOR(logic_op_logical)
     return make_logic_op<ch_op::notl, false, ch_bit<1>>(self, sloc);
   }
 
-  friend auto operator&&(Derived lhs, const Derived& rhs) {    
+  friend auto operator&&(Derived lhs, const Derived& rhs) {
     auto sloc = logic_accessor::sloc(lhs);
     return make_logic_op<ch_op::andl, false, ch_bit<1>>(lhs, rhs, sloc);
   }
@@ -520,15 +494,6 @@ CH_LOGIC_OPERATOR(logic_op_shift)
                          Derived>(lhs, rhs, sloc);
   }
 
-  auto operator<<=(const sloc_arg<uint32_t>& rhs) {
-    auto lhs = reinterpret_cast<const Derived*>(this)->clone();
-    return make_logic_op<ch_op::shl,
-                         ch_signed_v<Derived>,
-                         Derived,
-                         Derived,
-                         ch_uint<32>>(lhs, rhs.value, rhs.sloc);
-  }
-
   template <unsigned M>
   auto operator>>=(T<M> rhs) {
     static_assert(M <= 32, "invalid size");
@@ -537,6 +502,15 @@ CH_LOGIC_OPERATOR(logic_op_shift)
     return make_logic_op<ch_op::shr,
                          ch_signed_v<Derived>,
                          Derived>(lhs, rhs, sloc);
+  }
+
+  auto operator<<=(const sloc_arg<uint32_t>& rhs) {
+    auto lhs = reinterpret_cast<const Derived*>(this)->clone();
+    return make_logic_op<ch_op::shl,
+                         ch_signed_v<Derived>,
+                         Derived,
+                         Derived,
+                         ch_uint<32>>(lhs, rhs.value, rhs.sloc);
   }
 
   auto operator>>=(const sloc_arg<uint32_t>& rhs) {

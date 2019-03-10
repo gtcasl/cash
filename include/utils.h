@@ -167,10 +167,19 @@ inline constexpr bool is_fold_constructible_v = std::conjunction_v<std::is_const
 
 template <typename To, typename From>
 struct is_strictly_constructible : std::bool_constant<
-  std::is_constructible_v<To, From> && !std::is_base_of_v<To, From>> {};
+    (std::is_constructible_v<To, From> && !std::is_base_of_v<To, From>)> {};
 
 template<typename To, typename From>
 inline constexpr bool is_strictly_constructible_v = is_strictly_constructible<To, From>::value;
+
+///////////////////////////////////////////////////////////////////////////////
+
+template <typename To, typename From>
+struct is_explicitly_constructible : std::bool_constant<
+    (std::is_constructible_v<To, From> && !std::is_convertible_v<From, To>)> {};
+
+template<typename To, typename From>
+inline constexpr bool is_explicitly_constructible_v = is_explicitly_constructible<To, From>::value;
 
 ///////////////////////////////////////////////////////////////////////////////
 

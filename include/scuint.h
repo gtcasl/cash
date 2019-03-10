@@ -21,7 +21,7 @@ public:
                        system_op_arithmetic<ch_scuint, N,
                          system_op_slice<ch_scuint, N, ch_scbit<N>>>>>>>;
 
-  explicit ch_scuint(const system_buffer_ptr& buffer = make_system_buffer(N))
+  ch_scuint(const system_buffer_ptr& buffer = make_system_buffer(N))
     : base(buffer)
   {}
 
@@ -32,6 +32,10 @@ public:
   template <typename U,
             CH_REQUIRE_0(is_bitvector_extended_type_v<U>)>
   explicit ch_scuint(const U& other) : base(other) {}
+
+  template <unsigned M,
+            CH_REQUIRE_0(M < N)>
+  ch_scuint(const ch_scuint<M>& other) : base(other) {}
 
   template <typename U,
             CH_REQUIRE_0(is_scbit_base_v<U>),

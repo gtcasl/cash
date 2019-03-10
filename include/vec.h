@@ -57,7 +57,7 @@ public:
   using base = vec_base<T, N>;
   using base::operator [];
 
-  explicit ch_vec(const logic_buffer& buffer = logic_buffer(
+  ch_vec(const logic_buffer& buffer = logic_buffer(
         traits::bitwidth,
         CH_CUR_SLOC,
         stringf("ch_vec%d_%s", N, identifier_from_typeid(typeid(T).name()).c_str())))
@@ -108,7 +108,7 @@ public:
   }
 
   ch_vec& operator=(const ch_vec& other) {
-    logic_accessor::copy(*this, other);
+    logic_accessor::assign(*this, other);
     return *this;
   }
 
@@ -129,7 +129,7 @@ public:
             CH_REQUIRE_1(is_logic_type_v<U>)>
   ch_vec& operator=(const U& other) {
     static_assert(ch_width_v<U> == N * ch_width_v<T>, "invalid size");
-    logic_accessor::copy(*this, other);
+    logic_accessor::assign(*this, other);
     return *this;
   }
 
@@ -161,7 +161,7 @@ public:
   using base = vec_base<T, N>;
   using base::operator [];
 
-  explicit ch_vec(const system_buffer_ptr& buffer = make_system_buffer(traits::bitwidth))
+  ch_vec(const system_buffer_ptr& buffer = make_system_buffer(traits::bitwidth))
     : ch_vec(buffer, std::make_index_sequence<N>())
   {}
 
@@ -201,7 +201,7 @@ public:
   }
 
   ch_vec& operator=(const ch_vec& other) {
-    system_accessor::copy(*this, other);
+    system_accessor::assign(*this, other);
     return *this;
   }
 
@@ -214,7 +214,7 @@ public:
             CH_REQUIRE_0(is_system_type_v<U>)>
   ch_vec& operator=(const U& other) {
     static_assert(ch_width_v<U> == N * ch_width_v<T>, "invalid size");
-    system_accessor::copy(*this, other);
+    system_accessor::assign(*this, other);
     return *this;
   }
 
@@ -268,7 +268,7 @@ public:
     : ch_vec(other, sloc, std::make_index_sequence<N>())
   {}
 
-  explicit ch_vec(const ch_vec& other, CH_SLOC)
+  ch_vec(const ch_vec& other, CH_SLOC)
     : ch_vec(other, sloc, std::make_index_sequence<N>())
   {}
 
@@ -314,7 +314,7 @@ public:
     : ch_vec(other, std::make_index_sequence<N>())
   {}
 
-  explicit ch_vec(const ch_vec& other)
+  ch_vec(const ch_vec& other)
     : ch_vec(other, std::make_index_sequence<N>())
   {}
 

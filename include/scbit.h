@@ -21,7 +21,7 @@ public:
                       system_op_cast<ch_scbit, N,
                         system_op_slice<ch_scbit, N>>>>>>;
 
-  explicit ch_scbit(const system_buffer_ptr& buffer = make_system_buffer(N))
+  ch_scbit(const system_buffer_ptr& buffer = make_system_buffer(N))
     : buffer_(buffer) {
     assert(N == buffer->size());
   }
@@ -37,6 +37,14 @@ public:
   explicit ch_scbit(U&& other)
     : buffer_(make_system_buffer(sdata_type(N , std::forward<U>(other))))
   {}
+
+  template <unsigned M,
+            CH_REQUIRE_0(M < N)>
+  ch_scbit(const ch_scbit<M>& other) {
+    sdata_type ret(N);
+    bv_pad<false>(ret.words(), N, system_accessor::data(other).words(), M);
+    buffer_ = make_system_buffer(std::move(ret));
+  }
 
   template <typename U,
             CH_REQUIRE_0(is_scbit_base_v<U>),
@@ -55,7 +63,7 @@ public:
   ch_scbit(ch_scbit&& other) : buffer_(std::move(other.buffer_)) {}
 
   ch_scbit& operator=(const ch_scbit& other) {
-    system_accessor::copy(*this, other);
+    system_accessor::assign(*this, other);
     return *this;
   }
 

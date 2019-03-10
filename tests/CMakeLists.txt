@@ -1,8 +1,7 @@
 
 # set source files
 set(TEST_SOURCES
-    common.cpp
-    main.cpp
+    common.cpp    
     static.cpp
     basic.cpp
     system.cpp
@@ -23,6 +22,7 @@ set(TEST_SOURCES
     complex.cpp    
     router.cpp
     cache.cpp
+    main.cpp
 )
 
 # copy resource directory

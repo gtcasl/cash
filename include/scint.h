@@ -22,7 +22,7 @@ public:
                          system_op_slice<ch_scint, N, ch_scbit<N>>>>>>>;
   using base::buffer_;
 
-  explicit ch_scint(const system_buffer_ptr& buffer = make_system_buffer(N))
+  ch_scint(const system_buffer_ptr& buffer = make_system_buffer(N))
     : base(buffer)
   {}
 
@@ -33,6 +33,10 @@ public:
   template <typename U,
             CH_REQUIRE_0(is_bitvector_extended_type_v<U>)>
   explicit ch_scint(const U& other) : base(other) {}
+
+  template <unsigned M,
+            CH_REQUIRE_0(M < N)>
+  ch_scint(const ch_scint<M>& other) : base(other) {}
 
   template <typename U,
             CH_REQUIRE_0(is_scbit_base_v<U>),

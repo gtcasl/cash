@@ -41,7 +41,7 @@ public:
   using traits = system_traits<N, true, ch_scfixed, ch_fixed<N, Frac>>;
   using base = ch_scbit<N>;
 
-  explicit ch_scfixed(const system_buffer_ptr& buffer = make_system_buffer(N))
+  ch_scfixed(const system_buffer_ptr& buffer = make_system_buffer(N))
     : base(buffer)
   {}
 
@@ -163,7 +163,7 @@ public:
   using traits = logic_traits<N, true, ch_fixed, ch_scfixed<N, Frac>>;
   using base = ch_bit<N>;
 
-  explicit ch_fixed(const logic_buffer& buffer = logic_buffer(N, CH_CUR_SLOC))
+  ch_fixed(const logic_buffer& buffer = logic_buffer(N, CH_CUR_SLOC))
     : base(buffer)
   {}
 

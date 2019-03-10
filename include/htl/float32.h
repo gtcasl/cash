@@ -112,7 +112,7 @@ public:
   using traits = system_traits<32, true, ch_scfloat32, ch_float32>;
   using base = ch_scbit<32>;
 
-  explicit ch_scfloat32(const system_buffer_ptr& buffer = make_system_buffer(32))
+  ch_scfloat32(const system_buffer_ptr& buffer = make_system_buffer(32))
     : base(buffer)
   {}
 
@@ -199,7 +199,7 @@ public:
   using traits = logic_traits<32, true, ch_float32, ch_scfloat32>;
   using base = ch_bit32;
 
-  explicit ch_float32(const logic_buffer& buffer = logic_buffer(32, CH_CUR_SLOC))
+  ch_float32(const logic_buffer& buffer = logic_buffer(32, CH_CUR_SLOC))
     : base(buffer)
   {}
 

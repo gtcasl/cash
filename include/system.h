@@ -148,7 +148,7 @@ public:
   }
 
   template <typename U, typename V>
-  static void copy(U& dst, const V& src) {
+  static void assign(U& dst, const V& src) {
     static_assert(ch_width_v<U> == ch_width_v<V>, "invalid size");
     assert(ch_width_v<U> == dst.buffer()->size());
     assert(ch_width_v<V> == src.buffer()->size());

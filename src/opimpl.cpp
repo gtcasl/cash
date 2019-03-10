@@ -83,7 +83,7 @@ bool opimpl::should_resize_opds() const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-lnode ch::internal::createOpNode(
+lnodeimpl* ch::internal::createOpNode(
     ch_op op,
     uint32_t size,
     bool is_signed,
@@ -92,7 +92,7 @@ lnode ch::internal::createOpNode(
   return in.impl()->ctx()->create_node<opimpl>(op, size, is_signed, in.impl(), sloc);
 }
 
-lnode ch::internal::createOpNode(
+lnodeimpl* ch::internal::createOpNode(
     ch_op op,
     uint32_t size,
     bool is_signed,

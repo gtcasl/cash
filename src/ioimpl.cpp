@@ -97,20 +97,20 @@ void tapimpl::print(std::ostream& out) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-lnode ch::internal::createInputNode(const std::string& name,
+lnodeimpl* ch::internal::createInputNode(const std::string& name,
                                          uint32_t size,
                                          const source_location& sloc) {
   return ctx_curr()->create_input(size, name, sloc);
 }
 
-lnode ch::internal::createOutputNode(const std::string& name,
+lnodeimpl* ch::internal::createOutputNode(const std::string& name,
                                           uint32_t size,
                                           const source_location& sloc) {
   auto output = ctx_curr()->create_output(size, name, sloc);
   return output->src(0).impl();
 }
 
-lnode ch::internal::getOutputNode(const lnode& src) {
+lnodeimpl* ch::internal::getOutputNode(const lnode& src) {
   return ctx_curr()->get_output(src);
 }
 

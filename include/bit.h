@@ -21,7 +21,7 @@ public:
                      logic_op_shift<ch_bit, N,
                        logic_op_slice<ch_bit, N>>>>>;
 
-  explicit ch_bit(const logic_buffer& buffer = logic_buffer(N, CH_CUR_SLOC, "ch_bit"))
+  ch_bit(const logic_buffer& buffer = logic_buffer(N, CH_CUR_SLOC, "ch_bit"))
     : buffer_(buffer) {
     assert(N == buffer.size());
   }
@@ -36,10 +36,10 @@ public:
     : buffer_(logic_buffer(system_accessor::data(other), sloc))
   {}
 
-  template <typename U,
-            CH_REQUIRE_0(is_bitvector_extended_type_v<U>)>
-  explicit ch_bit(const U& other, CH_SLOC)
-    : buffer_(logic_buffer(sdata_type(N, other), sloc))
+  template <unsigned M,
+            CH_REQUIRE_0(M < N)>
+  ch_bit(const ch_bit<M>& other, CH_SLOC)
+    : buffer_(logic_buffer(createOpNode(ch_op::pad, N, false, get_lnode(other), sloc), sloc))
   {}
 
   template <typename U,
@@ -59,17 +59,17 @@ public:
   template <typename U,
               CH_REQUIRE_0(std::is_integral_v<U>)>
   ch_bit& operator=(const U& other) {
-    logic_accessor::copy(*this, sdata_type(N, other));
+    logic_accessor::assign(*this, sdata_type(N, other));
     return *this;
   }
 
   ch_bit& operator=(const ch_scbit<N>& other) {
-    logic_accessor::copy(*this, system_accessor::data(other));
+    logic_accessor::assign(*this, system_accessor::data(other));
     return *this;
   }
 
   ch_bit& operator=(const ch_bit& other) {
-    logic_accessor::copy(*this, other);
+    logic_accessor::assign(*this, other);
     return *this;
   }
 

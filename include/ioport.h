@@ -5,15 +5,15 @@
 namespace ch {
 namespace internal {
 
-lnode createInputNode(const std::string& name,
-                      uint32_t size,
-                      const source_location& sloc);
+lnodeimpl* createInputNode(const std::string& name,
+                           uint32_t size,
+                          const source_location& sloc);
 
-lnode createOutputNode(const std::string& name,
-                       uint32_t size,
-                       const source_location& sloc);
+lnodeimpl* createOutputNode(const std::string& name,
+                            uint32_t size,
+                            const source_location& sloc);
 
-lnode getOutputNode(const lnode& src);
+lnodeimpl* getOutputNode(const lnode& src);
 
 void bindInput(const lnode& src,
                const lnode& input,
@@ -54,7 +54,7 @@ public:
                                       T>;
   using base = T;
 
-  explicit ch_logic_in(const std::string& name = "in", CH_SLOC)
+  ch_logic_in(const std::string& name = "in", CH_SLOC)
      : base(logic_buffer(createInputNode(name, ch_width_v<T>, sloc))) {
     input_ = logic_accessor::buffer(*this);
   }
@@ -67,7 +67,7 @@ public:
     bindOutput(logic_accessor::buffer(*this), out.output_, sloc);
   }
 
-  explicit ch_logic_in(const ch_logic_in& other, CH_SLOC)
+  ch_logic_in(const ch_logic_in& other, CH_SLOC)
     : base(logic_accessor::buffer(other)) {
     CH_UNUSED(sloc);
   }
@@ -109,7 +109,7 @@ public:
   using base = T;
   using base::operator=;
 
-  explicit ch_logic_out(const std::string& name = "out", CH_SLOC)
+  ch_logic_out(const std::string& name = "out", CH_SLOC)
     : base(logic_buffer(createOutputNode(name, ch_width_v<T>, sloc))) {
     output_ = getOutputNode(logic_accessor::buffer(*this));
   }
@@ -262,7 +262,7 @@ public:
     static_assert(ch_width_v<T> == ch_width_v<U>, "invalid size");
   }
 
-  explicit ch_system_out(const ch_system_out& other)
+  ch_system_out(const ch_system_out& other)
     : base(system_accessor::buffer(other))
   {}
 

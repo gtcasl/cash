@@ -42,7 +42,7 @@
 
 #define CH_UNION_SYSTEM_IMPL(union_name, field_body, ...) \
   CH_FOR_EACH(field_body, , CH_SEP_SEMICOLON, __VA_ARGS__); \
-  explicit union_name(const ch::internal::system_buffer_ptr& buffer = \
+  union_name(const ch::internal::system_buffer_ptr& buffer = \
   ch::internal::make_system_buffer(traits::bitwidth)) \
     : CH_FOR_EACH(CH_UNION_SYSTEM_CTOR, , CH_SEP_COMMA, __VA_ARGS__) {} \
   union_name(const union_name& __other) \
@@ -51,7 +51,7 @@
    : union_name(ch::internal::system_accessor::move(__other)) {} \
   CH_FOR_EACH(CH_UNION_SYSTEM_FIELD_CTOR, union_name, CH_SEP_SPACE, __VA_ARGS__) \
   union_name& operator=(const union_name& __other) { \
-    ch::internal::system_accessor::copy(*this, __other); \
+    ch::internal::system_accessor::assign(*this, __other); \
     return *this; \
   } \
   union_name& operator=(union_name&& __other) { \
@@ -73,7 +73,7 @@ public:
 
 #define CH_UNION_LOGIC_IMPL(union_name, field_body, ...) \
   CH_FOR_EACH(field_body, , CH_SEP_SEMICOLON, __VA_ARGS__); \
-  explicit union_name(const ch::internal::logic_buffer& buffer = \
+  union_name(const ch::internal::logic_buffer& buffer = \
     ch::internal::logic_buffer(traits::bitwidth, CH_CUR_SLOC, CH_STRINGIZE(union_name))) \
     : CH_FOR_EACH(CH_UNION_LOGIC_CTOR, , CH_SEP_COMMA, __VA_ARGS__) {} \
   union_name(const union_name& __other, CH_SLOC) \
@@ -82,7 +82,7 @@ public:
     : union_name(ch::internal::logic_accessor::move(__other)) {} \
   CH_FOR_EACH(CH_UNION_LOGIC_FIELD_CTOR, union_name, CH_SEP_SPACE, __VA_ARGS__) \
   union_name& operator=(const union_name& __other) { \
-    ch::internal::logic_accessor::copy(*this, __other); \
+    ch::internal::logic_accessor::assign(*this, __other); \
     return *this; \
   } \
   union_name& operator=(union_name&& __other) { \

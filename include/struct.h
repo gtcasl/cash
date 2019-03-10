@@ -52,7 +52,7 @@ private: \
            CH_FOR_EACH(CH_STRUCT_FIELD_OFFSET, , CH_SEP_COMMA, __VA_ARGS__) }; \
 public: \
   CH_FOR_EACH(field_body, , CH_SEP_SEMICOLON, __VA_ARGS__); \
-  explicit struct_name(const ch::internal::system_buffer_ptr& buffer = \
+  struct_name(const ch::internal::system_buffer_ptr& buffer = \
     ch::internal::make_system_buffer(traits::bitwidth)) \
     : CH_FOR_EACH(CH_STRUCT_SYSTEM_CTOR, , CH_SEP_COMMA, __VA_ARGS__) {} \
   template <CH_REQUIRE_0(CH_NARG(__VA_ARGS__) >= 2)> \
@@ -67,7 +67,7 @@ public: \
     CH_REVERSE_FOR_EACH(CH_STRUCT_FIELD_CTOR_INIT, , CH_SEP_SEMICOLON, __VA_ARGS__); \
   } \
   struct_name& operator=(const struct_name& __other) { \
-    ch::internal::system_accessor::copy(*this, __other); \
+    ch::internal::system_accessor::assign(*this, __other); \
     return *this; \
   } \
   struct_name& operator=(struct_name&& __other) { \
@@ -93,7 +93,7 @@ private: \
            CH_FOR_EACH(CH_STRUCT_FIELD_OFFSET, , CH_SEP_COMMA, __VA_ARGS__) }; \
 public: \
   CH_FOR_EACH(field_body, , CH_SEP_SEMICOLON, __VA_ARGS__); \
-  explicit struct_name(const ch::internal::logic_buffer& buffer = \
+  struct_name(const ch::internal::logic_buffer& buffer = \
     ch::internal::logic_buffer(traits::bitwidth, CH_CUR_SLOC, CH_STRINGIZE(struct_name))) \
     : CH_FOR_EACH(CH_STRUCT_LOGIC_CTOR, , CH_SEP_COMMA, __VA_ARGS__) {} \
   template <CH_REQUIRE_0(CH_NARG(__VA_ARGS__) >= 2)> \
@@ -108,7 +108,7 @@ public: \
     CH_REVERSE_FOR_EACH(CH_STRUCT_FIELD_CTOR_INIT, , CH_SEP_SEMICOLON, __VA_ARGS__); \
   } \
   struct_name& operator=(const struct_name& __other) { \
-    ch::internal::logic_accessor::copy(*this, __other); \
+    ch::internal::logic_accessor::assign(*this, __other); \
     return *this; \
   } \
   struct_name& operator=(struct_name&& __other) { \
@@ -128,7 +128,7 @@ private: \
          CH_FOR_EACH(CH_STRUCT_FIELD_OFFSET, , CH_SEP_COMMA, __VA_ARGS__) }; \
 public: \
   CH_FOR_EACH(field_body, , CH_SEP_SEMICOLON, __VA_ARGS__); \
-  explicit struct_name(const ch::internal::system_buffer_ptr& buffer = \
+  struct_name(const ch::internal::system_buffer_ptr& buffer = \
     ch::internal::make_system_buffer(traits::bitwidth)) \
     : base(buffer) \
     , CH_FOR_EACH(CH_STRUCT_SYSTEM_CTOR, , CH_SEP_COMMA, __VA_ARGS__) {} \
@@ -145,7 +145,7 @@ public: \
     CH_REVERSE_FOR_EACH(CH_STRUCT_FIELD_CTOR_INIT, , CH_SEP_SEMICOLON, __VA_ARGS__); \
   } \
   struct_name& operator=(const struct_name& __other) { \
-    ch::internal::system_accessor::copy(*this, __other); \
+    ch::internal::system_accessor::assign(*this, __other); \
     return *this; \
   } \
   struct_name& operator=(struct_name&& __other) { \
@@ -173,7 +173,7 @@ private: \
          CH_FOR_EACH(CH_STRUCT_FIELD_OFFSET, , CH_SEP_COMMA, __VA_ARGS__) }; \
 public: \
   CH_FOR_EACH(field_body, , CH_SEP_SEMICOLON, __VA_ARGS__); \
-  explicit struct_name(const ch::internal::logic_buffer& buffer = \
+  struct_name(const ch::internal::logic_buffer& buffer = \
     ch::internal::logic_buffer(traits::bitwidth, CH_CUR_SLOC, CH_STRINGIZE(struct_name))) \
     : base(buffer) \
     , CH_FOR_EACH(CH_STRUCT_LOGIC_CTOR, , CH_SEP_COMMA, __VA_ARGS__) {} \
@@ -190,7 +190,7 @@ public: \
     CH_REVERSE_FOR_EACH(CH_STRUCT_FIELD_CTOR_INIT, , CH_SEP_SEMICOLON, __VA_ARGS__); \
   } \
   struct_name& operator=(const struct_name& __other) { \
-    ch::internal::logic_accessor::copy(*this, __other); \
+    ch::internal::logic_accessor::assign(*this, __other); \
     return *this; \
   } \
   struct_name& operator=(struct_name&& __other) { \

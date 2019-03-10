@@ -401,7 +401,7 @@ bool refimpl::check_fully_initialized() const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-lnode ch::internal::createRotateNode(
+lnodeimpl* ch::internal::createRotateNode(
     const lnode& next,
     uint32_t dist,
     bool right,
@@ -419,7 +419,7 @@ lnode ch::internal::createRotateNode(
   return ret;
 }
 
-lnode ch::internal::createShuffleNode(
+lnodeimpl* ch::internal::createShuffleNode(
     const lnode& in,
     const std::vector<unsigned>& indices,
     const source_location& sloc) {

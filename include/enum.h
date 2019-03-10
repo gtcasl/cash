@@ -29,14 +29,14 @@ void registerEnumString(const lnode& node, void* callback);
 #define CH_ENUM_STRING(a, i, x) case CH_ENUM_STRING_(CH_NARG(CH_REM x))(CH_REM x, x)
 
 #define CH_ENUM_SYSTEM_IMPL(enum_name) \
-  explicit enum_name(const ch::internal::system_buffer_ptr& buffer = \
+  enum_name(const ch::internal::system_buffer_ptr& buffer = \
     ch::internal::make_system_buffer(traits::bitwidth)) : base(buffer) {} \
   enum_name(const enum_name& __other) : base(__other) {} \
   enum_name(enum_name&& __other) : base(std::move(__other)) {} \
   enum_name(type __other) : base(static_cast<unsigned>(__other)) {}
 
 #define CH_ENUM_LOGIC_IMPL(enum_name) \
-  explicit enum_name(const ch::internal::logic_buffer& buffer = \
+  enum_name(const ch::internal::logic_buffer& buffer = \
     ch::internal::logic_buffer(traits::bitwidth, CH_CUR_SLOC, CH_STRINGIZE(enum_name))) \
     : base(buffer) { ch::internal::registerEnumString( \
       ch::internal::logic_accessor::buffer(*this), (void*)to_string); } \
