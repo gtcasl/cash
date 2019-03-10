@@ -270,6 +270,16 @@ struct sloc_arg {
   friend auto op(const Derived lhs, const Derived& rhs) { \
     auto sloc = logic_accessor::sloc(lhs); \
     return make_logic_op<opcode, ch_signed_v<Derived>, rtype>(lhs, rhs, sloc); \
+  } \
+  template <unsigned M, CH_REQUIRE_0(M < N)> \
+  friend auto op(Derived lhs, const T<M>& rhs) { \
+    auto sloc = logic_accessor::sloc(lhs); \
+    return make_logic_op<opcode, ch_signed_v<Derived>, rtype>(lhs, rhs, sloc); \
+  } \
+  template <unsigned M, CH_REQUIRE_0(M < N)> \
+  friend auto op(T<M> lhs, const Derived& rhs) { \
+    auto sloc = logic_accessor::sloc(lhs); \
+    return make_logic_op<opcode, ch_signed_v<Derived>, rtype>(lhs, rhs, sloc); \
   }
 
 #define CH_LOGIC_ASSIGN_IMPL(op, opcode, rtype) \
