@@ -336,7 +336,7 @@ bool verilogwriter::print_decl(std::ostream& out,
         out << ";";
         auto& sloc = node->sloc();
         if (!sloc.empty()) {
-          out << sloc;
+          out << " // " << sloc;
         }
         out << std::endl;
       } else {        

@@ -69,53 +69,25 @@ public:
   template <typename U0,
             CH_REQUIRE_0(std::is_convertible_v<U0, T>)>
   explicit ch_reg_impl(const U0& init0, CH_SLOC)
-    : base(createRegNode(logic_accessor::buffer(T(init0)), sloc, typeid(T).name())) {
-    __next__ = std::make_unique<next_t>(getRegNextNode(logic_accessor::buffer(*this)));
+    : base(createRegNode(to_lnode<T>(init0, sloc), sloc, typeid(T).name())) {
+    __next__ = std::make_unique<next_t>(getRegNextNode(get_lnode(*this)));
   }
 
-  template <typename U0,
-            CH_REQUIRE_0(!std::is_convertible_v<U0, T> && std::is_constructible_v<T, U0>)>
-  explicit ch_reg_impl(const U0& init0, CH_SLOC)
-    : base(createRegNode(logic_accessor::buffer(T(init0)), sloc, typeid(T).name())) {
-    __next__ = std::make_unique<next_t>(getRegNextNode(logic_accessor::buffer(*this)));
-  }
-
-  template <typename U0, typename U1,
-            CH_REQUIRE_0(std::is_constructible_v<T, U0, U1>)>
-  explicit ch_reg_impl(const U0& init0, const U1& init1, CH_SLOC)
-    : base(createRegNode(logic_accessor::buffer(T(init0, init1)), sloc, typeid(T).name())) {
-    __next__ = std::make_unique<next_t>(getRegNextNode(logic_accessor::buffer(*this)));
-  }
-
-  template <typename U0, typename U1, typename U2,
-            CH_REQUIRE_0(std::is_constructible_v<T, U0, U1, U2>)>
-  explicit ch_reg_impl(const U0& init0, const U1& init1, const U2& init2, CH_SLOC)
-    : base(createRegNode(logic_accessor::buffer(T(init0, init1, init2)), sloc, typeid(T).name())) {
-    __next__ = std::make_unique<next_t>(getRegNextNode(logic_accessor::buffer(*this)));
-  }
-
-  template <typename U0, typename U1, typename U2, typename U3,
-            CH_REQUIRE_0(std::is_constructible_v<T, U0, U1, U2, U3>)>
-  explicit ch_reg_impl(const U0& init0, const U1& init1, const U2& init2, const U3& init3, CH_SLOC)
-    : base(createRegNode(logic_accessor::buffer(T(init0, init1, init2, init3)), sloc, typeid(T).name())) {
-    __next__ = std::make_unique<next_t>(getRegNextNode(logic_accessor::buffer(*this)));
-  }
-
-  template <typename U0, typename U1, typename U2, typename U3, typename... Us,
-            CH_REQUIRE_0(std::is_constructible_v<T, U0, U1, U2, U3, Us...>)>
-  explicit ch_reg_impl(const U0& init0, const U1& init1, const U2& init2, const U3& init3, const Us&... inits)
-    : base(createRegNode(logic_accessor::buffer(T(init0, init1, init2, init3, inits...)), source_location(), typeid(T).name())) {
-    __next__ = std::make_unique<next_t>(getRegNextNode(logic_accessor::buffer(*this)));
+  template <typename... Us,
+            CH_REQUIRE_0(std::is_constructible_v<T, Us...>)>
+  explicit ch_reg_impl(const Us&... inits)
+    : base(createRegNode(get_lnode(T(inits...)), caller_srcinfo(1), typeid(T).name())) {
+    __next__ = std::make_unique<next_t>(getRegNextNode(get_lnode(*this)));
   }
 
   ch_reg_impl(const ch_reg_impl& other, CH_SLOC)
-    : base(copyRegNode(logic_accessor::buffer(other), sloc, typeid(T).name())) {
-    __next__ = std::make_unique<next_t>(getRegNextNode(logic_accessor::buffer(*this)));
+    : base(copyRegNode(get_lnode(other), sloc, typeid(T).name())) {
+    __next__ = std::make_unique<next_t>(getRegNextNode(get_lnode(*this)));
   }
 
   ch_reg_impl(ch_reg_impl&& other)
-    : base(std::move(logic_accessor::buffer(other))) {
-    __next__ = std::make_unique<next_t>(getRegNextNode(logic_accessor::buffer(*this)));
+    : base(std::move(get_lnode(other))) {
+    __next__ = std::make_unique<next_t>(getRegNextNode(get_lnode(*this)));
   }
 
   auto& operator->() const {

@@ -190,6 +190,12 @@ public:
 
 ///////////////////////////////////////////////////////////////////////////////
 
+
+template <typename T>
+auto get_snode(const T& obj) {
+  return system_accessor::data(obj);
+}
+
 typedef void (*SystemFunc1)(block_type* out,
                             uint32_t out_size,
                             const block_type* in,

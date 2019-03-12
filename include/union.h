@@ -22,18 +22,6 @@
 #define CH_UNION_LOGIC_FIELD(a, i, x) \
   ch_logic_t<ch::internal::identity_t<CH_PAIR_L(x)>> CH_PAIR_R(x)
 
-#define CH_UNION_SYSTEM_FIELD_CTOR(type, i, x) \
-  type(const ch_system_t<ch::internal::identity_t<CH_PAIR_L(x)>>& CH_CONCAT(_,CH_PAIR_R(x))) \
-    : type() { \
-    this->operator =(ch_scbit<traits::bitwidth>(CH_CONCAT(_,CH_PAIR_R(x)).as_scbit()).as<type>()); \
-  }
-
-#define CH_UNION_LOGIC_FIELD_CTOR(type, i, x) \
-  type(const ch_logic_t<ch::internal::identity_t<CH_PAIR_L(x)>>& CH_CONCAT(_,CH_PAIR_R(x)), CH_SLOC) \
-    : type(ch::internal::logic_buffer(traits::bitwidth, sloc, CH_STRINGIZE(name))) { \
-    this->operator =(ch_bit<traits::bitwidth>(CH_CONCAT(_,CH_PAIR_R(x)).as_bit(), sloc).as<type>()); \
-  }
-
 #define CH_UNION_OSTREAM(a, i, x) \
   if (i) { \
     __out << ",";  \
@@ -49,7 +37,10 @@
     : union_name(ch::internal::system_accessor::copy(__other)) {} \
   union_name(union_name&& __other) \
    : union_name(ch::internal::system_accessor::move(__other)) {} \
-  CH_FOR_EACH(CH_UNION_SYSTEM_FIELD_CTOR, union_name, CH_SEP_SPACE, __VA_ARGS__) \
+  union_name(const ch_scbit<traits::bitwidth>& other) \
+    : union_name() { \
+    this->operator =(other.as<union_name>()); \
+  } \
   union_name& operator=(const union_name& __other) { \
     ch::internal::system_accessor::assign(*this, __other); \
     return *this; \
@@ -80,13 +71,18 @@ public:
     : union_name(ch::internal::logic_accessor::copy(__other, sloc)) {} \
   union_name(union_name&& __other) \
     : union_name(ch::internal::logic_accessor::move(__other)) {} \
-  CH_FOR_EACH(CH_UNION_LOGIC_FIELD_CTOR, union_name, CH_SEP_SPACE, __VA_ARGS__) \
+  union_name(const ch_bit<traits::bitwidth>& other, CH_SLOC) \
+    : union_name(ch::internal::logic_buffer(traits::bitwidth, sloc, CH_STRINGIZE(name))) { \
+    this->operator =(other.as<union_name>()); \
+  } \
   union_name& operator=(const union_name& __other) { \
-    ch::internal::logic_accessor::assign(*this, __other); \
+    auto sloc = ch::internal::caller_srcinfo(1); \
+    ch::internal::logic_accessor::assign(*this, __other, sloc); \
     return *this; \
   } \
   union_name& operator=(union_name&& __other) { \
-    ch::internal::logic_accessor::move(*this, std::move(__other)); \
+    auto sloc = ch::internal::caller_srcinfo(1); \
+    ch::internal::logic_accessor::move(*this, std::move(__other), sloc); \
     return *this; \
   } \
 protected: \

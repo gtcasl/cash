@@ -116,15 +116,6 @@ public:
     pod_udfs_.erase(it);
   }
 
-  source_location get_source_location(const char* file, int line) {
-    source_location sloc(file, line);
-    auto count = dup_slocs_.insert(sloc);
-    if (count) {
-      sloc = source_location(file, line, count);
-    }
-    return sloc;
-  }
-
   static context_manager& instance(){
     static context_manager inst;
     return inst;
@@ -153,7 +144,6 @@ protected:
   dup_tracker<std::string> dup_ctx_names_;
   std::unordered_map<std::type_index, uint32_t> udf_signatures_;
   std::unordered_map<uint32_t, udf_iface*> pod_udfs_;
-  dup_tracker<source_location, std::size_t, source_location::hash_t> dup_slocs_;
 };
 
 context* ch::internal::ctx_create(const std::type_index& signature,
@@ -187,10 +177,6 @@ refcounted* ch::internal::createUDF(const std::type_index& signature,
 
 void ch::internal::destroyUDF(uint32_t id) {
   context_manager::instance().destroy_udf(id);
-}
-
-source_location ch::internal::get_source_location(const char* file, int line) {
-  return context_manager::instance().get_source_location(file, line);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

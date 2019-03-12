@@ -108,11 +108,13 @@ public: \
     CH_REVERSE_FOR_EACH(CH_STRUCT_FIELD_CTOR_INIT, , CH_SEP_SEMICOLON, __VA_ARGS__); \
   } \
   struct_name& operator=(const struct_name& __other) { \
-    ch::internal::logic_accessor::assign(*this, __other); \
+    auto sloc = ch::internal::caller_srcinfo(1); \
+    ch::internal::logic_accessor::assign(*this, __other, sloc); \
     return *this; \
   } \
   struct_name& operator=(struct_name&& __other) { \
-    ch::internal::logic_accessor::move(*this, std::move(__other)); \
+    auto sloc = ch::internal::caller_srcinfo(1); \
+    ch::internal::logic_accessor::move(*this, std::move(__other), sloc); \
     return *this; \
   } \
 protected: \
@@ -190,11 +192,13 @@ public: \
     CH_REVERSE_FOR_EACH(CH_STRUCT_FIELD_CTOR_INIT, , CH_SEP_SEMICOLON, __VA_ARGS__); \
   } \
   struct_name& operator=(const struct_name& __other) { \
-    ch::internal::logic_accessor::assign(*this, __other); \
+    auto sloc = ch::internal::caller_srcinfo(1); \
+    ch::internal::logic_accessor::assign(*this, __other, sloc); \
     return *this; \
   } \
   struct_name& operator=(struct_name&& __other) { \
-    ch::internal::logic_accessor::move(*this, std::move(__other)); \
+    auto sloc = ch::internal::caller_srcinfo(1); \
+    ch::internal::logic_accessor::move(*this, std::move(__other), sloc); \
     return *this; \
   } \
 protected: \

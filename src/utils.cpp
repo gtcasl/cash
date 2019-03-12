@@ -1,5 +1,6 @@
 #include <stdarg.h>
 #include <cxxabi.h>
+#include <execinfo.h>
 #include <regex>
 #include "common.h"
 #include "platform.h"
@@ -104,4 +105,37 @@ int ch::internal::char2int(char x, int base) {
     break;
   }
   CH_ABORT("invalid value");
+}
+
+source_location ch::internal::caller_srcinfo(uint32_t level) {
+  std::string cmd;
+  {
+    uint32_t l = 1 + level;
+    std::vector<void*> callstack(1+l);
+    uint32_t num_frames = backtrace(callstack.data(), callstack.size());
+    auto symbols = backtrace_symbols(callstack.data(), num_frames);
+    if (l < num_frames) {
+      auto symbol = symbols[l];
+      int p = 0;
+      while (symbol[p] != '(' && symbol[p] != ' ' && symbol[p] != 0) {
+        ++p;
+      }
+      cmd = stringf("addr2line %p -e %.*s", callstack[1+level], p, symbol);      
+    }
+    free(symbols);
+  }
+  if (!cmd.empty()) {
+    std::stringstream ss;
+    std::array<char, 128> out_buffer;
+    std::unique_ptr<FILE, decltype(&pclose)> pipe(popen(cmd.c_str(), "r"), pclose);
+    if (!pipe) {
+      throw std::runtime_error("popen() failed!");
+    }
+    while (fgets(out_buffer.data(), out_buffer.size(), pipe.get()) != nullptr) {
+      ss << out_buffer.data();
+    }
+    auto lineinfo = split(ss.str(), ':');
+    return source_location(lineinfo[0], stoi(lineinfo[1]));
+  }
+  return source_location();
 }

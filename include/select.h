@@ -140,7 +140,7 @@ auto ch_case(const K& key, const P& pred, const V& value, CH_SLOC) {
   static_assert(std::is_constructible_v<R, V>, "invalid type");
   static_assert(is_logic_type_v<K>, "invalid type");
   static_assert(is_scbit_convertible_v<P, ch_width_v<K>>, "invalid type");
-  static_assert(is_equality_comparable_v<P, K>, "invalid type");  
+  static_assert(is_equality_comparable_v<P, K>, "invalid type");
   return case_t<K, R>(get_lnode(key),
                       to_lnode<ch_width_v<K>>(pred, sloc),
                       to_lnode<R>(value, sloc),

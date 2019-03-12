@@ -170,15 +170,14 @@ void lnodeimpl::print(std::ostream& out) const {
 }
 
 std::string lnodeimpl::debug_info() const {
-  return stringf("'%s#%d (%d)' in module '%s (%d)' (%s:%d:%d)",
+  return stringf("'%s#%d (%d)' in module '%s (%d)' (%s:%d)",
                  name_.c_str(),
                  size_,
                  id_,
                  ctx_->name().c_str(),
                  ctx_->id(),
-                 sloc_.file(),
-                 sloc_.line(),
-                 sloc_.index());
+                 sloc_.file().c_str(),
+                 sloc_.line());
 }
 
 ///////////////////////////////////////////////////////////////////////////////

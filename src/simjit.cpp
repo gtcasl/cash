@@ -532,7 +532,7 @@ private:
 
       enum_strings = reinterpret_cast<enum_string_cb*>(buf);
       for (uint32_t i = 0, n = node->enum_strings().size(); i < n; ++i) {
-        enum_strings[i] =  node->enum_string(i);
+        enum_strings[i] = node->enum_string(i);
       }
       buf += node->enum_strings().size() * sizeof(enum_string_cb);
 
@@ -571,13 +571,15 @@ private:
   };
 
   struct assert_data_t {
-    char* msg;
+    char* msg;    
+    char* file;
+    int line;
     sdata_type time;
-    source_location sloc;
 
     static uint32_t size(assertimpl* node) {
       uint32_t size = sizeof(assert_data_t);
       size += node->msg().size() + 1; // msg
+      size += node->sloc().file().size() + 1; // file
       return size;
     }
 
@@ -589,14 +591,19 @@ private:
       memcpy(msg, node->msg().c_str(), msg_len);
       buf += msg_len;
 
-      cp->init_sdata(&time, node->time().impl());
+      auto file_len = node->sloc().file().size() + 1;
+      file = reinterpret_cast<char*>(buf);
+      memcpy(file, node->sloc().file().c_str(), file_len);
+      buf += file_len;
 
-      sloc = node->sloc();
+      line = node->sloc().line();
+
+      cp->init_sdata(&time, node->time().impl());
     }
 
     static void eval(assert_data_t* self) {
       fprintf(stderr, "assertion failure at tick %ld, %s (%s:%d)\n",
-              static_cast<uint64_t>(self->time), self->msg, self->sloc.file(), self->sloc.line());
+              static_cast<uint64_t>(self->time), self->msg, self->file, self->line);
       std::abort();
     }
   };

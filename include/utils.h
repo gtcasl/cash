@@ -13,6 +13,8 @@ struct requires_enum {
   enum class type {};
 };
 
+class source_location;
+
 #define CH_REQUIRE_0(...) std::enable_if_t<(__VA_ARGS__), typename ch::internal::requires_enum<0>::type>* = nullptr
 #define CH_REQUIRE_1(...) std::enable_if_t<(__VA_ARGS__), typename ch::internal::requires_enum<1>::type>* = nullptr
 #define CH_REQUIRE_2(...) std::enable_if_t<(__VA_ARGS__), typename ch::internal::requires_enum<2>::type>* = nullptr
@@ -22,7 +24,6 @@ std::string stringf(const char* format, ...);
 
 std::vector<std::string> split(const std::string& str, char delimiter);
 
-
 void dbprint(int level, const char* format, ...);
 
 std::string identifier_from_string(const std::string& name);
@@ -30,6 +31,8 @@ std::string identifier_from_string(const std::string& name);
 std::string identifier_from_typeid(const std::string& name);
 
 int char2int(char x, int base);
+
+source_location caller_srcinfo(uint32_t level);
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -166,20 +169,29 @@ inline constexpr bool is_fold_constructible_v = std::conjunction_v<std::is_const
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename To, typename From>
-struct is_strictly_constructible : std::bool_constant<
-    (std::is_constructible_v<To, From> && !std::is_base_of_v<To, From>)> {};
-
-template<typename To, typename From>
-inline constexpr bool is_strictly_constructible_v = is_strictly_constructible<To, From>::value;
-
-///////////////////////////////////////////////////////////////////////////////
-
-template <typename To, typename From>
 struct is_explicitly_constructible : std::bool_constant<
     (std::is_constructible_v<To, From> && !std::is_convertible_v<From, To>)> {};
 
 template<typename To, typename From>
 inline constexpr bool is_explicitly_constructible_v = is_explicitly_constructible<To, From>::value;
+
+///////////////////////////////////////////////////////////////////////////////
+
+template <typename To, typename From>
+struct is_implicitly_constructible : std::bool_constant<
+    (std::is_constructible_v<To, From> && std::is_convertible_v<From, To>)> {};
+
+template<typename To, typename From>
+inline constexpr bool is_implicitly_constructible_v = is_implicitly_constructible<To, From>::value;
+
+///////////////////////////////////////////////////////////////////////////////
+
+template <typename To, typename From>
+struct is_strictly_constructible : std::bool_constant<
+    (is_implicitly_constructible_v<To, From> && !std::is_base_of_v<To, From>)> {};
+
+template<typename To, typename From>
+inline constexpr bool is_strictly_constructible_v = is_strictly_constructible<To, From>::value;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -493,6 +505,39 @@ protected:
 
     mutable T* ptr_;
     mutable const smart_ptr<T>* next_;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+class source_location {
+public:
+
+  source_location(const std::string& file = "", int line = 0)
+    : file_(file)
+    , line_(line)
+  {}
+
+  const std::string& file() const {
+    return file_;
+  }
+
+  int line() const {
+    return line_;
+  }
+
+  bool empty() const {
+    return file_.empty();
+  }
+
+private:
+
+  friend std::ostream& operator<<(std::ostream& out, const source_location& sloc) {
+    out << sloc.file() << ":" << sloc.line();
+    return out;
+  }
+
+  std::string file_;
+  int line_;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

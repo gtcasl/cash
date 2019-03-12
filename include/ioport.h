@@ -56,7 +56,7 @@ public:
 
   ch_logic_in(const std::string& name = "in", CH_SLOC)
      : base(logic_buffer(createInputNode(name, ch_width_v<T>, sloc))) {
-    input_ = logic_accessor::buffer(*this);
+    input_ = get_lnode(*this);
   }
 
   template <typename U>
@@ -64,7 +64,7 @@ public:
     : base(logic_buffer(ch_width_v<T>, sloc, out.output_.name())) {
     static_assert(is_logic_only_v<U>, "invalid type");
     static_assert(std::is_constructible_v<U, T>, "invalid type");
-    bindOutput(logic_accessor::buffer(*this), out.output_, sloc);
+    bindOutput(get_lnode(*this), out.output_, sloc);
   }
 
   ch_logic_in(const ch_logic_in& other, CH_SLOC)
@@ -111,7 +111,7 @@ public:
 
   ch_logic_out(const std::string& name = "out", CH_SLOC)
     : base(logic_buffer(createOutputNode(name, ch_width_v<T>, sloc))) {
-    output_ = getOutputNode(logic_accessor::buffer(*this));
+    output_ = getOutputNode(get_lnode(*this));
   }
 
   template <typename U>
@@ -119,7 +119,7 @@ public:
     : base(logic_buffer(ch_width_v<T>, sloc, in.input_.name())) {
     static_assert(is_logic_only_v<U>, "invalid type");
     static_assert(std::is_constructible_v<U, T>, "invalid type");
-    bindInput(logic_accessor::buffer(*this), in.input_, sloc);
+    bindInput(get_lnode(*this), in.input_, sloc);
   }
 
   ch_logic_out(const ch_logic_out& other, CH_SLOC)

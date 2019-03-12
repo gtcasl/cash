@@ -27,18 +27,17 @@ public:
             CH_REQUIRE_0(std::is_integral_v<U>)>
   ch_uint(const U& other, CH_SLOC) : base(other, sloc) {}
 
-  ch_uint(const ch_scbit<N>& other, CH_SLOC) : base(other, sloc) {}
+  template <unsigned M,
+            CH_REQUIRE_0(M <= N)>
+  ch_uint(const ch_scbit<M>& other, CH_SLOC) : base(other, sloc) {}
 
   template <unsigned M,
             CH_REQUIRE_0(M < N)>
   ch_uint(const ch_uint<M>& other, CH_SLOC) : base(other, sloc) {}
 
-  explicit ch_uint(const ch_bit<N>& other, CH_SLOC) : base(other, sloc) {}
-
-  template <typename U,
-            CH_REQUIRE_0(is_bit_base_v<U>),
-            CH_REQUIRE_0(ch_width_v<U> < N)>
-  explicit ch_uint(const U& other, CH_SLOC) : base(other, sloc) {}
+  template <unsigned M,
+            CH_REQUIRE_0(M <= N)>
+  explicit ch_uint(const ch_bit<M>& other, CH_SLOC) : base(other, sloc) {}
 
   ch_uint(const ch_uint& other, CH_SLOC) : base(other, sloc) {}
 

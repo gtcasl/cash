@@ -38,6 +38,12 @@ public:
 
   template <unsigned M,
             CH_REQUIRE_0(M < N)>
+  ch_bit(const ch_scbit<M>& other, CH_SLOC)
+    : buffer_(logic_buffer(system_accessor::data(ch_scbit<N>(other)), sloc))
+  {}
+
+  template <unsigned M,
+            CH_REQUIRE_0(M < N)>
   ch_bit(const ch_bit<M>& other, CH_SLOC)
     : buffer_(logic_buffer(createOpNode(ch_op::pad, N, false, get_lnode(other), sloc), sloc))
   {}
@@ -59,22 +65,26 @@ public:
   template <typename U,
               CH_REQUIRE_0(std::is_integral_v<U>)>
   ch_bit& operator=(const U& other) {
-    logic_accessor::assign(*this, sdata_type(N, other));
+    auto sloc = caller_srcinfo(1);
+    logic_accessor::assign(*this, sdata_type(N, other), sloc);
     return *this;
   }
 
   ch_bit& operator=(const ch_scbit<N>& other) {
-    logic_accessor::assign(*this, system_accessor::data(other));
+    auto sloc = caller_srcinfo(1);
+    logic_accessor::assign(*this, system_accessor::data(other), sloc);
     return *this;
   }
 
   ch_bit& operator=(const ch_bit& other) {
-    logic_accessor::assign(*this, other);
+    auto sloc = caller_srcinfo(1);
+    logic_accessor::assign(*this, other, sloc);
     return *this;
   }
 
   ch_bit& operator=(ch_bit&& other) {
-    logic_accessor::move(*this, std::move(other));
+    auto sloc = caller_srcinfo(1);
+    logic_accessor::move(*this, std::move(other), sloc);
     return *this;
   }
 

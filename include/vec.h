@@ -108,12 +108,14 @@ public:
   }
 
   ch_vec& operator=(const ch_vec& other) {
-    logic_accessor::assign(*this, other);
+    auto sloc = caller_srcinfo(1);
+    logic_accessor::assign(*this, other, sloc);
     return *this;
   }
 
   ch_vec& operator=(ch_vec&& other) {
-    logic_accessor::move(*this, std::move(other));
+    auto sloc = caller_srcinfo(1);
+    logic_accessor::move(*this, std::move(other), sloc);
     return *this;
   }
 
@@ -129,7 +131,8 @@ public:
             CH_REQUIRE_1(is_logic_type_v<U>)>
   ch_vec& operator=(const U& other) {
     static_assert(ch_width_v<U> == N * ch_width_v<T>, "invalid size");
-    logic_accessor::assign(*this, other);
+    auto sloc = caller_srcinfo(1);
+    logic_accessor::assign(*this, other, sloc);
     return *this;
   }
 
