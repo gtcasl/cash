@@ -271,23 +271,23 @@ public:
 };
 
 template <unsigned Delay>
-auto ch_fadd(const ch_float32& lhs, const ch_float32& rhs, const ch_bool& enable = true, __sloc) {
-  return ch_delayEn(ch_udf<sfAdd>()(lhs, rhs, sloc), enable, Delay - 1);
+auto ch_fadd(const ch_float32& lhs, const ch_float32& rhs, const ch_bool& enable = true) {
+  return ch_delayEn(ch_udf<sfAdd>()(lhs, rhs), enable, Delay - 1);
 }
 
 template <unsigned Delay>
-auto ch_fsub(const ch_float32& lhs, const ch_float32& rhs, const ch_bool& enable = true, __sloc) {
-  return ch_delayEn(ch_udf<sfSub>()(lhs, rhs, sloc), enable, Delay - 1);
+auto ch_fsub(const ch_float32& lhs, const ch_float32& rhs, const ch_bool& enable = true) {
+  return ch_delayEn(ch_udf<sfSub>()(lhs, rhs), enable, Delay - 1);
 }
 
 template <unsigned Delay>
-auto ch_fmul(const ch_float32& lhs, const ch_float32& rhs, const ch_bool& enable = true, __sloc) {
-  return ch_delayEn(ch_udf<sfMul>()(lhs, rhs, sloc), enable, Delay - 1);
+auto ch_fmul(const ch_float32& lhs, const ch_float32& rhs, const ch_bool& enable = true) {
+  return ch_delayEn(ch_udf<sfMul>()(lhs, rhs), enable, Delay - 1);
 }
 
 template <unsigned Delay>
-auto ch_fdiv(const ch_float32& lhs, const ch_float32& rhs, const ch_bool& enable = true, __sloc) {
-  return ch_delayEn(ch_udf<sfDiv>()(lhs, rhs, sloc), enable, Delay - 1);
+auto ch_fdiv(const ch_float32& lhs, const ch_float32& rhs, const ch_bool& enable = true) {
+  return ch_delayEn(ch_udf<sfDiv>()(lhs, rhs), enable, Delay - 1);
 }
 
 }

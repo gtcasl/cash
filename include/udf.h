@@ -116,26 +116,22 @@ public:
     handle_->release();
   }
 
-#define CH_UDF_OP_TMPL(a, i, x) typename __T##i
-#define CH_UDF_OP_ASSERT(a, i, x) static_assert(std::is_convertible_v<__T##i, std::tuple_element_t<i, typename T::traits::Inputs>>, "invalid type for input"#i)
-#define CH_UDF_OP_DECL(a, i, x) const __T##i& arg##i
-#define CH_UDF_OP_ARG(a, i, x) to_lnode<std::tuple_element_t<i, typename T::traits::Inputs>>(arg##i, sloc)
-#define CH_UDF_OP(...) \
-  template <CH_FOR_EACH(CH_UDF_OP_TMPL, , CH_SEP_COMMA, __VA_ARGS__)> \
-  auto operator()(CH_FOR_EACH(CH_UDF_OP_DECL, , CH_SEP_COMMA, __VA_ARGS__), CH_SLOC) const { \
-    static_assert(CH_NARG(__VA_ARGS__) == std::tuple_size_v<typename T::traits::Inputs>, "number of inputs mismatch"); \
-    CH_FOR_EACH(CH_UDF_OP_ASSERT, , CH_SEP_SEMICOLON, __VA_ARGS__); \
-    auto node = createUDFNode(handle_, {CH_FOR_EACH(CH_UDF_OP_ARG, , CH_SEP_COMMA, __VA_ARGS__)}, sloc); \
-    return make_type<typename T::traits::Output>(node, sloc); \
+  template <typename... Args>
+  auto operator()(const Args&... args) const {
+    static_assert(sizeof...(Args) == std::tuple_size_v<typename T::traits::Inputs>, "number of inputs mismatch");
+    return this->call<Args...>(caller_srcinfo(1),
+                               args...,
+                               std::make_index_sequence<sizeof...(Args)>{});
   }
-CH_VA_ARGS_MAP(CH_UDF_OP)
-#undef CH_UDF_OP_TMPL
-#undef CH_UDF_OP_ASSERT
-#undef CH_UDF_OP_DECL
-#undef CH_UDF_OP_ARG
-#undef CH_UDF_OP
 
 protected:
+
+  template <typename... Args, std::size_t... Is>
+  auto call(const source_location& sloc, const Args&... args, std::index_sequence<Is...>) const {
+    static_assert((std::is_convertible_v<Args, std::tuple_element_t<Is, typename T::traits::Inputs>> && ...), "invalid input type");
+    auto node = createUDFNode(handle_, {to_lnode<std::tuple_element_t<Is, typename T::traits::Inputs>>(args, sloc)...}, sloc);
+    return make_type<typename T::traits::Output>(node, sloc);
+  }
 
   refcounted* handle_;
 };

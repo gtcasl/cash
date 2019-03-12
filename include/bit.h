@@ -246,7 +246,7 @@ auto ch_shuffle(const ch_bit<N>& obj,
   return make_type<ch_bit<N>>(node, sloc);
 }
 
-// tie function
+// bind function
 
 template <typename... Args>
 class bind_impl {
@@ -282,22 +282,11 @@ protected:
   std::tuple<Args&...> args_;
 };
 
-#define CH_BIND_TMPL(a, i, x) typename __T##i
-#define CH_BIND_ASSERT(a, i, x) static_assert(is_logic_type_v<__T##i>, "invalid type for argument"#i)
-#define CH_BIND_DECL(a, i, x) __T##i& arg##i
-#define CH_BIND_ARG(a, i, x) arg##i
-#define CH_BIND(...) \
-  template <CH_FOR_EACH(CH_BIND_TMPL, , CH_SEP_COMMA, __VA_ARGS__)> \
-  auto ch_bind(CH_FOR_EACH(CH_BIND_DECL, , CH_SEP_COMMA, __VA_ARGS__), CH_SLOC) { \
-    CH_FOR_EACH(CH_BIND_ASSERT, , CH_SEP_SEMICOLON, __VA_ARGS__); \
-    return bind_impl(sloc, CH_FOR_EACH(CH_BIND_ARG, , CH_SEP_COMMA, __VA_ARGS__)); \
-  }
-CH_VA_ARGS_MAP(CH_BIND)
-#undef CH_BIND_TMPL
-#undef CH_BIND_ASSERT
-#undef CH_BIND_DECL
-#undef CH_BIND_ARG
-#undef CH_BIND
+template <typename... Args>
+  auto ch_bind(Args&... args) {
+  static_assert((is_logic_type_v<Args> && ...), "invalid type for argument");
+  return bind_impl(caller_srcinfo(1), args...);
+}
 
 // concatenation function
 
@@ -313,37 +302,22 @@ void cat_impl(O& inout, uint32_t dst_offset, const source_location& sloc,
   cat_impl(inout, dst_offset - ch_width_v<I0>, sloc, args...);
 }
 
-#define CH_CAT_TYPE(a, i, x) __T##i
-#define CH_CAT_TMPL(a, i, x) typename __T##i
-#define CH_CAT_ASSERT(a, i, x) static_assert(is_object_type_v<__T##i>, "invalid type for argument"#i)
-#define CH_CAT_DECL(a, i, x) const __T##i& arg##i
-#define CH_CAT_ARG(a, i, x) to_logic<ch_width_v<__T##i>>(arg##i, sloc)
-#define CH_CAT(...) \
-  template <typename R, \
-            CH_FOR_EACH(CH_CAT_TMPL, , CH_SEP_COMMA, __VA_ARGS__)> \
-  auto ch_cat(CH_FOR_EACH(CH_CAT_DECL, , CH_SEP_COMMA, __VA_ARGS__), CH_SLOC) { \
-    CH_FOR_EACH(CH_CAT_ASSERT, , CH_SEP_SEMICOLON, __VA_ARGS__); \
-    static constexpr unsigned N = ch_width_v<CH_FOR_EACH(CH_CAT_TYPE, , CH_SEP_COMMA, __VA_ARGS__)>; \
-    static_assert(ch_width_v<R> == N, "size mismatch"); \
-    R ret(logic_buffer(N, sloc)); \
-    cat_impl(ret, N, sloc, CH_FOR_EACH(CH_CAT_ARG, , CH_SEP_COMMA, __VA_ARGS__)); \
-    return ret; \
-  } \
-  template <CH_FOR_EACH(CH_CAT_TMPL, , CH_SEP_COMMA, __VA_ARGS__)> \
-  auto ch_cat(CH_FOR_EACH(CH_CAT_DECL, , CH_SEP_COMMA, __VA_ARGS__), CH_SLOC) { \
-    CH_FOR_EACH(CH_CAT_ASSERT, , CH_SEP_SEMICOLON, __VA_ARGS__); \
-    static constexpr unsigned N = ch_width_v<CH_FOR_EACH(CH_CAT_TYPE, , CH_SEP_COMMA, __VA_ARGS__)>; \
-    ch_bit<N> ret(logic_buffer(N, sloc)); \
-    cat_impl(ret, N, sloc, CH_FOR_EACH(CH_CAT_ARG, , CH_SEP_COMMA, __VA_ARGS__)); \
-    return ret; \
-  }
-CH_VA_ARGS_MAP(CH_CAT)
-#undef CH_CAT_TYPE
-#undef CH_CAT_TMPL
-#undef CH_CAT_ASSERT
-#undef CH_CAT_DECL
-#undef CH_CAT_ARG
-#undef CH_CAT                         
+template <typename R, typename... Args>
+auto ch_cat(const Args&... args) {
+  static_assert((is_object_type_v<Args> && ...), "invalid argument type");
+  static constexpr unsigned N = (ch_width_v<Args> + ...);
+  static_assert(ch_width_v<R> == N, "size mismatch");
+  auto sloc = caller_srcinfo(1);
+  R ret(logic_buffer(N, sloc));
+  cat_impl(ret, N, sloc, to_logic<ch_width_v<Args>>(args, sloc)...);
+  return ret;
+}
+
+template <typename... Args>
+auto ch_cat(const Args&... args) {
+  static constexpr unsigned N = (ch_width_v<Args> + ...);
+  return ch_cat<ch_bit<N>>(args...);
+}
 
 // duplicate function
 
@@ -393,36 +367,19 @@ void ch_tap(const T& value, const std::string& name, CH_SLOC) {
 
 ch_uint<64> ch_now(CH_SLOC);
 
-// print function
+// print function       
 
-inline void ch_print(const std::string& format, CH_SLOC) {
-  createPrintNode(format, {}, sloc);
+template <typename... Args>
+void ch_print(const std::string& format, const Args&... args) {
+  static_assert((is_logic_type_v<Args> && ...), "invalid argument type");
+  auto sloc = caller_srcinfo(1);
+  createPrintNode(format, {get_lnode(args)...}, sloc);
 }
 
-inline void ch_println(const std::string& format, CH_SLOC) {
-  createPrintNode(format + '\n', {}, sloc);
+template <typename... Args>
+void ch_println(const std::string& format, const Args&... args) {
+  ch_print(format + '\n', args...);
 }
 
-#define CH_PRINT_TMPL(a, i, x) typename __T##i
-#define CH_PRINT_ASSERT(a, i, x) static_assert(is_logic_type_v<__T##i>, "invalid type for argument"#i)
-#define CH_PRINT_DECL(a, i, x) const __T##i& arg##i
-#define CH_PRINT_ARG(a, i, x) get_lnode(arg##i)
-#define CH_PRINT(...) \
-  template <CH_FOR_EACH(CH_PRINT_TMPL, , CH_SEP_COMMA, __VA_ARGS__)> \
-  void ch_print(const std::string& format, CH_FOR_EACH(CH_PRINT_DECL, , CH_SEP_COMMA, __VA_ARGS__), CH_SLOC) { \
-    CH_FOR_EACH(CH_PRINT_ASSERT, , CH_SEP_SEMICOLON, __VA_ARGS__); \
-    createPrintNode(format, {CH_FOR_EACH(CH_PRINT_ARG, , CH_SEP_COMMA, __VA_ARGS__)}, sloc); \
-  } \
-  template <CH_FOR_EACH(CH_PRINT_TMPL, , CH_SEP_COMMA, __VA_ARGS__)> \
-    void ch_println(const std::string& format, CH_FOR_EACH(CH_PRINT_DECL, , CH_SEP_COMMA, __VA_ARGS__), CH_SLOC) { \
-    CH_FOR_EACH(CH_PRINT_ASSERT, , CH_SEP_SEMICOLON, __VA_ARGS__); \
-    createPrintNode(format + '\n', {CH_FOR_EACH(CH_PRINT_ARG, , CH_SEP_COMMA, __VA_ARGS__)}, sloc); \
-  }
-CH_VA_ARGS_MAP(CH_PRINT)
-#undef CH_PRINT_TMPL
-#undef CH_PRINT_ASSERT
-#undef CH_PRINT_DECL
-#undef CH_PRINT_ARG
-#undef CH_PRINT
 }
 }

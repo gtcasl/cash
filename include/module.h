@@ -17,30 +17,12 @@ protected:
 public:
   io_type& io;
 
-  ch_module(CH_SLOC)
-    : device(std::type_index(typeid(T)), false, typeid(T).name())
-    , _(build(sloc))
+  template <typename... Args>
+  ch_module(Args&&... args)
+    : device(std::type_index(typeid(T)), (sizeof...(Args) != 0), typeid(T).name())
+    , _(build(caller_srcinfo(1), std::forward<Args>(args)...))
     , io(*_)
   {}
-
-#define CH_MODULE_TMPL(a, i, x) typename __U##i
-#define CH_MODULE_REQUIRE(a, i, x) __U##i
-#define CH_MODULE_DECL(a, i, x) const __U##i& arg##i
-#define CH_MODULE_ARG(a, i, x) arg##i
-#define CH_MODULE(...) \
-  template <CH_FOR_EACH(CH_MODULE_TMPL, , CH_SEP_COMMA, __VA_ARGS__), \
-            CH_REQUIRE_0(std::is_constructible_v<T, CH_FOR_EACH(CH_MODULE_REQUIRE, , CH_SEP_COMMA, __VA_ARGS__)>)> \
-  ch_module(CH_FOR_EACH(CH_MODULE_DECL, , CH_SEP_COMMA, __VA_ARGS__), CH_SLOC) \
-    : device(std::type_index(typeid(T)), true, typeid(T).name()) \
-    , _(build(sloc, CH_FOR_EACH(CH_MODULE_ARG, , CH_SEP_COMMA, __VA_ARGS__))) \
-    , io(*_) \
-  {}
-CH_VA_ARGS_MAP(CH_MODULE)
-#undef CH_MODULE_TMPL
-#undef CH_MODULE_REQUIRE
-#undef CH_MODULE_DECL
-#undef CH_MODULE_ARG
-#undef CH_MODULE
 
   ch_module(ch_module&& other)
     : base(std::move(other))
