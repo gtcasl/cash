@@ -73,15 +73,15 @@ std::string ch::internal::identifier_from_typeid(const std::string& name) {
   int status;
   char* demangled = abi::__cxa_demangle(name.c_str(), 0, 0, &status);
   CH_CHECK(0 == status, "abi::__cxa_demangle() failed");
-  std::string ret(demangled);
+  std::string sd(demangled);
   ::free(demangled);
-  // remove namespace prefix
-  auto tmp = std::regex_replace(ret, std::regex("[^<>:]*::"), "");
-  // replace template arguments
-  ret.clear();
-  std::regex_replace(std::back_inserter(ret), tmp.begin(), tmp.end(),
-                     std::regex("<.*>"), "");
-  return ret;
+  // remove spaces and close brakets
+  auto ss = std::regex_replace(sd, std::regex("[\\s>]+"), "");
+  // remove all namespaces
+  auto sn = std::regex_replace(ss, std::regex("[a-zA-Z_\\(\\)][a-zA-Z0-9_\\(\\)]*::"), "");
+  // replace template open brackets and commas
+  auto st = std::regex_replace(sn, std::regex("[<,]"), "_");
+  return st;
 }
 
 int ch::internal::char2int(char x, int base) {
