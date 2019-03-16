@@ -75,10 +75,10 @@ std::string ch::internal::identifier_from_typeid(const std::string& name) {
   CH_CHECK(0 == status, "abi::__cxa_demangle() failed");
   std::string sd(demangled);
   ::free(demangled);
-  // remove spaces and close brakets
-  auto ss = std::regex_replace(sd, std::regex("[\\s>]+"), "");
+  // remove all spaces, close brakets and parenthesis
+  auto ss = std::regex_replace(sd, std::regex("[\\s>\\(\\)]+"), "");
   // remove all namespaces
-  auto sn = std::regex_replace(ss, std::regex("[a-zA-Z_\\(\\)][a-zA-Z0-9_\\(\\)]*::"), "");
+  auto sn = std::regex_replace(ss, std::regex("[a-zA-Z_][a-zA-Z0-9_]*::"), "");
   // replace template open brackets and commas
   auto st = std::regex_replace(sn, std::regex("[<,]"), "_");
   return st;
