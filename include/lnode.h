@@ -83,6 +83,11 @@ std::ostream& operator<<(std::ostream& out, ch_op op);
 
 using ch_tick = uint64_t;
 
+template <typename T>
+auto idname() {
+  return identifier_from_typeid(typeid(T).name());
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 bool register_source_location(uint32_t level);

@@ -1,5 +1,7 @@
 #include <cash.h>
 
+#define CHECK(x) do { if (!(x)) { std::cout << "FAILED: " << #x << std::endl; std::abort(); } } while (false)
+
 using namespace ch::logic;
 using namespace ch::system;
 
@@ -49,42 +51,42 @@ int main() {
               << ", full=" << fifo.io.full << std::endl;
     switch (t) {
     case 0:
-      assert(fifo.io.empty == true);
-      assert(fifo.io.full == false);
+      CHECK(fifo.io.empty == true);
+      CHECK(fifo.io.full == false);
       fifo.io.din  = 1;
       fifo.io.push = 1;
       fifo.io.pop  = 0;
       break;      
     case 2:
-      assert(fifo.io.empty == false);
-      assert(fifo.io.full == false);
-      assert(fifo.io.dout == 1);
+      CHECK(fifo.io.empty == false);
+      CHECK(fifo.io.full == false);
+      CHECK(fifo.io.dout == 1);
       fifo.io.din = 2;
       fifo.io.push = 1;
       break;
     case 4:
-      assert(fifo.io.empty == false);
-      assert(fifo.io.full == true);
-      assert(fifo.io.dout == 1);
+      CHECK(fifo.io.empty == false);
+      CHECK(fifo.io.full == true);
+      CHECK(fifo.io.dout == 1);
       fifo.io.din = 0;
       fifo.io.push = 0;
       break;
     case 6:
-      assert(fifo.io.empty == false);
-      assert(fifo.io.full == true);
-      assert(fifo.io.dout == 1);
+      CHECK(fifo.io.empty == false);
+      CHECK(fifo.io.full == true);
+      CHECK(fifo.io.dout == 1);
       fifo.io.pop = 1;
       break;
     case 8:
-      assert(fifo.io.empty == false);
-      assert(fifo.io.full == false);
-      assert(fifo.io.dout == 2);
+      CHECK(fifo.io.empty == false);
+      CHECK(fifo.io.full == false);
+      CHECK(fifo.io.dout == 2);
       fifo.io.pop = 1;
       break;
     case 10:
-      assert(fifo.io.empty == true);
-      assert(fifo.io.full == false);
-      assert(fifo.io.dout == 1);
+      CHECK(fifo.io.empty == true);
+      CHECK(fifo.io.full == false);
+      CHECK(fifo.io.dout == 1);
       fifo.io.pop = 0;
       break;
     }

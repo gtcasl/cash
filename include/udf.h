@@ -101,7 +101,7 @@ public:
       auto udf = new T(std::forward<Args>(args)...);
       handle_ = createUDF(std::type_index(typeid(T)),
                           (sizeof...(Args) != 0),
-                          typeid(T).name(),
+                          idname<T>(),
                           T::traits::is_seq,
                           ch_width_v<typename T::traits::Output>,
                           udf_inputs_size<typename T::traits::Inputs>(),

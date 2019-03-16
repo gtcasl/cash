@@ -21,7 +21,7 @@
 #include "udfimpl.h"
 
 #ifdef CALLTRACE
-#include "srclocmgr.h"
+#include "slocmgr.h"
 #endif
 
 using namespace ch::internal;
@@ -50,7 +50,7 @@ public:
         ctx_signatures_.erase(it);
       }
     }
-    auto unique_name = identifier_from_typeid(name);
+    auto unique_name = name;
     auto instances = dup_ctx_names_.insert(unique_name);
     if (instances) {
        unique_name = stringf("%s_%ld", unique_name.c_str(), instances);
@@ -58,7 +58,7 @@ public:
     ctx = new context(unique_name, ctx_);
     if (!has_args) {
       pod_contexts_.emplace(ctx->id(), ctx);
-      auto status = ctx_signatures_.emplace(signature, ctx->id());
+      [[maybe_unused]] auto status = ctx_signatures_.emplace(signature, ctx->id());
       assert(status.second);
       ctx->set_managed(true);
     }
@@ -107,7 +107,7 @@ public:
     auto iface = new udf_iface(id, name, is_seq, output_size, inputs_size, udf);
     if (!has_args) {
       pod_udfs_.emplace(id, iface);
-      auto status = udf_signatures_.emplace(signature, id);
+      [[maybe_unused]] auto status = udf_signatures_.emplace(signature, id);
       assert(status.second);
       iface->set_managed(true);
     }
@@ -128,7 +128,7 @@ public:
     src_loc_manager_.release_source_location();
   }
   const source_location& get_source_location() {
-    return src_loc_manager_.sloc();
+    return src_loc_manager_.get_source_location();
   }
 #endif
 
@@ -160,7 +160,7 @@ protected:
   dup_tracker<std::string> dup_ctx_names_;
   std::unordered_map<std::type_index, uint32_t> udf_signatures_;
   std::unordered_map<uint32_t, udf_iface*> pod_udfs_;
-  src_loc_manager src_loc_manager_;
+  sloc_manager src_loc_manager_;
 };
 
 context* ch::internal::ctx_create(const std::type_index& signature,

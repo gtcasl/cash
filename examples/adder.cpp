@@ -1,5 +1,7 @@
 #include <cash.h>
 
+#define CHECK(x) do { if (!(x)) { std::cout << "FAILED: " << #x << std::endl; std::abort(); } } while (false)
+
 using namespace ch::logic;
 using namespace ch::system;
 using namespace ch::literals;
@@ -35,8 +37,8 @@ int main() {
   std::cout << "cout = " << adder.io.cout << std::endl;
   std::cout << "out = "  << adder.io.out << std::endl;
 
-  assert(adder.io.out == 1);
-  assert(adder.io.cout == 1);
+  CHECK(adder.io.out == 1);
+  CHECK(adder.io.cout == 1);
 
   ch_toVerilog("adder.v", adder);
   ch_toFIRRTL("adder.fir", adder);

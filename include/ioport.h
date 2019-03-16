@@ -39,7 +39,7 @@ public:
                                       T>;
   using base = T;
 
-  ch_in(const std::string& name = "ch_in")
+  ch_in(const std::string& name = idname<ch_in>())
      : base(createInputNode(name, ch_width_v<T>)) {
     input_ = get_lnode(*this);
   }
@@ -92,7 +92,7 @@ public:
   using base = T;
   using base::operator=;
 
-  ch_out(const std::string& name = "ch_out")
+  ch_out(const std::string& name = idname<ch_out>())
     : base(createOutputNode(name, ch_width_v<T>)) {
     output_ = getOutputNode(get_lnode(*this));
   }

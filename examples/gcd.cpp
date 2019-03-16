@@ -1,6 +1,8 @@
 #include <cash.h>
 #include <htl/decoupled.h>
 
+#define CHECK(x) do { if (!(x)) { std::cout << "FAILED: " << #x << std::endl; std::abort(); } } while (false)
+
 using namespace ch::logic;
 using namespace ch::system;
 using namespace ch::htl;
@@ -58,7 +60,7 @@ int main() {
 
   std::cout << "completed after " << (ticks/2) << " cycles" << std::endl;
 
-  assert(gcd.io.out.data == 16);
+  CHECK(gcd.io.out.data == 16);
 
   ch_toVerilog("gcd.v", gcd);
   ch_toFIRRTL("gcd.fir", gcd);

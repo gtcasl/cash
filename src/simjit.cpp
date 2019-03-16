@@ -241,7 +241,7 @@ static uint32_t get_value_size(jit_value_t j_value) {
   return get_type_size(j_type);
 }
 
-static bool is_native_type(jit_type_t j_type) {
+[[maybe_unused]] static bool is_native_type(jit_type_t j_type) {
   auto kind = jit_type_get_kind(j_type);
   switch (kind) {
   case JIT_TYPE_INT:

@@ -1,5 +1,7 @@
 #include <cash.h>
 
+#define CHECK(x) do { if (!(x)) { std::cout << "FAILED: " << #x << std::endl; std::abort(); } } while (false)
+
 using namespace ch::logic;
 using namespace ch::system;
 
@@ -36,7 +38,7 @@ int main() {
   std::cout << "rhs = "  << fastmul.io.rhs << std::endl;
   std::cout << "out = "  << fastmul.io.out << std::endl;
 
-  assert(fastmul.io.out == 6);
+  CHECK(fastmul.io.out == 6);
 
   ch_toVerilog("fastmul.v", fastmul);
   ch_toFIRRTL("fastmul.fir", fastmul);

@@ -4,6 +4,8 @@
 #include <cash.h>
 #include <htl/counter.h>
 
+#define CHECK(x) do { if (!(x)) { std::cout << "FAILED: " << #x << std::endl; std::abort(); } } while (false)
+
 using namespace ch::logic;
 using namespace ch::htl;
 using namespace ch::system;
@@ -175,7 +177,7 @@ int main() {
   auto c = a * b;
   for (size_t j = 0; j < c.height(); ++j)  {
     for (size_t i = 0; i < c.width(); ++i) {
-      assert(c.at(i, j) == matmul.io.c_out[j][i]);
+      CHECK(c.at(i, j) == matmul.io.c_out[j][i]);
     }
   }
 

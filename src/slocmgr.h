@@ -1,20 +1,21 @@
 #pragma once
 
+#include <unwind.h>
+#include <dlfcn.h>
+#include <bfd.h>
 #include "common.h"
-#include "bfd.h"
-#include <execinfo.h>
 
 namespace ch {
 namespace internal {
 
-class src_loc_manager {
+class sloc_manager {
 public:
 
-  src_loc_manager() : active_(false), addr_(nullptr) {
+  sloc_manager() : active_(false), addr_(nullptr) {
     bfd_init();
   }
 
-  ~src_loc_manager() {
+  ~sloc_manager() {
     for (auto entry : symbols_) {
       delete entry.second;
     }
@@ -25,7 +26,7 @@ public:
       return false;
     std::string module;
     void* addr;
-    if (!get_callstack_addr(level+1, addr, module))
+    if (!get_callstack_info(level+1, addr, module))
       return false;
     if (addr == addr_) {
       active_ = true;
@@ -54,7 +55,7 @@ public:
     active_ = false;
   }
 
-  const source_location& sloc() const {
+  const source_location& get_source_location() const {
     assert(active_);
     return sloc_;
   }
@@ -115,6 +116,26 @@ private:
     }
   };
 
+  struct bt_data_t {
+    uint32_t nskip;
+    void* addr;
+
+    bt_data_t(uint32_t level) : nskip(level+1), addr(nullptr) {}
+
+    _Unwind_Reason_Code walk(_Unwind_Context* ctx) {
+      int ip_before_insn = 0;
+      auto pc = _Unwind_GetIPInfo(ctx, &ip_before_insn);
+      if (!ip_before_insn)
+        --pc;
+      auto ip = reinterpret_cast<void*>(pc);
+      if (--nskip == 0) {
+        addr = ip;
+        return _URC_END_OF_STACK;
+      }
+      return _URC_NO_REASON;
+    }
+  };
+
   syminfo_t* load_symbols(const std::string module) {
     std::unique_ptr<bfd, decltype(&bfd_close)> abfd(bfd_openr(module.c_str(), nullptr), bfd_close);
     if (!abfd)
@@ -163,23 +184,21 @@ private:
     return true;
   }
 
-  bool get_callstack_addr(uint32_t level, void*& addr, std::string& module) {
-    uint32_t l = 1 + level;
-    std::vector<void*> callstack(1+l);
-    uint32_t num_frames = backtrace(callstack.data(), callstack.size());
-    if (l >= num_frames)
+  static _Unwind_Reason_Code backtrace_cb(_Unwind_Context* ctx, void *data) {
+    return (reinterpret_cast<bt_data_t*>(data))->walk(ctx);
+  }
+
+  bool get_callstack_info(uint32_t level, void*& addr, std::string& module) {
+    bt_data_t bt_data(level+1);
+    _Unwind_Backtrace(&backtrace_cb, &bt_data);
+    if (nullptr == bt_data.addr)
       return false;
-    auto symbols = backtrace_symbols(callstack.data(), num_frames);
-    if (symbols == nullptr)
+    Dl_info dlinfo;
+    if (!dladdr(bt_data.addr, &dlinfo)) {
       return false;
-    const char* module_path_begin = symbols[l];
-    const char* module_path_end = module_path_begin;
-    while (*module_path_end && *module_path_end != '(') {
-      ++module_path_end;
     }
-    module.assign(module_path_begin, module_path_end);
-    addr = callstack[l];
-    free(symbols);
+    addr = bt_data.addr;
+    module = dlinfo.dli_fname;
     return true;
   }
 

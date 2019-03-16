@@ -54,26 +54,26 @@ public:
   using base = T;
 
   ch_reg()
-    : base(createRegNode(ch_width_v<T>, identifier_from_typeid(typeid(ch_reg).name()))) {
+    : base(createRegNode(ch_width_v<T>, idname<T>())) {
     __next__ = std::make_unique<next_t>(getRegNextNode(get_lnode(*this)));
   }
 
   template <typename U0,
             CH_REQUIRE_0(std::is_convertible_v<U0, T>)>
   explicit ch_reg(const U0& init0)
-    : base(createRegNode(to_lnode<T>(init0), identifier_from_typeid(typeid(ch_reg).name()))) {
+    : base(createRegNode(to_lnode<T>(init0), idname<T>())) {
     __next__ = std::make_unique<next_t>(getRegNextNode(get_lnode(*this)));
   }
 
   template <typename... Us,
             CH_REQUIRE_0(std::is_constructible_v<T, Us...>)>
   explicit ch_reg(const Us&... inits)
-    : base(createRegNode(get_lnode(T(inits...)), identifier_from_typeid(typeid(ch_reg).name()))) {
+    : base(createRegNode(get_lnode(T(inits...)), idname<T>())) {
     __next__ = std::make_unique<next_t>(getRegNextNode(get_lnode(*this)));
   }
 
   ch_reg(const ch_reg& other)
-    : base(copyRegNode(get_lnode(other), identifier_from_typeid(typeid(ch_reg).name()))) {
+    : base(copyRegNode(get_lnode(other), idname<T>())) {
     __next__ = std::make_unique<next_t>(getRegNextNode(get_lnode(*this)));
   }
 
@@ -134,7 +134,7 @@ auto ch_next(const T& in) {
   static_assert(is_logic_type_v<R>, "invalid type");
   static_assert(std::is_constructible_v<R, T>, "invalid type");
   CH_SOURCE_LOCATION(1);
-  return R(createRegNext(to_lnode<R>(in), 1, identifier_from_typeid(typeid(R).name())));
+  return R(createRegNext(to_lnode<R>(in), 1, idname<R>()));
 }
 
 template <typename T>
@@ -153,7 +153,7 @@ auto ch_next(const T& in, const I& init) {
   return R(createRegNext(to_lnode<R>(in),
                          to_lnode<R>(init),
                          1,
-                         identifier_from_typeid(typeid(R).name())));
+                         idname<R>()));
 }
 
 template <typename T, typename I>
@@ -174,7 +174,7 @@ auto ch_nextEn(const T& in, const E& enable) {
   return R(createRegNext(to_lnode<R>(in),
                          1,
                          get_lnode(enable),
-                         identifier_from_typeid(typeid(R).name())));
+                         idname<R>()));
 }
 
 template <typename T, typename E>
@@ -195,7 +195,7 @@ auto ch_nextEn(const T& in, const E& enable, const I& init) {
                          to_lnode<R>(init),
                          1,
                          get_lnode(enable),
-                         identifier_from_typeid(typeid(R).name())));
+                         idname<R>()));
 }
 
 template <typename T, typename I, typename E>
@@ -216,7 +216,7 @@ auto ch_delay(const T& in, uint32_t delay = 1) {
   }
   return R(createRegNext(to_lnode<R>(in),
                          delay,
-                         identifier_from_typeid(typeid(R).name())));
+                         idname<R>()));
 }
 
 template <typename T>
@@ -237,7 +237,7 @@ auto ch_delay(const T& in, uint32_t delay, const I& init) {
   return R(createRegNext(to_lnode<R>(in),
                          to_lnode<R>(init),
                          delay,
-                         identifier_from_typeid(typeid(R).name())));
+                         idname<R>()));
 }
 
 template <typename T, typename I>
@@ -261,7 +261,7 @@ auto ch_delayEn(const T& in, const E& enable, uint32_t delay = 1) {
   return R(createRegNext(to_lnode<R>(in),
                          delay,
                          get_lnode(enable),
-                         identifier_from_typeid(typeid(R).name())));
+                         idname<R>()));
 }
 
 template <typename T, typename E>
@@ -285,7 +285,7 @@ auto ch_delayEn(const T& in, const E& enable, uint32_t delay, const I& init) {
                          to_lnode<R>(init),
                          delay,
                          get_lnode(enable),
-                         identifier_from_typeid(typeid(R).name())));
+                         idname<R>()));
 }
 
 template <typename T, typename I, typename E>

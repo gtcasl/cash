@@ -52,21 +52,21 @@ public:
   using base::operator [];
 
   ch_vec(const logic_buffer& buffer =
-      logic_buffer(traits::bitwidth, identifier_from_typeid(typeid(ch_vec).name())))
+      logic_buffer(traits::bitwidth, idname<ch_vec>()))
     : ch_vec(buffer, std::make_index_sequence<N>())
   {}
 
   template <typename U,
             CH_REQUIRE_0(std::is_constructible_v<T, U>)>
   explicit ch_vec(const vec_base<U, N>& other)
-    : ch_vec(logic_buffer(traits::bitwidth, identifier_from_typeid(typeid(ch_vec).name()))) {
+    : ch_vec(logic_buffer(traits::bitwidth, idname<ch_vec>())) {
     this->operator=(other);
   }
 
   template <typename U,
             CH_REQUIRE_0(is_logic_type_v<U>)>
   explicit ch_vec(const U& other)
-    : ch_vec(logic_buffer(traits::bitwidth, identifier_from_typeid(typeid(ch_vec).name()))) {
+    : ch_vec(logic_buffer(traits::bitwidth, idname<ch_vec>())) {
     static_assert(ch_width_v<U> == N * ch_width_v<T>, "invalid size");
     this->operator=(other);
   }
@@ -74,7 +74,7 @@ public:
   template <typename U,
             CH_REQUIRE_1(is_system_type_v<U>)>
   explicit ch_vec(const U& other)
-    : ch_vec(logic_buffer(traits::bitwidth, identifier_from_typeid(typeid(ch_vec).name()))) {
+    : ch_vec(logic_buffer(traits::bitwidth, idname<ch_vec>())) {
     static_assert(ch_width_v<U> == N * ch_width_v<T>, "invalid size");
     this->operator=(other);
   }
@@ -82,19 +82,19 @@ public:
   template <typename U,
             CH_REQUIRE_0(std::is_integral_v<U>)>
   explicit ch_vec(U value)
-    : ch_vec(logic_buffer(traits::bitwidth, identifier_from_typeid(typeid(ch_vec).name()))) {
+    : ch_vec(logic_buffer(traits::bitwidth, idname<ch_vec>())) {
     ch_scbit<traits::bitwidth> tmp(make_system_buffer(sdata_from_fill(value, ch_width_v<T>, N)));
     this->operator=(tmp);
   }
 
   template <typename U>
   explicit ch_vec(const std::initializer_list<U>& values)
-    : ch_vec(logic_buffer(traits::bitwidth, identifier_from_typeid(typeid(ch_vec).name()))) {
+    : ch_vec(logic_buffer(traits::bitwidth, idname<ch_vec>())) {
     this->operator=(values);
   }
 
   ch_vec(const ch_vec& other)
-    : ch_vec(logic_buffer(traits::bitwidth, identifier_from_typeid(typeid(ch_vec).name()))) {
+    : ch_vec(logic_buffer(traits::bitwidth, idname<ch_vec>())) {
     this->operator=(other);
   }
 
@@ -268,7 +268,7 @@ public:
   using base = vec_base<T, N>;
   using base::operator [];
 
-  explicit ch_vec(const std::string& name = identifier_from_typeid(typeid(ch_vec).name()))
+  explicit ch_vec(const std::string& name = idname<ch_vec>())
     : ch_vec(sloc_getter(), name, std::make_index_sequence<N>())
   {}
 

@@ -1,5 +1,7 @@
 #include <cash.h>
 
+#define CHECK(x) do { if (!(x)) { std::cout << "FAILED: " << #x << std::endl; std::abort(); } } while (false)
+
 using namespace ch::logic;
 using namespace ch::system;
 
@@ -25,7 +27,7 @@ int main() {
     return (t != 2*10);
   });
 
-  assert(counter.io.out == 12);
+  CHECK(counter.io.out == 12);
 
   ch_toVerilog("counter.v", counter);
   ch_toFIRRTL("counter.fir", counter);

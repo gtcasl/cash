@@ -22,7 +22,7 @@ public:
                        logic_op_slice<ch_bit, N>>>>>;
 
   ch_bit(const logic_buffer& buffer =
-      logic_buffer(N, identifier_from_typeid(typeid(ch_bit).name())))
+      logic_buffer(N, idname<ch_bit>()))
     : buffer_(buffer) {
     assert(N == buffer.size());
   }
@@ -30,7 +30,7 @@ public:
   template <typename U,
             CH_REQUIRE_0(std::is_integral_v<U>)>
   ch_bit(const U& other)
-    : ch_bit(logic_buffer(N, identifier_from_typeid(typeid(ch_bit).name()))) {
+    : ch_bit(logic_buffer(N, idname<ch_bit>())) {
     CH_SOURCE_LOCATION(1);
     this->operator=(other);
   }
@@ -39,7 +39,7 @@ public:
             CH_REQUIRE_0(is_scbit_base_v<U>),
             CH_REQUIRE_0(ch_width_v<U> <= N)>
   ch_bit(const U& other)
-    : ch_bit(logic_buffer(N, identifier_from_typeid(typeid(ch_bit).name()))) {
+    : ch_bit(logic_buffer(N, idname<ch_bit>())) {
     CH_SOURCE_LOCATION(1);
     this->operator=(other);
   }
@@ -48,13 +48,13 @@ public:
             CH_REQUIRE_0(is_bit_base_v<U>),
             CH_REQUIRE_0(ch_width_v<U> <= N)>
   ch_bit(const U& other)
-    : ch_bit(logic_buffer(N, identifier_from_typeid(typeid(ch_bit).name()))) {
+    : ch_bit(logic_buffer(N, idname<ch_bit>())) {
     CH_SOURCE_LOCATION(1);
     this->operator=(other);
   }
 
   ch_bit(const ch_bit& other)
-    : ch_bit(logic_buffer(N, identifier_from_typeid(typeid(ch_bit).name()))) {
+    : ch_bit(logic_buffer(N, idname<ch_bit>())) {
     CH_SOURCE_LOCATION(1);
     this->operator=(other);
   }

@@ -371,10 +371,9 @@ memory::memory(uint32_t data_width,
                bool is_logic_rom,
                const std::string& name,
                const sloc_getter&) {
-  CH_CHECK(!ctx_curr()->conditional_enabled(), "memory objects disallowed inside conditional blocks");
-  auto id = identifier_from_typeid(name);
+  CH_CHECK(!ctx_curr()->conditional_enabled(), "memory objects disallowed inside conditional blocks");  
   auto sloc = get_source_location();
-  impl_ = ctx_curr()->create_node<memimpl>(data_width, num_items, init_data, is_logic_rom, sloc, id);
+  impl_ = ctx_curr()->create_node<memimpl>(data_width, num_items, init_data, is_logic_rom, sloc, name);
 }
 
 lnode memory::aread(const lnode& addr) const {

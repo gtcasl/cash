@@ -1,5 +1,7 @@
 #include <cash.h>
 
+#define CHECK(x) do { if (!(x)) { std::cout << "FAILED: " << #x << std::endl; std::abort(); } } while (false)
+
 using namespace ch::logic;
 using namespace ch::system;
 
@@ -49,7 +51,7 @@ int main() {
   std::cout << "result:" << std::endl;
   std::cout << "valid = "  << vending.io.valid << std::endl;
 
-  assert(vending.io.valid);
+  CHECK(vending.io.valid);
 
   ch_toVerilog("vending.v", vending);
   ch_toFIRRTL("vending.fir", vending);

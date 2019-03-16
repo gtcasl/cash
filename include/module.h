@@ -19,7 +19,7 @@ public:
 
   template <typename... Args>
   ch_module(Args&&... args)
-    : device(std::type_index(typeid(T)), (sizeof...(Args) != 0), typeid(T).name())
+    : device(std::type_index(typeid(T)), (sizeof...(Args) != 0), idname<T>())
     , _(this->build<io_type, T>(std::forward<Args>(args)...))
     , io(*_)
   {}
