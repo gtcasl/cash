@@ -110,12 +110,11 @@ ch_bit<1> ch::internal::ch_reset() {
 logic_buffer ch::internal::createRegNode(unsigned size, const std::string& name,
                                          const sloc_getter&) {
   auto sloc = get_source_location();
-  auto id   = identifier_from_typeid(name);
   auto ctx  = ctx_curr();
   auto cd   = ctx->current_cd(sloc);
-  auto next = ctx->create_node<proxyimpl>(size, sloc, "ch_reg_next_" + id);
+  auto next = ctx->create_node<proxyimpl>(size, sloc, name);
   auto reg  = ctx->create_node<regimpl>(
-        size, 1, cd, nullptr, nullptr, next, nullptr, sloc, id);
+        size, 1, cd, nullptr, nullptr, next, nullptr, sloc, name);
   next->write(0, reg, 0, size);
   return reg;
 }
@@ -123,13 +122,12 @@ logic_buffer ch::internal::createRegNode(unsigned size, const std::string& name,
 logic_buffer ch::internal::createRegNode(const lnode& init_data, const std::string& name,
                                          const sloc_getter&) {
   auto sloc = get_source_location();
-  auto id   = identifier_from_typeid(name);
   auto ctx  = init_data.impl()->ctx();
   auto cd   = ctx->current_cd(sloc);
   auto rst  = ctx->current_reset(sloc);
-  auto next = ctx->create_node<proxyimpl>(init_data.size(), sloc, "ch_reg_next_" + id);
+  auto next = ctx->create_node<proxyimpl>(init_data.size(), sloc, name);
   auto reg  = ctx->create_node<regimpl>(
-        next->size(), 1, cd, rst  , nullptr, next, init_data.impl(), sloc, id);
+        next->size(), 1, cd, rst  , nullptr, next, init_data.impl(), sloc, name);
   next->write(0, reg, 0, init_data.size());
   return reg;
 }
@@ -137,7 +135,6 @@ logic_buffer ch::internal::createRegNode(const lnode& init_data, const std::stri
 logic_buffer ch::internal::copyRegNode(const lnode& node, const std::string& name,
                                        const sloc_getter&) {
   auto sloc   = get_source_location();
-  auto id     = identifier_from_typeid(name);
   auto reg    = reinterpret_cast<regimpl*>(node.impl());
   auto ctx    = reg->ctx();
   auto cd     = ctx->current_cd(sloc);
@@ -146,7 +143,7 @@ logic_buffer ch::internal::copyRegNode(const lnode& node, const std::string& nam
   auto enable = reg->has_enable() ? reg->enable().impl() : nullptr;
   auto init_data = reg->has_init_data() ? reg->init_data().impl() : nullptr;
   auto new_reg = ctx->create_node<regimpl>(
-        next->size(), reg->length(), cd, rst, enable, next, init_data, sloc, id);
+        next->size(), reg->length(), cd, rst, enable, next, init_data, sloc, name);
   return new_reg;
 }
 
@@ -158,12 +155,11 @@ logic_buffer ch::internal::createRegNext(const lnode& next,
                                          unsigned length,
                                          const std::string& name) {
   auto sloc = get_source_location();
-  auto id   = identifier_from_typeid(name);
   auto ctx  = next.impl()->ctx();
   auto cd   = ctx->current_cd(sloc);
   auto reg  = ctx->create_node<regimpl>(
-        next.size(), length, cd, nullptr, nullptr, next.impl(), nullptr, sloc, id);
-  return logic_buffer(reg, "ch_reg_" + id);
+        next.size(), length, cd, nullptr, nullptr, next.impl(), nullptr, sloc, name);
+  return logic_buffer(reg, name);
 }
 
 logic_buffer ch::internal::createRegNext(const lnode& next,
@@ -171,12 +167,11 @@ logic_buffer ch::internal::createRegNext(const lnode& next,
                                          const lnode& enable,
                                          const std::string& name) {
   auto sloc = get_source_location();
-  auto id   = identifier_from_typeid(name);
   auto ctx  = next.impl()->ctx();
   auto cd   = ctx->current_cd(sloc);
   auto reg  = ctx->create_node<regimpl>(
-        next.size(), length, cd, nullptr, enable.impl(), next.impl(), nullptr, sloc, id);
-  return logic_buffer(reg, "ch_reg_" + id);
+        next.size(), length, cd, nullptr, enable.impl(), next.impl(), nullptr, sloc, name);
+  return logic_buffer(reg, name);
 }
 
 logic_buffer ch::internal::createRegNext(const lnode& next,
@@ -184,13 +179,12 @@ logic_buffer ch::internal::createRegNext(const lnode& next,
                                          unsigned length,
                                          const std::string& name) {
   auto sloc = get_source_location();
-  auto id   = identifier_from_typeid(name);
   auto ctx  = next.impl()->ctx();
   auto cd   = ctx->current_cd(sloc);
   auto rst  = ctx->current_reset(sloc);
   auto reg  = ctx->create_node<regimpl>(
-        next.size(), length, cd, rst , nullptr, next.impl(), init_data.impl(), sloc, id);
-  return logic_buffer(reg, "ch_reg_" + id);
+        next.size(), length, cd, rst , nullptr, next.impl(), init_data.impl(), sloc, name);
+  return logic_buffer(reg, name);
 }
 
 logic_buffer ch::internal::createRegNext(const lnode& next,
@@ -199,13 +193,12 @@ logic_buffer ch::internal::createRegNext(const lnode& next,
                                          const lnode& enable,
                                          const std::string& name) {
   auto sloc = get_source_location();
-  auto id   = identifier_from_typeid(name);
   auto ctx  = next.impl()->ctx();
   auto cd   = ctx->current_cd(sloc);
   auto rst  = ctx->current_reset(sloc);
   auto reg  = ctx->create_node<regimpl>(
-        next.size(), length, cd, rst, enable.impl(), next.impl(), init_data.impl(), sloc, id);
-  return logic_buffer(reg, "ch_reg_" + id);
+        next.size(), length, cd, rst, enable.impl(), next.impl(), init_data.impl(), sloc, name);
+  return logic_buffer(reg, name);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
