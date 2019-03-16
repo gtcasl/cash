@@ -113,8 +113,7 @@ lnodeimpl* memimpl::clone(context* ctx, const clone_map&) const {
   return ctx->create_node<memimpl>(data_width_, num_items_, init_data_, force_logic_ram_, sloc_, name_);
 }
 
-memportimpl* memimpl::create_arport(lnodeimpl* addr,
-                                    const source_location& sloc) {
+memportimpl* memimpl::create_arport(lnodeimpl* addr, const source_location& sloc) {
   for (auto port : rdports_) {
     if (port->addr().id() == addr->id())
       return port;
@@ -370,29 +369,28 @@ memory::memory(uint32_t data_width,
                uint32_t num_items,
                const sdata_type& init_data,
                bool is_logic_rom,
-               const source_location& sloc,
-               const std::string& name) {
+               const std::string& name,
+               const sloc_getter&) {
   CH_CHECK(!ctx_curr()->conditional_enabled(), "memory objects disallowed inside conditional blocks");
   auto id = identifier_from_typeid(name);
+  auto sloc = get_source_location();
   impl_ = ctx_curr()->create_node<memimpl>(data_width, num_items, init_data, is_logic_rom, sloc, id);
 }
 
-lnode memory::aread(const lnode& addr, const source_location& sloc) const {
+lnode memory::aread(const lnode& addr) const {
+  auto sloc = get_source_location();
   return impl_->create_arport(addr.impl(), sloc);
 }
 
-lnode memory::sread(const lnode& addr,
-                    const lnode& enable,
-                    const source_location& sloc) const {
+lnode memory::sread(const lnode& addr, const lnode& enable) const {
+  auto sloc = get_source_location();
   auto cd = ctx_curr()->current_cd(sloc);
   return impl_->create_srport(cd, addr.impl(), enable.impl(), sloc);
 }
 
-void memory::write(const lnode& addr,
-                   const lnode& value,
-                   const lnode& enable,
-                   const source_location& sloc) {
+void memory::write(const lnode& addr, const lnode& value, const lnode& enable) {
   CH_CHECK(!ctx_curr()->conditional_enabled(), "memory access disallowed inside conditional blocks");
+  auto sloc = get_source_location();
   auto cd = ctx_curr()->current_cd(sloc);
   impl_->create_wport(cd, addr.impl(), value.impl(), enable.impl(), sloc);
 }

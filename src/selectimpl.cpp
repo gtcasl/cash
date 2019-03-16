@@ -9,11 +9,13 @@ using namespace ch::internal;
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void ch::internal::begin_branch(const lnode& key, const source_location& sloc) {
+void ch::internal::begin_branch(const lnode& key) {
+  auto sloc = get_source_location();
   ctx_curr()->begin_branch(key.impl(), sloc);
 }
 
-void ch::internal::begin_branch(const source_location& sloc) {
+void ch::internal::begin_branch() {
+  auto sloc = get_source_location();
   ctx_curr()->begin_branch(nullptr, sloc);
 }
 
@@ -41,7 +43,7 @@ selectimpl::selectimpl(context* ctx,
                        uint32_t size,
                        lnodeimpl* key,
                        const source_location& sloc)
-  : lnodeimpl(ctx, type_sel, size, sloc)
+  : lnodeimpl(ctx, type_sel, size, sloc, "")
   , key_idx_(-1) {
   if (key) {
     key_idx_ = this->add_src(key);
@@ -90,7 +92,8 @@ void selectimpl::print(std::ostream& out) const {
 lnode select_impl::emit(const lnode& value) {
   auto& stmts = stmts_;
   auto key = key_.empty() ? nullptr : key_.impl();
-  auto sel = ctx_curr()->create_node<selectimpl>(value.size(), key, sloc_);
+  auto sloc = get_source_location();
+  auto sel = ctx_curr()->create_node<selectimpl>(value.size(), key, sloc);
   for (auto& stmt : stmts) {
     assert(!key || type_lit == stmt.first.impl()->type()); // case's predicate should be literal
     sel->srcs().push_back(stmt.first);

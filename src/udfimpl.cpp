@@ -89,9 +89,8 @@ lnodeimpl* udfsimpl::clone(context* ctx, const clone_map& cloned_nodes) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-lnodeimpl* ch::internal::createUDFNode(refcounted* handle,
-                                       const std::vector<lnode>& inputs,
-                                       const source_location& sloc) {
+lnodeimpl* ch::internal::createUDFNode(refcounted* handle, const std::vector<lnode>& inputs) {
   auto udf = reinterpret_cast<udf_iface*>(handle);
+  auto sloc = get_source_location();
   return ctx_curr()->create_udf_node(udf, inputs, sloc);
 }

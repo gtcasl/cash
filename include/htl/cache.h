@@ -146,7 +146,7 @@ struct CacheWay {
     ch_bool valid, dirty;
     ch_bit<Cfg::tag_bits> tag;
     auto tag_wdata = ch_sel(io.readmiss, ch_cat(0_b, 1_b, io.tag), ch_cat(1_b, 1_b, tag));
-    ch_bind(dirty, valid, tag) = tag_store.read(io.index);
+    ch_tie(dirty, valid, tag) = tag_store.read(io.index);
     tag_store.write(io.index, tag_wdata, io.write);
 
     //--

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "int.h"
+#include "bit.h"
 
 namespace ch {
 namespace internal {
@@ -19,48 +19,79 @@ public:
                      logic_op_arithmetic<ch_uint, N,
                        logic_op_slice<ch_uint, N, ch_bit<N>>>>>>;
 
-  ch_uint(const logic_buffer& buffer = logic_buffer(N, CH_CUR_SLOC, "ch_uint"))
+  ch_uint(const logic_buffer& buffer =
+      logic_buffer(N, identifier_from_typeid(typeid(ch_uint).name())))
     : base(buffer)
   {}
 
   template <typename U,
             CH_REQUIRE_0(std::is_integral_v<U>)>
-  ch_uint(const U& other, CH_SLOC) : base(other, sloc) {}
+  ch_uint(const U& other)
+    : base(logic_buffer(N, identifier_from_typeid(typeid(ch_uint).name()))) {
+    CH_SOURCE_LOCATION(1);
+    this->operator=(other);
+  }
 
-  template <unsigned M,
-            CH_REQUIRE_0(M <= N)>
-  ch_uint(const ch_scbit<M>& other, CH_SLOC) : base(other, sloc) {}
+  template <typename U,
+            CH_REQUIRE_0(is_scbit_base_v<U>),
+            CH_REQUIRE_0(ch_width_v<U> <= N)>
+  ch_uint(const U& other)
+    : base(logic_buffer(N, identifier_from_typeid(typeid(ch_uint).name()))) {
+    CH_SOURCE_LOCATION(1);
+    this->operator=(other);
+  }
 
-  template <unsigned M,
-            CH_REQUIRE_0(M < N)>
-  ch_uint(const ch_uint<M>& other, CH_SLOC) : base(other, sloc) {}
+  template <typename U,
+            CH_REQUIRE_0(is_bit_base_v<U>),
+            CH_REQUIRE_0(ch_width_v<U> <= N)>
+  ch_uint(const U& other)
+    : base(logic_buffer(N, identifier_from_typeid(typeid(ch_uint).name()))) {
+    CH_SOURCE_LOCATION(1);
+    this->operator=(other);
+  }
 
-  template <unsigned M,
-            CH_REQUIRE_0(M <= N)>
-  explicit ch_uint(const ch_bit<M>& other, CH_SLOC) : base(other, sloc) {}
-
-  ch_uint(const ch_uint& other, CH_SLOC) : base(other, sloc) {}
+  ch_uint(const ch_uint& other)
+    : base(logic_buffer(N, identifier_from_typeid(typeid(ch_uint).name()))) {
+    CH_SOURCE_LOCATION(1);
+    this->operator=(other);
+  }
 
   ch_uint(ch_uint&& other) : base(std::move(other)) {}
 
   template <typename U,
             CH_REQUIRE_0(std::is_integral_v<U>)>
   ch_uint& operator=(const U& other) {
+    CH_SOURCE_LOCATION(1);
     base::operator=(other);
     return *this;
   }
 
-  ch_uint& operator=(const ch_scbit<N>& other) {
+  template <typename U,
+            CH_REQUIRE_0(is_scbit_base_v<U>),
+            CH_REQUIRE_0(ch_width_v<U> <= N)>
+  ch_uint& operator=(const U& other) {
+    CH_SOURCE_LOCATION(1);
+    base::operator=(other);
+    return *this;
+  }
+
+  template <typename U,
+            CH_REQUIRE_0(is_bit_base_v<U>),
+            CH_REQUIRE_0(ch_width_v<U> <= N)>
+  ch_uint& operator=(const U& other) {
+    CH_SOURCE_LOCATION(1);
     base::operator=(other);
     return *this;
   }
 
   ch_uint& operator=(const ch_uint& other) {
+    CH_SOURCE_LOCATION(1);
     base::operator=(other);
     return *this;
   }
 
   ch_uint& operator=(ch_uint&& other) {
+    CH_SOURCE_LOCATION(1);
     base::operator=(std::move(other));
     return *this;
   }
@@ -69,8 +100,9 @@ public:
 };
 
 template <unsigned M, unsigned N>
-auto ch_pad(const ch_uint<N>& obj, CH_SLOC) {
-  return ch_uint<M+N>(obj, sloc);
+auto ch_pad(const ch_uint<N>& obj) {
+  CH_SOURCE_LOCATION(1);
+  return ch_uint<M+N>(obj);
 }
 
 CH_LOGIC_FUNCTION_EQUALITY(ch_eq, ch_op::eq, ch_uint)

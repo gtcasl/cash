@@ -16,12 +16,6 @@ protected:
     : base{T(std::forward<Us>(values))...}
   {}
 
-  template <typename... Us,
-            CH_REQUIRE_0(sizeof...(Us) == N && is_fold_constructible_v<T, Us...>)>
-  vec_base(const source_location& sloc, Us&&... values)
-    : base{T(std::forward<Us>(values), sloc)...}
-  {}
-
   template <typename U, std::size_t...Is>
   vec_base(const U& other, std::index_sequence<Is...>)
     : base{T(other[Is])...}
@@ -57,65 +51,64 @@ public:
   using base = vec_base<T, N>;
   using base::operator [];
 
-  ch_vec(const logic_buffer& buffer = logic_buffer(
-        traits::bitwidth,
-        CH_CUR_SLOC,
-        stringf("ch_vec%d_%s", N, identifier_from_typeid(typeid(T).name()).c_str())))
-    : ch_vec(buffer, std::make_index_sequence<N>(), buffer.sloc())
-  {}
-
-  ch_vec(const ch_vec& other, CH_SLOC)
-    : ch_vec(logic_accessor::copy(other, sloc))
-  {}
-
-  ch_vec(ch_vec&& other) : base(std::move(other))
+  ch_vec(const logic_buffer& buffer =
+      logic_buffer(traits::bitwidth, identifier_from_typeid(typeid(ch_vec).name())))
+    : ch_vec(buffer, std::make_index_sequence<N>())
   {}
 
   template <typename U,
             CH_REQUIRE_0(std::is_constructible_v<T, U>)>
-  explicit ch_vec(const vec_base<U, N>& other, CH_SLOC)
-    : ch_vec(logic_accessor::copy(other, sloc))
-  {}
+  explicit ch_vec(const vec_base<U, N>& other)
+    : ch_vec(logic_buffer(traits::bitwidth, identifier_from_typeid(typeid(ch_vec).name()))) {
+    this->operator=(other);
+  }
 
   template <typename U,
             CH_REQUIRE_0(is_logic_type_v<U>)>
-  explicit ch_vec(const U& other, CH_SLOC)
-    : ch_vec(logic_accessor::copy(other, sloc)) {
+  explicit ch_vec(const U& other)
+    : ch_vec(logic_buffer(traits::bitwidth, identifier_from_typeid(typeid(ch_vec).name()))) {
     static_assert(ch_width_v<U> == N * ch_width_v<T>, "invalid size");
+    this->operator=(other);
   }
 
   template <typename U,
             CH_REQUIRE_1(is_system_type_v<U>)>
-  explicit ch_vec(const U& other, CH_SLOC)
-    : ch_vec(logic_buffer(system_accessor::data(other), sloc)) {
+  explicit ch_vec(const U& other)
+    : ch_vec(logic_buffer(traits::bitwidth, identifier_from_typeid(typeid(ch_vec).name()))) {
     static_assert(ch_width_v<U> == N * ch_width_v<T>, "invalid size");
+    this->operator=(other);
   }
 
   template <typename U,
             CH_REQUIRE_0(std::is_integral_v<U>)>
-  explicit ch_vec(U value, CH_SLOC)
-    : ch_vec(logic_buffer(sdata_from_fill(value, ch_width_v<T>, N), sloc))
-  {}
-
-  template <typename U>
-  explicit ch_vec(const std::initializer_list<U>& values, CH_SLOC)
-    : ch_vec(logic_buffer(traits::bitwidth, sloc)) {
-    assert(values.size() == N);
-    int i = N - 1;
-    for (auto& value : values) {
-      this->at(i--) = value;
-    }
+  explicit ch_vec(U value)
+    : ch_vec(logic_buffer(traits::bitwidth, identifier_from_typeid(typeid(ch_vec).name()))) {
+    ch_scbit<traits::bitwidth> tmp(make_system_buffer(sdata_from_fill(value, ch_width_v<T>, N)));
+    this->operator=(tmp);
   }
 
+  template <typename U>
+  explicit ch_vec(const std::initializer_list<U>& values)
+    : ch_vec(logic_buffer(traits::bitwidth, identifier_from_typeid(typeid(ch_vec).name()))) {
+    this->operator=(values);
+  }
+
+  ch_vec(const ch_vec& other)
+    : ch_vec(logic_buffer(traits::bitwidth, identifier_from_typeid(typeid(ch_vec).name()))) {
+    this->operator=(other);
+  }
+
+  ch_vec(ch_vec&& other) : base(std::move(other)) {}
+
   ch_vec& operator=(const ch_vec& other) {
-    auto sloc = caller_srcinfo(1);
-    logic_accessor::assign(*this, other, sloc);
+    CH_SOURCE_LOCATION(1);
+    logic_accessor::assign(*this, other);
     return *this;
   }
 
   ch_vec& operator=(ch_vec&& other) {
-    auto sloc = caller_srcinfo(1);
-    logic_accessor::move(*this, std::move(other), sloc);
+    CH_SOURCE_LOCATION(1);
+    logic_accessor::move(*this, std::move(other));
     return *this;
   }
 
@@ -123,7 +116,8 @@ public:
             CH_REQUIRE_0(is_system_type_v<U>)>
   ch_vec& operator=(const U& other) {
     static_assert(ch_width_v<U> == N * ch_width_v<T>, "invalid size");
-    this->buffer().write(system_accessor::data(other));
+    CH_SOURCE_LOCATION(1);
+    logic_accessor::assign(*this, system_accessor::data(other));
     return *this;
   }
 
@@ -131,8 +125,19 @@ public:
             CH_REQUIRE_1(is_logic_type_v<U>)>
   ch_vec& operator=(const U& other) {
     static_assert(ch_width_v<U> == N * ch_width_v<T>, "invalid size");
-    auto sloc = caller_srcinfo(1);
-    logic_accessor::assign(*this, other, sloc);
+    CH_SOURCE_LOCATION(1);
+    logic_accessor::assign(*this, other);
+    return *this;
+  }
+
+  template <typename U>
+  ch_vec& operator=(const std::initializer_list<U>& values) {
+    assert(values.size() == N);
+    CH_SOURCE_LOCATION(1);
+    int i = N - 1;
+    for (auto& value : values) {
+      this->at(i--) = value;
+    }
     return *this;
   }
 
@@ -141,8 +146,8 @@ public:
 protected:
 
   template <std::size_t...Is>
-  ch_vec(const logic_buffer& buffer, std::index_sequence<Is...>, const source_location& sloc)
-    : base(logic_buffer(ch_width_v<T>, buffer, Is * ch_width_v<T>, sloc, stringf("%d", Is))...)
+  ch_vec(const logic_buffer& buffer, std::index_sequence<Is...>)
+    : base(logic_buffer(ch_width_v<T>, buffer, Is * ch_width_v<T>, stringf("%d", Is))...)
   {}
 
   const logic_buffer& buffer() const {
@@ -263,21 +268,22 @@ public:
   using base = vec_base<T, N>;
   using base::operator [];
 
-  explicit ch_vec(const std::string& name = "io", CH_SLOC)
-    : ch_vec(name, sloc, std::make_index_sequence<N>())
+  explicit ch_vec(const std::string& name = identifier_from_typeid(typeid(ch_vec).name()))
+    : ch_vec(sloc_getter(), name, std::make_index_sequence<N>())
   {}
 
-  explicit ch_vec(const typename traits::flip_io& other, CH_SLOC)
-    : ch_vec(other, sloc, std::make_index_sequence<N>())
+  explicit ch_vec(const typename traits::flip_io& other)
+    : ch_vec(sloc_getter(), other, std::make_index_sequence<N>())
   {}
 
-  ch_vec(const ch_vec& other, CH_SLOC)
-    : ch_vec(other, sloc, std::make_index_sequence<N>())
+  ch_vec(const ch_vec& other)
+    : ch_vec(sloc_getter(), other, std::make_index_sequence<N>())
   {}
 
   ch_vec(ch_vec&& other) : base(std::move(other)) {}
 
   void operator()(typename traits::flip_io& other) {
+    CH_SOURCE_LOCATION(1);
     for (unsigned i = 0; i < N; ++i) {
       this->at(i)(other[i]);
     }
@@ -286,16 +292,17 @@ public:
 protected:
 
   ch_vec& operator=(const ch_vec& other) = delete;
+
   ch_vec& operator=(ch_vec&& other) = delete;
 
   template <std::size_t...Is>
-  ch_vec(const std::string& name, const source_location& sloc, std::index_sequence<Is...>)
-    : base(sloc, stringf("%s_%d", name.c_str(), Is)...)
+  ch_vec(const sloc_getter&, const std::string& name, std::index_sequence<Is...>)
+    : base(stringf("%s_%d", name.c_str(), Is)...)
   {}
 
   template <typename U, std::size_t...Is>
-  ch_vec(const vec_base<U, N>& other, const source_location& sloc, std::index_sequence<Is...>)
-    : base(sloc, other[Is]...)
+  ch_vec(const sloc_getter&, const vec_base<U, N>& other, std::index_sequence<Is...>)
+    : base(other[Is]...)
   {}
 };
 
@@ -332,6 +339,7 @@ public:
 protected:
 
   ch_vec& operator=(const ch_vec& other) = delete;
+
   ch_vec& operator=(ch_vec&& other) = delete;
 
   template <typename U, std::size_t...Is>

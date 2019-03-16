@@ -1429,23 +1429,23 @@ private:
 
     bool bypass_enable = ch::internal::compiler::build_bypass_list(
           bypass_nodes_, node->ctx(), node->id());
-    if (bypass_enable) {
-      bypass_enable_ = true;
+    if (bypass_enable) {      
       jit_label_t l_skip = jit_label_undefined;
       jit_insn_branch_if_not(j_func_, j_changed, &l_skip);
       l_bypass_ = l_skip;
+      bypass_enable_ = true;
     } else {
       scalar_map_[node->id()] = j_changed;
+      bypass_enable_ = false;
     }
   }
 
   void resolve_branch(lnodeimpl* node) {
     if (sblock_.cd
-     && ((node
-       && (!is_snode_type(node->type())
-        || node->type() != type_reg
-        || get_snode_reset(node) != sblock_.reset))
-      || !node)) {
+     && ((nullptr == node)
+      || (!is_snode_type(node->type())
+       || node->type() != type_reg
+       || get_snode_reset(node) != sblock_.reset))) {
       this->flush_sblock();
     }
      if (!bypass_enable_)

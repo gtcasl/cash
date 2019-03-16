@@ -20,6 +20,10 @@
 #include "udf.h"
 #include "udfimpl.h"
 
+#ifdef CALLTRACE
+#include "srclocmgr.h"
+#endif
+
 using namespace ch::internal;
 
 class context_manager {
@@ -116,6 +120,18 @@ public:
     pod_udfs_.erase(it);
   }
 
+#ifdef CALLTRACE
+  bool register_source_location(uint32_t level) {
+    return src_loc_manager_.register_source_location(level+1);
+  }
+  void release_source_location() {
+    src_loc_manager_.release_source_location();
+  }
+  const source_location& get_source_location() {
+    return src_loc_manager_.sloc();
+  }
+#endif
+
   static context_manager& instance(){
     static context_manager inst;
     return inst;
@@ -144,6 +160,7 @@ protected:
   dup_tracker<std::string> dup_ctx_names_;
   std::unordered_map<std::type_index, uint32_t> udf_signatures_;
   std::unordered_map<uint32_t, udf_iface*> pod_udfs_;
+  src_loc_manager src_loc_manager_;
 };
 
 context* ch::internal::ctx_create(const std::type_index& signature,
@@ -177,6 +194,29 @@ refcounted* ch::internal::createUDF(const std::type_index& signature,
 
 void ch::internal::destroyUDF(uint32_t id) {
   context_manager::instance().destroy_udf(id);
+}
+
+bool ch::internal::register_source_location(uint32_t level) {
+#ifdef CALLTRACE
+  return context_manager::instance().register_source_location(level+1);
+#else
+  CH_UNUSED(level);
+  return false;
+#endif
+}
+
+void ch::internal::release_source_location() {
+#ifdef CALLTRACE
+  context_manager::instance().release_source_location();
+#endif
+}
+
+source_location ch::internal::get_source_location() {
+#ifdef CALLTRACE
+  return context_manager::instance().get_source_location();
+#else
+  return source_location();
+#endif
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -455,8 +495,8 @@ node_list_view::iterator context::delete_node(const node_list_view::iterator& it
   return next;
 }
 
-void context::create_binding(context* ctx) {
-  this->create_node<bindimpl>(ctx, source_location());
+void context::create_binding(context* ctx, const source_location& sloc) {
+  this->create_node<bindimpl>(ctx, sloc);
 }
 
 inputimpl* context::create_input(uint32_t size,
@@ -675,7 +715,7 @@ void context::conditional_assign(
                             lnodeimpl* src,
                             uint32_t src_offset) {
     if (src->size() != range.length) {
-      src = this->create_node<proxyimpl>(src, src_offset, range.length, sloc);
+      src = this->create_node<proxyimpl>(src, src_offset, range.length, sloc, "slice");
     }
     slices[range][loc] = src;
   };
@@ -971,7 +1011,7 @@ lnodeimpl* context::create_predicate(const source_location& sloc) {
   auto one = this->create_literal(sdata_type(1, true));
 
   // create predicate variable
-  auto predicate = this->create_node<proxyimpl>(zero, 0, 1, sloc);
+  auto predicate = this->create_node<proxyimpl>(zero, 0, 1, sloc, "predicate");
   this->remove_local_variable(predicate, nullptr);
 
   // assign predicate
@@ -1145,9 +1185,8 @@ void context::dump_stats(std::ostream& out) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void ch::internal::registerTap(const lnode& node,
-                               const std::string& name,
-                               const source_location& sloc) {
+void ch::internal::registerTap(const lnode& node, const std::string& name) {
+  auto sloc = get_source_location();
   node.impl()->ctx()->register_tap(node, name, sloc);
 }
 

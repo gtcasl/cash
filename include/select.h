@@ -8,14 +8,9 @@ namespace internal {
 class select_impl {
 public:
   
-  select_impl(const source_location& sloc)
-    : sloc_(sloc)
-  {}
+  select_impl() {}
 
-  select_impl(const lnode& key, const source_location& sloc)
-    : key_(key)
-    , sloc_(sloc)
-  {}
+  select_impl(const lnode& key) : key_(key)  {}
 
   ~select_impl() {}
   
@@ -25,25 +20,17 @@ public:
   
   lnode emit(const lnode& value);
 
-  auto sloc() const {
-    return sloc_;
-  }
-
 protected:
 
   lnode key_;
   std::vector<std::pair<lnode, lnode>> stmts_;
-  source_location sloc_;
 };
 
 template <typename T>
 class select_t {
 public:
     
-  select_t(const lnode& pred,
-           const lnode& value,
-           const source_location& sloc)
-    : impl_(sloc) {
+  select_t(const lnode& pred, const lnode& value) : impl_() {
     impl_.push(pred, value);
   }
 
@@ -52,14 +39,15 @@ public:
     static_assert(std::is_constructible_v<T, V>, "invalid type");    
     static_assert(is_bit_base_v<P>, "invalid type");
     static_assert(ch_width_v<P> == 1, "invalid size");
-    impl_.push(get_lnode(pred), to_lnode<T>(value, impl_.sloc()));
+    impl_.push(get_lnode(pred), to_lnode<T>(value));
     return *this;
   }
   
   template <typename V>
   auto operator()(const V& value) {
     static_assert(std::is_constructible_v<T, V>, "invalid type");
-    return make_type<T>(impl_.emit(to_lnode<T>(value, impl_.sloc())), impl_.sloc());
+    CH_SOURCE_LOCATION(1);
+    return make_type<T>(impl_.emit(to_lnode<T>(value)));
   }
   
 protected:
@@ -71,11 +59,8 @@ template <typename K, typename V>
 class case_t {
 public:
 
-  case_t(const lnode& key,
-         const lnode& pred,
-         const lnode& value,
-         const source_location& sloc)
-    : impl_(key, sloc) {
+  case_t(const lnode& key, const lnode& pred, const lnode& value)
+    : impl_(key) {
     impl_.push(pred, value);
   }
 
@@ -83,16 +68,15 @@ public:
   case_t& operator()(const P& pred, const T& value) {    
     static_assert(std::is_constructible_v<V, T>, "invalid type");
     static_assert(is_equality_comparable_v<P, K>, "invalid type");
-    impl_.push(to_lnode<ch_width_v<K>>(pred, impl_.sloc()),
-               to_lnode<V>(value, impl_.sloc()));
+    impl_.push(to_lnode<ch_width_v<K>>(pred), to_lnode<V>(value));
     return *this;
   }
 
   template <typename T>
   auto operator()(const T& value) {
     static_assert(std::is_constructible_v<V, T>, "invalid type");
-    return make_type<V>(impl_.emit(to_lnode<V>(value, impl_.sloc())),
-                        impl_.sloc());
+    CH_SOURCE_LOCATION(1);
+    return make_type<V>(impl_.emit(to_lnode<V>(value)));
   }
   
 protected:
@@ -101,56 +85,61 @@ protected:
 };
 
 template <typename R, typename T, typename P>
-auto ch_sel(const P& pred, const T& value, CH_SLOC) {
+auto ch_sel(const P& pred, const T& value) {
   static_assert(is_logic_type_v<R>, "invalid type");
   static_assert(std::is_constructible_v<R, T>, "invalid type");
   static_assert(is_bit_base_v<P>, "invalid type");
   static_assert(ch_width_v<P> == 1, "invalid size");
-  return select_t<R>(get_lnode(pred), to_lnode<R>(value, sloc), sloc);
+  return select_t<R>(get_lnode(pred), to_lnode<R>(value));
 }
 
 template <typename T, typename P>
-auto ch_sel(const P& pred, const T& value, CH_SLOC) {
-  return ch_sel<ch_logic_t<T>, T, P>(pred, value, sloc);
+auto ch_sel(const P& pred, const T& value) {
+  return ch_sel<ch_logic_t<T>, T, P>(pred, value);
 }
 
 template <typename R, typename U, typename V, typename P>
-auto ch_sel(const P& pred, const U& _true, const V& _false, CH_SLOC) {
-  return ch_sel<R, U, P>(pred, _true, sloc)(_false);
+auto ch_sel(const P& pred, const U& _true, const V& _false) {
+  CH_SOURCE_LOCATION(1);
+  return ch_sel<R, U, P>(pred, _true)(_false);
 }
 
 template <typename U, typename V, typename P>
-auto ch_sel(const P& pred, const U& _true, const V& _false, CH_SLOC) {
+auto ch_sel(const P& pred, const U& _true, const V& _false) {
   static_assert(ch_width_v<deduce_type_t<false, U, V>> != 0, "invalid type");
-  return ch_sel<ch_logic_t<deduce_first_type_t<U, V>>, U, V, P>(pred, _true, _false, sloc);
+  CH_SOURCE_LOCATION(1);
+  return ch_sel<ch_logic_t<deduce_first_type_t<U, V>>, U, V, P>(pred, _true, _false);
 }
 
 template <typename U, typename V>
-auto ch_min(const U& lhs, const V& rhs, CH_SLOC) {
-  return ch_sel(lhs < rhs, lhs, rhs, sloc);
+auto ch_min(const U& lhs, const V& rhs) {
+  CH_SOURCE_LOCATION(1);
+  return ch_sel(lhs < rhs, lhs, rhs);
 }
 
 template <typename U, typename V>
-auto ch_max(const U& lhs, const V& rhs, CH_SLOC) {
-  return ch_sel(lhs > rhs, lhs, rhs, sloc);
+auto ch_max(const U& lhs, const V& rhs) {
+  CH_SOURCE_LOCATION(1);
+  return ch_sel(lhs > rhs, lhs, rhs);
 }
 
 template <typename R, typename V, typename K, typename P>
-auto ch_case(const K& key, const P& pred, const V& value, CH_SLOC) {
+auto ch_case(const K& key, const P& pred, const V& value) {
   static_assert(std::is_constructible_v<R, V>, "invalid type");
   static_assert(is_logic_type_v<K>, "invalid type");
   static_assert(is_scbit_convertible_v<P, ch_width_v<K>>, "invalid type");
   static_assert(is_equality_comparable_v<P, K>, "invalid type");
+  CH_SOURCE_LOCATION(1);
   return case_t<K, R>(get_lnode(key),
-                      to_lnode<ch_width_v<K>>(pred, sloc),
-                      to_lnode<R>(value, sloc),
-                      sloc);
+                      to_lnode<ch_width_v<K>>(pred),
+                      to_lnode<R>(value));
 }
 
 template <typename V, typename K, typename P>
-auto ch_case(const K& key, const P& pred, const V& value, CH_SLOC) {
+auto ch_case(const K& key, const P& pred, const V& value) {
   static_assert(is_object_type_v<V>, "invalid type");
-  return ch_case<ch_logic_t<V>, V, K, P>(key, pred, value, sloc);
+  CH_SOURCE_LOCATION(1);
+  return ch_case<ch_logic_t<V>, V, K, P>(key, pred, value);
 }
 
 }

@@ -123,7 +123,7 @@ TEST_CASE("memory", "[memory]") {
       ch_mem<ch_bit4, 4> mem;
       q = mem.read(a);
       mem.write(a, d, en);
-      ch_bind(a, d, en) = ch_delay(
+      ch_tie(a, d, en) = ch_delay(
         ch_case(ch_now(),
            3,  ch_cat(00_b, 0xA_h, 1_b))
           (5,  ch_cat(01_b, 0xB_h, 1_b))
@@ -153,7 +153,7 @@ TEST_CASE("memory", "[memory]") {
       ch_mem<ch_uint4, 4> mem;
       q = (mem.read(a) + 1) - 1;
       mem.write(a, d, en);
-      ch_bind(a, d, en) = ch_delay(
+      ch_tie(a, d, en) = ch_delay(
         ch_case(ch_now(),
            3,  ch_cat(00_b, 0xA_h, 1_b))
           (5,  ch_cat(01_b, 0xB_h, 1_b))

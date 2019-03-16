@@ -85,13 +85,24 @@ using ch_tick = uint64_t;
 
 ///////////////////////////////////////////////////////////////////////////////
 
-#if !defined(__clang__)
-  #define CH_CUR_SLOC ch::internal::source_location(__builtin_FILE(), __builtin_LINE())
-#else
-  #define CH_CUR_SLOC ch::internal::source_location(__FILE__, __LINE__)
-#endif
+bool register_source_location(uint32_t level);
+void release_source_location();
 
-#define CH_SLOC const ch::internal::source_location& sloc = CH_CUR_SLOC
+class sloc_getter {
+public:
+  sloc_getter(uint32_t level = 1) {
+    owned_ = register_source_location(level+1);
+  }
+  ~sloc_getter() {
+    if (owned_) {
+      release_source_location();
+    }
+  }
+private:
+  bool owned_;
+};
+
+#define CH_SOURCE_LOCATION(level) ch::internal::sloc_getter __sloc_getter__(level)
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -102,21 +113,17 @@ public:
 
   lnode(lnodeimpl* impl = nullptr) : impl_(impl) {}
 
-  lnode(uint32_t size,
-        const source_location& sloc,
-        const std::string& name = "");
-
   lnode(const sdata_type& value);
 
-  lnode(const lnode& src,
-        const source_location& sloc,
-        const std::string& name = "");
+  lnode(uint32_t size, const std::string& name, const sloc_getter& slg = sloc_getter());
+
+  lnode(const lnode& src, const std::string& name);
 
   lnode(uint32_t size,
         const lnode& src,
         uint32_t src_offset,
-        const source_location& sloc,
-        const std::string& name = "");
+        const std::string& name,
+        const sloc_getter& slg = sloc_getter());
 
   lnode(const lnode& other) : impl_(other.impl_) {}
 
@@ -128,8 +135,7 @@ public:
   void write(uint32_t dst_offset,
              const lnode& in,
              uint32_t src_offset,
-             uint32_t length,
-             const source_location& sloc);
+             uint32_t length);
 
   bool empty() const {
     return (nullptr == impl_);
@@ -147,7 +153,7 @@ public:
 
   const source_location& sloc() const;
 
-  lnode clone(const source_location& sloc) const;
+  lnode clone() const;
 
   inline friend bool operator==(const lnode& lhs, const lnode& rhs) {
     return lhs.id() == rhs.id();

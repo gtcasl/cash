@@ -761,12 +761,6 @@ TEST_CASE("arithmetic", "[arithmetic]") {
     });
     TEST([]()->ch_bool {
       ch_uint4 a(0x1);
-      ch_int4 b(0x2);
-      auto c = a | b;
-      return (c == 3);
-    });
-    TEST([]()->ch_bool {
-      ch_uint4 a(0x1);
       ch_bit4 b(0x2);
       auto c = a | b;
       return (c == 3);

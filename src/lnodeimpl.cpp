@@ -140,21 +140,15 @@ bool lnodeimpl::equals(const lnodeimpl& other) const {
   return false;
 }
 
-lnodeimpl* lnodeimpl::slice(uint32_t offset,
-                            uint32_t length,
-                            const source_location& sloc) const {
+lnodeimpl* lnodeimpl::slice(uint32_t offset, uint32_t length, const source_location& sloc) const {
   assert(length <= size_);
   auto self = const_cast<lnodeimpl*>(this);
   if (size_ == length)
     return self;
-  return ctx_->create_node<proxyimpl>(self, offset, length, sloc);
+  return ctx_->create_node<proxyimpl>(self, offset, length, sloc, "slice");
 }
 
-void lnodeimpl::write(uint32_t,
-                      const lnode&,
-                      uint32_t,
-                      uint32_t,
-                      const source_location&) {
+void lnodeimpl::write(uint32_t, const lnode&, uint32_t, uint32_t) {
   assert(false);
 }
 

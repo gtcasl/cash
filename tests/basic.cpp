@@ -19,11 +19,14 @@ struct TestAssign {
     __in (ch_bit4) in,
     __out (ch_bool) out
   );
+
   void describe() {
     ch_bit4 w(io.in);
     w = 0xB;
     io.out = (io.in == 0xA);
   }
+
+  ch_bit4 q;
 };
 
 struct TestAssign2 {
@@ -31,6 +34,7 @@ struct TestAssign2 {
     __in (ch_bit4) in,
     __out (ch_bool) out
   );
+
   void describe() {
     ch_bool x = io.out;
     ch_assert(x, "oops!");
@@ -43,6 +47,7 @@ struct TestAssign3 {
     __in (ch_bit4) in,
     __out (ch_bool) out
   );
+
   void describe() {
     io.out.as_bit() = (io.in.as_bit() == 0xA);
   }
@@ -129,6 +134,12 @@ TEST_CASE("basics", "[basics]") {
       ch_bit<65> a = 0xf, b = 0xe, c = 0x3, d = 0x2;
       auto s = ch_sel(a != b, c, d);
       return (s == c);
+    });
+
+    TEST([]()->ch_bool {
+      ch_vec<ch_bit4, 2> a(0);
+      a = 11_h;
+      return (a.as_uint() == 11_h);
     });
   }
   SECTION("ref", "[ref]") {

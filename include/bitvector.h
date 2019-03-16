@@ -147,7 +147,7 @@ public:
     const_iterator(const const_iterator& other) : base(other) {}
 
     const_iterator& operator=(const const_iterator& other) {
-      base::operator =(other);
+      base::operator=(other);
       return *this;
     }
 
@@ -283,7 +283,7 @@ public:
     {}
 
     const_reverse_iterator& operator=(const const_reverse_iterator& other) {
-      base::operator =(other);
+      base::operator=(other);
       return *this;
     }
 
@@ -420,7 +420,7 @@ public:
             CH_REQUIRE_0(std::is_integral_v<U> || is_bitvector_extended_type_v<U>)>
   explicit bitvector(uint32_t size, U value)
     : bitvector(size) {
-    this->operator =(value);
+    this->operator=(value);
   }
 
   bitvector(const bitvector& other)

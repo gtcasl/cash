@@ -5,23 +5,17 @@
 namespace ch {
 namespace internal {
 
-lnodeimpl* createInputNode(const std::string& name,
-                           uint32_t size,
-                          const source_location& sloc);
+lnodeimpl* createInputNode(const std::string& name, uint32_t size,
+                           const sloc_getter& slg = sloc_getter());
 
-lnodeimpl* createOutputNode(const std::string& name,
-                            uint32_t size,
-                            const source_location& sloc);
+lnodeimpl* createOutputNode(const std::string& name, uint32_t size,
+                            const sloc_getter& slg = sloc_getter());
 
 lnodeimpl* getOutputNode(const lnode& src);
 
-void bindInput(const lnode& src,
-               const lnode& input,
-               const source_location& sloc);
+void bindInput(const lnode& src, const lnode& input);
 
-void bindOutput(const lnode& dst,
-                const lnode& output,
-                const source_location& sloc);
+void bindOutput(const lnode& dst, const lnode& output);
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -54,23 +48,21 @@ public:
                                       T>;
   using base = T;
 
-  ch_logic_in(const std::string& name = "in", CH_SLOC)
-     : base(logic_buffer(createInputNode(name, ch_width_v<T>, sloc))) {
+  ch_logic_in(const std::string& name = "ch_in")
+     : base(createInputNode(name, ch_width_v<T>)) {
     input_ = get_lnode(*this);
   }
 
   template <typename U>
-  explicit ch_logic_in(const ch_logic_out<U>& out, CH_SLOC)
-    : base(logic_buffer(ch_width_v<T>, sloc, out.output_.name())) {
+  explicit ch_logic_in(const ch_logic_out<U>& out)
+    : base(logic_buffer(ch_width_v<T>, out.output_.name())) {
     static_assert(is_logic_only_v<U>, "invalid type");
     static_assert(std::is_constructible_v<U, T>, "invalid type");
-    bindOutput(get_lnode(*this), out.output_, sloc);
+    CH_SOURCE_LOCATION(1);
+    bindOutput(get_lnode(*this), out.output_);
   }
 
-  ch_logic_in(const ch_logic_in& other, CH_SLOC)
-    : base(logic_accessor::buffer(other)) {
-    CH_UNUSED(sloc);
-  }
+  ch_logic_in(const ch_logic_in& other) : base(other) {}
 
   ch_logic_in(const ch_logic_in&& other)
     : base(std::move(other))
@@ -80,6 +72,7 @@ public:
   template <typename U>
   void operator()(ch_logic_out<U>& out) const {
     static_assert(std::is_constructible_v<U, T>, "invalid type");
+    CH_SOURCE_LOCATION(1);
     out = *this;
   }
 
@@ -109,23 +102,21 @@ public:
   using base = T;
   using base::operator=;
 
-  ch_logic_out(const std::string& name = "out", CH_SLOC)
-    : base(logic_buffer(createOutputNode(name, ch_width_v<T>, sloc))) {
+  ch_logic_out(const std::string& name = "ch_out")
+    : base(createOutputNode(name, ch_width_v<T>)) {
     output_ = getOutputNode(get_lnode(*this));
   }
 
   template <typename U>
-  explicit ch_logic_out(const ch_logic_in<U>& in, CH_SLOC)
-    : base(logic_buffer(ch_width_v<T>, sloc, in.input_.name())) {
+  explicit ch_logic_out(const ch_logic_in<U>& in)
+    : base(logic_buffer(ch_width_v<T>, in.input_.name())) {
     static_assert(is_logic_only_v<U>, "invalid type");
     static_assert(std::is_constructible_v<U, T>, "invalid type");
-    bindInput(get_lnode(*this), in.input_, sloc);
+    CH_SOURCE_LOCATION(1);
+    bindInput(get_lnode(*this), in.input_);
   }
 
-  ch_logic_out(const ch_logic_out& other, CH_SLOC)
-    : base(logic_accessor::buffer(other)) {
-    CH_UNUSED(sloc);
-  }
+  ch_logic_out(const ch_logic_out& other) : base(other) {}
 
   ch_logic_out(ch_logic_out&& other)
     : base(std::move(other))
@@ -133,19 +124,22 @@ public:
   {}
 
   ch_logic_out& operator=(const ch_logic_out& other) {
+    CH_SOURCE_LOCATION(1);
     base::operator=(other);
     return *this;
   }
 
   ch_logic_out& operator=(ch_logic_out&& other) {
+    CH_SOURCE_LOCATION(1);
     base::operator=(std::move(other));
-    output_ = std::move(other.output_);
+    output_ = std::move(other.output_);    
     return *this;
   }
 
   template <typename U>
   void operator()(const ch_logic_in<U>& in) {
     static_assert(std::is_constructible_v<U, T>, "invalid type");
+    CH_SOURCE_LOCATION(1);
     *this = in;
   }
 

@@ -76,8 +76,7 @@ if (LIBJIT)
         BUILD_COMMAND ${MAKE}
         BUILD_BYPRODUCTS ${LIBJIT_DIR}/jit/.libs/libjit.a
         INSTALL_COMMAND ""
-    )
- 
+    ) 
     ExternalProject_Add_Step(libjit_ext
         bootstrap
         COMMAND ./bootstrap
@@ -98,6 +97,21 @@ if (CODECOV)
     message("Code coverage is enabled")
     target_compile_options(${PROJECT_NAME} PRIVATE --coverage)
     target_link_libraries(${PROJECT_NAME} PRIVATE --coverage)
+endif()
+
+if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+    find_path(LIBBFD_INCLUDE_DIR NAMES "bfd.h")
+    find_library(LIBBFD_LIBRARY bfd)
+    set(LIBBFD_INCLUDE_DIRS ${LIBBFD_INCLUDE_DIR} ${LIBDL_INCLUDE_DIR})
+    find_package_handle_standard_args(LIBBFD DEFAULT_MSG LIBBFD_LIBRARY LIBBFD_INCLUDE_DIR)
+    mark_as_advanced(LIBBFD_INCLUDE_DIR LIBBFD_LIBRARY)
+    if (LIBBFD_FOUND)
+      MESSAGE(STATUS "Binutils-dev found.")
+      target_link_libraries(${PROJECT_NAME} PRIVATE bfd dl)
+      add_definitions(-DCALLTRACE)
+    else()
+      MESSAGE(STATUS "Binutils-dev missing.")
+    endif()
 endif()
 
 target_include_directories(${PROJECT_NAME} PUBLIC

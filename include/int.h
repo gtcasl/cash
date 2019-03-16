@@ -19,48 +19,79 @@ public:
                      logic_op_arithmetic<ch_int, N,
                        logic_op_slice<ch_int, N, ch_bit<N>>>>>>;
 
-  ch_int(const logic_buffer& buffer = logic_buffer(N, CH_CUR_SLOC, "ch_int"))
+  ch_int(const logic_buffer& buffer =
+      logic_buffer(N, identifier_from_typeid(typeid(ch_int).name())))
     : base(buffer)
   {}
 
   template <typename U,
             CH_REQUIRE_0(std::is_integral_v<U>)>
-  ch_int(const U& other, CH_SLOC) : base(other, sloc) {}
+  ch_int(const U& other)
+    : base(logic_buffer(N, identifier_from_typeid(typeid(ch_int).name()))) {
+    CH_SOURCE_LOCATION(1);
+    this->operator=(other);
+  }
 
-  template <unsigned M,
-            CH_REQUIRE_0(M <= N)>
-  ch_int(const ch_scbit<M>& other, CH_SLOC) : base(other, sloc) {}
+  template <typename U,
+            CH_REQUIRE_0(is_scbit_base_v<U>),
+            CH_REQUIRE_0(ch_width_v<U> <= N)>
+  ch_int(const U& other)
+    : base(logic_buffer(N, identifier_from_typeid(typeid(ch_int).name()))) {
+    CH_SOURCE_LOCATION(1);
+    this->operator=(other);
+  }
 
-  template <unsigned M,
-            CH_REQUIRE_0(M < N)>
-  ch_int(const ch_int<M>& other, CH_SLOC) : base(other, sloc) {}
+  template <typename U,
+            CH_REQUIRE_0(is_bit_base_v<U>),
+            CH_REQUIRE_0(ch_width_v<U> <= N)>
+  ch_int(const U& other)
+    : base(logic_buffer(N, identifier_from_typeid(typeid(ch_int).name()))) {
+    CH_SOURCE_LOCATION(1);
+    this->operator=(other);
+  }
 
-  template <unsigned M,
-            CH_REQUIRE_0(M <= N)>
-  explicit ch_int(const ch_bit<M>& other, CH_SLOC) : base(other, sloc) {}
-
-  ch_int(const ch_int& other, CH_SLOC) : base(other, sloc) {}
+  ch_int(const ch_int& other)
+    : base(logic_buffer(N, identifier_from_typeid(typeid(ch_int).name()))) {
+    CH_SOURCE_LOCATION(1);
+    this->operator=(other);
+  }
 
   ch_int(ch_int&& other) : base(std::move(other)) {}
 
   template <typename U,
             CH_REQUIRE_0(std::is_integral_v<U>)>
   ch_int& operator=(const U& other) {
+    CH_SOURCE_LOCATION(1);
     base::operator=(other);
     return *this;
   }
 
-  ch_int& operator=(const ch_scbit<N>& other) {
+  template <typename U,
+            CH_REQUIRE_0(is_scbit_base_v<U>),
+            CH_REQUIRE_0(ch_width_v<U> <= N)>
+  ch_int& operator=(const U& other) {
+    CH_SOURCE_LOCATION(1);
+    base::operator=(other);
+    return *this;
+  }
+
+  template <typename U,
+            CH_REQUIRE_0(is_bit_base_v<U>),
+            CH_REQUIRE_0(ch_width_v<U> <= N)>
+  ch_int& operator=(const U& other) {
+    CH_SOURCE_LOCATION(1);
     base::operator=(other);
     return *this;
   }
 
   ch_int& operator=(const ch_int& other) {
+    CH_SOURCE_LOCATION(1);
     base::operator=(other);
     return *this;
   }
 
   ch_int& operator=(ch_int&& other) {
+    CH_SOURCE_LOCATION(1);
     base::operator=(std::move(other));
     return *this;
   }
@@ -69,13 +100,15 @@ public:
 };
 
 template <unsigned M, unsigned N>
-auto ch_pad(const ch_int<N>& obj, CH_SLOC) {
-  return ch_int<M+N>(obj, sloc);
+auto ch_pad(const ch_int<N>& obj) {
+  CH_SOURCE_LOCATION(1);
+  return ch_int<M+N>(obj);
 }
 
 template <unsigned N>
-auto ch_abs(const ch_int<N>& obj, CH_SLOC) {
-  return ch_sel(obj[N-1], -obj, obj, sloc);
+auto ch_abs(const ch_int<N>& obj) {
+  CH_SOURCE_LOCATION(1);
+  return ch_sel(obj[N-1], -obj, obj);
 }
 
 CH_LOGIC_FUNCTION_EQUALITY(ch_eq, ch_op::eq, ch_int)

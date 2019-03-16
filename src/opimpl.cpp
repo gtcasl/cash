@@ -8,19 +8,18 @@ using namespace ch::internal;
 
 opimpl::opimpl(context* ctx, ch_op op, uint32_t size, bool is_signed,
                  lnodeimpl* in, const source_location& sloc)
-  : lnodeimpl(ctx, type_op, size, sloc) {
+  : lnodeimpl(ctx, type_op, size, sloc, to_string(op)) {
   this->init(op, is_signed, in);
 }
 
 opimpl::opimpl(context* ctx, ch_op op, uint32_t size, bool is_signed,
                  lnodeimpl* lhs, lnodeimpl* rhs, const source_location& sloc)
-  : lnodeimpl(ctx, type_op, size, sloc) {
+  : lnodeimpl(ctx, type_op, size, sloc, to_string(op)) {
   this->init(op, is_signed, lhs, rhs);
 }
 
 void opimpl::init(ch_op op, bool is_signed, lnodeimpl* lhs, lnodeimpl* rhs) {
   op_ = op;
-  name_ = to_string(op);
   if (lhs) {
     this->add_src(lhs);
   }
@@ -87,8 +86,8 @@ lnodeimpl* ch::internal::createOpNode(
     ch_op op,
     uint32_t size,
     bool is_signed,
-    const lnode& in,
-    const source_location& sloc) {
+    const lnode& in) {
+  auto sloc = get_source_location();
   return in.impl()->ctx()->create_node<opimpl>(op, size, is_signed, in.impl(), sloc);
 }
 
@@ -97,8 +96,8 @@ lnodeimpl* ch::internal::createOpNode(
     uint32_t size,
     bool is_signed,
     const lnode& lhs,
-    const lnode& rhs,
-    const source_location& sloc) {
+    const lnode& rhs) {
+  auto sloc = get_source_location();
   if (op == ch_op::ne || op == ch_op::eq) {
     if (type_lit == lhs.impl()->type() && reinterpret_cast<litimpl*>(lhs.impl())->is_zero()) {
       op = (op == ch_op::eq) ? ch_op::notl : ch_op::orr;

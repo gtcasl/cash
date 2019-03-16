@@ -9,7 +9,7 @@ cdimpl::cdimpl(context* ctx,
                lnodeimpl* clk,
                bool pos_edge,
                const source_location& sloc)
-  : ioimpl(ctx, type_cd, 1, sloc)
+  : ioimpl(ctx, type_cd, 1, sloc, "")
   , pos_edge_(pos_edge) {
   this->add_src(clk);
 }

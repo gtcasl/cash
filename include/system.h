@@ -147,6 +147,13 @@ public:
     return make_system_buffer(std::move(*obj.buffer()));
   }
 
+  template <typename U>
+  static void assign(U& dst, const sdata_type& src) {
+    assert(ch_width_v<U> == src.size());
+    assert(ch_width_v<U> == dst.buffer()->size());
+    dst.buffer()->write(0, src, 0, ch_width_v<U>);
+  }
+
   template <typename U, typename V>
   static void assign(U& dst, const V& src) {
     static_assert(ch_width_v<U> == ch_width_v<V>, "invalid size");
@@ -190,6 +197,7 @@ public:
 
 ///////////////////////////////////////////////////////////////////////////////
 
+sdata_type sdata_from_fill(uint64_t value, uint32_t size, uint32_t count);
 
 template <typename T>
 auto get_snode(const T& obj) {
@@ -290,32 +298,34 @@ auto make_system_op(SystemFunc3 func, const A& lhs, const B& rhs) {
   }
 
 #define CH_SYSTEM_OPERATOR(name) \
-  template <template <unsigned> typename T, unsigned N, typename Next = empty_base> \
-  struct name : Next { \
+  template <template <unsigned> typename T, unsigned N, typename Base = empty_base> \
+  struct name : Base { \
     using Derived = T<N>; \
-    using Next::Next; \
-    using Next::operator=; \
-    name(const Next& other) : Next(other) {} \
-    name(Next&& other) : Next(std::move(other)) {} \
-    name& operator=(const Next& other) { Next::operator=(other); return *this; } \
-    name& operator=(Next&& other) { Next::operator=(std::move(other)); return *this; } \
-    name(const name& other) : Next(other) {} \
-    name(name&& other) : Next(std::move(other)) {} \
-    name& operator=(const name& other) { Next::operator=(other); return *this; } \
-    name& operator=(name&& other) { Next::operator=(std::move(other)); return *this; }
+    using Base::Base; \
+    using Base::operator=; \
+    name(const Base& other) : Base(other) {} \
+    name(Base&& other) : Base(std::move(other)) {} \
+    name& operator=(const Base& other) { Base::operator=(other); return *this; } \
+    name& operator=(Base&& other) { Base::operator=(std::move(other)); return *this; } \
+    name(const name& other) : Base(other) {} \
+    name(name&& other) : Base(std::move(other)) {} \
+    name& operator=(const name& other) { Base::operator=(other); return *this; } \
+    name& operator=(name&& other) { Base::operator=(std::move(other)); return *this; }
 
 #define CH_SYSTEM_OPERATOR_IMPL(op, body) \
   friend auto op(const Derived& lhs, const Derived& rhs) { \
     CH_REM body; \
   } \
-  template <unsigned M, CH_REQUIRE_0(M < N)> \
-  friend auto op(const Derived& lhs, const T<M>& _rhs) { \
-    T<N> rhs(_rhs); \
+  template <typename U, \
+            CH_REQUIRE_0(is_strictly_constructible_v<Derived, U>)> \
+  friend auto op(const Derived& lhs, const U& _rhs) { \
+    Derived rhs(_rhs); \
     CH_REM body; \
   } \
-  template <unsigned M, CH_REQUIRE_0(M < N)> \
-  friend auto op(const T<M>& _lhs, const Derived& rhs) { \
-    T<N> lhs(_lhs); \
+  template <typename U, \
+            CH_REQUIRE_0(is_strictly_constructible_v<Derived, U>)> \
+  friend auto op(const U& _lhs, const Derived& rhs) { \
+    Derived lhs(_lhs); \
     CH_REM body; \
   }
 
@@ -498,8 +508,6 @@ CH_SYSTEM_OPERATOR(system_op_slice)
     return this->asliceref<T<M>>(start);
   }
 };
-
-sdata_type sdata_from_fill(uint64_t value, uint32_t size, uint32_t count);
 
 }
 }

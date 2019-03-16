@@ -5,7 +5,7 @@
 using namespace ch::internal;
 
 timeimpl::timeimpl(context* ctx, const source_location& sloc)
-  : ioimpl(ctx, type_time, 8 * sizeof(ch_tick), sloc, "time")
+  : ioimpl(ctx, type_time, 8 * sizeof(ch_tick), sloc, "")
 {}
 
 lnodeimpl* timeimpl::clone(context* ctx, const clone_map&) const {
@@ -14,6 +14,8 @@ lnodeimpl* timeimpl::clone(context* ctx, const clone_map&) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-ch_uint<64> ch::internal::ch_now(const source_location& sloc) {
-  return make_type<ch_uint<64>>(ctx_curr()->create_time(sloc), sloc);
+ch_uint<64> ch::internal::ch_now() {
+  CH_SOURCE_LOCATION(1);
+  auto sloc = get_source_location();
+  return make_type<ch_uint<64>>(ctx_curr()->create_time(sloc));
 }

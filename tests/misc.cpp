@@ -43,7 +43,7 @@ TEST_CASE("misc", "[misc]") {
       ch_fixed<8, 4> a(00_h), b(10_h);
       auto q = sbind(a, b);
       auto [x, y] = q;
-      return (x == 10_h && y == -10_h);
+      return (x == 10_h && y == -16);
     });
     TEST([]()->ch_bool {
       ch_complex<ch_int4> a(0, 0), b(1, 1);

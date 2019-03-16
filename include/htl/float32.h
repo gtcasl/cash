@@ -199,26 +199,62 @@ public:
   using traits = logic_traits<32, true, ch_float32, ch_scfloat32>;
   using base = ch_bit32;
 
-  ch_float32(const logic_buffer& buffer = logic_buffer(32, CH_CUR_SLOC))
+  ch_float32(const logic_buffer& buffer = logic_buffer(32, "ch_float32"))
     : base(buffer)
   {}
 
-  ch_float32(float other, CH_SLOC) : base(bit_cast<uint32_t>(other), sloc) {}
+  ch_float32(float other)
+    : ch_float32(logic_buffer(32, "ch_float32")) {
+    __source_location(1);
+    this->operator=(other);
+  }
 
-  explicit ch_float32(const ch_scbit<32>& other, CH_SLOC) : base(other, sloc) {}
+  explicit ch_float32(const ch_scbit<32>& other)
+    : ch_float32(logic_buffer(32, "ch_float32")) {
+    __source_location(1);
+    this->operator=(other);
+  }
 
-  explicit ch_float32(const ch_bit<32>& other, CH_SLOC) : base(other, sloc) {}
+  explicit ch_float32(const ch_bit<32>& other)
+    : ch_float32(logic_buffer(32, "ch_float32")) {
+    __source_location(1);
+    this->operator=(other);
+  }
 
-  ch_float32(const ch_float32& other, CH_SLOC) : base(other, sloc) {}
+  ch_float32(const ch_float32& other)
+    : ch_float32(logic_buffer(32, "ch_float32")) {
+    __source_location(1);
+    this->operator=(other);
+  }
 
   ch_float32(ch_float32&& other) : base(std::move(other)) {}
 
+  ch_float32& operator=(float other) {
+    __source_location(1);
+    base::operator=(bit_cast<uint32_t>(other));
+    return *this;
+  }
+
+  ch_float32& operator=(const ch_scbit<32>& other) {
+    __source_location(1);
+    base::operator=(other);
+    return *this;
+  }
+
+  ch_float32& operator=(const ch_bit<32>& other) {
+    __source_location(1);
+    base::operator=(other);
+    return *this;
+  }
+
   ch_float32& operator=(const ch_float32& other) {
+    __source_location(1);
     base::operator=(other);
     return *this;
   }
 
   ch_float32& operator=(ch_float32&& other) {
+    __source_location(1);
     base::operator=(std::move(other));
     return *this;
   }
@@ -226,67 +262,82 @@ public:
   CH_LOGIC_INTERFACE(ch_float32)
 
   friend auto operator==(ch_float32& lhs, const ch_float32& rhs) {
+    __source_location(1);
     return (lhs.as_int() == rhs.as_int());
   }
 
   friend auto operator!=(ch_float32& lhs, const ch_float32& rhs) {
+    __source_location(1);
     return (lhs.as_int() != rhs.as_int());
   }
 
   friend auto operator<(ch_float32& lhs, const ch_float32& rhs) {
+    __source_location(1);
     return (lhs.as_int() < rhs.as_int());
   }
 
   friend auto operator<=(ch_float32& lhs, const ch_float32& rhs) {
+    __source_location(1);
     return (lhs.as_int() <= rhs.as_int());
   }
 
   friend auto operator>(ch_float32& lhs, const ch_float32& rhs) {
+    __source_location(1);
     return (lhs.as_int() >= rhs.as_int());
   }
 
   friend auto operator>=(ch_float32& lhs, const ch_float32& rhs) {
+    __source_location(1);
     return (lhs.as_int() >= rhs.as_int());
   }
 
   friend auto operator-(ch_float32& self) {
+    __source_location(1);
     return ch_udf<cfSub>()(0.0f, self);
   }
 
   friend auto operator+(ch_float32& lhs, const ch_float32& rhs) {
+    __source_location(1);
     return ch_udf<cfAdd>()(lhs, rhs);
   }
 
   friend auto operator-(ch_float32& lhs, const ch_float32& rhs) {
+    __source_location(1);
     return ch_udf<cfSub>()(lhs, rhs);
   }
 
   friend auto operator*(ch_float32& lhs, const ch_float32& rhs) {
+    __source_location(1);
     return ch_udf<cfMul>()(lhs, rhs);
   }
 
   friend auto operator/(ch_float32& lhs, const ch_float32& rhs) {
+    __source_location(1);
     return ch_udf<cfDiv>()(lhs, rhs);
   }
 };
 
 template <unsigned Delay>
 auto ch_fadd(const ch_float32& lhs, const ch_float32& rhs, const ch_bool& enable = true) {
+  __source_location(1);
   return ch_delayEn(ch_udf<sfAdd>()(lhs, rhs), enable, Delay - 1);
 }
 
 template <unsigned Delay>
 auto ch_fsub(const ch_float32& lhs, const ch_float32& rhs, const ch_bool& enable = true) {
+  __source_location(1);
   return ch_delayEn(ch_udf<sfSub>()(lhs, rhs), enable, Delay - 1);
 }
 
 template <unsigned Delay>
 auto ch_fmul(const ch_float32& lhs, const ch_float32& rhs, const ch_bool& enable = true) {
+  __source_location(1);
   return ch_delayEn(ch_udf<sfMul>()(lhs, rhs), enable, Delay - 1);
 }
 
 template <unsigned Delay>
 auto ch_fdiv(const ch_float32& lhs, const ch_float32& rhs, const ch_bool& enable = true) {
+  __source_location(1);
   return ch_delayEn(ch_udf<sfDiv>()(lhs, rhs), enable, Delay - 1);
 }
 

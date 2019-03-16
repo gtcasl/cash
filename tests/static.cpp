@@ -8,6 +8,7 @@ using namespace ch::htl;
 
 struct TestModule {
   __io (
+    __in (ch_bit4)  in,
     __in (ch_int4)  lhs,
     __in (ch_int4)  rhs,
     __out (ch_int4) out
@@ -68,6 +69,15 @@ void foo() {
   }
   {
     ch_scbit<4> x("5h");
+    ch_scint<4> y("5h");
+    ch_scuint<4> z("5h");
+  }
+  {
+    auto dev = ch_device<TestModule>();
+    auto a = dev.io.lhs ^ 3_h4;
+    auto b = dev.io.lhs ^ 3_h8;
+    auto c = dev.io.in ^ 3_h4;
+    auto d = dev.io.in ^ 3_h8;
   }
   {
     ch_float32 a, b;
@@ -345,6 +355,50 @@ void foo() {
     auto c10 = ch_mul<10>(m.io.lhs, m.io.rhs);
     auto c11 = ch_mul<10>(a, m.io.rhs);
     auto c12 = ch_mul<10>(m.io.rhs, a);
+  }
+
+  {
+    ch_reg<ch_int4> a(0);
+    ch_bit<4> lone(1);
+    ch_scbit<4> sone(1);
+    auto c0 = a->next + lone;
+    auto c1 = a->next + sone;
+    auto c2 = a->next + 1;
+    auto c3 = a->next + 1_b;
+    auto d0 = a + lone;
+    auto d1 = a + sone;
+    auto d2 = a + 1;
+    auto d3 = a + 1_b;
+  }
+
+  {
+    ch_int4 a;
+    ch_bit4  b;
+    auto c = a + b;
+  }
+
+  {
+    ch_int4 a;
+    ch_uint2  b;
+    auto c = a + b;
+  }
+
+  {
+    ch_int4 a;
+    ch_bit2  b;
+    auto c = a + b;
+  }
+
+  {
+    ch_uint4 a;
+    ch_int2  b;
+    auto c = a + b;
+  }
+
+  {
+    ch_int4 a;
+    ch_uint2  b;
+    auto c = a | b;
   }
 }
 

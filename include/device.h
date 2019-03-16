@@ -31,6 +31,30 @@ protected:
 
   device(const std::type_index& signature, bool has_args, const std::string& name);
 
+  template <typename io_type, typename T, typename... Args>
+  auto build(Args&&... args) {
+    std::shared_ptr<io_type> out;
+    if (this->begin_build()) {
+      std::unique_ptr<T> obj;
+      {
+        CH_SOURCE_LOCATION(2);
+        obj = std::make_unique<T>(std::forward<Args>(args)...);
+      }
+      obj->describe();
+      {
+        CH_SOURCE_LOCATION(2);
+        this->end_build();
+        out = std::make_shared<io_type>(obj->io);
+      }
+    } else {
+      CH_SOURCE_LOCATION(2);
+      decltype(T::io) obj_io;
+      this->end_build();
+      out = std::make_shared<io_type>(obj_io);
+    }
+    return out;
+  }
+
   bool begin_build() const;
 
   void end_build();
@@ -66,7 +90,7 @@ public:
   template <typename... Args>
   ch_device(Args&&... args)
     : device(std::type_index(typeid(T)), (sizeof...(Args) != 0), typeid(T).name())
-    , _(build(std::forward<Args>(args)...))
+    , _(this->build<io_type, T>(std::forward<Args>(args)...))
     , io(*_)
   {}
 
@@ -76,22 +100,6 @@ public:
   {}
 
 protected:
-
-  template <typename... Args>
-  auto build(Args&&... args) {
-    std::shared_ptr<io_type> out;
-    if (this->begin_build()) {
-      T obj(std::forward<Args>(args)...);
-      obj.describe();
-      this->end_build();
-      out = std::make_shared<io_type>(obj.io);
-    } else {
-      decltype(T::io) obj_io;
-      this->end_build();
-      out = std::make_shared<io_type>(obj_io);
-    }
-    return out;
-  }
 
   ch_device(const ch_device& other) = delete;
 

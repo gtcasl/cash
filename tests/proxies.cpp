@@ -324,19 +324,19 @@ TEST_CASE("proxies", "[proxies]") {
     });
     TEST([]()->ch_bool {
       ch_bit2 x(0), y(0);
-      ch_bind(y, x) = 0101_b;
+      ch_tie(y, x) = 0101_b;
       //ch_println("x={0}", x);
       return (x == 01_b && y == 01_b);
     });
     TEST([]()->ch_bool {
       ch_bit2 x(0), y(0), z(0);
-      ch_bind(z, y, x) = 010101_b;
+      ch_tie(z, y, x) = 010101_b;
       //ch_println("x={0}, y={1}, z={2}", x, y, z);
       return (x == 01_b && y == 01_b && z == 01_b);
     });
     TEST([]()->ch_bool {
       ch_bit2 x, y;
-      ch_bind(x, y) = ch_cat(01_b, 00_b);
+      ch_tie(x, y) = ch_cat(01_b, 00_b);
       //ch_println("x={0}, y={1}", x, y);
       return (x == 1 && y == 0);
     });
@@ -361,7 +361,7 @@ TEST_CASE("proxies", "[proxies]") {
     TEST([]()->ch_bool {
       ch_uint4 x, y;
       ch_uint8 z, w;
-      ch_bind(w, y, z, x) = 0xfa2eb1_h;
+      ch_tie(w, y, z, x) = 0xfa2eb1_h;
       auto k = ch_cat(y, x).as_uint() + z + w;
       return (0x06 == k);
     });
@@ -372,8 +372,8 @@ TEST_CASE("proxies", "[proxies]") {
       ch_bit8 z, w;
       auto a = ch_cat(ch_slice<4>(k, 4), ch_slice<4>(k, 0));
       auto b = ch_cat(ch_slice<8>(k, 16), ch_slice<8>(k, 8));
-      ch_bind(y, x) = a;
-      ch_bind(w, z) = b;
+      ch_tie(y, x) = a;
+      ch_tie(w, z) = b;
       return (x == 0x1 && y == 0xb && z == 0x2e && w == 0xfa);
     });
     TEST([]()->ch_bool {

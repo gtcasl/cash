@@ -26,7 +26,8 @@ void deviceimpl::begin_context() {
 void deviceimpl::end_context() {
   ctx_swap(old_ctx_);
   if (old_ctx_) {
-    old_ctx_->create_binding(ctx_);
+    auto sloc = get_source_location();
+    old_ctx_->create_binding(ctx_, sloc);
   }
 }
 

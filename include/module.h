@@ -20,7 +20,7 @@ public:
   template <typename... Args>
   ch_module(Args&&... args)
     : device(std::type_index(typeid(T)), (sizeof...(Args) != 0), typeid(T).name())
-    , _(build(caller_srcinfo(1), std::forward<Args>(args)...))
+    , _(this->build<io_type, T>(std::forward<Args>(args)...))
     , io(*_)
   {}
 
@@ -30,22 +30,6 @@ public:
   {}
 
 protected:
-
-  template <typename... Args>
-  auto build(const source_location& sloc, Args&&... args) {
-    std::shared_ptr<io_type> out;
-    if (this->begin_build()) {
-      T obj(std::forward<Args>(args)...);
-      obj.describe();
-      this->end_build();
-      out = std::make_shared<io_type>(obj.io, sloc);
-    } else {
-      decltype(T::io) obj_io(sloc);
-      this->end_build();
-      out = std::make_shared<io_type>(obj_io, sloc);
-    }
-    return out;
-  }
 
   ch_module(const ch_module& other) = delete;
 

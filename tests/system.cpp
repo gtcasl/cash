@@ -129,7 +129,7 @@ TEST_CASE("system", "[system]") {
     });
     TESTX([]()->bool {
       auto force_move_assignment = []() {
-        return 4_h + 3_h;
+        return 4_h ^ 3_h;
       };
       ch_scbit<4> x;
       x = force_move_assignment();
@@ -444,7 +444,7 @@ TEST_CASE("system", "[system]") {
     });
     TESTX([]()->bool {
       auto force_move_assignment = []() {
-        return 4_h + 3_h;
+        return 4_h ^ 3_h;
       };
       ch_system_t<s2_4_t> s2(0101_b, 01_b);
       s2.b = force_move_assignment();

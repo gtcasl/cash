@@ -15,7 +15,7 @@ protected:
          lnodetype type,
          uint32_t size,
          const source_location& sloc,
-         const std::string& name = "");
+         const std::string& name);
 
   friend class context;
 };
@@ -36,7 +36,7 @@ protected:
              uint32_t size,
              const io_value_t& value,
              const source_location& sloc,
-             const std::string& name = "");
+             const std::string& name);
 
   io_value_t value_;
 

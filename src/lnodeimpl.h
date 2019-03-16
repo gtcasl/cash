@@ -120,8 +120,7 @@ public:
   virtual void write(uint32_t dst_offset,
                      const lnode& src,
                      uint32_t src_offset,
-                     uint32_t length,
-                     const source_location& sloc);
+                     uint32_t length);
 
   virtual void print(std::ostream& out) const;
 
@@ -133,7 +132,7 @@ protected:
             lnodetype type,
             uint32_t size,
             const source_location& sloc,
-            const std::string& name = "");
+            const std::string& name);
 
   virtual ~lnodeimpl();
 
@@ -159,6 +158,8 @@ private:
 const char* to_string(lnodetype type);
 
 std::ostream& operator<<(std::ostream& out, lnodetype type);
+
+source_location get_source_location();
 
 }
 }

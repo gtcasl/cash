@@ -71,7 +71,7 @@ printimpl::printimpl(context* ctx,
                      const std::vector<lnode>& args,
                      const std::vector<enum_string_cb>& enum_strings,
                      const source_location& sloc)
-  : ioimpl(ctx, type_print, 0, sloc)
+  : ioimpl(ctx, type_print, 0, sloc, "")
   , enum_strings_(enum_strings)
   , format_(format)
   , pred_idx_(-1) {
@@ -93,7 +93,7 @@ printimpl::printimpl(context* ctx,
                      const std::vector<enum_string_cb>& enum_strings,
                      lnodeimpl* pred,
                      const source_location& sloc)
-  : ioimpl(ctx, type_print, 0, sloc)
+  : ioimpl(ctx, type_print, 0, sloc, "")
   , enum_strings_(enum_strings)
   , format_(format)
   , pred_idx_(-1) {
@@ -153,8 +153,7 @@ static int getFormatMaxIndex(const char* format) {
 
 void ch::internal::createPrintNode(
     const std::string& format,
-    const std::vector<lnode>& args,
-    const source_location& sloc) {
+    const std::vector<lnode>& args) {
   // printing is only enabled in debug mode
   if (0 == platform::self().dbg_level())
     return;
@@ -169,5 +168,6 @@ void ch::internal::createPrintNode(
     auto cb = arg.impl()->ctx()->enum_to_string(arg.id());
     enum_strings.emplace_back(cb);
   }
+  auto sloc = get_source_location();
   ctx_curr()->create_node<printimpl>(format, args, enum_strings, sloc);
 }

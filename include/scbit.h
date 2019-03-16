@@ -38,21 +38,13 @@ public:
     : buffer_(make_system_buffer(sdata_type(N , std::forward<U>(other))))
   {}
 
-  template <unsigned M,
-            CH_REQUIRE_0(M < N)>
-  ch_scbit(const ch_scbit<M>& other) {
-    sdata_type ret(N);
-    bv_pad<false>(ret.words(), N, system_accessor::data(other).words(), M);
-    buffer_ = make_system_buffer(std::move(ret));
-  }
-
   template <typename U,
             CH_REQUIRE_0(is_scbit_base_v<U>),
             CH_REQUIRE_0(ch_width_v<U> < N)>
-  explicit ch_scbit(const U& other) {
-    sdata_type ret(N);
-    bv_pad<ch_signed_v<U>>(ret.words(), N, system_accessor::data(other).words(), ch_width_v<U>);
-    buffer_ = make_system_buffer(std::move(ret));
+  ch_scbit(const U& other) {
+    sdata_type tmp(N);
+    bv_pad<ch_signed_v<U>>(tmp.words(), N, system_accessor::data(other).words(), ch_width_v<U>);
+    buffer_ = make_system_buffer(std::move(tmp));
   }
 
   ch_scbit(const ch_scbit& other)
@@ -61,6 +53,23 @@ public:
   {}
 
   ch_scbit(ch_scbit&& other) : buffer_(std::move(other.buffer_)) {}
+
+  template <typename U,
+            CH_REQUIRE_0(std::is_integral_v<U>)>
+  ch_scbit& operator=(const U& other) {
+    system_accessor::assign(*this, sdata_type(N , other));
+    return *this;
+  }
+
+  template <typename U,
+            CH_REQUIRE_0(is_scbit_base_v<U>),
+            CH_REQUIRE_0(ch_width_v<U> < N)>
+  ch_scbit& operator=(const U& other) {
+    sdata_type tmp(N);
+    bv_pad<ch_signed_v<U>>(tmp.words(), N, system_accessor::data(other).words(), ch_width_v<U>);
+    system_accessor::assign(*this, tmp);
+    return *this;
+  }
 
   ch_scbit& operator=(const ch_scbit& other) {
     system_accessor::assign(*this, other);

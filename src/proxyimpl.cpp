@@ -262,15 +262,15 @@ void proxyimpl::erase_source(uint32_t index, bool resize) {
 void proxyimpl::write(uint32_t dst_offset,
                       const lnode& src,
                       uint32_t src_offset,
-                      uint32_t length,
-                      const source_location& sloc) {
+                      uint32_t length) {
   assert(!src.empty());
   assert(size() > dst_offset);
   assert(size() >= dst_offset + length);
+  auto sloc = get_source_location();
   if (ctx_->conditional_enabled(this)) {
     auto src_impl = src.impl();
-    if (src_offset != 0 || src.size() != length) {
-      src_impl = ctx_->create_node<proxyimpl>(src, src_offset, length, sloc);
+    if (src_offset != 0 || src.size() != length) {      
+      src_impl = ctx_->create_node<proxyimpl>(src, src_offset, length, sloc, src.name());
     }
     ctx_->conditional_assign(this, dst_offset, length, src_impl, sloc);
   } else {
@@ -286,9 +286,7 @@ bool proxyimpl::equals(const lnodeimpl& other) const {
   return false;
 }
 
-lnodeimpl* proxyimpl::slice(uint32_t offset,
-                            uint32_t length,
-                            const source_location& sloc) const {
+lnodeimpl* proxyimpl::slice(uint32_t offset, uint32_t length, const source_location& sloc) const {
   assert(length <= this->size());
 
   // return the nested node if the offset/size match
@@ -355,8 +353,7 @@ void refimpl::write(
     uint32_t dst_offset,
     const lnode& src,
     uint32_t src_offset,
-    uint32_t length,
-    const source_location& sloc) {
+    uint32_t length) {
   assert(1 == this->srcs().size());
   assert(0 == ranges_[0].dst_offset);
   assert(this->size() == ranges_[0].length);
@@ -365,8 +362,7 @@ void refimpl::write(
       ranges_[0].src_offset + dst_offset,
       src,
       src_offset,
-      length,
-      sloc);
+      length);
 }
 
 bool refimpl::check_fully_initialized() const {
@@ -401,14 +397,11 @@ bool refimpl::check_fully_initialized() const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-lnodeimpl* ch::internal::createRotateNode(
-    const lnode& next,
-    uint32_t dist,
-    bool right,
-    const source_location& sloc) {
+lnodeimpl* ch::internal::createRotateNode(const lnode& next, uint32_t dist, bool right) {
   auto N = next.size();
   auto mod = dist % N;
-  auto ret = next.impl()->ctx()->create_node<proxyimpl>(N, sloc);
+  auto sloc = get_source_location();
+  auto ret = next.impl()->ctx()->create_node<proxyimpl>(N, sloc, (right ? "rotr" : "rotl"));
   if (right) {
     ret->add_source(0, next, mod, N - mod);
     ret->add_source(N - mod, next, 0, mod);
@@ -419,11 +412,9 @@ lnodeimpl* ch::internal::createRotateNode(
   return ret;
 }
 
-lnodeimpl* ch::internal::createShuffleNode(
-    const lnode& in,
-    const std::vector<unsigned>& indices,
-    const source_location& sloc) {
-  auto ret = in.impl()->ctx()->create_node<proxyimpl>(in.size(), sloc);
+lnodeimpl* ch::internal::createShuffleNode(const lnode& in, const std::vector<unsigned>& indices) {
+  auto sloc = get_source_location();
+  auto ret = in.impl()->ctx()->create_node<proxyimpl>(in.size(), sloc, "shuffle");
   auto stride = in.size() / indices.size();
   CH_CHECK(stride * indices.size() == in.size(), "invalid size");
   for (unsigned i = 0, n = indices.size(); i < n; ++i) {

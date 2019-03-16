@@ -19,9 +19,7 @@ refcounted* createUDF(const std::type_index& signature,
                       const std::initializer_list<uint32_t>& inputs_size,
                       udf_base* udf);
 
-lnodeimpl* createUDFNode(refcounted* handle,
-                         const std::vector<lnode>& inputs,
-                         const source_location& sloc);
+lnodeimpl* createUDFNode(refcounted* handle, const std::vector<lnode>& inputs);
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -119,18 +117,17 @@ public:
   template <typename... Args>
   auto operator()(const Args&... args) const {
     static_assert(sizeof...(Args) == std::tuple_size_v<typename T::traits::Inputs>, "number of inputs mismatch");
-    return this->call<Args...>(caller_srcinfo(1),
-                               args...,
-                               std::make_index_sequence<sizeof...(Args)>{});
+    CH_SOURCE_LOCATION(1);
+    return this->call<Args...>(args..., std::make_index_sequence<sizeof...(Args)>{});
   }
 
 protected:
 
   template <typename... Args, std::size_t... Is>
-  auto call(const source_location& sloc, const Args&... args, std::index_sequence<Is...>) const {
+  auto call(const Args&... args, std::index_sequence<Is...>) const {
     static_assert((std::is_convertible_v<Args, std::tuple_element_t<Is, typename T::traits::Inputs>> && ...), "invalid input type");
-    auto node = createUDFNode(handle_, {to_lnode<std::tuple_element_t<Is, typename T::traits::Inputs>>(args, sloc)...}, sloc);
-    return make_type<typename T::traits::Output>(node, sloc);
+    auto node = createUDFNode(handle_, {to_lnode<std::tuple_element_t<Is, typename T::traits::Inputs>>(args)...});
+    return make_type<typename T::traits::Output>(node);
   }
 
   refcounted* handle_;

@@ -32,8 +32,6 @@ std::string identifier_from_typeid(const std::string& name);
 
 int char2int(char x, int base);
 
-source_location caller_srcinfo(uint32_t level);
-
 ///////////////////////////////////////////////////////////////////////////////
 
 template<typename T>
@@ -512,10 +510,32 @@ protected:
 class source_location {
 public:
 
-  source_location(const std::string& file = "", int line = 0)
+  explicit source_location(const std::string& file = "", int line = 0)
     : file_(file)
     , line_(line)
   {}
+
+  source_location(const source_location& other)
+    : file_(other.file_)
+    , line_(other.line_)
+  {}
+
+  source_location(source_location&& other)
+    : file_(std::move(other.file_))
+    , line_(std::move(other.line_))
+  {}
+
+  source_location& operator=(const source_location& other) {
+    file_ = other.file_;
+    line_ = other.line_;
+    return *this;
+  }
+
+  source_location& operator=(source_location&& other) {
+    file_ = std::move(other.file_);
+    line_ = std::move(other.line_);
+    return *this;
+  }
 
   const std::string& file() const {
     return file_;

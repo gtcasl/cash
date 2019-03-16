@@ -69,12 +69,9 @@ public:
   void write(uint32_t dst_offset,
              const lnode& src,
              uint32_t src_offset,
-             uint32_t length,
-             const source_location& sloc) override;
+             uint32_t length) override;
 
-  lnodeimpl* slice(uint32_t offset,
-                   uint32_t length,
-                   const source_location& sloc) const override;
+  lnodeimpl* slice(uint32_t offset, uint32_t length, const source_location& sloc) const override;
 
   void print(std::ostream& out) const override;
   
@@ -83,19 +80,19 @@ protected:
   proxyimpl(context* ctx,
             uint32_t size,
             const source_location& sloc,
-            const std::string& name = "");
+            const std::string& name);
 
   proxyimpl(context* ctx,
             const lnode& src,
             const source_location& sloc,
-            const std::string& name = "");
+            const std::string& name);
 
   proxyimpl(context* ctx,
             const lnode& src,
             uint32_t offset,
             uint32_t length,
             const source_location& sloc,
-            const std::string& name = "");
+            const std::string& name);
 
   std::vector<range_t> ranges_;
 
@@ -110,8 +107,7 @@ public:
   void write(uint32_t dst_offset,
              const lnode& src,
              uint32_t src_offset,
-             uint32_t length,
-             const source_location& sloc) override;
+             uint32_t length) override;
 
   bool check_fully_initialized() const override;
 
@@ -122,7 +118,7 @@ protected:
           uint32_t offset,
           uint32_t length,
           const source_location& sloc,
-          const std::string& name = "");
+          const std::string& name);
 
   friend class context;
 };

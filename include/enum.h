@@ -33,24 +33,7 @@ void registerEnumString(const lnode& node, void* callback);
     ch::internal::make_system_buffer(traits::bitwidth)) : base(buffer) {} \
   enum_name(const enum_name& __other) : base(__other) {} \
   enum_name(enum_name&& __other) : base(std::move(__other)) {} \
-  enum_name(type __other) : base(static_cast<unsigned>(__other)) {}
-
-#define CH_ENUM_LOGIC_IMPL(enum_name) \
-  enum_name(const ch::internal::logic_buffer& buffer = \
-    ch::internal::logic_buffer(traits::bitwidth, CH_CUR_SLOC, CH_STRINGIZE(enum_name))) \
-    : base(buffer) { ch::internal::registerEnumString( \
-      ch::internal::get_lnode(*this), (void*)to_string); } \
-  enum_name(const enum_name& __other, CH_SLOC) \
-    : base(__other, sloc) { ch::internal::registerEnumString( \
-      ch::internal::get_lnode(*this), (void*)to_string); } \
-  enum_name(enum_name&& __other) \
-    : base(std::move(__other)) { ch::internal::registerEnumString( \
-      ch::internal::get_lnode(*this), (void*)to_string); } \
-  enum_name(type __other, CH_SLOC) \
-    : base(static_cast<unsigned>(__other), sloc) { ch::internal::registerEnumString( \
-      ch::internal::get_lnode(*this), (void*)to_string); }
-
-#define CH_ENUM_COMMON_IMPL(enum_name) \
+  enum_name(type __other) : base(static_cast<unsigned>(__other)) {} \
   enum_name& operator=(const enum_name& __other) { \
     base::operator=(__other); \
     return *this; \
@@ -67,6 +50,50 @@ void registerEnumString(const lnode& node, void* callback);
     return reinterpret_cast<const base&>(lhs) == reinterpret_cast<const base&>(__other); \
   } \
   friend auto operator!=(const enum_name& lhs, const enum_name& __other) { \
+    return reinterpret_cast<const base&>(lhs) != reinterpret_cast<const base&>(__other); \
+  }
+
+#define CH_ENUM_LOGIC_IMPL(enum_name) \
+  enum_name(const ch::internal::logic_buffer& buffer = \
+    ch::internal::logic_buffer(traits::bitwidth, CH_STRINGIZE(enum_name))) : base(buffer) { \
+    ch::internal::registerEnumString( \
+      ch::internal::get_lnode(*this), (void*)to_string); \
+  } \
+  enum_name(type __other) \
+    : enum_name(ch::internal::logic_buffer(traits::bitwidth, CH_STRINGIZE(enum_name))) { \
+    CH_SOURCE_LOCATION(1); \
+    this->operator=(__other); \
+  } \
+  enum_name(const enum_name& __other) \
+    : enum_name(ch::internal::logic_buffer(traits::bitwidth, CH_STRINGIZE(enum_name))) { \
+    CH_SOURCE_LOCATION(1); \
+    this->operator=(__other); \
+  } \
+  enum_name(enum_name&& __other) : base(std::move(__other)) { \
+    ch::internal::registerEnumString( \
+      ch::internal::get_lnode(*this), (void*)to_string); \
+  } \
+  enum_name& operator=(const enum_name& __other) { \
+    CH_SOURCE_LOCATION(1); \
+    base::operator=(__other); \
+    return *this; \
+  } \
+  enum_name& operator=(enum_name&& __other) { \
+    CH_SOURCE_LOCATION(1); \
+    base::operator=(std::move(__other)); \
+    return *this; \
+  } \
+  enum_name& operator=(type __other) { \
+    CH_SOURCE_LOCATION(1); \
+    base::operator=(static_cast<unsigned>(__other)); \
+    return *this; \
+  } \
+  friend auto operator==(const enum_name& lhs, const enum_name& __other) { \
+    CH_SOURCE_LOCATION(1); \
+    return reinterpret_cast<const base&>(lhs) == reinterpret_cast<const base&>(__other); \
+  } \
+  friend auto operator!=(const enum_name& lhs, const enum_name& __other) { \
+    CH_SOURCE_LOCATION(1); \
     return reinterpret_cast<const base&>(lhs) != reinterpret_cast<const base&>(__other); \
   }
 
@@ -91,7 +118,6 @@ void registerEnumString(const lnode& node, void* callback);
       using traits = ch::internal::system_traits<size, false, __system_type__, enum_name>; \
       using base = ch::internal::ch_scbit<size>; \
       CH_ENUM_SYSTEM_IMPL(__system_type__) \
-      CH_ENUM_COMMON_IMPL(__system_type__) \
       CH_SYSTEM_INTERFACE(__system_type__) \
     protected: \
       friend std::ostream& operator<<(std::ostream& __out, const __system_type__& __in) { \
@@ -102,7 +128,6 @@ void registerEnumString(const lnode& node, void* callback);
     using traits = ch::internal::logic_traits<size, false, enum_name, __system_type__>; \
     using base = ch::internal::ch_bit<size>; \
     CH_ENUM_LOGIC_IMPL(enum_name) \
-    CH_ENUM_COMMON_IMPL(enum_name) \
     CH_LOGIC_INTERFACE(enum_name) \
   }
 

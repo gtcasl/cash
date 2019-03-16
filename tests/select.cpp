@@ -278,7 +278,7 @@ TEST_CASE("conditionals", "[conditionals]") {
     TEST([]()->ch_bool {
       ch_int8 a(1), b(1), x, y;
       __if (a == 1) {
-        ch_bind(y, x) = 1;
+        ch_tie(y, x) = 1;
         __if (b == 0) {
           x = 1;
         } __elif (b == 1) {

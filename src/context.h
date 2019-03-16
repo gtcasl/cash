@@ -178,7 +178,7 @@ public:
 
   //--
 
-  void create_binding(context* ctx);
+  void create_binding(context* ctx, const source_location& sloc);
 
   inputimpl* create_input(uint32_t size,
                           const std::string& name,
@@ -200,13 +200,15 @@ public:
 
   //--
 
-  cdimpl* create_cd(const lnode& clk,
-                    bool pos_edge,
-                    const source_location& sloc);
-
   lnodeimpl* current_clock(const source_location& sloc);
 
   lnodeimpl* current_reset(const source_location& sloc);
+
+  cdimpl* current_cd(const source_location& sloc);
+
+  cdimpl* create_cd(const lnode& clk,
+                    bool pos_edge,
+                    const source_location& sloc);
 
   void push_cd(const lnode& clk,
                const lnode& reset,
@@ -215,8 +217,6 @@ public:
 
   void pop_cd();
 
-  cdimpl* current_cd(const source_location& sloc);
-  
   //--
 
   void begin_branch(lnodeimpl* key, const source_location& sloc);

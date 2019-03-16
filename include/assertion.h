@@ -5,7 +5,7 @@
 namespace ch {
 namespace internal {
 
-void ch_assert(const ch_bit<1>& cond, const std::string& msg, CH_SLOC);
+void ch_assert(const ch_bit<1>& cond, const std::string& msg);
 
 }
 }

@@ -87,8 +87,8 @@ void bindimpl::bind_output(lnodeimpl* dst,
   assert(ioport->ctx() != ctx_);
 
   // create bind port
-  auto output = ctx_->create_node<bindportimpl>(this, ioport, sloc);  
-  dst->write(0, output, 0, dst->size(), sloc);
+  auto output = ctx_->create_node<bindportimpl>(this, ioport, sloc);
+  dst->write(0, output, 0, dst->size());
 
   // add to list
   add_port(output, outputs_);
@@ -110,7 +110,7 @@ bindportimpl::bindportimpl(context* ctx,
                            lnodeimpl* src,
                            inputimpl* ioport,
                            const source_location& sloc)
-  : ioimpl(ctx, type_bindin, ioport->size(), sloc)
+  : ioimpl(ctx, type_bindin, ioport->size(), sloc, "")
   , binding_(binding)
   , ioport_(ioport) {
   binding->acquire();
@@ -121,7 +121,7 @@ bindportimpl::bindportimpl(context* ctx,
                            bindimpl* binding,
                            outputimpl* ioport,
                            const source_location& sloc)
-  : ioimpl(ctx, type_bindout, ioport->size(), sloc)
+  : ioimpl(ctx, type_bindout, ioport->size(), sloc, "")
   , binding_(binding)
   , ioport_(ioport) {
   binding->acquire();
@@ -153,17 +153,15 @@ void bindportimpl::print(std::ostream& out) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void ch::internal::bindInput(const lnode& src,
-                             const lnode& input,
-                             const source_location& sloc) {
+void ch::internal::bindInput(const lnode& src, const lnode& input) {
+  auto sloc = get_source_location();
   auto ctx = src.impl()->ctx();
-  auto binding = ctx->current_binding();
+  auto binding = ctx->current_binding();  
   binding->bind_input(src.impl(), reinterpret_cast<inputimpl*>(input.impl()), sloc);
 }
 
-void ch::internal::bindOutput(const lnode& dst,
-                              const lnode& output,
-                              const source_location& sloc) {
+void ch::internal::bindOutput(const lnode& dst, const lnode& output) {
+  auto sloc = get_source_location();
   auto ctx = dst.impl()->ctx();
   auto binding = ctx->current_binding();
   binding->bind_output(dst.impl(), reinterpret_cast<outputimpl*>(output.impl()), sloc);

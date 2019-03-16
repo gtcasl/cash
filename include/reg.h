@@ -6,46 +6,38 @@
 namespace ch {
 namespace internal {
 
-logic_buffer createRegNode(unsigned size,
-                           const source_location& sloc,
-                           const std::string& name);
+logic_buffer createRegNode(unsigned size, const std::string& name,
+                           const sloc_getter& slg = sloc_getter());
 
-logic_buffer createRegNode(const lnode& init,
-                           const source_location& sloc,
-                           const std::string& name);
+logic_buffer createRegNode(const lnode& init, const std::string& name,
+                           const sloc_getter& slg = sloc_getter());
 
-logic_buffer copyRegNode(const lnode& node,
-                         const source_location& sloc,
-                         const std::string& name);
+logic_buffer copyRegNode(const lnode& node, const std::string& name,
+                         const sloc_getter& slg = sloc_getter());
 
 logic_buffer getRegNextNode(const lnode& node);
 
 logic_buffer createRegNext(const lnode& next,
                            unsigned length,
-                           const source_location& sloc,
                            const std::string& name);
 
 logic_buffer createRegNext(const lnode& next,
                            unsigned length,
                            const lnode& enable,
-                           const source_location& sloc,
                            const std::string& name);
 
 logic_buffer createRegNext(const lnode& next,
                            const lnode& init,
                            unsigned length,
-                           const source_location& sloc,
                            const std::string& name);
 
 logic_buffer createRegNext(const lnode& next,
                            const lnode& init,
                            unsigned length,
                            const lnode& enable,
-                           const source_location& sloc,
                            const std::string& name);
 
-void pushClockDomain(const lnode& clock, const lnode& reset, bool pos_edge,
-                     const source_location& sloc);
+void pushClockDomain(const lnode& clock, const lnode& reset, bool pos_edge);
 
 void beginPipe(uint32_t length, const std::vector<int>& bounds);
 
@@ -61,27 +53,27 @@ public:
   using traits = logic_traits<ch_width_v<T>, ch_signed_v<T>, T, ch_system_t<T>>;
   using base = T;
 
-  ch_reg_impl(CH_SLOC)
-    : base(createRegNode(ch_width_v<T>, sloc, typeid(T).name())) {
-    __next__ = std::make_unique<next_t>(getRegNextNode(logic_accessor::buffer(*this)));
+  ch_reg_impl()
+    : base(createRegNode(ch_width_v<T>, typeid(T).name())) {
+    __next__ = std::make_unique<next_t>(getRegNextNode(get_lnode(*this)));
   }
 
   template <typename U0,
             CH_REQUIRE_0(std::is_convertible_v<U0, T>)>
-  explicit ch_reg_impl(const U0& init0, CH_SLOC)
-    : base(createRegNode(to_lnode<T>(init0, sloc), sloc, typeid(T).name())) {
+  explicit ch_reg_impl(const U0& init0)
+    : base(createRegNode(to_lnode<T>(init0), typeid(T).name())) {
     __next__ = std::make_unique<next_t>(getRegNextNode(get_lnode(*this)));
   }
 
   template <typename... Us,
             CH_REQUIRE_0(std::is_constructible_v<T, Us...>)>
   explicit ch_reg_impl(const Us&... inits)
-    : base(createRegNode(get_lnode(T(inits...)), caller_srcinfo(1), typeid(T).name())) {
+    : base(createRegNode(get_lnode(T(inits...)), typeid(T).name())) {
     __next__ = std::make_unique<next_t>(getRegNextNode(get_lnode(*this)));
   }
 
-  ch_reg_impl(const ch_reg_impl& other, CH_SLOC)
-    : base(copyRegNode(get_lnode(other), sloc, typeid(T).name())) {
+  ch_reg_impl(const ch_reg_impl& other)
+    : base(copyRegNode(get_lnode(other), typeid(T).name())) {
     __next__ = std::make_unique<next_t>(getRegNextNode(get_lnode(*this)));
   }
 
@@ -108,20 +100,18 @@ private:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-ch_bit<1> ch_clock(CH_SLOC);
+ch_bit<1> ch_clock();
 
-ch_bit<1> ch_reset(CH_SLOC);
+ch_bit<1> ch_reset();
 
 template <typename C, typename R = ch_bit<1>>
-void ch_pushcd(const C& clk,
-               const R& reset = ch_reset(),
-               bool pos_edge = true,
-               CH_SLOC) {
+void ch_pushcd(const C& clk, const R& reset = ch_reset(), bool pos_edge = true) {
   static_assert(is_bit_base_v<C>, "invalid type");
   static_assert(ch_width_v<C> == 1, "invalid size");
   static_assert(is_bit_base_v<R>, "invalid type");
   static_assert(ch_width_v<R> == 1, "invalid size");
-  pushClockDomain(get_lnode(clk), get_lnode(reset), pos_edge, sloc);
+  CH_SOURCE_LOCATION(1);
+  pushClockDomain(get_lnode(clk), get_lnode(reset), pos_edge);
 }
 
 void ch_popcd();
@@ -131,6 +121,7 @@ void ch_cd(Func&& func,
            const C& clk,
            const R& reset = ch_reset(),
            bool pos_edge = true) {
+  CH_SOURCE_LOCATION(1);
   ch_pushcd(clk, reset, pos_edge);
   func;
   ch_popcd();
@@ -139,171 +130,164 @@ void ch_cd(Func&& func,
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename R, typename T>
-auto ch_next(const T& in, CH_SLOC) {
+auto ch_next(const T& in) {
   static_assert(is_logic_type_v<R>, "invalid type");
   static_assert(std::is_constructible_v<R, T>, "invalid type");
-  return R(createRegNext(logic_accessor::buffer(R(in, sloc)),
-                         1,
-                         sloc,
-                         typeid(T).name()));
+  CH_SOURCE_LOCATION(1);
+  return R(createRegNext(to_lnode<R>(in), 1, typeid(T).name()));
 }
 
 template <typename T>
-auto ch_next(const T& in, CH_SLOC) {
+auto ch_next(const T& in) {
   static_assert(is_object_type_v<T>, "invalid type");
-  return ch_next<ch_logic_t<T>, T>(in, sloc);
+  CH_SOURCE_LOCATION(1);
+  return ch_next<ch_logic_t<T>, T>(in);
 }
 
 template <typename R, typename T, typename I>
-auto ch_next(const T& in, const I& init, CH_SLOC) {
+auto ch_next(const T& in, const I& init) {
   static_assert(is_logic_type_v<R>, "invalid type");
   static_assert(std::is_constructible_v<R, T>, "invalid type");
   static_assert(std::is_constructible_v<R, I>, "invalid type");
-  return R(createRegNext(logic_accessor::buffer(R(in, sloc)),
-                         logic_accessor::buffer(R(init, sloc)),
-                         1,
-                         sloc,
-                         typeid(T).name()));
+  CH_SOURCE_LOCATION(1);
+  return R(createRegNext(to_lnode<R>(in), to_lnode<R>(init), 1, typeid(T).name()));
 }
 
 template <typename T, typename I>
-auto ch_next(const T& in, const I& init, CH_SLOC) {
-  return ch_next<ch_logic_t<T>, T, I>(in, init, sloc);
+auto ch_next(const T& in, const I& init) {
+  CH_SOURCE_LOCATION(1);
+  return ch_next<ch_logic_t<T>, T, I>(in, init);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename R, typename T, typename E>
-auto ch_nextEn(const T& in, const E& enable, CH_SLOC) {
+auto ch_nextEn(const T& in, const E& enable) {
   static_assert(is_logic_type_v<R>, "invalid type");
   static_assert(std::is_constructible_v<R, T>, "invalid type");
   static_assert(is_bit_base_v<E>, "invalid type");
   static_assert(ch_width_v<E> == 1, "invalid size");
-  return R(createRegNext(logic_accessor::buffer(R(in, sloc)),
-                         1,
-                         logic_accessor::buffer(enable),
-                         sloc,
-                         typeid(T).name()));
+  CH_SOURCE_LOCATION(1);
+  return R(createRegNext(to_lnode<R>(in), 1, get_lnode(enable), typeid(T).name()));
 }
 
 template <typename T, typename E>
-auto ch_nextEn(const T& in, const E& enable, CH_SLOC) {
-  return ch_nextEn<ch_logic_t<T>, T, E>(in, enable, sloc);
+auto ch_nextEn(const T& in, const E& enable) {
+  CH_SOURCE_LOCATION(1);
+  return ch_nextEn<ch_logic_t<T>, T, E>(in, enable);
 }
 
 template <typename R, typename T, typename I, typename E>
-auto ch_nextEn(const T& in, const E& enable, const I& init, CH_SLOC) {
+auto ch_nextEn(const T& in, const E& enable, const I& init) {
   static_assert(is_logic_type_v<R>, "invalid type");
   static_assert(std::is_constructible_v<R, T>, "invalid type");
   static_assert(std::is_constructible_v<R, I>, "invalid type");  
   static_assert(is_bit_base_v<E>, "invalid type");
   static_assert(ch_width_v<E> == 1, "invalid size");
-  return R(createRegNext(logic_accessor::buffer(R(in, sloc)),
-                         logic_accessor::buffer(R(init, sloc)),
+  CH_SOURCE_LOCATION(1);
+  return R(createRegNext(to_lnode<R>(in),
+                         to_lnode<R>(init),
                          1,
-                         logic_accessor::buffer(enable),
-                         sloc,
+                         get_lnode(enable),
                          typeid(T).name()));
 }
 
 template <typename T, typename I, typename E>
-auto ch_nextEn(const T& in, const E& enable, const I& init, CH_SLOC) {
-  return ch_nextEn<ch_logic_t<T>, T, I, E>(in, enable, init, sloc);
+auto ch_nextEn(const T& in, const E& enable, const I& init) {
+  CH_SOURCE_LOCATION(1);
+  return ch_nextEn<ch_logic_t<T>, T, I, E>(in, enable, init);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename R, typename T>
-auto ch_delay(const T& in, uint32_t delay = 1, CH_SLOC) {
+auto ch_delay(const T& in, uint32_t delay = 1) {
   static_assert(is_logic_type_v<R>, "invalid type");
   static_assert(std::is_constructible_v<R, T>, "invalid type");
+  CH_SOURCE_LOCATION(1);
   if (0 == delay) {
-    return R(in, sloc);
+    return R(in);
   }
-  return R(createRegNext(logic_accessor::buffer(R(in, sloc)),
-                         delay,
-                         sloc,
-                         typeid(T).name()));
+  return R(createRegNext(to_lnode<R>(in), delay, typeid(T).name()));
 }
 
 template <typename T>
-auto ch_delay(const T& in, uint32_t delay = 1, CH_SLOC) {
-  return ch_delay<ch_logic_t<T>, T>(in, delay, sloc);
+auto ch_delay(const T& in, uint32_t delay = 1) {
+  CH_SOURCE_LOCATION(1);
+  return ch_delay<ch_logic_t<T>, T>(in, delay);
 }
 
 template <typename R, typename T, typename I>
-auto ch_delay(const T& in, uint32_t delay, const I& init, CH_SLOC) {
+auto ch_delay(const T& in, uint32_t delay, const I& init) {
   static_assert(is_logic_type_v<R>, "invalid type");
   static_assert(std::is_constructible_v<R, T>, "invalid type");
   static_assert(std::is_constructible_v<R, I>, "invalid type");
+  CH_SOURCE_LOCATION(1);
   if (0 == delay) {
-    return R(in, sloc);
+    return R(in);
   }
-  return R(createRegNext(logic_accessor::buffer(R(in, sloc)),
-                         logic_accessor::buffer(R(init, sloc)),
-                         delay,
-                         sloc,
-                         typeid(T).name()));
+  return R(createRegNext(to_lnode<R>(in), to_lnode<R>(init), delay, typeid(T).name()));
 }
 
 template <typename T, typename I>
-auto ch_delay(const T& in, uint32_t delay, const I& init, CH_SLOC) {
-  return ch_delay<ch_logic_t<T>, T>(in, delay, init, sloc);
+auto ch_delay(const T& in, uint32_t delay, const I& init) {
+  CH_SOURCE_LOCATION(1);
+  return ch_delay<ch_logic_t<T>, T>(in, delay, init);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename R, typename T, typename E>
-auto ch_delayEn(const T& in, const E& enable, uint32_t delay = 1, CH_SLOC) {
+auto ch_delayEn(const T& in, const E& enable, uint32_t delay = 1) {
   static_assert(is_logic_type_v<R>, "invalid type");
   static_assert(std::is_constructible_v<R, T>, "invalid type");
   static_assert(is_bit_base_v<E>, "invalid type");
   static_assert(ch_width_v<E> == 1, "invalid size");
+  CH_SOURCE_LOCATION(1);
   if (0 == delay) {
-    return R(in, sloc);
+    return R(in);
   }
-  return R(createRegNext(logic_accessor::buffer(R(in, sloc)),
-                         delay,
-                         logic_accessor::buffer(enable),
-                         sloc,
-                         typeid(T).name()));
+  return R(createRegNext(to_lnode<R>(in), delay, get_lnode(enable), typeid(T).name()));
 }
 
 template <typename T, typename E>
-auto ch_delayEn(const T& in, const E& enable, uint32_t delay = 1, CH_SLOC) {
-  return ch_delayEn<ch_logic_t<T>, T, E>(in, enable, delay, sloc);
+auto ch_delayEn(const T& in, const E& enable, uint32_t delay = 1) {
+  CH_SOURCE_LOCATION(1);
+  return ch_delayEn<ch_logic_t<T>, T, E>(in, enable, delay);
 }
 
 template <typename R, typename T, typename I, typename E>
-auto ch_delayEn(const T& in, const E& enable, uint32_t delay, const I& init, CH_SLOC) {
+auto ch_delayEn(const T& in, const E& enable, uint32_t delay, const I& init) {
   static_assert(is_logic_type_v<R>, "invalid type");
   static_assert(std::is_constructible_v<R, T>, "invalid type");
   static_assert(std::is_constructible_v<R, I>, "invalid type");
   static_assert(is_bit_base_v<E>, "invalid type");
   static_assert(ch_width_v<E> == 1, "invalid size");
+  CH_SOURCE_LOCATION(1);
   if (0 == delay) {
-    return R(in, sloc);
+    return R(in);
   }
-  return R(createRegNext(logic_accessor::buffer(R(in, sloc)),
-                         logic_accessor::buffer(R(init, sloc)),
+  return R(createRegNext(to_lnode<R>(in),
+                         to_lnode<R>(init),
                          delay,
-                         logic_accessor::buffer(enable),                         
-                         sloc,
+                         get_lnode(enable),
                          typeid(T).name()));
 }
 
 template <typename T, typename I, typename E>
-auto ch_delayEn(const T& in, const E& enable, uint32_t delay, const I& init, CH_SLOC) {
-  return ch_delayEn<ch_logic_t<T>, T, I, E>(in, enable, delay, init, sloc);
+auto ch_delayEn(const T& in, const E& enable, uint32_t delay, const I& init) {
+  CH_SOURCE_LOCATION(1);
+  return ch_delayEn<ch_logic_t<T>, T, I, E>(in, enable, delay, init);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename Func, typename... Bs>
 auto ch_pipe(Func&& func, uint32_t length, Bs&&... bounds) {
+  CH_SOURCE_LOCATION(1);
   beginPipe(length, {std::forward<Bs>(bounds)...});
   auto ret = func;
-  endPipe(logic_accessor::buffer(ret));
+  endPipe(get_lnode(ret));
   return ret;
 }
 
@@ -311,9 +295,10 @@ template <typename Func, typename E, typename... Bs>
 auto ch_pipeEn(Func&& func, const E& enable, uint32_t length, Bs&&... bounds) {
   static_assert(is_bit_base_v<E>, "invalid type");
   static_assert(ch_width_v<E> == 1, "invalid size");
-  beginPipe(length, logic_accessor::buffer(enable), {std::forward<Bs>(bounds)...});
+  CH_SOURCE_LOCATION(1);
+  beginPipe(length, get_lnode(enable), {std::forward<Bs>(bounds)...});
   auto ret = func;
-  endPipe(logic_accessor::buffer(ret));
+  endPipe(get_lnode(ret));
   return ret;
 }
 

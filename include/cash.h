@@ -271,11 +271,11 @@ namespace logic {
   // utility functions
   //
 
+  using ch::internal::ch_tie;
   using ch::internal::ch_ref;
   using ch::internal::ch_sliceref;
   using ch::internal::ch_asliceref;
-  using ch::internal::ch_clone;
-  using ch::internal::ch_bind;
+  using ch::internal::ch_clone;  
   using ch::internal::ch_print;
   using ch::internal::ch_println;
   using ch::internal::ch_now;
@@ -400,6 +400,6 @@ inline namespace literals {
 #define __require2 CH_REQUIRE_2
 #define __require3 CH_REQUIRE_3
 
-#define __sloc     CH_SLOC
+#define __source_location CH_SOURCE_LOCATION
 
 #define __unused   CH_UNUSED

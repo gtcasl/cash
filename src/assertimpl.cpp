@@ -5,8 +5,9 @@
 
 using namespace ch::internal;
 
-void ch::internal::ch_assert(const ch_bit<1>& cond, const std::string& msg,
-                             const source_location& sloc) {
+void ch::internal::ch_assert(const ch_bit<1>& cond, const std::string& msg) {
+  CH_SOURCE_LOCATION(1);
+  auto sloc = get_source_location();
   auto lcond = get_lnode(cond).impl();
   lcond->ctx()->create_node<assertimpl>(lcond, msg, sloc);
 }
@@ -15,7 +16,7 @@ assertimpl::assertimpl(context* ctx,
                        lnodeimpl* cond,
                        const std::string& msg,
                        const source_location& sloc)
-  : ioimpl(ctx, type_assert, 0, sloc)
+  : ioimpl(ctx, type_assert, 0, sloc, "")
   , msg_(msg)
   , pred_idx_(-1) {
   this->add_src(cond);
@@ -34,7 +35,7 @@ assertimpl::assertimpl(context* ctx,
                        lnodeimpl* pred,
                        const std::string& msg,
                        const source_location& sloc)
-  : ioimpl(ctx, type_assert, 0, sloc)
+  : ioimpl(ctx, type_assert, 0, sloc, "")
   , msg_(msg)
   , pred_idx_(-1) {
   this->add_src(cond);
