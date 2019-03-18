@@ -184,8 +184,12 @@ public:
     io.req_stalls = req_stalls;
     io.mem_stalls = mem_stalls;
 
+    /*__if (ch_clock() && io.deq.valid && io.deq.ready) {
+      ch_println("{}: AVMR: deq_data={}", ch_now(), io.deq.data);
+    };*/
+
     /*__if (ch_clock()) {
-      ch_println("{0}: AVMR: start={1}, rd={2}, addr={3}, burst={4}, rdg={5}, rmqs={6}, pns={7}, rsp={8}, pop={9}, ffs={10}, buzy={11}",
+      ch_println("{}: AVMR: start={}, rd={}, addr={}, burst={}, rdg={}, rmqs={}, pns={}, rsp={}, pop={}, ffs={}, buzy={}",
              ch_now(), io.start, io.avm.read, io.avm.address, io.avm.burstcount,
                read_granted, remain_reqs, pending_size, io.avm.readdatavalid,
                fifo_dequeued, out_fifo_.io.size, io.buzy);
@@ -306,10 +310,14 @@ public:
     io.req_stalls = req_stalls;
     io.mem_stalls = mem_stalls;
 
+    /*__if (ch_clock() && io.enq.valid && io.enq.ready) {
+      ch_println("{}: AVMW: enq_data={}", ch_now(), io.enq.data);
+    };*/
+
     /*__if (ch_clock()) {
-      ch_println("{0}: AVMW: wbg={1}, wr={2}, wrg={3}, wtrq={4}, ffs={5}, addr={6}, burst={7}, burstctr={8}, wdata={9}, buzy={10}",
+      ch_println("{}: AVMW: wbg={}, wr={}, wrg={}, wtrq={}, ffs={}, addr={}, burst={}, burstctr={}, wdata={}, busy={}",
              ch_now(), write_begin, io.avm.write, write_granted, io.avm.waitrequest, in_fifo_.io.size,
-               io.avm.address, io.avm.burstcount, burst_counter, io.avm.writedata, io.buzy);
+               io.avm.address, io.avm.burstcount, burst_counter, io.avm.writedata, io.busy);
     };*/
   }
 
