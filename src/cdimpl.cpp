@@ -19,6 +19,14 @@ lnodeimpl* cdimpl::clone(context* ctx, const clone_map& cloned_nodes) const {
   return ctx->create_cd(clk, pos_edge_, sloc_);
 }
 
+bool cdimpl::equals(const lnodeimpl& other) const {
+  if (lnodeimpl::equals(other)) {
+    auto _other = reinterpret_cast<const cdimpl&>(other);
+    return (pos_edge_ == _other.pos_edge_);
+  }
+  return false;
+}
+
 void cdimpl::print(std::ostream& out) const {
   out << "#" << id_ << " <- " << this->type() << "("
       << (pos_edge_ ? "pos_edge" : "negedge")

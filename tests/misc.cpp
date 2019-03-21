@@ -112,12 +112,12 @@ TEST_CASE("misc", "[misc]") {
       return ch_true;
     });
     TEST([]()->ch_bool {
-      ch_bit8 a(255);
+      ch_bit128 a(0x5555);
       ch_println("a={0}", a);
       return ch_true;
-    });    
+    });
     TEST([]()->ch_bool {
-      ch_bit128 a(0x5555);
+      ch_bit8 a(255);
       ch_println("a={0}", a);
       return ch_true;
     });

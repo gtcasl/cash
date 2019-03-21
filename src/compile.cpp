@@ -760,6 +760,7 @@ bool compiler::subexpressions_elimination() {
     switch (node->type()) {
     default:
       return false;
+    case type_cd:
     case type_proxy:
     case type_sel:
     case type_op:
@@ -1038,6 +1039,8 @@ void compiler::create_merged_context(context* ctx) {
   std::function<void (context*, clone_map&)> visit = [&](context* curr, clone_map& map) {
     //--
     std::unordered_map<proxyimpl*, lnodeimpl*> placeholders;
+
+    //--
     auto ensure_placeholder = [&](const lnode& node) {
       //assert(node.impl()->type() != type_undef);
       if (map.count(node.id()) != 0)
@@ -1134,9 +1137,11 @@ void compiler::create_merged_context(context* ctx) {
   };
 
   CH_DBG(2, "create merged context for %s (#%d) ...\n", ctx->name().c_str(), ctx->id());
+
   clone_map map;
   node_path.push_back(stringf("%s_%d", ctx->name().c_str(), ctx->id()));
   visit(ctx, map);
+
   node_path.pop_back();
 }
 

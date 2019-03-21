@@ -18,6 +18,8 @@ public:
 
   lnodeimpl* clone(context* ctx, const clone_map& cloned_nodes) const override;
 
+  bool equals(const lnodeimpl& other) const override;
+
   void print(std::ostream& out) const override;
 
 protected:

@@ -160,7 +160,9 @@ protected:
   dup_tracker<std::string> dup_ctx_names_;
   std::unordered_map<std::type_index, uint32_t> udf_signatures_;
   std::unordered_map<uint32_t, udf_iface*> pod_udfs_;
+#ifdef CALLTRACE
   sloc_manager src_loc_manager_;
+#endif
 };
 
 context* ch::internal::ctx_create(const std::type_index& signature,
@@ -267,9 +269,9 @@ context::context(const std::string& name, context* parent)
   , sys_clk_(nullptr)
   , sys_reset_(nullptr)
   , sys_time_(nullptr)
-  , nodes_(&literals_, &proxies_, &inputs_, &outputs_, &alus_,
-           &cdomains_, &regs_, &mems_, &marports_, &msrports_, &mwports_,
-           &bindings_, &bindports_, &taps_, &gtaps_, &udfseqs_, &udfcombs_)
+  , nodes_(&mems_, &marports_, &msrports_, &mwports_, &regs_, &proxies_, &alus_,
+           &inputs_, &outputs_, &cdomains_, &bindings_, &bindports_,
+           &udfseqs_, &udfcombs_, &gtaps_, &taps_, &literals_)
   , snodes_(&regs_, &msrports_, &mwports_, &udfseqs_)
   , udfs_(&udfcombs_, &udfseqs_)
   , cond_blk_idx_(0)    
