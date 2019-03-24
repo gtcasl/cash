@@ -881,7 +881,8 @@ context::emit_conditionals(lnodeimpl* dst,
       auto df_value = values.back().second;
       lnodeimpl* skip_pred = nullptr;
       for (auto it = values.begin(), end = values.end(); it != end;) {
-        if (it->first && it->second == df_value) {
+        if (it->first
+         && it->second == df_value) {
           if (nullptr == key) {
             if (skip_pred) {
               skip_pred = this->create_node<opimpl>(ch_op::orb, 1, false, skip_pred, it->first, branch->sloc);
@@ -891,9 +892,10 @@ context::emit_conditionals(lnodeimpl* dst,
           }
           it = values.erase(it);
         } else {
-          if (skip_pred && it->first) {
+          if (it->first && skip_pred) {
             auto not_skip_pred = this->create_node<opimpl>(ch_op::inv, 1, false, skip_pred, branch->sloc);
             it->first = this->create_node<opimpl>(ch_op::andb, 1, false, it->first, not_skip_pred, branch->sloc);
+            skip_pred = nullptr;
           }
           ++it;
         }

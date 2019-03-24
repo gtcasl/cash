@@ -416,10 +416,7 @@ public:
         break;
       case type_reg:
         this->emit_node(reinterpret_cast<regimpl*>(node));
-        break;
-      case type_mem:
-        this->emit_node(reinterpret_cast<memimpl*>(node));
-        break;
+        break;      
       case type_marport:
         this->emit_node(reinterpret_cast<marportimpl*>(node));
         break;
@@ -446,6 +443,7 @@ public:
         break;
       default:
         std::abort();
+      case type_mem:
         break;
       }
     }
@@ -1783,13 +1781,6 @@ private:
     }
   }
 
-  void emit_node(memimpl* node) {
-    __source_info();
-    auto maddr = this->get_pointer_address(node);
-    auto j_dst = maddr.offset ? jit_insn_add_relative(j_func_, maddr.base, maddr.offset) : maddr.base;
-    pointer_map_[node->id()] = j_dst;
-  }
-
   void emit_node(marportimpl* node) {
     __source_info();
 
@@ -2266,6 +2257,9 @@ private:
 
       switch (type) {
       case type_lit:
+        if (dst_width > WORD_SIZE) {
+          this->calc_pointer_address(node);
+        }
         break;
       case type_input:
       case type_output:
@@ -2300,6 +2294,7 @@ private:
           auto j_dst = jit_insn_load_relative(j_func_, j_vars_, addr, j_xtype);
           scalar_map_[node->id()] = this->emit_cast(j_dst, j_ntype);;
         }
+        this->calc_pointer_address(node);
       } break;
       case type_mem: {
         auto addr = addr_map_.at(node->id());
@@ -2310,6 +2305,7 @@ private:
         } else {
           bv_init(buf, dst_width);
         }
+        this->calc_pointer_address(node);
       } break;
       case type_msrport: {
         auto addr = addr_map_.at(node->id());
@@ -2320,16 +2316,18 @@ private:
           auto j_dst = jit_insn_load_relative(j_func_, j_vars_, addr, j_xtype);
           scalar_map_[node->id()] = this->emit_cast(j_dst, j_ntype);;
         }
+        this->calc_pointer_address(node);
       } break;
       case type_time: {
         auto addr = addr_map_.at(node->id());
-        bv_reset(reinterpret_cast<block_type*>(sim_ctx_->state.vars + addr), dst_width);
+        bv_reset(reinterpret_cast<block_type*>(sim_ctx_->state.vars + addr), dst_width);        
         if (dst_width <= WORD_SIZE) {
           // preload scalar value
           __source_info();
           auto j_dst = jit_insn_load_relative(j_func_, j_vars_, addr, j_xtype);
           scalar_map_[node->id()] = j_dst;
         }
+        this->calc_pointer_address(node);
       } break;
       case type_assert: {
         auto addr = addr_map_.at(node->id());
@@ -2355,6 +2353,7 @@ private:
             scalar_map_[node->id()] = this->emit_cast(j_dst, j_ntype);;
           }
           addr += __align_word_size(dst_width);
+          this->calc_pointer_address(node);
         }
         auto u = reinterpret_cast<udfimpl*>(node);
         reinterpret_cast<udf_data_t*>(sim_ctx_->state.vars + addr)->init(u, this);
@@ -2367,6 +2366,7 @@ private:
         if (dst_width > WORD_SIZE) {
           auto addr = addr_map_.at(node->id());
           bv_init(reinterpret_cast<block_type*>(sim_ctx_->state.vars + addr), dst_width);
+          this->calc_pointer_address(node);
         }
         break;
       default:
@@ -2954,14 +2954,25 @@ private:
     }
   }
 
-  jit_value_t emit_pointer_address(lnodeimpl* node, uint32_t offset = 0) {
+  void calc_pointer_address(lnodeimpl* node) {
+    auto maddr = this->get_pointer_address(node);
+    if (0 == maddr.offset)
+      return;
+
+    auto j_dst = jit_insn_add_relative(j_func_, maddr.base, maddr.offset);
+    pointer_map_[node->id()] = j_dst;
+  }
+
+  jit_value_t emit_pointer_address(lnodeimpl* node) {
+    auto maddr = this->get_pointer_address(node);
+    if (0 == maddr.offset)
+      return maddr.base;
+
     auto it = pointer_map_.find(node->id());
     if (it != pointer_map_.end())
       return it->second;
 
-    auto maddr = this->get_pointer_address(node);
-    offset += maddr.offset;
-    return offset ? jit_insn_add_relative(j_func_, maddr.base, offset) : maddr.base;
+    return jit_insn_add_relative(j_func_, maddr.base, maddr.offset);
   }
 
   jit_value_t emit_load_scalar_relative(lnodeimpl* node, uint32_t offset, jit_type_t j_type) {

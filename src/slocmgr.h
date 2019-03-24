@@ -56,7 +56,6 @@ public:
   }
 
   const source_location& get_source_location() const {
-    assert(active_);
     return sloc_;
   }
 
@@ -103,7 +102,7 @@ private:
     void lookup(bfd *abfd, asection *section) {
       if (found)
         return;
-      if ((bfd_get_section_flags(abfd, section) & SEC_ALLOC) == 0)
+      if (0 == (bfd_get_section_flags(abfd, section) & SEC_ALLOC))
         return;
       auto vma = bfd_get_section_vma(abfd, section);
       if (addr < vma)
@@ -180,6 +179,7 @@ private:
     bfd_map_over_sections(sym->handle, &find_address_in_section_cb, &finder);
     if (!finder.found)
       return false;
+
     sloc = source_location((finder.filename ? finder.filename : ""), finder.line);
     return true;
   }
@@ -193,10 +193,11 @@ private:
     _Unwind_Backtrace(&backtrace_cb, &bt_data);
     if (nullptr == bt_data.addr)
       return false;
+
     Dl_info dlinfo;
-    if (!dladdr(bt_data.addr, &dlinfo)) {
+    if (!dladdr(bt_data.addr, &dlinfo))
       return false;
-    }
+
     addr = bt_data.addr;
     module = dlinfo.dli_fname;
     return true;
