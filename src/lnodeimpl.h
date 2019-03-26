@@ -99,9 +99,7 @@ public:
     return sloc_;
   }
 
-  std::vector<lnode>& srcs();
-
-  lnode& src(uint32_t index);
+  void set_src(uint32_t index, const lnode& src);
 
   uint32_t add_src(const lnode& src);
 

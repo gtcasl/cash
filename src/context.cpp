@@ -153,7 +153,7 @@ protected:
 
   mutable context* ctx_;
   mutable uint32_t ctx_ids_;
-  mutable uint32_t node_ids_;  
+  mutable uint32_t node_ids_;
   mutable uint32_t udf_ids_;
   std::unordered_map<std::type_index, uint32_t> ctx_signatures_;
   std::unordered_map<uint32_t, context*> pod_contexts_;
@@ -269,12 +269,13 @@ context::context(const std::string& name, context* parent)
   , sys_clk_(nullptr)
   , sys_reset_(nullptr)
   , sys_time_(nullptr)
-  , nodes_(&mems_, &marports_, &msrports_, &mwports_, &regs_, &proxies_, &alus_,
+  , nodes_(&mems_, &marports_, &msrports_, &mwports_, &regs_,
+           &proxies_, &sels_, &ops_,
            &inputs_, &outputs_, &cdomains_, &bindings_, &bindports_,
            &udfseqs_, &udfcombs_, &gtaps_, &taps_, &literals_)
   , snodes_(&regs_, &msrports_, &mwports_, &udfseqs_)
   , udfs_(&udfcombs_, &udfseqs_)
-  , cond_blk_idx_(0)    
+  , cond_blk_idx_(0)
 {}
 
 context::~context() {
@@ -329,9 +330,11 @@ void context::add_node(lnodeimpl* node) {
   case type_output:
     outputs_.push_back(node);
     break;
-  case type_op:
   case type_sel:
-    alus_.push_back(node);
+    sels_.push_back(node);
+    break;
+  case type_op:
+    ops_.push_back(node);
     break;
   case type_cd:
     cdomains_.push_back(node);
@@ -383,7 +386,7 @@ void context::add_node(lnodeimpl* node) {
     auto curr_branch = cond_branches_.top();
     auto curr_block = curr_branch->blocks.back();
     cond_inits_[node->id()] = curr_block;
-  }  
+  }
 }
 
 void context::delete_node(lnodeimpl* node) {
@@ -410,9 +413,11 @@ void context::delete_node(lnodeimpl* node) {
   case type_output:
     outputs_.remove(node);
     break;
-  case type_op:
   case type_sel:
-    alus_.remove(node);
+    sels_.remove(node);
+    break;
+  case type_op:
+    ops_.remove(node);
     break;
   case type_cd:
     cdomains_.remove(node);
@@ -468,7 +473,7 @@ void context::delete_node(lnodeimpl* node) {
 node_list_view::iterator context::delete_node(const node_list_view::iterator& it) {
   auto node = *it;
   CH_DBG(3, "*** deleting node: %s%d(#%d)\n", to_string(node->type()), node->size(), node->id());
-  
+
   auto type = node->type();
   switch (type) {
   case type_input:
@@ -641,7 +646,7 @@ void context::end_branch() {
   cond_branches_.pop();
   if (cond_branches_.empty()) {
     // emit conditional statements
-    for (auto& var : cond_vars_) {      
+    for (auto& var : cond_vars_) {
       auto dst = var.first;
       assert(type_proxy == dst->type());
       for (auto& slice : var.second) {
@@ -658,7 +663,7 @@ void context::end_branch() {
 }
 
 void context::begin_block(lnodeimpl* pred) {
-  // insert new conditional block  
+  // insert new conditional block
   auto curr_branch = cond_branches_.top();
   auto new_block = new cond_block_t(++cond_blk_idx_, pred, curr_branch);
   curr_branch->blocks.push_back(new_block);
@@ -706,7 +711,7 @@ void context::conditional_assign(
     lnodeimpl* src,
     const source_location& sloc) {
   assert(this->conditional_enabled(dst));
-  auto& slices     = cond_vars_[dst];
+  auto& defs       = cond_vars_[dst];
   auto curr_branch = cond_branches_.top();
   auto curr_block  = curr_branch->blocks.back();
 
@@ -721,65 +726,6 @@ void context::conditional_assign(
     }
     slices[range][loc] = src;
   };
-
-  {
-    //--
-    cond_slices_t split_list;
-
-    //--
-    auto create_split_definitions = [&](const cond_range_t& range,
-                                     uint32_t offset,
-                                     uint32_t length) {
-      cond_range_t new_range{offset, length};
-      for (auto def : slices[range]) {
-        add_definition(split_list, new_range, def.first, def.second, offset - range.offset);
-      }
-    };
-
-    // create split list for partially overlapping definitions
-    for (auto it = slices.begin(), end = slices.end(); it != end;) {
-      auto& curr  = it->first;
-      uint32_t curr_end = curr.offset + curr.length;
-      uint32_t var_end  = offset + length;
-
-      // does variable overlap existing definition?
-      if (offset < curr_end && var_end > curr.offset) {
-        if (offset <= curr.offset && var_end >= curr_end) {
-          // variable fully overlaps current
-          ++it;
-          continue;
-        } else if (offset < curr.offset) {
-          // variable overlaps on the left
-          create_split_definitions(curr, curr.offset, var_end - curr.offset);
-          create_split_definitions(curr, var_end, curr_end - var_end);
-        } else if (var_end > curr_end) {
-          // variable overlaps on the right
-          create_split_definitions(curr, curr.offset, offset - curr.offset);
-          create_split_definitions(curr, offset, curr_end - offset);
-        } else {
-          // variable fully included
-          if (offset != curr.offset) {
-            create_split_definitions(curr, curr.offset, offset - curr.offset);
-          }
-          create_split_definitions(curr, offset, var_end - offset);
-          if (var_end != curr_end) {
-            create_split_definitions(curr, var_end, curr_end - var_end);
-          }
-        }
-        // remove entry
-        it = slices.erase(it);
-      } else {
-        ++it;
-      }
-    }
-
-    // insert split entries
-    if (!split_list.empty()) {
-      for (auto& item : split_list) {
-        slices[item.first] = item.second;
-      }
-    }
-  }
 
   //--
   std::function<void (cond_defs_t&, const cond_block_t*)>
@@ -800,21 +746,81 @@ void context::conditional_assign(
   };
 
   //--
-  uint32_t var_offset = offset;
+  auto create_split_definitions = [&](cond_slices_t& split_list,
+                                      const cond_range_t& range,
+                                      uint32_t offset,
+                                      uint32_t length) {
+    cond_range_t new_range{offset, length};
+    for (auto def : defs[range]) {
+      add_definition(split_list, new_range, def.first, def.second, offset - range.offset);
+    }
+  };
 
   //--
-  auto add_new_definition = [&](uint32_t offset, uint32_t length) {
+  auto add_new_definition = [&](uint32_t var_offset, uint32_t offset, uint32_t length) {
     cond_range_t new_range{offset, length};
 
     // delete all existing definitions within current block
-    delete_definitions(slices[new_range], curr_block);
+    delete_definitions(defs[new_range], curr_block);
 
     // add new definition
-    add_definition(slices, new_range, curr_block->id, src, offset - var_offset);
+    add_definition(defs, new_range, curr_block->id, src, offset - var_offset);
   };
 
+  {
+    //--
+    cond_slices_t split_list;
+
+    // create split list for partially overlapping definitions
+    for (auto it = defs.begin(), end = defs.end(); it != end;) {
+      auto& curr = it->first;
+      uint32_t curr_end = curr.offset + curr.length;
+      uint32_t var_end  = offset + length;
+
+      // does variable overlap existing definition?
+      if (offset < curr_end && var_end > curr.offset) {
+        if (offset <= curr.offset && var_end >= curr_end) {
+          // variable fully overlaps current
+          ++it;
+          continue;
+        } else if (offset < curr.offset) {
+          // variable overlaps on the left
+          create_split_definitions(split_list, curr, curr.offset, var_end - curr.offset);
+          create_split_definitions(split_list, curr, var_end, curr_end - var_end);
+        } else if (var_end > curr_end) {
+          // variable overlaps on the right
+          create_split_definitions(split_list, curr, curr.offset, offset - curr.offset);
+          create_split_definitions(split_list, curr, offset, curr_end - offset);
+        } else {
+          // variable fully included
+          if (offset != curr.offset) {
+            create_split_definitions(split_list, curr, curr.offset, offset - curr.offset);
+          }
+          create_split_definitions(split_list, curr, offset, var_end - offset);
+          if (var_end != curr_end) {
+            create_split_definitions(split_list, curr, var_end, curr_end - var_end);
+          }
+        }
+        // remove entry
+        it = defs.erase(it);
+      } else {
+        ++it;
+      }
+    }
+
+    // insert split entries
+    if (!split_list.empty()) {
+      for (auto& item : split_list) {
+        defs[item.first] = item.second;
+      }
+    }
+  }
+
+  //--
+  uint32_t var_offset = offset;
+
   // add new definitions to current block
-  for (auto it = slices.begin(), end = slices.end();
+  for (auto it = defs.begin(), end = defs.end();
        length != 0 && it != end; ++it) {
     auto& curr = it->first;
     uint32_t curr_end = curr.offset + curr.length;
@@ -825,18 +831,18 @@ void context::conditional_assign(
       if (offset == curr.offset
        && var_end == curr_end) {
         // variable strictly overlaps current definition
-        add_new_definition(offset, length);
+        add_new_definition(var_offset, offset, length);
         length = 0; // no need to continue
       } else if (offset < curr.offset) {
         // variable overlaps current definition on the left
-        add_new_definition(offset, curr.offset - offset);
-        add_new_definition(curr.offset, curr.length);
+        add_new_definition(var_offset, offset, curr.offset - offset);
+        add_new_definition(var_offset, curr.offset, curr.length);
         uint32_t delta = (curr.offset - offset) + curr.length;
         offset += delta;
         length -= delta;
       } else if (var_end > curr_end) {
         // variable overlaps current definition on the right
-        add_new_definition(curr.offset, curr.length);
+        add_new_definition(var_offset, curr.offset, curr.length);
         offset += curr.length;
         length -= curr.length;
       } else {
@@ -846,7 +852,7 @@ void context::conditional_assign(
     } else if (std::next(it) == end
             || var_end <= curr.offset) {
       // no overlap with current and next
-      add_new_definition(offset, length);
+      add_new_definition(var_offset, offset, length);
       length = 0; // no need to continue
     } else {
       // definitions no not overlap
@@ -855,7 +861,7 @@ void context::conditional_assign(
   }
 
   if (length != 0) {
-    add_new_definition(offset, length);
+    add_new_definition(var_offset, offset, length);
   }
 }
 
@@ -872,73 +878,6 @@ context::emit_conditionals(lnodeimpl* dst,
   typedef std::list<std::pair<lnodeimpl*, lnodeimpl*>> branch_info_t;
 
   //--
-  auto branch_optimizer = [&](lnodeimpl* key, branch_info_t& values)->lnodeimpl* {
-    // ensure default value exist
-    assert(nullptr == values.back().first && values.back().second);
-
-    {
-      // skip paths with value equal to default value
-      auto df_value = values.back().second;
-      lnodeimpl* skip_pred = nullptr;
-      for (auto it = values.begin(), end = values.end(); it != end;) {
-        if (it->first
-         && it->second == df_value) {
-          if (nullptr == key) {
-            if (skip_pred) {
-              skip_pred = this->create_node<opimpl>(ch_op::orb, 1, false, skip_pred, it->first, branch->sloc);
-            } else {
-              skip_pred = it->first;
-            }
-          }
-          it = values.erase(it);
-        } else {
-          if (it->first && skip_pred) {
-            auto not_skip_pred = this->create_node<opimpl>(ch_op::inv, 1, false, skip_pred, branch->sloc);
-            it->first = this->create_node<opimpl>(ch_op::andb, 1, false, it->first, not_skip_pred, branch->sloc);
-            skip_pred = nullptr;
-          }
-          ++it;
-        }
-      }
-    }
-
-    // return single assignment as default value
-    if (1 ==  values.size()) {
-      assert(nullptr == values.front().first);
-      return values.front().second;
-    }
-
-    // coallesce cascading ternary branches sharing the same default value
-    // p2 ? (p1 ? t1 : f1) : f1 => (p1 & p2) ? t1 : f1;
-    if (2 == values.size()) {
-      auto _true = dynamic_cast<selectimpl*>(values.front().second);
-      if (_true) {
-        uint32_t num_srcs = _true->has_key() ? 4 : 3;
-        if (_true->num_srcs() == num_srcs
-         && _true->src(num_srcs-1) == values.back().second) {
-          // combine predicates
-          auto pred0 = values.front().first;
-          if (key) {
-            pred0 = this->create_node<opimpl>(ch_op::eq, 1, false, key, pred0, branch->sloc);
-          }
-          auto pred1 = _true->src(0).impl();
-          if (_true->has_key()) {
-            // create predicate
-            pred1 = this->create_node<opimpl>(ch_op::eq, 1, false, pred1, _true->src(1).impl(), branch->sloc);
-            // remove key from src list
-            _true->remove_key();
-          }
-          auto pred = this->create_node<opimpl>(ch_op::andb, 1, false, pred0, pred1, branch->sloc);
-          _true->src(0) = pred;
-          return _true;
-        }
-      }
-    }
-
-    return nullptr;
-  };
-
-  //--
   auto emit_conditional_block = [&](const cond_block_t* block,
                                     lnodeimpl* current)->lnodeimpl* {
     // get existing definition in current block
@@ -946,10 +885,12 @@ context::emit_conditionals(lnodeimpl* dst,
     if (it != defs.end()) {
       current = it->second;
     }
+
     // recurse emit conditionals from nested blocks
     for (auto br : block->branches) {
       current = emit_conditional_branch(br, current);
     }
+
     return current;
   };
 
@@ -959,41 +900,41 @@ context::emit_conditionals(lnodeimpl* dst,
     uint32_t changed = 0;
     branch_info_t values;
 
+    // get definitions
     for (auto block : branch->blocks) {
-      // get definition
       auto value = emit_conditional_block(block, current);
       values.emplace_back(block->pred, value);
       changed |= (value != current);
     }
 
-    if (changed) {
-      // add default value if not provided
-      if (values.back().first) {
-         values.emplace_back(nullptr, current);
-      }
+    if (!changed)
+      return current;
 
-      // optimize the branch
-      auto ret = branch_optimizer(branch->key, values);
-      if (ret)
-        return ret;
-
-      // create select node
-      auto sel = this->create_node<selectimpl>(
-                          current->size(), branch->key, branch->sloc);
-      for (auto& value : values) {
-        auto pred = value.first;
-        if (pred) {
-          // the case predicate should be a literal value
-          assert(!branch->key || type_lit == pred->type());
-          sel->srcs().push_back(pred);
-        }
-        sel->srcs().push_back(value.second);
-      }
-
-      return sel;
+    // add default value if not provided
+    if (values.back().first) {
+       values.emplace_back(nullptr, current);
     }
 
-    return current;
+    // return single assignment as default value
+    if (1 ==  values.size()) {
+      assert(nullptr == values.front().first);
+      return values.front().second;
+    }
+
+    // create select node
+    auto sel = this->create_node<selectimpl>(
+                        current->size(), branch->key, branch->sloc);
+    for (auto& value : values) {
+      auto pred = value.first;
+      if (pred) {
+        // the case predicate should be a literal value
+        assert(!branch->key || type_lit == pred->type());
+        sel->add_src(pred);
+      }
+      sel->add_src(value.second);
+    }
+
+    return sel;
   };
 
   // get current variable value
@@ -1003,7 +944,7 @@ context::emit_conditionals(lnodeimpl* dst,
   auto it = cond_inits_.find(dst->id());
   if (it != cond_inits_.end()) {
     current = emit_conditional_block(it->second, current);
-  } else {    
+  } else {
     current = emit_conditional_branch(branch, current);
   }
 
@@ -1011,8 +952,8 @@ context::emit_conditionals(lnodeimpl* dst,
 }
 
 lnodeimpl* context::create_predicate(const source_location& sloc) {
-  auto zero = this->create_literal(sdata_type(1, false));
-  auto one = this->create_literal(sdata_type(1, true));
+  auto zero = this->create_literal(sdata_type(1, 0));
+  auto one = this->create_literal(sdata_type(1, 1));
 
   // create predicate variable
   auto predicate = this->create_node<proxyimpl>(zero, 0, 1, sloc, "predicate");
@@ -1031,7 +972,7 @@ bindimpl* context::current_binding() {
 void context::register_tap(const lnode& node,
                            const std::string& name,
                            const source_location& sloc) {
-  auto sid = identifier_from_string(name);  
+  auto sid = identifier_from_string(name);
   auto num_dups = dup_tap_names_.insert(sid);
   if (num_dups) {
     sid = stringf("tap_%s_%ld", sid.c_str(), num_dups);
@@ -1093,20 +1034,20 @@ void context::dump_cfg(lnodeimpl* target, std::ostream& out) {
       }
     }
   };
-  
+
   for (auto node : taps_) {
     auto tap = reinterpret_cast<tapimpl*>(node);
     taps[tap->target().id()] = tap;
   }
-  
+
   visited_nodes.insert(target->id());
-  
+
   if (type_tap == target->type()) {
     auto tap = reinterpret_cast<tapimpl*>(target);
     target = tap->target().impl();
     target->print(out);
     out << " // " << tap->name();
-  } else {  
+  } else {
     target->print(out);
   }
 

@@ -25,10 +25,6 @@ public:
     return this->src(1);
   }
 
-  lnode& next() {
-    return this->src(1);
-  }
-
   bool has_enable() const {
     return (enable_idx_ != -1);
   }

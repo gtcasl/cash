@@ -4,21 +4,14 @@
 
 using namespace ch::internal;
 
-static void add_port(bindportimpl* bindport, std::vector<lnode>& list) {
-  // lookup existing binding
-  size_t index = 0;
-  for (;index < list.size(); ++index) {
+static uint32_t find_port_index(bindportimpl* bindport, const std::vector<lnode>& list) {
+  // lookup existing binding  
+  for (uint32_t index = 0; index < list.size(); ++index) {
     auto impl = reinterpret_cast<bindportimpl*>(list[index].impl());
     if (impl->ioport().id() == bindport->ioport().id())
-      break;
+      return index;
   }
-
-  // add to list
-  if (index < list.size()) {
-    list[index] = bindport;
-  } else {
-    list.push_back(bindport);
-  }
+  return -1;
 }
 
 bindimpl::bindimpl(context* ctx, context* module, const source_location& sloc)
@@ -77,7 +70,12 @@ void bindimpl::bind_input(lnodeimpl* src,
   ioport->add_bindport(input);
 
   // add to list
-  add_port(input, this->srcs());
+  auto p = find_port_index(input, this->srcs());
+  if (p < this->srcs().size()) {
+    this->set_src(p, input);
+  } else {
+    this->add_src(input);
+  }
 }
 
 void bindimpl::bind_output(lnodeimpl* dst,
@@ -91,7 +89,12 @@ void bindimpl::bind_output(lnodeimpl* dst,
   dst->write(0, output, 0, dst->size());
 
   // add to list
-  add_port(output, outputs_);
+  auto p = find_port_index(output, outputs_);
+  if (p < outputs_.size()) {
+    outputs_[p] = output;
+  } else {
+    outputs_.push_back(output);
+  }
 }
 
 void bindimpl::print(std::ostream& out) const {

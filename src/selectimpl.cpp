@@ -44,9 +44,10 @@ selectimpl::selectimpl(context* ctx,
                        lnodeimpl* key,
                        const source_location& sloc)
   : lnodeimpl(ctx, type_sel, size, sloc, "")
-  , key_idx_(-1) {
+  , has_key_(false) {
   if (key) {
-    key_idx_ = this->add_src(key);
+    this->add_src(key);
+    has_key_ = true;
   }
 }
 
@@ -56,7 +57,7 @@ lnodeimpl* selectimpl::clone(context* ctx, const clone_map& cloned_nodes) const 
     key = cloned_nodes.at(this->key().id());
   }
   auto node = ctx->create_node<selectimpl>(this->size(), key, sloc_);
-  for (uint32_t i = key_idx_ + 1; i < this->srcs().size(); ++i) {
+  for (uint32_t i = (has_key_ ? 1 : 0); i < this->srcs().size(); ++i) {
     auto src = cloned_nodes.at(this->src(i).id());
     node->add_src(src);
   }
@@ -67,7 +68,7 @@ lnodeimpl* selectimpl::clone(context* ctx, const clone_map& cloned_nodes) const 
 bool selectimpl::equals(const lnodeimpl& other) const {
   if (lnodeimpl::equals(other)) {
     auto _other = reinterpret_cast<const selectimpl&>(other);
-    return (key_idx_ == _other.key_idx_);
+    return (has_key_ == _other.has_key_);
   }
   return false;
 }
@@ -96,9 +97,9 @@ lnode select_impl::emit(const lnode& value) {
   auto sel = ctx_curr()->create_node<selectimpl>(value.size(), key, sloc);
   for (auto& stmt : stmts) {
     assert(!key || type_lit == stmt.first.impl()->type()); // case's predicate should be literal
-    sel->srcs().push_back(stmt.first);
-    sel->srcs().push_back(stmt.second);
+    sel->add_src(stmt.first);
+    sel->add_src(stmt.second);
   }
-  sel->srcs().push_back(value);
+  sel->add_src(value);
   return sel;
 }

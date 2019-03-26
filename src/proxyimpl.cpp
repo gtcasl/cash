@@ -206,7 +206,7 @@ void proxyimpl::add_source(uint32_t dst_offset,
         }
       }
       if (!in_use) {
-        this->erase_source(idx);
+        this->erase_source(idx, false);
       }
     }    
   }

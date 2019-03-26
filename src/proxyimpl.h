@@ -58,7 +58,7 @@ public:
                   uint32_t src_offset,
                   uint32_t length);
 
-  void erase_source(uint32_t src_idx, bool resize = false);
+  void erase_source(uint32_t src_idx, bool resize);
 
   int merge_adjacent_ranges(uint32_t index);
 

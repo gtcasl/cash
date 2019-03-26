@@ -22,10 +22,6 @@ protected:
 
   typedef std::unordered_map<uint32_t, std::unordered_set<const lnode*>> node_map_t;
 
-  void build_node_map();
-
-  void build_node_map(lnodeimpl* node);
-
   bool dead_code_elimination();
 
   bool constant_folding();
@@ -36,12 +32,21 @@ protected:
 
   bool proxies_coalescing();
 
+  bool branch_coalescing();
+
   lnodeimpl* constant_fold(proxyimpl* node);
   lnodeimpl* constant_fold(selectimpl* node);
   lnodeimpl* constant_fold(opimpl* node);
   lnodeimpl* constant_fold_bitwise(opimpl* node);
 
+  void map_initialize();
+
+  void map_add_node_srcs(lnodeimpl* node);
+
+  void map_remove_node_srcs(lnodeimpl* node);
+
   void map_replace_target(lnodeimpl* from, lnodeimpl* to);
+
   void map_delete(lnodeimpl* node);
 
   node_map_t node_map_;

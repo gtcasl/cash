@@ -99,6 +99,14 @@ public:
     return proxies_;
   }
 
+  auto& ops() const {
+    return ops_;
+  }
+
+  auto& sels() const {
+    return sels_;
+  }
+
   auto& inputs() const {
     return inputs_;
   }
@@ -293,7 +301,8 @@ protected:
   node_list proxies_;
   node_list inputs_;
   node_list outputs_;
-  node_list alus_;
+  node_list sels_;
+  node_list ops_;
   node_list cdomains_;
   node_list regs_;
   node_list mems_;

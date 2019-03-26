@@ -16,7 +16,8 @@ enum class cflags {
   disable_cfo = (1 << 9),
   disable_cse = (1 << 10),
   disable_pip = (1 << 11),
-  disable_pcx = (1 << 12)
+  disable_pcx = (1 << 12),
+  disable_bro = (1 << 13),
 };
 
 inline constexpr auto operator|(cflags lsh, cflags rhs) {

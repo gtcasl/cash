@@ -94,7 +94,7 @@ struct interval_t {
 compiler::compiler(context* ctx) : ctx_(ctx) {}
 
 void compiler::optimize() {
-  size_t cfo_total(0), dce_total(0), cse_total(0), pip_total(0), pcx_total(0);
+  size_t cfo_total(0), dce_total(0), cse_total(0), pip_total(0), pcx_total(0), bro_total(0);
 
   CH_DBG(2, "compiling %s (#%d) ...\n", ctx_->name().c_str(), ctx_->id());
 
@@ -104,7 +104,7 @@ void compiler::optimize() {
   this->dead_code_elimination();
   dce_total = tracker.deleted();
 
-  this->build_node_map();
+  this->map_initialize();
 
   for (;;) {
     bool changed = false;
@@ -116,6 +116,8 @@ void compiler::optimize() {
     auto pip = tracker.deleted();
     changed |= this->proxies_coalescing();
     auto pcx = tracker.deleted();
+    changed |= this->branch_coalescing();
+    auto bro = tracker.deleted();
 
     if (!changed)
       break;
@@ -124,6 +126,7 @@ void compiler::optimize() {
     cse_total += cse;
     pip_total += pip;
     pcx_total += pcx;
+    bro_total += bro;
   }
 
 #ifndef NDEBUG
@@ -148,20 +151,9 @@ void compiler::optimize() {
   CH_DBG(2, "*** deleted %lu CSE nodes\n", cse_total);
   CH_DBG(2, "*** deleted %lu PIP nodes\n", pip_total);
   CH_DBG(2, "*** deleted %lu PCX nodes\n", pcx_total);
+  CH_DBG(2, "*** deleted %lu BRO nodes\n", bro_total);
   CH_DBG(2, "Before optimization: %lu\n", orig_num_nodes);
   CH_DBG(2, "After optimization: %lu\n", tracker.current());
-}
-
-void compiler::build_node_map(lnodeimpl* node) {
-  for (auto& src : node->srcs()) {
-    node_map_[src.id()].emplace(&src);
-  }
-}
-
-void compiler::build_node_map() {
-  for (auto node : ctx_->nodes()) {
-    build_node_map(node);
-  }
 }
 
 bool compiler::dead_code_elimination() {
@@ -697,12 +689,12 @@ lnodeimpl* compiler::constant_fold_bitwise(opimpl* node) {
     } else
     if (node->size() == src0->size() && node->size() == src1->size() && src0_is_ones) {
       auto inv = ctx_->create_node<opimpl>(ch_op::inv, node->size(), false, src1, node->sloc());
-      this->build_node_map(inv);
+      this->map_add_node_srcs(inv);
       return inv;
     } else
     if (node->size() == src0->size() && node->size() == src1->size() && src1_is_ones) {
       auto inv = ctx_->create_node<opimpl>(ch_op::inv, node->size(), false, src0, node->sloc());
-      this->build_node_map(inv);
+      this->map_add_node_srcs(inv);
       return inv;
     }
     break;
@@ -1000,25 +992,191 @@ bool compiler::proxies_coalescing() {
   return changed;
 }
 
-void compiler::map_replace_target(lnodeimpl* from, lnodeimpl* to) {
-  // update all nodes pointing to source to now point to target
-  // and unregister source's references
-  auto from_it = node_map_.find(from->id());
-  assert(from_it != node_map_.end());
-  auto& to_refs = node_map_[to->id()];
-  for (auto node : from_it->second) {
-    *const_cast<lnode*>(node) = to;
-    to_refs.emplace(node);
-  }
-}
+bool compiler::branch_coalescing() {
+  if (platform::self().cflags() & cflags::disable_bro)
+    return false;
 
-void compiler::map_delete(lnodeimpl* node) {
-  auto it = node_map_.find(node->id());
-  assert(it != node_map_.end());
-  for (auto& src : node->srcs()) {
-    node_map_[src.id()].erase(&src);
+  CH_DBG(3, "Begin Compiler::BRO\n");
+
+  bool changed = false;
+
+  //--
+  auto remove_node_src = [&](lnodeimpl* node, uint32_t index) {
+    auto impl0 = node->src(index + 0).impl();
+    auto impl1 = node->src(index + 1).impl();
+
+    this->map_remove_node_srcs(node);
+    node->remove_src(index + 1); // higher index first
+    node->remove_src(index + 0);
+    this->map_add_node_srcs(node);
+
+    if (0 == node_map_.count(impl0->id())) {
+      ctx_->delete_node(impl0);
+    }
+
+    if (0 == node_map_.count(impl1->id())) {
+      ctx_->delete_node(impl1);
+    }
+
+    changed = true;
+  };
+
+  //--
+  auto coalesce_branch = [&](selectimpl* sel)->lnodeimpl* {
+    auto has_key = sel->has_key();
+    auto start = has_key ? 1 : 0;
+
+    // skip paths with value equal to default value
+    {
+      auto df_value = sel->srcs().back();
+      lnodeimpl* skip_pred = nullptr;
+      std::vector<uint32_t> deleted; // ensure deletion from high to low indices
+      for (uint32_t i = start, n = sel->srcs().size() - 1; i < n; i += 2) {
+        auto pred  = sel->src(i+0).impl();
+        auto value = sel->src(i+1).impl();
+        if (value == df_value) {
+          if (!has_key) {
+            if (skip_pred) {
+              skip_pred = ctx_->create_node<opimpl>(ch_op::orb, 1, false, skip_pred, pred, sel->sloc());
+              this->map_add_node_srcs(skip_pred);
+            } else {
+              skip_pred = pred;
+            }
+          }
+          deleted.push_back(i);
+        } else {
+          if (skip_pred) {
+            skip_pred = ctx_->create_node<opimpl>(ch_op::inv, 1, false, skip_pred, sel->sloc());
+            this->map_add_node_srcs(skip_pred);
+            pred = ctx_->create_node<opimpl>(ch_op::andb, 1, false, pred, skip_pred, sel->sloc());
+            this->map_add_node_srcs(pred);
+
+            this->map_remove_node_srcs(sel);
+            sel->set_src(i+0, pred);
+            this->map_add_node_srcs(sel);
+
+            skip_pred = nullptr;
+          }
+        }
+      }
+
+      for (auto it = deleted.rbegin(); it != deleted.rend();) {
+        remove_node_src(sel, *it++);
+      }
+    }
+
+    // merge conditional select blocks with same values
+    if (!has_key) {
+      ordered_set<uint32_t> dups; // ensure deletion from high to low indices
+      for (uint32_t i = 0, n = sel->srcs().size() - 1; i < n; i += 2) {
+        auto pred1  = sel->src(i+0).impl();
+        auto value1 = sel->src(i+1).impl();
+        auto m = i;
+
+        for (uint32_t j = i + 2; j < n; j += 2) {
+          auto value2 = sel->src(j+1).impl();
+          if (value2 == value1) {
+            dups.insert(j);
+            m = j;
+          }
+        }
+
+        if (!dups.empty()) {
+          lnodeimpl* skip_pred = nullptr;
+          for (uint32_t j = i + 2; j < m; j += 2) {
+            if (dups.count(j) != 0)
+              continue;
+            auto pred2 = sel->src(j+0).impl();
+            if (skip_pred) {
+              skip_pred = ctx_->create_node<opimpl>(ch_op::orb, 1, false, skip_pred, pred2, sel->sloc());
+              this->map_add_node_srcs(skip_pred);
+            } else {
+              skip_pred = pred2;
+            }
+          }
+
+          for (auto dup : dups) {
+            pred1 = ctx_->create_node<opimpl>(ch_op::orb, 1, false, pred1, sel->src(dup).impl(), sel->sloc());
+            this->map_add_node_srcs(pred1);
+          }
+
+          if (skip_pred) {
+            skip_pred = ctx_->create_node<opimpl>(ch_op::inv, 1, false, skip_pred, sel->sloc());
+            this->map_add_node_srcs(skip_pred);
+            pred1 = ctx_->create_node<opimpl>(ch_op::andb, 1, false, pred1, skip_pred, sel->sloc());
+            this->map_add_node_srcs(pred1);
+          }
+
+          this->map_remove_node_srcs(sel);
+          sel->set_src(i+0, pred1);
+          this->map_add_node_srcs(sel);
+
+          for (auto it = dups.rbegin(); it != dups.rend();) {
+            remove_node_src(sel, *it++);
+            n -= 2; // update size
+          }
+
+          dups.clear();
+        }
+      }
+    }
+
+    if (1 == sel->srcs().size()) {
+      return sel->src(0).impl();
+    }
+
+    // coallesce cascading ternary branches sharing the same default value
+    // p2 ? (p1 ? t1 : f1) : f1 => (p1 & p2) ? t1 : f1;
+    uint32_t sel_num_srcs = has_key ? 4 : 3;
+    if (sel->srcs().size() == sel_num_srcs) {
+      auto _true = dynamic_cast<selectimpl*>(sel->src(sel_num_srcs-2).impl());
+      if (_true) {
+        auto true_has_key = _true->has_key();
+        uint32_t true_num_srcs = true_has_key ? 4 : 3;
+        if (_true->num_srcs() == true_num_srcs
+         && _true->src(true_num_srcs-1) == sel->src(sel_num_srcs-1).impl()) {
+          // combine predicates
+          auto pred0 = sel->src(sel_num_srcs-3).impl();
+          if (has_key) {
+            pred0 = ctx_->create_node<opimpl>(ch_op::eq, 1, false, sel->key().impl(), pred0, sel->sloc());
+            this->map_add_node_srcs(pred0);
+          }
+          auto pred1 = _true->src(true_num_srcs-3).impl();
+          if (true_has_key) {
+            // create predicate
+            pred1 = ctx_->create_node<opimpl>(ch_op::eq, 1, false, pred1, _true->src(1).impl(), sel->sloc());
+            this->map_add_node_srcs(pred1);
+          }
+          auto pred = ctx_->create_node<opimpl>(ch_op::andb, 1, false, pred0, pred1, sel->sloc());
+          this->map_add_node_srcs(pred);
+
+          this->map_remove_node_srcs(_true);
+          if (true_has_key) {
+            _true->remove_key();
+          }
+          _true->set_src(0, pred);
+          this->map_add_node_srcs(_true);
+
+          return _true;
+        }
+      }
+    }
+
+    return nullptr;
+  };
+
+  for (auto it = ctx_->sels().begin(), end = ctx_->sels().end(); it != end;) {
+    auto sel = reinterpret_cast<selectimpl*>(*it++);
+    auto x = coalesce_branch(sel);
+    if (x) {
+      map_replace_target(sel, x);
+      this->map_delete(sel);
+      ctx_->delete_node(sel);
+      changed = true;
+    }
   }
-  node_map_.erase(it);
+
+  return changed;
 }
 
 void compiler::create_merged_context(context* ctx) {
@@ -1361,4 +1519,50 @@ bool compiler::build_bypass_list(std::unordered_set<uint32_t>& out, context* ctx
   }
 
   return !has_data_nodes;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void compiler::map_initialize() {
+  for (auto node : ctx_->nodes()) {
+    this->map_add_node_srcs(node);
+  }
+}
+
+void compiler::map_add_node_srcs(lnodeimpl* node) {
+  for (auto& src : node->srcs()) {
+    node_map_[src.id()].emplace(&src);
+  }
+}
+
+void compiler::map_remove_node_srcs(lnodeimpl* node) {
+  [[maybe_unused]] size_t n;
+  for (auto& src : node->srcs()) {
+    auto it = node_map_.find(src.id());
+    assert(it != node_map_.end());
+    n = it->second.erase(&src);
+    assert(n);
+    if (it->second.empty()) {
+      node_map_.erase(it);
+    }
+  }
+}
+
+void compiler::map_delete(lnodeimpl* node) {
+  map_remove_node_srcs(node);
+  auto it = node_map_.find(node->id());
+  assert(it != node_map_.end());
+  node_map_.erase(it);
+}
+
+void compiler::map_replace_target(lnodeimpl* from, lnodeimpl* to) {
+  // update all nodes pointing to source to now point to target
+  // and unregister source's references
+  auto from_it = node_map_.find(from->id());
+  assert(from_it != node_map_.end());
+  auto& to_refs = node_map_[to->id()];
+  for (auto node : from_it->second) {
+    *const_cast<lnode*>(node) = to;
+    to_refs.emplace(node);
+  }
 }

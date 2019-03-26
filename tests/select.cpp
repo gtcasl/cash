@@ -278,18 +278,18 @@ TEST_CASE("conditionals", "[conditionals]") {
     TEST([]()->ch_bool {
       ch_int8 a(1), b(1), x, y;
       __if (a == 1) {
-        ch_tie(y, x) = 1;
+        ch_tie(y, x) = 0x0706;
         __if (b == 0) {
           x = 1;
         } __elif (b == 1) {
-          y = 1;
+          y = 2;
         };
       } __else {
         x = 4;
         y = 5;
       };
       //ch_println("x={0}, y={1}", x, y);
-      return (x == 1 && y == 1);
+      return (x == 6 && y == 2);
     });
 
     TEST([]()->ch_bool {
@@ -336,6 +336,16 @@ TEST_CASE("conditionals", "[conditionals]") {
       return (b == 2 && c == 2);
     });
     TEST([]()->ch_bool {
+      ch_int4 a(0), b(1), x(1);
+      __if (x == 1) {
+        a = 3;
+      } __else {
+        b = 4;
+      };
+      //ch_println("b={0}", b);
+      return (b == 1);
+    });
+    TEST([]()->ch_bool {
       ch_int4 a(0), b(0);
       __if (a == 1) {
         b = 1;
@@ -360,6 +370,71 @@ TEST_CASE("conditionals", "[conditionals]") {
       };
       //ch_println("b={0}", b);
       return (b == 0100_b);
+    });
+    TEST([]()->ch_bool {
+      ch_int4 a(3), b(0), c(2);
+      __if (a == 1) {
+        b = 1;
+      } __elif (c == 2) {
+        b = 3;
+      } __elif (a == 3) {
+        b = 3;
+      } __else {
+        b = 3;
+      };
+      return (b == 3);
+    });
+    TEST([]()->ch_bool {
+      ch_int4 a(3), b(0), c(2);
+      __if (a == 1) {
+        b = 3;
+      } __elif (c == 2) {
+        b = 2;
+      } __elif (a == 3) {
+        b = 3;
+      } __else {
+        b = 3;
+      };
+      return (b == 2);
+    });
+    TEST([]()->ch_bool {
+      ch_int4 a(3), b(0), c(2);
+      __if (a == 1) {
+        b = 1;
+      } __elif (c == 2) {
+        b = 2;
+      } __elif (c == 4) {
+        b = 4;
+      } __elif (a == 3) {
+        b = 1;
+      } __else {
+        b = 3;
+      };
+      return (b == 2);
+    });
+    TEST([]()->ch_bool {
+      ch_int4 a(0), b(0), c(2), d(2);
+      __if (a == 1) {
+        b = 1;
+      } __elif (c == 2) {
+        b = 1;
+      } __elif (d == 2) {
+        b = 3;
+      } __else {
+        b = 4;
+      };
+      return (b == 1);
+    });
+    TEST([]()->ch_bool {
+      ch_int4 a(0), b(0), c(2);
+      __if (a == 1) {
+        b = 1;
+      } __elif (c == 2) {
+        b = 1;
+      } __else {
+        b = 1;
+      };
+      return (b == 1);
     });
   }
   SECTION("switch", "[switch]") {
@@ -411,7 +486,8 @@ TEST_CASE("conditionals", "[conditionals]") {
          d = c;
          e = c;         
       };
-      return (d + e == 3);
+      //ch_println("d={}, e={}", d, e);
+      return (d == 2 && e == 1);
     });
     TEST([]()->ch_bool {
       ch_bit4 a(0), b(0);
@@ -514,6 +590,51 @@ TEST_CASE("conditionals", "[conditionals]") {
         a = c3;
       };
       return (a == c3);
+    });
+
+    TEST([]()->ch_bool {
+      ch_bit128 k(0), c1(3), c3(1), a;
+      __switch (k)
+      __case (1) {
+        a = c1;
+      }
+      __case (2) {
+        a = c3;
+      }
+      __default {
+        a = c3;
+      };
+      return (a == c3);
+    });
+
+    TEST([]()->ch_bool {
+      ch_bit128 k(2), c1(3), c3(1), a;
+      __switch (k)
+      __case (1) {
+        a = c1;
+      }
+      __case (2) {
+        a = c1;
+      }
+      __default {
+        a = c3;
+      };
+      return (a == c1);
+    });
+
+    TEST([]()->ch_bool {
+      ch_bit128 k(1), c1(3), c3(1), a;
+      __switch (k)
+      __case (1) {
+        a = c1;
+      }
+      __case (2) {
+        a = c1;
+      }
+      __default {
+        a = c1;
+      };
+      return (a == c1);
     });
   }
 }

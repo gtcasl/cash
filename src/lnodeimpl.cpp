@@ -89,15 +89,10 @@ lnodeimpl::lnodeimpl(context* ctx,
 
 lnodeimpl::~lnodeimpl() {}
 
-std::vector<lnode>& lnodeimpl::srcs() {
+void lnodeimpl::set_src(uint32_t index, const lnode& src) {
+  assert(index < srcs_.size());  
+  srcs_[index] = src;
   hash_ = 0;
-  return srcs_;
-}
-
-lnode& lnodeimpl::src(uint32_t index) {
-  assert(index < srcs_.size());
-  hash_ = 0;
-  return srcs_[index];
 }
 
 uint32_t lnodeimpl::add_src(const lnode& src) {

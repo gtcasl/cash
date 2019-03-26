@@ -9,16 +9,16 @@ class selectimpl : public lnodeimpl {
 public:
 
   bool has_key() const {
-    return key_idx_ != -1;
+    return has_key_;
   }
 
-  auto& key() const {
-    return this->src(key_idx_);
+  const auto& key() const {
+    return this->src(0);
   }
 
   void remove_key() {
-    this->srcs().erase(this->srcs().begin());
-    key_idx_ = -1;
+    this->remove_src(0);
+    has_key_ = false;
   }
 
   bool is_ternary() const {
@@ -38,7 +38,7 @@ protected:
              lnodeimpl* key,
              const source_location& sloc);
 
-  int key_idx_;
+  bool has_key_;
 
   friend class context;
 };
