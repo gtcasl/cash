@@ -437,6 +437,7 @@ bool compiler::constant_folding() {
         continue;
       this->map_delete(dn);
     }
+    assert(node_map_.find(dn->id()) == node_map_.end());
     ctx_->delete_node(dn);
   }
 
@@ -1542,9 +1543,6 @@ void compiler::map_remove_node_srcs(lnodeimpl* node) {
     assert(it != node_map_.end());
     n = it->second.erase(&src);
     assert(n);
-    if (it->second.empty()) {
-      node_map_.erase(it);
-    }
   }
 }
 
@@ -1552,12 +1550,14 @@ void compiler::map_delete(lnodeimpl* node) {
   map_remove_node_srcs(node);
   auto it = node_map_.find(node->id());
   assert(it != node_map_.end());
+  assert(it->second.empty());
   node_map_.erase(it);
 }
 
 void compiler::map_replace_target(lnodeimpl* from, lnodeimpl* to) {
   // update all nodes pointing to source to now point to target
   // and unregister source's references
+  assert(from != to);
   auto from_it = node_map_.find(from->id());
   assert(from_it != node_map_.end());
   auto& to_refs = node_map_[to->id()];
@@ -1565,4 +1565,5 @@ void compiler::map_replace_target(lnodeimpl* from, lnodeimpl* to) {
     *const_cast<lnode*>(node) = to;
     to_refs.emplace(node);
   }
+  from_it->second.clear();
 }
