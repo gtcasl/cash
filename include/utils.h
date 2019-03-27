@@ -28,7 +28,7 @@ void dbprint(int level, const char* format, ...);
 
 std::string identifier_from_string(const std::string& name);
 
-std::string identifier_from_typeid(const std::string& name);
+std::string identifier_from_typeid(const std::string& name, bool remove_template_params = false);
 
 int char2int(char x, int base);
 

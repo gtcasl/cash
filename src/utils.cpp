@@ -69,19 +69,23 @@ std::string ch::internal::identifier_from_string(const std::string& name) {
   return ret;
 }
 
-std::string ch::internal::identifier_from_typeid(const std::string& name) {
+std::string ch::internal::identifier_from_typeid(const std::string& name,
+                                                 bool remove_template_params) {
   int status;
   char* demangled = abi::__cxa_demangle(name.c_str(), 0, 0, &status);
   CH_CHECK(0 == status, "abi::__cxa_demangle() failed");
   std::string sd(demangled);
   ::free(demangled);
+  if (remove_template_params) {
+    sd = std::regex_replace(sd, std::regex("<.*>"), "");
+  }
   // remove all spaces, close brakets and parenthesis
-  auto ss = std::regex_replace(sd, std::regex("[\\s>\\(\\)]+"), "");
+  sd = std::regex_replace(sd, std::regex("[\\s>\\(\\)]+"), "");
   // remove all namespaces
-  auto sn = std::regex_replace(ss, std::regex("[a-zA-Z_][a-zA-Z0-9_]*::"), "");
+  sd = std::regex_replace(sd, std::regex("[a-zA-Z_][a-zA-Z0-9_]*::"), "");
   // replace template open brackets and commas
-  auto st = std::regex_replace(sn, std::regex("[<,]"), "_");
-  return st;
+  sd = std::regex_replace(sd, std::regex("[<,]"), "_");
+  return sd;
 }
 
 int ch::internal::char2int(char x, int base) {

@@ -65,7 +65,7 @@ public:
 
   template <typename... Args>
   ch_device(Args&&... args)
-    : device(std::type_index(typeid(T)), (sizeof...(Args) != 0), idname<T>())
+    : device(std::type_index(typeid(T)), (sizeof...(Args) != 0), idname<T>(true))
     , _(this->build(std::forward<Args>(args)...))
     , io(*_)
   {}
