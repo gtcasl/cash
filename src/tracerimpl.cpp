@@ -640,16 +640,22 @@ void tracerimpl::toVerilator(std::ofstream& out,
   };
 
   //--
-  auto print_value = [](std::ostream& out, const bv_t& value) {
+  auto print_value = [](std::ostream& out,
+                        const bv_t& value,
+                        uint32_t size = 0,
+                        uint32_t offset = 0) {
     out << "0x";
+
+    bool skip_zeros = true;
+    if (0 == size) {
+      size = value.size();
+    }
+
     auto oldflags = out.flags();
     out.setf(std::ios_base::hex, std::ios_base::basefield);
 
-    bool skip_zeros = true;
-    uint32_t word = 0;
-    auto size = value.size();
-
-    for (auto it = value.begin() + (size - 1); size;) {
+    uint32_t word(0);
+    for (auto it = value.begin() + offset + (size - 1); size;) {
       word = (word << 0x1) | *it--;
       if (0 == (--size & 0x3)) {
         if (0 == size || (word != 0 ) || !skip_zeros) {
@@ -669,7 +675,6 @@ void tracerimpl::toVerilator(std::ofstream& out,
     CH_ABORT("multiple devices not supported!");
     return;
   }
-
 
   uint64_t tc = 0;
   auto mask_width = valid_mask_.size();
@@ -709,9 +714,19 @@ void tracerimpl::toVerilator(std::ofstream& out,
             }
             auto value = get_value(src_block, signal_size, in_offset);
             in_offset += signal_size;
-            out << "device->" << signal_name << "=";
-            print_value(out, value);
-            out << ";";
+            if (signal_size > 64) {
+              for (uint32_t j = 0; j < signal_size;) {
+                out << "device->" << signal_name << "[" << j << "]=";
+                auto s = (j+8 <= signal_size) ? 8 : (signal_size-j);
+                print_value(out, value, s, j);
+                out << ";";
+                j += s;
+              }
+            } else {
+              out << "device->" << signal_name << "=";
+              print_value(out, value);
+              out << ";";
+            }            
           }
         }
       }
@@ -745,9 +760,19 @@ void tracerimpl::toVerilator(std::ofstream& out,
 
             auto value = get_value(src_block, signal_size, out_offset);
             out_offset += signal_size;
-            out << "assert(device->" << signal_name << " == ";
-            print_value(out, value);
-            out << ");";
+            if (signal_size > 64) {
+              for (uint32_t j = 0; j < signal_size;) {
+                out << "assert(device->" << signal_name << "[" << j << "] == ";
+                auto s = (j+8 <= signal_size) ? 8 : (signal_size-j);
+                print_value(out, value, s, j);
+                out << ");";
+                j += s;
+              }
+            } else {
+              out << "assert(device->" << signal_name << " == ";
+              print_value(out, value);
+              out << ");";
+            }            
           } else {
             if (type_input == signal_type)
               continue;
@@ -763,9 +788,19 @@ void tracerimpl::toVerilator(std::ofstream& out,
             auto& prev = prev_values_.at(i);
             assert(prev.first);
             auto value = get_value(prev.first, signal_size, prev.second);
-            out << "assert(device->" << signal_name << " == ";
-            print_value(out, value);
-            out << ");";
+            if (signal_size > 64) {
+              for (uint32_t j = 0; j < signal_size;) {
+                out << "assert(device->" << signal_name << "[" << j << "] == ";
+                auto s = (j+8 <= signal_size) ? 8 : (signal_size-j);
+                print_value(out, value, s, j);
+                out << ");";
+                j += s;
+              }
+            } else {
+              out << "assert(device->" << signal_name << " == ";
+              print_value(out, value);
+              out << ");";
+            }
           }
         }
       }
