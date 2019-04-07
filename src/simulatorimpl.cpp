@@ -200,7 +200,10 @@ ch_simulator& ch_simulator::operator=(const ch_simulator& other) {
 }
 
 ch_simulator& ch_simulator::operator=(ch_simulator&& other) {
-  impl_ = std::move(other.impl_);
+  if (impl_) {
+    impl_->release();
+  }
+  impl_ = other.impl_;
   other.impl_ = nullptr;
   return *this;
 }
