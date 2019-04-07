@@ -2479,11 +2479,8 @@ private:
     auto src_end8 = src_lsb8 + length;
     if (src_end8 <= WORD_SIZE) {
       auto j_vtype = to_value_type(src_end8);
-      auto vsize = to_value_size(src_end8);
-      int src_idx = ceildiv(offset + length, 8) - (vsize / 8);
-      int src_lsb = offset - src_idx * 8;
-      auto j_src_value = jit_insn_load_relative(j_func_, src_ptr.base, src_ptr.offset + src_idx, j_vtype);
-      return this->emit_scalar_slice(j_src_value, src_lsb, length);
+      auto j_src_value = jit_insn_load_relative(j_func_, src_ptr.base, src_ptr.offset + (offset / 8), j_vtype);
+      return this->emit_scalar_slice(j_src_value, src_lsb8, length);
     } else {
       auto src_idx = offset / WORD_SIZE;
       auto src_lsb = offset % WORD_SIZE;
