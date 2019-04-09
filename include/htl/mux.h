@@ -9,44 +9,6 @@ using namespace ch::logic;
 using namespace extension;
 
 template <typename ArgN, typename ArgM, typename... Args>
-auto ch_hmux(const ch_bit<(2+sizeof...(Args))>& sel,
-             const ArgN& argN,
-             const ArgM& argM,
-             const Args&... args) {
-  static_assert((is_object_type_v<ArgN>), "invalid type");
-  static_assert((is_object_type_v<ArgM>), "invalid type");
-  static_assert((is_object_type_v<Args> && ...), "invalid type");
-  auto cs = ch_case(sel, (1 << sizeof...(Args)), argM);
-  int i = 0;
-  for_each_reverse([&](auto arg){ cs(1 << i++, arg); }, args...);
-  return cs(argN);
-}
-
-template <unsigned N, typename T, std::size_t M>
-auto ch_hmux(const ch_bit<N>& sel, const std::array<T, M>& args) {
-  static_assert(is_object_type_v<T>, "invalid type");
-  static_assert(N == M, "invalid size");
-  static_assert(N >= 2, "invalid size");
-  auto cs = ch_case(sel, 0x1, args[0]);
-  for (unsigned i = 1; i < N-1; ++i) {
-    cs(1 << i, args[i]);
-  }
-  return cs(args[N-1]);
-}
-
-template <unsigned N, unsigned M>
-auto ch_hmux(const ch_bit<N>& sel, const ch_bit<M>& args) {
-  static constexpr unsigned K = M / N;
-  static_assert(N*K == M, "invalid size");
-  static_assert(N >= 2, "invalid size");
-  auto cs = ch_case(sel, 0x1, ch_aslice<K>(args, 0));
-  for (unsigned i = 1; i < N-1; ++i) {
-    cs(1 << i, ch_aslice<K>(args, i));
-  }
-  return cs(ch_aslice<K>(args, N-1));
-}
-
-template <typename ArgN, typename ArgM, typename... Args>
 auto ch_mux(const ch_bit<(log2ceil(2+sizeof...(Args)))>& sel,
             const ArgN& argN,
             const ArgM& argM,
@@ -83,6 +45,47 @@ auto ch_mux(const ch_bit<N>& sel, const ch_bit<M>& args) {
     cs(i, ch_aslice<K>(args, i));
   }
   return cs(ch_aslice<K>(args, Q-1));
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+template <typename ArgN, typename... Args>
+auto ch_hmux(const ch_bit<(1+sizeof...(Args))>& sel,
+             const ArgN& argN,
+             const Args&... args) {
+  static_assert((is_object_type_v<ArgN>), "invalid type");
+  static_assert(sizeof...(Args) >= 1, "invalid size");
+  static_assert(sizeof...(Args) <= 63, "invalid size");
+  auto cs = ch_case(sel, (1ull << sizeof...(Args)), argN);
+  int i = 0;
+  for_each_reverse([&](auto arg){ cs(1ull << i++, arg); }, args...);
+  return cs(0);
+}
+
+template <unsigned N, typename T, std::size_t M>
+auto ch_hmux(const ch_bit<N>& sel, const std::array<T, M>& args) {
+  static_assert(is_object_type_v<T>, "invalid type");
+  static_assert(N == M, "invalid size");
+  static_assert(N >= 2, "invalid size");
+  static_assert(N <= 64, "invalid size");
+  auto cs = ch_case(sel, 0x1, args[0]);
+  for (unsigned i = 1; i < N; ++i) {
+    cs(1ull << i, args[i]);
+  }
+  return cs(0);
+}
+
+template <unsigned N, unsigned M>
+auto ch_hmux(const ch_bit<N>& sel, const ch_bit<M>& args) {
+  static constexpr unsigned K = M / N;
+  static_assert(N*K == M, "invalid size");
+  static_assert(N >= 2, "invalid size");
+  static_assert(N <= 64, "invalid size");
+  auto cs = ch_case(sel, 0x1, ch_aslice<K>(args, 0));
+  for (unsigned i = 1; i < N; ++i) {
+    cs(1ull << i, ch_aslice<K>(args, i));
+  }
+  return cs(0);
 }
 
 }
