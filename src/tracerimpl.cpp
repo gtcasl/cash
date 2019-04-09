@@ -331,7 +331,7 @@ void tracerimpl::toTestBench(std::ofstream& out,
     case type_bindout: {
       std::stringstream ss;
       auto p = reinterpret_cast<bindportimpl*>(node);
-      ss << p->binding()->type() << "_" << p->binding()->name() << "_"
+      ss << p->binding()->name() << "_"
          << p->binding()->id() << "_" << p->ioport().name();
       return ss.str();
     }

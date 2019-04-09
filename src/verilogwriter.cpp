@@ -915,11 +915,13 @@ void verilogwriter::print_name(std::ostream& out, lnodeimpl* node, bool force) {
   case type_mwport:
   case type_udfc:
   case type_udfs:
-  case type_bind:
     print_unique_name(node);
     break;
   case type_time:
     out << "$time";
+    break;
+  case type_bind:
+    out << node->name() << "_" << node->id();
     break;
   case type_bindin:
   case type_bindout: {
