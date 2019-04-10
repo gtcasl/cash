@@ -25,13 +25,21 @@ regimpl::regimpl(context* ctx,
   , initdata_idx_(-1) {
   this->add_src(cd);
   this->add_src(next);
-  if (reset) {
-    reset_idx_ = this->add_src(reset);
-  }
+
   if (enable) {
     enable_idx_ = this->add_src(enable);
   }
+
+  if ((platform::self().cflags() & cflags::reg_init)
+   && !init_data) {
+    assert(!reset);
+    reset = ctx->current_reset(sloc);
+    init_data = ctx->create_literal(sdata_type(size, 0));
+  }
+
   if (init_data) {
+    assert(reset);
+    reset_idx_ = this->add_src(reset);
     initdata_idx_ = this->add_src(init_data);
   }
 }
@@ -119,7 +127,8 @@ logic_buffer ch::internal::createRegNode(unsigned size, const std::string& name,
   return reg;
 }
 
-logic_buffer ch::internal::createRegNode(const lnode& init_data, const std::string& name,
+logic_buffer ch::internal::createRegNode(const lnode& init_data,
+                                         const std::string& name,
                                          const sloc_getter&) {
   auto sloc = get_source_location();
   auto ctx  = init_data.impl()->ctx();
@@ -132,7 +141,8 @@ logic_buffer ch::internal::createRegNode(const lnode& init_data, const std::stri
   return reg;
 }
 
-logic_buffer ch::internal::copyRegNode(const lnode& node, const std::string& name,
+logic_buffer ch::internal::copyRegNode(const lnode& node,
+                                       const std::string& name,
                                        const sloc_getter&) {
   auto sloc   = get_source_location();
   auto reg    = reinterpret_cast<regimpl*>(node.impl());

@@ -2,6 +2,7 @@
 
 #include <string.h>
 #include <cash.h>
+#include "../src/platform.h"
 #include "catch.h"
 
 using namespace ch::internal;
@@ -152,11 +153,15 @@ auto TestFunction(F&& f, const T0& a, const T1& b, const T2& c, const T2& d) {
   return ret;
 }
 
+///////////////////////////////////////////////////////////////////////////////
+
 bool checkVerilog(const std::string& moduleName);
 
 bool TEST(const std::function<ch_bool()> &test, ch_tick cycles = 0);
 
 bool TESTX(const std::function<bool()> &test);
+
+///////////////////////////////////////////////////////////////////////////////
 
 class RetCheck {
 public:
@@ -170,4 +175,23 @@ public:
 
 private:
   int64_t count_;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+class auto_cflags_disable {
+public:
+  auto_cflags_disable(int flags) {
+    cflags_ = platform::self().cflags();
+    platform::self().set_cflags(cflags(cflags_ & ~flags));
+  }
+  auto_cflags_disable(cflags flags) {
+    cflags_ = platform::self().cflags();
+    platform::self().set_cflags(cflags(cflags_ & ~(int)flags));
+  }
+  ~auto_cflags_disable() {
+    platform::self().set_cflags(cflags_);
+  }
+private:
+  ch::internal::cflags cflags_;
 };

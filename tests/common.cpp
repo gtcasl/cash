@@ -6,6 +6,10 @@ static void begin_test() {
   std::cout << "running test #" << test_number++ << " ..." << std::endl;
 }
 
+static void end_test() {
+  //--
+}
+
 struct TestRunner {
   __io (
     __out (ch_bool) out
@@ -40,6 +44,7 @@ bool TEST(const std::function<ch_bool ()>& test, ch_tick cycles) {
 
   bool bRet = (bool)device.io.out;
   assert(bRet);
+  end_test();
   return bRet;
 }
 
@@ -47,6 +52,7 @@ bool TESTX(const std::function<bool()>& test) {
   begin_test();
   bool bRet = test();
   assert(bRet);
+  end_test();
   return bRet;
 }
 

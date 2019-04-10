@@ -150,23 +150,6 @@ private:
   auto pfn = is_signed ? fname<true, block_type> : fname<false, block_type>; \
   this->emit_op_call_bitwise(reinterpret_cast<void*>(pfn), #fname, __VA_ARGS__)
 
-static uint32_t to_value_size(uint32_t size) {
-  uint32_t bytes = ceildiv(size, 8);
-  switch (bytes) {
-  case 0:
-    return 0;
-  case 1:
-    return 8;
-  case 2:
-    return 16;
-  case 3:
-  case 4:
-    return 32;
-  default:
-    return 64;
-  }
-}
-
 static bool is_value_size(uint32_t size) {
   switch (size) {
   case 8:
@@ -346,7 +329,12 @@ struct sim_state_t {
 typedef int (*pfn_entry)(sim_state_t*);
 
 struct sim_ctx_t {
-  sim_ctx_t() : entry(nullptr) {
+  sim_ctx_t()
+  #ifdef JIT_BACKEND_INTERP
+    : j_func(nullptr) {
+  #else
+    : entry(nullptr) {
+  #endif
     j_ctx = jit_context_create();
   }
 
@@ -357,8 +345,12 @@ struct sim_ctx_t {
   }
 
   sim_state_t state;
+#ifdef JIT_BACKEND_INTERP
+  jit_function_t j_func;
+#else
   pfn_entry entry;
-  jit_context_t j_ctx;
+#endif
+  jit_context_t j_ctx;  
 };
 
 class compiler {
@@ -474,8 +466,12 @@ public:
       fclose(file);
     }
 
+  #ifdef JIT_BACKEND_INTERP
+    sim_ctx_->j_func = j_func_;
+  #else
     // get closure
     sim_ctx_->entry = reinterpret_cast<pfn_entry>(jit_function_to_closure(j_func_));
+  #endif
   }
 
 private:
@@ -3221,7 +3217,16 @@ void driver::initialize(const std::vector<lnodeimpl*>& eval_list) {
 }
 
 void driver::eval() {
-  int ret = (sim_ctx_->entry)(&sim_ctx_->state);
+  int ret;
+#ifdef JIT_BACKEND_INTERP
+  void* arg = &sim_ctx_->state;
+  void* args[1] = {&arg};
+  jit_int j_ret;
+  jit_function_apply(sim_ctx_->j_func, args, &j_ret);
+  ret = static_cast<int>(j_ret);
+#else
+  ret = (sim_ctx_->entry)(&sim_ctx_->state);
+#endif
   if (ret) {
     error_handler(ret);
   }

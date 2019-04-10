@@ -6,6 +6,7 @@ project(cash VERSION 0.1.0 LANGUAGES CXX)
 include(ExternalProject)
 
 option(LIBJIT "Enable libjit." ON)
+option(INTERPRETER "Enable libjit interpreter." ON)
 option(CODECOV "Enable code coverage." OFF)
 
 set(DEFAULT_BUILD_TYPE "Release")
@@ -67,14 +68,18 @@ target_link_libraries(${PROJECT_NAME} PRIVATE ${CMAKE_THREAD_LIBS_INIT})
 
 if (LIBJIT)
     message("LIBJIT compiler is enabled")
-    set(LIBJIT_DIR ${CMAKE_CURRENT_SOURCE_DIR}/third_party/libjit)
+    set(LIBJIT_SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/third_party/libjit)
+    set(LIBJIT_BUILD_DIR ${CMAKE_BINARY_DIR}/src/libjit_ext-build)
+    set(LIBJIT_OPTS --with-pic)
+    if (INTERPRETER)
+        set(LIBJIT_OPTS ${LIBJIT_OPTS} --enable-interpreter)
+        add_definitions(-DJIT_BACKEND_INTERP)
+    endif()
     ExternalProject_Add(libjit_ext
-        INSTALL_DIR ${LIBJIT_DIR}
-        SOURCE_DIR ${LIBJIT_DIR}
-        CONFIGURE_COMMAND ${LIBJIT_DIR}/configure --prefix=${LIBJIT_DIR} --with-pic
-        BUILD_IN_SOURCE 1
+        PREFIX ${CMAKE_BINARY_DIR}
+        SOURCE_DIR ${LIBJIT_SRC_DIR}
+        CONFIGURE_COMMAND ${LIBJIT_SRC_DIR}/configure ${LIBJIT_OPTS}
         BUILD_COMMAND ${MAKE}
-        BUILD_BYPRODUCTS ${LIBJIT_DIR}/jit/.libs/libjit.a
         INSTALL_COMMAND ""
     ) 
     ExternalProject_Add_Step(libjit_ext
@@ -82,13 +87,15 @@ if (LIBJIT)
         COMMAND ./bootstrap
         DEPENDEES download
         DEPENDERS configure
-        WORKING_DIRECTORY ${LIBJIT_DIR}
+        WORKING_DIRECTORY ${LIBJIT_SRC_DIR}
     )
     add_library(libjit STATIC IMPORTED GLOBAL)
-    set_target_properties(libjit PROPERTIES INTERFACE_INCLUDE_DIRECTORIES "${LIBJIT_DIR}/include")
-    set_target_properties(libjit PROPERTIES IMPORTED_LOCATION ${LIBJIT_DIR}/jit/.libs/libjit.a)
-    target_link_libraries(${PROJECT_NAME} PRIVATE libjit)
     add_dependencies(libjit libjit_ext)
+    file(MAKE_DIRECTORY ${LIBJIT_BUILD_DIR}/include)
+    set_target_properties(libjit PROPERTIES
+                          IMPORTED_LOCATION "${LIBJIT_BUILD_DIR}/jit/.libs/libjit.a"
+                          INTERFACE_INCLUDE_DIRECTORIES "${LIBJIT_BUILD_DIR}/include")
+    target_link_libraries(${PROJECT_NAME} PRIVATE libjit)
 else()
     add_definitions(-DNLIBJIT)
 endif()

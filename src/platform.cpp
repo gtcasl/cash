@@ -51,7 +51,11 @@ ch::internal::cflags platform::cflags() const {
   return ch::internal::cflags(impl_->cflags_);
 }
 
-const platform& platform::self() {
+void platform::set_cflags(ch::internal::cflags value) {
+  impl_->cflags_ = static_cast<int>(value);
+}
+
+platform& platform::self() {
   static platform s_instance;
   return s_instance;
 }
