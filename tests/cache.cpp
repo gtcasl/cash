@@ -31,6 +31,8 @@ TEST_CASE("cache", "[cache]") {
       cache.io.mem.readdatavalid = false;
       cache.io.mem.waitrequest = true;
 
+      RetCheck ret;
+
       tracer.run([&](ch_tick t)->bool {
         /*std::cout << "t" << t
                   << ", cpu_rdata=" << cache.io.cpu.readdata
@@ -43,16 +45,16 @@ TEST_CASE("cache", "[cache]") {
                   << std::endl;*/
         switch (t) {
         case 0:
-          assert(cache.io.cpu.readdatavalid == false);
-          assert(cache.io.cpu.waitrequest == false);
-          assert(cache.io.mem.read == false);
-          assert(cache.io.mem.write == false);
+          ret &= (cache.io.cpu.readdatavalid == false);
+          ret &= (cache.io.cpu.waitrequest == false);
+          ret &= (cache.io.mem.read == false);
+          ret &= (cache.io.mem.write == false);
           break;
 
         // read miss
 
         case 2:
-          assert(cache.io.cpu.waitrequest == false);
+          ret &= (cache.io.cpu.waitrequest == false);
           cache.io.cpu.address = cpu_address(1,1,0);
           cache.io.cpu.worden = 0xf;
           cache.io.cpu.read = true;
@@ -65,8 +67,8 @@ TEST_CASE("cache", "[cache]") {
           break;
 
         case 6:
-          assert(cache.io.mem.read == true);
-          assert(cache.io.mem.address == mem_address(1,1,0));
+          ret &= (cache.io.mem.read == true);
+          ret &= (cache.io.mem.address == mem_address(1,1,0));
           break;
 
         case 8:
@@ -78,14 +80,14 @@ TEST_CASE("cache", "[cache]") {
           break;
 
         case 12:
-          assert(cache.io.mem.read == false);
+          ret &= (cache.io.mem.read == false);
           cache.io.mem.readdata = 256;
           cache.io.mem.readdatavalid = true;
           break;
 
         case 14:
-          assert(cache.io.cpu.readdatavalid == true);
-          assert(cache.io.cpu.readdata == 256);
+          ret &= (cache.io.cpu.readdatavalid == true);
+          ret &= (cache.io.cpu.readdata == 256);
           cache.io.mem.readdata = 0;
           cache.io.mem.readdatavalid = false;
           break;
@@ -105,14 +107,14 @@ TEST_CASE("cache", "[cache]") {
           break;
 
         case 20:
-          assert(cache.io.cpu.readdatavalid == true);
-          assert(cache.io.cpu.readdata == 256);
+          ret &= (cache.io.cpu.readdatavalid == true);
+          ret &= (cache.io.cpu.readdata == 256);
           break;
 
         // write hit
 
         case 22:
-          assert(cache.io.cpu.waitrequest == false);
+          ret &= (cache.io.cpu.waitrequest == false);
           cache.io.cpu.address = cpu_address(1,1,0);
           cache.io.cpu.worden = 0x1;
           cache.io.cpu.writedata = 16;
@@ -131,7 +133,7 @@ TEST_CASE("cache", "[cache]") {
         // read hit
 
         case 28:
-          assert(cache.io.cpu.waitrequest == false);
+          ret &= (cache.io.cpu.waitrequest == false);
           cache.io.cpu.address = cpu_address(1,1,0);
           cache.io.cpu.worden = 0xf;
           cache.io.cpu.read = true;
@@ -144,8 +146,8 @@ TEST_CASE("cache", "[cache]") {
           break;
 
         case 32:
-          assert(cache.io.cpu.readdatavalid == true);
-          assert(cache.io.cpu.readdata == 272);
+          ret &= (cache.io.cpu.readdatavalid == true);
+          ret &= (cache.io.cpu.readdata == 272);
           cache.io.cpu.address = 0;
           cache.io.cpu.worden = 0;
           cache.io.cpu.read = false;
@@ -154,7 +156,7 @@ TEST_CASE("cache", "[cache]") {
         // write miss
 
         case 34:
-          assert(cache.io.cpu.waitrequest == false);
+          ret &= (cache.io.cpu.waitrequest == false);
           cache.io.cpu.address = cpu_address(2,1,0);
           cache.io.cpu.worden = 0x1;
           cache.io.cpu.writedata = 16;
@@ -168,8 +170,8 @@ TEST_CASE("cache", "[cache]") {
           break;
 
         case 38:
-          assert(cache.io.mem.read == true);
-          assert(cache.io.mem.address == mem_address(2,1,0));
+          ret &= (cache.io.mem.read == true);
+          ret &= (cache.io.mem.address == mem_address(2,1,0));
           break;
 
         case 40:
@@ -181,7 +183,7 @@ TEST_CASE("cache", "[cache]") {
           break;
 
         case 44:
-          assert(cache.io.mem.read == false);
+          ret &= (cache.io.mem.read == false);
           cache.io.mem.readdata = 64;
           cache.io.mem.readdatavalid = true;
           break;
@@ -194,7 +196,7 @@ TEST_CASE("cache", "[cache]") {
         // read miss
 
         case 48:
-          assert(cache.io.cpu.waitrequest == false);
+          ret &= (cache.io.cpu.waitrequest == false);
           cache.io.cpu.address = cpu_address(3,1,0);
           cache.io.cpu.worden = 0xf;
           cache.io.cpu.read = true;
@@ -207,8 +209,8 @@ TEST_CASE("cache", "[cache]") {
           break;
 
         case 52:
-          assert(cache.io.mem.read == true);
-          assert(cache.io.mem.address == mem_address(3,1,0));
+          ret &= (cache.io.mem.read == true);
+          ret &= (cache.io.mem.address == mem_address(3,1,0));
           break;
 
         case 54:
@@ -220,14 +222,14 @@ TEST_CASE("cache", "[cache]") {
           break;
 
         case 58:
-          assert(cache.io.mem.read == false);
+          ret &= (cache.io.mem.read == false);
           cache.io.mem.readdata = 128;
           cache.io.mem.readdatavalid = true;
           break;
 
         case 60:
-          assert(cache.io.cpu.readdatavalid == true);
-          assert(cache.io.cpu.readdata == 128);
+          ret &= (cache.io.cpu.readdatavalid == true);
+          ret &= (cache.io.cpu.readdata == 128);
           cache.io.mem.readdata = 0;
           cache.io.mem.readdatavalid = false;
           break;
@@ -235,7 +237,7 @@ TEST_CASE("cache", "[cache]") {
         // write miss
 
         case 62:
-          assert(cache.io.cpu.waitrequest == false);
+          ret &= (cache.io.cpu.waitrequest == false);
           cache.io.cpu.address = cpu_address(4,1,0);
           cache.io.cpu.worden = 0x1;
           cache.io.cpu.writedata = 16;
@@ -249,8 +251,8 @@ TEST_CASE("cache", "[cache]") {
           break;
 
         case 66:
-          assert(cache.io.mem.read == true);
-          assert(cache.io.mem.address == mem_address(4,1,0));
+          ret &= (cache.io.mem.read == true);
+          ret &= (cache.io.mem.address == mem_address(4,1,0));
           break;
 
         case 68:
@@ -262,7 +264,7 @@ TEST_CASE("cache", "[cache]") {
           break;
 
         case 72:
-          assert(cache.io.mem.read == false);
+          ret &= (cache.io.mem.read == false);
           cache.io.mem.readdata = 512;
           cache.io.mem.readdatavalid = true;
           break;
@@ -275,7 +277,7 @@ TEST_CASE("cache", "[cache]") {
         // write miss with writeback
 
         case 82:
-          assert(cache.io.cpu.waitrequest == false);
+          ret &= (cache.io.cpu.waitrequest == false);
           cache.io.cpu.address = cpu_address(5,1,0);
           cache.io.cpu.worden = 0x1;
           cache.io.cpu.writedata = 16;
@@ -289,15 +291,15 @@ TEST_CASE("cache", "[cache]") {
           break;
 
         case 86:
-          assert(cache.io.mem.write == true);
-          assert(cache.io.mem.address == mem_address(1,1,0));
-          assert(cache.io.mem.writedata == 272);
+          ret &= (cache.io.mem.write == true);
+          ret &= (cache.io.mem.address == mem_address(1,1,0));
+          ret &= (cache.io.mem.writedata == 272);
           cache.io.mem.waitrequest = false;
           break;
 
         case 88:
-          assert(cache.io.mem.read == true);
-          assert(cache.io.mem.address == mem_address(5,1,0));
+          ret &= (cache.io.mem.read == true);
+          ret &= (cache.io.mem.address == mem_address(5,1,0));
           cache.io.mem.waitrequest = true;
           break;
 
@@ -310,7 +312,7 @@ TEST_CASE("cache", "[cache]") {
           break;
 
         case 94:
-          assert(cache.io.mem.read == false);
+          ret &= (cache.io.mem.read == false);
           cache.io.mem.readdata = 1024;
           cache.io.mem.readdatavalid = true;
           break;
@@ -323,7 +325,7 @@ TEST_CASE("cache", "[cache]") {
         // write miss with no writeback
 
         case 98:
-          assert(cache.io.cpu.waitrequest == false);
+          ret &= (cache.io.cpu.waitrequest == false);
           cache.io.cpu.address = cpu_address(6,1,0);
           cache.io.cpu.worden = 0x1;
           cache.io.cpu.writedata = 16;
@@ -337,8 +339,8 @@ TEST_CASE("cache", "[cache]") {
           break;
 
         case 102:
-          assert(cache.io.mem.read == true);
-          assert(cache.io.mem.address == mem_address(6,1,0));
+          ret &= (cache.io.mem.read == true);
+          ret &= (cache.io.mem.address == mem_address(6,1,0));
           break;
 
         case 104:
@@ -350,7 +352,7 @@ TEST_CASE("cache", "[cache]") {
           break;
 
         case 108:
-          assert(cache.io.mem.read == false);
+          ret &= (cache.io.mem.read == false);
           cache.io.mem.readdata = 2048;
           cache.io.mem.readdatavalid = true;
           break;
@@ -367,9 +369,9 @@ TEST_CASE("cache", "[cache]") {
       tracer.toText("cache.log");
       tracer.toVCD("cache.vcd");
       tracer.toTestBench("cache_tb.v", "cache.v");
-      int ret = system("iverilog cache_tb.v -o cache_tb.iv")
-              | system("! vvp cache_tb.iv | grep 'ERROR' || false");
-      return (0 == ret);
+      ret &= (0 == system("iverilog cache_tb.v -o cache_tb.iv"));
+      ret &= (0 == system("! vvp cache_tb.iv | grep 'ERROR' || false"));
+      return ret;
     });
   }
 }
