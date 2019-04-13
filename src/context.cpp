@@ -1,4 +1,4 @@
-﻿#include "context.h"
+#include "context.h"
 #include <thread>
 #include "lnode.h"
 #include "litimpl.h"
@@ -924,16 +924,41 @@ context::emit_conditionals(lnodeimpl* dst,
     // create select node
     auto sel = this->create_node<selectimpl>(
                         current->size(), branch->key, branch->sloc);
-    for (auto& value : values) {
-      auto pred = value.first;
-      if (pred) {
-        // the case predicate should be a literal value
-        assert(!branch->key || type_lit == pred->type());
-        sel->add_src(pred);
+    if (branch->key && (branch->key->size() <= 64)) {
+      // insert switch cases in ascending order
+      for (auto& value : values) {
+        auto pred = value.first;
+        if (pred) {
+          // the case predicate should be a literal value
+          assert(!branch->key || type_lit == pred->type());
+          auto ipred = static_cast<int64_t>(reinterpret_cast<litimpl*>(pred)->value());
+          uint32_t i = 1;
+          for (; i < sel->srcs().size(); i += 2) {
+            auto sel_ipred = static_cast<int64_t>(reinterpret_cast<litimpl*>(sel->src(i).impl())->value());
+            CH_CHECK(sel_ipred != ipred, "duplicate switch case predicate");
+            if (sel_ipred > ipred) {
+              sel->insert_src(i, value.second);
+              sel->insert_src(i, pred);
+              break;
+            }
+          }
+          if (i == sel->srcs().size()) {
+            sel->add_src(pred);
+            sel->add_src(value.second);
+          }
+        } else {
+          sel->add_src(value.second);
+        }
       }
-      sel->add_src(value.second);
+    } else {
+      for (auto& value : values) {
+        auto pred = value.first;
+        if (pred) {
+          sel->add_src(pred);
+        }
+        sel->add_src(value.second);
+      }
     }
-
     return sel;
   };
 

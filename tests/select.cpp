@@ -2,9 +2,9 @@
 
 TEST_CASE("conditionals", "[conditionals]") {
   SECTION("select", "[select]") {
-    TEST([]()->ch_bool {
-      ch_int4 a(0), b(1), c;
-      c = ch_sel(a < b, a, b);
+    TEST1([](const ch_int8& x)->ch_bool {
+      ch_int4 a(7), b(1);
+      auto c = ch_sel(x[0], a, b);
       return (c == a);
     });
     TEST([]()->ch_bool {
@@ -176,8 +176,8 @@ TEST_CASE("conditionals", "[conditionals]") {
       };
       return (c == 3);
     });
-    TEST([]()->ch_bool {
-      ch_bit8 a(1), b(1), x;
+    TEST1([](const ch_int8& t)->ch_bool {
+      ch_bit8 a(t[0]), b(t[0]), x;
       __if (a == 1) {
         x = 0;
         __if (b == 0) {
@@ -259,13 +259,13 @@ TEST_CASE("conditionals", "[conditionals]") {
       //ch_println("x={0}", x);
       return (x == 0);
     });
-    TEST([]()->ch_bool {
+    TEST1([](const ch_int8& t)->ch_bool {
       ch_int8 a(1), b(1), x;
-      __if (a == 1) {
+      __if (a == t[0]) {
         x = 0;
-        __if (b == 0) {
+        __if (b == t[1]) {
           x = 1;
-        } __elif (b == 1) {
+        } __elif (b == t[0]) {
           x = 2;
         };
         x = 3;
@@ -520,13 +520,76 @@ TEST_CASE("conditionals", "[conditionals]") {
       };
       return (b == 1101_b);
     });
-    TEST([]()->ch_bool {
-      ch_bit4 a(0), b;
+    TEST1([](const ch_int8& t)->ch_bool {
+      ch_bit4 a = ch_slice<4>(t,1), b;
       __switch (a)
       __case(0) { b = 0010_b; }
       __case(1) { b = 0001_b; }
       __default { b = 1000_b; };
       return (b == 0010_b);
+    });
+
+    TEST1([](const ch_int8& t)->ch_bool {
+      ch_bit4 b;
+      __switch (t)
+      __case(5)  { b = 0011_b; }
+      __case(7)  { b = 0011_b; }
+      __case(10) { b = 0001_b; }
+      __case(11) { b = 0110_b; }
+      __case(12) { b = 0010_b; }
+      __case(1)  { b = 0010_b; }
+      __default  { b = 1111_b; };
+      return (b == 0010_b);
+    });
+
+    TEST1([](const ch_int8& t)->ch_bool {
+      ch_bit4 b;
+      __switch (t)
+      __case(0)  { b = 0100_b; }
+      __case(7)  { b = 0001_b; }
+      __case(10) { b = 0001_b; }
+      __case(11) { b = 0110_b; }
+      __case(12) { b = 0011_b; }
+      __case(1)  { b = 0010_b; }
+      __default  { b = 1111_b; };
+      return (b == 0010_b);
+    });
+
+    TEST1([](const ch_int8& t)->ch_bool {
+      ch_bit4 b;
+      __switch (t)
+      __case(5)  { b = 0010_b; }
+      __case(7)  { b = 0001_b; }
+      __case(10) { b = 0001_b; }
+      __case(11) { b = 0110_b; }
+      __case(12) { b = 0011_b; }
+      __case(2)  { b = 0010_b; }
+      __default  { b = 1111_b; };
+      return (b == 1111_b);
+    });
+
+    TEST1([](const ch_int8& t)->ch_bool {
+      ch_bit4 b;
+      __switch (t+11)
+      __case(5)  { b = 0010_b; }
+      __case(7)  { b = 0001_b; }
+      __case(10) { b = 0001_b; }
+      __case(12) { b = 0011_b; }
+      __case(2)  { b = 0010_b; }
+      __default  { b = 1111_b; };
+      return (b == 0011_b);
+    });
+
+    TEST1([](const ch_int8& t)->ch_bool {
+      ch_bit4 b;
+      __switch (t+12)
+      __case(5)  { b = 0010_b; }
+      __case(7)  { b = 0001_b; }
+      __case(10) { b = 0001_b; }
+      __case(12) { b = 0011_b; }
+      __case(2)  { b = 0010_b; }
+      __default  { b = 1111_b; };
+      return (b == 1111_b);
     });
 
     TEST([]()->ch_bool {

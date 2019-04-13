@@ -102,6 +102,11 @@ uint32_t lnodeimpl::add_src(const lnode& src) {
   return index;
 }
 
+void lnodeimpl::insert_src(uint32_t index, const lnode& src) {
+  srcs_.insert(srcs_.begin() + index, src);
+  hash_ = 0;
+}
+
 void lnodeimpl::remove_src(uint32_t index) {
   srcs_.erase(srcs_.begin() + index);
   hash_ = 0;

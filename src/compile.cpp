@@ -1163,6 +1163,33 @@ bool compiler::branch_coalescing() {
       }
     }
 
+    // convert tenary switches to branches
+    if (has_key && 4 == sel->srcs().size()) {
+      auto pred = ctx_->create_node<opimpl>(ch_op::eq, 1, false, sel->src(0).impl(), sel->src(1).impl(), sel->sloc());
+      this->map_add_node_srcs(pred);
+      this->map_remove_node_srcs(sel);
+      sel->remove_key();
+      sel->set_src(0, pred);
+      this->map_add_node_srcs(sel);
+      changed = true;
+      return nullptr;
+    }
+
+    // eliminate ternary branches with constant boolean sources
+    if (1 == sel->size()
+     && 3 == sel->srcs().size()
+     && type_lit == sel->src(1).impl()->type()
+     && type_lit == sel->src(2).impl()->type()) {
+      if (static_cast<bool>(reinterpret_cast<litimpl*>(sel->src(1).impl())->value())) {
+        return sel->src(0).impl();
+      } else {
+        auto pred = sel->src(0).impl();
+        auto inv_pred = ctx_->create_node<opimpl>(ch_op::inv, 1, false, pred, sel->sloc());
+        this->map_add_node_srcs(inv_pred);
+        return inv_pred;
+      }
+    }
+
     return nullptr;
   };
 

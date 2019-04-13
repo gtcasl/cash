@@ -159,6 +159,10 @@ bool checkVerilog(const std::string& moduleName);
 
 bool TEST(const std::function<ch_bool()> &test, ch_tick cycles = 0);
 
+bool TEST1(const std::function<ch_bool(const ch_int8&)> &test, ch_tick cycles = 0);
+
+bool TEST2(const std::function<ch_bool(const ch_int8&, const ch_int8&)> &test, ch_tick cycles = 0);
+
 bool TESTX(const std::function<bool()> &test);
 
 ///////////////////////////////////////////////////////////////////////////////

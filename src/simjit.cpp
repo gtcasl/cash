@@ -1322,14 +1322,13 @@ private:
                         args,
                         __countof(args),
                         JIT_CALL_NOTHROW);
-
   }
 
-  void emit_node(selectimpl* node) {
-    __source_info();
-
+  bool optimize_select(selectimpl* node) {
+    //--
     jit_label_t l_exit = jit_label_undefined;
 
+    //--
     uint32_t dst_width = node->size();
     bool is_scalar = (dst_width <= WORD_SIZE);
     auto j_ntype = to_native_type(dst_width);
@@ -1340,70 +1339,344 @@ private:
       scalar_map_[node->id()] = j_dst;
     }
 
-    if (node->has_key()) {
-      uint32_t i = 1, l = node->srcs().size() - 1;
-      for (;i < l; i += 2) {
-        jit_label_t l_skip = jit_label_undefined;
-        uint32_t key_size = node->key().size();
-        if (key_size <= WORD_SIZE) {
-          auto j_key = scalar_map_.at(node->src(0).id());
-          auto j_val = scalar_map_.at(node->src(i).id());
-          auto j_eq = jit_insn_eq(j_func_, j_key, j_val);
-          jit_insn_branch_if_not(j_func_, j_eq, &l_skip);
-        } else {
-          auto j_key_ptr = this->emit_pointer_address(node->src(0).impl());
-          auto j_val_ptr = this->emit_pointer_address(node->src(i).impl());
-          auto j_eq = this->emit_eq_vector(j_key_ptr, key_size, j_val_ptr, key_size, false);
-          jit_insn_branch_if_not(j_func_, j_eq, &l_skip);
+    //--
+    auto is_switch = node->has_key();
+    auto key_size = node->key().size();
+    auto is_iswitch = is_switch && (key_size <= 32);
+    int32_t start = 0, l = node->srcs().size() - 1;
+    if (is_switch) {
+      ++start;
+    }
+
+    // analyze the select node
+    bool is_constant = (type_lit == node->src(l).impl()->type());
+    auto pred_min = std::numeric_limits<int32_t>::max();
+    auto pred_max = std::numeric_limits<int32_t>::min();
+    int32_t pred_delta = 0;
+    int32_t i_pred_prev = 0;
+    for (int32_t i = start; i < l; i += 2) {
+      auto pred = node->src(i+0).impl();
+      if (is_iswitch) {
+        auto i_pred = static_cast<int32_t>(reinterpret_cast<litimpl*>(pred)->value());
+        pred_delta += (i != start) ? (i_pred - i_pred_prev) : 0;
+        pred_min = std::min(i_pred, pred_min);
+        pred_max = std::max(i_pred, pred_max);
+        i_pred_prev = i_pred;
+      }
+      auto value = node->src(i+1).impl();
+      is_constant &= (type_lit == value->type());
+    }
+
+    if (is_iswitch) {
+      auto distance = (pred_max - pred_min) + 1;
+      if (l > 3*2+1
+       && is_constant
+       && distance * dst_width <= WORD_SIZE) {
+        //
+        // short switch tables
+        //
+        jit_label_t l_default = jit_label_undefined;
+        auto max_cases = (1ll << key_size);
+        bool is_inclusive = (max_cases * dst_width <= WORD_SIZE);
+
+        if (!is_inclusive) {
+          auto j_key = scalar_map_.at(node->key().id());
+          auto j_max = this->emit_constant(pred_max, jit_type_uint);
+          auto j_pred = jit_insn_gt(j_func_, j_key, j_max);
+          if (pred_min) {
+            auto j_min = this->emit_constant(pred_min, jit_type_uint);
+            auto j_tmp = jit_insn_lt(j_func_, j_key, j_min);
+            j_pred = jit_insn_or(j_func_, j_pred, j_tmp);
+          }
+          jit_insn_branch_if(j_func_, j_pred, &l_default);
         }
+
+        block_type table(0);
+        int32_t k = start;
+        int32_t length = is_inclusive ? max_cases : distance;
+        int32_t offset = is_inclusive ? 0 : pred_min;
+        auto i_default = static_cast<block_type>(reinterpret_cast<litimpl*>(node->src(l).impl())->value());
+
+        for (int i = 0; i < length; ++i) {
+          bool found = false;
+          for (int32_t j = k; j < l; j += 2) {
+            auto pred = node->src(j+0).impl();
+            auto i_pred = static_cast<int32_t>(reinterpret_cast<litimpl*>(pred)->value());
+            if (i_pred == offset + i) {
+              auto i_src = static_cast<block_type>(reinterpret_cast<litimpl*>(node->src(j+1).impl())->value());
+              table |= i_src << (i * dst_width);
+              found  = true;
+              k += 2;
+              break;
+            }
+          }
+          if (!found) {
+            table |= i_default << (i * dst_width);
+          }
+        }
+
+        auto j_ttype = to_native_type(length * dst_width);
+        auto j_table = this->emit_constant(table, j_ttype);
+        auto j_key = scalar_map_.at(node->key().id());
+
+        if (!is_inclusive && pred_min) {
+          auto j_min = this->emit_constant(pred_min, jit_type_uint);
+          j_key = jit_insn_sub(j_func_, j_key, j_min);
+        }
+
+        jit_value_t j_shift;
+        if (ispow2(dst_width)) {
+          auto j_destW = this->emit_constant(log2floor(dst_width), j_ttype);
+          j_shift = jit_insn_shl(j_func_, j_key, j_destW);
+        } else {
+          auto j_destW = this->emit_constant(dst_width, j_ttype);
+          j_shift = jit_insn_mul(j_func_, j_key, j_destW);
+        }
+
+        auto j_tmp1 = jit_insn_ushr(j_func_, j_table, j_shift);
+        auto j_mask = this->emit_constant((1ull << dst_width)-1, j_ttype);
+        auto j_tmp2 = jit_insn_and(j_func_, j_tmp1, j_mask);
+        jit_insn_store(j_func_, j_dst, j_tmp2);
+
+        if (!is_inclusive) {
+          jit_insn_branch(j_func_, &l_exit);
+
+          // emit 'default' block
+          jit_insn_label(j_func_, &l_default);
+          auto j_src = scalar_map_.at(node->src(l).id());
+          jit_insn_store(j_func_, j_dst, j_src);
+
+          jit_insn_label(j_func_, &l_exit);
+        }
+        return true;
+      }
+
+      auto density = pred_delta ? (float(l/2) / pred_delta) : 0;
+      if (l > 2*3+1 && density > 0.6) {
+        //
+        // emit jump table
+        //
+        jit_label_t l_default = jit_label_undefined;
+        jit_label_t l_jump = jit_label_undefined;
+        std::vector<jit_label_t> labels(l/2, jit_label_undefined);
+        std::unordered_map<uint32_t, uint32_t> unique_values;
+
+        // emit 'case' blocks
+        for (int32_t i = 1; i < l; i += 2) {
+          auto label = &labels.at(i/2);
+          auto src = node->src(i+1).impl();
+          auto it = unique_values.find(src->id());
+          if (it != unique_values.end()) {
+            *label = labels.at(it->second);
+            continue;
+          }
+          unique_values[src->id()] = i/2;
+
+          jit_insn_label(j_func_, label);
+          if (is_scalar) {
+            auto j_src = scalar_map_.at(node->src(i+1).id());
+            jit_insn_store(j_func_, j_dst, j_src);
+          } else {
+            auto j_dst_ptr = this->emit_pointer_address(node);
+            auto j_src_ptr = this->emit_pointer_address(node->src(i+1).impl());
+            this->emit_memcpy(j_dst_ptr, j_src_ptr, ceildiv(dst_width, 8));
+          }
+          jit_insn_branch(j_func_, &l_exit);
+        }
+
+        // emit 'default' block
+        jit_insn_label(j_func_, &l_default);
         if (is_scalar) {
-          auto j_src = scalar_map_.at(node->src(i+1).id());
+          auto j_src = scalar_map_.at(node->src(l).id());
           jit_insn_store(j_func_, j_dst, j_src);
         } else {
           auto j_dst_ptr = this->emit_pointer_address(node);
-          auto j_src_ptr = this->emit_pointer_address(node->src(i+1).impl());
+          auto j_src_ptr = this->emit_pointer_address(node->src(l).impl());
           this->emit_memcpy(j_dst_ptr, j_src_ptr, ceildiv(dst_width, 8));
         }
-        jit_insn_branch(j_func_, &l_exit);
-        jit_insn_label(j_func_, &l_skip);
-      }
-      if (is_scalar) {
-        auto j_src = scalar_map_.at(node->src(i).id());
-        jit_insn_store(j_func_, j_dst, j_src);
-      } else {
-        auto j_dst_ptr = this->emit_pointer_address(node);
-        auto j_src_ptr = this->emit_pointer_address(node->src(i).impl());
-        this->emit_memcpy(j_dst_ptr, j_src_ptr, ceildiv(dst_width, 8));
+
+        // exit
+        jit_insn_label(j_func_, &l_exit);
+
+        // build label table
+        jit_insn_label(j_func_, &l_jump);
+        auto j_key = scalar_map_.at(node->key().id());
+        auto j_max = this->emit_constant(pred_max, jit_type_uint);
+        auto j_pred = jit_insn_gt(j_func_, j_key, j_max);
+        if (pred_min) {
+          auto j_min = this->emit_constant(pred_min, jit_type_uint);
+          auto j_tmp = jit_insn_lt(j_func_, j_key, j_min);
+          j_pred = jit_insn_or(j_func_, j_pred, j_tmp);
+        }
+        jit_insn_branch_if(j_func_, j_pred, &l_default);
+
+        auto j_value = j_key;
+        if (pred_min) {
+          auto j_min = this->emit_constant(pred_min, jit_type_uint);
+          j_value = jit_insn_sub(j_func_, j_key, j_min);
+        }
+
+        int32_t k = start;
+        std::vector<jit_label_t> jump_labels(distance, jit_label_undefined);
+        for (int32_t i = 0; i < distance; ++i) {
+          auto p = i + pred_min;
+          for (int32_t j = k; j < l; j += 2) {
+            auto pred = node->src(j+0).impl();
+            auto i_pred = static_cast<int32_t>(reinterpret_cast<litimpl*>(pred)->value());
+            if (i_pred == p) {
+              jump_labels[i] = labels[j/2];
+              k += 2;
+              break;
+            }
+          }
+          if (jit_label_undefined == jump_labels[i]) {
+            jump_labels[i] = l_default;
+          }
+        }
+
+        jit_insn_jump_table(j_func_, j_value, jump_labels.data(), jump_labels.size());
+        jit_insn_move_blocks_to_end(j_func_, labels.at(0), l_jump);
+        return true;
       }
     } else {
-      uint32_t i = 0, l = node->srcs().size() - 1;
-      for (;i < l; i += 2) {
-        jit_label_t l_skip = jit_label_undefined;
-        auto j_pred = scalar_map_.at(node->src(i).id());
-        jit_insn_branch_if_not(j_func_, j_pred, &l_skip);
-        if (is_scalar) {
-          auto j_src = scalar_map_.at(node->src(i+1).id());
-          jit_insn_store(j_func_, j_dst, j_src);
-        } else {
-          auto j_dst_ptr = this->emit_pointer_address(node);
-          auto j_src_ptr = this->emit_pointer_address(node->src(i+1).impl());
-          this->emit_memcpy(j_dst_ptr, j_src_ptr, ceildiv(dst_width, 8));
-        }
-        jit_insn_branch(j_func_, &l_exit);
-        jit_insn_label(j_func_, &l_skip);
+      if (is_scalar && l == 2) {
+        //
+        // emit ternary branches
+        //
+        auto j_pred  = scalar_map_.at(node->src(0).id());
+        auto j_true  = scalar_map_.at(node->src(1).id());
+        auto j_false = scalar_map_.at(node->src(2).id());
+        jit_insn_store(j_func_, j_dst, j_true);
+        jit_insn_branch_if(j_func_, j_pred, &l_exit);
+        jit_insn_store(j_func_, j_dst, j_false);
+        jit_insn_label(j_func_, &l_exit);
+        return true;
       }
+    }
+
+    return false;
+  }
+
+  void emit_node(selectimpl* node) {
+    __source_info();
+
+    auto status = optimize_select(node);
+    if (status)
+      return;
+
+    uint32_t dst_width = node->size();
+    bool is_scalar = (dst_width <= WORD_SIZE);
+    auto j_ntype = to_native_type(dst_width);
+    jit_label_t l_exit = jit_label_undefined;
+
+    jit_value_t j_dst = nullptr;
+    if (is_scalar) {
+      j_dst = jit_value_create(j_func_, j_ntype);
+      scalar_map_[node->id()] = j_dst;
+    }
+
+    if (node->has_key()) {
+      // lower switch statements
+      uint32_t key_size = node->key().size();
+      uint32_t l = node->srcs().size() - 1;
+      std::vector<jit_label_t> labels(l/2, jit_label_undefined);
+      std::unordered_map<uint32_t, uint32_t> unique_values;
+
+      // emit jump tests
+      for (uint32_t i = 1; i < l; i += 2) {
+        auto label = &labels.at(i/2);
+        auto src = node->src(i+1).impl();
+        auto it = unique_values.find(src->id());
+        if (it != unique_values.end()) {
+          label = &labels.at(it->second);
+        } else {
+          unique_values[src->id()] = i/2;
+        }
+        if (key_size <= WORD_SIZE) {          
+          auto j_key = scalar_map_.at(node->key().id());
+          auto j_val = scalar_map_.at(node->src(i).id());
+          auto j_pred = jit_insn_eq(j_func_, j_key, j_val);
+          jit_insn_branch_if(j_func_, j_pred, label);
+        } else {
+          auto j_key_ptr = this->emit_pointer_address(node->key().impl());
+          auto j_val_ptr = this->emit_pointer_address(node->src(i).impl());
+          auto j_pred = this->emit_eq_vector(j_key_ptr, key_size, j_val_ptr, key_size, false);
+          jit_insn_branch_if(j_func_, j_pred, label);
+        }        
+      }
+
+      // emit 'default' block
       if (is_scalar) {
-        auto j_src = scalar_map_.at(node->src(i).id());
+        auto j_src = scalar_map_.at(node->src(l).id());
         jit_insn_store(j_func_, j_dst, j_src);
       } else {
         auto j_dst_ptr = this->emit_pointer_address(node);
-        auto j_src_ptr = this->emit_pointer_address(node->src(i).impl());
+        auto j_src_ptr = this->emit_pointer_address(node->src(l).impl());
         this->emit_memcpy(j_dst_ptr, j_src_ptr, ceildiv(dst_width, 8));
       }
+      jit_insn_branch(j_func_, &l_exit);
+
+      // emit 'case' blocks
+      for (uint32_t i = 1; i < l; i += 2) {
+        auto src = node->src(i+1).impl();
+        auto k = unique_values[src->id()];
+        if (k != i/2)
+          continue;
+        jit_insn_label(j_func_, &labels.at(i/2));
+        if (is_scalar) {
+          auto j_src = scalar_map_.at(src->id());
+          jit_insn_store(j_func_, j_dst, j_src);
+        } else {
+          auto j_dst_ptr = this->emit_pointer_address(node);
+          auto j_src_ptr = this->emit_pointer_address(src);
+          this->emit_memcpy(j_dst_ptr, j_src_ptr, ceildiv(dst_width, 8));
+        }
+        if (i != l-1) {
+          jit_insn_branch(j_func_, &l_exit);
+        }
+      }
+    } else {
+      // lower conditional branches      
+      uint32_t l = node->srcs().size() - 1;
+      std::vector<jit_label_t> labels(l/2, jit_label_undefined);
+
+      // emit jump tests
+      for (uint32_t i = 0; i < l; i += 2) {
+        auto j_pred = scalar_map_.at(node->src(i).id());
+        jit_insn_branch_if(j_func_, j_pred, &labels.at(i/2));
+      }
+
+      // emit 'else' block
+      if (is_scalar) {
+        auto j_src = scalar_map_.at(node->src(l).id());
+        jit_insn_store(j_func_, j_dst, j_src);
+      } else {
+        auto j_dst_ptr = this->emit_pointer_address(node);
+        auto j_src_ptr = this->emit_pointer_address(node->src(l).impl());
+        this->emit_memcpy(j_dst_ptr, j_src_ptr, ceildiv(dst_width, 8));
+      }
+      jit_insn_branch(j_func_, &l_exit);
+
+      // emit 'if' blocks
+      for (uint32_t i = 0; i < l; i += 2) {
+        auto src = node->src(i+1).impl();
+        jit_insn_label(j_func_, &labels.at(i/2));
+        if (is_scalar) {
+          auto j_src = scalar_map_.at(src->id());
+          jit_insn_store(j_func_, j_dst, j_src);
+        } else {
+          auto j_dst_ptr = this->emit_pointer_address(node);
+          auto j_src_ptr = this->emit_pointer_address(src);
+          this->emit_memcpy(j_dst_ptr, j_src_ptr, ceildiv(dst_width, 8));
+        }
+        if (i != l-1) {
+          jit_insn_branch(j_func_, &l_exit);
+        }
+      }      
     }
-    if (l_exit != jit_label_undefined) {
-      jit_insn_label(j_func_, &l_exit);
-    }
+
+    // exit
+    jit_insn_label(j_func_, &l_exit);
   }
 
   void emit_node(cdimpl* node) {
@@ -1414,12 +1687,14 @@ private:
     auto j_prev_clk = jit_insn_load_relative(j_func_, j_vars_, addr, jit_type_uint);
     auto j_clk_changed = jit_insn_xor(j_func_, j_clk, j_prev_clk);
     jit_value_t j_changed ;
+
     if (node->pos_edge()) {
       j_changed = jit_insn_and(j_func_, j_clk_changed, j_clk);
     } else {
       auto j_clk_n = jit_insn_not(j_func_, j_clk);
       j_changed = jit_insn_and(j_func_, j_clk_changed, j_clk_n);
     }
+
     jit_insn_store_relative(j_func_, j_vars_, addr, j_clk);
 
     auto bypass_enable = (1 == node->ctx()->cdomains().size())

@@ -6,7 +6,7 @@ project(cash VERSION 0.1.0 LANGUAGES CXX)
 include(ExternalProject)
 
 option(LIBJIT "Enable libjit." ON)
-option(INTERPRETER "Enable libjit interpreter." ON)
+option(INTERPRETER "Enable libjit interpreter." OFF)
 option(CODECOV "Enable code coverage." OFF)
 
 set(DEFAULT_BUILD_TYPE "Release")
@@ -94,7 +94,7 @@ if (LIBJIT)
     file(MAKE_DIRECTORY ${LIBJIT_BUILD_DIR}/include)
     set_target_properties(libjit PROPERTIES
                           IMPORTED_LOCATION "${LIBJIT_BUILD_DIR}/jit/.libs/libjit.a"
-                          INTERFACE_INCLUDE_DIRECTORIES "${LIBJIT_BUILD_DIR}/include")
+                          INTERFACE_INCLUDE_DIRECTORIES "${LIBJIT_SRC_DIR}/include;${LIBJIT_BUILD_DIR}/include")
     target_link_libraries(${PROJECT_NAME} PRIVATE libjit)
 else()
     add_definitions(-DNLIBJIT)

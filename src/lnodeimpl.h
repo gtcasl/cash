@@ -103,6 +103,8 @@ public:
 
   uint32_t add_src(const lnode& src);
 
+  void insert_src(uint32_t index, const lnode& src);
+
   void remove_src(uint32_t index);
 
   void resize(uint32_t size);
