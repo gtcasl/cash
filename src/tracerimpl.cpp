@@ -717,7 +717,7 @@ void tracerimpl::toVerilator(std::ofstream& out,
             in_offset += signal_size;
             if (signal_size > 64) {
               for (uint32_t j = 0; j < signal_size;) {
-                out << "device->" << signal_name << "[" << j << "]=";
+                out << "((char*)&device->" << signal_name << ")[" << j << "]=";
                 auto s = (j+8 <= signal_size) ? 8 : (signal_size-j);
                 print_value(out, value, s, j);
                 out << ";";
@@ -763,7 +763,7 @@ void tracerimpl::toVerilator(std::ofstream& out,
             out_offset += signal_size;
             if (signal_size > 64) {
               for (uint32_t j = 0; j < signal_size;) {
-                out << "CHECK(device->" << signal_name << "[" << j << "] == ";
+                out << "CHECK(((char*)&device->" << signal_name << ")[" << j << "] == ";
                 auto s = (j+8 <= signal_size) ? 8 : (signal_size-j);
                 print_value(out, value, s, j);
                 out << ");";
@@ -791,7 +791,7 @@ void tracerimpl::toVerilator(std::ofstream& out,
             auto value = get_value(prev.first, signal_size, prev.second);
             if (signal_size > 64) {
               for (uint32_t j = 0; j < signal_size;) {
-                out << "CHECK(device->" << signal_name << "[" << j << "] == ";
+                out << "CHECK(((char*)&device->" << signal_name << ")[" << j << "] == ";
                 auto s = (j+8 <= signal_size) ? 8 : (signal_size-j);
                 print_value(out, value, s, j);
                 out << ");";
