@@ -1337,6 +1337,53 @@ void compiler::build_eval_list(std::vector<lnodeimpl*>& eval_list) {
   std::unordered_set<lnodeimpl*> update_list;
   std::unordered_set<lnodeimpl*> uninitialized_regs;
 
+  /*//--
+  std::unordered_set<uint32_t> relocated_nodes;
+  auto relocate_node = [&](uint32_t nidx) {
+    auto node = eval_list.at(nidx);
+    if (type_cd == node->type()
+     || is_snode_type(node->type())
+     || relocated_nodes.count(node->id()))
+        return;
+
+    for (auto& src : node->srcs()) {
+      if (type_lit != src.impl()->type())
+        return;
+    }
+
+    for (uint32_t i = nidx + 1; i < eval_list.size(); ++i) {
+      auto curr = eval_list.at(i);
+      bool is_used = false;
+      for (auto& src : node->srcs()) {
+        if (src.id() == curr->id()) {
+          is_used = true;
+          break;
+        }
+      }
+      if (!is_used) {
+        for (auto& src : curr->srcs()) {
+          if (src.id() == node->id()) {
+            is_used = true;
+            break;
+          }
+        }
+      }
+      if (is_used) {
+        uint32_t k = i - 1;
+        if (k > nidx) {
+          // move node closer to use
+          for (uint32_t j = nidx; j < k; ++j) {
+            eval_list.at(j) = eval_list.at(j+1);
+          }
+          eval_list.at(k) = node;
+          relocated_nodes.insert(node->id());
+        }
+        return;
+      }
+    }
+  };*/
+
+  //--
   std::function<bool (lnodeimpl*)> dfs_visit = [&](lnodeimpl* node)->bool {
     if (visited_nodes.count(node->id())) {
       // if a node depends on an update node, it also needs to be updated.
@@ -1453,6 +1500,11 @@ void compiler::build_eval_list(std::vector<lnodeimpl*>& eval_list) {
     visited_nodes.erase(sys_time->id());
     dfs_visit(sys_time);
   }
+
+  /*// compress nodes distance
+  for (uint32_t i = 0; i < eval_list.size(); ++i) {
+    relocate_node(i);
+  }*/
 
   if (platform::self().cflags() & cflags::dump_ast) {
     for (auto node : eval_list) {
