@@ -683,6 +683,7 @@ void tracerimpl::toVerilator(std::ofstream& out,
     prev_values_[i] = std::make_pair<block_t*, uint32_t>(nullptr, 0);
   }
 
+  out << "#define CHECK(x) do { if (!(x)) { std::cout << \"FAILED: \" << #x << std::endl; } } while (false)" << std::endl;
   out << "bool eval(" << moduleTypeName << "* device, uint64_t tick) {" << std::endl;
   out << "switch (tick) {" << std::endl;
   auto trace_block = trace_head_;
@@ -762,14 +763,14 @@ void tracerimpl::toVerilator(std::ofstream& out,
             out_offset += signal_size;
             if (signal_size > 64) {
               for (uint32_t j = 0; j < signal_size;) {
-                out << "assert(device->" << signal_name << "[" << j << "] == ";
+                out << "CHECK(device->" << signal_name << "[" << j << "] == ";
                 auto s = (j+8 <= signal_size) ? 8 : (signal_size-j);
                 print_value(out, value, s, j);
                 out << ");";
                 j += s;
               }
             } else {
-              out << "assert(device->" << signal_name << " == ";
+              out << "CHECK(device->" << signal_name << " == ";
               print_value(out, value);
               out << ");";
             }            
@@ -790,14 +791,14 @@ void tracerimpl::toVerilator(std::ofstream& out,
             auto value = get_value(prev.first, signal_size, prev.second);
             if (signal_size > 64) {
               for (uint32_t j = 0; j < signal_size;) {
-                out << "assert(device->" << signal_name << "[" << j << "] == ";
+                out << "CHECK(device->" << signal_name << "[" << j << "] == ";
                 auto s = (j+8 <= signal_size) ? 8 : (signal_size-j);
                 print_value(out, value, s, j);
                 out << ");";
                 j += s;
               }
             } else {
-              out << "assert(device->" << signal_name << " == ";
+              out << "CHECK(device->" << signal_name << " == ";
               print_value(out, value);
               out << ");";
             }
