@@ -671,8 +671,7 @@ private:
       auto j_ntype = to_native_type(dst_width);
       scalar_map_[node->id()] = this->emit_cast(j_tmp, j_ntype);
     } else {
-      auto dst_addr = this->
-          get_pointer_address(node);
+      auto dst_addr = this->get_pointer_address(node);
       jit_value_t j_tmp = nullptr;
       for (auto& range : node->ranges()) {
         auto& src = node->src(range.src_idx);
@@ -1719,6 +1718,7 @@ private:
     if (sblock_.cd
      && ((nullptr == node)
       || (!is_snode_type(node->type())
+       || 0 ==(platform::self().cflags() & cflags::disable_snc)
        || node->type() != type_reg
        || get_snode_reset(node) != sblock_.reset))) {
       this->flush_sblock();

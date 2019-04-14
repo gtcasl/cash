@@ -23,6 +23,7 @@ enum class cflags {
   disable_cpb = (1 << 14),
   disable_swo = (1 << 15),
   disable_sro = (1 << 16),
+  disable_snc = (1 << 17),
 };
 
 inline constexpr auto operator|(cflags lsh, cflags rhs) {
