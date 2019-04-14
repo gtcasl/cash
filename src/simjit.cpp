@@ -1326,6 +1326,10 @@ private:
 
   bool optimize_select(selectimpl* node) {
     //--
+    if (0 != (platform::self().cflags() & cflags::disable_swo))
+      return false;
+
+    //--
     jit_label_t l_exit = jit_label_undefined;
 
     //--
@@ -1698,6 +1702,7 @@ private:
     jit_insn_store_relative(j_func_, j_vars_, addr, j_clk);
 
     auto bypass_enable = (1 == node->ctx()->cdomains().size())
+                       && 0 == (platform::self().cflags() & cflags::disable_cpb)
       && ch::internal::compiler::build_bypass_list(bypass_nodes_, node->ctx(), node->id());
     if (bypass_enable) {      
       jit_label_t l_skip = jit_label_undefined;

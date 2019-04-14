@@ -192,8 +192,22 @@ logic_buffer ch::internal::createRegNext(const lnode& next,
   auto ctx  = next.impl()->ctx();
   auto cd   = ctx->current_cd(sloc);
   auto rst  = ctx->current_reset(sloc);
-  auto reg  = ctx->create_node<regimpl>(
-        next.size(), length, cd, rst , nullptr, next.impl(), init_data.impl(), sloc, name);
+
+  lnodeimpl* reg = nullptr;
+  if (0 == (platform::self().cflags() & cflags::disable_sro)) {
+    reg  = ctx->create_node<regimpl>(
+          next.size(), length, cd, rst , nullptr, next.impl(), init_data.impl(), sloc, name);
+  } else {
+    while (length--){
+      if (reg) {
+        reg  = ctx->create_node<regimpl>(
+              next.size(), 1, cd, rst , nullptr, reg, init_data.impl(), sloc, name);
+      } else {
+        reg  = ctx->create_node<regimpl>(
+              next.size(), 1, cd, rst , nullptr, next.impl(), init_data.impl(), sloc, name);
+      }
+    }
+  }
   return logic_buffer(reg, name);
 }
 
@@ -206,8 +220,22 @@ logic_buffer ch::internal::createRegNext(const lnode& next,
   auto ctx  = next.impl()->ctx();
   auto cd   = ctx->current_cd(sloc);
   auto rst  = ctx->current_reset(sloc);
-  auto reg  = ctx->create_node<regimpl>(
+
+  lnodeimpl* reg = nullptr;
+  if (0 ==(platform::self().cflags() & cflags::disable_sro)) {
+    reg  = ctx->create_node<regimpl>(
         next.size(), length, cd, rst, enable.impl(), next.impl(), init_data.impl(), sloc, name);
+  } else {
+    while (length--){
+      if (reg) {
+        reg  = ctx->create_node<regimpl>(
+              next.size(), 1, cd, rst , enable.impl(), reg, init_data.impl(), sloc, name);
+      } else {
+        reg  = ctx->create_node<regimpl>(
+              next.size(), 1, cd, rst , enable.impl(), next.impl(), init_data.impl(), sloc, name);
+      }
+    }
+  }
   return logic_buffer(reg, name);
 }
 
