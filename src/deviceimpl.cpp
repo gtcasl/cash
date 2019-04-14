@@ -38,7 +38,9 @@ bool deviceimpl::begin_build() const {
 void deviceimpl::end_build() {
   if (!initialized_) {
     compiler compiler(ctx_);
-    compiler.optimize();
+    if (0 == (platform::self().cflags() & cflags::no_smod_opt)) {
+      compiler.optimize();
+    }
   }
 }
 

@@ -1093,50 +1093,64 @@ void context::dump_stats(std::ostream& out) {
   uint64_t num_literals = 0;
   uint64_t num_ops = 0;
   uint64_t num_muxes = 0;
+  uint64_t num_proxies = 0;
+  uint64_t num_other = 0;
 
-  uint64_t input_bits = 0;
-  uint64_t output_bits = 0;
-  uint64_t register_bits = 0;
-  uint64_t memory_bits = 0;
-  uint64_t literal_bits = 0;
+  uint64_t inputs_bits = 0;
+  uint64_t outputs_bits = 0;
+  uint64_t registers_bits = 0;
+  uint64_t memories_bits = 0;
+  uint64_t literals_bits = 0;
+  uint64_t ops_bits = 0;
+  uint64_t muxes_bits = 0;
+  uint64_t proxies_bits = 0;
+  uint64_t other_bits = 0;
 
   std::function<void(context*)> calc_stats = [&](context* ctx) {
     for (lnodeimpl* node : ctx->nodes()) {
       switch (node->type()) {
       case type_input:
         if (nullptr == ctx->parent()) {
-          input_bits += node->size();
+          inputs_bits += node->size();
           ++num_inputs;
         }
         break;
       case type_output:
         if (nullptr == ctx->parent()) {
-          output_bits += node->size();
+          outputs_bits += node->size();
           ++num_outputs;
         }
         break;
       case type_reg:
-        register_bits += node->size();
+        registers_bits += node->size();
         ++num_registers;
         break;
       case type_mem:
-        memory_bits += node->size();
+        memories_bits += node->size();
         ++num_memories;
         break;
       case type_lit:
-        literal_bits += node->size();
+        literals_bits += node->size();
         ++num_literals;
         break;
       case type_op:
+        ops_bits += node->size();
         ++num_ops;
         break;
       case type_sel:
-        ++num_muxes;
+        muxes_bits += node->size();
+        ++num_muxes;        
+        break;
+      case type_proxy:
+        proxies_bits += node->size();
+        ++num_proxies;
         break;
       case type_bind:
         calc_stats(reinterpret_cast<bindimpl*>(node)->module());
         break;
       default:
+        other_bits += node->size();
+        ++num_other;
         break;
       }
     }
@@ -1144,13 +1158,22 @@ void context::dump_stats(std::ostream& out) {
 
   calc_stats(this);
 
-  out << "ch-stats: total inputs = " << num_inputs << " (" << input_bits << " bits)" << std::endl;
-  out << "ch-stats: total outputs = " << num_outputs << " (" << output_bits << " bits)" << std::endl;
-  out << "ch-stats: total registers = " << num_registers << " (" << register_bits << " bits)" << std::endl;
-  out << "ch-stats: total memories = " << num_memories << " (" << memory_bits << " bits)" << std::endl;
-  out << "ch-stats: total literals = " << num_literals << " (" << literal_bits << " bits)" << std::endl;
-  out << "ch-stats: total ops = " << num_ops << std::endl;
-  out << "ch-stats: total muxes = " << num_muxes << std::endl;
+  auto num_nodes = num_inputs + num_outputs + num_registers + num_memories
+                 + num_literals + num_ops + num_muxes + num_proxies + num_other;
+
+  auto nodes_bits = inputs_bits + outputs_bits + registers_bits + memories_bits
+                  + literals_bits + ops_bits + muxes_bits + proxies_bits + other_bits;
+
+  out << "ch-stats: total nodes = " << num_nodes << " (" << nodes_bits << " bits)" << std::endl;
+  out << "ch-stats: total inputs = " << num_inputs << " (" << inputs_bits << " bits, " << ((inputs_bits * 100)/nodes_bits) << "%)" << std::endl;
+  out << "ch-stats: total outputs = " << num_outputs << " (" << outputs_bits << " bits, " << ((outputs_bits * 100)/nodes_bits) << "%)" << std::endl;
+  out << "ch-stats: total registers = " << num_registers << " (" << registers_bits << " bits, " << ((registers_bits * 100)/nodes_bits) << "%)" << std::endl;
+  out << "ch-stats: total memories = " << num_memories << " (" << memories_bits << " bits, " << ((memories_bits * 100)/nodes_bits) << "%)" << std::endl;
+  out << "ch-stats: total literals = " << num_literals << " (" << literals_bits << " bits, " << ((literals_bits * 100)/nodes_bits) << "%)" << std::endl;
+  out << "ch-stats: total ops = " << num_ops << " (" << ops_bits << " bits, " << ((ops_bits * 100)/nodes_bits) << "%)" << std::endl;
+  out << "ch-stats: total muxes = " << num_muxes << " (" << muxes_bits << " bits, " << ((muxes_bits * 100)/nodes_bits) << "%)" << std::endl;
+  out << "ch-stats: total proxies = " << num_proxies << " (" << proxies_bits << " bits, " << ((proxies_bits * 100)/nodes_bits) << "%)" << std::endl;
+  out << "ch-stats: total other = " << num_other << " (" << other_bits << " bits, " << ((other_bits * 100)/nodes_bits) << "%)" << std::endl;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -13,6 +13,7 @@ enum class cflags {
   show_sloc   = (1 << 4),
   reg_init    = (1 << 5),
   check_reg   = (1 << 6),
+  no_smod_opt = (1 << 7),
   disable_jit = (1 << 8),
   disable_cfo = (1 << 9),
   disable_cse = (1 << 10),
