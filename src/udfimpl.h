@@ -111,6 +111,10 @@ public:
     return this->src(cd_idx_);
   }
 
+  const lnode& reset() const {
+    return this->src(reset_idx_);
+  }
+
   lnodeimpl* clone(context* ctx, const clone_map& cloned_nodes) const override;
 
 protected:
@@ -118,10 +122,12 @@ protected:
   udfsimpl(context* ctx,
            udf_iface* udf,
            lnodeimpl* cd,
+           lnodeimpl* reset,
            const std::vector<lnode>& srcs,
            const source_location& sloc);
 
   int cd_idx_;
+  int reset_idx_;
 
   friend class context;
 };

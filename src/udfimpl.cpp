@@ -71,10 +71,12 @@ lnodeimpl* udfcimpl::clone(context* ctx, const clone_map& cloned_nodes) const {
 udfsimpl::udfsimpl(context* ctx,
                    udf_iface* udf,
                    lnodeimpl* cd,
+                   lnodeimpl* reset,
                    const std::vector<lnode>& srcs,
                    const source_location& sloc)
   : udfimpl(ctx, type_udfs, udf, srcs, sloc) {
   cd_idx_ = this->add_src(cd);
+  reset_idx_ = this->add_src(reset);
 }
 
 lnodeimpl* udfsimpl::clone(context* ctx, const clone_map& cloned_nodes) const {
@@ -84,7 +86,8 @@ lnodeimpl* udfsimpl::clone(context* ctx, const clone_map& cloned_nodes) const {
     srcs[i] = cloned_nodes.at(this->src(i).id());
   }
   auto cd = cloned_nodes.at(this->cd().id());
-  return ctx->create_node<udfsimpl>(udf_, cd, srcs, sloc_);
+  auto reset = cloned_nodes.at(this->reset().id());
+  return ctx->create_node<udfsimpl>(udf_, cd, reset, srcs, sloc_);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -22,9 +22,12 @@ struct sfAdd : public udf_seq<ch_float32, ch_float32, ch_float32> {
     dst = bit_cast<int32_t>(lhs + rhs);
   }
 
-  void to_verilog(std::ostream& out) override {
+  bool to_verilog(std::ostream& out, udf_verilog_mode mode) override {
+    if (mode != udf_verilog_mode::body)
+      return false;
     out << "fp_add __fp_add$id(.clock($clock), .clk_en($src2), "
            ".dataa($src0), .datab($src1), .result($dst));";
+    return true;
   }
 };
 
@@ -36,9 +39,12 @@ struct sfSub : public udf_seq<ch_float32, ch_float32, ch_float32> {
     dst = bit_cast<int32_t>(lhs - rhs);
   }
 
-  void to_verilog(std::ostream& out) override {
+  bool to_verilog(std::ostream& out, udf_verilog_mode mode) override {
+    if (mode != udf_verilog_mode::body)
+      return false;
     out << "fp_sub __fp_sub$id(.clock($clock), .clk_en($src2), "
            ".dataa($src0), .datab($src1), .result($dst));";
+    return true;
   }
 };
 
@@ -50,9 +56,12 @@ struct sfMul : public udf_seq<ch_float32, ch_float32, ch_float32> {
     dst = bit_cast<int32_t>(lhs * rhs);
   }
 
-  void to_verilog(std::ostream& out) override {
+  bool to_verilog(std::ostream& out, udf_verilog_mode mode) override {
+    if (mode != udf_verilog_mode::body)
+      return false;
     out << "fp_mul __fp_mul$id(.clock($clock), .clk_en($src2), "
            ".dataa($src0), .datab($src1), .result($dst));";
+    return true;
   }
 };
 
@@ -67,9 +76,12 @@ struct sfDiv : public udf_seq<ch_float32, ch_float32, ch_float32> {
     }
   }
 
-  void to_verilog(std::ostream& out) override {
+  bool to_verilog(std::ostream& out, udf_verilog_mode mode) override {
+    if (mode != udf_verilog_mode::body)
+      return false;
     out << "fp_div __fp_div$id(.clock($clock), .clk_en($src2), "
            ".dataa($src0), .datab($src1), .result($dst));";
+    return true;
   }
 };
 

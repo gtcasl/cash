@@ -132,6 +132,7 @@ void verilogwriter::print_body(std::ostream& out) {
   //
   {
     auto_indent indent(out);
+
     std::unordered_set<uint32_t> visited;
     int written = 0;
     for (auto node : ctx_->literals()) {
@@ -139,6 +140,21 @@ void verilogwriter::print_body(std::ostream& out) {
     }
     for (auto node : ctx_->nodes()) {
       written |= this->print_decl(out, node, visited);
+    }
+    if (written) {
+      out << std::endl;
+    }
+  }
+
+  //
+  // UDF declarations
+  //
+  {
+    auto_indent indent(out);
+
+    int written = 0;
+    for (auto node : ctx_->udfs()) {
+      written |= this->print_udf(out, reinterpret_cast<udfimpl*>(node), udf_verilog_mode::declaration);
     }
     if (written) {
       out << std::endl;
@@ -384,7 +400,7 @@ bool verilogwriter::print_logic(std::ostream& out, lnodeimpl* node) {
     return this->print_bindport(out, reinterpret_cast<bindportimpl*>(node));
   case type_udfc:
   case type_udfs:
-    return this->print_udf(out, reinterpret_cast<udfimpl*>(node));
+    return this->print_udf(out, reinterpret_cast<udfimpl*>(node), udf_verilog_mode::body);
   default:
     assert(false);
   case type_lit:
@@ -810,7 +826,7 @@ bool verilogwriter::print_mem(std::ostream& out, memimpl* node) {
   return true;
 }
 
-bool verilogwriter::print_udf(std::ostream& out, udfimpl* node) {
+bool verilogwriter::print_udf(std::ostream& out, udfimpl* node, udf_verilog_mode mode) {
   std::unordered_map<std::string, std::string> dic;
 
   auto dict_add = [&](const std::string& key, lnodeimpl* value) {
@@ -831,48 +847,54 @@ bool verilogwriter::print_udf(std::ostream& out, udfimpl* node) {
   if (udf->is_seq()) {
     auto udfs = reinterpret_cast<udfsimpl*>(node);
     auto cd = reinterpret_cast<cdimpl*>(udfs->cd().impl());
-    dict_add("clock", cd->clk().impl());
+    dict_add("clk", cd->clk().impl());
+    dict_add("reset", udfs->reset().impl());
   }
 
   std::string code;
+  bool changed;
   {
     // load code template
     std::ostringstream os;
-    udf->impl()->to_verilog(os);
+    changed = udf->impl()->to_verilog(os, mode);
     code = os.str();
   }
 
-  // replace tokens
-  static const std::string Identifier("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ01234567890_");
-  std::string::size_type start = 0, pos = 0;
-  auto len = code.length();
-  while ((pos = code.find('$', pos)) != std::string::npos) {
-    auto k = pos + 1;
-    if (k < len) {
-      auto end = code.find_first_not_of(Identifier, k);
-      if (end == std::string::npos || end > k) {
-        auto key = code.substr(k, end - k);
-        auto it = dic.find(key);
-        if (it != dic.end()) {
-          out << code.substr(start, pos - start);
-          out << it->second;
-          start = end;
-          pos = end;
-          if (pos == std::string::npos)
-            break;
-          continue;
+  if (changed) {
+    // replace tokens
+    static const std::string Identifier("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ01234567890_");
+    std::string::size_type start = 0, pos = 0;
+    auto len = code.length();
+    while ((pos = code.find('$', pos)) != std::string::npos) {
+      auto k = pos + 1;
+      if (k < len) {
+        auto end = code.find_first_not_of(Identifier, k);
+        if (end == std::string::npos || end > k) {
+          auto key = code.substr(k, end - k);
+          auto it = dic.find(key);
+          if (it != dic.end()) {
+            out << code.substr(start, pos - start);
+            out << it->second;
+            start = end;
+            pos = end;
+            if (pos == std::string::npos)
+              break;
+            continue;
+          }
         }
       }
+
+      out << code.substr(start, k - start);
+      start = k;
+      pos = k;
     }
-    out << code.substr(start, k - start);
-    start = k;
-    pos = k;
+    if (start != std::string::npos) {
+      out << code.substr(start);
+    }
+    out << std::endl;
   }
-  if (start != std::string::npos) {
-    out << code.substr(start);
-  }
-  out << std::endl;
-  return true;
+
+  return changed;
 }
 
 void verilogwriter::print_name(std::ostream& out, lnodeimpl* node, bool force) {
@@ -1024,23 +1046,26 @@ void verilogwriter::print_operator(std::ostream& out, ch_op op) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-std::function<void (std::ostream& out, context*, std::unordered_set<udf_iface*>&)>
+std::function<bool (std::ostream& out, context*, std::unordered_set<udf_iface*>&)>
   print_udf_dependencies = [](std::ostream& out, context* ctx, std::unordered_set<udf_iface*>& visited) {
+  bool changed = false;
   for (auto node : ctx->bindings()) {
     auto binding = reinterpret_cast<bindimpl*>(node);
-    print_udf_dependencies(out, binding->module(), visited);
+    if (print_udf_dependencies(out, binding->module(), visited))
+      changed = true;
   }
-  for (auto node : ctx->nodes()) {
-    if (type_udfc != node->type()
-     && type_udfs != node->type())
-      continue;
+
+  for (auto node : ctx->udfs()) {
     auto udf = reinterpret_cast<udfimpl*>(node)->udf();
     if (0 == visited.count(udf)) {
-      udf->impl()->init_verilog(out);
-      out << std::endl;
+      if (udf->impl()->to_verilog(out, udf_verilog_mode::header)) {
+        out << std::endl;
+        changed =true;
+      }
       visited.insert(udf);
     }
   }
+  return changed;
 };
 
 void ch::internal::ch_toVerilog(std::ostream& out, const device& device) {
@@ -1051,7 +1076,9 @@ void ch::internal::ch_toVerilog(std::ostream& out, const device& device) {
   auto ctx = device.impl()->ctx();
   visited.insert(ctx->name());
   if (!ctx->udfs().empty()) {    
-    print_udf_dependencies(out, ctx, udf_visited);
+    if (print_udf_dependencies(out, ctx, udf_visited)) {
+      out << std::endl;
+    }
   }  
   verilogwriter writer(ctx);  
   writer.print(out, visited);

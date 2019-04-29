@@ -12,12 +12,11 @@ namespace {
       dst = *(int32_t*)&lhs + *(int32_t*)&rhs;
     }
 
-    void init_verilog(std::ostream& out) override {
-      out << "// comment";
-    }
-
-    void to_verilog(std::ostream& out) override {
+    bool to_verilog(std::ostream& out, udf_verilog_mode mode) override {
+      if (mode != udf_verilog_mode::body)
+        return false;
       out << "assign $dst = $signed($src0) + $signed($src1);";
+      return true;
     }
   };
 
@@ -29,12 +28,11 @@ namespace {
       dst = *(int32_t*)&lhs + *(int32_t*)&rhs;
     }
 
-    void init_verilog(std::ostream& out) override {
-      out << "// comment";
-    }
-
-    void to_verilog(std::ostream& out) override {
+    bool to_verilog(std::ostream& out, udf_verilog_mode mode) override {
+      if (mode != udf_verilog_mode::body)
+        return false;
       out << "assign $dst = $signed($src0) + $signed($src1);";
+      return true;
     }
   };
 }

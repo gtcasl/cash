@@ -1012,7 +1012,8 @@ udfimpl* context::create_udf_node(udf_iface* udf,
                                   const source_location& sloc) {
   if (udf->is_seq()) {
     auto cd = this->current_cd(sloc);
-    return this->create_node<udfsimpl>(udf, cd, inputs, sloc);
+    auto reset = this->current_reset(sloc);
+    return this->create_node<udfsimpl>(udf, cd, reset, inputs, sloc);
   } else {
     return this->create_node<udfcimpl>(udf, inputs, sloc);
   }

@@ -48,6 +48,8 @@ CH_DEF_SFINAE_CHECK(is_udf_type, is_udf_traits_v<typename std::decay_t<T>::trait
 
 ///////////////////////////////////////////////////////////////////////////////
 
+enum class udf_verilog_mode { header, declaration, body };
+
 class udf_base : public refcounted {
 public:
 
@@ -56,9 +58,7 @@ public:
 
   virtual void eval(udf_output&, const udf_inputs&) = 0;
 
-  virtual void init_verilog(std::ostream& out) = 0;
-
-  virtual void to_verilog(std::ostream& out) = 0;
+  virtual bool to_verilog(std::ostream& out, udf_verilog_mode mode) = 0;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -69,9 +69,7 @@ public:
 
   using traits = udf_traits<false, Output, Inputs...>;
 
-  void init_verilog(std::ostream&) override {}
-
-  void to_verilog(std::ostream&) override {}
+  bool to_verilog(std::ostream&, udf_verilog_mode) override { return false; }
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -82,9 +80,7 @@ public:
 
   using traits = udf_traits<true, Output, Inputs...>;
 
-  void init_verilog(std::ostream&) override {}
-
-  void to_verilog(std::ostream&) override {}
+  bool to_verilog(std::ostream&, udf_verilog_mode) override { return false; }
 };
 
 ///////////////////////////////////////////////////////////////////////////////

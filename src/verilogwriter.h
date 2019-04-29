@@ -23,6 +23,7 @@ class udfsimpl;
 class tapimpl;
 class source_location;
 enum class ch_op;
+enum class udf_verilog_mode;
 
 class verilogwriter {
 public:
@@ -74,7 +75,7 @@ protected:
 
   bool print_mem(std::ostream& out, memimpl* node);
 
-  bool print_udf(std::ostream& out, udfimpl* node);
+  bool print_udf(std::ostream& out, udfimpl* node, udf_verilog_mode mode);
 
   void print_name(std::ostream& out,
                   lnodeimpl* node,

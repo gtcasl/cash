@@ -343,6 +343,7 @@ namespace extension {
   using ch::internal::udf_seq;
   using ch::internal::udf_output;
   using ch::internal::udf_inputs;
+  using ch::internal::udf_verilog_mode;
   using ch::internal::lnode;
 
   using ch::internal::system_op_equality;
