@@ -61,7 +61,23 @@ __struct (sd3_t, (
   (ch_bit4) d
 ));
 
+__struct (qw_t, (
+  (ch_bool) a,
+  (ch_bool) b,
+  (ch_uint8) c
+));
+
+__struct (qw2_t, (
+  (ch_bool) a,
+  (ch_bool) b,
+  (e2_t) c
+));
+
 void foo() {
+  {
+    qw_t qw{false, false, 1};
+    qw2_t qw2{e2_t::done, false, false};
+  }
   {
     auto d1 = ch_device<TestModule>();
     ch_device d2;

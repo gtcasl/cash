@@ -9,6 +9,7 @@ template <typename T, unsigned N>
 class vec_base : public std::array<T, N> {
 protected:
   using base = std::array<T, N>;
+  static const std::size_t array_size = N;
 
   template <typename... Us,
             CH_REQUIRE_0(sizeof...(Us) == N && is_fold_constructible_v<T, Us...>)>

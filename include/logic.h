@@ -192,15 +192,15 @@ auto make_logic_op(const A& a, const B& b) {
 ///////////////////////////////////////////////////////////////////////////////
 
 #define CH_LOGIC_INTERFACE(type) \
-  template <typename R> \
-  std::add_const_t<R> as() const { \
-  static_assert(ch::internal::is_logic_type_v<R>, "invalid type"); \
-    return ch::internal::logic_accessor::cast<R>(*this); \
+  template <typename __R> \
+  std::add_const_t<__R> as() const { \
+  static_assert(ch::internal::is_logic_type_v<__R>, "invalid type"); \
+    return ch::internal::logic_accessor::cast<__R>(*this); \
   } \
-  template <typename R> \
+  template <typename __R> \
   auto as() { \
-    static_assert(ch::internal::is_logic_type_v<R>, "invalid type"); \
-    return ch::internal::logic_accessor::cast<R>(*this); \
+    static_assert(ch::internal::is_logic_type_v<__R>, "invalid type"); \
+    return ch::internal::logic_accessor::cast<__R>(*this); \
   } \
   auto as_bit() const { \
     return this->as<ch::internal::ch_bit<type::traits::bitwidth>>(); \

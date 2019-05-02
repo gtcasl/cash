@@ -251,29 +251,29 @@ auto make_system_op(SystemFunc3 func, const A& lhs, const B& rhs) {
 ///////////////////////////////////////////////////////////////////////////////
 
 #define CH_SYSTEM_INTERFACE(type) \
-  template <typename U, CH_REQUIRE_0(std::is_integral_v<U> && std::is_unsigned_v<U>)> \
+  template <typename __U, CH_REQUIRE_0(std::is_integral_v<__U> && std::is_unsigned_v<__U>)> \
   void read(uint32_t src_offset, \
-            U* out, \
+            __U* out, \
             uint32_t dst_offset = 0, \
             uint32_t length = type::traits::bitwidth) const { \
-    this->buffer()->read(src_offset, out, sizeof(U), dst_offset, length); \
+    this->buffer()->read(src_offset, out, sizeof(__U), dst_offset, length); \
   } \
-  template <typename U, CH_REQUIRE_0(std::is_integral_v<U> && std::is_unsigned_v<U>)> \
+  template <typename __U, CH_REQUIRE_0(std::is_integral_v<__U> && std::is_unsigned_v<__U>)> \
   void write(uint32_t dst_offset, \
-             const U* in, \
+             const __U* in, \
              uint32_t src_offset = 0, \
              uint32_t length = type::traits::bitwidth) { \
-    this->buffer()->write(dst_offset, in, sizeof(U), src_offset, length); \
+    this->buffer()->write(dst_offset, in, sizeof(__U), src_offset, length); \
   } \
-  template <typename R> \
-  std::add_const_t<R> as() const { \
-    static_assert(ch::internal::is_system_type_v<R>, "invalid type"); \
-    return ch::internal::system_accessor::cast<R>(*this); \
+  template <typename __R> \
+  std::add_const_t<__R> as() const { \
+    static_assert(ch::internal::is_system_type_v<__R>, "invalid type"); \
+    return ch::internal::system_accessor::cast<__R>(*this); \
   } \
-  template <typename R> \
+  template <typename __R> \
   auto as() { \
-    static_assert(ch::internal::is_system_type_v<R>, "invalid type"); \
-    return ch::internal::system_accessor::cast<R>(*this); \
+    static_assert(ch::internal::is_system_type_v<__R>, "invalid type"); \
+    return ch::internal::system_accessor::cast<__R>(*this); \
   } \
   auto as_scbit() const { \
     return this->as<ch_scbit<type::traits::bitwidth>>(); \
@@ -316,15 +316,15 @@ auto make_system_op(SystemFunc3 func, const A& lhs, const B& rhs) {
   friend auto op(const Derived& lhs, const Derived& rhs) { \
     CH_REM body; \
   } \
-  template <typename U, \
-            CH_REQUIRE_0(is_strictly_constructible_v<Derived, U>)> \
-  friend auto op(const Derived& lhs, const U& _rhs) { \
+  template <typename __U, \
+            CH_REQUIRE_0(is_strictly_constructible_v<Derived, __U>)> \
+  friend auto op(const Derived& lhs, const __U& _rhs) { \
     Derived rhs(_rhs); \
     CH_REM body; \
   } \
-  template <typename U, \
-            CH_REQUIRE_0(is_strictly_constructible_v<Derived, U>)> \
-  friend auto op(const U& _lhs, const Derived& rhs) { \
+  template <typename __U, \
+            CH_REQUIRE_0(is_strictly_constructible_v<Derived, __U>)> \
+  friend auto op(const __U& _lhs, const Derived& rhs) { \
     Derived lhs(_lhs); \
     CH_REM body; \
   }
