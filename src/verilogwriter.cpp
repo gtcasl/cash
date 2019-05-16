@@ -5,6 +5,7 @@
 #include "deviceimpl.h"
 #include "bindimpl.h"
 #include "litimpl.h"
+#include "cdimpl.h"
 #include "regimpl.h"
 #include "memimpl.h"
 #include "ioimpl.h"

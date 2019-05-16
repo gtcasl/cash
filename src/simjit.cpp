@@ -3,6 +3,7 @@
 #include "simjit.h"
 #include "bindimpl.h"
 #include "litimpl.h"
+#include "cdimpl.h"
 #include "regimpl.h"
 #include "memimpl.h"
 #include "ioimpl.h"
@@ -604,7 +605,7 @@ private:
 
   struct udf_data_t {
     uint32_t dst_width;
-    udf_iface* udf;
+    udf_obj* udf;
     sdata_type* srcs;
 
     static uint32_t size(udfimpl* node) {

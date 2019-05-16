@@ -1,5 +1,7 @@
 #include "bindimpl.h"
+#include "proxyimpl.h"
 #include "ioport.h"
+#include "cdimpl.h"
 #include "context.h"
 
 using namespace ch::internal;
@@ -156,16 +158,22 @@ void bindportimpl::print(std::ostream& out) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void ch::internal::bindInput(const lnode& src, const lnode& input) {
+lnodeimpl* ch::internal::createInputNode(const lnode& output,
+                                         const sloc_getter&) {
   auto sloc = get_source_location();
-  auto ctx = src.impl()->ctx();
-  auto binding = ctx->current_binding();  
-  binding->bind_input(src.impl(), reinterpret_cast<inputimpl*>(input.impl()), sloc);
+  auto ctx = ctx_curr();
+  auto binding = ctx->current_binding();
+  auto node = ctx->create_node<proxyimpl>(output.size(), sloc, output.name());
+  binding->bind_output(node, reinterpret_cast<outputimpl*>(output.impl()), sloc);
+  return node;
 }
 
-void ch::internal::bindOutput(const lnode& dst, const lnode& output) {
+lnodeimpl* ch::internal::createOutputNode(const lnode& input,
+                                          const sloc_getter&) {
   auto sloc = get_source_location();
-  auto ctx = dst.impl()->ctx();
+  auto ctx = ctx_curr();
   auto binding = ctx->current_binding();
-  binding->bind_output(dst.impl(), reinterpret_cast<outputimpl*>(output.impl()), sloc);
+  auto node = ctx->create_node<proxyimpl>(input.size(), sloc, input.name());
+  binding->bind_input(node, reinterpret_cast<inputimpl*>(input.impl()), sloc);
+  return node;
 }

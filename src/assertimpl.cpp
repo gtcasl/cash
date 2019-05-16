@@ -1,16 +1,8 @@
 #include "assertimpl.h"
 #include "timeimpl.h"
-#include "assertion.h"
 #include "context.h"
 
 using namespace ch::internal;
-
-void ch::internal::ch_assert(const ch_bit<1>& cond, const std::string& msg) {
-  CH_SOURCE_LOCATION(1);
-  auto sloc = get_source_location();
-  auto lcond = get_lnode(cond).impl();
-  lcond->ctx()->create_node<assertimpl>(lcond, msg, sloc);
-}
 
 assertimpl::assertimpl(context* ctx,
                        lnodeimpl* cond,
@@ -53,4 +45,12 @@ lnodeimpl* assertimpl::clone(context* ctx, const clone_map& cloned_nodes) const 
     pred = cloned_nodes.at(this->pred().id());
   }
   return ctx->create_node<assertimpl>(cond, pred, msg_, sloc_);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void ch::internal::createAssertNode(const lnode& cond, const std::string& msg) {
+  auto sloc = get_source_location();
+  auto cimpl = cond.impl();
+  cimpl->ctx()->create_node<assertimpl>(cimpl, msg, sloc);
 }

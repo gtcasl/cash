@@ -81,8 +81,8 @@ public:
     return ctx;
   }
 
-  udf_iface* lookup_udf(const std::type_index& signature, bool has_args) {
-    udf_iface* udf = nullptr;
+  udf_obj* lookup_udf(const std::type_index& signature, bool has_args) {
+    udf_obj* udf = nullptr;
     if (!has_args) {
       auto it = udf_signatures_.find(signature);
       if (it != udf_signatures_.end()) {
@@ -96,7 +96,7 @@ public:
     return udf;
   }
 
-  udf_iface* create_udf(const std::type_index& signature,
+  udf_obj* create_udf(const std::type_index& signature,
                         bool has_args,
                         const std::string& name,
                         bool is_seq,
@@ -104,14 +104,14 @@ public:
                         const std::initializer_list<uint32_t>& inputs_size,
                         udf_base* udf) {
     uint32_t id = this->udf_id();
-    auto iface = new udf_iface(id, name, is_seq, output_size, inputs_size, udf);
+    auto obj = new udf_obj(id, name, is_seq, output_size, inputs_size, udf);
     if (!has_args) {
-      pod_udfs_.emplace(id, iface);
+      pod_udfs_.emplace(id, obj);
       [[maybe_unused]] auto status = udf_signatures_.emplace(signature, id);
       assert(status.second);
-      iface->set_managed(true);
+      obj->set_managed(true);
     }
-    return iface;
+    return obj;
   }
 
   void destroy_udf(uint32_t id) {
@@ -159,7 +159,7 @@ protected:
   std::unordered_map<uint32_t, context*> pod_contexts_;
   dup_tracker<std::string> dup_ctx_names_;
   std::unordered_map<std::type_index, uint32_t> udf_signatures_;
-  std::unordered_map<uint32_t, udf_iface*> pod_udfs_;
+  std::unordered_map<uint32_t, udf_obj*> pod_udfs_;
 #ifdef CALLTRACE
   sloc_manager src_loc_manager_;
 #endif
@@ -196,6 +196,13 @@ refcounted* ch::internal::createUDF(const std::type_index& signature,
 
 void ch::internal::destroyUDF(uint32_t id) {
   context_manager::instance().destroy_udf(id);
+}
+
+void ch::internal::registerUDF(const std::type_index& signature,
+                               const std::string& name,
+                               bool is_seq,
+                               udf_iface* udf) {
+  CH_TODO();
 }
 
 bool ch::internal::register_source_location(uint32_t level) {
@@ -1007,7 +1014,7 @@ void context::register_tap(const lnode& node,
   this->create_node<tapimpl>(node, sid, sloc);
 }
 
-udfimpl* context::create_udf_node(udf_iface* udf,
+udfimpl* context::create_udf_node(udf_obj* udf,
                                   const std::vector<lnode>& inputs,
                                   const source_location& sloc) {
   if (udf->is_seq()) {
@@ -1017,6 +1024,18 @@ udfimpl* context::create_udf_node(udf_iface* udf,
   } else {
     return this->create_node<udfcimpl>(udf, inputs, sloc);
   }
+}
+
+lnodeimpl* context::create_udf_input(uint32_t size,
+                                     const std::string& name,
+                                     const source_location& sloc) {
+  CH_TODO();
+}
+
+lnodeimpl* context::create_udf_output(uint32_t size,
+                                      const std::string& name,
+                                      const source_location& sloc) {
+  CH_TODO();
 }
 
 void context::register_enum_string(uint32_t id, enum_string_cb callback) {

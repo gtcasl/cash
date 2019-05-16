@@ -26,7 +26,9 @@
   m(assert) \
   m(print) \
   m(udfc) \
-  m(udfs)
+  m(udfs) \
+  m(udfin) \
+  m(udfout)
 
 namespace ch {
 namespace internal {

@@ -28,6 +28,7 @@ class assertimpl;
 class timeimpl;
 class udfimpl;
 class udf_base;
+class udf_obj;
 class udf_iface;
 class clock_event;
 class source_location;
@@ -259,9 +260,17 @@ public:
 
   //--
 
-  udfimpl* create_udf_node(udf_iface* udf,
+  udfimpl* create_udf_node(udf_obj* udf,
                            const std::vector<lnode>& inputs,
                            const source_location& sloc);
+
+  lnodeimpl* create_udf_input(uint32_t size,
+                              const std::string& name,
+                              const source_location& sloc);
+
+  lnodeimpl* create_udf_output(uint32_t size,
+                               const std::string& name,
+                               const source_location& sloc);
 
   //--
   

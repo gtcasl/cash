@@ -97,7 +97,7 @@ public:
 
 protected:
 
-  const system_buffer_ptr& buffer() const {
+  const system_buffer_ptr& __buffer() const {
     return buffer_;
   }
 
@@ -109,6 +109,30 @@ protected:
     return out << system_accessor::data(in);
   }
 };
+
+//
+// read/write function
+//
+
+template <typename T, typename U>
+void ch_read(const T& obj,
+             uint32_t src_offset,
+             U* out,
+             uint32_t dst_offset = 0,
+             uint32_t length = ch_width_v<T>) {
+  static_assert(is_system_type_v<T>, "invalid type");
+  system_accessor::buffer(obj)->read(src_offset, out, sizeof(U), dst_offset, length);
+}
+
+template <typename T, typename U>
+void ch_write(T& obj,
+              uint32_t dst_offset,
+              U* in,
+              uint32_t src_offset = 0,
+              uint32_t length = ch_width_v<T>) {
+  static_assert(is_system_type_v<T>, "invalid type");
+  system_accessor::buffer(obj)->write(dst_offset, in, sizeof(U), src_offset, length);
+}
 
 }
 }

@@ -151,7 +151,7 @@ protected:
     : base(logic_buffer(ch_width_v<T>, buffer, Is * ch_width_v<T>, stringf("%d", Is))...)
   {}
 
-  const logic_buffer& buffer() const {
+  const logic_buffer& __buffer() const {
     return logic_accessor::source(this->at(0));
   }
 
@@ -236,7 +236,7 @@ protected:
     : base(make_system_buffer(ch_width_v<T>, buffer, Is * ch_width_v<T>)...)
   {}
 
-  const system_buffer_ptr& buffer() const {
+  const system_buffer_ptr& __buffer() const {
     return system_accessor::source(this->at(0));
   }
 
@@ -265,7 +265,10 @@ public:
                                  ch_direction_v<T>,
                                  ch_vec,
                                  ch_vec<ch_flip_io<T>, N>,
-                                 ch_vec<ch_system_io<T>, N>>;
+                                 ch_vec<ch_system_io<T>, N>,
+                                 ch_vec<ch_flip_io<ch_system_io<T>>, N>,
+                                 ch_vec<ch_system_t<T>, N>,
+                                 ch_vec<ch_logic_t<T>, N>>;
   using base = vec_base<T, N>;
   using base::operator [];
 
@@ -274,6 +277,10 @@ public:
   {}
 
   explicit ch_vec(const typename traits::flip_io& other)
+    : ch_vec(sloc_getter(), other, std::make_index_sequence<N>())
+  {}
+
+  explicit ch_vec(const typename traits::system_flip_io& other)
     : ch_vec(sloc_getter(), other, std::make_index_sequence<N>())
   {}
 
@@ -317,9 +324,16 @@ public:
                                   ch_direction_v<T>,
                                   ch_vec,
                                   ch_vec<ch_flip_io<T>, N>,
-                                  ch_vec<ch_logic_io<T>, N>>;
+                                  ch_vec<ch_logic_io<T>, N>,
+                                  ch_vec<ch_flip_io<ch_logic_io<T>>, N>,
+                                  ch_vec<ch_system_t<T>, N>,
+                                  ch_vec<ch_logic_t<T>, N>>;
   using base = vec_base<T, N>;
   using base::operator [];
+
+  explicit ch_vec(const std::string& name = idname<ch_vec>())
+    : ch_vec(name, std::make_index_sequence<N>())
+  {}
 
   explicit ch_vec(const typename traits::logic_io& other)
     : ch_vec(other, std::make_index_sequence<N>())
@@ -342,6 +356,11 @@ protected:
   ch_vec& operator=(const ch_vec& other) = delete;
 
   ch_vec& operator=(ch_vec&& other) = delete;
+
+  template <std::size_t...Is>
+  ch_vec(const std::string& name, std::index_sequence<Is...>)
+    : base(stringf("%s_%d", name.c_str(), Is)...)
+  {}
 
   template <typename U, std::size_t...Is>
   ch_vec(const vec_base<U, N>& other, std::index_sequence<Is...>)

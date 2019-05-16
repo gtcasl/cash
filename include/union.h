@@ -50,7 +50,7 @@
     return *this; \
   } \
 protected: \
-  const ch::internal::system_buffer_ptr& buffer() const { \
+  const ch::internal::system_buffer_ptr& __buffer() const { \
     CH_STRUCT_SYSTEM_SOURCE(0, CH_FIRST_ARG(__VA_ARGS__)); \
   } \
   friend std::ostream& operator<<(std::ostream& __out, const union_name& __in) { \
@@ -90,7 +90,7 @@ public:
     return *this; \
   } \
 protected: \
-  const ch::internal::logic_buffer& buffer() const { \
+  const ch::internal::logic_buffer& __buffer() const { \
     CH_STRUCT_LOGIC_SOURCE(0, CH_FIRST_ARG(__VA_ARGS__)); \
   } \
   friend class ch::internal::logic_accessor; \

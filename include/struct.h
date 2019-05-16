@@ -17,6 +17,12 @@
 #define CH_STRUCT_LOGIC_FIELD(a, i, x) \
   ch_logic_t<ch::internal::identity_t<CH_PAIR_L(x)>> CH_PAIR_R(x)
 
+#define CH_STRUCT_SYSTEM_FIELD_CTOR_ARGS(a, i, x) \
+  const ch_system_t<ch::internal::identity_t<CH_PAIR_L(x)>>& CH_CONCAT(_,CH_PAIR_R(x))
+
+#define CH_STRUCT_LOGIC_FIELD_CTOR_ARGS(a, i, x) \
+  const ch_logic_t<ch::internal::identity_t<CH_PAIR_L(x)>>& CH_CONCAT(_,CH_PAIR_R(x))
+
 #define CH_STRUCT_SYSTEM_CTOR(a, i, x) \
   CH_PAIR_R(x)(ch::internal::make_system_buffer( \
     ch_width_v<ch::internal::identity_t<CH_PAIR_L(x)>>, buffer, __field_offset##i))
@@ -24,12 +30,6 @@
 #define CH_STRUCT_LOGIC_CTOR(a, i, x) \
   CH_PAIR_R(x)(ch::internal::logic_buffer( \
     ch_width_v<ch::internal::identity_t<CH_PAIR_L(x)>>, buffer, __field_offset##i, CH_STRINGIZE(CH_PAIR_R(x))))
-
-#define CH_STRUCT_SYSTEM_FIELD_CTOR_ARGS(a, i, x) \
-  const ch_system_t<ch::internal::identity_t<CH_PAIR_L(x)>>& CH_CONCAT(_,CH_PAIR_R(x))
-
-#define CH_STRUCT_LOGIC_FIELD_CTOR_ARGS(a, i, x) \
-  const ch_logic_t<ch::internal::identity_t<CH_PAIR_L(x)>>& CH_CONCAT(_,CH_PAIR_R(x))
 
 #define CH_STRUCT_FIELD_CTOR_INIT(a, i, x) \
   CH_PAIR_R(x) = CH_CONCAT(_,CH_PAIR_R(x))
@@ -46,12 +46,12 @@
   } \
   __out << __in.CH_PAIR_R(x)
 
-#define CH_BASIC_STRUCT_SYSTEM_IMPL(struct_name, field_body, ...) \
+#define CH_BASIC_STRUCT_SYSTEM_IMPL(struct_name, ...) \
 private: \
   enum { __field_offset0 = 0, \
            CH_FOR_EACH(CH_STRUCT_FIELD_OFFSET, , CH_SEP_COMMA, __VA_ARGS__) }; \
 public: \
-  CH_FOR_EACH(field_body, , CH_SEP_SEMICOLON, __VA_ARGS__); \
+  CH_FOR_EACH(CH_STRUCT_SYSTEM_FIELD, , CH_SEP_SEMICOLON, __VA_ARGS__); \
   struct_name(const ch::internal::system_buffer_ptr& buffer = \
     ch::internal::make_system_buffer(traits::bitwidth)) \
     : CH_FOR_EACH(CH_STRUCT_SYSTEM_CTOR, , CH_SEP_COMMA, __VA_ARGS__) {} \
@@ -75,7 +75,7 @@ public: \
     return *this; \
   } \
 protected: \
-  const ch::internal::system_buffer_ptr& buffer() const { \
+  const ch::internal::system_buffer_ptr& __buffer() const { \
     CH_STRUCT_SYSTEM_SOURCE(0, CH_FIRST_ARG(__VA_ARGS__)); \
   } \
   friend std::ostream& operator<<(std::ostream& __out, const struct_name& __in) { \
@@ -87,12 +87,12 @@ protected: \
   friend class ch::internal::system_accessor; \
 public:
 
-#define CH_BASIC_STRUCT_LOGIC_IMPL(struct_name, field_body, ...) \
+#define CH_BASIC_STRUCT_LOGIC_IMPL(struct_name, ...) \
 private: \
   enum { __field_offset0 = 0, \
            CH_FOR_EACH(CH_STRUCT_FIELD_OFFSET, , CH_SEP_COMMA, __VA_ARGS__) }; \
 public: \
-  CH_FOR_EACH(field_body, , CH_SEP_SEMICOLON, __VA_ARGS__); \
+  CH_FOR_EACH(CH_STRUCT_LOGIC_FIELD, , CH_SEP_SEMICOLON, __VA_ARGS__); \
   struct_name(const ch::internal::logic_buffer& buffer = \
     ch::internal::logic_buffer(traits::bitwidth, CH_STRINGIZE(struct_name))) \
     : CH_FOR_EACH(CH_STRUCT_LOGIC_CTOR, , CH_SEP_COMMA, __VA_ARGS__) {} \
@@ -126,18 +126,18 @@ public: \
     return *this; \
   } \
 protected: \
-  const ch::internal::logic_buffer& buffer() const { \
+  const ch::internal::logic_buffer& __buffer() const { \
     CH_STRUCT_LOGIC_SOURCE(0, CH_FIRST_ARG(__VA_ARGS__)); \
   } \
   friend class ch::internal::logic_accessor; \
 public:
 
-#define CH_DERIVED_STRUCT_SYSTEM_IMPL(struct_name, field_body, ...) \
+#define CH_DERIVED_STRUCT_SYSTEM_IMPL(struct_name, ...) \
 private: \
   enum { __field_offset0 = ch_width_v<base>, \
          CH_FOR_EACH(CH_STRUCT_FIELD_OFFSET, , CH_SEP_COMMA, __VA_ARGS__) }; \
 public: \
-  CH_FOR_EACH(field_body, , CH_SEP_SEMICOLON, __VA_ARGS__); \
+  CH_FOR_EACH(CH_STRUCT_SYSTEM_FIELD, , CH_SEP_SEMICOLON, __VA_ARGS__); \
   struct_name(const ch::internal::system_buffer_ptr& buffer = \
     ch::internal::make_system_buffer(traits::bitwidth)) \
     : base(buffer) \
@@ -163,8 +163,8 @@ public: \
     return *this; \
   } \
 protected: \
-  const ch::internal::system_buffer_ptr& buffer() const { \
-    return base::buffer(); \
+  const ch::internal::system_buffer_ptr& __buffer() const { \
+    return base::__buffer(); \
   } \
   friend std::ostream& operator<<(std::ostream& __out, const struct_name& __in) { \
     __out << "("; \
@@ -177,12 +177,12 @@ protected: \
   friend class ch::internal::system_accessor; \
 public:
 
-#define CH_DERIVED_STRUCT_LOGIC_IMPL(struct_name, field_body, ...) \
+#define CH_DERIVED_STRUCT_LOGIC_IMPL(struct_name, ...) \
 private: \
   enum { __field_offset0 = ch_width_v<base>, \
          CH_FOR_EACH(CH_STRUCT_FIELD_OFFSET, , CH_SEP_COMMA, __VA_ARGS__) }; \
 public: \
-  CH_FOR_EACH(field_body, , CH_SEP_SEMICOLON, __VA_ARGS__); \
+  CH_FOR_EACH(CH_STRUCT_LOGIC_FIELD, , CH_SEP_SEMICOLON, __VA_ARGS__); \
   struct_name(const ch::internal::logic_buffer& buffer = \
     ch::internal::logic_buffer(traits::bitwidth, CH_STRINGIZE(struct_name))) \
     : base(buffer) \
@@ -218,8 +218,8 @@ public: \
     return *this; \
   } \
 protected: \
-  const ch::internal::logic_buffer& buffer() const { \
-    return base::buffer(); \
+  const ch::internal::logic_buffer& __buffer() const { \
+    return base::__buffer(); \
   } \
   friend class ch::internal::logic_accessor; \
 public:
@@ -230,12 +230,12 @@ public:
     class __system_type__ { \
     public: \
       using traits = ch::internal::system_traits<CH_STRUCT_SIZE(__VA_ARGS__), false, __system_type__, struct_name>; \
-      CH_BASIC_STRUCT_SYSTEM_IMPL(__system_type__, CH_STRUCT_SYSTEM_FIELD, __VA_ARGS__) \
+      CH_BASIC_STRUCT_SYSTEM_IMPL(__system_type__, __VA_ARGS__) \
       CH_SYSTEM_INTERFACE(__system_type__) \
     }; \
   public: \
     using traits = ch::internal::logic_traits<CH_STRUCT_SIZE(__VA_ARGS__), false, struct_name, __system_type__>; \
-    CH_BASIC_STRUCT_LOGIC_IMPL(struct_name, CH_STRUCT_LOGIC_FIELD, __VA_ARGS__) \
+    CH_BASIC_STRUCT_LOGIC_IMPL(struct_name, __VA_ARGS__) \
     CH_LOGIC_INTERFACE(struct_name) \
   }
 
@@ -246,13 +246,13 @@ public:
     public: \
       using base = ch_system_t<parent>; \
       using traits = ch::internal::system_traits<ch_width_v<base> + CH_STRUCT_SIZE(__VA_ARGS__), false, __system_type__, struct_name>; \
-      CH_DERIVED_STRUCT_SYSTEM_IMPL(__system_type__, CH_STRUCT_SYSTEM_FIELD, __VA_ARGS__) \
+      CH_DERIVED_STRUCT_SYSTEM_IMPL(__system_type__, __VA_ARGS__) \
       CH_SYSTEM_INTERFACE(__system_type__) \
     }; \
   public: \
     using base = parent; \
     using traits = ch::internal::logic_traits<ch_width_v<base> + CH_STRUCT_SIZE(__VA_ARGS__), false, struct_name, __system_type__>; \
-    CH_DERIVED_STRUCT_LOGIC_IMPL(struct_name, CH_STRUCT_LOGIC_FIELD, __VA_ARGS__) \
+    CH_DERIVED_STRUCT_LOGIC_IMPL(struct_name, __VA_ARGS__) \
     CH_LOGIC_INTERFACE(struct_name) \
   }
 

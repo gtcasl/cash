@@ -1,5 +1,6 @@
 #include "compile.h"
 #include "litimpl.h"
+#include "cdimpl.h"
 #include "regimpl.h"
 #include "opimpl.h"
 #include "selectimpl.h"

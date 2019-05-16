@@ -19,7 +19,6 @@
 #include "select.h"
 #include "if.h"
 #include "switch.h"
-#include "assertion.h"
 #include "simulator.h"
 #include "tracer.h"
 #include "codegen.h"
@@ -89,7 +88,9 @@ namespace logic {
 
   using ch::internal::ch_module;
 
-  using ch::internal::ch_udf;
+  using ch::internal::ch_udf;  
+  using ch::internal::ch_udf_comb;
+  using ch::internal::ch_udf_seq;
 
   //
   // declared types
@@ -231,16 +232,57 @@ namespace logic {
   using ch::internal::ch_rotr;
 
   //
-  // resize functions
+  // slicing functions
   //
 
   using ch::internal::ch_slice;
   using ch::internal::ch_aslice;
-  using ch::internal::ch_pad;
+
+  //
+  // resize functions
+  //
+
   using ch::internal::ch_resize;
+  using ch::internal::ch_pad;
+
+  //
+  // concatenation function
+  //
+
   using ch::internal::ch_cat;
+
+  //
+  // duplicate function
+  //
+
   using ch::internal::ch_dup;
+
+  //
+  // shuffle function
+  //
+
   using ch::internal::ch_shuffle;
+
+  //
+  // cast function
+  //
+
+  using ch::internal::ch_as;
+
+  //
+  // reference functions
+  //
+
+  using ch::internal::ch_ref;
+  using ch::internal::ch_sliceref;
+  using ch::internal::ch_asliceref;
+  using ch::internal::ch_tie;
+
+  //
+  // clone function
+  //
+
+  using ch::internal::ch_clone;
 
   //
   // conditional functions
@@ -268,17 +310,22 @@ namespace logic {
   using ch::internal::ch_cd;
 
   //
-  // utility functions
+  // time function
   //
 
-  using ch::internal::ch_tie;
-  using ch::internal::ch_ref;
-  using ch::internal::ch_sliceref;
-  using ch::internal::ch_asliceref;
-  using ch::internal::ch_clone;  
+  using ch::internal::ch_now;
+
+  //
+  // print functions
+  //
+
   using ch::internal::ch_print;
   using ch::internal::ch_println;
-  using ch::internal::ch_now;
+
+  //
+  // debug functions
+  //
+
   using ch::internal::ch_assert;
   using ch::internal::ch_tap;  
 }
@@ -289,6 +336,13 @@ namespace logic {
 namespace system {
 
   using namespace ch::utility;
+
+  //
+  // read/write function
+  //
+
+  using ch::internal::ch_read;
+  using ch::internal::ch_write;
 
   //
   // basic types
@@ -394,6 +448,7 @@ inline namespace literals {
 #define __out(...) (ch_out<__VA_ARGS__>)
 #define __inout    CH_INOUT
 #define __io       CH_IO
+#define __scio     CH_SCIO
 #define __flip     CH_FLIP
 
 #define __require0 CH_REQUIRE_0

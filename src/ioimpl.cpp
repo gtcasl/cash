@@ -106,8 +106,8 @@ lnodeimpl* ch::internal::createInputNode(const std::string& name, uint32_t size,
 lnodeimpl* ch::internal::createOutputNode(const std::string& name, uint32_t size,
                                           const sloc_getter&) {
   auto sloc = get_source_location();
-  auto output = ctx_curr()->create_output(size, name, sloc);
-  return output->src(0).impl();
+  auto node = ctx_curr()->create_output(size, name, sloc);
+  return node->src(0).impl();
 }
 
 lnodeimpl* ch::internal::getOutputNode(const lnode& src) {
@@ -115,6 +115,11 @@ lnodeimpl* ch::internal::getOutputNode(const lnode& src) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+
+system_io_buffer::system_io_buffer(uint32_t size, const std::string& name)
+  : base(sdata_type(), nullptr, 0, size)
+  , name_(name)
+{}
 
 system_io_buffer::system_io_buffer(const lnode& io)
   : base(sdata_type(), nullptr, 0, io.size())
@@ -155,6 +160,6 @@ void system_io_buffer::write(uint32_t dst_offset,
   io_->write(dst_offset, in, byte_alignment, src_offset, length);
 }
 
-void system_io_buffer::bind(system_io_buffer* out) {
-  out->io_.reset_all(io_);
+void system_io_buffer::bind(const io_value_t& io) {
+  io_.reset_all(io);
 }

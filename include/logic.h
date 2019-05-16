@@ -19,6 +19,8 @@ void registerTap(const lnode& node, const std::string& name);
 
 void createPrintNode(const std::string& format, const std::vector<lnode>& args);
 
+void createAssertNode(const lnode& cond, const std::string& msg);
+
 ///////////////////////////////////////////////////////////////////////////////
 
 template <unsigned N> class ch_bit;
@@ -41,34 +43,34 @@ class logic_accessor {
 public:
   template <typename T>
   static auto& buffer(const T& obj) {
-    assert(obj.buffer().size() == ch_width_v<T>);
-    return obj.buffer();
+    assert(obj.__buffer().size() == ch_width_v<T>);
+    return obj.__buffer();
   }
 
   template <typename T>
   static auto& source(const T& obj) {
-    assert(obj.buffer().size() == ch_width_v<T>);
-    return obj.buffer().source();
+    assert(obj.__buffer().size() == ch_width_v<T>);
+    return obj.__buffer().source();
   }
 
   template <typename T>
   static auto move(T&& obj) {
-    assert(obj.buffer().size() == ch_width_v<T>);
-    return logic_buffer(std::move(obj.buffer()));
+    assert(obj.__buffer().size() == ch_width_v<T>);
+    return logic_buffer(std::move(obj.__buffer()));
   }
 
   template <typename U>
   static void assign(U& dst, const sdata_type& src) {
     assert(ch_width_v<U> == src.size());
-    const_cast<logic_buffer&>(dst.buffer()).write(0, src, 0, ch_width_v<U>);
+    const_cast<logic_buffer&>(dst.__buffer()).write(0, src, 0, ch_width_v<U>);
   }
 
   template <typename U, typename V>
   static void assign(U& dst, const V& src) {
     static_assert(ch_width_v<U> == ch_width_v<V>, "invalid size");
-    assert(ch_width_v<U> == dst.buffer().size());
-    assert(ch_width_v<V> == src.buffer().size());
-    const_cast<logic_buffer&>(dst.buffer()).write(0, src.buffer(), 0, ch_width_v<U>);
+    assert(ch_width_v<U> == dst.__buffer().size());
+    assert(ch_width_v<V> == src.__buffer().size());
+    const_cast<logic_buffer&>(dst.__buffer()).write(0, src.__buffer(), 0, ch_width_v<U>);
   }
 
   template <typename U, typename V>
@@ -82,13 +84,13 @@ public:
                     const V& src,
                     uint32_t src_offset,
                     uint32_t length) {
-    const_cast<logic_buffer&>(dst.buffer()).write(dst_offset, src.buffer(), src_offset, length);
+    const_cast<logic_buffer&>(dst.__buffer()).write(dst_offset, src.__buffer(), src_offset, length);
   }
 
   template <typename T>
   static auto clone(const T& obj) {
-    assert(obj.buffer().size() == ch_width_v<T>);
-    auto data = obj.buffer().clone();
+    assert(obj.__buffer().size() == ch_width_v<T>);
+    auto data = obj.__buffer().clone();
     return T(logic_buffer(data, "clone"));
   }
 
@@ -96,9 +98,9 @@ public:
   static auto slice(const T& obj, size_t start) {
     static_assert(ch_width_v<R> <= ch_width_v<T>, "invalid size");
     assert(start + ch_width_v<R> <= ch_width_v<T>);
-    assert(obj.buffer().size() == ch_width_v<T>);
+    assert(obj.__buffer().size() == ch_width_v<T>);
     logic_buffer buffer(ch_width_v<R>, "slice");
-    buffer.write(0, obj.buffer(), start, ch_width_v<R>);
+    buffer.write(0, obj.__buffer(), start, ch_width_v<R>);
     return R(buffer);
   }
 
@@ -106,21 +108,21 @@ public:
   static auto ref(const T& obj, size_t start) {
     static_assert(ch_width_v<R> <= ch_width_v<T>, "invalid size");
     assert(start + ch_width_v<R> <= ch_width_v<T>);
-    assert(obj.buffer().size() == ch_width_v<T>);
-    logic_buffer buffer(ch_width_v<R>, obj.buffer(), start, "sliceref");
+    assert(obj.__buffer().size() == ch_width_v<T>);
+    logic_buffer buffer(ch_width_v<R>, obj.__buffer(), start, "sliceref");
     return R(buffer);
   }
 
   template <typename R, typename T>
   static auto cast(const T& obj) {
     static_assert(ch_width_v<T> == ch_width_v<R>, "invalid size");
-    assert(obj.buffer().size() == ch_width_v<T>);
-    return R(obj.buffer());
+    assert(obj.__buffer().size() == ch_width_v<T>);
+    return R(obj.__buffer());
   }
 
   template <typename T>
   static const auto& name(const T& obj) {
-    return obj.buffer().name();
+    return obj.__buffer().name();
   }
 };
 
@@ -203,22 +205,22 @@ auto make_logic_op(const A& a, const B& b) {
     return ch::internal::logic_accessor::cast<__R>(*this); \
   } \
   auto as_bit() const { \
-    return this->as<ch::internal::ch_bit<type::traits::bitwidth>>(); \
+    return this->as<ch_bit<type::traits::bitwidth>>(); \
   } \
   auto as_bit() { \
-    return this->as<ch::internal::ch_bit<type::traits::bitwidth>>(); \
+    return this->as<ch_bit<type::traits::bitwidth>>(); \
   } \
   auto as_int() const { \
-    return this->as<ch::internal::ch_int<type::traits::bitwidth>>(); \
+    return this->as<ch_int<type::traits::bitwidth>>(); \
   } \
   auto as_int() { \
-    return this->as<ch::internal::ch_int<type::traits::bitwidth>>(); \
+    return this->as<ch_int<type::traits::bitwidth>>(); \
   } \
   auto as_uint() const { \
-    return this->as<ch::internal::ch_uint<type::traits::bitwidth>>(); \
+    return this->as<ch_uint<type::traits::bitwidth>>(); \
   } \
   auto as_uint() { \
-    return this->as<ch::internal::ch_uint<type::traits::bitwidth>>(); \
+    return this->as<ch_uint<type::traits::bitwidth>>(); \
   } \
   auto as_reg() { \
     CH_SOURCE_LOCATION(1); \
@@ -603,9 +605,3 @@ CH_LOGIC_OPERATOR(logic_op_slice)
 
 }
 }
-
-#ifndef NDEBUG
-  #define CH_TAP(x) ch_tap(x, #x)
-#else
-  #define CH_TAP(x)
-#endif

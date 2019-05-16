@@ -81,7 +81,6 @@ TEST_CASE("misc", "[misc]") {
     TEST([]()->ch_bool {
       ch_bit4 a(1100_b), b(1);
       auto c = a.slice<2>(1) ^ 01_b;
-      ch_println("c={}", c);
       __if (b == 1) {
         ch_assert(c == 11_b, "assertion failed!");
       } __else {
@@ -102,8 +101,7 @@ TEST_CASE("misc", "[misc]") {
   
   SECTION("tick", "[tick]") {
     TEST([]()->ch_bool {
-      ch_println("tick={0}", ch_now());
-      return ch_true;
+      return (0 == ch_now());
     });
   }
   

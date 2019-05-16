@@ -57,7 +57,6 @@ auto operator/(const ch_complex<T>& lhs, const ch_complex<T>& rhs) {
   auto im_1 = lhs.im * rhs.re;
   auto im_2 = lhs.re * rhs.im;
   auto im = (im_1 - im_2) / q;
-  ch_println("re_3={0}, q={1}, re={2}", re_3, q, re);
   return ch_complex<T>(im, re);
 }
 

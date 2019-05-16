@@ -99,7 +99,7 @@ public:
       port->writeack = false;
       if (i == status.rsp_channel) {
         if (status.rsp_wdata) {
-          port->readdata.write(0, status.rsp_wdata, 0, ch_width_v<decltype(port->readdata)>);
+          ch_write(port->readdata, 0, status.rsp_wdata, 0, ch_width_v<decltype(port->readdata)>);
           port->readdatavalid = true;
         } else {
           port->writeack = true;

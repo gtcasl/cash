@@ -26,11 +26,12 @@ using block_type = std::conditional_t<CASH_BLOCK_SIZE == 1, uint8_t,
 using sdata_type = bitvector<block_type>;
 
 enum traits_type {
-  traits_none   = 0x00,
-  traits_logic  = 0x01,
-  traits_system = 0x02,
-  traits_io     = 0x04,
-  traits_udf    = 0x08,
+  traits_none      = 0x00,
+  traits_logic     = 0x01,
+  traits_system    = 0x02,
+  traits_logic_io  = 0x04,
+  traits_system_io = 0x08,
+  traits_udf       = 0x10,
 };
 
 enum class ch_direction {
@@ -48,6 +49,10 @@ inline constexpr ch_direction ch_direction_v = std::decay_t<T>::traits::directio
 
 CH_DEF_SFINAE_CHECK(is_object_type, (T::traits::type & traits_logic) || (T::traits::type & traits_system));
 
+CH_DEF_SFINAE_CHECK(is_io_type, (T::traits::type & traits_logic_io) || (T::traits::type & traits_system_io));
+
+CH_DEF_SFINAE_CHECK(is_valid_type, (T::traits::type != traits_none));
+
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T, typename Enable = void>
@@ -61,7 +66,7 @@ struct width_value_impl<T, std::enable_if_t<std::is_arithmetic_v<T>>> {
 };
 
 template <typename T>
-struct width_value_impl<T, std::enable_if_t<is_object_type_v<T>>> {
+struct width_value_impl<T, std::enable_if_t<is_valid_type_v<T>>> {
   static constexpr uint32_t value = T::traits::bitwidth;
 };
 
@@ -103,7 +108,10 @@ inline constexpr bool ch_signed_v = signed_impl<std::decay_t<T>>::value;
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <unsigned Bitwidth, bool Signed, typename SystemType, typename LogicType>
+template <unsigned Bitwidth,
+          bool Signed,
+          typename SystemType,
+          typename LogicType>
 struct system_traits {
   static_assert(Bitwidth != 0, "invalid size");
   static constexpr int type = traits_system;
@@ -122,7 +130,7 @@ struct system_t_impl<T, std::enable_if_t<std::is_arithmetic_v<T>>> {
 };
 
 template <typename T>
-struct system_t_impl<T, std::enable_if_t<is_object_type_v<T>>> {
+struct system_t_impl<T, std::enable_if_t<(is_object_type_v<T>) || (is_io_type_v<T>)>> {
   using type = typename std::decay_t<T>::traits::system_type;
 };
 
@@ -138,7 +146,10 @@ CH_DEF_SFINAE_CHECK(is_system_type, is_system_traits_v<typename std::decay_t<T>:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <unsigned Bitwidth, bool Signed, typename LogicType, typename SystemType>
+template <unsigned Bitwidth,
+          bool Signed,
+          typename LogicType,
+          typename SystemType>
 struct logic_traits {
   static_assert(Bitwidth != 0, "invalid size");
   static constexpr int type = traits_logic;
@@ -157,7 +168,7 @@ struct logic_t_impl<T, std::enable_if_t<std::is_arithmetic_v<T>>> {
 };
 
 template <typename T>
-struct logic_t_impl<T, std::enable_if_t<is_object_type_v<T>>> {
+struct logic_t_impl<T, std::enable_if_t<(is_object_type_v<T>) || (is_io_type_v<T>)>> {
   using type = typename std::decay_t<T>::traits::logic_type;
 };
 
@@ -177,30 +188,42 @@ template <unsigned Bitwidth,
           ch_direction Direction,
           typename SystemIO,
           typename FlipIO,
-          typename LogicIO>
+          typename LogicIO,
+          typename LogicFlipIO,
+          typename SystemType,
+          typename LogicType>
 struct system_io_traits {
   static_assert(Bitwidth != 0, "invalid size");
-  static constexpr int type = traits_system | traits_io;
+  static constexpr int type = traits_system_io;
   static constexpr unsigned bitwidth = Bitwidth;
   static constexpr ch_direction direction = Direction;
-  using system_io = SystemIO;
-  using flip_io   = FlipIO;
-  using logic_io  = LogicIO;
+  using system_io     = SystemIO;
+  using flip_io       = FlipIO;
+  using logic_io      = LogicIO;
+  using logic_flip_io = LogicFlipIO;
+  using system_type   = SystemType;
+  using logic_type    = LogicType;
 };
 
 template <unsigned Bitwidth,
           ch_direction Direction,
           typename LogicIO,
           typename FlipIO,
-          typename SystemIO>
+          typename SystemIO,
+          typename SystemFlipIO,
+          typename SystemType,
+          typename LogicType>
 struct logic_io_traits {
   static_assert(Bitwidth != 0, "invalid size");
-  static constexpr int type = traits_logic | traits_io;
+  static constexpr int type = traits_logic_io;
   static constexpr unsigned bitwidth = Bitwidth;
   static constexpr ch_direction direction = Direction;
-  using logic_io  = LogicIO;
-  using flip_io   = FlipIO;
-  using system_io = SystemIO;
+  using logic_io      = LogicIO;
+  using flip_io       = FlipIO;
+  using system_io     = SystemIO;
+  using system_flip_io= SystemFlipIO;
+  using system_type   = SystemType;
+  using logic_type    = LogicType;
 };
 
 template <ch_direction Direction,
@@ -209,15 +232,15 @@ template <ch_direction Direction,
           typename LogicIO,
           typename SystemType>
 struct base_system_io_traits {
-  static constexpr int type = traits_system | traits_io;
+  static constexpr int type = traits_system | traits_system_io;
   static constexpr unsigned bitwidth = ch_width_v<SystemType>;
   static constexpr unsigned is_signed = ch_signed_v<SystemType>;
   static constexpr ch_direction direction = Direction;
-  using system_io   = SystemIO;
-  using flip_io     = FlipIO;
-  using logic_io    = LogicIO;
-  using system_type = SystemType;
-  using logic_type  = ch_logic_t<SystemType>;
+  using system_io     = SystemIO;
+  using flip_io       = FlipIO;
+  using logic_io      = LogicIO;
+  using system_type   = SystemType;
+  using logic_type    = ch_logic_t<SystemType>;
 };
 
 template <ch_direction Direction,
@@ -226,15 +249,15 @@ template <ch_direction Direction,
           typename SystemIO,
           typename LogicType>
 struct base_logic_io_traits {
-  static constexpr int type = traits_logic | traits_io;
+  static constexpr int type = traits_logic | traits_logic_io;
   static constexpr unsigned bitwidth = ch_width_v<LogicType>;
   static constexpr unsigned is_signed = ch_signed_v<LogicType>;
   static constexpr ch_direction direction = Direction;
-  using logic_io    = LogicIO;
-  using flip_io     = FlipIO;
-  using system_io   = SystemIO;
-  using logic_type  = LogicType;
-  using system_type = ch_system_t<LogicType>;
+  using logic_io      = LogicIO;
+  using flip_io       = FlipIO;
+  using system_io     = SystemIO;
+  using logic_type    = LogicType;
+  using system_type   = ch_system_t<LogicType>;
 };
 
 template <typename T>
@@ -247,23 +270,18 @@ template <typename T>
 using ch_flip_io = typename std::decay_t<T>::traits::flip_io;
 
 template <typename T>
-inline constexpr bool is_system_io_traits_v = bool_constant_v<(T::type & traits_system) && (T::type & traits_io)>;
+inline constexpr bool is_system_io_traits_v = bool_constant_v<(T::type & traits_system_io)>;
 
 template <typename T>
-inline constexpr bool is_logic_io_traits_v = bool_constant_v<(T::type & traits_logic) && (T::type & traits_io)>;
-
-template <typename T>
-inline constexpr bool is_io_traits_v = bool_constant_v<(T::type & traits_io)>;
+inline constexpr bool is_logic_io_traits_v = bool_constant_v<(T::type & traits_logic_io)>;
 
 CH_DEF_SFINAE_CHECK(is_system_io, is_system_io_traits_v<typename std::decay_t<T>::traits>);
 
 CH_DEF_SFINAE_CHECK(is_logic_io, is_logic_io_traits_v<typename std::decay_t<T>::traits>);
 
-CH_DEF_SFINAE_CHECK(is_io, is_io_traits_v<typename std::decay_t<T>::traits>);
-
 ///////////////////////////////////////////////////////////////////////////////
 
-struct non_ch_type {
+struct non_object_type {
   struct traits {
     static constexpr int type = traits_none;
     static constexpr unsigned bitwidth = 0;
@@ -271,18 +289,15 @@ struct non_ch_type {
   };
 };
 
-template <typename T>
-using ch_type_t = std::conditional_t<is_object_type_v<T>, T, non_ch_type>;
-
 template <bool resize, typename T0, typename T1>
 struct deduce_type_impl {
   using D0 = std::decay_t<T0>;
   using D1 = std::decay_t<T1>;
-  using U0 = std::conditional_t<is_object_type_v<D0>, D0, non_ch_type>;
-  using U1 = std::conditional_t<is_object_type_v<D1>, D1, non_ch_type>;
+  using U0 = std::conditional_t<is_object_type_v<D0>, D0, non_object_type>;
+  using U1 = std::conditional_t<is_object_type_v<D1>, D1, non_object_type>;
   using type = std::conditional_t<(ch_width_v<U0> != 0) && (ch_width_v<U1> != 0),
     std::conditional_t<(ch_width_v<U0> == ch_width_v<U1>) || ((ch_width_v<U0> > ch_width_v<U1>) && resize), U0,
-        std::conditional_t<(ch_width_v<U0> < ch_width_v<U1>) && resize, U1, non_ch_type>>,
+        std::conditional_t<(ch_width_v<U0> < ch_width_v<U1>) && resize, U1, non_object_type>>,
           std::conditional_t<(ch_width_v<U0> != 0), U0, U1>>;
 };
 
@@ -306,8 +321,8 @@ template <typename T0, typename T1>
 struct deduce_first_type_impl {
   using D0 = std::decay_t<T0>;
   using D1 = std::decay_t<T1>;
-  using U0 = std::conditional_t<is_object_type_v<D0>, D0, non_ch_type>;
-  using U1 = std::conditional_t<is_object_type_v<D1>, D1, non_ch_type>;
+  using U0 = std::conditional_t<is_object_type_v<D0>, D0, non_object_type>;
+  using U1 = std::conditional_t<is_object_type_v<D1>, D1, non_object_type>;
   using type = std::conditional_t<(ch_width_v<U0> != 0), U0, U1>;
 };
 

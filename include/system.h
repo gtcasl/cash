@@ -119,54 +119,54 @@ class system_accessor {
 public:
   template <typename T>
   static const auto& buffer(const T& obj) {
-    assert(obj.buffer()->size() == ch_width_v<T>);
-    return obj.buffer();
+    assert(obj.__buffer()->size() == ch_width_v<T>);
+    return obj.__buffer();
   }
 
   template <typename T>
   static const auto& data(const T& obj) {
-    assert(obj.buffer()->size() == ch_width_v<T>);
-    return obj.buffer()->data();
+    assert(obj.__buffer()->size() == ch_width_v<T>);
+    return obj.__buffer()->data();
   }
 
   template <typename T>
   static const auto& source(const T& obj) {
-    assert(obj.buffer()->size() == ch_width_v<T>);
-    return obj.buffer()->source();
+    assert(obj.__buffer()->size() == ch_width_v<T>);
+    return obj.__buffer()->source();
   }
 
   template <typename T>
   static auto copy(const T& obj) {
-    assert(obj.buffer()->size() == ch_width_v<T>);
-    return make_system_buffer(*obj.buffer());
+    assert(obj.__buffer()->size() == ch_width_v<T>);
+    return make_system_buffer(*obj.__buffer());
   }
 
   template <typename T>
   static auto move(T&& obj) {
-    assert(obj.buffer()->size() == ch_width_v<T>);
-    return make_system_buffer(std::move(*obj.buffer()));
+    assert(obj.__buffer()->size() == ch_width_v<T>);
+    return make_system_buffer(std::move(*obj.__buffer()));
   }
 
   template <typename U>
   static void assign(U& dst, const sdata_type& src) {
     assert(ch_width_v<U> == src.size());
-    assert(ch_width_v<U> == dst.buffer()->size());
-    dst.buffer()->write(0, src, 0, ch_width_v<U>);
+    assert(ch_width_v<U> == dst.__buffer()->size());
+    dst.__buffer()->write(0, src, 0, ch_width_v<U>);
   }
 
   template <typename U, typename V>
   static void assign(U& dst, const V& src) {
     static_assert(ch_width_v<U> == ch_width_v<V>, "invalid size");
-    assert(ch_width_v<U> == dst.buffer()->size());
-    assert(ch_width_v<V> == src.buffer()->size());
-    *dst.buffer() = *src.buffer();
+    assert(ch_width_v<U> == dst.__buffer()->size());
+    assert(ch_width_v<V> == src.__buffer()->size());
+    *dst.__buffer() = *src.__buffer();
   }
 
   template <typename U, typename V>
   static void move(U& dst, V&& src) {
     static_assert(ch_width_v<U> == ch_width_v<V>, "invalid size");
-    assert(ch_width_v<U> == dst.buffer()->size());
-    *dst.buffer() = std::move(*src.buffer());
+    assert(ch_width_v<U> == dst.__buffer()->size());
+    *dst.__buffer() = std::move(*src.__buffer());
   }
 
   template <typename U, typename V>
@@ -175,23 +175,23 @@ public:
                     const V& src,
                     uint32_t src_offset,
                     uint32_t length) {
-    auto data = src.buffer()->data();
-    dst.buffer()->write(dst_offset, data, src_offset, length);
+    auto data = src.__buffer()->data();
+    dst.__buffer()->write(dst_offset, data, src_offset, length);
   }
 
   template <typename R, typename T>
   static auto ref(const T& obj, size_t start) {
     static_assert(ch_width_v<R> <= ch_width_v<T>, "invalid size");
     assert(start + ch_width_v<R> <= ch_width_v<T>);
-    assert(obj.buffer()->size() == ch_width_v<T>);
-    return R(make_system_buffer(ch_width_v<R>, obj.buffer(), start));
+    assert(obj.__buffer()->size() == ch_width_v<T>);
+    return R(make_system_buffer(ch_width_v<R>, obj.__buffer(), start));
   }
 
   template <typename R, typename T>
   static auto cast(const T& obj) {
     static_assert(ch_width_v<T> == ch_width_v<R>, "invalid size");
-    assert(obj.buffer()->size() == ch_width_v<T>);
-    return R(obj.buffer());
+    assert(obj.__buffer()->size() == ch_width_v<T>);
+    return R(obj.__buffer());
   }
 };
 
@@ -251,20 +251,6 @@ auto make_system_op(SystemFunc3 func, const A& lhs, const B& rhs) {
 ///////////////////////////////////////////////////////////////////////////////
 
 #define CH_SYSTEM_INTERFACE(type) \
-  template <typename __U, CH_REQUIRE_0(std::is_integral_v<__U> && std::is_unsigned_v<__U>)> \
-  void read(uint32_t src_offset, \
-            __U* out, \
-            uint32_t dst_offset = 0, \
-            uint32_t length = type::traits::bitwidth) const { \
-    this->buffer()->read(src_offset, out, sizeof(__U), dst_offset, length); \
-  } \
-  template <typename __U, CH_REQUIRE_0(std::is_integral_v<__U> && std::is_unsigned_v<__U>)> \
-  void write(uint32_t dst_offset, \
-             const __U* in, \
-             uint32_t src_offset = 0, \
-             uint32_t length = type::traits::bitwidth) { \
-    this->buffer()->write(dst_offset, in, sizeof(__U), src_offset, length); \
-  } \
   template <typename __R> \
   std::add_const_t<__R> as() const { \
     static_assert(ch::internal::is_system_type_v<__R>, "invalid type"); \
@@ -282,16 +268,16 @@ auto make_system_op(SystemFunc3 func, const A& lhs, const B& rhs) {
     return this->as<ch_scbit<type::traits::bitwidth>>(); \
   } \
   auto as_scint() const { \
-    return this->as<ch::internal::ch_scint<type::traits::bitwidth>>(); \
+    return this->as<ch_scint<type::traits::bitwidth>>(); \
   } \
   auto as_scint() { \
-    return this->as<ch::internal::ch_scint<type::traits::bitwidth>>(); \
+    return this->as<ch_scint<type::traits::bitwidth>>(); \
   } \
   auto as_scuint() const { \
-    return this->as<ch::internal::ch_scuint<type::traits::bitwidth>>(); \
+    return this->as<ch_scuint<type::traits::bitwidth>>(); \
   } \
   auto as_scuint() { \
-    return this->as<ch::internal::ch_scuint<type::traits::bitwidth>>(); \
+    return this->as<ch_scuint<type::traits::bitwidth>>(); \
   } \
   auto ref() { \
     return ch::internal::system_accessor::ref<type>(*this, 0); \

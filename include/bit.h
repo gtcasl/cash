@@ -125,7 +125,7 @@ public:
 
 protected:
 
-  const logic_buffer& buffer() const {
+  const logic_buffer& __buffer() const {
     return buffer_;
   }
 
@@ -369,7 +369,7 @@ auto ch_dup(const T& obj) {
   return out;
 }
 
-// reference function
+// cast function
 
 template <typename R, typename T>
 auto ch_as(const T& obj) {
@@ -396,15 +396,6 @@ auto ch_clone(const T& obj) {
   return obj.template clone();
 }
 
-// tap function
-
-template <typename T>
-void ch_tap(const T& value, const std::string& name) {
-  static_assert(is_logic_type_v<T>, "invalid type");
-  CH_SOURCE_LOCATION(1);
-  registerTap(get_lnode(value), name);
-}
-
 // time function
 
 ch_uint<64> ch_now();
@@ -424,5 +415,36 @@ void ch_println(const std::string& format, const Args&... args) {
   ch_print(format + '\n', args...);
 }
 
+// tap function
+
+template <typename T>
+void ch_tap(const T& value, const std::string& name) {
+  static_assert(is_logic_type_v<T>, "invalid type");
+  CH_SOURCE_LOCATION(1);
+  registerTap(get_lnode(value), name);
 }
+
+//
+// assert functions
+//
+
+inline void ch_assert(const ch_bit<1>& cond, const std::string& msg) {
+  CH_SOURCE_LOCATION(1);
+  createAssertNode(get_lnode(cond), msg);
 }
+
+}
+}                           
+
+#ifndef NDEBUG
+  #define CH_TAP(x) ch_tap(x, #x)
+#else
+  #define CH_TAP(x)
+#endif
+
+#ifndef NDEBUG
+  #define CH_ASSERT(x) \
+    ch_assert(x, stringf("Failed assertion in %s: %d", __FILE__, __LINE__))
+#else
+  #define CH_ASSERT(x)
+#endif

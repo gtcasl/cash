@@ -1,7 +1,7 @@
 #include "opimpl.h"
 #include "proxyimpl.h"
 #include "litimpl.h"
-#include "logic.h"
+#include "cdimpl.h"
 #include "context.h"
 
 using namespace ch::internal;

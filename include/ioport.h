@@ -5,19 +5,7 @@
 namespace ch {
 namespace internal {
 
-lnodeimpl* createInputNode(const std::string& name, uint32_t size,
-                           const sloc_getter& slg = sloc_getter());
-
-lnodeimpl* createOutputNode(const std::string& name, uint32_t size,
-                            const sloc_getter& slg = sloc_getter());
-
-lnodeimpl* getOutputNode(const lnode& src);
-
-void bindInput(const lnode& src, const lnode& input);
-
-void bindOutput(const lnode& dst, const lnode& output);
-
-///////////////////////////////////////////////////////////////////////////////
+class system_io_buffer;
 
 template <typename T, typename Enable = void>
 class ch_in {};
@@ -26,6 +14,76 @@ template <typename T, typename Enable = void>
 class ch_out {};
 
 using io_value_t = smart_ptr<sdata_type>;
+
+lnodeimpl* createInputNode(const std::string& name, uint32_t size,
+                           const sloc_getter& slg = sloc_getter());
+
+lnodeimpl* createOutputNode(const std::string& name, uint32_t size,
+                            const sloc_getter& slg = sloc_getter());
+
+lnodeimpl* createInputNode(const system_io_buffer* buffer,
+                           const sloc_getter& slg = sloc_getter());
+
+lnodeimpl* createOutputNode(const system_io_buffer* buffer,
+                            const sloc_getter& slg = sloc_getter());
+
+lnodeimpl* createInputNode(const lnode& output,
+                           const sloc_getter& slg = sloc_getter());
+
+lnodeimpl* createOutputNode(const lnode& input,
+                            const sloc_getter& slg = sloc_getter());
+
+lnodeimpl* getOutputNode(const lnode& src);
+
+///////////////////////////////////////////////////////////////////////////////
+
+class system_io_buffer : public system_buffer {
+public:
+  using base = system_buffer;
+
+  explicit system_io_buffer(uint32_t size, const std::string& name);
+
+  explicit system_io_buffer(const lnode& io);
+
+  const sdata_type& data() const override;
+
+  void read(uint32_t src_offset,
+            sdata_type& dst,
+            uint32_t dst_offset,
+            uint32_t length) const override;
+
+  void write(uint32_t dst_offset,
+             const sdata_type& src,
+             uint32_t src_offset,
+             uint32_t length) override;
+
+  void read(uint32_t src_offset,
+            void* out,
+            uint32_t byte_alignment,
+            uint32_t dst_offset,
+            uint32_t length) const override;
+
+  void write(uint32_t dst_offset,
+             const void* in,
+             uint32_t byte_alignment,
+             uint32_t src_offset,
+             uint32_t length) override;
+
+  void bind(const io_value_t& io);
+
+  const auto& name() const {
+    return name_;
+  };
+
+  const auto& io() const {
+    return io_;
+  };
+
+protected:
+
+  std::string name_;
+  io_value_t io_;
+};
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -44,13 +102,19 @@ public:
     input_ = get_lnode(*this);
   }
 
-  template <typename U>
-  explicit ch_in(const ch_out<U>& out)
-    : base(logic_buffer(ch_width_v<T>, out.output_.name())) {
-    static_assert(is_logic_only_v<U>, "invalid type");
-    static_assert(std::is_constructible_v<U, T>, "invalid type");
-    CH_SOURCE_LOCATION(1);
-    bindOutput(get_lnode(*this), out.output_);
+  template <typename U,
+            CH_REQUIRE_0(is_logic_only_v<U>)>
+  explicit ch_in(const ch_out<U>& other)
+    : base(createInputNode(other.output_)) {
+    static_assert(ch_width_v<T> == ch_width_v<U>, "invalid size");
+  }
+
+  template <typename U,
+            CH_REQUIRE_0(is_system_only_v<U>)>
+  explicit ch_in(const ch_out<U>& other)
+     : base(createInputNode(reinterpret_cast<system_io_buffer*>(
+                              system_accessor::buffer(other).get()))) {
+    static_assert(ch_width_v<T> == ch_width_v<U>, "invalid size");
   }
 
   ch_in(const ch_in& other) : base(other) {}
@@ -97,13 +161,19 @@ public:
     output_ = getOutputNode(get_lnode(*this));
   }
 
-  template <typename U>
-  explicit ch_out(const ch_in<U>& in)
-    : base(logic_buffer(ch_width_v<T>, in.input_.name())) {
-    static_assert(is_logic_only_v<U>, "invalid type");
-    static_assert(std::is_constructible_v<U, T>, "invalid type");
-    CH_SOURCE_LOCATION(1);
-    bindInput(get_lnode(*this), in.input_);
+  template <typename U,
+            CH_REQUIRE_0(is_logic_only_v<U>)>
+  explicit ch_out(const ch_in<U>& other)
+    : base(createOutputNode(other.input_)) {
+    static_assert(ch_width_v<T> == ch_width_v<U>, "invalid size");
+  }
+
+  template <typename U,
+            CH_REQUIRE_0(is_system_only_v<U>)>
+  explicit ch_out(const ch_in<U>& other)
+     : base(createOutputNode(reinterpret_cast<system_io_buffer*>(
+                               system_accessor::buffer(other).get()))) {
+    static_assert(ch_width_v<T> == ch_width_v<U>, "invalid size");
   }
 
   ch_out(const ch_out& other) : base(other) {}
@@ -143,45 +213,6 @@ protected:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class system_io_buffer : public system_buffer {
-public:
-  using base = system_buffer;
-
-  explicit system_io_buffer(const lnode& io);
-
-  const sdata_type& data() const override;
-
-  void read(uint32_t src_offset,
-            sdata_type& dst,
-            uint32_t dst_offset,
-            uint32_t length) const override;
-
-  void write(uint32_t dst_offset,
-             const sdata_type& src,
-             uint32_t src_offset,
-             uint32_t length) override;
-
-  void read(uint32_t src_offset,
-            void* out,
-            uint32_t byte_alignment,
-            uint32_t dst_offset,
-            uint32_t length) const override;
-
-  void write(uint32_t dst_offset,
-             const void* in,
-             uint32_t byte_alignment,
-             uint32_t src_offset,
-             uint32_t length) override;
-
-  void bind(system_io_buffer* out);
-
-protected:
-
-  io_value_t io_;
-};
-
-///////////////////////////////////////////////////////////////////////////////
-
 template <typename T>
 class ch_in<T, std::enable_if_t<is_system_only_v<T>>> : public T {
 public:
@@ -193,9 +224,13 @@ public:
   using base = T;
   using base::operator=;
 
+  ch_in(const std::string& name = idname<ch_in>())
+     : base(std::make_shared<system_io_buffer>(ch_width_v<T>, name))
+  {}
+
   template <typename U>
-  explicit ch_in(const ch_in<U>& in)
-    : base(std::make_shared<system_io_buffer>(in.input_)) {
+  explicit ch_in(const ch_in<U>& other)
+    : base(std::make_shared<system_io_buffer>(other.input_)) {
     static_assert(is_logic_only_v<U>, "invalid type");
     static_assert(ch_width_v<U> == ch_width_v<T>, "invalid size");
   }
@@ -221,7 +256,7 @@ public:
     static_assert(std::is_constructible_v<U, T>, "invalid type");
     auto this_buf = reinterpret_cast<system_io_buffer*>(system_accessor::buffer(*this).get());
     auto out_buf = reinterpret_cast<system_io_buffer*>(system_accessor::buffer(out).get());
-    this_buf->bind(out_buf);
+    out_buf->bind(this_buf->io());
   }
 };
 
@@ -237,9 +272,13 @@ public:
                                        T>;
   using base = T;
 
+  ch_out(const std::string& name = idname<ch_out>())
+     : base(std::make_shared<system_io_buffer>(ch_width_v<T>, name))
+  {}
+
   template <typename U>
-  explicit ch_out(const ch_out<U>& out)
-    : base(std::make_shared<system_io_buffer>(out.output_)) {
+  explicit ch_out(const ch_out<U>& other)
+    : base(std::make_shared<system_io_buffer>(other.output_)) {
     static_assert(is_logic_only_v<U>, "invalid type");
     static_assert(ch_width_v<T> == ch_width_v<U>, "invalid size");
   }
@@ -257,7 +296,7 @@ public:
     static_assert(std::is_constructible_v<U, T>, "invalid type");
     auto this_buf = reinterpret_cast<system_io_buffer*>(system_accessor::buffer(*this).get());
     auto out_buf = reinterpret_cast<system_io_buffer*>(system_accessor::buffer(out).get());
-    out_buf->bind(this_buf);
+    this_buf->bind(out_buf->io());
   }
 
 protected:

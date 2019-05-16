@@ -33,7 +33,7 @@ protected:
 
   context* ctx_;
   context* old_ctx_;
-  bool initialized_;
+  bool is_new_ctx_;
 };
 
 }

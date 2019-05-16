@@ -12,7 +12,7 @@ deviceimpl::deviceimpl(const std::type_index& signature,
                        const std::string& name) {
   ctx_ = ctx_create(signature, has_args, name);
   ctx_->acquire();
-  initialized_ = (ctx_->nodes().size() != 0);
+  is_new_ctx_ = (0 == ctx_->nodes().size());
 }
 
 deviceimpl::~deviceimpl() {
@@ -32,11 +32,11 @@ void deviceimpl::end_context() {
 }
 
 bool deviceimpl::begin_build() const {
-  return !initialized_;
+  return is_new_ctx_;
 }
 
 void deviceimpl::end_build() {
-  if (!initialized_) {
+  if (is_new_ctx_) {
     compiler compiler(ctx_);
     if (0 == (platform::self().cflags() & cflags::no_smod_opt)) {
       compiler.optimize();

@@ -1,22 +1,22 @@
 #pragma once
 
-#include "lnodeimpl.h"
+#include "ioimpl.h"
 #include "udf.h"
 
 namespace ch {
 namespace internal {
 
-class udf_iface : public refcounted {
+class udf_obj : public refcounted {
 public:
 
-  udf_iface(uint32_t id,
-            const std::string& name,
-            bool is_seq,
-            uint32_t output_size,
-            const std::initializer_list<uint32_t>& inputs_size,
-            udf_base* impl);
+  udf_obj(uint32_t id,
+          const std::string& name,
+          bool is_seq,
+          uint32_t output_size,
+          const std::initializer_list<uint32_t>& inputs_size,
+          udf_base* impl);
 
-  ~udf_iface();
+  ~udf_obj();
 
   uint32_t id() const {
     return id_;
@@ -63,10 +63,10 @@ private:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class udfimpl : public lnodeimpl {
+class udfimpl : public ioimpl {
 public:
 
-  udf_iface* udf() const {
+  udf_obj* udf() const {
     return udf_;
   }
 
@@ -74,13 +74,13 @@ protected:
 
   udfimpl(context* ctx,
           lnodetype type,
-          udf_iface* udf,
+          udf_obj* udf,
           const std::vector<lnode>& srcs,
           const source_location& sloc);
 
   ~udfimpl();
 
-  udf_iface* udf_;
+  udf_obj* udf_;
 
   friend class context;
 };
@@ -95,9 +95,9 @@ public:
 protected:
 
   udfcimpl(context* ctx,
-          udf_iface* udf,
-          const std::vector<lnode>& srcs,
-          const source_location& sloc);
+           udf_obj* udf,
+           const std::vector<lnode>& srcs,
+           const source_location& sloc);
 
   friend class context;
 };
@@ -120,7 +120,7 @@ public:
 protected:
 
   udfsimpl(context* ctx,
-           udf_iface* udf,
+           udf_obj* udf,
            lnodeimpl* cd,
            lnodeimpl* reset,
            const std::vector<lnode>& srcs,
@@ -132,4 +132,59 @@ protected:
   friend class context;
 };
 
+///////////////////////////////////////////////////////////////////////////////
+
+class udfportimpl;
+
+class udfimpl2 : public ioimpl {
+public:
+
+  udf_iface* udf() const {
+    return udf_;
+  }
+
+  void remove_port(udfportimpl* output);
+
+protected:
+
+  udfimpl2(context* ctx,
+           lnodetype type,
+           udf_iface* udf,
+           const std::vector<lnode>& srcs,
+           const source_location& sloc);
+
+  ~udfimpl2();
+
+  udf_iface* udf_;
+
+  friend class context;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+class udfportimpl : public ioimpl {
+public:
+
+  udfimpl2* udf() {
+    return udf_;
+  }
+
+protected:
+
+  udfportimpl(context* ctx,
+              lnodeimpl* src,
+              udfimpl2* udf,
+              const source_location& sloc);
+
+  udfportimpl(context* ctx,
+              unsigned size,
+              udfimpl2* udf,
+              const source_location& sloc);
+
+  ~udfportimpl();
+
+  udfimpl2* udf_;
+
+  friend class context;
+};
 }}

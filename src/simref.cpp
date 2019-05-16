@@ -1,6 +1,7 @@
 #include "simref.h"
 #include "bindimpl.h"
 #include "litimpl.h"
+#include "cdimpl.h"
 #include "regimpl.h"
 #include "memimpl.h"
 #include "ioimpl.h"
@@ -1546,7 +1547,7 @@ private:
     }
   }
 
-  udf_iface* udf_;
+  udf_obj* udf_;
   sdata_type dst_;
   std::vector<sdata_type> srcs_;
 };
@@ -1595,7 +1596,7 @@ private:
   }
 
   const block_type* cd_;
-  udf_iface* udf_;
+  udf_obj* udf_;
   sdata_type dst_;
   std::vector<sdata_type> srcs_;
 };
