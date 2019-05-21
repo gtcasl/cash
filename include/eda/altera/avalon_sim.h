@@ -58,7 +58,7 @@ protected:
 template <typename AVM>
 class avm_slave_driver : public avm_slave_driver_base {
 public:
-  using io_type = ch_system_io<avalon_mm_io<AVM>>;
+  using io_type = ch_flip_io<ch_system_io<avalon_mm_io<AVM>>>;
 
   avm_slave_driver(uint32_t reqs_queue_size, uint32_t latency)
     : avm_slave_driver_base(AVM::DataW / 8,

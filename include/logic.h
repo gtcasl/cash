@@ -42,6 +42,8 @@ public:
 
   logic_buffer(lnodeimpl* impl) : lnode(impl) {}
 
+  logic_buffer(const sdata_type& value) : lnode(value) {}
+
   logic_buffer(uint32_t size,
                const std::string& name,
                const sloc_getter& slg = sloc_getter());
