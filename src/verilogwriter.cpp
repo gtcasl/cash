@@ -211,14 +211,14 @@ bool verilogwriter::print_binding(std::ostream& out, bindimpl* node) {
   for (auto& input : node->inputs()) {
     auto b = reinterpret_cast<bindportimpl*>(input.impl());
     auto p = reinterpret_cast<ioimpl*>(b->ioport().impl());
-    out << sep << "." << p->name() << "(";
+    out << sep << "." << identifier_from_string(p->name()) << "(";
     this->print_name(out, b);
     out << ")";
   }
   for (auto& output : node->outputs()) {
     auto b = reinterpret_cast<bindportimpl*>(output.impl());
     auto p = reinterpret_cast<ioimpl*>(b->ioport().impl());
-    out << sep << "." << p->name() << "(";
+    out << sep << "." << identifier_from_string(p->name()) << "(";
     this->print_name(out, b);
     out << ")";
   }
@@ -292,10 +292,9 @@ bool verilogwriter::print_decl(std::ostream& out,
   case type_sel:
   case type_reg:
   case type_msrport:
-  case type_marport:
-  case type_udfc:
-  case type_udfs:
+  case type_marport:  
   case type_mem:  
+  case type_udfout:
     if (ref
      && (IsRegType(ref) != IsRegType(node)
       || ref->size() != node->size()))
@@ -368,7 +367,10 @@ bool verilogwriter::print_decl(std::ostream& out,
   case type_input:
   case type_output:
   case type_cd:
-  case type_mwport:  
+  case type_mwport:
+  case type_udfc:
+  case type_udfs:
+  case type_udfin:
   case type_assert:
   case type_print:
   case type_time:
@@ -411,6 +413,8 @@ bool verilogwriter::print_logic(std::ostream& out, lnodeimpl* node) {
   case type_msrport:
   case type_marport:
   case type_mwport:  
+  case type_udfin:
+  case type_udfout:
   case type_assert:
   case type_print:
   case type_time:
@@ -836,16 +840,15 @@ bool verilogwriter::print_udf(std::ostream& out, udfimpl* node, udf_verilog_mode
     dic[key] = os.str();
   };
 
-  auto udf = node->udf();
-
-  dic["id"] = std::to_string(node->id());
-  dict_add("dst", node);
-
-  for (uint32_t i = 0, n = udf->inputs_size().size(); i < n; ++i) {
-    dict_add("src" + std::to_string(i), node->src(i).impl());
+  for (auto& input : node->inputs()) {
+    dict_add(input.impl()->name(), input.impl()->src(0).impl());
   }
 
-  if (udf->is_seq()) {
+  for (auto& output : node->outputs()) {
+    dict_add(output.impl()->name(), output.impl());
+  }
+
+  if (type_udfs == node->type()) {
     auto udfs = reinterpret_cast<udfsimpl*>(node);
     auto cd = reinterpret_cast<cdimpl*>(udfs->cd().impl());
     dict_add("clk", cd->clk().impl());
@@ -857,13 +860,13 @@ bool verilogwriter::print_udf(std::ostream& out, udfimpl* node, udf_verilog_mode
   {
     // load code template
     std::ostringstream os;
-    changed = udf->impl()->to_verilog(os, mode);
+    changed = node->udf()->to_verilog(os, mode);
     code = os.str();
   }
 
   if (changed) {
     // replace tokens
-    static const std::string Identifier("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ01234567890_");
+    static const std::string Identifier("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ01234567890_.");
     std::string::size_type start = 0, pos = 0;
     auto len = code.length();
     while ((pos = code.find('$', pos)) != std::string::npos) {
@@ -903,7 +906,7 @@ void verilogwriter::print_name(std::ostream& out, lnodeimpl* node, bool force) {
   auto print_unique_name = [&](lnodeimpl* node) {
     out << node->type();
     if (!node->name().empty()) {
-      out << "_" << node->name();
+      out << "_" << identifier_from_string(node->name());
     }
     out << "_" << node->id();
   };
@@ -912,7 +915,7 @@ void verilogwriter::print_name(std::ostream& out, lnodeimpl* node, bool force) {
   switch (type) {
   case type_input:
   case type_output:
-    out << node->name();
+    out << identifier_from_string(node->name());
     break;
   case type_proxy:    
     if (!force && this->is_inline_subscript(node)) {
@@ -936,21 +939,20 @@ void verilogwriter::print_name(std::ostream& out, lnodeimpl* node, bool force) {
   case type_msrport:
   case type_marport:
   case type_mwport:
-  case type_udfc:
-  case type_udfs:
+  case type_udfout:
     print_unique_name(node);
     break;
   case type_time:
     out << "$time";
     break;
   case type_bind:
-    out << node->name() << "_" << node->id();
+    out << identifier_from_string(node->name()) << "_" << node->id();
     break;
   case type_bindin:
   case type_bindout: {
     auto bindport = reinterpret_cast<bindportimpl*>(node);
     print_name(out, bindport->binding());
-    out << "_" << bindport->ioport().name();
+    out << "_" << identifier_from_string(bindport->ioport().name());
   } break;
   default:
     assert(false);
@@ -1057,13 +1059,13 @@ std::function<bool (std::ostream& out, context*, std::unordered_set<uint32_t>&)>
   }
 
   for (auto node : ctx->udfs()) {
-    auto udf = reinterpret_cast<udfimpl*>(node)->udf();
-    if (0 == visited.count(udf->id())) {
-      if (udf->impl()->to_verilog(out, udf_verilog_mode::header)) {
+    auto udfs = reinterpret_cast<udfsimpl*>(node);
+    if (0 == visited.count(udfs->id())) {
+      if (udfs->udf()->to_verilog(out, udf_verilog_mode::header)) {
         out << std::endl;
         changed =true;
       }
-      visited.insert(udf->id());
+      visited.insert(udfs->id());
     }
   }
   return changed;

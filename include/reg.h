@@ -6,32 +6,32 @@
 namespace ch {
 namespace internal {
 
-logic_buffer createRegNode(unsigned size, const std::string& name,
+lnodeimpl* createRegNode(unsigned size, const std::string& name,
                            const sloc_getter& slg = sloc_getter());
 
-logic_buffer createRegNode(const lnode& init, const std::string& name,
+lnodeimpl* createRegNode(const lnode& init, const std::string& name,
                            const sloc_getter& slg = sloc_getter());
 
-logic_buffer copyRegNode(const lnode& node, const std::string& name,
+lnodeimpl* copyRegNode(const lnode& node, const std::string& name,
                          const sloc_getter& slg = sloc_getter());
 
-logic_buffer getRegNextNode(const lnode& node);
+lnodeimpl* getRegNextNode(const lnode& node);
 
-logic_buffer createRegNext(const lnode& next,
+lnodeimpl* createRegNext(const lnode& next,
                            unsigned length,
                            const std::string& name);
 
-logic_buffer createRegNext(const lnode& next,
+lnodeimpl* createRegNext(const lnode& next,
                            unsigned length,
                            const lnode& enable,
                            const std::string& name);
 
-logic_buffer createRegNext(const lnode& next,
+lnodeimpl* createRegNext(const lnode& next,
                            const lnode& init,
                            unsigned length,
                            const std::string& name);
 
-logic_buffer createRegNext(const lnode& next,
+lnodeimpl* createRegNext(const lnode& next,
                            const lnode& init,
                            unsigned length,
                            const lnode& enable,
@@ -78,7 +78,7 @@ public:
   }
 
   ch_reg(ch_reg&& other)
-    : base(std::move(get_lnode(other))) {
+    : base(std::move(logic_accessor::move(other))) {
     __next__ = std::make_unique<next_t>(getRegNextNode(get_lnode(*this)));
   }
 

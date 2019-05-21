@@ -8,6 +8,7 @@ set(EXAMPLES
     gcd 
     vending
     matmul
+    sqrt
 )
 
 foreach(EXAMPLE ${EXAMPLES})

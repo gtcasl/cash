@@ -24,7 +24,7 @@ namespace {
   };
 }
 
-TEST_CASE("floats", "[floats]") {
+TEST_CASE("float", "[float]") {
   SECTION("basic", "[basic]") {
     TEST([]()->ch_bool {
       ch_float32 x(1.0f), y(1.0f);
@@ -74,7 +74,7 @@ TEST_CASE("floats", "[floats]") {
     TEST([]()->ch_bool {
       ch_float32 x(0.5f), y(0.5f), z;
       z = ch_fmul<1>(x, y);
-      //ch_println("{0}: clk={1}, rst={2}, z={3}", ch_now(), ch_clock(), ch_reset(), z);
+      ch_println("{0}: clk={1}, rst={2}, z={3}", ch_now(), ch_clock(), ch_reset(), z);
       return (z == 0x3e800000_h);
     }, 1);
 
@@ -131,7 +131,7 @@ TEST_CASE("floats", "[floats]") {
       device.io.lhs = 0.5f;
       device.io.rhs = 0.5f;
       ch_simulator sim(device);
-      sim.run(2*2*4);
+      sim.run(2+2*2*4);
       ch_toVerilog("fmultest.v", device);
       float ret(device.io.out);
       //std::cout << "ret=" << ret << std::endl;

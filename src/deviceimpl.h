@@ -12,7 +12,7 @@ class deviceimpl : public refcounted {
 public:
 
   deviceimpl(const std::type_index& signature,
-             bool has_args,
+             bool is_pod,
              const std::string& name);
 
   ~deviceimpl();

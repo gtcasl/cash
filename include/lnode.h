@@ -120,15 +120,9 @@ public:
 
   lnode(const sdata_type& value);
 
-  lnode(uint32_t size, const std::string& name, const sloc_getter& slg = sloc_getter());
+  lnode(uint32_t size, const std::string& name);
 
   lnode(const lnode& src, const std::string& name);
-
-  lnode(uint32_t size,
-        const lnode& src,
-        uint32_t src_offset,
-        const std::string& name,
-        const sloc_getter& slg = sloc_getter());
 
   lnode(const lnode& other) : impl_(other.impl_) {}
 
@@ -137,19 +131,12 @@ public:
     return *this;
   }
 
-  void write(uint32_t dst_offset,
-             const lnode& in,
-             uint32_t src_offset,
-             uint32_t length);
-
   bool empty() const {
     return (nullptr == impl_);
   }
 
   lnodeimpl* impl() const;
 
-  const lnode& source() const;
-  
   uint32_t id() const;
 
   const std::string& name() const;
@@ -158,7 +145,10 @@ public:
 
   const source_location& sloc() const;
 
-  lnode clone() const;
+  void write(uint32_t dst_offset,
+             const lnode& in,
+             uint32_t src_offset,
+             uint32_t length);
 
   inline friend bool operator==(const lnode& lhs, const lnode& rhs) {
     return lhs.id() == rhs.id();

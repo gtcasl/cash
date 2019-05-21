@@ -91,6 +91,12 @@ public:
     return srcs_[index];
   }
 
+  lnode& mutable_src(uint32_t index) {
+    assert(index < srcs_.size());
+    hash_ = 0;
+    return srcs_[index];
+  }
+
   uint32_t size() const {
     return size_;
   }

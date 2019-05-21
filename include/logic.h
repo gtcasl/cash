@@ -35,7 +35,33 @@ inline constexpr bool is_bit_convertible_v = std::is_constructible_v<ch_bit<N>, 
 
 template <typename T> class ch_reg;
 
-using logic_buffer = lnode;
+///////////////////////////////////////////////////////////////////////////////
+
+class logic_buffer : public lnode {
+public:
+
+  logic_buffer(lnodeimpl* impl) : lnode(impl) {}
+
+  logic_buffer(uint32_t size,
+               const std::string& name,
+               const sloc_getter& slg = sloc_getter());
+
+  logic_buffer(const lnode& node,
+               const std::string& name,
+               const sloc_getter& slg = sloc_getter());
+
+  logic_buffer(uint32_t size,
+               const logic_buffer& src,
+               uint32_t src_offset,
+               const std::string& name,
+               const sloc_getter& slg = sloc_getter());
+
+  const logic_buffer& source() const;
+
+  logic_buffer& source();
+
+  lnode clone() const;
+};
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -70,7 +96,8 @@ public:
     static_assert(ch_width_v<U> == ch_width_v<V>, "invalid size");
     assert(ch_width_v<U> == dst.__buffer().size());
     assert(ch_width_v<V> == src.__buffer().size());
-    const_cast<logic_buffer&>(dst.__buffer()).write(0, src.__buffer(), 0, ch_width_v<U>);
+    const_cast<logic_buffer&>(dst.__buffer()).write(
+          0, src.__buffer(), 0, ch_width_v<U>);
   }
 
   template <typename U, typename V>
@@ -84,7 +111,8 @@ public:
                     const V& src,
                     uint32_t src_offset,
                     uint32_t length) {
-    const_cast<logic_buffer&>(dst.__buffer()).write(dst_offset, src.__buffer(), src_offset, length);
+    const_cast<logic_buffer&>(dst.__buffer()).write(
+          dst_offset, src.__buffer(), src_offset, length);
   }
 
   template <typename T>

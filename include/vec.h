@@ -272,7 +272,7 @@ public:
   using base = vec_base<T, N>;
   using base::operator [];
 
-  explicit ch_vec(const std::string& name = idname<ch_vec>())
+  explicit ch_vec(const std::string& name = "io")
     : ch_vec(sloc_getter(), name, std::make_index_sequence<N>())
   {}
 
@@ -305,7 +305,7 @@ protected:
 
   template <std::size_t...Is>
   ch_vec(const sloc_getter&, const std::string& name, std::index_sequence<Is...>)
-    : base(stringf("%s_%d", name.c_str(), Is)...)
+    : base(stringf("%s[%d]", name.c_str(), Is)...)
   {}
 
   template <typename U, std::size_t...Is>
@@ -331,11 +331,11 @@ public:
   using base = vec_base<T, N>;
   using base::operator [];
 
-  explicit ch_vec(const std::string& name = idname<ch_vec>())
+  explicit ch_vec(const std::string& name = "io")
     : ch_vec(name, std::make_index_sequence<N>())
   {}
 
-  explicit ch_vec(const typename traits::logic_io& other)
+  explicit ch_vec(const typename traits::logic_flip_io& other)
     : ch_vec(other, std::make_index_sequence<N>())
   {}
 
@@ -359,7 +359,7 @@ protected:
 
   template <std::size_t...Is>
   ch_vec(const std::string& name, std::index_sequence<Is...>)
-    : base(stringf("%s_%d", name.c_str(), Is)...)
+    : base(stringf("%s[%d]", name.c_str(), Is)...)
   {}
 
   template <typename U, std::size_t...Is>

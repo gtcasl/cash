@@ -392,11 +392,13 @@ public:
         this->emit_node(reinterpret_cast<proxyimpl*>(node));
         break;
       case type_input:
-        this->emit_node(reinterpret_cast<inputimpl*>(node));
+      case type_udfout:
+        this->emit_node_input(reinterpret_cast<ioportimpl*>(node));
         break;
       case type_output:
       case type_tap:
-        this->emit_node(reinterpret_cast<outputimpl*>(node));
+      case type_udfin:
+        this->emit_node_output(reinterpret_cast<ioportimpl*>(node));
         break;
       case type_op:
         this->emit_node(reinterpret_cast<opimpl*>(node));
@@ -604,32 +606,22 @@ private:
   };
 
   struct udf_data_t {
-    uint32_t dst_width;
-    udf_obj* udf;
-    sdata_type* srcs;
+    udf_iface* udf;
 
     static uint32_t size(udfimpl* node) {
-      auto udf = node->udf();
-      uint32_t size = sizeof(udf_data_t);
-      size += udf->inputs_size().size() * sizeof(sdata_type); // srcs
-      return size;
+      return sizeof(udf_data_t);
     }
 
-    void init(udfimpl* node, const compiler* cp) {
-      auto buf = reinterpret_cast<uint8_t*>(this) + sizeof(udf_data_t);
-      dst_width = node->size();
+    void init(udfimpl* node) {
       udf = node->udf();
-      srcs = reinterpret_cast<sdata_type*>(buf);
-      for (uint32_t i = 0, n = udf->inputs_size().size(); i < n; ++i) {
-        cp->init_sdata(&srcs[i], node->src(i).impl());
-      }
     }
 
-    static void eval(block_type* out, udf_data_t* self) {
-      sdata_type dst;
-      dst.emplace(out, self->dst_width);
-      self->udf->impl()->eval(dst, self->srcs);
-      dst.emplace(nullptr);
+    static void eval(udf_data_t* self) {
+      self->udf->eval();
+    }
+
+    static void reset(udf_data_t* self) {
+      self->udf->reset();
     }
   };
 
@@ -690,28 +682,28 @@ private:
     }
   }
 
-  void emit_node(inputimpl* node) {
+  void emit_node_input(ioportimpl* node) {
     __source_info_ex(node->name().c_str());
-    uint32_t dst_width = node->size();
-    uint32_t addr = addr_map_.at(node->id());
-    auto j_ptr = jit_insn_load_relative(j_func_, j_ports_, addr * sizeof(block_type*), jit_type_void_ptr);
+    auto dst_width = node->size();
+    auto j_xtype = to_native_or_word_type(dst_width);
+    auto addr = addr_map_.at(node->id());
+    auto j_src_ptr = jit_insn_load_relative(j_func_, j_ports_, addr * sizeof(block_type*), jit_type_void_ptr);
     if (dst_width <= WORD_SIZE) {
-      auto j_xtype = to_native_or_word_type(dst_width);
       auto j_ntype = to_native_type(dst_width);
-      auto j_value = jit_insn_load_relative(j_func_, j_ptr, 0, j_xtype);
+      auto j_value = jit_insn_load_relative(j_func_, j_src_ptr, 0, j_xtype);
       scalar_map_[node->id()] = this->emit_cast(j_value, j_ntype);
     } else {
-      input_map_[node->id()] = j_ptr;
+      input_map_[node->id()] = j_src_ptr;
     }
   }
 
-  void emit_node(ioportimpl* node) {
+  void emit_node_output(ioportimpl* node) {
     __source_info_ex(node->name().c_str());
-    uint32_t dst_width = node->size();
-    uint32_t addr = addr_map_.at(node->id());
+    auto dst_width = node->size();
+    auto j_xtype = to_native_or_word_type(dst_width);
+    auto addr = addr_map_.at(node->id());
     auto j_dst_ptr = jit_insn_load_relative(j_func_, j_ports_, addr * sizeof(block_type*), jit_type_void_ptr);
     if (dst_width <= WORD_SIZE) {
-      auto j_xtype = to_native_or_word_type(dst_width);
       auto j_src_value = scalar_map_.at(node->src(0).id());
       auto j_src_value_x = this->emit_cast(j_src_value, j_xtype);
       jit_insn_store_relative(j_func_, j_dst_ptr, 0, j_src_value_x);
@@ -1772,9 +1764,16 @@ private:
       jit_insn_branch_if_not(j_func_, j_reset, &l_skip);
 
       for (auto node : sblock_.nodes) {
-        if (node->type() != type_reg)
-          continue;
-        this->emit_snode_init(reinterpret_cast<regimpl*>(node));
+        switch (node->type()) {
+        case type_reg:
+          this->emit_snode_init(reinterpret_cast<regimpl*>(node));
+          break;
+        case type_udfs:
+          this->emit_snode_init(reinterpret_cast<udfsimpl*>(node));
+          break;
+        default:
+          break;
+        }
       }
 
       jit_insn_branch(j_func_, &l_exit);
@@ -2262,50 +2261,20 @@ private:
     }
   }
 
-  void emit_node(udfcimpl* node) {
+  void emit_node(udfimpl* node) {
     __source_info();
 
-    auto dst_width = node->size();
-    auto j_ntype = to_native_type(dst_width);
-    auto udf = node->udf();
-
     auto addr = addr_map_.at(node->id());
-    auto data_addr = addr;
-    jit_value_t j_dst_ptr, j_dst_tmp = nullptr;
-    if (dst_width <= WORD_SIZE) {
-      j_dst_tmp = jit_value_create(j_func_, word_type_);
-      jit_insn_store(j_func_, j_dst_tmp, j_zero_);
-      j_dst_ptr = this->emit_address_of(j_dst_tmp, word_type_);
-    } else {
-      j_dst_ptr = this->emit_pointer_address(node);
-      data_addr += __align_word_size(dst_width);
-    }
-    auto j_data_ptr = jit_insn_add_relative(j_func_, j_vars_, data_addr);
-
-    // copy scalar arguments
-    uint32_t src_idx = 0;
-    for (uint32_t i = 0, n = udf->inputs_size().size(); i < n; ++i) {
-      auto src = node->src(i).impl();
-      auto it = scalar_map_.find(src->id());
-      if (it != scalar_map_.end()) {
-        auto srcs_ptr = jit_insn_load_relative(j_func_,
-                                               j_vars_,
-                                               data_addr + offsetof(udf_data_t, srcs),
-                                               jit_type_void_ptr);
-        auto j_src = this->emit_address_of(it->second, word_type_);
-        jit_insn_store_relative(j_func_, srcs_ptr, src_idx * sizeof(sdata_type), j_src);
-      }
-      ++src_idx;
-    }
+    auto j_data_ptr = jit_insn_add_relative(j_func_, j_vars_, addr);
 
     // call native function
-    jit_type_t params[] = {jit_type_void_ptr, jit_type_void_ptr};
+    jit_type_t params[] = {jit_type_void_ptr};
     jit_type_t j_sig = jit_type_create_signature(jit_abi_cdecl,
                                                  jit_type_void,
                                                  params,
                                                  __countof(params),
                                                  1);
-    jit_value_t args[] = {j_dst_ptr, j_data_ptr};
+    jit_value_t args[] = {j_data_ptr};
     jit_insn_call_native(j_func_,
                          "udf_data_t::eval",
                          (void*)udf_data_t::eval,
@@ -2313,10 +2282,6 @@ private:
                          args,
                          __countof(args),
                          JIT_CALL_NOTHROW);
-
-    if (dst_width <= WORD_SIZE) {
-      scalar_map_[node->id()] = this->emit_cast(j_dst_tmp, j_ntype);
-    }
   }
 
   void emit_node(udfsimpl* node) {
@@ -2325,55 +2290,31 @@ private:
     sblock_.nodes.push_back(node);
   }
 
-  void emit_snode_value(udfsimpl* node) {
+  void emit_snode_value(udfimpl* node) {
+    emit_node(node);
+  }
+
+  void emit_snode_init(udfimpl* node) {
     __source_info();
 
-    auto dst_width = node->size();
-    auto udf = node->udf();
-
     auto addr = addr_map_.at(node->id());
-    auto data_addr = addr + __align_word_size(dst_width);
-    auto j_dst_ptr = this->emit_pointer_address(node);
-    auto j_data_ptr = jit_insn_add_relative(j_func_, j_vars_, data_addr);
-
-    // copy scalar arguments
-    uint32_t src_idx = 0;
-    for (uint32_t i = 0, n = udf->inputs_size().size(); i < n; ++i) {
-      auto src = node->src(i).impl();
-      auto it = scalar_map_.find(src->id());
-      if (it != scalar_map_.end()) {
-        auto srcs_ptr = jit_insn_load_relative(j_func_,
-                                               j_vars_,
-                                               data_addr + offsetof(udf_data_t, srcs),
-                                               jit_type_void_ptr);
-        auto j_src = this->emit_address_of(it->second, word_type_);
-        jit_insn_store_relative(j_func_, srcs_ptr, src_idx * sizeof(sdata_type), j_src);
-      }
-      ++src_idx;
-    }
+    auto j_data_ptr = jit_insn_add_relative(j_func_, j_vars_, addr);
 
     // call native function
-    jit_type_t params[] = {jit_type_void_ptr, jit_type_void_ptr};
+    jit_type_t params[] = {jit_type_void_ptr};
     jit_type_t j_sig = jit_type_create_signature(jit_abi_cdecl,
                                                  jit_type_void,
                                                  params,
                                                  __countof(params),
                                                  1);
-    jit_value_t args[] = {j_dst_ptr, j_data_ptr};
+    jit_value_t args[] = {j_data_ptr};
     jit_insn_call_native(j_func_,
-                         "udf_data_t::eval",
-                         (void*)udf_data_t::eval,
+                         "udf_data_t::reset",
+                         (void*)udf_data_t::reset,
                          j_sig,
                          args,
                          __countof(args),
                          JIT_CALL_NOTHROW);
-
-    if (dst_width <= WORD_SIZE) {
-      auto j_xtype = to_native_or_word_type(dst_width);
-      auto j_ntype = to_native_type(dst_width);
-      auto j_dst = jit_insn_load_relative(j_func_, j_vars_, addr, j_xtype);
-      scalar_map_[node->id()] = this->emit_cast(j_dst, j_ntype);
-    }
   }
 
   /////////////////////////////////////////////////////////////////////////////
@@ -2395,6 +2336,8 @@ private:
       case type_input:
       case type_output:
       case type_tap:
+      case type_udfin:
+      case type_udfout:
         addr_map_[node->id()] = port_addr++;
         break;
       case type_cd:
@@ -2435,13 +2378,9 @@ private:
       case type_udfc:
       case type_udfs: {
         addr_map_[node->id()] = var_addr;
-        if (type_udfs == type
-         || dst_width > WORD_SIZE) {
-          var_addr += __align_word_size(dst_width);
-        }
         auto u = reinterpret_cast<udfimpl*>(node);
         var_addr += __align_word_size(udf_data_t::size(u) * 8);
-      } break;
+      } break;      
       case type_op:
       case type_sel:
       case type_proxy:
@@ -2540,7 +2479,9 @@ private:
         break;
       case type_input:
       case type_output:
-      case type_tap: {
+      case type_tap:
+      case type_udfin:
+      case type_udfout: {
         auto addr = addr_map_.at(node->id());
         auto ioport = reinterpret_cast<ioportimpl*>(node);
         sim_ctx_->state.ports[addr] = ioport->value()->words();
@@ -2619,21 +2560,8 @@ private:
       case type_udfc:
       case type_udfs: {
         auto addr = addr_map_.at(node->id());
-        if (type_udfs == type
-         || dst_width > WORD_SIZE) {
-          bv_init(reinterpret_cast<block_type*>(sim_ctx_->state.vars + addr), dst_width);
-          if (type_udfs == type
-           && dst_width <= WORD_SIZE) {
-            // preload scalar value
-            __source_info();
-            auto j_dst = jit_insn_load_relative(j_func_, j_vars_, addr, j_xtype);
-            scalar_map_[node->id()] = this->emit_cast(j_dst, j_ntype);;
-          }
-          addr += __align_word_size(dst_width);
-          this->calc_pointer_address(node);
-        }
         auto u = reinterpret_cast<udfimpl*>(node);
-        reinterpret_cast<udf_data_t*>(sim_ctx_->state.vars + addr)->init(u, this);
+        reinterpret_cast<udf_data_t*>(sim_ctx_->state.vars + addr)->init(u);
       } break;
       case type_op:
       case type_sel:
@@ -2676,6 +2604,7 @@ private:
       auto addr = it->second;
       switch (node->type()) {
       case type_input:
+      case type_udfout:
         assert(addr < ports_size_);
         value = sim_ctx_->state.ports[addr];
         break;

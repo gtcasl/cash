@@ -46,6 +46,7 @@ set(PROJECT_SOURCES
     src/printimpl.cpp
     src/udfimpl.cpp
     src/lnode.cpp
+    src/logic.cpp
     src/system.cpp
     src/context.cpp
     src/deviceimpl.cpp

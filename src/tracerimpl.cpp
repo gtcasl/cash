@@ -332,7 +332,7 @@ void tracerimpl::toTestBench(std::ofstream& out,
       std::stringstream ss;
       auto p = reinterpret_cast<bindportimpl*>(node);
       ss << p->binding()->name() << "_"
-         << p->binding()->id() << "_" << p->ioport().name();
+         << p->binding()->id() << "_" << identifier_from_string(p->ioport().name());
       return ss.str();
     }
     case type_time:
@@ -341,7 +341,7 @@ void tracerimpl::toTestBench(std::ofstream& out,
       std::stringstream ss;
       ss << node->type();
       if (!node->name().empty()) {
-        ss << "_" << node->name();
+        ss << "_" << identifier_from_string(node->name());
       }
       ss << "_" << node->id();
       return ss.str();
@@ -440,11 +440,11 @@ void tracerimpl::toTestBench(std::ofstream& out,
     out << ctx->name() << " " << ctx->name() << "_" << ctx->id() << "(";
     for (auto node : ctx->inputs()) {
       auto input = reinterpret_cast<inputimpl*>(node);
-      out << sep << "." << input->name() << "(" << find_signal_name(input) << ")";
+      out << sep << "." << identifier_from_string(input->name()) << "(" << find_signal_name(input) << ")";
     }
     for (auto node : ctx->outputs()) {
       auto output = reinterpret_cast<outputimpl*>(node);
-      out << sep << "." << output->name() << "(" << find_signal_name(output) << ")";
+      out << sep << "." << identifier_from_string(output->name()) << "(" << find_signal_name(output) << ")";
     }
     out << ");" << std::endl;
     return true;

@@ -19,7 +19,7 @@ class bindportimpl;
 class ioimpl;
 class cdimpl;
 class udfimpl;
-class udfsimpl;
+class udfportimpl;
 class tapimpl;
 class source_location;
 enum class ch_op;

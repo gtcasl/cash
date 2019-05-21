@@ -59,9 +59,12 @@ lnodeimpl* ch::internal::get_snode_reset(lnodeimpl* node) {
     auto reg = reinterpret_cast<regimpl*>(node);
     return reg->has_init_data() ? reg->reset().impl() : nullptr;
   }
+  case type_udfs: {
+    auto udfs = reinterpret_cast<udfsimpl*>(node);
+    return udfs->reset().impl();
+  }
   case type_msrport:
-  case type_mwport:
-  case type_udfs:
+  case type_mwport:  
     return nullptr;
   default:
     std::abort();

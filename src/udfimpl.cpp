@@ -1,157 +1,162 @@
 #include "udfimpl.h"
+#include "proxyimpl.h"
 #include "cdimpl.h"
 #include "context.h"
 
 using namespace ch::internal;
 
-udf_obj::udf_obj(uint32_t id,
-                     const std::string& name,
-                     bool is_seq,
-                     uint32_t output_size,
-                     const std::initializer_list<uint32_t>& inputs_size,
-                     udf_base* impl)
-  : id_(id)
-  , name_(name)
-  , is_managed_(false)
-  , is_seq_(is_seq)
-  , output_size_(output_size)
-  , inputs_size_(inputs_size)
-  , impl_(impl) {
-  impl_->acquire();
-}
-
-udf_obj::~udf_obj() {
-  if (impl_) {
-    impl_->release();
-    if (is_managed_) {
-      destroyUDF(id_);
-    }
-  }
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
 udfimpl::udfimpl(context* ctx,
                  lnodetype type,
-                 udf_obj* udf,
-                 const std::vector<lnode>& srcs,
-                 const source_location& sloc)
-  : ioimpl(ctx, type, udf->output_size(), sloc, udf->name())
+                 udf_iface* udf,
+                 const source_location& sloc,
+                 const std::string& name)
+  : ioimpl(ctx, type, 0, sloc, name)
   , udf_(udf) {
-  udf->acquire();
-  for (auto src : srcs) {
-    this->add_src(src);
-  }
+  udf_->acquire();
 }
 
 udfimpl::~udfimpl() {
   udf_->release();
 }
 
+void udfimpl::remove_port(lnodeimpl* port) {
+  for (auto it = this->srcs().begin(), end = this->srcs().end(); it != end; ++it) {
+    if (it->id() == port->id()) {
+      this->remove_src(it - this->srcs().begin());
+      return;
+    }
+  }
+  for (auto it = inputs_.begin(), end = inputs_.end(); it != end; ++it) {
+    if (it->id() == port->id()) {
+      inputs_.erase(it);
+      return;
+    }
+  }
+  for (auto it = outputs_.begin(), end = outputs_.end(); it != end; ++it) {
+    if (it->id() == port->id()) {
+      outputs_.erase(it);
+      return;
+    }
+  }
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 udfcimpl::udfcimpl(context* ctx,
-                   udf_obj* udf,
-                   const std::vector<lnode>& srcs,
-                   const source_location& sloc)
-  : udfimpl(ctx, type_udfc, udf, srcs, sloc)
+                   udf_iface* udf,
+                   const source_location& sloc,
+                   const std::string& name)
+  : udfimpl(ctx, type_udfc, udf, sloc, name)
 {}
 
+udfcimpl::~udfcimpl() {}
+
 lnodeimpl* udfcimpl::clone(context* ctx, const clone_map& cloned_nodes) const {
-  std::vector<lnode> srcs;
-  srcs.resize(udf_->inputs_size().size());
-  for (uint32_t i = 0, n = srcs.size(); i < n; ++i) {
-    srcs[i] = cloned_nodes.at(this->src(i).id());
+  auto udf = ctx->create_node<udfcimpl>(udf_, sloc_, name_);
+  for (auto& input : inputs_) {
+    auto new_input = reinterpret_cast<udfportimpl*>(cloned_nodes.at(input.id()));
+    udf->add_input(new_input);
   }
-  return ctx->create_node<udfcimpl>(udf_, srcs, sloc_);
+  return udf;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 udfsimpl::udfsimpl(context* ctx,
-                   udf_obj* udf,
+                   udf_iface* udf,
                    lnodeimpl* cd,
                    lnodeimpl* reset,
-                   const std::vector<lnode>& srcs,
-                   const source_location& sloc)
-  : udfimpl(ctx, type_udfs, udf, srcs, sloc) {
+                   const source_location& sloc,
+                   const std::string& name)
+  : udfimpl(ctx, type_udfs, udf, sloc, name) {
   cd_idx_ = this->add_src(cd);
   reset_idx_ = this->add_src(reset);
 }
 
+udfsimpl::~udfsimpl() {}
+
 lnodeimpl* udfsimpl::clone(context* ctx, const clone_map& cloned_nodes) const {
-  std::vector<lnode> srcs;
-  srcs.resize(udf_->inputs_size().size());
-  for (uint32_t i = 0, n = srcs.size(); i < n; ++i) {
-    srcs[i] = cloned_nodes.at(this->src(i).id());
-  }
   auto cd = cloned_nodes.at(this->cd().id());
   auto reset = cloned_nodes.at(this->reset().id());
-  return ctx->create_node<udfsimpl>(udf_, cd, reset, srcs, sloc_);
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-udfimpl2::udfimpl2(context* ctx,
-                   lnodetype type,
-                   udf_iface* udf,
-                   const std::vector<lnode>& srcs,
-                   const source_location& sloc)
-  : ioimpl(ctx, type, 0, sloc, "") {
-  //--
-}
-
-udfimpl2::~udfimpl2() {}
-
-void udfimpl2::remove_port(udfportimpl* output) {
-  //--
+  auto udf = ctx->create_node<udfsimpl>(udf_, cd, reset, sloc_, name_);
+  for (auto& input : inputs_) {
+    auto new_input = reinterpret_cast<udfportimpl*>(cloned_nodes.at(input.id()));
+    udf->add_input(new_input);
+  }
+  return udf;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 udfportimpl::udfportimpl(context* ctx,
                          lnodeimpl* src,
-                         udfimpl2* udf,
-                         const source_location& sloc)
-  : ioimpl(ctx, type_udfin, src->size(), sloc, "")
-  , udf_(udf) {
-  udf->acquire();
+                         const io_value_t& value,
+                         const source_location& sloc,
+                         const std::string& name)
+  : ioportimpl(ctx, type_udfin, src->size(), value, sloc, name)
+  , udf_(nullptr) {
   this->add_src(src);
 }
 
 udfportimpl::udfportimpl(context* ctx,
                          unsigned size,
-                         udfimpl2* udf,
-                         const source_location& sloc)
-  : ioimpl(ctx, type_udfout, size, sloc, "")
+                         udfimpl* udf,
+                         const io_value_t& value,
+                         const source_location& sloc,
+                         const std::string& name)
+  : ioportimpl(ctx, type_udfout, size, value, sloc, name)
   , udf_(udf) {
-  udf->acquire();
   this->add_src(udf);
+  udf->acquire();
+  udf->add_output(this);
 }
 
 udfportimpl::~udfportimpl() {
-  udf_->remove_port(this);
-  udf_->release();
+  if (udf_) {
+    udf_->remove_port(this);
+    udf_->release();
+  }
+}
+
+lnodeimpl* udfportimpl::clone(context* ctx, const clone_map& cloned_nodes) const {  
+  if (type_ == type_udfin) {
+    auto src = reinterpret_cast<udfimpl*>(cloned_nodes.at(this->src(0).id()));
+    return ctx->create_node<udfportimpl>(src, value_, sloc_, name_);
+  } else {    
+    auto udf = reinterpret_cast<udfimpl*>(cloned_nodes.at(udf_->id()));
+    return ctx->create_node<udfportimpl>(this->size(), udf, value_, sloc_, name_);
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-lnodeimpl* ch::internal::createUDFNode(refcounted* handle, const std::vector<lnode>& inputs) {
-  auto udf = reinterpret_cast<udf_obj*>(handle);
+void ch::internal::createUDFNode(const std::string& name,
+                                 bool is_seq,
+                                 udf_iface* udf) {
   auto sloc = get_source_location();
-  return ctx_curr()->create_udf_node(udf, inputs, sloc);
+  ctx_curr()->create_udf_node(udf, is_seq, name, sloc);
 }
 
-lnodeimpl* ch::internal::createInputNode(const system_io_buffer* buffer,
-                                         const sloc_getter&) {
+lnodeimpl* ch::internal::bindInputNode(system_io_buffer* input,
+                                       const sloc_getter&) {
   auto sloc = get_source_location();
-  auto node = ctx_curr()->create_udf_input(buffer->size(), buffer->name(), sloc);
-  return node;
+  auto ctx  = ctx_curr();
+  auto value = smart_ptr<sdata_type>::make(input->size());
+  auto src  = ctx->create_node<proxyimpl>(input->size(), sloc, input->name());
+  auto node = ctx->create_node<udfportimpl>(src, value, sloc, input->name());
+  input->bind(node->value());
+  auto udf = ctx->current_udf();
+  udf->add_input(node);
+  return src;
 }
 
-lnodeimpl* ch::internal::createOutputNode(const system_io_buffer* buffer,
-                                          const sloc_getter&) {
+lnodeimpl* ch::internal::bindOutputNode(system_io_buffer* output,
+                                        const sloc_getter&) {
   auto sloc = get_source_location();
-  auto node = ctx_curr()->create_udf_output(buffer->size(), buffer->name(), sloc);
+  auto ctx  = ctx_curr();
+  auto udf  = ctx->current_udf();
+  auto value = smart_ptr<sdata_type>::make(output->size());
+  auto node = ctx->create_node<udfportimpl>(output->size(), udf, value, sloc, output->name());
+  output->bind(node->value());
   return node;
 }

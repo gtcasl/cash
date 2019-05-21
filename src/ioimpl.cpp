@@ -106,8 +106,8 @@ lnodeimpl* ch::internal::createInputNode(const std::string& name, uint32_t size,
 lnodeimpl* ch::internal::createOutputNode(const std::string& name, uint32_t size,
                                           const sloc_getter&) {
   auto sloc = get_source_location();
-  auto node = ctx_curr()->create_output(size, name, sloc);
-  return node->src(0).impl();
+  auto output = ctx_curr()->create_output(size, name, sloc);
+  return output->src(0).impl();
 }
 
 lnodeimpl* ch::internal::getOutputNode(const lnode& src) {

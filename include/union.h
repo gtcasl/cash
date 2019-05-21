@@ -28,24 +28,24 @@
   } \
   __out << __in.CH_PAIR_R(x)
 
-#define CH_UNION_SYSTEM_IMPL(union_name, field_body, ...) \
+#define CH_UNION_SYSTEM_IMPL(type_name, union_name, field_body, ...) \
   CH_FOR_EACH(field_body, , CH_SEP_SEMICOLON, __VA_ARGS__); \
-  union_name(const ch::internal::system_buffer_ptr& buffer = \
+  type_name(const ch::internal::system_buffer_ptr& buffer = \
   ch::internal::make_system_buffer(traits::bitwidth)) \
     : CH_FOR_EACH(CH_UNION_SYSTEM_CTOR, , CH_SEP_COMMA, __VA_ARGS__) {} \
-  union_name(const union_name& __other) \
-    : union_name(ch::internal::system_accessor::copy(__other)) {} \
-  union_name(union_name&& __other) \
-   : union_name(ch::internal::system_accessor::move(__other)) {} \
-  union_name(const ch_scbit<traits::bitwidth>& other) \
-    : union_name() { \
-    this->operator=(other.as<union_name>()); \
+  type_name(const type_name& __other) \
+    : type_name(ch::internal::system_accessor::copy(__other)) {} \
+  type_name(type_name&& __other) \
+   : type_name(ch::internal::system_accessor::move(__other)) {} \
+  type_name(const ch_scbit<traits::bitwidth>& other) \
+    : type_name() { \
+    this->operator=(other.as<type_name>()); \
   } \
-  union_name& operator=(const union_name& __other) { \
+  type_name& operator=(const type_name& __other) { \
     ch::internal::system_accessor::assign(*this, __other); \
     return *this; \
   } \
-  union_name& operator=(union_name&& __other) { \
+  type_name& operator=(type_name&& __other) { \
     ch::internal::system_accessor::move(*this, std::move(__other)); \
     return *this; \
   } \
@@ -53,7 +53,7 @@ protected: \
   const ch::internal::system_buffer_ptr& __buffer() const { \
     CH_STRUCT_SYSTEM_SOURCE(0, CH_FIRST_ARG(__VA_ARGS__)); \
   } \
-  friend std::ostream& operator<<(std::ostream& __out, const union_name& __in) { \
+  friend std::ostream& operator<<(std::ostream& __out, const type_name& __in) { \
     __out << "("; \
     CH_FOR_EACH(CH_UNION_OSTREAM, , CH_SEP_SEMICOLON, __VA_ARGS__); \
     __out << ")"; \
@@ -62,29 +62,29 @@ protected: \
   friend class ch::internal::system_accessor; \
 public:
 
-#define CH_UNION_LOGIC_IMPL(union_name, field_body, ...) \
+#define CH_UNION_LOGIC_IMPL(type_name, union_name, field_body, ...) \
   CH_FOR_EACH(field_body, , CH_SEP_SEMICOLON, __VA_ARGS__); \
-  union_name(const ch::internal::logic_buffer& buffer = \
+  type_name(const ch::internal::logic_buffer& buffer = \
     ch::internal::logic_buffer(traits::bitwidth, CH_STRINGIZE(union_name))) \
     : CH_FOR_EACH(CH_UNION_LOGIC_CTOR, , CH_SEP_COMMA, __VA_ARGS__) {} \
-  union_name(const union_name& __other) \
-    : union_name(ch::internal::logic_buffer(traits::bitwidth, CH_STRINGIZE(union_name))) { \
+  type_name(const type_name& __other) \
+    : type_name(ch::internal::logic_buffer(traits::bitwidth, CH_STRINGIZE(union_name))) { \
     CH_SOURCE_LOCATION(1); \
     this->operator=(__other); \
   } \
-  union_name(union_name&& __other) \
-    : union_name(ch::internal::logic_accessor::move(__other)) {} \
-  union_name(const ch_bit<traits::bitwidth>& other) \
-    : union_name(ch::internal::logic_buffer(traits::bitwidth, CH_STRINGIZE(union_name))) { \
+  type_name(type_name&& __other) \
+    : type_name(ch::internal::logic_accessor::move(__other)) {} \
+  type_name(const ch_bit<traits::bitwidth>& other) \
+    : type_name(ch::internal::logic_buffer(traits::bitwidth, CH_STRINGIZE(union_name))) { \
     CH_SOURCE_LOCATION(1); \
-    this->operator=(other.as<union_name>()); \
+    this->operator=(other.as<type_name>()); \
   } \
-  union_name& operator=(const union_name& __other) { \
+  type_name& operator=(const type_name& __other) { \
     CH_SOURCE_LOCATION(1); \
     ch::internal::logic_accessor::assign(*this, __other); \
     return *this; \
   } \
-  union_name& operator=(union_name&& __other) { \
+  type_name& operator=(type_name&& __other) { \
     CH_SOURCE_LOCATION(1); \
     ch::internal::logic_accessor::move(*this, std::move(__other)); \
     return *this; \
@@ -102,12 +102,12 @@ public:
     class __system_type__ { \
     public: \
       using traits = ch::internal::system_traits<CH_UNION_SIZE(__VA_ARGS__), false, __system_type__, union_name>; \
-      CH_UNION_SYSTEM_IMPL(__system_type__, CH_UNION_SYSTEM_FIELD, __VA_ARGS__) \
+      CH_UNION_SYSTEM_IMPL(__system_type__, union_name, CH_UNION_SYSTEM_FIELD, __VA_ARGS__) \
       CH_SYSTEM_INTERFACE(__system_type__) \
     }; \
   public: \
     using traits = ch::internal::logic_traits<CH_UNION_SIZE(__VA_ARGS__), false, union_name, __system_type__>; \
-    CH_UNION_LOGIC_IMPL(union_name, CH_UNION_LOGIC_FIELD, __VA_ARGS__) \
+    CH_UNION_LOGIC_IMPL(union_name, union_name, CH_UNION_LOGIC_FIELD, __VA_ARGS__) \
     CH_LOGIC_INTERFACE(union_name) \
   }
 

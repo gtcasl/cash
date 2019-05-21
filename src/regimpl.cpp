@@ -115,7 +115,7 @@ ch_bit<1> ch::internal::ch_reset() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-logic_buffer ch::internal::createRegNode(unsigned size, const std::string& name,
+lnodeimpl* ch::internal::createRegNode(unsigned size, const std::string& name,
                                          const sloc_getter&) {
   auto sloc = get_source_location();
   auto ctx  = ctx_curr();
@@ -127,7 +127,7 @@ logic_buffer ch::internal::createRegNode(unsigned size, const std::string& name,
   return reg;
 }
 
-logic_buffer ch::internal::createRegNode(const lnode& init_data,
+lnodeimpl* ch::internal::createRegNode(const lnode& init_data,
                                          const std::string& name,
                                          const sloc_getter&) {
   auto sloc = get_source_location();
@@ -141,7 +141,7 @@ logic_buffer ch::internal::createRegNode(const lnode& init_data,
   return reg;
 }
 
-logic_buffer ch::internal::copyRegNode(const lnode& node,
+lnodeimpl* ch::internal::copyRegNode(const lnode& node,
                                        const std::string& name,
                                        const sloc_getter&) {
   auto sloc   = get_source_location();
@@ -157,11 +157,11 @@ logic_buffer ch::internal::copyRegNode(const lnode& node,
   return new_reg;
 }
 
-logic_buffer ch::internal::getRegNextNode(const lnode& node) {
-  return reinterpret_cast<regimpl*>(node.impl())->next();
+lnodeimpl* ch::internal::getRegNextNode(const lnode& node) {
+  return reinterpret_cast<regimpl*>(node.impl())->next().impl();
 }
 
-logic_buffer ch::internal::createRegNext(const lnode& next,
+lnodeimpl* ch::internal::createRegNext(const lnode& next,
                                          unsigned length,
                                          const std::string& name) {
   auto sloc = get_source_location();
@@ -169,10 +169,10 @@ logic_buffer ch::internal::createRegNext(const lnode& next,
   auto cd   = ctx->current_cd(sloc);
   auto reg  = ctx->create_node<regimpl>(
         next.size(), length, cd, nullptr, nullptr, next.impl(), nullptr, sloc, name);
-  return logic_buffer(reg, name);
+  return ctx->create_node<proxyimpl>(reg, sloc, name);
 }
 
-logic_buffer ch::internal::createRegNext(const lnode& next,
+lnodeimpl* ch::internal::createRegNext(const lnode& next,
                                          unsigned length,
                                          const lnode& enable,
                                          const std::string& name) {
@@ -181,10 +181,10 @@ logic_buffer ch::internal::createRegNext(const lnode& next,
   auto cd   = ctx->current_cd(sloc);
   auto reg  = ctx->create_node<regimpl>(
         next.size(), length, cd, nullptr, enable.impl(), next.impl(), nullptr, sloc, name);
-  return logic_buffer(reg, name);
+  return ctx->create_node<proxyimpl>(reg, sloc, name);
 }
 
-logic_buffer ch::internal::createRegNext(const lnode& next,
+lnodeimpl* ch::internal::createRegNext(const lnode& next,
                                          const lnode& init_data,
                                          unsigned length,
                                          const std::string& name) {
@@ -208,10 +208,10 @@ logic_buffer ch::internal::createRegNext(const lnode& next,
       }
     }
   }
-  return logic_buffer(reg, name);
+  return ctx->create_node<proxyimpl>(reg, sloc, name);
 }
 
-logic_buffer ch::internal::createRegNext(const lnode& next,
+lnodeimpl* ch::internal::createRegNext(const lnode& next,
                                          const lnode& init_data,
                                          unsigned length,
                                          const lnode& enable,
@@ -236,17 +236,20 @@ logic_buffer ch::internal::createRegNext(const lnode& next,
       }
     }
   }
-  return logic_buffer(reg, name);
+  return ctx->create_node<proxyimpl>(reg, sloc, name);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void ch::internal::beginPipe(uint32_t length, const std::vector<int>& bounds) {
+void ch::internal::beginPipe(uint32_t length,
+                             const std::vector<int>& bounds) {
   CH_UNUSED(length, bounds);
   CH_TODO();
 }
 
-void ch::internal::beginPipe(uint32_t length, const lnode& enable, const std::vector<int>& bounds) {
+void ch::internal::beginPipe(uint32_t length,
+                             const lnode& enable,
+                             const std::vector<int>& bounds) {
   CH_UNUSED(length, enable, bounds);
   CH_TODO();
 }

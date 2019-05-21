@@ -8,9 +8,9 @@
 using namespace ch::internal;
 
 deviceimpl::deviceimpl(const std::type_index& signature,
-                       bool has_args,
+                       bool is_pod,
                        const std::string& name) {
-  ctx_ = ctx_create(signature, has_args, name);
+  ctx_ = ctx_create(signature, is_pod, name);
   ctx_->acquire();
   is_new_ctx_ = (0 == ctx_->nodes().size());
 }
@@ -49,9 +49,9 @@ void deviceimpl::end_build() {
 device::device() : impl_(nullptr) {}
 
 device::device(const std::type_index& signature,
-               bool has_args,
+               bool is_pod,
                const std::string& name) {
-  impl_ = new deviceimpl(signature, has_args, name);
+  impl_ = new deviceimpl(signature, is_pod, name);
   impl_->acquire();
   impl_->begin_context();
 }

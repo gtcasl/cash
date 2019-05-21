@@ -1525,31 +1525,18 @@ public:
   }
 
   void eval() override {
-    udf_->impl()->eval(dst_, srcs_.data());
+    udf_->eval();
   }
 
 private:
 
   instr_udfc(udfcimpl* node, data_map_t& map)
     : udf_(node->udf())
-    , dst_(node->size()) {
-    srcs_.resize(node->srcs().size());
-    for (uint32_t i = 0, n = udf_->inputs_size().size(); i < n; ++i) {
-      auto& src = node->src(i);
-      srcs_[i].emplace(const_cast<block_type*>(map.at(src.id())), src.size());
-    }
-    map[node->id()] = dst_.words();
-  }
+  {}
 
-  ~instr_udfc() {
-    for (auto& src : srcs_) {
-      src.emplace(nullptr);
-    }
-  }
+  ~instr_udfc() {}
 
-  udf_obj* udf_;
-  sdata_type dst_;
-  std::vector<sdata_type> srcs_;
+  udf_iface* udf_;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1563,10 +1550,7 @@ public:
 
   void init(udfsimpl* node, data_map_t& map) {
     cd_ = map.at(node->cd().id());
-    for (uint32_t i = 0, n = udf_->inputs_size().size(); i < n; ++i) {
-      auto& src = node->src(i);
-      srcs_[i].emplace(const_cast<block_type*>(map.at(src.id())), src.size());
-    }
+    reset_ = map.at(node->reset().id());
   }
 
   void destroy() override {
@@ -1576,30 +1560,83 @@ public:
   void eval() override {
     if (!static_cast<bool>(cd_[0]))
       return;
-    udf_->impl()->eval(dst_, srcs_.data());
+    if (static_cast<bool>(reset_[0])) {
+      udf_->reset();
+    } else {
+      udf_->eval();
+    }
   }
 
 private:
 
   instr_udfs(udfsimpl* node, data_map_t& map)
     : cd_(nullptr)
+    , reset_(nullptr)
     , udf_(node->udf())
-    , dst_(node->size()) {
-    srcs_.resize(node->srcs().size());
-    map[node->id()] = dst_.words();
+  {}
+
+  ~instr_udfs() {}
+
+  const block_type* cd_;
+  const block_type* reset_;
+  udf_iface* udf_;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+class instr_udfin_base : public instr_base {
+public:
+
+  static instr_udfin_base* create(udfportimpl* node, data_map_t& map);
+
+protected:
+
+  instr_udfin_base(block_type* dst, const block_type* src, uint32_t size)
+    : dst_(dst)
+    , src_(src)
+    , size_(size)
+  {}
+
+  block_type* dst_;
+  const block_type* src_;
+  uint32_t size_;
+};
+
+template <bool is_scalar>
+class instr_udfin : public instr_udfin_base {
+public:
+
+  void destroy() override {
+    delete this;
   }
 
-  ~instr_udfs() {
-    for (auto& src : srcs_) {
-      src.emplace(nullptr);
+  void eval() override {
+    if constexpr (is_scalar) {
+      bv_copy_scalar(dst_, src_);
+    } else {
+      bv_copy_vector(dst_, src_, size_);
     }
   }
 
-  const block_type* cd_;
-  udf_obj* udf_;
-  sdata_type dst_;
-  std::vector<sdata_type> srcs_;
+private:
+
+  instr_udfin(block_type* dst, const block_type* src, uint32_t size)
+    : instr_udfin_base(dst, src, size)
+  {}
+
+  friend class instr_udfin_base;
 };
+
+instr_udfin_base* instr_udfin_base::create(udfportimpl* node, data_map_t& map) {
+  auto dst  = node->value()->words();
+  auto src  = map.at(node->src(0).id());
+  auto size = node->size();
+  if (size <= bitwidth_v<block_type>) {
+    return new instr_udfin<true>(dst, src, size);
+  } else {
+    return new instr_udfin<false>(dst, src, size);
+  }
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -1720,6 +1757,15 @@ public:
         instr = instr_map.at(node->id());
         reinterpret_cast<instr_udfs*>(instr)->init(reinterpret_cast<udfsimpl*>(node), data_map);
         break;
+      case type_udfin: {
+        auto udfin = reinterpret_cast<udfportimpl*>(node);
+        data_map[node->id()] = data_map.at(udfin->src(0).id());
+        instr = instr_udfin_base::create(udfin, data_map);
+      } break;
+      case type_udfout: {
+        auto udfout = reinterpret_cast<udfportimpl*>(node);
+        data_map[node->id()] = udfout->value()->words();
+      } break;
       case type_lit:
       case type_mem:
         break;

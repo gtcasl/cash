@@ -29,7 +29,7 @@ public:
 
 protected:
 
-  device(const std::type_index& signature, bool has_args, const std::string& name);
+  device(const std::type_index& signature, bool is_pod, const std::string& name);
 
   bool begin_build() const;
 
@@ -96,19 +96,19 @@ public:
   static_assert(has_logic_io_v<T>, "missing io port");
   static_assert(is_detected_v<detect_describe_t, T>, "missing describe() method");
   using base = device;
-  using io_type = ch_system_io<decltype(T::io)>;
+  using io_type = ch_flip_io<ch_system_io<decltype(T::io)>>;
 
   io_type io;
 
   template <typename... Args>
   ch_device(const std::string& name, Args&&... args)
-    : device(std::type_index(typeid(T)), name)
+    : device(std::type_index(typeid(T)), 0 == sizeof...(Args), name)
     , io(module_loader<T>(this, std::forward<Args>(args)...).get())
   {}
 
   template <typename... Args>
   ch_device(Args&&... args)
-    : device(std::type_index(typeid(T)), (sizeof...(Args) != 0), idname<T>(true))
+    : device(std::type_index(typeid(T)), 0 == sizeof...(Args), idname<T>(true))
     , io(module_loader<T>(this, std::forward<Args>(args)...).get())
   {}
 

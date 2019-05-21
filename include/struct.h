@@ -46,31 +46,31 @@
   } \
   __out << __in.CH_PAIR_R(x)
 
-#define CH_BASIC_STRUCT_SYSTEM_IMPL(struct_name, ...) \
+#define CH_BASIC_STRUCT_SYSTEM_IMPL(type_name, struct_name, ...) \
 private: \
   enum { __field_offset0 = 0, \
            CH_FOR_EACH(CH_STRUCT_FIELD_OFFSET, , CH_SEP_COMMA, __VA_ARGS__) }; \
 public: \
   CH_FOR_EACH(CH_STRUCT_SYSTEM_FIELD, , CH_SEP_SEMICOLON, __VA_ARGS__); \
-  struct_name(const ch::internal::system_buffer_ptr& buffer = \
+  type_name(const ch::internal::system_buffer_ptr& buffer = \
     ch::internal::make_system_buffer(traits::bitwidth)) \
     : CH_FOR_EACH(CH_STRUCT_SYSTEM_CTOR, , CH_SEP_COMMA, __VA_ARGS__) {} \
   template <CH_REQUIRE_0(CH_NARG(__VA_ARGS__) >= 2)> \
-  explicit struct_name(const ch_scbit<traits::bitwidth>& __other) \
-    : struct_name(ch::internal::system_accessor::copy(__other)) {} \
-  struct_name(const struct_name& __other) \
-    : struct_name(ch::internal::system_accessor::copy(__other)) {} \
-  struct_name(struct_name&& __other) \
-    : struct_name(ch::internal::system_accessor::move(__other)) {} \
-  struct_name(CH_REVERSE_FOR_EACH(CH_STRUCT_SYSTEM_FIELD_CTOR_ARGS, , CH_SEP_COMMA, __VA_ARGS__)) \
-    : struct_name() { \
+  explicit type_name(const ch_scbit<traits::bitwidth>& __other) \
+    : type_name(ch::internal::system_accessor::copy(__other)) {} \
+  type_name(const type_name& __other) \
+    : type_name(ch::internal::system_accessor::copy(__other)) {} \
+  type_name(type_name&& __other) \
+    : type_name(ch::internal::system_accessor::move(__other)) {} \
+  type_name(CH_REVERSE_FOR_EACH(CH_STRUCT_SYSTEM_FIELD_CTOR_ARGS, , CH_SEP_COMMA, __VA_ARGS__)) \
+    : type_name() { \
     CH_REVERSE_FOR_EACH(CH_STRUCT_FIELD_CTOR_INIT, , CH_SEP_SEMICOLON, __VA_ARGS__); \
   } \
-  struct_name& operator=(const struct_name& __other) { \
+  type_name& operator=(const type_name& __other) { \
     ch::internal::system_accessor::assign(*this, __other); \
     return *this; \
   } \
-  struct_name& operator=(struct_name&& __other) { \
+  type_name& operator=(type_name&& __other) { \
     ch::internal::system_accessor::move(*this, std::move(__other)); \
     return *this; \
   } \
@@ -78,7 +78,7 @@ protected: \
   const ch::internal::system_buffer_ptr& __buffer() const { \
     CH_STRUCT_SYSTEM_SOURCE(0, CH_FIRST_ARG(__VA_ARGS__)); \
   } \
-  friend std::ostream& operator<<(std::ostream& __out, const struct_name& __in) { \
+  friend std::ostream& operator<<(std::ostream& __out, const type_name& __in) { \
     __out << "("; \
     CH_FOR_EACH(CH_STRUCT_OSTREAM, , CH_SEP_SEMICOLON, __VA_ARGS__); \
     __out << ")"; \
@@ -87,40 +87,40 @@ protected: \
   friend class ch::internal::system_accessor; \
 public:
 
-#define CH_BASIC_STRUCT_LOGIC_IMPL(struct_name, ...) \
+#define CH_BASIC_STRUCT_LOGIC_IMPL(type_name, struct_name, ...) \
 private: \
   enum { __field_offset0 = 0, \
            CH_FOR_EACH(CH_STRUCT_FIELD_OFFSET, , CH_SEP_COMMA, __VA_ARGS__) }; \
 public: \
   CH_FOR_EACH(CH_STRUCT_LOGIC_FIELD, , CH_SEP_SEMICOLON, __VA_ARGS__); \
-  struct_name(const ch::internal::logic_buffer& buffer = \
+  type_name(const ch::internal::logic_buffer& buffer = \
     ch::internal::logic_buffer(traits::bitwidth, CH_STRINGIZE(struct_name))) \
     : CH_FOR_EACH(CH_STRUCT_LOGIC_CTOR, , CH_SEP_COMMA, __VA_ARGS__) {} \
   template <CH_REQUIRE_0(CH_NARG(__VA_ARGS__) >= 2)> \
-  explicit struct_name(const ch_scbit<traits::bitwidth>& __other) \
-    : struct_name(ch::internal::logic_buffer(traits::bitwidth, CH_STRINGIZE(struct_name))) { \
+  explicit type_name(const ch_scbit<traits::bitwidth>& __other) \
+    : type_name(ch::internal::logic_buffer(traits::bitwidth, CH_STRINGIZE(struct_name))) { \
     CH_SOURCE_LOCATION(1); \
     ch::internal::logic_buffer tmp(ch::internal::system_accessor::data(__other)); \
     this->operator=(tmp); \
   } \
-  struct_name(const struct_name& __other) \
-    : struct_name(ch::internal::logic_buffer(traits::bitwidth, CH_STRINGIZE(struct_name))) { \
+  type_name(const type_name& __other) \
+    : type_name(ch::internal::logic_buffer(traits::bitwidth, CH_STRINGIZE(struct_name))) { \
     CH_SOURCE_LOCATION(1); \
     this->operator=(__other); \
   } \
-  struct_name(struct_name&& __other) \
-    : struct_name(ch::internal::logic_accessor::move(__other)) {} \
-  struct_name(CH_REVERSE_FOR_EACH(CH_STRUCT_LOGIC_FIELD_CTOR_ARGS, , CH_SEP_COMMA, __VA_ARGS__)) \
-    : struct_name(ch::internal::logic_buffer(traits::bitwidth, CH_STRINGIZE(struct_name))) { \
+  type_name(type_name&& __other) \
+    : type_name(ch::internal::logic_accessor::move(__other)) {} \
+  type_name(CH_REVERSE_FOR_EACH(CH_STRUCT_LOGIC_FIELD_CTOR_ARGS, , CH_SEP_COMMA, __VA_ARGS__)) \
+    : type_name(ch::internal::logic_buffer(traits::bitwidth, CH_STRINGIZE(struct_name))) { \
     CH_SOURCE_LOCATION(1); \
     CH_REVERSE_FOR_EACH(CH_STRUCT_FIELD_CTOR_INIT, , CH_SEP_SEMICOLON, __VA_ARGS__); \
   } \
-  struct_name& operator=(const struct_name& __other) { \
+  type_name& operator=(const type_name& __other) { \
     CH_SOURCE_LOCATION(1); \
     ch::internal::logic_accessor::assign(*this, __other); \
     return *this; \
   } \
-  struct_name& operator=(struct_name&& __other) { \
+  type_name& operator=(type_name&& __other) { \
     CH_SOURCE_LOCATION(1); \
     ch::internal::logic_accessor::move(*this, std::move(__other)); \
     return *this; \
@@ -132,33 +132,33 @@ protected: \
   friend class ch::internal::logic_accessor; \
 public:
 
-#define CH_DERIVED_STRUCT_SYSTEM_IMPL(struct_name, ...) \
+#define CH_DERIVED_STRUCT_SYSTEM_IMPL(type_name, struct_name, ...) \
 private: \
   enum { __field_offset0 = ch_width_v<base>, \
          CH_FOR_EACH(CH_STRUCT_FIELD_OFFSET, , CH_SEP_COMMA, __VA_ARGS__) }; \
 public: \
   CH_FOR_EACH(CH_STRUCT_SYSTEM_FIELD, , CH_SEP_SEMICOLON, __VA_ARGS__); \
-  struct_name(const ch::internal::system_buffer_ptr& buffer = \
+  type_name(const ch::internal::system_buffer_ptr& buffer = \
     ch::internal::make_system_buffer(traits::bitwidth)) \
     : base(buffer) \
     , CH_FOR_EACH(CH_STRUCT_SYSTEM_CTOR, , CH_SEP_COMMA, __VA_ARGS__) {} \
   template <CH_REQUIRE_0(CH_NARG(__VA_ARGS__) >= 2)> \
-  explicit struct_name(const ch_scbit<traits::bitwidth>& __other) \
-    : struct_name(ch::internal::system_accessor::copy(__other)) {} \
-  struct_name(const struct_name& __other) \
-    : struct_name(ch::internal::system_accessor::copy(__other)) {} \
-  struct_name(struct_name&& __other) \
-    : struct_name(ch::internal::system_accessor::move(__other)) {} \
-  struct_name(CH_REVERSE_FOR_EACH(CH_STRUCT_SYSTEM_FIELD_CTOR_ARGS, , CH_SEP_COMMA, __VA_ARGS__), const base& parent) \
-    : struct_name() { \
+  explicit type_name(const ch_scbit<traits::bitwidth>& __other) \
+    : type_name(ch::internal::system_accessor::copy(__other)) {} \
+  type_name(const type_name& __other) \
+    : type_name(ch::internal::system_accessor::copy(__other)) {} \
+  type_name(type_name&& __other) \
+    : type_name(ch::internal::system_accessor::move(__other)) {} \
+  type_name(CH_REVERSE_FOR_EACH(CH_STRUCT_SYSTEM_FIELD_CTOR_ARGS, , CH_SEP_COMMA, __VA_ARGS__), const base& parent) \
+    : type_name() { \
     ch::internal::system_accessor::write(*this, 0, parent, 0, ch_width_v<base>); \
     CH_REVERSE_FOR_EACH(CH_STRUCT_FIELD_CTOR_INIT, , CH_SEP_SEMICOLON, __VA_ARGS__); \
   } \
-  struct_name& operator=(const struct_name& __other) { \
+  type_name& operator=(const type_name& __other) { \
     ch::internal::system_accessor::assign(*this, __other); \
     return *this; \
   } \
-  struct_name& operator=(struct_name&& __other) { \
+  type_name& operator=(type_name&& __other) { \
     ch::internal::system_accessor::move(*this, std::move(__other)); \
     return *this; \
   } \
@@ -166,7 +166,7 @@ protected: \
   const ch::internal::system_buffer_ptr& __buffer() const { \
     return base::__buffer(); \
   } \
-  friend std::ostream& operator<<(std::ostream& __out, const struct_name& __in) { \
+  friend std::ostream& operator<<(std::ostream& __out, const type_name& __in) { \
     __out << "("; \
     __out << reinterpret_cast<const base&>(__in); \
     __out << ","; \
@@ -177,42 +177,42 @@ protected: \
   friend class ch::internal::system_accessor; \
 public:
 
-#define CH_DERIVED_STRUCT_LOGIC_IMPL(struct_name, ...) \
+#define CH_DERIVED_STRUCT_LOGIC_IMPL(type_name, struct_name, ...) \
 private: \
   enum { __field_offset0 = ch_width_v<base>, \
          CH_FOR_EACH(CH_STRUCT_FIELD_OFFSET, , CH_SEP_COMMA, __VA_ARGS__) }; \
 public: \
   CH_FOR_EACH(CH_STRUCT_LOGIC_FIELD, , CH_SEP_SEMICOLON, __VA_ARGS__); \
-  struct_name(const ch::internal::logic_buffer& buffer = \
+  type_name(const ch::internal::logic_buffer& buffer = \
     ch::internal::logic_buffer(traits::bitwidth, CH_STRINGIZE(struct_name))) \
     : base(buffer) \
     , CH_FOR_EACH(CH_STRUCT_LOGIC_CTOR, , CH_SEP_COMMA, __VA_ARGS__) {} \
   template <CH_REQUIRE_0(CH_NARG(__VA_ARGS__) >= 2)> \
-  explicit struct_name(const ch_scbit<traits::bitwidth>& __other) \
-    : struct_name(ch::internal::logic_buffer(traits::bitwidth, CH_STRINGIZE(struct_name))) { \
+  explicit type_name(const ch_scbit<traits::bitwidth>& __other) \
+    : type_name(ch::internal::logic_buffer(traits::bitwidth, CH_STRINGIZE(struct_name))) { \
     CH_SOURCE_LOCATION(1); \
     ch::internal::logic_buffer tmp(ch::internal::system_accessor::data(__other)); \
     this->operator=(tmp); \
   } \
-  struct_name(const struct_name& __other) \
-    : struct_name(ch::internal::logic_buffer(traits::bitwidth, CH_STRINGIZE(struct_name))) { \
+  type_name(const type_name& __other) \
+    : type_name(ch::internal::logic_buffer(traits::bitwidth, CH_STRINGIZE(struct_name))) { \
     CH_SOURCE_LOCATION(1); \
     this->operator=(__other); \
   } \
-  struct_name(struct_name&& __other) \
-    : struct_name(ch::internal::logic_accessor::move(__other)) {} \
-  struct_name(CH_REVERSE_FOR_EACH(CH_STRUCT_LOGIC_FIELD_CTOR_ARGS, , CH_SEP_COMMA, __VA_ARGS__), const base& parent) \
-    : struct_name(ch::internal::logic_buffer(traits::bitwidth, CH_STRINGIZE(struct_name))) { \
+  type_name(type_name&& __other) \
+    : type_name(ch::internal::logic_accessor::move(__other)) {} \
+  type_name(CH_REVERSE_FOR_EACH(CH_STRUCT_LOGIC_FIELD_CTOR_ARGS, , CH_SEP_COMMA, __VA_ARGS__), const base& parent) \
+    : type_name(ch::internal::logic_buffer(traits::bitwidth, CH_STRINGIZE(struct_name))) { \
     CH_SOURCE_LOCATION(1); \
     ch::internal::logic_accessor::write(*this, 0, parent, 0, ch_width_v<base>); \
     CH_REVERSE_FOR_EACH(CH_STRUCT_FIELD_CTOR_INIT, , CH_SEP_SEMICOLON, __VA_ARGS__); \
   } \
-  struct_name& operator=(const struct_name& __other) { \
+  type_name& operator=(const type_name& __other) { \
     CH_SOURCE_LOCATION(1); \
     ch::internal::logic_accessor::assign(*this, __other); \
     return *this; \
   } \
-  struct_name& operator=(struct_name&& __other) { \
+  type_name& operator=(type_name&& __other) { \
     CH_SOURCE_LOCATION(1); \
     ch::internal::logic_accessor::move(*this, std::move(__other)); \
     return *this; \
@@ -230,12 +230,12 @@ public:
     class __system_type__ { \
     public: \
       using traits = ch::internal::system_traits<CH_STRUCT_SIZE(__VA_ARGS__), false, __system_type__, struct_name>; \
-      CH_BASIC_STRUCT_SYSTEM_IMPL(__system_type__, __VA_ARGS__) \
+      CH_BASIC_STRUCT_SYSTEM_IMPL(__system_type__, struct_name, __VA_ARGS__) \
       CH_SYSTEM_INTERFACE(__system_type__) \
     }; \
   public: \
     using traits = ch::internal::logic_traits<CH_STRUCT_SIZE(__VA_ARGS__), false, struct_name, __system_type__>; \
-    CH_BASIC_STRUCT_LOGIC_IMPL(struct_name, __VA_ARGS__) \
+    CH_BASIC_STRUCT_LOGIC_IMPL(struct_name, struct_name, __VA_ARGS__) \
     CH_LOGIC_INTERFACE(struct_name) \
   }
 
@@ -246,13 +246,13 @@ public:
     public: \
       using base = ch_system_t<parent>; \
       using traits = ch::internal::system_traits<ch_width_v<base> + CH_STRUCT_SIZE(__VA_ARGS__), false, __system_type__, struct_name>; \
-      CH_DERIVED_STRUCT_SYSTEM_IMPL(__system_type__, __VA_ARGS__) \
+      CH_DERIVED_STRUCT_SYSTEM_IMPL(__system_type__, struct_name, __VA_ARGS__) \
       CH_SYSTEM_INTERFACE(__system_type__) \
     }; \
   public: \
     using base = parent; \
     using traits = ch::internal::logic_traits<ch_width_v<base> + CH_STRUCT_SIZE(__VA_ARGS__), false, struct_name, __system_type__>; \
-    CH_DERIVED_STRUCT_LOGIC_IMPL(struct_name, __VA_ARGS__) \
+    CH_DERIVED_STRUCT_LOGIC_IMPL(struct_name, struct_name, __VA_ARGS__) \
     CH_LOGIC_INTERFACE(struct_name) \
   }
 

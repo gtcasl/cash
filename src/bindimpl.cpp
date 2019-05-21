@@ -46,7 +46,7 @@ lnodeimpl* bindimpl::clone(context*, const clone_map&) const {
   return nullptr;
 }
 
-void bindimpl::remove_port(bindportimpl* port) {
+void bindimpl::remove_port(lnodeimpl* port) {
   for (auto it = this->srcs().begin(), end = this->srcs().end(); it != end; ++it) {
     if (it->id() == port->id()) {
       this->remove_src(it - this->srcs().begin());
@@ -158,22 +158,20 @@ void bindportimpl::print(std::ostream& out) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-lnodeimpl* ch::internal::createInputNode(const lnode& output,
-                                         const sloc_getter&) {
-  auto sloc = get_source_location();
-  auto ctx = ctx_curr();
-  auto binding = ctx->current_binding();
-  auto node = ctx->create_node<proxyimpl>(output.size(), sloc, output.name());
-  binding->bind_output(node, reinterpret_cast<outputimpl*>(output.impl()), sloc);
-  return node;
-}
-
-lnodeimpl* ch::internal::createOutputNode(const lnode& input,
-                                          const sloc_getter&) {
+lnodeimpl* ch::internal::bindInputNode(const lnode& input, const sloc_getter&) {
   auto sloc = get_source_location();
   auto ctx = ctx_curr();
   auto binding = ctx->current_binding();
   auto node = ctx->create_node<proxyimpl>(input.size(), sloc, input.name());
   binding->bind_input(node, reinterpret_cast<inputimpl*>(input.impl()), sloc);
+  return node;
+}
+
+lnodeimpl* ch::internal::bindOutputNode(const lnode& output, const sloc_getter&) {
+  auto sloc = get_source_location();
+  auto ctx = ctx_curr();
+  auto binding = ctx->current_binding();
+  auto node = ctx->create_node<proxyimpl>(output.size(), sloc, output.name());
+  binding->bind_output(node, reinterpret_cast<outputimpl*>(output.impl()), sloc);
   return node;
 }

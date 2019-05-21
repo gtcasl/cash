@@ -27,6 +27,7 @@ class tapimpl;
 class assertimpl;
 class timeimpl;
 class udfimpl;
+class udfportimpl;
 class udf_base;
 class udf_obj;
 class udf_iface;
@@ -260,17 +261,12 @@ public:
 
   //--
 
-  udfimpl* create_udf_node(udf_obj* udf,
-                           const std::vector<lnode>& inputs,
-                           const source_location& sloc);
+  void create_udf_node(udf_iface* udf,
+                       bool is_seq,
+                       const std::string& name,
+                       const source_location& sloc);
 
-  lnodeimpl* create_udf_input(uint32_t size,
-                              const std::string& name,
-                              const source_location& sloc);
-
-  lnodeimpl* create_udf_output(uint32_t size,
-                               const std::string& name,
-                               const source_location& sloc);
+  udfimpl* current_udf();
 
   //--
   
@@ -305,6 +301,7 @@ protected:
   inputimpl* sys_clk_;
   inputimpl* sys_reset_;
   timeimpl*  sys_time_;
+  udfimpl*   curr_udf_;
   
   node_list literals_;
   node_list proxies_;
@@ -324,6 +321,7 @@ protected:
   node_list gtaps_;
   node_list udfseqs_;
   node_list udfcombs_;
+  node_list udfports_;
 
   node_list_view nodes_;
   node_list_view snodes_;
@@ -340,7 +338,7 @@ protected:
 };
 
 context* ctx_create(const std::type_index& signature,
-                    bool has_args,
+                    bool is_pod,
                     const std::string& name);
 
 context* ctx_swap(context* ctx);

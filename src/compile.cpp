@@ -1223,7 +1223,8 @@ void compiler::create_merged_context(context* ctx) {
   };
 
   //--
-  std::function<void (context*, clone_map&)> visit = [&](context* curr, clone_map& map) {
+  std::function<void (context*, clone_map&)>
+      visit = [&](context* curr, clone_map& map) {
     //--
     std::unordered_map<proxyimpl*, lnodeimpl*> placeholders;
 

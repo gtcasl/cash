@@ -17,7 +17,7 @@ public:
 
   template <typename... Args>
   ch_module(Args&&... args)
-    : device(std::type_index(typeid(T)), (sizeof...(Args) != 0), idname<T>())
+    : device(std::type_index(typeid(T)), 0 == sizeof...(Args), idname<T>())
     , io(module_loader<T>(this, std::forward<Args>(args)...).get())
   {}
 

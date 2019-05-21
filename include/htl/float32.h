@@ -14,111 +14,6 @@ using namespace extension;
 
 class ch_float32;
 
-struct sfAdd : public udf_seq<ch_float32, ch_float32, ch_float32> {
-
-  void eval(udf_output& dst, const udf_inputs& srcs) override {
-    auto lhs = bit_cast<float>(static_cast<int32_t>(srcs[0]));
-    auto rhs = bit_cast<float>(static_cast<int32_t>(srcs[1]));
-    dst = bit_cast<int32_t>(lhs + rhs);
-  }
-
-  bool to_verilog(std::ostream& out, udf_verilog_mode mode) override {
-    if (mode != udf_verilog_mode::body)
-      return false;
-    out << "fp_add __fp_add$id(.clock($clock), .clk_en($src2), "
-           ".dataa($src0), .datab($src1), .result($dst));";
-    return true;
-  }
-};
-
-struct sfSub : public udf_seq<ch_float32, ch_float32, ch_float32> {
-
-  void eval(udf_output& dst, const udf_inputs& srcs) override {
-    auto lhs = bit_cast<float>(static_cast<int32_t>(srcs[0]));
-    auto rhs = bit_cast<float>(static_cast<int32_t>(srcs[1]));
-    dst = bit_cast<int32_t>(lhs - rhs);
-  }
-
-  bool to_verilog(std::ostream& out, udf_verilog_mode mode) override {
-    if (mode != udf_verilog_mode::body)
-      return false;
-    out << "fp_sub __fp_sub$id(.clock($clock), .clk_en($src2), "
-           ".dataa($src0), .datab($src1), .result($dst));";
-    return true;
-  }
-};
-
-struct sfMul : public udf_seq<ch_float32, ch_float32, ch_float32> {
-
-  void eval(udf_output& dst, const udf_inputs& srcs) override {
-    auto lhs = bit_cast<float>(static_cast<int32_t>(srcs[0]));
-    auto rhs = bit_cast<float>(static_cast<int32_t>(srcs[1]));
-    dst = bit_cast<int32_t>(lhs * rhs);
-  }
-
-  bool to_verilog(std::ostream& out, udf_verilog_mode mode) override {
-    if (mode != udf_verilog_mode::body)
-      return false;
-    out << "fp_mul __fp_mul$id(.clock($clock), .clk_en($src2), "
-           ".dataa($src0), .datab($src1), .result($dst));";
-    return true;
-  }
-};
-
-struct sfDiv : public udf_seq<ch_float32, ch_float32, ch_float32> {
-
-  void eval(udf_output& dst, const udf_inputs& srcs) override {
-    auto enable = static_cast<bool>(srcs[2]);
-    if (enable) {
-      auto lhs = bit_cast<float>(static_cast<int32_t>(srcs[0]));
-      auto rhs = bit_cast<float>(static_cast<int32_t>(srcs[1]));
-      dst = bit_cast<int32_t>(lhs / rhs);
-    }
-  }
-
-  bool to_verilog(std::ostream& out, udf_verilog_mode mode) override {
-    if (mode != udf_verilog_mode::body)
-      return false;
-    out << "fp_div __fp_div$id(.clock($clock), .clk_en($src2), "
-           ".dataa($src0), .datab($src1), .result($dst));";
-    return true;
-  }
-};
-
-struct cfAdd : public udf_comb<ch_float32, ch_float32, ch_float32> {
-  void eval(udf_output& dst, const udf_inputs& srcs) override {
-    auto lhs = bit_cast<float>(static_cast<int32_t>(srcs[0]));
-    auto rhs = bit_cast<float>(static_cast<int32_t>(srcs[1]));
-    dst = bit_cast<int32_t>(lhs + rhs);
-  }
-};
-
-struct cfSub : public udf_comb<ch_float32, ch_float32, ch_float32> {
-  void eval(udf_output& dst, const udf_inputs& srcs) override {
-    auto lhs = bit_cast<float>(static_cast<int32_t>(srcs[0]));
-    auto rhs = bit_cast<float>(static_cast<int32_t>(srcs[1]));
-    dst = bit_cast<int32_t>(lhs - rhs);
-  }
-};
-
-struct cfMul : public udf_comb<ch_float32, ch_float32, ch_float32> {
-  void eval(udf_output& dst, const udf_inputs& srcs) override {
-    auto lhs = bit_cast<float>(static_cast<int32_t>(srcs[0]));
-    auto rhs = bit_cast<float>(static_cast<int32_t>(srcs[1]));
-    dst = bit_cast<int32_t>(lhs * rhs);
-  }
-};
-
-struct cfDiv : public udf_comb<ch_float32, ch_float32, ch_float32> {
-  void eval(udf_output& dst, const udf_inputs& srcs) override {
-    auto lhs = bit_cast<float>(static_cast<int32_t>(srcs[0]));
-    auto rhs = bit_cast<float>(static_cast<int32_t>(srcs[1]));
-    dst = bit_cast<int32_t>(lhs / rhs);
-  }
-};
-
-class ch_float32;
-
 class ch_scfloat32 : public ch_scbit<32> {
 public:
   using traits = system_traits<32, true, ch_scfloat32, ch_float32>;
@@ -128,7 +23,7 @@ public:
     : base(buffer)
   {}
 
-  ch_scfloat32(float other) : base(bit_cast<uint32_t>(other)) {}
+  ch_scfloat32(float other) : base(bit_cast<int32_t>(other)) {}
 
   explicit ch_scfloat32(const ch_scbit<32>& other) : base(other) {}
 
@@ -202,9 +97,11 @@ public:
   }
 
   explicit operator float() const {
-    return bit_cast<float>(static_cast<uint32_t>(*this));
+    return bit_cast<float>(static_cast<int32_t>(*this));
   }  
 };
+
+///////////////////////////////////////////////////////////////////////////////
 
 class ch_float32 : public ch_bit32 {
 public:
@@ -243,7 +140,7 @@ public:
 
   ch_float32& operator=(float other) {
     __source_location(1);
-    base::operator=(bit_cast<uint32_t>(other));
+    base::operator=(bit_cast<int32_t>(other));
     return *this;
   }
 
@@ -303,54 +200,314 @@ public:
     return (lhs.as_int() >= rhs.as_int());
   }
 
-  friend auto operator-(ch_float32& self) {
-    __source_location(1);
-    return ch_udf<cfSub>()(0.0f, self);
+  friend auto operator-(ch_float32& self);
+
+  friend auto operator+(ch_float32& lhs, const ch_float32& rhs);
+
+  friend auto operator-(ch_float32& lhs, const ch_float32& rhs);
+
+  friend auto operator*(ch_float32& lhs, const ch_float32& rhs);
+
+  friend auto operator/(ch_float32& lhs, const ch_float32& rhs);
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+template <typename T>
+class sc_pipereg {
+public:
+  sc_pipereg(unsigned depth) : buffer_(depth), index_(0) {}
+
+  T eval(const T& obj, bool enable) {
+    if (enable) {
+      buffer_[index_] = obj;
+      if (++index_ == buffer_.size())
+        index_ = 0;
+    }
+    return buffer_[index_];
   }
 
-  friend auto operator+(ch_float32& lhs, const ch_float32& rhs) {
-    __source_location(1);
-    return ch_udf<cfAdd>()(lhs, rhs);
+  void reset() {
+    index_ = 0;
   }
 
-  friend auto operator-(ch_float32& lhs, const ch_float32& rhs) {
-    __source_location(1);
-    return ch_udf<cfSub>()(lhs, rhs);
+private:
+  std::vector<T> buffer_;
+  unsigned index_;
+};
+
+class sfAdd {
+public:
+  __scio (
+    __in (ch_bool)     en,
+    __in (ch_float32)  lhs,
+    __in (ch_float32)  rhs,
+    __out (ch_float32) dst
+  );
+
+  sfAdd(unsigned delay) : pipe_(delay) {}
+
+  void eval() {
+    auto lhs = static_cast<float>(io.lhs);
+    auto rhs = static_cast<float>(io.rhs);
+    io.dst = pipe_.eval(lhs + rhs, !!io.en);
   }
 
-  friend auto operator*(ch_float32& lhs, const ch_float32& rhs) {
-    __source_location(1);
-    return ch_udf<cfMul>()(lhs, rhs);
+  void reset() {
+    pipe_.reset();
   }
 
-  friend auto operator/(ch_float32& lhs, const ch_float32& rhs) {
-    __source_location(1);
-    return ch_udf<cfDiv>()(lhs, rhs);
+  bool to_verilog(std::ostream& out, udf_verilog_mode mode) {
+    if (mode != udf_verilog_mode::body)
+      return false;
+    out << "fp_add __fp_add$id(.clock($clk), .clk_en($io.en), "
+           ".dataa($io.lhs), .datab($io.rhs), .result($io.dst));";
+    return true;
+  }
+
+private:
+  sc_pipereg<float> pipe_;
+};
+
+class sfSub {
+public:
+  __scio (
+    __in (ch_bool)     en,
+    __in (ch_float32)  lhs,
+    __in (ch_float32)  rhs,
+    __out (ch_float32) dst
+  );
+
+  sfSub(unsigned delay) : pipe_(delay) {}
+
+  void eval() {
+    auto lhs = static_cast<float>(io.lhs);
+    auto rhs = static_cast<float>(io.rhs);
+    io.dst = pipe_.eval(lhs - rhs, !!io.en);
+  }
+
+  void reset() {
+    pipe_.reset();
+  }
+
+  bool to_verilog(std::ostream& out, udf_verilog_mode mode) {
+    if (mode != udf_verilog_mode::body)
+      return false;
+    out << "fp_sub __fp_sub$id(.clock($clk), .clk_en($io.en), "
+           ".dataa($io.lhs), .datab($io.rhs), .result($io.dst));";
+    return true;
+  }
+
+private:
+  sc_pipereg<float> pipe_;
+};
+
+class sfMul {
+public:
+  __scio (
+    __in (ch_bool)     en,
+    __in (ch_float32)  lhs,
+    __in (ch_float32)  rhs,
+    __out (ch_float32) dst
+  );
+
+  sfMul(unsigned delay) : pipe_(delay) {}
+
+  void eval() {
+    auto lhs = static_cast<float>(io.lhs);
+    auto rhs = static_cast<float>(io.rhs);
+    io.dst = pipe_.eval(lhs * rhs, !!io.en);
+  }
+
+  void reset() {
+    pipe_.reset();
+  }
+
+  bool to_verilog(std::ostream& out, udf_verilog_mode mode) {
+    if (mode != udf_verilog_mode::body)
+      return false;
+    out << "fp_mul __fp_mul$id(.clock($clk), .clk_en($io.en), "
+           ".dataa($io.lhs), .datab($io.rhs), .result($io.dst));";
+    return true;
+  }
+
+private:
+  sc_pipereg<float> pipe_;
+};
+
+class sfDiv {
+public:
+  __scio (
+    __in (ch_bool)     en,
+    __in (ch_float32)  lhs,
+    __in (ch_float32)  rhs,
+    __out (ch_float32) dst
+  );
+
+  sfDiv(unsigned delay) : pipe_(delay) {}
+
+  void eval() {
+    auto lhs = static_cast<float>(io.lhs);
+    auto rhs = static_cast<float>(io.rhs);
+    io.dst = pipe_.eval(lhs / rhs, !!io.en);
+  }
+
+  void reset() {
+    pipe_.reset();
+  }
+
+  bool to_verilog(std::ostream& out, udf_verilog_mode mode) {
+    if (mode != udf_verilog_mode::body)
+      return false;
+    out << "fp_div __fp_div$id(.clock($clk), .clk_en($io.en), "
+           ".dataa($io.lhs), .datab($io.rhs), .result($io.dst));";
+    return true;
+  }
+
+private:
+  sc_pipereg<float> pipe_;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct cfAdd {
+  __scio (
+    __in (ch_float32)  lhs,
+    __in (ch_float32)  rhs,
+    __out (ch_float32) dst
+  );
+
+  void eval() {
+    auto lhs = bit_cast<float>(static_cast<int32_t>(io.lhs));
+    auto rhs = bit_cast<float>(static_cast<int32_t>(io.rhs));
+    io.dst = bit_cast<int32_t>(lhs + rhs);
   }
 };
+
+struct cfSub {
+  __scio (
+    __in (ch_float32)  lhs,
+    __in (ch_float32)  rhs,
+    __out (ch_float32) dst
+  );
+
+  void eval() {
+    auto lhs = bit_cast<float>(static_cast<int32_t>(io.lhs));
+    auto rhs = bit_cast<float>(static_cast<int32_t>(io.rhs));
+    io.dst = bit_cast<int32_t>(lhs - rhs);
+  }
+};
+
+struct cfMul {
+  __scio (
+    __in (ch_float32)  lhs,
+    __in (ch_float32)  rhs,
+    __out (ch_float32) dst
+  );
+
+  void eval() {
+    auto lhs = bit_cast<float>(static_cast<int32_t>(io.lhs));
+    auto rhs = bit_cast<float>(static_cast<int32_t>(io.rhs));
+    io.dst = bit_cast<int32_t>(lhs * rhs);
+  }
+};
+
+struct cfDiv {
+  __scio (
+    __in (ch_float32)  lhs,
+    __in (ch_float32)  rhs,
+    __out (ch_float32) dst
+  );
+
+  void eval() {
+    auto lhs = bit_cast<float>(static_cast<int32_t>(io.lhs));
+    auto rhs = bit_cast<float>(static_cast<int32_t>(io.rhs));
+    io.dst = bit_cast<int32_t>(lhs / rhs);
+  }
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+inline auto operator-(ch_float32& self) {
+  __source_location(1);
+  ch_udf_comb<cfSub> udf;
+  udf.io.lhs = 0.0f;
+  udf.io.rhs = self;
+  return udf.io.dst;
+}
+
+inline auto operator+(ch_float32& lhs, const ch_float32& rhs) {
+  __source_location(1);
+  ch_udf_comb<cfAdd> udf;
+  udf.io.lhs = lhs;
+  udf.io.rhs = rhs;
+  return udf.io.dst;
+}
+
+inline auto operator-(ch_float32& lhs, const ch_float32& rhs) {
+  __source_location(1);
+  ch_udf_comb<cfSub> udf;
+  udf.io.lhs = lhs;
+  udf.io.rhs = rhs;
+  return udf.io.dst;
+}
+
+inline auto operator*(ch_float32& lhs, const ch_float32& rhs) {
+  __source_location(1);
+  ch_udf_comb<cfMul> udf;
+  udf.io.lhs = lhs;
+  udf.io.rhs = rhs;
+  return udf.io.dst;
+}
+
+inline auto operator/(ch_float32& lhs, const ch_float32& rhs) {
+  __source_location(1);
+  ch_udf_comb<cfDiv> udf;
+  udf.io.lhs = lhs;
+  udf.io.rhs = rhs;
+  return udf.io.dst;
+}
+
+///////////////////////////////////////////////////////////////////////////////
 
 template <unsigned Delay>
 auto ch_fadd(const ch_float32& lhs, const ch_float32& rhs, const ch_bool& enable = true) {
   __source_location(1);
-  return ch_delayEn(ch_udf<sfAdd>()(lhs, rhs), enable, Delay - 1);
+  ch_udf_seq<sfAdd> udf(Delay);
+  udf.io.en  = enable;
+  udf.io.lhs = lhs;
+  udf.io.rhs = rhs;
+  return udf.io.dst;
 }
 
 template <unsigned Delay>
 auto ch_fsub(const ch_float32& lhs, const ch_float32& rhs, const ch_bool& enable = true) {
   __source_location(1);
-  return ch_delayEn(ch_udf<sfSub>()(lhs, rhs), enable, Delay - 1);
+  ch_udf_seq<sfSub> udf(Delay);
+  udf.io.en  = enable;
+  udf.io.lhs = lhs;
+  udf.io.rhs = rhs;
+  return udf.io.dst;
 }
 
 template <unsigned Delay>
 auto ch_fmul(const ch_float32& lhs, const ch_float32& rhs, const ch_bool& enable = true) {
   __source_location(1);
-  return ch_delayEn(ch_udf<sfMul>()(lhs, rhs), enable, Delay - 1);
+  ch_udf_seq<sfMul> udf(Delay);
+  udf.io.en  = enable;
+  udf.io.lhs = lhs;
+  udf.io.rhs = rhs;
+  return udf.io.dst;
 }
 
 template <unsigned Delay>
 auto ch_fdiv(const ch_float32& lhs, const ch_float32& rhs, const ch_bool& enable = true) {
   __source_location(1);
-  return ch_delayEn(ch_udf<sfDiv>()(lhs, rhs), enable, Delay - 1);
+  ch_udf_seq<sfDiv> udf(Delay);
+  udf.io.en  = enable;
+  udf.io.lhs = lhs;
+  udf.io.rhs = rhs;
+  return udf.io.dst;
 }
 
 }

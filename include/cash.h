@@ -88,7 +88,6 @@ namespace logic {
 
   using ch::internal::ch_module;
 
-  using ch::internal::ch_udf;  
   using ch::internal::ch_udf_comb;
   using ch::internal::ch_udf_seq;
 
@@ -393,10 +392,6 @@ namespace extension {
   using ch::internal::make_system_buffer;
   using ch::internal::system_accessor;
   using ch::internal::logic_accessor;
-  using ch::internal::udf_comb;
-  using ch::internal::udf_seq;
-  using ch::internal::udf_output;
-  using ch::internal::udf_inputs;
   using ch::internal::udf_verilog_mode;
   using ch::internal::lnode;
 

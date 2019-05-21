@@ -6,81 +6,45 @@
 namespace ch {
 namespace internal {
 
-class udf_obj : public refcounted {
-public:
-
-  udf_obj(uint32_t id,
-          const std::string& name,
-          bool is_seq,
-          uint32_t output_size,
-          const std::initializer_list<uint32_t>& inputs_size,
-          udf_base* impl);
-
-  ~udf_obj();
-
-  uint32_t id() const {
-    return id_;
-  }
-
-  const auto& name() const {
-    return name_;
-  }
-
-  void set_managed(bool value) {
-    is_managed_ = value;
-  }
-
-  bool is_managed() const {
-    return is_managed_;
-  }
-
-  bool is_seq() const {
-    return is_seq_;
-  }
-
-  uint32_t output_size() const {
-    return output_size_;
-  }
-
-  const std::vector<uint32_t>& inputs_size() const {
-    return inputs_size_;
-  }
-
-  udf_base* impl() const {
-    return impl_;
-  }
-
-private:
-
-  uint32_t id_;
-  std::string name_;
-  bool is_managed_;
-  bool is_seq_;
-  uint32_t output_size_;
-  std::vector<uint32_t> inputs_size_;
-  udf_base* impl_;
-};
-
-///////////////////////////////////////////////////////////////////////////////
-
 class udfimpl : public ioimpl {
 public:
 
-  udf_obj* udf() const {
+  udf_iface* udf() const {
     return udf_;
   }
+
+  auto& inputs() {
+    return inputs_;
+  }
+
+  auto& outputs() {
+    return outputs_;
+  }
+
+  void add_input(const lnode& input) {
+    this->add_src(input);
+    inputs_.push_back(input);
+  }
+
+  void add_output(const lnode& output) {
+    outputs_.push_back(output);
+  }
+
+  void remove_port(lnodeimpl* port);
 
 protected:
 
   udfimpl(context* ctx,
           lnodetype type,
-          udf_obj* udf,
-          const std::vector<lnode>& srcs,
-          const source_location& sloc);
+          udf_iface* udf,
+          const source_location& sloc,
+          const std::string& name);
 
   ~udfimpl();
 
-  udf_obj* udf_;
+  udf_iface* udf_;
+  std::vector<lnode> inputs_;
+  std::vector<lnode> outputs_;
 
   friend class context;
 };
@@ -95,9 +59,11 @@ public:
 protected:
 
   udfcimpl(context* ctx,
-           udf_obj* udf,
-           const std::vector<lnode>& srcs,
-           const source_location& sloc);
+           udf_iface* udf,
+           const source_location& sloc,
+           const std::string& name);
+
+  ~udfcimpl();
 
   friend class context;
 };
@@ -120,11 +86,13 @@ public:
 protected:
 
   udfsimpl(context* ctx,
-           udf_obj* udf,
+           udf_iface* udf,
            lnodeimpl* cd,
            lnodeimpl* reset,
-           const std::vector<lnode>& srcs,
-           const source_location& sloc);
+           const source_location& sloc,
+           const std::string& name);
+
+  ~udfsimpl();
 
   int cd_idx_;
   int reset_idx_;
@@ -134,57 +102,35 @@ protected:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class udfportimpl;
-
-class udfimpl2 : public ioimpl {
+class udfportimpl : public ioportimpl {
 public:
 
-  udf_iface* udf() const {
+  udfimpl* udf() const {
     return udf_;
   }
 
-  void remove_port(udfportimpl* output);
-
-protected:
-
-  udfimpl2(context* ctx,
-           lnodetype type,
-           udf_iface* udf,
-           const std::vector<lnode>& srcs,
-           const source_location& sloc);
-
-  ~udfimpl2();
-
-  udf_iface* udf_;
-
-  friend class context;
-};
-
-///////////////////////////////////////////////////////////////////////////////
-
-class udfportimpl : public ioimpl {
-public:
-
-  udfimpl2* udf() {
-    return udf_;
-  }
+  lnodeimpl* clone(context* ctx, const clone_map& cloned_nodes) const override;
 
 protected:
 
   udfportimpl(context* ctx,
               lnodeimpl* src,
-              udfimpl2* udf,
-              const source_location& sloc);
+              const io_value_t& value,
+              const source_location& sloc,
+              const std::string& name);
 
   udfportimpl(context* ctx,
               unsigned size,
-              udfimpl2* udf,
-              const source_location& sloc);
+              udfimpl* udf,
+              const io_value_t& value,
+              const source_location& sloc,
+              const std::string& name);
 
   ~udfportimpl();
 
-  udfimpl2* udf_;
+  udfimpl* udf_;
 
   friend class context;
 };
+
 }}

@@ -5,8 +5,6 @@
 namespace ch {
 namespace internal {
 
-class bindportimpl;
-
 class bindimpl : public ioimpl {
 public:
 
@@ -28,7 +26,7 @@ public:
 
   void bind_output(lnodeimpl* dst, outputimpl* ioport,const source_location& sloc);
 
-  void remove_port(bindportimpl* output);
+  void remove_port(lnodeimpl* port);
 
   void print(std::ostream& out) const override;
 
