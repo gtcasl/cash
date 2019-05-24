@@ -1516,8 +1516,8 @@ private:
 class instr_udfc : public instr_base {
 public:
 
-  static instr_udfc* create(udfcimpl* node, data_map_t& map) {
-    return new instr_udfc(node, map);
+  static instr_udfc* create(udfcimpl* node) {
+    return new instr_udfc(node);
   }
 
   void destroy() override {
@@ -1530,7 +1530,7 @@ public:
 
 private:
 
-  instr_udfc(udfcimpl* node, data_map_t& map)
+  instr_udfc(udfcimpl* node)
     : udf_(node->udf())
   {}
 
@@ -1544,8 +1544,8 @@ private:
 class instr_udfs : public instr_base {
 public:
 
-  static instr_udfs* create(udfsimpl* node, data_map_t& map) {
-    return new instr_udfs(node, map);
+  static instr_udfs* create(udfsimpl* node) {
+    return new instr_udfs(node);
   }
 
   void init(udfsimpl* node, data_map_t& map) {
@@ -1569,7 +1569,7 @@ public:
 
 private:
 
-  instr_udfs(udfsimpl* node, data_map_t& map)
+  instr_udfs(udfsimpl* node)
     : cd_(nullptr)
     , reset_(nullptr)
     , udf_(node->udf())
@@ -1692,7 +1692,7 @@ public:
         instr_map[node->id()] = instr_msrport_base::create(reinterpret_cast<msrportimpl*>(node), data_map);
         break;
       case type_udfs:
-        instr_map[node->id()] = instr_udfs::create(reinterpret_cast<udfsimpl*>(node), data_map);
+        instr_map[node->id()] = instr_udfs::create(reinterpret_cast<udfsimpl*>(node));
         break;
       default:
         break;
@@ -1751,7 +1751,7 @@ public:
         instr = instr_print::create(reinterpret_cast<printimpl*>(node), data_map);
         break;
       case type_udfc:
-        instr = instr_udfc::create(reinterpret_cast<udfcimpl*>(node), data_map);
+        instr = instr_udfc::create(reinterpret_cast<udfcimpl*>(node));
         break;
       case type_udfs:
         instr = instr_map.at(node->id());

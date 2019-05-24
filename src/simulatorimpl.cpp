@@ -84,7 +84,7 @@ void simulatorimpl::initialize() {
     }
 
     // initialize driver
-  #ifndef NLIBJIT
+  #if defined(LIBJIT) || defined(LLVMJIT)
     if (0 == (platform::self().cflags() & cflags::disable_jit)) {
       sim_driver_ = new simjit::driver();
     } else {

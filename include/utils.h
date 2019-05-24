@@ -273,8 +273,6 @@ protected:
   refcounted() : refcount_(0) {}
   virtual ~refcounted() {}
   
-protected:
-  
   mutable long refcount_;
 };
 

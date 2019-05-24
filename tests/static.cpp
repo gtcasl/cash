@@ -6,6 +6,9 @@ using namespace ch::system;
 using namespace ch::literals;
 using namespace ch::htl;
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-but-set-variable"
+
 struct TestModule {
   __io (
     __in (ch_bit4)  in,
@@ -430,3 +433,5 @@ void bar() {
   ch_reg<s2_4_t> h{0101_b, 01_b};
   ch_reg<u2_4_t> i{0101_b};
 }
+
+#pragma GCC diagnostic pop

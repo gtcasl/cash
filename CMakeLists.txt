@@ -5,7 +5,8 @@ project(cash VERSION 0.1.0 LANGUAGES CXX)
 
 include(ExternalProject)
 
-option(LIBJIT "Enable libjit." ON)
+option(LLVMJIT "Enable llvmjit." ON)
+option(LIBJIT "Enable libjit." OFF)
 option(INTERPRETER "Enable libjit interpreter." OFF)
 option(CODECOV "Enable code coverage." OFF)
 
@@ -28,7 +29,13 @@ find_package(IVERILOG REQUIRED)
 include_directories("include")
 
 # set source files
+if (LIBJIT)
+    set(PROJECT_SOURCES src/libjit.cpp)
+elseif (LLVMJIT)
+    set(PROJECT_SOURCES src/llvmjit.cpp)
+endif()
 set(PROJECT_SOURCES
+    ${PROJECT_SOURCES}
     src/utils.cpp
     src/platform.cpp    
     src/lnodeimpl.cpp
@@ -50,11 +57,11 @@ set(PROJECT_SOURCES
     src/system.cpp
     src/context.cpp
     src/deviceimpl.cpp
-    src/compile.cpp    
+    src/compile.cpp
+    src/simref.cpp
+    src/simjit.cpp    
     src/simulatorimpl.cpp
     src/tracerimpl.cpp
-    src/simref.cpp
-    src/simjit.cpp
     src/verilogwriter.cpp
     src/firrtlwriter.cpp
     src/eda/altera/avalon_sim.cpp
@@ -96,9 +103,20 @@ if (LIBJIT)
     set_target_properties(libjit PROPERTIES
                           IMPORTED_LOCATION "${LIBJIT_BUILD_DIR}/jit/.libs/libjit.a"
                           INTERFACE_INCLUDE_DIRECTORIES "${LIBJIT_SRC_DIR}/include;${LIBJIT_BUILD_DIR}/include")
-    target_link_libraries(${PROJECT_NAME} PRIVATE libjit)
-else()
-    add_definitions(-DNLIBJIT)
+    target_link_libraries(${PROJECT_NAME} PRIVATE libjit)    
+    add_definitions(-DLIBJIT)
+elseif (LLVMJIT)
+    find_package(LLVM REQUIRED CONFIG)
+    message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
+    message(STATUS "Using LLVMConfig.cmake in: ${LLVM_DIR}")
+    include_directories(${LLVM_INCLUDE_DIRS})
+    add_definitions(${LLVM_DEFINITIONS})
+
+    # Find the libraries that correspond to the LLVM components that we wish to use
+    llvm_map_components_to_libnames(llvm_libs core executionEngine native object orcjit runtimedyld support ipo)
+
+    target_link_libraries(${PROJECT_NAME} PRIVATE ${llvm_libs})
+    add_definitions(-DLLVMJIT)
 endif()
 
 if (CODECOV)

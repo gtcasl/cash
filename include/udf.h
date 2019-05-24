@@ -62,6 +62,7 @@ public:
     if constexpr (is_detected_v<detect_to_verilog_t, T>) {
       return udf_.to_verilog(out, mode);
     } else {
+      CH_UNUSED(out, mode);
       return false;
     }
   }

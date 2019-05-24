@@ -15,8 +15,11 @@
 #include "printimpl.h"
 #include "timeimpl.h"
 #include "udfimpl.h"
-#include "jit/jit.h"
-#include "jit/jit-dump.h"
+#if defined(LLVMJIT)
+  #include "llvmjit.h"
+#elif defined(LIBJIT)
+  #include "libjit.h"
+#endif
 #include "compile.h"
 
 namespace ch::internal::simjit {
@@ -56,8 +59,6 @@ struct sblock_t {
 class SrcLogger {
 public:
   SrcLogger(jit_function_t func, const char* fname, const char* vname = nullptr) : func_(func) {
-    jit_insn_new_block(func);
-    auto block = jit_function_get_current(func);
     auto name = fname;
     if (vname) {
       auto tmp = stringf("%s @var=%s", fname, vname);
@@ -65,12 +66,10 @@ public:
       strncpy(tmp2, tmp.c_str(), tmp.length());
       name = tmp2;
     }
-    jit_block_set_meta(block, 0, (void*)name, nullptr);
+    jit_insn_set_marker(func_, name);
   }
   ~SrcLogger() {
-    jit_insn_new_block(func_);
-    auto block = jit_function_get_current(func_);
-    jit_block_set_meta(block, 0, (void*)"", nullptr);
+    jit_insn_set_marker(func_, "");
   }
 private:
   jit_function_t func_;
@@ -169,14 +168,14 @@ static jit_type_t to_value_type(uint32_t size) {
   case 0:
     return jit_type_void;
   case 1:
-    return jit_type_ubyte;
+    return jit_type_int8;
   case 2:
-    return jit_type_ushort;
+    return jit_type_int16;
   case 3:
   case 4:
-    return jit_type_uint;
+    return jit_type_int32;
   default:
-    return jit_type_ulong;
+    return jit_type_int64;
   }
 }
 
@@ -228,46 +227,11 @@ static uint32_t get_value_size(jit_value_t j_value) {
 [[maybe_unused]] static bool is_native_type(jit_type_t j_type) {
   auto kind = jit_type_get_kind(j_type);
   switch (kind) {
-  case JIT_TYPE_INT:
-  case JIT_TYPE_UINT:
-  case JIT_TYPE_LONG:
-  case JIT_TYPE_ULONG:
+  case JIT_TYPE_INT32:
+  case JIT_TYPE_INT64:
     return true;
   default:
     return false;
-  }
-}
-
-static bool is_signed_type(jit_type_t j_type) {
-  auto kind = jit_type_get_kind(j_type);
-  switch (kind) {
-  case JIT_TYPE_SBYTE:
-  case JIT_TYPE_SHORT:
-  case JIT_TYPE_INT:
-  case JIT_TYPE_LONG:
-    return true;
-  default:
-    return false;
-  }
-}
-
-static jit_type_t to_signed_type(jit_type_t j_type) {
-  auto kind = jit_type_get_kind(j_type);
-  switch (kind) {
-  case JIT_TYPE_UBYTE:
-  case JIT_TYPE_SBYTE:
-    return jit_type_sbyte;
-  case JIT_TYPE_USHORT:
-  case JIT_TYPE_SHORT:
-    return jit_type_short;
-  case JIT_TYPE_UINT:
-  case JIT_TYPE_INT:
-    return jit_type_int;
-  case JIT_TYPE_ULONG:
-  case JIT_TYPE_LONG:
-    return jit_type_long;
-  default:
-    std::abort();
   }
 }
 
@@ -341,7 +305,7 @@ struct sim_ctx_t {
 
   ~sim_ctx_t() {
     if (j_ctx) {
-      jit_context_build_end(j_ctx);
+      jit_context_destroy(j_ctx);
     }
   }
 
@@ -451,8 +415,8 @@ public:
 
     // dump JIT assembly code
     if (platform::self().cflags() & cflags::dump_jit) {
-      auto file = fopen("simjit.tac", "w");
-      this->dump_ast(file, "simjit");
+      auto file = fopen("simjit.ast", "w");
+      jit_dump_ast(file, j_func_, "simjit");
       fclose(file);
     }
 
@@ -465,7 +429,7 @@ public:
     // dump JIT assembly code
     if (platform::self().cflags() & cflags::dump_asm) {
       auto file = fopen("simjit.asm", "w");
-      jit_dump_function(file, j_func_, "simjit");
+      jit_dump_asm(file, j_func_, "simjit");
       fclose(file);
     }
 
@@ -608,7 +572,7 @@ private:
   struct udf_data_t {
     udf_iface* udf;
 
-    static uint32_t size(udfimpl* node) {
+    static uint32_t size(udfimpl*) {
       return sizeof(udf_data_t);
     }
 
@@ -626,17 +590,18 @@ private:
   };
 
   void create_function() {
-    jit_type_t params[1] = {jit_type_void_ptr};
-    auto sig = jit_type_create_signature(jit_abi_cdecl, jit_type_int, params, 1, 1);
-    j_func_ = jit_function_create(sim_ctx_->j_ctx, sig);
+    jit_type_t params[1] = {jit_type_ptr};
+    auto j_sig = jit_type_create_signature(jit_abi_cdecl, jit_type_int32, params, 1, 1);
+    j_func_ = jit_function_create(sim_ctx_->j_ctx, j_sig);
+    jit_type_free(j_sig);
     auto j_state = jit_value_get_param(j_func_, 0);
-    j_vars_ = jit_insn_load_relative(j_func_, j_state, offsetof(sim_state_t, vars), jit_type_void_ptr);
-    j_ports_ = jit_insn_load_relative(j_func_, j_state, offsetof(sim_state_t, ports), jit_type_void_ptr);
+    j_vars_ = jit_insn_load_relative(j_func_, j_state, offsetof(sim_state_t, vars), jit_type_ptr);
+    j_ports_ = jit_insn_load_relative(j_func_, j_state, offsetof(sim_state_t, ports), jit_type_ptr);
   #ifndef NDEBUG
-    j_dbg_ = jit_insn_load_relative(j_func_, j_state, offsetof(sim_state_t, dbg), jit_type_void_ptr);
+    j_dbg_ = jit_insn_load_relative(j_func_, j_state, offsetof(sim_state_t, dbg), jit_type_ptr);
   #endif
-    j_zero_ = this->emit_constant(0, jit_type_uint);
-    j_one_ = this->emit_constant(1, jit_type_uint);
+    j_zero_ = this->emit_constant(0, jit_type_int8);
+    j_one_ = this->emit_constant(1, jit_type_int8);
   }
 
   void emit_node(litimpl* node) {
@@ -687,7 +652,7 @@ private:
     auto dst_width = node->size();
     auto j_xtype = to_native_or_word_type(dst_width);
     auto addr = addr_map_.at(node->id());
-    auto j_src_ptr = jit_insn_load_relative(j_func_, j_ports_, addr * sizeof(block_type*), jit_type_void_ptr);
+    auto j_src_ptr = jit_insn_load_relative(j_func_, j_ports_, addr * sizeof(block_type*), jit_type_ptr);
     if (dst_width <= WORD_SIZE) {
       auto j_ntype = to_native_type(dst_width);
       auto j_value = jit_insn_load_relative(j_func_, j_src_ptr, 0, j_xtype);
@@ -702,7 +667,7 @@ private:
     auto dst_width = node->size();
     auto j_xtype = to_native_or_word_type(dst_width);
     auto addr = addr_map_.at(node->id());
-    auto j_dst_ptr = jit_insn_load_relative(j_func_, j_ports_, addr * sizeof(block_type*), jit_type_void_ptr);
+    auto j_dst_ptr = jit_insn_load_relative(j_func_, j_ports_, addr * sizeof(block_type*), jit_type_ptr);
     if (dst_width <= WORD_SIZE) {
       auto j_src_value = scalar_map_.at(node->src(0).id());
       auto j_src_value_x = this->emit_cast(j_src_value, j_xtype);
@@ -1081,7 +1046,7 @@ private:
       if (is_scalar) {
         auto j_src0_s = is_signed ? this->emit_sign_ext(j_src0, node->src(0).size()) : j_src0;
         auto j_src1_s = is_signed ? this->emit_sign_ext(j_src1, node->src(1).size()) : j_src1;
-        auto j_dst = jit_insn_div(j_func_, j_src0_s, j_src1_s);
+        auto j_dst = is_signed ? jit_insn_sdiv(j_func_, j_src0_s, j_src1_s) : jit_insn_udiv(j_func_, j_src0_s, j_src1_s);
         scalar_map_[node->id()] = this->emit_cast(j_dst, j_ntype);
         this->emit_clear_extra_bits(node);
       } else {
@@ -1093,7 +1058,7 @@ private:
       if (is_scalar) {
         auto j_src0_s = is_signed ? this->emit_sign_ext(j_src0, node->src(0).size()) : j_src0;
         auto j_src1_s = is_signed ? this->emit_sign_ext(j_src1, node->src(1).size()) : j_src1;
-        auto j_dst = jit_insn_rem(j_func_, j_src0_s, j_src1_s);
+        auto j_dst = is_signed ? jit_insn_srem(j_func_, j_src0_s, j_src1_s) : jit_insn_urem(j_func_, j_src0_s, j_src1_s);
         scalar_map_[node->id()] = this->emit_cast(j_dst, j_ntype);
         this->emit_clear_extra_bits(node);
       } else {
@@ -1129,33 +1094,33 @@ private:
     __source_info();
     if (opd >= node->srcs().size())
       return nullptr;
-    auto src = node->src(opd).impl();
-    auto is_signed = node->is_signed();
+    auto src = node->src(opd).impl();    
     if (is_scalar) {
       auto it = scalar_map_.find(src->id());
       if (it != scalar_map_.end()) {
         auto j_value = scalar_map_.at(src->id());
+        auto is_signed = node->is_signed();
         if (need_resize && is_signed) {
           j_value = this->emit_sign_ext(j_value, src->size());
         }
         return j_value;
       } else {
         assert(op_flags::shift == CH_OP_CLASS(node->op()));
-        return this->emit_load_scalar_relative(src, 0, jit_type_uint);
+        return this->emit_load_scalar_relative(src, 0, jit_type_int32);
       }
     } else {
       auto it = scalar_map_.find(src->id());
       if (it != scalar_map_.end()) {
         if (op_flags::shift == CH_OP_CLASS(node->op())
          && 1 == opd) {
-          return this->emit_cast(it->second, jit_type_uint);
+          return this->emit_cast(it->second, jit_type_int32);
         } else {
           return this->emit_address_of(it->second, word_type_);
         }
       } else {
         if (op_flags::shift == CH_OP_CLASS(node->op())
          && 1 == opd) {
-          return this->emit_load_scalar_relative(src, 0, jit_type_uint);
+          return this->emit_load_scalar_relative(src, 0, jit_type_int32);
         } else {
           return this->emit_pointer_address(src);
         }
@@ -1170,23 +1135,25 @@ private:
     __source_info();
 
     // setup arguments
-    auto j_in_size = this->emit_constant(in_size, jit_type_uint);
+    auto j_in_size = this->emit_constant(in_size, jit_type_int32);
 
     // call native function
-    jit_type_t params[] = {jit_type_void_ptr, jit_type_uint};
-    jit_type_t j_sig = jit_type_create_signature(jit_abi_cdecl,
-                                                 jit_type_uint,
-                                                 params,
-                                                 __countof(params),
-                                                 1);
+    jit_type_t params[] = {jit_type_ptr, jit_type_int32};
+    auto j_sig = jit_type_create_signature(jit_abi_cdecl,
+                                           jit_type_int32,
+                                           params,
+                                           __countof(params),
+                                           1);
     jit_value_t args[] = {j_in, j_in_size};
-    return jit_insn_call_native(j_func_,
-                                name,
-                                pfn,
-                                j_sig,
-                                args,
-                                __countof(args),
-                                JIT_CALL_NOTHROW);
+    auto ret = jit_insn_call_native(j_func_,
+                                    name,
+                                    pfn,
+                                    j_sig,
+                                    args,
+                                    __countof(args),
+                                    JIT_CALL_NOTHROW);
+    jit_type_free(j_sig);
+    return ret;
   }
 
   jit_value_t emit_op_call_relational(void* pfn,
@@ -1198,25 +1165,27 @@ private:
     __source_info();
 
     // setup arguments
-    auto j_lhs_size = this->emit_constant(lhs_size, jit_type_uint);
-    auto j_rhs_size = this->emit_constant(rhs_size, jit_type_uint);
+    auto j_lhs_size = this->emit_constant(lhs_size, jit_type_int32);
+    auto j_rhs_size = this->emit_constant(rhs_size, jit_type_int32);
 
     // call native function
-    jit_type_t params[] = {jit_type_void_ptr, jit_type_uint,
-                           jit_type_void_ptr, jit_type_uint};
-    jit_type_t j_sig = jit_type_create_signature(jit_abi_cdecl,
-                                                 jit_type_uint,
-                                                 params,
-                                                 __countof(params),
-                                                 1);
+    jit_type_t params[] = {jit_type_ptr, jit_type_int32,
+                           jit_type_ptr, jit_type_int32};
+    auto j_sig = jit_type_create_signature(jit_abi_cdecl,
+                                           jit_type_int32,
+                                           params,
+                                           __countof(params),
+                                           1);
     jit_value_t args[] = {j_lhs, j_lhs_size, j_rhs, j_rhs_size};
-    return jit_insn_call_native(j_func_,
-                                name,
-                                pfn,
-                                j_sig,
-                                args,
-                                __countof(args),
-                                JIT_CALL_NOTHROW);
+    auto ret = jit_insn_call_native(j_func_,
+                                    name,
+                                    pfn,
+                                    j_sig,
+                                    args,
+                                    __countof(args),
+                                    JIT_CALL_NOTHROW);
+    jit_type_free(j_sig);
+    return ret;
   }
 
   void emit_op_call_bitwise(void* pfn,
@@ -1228,17 +1197,17 @@ private:
     __source_info();
 
     // setup arguments
-    auto j_out_size = this->emit_constant(out_size, jit_type_uint);
-    auto j_in_size = this->emit_constant(in_size, jit_type_uint);
+    auto j_out_size = this->emit_constant(out_size, jit_type_int32);
+    auto j_in_size = this->emit_constant(in_size, jit_type_int32);
 
     // call native function
-    jit_type_t params[] = {jit_type_void_ptr, jit_type_uint,
-                           jit_type_void_ptr, jit_type_uint};
-    jit_type_t j_sig = jit_type_create_signature(jit_abi_cdecl,
-                                                 jit_type_void,
-                                                 params,
-                                                 __countof(params),
-                                                 1);
+    jit_type_t params[] = {jit_type_ptr, jit_type_int32,
+                           jit_type_ptr, jit_type_int32};
+    auto j_sig = jit_type_create_signature(jit_abi_cdecl,
+                                           jit_type_void,
+                                           params,
+                                           __countof(params),
+                                           1);
     jit_value_t args[] = {j_out, j_out_size, j_in, j_in_size};
     jit_insn_call_native(j_func_,
                          name,
@@ -1247,6 +1216,7 @@ private:
                          args,
                          __countof(args),
                          JIT_CALL_NOTHROW);
+    jit_type_free(j_sig);
   }
 
   void emit_op_call_bitwise(void* pfn,
@@ -1260,19 +1230,19 @@ private:
     __source_info();
 
     // setup arguments
-    auto j_out_size = this->emit_constant(out_size, jit_type_uint);
-    auto j_lhs_size = this->emit_constant(lhs_size, jit_type_uint);
-    auto j_rhs_size = this->emit_constant(rhs_size, jit_type_uint);
+    auto j_out_size = this->emit_constant(out_size, jit_type_int32);
+    auto j_lhs_size = this->emit_constant(lhs_size, jit_type_int32);
+    auto j_rhs_size = this->emit_constant(rhs_size, jit_type_int32);
 
     // call native function
-    jit_type_t params[] = {jit_type_void_ptr, jit_type_uint,
-                           jit_type_void_ptr, jit_type_uint,
-                           jit_type_void_ptr, jit_type_uint};
-    jit_type_t j_sig = jit_type_create_signature(jit_abi_cdecl,
-                                                 jit_type_void,
-                                                 params,
-                                                 __countof(params),
-                                                 1);
+    jit_type_t params[] = {jit_type_ptr, jit_type_int32,
+                           jit_type_ptr, jit_type_int32,
+                           jit_type_ptr, jit_type_int32};
+    auto j_sig = jit_type_create_signature(jit_abi_cdecl,
+                                           jit_type_void,
+                                           params,
+                                           __countof(params),
+                                           1);
     jit_value_t args[] = {j_out, j_out_size, j_lhs, j_lhs_size, j_rhs, j_rhs_size};
     jit_insn_call_native(j_func_,
                          name,
@@ -1281,6 +1251,7 @@ private:
                          args,
                          __countof(args),
                          JIT_CALL_NOTHROW);
+    jit_type_free(j_sig);
   }
 
   void emit_op_call_shift(void* pfn,
@@ -1290,30 +1261,31 @@ private:
                            jit_value_t j_lhs,
                            uint32_t lhs_size,
                            jit_value_t j_rhs) {
-   __source_info();
+    __source_info();
 
-   // setup arguments
-   auto j_out_size = this->emit_constant(out_size, jit_type_uint);
-   auto j_lhs_size = this->emit_constant(lhs_size, jit_type_uint);
-   assert(32 == get_value_size(j_rhs));
+    // setup arguments
+    auto j_out_size = this->emit_constant(out_size, jit_type_int32);
+    auto j_lhs_size = this->emit_constant(lhs_size, jit_type_int32);
+    assert(32 == get_value_size(j_rhs));
 
-   // call native function
-   jit_type_t params[] = {jit_type_void_ptr, jit_type_uint,
-                          jit_type_void_ptr, jit_type_uint,
-                          jit_type_uint};
-   jit_type_t j_sig = jit_type_create_signature(jit_abi_cdecl,
-                                                jit_type_void,
-                                                params,
-                                                __countof(params),
-                                                1);
-   jit_value_t args[] = {j_out, j_out_size, j_lhs, j_lhs_size, j_rhs};
-   jit_insn_call_native(j_func_,
-                        name,
-                        pfn,
-                        j_sig,
-                        args,
-                        __countof(args),
-                        JIT_CALL_NOTHROW);
+    // call native function
+    jit_type_t params[] = {jit_type_ptr, jit_type_int32,
+                           jit_type_ptr, jit_type_int32,
+                           jit_type_int32};
+    auto j_sig = jit_type_create_signature(jit_abi_cdecl,
+                                           jit_type_void,
+                                           params,
+                                           __countof(params),
+                                           1);
+    jit_value_t args[] = {j_out, j_out_size, j_lhs, j_lhs_size, j_rhs};
+    jit_insn_call_native(j_func_,
+                         name,
+                         pfn,
+                          j_sig,
+                         args,
+                         __countof(args),
+                         JIT_CALL_NOTHROW);
+    jit_type_free(j_sig);
   }
 
   bool optimize_select(selectimpl* node) {
@@ -1377,10 +1349,10 @@ private:
 
         if (!is_inclusive) {
           auto j_key = scalar_map_.at(node->key().id());
-          auto j_max = this->emit_constant(pred_max, jit_type_uint);
+          auto j_max = this->emit_constant(pred_max, jit_type_int32);
           auto j_pred = jit_insn_gt(j_func_, j_key, j_max);
           if (pred_min) {
-            auto j_min = this->emit_constant(pred_min, jit_type_uint);
+            auto j_min = this->emit_constant(pred_min, jit_type_int32);
             auto j_tmp = jit_insn_lt(j_func_, j_key, j_min);
             j_pred = jit_insn_or(j_func_, j_pred, j_tmp);
           }
@@ -1416,7 +1388,7 @@ private:
         auto j_key = scalar_map_.at(node->key().id());
 
         if (!is_inclusive && pred_min) {
-          auto j_min = this->emit_constant(pred_min, jit_type_uint);
+          auto j_min = this->emit_constant(pred_min, jit_type_int32);
           j_key = jit_insn_sub(j_func_, j_key, j_min);
         }
 
@@ -1497,10 +1469,10 @@ private:
         // build label table
         jit_insn_label(j_func_, &l_jump);
         auto j_key = scalar_map_.at(node->key().id());
-        auto j_max = this->emit_constant(pred_max, jit_type_uint);
+        auto j_max = this->emit_constant(pred_max, jit_type_int32);
         auto j_pred = jit_insn_gt(j_func_, j_key, j_max);
         if (pred_min) {
-          auto j_min = this->emit_constant(pred_min, jit_type_uint);
+          auto j_min = this->emit_constant(pred_min, jit_type_int32);
           auto j_tmp = jit_insn_lt(j_func_, j_key, j_min);
           j_pred = jit_insn_or(j_func_, j_pred, j_tmp);
         }
@@ -1508,7 +1480,7 @@ private:
 
         auto j_value = j_key;
         if (pred_min) {
-          auto j_min = this->emit_constant(pred_min, jit_type_uint);
+          auto j_min = this->emit_constant(pred_min, jit_type_int32);
           j_value = jit_insn_sub(j_func_, j_key, j_min);
         }
 
@@ -1680,7 +1652,7 @@ private:
 
     auto j_clk = scalar_map_.at(node->src(0).id());
     auto addr = addr_map_.at(node->id());
-    auto j_prev_clk = jit_insn_load_relative(j_func_, j_vars_, addr, jit_type_uint);
+    auto j_prev_clk = jit_insn_load_relative(j_func_, j_vars_, addr, jit_type_int32);
     auto j_clk_changed = jit_insn_xor(j_func_, j_clk, j_prev_clk);
     jit_value_t j_changed ;
 
@@ -1891,8 +1863,8 @@ private:
             jit_label_t l_loop = jit_label_undefined;
             jit_label_t l_exit = jit_label_undefined;
             auto j_pipe_ptr = jit_insn_add_relative(j_func_, j_vars_, pipe_addr);
-            auto j_index = jit_value_create(j_func_, jit_type_uint);
-            auto j_lengthM1 = this->emit_constant(pipe_length - 1, jit_type_uint);
+            auto j_index = jit_value_create(j_func_, jit_type_int32);
+            auto j_lengthM1 = this->emit_constant(pipe_length - 1, jit_type_int32);
             jit_insn_store(j_func_, j_index, j_lengthM1);
             jit_insn_label(j_func_, &l_loop);
             this->emit_store_array_scalar(j_pipe_ptr, pipe_width, j_index, j_init_data, dst_width);
@@ -1917,8 +1889,8 @@ private:
           } else {
             jit_label_t l_loop = jit_label_undefined;
             jit_label_t l_exit = jit_label_undefined;
-            auto j_index = jit_value_create(j_func_, jit_type_uint);
-            auto j_lengthM1 = this->emit_constant(pipe_length - 1, jit_type_uint);
+            auto j_index = jit_value_create(j_func_, jit_type_int32);
+            auto j_lengthM1 = this->emit_constant(pipe_length - 1, jit_type_int32);
             jit_insn_store(j_func_, j_index, j_lengthM1);
             jit_insn_label(j_func_, &l_loop);
             this->emit_store_array_vector(j_pipe_ptr, j_index, j_init_data, dst_width);
@@ -1990,11 +1962,11 @@ private:
           jit_insn_store(j_func_, j_dst, j_pipe_0_n);
 
           // pipe >>= dst_width
-          auto j_shift = this->emit_constant(dst_width, jit_type_uint);
+          auto j_shift = this->emit_constant(dst_width, jit_type_int32);
           auto j_pipe_s = jit_insn_ushr(j_func_, j_pipe, j_shift);
 
           // pipe[n-1] <- next
-          auto j_shfn1  = this->emit_constant((pipe_length - 1) * dst_width, jit_type_uint);
+          auto j_shfn1  = this->emit_constant((pipe_length - 1) * dst_width, jit_type_int32);
           auto j_next_p = this->emit_cast(j_next, j_pipe_ntype);
           auto j_next_s = jit_insn_shl(j_func_, j_next_p, j_shfn1);
           auto j_or     = jit_insn_or(j_func_, j_next_s, j_pipe_s);
@@ -2014,7 +1986,7 @@ private:
         } else {
           // load pipe index
           auto pipe_index_addr = pipe_addr + __align_word_size(pipe_width);
-          auto j_pipe_index = jit_insn_load_relative(j_func_, j_vars_, pipe_index_addr, jit_type_uint);
+          auto j_pipe_index = jit_insn_load_relative(j_func_, j_vars_, pipe_index_addr, jit_type_int32);
           auto j_pipe_ptr = jit_insn_add_relative(j_func_, j_vars_, pipe_addr);
 
           if (is_scalar) {
@@ -2038,7 +2010,7 @@ private:
           }
 
           // advance pipe index
-          auto j_max = this->emit_constant(pipe_length - 1, jit_type_uint);
+          auto j_max = this->emit_constant(pipe_length - 1, jit_type_int32);
           auto j_sub = jit_insn_sub(j_func_, j_pipe_index, j_one_);
           auto j_min = jit_insn_min(j_func_, j_sub, j_max);
           jit_insn_store_relative(j_func_, j_vars_, pipe_index_addr, j_min);
@@ -2185,7 +2157,7 @@ private:
         auto srcs_ptr = jit_insn_load_relative(j_func_,
                                                j_vars_,
                                                addr + offsetof(print_data_t, srcs),
-                                               jit_type_void_ptr);
+                                               jit_type_ptr);
         auto j_src = this->emit_address_of(it->second, word_type_);
         jit_insn_store_relative(j_func_, srcs_ptr, src_idx * sizeof(sdata_type), j_src);
       }
@@ -2193,12 +2165,12 @@ private:
     }
 
     // call native function
-    jit_type_t params[] = {jit_type_void_ptr};
-    jit_type_t j_sig = jit_type_create_signature(jit_abi_cdecl,
-                                                 jit_type_void,
-                                                 params,
-                                                 __countof(params),
-                                                 1);
+    jit_type_t params[] = {jit_type_ptr};
+    auto j_sig = jit_type_create_signature(jit_abi_cdecl,
+                                           jit_type_void,
+                                           params,
+                                           __countof(params),
+                                           1);
     jit_value_t args[] = {j_data_ptr};
     jit_insn_call_native(j_func_,
                          "print_data_t::eval",
@@ -2207,6 +2179,7 @@ private:
                          args,
                          __countof(args),
                          JIT_CALL_NOTHROW);
+    jit_type_free(j_sig);
 
     if (l_exit != jit_label_undefined) {
       jit_insn_label(j_func_, &l_exit);
@@ -2235,18 +2208,18 @@ private:
       auto time_ptr = jit_insn_load_relative(j_func_,
                                              j_vars_,
                                              addr + offsetof(assert_data_t, time),
-                                             jit_type_void_ptr);
+                                             jit_type_ptr);
       auto j_time = this->emit_address_of(it->second, word_type_);
       jit_insn_store_relative(j_func_, time_ptr, 0, j_time);
     }
 
     // call native function
-    jit_type_t params[] = {jit_type_void_ptr};
-    jit_type_t j_sig = jit_type_create_signature(jit_abi_cdecl,
-                                                 jit_type_void,
-                                                 params,
-                                                 __countof(params),
-                                                 1);
+    jit_type_t params[] = {jit_type_ptr};
+    auto j_sig = jit_type_create_signature(jit_abi_cdecl,
+                                           jit_type_void,
+                                           params,
+                                           __countof(params),
+                                           1);
     jit_value_t args[] = {j_data_ptr};
     jit_insn_call_native(j_func_,
                          "assert_data_t::eval",
@@ -2255,6 +2228,7 @@ private:
                          args,
                          __countof(args),
                          JIT_CALL_NOTHROW);
+    jit_type_free(j_sig);
 
     if (l_exit != jit_label_undefined) {
       jit_insn_label(j_func_, &l_exit);
@@ -2268,12 +2242,12 @@ private:
     auto j_data_ptr = jit_insn_add_relative(j_func_, j_vars_, addr);
 
     // call native function
-    jit_type_t params[] = {jit_type_void_ptr};
-    jit_type_t j_sig = jit_type_create_signature(jit_abi_cdecl,
-                                                 jit_type_void,
-                                                 params,
-                                                 __countof(params),
-                                                 1);
+    jit_type_t params[] = {jit_type_ptr};
+    auto j_sig = jit_type_create_signature(jit_abi_cdecl,
+                                           jit_type_void,
+                                           params,
+                                           __countof(params),
+                                           1);
     jit_value_t args[] = {j_data_ptr};
     jit_insn_call_native(j_func_,
                          "udf_data_t::eval",
@@ -2282,6 +2256,7 @@ private:
                          args,
                          __countof(args),
                          JIT_CALL_NOTHROW);
+    jit_type_free(j_sig);
   }
 
   void emit_node(udfsimpl* node) {
@@ -2301,12 +2276,12 @@ private:
     auto j_data_ptr = jit_insn_add_relative(j_func_, j_vars_, addr);
 
     // call native function
-    jit_type_t params[] = {jit_type_void_ptr};
-    jit_type_t j_sig = jit_type_create_signature(jit_abi_cdecl,
-                                                 jit_type_void,
-                                                 params,
-                                                 __countof(params),
-                                                 1);
+    jit_type_t params[] = {jit_type_ptr};
+    auto j_sig = jit_type_create_signature(jit_abi_cdecl,
+                                           jit_type_void,
+                                           params,
+                                           __countof(params),
+                                           1);
     jit_value_t args[] = {j_data_ptr};
     jit_insn_call_native(j_func_,
                          "udf_data_t::reset",
@@ -2315,6 +2290,7 @@ private:
                          args,
                          __countof(args),
                          JIT_CALL_NOTHROW);
+    jit_type_free(j_sig);
   }
 
   /////////////////////////////////////////////////////////////////////////////
@@ -2648,7 +2624,7 @@ private:
     auto native_width = to_native_size(width);
     jit_value_t j_ret = j_value;
     for (uint32_t i = (native_width / 2); i != 0; i /= 2) {
-      auto j_shift = this->emit_constant(i, jit_type_uint);
+      auto j_shift = this->emit_constant(i, jit_type_int32);
       auto j_tmp = jit_insn_ushr(j_func_, j_ret, j_shift);
       j_ret = jit_insn_xor(j_func_, j_ret, j_tmp);
     }
@@ -2664,7 +2640,7 @@ private:
 
     jit_value_t j_src = j_value;
     if (offset) {
-      auto j_offset = this->emit_constant(offset, jit_type_uint);
+      auto j_offset = this->emit_constant(offset, jit_type_int32);
       j_src = jit_insn_ushr(j_func_, j_value, j_offset);
     }
     int clamp = get_value_size(j_src) - length;
@@ -2691,11 +2667,11 @@ private:
       auto src_idx = offset / WORD_SIZE;
       auto src_lsb = offset % WORD_SIZE;
       auto j_xtype = to_native_or_word_type(length);
-      auto j_src_lsb = this->emit_constant(src_lsb, jit_type_uint);
+      auto j_src_lsb = this->emit_constant(src_lsb, jit_type_int32);
       auto j_src_value0 = jit_insn_load_relative(j_func_, src_ptr.base, src_ptr.offset + src_idx * sizeof(block_type), j_xtype);
       auto j_src_value0_s = jit_insn_ushr(j_func_, j_src_value0, j_src_lsb);
       auto j_src_value1 = jit_insn_load_relative(j_func_, src_ptr.base, src_ptr.offset + (src_idx + 1) * sizeof(block_type), j_xtype);
-      auto j_rem = this->emit_constant(get_value_size(j_src_value1) - src_lsb, jit_type_uint);
+      auto j_rem = this->emit_constant(get_value_size(j_src_value1) - src_lsb, jit_type_int32);
       auto j_src_value1_s = jit_insn_shl(j_func_, j_src_value1, j_rem);
       auto j_src_value = jit_insn_or(j_func_, j_src_value1_s, j_src_value0_s);
       return this->emit_scalar_slice(j_src_value, 0, length);
@@ -2740,17 +2716,17 @@ private:
         assert(array_width > WORD_SIZE);
         auto j_xtype = to_native_or_word_type(length);
         auto xsize = to_native_or_word_size(length);
-        auto j_ovf = this->emit_constant(xsize - length, jit_type_uint);
-        auto j_ovf_b = this->emit_constant((xsize - length) / 8, jit_type_uint);
-        auto j_data_size = this->emit_constant(length / 8, jit_type_uint);
+        auto j_ovf = this->emit_constant(xsize - length, jit_type_int32);
+        auto j_ovf_b = this->emit_constant((xsize - length) / 8, jit_type_int32);
+        auto j_data_size = this->emit_constant(length / 8, jit_type_int32);
         auto j_offset = jit_insn_mul(j_func_, j_index, j_data_size);
         auto j_offset_d = jit_insn_sub(j_func_, j_offset, j_ovf_b);
-        auto j_addr = jit_insn_load_elem_address(j_func_, j_array_ptr, j_offset_d, jit_type_ubyte);
+        auto j_addr = jit_insn_load_elem_address(j_func_, j_array_ptr, j_offset_d, jit_type_int8);
         auto j_tmp = jit_insn_load_relative(j_func_, j_addr, 0, j_xtype);
         j_src = jit_insn_ushr(j_func_, j_tmp, j_ovf);
       }
     } else {
-      auto j_data_width = this->emit_constant(length, jit_type_uint);
+      auto j_data_width = this->emit_constant(length, jit_type_int32);
       auto j_src_offset = jit_insn_mul(j_func_, j_index, j_data_width);
       if (array_width <= WORD_SIZE) {
         auto j_xtype = to_native_or_word_type(array_width);
@@ -2759,8 +2735,8 @@ private:
       } else {
         auto j_xtype = to_native_or_word_type(length);
         auto xsize = to_native_or_word_size(length);
-        auto j_block_logsize = this->emit_constant(log2floor(xsize), jit_type_uint);
-        auto j_block_mask = this->emit_constant(xsize - 1, jit_type_uint);
+        auto j_block_logsize = this->emit_constant(log2floor(xsize), jit_type_int32);
+        auto j_block_mask = this->emit_constant(xsize - 1, jit_type_int32);
         auto j_src_idx = jit_insn_ushr(j_func_, j_src_offset, j_block_logsize);
         auto j_src_lsb = jit_insn_and(j_func_, j_src_offset, j_block_mask);
 
@@ -2769,12 +2745,12 @@ private:
         j_src = jit_insn_ushr(j_func_, j_src_value0, j_src_lsb);
 
         jit_label_t l_skip = jit_label_undefined;
-        auto j_src_rem = this->emit_constant(xsize - length, jit_type_uint);
+        auto j_src_rem = this->emit_constant(xsize - length, jit_type_int32);
         auto j_src_inclusive = jit_insn_le(j_func_, j_src_lsb, j_src_rem);
         jit_insn_branch_if(j_func_, j_src_inclusive, &l_skip);
 
         auto j_src_value1 = jit_insn_load_relative(j_func_, j_src_ptr, sizeof(block_type), j_xtype);
-        auto j_block_size = this->emit_constant(xsize, jit_type_uint);
+        auto j_block_size = this->emit_constant(xsize, jit_type_int32);
         auto j_rem = jit_insn_sub(j_func_, j_block_size, j_src_lsb);
         auto j_src1_s = jit_insn_shl(j_func_, j_src_value1, j_rem);
         auto j_or = jit_insn_or(j_func_, j_src, j_src1_s);
@@ -2807,12 +2783,12 @@ private:
         auto xsize = to_native_or_word_size(length);
         auto mask = std::numeric_limits<uint64_t>::max() >> (64 - length);
         auto j_mask = this->emit_constant(mask << (xsize - length), j_xtype);
-        auto j_ovf = this->emit_constant(xsize - length, jit_type_uint);
-        auto j_ovf_b = this->emit_constant((xsize - length) / 8, jit_type_uint);
-        auto j_data_size = this->emit_constant(length / 8, jit_type_uint);
+        auto j_ovf = this->emit_constant(xsize - length, jit_type_int32);
+        auto j_ovf_b = this->emit_constant((xsize - length) / 8, jit_type_int32);
+        auto j_data_size = this->emit_constant(length / 8, jit_type_int32);
         auto j_offset = jit_insn_mul(j_func_, j_index, j_data_size);
         auto j_offset_d = jit_insn_sub(j_func_, j_offset, j_ovf_b);
-        auto j_addr = jit_insn_load_elem_address(j_func_, j_array_ptr, j_offset_d, jit_type_ubyte);
+        auto j_addr = jit_insn_load_elem_address(j_func_, j_array_ptr, j_offset_d, jit_type_int8);
         auto j_dst = jit_insn_load_relative(j_func_, j_addr, 0, j_xtype);
         auto j_data_s = jit_insn_shl(j_func_, j_data, j_ovf);
         auto j_dst_new = this->emit_blend(j_mask, j_dst, j_data_s);
@@ -2820,7 +2796,7 @@ private:
         jit_insn_store_relative(j_func_, j_addr, 0, j_dst_new_x);
       }
     } else {
-      auto j_data_width = this->emit_constant(length, jit_type_uint);
+      auto j_data_width = this->emit_constant(length, jit_type_int32);
       auto j_dst_offset = jit_insn_mul(j_func_, j_index, j_data_width);
 
       if (array_width <= WORD_SIZE) {
@@ -2837,8 +2813,8 @@ private:
       } else {
         auto j_xtype = to_native_or_word_type(length);
         auto xsize = to_native_or_word_size(length);
-        auto j_block_logsize = this->emit_constant(log2floor(xsize), jit_type_uint);
-        auto j_block_mask = this->emit_constant(xsize - 1, jit_type_uint);
+        auto j_block_logsize = this->emit_constant(log2floor(xsize), jit_type_int32);
+        auto j_block_mask = this->emit_constant(xsize - 1, jit_type_int32);
         auto mask = std::numeric_limits<uint64_t>::max() >> (64 - length);
         auto j_mask = this->emit_constant(mask, j_xtype);
         auto j_data_w = this->emit_cast(j_data, j_xtype);
@@ -2854,7 +2830,7 @@ private:
         jit_insn_store_relative(j_func_, j_dst_ptr, 0, j_dst0_x);
 
         jit_label_t l_skip = jit_label_undefined;
-        auto j_dst_rem = this->emit_constant(xsize - length, jit_type_uint);
+        auto j_dst_rem = this->emit_constant(xsize - length, jit_type_int32);
         auto j_single_block = jit_insn_le(j_func_, j_dst_lsb, j_dst_rem);
 
         jit_insn_branch_if(j_func_, j_single_block, &l_skip);
@@ -2878,12 +2854,12 @@ private:
     __source_info();
 
     if (0 == (dst_width % 8)) {
-      auto j_size = this->emit_constant(dst_width / 8, jit_type_uint);
+      auto j_size = this->emit_constant(dst_width / 8, jit_type_int32);
       auto j_src_offset = jit_insn_mul(j_func_, j_index, j_size);
-      auto j_src_ptr = jit_insn_load_elem_address(j_func_, j_array_ptr, j_src_offset, jit_type_ubyte);
+      auto j_src_ptr = jit_insn_load_elem_address(j_func_, j_array_ptr, j_src_offset, jit_type_int8);
       this->emit_memcpy(j_dst_ptr, j_src_ptr, dst_width / 8);
     } else {
-      auto j_src_width = this->emit_constant(dst_width, jit_type_uint);
+      auto j_src_width = this->emit_constant(dst_width, jit_type_int32);
       auto j_src_offset = jit_insn_mul(j_func_, j_index, j_src_width);
       this->emit_copy_vector(j_dst_ptr, j_zero_, j_array_ptr, j_src_offset, dst_width);
     }
@@ -2896,12 +2872,12 @@ private:
     __source_info();
 
     if (0 == (src_width % 8)) {
-      auto j_size = this->emit_constant(src_width / 8, jit_type_uint);
+      auto j_size = this->emit_constant(src_width / 8, jit_type_int32);
       auto j_dst_offset = jit_insn_mul(j_func_, j_index, j_size);
-      auto j_dst_ptr = jit_insn_load_elem_address(j_func_, j_array_ptr, j_dst_offset, jit_type_ubyte);
+      auto j_dst_ptr = jit_insn_load_elem_address(j_func_, j_array_ptr, j_dst_offset, jit_type_int8);
       this->emit_memcpy(j_dst_ptr, j_src_ptr, src_width / 8);
     } else {
-      auto j_dst_width = this->emit_constant(src_width, jit_type_uint);
+      auto j_dst_width = this->emit_constant(src_width, jit_type_int32);
       auto j_dst_offset = jit_insn_mul(j_func_, j_index, j_dst_width);
       this->emit_copy_vector(j_array_ptr, j_dst_offset, j_src_ptr, j_zero_, src_width);
     }
@@ -2924,8 +2900,8 @@ private:
     block_type mask0 = (WORD_MAX >> (WORD_SIZE - length)) << w_dst_lsb;
     block_type mask1 = block_type(~mask0) >> (WORD_SIZE - length);
 
-    auto j_src_offset = this->emit_constant(src_offset, jit_type_uint);
-    auto j_dst_lsb = this->emit_constant(w_dst_lsb, jit_type_uint);
+    auto j_src_offset = this->emit_constant(src_offset, jit_type_int32);
+    auto j_dst_lsb = this->emit_constant(w_dst_lsb, jit_type_int32);
     auto j_src_s = jit_insn_ushr(j_func_, j_src, j_src_offset);
     auto j_src_n = this->emit_cast(j_src_s, j_ntype);
     auto j_src_0 = jit_insn_shl(j_func_, j_src_n, j_dst_lsb);
@@ -2936,7 +2912,7 @@ private:
     jit_insn_store_relative(j_func_, j_dst_ptr, w_dst_idx * sizeof(block_type), j_blend0_x);
     if (w_dst_lsb > (WORD_SIZE - length)) {
       auto j_dst_1 = jit_insn_load_relative(j_func_, j_dst_ptr, (w_dst_idx + 1) * sizeof(block_type), j_xtype);
-      auto j_rem = this->emit_constant(WORD_SIZE - w_dst_lsb, jit_type_uint);
+      auto j_rem = this->emit_constant(WORD_SIZE - w_dst_lsb, jit_type_int32);
       auto j_src_1 = jit_insn_ushr(j_func_, j_src_n, j_rem);
       auto j_mask1 = this->emit_constant(mask1, j_ntype);
       auto j_blend1 = this->emit_blend(j_mask1, j_dst_1, j_src_1);
@@ -2960,16 +2936,16 @@ private:
       uint32_t rem = length % 8;
       if (rem) {
         auto offset = length / 8;
-        auto j_src_value = jit_insn_load_relative(j_func_, j_src_ptr8, offset, jit_type_ubyte);
-        auto j_dst_value = jit_insn_load_relative(j_func_, j_dst_ptr8, offset, jit_type_ubyte);
-        auto j_mask = this->emit_constant(0xff << rem, jit_type_ubyte);
+        auto j_src_value = jit_insn_load_relative(j_func_, j_src_ptr8, offset, jit_type_int8);
+        auto j_dst_value = jit_insn_load_relative(j_func_, j_dst_ptr8, offset, jit_type_int8);
+        auto j_mask = this->emit_constant(0xff << rem, jit_type_int32);
         auto j_dst = this->emit_blend(j_mask, j_src_value, j_dst_value);
-        auto j_dst_b = this->emit_cast(j_dst, jit_type_ubyte);
+        auto j_dst_b = this->emit_cast(j_dst, jit_type_int8);
         jit_insn_store_relative(j_func_, j_dst_ptr8, offset, j_dst_b);
       }
     } else {
-      auto j_dst_offset = this->emit_constant(dst_offset, jit_type_uint);
-      auto j_src_offset = this->emit_constant(src_offset, jit_type_uint);
+      auto j_dst_offset = this->emit_constant(dst_offset, jit_type_int32);
+      auto j_src_offset = this->emit_constant(src_offset, jit_type_int32);
       this->emit_copy_vector(j_dst_ptr, j_dst_offset, j_src_ptr, j_src_offset, length);
     }
   }
@@ -2981,10 +2957,10 @@ private:
                         uint32_t length) {
     __source_info();
 
-    auto j_length = this->emit_constant(length, jit_type_uint);
+    auto j_length = this->emit_constant(length, jit_type_int32);
 
     // call native function
-    jit_type_t params[] = {jit_type_void_ptr, jit_type_uint, jit_type_void_ptr, jit_type_uint, jit_type_uint};
+    jit_type_t params[] = {jit_type_ptr, jit_type_int32, jit_type_ptr, jit_type_int32, jit_type_int32};
     auto j_sig = jit_type_create_signature(jit_abi_cdecl,
                                            jit_type_void,
                                            params,
@@ -2998,6 +2974,7 @@ private:
                          args,
                          __countof(args),
                          JIT_CALL_NOTHROW);
+    jit_type_free(j_sig);
   }
 
   jit_value_t emit_append_slice_vector(jit_value_t j_cur,
@@ -3021,7 +2998,7 @@ private:
       jit_insn_store_relative(j_func_, dst_addr.base, dst_addr.offset + dst_idx * sizeof(block_type), j_cur_w);
       ++dst_idx;
       // copy remaining bits into next block
-      auto j_rem = this->emit_constant(WORD_SIZE - dst_lsb, jit_type_uint);
+      auto j_rem = this->emit_constant(WORD_SIZE - dst_lsb, jit_type_int32);
       auto j_src_n = this->emit_cast(j_src, j_ntype);
       j_cur = jit_insn_ushr(j_func_, j_src_n, j_rem);
     }
@@ -3074,8 +3051,8 @@ private:
         auto j_src_ptr8 = jit_insn_add_relative(j_func_, src_addr.base, src_addr.offset + src_offset / 8);
         this->emit_memcpy(j_dst_ptr8, j_src_ptr8, length_w / 8);
       } else {
-        auto j_dst_offset = this->emit_constant(dst_addr.offset * 8 + dst_offset, jit_type_uint);
-        auto j_src_offset = this->emit_constant(src_addr.offset * 8 + src_offset, jit_type_uint);
+        auto j_dst_offset = this->emit_constant(dst_addr.offset * 8 + dst_offset, jit_type_int32);
+        auto j_src_offset = this->emit_constant(src_addr.offset * 8 + src_offset, jit_type_int32);
         this->emit_copy_vector(dst_addr.base, j_dst_offset, src_addr.base, j_src_offset, length_w);
       }
       dst_offset += length_w;
@@ -3117,7 +3094,7 @@ private:
       }
     }
 
-    auto j_dst_lsb = this->emit_constant(dst_offset, jit_type_uint);
+    auto j_dst_lsb = this->emit_constant(dst_offset, jit_type_int32);
     auto j_src_n = this->emit_cast(j_src, j_ntype);
     auto j_src_s = jit_insn_shl(j_func_, j_src_n, j_dst_lsb);
 
@@ -3189,28 +3166,23 @@ private:
   }
 
   void emit_memcpy(jit_value_t j_dst_ptr, jit_value_t j_src_ptr, uint32_t length) {
-    auto j_length = this->emit_constant(length, jit_type_uint);
+    auto j_length = this->emit_constant(length, jit_type_int32);
     jit_insn_memcpy(j_func_, j_dst_ptr, j_src_ptr, j_length);
   }
 
   jit_value_t emit_sign_ext(jit_value_t j_value, uint32_t width) {
     auto j_type = jit_value_get_type(j_value);
-    auto j_stype = to_signed_type(j_type);
     auto value_size = get_type_size(j_type);
     assert(value_size >= width);
-    if (value_size == width) {
-      return this->emit_cast(j_value, j_stype);
-    }
+    if (value_size == width)
+      return j_value;
     if (is_value_size(width)) {
-      auto j_otype = to_signed_type(to_value_type(width));
-      auto j_tmp = this->emit_cast(j_value, j_otype);
-      return this->emit_cast(j_tmp, j_stype);
-    } else {
-      auto j_mask = this->emit_constant(1ull << (width - 1), j_type);
-      auto j_tmp1 = jit_insn_xor(j_func_, j_value, j_mask);
-      auto j_tmp2 = jit_insn_sub(j_func_, j_tmp1, j_mask);
-      return this->emit_cast(j_tmp2, j_stype);
+      auto j_otype = to_value_type(width);
+      return this->emit_cast(j_value, j_otype);
     }
+    auto j_mask = this->emit_constant(1ull << (width - 1), j_type);
+    auto j_tmp1 = jit_insn_xor(j_func_, j_value, j_mask);
+    return jit_insn_sub(j_func_, j_tmp1, j_mask);
   }
 
   jit_value_t emit_blend(jit_value_t j_mask, jit_value_t j_false, jit_value_t j_true) {
@@ -3248,8 +3220,8 @@ private:
   }
 
   void emit_range_check(jit_value_t j_value, uint32_t start, uint32_t end) {
-    auto j_start = this->emit_constant(start, jit_type_uint);
-    auto j_end = this->emit_constant(end, jit_type_uint);
+    auto j_start = this->emit_constant(start, jit_type_int32);
+    auto j_end = this->emit_constant(end, jit_type_int32);
     auto j_check1 = jit_insn_ge(j_func_, j_value, j_start);
     auto j_check2 = jit_insn_lt(j_func_, j_value, j_end);
     auto j_check = jit_insn_and(j_func_, j_check1, j_check2);
@@ -3260,110 +3232,18 @@ private:
   }
 
   jit_value_t emit_constant(long value, jit_type_t j_type) {
-    auto nbytes = jit_type_get_size(j_type);
-    if (nbytes <= 4) {
-      return jit_value_create_nint_constant(j_func_, j_type, value);
-    } else if (nbytes <= 8) {
-      return jit_value_create_long_constant(j_func_, j_type, value);
-    } else {
-      std::abort();
-    }
+    return jit_value_create_int_constant(j_func_, j_type, value);
   }
 
   long get_constant_value(jit_value_t j_value) {
     assert(jit_value_is_constant(j_value));
-    auto size = get_value_size(j_value);
-    if (size <= 32) {
-      int32_t value = jit_value_get_nint_constant(j_value);
-      auto j_type = jit_value_get_type(j_value);
-      if (is_signed_type(j_type)) {
-        auto nbytes = jit_type_get_size(j_type);
-        switch (nbytes) {
-        case 1:
-          return static_cast<int8_t>(value);
-        case 2:
-          return static_cast<int16_t>(value);
-        case 4:
-          return value;
-        default:
-          std::abort();
-        }
-      }
-      return value;
-    } else if (size <= 64) {
-      return jit_value_get_long_constant(j_value);
-    } else {
-      std::abort();
-    }
-  }
-
-  void dump_ast(FILE *stream, const char *name) {
-    fprintf(stream, "function %s(", name);
-
-    // dump signature
-    auto signature = jit_function_get_signature(j_func_);
-    uint32_t num_params = jit_type_num_params(signature);
-    for (uint32_t param = 0; param < num_params; ++param) {
-      if (param != 0) {
-        fputs(", ", stream);
-      }
-      auto value = jit_value_get_param(j_func_, param);
-      jit_dump_value(stream, j_func_, value, 0);
-      fputs(" : ", stream);
-      jit_dump_type(stream, jit_type_get_param(signature, param));
-    }
-
-    fprintf(stream, ") : ");
-    jit_dump_type(stream, jit_type_get_return(signature));
-    putc('\n', stream);
-
-    // dump blocks
-    jit_block_t block = nullptr;
-    while ((block = jit_block_next(j_func_, block)) != nullptr) {
-      auto meta = jit_block_get_meta(block, 0);
-      if (meta) {
-        if (((char*)meta)[0] != '\0') {
-          auto sinfo = (const char*)(meta);
-          fprintf(stream, "# </sref %s\n", sinfo);
-          if (strchr(sinfo, '@')) {
-            delete [] sinfo; // release allocation
-          }
-        } else {
-          fprintf(stream, "# sref/>\n");
-        }
-      }
-      // dump label if present
-      auto label = jit_block_get_label(block);
-      if (label != jit_label_undefined) {
-        for (;;) {
-          fprintf(stream, ".L%ld:", (long) label);
-          label = jit_block_get_next_label(block, label);
-          if (label == jit_label_undefined) {
-            fprintf(stream, "\n");
-            break;
-          }
-          fprintf(stream, " ");
-        }
-      }
-
-      // dump the instructions
-      jit_insn_iter_t iter;
-      jit_insn_iter_init(&iter, block);
-      jit_insn_t insn = nullptr;
-      while ((insn = jit_insn_iter_next(&iter)) != nullptr) {
-        putc('\t', stream);
-        jit_dump_insn(stream, j_func_, insn);
-        putc('\n', stream);
-      }
-    }
-    fprintf(stream, "end\n\n");
-    fflush(stream);
+    return jit_value_get_int_constant(j_value);
   }
 
 #ifndef NDEBUG
   void emit_watch(jit_value_t j_value, const char* name) {
     // setup arguments
-    auto j_arg0 = this->emit_cast(j_value, jit_type_ulong);
+    auto j_arg0 = this->emit_cast(j_value, jit_type_int64);
 
     auto name_len = strlen(name) + 1;
     memcpy(sim_ctx_->state.dbg + dbg_off_, name, name_len);
@@ -3371,12 +3251,12 @@ private:
     dbg_off_ += name_len;
 
     // call native function
-    jit_type_t params[] = {jit_type_ulong, jit_type_void_ptr};
-    jit_type_t j_sig = jit_type_create_signature(jit_abi_cdecl,
-                                                 jit_type_void,
-                                                 params,
-                                                 __countof(params),
-                                                 1);
+    jit_type_t params[] = {jit_type_int64, jit_type_ptr};
+    auto j_sig = jit_type_create_signature(jit_abi_cdecl,
+                                           jit_type_void,
+                                           params,
+                                           __countof(params),
+                                           1);
     jit_value_t args[] = {j_arg0, j_arg1};
     jit_insn_call_native(j_func_,
                          "ext_watch",
@@ -3385,6 +3265,7 @@ private:
                          args,
                          __countof(args),
                          JIT_CALL_NOTHROW);
+    jit_type_free(j_sig);
   }
 #endif
 
