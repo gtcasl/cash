@@ -1123,9 +1123,10 @@ bool compiler::branch_coalescing() {
       }
     }
 
-    if (1 == sel->srcs().size()) {
-      return sel->src(0).impl();
-    }
+    // is default only select
+    uint32_t sel_def_size = sel->has_key() ? 2 : 1;
+    if (sel->srcs().size() == sel_def_size)
+      return sel->src(sel_def_size - 1).impl();
 
     // coallesce cascading ternary branches sharing the same default value
     // p2 ? (p1 ? t1 : f1) : f1 => (p1 & p2) ? t1 : f1;

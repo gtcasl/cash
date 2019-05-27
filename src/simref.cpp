@@ -1658,11 +1658,11 @@ struct sim_ctx_t {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class compiler {
+class Compiler {
 public:
-  compiler(sim_ctx_t* ctx) : sim_ctx_(ctx) {}
+  Compiler(sim_ctx_t* ctx) : sim_ctx_(ctx) {}
 
-  ~compiler() {}
+  ~Compiler() {}
 
   void build(const std::vector<lnodeimpl*>& eval_list) {
     data_map_t data_map;
@@ -1837,7 +1837,7 @@ driver::~driver() {
 }
 
 void driver::initialize(const std::vector<lnodeimpl*>& eval_list) {
-  compiler compiler(sim_ctx_);
+  Compiler compiler(sim_ctx_);
   compiler.build(eval_list);
 }
 

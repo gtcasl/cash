@@ -66,13 +66,13 @@ typedef enum {
   jit_abi_fastcall		/* Win32 FASTCALL (same as cdecl if not Win32) */
 } jit_abi_t;
 
-#define	JIT_TYPE_INVALID	   -1
-#define	JIT_TYPE_VOID				  0
-#define	JIT_TYPE_INT8 				1
-#define	JIT_TYPE_INT16				3
-#define	JIT_TYPE_INT32		   	5
-#define	JIT_TYPE_INT64			  9
-#define	JIT_TYPE_PTR				  17
+#define	JIT_TYPE_INVALID	-1
+#define	JIT_TYPE_VOID			 0
+#define	JIT_TYPE_INT8 		 1
+#define	JIT_TYPE_INT16		 2
+#define	JIT_TYPE_INT32		 3
+#define	JIT_TYPE_INT64		 4
+#define	JIT_TYPE_PTR			 5
 
 extern const jit_type_t jit_type_void;
 extern const jit_type_t jit_type_int8;
@@ -81,7 +81,7 @@ extern const jit_type_t jit_type_int32;
 extern const jit_type_t jit_type_int64;
 extern const jit_type_t jit_type_ptr;
 
-jit_type_t jit_type_create_signature(jit_abi_t abi, jit_type_t return_type, jit_type_t *params, unsigned int num_params, int incref);
+jit_type_t jit_type_create_signature(jit_abi_t abi, jit_type_t return_type, jit_type_t *args, unsigned int num_args, int incref);
 void jit_type_free(jit_type_t type);
 int jit_type_get_kind(jit_type_t type);
 jit_nuint jit_type_get_size(jit_type_t type);
@@ -112,7 +112,7 @@ jit_value_t jit_value_create(jit_function_t func, jit_type_t type);
 jit_type_t jit_value_get_type(jit_value_t value);
 jit_value_t jit_value_get_param(jit_function_t func, unsigned int param);
 
-jit_value_t jit_value_create_int_constant(jit_function_t func, jit_type_t type, jit_long const_value);
+jit_value_t jit_value_create_int_constant(jit_function_t func, jit_long const_value, jit_type_t type);
 jit_long jit_value_get_int_constant(jit_value_t value);
 int jit_value_is_constant(jit_value_t value);
 
@@ -148,10 +148,14 @@ jit_value_t jit_insn_shr(jit_function_t func, jit_value_t value1, jit_value_t va
 jit_value_t jit_insn_ushr(jit_function_t func, jit_value_t value1, jit_value_t value2);
 jit_value_t jit_insn_eq(jit_function_t func, jit_value_t value1, jit_value_t value2);
 jit_value_t jit_insn_ne(jit_function_t func, jit_value_t value1, jit_value_t value2);
-jit_value_t jit_insn_lt(jit_function_t func, jit_value_t value1, jit_value_t value2);
-jit_value_t jit_insn_le(jit_function_t func, jit_value_t value1, jit_value_t value2);
-jit_value_t jit_insn_gt(jit_function_t func, jit_value_t value1, jit_value_t value2);
-jit_value_t jit_insn_ge(jit_function_t func, jit_value_t value1, jit_value_t value2);
+jit_value_t jit_insn_slt(jit_function_t func, jit_value_t value1, jit_value_t value2);
+jit_value_t jit_insn_ult(jit_function_t func, jit_value_t value1, jit_value_t value2);
+jit_value_t jit_insn_sle(jit_function_t func, jit_value_t value1, jit_value_t value2);
+jit_value_t jit_insn_ule(jit_function_t func, jit_value_t value1, jit_value_t value2);
+jit_value_t jit_insn_sgt(jit_function_t func, jit_value_t value1, jit_value_t value2);
+jit_value_t jit_insn_ugt(jit_function_t func, jit_value_t value1, jit_value_t value2);
+jit_value_t jit_insn_sge(jit_function_t func, jit_value_t value1, jit_value_t value2);
+jit_value_t jit_insn_uge(jit_function_t func, jit_value_t value1, jit_value_t value2);
 
 jit_value_t jit_insn_to_bool(jit_function_t func, jit_value_t value);
 jit_value_t jit_insn_to_not_bool(jit_function_t func, jit_value_t value);
@@ -172,6 +176,9 @@ jit_value_t jit_insn_address_of(jit_function_t func, jit_value_t value);
 
 void jit_insn_set_marker(jit_function_t func, const char* name);
 
+jit_value_t jit_insn_select(jit_function_t func, jit_value_t cond, jit_value_t case_true, jit_value_t case_false);
+jit_value_t jit_insn_switch(jit_function_t func, jit_value_t key, const jit_value_t* preds, const jit_value_t* values, unsigned int num_cases, jit_value_t def_value);
+
 int jit_insn_branch(jit_function_t func, jit_label_t *label);
 int jit_insn_branch_if(jit_function_t func, jit_value_t value, jit_label_t *label);
 int jit_insn_branch_if_not(jit_function_t func, jit_value_t value, jit_label_t *label);
@@ -184,6 +191,8 @@ int jit_insn_move_blocks_to_end(jit_function_t func, jit_label_t from_label, jit
 int jit_insn_memcpy(jit_function_t func, jit_value_t dest, jit_value_t src, jit_value_t size);
 int jit_insn_jump_table(jit_function_t func, jit_value_t value, jit_label_t *labels, unsigned int num_labels);
 jit_value_t jit_insn_call_native(jit_function_t func, const char *name, void *native_func, jit_type_t signature, jit_value_t *args, unsigned int num_args, int flags);
+
+jit_value_t jit_insn_convert(jit_function_t func, jit_value_t value, jit_type_t type, int overflow_check);
 
 //
 // Dump API

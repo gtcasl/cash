@@ -163,7 +163,7 @@ static bool is_value_size(uint32_t size) {
 }
 
 static jit_type_t to_value_type(uint32_t size) {
-  uint32_t bytes = ceildiv(size, 8);
+  auto bytes = ceildiv(size, 8);
   switch (bytes) {
   case 0:
     return jit_type_void;
@@ -181,7 +181,7 @@ static jit_type_t to_value_type(uint32_t size) {
 
 
 static uint32_t to_native_size(uint32_t size) {
-  uint32_t bytes = ceildiv(size, 8);
+  auto bytes = ceildiv(size, 8);
   switch (bytes) {
   case 0:
     return 0;
@@ -196,26 +196,26 @@ static uint32_t to_native_size(uint32_t size) {
 }
 
 static jit_type_t to_native_type(uint32_t size) {
-  uint32_t native_size = to_native_size(size);
+  auto native_size = to_native_size(size);
   return to_value_type(native_size);
 }
 
 static uint32_t to_native_or_word_size(uint32_t size) {
-  uint32_t native_size = to_native_size(size);
+  auto native_size = to_native_size(size);
   if (native_size <= WORD_SIZE)
     return native_size;
   return WORD_SIZE;
 }
 
 static jit_type_t to_native_or_word_type(uint32_t size) {
-  uint32_t native_size = to_native_size(size);
+  auto native_size = to_native_size(size);
   if (native_size <= WORD_SIZE)
     return to_value_type(native_size);
   return to_value_type(WORD_SIZE);
 }
 
 static uint32_t get_type_size(jit_type_t j_type) {
-  uint32_t nbytes = jit_type_get_size(j_type);
+  auto nbytes = jit_type_get_size(j_type);
   return nbytes * 8;
 }
 
@@ -318,10 +318,10 @@ struct sim_ctx_t {
   jit_context_t j_ctx;  
 };
 
-class compiler {
+class Compiler {
 public:
 
-  compiler(sim_ctx_t* ctx)
+  Compiler(sim_ctx_t* ctx)
     : sim_ctx_(ctx)
     , l_bypass_(jit_label_undefined)
     , bypass_enable_(false)
@@ -333,7 +333,7 @@ public:
   #endif
   {}
 
-  ~compiler() {}
+  ~Compiler() {}
 
   void build(const std::vector<lnodeimpl*>& eval_list) {
     // begin build
@@ -411,7 +411,8 @@ public:
     this->resolve_branch(nullptr);
 
     // return 0
-    jit_insn_return(j_func_, j_zero_);
+    auto j_zero = this->emit_constant(0, jit_type_int32);
+    jit_insn_return(j_func_, j_zero);
 
     // dump JIT assembly code
     if (platform::self().cflags() & cflags::dump_jit) {
@@ -421,7 +422,8 @@ public:
     }
 
     // compile function
-    jit_function_compile(j_func_);
+    if (!jit_function_compile(j_func_))
+      exit(1);
 
     // end build
     jit_context_build_end(sim_ctx_->j_ctx);
@@ -483,7 +485,7 @@ private:
       return size;
     }
 
-    void init(printimpl* node, const compiler* cp) {
+    void init(printimpl* node, const Compiler* cp) {
       auto buf = reinterpret_cast<uint8_t*>(this) + sizeof(print_data_t);
 
       auto fmt_len = node->format().size() + 1;
@@ -544,7 +546,7 @@ private:
       return size;
     }
 
-    void init(assertimpl* node, const compiler* cp) {
+    void init(assertimpl* node, const Compiler* cp) {
       auto buf = reinterpret_cast<uint8_t*>(this) + sizeof(print_data_t);
 
       auto msg_len = node->msg().size() + 1;
@@ -600,14 +602,12 @@ private:
   #ifndef NDEBUG
     j_dbg_ = jit_insn_load_relative(j_func_, j_state, offsetof(sim_state_t, dbg), jit_type_ptr);
   #endif
-    j_zero_ = this->emit_constant(0, jit_type_int8);
-    j_one_ = this->emit_constant(1, jit_type_int8);
   }
 
   void emit_node(litimpl* node) {
     __source_info();
 
-    uint32_t dst_width = node->size();
+    auto dst_width = node->size();
     if (dst_width <= WORD_SIZE) {
       auto j_ntype = to_native_type(dst_width);
       auto j_value = this->emit_constant(node->value().word(0), j_ntype);
@@ -617,7 +617,7 @@ private:
 
   void emit_node(proxyimpl* node) {
     __source_info();
-    uint32_t dst_width = node->size();
+    auto dst_width = node->size();
     auto j_ntype = to_native_type(dst_width);
     if (dst_width <= WORD_SIZE) {
       jit_value_t j_tmp = nullptr;
@@ -682,36 +682,37 @@ private:
     __source_info();
 
     struct auto_store_addr_t {
-      compiler* C;
-      lnodeimpl* node;
+      Compiler*   Cp;
+      lnodeimpl*  node;
       jit_value_t ptr;
       jit_value_t bkstore;
 
-      auto_store_addr_t(compiler* C, lnodeimpl* node) : C(C), node(node) {
+      auto_store_addr_t(Compiler* compiler, lnodeimpl* node) : Cp(compiler), node(node) {
         if (node->size() <= WORD_SIZE) {
-          bkstore = jit_value_create(C->j_func_, C->word_type_);
-          jit_insn_store(C->j_func_, bkstore, C->j_zero_);
-          ptr = C->emit_address_of(bkstore, C->word_type_);
+          bkstore = jit_value_create(Cp->j_func_, Cp->word_type_);
+          auto j_zero = Cp->emit_constant(0, Cp->word_type_);
+          jit_insn_store(Cp->j_func_, bkstore, j_zero);
+          ptr = Cp->emit_address_of(bkstore, Cp->word_type_);
         } else {
           bkstore = nullptr;
-          ptr = C->emit_pointer_address(node);
+          ptr = Cp->emit_pointer_address(node);
         }
       }
 
       ~auto_store_addr_t() {
         if (bkstore) {
           auto j_ntype = to_native_type(node->size());
-          C->scalar_map_[node->id()] = C->emit_cast(bkstore, j_ntype);
+          Cp->scalar_map_[node->id()] = Cp->emit_cast(bkstore, j_ntype);
         }
       }
     };
 
-    uint32_t dst_width = node->size();
+    auto dst_width = node->size();
     auto j_ntype = to_native_type(dst_width);
     auto native_size = to_native_size(dst_width);
-    bool is_signed = node->is_signed();
+    auto is_signed = node->is_signed();
 
-    bool is_scalar = (dst_width <= bitwidth_v<block_type>);
+    auto is_scalar = (dst_width <= bitwidth_v<block_type>);
     if (node->srcs().size() > 0) {
       is_scalar &= (node->src(0).size() <= bitwidth_v<block_type>);
       if (CH_OP_CLASS(node->op()) != op_flags::shift
@@ -749,7 +750,7 @@ private:
       if (is_scalar) {
         auto j_src0_s = is_signed ? this->emit_sign_ext(j_src0, node->src(0).size()) : j_src0;
         auto j_src1_s = is_signed ? this->emit_sign_ext(j_src1, node->src(1).size()) : j_src1;
-        auto j_dst = jit_insn_lt(j_func_, j_src0_s, j_src1_s);
+        auto j_dst = is_signed ? jit_insn_slt(j_func_, j_src0_s, j_src1_s) : jit_insn_ult(j_func_, j_src0_s, j_src1_s);
         scalar_map_[node->id()] = this->emit_cast(j_dst, j_ntype);
       } else {
         auto j_dst = __op_call_relational(bv_lt_vector, j_src0, node->src(0).size(), j_src1, node->src(1).size());
@@ -760,7 +761,7 @@ private:
       if (is_scalar) {
         auto j_src0_s = is_signed ? this->emit_sign_ext(j_src0, node->src(0).size()) : j_src0;
         auto j_src1_s = is_signed ? this->emit_sign_ext(j_src1, node->src(1).size()) : j_src1;
-        auto j_dst = jit_insn_gt(j_func_, j_src0_s, j_src1_s);
+        auto j_dst = is_signed ? jit_insn_sgt(j_func_, j_src0_s, j_src1_s) : jit_insn_ugt(j_func_, j_src0_s, j_src1_s);
         scalar_map_[node->id()] = this->emit_cast(j_dst, j_ntype);
       } else {
         auto j_dst = __op_call_relational(bv_lt_vector, j_src1, node->src(1).size(), j_src0, node->src(0).size());
@@ -771,7 +772,7 @@ private:
       if (is_scalar) {
         auto j_src0_s = is_signed ? this->emit_sign_ext(j_src0, node->src(0).size()) : j_src0;
         auto j_src1_s = is_signed ? this->emit_sign_ext(j_src1, node->src(1).size()) : j_src1;
-        auto j_dst = jit_insn_le(j_func_, j_src0_s, j_src1_s);
+        auto j_dst = is_signed ? jit_insn_sle(j_func_, j_src0_s, j_src1_s) : jit_insn_ule(j_func_, j_src0_s, j_src1_s);
         scalar_map_[node->id()] = this->emit_cast(j_dst, j_ntype);
       } else {
         auto j_dst = __op_call_relational(bv_lt_vector, j_src1, node->src(1).size(), j_src0, node->src(0).size());
@@ -783,7 +784,7 @@ private:
       if (is_scalar) {
         auto j_src0_s = is_signed ? this->emit_sign_ext(j_src0, node->src(0).size()) : j_src0;
         auto j_src1_s = is_signed ? this->emit_sign_ext(j_src1, node->src(1).size()) : j_src1;
-        auto j_dst = jit_insn_ge(j_func_, j_src0_s, j_src1_s);
+        auto j_dst = is_signed ? jit_insn_sge(j_func_, j_src0_s, j_src1_s) : jit_insn_uge(j_func_, j_src0_s, j_src1_s);
         scalar_map_[node->id()] = this->emit_cast(j_dst, j_ntype);
       } else {
         auto j_dst = __op_call_relational(bv_lt_vector, j_src0, node->src(0).size(), j_src1, node->src(1).size());
@@ -794,7 +795,8 @@ private:
 
     case ch_op::notl:
       if (is_scalar) {
-        auto j_dst = jit_insn_eq(j_func_, j_src0, j_zero_);
+        auto j_zero = this->emit_constant(0, j_ntype);
+        auto j_dst = jit_insn_eq(j_func_, j_src0, j_zero);
         scalar_map_[node->id()] = this->emit_cast(j_dst, j_ntype);
       } else {
         auto j_dst = __op_call_logical(bv_notl_vector, j_src0, node->src(0).size());
@@ -867,7 +869,7 @@ private:
           __op_call_bitwise(bv_or_vector, auto_dst.ptr, dst_width, j_src0, node->src(0).size(), j_src1, node->src(1).size());
         } else {
           auto dst_addr = addr_map_.at(node->id());
-          uint32_t num_words = ceildiv(dst_width, WORD_SIZE);
+          auto num_words = ceildiv(dst_width, WORD_SIZE);
           for (uint32_t i = 0; i < num_words; ++i) {
             auto j_src0 = this->emit_load_scalar_elem(node->src(0).impl(), i, word_type_);
             auto j_src1 = this->emit_load_scalar_elem(node->src(1).impl(), i, word_type_);
@@ -936,18 +938,19 @@ private:
     case ch_op::shl:
       if (is_scalar) {
         jit_label_t l_else = jit_label_undefined;
-        jit_label_t l_exit = jit_label_undefined;
+        jit_label_t l_exit(jit_label_undefined);
         auto j_dst = jit_value_create(j_func_, j_ntype);
         scalar_map_[node->id()] = j_dst;
         auto j_max = this->emit_constant(native_size, j_ntype);
-        auto j_overflow = jit_insn_ge(j_func_, j_src1, j_max);
+        auto j_zero = this->emit_constant(0, j_ntype);
+        auto j_overflow = jit_insn_sge(j_func_, j_src1, j_max);
         jit_insn_branch_if(j_func_, j_overflow, &l_else);
         auto j_src0_n = this->emit_cast(j_src0, j_ntype);
         auto j_tmp = jit_insn_shl(j_func_, j_src0_n, j_src1);
         jit_insn_store(j_func_, j_dst, j_tmp);
         jit_insn_branch(j_func_, &l_exit);
         jit_insn_label(j_func_, &l_else);
-        jit_insn_store(j_func_, j_dst, j_zero_);
+        jit_insn_store(j_func_, j_dst, j_zero);
         jit_insn_label(j_func_, &l_exit);
         this->emit_clear_extra_bits(node);
       } else {
@@ -958,7 +961,7 @@ private:
     case ch_op::shr:
       if (is_scalar) {
         jit_label_t l_else = jit_label_undefined;
-        jit_label_t l_exit = jit_label_undefined;
+        jit_label_t l_exit(jit_label_undefined);
         auto j_dst = jit_value_create(j_func_, j_ntype);
         scalar_map_[node->id()] = j_dst;
         if (is_signed) {
@@ -967,7 +970,7 @@ private:
           auto src0_type = jit_value_get_type(j_src0_s);
           auto src0_size = get_value_size(j_src0_s);
           auto j_max = this->emit_constant(src0_size, src0_type);
-          auto j_overflow = jit_insn_ge(j_func_, j_src1, j_max);
+          auto j_overflow = jit_insn_sge(j_func_, j_src1, j_max);
           jit_insn_branch_if(j_func_, j_overflow, &l_else);
           auto j_tmp1 = jit_insn_shr(j_func_, j_src0_s, j_src1);
           jit_insn_store(j_func_, j_dst, j_tmp1);
@@ -982,13 +985,14 @@ private:
           auto src0_type = jit_value_get_type(j_src0);
           auto src0_size = get_value_size(j_src0);
           auto j_max = this->emit_constant(src0_size, src0_type);
-          auto j_overflow = jit_insn_ge(j_func_, j_src1, j_max);
+          auto j_zero = this->emit_constant(0, j_ntype);
+          auto j_overflow = jit_insn_sge(j_func_, j_src1, j_max);
           jit_insn_branch_if(j_func_, j_overflow, &l_else);
           auto j_tmp = jit_insn_ushr(j_func_, j_src0, j_src1);
           jit_insn_store(j_func_, j_dst, j_tmp);
           jit_insn_branch(j_func_, &l_exit);
           jit_insn_label(j_func_, &l_else);
-          jit_insn_store(j_func_, j_dst, j_zero_);
+          jit_insn_store(j_func_, j_dst, j_zero);
           jit_insn_label(j_func_, &l_exit);
         }
       } else {
@@ -1294,232 +1298,124 @@ private:
       return false;
 
     //--
-    jit_label_t l_exit = jit_label_undefined;
-
-    //--
-    uint32_t dst_width = node->size();
+    auto dst_width = node->size();
     bool is_scalar = (dst_width <= WORD_SIZE);
-    auto j_ntype = to_native_type(dst_width);
-
+    auto j_ntype = to_native_type(dst_width);    
+    auto is_switch = node->has_key();
+    auto key_size = node->key().size();
+    auto is_iswitch = is_switch && (key_size <= 32);
+    int32_t l = node->srcs().size() - 1;
+    int32_t start = is_switch ? 1 : 0;
     jit_value_t j_dst = nullptr;
     if (is_scalar) {
       j_dst = jit_value_create(j_func_, j_ntype);
       scalar_map_[node->id()] = j_dst;
     }
 
-    //--
-    auto is_switch = node->has_key();
-    auto key_size = node->key().size();
-    auto is_iswitch = is_switch && (key_size <= 32);
-    int32_t start = 0, l = node->srcs().size() - 1;
-    if (is_switch) {
-      ++start;
-    }
-
     // analyze the select node
     bool is_constant = (type_lit == node->src(l).impl()->type());
-    auto pred_min = std::numeric_limits<int32_t>::max();
-    auto pred_max = std::numeric_limits<int32_t>::min();
-    int32_t pred_delta = 0;
-    int32_t i_pred_prev = 0;
+    auto pred_min = std::numeric_limits<int64_t>::max();
+    auto pred_max = std::numeric_limits<int64_t>::min();
+    int64_t pred_delta = 0;
+    int64_t i_pred_prev = 0;
     for (int32_t i = start; i < l; i += 2) {
-      auto pred = node->src(i+0).impl();
+      auto j_pred = scalar_map_.at(node->src(i+0).id());
       if (is_iswitch) {
-        auto i_pred = static_cast<int32_t>(reinterpret_cast<litimpl*>(pred)->value());
-        pred_delta += (i != start) ? (i_pred - i_pred_prev) : 0;
-        pred_min = std::min(i_pred, pred_min);
-        pred_max = std::max(i_pred, pred_max);
-        i_pred_prev = i_pred;
+        auto pred_value = jit_value_get_int_constant(j_pred);
+        pred_delta += (i != start) ? (pred_value - i_pred_prev) : 0;
+        pred_min = std::min(pred_value, pred_min);
+        pred_max = std::max(pred_value, pred_max);
+        i_pred_prev = pred_value;
       }
       auto value = node->src(i+1).impl();
       is_constant &= (type_lit == value->type());
     }
 
-    if (is_iswitch) {
-      auto distance = (pred_max - pred_min) + 1;
-      if (l > 3*2+1
-       && is_constant
-       && distance * dst_width <= WORD_SIZE) {
-        //
-        // short switch tables
-        //
-        jit_label_t l_default = jit_label_undefined;
-        auto max_cases = (1ll << key_size);
-        bool is_inclusive = (max_cases * dst_width <= WORD_SIZE);
+    auto distance = (pred_max - pred_min) + 1;
+    if (is_iswitch
+     && l > 3*2+1
+     && is_constant
+     && distance * dst_width <= WORD_SIZE) {
+      //
+      // short switch tables
+      //
+      jit_label_t l_default(jit_label_undefined);
+      jit_label_t l_exit(jit_label_undefined);
+      auto max_cases = (1ll << key_size);
+      bool is_inclusive = (max_cases * dst_width <= WORD_SIZE);
 
-        if (!is_inclusive) {
-          auto j_key = scalar_map_.at(node->key().id());
-          auto j_max = this->emit_constant(pred_max, jit_type_int32);
-          auto j_pred = jit_insn_gt(j_func_, j_key, j_max);
-          if (pred_min) {
-            auto j_min = this->emit_constant(pred_min, jit_type_int32);
-            auto j_tmp = jit_insn_lt(j_func_, j_key, j_min);
-            j_pred = jit_insn_or(j_func_, j_pred, j_tmp);
-          }
-          jit_insn_branch_if(j_func_, j_pred, &l_default);
-        }
-
-        block_type table(0);
-        int32_t k = start;
-        int32_t length = is_inclusive ? max_cases : distance;
-        int32_t offset = is_inclusive ? 0 : pred_min;
-        auto i_default = static_cast<block_type>(reinterpret_cast<litimpl*>(node->src(l).impl())->value());
-
-        for (int i = 0; i < length; ++i) {
-          bool found = false;
-          for (int32_t j = k; j < l; j += 2) {
-            auto pred = node->src(j+0).impl();
-            auto i_pred = static_cast<int32_t>(reinterpret_cast<litimpl*>(pred)->value());
-            if (i_pred == offset + i) {
-              auto i_src = static_cast<block_type>(reinterpret_cast<litimpl*>(node->src(j+1).impl())->value());
-              table |= i_src << (i * dst_width);
-              found  = true;
-              k += 2;
-              break;
-            }
-          }
-          if (!found) {
-            table |= i_default << (i * dst_width);
-          }
-        }
-
-        auto j_ttype = to_native_type(length * dst_width);
-        auto j_table = this->emit_constant(table, j_ttype);
-        auto j_key = scalar_map_.at(node->key().id());
-
-        if (!is_inclusive && pred_min) {
-          auto j_min = this->emit_constant(pred_min, jit_type_int32);
-          j_key = jit_insn_sub(j_func_, j_key, j_min);
-        }
-
-        jit_value_t j_shift;
-        if (ispow2(dst_width)) {
-          auto j_destW = this->emit_constant(log2floor(dst_width), j_ttype);
-          j_shift = jit_insn_shl(j_func_, j_key, j_destW);
-        } else {
-          auto j_destW = this->emit_constant(dst_width, j_ttype);
-          j_shift = jit_insn_mul(j_func_, j_key, j_destW);
-        }
-
-        auto j_tmp1 = jit_insn_ushr(j_func_, j_table, j_shift);
-        auto j_mask = this->emit_constant((1ull << dst_width)-1, j_ttype);
-        auto j_tmp2 = jit_insn_and(j_func_, j_tmp1, j_mask);
-        jit_insn_store(j_func_, j_dst, j_tmp2);
-
-        if (!is_inclusive) {
-          jit_insn_branch(j_func_, &l_exit);
-
-          // emit 'default' block
-          jit_insn_label(j_func_, &l_default);
-          auto j_src = scalar_map_.at(node->src(l).id());
-          jit_insn_store(j_func_, j_dst, j_src);
-
-          jit_insn_label(j_func_, &l_exit);
-        }
-        return true;
-      }
-
-      auto density = pred_delta ? (float(l/2) / pred_delta) : 0;
-      if (l > 2*3+1 && density > 0.6) {
-        //
-        // emit jump table
-        //
-        jit_label_t l_default = jit_label_undefined;
-        jit_label_t l_jump = jit_label_undefined;
-        std::vector<jit_label_t> labels(l/2, jit_label_undefined);
-        std::unordered_map<uint32_t, uint32_t> unique_values;
-
-        // emit 'case' blocks
-        for (int32_t i = 1; i < l; i += 2) {
-          auto label = &labels.at(i/2);
-          auto src = node->src(i+1).impl();
-          auto it = unique_values.find(src->id());
-          if (it != unique_values.end()) {
-            *label = labels.at(it->second);
-            continue;
-          }
-          unique_values[src->id()] = i/2;
-
-          jit_insn_label(j_func_, label);
-          if (is_scalar) {
-            auto j_src = scalar_map_.at(node->src(i+1).id());
-            jit_insn_store(j_func_, j_dst, j_src);
-          } else {
-            auto j_dst_ptr = this->emit_pointer_address(node);
-            auto j_src_ptr = this->emit_pointer_address(node->src(i+1).impl());
-            this->emit_memcpy(j_dst_ptr, j_src_ptr, ceildiv(dst_width, 8));
-          }
-          jit_insn_branch(j_func_, &l_exit);
-        }
-
-        // emit 'default' block
-        jit_insn_label(j_func_, &l_default);
-        if (is_scalar) {
-          auto j_src = scalar_map_.at(node->src(l).id());
-          jit_insn_store(j_func_, j_dst, j_src);
-        } else {
-          auto j_dst_ptr = this->emit_pointer_address(node);
-          auto j_src_ptr = this->emit_pointer_address(node->src(l).impl());
-          this->emit_memcpy(j_dst_ptr, j_src_ptr, ceildiv(dst_width, 8));
-        }
-
-        // exit
-        jit_insn_label(j_func_, &l_exit);
-
-        // build label table
-        jit_insn_label(j_func_, &l_jump);
+      if (!is_inclusive) {
         auto j_key = scalar_map_.at(node->key().id());
         auto j_max = this->emit_constant(pred_max, jit_type_int32);
-        auto j_pred = jit_insn_gt(j_func_, j_key, j_max);
+        auto j_pred = jit_insn_sgt(j_func_, j_key, j_max);
         if (pred_min) {
           auto j_min = this->emit_constant(pred_min, jit_type_int32);
-          auto j_tmp = jit_insn_lt(j_func_, j_key, j_min);
+          auto j_tmp = jit_insn_slt(j_func_, j_key, j_min);
           j_pred = jit_insn_or(j_func_, j_pred, j_tmp);
         }
         jit_insn_branch_if(j_func_, j_pred, &l_default);
-
-        auto j_value = j_key;
-        if (pred_min) {
-          auto j_min = this->emit_constant(pred_min, jit_type_int32);
-          j_value = jit_insn_sub(j_func_, j_key, j_min);
-        }
-
-        int32_t k = start;
-        std::vector<jit_label_t> jump_labels(distance, jit_label_undefined);
-        for (int32_t i = 0; i < distance; ++i) {
-          auto p = i + pred_min;
-          for (int32_t j = k; j < l; j += 2) {
-            auto pred = node->src(j+0).impl();
-            auto i_pred = static_cast<int32_t>(reinterpret_cast<litimpl*>(pred)->value());
-            if (i_pred == p) {
-              jump_labels[i] = labels[j/2];
-              k += 2;
-              break;
-            }
-          }
-          if (jit_label_undefined == jump_labels[i]) {
-            jump_labels[i] = l_default;
-          }
-        }
-
-        jit_insn_jump_table(j_func_, j_value, jump_labels.data(), jump_labels.size());
-        jit_insn_move_blocks_to_end(j_func_, labels.at(0), l_jump);
-        return true;
       }
-    } else {
-      if (is_scalar && l == 2) {
-        //
-        // emit ternary branches
-        //
-        auto j_pred  = scalar_map_.at(node->src(0).id());
-        auto j_true  = scalar_map_.at(node->src(1).id());
-        auto j_false = scalar_map_.at(node->src(2).id());
-        jit_insn_store(j_func_, j_dst, j_true);
-        jit_insn_branch_if(j_func_, j_pred, &l_exit);
-        jit_insn_store(j_func_, j_dst, j_false);
+
+      block_type table(0);
+      int32_t k = start;
+      int32_t length = is_inclusive ? max_cases : distance;
+      int32_t offset = is_inclusive ? 0 : pred_min;
+      auto j_def_value = scalar_map_.at(node->src(l).id());
+      auto def_value = jit_value_get_int_constant(j_def_value);
+
+      for (int i = 0; i < length; ++i) {
+        bool found = false;
+        for (int32_t j = k; j < l; j += 2) {
+          auto j_pred = scalar_map_.at(node->src(j+0).id());
+          auto pred_value = jit_value_get_int_constant(j_pred);
+          if (pred_value == offset + i) {
+            auto j_src = scalar_map_.at(node->src(j+1).id());
+            auto src_value = jit_value_get_int_constant(j_src);
+            table |= src_value << (i * dst_width);
+            found  = true;
+            k += 2;
+            break;
+          }
+        }
+        if (!found) {
+          table |= def_value << (i * dst_width);
+        }
+      }
+
+      auto j_ttype = to_native_type(length * dst_width);
+      auto j_table = this->emit_constant(table, j_ttype);
+      auto j_key = scalar_map_.at(node->key().id());
+
+      if (!is_inclusive && pred_min) {
+        auto j_min = this->emit_constant(pred_min, jit_type_int32);
+        j_key = jit_insn_sub(j_func_, j_key, j_min);
+      }
+
+      jit_value_t j_shift;
+      if (ispow2(dst_width)) {
+        auto j_destW = this->emit_constant(log2floor(dst_width), j_ttype);
+        j_shift = jit_insn_shl(j_func_, j_key, j_destW);
+      } else {
+        auto j_destW = this->emit_constant(dst_width, j_ttype);
+        j_shift = jit_insn_mul(j_func_, j_key, j_destW);
+      }
+
+      auto j_tmp1 = jit_insn_ushr(j_func_, j_table, j_shift);
+      auto j_mask = this->emit_constant((1ull << dst_width)-1, j_ttype);
+      auto j_tmp2 = jit_insn_and(j_func_, j_tmp1, j_mask);
+      jit_insn_store(j_func_, j_dst, j_tmp2);
+
+      if (!is_inclusive) {
+        jit_insn_branch(j_func_, &l_exit);
+
+        // emit 'default' block
+        jit_insn_label(j_func_, &l_default);
+        auto j_src = scalar_map_.at(node->src(l).id());
+        jit_insn_store(j_func_, j_dst, j_src);
+
         jit_insn_label(j_func_, &l_exit);
-        return true;
       }
+      return true;
     }
 
     return false;
@@ -1535,7 +1431,7 @@ private:
     uint32_t dst_width = node->size();
     bool is_scalar = (dst_width <= WORD_SIZE);
     auto j_ntype = to_native_type(dst_width);
-    jit_label_t l_exit = jit_label_undefined;
+    auto l = node->srcs().size() - 1;
 
     jit_value_t j_dst = nullptr;
     if (is_scalar) {
@@ -1545,106 +1441,130 @@ private:
 
     if (node->has_key()) {
       // lower switch statements
-      uint32_t key_size = node->key().size();
-      uint32_t l = node->srcs().size() - 1;
-      std::vector<jit_label_t> labels(l/2, jit_label_undefined);
-      std::unordered_map<uint32_t, uint32_t> unique_values;
-
-      // emit jump tests
-      for (uint32_t i = 1; i < l; i += 2) {
-        auto label = &labels.at(i/2);
-        auto src = node->src(i+1).impl();
-        auto it = unique_values.find(src->id());
-        if (it != unique_values.end()) {
-          label = &labels.at(it->second);
-        } else {
-          unique_values[src->id()] = i/2;
+      auto key_size = node->key().size();
+      if (is_scalar && (key_size <= WORD_SIZE)) {
+        auto j_key = scalar_map_.at(node->key().id());
+        std::vector<jit_value_t> preds(l/2), values(l/2);
+        for (uint32_t i = 1; i < l; i += 2) {
+          preds[i/2] = scalar_map_.at(node->src(i+0).id());
+          values[i/2] = scalar_map_.at(node->src(i+1).id());
         }
-        if (key_size <= WORD_SIZE) {          
-          auto j_key = scalar_map_.at(node->key().id());
-          auto j_val = scalar_map_.at(node->src(i).id());
-          auto j_pred = jit_insn_eq(j_func_, j_key, j_val);
-          jit_insn_branch_if(j_func_, j_pred, label);
-        } else {
-          auto j_key_ptr = this->emit_pointer_address(node->key().impl());
-          auto j_val_ptr = this->emit_pointer_address(node->src(i).impl());
-          auto j_pred = this->emit_eq_vector(j_key_ptr, key_size, j_val_ptr, key_size, false);
-          jit_insn_branch_if(j_func_, j_pred, label);
-        }        
-      }
-
-      // emit 'default' block
-      if (is_scalar) {
-        auto j_src = scalar_map_.at(node->src(l).id());
-        jit_insn_store(j_func_, j_dst, j_src);
+        auto def_value = scalar_map_.at(node->src(l).id());
+        auto j_tmp = jit_insn_switch(j_func_, j_key, preds.data(), values.data(), l/2, def_value);
+        scalar_map_[node->id()] = j_tmp;
       } else {
-        auto j_dst_ptr = this->emit_pointer_address(node);
-        auto j_src_ptr = this->emit_pointer_address(node->src(l).impl());
-        this->emit_memcpy(j_dst_ptr, j_src_ptr, ceildiv(dst_width, 8));
-      }
-      jit_insn_branch(j_func_, &l_exit);
+        std::vector<jit_label_t> labels(l/2, jit_label_undefined);
+        std::unordered_map<uint32_t, uint32_t> unique_values;
+        jit_label_t l_exit(jit_label_undefined);
 
-      // emit 'case' blocks
-      for (uint32_t i = 1; i < l; i += 2) {
-        auto src = node->src(i+1).impl();
-        auto k = unique_values[src->id()];
-        if (k != i/2)
-          continue;
-        jit_insn_label(j_func_, &labels.at(i/2));
+        // emit jump tests
+        for (uint32_t i = 1; i < l; i += 2) {
+          auto label = &labels.at(i/2);
+          auto src = node->src(i+1).impl();
+          auto it = unique_values.find(src->id());
+          if (it != unique_values.end()) {
+            label = &labels.at(it->second);
+          } else {
+            unique_values[src->id()] = i/2;
+          }
+          if (key_size <= WORD_SIZE) {
+            auto j_key = scalar_map_.at(node->key().id());
+            auto j_val = scalar_map_.at(node->src(i).id());
+            auto j_pred = jit_insn_eq(j_func_, j_key, j_val);
+            jit_insn_branch_if(j_func_, j_pred, label);
+          } else {
+            auto j_key_ptr = this->emit_pointer_address(node->key().impl());
+            auto j_val_ptr = this->emit_pointer_address(node->src(i).impl());
+            auto j_pred = this->emit_eq_vector(j_key_ptr, key_size, j_val_ptr, key_size, false);
+            jit_insn_branch_if(j_func_, j_pred, label);
+          }
+        }
+
+        // emit 'default' block
         if (is_scalar) {
-          auto j_src = scalar_map_.at(src->id());
+          auto j_src = scalar_map_.at(node->src(l).id());
           jit_insn_store(j_func_, j_dst, j_src);
         } else {
           auto j_dst_ptr = this->emit_pointer_address(node);
-          auto j_src_ptr = this->emit_pointer_address(src);
+          auto j_src_ptr = this->emit_pointer_address(node->src(l).impl());
           this->emit_memcpy(j_dst_ptr, j_src_ptr, ceildiv(dst_width, 8));
         }
-        if (i != l-1) {
-          jit_insn_branch(j_func_, &l_exit);
+        jit_insn_branch(j_func_, &l_exit);
+
+        // emit 'case' blocks
+        for (uint32_t i = 1; i < l; i += 2) {
+          auto src = node->src(i+1).impl();
+          auto k = unique_values[src->id()];
+          if (k != i/2)
+            continue;
+          jit_insn_label(j_func_, &labels.at(i/2));
+          if (is_scalar) {
+            auto j_src = scalar_map_.at(src->id());
+            jit_insn_store(j_func_, j_dst, j_src);
+          } else {
+            auto j_dst_ptr = this->emit_pointer_address(node);
+            auto j_src_ptr = this->emit_pointer_address(src);
+            this->emit_memcpy(j_dst_ptr, j_src_ptr, ceildiv(dst_width, 8));
+          }
+          if (i != l-1) {
+            jit_insn_branch(j_func_, &l_exit);
+          }
         }
-      }
-    } else {
-      // lower conditional branches      
-      uint32_t l = node->srcs().size() - 1;
-      std::vector<jit_label_t> labels(l/2, jit_label_undefined);
 
-      // emit jump tests
-      for (uint32_t i = 0; i < l; i += 2) {
-        auto j_pred = scalar_map_.at(node->src(i).id());
-        jit_insn_branch_if(j_func_, j_pred, &labels.at(i/2));
+        // exit
+        jit_insn_label(j_func_, &l_exit);
       }
-
-      // emit 'else' block
-      if (is_scalar) {
-        auto j_src = scalar_map_.at(node->src(l).id());
-        jit_insn_store(j_func_, j_dst, j_src);
+    } else {      
+      if (is_scalar && l == 2) {
+        // emit ternary operator
+        auto j_pred  = scalar_map_.at(node->src(0).id());
+        auto j_true  = scalar_map_.at(node->src(1).id());
+        auto j_false = scalar_map_.at(node->src(2).id());
+        auto j_tmp = jit_insn_select(j_func_, j_pred, j_true, j_false);
+        scalar_map_[node->id()] = j_tmp;
       } else {
-        auto j_dst_ptr = this->emit_pointer_address(node);
-        auto j_src_ptr = this->emit_pointer_address(node->src(l).impl());
-        this->emit_memcpy(j_dst_ptr, j_src_ptr, ceildiv(dst_width, 8));
-      }
-      jit_insn_branch(j_func_, &l_exit);
+        // lower conditional branches
+        std::vector<jit_label_t> labels(l/2, jit_label_undefined);
+        jit_label_t l_exit(jit_label_undefined);
 
-      // emit 'if' blocks
-      for (uint32_t i = 0; i < l; i += 2) {
-        auto src = node->src(i+1).impl();
-        jit_insn_label(j_func_, &labels.at(i/2));
+        // emit jump tests
+        for (uint32_t i = 0; i < l; i += 2) {
+          auto j_pred = scalar_map_.at(node->src(i).id());
+          jit_insn_branch_if(j_func_, j_pred, &labels.at(i/2));
+        }
+
+        // emit 'else' block
         if (is_scalar) {
-          auto j_src = scalar_map_.at(src->id());
+          auto j_src = scalar_map_.at(node->src(l).id());
           jit_insn_store(j_func_, j_dst, j_src);
         } else {
           auto j_dst_ptr = this->emit_pointer_address(node);
-          auto j_src_ptr = this->emit_pointer_address(src);
+          auto j_src_ptr = this->emit_pointer_address(node->src(l).impl());
           this->emit_memcpy(j_dst_ptr, j_src_ptr, ceildiv(dst_width, 8));
         }
-        if (i != l-1) {
-          jit_insn_branch(j_func_, &l_exit);
+        jit_insn_branch(j_func_, &l_exit);
+
+        // emit 'if' blocks
+        for (uint32_t i = 0; i < l; i += 2) {
+          auto src = node->src(i+1).impl();
+          jit_insn_label(j_func_, &labels.at(i/2));
+          if (is_scalar) {
+            auto j_src = scalar_map_.at(src->id());
+            jit_insn_store(j_func_, j_dst, j_src);
+          } else {
+            auto j_dst_ptr = this->emit_pointer_address(node);
+            auto j_src_ptr = this->emit_pointer_address(src);
+            this->emit_memcpy(j_dst_ptr, j_src_ptr, ceildiv(dst_width, 8));
+          }
+          if (i != l-1) {
+            jit_insn_branch(j_func_, &l_exit);
+          }
         }
-      }      
+
+        // exit
+        jit_insn_label(j_func_, &l_exit);
+      }
     }
-
-    // exit
-    jit_insn_label(j_func_, &l_exit);
   }
 
   void emit_node(cdimpl* node) {
@@ -1704,7 +1624,7 @@ private:
   void flush_sblock() {
     __source_info();
 
-    jit_label_t l_exit = jit_label_undefined;
+    jit_label_t l_exit(jit_label_undefined);
 
     // emit clock domain
     bool merge_cd_enable = false;
@@ -1808,7 +1728,7 @@ private:
   void emit_snode_init(regimpl* node) {
     assert(node->has_init_data());
 
-    uint32_t dst_width = node->size();
+    auto dst_width = node->size();
     auto j_xtype = to_native_or_word_type(dst_width);
     auto is_scalar = (dst_width <= WORD_SIZE);
     auto dst_addr = addr_map_.at(node->id());
@@ -1822,8 +1742,8 @@ private:
     }
 
     if (node->is_pipe()) {
-      uint32_t pipe_length = node->length() - 1;
-      uint32_t pipe_width = pipe_length * dst_width;
+      auto pipe_length = node->length() - 1;
+      auto pipe_width = pipe_length * dst_width;
       auto j_pipe_xtype = to_native_or_word_type(pipe_width);
       auto j_pipe_ntype = to_native_type(pipe_width);
       uint32_t pipe_addr = dst_addr + __align_word_size(dst_width);
@@ -1845,10 +1765,10 @@ private:
         jit_insn_store_relative(j_func_, j_vars_, pipe_addr, j_tmp_x);
       } else {
         if (is_scalar) {
-          // reset dst register
-          jit_insn_store(j_func_, j_dst, j_init_data);
+          // reset dst register          
           auto j_init_data_x = this->emit_cast(j_init_data, j_xtype);
           jit_insn_store_relative(j_func_, j_vars_, dst_addr, j_init_data_x);
+          jit_insn_store(j_func_, j_dst, j_init_data);
 
           // reset pipe registers
           if (node->length() <= INLINE_THRESHOLD
@@ -1861,7 +1781,7 @@ private:
             }
           } else {
             jit_label_t l_loop = jit_label_undefined;
-            jit_label_t l_exit = jit_label_undefined;
+            jit_label_t l_exit(jit_label_undefined);
             auto j_pipe_ptr = jit_insn_add_relative(j_func_, j_vars_, pipe_addr);
             auto j_index = jit_value_create(j_func_, jit_type_int32);
             auto j_lengthM1 = this->emit_constant(pipe_length - 1, jit_type_int32);
@@ -1869,7 +1789,8 @@ private:
             jit_insn_label(j_func_, &l_loop);
             this->emit_store_array_scalar(j_pipe_ptr, pipe_width, j_index, j_init_data, dst_width);
             jit_insn_branch_if_not(j_func_, j_index, &l_exit);
-            auto j_sub = jit_insn_sub(j_func_, j_index, j_one_);
+            auto j_one = this->emit_constant(1, jit_type_int32);
+            auto j_sub = jit_insn_sub(j_func_, j_index, j_one);
             jit_insn_store(j_func_, j_index, j_sub);
             jit_insn_branch(j_func_, &l_loop);
             jit_insn_label(j_func_, &l_exit);
@@ -1888,14 +1809,15 @@ private:
             }
           } else {
             jit_label_t l_loop = jit_label_undefined;
-            jit_label_t l_exit = jit_label_undefined;
+            jit_label_t l_exit(jit_label_undefined);
             auto j_index = jit_value_create(j_func_, jit_type_int32);
             auto j_lengthM1 = this->emit_constant(pipe_length - 1, jit_type_int32);
             jit_insn_store(j_func_, j_index, j_lengthM1);
             jit_insn_label(j_func_, &l_loop);
             this->emit_store_array_vector(j_pipe_ptr, j_index, j_init_data, dst_width);
             jit_insn_branch_if_not(j_func_, j_index, &l_exit);
-            auto j_sub = jit_insn_sub(j_func_, j_index, j_one_);
+            auto j_one = this->emit_constant(1, jit_type_int32);
+            auto j_sub = jit_insn_sub(j_func_, j_index, j_one);
             jit_insn_store(j_func_, j_index, j_sub);
             jit_insn_branch(j_func_, &l_loop);
             jit_insn_label(j_func_, &l_exit);
@@ -1904,9 +1826,9 @@ private:
       }
     } else {
       if (is_scalar) {
-        jit_insn_store(j_func_, j_dst, j_init_data);
         auto j_init_data_x = this->emit_cast(j_init_data, j_xtype);
         jit_insn_store_relative(j_func_, j_vars_, dst_addr, j_init_data_x);
+        jit_insn_store(j_func_, j_dst, j_init_data);
       } else {
         auto j_dst_ptr = jit_insn_add_relative(j_func_, j_vars_, dst_addr);
         auto j_init_ptr = this->emit_pointer_address(node->init_data().impl());
@@ -1918,7 +1840,7 @@ private:
   void emit_snode_value(regimpl* node) {
     __source_info();
 
-    uint32_t dst_width = node->size();
+    auto dst_width = node->size();
     auto j_xtype = to_native_or_word_type(dst_width);
     auto j_ntype = to_native_type(dst_width);
     auto is_scalar = (dst_width <= WORD_SIZE);
@@ -1933,8 +1855,8 @@ private:
     }
 
     if (node->is_pipe()) {
-      uint32_t pipe_length = node->length() - 1;
-      uint32_t pipe_width = pipe_length * dst_width;
+      auto pipe_length = node->length() - 1;
+      auto pipe_width = pipe_length * dst_width;
       auto pipe_addr = dst_addr + __align_word_size(dst_width);
       auto is_pipe_scalar = (pipe_width <= WORD_SIZE);
 
@@ -2011,7 +1933,8 @@ private:
 
           // advance pipe index
           auto j_max = this->emit_constant(pipe_length - 1, jit_type_int32);
-          auto j_sub = jit_insn_sub(j_func_, j_pipe_index, j_one_);
+          auto j_one = this->emit_constant(1, jit_type_int32);
+          auto j_sub = jit_insn_sub(j_func_, j_pipe_index, j_one);
           auto j_min = jit_insn_min(j_func_, j_sub, j_max);
           jit_insn_store_relative(j_func_, j_vars_, pipe_index_addr, j_min);
         }
@@ -2041,7 +1964,7 @@ private:
     this->emit_range_check(j_src_addr, 0, node->mem()->num_items());
   #endif
     auto j_array_ptr = this->emit_pointer_address(node->mem());
-    uint32_t array_width = node->mem()->size();
+    auto array_width = node->mem()->size();
 
     if (is_scalar) {
       auto j_src = this->emit_load_array_scalar(j_array_ptr, array_width, j_src_addr, dst_width);
@@ -2069,7 +1992,7 @@ private:
     this->emit_range_check(j_src_addr, 0, node->mem()->num_items());
   #endif
     auto j_array_ptr = this->emit_pointer_address(node->mem());
-    uint32_t array_width = node->mem()->size();
+    auto array_width = node->mem()->size();
 
     if (is_scalar) {
       auto dst_addr = addr_map_.at(node->id());
@@ -2104,7 +2027,7 @@ private:
     this->emit_range_check(j_dst_addr, 0, node->mem()->num_items());
   #endif
     auto j_array_ptr = this->emit_pointer_address(node->mem());
-    uint32_t array_width = node->mem()->size();
+    auto array_width = node->mem()->size();
 
     if (is_scalar) {
       auto j_wdata = scalar_map_.at(node->wdata().id());
@@ -2129,7 +2052,8 @@ private:
     } else {
       j_value = jit_insn_load_relative(j_func_, j_vars_, addr, j_xtype);
     }
-    auto j_incr = jit_insn_add(j_func_, j_value, j_one_);
+    auto j_one = this->emit_constant(1, j_xtype);
+    auto j_incr = jit_insn_add(j_func_, j_value, j_one);
     auto j_incr_x = this->emit_cast(j_incr, j_xtype);
     jit_insn_store_relative(j_func_, j_vars_, addr, j_incr_x);
   }
@@ -2137,7 +2061,7 @@ private:
   void emit_node(printimpl* node) {
     __source_info();
 
-    jit_label_t l_exit = jit_label_undefined;
+    jit_label_t l_exit(jit_label_undefined);
 
     auto predicated = node->has_pred();
     if (predicated) {
@@ -2189,7 +2113,7 @@ private:
   void emit_node(assertimpl* node) {
     __source_info();
 
-    jit_label_t l_exit = jit_label_undefined;
+    jit_label_t l_exit(jit_label_undefined);
 
     auto j_cond = scalar_map_.at(node->cond().id());
     if (node->has_pred()) {
@@ -2302,7 +2226,7 @@ private:
     uint32_t port_addr = 0;
 
     for (auto node : eval_list) {
-      uint32_t dst_width = node->size();
+      auto dst_width = node->size();
       auto type = node->type();
       switch (type) {
       case type_lit: {
@@ -2325,7 +2249,7 @@ private:
         auto reg = reinterpret_cast<regimpl*>(node);
         var_addr += __align_word_size(reg->size());
         if (reg->is_pipe()) {
-          uint32_t pipe_width = (reg->length() - 1) * reg->size();
+          auto pipe_width = (reg->length() - 1) * reg->size();
           var_addr += __align_word_size(pipe_width);
           if (pipe_width > WORD_SIZE) {
             var_addr += sizeof(uint32_t); // pipe index
@@ -2373,7 +2297,7 @@ private:
       }
     }
 
-    uint32_t vars_size = var_addr + consts_size;
+    auto vars_size = var_addr + consts_size;
     if (vars_size) {
       sim_ctx_->state.vars = new uint8_t[vars_size];
       vars_size_= vars_size;
@@ -2395,7 +2319,7 @@ private:
   }
 
   uint32_t alloc_constant(litimpl* lit, std::vector<const_alloc_t>& constants) {
-    uint32_t dst_width = lit->size();
+    auto dst_width = lit->size();
     if (dst_width <= WORD_SIZE)
       return 0;
 
@@ -2406,7 +2330,7 @@ private:
     // allocate literals with size bigger than WORD_SIZE bits
     for (auto& constant : constants) {
       if (constant.size >= num_words) {
-        uint32_t width = num_words * WORD_SIZE;
+        auto width = num_words * WORD_SIZE;
         if (bv_eq<false, block_type, ClearBitAccessor<block_type>>(
               constant.data, width, lit->value().words(), width)) {
           constant.nodes.push_back(lit->id());
@@ -2442,7 +2366,7 @@ private:
 
   void init_variables(const std::vector<lnodeimpl*>& eval_list) {
     for (auto node : eval_list) {
-      uint32_t dst_width = node->size();
+      auto dst_width = node->size();
       auto j_xtype = to_native_or_word_type(dst_width);
       auto j_ntype = to_native_type(dst_width);
       auto type = node->type();
@@ -2486,7 +2410,10 @@ private:
           __source_info();
           auto addr = addr_map_.at(node->id());
           auto j_dst = jit_insn_load_relative(j_func_, j_vars_, addr, j_xtype);
-          scalar_map_[node->id()] = this->emit_cast(j_dst, j_ntype);;
+          auto j_dst_n = this->emit_cast(j_dst, j_ntype);
+          auto j_var = jit_value_create(j_func_, j_ntype);
+          jit_insn_store(j_func_, j_var, j_dst_n);
+          scalar_map_[node->id()] = j_var;
         }
         this->calc_pointer_address(node);
       } break;
@@ -2508,7 +2435,10 @@ private:
           // preload scalar value
           __source_info();
           auto j_dst = jit_insn_load_relative(j_func_, j_vars_, addr, j_xtype);
-          scalar_map_[node->id()] = this->emit_cast(j_dst, j_ntype);;
+          auto j_dst_n = this->emit_cast(j_dst, j_ntype);
+          auto j_var = jit_value_create(j_func_, j_ntype);
+          jit_insn_store(j_func_, j_var, j_dst_n);
+          scalar_map_[node->id()] = j_var;
         }
         this->calc_pointer_address(node);
       } break;
@@ -2628,7 +2558,8 @@ private:
       auto j_tmp = jit_insn_ushr(j_func_, j_ret, j_shift);
       j_ret = jit_insn_xor(j_func_, j_ret, j_tmp);
     }
-    return jit_insn_and(j_func_, j_ret, j_one_);
+    auto j_one = this->emit_constant(1, jit_type_int32);
+    return jit_insn_and(j_func_, j_ret, j_one);
   }
 
   jit_value_t emit_scalar_slice(jit_value_t j_value,
@@ -2684,7 +2615,7 @@ private:
     __source_info();
     assert(length <= WORD_SIZE);
 
-    uint32_t src_width = node->size();
+    auto src_width = node->size();
     if (src_width <= WORD_SIZE) {
       auto j_src_value = scalar_map_.at(node->id());
       if (src_width != length) {
@@ -2742,11 +2673,14 @@ private:
 
         auto j_src_ptr = jit_insn_load_elem_address(j_func_, j_array_ptr, j_src_idx, j_xtype);
         auto j_src_value0 = jit_insn_load_relative(j_func_, j_src_ptr, 0, j_xtype);
-        j_src = jit_insn_ushr(j_func_, j_src_value0, j_src_lsb);
+
+        auto j_src_0 = jit_insn_ushr(j_func_, j_src_value0, j_src_lsb);
+        j_src = jit_value_create(j_func_, j_xtype);
+        jit_insn_store(j_func_, j_src, j_src_0);
 
         jit_label_t l_skip = jit_label_undefined;
         auto j_src_rem = this->emit_constant(xsize - length, jit_type_int32);
-        auto j_src_inclusive = jit_insn_le(j_func_, j_src_lsb, j_src_rem);
+        auto j_src_inclusive = jit_insn_sle(j_func_, j_src_lsb, j_src_rem);
         jit_insn_branch_if(j_func_, j_src_inclusive, &l_skip);
 
         auto j_src_value1 = jit_insn_load_relative(j_func_, j_src_ptr, sizeof(block_type), j_xtype);
@@ -2831,7 +2765,7 @@ private:
 
         jit_label_t l_skip = jit_label_undefined;
         auto j_dst_rem = this->emit_constant(xsize - length, jit_type_int32);
-        auto j_single_block = jit_insn_le(j_func_, j_dst_lsb, j_dst_rem);
+        auto j_single_block = jit_insn_sle(j_func_, j_dst_lsb, j_dst_rem);
 
         jit_insn_branch_if(j_func_, j_single_block, &l_skip);
         auto j_dst_value1 = jit_insn_load_relative(j_func_, j_dst_ptr, sizeof(block_type), j_xtype);
@@ -2861,7 +2795,8 @@ private:
     } else {
       auto j_src_width = this->emit_constant(dst_width, jit_type_int32);
       auto j_src_offset = jit_insn_mul(j_func_, j_index, j_src_width);
-      this->emit_copy_vector(j_dst_ptr, j_zero_, j_array_ptr, j_src_offset, dst_width);
+      auto j_zero = this->emit_constant(0, jit_type_int32);
+      this->emit_copy_vector(j_dst_ptr, j_zero, j_array_ptr, j_src_offset, dst_width);
     }
   }
 
@@ -2879,7 +2814,8 @@ private:
     } else {
       auto j_dst_width = this->emit_constant(src_width, jit_type_int32);
       auto j_dst_offset = jit_insn_mul(j_func_, j_index, j_dst_width);
-      this->emit_copy_vector(j_array_ptr, j_dst_offset, j_src_ptr, j_zero_, src_width);
+      auto j_zero = this->emit_constant(0, jit_type_int32);
+      this->emit_copy_vector(j_array_ptr, j_dst_offset, j_src_ptr, j_zero, src_width);
     }
   }
 
@@ -2933,7 +2869,7 @@ private:
       auto j_dst_ptr8 = jit_insn_add_relative(j_func_, j_dst_ptr, dst_offset / 8);
       auto j_src_ptr8 = jit_insn_add_relative(j_func_, j_src_ptr, src_offset / 8);
       this->emit_memcpy(j_dst_ptr8, j_src_ptr8, length / 8);
-      uint32_t rem = length % 8;
+      auto rem = length % 8;
       if (rem) {
         auto offset = length / 8;
         auto j_src_value = jit_insn_load_relative(j_func_, j_src_ptr8, offset, jit_type_int8);
@@ -3109,10 +3045,10 @@ private:
   void emit_clear_extra_bits(lnodeimpl* node) {
     __source_info();
 
-    uint32_t dst_width = node->size();
+    auto dst_width = node->size();
     assert(dst_width <= WORD_SIZE);
     auto native_size = to_native_size(dst_width);
-    uint32_t rem = dst_width % native_size;
+    auto rem = dst_width % native_size;
     if (0 == rem)
       return;
     auto j_ntype = to_native_type(dst_width);
@@ -3204,35 +3140,24 @@ private:
   }
 
   jit_value_t emit_cast(jit_value_t j_value, jit_type_t to_type) {
-    auto from_type = jit_value_get_type(j_value);
-    auto from_kind = jit_type_get_kind(from_type);
-    auto to_kind = jit_type_get_kind(to_type);
-    if (from_kind == to_kind)
-      return j_value;
-    if (jit_value_is_constant(j_value)) {
-      auto value = this->get_constant_value(j_value);
-      return this->emit_constant(value, to_type);
-    } else {
-      auto j_ret = jit_value_create(j_func_, to_type);
-      jit_insn_store(j_func_, j_ret, j_value);
-      return j_ret;
-    }
+    return jit_insn_convert(j_func_, j_value, to_type, 0);
   }
 
   void emit_range_check(jit_value_t j_value, uint32_t start, uint32_t end) {
     auto j_start = this->emit_constant(start, jit_type_int32);
     auto j_end = this->emit_constant(end, jit_type_int32);
-    auto j_check1 = jit_insn_ge(j_func_, j_value, j_start);
-    auto j_check2 = jit_insn_lt(j_func_, j_value, j_end);
+    auto j_one = this->emit_constant(1, jit_type_int32);
+    auto j_check1 = jit_insn_sge(j_func_, j_value, j_start);
+    auto j_check2 = jit_insn_slt(j_func_, j_value, j_end);
     auto j_check = jit_insn_and(j_func_, j_check1, j_check2);
     jit_label_t l_skip = jit_label_undefined;
     jit_insn_branch_if(j_func_, j_check, &l_skip);
-    jit_insn_return(j_func_, j_one_); // return 1
+    jit_insn_return(j_func_, j_one);
     jit_insn_label(j_func_, &l_skip);
   }
 
   jit_value_t emit_constant(long value, jit_type_t j_type) {
-    return jit_value_create_int_constant(j_func_, j_type, value);
+    return jit_value_create_int_constant(j_func_, value, j_type);
   }
 
   long get_constant_value(jit_value_t j_value) {
@@ -3288,8 +3213,6 @@ private:
   jit_value_t     j_dbg_;
   uint32_t        dbg_off_;
 #endif
-  jit_value_t     j_zero_;
-  jit_value_t     j_one_;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -3303,7 +3226,7 @@ driver::~driver() {
 }
 
 void driver::initialize(const std::vector<lnodeimpl*>& eval_list) {
-  compiler compiler(sim_ctx_);
+  Compiler compiler(sim_ctx_);
   compiler.build(eval_list);
 }
 
