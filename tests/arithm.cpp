@@ -902,6 +902,18 @@ TEST_CASE("arithmetic", "[arithmetic]") {
       ch_uint4 b(2);
       auto c = a * b;
       return (c == 2);
+    });    
+    TEST2([](const ch_int8& x, const ch_int8& y)->ch_bool {
+      ch_int8 a = -x;
+      ch_int8 b = -y;
+      auto c = a * b;
+      return (c == 2);
+    });
+    TEST2([](const ch_int8& x, const ch_int8& y)->ch_bool {
+      ch_int8 a = -x;
+      ch_int32 b = -y;
+      auto c = a * b;
+      return (c == 2);
     });
     TEST([]()->ch_bool {
       ch_int<100> a(-0x6ABA8);

@@ -1,26 +1,6 @@
 #include "libjit.h"
 #include "common.h"
 
-static jit_type_t to_signed_type(jit_type_t type) {
-  auto kind = jit_type_get_kind(type);
-  switch (kind) {
-  case JIT_TYPE_UBYTE:
-  case JIT_TYPE_SBYTE:
-    return jit_type_int8;
-  case JIT_TYPE_USHORT:
-  case JIT_TYPE_SHORT:
-    return jit_type_int16;
-  case JIT_TYPE_UINT:
-  case JIT_TYPE_INT:
-    return jit_type_int32;
-  case JIT_TYPE_ULONG:
-  case JIT_TYPE_LONG:
-    return jit_type_int64;
-  default:
-    std::abort();
-  }
-}
-
 static jit_type_t to_native_type(jit_type_t type) {
   auto kind = jit_type_get_kind(type);
   switch (kind) {
@@ -39,6 +19,46 @@ static jit_type_t to_native_type(jit_type_t type) {
   }
 }
 
+static jit_type_t to_signed_type(jit_type_t type) {
+  auto kind = jit_type_get_kind(type);
+  switch (kind) {
+  case JIT_TYPE_UBYTE:
+  case JIT_TYPE_SBYTE:
+    return jit_type_sbyte;
+  case JIT_TYPE_USHORT:
+  case JIT_TYPE_SHORT:
+    return jit_type_short;
+  case JIT_TYPE_UINT:
+  case JIT_TYPE_INT:
+    return jit_type_int;
+  case JIT_TYPE_ULONG:
+  case JIT_TYPE_LONG:
+    return jit_type_long;
+  default:
+    std::abort();
+  }
+}
+
+static jit_type_t to_unsigned_type(jit_type_t type) {
+  auto kind = jit_type_get_kind(type);
+  switch (kind) {
+  case JIT_TYPE_UBYTE:
+  case JIT_TYPE_SBYTE:
+    return jit_type_ubyte;
+  case JIT_TYPE_USHORT:
+  case JIT_TYPE_SHORT:
+    return jit_type_ushort;
+  case JIT_TYPE_UINT:
+  case JIT_TYPE_INT:
+    return jit_type_uint;
+  case JIT_TYPE_ULONG:
+  case JIT_TYPE_LONG:
+    return jit_type_ulong;
+  default:
+    std::abort();
+  }
+}
+
 static jit_value_t to_signed_value(jit_function_t func, jit_value_t value) {
   auto t = jit_value_get_type(value);
   auto t_kind = jit_type_get_kind(t);
@@ -47,6 +67,16 @@ static jit_value_t to_signed_value(jit_function_t func, jit_value_t value) {
   if (t_kind == st_kind)
     return value;
   return jit_insn_convert(func, value, st, 0);
+}
+
+static jit_value_t to_unsigned_value(jit_function_t func, jit_value_t value) {
+  auto t = jit_value_get_type(value);
+  auto t_kind = jit_type_get_kind(t);
+  auto ut = to_unsigned_type(t);
+  auto ut_kind = jit_type_get_kind(ut);
+  if (t_kind == ut_kind)
+    return value;
+  return jit_insn_convert(func, value, ut, 0);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -76,7 +106,7 @@ jit_long jit_value_get_int_constant(jit_value_t value) {
 jit_value_t jit_insn_sdiv(jit_function_t func, jit_value_t value1, jit_value_t value2) {
   auto lhs = to_signed_value(func, value1);
   auto rhs = to_signed_value(func, value2);
-  return jit_insn_div(func, lhs, rhs);
+  return to_unsigned_value(func, jit_insn_div(func, lhs, rhs));
 }
 
 jit_value_t jit_insn_udiv(jit_function_t func, jit_value_t value1, jit_value_t value2) {
@@ -86,7 +116,7 @@ jit_value_t jit_insn_udiv(jit_function_t func, jit_value_t value1, jit_value_t v
 jit_value_t jit_insn_srem(jit_function_t func, jit_value_t value1, jit_value_t value2) {
   auto lhs = to_signed_value(func, value1);
   auto rhs = to_signed_value(func, value2);
-  return jit_insn_rem(func, lhs, rhs);
+  return to_unsigned_value(func, jit_insn_rem(func, lhs, rhs));
 }
 
 jit_value_t jit_insn_urem(jit_function_t func, jit_value_t value1, jit_value_t value2) {
@@ -96,7 +126,7 @@ jit_value_t jit_insn_urem(jit_function_t func, jit_value_t value1, jit_value_t v
 jit_value_t jit_insn_slt(jit_function_t func, jit_value_t value1, jit_value_t value2) {
   auto lhs = to_signed_value(func, value1);
   auto rhs = to_signed_value(func, value2);
-  return jit_insn_lt(func, lhs, rhs);
+  return to_unsigned_value(func, jit_insn_lt(func, lhs, rhs));
 }
 
 jit_value_t jit_insn_ult(jit_function_t func, jit_value_t value1, jit_value_t value2) {
@@ -106,7 +136,7 @@ jit_value_t jit_insn_ult(jit_function_t func, jit_value_t value1, jit_value_t va
 jit_value_t jit_insn_sle(jit_function_t func, jit_value_t value1, jit_value_t value2) {
   auto lhs = to_signed_value(func, value1);
   auto rhs = to_signed_value(func, value2);
-  return jit_insn_le(func, lhs, rhs);
+  return to_unsigned_value(func, jit_insn_le(func, lhs, rhs));
 }
 
 jit_value_t jit_insn_ule(jit_function_t func, jit_value_t value1, jit_value_t value2) {
@@ -116,7 +146,7 @@ jit_value_t jit_insn_ule(jit_function_t func, jit_value_t value1, jit_value_t va
 jit_value_t jit_insn_sgt(jit_function_t func, jit_value_t value1, jit_value_t value2) {
   auto lhs = to_signed_value(func, value1);
   auto rhs = to_signed_value(func, value2);
-  return jit_insn_gt(func, lhs, rhs);
+  return to_unsigned_value(func, jit_insn_gt(func, lhs, rhs));
 }
 
 jit_value_t jit_insn_ugt(jit_function_t func, jit_value_t value1, jit_value_t value2) {
@@ -126,11 +156,23 @@ jit_value_t jit_insn_ugt(jit_function_t func, jit_value_t value1, jit_value_t va
 jit_value_t jit_insn_sge(jit_function_t func, jit_value_t value1, jit_value_t value2) {
   auto lhs = to_signed_value(func, value1);
   auto rhs = to_signed_value(func, value2);
-  return jit_insn_ge(func, lhs, rhs);
+  return to_unsigned_value(func, jit_insn_ge(func, lhs, rhs));
 }
 
 jit_value_t jit_insn_uge(jit_function_t func, jit_value_t value1, jit_value_t value2) {
   return jit_insn_ge(func, value1, value2);
+}
+
+jit_value_t jit_insn_sext(jit_function_t func, jit_value_t value, jit_type_t type) {
+  auto vtype = jit_value_get_type(value);
+  auto vt_size = jit_type_get_size(vtype);
+  auto t_size = jit_type_get_size(type);
+  assert(vt_size <= t_size);
+  if (vt_size == t_size)
+    return value;
+  auto stype = to_signed_type(vtype);
+  auto svalue = jit_insn_convert(func, value, stype, 0);
+  return jit_insn_convert(func, svalue, type, 0);
 }
 
 jit_value_t jit_insn_select(jit_function_t func,

@@ -23,7 +23,7 @@
 
 #pragma GCC diagnostic pop
 
-#define	JIT_TYPE_BOOL   18
+#define	JIT_TYPE_BOOL   6
 extern const jit_type_t jit_type_bool;
 
 class _jit_type : public ch::internal::refcounted {
@@ -332,18 +332,24 @@ public:
     return args_[index].get();
   }
 
-  auto resolve_value(jit_value_t value) {
+  auto resolve_value(jit_value_t value, jit_type_t type = nullptr) {
     llvm::Value* ret;
     if (value->is_mutable()) {
       ret = ctx_->builder()->CreateLoad(value->alloc());
     } else {
       ret = value->impl();
     }
+    if (type
+     && value->type()->kind() != type->kind()) {
+      assert(jit_type_get_size(value->type()) <= jit_type_get_size(type));
+      ret = ctx_->builder()->CreateIntCast(ret, type->impl(), false);
+    }
     return ret;
   }
 
   auto create_value(jit_type_t type) {
-    llvm::IRBuilder<> builder(&impl_->getEntryBlock(), impl_->getEntryBlock().begin());
+    llvm::IRBuilder<> builder(&impl_->getEntryBlock(),
+                              impl_->getEntryBlock().begin());
     auto alloc = builder.CreateAlloca(type->impl());
     variables_.emplace_back(std::make_unique<_jit_value>(alloc, type));
     return variables_.back().get();
@@ -383,7 +389,9 @@ public:
     return labels_[cur_label_];
   }
 
-  void set_current_block(llvm::BasicBlock* block, jit_label_t label, bool detached = false) {
+  void set_current_block(llvm::BasicBlock* block,
+                         jit_label_t label,
+                         bool detached = false) {
     if (!detached) {
       auto bb = labels_[cur_label_];
       if (nullptr == bb->getTerminator()) {
@@ -411,7 +419,7 @@ private:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-auto resolve_pointer_type(_jit_context* ctx, llvm::Value* value, llvm::Type* type) {
+auto resolve_pointer(_jit_context* ctx, llvm::Value* value, llvm::Type* type) {
   if (value->getType() != type) {
     assert(type->getTypeID() == llvm::Type::IntegerTyID);
     auto size = llvm::cast<llvm::IntegerType>(type)->getBitWidth();
@@ -530,6 +538,8 @@ jit_nuint jit_type_get_size(jit_type_t type) {
   switch (kind) {
   case JIT_TYPE_VOID:
     return 0;
+  case JIT_TYPE_BOOL:
+    return 1;
   case JIT_TYPE_INT8:
     return 1;
   case JIT_TYPE_INT16:
@@ -590,12 +600,16 @@ jit_long jit_value_get_int_constant(jit_value_t value) {
 }
 
 int jit_value_is_constant(jit_value_t value) {
+  if (value->is_mutable())
+    return false;
   return (llvm::dyn_cast<llvm::ConstantInt>(value->impl()) != nullptr);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-jit_value_t jit_insn_add(jit_function_t func, jit_value_t value1, jit_value_t value2) {
+jit_value_t jit_insn_add(jit_function_t func,
+                         jit_value_t value1,
+                         jit_value_t value2) {
   auto ctx = func->ctx();
   auto builder = ctx->builder();
   auto lhs = func->resolve_value(value1);
@@ -604,7 +618,9 @@ jit_value_t jit_insn_add(jit_function_t func, jit_value_t value1, jit_value_t va
   return func->create_value(res);
 }
 
-jit_value_t jit_insn_sub(jit_function_t func, jit_value_t value1, jit_value_t value2) {
+jit_value_t jit_insn_sub(jit_function_t func,
+                         jit_value_t value1,
+                         jit_value_t value2) {
   auto ctx = func->ctx();
   auto builder = ctx->builder();  
   auto lhs = func->resolve_value(value1);
@@ -613,7 +629,9 @@ jit_value_t jit_insn_sub(jit_function_t func, jit_value_t value1, jit_value_t va
   return func->create_value(res);
 }
 
-jit_value_t jit_insn_mul(jit_function_t func, jit_value_t value1, jit_value_t value2) {
+jit_value_t jit_insn_mul(jit_function_t func,
+                         jit_value_t value1,
+                         jit_value_t value2) {
   auto ctx = func->ctx();
   auto builder = ctx->builder();
   auto lhs = func->resolve_value(value1);
@@ -622,7 +640,9 @@ jit_value_t jit_insn_mul(jit_function_t func, jit_value_t value1, jit_value_t va
   return func->create_value(res);
 }
 
-jit_value_t jit_insn_sdiv(jit_function_t func, jit_value_t value1, jit_value_t value2) {
+jit_value_t jit_insn_sdiv(jit_function_t func,
+                          jit_value_t value1,
+                          jit_value_t value2) {
   auto ctx = func->ctx();
   auto builder = ctx->builder();
   auto lhs = func->resolve_value(value1);
@@ -631,7 +651,9 @@ jit_value_t jit_insn_sdiv(jit_function_t func, jit_value_t value1, jit_value_t v
   return func->create_value(res);
 }
 
-jit_value_t jit_insn_udiv(jit_function_t func, jit_value_t value1, jit_value_t value2) {
+jit_value_t jit_insn_udiv(jit_function_t func,
+                          jit_value_t value1,
+                          jit_value_t value2) {
   auto ctx = func->ctx();
   auto builder = ctx->builder();
   auto lhs = func->resolve_value(value1);
@@ -640,7 +662,9 @@ jit_value_t jit_insn_udiv(jit_function_t func, jit_value_t value1, jit_value_t v
   return func->create_value(res);
 }
 
-jit_value_t jit_insn_srem(jit_function_t func, jit_value_t value1, jit_value_t value2) {
+jit_value_t jit_insn_srem(jit_function_t func,
+                          jit_value_t value1,
+                          jit_value_t value2) {
   auto ctx = func->ctx();
   auto builder = ctx->builder();
   auto lhs = func->resolve_value(value1);
@@ -649,7 +673,9 @@ jit_value_t jit_insn_srem(jit_function_t func, jit_value_t value1, jit_value_t v
   return func->create_value(res);
 }
 
-jit_value_t jit_insn_urem(jit_function_t func, jit_value_t value1, jit_value_t value2) {
+jit_value_t jit_insn_urem(jit_function_t func,
+                          jit_value_t value1,
+                          jit_value_t value2) {
   auto ctx = func->ctx();
   auto builder = ctx->builder();
   auto lhs = func->resolve_value(value1);
@@ -666,7 +692,9 @@ jit_value_t jit_insn_neg(jit_function_t func, jit_value_t value) {
   return func->create_value(res);
 }
 
-jit_value_t jit_insn_and(jit_function_t func, jit_value_t value1, jit_value_t value2) {
+jit_value_t jit_insn_and(jit_function_t func,
+                         jit_value_t value1,
+                         jit_value_t value2) {
   auto ctx = func->ctx();
   auto builder = ctx->builder();
   auto lhs = func->resolve_value(value1);
@@ -675,7 +703,9 @@ jit_value_t jit_insn_and(jit_function_t func, jit_value_t value1, jit_value_t va
   return func->create_value(res);
 }
 
-jit_value_t jit_insn_or(jit_function_t func, jit_value_t value1, jit_value_t value2) {
+jit_value_t jit_insn_or(jit_function_t func,
+                        jit_value_t value1,
+                        jit_value_t value2) {
   auto ctx = func->ctx();
   auto builder = ctx->builder();
   auto lhs = func->resolve_value(value1);
@@ -684,7 +714,9 @@ jit_value_t jit_insn_or(jit_function_t func, jit_value_t value1, jit_value_t val
   return func->create_value(res);
 }
 
-jit_value_t jit_insn_xor(jit_function_t func, jit_value_t value1, jit_value_t value2) {
+jit_value_t jit_insn_xor(jit_function_t func,
+                         jit_value_t value1,
+                         jit_value_t value2) {
   auto ctx = func->ctx();
   auto builder = ctx->builder();
   auto lhs = func->resolve_value(value1);
@@ -701,34 +733,42 @@ jit_value_t jit_insn_not(jit_function_t func, jit_value_t value) {
   return func->create_value(res);
 }
 
-jit_value_t jit_insn_shl(jit_function_t func, jit_value_t value1, jit_value_t value2) {
+jit_value_t jit_insn_shl(jit_function_t func,
+                         jit_value_t value1,
+                         jit_value_t value2) {
   auto ctx = func->ctx();
   auto builder = ctx->builder();
   auto lhs = func->resolve_value(value1);
-  auto rhs = func->resolve_value(value2);
+  auto rhs = func->resolve_value(value2, value1->type());
   auto res = builder->CreateShl(lhs, rhs);
   return func->create_value(res);
 }
 
-jit_value_t jit_insn_shr(jit_function_t func, jit_value_t value1, jit_value_t value2) {
+jit_value_t jit_insn_shr(jit_function_t func,
+                         jit_value_t value1,
+                         jit_value_t value2) {
   auto ctx = func->ctx();
   auto builder = ctx->builder();
   auto lhs = func->resolve_value(value1);
-  auto rhs = func->resolve_value(value2);
+  auto rhs = func->resolve_value(value2, value1->type());
   auto res = builder->CreateAShr(lhs, rhs);
   return func->create_value(res);
 }
 
-jit_value_t jit_insn_ushr(jit_function_t func, jit_value_t value1, jit_value_t value2) {
+jit_value_t jit_insn_ushr(jit_function_t func,
+                          jit_value_t value1,
+                          jit_value_t value2) {
   auto ctx = func->ctx();
   auto builder = ctx->builder();
   auto lhs = func->resolve_value(value1);
-  auto rhs = func->resolve_value(value2);
+  auto rhs = func->resolve_value(value2, value1->type());
   auto res = builder->CreateLShr(lhs, rhs);
   return func->create_value(res);
 }
 
-jit_value_t jit_insn_eq(jit_function_t func, jit_value_t value1, jit_value_t value2) {
+jit_value_t jit_insn_eq(jit_function_t func,
+                        jit_value_t value1,
+                        jit_value_t value2) {
   auto ctx = func->ctx();
   auto builder = ctx->builder();
   auto lhs = func->resolve_value(value1);
@@ -737,7 +777,9 @@ jit_value_t jit_insn_eq(jit_function_t func, jit_value_t value1, jit_value_t val
   return func->create_value(res);
 }
 
-jit_value_t jit_insn_ne(jit_function_t func, jit_value_t value1, jit_value_t value2) {
+jit_value_t jit_insn_ne(jit_function_t func,
+                        jit_value_t value1,
+                        jit_value_t value2) {
   auto ctx = func->ctx();
   auto builder = ctx->builder();
   auto lhs = func->resolve_value(value1);
@@ -746,7 +788,9 @@ jit_value_t jit_insn_ne(jit_function_t func, jit_value_t value1, jit_value_t val
   return func->create_value(res);
 }
 
-jit_value_t jit_insn_slt(jit_function_t func, jit_value_t value1, jit_value_t value2) {
+jit_value_t jit_insn_slt(jit_function_t func,
+                         jit_value_t value1,
+                         jit_value_t value2) {
   auto ctx = func->ctx();
   auto builder = ctx->builder();
   auto lhs = func->resolve_value(value1);
@@ -755,7 +799,9 @@ jit_value_t jit_insn_slt(jit_function_t func, jit_value_t value1, jit_value_t va
   return func->create_value(res);
 }
 
-jit_value_t jit_insn_ult(jit_function_t func, jit_value_t value1, jit_value_t value2) {
+jit_value_t jit_insn_ult(jit_function_t func,
+                         jit_value_t value1,
+                         jit_value_t value2) {
   auto ctx = func->ctx();
   auto builder = ctx->builder();
   auto lhs = func->resolve_value(value1);
@@ -764,7 +810,9 @@ jit_value_t jit_insn_ult(jit_function_t func, jit_value_t value1, jit_value_t va
   return func->create_value(res);
 }
 
-jit_value_t jit_insn_sle(jit_function_t func, jit_value_t value1, jit_value_t value2) {
+jit_value_t jit_insn_sle(jit_function_t func,
+                         jit_value_t value1,
+                         jit_value_t value2) {
   auto ctx = func->ctx();
   auto builder = ctx->builder();
   auto lhs = func->resolve_value(value1);
@@ -773,7 +821,9 @@ jit_value_t jit_insn_sle(jit_function_t func, jit_value_t value1, jit_value_t va
   return func->create_value(res);
 }
 
-jit_value_t jit_insn_ule(jit_function_t func, jit_value_t value1, jit_value_t value2) {
+jit_value_t jit_insn_ule(jit_function_t func,
+                         jit_value_t value1,
+                         jit_value_t value2) {
   auto ctx = func->ctx();
   auto builder = ctx->builder();
   auto lhs = func->resolve_value(value1);
@@ -782,7 +832,9 @@ jit_value_t jit_insn_ule(jit_function_t func, jit_value_t value1, jit_value_t va
   return func->create_value(res);
 }
 
-jit_value_t jit_insn_sgt(jit_function_t func, jit_value_t value1, jit_value_t value2) {
+jit_value_t jit_insn_sgt(jit_function_t func,
+                         jit_value_t value1,
+                         jit_value_t value2) {
   auto ctx = func->ctx();
   auto builder = ctx->builder();
   auto lhs = func->resolve_value(value1);
@@ -791,7 +843,9 @@ jit_value_t jit_insn_sgt(jit_function_t func, jit_value_t value1, jit_value_t va
   return func->create_value(res);
 }
 
-jit_value_t jit_insn_ugt(jit_function_t func, jit_value_t value1, jit_value_t value2) {
+jit_value_t jit_insn_ugt(jit_function_t func,
+                         jit_value_t value1,
+                         jit_value_t value2) {
   auto ctx = func->ctx();
   auto builder = ctx->builder();
   auto lhs = func->resolve_value(value1);
@@ -800,7 +854,9 @@ jit_value_t jit_insn_ugt(jit_function_t func, jit_value_t value1, jit_value_t va
   return func->create_value(res);
 }
 
-jit_value_t jit_insn_sge(jit_function_t func, jit_value_t value1, jit_value_t value2) {
+jit_value_t jit_insn_sge(jit_function_t func,
+                         jit_value_t value1,
+                         jit_value_t value2) {
   auto ctx = func->ctx();
   auto builder = ctx->builder();
   auto lhs = func->resolve_value(value1);
@@ -809,7 +865,9 @@ jit_value_t jit_insn_sge(jit_function_t func, jit_value_t value1, jit_value_t va
   return func->create_value(res);
 }
 
-jit_value_t jit_insn_uge(jit_function_t func, jit_value_t value1, jit_value_t value2) {
+jit_value_t jit_insn_uge(jit_function_t func,
+                         jit_value_t value1,
+                         jit_value_t value2) {
   auto ctx = func->ctx();
   auto builder = ctx->builder();
   auto lhs = func->resolve_value(value1);
@@ -857,7 +915,7 @@ int jit_insn_store(jit_function_t func, jit_value_t dest, jit_value_t value) {
   auto ctx = func->ctx();
   auto builder = ctx->builder();  
   auto in = func->resolve_value(value);
-  auto addr = resolve_pointer_type(ctx, dest->alloc(), in->getType());
+  auto addr = resolve_pointer(ctx, dest->alloc(), in->getType());
   builder->CreateStore(in, addr);
   return 1;
 }
@@ -889,7 +947,7 @@ int jit_insn_store_relative(jit_function_t func,
     auto idx = builder->getInt32(offset);
     addr = builder->CreateInBoundsGEP(jit_type_int8->impl(), addr, idx);
   }
-  addr = resolve_pointer_type(ctx, addr, in->getType());
+  addr = resolve_pointer(ctx, addr, in->getType());
   auto inst = builder->CreateStore(in, addr);
   return (inst != nullptr);
 }
@@ -942,7 +1000,7 @@ int jit_insn_store_elem(jit_function_t func,
   auto addr = func->resolve_value(base_addr);
   auto idx = func->resolve_value(index);
   addr = builder->CreateInBoundsGEP(elem_type->impl(), addr, idx);
-  addr = resolve_pointer_type(ctx, addr, elem_type->impl());
+  addr = resolve_pointer(ctx, addr, elem_type->impl());
   auto inst = builder->CreateStore(in, addr);
   return (inst != nullptr);
 }
@@ -973,16 +1031,20 @@ jit_value_t jit_insn_select(jit_function_t func,
                             jit_value_t case_false) {
   auto ctx = func->ctx();
   auto builder = ctx->builder();
+  auto type = case_true->type();
+  auto dst = func->create_value(type);
   auto cc = func->resolve_value(cond);
-  auto type = cond->type();
-  if (type->kind() != JIT_TYPE_BOOL) {
-    auto zero = jit_value_create_int_constant(func, 0, type);
+  auto ctype = cond->type();
+  if (ctype->kind() != JIT_TYPE_BOOL) {
+    auto zero = jit_value_create_int_constant(func, 0, ctype);
     cc = builder->CreateICmpNE(cc, zero->impl());
   }
   auto tt = func->resolve_value(case_true);
   auto ff = func->resolve_value(case_false);
   auto res = builder->CreateSelect(cc, tt, ff);
-  return func->create_value(res);
+  auto inst = builder->CreateStore(res, dst->alloc());
+  assert(inst != nullptr);
+  return dst;
 }
 
 jit_value_t jit_insn_switch(jit_function_t func,
@@ -1117,18 +1179,14 @@ int jit_insn_memcpy(jit_function_t func,
                     jit_value_t dest,
                     jit_value_t src,
                     jit_value_t size) {
-  CH_UNUSED(func, dest, src, size);
-  CH_TODO();
-  return 0;
-}
-
-int jit_insn_jump_table(jit_function_t func,
-                        jit_value_t value,
-                        jit_label_t *labels,
-                        unsigned int num_labels) {
-  CH_UNUSED(func, value, labels, num_labels);
-  CH_TODO();
-  return 0;
+  auto ctx = func->ctx();
+  auto builder = ctx->builder();
+  auto ll_dest = func->resolve_value(dest);
+  auto ll_src = func->resolve_value(src);
+  auto ll_size = func->resolve_value(size);
+  auto inst = builder->CreateMemCpy(ll_dest, 1, ll_src, 1, ll_size);
+  assert(inst != nullptr);
+  return 1;
 }
 
 jit_value_t jit_insn_call_native(jit_function_t func,
@@ -1138,9 +1196,49 @@ jit_value_t jit_insn_call_native(jit_function_t func,
                                  jit_value_t *args,
                                  unsigned int num_args,
                                  int flags) {
-  CH_UNUSED(func, name, native_func, signature, args, num_args, flags);
-  CH_TODO();
-  return nullptr;
+  CH_UNUSED(native_func);
+  assert(flags == JIT_CALL_NOTHROW);
+  auto ctx = func->ctx();
+  auto builder = ctx->builder();
+
+  llvm::Function* ext_func;
+  {
+    auto j_sig = reinterpret_cast<_jit_signature*>(signature);
+    std::vector<llvm::Type*> args(j_sig->arg_types().size());
+    for (unsigned i = 0; i < j_sig->arg_types().size(); ++i) {
+      args[i] = j_sig->arg_types()[i]->impl();
+    }
+    auto sig = llvm::FunctionType::get(j_sig->impl(), args, false);
+    ext_func = llvm::Function::Create(sig,
+                                      llvm::Function::ExternalLinkage,
+                                      name,
+                                      ctx->module());
+  }
+  llvm::Value* res;
+  {
+    std::vector<llvm::Value*> ll_args(num_args);
+    for (unsigned int i = 0; i < num_args; ++i) {
+      ll_args[i] = func->resolve_value(args[i]);
+    }
+    res = builder->CreateCall(ext_func, ll_args);
+  }
+  return func->create_value(res);
+}
+
+jit_value_t jit_insn_sext(jit_function_t func,
+                          jit_value_t value,
+                          jit_type_t type) {
+  auto vtype   = jit_value_get_type(value);
+  auto vt_size = jit_type_get_size(vtype);
+  auto t_size  = jit_type_get_size(type);
+  assert(vt_size <= t_size);
+  if (vt_size == t_size)
+    return value;
+  auto ctx = func->ctx();
+  auto builder = ctx->builder();
+  auto in = func->resolve_value(value);
+  auto res = builder->CreateSExt(in, type->impl());
+  return func->create_value(res);
 }
 
 jit_value_t jit_insn_convert(jit_function_t func,
@@ -1152,7 +1250,7 @@ jit_value_t jit_insn_convert(jit_function_t func,
     return nullptr;
   }
   if (value->type()->kind() == type->kind())
-    return value;
+    return value;  
   auto ctx = func->ctx();
   auto builder = ctx->builder();
   auto in = func->resolve_value(value);
@@ -1183,7 +1281,8 @@ int jit_dump_asm(FILE *stream, jit_function_t func, const char *name) {
     auto target = ctx->target();;
     llvm::legacy::PassManager pass;
     llvm::raw_svector_ostream os(sv);
-    if (target->addPassesToEmitFile(pass, os, nullptr, llvm::TargetMachine::CGFT_AssemblyFile))
+    if (target->addPassesToEmitFile(
+          pass, os, nullptr, llvm::TargetMachine::CGFT_AssemblyFile))
       return 0;
     pass.run(*module);
   }

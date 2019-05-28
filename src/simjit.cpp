@@ -267,6 +267,26 @@ static void ext_copy_vector(block_type* dst,
   bv_copy_vector(dst + w_dst_idx, w_dst_lsb, src + w_src_idx, w_src_lsb, length);
 }
 
+struct udf_data_t {
+  udf_iface* udf;
+
+  static uint32_t size(udfimpl*) {
+    return sizeof(udf_data_t);
+  }
+
+  void init(udfimpl* node) {
+    udf = node->udf();
+  }
+};
+
+extern "C" void udf_data_eval(udf_data_t* self) {
+  self->udf->eval();
+}
+
+extern "C" void udf_data_reset(udf_data_t* self) {
+  self->udf->reset();
+}
+
 struct sim_state_t {
   block_type** ports;
   uint8_t* vars;
@@ -571,7 +591,7 @@ private:
     }
   };
 
-  struct udf_data_t {
+  /*struct udf_data_t {
     udf_iface* udf;
 
     static uint32_t size(udfimpl*) {
@@ -589,7 +609,7 @@ private:
     static void reset(udf_data_t* self) {
       self->udf->reset();
     }
-  };
+  };*/
 
   void create_function() {
     jit_type_t params[1] = {jit_type_ptr};
@@ -2174,8 +2194,8 @@ private:
                                            1);
     jit_value_t args[] = {j_data_ptr};
     jit_insn_call_native(j_func_,
-                         "udf_data_t::eval",
-                         (void*)udf_data_t::eval,
+                         "udf_data_t_eval",
+                         (void*)udf_data_eval,
                          j_sig,
                          args,
                          __countof(args),
@@ -2208,8 +2228,8 @@ private:
                                            1);
     jit_value_t args[] = {j_data_ptr};
     jit_insn_call_native(j_func_,
-                         "udf_data_t::reset",
-                         (void*)udf_data_t::reset,
+                         "udf_data_t_reset",
+                         (void*)udf_data_reset,
                          j_sig,
                          args,
                          __countof(args),
@@ -3114,7 +3134,8 @@ private:
       return j_value;
     if (is_value_size(width)) {
       auto j_otype = to_value_type(width);
-      return this->emit_cast(j_value, j_otype);
+      auto j_tmp = jit_insn_convert(j_func_, j_value, j_otype, 0);
+      return jit_insn_sext(j_func_, j_tmp, j_type);
     }
     auto j_mask = this->emit_constant(1ull << (width - 1), j_type);
     auto j_tmp1 = jit_insn_xor(j_func_, j_value, j_mask);

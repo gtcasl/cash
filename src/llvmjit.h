@@ -189,9 +189,9 @@ int jit_insn_return(jit_function_t func, jit_value_t value);
 int jit_insn_move_blocks_to_end(jit_function_t func, jit_label_t from_label, jit_label_t to_label);
 
 int jit_insn_memcpy(jit_function_t func, jit_value_t dest, jit_value_t src, jit_value_t size);
-int jit_insn_jump_table(jit_function_t func, jit_value_t value, jit_label_t *labels, unsigned int num_labels);
 jit_value_t jit_insn_call_native(jit_function_t func, const char *name, void *native_func, jit_type_t signature, jit_value_t *args, unsigned int num_args, int flags);
 
+jit_value_t jit_insn_sext(jit_function_t func, jit_value_t value, jit_type_t type);
 jit_value_t jit_insn_convert(jit_function_t func, jit_value_t value, jit_type_t type, int overflow_check);
 
 //
