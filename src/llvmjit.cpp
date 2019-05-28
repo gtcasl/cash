@@ -280,6 +280,10 @@ public:
     return (void*)ret->getAddress();
   }
 
+  _jit_function* create_function(jit_type_t signature,
+                                 const char* name,
+                                 bool is_external = false);
+
 private:
 
   llvm::orc::ExecutionSession ex_session_;
@@ -291,29 +295,28 @@ private:
   llvm::orc::MangleAndInterner mangle_;
   std::unique_ptr<llvm::TargetMachine> target_;
   std::unique_ptr<llvm::Module> module_;
+  std::unordered_map<std::string, std::unique_ptr<_jit_function>> functions_;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
 class _jit_function {
 public:
-  _jit_function(_jit_context* ctx,
-                llvm::Function* impl,
-                jit_type_t return_type)
+  _jit_function(_jit_context* ctx, llvm::Function* impl, bool is_external)
     : ctx_(ctx)
     , impl_(impl)
-    , return_type_(return_type)
     , args_(impl->arg_size())
-    , cur_label_(0) {
+    , cur_label_(jit_label_undefined) {
     int i = 0;
     for (auto& arg : impl->args()) {
       auto type = _jit_type::from_llvm_type(arg.getType());
       args_[i] = std::make_unique<_jit_value>(&arg, type);
       ++i;
     }
-    auto bb = llvm::BasicBlock::Create(*ctx->impl(), "entry", impl);
-    ctx->builder()->SetInsertPoint(bb);
-    labels_.emplace(cur_label_, bb);
+    if (!is_external) {
+      auto bb = this->create_block(&cur_label_);
+      ctx->builder()->SetInsertPoint(bb);
+    }
   }
 
   auto ctx() const {
@@ -324,12 +327,16 @@ public:
     return impl_;
   }
 
-  auto return_type() {
-    return return_type_;
-  }
-
   auto arg(unsigned int index) const {
     return args_[index].get();
+  }
+
+  auto resolve_pointer(llvm::Value* value, llvm::Type* type) {
+    assert(value->getType()->getTypeID() == llvm::Type::PointerTyID);
+    auto ptype = type->getPointerTo();
+    if (value->getType() == ptype)
+      return value;
+    return ctx_->builder()->CreatePointerCast(value, ptype);
   }
 
   auto resolve_value(jit_value_t value, jit_type_t type = nullptr) {
@@ -341,7 +348,6 @@ public:
     }
     if (type
      && value->type()->kind() != type->kind()) {
-      assert(jit_type_get_size(value->type()) <= jit_type_get_size(type));
       ret = ctx_->builder()->CreateIntCast(ret, type->impl(), false);
     }
     return ret;
@@ -366,34 +372,40 @@ public:
       return nullptr;
     auto l = *label;
     if (l != jit_label_undefined) {
-      auto it = labels_.find(l);
-      if (it == labels_.end())
+      auto it = basicblocks_.find(l);
+      if (it == basicblocks_.end())
         return nullptr;
       return it->second;
     }
     if (reuse) {
-      auto bb = labels_[cur_label_];
+      assert(!basicblocks_.empty());
+      auto bb = basicblocks_[cur_label_];
       if (0 == bb->size()) {
         *label = cur_label_;
         return bb;
       }
     }
-    auto bb = llvm::BasicBlock::Create(*ctx_->impl());
-    l = labels_.size();
-    labels_.emplace(l, bb);
+    llvm::BasicBlock* bb;
+    if (basicblocks_.empty()) {
+      bb = llvm::BasicBlock::Create(*ctx_->impl(), "entry", impl_);
+    } else {
+      bb = llvm::BasicBlock::Create(*ctx_->impl());
+    }
+    l = basicblocks_.size();
+    basicblocks_.emplace(l, bb);
     *label = l;
     return bb;
   }
 
   llvm::BasicBlock* get_current_block() {
-    return labels_[cur_label_];
+    return basicblocks_[cur_label_];
   }
 
   void set_current_block(llvm::BasicBlock* block,
                          jit_label_t label,
                          bool detached = false) {
     if (!detached) {
-      auto bb = labels_[cur_label_];
+      auto bb = basicblocks_[cur_label_];
       if (nullptr == bb->getTerminator()) {
         ctx_->builder()->CreateBr(block);
       }
@@ -410,39 +422,33 @@ public:
 private:
   _jit_context* ctx_;
   llvm::Function* impl_;
-  jit_type_t return_type_;
   std::vector<std::unique_ptr<_jit_value>> args_;
   std::vector<std::unique_ptr<_jit_value>> variables_;
-  std::unordered_map<jit_label_t, llvm::BasicBlock*> labels_;
+  std::unordered_map<jit_label_t, llvm::BasicBlock*> basicblocks_;
   jit_label_t cur_label_;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
-auto resolve_pointer(_jit_context* ctx, llvm::Value* value, llvm::Type* type) {
-  if (value->getType() != type) {
-    assert(type->getTypeID() == llvm::Type::IntegerTyID);
-    auto size = llvm::cast<llvm::IntegerType>(type)->getBitWidth();
-    switch (size) {
-    case 8:
-      type = llvm::Type::getInt8PtrTy(*ctx->impl());
-      break;
-    case 16:
-      type = llvm::Type::getInt16PtrTy(*ctx->impl());
-      break;
-    case 32:
-      type = llvm::Type::getInt32PtrTy(*ctx->impl());
-      break;
-    case 64:
-      type = llvm::Type::getInt64PtrTy(*ctx->impl());
-      break;
-    default:
-      assert(false);
-      break;
-    }
-    return ctx->builder()->CreatePointerCast(value, type);
+_jit_function* _jit_context::create_function(jit_type_t signature,
+                                             const char* name,
+                                             bool is_external) {
+  auto it = functions_.find(name);
+  if (it != functions_.end())
+    return it->second.get();
+  auto j_sig = reinterpret_cast<_jit_signature*>(signature);
+  std::vector<llvm::Type*> args(j_sig->arg_types().size());
+  for (unsigned i = 0; i < j_sig->arg_types().size(); ++i) {
+    args[i] = j_sig->arg_types()[i]->impl();
   }
-  return value;
+  auto sig = llvm::FunctionType::get(j_sig->impl(), args, false);
+  auto func = llvm::Function::Create(sig,
+                                     llvm::Function::ExternalLinkage,
+                                     name,
+                                     module_.get());
+  auto jfunc = new _jit_function(this, func, is_external);
+  functions_.emplace(name, jfunc);
+  return jfunc;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -483,17 +489,7 @@ void jit_context_build_end(jit_context_t context) {
 ///////////////////////////////////////////////////////////////////////////////
 
 jit_function_t jit_function_create(jit_context_t context, jit_type_t signature) {
-  auto j_sig = reinterpret_cast<_jit_signature*>(signature);
-  std::vector<llvm::Type*> args(j_sig->arg_types().size());
-  for (unsigned i = 0; i < j_sig->arg_types().size(); ++i) {
-    args[i] = j_sig->arg_types()[i]->impl();
-  }
-  auto sig = llvm::FunctionType::get(j_sig->impl(), args, false);
-  auto func = llvm::Function::Create(sig,
-                                     llvm::Function::ExternalLinkage,
-                                     "eval",
-                                     context->module());  
-  return new _jit_function(context, func, j_sig->return_type());
+  return context->create_function(signature, "eval");
 }
 
 int jit_function_compile(jit_function_t func) {
@@ -738,7 +734,7 @@ jit_value_t jit_insn_shl(jit_function_t func,
   return func->create_value(res);
 }
 
-jit_value_t jit_insn_shr(jit_function_t func,
+jit_value_t jit_insn_sshr(jit_function_t func,
                          jit_value_t value1,
                          jit_value_t value2) {
   auto ctx = func->ctx();
@@ -900,9 +896,8 @@ int jit_insn_store(jit_function_t func, jit_value_t dest, jit_value_t value) {
   assert(dest->is_mutable());
   auto ctx = func->ctx();
   auto builder = ctx->builder();  
-  auto in = func->resolve_value(value);
-  auto addr = resolve_pointer(ctx, dest->alloc(), in->getType());
-  builder->CreateStore(in, addr);
+  auto in = func->resolve_value(value, dest->type());
+  builder->CreateStore(in, dest->alloc());
   return 1;
 }
 
@@ -933,7 +928,7 @@ int jit_insn_store_relative(jit_function_t func,
     auto idx = builder->getInt32(offset);
     addr = builder->CreateInBoundsGEP(jit_type_int8->impl(), addr, idx);
   }
-  addr = resolve_pointer(ctx, addr, in->getType());
+  addr = func->resolve_pointer(addr, in->getType());
   auto inst = builder->CreateStore(in, addr);
   return (inst != nullptr);
 }
@@ -986,15 +981,19 @@ int jit_insn_store_elem(jit_function_t func,
   auto addr = func->resolve_value(base_addr);
   auto idx = func->resolve_value(index);
   addr = builder->CreateInBoundsGEP(elem_type->impl(), addr, idx);
-  addr = resolve_pointer(ctx, addr, elem_type->impl());
   auto inst = builder->CreateStore(in, addr);
   return (inst != nullptr);
 }
 
 jit_value_t jit_insn_address_of(jit_function_t func, jit_value_t value) {
-  CH_UNUSED(func, value);
-  CH_TODO();
-  return nullptr;
+  if (!value->is_mutable()) {
+    auto ctx = func->ctx();
+    auto builder = ctx->builder();
+    jit_value_t data = value;
+    value = func->create_value(value->type());
+    builder->CreateStore(data->impl(), value->alloc());
+  }
+  return func->create_value(value->alloc());
 }
 
 void jit_insn_set_marker(jit_function_t func, const char* name) {
@@ -1172,28 +1171,12 @@ jit_value_t jit_insn_call_native(jit_function_t func,
   assert(flags == JIT_CALL_NOTHROW);
   auto ctx = func->ctx();
   auto builder = ctx->builder();
-
-  llvm::Function* ext_func;
-  {
-    auto j_sig = reinterpret_cast<_jit_signature*>(signature);
-    std::vector<llvm::Type*> args(j_sig->arg_types().size());
-    for (unsigned i = 0; i < j_sig->arg_types().size(); ++i) {
-      args[i] = j_sig->arg_types()[i]->impl();
-    }
-    auto sig = llvm::FunctionType::get(j_sig->impl(), args, false);
-    ext_func = llvm::Function::Create(sig,
-                                      llvm::Function::ExternalLinkage,
-                                      name,
-                                      ctx->module());
+  auto jfunc = ctx->create_function(signature, name, true);
+  std::vector<llvm::Value*> ll_args(num_args);
+  for (unsigned int i = 0; i < num_args; ++i) {
+    ll_args[i] = func->resolve_value(args[i]);
   }
-  llvm::Value* res;
-  {
-    std::vector<llvm::Value*> ll_args(num_args);
-    for (unsigned int i = 0; i < num_args; ++i) {
-      ll_args[i] = func->resolve_value(args[i]);
-    }
-    res = builder->CreateCall(ext_func, ll_args);
-  }
+  auto res = builder->CreateCall(jfunc->impl(), ll_args);
   return func->create_value(res);
 }
 

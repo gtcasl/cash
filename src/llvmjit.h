@@ -143,7 +143,7 @@ jit_value_t jit_insn_or(jit_function_t func, jit_value_t value1, jit_value_t val
 jit_value_t jit_insn_xor(jit_function_t func, jit_value_t value1, jit_value_t value2);
 jit_value_t jit_insn_not(jit_function_t func, jit_value_t value);
 jit_value_t jit_insn_shl(jit_function_t func, jit_value_t value1, jit_value_t value2);
-jit_value_t jit_insn_shr(jit_function_t func, jit_value_t value1, jit_value_t value2);
+jit_value_t jit_insn_sshr(jit_function_t func, jit_value_t value1, jit_value_t value2);
 jit_value_t jit_insn_ushr(jit_function_t func, jit_value_t value1, jit_value_t value2);
 jit_value_t jit_insn_eq(jit_function_t func, jit_value_t value1, jit_value_t value2);
 jit_value_t jit_insn_ne(jit_function_t func, jit_value_t value1, jit_value_t value2);

@@ -35,45 +35,7 @@ static constexpr uint32_t WORD_MASK = WORD_SIZE - 1;
 static constexpr block_type WORD_MAX = std::numeric_limits<block_type>::max();
 static constexpr uint32_t INLINE_THRESHOLD = 8;
 
-struct memaddr_t {
-  jit_value_t base;
-  uint32_t offset;
-};
-
-struct sblock_t {
-  sblock_t() {
-    this->clear();
-  }
-
-  void clear() {
-    cd = nullptr;
-    reset = nullptr;
-    nodes.clear();
-  }
-
-  lnodeimpl* cd;
-  lnodeimpl* reset;
-  std::vector<lnodeimpl*> nodes;
-};
-
-class SrcLogger {
-public:
-  SrcLogger(jit_function_t func, const char* fname, const char* vname = nullptr) : func_(func) {
-    auto name = fname;
-    if (vname) {
-      auto tmp = stringf("%s @var=%s", fname, vname);
-      auto tmp2 = new char[tmp.length() + 1]();
-      strncpy(tmp2, tmp.c_str(), tmp.length());
-      name = tmp2;
-    }
-    jit_insn_set_marker(func_, name);
-  }
-  ~SrcLogger() {
-    jit_insn_set_marker(func_, "");
-  }
-private:
-  jit_function_t func_;
-};
+///////////////////////////////////////////////////////////////////////////////
 
 #define __align_word_size(...) ((((__VA_ARGS__) + WORD_MASK) / WORD_SIZE) * sizeof(block_type))
 #define __countof(arr) (sizeof(arr) / sizeof(arr[0]))
@@ -149,6 +111,8 @@ private:
 #define __op_call_arithmetic2(fname, ...) \
   auto pfn = is_signed ? fname<true, block_type> : fname<false, block_type>; \
   this->emit_op_call_bitwise(reinterpret_cast<void*>(pfn), #fname, __VA_ARGS__)
+
+///////////////////////////////////////////////////////////////////////////////
 
 static bool is_value_size(uint32_t size) {
   switch (size) {
@@ -236,7 +200,7 @@ static uint32_t get_value_size(jit_value_t j_value) {
 }
 
 #ifndef NDEBUG
-static void ext_watch(uint64_t value, char* name) {
+extern "C" void ext_watch(uint64_t value, char* name) {
   auto oldflags = std::cout.flags();
   std::cout.setf(std::ios_base::hex, std::ios_base::basefield);
   std::cout << "WATCH:" << name << " = " << value << std::endl;
@@ -244,6 +208,21 @@ static void ext_watch(uint64_t value, char* name) {
 }
 #define __watch(x) this->emit_watch(x, #x)
 #endif
+
+extern "C" void ext_copy_vector(block_type* dst,
+                                uint32_t dst_offset,
+                                const block_type* src,
+                                uint32_t src_offset,
+                                uint32_t length) {
+  assert(length > WORD_SIZE);
+  auto w_dst_idx = dst_offset / WORD_SIZE;
+  auto w_dst_lsb = dst_offset % WORD_SIZE;
+  auto w_src_idx = src_offset / WORD_SIZE;
+  auto w_src_lsb = src_offset % WORD_SIZE;
+  bv_copy_vector(dst + w_dst_idx, w_dst_lsb, src + w_src_idx, w_src_lsb, length);
+}
+
+
 
 static void error_handler(int error_code) {
   switch (error_code) {
@@ -254,18 +233,32 @@ static void error_handler(int error_code) {
   std::abort();
 }
 
-static void ext_copy_vector(block_type* dst,
-                            uint32_t dst_offset,
-                            const block_type* src,
-                            uint32_t src_offset,
-                            uint32_t length) {
-  assert(length > WORD_SIZE);
-  auto w_dst_idx = dst_offset / WORD_SIZE;
-  auto w_dst_lsb = dst_offset % WORD_SIZE;
-  auto w_src_idx = src_offset / WORD_SIZE;
-  auto w_src_lsb = src_offset % WORD_SIZE;
-  bv_copy_vector(dst + w_dst_idx, w_dst_lsb, src + w_src_idx, w_src_lsb, length);
-}
+class Compiler;
+
+void init_sdata(const Compiler* cp, sdata_type* data, lnodeimpl* node);
+
+///////////////////////////////////////////////////////////////////////////////
+
+class SrcLogger {
+public:
+  SrcLogger(jit_function_t func, const char* fname, const char* vname = nullptr) : func_(func) {
+    auto name = fname;
+    if (vname) {
+      auto tmp = stringf("%s @var=%s", fname, vname);
+      auto tmp2 = new char[tmp.length() + 1]();
+      strncpy(tmp2, tmp.c_str(), tmp.length());
+      name = tmp2;
+    }
+    jit_insn_set_marker(func_, name);
+  }
+  ~SrcLogger() {
+    jit_insn_set_marker(func_, "");
+  }
+private:
+  jit_function_t func_;
+};
+
+///////////////////////////////////////////////////////////////////////////////
 
 struct udf_data_t {
   udf_iface* udf;
@@ -286,6 +279,114 @@ extern "C" void udf_data_eval(udf_data_t* self) {
 extern "C" void udf_data_reset(udf_data_t* self) {
   self->udf->reset();
 }
+
+///////////////////////////////////////////////////////////////////////////////
+
+typedef const char* (*enum_string_cb)(uint32_t value);
+
+struct print_data_t {
+  char* format;
+  enum_string_cb* enum_strings;
+  sdata_type* srcs;
+
+  static uint32_t size(printimpl* node) {
+    auto num_srcs = node->srcs().size() + (node->has_pred() ? -1 : 0);
+    uint32_t size = sizeof(print_data_t);
+    size += node->format().size() + 1; // format
+    size += node->enum_strings().size() * sizeof(enum_string_cb); // enum_strings
+    size += num_srcs * sizeof(sdata_type); // src_values
+    return size;
+  }
+
+  void init(printimpl* node, const Compiler* cp) {
+    auto buf = reinterpret_cast<uint8_t*>(this) + sizeof(print_data_t);
+
+    auto fmt_len = node->format().size() + 1;
+    format = reinterpret_cast<char*>(buf);
+    memcpy(format, node->format().c_str(), fmt_len);
+    buf += fmt_len;
+
+    enum_strings = reinterpret_cast<enum_string_cb*>(buf);
+    for (uint32_t i = 0, n = node->enum_strings().size(); i < n; ++i) {
+      enum_strings[i] = node->enum_string(i);
+    }
+    buf += node->enum_strings().size() * sizeof(enum_string_cb);
+
+    srcs = reinterpret_cast<sdata_type*>(buf);
+    uint32_t pred = node->has_pred() ? 1 : 0;
+    for (uint32_t i = 0, n = node->srcs().size() - pred; i < n; ++i) {
+      init_sdata(cp, &srcs[i], node->src(i + pred).impl());
+    }
+  }
+};
+
+extern "C" void print_data_eval(print_data_t* self) {
+  std::stringstream strbuf;
+  fmtparser parser;
+  for (const char *str = self->format; *str != '\0'; ++str) {
+    if (*str == '{') {
+      fmtinfo_t fmt;
+      str = parser.parse(&fmt, str);
+      auto& src = self->srcs[fmt.index];
+      switch (fmt.type) {
+      case fmttype::Int:
+        strbuf << src;
+        break;
+      case fmttype::Float:
+        strbuf << bit_cast<float>(static_cast<int>(src));
+       break;
+      case fmttype::Enum:
+        strbuf << self->enum_strings[fmt.index](static_cast<int>(src));
+        break;
+      }
+    } else {
+      strbuf.put(*str);
+    }
+  }
+  std::cout << strbuf.rdbuf();
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct assert_data_t {
+  char* msg;
+  char* file;
+  int line;
+  sdata_type time;
+
+  static uint32_t size(assertimpl* node) {
+    uint32_t size = sizeof(assert_data_t);
+    size += node->msg().size() + 1; // msg
+    size += node->sloc().file().size() + 1; // file
+    return size;
+  }
+
+  void init(assertimpl* node, const Compiler* cp) {
+    auto buf = reinterpret_cast<uint8_t*>(this) + sizeof(print_data_t);
+
+    auto msg_len = node->msg().size() + 1;
+    msg = reinterpret_cast<char*>(buf);
+    memcpy(msg, node->msg().c_str(), msg_len);
+    buf += msg_len;
+
+    auto file_len = node->sloc().file().size() + 1;
+    file = reinterpret_cast<char*>(buf);
+    memcpy(file, node->sloc().file().c_str(), file_len);
+    buf += file_len;
+
+    line = node->sloc().line();
+
+    init_sdata(cp, &time, node->time().impl());
+  }
+};
+
+extern "C" void assert_data_eval(assert_data_t* self) {
+  fprintf(stderr, "assertion failure at tick %ld, %s (%s:%d)\n",
+          static_cast<uint64_t>(self->time), self->msg, self->file, self->line);
+  std::abort();
+}
+
+///////////////////////////////////////////////////////////////////////////////
 
 struct sim_state_t {
   block_type** ports;
@@ -338,132 +439,31 @@ struct sim_ctx_t {
   jit_context_t j_ctx;  
 };
 
+///////////////////////////////////////////////////////////////////////////////
+
 class Compiler {
-public:
-
-  Compiler(sim_ctx_t* ctx)
-    : sim_ctx_(ctx)
-    , l_bypass_(jit_label_undefined)
-    , bypass_enable_(false)
-    , word_type_(to_value_type(WORD_SIZE))
-    , vars_size_(0)
-    , ports_size_(0)
-  #ifndef NDEBUG
-    , dbg_off_(0)
-  #endif
-  {}
-
-  ~Compiler() {}
-
-  void build(const std::vector<lnodeimpl*>& eval_list) {
-    // begin build
-    jit_context_build_start(sim_ctx_->j_ctx);
-
-    // create JIT function
-    this->create_function();
-
-    // allocate objects
-    this->allocate_nodes(eval_list);
-
-    // lower all nodes
-    for (auto node : eval_list) {
-      this->resolve_branch(node);
-      switch (node->type()) {
-      case type_lit:
-        this->emit_node(reinterpret_cast<litimpl*>(node));
-        break;
-      case type_proxy:
-        this->emit_node(reinterpret_cast<proxyimpl*>(node));
-        break;
-      case type_input:
-      case type_udfout:
-        this->emit_node_input(reinterpret_cast<ioportimpl*>(node));
-        break;
-      case type_output:
-      case type_tap:
-      case type_udfin:
-        this->emit_node_output(reinterpret_cast<ioportimpl*>(node));
-        break;
-      case type_op:
-        this->emit_node(reinterpret_cast<opimpl*>(node));
-        break;
-      case type_sel:
-        this->emit_node(reinterpret_cast<selectimpl*>(node));
-        break;
-      case type_cd:
-        this->emit_node(reinterpret_cast<cdimpl*>(node));
-        break;
-      case type_reg:
-        this->emit_node(reinterpret_cast<regimpl*>(node));
-        break;      
-      case type_marport:
-        this->emit_node(reinterpret_cast<marportimpl*>(node));
-        break;
-      case type_msrport:
-        this->emit_node(reinterpret_cast<msrportimpl*>(node));
-        break;
-      case type_mwport:
-        this->emit_node(reinterpret_cast<mwportimpl*>(node));
-        break;
-      case type_time:
-        this->emit_node(reinterpret_cast<timeimpl*>(node));
-        break;
-      case type_assert:
-        this->emit_node(reinterpret_cast<assertimpl*>(node));
-        break;
-      case type_print:
-        this->emit_node(reinterpret_cast<printimpl*>(node));
-        break;
-      case type_udfc:
-        this->emit_node(reinterpret_cast<udfcimpl*>(node));
-        break;
-      case type_udfs:
-        this->emit_node(reinterpret_cast<udfsimpl*>(node));
-        break;
-      default:
-        std::abort();
-      case type_mem:
-        break;
-      }
-    }
-
-    // create bypass label
-    this->resolve_branch(nullptr);
-
-    // return 0
-    auto j_zero = this->emit_constant(0, jit_type_int32);
-    jit_insn_return(j_func_, j_zero);
-
-    // dump JIT assembly code
-    if (platform::self().cflags() & cflags::dump_jit) {
-      auto file = fopen("simjit.ast", "w");
-      jit_dump_ast(file, j_func_, "simjit");
-      fclose(file);
-    }
-
-    // compile function
-    if (!jit_function_compile(j_func_))
-      exit(1);
-
-    // end build
-    jit_context_build_end(sim_ctx_->j_ctx);
-
-    // dump JIT assembly code
-    if (platform::self().cflags() & cflags::dump_asm) {
-      auto file = fopen("simjit.asm", "w");
-      jit_dump_asm(file, j_func_, "simjit");
-      fclose(file);
-    }
-
-  #ifdef JIT_BACKEND_INTERP
-    sim_ctx_->j_func = j_func_;
-  #else
-    // get closure
-    sim_ctx_->entry = reinterpret_cast<pfn_entry>(jit_function_to_closure(j_func_));
-  #endif
-  }
-
 private:
+
+  struct memaddr_t {
+    jit_value_t base;
+    uint32_t offset;
+  };
+
+  struct sblock_t {
+    sblock_t() {
+      this->clear();
+    }
+
+    void clear() {
+      cd = nullptr;
+      reset = nullptr;
+      nodes.clear();
+    }
+
+    lnodeimpl* cd;
+    lnodeimpl* reset;
+    std::vector<lnodeimpl*> nodes;
+  };
 
   struct const_alloc_t {
     const_alloc_t(block_type* data, uint32_t size, uint32_t node_id)
@@ -489,127 +489,27 @@ private:
     }
   };
 
-  typedef const char* (*enum_string_cb)(uint32_t value);
+  sim_ctx_t*      sim_ctx_;
+  alloc_map_t     addr_map_;
+  var_map_t       input_map_;
+  var_map_t       scalar_map_;
+  var_map_t       pointer_map_;
+  jit_label_t     l_bypass_;
+  bypass_set_t    bypass_nodes_;
+  bool            bypass_enable_;
+  sblock_t        sblock_;
+  jit_type_t      word_type_;
+  jit_function_t  j_func_;
+  jit_value_t     j_vars_;
+  jit_value_t     j_ports_;
+  uint32_t        vars_size_;
+  uint32_t        ports_size_;
+#ifndef NDEBUG
+  jit_value_t     j_dbg_;
+  uint32_t        dbg_off_;
+#endif
 
-  struct print_data_t {
-    char* format;
-    enum_string_cb* enum_strings;
-    sdata_type* srcs;
-
-    static uint32_t size(printimpl* node) {
-      auto num_srcs = node->srcs().size() + (node->has_pred() ? -1 : 0);
-      uint32_t size = sizeof(print_data_t);
-      size += node->format().size() + 1; // format
-      size += node->enum_strings().size() * sizeof(enum_string_cb); // enum_strings
-      size += num_srcs * sizeof(sdata_type); // src_values
-      return size;
-    }
-
-    void init(printimpl* node, const Compiler* cp) {
-      auto buf = reinterpret_cast<uint8_t*>(this) + sizeof(print_data_t);
-
-      auto fmt_len = node->format().size() + 1;
-      format = reinterpret_cast<char*>(buf);
-      memcpy(format, node->format().c_str(), fmt_len);
-      buf += fmt_len;
-
-      enum_strings = reinterpret_cast<enum_string_cb*>(buf);
-      for (uint32_t i = 0, n = node->enum_strings().size(); i < n; ++i) {
-        enum_strings[i] = node->enum_string(i);
-      }
-      buf += node->enum_strings().size() * sizeof(enum_string_cb);
-
-      srcs = reinterpret_cast<sdata_type*>(buf);
-      uint32_t pred = node->has_pred() ? 1 : 0;
-      for (uint32_t i = 0, n = node->srcs().size() - pred; i < n; ++i) {
-        cp->init_sdata(&srcs[i], node->src(i + pred).impl());
-      }
-    }
-
-    static void eval(print_data_t* self) {
-      std::stringstream strbuf;
-      fmtparser parser;
-      for (const char *str = self->format; *str != '\0'; ++str) {
-        if (*str == '{') {
-          fmtinfo_t fmt;
-          str = parser.parse(&fmt, str);
-          auto& src = self->srcs[fmt.index];
-          switch (fmt.type) {
-          case fmttype::Int:
-            strbuf << src;
-            break;
-          case fmttype::Float:
-            strbuf << bit_cast<float>(static_cast<int>(src));
-           break;
-          case fmttype::Enum:
-            strbuf << self->enum_strings[fmt.index](static_cast<int>(src));
-            break;
-          }
-        } else {
-          strbuf.put(*str);
-        }
-      }
-      std::cout << strbuf.rdbuf();
-    }
-  };
-
-  struct assert_data_t {
-    char* msg;    
-    char* file;
-    int line;
-    sdata_type time;
-
-    static uint32_t size(assertimpl* node) {
-      uint32_t size = sizeof(assert_data_t);
-      size += node->msg().size() + 1; // msg
-      size += node->sloc().file().size() + 1; // file
-      return size;
-    }
-
-    void init(assertimpl* node, const Compiler* cp) {
-      auto buf = reinterpret_cast<uint8_t*>(this) + sizeof(print_data_t);
-
-      auto msg_len = node->msg().size() + 1;
-      msg = reinterpret_cast<char*>(buf);
-      memcpy(msg, node->msg().c_str(), msg_len);
-      buf += msg_len;
-
-      auto file_len = node->sloc().file().size() + 1;
-      file = reinterpret_cast<char*>(buf);
-      memcpy(file, node->sloc().file().c_str(), file_len);
-      buf += file_len;
-
-      line = node->sloc().line();
-
-      cp->init_sdata(&time, node->time().impl());
-    }
-
-    static void eval(assert_data_t* self) {
-      fprintf(stderr, "assertion failure at tick %ld, %s (%s:%d)\n",
-              static_cast<uint64_t>(self->time), self->msg, self->file, self->line);
-      std::abort();
-    }
-  };
-
-  /*struct udf_data_t {
-    udf_iface* udf;
-
-    static uint32_t size(udfimpl*) {
-      return sizeof(udf_data_t);
-    }
-
-    void init(udfimpl* node) {
-      udf = node->udf();
-    }
-
-    static void eval(udf_data_t* self) {
-      self->udf->eval();
-    }
-
-    static void reset(udf_data_t* self) {
-      self->udf->reset();
-    }
-  };*/
+  friend void init_sdata(const Compiler* Cp, sdata_type* data, lnodeimpl* node);
 
   void create_function() {
     jit_type_t params[1] = {jit_type_ptr};
@@ -992,12 +892,12 @@ private:
           auto j_max = this->emit_constant(src0_size, src0_type);
           auto j_overflow = jit_insn_sge(j_func_, j_src1, j_max);
           jit_insn_branch_if(j_func_, j_overflow, &l_else);
-          auto j_tmp1 = jit_insn_shr(j_func_, j_src0_s, j_src1);
+          auto j_tmp1 = jit_insn_sshr(j_func_, j_src0_s, j_src1);
           jit_insn_store(j_func_, j_dst, j_tmp1);
           jit_insn_branch(j_func_, &l_exit);
           jit_insn_label(j_func_, &l_else);
           auto j_maxM1 = this->emit_constant(src0_size - 1, src0_type);
-          auto j_tmp2 = jit_insn_shr(j_func_, j_src0_s, j_maxM1);
+          auto j_tmp2 = jit_insn_sshr(j_func_, j_src0_s, j_maxM1);
           jit_insn_store(j_func_, j_dst, j_tmp2);
           jit_insn_label(j_func_, &l_exit);
           this->emit_clear_extra_bits(node);
@@ -1320,10 +1220,11 @@ private:
     //--
     auto dst_width = node->size();
     bool is_scalar = (dst_width <= WORD_SIZE);
-    auto j_ntype = to_native_type(dst_width);    
-    auto is_switch = node->has_key();
     auto key_size = node->key().size();
-    auto is_iswitch = is_switch && (key_size <= 32);
+    auto is_switch = node->has_key() && (key_size <= 32);
+    if (!is_switch)
+      return false;
+    auto j_ntype = to_native_type(dst_width);
     int32_t l = node->srcs().size() - 1;
     int32_t start = is_switch ? 1 : 0;
     jit_value_t j_dst = nullptr;
@@ -1340,7 +1241,7 @@ private:
     int64_t i_pred_prev = 0;
     for (int32_t i = start; i < l; i += 2) {
       auto j_pred = scalar_map_.at(node->src(i+0).id());
-      if (is_iswitch) {
+      if (is_switch) {
         auto pred_value = jit_value_get_int_constant(j_pred);
         pred_delta += (i != start) ? (pred_value - i_pred_prev) : 0;
         pred_min = std::min(pred_value, pred_min);
@@ -1352,7 +1253,7 @@ private:
     }
 
     auto distance = (pred_max - pred_min) + 1;
-    if (is_iswitch
+    if (is_switch
      && l > 3*2+1
      && is_constant
      && distance * dst_width <= WORD_SIZE) {
@@ -1402,7 +1303,7 @@ private:
         }
       }
 
-      auto j_ttype = to_native_type(length * dst_width);
+      auto j_ttype = to_native_or_word_type(length * dst_width);
       auto j_table = this->emit_constant(table, j_ttype);
       auto j_key = scalar_map_.at(node->key().id());
 
@@ -2097,7 +1998,8 @@ private:
     for (uint32_t i = (node->has_pred() ? 1 : 0), n = node->srcs().size(); i < n; ++i) {
       auto src = node->src(i).impl();
       auto it = scalar_map_.find(src->id());
-      if (it != scalar_map_.end()) {
+      if (it != scalar_map_.end()
+       && 0 == addr_map_.count(src->id())) {
         auto srcs_ptr = jit_insn_load_relative(j_func_,
                                                j_vars_,
                                                addr + offsetof(print_data_t, srcs),
@@ -2117,8 +2019,8 @@ private:
                                            1);
     jit_value_t args[] = {j_data_ptr};
     jit_insn_call_native(j_func_,
-                         "print_data_t::eval",
-                         (void*)print_data_t::eval,
+                         "print_data_eval",
+                         (void*)print_data_eval,
                          j_sig,
                          args,
                          __countof(args),
@@ -2148,7 +2050,8 @@ private:
 
     // copy scalar arguments
     auto it = scalar_map_.find(node->time().id());
-    if (it != scalar_map_.end()) {
+    if (it != scalar_map_.end()
+     && 0 == addr_map_.count(node->time().id())) {
       auto time_ptr = jit_insn_load_relative(j_func_,
                                              j_vars_,
                                              addr + offsetof(assert_data_t, time),
@@ -2166,8 +2069,8 @@ private:
                                            1);
     jit_value_t args[] = {j_data_ptr};
     jit_insn_call_native(j_func_,
-                         "assert_data_t::eval",
-                         (void*)assert_data_t::eval,
+                         "assert_data_eval",
+                         (void*)assert_data_eval,
                          j_sig,
                          args,
                          __countof(args),
@@ -2521,26 +2424,6 @@ private:
       addr += constant.size * sizeof(block_type);
     }
     CH_DBGCHECK((addr - offset) == size, "invalid size");
-  }
-
-  void init_sdata(sdata_type* data, lnodeimpl* node) const {
-    block_type* value = nullptr;
-    auto it = addr_map_.find(node->id());
-    if (it != addr_map_.end()) {
-      auto addr = it->second;
-      switch (node->type()) {
-      case type_input:
-      case type_udfout:
-        assert(addr < ports_size_);
-        value = sim_ctx_->state.ports[addr];
-        break;
-      default:
-        assert(addr < vars_size_);
-        value = reinterpret_cast<block_type*>(sim_ctx_->state.vars + addr);
-        break;
-      }
-    }
-    data->emplace(value, node->size());
   }
 
   /////////////////////////////////////////////////////////////////////////////
@@ -3215,26 +3098,152 @@ private:
   }
 #endif
 
-  sim_ctx_t*      sim_ctx_;
-  alloc_map_t     addr_map_;
-  var_map_t       input_map_;
-  var_map_t       scalar_map_;
-  var_map_t       pointer_map_;
-  jit_label_t     l_bypass_;
-  bypass_set_t    bypass_nodes_;
-  bool            bypass_enable_;
-  sblock_t        sblock_;
-  jit_type_t      word_type_;
-  jit_function_t  j_func_;
-  jit_value_t     j_vars_;
-  jit_value_t     j_ports_;
-  uint32_t        vars_size_;
-  uint32_t        ports_size_;
-#ifndef NDEBUG
-  jit_value_t     j_dbg_;
-  uint32_t        dbg_off_;
-#endif
+public:
+
+  Compiler(sim_ctx_t* ctx)
+    : sim_ctx_(ctx)
+    , l_bypass_(jit_label_undefined)
+    , bypass_enable_(false)
+    , word_type_(to_value_type(WORD_SIZE))
+    , vars_size_(0)
+    , ports_size_(0)
+  #ifndef NDEBUG
+    , dbg_off_(0)
+  #endif
+  {}
+
+  ~Compiler() {}
+
+  void build(const std::vector<lnodeimpl*>& eval_list) {
+    // begin build
+    jit_context_build_start(sim_ctx_->j_ctx);
+
+    // create JIT function
+    this->create_function();
+
+    // allocate objects
+    this->allocate_nodes(eval_list);
+
+    // lower all nodes
+    for (auto node : eval_list) {
+      this->resolve_branch(node);
+      switch (node->type()) {
+      case type_lit:
+        this->emit_node(reinterpret_cast<litimpl*>(node));
+        break;
+      case type_proxy:
+        this->emit_node(reinterpret_cast<proxyimpl*>(node));
+        break;
+      case type_input:
+      case type_udfout:
+        this->emit_node_input(reinterpret_cast<ioportimpl*>(node));
+        break;
+      case type_output:
+      case type_tap:
+      case type_udfin:
+        this->emit_node_output(reinterpret_cast<ioportimpl*>(node));
+        break;
+      case type_op:
+        this->emit_node(reinterpret_cast<opimpl*>(node));
+        break;
+      case type_sel:
+        this->emit_node(reinterpret_cast<selectimpl*>(node));
+        break;
+      case type_cd:
+        this->emit_node(reinterpret_cast<cdimpl*>(node));
+        break;
+      case type_reg:
+        this->emit_node(reinterpret_cast<regimpl*>(node));
+        break;
+      case type_marport:
+        this->emit_node(reinterpret_cast<marportimpl*>(node));
+        break;
+      case type_msrport:
+        this->emit_node(reinterpret_cast<msrportimpl*>(node));
+        break;
+      case type_mwport:
+        this->emit_node(reinterpret_cast<mwportimpl*>(node));
+        break;
+      case type_time:
+        this->emit_node(reinterpret_cast<timeimpl*>(node));
+        break;
+      case type_assert:
+        this->emit_node(reinterpret_cast<assertimpl*>(node));
+        break;
+      case type_print:
+        this->emit_node(reinterpret_cast<printimpl*>(node));
+        break;
+      case type_udfc:
+        this->emit_node(reinterpret_cast<udfcimpl*>(node));
+        break;
+      case type_udfs:
+        this->emit_node(reinterpret_cast<udfsimpl*>(node));
+        break;
+      default:
+        std::abort();
+      case type_mem:
+        break;
+      }
+    }
+
+    // create bypass label
+    this->resolve_branch(nullptr);
+
+    // return 0
+    auto j_zero = this->emit_constant(0, jit_type_int32);
+    jit_insn_return(j_func_, j_zero);
+
+    // dump JIT assembly code
+    if (platform::self().cflags() & cflags::dump_jit) {
+      auto file = fopen("simjit.ast", "w");
+      jit_dump_ast(file, j_func_, "simjit");
+      fclose(file);
+    }
+
+    // compile function
+    if (!jit_function_compile(j_func_))
+      exit(1);
+
+    // end build
+    jit_context_build_end(sim_ctx_->j_ctx);
+
+    // dump JIT assembly code
+    if (platform::self().cflags() & cflags::dump_asm) {
+      auto file = fopen("simjit.asm", "w");
+      jit_dump_asm(file, j_func_, "simjit");
+      fclose(file);
+    }
+
+  #ifdef JIT_BACKEND_INTERP
+    sim_ctx_->j_func = j_func_;
+  #else
+    // get closure
+    sim_ctx_->entry = reinterpret_cast<pfn_entry>(jit_function_to_closure(j_func_));
+  #endif
+  }
 };
+
+///////////////////////////////////////////////////////////////////////////////
+
+void init_sdata(const Compiler* Cp, sdata_type* data, lnodeimpl* node) {
+  block_type* value = nullptr;
+  auto it = Cp->addr_map_.find(node->id());
+  if (it != Cp->addr_map_.end()) {
+    auto addr = it->second;
+    switch (node->type()) {
+    case type_input:
+    case type_udfout:
+      assert(addr < Cp->ports_size_);
+      value = Cp->sim_ctx_->state.ports[addr];
+      break;
+    default:
+      assert(addr < Cp->vars_size_);
+      value = reinterpret_cast<block_type*>(Cp->sim_ctx_->state.vars + addr);
+      break;
+    }
+  }
+  data->emplace(value, node->size());
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
