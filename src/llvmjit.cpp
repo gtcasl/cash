@@ -440,7 +440,7 @@ auto resolve_pointer(_jit_context* ctx, llvm::Value* value, llvm::Type* type) {
       assert(false);
       break;
     }
-    return ctx->builder()->CreateBitCast(value, type);
+    return ctx->builder()->CreatePointerCast(value, type);
   }
   return value;
 }
@@ -504,12 +504,6 @@ int jit_function_compile(jit_function_t func) {
 void *jit_function_to_closure(jit_function_t func) {
   auto ctx = func->ctx();
   return ctx->closure("eval");
-}
-
-jit_block_t jit_function_get_current(jit_function_t func) {
-  CH_UNUSED(func);
-  CH_TODO();
-  return nullptr;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -876,38 +870,30 @@ jit_value_t jit_insn_uge(jit_function_t func,
   return func->create_value(res);
 }
 
-jit_value_t jit_insn_to_bool(jit_function_t func, jit_value_t value1) {
-  CH_UNUSED(func, value1);
-  CH_TODO();
-  return nullptr;
-}
-
-jit_value_t jit_insn_to_not_bool(jit_function_t func, jit_value_t value1) {
-  CH_UNUSED(func, value1);
-  CH_TODO();
-  return nullptr;
-}
-
-jit_value_t jit_insn_abs(jit_function_t func, jit_value_t value1) {
-  CH_UNUSED(func, value1);
-  CH_TODO();
-  return nullptr;
+jit_value_t jit_insn_to_bool(jit_function_t func, jit_value_t value) {
+  return jit_insn_convert(func, value, jit_type_bool, 0);
 }
 
 jit_value_t jit_insn_min(jit_function_t func,
                          jit_value_t value1,
                          jit_value_t value2) {
-  CH_UNUSED(func, value1, value2);
-  CH_TODO();
-  return nullptr;
+  auto ctx = func->ctx();
+  auto builder = ctx->builder();
+  auto lhs = func->resolve_value(value1);
+  auto rhs = func->resolve_value(value2);
+  auto res = builder->CreateMinimum(lhs, rhs);
+  return func->create_value(res);
 }
 
 jit_value_t jit_insn_max(jit_function_t func,
                          jit_value_t value1,
                          jit_value_t value2) {
-  CH_UNUSED(func, value1, value2);
-  CH_TODO();
-  return nullptr;
+  auto ctx = func->ctx();
+  auto builder = ctx->builder();
+  auto lhs = func->resolve_value(value1);
+  auto rhs = func->resolve_value(value2);
+  auto res = builder->CreateMaximum(lhs, rhs);
+  return func->create_value(res);
 }
 
 int jit_insn_store(jit_function_t func, jit_value_t dest, jit_value_t value) {
@@ -1153,26 +1139,12 @@ int jit_insn_label_tight(jit_function_t func, jit_label_t *label) {
   return 1;
 }
 
-int jit_insn_new_block(jit_function_t func) {
-  CH_UNUSED(func);
-  CH_TODO();
-  return 0;
-}
-
 int jit_insn_return(jit_function_t func, jit_value_t value) {
   auto ctx = func->ctx();
   auto builder = ctx->builder();
   auto in = func->resolve_value(value);
   builder->CreateRet(in);
   return 1;
-}
-
-int jit_insn_move_blocks_to_end(jit_function_t func,
-                                jit_label_t from_label,
-                                jit_label_t to_label) {
-  CH_UNUSED(func, from_label, to_label);
-  CH_TODO();
-  return 0;
 }
 
 int jit_insn_memcpy(jit_function_t func,
@@ -1245,10 +1217,7 @@ jit_value_t jit_insn_convert(jit_function_t func,
                              jit_value_t value,
                              jit_type_t type,
                              int overflow_check) {
-  if (overflow_check) {
-    CH_TODO();
-    return nullptr;
-  }
+  assert(0 == overflow_check);
   if (value->type()->kind() == type->kind())
     return value;  
   auto ctx = func->ctx();

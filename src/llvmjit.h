@@ -102,7 +102,6 @@ void jit_context_build_end(jit_context_t context);
 jit_function_t jit_function_create(jit_context_t context, jit_type_t signature);
 int jit_function_compile(jit_function_t func);
 void *jit_function_to_closure(jit_function_t func);
-jit_block_t jit_function_get_current(jit_function_t func);
 
 //
 // Value API
@@ -158,9 +157,7 @@ jit_value_t jit_insn_sge(jit_function_t func, jit_value_t value1, jit_value_t va
 jit_value_t jit_insn_uge(jit_function_t func, jit_value_t value1, jit_value_t value2);
 
 jit_value_t jit_insn_to_bool(jit_function_t func, jit_value_t value);
-jit_value_t jit_insn_to_not_bool(jit_function_t func, jit_value_t value);
 
-jit_value_t jit_insn_abs(jit_function_t func, jit_value_t value1);
 jit_value_t jit_insn_min(jit_function_t func, jit_value_t value1, jit_value_t value2);
 jit_value_t jit_insn_max(jit_function_t func, jit_value_t value1, jit_value_t value2);
 
@@ -186,7 +183,6 @@ int jit_insn_branch_if_not(jit_function_t func, jit_value_t value, jit_label_t *
 int jit_insn_label(jit_function_t func, jit_label_t *label);
 int jit_insn_label_tight(jit_function_t func, jit_label_t *label);
 int jit_insn_return(jit_function_t func, jit_value_t value);
-int jit_insn_move_blocks_to_end(jit_function_t func, jit_label_t from_label, jit_label_t to_label);
 
 int jit_insn_memcpy(jit_function_t func, jit_value_t dest, jit_value_t src, jit_value_t size);
 jit_value_t jit_insn_call_native(jit_function_t func, const char *name, void *native_func, jit_type_t signature, jit_value_t *args, unsigned int num_args, int flags);
