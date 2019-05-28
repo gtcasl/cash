@@ -2194,7 +2194,7 @@ private:
                                            1);
     jit_value_t args[] = {j_data_ptr};
     jit_insn_call_native(j_func_,
-                         "udf_data_t_eval",
+                         "udf_data_eval",
                          (void*)udf_data_eval,
                          j_sig,
                          args,
@@ -2228,7 +2228,7 @@ private:
                                            1);
     jit_value_t args[] = {j_data_ptr};
     jit_insn_call_native(j_func_,
-                         "udf_data_t_reset",
+                         "udf_data_reset",
                          (void*)udf_data_reset,
                          j_sig,
                          args,
