@@ -62,6 +62,15 @@ void ch::internal::dbprint(int level, const char* format, ...) {
   va_end(args);
 }
 
+std::string ch::internal::demanged_typeid(const std::string& name) {
+  int status;
+  char* demangled = abi::__cxa_demangle(name.c_str(), 0, 0, &status);
+  CH_CHECK(0 == status, "abi::__cxa_demangle() failed");
+  std::string sd(demangled);
+  ::free(demangled);
+  return sd;
+}
+
 std::string ch::internal::identifier_from_string(const std::string& name) {
   auto ret(name);
   auto not_identifier = [&](auto x){ return !isalnum(x) && (x != '_'); };
@@ -71,11 +80,7 @@ std::string ch::internal::identifier_from_string(const std::string& name) {
 
 std::string ch::internal::identifier_from_typeid(const std::string& name,
                                                  bool remove_template_params) {
-  int status;
-  char* demangled = abi::__cxa_demangle(name.c_str(), 0, 0, &status);
-  CH_CHECK(0 == status, "abi::__cxa_demangle() failed");
-  std::string sd(demangled);
-  ::free(demangled);
+  std::string sd = demanged_typeid(name);
   if (remove_template_params) {
     sd = std::regex_replace(sd, std::regex("<.*>"), "");
   }

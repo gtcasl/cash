@@ -163,6 +163,26 @@ jit_value_t jit_insn_uge(jit_function_t func, jit_value_t value1, jit_value_t va
   return jit_insn_ge(func, value1, value2);
 }
 
+jit_value_t jit_insn_smin(jit_function_t func, jit_value_t value1, jit_value_t value2) {
+  auto lhs = to_signed_value(func, value1);
+  auto rhs = to_signed_value(func, value2);
+  return to_unsigned_value(func, jit_insn_min(func, lhs, rhs));
+}
+
+jit_value_t jit_insn_umin(jit_function_t func, jit_value_t value1, jit_value_t value2) {
+  return jit_insn_min(func, value1, value2);
+}
+
+jit_value_t jit_insn_smax(jit_function_t func, jit_value_t value1, jit_value_t value2) {
+  auto lhs = to_signed_value(func, value1);
+  auto rhs = to_signed_value(func, value2);
+  return to_unsigned_value(func, jit_insn_max(func, lhs, rhs));
+}
+
+jit_value_t jit_insn_umax(jit_function_t func, jit_value_t value1, jit_value_t value2) {
+  return jit_insn_max(func, value1, value2);
+}
+
 jit_value_t jit_insn_sext(jit_function_t func, jit_value_t value, jit_type_t type) {
   auto vtype = jit_value_get_type(value);
   auto vt_size = jit_type_get_size(vtype);

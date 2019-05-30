@@ -103,7 +103,8 @@ static constexpr uint32_t INLINE_THRESHOLD = 8;
 
 #define __op_call_shr(fname, ...) \
   auto pfn = is_signed ? fname<true, block_type> : fname<false, block_type>; \
-  this->emit_op_call_shift(reinterpret_cast<void*>(pfn), #fname, __VA_ARGS__)
+  auto pfn_name = is_signed ? stringf("%s<true, block_type>",#fname) : stringf("%s<false, block_type>",#fname); \
+  this->emit_op_call_shift(reinterpret_cast<void*>(pfn), pfn_name.c_str(), __VA_ARGS__)
 
 #define __op_call_arithmetic(fname, ...) \
   __op_call_bitwise(fname, __VA_ARGS__)
@@ -1856,7 +1857,7 @@ private:
           auto j_max = this->emit_constant(pipe_length - 1, jit_type_int32);
           auto j_one = this->emit_constant(1, jit_type_int32);
           auto j_sub = jit_insn_sub(j_func_, j_pipe_index, j_one);
-          auto j_min = jit_insn_min(j_func_, j_sub, j_max);
+          auto j_min = jit_insn_umin(j_func_, j_sub, j_max);
           jit_insn_store_relative(j_func_, j_vars_, pipe_index_addr, j_min);
         }
       }

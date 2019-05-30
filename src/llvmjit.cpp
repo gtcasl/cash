@@ -4,13 +4,15 @@
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 
-#include "llvm/ExecutionEngine/SectionMemoryManager.h"
+/*#include "llvm/ExecutionEngine/SectionMemoryManager.h"
 #include "llvm/ExecutionEngine/JITSymbol.h"
 #include "llvm/ExecutionEngine/Orc/CompileUtils.h"
 #include "llvm/ExecutionEngine/Orc/ExecutionUtils.h"
 #include "llvm/ExecutionEngine/Orc/IRCompileLayer.h"
 #include "llvm/ExecutionEngine/Orc/RTDyldObjectLinkingLayer.h"
 #include "llvm/ExecutionEngine/Orc/JITTargetMachineBuilder.h"
+
+#include <llvm/ExecutionEngine/ExecutionEngine.h>
 
 #include "llvm/IR/DerivedTypes.h"
 #include "llvm/IR/IRBuilder.h"
@@ -19,7 +21,26 @@
 #include "llvm/Support/TargetSelect.h"
 #include "llvm/Support/TargetRegistry.h"
 #include "llvm/Support/raw_os_ostream.h"
-#include "llvm/Transforms/IPO/PassManagerBuilder.h"
+#include "llvm/Transforms/IPO/PassManagerBuilder.h"*/
+
+#include <llvm/ExecutionEngine/ExecutionEngine.h>
+#include <llvm/IR/IRBuilder.h>
+#include <llvm/IR/LegacyPassManager.h>
+
+#include <llvm/ExecutionEngine/ExecutionEngine.h>
+#include <llvm/ExecutionEngine/MCJIT.h>
+#include <llvm/Support/TargetSelect.h>
+
+#include <llvm/Transforms/InstCombine/InstCombine.h>
+#include <llvm/Transforms/Scalar.h>
+#include <llvm/Transforms/Scalar/GVN.h>
+#include <llvm/Transforms/Utils.h>
+
+#include <llvm/IR/DerivedTypes.h>
+#include <llvm/IR/Verifier.h>
+#include <llvm/Support/raw_os_ostream.h>
+
+#include <llvm/Transforms/IPO/PassManagerBuilder.h>
 
 #pragma GCC diagnostic pop
 
@@ -55,8 +76,10 @@ public:
     switch (type->getTypeID()) {
     case llvm::Type::VoidTyID:
       return jit_type_void;
-    case llvm::Type::PointerTyID:
+    case llvm::Type::PointerTyID: {
+      assert(type == jit_type_ptr->impl());
       return jit_type_ptr;
+    }
     case llvm::Type::IntegerTyID: {
       auto size = llvm::cast<llvm::IntegerType>(type)->getBitWidth();
       switch (size) {
@@ -121,8 +144,12 @@ public:
     return return_type_;
   }
 
-  const auto& arg_types() const {
+  auto& arg_types() const {
     return arg_types_;
+  }
+
+  auto arg_type(unsigned i) const {
+    return arg_types_.at(i);
   }
 
 private:
@@ -197,46 +224,52 @@ private:
 class _jit_context {
 public:
 
-  _jit_context(const llvm::orc::JITTargetMachineBuilder& JTMB,
-               llvm::TargetMachine* TM,
-               const llvm::DataLayout& DL)
-    : thread_context_(llvm::make_unique<llvm::LLVMContext>())
-    , context_(thread_context_.getContext())
-    , builder_(*context_)
-    , object_layer_(ex_session_, []() { return llvm::make_unique<llvm::SectionMemoryManager>(); })
-    , compile_layer_(ex_session_, object_layer_, llvm::orc::ConcurrentIRCompiler(JTMB))
-    , mangle_(ex_session_, DL)
-    , target_(TM) {
+  _jit_context() : builder_(context_) {
     //--
-    ex_session_.getMainJITDylib().setGenerator(
-      llvm::cantFail(llvm::orc::DynamicLibrarySearchGenerator::GetForCurrentProcess(DL)));
-
-    //--
-    module_ = std::make_unique<llvm::Module>("llvmjit", *context_);
-    module_->setDataLayout(DL);
-
-    //--
-    jit_type_void_def.init(JIT_TYPE_VOID, llvm::Type::getVoidTy(*context_));
-    jit_type_bool_def.init(JIT_TYPE_BOOL, llvm::Type::getInt1Ty(*context_));
-    jit_type_int8_def.init(JIT_TYPE_INT8, llvm::Type::getInt8Ty(*context_));
-    jit_type_int16_def.init(JIT_TYPE_INT16, llvm::Type::getInt16Ty(*context_));
-    jit_type_int32_def.init(JIT_TYPE_INT32, llvm::Type::getInt32Ty(*context_));
-    jit_type_int64_def.init(JIT_TYPE_INT64, llvm::Type::getInt64Ty(*context_));
-    jit_type_ptr_def.init(JIT_TYPE_PTR, llvm::Type::getInt8PtrTy(*context_));
+    jit_type_void_def.init(JIT_TYPE_VOID, llvm::Type::getVoidTy(context_));
+    jit_type_bool_def.init(JIT_TYPE_BOOL, llvm::Type::getInt1Ty(context_));
+    jit_type_int8_def.init(JIT_TYPE_INT8, llvm::Type::getInt8Ty(context_));
+    jit_type_int16_def.init(JIT_TYPE_INT16, llvm::Type::getInt16Ty(context_));
+    jit_type_int32_def.init(JIT_TYPE_INT32, llvm::Type::getInt32Ty(context_));
+    jit_type_int64_def.init(JIT_TYPE_INT64, llvm::Type::getInt64Ty(context_));
+    jit_type_ptr_def.init(JIT_TYPE_PTR, llvm::Type::getInt8PtrTy(context_));
   }
 
   ~_jit_context() {}
 
-  auto impl() const {
-    return context_;
+  bool init() {
+    auto module = std::make_unique<llvm::Module>("llvmjit", context_);    
+    module_ = module.get();
+
+    std::string error;
+    engine_ = llvm::EngineBuilder(std::move(module))
+                .setErrorStr(&error)
+                .setOptLevel(llvm::CodeGenOpt::Aggressive)
+                .setEngineKind(llvm::EngineKind::JIT)
+                .create();
+    if (!engine_) {
+      std::cerr << "Error: failed to create llvm::EngineBuilder; " << error << std::endl;
+      return false;
+    }
+    target_ = engine_->getTargetMachine();
+    module_->setDataLayout(target_->createDataLayout());
+    return true;
+  }
+
+  auto impl() {
+    return &context_;
   }
 
   auto target() const {
-    return target_.get();
+    return target_;
   }
 
   auto module() const {
-    return module_.get();
+    return module_;
+  }
+
+  auto engine() const {
+    return engine_;
   }
 
   auto builder() {
@@ -246,55 +279,60 @@ public:
   int compile(llvm::Function* func) {
     {
       static llvm::raw_os_ostream os(std::cerr);
-      if (llvm::verifyFunction(*func, &os))
+      if (llvm::verifyFunction(*func, &os)) {
+        assert(false);
         return 0;
+      }
     }
     {
+      llvm::legacy::FunctionPassManager fpm(module_);
+      fpm.add(llvm::createPromoteMemoryToRegisterPass());
+      fpm.add(llvm::createAggressiveDCEPass());
+      fpm.add(llvm::createCFGSimplificationPass());
+      fpm.add(llvm::createConstantPropagationPass());
+      fpm.add(llvm::createDeadCodeEliminationPass());
+      fpm.add(llvm::createGVNPass());
+      fpm.add(llvm::createIndVarSimplifyPass());
+      fpm.add(llvm::createInstructionCombiningPass());
+      fpm.add(llvm::createLICMPass());
+      fpm.add(llvm::createLowerSwitchPass());
+      fpm.add(llvm::createReassociatePass());
+      fpm.doInitialization();
+      fpm.run(*func);
+    }
+    /*{
       llvm::PassManagerBuilder pmb;
       pmb.OptLevel = 3;
       pmb.SizeLevel = 0;
       pmb.LoopVectorize = true;
       pmb.SLPVectorize = true;
 
-      llvm::legacy::FunctionPassManager fpm(module_.get());
+      llvm::legacy::FunctionPassManager fpm(module_);
       llvm::legacy::PassManager pm;
       pmb.populateFunctionPassManager(fpm);
       pmb.populateModulePassManager(pm);
       fpm.doInitialization();
       fpm.run(*func);
       pm.run(*module_);
-    }
+    }*/
     return 1;
   }
 
   void* closure(const std::string& name) {
-    auto err = compile_layer_.add(
-          ex_session_.getMainJITDylib(),
-          llvm::orc::ThreadSafeModule(std::move(module_), thread_context_));
-    if (err)
-      return nullptr;
-    auto ret = ex_session_.lookup(
-      {&ex_session_.getMainJITDylib()}, mangle_(name));
-    if (!ret)
-      return nullptr;
-    return (void*)ret->getAddress();
+    return (void*)engine_->getFunctionAddress(name);
   }
 
   _jit_function* create_function(jit_type_t signature,
                                  const char* name,
-                                 bool is_external = false);
+                                 void* address = nullptr);
 
 private:
 
-  llvm::orc::ExecutionSession ex_session_;
-  llvm::orc::ThreadSafeContext thread_context_;
-  llvm::LLVMContext* context_;
+  llvm::LLVMContext context_;
   llvm::IRBuilder<> builder_;
-  llvm::orc::RTDyldObjectLinkingLayer object_layer_;
-  llvm::orc::IRCompileLayer compile_layer_;
-  llvm::orc::MangleAndInterner mangle_;
-  std::unique_ptr<llvm::TargetMachine> target_;
-  std::unique_ptr<llvm::Module> module_;
+  llvm::Module* module_;
+  llvm::ExecutionEngine* engine_;
+  llvm::TargetMachine* target_;
   std::unordered_map<std::string, std::unique_ptr<_jit_function>> functions_;
 };
 
@@ -302,7 +340,7 @@ private:
 
 class _jit_function {
 public:
-  _jit_function(_jit_context* ctx, llvm::Function* impl, bool is_external)
+  _jit_function(_jit_context* ctx, llvm::Function* impl, void* address)
     : ctx_(ctx)
     , impl_(impl)
     , args_(impl->arg_size())
@@ -313,7 +351,9 @@ public:
       args_[i] = std::make_unique<_jit_value>(&arg, type);
       ++i;
     }
-    if (!is_external) {
+    if (address) {
+      ctx->engine()->addGlobalMapping(impl, address);
+    } else {
       auto bb = this->create_block(&cur_label_);
       ctx->builder()->SetInsertPoint(bb);
     }
@@ -331,12 +371,18 @@ public:
     return args_[index].get();
   }
 
-  auto resolve_pointer(llvm::Value* value, llvm::Type* type) {
-    assert(value->getType()->getTypeID() == llvm::Type::PointerTyID);
-    auto ptype = type->getPointerTo();
-    if (value->getType() == ptype)
-      return value;
-    return ctx_->builder()->CreatePointerCast(value, ptype);
+  auto resolve_address(jit_value_t value, jit_type_t type) {
+    llvm::Value* ret;
+    if (value->is_mutable()) {
+      ret = ctx_->builder()->CreateLoad(value->alloc());
+    } else {
+      ret = value->impl();
+    }
+    auto ptype = type->impl()->getPointerTo();
+    if (ret->getType() != ptype) {
+      ret = ctx_->builder()->CreatePointerCast(ret, ptype);
+    }
+    return ret;
   }
 
   auto resolve_value(jit_value_t value, jit_type_t type = nullptr) {
@@ -348,6 +394,7 @@ public:
     }
     if (type
      && value->type()->kind() != type->kind()) {
+      assert(type->impl()->getTypeID() == llvm::Type::IntegerTyID);
       ret = ctx_->builder()->CreateIntCast(ret, type->impl(), false);
     }
     return ret;
@@ -432,7 +479,7 @@ private:
 
 _jit_function* _jit_context::create_function(jit_type_t signature,
                                              const char* name,
-                                             bool is_external) {
+                                             void* address) {
   auto it = functions_.find(name);
   if (it != functions_.end())
     return it->second.get();
@@ -445,10 +492,18 @@ _jit_function* _jit_context::create_function(jit_type_t signature,
   auto func = llvm::Function::Create(sig,
                                      llvm::Function::ExternalLinkage,
                                      name,
-                                     module_.get());
-  auto jfunc = new _jit_function(this, func, is_external);
+                                     module_);
+  auto jfunc = new _jit_function(this, func, address);
   functions_.emplace(name, jfunc);
   return jfunc;
+}
+
+static jit_type_t find_common_type(jit_value_t lhs, jit_value_t rhs) {
+  auto t1 = lhs->type();
+  auto t2 = rhs->type();
+  auto s1 = jit_type_get_size(t1);
+  auto s2 = jit_type_get_size(t2);
+  return (s1 < s2) ? t2 : t1;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -457,21 +512,15 @@ jit_context_t jit_context_create() {
   llvm::InitializeNativeTarget();
   llvm::InitializeNativeTargetAsmPrinter();
 
-  auto JTMB = llvm::orc::JITTargetMachineBuilder::detectHost();
-  if (!JTMB) {
-    std::cerr << "JITTargetMachineBuilder::detectHost() failed" << std::endl;
+  auto context = new _jit_context();
+  if (nullptr == context) {
+    std::cerr << "Error: failed to create context" << std::endl;
     return nullptr;
   }
-
-  auto TM = JTMB->createTargetMachine();
-  if (!TM) {
-    std::cerr << "JITTargetMachineBuilder::createTargetMachine() failed" << std::endl;
+  if (!context->init())
     return nullptr;
-  }
 
-  auto DL = (*TM)->createDataLayout();
-
-  return new _jit_context(*JTMB, TM->release(), DL);
+  return context;
 }
 
 void jit_context_destroy(jit_context_t context) {
@@ -602,8 +651,9 @@ jit_value_t jit_insn_add(jit_function_t func,
                          jit_value_t value2) {
   auto ctx = func->ctx();
   auto builder = ctx->builder();
-  auto lhs = func->resolve_value(value1);
-  auto rhs = func->resolve_value(value2);
+  auto type = find_common_type(value1, value2);
+  auto lhs = func->resolve_value(value1, type);
+  auto rhs = func->resolve_value(value2, type);
   auto res = builder->CreateAdd(lhs, rhs);
   return func->create_value(res);
 }
@@ -613,8 +663,9 @@ jit_value_t jit_insn_sub(jit_function_t func,
                          jit_value_t value2) {
   auto ctx = func->ctx();
   auto builder = ctx->builder();  
-  auto lhs = func->resolve_value(value1);
-  auto rhs = func->resolve_value(value2);
+  auto type = find_common_type(value1, value2);
+  auto lhs = func->resolve_value(value1, type);
+  auto rhs = func->resolve_value(value2, type);
   auto res = builder->CreateSub(lhs, rhs);
   return func->create_value(res);
 }
@@ -624,8 +675,9 @@ jit_value_t jit_insn_mul(jit_function_t func,
                          jit_value_t value2) {
   auto ctx = func->ctx();
   auto builder = ctx->builder();
-  auto lhs = func->resolve_value(value1);
-  auto rhs = func->resolve_value(value2);
+  auto type = find_common_type(value1, value2);
+  auto lhs = func->resolve_value(value1, type);
+  auto rhs = func->resolve_value(value2, type);
   auto res = builder->CreateMul(lhs, rhs);
   return func->create_value(res);
 }
@@ -635,8 +687,9 @@ jit_value_t jit_insn_sdiv(jit_function_t func,
                           jit_value_t value2) {
   auto ctx = func->ctx();
   auto builder = ctx->builder();
-  auto lhs = func->resolve_value(value1);
-  auto rhs = func->resolve_value(value2);
+  auto type = find_common_type(value1, value2);
+  auto lhs = func->resolve_value(value1, type);
+  auto rhs = func->resolve_value(value2, type);
   auto res = builder->CreateSDiv(lhs, rhs);
   return func->create_value(res);
 }
@@ -646,8 +699,9 @@ jit_value_t jit_insn_udiv(jit_function_t func,
                           jit_value_t value2) {
   auto ctx = func->ctx();
   auto builder = ctx->builder();
-  auto lhs = func->resolve_value(value1);
-  auto rhs = func->resolve_value(value2);
+  auto type = find_common_type(value1, value2);
+  auto lhs = func->resolve_value(value1, type);
+  auto rhs = func->resolve_value(value2, type);
   auto res = builder->CreateUDiv(lhs, rhs);
   return func->create_value(res);
 }
@@ -657,8 +711,9 @@ jit_value_t jit_insn_srem(jit_function_t func,
                           jit_value_t value2) {
   auto ctx = func->ctx();
   auto builder = ctx->builder();
-  auto lhs = func->resolve_value(value1);
-  auto rhs = func->resolve_value(value2);
+  auto type = find_common_type(value1, value2);
+  auto lhs = func->resolve_value(value1, type);
+  auto rhs = func->resolve_value(value2, type);
   auto res = builder->CreateSRem(lhs, rhs);
   return func->create_value(res);
 }
@@ -668,8 +723,9 @@ jit_value_t jit_insn_urem(jit_function_t func,
                           jit_value_t value2) {
   auto ctx = func->ctx();
   auto builder = ctx->builder();
-  auto lhs = func->resolve_value(value1);
-  auto rhs = func->resolve_value(value2);
+  auto type = find_common_type(value1, value2);
+  auto lhs = func->resolve_value(value1, type);
+  auto rhs = func->resolve_value(value2, type);
   auto res = builder->CreateURem(lhs, rhs);
   return func->create_value(res);
 }
@@ -687,8 +743,9 @@ jit_value_t jit_insn_and(jit_function_t func,
                          jit_value_t value2) {
   auto ctx = func->ctx();
   auto builder = ctx->builder();
-  auto lhs = func->resolve_value(value1);
-  auto rhs = func->resolve_value(value2);
+  auto type = find_common_type(value1, value2);
+  auto lhs = func->resolve_value(value1, type);
+  auto rhs = func->resolve_value(value2, type);
   auto res = builder->CreateAnd(lhs, rhs);
   return func->create_value(res);
 }
@@ -698,8 +755,9 @@ jit_value_t jit_insn_or(jit_function_t func,
                         jit_value_t value2) {
   auto ctx = func->ctx();
   auto builder = ctx->builder();
-  auto lhs = func->resolve_value(value1);
-  auto rhs = func->resolve_value(value2);
+  auto type = find_common_type(value1, value2);
+  auto lhs = func->resolve_value(value1, type);
+  auto rhs = func->resolve_value(value2, type);
   auto res = builder->CreateOr(lhs, rhs);
   return func->create_value(res);
 }
@@ -709,8 +767,9 @@ jit_value_t jit_insn_xor(jit_function_t func,
                          jit_value_t value2) {
   auto ctx = func->ctx();
   auto builder = ctx->builder();
-  auto lhs = func->resolve_value(value1);
-  auto rhs = func->resolve_value(value2);
+  auto type = find_common_type(value1, value2);
+  auto lhs = func->resolve_value(value1, type);
+  auto rhs = func->resolve_value(value2, type);
   auto res = builder->CreateXor(lhs, rhs);
   return func->create_value(res);
 }
@@ -728,8 +787,9 @@ jit_value_t jit_insn_shl(jit_function_t func,
                          jit_value_t value2) {
   auto ctx = func->ctx();
   auto builder = ctx->builder();
-  auto lhs = func->resolve_value(value1);
-  auto rhs = func->resolve_value(value2, value1->type());
+  auto type = find_common_type(value1, value2);
+  auto lhs = func->resolve_value(value1, type);
+  auto rhs = func->resolve_value(value2, type);
   auto res = builder->CreateShl(lhs, rhs);
   return func->create_value(res);
 }
@@ -739,8 +799,9 @@ jit_value_t jit_insn_sshr(jit_function_t func,
                          jit_value_t value2) {
   auto ctx = func->ctx();
   auto builder = ctx->builder();
-  auto lhs = func->resolve_value(value1);
-  auto rhs = func->resolve_value(value2, value1->type());
+  auto type = find_common_type(value1, value2);
+  auto lhs = func->resolve_value(value1, type);
+  auto rhs = func->resolve_value(value2, type);
   auto res = builder->CreateAShr(lhs, rhs);
   return func->create_value(res);
 }
@@ -750,8 +811,9 @@ jit_value_t jit_insn_ushr(jit_function_t func,
                           jit_value_t value2) {
   auto ctx = func->ctx();
   auto builder = ctx->builder();
-  auto lhs = func->resolve_value(value1);
-  auto rhs = func->resolve_value(value2, value1->type());
+  auto type = find_common_type(value1, value2);
+  auto lhs = func->resolve_value(value1, type);
+  auto rhs = func->resolve_value(value2, type);
   auto res = builder->CreateLShr(lhs, rhs);
   return func->create_value(res);
 }
@@ -761,8 +823,9 @@ jit_value_t jit_insn_eq(jit_function_t func,
                         jit_value_t value2) {
   auto ctx = func->ctx();
   auto builder = ctx->builder();
-  auto lhs = func->resolve_value(value1);
-  auto rhs = func->resolve_value(value2);
+  auto type = find_common_type(value1, value2);
+  auto lhs = func->resolve_value(value1, type);
+  auto rhs = func->resolve_value(value2, type);
   auto res = builder->CreateICmpEQ(lhs, rhs);
   return func->create_value(res);
 }
@@ -772,8 +835,9 @@ jit_value_t jit_insn_ne(jit_function_t func,
                         jit_value_t value2) {
   auto ctx = func->ctx();
   auto builder = ctx->builder();
-  auto lhs = func->resolve_value(value1);
-  auto rhs = func->resolve_value(value2);
+  auto type = find_common_type(value1, value2);
+  auto lhs = func->resolve_value(value1, type);
+  auto rhs = func->resolve_value(value2, type);
   auto res = builder->CreateICmpNE(lhs, rhs);
   return func->create_value(res);
 }
@@ -783,8 +847,9 @@ jit_value_t jit_insn_slt(jit_function_t func,
                          jit_value_t value2) {
   auto ctx = func->ctx();
   auto builder = ctx->builder();
-  auto lhs = func->resolve_value(value1);
-  auto rhs = func->resolve_value(value2);
+  auto type = find_common_type(value1, value2);
+  auto lhs = func->resolve_value(value1, type);
+  auto rhs = func->resolve_value(value2, type);
   auto res = builder->CreateICmpSLT(lhs, rhs);
   return func->create_value(res);
 }
@@ -794,8 +859,9 @@ jit_value_t jit_insn_ult(jit_function_t func,
                          jit_value_t value2) {
   auto ctx = func->ctx();
   auto builder = ctx->builder();
-  auto lhs = func->resolve_value(value1);
-  auto rhs = func->resolve_value(value2);
+  auto type = find_common_type(value1, value2);
+  auto lhs = func->resolve_value(value1, type);
+  auto rhs = func->resolve_value(value2, type);
   auto res = builder->CreateICmpULT(lhs, rhs);
   return func->create_value(res);
 }
@@ -805,8 +871,9 @@ jit_value_t jit_insn_sle(jit_function_t func,
                          jit_value_t value2) {
   auto ctx = func->ctx();
   auto builder = ctx->builder();
-  auto lhs = func->resolve_value(value1);
-  auto rhs = func->resolve_value(value2);
+  auto type = find_common_type(value1, value2);
+  auto lhs = func->resolve_value(value1, type);
+  auto rhs = func->resolve_value(value2, type);
   auto res = builder->CreateICmpSLE(lhs, rhs);
   return func->create_value(res);
 }
@@ -816,8 +883,9 @@ jit_value_t jit_insn_ule(jit_function_t func,
                          jit_value_t value2) {
   auto ctx = func->ctx();
   auto builder = ctx->builder();
-  auto lhs = func->resolve_value(value1);
-  auto rhs = func->resolve_value(value2);
+  auto type = find_common_type(value1, value2);
+  auto lhs = func->resolve_value(value1, type);
+  auto rhs = func->resolve_value(value2, type);
   auto res = builder->CreateICmpULE(lhs, rhs);
   return func->create_value(res);
 }
@@ -827,8 +895,9 @@ jit_value_t jit_insn_sgt(jit_function_t func,
                          jit_value_t value2) {
   auto ctx = func->ctx();
   auto builder = ctx->builder();
-  auto lhs = func->resolve_value(value1);
-  auto rhs = func->resolve_value(value2);
+  auto type = find_common_type(value1, value2);
+  auto lhs = func->resolve_value(value1, type);
+  auto rhs = func->resolve_value(value2, type);
   auto res = builder->CreateICmpSGT(lhs, rhs);
   return func->create_value(res);
 }
@@ -838,8 +907,9 @@ jit_value_t jit_insn_ugt(jit_function_t func,
                          jit_value_t value2) {
   auto ctx = func->ctx();
   auto builder = ctx->builder();
-  auto lhs = func->resolve_value(value1);
-  auto rhs = func->resolve_value(value2);
+  auto type = find_common_type(value1, value2);
+  auto lhs = func->resolve_value(value1, type);
+  auto rhs = func->resolve_value(value2, type);
   auto res = builder->CreateICmpUGT(lhs, rhs);
   return func->create_value(res);
 }
@@ -849,8 +919,9 @@ jit_value_t jit_insn_sge(jit_function_t func,
                          jit_value_t value2) {
   auto ctx = func->ctx();
   auto builder = ctx->builder();
-  auto lhs = func->resolve_value(value1);
-  auto rhs = func->resolve_value(value2);
+  auto type = find_common_type(value1, value2);
+  auto lhs = func->resolve_value(value1, type);
+  auto rhs = func->resolve_value(value2, type);
   auto res = builder->CreateICmpSGE(lhs, rhs);
   return func->create_value(res);
 }
@@ -860,35 +931,62 @@ jit_value_t jit_insn_uge(jit_function_t func,
                          jit_value_t value2) {
   auto ctx = func->ctx();
   auto builder = ctx->builder();
-  auto lhs = func->resolve_value(value1);
-  auto rhs = func->resolve_value(value2);
+  auto type = find_common_type(value1, value2);
+  auto lhs = func->resolve_value(value1, type);
+  auto rhs = func->resolve_value(value2, type);
   auto res = builder->CreateICmpUGE(lhs, rhs);
   return func->create_value(res);
 }
 
-jit_value_t jit_insn_to_bool(jit_function_t func, jit_value_t value) {
-  return jit_insn_convert(func, value, jit_type_bool, 0);
-}
-
-jit_value_t jit_insn_min(jit_function_t func,
-                         jit_value_t value1,
-                         jit_value_t value2) {
+jit_value_t jit_insn_smin(jit_function_t func,
+                          jit_value_t value1,
+                          jit_value_t value2) {
   auto ctx = func->ctx();
   auto builder = ctx->builder();
-  auto lhs = func->resolve_value(value1);
-  auto rhs = func->resolve_value(value2);
-  auto res = builder->CreateMinimum(lhs, rhs);
+  auto type = find_common_type(value1, value2);
+  auto lhs = func->resolve_value(value1, type);
+  auto rhs = func->resolve_value(value2, type);
+  auto cmp = builder->CreateICmpSLT(lhs, rhs);
+  auto res = builder->CreateSelect(cmp, lhs, rhs);
   return func->create_value(res);
 }
 
-jit_value_t jit_insn_max(jit_function_t func,
-                         jit_value_t value1,
-                         jit_value_t value2) {
+jit_value_t jit_insn_umin(jit_function_t func,
+                          jit_value_t value1,
+                          jit_value_t value2) {
   auto ctx = func->ctx();
   auto builder = ctx->builder();
-  auto lhs = func->resolve_value(value1);
-  auto rhs = func->resolve_value(value2);
-  auto res = builder->CreateMaximum(lhs, rhs);
+  auto type = find_common_type(value1, value2);
+  auto lhs = func->resolve_value(value1, type);
+  auto rhs = func->resolve_value(value2, type);
+  auto cmp = builder->CreateICmpULT(lhs, rhs);
+  auto res = builder->CreateSelect(cmp, lhs, rhs);
+  return func->create_value(res);
+}
+
+jit_value_t jit_insn_smax(jit_function_t func,
+                          jit_value_t value1,
+                          jit_value_t value2) {
+  auto ctx = func->ctx();
+  auto builder = ctx->builder();
+  auto type = find_common_type(value1, value2);
+  auto lhs = func->resolve_value(value1, type);
+  auto rhs = func->resolve_value(value2, type);
+  auto cmp = builder->CreateICmpSGT(lhs, rhs);
+  auto res = builder->CreateSelect(cmp, lhs, rhs);
+  return func->create_value(res);
+}
+
+jit_value_t jit_insn_umax(jit_function_t func,
+                          jit_value_t value1,
+                          jit_value_t value2) {
+  auto ctx = func->ctx();
+  auto builder = ctx->builder();
+  auto type = find_common_type(value1, value2);
+  auto lhs = func->resolve_value(value1, type);
+  auto rhs = func->resolve_value(value2, type);
+  auto cmp = builder->CreateICmpUGT(lhs, rhs);
+  auto res = builder->CreateSelect(cmp, lhs, rhs);
   return func->create_value(res);
 }
 
@@ -928,7 +1026,10 @@ int jit_insn_store_relative(jit_function_t func,
     auto idx = builder->getInt32(offset);
     addr = builder->CreateInBoundsGEP(jit_type_int8->impl(), addr, idx);
   }
-  addr = func->resolve_pointer(addr, in->getType());
+  auto ptype = in->getType()->getPointerTo();
+  if (ptype != addr->getType()) {
+    addr = builder->CreatePointerCast(addr, ptype);
+  }
   auto inst = builder->CreateStore(in, addr);
   return (inst != nullptr);
 }
@@ -952,7 +1053,7 @@ jit_value_t jit_insn_load_elem(jit_function_t func,
   auto ctx = func->ctx();
   auto builder = ctx->builder();
   auto idx = func->resolve_value(index);
-  auto addr = func->resolve_value(base_addr);
+  auto addr = func->resolve_address(base_addr, elem_type);
   addr = builder->CreateInBoundsGEP(elem_type->impl(), addr, idx);
   auto value = builder->CreateLoad(elem_type->impl(), addr);
   return func->create_value(value);
@@ -962,11 +1063,15 @@ jit_value_t jit_insn_load_elem_address(jit_function_t func,
                                        jit_value_t base_addr,
                                        jit_value_t index,
                                        jit_type_t elem_type) {
+  assert(jit_type_ptr == base_addr->type());
   auto ctx = func->ctx();
   auto builder = ctx->builder();
   auto idx = func->resolve_value(index);
-  auto addr = func->resolve_value(base_addr);
+  auto addr = func->resolve_address(base_addr, elem_type);
   auto value = builder->CreateInBoundsGEP(elem_type->impl(), addr, idx);
+  if (value->getType() != jit_type_ptr->impl()) {
+    value = builder->CreatePointerCast(value, jit_type_ptr->impl());
+  }
   return func->create_value(value);
 }
 
@@ -978,26 +1083,39 @@ int jit_insn_store_elem(jit_function_t func,
   auto builder = ctx->builder();
   auto in = func->resolve_value(value);
   auto elem_type = value->type();
-  auto addr = func->resolve_value(base_addr);
   auto idx = func->resolve_value(index);
+  auto addr = func->resolve_address(base_addr, elem_type);
   addr = builder->CreateInBoundsGEP(elem_type->impl(), addr, idx);
   auto inst = builder->CreateStore(in, addr);
   return (inst != nullptr);
 }
 
 jit_value_t jit_insn_address_of(jit_function_t func, jit_value_t value) {
-  if (!value->is_mutable()) {
-    auto ctx = func->ctx();
-    auto builder = ctx->builder();
+  auto ctx = func->ctx();
+  auto builder = ctx->builder();
+  if (!value->is_mutable()) {    
     jit_value_t data = value;
     value = func->create_value(value->type());
     builder->CreateStore(data->impl(), value->alloc());
+  }  
+  llvm::Value* alloc = value->alloc();
+  if (alloc->getType() != jit_type_ptr->impl()) {
+    alloc = builder->CreatePointerCast(alloc, jit_type_ptr->impl());
   }
-  return func->create_value(value->alloc());
+  return func->create_value(alloc);
 }
 
 void jit_insn_set_marker(jit_function_t func, const char* name) {
   CH_UNUSED(func, name);
+}
+
+jit_value_t jit_insn_to_bool(jit_function_t func, jit_value_t value) {
+  auto ctx = func->ctx();
+  auto builder = ctx->builder();
+  auto in = func->resolve_value(value);
+  auto zero = jit_value_create_int_constant(func, 0, value->type());
+  auto res = builder->CreateICmpNE(in, zero->impl());
+  return func->create_value(res);
 }
 
 int jit_insn_branch(jit_function_t func, jit_label_t *label) {
@@ -1171,10 +1289,11 @@ jit_value_t jit_insn_call_native(jit_function_t func,
   assert(flags == JIT_CALL_NOTHROW);
   auto ctx = func->ctx();
   auto builder = ctx->builder();
-  auto jfunc = ctx->create_function(signature, name, true);
+  auto j_sig = reinterpret_cast<_jit_signature*>(signature);
+  auto jfunc = ctx->create_function(j_sig, name, native_func);
   std::vector<llvm::Value*> ll_args(num_args);
   for (unsigned int i = 0; i < num_args; ++i) {
-    ll_args[i] = func->resolve_value(args[i]);
+    ll_args[i] = func->resolve_value(args[i], j_sig->arg_type(i));
   }
   auto res = builder->CreateCall(jfunc->impl(), ll_args);
   return func->create_value(res);
@@ -1230,7 +1349,7 @@ int jit_dump_asm(FILE *stream, jit_function_t func, const char *name) {
   {
     auto ctx = func->ctx();
     auto module = ctx->module();
-    auto target = ctx->target();;
+    auto target = ctx->target();
     llvm::legacy::PassManager pass;
     llvm::raw_svector_ostream os(sv);
     if (target->addPassesToEmitFile(

@@ -31,6 +31,11 @@ jit_value_t jit_insn_ugt(jit_function_t func, jit_value_t value1, jit_value_t va
 jit_value_t jit_insn_sge(jit_function_t func, jit_value_t value1, jit_value_t value2);
 jit_value_t jit_insn_uge(jit_function_t func, jit_value_t value1, jit_value_t value2);
 
+jit_value_t jit_insn_smin(jit_function_t func, jit_value_t value1, jit_value_t value2);
+jit_value_t jit_insn_umin(jit_function_t func, jit_value_t value1, jit_value_t value2);
+jit_value_t jit_insn_smax(jit_function_t func, jit_value_t value1, jit_value_t value2);
+jit_value_t jit_insn_umax(jit_function_t func, jit_value_t value1, jit_value_t value2);
+
 jit_value_t jit_insn_sext(jit_function_t func, jit_value_t value, jit_type_t type);
 
 jit_value_t jit_insn_select(jit_function_t func, jit_value_t cond, jit_value_t case_true, jit_value_t case_false);

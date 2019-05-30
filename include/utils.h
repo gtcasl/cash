@@ -26,11 +26,20 @@ std::vector<std::string> split(const std::string& str, char delimiter);
 
 void dbprint(int level, const char* format, ...);
 
+std::string demanged_typeid(const std::string& name);
+
 std::string identifier_from_string(const std::string& name);
 
 std::string identifier_from_typeid(const std::string& name, bool remove_template_params = false);
 
 int char2int(char x, int base);
+
+///////////////////////////////////////////////////////////////////////////////
+
+template <typename T>
+auto idname(bool remove_template_params = false) {
+  return identifier_from_typeid(typeid(T).name(), remove_template_params);
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 

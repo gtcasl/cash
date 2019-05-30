@@ -70,6 +70,15 @@ set(PROJECT_SOURCES
 # build library
 add_library(${PROJECT_NAME} SHARED ${PROJECT_SOURCES})
 
+target_include_directories(${PROJECT_NAME} PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<INSTALL_INTERFACE:include>
+    PRIVATE src)
+
+set_target_properties(${PROJECT_NAME} PROPERTIES
+    VERSION ${PROJECT_VERSION}
+    SOVERSION ${PROJECT_VERSION_MAJOR})
+
 # link pthreads
 find_package(Threads)
 target_link_libraries(${PROJECT_NAME} PRIVATE ${CMAKE_THREAD_LIBS_INIT})
@@ -113,7 +122,9 @@ elseif (LLVMJIT)
     add_definitions(${LLVM_DEFINITIONS})
 
     # Find the libraries that correspond to the LLVM components that we wish to use
-    llvm_map_components_to_libnames(llvm_libs core executionEngine native object orcjit runtimedyld support ipo)
+    #llvm_map_components_to_libnames(llvm_libs core executionEngine native object orcjit runtimedyld support ipo)
+
+    llvm_map_components_to_libnames(llvm_libs Core ExecutionEngine Interpreter Support nativecodegen mcjit ipo)
 
     target_link_libraries(${PROJECT_NAME} PRIVATE ${llvm_libs})
     add_definitions(-DLLVMJIT)
@@ -138,15 +149,6 @@ if (LIBBFD_FOUND)
 else()
   MESSAGE(STATUS "Binutils-dev missing.")
 endif()
-
-target_include_directories(${PROJECT_NAME} PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-    $<INSTALL_INTERFACE:include>
-    PRIVATE src)
-
-set_target_properties(${PROJECT_NAME} PROPERTIES
-    VERSION ${PROJECT_VERSION}
-    SOVERSION ${PROJECT_VERSION_MAJOR})
 
 include(GNUInstallDirs)
 

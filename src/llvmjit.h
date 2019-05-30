@@ -158,8 +158,10 @@ jit_value_t jit_insn_uge(jit_function_t func, jit_value_t value1, jit_value_t va
 
 jit_value_t jit_insn_to_bool(jit_function_t func, jit_value_t value);
 
-jit_value_t jit_insn_min(jit_function_t func, jit_value_t value1, jit_value_t value2);
-jit_value_t jit_insn_max(jit_function_t func, jit_value_t value1, jit_value_t value2);
+jit_value_t jit_insn_smin(jit_function_t func, jit_value_t value1, jit_value_t value2);
+jit_value_t jit_insn_umin(jit_function_t func, jit_value_t value1, jit_value_t value2);
+jit_value_t jit_insn_smax(jit_function_t func, jit_value_t value1, jit_value_t value2);
+jit_value_t jit_insn_umax(jit_function_t func, jit_value_t value1, jit_value_t value2);
 
 int jit_insn_store(jit_function_t func, jit_value_t dest, jit_value_t value);
 jit_value_t jit_insn_load_relative(jit_function_t func, jit_value_t base_addr, jit_nint offset, jit_type_t type);
