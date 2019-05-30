@@ -27,11 +27,25 @@ install:
   - wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
   - sudo apt-add-repository "deb http://apt.llvm.org/trusty/ llvm-toolchain-trusty-8 main"
   - sudo apt-get update
-  - sudo apt-get install -y llvm-8-dev
+  - sudo apt-get install -y libllvm8 llvm-8-dev llvm-8 llvm-8-runtime
 
 script: 
   # patch libjit
-  - scripts/libjit_patch.sh
+  - scripts/libjit_patch.sh  
+  # Build llvm Release project
+  - mkdir -p build_llr
+  - pushd build_llr
+  - cmake -DLLVMJIT=ON -DCMAKE_BUILD_TYPE=Release ..
+  - make -j8 all
+  - make test
+  - CASH_CFLAGS=256 make test
+  - CASH_CFLAGS=640 make test
+  - CASH_CFLAGS=261760 make test
+  - valgrind bin/testsuite
+  - CASH_CFLAGS=256 valgrind bin/testsuite
+  - CASH_CFLAGS=640 valgrind bin/testsuite
+  - CASH_CFLAGS=261760 valgrind bin/testsuite
+  - popd
   # Build libjit Release project
   - mkdir -p build_jbr
   - pushd build_jbr
@@ -39,31 +53,24 @@ script:
   - make -j8 all
   - make test
   - CASH_CFLAGS=256 make test
+  - CASH_CFLAGS=640 make test
+  - CASH_CFLAGS=261760 make test
   - valgrind bin/testsuite
   - CASH_CFLAGS=256 valgrind bin/testsuite
   - CASH_CFLAGS=640 valgrind bin/testsuite
-  - popd
-  # Build llvm Release project
-  - mkdir -p build_rel
-  - pushd build_rel
-  - cmake -DLLVMJIT=ON -DCMAKE_BUILD_TYPE=Release ..
-  - make -j8 all
-  - make test
-  - CASH_CFLAGS=256 make test
-  - valgrind bin/testsuite
-  - CASH_CFLAGS=256 valgrind bin/testsuite
-  - CASH_CFLAGS=640 valgrind bin/testsuite
+  - CASH_CFLAGS=261760 valgrind bin/testsuite
   - popd
   # Build llvm Debug project
   - export CASH_DEBUG_LEVEL=3
-  - mkdir -p build_dbg
-  - pushd build_dbg
+  - mkdir -p build_lld
+  - pushd build_lld
   - cmake -DLLVMJIT=ON -DCMAKE_BUILD_TYPE=Debug -DCODECOV=ON ..
   - make -j8 all 
   - CASH_CFLAGS=15  make test
   - CASH_CFLAGS=271 make test
   - CASH_CFLAGS=655 make test
-  - popd
+  - CASH_CFLAGS=261775 make test
+  - popd  
   
 after_success:
   # Gather code coverage
