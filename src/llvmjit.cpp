@@ -4,43 +4,19 @@
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 
-/*#include "llvm/ExecutionEngine/SectionMemoryManager.h"
-#include "llvm/ExecutionEngine/JITSymbol.h"
-#include "llvm/ExecutionEngine/Orc/CompileUtils.h"
-#include "llvm/ExecutionEngine/Orc/ExecutionUtils.h"
-#include "llvm/ExecutionEngine/Orc/IRCompileLayer.h"
-#include "llvm/ExecutionEngine/Orc/RTDyldObjectLinkingLayer.h"
-#include "llvm/ExecutionEngine/Orc/JITTargetMachineBuilder.h"
-
-#include <llvm/ExecutionEngine/ExecutionEngine.h>
-
-#include "llvm/IR/DerivedTypes.h"
-#include "llvm/IR/IRBuilder.h"
-#include "llvm/IR/Module.h"
-#include "llvm/IR/Verifier.h"
-#include "llvm/Support/TargetSelect.h"
-#include "llvm/Support/TargetRegistry.h"
-#include "llvm/Support/raw_os_ostream.h"
-#include "llvm/Transforms/IPO/PassManagerBuilder.h"*/
-
-#include <llvm/ExecutionEngine/ExecutionEngine.h>
-#include <llvm/IR/IRBuilder.h>
-#include <llvm/IR/LegacyPassManager.h>
-
-#include <llvm/ExecutionEngine/ExecutionEngine.h>
 #include <llvm/ExecutionEngine/MCJIT.h>
-#include <llvm/Support/TargetSelect.h>
+
+#include <llvm/IR/IRBuilder.h>
+#include <llvm/IR/Verifier.h>
+#include <llvm/IR/LegacyPassManager.h>
 
 #include <llvm/Transforms/InstCombine/InstCombine.h>
 #include <llvm/Transforms/Scalar.h>
 #include <llvm/Transforms/Scalar/GVN.h>
 #include <llvm/Transforms/Utils.h>
 
-#include <llvm/IR/DerivedTypes.h>
-#include <llvm/IR/Verifier.h>
+#include <llvm/Support/TargetSelect.h>
 #include <llvm/Support/raw_os_ostream.h>
-
-#include <llvm/Transforms/IPO/PassManagerBuilder.h>
 
 #pragma GCC diagnostic pop
 
@@ -300,21 +276,6 @@ public:
       fpm.doInitialization();
       fpm.run(*func);
     }
-    /*{
-      llvm::PassManagerBuilder pmb;
-      pmb.OptLevel = 3;
-      pmb.SizeLevel = 0;
-      pmb.LoopVectorize = true;
-      pmb.SLPVectorize = true;
-
-      llvm::legacy::FunctionPassManager fpm(module_);
-      llvm::legacy::PassManager pm;
-      pmb.populateFunctionPassManager(fpm);
-      pmb.populateModulePassManager(pm);
-      fpm.doInitialization();
-      fpm.run(*func);
-      pm.run(*module_);
-    }*/
     return 1;
   }
 
