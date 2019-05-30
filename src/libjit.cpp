@@ -1,4 +1,5 @@
 #include "libjit.h"
+#include "jit/jit-dump.h"
 #include "common.h"
 
 static jit_type_t to_native_type(jit_type_t type) {

@@ -121,10 +121,7 @@ elseif (LLVMJIT)
     include_directories(${LLVM_INCLUDE_DIRS})
     add_definitions(${LLVM_DEFINITIONS})
 
-    # Find the libraries that correspond to the LLVM components that we wish to use
-    #llvm_map_components_to_libnames(llvm_libs core executionEngine native object orcjit runtimedyld support ipo)
-
-    llvm_map_components_to_libnames(llvm_libs Core ExecutionEngine Interpreter Support nativecodegen mcjit ipo)
+    llvm_map_components_to_libnames(llvm_libs Core ExecutionEngine Interpreter Support nativecodegen mcjit)
 
     target_link_libraries(${PROJECT_NAME} PRIVATE ${llvm_libs})
     add_definitions(-DLLVMJIT)
