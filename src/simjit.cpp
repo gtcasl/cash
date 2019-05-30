@@ -864,7 +864,7 @@ private:
         scalar_map_[node->id()] = j_dst;
         auto j_max = this->emit_constant(native_size, j_ntype);
         auto j_zero = this->emit_constant(0, j_ntype);
-        auto j_overflow = jit_insn_sge(j_func_, j_src1, j_max);
+        auto j_overflow = jit_insn_uge(j_func_, j_src1, j_max);
         jit_insn_branch_if(j_func_, j_overflow, &l_else);
         auto j_src0_n = this->emit_cast(j_src0, j_ntype);
         auto j_tmp = jit_insn_shl(j_func_, j_src0_n, j_src1);
@@ -891,7 +891,7 @@ private:
           auto src0_type = jit_value_get_type(j_src0_s);
           auto src0_size = get_value_size(j_src0_s);
           auto j_max = this->emit_constant(src0_size, src0_type);
-          auto j_overflow = jit_insn_sge(j_func_, j_src1, j_max);
+          auto j_overflow = jit_insn_uge(j_func_, j_src1, j_max);
           jit_insn_branch_if(j_func_, j_overflow, &l_else);
           auto j_tmp1 = jit_insn_sshr(j_func_, j_src0_s, j_src1);
           jit_insn_store(j_func_, j_dst, j_tmp1);
@@ -907,7 +907,7 @@ private:
           auto src0_size = get_value_size(j_src0);
           auto j_max = this->emit_constant(src0_size, src0_type);
           auto j_zero = this->emit_constant(0, j_ntype);
-          auto j_overflow = jit_insn_sge(j_func_, j_src1, j_max);
+          auto j_overflow = jit_insn_uge(j_func_, j_src1, j_max);
           jit_insn_branch_if(j_func_, j_overflow, &l_else);
           auto j_tmp = jit_insn_ushr(j_func_, j_src0, j_src1);
           jit_insn_store(j_func_, j_dst, j_tmp);
@@ -1269,10 +1269,10 @@ private:
       if (!is_inclusive) {
         auto j_key = scalar_map_.at(node->key().id());
         auto j_max = this->emit_constant(pred_max, jit_type_int32);
-        auto j_pred = jit_insn_sgt(j_func_, j_key, j_max);
+        auto j_pred = jit_insn_ugt(j_func_, j_key, j_max);
         if (pred_min) {
           auto j_min = this->emit_constant(pred_min, jit_type_int32);
-          auto j_tmp = jit_insn_slt(j_func_, j_key, j_min);
+          auto j_tmp = jit_insn_ult(j_func_, j_key, j_min);
           j_pred = jit_insn_or(j_func_, j_pred, j_tmp);
         }
         jit_insn_branch_if(j_func_, j_pred, &l_default);
@@ -2584,7 +2584,7 @@ private:
 
         jit_label_t l_skip = jit_label_undefined;
         auto j_src_rem = this->emit_constant(xsize - length, jit_type_int32);
-        auto j_src_inclusive = jit_insn_sle(j_func_, j_src_lsb, j_src_rem);
+        auto j_src_inclusive = jit_insn_ule(j_func_, j_src_lsb, j_src_rem);
         jit_insn_branch_if(j_func_, j_src_inclusive, &l_skip);
 
         auto j_src_value1 = jit_insn_load_relative(j_func_, j_src_ptr, sizeof(block_type), j_xtype);
@@ -2669,7 +2669,7 @@ private:
 
         jit_label_t l_skip = jit_label_undefined;
         auto j_dst_rem = this->emit_constant(xsize - length, jit_type_int32);
-        auto j_single_block = jit_insn_sle(j_func_, j_dst_lsb, j_dst_rem);
+        auto j_single_block = jit_insn_ule(j_func_, j_dst_lsb, j_dst_rem);
 
         jit_insn_branch_if(j_func_, j_single_block, &l_skip);
         auto j_dst_value1 = jit_insn_load_relative(j_func_, j_dst_ptr, sizeof(block_type), j_xtype);
@@ -3052,8 +3052,8 @@ private:
     auto j_start = this->emit_constant(start, jit_type_int32);
     auto j_end = this->emit_constant(end, jit_type_int32);
     auto j_one = this->emit_constant(1, jit_type_int32);
-    auto j_check1 = jit_insn_sge(j_func_, j_value, j_start);
-    auto j_check2 = jit_insn_slt(j_func_, j_value, j_end);
+    auto j_check1 = jit_insn_uge(j_func_, j_value, j_start);
+    auto j_check2 = jit_insn_ult(j_func_, j_value, j_end);
     auto j_check = jit_insn_and(j_func_, j_check1, j_check2);
     jit_label_t l_skip = jit_label_undefined;
     jit_insn_branch_if(j_func_, j_check, &l_skip);

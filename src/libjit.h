@@ -1,6 +1,7 @@
 #pragma once
 
-#include "jit/jit.h"
+#include <stdio.h>
+#include <jit/jit.h>
 
 #define	JIT_TYPE_INT8		JIT_TYPE_UBYTE
 #define	JIT_TYPE_INT16	JIT_TYPE_USHORT

@@ -32,10 +32,10 @@ install:
 script: 
   # patch libjit
   - scripts/libjit_patch.sh
-  # Build Release project
-  - mkdir -p build_rel
-  - pushd build_rel
-  - cmake -DCMAKE_BUILD_TYPE=Release ..
+  # Build libjit Release project
+  - mkdir -p build_jbr
+  - pushd build_jbr
+  - cmake -DLIBJIT=ON -DCMAKE_BUILD_TYPE=Release ..
   - make -j8 all
   - make test
   - CASH_CFLAGS=256 make test
@@ -43,15 +43,27 @@ script:
   - CASH_CFLAGS=256 valgrind bin/testsuite
   - CASH_CFLAGS=640 valgrind bin/testsuite
   - popd
-  # Build Debug project
+  # Build llvm Release project
+  - mkdir -p build_rel
+  - pushd build_rel
+  - cmake -DLLVMJIT=ON -DCMAKE_BUILD_TYPE=Release ..
+  - make -j8 all
+  - make test
+  - CASH_CFLAGS=256 make test
+  - valgrind bin/testsuite
+  - CASH_CFLAGS=256 valgrind bin/testsuite
+  - CASH_CFLAGS=640 valgrind bin/testsuite
+  - popd
+  # Build llvm Debug project
   - export CASH_DEBUG_LEVEL=3
   - mkdir -p build_dbg
   - pushd build_dbg
-  - cmake -DCMAKE_BUILD_TYPE=Debug -DCODECOV=ON ..
+  - cmake -DLLVMJIT=ON -DCMAKE_BUILD_TYPE=Debug -DCODECOV=ON ..
   - make -j8 all 
   - CASH_CFLAGS=15  make test
   - CASH_CFLAGS=271 make test
   - CASH_CFLAGS=655 make test
+  - popd
   
 after_success:
   # Gather code coverage
