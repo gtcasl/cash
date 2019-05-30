@@ -25,9 +25,9 @@ install:
   - sudo apt-get install texinfo
   # llvm
   - wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
-  - sudo apt-add-repository "deb http://apt.llvm.org/trusty/ llvm-toolchain-trusty-7 main"
+  - sudo apt-add-repository "deb http://apt.llvm.org/trusty/ llvm-toolchain-trusty-8 main"
   - sudo apt-get update
-  - sudo apt-get install -y libllvm7 llvm-7 llvm-7-dev
+  - sudo apt-get install -y llvm-8-dev
 
 script: 
   # patch libjit
