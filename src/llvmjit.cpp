@@ -13,7 +13,7 @@
 #include <llvm/Transforms/InstCombine/InstCombine.h>
 #include <llvm/Transforms/Scalar.h>
 #include <llvm/Transforms/Scalar/GVN.h>
-//#include <llvm/Transforms/Utils.h>
+#include <llvm/Transforms/Utils.h>
 
 #include <llvm/Support/TargetSelect.h>
 #include <llvm/Support/raw_os_ostream.h>
@@ -262,8 +262,9 @@ public:
     }
     {
       llvm::legacy::FunctionPassManager fpm(module_);
+
       fpm.add(llvm::createAggressiveDCEPass());
-      //fpm.add(llvm::createPromoteMemoryToRegisterPass());
+      fpm.add(llvm::createPromoteMemoryToRegisterPass());
       fpm.add(llvm::createConstantPropagationPass());
 
       fpm.add(llvm::createInstructionCombiningPass());
@@ -275,9 +276,9 @@ public:
       fpm.add(llvm::createSROAPass());
       fpm.add(llvm::createFlattenCFGPass());
 
-      fpm.add(llvm::createIndVarSimplifyPass());      
+      fpm.add(llvm::createIndVarSimplifyPass());
       fpm.add(llvm::createLICMPass());
-      //fpm.add(llvm::createLowerSwitchPass());
+      fpm.add(llvm::createLowerSwitchPass());
 
       fpm.doInitialization();
       fpm.run(*func);
