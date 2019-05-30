@@ -1106,8 +1106,7 @@ jit_value_t jit_insn_select(jit_function_t func,
   auto tt = func->resolve_value(case_true);
   auto ff = func->resolve_value(case_false);
   auto res = builder->CreateSelect(cc, tt, ff);
-  auto inst = builder->CreateStore(res, dst->alloc());
-  assert(inst != nullptr);
+  builder->CreateStore(res, dst->alloc());
   return dst;
 }
 
@@ -1135,8 +1134,7 @@ jit_value_t jit_insn_switch(jit_function_t func,
       // case block
       func->set_current_block(caseBB, l_caseBB, true);
       auto value = func->resolve_value(values[i]);
-      auto inst = builder->CreateStore(value, dst->alloc());
-      assert(inst != nullptr);
+      builder->CreateStore(value, dst->alloc());
       builder->CreateBr(exitBB);
     }
     auto pred = func->resolve_value(preds[i]);
@@ -1147,8 +1145,7 @@ jit_value_t jit_insn_switch(jit_function_t func,
     // default block
     func->set_current_block(defBB, l_defBB, true);
     auto value = func->resolve_value(def_value);
-    auto inst = builder->CreateStore(value, dst->alloc());
-    assert(inst != nullptr);
+    builder->CreateStore(value, dst->alloc());
     builder->CreateBr(exitBB);
   }
   // exit block
@@ -1234,8 +1231,7 @@ int jit_insn_memcpy(jit_function_t func,
   auto ll_dest = func->resolve_value(dest);
   auto ll_src = func->resolve_value(src);
   auto ll_size = func->resolve_value(size);
-  auto inst = builder->CreateMemCpy(ll_dest, 1, ll_src, 1, ll_size);
-  assert(inst != nullptr);
+  builder->CreateMemCpy(ll_dest, 1, ll_src, 1, ll_size);
   return 1;
 }
 
@@ -1246,7 +1242,7 @@ jit_value_t jit_insn_call_native(jit_function_t func,
                                  jit_value_t *args,
                                  unsigned int num_args,
                                  int flags) {
-  CH_UNUSED(native_func);
+  CH_UNUSED(native_func, flags);
   assert(flags == JIT_CALL_NOTHROW);
   auto ctx = func->ctx();
   auto builder = ctx->builder();
@@ -1280,7 +1276,7 @@ jit_value_t jit_insn_convert(jit_function_t func,
                              jit_value_t value,
                              jit_type_t type,
                              int overflow_check) {
-  assert(0 == overflow_check);
+  CH_DBGCHECK(0 == overflow_check, "overflow_check not supported");
   if (value->type()->kind() == type->kind())
     return value;  
   auto ctx = func->ctx();

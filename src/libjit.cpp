@@ -272,10 +272,10 @@ jit_value_t jit_insn_switch(jit_function_t func,
     // build label table
     jit_insn_label(func, &l_jump);
     auto j_max = jit_value_create_int_constant(func, pred_max, jit_type_int32);
-    auto j_pred = jit_insn_sgt(func, key, j_max);
+    auto j_pred = jit_insn_ugt(func, key, j_max);
     if (pred_min) {
       auto j_min = jit_value_create_int_constant(func, pred_min, jit_type_int32);
-      auto j_tmp = jit_insn_slt(func, key, j_min);
+      auto j_tmp = jit_insn_ult(func, key, j_min);
       j_pred = jit_insn_or(func, j_pred, j_tmp);
     }
     jit_insn_branch_if(func, j_pred, &l_default);

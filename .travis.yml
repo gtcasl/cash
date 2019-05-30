@@ -7,8 +7,12 @@ addons:
         sources:
         - ubuntu-toolchain-r-test
         packages:
+        - build-essential
         - iverilog
         - lcov
+        - valgrind
+        - texinfo
+        - binutils-dev
 
 before_install:
   # C++17
@@ -19,15 +23,11 @@ install:
   # C++17
   - sudo apt-get install gcc-7 g++-7
   - sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-7 60 --slave /usr/bin/g++ g++ /usr/bin/g++-7
-  # valgrin
-  - sudo apt-get install valgrind
-  # texinfo 
-  - sudo apt-get install texinfo
   # llvm
   - wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
   - sudo apt-add-repository "deb http://apt.llvm.org/trusty/ llvm-toolchain-trusty-8 main"
   - sudo apt-get update
-  - sudo apt-get install -y libllvm8 llvm-8-dev llvm-8 llvm-8-runtime
+  - sudo apt-get install llvm-8-dev
 
 script: 
   # patch libjit
