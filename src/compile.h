@@ -24,11 +24,11 @@ protected:
 
   bool dead_code_elimination();
 
+  bool prune_identity_proxies();
+
   bool constant_folding();
 
   bool subexpressions_elimination();
-
-  bool prune_identity_proxies();
 
   bool proxies_coalescing();
 

@@ -6,6 +6,7 @@
 #define CH_LNODE_NAME(n) #n,
 #define CH_LNODE_INDEX(op) ((int)op)
 #define CH_LNODE_ENUM(m) \
+  m(none) \
   m(lit) \
   m(proxy) \
   m(input) \
@@ -34,24 +35,11 @@ namespace ch {
 namespace internal {
   
 class context;
+class cdimpl;
 
 enum lnodetype {
   CH_LNODE_ENUM(CH_LNODE_TYPE)
 };
-
-inline bool is_snode_type(lnodetype type) {
-  return type == type_reg
-      || type == type_mwport
-      || type == type_msrport
-      || type == type_udfs;
-}
-
-class cdimpl;
-cdimpl* get_snode_cd(lnodeimpl* node);
-
-lnodeimpl* get_snode_enable(lnodeimpl* node);
-
-lnodeimpl* get_snode_reset(lnodeimpl* node);
 
 using clone_map = std::unordered_map<uint32_t, lnodeimpl*>;
 
@@ -66,8 +54,8 @@ public:
     return name_;
   }
 
-  std::string& name() {
-    return name_;
+  void rename(const std::string& name) {
+    name_ = name;
   }
   
   lnodetype type() const {
@@ -117,6 +105,10 @@ public:
 
   void resize(uint32_t size);
 
+  virtual bool check_fully_initialized() const {
+    return true;
+  }
+
   virtual lnodeimpl* clone(context* ctx, const clone_map& cloned_nodes) const = 0;
 
   virtual bool equals(const lnodeimpl& other) const;
@@ -136,28 +128,35 @@ public:
 
 protected:
 
-  lnodeimpl(context* ctx,
+  lnodeimpl(uint32_t id,
             lnodetype type,
             uint32_t size,
-            const source_location& sloc,
-            const std::string& name);
+            context* ctx,
+            const std::string& name,
+            const source_location& sloc);
 
   virtual ~lnodeimpl();
 
-  lnodeimpl* prev_;
-  lnodeimpl* next_;
+  const uint32_t id_;
+  const lnodetype type_;
+
+private:
+
+  uint32_t size_;
+
+protected:
 
   context* ctx_;
   std::string name_;
   source_location sloc_;
-  const uint32_t id_;
-  const lnodetype type_;
   mutable size_t hash_;
 
 private:
 
   std::vector<lnode> srcs_;
-  uint32_t size_;
+
+  lnodeimpl* prev_;
+  lnodeimpl* next_;
 
   friend class context;
   friend class node_list;

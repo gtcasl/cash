@@ -1,6 +1,9 @@
 #include "cdimpl.h"
 #include "ioimpl.h"
 #include "litimpl.h"
+#include "regimpl.h"
+#include "memimpl.h"
+#include "udfimpl.h"
 #include "context.h"
 
 using namespace ch::internal;
@@ -9,14 +12,14 @@ cdimpl::cdimpl(context* ctx,
                lnodeimpl* clk,
                bool pos_edge,
                const source_location& sloc)
-  : ioimpl(ctx, type_cd, 1, sloc, "")
+  : ioimpl(ctx, type_cd, 1, "", sloc)
   , pos_edge_(pos_edge) {
   this->add_src(clk);
 }
 
 lnodeimpl* cdimpl::clone(context* ctx, const clone_map& cloned_nodes) const {
   auto clk = cloned_nodes.at(this->clk().id());
-  return ctx->create_cd(clk, pos_edge_, sloc_);
+  return ctx->create_node<cdimpl>(clk, pos_edge_, sloc_);
 }
 
 bool cdimpl::equals(const lnodeimpl& other) const {
@@ -31,4 +34,64 @@ void cdimpl::print(std::ostream& out) const {
   out << "#" << id_ << " <- " << this->type() << "("
       << (pos_edge_ ? "pos_edge" : "negedge")
       << ", #" << this->src(0).id() << ")";
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+cdimpl* ch::internal::get_snode_cd(lnodeimpl* node) {
+  switch (node->type()) {
+  case type_reg:
+    return reinterpret_cast<cdimpl*>(
+          reinterpret_cast<regimpl*>(node)->cd().impl());
+  case type_msrport:
+    return reinterpret_cast<cdimpl*>(
+          reinterpret_cast<memportimpl*>(node)->cd().impl());
+  case type_mwport:
+    return reinterpret_cast<cdimpl*>(
+          reinterpret_cast<memportimpl*>(node)->cd().impl());
+  case type_udfs:
+    return reinterpret_cast<cdimpl*>(
+          reinterpret_cast<udfsimpl*>(node)->cd().impl());
+  default:
+    std::abort();
+  }
+  return nullptr;
+}
+
+lnodeimpl* ch::internal::get_snode_enable(lnodeimpl* node) {
+  switch (node->type()) {
+  case type_reg: {
+    auto reg = reinterpret_cast<regimpl*>(node);
+    return reg->has_enable() ? reg->enable().impl() : nullptr;
+  }
+  case type_msrport:
+  case type_mwport: {
+     auto mport = reinterpret_cast<memportimpl*>(node);
+     return mport->has_enable() ? mport->enable().impl() : nullptr;
+   }
+  case type_udfs:
+    return nullptr;
+  default:
+    std::abort();
+  }
+  return nullptr;
+}
+
+lnodeimpl* ch::internal::get_snode_reset(lnodeimpl* node) {
+  switch (node->type()) {
+  case type_reg: {
+    auto reg = reinterpret_cast<regimpl*>(node);
+    return reg->has_init_data() ? reg->reset().impl() : nullptr;
+  }
+  case type_udfs: {
+    auto udfs = reinterpret_cast<udfsimpl*>(node);
+    return udfs->reset().impl();
+  }
+  case type_msrport:
+  case type_mwport:
+    return nullptr;
+  default:
+    std::abort();
+  }
+  return nullptr;
 }

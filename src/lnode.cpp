@@ -26,13 +26,13 @@ lnode::lnode(const sdata_type& value) {
 
 lnode::lnode(uint32_t size, const std::string& name) {
   auto sloc = get_source_location();
-  impl_ = ctx_curr()->create_node<proxyimpl>(size, sloc, name);
+  impl_ = ctx_curr()->create_node<proxyimpl>(size, name, sloc);
 }
 
 lnode::lnode(const lnode& src, const std::string& name) {
   auto sloc = get_source_location();
   impl_ = src.impl()->ctx()->create_node<proxyimpl>(
-                src, sloc, (name.empty() ? src.name() : name));
+                src, (name.empty() ? src.name() : name), sloc);
 }
 
 uint32_t lnode::id() const {

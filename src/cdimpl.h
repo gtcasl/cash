@@ -34,5 +34,20 @@ protected:
   friend class context;
 };
 
+///////////////////////////////////////////////////////////////////////////////
+
+inline bool is_snode_type(lnodetype type) {
+  return type == type_reg
+      || type == type_mwport
+      || type == type_msrport
+      || type == type_udfs;
+}
+
+cdimpl* get_snode_cd(lnodeimpl* node);
+
+lnodeimpl* get_snode_enable(lnodeimpl* node);
+
+lnodeimpl* get_snode_reset(lnodeimpl* node);
+
 }
 }

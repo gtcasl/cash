@@ -538,11 +538,11 @@ instr_op_base* instr_op_base::create(opimpl* node, data_map_t& map) {
   bool is_scalar = (dst_size <= bitwidth_v<block_type>);
 
   // access source node data
-  if (node->srcs().size() > 0) {
+  if (node->num_srcs() > 0) {
     src0 = map.at(node->src(0).id());
     src0_size = node->src(0).size();
     is_scalar &= (src0_size <= bitwidth_v<block_type>);
-    if (node->srcs().size() > 1) {
+    if (node->num_srcs() > 1) {
       src1 = map.at(node->src(1).id());
       src1_size = node->src(1).size();
       if (CH_OP_CLASS(node->op()) != op_flags::shift) {
@@ -733,7 +733,7 @@ instr_select_base* instr_select_base::create(selectimpl* node, data_map_t& map) 
   uint32_t dst_nblocks = ceildiv(dst_size, bitwidth_v<block_type>);
   uint32_t dst_bytes = sizeof(block_type) * dst_nblocks;
 
-  uint32_t num_srcs = node->srcs().size();
+  uint32_t num_srcs = node->num_srcs();
   uint32_t src_bytes = sizeof(block_type*) * num_srcs;
 
   bool is_scalar = dst_size <= bitwidth_v<block_type>;
@@ -1493,7 +1493,7 @@ private:
     , pred_(node->has_pred() ? map.at(node->pred().id()) : nullptr)
     , format_(node->format()) {
     srcs_.resize(node->enum_strings().size());
-    for (uint32_t i = (pred_ ? 1 : 0), j = 0, n = node->srcs().size(); i < n; ++i, ++j) {
+    for (uint32_t i = (pred_ ? 1 : 0), j = 0, n = node->num_srcs(); i < n; ++i, ++j) {
       auto src = node->src(i).impl();
       srcs_[j].emplace(const_cast<block_type*>(map.at(src->id())), src->size());
     }

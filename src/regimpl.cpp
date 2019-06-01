@@ -16,9 +16,9 @@ regimpl::regimpl(context* ctx,
                  lnodeimpl* enable,
                  lnodeimpl* next,                 
                  lnodeimpl* init_data,
-                 const source_location& sloc,
-                 const std::string& name)
-  : lnodeimpl(ctx, type_reg, size, sloc, name)
+                 const std::string& name,
+                 const source_location& sloc)
+  : lnodeimpl(ctx->node_id(), type_reg, size, ctx, name, sloc)
   , length_(length)
   , reset_idx_(-1)
   , enable_idx_(-1)
@@ -60,7 +60,7 @@ lnodeimpl* regimpl::clone(context* ctx, const clone_map& cloned_nodes) const {
     init_data = cloned_nodes.at(this->init_data().id());
   }
   return ctx->create_node<regimpl>(
-        this->size(), length_, cd, reset, enable, next, init_data, sloc_, name_);
+        this->size(), length_, cd, reset, enable, next, init_data, name_, sloc_);
 }
 
 bool regimpl::equals(const lnodeimpl& other) const {
@@ -75,7 +75,7 @@ void regimpl::print(std::ostream& out) const {
   if (length_ > 1) {
     out << "#" << id_ << " <- pipe" << this->size();
     out << "(" << length_;
-    for (uint32_t i = 0; i < this->srcs().size(); ++i) {
+    for (uint32_t i = 0; i < this->num_srcs(); ++i) {
       out << ", ";
       out << "#" << this->src(i).id();
     }
@@ -116,34 +116,34 @@ ch_bit<1> ch::internal::ch_reset() {
 ///////////////////////////////////////////////////////////////////////////////
 
 lnodeimpl* ch::internal::createRegNode(unsigned size, const std::string& name,
-                                         const sloc_getter&) {
+                                       const sloc_getter&) {
   auto sloc = get_source_location();
   auto ctx  = ctx_curr();
   auto cd   = ctx->current_cd(sloc);
-  auto next = ctx->create_node<proxyimpl>(size, sloc, name);
+  auto next = ctx->create_node<proxyimpl>(size, name, sloc);
   auto reg  = ctx->create_node<regimpl>(
-        size, 1, cd, nullptr, nullptr, next, nullptr, sloc, name);
+        size, 1, cd, nullptr, nullptr, next, nullptr, name, sloc);
   next->write(0, reg, 0, size);
   return reg;
 }
 
 lnodeimpl* ch::internal::createRegNode(const lnode& init_data,
-                                         const std::string& name,
-                                         const sloc_getter&) {
+                                       const std::string& name,
+                                       const sloc_getter&) {
   auto sloc = get_source_location();
   auto ctx  = init_data.impl()->ctx();
   auto cd   = ctx->current_cd(sloc);
   auto rst  = ctx->current_reset(sloc);
-  auto next = ctx->create_node<proxyimpl>(init_data.size(), sloc, name);
+  auto next = ctx->create_node<proxyimpl>(init_data.size(), name, sloc);
   auto reg  = ctx->create_node<regimpl>(
-        next->size(), 1, cd, rst  , nullptr, next, init_data.impl(), sloc, name);
+        next->size(), 1, cd, rst  , nullptr, next, init_data.impl(), name, sloc);
   next->write(0, reg, 0, init_data.size());
   return reg;
 }
 
 lnodeimpl* ch::internal::copyRegNode(const lnode& node,
-                                       const std::string& name,
-                                       const sloc_getter&) {
+                                     const std::string& name,
+                                     const sloc_getter&) {
   auto sloc   = get_source_location();
   auto reg    = reinterpret_cast<regimpl*>(node.impl());
   auto ctx    = reg->ctx();
@@ -153,7 +153,7 @@ lnodeimpl* ch::internal::copyRegNode(const lnode& node,
   auto enable = reg->has_enable() ? reg->enable().impl() : nullptr;
   auto init_data = reg->has_init_data() ? reg->init_data().impl() : nullptr;
   auto new_reg = ctx->create_node<regimpl>(
-        next->size(), reg->length(), cd, rst, enable, next, init_data, sloc, name);
+        next->size(), reg->length(), cd, rst, enable, next, init_data, name, sloc);
   return new_reg;
 }
 
@@ -162,32 +162,33 @@ lnodeimpl* ch::internal::getRegNextNode(const lnode& node) {
 }
 
 lnodeimpl* ch::internal::createRegNext(const lnode& next,
-                                         unsigned length,
-                                         const std::string& name) {
+                                       unsigned length,
+                                       const std::string& name) {
   auto sloc = get_source_location();
   auto ctx  = next.impl()->ctx();
   auto cd   = ctx->current_cd(sloc);
   auto reg  = ctx->create_node<regimpl>(
-        next.size(), length, cd, nullptr, nullptr, next.impl(), nullptr, sloc, name);
-  return ctx->create_node<proxyimpl>(reg, sloc, name);
+        next.size(), length, cd, nullptr, nullptr, next.impl(), nullptr, name, sloc);
+  return ctx->create_node<proxyimpl>(reg, name, sloc);
 }
 
 lnodeimpl* ch::internal::createRegNext(const lnode& next,
-                                         unsigned length,
-                                         const lnode& enable,
-                                         const std::string& name) {
+                                       unsigned length,
+                                       const lnode& enable,
+                                       const std::string& name) {
   auto sloc = get_source_location();
   auto ctx  = next.impl()->ctx();
   auto cd   = ctx->current_cd(sloc);
+  auto enable_impl = is_literal_one(enable.impl()) ? nullptr : enable.impl();
   auto reg  = ctx->create_node<regimpl>(
-        next.size(), length, cd, nullptr, enable.impl(), next.impl(), nullptr, sloc, name);
-  return ctx->create_node<proxyimpl>(reg, sloc, name);
+        next.size(), length, cd, nullptr, enable_impl, next.impl(), nullptr, name, sloc);
+  return ctx->create_node<proxyimpl>(reg, name, sloc);
 }
 
 lnodeimpl* ch::internal::createRegNext(const lnode& next,
-                                         const lnode& init_data,
-                                         unsigned length,
-                                         const std::string& name) {
+                                       const lnode& init_data,
+                                       unsigned length,
+                                       const std::string& name) {
   auto sloc = get_source_location();
   auto ctx  = next.impl()->ctx();
   auto cd   = ctx->current_cd(sloc);
@@ -196,47 +197,48 @@ lnodeimpl* ch::internal::createRegNext(const lnode& next,
   lnodeimpl* reg = nullptr;
   if (0 == (platform::self().cflags() & cflags::disable_sro)) {
     reg  = ctx->create_node<regimpl>(
-          next.size(), length, cd, rst , nullptr, next.impl(), init_data.impl(), sloc, name);
+          next.size(), length, cd, rst , nullptr, next.impl(), init_data.impl(), name, sloc);
   } else {
     while (length--){
       if (reg) {
         reg  = ctx->create_node<regimpl>(
-              next.size(), 1, cd, rst , nullptr, reg, init_data.impl(), sloc, name);
+              next.size(), 1, cd, rst , nullptr, reg, init_data.impl(), name, sloc);
       } else {
         reg  = ctx->create_node<regimpl>(
-              next.size(), 1, cd, rst , nullptr, next.impl(), init_data.impl(), sloc, name);
+              next.size(), 1, cd, rst , nullptr, next.impl(), init_data.impl(), name, sloc);
       }
     }
   }
-  return ctx->create_node<proxyimpl>(reg, sloc, name);
+  return ctx->create_node<proxyimpl>(reg, name, sloc);
 }
 
 lnodeimpl* ch::internal::createRegNext(const lnode& next,
-                                         const lnode& init_data,
-                                         unsigned length,
-                                         const lnode& enable,
-                                         const std::string& name) {
+                                       const lnode& init_data,
+                                       unsigned length,
+                                       const lnode& enable,
+                                       const std::string& name) {
   auto sloc = get_source_location();
   auto ctx  = next.impl()->ctx();
   auto cd   = ctx->current_cd(sloc);
   auto rst  = ctx->current_reset(sloc);
+  auto enable_impl = is_literal_one(enable.impl()) ? nullptr : enable.impl();
 
   lnodeimpl* reg = nullptr;
   if (0 ==(platform::self().cflags() & cflags::disable_sro)) {
     reg  = ctx->create_node<regimpl>(
-        next.size(), length, cd, rst, enable.impl(), next.impl(), init_data.impl(), sloc, name);
+        next.size(), length, cd, rst, enable_impl, next.impl(), init_data.impl(), name, sloc);
   } else {
     while (length--){
       if (reg) {
         reg  = ctx->create_node<regimpl>(
-              next.size(), 1, cd, rst , enable.impl(), reg, init_data.impl(), sloc, name);
+              next.size(), 1, cd, rst , enable_impl, reg, init_data.impl(), name, sloc);
       } else {
         reg  = ctx->create_node<regimpl>(
-              next.size(), 1, cd, rst , enable.impl(), next.impl(), init_data.impl(), sloc, name);
+              next.size(), 1, cd, rst , enable_impl, next.impl(), init_data.impl(), name, sloc);
       }
     }
   }
-  return ctx->create_node<proxyimpl>(reg, sloc, name);
+  return ctx->create_node<proxyimpl>(reg, name, sloc);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

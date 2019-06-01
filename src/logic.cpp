@@ -24,7 +24,7 @@ logic_buffer::logic_buffer(uint32_t size,
   auto sloc = get_source_location();
   auto full_name = (!src.name().empty() && !name.empty()) ? (src.name() + "." + name) : name;
   impl_ = src.impl()->ctx()->create_node<refimpl>(
-        src, src_offset, size, sloc, full_name);
+        src, src_offset, size, full_name, sloc);
 }
 
 const logic_buffer& logic_buffer::source() const {

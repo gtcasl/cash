@@ -8,7 +8,7 @@ assertimpl::assertimpl(context* ctx,
                        lnodeimpl* cond,
                        const std::string& msg,
                        const source_location& sloc)
-  : ioimpl(ctx, type_assert, 0, sloc, "")
+  : ioimpl(ctx, type_assert, 0, "", sloc)
   , msg_(msg)
   , pred_idx_(-1) {
   this->add_src(cond);
@@ -27,7 +27,7 @@ assertimpl::assertimpl(context* ctx,
                        lnodeimpl* pred,
                        const std::string& msg,
                        const source_location& sloc)
-  : ioimpl(ctx, type_assert, 0, sloc, "")
+  : ioimpl(ctx, type_assert, 0, "", sloc)
   , msg_(msg)
   , pred_idx_(-1) {
   this->add_src(cond);

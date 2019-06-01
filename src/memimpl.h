@@ -71,6 +71,18 @@ public:
                            lnodeimpl* enable,
                            const source_location& sloc);
 
+  void add_rdport(marportimpl* port) {
+    rdports_.emplace_back(port);
+  }
+
+  void add_rdport(msrportimpl* port) {
+    rdports_.emplace_back(port);
+  }
+
+  void add_wrport(mwportimpl* port) {
+    wrports_.emplace_back(port);
+  }
+
   void remove_port(memportimpl* port);
 
   void print(std::ostream& out) const override;
@@ -82,11 +94,11 @@ protected:
           uint32_t num_items,
           const sdata_type& init_data,
           bool force_logic_ram,
-          const source_location& sloc,
-          const std::string& name);
+          const std::string& name,
+          const source_location& sloc);
   
   std::vector<memportimpl*> rdports_;
-  std::vector<mwportimpl*>  wrports_;
+  std::vector<mwportimpl*> wrports_;
   sdata_type init_data_;
   uint32_t data_width_;
   uint32_t num_items_;

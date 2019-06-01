@@ -14,8 +14,8 @@ protected:
   ioimpl(context* ctx,
          lnodetype type,
          uint32_t size,
-         const source_location& sloc,
-         const std::string& name);
+         const std::string& name,
+         const source_location& sloc);
 
   friend class context;
 };
@@ -35,8 +35,8 @@ protected:
              lnodetype type,
              uint32_t size,
              const io_value_t& value,
-             const source_location& sloc,
-             const std::string& name);
+             const std::string& name,
+             const source_location& sloc);
 
   io_value_t value_;
 
@@ -91,6 +91,7 @@ public:
 protected:
 
   outputimpl(context* ctx,
+             uint32_t size,
              const lnode& src,
              const io_value_t& value,
              const std::string& name,
@@ -117,6 +118,7 @@ public:
 protected:
 
   tapimpl(context* ctx,
+          uint32_t size,
           const lnode& src,
           const std::string& name,
           const source_location& sloc);

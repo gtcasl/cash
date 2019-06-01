@@ -26,11 +26,20 @@ public:
   
 protected:
 
-  opimpl(context* ctx, ch_op op, uint32_t size, bool is_signed,
-          lnodeimpl* lhs, const source_location& sloc);
+  opimpl(context* ctx,
+         ch_op op,
+         uint32_t size,
+         bool is_signed,
+         lnodeimpl* lhs,
+         const source_location& sloc);
 
-  opimpl(context* ctx, ch_op op, uint32_t size, bool is_signed,
-          lnodeimpl* lhs, lnodeimpl* rhs, const source_location& sloc);
+  opimpl(context* ctx,
+         ch_op op,
+         uint32_t size,
+         bool is_signed,
+         lnodeimpl* lhs,
+         lnodeimpl* rhs,
+         const source_location& sloc);
 
   ~opimpl() {}
 

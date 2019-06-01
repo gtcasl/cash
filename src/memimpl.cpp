@@ -101,9 +101,9 @@ memimpl::memimpl(context* ctx,
                  uint32_t num_items,
                  const sdata_type& init_data,
                  bool force_logic_ram,
-                 const source_location& sloc,
-                 const std::string& name)
-  : ioimpl(ctx, type_mem, data_width * num_items, sloc, name)
+                 const std::string& name,
+                 const source_location& sloc)
+  : ioimpl(ctx, type_mem, data_width * num_items, name, sloc)
   , init_data_(init_data)
   , data_width_(data_width)
   , num_items_(num_items)
@@ -111,7 +111,12 @@ memimpl::memimpl(context* ctx,
 {}
 
 lnodeimpl* memimpl::clone(context* ctx, const clone_map&) const {
-  return ctx->create_node<memimpl>(data_width_, num_items_, init_data_, force_logic_ram_, sloc_, name_);
+  return ctx->create_node<memimpl>(data_width_,
+                                   num_items_,
+                                   init_data_,
+                                   force_logic_ram_,
+                                   name_,
+                                   sloc_);
 }
 
 memportimpl* memimpl::create_arport(lnodeimpl* addr, const source_location& sloc) {
@@ -129,8 +134,14 @@ memportimpl* memimpl::create_srport(lnodeimpl* cd,
                                     lnodeimpl* enable,
                                     const source_location& sloc) {
   for (auto port : rdports_) {
-    if (port->addr().id() == addr->id())
+    if (port->addr().id() == addr->id()) {
+      CH_CHECK(port->cd().id() == cd->id(),
+               "duplicate memory read port with different clock");
+      CH_CHECK((!enable && !port->has_enable())
+            && (enable && port->has_enable() && port->enable().id() == enable->id()),
+               "duplicate memory read port with different enable signal");
       return port;
+    }
   }
   auto impl = ctx_->create_node<msrportimpl>(this, cd, addr, enable, sloc);
   rdports_.emplace_back(impl);
@@ -223,7 +234,7 @@ bool memimpl::is_logic_rom() const {
 
 void memimpl::print(std::ostream& out) const {
   out << "#" << id_ << " <- " << this->type() << this->size();
-  uint32_t n = this->srcs().size();
+  uint32_t n = this->num_srcs();
   if (n > 0) {
     out << "(";
     for (uint32_t i = 0; i < n; ++i) {
@@ -245,7 +256,7 @@ memportimpl::memportimpl(context* ctx,
                          lnodeimpl* addr,
                          lnodeimpl* enable,
                          const source_location& sloc)
-  : ioimpl(ctx, type, size, sloc, mem->name())
+  : ioimpl(ctx, type, size, mem->name(), sloc)
   , mem_(mem)
   , cd_idx_(-1)
   , addr_idx_(-1)
@@ -262,9 +273,7 @@ memportimpl::memportimpl(context* ctx,
   addr_idx_ = this->add_src(addr);
 
   // add enable predicate
-  if (enable
-   && !(type_lit == enable->type()
-    && reinterpret_cast<litimpl*>(enable)->value().is_ones())) {
+  if (enable) {
     enable_idx_ = this->add_src(enable);
   }
 }
@@ -282,16 +291,17 @@ marportimpl::marportimpl(context* ctx,
   : memportimpl(ctx, type_marport, mem->data_width(), mem, nullptr, addr, nullptr, sloc) {
   // add memory as source
   this->add_src(mem);
+  mem->add_rdport(this);
 }
 
 marportimpl::~marportimpl() {
   mem_->remove_port(this);
 }
 
-lnodeimpl* marportimpl::clone(context*, const clone_map& cloned_nodes) const {
+lnodeimpl* marportimpl::clone(context* ctx, const clone_map& cloned_nodes) const {
   auto mem = reinterpret_cast<memimpl*>(cloned_nodes.at(mem_->id()));
   auto addr = cloned_nodes.at(this->addr().id());
-  return mem->create_arport(addr, sloc_);
+  return ctx->create_node<marportimpl>(mem, addr, sloc_);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -305,21 +315,22 @@ msrportimpl::msrportimpl(context* ctx,
   : memportimpl(ctx, type_msrport, mem->data_width(), mem, cd, addr, enable, sloc) {
   // add memory as source
   this->add_src(mem);
+  mem->add_rdport(this);
 }
 
 msrportimpl::~msrportimpl() {
   mem_->remove_port(this);
 }
 
-lnodeimpl* msrportimpl::clone(context*, const clone_map& cloned_nodes) const {
+lnodeimpl* msrportimpl::clone(context* ctx, const clone_map& cloned_nodes) const {
   auto mem = reinterpret_cast<memimpl*>(cloned_nodes.at(mem_->id()));
-  auto addr = cloned_nodes.at(this->addr().id());
   auto cd = cloned_nodes.at(this->cd().id());
+  auto addr = cloned_nodes.at(this->addr().id());  
   lnodeimpl* enable = nullptr;
   if (this->has_enable()) {
     enable = cloned_nodes.at(this->enable().id());
   }
-  return mem->create_srport(cd, addr, enable, sloc_);
+  return ctx->create_node<msrportimpl>(mem, cd, addr, enable, sloc_);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -334,6 +345,7 @@ mwportimpl::mwportimpl(context* ctx,
   : memportimpl(ctx, type_mwport, 0, mem, cd, addr, enable, sloc) {
   // add as memory source
   mem->add_src(this);
+  mem->add_wrport(this);
 
   // add data source
   wdata_idx_ = this->add_src(wdata);
@@ -344,24 +356,15 @@ mwportimpl::~mwportimpl() {
 }
 
 lnodeimpl* mwportimpl::clone(context* ctx, const clone_map& cloned_nodes) const {
-  memimpl* mem;
-  auto it = cloned_nodes.find(mem_->id());
-  if (it == cloned_nodes.end()) {
-    mem = reinterpret_cast<memimpl*>(mem_->clone(ctx, cloned_nodes));
-  } else {
-    mem = reinterpret_cast<memimpl*>(it->second);
-  }
+  auto mem = reinterpret_cast<memimpl*>(cloned_nodes.at(mem_->id()));
+  auto cd = cloned_nodes.at(this->cd().id());
   auto addr = cloned_nodes.at(this->addr().id());
   auto wdata = cloned_nodes.at(this->wdata().id());
   lnodeimpl* enable = nullptr;
   if (this->has_enable()) {
     enable = cloned_nodes.at(this->enable().id());
   }
-  lnodeimpl* cd = nullptr;
-  if (this->has_cd()) {
-    cd = cloned_nodes.at(this->cd().id());
-  }
-  return mem->create_wport(cd, addr, wdata, enable, sloc_);
+  return ctx->create_node<mwportimpl>(mem, cd, addr, wdata, enable, sloc_);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -374,7 +377,7 @@ memory::memory(uint32_t data_width,
                const sloc_getter&) {
   CH_CHECK(!ctx_curr()->conditional_enabled(), "memory objects disallowed inside conditional blocks");  
   auto sloc = get_source_location();
-  impl_ = ctx_curr()->create_node<memimpl>(data_width, num_items, init_data, is_logic_rom, sloc, name);
+  impl_ = ctx_curr()->create_node<memimpl>(data_width, num_items, init_data, is_logic_rom, name, sloc);
 }
 
 lnode memory::aread(const lnode& addr) const {
@@ -385,12 +388,14 @@ lnode memory::aread(const lnode& addr) const {
 lnode memory::sread(const lnode& addr, const lnode& enable) const {
   auto sloc = get_source_location();
   auto cd = ctx_curr()->current_cd(sloc);
-  return impl_->create_srport(cd, addr.impl(), enable.impl(), sloc);
+  auto enable_impl = is_literal_one(enable.impl()) ? nullptr : enable.impl();
+  return impl_->create_srport(cd, addr.impl(), enable_impl, sloc);
 }
 
 void memory::write(const lnode& addr, const lnode& value, const lnode& enable) {
   CH_CHECK(!ctx_curr()->conditional_enabled(), "memory access disallowed inside conditional blocks");
   auto sloc = get_source_location();
   auto cd = ctx_curr()->current_cd(sloc);
-  impl_->create_wport(cd, addr.impl(), value.impl(), enable.impl(), sloc);
+  auto enable_impl = is_literal_one(enable.impl()) ? nullptr : enable.impl();
+  impl_->create_wport(cd, addr.impl(), value.impl(), enable_impl, sloc);
 }

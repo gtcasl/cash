@@ -8,9 +8,9 @@ using namespace ch::internal;
 ioimpl::ioimpl(context* ctx,
                lnodetype type,
                uint32_t size,
-               const source_location& sloc,
-               const std::string& name)
-  : lnodeimpl(ctx, type, size, sloc, name)
+               const std::string& name,
+               const source_location& sloc)
+  : lnodeimpl(ctx->node_id(), type, size, ctx, name, sloc)
 {}
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -19,9 +19,9 @@ ioportimpl::ioportimpl(context* ctx,
                        lnodetype type,
                        uint32_t size,
                        const io_value_t& value,
-                       const source_location& sloc,
-                       const std::string& name)
-  : ioimpl(ctx, type, size, sloc, name)
+                       const std::string& name,
+                       const source_location& sloc)
+  : ioimpl(ctx, type, size, name, sloc)
   , value_(value)
 {}
 
@@ -32,7 +32,7 @@ inputimpl::inputimpl(context* ctx,
                      const io_value_t& value,
                      const std::string& name,
                      const source_location& sloc)
-  : ioportimpl(ctx, type_input, size, value, sloc, name)
+  : ioportimpl(ctx, type_input, size, value, name, sloc)
 {}
 
 inputimpl::~inputimpl() {}
@@ -53,11 +53,12 @@ void inputimpl::print(std::ostream& out) const {
 ///////////////////////////////////////////////////////////////////////////////
 
 outputimpl::outputimpl(context* ctx,
+                       uint32_t size,
                        const lnode& src,
                        const io_value_t& value,
                        const std::string& name,
                        const source_location& sloc)
-  : ioportimpl(ctx, type_output, src.size(), value, sloc, name) {
+  : ioportimpl(ctx, type_output, size, value, name, sloc) {
   this->add_src(src);
 }
 
@@ -65,7 +66,7 @@ outputimpl::~outputimpl() {}
 
 lnodeimpl* outputimpl::clone(context* ctx, const clone_map& cloned_nodes) const {
   auto src = cloned_nodes.at(this->src(0).id());
-  return ctx->create_node<outputimpl>(src, value_, name_, sloc_);
+  return ctx->create_node<outputimpl>(this->size(), src, value_, name_, sloc_);
 }
 
 void outputimpl::print(std::ostream& out) const {
@@ -76,10 +77,11 @@ void outputimpl::print(std::ostream& out) const {
 ///////////////////////////////////////////////////////////////////////////////
 
 tapimpl::tapimpl(context* ctx,
+                 uint32_t size,
                  const lnode& src,
                  const std::string& name,
                  const source_location& sloc)
-  : ioportimpl(ctx, type_tap, src.size(), smart_ptr<sdata_type>::make(src.size()), sloc, name) {
+  : ioportimpl(ctx, type_tap, size, smart_ptr<sdata_type>::make(src.size()), name, sloc) {
   this->add_src(src);
 }
 
@@ -87,7 +89,7 @@ tapimpl::~tapimpl() {}
 
 lnodeimpl* tapimpl::clone(context* ctx, const clone_map& cloned_nodes) const {
   auto src = cloned_nodes.at(this->src(0).id());
-  return ctx->create_node<tapimpl>(src, name_, sloc_);
+  return ctx->create_node<tapimpl>(this->size(), src, name_, sloc_);
 }
 
 void tapimpl::print(std::ostream& out) const {

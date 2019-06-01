@@ -37,8 +37,8 @@ protected:
   udfimpl(context* ctx,
           lnodetype type,
           udf_iface* udf,
-          const source_location& sloc,
-          const std::string& name);
+          const std::string& name,
+          const source_location& sloc);
 
   ~udfimpl();
 
@@ -60,8 +60,8 @@ protected:
 
   udfcimpl(context* ctx,
            udf_iface* udf,
-           const source_location& sloc,
-           const std::string& name);
+           const std::string& name,
+           const source_location& sloc);
 
   ~udfcimpl();
 
@@ -89,8 +89,8 @@ protected:
            udf_iface* udf,
            lnodeimpl* cd,
            lnodeimpl* reset,
-           const source_location& sloc,
-           const std::string& name);
+           const std::string& name,
+           const source_location& sloc);
 
   ~udfsimpl();
 
@@ -114,17 +114,19 @@ public:
 protected:
 
   udfportimpl(context* ctx,
+              unsigned size,
               lnodeimpl* src,
+              udfimpl* udf,
               const io_value_t& value,
-              const source_location& sloc,
-              const std::string& name);
+              const std::string& name,
+              const source_location& sloc);
 
   udfportimpl(context* ctx,
               unsigned size,
               udfimpl* udf,
               const io_value_t& value,
-              const source_location& sloc,
-              const std::string& name);
+              const std::string& name,
+              const source_location& sloc);
 
   ~udfportimpl();
 

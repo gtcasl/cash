@@ -6,15 +6,24 @@
 
 using namespace ch::internal;
 
-opimpl::opimpl(context* ctx, ch_op op, uint32_t size, bool is_signed,
-                 lnodeimpl* in, const source_location& sloc)
-  : lnodeimpl(ctx, type_op, size, sloc, to_string(op)) {
+opimpl::opimpl(context* ctx,
+               ch_op op,
+               uint32_t size,
+               bool is_signed,
+               lnodeimpl* in,
+               const source_location& sloc)
+  : lnodeimpl(ctx->node_id(), type_op, size, ctx, to_string(op), sloc) {
   this->init(op, is_signed, in);
 }
 
-opimpl::opimpl(context* ctx, ch_op op, uint32_t size, bool is_signed,
-                 lnodeimpl* lhs, lnodeimpl* rhs, const source_location& sloc)
-  : lnodeimpl(ctx, type_op, size, sloc, to_string(op)) {
+opimpl::opimpl(context* ctx,
+               ch_op op,
+               uint32_t size,
+               bool is_signed,
+               lnodeimpl* lhs,
+               lnodeimpl* rhs,
+               const source_location& sloc)
+  : lnodeimpl(ctx->node_id(), type_op, size, ctx, to_string(op), sloc) {
   this->init(op, is_signed, lhs, rhs);
 }
 
@@ -37,7 +46,7 @@ void opimpl::init(ch_op op, bool is_signed, lnodeimpl* lhs, lnodeimpl* rhs) {
 
 lnodeimpl* opimpl::clone(context* ctx, const clone_map& cloned_nodes) const {
   auto src0 = cloned_nodes.at(this->src(0).id());
-  if (this->srcs().size() == 2) {
+  if (this->num_srcs() == 2) {
     auto src1 = cloned_nodes.at(this->src(1).id());
     return ctx->create_node<opimpl>(op_, this->size(), signed_, src0, src1, sloc_);
   } else {
@@ -55,7 +64,7 @@ bool opimpl::equals(const lnodeimpl& other) const {
 
 void opimpl::print(std::ostream& out) const {
   out << "#" << id_ << " <- " << this->type() << this->size();
-  auto n = this->srcs().size();
+  auto n = this->num_srcs();
   out << "(" << op_ << (signed_ ? "_s" : "_u") << ", ";
   for (uint32_t i = 0; i < n; ++i) {
     if (i > 0)
@@ -74,7 +83,7 @@ bool opimpl::should_resize_opds() const {
   case op_flags::resize_dst:
     // source operand and destination sizes should match
     return ((this->src(0).size() < this->size())
-        || ((this->srcs().size() > 1) && this->src(1).size() < this->size()));
+        || ((this->num_srcs() > 1) && this->src(1).size() < this->size()));
   default:
     return false;
   }

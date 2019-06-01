@@ -1,8 +1,5 @@
 #include "lnodeimpl.h"
 #include "proxyimpl.h"
-#include "regimpl.h"
-#include "memimpl.h"
-#include "udfimpl.h"
 #include "context.h"
 
 using namespace ch::internal;
@@ -14,80 +11,23 @@ const char* ch::internal::to_string(lnodetype type) {
   return sc_names[CH_LNODE_INDEX(type)];
 }
 
-cdimpl* ch::internal::get_snode_cd(lnodeimpl* node) {
-  switch (node->type()) {
-  case type_reg:
-    return reinterpret_cast<cdimpl*>(
-          reinterpret_cast<regimpl*>(node)->cd().impl());
-  case type_msrport:
-    return reinterpret_cast<cdimpl*>(
-          reinterpret_cast<memportimpl*>(node)->cd().impl());
-  case type_mwport:
-    return reinterpret_cast<cdimpl*>(
-          reinterpret_cast<memportimpl*>(node)->cd().impl());
-  case type_udfs:
-    return reinterpret_cast<cdimpl*>(
-          reinterpret_cast<udfsimpl*>(node)->cd().impl());
-  default:
-    std::abort();
-  }
-  return nullptr;
-}
-
-lnodeimpl* ch::internal::get_snode_enable(lnodeimpl* node) {
-  switch (node->type()) {
-  case type_reg: {
-    auto reg = reinterpret_cast<regimpl*>(node);
-    return reg->has_enable() ? reg->enable().impl() : nullptr;
-  }
-  case type_msrport:
-  case type_mwport: {
-     auto mport = reinterpret_cast<memportimpl*>(node);
-     return mport->has_enable() ? mport->enable().impl() : nullptr;
-   }
-  case type_udfs:
-    return nullptr;
-  default:
-    std::abort();
-  }
-  return nullptr;
-}
-
-lnodeimpl* ch::internal::get_snode_reset(lnodeimpl* node) {
-  switch (node->type()) {
-  case type_reg: {
-    auto reg = reinterpret_cast<regimpl*>(node);
-    return reg->has_init_data() ? reg->reset().impl() : nullptr;
-  }
-  case type_udfs: {
-    auto udfs = reinterpret_cast<udfsimpl*>(node);
-    return udfs->reset().impl();
-  }
-  case type_msrport:
-  case type_mwport:  
-    return nullptr;
-  default:
-    std::abort();
-  }
-  return nullptr;
-}
-
 ///////////////////////////////////////////////////////////////////////////////
 
-lnodeimpl::lnodeimpl(context* ctx,
+lnodeimpl::lnodeimpl(uint32_t id,
                      lnodetype type,
                      uint32_t size,                     
-                     const source_location& sloc,
-                     const std::string& name)
-  : prev_(nullptr)
-  , next_(nullptr)
+                     context* ctx,
+                     const std::string& name,
+                     const source_location& sloc)
+  : id_(id)
+  , type_(type)
+  , size_(size)
   , ctx_(ctx)
   , name_(name)
   , sloc_(sloc)
-  , id_(ctx->node_id())
-  , type_(type)
   , hash_(0)
-  , size_(size)
+  , prev_(nullptr)
+  , next_(nullptr)
 {}
 
 lnodeimpl::~lnodeimpl() {}
@@ -133,8 +73,8 @@ size_t lnodeimpl::hash() const {
 bool lnodeimpl::equals(const lnodeimpl& other) const {
   if (this->type() == other.type()
    && this->size() == other.size()
-   && this->srcs().size() == other.srcs().size()) {
-    for (unsigned i = 0, n = this->srcs().size(); i < n; ++i) {
+   && this->num_srcs() == other.num_srcs()) {
+    for (unsigned i = 0, n = this->num_srcs(); i < n; ++i) {
       if (this->src(i).id() != other.src(i).id())
         return false;
     }
@@ -148,7 +88,7 @@ lnodeimpl* lnodeimpl::slice(uint32_t offset, uint32_t length, const source_locat
   auto self = const_cast<lnodeimpl*>(this);
   if (size_ == length)
     return self;
-  return ctx_->create_node<proxyimpl>(self, offset, length, sloc, "slice");
+  return ctx_->create_node<proxyimpl>(self, offset, length, "slice", sloc);
 }
 
 void lnodeimpl::write(uint32_t, const lnode&, uint32_t, uint32_t) {

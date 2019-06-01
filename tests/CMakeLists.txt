@@ -29,7 +29,7 @@ set(TEST_SOURCES
 file(COPY "res" DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 
 # build executables
-add_executable(dogfood dogfood.cpp)
+add_executable(dogfood dogfood.cpp common.cpp)
 add_executable(testsuite ${TEST_SOURCES})
 
 # Define dependent libraries

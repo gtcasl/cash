@@ -30,5 +30,10 @@ protected:
   friend class context;
 };
 
+inline bool is_literal_one(lnodeimpl* node) {
+  return ((type_lit == node->type())
+       && reinterpret_cast<litimpl*>(node)->value().is_ones());
+}
+
 }
 }

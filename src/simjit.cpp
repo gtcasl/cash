@@ -291,7 +291,7 @@ struct print_data_t {
   sdata_type* srcs;
 
   static uint32_t size(printimpl* node) {
-    auto num_srcs = node->srcs().size() + (node->has_pred() ? -1 : 0);
+    auto num_srcs = node->num_srcs() + (node->has_pred() ? -1 : 0);
     uint32_t size = sizeof(print_data_t);
     size += node->format().size() + 1; // format
     size += node->enum_strings().size() * sizeof(enum_string_cb); // enum_strings
@@ -315,7 +315,7 @@ struct print_data_t {
 
     srcs = reinterpret_cast<sdata_type*>(buf);
     uint32_t pred = node->has_pred() ? 1 : 0;
-    for (uint32_t i = 0, n = node->srcs().size() - pred; i < n; ++i) {
+    for (uint32_t i = 0, n = node->num_srcs() - pred; i < n; ++i) {
       init_sdata(cp, &srcs[i], node->src(i + pred).impl());
     }
   }
@@ -634,10 +634,10 @@ private:
     auto is_signed = node->is_signed();
 
     auto is_scalar = (dst_width <= bitwidth_v<block_type>);
-    if (node->srcs().size() > 0) {
+    if (node->num_srcs() > 0) {
       is_scalar &= (node->src(0).size() <= bitwidth_v<block_type>);
       if (CH_OP_CLASS(node->op()) != op_flags::shift
-       && node->srcs().size() > 1) {
+       && node->num_srcs() > 1) {
         is_scalar &= (node->src(1).size() <= bitwidth_v<block_type>);
       }
     }
@@ -858,7 +858,7 @@ private:
 
     case ch_op::shl:
       if (is_scalar) {
-        jit_label_t l_else = jit_label_undefined;
+        jit_label_t l_else(jit_label_undefined);
         jit_label_t l_exit(jit_label_undefined);
         auto j_dst = jit_value_create(j_func_, j_ntype);
         scalar_map_[node->id()] = j_dst;
@@ -881,7 +881,7 @@ private:
       break;
     case ch_op::shr:
       if (is_scalar) {
-        jit_label_t l_else = jit_label_undefined;
+        jit_label_t l_else(jit_label_undefined);
         jit_label_t l_exit(jit_label_undefined);
         auto j_dst = jit_value_create(j_func_, j_ntype);
         scalar_map_[node->id()] = j_dst;
@@ -1017,7 +1017,7 @@ private:
                                bool is_scalar,
                                bool need_resize) {
     __source_info();
-    if (opd >= node->srcs().size())
+    if (opd >= node->num_srcs())
       return nullptr;
     auto src = node->src(opd).impl();    
     if (is_scalar) {
@@ -1226,7 +1226,7 @@ private:
     if (!is_switch)
       return false;
     auto j_ntype = to_native_type(dst_width);
-    int32_t l = node->srcs().size() - 1;
+    int32_t l = node->num_srcs() - 1;
     int32_t start = is_switch ? 1 : 0;
     jit_value_t j_dst = nullptr;
     if (is_scalar) {
@@ -1353,7 +1353,7 @@ private:
     uint32_t dst_width = node->size();
     bool is_scalar = (dst_width <= WORD_SIZE);
     auto j_ntype = to_native_type(dst_width);
-    auto l = node->srcs().size() - 1;
+    auto l = node->num_srcs() - 1;
 
     jit_value_t j_dst = nullptr;
     if (is_scalar) {
@@ -1511,7 +1511,7 @@ private:
                        && 0 == (platform::self().cflags() & cflags::disable_cpb)
       && ch::internal::compiler::build_bypass_list(bypass_nodes_, node->ctx(), node->id());
     if (bypass_enable) {      
-      jit_label_t l_skip = jit_label_undefined;
+      jit_label_t l_skip(jit_label_undefined);
       jit_insn_branch_if_not(j_func_, j_changed, &l_skip);
       l_bypass_ = l_skip;
       bypass_enable_ = true;
@@ -1525,7 +1525,7 @@ private:
     if (sblock_.cd
      && ((nullptr == node)
       || (!is_snode_type(node->type())
-       || 0 ==(platform::self().cflags() & cflags::disable_snc)
+       || 0 !=(platform::self().cflags() & cflags::disable_snc)
        || node->type() != type_reg
        || get_snode_reset(node) != sblock_.reset))) {
       this->flush_sblock();
@@ -1549,23 +1549,23 @@ private:
     jit_label_t l_exit(jit_label_undefined);
 
     // emit clock domain
-    bool merge_cd_enable = false;
+    bool merged_cd_enable = false;
     if (!bypass_enable_) {
       if (!sblock_.reset) {
         auto it = sblock_.nodes.begin();
         auto end = sblock_.nodes.end();
         auto enable = get_snode_enable(*it++);
         if (enable) {
-          merge_cd_enable = true;
+          merged_cd_enable = true;
           while (it != end) {
             if (get_snode_enable(*it++) != enable) {
-              merge_cd_enable = false;
+              merged_cd_enable = false;
               break;
             }
           }
         }
       }
-      if (!merge_cd_enable) {
+      if (!merged_cd_enable) {
         auto j_cd = scalar_map_.at(sblock_.cd->id());
         jit_insn_branch_if_not(j_func_, j_cd, &l_exit);
       }
@@ -1573,7 +1573,7 @@ private:
 
     if (sblock_.reset) {
       // emit reset nodes
-      jit_label_t l_skip = jit_label_undefined;
+      jit_label_t l_skip(jit_label_undefined);
       auto j_reset = scalar_map_.at(sblock_.reset->id());
       jit_insn_branch_if_not(j_func_, j_reset, &l_skip);
 
@@ -1594,47 +1594,50 @@ private:
       jit_insn_label(j_func_, &l_skip);
     }
 
-    // emit enable nodes
-    jit_label_t l_skip = jit_label_undefined;
-    lnodeimpl* cur_enable = nullptr;
-    for (auto node : sblock_.nodes) {
-      auto enable = get_snode_enable(node);
-      if (enable != cur_enable) {
-        if (cur_enable) {
-          jit_insn_label(j_func_, &l_skip);
-        };
-        if (enable) {
-          auto j_enable = scalar_map_.at(enable->id());
-          if (merge_cd_enable) {
-            auto j_cd = scalar_map_.at(sblock_.cd->id());
-            auto j_pred = jit_insn_and(j_func_, j_cd, j_enable);
-            jit_insn_branch_if_not(j_func_, j_pred, &l_skip);
-          } else {
-            jit_insn_branch_if_not(j_func_, j_enable, &l_skip);
+    {
+      // emit enable nodes
+      jit_label_t l_skip(jit_label_undefined);
+      lnodeimpl* cur_enable = nullptr;
+      for (auto node : sblock_.nodes) {
+        auto enable = get_snode_enable(node);
+        if (enable != cur_enable) {
+          if (cur_enable) {
+            jit_insn_label(j_func_, &l_skip);
+            l_skip = jit_label_undefined;
+          };
+          if (enable) {
+            auto j_enable = scalar_map_.at(enable->id());
+            if (merged_cd_enable) {
+              auto j_cd = scalar_map_.at(sblock_.cd->id());
+              auto j_pred = jit_insn_and(j_func_, j_cd, j_enable);
+              jit_insn_branch_if_not(j_func_, j_pred, &l_skip);
+            } else {
+              jit_insn_branch_if_not(j_func_, j_enable, &l_skip);
+            }
           }
+          cur_enable = enable;
         }
-        cur_enable = enable;
+        switch (node->type()) {
+        case type_reg:
+          this->emit_snode_value(reinterpret_cast<regimpl*>(node));
+          break;
+        case type_msrport:
+          this->emit_snode_value(reinterpret_cast<msrportimpl*>(node));
+          break;
+        case type_mwport:
+          this->emit_snode_value(reinterpret_cast<mwportimpl*>(node));
+          break;
+        case type_udfs:
+          this->emit_snode_value(reinterpret_cast<udfsimpl*>(node));
+          break;
+        default:
+          std::abort();
+        }
       }
-      switch (node->type()) {
-      case type_reg:
-        this->emit_snode_value(reinterpret_cast<regimpl*>(node));
-        break;
-      case type_msrport:
-        this->emit_snode_value(reinterpret_cast<msrportimpl*>(node));
-        break;
-      case type_mwport:
-        this->emit_snode_value(reinterpret_cast<mwportimpl*>(node));
-        break;
-      case type_udfs:
-        this->emit_snode_value(reinterpret_cast<udfsimpl*>(node));
-        break;
-      default:
-        std::abort();
-      }
+      if (l_skip != jit_label_undefined) {
+        jit_insn_label(j_func_, &l_skip);
+      };
     }
-    if (cur_enable) {
-      jit_insn_label(j_func_, &l_skip);
-    };
     if (l_exit != jit_label_undefined) {
       jit_insn_label_tight(j_func_, &l_exit);
     }
@@ -1702,7 +1705,7 @@ private:
                     j_tmp, memaddr_t{j_vars_, pipe_addr}, i * dst_width, pipe_width, j_init_data_w, dst_width);
             }
           } else {
-            jit_label_t l_loop = jit_label_undefined;
+            jit_label_t l_loop(jit_label_undefined);
             jit_label_t l_exit(jit_label_undefined);
             auto j_pipe_ptr = jit_insn_add_relative(j_func_, j_vars_, pipe_addr);
             auto j_index = jit_value_create(j_func_, jit_type_int32);
@@ -1730,7 +1733,7 @@ private:
               this->emit_copy_vector(j_pipe_ptr, i * dst_width, j_init_ptr, 0, dst_width);
             }
           } else {
-            jit_label_t l_loop = jit_label_undefined;
+            jit_label_t l_loop(jit_label_undefined);
             jit_label_t l_exit(jit_label_undefined);
             auto j_index = jit_value_create(j_func_, jit_type_int32);
             auto j_lengthM1 = this->emit_constant(pipe_length - 1, jit_type_int32);
@@ -1996,7 +1999,7 @@ private:
 
     // copy scalar arguments
     uint32_t src_idx = 0;
-    for (uint32_t i = (node->has_pred() ? 1 : 0), n = node->srcs().size(); i < n; ++i) {
+    for (uint32_t i = (node->has_pred() ? 1 : 0), n = node->num_srcs(); i < n; ++i) {
       auto src = node->src(i).impl();
       auto it = scalar_map_.find(src->id());
       if (it != scalar_map_.end()
@@ -2582,7 +2585,7 @@ private:
         j_src = jit_value_create(j_func_, j_xtype);
         jit_insn_store(j_func_, j_src, j_src_0);
 
-        jit_label_t l_skip = jit_label_undefined;
+        jit_label_t l_skip(jit_label_undefined);
         auto j_src_rem = this->emit_constant(xsize - length, jit_type_int32);
         auto j_src_inclusive = jit_insn_ule(j_func_, j_src_lsb, j_src_rem);
         jit_insn_branch_if(j_func_, j_src_inclusive, &l_skip);
@@ -2667,7 +2670,7 @@ private:
         auto j_dst0_x = this->emit_cast(j_dst0, j_xtype);
         jit_insn_store_relative(j_func_, j_dst_ptr, 0, j_dst0_x);
 
-        jit_label_t l_skip = jit_label_undefined;
+        jit_label_t l_skip(jit_label_undefined);
         auto j_dst_rem = this->emit_constant(xsize - length, jit_type_int32);
         auto j_single_block = jit_insn_ule(j_func_, j_dst_lsb, j_dst_rem);
 
@@ -3055,7 +3058,7 @@ private:
     auto j_check1 = jit_insn_uge(j_func_, j_value, j_start);
     auto j_check2 = jit_insn_ult(j_func_, j_value, j_end);
     auto j_check = jit_insn_and(j_func_, j_check1, j_check2);
-    jit_label_t l_skip = jit_label_undefined;
+    jit_label_t l_skip(jit_label_undefined);
     jit_insn_branch_if(j_func_, j_check, &l_skip);
     jit_insn_return(j_func_, j_one);
     jit_insn_label(j_func_, &l_skip);

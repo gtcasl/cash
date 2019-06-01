@@ -47,7 +47,7 @@ struct ch_queue {
     };
 
     ch_counter<N> wr_ctr(writing);
-    ch_mem<T, N> mem;
+    ch_mem<T, N, SyncRead> mem;
     mem.write(wr_ctr.value(), io.enq.data, writing);
 
     T data_out;

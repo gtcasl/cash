@@ -22,7 +22,7 @@ public:
   }
 
   bool is_ternary() const {
-    return this->srcs().size() == (has_key() ? 4 : 3);
+    return this->num_srcs() == (has_key() ? 4 : 3);
   }
 
   lnodeimpl* clone(context* ctx, const clone_map& cloned_nodes) const override;

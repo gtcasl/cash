@@ -17,6 +17,30 @@ using namespace ch::internal;
 namespace ch {
 namespace internal {
 
+struct placeholder_user_t {
+  uint32_t node_id;
+  uint32_t src_idx;
+
+  placeholder_user_t(uint32_t node_id, uint32_t src_idx)
+    : node_id(node_id)
+    , src_idx(src_idx)
+  {}
+};
+
+class placeholder_node : public lnodeimpl {
+public:
+  placeholder_node(uint32_t id, uint32_t size)
+    : lnodeimpl(id, type_none, size, nullptr, "", source_location())
+  {}
+
+  lnodeimpl* clone(context*, const clone_map&) const override {
+    assert(false);
+    return nullptr;
+  }
+
+  std::vector<placeholder_user_t> users;
+};
+
 struct cse_key_t {
 
   lnodeimpl* node;
@@ -26,12 +50,12 @@ struct cse_key_t {
   bool operator==(const cse_key_t& other) const {
     return this->node->equals(*other.node);
   }
-};
 
-struct cse_hash_t {
-  std::size_t operator()(const cse_key_t& key) const {
-    return key.node->hash();
-  }
+  struct hash_type {
+    std::size_t operator()(const cse_key_t& key) const {
+      return key.node->hash();
+    }
+  };
 };
 
 class node_tracker {
@@ -183,11 +207,11 @@ bool compiler::dead_code_elimination() {
     // update proxy users' ranges
     for (auto use : proxy_users.at(proxy->id())) {
       uint32_t i = 0;
-      for (uint32_t n = use->srcs().size(); i < n; ++i) {
+      for (uint32_t n = use->num_srcs(); i < n; ++i) {
         if (use->src(i).id() == proxy->id())
           break;
       }
-      assert(i != use->srcs().size());
+      assert(i != use->num_srcs());
       for (auto& range : use->ranges()) {
         if (range.src_idx == i) {
           uint32_t r = 0;
@@ -275,8 +299,7 @@ bool compiler::dead_code_elimination() {
 
         // check for undefined proxies
         if (!is_new_proxy_src
-         && type_proxy == src_impl->type()
-         && !reinterpret_cast<proxyimpl*>(src_impl)->check_fully_initialized()) {
+         && !src_impl->check_fully_initialized()) {
           undefs.push_back(src_impl);
           if (proxy) {
             undefs.push_back(proxy);
@@ -386,7 +409,7 @@ bool compiler::constant_folding() {
           is_constant = (type_lit == sel->key().impl()->type());
         } else {
           is_constant = true;
-          for (uint32_t i = 0, l = sel->srcs().size() - 1; i < l; i += 2) {
+          for (uint32_t i = 0, l = sel->num_srcs() - 1; i < l; i += 2) {
             is_constant &= (type_lit == sel->src(i).impl()->type());
           }
         }
@@ -469,12 +492,12 @@ lnodeimpl* compiler::constant_fold(opimpl* node) {
   uint32_t src1_size = 0;
 
   // access source node data
-  if (node->srcs().size() > 0) {
+  if (node->num_srcs() > 0) {
     auto src0_impl = node->src(0).impl();
     assert(type_lit == src0_impl->type());
     src0_data = reinterpret_cast<litimpl*>(src0_impl)->value().words();
     src0_size = node->src(0).size();
-    if (node->srcs().size() > 1) {
+    if (node->num_srcs() > 1) {
       auto src1_impl = node->src(1).impl();
       assert(type_lit == src1_impl->type());
       src1_data = reinterpret_cast<litimpl*>(src1_impl)->value().words();
@@ -714,7 +737,7 @@ lnodeimpl* compiler::constant_fold(selectimpl* node) {
     auto key_size = key_impl->size();
 
     uint32_t i = 1;
-    for (uint32_t l = node->srcs().size() - 1; i < l; i += 2) {
+    for (uint32_t l = node->num_srcs() - 1; i < l; i += 2) {
       auto src_impl = node->src(i).impl();
       assert(type_lit == src_impl->type());
       assert(key_size == src_impl->size());
@@ -726,7 +749,7 @@ lnodeimpl* compiler::constant_fold(selectimpl* node) {
     return node->src(i).impl();
   } else {
     uint32_t i = 0;
-    for (uint32_t l = node->srcs().size() - 1; i < l; i += 2) {
+    for (uint32_t l = node->num_srcs() - 1; i < l; i += 2) {
       auto src_impl = node->src(i).impl();
       assert(type_lit == src_impl->type());
       auto src_data = reinterpret_cast<litimpl*>(src_impl)->value().words();
@@ -747,7 +770,7 @@ bool compiler::subexpressions_elimination() {
   bool changed = false;
 
   std::vector<node_list_view::iterator> deleted_list;
-  std::unordered_set<cse_key_t, cse_hash_t> cse_table;
+  std::unordered_set<cse_key_t, cse_key_t::hash_type> cse_table;
 
   auto apply_cse = [&](const node_list_view::iterator& it)->bool {
     auto node = *it;
@@ -1033,7 +1056,7 @@ bool compiler::branch_coalescing() {
       auto df_value = sel->srcs().back();
       lnodeimpl* skip_pred = nullptr;
       std::vector<uint32_t> deleted; // ensure deletion from high to low indices
-      for (uint32_t i = start, n = sel->srcs().size() - 1; i < n; i += 2) {
+      for (uint32_t i = start, n = sel->num_srcs() - 1; i < n; i += 2) {
         auto pred  = sel->src(i+0).impl();
         auto value = sel->src(i+1).impl();
         if (value == df_value) {
@@ -1070,7 +1093,7 @@ bool compiler::branch_coalescing() {
     // merge conditional select blocks with same values
     if (!has_key) {
       ordered_set<uint32_t> dups; // ensure deletion from high to low indices
-      for (uint32_t i = 0, n = sel->srcs().size() - 1; i < n; i += 2) {
+      for (uint32_t i = 0, n = sel->num_srcs() - 1; i < n; i += 2) {
         auto pred1  = sel->src(i+0).impl();
         auto value1 = sel->src(i+1).impl();
         auto m = i;
@@ -1125,13 +1148,13 @@ bool compiler::branch_coalescing() {
 
     // is default only select
     uint32_t sel_def_size = sel->has_key() ? 2 : 1;
-    if (sel->srcs().size() == sel_def_size)
+    if (sel->num_srcs() == sel_def_size)
       return sel->src(sel_def_size - 1).impl();
 
     // coallesce cascading ternary branches sharing the same default value
     // p2 ? (p1 ? t1 : f1) : f1 => (p1 & p2) ? t1 : f1;
     uint32_t sel_num_srcs = has_key ? 4 : 3;
-    if (sel->srcs().size() == sel_num_srcs) {
+    if (sel->num_srcs() == sel_num_srcs) {
       auto _true = dynamic_cast<selectimpl*>(sel->src(sel_num_srcs-2).impl());
       if (_true) {
         auto true_has_key = _true->has_key();
@@ -1166,7 +1189,7 @@ bool compiler::branch_coalescing() {
     }
 
     // convert tenary switches to branches
-    if (has_key && 4 == sel->srcs().size()) {
+    if (has_key && 4 == sel->num_srcs()) {
       auto pred = ctx_->create_node<opimpl>(ch_op::eq, 1, false, sel->src(0).impl(), sel->src(1).impl(), sel->sloc());
       this->map_add_node_srcs(pred);
       this->map_remove_node_srcs(sel);
@@ -1179,7 +1202,7 @@ bool compiler::branch_coalescing() {
 
     // eliminate ternary branches with constant boolean sources
     if (1 == sel->size()
-     && 3 == sel->srcs().size()
+     && 3 == sel->num_srcs()
      && type_lit == sel->src(1).impl()->type()
      && type_lit == sel->src(2).impl()->type()) {
       if (static_cast<bool>(reinterpret_cast<litimpl*>(sel->src(1).impl())->value())) {
@@ -1227,16 +1250,22 @@ void compiler::create_merged_context(context* ctx) {
   std::function<void (context*, clone_map&)>
       visit = [&](context* curr, clone_map& map) {
     //--
-    std::unordered_map<proxyimpl*, lnodeimpl*> placeholders;
+    std::vector<std::unique_ptr<placeholder_node>> placeholders;
 
     //--
-    auto ensure_placeholder = [&](const lnode& node) {
-      //assert(node.impl()->type() != type_undef);
-      if (map.count(node.id()) != 0)
+    auto ensure_placeholder = [&](lnodeimpl* node, uint32_t src_idx) {
+      auto& src = node->src(src_idx);
+      auto it = map.find(src.id());
+      if (it != map.end()) {
+        if (type_none == it->second->type()) {
+          reinterpret_cast<placeholder_node*>(it->second)->users.emplace_back(node->id(), src_idx);
+        }
         return;
-      auto placeholder = ctx_->create_node<proxyimpl>(node.size(), node.sloc(), node.name());
-      placeholders[placeholder] = node.impl();
-      map[node.id()] = placeholder;
+      }
+      auto entry = std::make_unique<placeholder_node>(src.id(), src.size());
+      entry->users.emplace_back(node->id(), src_idx);
+      map[src.id()] = entry.get();
+      placeholders.emplace_back(std::move(entry));
     };
 
     //--
@@ -1245,30 +1274,58 @@ void compiler::create_merged_context(context* ctx) {
       case type_bind: {
         auto bind = reinterpret_cast<bindimpl*>(node);
         clone_map sub_map;
-        for (auto& s : bind->srcs()) {
-          auto bs = reinterpret_cast<bindportimpl*>(s.impl());
-          ensure_placeholder(bs->src(0));
-          sub_map[s.id()] = map.at(bs->src(0).id());
+        auto module = bind->module();
+
+        // map module inputs to bind inputs
+        for (auto input : module->inputs()) {
+          bool found = false;
+          for (auto bp : reinterpret_cast<inputimpl*>(input)->bindports()) {
+            for (auto& bi : bind->inputs()) {
+              if (bp->id() == bi.id()) {
+                auto bi_impl = reinterpret_cast<bindportimpl*>(bi.impl());
+                ensure_placeholder(bi_impl, 0);
+                sub_map[input->id()] = map.at(bi_impl->src(0).id());
+                found = true;
+                break;
+              }
+            }
+            if (found)
+              break;
+          }
+          assert(found);
         }
+
         node_path.push_back(stringf("%s_%d", bind->module()->name().c_str(), bind->id()));
         visit(bind->module(), sub_map);
         node_path.pop_back();
-        for (auto& o : bind->outputs()) {
-          auto bo = reinterpret_cast<bindportimpl*>(o.impl());
-          map[o.id()] = sub_map.at(bo->ioport().id());
-        }
-      } break;
-      case type_input: {
-        auto input = reinterpret_cast<inputimpl*>(node);
-        if (curr->parent()) {
-          for (auto p : input->bindports()) {
-            auto it = map.find(p->id());
-            if (it != map.end()) {
-              map[input->id()] = it->second;
-              break;
+
+        // copy over unresolved mappings
+        for (auto& placeholder : placeholders) {
+          auto src = map.at(placeholder->id());
+          if (src->type() != type_none)
+            continue;
+          for (auto& user : placeholder->users) {
+            auto it = sub_map.find(user.node_id);
+            if (it != sub_map.end()) {
+              map[user.node_id] = it->second;
             }
           }
-        } else {
+        }
+
+        // map bindoutputs to module outputs
+        for (auto& bo : bind->outputs()) {
+          auto bo_impl = reinterpret_cast<bindportimpl*>(bo.impl());
+          auto bo_value = sub_map.at(bo_impl->ioport().impl()->src(0).id());
+          map[bo.id()] = bo_value;
+        }
+      } break;
+      case type_bindin:
+      case type_bindout:
+        // skip
+        break;
+      case type_input: {
+        auto input = reinterpret_cast<inputimpl*>(node);
+        if (nullptr == curr->parent()) {
           lnodeimpl* eval_node;
           if (input->name() == "clk") {
             eval_node = ctx_->current_clock(input->sloc());
@@ -1276,41 +1333,36 @@ void compiler::create_merged_context(context* ctx) {
             eval_node = ctx_->current_reset(input->sloc());
           } else {
             eval_node = input->clone(ctx_, map);
-            eval_node->name() = full_name(eval_node);
+            eval_node->rename(full_name(eval_node));
           }
           map[input->id()] = eval_node;
         }
       } break;
-      case type_output: {
-        auto output = reinterpret_cast<outputimpl*>(node);
-        ensure_placeholder(output->src(0));
-        if (curr->parent()) {
-          map[output->id()] = map.at(output->src(0).id());
-        } else {
+      case type_output: {        
+        if (nullptr == curr->parent()) {
+          auto output = reinterpret_cast<outputimpl*>(node);
+          ensure_placeholder(output, 0);
           auto eval_node = output->clone(ctx_, map);
-          eval_node->name() = full_name(eval_node);
+          eval_node->rename(full_name(eval_node));
           map[output->id()] = eval_node;
         }
       } break;
-      case type_mem: {
+      case type_mem:
+      case type_udfc:
+      case type_udfs: {
         auto eval_node = node->clone(ctx_, map);
         map[node->id()] = eval_node;
       } break;
       case type_tap: {
         auto tap = reinterpret_cast<tapimpl*>(node);
-        ensure_placeholder(tap->src(0));
+        ensure_placeholder(tap, 0);
         auto eval_node = tap->clone(ctx_, map);
-        eval_node->name() = full_name(eval_node);
+        eval_node->rename(full_name(eval_node));
         map[tap->id()] = eval_node;
       } break;
-      case type_bindin:
-      case type_bindout:
-        // skip
-        break;
       default: {
-        // assign placeholders
-        for (auto& src : node->srcs()) {
-          ensure_placeholder(src);
+        for (uint32_t i = 0; i < node->num_srcs(); ++i) {
+          ensure_placeholder(node, i);
         }
         auto eval_node = node->clone(ctx_, map);
         map[node->id()] = eval_node;
@@ -1319,9 +1371,18 @@ void compiler::create_merged_context(context* ctx) {
     }
 
     // resolve placeholders
-    for (auto placeholder : placeholders) {
-      auto src = map.at(placeholder.second->id());
-      placeholder.first->add_source(0, src, 0, src->size());
+    for (auto& placeholder : placeholders) {
+      auto src = map.at(placeholder->id());
+      assert(src->type() != type_none);
+      for (auto& user : placeholder->users) {
+        auto it = map.find(user.node_id);
+        if (it != map.end()) {
+          auto target = it->second;
+          assert(target->type() != type_none);
+          assert(type_none == target->src(user.src_idx).impl()->type());
+          target->set_src(user.src_idx, src);
+        }
+      }
     }
   };
 
@@ -1330,7 +1391,6 @@ void compiler::create_merged_context(context* ctx) {
   clone_map map;
   node_path.push_back(stringf("%s_%d", ctx->name().c_str(), ctx->id()));
   visit(ctx, map);
-
   node_path.pop_back();
 }
 
@@ -1339,52 +1399,6 @@ void compiler::build_eval_list(std::vector<lnodeimpl*>& eval_list) {
   std::unordered_set<uint32_t> cyclic_nodes;
   std::unordered_set<lnodeimpl*> update_list;
   std::unordered_set<lnodeimpl*> uninitialized_regs;
-
-  /*//--
-  std::unordered_set<uint32_t> relocated_nodes;
-  auto relocate_node = [&](uint32_t nidx) {
-    auto node = eval_list.at(nidx);
-    if (type_cd == node->type()
-     || is_snode_type(node->type())
-     || relocated_nodes.count(node->id()))
-        return;
-
-    for (auto& src : node->srcs()) {
-      if (type_lit != src.impl()->type())
-        return;
-    }
-
-    for (uint32_t i = nidx + 1; i < eval_list.size(); ++i) {
-      auto curr = eval_list.at(i);
-      bool is_used = false;
-      for (auto& src : node->srcs()) {
-        if (src.id() == curr->id()) {
-          is_used = true;
-          break;
-        }
-      }
-      if (!is_used) {
-        for (auto& src : curr->srcs()) {
-          if (src.id() == node->id()) {
-            is_used = true;
-            break;
-          }
-        }
-      }
-      if (is_used) {
-        uint32_t k = i - 1;
-        if (k > nidx) {
-          // move node closer to use
-          for (uint32_t j = nidx; j < k; ++j) {
-            eval_list.at(j) = eval_list.at(j+1);
-          }
-          eval_list.at(k) = node;
-          relocated_nodes.insert(node->id());
-        }
-        return;
-      }
-    }
-  };*/
 
   //--
   std::function<bool (lnodeimpl*)> dfs_visit = [&](lnodeimpl* node)->bool {
@@ -1503,11 +1517,6 @@ void compiler::build_eval_list(std::vector<lnodeimpl*>& eval_list) {
     visited_nodes.erase(sys_time->id());
     dfs_visit(sys_time);
   }
-
-  /*// compress nodes distance
-  for (uint32_t i = 0; i < eval_list.size(); ++i) {
-    relocate_node(i);
-  }*/
 
   if (platform::self().cflags() & cflags::dump_ast) {
     for (auto node : eval_list) {

@@ -71,7 +71,7 @@ printimpl::printimpl(context* ctx,
                      const std::vector<lnode>& args,
                      const std::vector<enum_string_cb>& enum_strings,
                      const source_location& sloc)
-  : ioimpl(ctx, type_print, 0, sloc, "")
+  : ioimpl(ctx, type_print, 0, "", sloc)
   , enum_strings_(enum_strings)
   , format_(format)
   , pred_idx_(-1) {
@@ -93,7 +93,7 @@ printimpl::printimpl(context* ctx,
                      const std::vector<enum_string_cb>& enum_strings,
                      lnodeimpl* pred,
                      const source_location& sloc)
-  : ioimpl(ctx, type_print, 0, sloc, "")
+  : ioimpl(ctx, type_print, 0, "", sloc)
   , enum_strings_(enum_strings)
   , format_(format)
   , pred_idx_(-1) {
@@ -111,7 +111,7 @@ lnodeimpl* printimpl::clone(context* ctx, const clone_map& cloned_nodes) const {
     pred = cloned_nodes.at(this->pred().id());
   }
   std::vector<lnode> args;
-  for (uint32_t i = pred_idx_ + 1; i < this->srcs().size(); ++i) {
+  for (uint32_t i = pred_idx_ + 1; i < this->num_srcs(); ++i) {
     auto& src = cloned_nodes.at(this->src(i).id());
     args.emplace_back(src);
   }
@@ -120,7 +120,7 @@ lnodeimpl* printimpl::clone(context* ctx, const clone_map& cloned_nodes) const {
 
 void printimpl::print(std::ostream& out) const {
   out << "#" << id_ << " <- " << this->type();
-  uint32_t n = this->srcs().size();
+  uint32_t n = this->num_srcs();
   if (n > 0) {
     out << "(";
     uint32_t i = 0;

@@ -478,9 +478,9 @@ outputimpl* context::create_output(uint32_t size,
       return output;
     }
   }
-  auto src = this->create_node<proxyimpl>(size, sloc, name);
+  auto src = this->create_node<proxyimpl>(size, name, sloc);
   auto value = smart_ptr<sdata_type>::make(size);
-  return this->create_node<outputimpl>(src, value, name, sloc);
+  return this->create_node<outputimpl>(size, src, value, name, sloc);
 }
 
 outputimpl* context::get_output(const lnode& src) {
@@ -600,7 +600,7 @@ void context::end_branch() {
       auto dst = var.first;
       assert(type_proxy == dst->type());
       for (auto& slice : var.second) {
-        auto value  = this->emit_conditionals(dst, slice.first, slice.second, curr_branch);
+        auto value = this->emit_conditionals(dst, slice.first, slice.second, curr_branch);
         reinterpret_cast<proxyimpl*>(dst)->add_source(slice.first.offset, value, 0, slice.first.length);
       }
     }
@@ -672,7 +672,7 @@ void context::conditional_assign(
                             lnodeimpl* src,
                             uint32_t src_offset) {
     if (src->size() != range.length) {
-      src = this->create_node<proxyimpl>(src, src_offset, range.length, sloc, "slice");
+      src = this->create_node<proxyimpl>(src, src_offset, range.length, "slice", sloc);
     }
     slices[range][loc] = src;
   };
@@ -862,7 +862,7 @@ context::emit_conditionals(lnodeimpl* dst,
 
     // add default value if not provided
     if (values.back().first) {
-       values.emplace_back(nullptr, current);
+      values.emplace_back(nullptr, current);
     }
 
     // return single assignment as default value
@@ -873,7 +873,7 @@ context::emit_conditionals(lnodeimpl* dst,
 
     // create select node
     auto sel = this->create_node<selectimpl>(
-                        current->size(), branch->key, branch->sloc);
+                        range.length, branch->key, branch->sloc);
     if (branch->key && (branch->key->size() <= 64)) {
       // insert switch cases in ascending order
       for (auto& value : values) {
@@ -883,7 +883,7 @@ context::emit_conditionals(lnodeimpl* dst,
           assert(!branch->key || type_lit == pred->type());
           auto ipred = static_cast<int64_t>(reinterpret_cast<litimpl*>(pred)->value());
           uint32_t i = 1;
-          for (; i < sel->srcs().size(); i += 2) {
+          for (; i < sel->num_srcs(); i += 2) {
             auto sel_ipred = static_cast<int64_t>(reinterpret_cast<litimpl*>(sel->src(i).impl())->value());
             CH_CHECK(sel_ipred != ipred, "duplicate switch case predicate");
             if (sel_ipred > ipred) {
@@ -892,7 +892,7 @@ context::emit_conditionals(lnodeimpl* dst,
               break;
             }
           }
-          if (i == sel->srcs().size()) {
+          if (i == sel->num_srcs()) {
             sel->add_src(pred);
             sel->add_src(value.second);
           }
@@ -907,6 +907,13 @@ context::emit_conditionals(lnodeimpl* dst,
           sel->add_src(pred);
         }
         sel->add_src(value.second);
+      }
+    }
+    // check sources
+    for (auto& src : sel->srcs()) {
+      if (src.empty()) {
+        fprintf(stderr, "error: not-fully initialized conditional variable: %s\n", sel->debug_info().c_str());
+        std::abort();
       }
     }
     return sel;
@@ -931,7 +938,7 @@ lnodeimpl* context::create_predicate(const source_location& sloc) {
   auto one = this->create_literal(sdata_type(1, 1));
 
   // create predicate variable
-  auto predicate = this->create_node<proxyimpl>(zero, 0, 1, sloc, "predicate");
+  auto predicate = this->create_node<proxyimpl>(zero, 0, 1, "predicate", sloc);
   this->remove_local_variable(predicate, nullptr);
 
   // assign predicate
@@ -954,7 +961,7 @@ void context::register_tap(const lnode& node,
   } else {
     sid = stringf("tap.%s", sid.c_str());
   }
-  this->create_node<tapimpl>(node, sid, sloc);
+  this->create_node<tapimpl>(node.size(), node, sid, sloc);
 }
 
 void context::create_udf_node(udf_iface* udf,
@@ -964,9 +971,9 @@ void context::create_udf_node(udf_iface* udf,
   if (is_seq) {
     auto cd = this->current_cd(sloc);
     auto reset = this->current_reset(sloc);
-    curr_udf_ = this->create_node<udfsimpl>(udf, cd, reset, sloc, name);
+    curr_udf_ = this->create_node<udfsimpl>(udf, cd, reset, name, sloc);
   } else {
-    curr_udf_ = this->create_node<udfcimpl>(udf, sloc, name);
+    curr_udf_ = this->create_node<udfcimpl>(udf, name, sloc);
   }
 }
 

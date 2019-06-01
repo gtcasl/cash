@@ -123,17 +123,19 @@ struct Foo3 {
   }
 };
 
-template <typename T, unsigned N>
+template <typename T, unsigned N, bool SyncRead = false>
 struct QueueWrapper {
   __io (
-    (ch_deq_io<T>) enq,
-    (ch_enq_io<T>) deq
+    (ch_enq_io<T>) enq,
+    (ch_deq_io<T>) deq,
+    __out (ch_uint<ch_queue<T, N>::size_width>) size
   );
   void describe() {
     queue_.io.enq(io.enq);
     queue_.io.deq(io.deq);
+    queue_.io.size(io.size);
   }
-  ch_module<ch_queue<T, N>> queue_;
+  ch_module<ch_queue<T, N, SyncRead>> queue_;
 };
 
 template <typename T>
@@ -237,7 +239,7 @@ struct Dogfood {
 }
 
 int main() {
-  ch_device<Dogfood> device;
+  /*ch_device<Dogfood> device;
   //ch_toVerilog("test.v", device);
   ch_simulator sim(device);
   device.io.in = 0xA;
@@ -245,7 +247,7 @@ int main() {
     std::cout << "t" << t << ": out="  << device.io.out << std::endl;
     //assert(!!device.io.out);
     return (t < 2*3);
-  });
+  });*/
 
   /*{
     ch_device<inverter> device;
@@ -502,6 +504,96 @@ int main() {
     auto b = a.slice<12>().slice<8>().slice<4>(4);
     assert(b == 0xc_h);
   }*/
+
+  {
+    static const int N = 2;
+    ch_device<QueueWrapper<ch_bit4, N>> queue;
+    RetCheck ret;
+
+    ch_tracer trace(queue);
+    ch_tick t = trace.reset(0);
+
+    for (int i = 0; i < N; ++i) {
+      if (i != 0) {
+        ret &= (0xA == queue.io.deq.data);
+      }
+      ret &= (queue.io.deq.valid == (i != 0)); // ?empty
+      ret &= !!queue.io.enq.ready;    // !full
+      ret &= i == queue.io.size;      // i
+      queue.io.enq.data = (0xA + i);
+      queue.io.enq.valid = true;      // push
+      queue.io.deq.ready = false;
+      t = trace.step(t);
+    }
+
+    for (int i = 0; i < N; ++i) {
+      ret &= ((0xA + i) == queue.io.deq.data);
+      ret &= !!queue.io.deq.valid;    // !empty
+      ret &= (queue.io.enq.ready == (i != 0));  // ?full
+      ret &= (N-i) == queue.io.size;  // N-i
+      queue.io.enq.valid = false;
+      queue.io.deq.ready = true;      // pop
+      t = trace.step(t);
+    }
+
+    for (int i = 0; i < N; ++i) {
+      if (i != 0) {
+        ret &= (0xA == queue.io.deq.data);
+      }
+      ret &= (queue.io.deq.valid == (i != 0)); // ?empty
+      ret &= !!queue.io.enq.ready;    // !full
+      ret &= i == queue.io.size;      // i
+      queue.io.enq.data = (0xA + i);
+      queue.io.enq.valid = true;      // push
+      queue.io.deq.ready = false;
+      t = trace.step(t);
+    }
+
+    for (int i = 0; i < N-1; ++i) {
+      ret &= ((0xA + i) == queue.io.deq.data);
+      ret &= !!queue.io.deq.valid;    // !empty
+      ret &= (queue.io.enq.ready == (i != 0));  // ?full
+      ret &= (N-i) == queue.io.size;  // N-i
+      queue.io.enq.valid = false;
+      queue.io.deq.ready = true;      // pop
+      t = trace.step(t);
+    }
+
+    if (N == 1) {
+      ret &= (0xA == queue.io.deq.data);
+      ret &= !!queue.io.deq.valid;    // !empty
+      ret &= !queue.io.enq.ready;     // full
+      ret &= 1 == queue.io.size;      // 1
+      queue.io.enq.valid = false;
+      queue.io.deq.ready = true;      // pop
+      t = trace.step(t);
+    } else {
+      ret &= ((0xA + N-1) == queue.io.deq.data);
+      ret &= !!queue.io.deq.valid; // !empty
+      ret &= (queue.io.enq.ready == (N != 1)); // ?full
+      ret &= 1 == queue.io.size;   // 1
+      queue.io.enq.data = (0xA + N);
+      queue.io.enq.valid = true;   // push
+      queue.io.deq.ready = true;   // pop
+      t = trace.step(t);
+
+      ret &= ((0xA + N) == queue.io.deq.data);
+      ret &= !!queue.io.deq.valid; // !empty
+      ret &= !!queue.io.enq.ready; // !full
+      ret &= 1 == queue.io.size;   // 1
+      queue.io.enq.valid = false;
+      queue.io.deq.ready = true;   // pop
+      t = trace.step(t);
+    }
+
+    ret &= !queue.io.deq.valid;  // empty
+    ret &= !!queue.io.enq.ready; // !full
+    ret &= 0 == queue.io.size;   // 0
+
+    trace.toTestBench("queue_tb.v", "queue.v");
+    ret &= (checkVerilog("queue_tb.v"));
+    assert(!!ret);
+  }
 
   return 0;
 }

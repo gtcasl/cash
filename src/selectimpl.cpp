@@ -44,7 +44,7 @@ selectimpl::selectimpl(context* ctx,
                        uint32_t size,
                        lnodeimpl* key,
                        const source_location& sloc)
-  : lnodeimpl(ctx, type_sel, size, sloc, "")
+  : lnodeimpl(ctx->node_id(), type_sel, size, ctx, "", sloc)
   , has_key_(false) {
   if (key) {
     this->add_src(key);
@@ -58,7 +58,7 @@ lnodeimpl* selectimpl::clone(context* ctx, const clone_map& cloned_nodes) const 
     key = cloned_nodes.at(this->key().id());
   }
   auto node = ctx->create_node<selectimpl>(this->size(), key, sloc_);
-  for (uint32_t i = (has_key_ ? 1 : 0); i < this->srcs().size(); ++i) {
+  for (uint32_t i = (has_key_ ? 1 : 0); i < this->num_srcs(); ++i) {
     auto src = cloned_nodes.at(this->src(i).id());
     node->add_src(src);
   }
@@ -76,7 +76,7 @@ bool selectimpl::equals(const lnodeimpl& other) const {
 
 void selectimpl::print(std::ostream& out) const {
   out << "#" << id_ << " <- " << (this->has_key() ? "case" : "sel") << this->size();
-  auto n = this->srcs().size();
+  auto n = this->num_srcs();
   if (n > 0) {
     out << "(";
     for (uint32_t i = 0; i < n; ++i) {
@@ -103,7 +103,7 @@ lnode select_impl::emit(const lnode& value) {
       assert(type_lit == pred->type()); // the case predicate should be a literal value
       auto ipred = static_cast<int64_t>(reinterpret_cast<litimpl*>(pred)->value());
       uint32_t i = 1;
-      for (; i < sel->srcs().size(); i += 2) {
+      for (; i < sel->num_srcs(); i += 2) {
         auto sel_ipred = static_cast<int64_t>(reinterpret_cast<litimpl*>(sel->src(i).impl())->value());
         CH_CHECK(sel_ipred != ipred, "duplicate switch case predicate");
         if (sel_ipred > ipred) {
@@ -112,7 +112,7 @@ lnode select_impl::emit(const lnode& value) {
           break;
         }
       }
-      if (i == sel->srcs().size()) {
+      if (i == sel->num_srcs()) {
         sel->add_src(pred);
         sel->add_src(stmt.second);
       }
