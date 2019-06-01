@@ -1523,11 +1523,11 @@ private:
 
   void resolve_branch(lnodeimpl* node) {
     if (sblock_.cd
-     && ((nullptr == node)
-      || (!is_snode_type(node->type())
-       || 0 !=(platform::self().cflags() & cflags::disable_snc)
-       || node->type() != type_reg
-       || get_snode_reset(node) != sblock_.reset))) {
+     && ((0 != (platform::self().cflags() & cflags::disable_snc)
+      || (nullptr == node)
+      || !is_snode_type(node->type())
+      || get_snode_cd(node) != sblock_.cd
+      || get_snode_reset(node) != sblock_.reset))) {
       this->flush_sblock();
     }
      if (!bypass_enable_)

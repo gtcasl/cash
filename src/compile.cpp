@@ -1300,11 +1300,10 @@ void compiler::create_merged_context(context* ctx) {
         node_path.pop_back();
 
         // copy over unresolved mappings
-        for (auto& placeholder : placeholders) {
-          auto src = map.at(placeholder->id());
-          if (src->type() != type_none)
+        for (auto& entry : sub_map) {
+          if (entry.second->type() != type_none)
             continue;
-          for (auto& user : placeholder->users) {
+          for (auto& user : reinterpret_cast<placeholder_node*>(entry.second)->users) {
             auto it = sub_map.find(user.node_id);
             if (it != sub_map.end()) {
               map[user.node_id] = it->second;
