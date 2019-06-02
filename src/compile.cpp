@@ -18,12 +18,12 @@ namespace ch {
 namespace internal {
 
 struct placeholder_user_t {
-  uint32_t node_id;
   uint32_t src_idx;
+  lnodeimpl* node;
 
-  placeholder_user_t(uint32_t node_id, uint32_t src_idx)
-    : node_id(node_id)
-    , src_idx(src_idx)
+  placeholder_user_t(uint32_t src_idx)
+    : src_idx(src_idx)
+    , node(nullptr)
   {}
 };
 
@@ -38,7 +38,7 @@ public:
     return nullptr;
   }
 
-  std::vector<placeholder_user_t> users;
+  std::list<placeholder_user_t> users;
 };
 
 struct cse_key_t {
@@ -1251,6 +1251,7 @@ void compiler::create_merged_context(context* ctx) {
       visit = [&](context* curr, clone_map& map) {
     //--
     std::vector<std::unique_ptr<placeholder_node>> placeholders;
+    std::unordered_map<uint32_t, std::vector<lnodeimpl**>> unresolved_nodes;
 
     //--
     auto ensure_placeholder = [&](lnodeimpl* node, uint32_t src_idx) {
@@ -1258,14 +1259,30 @@ void compiler::create_merged_context(context* ctx) {
       auto it = map.find(src.id());
       if (it != map.end()) {
         if (type_none == it->second->type()) {
-          reinterpret_cast<placeholder_node*>(it->second)->users.emplace_back(node->id(), src_idx);
+          auto placeholder = reinterpret_cast<placeholder_node*>(it->second);
+          auto& user = placeholder->users.emplace_back(src_idx);
+          unresolved_nodes[node->id()].emplace_back(&user.node);
         }
         return;
       }
-      auto entry = std::make_unique<placeholder_node>(src.id(), src.size());
-      entry->users.emplace_back(node->id(), src_idx);
-      map[src.id()] = entry.get();
-      placeholders.emplace_back(std::move(entry));
+
+      auto placeholder = std::make_unique<placeholder_node>(src.id(), src.size());
+      auto& user = placeholder->users.emplace_back(src_idx);
+      unresolved_nodes[node->id()].emplace_back(&user.node);
+
+      map[src.id()] = placeholder.get();
+      placeholders.emplace_back(std::move(placeholder));
+    };
+
+    //--
+    auto update_map = [&](uint32_t id, lnodeimpl* node) {
+      map[id] = node;
+      auto it = unresolved_nodes.find(id);
+      if (it != unresolved_nodes.end()) {
+        for (auto& entry : it->second) {
+          *entry = node;
+        }
+      }
     };
 
     //--
@@ -1299,18 +1316,6 @@ void compiler::create_merged_context(context* ctx) {
         visit(bind->module(), sub_map);
         node_path.pop_back();
 
-        // copy over unresolved mappings
-        for (auto& entry : sub_map) {
-          if (entry.second->type() != type_none)
-            continue;
-          for (auto& user : reinterpret_cast<placeholder_node*>(entry.second)->users) {
-            auto it = sub_map.find(user.node_id);
-            if (it != sub_map.end()) {
-              map[user.node_id] = it->second;
-            }
-          }
-        }
-
         // map bindoutputs to module outputs
         for (auto& bo : bind->outputs()) {
           auto bo_impl = reinterpret_cast<bindportimpl*>(bo.impl());
@@ -1334,7 +1339,7 @@ void compiler::create_merged_context(context* ctx) {
             eval_node = input->clone(ctx_, map);
             eval_node->rename(full_name(eval_node));
           }
-          map[input->id()] = eval_node;
+          update_map(input->id(), eval_node);
         }
       } break;
       case type_output: {        
@@ -1343,28 +1348,28 @@ void compiler::create_merged_context(context* ctx) {
           ensure_placeholder(output, 0);
           auto eval_node = output->clone(ctx_, map);
           eval_node->rename(full_name(eval_node));
-          map[output->id()] = eval_node;
+          update_map(output->id(), eval_node);
         }
       } break;
       case type_mem:
       case type_udfc:
       case type_udfs: {
         auto eval_node = node->clone(ctx_, map);
-        map[node->id()] = eval_node;
+        update_map(node->id(), eval_node);
       } break;
       case type_tap: {
         auto tap = reinterpret_cast<tapimpl*>(node);
         ensure_placeholder(tap, 0);
         auto eval_node = tap->clone(ctx_, map);
         eval_node->rename(full_name(eval_node));
-        map[tap->id()] = eval_node;
+        update_map(tap->id(), eval_node);
       } break;
       default: {
         for (uint32_t i = 0; i < node->num_srcs(); ++i) {
           ensure_placeholder(node, i);
         }
         auto eval_node = node->clone(ctx_, map);
-        map[node->id()] = eval_node;
+        update_map(node->id(), eval_node);
       } break;
       }
     }
@@ -1374,12 +1379,11 @@ void compiler::create_merged_context(context* ctx) {
       auto src = map.at(placeholder->id());
       assert(src->type() != type_none);
       for (auto& user : placeholder->users) {
-        auto it = map.find(user.node_id);
-        if (it != map.end()) {
-          auto target = it->second;
+        auto target = user.node;
+        if (target) {
           assert(target->type() != type_none);
-          assert(type_none == target->src(user.src_idx).impl()->type());
-          target->set_src(user.src_idx, src);
+          if (type_none == target->src(user.src_idx).impl()->type())
+            target->set_src(user.src_idx, src);
         }
       }
     }
