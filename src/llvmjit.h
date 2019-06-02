@@ -163,6 +163,7 @@ jit_value_t jit_insn_umin(jit_function_t func, jit_value_t value1, jit_value_t v
 jit_value_t jit_insn_smax(jit_function_t func, jit_value_t value1, jit_value_t value2);
 jit_value_t jit_insn_umax(jit_function_t func, jit_value_t value1, jit_value_t value2);
 
+jit_value_t jit_insn_load(jit_function_t func, jit_value_t value);
 int jit_insn_store(jit_function_t func, jit_value_t dest, jit_value_t value);
 jit_value_t jit_insn_load_relative(jit_function_t func, jit_value_t base_addr, jit_nint offset, jit_type_t type);
 int jit_insn_store_relative(jit_function_t func, jit_value_t base_addr, jit_nint offset, jit_value_t value);

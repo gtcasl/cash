@@ -21,7 +21,7 @@ struct ch_queue {
     __out (ch_uint<size_width>) size
   );
 
-  void describe() {    
+  void describe() {
     auto reading = io.deq.ready && io.deq.valid;
     auto writing = io.enq.valid && io.enq.ready;
 
@@ -102,7 +102,7 @@ struct ch_llqueue {
     auto reading = io.deq.ready && io.deq.valid;
     auto writing = io.enq.valid && io.enq.ready;
 
-    if constexpr (N == 1) {      
+    if constexpr (N == 1) {
       ch_reg<ch_uint1> size(0);
 
       __if (writing && !reading) {

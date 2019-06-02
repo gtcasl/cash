@@ -513,6 +513,7 @@ int main() {
     ch_tracer trace(queue);
     ch_tick t = trace.reset(0);
 
+    // fill the queue
     for (int i = 0; i < N; ++i) {
       if (i != 0) {
         ret &= (0xA == queue.io.deq.data);
@@ -526,6 +527,7 @@ int main() {
       t = trace.step(t);
     }
 
+    // empty the queue
     for (int i = 0; i < N; ++i) {
       ret &= ((0xA + i) == queue.io.deq.data);
       ret &= !!queue.io.deq.valid;    // !empty
@@ -536,6 +538,7 @@ int main() {
       t = trace.step(t);
     }
 
+    // fill the queue again
     for (int i = 0; i < N; ++i) {
       if (i != 0) {
         ret &= (0xA == queue.io.deq.data);
@@ -549,6 +552,7 @@ int main() {
       t = trace.step(t);
     }
 
+    // empty queue leaving one entry
     for (int i = 0; i < N-1; ++i) {
       ret &= ((0xA + i) == queue.io.deq.data);
       ret &= !!queue.io.deq.valid;    // !empty
@@ -589,9 +593,6 @@ int main() {
     ret &= !queue.io.deq.valid;  // empty
     ret &= !!queue.io.enq.ready; // !full
     ret &= 0 == queue.io.size;   // 0
-
-    trace.toTestBench("queue_tb.v", "queue.v");
-    ret &= (checkVerilog("queue_tb.v"));
     assert(!!ret);
   }
 

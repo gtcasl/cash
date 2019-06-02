@@ -958,6 +958,20 @@ jit_value_t jit_insn_umax(jit_function_t func,
   return func->create_value(res);
 }
 
+jit_value_t jit_insn_load(jit_function_t func, jit_value_t value) {
+  if (jit_value_is_constant(value))
+    return value;
+  auto ctx = func->ctx();
+  auto builder = ctx->builder();
+  if (!value->is_mutable()) {
+    jit_value_t data = value;
+    value = func->create_value(value->type());
+    builder->CreateStore(data->impl(), value->alloc());
+  }
+  auto res = builder->CreateLoad(value->alloc());
+  return func->create_value(res);
+}
+
 int jit_insn_store(jit_function_t func, jit_value_t dest, jit_value_t value) {
   assert(dest->is_mutable());
   auto ctx = func->ctx();

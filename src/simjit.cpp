@@ -541,14 +541,19 @@ private:
     auto dst_width = node->size();
     auto j_ntype = to_native_type(dst_width);
     if (dst_width <= WORD_SIZE) {
-      jit_value_t j_tmp = nullptr;
-      for (auto& range : node->ranges()) {
-        auto& src = node->src(range.src_idx);
-        auto j_src = this->emit_load_slice_scalar(src.impl(), range.src_offset, range.length);
-        j_tmp = this->emit_append_slice_scalar(j_tmp, range.dst_offset, j_src, j_ntype);
+      if (node->is_identity()) {
+        auto j_src = scalar_map_[node->src(0).id()];
+        auto j_res = jit_insn_load(j_func_, j_src);
+        scalar_map_[node->id()] = this->emit_cast(j_res, j_ntype);
+      } else {
+        jit_value_t j_tmp = nullptr;
+        for (auto& range : node->ranges()) {
+          auto& src = node->src(range.src_idx);
+          auto j_src = this->emit_load_slice_scalar(src.impl(), range.src_offset, range.length);
+          j_tmp = this->emit_append_slice_scalar(j_tmp, range.dst_offset, j_src, j_ntype);
+        }
+        scalar_map_[node->id()] = this->emit_cast(j_tmp, j_ntype);
       }
-      auto j_ntype = to_native_type(dst_width);
-      scalar_map_[node->id()] = this->emit_cast(j_tmp, j_ntype);
     } else {
       auto dst_addr = this->get_pointer_address(node);
       jit_value_t j_tmp = nullptr;
@@ -1617,6 +1622,7 @@ private:
           }
           cur_enable = enable;
         }
+
         switch (node->type()) {
         case type_reg:
           this->emit_snode_value(reinterpret_cast<regimpl*>(node));
@@ -1868,7 +1874,7 @@ private:
       if (is_scalar) {
         auto j_next_x = this->emit_cast(j_next, j_xtype);
         jit_insn_store_relative(j_func_, j_vars_, dst_addr, j_next_x);
-        jit_insn_store(j_func_, j_dst, j_next);
+        jit_insn_store(j_func_, j_dst, j_next);        
       } else {
         auto j_dst_ptr = jit_insn_add_relative(j_func_, j_vars_, dst_addr);
         auto j_next_ptr = this->emit_pointer_address(node->next().impl());
@@ -2333,12 +2339,12 @@ private:
           }
         }
         if (dst_width <= WORD_SIZE) {
-          // preload scalar value
           __source_info();
+          // preload scalar value
+          auto j_var = jit_value_create(j_func_, j_ntype);
           auto addr = addr_map_.at(node->id());
           auto j_dst = jit_insn_load_relative(j_func_, j_vars_, addr, j_xtype);
           auto j_dst_n = this->emit_cast(j_dst, j_ntype);
-          auto j_var = jit_value_create(j_func_, j_ntype);
           jit_insn_store(j_func_, j_var, j_dst_n);
           scalar_map_[node->id()] = j_var;
         }
@@ -2359,11 +2365,11 @@ private:
         auto addr = addr_map_.at(node->id());
         bv_init(reinterpret_cast<block_type*>(sim_ctx_->state.vars + addr), dst_width);
         if (dst_width <= WORD_SIZE) {
-          // preload scalar value
           __source_info();
+          // preload scalar value
+          auto j_var = jit_value_create(j_func_, j_ntype);
           auto j_dst = jit_insn_load_relative(j_func_, j_vars_, addr, j_xtype);
           auto j_dst_n = this->emit_cast(j_dst, j_ntype);
-          auto j_var = jit_value_create(j_func_, j_ntype);
           jit_insn_store(j_func_, j_var, j_dst_n);
           scalar_map_[node->id()] = j_var;
         }
@@ -2373,8 +2379,8 @@ private:
         auto addr = addr_map_.at(node->id());
         bv_reset(reinterpret_cast<block_type*>(sim_ctx_->state.vars + addr), dst_width);        
         if (dst_width <= WORD_SIZE) {
-          // preload scalar value
           __source_info();
+          // preload scalar value
           auto j_dst = jit_insn_load_relative(j_func_, j_vars_, addr, j_xtype);
           scalar_map_[node->id()] = j_dst;
         }
