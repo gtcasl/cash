@@ -117,10 +117,9 @@ public:
                            uint32_t length,
                            const source_location& sloc) const;
 
-  virtual void write(uint32_t dst_offset,
-                     const lnode& src,
-                     uint32_t src_offset,
-                     uint32_t length);
+  virtual void write(uint32_t, const lnode&, uint32_t, uint32_t) {
+    assert(false);
+  }
 
   virtual void print(std::ostream& out) const;
 

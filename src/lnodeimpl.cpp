@@ -91,10 +91,6 @@ lnodeimpl* lnodeimpl::slice(uint32_t offset, uint32_t length, const source_locat
   return ctx_->create_node<proxyimpl>(self, offset, length, "slice", sloc);
 }
 
-void lnodeimpl::write(uint32_t, const lnode&, uint32_t, uint32_t) {
-  assert(false);
-}
-
 void lnodeimpl::print(std::ostream& out) const {
   out << "#" << id_ << " <- " << this->type() << size_;
   out << "(";

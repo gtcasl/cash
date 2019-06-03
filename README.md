@@ -15,8 +15,28 @@ Cash requires C++17 compiler to build with support for inline variables.
 It has been tested with GCC 7 and Clang 5.
 
 Other dependencies include:
+  - [LLVM](https://www.llvm.org)
   - [LIBJIT](https://www.gnu.org/software/libjit)
   - [Catch](https://github.com/catchorg/Catch2)
+  - [iVerilog](http://iverilog.icarus.com/)
+
+System Setup (Ubuntu Trusty)
+----------------------------
+
+C++17 Install:
+	$ sudo add-apt-repository --yes ppa:ubuntu-toolchain-r/test
+	$ sudo apt-get update
+	$ sudo apt-get install gcc-7 g++-7
+	$ sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-7 60 --slave /usr/bin/g++ g++ /usr/bin/g++-7
+
+LLVM 8.0 Install:
+	$ wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
+	$ sudo apt-add-repository "deb http://apt.llvm.org/trusty/ llvm-toolchain-trusty-8 main"
+	$ sudo apt-get update
+	$ sudo apt-get install llvm-8-dev
+
+IVerilog Install:
+	$ sudo apt-get install iverilog
 
 Installation
 ------------
@@ -35,7 +55,7 @@ Optionally, you can also install Cash on your system:
     
 That's all!
 
-Using Cash library
+Using the sCash library
 ------------------
 You must link the following library from the install location to your project
 

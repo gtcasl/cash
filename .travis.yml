@@ -8,19 +8,16 @@ addons:
         - ubuntu-toolchain-r-test
         packages:
         - build-essential
+        - binutils-dev
         - iverilog
         - lcov
         - valgrind
         - texinfo
-        - binutils-dev
-
-before_install:
-  # C++17
-  - sudo add-apt-repository --yes ppa:ubuntu-toolchain-r/test
-  - sudo apt-get update
 
 install: 
   # C++17
+  - sudo add-apt-repository --yes ppa:ubuntu-toolchain-r/test
+  - sudo apt-get update
   - sudo apt-get install gcc-7 g++-7
   - sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-7 60 --slave /usr/bin/g++ g++ /usr/bin/g++-7
   # llvm
@@ -39,12 +36,10 @@ script:
   - make -j8 all
   - make test   
   - CASH_CFLAGS=256 make test    # Turn off JIT
-  - CASH_CFLAGS=640 make test    # Turn off CFO/SUB opts
   - CASH_CFLAGS=261760 make test # Turn off all opts
   #- valgrind bin/testsuite
-  #- CASH_CFLAGS=256 valgrind bin/testsuite
-  #- CASH_CFLAGS=640 valgrind bin/testsuite
   #- CASH_CFLAGS=261760 valgrind bin/testsuite
+  - CASH_CFLAGS=256 valgrind bin/testsuite
   - popd
   # Build libjit Release project
   - mkdir -p build_jbr
@@ -52,12 +47,8 @@ script:
   - cmake -DLIBJIT=ON -DCMAKE_BUILD_TYPE=Release ..
   - make -j8 all
   - make test
-  - CASH_CFLAGS=256 make test
-  - CASH_CFLAGS=640 make test
   - CASH_CFLAGS=261760 make test
   - valgrind bin/testsuite
-  - CASH_CFLAGS=256 valgrind bin/testsuite
-  - CASH_CFLAGS=640 valgrind bin/testsuite
   - CASH_CFLAGS=261760 valgrind bin/testsuite
   - popd
   # Build llvm Debug project
@@ -68,7 +59,6 @@ script:
   - make -j8 all 
   - CASH_CFLAGS=15  make test
   - CASH_CFLAGS=271 make test
-  - CASH_CFLAGS=655 make test
   - CASH_CFLAGS=261775 make test
   - popd  
   
