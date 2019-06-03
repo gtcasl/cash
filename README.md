@@ -24,19 +24,19 @@ System Setup (Ubuntu Trusty)
 ----------------------------
 
 C++17 Install:
-	$ sudo add-apt-repository --yes ppa:ubuntu-toolchain-r/test
-	$ sudo apt-get update
-	$ sudo apt-get install gcc-7 g++-7
-	$ sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-7 60 --slave /usr/bin/g++ g++ /usr/bin/g++-7
+$ sudo add-apt-repository --yes ppa:ubuntu-toolchain-r/test
+    $ sudo apt-get update
+    $ sudo apt-get install gcc-7 g++-7
+    $ sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-7 60 --slave /usr/bin/g++ g++ /usr/bin/g++-7
 
 LLVM 8.0 Install:
-	$ wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
-	$ sudo apt-add-repository "deb http://apt.llvm.org/trusty/ llvm-toolchain-trusty-8 main"
-	$ sudo apt-get update
-	$ sudo apt-get install llvm-8-dev
+    $ wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
+    $ sudo apt-add-repository "deb http://apt.llvm.org/trusty/ llvm-toolchain-trusty-8 main"
+    $ sudo apt-get update
+    $ sudo apt-get install llvm-8-dev
 
 IVerilog Install:
-	$ sudo apt-get install iverilog
+    $ sudo apt-get install iverilog
 
 Installation
 ------------
