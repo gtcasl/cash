@@ -15,7 +15,6 @@ It has been tested with GCC 7 and Clang 5.
 Other dependencies include:
 
   - [LLVM](https://www.llvm.org)
-  - [LIBJIT](https://www.gnu.org/software/libjit)
   - [Catch](https://github.com/catchorg/Catch2)
   - [iVerilog](http://iverilog.icarus.com/)
 
@@ -50,7 +49,7 @@ IVerilog Install:
 
 To install Cash you must clone the repository and create a build directory:
 
-    $ git clone --recursive https://github.com/gtcasl/cash.git && cd cash
+    $ git clone https://github.com/gtcasl/cash.git && cd cash
     $ mkdir build && cd build
 
 Then use run cmake to generate the makefile and export the package informations:
