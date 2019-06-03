@@ -20,12 +20,6 @@ udfimpl::~udfimpl() {
 }
 
 void udfimpl::remove_port(lnodeimpl* port) {
-  for (auto it = this->srcs().begin(), end = this->srcs().end(); it != end; ++it) {
-    if (it->id() == port->id()) {
-      this->remove_src(it - this->srcs().begin());
-      return;
-    }
-  }
   for (auto it = inputs_.begin(), end = inputs_.end(); it != end; ++it) {
     if (it->id() == port->id()) {
       inputs_.erase(it);
@@ -35,6 +29,12 @@ void udfimpl::remove_port(lnodeimpl* port) {
   for (auto it = outputs_.begin(), end = outputs_.end(); it != end; ++it) {
     if (it->id() == port->id()) {
       outputs_.erase(it);
+      return;
+    }
+  }
+  for (auto it = this->srcs().begin(), end = this->srcs().end(); it != end; ++it) {
+    if (it->id() == port->id()) {
+      this->remove_src(it - this->srcs().begin());
       return;
     }
   }
@@ -87,8 +87,8 @@ udfportimpl::udfportimpl(context* ctx,
                          const source_location& sloc)
   : ioportimpl(ctx, type_udfin, size, value, name, sloc)
   , udf_(udf) {
-  udf->acquire();
   this->add_src(src);
+  udf->acquire();  
   udf->add_input(this);
 }
 

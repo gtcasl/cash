@@ -41,10 +41,10 @@ script:
   - CASH_CFLAGS=256 make test    # Turn off JIT
   - CASH_CFLAGS=640 make test    # Turn off CFO/SUB opts
   - CASH_CFLAGS=261760 make test # Turn off all opts
-  - valgrind bin/testsuite
-  - CASH_CFLAGS=256 valgrind bin/testsuite
-  - CASH_CFLAGS=640 valgrind bin/testsuite
-  - CASH_CFLAGS=261760 valgrind bin/testsuite
+  #- valgrind bin/testsuite
+  #- CASH_CFLAGS=256 valgrind bin/testsuite
+  #- CASH_CFLAGS=640 valgrind bin/testsuite
+  #- CASH_CFLAGS=261760 valgrind bin/testsuite
   - popd
   # Build libjit Release project
   - mkdir -p build_jbr
