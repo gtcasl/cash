@@ -113,7 +113,7 @@ static constexpr uint32_t INLINE_THRESHOLD = 8;
   auto pfn = is_signed ? fname<true, block_type> : fname<false, block_type>; \
   this->emit_op_call_bitwise(reinterpret_cast<void*>(pfn), #fname, __VA_ARGS__)
 
-///////////////////////////////////////////////////////////////////////////////
+/////////to_value_type//////////////////////////////////////////////////////////////////////
 
 static bool is_value_size(uint32_t size) {
   switch (size) {
@@ -545,12 +545,12 @@ private:
         auto j_src = scalar_map_[node->src(0).id()];
         auto j_res = jit_insn_load(j_func_, j_src);
         scalar_map_[node->id()] = this->emit_cast(j_res, j_ntype);
-      } else {
+      } else {        
         jit_value_t j_tmp = nullptr;
         for (auto& range : node->ranges()) {
           auto& src = node->src(range.src_idx);
           auto j_src = this->emit_load_slice_scalar(src.impl(), range.src_offset, range.length);
-          j_tmp = this->emit_append_slice_scalar(j_tmp, range.dst_offset, j_src, j_ntype);
+          j_tmp = this->emit_append_slice_scalar(j_tmp, range.dst_offset, j_src, range.length);
         }
         scalar_map_[node->id()] = this->emit_cast(j_tmp, j_ntype);
       }
@@ -575,12 +575,12 @@ private:
 
   void emit_node_input(ioportimpl* node) {
     __source_info_ex(node->name().c_str());
-    auto dst_width = node->size();
-    auto j_xtype = to_native_or_word_type(dst_width);
+    auto dst_width = node->size();        
     auto addr = addr_map_.at(node->id());
     auto j_src_ptr = jit_insn_load_relative(j_func_, j_ports_, addr * sizeof(block_type*), jit_type_ptr);
     if (dst_width <= WORD_SIZE) {
       auto j_ntype = to_native_type(dst_width);
+      auto j_xtype = to_native_or_word_type(dst_width);
       auto j_value = jit_insn_load_relative(j_func_, j_src_ptr, 0, j_xtype);
       scalar_map_[node->id()] = this->emit_cast(j_value, j_ntype);
     } else {
@@ -590,11 +590,11 @@ private:
 
   void emit_node_output(ioportimpl* node) {
     __source_info_ex(node->name().c_str());
-    auto dst_width = node->size();
-    auto j_xtype = to_native_or_word_type(dst_width);
+    auto dst_width = node->size();    
     auto addr = addr_map_.at(node->id());
     auto j_dst_ptr = jit_insn_load_relative(j_func_, j_ports_, addr * sizeof(block_type*), jit_type_ptr);
     if (dst_width <= WORD_SIZE) {
+      auto j_xtype = to_native_or_word_type(dst_width);
       auto j_src_value = scalar_map_.at(node->src(0).id());
       auto j_src_value_x = this->emit_cast(j_src_value, j_xtype);
       jit_insn_store_relative(j_func_, j_dst_ptr, 0, j_src_value_x);
@@ -1219,6 +1219,7 @@ private:
   }
 
   bool optimize_select(selectimpl* node) {
+    __source_info();
     //--
     if (0 != (platform::self().cflags() & cflags::disable_swo))
       return false;
@@ -1657,6 +1658,7 @@ private:
   }
 
   void emit_snode_init(regimpl* node) {
+    __source_info();
     assert(node->has_init_data());
 
     auto dst_width = node->size();
@@ -1675,7 +1677,6 @@ private:
     if (node->is_pipe()) {
       auto pipe_length = node->length() - 1;
       auto pipe_width = pipe_length * dst_width;
-      auto j_pipe_xtype = to_native_or_word_type(pipe_width);
       auto j_pipe_ntype = to_native_type(pipe_width);
       uint32_t pipe_addr = dst_addr + __align_word_size(dst_width);
       auto is_pipe_scalar = (pipe_width <= WORD_SIZE);
@@ -1690,10 +1691,9 @@ private:
         auto j_init_data_p = this->emit_cast(j_init_data, j_pipe_ntype);
         jit_value_t j_tmp = nullptr;
         for (uint32_t i = 0; i < pipe_length; ++i) {
-          j_tmp = this->emit_append_slice_scalar(j_tmp, i * dst_width, j_init_data_p, j_pipe_ntype);
+          j_tmp = this->emit_append_slice_scalar(j_tmp, i * dst_width, j_init_data_p, dst_width);
         }
-        auto j_tmp_x = this->emit_cast(j_tmp, j_pipe_xtype);
-        jit_insn_store_relative(j_func_, j_vars_, pipe_addr, j_tmp_x);
+        jit_insn_store_relative(j_func_, j_vars_, pipe_addr, j_tmp);
       } else {
         if (is_scalar) {
           // reset dst register          
@@ -1772,8 +1772,8 @@ private:
     __source_info();
 
     auto dst_width = node->size();
-    auto j_xtype = to_native_or_word_type(dst_width);
     auto j_ntype = to_native_type(dst_width);
+    auto j_xtype = to_native_or_word_type(dst_width);
     auto is_scalar = (dst_width <= WORD_SIZE);
     auto dst_addr = addr_map_.at(node->id());
 
@@ -1928,8 +1928,8 @@ private:
     if (is_scalar) {
       auto dst_addr = addr_map_.at(node->id());
       auto j_dst = scalar_map_.at(node->id());
-      auto j_xtype = to_native_or_word_type(dst_width);
       auto j_ntype = to_native_type(dst_width);
+      auto j_xtype = to_native_or_word_type(dst_width);      
       auto j_src = this->emit_load_array_scalar(j_array_ptr, array_width, j_src_addr, dst_width);      
       auto j_src_n = this->emit_cast(j_src, j_ntype);
       auto j_src_x = this->emit_cast(j_src_n, j_xtype);
@@ -2123,6 +2123,7 @@ private:
   }
 
   void emit_snode_value(udfimpl* node) {
+    __source_info();
     emit_node(node);
   }
 
@@ -2152,13 +2153,13 @@ private:
 
   /////////////////////////////////////////////////////////////////////////////
 
-  void allocate_nodes(const std::vector<lnodeimpl*>& eval_list) {
+  void allocate_nodes(context* ctx) {
     std::vector<const_alloc_t> constants;
     uint32_t consts_size = 0;
     uint32_t var_addr = 0;    
     uint32_t port_addr = 0;
 
-    for (auto node : eval_list) {
+    for (auto node : ctx->nodes()) {
       auto dst_width = node->size();
       auto type = node->type();
       switch (type) {
@@ -2248,7 +2249,7 @@ private:
     sim_ctx_->state.dbg = new char[4096];
   #endif
 
-    this->init_variables(eval_list);
+    this->init_variables(ctx);
   }
 
   uint32_t alloc_constant(litimpl* lit, std::vector<const_alloc_t>& constants) {
@@ -2297,17 +2298,18 @@ private:
     return total_words * sizeof(block_type);
   }
 
-  void init_variables(const std::vector<lnodeimpl*>& eval_list) {
-    for (auto node : eval_list) {
-      auto dst_width = node->size();
-      auto j_xtype = to_native_or_word_type(dst_width);
+  void init_variables(context* ctx) {
+    __source_info();
+    for (auto node : ctx->nodes()) {
+      auto dst_width = node->size();      
       auto j_ntype = to_native_type(dst_width);
+      auto j_xtype = to_native_or_word_type(dst_width);
       auto type = node->type();
 
       switch (type) {
       case type_lit:
         if (dst_width > WORD_SIZE) {
-          this->calc_pointer_address(node);
+          this->precompute_pointer_address(node);
         }
         break;
       case type_input:
@@ -2339,7 +2341,6 @@ private:
           }
         }
         if (dst_width <= WORD_SIZE) {
-          __source_info();
           // preload scalar value
           auto j_var = jit_value_create(j_func_, j_ntype);
           auto addr = addr_map_.at(node->id());
@@ -2348,7 +2349,7 @@ private:
           jit_insn_store(j_func_, j_var, j_dst_n);
           scalar_map_[node->id()] = j_var;
         }
-        this->calc_pointer_address(node);
+        this->precompute_pointer_address(node);
       } break;
       case type_mem: {
         auto addr = addr_map_.at(node->id());
@@ -2359,13 +2360,12 @@ private:
         } else {
           bv_init(buf, dst_width);
         }
-        this->calc_pointer_address(node);
+        this->precompute_pointer_address(node);
       } break;
       case type_msrport: {
         auto addr = addr_map_.at(node->id());
         bv_init(reinterpret_cast<block_type*>(sim_ctx_->state.vars + addr), dst_width);
-        if (dst_width <= WORD_SIZE) {
-          __source_info();
+        if (dst_width <= WORD_SIZE) {          
           // preload scalar value
           auto j_var = jit_value_create(j_func_, j_ntype);
           auto j_dst = jit_insn_load_relative(j_func_, j_vars_, addr, j_xtype);
@@ -2373,18 +2373,17 @@ private:
           jit_insn_store(j_func_, j_var, j_dst_n);
           scalar_map_[node->id()] = j_var;
         }
-        this->calc_pointer_address(node);
+        this->precompute_pointer_address(node);
       } break;
       case type_time: {
         auto addr = addr_map_.at(node->id());
         bv_reset(reinterpret_cast<block_type*>(sim_ctx_->state.vars + addr), dst_width);        
         if (dst_width <= WORD_SIZE) {
-          __source_info();
           // preload scalar value
           auto j_dst = jit_insn_load_relative(j_func_, j_vars_, addr, j_xtype);
           scalar_map_[node->id()] = j_dst;
         }
-        this->calc_pointer_address(node);
+        this->precompute_pointer_address(node);
       } break;
       case type_assert: {
         auto addr = addr_map_.at(node->id());
@@ -2410,7 +2409,7 @@ private:
         if (dst_width > WORD_SIZE) {
           auto addr = addr_map_.at(node->id());
           bv_init(reinterpret_cast<block_type*>(sim_ctx_->state.vars + addr), dst_width);
-          this->calc_pointer_address(node);
+          this->precompute_pointer_address(node);
         }
         break;
       default:
@@ -2421,7 +2420,7 @@ private:
 
   void init_constants(const std::vector<const_alloc_t>& constants,
                       uint32_t offset,
-                      uint32_t size) {
+                      uint32_t size) {    
     auto buf = reinterpret_cast<block_type*>(sim_ctx_->state.vars + offset);
     auto addr = offset;
     for (auto& constant : constants) {
@@ -2501,6 +2500,7 @@ private:
   jit_value_t emit_load_slice_scalar(memaddr_t src_ptr,
                                      uint32_t offset,
                                      uint32_t length) {
+    __source_info();
     auto src_lsb8 = offset % 8;
     auto src_end8 = src_lsb8 + length;
     if (src_end8 <= WORD_SIZE) {
@@ -2740,8 +2740,8 @@ private:
     __source_info();
     assert(length <= WORD_SIZE);
 
-    auto j_xtype = to_native_or_word_type(length);
     auto j_ntype = to_native_type(length);
+    auto j_xtype = to_native_or_word_type(length);
 
     auto w_dst_idx = dst_offset / WORD_SIZE;
     auto w_dst_lsb = dst_offset % WORD_SIZE;
@@ -2838,8 +2838,7 @@ private:
     auto dst_idx = dst_offset / WORD_SIZE;
     auto dst_lsb = dst_offset % WORD_SIZE;
 
-    auto j_ntype = to_native_type(WORD_SIZE);
-    j_cur = this->emit_append_slice_scalar(j_cur, dst_lsb, j_src, j_ntype);
+    j_cur = this->emit_append_slice_scalar(j_cur, dst_lsb, j_src, length);
 
     if ((dst_lsb + length) > WORD_SIZE) {
       // flush current block
@@ -2848,8 +2847,7 @@ private:
       ++dst_idx;
       // copy remaining bits into next block
       auto j_rem = this->emit_constant(WORD_SIZE - dst_lsb, jit_type_int32);
-      auto j_src_n = this->emit_cast(j_src, j_ntype);
-      j_cur = jit_insn_ushr(j_func_, j_src_n, j_rem);
+      j_cur = jit_insn_ushr(j_func_, j_src, j_rem);
     }
 
     if ((dst_lsb + length) == WORD_SIZE
@@ -2919,14 +2917,14 @@ private:
   jit_value_t emit_append_slice_scalar(jit_value_t j_cur,
                                        uint32_t dst_offset,
                                        jit_value_t j_src,
-                                       jit_type_t j_ntype) {
+                                       uint32_t length) {
     __source_info();
 
-    if (nullptr == j_cur)
-      return this->emit_cast(j_src, j_ntype);
+    if (nullptr == j_cur)      
+      return j_src;
 
-    assert(is_native_type(j_ntype));
-    assert(jit_type_get_kind(j_ntype) == jit_type_get_kind(jit_value_get_type(j_cur)));
+    auto xsize = std::max(get_value_size(j_src), dst_offset + length);
+    auto j_xtype = to_native_or_word_type(xsize);
 
     if (jit_value_is_constant(j_src)) {
       auto src = this->get_constant_value(j_src);
@@ -2936,19 +2934,22 @@ private:
       src = block_type(src) << dst_offset;
       if (jit_value_is_constant(j_cur)) {
         auto val = this->get_constant_value(j_cur);
-        return this->emit_constant(src | val, j_ntype);
+        return this->emit_constant(src | val, j_xtype);
       } else {
-        auto j_tmp = this->emit_constant(src, j_ntype);
+        auto j_tmp = this->emit_constant(src, j_xtype);
         return jit_insn_or(j_func_, j_cur, j_tmp);
       }
     }
 
-    auto j_dst_lsb = this->emit_constant(dst_offset, jit_type_int32);
-    auto j_src_n = this->emit_cast(j_src, j_ntype);
-    auto j_src_s = jit_insn_shl(j_func_, j_src_n, j_dst_lsb);
+    jit_value_t j_src_s(j_src);
+    if (dst_offset) {
+      auto j_dst_lsb = this->emit_constant(dst_offset, jit_type_int32);
+      auto j_src_n = this->emit_cast(j_src, j_xtype);
+      j_src_s = jit_insn_shl(j_func_, j_src_n, j_dst_lsb);
+    }
 
     if (jit_value_is_constant(j_cur)
-    &&  0 == this->get_constant_value(j_cur)) {
+     && 0 == this->get_constant_value(j_cur)) {
       return j_src_s;
     }
 
@@ -2983,11 +2984,10 @@ private:
     }
   }
 
-  void calc_pointer_address(lnodeimpl* node) {
+  void precompute_pointer_address(lnodeimpl* node) {
     auto maddr = this->get_pointer_address(node);
     if (0 == maddr.offset)
       return;
-
     auto j_dst = jit_insn_add_relative(j_func_, maddr.base, maddr.offset);
     pointer_map_[node->id()] = j_dst;
   }
@@ -2996,11 +2996,9 @@ private:
     auto maddr = this->get_pointer_address(node);
     if (0 == maddr.offset)
       return maddr.base;
-
     auto it = pointer_map_.find(node->id());
     if (it != pointer_map_.end())
       return it->second;
-
     return jit_insn_add_relative(j_func_, maddr.base, maddr.offset);
   }
 
@@ -3020,6 +3018,7 @@ private:
   }
 
   jit_value_t emit_sign_ext(jit_value_t j_value, uint32_t width) {
+    __source_info();
     auto j_type = jit_value_get_type(j_value);
     auto value_size = get_type_size(j_type);
     assert(value_size >= width);
@@ -3036,6 +3035,7 @@ private:
   }
 
   jit_value_t emit_blend(jit_value_t j_mask, jit_value_t j_false, jit_value_t j_true) {
+    __source_info();
     auto j_tmp1 = jit_insn_xor(j_func_, j_false, j_true);
     auto j_tmp2 = jit_insn_and(j_func_, j_tmp1, j_mask);
     return jit_insn_xor(j_func_, j_tmp2, j_false);
@@ -3054,10 +3054,15 @@ private:
   }
 
   jit_value_t emit_cast(jit_value_t j_value, jit_type_t to_type) {
+    auto from_kind = jit_type_get_kind(jit_value_get_type(j_value));
+    auto to_kind = jit_type_get_kind(to_type);
+    if (from_kind == to_kind)
+      return j_value;
     return jit_insn_convert(j_func_, j_value, to_type, 0);
   }
 
   void emit_range_check(jit_value_t j_value, uint32_t start, uint32_t end) {
+    __source_info();
     auto j_start = this->emit_constant(start, jit_type_int32);
     auto j_end = this->emit_constant(end, jit_type_int32);
     auto j_one = this->emit_constant(1, jit_type_int32);
@@ -3132,7 +3137,7 @@ public:
     this->create_function();
 
     // allocate objects
-    this->allocate_nodes(eval_list);
+    this->allocate_nodes(eval_list.back()->ctx());
 
     // lower all nodes
     for (auto node : eval_list) {
