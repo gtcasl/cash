@@ -28,7 +28,7 @@ The master branch has been added to [travis](https://travis-ci.org)'s continuous
 # System Setup (Ubuntu Trusty)
 
 C++17 Install:
-    
+
     $ sudo add-apt-repository --yes ppa:ubuntu-toolchain-r/test
     $ sudo apt-get update
     $ sudo apt-get install gcc-7 g++-7
