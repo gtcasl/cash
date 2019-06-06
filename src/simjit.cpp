@@ -1231,9 +1231,10 @@ private:
     auto is_switch = node->has_key() && (key_size <= 32);
     if (!is_switch)
       return false;
+
     auto j_ntype = to_native_type(dst_width);
-    int32_t l = node->num_srcs() - 1;
-    int32_t start = is_switch ? 1 : 0;
+    uint32_t l = node->num_srcs() - 1;
+    uint32_t start = is_switch ? 1 : 0;
     jit_value_t j_dst = nullptr;
     if (is_scalar) {
       j_dst = jit_value_create(j_func_, j_ntype);
@@ -1242,11 +1243,11 @@ private:
 
     // analyze the select node
     bool is_constant = (type_lit == node->src(l).impl()->type());
-    auto pred_min = std::numeric_limits<int64_t>::max();
-    auto pred_max = std::numeric_limits<int64_t>::min();
-    int64_t pred_delta = 0;
-    int64_t i_pred_prev = 0;
-    for (int32_t i = start; i < l; i += 2) {
+    auto pred_min = std::numeric_limits<uint64_t>::max();
+    auto pred_max = std::numeric_limits<uint64_t>::min();
+    uint64_t pred_delta = 0;
+    uint64_t i_pred_prev = 0;
+    for (uint32_t i = start; i < l; i += 2) {
       auto j_pred = scalar_map_.at(node->src(i+0).id());
       if (is_switch) {
         auto pred_value = jit_value_get_int_constant(j_pred);
@@ -1285,15 +1286,15 @@ private:
       }
 
       block_type table(0);
-      int32_t k = start;
-      int32_t length = is_inclusive ? max_cases : distance;
-      int32_t offset = is_inclusive ? 0 : pred_min;
+      uint32_t k = start;
+      uint32_t length = is_inclusive ? max_cases : distance;
+      uint32_t offset = is_inclusive ? 0 : pred_min;
       auto j_def_value = scalar_map_.at(node->src(l).id());
       auto def_value = jit_value_get_int_constant(j_def_value);
 
-      for (int i = 0; i < length; ++i) {
+      for (uint32_t i = 0; i < length; ++i) {
         bool found = false;
-        for (int32_t j = k; j < l; j += 2) {
+        for (uint32_t j = k; j < l; j += 2) {
           auto j_pred = scalar_map_.at(node->src(j+0).id());
           auto pred_value = jit_value_get_int_constant(j_pred);
           if (pred_value == offset + i) {
@@ -2920,7 +2921,7 @@ private:
                                        uint32_t length) {
     __source_info();
 
-    if (nullptr == j_cur)      
+    if (nullptr == j_cur)
       return j_src;
 
     auto xsize = std::max(get_value_size(j_src), dst_offset + length);
@@ -2931,7 +2932,7 @@ private:
       if (0 == src)
         return j_cur;
       assert(dst_offset < WORD_SIZE);
-      src = block_type(src) << dst_offset;
+      src = (block_type(src) << dst_offset);
       if (jit_value_is_constant(j_cur)) {
         auto val = this->get_constant_value(j_cur);
         return this->emit_constant(src | val, j_xtype);
@@ -2942,11 +2943,11 @@ private:
     }
 
     jit_value_t j_src_s(j_src);
-    if (dst_offset) {
+   if (dst_offset) {
       auto j_dst_lsb = this->emit_constant(dst_offset, jit_type_int32);
       auto j_src_n = this->emit_cast(j_src, j_xtype);
       j_src_s = jit_insn_shl(j_func_, j_src_n, j_dst_lsb);
-    }
+   }
 
     if (jit_value_is_constant(j_cur)
      && 0 == this->get_constant_value(j_cur)) {
@@ -3079,7 +3080,7 @@ private:
     return jit_value_create_int_constant(j_func_, value, j_type);
   }
 
-  long get_constant_value(jit_value_t j_value) {
+  uint64_t get_constant_value(jit_value_t j_value) {
     assert(jit_value_is_constant(j_value));
     return jit_value_get_int_constant(j_value);
   }

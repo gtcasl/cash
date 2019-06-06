@@ -578,7 +578,7 @@ jit_value_t jit_value_get_param(jit_function_t func, unsigned int param) {
 }
 
 jit_value_t jit_value_create_int_constant(jit_function_t func,
-                                          jit_long const_value,
+                                          jit_ulong const_value,
                                           jit_type_t type) {
   auto builder = func->ctx()->builder();
   auto kind = type->kind();
@@ -601,9 +601,15 @@ jit_value_t jit_value_create_int_constant(jit_function_t func,
   return nullptr;
 }
 
-jit_long jit_value_get_int_constant(jit_value_t value) {
+jit_ulong jit_value_get_int_constant(jit_value_t value) {
   auto const_value = llvm::dyn_cast<llvm::ConstantInt>(value->impl());
-  return const_value->getSExtValue();
+  auto res = const_value->getSExtValue();
+  auto size = jit_type_get_size(value->type());
+  if (size < 8) {
+    auto mask = (1ull << (8 * size)) - 1;
+    res &= mask;
+  }
+  return res;
 }
 
 int jit_value_is_constant(jit_value_t value) {

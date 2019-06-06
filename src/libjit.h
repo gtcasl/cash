@@ -14,8 +14,8 @@
 #define jit_type_int64 jit_type_ulong
 #define jit_type_ptr   jit_type_void_ptr
 
-jit_value_t jit_value_create_int_constant(jit_function_t func, jit_long const_value, jit_type_t type);
-jit_long jit_value_get_int_constant(jit_value_t value);
+jit_value_t jit_value_create_int_constant(jit_function_t func, jit_ulong const_value, jit_type_t type);
+jit_ulong jit_value_get_int_constant(jit_value_t value);
 
 jit_value_t jit_insn_sdiv(jit_function_t func, jit_value_t value1, jit_value_t value2);
 jit_value_t jit_insn_udiv(jit_function_t func, jit_value_t value1, jit_value_t value2);

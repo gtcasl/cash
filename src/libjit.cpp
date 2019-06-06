@@ -83,7 +83,7 @@ static jit_value_t to_unsigned_value(jit_function_t func, jit_value_t value) {
 ///////////////////////////////////////////////////////////////////////////////
 
 jit_value_t jit_value_create_int_constant(jit_function_t func,
-                                          jit_long const_value,
+                                          jit_ulong const_value,
                                           jit_type_t type) {
   auto size = jit_type_get_size(type);
   if (size <= 4) {
@@ -93,15 +93,21 @@ jit_value_t jit_value_create_int_constant(jit_function_t func,
   }
 }
 
-jit_long jit_value_get_int_constant(jit_value_t value) {
+jit_ulong jit_value_get_int_constant(jit_value_t value) {
   assert(jit_value_is_constant(value));
   auto type = jit_value_get_type(value);
   auto size = jit_type_get_size(type);
+  jit_ulong res;
   if (size <= 4) {
-    return jit_value_get_nint_constant(value);
+    res = jit_value_get_nint_constant(value);
   } else {
-    return jit_value_get_long_constant(value);
+    res = jit_value_get_long_constant(value);
   }
+  if (size < 8) {
+    auto mask = (1ull << (8 * size)) - 1;
+    res &= mask;
+  }
+  return res;
 }
 
 jit_value_t jit_insn_sdiv(jit_function_t func, jit_value_t value1, jit_value_t value2) {
@@ -222,10 +228,10 @@ jit_value_t jit_insn_switch(jit_function_t func,
   auto j_dst = jit_value_create(func, j_ntype);
 
   // analyze the select node  
-  auto pred_min = std::numeric_limits<int64_t>::max();
-  auto pred_max = std::numeric_limits<int64_t>::min();
-  int64_t pred_delta = 0;
-  int64_t i_pred_prev = 0;
+  auto pred_min = std::numeric_limits<uint64_t>::max();
+  auto pred_max = std::numeric_limits<uint64_t>::min();
+  uint64_t pred_delta = 0;
+  uint64_t i_pred_prev = 0;
   bool is_constant = true;
   for (unsigned int i = 0; i < num_cases; ++i) {
     auto pred_value = jit_value_get_int_constant(preds[i]);
@@ -289,7 +295,7 @@ jit_value_t jit_insn_switch(jit_function_t func,
     unsigned int k = 0;
     auto distance = (pred_max - pred_min) + 1;
     std::vector<jit_label_t> jump_labels(distance, jit_label_undefined);
-    for (int32_t i = 0; i < distance; ++i) {
+    for (uint32_t i = 0; i < distance; ++i) {
       auto p = i + pred_min;
       for (unsigned int j = k; j < num_cases; ++j) {
         auto pred_value = jit_value_get_int_constant(preds[j]);
@@ -312,7 +318,7 @@ jit_value_t jit_insn_switch(jit_function_t func,
     jit_label_t l_exit(jit_label_undefined);
 
     // emit jump tests
-    for (unsigned int i = 0; i < num_cases; ++i) {
+    for (uint32_t i = 0; i < num_cases; ++i) {
       auto label = &labels.at(i);
       auto j_src = values[i];
       auto it = unique_values.find(j_src);

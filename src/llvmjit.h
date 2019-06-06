@@ -111,8 +111,8 @@ jit_value_t jit_value_create(jit_function_t func, jit_type_t type);
 jit_type_t jit_value_get_type(jit_value_t value);
 jit_value_t jit_value_get_param(jit_function_t func, unsigned int param);
 
-jit_value_t jit_value_create_int_constant(jit_function_t func, jit_long const_value, jit_type_t type);
-jit_long jit_value_get_int_constant(jit_value_t value);
+jit_value_t jit_value_create_int_constant(jit_function_t func, jit_ulong const_value, jit_type_t type);
+jit_ulong jit_value_get_int_constant(jit_value_t value);
 int jit_value_is_constant(jit_value_t value);
 
 //
