@@ -1,3 +1,4 @@
+#include "cd.h"
 #include "cdimpl.h"
 #include "ioimpl.h"
 #include "litimpl.h"
@@ -24,7 +25,7 @@ lnodeimpl* cdimpl::clone(context* ctx, const clone_map& cloned_nodes) const {
 
 bool cdimpl::equals(const lnodeimpl& other) const {
   if (lnodeimpl::equals(other)) {
-    auto _other = reinterpret_cast<const cdimpl&>(other);
+    auto& _other = reinterpret_cast<const cdimpl&>(other);
     return (pos_edge_ == _other.pos_edge_);
   }
   return false;
@@ -94,4 +95,27 @@ lnodeimpl* ch::internal::get_snode_reset(lnodeimpl* node) {
     std::abort();
   }
   return nullptr;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+lnodeimpl* ch::internal::getCurrentClockNode() {
+  auto sloc = get_source_location();
+  return ctx_curr()->current_clock(sloc);
+}
+
+lnodeimpl* ch::internal::getCurrentResetNode() {
+  auto sloc = get_source_location();
+  return ctx_curr()->current_reset(sloc);
+}
+
+void ch::internal::pushClockDomain(const lnode& clock,
+                                   const lnode& reset,
+                                   bool pos_edge) {
+  auto sloc = get_source_location();
+  clock.impl()->ctx()->push_cd(clock, reset, pos_edge, sloc);
+}
+
+void ch::internal::ch_popcd() {
+  ctx_curr()->pop_cd();
 }

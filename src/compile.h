@@ -39,18 +39,6 @@ protected:
   lnodeimpl* constant_fold(opimpl* node);
   lnodeimpl* constant_fold_bitwise(opimpl* node);
 
-  void map_initialize();
-
-  void map_add_node_srcs(lnodeimpl* node);
-
-  void map_remove_node_srcs(lnodeimpl* node);
-
-  void map_replace_target(lnodeimpl* from, lnodeimpl* to);
-
-  void map_delete(lnodeimpl* node);
-
-  node_map_t node_map_;
-
   context* ctx_;
 };
 

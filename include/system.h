@@ -180,7 +180,7 @@ public:
   }
 
   template <typename R, typename T>
-  static auto ref(const T& obj, size_t start) {
+  static auto sliceref(const T& obj, size_t start) {
     static_assert(ch_width_v<R> <= ch_width_v<T>, "invalid size");
     assert(start + ch_width_v<R> <= ch_width_v<T>);
     assert(obj.__buffer()->size() == ch_width_v<T>);
@@ -227,7 +227,7 @@ auto make_system_op(SystemFunc1 func, const A& in) {
   sdata_type ret(ch_width_v<R>);
   auto& u = system_accessor::data(in);
   func(ret.words(), ch_width_v<R>, u.words(), ch_width_v<A>);
-  return R(make_system_buffer(std::move(ret)));
+  return std::add_const_t<R>(make_system_buffer(std::move(ret)));
 }
 
 template <typename R, typename A, typename B>
@@ -236,7 +236,7 @@ auto make_system_op(SystemFunc2 func, const A& lhs, const B& rhs) {
   auto& u = system_accessor::data(lhs);
   auto& v = system_accessor::data(rhs);
   func(ret.words(), ch_width_v<R>, u.words(), ch_width_v<A>, v.words(), ch_width_v<B>);
-  return R(make_system_buffer(std::move(ret)));
+  return std::add_const_t<R>(make_system_buffer(std::move(ret)));
 }
 
 template <typename R, typename A, typename B>
@@ -245,16 +245,16 @@ auto make_system_op(SystemFunc3 func, const A& lhs, const B& rhs) {
   auto& u = system_accessor::data(lhs);
   auto v = static_cast<uint32_t>(rhs);
   func(ret.words(), ch_width_v<R>, u.words(), u.size(), v);
-  return R(make_system_buffer(std::move(ret)));
+  return std::add_const_t<R>(make_system_buffer(std::move(ret)));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 #define CH_SYSTEM_INTERFACE(type) \
   template <typename __R> \
-  std::add_const_t<__R> as() const { \
+  auto as() const { \
     static_assert(ch::internal::is_system_type_v<__R>, "invalid type"); \
-    return ch::internal::system_accessor::cast<__R>(*this); \
+    return ch::internal::system_accessor::cast<std::add_const_t<__R>>(*this); \
   } \
   template <typename __R> \
   auto as() { \
@@ -280,7 +280,7 @@ auto make_system_op(SystemFunc3 func, const A& lhs, const B& rhs) {
     return this->as<ch_scuint<type::traits::bitwidth>>(); \
   } \
   auto ref() { \
-    return ch::internal::system_accessor::ref<type>(*this, 0); \
+    return ch::internal::system_accessor::sliceref<type>(*this, 0); \
   }
 
 #define CH_SYSTEM_OPERATOR(name) \
@@ -449,13 +449,13 @@ CH_SYSTEM_OPERATOR(system_op_arithmetic)
 
 CH_SYSTEM_OPERATOR(system_op_slice)
   template <typename R>
-  std::add_const_t<R> slice(size_t start = 0) const {
+  auto slice(size_t start = 0) const {
     static_assert(ch_width_v<R> <= N, "invalid size");
     assert(start + ch_width_v<R> <= N);
     R ret;
     auto& self = reinterpret_cast<const Derived&>(*this);
     system_accessor::write(ret, 0, self, start, ch_width_v<R>);
-    return ret;
+    return std::add_const_t<R>(ret);
   }
 
   template <typename R>
@@ -476,7 +476,7 @@ CH_SYSTEM_OPERATOR(system_op_slice)
   template <typename R>
     auto sliceref(size_t start = 0) {
     auto& self = reinterpret_cast<const Derived&>(*this);
-    return system_accessor::ref<R>(self, start);
+    return system_accessor::sliceref<R>(self, start);
   }
 
   template <typename R>

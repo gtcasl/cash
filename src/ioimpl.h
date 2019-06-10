@@ -1,12 +1,12 @@
 #pragma once
 
 #include "lnodeimpl.h"
-#include "ioport.h"
 
 namespace ch {
 namespace internal {
 
 class bindportimpl;
+using io_value_t = smart_ptr<sdata_type>;
 
 class ioimpl : public lnodeimpl {
 protected:
@@ -92,7 +92,7 @@ protected:
 
   outputimpl(context* ctx,
              uint32_t size,
-             const lnode& src,
+             lnodeimpl* src,
              const io_value_t& value,
              const std::string& name,
              const source_location& sloc);
@@ -119,7 +119,7 @@ protected:
 
   tapimpl(context* ctx,
           uint32_t size,
-          const lnode& src,
+          lnodeimpl* src,
           const std::string& name,
           const source_location& sloc);
 

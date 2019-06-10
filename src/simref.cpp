@@ -13,6 +13,7 @@
 #include "printimpl.h"
 #include "timeimpl.h"
 #include "udfimpl.h"
+#include "udf.h"
 #include "compile.h"
 
 using namespace ch::internal;

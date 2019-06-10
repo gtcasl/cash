@@ -95,19 +95,17 @@ public:
     return sloc_;
   }
 
-  void set_src(uint32_t index, const lnode& src);
+  void set_src(uint32_t index, lnodeimpl* src);
 
-  uint32_t add_src(const lnode& src);
+  uint32_t add_src(lnodeimpl* src);
 
-  void insert_src(uint32_t index, const lnode& src);
+  void insert_src(uint32_t index, lnodeimpl* src);
 
   void remove_src(uint32_t index);
 
-  void resize(uint32_t size);
+  void clear_srcs();
 
-  virtual bool check_fully_initialized() const {
-    return true;
-  }
+  void resize(uint32_t size);
 
   virtual lnodeimpl* clone(context* ctx, const clone_map& cloned_nodes) const = 0;
 
@@ -117,9 +115,19 @@ public:
                            uint32_t length,
                            const source_location& sloc) const;
 
-  virtual void write(uint32_t, const lnode&, uint32_t, uint32_t) {
-    assert(false);
+  virtual void write(uint32_t, lnodeimpl*, uint32_t, uint32_t);
+
+  virtual bool check_fully_initialized() const;
+
+  auto users() const {
+   return users_;
   }
+
+  void add_user(lnode* user);
+
+  void replace_uses(lnodeimpl* node);
+
+  void remove_user(lnode* user);
 
   virtual void print(std::ostream& out) const;
 
@@ -156,6 +164,7 @@ private:
 
   lnodeimpl* prev_;
   lnodeimpl* next_;
+  lnode* users_;
 
   friend class context;
   friend class node_list;

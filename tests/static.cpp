@@ -107,7 +107,7 @@ void foo() {
   {
     ch_scbit<4> a = 3;
     auto b = a & 1;
-    auto c = 3 & a;
+    ch_scbit<4> c = 3 & a;
     c = a;
   }
   {

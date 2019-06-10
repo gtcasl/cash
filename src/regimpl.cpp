@@ -65,7 +65,7 @@ lnodeimpl* regimpl::clone(context* ctx, const clone_map& cloned_nodes) const {
 
 bool regimpl::equals(const lnodeimpl& other) const {
   if (lnodeimpl::equals(other)) {
-    auto _other = reinterpret_cast<const regimpl&>(other);
+    auto& _other = reinterpret_cast<const regimpl&>(other);
     return (length_ == _other.length_);
   }
   return false;
@@ -85,37 +85,10 @@ void regimpl::print(std::ostream& out) const {
   }
 }
 
-
 ///////////////////////////////////////////////////////////////////////////////
 
-void ch::internal::pushClockDomain(const lnode& clock,
-                                   const lnode& reset,
-                                   bool pos_edge) {
-  auto sloc = get_source_location();
-  clock.impl()->ctx()->push_cd(clock, reset, pos_edge, sloc);
-}
-
-void ch::internal::ch_popcd() {
-  ctx_curr()->pop_cd();
-}
-
-ch_bit<1> ch::internal::ch_clock() {
-  CH_SOURCE_LOCATION(1);
-  auto sloc = get_source_location();
-  auto clk = ctx_curr()->current_clock(sloc);
-  return make_type<ch_bit<1>>(clk);
-}
-
-ch_bit<1> ch::internal::ch_reset() {
-  CH_SOURCE_LOCATION(1);
-  auto sloc = get_source_location();
-  auto rst = ctx_curr()->current_reset(sloc);
-  return make_type<ch_bit<1>>(rst);
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-lnodeimpl* ch::internal::createRegNode(unsigned size, const std::string& name,
+lnodeimpl* ch::internal::createRegNode(unsigned size,
+                                       const std::string& name,
                                        const sloc_getter&) {
   auto sloc = get_source_location();
   auto ctx  = ctx_curr();

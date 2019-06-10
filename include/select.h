@@ -18,7 +18,7 @@ public:
     stmts_.emplace_back(pred, value);
   }
   
-  lnode emit(const lnode& value);
+  lnode emit(const lnode& def_value);
 
 protected:
 
@@ -44,10 +44,10 @@ public:
   }
   
   template <typename V>
-  auto operator()(const V& value) {
+  auto operator()(const V& def_value) {
     static_assert(std::is_constructible_v<T, V>, "invalid type");
     CH_SOURCE_LOCATION(1);
-    return make_type<T>(impl_.emit(to_lnode<T>(value)));
+    return make_type<T>(impl_.emit(to_lnode<T>(def_value)));
   }
   
 protected:
@@ -73,10 +73,10 @@ public:
   }
 
   template <typename T>
-  auto operator()(const T& value) {
+  auto operator()(const T& def_value) {
     static_assert(std::is_constructible_v<V, T>, "invalid type");
     CH_SOURCE_LOCATION(1);
-    return make_type<V>(impl_.emit(to_lnode<V>(value)));
+    return make_type<V>(impl_.emit(to_lnode<V>(def_value)));
   }
   
 protected:

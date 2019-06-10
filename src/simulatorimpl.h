@@ -1,10 +1,12 @@
 #pragma once
 
 #include "device.h"
-#include "context.h"
 
 namespace ch {
 namespace internal {
+
+class inputimpl;
+using io_value_t = smart_ptr<sdata_type>;
 
 class clock_driver {
 public:

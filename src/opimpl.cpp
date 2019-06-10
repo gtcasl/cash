@@ -1,3 +1,4 @@
+#include "logic.h"
 #include "opimpl.h"
 #include "proxyimpl.h"
 #include "litimpl.h"
@@ -56,7 +57,7 @@ lnodeimpl* opimpl::clone(context* ctx, const clone_map& cloned_nodes) const {
 
 bool opimpl::equals(const lnodeimpl& other) const {
   if (lnodeimpl::equals(other)) {
-    auto _other = reinterpret_cast<const opimpl&>(other);
+    auto& _other = reinterpret_cast<const opimpl&>(other);
     return (op_ == _other.op_) && (signed_ == _other.signed_);
   }
   return false;

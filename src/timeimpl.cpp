@@ -1,3 +1,4 @@
+#include "debug.h"
 #include "timeimpl.h"
 #include "context.h"
 #include "uint.h"
@@ -14,8 +15,7 @@ lnodeimpl* timeimpl::clone(context* ctx, const clone_map&) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-ch_uint<64> ch::internal::ch_now() {
-  CH_SOURCE_LOCATION(1);
+lnodeimpl* ch::internal::getCurrentTimeNode() {
   auto sloc = get_source_location();
-  return make_type<ch_uint<64>>(ctx_curr()->create_time(sloc));
+  return ctx_curr()->create_time(sloc);
 }

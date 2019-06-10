@@ -1,6 +1,6 @@
+#include "debug.h"
 #include "context.h"
 #include "printimpl.h"
-#include "logic.h"
 
 using namespace ch::internal;
 
@@ -83,7 +83,7 @@ printimpl::printimpl(context* ctx,
   }
 
   for (auto arg : args) {
-    this->add_src(arg);
+    this->add_src(arg.impl());
   }
 }
 
@@ -101,7 +101,7 @@ printimpl::printimpl(context* ctx,
     pred_idx_ = this->add_src(pred);
   }
   for (auto arg : args) {
-    this->add_src(arg);
+    this->add_src(arg.impl());
   }
 }
 

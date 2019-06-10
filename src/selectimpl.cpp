@@ -68,7 +68,7 @@ lnodeimpl* selectimpl::clone(context* ctx, const clone_map& cloned_nodes) const 
 
 bool selectimpl::equals(const lnodeimpl& other) const {
   if (lnodeimpl::equals(other)) {
-    auto _other = reinterpret_cast<const selectimpl&>(other);
+    auto& _other = reinterpret_cast<const selectimpl&>(other);
     return (has_key_ == _other.has_key_);
   }
   return false;
@@ -91,11 +91,11 @@ void selectimpl::print(std::ostream& out) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-lnode select_impl::emit(const lnode& value) {
+lnode select_impl::emit(const lnode& def_value) {
   auto& stmts = stmts_;
   auto key = key_.empty() ? nullptr : key_.impl();
   auto sloc = get_source_location();
-  auto sel = ctx_curr()->create_node<selectimpl>(value.size(), key, sloc);
+  auto sel = ctx_curr()->create_node<selectimpl>(def_value.size(), key, sloc);
   if (key && (key->size() <= 64)) {
     // insert switch cases in ascending order
     for (auto& stmt : stmts) {
@@ -107,22 +107,22 @@ lnode select_impl::emit(const lnode& value) {
         auto sel_ipred = static_cast<int64_t>(reinterpret_cast<litimpl*>(sel->src(i).impl())->value());
         CH_CHECK(sel_ipred != ipred, "duplicate switch case predicate");
         if (sel_ipred > ipred) {
-          sel->insert_src(i, stmt.second);
+          sel->insert_src(i, stmt.second.impl());
           sel->insert_src(i, pred);
           break;
         }
       }
       if (i == sel->num_srcs()) {
         sel->add_src(pred);
-        sel->add_src(stmt.second);
+        sel->add_src(stmt.second.impl());
       }
     }
   } else {
     for (auto& stmt : stmts) {
-      sel->add_src(stmt.first);
-      sel->add_src(stmt.second);
+      sel->add_src(stmt.first.impl());
+      sel->add_src(stmt.second.impl());
     }
   }
-  sel->add_src(value);
+  sel->add_src(def_value.impl());
   return sel;
 }

@@ -25,6 +25,8 @@ private:
   int index_;
 };
 
+typedef const char* (*enum_string_cb)(uint32_t value);
+
 class printimpl : public ioimpl {
 public:
 

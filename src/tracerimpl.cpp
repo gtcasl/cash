@@ -2,6 +2,7 @@
 #include "tracer.h"
 #include "ioimpl.h"
 #include "bindimpl.h"
+#include "context.h"
 
 using namespace ch::internal;
 

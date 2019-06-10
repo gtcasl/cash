@@ -6,38 +6,39 @@
 namespace ch {
 namespace internal {
 
-lnodeimpl* createRegNode(unsigned size, const std::string& name,
-                           const sloc_getter& slg = sloc_getter());
-
-lnodeimpl* createRegNode(const lnode& init, const std::string& name,
-                           const sloc_getter& slg = sloc_getter());
-
-lnodeimpl* copyRegNode(const lnode& node, const std::string& name,
+lnodeimpl* createRegNode(unsigned size,
+                         const std::string& name,
                          const sloc_getter& slg = sloc_getter());
+
+lnodeimpl* createRegNode(const lnode& init,
+                         const std::string& name,
+                         const sloc_getter& slg = sloc_getter());
+
+lnodeimpl* copyRegNode(const lnode& node,
+                       const std::string& name,
+                       const sloc_getter& slg = sloc_getter());
 
 lnodeimpl* getRegNextNode(const lnode& node);
 
 lnodeimpl* createRegNext(const lnode& next,
-                           unsigned length,
-                           const std::string& name);
+                         unsigned length,
+                         const std::string& name);
 
 lnodeimpl* createRegNext(const lnode& next,
-                           unsigned length,
-                           const lnode& enable,
-                           const std::string& name);
+                         unsigned length,
+                         const lnode& enable,
+                         const std::string& name);
 
 lnodeimpl* createRegNext(const lnode& next,
-                           const lnode& init,
-                           unsigned length,
-                           const std::string& name);
+                         const lnode& init,
+                         unsigned length,
+                         const std::string& name);
 
 lnodeimpl* createRegNext(const lnode& next,
-                           const lnode& init,
-                           unsigned length,
-                           const lnode& enable,
-                           const std::string& name);
-
-void pushClockDomain(const lnode& clock, const lnode& reset, bool pos_edge);
+                         const lnode& init,
+                         unsigned length,
+                         const lnode& enable,
+                         const std::string& name);
 
 void beginPipe(uint32_t length, const std::vector<int>& bounds);
 
@@ -54,21 +55,21 @@ public:
   using base = T;
 
   ch_reg()
-    : base(createRegNode(ch_width_v<T>, idname<T>())) {
+    : base(logic_buffer(createRegNode(ch_width_v<T>, idname<T>()))) {
     __next__ = std::make_unique<next_t>(getRegNextNode(get_lnode(*this)));
   }
 
   template <typename U0,
             CH_REQUIRE_0(std::is_convertible_v<U0, T>)>
   explicit ch_reg(const U0& init0)
-    : base(createRegNode(to_lnode<T>(init0), idname<T>())) {
+    : base(logic_buffer(createRegNode(to_lnode<T>(init0), idname<T>()))) {
     __next__ = std::make_unique<next_t>(getRegNextNode(get_lnode(*this)));
   }
 
   template <typename... Us,
             CH_REQUIRE_0(std::is_constructible_v<T, Us...>)>
   explicit ch_reg(const Us&... inits)
-    : base(createRegNode(get_lnode(T(inits...)), idname<T>())) {
+    : base(logic_buffer(createRegNode(get_lnode(T(inits...)), idname<T>()))) {
     __next__ = std::make_unique<next_t>(getRegNextNode(get_lnode(*this)));
   }
 
@@ -91,7 +92,7 @@ private:
   ch_reg& operator=(ch_reg&&) = delete;
 
   struct next_t {
-    next_t(const logic_buffer& buffer) : next(buffer) {}
+    next_t(lnodeimpl* impl) : next(logic_buffer(impl)) {}
     T next;
   };
 
@@ -100,41 +101,12 @@ private:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-ch_bit<1> ch_clock();
-
-ch_bit<1> ch_reset();
-
-template <typename C, typename R = ch_bit<1>>
-void ch_pushcd(const C& clk, const R& reset = ch_reset(), bool pos_edge = true) {
-  static_assert(is_bit_base_v<C>, "invalid type");
-  static_assert(ch_width_v<C> == 1, "invalid size");
-  static_assert(is_bit_base_v<R>, "invalid type");
-  static_assert(ch_width_v<R> == 1, "invalid size");
-  CH_SOURCE_LOCATION(1);
-  pushClockDomain(get_lnode(clk), get_lnode(reset), pos_edge);
-}
-
-void ch_popcd();
-
-template <typename Func, typename C, typename R = ch_bit<1>>
-void ch_cd(Func&& func,
-           const C& clk,
-           const R& reset = ch_reset(),
-           bool pos_edge = true) {
-  CH_SOURCE_LOCATION(1);
-  ch_pushcd(clk, reset, pos_edge);
-  func;
-  ch_popcd();
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
 template <typename R, typename T>
 auto ch_next(const T& in) {
   static_assert(is_logic_type_v<R>, "invalid type");
   static_assert(std::is_constructible_v<R, T>, "invalid type");
   CH_SOURCE_LOCATION(1);
-  return R(createRegNext(to_lnode<R>(in), 1, idname<R>()));
+  return make_type<R>(createRegNext(to_lnode<R>(in), 1, idname<R>()));
 }
 
 template <typename T>
@@ -150,10 +122,10 @@ auto ch_next(const T& in, const I& init) {
   static_assert(std::is_constructible_v<R, T>, "invalid type");
   static_assert(std::is_constructible_v<R, I>, "invalid type");
   CH_SOURCE_LOCATION(1);
-  return R(createRegNext(to_lnode<R>(in),
-                         to_lnode<R>(init),
-                         1,
-                         idname<R>()));
+  return make_type<R>(createRegNext(to_lnode<R>(in),
+                                    to_lnode<R>(init),
+                                    1,
+                                    idname<R>()));
 }
 
 template <typename T, typename I>
@@ -171,10 +143,10 @@ auto ch_nextEn(const T& in, const E& enable) {
   static_assert(is_bit_base_v<E>, "invalid type");
   static_assert(ch_width_v<E> == 1, "invalid size");
   CH_SOURCE_LOCATION(1);
-  return R(createRegNext(to_lnode<R>(in),
-                         1,
-                         get_lnode(enable),
-                         idname<R>()));
+  return make_type<R>(createRegNext(to_lnode<R>(in),
+                                    1,
+                                    get_lnode(enable),
+                                    idname<R>()));
 }
 
 template <typename T, typename E>
@@ -191,11 +163,11 @@ auto ch_nextEn(const T& in, const E& enable, const I& init) {
   static_assert(is_bit_base_v<E>, "invalid type");
   static_assert(ch_width_v<E> == 1, "invalid size");
   CH_SOURCE_LOCATION(1);
-  return R(createRegNext(to_lnode<R>(in),
-                         to_lnode<R>(init),
-                         1,
-                         get_lnode(enable),
-                         idname<R>()));
+  return make_type<R>(createRegNext(to_lnode<R>(in),
+                                    to_lnode<R>(init),
+                                    1,
+                                    get_lnode(enable),
+                                    idname<R>()));
 }
 
 template <typename T, typename I, typename E>
@@ -214,9 +186,7 @@ auto ch_delay(const T& in, uint32_t delay = 1) {
   if (0 == delay) {
     return R(in);
   }
-  return R(createRegNext(to_lnode<R>(in),
-                         delay,
-                         idname<R>()));
+  return make_type<R>(createRegNext(to_lnode<R>(in), delay, idname<R>()));
 }
 
 template <typename T>
@@ -234,10 +204,10 @@ auto ch_delay(const T& in, uint32_t delay, const I& init) {
   if (0 == delay) {
     return R(in);
   }
-  return R(createRegNext(to_lnode<R>(in),
-                         to_lnode<R>(init),
-                         delay,
-                         idname<R>()));
+  return make_type<R>(createRegNext(to_lnode<R>(in),
+                                    to_lnode<R>(init),
+                                    delay,
+                                    idname<R>()));
 }
 
 template <typename T, typename I>
@@ -258,10 +228,10 @@ auto ch_delayEn(const T& in, const E& enable, uint32_t delay = 1) {
   if (0 == delay) {
     return R(in);
   }
-  return R(createRegNext(to_lnode<R>(in),
-                         delay,
-                         get_lnode(enable),
-                         idname<R>()));
+  return make_type<R>(createRegNext(to_lnode<R>(in),
+                                    delay,
+                                    get_lnode(enable),
+                                    idname<R>()));
 }
 
 template <typename T, typename E>
@@ -281,11 +251,11 @@ auto ch_delayEn(const T& in, const E& enable, uint32_t delay, const I& init) {
   if (0 == delay) {
     return R(in);
   }
-  return R(createRegNext(to_lnode<R>(in),
-                         to_lnode<R>(init),
-                         delay,
-                         get_lnode(enable),
-                         idname<R>()));
+  return make_type<R>(createRegNext(to_lnode<R>(in),
+                                    to_lnode<R>(init),
+                                    delay,
+                                    get_lnode(enable),
+                                    idname<R>()));
 }
 
 template <typename T, typename I, typename E>

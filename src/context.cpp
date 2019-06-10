@@ -1,6 +1,4 @@
 #include "context.h"
-#include <thread>
-#include "lnode.h"
 #include "litimpl.h"
 #include "regimpl.h"
 #include "memimpl.h"
@@ -13,12 +11,13 @@
 #include "timeimpl.h"
 #include "assertimpl.h"
 #include "cdimpl.h"
+#include "udfimpl.h"
 #include "ioport.h"
 #include "traits.h"
 #include "select.h"
 #include "enum.h"
 #include "udf.h"
-#include "udfimpl.h"
+#include "debug.h"
 
 #ifdef CALLTRACE
 #include "slocmgr.h"
@@ -961,7 +960,7 @@ void context::register_tap(const lnode& node,
   } else {
     sid = stringf("tap.%s", sid.c_str());
   }
-  this->create_node<tapimpl>(node.size(), node, sid, sloc);
+  this->create_node<tapimpl>(node.size(), node.impl(), sid, sloc);
 }
 
 void context::create_udf_node(udf_iface* udf,

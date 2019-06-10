@@ -111,7 +111,9 @@ class lnodeimpl;
 class lnode {
 public:
 
-  lnode(lnodeimpl* impl = nullptr) : impl_(impl) {}
+  lnode() : impl_(nullptr), next_(nullptr) {}
+
+  lnode(lnodeimpl* impl);
 
   lnode(const sdata_type& value);
 
@@ -119,18 +121,18 @@ public:
 
   lnode(const lnode& src, const std::string& name);
 
-  lnode(const lnode& other) : impl_(other.impl_) {}
+  lnode(const lnode& other) : lnode(other.impl()) {}
 
-  lnode& operator=(const lnode& other) {
-    impl_ = other.impl_;
-    return *this;
-  }
+  ~lnode();
 
   bool empty() const {
     return (nullptr == impl_);
   }
 
-  lnodeimpl* impl() const;
+  lnodeimpl* impl() const {
+    assert(impl_);
+    return impl_;
+  }
 
   uint32_t id() const;
 
@@ -138,12 +140,18 @@ public:
   
   uint32_t size() const;
 
+  auto next() const {
+    return next_;
+  }
+
   const source_location& sloc() const;
 
   void write(uint32_t dst_offset,
              const lnode& in,
              uint32_t src_offset,
              uint32_t length);
+
+  lnode& operator=(const lnode& other);
 
   inline friend bool operator==(const lnode& lhs, const lnode& rhs) {
     return lhs.id() == rhs.id();
@@ -153,13 +161,14 @@ public:
     return lhs.id() != rhs.id();
   }
 
-  inline friend bool operator<(const lnode& lhs, const lnode& rhs) {
-    return lhs.id() < rhs.id();
-  }
+protected:  
 
-protected:
+  void ensure_proxy();
 
   mutable lnodeimpl* impl_;
+  lnode* next_;
+
+  friend class lnodeimpl;
 };
 
 }

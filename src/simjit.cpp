@@ -15,6 +15,7 @@
 #include "printimpl.h"
 #include "timeimpl.h"
 #include "udfimpl.h"
+#include "udf.h"
 #if defined(LLVMJIT)
   #include "llvmjit.h"
 #elif defined(LIBJIT)

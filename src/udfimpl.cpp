@@ -1,3 +1,5 @@
+#include "udf.h"
+#include "ioport.h"
 #include "udfimpl.h"
 #include "proxyimpl.h"
 #include "cdimpl.h"

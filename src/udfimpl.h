@@ -1,10 +1,11 @@
 #pragma once
 
 #include "ioimpl.h"
-#include "udf.h"
 
 namespace ch {
 namespace internal {
+
+class udf_iface;
 
 class udfimpl : public ioimpl {
 public:
@@ -21,12 +22,12 @@ public:
     return outputs_;
   }
 
-  void add_input(const lnode& input) {
+  void add_input(lnodeimpl* input) {
     this->add_src(input);
     inputs_.push_back(input);
   }
 
-  void add_output(const lnode& output) {
+  void add_output(lnodeimpl* output) {
     outputs_.push_back(output);
   }
 

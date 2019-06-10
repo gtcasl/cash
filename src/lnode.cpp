@@ -20,19 +20,37 @@ std::ostream& ch::internal::operator<<(std::ostream& out, ch_op op) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-lnode::lnode(const sdata_type& value) {
-  impl_ = ctx_curr()->create_literal(value);
+lnode::lnode(lnodeimpl* impl) : impl_(impl), next_(nullptr) {
+  assert(impl);
+  impl->add_user(this);
 }
 
-lnode::lnode(uint32_t size, const std::string& name) {
-  auto sloc = get_source_location();
-  impl_ = ctx_curr()->create_node<proxyimpl>(size, name, sloc);
+lnode::lnode(const sdata_type& value)
+  : lnode(ctx_curr()->create_literal(value))
+{}
+
+lnode::lnode(uint32_t size, const std::string& name)
+  : lnode(ctx_curr()->create_node<proxyimpl>(size, name, get_source_location()))
+{}
+
+lnode::lnode(const lnode& src, const std::string& name)
+: lnode(src.impl()->ctx()->create_node<proxyimpl>(
+    src.impl(), (name.empty() ? src.name() : name), get_source_location()))
+{}
+
+lnode::~lnode() {
+  if (impl_) {
+    impl_->remove_user(this);
+  }
 }
 
-lnode::lnode(const lnode& src, const std::string& name) {
-  auto sloc = get_source_location();
-  impl_ = src.impl()->ctx()->create_node<proxyimpl>(
-                src, (name.empty() ? src.name() : name), sloc);
+lnode& lnode::operator=(const lnode& other) {
+  if (impl_) {
+    impl_->remove_user(this);
+  }
+  impl_ = other.impl();
+  impl_->add_user(this);
+  return *this;
 }
 
 uint32_t lnode::id() const {
@@ -49,11 +67,6 @@ uint32_t lnode::size() const {
   return impl_ ? impl_->size() : 0;
 }
 
-lnodeimpl* lnode::impl() const {
-  assert(impl_);
-  return impl_;
-}
-
 const source_location& lnode::sloc() const {
   assert(impl_);
   return impl_->sloc();
@@ -64,7 +77,17 @@ void lnode::write(uint32_t dst_offset,
                   uint32_t src_offset,
                   uint32_t length) {
   assert(impl_);
-  impl_->write(dst_offset, src, src_offset, length);
+  this->ensure_proxy();
+  impl_->write(dst_offset, src.impl(), src_offset, length);
+}
+
+void lnode::ensure_proxy() {
+  auto impl = impl_;
+  if (type_proxy == impl->type())
+    return;
+  auto proxy = impl->ctx()->create_node<proxyimpl>(impl->size(), impl->name(), impl->sloc());
+  impl->replace_uses(proxy);
+  proxy->write(0, impl, 0, impl->size());
 }
 
 std::ostream& ch::internal::operator<<(std::ostream& out, lnodetype type) {

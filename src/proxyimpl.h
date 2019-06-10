@@ -54,7 +54,7 @@ public:
   }
 
   void add_source(uint32_t dst_offset,
-                  const lnode& src,
+                  lnodeimpl* src,
                   uint32_t src_offset,
                   uint32_t length);
 
@@ -67,7 +67,7 @@ public:
   bool equals(const lnodeimpl& other) const override;
 
   void write(uint32_t dst_offset,
-             const lnode& src,
+             lnodeimpl* src,
              uint32_t src_offset,
              uint32_t length) override;
 
@@ -83,12 +83,12 @@ protected:
             const source_location& sloc);
 
   proxyimpl(context* ctx,
-            const lnode& src,
+            lnodeimpl* src,
             const std::string& name,
             const source_location& sloc);
 
   proxyimpl(context* ctx,
-            const lnode& src,
+            lnodeimpl* src,
             uint32_t offset,
             uint32_t length,
             const std::string& name,
@@ -105,7 +105,7 @@ class refimpl : public proxyimpl {
 public:
 
   void write(uint32_t dst_offset,
-             const lnode& src,
+             lnodeimpl* src,
              uint32_t src_offset,
              uint32_t length) override;
 
@@ -114,7 +114,7 @@ public:
 protected:
 
   refimpl(context* ctx,
-          const lnode& src,
+          lnodeimpl* src,
           uint32_t offset,
           uint32_t length,
           const std::string& name,

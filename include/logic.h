@@ -8,18 +8,15 @@ namespace internal {
 
 lnodeimpl* createOpNode(ch_op op, uint32_t size, bool is_signed, const lnode& in);
 
-lnodeimpl* createOpNode(ch_op op, uint32_t size, bool is_signed,
-                        const lnode& lhs, const lnode& rhs);
+lnodeimpl* createOpNode(ch_op op,
+                        uint32_t size,
+                        bool is_signed,
+                        const lnode& lhs,
+                        const lnode& rhs);
 
 lnodeimpl* createRotateNode(const lnode& next, uint32_t dist, bool right);
 
 lnodeimpl* createShuffleNode(const lnode& in, const std::vector<unsigned>& indices);
-
-void registerTap(const lnode& node, const std::string& name);
-
-void createPrintNode(const std::string& format, const std::vector<lnode>& args);
-
-void createAssertNode(const lnode& cond, const std::string& msg);
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -40,15 +37,11 @@ template <typename T> class ch_reg;
 class logic_buffer : public lnode {
 public:
 
-  logic_buffer(lnodeimpl* impl) : lnode(impl) {}
+  explicit logic_buffer(lnodeimpl* impl) : lnode(impl) {}
 
-  logic_buffer(const sdata_type& value) : lnode(value) {}
+  explicit logic_buffer(const sdata_type& value) : lnode(value) {}
 
   logic_buffer(uint32_t size,
-               const std::string& name,
-               const sloc_getter& slg = sloc_getter());
-
-  logic_buffer(const lnode& node,
                const std::string& name,
                const sloc_getter& slg = sloc_getter());
 
@@ -62,7 +55,9 @@ public:
 
   logic_buffer& source();
 
-  lnode clone() const;
+  lnodeimpl* clone() const;
+
+  lnodeimpl* sliceref(size_t size, size_t start) const;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -121,7 +116,7 @@ public:
   static auto clone(const T& obj) {
     assert(obj.__buffer().size() == ch_width_v<T>);
     auto data = obj.__buffer().clone();
-    return T(logic_buffer(data, "clone"));
+    return T(logic_buffer(data));
   }
 
   template <typename R, typename T>
@@ -131,16 +126,16 @@ public:
     assert(obj.__buffer().size() == ch_width_v<T>);
     logic_buffer buffer(ch_width_v<R>, "slice");
     buffer.write(0, obj.__buffer(), start, ch_width_v<R>);
-    return R(buffer);
+    return std::add_const_t<R>(buffer);
   }
 
   template <typename R, typename T>
-  static auto ref(const T& obj, size_t start) {
+  static auto sliceref(const T& obj, size_t start) {
     static_assert(ch_width_v<R> <= ch_width_v<T>, "invalid size");
     assert(start + ch_width_v<R> <= ch_width_v<T>);
     assert(obj.__buffer().size() == ch_width_v<T>);
-    logic_buffer buffer(ch_width_v<R>, obj.__buffer(), start, "sliceref");
-    return R(buffer);
+    auto data = obj.__buffer().sliceref(ch_width_v<R>, start);
+    return R(logic_buffer(data));
   }
 
   template <typename R, typename T>
@@ -168,12 +163,12 @@ auto to_logic(T&& obj) {
 }
 
 template <typename T>
-lnode get_lnode(const T& obj) {
+auto get_lnode(const T& obj) {
   return logic_accessor::buffer(obj);
 }
 
 template <typename R, typename T>
-lnode to_lnode(const T& obj) {
+auto to_lnode(const T& obj) {
   if constexpr (is_logic_type_v<T>) {
     if constexpr (ch_width_v<T> <= ch_width_v<R>) {
       return get_lnode(obj);
@@ -200,13 +195,13 @@ lnode to_lnode(const T& obj) {
 }
 
 template <unsigned N, typename T>
-lnode to_lnode(const T& obj) {
+auto to_lnode(const T& obj) {
   return to_lnode<ch_bit<N>, T>(obj);
 }
 
 template <typename T>
 auto make_type(const lnode& node) {
-  return T(logic_buffer(node, node.name()));
+  return std::add_const_t<T>(logic_buffer(node.impl()));
 }
 
 template <ch_op op, bool Signed, typename R, typename A, typename DA = A>
@@ -225,9 +220,9 @@ auto make_logic_op(const A& a, const B& b) {
 
 #define CH_LOGIC_INTERFACE(type) \
   template <typename __R> \
-  std::add_const_t<__R> as() const { \
+  auto as() const { \
   static_assert(ch::internal::is_logic_type_v<__R>, "invalid type"); \
-    return ch::internal::logic_accessor::cast<__R>(*this); \
+    return ch::internal::logic_accessor::cast<std::add_const_t<__R>>(*this); \
   } \
   template <typename __R> \
   auto as() { \
@@ -266,7 +261,7 @@ auto make_logic_op(const A& a, const B& b) {
   } \
   auto ref() { \
     CH_SOURCE_LOCATION(1); \
-    return ch::internal::logic_accessor::ref<type>(*this, 0); \
+    return ch::internal::logic_accessor::sliceref<type>(*this, 0); \
   } \
   auto clone() const { \
     CH_SOURCE_LOCATION(1); \
@@ -580,7 +575,7 @@ CH_LOGIC_OPERATOR(logic_op_arithmetic)
 
 CH_LOGIC_OPERATOR(logic_op_slice)
   template <typename R>
-  std::add_const_t<R> slice(size_t start = 0) const {
+  auto slice(size_t start = 0) const {
     static_assert(ch_width_v<R> <= N, "invalid size");
     assert(start + ch_width_v<R> <= N);
     auto& self = reinterpret_cast<const Derived&>(*this);
@@ -611,7 +606,7 @@ CH_LOGIC_OPERATOR(logic_op_slice)
     assert(start + ch_width_v<R> <= N);
     CH_SOURCE_LOCATION(1);
     auto& self = reinterpret_cast<const Derived&>(*this);
-    return logic_accessor::ref<R>(self, start);
+    return logic_accessor::sliceref<R>(self, start);
   }
 
   template <unsigned M>

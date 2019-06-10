@@ -12,15 +12,15 @@ proxyimpl::proxyimpl(context* ctx,
 {}
 
 proxyimpl::proxyimpl(context* ctx,
-                     const lnode& src,
+                     lnodeimpl* src,
                      const std::string& name,
                      const source_location& sloc)
-  : lnodeimpl(ctx->node_id(), type_proxy, src.size(), ctx, name, sloc) {
-  this->add_source(0, src, 0, src.size());
+  : lnodeimpl(ctx->node_id(), type_proxy, src->size(), ctx, name, sloc) {
+  this->add_source(0, src, 0, src->size());
 }
 
 proxyimpl::proxyimpl(context* ctx,
-                     const lnode& src,
+                     lnodeimpl* src,
                      uint32_t offset,
                      uint32_t length,
                      const std::string& name,
@@ -49,25 +49,23 @@ lnodeimpl* proxyimpl::clone(context* ctx, const clone_map& cloned_nodes) const {
 }
 
 void proxyimpl::add_source(uint32_t dst_offset,
-                           const lnode& src,
+                           lnodeimpl* src,
                            uint32_t src_offset,
                            uint32_t length) {
-  assert(!src.empty());
-  assert(this != src.impl());
   assert(length != 0);
   assert(dst_offset + length <= this->size());
-  assert(src_offset + length <= src.size());
+  assert(src_offset + length <= src->size());
 
   // update source location
   if (sloc_.empty()) {
-    sloc_ = src.sloc();
+    sloc_ = src->sloc();
   }
 
   // add new source
   auto size = num_srcs();
   uint32_t new_srcidx = size;
   for (uint32_t i = 0, n = size; i < n; ++i) {
-    if (this->src(i).id() == src.id()) {
+    if (this->src(i).id() == src->id()) {
       new_srcidx = i;
       break;
     }
@@ -261,19 +259,17 @@ void proxyimpl::erase_source(uint32_t index, bool resize) {
 }
 
 void proxyimpl::write(uint32_t dst_offset,
-                      const lnode& src,
+                      lnodeimpl* src,
                       uint32_t src_offset,
                       uint32_t length) {
-  assert(!src.empty());
   assert(size() > dst_offset);
   assert(size() >= dst_offset + length);
   auto sloc = get_source_location();
   if (ctx_->conditional_enabled(this)) {
-    auto src_impl = src.impl();
-    if (src_offset != 0 || src.size() != length) {      
-      src_impl = ctx_->create_node<proxyimpl>(src, src_offset, length, src.name(), sloc);
+    if (src_offset != 0 || src->size() != length) {
+      src = ctx_->create_node<proxyimpl>(src, src_offset, length, src->name(), sloc);
     }
-    ctx_->conditional_assign(this, dst_offset, length, src_impl, sloc);
+    ctx_->conditional_assign(this, dst_offset, length, src, sloc);
   } else {
     this->add_source(dst_offset, src, src_offset, length);
   }
@@ -281,7 +277,7 @@ void proxyimpl::write(uint32_t dst_offset,
 
 bool proxyimpl::equals(const lnodeimpl& other) const {
   if (lnodeimpl::equals(other)) {
-    auto _other = reinterpret_cast<const proxyimpl&>(other);
+    auto& _other = reinterpret_cast<const proxyimpl&>(other);
     return (this->ranges_ == _other.ranges_);
   }
   return false;
@@ -313,7 +309,7 @@ lnodeimpl* proxyimpl::slice(uint32_t offset, uint32_t length, const source_locat
       uint32_t sub_end = std::min(src_end, r_end);
       uint32_t dst_offset = sub_start - offset;
       uint32_t src_offset = range.src_offset + (sub_start - range.dst_offset);
-      proxy->add_source(dst_offset, this->src(range.src_idx), src_offset, sub_end - sub_start);
+      proxy->add_source(dst_offset, this->src(range.src_idx).impl(), src_offset, sub_end - sub_start);
     }
   }
 
@@ -345,7 +341,7 @@ void proxyimpl::print(std::ostream& out) const {
 
 refimpl::refimpl(
     context* ctx,
-    const lnode& src,
+    lnodeimpl* src,
     uint32_t offset,
     uint32_t length,
     const std::string& name,
@@ -355,7 +351,7 @@ refimpl::refimpl(
 
 void refimpl::write(
     uint32_t dst_offset,
-    const lnode& src,
+    lnodeimpl* src,
     uint32_t src_offset,
     uint32_t length) {
   assert(1 == this->num_srcs());
@@ -363,10 +359,10 @@ void refimpl::write(
   assert(this->size() == ranges_[0].length);
   assert(length <= ranges_[0].length);
   this->src(0).impl()->write(
-      ranges_[0].src_offset + dst_offset,
-      src,
-      src_offset,
-      length);
+    ranges_[0].src_offset + dst_offset,
+    src,
+    src_offset,
+    length);
 }
 
 bool refimpl::check_fully_initialized() const {
@@ -407,11 +403,11 @@ lnodeimpl* ch::internal::createRotateNode(const lnode& next, uint32_t dist, bool
   auto sloc = get_source_location();
   auto ret = next.impl()->ctx()->create_node<proxyimpl>(N, (right ? "rotr" : "rotl"), sloc);
   if (right) {
-    ret->add_source(0, next, mod, N - mod);
-    ret->add_source(N - mod, next, 0, mod);
+    ret->add_source(0, next.impl(), mod, N - mod);
+    ret->add_source(N - mod, next.impl(), 0, mod);
   } else {
-    ret->add_source(0, next, N - mod, mod);
-    ret->add_source(mod, next, 0, N - mod);
+    ret->add_source(0, next.impl(), N - mod, mod);
+    ret->add_source(mod, next.impl(), 0, N - mod);
   }
   return ret;
 }
@@ -424,7 +420,7 @@ lnodeimpl* ch::internal::createShuffleNode(const lnode& in, const std::vector<un
   for (unsigned i = 0, n = indices.size(); i < n; ++i) {
     auto j = indices[n - 1 - i];
     CH_CHECK(j < n, "invalid index");
-    ret->add_source(i * stride, in, j * stride, stride);
+    ret->add_source(i * stride, in.impl(), j * stride, stride);
   }
   return ret;
 }

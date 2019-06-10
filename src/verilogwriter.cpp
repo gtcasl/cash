@@ -15,6 +15,7 @@
 #include "opimpl.h"
 #include "assertimpl.h"
 #include "udfimpl.h"
+#include "udf.h"
 
 using namespace ch::internal;
 

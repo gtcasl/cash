@@ -1,3 +1,4 @@
+#include "ioport.h"
 #include "ioimpl.h"
 #include "bindimpl.h"
 #include "proxyimpl.h"
@@ -54,7 +55,7 @@ void inputimpl::print(std::ostream& out) const {
 
 outputimpl::outputimpl(context* ctx,
                        uint32_t size,
-                       const lnode& src,
+                       lnodeimpl* src,
                        const io_value_t& value,
                        const std::string& name,
                        const source_location& sloc)
@@ -78,10 +79,10 @@ void outputimpl::print(std::ostream& out) const {
 
 tapimpl::tapimpl(context* ctx,
                  uint32_t size,
-                 const lnode& src,
+                 lnodeimpl* src,
                  const std::string& name,
                  const source_location& sloc)
-  : ioportimpl(ctx, type_tap, size, smart_ptr<sdata_type>::make(src.size()), name, sloc) {
+  : ioportimpl(ctx, type_tap, size, smart_ptr<sdata_type>::make(src->size()), name, sloc) {
   this->add_src(src);
 }
 

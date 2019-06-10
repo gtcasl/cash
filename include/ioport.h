@@ -98,22 +98,22 @@ public:
   using base = T;
 
   ch_in(const std::string& name = "io")
-     : base(createInputNode(name, ch_width_v<T>)) {
+     : base(logic_buffer(createInputNode(name, ch_width_v<T>))) {
     input_ = get_lnode(*this);
   }
 
   template <typename U,
             CH_REQUIRE_0(is_logic_only_v<U>)>
   explicit ch_in(const ch_out<U>& other)
-    : base(bindOutputNode(other.output_)) {
+    : base(logic_buffer(bindOutputNode(other.output_))) {
     static_assert(ch_width_v<T> == ch_width_v<U>, "invalid size");
   }
 
   template <typename U,
             CH_REQUIRE_0(is_system_only_v<U>)>
   explicit ch_in(const ch_out<U>& other)
-     : base(bindOutputNode(reinterpret_cast<system_io_buffer*>(
-                            system_accessor::buffer(other).get()))) {
+     : base(logic_buffer(bindOutputNode(reinterpret_cast<system_io_buffer*>(
+                            system_accessor::buffer(other).get())))) {
     static_assert(ch_width_v<T> == ch_width_v<U>, "invalid size");
   }
 
@@ -157,22 +157,22 @@ public:
   using base::operator=;
 
   ch_out(const std::string& name = "io")
-    : base(createOutputNode(name, ch_width_v<T>)) {
+    : base(logic_buffer(createOutputNode(name, ch_width_v<T>))) {
     output_ = getOutputNode(get_lnode(*this));
   }
 
   template <typename U,
             CH_REQUIRE_0(is_logic_only_v<U>)>
   explicit ch_out(const ch_in<U>& other)
-    : base(bindInputNode(other.input_)) {
+    : base(logic_buffer(bindInputNode(other.input_))) {
     static_assert((ch_width_v<T>) == (ch_width_v<U>), "invalid size");
   }
 
   template <typename U,
             CH_REQUIRE_0(is_system_only_v<U>)>
   explicit ch_out(const ch_in<U>& other)
-     : base(bindInputNode(reinterpret_cast<system_io_buffer*>(
-                            system_accessor::buffer(other).get()))) {
+     : base(logic_buffer(bindInputNode(reinterpret_cast<system_io_buffer*>(
+                            system_accessor::buffer(other).get())))) {
     static_assert((ch_width_v<T>) == (ch_width_v<U>), "invalid size");
   }
 
