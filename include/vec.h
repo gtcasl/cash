@@ -170,7 +170,7 @@ public:
   using base = vec_base<T, N>;
   using base::operator [];
 
-  ch_vec(const system_buffer_ptr& buffer = make_system_buffer(traits::bitwidth))
+  ch_vec(const system_buffer_ptr& buffer = make_system_buffer(traits::bitwidth, idname<ch_vec>()))
     : ch_vec(buffer, std::make_index_sequence<N>())
   {}
 
@@ -201,7 +201,7 @@ public:
 
   template <typename U>
   explicit ch_vec(const std::initializer_list<U>& values)
-    : ch_vec(make_system_buffer(traits::bitwidth)) {
+    : ch_vec(make_system_buffer(traits::bitwidth, idname<ch_vec>())) {
     assert(values.size() == N);
     int i = N - 1;
     for (auto& value : values) {
@@ -233,7 +233,7 @@ protected:
 
   template <std::size_t...Is>
   ch_vec(const system_buffer_ptr& buffer, std::index_sequence<Is...>)
-    : base(make_system_buffer(ch_width_v<T>, buffer, Is * ch_width_v<T>)...)
+    : base(make_system_buffer(ch_width_v<T>, buffer, Is * ch_width_v<T>, stringf("%d", Is))...)
   {}
 
   const system_buffer_ptr& __buffer() const {
@@ -305,7 +305,7 @@ protected:
 
   template <std::size_t...Is>
   ch_vec(const sloc_getter&, const std::string& name, std::index_sequence<Is...>)
-    : base(stringf("%s[%d]", name.c_str(), Is)...)
+    : base(stringf("%s_%d", name.c_str(), Is)...)
   {}
 
   template <typename U, std::size_t...Is>
@@ -359,7 +359,7 @@ protected:
 
   template <std::size_t...Is>
   ch_vec(const std::string& name, std::index_sequence<Is...>)
-    : base(stringf("%s[%d]", name.c_str(), Is)...)
+    : base(stringf("%s_%d", name.c_str(), Is)...)
   {}
 
   template <typename U, std::size_t...Is>

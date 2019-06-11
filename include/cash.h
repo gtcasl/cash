@@ -394,7 +394,8 @@ namespace extension {
   using ch::internal::make_system_buffer;
   using ch::internal::system_accessor;
   using ch::internal::logic_accessor;
-  using ch::internal::udf_verilog_mode;
+  using ch::internal::udf_verilog;
+  using ch::internal::udf_vostream;
   using ch::internal::lnode;
 
   using ch::internal::system_op_equality;

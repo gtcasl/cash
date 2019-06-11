@@ -41,7 +41,7 @@ public:
   using traits = system_traits<N, true, ch_scfixed, ch_fixed<N, Frac>>;
   using base = ch_scbit<N>;
 
-  ch_scfixed(const system_buffer_ptr& buffer = make_system_buffer(N))
+  ch_scfixed(const system_buffer_ptr& buffer = make_system_buffer(N, ch::internal::idname<ch_scfixed>()))
     : base(buffer)
   {}
 

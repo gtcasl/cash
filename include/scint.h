@@ -22,7 +22,7 @@ public:
                          system_op_slice<ch_scint, N, ch_scbit<N>>>>>>>;
   using base::buffer_;
 
-  ch_scint(const system_buffer_ptr& buffer = make_system_buffer(N))
+  ch_scint(const system_buffer_ptr& buffer = make_system_buffer(N, idname<ch_scint>()))
     : base(buffer)
   {}
 

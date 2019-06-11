@@ -17,8 +17,8 @@ namespace {
       io.dst = lhs + rhs;
     }
 
-    bool to_verilog(std::ostream& out, udf_verilog_mode mode) {
-      if (mode != udf_verilog_mode::body)
+    bool to_verilog(udf_vostream& out, udf_verilog mode) {
+      if (mode != udf_verilog::body)
         return false;
       out << "assign $io.dst = $signed($io.lhs) + $signed($io.rhs);";
       return true;

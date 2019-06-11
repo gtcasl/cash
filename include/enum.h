@@ -30,7 +30,7 @@ void registerEnumString(const lnode& node, void* callback);
 
 #define CH_ENUM_SYSTEM_IMPL(enum_name) \
   enum_name(const ch::internal::system_buffer_ptr& buffer = \
-    ch::internal::make_system_buffer(traits::bitwidth)) : base(buffer) {} \
+    ch::internal::make_system_buffer(traits::bitwidth, CH_STRINGIZE(enum_name))) : base(buffer) {} \
   enum_name(const enum_name& __other) : base(__other) {} \
   enum_name(enum_name&& __other) : base(std::move(__other)) {} \
   enum_name(type __other) : base(static_cast<unsigned>(__other)) {} \

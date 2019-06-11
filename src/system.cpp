@@ -4,22 +4,6 @@
 
 using namespace ch::internal;
 
-system_buffer::system_buffer(uint32_t size)
-  : value_(size)
-  , offset_(0)
-  , size_(size)
-{}
-
-system_buffer::system_buffer(const sdata_type& value,
-                             const system_buffer_ptr& source,
-                             uint32_t offset,
-                             uint32_t size)
-  : source_(source)
-  , value_(value)
-  , offset_(offset)
-  , size_(size)
-{}
-
 system_buffer::system_buffer(const sdata_type& data)
   : value_(data)
   , offset_(0)
@@ -32,12 +16,21 @@ system_buffer::system_buffer(sdata_type&& data)
   , size_(value_.size())
 {}
 
+system_buffer::system_buffer(uint32_t size, const std::string& name)
+  : value_(size)
+  , offset_(0)
+  , size_(size)
+  , name_(name)
+{}
+
 system_buffer::system_buffer(uint32_t size,
                              const system_buffer_ptr& buffer,
-                             uint32_t offset)
+                             uint32_t offset,
+                             const std::string& name)
   : source_(buffer)
   , offset_(offset)
-  , size_(size) {
+  , size_(size)
+  , name_(((!buffer->name().empty() && !name.empty()) ? (buffer->name() + "." + name) : name)) {
   assert(offset_ + size_ <= buffer->size());
 }
 
@@ -138,6 +131,14 @@ void system_buffer::write(uint32_t dst_offset,
     source_->write(offset_ + dst_offset, in, byte_alignment, src_offset, length);
   } else {
     value_.write(dst_offset, in, byte_alignment, src_offset, length);
+  }
+}
+
+std::string system_buffer::to_verilog() const {
+  if (source_) {
+    return source_->to_verilog() + stringf("[%d:%d]", (offset_ + size_ - 1), offset_);
+  } else {
+    return "$" + name_;
   }
 }
 

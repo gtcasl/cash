@@ -21,7 +21,7 @@ public:
                        system_op_arithmetic<ch_scuint, N,
                          system_op_slice<ch_scuint, N, ch_scbit<N>>>>>>>;
 
-  ch_scuint(const system_buffer_ptr& buffer = make_system_buffer(N))
+  ch_scuint(const system_buffer_ptr& buffer = make_system_buffer(N, idname<ch_scuint>()))
     : base(buffer)
   {}
 

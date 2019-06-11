@@ -66,15 +66,15 @@ struct SqrtUDF {
     bitl_ = 15;
   }
 
-  bool to_verilog(std::ostream& out, udf_verilog_mode mode) {
+  bool to_verilog(udf_vostream& out, udf_verilog mode) {
     switch (mode) {
-    case udf_verilog_mode::header:
+    case udf_verilog::header:
       out << sqrt_v_source;
       return true;
-    case udf_verilog_mode::declaration:
-      out << "sqrt32 root($clk, $reset, $io.in, $io.valid, $io.out);";
+    case udf_verilog::body:
+      out << "sqrt32 root($clk, $reset, " << io.in << ", " << io.valid << ", " << io.out << ");";
       return true;
-    case udf_verilog_mode::body:
+    default:
       break;
     }
     return false;

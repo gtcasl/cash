@@ -32,13 +32,16 @@ using system_buffer_ptr = std::shared_ptr<system_buffer>;
 
 class system_buffer {
 public:
-  explicit system_buffer(uint32_t size);
-
   explicit system_buffer(const sdata_type& data);
 
   system_buffer(sdata_type&& data);
 
-  system_buffer(uint32_t size, const system_buffer_ptr& buffer, uint32_t offset);
+  system_buffer(uint32_t size, const std::string& name);
+
+  system_buffer(uint32_t size,
+                const system_buffer_ptr& buffer,
+                uint32_t offset,
+                const std::string& name);
 
   system_buffer(const system_buffer& other);
 
@@ -52,21 +55,27 @@ public:
 
   virtual const sdata_type& data() const;
 
-  const system_buffer_ptr& source() const {
+  const auto& source() const {
     return source_;
   }
 
-  const sdata_type& value() const {
+  const auto& value() const {
     return value_;
   }
 
-  uint32_t offset() const {
+  auto offset() const {
     return offset_;
   }
 
-  uint32_t size() const {
+  auto size() const {
     return size_;
   }
+
+  auto name() const {
+    return name_;
+  }
+
+  std::string to_verilog() const;
 
   void copy(uint32_t dst_offset,
             const system_buffer& src,
@@ -97,15 +106,11 @@ public:
 
 protected:
 
-  system_buffer(const sdata_type& value,
-                const system_buffer_ptr& source,
-                uint32_t offset,
-                uint32_t size);
-
   system_buffer_ptr source_;
   mutable sdata_type value_;
   uint32_t offset_;
   uint32_t size_;
+  std::string name_;
 };
 
 template <typename... Args>
@@ -147,6 +152,12 @@ public:
     return make_system_buffer(std::move(*obj.__buffer()));
   }
 
+  template <typename T>
+  static std::string to_verilog(const T& obj) {
+    assert(obj.__buffer()->size() == ch_width_v<T>);
+    return obj.__buffer()->to_verilog();
+  }
+
   template <typename U>
   static void assign(U& dst, const sdata_type& src) {
     assert(ch_width_v<U> == src.size());
@@ -184,7 +195,7 @@ public:
     static_assert(ch_width_v<R> <= ch_width_v<T>, "invalid size");
     assert(start + ch_width_v<R> <= ch_width_v<T>);
     assert(obj.__buffer()->size() == ch_width_v<T>);
-    return R(make_system_buffer(ch_width_v<R>, obj.__buffer(), start));
+    return R(make_system_buffer(ch_width_v<R>, obj.__buffer(), start, "sliceref"));
   }
 
   template <typename R, typename T>

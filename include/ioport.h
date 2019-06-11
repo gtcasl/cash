@@ -71,17 +71,12 @@ public:
 
   void bind(const io_value_t& io);
 
-  const auto& name() const {
-    return name_;
-  };
-
   const auto& io() const {
     return io_;
   };
 
 protected:
 
-  std::string name_;
   io_value_t io_;
 };
 

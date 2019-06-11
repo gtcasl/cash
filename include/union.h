@@ -10,7 +10,7 @@
 
 #define CH_UNION_SYSTEM_CTOR(a, i, x) \
   CH_PAIR_R(x)(ch::internal::make_system_buffer( \
-    ch_width_v<ch::internal::identity_t<CH_PAIR_L(x)>>, buffer, 0))
+    ch_width_v<ch::internal::identity_t<CH_PAIR_L(x)>>, buffer, 0, CH_STRINGIZE(CH_PAIR_R(x))))
 
 #define CH_UNION_LOGIC_CTOR(a, i, x) \
   CH_PAIR_R(x)(ch::internal::logic_buffer( \
@@ -31,7 +31,7 @@
 #define CH_UNION_SYSTEM_IMPL(type_name, union_name, field_body, ...) \
   CH_FOR_EACH(field_body, , CH_SEP_SEMICOLON, __VA_ARGS__); \
   type_name(const ch::internal::system_buffer_ptr& buffer = \
-  ch::internal::make_system_buffer(traits::bitwidth)) \
+  ch::internal::make_system_buffer(traits::bitwidth, CH_STRINGIZE(union_name))) \
     : CH_FOR_EACH(CH_UNION_SYSTEM_CTOR, , CH_SEP_COMMA, __VA_ARGS__) {} \
   type_name(const type_name& __other) \
     : type_name(ch::internal::system_accessor::copy(__other)) {} \

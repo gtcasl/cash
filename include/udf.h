@@ -7,9 +7,32 @@ namespace internal {
 
 class udf_iface;
 
-enum class udf_verilog_mode { header, declaration, body };
+enum class udf_verilog { header, declaration, body };
 
 void createUDFNode(const std::string& name, bool is_seq, udf_iface* udf);
+
+///////////////////////////////////////////////////////////////////////////////
+
+class udf_vostream : public std::ostream {
+public:
+  udf_vostream(std::streambuf* sbuf) : std::ostream(sbuf) {}
+
+  template <typename T>
+  udf_vostream& operator<<(T&& obj) {
+    if constexpr (is_system_type_v<T>) {
+      auto name = system_accessor::to_verilog(std::forward<T>(obj));
+      reinterpret_cast<std::ostream&>(*this) << name;
+    } else {
+      reinterpret_cast<std::ostream&>(*this) << std::forward<T>(obj);
+    }
+    return *this;
+  }
+
+  udf_vostream& operator<<(std::ostream&(*pf)(std::ostream&)) {
+    reinterpret_cast<std::ostream&>(*this) << pf;
+    return *this;
+  }
+};
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -23,7 +46,7 @@ public:
 
   virtual void reset() = 0;
 
-  virtual bool to_verilog(std::ostream&, udf_verilog_mode) = 0;
+  virtual bool to_verilog(udf_vostream&, udf_verilog) = 0;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -38,7 +61,7 @@ using detect_reset_t = decltype(std::declval<T&>().reset());
 
 template<typename T>
 using detect_to_verilog_t = decltype(std::declval<T&>().to_verilog(
-  std::declval<std::ostream&>(), std::declval<udf_verilog_mode&>()));
+  std::declval<udf_vostream&>(), std::declval<udf_verilog&>()));
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -58,7 +81,7 @@ public:
     }
   }
 
-  bool to_verilog(std::ostream& out, udf_verilog_mode mode) override {
+  bool to_verilog(udf_vostream& out, udf_verilog mode) override {
     if constexpr (is_detected_v<detect_to_verilog_t, T>) {
       return udf_.to_verilog(out, mode);
     } else {

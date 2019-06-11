@@ -19,7 +19,7 @@ public:
   using traits = system_traits<32, true, ch_scfloat32, ch_float32>;
   using base = ch_scbit<32>;
 
-  ch_scfloat32(const system_buffer_ptr& buffer = make_system_buffer(32))
+  ch_scfloat32(const system_buffer_ptr& buffer = make_system_buffer(32, "ch_scfloat32"))
     : base(buffer)
   {}
 
@@ -257,8 +257,8 @@ public:
     pipe_.reset();
   }
 
-  bool to_verilog(std::ostream& out, udf_verilog_mode mode) {
-    if (mode != udf_verilog_mode::body)
+  bool to_verilog(udf_vostream& out, udf_verilog mode) {
+    if (mode != udf_verilog::body)
       return false;
     out << "fp_add __fp_add$id(.clock($clk), .clk_en($io.en), "
            ".dataa($io.lhs), .datab($io.rhs), .result($io.dst));";
@@ -290,8 +290,8 @@ public:
     pipe_.reset();
   }
 
-  bool to_verilog(std::ostream& out, udf_verilog_mode mode) {
-    if (mode != udf_verilog_mode::body)
+  bool to_verilog(udf_vostream& out, udf_verilog mode) {
+    if (mode != udf_verilog::body)
       return false;
     out << "fp_sub __fp_sub$id(.clock($clk), .clk_en($io.en), "
            ".dataa($io.lhs), .datab($io.rhs), .result($io.dst));";
@@ -323,8 +323,8 @@ public:
     pipe_.reset();
   }
 
-  bool to_verilog(std::ostream& out, udf_verilog_mode mode) {
-    if (mode != udf_verilog_mode::body)
+  bool to_verilog(udf_vostream& out, udf_verilog mode) {
+    if (mode != udf_verilog::body)
       return false;
     out << "fp_mul __fp_mul$id(.clock($clk), .clk_en($io.en), "
            ".dataa($io.lhs), .datab($io.rhs), .result($io.dst));";
@@ -356,8 +356,8 @@ public:
     pipe_.reset();
   }
 
-  bool to_verilog(std::ostream& out, udf_verilog_mode mode) {
-    if (mode != udf_verilog_mode::body)
+  bool to_verilog(udf_vostream& out, udf_verilog mode) {
+    if (mode != udf_verilog::body)
       return false;
     out << "fp_div __fp_div$id(.clock($clk), .clk_en($io.en), "
            ".dataa($io.lhs), .datab($io.rhs), .result($io.dst));";

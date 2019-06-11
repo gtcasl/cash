@@ -21,7 +21,7 @@ public:
                       system_op_cast<ch_scbit, N,
                         system_op_slice<ch_scbit, N>>>>>>;
 
-  ch_scbit(const system_buffer_ptr& buffer = make_system_buffer(N))
+  ch_scbit(const system_buffer_ptr& buffer = make_system_buffer(N, idname<ch_scbit>()))
     : buffer_(buffer) {
     assert(N == buffer->size());
   }
@@ -104,7 +104,11 @@ protected:
   system_buffer_ptr buffer_;
 
   friend class system_accessor;
-
+                   template <typename T>
+                   static auto copy(const T& obj) {
+                     assert(obj.__buffer()->size() == ch_width_v<T>);
+                     return make_system_buffer(*obj.__buffer());
+                   }
   friend std::ostream& operator<<(std::ostream& out, const ch_scbit& in) {
     return out << system_accessor::data(in);
   }

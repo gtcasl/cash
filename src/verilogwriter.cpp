@@ -153,10 +153,9 @@ void verilogwriter::print_body(std::ostream& out) {
   //
   {
     auto_indent indent(out);
-
     int written = 0;
     for (auto node : ctx_->udfs()) {
-      written |= this->print_udf(out, reinterpret_cast<udfimpl*>(node), udf_verilog_mode::declaration);
+      written |= this->print_udf(out, reinterpret_cast<udfimpl*>(node), udf_verilog::declaration);
     }
     if (written) {
       out << std::endl;
@@ -404,7 +403,7 @@ bool verilogwriter::print_logic(std::ostream& out, lnodeimpl* node) {
     return this->print_bindport(out, reinterpret_cast<bindportimpl*>(node));
   case type_udfc:
   case type_udfs:
-    return this->print_udf(out, reinterpret_cast<udfimpl*>(node), udf_verilog_mode::body);
+    return this->print_udf(out, reinterpret_cast<udfimpl*>(node), udf_verilog::body);
   default:
     assert(false);
   case type_lit:
@@ -832,7 +831,7 @@ bool verilogwriter::print_mem(std::ostream& out, memimpl* node) {
   return true;
 }
 
-bool verilogwriter::print_udf(std::ostream& out, udfimpl* node, udf_verilog_mode mode) {
+bool verilogwriter::print_udf(std::ostream& out, udfimpl* node, udf_verilog mode) {
   std::unordered_map<std::string, std::string> dic;
 
   auto dict_add = [&](const std::string& key, lnodeimpl* value) {
@@ -861,7 +860,8 @@ bool verilogwriter::print_udf(std::ostream& out, udfimpl* node, udf_verilog_mode
   {
     // load code template
     std::ostringstream os;
-    changed = node->udf()->to_verilog(os, mode);
+    udf_vostream udf_os(os.rdbuf());
+    changed = node->udf()->to_verilog(udf_os, mode);
     code = os.str();
   }
 
@@ -1050,8 +1050,8 @@ void verilogwriter::print_operator(std::ostream& out, ch_op op) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-std::function<bool (std::ostream& out, context*, std::unordered_set<uint32_t>&)>
-  print_udf_dependencies = [](std::ostream& out, context* ctx, std::unordered_set<uint32_t>& visited) {
+std::function<bool (udf_vostream& out, context*, std::unordered_set<uint32_t>&)>
+  print_udf_dependencies = [](udf_vostream& out, context* ctx, std::unordered_set<uint32_t>& visited) {
   bool changed = false;
   for (auto node : ctx->bindings()) {
     auto binding = reinterpret_cast<bindimpl*>(node);
@@ -1059,16 +1059,18 @@ std::function<bool (std::ostream& out, context*, std::unordered_set<uint32_t>&)>
       changed = true;
   }
 
+
   for (auto node : ctx->udfs()) {
     auto udfs = reinterpret_cast<udfsimpl*>(node);
     if (0 == visited.count(udfs->id())) {
-      if (udfs->udf()->to_verilog(out, udf_verilog_mode::header)) {
+      if (udfs->udf()->to_verilog(out, udf_verilog::header)) {
         out << std::endl;
         changed =true;
       }
       visited.insert(udfs->id());
     }
   }
+
   return changed;
 };
 
@@ -1079,7 +1081,8 @@ void ch::internal::ch_toVerilog(std::ostream& out, const device& device) {
 
   auto ctx = device.impl()->ctx();
   visited.insert(ctx->name());
-  if (print_udf_dependencies(out, ctx, udf_visited)) {
+  udf_vostream udf_os(out.rdbuf());
+  if (print_udf_dependencies(udf_os, ctx, udf_visited)) {
     out << std::endl;
   }
 
@@ -1092,9 +1095,10 @@ void ch::internal::ch_toVerilog(std::ostream& out, const ch_device_list& devices
     std::unordered_set<uint32_t> udf_visited;
 
     bool changed = false;
+    udf_vostream udf_os(out.rdbuf());
     for (auto& device : devices) {
-      auto ctx = device.impl()->ctx();
-      if (print_udf_dependencies(out, ctx, udf_visited)) {
+      auto ctx = device.impl()->ctx();      
+      if (print_udf_dependencies(udf_os, ctx, udf_visited)) {
         changed = true;
       }
     }
