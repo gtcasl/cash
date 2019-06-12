@@ -6,18 +6,10 @@ namespace ch {
 namespace internal {
 
 template <unsigned N = 32>
-class ch_int : public logic_op_relational<ch_int, N,
-                        logic_op_bitwise<ch_int, N,
-                          logic_op_shift<ch_int, N,
-                            logic_op_arithmetic<ch_int, N,
-                              logic_op_slice<ch_int, N, ch_bit<N>>>>>> {
-public:
+class ch_int : public ch_bit<N> {
+public:  
   using traits = logic_traits<N, true, ch_int, ch_scint<N>>;
-  using base = logic_op_relational<ch_int, N,
-                 logic_op_bitwise<ch_int, N,
-                   logic_op_shift<ch_int, N,
-                     logic_op_arithmetic<ch_int, N,
-                       logic_op_slice<ch_int, N, ch_bit<N>>>>>>;
+  using base = ch_bit<N>;
 
   ch_int(const logic_buffer& buffer =
       logic_buffer(N, idname<ch_int>()))
@@ -97,6 +89,11 @@ public:
   }
 
   CH_LOGIC_INTERFACE(ch_int)
+  CH_LOGIC_OP_RELATIONAL(ch_int)
+  CH_LOGIC_OP_ARITHMETIC(ch_int)
+  CH_LOGIC_OP_BITWISE(ch_int)
+  CH_LOGIC_OP_SHIFT(ch_int)
+  CH_LOGIC_OP_SLICE(ch_int)
 };
 
 template <unsigned M, unsigned N>
@@ -111,27 +108,27 @@ auto ch_abs(const ch_int<N>& obj) {
   return ch_sel(obj[N-1], -obj, obj);
 }
 
-CH_LOGIC_FUNCTION_EQUALITY(ch_eq, ch_op::eq, ch_int)
-CH_LOGIC_FUNCTION_EQUALITY(ch_ne, ch_op::ne, ch_int)
+CH_LOGIC_FUNCTION_EQUALITY(ch_int, ch_eq, ch_op::eq)
+CH_LOGIC_FUNCTION_EQUALITY(ch_int, ch_ne, ch_op::ne)
 
-CH_LOGIC_FUNCTION_RELATIONAL(ch_lt, ch_op::lt, ch_int)
-CH_LOGIC_FUNCTION_RELATIONAL(ch_le, ch_op::le, ch_int)
-CH_LOGIC_FUNCTION_RELATIONAL(ch_gt, ch_op::gt, ch_int)
-CH_LOGIC_FUNCTION_RELATIONAL(ch_ge, ch_op::ge, ch_int)
+CH_LOGIC_FUNCTION_RELATIONAL(ch_int, ch_lt, ch_op::lt)
+CH_LOGIC_FUNCTION_RELATIONAL(ch_int, ch_le, ch_op::le)
+CH_LOGIC_FUNCTION_RELATIONAL(ch_int, ch_gt, ch_op::gt)
+CH_LOGIC_FUNCTION_RELATIONAL(ch_int, ch_ge, ch_op::ge)
 
-CH_LOGIC_FUNCTION_BITWISE1(ch_inv, ch_op::inv, ch_int)
-CH_LOGIC_FUNCTION_BITWISE2(ch_and, ch_op::andb, ch_int)
-CH_LOGIC_FUNCTION_BITWISE2(ch_or, ch_op::orb, ch_int)
-CH_LOGIC_FUNCTION_BITWISE2(ch_xor, ch_op::xorb, ch_int)
+CH_LOGIC_FUNCTION_BITWISE1(ch_int, ch_inv, ch_op::inv)
+CH_LOGIC_FUNCTION_BITWISE2(ch_int, ch_and, ch_op::andb)
+CH_LOGIC_FUNCTION_BITWISE2(ch_int, ch_or, ch_op::orb)
+CH_LOGIC_FUNCTION_BITWISE2(ch_int, ch_xor, ch_op::xorb)
 
-CH_LOGIC_FUNCTION_SHIFT(ch_shl, ch_op::shl, ch_int)
-CH_LOGIC_FUNCTION_SHIFT(ch_shr, ch_op::shr, ch_int)
+CH_LOGIC_FUNCTION_SHIFT(ch_int, ch_shl, ch_op::shl)
+CH_LOGIC_FUNCTION_SHIFT(ch_int, ch_shr, ch_op::shr)
 
-CH_LOGIC_FUNCTION_ARITHMETIC1(ch_neg, ch_op::neg, ch_int)
-CH_LOGIC_FUNCTION_ARITHMETIC2(ch_add, ch_op::add, ch_int)
-CH_LOGIC_FUNCTION_ARITHMETIC2(ch_sub, ch_op::sub, ch_int)
-CH_LOGIC_FUNCTION_ARITHMETIC3(ch_mul, ch_op::mul, ch_int)
-CH_LOGIC_FUNCTION_ARITHMETIC3(ch_div, ch_op::div, ch_int)
-CH_LOGIC_FUNCTION_ARITHMETIC3(ch_mod, ch_op::mod, ch_int)
+CH_LOGIC_FUNCTION_ARITHMETIC1(ch_int, ch_neg, ch_op::neg)
+CH_LOGIC_FUNCTION_ARITHMETIC2(ch_int, ch_add, ch_op::add)
+CH_LOGIC_FUNCTION_ARITHMETIC2(ch_int, ch_sub, ch_op::sub)
+CH_LOGIC_FUNCTION_ARITHMETIC3(ch_int, ch_mul, ch_op::mul)
+CH_LOGIC_FUNCTION_ARITHMETIC3(ch_int, ch_div, ch_op::div)
+CH_LOGIC_FUNCTION_ARITHMETIC3(ch_int, ch_mod, ch_op::mod)
 
 }}

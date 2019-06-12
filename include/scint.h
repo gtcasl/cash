@@ -6,20 +6,10 @@ namespace ch {
 namespace internal {
 
 template <unsigned N = 32>
-class ch_scint : public system_op_relational<ch_scint, N,
-                          system_op_bitwise<ch_scint, N,
-                            system_op_shift<ch_scint, N,
-                              system_op_cast<ch_scint, N,
-                                system_op_arithmetic<ch_scint, N,
-                                  system_op_slice<ch_scint, N, ch_scbit<N>>>>>>> {
+class ch_scint : public ch_scbit<N> {
 public:
   using traits = system_traits<N, true, ch_scint, ch_int<N>>;
-  using base = system_op_relational<ch_scint, N,
-                 system_op_bitwise<ch_scint, N,
-                   system_op_shift<ch_scint, N,
-                     system_op_cast<ch_scint, N,
-                       system_op_arithmetic<ch_scint, N,
-                         system_op_slice<ch_scint, N, ch_scbit<N>>>>>>>;
+  using base = ch_scbit<N>;
   using base::buffer_;
 
   ch_scint(const system_buffer_ptr& buffer = make_system_buffer(N, idname<ch_scint>()))
@@ -69,6 +59,12 @@ public:
   }
 
   CH_SYSTEM_INTERFACE(ch_scint)
+  CH_SYSTEM_OP_RELATIONAL(ch_scint)
+  CH_SYSTEM_OP_BITWISE(ch_scint)
+  CH_SYSTEM_OP_SHIFT(ch_scint)
+  CH_SYSTEM_OP_ARITHMETIC(ch_scint)
+  CH_SYSTEM_OP_SLICE(ch_scint)
+  CH_SYSTEM_OP_CAST(ch_scint)
 };
 
 }

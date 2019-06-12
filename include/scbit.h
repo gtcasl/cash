@@ -6,20 +6,9 @@ namespace ch {
 namespace internal {
 
 template <unsigned N>
-class ch_scbit : public system_op_equality<ch_scbit, N,
-                          system_op_logical<ch_scbit, N,
-                            system_op_bitwise<ch_scbit, N,
-                              system_op_shift<ch_scbit, N,
-                                system_op_cast<ch_scbit, N,
-                                  system_op_slice<ch_scbit, N>>>>>> {
+class ch_scbit {
 public:  
   using traits = system_traits<N, false, ch_scbit, ch_bit<N>>;
-  using base = system_op_equality<ch_scbit, N,
-                system_op_logical<ch_scbit, N,
-                  system_op_bitwise<ch_scbit, N,
-                    system_op_shift<ch_scbit, N,
-                      system_op_cast<ch_scbit, N,
-                        system_op_slice<ch_scbit, N>>>>>>;
 
   ch_scbit(const system_buffer_ptr& buffer = make_system_buffer(N, idname<ch_scbit>()))
     : buffer_(buffer) {
@@ -48,8 +37,7 @@ public:
   }
 
   ch_scbit(const ch_scbit& other)
-    : base()
-    , buffer_(system_accessor::copy(other))
+    : buffer_(system_accessor::copy(other))
   {}
 
   ch_scbit(ch_scbit&& other) : buffer_(std::move(other.buffer_)) {}
@@ -94,6 +82,12 @@ public:
   }
 
   CH_SYSTEM_INTERFACE(ch_scbit)
+  CH_SYSTEM_OP_EQUALITY(ch_scbit)
+  CH_SYSTEM_OP_LOGICAL(ch_scbit)
+  CH_SYSTEM_OP_BITWISE(ch_scbit)
+  CH_SYSTEM_OP_SHIFT(ch_scbit)
+  CH_SYSTEM_OP_CAST(ch_scbit)
+  CH_SYSTEM_OP_SLICE(ch_scbit)
 
 protected:
 

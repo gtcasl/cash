@@ -269,45 +269,38 @@ auto make_logic_op(const A& a, const B& b) {
     return ch::internal::logic_accessor::clone(*this); \
   }
 
-#define CH_LOGIC_OPERATOR(name) \
-  template <template <unsigned> typename T, unsigned N, typename Base = empty_base> \
-  struct name : Base { \
-    using Derived = T<N>; \
-    using Base::Base; \
-    using Base::operator=;
-
-#define CH_LOGIC_OPERATOR_IMPL(op, opcode, rtype) \
-  friend auto op(const Derived& lhs, const Derived& rhs) { \
+#define CH_LOGIC_OPERATOR_IMPL(type, op, opcode, rtype) \
+  friend auto op(const type& lhs, const type& rhs) { \
     CH_SOURCE_LOCATION(1); \
-    return make_logic_op<opcode, ch_signed_v<Derived>, rtype>(lhs, rhs); \
+    return make_logic_op<opcode, ch_signed_v<type>, rtype>(lhs, rhs); \
   } \
   template <typename U, \
-            CH_REQUIRE_0(is_strictly_constructible_v<Derived, U>)> \
-  friend auto op(const Derived& lhs, const U& rhs) { \
+            CH_REQUIRE_0(is_strictly_constructible_v<type, U>)> \
+  friend auto op(const type& lhs, const U& rhs) { \
     CH_SOURCE_LOCATION(1); \
-    return make_logic_op<opcode, ch_signed_v<Derived>, rtype, Derived, U, Derived, Derived>(lhs, rhs); \
+    return make_logic_op<opcode, ch_signed_v<type>, rtype, type, U, type, type>(lhs, rhs); \
   } \
   template <typename U, \
-            CH_REQUIRE_0(is_strictly_constructible_v<Derived, U>)> \
-  friend auto op(const U& lhs, const Derived& rhs) { \
+            CH_REQUIRE_0(is_strictly_constructible_v<type, U>)> \
+  friend auto op(const U& lhs, const type& rhs) { \
     CH_SOURCE_LOCATION(1); \
-    return make_logic_op<opcode, ch_signed_v<Derived>, rtype, U, Derived, Derived, Derived>(lhs, rhs); \
+    return make_logic_op<opcode, ch_signed_v<type>, rtype, U, type, type, type>(lhs, rhs); \
   }
 
-#define CH_LOGIC_ASSIGN_IMPL(op, opcode, rtype) \
-  auto op(const Derived& rhs) { \
+#define CH_LOGIC_ASSIGN_IMPL(type, op, opcode, rtype) \
+  auto op(const type& rhs) { \
     CH_SOURCE_LOCATION(1); \
-    auto lhs = reinterpret_cast<const Derived*>(this)->clone(); \
-    return make_logic_op<opcode, ch_signed_v<Derived>, rtype>(lhs, rhs); \
+    auto lhs = reinterpret_cast<const type*>(this)->clone(); \
+    return make_logic_op<opcode, ch_signed_v<type>, rtype>(lhs, rhs); \
   } \
   template <unsigned M, CH_REQUIRE_0(M < N)> \
-  auto op(const T<M>& rhs) { \
+  auto op(const type<M>& rhs) { \
     CH_SOURCE_LOCATION(1); \
-    auto lhs = reinterpret_cast<const Derived*>(this)->clone(); \
-    return make_logic_op<opcode, ch_signed_v<Derived>, rtype>(lhs, rhs); \
+    auto lhs = reinterpret_cast<const type*>(this)->clone(); \
+    return make_logic_op<opcode, ch_signed_v<type>, rtype>(lhs, rhs); \
   }
 
-#define CH_LOGIC_FUNCTION_EQUALITY(func, op, type) \
+#define CH_LOGIC_FUNCTION_EQUALITY(type, func, op) \
   template <unsigned N, unsigned M = N> \
   auto func(const type<N>& lhs, const type<M>& rhs) { \
     CH_SOURCE_LOCATION(1); \
@@ -326,10 +319,10 @@ auto make_logic_op(const A& a, const B& b) {
     return make_logic_op<op, false, ch_bit<1>, U, type<N>, type<ch_width_v<U>>, type<N>>(lhs, rhs); \
   }
 
-#define CH_LOGIC_FUNCTION_RELATIONAL(func, op, type) \
-  CH_LOGIC_FUNCTION_EQUALITY(func, op, type)
+#define CH_LOGIC_FUNCTION_RELATIONAL(type, func, op) \
+  CH_LOGIC_FUNCTION_EQUALITY(type, func, op)
 
-#define CH_LOGIC_FUNCTION_BITWISE1(func, op, type) \
+#define CH_LOGIC_FUNCTION_BITWISE1(type, func, op) \
   template <unsigned R = 0, unsigned N> \
   auto func(const type<N>& in) { \
     CH_SOURCE_LOCATION(1); \
@@ -341,7 +334,7 @@ auto make_logic_op(const A& a, const B& b) {
     } \
   }
 
-#define CH_LOGIC_FUNCTION_BITWISE2(func, op, type) \
+#define CH_LOGIC_FUNCTION_BITWISE2(type, func, op) \
   template <unsigned R = 0, unsigned N, unsigned M = N> \
   auto func(const type<N>& lhs, const type<M>& rhs) { \
     CH_SOURCE_LOCATION(1); \
@@ -395,7 +388,7 @@ auto make_logic_op(const A& a, const B& b) {
     } \
   }
 
-#define CH_LOGIC_FUNCTION_SHIFT(func, op, type) \
+#define CH_LOGIC_FUNCTION_SHIFT(type, func, op) \
   template <unsigned R = 0, unsigned N, unsigned M = N> \
   auto func(const type<N>& lhs, const type<M>& rhs) { \
     CH_SOURCE_LOCATION(1); \
@@ -419,13 +412,13 @@ auto make_logic_op(const A& a, const B& b) {
                          U, type<N>, ch_logic_t<U>, type<N>>(lhs, rhs); \
   }
 
-#define CH_LOGIC_FUNCTION_ARITHMETIC1(func, op, type) \
-  CH_LOGIC_FUNCTION_BITWISE1(func, op, type)
+#define CH_LOGIC_FUNCTION_ARITHMETIC1(type, func, op) \
+  CH_LOGIC_FUNCTION_BITWISE1(type, func, op)
 
-#define CH_LOGIC_FUNCTION_ARITHMETIC2(func, op, type) \
-  CH_LOGIC_FUNCTION_BITWISE2(func, op, type)
+#define CH_LOGIC_FUNCTION_ARITHMETIC2(type, func, op) \
+  CH_LOGIC_FUNCTION_BITWISE2(type, func, op)
 
-#define CH_LOGIC_FUNCTION_ARITHMETIC3(func, op, type) \
+#define CH_LOGIC_FUNCTION_ARITHMETIC3(type, func, op) \
   template <unsigned R = 0, unsigned N, unsigned M = N> \
   auto func(const type<N>& lhs, const type<M>& rhs) { \
     CH_SOURCE_LOCATION(1); \
@@ -449,185 +442,163 @@ auto make_logic_op(const A& a, const B& b) {
                          U, type<N>, type<ch_width_v<U>>, type<N>>(lhs, rhs); \
   }
 
-CH_LOGIC_OPERATOR(logic_op_equality)
-  CH_LOGIC_OPERATOR_IMPL(operator==, ch_op::eq, ch_bit<1>)
-  CH_LOGIC_OPERATOR_IMPL(operator!=, ch_op::ne, ch_bit<1>)
-};
+#define CH_LOGIC_OP_EQUALITY(type) \
+  CH_LOGIC_OPERATOR_IMPL(type, operator==, ch_op::eq, ch_bit<1>) \
+  CH_LOGIC_OPERATOR_IMPL(type, operator!=, ch_op::ne, ch_bit<1>)
 
-CH_LOGIC_OPERATOR(logic_op_logical)
-  friend auto operator!(const Derived& self) {
-    CH_SOURCE_LOCATION(1);
-    return make_logic_op<ch_op::notl, false, ch_bit<1>>(self);
-  }
-  CH_LOGIC_OPERATOR_IMPL(operator&&, ch_op::andl, ch_bit<1>)
-  CH_LOGIC_OPERATOR_IMPL(operator||, ch_op::orl, ch_bit<1>)
-};
+#define CH_LOGIC_OP_LOGICAL(type) \
+  friend auto operator!(const type& self) { \
+    CH_SOURCE_LOCATION(1); \
+    return make_logic_op<ch_op::notl, false, ch_bit<1>>(self); \
+  } \
+  CH_LOGIC_OPERATOR_IMPL(type, operator&&, ch_op::andl, ch_bit<1>) \
+  CH_LOGIC_OPERATOR_IMPL(type, operator||, ch_op::orl, ch_bit<1>)
 
-CH_LOGIC_OPERATOR(logic_op_bitwise)
-  friend auto operator~(const Derived& self) {
-    CH_SOURCE_LOCATION(1);
-    return make_logic_op<ch_op::inv, false, Derived>(self);
-  }
+#define CH_LOGIC_OP_BITWISE(type) \
+  friend auto operator~(const type& self) { \
+    CH_SOURCE_LOCATION(1); \
+    return make_logic_op<ch_op::inv, false, type>(self); \
+  } \
+  CH_LOGIC_OPERATOR_IMPL(type, operator&, ch_op::andb, type) \
+  CH_LOGIC_OPERATOR_IMPL(type, operator|, ch_op::orb, type) \
+  CH_LOGIC_OPERATOR_IMPL(type, operator^, ch_op::xorb, type) \
+  CH_LOGIC_ASSIGN_IMPL(type, operator&=, ch_op::andb, type) \
+  CH_LOGIC_ASSIGN_IMPL(type, operator|=, ch_op::orb, type) \
+  CH_LOGIC_ASSIGN_IMPL(type, operator^=, ch_op::xorb, type)
 
-  CH_LOGIC_OPERATOR_IMPL(operator&, ch_op::andb, Derived)
-  CH_LOGIC_OPERATOR_IMPL(operator|, ch_op::orb, Derived)
-  CH_LOGIC_OPERATOR_IMPL(operator^, ch_op::xorb, Derived)
-
-  CH_LOGIC_ASSIGN_IMPL(operator&=, ch_op::andb, Derived)
-  CH_LOGIC_ASSIGN_IMPL(operator|=, ch_op::orb, Derived)
-  CH_LOGIC_ASSIGN_IMPL(operator^=, ch_op::xorb, Derived)
-};
-
-CH_LOGIC_OPERATOR(logic_op_shift)
-  template <typename U,
-            CH_REQUIRE_0(std::is_convertible_v<U, ch_bit<ch_width_v<U>>>)>
-  friend auto operator<<(const Derived& lhs, const U& rhs) {
-    static_assert(ch_width_v<U> <= 32, "invalid size");
-    CH_SOURCE_LOCATION(1);
-    return make_logic_op<ch_op::shl,
-                         ch_signed_v<Derived>,
-                         Derived,
-                         Derived,
-                         U,
-                         Derived,
-                         ch_bit<ch_width_v<U>>>(lhs, rhs);
-  }
-
-  template <typename U,
-            CH_REQUIRE_0(std::is_convertible_v<U, ch_bit<ch_width_v<U>>>)>
-  friend auto operator>>(const Derived& lhs, const U& rhs) {
-    static_assert(ch_width_v<U> <= 32, "invalid size");
-    CH_SOURCE_LOCATION(1);
-    return make_logic_op<ch_op::shr,
-                         ch_signed_v<Derived>,
-                         Derived,
-                         Derived,
-                         U,
-                         Derived,
-                         ch_bit<ch_width_v<U>>>(lhs, rhs);
-  }
-
-  template <unsigned M>
-  auto operator<<=(const T<M>& rhs) {
-    static_assert(M <= 32, "invalid size");
-    CH_SOURCE_LOCATION(1);
-    auto lhs = reinterpret_cast<const Derived*>(this)->clone();
-    return make_logic_op<ch_op::shl, ch_signed_v<Derived>, Derived>(lhs, rhs);
-  }
-
-  template <unsigned M>
-  auto operator>>=(const T<M>& rhs) {
-    static_assert(M <= 32, "invalid size");
-    CH_SOURCE_LOCATION(1);
-    auto lhs = reinterpret_cast<const Derived*>(this)->clone();
-    return make_logic_op<ch_op::shr, ch_signed_v<Derived>, Derived>(lhs, rhs);
-  }
-
-  auto operator<<=(uint32_t rhs) {
-    CH_SOURCE_LOCATION(1);
-    auto lhs = reinterpret_cast<const Derived*>(this)->clone();
-    return make_logic_op<ch_op::shl,
-                         ch_signed_v<Derived>,
-                         Derived,
-                         Derived,
-                         uint32_t,
-                         Derived,
-                         ch_uint<32>>(lhs, rhs, rhs);
-  }
-
-  auto operator>>=(uint32_t& rhs) {
-    CH_SOURCE_LOCATION(1);
-    auto lhs = reinterpret_cast<const Derived*>(this)->clone();
-    return make_logic_op<ch_op::shr,
-                         ch_signed_v<Derived>,
-                         Derived,
-                         Derived,
-                         uint32_t,
-                         Derived,
-                         ch_uint<32>>(lhs, rhs, rhs);
-  }
-};
-
-CH_LOGIC_OPERATOR(logic_op_relational)
-  CH_LOGIC_OPERATOR_IMPL(operator<, ch_op::lt, ch_bit<1>)
-  CH_LOGIC_OPERATOR_IMPL(operator<=, ch_op::le, ch_bit<1>)
-  CH_LOGIC_OPERATOR_IMPL(operator>, ch_op::gt, ch_bit<1>)
-  CH_LOGIC_OPERATOR_IMPL(operator>=, ch_op::ge, ch_bit<1>)
-};
-
-CH_LOGIC_OPERATOR(logic_op_arithmetic)
-  friend auto operator-(const Derived& self) {
-    CH_SOURCE_LOCATION(1);
-    return make_logic_op<ch_op::neg, ch_signed_v<Derived>, Derived>(self);
+#define CH_LOGIC_OP_SHIFT(type) \
+  template <typename U, \
+            CH_REQUIRE_0(std::is_convertible_v<U, ch_bit<ch_width_v<U>>>)> \
+  friend auto operator<<(const type& lhs, const U& rhs) { \
+    static_assert(ch_width_v<U> <= 32, "invalid size"); \
+    CH_SOURCE_LOCATION(1); \
+    return make_logic_op<ch_op::shl, \
+                         ch_signed_v<type>, \
+                         type, \
+                         type, \
+                         U, \
+                         type, \
+                         ch_bit<ch_width_v<U>>>(lhs, rhs); \
+  } \
+  template <typename U, \
+            CH_REQUIRE_0(std::is_convertible_v<U, ch_bit<ch_width_v<U>>>)> \
+  friend auto operator>>(const type& lhs, const U& rhs) { \
+    static_assert(ch_width_v<U> <= 32, "invalid size"); \
+    CH_SOURCE_LOCATION(1); \
+    return make_logic_op<ch_op::shr, \
+                         ch_signed_v<type>, \
+                         type, \
+                         type, \
+                         U, \
+                         type, \
+                         ch_bit<ch_width_v<U>>>(lhs, rhs); \
+  } \
+  template <unsigned M> \
+  auto operator<<=(const type<M>& rhs) { \
+    static_assert(M <= 32, "invalid size"); \
+    CH_SOURCE_LOCATION(1); \
+    auto lhs = reinterpret_cast<const type*>(this)->clone(); \
+    return make_logic_op<ch_op::shl, ch_signed_v<type>, type>(lhs, rhs); \
+  } \
+  template <unsigned M> \
+  auto operator>>=(const type<M>& rhs) { \
+    static_assert(M <= 32, "invalid size"); \
+    CH_SOURCE_LOCATION(1); \
+    auto lhs = reinterpret_cast<const type*>(this)->clone(); \
+    return make_logic_op<ch_op::shr, ch_signed_v<type>, type>(lhs, rhs); \
+  } \
+  auto operator<<=(uint32_t rhs) { \
+    CH_SOURCE_LOCATION(1); \
+    auto lhs = reinterpret_cast<const type*>(this)->clone(); \
+    return make_logic_op<ch_op::shl, \
+                         ch_signed_v<type>, \
+                         type, \
+                         type, \
+                         uint32_t, \
+                         type, \
+                         ch_uint<32>>(lhs, rhs, rhs); \
+  } \
+  auto operator>>=(uint32_t& rhs) { \
+    CH_SOURCE_LOCATION(1); \
+    auto lhs = reinterpret_cast<const type*>(this)->clone(); \
+    return make_logic_op<ch_op::shr, \
+                         ch_signed_v<type>, \
+                         type, \
+                         type, \
+                         uint32_t, \
+                         type, \
+                         ch_uint<32>>(lhs, rhs, rhs); \
   }
 
-  CH_LOGIC_OPERATOR_IMPL(operator+, ch_op::add, Derived)
-  CH_LOGIC_OPERATOR_IMPL(operator-, ch_op::sub, Derived)
-  CH_LOGIC_OPERATOR_IMPL(operator*, ch_op::mul, Derived)
-  CH_LOGIC_OPERATOR_IMPL(operator/, ch_op::div, Derived)
-  CH_LOGIC_OPERATOR_IMPL(operator%, ch_op::mod, Derived)
 
-  CH_LOGIC_ASSIGN_IMPL(operator+=, ch_op::add, Derived)
-  CH_LOGIC_ASSIGN_IMPL(operator-=, ch_op::sub, Derived)
-  CH_LOGIC_ASSIGN_IMPL(operator*=, ch_op::mul, Derived)
-  CH_LOGIC_ASSIGN_IMPL(operator/=, ch_op::div, Derived)
-  CH_LOGIC_ASSIGN_IMPL(operator%=, ch_op::mod, Derived)
-};
+#define CH_LOGIC_OP_RELATIONAL(type) \
+  CH_LOGIC_OPERATOR_IMPL(type, operator<, ch_op::lt, ch_bit<1>) \
+  CH_LOGIC_OPERATOR_IMPL(type, operator<=, ch_op::le, ch_bit<1>) \
+  CH_LOGIC_OPERATOR_IMPL(type, operator>, ch_op::gt, ch_bit<1>) \
+  CH_LOGIC_OPERATOR_IMPL(type, operator>=, ch_op::ge, ch_bit<1>)
 
-CH_LOGIC_OPERATOR(logic_op_slice)
-  template <typename R>
-  auto slice(size_t start = 0) const {
-    static_assert(ch_width_v<R> <= N, "invalid size");
-    assert(start + ch_width_v<R> <= N);
-    auto& self = reinterpret_cast<const Derived&>(*this);
-    return logic_accessor::slice<R>(self, start);
+#define  CH_LOGIC_OP_ARITHMETIC(type) \
+  friend auto operator-(const type& self) { \
+    CH_SOURCE_LOCATION(1); \
+    return make_logic_op<ch_op::neg, ch_signed_v<type>, type>(self); \
+  } \
+  CH_LOGIC_OPERATOR_IMPL(type, operator+, ch_op::add, type) \
+  CH_LOGIC_OPERATOR_IMPL(type, operator-, ch_op::sub, type) \
+  CH_LOGIC_OPERATOR_IMPL(type, operator*, ch_op::mul, type) \
+  CH_LOGIC_OPERATOR_IMPL(type, operator/, ch_op::div, type) \
+  CH_LOGIC_OPERATOR_IMPL(type, operator%, ch_op::mod, type) \
+  CH_LOGIC_ASSIGN_IMPL(type, operator+=, ch_op::add, type) \
+  CH_LOGIC_ASSIGN_IMPL(type, operator-=, ch_op::sub, type) \
+  CH_LOGIC_ASSIGN_IMPL(type, operator*=, ch_op::mul, type) \
+  CH_LOGIC_ASSIGN_IMPL(type, operator/=, ch_op::div, type) \
+  CH_LOGIC_ASSIGN_IMPL(type, operator%=, ch_op::mod, type)
+
+#define CH_LOGIC_OP_SLICE(type) \
+  template <typename R> \
+  auto slice(size_t start = 0) const { \
+    static_assert(ch_width_v<R> <= N, "invalid size"); \
+    assert(start + ch_width_v<R> <= N); \
+    auto& self = reinterpret_cast<const type&>(*this); \
+    return logic_accessor::slice<R>(self, start); \
+  } \
+  template <unsigned M> \
+  auto slice(size_t start = 0) const { \
+    CH_SOURCE_LOCATION(1); \
+    return this->slice<type<M>>(start); \
+  } \
+  template <typename R> \
+  auto aslice(size_t start = 0) const { \
+    CH_SOURCE_LOCATION(1); \
+    return this->slice<R>(start * ch_width_v<R>); \
+  } \
+  template <unsigned M> \
+  auto aslice(size_t start = 0) const { \
+    CH_SOURCE_LOCATION(1); \
+    return this->aslice<type<M>>(start); \
+  } \
+  template <typename R> \
+  auto sliceref(size_t start = 0) { \
+    static_assert(ch_width_v<R> <= N, "invalid size"); \
+    assert(start + ch_width_v<R> <= N); \
+    CH_SOURCE_LOCATION(1); \
+    auto& self = reinterpret_cast<const type&>(*this); \
+    return logic_accessor::sliceref<R>(self, start); \
+  } \
+  template <unsigned M> \
+  auto sliceref(size_t start = 0) { \
+    CH_SOURCE_LOCATION(1); \
+    return this->sliceref<type<M>>(start); \
+  } \
+  template <typename R> \
+  auto asliceref(size_t start = 0) { \
+    CH_SOURCE_LOCATION(1); \
+    return this->sliceref<R>(start * ch_width_v<R>); \
+  } \
+  template <unsigned M> \
+  auto asliceref(size_t start = 0) { \
+    CH_SOURCE_LOCATION(1); \
+    return this->asliceref<type<M>>(start); \
   }
-
-  template <unsigned M>
-  auto slice(size_t start = 0) const {
-    CH_SOURCE_LOCATION(1);
-    return this->slice<T<M>>(start);
-  }
-
-  template <typename R>
-  auto aslice(size_t start = 0) const {
-    CH_SOURCE_LOCATION(1);
-    return this->slice<R>(start * ch_width_v<R>);
-  }
-
-  template <unsigned M>
-  auto aslice(size_t start = 0) const {
-    CH_SOURCE_LOCATION(1);
-    return this->aslice<T<M>>(start);
-  }
-
-  template <typename R>
-  auto sliceref(size_t start = 0) {
-    static_assert(ch_width_v<R> <= N, "invalid size");
-    assert(start + ch_width_v<R> <= N);
-    CH_SOURCE_LOCATION(1);
-    auto& self = reinterpret_cast<const Derived&>(*this);
-    return logic_accessor::sliceref<R>(self, start);
-  }
-
-  template <unsigned M>
-  auto sliceref(size_t start = 0) {
-    CH_SOURCE_LOCATION(1);
-    return this->sliceref<T<M>>(start);
-  }
-
-  template <typename R>
-  auto asliceref(size_t start = 0) {
-    CH_SOURCE_LOCATION(1);
-    return this->sliceref<R>(start * ch_width_v<R>);
-  }
-
-  template <unsigned M>
-  auto asliceref(size_t start = 0) {
-    CH_SOURCE_LOCATION(1);
-    return this->asliceref<T<M>>(start);
-  }
-};
 
 }
 }

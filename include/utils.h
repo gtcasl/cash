@@ -13,8 +13,6 @@ struct requires_enum {
   enum class type {};
 };
 
-class source_location;
-
 #define CH_REQUIRE_0(...) std::enable_if_t<(__VA_ARGS__), typename ch::internal::requires_enum<0>::type>* = nullptr
 #define CH_REQUIRE_1(...) std::enable_if_t<(__VA_ARGS__), typename ch::internal::requires_enum<1>::type>* = nullptr
 #define CH_REQUIRE_2(...) std::enable_if_t<(__VA_ARGS__), typename ch::internal::requires_enum<2>::type>* = nullptr

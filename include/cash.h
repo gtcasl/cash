@@ -397,21 +397,6 @@ namespace extension {
   using ch::internal::udf_verilog;
   using ch::internal::udf_vostream;
   using ch::internal::lnode;
-
-  using ch::internal::system_op_equality;
-  using ch::internal::system_op_logical;
-  using ch::internal::system_op_bitwise;
-  using ch::internal::system_op_shift;
-  using ch::internal::system_op_cast;
-  using ch::internal::system_op_relational;
-  using ch::internal::system_op_arithmetic;
-
-  using ch::internal::logic_op_equality;
-  using ch::internal::logic_op_logical;
-  using ch::internal::logic_op_bitwise;
-  using ch::internal::logic_op_shift;
-  using ch::internal::logic_op_relational;
-  using ch::internal::logic_op_arithmetic;
 }
 
 //

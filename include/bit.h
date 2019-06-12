@@ -7,19 +7,10 @@ namespace ch {
 namespace internal {
 
 template <unsigned N>
-class ch_bit : public logic_op_equality<ch_bit, N,
-                        logic_op_logical<ch_bit, N,
-                          logic_op_bitwise<ch_bit, N,
-                            logic_op_shift<ch_bit, N,
-                              logic_op_slice<ch_bit, N>>>>> {
+class ch_bit {
 public:
   static_assert(N != 0, "invalid size");
   using traits = logic_traits<N, false, ch_bit, ch_scbit<N>>;
-  using base = logic_op_equality<ch_bit, N,
-                 logic_op_logical<ch_bit, N,
-                   logic_op_bitwise<ch_bit, N,
-                     logic_op_shift<ch_bit, N,
-                       logic_op_slice<ch_bit, N>>>>>;
 
   ch_bit(const logic_buffer& buffer =
       logic_buffer(N, idname<ch_bit>()))
@@ -122,6 +113,11 @@ public:
   }
 
   CH_LOGIC_INTERFACE(ch_bit)
+  CH_LOGIC_OP_EQUALITY(ch_bit)
+  CH_LOGIC_OP_LOGICAL(ch_bit)
+  CH_LOGIC_OP_BITWISE(ch_bit)
+  CH_LOGIC_OP_SHIFT(ch_bit)
+  CH_LOGIC_OP_SLICE(ch_bit)
 
 protected:
 
@@ -188,20 +184,20 @@ auto ch_asliceref(T& obj, size_t start = 0) {
 
 // equality functions
 
-CH_LOGIC_FUNCTION_EQUALITY(ch_eq, ch_op::eq, ch_bit)
-CH_LOGIC_FUNCTION_EQUALITY(ch_ne, ch_op::ne, ch_bit)
+CH_LOGIC_FUNCTION_EQUALITY(ch_bit, ch_eq, ch_op::eq)
+CH_LOGIC_FUNCTION_EQUALITY(ch_bit, ch_ne, ch_op::ne)
 
 // binary functions
 
-CH_LOGIC_FUNCTION_BITWISE1(ch_inv, ch_op::inv, ch_bit)
-CH_LOGIC_FUNCTION_BITWISE2(ch_and, ch_op::andb, ch_bit)
-CH_LOGIC_FUNCTION_BITWISE2(ch_or, ch_op::orb, ch_bit)
-CH_LOGIC_FUNCTION_BITWISE2(ch_xor, ch_op::xorb, ch_bit)
+CH_LOGIC_FUNCTION_BITWISE1(ch_bit, ch_inv, ch_op::inv)
+CH_LOGIC_FUNCTION_BITWISE2(ch_bit, ch_and, ch_op::andb)
+CH_LOGIC_FUNCTION_BITWISE2(ch_bit, ch_or, ch_op::orb)
+CH_LOGIC_FUNCTION_BITWISE2(ch_bit, ch_xor, ch_op::xorb)
 
 // shift functions
 
-CH_LOGIC_FUNCTION_SHIFT(ch_shl, ch_op::shl, ch_bit)
-CH_LOGIC_FUNCTION_SHIFT(ch_shr, ch_op::shr, ch_bit)
+CH_LOGIC_FUNCTION_SHIFT(ch_bit, ch_shl, ch_op::shl)
+CH_LOGIC_FUNCTION_SHIFT(ch_bit, ch_shr, ch_op::shr)
 
 // reduce functions
 
