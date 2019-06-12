@@ -748,7 +748,7 @@ TEST_CASE("arithmetic", "[arithmetic]") {
     });
   }
   
-  SECTION("arithmetic", "[math]") {
+  SECTION("arithmetic", "[arithmetic]") {
     TEST([]()->ch_bool {
       ch_uint4 a(0x1), b(0x2);
       auto c = a + b;

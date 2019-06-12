@@ -64,17 +64,18 @@ TEST_CASE("float", "[float]") {
     });
   }
   
-  SECTION("arithmetic test", "[math]") {
+  SECTION("arithmetic", "[arithmetic]") {
     TEST([]()->ch_bool {
       ch_float32 x(0.5f), y(0.0f), z;
       z = ch_fmul<1>(x, y);      
+      //ch_println("{0}: clk={1}, rst={2}, z={3}", ch_now(), ch_clock(), ch_reset(), z);
       return (z == 0.0f);
     }, 1);
     
     TEST([]()->ch_bool {
       ch_float32 x(0.5f), y(0.5f), z;
       z = ch_fmul<1>(x, y);
-      ch_println("{0}: clk={1}, rst={2}, z={3}", ch_now(), ch_clock(), ch_reset(), z);
+      //ch_println("{0}: clk={1}, rst={2}, z={3}", ch_now(), ch_clock(), ch_reset(), z);
       return (z == 0x3e800000_h);
     }, 1);
 
@@ -134,7 +135,7 @@ TEST_CASE("float", "[float]") {
       sim.run(2+2*2*4);
       ch_toVerilog("fmultest.v", device);
       float ret(device.io.out);
-      //std::cout << "ret=" << ret << std::endl;
+      std::cout << "ret=" << ret << std::endl;
       return (0.25f == ret);
     });
   }

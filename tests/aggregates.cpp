@@ -108,7 +108,7 @@ using v2_3_t = ch_vec<ch_bit2, 3>;
 }
 
 TEST_CASE("aggregates", "[aggregates]") {
-  SECTION("structs", "[struct]") {
+  SECTION("structs", "[structs]") {
     TEST([]()->ch_bool {
       s1_t s1(1_h);
       s2_t s2(1_h, 0_h);
@@ -186,7 +186,7 @@ TEST_CASE("aggregates", "[aggregates]") {
     });
   } 
   
-  SECTION("unions", "[union]") {
+  SECTION("unions", "[unions]") {
     TEST([]()->ch_bool {
       u2_4_t u2 = {0_b4};
       u2.a = 1;
@@ -218,7 +218,7 @@ TEST_CASE("aggregates", "[aggregates]") {
     });
   }
   
-  SECTION("vectors", "[vector]") {
+  SECTION("vectors", "[vectors]") {
     TEST([]()->ch_bool {
       v2_2_t a{0, 0};
       a[0][1] = 1;
@@ -256,7 +256,7 @@ TEST_CASE("aggregates", "[aggregates]") {
     });
   }
   
-  SECTION("enums", "[enum]") {
+  SECTION("enums", "[enums]") {
     TEST([]()->ch_bool {
       my_enum a(my_enum::idle);
       return (0 == a.as_bit());

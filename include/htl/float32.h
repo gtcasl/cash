@@ -326,8 +326,12 @@ public:
   bool to_verilog(udf_vostream& out, udf_verilog mode) {
     if (mode != udf_verilog::body)
       return false;
-    out << "fp_mul __fp_mul$id(.clock($clk), .clk_en($io.en), "
-           ".dataa($io.lhs), .datab($io.rhs), .result($io.dst));";
+    out << "fp_mul __fp_mul$id("
+        << ".clock($clk), "
+        << ".clk_en(" << io.en << "), "
+        << ".dataa(" << io.lhs << "), "
+        << ".datab(" << io.rhs << "), "
+        << ".result(" << io.dst << "));";
     return true;
   }
 
@@ -359,8 +363,12 @@ public:
   bool to_verilog(udf_vostream& out, udf_verilog mode) {
     if (mode != udf_verilog::body)
       return false;
-    out << "fp_div __fp_div$id(.clock($clk), .clk_en($io.en), "
-           ".dataa($io.lhs), .datab($io.rhs), .result($io.dst));";
+    out << "fp_div __fp_div$id("
+        << ".clock($clk), "
+        << ".clk_en(" << io.en << "), "
+        << ".dataa(" << io.lhs << "), "
+        << ".datab(" << io.rhs << "), "
+        << ".result(" << io.dst << "));";
     return true;
   }
 

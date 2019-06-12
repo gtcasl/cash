@@ -30,7 +30,8 @@ inline constexpr bool is_bit_base_v = std::is_base_of_v<ch_bit<ch_width_v<T>>, T
 template <typename T, unsigned N = ch_width_v<T>>
 inline constexpr bool is_bit_convertible_v = std::is_constructible_v<ch_bit<N>, T>;
 
-template <typename T> class ch_reg;
+template <typename T> class ch_reg_impl;
+template <typename T> using ch_reg = std::add_const_t<ch_reg_impl<T>>;
 
 ///////////////////////////////////////////////////////////////////////////////
 

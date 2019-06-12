@@ -120,13 +120,15 @@ lnodeimpl* ch::internal::getOutputNode(const lnode& src) {
 ///////////////////////////////////////////////////////////////////////////////
 
 system_io_buffer::system_io_buffer(uint32_t size, const std::string& name)
-  : base(size, name)
-{}
+  : base(0, name) {
+  size_ = size;
+}
 
 system_io_buffer::system_io_buffer(const lnode& io)
-  : base(io.size(), io.name())
-  , io_(reinterpret_cast<ioportimpl*>(io.impl())->value())
-{}
+  : base(0, io.name())
+  , io_(reinterpret_cast<ioportimpl*>(io.impl())->value()) {
+  size_ = io.size();
+}
 
 const sdata_type& system_io_buffer::data() const {
   return *io_;

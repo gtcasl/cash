@@ -49,36 +49,36 @@ void endPipe(const lnode& ret);
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T>
-class ch_reg final : public std::add_const_t<T> {
+class ch_reg_impl final : public T {
 public:  
   using traits = logic_traits<ch_width_v<T>, ch_signed_v<T>, T, ch_system_t<T>>;
   using base = T;
 
-  ch_reg()
+  ch_reg_impl()
     : base(logic_buffer(createRegNode(ch_width_v<T>, idname<T>()))) {
     __next__ = std::make_unique<next_t>(getRegNextNode(get_lnode(*this)));
   }
 
   template <typename U0,
             CH_REQUIRE_0(std::is_convertible_v<U0, T>)>
-  explicit ch_reg(const U0& init0)
+  explicit ch_reg_impl(const U0& init0)
     : base(logic_buffer(createRegNode(to_lnode<T>(init0), idname<T>()))) {
     __next__ = std::make_unique<next_t>(getRegNextNode(get_lnode(*this)));
   }
 
   template <typename... Us,
             CH_REQUIRE_0(std::is_constructible_v<T, Us...>)>
-  explicit ch_reg(const Us&... inits)
+  explicit ch_reg_impl(const Us&... inits)
     : base(logic_buffer(createRegNode(get_lnode(T(inits...)), idname<T>()))) {
     __next__ = std::make_unique<next_t>(getRegNextNode(get_lnode(*this)));
   }
 
-  ch_reg(const ch_reg& other)
-    : base(copyRegNode(get_lnode(other), idname<T>())) {
+  ch_reg_impl(const ch_reg_impl& other)
+    : base(logic_buffer(copyRegNode(get_lnode(other), idname<T>()))) {
     __next__ = std::make_unique<next_t>(getRegNextNode(get_lnode(*this)));
   }
 
-  ch_reg(ch_reg&& other)
+  ch_reg_impl(ch_reg_impl&& other)
     : base(std::move(logic_accessor::move(other))) {
     __next__ = std::make_unique<next_t>(getRegNextNode(get_lnode(*this)));
   }
@@ -89,7 +89,7 @@ public:
 
 private:
 
-  ch_reg& operator=(ch_reg&&) = delete;
+  ch_reg_impl& operator=(ch_reg_impl&&) = delete;
 
   struct next_t {
     next_t(lnodeimpl* impl) : next(logic_buffer(impl)) {}

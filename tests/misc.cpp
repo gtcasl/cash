@@ -33,7 +33,7 @@ namespace {
 }
 
 TEST_CASE("misc", "[misc]") {
-  SECTION("structured binding", "[structured binding]") {
+  SECTION("sbind", "[sbind]") {
     TEST([]()->ch_bool {
       ch_int4 a(0_h), b(1_h);
       auto [x, y] = sbind(a, b);

@@ -840,6 +840,8 @@ bool verilogwriter::print_udf(std::ostream& out, udfimpl* node, udf_verilog mode
     dic[key] = os.str();
   };
 
+  dic["id"] = stringf("%d", node->id());
+
   for (auto& input : node->inputs()) {
     dict_add(input.impl()->name(), input.impl()->src(0).impl());
   }

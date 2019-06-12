@@ -200,7 +200,7 @@ TEST_CASE("htl", "[htl]") {
       return (y == 0xA_h);
     });
   }
-  SECTION("pri_enc", "[mux]") {
+  SECTION("pri_enc", "[pri_enc]") {
     TEST([]()->ch_bool {
       ch_bit4 k(0x0);
       auto y = ch_pri_enc(k);
