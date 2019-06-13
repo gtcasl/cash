@@ -1518,7 +1518,7 @@ void compiler::build_eval_list(std::vector<lnodeimpl*>& eval_list) {
   }
 
   if (!uninitialized_regs.empty()
-   && (platform::self().cflags() & cflags::check_reg)) {
+   && (platform::self().cflags() & cflags::check_reg_init)) {
     for (auto node : uninitialized_regs) {
       fprintf(stderr, "warning: uninitialized register %s\n", node->debug_info().c_str());
     }

@@ -85,23 +85,6 @@ using ch_tick = uint64_t;
 
 ///////////////////////////////////////////////////////////////////////////////
 
-#if !defined(__clang__)
-  #define CH_CUR_SLOC ch::internal::source_location(__builtin_FILE(), __builtin_LINE())
-#else
-  #define CH_CUR_SLOC ch::internal::source_location(__FILE__, __LINE__)
-#endif
-
-#define CH_SLOC const ch::internal::source_location& sloc = CH_CUR_SLOC
-
-template <typename T>
-struct sloc_proxy {
-    sloc_proxy(const T& value, CH_SLOC) : value(value), sloc(sloc) {}
-    const T& value;
-    source_location sloc;
-};
-
-///////////////////////////////////////////////////////////////////////////////
-
 bool register_source_location(uint32_t level);
 void release_source_location();
 

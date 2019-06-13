@@ -348,19 +348,18 @@ bool verilogwriter::print_decl(std::ostream& out,
     }
     visited.insert(node->id());
     if (!ref) {
+      out << ";";
       if (platform::self().cflags() & cflags::show_sloc) {
-        out << ";";
         auto& sloc = node->sloc();
         if (!sloc.empty()) {
           out << " // " << sloc;
         }
-        out << std::endl;
       } else {        
         for (auto other : node->ctx()->nodes()) {
           this->print_decl(out, other, visited, node);
-        }
-        out << ";" << std::endl;
+        }       
       }
+      out << std::endl;
     }
     return true;
   case type_bind:

@@ -30,7 +30,7 @@ regimpl::regimpl(context* ctx,
     enable_idx_ = this->add_src(enable);
   }
 
-  if ((platform::self().cflags() & cflags::reg_init)
+  if ((platform::self().cflags() & cflags::force_reg_init)
    && !init_data) {
     assert(!reset);
     reset = ctx->current_reset(sloc);
