@@ -417,7 +417,7 @@ public:
   }
 
   template <typename U,
-            CH_REQUIRE_0(std::is_integral_v<U> || is_bitvector_extended_type_v<U>)>
+            CH_REQUIRE(std::is_integral_v<U> || is_bitvector_extended_type_v<U>)>
   explicit bitvector(uint32_t size, U value)
     : bitvector(size) {
     this->operator=(value);
@@ -457,14 +457,14 @@ public:
   }
 
   template <typename U,
-            CH_REQUIRE_0(std::is_integral_v<U> && std::is_signed_v<U>)>
+            CH_REQUIRE(std::is_integral_v<U> && std::is_signed_v<U>)>
   bitvector& operator=(U value) {
     bv_assign<U>(words_, size_, value);
     return *this;
   }
 
   template <typename U,
-            CH_REQUIRE_0(std::is_integral_v<U> && std::is_unsigned_v<U>)>
+            CH_REQUIRE(std::is_integral_v<U> && std::is_unsigned_v<U>)>
   bitvector& operator=(U value) {
     bv_assign<U>(words_, size_, value);
     return *this;
@@ -602,7 +602,7 @@ public:
   }
 
   template <typename U,
-            CH_REQUIRE_0(std::is_integral_v<U> && std::is_unsigned_v<U>)>
+            CH_REQUIRE(std::is_integral_v<U> && std::is_unsigned_v<U>)>
   void read(uint32_t src_offset,
             U* out,
             uint32_t dst_offset,
@@ -611,7 +611,7 @@ public:
   }
 
   template <typename U,
-            CH_REQUIRE_0(std::is_integral_v<U> && std::is_unsigned_v<U>)>
+            CH_REQUIRE(std::is_integral_v<U> && std::is_unsigned_v<U>)>
   void write(uint32_t dst_offset,
              const U* in,
              uint32_t src_offset,

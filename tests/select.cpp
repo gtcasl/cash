@@ -521,7 +521,8 @@ TEST_CASE("conditionals", "[conditionals]") {
       return (b == 1101_b);
     });
     TEST1([](const ch_int8& t)->ch_bool {
-      ch_bit4 a = ch_slice<4>(t,1), b;
+      ch_bit4 a, b;
+      a = ch_slice<4>(t,1);
       __switch (a)
       __case(0) { b = 0010_b; }
       __case(1) { b = 0001_b; }

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "bit.h"
+#include "int.h"
 
 namespace ch {
 namespace internal {
@@ -15,15 +15,15 @@ void pushClockDomain(const lnode& clock, const lnode& reset, bool pos_edge);
 
 inline auto ch_clock() {
   CH_SOURCE_LOCATION(1);
-  return make_type<ch_bit<1>>(getCurrentClockNode());
+  return make_type<ch_bool>(getCurrentClockNode());
 }
 
 inline auto ch_reset() {
   CH_SOURCE_LOCATION(1);
-  return make_type<ch_bit<1>>(getCurrentResetNode());
+  return make_type<ch_bool>(getCurrentResetNode());
 }
 
-template <typename C, typename R = ch_bit<1>>
+template <typename C, typename R = ch_bool>
 void ch_pushcd(const C& clk, const R& reset = ch_reset(), bool pos_edge = true) {
   static_assert(is_bit_base_v<C>, "invalid type");
   static_assert(ch_width_v<C> == 1, "invalid size");
@@ -35,7 +35,7 @@ void ch_pushcd(const C& clk, const R& reset = ch_reset(), bool pos_edge = true) 
 
 void ch_popcd();
 
-template <typename Func, typename C, typename R = ch_bit<1>>
+template <typename Func, typename C, typename R = ch_bool>
 void ch_cd(Func&& func,
            const C& clk,
            const R& reset = ch_reset(),

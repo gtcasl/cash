@@ -57,7 +57,7 @@ struct TestAssign3 {
 
 TEST_CASE("basics", "[basics]") {
   SECTION("assign", "[assign]") {
-    TEST([]()->ch_bool {
+    TEST([]()->ch_bool {           
       ch_int4 a(14), b(1);
       auto d = a + b;
       b = 0;

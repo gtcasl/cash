@@ -674,6 +674,7 @@ TEST_CASE("arithmetic", "[arithmetic]") {
     TEST([]()->ch_bool {
       ch_int<64> a(0x200000000);
       auto c = ch_shr<65>(a, 33);
+      //ch_println("c={0}", c);
       return (c == 0x1);
     });
     TEST([]()->ch_bool {
@@ -846,6 +847,12 @@ TEST_CASE("arithmetic", "[arithmetic]") {
       ch_uint<65> a(0x1);
       ch_uint<66> b(0x2);
       auto c = b - a;
+      return (c == 1);
+    });
+    TEST([]()->ch_bool {
+      ch_uint<65> a(0x2);
+      ch_uint<32> b(0x1);
+      auto c = ch_sub<1>(a, b);
       return (c == 1);
     });
     TEST([]()->ch_bool {

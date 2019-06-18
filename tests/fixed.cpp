@@ -8,7 +8,7 @@ TEST_CASE("fixed", "[fixed]") {
     TEST([]()->ch_bool {
       ch_fixed<32, 16> a(0x8000), b(0x10000);
       auto c = a + b;
-      //ch_println("a={0}, b={1}, c={2}", a, b, c);
+      ch_println("a={0}, b={1}, c={2}", a, b, c);
       return (c == 0x18000);
     });
 

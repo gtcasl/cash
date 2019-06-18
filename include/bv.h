@@ -184,13 +184,13 @@ bool bv_is_ones(const T* in, uint32_t size) {
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename U, typename T,
-          CH_REQUIRE_0(std::is_integral_v<U>)>
+          CH_REQUIRE(std::is_integral_v<U>)>
 void bv_assign_scalar(T* dst, U value) {
   dst[0] = value;
 }
 
 template <typename U, typename T,
-          CH_REQUIRE_0(std::is_integral_v<U> && std::is_unsigned_v<U>)>
+          CH_REQUIRE(std::is_integral_v<U> && std::is_unsigned_v<U>)>
 void bv_assign_vector(T* dst, uint32_t size, U value) {
   static constexpr uint32_t WORD_SIZE = bitwidth_v<T>;
 
@@ -210,7 +210,7 @@ void bv_assign_vector(T* dst, uint32_t size, U value) {
 }
 
 template <typename U, typename T,
-          CH_REQUIRE_0(std::is_integral_v<U> && std::is_signed_v<U>)>
+          CH_REQUIRE(std::is_integral_v<U> && std::is_signed_v<U>)>
 void bv_assign_vector(T* dst, uint32_t size, U value) {
   static constexpr uint32_t WORD_SIZE = bitwidth_v<T>;
   static constexpr T        WORD_MAX  = std::numeric_limits<T>::max();
@@ -228,7 +228,7 @@ void bv_assign_vector(T* dst, uint32_t size, U value) {
 }
 
 template <typename U, typename T,
-          CH_REQUIRE_0(std::is_integral_v<U> && std::is_unsigned_v<U>)>
+          CH_REQUIRE(std::is_integral_v<U> && std::is_unsigned_v<U>)>
 void bv_assign(T* dst, uint32_t size, U value) {
   static constexpr uint32_t WORD_SIZE = bitwidth_v<T>;
   if constexpr (std::numeric_limits<U>::digits > 1) {
@@ -242,7 +242,7 @@ void bv_assign(T* dst, uint32_t size, U value) {
 }
 
 template <typename U, typename T,
-          CH_REQUIRE_0(std::is_integral_v<U> && std::is_signed_v<U>)>
+          CH_REQUIRE(std::is_integral_v<U> && std::is_signed_v<U>)>
 void bv_assign(T* dst, uint32_t size, U value) {
   static constexpr uint32_t WORD_SIZE = bitwidth_v<T>;
   static_assert(std::numeric_limits<U>::digits > 1, "inavlid size");
@@ -1076,46 +1076,29 @@ int bv_cmp(const T* lhs, uint32_t lhs_offset,
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T>
-class ClearBitAccessor {
-public:
-  ClearBitAccessor(const T* value, uint32_t size, uint32_t other_size)
-    : value_(value) {    
-    CH_DBGCHECK(size == other_size, "invalid size");
-  }
-
-  T get() const {
-    return value_[0];
-  }
-
-  T get(uint32_t index) const {
-    return value_[index];
-  }
-
-  bool need_resize() const {
-    return false;
-  }
-
-private:
-  const T* value_;
-};
-
-///////////////////////////////////////////////////////////////////////////////
-
-template <bool is_signed, bool is_resize, typename T>
+template <typename T, bool is_signed, bool is_resizable>
 class StaticBitAccessor {
 public:
   StaticBitAccessor(const T* value, uint32_t size, uint32_t other_size)
     : value_(value)
-    , size_(size)
-    , end_((size - 1) / bitwidth_v<T>) {
-    resize_ = (size < other_size);
+    , last_value_(0)
+    , last_index_(0)
+    , resize_(false) {
+    if constexpr (is_resizable) {
+      if (size < other_size) {
+        resize_ = true;
+        last_index_ = (size - 1) / bitwidth_v<T>;
+        if constexpr (is_signed) {
+          last_value_ = sign_ext(value[last_index_], size % bitwidth_v<T>);
+        }
+      }
+    }
   }
 
   T get() const {
-    if constexpr (is_resize && is_signed) {
+    if constexpr (is_resizable && is_signed) {
       if (resize_) {
-        return sign_ext(value_[0], size_);
+        return last_value_;
       } else {
         return value_[0];
       }
@@ -1125,78 +1108,23 @@ public:
   }
 
   T get(uint32_t index) const {
-    if constexpr (is_resize) {
+    if constexpr (is_resizable) {
       if (resize_) {
         if constexpr (is_signed) {
-          if (index < end_) {
+          if (index < last_index_) {
             return value_[index];
           } else {
-            if (index == end_) {
-              return sign_ext(value_[index], size_);
+            if (index == last_index_) {
+              return last_value_;
             } else {
-              return std::numeric_limits<T>::max();
+              return -(last_value_ >> (bitwidth_v<T> - 1));
             }
           }
         } else {
-          return (index <= end_) ? value_[index] : 0;
+          return (index <= last_index_) ? value_[index] : 0;
         }
       } else {
         return value_[index];
-      }
-    } else {
-      return value_[index];
-    }
-  }
-
-  bool need_resize() const {
-    return is_resize;
-  }
-
-private:  
-  const T* value_;  
-  uint32_t size_;
-  uint32_t end_;
-  bool resize_;
-};
-
-///////////////////////////////////////////////////////////////////////////////
-
-template <typename T, bool is_signed>
-class DefaultBitAccessor {
-public:
-  DefaultBitAccessor(const T* value, uint32_t size, uint32_t other_size)
-    : value_(value)
-    , size_(size)
-    , end_((size - 1) / bitwidth_v<T>) {
-    resize_ = (size < other_size);
-  }
-
-  T get() const {
-    if constexpr (is_signed) {
-      if (resize_) {
-        return sign_ext(value_[0], size_);
-      } else {
-        return value_[0];
-      }
-    } else {
-      return value_[0];
-    }
-  }
-
-  T get(uint32_t index) const {
-    if (resize_) {
-      if constexpr (is_signed) {
-        if (index < end_) {
-          return value_[index];
-        } else {
-          if (index == end_) {
-            return sign_ext(value_[index], size_);
-          } else {
-            return std::numeric_limits<T>::max();
-          }
-        }
-      } else {
-        return (index <= end_) ? value_[index] : 0;
       }
     } else {
       return value_[index];
@@ -1208,11 +1136,14 @@ public:
   }
 
 private:  
-  const T* value_;
-  uint32_t size_;
-  uint32_t end_;
+  const T* value_;    
+  T last_value_;
+  uint32_t last_index_;
   bool resize_;
 };
+
+template <typename T> using ClearBitAccessor = StaticBitAccessor<T, false, false>;
+template <typename T, bool is_signed> using DefaultBitAccessor = StaticBitAccessor<T, is_signed, true>;
 
 ///////////////////////////////////////////////////////////////////////////////
 

@@ -24,11 +24,7 @@ template <unsigned N> class ch_bit;
 template <unsigned N> class ch_int;
 template <unsigned N> class ch_uint;
 
-template <typename T>
-inline constexpr bool is_bit_base_v = std::is_base_of_v<ch_bit<ch_width_v<T>>, T>;
-
-template <typename T, unsigned N = ch_width_v<T>>
-inline constexpr bool is_bit_convertible_v = std::is_constructible_v<ch_bit<N>, T>;
+using ch_bool = ch_uint<1>;
 
 template <typename T> class ch_reg_impl;
 template <typename T> using ch_reg = std::add_const_t<ch_reg_impl<T>>;
@@ -150,6 +146,126 @@ public:
   static const auto& name(const T& obj) {
     return obj.__buffer().name();
   }
+
+  template <typename T, typename U>
+  static auto do_eq(const T& obj, const U& other) {
+    return obj.do_eq(other);
+  }
+
+  template <typename T, typename U>
+  static auto do_ne(const T& obj, const U& other) {
+    return obj.do_ne(other);
+  }
+
+  template <typename T>
+  static auto do_not(const T& obj) {
+    return obj.do_not();
+  }
+
+  template <typename T, typename U>
+  static auto do_andl(const T& obj, const U& other) {
+    return obj.do_andl(other);
+  }
+
+  template <typename T, typename U>
+  static auto do_orl(const T& obj, const U& other) {
+    return obj.do_orl(other);
+  }
+
+  template <typename R, typename T>
+  static auto do_inv(const T& obj) {
+    return obj.template do_inv<R>();
+  }
+
+  template <typename R, typename T, typename U>
+  static auto do_and(const T& obj, const U& other) {
+    return obj.template do_and<R>(other);
+  }
+
+  template <typename R, typename T, typename U>
+  static auto do_or(const T& obj, const U& other) {
+    return obj.template do_or<R>(other);
+  }
+
+  template <typename R, typename T, typename U>
+  static auto do_xor(const T& obj, const U& other) {
+    return obj.template do_xor<R>(other);
+  }
+
+  template <typename R, typename T, typename U>
+  static auto do_shl(const T& obj, const U& other) {
+    return obj.template do_shl<R>(other);
+  }
+
+  template <typename R, typename T, typename U>
+  static auto do_shr(const T& obj, const U& other) {
+    return obj.template do_shr<R>(other);
+  }
+
+  template <typename T>
+  static auto do_andr(const T& obj) {
+    return obj.do_andr();
+  }
+
+  template <typename T>
+  static auto do_orr(const T& obj) {
+    return obj.do_orr();
+  }
+
+  template <typename T>
+  static auto do_xorr(const T& obj) {
+    return obj.do_xorr();
+  }
+
+  template <typename T, typename U>
+  static auto do_lt(const T& obj, const U& other) {
+    return obj.do_lt(other);
+  }
+
+  template <typename T, typename U>
+  static auto do_le(const T& obj, const U& other) {
+    return obj.do_le(other);
+  }
+
+  template <typename T, typename U>
+  static auto do_gt(const T& obj, const U& other) {
+    return obj.do_gt(other);
+  }
+
+  template <typename T, typename U>
+  static auto do_ge(const T& obj, const U& other) {
+    return obj.do_ge(other);
+  }
+
+  template <typename R, typename T>
+  static auto do_neg(const T& obj) {
+    return obj.template do_neg<R>();
+  }
+
+  template <typename R, typename T, typename U>
+  static auto do_add(const T& obj, const U& other) {
+    return obj.template do_add<R>(other);
+  }
+
+  template <typename R, typename T, typename U>
+  static auto do_sub(const T& obj, const U& other) {
+    return obj.template do_sub<R>(other);
+  }
+
+  template <typename R, typename T, typename U>
+  static auto do_mul(const T& obj, const U& other) {
+    return obj.template do_mul<R>(other);
+  }
+
+  template <typename R, typename T, typename U>
+  static auto do_div(const T& obj, const U& other) {
+    return obj.template do_div<R>(other);
+  }
+
+  template <typename R, typename T, typename U>
+  static auto do_mod(const T& obj, const U& other) {
+    return obj.template do_mod<R>(other);
+  }
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -168,11 +284,17 @@ auto get_lnode(const T& obj) {
   return logic_accessor::buffer(obj);
 }
 
-template <typename R, typename T>
+template <typename R, bool preserve = false, typename T>
 auto to_lnode(const T& obj) {
   if constexpr (is_logic_type_v<T>) {
-    if constexpr (ch_width_v<T> <= ch_width_v<R>) {
-      return get_lnode(obj);
+    if constexpr (preserve || ch_width_v<T> <= ch_width_v<R>) {
+      if constexpr (is_object_type_v<R>
+                 && ch_width_v<T> < ch_width_v<R>
+                 && ch_signed_v<T> != ch_signed_v<R>) {
+        return lnode(createOpNode(ch_op::pad, ch_width_v<R>, ch_signed_v<T>, get_lnode(obj)));
+      } else {
+        return get_lnode(obj);
+      }
     } else {
       lnode tmp(ch_width_v<R>, "slice");
       tmp.write(0, get_lnode(obj), 0, ch_width_v<R>);
@@ -180,8 +302,16 @@ auto to_lnode(const T& obj) {
     }
   } else
   if constexpr (is_system_type_v<T>) {
-    if constexpr (ch_width_v<T> <= ch_width_v<R>) {
-      return lnode(get_snode(obj));
+    if constexpr (preserve || ch_width_v<T> <= ch_width_v<R>) {
+      if constexpr (is_object_type_v<R>
+                 && ch_width_v<T> < ch_width_v<R>
+                 && ch_signed_v<T> != ch_signed_v<R>) {
+        sdata_type tmp(ch_width_v<R>);
+        bv_pad<ch_signed_v<T>>(tmp.words(), ch_width_v<R>, system_accessor::data(obj).words(), ch_width_v<T>);
+        return lnode(tmp);
+      } else {
+        return lnode(get_snode(obj));
+      }
     } else {
       sdata_type tmp(ch_width_v<R>);
       tmp.copy(0, get_snode(obj), 0, ch_width_v<R>);
@@ -189,7 +319,13 @@ auto to_lnode(const T& obj) {
     }
   } else
   if constexpr (is_scbit_convertible_v<T, ch_width_v<R>>) {
-    return lnode(get_snode(ch_scbit<ch_width_v<R>>(obj)));
+    if constexpr (preserve
+               && ch_width_v<T> < ch_width_v<R>
+               && ch_signed_v<T> == ch_signed_v<R>) {
+      return lnode(get_snode(ch_scbit<ch_width_v<T>>(obj)));
+    } else {
+      return lnode(get_snode(ch_scbit<ch_width_v<R>>(obj)));
+    }
   } else {
     return get_lnode(R(obj));
   }
@@ -197,7 +333,21 @@ auto to_lnode(const T& obj) {
 
 template <unsigned N, typename T>
 auto to_lnode(const T& obj) {
-  return to_lnode<ch_bit<N>, T>(obj);
+  return to_lnode<ch_bit<N>>(obj);
+}
+
+template <typename R, typename T>
+auto logic_operand(const T& obj) {
+  static_assert(!is_logic_type_v<T>);
+  if constexpr (is_system_type_v<T>) {
+    return size_cast_t<R, ch_width_v<T>>(logic_buffer(get_snode(obj)));
+  } else
+  if constexpr (std::is_integral_v<T>) {
+    static const auto N = std::min(ch_width_v<T>, ch_width_v<R>);
+    return size_cast_t<R, N>(logic_buffer(get_snode(ch_scbit<N>(obj))));
+  } else {
+    return R(obj);
+  }
 }
 
 template <typename T>
@@ -205,17 +355,43 @@ auto make_type(const lnode& node) {
   return std::add_const_t<T>(logic_buffer(node.impl()));
 }
 
-template <ch_op op, bool Signed, typename R, typename A, typename DA = A>
+template <ch_op op, bool Signed, typename R, typename A>
 auto make_logic_op(const A& a) {
-  auto node = createOpNode(op, ch_width_v<R>, Signed, to_lnode<DA>(a));
-  return make_type<R>(node);
+  if (CH_OP_IS_BOOLEAN(op)) {
+    return make_type<R>(createOpNode(op, ch_width_v<R>, Signed, to_lnode<R, true>(a)));
+  } else {
+    return make_type<R>(createOpNode(op, ch_width_v<R>, Signed, to_lnode<R, false>(a)));
+  }
 }
 
-template <ch_op op, bool Signed, typename R, typename A, typename B, typename DA = A, typename DB = B>
+template <ch_op op, bool Signed, typename R, typename A, typename B>
 auto make_logic_op(const A& a, const B& b) {
-  auto node = createOpNode(op, ch_width_v<R>, Signed, to_lnode<DA>(a), to_lnode<DB>(b));
-  return make_type<R>(node);
+  if constexpr (op_flags::shift == CH_OP_CLASS(op)) {
+    return make_type<R>(createOpNode(
+        op, ch_width_v<R>, Signed, to_lnode<B, true>(a), to_lnode<ch_logic_t<B>, true>(b)));
+  } else {
+    return make_type<R>(createOpNode(
+        op, ch_width_v<R>, Signed, to_lnode<B, true>(a), to_lnode<A, true>(b)));
+  }
 }
+
+template <typename R, typename T>
+using logic_op_ret = std::conditional_t<is_object_type_v<T>
+                                     && ((ch_width_v<T> > ch_width_v<R>)
+                                      || (ch_width_v<T> == ch_width_v<R> && ch_signed_v<T>)),
+                                        ch_logic_t<T>, R>;
+
+template <unsigned R, typename T>
+using logic_func_ret = std::conditional_t<R, size_cast_t<T, R>, T>;
+
+template <typename T> class ch_bit_base;
+
+template <typename T>
+inline constexpr bool is_bit_base_v = is_logic_type_v<T>
+              && std::is_base_of_v<ch_bit_base<ch_logic_t<T>>, ch_logic_t<T>>;
+
+template <typename T, unsigned N = ch_width_v<T>>
+inline constexpr bool is_bit_convertible_v = std::is_constructible_v<ch_bit<N>, T>;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -223,12 +399,12 @@ auto make_logic_op(const A& a, const B& b) {
   template <typename __R> \
   auto as() const { \
   static_assert(ch::internal::is_logic_type_v<__R>, "invalid type"); \
-    return ch::internal::logic_accessor::cast<std::add_const_t<__R>>(*this); \
+    return ch::internal::logic_accessor::cast<std::add_const_t<__R>>((const type&)*this); \
   } \
   template <typename __R> \
   auto as() { \
     static_assert(ch::internal::is_logic_type_v<__R>, "invalid type"); \
-    return ch::internal::logic_accessor::cast<__R>(*this); \
+    return ch::internal::logic_accessor::cast<__R>((type&)*this); \
   } \
   auto as_bit() const { \
     return this->as<ch_bit<type::traits::bitwidth>>(); \
@@ -262,309 +438,124 @@ auto make_logic_op(const A& a, const B& b) {
   } \
   auto ref() { \
     CH_SOURCE_LOCATION(1); \
-    return ch::internal::logic_accessor::sliceref<type>(*this, 0); \
+    return ch::internal::logic_accessor::sliceref<type>((type&)*this, 0); \
   } \
   auto clone() const { \
     CH_SOURCE_LOCATION(1); \
-    return ch::internal::logic_accessor::clone(*this); \
+    return ch::internal::logic_accessor::clone((const type&)*this); \
   }
 
-#define CH_LOGIC_OPERATOR_IMPL(type, op, opcode, rtype) \
-  friend auto op(const type& lhs, const type& rhs) { \
+#define CH_LOGIC_OPERATOR1_IMPL(type, opcode, op, method) \
+  friend auto op(const sloc_proxy<type>& self) { \
     CH_SOURCE_LOCATION(1); \
-    return make_logic_op<opcode, ch_signed_v<type>, rtype>(lhs, rhs); \
-  } \
-  template <typename U, \
-            CH_REQUIRE_0(is_strictly_constructible_v<type, U>)> \
-  friend auto op(const type& lhs, const U& rhs) { \
-    CH_SOURCE_LOCATION(1); \
-    return make_logic_op<opcode, ch_signed_v<type>, rtype, type, U, type, type>(lhs, rhs); \
-  } \
-  template <typename U, \
-            CH_REQUIRE_0(is_strictly_constructible_v<type, U>)> \
-  friend auto op(const U& lhs, const type& rhs) { \
-    CH_SOURCE_LOCATION(1); \
-    return make_logic_op<opcode, ch_signed_v<type>, rtype, U, type, type, type>(lhs, rhs); \
-  }
-
-#define CH_LOGIC_ASSIGN_IMPL(type, op, opcode, rtype) \
-  auto op(const type& rhs) { \
-    CH_SOURCE_LOCATION(1); \
-    auto lhs = reinterpret_cast<const type*>(this)->clone(); \
-    return make_logic_op<opcode, ch_signed_v<type>, rtype>(lhs, rhs); \
-  } \
-  template <unsigned M, CH_REQUIRE_0(M < N)> \
-  auto op(const type<M>& rhs) { \
-    CH_SOURCE_LOCATION(1); \
-    auto lhs = reinterpret_cast<const type*>(this)->clone(); \
-    return make_logic_op<opcode, ch_signed_v<type>, rtype>(lhs, rhs); \
-  }
-
-#define CH_LOGIC_FUNCTION_EQUALITY(type, func, op) \
-  template <unsigned N, unsigned M = N> \
-  auto func(const type<N>& lhs, const type<M>& rhs) { \
-    CH_SOURCE_LOCATION(1); \
-    return make_logic_op<op, false, ch_bit<1>>(lhs, rhs); \
-  } \
-  template <unsigned N, typename U, \
-            CH_REQUIRE_0(is_strictly_constructible_v<type<ch_width_v<U>>, U>)> \
-  auto func(const type<N>& lhs, const U& rhs) { \
-    CH_SOURCE_LOCATION(1); \
-    return make_logic_op<op, false, ch_bit<1>, type<N>, U, type<N>, type<ch_width_v<U>>>(lhs, rhs); \
-  } \
-  template <unsigned N, typename U, \
-            CH_REQUIRE_0(is_strictly_constructible_v<type<ch_width_v<U>>, U>)> \
-  auto func(const U& lhs, const type<N>& rhs) { \
-    CH_SOURCE_LOCATION(1); \
-    return make_logic_op<op, false, ch_bit<1>, U, type<N>, type<ch_width_v<U>>, type<N>>(lhs, rhs); \
-  }
-
-#define CH_LOGIC_FUNCTION_RELATIONAL(type, func, op) \
-  CH_LOGIC_FUNCTION_EQUALITY(type, func, op)
-
-#define CH_LOGIC_FUNCTION_BITWISE1(type, func, op) \
-  template <unsigned R = 0, unsigned N> \
-  auto func(const type<N>& in) { \
-    CH_SOURCE_LOCATION(1); \
-    if constexpr (R && R < N) { \
-      return make_logic_op<op, ch_signed_v<type<N>>, type<R>, type<N>, type<R>>(in); \
+    if constexpr (CH_OP_IS_BOOLEAN(opcode)) { \
+      return ch::internal::logic_accessor::method(self.value); \
     } else { \
-      return make_logic_op<op, ch_signed_v<type<N>>, \
-                std::conditional_t<(R != 0), type<R>, type<N>>>(in); \
+      return ch::internal::logic_accessor::method<type>(self.value); \
     } \
   }
 
-#define CH_LOGIC_FUNCTION_BITWISE2(type, func, op) \
-  template <unsigned R = 0, unsigned N, unsigned M = N> \
-  auto func(const type<N>& lhs, const type<M>& rhs) { \
-    CH_SOURCE_LOCATION(1); \
-   if constexpr (R && R < N && R < M) { \
-      return make_logic_op<op, ch_signed_v<type<N>>, type<R>, type<N>, type<M>, type<R>, type<R>>(lhs, rhs); \
-    } else \
-    if constexpr (R && R < N) { \
-      return make_logic_op<op, ch_signed_v<type<N>>, type<R>, type<N>, type<M>, type<R>, type<M>>(lhs, rhs); \
-    } else \
-    if constexpr (R && R < M) { \
-      return make_logic_op<op, ch_signed_v<type<N>>, type<R>, type<N>, type<M>, type<N>, type<R>>(lhs, rhs); \
-    } else { \
-      return make_logic_op<op, ch_signed_v<type<N>>, \
-                         std::conditional_t<(R != 0), type<R>, type<std::max(N, M)>>>(lhs, rhs); \
-    } \
-  } \
-  template <unsigned R = 0, unsigned N, typename U, \
-            CH_REQUIRE_0(is_strictly_constructible_v<type<ch_width_v<U>>, U>)> \
-  auto func(const type<N>& lhs, const U& rhs) { \
-    CH_SOURCE_LOCATION(1); \
-    if constexpr (R && R < N && R < ch_width_v<U>) { \
-      return make_logic_op<op, ch_signed_v<type<N>>, type<R>, type<N>, U, type<R>, type<R>>(lhs, rhs); \
-    } else \
-    if constexpr (R && R < N) { \
-      return make_logic_op<op, ch_signed_v<type<N>>, type<R>, type<N>, U, type<R>, type<ch_width_v<U>>>(lhs, rhs); \
-    } else \
-    if constexpr (R && R < ch_width_v<U>) { \
-      return make_logic_op<op, ch_signed_v<type<N>>, type<R>, type<N>, U, type<N>, type<R>>(lhs, rhs); \
-    } else { \
-      return make_logic_op<op, ch_signed_v<type<N>>, \
-                         std::conditional_t<(R != 0), type<R>, type<std::max(N, ch_width_v<U>)>>, \
-                         type<N>, U, type<N>, type<ch_width_v<U>>>(lhs, rhs); \
-    } \
-  } \
-  template <unsigned R = 0, typename U, unsigned N, \
-            CH_REQUIRE_0(is_strictly_constructible_v<type<ch_width_v<U>>, U>)> \
-  auto func(const U& lhs, const type<N>& rhs) { \
-    CH_SOURCE_LOCATION(1); \
-    if constexpr (R && R < ch_width_v<U> && R < N) { \
-      return make_logic_op<op, ch_signed_v<type<N>>, type<R>, U, type<N>, type<R>, type<R>>(lhs, rhs); \
-    } else \
-    if constexpr (R && R < ch_width_v<U>) { \
-      return make_logic_op<op, ch_signed_v<type<N>>, type<R>, U, type<N>, type<R>, type<N>>(lhs, rhs); \
-    } else \
-    if constexpr (R && R < N) { \
-      return make_logic_op<op, ch_signed_v<type<N>>, type<R>, U, type<N>, type<ch_width_v<U>>, type<R>>(lhs, rhs); \
-    } else { \
-      return make_logic_op<op, ch_signed_v<type<N>>, \
-                         std::conditional_t<(R != 0), type<R>, type<std::max(N, ch_width_v<U>)>>, \
-                         U, type<N>, type<ch_width_v<U>>, type<N>>(lhs, rhs); \
-    } \
-  }
-
-#define CH_LOGIC_FUNCTION_SHIFT(type, func, op) \
-  template <unsigned R = 0, unsigned N, unsigned M = N> \
-  auto func(const type<N>& lhs, const type<M>& rhs) { \
-    CH_SOURCE_LOCATION(1); \
-    return make_logic_op<op, ch_signed_v<type<N>>, \
-                         std::conditional_t<(R != 0), type<R>, type<N>>>(lhs, rhs); \
-  } \
-  template <unsigned R = 0, unsigned N, typename U, \
-            CH_REQUIRE_0(is_strictly_constructible_v<ch_bit<ch_width_v<U>>, U>)> \
-  auto func(const type<N>& lhs, const U& rhs) { \
-    CH_SOURCE_LOCATION(1); \
-    return make_logic_op<op, ch_signed_v<type<N>>, \
-                         std::conditional_t<(R != 0), type<R>, type<N>>, \
-                         type<N>, U, type<N>, ch_logic_t<U>>(lhs, rhs); \
-  } \
-  template <unsigned R = 0, typename U, unsigned N, \
-            CH_REQUIRE_0(is_strictly_constructible_v<ch_bit<ch_width_v<U>>, U>)> \
-  auto func(const U& lhs, const type<N>& rhs) { \
-    CH_SOURCE_LOCATION(1); \
-    return make_logic_op<op, ch_signed_v<U>, \
-                         std::conditional_t<(R != 0), type<R>, ch_logic_t<U>>, \
-                         U, type<N>, ch_logic_t<U>, type<N>>(lhs, rhs); \
-  }
-
-#define CH_LOGIC_FUNCTION_ARITHMETIC1(type, func, op) \
-  CH_LOGIC_FUNCTION_BITWISE1(type, func, op)
-
-#define CH_LOGIC_FUNCTION_ARITHMETIC2(type, func, op) \
-  CH_LOGIC_FUNCTION_BITWISE2(type, func, op)
-
-#define CH_LOGIC_FUNCTION_ARITHMETIC3(type, func, op) \
-  template <unsigned R = 0, unsigned N, unsigned M = N> \
-  auto func(const type<N>& lhs, const type<M>& rhs) { \
-    CH_SOURCE_LOCATION(1); \
-    return make_logic_op<op, ch_signed_v<type<N>>, \
-                         std::conditional_t<(R != 0), type<R>, type<std::max(N, M)>>>(lhs, rhs); \
-  } \
-  template <unsigned R = 0, unsigned N, typename U, \
-            CH_REQUIRE_0(is_strictly_constructible_v<type<ch_width_v<U>>, U>)> \
-  auto func(const type<N>& lhs, const U& rhs) { \
-    CH_SOURCE_LOCATION(1); \
-    return make_logic_op<op, ch_signed_v<type<N>>, \
-                         std::conditional_t<(R != 0), type<R>, type<std::max(N, ch_width_v<U>)>>, \
-                         type<N>, U, type<N>, type<ch_width_v<U>>>(lhs, rhs); \
-  } \
-  template <unsigned R = 0, typename U, unsigned N, \
-            CH_REQUIRE_0(is_strictly_constructible_v<type<ch_width_v<U>>, U>)> \
-  auto func(const U& lhs, const type<N>& rhs) { \
-    CH_SOURCE_LOCATION(1); \
-    return make_logic_op<op, ch_signed_v<type<N>>, \
-                         std::conditional_t<(R != 0), type<R>, type<std::max(N, ch_width_v<U>)>>, \
-                         U, type<N>, type<ch_width_v<U>>, type<N>>(lhs, rhs); \
-  }
-
-#define CH_LOGIC_OP_EQUALITY(type) \
-  CH_LOGIC_OPERATOR_IMPL(type, operator==, ch_op::eq, ch_bit<1>) \
-  CH_LOGIC_OPERATOR_IMPL(type, operator!=, ch_op::ne, ch_bit<1>)
-
-#define CH_LOGIC_OP_LOGICAL(type) \
-  friend auto operator!(const type& self) { \
-    CH_SOURCE_LOCATION(1); \
-    return make_logic_op<ch_op::notl, false, ch_bit<1>>(self); \
-  } \
-  CH_LOGIC_OPERATOR_IMPL(type, operator&&, ch_op::andl, ch_bit<1>) \
-  CH_LOGIC_OPERATOR_IMPL(type, operator||, ch_op::orl, ch_bit<1>)
-
-#define CH_LOGIC_OP_BITWISE(type) \
-  friend auto operator~(const type& self) { \
-    CH_SOURCE_LOCATION(1); \
-    return make_logic_op<ch_op::inv, false, type>(self); \
-  } \
-  CH_LOGIC_OPERATOR_IMPL(type, operator&, ch_op::andb, type) \
-  CH_LOGIC_OPERATOR_IMPL(type, operator|, ch_op::orb, type) \
-  CH_LOGIC_OPERATOR_IMPL(type, operator^, ch_op::xorb, type) \
-  CH_LOGIC_ASSIGN_IMPL(type, operator&=, ch_op::andb, type) \
-  CH_LOGIC_ASSIGN_IMPL(type, operator|=, ch_op::orb, type) \
-  CH_LOGIC_ASSIGN_IMPL(type, operator^=, ch_op::xorb, type)
-
-#define CH_LOGIC_OP_SHIFT(type) \
+#define CH_LOGIC_OPERATOR2_IMPL(type, opcode, op, method) \
   template <typename U, \
-            CH_REQUIRE_0(std::is_convertible_v<U, ch_bit<ch_width_v<U>>>)> \
-  friend auto operator<<(const type& lhs, const U& rhs) { \
-    static_assert(ch_width_v<U> <= 32, "invalid size"); \
+            CH_REQUIRE(is_bit_base_v<U>)> \
+  friend auto op(const sloc_proxy<type>& lhs, const U& rhs) { \
     CH_SOURCE_LOCATION(1); \
-    return make_logic_op<ch_op::shl, \
-                         ch_signed_v<type>, \
-                         type, \
-                         type, \
-                         U, \
-                         type, \
-                         ch_bit<ch_width_v<U>>>(lhs, rhs); \
+    if constexpr (CH_OP_IS_BOOLEAN(opcode)) { \
+      return ch::internal::logic_accessor::method(lhs.value, rhs); \
+    } else { \
+      return ch::internal::logic_accessor::method<logic_op_ret<type, U>>(lhs.value, rhs); \
+    } \
   } \
   template <typename U, \
-            CH_REQUIRE_0(std::is_convertible_v<U, ch_bit<ch_width_v<U>>>)> \
-  friend auto operator>>(const type& lhs, const U& rhs) { \
-    static_assert(ch_width_v<U> <= 32, "invalid size"); \
+            CH_REQUIRE(!is_bit_base_v<U>)> \
+  friend auto op(const sloc_proxy<type>& lhs, const U& rhs) { \
     CH_SOURCE_LOCATION(1); \
-    return make_logic_op<ch_op::shr, \
-                         ch_signed_v<type>, \
-                         type, \
-                         type, \
-                         U, \
-                         type, \
-                         ch_bit<ch_width_v<U>>>(lhs, rhs); \
+    static_assert(is_strictly_constructible_v<type, U> || is_system_type_v<U>, "invalid type"); \
+    if constexpr (CH_OP_IS_BOOLEAN(opcode)) { \
+      return ch::internal::logic_accessor::method(lhs.value, rhs); \
+    } else { \
+      return ch::internal::logic_accessor::method<logic_op_ret<type, U>>(lhs.value, rhs); \
+    } \
   } \
-  template <unsigned M> \
-  auto operator<<=(const type<M>& rhs) { \
-    static_assert(M <= 32, "invalid size"); \
+  template <typename U, \
+            CH_REQUIRE(!is_bit_base_v<U>)> \
+  friend auto op(const U& lhs, const sloc_proxy<type>& rhs) { \
     CH_SOURCE_LOCATION(1); \
-    auto lhs = reinterpret_cast<const type*>(this)->clone(); \
-    return make_logic_op<ch_op::shl, ch_signed_v<type>, type>(lhs, rhs); \
-  } \
-  template <unsigned M> \
-  auto operator>>=(const type<M>& rhs) { \
-    static_assert(M <= 32, "invalid size"); \
-    CH_SOURCE_LOCATION(1); \
-    auto lhs = reinterpret_cast<const type*>(this)->clone(); \
-    return make_logic_op<ch_op::shr, ch_signed_v<type>, type>(lhs, rhs); \
-  } \
-  auto operator<<=(uint32_t rhs) { \
-    CH_SOURCE_LOCATION(1); \
-    auto lhs = reinterpret_cast<const type*>(this)->clone(); \
-    return make_logic_op<ch_op::shl, \
-                         ch_signed_v<type>, \
-                         type, \
-                         type, \
-                         uint32_t, \
-                         type, \
-                         ch_uint<32>>(lhs, rhs, rhs); \
-  } \
-  auto operator>>=(uint32_t& rhs) { \
-    CH_SOURCE_LOCATION(1); \
-    auto lhs = reinterpret_cast<const type*>(this)->clone(); \
-    return make_logic_op<ch_op::shr, \
-                         ch_signed_v<type>, \
-                         type, \
-                         type, \
-                         uint32_t, \
-                         type, \
-                         ch_uint<32>>(lhs, rhs, rhs); \
+    static_assert(is_strictly_constructible_v<type, U> || is_system_type_v<U>, "invalid type"); \
+    auto _lhs = logic_operand<type>(lhs); \
+    if constexpr (CH_OP_IS_BOOLEAN(opcode)) { \
+      return ch::internal::logic_accessor::method(_lhs, rhs.value); \
+    } else { \
+      return ch::internal::logic_accessor::method<logic_op_ret<type, U>>(_lhs, rhs.value); \
+    } \
   }
 
+#define CH_LOGIC_FUNCTION1_DECL(func) \
+  template <unsigned R = 0, typename T> auto func(const sloc_proxy<T>& self);
 
-#define CH_LOGIC_OP_RELATIONAL(type) \
-  CH_LOGIC_OPERATOR_IMPL(type, operator<, ch_op::lt, ch_bit<1>) \
-  CH_LOGIC_OPERATOR_IMPL(type, operator<=, ch_op::le, ch_bit<1>) \
-  CH_LOGIC_OPERATOR_IMPL(type, operator>, ch_op::gt, ch_bit<1>) \
-  CH_LOGIC_OPERATOR_IMPL(type, operator>=, ch_op::ge, ch_bit<1>)
-
-#define  CH_LOGIC_OP_ARITHMETIC(type) \
-  friend auto operator-(const type& self) { \
+#define CH_LOGIC_FUNCTION1_IMPL(type, opcode, func, method) \
+  template <unsigned R = 0> \
+  friend auto func(const sloc_proxy<type>& self) { \
     CH_SOURCE_LOCATION(1); \
-    return make_logic_op<ch_op::neg, ch_signed_v<type>, type>(self); \
+    if constexpr (CH_OP_IS_BOOLEAN(opcode)) { \
+      return ch::internal::logic_accessor::method(self.value); \
+    } else { \
+      return ch::internal::logic_accessor::method<logic_func_ret<R, type>>(self.value); \
+    } \
+  }
+
+#define CH_LOGIC_FUNCTION2_DECL(func) \
+  template <unsigned R = 0, typename T> auto func(const sloc_proxy<T>& lhs, const sloc_proxy<T>& rhs); \
+  template <unsigned R = 0, typename T, typename U> auto func(const sloc_proxy<T>& lhs, const U& rhs); \
+  template <unsigned R = 0, typename T, typename U> auto func(const U& lhs, const sloc_proxy<T>& rhs);
+
+#define CH_LOGIC_FUNCTION2_IMPL(type, opcode, func, method) \
+  template <unsigned R = 0, typename U, \
+            CH_REQUIRE(is_bit_base_v<U>)> \
+  friend auto func(const sloc_proxy<type>& lhs, const U& rhs) { \
+    CH_SOURCE_LOCATION(1); \
+    if constexpr (CH_OP_IS_BOOLEAN(opcode)) { \
+      return ch::internal::logic_accessor::method(lhs.value, rhs); \
+    } else { \
+      return ch::internal::logic_accessor::method<logic_func_ret<R, type>>(lhs.value, rhs); \
+    } \
   } \
-  CH_LOGIC_OPERATOR_IMPL(type, operator+, ch_op::add, type) \
-  CH_LOGIC_OPERATOR_IMPL(type, operator-, ch_op::sub, type) \
-  CH_LOGIC_OPERATOR_IMPL(type, operator*, ch_op::mul, type) \
-  CH_LOGIC_OPERATOR_IMPL(type, operator/, ch_op::div, type) \
-  CH_LOGIC_OPERATOR_IMPL(type, operator%, ch_op::mod, type) \
-  CH_LOGIC_ASSIGN_IMPL(type, operator+=, ch_op::add, type) \
-  CH_LOGIC_ASSIGN_IMPL(type, operator-=, ch_op::sub, type) \
-  CH_LOGIC_ASSIGN_IMPL(type, operator*=, ch_op::mul, type) \
-  CH_LOGIC_ASSIGN_IMPL(type, operator/=, ch_op::div, type) \
-  CH_LOGIC_ASSIGN_IMPL(type, operator%=, ch_op::mod, type)
+  template <unsigned R = 0, typename U, \
+            CH_REQUIRE(!is_bit_base_v<U>)> \
+  friend auto func(const sloc_proxy<type>& lhs, const U& rhs) { \
+    CH_SOURCE_LOCATION(1); \
+    static_assert(is_strictly_constructible_v<type, U> || is_system_type_v<U>, "invalid type"); \
+    if constexpr (CH_OP_IS_BOOLEAN(opcode)) { \
+      return ch::internal::logic_accessor::method(lhs.value, rhs); \
+    } else { \
+      return ch::internal::logic_accessor::method<logic_func_ret<R, type>>(lhs.value, rhs); \
+    } \
+  } \
+  template <unsigned R = 0, typename U, \
+            CH_REQUIRE(!is_bit_base_v<U>)> \
+  friend auto func(const U& lhs, const sloc_proxy<type>& rhs) { \
+    CH_SOURCE_LOCATION(1); \
+    static_assert(is_strictly_constructible_v<type, U> || is_system_type_v<U>, "invalid type"); \
+    auto _lhs = logic_operand<type, U>(lhs); \
+    if constexpr (CH_OP_IS_BOOLEAN(opcode)) { \
+      return ch::internal::logic_accessor::method(_lhs, rhs.value); \
+    } else { \
+      return ch::internal::logic_accessor::method<logic_func_ret<R, type>>(_lhs, rhs.value); \
+    } \
+  }
 
 #define CH_LOGIC_OP_SLICE(type) \
   template <typename R> \
   auto slice(size_t start = 0) const { \
-    static_assert(ch_width_v<R> <= N, "invalid size"); \
-    assert(start + ch_width_v<R> <= N); \
-    auto& self = reinterpret_cast<const type&>(*this); \
-    return logic_accessor::slice<R>(self, start); \
+    static_assert(ch_width_v<R> <= ch_width_v<type>, "invalid size"); \
+    assert(start + ch_width_v<R> <= ch_width_v<type>); \
+    auto self = reinterpret_cast<const type*>(this); \
+    return logic_accessor::slice<R>(*self, start); \
   } \
   template <unsigned M> \
   auto slice(size_t start = 0) const { \
     CH_SOURCE_LOCATION(1); \
-    return this->slice<type<M>>(start); \
+    return this->slice<size_cast_t<type,M>>(start); \
   } \
   template <typename R> \
   auto aslice(size_t start = 0) const { \
@@ -574,20 +565,20 @@ auto make_logic_op(const A& a, const B& b) {
   template <unsigned M> \
   auto aslice(size_t start = 0) const { \
     CH_SOURCE_LOCATION(1); \
-    return this->aslice<type<M>>(start); \
+    return this->aslice<size_cast_t<type,M>>(start); \
   } \
   template <typename R> \
   auto sliceref(size_t start = 0) { \
-    static_assert(ch_width_v<R> <= N, "invalid size"); \
-    assert(start + ch_width_v<R> <= N); \
+    static_assert(ch_width_v<R> <= ch_width_v<type>, "invalid size"); \
+    assert(start + ch_width_v<R> <= ch_width_v<type>); \
     CH_SOURCE_LOCATION(1); \
-    auto& self = reinterpret_cast<const type&>(*this); \
-    return logic_accessor::sliceref<R>(self, start); \
+    auto self = reinterpret_cast<type*>(this); \
+    return logic_accessor::sliceref<R>(*self, start); \
   } \
   template <unsigned M> \
   auto sliceref(size_t start = 0) { \
     CH_SOURCE_LOCATION(1); \
-    return this->sliceref<type<M>>(start); \
+    return this->sliceref<size_cast_t<type,M>>(start); \
   } \
   template <typename R> \
   auto asliceref(size_t start = 0) { \
@@ -597,8 +588,7 @@ auto make_logic_op(const A& a, const B& b) {
   template <unsigned M> \
   auto asliceref(size_t start = 0) { \
     CH_SOURCE_LOCATION(1); \
-    return this->asliceref<type<M>>(start); \
+    return this->asliceref<size_cast_t<type,M>>(start); \
   }
-
 }
 }

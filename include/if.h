@@ -1,6 +1,6 @@
 ﻿#pragma once
 
-#include "bit.h"
+#include "int.h"
 
 namespace ch {
 namespace internal {
@@ -56,7 +56,7 @@ public:
     : if_(p_if)
   {}
 
-  if_body_t operator,(const ch_bit<1>& pred) {
+  if_body_t operator,(const ch_bool& pred) {
     return if_body_t(if_, get_lnode(pred));
   }
 

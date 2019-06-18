@@ -144,6 +144,14 @@ CH_DEF_SFINAE_CHECK(is_system_only, bool_constant_v<(std::decay_t<T>::traits::ty
 
 CH_DEF_SFINAE_CHECK(is_system_type, is_system_traits_v<typename std::decay_t<T>::traits>);
 
+template <typename T, unsigned N>
+struct size_cast {
+    using type = typename T:: template size_cast<N>;
+};
+
+template <typename T, unsigned N>
+using size_cast_t = typename size_cast<T,N>::type;
+
 ///////////////////////////////////////////////////////////////////////////////
 
 template <unsigned Bitwidth,
@@ -160,7 +168,9 @@ struct logic_traits {
 };
 
 template <typename T, typename Enable = void>
-struct logic_t_impl {};
+struct logic_t_impl {
+  using type = void;
+};
 
 template <typename T>
 struct logic_t_impl<T, std::enable_if_t<std::is_arithmetic_v<T>>> {

@@ -47,7 +47,7 @@ public:
   switch_case_t(const switch_ptr& p_switch) : switch_(p_switch) {}
 
   template <typename V,
-            CH_REQUIRE_0(!std::is_convertible_v<V, fvoid_t>)>
+            CH_REQUIRE(!std::is_convertible_v<V, fvoid_t>)>
   switch_body_t<K> operator,(const V& value) {
     static_assert(is_equality_comparable_v<K, V>, "invalid type");
     if constexpr (std::is_enum_v<V>) {

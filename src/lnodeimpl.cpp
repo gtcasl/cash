@@ -166,9 +166,8 @@ void lnodeimpl::print(std::ostream& out) const {
 }
 
 std::string lnodeimpl::debug_info() const {
-  return stringf("'%s#%d (%d)' in module '%s (%d)' (%s:%d)",
+  return stringf("'%s (%d)' in module '%s (%d)' (%s:%d)",
                  name_.c_str(),
-                 size_,
                  id_,
                  ctx_->name().c_str(),
                  ctx_->id(),

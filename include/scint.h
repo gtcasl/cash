@@ -17,16 +17,16 @@ public:
   {}
 
   template <typename U,
-            CH_REQUIRE_0(std::is_integral_v<U>)>
+            CH_REQUIRE(std::is_integral_v<U>)>
   ch_scint(const U& other) : base(other) {}
 
   template <typename U,
-            CH_REQUIRE_0(is_bitvector_extended_type_v<U>)>
+            CH_REQUIRE(is_bitvector_extended_type_v<U>)>
   explicit ch_scint(U&& other) : base(std::forward<U>(other)) {}
 
   template <typename U,
-            CH_REQUIRE_0(is_scbit_base_v<U>),
-            CH_REQUIRE_0(ch_width_v<U> <= N)>
+            CH_REQUIRE(is_scbit_base_v<U>),
+            CH_REQUIRE(ch_width_v<U> <= N)>
   ch_scint(const U& other) : base(other) {}
 
   ch_scint(const ch_scint& other) : base(other) {}
@@ -34,15 +34,15 @@ public:
   ch_scint(ch_scint&& other) : base(std::move(other)) {}
 
   template <typename U,
-            CH_REQUIRE_0(std::is_integral_v<U>)>
+            CH_REQUIRE(std::is_integral_v<U>)>
   ch_scint& operator=(const U& other) {
     base::operator=(other);
     return *this;
   }
 
   template <typename U,
-            CH_REQUIRE_0(is_scbit_base_v<U>),
-            CH_REQUIRE_0(ch_width_v<U> <= N)>
+            CH_REQUIRE(is_scbit_base_v<U>),
+            CH_REQUIRE(ch_width_v<U> <= N)>
   ch_scint& operator=(const U& other) {
     base::operator=(other);
     return *this;

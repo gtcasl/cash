@@ -56,6 +56,9 @@ namespace logic {
   // data types
   //
 
+  using ch::internal::ch_bit_base;
+  using ch::internal::ch_number_base;
+
   using ch::internal::ch_bit;
   using ch::internal::ch_int;
   using ch::internal::ch_uint;
@@ -97,8 +100,6 @@ namespace logic {
   // declared types
   //
 
-  using ch_bool   = ch_bit<1>;
-
   using ch_bit1   = ch_bit<1>;
   using ch_bit2   = ch_bit<2>;
   using ch_bit4   = ch_bit<4>;
@@ -131,8 +132,6 @@ namespace logic {
   using ch_uint128= ch_uint<128>;
   using ch_uint256= ch_uint<256>;
   using ch_uint512= ch_uint<512>;
-
-  using ch_scbool   = ch_scbit<1>;
 
   using ch_scbit1   = ch_scbit<1>;
   using ch_scbit2   = ch_scbit<2>;
@@ -167,12 +166,15 @@ namespace logic {
   using ch_scuint256= ch_scuint<256>;
   using ch_scuint512= ch_scuint<512>;
 
+  using ch::internal::ch_bool;
+  using ch::internal::ch_scbool;
+
   //
   // constants
   //
 
-  const ch_scbit<1> ch_false(0);
-  const ch_scbit<1> ch_true(1);
+  const ch_scbool ch_false(0);
+  const ch_scbool ch_true(1);
 
   //
   // equality functions
@@ -191,12 +193,21 @@ namespace logic {
   using ch::internal::ch_ge;
 
   //
+  // logic functions
+  //
+
+  using ch::internal::ch_not;
+  using ch::internal::ch_andl;
+  using ch::internal::ch_orl;
+
+  //
   // binary functions
   //
 
   using ch::internal::ch_inv;
   using ch::internal::ch_and;
   using ch::internal::ch_or;
+  using ch::internal::ch_xor;
 
   //
   // shift functions
@@ -434,7 +445,7 @@ inline namespace literals {
 #define __scio     CH_SCIO
 #define __flip     CH_FLIP
 
-#define __require0 CH_REQUIRE_0
+#define __require0 CH_REQUIRE
 #define __require1 CH_REQUIRE_1
 #define __require2 CH_REQUIRE_2
 #define __require3 CH_REQUIRE_3

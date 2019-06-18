@@ -13,10 +13,7 @@ struct requires_enum {
   enum class type {};
 };
 
-#define CH_REQUIRE_0(...) std::enable_if_t<(__VA_ARGS__), typename ch::internal::requires_enum<0>::type>* = nullptr
-#define CH_REQUIRE_1(...) std::enable_if_t<(__VA_ARGS__), typename ch::internal::requires_enum<1>::type>* = nullptr
-#define CH_REQUIRE_2(...) std::enable_if_t<(__VA_ARGS__), typename ch::internal::requires_enum<2>::type>* = nullptr
-#define CH_REQUIRE_3(...) std::enable_if_t<(__VA_ARGS__), typename ch::internal::requires_enum<3>::type>* = nullptr
+#define CH_REQUIRE(...) std::enable_if_t<(__VA_ARGS__), typename ch::internal::requires_enum<0>::type>* = nullptr
 
 std::string stringf(const char* format, ...);
 
@@ -223,7 +220,7 @@ struct identity_impl {
 template<typename T>
 using identity_t = typename identity_impl<T>::type;
 
-struct empty_base {};
+struct empty_t {};
 
 template <typename...>
 using void_t = void;
@@ -801,7 +798,7 @@ constexpr unsigned ceil2(T value) {
 }
 
 template <typename R, typename T, typename U,
-          CH_REQUIRE_0(!std::is_same_v<R, T>)>
+          CH_REQUIRE(!std::is_same_v<R, T>)>
 constexpr R ceildiv(T a, U b) {
   static_assert(std::is_integral_v<R>, "invalid type");
   static_assert(std::is_integral_v<T>, "invalid type");

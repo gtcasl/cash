@@ -33,20 +33,20 @@ inline T ToFixed(double value, unsigned I, unsigned F) {
 }
 
 template <unsigned N, unsigned F>
-class ch_scfixed : public ch_scbit<N> {
+class ch_scfixed : public ch_scint<N> {
 public:  
   static constexpr unsigned Intg = N-F;
   static constexpr unsigned Frac = F;
   static_assert(N >= (Frac+1), "invalid size");
   using traits = system_traits<N, true, ch_scfixed, ch_fixed<N, Frac>>;
-  using base = ch_scbit<N>;
+  using base = ch_scint<N>;
 
   ch_scfixed(const system_buffer_ptr& buffer = make_system_buffer(N, ch::internal::idname<ch_scfixed>()))
     : base(buffer)
   {}
 
   template <typename U,
-            CH_REQUIRE_0(std::is_integral_v<U>)>
+            CH_REQUIRE(std::is_integral_v<U>)>
   ch_scfixed(const U& other) : base(other) {}
 
   explicit ch_scfixed(double other) : base(ToFixed<int>(other, Intg, Frac)) {
@@ -100,13 +100,13 @@ public:
   }
 
   template <typename U,
-            CH_REQUIRE_0(std::is_convertible_v<U, ch_scbit<ch_width_v<U>>>)>
+            CH_REQUIRE(std::is_convertible_v<U, ch_scbit<ch_width_v<U>>>)>
   friend auto operator<<(const ch_scfixed& lhs, const U& rhs) {
     return (lhs.as_scint() << rhs).template as<ch_scfixed>();
   }
 
   template <typename U,
-            CH_REQUIRE_0(std::is_convertible_v<U, ch_scbit<ch_width_v<U>>>)>
+            CH_REQUIRE(std::is_convertible_v<U, ch_scbit<ch_width_v<U>>>)>
   friend auto operator>>(const ch_scfixed& lhs, const U& rhs) {
     return (lhs.as_scint() >> rhs).template as<ch_scfixed>();
   }
@@ -134,7 +134,7 @@ public:
   }
 
   template <typename U,
-            CH_REQUIRE_0(std::is_integral_v<U>)>
+            CH_REQUIRE(std::is_integral_v<U>)>
   explicit operator U() const {
     return static_cast<U>(this->as_scint());
   }
@@ -154,26 +154,28 @@ public:
   }
 };
 
+///////////////////////////////////////////////////////////////////////////////
+
 template <unsigned N, unsigned F>
-class ch_fixed : public ch_bit<N> {
+class ch_fixed : public ch_number_base<ch_fixed<N, F>> {
 public:  
   static constexpr unsigned Intg = N-F;
   static constexpr unsigned Frac = F;
   static_assert(N >= (Frac+1), "invalid size");
   using traits = logic_traits<N, true, ch_fixed, ch_scfixed<N, Frac>>;
-  using base = ch_bit<N>;
+  using base = ch_number_base<ch_fixed<N, F>>;
 
   ch_fixed(const logic_buffer& buffer =
       logic_buffer(N, ch::internal::idname<ch_fixed>()))
-    : base(buffer)
+    : buffer_(buffer)
   {}
 
   template <typename U,
-            CH_REQUIRE_0(std::is_integral_v<U>)>
+            CH_REQUIRE(std::is_integral_v<U>)>
   ch_fixed(const U& other)
     : ch_fixed(logic_buffer(N, ch::internal::idname<ch_fixed>())) {
     __source_location(1);
-    this->operator=(other);
+    base::operator=(other);
   }
 
   explicit ch_fixed(double other)
@@ -182,49 +184,35 @@ public:
     this->operator=(other);
   }
 
-  explicit ch_fixed(const ch_scbit<N>& other)
+  template <typename U,
+            CH_REQUIRE(ch::internal::is_scbit_base_v<U>),
+            CH_REQUIRE(ch_width_v<U> <= N)>
+  explicit ch_fixed(const U& other)
     : ch_fixed(logic_buffer(N, ch::internal::idname<ch_fixed>())) {
-    __source_location(1);
-    this->operator=(other);
+    CH_SOURCE_LOCATION(1);
+    base::operator=(other);
   }
-
-  explicit ch_fixed(const ch_bit<N>& other)
-    : ch_fixed(logic_buffer(N, ch::internal::idname<ch_fixed>())) {
-    __source_location(1);
-    this->operator=(other);
-  }
-
-  ch_fixed(const ch_fixed& other)
-    : ch_fixed(logic_buffer(N, ch::internal::idname<ch_fixed>())) {
-    __source_location(1);
-    this->operator=(other);
-  }
-
-  ch_fixed(ch_fixed&& other) : base(std::move(other)) {}
 
   template <typename U,
-            CH_REQUIRE_0(std::is_integral_v<U>)>
-  ch_fixed& operator=(const U& other) {
-    __source_location(1);
+            CH_REQUIRE(ch::internal::is_bit_base_v<U>),
+            CH_REQUIRE(ch_width_v<U> <= N)>
+  explicit ch_fixed(const U& other)
+    : ch_fixed(logic_buffer(N, ch::internal::idname<ch_fixed>())) {
+    CH_SOURCE_LOCATION(1);
     base::operator=(other);
-    return *this;
   }
+
+  explicit ch_fixed(const ch_fixed& other)
+    : ch_fixed(logic_buffer(N, ch::internal::idname<ch_fixed>())) {
+    __source_location(1);
+    this->operator=(other);
+  }
+
+  ch_fixed(ch_fixed&& other) : buffer_(std::move(other.buffer_)) {}
 
   ch_fixed& operator=(double other) {
     __source_location(1);
     base::operator=(ToFixed<int>(other, Intg, Frac));
-    return *this;
-  }
-
-  ch_fixed& operator=(const ch_scbit<N>& other) {
-    __source_location(1);
-    base::operator=(other);
-    return *this;
-  }
-
-  ch_fixed& operator=(const ch_bit<N>& other) {
-    __source_location(1);
-    base::operator=(other);
     return *this;
   }
 
@@ -240,83 +228,28 @@ public:
     return *this;
   }
 
-  CH_LOGIC_INTERFACE(ch_fixed)
+protected:
 
-  friend auto operator<(const ch_fixed& lhs, const ch_fixed& rhs) {
-    __source_location(1);
-    return (lhs.as_int() < rhs.as_int());
-  }
-
-  friend auto operator<=(const ch_fixed& lhs, const ch_fixed& rhs) {
-    __source_location(1);
-    return (lhs.as_int() <= rhs.as_int());
-  }
-
-  friend auto operator>(const ch_fixed& lhs, const ch_fixed& rhs) {
-    __source_location(1);
-    return (lhs.as_int() >= rhs.as_int());
-  }
-
-  friend auto operator>=(const ch_fixed& lhs, const ch_fixed& rhs) {
-    __source_location(1);
-    return (lhs.as_int() >= rhs.as_int());
-  }
-
-  friend auto operator~(const ch_fixed& self) {
-    __source_location(1);
-    return (~self.as_int()).template as<ch_fixed>();
-  }
-
-  friend auto operator&(const ch_fixed& lhs, const ch_fixed& rhs) {
-    __source_location(1);
-    return (lhs.as_int() & rhs.as_int()).template as<ch_fixed>();
-  }
-
-  friend auto operator|(const ch_fixed& lhs, const ch_fixed& rhs) {
-    __source_location(1);
-    return (lhs.as_int() | rhs.as_int()).template as<ch_fixed>();
-  }
-
-  template <typename U,
-            CH_REQUIRE_0(std::is_convertible_v<U, ch_bit<ch_width_v<U>>>)>
-  friend auto operator<<(const ch_fixed& lhs, const U& rhs) {
-    __source_location(1);
-    return (lhs.as_int() << rhs).template as<ch_fixed>();
-  }
-
-  template <typename U,
-            CH_REQUIRE_0(std::is_convertible_v<U, ch_bit<ch_width_v<U>>>)>
-  friend auto operator>>(const ch_fixed& lhs, const U& rhs) {
-    __source_location(1);
-    return (lhs.as_int() >> rhs).template as<ch_fixed>();
-  }
-
-  friend auto operator-(const ch_fixed& self) {
-    __source_location(1);
-    return (-self.as_int()).template as<ch_fixed>();
-  }
-
-  friend auto operator+(const ch_fixed& lhs, const ch_fixed& rhs) {
-    __source_location(1);
-    return (lhs.as_int() + rhs.as_int()).template as<ch_fixed>();
-  }
-
-  friend auto operator-(const ch_fixed& lhs, const ch_fixed& rhs) {
-    __source_location(1);
-    return (lhs.as_int() - rhs.as_int()).template as<ch_fixed>();
-  }
-
-  friend auto operator*(const ch_fixed& lhs, const ch_fixed& rhs) {
-    __source_location(1);
-    auto ret = ch_shr<N>(ch_mul<N+Frac>(lhs.as_int(), rhs.as_int()), Frac);
+  template <typename R, typename U>
+  auto do_mul(const U& other) const {
+    auto ret = ch_shr<N>(ch_mul<N+Frac>(this->as_int(), other), Frac);
     return ret.template as<ch_fixed>();
   }
 
-  friend auto operator/(const ch_fixed& lhs, const ch_fixed& rhs) {
-    __source_location(1);
-    auto ret = (ch_shl<N+Frac>(lhs.as_int(), Frac) / rhs.as_int()).template slice<N>();
+  template <typename R, typename U>
+  auto do_div(const U& other) const {
+    auto ret = (ch_shl<N+Frac>(this->as_int(), Frac) / other).template slice<N>();
     return ret.template as<ch_fixed>();
   }
+
+  const logic_buffer& __buffer() const {
+    return buffer_;
+  }
+
+  logic_buffer buffer_;
+
+  friend class ch::internal::logic_accessor;
+  template <unsigned M, unsigned E> friend class ch_fixed;
 };
 
 }

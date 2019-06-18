@@ -97,7 +97,7 @@ public:
   }
 
   template <typename U,
-            CH_REQUIRE_0(std::is_integral_v<U>)>
+            CH_REQUIRE(std::is_integral_v<U>)>
   explicit ch_rom(const U& value)
     : mem_(ch_width_v<T>, N, sdata_from_fill(value, data_width, N), ForceLogicRAM, idname<T>())
   {}
@@ -145,7 +145,7 @@ public:
   }
 
   template <typename U,
-            CH_REQUIRE_0(std::is_integral_v<U>)>
+            CH_REQUIRE(std::is_integral_v<U>)>
   explicit ch_mem(const U& value)
     : mem_(ch_width_v<T>, N, sdata_from_fill(value, data_width, N), false, idname<T>())
   {}
@@ -166,7 +166,8 @@ public:
   auto read(const U& addr, const E& enable) const {
     static_assert(SyncRead, "invalid memory type");
     static_assert(is_bit_convertible_v<U, addr_width>, "invalid type");
-    static_assert(is_bit_convertible_v<E, 1>, "invalid type");\
+    static_assert(is_bit_base_v<E>, "invalid type");
+    static_assert(ch_width_v<E> == 1, "invalid size");
     CH_SOURCE_LOCATION(1);
     auto laddr = to_lnode<addr_width>(addr);
     auto l_enable = get_lnode(enable);
@@ -187,7 +188,7 @@ public:
   void write(const U& addr, const V& value, const E& enable) {
     static_assert(is_bit_convertible_v<U, addr_width>, "invalid address type");
     static_assert(std::is_constructible_v<T, V>, "invalidvalue  type");
-    static_assert(is_bit_convertible_v<E>, "invalid enable type");
+    static_assert(is_bit_base_v<E>, "invalid enable type");
     static_assert(ch_width_v<E> * (ch_width_v<T> / ch_width_v<E>) == ch_width_v<T>, "invalid enable size");
     CH_SOURCE_LOCATION(1);
     auto l_addr   = to_lnode<addr_width>(addr);

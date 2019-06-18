@@ -1,4 +1,4 @@
-#ifndef NLIBJIT
+﻿#ifndef NLIBJIT
 
 #include "simjit.h"
 #include "bindimpl.h"
@@ -58,13 +58,13 @@ static constexpr uint32_t INLINE_THRESHOLD = 8;
     void* pfn; \
     if (is_signed) { \
       if (need_resize) { \
-        pfn = reinterpret_cast<void*>(fname<true, block_type, StaticBitAccessor<true, true, block_type>>); \
+        pfn = reinterpret_cast<void*>(fname<true, block_type, StaticBitAccessor<block_type, true, true>>); \
       } else { \
-        pfn = reinterpret_cast<void*>(fname<true, block_type, StaticBitAccessor<true, false, block_type>>); \
+        pfn = reinterpret_cast<void*>(fname<true, block_type, StaticBitAccessor<block_type, true, false>>); \
       } \
     } else { \
       if (need_resize) { \
-        pfn = reinterpret_cast<void*>(fname<false, block_type, StaticBitAccessor<false, true, block_type>>); \
+        pfn = reinterpret_cast<void*>(fname<false, block_type, StaticBitAccessor<block_type, false, true>>); \
       } else { \
         pfn = reinterpret_cast<void*>(fname<false, block_type, ClearBitAccessor<block_type>>); \
       } \
@@ -79,13 +79,13 @@ static constexpr uint32_t INLINE_THRESHOLD = 8;
   void* pfn; \
   if (is_signed) { \
     if (need_resize) { \
-      pfn = reinterpret_cast<void*>(fname<true, block_type, StaticBitAccessor<true, true, block_type>>); \
+      pfn = reinterpret_cast<void*>(fname<true, block_type, StaticBitAccessor<block_type, true, true>>); \
     } else { \
-      pfn = reinterpret_cast<void*>(fname<true, block_type, StaticBitAccessor<true, false, block_type>>); \
+      pfn = reinterpret_cast<void*>(fname<true, block_type, StaticBitAccessor<block_type, true, false>>); \
     } \
   } else { \
     if (need_resize) { \
-      pfn = reinterpret_cast<void*>(fname<false, block_type, StaticBitAccessor<false, true, block_type>>); \
+      pfn = reinterpret_cast<void*>(fname<false, block_type, StaticBitAccessor<block_type, false, true>>); \
     } else { \
       pfn = reinterpret_cast<void*>(fname<false, block_type, ClearBitAccessor<block_type>>); \
     } \
@@ -611,8 +611,8 @@ private:
     struct auto_store_addr_t {
       Compiler*   Cp;
       lnodeimpl*  node;
-      jit_value_t ptr;
       jit_value_t bkstore;
+      jit_value_t ptr;
 
       auto_store_addr_t(Compiler* compiler, lnodeimpl* node) : Cp(compiler), node(node) {
         if (node->size() <= WORD_SIZE) {
@@ -768,19 +768,17 @@ private:
         auto j_dst = jit_insn_and(j_func_, j_src0, j_src1);
         scalar_map_[node->id()] = this->emit_cast(j_dst, j_ntype);
       } else {
-        if (need_resize
-         || dst_width > INLINE_THRESHOLD * WORD_SIZE) {
-          auto_store_addr_t auto_dst(this, node);
+        auto_store_addr_t auto_dst(this, node);
+        if (need_resize || dst_width > INLINE_THRESHOLD * WORD_SIZE) {
           __op_call_bitwise(bv_and_vector, auto_dst.ptr, dst_width, j_src0, node->src(0).size(), j_src1, node->src(1).size());
         } else {
-          auto dst_addr = addr_map_.at(node->id());
           uint32_t num_words = ceildiv(dst_width, WORD_SIZE);
           for (uint32_t i = 0; i < num_words; ++i) {
             auto j_src0 = this->emit_load_scalar_elem(node->src(0).impl(), i, word_type_);
             auto j_src1 = this->emit_load_scalar_elem(node->src(1).impl(), i, word_type_);
             auto j_dst  = jit_insn_and(j_func_, j_src0, j_src1);
             auto j_dst_w = this->emit_cast(j_dst, word_type_);
-            jit_insn_store_relative(j_func_, j_vars_, dst_addr + i * sizeof(block_type), j_dst_w);
+            jit_insn_store_relative(j_func_, auto_dst.ptr, i * sizeof(block_type), j_dst_w);
           }
         }
       }
@@ -790,19 +788,18 @@ private:
         auto j_dst = jit_insn_or(j_func_, j_src0, j_src1);
         scalar_map_[node->id()] = this->emit_cast(j_dst, j_ntype);
       } else {
-        if (need_resize
-         || dst_width > INLINE_THRESHOLD * WORD_SIZE) {
+        auto_store_addr_t auto_dst(this, node);
+        if (need_resize || dst_width > INLINE_THRESHOLD * WORD_SIZE) {
           auto_store_addr_t auto_dst(this, node);
           __op_call_bitwise(bv_or_vector, auto_dst.ptr, dst_width, j_src0, node->src(0).size(), j_src1, node->src(1).size());
-        } else {
-          auto dst_addr = addr_map_.at(node->id());
+        } else {          
           auto num_words = ceildiv(dst_width, WORD_SIZE);
           for (uint32_t i = 0; i < num_words; ++i) {
             auto j_src0 = this->emit_load_scalar_elem(node->src(0).impl(), i, word_type_);
             auto j_src1 = this->emit_load_scalar_elem(node->src(1).impl(), i, word_type_);
             auto j_dst  = jit_insn_or(j_func_, j_src0, j_src1);
             auto j_dst_w = this->emit_cast(j_dst, word_type_);
-            jit_insn_store_relative(j_func_, j_vars_, dst_addr + i * sizeof(block_type), j_dst_w);
+            jit_insn_store_relative(j_func_, auto_dst.ptr, i * sizeof(block_type), j_dst_w);
           }
         }
       }
@@ -812,19 +809,17 @@ private:
         auto j_dst = jit_insn_xor(j_func_, j_src0, j_src1);
         scalar_map_[node->id()] = this->emit_cast(j_dst, j_ntype);
       } else {
-        if (need_resize
-         || dst_width > INLINE_THRESHOLD * WORD_SIZE) {
-          auto_store_addr_t auto_dst(this, node);
+        auto_store_addr_t auto_dst(this, node);
+        if (need_resize || dst_width > INLINE_THRESHOLD * WORD_SIZE) {
           __op_call_bitwise(bv_xor_vector, auto_dst.ptr, dst_width, j_src0, node->src(0).size(), j_src1, node->src(1).size());
         } else {
-          auto dst_addr = addr_map_.at(node->id());
           uint32_t num_words = ceildiv(dst_width, WORD_SIZE);
           for (uint32_t i = 0; i < num_words; ++i) {
             auto j_src0 = this->emit_load_scalar_elem(node->src(0).impl(), i, word_type_);
             auto j_src1 = this->emit_load_scalar_elem(node->src(1).impl(), i, word_type_);
             auto j_dst  = jit_insn_xor(j_func_, j_src0, j_src1);
             auto j_dst_w = this->emit_cast(j_dst, word_type_);
-            jit_insn_store_relative(j_func_, j_vars_, dst_addr + i * sizeof(block_type), j_dst_w);
+            jit_insn_store_relative(j_func_, auto_dst.ptr, i * sizeof(block_type), j_dst_w);
           }
         }
       }

@@ -16,20 +16,20 @@ public:
   }
 
   template <typename U,
-            CH_REQUIRE_0(std::is_integral_v<U>)>
+            CH_REQUIRE(std::is_integral_v<U>)>
   ch_scbit(const U& other)
     : buffer_(make_system_buffer(sdata_type(N , other)))
   {}
 
   template <typename U,
-            CH_REQUIRE_0(is_bitvector_extended_type_v<U>)>
+            CH_REQUIRE(is_bitvector_extended_type_v<U>)>
   explicit ch_scbit(U&& other)
     : buffer_(make_system_buffer(sdata_type(N , std::forward<U>(other))))
   {}
 
   template <typename U,
-            CH_REQUIRE_0(is_scbit_base_v<U>),
-            CH_REQUIRE_0(ch_width_v<U> < N)>
+            CH_REQUIRE(is_scbit_base_v<U>),
+            CH_REQUIRE(ch_width_v<U> < N)>
   ch_scbit(const U& other) {
     sdata_type tmp(N);
     bv_pad<ch_signed_v<U>>(tmp.words(), N, system_accessor::data(other).words(), ch_width_v<U>);
@@ -43,15 +43,15 @@ public:
   ch_scbit(ch_scbit&& other) : buffer_(std::move(other.buffer_)) {}
 
   template <typename U,
-            CH_REQUIRE_0(std::is_integral_v<U>)>
+            CH_REQUIRE(std::is_integral_v<U>)>
   ch_scbit& operator=(const U& other) {
     system_accessor::assign(*this, sdata_type(N , other));
     return *this;
   }
 
   template <typename U,
-            CH_REQUIRE_0(is_scbit_base_v<U>),
-            CH_REQUIRE_0(ch_width_v<U> < N)>
+            CH_REQUIRE(is_scbit_base_v<U>),
+            CH_REQUIRE(ch_width_v<U> < N)>
   ch_scbit& operator=(const U& other) {
     sdata_type tmp(N);
     bv_pad<ch_signed_v<U>>(tmp.words(), N, system_accessor::data(other).words(), ch_width_v<U>);

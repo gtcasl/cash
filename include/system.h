@@ -9,6 +9,8 @@ template <unsigned N> class ch_scbit;
 template <unsigned N> class ch_scint;
 template <unsigned N> class ch_scuint;
 
+using ch_scbool = ch_scuint<1>;
+
 template <typename T>
 inline constexpr bool is_scbit_base_v = std::is_base_of_v<ch_scbit<ch_width_v<T>>, T>;
 
@@ -299,13 +301,13 @@ auto make_system_op(SystemFunc3 func, const A& lhs, const B& rhs) {
     CH_REM body; \
   } \
   template <typename __U, \
-            CH_REQUIRE_0(is_strictly_constructible_v<type, __U>)> \
+            CH_REQUIRE(is_strictly_constructible_v<type, __U>)> \
   friend auto op(const type& lhs, const __U& _rhs) { \
     type rhs(_rhs); \
     CH_REM body; \
   } \
   template <typename __U, \
-            CH_REQUIRE_0(is_strictly_constructible_v<type, __U>)> \
+            CH_REQUIRE(is_strictly_constructible_v<type, __U>)> \
   friend auto op(const __U& _lhs, const type& rhs) { \
     type lhs(_lhs); \
     CH_REM body; \
@@ -365,7 +367,7 @@ auto make_system_op(SystemFunc3 func, const A& lhs, const B& rhs) {
 
 #define CH_SYSTEM_OP_SHIFT(type) \
   template <typename U, \
-            CH_REQUIRE_0(std::is_convertible_v<U, ch_scbit<ch_width_v<U>>>)> \
+            CH_REQUIRE(std::is_convertible_v<U, ch_scbit<ch_width_v<U>>>)> \
   friend auto operator<<(const type& lhs, const U& rhs) { \
     static_assert(ch_width_v<U> <= 32, "invalid size"); \
     return make_system_op<type, type, ch_scbit<ch_width_v<U>>>( \
@@ -373,7 +375,7 @@ auto make_system_op(SystemFunc3 func, const A& lhs, const B& rhs) {
     ); \
   } \
   template <typename U, \
-            CH_REQUIRE_0(std::is_convertible_v<U, ch_scbit<ch_width_v<U>>>)> \
+            CH_REQUIRE(std::is_convertible_v<U, ch_scbit<ch_width_v<U>>>)> \
   friend auto operator>>(const type& lhs, const U& rhs) { \
     static_assert(ch_width_v<U> <= 32, "invalid size"); \
     return make_system_op<type, type, ch_scbit<ch_width_v<U>>>( \
@@ -383,7 +385,7 @@ auto make_system_op(SystemFunc3 func, const A& lhs, const B& rhs) {
 
 #define CH_SYSTEM_OP_CAST(type) \
   template <typename U, \
-            CH_REQUIRE_0(std::is_integral_v<U>)> \
+            CH_REQUIRE(std::is_integral_v<U>)> \
   explicit operator U() const { \
     static_assert(bitwidth_v<U> >= type::traits::bitwidth, "invalid size"); \
     auto ret = static_cast<U>(system_accessor::data(reinterpret_cast<const type&>(*this))); \

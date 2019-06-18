@@ -1,16 +1,222 @@
 #pragma once
 
 #include "logic.h"
-#include "vec.h"
 
 namespace ch {
 namespace internal {
 
+template <typename T>
+class ch_bit_base {
+public:
+
+  template <typename U,
+            CH_REQUIRE(std::is_integral_v<U>)>
+  T& operator=(const U& other) {
+    CH_SOURCE_LOCATION(1);
+    auto self = reinterpret_cast<T*>(this);
+    logic_accessor::assign(*self, sdata_type(ch_width_v<T>, other));
+    return *self;
+  }
+
+  template <typename U,
+            CH_REQUIRE(is_scbit_base_v<U>)>
+  T& operator=(const U& other) {
+    CH_SOURCE_LOCATION(1);
+    static_assert(ch_width_v<U> <= ch_width_v<T>, "invalid size");
+    auto self = reinterpret_cast<T*>(this);
+    if constexpr (ch_width_v<U> < ch_width_v<T>) {
+      ch_scbit<ch_width_v<T>> tmp(other);
+      logic_accessor::assign(*self, system_accessor::data(tmp));
+    } else {
+      logic_accessor::assign(*self, system_accessor::data(other));
+    }
+    return *self;
+  }
+
+  template <typename U,
+            CH_REQUIRE(is_bit_base_v<U>)>
+  T& operator=(const U& other) {
+    CH_SOURCE_LOCATION(1);
+    static_assert(ch_width_v<U> <= ch_width_v<T>, "invalid size");
+    auto self = reinterpret_cast<T*>(this);
+    if constexpr (ch_width_v<U> < ch_width_v<T>) {
+      ch_bit<ch_width_v<T>> tmp(logic_buffer(
+          createOpNode(ch_op::pad, ch_width_v<T>, ch_signed_v<U>, get_lnode(other))));
+      logic_accessor::assign(*self, tmp);
+    } else {
+      logic_accessor::assign(*self, other);
+    }
+    return *self;
+  }
+
+  // subscript operators
+
+  auto operator[](size_t index) const {
+    assert(index < ch_width_v<T>);
+    CH_SOURCE_LOCATION(1);
+    return this->template slice<ch_bit<1>>(index);
+  }
+
+  auto operator[](size_t index) {
+    assert(index < ch_width_v<T>);
+    CH_SOURCE_LOCATION(1);
+    return this->template sliceref<ch_bit<1>>(index);
+  }
+
+  CH_LOGIC_INTERFACE(T)
+  CH_LOGIC_OP_SLICE(T)
+
+  CH_LOGIC_OPERATOR2_IMPL(T, ch_op::eq, operator==, do_eq)
+  CH_LOGIC_OPERATOR2_IMPL(T, ch_op::ne, operator!=, do_ne)
+
+  CH_LOGIC_OPERATOR1_IMPL(T, ch_op::notl, operator!, do_not)
+  CH_LOGIC_OPERATOR2_IMPL(T, ch_op::andl, operator&&, do_andl)
+  CH_LOGIC_OPERATOR2_IMPL(T, ch_op::orl, operator||, do_orl)
+
+  CH_LOGIC_OPERATOR1_IMPL(T, ch_op::inv, operator~, do_inv)
+  CH_LOGIC_OPERATOR2_IMPL(T, ch_op::andb, operator&, do_and)
+  CH_LOGIC_OPERATOR2_IMPL(T, ch_op::orb, operator|, do_or)
+  CH_LOGIC_OPERATOR2_IMPL(T, ch_op::xorb, operator^, do_xor)
+
+  CH_LOGIC_OPERATOR2_IMPL(T, ch_op::shl, operator<<, do_shl)
+  CH_LOGIC_OPERATOR2_IMPL(T, ch_op::shr, operator>>, do_shr)
+
+  CH_LOGIC_FUNCTION2_IMPL(T, ch_op::eq, ch_eq, do_eq)
+  CH_LOGIC_FUNCTION2_IMPL(T, ch_op::ne, ch_ne, do_ne)
+
+  CH_LOGIC_FUNCTION1_IMPL(T, ch_op::notl, ch_not, do_not)
+  CH_LOGIC_FUNCTION2_IMPL(T, ch_op::andl, ch_andl, do_andl)
+  CH_LOGIC_FUNCTION2_IMPL(T, ch_op::orl, ch_orl, do_orl)
+
+  CH_LOGIC_FUNCTION1_IMPL(T, ch_op::inv, ch_inv, do_inv)
+  CH_LOGIC_FUNCTION2_IMPL(T, ch_op::andb, ch_and, do_and)
+  CH_LOGIC_FUNCTION2_IMPL(T, ch_op::orb, ch_or, do_or)
+  CH_LOGIC_FUNCTION2_IMPL(T, ch_op::xorb, ch_xor, do_xor)
+
+  CH_LOGIC_FUNCTION2_IMPL(T, ch_op::shl, ch_shl, do_shl)
+  CH_LOGIC_FUNCTION2_IMPL(T, ch_op::shr, ch_shr, do_shr)
+
+  CH_LOGIC_FUNCTION1_IMPL(T, ch_op::andr, ch_andr, do_andr)
+  CH_LOGIC_FUNCTION1_IMPL(T, ch_op::orr, ch_orr, do_orr)
+  CH_LOGIC_FUNCTION1_IMPL(T, ch_op::xorr, ch_xorr, do_xorr)
+
+protected:
+
+  template <typename U>
+  auto do_eq(const U& other) const {
+    auto self = reinterpret_cast<const T*>(this);
+    return make_logic_op<ch_op::eq, ch_signed_v<T>, ch_bool>(*self, other);
+  }
+
+  template <typename U>
+  auto do_ne(const U& other) const {
+    auto self = reinterpret_cast<const T*>(this);
+    return make_logic_op<ch_op::ne, ch_signed_v<T>, ch_bool>(*self, other);
+  }
+
+  auto do_not() const {
+    auto self = reinterpret_cast<const T*>(this);
+    return make_logic_op<ch_op::notl, false, ch_bool>(*self);
+  }
+
+  template <typename U>
+  auto do_andl(const U& other) const {
+    auto self = reinterpret_cast<const T*>(this);
+    return make_logic_op<ch_op::andl, ch_signed_v<T>, ch_bool>(*self, other);
+  }
+
+  template <typename U>
+  auto do_orl(const U& other) const {
+    auto self = reinterpret_cast<const T*>(this);
+    return make_logic_op<ch_op::orl, ch_signed_v<T>, ch_bool>(*self, other);
+  }
+
+  template <typename R>
+  auto do_inv() const {
+    auto self = reinterpret_cast<const T*>(this);
+    return make_logic_op<ch_op::inv, false, R>(*self);
+  }
+
+  template <typename R, typename U>
+  auto do_and(const U& other) const {
+    auto self = reinterpret_cast<const T*>(this);
+    return make_logic_op<ch_op::andb, ch_signed_v<R>, R>(*self, other);
+  }
+
+  template <typename R, typename U>
+  auto do_or(const U& other) const {
+    auto self = reinterpret_cast<const T*>(this);
+    return make_logic_op<ch_op::orb, ch_signed_v<R>, R>(*self, other);
+  }
+
+  template <typename R, typename U>
+  auto do_xor(const U& other) const {
+    auto self = reinterpret_cast<const T*>(this);
+    return make_logic_op<ch_op::xorb, ch_signed_v<R>, R>(*self, other);
+  }
+
+  template <typename R, typename U>
+  auto do_shl(const U& other) const {    
+    auto self = reinterpret_cast<const T*>(this);
+    static_assert(ch_width_v<U> <= 32, "invalid size");
+    return make_logic_op<ch_op::shl, ch_signed_v<R>, R>(*self, other);
+  }
+
+  template <typename R, typename U>
+  auto do_shr(const U& other) const {
+    auto self = reinterpret_cast<const T*>(this);
+    static_assert(ch_width_v<U> <= 32, "invalid size");
+    return make_logic_op<ch_op::shr, ch_signed_v<R>, R>(*self, other);
+  }
+
+  auto do_andr() const {
+    auto self = reinterpret_cast<const T*>(this);
+    return make_logic_op<ch_op::andr, false, ch_bool>(*self);
+  }
+
+  auto do_orr() const {
+    auto self = reinterpret_cast<const T*>(this);
+    return make_logic_op<ch_op::orr, false, ch_bool>(*self);
+  }
+
+  auto do_xorr() const {
+    auto self = reinterpret_cast<const T*>(this);
+    return make_logic_op<ch_op::xorr, false, ch_bool>(*self);
+  }
+
+  template <typename U> friend class ch_bit_base;
+};
+
+
+CH_LOGIC_FUNCTION2_DECL(ch_eq)
+CH_LOGIC_FUNCTION2_DECL(ch_ne)
+
+CH_LOGIC_FUNCTION1_DECL(ch_not)
+CH_LOGIC_FUNCTION2_DECL(ch_andl)
+CH_LOGIC_FUNCTION2_DECL(ch_orl)
+
+CH_LOGIC_FUNCTION1_DECL(ch_inv)
+CH_LOGIC_FUNCTION2_DECL(ch_and)
+CH_LOGIC_FUNCTION2_DECL(ch_or)
+CH_LOGIC_FUNCTION2_DECL(ch_xor)
+
+CH_LOGIC_FUNCTION2_DECL(ch_andr)
+CH_LOGIC_FUNCTION2_DECL(ch_orr)
+CH_LOGIC_FUNCTION2_DECL(ch_xorr)
+
+CH_LOGIC_FUNCTION2_DECL(ch_shl)
+CH_LOGIC_FUNCTION2_DECL(ch_shr)
+
+///////////////////////////////////////////////////////////////////////////////
+
 template <unsigned N>
-class ch_bit {
+class ch_bit : public ch_bit_base<ch_bit<N>> {
 public:
   static_assert(N != 0, "invalid size");
   using traits = logic_traits<N, false, ch_bit, ch_scbit<N>>;
+  template <unsigned M> using size_cast = ch_bit<M>;
+  using base = ch_bit_base<ch_bit<N>>;
+  using base::operator=;
 
   ch_bit(const logic_buffer& buffer =
       logic_buffer(N, idname<ch_bit>()))
@@ -19,72 +225,38 @@ public:
   }
 
   template <typename U,
-            CH_REQUIRE_0(std::is_integral_v<U>)>
+            CH_REQUIRE(std::is_integral_v<U>)>
   ch_bit(const U& other)
     : ch_bit(logic_buffer(N, idname<ch_bit>())) {
     CH_SOURCE_LOCATION(1);
-    this->operator=(other);
+    base::operator=(other);
   }
 
   template <typename U,
-            CH_REQUIRE_0(is_scbit_base_v<U>),
-            CH_REQUIRE_0(ch_width_v<U> <= N)>
+            CH_REQUIRE(is_scbit_base_v<U>),
+            CH_REQUIRE(ch_width_v<U> <= N)>
   ch_bit(const U& other)
     : ch_bit(logic_buffer(N, idname<ch_bit>())) {
     CH_SOURCE_LOCATION(1);
-    this->operator=(other);
+    base::operator=(other);
   }
 
   template <typename U,
-            CH_REQUIRE_0(is_bit_base_v<U>),
-            CH_REQUIRE_0(ch_width_v<U> <= N)>
+            CH_REQUIRE(is_bit_base_v<U>),
+            CH_REQUIRE(ch_width_v<U> <= N)>
   ch_bit(const U& other)
     : ch_bit(logic_buffer(N, idname<ch_bit>())) {
     CH_SOURCE_LOCATION(1);
-    this->operator=(other);
+    base::operator=(other);
   }
 
   ch_bit(const ch_bit& other)
     : ch_bit(logic_buffer(N, idname<ch_bit>())) {
     CH_SOURCE_LOCATION(1);
-    this->operator=(other);
+    base::operator=(other);
   }
 
-  ch_bit(ch_bit&& other) : buffer_(std::move(other.buffer_)) {}
-
-  template <typename U,
-            CH_REQUIRE_0(std::is_integral_v<U>)>
-  ch_bit& operator=(const U& other) {
-    CH_SOURCE_LOCATION(1);
-    logic_accessor::assign(*this, sdata_type(N, other));
-    return *this;
-  }
-
-  template <typename U,
-            CH_REQUIRE_0(is_scbit_base_v<U>),
-            CH_REQUIRE_0(ch_width_v<U> < N)>
-  ch_bit& operator=(const U& other) {
-    CH_SOURCE_LOCATION(1);
-    ch_scbit<N> tmp(other);
-    logic_accessor::assign(*this, system_accessor::data(tmp));
-    return *this;
-  }
-
-  ch_bit& operator=(const ch_scbit<N>& other) {
-    CH_SOURCE_LOCATION(1);
-    logic_accessor::assign(*this, system_accessor::data(other));
-    return *this;
-  }
-
-  template <typename U,
-            CH_REQUIRE_0(is_bit_base_v<U>),
-            CH_REQUIRE_0(ch_width_v<U> < N)>
-  ch_bit& operator=(const U& other) {
-    CH_SOURCE_LOCATION(1);
-    ch_bit<N> tmp(logic_buffer(createOpNode(ch_op::pad, N, ch_signed_v<U>, get_lnode(other))));
-    logic_accessor::assign(*this, tmp);
-    return *this;
-  }
+  ch_bit(ch_bit&& other) : buffer_(std::move(other.buffer_)) {}  
 
   ch_bit& operator=(const ch_bit& other) {
     CH_SOURCE_LOCATION(1);
@@ -98,27 +270,6 @@ public:
     return *this;
   }
 
-  // subscript operators
-
-  auto operator[](size_t index) const {
-    assert(index < N);
-    CH_SOURCE_LOCATION(1);
-    return this->template slice<1>(index);
-  }
-
-  auto operator[](size_t index) {
-    assert(index < N);
-    CH_SOURCE_LOCATION(1);
-    return this->template sliceref<1>(index);
-  }
-
-  CH_LOGIC_INTERFACE(ch_bit)
-  CH_LOGIC_OP_EQUALITY(ch_bit)
-  CH_LOGIC_OP_LOGICAL(ch_bit)
-  CH_LOGIC_OP_BITWISE(ch_bit)
-  CH_LOGIC_OP_SHIFT(ch_bit)
-  CH_LOGIC_OP_SLICE(ch_bit)
-
 protected:
 
   const logic_buffer& __buffer() const {
@@ -128,6 +279,7 @@ protected:
   logic_buffer buffer_;
 
   friend class logic_accessor;
+  template <unsigned M> friend class ch_bit;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -180,43 +332,6 @@ template <unsigned N, typename T>
 auto ch_asliceref(T& obj, size_t start = 0) {
   CH_SOURCE_LOCATION(1);
   return obj.template asliceref<N>(start);
-}
-
-// equality functions
-
-CH_LOGIC_FUNCTION_EQUALITY(ch_bit, ch_eq, ch_op::eq)
-CH_LOGIC_FUNCTION_EQUALITY(ch_bit, ch_ne, ch_op::ne)
-
-// binary functions
-
-CH_LOGIC_FUNCTION_BITWISE1(ch_bit, ch_inv, ch_op::inv)
-CH_LOGIC_FUNCTION_BITWISE2(ch_bit, ch_and, ch_op::andb)
-CH_LOGIC_FUNCTION_BITWISE2(ch_bit, ch_or, ch_op::orb)
-CH_LOGIC_FUNCTION_BITWISE2(ch_bit, ch_xor, ch_op::xorb)
-
-// shift functions
-
-CH_LOGIC_FUNCTION_SHIFT(ch_bit, ch_shl, ch_op::shl)
-CH_LOGIC_FUNCTION_SHIFT(ch_bit, ch_shr, ch_op::shr)
-
-// reduce functions
-
-template <unsigned N>
-inline auto ch_andr(const ch_bit<N>& in) {
-  CH_SOURCE_LOCATION(1);
-  return make_logic_op<ch_op::andr, false, ch_bit<1>>(in);
-}
-
-template <unsigned N>
-inline auto ch_orr(const ch_bit<N>& in) {
-  CH_SOURCE_LOCATION(1);
-  return make_logic_op<ch_op::orr, false, ch_bit<1>>(in);
-}
-
-template <unsigned N>
-inline auto ch_xorr(const ch_bit<N>& in) {
-  CH_SOURCE_LOCATION(1);
-  return make_logic_op<ch_op::xorr, false, ch_bit<1>>(in);
 }
 
 // rotate functions

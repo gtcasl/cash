@@ -376,7 +376,7 @@ bool compiler::dead_code_elimination() {
     }
   }
 
-  // check for un-initialized nodes
+  // check for uninitialized nodes
   if (!undefs.empty()) {
     bool found = false;
     for (auto node : undefs) {
@@ -398,7 +398,7 @@ bool compiler::dead_code_elimination() {
         auto proxy = reinterpret_cast<proxyimpl*>(node);
         if (proxy->check_fully_initialized())
           continue;
-        fprintf(stderr, "error: un-initialized variable %s\n", proxy->debug_info().c_str());
+        fprintf(stderr, "error: uninitialized variable %s\n", proxy->debug_info().c_str());
       }
       std::abort();
     #define LCOV_EXCL_END

@@ -12,7 +12,7 @@ protected:
   static const std::size_t array_size = N;
 
   template <typename... Us,
-            CH_REQUIRE_0(sizeof...(Us) == N && is_fold_constructible_v<T, Us...>)>
+            CH_REQUIRE(sizeof...(Us) == N && is_fold_constructible_v<T, Us...>)>
   vec_base(Us&&... values)
     : base{T(std::forward<Us>(values))...}
   {}
@@ -58,14 +58,14 @@ public:
   {}
 
   template <typename U,
-            CH_REQUIRE_0(std::is_constructible_v<T, U>)>
+            CH_REQUIRE(std::is_constructible_v<T, U>)>
   explicit ch_vec(const vec_base<U, N>& other)
     : ch_vec(logic_buffer(traits::bitwidth, idname<ch_vec>())) {
     this->operator=(other);
   }
 
   template <typename U,
-            CH_REQUIRE_0(is_logic_type_v<U>)>
+            CH_REQUIRE(is_object_type_v<U>)>
   explicit ch_vec(const U& other)
     : ch_vec(logic_buffer(traits::bitwidth, idname<ch_vec>())) {
     static_assert(ch_width_v<U> == N * ch_width_v<T>, "invalid size");
@@ -73,15 +73,7 @@ public:
   }
 
   template <typename U,
-            CH_REQUIRE_1(is_system_type_v<U>)>
-  explicit ch_vec(const U& other)
-    : ch_vec(logic_buffer(traits::bitwidth, idname<ch_vec>())) {
-    static_assert(ch_width_v<U> == N * ch_width_v<T>, "invalid size");
-    this->operator=(other);
-  }
-
-  template <typename U,
-            CH_REQUIRE_0(std::is_integral_v<U>)>
+            CH_REQUIRE(std::is_integral_v<U>)>
   explicit ch_vec(U value)
     : ch_vec(logic_buffer(traits::bitwidth, idname<ch_vec>())) {
     ch_scbit<traits::bitwidth> tmp(make_system_buffer(sdata_from_fill(value, ch_width_v<T>, N)));
@@ -114,20 +106,15 @@ public:
   }
 
   template <typename U,
-            CH_REQUIRE_0(is_system_type_v<U>)>
+            CH_REQUIRE(is_object_type_v<U>)>
   ch_vec& operator=(const U& other) {
     static_assert(ch_width_v<U> == N * ch_width_v<T>, "invalid size");
     CH_SOURCE_LOCATION(1);
-    logic_accessor::assign(*this, system_accessor::data(other));
-    return *this;
-  }
-
-  template <typename U,
-            CH_REQUIRE_1(is_logic_type_v<U>)>
-  ch_vec& operator=(const U& other) {
-    static_assert(ch_width_v<U> == N * ch_width_v<T>, "invalid size");
-    CH_SOURCE_LOCATION(1);
-    logic_accessor::assign(*this, other);
+    if constexpr (is_logic_type_v<U>) {
+      logic_accessor::assign(*this, other);
+    } else {
+      logic_accessor::assign(*this, system_accessor::data(other));
+    }
     return *this;
   }
 
@@ -181,20 +168,20 @@ public:
   ch_vec(ch_vec&& other) : base(std::move(other)) {}
 
   template <typename U,
-            CH_REQUIRE_0(std::is_constructible_v<T, U>)>
+            CH_REQUIRE(std::is_constructible_v<T, U>)>
   explicit ch_vec(const vec_base<U, N>& other)
     : ch_vec(system_accessor::copy(other))
   {}
 
   template <typename U,
-              CH_REQUIRE_0(is_system_type_v<U>)>
+              CH_REQUIRE(is_system_type_v<U>)>
   explicit ch_vec(const U& other)
     : ch_vec(system_accessor::copy(other)) {
     static_assert(ch_width_v<U> == N * ch_width_v<T>, "invalid size");
   }
 
   template <typename U,
-            CH_REQUIRE_0(std::is_integral_v<U>)>
+            CH_REQUIRE(std::is_integral_v<U>)>
   explicit ch_vec(U value)
     : ch_vec(make_system_buffer(sdata_from_fill(value, ch_width_v<T>, N)))
   {}
@@ -220,7 +207,7 @@ public:
   }
 
   template <typename U,
-            CH_REQUIRE_0(is_system_type_v<U>)>
+            CH_REQUIRE(is_system_type_v<U>)>
   ch_vec& operator=(const U& other) {
     static_assert(ch_width_v<U> == N * ch_width_v<T>, "invalid size");
     system_accessor::assign(*this, other);

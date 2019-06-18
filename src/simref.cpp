@@ -318,7 +318,7 @@ public:
 
   void eval() override {
     //--
-    using bit_accessor_t = StaticBitAccessor<is_signed, resize_opds, block_type>;
+    using bit_accessor_t = StaticBitAccessor<block_type, is_signed, resize_opds>;
 
     switch (op) {
     case ch_op::eq:

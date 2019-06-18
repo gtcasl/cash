@@ -39,7 +39,7 @@ void ch_println(const std::string& format, const Args&... args) {
 
 // assert function
 
-inline void ch_assert(const ch_bit<1>& cond, const std::string& msg) {
+inline void ch_assert(const ch_bool& cond, const std::string& msg) {
   CH_SOURCE_LOCATION(1);
   createAssertNode(get_lnode(cond), msg);
 }

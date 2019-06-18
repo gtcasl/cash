@@ -194,6 +194,11 @@ void foo() {
     auto c = a & b;
   }
   {
+    ch_bit2 a(0);
+    ch_bit4 b(1);
+    auto c = a & b;
+  }
+  {
     ch_int4 a(0);
     ch_int4 b(1);
     auto c = a + b + 1_b;
@@ -208,7 +213,6 @@ void foo() {
     auto e = m.io.lhs + m.io.rhs;
     auto f = a + m.io.rhs;
   }
-
   {
     ch_bit<4> a = 3;
     auto b = a & 1;

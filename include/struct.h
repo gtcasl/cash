@@ -35,10 +35,10 @@
   CH_PAIR_R(x) = CH_CONCAT(_,CH_PAIR_R(x))
 
 #define CH_STRUCT_SYSTEM_SOURCE(i, x) \
-  return ch::internal::system_accessor::source(CH_PAIR_R(x))
+  ch::internal::system_accessor::source(CH_PAIR_R(x))
 
 #define CH_STRUCT_LOGIC_SOURCE(i, x) \
-  return ch::internal::logic_accessor::source(CH_PAIR_R(x))
+  ch::internal::logic_accessor::source(CH_PAIR_R(x))
 
 #define CH_STRUCT_OSTREAM(a, i, x) \
   if (i) { \
@@ -55,7 +55,7 @@ public: \
   type_name(const ch::internal::system_buffer_ptr& buffer = \
     ch::internal::make_system_buffer(traits::bitwidth, CH_STRINGIZE(struct_name))) \
     : CH_FOR_EACH(CH_STRUCT_SYSTEM_CTOR, , CH_SEP_COMMA, __VA_ARGS__) {} \
-  template <CH_REQUIRE_0(CH_NARG(__VA_ARGS__) >= 2)> \
+  template <CH_REQUIRE(CH_NARG(__VA_ARGS__) >= 2)> \
   explicit type_name(const ch_scbit<traits::bitwidth>& __other) \
     : type_name(ch::internal::system_accessor::copy(__other)) {} \
   type_name(const type_name& __other) \
@@ -76,7 +76,7 @@ public: \
   } \
 protected: \
   const ch::internal::system_buffer_ptr& __buffer() const { \
-    CH_STRUCT_SYSTEM_SOURCE(0, CH_FIRST_ARG(__VA_ARGS__)); \
+    return CH_STRUCT_SYSTEM_SOURCE(0, CH_FIRST_ARG(__VA_ARGS__)); \
   } \
   friend std::ostream& operator<<(std::ostream& __out, const type_name& __in) { \
     __out << "("; \
@@ -96,7 +96,7 @@ public: \
   type_name(const ch::internal::logic_buffer& buffer = \
     ch::internal::logic_buffer(traits::bitwidth, CH_STRINGIZE(struct_name))) \
     : CH_FOR_EACH(CH_STRUCT_LOGIC_CTOR, , CH_SEP_COMMA, __VA_ARGS__) {} \
-  template <CH_REQUIRE_0(CH_NARG(__VA_ARGS__) >= 2)> \
+  template <CH_REQUIRE(CH_NARG(__VA_ARGS__) >= 2)> \
   explicit type_name(const ch_scbit<traits::bitwidth>& __other) \
     : type_name(ch::internal::logic_buffer(traits::bitwidth, CH_STRINGIZE(struct_name))) { \
     CH_SOURCE_LOCATION(1); \
@@ -127,7 +127,7 @@ public: \
   } \
 protected: \
   const ch::internal::logic_buffer& __buffer() const { \
-    CH_STRUCT_LOGIC_SOURCE(0, CH_FIRST_ARG(__VA_ARGS__)); \
+    return CH_STRUCT_LOGIC_SOURCE(0, CH_FIRST_ARG(__VA_ARGS__)); \
   } \
   friend class ch::internal::logic_accessor; \
 public:
@@ -142,7 +142,7 @@ public: \
     ch::internal::make_system_buffer(traits::bitwidth, CH_STRINGIZE(struct_name))) \
     : base(buffer) \
     , CH_FOR_EACH(CH_STRUCT_SYSTEM_CTOR, , CH_SEP_COMMA, __VA_ARGS__) {} \
-  template <CH_REQUIRE_0(CH_NARG(__VA_ARGS__) >= 2)> \
+  template <CH_REQUIRE(CH_NARG(__VA_ARGS__) >= 2)> \
   explicit type_name(const ch_scbit<traits::bitwidth>& __other) \
     : type_name(ch::internal::system_accessor::copy(__other)) {} \
   type_name(const type_name& __other) \
@@ -187,7 +187,7 @@ public: \
     ch::internal::logic_buffer(traits::bitwidth, CH_STRINGIZE(struct_name))) \
     : base(buffer) \
     , CH_FOR_EACH(CH_STRUCT_LOGIC_CTOR, , CH_SEP_COMMA, __VA_ARGS__) {} \
-  template <CH_REQUIRE_0(CH_NARG(__VA_ARGS__) >= 2)> \
+  template <CH_REQUIRE(CH_NARG(__VA_ARGS__) >= 2)> \
   explicit type_name(const ch_scbit<traits::bitwidth>& __other) \
     : type_name(ch::internal::logic_buffer(traits::bitwidth, CH_STRINGIZE(struct_name))) { \
     CH_SOURCE_LOCATION(1); \

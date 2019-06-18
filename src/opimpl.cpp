@@ -38,7 +38,7 @@ void opimpl::init(ch_op op, bool is_signed, lnodeimpl* lhs, lnodeimpl* rhs) {
   }
   // disable the sign if not applicable
   if (is_signed
-   && (0 == (CH_OP_PROP(op) & op_flags::is_signed))
+   && !CH_OP_IS_SIGNED(op)
    && !this->should_resize_opds()) {
     is_signed = false;
   }

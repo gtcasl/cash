@@ -1,9 +1,17 @@
 #include "common.h"
 #include <limits>
 
-static void begin_test() {
+static bool begin_test() {
   static int test_number = 0;
-  std::cout << "running test #" << test_number++ << " ..." << std::endl;
+  ++test_number;
+  auto testid = std::getenv("CASH_TESTID");
+  if (testid) {
+    auto id = atol(testid);
+    if (id != 0 && test_number != id)
+      return false;
+  }
+  std::cout << "running test #" << test_number << " ..." << std::endl;
+  return true;
 }
 
 static void end_test() {
@@ -68,10 +76,11 @@ RetCheck& RetCheck::operator&=(bool value) {
 }
 
 bool TEST(const std::function<ch_bool ()>& test, ch_tick cycles) {
-  ch_device<TestRunner> device(test);
-  ch_simulator sim(device);
+  if (!begin_test())
+    return true;
 
-  begin_test();
+  ch_device<TestRunner> device(test);
+  ch_simulator sim(device);  
 
   auto ticks = (0 == cycles) ? 1 : (cycles * 2);
 
@@ -89,10 +98,11 @@ bool TEST(const std::function<ch_bool ()>& test, ch_tick cycles) {
 }
 
 bool TEST1(const std::function<ch_bool (const ch_int8&)>& test, ch_tick cycles) {
+  if (!begin_test())
+    return true;
+
   ch_device<TestRunner1> device(test);
   ch_simulator sim(device);
-
-  begin_test();
 
   auto ticks = (0 == cycles) ? 1 : (cycles * 2);
 
@@ -112,10 +122,11 @@ bool TEST1(const std::function<ch_bool (const ch_int8&)>& test, ch_tick cycles) 
 }
 
 bool TEST2(const std::function<ch_bool (const ch_int8&, const ch_int8&)>& test, ch_tick cycles) {
+  if (!begin_test())
+    return true;
+
   ch_device<TestRunner2> device(test);
   ch_simulator sim(device);
-
-  begin_test();
 
   auto ticks = (0 == cycles) ? 1 : (cycles * 2);
 
@@ -136,7 +147,8 @@ bool TEST2(const std::function<ch_bool (const ch_int8&, const ch_int8&)>& test, 
 }
 
 bool TESTX(const std::function<bool()>& test) {
-  begin_test();
+  if (!begin_test())
+    return true;
   bool bRet = test();
   assert(bRet);
   end_test();

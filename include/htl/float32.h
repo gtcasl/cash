@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cash.h>
+#include <math.h>
 
 namespace ch {
 namespace htl {
@@ -103,56 +104,50 @@ public:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class ch_float32 : public ch_bit32 {
+class ch_float32 : public ch_number_base<ch_float32> {
 public:
   using traits = logic_traits<32, true, ch_float32, ch_scfloat32>;
-  using base = ch_bit32;
+  using base = ch_number_base<ch_float32>;
 
-  ch_float32(const logic_buffer& buffer = logic_buffer(32, "ch_float32"))
-    : base(buffer)
+  ch_float32(const logic_buffer& buffer = logic_buffer(32, ch::internal::idname<ch_float32>()))
+    : buffer_(buffer)
   {}
 
   ch_float32(float other)
-    : ch_float32(logic_buffer(32, "ch_float32")) {
+    : ch_float32(logic_buffer(32, ch::internal::idname<ch_float32>())) {
     __source_location(1);
     this->operator=(other);
   }
 
-  explicit ch_float32(const ch_scbit<32>& other)
-    : ch_float32(logic_buffer(32, "ch_float32")) {
-    __source_location(1);
-    this->operator=(other);
+  template <typename U,
+            CH_REQUIRE(ch::internal::is_scbit_base_v<U>),
+            CH_REQUIRE(ch_width_v<U> <= 32)>
+  explicit ch_float32(const U& other)
+    : ch_float32(logic_buffer(32, ch::internal::idname<ch_float32>())) {
+    CH_SOURCE_LOCATION(1);
+    base::operator=(other);
   }
 
-  explicit ch_float32(const ch_bit<32>& other)
-    : ch_float32(logic_buffer(32, "ch_float32")) {
-    __source_location(1);
-    this->operator=(other);
+  template <typename U,
+            CH_REQUIRE(ch::internal::is_bit_base_v<U>),
+            CH_REQUIRE(ch_width_v<U> <= 32)>
+  explicit ch_float32(const U& other)
+    : ch_float32(logic_buffer(32, ch::internal::idname<ch_float32>())) {
+    CH_SOURCE_LOCATION(1);
+    base::operator=(other);
   }
 
   ch_float32(const ch_float32& other)
-    : ch_float32(logic_buffer(32, "ch_float32")) {
+    : ch_float32(logic_buffer(32, ch::internal::idname<ch_float32>())) {
     __source_location(1);
     this->operator=(other);
   }
 
-  ch_float32(ch_float32&& other) : base(std::move(other)) {}
+  ch_float32(ch_float32&& other) : buffer_(std::move(other.buffer_)) {}
 
   ch_float32& operator=(float other) {
     __source_location(1);
     base::operator=(bit_cast<int32_t>(other));
-    return *this;
-  }
-
-  ch_float32& operator=(const ch_scbit<32>& other) {
-    __source_location(1);
-    base::operator=(other);
-    return *this;
-  }
-
-  ch_float32& operator=(const ch_bit<32>& other) {
-    __source_location(1);
-    base::operator=(other);
     return *this;
   }
 
@@ -168,47 +163,33 @@ public:
     return *this;
   }
 
-  CH_LOGIC_INTERFACE(ch_float32)
+protected:
 
-  friend auto operator==(ch_float32& lhs, const ch_float32& rhs) {
-    __source_location(1);
-    return (lhs.as_int() == rhs.as_int());
+  template <typename R>
+  auto do_neg() const;
+
+  template <typename R, typename U>
+  auto do_add(const U& other) const;
+
+  template <typename R, typename U>
+  auto do_sub(const U& other) const;
+
+  template <typename R, typename U>
+  auto do_mul(const U& other) const;
+
+  template <typename R, typename U>
+  auto do_div(const U& other) const;
+
+  template <typename R, typename U>
+  auto do_mod(const U& other) const;
+
+  const logic_buffer& __buffer() const {
+    return buffer_;
   }
 
-  friend auto operator!=(ch_float32& lhs, const ch_float32& rhs) {
-    __source_location(1);
-    return (lhs.as_int() != rhs.as_int());
-  }
+  logic_buffer buffer_;
 
-  friend auto operator<(ch_float32& lhs, const ch_float32& rhs) {
-    __source_location(1);
-    return (lhs.as_int() < rhs.as_int());
-  }
-
-  friend auto operator<=(ch_float32& lhs, const ch_float32& rhs) {
-    __source_location(1);
-    return (lhs.as_int() <= rhs.as_int());
-  }
-
-  friend auto operator>(ch_float32& lhs, const ch_float32& rhs) {
-    __source_location(1);
-    return (lhs.as_int() >= rhs.as_int());
-  }
-
-  friend auto operator>=(ch_float32& lhs, const ch_float32& rhs) {
-    __source_location(1);
-    return (lhs.as_int() >= rhs.as_int());
-  }
-
-  friend auto operator-(ch_float32& self);
-
-  friend auto operator+(ch_float32& lhs, const ch_float32& rhs);
-
-  friend auto operator-(ch_float32& lhs, const ch_float32& rhs);
-
-  friend auto operator*(ch_float32& lhs, const ch_float32& rhs);
-
-  friend auto operator/(ch_float32& lhs, const ch_float32& rhs);
+  friend class ch::internal::logic_accessor;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -434,45 +415,73 @@ struct cfDiv {
   }
 };
 
+struct cfMod {
+  __scio (
+    __in (ch_float32)  lhs,
+    __in (ch_float32)  rhs,
+    __out (ch_float32) dst
+  );
+
+  void eval() {
+    auto lhs = bit_cast<float>(static_cast<int32_t>(io.lhs));
+    auto rhs = bit_cast<float>(static_cast<int32_t>(io.rhs));
+    io.dst = bit_cast<int32_t>(fmod(lhs, rhs));
+  }
+};
+
 ///////////////////////////////////////////////////////////////////////////////
 
-inline auto operator-(ch_float32& self) {
+template <typename R>
+auto ch_float32::do_neg() const {
   __source_location(1);
   ch_udf_comb<cfSub> udf;
   udf.io.lhs = 0.0f;
-  udf.io.rhs = self;
+  udf.io.rhs = *this;
   return udf.io.dst;
 }
 
-inline auto operator+(ch_float32& lhs, const ch_float32& rhs) {
+template <typename R, typename U>
+auto ch_float32::do_add(const U& other) const {
   __source_location(1);
   ch_udf_comb<cfAdd> udf;
-  udf.io.lhs = lhs;
-  udf.io.rhs = rhs;
+  udf.io.lhs = *this;
+  udf.io.rhs = other;
   return udf.io.dst;
 }
 
-inline auto operator-(ch_float32& lhs, const ch_float32& rhs) {
+template <typename R, typename U>
+auto ch_float32::do_sub(const U& other) const {
   __source_location(1);
   ch_udf_comb<cfSub> udf;
-  udf.io.lhs = lhs;
-  udf.io.rhs = rhs;
+  udf.io.lhs = *this;
+  udf.io.rhs = other;
   return udf.io.dst;
 }
 
-inline auto operator*(ch_float32& lhs, const ch_float32& rhs) {
+template <typename R, typename U>
+auto ch_float32::do_mul(const U& other) const {
   __source_location(1);
   ch_udf_comb<cfMul> udf;
-  udf.io.lhs = lhs;
-  udf.io.rhs = rhs;
+  udf.io.lhs = *this;
+  udf.io.rhs = other;
   return udf.io.dst;
 }
 
-inline auto operator/(ch_float32& lhs, const ch_float32& rhs) {
+template <typename R, typename U>
+auto ch_float32::do_div(const U& other) const {
   __source_location(1);
   ch_udf_comb<cfDiv> udf;
-  udf.io.lhs = lhs;
-  udf.io.rhs = rhs;
+  udf.io.lhs = *this;
+  udf.io.rhs = other;
+  return udf.io.dst;
+}
+
+template <typename R, typename U>
+auto ch_float32::do_mod(const U& other) const {
+  __source_location(1);
+  ch_udf_comb<cfMod> udf;
+  udf.io.lhs = *this;
+  udf.io.rhs = other;
   return udf.io.dst;
 }
 

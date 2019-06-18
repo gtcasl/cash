@@ -22,6 +22,12 @@
 #define CH_UNION_LOGIC_FIELD(a, i, x) \
   ch_logic_t<ch::internal::identity_t<CH_PAIR_L(x)>> CH_PAIR_R(x)
 
+#define CH_UNION_SYSTEM_SOURCE(i, x) \
+  ch::internal::system_accessor::source(CH_PAIR_R(x))
+
+#define CH_UNION_LOGIC_SOURCE(i, x) \
+  ch::internal::logic_accessor::source(CH_PAIR_R(x))
+
 #define CH_UNION_OSTREAM(a, i, x) \
   if (i) { \
     __out << ",";  \
@@ -51,7 +57,7 @@
   } \
 protected: \
   const ch::internal::system_buffer_ptr& __buffer() const { \
-    CH_STRUCT_SYSTEM_SOURCE(0, CH_FIRST_ARG(__VA_ARGS__)); \
+    return CH_UNION_SYSTEM_SOURCE(0, CH_FIRST_ARG(__VA_ARGS__)); \
   } \
   friend std::ostream& operator<<(std::ostream& __out, const type_name& __in) { \
     __out << "("; \
@@ -91,7 +97,7 @@ public:
   } \
 protected: \
   const ch::internal::logic_buffer& __buffer() const { \
-    CH_STRUCT_LOGIC_SOURCE(0, CH_FIRST_ARG(__VA_ARGS__)); \
+    return CH_UNION_LOGIC_SOURCE(0, CH_FIRST_ARG(__VA_ARGS__)); \
   } \
   friend class ch::internal::logic_accessor; \
 public:
