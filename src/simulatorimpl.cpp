@@ -67,11 +67,6 @@ void simulatorimpl::initialize() {
         for (auto ctx : contexts_) {
           compiler.create_merged_context(ctx);
         }
-      }
-
-      // optimize evaluation context
-      {
-        compiler compiler(eval_ctx_);
         compiler.optimize();
       }
     }

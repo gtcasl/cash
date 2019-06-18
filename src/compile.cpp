@@ -175,27 +175,23 @@ void compiler::optimize() {
   dce_total = tracker.deleted();
 
   // run optimization passes
-  for (;;) {
-    bool changed = false;
-    changed |= this->prune_identity_proxies();
-    auto pip = tracker.deleted();
+  bool changed =true;
+  if (ctx_->parent()
+   && (platform::self().cflags() & cflags::disable_sub_opt) != 0) {
+    changed = false;
+  }
+
+  for (;changed;) {
+    changed = this->prune_identity_proxies();
+    pip_total += tracker.deleted();
     changed |= this->proxies_coalescing();
-    auto pcx = tracker.deleted();
+    pcx_total += tracker.deleted();
     changed |= this->constant_folding();
-    auto cfo = tracker.deleted();
+    cfo_total += tracker.deleted();
     changed |= this->subexpressions_elimination();
-    auto cse = tracker.deleted();    
+    cse_total += tracker.deleted();
     changed |= this->branch_coalescing();
-    auto bro = tracker.deleted();
-
-    if (!changed)
-      break;
-
-    cfo_total += cfo;
-    cse_total += cse;
-    pip_total += pip;
-    pcx_total += pcx;
-    bro_total += bro;
+    bro_total += tracker.deleted();
   }
 
 #ifndef NDEBUG
@@ -368,7 +364,8 @@ bool compiler::dead_code_elimination() {
   // delete dead nodes
   for (auto it = ctx_->nodes().begin(),
             end = ctx_->nodes().end(); it != end;) {
-    if (0 == live_nodes.count(*it)) {
+    auto node = *it;
+    if (0 == live_nodes.count(node)) {
       it = ctx_->delete_node(it);
       changed = true;
     } else {

@@ -106,22 +106,6 @@ struct MAC {
   );
 
   void describe() {
-    {
-      ch_int<2> a(0);
-      ch_int<4> b(0);
-      ch_uint<2> c(1);
-      auto r1 = a + b;
-      auto r2 = a + c;
-    }
-    {
-      ch_uint8 q;
-      ch_uint4 a;
-      ch_int2  b;
-      ch_bit4 k;
-      auto c = a + b;
-      a = b;
-      //ch_bit4 q = ch_slice<4>(q);
-    }
     io.a_out = ch_nextEn(io.a_in, io.enable, 0);
     io.b_out = ch_nextEn(io.b_in, io.enable, 0);
     io.c_out = ch_nextEn(io.c_out + ch_mul<O>(io.a_in, io.b_in), io.enable, 0);

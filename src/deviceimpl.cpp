@@ -38,9 +38,7 @@ bool deviceimpl::begin_build() const {
 void deviceimpl::end_build() {
   if (is_new_ctx_) {
     compiler compiler(ctx_);
-    if (0 == (platform::self().cflags() & cflags::disable_sub_opt)) {
-      compiler.optimize();
-    }
+    compiler.optimize();
   }
 }
 
