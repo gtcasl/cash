@@ -39,8 +39,7 @@ set(PROJECT_SOURCES
     src/utils.cpp
     src/platform.cpp    
     src/system.cpp
-    src/logic.cpp
-    src/context.cpp
+    src/logic.cpp    
     src/lnode.cpp
     src/lnodeimpl.cpp
     src/ioimpl.cpp
@@ -57,6 +56,8 @@ set(PROJECT_SOURCES
     src/printimpl.cpp
     src/udfimpl.cpp
     src/deviceimpl.cpp
+    src/context.cpp
+    src/branchconv.cpp
     src/compile.cpp
     src/simref.cpp
     src/simjit.cpp    

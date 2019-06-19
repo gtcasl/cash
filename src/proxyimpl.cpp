@@ -269,7 +269,7 @@ void proxyimpl::write(uint32_t dst_offset,
     if (src_offset != 0 || src->size() != length) {
       src = ctx_->create_node<proxyimpl>(src, src_offset, length, src->name(), sloc);
     }
-    ctx_->conditional_assign(this, dst_offset, length, src, sloc);
+    ctx_->conditional_write(this, dst_offset, length, src, sloc);
   } else {
     this->add_source(dst_offset, src, src_offset, length);
   }

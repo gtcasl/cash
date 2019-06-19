@@ -33,36 +33,8 @@ class udf_obj;
 class udf_iface;
 class clock_event;
 class source_location;
-struct cond_br_t;
-struct cond_block_t;
-
-struct cond_range_t {
-  uint32_t offset;
-  uint32_t length;
-
-  bool operator==(const cond_range_t& var) const {
-    return this->offset == var.offset
-        && this->length == var.length;
-  }
-
-  bool operator!=(const cond_range_t& var) const {
-    return !(*this == var);
-  }
-
-  bool operator<(const cond_range_t& var) const {
-    if (this->offset != var.offset)
-      return (this->offset < var.offset);
-    return (this->length < var.length);
-  }
-};
-
-typedef std::unordered_map<uint32_t, lnodeimpl*> cond_defs_t;
-
-typedef std::map<cond_range_t, cond_defs_t> cond_slices_t;
-
-typedef std::unordered_map<proxyimpl*, cond_slices_t> cond_vars_t;
-
-typedef std::unordered_map<uint32_t, cond_block_t*> cond_inits_t;
+class branchconverter;
+class cond_block_t;
 
 typedef const char* (*enum_string_cb)(uint32_t value);
 
@@ -186,6 +158,8 @@ public:
 
   void delete_node(lnodeimpl* node);
 
+  void reset_system_node(lnodeimpl* node);
+
   //--
 
   void create_binding(context* ctx, const source_location& sloc);
@@ -239,15 +213,13 @@ public:
 
   bool conditional_enabled(lnodeimpl* node = nullptr) const;
 
-  void conditional_assign(proxyimpl* dst,
+  void conditional_write(proxyimpl* dst,
                           uint32_t offset,
                           uint32_t length,
                           lnodeimpl* src,
                           const source_location& sloc);
 
   lnodeimpl* create_predicate(const source_location& sloc);
-
-  void remove_local_variable(lnodeimpl* src, lnodeimpl* dst);
 
   //--
 
@@ -286,12 +258,7 @@ public:
   
 protected:
 
-  void add_node(lnodeimpl* node);
-
-  lnodeimpl* emit_conditionals(proxyimpl* dst,
-                               const cond_range_t& range,
-                               const cond_defs_t& defs,
-                               const cond_br_t* branch);
+  void add_node(lnodeimpl* node);  
 
   uint32_t    id_;
   std::string name_;
@@ -327,14 +294,10 @@ protected:
   node_list_view snodes_;
   node_list_view udfs_;
 
-  enum_strings_t enum_strings_;
-
-  cd_stack_t              cd_stack_;
+  enum_strings_t   enum_strings_;
+  branchconverter* branchconv_;
+  cd_stack_t       cd_stack_;
   dup_tracker<std::string> dup_tap_names_;
-  uint32_t                cond_blk_idx_;
-  std::stack<cond_br_t*>  cond_branches_;
-  cond_vars_t             cond_vars_;
-  cond_inits_t            cond_inits_;  
 };
 
 context* ctx_create(const std::type_index& signature,
