@@ -283,7 +283,7 @@ bool proxyimpl::equals(const lnodeimpl& other) const {
   return false;
 }
 
-lnodeimpl* proxyimpl::slice(uint32_t offset, uint32_t length, const source_location& sloc) const {
+lnodeimpl* proxyimpl::source(uint32_t offset, uint32_t length, const source_location& sloc) const {
   assert(length <= this->size());
 
   if (0 == this->num_srcs())

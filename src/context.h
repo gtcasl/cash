@@ -60,7 +60,7 @@ typedef std::unordered_map<uint32_t, lnodeimpl*> cond_defs_t;
 
 typedef std::map<cond_range_t, cond_defs_t> cond_slices_t;
 
-typedef std::unordered_map<lnodeimpl*, cond_slices_t> cond_vars_t;
+typedef std::unordered_map<proxyimpl*, cond_slices_t> cond_vars_t;
 
 typedef std::unordered_map<uint32_t, cond_block_t*> cond_inits_t;
 
@@ -239,7 +239,7 @@ public:
 
   bool conditional_enabled(lnodeimpl* node = nullptr) const;
 
-  void conditional_assign(lnodeimpl* dst,
+  void conditional_assign(proxyimpl* dst,
                           uint32_t offset,
                           uint32_t length,
                           lnodeimpl* src,
@@ -288,7 +288,7 @@ protected:
 
   void add_node(lnodeimpl* node);
 
-  lnodeimpl* emit_conditionals(lnodeimpl* dst,
+  lnodeimpl* emit_conditionals(proxyimpl* dst,
                                const cond_range_t& range,
                                const cond_defs_t& defs,
                                const cond_br_t* branch);

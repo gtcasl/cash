@@ -72,24 +72,6 @@ const source_location& lnode::sloc() const {
   return impl_->sloc();
 }
 
-void lnode::write(uint32_t dst_offset,
-                  const lnode& src,
-                  uint32_t src_offset,
-                  uint32_t length) {
-  assert(impl_);
-  this->ensure_proxy();
-  impl_->write(dst_offset, src.impl(), src_offset, length);
-}
-
-void lnode::ensure_proxy() {
-  auto impl = impl_;
-  if (type_proxy == impl->type())
-    return;
-  auto proxy = impl->ctx()->create_node<proxyimpl>(impl->size(), impl->name(), impl->sloc());
-  impl->replace_uses(proxy);
-  proxy->write(0, impl, 0, impl->size());
-}
-
 std::ostream& ch::internal::operator<<(std::ostream& out, lnodetype type) {
   out << to_string(type);
   return out;

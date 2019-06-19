@@ -654,7 +654,7 @@ bool context::conditional_enabled(lnodeimpl* node) const {
 }
 
 void context::conditional_assign(
-    lnodeimpl* dst,
+    proxyimpl* dst,
     uint32_t offset,
     uint32_t length,
     lnodeimpl* src,
@@ -815,7 +815,7 @@ void context::conditional_assign(
 }
 
 lnodeimpl*
-context::emit_conditionals(lnodeimpl* dst,
+context::emit_conditionals(proxyimpl* dst,
                            const cond_range_t& range,
                            const cond_defs_t& defs,
                            const cond_br_t* branch) {
@@ -919,7 +919,7 @@ context::emit_conditionals(lnodeimpl* dst,
   };
 
   // get current variable value
-  auto current = dst->slice(range.offset, range.length, branch->sloc);
+  auto current = dst->source(range.offset, range.length, branch->sloc);
 
   // emit conditional variable
   auto it = cond_inits_.find(dst->id());

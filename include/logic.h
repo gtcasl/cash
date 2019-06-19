@@ -52,9 +52,18 @@ public:
 
   logic_buffer& source();
 
+  void write(uint32_t dst_offset,
+             const lnode& in,
+             uint32_t src_offset,
+             uint32_t length);
+
   lnodeimpl* clone() const;
 
   lnodeimpl* sliceref(size_t size, size_t start) const;
+
+protected:
+
+  void ensure_proxy();
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -296,7 +305,7 @@ auto to_lnode(const T& obj) {
         return get_lnode(obj);
       }
     } else {
-      lnode tmp(ch_width_v<R>, "slice");
+      logic_buffer tmp(ch_width_v<R>, "slice");
       tmp.write(0, get_lnode(obj), 0, ch_width_v<R>);
       return tmp;
     }

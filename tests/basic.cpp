@@ -153,6 +153,23 @@ TEST_CASE("basics", "[basics]") {
       a = 11_h;
       return (a.as_uint() == 11_h);
     });
+
+    TEST1([](const ch_int8& t)->ch_bool {
+      auto res = t + 2;
+      auto q = t;
+      q = q.clone() + 1;
+      q = q.clone() + 1;
+      return (q == res);
+    });
+
+    TEST([]()->ch_bool {
+      ch_int4 q(0);
+      q[0] = 1;
+      q[1] = 1;
+      q = q.clone() + 1;
+      q = q.clone() + 1;
+      return (q == 3+2);
+    });
   }
   SECTION("ref", "[ref]") {
     TEST([]()->ch_bool {

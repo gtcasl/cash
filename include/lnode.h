@@ -168,11 +168,6 @@ public:
 
   const source_location& sloc() const;
 
-  void write(uint32_t dst_offset,
-             const lnode& in,
-             uint32_t src_offset,
-             uint32_t length);
-
   lnode& operator=(const lnode& other);
 
   inline friend bool operator==(const lnode& lhs, const lnode& rhs) {
@@ -184,8 +179,6 @@ public:
   }
 
 protected:  
-
-  void ensure_proxy();
 
   mutable lnodeimpl* impl_;
   lnode* next_;

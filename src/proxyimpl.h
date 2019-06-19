@@ -71,7 +71,7 @@ public:
              uint32_t src_offset,
              uint32_t length) override;
 
-  lnodeimpl* slice(uint32_t offset, uint32_t length, const source_location& sloc) const override;
+  lnodeimpl* source(uint32_t offset, uint32_t length, const source_location& sloc) const;
 
   void print(std::ostream& out) const override;
   
