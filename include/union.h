@@ -151,13 +151,13 @@ public:
     class __system_type__ { \
     public: \
       using traits = ch::internal::system_traits<CH_UNION_SIZE(__VA_ARGS__), false, __system_type__, union_name>; \
-      CH_UNION_SYSTEM_IMPL(__system_type__, union_name, CH_UNION_SYSTEM_FIELD, __VA_ARGS__) \
       CH_SYSTEM_INTERFACE(__system_type__) \
+      CH_UNION_SYSTEM_IMPL(__system_type__, union_name, CH_UNION_SYSTEM_FIELD, __VA_ARGS__) \
     }; \
   public: \
     using traits = ch::internal::logic_traits<CH_UNION_SIZE(__VA_ARGS__), false, union_name, __system_type__>; \
-    CH_UNION_LOGIC_IMPL(union_name, union_name, CH_UNION_LOGIC_FIELD, __VA_ARGS__) \
     CH_LOGIC_INTERFACE(union_name) \
+    CH_UNION_LOGIC_IMPL(union_name, union_name, CH_UNION_LOGIC_FIELD, __VA_ARGS__) \
   }
 
 #define CH_UNION(name, body) \

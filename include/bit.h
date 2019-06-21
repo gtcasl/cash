@@ -546,7 +546,7 @@ template <typename T>
 auto ch_ref(T& obj) {
   static_assert(is_logic_type_v<T>, "invalid type");
   CH_SOURCE_LOCATION(1);
-  return obj.template ref();
+  return obj.ref();
 }
 
 // clone function
@@ -555,7 +555,7 @@ template <typename T>
 auto ch_clone(const T& obj) {
   static_assert(is_logic_type_v<T>, "invalid type");
   CH_SOURCE_LOCATION(1);
-  return obj.template clone();
+  return obj.clone();
 }
 
 // abs function
