@@ -528,10 +528,13 @@ using system_op_ret = std::conditional_t<is_data_type_v<U>
   }
 
 #define CH_SYSTEM_FUNCTION1X_IMPL(base, func, method) \
+  friend auto func(const base& self) { \
+    return ch::internal::system_accessor::method<T>((const T&)self); \
+  } \
   template <unsigned R> \
   friend auto func(const base& self) { \
-    if constexpr (0 == R || !is_resizable_v<T>) { \
-      static_assert(0 == R, "invalid output size"); \
+    if constexpr (ch_width_v<T> == R || !is_resizable_v<T>) { \
+      static_assert(ch_width_v<T> == R, "invalid output size"); \
       return ch::internal::system_accessor::method<T>((const T&)self); \
     } else { \
       return ch::internal::system_accessor::method<size_cast_t<T, R>>((const T&)self); \
@@ -544,8 +547,11 @@ using system_op_ret = std::conditional_t<is_data_type_v<U>
   template <typename T, typename U, CH_REQUIRE(is_strictly_constructible_v<T, U>)> auto func(const U& lhs, const base<T>& rhs);
 
 #define CH_SYSTEM_FUNCTION2X_DECL(base, func) \
+  template <typename T> auto func(const base<T>& lhs, const base<T>& rhs); \
   template <unsigned R, typename T> auto func(const base<T>& lhs, const base<T>& rhs); \
+  template <typename T, typename U, CH_REQUIRE(is_strictly_constructible_v<T, U>)> auto func(const base<T>& lhs, const U& rhs); \
   template <unsigned R, typename T, typename U, CH_REQUIRE(is_strictly_constructible_v<T, U>)> auto func(const base<T>& lhs, const U& rhs); \
+  template <typename T, typename U, CH_REQUIRE(is_strictly_constructible_v<T, U>)> auto func(const U& lhs, const base<T>& rhs); \
   template <unsigned R, typename T, typename U, CH_REQUIRE(is_strictly_constructible_v<T, U>)> auto func(const U& lhs, const base<T>& rhs);
 
 #define CH_SYSTEM_FUNCTION2B_IMPL(base, func, method) \
@@ -565,31 +571,45 @@ using system_op_ret = std::conditional_t<is_data_type_v<U>
   }
 
 #define CH_SYSTEM_FUNCTION2X_IMPL(base, func, method) \
-  template <unsigned R = 0> \
   friend auto func(const base& lhs, const base& rhs) { \
-    if constexpr (0 == R || !is_resizable_v<T>) { \
-      static_assert(0 == R, "invalid output size"); \
+    return ch::internal::system_accessor::method<T>((const T&)lhs, (const T&)rhs); \
+  } \
+  template <unsigned R> \
+  friend auto func(const base& lhs, const base& rhs) { \
+    if constexpr (ch_width_v<T> == R || !is_resizable_v<T>) { \
+      static_assert(ch_width_v<T> == R, "invalid output size"); \
       return ch::internal::system_accessor::method<T>((const T&)lhs, (const T&)rhs); \
     } else { \
       return ch::internal::system_accessor::method<size_cast_t<T, R>>((const T&)lhs, (const T&)rhs); \
     } \
   } \
-  template <unsigned R = 0, typename U, \
+  template <typename U, \
             CH_REQUIRE(is_strictly_constructible_v<T, U>)> \
   friend auto func(const base& lhs, const U& rhs) { \
-    if constexpr (0 == R || !is_resizable_v<T>) { \
-      static_assert(0 == R, "invalid output size"); \
+    return ch::internal::system_accessor::method<T>((const T&)lhs, rhs); \
+  } \
+  template <unsigned R, typename U, \
+            CH_REQUIRE(is_strictly_constructible_v<T, U>)> \
+  friend auto func(const base& lhs, const U& rhs) { \
+    if constexpr (ch_width_v<T> == R || !is_resizable_v<T>) { \
+      static_assert(ch_width_v<T> == R, "invalid output size"); \
       return ch::internal::system_accessor::method<T>((const T&)lhs, rhs); \
     } else { \
       return ch::internal::system_accessor::method<size_cast_t<T, R>>((const T&)lhs, rhs); \
     } \
   } \
-  template <unsigned R = 0, typename U, \
+  template <typename U, \
             CH_REQUIRE(is_strictly_constructible_v<T, U>)> \
   friend auto func(const U& lhs, const base& rhs) { \
     auto _lhs = system_operand<T, U>(lhs); \
-    if constexpr (0 == R || !is_resizable_v<T>) { \
-      static_assert(0 == R, "invalid output size"); \
+    return ch::internal::system_accessor::method<T>(_lhs, (const T&)rhs); \
+  } \
+  template <unsigned R, typename U, \
+            CH_REQUIRE(is_strictly_constructible_v<T, U>)> \
+  friend auto func(const U& lhs, const base& rhs) { \
+    auto _lhs = system_operand<T, U>(lhs); \
+    if constexpr (ch_width_v<T> == R || !is_resizable_v<T>) { \
+      static_assert(ch_width_v<T> == R, "invalid output size"); \
       return ch::internal::system_accessor::method<T>(_lhs, (const T&)rhs); \
     } else { \
       return ch::internal::system_accessor::method<size_cast_t<T, R>>(_lhs, (const T&)rhs); \

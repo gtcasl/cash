@@ -527,11 +527,15 @@ using logic_op_ret = std::conditional_t<is_data_type_v<U>
   }
 
 #define CH_LOGIC_FUNCTION1X_IMPL(type, func, method) \
-  template <unsigned R = 0> \
   friend auto func(const sloc_proxy<type>& self) { \
     CH_SOURCE_LOCATION(1); \
-    if constexpr (0 == R || !is_resizable_v<type>) { \
-      static_assert(0 == R, "invalid output size"); \
+    return ch::internal::logic_accessor::method<type>(self.value); \
+  } \
+  template <unsigned R> \
+  friend auto func(const sloc_proxy<type>& self) { \
+    CH_SOURCE_LOCATION(1); \
+    if constexpr (ch_width_v<T> == R || !is_resizable_v<type>) { \
+      static_assert(ch_width_v<T> == R, "invalid output size"); \
       return ch::internal::logic_accessor::method<type>(self.value); \
     } else { \
       return ch::internal::logic_accessor::method<size_cast_t<type, R>>(self.value); \
@@ -544,8 +548,11 @@ using logic_op_ret = std::conditional_t<is_data_type_v<U>
   template <typename T, typename U, CH_REQUIRE(is_strictly_constructible_v<T, U> || is_system_type_v<U>)> auto func(const U& lhs, const sloc_proxy<T>& rhs);
 
 #define CH_LOGIC_FUNCTION2X_DECL(func) \
+  template <typename T> auto func(const sloc_proxy<T>& lhs, const sloc_proxy<T>& rhs); \
   template <unsigned R, typename T> auto func(const sloc_proxy<T>& lhs, const sloc_proxy<T>& rhs); \
+  template <typename T, typename U, CH_REQUIRE(is_strictly_constructible_v<T, U> || is_system_type_v<U>)> auto func(const sloc_proxy<T>& lhs, const U& rhs); \
   template <unsigned R, typename T, typename U, CH_REQUIRE(is_strictly_constructible_v<T, U> || is_system_type_v<U>)> auto func(const sloc_proxy<T>& lhs, const U& rhs); \
+  template <typename T, typename U, CH_REQUIRE(is_strictly_constructible_v<T, U> || is_system_type_v<U>)> auto func(const U& lhs, const sloc_proxy<T>& rhs); \
   template <unsigned R, typename T, typename U, CH_REQUIRE(is_strictly_constructible_v<T, U> || is_system_type_v<U>)> auto func(const U& lhs, const sloc_proxy<T>& rhs);
 
 #define CH_LOGIC_FUNCTION2B_IMPL(type, func, method) \
@@ -568,38 +575,56 @@ using logic_op_ret = std::conditional_t<is_data_type_v<U>
   }
 
 #define CH_LOGIC_FUNCTION2X_IMPL(type, func, method) \
-  template <unsigned R = 0> \
   friend auto func(const sloc_proxy<type>& lhs, const sloc_proxy<type>& rhs) { \
     CH_SOURCE_LOCATION(1); \
-    if constexpr (0 == R || !is_resizable_v<type>) { \
-      static_assert(0 == R, "invalid output size"); \
+    return ch::internal::logic_accessor::method<type>(lhs.value, rhs.value); \
+  } \
+  template <unsigned R> \
+  friend auto func(const sloc_proxy<type>& lhs, const sloc_proxy<type>& rhs) { \
+    CH_SOURCE_LOCATION(1); \
+    if constexpr (ch_width_v<T> == R || !is_resizable_v<type>) { \
+      static_assert(ch_width_v<T> == R, "invalid output size"); \
       return ch::internal::logic_accessor::method<type>(lhs.value, rhs.value); \
     } else { \
       return ch::internal::logic_accessor::method<size_cast_t<type, R>>(lhs.value, rhs.value); \
     } \
   } \
-  template <unsigned R = 0, typename U, \
+  template <typename U, \
             CH_REQUIRE(is_strictly_constructible_v<type, U> || is_system_type_v<U>)> \
   friend auto func(const sloc_proxy<type>& lhs, const U& rhs) { \
     CH_SOURCE_LOCATION(1); \
-    if constexpr (0 == R || !is_resizable_v<type>) { \
-      static_assert(0 == R, "invalid output size"); \
+    return ch::internal::logic_accessor::method<type>(lhs.value, rhs); \
+  } \
+  template <unsigned R, typename U, \
+            CH_REQUIRE(is_strictly_constructible_v<type, U> || is_system_type_v<U>)> \
+  friend auto func(const sloc_proxy<type>& lhs, const U& rhs) { \
+    CH_SOURCE_LOCATION(1); \
+    if constexpr (ch_width_v<T> == R || !is_resizable_v<type>) { \
+      static_assert(ch_width_v<T> == R, "invalid output size"); \
       return ch::internal::logic_accessor::method<type>(lhs.value, rhs); \
     } else { \
       return ch::internal::logic_accessor::method<size_cast_t<type, R>>(lhs.value, rhs); \
     } \
   } \
-  template <unsigned R = 0, typename U, \
+  template <typename U, \
             CH_REQUIRE(is_strictly_constructible_v<type, U> || is_system_type_v<U>)> \
   friend auto func(const U& lhs, const sloc_proxy<type>& rhs) { \
     CH_SOURCE_LOCATION(1); \
     auto _lhs = logic_operand<type, U>(lhs); \
-    if constexpr (0 == R || !is_resizable_v<type>) { \
-      static_assert(0 == R, "invalid output size"); \
+    return ch::internal::logic_accessor::method<type>(_lhs, rhs.value); \
+  } \
+  template <unsigned R, typename U, \
+            CH_REQUIRE(is_strictly_constructible_v<type, U> || is_system_type_v<U>)> \
+  friend auto func(const U& lhs, const sloc_proxy<type>& rhs) { \
+    CH_SOURCE_LOCATION(1); \
+    auto _lhs = logic_operand<type, U>(lhs); \
+    if constexpr (ch_width_v<T> == R || !is_resizable_v<type>) { \
+      static_assert(ch_width_v<T> == R, "invalid output size"); \
       return ch::internal::logic_accessor::method<type>(_lhs, rhs.value); \
     } else { \
       return ch::internal::logic_accessor::method<size_cast_t<type, R>>(_lhs, rhs.value); \
     } \
   }
+
 }
 }
