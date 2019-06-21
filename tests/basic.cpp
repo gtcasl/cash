@@ -249,8 +249,8 @@ TEST_CASE("basics", "[basics]") {
       ch_bit<66> x(0x1);
       ch_bit<200> y(0x1);
       ch_bit<65> z(0x1);
-      return (x.slice<8>() == y.slice<8>())
-          && (x.slice<8>() == z.slice<8>());
+      return (ch_slice<8>(x) == ch_slice<8>(y))
+          && (ch_slice<8>(x) == ch_slice<8>(z));
     });
   }
 }

@@ -1,6 +1,25 @@
 #pragma once
 
 #include "logic.h"
+#include "system.h"
+
+namespace ch {
+namespace internal {
+
+template <typename R, typename T, typename... Ts>
+struct select_constructible {
+  using type = std::conditional_t<std::is_constructible_v<T, R>, T, typename select_constructible<R, Ts...>::type>;
+};
+
+template <typename R, typename T>
+struct select_constructible<R, T> {
+  using type = std::conditional_t<std::is_constructible_v<T, R>, T, void>;
+};
+
+template <typename R, typename... Ts>
+using select_constructible_t = typename select_constructible<R, Ts...>::type;
+
+}}
 
 #define CH_UNION_SIZE_EACH(a, i, x) \
   ch_width_v<ch::internal::identity_t<CH_PAIR_L(x)>>
@@ -28,6 +47,12 @@
 #define CH_UNION_LOGIC_SOURCE(i, x) \
   ch::internal::logic_accessor::source(CH_PAIR_R(x))
 
+#define CH_UNION_ARG_MATCH(a, i, x) \
+  std::is_constructible_v<decltype(CH_PAIR_R(x)), __U>
+
+#define CH_UNION_ARG_TYPES(a, i, x) \
+  decltype(CH_PAIR_R(x))
+
 #define CH_UNION_OSTREAM(a, i, x) \
   if (i) { \
     __out << ",";  \
@@ -37,16 +62,26 @@
 #define CH_UNION_SYSTEM_IMPL(type_name, union_name, field_body, ...) \
   CH_FOR_EACH(field_body, , CH_SEP_SEMICOLON, __VA_ARGS__); \
   type_name(const ch::internal::system_buffer_ptr& buffer = \
-  ch::internal::make_system_buffer(traits::bitwidth, CH_STRINGIZE(union_name))) \
+    ch::internal::make_system_buffer(traits::bitwidth, CH_STRINGIZE(union_name))) \
     : CH_FOR_EACH(CH_UNION_SYSTEM_CTOR, , CH_SEP_COMMA, __VA_ARGS__) {} \
+  template <typename __U, \
+            CH_REQUIRE(CH_FOR_EACH(CH_UNION_ARG_MATCH, , CH_SEP_OR, __VA_ARGS__))> \
+  type_name(const __U& __other) \
+    : type_name(ch::internal::make_system_buffer(traits::bitwidth, CH_STRINGIZE(union_name))) { \
+    auto self = this->as_bit(); \
+    auto arg = ch_sliceref<ch::internal::select_constructible_t<__U, CH_FOR_EACH(CH_UNION_ARG_TYPES, , CH_SEP_COMMA, __VA_ARGS__)>>(self); \
+    arg = __other; \
+    if constexpr (ch_width_v<decltype(arg)> < traits::bitwidth) { \
+      auto rem = ch_sliceref<traits::bitwidth - ch_width_v<decltype(arg)>>(self, ch_width_v<decltype(arg)>); \
+      rem = 0; \
+    } \
+  } \
   type_name(const type_name& __other) \
-    : type_name(ch::internal::system_accessor::copy(__other)) {} \
+    : type_name(ch::internal::make_system_buffer(traits::bitwidth, CH_STRINGIZE(union_name))) { \
+    this->operator=(__other); \
+  } \
   type_name(type_name&& __other) \
    : type_name(ch::internal::system_accessor::move(__other)) {} \
-  type_name(const ch_scbit<traits::bitwidth>& other) \
-    : type_name() { \
-    this->operator=(other.as<type_name>()); \
-  } \
   type_name& operator=(const type_name& __other) { \
     ch::internal::system_accessor::assign(*this, __other); \
     return *this; \
@@ -73,6 +108,19 @@ public:
   type_name(const ch::internal::logic_buffer& buffer = \
     ch::internal::logic_buffer(traits::bitwidth, CH_STRINGIZE(union_name))) \
     : CH_FOR_EACH(CH_UNION_LOGIC_CTOR, , CH_SEP_COMMA, __VA_ARGS__) {} \
+  template <typename __U, \
+            CH_REQUIRE(CH_FOR_EACH(CH_UNION_ARG_MATCH, , CH_SEP_OR, __VA_ARGS__))> \
+  explicit type_name(const __U& __other) \
+    : type_name(ch::internal::logic_buffer(traits::bitwidth, CH_STRINGIZE(union_name))) { \
+    CH_SOURCE_LOCATION(1); \
+    auto self = this->as_bit(); \
+    auto arg = ch_sliceref<ch::internal::select_constructible_t<__U, CH_FOR_EACH(CH_UNION_ARG_TYPES, , CH_SEP_COMMA, __VA_ARGS__)>>(self); \
+    arg = __other; \
+    if constexpr (ch_width_v<decltype(arg)> < traits::bitwidth) { \
+      auto rem = ch_sliceref<traits::bitwidth - ch_width_v<decltype(arg)>>(self, ch_width_v<decltype(arg)>); \
+      rem = 0; \
+    } \
+  } \
   type_name(const type_name& __other) \
     : type_name(ch::internal::logic_buffer(traits::bitwidth, CH_STRINGIZE(union_name))) { \
     CH_SOURCE_LOCATION(1); \
@@ -80,11 +128,6 @@ public:
   } \
   type_name(type_name&& __other) \
     : type_name(ch::internal::logic_accessor::move(__other)) {} \
-  type_name(const ch_bit<traits::bitwidth>& other) \
-    : type_name(ch::internal::logic_buffer(traits::bitwidth, CH_STRINGIZE(union_name))) { \
-    CH_SOURCE_LOCATION(1); \
-    this->operator=(other.as<type_name>()); \
-  } \
   type_name& operator=(const type_name& __other) { \
     CH_SOURCE_LOCATION(1); \
     ch::internal::logic_accessor::assign(*this, __other); \

@@ -60,7 +60,7 @@ using v2_3_t = ch_vec<ch_bit2, 3>;
 TEST_CASE("system", "[system]") {
   SECTION("basics", "[basics]") {
     TESTX([]()->bool {
-      ch_scbit<1> a(1), b(0);
+      ch_sbit<1> a(1), b(0);
       bool ret = false;
       if (a) {
         if (b) {
@@ -72,74 +72,74 @@ TEST_CASE("system", "[system]") {
       return ret;
     });
     TESTX([]()->bool {
-      ch_scbit<4> a(0xb);
-      ch_scbit<4> b(0x5);
+      ch_sbit<4> a(0xb);
+      ch_sbit<4> b(0x5);
       int v(a & b);
       return (v == 0x1);
     });
     TESTX([]()->bool {
-      ch_scuint<4> a(0xa);
-      ch_scuint<4> b(0x5);
+      ch_suint<4> a(0xa);
+      ch_suint<4> b(0x5);
       int v(a + b);
       int ret = v + 1;
       return (ret == 0x10);
     });
     TESTX([]()->bool {
-      ch_scint<4> a(0xa);
-      ch_scint<4> b(0x5);
+      ch_sint<4> a(0xa);
+      ch_sint<4> b(0x5);
       int v(a + b);
       int ret = v + 1;
       return (ret == 0);
     });
     TESTX([]()->bool {
-      ch_scuint<6> a(0xa);
-      ch_scuint<4> b(0x5);
+      ch_suint<6> a(0xa);
+      ch_suint<4> b(0x5);
       int v(a + b);
       int ret = v + 1;
       return (ret == 0x10);
     });
     TESTX([]()->bool {
-      ch_scuint<4> a(0xa);
-      ch_scint<6> b(0x5);
-      int v(a + b.as_scuint());
+      ch_suint<4> a(0xa);
+      ch_sint<6> b(0x5);
+      int v(a + b.as_uint());
       int ret = v + 1;
       return (ret == 0x10);
     });
     TESTX([]()->bool {
-      ch_scuint<4> a(0), b(1), c(1);
+      ch_suint<4> a(0), b(1), c(1);
       int ret = (a != b);
       ret &= (b == c);
       ret &= (a == (b - c));
       return !!ret;
     });
     TESTX([]()->bool {
-      ch_scuint<4> a(0), b(1), c(1);
+      ch_suint<4> a(0), b(1), c(1);
       int ret = (a != b);
       ret &= (b == c);
       ret &= (a == (b - c));
       return !!ret;
     });
     TESTX([]()->bool {
-      ch_scbit<4> a(0101_b);
-      return (a[0] == a[2]) && (a.slice<2>() == a.slice<2>(2));
+      ch_sbit<4> a(0101_b);
+      return (a[0] == a[2]) && (ch_slice<2>(a) == ch_slice<2>(a, 2));
     });
     TESTX([]()->bool {
-      const ch_scbit<4> a(0101_b);
-      return (a[0] == a[2]) && (a.slice<2>() == a.slice<2>(2));
+      const ch_sbit<4> a(0101_b);
+      return (a[0] == a[2]) && (ch_slice<2>(a) == ch_slice<2>(a, 2));
     });
     TESTX([]()->bool {
       auto force_move_assignment = []() {
         return 4_h ^ 3_h;
       };
-      ch_scbit<4> x;
+      ch_sbit<4> x;
       x = force_move_assignment();
       return (x == 7);
     });
   }
   SECTION("arithmetic", "[arithmetic]") {
     TESTX([]()->bool {
-      ch_scbit<4> a(3);
-      ch_scbit<3> b(1);
+      ch_sbit<4> a(3);
+      ch_sbit<3> b(1);
       RetCheck ret;
       ret &= (a == 0011_b);
       ret &= (b == 001_b);
@@ -152,8 +152,8 @@ TEST_CASE("system", "[system]") {
       return ret;
     });
     TESTX([]()->bool {
-      ch_scuint<4> a(3);
-      ch_scuint<3> b(1);
+      ch_suint<4> a(3);
+      ch_suint<3> b(1);
       RetCheck ret;
       ret &= (a == 0011_b);
       ret &= (b == 001_b);
@@ -179,8 +179,8 @@ TEST_CASE("system", "[system]") {
       return ret;
     });
     TESTX([]()->bool {
-      ch_scuint<WS> a(3);
-      ch_scuint<WS> b(1);
+      ch_suint<WS> a(3);
+      ch_suint<WS> b(1);
       RetCheck ret;
       ret &= (a == 0011_b);
       ret &= (b == 001_b);
@@ -205,8 +205,8 @@ TEST_CASE("system", "[system]") {
       return ret;
     });
     TESTX([]()->bool {
-      ch_scint<4> a(-3);
-      ch_scint<3> b(-1);
+      ch_sint<4> a(-3);
+      ch_sint<3> b(-1);
       RetCheck ret;
       ret &= (a == 1101_b);
       ret &= (b == 111_b);
@@ -230,8 +230,8 @@ TEST_CASE("system", "[system]") {
       return ret;
     });
     TESTX([]()->bool {
-      ch_scint<WS> a(-3);
-      ch_scint<WS> b(-1);
+      ch_sint<WS> a(-3);
+      ch_sint<WS> b(-1);
       RetCheck ret;
       ret &= (a == -3);
       ret &= (b == -1);
@@ -253,9 +253,9 @@ TEST_CASE("system", "[system]") {
       return ret;
     });
     TESTX([]()->bool {
-      ch_scint<127> a(3100);
-      ch_scint<126> b(1010);
-      ch_scint<125> c(-1000);
+      ch_sint<127> a(3100);
+      ch_sint<126> b(1010);
+      ch_sint<125> c(-1000);
       RetCheck ret;
       ret &= ((a + b) == 4110);
       ret &= ((a + c) == 2100);
@@ -273,9 +273,9 @@ TEST_CASE("system", "[system]") {
       return ret;
     });
     TESTX([]()->bool {
-      ch_scint<128> a(3100);
-      ch_scint<128> b(1010);
-      ch_scint<128> c(-1000);
+      ch_sint<128> a(3100);
+      ch_sint<128> b(1010);
+      ch_sint<128> c(-1000);
       RetCheck ret;
       ret &= ((a + b) == 4110);
       ret &= ((a + c) == 2100);
@@ -293,22 +293,22 @@ TEST_CASE("system", "[system]") {
       return ret;
     });
     TESTX([]()->bool {
-      ch_scint<33> a(0x1ffffff8b);
-      ch_scint<33> b(0x000007fff);
+      ch_sint<33> a(0x1ffffff8b);
+      ch_sint<33> b(0x000007fff);
       RetCheck ret;
       ret &= ((a * b) == 0x1FFC58075);
       return ret;
     });
     TESTX([]()->bool {
-      ch_scuint<128> a(260);
-      ch_scuint<128> b(261);
+      ch_suint<128> a(260);
+      ch_suint<128> b(261);
       RetCheck ret;
       ret &= ((a / b) == 260/261);
       return ret;
     });
     TESTX([]()->bool {
-      ch_scuint<128> a(512);
-      ch_scuint<128> b(257);
+      ch_suint<128> a(512);
+      ch_suint<128> b(257);
       RetCheck ret;
       ret &= ((a / b) == 512/257);
       return ret;
@@ -316,74 +316,74 @@ TEST_CASE("system", "[system]") {
   }
   SECTION("cast", "[cast]") {
     TESTX([]()->bool {
-      ch_scbit<4> x(8);
+      ch_sbit<4> x(8);
       return (x == 8);
     });
     TESTX([]()->bool {
-      ch_scuint<4> x(8);
+      ch_suint<4> x(8);
       return (x == 8);
     });
     TESTX([]()->bool {
-      ch_scint<4> x(8);
+      ch_sint<4> x(8);
       return (x == 8);
     });
     TESTX([]()->bool {
-      ch_scbit<4> x(8);
+      ch_sbit<4> x(8);
       return (static_cast<int>(x) == 8);
     });
     TESTX([]()->bool {
-      ch_scuint<4> x(8);
+      ch_suint<4> x(8);
       return (static_cast<int>(x) == 8);
     });
     TESTX([]()->bool {
-      ch_scint<4> x(8);
+      ch_sint<4> x(8);
       return (static_cast<int>(x) == -8);
     });
     TESTX([]()->bool {
-      ch_scint<4> x(7);
+      ch_sint<4> x(7);
       return (static_cast<int>(x) == 7);
     });
     TESTX([]()->bool {
-      ch_scbit<4> x(-8);
+      ch_sbit<4> x(-8);
       return (x == 8);
     });
     TESTX([]()->bool {
-      ch_scuint<4> x(-8);
+      ch_suint<4> x(-8);
       return (x == 8);
     });
     TESTX([]()->bool {
-      ch_scint<4> x(-8);
+      ch_sint<4> x(-8);
       return (x == -8);
     });
     TESTX([]()->bool {
-      ch_scbit<4> x(-8);
+      ch_sbit<4> x(-8);
       return (static_cast<int>(x) == 8);
     });
     TESTX([]()->bool {
-      ch_scuint<4> x(-8);
+      ch_suint<4> x(-8);
       return (static_cast<int>(x) == 8);
     });
     TESTX([]()->bool {
-      ch_scint<4> x(-8);
+      ch_sint<4> x(-8);
       return (static_cast<int>(x) == -8);
     });
     TESTX([]()->bool {
-      ch_scbit<4> x(-1);
+      ch_sbit<4> x(-1);
       return (static_cast<int>(x) == 0xf);
     });
     TESTX([]()->bool {
-      ch_scuint<4> x(-1);
+      ch_suint<4> x(-1);
       return (static_cast<int>(x) == 0xf);
     });
     TESTX([]()->bool {
-      ch_scint<4> x(-1);
+      ch_sint<4> x(-1);
       return (static_cast<int>(x) == -1);
     });
   }
   SECTION("enum", "[enum]") {
     TESTX([]()->bool {
       ch_system_t<e2_t> a(e2_t::done);
-      return (a == 3);
+      return (a.as_int() == 3);
     });
     TESTX([]()->bool {
       ch_system_t<e2_t> a(e2_t::done), b(a);
@@ -404,24 +404,24 @@ TEST_CASE("system", "[system]") {
     });
     TESTX([]()->bool {
       ch_system_t<u2_4_t> a(0101_b), b(a);
-      return (a.as_scbit() == b.as_scbit());
+      return (a.as_bit() == b.as_bit());
     });
     TESTX([]()->bool {
       ch_system_t<u2_4_t> a(0101_b), b;
       b = a;
-      return (a.as_scbit() == b.as_scbit());
+      return (a.as_bit() == b.as_bit());
     });
     TESTX([]()->bool {
       ch_system_t<u2_4_t> a{3_h};
-      return (a.as_scbit() == 3);
+      return (a.as_bit() == 3);
     });
     TESTX([]()->bool {
       ch_system_t<u2_4_t> a(0011_b4);
-      return (a.as_scbit() == 3);
+      return (a.as_bit() == 3);
     });
     TESTX([]()->bool {
       ch_system_t<u2_4_t> a(11_b2);
-      return (a.as_scbit() == 3);
+      return (a.as_bit() == 3);
     });
   }
   SECTION("struct", "[struct]") {
@@ -440,7 +440,7 @@ TEST_CASE("system", "[system]") {
       ch_system_t<s2_4_t> s;
       s = ch_system_t<s2_4_t>(0101_b, 01_b);
       s.b = 1010_b;
-      return (s.as_scbit() == 101001_b);
+      return (s.as_bit() == 101001_b);
     });
     TESTX([]()->bool {
       auto force_move_assignment = []() {
@@ -448,7 +448,7 @@ TEST_CASE("system", "[system]") {
       };
       ch_system_t<s2_4_t> s2(0101_b, 01_b);
       s2.b = force_move_assignment();
-      return (s2.b == 7) && (s2.as_scbit() == 011101_b);
+      return (s2.b == 7) && (s2.as_bit() == 011101_b);
     });
     TESTX([]()->bool {
       auto force_move_construct = []() {
@@ -456,32 +456,32 @@ TEST_CASE("system", "[system]") {
         return s2;
       };
       ch_system_t<s2_4_t> s2(force_move_construct());
-      return (s2.as_scbit() == 010101_b);
+      return (s2.as_bit() == 010101_b);
     });
     TESTX([]()->bool {
       ch_system_t<s2_4_t> a(0101_b, 01_b);
-      return (a.as_scbit() == 010101_b);
+      return (a.as_bit() == 010101_b);
     });
     TESTX([]()->bool {
       ch_system_t<s2_4_t> a(0101_b, 01_b), b(a);
-      return (a.as_scbit() == b.as_scbit());
+      return (a.as_bit() == b.as_bit());
     });
     TESTX([]()->bool {
       ch_system_t<s2_4_t> a(0101_b, 01_b), b;
       b = a;
-      return (a.as_scbit() == b.as_scbit());
+      return (a.as_bit() == b.as_bit());
     });
     TESTX([]()->bool {
       ch_system_t<sd1_t> a{1_b2, 2_h};
-      return (a.as_scbit() == 010010_b);
+      return (a.as_bit() == 010010_b);
     });
     TESTX([]()->bool {
       ch_system_t<sd2_t> a{2_h, {1_b2, 2_h}};
-      return (a.as_scbit() == 0010010010_b);
+      return (a.as_bit() == 0010010010_b);
     });
     TESTX([]()->bool {
       ch_system_t<sd3_t> a{3_h, {1_b2, 2_h}};
-      return (a.as_scbit() == 0011010010_b);
+      return (a.as_bit() == 0011010010_b);
     });
     TESTX([]()->bool {
       ch_system_t<sd3_t> a{3_h, {1_b2, 2_h}}, b(a);
@@ -493,13 +493,13 @@ TEST_CASE("system", "[system]") {
       };
       ch_system_t<sd3_t> a;
       a = force_move_assignment();
-      return (a.as_scbit() == 0011010010_b);
+      return (a.as_bit() == 0011010010_b);
     });
     TESTX([]()->bool {
       auto t1 = std::tuple(ch_system_t<s2_4_t>(0101_b, 01_b), ch_system_t<s2_4_t>(1, 0));
       auto t2 = t1;
       auto [x, y] = t2;
-      return (x.as_scbit() == 010101_b && y.as_scbit() == 000100_b);
+      return (x.as_bit() == 010101_b && y.as_bit() == 000100_b);
     });
     TESTX([]()->bool {
       ch_system_t<sd3_t> s3{3_h, {1_b2, 2_h}};
@@ -518,7 +518,7 @@ TEST_CASE("system", "[system]") {
   SECTION("vector", "[vector]") {
     TEST([]()->ch_bool {
       ch_system_t<v2_2_t> x(3_h);
-      v2_2_t y(x.as_scbit());
+      v2_2_t y(x.as_bit());
       return (y[0] == 3) && (y[1] == 0);
     });
     TESTX([]()->bool {

@@ -15,98 +15,100 @@ using namespace extension;
 
 class ch_float32;
 
-class ch_scfloat32 : public ch_scbit<32> {
+class ch_sfloat32 : public ch_snumber_base<ch_sfloat32> {
 public:
-  using traits = system_traits<32, true, ch_scfloat32, ch_float32>;
-  using base = ch_scbit<32>;
+  using traits = system_traits<32, true, ch_sfloat32, ch_float32>;
+  using base = ch_snumber_base<ch_sfloat32>;
 
-  ch_scfloat32(const system_buffer_ptr& buffer = make_system_buffer(32, "ch_scfloat32"))
-    : base(buffer)
+  ch_sfloat32(const system_buffer_ptr& buffer
+              = make_system_buffer(32, ch::internal::idname<ch_sfloat32>()))
+    : buffer_(buffer)
   {}
 
-  ch_scfloat32(float other) : base(bit_cast<int32_t>(other)) {}
+  ch_sfloat32(float other)
+    : ch_sfloat32(make_system_buffer(32, ch::internal::idname<ch_sfloat32>())) {
+    this->operator=(other);
+  }
 
-  explicit ch_scfloat32(const ch_scbit<32>& other) : base(other) {}
+  template <typename U,
+            CH_REQUIRE(ch_width_v<U> <= 32)>
+  explicit ch_sfloat32(const ch_sbit_base<U>& other)
+    : ch_sfloat32(make_system_buffer(32, ch::internal::idname<ch_sfloat32>())) {
+    base::operator=((const U&)other);
+  }
 
-  ch_scfloat32(const ch_scfloat32& other) : base(other) {}
+  ch_sfloat32(const ch_sfloat32& other)
+    : ch_sfloat32(make_system_buffer(32, ch::internal::idname<ch_sfloat32>())) {
+    this->operator=(other);
+  }
 
-  ch_scfloat32(ch_scfloat32&& other) : base(std::move(other)) {}
+  ch_sfloat32(ch_sfloat32&& other) : buffer_(std::move(other.buffer_)) {}
 
-  ch_scfloat32& operator=(const ch_scfloat32& other) {
+  ch_sfloat32& operator=(const ch_sfloat32& other) {
     base::operator=(other);
     return *this;
   }
 
-  ch_scfloat32& operator=(ch_scfloat32&& other) {
-    base::operator=(std::move(other));
+  ch_sfloat32& operator=(ch_sfloat32&& other) {
+    this->as_int().operator=(std::move(other.as_int()));
     return *this;
   }
 
-  CH_SYSTEM_INTERFACE(ch_scfloat32)
-
-  friend auto operator==(const ch_scfloat32& lhs, const ch_scfloat32& rhs) {
-    return (lhs.as_scint() == rhs.as_scint());
-  }
-
-  friend auto operator!=(const ch_scfloat32& lhs, const ch_scfloat32& rhs) {
-    return (lhs.as_scint() != rhs.as_scint());
-  }
-
-  friend auto operator<(const ch_scfloat32& lhs, const ch_scfloat32& rhs) {
-    return (lhs.as_scint() < rhs.as_scint());
-  }
-
-  friend auto operator<=(const ch_scfloat32& lhs, const ch_scfloat32& rhs) {
-    return (lhs.as_scint() <= rhs.as_scint());
-  }
-
-  friend auto operator>(const ch_scfloat32& lhs, const ch_scfloat32& rhs) {
-    return (lhs.as_scint() >= rhs.as_scint());
-  }
-
-  friend auto operator>=(const ch_scfloat32& lhs, const ch_scfloat32& rhs) {
-    return (lhs.as_scint() >= rhs.as_scint());
-  }
-
-  friend auto operator-(const ch_scfloat32& self) {
-    auto f_self = bit_cast<float>(static_cast<int32_t>(system_accessor::data(self)));
-    return ch_scfloat32(0.0f - f_self);
-  }
-
-  friend auto operator+(const ch_scfloat32& lhs, const ch_scfloat32& rhs) {
-    auto f_lhs = bit_cast<float>(static_cast<int32_t>(system_accessor::data(lhs)));
-    auto f_rhs = bit_cast<float>(static_cast<int32_t>(system_accessor::data(rhs)));
-    return ch_scfloat32(f_lhs + f_rhs);
-  }
-
-  friend auto operator-(const ch_scfloat32& lhs, const ch_scfloat32& rhs) {
-    auto f_lhs = bit_cast<float>(static_cast<int32_t>(system_accessor::data(lhs)));
-    auto f_rhs = bit_cast<float>(static_cast<int32_t>(system_accessor::data(rhs)));
-    return ch_scfloat32(f_lhs - f_rhs);
-  }
-
-  friend auto operator*(const ch_scfloat32& lhs, const ch_scfloat32& rhs) {
-    auto f_lhs = bit_cast<float>(static_cast<int32_t>(system_accessor::data(lhs)));
-    auto f_rhs = bit_cast<float>(static_cast<int32_t>(system_accessor::data(rhs)));
-    return ch_scfloat32(f_lhs * f_rhs);
-  }
-
-  friend auto operator/(const ch_scfloat32& lhs, const ch_scfloat32& rhs) {
-    auto f_lhs = bit_cast<float>(static_cast<int32_t>(system_accessor::data(lhs)));
-    auto f_rhs = bit_cast<float>(static_cast<int32_t>(system_accessor::data(rhs)));
-    return ch_scfloat32(f_lhs / f_rhs);
+  ch_sfloat32& operator=(float other) {
+    base::operator=(bit_cast<int32_t>(other));
+    return *this;
   }
 
   explicit operator float() const {
     return bit_cast<float>(static_cast<int32_t>(*this));
   }  
+
+protected:
+
+  template <typename R>
+  auto do_neg() const {
+    return R();
+  }
+
+  template <typename R, typename U>
+  auto do_add(const U& other) const {
+    return R();
+  }
+
+  template <typename R, typename U>
+  auto do_sub(const U& other) const {
+    return R();
+  }
+
+  template <typename R, typename U>
+  auto do_mul(const U& other) const {
+    return R();
+  }
+
+  template <typename R, typename U>
+  auto do_div(const U& other) const {
+    return R();
+  }
+
+  template <typename R, typename U>
+  auto do_mod(const U& other) const {
+    return R();
+  }
+
+  const system_buffer_ptr& __buffer() const {
+    return buffer_;
+  }
+
+  system_buffer_ptr buffer_;
+
+  friend class ch::internal::system_accessor;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
 class ch_float32 : public ch_number_base<ch_float32> {
 public:
-  using traits = logic_traits<32, true, ch_float32, ch_scfloat32>;
+  using traits = logic_traits<32, true, ch_float32, ch_sfloat32>;
   using base = ch_number_base<ch_float32>;
 
   ch_float32(const logic_buffer& buffer = logic_buffer(32, ch::internal::idname<ch_float32>()))
@@ -120,21 +122,25 @@ public:
   }
 
   template <typename U,
-            CH_REQUIRE(ch::internal::is_scbit_base_v<U>),
             CH_REQUIRE(ch_width_v<U> <= 32)>
-  explicit ch_float32(const U& other)
+  explicit ch_float32(const ch_sbit_base<U>& other)
     : ch_float32(logic_buffer(32, ch::internal::idname<ch_float32>())) {
-    CH_SOURCE_LOCATION(1);
+    __source_location(1);
+    base::operator=((const U&)other);
+  }
+
+  ch_float32(const ch_sfloat32& other)
+    : ch_float32(logic_buffer(32, ch::internal::idname<ch_float32>())) {
+    __source_location(1);
     base::operator=(other);
   }
 
   template <typename U,
-            CH_REQUIRE(ch::internal::is_bit_base_v<U>),
             CH_REQUIRE(ch_width_v<U> <= 32)>
-  explicit ch_float32(const U& other)
+  explicit ch_float32(const ch_bit_base<U>& other)
     : ch_float32(logic_buffer(32, ch::internal::idname<ch_float32>())) {
-    CH_SOURCE_LOCATION(1);
-    base::operator=(other);
+    __source_location(1);
+    base::operator=((const U&)other);
   }
 
   ch_float32(const ch_float32& other)
@@ -159,7 +165,7 @@ public:
 
   ch_float32& operator=(ch_float32&& other) {
     __source_location(1);
-    base::operator=(std::move(other));
+    this->as_int().operator=(std::move(other.as_int()));
     return *this;
   }
 
@@ -219,7 +225,7 @@ private:
 
 class sfAdd {
 public:
-  __scio (
+  __sio (
     __in (ch_bool)     en,
     __in (ch_float32)  lhs,
     __in (ch_float32)  rhs,
@@ -252,7 +258,7 @@ private:
 
 class sfSub {
 public:
-  __scio (
+  __sio (
     __in (ch_bool)     en,
     __in (ch_float32)  lhs,
     __in (ch_float32)  rhs,
@@ -285,7 +291,7 @@ private:
 
 class sfMul {
 public:
-  __scio (
+  __sio (
     __in (ch_bool)     en,
     __in (ch_float32)  lhs,
     __in (ch_float32)  rhs,
@@ -322,7 +328,7 @@ private:
 
 class sfDiv {
 public:
-  __scio (
+  __sio (
     __in (ch_bool)     en,
     __in (ch_float32)  lhs,
     __in (ch_float32)  rhs,
@@ -360,7 +366,7 @@ private:
 ///////////////////////////////////////////////////////////////////////////////
 
 struct cfAdd {
-  __scio (
+  __sio (
     __in (ch_float32)  lhs,
     __in (ch_float32)  rhs,
     __out (ch_float32) dst
@@ -374,7 +380,7 @@ struct cfAdd {
 };
 
 struct cfSub {
-  __scio (
+  __sio (
     __in (ch_float32)  lhs,
     __in (ch_float32)  rhs,
     __out (ch_float32) dst
@@ -388,7 +394,7 @@ struct cfSub {
 };
 
 struct cfMul {
-  __scio (
+  __sio (
     __in (ch_float32)  lhs,
     __in (ch_float32)  rhs,
     __out (ch_float32) dst
@@ -402,7 +408,7 @@ struct cfMul {
 };
 
 struct cfDiv {
-  __scio (
+  __sio (
     __in (ch_float32)  lhs,
     __in (ch_float32)  rhs,
     __out (ch_float32) dst
@@ -416,7 +422,7 @@ struct cfDiv {
 };
 
 struct cfMod {
-  __scio (
+  __sio (
     __in (ch_float32)  lhs,
     __in (ch_float32)  rhs,
     __out (ch_float32) dst

@@ -696,6 +696,21 @@ constexpr void static_for(Func&& func) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+template <typename T>
+struct static_print_impl {};
+
+template <typename T>
+auto static_print() {
+  return static_print_impl<T>::value;
+}
+
+template <size_t N>
+auto static_print() {
+  return static_print_impl<std::integral_constant<size_t, N>>::value;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 struct nonesuch {
   ~nonesuch() = delete;
   nonesuch(nonesuch const&) = delete;
@@ -889,7 +904,7 @@ auto sign_ext(T value, unsigned width) {
   template<typename T> \
   struct type_name##_impl<T, std::enable_if_t<(predicate)>> : std::true_type {}; \
   template <typename T> \
-  inline constexpr bool type_name##_v = type_name##_impl<T>::value
+  inline constexpr bool type_name##_v = type_name##_impl<std::decay_t<T>>::value
 
 #define CH_UNUSED(...) ch::internal::unused(__VA_ARGS__)
 

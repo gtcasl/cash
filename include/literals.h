@@ -1,6 +1,6 @@
 #pragma once
 
-#include "scuint.h"
+#include "uint.h"
 
 namespace ch {
 namespace internal {
@@ -119,34 +119,34 @@ namespace literals {
 
   template <char... Chars>
   auto operator "" _b() {
-    return ch_scbit<lit_bin_size_v<Chars...>>(std::string{Chars..., '_', 'b'});
+    return ch_sbit<lit_bin_size_v<Chars...>>(std::string{Chars..., '_', 'b'});
   }
 
   template <char... Chars>
   auto operator "" _o() {
-    return ch_scbit<lit_oct_size_v<Chars...>>(std::string{Chars..., '_', 'o'});
+    return ch_sbit<lit_oct_size_v<Chars...>>(std::string{Chars..., '_', 'o'});
   }
 
   template <char... Chars>
   auto operator "" _h() {
-    return ch_scbit<lit_hex_size_v<Chars...>>(std::string{Chars..., '_', 'h'});
+    return ch_sbit<lit_hex_size_v<Chars...>>(std::string{Chars..., '_', 'h'});
   }
 
 #define CH_DEF_LITERALS_IMPL(a, i, x) \
   template <char... Chars> \
   auto operator "" _b##x() { \
     static_assert(x >= lit_bin_sizex_v<Chars...>, "literal out of range"); \
-    return ch_scbit<x>(std::string{Chars..., '_', 'b'}); \
+    return ch_sbit<x>(std::string{Chars..., '_', 'b'}); \
   } \
   template <char... Chars> \
   auto operator "" _o##x() { \
     static_assert(x >= lit_oct_sizex_v<Chars...>, "literal out of range"); \
-    return ch_scbit<x>(std::string{Chars..., '_', 'o'}); \
+    return ch_sbit<x>(std::string{Chars..., '_', 'o'}); \
   } \
   template <char... Chars> \
   auto operator "" _h##x() { \
     static_assert(x >= lit_hex_sizex_v<Chars...>, "literal out of range"); \
-    return ch_scbit<x>(std::string{Chars..., '_', 'h'}); \
+    return ch_sbit<x>(std::string{Chars..., '_', 'h'}); \
   }
 
 #define CH_DEF_LITERALS_IMPL2(x, ...) \

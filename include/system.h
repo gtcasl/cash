@@ -5,24 +5,27 @@
 namespace ch {
 namespace internal {
 
-template <unsigned N> class ch_scbit;
-template <unsigned N> class ch_scint;
-template <unsigned N> class ch_scuint;
+template <typename T> class ch_sbit_base;
 
-using ch_scbool = ch_scuint<1>;
+template <unsigned N> class ch_sbit;
+template <unsigned N> class ch_sint;
+template <unsigned N> class ch_suint;
+
+using ch_sbool = ch_suint<1>;
 
 template <typename T>
-inline constexpr bool is_scbit_base_v = std::is_base_of_v<ch_scbit<ch_width_v<T>>, T>;
+inline constexpr bool is_sbit_base_v = is_system_type_v<T>
+              && std::is_base_of_v<ch_sbit_base<ch_system_t<T>>, ch_system_t<T>>;
 
 template <typename T, unsigned N>
-inline constexpr bool is_scbit_convertible_v = std::is_constructible_v<ch_scbit<N>, T>;
+inline constexpr bool is_sbit_convertible_v = std::is_constructible_v<ch_sbit<N>, T>;
 
 template <unsigned N, typename T>
 auto to_system(T&& obj) {
   if constexpr (is_system_type_v<T> && ch_width_v<T> == N) {
     return std::move(obj);
   } else {
-    return ch_scbit<N>(std::forward<T>(obj));
+    return ch_sbit<N>(std::forward<T>(obj));
   }
 }
 
@@ -148,6 +151,19 @@ public:
     return make_system_buffer(*obj.__buffer());
   }
 
+  template <unsigned N, typename T>
+  static auto resize(const T& obj) {
+    assert(obj.__buffer()->size() == ch_width_v<T>);
+    assert(ch_width_v<T> <= N);
+    if constexpr (ch_width_v<T> < N) {
+      sdata_type tmp(N);
+      bv_pad<ch_signed_v<T>>(tmp.words(), N, system_accessor::data(obj).words(), ch_width_v<T>);
+      return make_system_buffer(std::move(tmp));
+    } else {
+      return make_system_buffer(*obj.__buffer());
+    }
+  }
+
   template <typename T>
   static auto move(T&& obj) {
     assert(obj.__buffer()->size() == ch_width_v<T>);
@@ -193,6 +209,16 @@ public:
   }
 
   template <typename R, typename T>
+  static auto slice(const T& obj, size_t start) {
+    static_assert(ch_width_v<R> <= ch_width_v<T>, "invalid size");
+    assert(start + ch_width_v<R> <= ch_width_v<T>);
+    assert(obj.__buffer()->size() == ch_width_v<T>);
+    R ret;
+    system_accessor::write(ret, 0, obj, start, ch_width_v<R>);
+    return std::add_const_t<R>(ret);
+  }
+
+  template <typename R, typename T>
   static auto sliceref(const T& obj, size_t start) {
     static_assert(ch_width_v<R> <= ch_width_v<T>, "invalid size");
     assert(start + ch_width_v<R> <= ch_width_v<T>);
@@ -205,6 +231,131 @@ public:
     static_assert(ch_width_v<T> == ch_width_v<R>, "invalid size");
     assert(obj.__buffer()->size() == ch_width_v<T>);
     return R(obj.__buffer());
+  }
+
+  template <typename T, typename U>
+  static auto do_eq(const T& obj, const U& other) {
+    return obj.do_eq(other);
+  }
+
+  template <typename T, typename U>
+  static auto do_ne(const T& obj, const U& other) {
+    return obj.do_ne(other);
+  }
+
+  template <typename T>
+  static auto do_not(const T& obj) {
+    return obj.do_not();
+  }
+
+  template <typename T, typename U>
+  static auto do_andl(const T& obj, const U& other) {
+    return obj.do_andl(other);
+  }
+
+  template <typename T, typename U>
+  static auto do_orl(const T& obj, const U& other) {
+    return obj.do_orl(other);
+  }
+
+  template <typename R, typename T>
+  static auto do_inv(const T& obj) {
+    return obj.template do_inv<R>();
+  }
+
+  template <typename R, typename T, typename U>
+  static auto do_and(const T& obj, const U& other) {
+    return obj.template do_and<R>(other);
+  }
+
+  template <typename R, typename T, typename U>
+  static auto do_or(const T& obj, const U& other) {
+    return obj.template do_or<R>(other);
+  }
+
+  template <typename R, typename T, typename U>
+  static auto do_xor(const T& obj, const U& other) {
+    return obj.template do_xor<R>(other);
+  }
+
+  template <typename R, typename T, typename U>
+  static auto do_shl(const T& obj, const U& other) {
+    return obj.template do_shl<R>(other);
+  }
+
+  template <typename R, typename T, typename U>
+  static auto do_shr(const T& obj, const U& other) {
+    return obj.template do_shr<R>(other);
+  }
+
+  template <typename T>
+  static auto do_andr(const T& obj) {
+    return obj.do_andr();
+  }
+
+  template <typename T>
+  static auto do_orr(const T& obj) {
+    return obj.do_orr();
+  }
+
+  template <typename T>
+  static auto do_xorr(const T& obj) {
+    return obj.do_xorr();
+  }
+
+  template <typename T, typename U>
+  static auto do_lt(const T& obj, const U& other) {
+    return obj.do_lt(other);
+  }
+
+  template <typename T, typename U>
+  static auto do_le(const T& obj, const U& other) {
+    return obj.do_le(other);
+  }
+
+  template <typename T, typename U>
+  static auto do_gt(const T& obj, const U& other) {
+    return obj.do_gt(other);
+  }
+
+  template <typename T, typename U>
+  static auto do_ge(const T& obj, const U& other) {
+    return obj.do_ge(other);
+  }
+
+  template <typename R, typename T>
+  static auto do_neg(const T& obj) {
+    return obj.template do_neg<R>();
+  }
+
+  template <typename R, typename T, typename U>
+  static auto do_add(const T& obj, const U& other) {
+    return obj.template do_add<R>(other);
+  }
+
+  template <typename R, typename T, typename U>
+  static auto do_sub(const T& obj, const U& other) {
+    return obj.template do_sub<R>(other);
+  }
+
+  template <typename R, typename T, typename U>
+  static auto do_mul(const T& obj, const U& other) {
+    return obj.template do_mul<R>(other);
+  }
+
+  template <typename R, typename T, typename U>
+  static auto do_div(const T& obj, const U& other) {
+    return obj.template do_div<R>(other);
+  }
+
+  template <typename R, typename T, typename U>
+  static auto do_mod(const T& obj, const U& other) {
+    return obj.template do_mod<R>(other);
+  }
+
+  template <typename T>
+  static std::ostream& do_print(const T& obj, std::ostream& out) {
+    return obj.do_print(out);
   }
 };
 
@@ -261,212 +412,202 @@ auto make_system_op(SystemFunc3 func, const A& lhs, const B& rhs) {
   return std::add_const_t<R>(make_system_buffer(std::move(ret)));
 }
 
+template <typename R, typename T>
+auto system_operand(const T& obj) {
+  if constexpr (!is_resizable_v<R>) {
+    return R(obj);
+  } else
+  if constexpr (is_system_type_v<T>) {
+    return obj.template as<size_cast_t<R, ch_width_v<T>>>();
+  } else
+  if constexpr (std::is_integral_v<T>) {
+    static const auto N = std::min(ch_width_v<T>, ch_width_v<R>);
+    return size_cast_t<R, N>(obj);
+  } else {
+    return R(obj);
+  }
+}
+
+template <typename T, typename U>
+using system_op_ret = std::conditional_t<is_data_type_v<U>
+                                     && ((ch_width_v<U> > ch_width_v<T>)
+                                      || (ch_width_v<U> == ch_width_v<T>
+                                       && ch_signed_v<U>
+                                       && !ch_signed_v<T>)),
+                                         ch_system_t<U>, T>;
+
 ///////////////////////////////////////////////////////////////////////////////
 
 #define CH_SYSTEM_INTERFACE(type) \
   template <typename __R> \
   auto as() const { \
     static_assert(ch::internal::is_system_type_v<__R>, "invalid type"); \
-    return ch::internal::system_accessor::cast<std::add_const_t<__R>>(*this); \
+    auto self = reinterpret_cast<const type*>(this); \
+    return ch::internal::system_accessor::cast<std::add_const_t<__R>>(*self); \
   } \
   template <typename __R> \
   auto as() { \
     static_assert(ch::internal::is_system_type_v<__R>, "invalid type"); \
-    return ch::internal::system_accessor::cast<__R>(*this); \
+    auto self = reinterpret_cast<const type*>(this); \
+    return ch::internal::system_accessor::cast<__R>(*self); \
   } \
-  auto as_scbit() const { \
-    return this->as<ch_scbit<type::traits::bitwidth>>(); \
+  auto as_bit() const { \
+    return this->template as<ch_sbit<type::traits::bitwidth>>(); \
   } \
-  auto as_scbit() { \
-    return this->as<ch_scbit<type::traits::bitwidth>>(); \
+  auto as_bit() { \
+    return this->template as<ch_sbit<type::traits::bitwidth>>(); \
   } \
-  auto as_scint() const { \
-    return this->as<ch_scint<type::traits::bitwidth>>(); \
+  auto as_int() const { \
+    return this->template as<ch_sint<type::traits::bitwidth>>(); \
   } \
-  auto as_scint() { \
-    return this->as<ch_scint<type::traits::bitwidth>>(); \
+  auto as_int() { \
+    return this->template as<ch_sint<type::traits::bitwidth>>(); \
   } \
-  auto as_scuint() const { \
-    return this->as<ch_scuint<type::traits::bitwidth>>(); \
+  auto as_uint() const { \
+    return this->template as<ch_suint<type::traits::bitwidth>>(); \
   } \
-  auto as_scuint() { \
-    return this->as<ch_scuint<type::traits::bitwidth>>(); \
+  auto as_uint() { \
+    return this->template as<ch_suint<type::traits::bitwidth>>(); \
   } \
   auto ref() { \
-    return ch::internal::system_accessor::sliceref<type>(*this, 0); \
+    auto self = reinterpret_cast<const type*>(this); \
+    return ch::internal::system_accessor::sliceref<type>(*self, 0); \
   }
 
-#define CH_SYSTEM_OPERATOR_IMPL(type, op, body) \
-  friend auto op(const type& lhs, const type& rhs) { \
-    CH_REM body; \
-  } \
-  template <typename __U, \
-            CH_REQUIRE(is_strictly_constructible_v<type, __U>)> \
-  friend auto op(const type& lhs, const __U& _rhs) { \
-    type rhs(_rhs); \
-    CH_REM body; \
-  } \
-  template <typename __U, \
-            CH_REQUIRE(is_strictly_constructible_v<type, __U>)> \
-  friend auto op(const __U& _lhs, const type& rhs) { \
-    type lhs(_lhs); \
-    CH_REM body; \
+#define CH_SYSTEM_OPERATOR1B_IMPL(base, op, method) \
+  friend auto op(const base& self) { \
+    return ch::internal::system_accessor::method((const T&)self); \
   }
 
-#define CH_SYSTEM_OP_EQUALITY(type) \
-  CH_SYSTEM_OPERATOR_IMPL(type, operator==, ( \
-    auto lhs_w = system_accessor::data(lhs).words(); \
-    auto rhs_w = system_accessor::data(rhs).words(); \
-    return bv_eq<false, block_type, ClearBitAccessor<block_type>>(lhs_w, N, rhs_w, N)); \
-  ) \
-  CH_SYSTEM_OPERATOR_IMPL(type, operator!=, ( \
-    auto lhs_w = system_accessor::data(lhs).words(); \
-    auto rhs_w = system_accessor::data(rhs).words(); \
-    return !bv_eq<false, block_type, ClearBitAccessor<block_type>>(lhs_w, N, rhs_w, N)); \
-  )
-
-#define CH_SYSTEM_OP_LOGICAL(type) \
-  friend auto operator&&(const type& lhs, const type& rhs) { \
-    auto lhs_w = system_accessor::data(lhs).words(); \
-    auto rhs_w = system_accessor::data(rhs).words(); \
-    return bv_orr(lhs_w, N) && bv_orr(rhs_w, N); \
-  } \
-  friend auto operator&&(const type& lhs, bool rhs) { \
-    auto lhs_w = system_accessor::data(lhs).words(); \
-    return bv_orr(lhs_w, N) && rhs; \
-  } \
-  friend auto operator&&(bool lhs, const type& rhs) { \
-    auto rhs_w = system_accessor::data(rhs).words(); \
-    return lhs && bv_orr(rhs_w, N); \
-  } \
-  friend auto operator||(const type& lhs, const type& rhs) { \
-    auto lhs_w = system_accessor::data(lhs).words(); \
-    auto rhs_w = system_accessor::data(rhs).words(); \
-    return bv_orr(lhs_w, N) || bv_orr(rhs_w, N); \
-  } \
-  friend auto operator||(const type& lhs, bool rhs) { \
-    auto lhs_w = system_accessor::data(lhs).words(); \
-    return bv_orr(lhs_w, N) || rhs; \
-  } \
-  friend auto operator||(bool lhs, const type& rhs) { \
-    auto rhs_w = system_accessor::data(rhs).words(); \
-    return lhs || bv_orr(rhs_w, N); \
-  } \
-  friend auto operator!(const type& self) { \
-    return !bv_orr(system_accessor::data(self).words(), N); \
+#define CH_SYSTEM_OPERATOR1X_IMPL(base, op, method) \
+  friend auto op(const base& self) { \
+    return ch::internal::system_accessor::method<T>((const T&)self); \
   }
 
-#define CH_SYSTEM_OP_BITWISE(type) \
-  friend auto operator~(const type& self) { \
-    auto func = bv_inv<ch_signed_v<type>, block_type, ClearBitAccessor<block_type>>; \
-    return make_system_op<type>(func, self); \
-  } \
-  CH_SYSTEM_OPERATOR_IMPL(type, operator&, (return make_system_op<type>(bv_and<ch_signed_v<type>, block_type, ClearBitAccessor<block_type>>, lhs, rhs))) \
-  CH_SYSTEM_OPERATOR_IMPL(type, operator|, (return make_system_op<type>(bv_or<ch_signed_v<type>, block_type, ClearBitAccessor<block_type>>, lhs, rhs))) \
-  CH_SYSTEM_OPERATOR_IMPL(type, operator^, (return make_system_op<type>(bv_xor<ch_signed_v<type>, block_type, ClearBitAccessor<block_type>>, lhs, rhs))) \
-
-#define CH_SYSTEM_OP_SHIFT(type) \
-  template <typename U, \
-            CH_REQUIRE(std::is_convertible_v<U, ch_scbit<ch_width_v<U>>>)> \
-  friend auto operator<<(const type& lhs, const U& rhs) { \
-    static_assert(ch_width_v<U> <= 32, "invalid size"); \
-    return make_system_op<type, type, ch_scbit<ch_width_v<U>>>( \
-      bv_shl, lhs, rhs \
-    ); \
+#define CH_SYSTEM_OPERATOR2B_IMPL(base, op, method) \
+  friend auto op(const base& lhs, const base& rhs) { \
+    return ch::internal::system_accessor::method((const T&)lhs, (const T&)rhs); \
   } \
   template <typename U, \
-            CH_REQUIRE(std::is_convertible_v<U, ch_scbit<ch_width_v<U>>>)> \
-  friend auto operator>>(const type& lhs, const U& rhs) { \
-    static_assert(ch_width_v<U> <= 32, "invalid size"); \
-    return make_system_op<type, type, ch_scbit<ch_width_v<U>>>( \
-      bv_shr<ch_signed_v<type>>, lhs, rhs \
-    ); \
+            CH_REQUIRE(is_strictly_constructible_v<T, U>)> \
+  friend auto op(const base& lhs, const U& rhs) { \
+    return ch::internal::system_accessor::method((const T&)lhs, rhs); \
   } \
+  template <typename U, \
+            CH_REQUIRE(is_strictly_constructible_v<T, U>)> \
+  friend auto op(const U& lhs, const base& rhs) { \
+    auto _lhs = system_operand<T>(lhs); \
+    return ch::internal::system_accessor::method(_lhs, (const T&)rhs); \
+  }
+
+#define CH_SYSTEM_OPERATOR2X_IMPL(base, op, method) \
+  friend auto op(const base& lhs, const base& rhs) { \
+    return ch::internal::system_accessor::method<T>((const T&)lhs, (const T&)rhs); \
+  } \
+  template <typename U, \
+            CH_REQUIRE(is_strictly_constructible_v<T, U>)> \
+  friend auto op(const base& lhs, const U& rhs) { \
+    return ch::internal::system_accessor::method<system_op_ret<T, U>>((const T&)lhs, rhs); \
+  } \
+  template <typename U, \
+            CH_REQUIRE(is_strictly_constructible_v<T, U>)> \
+  friend auto op(const U& lhs, const base& rhs) { \
+    auto _lhs = system_operand<T>(lhs); \
+    return ch::internal::system_accessor::method<system_op_ret<T, U>>(_lhs, (const T&)rhs); \
+  }
+
+#define CH_SYSTEM_FUNCTION1B_DECL(base, func) \
+  template <typename T> auto func(const base<T>& self);
+
+#define CH_SYSTEM_FUNCTION1X_DECL(base, func) \
+  template <unsigned R = 0, typename T> auto func(const base<T>& self);
+
+#define CH_SYSTEM_FUNCTION1B_IMPL(base, func, method) \
+  friend auto func(const base& self) { \
+    return ch::internal::system_accessor::method((const T&)self); \
+  }
+
+#define CH_SYSTEM_FUNCTION1X_IMPL(base, func, method) \
+  template <unsigned R> \
+  friend auto func(const base& self) { \
+    if constexpr (0 == R || !is_resizable_v<T>) { \
+      static_assert(0 == R, "invalid output size"); \
+      return ch::internal::system_accessor::method<T>((const T&)self); \
+    } else { \
+      return ch::internal::system_accessor::method<size_cast_t<T, R>>((const T&)self); \
+    } \
+  }
+
+#define CH_SYSTEM_FUNCTION2B_DECL(base, func) \
+  template <typename T> auto func(const base<T>& lhs, const base<T>& rhs); \
+  template <typename T, typename U, CH_REQUIRE(is_strictly_constructible_v<T, U>)> auto func(const base<T>& lhs, const U& rhs); \
+  template <typename T, typename U, CH_REQUIRE(is_strictly_constructible_v<T, U>)> auto func(const U& lhs, const base<T>& rhs);
+
+#define CH_SYSTEM_FUNCTION2X_DECL(base, func) \
+  template <unsigned R, typename T> auto func(const base<T>& lhs, const base<T>& rhs); \
+  template <unsigned R, typename T, typename U, CH_REQUIRE(is_strictly_constructible_v<T, U>)> auto func(const base<T>& lhs, const U& rhs); \
+  template <unsigned R, typename T, typename U, CH_REQUIRE(is_strictly_constructible_v<T, U>)> auto func(const U& lhs, const base<T>& rhs);
+
+#define CH_SYSTEM_FUNCTION2B_IMPL(base, func, method) \
+  friend auto func(const base& lhs, const base& rhs) { \
+    return ch::internal::system_accessor::method((const T&)lhs, (const T&)rhs); \
+  } \
+  template <typename U, \
+            CH_REQUIRE(is_strictly_constructible_v<T, U>)> \
+  friend auto func(const base& lhs, const U& rhs) { \
+    return ch::internal::system_accessor::method((const T&)lhs, rhs); \
+  } \
+  template <typename U, \
+            CH_REQUIRE(is_strictly_constructible_v<T, U>)> \
+  friend auto func(const U& lhs, const base& rhs) { \
+    auto _lhs = system_operand<T, U>(lhs); \
+    return ch::internal::system_accessor::method(_lhs, (const T&)rhs); \
+  }
+
+#define CH_SYSTEM_FUNCTION2X_IMPL(base, func, method) \
+  template <unsigned R = 0> \
+  friend auto func(const base& lhs, const base& rhs) { \
+    if constexpr (0 == R || !is_resizable_v<T>) { \
+      static_assert(0 == R, "invalid output size"); \
+      return ch::internal::system_accessor::method<T>((const T&)lhs, (const T&)rhs); \
+    } else { \
+      return ch::internal::system_accessor::method<size_cast_t<T, R>>((const T&)lhs, (const T&)rhs); \
+    } \
+  } \
+  template <unsigned R = 0, typename U, \
+            CH_REQUIRE(is_strictly_constructible_v<T, U>)> \
+  friend auto func(const base& lhs, const U& rhs) { \
+    if constexpr (0 == R || !is_resizable_v<T>) { \
+      static_assert(0 == R, "invalid output size"); \
+      return ch::internal::system_accessor::method<T>((const T&)lhs, rhs); \
+    } else { \
+      return ch::internal::system_accessor::method<size_cast_t<T, R>>((const T&)lhs, rhs); \
+    } \
+  } \
+  template <unsigned R = 0, typename U, \
+            CH_REQUIRE(is_strictly_constructible_v<T, U>)> \
+  friend auto func(const U& lhs, const base& rhs) { \
+    auto _lhs = system_operand<T, U>(lhs); \
+    if constexpr (0 == R || !is_resizable_v<T>) { \
+      static_assert(0 == R, "invalid output size"); \
+      return ch::internal::system_accessor::method<T>(_lhs, (const T&)rhs); \
+    } else { \
+      return ch::internal::system_accessor::method<size_cast_t<T, R>>(_lhs, (const T&)rhs); \
+    } \
+  }
 
 #define CH_SYSTEM_OP_CAST(type) \
   template <typename U, \
             CH_REQUIRE(std::is_integral_v<U>)> \
   explicit operator U() const { \
     static_assert(bitwidth_v<U> >= type::traits::bitwidth, "invalid size"); \
-    auto ret = static_cast<U>(system_accessor::data(reinterpret_cast<const type&>(*this))); \
+    auto self = reinterpret_cast<const type*>(this); \
+    auto ret = static_cast<U>(system_accessor::data(*self)); \
     if constexpr(ch_signed_v<type> && (bitwidth_v<U> > type::traits::bitwidth)) { \
       return sign_ext(ret, type::traits::bitwidth); \
     } else { \
       return ret; \
     } \
-  } \
-  explicit operator sdata_type() const { \
-    return system_accessor::data(reinterpret_cast<const type&>(*this)); \
-  }
-
-#define CH_SYSTEM_OP_RELATIONAL(type) \
-  CH_SYSTEM_OPERATOR_IMPL(type, operator<, ( \
-    auto lhs_w = system_accessor::data(lhs).words(); \
-    auto rhs_w = system_accessor::data(rhs).words(); \
-    return bv_lt<ch_signed_v<type>, block_type, ClearBitAccessor<block_type>>(lhs_w, N, rhs_w, N);) \
-  ) \
-  CH_SYSTEM_OPERATOR_IMPL(type, operator>=, (return !(lhs < rhs))) \
-  CH_SYSTEM_OPERATOR_IMPL(type, operator>, (return (rhs < lhs))) \
-  CH_SYSTEM_OPERATOR_IMPL(type, operator<=, (return !(rhs < lhs))) \
-
-#define CH_SYSTEM_OP_ARITHMETIC(type) \
-  friend auto operator-(const type& self) { \
-    return make_system_op<type>(bv_neg<ch_signed_v<type>, block_type, ClearBitAccessor<block_type>>, self); \
-  } \
-  CH_SYSTEM_OPERATOR_IMPL(type, operator+, ( \
-    return make_system_op<type>(bv_add<ch_signed_v<type>, block_type, ClearBitAccessor<block_type>>, lhs, rhs)) \
-  ) \
-  CH_SYSTEM_OPERATOR_IMPL(type, operator-, ( \
-    return make_system_op<type>(bv_sub<ch_signed_v<type>, block_type, ClearBitAccessor<block_type>>, lhs, rhs)) \
-  ) \
-  CH_SYSTEM_OPERATOR_IMPL(type, operator*, ( \
-    return make_system_op<type>(bv_mul<ch_signed_v<type>>, lhs, rhs)) \
-  ) \
-  CH_SYSTEM_OPERATOR_IMPL(type, operator/, ( \
-    return make_system_op<type>(bv_div<ch_signed_v<type>>, lhs, rhs);) \
-  ) \
-  CH_SYSTEM_OPERATOR_IMPL(type, operator%, ( \
-    return make_system_op<type>(bv_mod<ch_signed_v<type>>, lhs, rhs);) \
-  )
-
-#define CH_SYSTEM_OP_SLICE(type) \
-  template <typename R> \
-  auto slice(size_t start = 0) const { \
-    static_assert(ch_width_v<R> <= N, "invalid size"); \
-    assert(start + ch_width_v<R> <= N); \
-    R ret; \
-    auto& self = reinterpret_cast<const type&>(*this); \
-    system_accessor::write(ret, 0, self, start, ch_width_v<R>); \
-    return std::add_const_t<R>(ret); \
-  } \
-  template <typename R> \
-  auto aslice(size_t start = 0) const { \
-    return this->slice<R>(start * ch_width_v<R>); \
-  } \
-  template <unsigned M> \
-  auto slice(size_t start = 0) const { \
-    return this->slice<type<M>>(start); \
-  } \
-  template <unsigned M> \
-  auto aslice(size_t start = 0) const { \
-    return this->aslice<type<M>>(start); \
-  } \
-  template <typename R> \
-    auto sliceref(size_t start = 0) { \
-    auto& self = reinterpret_cast<const type&>(*this); \
-    return system_accessor::sliceref<R>(self, start); \
-  } \
-  template <typename R> \
-  auto asliceref(size_t start = 0) { \
-    return this->sliceref<R>(start * ch_width_v<R>); \
-  } \
-  template <unsigned M> \
-  auto sliceref(size_t start = 0) { \
-    return this->sliceref<type<M>>(start); \
-  } \
-  template <unsigned M> \
-  auto asliceref(size_t start = 0) { \
-    return this->asliceref<type<M>>(start); \
   }
 
 }

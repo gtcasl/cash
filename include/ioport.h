@@ -1,6 +1,7 @@
 #pragma once
 
 #include "logic.h"
+#include "system.h"
 
 namespace ch {
 namespace internal {
@@ -14,12 +15,13 @@ template <typename T> class ch_system_in;
 template <typename T> class ch_system_out;
 
 template <typename T>
-using ch_in = std::add_const_t<std::conditional_t<is_logic_type_v<T>,
-                                  ch_logic_in<T>, ch_system_in<T>>>;
+using ch_in = std::add_const_t<
+                std::conditional_t<is_logic_type_v<T>,
+                                   ch_logic_in<T>, ch_system_in<T>>>;
 
 template <typename T>
 using ch_out = std::conditional_t<is_logic_type_v<T>,
-                  ch_logic_out<T>, ch_system_out<T>>;
+                                  ch_logic_out<T>, ch_system_out<T>>;
 
 using io_value_t = smart_ptr<sdata_type>;
 
@@ -109,14 +111,14 @@ public:
   template <typename U>
   explicit ch_logic_in(const ch_logic_out<U>& other)
     : base(logic_buffer(bindOutputNode(other.output_))) {
-    static_assert(ch_width_v<T> == ch_width_v<U>, "invalid size");
+    static_assert((ch_width_v<T>) == (ch_width_v<U>), "invalid size");
   }
 
   template <typename U>
   explicit ch_logic_in(const ch_system_out<U>& other)
      : base(logic_buffer(bindOutputNode(reinterpret_cast<system_io_buffer*>(
                             system_accessor::buffer(other).get())))) {
-    static_assert(ch_width_v<T> == ch_width_v<U>, "invalid size");
+    static_assert((ch_width_v<T>) == (ch_width_v<U>), "invalid size");
   }
 
   ch_logic_in(const ch_logic_in& other) : base(other) {}
@@ -233,7 +235,7 @@ public:
   explicit ch_system_in(const ch_logic_out<U>& other)
     : base(std::make_shared<system_io_buffer>(other.output_)) {
     static_assert(is_logic_only_v<U>, "invalid type");
-    static_assert(ch_width_v<T> == ch_width_v<U>, "invalid size");
+    static_assert((ch_width_v<T>) == (ch_width_v<U>), "invalid size");
   }
 
   ch_system_in(const ch_system_in& other)
@@ -281,7 +283,7 @@ public:
   explicit ch_system_out(const ch_logic_in<U>& other)
     : base(std::make_shared<system_io_buffer>(other.input_)) {
     static_assert(is_logic_only_v<U>, "invalid type");
-    static_assert(ch_width_v<U> == ch_width_v<T>, "invalid size");
+    static_assert((ch_width_v<U>) == (ch_width_v<T>), "invalid size");
   }
 
   ch_system_out(const ch_system_out& other)

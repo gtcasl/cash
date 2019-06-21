@@ -1,6 +1,4 @@
 #include "system.h"
-#include "scint.h"
-#include "scuint.h"
 
 using namespace ch::internal;
 

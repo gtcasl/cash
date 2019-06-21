@@ -724,8 +724,6 @@ public:
   CH_DEF_CAST(uint64_t)
 #undef CH_DEF_CAST
 
-protected:
-
   void read(uint32_t src_offset,
             void* dst,
             uint32_t byte_alignment,
@@ -795,11 +793,10 @@ protected:
     }
   }
 
+protected:
+
   word_t* words_;
   uint32_t size_;
-
-  friend class system_buffer;
-  friend class system_io_buffer;
 };
 
 template <typename word_t>

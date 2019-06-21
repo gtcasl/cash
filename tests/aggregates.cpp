@@ -188,24 +188,24 @@ TEST_CASE("aggregates", "[aggregates]") {
   
   SECTION("unions", "[unions]") {
     TEST([]()->ch_bool {
-      u2_4_t u2 = {0_b4};
+      u2_4_t u2{0_b4};
       u2.a = 1;
       return (u2.b == 1);
     });
     TEST([]()->ch_bool {
-      u2_4_t u2 = {0_b4};
+      u2_4_t u2{0_b4};
       u2.b = 1;
       return (u2.a == 1);
     });
     TEST([]()->ch_bool {
-      u3_t u3 = {0_b8};
+      u3_t u3{0_b8};
       u3.b = 01010101_b;
       u3.a = 11_b;
-      u3.c.sliceref<2>(2) = 00_b;
+      ch_sliceref<2>(u3.c, 2) = 00_b;
       return (u3.as_bit() == 01010011_b);
     });    
     TEST([]()->ch_bool {
-      u2_4_t a = {11_b4};
+      u2_4_t a{11_b4};
       return (a.as_bit() == 3);
     });
     TEST([]()->ch_bool {

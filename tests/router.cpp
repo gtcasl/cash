@@ -120,7 +120,7 @@ public:
       // initialize the local input of each router
       for (int j = 0; j < NUM_TILES_Y; ++j) {
         for(int i = 0; i < NUM_TILES_X; ++i) {
-           device_.io.flits_in[j][i].as_scbit() = 0x0;
+           device_.io.flits_in[j][i].as_bit() = 0x0;
            device_.io.credits_in[j][i] = 0x1; // assume attached PE can always receive flits
         }
       }
@@ -134,7 +134,7 @@ public:
     case 10:
       status_ |= !device_.io.flits_out[0][0][Direction::East].valid; // flit exits router(0,0) East port
       assert(0 == status_);
-      device_.io.flits_in[0][0].as_scbit() = 0x0;
+      device_.io.flits_in[0][0].as_bit() = 0x0;
       break;
     case 12:
       status_ |= !device_.io.flits_out[0][1][Direction::North].valid; // flit exits router(1,0) North port

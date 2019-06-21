@@ -1,10 +1,6 @@
 #pragma once
 
 #include "literals.h"
-#include "scbit.h"
-#include "scint.h"
-#include "scuint.h"
-#include "logic.h"
 #include "bit.h"
 #include "int.h"
 #include "uint.h"
@@ -20,6 +16,7 @@
 #include "if.h"
 #include "switch.h"
 #include "module.h"
+#include "device.h"
 #include "simulator.h"
 #include "tracer.h"
 #include "codegen.h"
@@ -57,15 +54,19 @@ namespace logic {
   //
 
   using ch::internal::ch_bit_base;
+  using ch::internal::ch_sbit_base;
+
   using ch::internal::ch_number_base;
+  using ch::internal::ch_snumber_base;
 
   using ch::internal::ch_bit;
-  using ch::internal::ch_int;
-  using ch::internal::ch_uint;
+  using ch::internal::ch_sbit;
 
-  using ch::internal::ch_scbit;
-  using ch::internal::ch_scint;
-  using ch::internal::ch_scuint;
+  using ch::internal::ch_int;
+  using ch::internal::ch_sint;
+
+  using ch::internal::ch_uint;
+  using ch::internal::ch_suint;
 
   using ch::internal::ch_reg;
   using ch::internal::ch_vec;
@@ -133,48 +134,48 @@ namespace logic {
   using ch_uint256= ch_uint<256>;
   using ch_uint512= ch_uint<512>;
 
-  using ch_scbit1   = ch_scbit<1>;
-  using ch_scbit2   = ch_scbit<2>;
-  using ch_scbit4   = ch_scbit<4>;
-  using ch_scbit8   = ch_scbit<8>;
-  using ch_scbit16  = ch_scbit<16>;
-  using ch_scbit32  = ch_scbit<32>;
-  using ch_scbit64  = ch_scbit<64>;
-  using ch_scbit128 = ch_scbit<128>;
-  using ch_scbit256 = ch_scbit<256>;
-  using ch_scbit512 = ch_scbit<512>;
+  using ch_sbit1   = ch_sbit<1>;
+  using ch_sbit2   = ch_sbit<2>;
+  using ch_sbit4   = ch_sbit<4>;
+  using ch_sbit8   = ch_sbit<8>;
+  using ch_sbit16  = ch_sbit<16>;
+  using ch_sbit32  = ch_sbit<32>;
+  using ch_sbit64  = ch_sbit<64>;
+  using ch_sbit128 = ch_sbit<128>;
+  using ch_sbit256 = ch_sbit<256>;
+  using ch_sbit512 = ch_sbit<512>;
 
-  using ch_scint1   = ch_scint<1>;
-  using ch_scint2   = ch_scint<2>;
-  using ch_scint4   = ch_scint<4>;
-  using ch_scint8   = ch_scint<8>;
-  using ch_scint16  = ch_scint<16>;
-  using ch_scint32  = ch_scint<32>;
-  using ch_scint64  = ch_scint<64>;
-  using ch_scint128 = ch_scint<128>;
-  using ch_scint256 = ch_scint<256>;
-  using ch_scint512 = ch_scint<512>;
+  using ch_sint1   = ch_sint<1>;
+  using ch_sint2   = ch_sint<2>;
+  using ch_sint4   = ch_sint<4>;
+  using ch_sint8   = ch_sint<8>;
+  using ch_sint16  = ch_sint<16>;
+  using ch_sint32  = ch_sint<32>;
+  using ch_sint64  = ch_sint<64>;
+  using ch_sint128 = ch_sint<128>;
+  using ch_sint256 = ch_sint<256>;
+  using ch_sint512 = ch_sint<512>;
 
-  using ch_scuint1  = ch_scuint<1>;
-  using ch_scuint2  = ch_scuint<2>;
-  using ch_scuint4  = ch_scuint<4>;
-  using ch_scuint8  = ch_scuint<8>;
-  using ch_scuint16 = ch_scuint<16>;
-  using ch_scuint32 = ch_scuint<32>;
-  using ch_scuint64 = ch_scuint<64>;
-  using ch_scuint128= ch_scuint<128>;
-  using ch_scuint256= ch_scuint<256>;
-  using ch_scuint512= ch_scuint<512>;
+  using ch_suint1  = ch_suint<1>;
+  using ch_suint2  = ch_suint<2>;
+  using ch_suint4  = ch_suint<4>;
+  using ch_suint8  = ch_suint<8>;
+  using ch_suint16 = ch_suint<16>;
+  using ch_suint32 = ch_suint<32>;
+  using ch_suint64 = ch_suint<64>;
+  using ch_suint128= ch_suint<128>;
+  using ch_suint256= ch_suint<256>;
+  using ch_suint512= ch_suint<512>;
 
   using ch::internal::ch_bool;
-  using ch::internal::ch_scbool;
+  using ch::internal::ch_sbool;
 
   //
   // constants
   //
 
-  const ch_scbool ch_false(0);
-  const ch_scbool ch_true(1);
+  const ch_sbool ch_false(0);
+  const ch_sbool ch_true(1);
 
   //
   // equality functions
@@ -391,9 +392,9 @@ namespace system {
 // user defined functions
 //
 namespace extension {
-  using ch::internal::is_object_type_v;
+  using ch::internal::is_data_type_v;
   using ch::internal::is_bit_convertible_v;
-  using ch::internal::is_scbit_convertible_v;
+  using ch::internal::is_sbit_convertible_v;
   using ch::internal::is_bitvector_extended_type_v;
 
   using ch::internal::source_location;
@@ -442,13 +443,10 @@ inline namespace literals {
 #define __out(...) (ch_out<__VA_ARGS__>)
 #define __inout    CH_INOUT
 #define __io       CH_IO
-#define __scio     CH_SCIO
+#define __sio      CH_SCIO
 #define __flip     CH_FLIP
 
-#define __require0 CH_REQUIRE
-#define __require1 CH_REQUIRE_1
-#define __require2 CH_REQUIRE_2
-#define __require3 CH_REQUIRE_3
+#define __require  CH_REQUIRE
 
 #define __source_location CH_SOURCE_LOCATION
 

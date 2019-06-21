@@ -5,7 +5,7 @@ using namespace ch::extension;
 namespace {
 
   struct Add {
-    __scio (
+    __sio (
       __in (ch_int32)  lhs,
       __in (ch_int32)  rhs,
       __out (ch_int32) dst

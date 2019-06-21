@@ -30,32 +30,34 @@ void registerEnumString(const lnode& node, void* callback);
 
 #define CH_ENUM_SYSTEM_IMPL(enum_name) \
   enum_name(const ch::internal::system_buffer_ptr& buffer = \
-    ch::internal::make_system_buffer(traits::bitwidth, CH_STRINGIZE(enum_name))) : base(buffer) {} \
-  enum_name(type __other) : base(static_cast<unsigned>(__other)) {} \
-  enum_name(const enum_name& __other) : base(__other) {} \
-  enum_name(enum_name&& __other) : base(std::move(__other)) {} \
+    ch::internal::make_system_buffer(traits::bitwidth, CH_STRINGIZE(enum_name))) \
+    : buffer_(buffer) {} \
+  enum_name(type __other) \
+    : enum_name(ch::internal::make_system_buffer(traits::bitwidth, CH_STRINGIZE(enum_name))) { \
+    this->operator=(__other); \
+  } \
+  enum_name(const enum_name& __other) \
+    : enum_name(ch::internal::make_system_buffer(traits::bitwidth, CH_STRINGIZE(enum_name))) { \
+    this->operator=(__other); \
+  } \
+  enum_name(enum_name&& __other) : buffer_(std::move(__other.buffer_)) {} \
   enum_name& operator=(const enum_name& __other) { \
-    base::operator=(__other); \
+    ch::internal::system_accessor::assign(*this, __other); \
     return *this; \
   } \
   enum_name& operator=(enum_name&& __other) { \
-    base::operator=(std::move(__other)); \
+    ch::internal::system_accessor::move(*this, std::move(__other)); \
     return *this; \
   } \
   enum_name& operator=(type __other) { \
     base::operator=(static_cast<unsigned>(__other)); \
     return *this; \
-  } \
-  friend auto operator==(const enum_name& lhs, const enum_name& __other) { \
-    return reinterpret_cast<const base&>(lhs) == reinterpret_cast<const base&>(__other); \
-  } \
-  friend auto operator!=(const enum_name& lhs, const enum_name& __other) { \
-    return reinterpret_cast<const base&>(lhs) != reinterpret_cast<const base&>(__other); \
   }
 
 #define CH_ENUM_LOGIC_IMPL(enum_name) \
   enum_name(const ch::internal::logic_buffer& buffer = \
-    ch::internal::logic_buffer(traits::bitwidth, CH_STRINGIZE(enum_name))) : buffer_(buffer) { \
+    ch::internal::logic_buffer(traits::bitwidth, CH_STRINGIZE(enum_name))) \
+    : buffer_(buffer) { \
     ch::internal::registerEnumString(ch::internal::get_lnode(*this), (void*)to_string); \
   } \
   enum_name(type __other) \
@@ -68,18 +70,15 @@ void registerEnumString(const lnode& node, void* callback);
     CH_SOURCE_LOCATION(1); \
     this->operator=(__other); \
   } \
-  enum_name(enum_name&& __other) : buffer_(std::move(__other.buffer_)) { \
-    ch::internal::registerEnumString( \
-      ch::internal::get_lnode(*this), (void*)to_string); \
-  } \
+  enum_name(enum_name&& __other) : buffer_(std::move(__other.buffer_)) {} \
   enum_name& operator=(const enum_name& __other) { \
     CH_SOURCE_LOCATION(1); \
-    base::operator=(__other); \
+    ch::internal::logic_accessor::assign(*this, __other); \
     return *this; \
   } \
   enum_name& operator=(enum_name&& __other) { \
     CH_SOURCE_LOCATION(1); \
-    base::operator=(std::move(__other)); \
+    ch::internal::logic_accessor::move(*this, std::move(__other)); \
     return *this; \
   } \
   enum_name& operator=(type __other) { \
@@ -89,11 +88,11 @@ void registerEnumString(const lnode& node, void* callback);
   }
 
 #define CH_ENUM_IMPL(enum_name, size, ...) \
-  class enum_name : public ch::internal::ch_number_base<enum_name> { \
+  class enum_name : public ch::internal::ch_bit_base<enum_name> { \
   public: \
     enum type { \
-    CH_FOR_EACH(CH_ENUM_FIELD, , CH_SEP_COMMA, __VA_ARGS__) \
-    , __MAX_VALUE__ \
+      CH_FOR_EACH(CH_ENUM_FIELD, , CH_SEP_COMMA, __VA_ARGS__) \
+      , __MAX_VALUE__ \
     }; \
     static_assert(log2floor<int>(__MAX_VALUE__) <= size, "size mismatch"); \
     static const char* to_string(type value) { \
@@ -110,22 +109,22 @@ void registerEnumString(const lnode& node, void* callback);
     ch::internal::logic_buffer buffer_; \
     friend class ch::internal::logic_accessor; \
     \
-    class __system_type__ : public ch_scbit<size> { \
+    class __system_type__ : public ch::internal::ch_sbit_base<__system_type__> { \
+    private: \
+      const ch::internal::system_buffer_ptr& __buffer() const { \
+        return buffer_; \
+      } \
+      ch::internal::system_buffer_ptr buffer_; \
+      friend class ch::internal::system_accessor; \
     public: \
       using traits = ch::internal::system_traits<size, false, __system_type__, enum_name>; \
-      using base = ch_scbit<size>; \
+      using base = ch::internal::ch_sbit_base<__system_type__>; \
       CH_ENUM_SYSTEM_IMPL(__system_type__) \
-      CH_SYSTEM_INTERFACE(__system_type__) \
-    protected: \
-      friend std::ostream& operator<<(std::ostream& __out, const __system_type__& __in) { \
-        return __out << to_string((type)static_cast<int>(__in)); \
-      } \
     }; \
   public: \
     using traits = ch::internal::logic_traits<size, false, enum_name, __system_type__>; \
     using base = ch::internal::ch_bit_base<enum_name>; \
     CH_ENUM_LOGIC_IMPL(enum_name) \
-    CH_LOGIC_INTERFACE(enum_name) \
   }
 
 #define CH_ENUM3(name, size, body) \

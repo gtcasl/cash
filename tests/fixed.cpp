@@ -111,63 +111,63 @@ TEST_CASE("fixed", "[fixed]") {
 
   SECTION("system", "[system]") {
     TESTX([]()->bool {
-      ch_scfixed<32, 16> a(0x8000), b(0x10000);
+      ch_sfixed<32, 16> a(0x8000), b(0x10000);
       auto c = a + b;
       return (c == 0x18000);
     });
 
     TESTX([]()->bool {
-      ch_scfixed<32, 16> a(0x18000), b(0x8000);
+      ch_sfixed<32, 16> a(0x18000), b(0x8000);
       auto c = a - b;
       return (c == 0x10000);
     });
 
     TESTX([]()->bool {
-      ch_scfixed<32, 16> a(0x8000), b(0x8000);
+      ch_sfixed<32, 16> a(0x8000), b(0x8000);
       auto c = a * b;
       return (c == 0x4000);
     });
 
     TESTX([]()->bool {
-      ch_scfixed<32, 16> a(-0x8000), b(0x8000);
+      ch_sfixed<32, 16> a(-0x8000), b(0x8000);
       auto c = a * b;
       return (c == -0x4000);
     });
 
     TESTX([]()->bool {
-      ch_scfixed<32, 16> a(-0.25f), b(0.25f);
+      ch_sfixed<32, 16> a(-0.25f), b(0.25f);
       auto c = a * b;
       //std::cout << "c=" << (float)c << std::endl;
       return ((float)c == -0.0625f);
     });
 
     TESTX([]()->bool {
-      ch_scfixed<28, 15> a(-0.25f), b(0.25f);
+      ch_sfixed<28, 15> a(-0.25f), b(0.25f);
       auto c = a * b;
       //std::cout << "c=" << (float)c << std::endl;
       return ((float)c == -0.0625f);
     });
 
     TESTX([]()->bool {
-      ch_scfixed<25, 15> a(-0.25f), b(0.25f);
+      ch_sfixed<25, 15> a(-0.25f), b(0.25f);
       auto c = a * b;
       //std::cout << "c=" << (float)c << std::endl;
       return ((float)c == -0.0625f);
     });
 
     TESTX([]()->bool {
-      ch_scfixed<32, 16> a(0x18000), b(0x8000);
+      ch_sfixed<32, 16> a(0x18000), b(0x8000);
       auto c = a / b;
       return (c == 0x30000);
     });
 
     TESTX([]()->bool {
-      ch_scfixed<32, 16> a(0.25);
+      ch_sfixed<32, 16> a(0.25);
       return (a == 0x4000);
     });
 
     TESTX([]()->bool {
-      ch_scfixed<32, 16> a(-0.125);
+      ch_sfixed<32, 16> a(-0.125);
       return (a == -0x2000);
     });
   }

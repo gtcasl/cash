@@ -74,13 +74,13 @@ TEST_CASE("misc", "[misc]") {
   SECTION("assert", "[assert]") {
     TEST([]()->ch_bool {
       ch_bit4 a(1100_b);
-      auto c = a.slice<2>(1) ^ 01_b;
+      auto c = ch_slice<2>(a, 1) ^ 01_b;
       ch_assert(c == 11_b, "assertion failed!");
       return (c == 11_b);
     });
     TEST([]()->ch_bool {
       ch_bit4 a(1100_b), b(1);
-      auto c = a.slice<2>(1) ^ 01_b;
+      auto c = ch_slice<2>(a, 1) ^ 01_b;
       __if (b == 1) {
         ch_assert(c == 11_b, "assertion failed!");
       } __else {
@@ -93,7 +93,7 @@ TEST_CASE("misc", "[misc]") {
   SECTION("taps", "[tap]") {
     TEST([]()->ch_bool {
       ch_bit4 a(1100_b);
-      auto c = a.slice<2>(1) ^ 01_b;
+      auto c = ch_slice<2>(a, 1) ^ 01_b;
       __tap(c);
       return (c == 11_b);
     });

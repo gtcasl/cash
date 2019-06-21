@@ -260,7 +260,7 @@ int main() {
     s1.run();
   }
   {
-    ch_scbit<4> a(1), b;
+    ch_sbit<4> a(1), b;
     b = std::move(a);
     assert(b == 1);
   }
@@ -382,12 +382,12 @@ int main() {
   }
 
   {
-    ch_scbit<4> a(0101_b);
+    ch_sbit<4> a(0101_b);
     assert(a[0]);
     assert(a[2]);
-    assert(1 == a.slice<2>());
-    assert(1 == a.slice<2>(2));
-    assert((a[0] == a[2]) && (a.slice<2>() == a.slice<2>(2)));
+    assert(1 == ch_slice<2>(a));
+    assert(1 == ch_slice<2>(a, 2));
+    assert((a[0] == a[2]) && (ch_slice<2>(a) == ch_slice<2>(a, 2)));
   }*/
 
   /*#define COPY_REF(dst, dst_offset, src, src_offset, length) \
@@ -500,8 +500,8 @@ int main() {
   }
 
   {
-    ch_scbit<16> a(0xabcd_h);
-    auto b = a.slice<12>().slice<8>().slice<4>(4);
+    ch_sbit<16> a(0xabcd_h);
+    auto b = ch_slice<12>(a).slice<8>().slice<4>(4);
     assert(b == 0xc_h);
   }*/
 

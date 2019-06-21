@@ -58,7 +58,7 @@ public:
     bindports_.push_back(bindport);
   }
 
-  const auto bindports() const {
+  auto bindports() const {
     return bindports_;
   }
 

@@ -45,7 +45,7 @@ TEST_CASE("arithmetic", "[arithmetic]") {
     TEST([]()->ch_bool {
       ch_bit128 a(0xBA), b(0xDC);
       auto c = a ^ b;
-      return (c.slice<8>() == 0x66);
+      return (ch_slice<8>(c) == 0x66);
     });
     TEST([]()->ch_bool {
       ch_bit128 a(0xBA);
@@ -60,12 +60,12 @@ TEST_CASE("arithmetic", "[arithmetic]") {
     TEST([]()->ch_bool {
       ch_bit128 a(0xBA), b(0xDC);
       auto c = a | b;
-      return (c.slice<8>() == 0xFE);
+      return (ch_slice<8>(c) == 0xFE);
     });
     TEST([]()->ch_bool {
       ch_bit128 a(0xBA), b(0xDC);
       auto c = a & b;
-      return (c.slice<8>() == 0x98);
+      return (ch_slice<8>(c) == 0x98);
     });
   }
   

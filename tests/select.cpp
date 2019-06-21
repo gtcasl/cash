@@ -362,9 +362,9 @@ TEST_CASE("conditionals", "[conditionals]") {
       __if (a == 1) {
         b = 1;
       } __elif (a == 2) {
-        b.sliceref<3>() = 1;
+        ch_sliceref<3>(b) = 1;
       } __elif (a == 3) {
-        b.sliceref<2>(2) = 1;
+        ch_sliceref<2>(b, 2) = 1;
       } __else {
         b = 1000_b;
       };
@@ -493,7 +493,7 @@ TEST_CASE("conditionals", "[conditionals]") {
       ch_bit4 a(0), b(0);
       __switch (a)
       __case(0) {
-        b.sliceref<3>(0) = 101_b;
+        ch_sliceref<3>(b, 0) = 101_b;
       }
       __case(1) {
         b = 0;

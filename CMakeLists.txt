@@ -64,7 +64,7 @@ set(PROJECT_SOURCES
     src/simulatorimpl.cpp
     src/tracerimpl.cpp
     src/verilogwriter.cpp
-    src/firrtlwriter.cpp
+    src/firrtlwriter.cpp    
     src/eda/altera/avalon_sim.cpp
 )
 

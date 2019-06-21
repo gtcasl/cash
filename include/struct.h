@@ -1,6 +1,7 @@
 #pragma once
 
 #include "logic.h"
+#include "system.h"
 
 #define CH_STRUCT_SIZE_EACH(a, i, x) \
   ch_width_v<ch::internal::identity_t<CH_PAIR_L(x)>>
@@ -55,17 +56,16 @@ public: \
   type_name(const ch::internal::system_buffer_ptr& buffer = \
     ch::internal::make_system_buffer(traits::bitwidth, CH_STRINGIZE(struct_name))) \
     : CH_FOR_EACH(CH_STRUCT_SYSTEM_CTOR, , CH_SEP_COMMA, __VA_ARGS__) {} \
-  template <CH_REQUIRE(CH_NARG(__VA_ARGS__) >= 2)> \
-  explicit type_name(const ch_scbit<traits::bitwidth>& __other) \
-    : type_name(ch::internal::system_accessor::copy(__other)) {} \
-  type_name(const type_name& __other) \
-    : type_name(ch::internal::system_accessor::copy(__other)) {} \
-  type_name(type_name&& __other) \
-    : type_name(ch::internal::system_accessor::move(__other)) {} \
   type_name(CH_REVERSE_FOR_EACH(CH_STRUCT_SYSTEM_FIELD_CTOR_ARGS, , CH_SEP_COMMA, __VA_ARGS__)) \
-    : type_name() { \
+    : type_name(ch::internal::make_system_buffer(traits::bitwidth, CH_STRINGIZE(struct_name))) { \
     CH_REVERSE_FOR_EACH(CH_STRUCT_FIELD_CTOR_INIT, , CH_SEP_SEMICOLON, __VA_ARGS__); \
   } \
+  type_name(const type_name& __other) \
+    : type_name(ch::internal::make_system_buffer(traits::bitwidth, CH_STRINGIZE(struct_name))) { \
+    this->operator=(__other); \
+  } \
+  type_name(type_name&& __other) \
+    : type_name(ch::internal::system_accessor::move(__other)) {} \
   type_name& operator=(const type_name& __other) { \
     ch::internal::system_accessor::assign(*this, __other); \
     return *this; \
@@ -96,12 +96,10 @@ public: \
   type_name(const ch::internal::logic_buffer& buffer = \
     ch::internal::logic_buffer(traits::bitwidth, CH_STRINGIZE(struct_name))) \
     : CH_FOR_EACH(CH_STRUCT_LOGIC_CTOR, , CH_SEP_COMMA, __VA_ARGS__) {} \
-  template <CH_REQUIRE(CH_NARG(__VA_ARGS__) >= 2)> \
-  explicit type_name(const ch_scbit<traits::bitwidth>& __other) \
+  type_name(CH_REVERSE_FOR_EACH(CH_STRUCT_LOGIC_FIELD_CTOR_ARGS, , CH_SEP_COMMA, __VA_ARGS__)) \
     : type_name(ch::internal::logic_buffer(traits::bitwidth, CH_STRINGIZE(struct_name))) { \
     CH_SOURCE_LOCATION(1); \
-    ch::internal::logic_buffer tmp(ch::internal::system_accessor::data(__other)); \
-    this->operator=(tmp); \
+    CH_REVERSE_FOR_EACH(CH_STRUCT_FIELD_CTOR_INIT, , CH_SEP_SEMICOLON, __VA_ARGS__); \
   } \
   type_name(const type_name& __other) \
     : type_name(ch::internal::logic_buffer(traits::bitwidth, CH_STRINGIZE(struct_name))) { \
@@ -110,11 +108,6 @@ public: \
   } \
   type_name(type_name&& __other) \
     : type_name(ch::internal::logic_accessor::move(__other)) {} \
-  type_name(CH_REVERSE_FOR_EACH(CH_STRUCT_LOGIC_FIELD_CTOR_ARGS, , CH_SEP_COMMA, __VA_ARGS__)) \
-    : type_name(ch::internal::logic_buffer(traits::bitwidth, CH_STRINGIZE(struct_name))) { \
-    CH_SOURCE_LOCATION(1); \
-    CH_REVERSE_FOR_EACH(CH_STRUCT_FIELD_CTOR_INIT, , CH_SEP_SEMICOLON, __VA_ARGS__); \
-  } \
   type_name& operator=(const type_name& __other) { \
     CH_SOURCE_LOCATION(1); \
     ch::internal::logic_accessor::assign(*this, __other); \
@@ -142,18 +135,17 @@ public: \
     ch::internal::make_system_buffer(traits::bitwidth, CH_STRINGIZE(struct_name))) \
     : base(buffer) \
     , CH_FOR_EACH(CH_STRUCT_SYSTEM_CTOR, , CH_SEP_COMMA, __VA_ARGS__) {} \
-  template <CH_REQUIRE(CH_NARG(__VA_ARGS__) >= 2)> \
-  explicit type_name(const ch_scbit<traits::bitwidth>& __other) \
-    : type_name(ch::internal::system_accessor::copy(__other)) {} \
-  type_name(const type_name& __other) \
-    : type_name(ch::internal::system_accessor::copy(__other)) {} \
-  type_name(type_name&& __other) \
-    : type_name(ch::internal::system_accessor::move(__other)) {} \
   type_name(CH_REVERSE_FOR_EACH(CH_STRUCT_SYSTEM_FIELD_CTOR_ARGS, , CH_SEP_COMMA, __VA_ARGS__), const base& parent) \
-    : type_name() { \
+    : type_name(ch::internal::make_system_buffer(traits::bitwidth, CH_STRINGIZE(struct_name))) { \
     ch::internal::system_accessor::write(*this, 0, parent, 0, ch_width_v<base>); \
     CH_REVERSE_FOR_EACH(CH_STRUCT_FIELD_CTOR_INIT, , CH_SEP_SEMICOLON, __VA_ARGS__); \
   } \
+  type_name(const type_name& __other) \
+    : type_name(ch::internal::make_system_buffer(traits::bitwidth, CH_STRINGIZE(struct_name))) { \
+    this->operator=(__other); \
+  } \
+  type_name(type_name&& __other) \
+    : type_name(ch::internal::system_accessor::move(__other)) {} \
   type_name& operator=(const type_name& __other) { \
     ch::internal::system_accessor::assign(*this, __other); \
     return *this; \
@@ -187,12 +179,11 @@ public: \
     ch::internal::logic_buffer(traits::bitwidth, CH_STRINGIZE(struct_name))) \
     : base(buffer) \
     , CH_FOR_EACH(CH_STRUCT_LOGIC_CTOR, , CH_SEP_COMMA, __VA_ARGS__) {} \
-  template <CH_REQUIRE(CH_NARG(__VA_ARGS__) >= 2)> \
-  explicit type_name(const ch_scbit<traits::bitwidth>& __other) \
+  type_name(CH_REVERSE_FOR_EACH(CH_STRUCT_LOGIC_FIELD_CTOR_ARGS, , CH_SEP_COMMA, __VA_ARGS__), const base& parent) \
     : type_name(ch::internal::logic_buffer(traits::bitwidth, CH_STRINGIZE(struct_name))) { \
     CH_SOURCE_LOCATION(1); \
-    ch::internal::logic_buffer tmp(ch::internal::system_accessor::data(__other)); \
-    this->operator=(tmp); \
+    reinterpret_cast<base*>(this)->operator=(parent); \
+    CH_REVERSE_FOR_EACH(CH_STRUCT_FIELD_CTOR_INIT, , CH_SEP_SEMICOLON, __VA_ARGS__); \
   } \
   type_name(const type_name& __other) \
     : type_name(ch::internal::logic_buffer(traits::bitwidth, CH_STRINGIZE(struct_name))) { \
@@ -201,12 +192,6 @@ public: \
   } \
   type_name(type_name&& __other) \
     : type_name(ch::internal::logic_accessor::move(__other)) {} \
-  type_name(CH_REVERSE_FOR_EACH(CH_STRUCT_LOGIC_FIELD_CTOR_ARGS, , CH_SEP_COMMA, __VA_ARGS__), const base& parent) \
-    : type_name(ch::internal::logic_buffer(traits::bitwidth, CH_STRINGIZE(struct_name))) { \
-    CH_SOURCE_LOCATION(1); \
-    ch::internal::logic_accessor::write(*this, 0, parent, 0, ch_width_v<base>); \
-    CH_REVERSE_FOR_EACH(CH_STRUCT_FIELD_CTOR_INIT, , CH_SEP_SEMICOLON, __VA_ARGS__); \
-  } \
   type_name& operator=(const type_name& __other) { \
     CH_SOURCE_LOCATION(1); \
     ch::internal::logic_accessor::assign(*this, __other); \

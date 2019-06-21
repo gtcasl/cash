@@ -111,7 +111,7 @@ auto ch_next(const T& in) {
 
 template <typename T>
 auto ch_next(const T& in) {
-  static_assert(is_object_type_v<T>, "invalid type");
+  static_assert(is_data_type_v<T>, "invalid type");
   CH_SOURCE_LOCATION(1);
   return ch_next<ch_logic_t<T>, T>(in);
 }

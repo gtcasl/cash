@@ -13,9 +13,9 @@ auto ch_mux(const ch_bit<(log2ceil(2+sizeof...(Args)))>& sel,
             const ArgN& argN,
             const ArgM& argM,
             const Args&... args) {
-  static_assert((is_object_type_v<ArgN>), "invalid type");
-  static_assert((is_object_type_v<ArgM>), "invalid type");
-  static_assert((is_object_type_v<Args> && ...), "invalid type");
+  static_assert((is_data_type_v<ArgN>), "invalid type");
+  static_assert((is_data_type_v<ArgM>), "invalid type");
+  static_assert((is_data_type_v<Args> && ...), "invalid type");
   auto cs = ch_case(sel, sizeof...(Args), argM);
   int i = 0;
   for_each_reverse([&](auto arg){ cs(i++, arg); }, args...);
@@ -24,7 +24,7 @@ auto ch_mux(const ch_bit<(log2ceil(2+sizeof...(Args)))>& sel,
 
 template <unsigned N, typename T, std::size_t M>
 auto ch_mux(const ch_bit<N>& sel, const std::array<T, M>& args) {
-  static_assert(is_object_type_v<T>, "invalid type");
+  static_assert(is_data_type_v<T>, "invalid type");
   static_assert(N == log2ceil(M), "invalid size");
   static_assert(M >= 2, "invalid size");
   auto cs = ch_case(sel, 0, args[0]);
@@ -53,7 +53,7 @@ template <typename ArgN, typename... Args>
 auto ch_hmux(const ch_bit<(1+sizeof...(Args))>& sel,
              const ArgN& argN,
              const Args&... args) {
-  static_assert((is_object_type_v<ArgN>), "invalid type");
+  static_assert((is_data_type_v<ArgN>), "invalid type");
   static_assert(sizeof...(Args) >= 1, "invalid size");
   static_assert(sizeof...(Args) <= 63, "invalid size");
   auto cs = ch_case(sel, (1ull << sizeof...(Args)), argN);
@@ -64,7 +64,7 @@ auto ch_hmux(const ch_bit<(1+sizeof...(Args))>& sel,
 
 template <unsigned N, typename T, std::size_t M>
 auto ch_hmux(const ch_bit<N>& sel, const std::array<T, M>& args) {
-  static_assert(is_object_type_v<T>, "invalid type");
+  static_assert(is_data_type_v<T>, "invalid type");
   static_assert(N == M, "invalid size");
   static_assert(N >= 2, "invalid size");
   static_assert(N <= 64, "invalid size");
@@ -72,7 +72,9 @@ auto ch_hmux(const ch_bit<N>& sel, const std::array<T, M>& args) {
   for (unsigned i = 1; i < N; ++i) {
     cs(1ull << i, args[i]);
   }
-  return cs(0);
+  T def;
+  def.as_int() = 0;
+  return cs(def);
 }
 
 template <unsigned N, unsigned M>

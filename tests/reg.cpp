@@ -367,12 +367,12 @@ TEST_CASE("registers", "[registers]") {
       ch_reg<ch_bit2> a, e;
       auto b = ch_case(ch_now(), 9, 11_b)(7, 0)(5, 2)(3, 1)(0);
       auto v = ch_case(ch_now(), 9, 11_b)(7, 1)(5, 0)(3, 2)(0);
-      e->next = v.slice<2>();
+      e->next = ch_slice<2>(v);
 
       __if (b == 1) {
-        a->next = v.slice<2>();
+        a->next = ch_slice<2>(v);
       } __elif (b == 0) {
-         a->next = v.slice<2>();
+         a->next = ch_slice<2>(v);
       } __elif (b == 2) {
         a->next = 0;
       } __else {
