@@ -26,7 +26,7 @@ public:
     auto self = reinterpret_cast<T*>(this);
     if constexpr (ch_width_v<U> < ch_width_v<T>) {
       sdata_type tmp(ch_width_v<T>);
-      bv_pad<ch_signed_v<U>>(tmp.words(), ch_width_v<T>, system_accessor::data((const U&)other).words(), ch_width_v<U>);
+      bv_pad<is_signed_v<U>>(tmp.words(), ch_width_v<T>, system_accessor::data((const U&)other).words(), ch_width_v<U>);
       system_accessor::assign(*self, tmp);
     } else {
       system_accessor::assign(*self, (const U&)other);
@@ -94,103 +94,82 @@ protected:
   template <typename U>
   auto do_eq(const U& other) const {
     auto self = reinterpret_cast<const T*>(this);
-    /*auto lhs_w = system_accessor::data(*self).words();
-    auto rhs_w = system_accessor::data(other).words();
-    return bv_eq<ch_signed_v<T>, block_type, ClearBitAccessor<block_type>>(
-                                      lhs_w, ch_width_v<T>, rhs_w, ch_width_v<T>);*/
-    return false;
+    return make_system_op<ch_op::eq>(*self, other);
   }
 
   template <typename U>
   auto do_ne(const U& other) const {
-    auto self = reinterpret_cast<const T*>(this);
-    /*auto lhs_w = system_accessor::data(*self).words();
-    auto rhs_w = system_accessor::data(other).words();
-    return !bv_eq<ch_signed_v<T>, block_type, ClearBitAccessor<block_type>>(
-                                      lhs_w, ch_width_v<T>, rhs_w, ch_width_v<T>);*/
-    return false;
+    return !this->do_eq(other);
   }
 
   auto do_not() const {
     auto self = reinterpret_cast<const T*>(this);
-    //return make_logic_op<ch_op::notl, false, ch_bool>(*self);
-    return false;
+    return make_system_op<ch_op::notl>(*self);
   }
 
   template <typename U>
   auto do_andl(const U& other) const {
     auto self = reinterpret_cast<const T*>(this);
-    //return make_logic_op<ch_op::andl, ch_signed_v<T>, ch_bool>(*self, other);
-    return false;
+    return make_system_op<ch_op::andl, false>(*self, other);
   }
 
   template <typename U>
   auto do_orl(const U& other) const {
     auto self = reinterpret_cast<const T*>(this);
-    //return make_logic_op<ch_op::orl, ch_signed_v<T>, ch_bool>(*self, other);
-    return false;
+    return make_system_op<ch_op::orl>(*self, other);
   }
 
   template <typename R>
   auto do_inv() const {
     auto self = reinterpret_cast<const T*>(this);
-    //return make_logic_op<ch_op::inv, false, R>(*self);
-    return R();
+    return make_system_op<R, ch_op::inv>(*self);
   }
 
   template <typename R, typename U>
   auto do_and(const U& other) const {
     auto self = reinterpret_cast<const T*>(this);
-    //return make_logic_op<ch_op::andb, ch_signed_v<R>, R>(*self, other);
-    return R();
+    return make_system_op<R, ch_op::andb>(*self, other);
   }
 
   template <typename R, typename U>
   auto do_or(const U& other) const {
     auto self = reinterpret_cast<const T*>(this);
-    //return make_logic_op<ch_op::orb, ch_signed_v<R>, R>(*self, other);
-    return R();
+    return make_system_op<R, ch_op::orb>(*self, other);
   }
 
   template <typename R, typename U>
   auto do_xor(const U& other) const {
     auto self = reinterpret_cast<const T*>(this);
-    //return make_logic_op<ch_op::xorb, ch_signed_v<R>, R>(*self, other);
-    return R();
+    return make_system_op<R, ch_op::xorb>(*self, other);
   }
 
   template <typename R, typename U>
   auto do_shl(const U& other) const {
-    auto self = reinterpret_cast<const T*>(this);
     static_assert(ch_width_v<U> <= 32, "invalid size");
-    //return make_logic_op<ch_op::shl, ch_signed_v<R>, R>(*self, other);
-    return R();
+    auto self = reinterpret_cast<const T*>(this);
+    return make_system_op<R, ch_op::shl>(*self, other);
   }
 
   template <typename R, typename U>
   auto do_shr(const U& other) const {
-    auto self = reinterpret_cast<const T*>(this);
     static_assert(ch_width_v<U> <= 32, "invalid size");
-    //return make_logic_op<ch_op::shr, ch_signed_v<R>, R>(*self, other);
-    return R();
+    auto self = reinterpret_cast<const T*>(this);
+    return make_system_op<R, ch_op::shr>(*self, other);
   }
 
   auto do_andr() const {
     auto self = reinterpret_cast<const T*>(this);
-    //return make_logic_op<ch_op::andr, false, ch_bool>(*self);
-    return false;
+    return make_system_op<ch_op::andr>(*self);
   }
 
   auto do_orr() const {
     auto self = reinterpret_cast<const T*>(this);
-    //return make_logic_op<ch_op::orr, false, ch_bool>(*self);
-    return false;
+    return make_system_op<ch_op::orr>(*self);
   }
 
   auto do_xorr() const {
     auto self = reinterpret_cast<const T*>(this);
-    //return make_logic_op<ch_op::xorr, false, ch_bool>(*self);
-    return false;
+    return make_system_op<ch_op::xorr>(*self);
   }
 
   std::ostream& do_print(std::ostream& out) const {
@@ -258,7 +237,7 @@ public:
     auto self = reinterpret_cast<T*>(this);
     if constexpr (ch_width_v<U> < ch_width_v<T>) {
       ch_bit<ch_width_v<T>> tmp(logic_buffer(
-          createOpNode(ch_op::pad, ch_width_v<T>, ch_signed_v<U>, get_lnode((const U&)other))));
+          createOpNode(ch_op::pad, ch_width_v<T>, is_signed_v<U>, get_lnode((const U&)other))));
       logic_accessor::assign(*self, tmp);
     } else {
       logic_accessor::assign(*self,(const U&)other);
@@ -323,83 +302,83 @@ protected:
   template <typename U>
   auto do_eq(const U& other) const {
     auto self = reinterpret_cast<const T*>(this);
-    return make_logic_op<ch_op::eq, ch_signed_v<T>, ch_bool>(*self, other);
+    return make_logic_op<ch_op::eq, ch_bool>(*self, other);
   }
 
   template <typename U>
   auto do_ne(const U& other) const {
     auto self = reinterpret_cast<const T*>(this);
-    return make_logic_op<ch_op::ne, ch_signed_v<T>, ch_bool>(*self, other);
+    return make_logic_op<ch_op::ne, ch_bool>(*self, other);
   }
 
   auto do_not() const {
     auto self = reinterpret_cast<const T*>(this);
-    return make_logic_op<ch_op::notl, false, ch_bool>(*self);
+    return make_logic_op<ch_op::notl, ch_bool>(*self);
   }
 
   template <typename U>
   auto do_andl(const U& other) const {
     auto self = reinterpret_cast<const T*>(this);
-    return make_logic_op<ch_op::andl, ch_signed_v<T>, ch_bool>(*self, other);
+    return make_logic_op<ch_op::andl, ch_bool>(*self, other);
   }
 
   template <typename U>
   auto do_orl(const U& other) const {
     auto self = reinterpret_cast<const T*>(this);
-    return make_logic_op<ch_op::orl, ch_signed_v<T>, ch_bool>(*self, other);
+    return make_logic_op<ch_op::orl, ch_bool>(*self, other);
   }
 
   template <typename R>
   auto do_inv() const {
     auto self = reinterpret_cast<const T*>(this);
-    return make_logic_op<ch_op::inv, false, R>(*self);
+    return make_logic_op<ch_op::inv, R>(*self);
   }
 
   template <typename R, typename U>
   auto do_and(const U& other) const {
     auto self = reinterpret_cast<const T*>(this);
-    return make_logic_op<ch_op::andb, ch_signed_v<R>, R>(*self, other);
+    return make_logic_op<ch_op::andb, R>(*self, other);
   }
 
   template <typename R, typename U>
   auto do_or(const U& other) const {
     auto self = reinterpret_cast<const T*>(this);
-    return make_logic_op<ch_op::orb, ch_signed_v<R>, R>(*self, other);
+    return make_logic_op<ch_op::orb, R>(*self, other);
   }
 
   template <typename R, typename U>
   auto do_xor(const U& other) const {
     auto self = reinterpret_cast<const T*>(this);
-    return make_logic_op<ch_op::xorb, ch_signed_v<R>, R>(*self, other);
+    return make_logic_op<ch_op::xorb, R>(*self, other);
   }
 
   template <typename R, typename U>
   auto do_shl(const U& other) const {
     auto self = reinterpret_cast<const T*>(this);
     static_assert(ch_width_v<U> <= 32, "invalid size");
-    return make_logic_op<ch_op::shl, ch_signed_v<R>, R>(*self, other);
+    return make_logic_op<ch_op::shl, R>(*self, other);
   }
 
   template <typename R, typename U>
   auto do_shr(const U& other) const {
     auto self = reinterpret_cast<const T*>(this);
     static_assert(ch_width_v<U> <= 32, "invalid size");
-    return make_logic_op<ch_op::shr, ch_signed_v<R>, R>(*self, other);
+    return make_logic_op<ch_op::shr, R>(*self, other);
   }
 
   auto do_andr() const {
     auto self = reinterpret_cast<const T*>(this);
-    return make_logic_op<ch_op::andr, false, ch_bool>(*self);
+    return make_logic_op<ch_op::andr, ch_bool>(*self);
   }
 
   auto do_orr() const {
     auto self = reinterpret_cast<const T*>(this);
-    return make_logic_op<ch_op::orr, false, ch_bool>(*self);
+    return make_logic_op<ch_op::orr, ch_bool>(*self);
   }
 
   auto do_xorr() const {
     auto self = reinterpret_cast<const T*>(this);
-    return make_logic_op<ch_op::xorr, false, ch_bool>(*self);
+    return make_logic_op<ch_op::xorr, ch_bool>(*self);
   }
 
   template <typename U> friend class ch_bit_base;

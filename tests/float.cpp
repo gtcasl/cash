@@ -50,17 +50,17 @@ TEST_CASE("float", "[float]") {
     
     TEST([]()->ch_bool {
       ch_float32 x(0.5f);
-      return (x == 0x3f000000_h);
+      return (x.as_bit() == 0x3f000000_h);
     });
     
     TEST([]()->ch_bool {
       ch_float32 x(1.0f);
-      return (x == 0x3f800000_h);
+      return (x.as_bit() == 0x3f800000_h);
     });
     
     TEST([]()->ch_bool {
       ch_float32 x(2.0f);
-      return (x == 0x40000000_h);
+      return (x.as_bit() == 0x40000000_h);
     });
   }
   
@@ -76,31 +76,31 @@ TEST_CASE("float", "[float]") {
       ch_float32 x(0.5f), y(0.5f), z;
       z = ch_fmul<1>(x, y);
       //ch_println("{0}: clk={1}, rst={2}, z={3}", ch_now(), ch_clock(), ch_reset(), z);
-      return (z == 0x3e800000_h);
+      return (z.as_bit() == 0x3e800000_h);
     }, 1);
 
     TEST([]()->ch_bool {
       ch_float32 x(0.5f), y(1.0f), z;
       z = ch_fmul<1>(x, y);
-      return (z == 0x3f000000_h);
+      return (z.as_bit() == 0x3f000000_h);
     }, 1);
     
     TEST([]()->ch_bool {
       ch_float32 x(0.5f), y(2.0f), z;
       z = ch_fmul<1>(x, y);
-      return (z == 0x3f800000_h);
+      return (z.as_bit() == 0x3f800000_h);
     }, 1);
     
     TEST([]()->ch_bool {
       ch_float32 x(0.5f), y(1.5f), z;
       z = ch_fadd<1>(x, y);
-      return (z == 0x40000000_h);
+      return (z.as_bit() == 0x40000000_h);
     }, 1);
     
     TEST([]()->ch_bool {
       ch_float32 x(2.5f), y(0.5f), z;
       z = ch_fsub<1>(x, y);
-      return (z == 0x40000000_h);
+      return (z.as_bit() == 0x40000000_h);
     }, 1);
 
     TEST([]()->ch_bool {

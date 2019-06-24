@@ -67,32 +67,49 @@ protected:
 
   template <typename R>
   auto do_neg() const {
-    return R();
+    static_assert(std::is_same_v<R, ch_sfloat32>, "invalid type");
+    auto value = static_cast<float>(*this);
+    return ch_sfloat32(0.0f - value);
   }
 
   template <typename R, typename U>
   auto do_add(const U& other) const {
-    return R();
+    static_assert(std::is_same_v<R, ch_sfloat32>, "invalid type");
+    auto lhs_value = static_cast<float>(*this);
+    auto rhs_value = static_cast<float>(other);
+    return ch_sfloat32(lhs_value + rhs_value);
   }
 
   template <typename R, typename U>
   auto do_sub(const U& other) const {
-    return R();
+    static_assert(std::is_same_v<R, ch_sfloat32>, "invalid type");
+    auto lhs_value = static_cast<float>(*this);
+    auto rhs_value = static_cast<float>(other);
+    return ch_sfloat32(lhs_value - rhs_value);
   }
 
   template <typename R, typename U>
   auto do_mul(const U& other) const {
-    return R();
+    static_assert(std::is_same_v<R, ch_sfloat32>, "invalid type");
+    auto lhs_value = static_cast<float>(*this);
+    auto rhs_value = static_cast<float>(other);
+    return ch_sfloat32(lhs_value * rhs_value);
   }
 
   template <typename R, typename U>
   auto do_div(const U& other) const {
-    return R();
+    static_assert(std::is_same_v<R, ch_sfloat32>, "invalid type");
+    auto lhs_value = static_cast<float>(*this);
+    auto rhs_value = static_cast<float>(other);
+    return ch_sfloat32(lhs_value / rhs_value);
   }
 
   template <typename R, typename U>
   auto do_mod(const U& other) const {
-    return R();
+    static_assert(std::is_same_v<R, ch_sfloat32>, "invalid type");
+    auto lhs_value = static_cast<float>(*this);
+    auto rhs_value = static_cast<float>(other);
+    return ch_sfloat32(fmod(lhs_value, rhs_value));
   }
 
   const system_buffer_ptr& __buffer() const {
@@ -439,6 +456,7 @@ struct cfMod {
 
 template <typename R>
 auto ch_float32::do_neg() const {
+  static_assert(std::is_same_v<R, ch_float32>, "invalid type");
   __source_location(1);
   ch_udf_comb<cfSub> udf;
   udf.io.lhs = 0.0f;
@@ -448,6 +466,7 @@ auto ch_float32::do_neg() const {
 
 template <typename R, typename U>
 auto ch_float32::do_add(const U& other) const {
+  static_assert(std::is_same_v<R, ch_float32>, "invalid type");
   __source_location(1);
   ch_udf_comb<cfAdd> udf;
   udf.io.lhs = *this;
@@ -457,6 +476,7 @@ auto ch_float32::do_add(const U& other) const {
 
 template <typename R, typename U>
 auto ch_float32::do_sub(const U& other) const {
+  static_assert(std::is_same_v<R, ch_float32>, "invalid type");
   __source_location(1);
   ch_udf_comb<cfSub> udf;
   udf.io.lhs = *this;
@@ -466,6 +486,7 @@ auto ch_float32::do_sub(const U& other) const {
 
 template <typename R, typename U>
 auto ch_float32::do_mul(const U& other) const {
+  static_assert(std::is_same_v<R, ch_float32>, "invalid type");
   __source_location(1);
   ch_udf_comb<cfMul> udf;
   udf.io.lhs = *this;
@@ -475,6 +496,7 @@ auto ch_float32::do_mul(const U& other) const {
 
 template <typename R, typename U>
 auto ch_float32::do_div(const U& other) const {
+  static_assert(std::is_same_v<R, ch_float32>, "invalid type");
   __source_location(1);
   ch_udf_comb<cfDiv> udf;
   udf.io.lhs = *this;
@@ -484,6 +506,7 @@ auto ch_float32::do_div(const U& other) const {
 
 template <typename R, typename U>
 auto ch_float32::do_mod(const U& other) const {
+  static_assert(std::is_same_v<R, ch_float32>, "invalid type");
   __source_location(1);
   ch_udf_comb<cfMod> udf;
   udf.io.lhs = *this;

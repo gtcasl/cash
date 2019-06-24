@@ -585,7 +585,7 @@ lnodeimpl* compiler::constant_fold(opimpl* node) {
     }
     break;
   case ch_op::notl:
-    bv_assign_scalar(tmp.words(), bv_notl(src0_data, src0_size));
+    bv_assign_scalar(tmp.words(), bv_not(src0_data, src0_size));
     break;
   case ch_op::andl:
     bv_assign_scalar(tmp.words(), bv_andl(src0_data, src0_size, src1_data, src1_size));

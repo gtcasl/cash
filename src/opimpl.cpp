@@ -98,6 +98,7 @@ lnodeimpl* ch::internal::createOpNode(
     bool is_signed,
     const lnode& in) {
   auto sloc = get_source_location();
+  is_signed &= CH_OP_IS_SIGNED(op);
   return in.impl()->ctx()->create_node<opimpl>(op, size, is_signed, in.impl(), sloc);
 }
 
@@ -108,12 +109,15 @@ lnodeimpl* ch::internal::createOpNode(
     const lnode& lhs,
     const lnode& rhs) {
   auto sloc = get_source_location();
+  is_signed &= CH_OP_IS_SIGNED(op);
   if (op == ch_op::ne || op == ch_op::eq) {
-    if (type_lit == lhs.impl()->type() && reinterpret_cast<litimpl*>(lhs.impl())->is_zero()) {
+    if (type_lit == lhs.impl()->type()
+     && reinterpret_cast<litimpl*>(lhs.impl())->is_zero()) {
       op = (op == ch_op::eq) ? ch_op::notl : ch_op::orr;
       return rhs.impl()->ctx()->create_node<opimpl>(op, size, is_signed, rhs.impl(), sloc);
     } else
-    if (type_lit == rhs.impl()->type() && reinterpret_cast<litimpl*>(rhs.impl())->is_zero()) {
+    if (type_lit == rhs.impl()->type()
+     && reinterpret_cast<litimpl*>(rhs.impl())->is_zero()) {
       op = (op == ch_op::eq) ? ch_op::notl : ch_op::orr;
       return lhs.impl()->ctx()->create_node<opimpl>(op, size, is_signed, lhs.impl(), sloc);
     }

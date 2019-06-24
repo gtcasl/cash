@@ -183,7 +183,7 @@ public:
   ch_bit(const ch_bit& other)
     : ch_bit(logic_buffer(N, idname<ch_bit>())) {
     CH_SOURCE_LOCATION(1);
-    base::operator=(other);
+    this->operator=(other);
   }
 
   ch_bit(ch_bit&& other) : buffer_(std::move(other.buffer_)) {}  
@@ -270,7 +270,7 @@ auto ch_slice(const ch_sbit_base<T>& obj, size_t start = 0) {
     assert(0 == start);
     return (const T&)obj;
   } else {
-    return ch_slice<size_cast_t<T, N>>(obj, start);
+    return ch_slice<ch_size_cast_t<T, N>>(obj, start);
   }
 }
 
@@ -281,7 +281,7 @@ auto ch_aslice(const ch_sbit_base<T>& obj, size_t start = 0) {
     assert(0 == start);
     return (const T&)obj;
   } else {
-    return ch_aslice<size_cast_t<T, N>>(obj, start);
+    return ch_aslice<ch_size_cast_t<T, N>>(obj, start);
   }
 }
 
@@ -292,7 +292,7 @@ auto ch_sliceref(ch_sbit_base<T>& obj, size_t start = 0) {
     assert(0 == start);
     return (const T&)obj;
   } else {
-    return ch_sliceref<size_cast_t<T, N>>(obj, start);
+    return ch_sliceref<ch_size_cast_t<T, N>>(obj, start);
   }
 }
 
@@ -303,7 +303,7 @@ auto ch_asliceref(ch_sbit_base<T>& obj, size_t start = 0) {
     assert(0 == start);
     return (const T&)obj;
   } else {
-    return ch_asliceref<size_cast_t<T, N>>(obj, start);
+    return ch_asliceref<ch_size_cast_t<T, N>>(obj, start);
   }
 }
 
@@ -345,7 +345,7 @@ auto ch_slice(const ch_bit_base<T>& obj, size_t start = 0) {
     assert(0 == start);
     return (const T&)obj;
   } else {
-    return ch_slice<size_cast_t<T, N>>(obj, start);
+    return ch_slice<ch_size_cast_t<T, N>>(obj, start);
   }
 }
 
@@ -357,7 +357,7 @@ auto ch_aslice(const ch_bit_base<T>& obj, size_t start = 0) {
     assert(0 == start);
     return (const T&)obj;
   } else {
-    return ch_aslice<size_cast_t<T, N>>(obj, start);
+    return ch_aslice<ch_size_cast_t<T, N>>(obj, start);
   }
 }
 
@@ -369,7 +369,7 @@ auto ch_sliceref(ch_bit_base<T>& obj, size_t start = 0) {
     assert(0 == start);
     return (const T&)obj;
   } else {
-    return ch_sliceref<size_cast_t<T, N>>(obj, start);
+    return ch_sliceref<ch_size_cast_t<T, N>>(obj, start);
   }
 }
 
@@ -381,7 +381,7 @@ auto ch_asliceref(ch_bit_base<T>& obj, size_t start = 0) {
     assert(0 == start);
     return (const T&)obj;
   } else {
-    return ch_asliceref<size_cast_t<T, N>>(obj, start);
+    return ch_asliceref<ch_size_cast_t<T, N>>(obj, start);
   }
 }
 
@@ -390,13 +390,13 @@ auto ch_asliceref(ch_bit_base<T>& obj, size_t start = 0) {
 template <typename T>
 inline auto ch_rotl(const ch_bit_base<T>& lhs, uint32_t rhs) {
   CH_SOURCE_LOCATION(1);
-  return make_type<T>(createRotateNode(get_lnode((const T&)lhs), rhs, false));
+  return make_logic_type<T>(createRotateNode(get_lnode((const T&)lhs), rhs, false));
 }
 
 template <typename T>
 inline auto ch_rotr(const ch_bit_base<T>& lhs, uint32_t rhs) {
   CH_SOURCE_LOCATION(1);
-  return make_type<T>(createRotateNode(get_lnode((const T&)lhs), rhs, true));
+  return make_logic_type<T>(createRotateNode(get_lnode((const T&)lhs), rhs, true));
 }
 
 // padding function
@@ -408,7 +408,7 @@ auto ch_pad(const ch_bit_base<T>& obj) {
     static_assert(0 == N, "invalid size");
     return (const T&)obj;
   } else {
-    return size_cast_t<T, (ch_width_v<T> + N)>((const T&)obj);
+    return ch_size_cast_t<T, (ch_width_v<T> + N)>((const T&)obj);
   }
 }
 
@@ -442,7 +442,7 @@ auto ch_shuffle(const ch_bit_base<T>& obj, const std::array<unsigned, M>& indice
   CH_SOURCE_LOCATION(1);
   auto node = createShuffleNode(get_lnode((const T&)obj),
                                 std::vector<unsigned>(indices.begin(), indices.end()));
-  return make_type<T>(node);
+  return make_logic_type<T>(node);
 }
 
 // tie function

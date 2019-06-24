@@ -40,71 +40,59 @@ protected:
   template <typename U>
   auto do_lt(const U& other) const {
     auto self = reinterpret_cast<const T*>(this);
-    //return make_logic_op<ch_op::lt, ch_signed_v<T>, ch_bool>(*self, other);
-    return false;
+    return make_system_op<ch_op::lt>(*self, other);
   }
 
   template <typename U>
-  auto do_le(const U& other) const {
-    auto self = reinterpret_cast<const T*>(this);
-    //return make_logic_op<ch_op::le, ch_signed_v<T>, ch_bool>(*self, other);
-    return false;
+  auto do_le(const U& other) const {    
+    return !this->do_gt(other);
   }
 
   template <typename U>
   auto do_gt(const U& other) const {
     auto self = reinterpret_cast<const T*>(this);
-    //return make_logic_op<ch_op::gt, ch_signed_v<T>, ch_bool>(*self, other);
-    return false;
+    return make_system_op<ch_op::lt>(other, *self);
   }
 
   template <typename U>
   auto do_ge(const U& other) const {
-    auto self = reinterpret_cast<const T*>(this);
-    //return make_logic_op<ch_op::ge, ch_signed_v<T>, ch_bool>(*self, other);
-    return false;
+    return !this->do_le(other);
   }
 
   template <typename R>
   auto do_neg() const {
     auto self = reinterpret_cast<const T*>(this);
-    //return make_logic_op<ch_op::neg, ch_signed_v<R>, R>(*self);
-    return R();
+    return make_system_op<R, ch_op::neg>(*self);
   }
 
   template <typename R, typename U>
   auto do_add(const U& other) const {
     auto self = reinterpret_cast<const T*>(this);
-    //return make_logic_op<ch_op::add, ch_signed_v<R>, R>(*self, other);
-    return R();
+    return make_system_op<R, ch_op::add>(*self, other);
   }
 
   template <typename R, typename U>
   auto do_sub(const U& other) const {
     auto self = reinterpret_cast<const T*>(this);
-    //return make_logic_op<ch_op::sub, ch_signed_v<R>, R>(*self, other);
-    return R();
+    return make_system_op<R, ch_op::sub>(*self, other);
   }
 
   template <typename R, typename U>
   auto do_mul(const U& other) const {
     auto self = reinterpret_cast<const T*>(this);
-    //return make_logic_op<ch_op::mul, ch_signed_v<R>, R>(*self, other);
-    return R();
+    return make_system_op<R, ch_op::mul>(*self, other);
   }
 
   template <typename R, typename U>
   auto do_div(const U& other) const {
     auto self = reinterpret_cast<const T*>(this);
-    //return make_logic_op<ch_op::div, ch_signed_v<R>, R>(*self, other);
-    return R();
+    return make_system_op<R, ch_op::div>(*self, other);
   }
 
   template <typename R, typename U>
   auto do_mod(const U& other) const {
     auto self = reinterpret_cast<const T*>(this);
-    //return make_logic_op<ch_op::mod, ch_signed_v<R>, R>(*self, other);
-    return R();
+    return make_system_op<R, ch_op::mod>(*self, other);
   }
 
   template <typename U> friend class ch_snumber_base;
@@ -159,61 +147,61 @@ protected:
   template <typename U>
   auto do_lt(const U& other) const {
     auto self = reinterpret_cast<const T*>(this);
-    return make_logic_op<ch_op::lt, ch_signed_v<T>, ch_bool>(*self, other);
+    return make_logic_op<ch_op::lt, ch_bool>(*self, other);
   }
 
   template <typename U>
   auto do_le(const U& other) const {
     auto self = reinterpret_cast<const T*>(this);
-    return make_logic_op<ch_op::le, ch_signed_v<T>, ch_bool>(*self, other);
+    return make_logic_op<ch_op::le, ch_bool>(*self, other);
   }
 
   template <typename U>
   auto do_gt(const U& other) const {
     auto self = reinterpret_cast<const T*>(this);
-    return make_logic_op<ch_op::gt, ch_signed_v<T>, ch_bool>(*self, other);
+    return make_logic_op<ch_op::gt, ch_bool>(*self, other);
   }
 
   template <typename U>
   auto do_ge(const U& other) const {
     auto self = reinterpret_cast<const T*>(this);
-    return make_logic_op<ch_op::ge, ch_signed_v<T>, ch_bool>(*self, other);
+    return make_logic_op<ch_op::ge, ch_bool>(*self, other);
   }
 
   template <typename R>
   auto do_neg() const {
     auto self = reinterpret_cast<const T*>(this);
-    return make_logic_op<ch_op::neg, ch_signed_v<R>, R>(*self);
+    return make_logic_op<ch_op::neg, R>(*self);
   }
 
   template <typename R, typename U>
   auto do_add(const U& other) const {
     auto self = reinterpret_cast<const T*>(this);
-    return make_logic_op<ch_op::add, ch_signed_v<R>, R>(*self, other);
+    return make_logic_op<ch_op::add, R>(*self, other);
   }
 
   template <typename R, typename U>
   auto do_sub(const U& other) const {
     auto self = reinterpret_cast<const T*>(this);
-    return make_logic_op<ch_op::sub, ch_signed_v<R>, R>(*self, other);
+    return make_logic_op<ch_op::sub, R>(*self, other);
   }
 
   template <typename R, typename U>
   auto do_mul(const U& other) const {
     auto self = reinterpret_cast<const T*>(this);
-    return make_logic_op<ch_op::mul, ch_signed_v<R>, R>(*self, other);
+    return make_logic_op<ch_op::mul, R>(*self, other);
   }
 
   template <typename R, typename U>
   auto do_div(const U& other) const {
     auto self = reinterpret_cast<const T*>(this);
-    return make_logic_op<ch_op::div, ch_signed_v<R>, R>(*self, other);
+    return make_logic_op<ch_op::div, R>(*self, other);
   }
 
   template <typename R, typename U>
   auto do_mod(const U& other) const {
     auto self = reinterpret_cast<const T*>(this);
-    return make_logic_op<ch_op::mod, ch_signed_v<R>, R>(*self, other);
+    return make_logic_op<ch_op::mod, R>(*self, other);
   }
 
   template <typename U> friend class ch_number_base;

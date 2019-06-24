@@ -182,7 +182,7 @@ public:
   ch_int(const ch_int& other)
     : ch_int(logic_buffer(N, idname<ch_int>())) {
     CH_SOURCE_LOCATION(1);
-    base::operator=(other);
+    this->operator=(other);
   }
 
   ch_int(ch_int&& other) : buffer_(std::move(other.buffer_)) {}

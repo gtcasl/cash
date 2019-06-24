@@ -60,13 +60,13 @@ static constexpr uint32_t INLINE_THRESHOLD = 8;
       if (need_resize) { \
         pfn = reinterpret_cast<void*>(fname<true, block_type, StaticBitAccessor<block_type, true, true>>); \
       } else { \
-        pfn = reinterpret_cast<void*>(fname<true, block_type, StaticBitAccessor<block_type, true, false>>); \
+        pfn = reinterpret_cast<void*>(fname<true, block_type, StaticBitAccessor<block_type, false, false>>); \
       } \
     } else { \
       if (need_resize) { \
-        pfn = reinterpret_cast<void*>(fname<false, block_type, StaticBitAccessor<block_type, false, true>>); \
+        pfn = reinterpret_cast<void*>(fname<false, block_type, StaticBitAccessor<block_type, true, false>>); \
       } else { \
-        pfn = reinterpret_cast<void*>(fname<false, block_type, ClearBitAccessor<block_type>>); \
+        pfn = reinterpret_cast<void*>(fname<false, block_type, StaticBitAccessor<block_type, false, false>>); \
       } \
     } \
     return this->emit_op_call_relational(pfn, #fname, __VA_ARGS__); \
@@ -81,13 +81,13 @@ static constexpr uint32_t INLINE_THRESHOLD = 8;
     if (need_resize) { \
       pfn = reinterpret_cast<void*>(fname<true, block_type, StaticBitAccessor<block_type, true, true>>); \
     } else { \
-      pfn = reinterpret_cast<void*>(fname<true, block_type, StaticBitAccessor<block_type, true, false>>); \
+      pfn = reinterpret_cast<void*>(fname<true, block_type, StaticBitAccessor<block_type, false, false>>); \
     } \
   } else { \
     if (need_resize) { \
-      pfn = reinterpret_cast<void*>(fname<false, block_type, StaticBitAccessor<block_type, false, true>>); \
+      pfn = reinterpret_cast<void*>(fname<false, block_type, StaticBitAccessor<block_type, true, false>>); \
     } else { \
-      pfn = reinterpret_cast<void*>(fname<false, block_type, ClearBitAccessor<block_type>>); \
+      pfn = reinterpret_cast<void*>(fname<false, block_type, StaticBitAccessor<block_type, false, false>>); \
     } \
   } \
   this->emit_op_call_bitwise(pfn, #fname, __VA_ARGS__)
@@ -726,7 +726,7 @@ private:
         auto j_dst = jit_insn_eq(j_func_, j_src0, j_zero);
         scalar_map_[node->id()] = this->emit_cast(j_dst, j_ntype);
       } else {
-        auto j_dst = __op_call_logical(bv_notl_vector, j_src0, node->src(0).size());
+        auto j_dst = __op_call_logical(bv_not_vector, j_src0, node->src(0).size());
         scalar_map_[node->id()] = this->emit_cast(j_dst, j_ntype);
       }
       break;

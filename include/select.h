@@ -47,7 +47,7 @@ public:
   auto operator()(const V& def_value) {
     static_assert(std::is_constructible_v<T, V>, "invalid type");
     CH_SOURCE_LOCATION(1);
-    return make_type<T>(impl_.emit(to_lnode<T>(def_value)));
+    return make_logic_type<T>(impl_.emit(to_lnode<T>(def_value)));
   }
   
 protected:
@@ -76,7 +76,7 @@ public:
   auto operator()(const T& def_value) {
     static_assert(std::is_constructible_v<V, T>, "invalid type");
     CH_SOURCE_LOCATION(1);
-    return make_type<V>(impl_.emit(to_lnode<V>(def_value)));
+    return make_logic_type<V>(impl_.emit(to_lnode<V>(def_value)));
   }
   
 protected:

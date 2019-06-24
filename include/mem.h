@@ -107,7 +107,7 @@ public:
     static_assert(is_bit_convertible_v<U, addr_width>, "invalid type");
     CH_SOURCE_LOCATION(1);
     auto laddr = to_lnode<addr_width>(addr);
-    return make_type<T>(mem_.aread(laddr));
+    return make_logic_type<T>(mem_.aread(laddr));
   }
 
 protected:
@@ -156,9 +156,9 @@ public:
     CH_SOURCE_LOCATION(1);
     auto laddr = to_lnode<addr_width>(addr);
     if constexpr (SyncRead) {
-      return make_type<T>(mem_.sread(laddr, sdata_type(1,1)));
+      return make_logic_type<T>(mem_.sread(laddr, sdata_type(1,1)));
     } else {
-      return make_type<T>(mem_.aread(laddr));
+      return make_logic_type<T>(mem_.aread(laddr));
     }
   }
 
@@ -171,7 +171,7 @@ public:
     CH_SOURCE_LOCATION(1);
     auto laddr = to_lnode<addr_width>(addr);
     auto l_enable = get_lnode(enable);
-    return make_type<T>(mem_.sread(laddr, l_enable));
+    return make_logic_type<T>(mem_.sread(laddr, l_enable));
   }
 
   template <typename U, typename V>

@@ -1076,7 +1076,7 @@ int bv_cmp(const T* lhs, uint32_t lhs_offset,
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T, bool is_signed, bool is_resizable>
+template <typename T, bool is_resizable, bool is_signed>
 class StaticBitAccessor {
 public:
   StaticBitAccessor(const T* value, uint32_t size, uint32_t other_size)
@@ -1143,7 +1143,7 @@ private:
 };
 
 template <typename T> using ClearBitAccessor = StaticBitAccessor<T, false, false>;
-template <typename T, bool is_signed> using DefaultBitAccessor = StaticBitAccessor<T, is_signed, true>;
+template <typename T, bool is_signed> using DefaultBitAccessor = StaticBitAccessor<T, true, is_signed>;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -1359,23 +1359,23 @@ bool bv_xorr(const T* in, uint32_t size) {
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T>
-bool bv_notl_scalar(const T* in) {
+bool bv_not_scalar(const T* in) {
   return !bv_orr_scalar(in);
 }
 
 template <typename T>
-bool bv_notl_vector(const T* in, uint32_t size) {
+bool bv_not_vector(const T* in, uint32_t size) {
   return !bv_orr_vector(in, size);
 }
 
 template <typename T>
-bool bv_notl(const T* in, uint32_t size) {
+bool bv_not(const T* in, uint32_t size) {
   static constexpr uint32_t WORD_SIZE = bitwidth_v<T>;
 
   if (size <= WORD_SIZE) {
-    return bv_notl_scalar<T>(in);
+    return bv_not_scalar<T>(in);
   } else {
-    return bv_notl_vector<T>(in, size);
+    return bv_not_vector<T>(in, size);
   }
 }
 

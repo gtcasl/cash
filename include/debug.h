@@ -19,7 +19,7 @@ void registerTap(const lnode& node, const std::string& name);
 
 inline auto ch_now() {
   CH_SOURCE_LOCATION(1);
-  return make_type<ch_uint<64>>(getCurrentTimeNode());
+  return make_logic_type<ch_uint<64>>(getCurrentTimeNode());
 }
 
 // print function

@@ -78,7 +78,7 @@ namespace logic {
   //
 
   using ch::internal::ch_width_v;
-  using ch::internal::ch_signed_v;
+  using ch::internal::is_signed_v;
   using ch::internal::ch_direction_v;
 
   using ch::internal::ch_system_t;

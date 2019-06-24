@@ -15,12 +15,12 @@ void pushClockDomain(const lnode& clock, const lnode& reset, bool pos_edge);
 
 inline auto ch_clock() {
   CH_SOURCE_LOCATION(1);
-  return make_type<ch_bool>(getCurrentClockNode());
+  return make_logic_type<ch_bool>(getCurrentClockNode());
 }
 
 inline auto ch_reset() {
   CH_SOURCE_LOCATION(1);
-  return make_type<ch_bool>(getCurrentResetNode());
+  return make_logic_type<ch_bool>(getCurrentResetNode());
 }
 
 template <typename C, typename R = ch_bool>

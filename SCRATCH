@@ -37,7 +37,7 @@ auto ch_udf_impl(const Args&... args, std::index_sequence<Is...>) {
   static_assert(sizeof...(Args) == std::tuple_size_v<typename T::traits::Inputs>, "number of inputs mismatch");
   static_assert((std::is_convertible_v<Args, std::tuple_element_t<Is, typename T::traits::Inputs>> && ...), "invalid type for input");
   auto node = createUDFNode(get_udf<T>(), {to_lnode<std::tuple_element_t<Is, typename T::traits::Inputs>>(args)...});
-  return make_type<typename T::traits::Output>(node);
+  return make_logic_type<typename T::traits::Output>(node);
 }
 
 template <typename T, typename... Args, typename = void>

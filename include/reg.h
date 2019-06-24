@@ -51,7 +51,7 @@ void endPipe(const lnode& ret);
 template <typename T>
 class ch_reg_impl final : public T {
 public:  
-  using traits = logic_traits<ch_width_v<T>, ch_signed_v<T>, T, ch_system_t<T>>;
+  using traits = logic_traits<ch_width_v<T>, is_signed_v<T>, T, ch_system_t<T>>;
   using base = T;
 
   ch_reg_impl()
@@ -106,7 +106,7 @@ auto ch_next(const T& in) {
   static_assert(is_logic_type_v<R>, "invalid type");
   static_assert(std::is_constructible_v<R, T>, "invalid type");
   CH_SOURCE_LOCATION(1);
-  return make_type<R>(createRegNext(to_lnode<R>(in), 1, idname<R>()));
+  return make_logic_type<R>(createRegNext(to_lnode<R>(in), 1, idname<R>()));
 }
 
 template <typename T>
@@ -122,7 +122,7 @@ auto ch_next(const T& in, const I& init) {
   static_assert(std::is_constructible_v<R, T>, "invalid type");
   static_assert(std::is_constructible_v<R, I>, "invalid type");
   CH_SOURCE_LOCATION(1);
-  return make_type<R>(createRegNext(to_lnode<R>(in),
+  return make_logic_type<R>(createRegNext(to_lnode<R>(in),
                                     to_lnode<R>(init),
                                     1,
                                     idname<R>()));
@@ -143,7 +143,7 @@ auto ch_nextEn(const T& in, const E& enable) {
   static_assert(is_bit_base_v<E>, "invalid type");
   static_assert(ch_width_v<E> == 1, "invalid size");
   CH_SOURCE_LOCATION(1);
-  return make_type<R>(createRegNext(to_lnode<R>(in),
+  return make_logic_type<R>(createRegNext(to_lnode<R>(in),
                                     1,
                                     get_lnode(enable),
                                     idname<R>()));
@@ -163,7 +163,7 @@ auto ch_nextEn(const T& in, const E& enable, const I& init) {
   static_assert(is_bit_base_v<E>, "invalid type");
   static_assert(ch_width_v<E> == 1, "invalid size");
   CH_SOURCE_LOCATION(1);
-  return make_type<R>(createRegNext(to_lnode<R>(in),
+  return make_logic_type<R>(createRegNext(to_lnode<R>(in),
                                     to_lnode<R>(init),
                                     1,
                                     get_lnode(enable),
@@ -186,7 +186,7 @@ auto ch_delay(const T& in, uint32_t delay = 1) {
   if (0 == delay) {
     return R(in);
   }
-  return make_type<R>(createRegNext(to_lnode<R>(in), delay, idname<R>()));
+  return make_logic_type<R>(createRegNext(to_lnode<R>(in), delay, idname<R>()));
 }
 
 template <typename T>
@@ -204,7 +204,7 @@ auto ch_delay(const T& in, uint32_t delay, const I& init) {
   if (0 == delay) {
     return R(in);
   }
-  return make_type<R>(createRegNext(to_lnode<R>(in),
+  return make_logic_type<R>(createRegNext(to_lnode<R>(in),
                                     to_lnode<R>(init),
                                     delay,
                                     idname<R>()));
@@ -228,7 +228,7 @@ auto ch_delayEn(const T& in, const E& enable, uint32_t delay = 1) {
   if (0 == delay) {
     return R(in);
   }
-  return make_type<R>(createRegNext(to_lnode<R>(in),
+  return make_logic_type<R>(createRegNext(to_lnode<R>(in),
                                     delay,
                                     get_lnode(enable),
                                     idname<R>()));
@@ -251,7 +251,7 @@ auto ch_delayEn(const T& in, const E& enable, uint32_t delay, const I& init) {
   if (0 == delay) {
     return R(in);
   }
-  return make_type<R>(createRegNext(to_lnode<R>(in),
+  return make_logic_type<R>(createRegNext(to_lnode<R>(in),
                                     to_lnode<R>(init),
                                     delay,
                                     get_lnode(enable),

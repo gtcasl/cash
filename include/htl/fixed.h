@@ -138,12 +138,16 @@ protected:
 
   template <typename R, typename U>
   auto do_mul(const U& other) const {
-    return R();
+    static_assert(std::is_same_v<R, ch_sfixed>, "invalid type");
+    auto ret = ch_shr<N>(ch_mul<N+Frac>(this->as_int(), other.as_int()), Frac);
+    return ret.template as<ch_sfixed>();
   }
 
   template <typename R, typename U>
   auto do_div(const U& other) const {
-    return R();
+    static_assert(std::is_same_v<R, ch_sfixed>, "invalid type");
+    auto ret = ch_slice<N>(ch_shl<N+Frac>(this->as_int(), Frac) / other.as_int());
+    return ret.template as<ch_sfixed>();
   }
 
   const system_buffer_ptr& __buffer() const {
@@ -292,12 +296,14 @@ protected:
 
   template <typename R, typename U>
   auto do_mul(const U& other) const {
+    static_assert(std::is_same_v<R, ch_fixed>, "invalid type");
     auto ret = ch_shr<N>(ch_mul<N+Frac>(this->as_int(), other.as_int()), Frac);
     return ret.template as<ch_fixed>();
   }
 
   template <typename R, typename U>
   auto do_div(const U& other) const {
+    static_assert(std::is_same_v<R, ch_fixed>, "invalid type");
     auto ret = ch_slice<N>(ch_shl<N+Frac>(this->as_int(), Frac) / other.as_int());
     return ret.template as<ch_fixed>();
   }

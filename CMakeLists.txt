@@ -35,7 +35,12 @@ elseif (LLVMJIT)
     set(PROJECT_SOURCES src/llvmjit.cpp)
 endif()
 set(PROJECT_SOURCES
-    ${PROJECT_SOURCES}
+    ${PROJECT_SOURCES}    
+    #tests/fixed.cpp
+    #tests/float.cpp
+    #tests/static.cpp
+    #tests/system.cpp
+    #tests/aggregates.cpp
     src/utils.cpp
     src/platform.cpp    
     src/system.cpp

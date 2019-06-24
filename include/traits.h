@@ -55,55 +55,123 @@ CH_DEF_SFINAE_CHECK(is_io_type, 0 != (T::traits::type & (traits_logic_io | trait
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T, typename Enable = void>
-struct width_value_impl {
+struct width_impl {
   static constexpr uint32_t value = 0;
 };
 
 template <typename T>
-struct width_value_impl<T, std::enable_if_t<is_object_type_v<T>>> {
+struct width_impl<T, std::enable_if_t<is_object_type_v<T>>> {
   static constexpr uint32_t value = T::traits::bitwidth;
 };
 
 template <typename T>
-struct width_value_impl<T, std::enable_if_t<std::is_arithmetic_v<T>>> {
+struct width_impl<T, std::enable_if_t<std::is_arithmetic_v<T>>> {
   static constexpr uint32_t value = bitwidth_v<T>;
 };
 
 template <typename... Ts>
-struct width_impl;
+struct width_list_impl;
 
 template <typename T>
-struct width_impl<T> {
-  static constexpr uint32_t value = width_value_impl<T>::value;
+struct width_list_impl<T> {
+  static constexpr uint32_t value = width_impl<T>::value;
 };
 
 template <typename T0, typename... Ts>
-struct width_impl<T0, Ts...> {
-  static constexpr uint32_t value = T0::traits::bitwidth + width_impl<Ts...>::value;
+struct width_list_impl<T0, Ts...> {
+  static constexpr uint32_t value = width_list_impl<T0>::value + width_list_impl<Ts...>::value;
 };
 
 template <typename... Ts>
-inline constexpr uint32_t ch_width_v = width_impl<std::decay_t<Ts>...>::value;
+inline constexpr uint32_t ch_width_v = width_list_impl<std::decay_t<Ts>...>::value;
 
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T, typename Enable = void>
-struct signed_impl {
+struct is_signed_impl {
   static constexpr bool value = false;
 };
 
 template <typename T>
-struct signed_impl<T, std::enable_if_t<is_data_type_v<T>>> {
+struct is_signed_impl<T, std::enable_if_t<is_data_type_v<T>>> {
   static constexpr bool value = T::traits::is_signed;
 };
 
 template <typename T>
-struct signed_impl<T, std::enable_if_t<std::is_arithmetic_v<T>>> {
+struct is_signed_impl<T, std::enable_if_t<std::is_arithmetic_v<T>>> {
   static constexpr bool value = std::is_signed_v<T>;
 };
 
+template <typename... Ts>
+struct is_signed_list_impl;
+
 template <typename T>
-inline constexpr bool ch_signed_v = signed_impl<std::decay_t<T>>::value;
+struct is_signed_list_impl<T> {
+  static constexpr bool value = is_signed_impl<T>::value;
+};
+
+template <typename T0, typename... Ts>
+struct is_signed_list_impl<T0, Ts...> {
+  static constexpr bool value = is_signed_list_impl<T0>::value || is_signed_list_impl<Ts...>::value;
+};
+
+template <typename T>
+inline constexpr bool is_signed_v = is_signed_list_impl<std::decay_t<T>>::value;
+
+///////////////////////////////////////////////////////////////////////////////
+
+template <typename T, typename Enable = void>
+struct signed_type_impl {
+  using type = void;
+};
+
+template <typename T>
+struct signed_type_impl<T, std::enable_if_t<std::is_signed_v<T>>> {
+  using type = T;
+};
+
+template <typename T>
+struct signed_type_impl<T, std::enable_if_t<std::is_arithmetic_v<T>>> {
+  static constexpr bool value = std::make_signed_v<T>;
+};
+
+
+template <typename T>
+struct signed_type_impl<T, std::enable_if_t<std::is_same_v<T, ch_bit<ch_width_v<T>>>>> {
+  using type = ch_int<ch_width_v<T>>;
+};
+
+template <typename T>
+struct signed_type_impl<T, std::enable_if_t<std::is_same_v<T, ch_uint<ch_width_v<T>>>>> {
+  using type = ch_int<ch_width_v<T>>;
+};
+
+template <typename T, unsigned N>
+using ch_signed_t = typename signed_type_impl<T>::type;
+
+///////////////////////////////////////////////////////////////////////////////
+
+CH_DEF_SFINAE_CHECK(is_resizable, sizeof(typename T:: template size_cast<1>) != 0);
+
+template <typename T, unsigned N, typename Enable = void>
+struct size_cast_impl {
+  using type = void;
+};
+
+template <typename T, unsigned N>
+struct size_cast_impl<T, N, std::enable_if_t<is_resizable_v<T>>> {
+  using type = typename T::template size_cast<N>;
+};
+
+template <typename T, unsigned N>
+using ch_size_cast_t = typename size_cast_impl<T, N>::type;
+
+template <typename T, typename U>
+inline constexpr bool is_resize_constructible_v =
+       is_strictly_constructible_v<T, U>
+    || (!is_strictly_constructible_v<U, T>
+     && is_resizable_v<T>
+     && is_strictly_constructible_v<ch_size_cast_t<T, ch_width_v<U>>, U>);
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -141,16 +209,6 @@ using ch_system_t = typename system_t_impl<std::decay_t<T>>::type;
 CH_DEF_SFINAE_CHECK(is_system_only, (T::traits::type == traits_system));
 
 CH_DEF_SFINAE_CHECK(is_system_type, 0 != (T::traits::type & traits_system));
-
-template <typename T, unsigned N>
-struct size_cast {
-  using type = typename T:: template size_cast<N>;
-};
-
-template <typename T, unsigned N>
-using size_cast_t = typename size_cast<T,N>::type;
-
-CH_DEF_SFINAE_CHECK(is_resizable, sizeof(typename T:: template size_cast<1>) != 0);
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -241,7 +299,7 @@ template <ch_direction Direction,
 struct base_system_io_traits {
   static constexpr int type = traits_system | traits_system_io;
   static constexpr unsigned bitwidth = ch_width_v<SystemType>;
-  static constexpr unsigned is_signed = ch_signed_v<SystemType>;
+  static constexpr unsigned is_signed = is_signed_v<SystemType>;
   static constexpr ch_direction direction = Direction;
   using system_io     = SystemIO;
   using flip_io       = FlipIO;
@@ -258,7 +316,7 @@ template <ch_direction Direction,
 struct base_logic_io_traits {
   static constexpr int type = traits_logic | traits_logic_io;
   static constexpr unsigned bitwidth = ch_width_v<LogicType>;
-  static constexpr unsigned is_signed = ch_signed_v<LogicType>;
+  static constexpr unsigned is_signed = is_signed_v<LogicType>;
   static constexpr ch_direction direction = Direction;
   using logic_io      = LogicIO;
   using flip_io       = FlipIO;
@@ -280,7 +338,7 @@ CH_DEF_SFINAE_CHECK(is_system_io, 0 != (T::traits::type & traits_system_io));
 
 CH_DEF_SFINAE_CHECK(is_logic_io, 0 != (T::traits::type & traits_logic_io));
 
-///////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////
 
 struct non_object_type {
   struct traits {

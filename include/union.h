@@ -68,8 +68,9 @@ using select_constructible_t = typename select_constructible<R, Ts...>::type;
             CH_REQUIRE(CH_FOR_EACH(CH_UNION_ARG_MATCH, , CH_SEP_OR, __VA_ARGS__))> \
   type_name(const __U& __other) \
     : type_name(ch::internal::make_system_buffer(traits::bitwidth, CH_STRINGIZE(union_name))) { \
+    using arg_type = ch::internal::select_constructible_t<__U, CH_FOR_EACH(CH_UNION_ARG_TYPES, , CH_SEP_COMMA, __VA_ARGS__)>; \
     auto self = this->as_bit(); \
-    auto arg = ch_sliceref<ch::internal::select_constructible_t<__U, CH_FOR_EACH(CH_UNION_ARG_TYPES, , CH_SEP_COMMA, __VA_ARGS__)>>(self); \
+    auto arg = ch_sliceref<arg_type>(self); \
     arg = __other; \
     if constexpr (ch_width_v<decltype(arg)> < traits::bitwidth) { \
       auto rem = ch_sliceref<traits::bitwidth - ch_width_v<decltype(arg)>>(self, ch_width_v<decltype(arg)>); \
@@ -113,8 +114,9 @@ public:
   explicit type_name(const __U& __other) \
     : type_name(ch::internal::logic_buffer(traits::bitwidth, CH_STRINGIZE(union_name))) { \
     CH_SOURCE_LOCATION(1); \
+    using arg_type = ch::internal::select_constructible_t<__U, CH_FOR_EACH(CH_UNION_ARG_TYPES, , CH_SEP_COMMA, __VA_ARGS__)>; \
     auto self = this->as_bit(); \
-    auto arg = ch_sliceref<ch::internal::select_constructible_t<__U, CH_FOR_EACH(CH_UNION_ARG_TYPES, , CH_SEP_COMMA, __VA_ARGS__)>>(self); \
+    auto arg = ch_sliceref<arg_type>(self); \
     arg = __other; \
     if constexpr (ch_width_v<decltype(arg)> < traits::bitwidth) { \
       auto rem = ch_sliceref<traits::bitwidth - ch_width_v<decltype(arg)>>(self, ch_width_v<decltype(arg)>); \

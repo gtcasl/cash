@@ -468,6 +468,20 @@ void foo() {
     ch_uint2 b(0);
     auto c = a | b;
   }
+  {
+    ch_int2 a(1);
+    auto c = a & 1010_b;
+    auto d = 1010_b | a;
+    auto e = ch_and(a, 1010_b);
+    auto f = ch_add<3>(1010_b, a);
+  }
+  {
+    ch_int2 a(1);
+    auto c = (a != 1010_b);
+    auto d = (1010_b > a);
+    auto e = ch_shr<3>(a, 1010_b);
+    auto f = ch_eq(1010_b, a);
+  }
 }
 
 void bar() {

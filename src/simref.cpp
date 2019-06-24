@@ -318,7 +318,7 @@ public:
 
   void eval() override {
     //--
-    using bit_accessor_t = StaticBitAccessor<block_type, is_signed, resize_opds>;
+    using bit_accessor_t = StaticBitAccessor<block_type, resize_opds, is_signed>;
 
     switch (op) {
     case ch_op::eq:
@@ -367,9 +367,9 @@ public:
 
     case ch_op::notl:
       if constexpr (is_scalar) {
-        bv_assign_scalar(dst_, bv_notl_scalar(src0_));
+        bv_assign_scalar(dst_, bv_not_scalar(src0_));
       } else {
-        bv_assign_scalar(dst_, bv_notl_vector(src0_, src0_size_));
+        bv_assign_scalar(dst_, bv_not_vector(src0_, src0_size_));
       }
       break;
     case ch_op::andl:
