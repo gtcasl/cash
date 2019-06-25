@@ -5,6 +5,18 @@
 namespace ch {
 namespace internal {
 
+CH_SYSTEM_FUNCTION2B_DECL(ch_snumber_base, ch_lt)
+CH_SYSTEM_FUNCTION2B_DECL(ch_snumber_base, ch_le)
+CH_SYSTEM_FUNCTION2B_DECL(ch_snumber_base, ch_gt)
+CH_SYSTEM_FUNCTION2B_DECL(ch_snumber_base, ch_ge)
+
+CH_SYSTEM_FUNCTION1X_DECL(ch_snumber_base, ch_neg)
+CH_SYSTEM_FUNCTION2X_DECL(ch_snumber_base, ch_add)
+CH_SYSTEM_FUNCTION2X_DECL(ch_snumber_base, ch_sub)
+CH_SYSTEM_FUNCTION2X_DECL(ch_snumber_base, ch_mul)
+CH_SYSTEM_FUNCTION2X_DECL(ch_snumber_base, ch_div)
+CH_SYSTEM_FUNCTION2X_DECL(ch_snumber_base, ch_mod)
+
 template <typename T>
 class ch_snumber_base : public ch_sbit_base<T> {
 public:
@@ -98,19 +110,19 @@ protected:
   template <typename U> friend class ch_snumber_base;
 };
 
-CH_SYSTEM_FUNCTION2B_DECL(ch_snumber_base, ch_lt)
-CH_SYSTEM_FUNCTION2B_DECL(ch_snumber_base, ch_le)
-CH_SYSTEM_FUNCTION2B_DECL(ch_snumber_base, ch_gt)
-CH_SYSTEM_FUNCTION2B_DECL(ch_snumber_base, ch_ge)
-
-CH_SYSTEM_FUNCTION1X_DECL(ch_snumber_base, ch_neg)
-CH_SYSTEM_FUNCTION2X_DECL(ch_snumber_base, ch_add)
-CH_SYSTEM_FUNCTION2X_DECL(ch_snumber_base, ch_sub)
-CH_SYSTEM_FUNCTION2X_DECL(ch_snumber_base, ch_mul)
-CH_SYSTEM_FUNCTION2X_DECL(ch_snumber_base, ch_div)
-CH_SYSTEM_FUNCTION2X_DECL(ch_snumber_base, ch_mod)
-
 ///////////////////////////////////////////////////////////////////////////////
+
+CH_LOGIC_FUNCTION2B_DECL(ch_lt)
+CH_LOGIC_FUNCTION2B_DECL(ch_le)
+CH_LOGIC_FUNCTION2B_DECL(ch_gt)
+CH_LOGIC_FUNCTION2B_DECL(ch_ge)
+
+CH_LOGIC_FUNCTION1X_DECL(ch_neg)
+CH_LOGIC_FUNCTION2X_DECL(ch_add)
+CH_LOGIC_FUNCTION2X_DECL(ch_sub)
+CH_LOGIC_FUNCTION2X_DECL(ch_mul)
+CH_LOGIC_FUNCTION2X_DECL(ch_div)
+CH_LOGIC_FUNCTION2X_DECL(ch_mod)
 
 template <typename T>
 class ch_number_base : public ch_bit_base<T> {
@@ -147,76 +159,64 @@ protected:
   template <typename U>
   auto do_lt(const U& other) const {
     auto self = reinterpret_cast<const T*>(this);
-    return make_logic_op<ch_op::lt, ch_bool>(*self, other);
+    return make_logic_op<ch_op::lt>(*self, other);
   }
 
   template <typename U>
   auto do_le(const U& other) const {
     auto self = reinterpret_cast<const T*>(this);
-    return make_logic_op<ch_op::le, ch_bool>(*self, other);
+    return make_logic_op<ch_op::le>(*self, other);
   }
 
   template <typename U>
   auto do_gt(const U& other) const {
     auto self = reinterpret_cast<const T*>(this);
-    return make_logic_op<ch_op::gt, ch_bool>(*self, other);
+    return make_logic_op<ch_op::gt>(*self, other);
   }
 
   template <typename U>
   auto do_ge(const U& other) const {
     auto self = reinterpret_cast<const T*>(this);
-    return make_logic_op<ch_op::ge, ch_bool>(*self, other);
+    return make_logic_op<ch_op::ge>(*self, other);
   }
 
   template <typename R>
   auto do_neg() const {
     auto self = reinterpret_cast<const T*>(this);
-    return make_logic_op<ch_op::neg, R>(*self);
+    return make_logic_op<R, ch_op::neg>(*self);
   }
 
   template <typename R, typename U>
   auto do_add(const U& other) const {
     auto self = reinterpret_cast<const T*>(this);
-    return make_logic_op<ch_op::add, R>(*self, other);
+    return make_logic_op<R, ch_op::add>(*self, other);
   }
 
   template <typename R, typename U>
   auto do_sub(const U& other) const {
     auto self = reinterpret_cast<const T*>(this);
-    return make_logic_op<ch_op::sub, R>(*self, other);
+    return make_logic_op<R, ch_op::sub>(*self, other);
   }
 
   template <typename R, typename U>
   auto do_mul(const U& other) const {
     auto self = reinterpret_cast<const T*>(this);
-    return make_logic_op<ch_op::mul, R>(*self, other);
+    return make_logic_op<R, ch_op::mul>(*self, other);
   }
 
   template <typename R, typename U>
   auto do_div(const U& other) const {
     auto self = reinterpret_cast<const T*>(this);
-    return make_logic_op<ch_op::div, R>(*self, other);
+    return make_logic_op<R, ch_op::div>(*self, other);
   }
 
   template <typename R, typename U>
   auto do_mod(const U& other) const {
     auto self = reinterpret_cast<const T*>(this);
-    return make_logic_op<ch_op::mod, R>(*self, other);
+    return make_logic_op<R, ch_op::mod>(*self, other);
   }
 
   template <typename U> friend class ch_number_base;
 };
-
-CH_LOGIC_FUNCTION2B_DECL(ch_lt)
-CH_LOGIC_FUNCTION2B_DECL(ch_le)
-CH_LOGIC_FUNCTION2B_DECL(ch_gt)
-CH_LOGIC_FUNCTION2B_DECL(ch_ge)
-
-CH_LOGIC_FUNCTION1X_DECL(ch_neg)
-CH_LOGIC_FUNCTION2X_DECL(ch_add)
-CH_LOGIC_FUNCTION2X_DECL(ch_sub)
-CH_LOGIC_FUNCTION2X_DECL(ch_mul)
-CH_LOGIC_FUNCTION2X_DECL(ch_div)
-CH_LOGIC_FUNCTION2X_DECL(ch_mod)
 
 }}

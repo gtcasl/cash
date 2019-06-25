@@ -6,6 +6,25 @@
 namespace ch {
 namespace internal {
 
+CH_SYSTEM_FUNCTION2B_DECL(ch_sbit_base, ch_eq)
+CH_SYSTEM_FUNCTION2B_DECL(ch_sbit_base, ch_ne)
+
+CH_SYSTEM_FUNCTION1B_DECL(ch_sbit_base, ch_not)
+CH_SYSTEM_FUNCTION2B_DECL(ch_sbit_base, ch_andl)
+CH_SYSTEM_FUNCTION2B_DECL(ch_sbit_base, ch_orl)
+
+CH_SYSTEM_FUNCTION1X_DECL(ch_sbit_base, ch_inv)
+CH_SYSTEM_FUNCTION2X_DECL(ch_sbit_base, ch_and)
+CH_SYSTEM_FUNCTION2X_DECL(ch_sbit_base, ch_or)
+CH_SYSTEM_FUNCTION2X_DECL(ch_sbit_base, ch_xor)
+
+CH_SYSTEM_FUNCTION2B_DECL(ch_sbit_base, ch_andr)
+CH_SYSTEM_FUNCTION2B_DECL(ch_sbit_base, ch_orr)
+CH_SYSTEM_FUNCTION2B_DECL(ch_sbit_base, ch_xorr)
+
+CH_SYSTEM_FUNCTION2X_DECL(ch_sbit_base, ch_shl)
+CH_SYSTEM_FUNCTION2X_DECL(ch_sbit_base, ch_shr)
+
 template <typename T>
 class ch_sbit_base {
 public:
@@ -63,8 +82,8 @@ public:
   CH_SYSTEM_OPERATOR2X_IMPL(ch_sbit_base, operator|, do_or)
   CH_SYSTEM_OPERATOR2X_IMPL(ch_sbit_base, operator^, do_xor)
 
-  CH_SYSTEM_OPERATOR2X_IMPL(ch_sbit_base, operator<<, do_shl)
-  CH_SYSTEM_OPERATOR2X_IMPL(ch_sbit_base, operator>>, do_shr)
+  CH_SYSTEM_OPERATOR2Y_IMPL(ch_sbit_base, operator<<, do_shl)
+  CH_SYSTEM_OPERATOR2Y_IMPL(ch_sbit_base, operator>>, do_shr)
 
   CH_SYSTEM_FUNCTION2B_IMPL(ch_sbit_base, ch_eq, do_eq)
   CH_SYSTEM_FUNCTION2B_IMPL(ch_sbit_base, ch_ne, do_ne)
@@ -78,8 +97,8 @@ public:
   CH_SYSTEM_FUNCTION2X_IMPL(ch_sbit_base, ch_or, do_or)
   CH_SYSTEM_FUNCTION2X_IMPL(ch_sbit_base, ch_xor, do_xor)
 
-  CH_SYSTEM_FUNCTION2X_IMPL(ch_sbit_base, ch_shl, do_shl)
-  CH_SYSTEM_FUNCTION2X_IMPL(ch_sbit_base, ch_shr, do_shr)
+  CH_SYSTEM_FUNCTION2Y_IMPL(ch_sbit_base, ch_shl, do_shl)
+  CH_SYSTEM_FUNCTION2Y_IMPL(ch_sbit_base, ch_shr, do_shr)
 
   CH_SYSTEM_FUNCTION1B_IMPL(ch_sbit_base, ch_andr, do_andr)
   CH_SYSTEM_FUNCTION1B_IMPL(ch_sbit_base, ch_orr, do_orr)
@@ -180,26 +199,26 @@ protected:
   template <typename U> friend class ch_sbit_base;
 };
 
-CH_SYSTEM_FUNCTION2B_DECL(ch_sbit_base, ch_eq)
-CH_SYSTEM_FUNCTION2B_DECL(ch_sbit_base, ch_ne)
-
-CH_SYSTEM_FUNCTION1B_DECL(ch_sbit_base, ch_not)
-CH_SYSTEM_FUNCTION2B_DECL(ch_sbit_base, ch_andl)
-CH_SYSTEM_FUNCTION2B_DECL(ch_sbit_base, ch_orl)
-
-CH_SYSTEM_FUNCTION1X_DECL(ch_sbit_base, ch_inv)
-CH_SYSTEM_FUNCTION2X_DECL(ch_sbit_base, ch_and)
-CH_SYSTEM_FUNCTION2X_DECL(ch_sbit_base, ch_or)
-CH_SYSTEM_FUNCTION2X_DECL(ch_sbit_base, ch_xor)
-
-CH_SYSTEM_FUNCTION2B_DECL(ch_sbit_base, ch_andr)
-CH_SYSTEM_FUNCTION2B_DECL(ch_sbit_base, ch_orr)
-CH_SYSTEM_FUNCTION2B_DECL(ch_sbit_base, ch_xorr)
-
-CH_SYSTEM_FUNCTION2X_DECL(ch_sbit_base, ch_shl)
-CH_SYSTEM_FUNCTION2X_DECL(ch_sbit_base, ch_shr)
-
 ///////////////////////////////////////////////////////////////////////////////
+
+CH_LOGIC_FUNCTION2B_DECL(ch_eq)
+CH_LOGIC_FUNCTION2B_DECL(ch_ne)
+
+CH_LOGIC_FUNCTION1B_DECL(ch_not)
+CH_LOGIC_FUNCTION2B_DECL(ch_andl)
+CH_LOGIC_FUNCTION2B_DECL(ch_orl)
+
+CH_LOGIC_FUNCTION1X_DECL(ch_inv)
+CH_LOGIC_FUNCTION2X_DECL(ch_and)
+CH_LOGIC_FUNCTION2X_DECL(ch_or)
+CH_LOGIC_FUNCTION2X_DECL(ch_xor)
+
+CH_LOGIC_FUNCTION2B_DECL(ch_andr)
+CH_LOGIC_FUNCTION2B_DECL(ch_orr)
+CH_LOGIC_FUNCTION2B_DECL(ch_xorr)
+
+CH_LOGIC_FUNCTION2X_DECL(ch_shl)
+CH_LOGIC_FUNCTION2X_DECL(ch_shr)
 
 template <typename T>
 class ch_bit_base {
@@ -275,8 +294,8 @@ public:
   CH_LOGIC_OPERATOR2X_IMPL(T, operator|, do_or)
   CH_LOGIC_OPERATOR2X_IMPL(T, operator^, do_xor)
 
-  CH_LOGIC_OPERATOR2X_IMPL(T, operator<<, do_shl)
-  CH_LOGIC_OPERATOR2X_IMPL(T, operator>>, do_shr)
+  CH_LOGIC_OPERATOR2Y_IMPL(T, operator<<, do_shl)
+  CH_LOGIC_OPERATOR2Y_IMPL(T, operator>>, do_shr)
 
   CH_LOGIC_FUNCTION2B_IMPL(T, ch_eq, do_eq)
   CH_LOGIC_FUNCTION2B_IMPL(T, ch_ne, do_ne)
@@ -290,8 +309,8 @@ public:
   CH_LOGIC_FUNCTION2X_IMPL(T, ch_or, do_or)
   CH_LOGIC_FUNCTION2X_IMPL(T, ch_xor, do_xor)
 
-  CH_LOGIC_FUNCTION2X_IMPL(T, ch_shl, do_shl)
-  CH_LOGIC_FUNCTION2X_IMPL(T, ch_shr, do_shr)
+  CH_LOGIC_FUNCTION2Y_IMPL(T, ch_shl, do_shl)
+  CH_LOGIC_FUNCTION2Y_IMPL(T, ch_shr, do_shr)
 
   CH_LOGIC_FUNCTION1B_IMPL(T, ch_andr, do_andr)
   CH_LOGIC_FUNCTION1B_IMPL(T, ch_orr, do_orr)
@@ -302,106 +321,87 @@ protected:
   template <typename U>
   auto do_eq(const U& other) const {
     auto self = reinterpret_cast<const T*>(this);
-    return make_logic_op<ch_op::eq, ch_bool>(*self, other);
+    return make_logic_op<ch_op::eq>(*self, other);
   }
 
   template <typename U>
   auto do_ne(const U& other) const {
     auto self = reinterpret_cast<const T*>(this);
-    return make_logic_op<ch_op::ne, ch_bool>(*self, other);
+    return make_logic_op<ch_op::ne>(*self, other);
   }
 
   auto do_not() const {
     auto self = reinterpret_cast<const T*>(this);
-    return make_logic_op<ch_op::notl, ch_bool>(*self);
+    return make_logic_op<ch_op::notl>(*self);
   }
 
   template <typename U>
   auto do_andl(const U& other) const {
     auto self = reinterpret_cast<const T*>(this);
-    return make_logic_op<ch_op::andl, ch_bool>(*self, other);
+    return make_logic_op<ch_op::andl>(*self, other);
   }
 
   template <typename U>
   auto do_orl(const U& other) const {
     auto self = reinterpret_cast<const T*>(this);
-    return make_logic_op<ch_op::orl, ch_bool>(*self, other);
+    return make_logic_op<ch_op::orl>(*self, other);
   }
 
   template <typename R>
   auto do_inv() const {
     auto self = reinterpret_cast<const T*>(this);
-    return make_logic_op<ch_op::inv, R>(*self);
+    return make_logic_op<R, ch_op::inv>(*self);
   }
 
   template <typename R, typename U>
   auto do_and(const U& other) const {
     auto self = reinterpret_cast<const T*>(this);
-    return make_logic_op<ch_op::andb, R>(*self, other);
+    return make_logic_op<R, ch_op::andb>(*self, other);
   }
 
   template <typename R, typename U>
   auto do_or(const U& other) const {
     auto self = reinterpret_cast<const T*>(this);
-    return make_logic_op<ch_op::orb, R>(*self, other);
+    return make_logic_op<R, ch_op::orb>(*self, other);
   }
 
   template <typename R, typename U>
   auto do_xor(const U& other) const {
     auto self = reinterpret_cast<const T*>(this);
-    return make_logic_op<ch_op::xorb, R>(*self, other);
+    return make_logic_op<R, ch_op::xorb>(*self, other);
   }
 
   template <typename R, typename U>
   auto do_shl(const U& other) const {
     auto self = reinterpret_cast<const T*>(this);
     static_assert(ch_width_v<U> <= 32, "invalid size");
-    return make_logic_op<ch_op::shl, R>(*self, other);
+    return make_logic_op<R, ch_op::shl>(*self, other);
   }
 
   template <typename R, typename U>
   auto do_shr(const U& other) const {
     auto self = reinterpret_cast<const T*>(this);
     static_assert(ch_width_v<U> <= 32, "invalid size");
-    return make_logic_op<ch_op::shr, R>(*self, other);
+    return make_logic_op<R, ch_op::shr>(*self, other);
   }
 
   auto do_andr() const {
     auto self = reinterpret_cast<const T*>(this);
-    return make_logic_op<ch_op::andr, ch_bool>(*self);
+    return make_logic_op<ch_op::andr>(*self);
   }
 
   auto do_orr() const {
     auto self = reinterpret_cast<const T*>(this);
-    return make_logic_op<ch_op::orr, ch_bool>(*self);
+    return make_logic_op<ch_op::orr>(*self);
   }
 
   auto do_xorr() const {
     auto self = reinterpret_cast<const T*>(this);
-    return make_logic_op<ch_op::xorr, ch_bool>(*self);
+    return make_logic_op<ch_op::xorr>(*self);
   }
 
   template <typename U> friend class ch_bit_base;
 };
-
-CH_LOGIC_FUNCTION2B_DECL(ch_eq)
-CH_LOGIC_FUNCTION2B_DECL(ch_ne)
-
-CH_LOGIC_FUNCTION1B_DECL(ch_not)
-CH_LOGIC_FUNCTION2B_DECL(ch_andl)
-CH_LOGIC_FUNCTION2B_DECL(ch_orl)
-
-CH_LOGIC_FUNCTION1X_DECL(ch_inv)
-CH_LOGIC_FUNCTION2X_DECL(ch_and)
-CH_LOGIC_FUNCTION2X_DECL(ch_or)
-CH_LOGIC_FUNCTION2X_DECL(ch_xor)
-
-CH_LOGIC_FUNCTION2B_DECL(ch_andr)
-CH_LOGIC_FUNCTION2B_DECL(ch_orr)
-CH_LOGIC_FUNCTION2B_DECL(ch_xorr)
-
-CH_LOGIC_FUNCTION2X_DECL(ch_shl)
-CH_LOGIC_FUNCTION2X_DECL(ch_shr)
 
 }
 }

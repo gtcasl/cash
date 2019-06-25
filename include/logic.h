@@ -20,6 +20,7 @@ lnodeimpl* createShuffleNode(const lnode& in, const std::vector<unsigned>& indic
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T> class ch_bit_base;
+template <typename T> class ch_number_base;
 
 template <unsigned N> class ch_bit;
 template <unsigned N> class ch_int;
@@ -315,7 +316,6 @@ auto to_lnode(const T& obj) {
       ch_system_t<R> tmp(obj);
       return lnode(get_snode(tmp));
     }
-    return ch_size_cast_t<R, ch_width_v<T>>(logic_buffer(get_snode(obj)));
   } else
   if constexpr (std::is_integral_v<T>) {
     ch_system_t<R> tmp(obj);
@@ -330,34 +330,22 @@ auto to_lnode(const T& obj) {
   return to_lnode<ch_bit<N>>(obj);
 }
 
-template <typename R, bool left, typename T>
+template <typename R, typename T>
 auto logic_cast(const T& obj) {
   static_assert(std::is_constructible_v<R, T>, "invalid cast");
-  if constexpr (left && (is_signed_v<T> != is_signed_v<R> || !is_resizable_v<R>)) {
+  if constexpr ((is_signed_v<T> != is_signed_v<R> || !is_resizable_v<R>)) {
     return R(obj);
   } else
   if constexpr (is_logic_type_v<T>) {
-    if constexpr (left) {
-      return obj.template as<ch_size_cast_t<R, ch_width_v<T>>>();
-    } else {
-      return obj;
-    }
+    return obj.template as<ch_size_cast_t<R, ch_width_v<T>>>();
   } else
   if constexpr (is_system_type_v<T>) {
-    if constexpr (left) {
-      return ch_size_cast_t<R, ch_width_v<T>>(logic_buffer(get_snode(obj)));
-    } else {
-      return ch_logic_t<T>(logic_buffer(get_snode(obj)));
-    }
+    return ch_size_cast_t<R, ch_width_v<T>>(logic_buffer(get_snode(obj)));
   } else
   if constexpr (std::is_integral_v<T>) {
     static const auto N = std::min(ch_width_v<T>, ch_width_v<R>);
     ch_size_cast_t<ch_system_t<T>, N> tmp(obj);
-    if constexpr (left) {
-      return ch_size_cast_t<R, N>(logic_buffer(get_snode(tmp)));
-    } else {
-      return ch_size_cast_t<ch_logic_t<T>, N>(logic_buffer(get_snode(tmp)));
-    }
+    return ch_size_cast_t<R, N>(logic_buffer(get_snode(tmp)));
   } else {
     return R(obj);
   }
@@ -368,13 +356,25 @@ auto make_logic_type(const lnode& node) {
   return std::add_const_t<T>(logic_buffer(node.impl()));
 }
 
-template <ch_op op, typename R, typename A>
+template <ch_op op, typename A>
 auto make_logic_op(const A& a) {
-  auto node = createOpNode(op, ch_width_v<R>, is_signed_v<A>, get_lnode(a));
+  auto node = createOpNode(op, 1, false, get_lnode(a));
+  return make_logic_type<ch_bool>(node);
+}
+
+template <typename R, ch_op op, typename A>
+auto make_logic_op(const A& a) {
+  auto node = createOpNode(op, ch_width_v<R>, is_signed_v<R>, get_lnode(a));
   return make_logic_type<R>(node);
 }
 
-template <ch_op op, typename R, typename A, typename B>
+template <ch_op op, typename A, typename B>
+auto make_logic_op(const A& a, const B& b) {
+  auto node = createOpNode(op, 1, is_signed_v<A>, get_lnode(a), get_lnode(b));
+  return make_logic_type<ch_bool>(node);
+}
+
+template <typename R, ch_op op, typename A, typename B>
 auto make_logic_op(const A& a, const B& b) {
   auto node = createOpNode(op, ch_width_v<R>, is_signed_v<R>, get_lnode(a), get_lnode(b));
   return make_logic_type<R>(node);
@@ -447,7 +447,7 @@ auto make_logic_op(const A& a, const B& b) {
 #define CH_LOGIC_OPERATOR1X_IMPL(type, op, method) \
   friend auto op(const sloc_proxy<type>& self) { \
     CH_SOURCE_LOCATION(1); \
-    return ch::internal::logic_accessor::type>(self.value); \
+    return ch::internal::logic_accessor::method<type>(self.value); \
   }
 
 #define CH_LOGIC_OPERATOR2B_IMPL(type, op, method) \
@@ -460,8 +460,12 @@ auto make_logic_op(const A& a, const B& b) {
   friend auto op(const sloc_proxy<type>& lhs, const U& rhs) { \
     CH_SOURCE_LOCATION(1); \
     if constexpr (is_strictly_constructible_v<type, U>) { \
-      auto _rhs = logic_cast<type>(rhs); \
-      return ch::internal::logic_accessor::method(lhs.value, _rhs); \
+      if constexpr (!is_signed_v<type> && is_signed_v<U>) { \
+        return op((const ch_signed_t<type>&)lhs.value, rhs); \
+      } else { \
+        auto _rhs = logic_cast<type>(rhs); \
+        return ch::internal::logic_accessor::method(lhs.value, _rhs); \
+      } \
     } else { \
       return op(lhs.value, ch_size_cast_t<type, ch_width_v<U>>(rhs)); \
     } \
@@ -471,8 +475,12 @@ auto make_logic_op(const A& a, const B& b) {
   friend auto op(const U& lhs, const sloc_proxy<type>& rhs) { \
     CH_SOURCE_LOCATION(1); \
     if constexpr (is_strictly_constructible_v<type, U>) { \
-      auto _lhs = logic_cast<type>(lhs); \
-      return ch::internal::logic_accessor::method(_lhs, rhs.value); \
+      if constexpr (is_signed_v<U> && !is_signed_v<type>) { \
+        return op(lhs, (const ch_signed_t<type>&)rhs.value); \
+      } else { \
+        auto _lhs = logic_cast<type>(lhs); \
+        return ch::internal::logic_accessor::method(_lhs, rhs.value); \
+      } \
     } else { \
       return op(ch_size_cast_t<type, ch_width_v<U>>(lhs), rhs.value); \
     } \
@@ -488,7 +496,43 @@ auto make_logic_op(const A& a, const B& b) {
   friend auto op(const sloc_proxy<type>& lhs, const U& rhs) { \
     CH_SOURCE_LOCATION(1); \
     if constexpr (is_strictly_constructible_v<type, U>) { \
-      auto _rhs = logic_cast<type>(rhs); \
+      if constexpr (!is_signed_v<type> && is_signed_v<U>) { \
+        return op((const ch_signed_t<type>&)lhs.value, rhs); \
+      } else { \
+        auto _rhs = logic_cast<type>(rhs); \
+        return ch::internal::logic_accessor::method<type>(lhs.value, _rhs); \
+      } \
+    } else { \
+      return op(lhs.value, ch_size_cast_t<type, ch_width_v<U>>(rhs)); \
+    } \
+  } \
+  template <typename U, \
+            CH_REQUIRE(is_resize_constructible_v<type, U>)> \
+  friend auto op(const U& lhs, const sloc_proxy<type>& rhs) { \
+    CH_SOURCE_LOCATION(1); \
+    if constexpr (is_strictly_constructible_v<type, U>) { \
+      if constexpr (is_signed_v<U> && !is_signed_v<type>) { \
+        return op(lhs, (const ch_signed_t<type>&)rhs.value); \
+      } else { \
+        auto _lhs = logic_cast<type>(lhs); \
+        return ch::internal::logic_accessor::method<type>(_lhs, rhs.value); \
+      } \
+    } else { \
+      return op(ch_size_cast_t<type, ch_width_v<U>>(lhs), rhs.value); \
+    } \
+  }
+
+#define CH_LOGIC_OPERATOR2Y_IMPL(type, op, method) \
+  friend auto op(const sloc_proxy<type>& lhs, const sloc_proxy<type>& rhs) { \
+    CH_SOURCE_LOCATION(1); \
+    return ch::internal::logic_accessor::method<type>(lhs.value, rhs.value); \
+  } \
+  template <typename U, \
+            CH_REQUIRE(is_resize_constructible_v<type, U>)> \
+  friend auto op(const sloc_proxy<type>& lhs, const U& rhs) { \
+    CH_SOURCE_LOCATION(1); \
+    if constexpr (is_strictly_constructible_v<type, U>) { \
+      auto _rhs = ch_logic_t<U>(rhs); \
       return ch::internal::logic_accessor::method<type>(lhs.value, _rhs); \
     } else { \
       return op(lhs.value, ch_size_cast_t<type, ch_width_v<U>>(rhs)); \
@@ -557,8 +601,12 @@ auto make_logic_op(const A& a, const B& b) {
   friend auto func(const sloc_proxy<type>& lhs, const U& rhs) { \
     CH_SOURCE_LOCATION(1); \
     if constexpr (is_strictly_constructible_v<type, U>) { \
-      auto _rhs = logic_cast<type>(rhs); \
-      return ch::internal::logic_accessor::method(lhs.value, _rhs); \
+      if constexpr (!is_signed_v<type> && is_signed_v<U>) { \
+        return func((const ch_signed_t<type>&)lhs.value, rhs); \
+      } else { \
+        auto _rhs = logic_cast<type>(rhs); \
+        return ch::internal::logic_accessor::method(lhs.value, _rhs); \
+      } \
     } else { \
       return func(lhs.value, ch_size_cast_t<type, ch_width_v<U>>(rhs)); \
     } \
@@ -568,8 +616,12 @@ auto make_logic_op(const A& a, const B& b) {
   friend auto func(const U& lhs, const sloc_proxy<type>& rhs) { \
     CH_SOURCE_LOCATION(1); \
     if constexpr (is_strictly_constructible_v<type, U>) { \
-      auto _lhs = logic_cast<type>(lhs); \
-      return ch::internal::logic_accessor::method(_lhs, rhs.value); \
+      if constexpr (is_signed_v<U> && !is_signed_v<type>) { \
+        return func(lhs, (const ch_signed_t<type>&)rhs.value); \
+      } else { \
+        auto _lhs = logic_cast<type>(lhs); \
+        return ch::internal::logic_accessor::method(_lhs, rhs.value); \
+      } \
     } else { \
       return func(ch_size_cast_t<type, ch_width_v<U>>(lhs), rhs.value); \
     } \
@@ -595,7 +647,93 @@ auto make_logic_op(const A& a, const B& b) {
   friend auto func(const sloc_proxy<type>& lhs, const U& rhs) { \
     CH_SOURCE_LOCATION(1); \
     if constexpr (is_strictly_constructible_v<type, U>) { \
-      auto _rhs = logic_cast<type>(rhs); \
+      if constexpr (!is_signed_v<type> && is_signed_v<U>) { \
+        return func((const ch_signed_t<type>&)lhs.value, rhs); \
+      } else { \
+        auto _rhs = logic_cast<type>(rhs); \
+        return ch::internal::logic_accessor::method<type>(lhs.value, _rhs); \
+      } \
+    } else { \
+      return func(lhs.value, ch_size_cast_t<type, ch_width_v<U>>(rhs)); \
+    } \
+  } \
+  template <unsigned R, typename U, \
+            CH_REQUIRE(is_resize_constructible_v<type, U>)> \
+  friend auto func(const sloc_proxy<type>& lhs, const U& rhs) { \
+    CH_SOURCE_LOCATION(1); \
+    if constexpr (is_strictly_constructible_v<type, U>) { \
+      if constexpr (!is_signed_v<type> && is_signed_v<U>) { \
+        return func<R>((const ch_signed_t<type>&)lhs.value, rhs); \
+      } else { \
+        auto _rhs = logic_cast<type>(rhs); \
+        if constexpr (ch_width_v<type> == R || !is_resizable_v<type>) { \
+          static_assert(ch_width_v<type> == R, "invalid output size"); \
+          return ch::internal::logic_accessor::method<type>(lhs.value, _rhs); \
+        } else { \
+          return ch::internal::logic_accessor::method<ch_size_cast_t<type, R>>(lhs.value, _rhs); \
+        } \
+      } \
+    } else { \
+      return func<R>(lhs.value, ch_size_cast_t<type, ch_width_v<U>>(rhs)); \
+    } \
+  } \
+  template <typename U, \
+            CH_REQUIRE(is_resize_constructible_v<type, U>)> \
+  friend auto func(const U& lhs, const sloc_proxy<type>& rhs) { \
+    CH_SOURCE_LOCATION(1); \
+    if constexpr (is_strictly_constructible_v<type, U>) { \
+      if constexpr (is_signed_v<U> && !is_signed_v<type>) { \
+        return func(lhs, (const ch_signed_t<type>&)rhs.value); \
+      } else { \
+        auto _lhs = logic_cast<type>(lhs); \
+        return ch::internal::logic_accessor::method<type>(_lhs, rhs.value); \
+      } \
+    } else { \
+      return func(ch_size_cast_t<type, ch_width_v<U>>(lhs), rhs.value); \
+    } \
+  } \
+  template <unsigned R, typename U, \
+            CH_REQUIRE(is_resize_constructible_v<type, U>)> \
+  friend auto func(const U& lhs, const sloc_proxy<type>& rhs) { \
+    CH_SOURCE_LOCATION(1); \
+    if constexpr (is_strictly_constructible_v<type, U>) { \
+      if constexpr (is_signed_v<U> && !is_signed_v<type>) { \
+        return func<R>(lhs, (const ch_signed_t<type>&)rhs.value); \
+      } else { \
+        auto _lhs = logic_cast<type>(lhs); \
+        if constexpr (ch_width_v<type> == R || !is_resizable_v<type>) { \
+          static_assert(ch_width_v<type> == R, "invalid output size"); \
+          return ch::internal::logic_accessor::method<type>(_lhs, rhs.value); \
+        } else { \
+          return ch::internal::logic_accessor::method<ch_size_cast_t<type, R>>(_lhs, rhs.value); \
+        } \
+      } \
+    } else { \
+      return func<R>(ch_size_cast_t<type, ch_width_v<U>>(lhs), rhs.value); \
+    } \
+  }
+
+#define CH_LOGIC_FUNCTION2Y_IMPL(type, func, method) \
+  friend auto func(const sloc_proxy<type>& lhs, const sloc_proxy<type>& rhs) { \
+    CH_SOURCE_LOCATION(1); \
+    return ch::internal::logic_accessor::method<type>(lhs.value, rhs.value); \
+  } \
+  template <unsigned R> \
+  friend auto func(const sloc_proxy<type>& lhs, const sloc_proxy<type>& rhs) { \
+    CH_SOURCE_LOCATION(1); \
+    if constexpr (ch_width_v<type> == R || !is_resizable_v<type>) { \
+      static_assert(ch_width_v<type> == R, "invalid output size"); \
+      return ch::internal::logic_accessor::method<type>(lhs.value, rhs.value); \
+    } else { \
+      return ch::internal::logic_accessor::method<ch_size_cast_t<type, R>>(lhs.value, rhs.value); \
+    } \
+  } \
+  template <typename U, \
+            CH_REQUIRE(is_resize_constructible_v<type, U>)> \
+  friend auto func(const sloc_proxy<type>& lhs, const U& rhs) { \
+    CH_SOURCE_LOCATION(1); \
+    if constexpr (is_strictly_constructible_v<type, U>) { \
+      auto _rhs = ch_logic_t<U>(rhs); \
       return ch::internal::logic_accessor::method<type>(lhs.value, _rhs); \
     } else { \
       return func(lhs.value, ch_size_cast_t<type, ch_width_v<U>>(rhs)); \
@@ -606,7 +744,7 @@ auto make_logic_op(const A& a, const B& b) {
   friend auto func(const sloc_proxy<type>& lhs, const U& rhs) { \
     CH_SOURCE_LOCATION(1); \
     if constexpr (is_strictly_constructible_v<type, U>) { \
-      auto _rhs = logic_cast<type>(rhs); \
+      auto _rhs = ch_logic_t<U>(rhs); \
       if constexpr (ch_width_v<type> == R || !is_resizable_v<type>) { \
         static_assert(ch_width_v<type> == R, "invalid output size"); \
         return ch::internal::logic_accessor::method<type>(lhs.value, _rhs); \

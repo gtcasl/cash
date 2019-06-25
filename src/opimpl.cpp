@@ -109,7 +109,6 @@ lnodeimpl* ch::internal::createOpNode(
     const lnode& lhs,
     const lnode& rhs) {
   auto sloc = get_source_location();
-  is_signed &= CH_OP_IS_SIGNED(op);
   if (op == ch_op::ne || op == ch_op::eq) {
     if (type_lit == lhs.impl()->type()
      && reinterpret_cast<litimpl*>(lhs.impl())->is_zero()) {

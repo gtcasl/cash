@@ -102,21 +102,8 @@ struct is_signed_impl<T, std::enable_if_t<std::is_arithmetic_v<T>>> {
   static constexpr bool value = std::is_signed_v<T>;
 };
 
-template <typename... Ts>
-struct is_signed_list_impl;
-
 template <typename T>
-struct is_signed_list_impl<T> {
-  static constexpr bool value = is_signed_impl<T>::value;
-};
-
-template <typename T0, typename... Ts>
-struct is_signed_list_impl<T0, Ts...> {
-  static constexpr bool value = is_signed_list_impl<T0>::value || is_signed_list_impl<Ts...>::value;
-};
-
-template <typename T>
-inline constexpr bool is_signed_v = is_signed_list_impl<std::decay_t<T>>::value;
+inline constexpr bool is_signed_v = is_signed_impl<std::decay_t<T>>::value;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -132,7 +119,7 @@ struct signed_type_impl<T, std::enable_if_t<std::is_signed_v<T>>> {
 
 template <typename T>
 struct signed_type_impl<T, std::enable_if_t<std::is_arithmetic_v<T>>> {
-  static constexpr bool value = std::make_signed_v<T>;
+  using type = std::make_signed_t<T>;
 };
 
 
@@ -146,7 +133,17 @@ struct signed_type_impl<T, std::enable_if_t<std::is_same_v<T, ch_uint<ch_width_v
   using type = ch_int<ch_width_v<T>>;
 };
 
-template <typename T, unsigned N>
+template <typename T>
+struct signed_type_impl<T, std::enable_if_t<std::is_same_v<T, ch_sbit<ch_width_v<T>>>>> {
+  using type = ch_sint<ch_width_v<T>>;
+};
+
+template <typename T>
+struct signed_type_impl<T, std::enable_if_t<std::is_same_v<T, ch_suint<ch_width_v<T>>>>> {
+  using type = ch_sint<ch_width_v<T>>;
+};
+
+template <typename T>
 using ch_signed_t = typename signed_type_impl<T>::type;
 
 ///////////////////////////////////////////////////////////////////////////////

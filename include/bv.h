@@ -1085,7 +1085,8 @@ public:
     , last_index_(0)
     , resize_(false) {
     if constexpr (is_resizable) {
-      if (size < other_size) {
+      if ((is_signed && (size % bitwidth_v<T>) != 0)
+       || (size < other_size)) {
         resize_ = true;
         last_index_ = (size - 1) / bitwidth_v<T>;
         if constexpr (is_signed) {
@@ -1097,11 +1098,7 @@ public:
 
   T get() const {
     if constexpr (is_resizable && is_signed) {
-      if (resize_) {
-        return last_value_;
-      } else {
-        return value_[0];
-      }
+      return resize_ ? last_value_ : value_[0];
     } else {
       return value_[0];
     }
@@ -1434,7 +1431,6 @@ void bv_inv_scalar(T* out, uint32_t out_size, const T* in, uint32_t in_size) {
   BitAccessor arg0(in, in_size, out_size);
 
   out[0] = ~arg0.get();
-
   bv_clear_extra_bits(out, out_size);
 }
 
@@ -1490,6 +1486,12 @@ void bv_and_vector(T* out, uint32_t out_size, const T* lhs, uint32_t lhs_size, c
   for (uint32_t i = 0; i < num_words; ++i) {
     out[i] = arg0.get(i) & arg1.get(i);
   }
+
+  if constexpr (is_signed) {
+    if (arg0.need_resize() || arg1.need_resize()) {
+      bv_clear_extra_bits(out, out_size);
+    }
+  }
 }
 
 template <bool is_signed, typename T, typename BitAccessor = DefaultBitAccessor<T, is_signed>>
@@ -1532,6 +1534,12 @@ void bv_or_vector(T* out, uint32_t out_size, const T* lhs, uint32_t lhs_size, co
   for (uint32_t i = 0; i < num_words; ++i) {
     out[i] = arg0.get(i) | arg1.get(i);
   }
+
+  if constexpr (is_signed) {
+    if (arg0.need_resize() || arg1.need_resize()) {
+      bv_clear_extra_bits(out, out_size);
+    }
+  }
 }
 
 template <bool is_signed, typename T, typename BitAccessor = DefaultBitAccessor<T, is_signed>>
@@ -1573,6 +1581,12 @@ void bv_xor_vector(T* out, uint32_t out_size, const T* lhs, uint32_t lhs_size, c
   uint32_t num_words = ceildiv(out_size, WORD_SIZE);
   for (uint32_t i = 0; i < num_words; ++i) {
     out[i] = arg0.get(i) ^ arg1.get(i);
+  }
+
+  if constexpr (is_signed) {
+    if (arg0.need_resize() || arg1.need_resize()) {
+      bv_clear_extra_bits(out, out_size);
+    }
   }
 }
 

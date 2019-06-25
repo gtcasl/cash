@@ -135,9 +135,9 @@ public: \
     ch::internal::make_system_buffer(traits::bitwidth, CH_STRINGIZE(struct_name))) \
     : base(buffer) \
     , CH_FOR_EACH(CH_STRUCT_SYSTEM_CTOR, , CH_SEP_COMMA, __VA_ARGS__) {} \
-  type_name(CH_REVERSE_FOR_EACH(CH_STRUCT_SYSTEM_FIELD_CTOR_ARGS, , CH_SEP_COMMA, __VA_ARGS__), const base& parent) \
+  type_name(CH_REVERSE_FOR_EACH(CH_STRUCT_SYSTEM_FIELD_CTOR_ARGS, , CH_SEP_COMMA, __VA_ARGS__), const base& __base) \
     : type_name(ch::internal::make_system_buffer(traits::bitwidth, CH_STRINGIZE(struct_name))) { \
-    ch::internal::system_accessor::write(*this, 0, parent, 0, ch_width_v<base>); \
+    ch::internal::system_accessor::write(*this, 0, __base, 0, ch_width_v<base>); \
     CH_REVERSE_FOR_EACH(CH_STRUCT_FIELD_CTOR_INIT, , CH_SEP_SEMICOLON, __VA_ARGS__); \
   } \
   type_name(const type_name& __other) \
@@ -179,10 +179,10 @@ public: \
     ch::internal::logic_buffer(traits::bitwidth, CH_STRINGIZE(struct_name))) \
     : base(buffer) \
     , CH_FOR_EACH(CH_STRUCT_LOGIC_CTOR, , CH_SEP_COMMA, __VA_ARGS__) {} \
-  type_name(CH_REVERSE_FOR_EACH(CH_STRUCT_LOGIC_FIELD_CTOR_ARGS, , CH_SEP_COMMA, __VA_ARGS__), const base& parent) \
+  type_name(CH_REVERSE_FOR_EACH(CH_STRUCT_LOGIC_FIELD_CTOR_ARGS, , CH_SEP_COMMA, __VA_ARGS__), const base& __base) \
     : type_name(ch::internal::logic_buffer(traits::bitwidth, CH_STRINGIZE(struct_name))) { \
     CH_SOURCE_LOCATION(1); \
-    reinterpret_cast<base*>(this)->operator=(parent); \
+    ch::internal::logic_accessor::write(*this, 0, __base, 0, ch_width_v<base>); \
     CH_REVERSE_FOR_EACH(CH_STRUCT_FIELD_CTOR_INIT, , CH_SEP_SEMICOLON, __VA_ARGS__); \
   } \
   type_name(const type_name& __other) \

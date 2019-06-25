@@ -760,13 +760,39 @@ private:
         this->emit_clear_extra_bits(node);
       } else {
         auto_store_addr_t auto_dst(this, node);
-        __op_call_bitwise(bv_inv_vector, auto_dst.ptr, dst_width, j_src0, node->src(0).size());
+        if (need_resize || dst_width > INLINE_THRESHOLD * WORD_SIZE) {
+          __op_call_bitwise(bv_inv_vector, auto_dst.ptr, dst_width, j_src0, node->src(0).size());
+        } else {
+          uint32_t num_words = ceildiv(dst_width, WORD_SIZE);
+          if (num_words) {
+            uint32_t i = 0;
+            for (; i < num_words-1; ++i) {
+              auto j_src = this->emit_load_scalar_elem(node->src(0).impl(), i, word_type_);
+              auto j_dst = jit_insn_not(j_func_, j_src);
+              auto j_dst_w = this->emit_cast(j_dst, word_type_);
+              jit_insn_store_relative(j_func_, auto_dst.ptr, i * sizeof(block_type), j_dst_w);
+            }
+            auto j_src = this->emit_load_scalar_elem(node->src(0).impl(), i, word_type_);
+            auto j_dst = jit_insn_not(j_func_, j_src);
+            auto rem = dst_width % WORD_SIZE;
+            if (rem) {
+              auto mask = ~(std::numeric_limits<uint64_t>::max() << rem);
+              auto j_mask = this->emit_constant(mask, word_type_);
+              j_dst = jit_insn_and(j_func_, j_dst, j_mask);
+            }
+            auto j_dst_w = this->emit_cast(j_dst, word_type_);
+            jit_insn_store_relative(j_func_, auto_dst.ptr, i * sizeof(block_type), j_dst_w);
+          }
+        }
       }
       break;
     case ch_op::andb:
       if (is_scalar) {
         auto j_dst = jit_insn_and(j_func_, j_src0, j_src1);
         scalar_map_[node->id()] = this->emit_cast(j_dst, j_ntype);
+        if (need_resize && is_signed) {
+          this->emit_clear_extra_bits(node);
+        }
       } else {
         auto_store_addr_t auto_dst(this, node);
         if (need_resize || dst_width > INLINE_THRESHOLD * WORD_SIZE) {
@@ -787,10 +813,12 @@ private:
       if (is_scalar) {
         auto j_dst = jit_insn_or(j_func_, j_src0, j_src1);
         scalar_map_[node->id()] = this->emit_cast(j_dst, j_ntype);
+        if (need_resize && is_signed) {
+          this->emit_clear_extra_bits(node);
+        }
       } else {
         auto_store_addr_t auto_dst(this, node);
         if (need_resize || dst_width > INLINE_THRESHOLD * WORD_SIZE) {
-          auto_store_addr_t auto_dst(this, node);
           __op_call_bitwise(bv_or_vector, auto_dst.ptr, dst_width, j_src0, node->src(0).size(), j_src1, node->src(1).size());
         } else {          
           auto num_words = ceildiv(dst_width, WORD_SIZE);
@@ -808,6 +836,9 @@ private:
       if (is_scalar) {
         auto j_dst = jit_insn_xor(j_func_, j_src0, j_src1);
         scalar_map_[node->id()] = this->emit_cast(j_dst, j_ntype);
+        if (need_resize && is_signed) {
+          this->emit_clear_extra_bits(node);
+        }
       } else {
         auto_store_addr_t auto_dst(this, node);
         if (need_resize || dst_width > INLINE_THRESHOLD * WORD_SIZE) {
@@ -2956,16 +2987,16 @@ private:
   void emit_clear_extra_bits(lnodeimpl* node) {
     __source_info();
 
-    auto dst_width = node->size();
+    auto dst_width = node->size();    
     assert(dst_width <= WORD_SIZE);
     auto native_size = to_native_size(dst_width);
     auto rem = dst_width % native_size;
     if (0 == rem)
-      return;
-    auto j_ntype = to_native_type(dst_width);
-    auto j_dst = scalar_map_.at(node->id());
+      return;    
     auto mask = ~(std::numeric_limits<uint64_t>::max() << rem);
-    auto j_mask = this->emit_constant(mask, j_ntype);
+    auto j_dst = scalar_map_.at(node->id());
+    auto j_type = jit_value_get_type(j_dst);
+    auto j_mask = this->emit_constant(mask, j_type);
     auto j_and = jit_insn_and(j_func_, j_dst, j_mask);
     scalar_map_[node->id()] = j_and;
   }
@@ -3007,6 +3038,16 @@ private:
   jit_value_t emit_load_scalar_elem(lnodeimpl* node, uint32_t index, jit_type_t j_type) {
     auto nbytes = jit_type_get_size(j_type);
     return this->emit_load_scalar_relative(node, index * nbytes, j_type);
+  }
+
+  void emit_store_scalar_relative(lnodeimpl* node, uint32_t offset, jit_value_t j_value) {
+    auto maddr = this->get_pointer_address(node);
+    jit_insn_store_relative(j_func_, maddr.base, maddr.offset + offset, j_value);
+  }
+
+  void emit_store_scalar_elem(lnodeimpl* node, uint32_t index, jit_value_t j_value) {
+    auto nbytes = get_value_size(j_value) / 8;
+    return this->emit_store_scalar_relative(node, index * nbytes, j_value);
   }
 
   void emit_memcpy(jit_value_t j_dst_ptr, jit_value_t j_src_ptr, uint32_t length) {

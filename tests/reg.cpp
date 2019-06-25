@@ -24,7 +24,7 @@ TEST_CASE("registers", "[registers]") {
       auto_cflags_disable reg_init_off(cflags::force_reg_init);
       ch_bit2 a;
       a = ch_delay(11_b);
-      ch_bit2 e = ch_case(ch_now(), 3, 11_b)(a);
+      auto e = ch_case(ch_now(), 3, 11_b)(a);
       //ch_println("t={0}, a={1}, e={2}", ch_now(), a, e);
       return (a == e);
     }, 1);

@@ -367,7 +367,7 @@ auto ch_sliceref(ch_bit_base<T>& obj, size_t start = 0) {
   if constexpr (ch_width_v<T> == N || !is_resizable_v<T>) {
     static_assert(ch_width_v<T> == N, "invalid size");
     assert(0 == start);
-    return (const T&)obj;
+    return ((T&)obj).ref();
   } else {
     return ch_sliceref<ch_size_cast_t<T, N>>(obj, start);
   }
@@ -379,7 +379,7 @@ auto ch_asliceref(ch_bit_base<T>& obj, size_t start = 0) {
   if constexpr (ch_width_v<T> == N || !is_resizable_v<T>) {
     static_assert(ch_width_v<T> == N, "invalid size");
     assert(0 == start);
-    return (const T&)obj;
+    return ((T&)obj).ref();
   } else {
     return ch_asliceref<ch_size_cast_t<T, N>>(obj, start);
   }
@@ -455,8 +455,7 @@ public:
   template <typename U>
   void operator=(const U& other) {
     static_assert(is_bit_convertible_v<U, ch_width_v<Args...>>, "invalid type");
-    this->assign(to_logic<ch_width_v<Args...>>(other),
-                 std::index_sequence_for<Args...>());
+    this->assign(to_logic<ch_width_v<Args...>>(other), std::index_sequence_for<Args...>());
   }
 
 protected:

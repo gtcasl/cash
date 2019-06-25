@@ -205,6 +205,33 @@ TEST_CASE("system", "[system]") {
       return ret;
     });
     TESTX([]()->bool {
+      ch_sint<WS+4> a(-1);
+      ch_sint<WS+2> b(-2);
+      RetCheck ret;
+      ret &= (-a == 1);
+      ret &= (-b == 2);
+      ret &= (a - b == 1);
+      ret &= (a == -1);
+      ret &= (b == -2);
+      ret &= (a * b == 2);
+      ret &= (a-1 == b);
+      ret &= (a == b+1);
+      ret &= (a > b);
+      return ret;
+    });
+    TESTX([]()->bool {
+      ch_suint<WS+4> a(-1);
+      ch_suint<WS+2> b(-2);
+      RetCheck ret;
+      ret &= (-a == 1);
+      ret &= (-b == 2);
+      ret &= (a+1 == 0);
+      ret &= (b+2 == 0);
+      ret &= (a == b+1);
+      ret &= (a > b);
+      return ret;
+    });
+    TESTX([]()->bool {
       ch_sint<4> a(-3);
       ch_sint<3> b(-1);
       RetCheck ret;
