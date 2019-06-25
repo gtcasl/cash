@@ -1,21 +1,26 @@
 #include "common.h"
 #include <limits>
 
+static int g_test_number = 0;
+
 static bool begin_test() {
-  static int test_number = 0;
-  ++test_number;
+  ++g_test_number;
   auto testid = std::getenv("CASH_TESTID");
   if (testid) {
     auto id = atol(testid);
-    if (id != 0 && test_number != id)
+    if (id != 0 && g_test_number != id)
       return false;
   }
-  std::cout << "running test #" << test_number << " ..." << std::endl;
+  std::cout << "running test #" << g_test_number << " ..." << std::endl;
   return true;
 }
 
-static void end_test() {
-  //--
+static bool end_test(bool passed) {
+  if (!passed) {
+    std::cout << "error: test #" << g_test_number << " failed!" << std::endl;
+    std::abort();
+  }
+  return passed;
 }
 
 struct TestRunner {
@@ -91,10 +96,7 @@ bool TEST(const std::function<ch_bool ()>& test, ch_tick cycles) {
     return (t < ticks);
   });
 
-  bool bRet = (bool)device.io.out;
-  assert(bRet);
-  end_test();
-  return bRet;
+  return end_test((bool)device.io.out);
 }
 
 bool TEST1(const std::function<ch_bool (const ch_int8&)>& test, ch_tick cycles) {
@@ -115,10 +117,7 @@ bool TEST1(const std::function<ch_bool (const ch_int8&)>& test, ch_tick cycles) 
     return (t < ticks);
   });
 
-  bool bRet = (bool)device.io.out;
-  assert(bRet);
-  end_test();
-  return bRet;
+  return end_test((bool)device.io.out);
 }
 
 bool TEST2(const std::function<ch_bool (const ch_int8&, const ch_int8&)>& test, ch_tick cycles) {
@@ -140,24 +139,17 @@ bool TEST2(const std::function<ch_bool (const ch_int8&, const ch_int8&)>& test, 
     return (t < ticks);
   });
 
-  bool bRet = (bool)device.io.out;
-  assert(bRet);
-  end_test();
-  return bRet;
+  return end_test((bool)device.io.out);
 }
 
 bool TESTX(const std::function<bool()>& test) {
   if (!begin_test())
     return true;
-  bool bRet = test();
-  assert(bRet);
-  end_test();
-  return bRet;
+  return end_test(test());
 }
 
 bool checkVerilog(const std::string& file) {
   int ret = system(stringf("iverilog %s -o %s.iv", file.c_str(), file.c_str()).c_str())
           | system(stringf("! vvp %s.iv | grep 'ERROR' || false", file.c_str()).c_str());
-  assert(0 == ret );
   return (0 == ret);
 }

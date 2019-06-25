@@ -36,7 +36,8 @@ TEST_CASE("misc", "[misc]") {
   SECTION("sbind", "[sbind]") {
     TEST([]()->ch_bool {
       ch_int4 a(0_h), b(1_h);
-      auto [x, y] = sbind(a, b);
+      auto q = sbind(a, b);
+      auto [x, y] = q;
       return (x == 1 && y == -1);
     });
     TEST([]()->ch_bool {

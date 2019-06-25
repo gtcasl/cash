@@ -99,12 +99,12 @@ public:
   ch_sfixed(ch_sfixed&& other) : buffer_(std::move(other.buffer_)) {}
 
   ch_sfixed& operator=(const ch_sfixed& other) {
-    base::operator=(other);
+    this->as_bit().operator=(other.as_bit());
     return *this;
   }
 
   ch_sfixed& operator=(ch_sfixed&& other) {
-    this->as_int().operator=(std::move(other.as_int()));
+    this->as_bit().operator=(std::move(other.as_bit()));
     return *this;
   }
 
@@ -282,13 +282,13 @@ public:
 
   ch_fixed& operator=(const ch_fixed& other) {
     __source_location(1);
-    base::operator=(other);
+    this->as_bit().operator=(other.as_bit());
     return *this;
   }
 
   ch_fixed& operator=(ch_fixed&& other) {
     __source_location(1);
-    this->as_int().operator=(std::move(other.as_int()));
+    this->as_bit().operator=(std::move(other.as_bit()));
     return *this;
   }
 

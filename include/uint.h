@@ -70,12 +70,12 @@ public:
   ch_suint(ch_suint&& other) : buffer_(std::move(other.buffer_)) {}
 
   ch_suint& operator=(const ch_suint& other) {
-    system_accessor::assign(*this, other);
+    this->as_bit().operator=(other);
     return *this;
   }
 
   ch_suint& operator=(ch_suint&& other) {
-    system_accessor::move(*this, std::move(other));
+    this->as_bit().operator=(std::move(other.as_bit()));
     return *this;
   }
 
@@ -189,13 +189,13 @@ public:
 
   ch_uint& operator=(const ch_uint& other) {
     CH_SOURCE_LOCATION(1);
-    logic_accessor::assign(*this, other);
+    this->as_bit().operator=(other);
     return *this;
   }
 
   ch_uint& operator=(ch_uint&& other) {
     CH_SOURCE_LOCATION(1);
-    logic_accessor::move(*this, std::move(other));
+    this->as_bit().operator=(std::move(other.as_bit()));
     return *this;
   }
 

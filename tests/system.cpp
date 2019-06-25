@@ -227,7 +227,8 @@ TEST_CASE("system", "[system]") {
       ret &= (-b == 2);
       ret &= (a+1 == 0);
       ret &= (b+2 == 0);
-      ret &= (a == b+1);
+      ret &= (a != b+1);
+      ret &= (ch_slice<WS+2>(a) == b+1);
       ret &= (a > b);
       return ret;
     });

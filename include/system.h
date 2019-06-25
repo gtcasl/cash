@@ -556,7 +556,7 @@ auto make_system_op(const A& lhs, const B& rhs) {
   template <typename U, \
             CH_REQUIRE(is_strictly_constructible_v<T, U>)> \
   friend auto op(const base& lhs, const U& rhs) { \
-    if constexpr (!is_signed_v<T> && is_signed_v<U>) { \
+    if constexpr (!std::is_integral_v<U> && is_signed_v<U> && !is_signed_v<T>) { \
       return op((const ch_signed_t<T>&)lhs, rhs); \
     } else { \
       auto _rhs = system_cast<T>(rhs); \
@@ -566,7 +566,7 @@ auto make_system_op(const A& lhs, const B& rhs) {
   template <typename U, \
             CH_REQUIRE(is_strictly_constructible_v<T, U>)> \
   friend auto op(const U& lhs, const base& rhs) { \
-    if constexpr (is_signed_v<U> && !is_signed_v<T>) { \
+    if constexpr (!std::is_integral_v<U> && is_signed_v<U> && !is_signed_v<T>) { \
       return op(lhs, (const ch_signed_t<T>&)rhs); \
     } else { \
       auto _lhs = system_cast<T>(lhs); \
@@ -581,7 +581,7 @@ auto make_system_op(const A& lhs, const B& rhs) {
   template <typename U, \
             CH_REQUIRE(is_strictly_constructible_v<T, U>)> \
   friend auto op(const base& lhs, const U& rhs) { \
-    if constexpr (!is_signed_v<T> && is_signed_v<U>) { \
+    if constexpr (!std::is_integral_v<U> && is_signed_v<U> && !is_signed_v<T>) { \
       return op((const ch_signed_t<T>&)lhs, rhs); \
     } else { \
       auto _rhs = system_cast<T>(rhs); \
@@ -591,7 +591,7 @@ auto make_system_op(const A& lhs, const B& rhs) {
   template <typename U, \
             CH_REQUIRE(is_strictly_constructible_v<T, U>)> \
   friend auto op(const U& lhs, const base& rhs) { \
-    if constexpr (is_signed_v<U> && !is_signed_v<T>) { \
+    if constexpr (!std::is_integral_v<U> && is_signed_v<U> && !is_signed_v<T>) { \
       return op(lhs, (const ch_signed_t<T>&)rhs); \
     } else { \
       auto _lhs = system_cast<T>(lhs); \
@@ -661,7 +661,7 @@ auto make_system_op(const A& lhs, const B& rhs) {
   template <typename U, \
             CH_REQUIRE(is_strictly_constructible_v<T, U>)> \
   friend auto func(const base& lhs, const U& rhs) { \
-    if constexpr (!is_signed_v<T> && is_signed_v<U>) { \
+    if constexpr (!std::is_integral_v<U> && is_signed_v<U> && !is_signed_v<T>) { \
       return func((const ch_signed_t<T>&)lhs, rhs); \
     } else { \
       auto _rhs = system_cast<T>(rhs); \
@@ -671,7 +671,7 @@ auto make_system_op(const A& lhs, const B& rhs) {
   template <typename U, \
             CH_REQUIRE(is_strictly_constructible_v<T, U>)> \
   friend auto func(const U& lhs, const base& rhs) { \
-    if constexpr (is_signed_v<U> && !is_signed_v<T>) { \
+    if constexpr (!std::is_integral_v<U> && is_signed_v<U> && !is_signed_v<T>) { \
       return func(lhs, (const ch_signed_t<T>&)rhs); \
     } else { \
       auto _lhs = system_cast<T>(lhs); \
@@ -695,7 +695,7 @@ auto make_system_op(const A& lhs, const B& rhs) {
   template <typename U, \
             CH_REQUIRE(is_strictly_constructible_v<T, U>)> \
   friend auto func(const base& lhs, const U& rhs) { \
-    if constexpr (!is_signed_v<T> && is_signed_v<U>) { \
+    if constexpr (!std::is_integral_v<U> && is_signed_v<U> && !is_signed_v<T>) { \
       return func((const ch_signed_t<T>&)lhs, rhs); \
     } else { \
       auto _rhs = system_cast<T>(rhs); \
@@ -705,7 +705,7 @@ auto make_system_op(const A& lhs, const B& rhs) {
   template <unsigned R, typename U, \
             CH_REQUIRE(is_strictly_constructible_v<T, U>)> \
   friend auto func(const base& lhs, const U& rhs) { \
-    if constexpr (!is_signed_v<T> && is_signed_v<U>) { \
+    if constexpr (!std::is_integral_v<U> && is_signed_v<U> && !is_signed_v<T>) { \
       return func<R>((const ch_signed_t<T>&)lhs, rhs); \
     } else { \
       auto _rhs = system_cast<T>(rhs); \
@@ -720,7 +720,7 @@ auto make_system_op(const A& lhs, const B& rhs) {
   template <typename U, \
             CH_REQUIRE(is_strictly_constructible_v<T, U>)> \
   friend auto func(const U& lhs, const base& rhs) { \
-    if constexpr (is_signed_v<U> && !is_signed_v<T>) { \
+    if constexpr (!std::is_integral_v<U> && is_signed_v<U> && !is_signed_v<T>) { \
       return func(lhs, (const ch_signed_t<T>&)rhs); \
     } else { \
       auto _lhs = system_cast<T>(lhs); \
@@ -730,7 +730,7 @@ auto make_system_op(const A& lhs, const B& rhs) {
   template <unsigned R, typename U, \
             CH_REQUIRE(is_strictly_constructible_v<T, U>)> \
   friend auto func(const U& lhs, const base& rhs) { \
-    if constexpr (is_signed_v<U> && !is_signed_v<T>) { \
+    if constexpr (!std::is_integral_v<U> && is_signed_v<U> && !is_signed_v<T>) { \
       return func<R>(lhs, (const ch_signed_t<T>&)rhs); \
     } else { \
       auto _lhs = system_cast<T>(lhs); \

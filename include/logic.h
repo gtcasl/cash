@@ -460,7 +460,7 @@ auto make_logic_op(const A& a, const B& b) {
   friend auto op(const sloc_proxy<type>& lhs, const U& rhs) { \
     CH_SOURCE_LOCATION(1); \
     if constexpr (is_strictly_constructible_v<type, U>) { \
-      if constexpr (!is_signed_v<type> && is_signed_v<U>) { \
+      if constexpr (!std::is_integral_v<U> && is_signed_v<U> && !is_signed_v<type>) { \
         return op((const ch_signed_t<type>&)lhs.value, rhs); \
       } else { \
         auto _rhs = logic_cast<type>(rhs); \
@@ -475,7 +475,7 @@ auto make_logic_op(const A& a, const B& b) {
   friend auto op(const U& lhs, const sloc_proxy<type>& rhs) { \
     CH_SOURCE_LOCATION(1); \
     if constexpr (is_strictly_constructible_v<type, U>) { \
-      if constexpr (is_signed_v<U> && !is_signed_v<type>) { \
+      if constexpr (!std::is_integral_v<U> && is_signed_v<U> && !is_signed_v<type>) { \
         return op(lhs, (const ch_signed_t<type>&)rhs.value); \
       } else { \
         auto _lhs = logic_cast<type>(lhs); \
@@ -496,7 +496,7 @@ auto make_logic_op(const A& a, const B& b) {
   friend auto op(const sloc_proxy<type>& lhs, const U& rhs) { \
     CH_SOURCE_LOCATION(1); \
     if constexpr (is_strictly_constructible_v<type, U>) { \
-      if constexpr (!is_signed_v<type> && is_signed_v<U>) { \
+      if constexpr (!std::is_integral_v<U> && is_signed_v<U> && !is_signed_v<type>) { \
         return op((const ch_signed_t<type>&)lhs.value, rhs); \
       } else { \
         auto _rhs = logic_cast<type>(rhs); \
@@ -511,7 +511,7 @@ auto make_logic_op(const A& a, const B& b) {
   friend auto op(const U& lhs, const sloc_proxy<type>& rhs) { \
     CH_SOURCE_LOCATION(1); \
     if constexpr (is_strictly_constructible_v<type, U>) { \
-      if constexpr (is_signed_v<U> && !is_signed_v<type>) { \
+      if constexpr (!std::is_integral_v<U> && is_signed_v<U> && !is_signed_v<type>) { \
         return op(lhs, (const ch_signed_t<type>&)rhs.value); \
       } else { \
         auto _lhs = logic_cast<type>(lhs); \
@@ -601,7 +601,7 @@ auto make_logic_op(const A& a, const B& b) {
   friend auto func(const sloc_proxy<type>& lhs, const U& rhs) { \
     CH_SOURCE_LOCATION(1); \
     if constexpr (is_strictly_constructible_v<type, U>) { \
-      if constexpr (!is_signed_v<type> && is_signed_v<U>) { \
+      if constexpr (!std::is_integral_v<U> && is_signed_v<U> && !is_signed_v<type>) { \
         return func((const ch_signed_t<type>&)lhs.value, rhs); \
       } else { \
         auto _rhs = logic_cast<type>(rhs); \
@@ -616,7 +616,7 @@ auto make_logic_op(const A& a, const B& b) {
   friend auto func(const U& lhs, const sloc_proxy<type>& rhs) { \
     CH_SOURCE_LOCATION(1); \
     if constexpr (is_strictly_constructible_v<type, U>) { \
-      if constexpr (is_signed_v<U> && !is_signed_v<type>) { \
+      if constexpr (!std::is_integral_v<U> && is_signed_v<U> && !is_signed_v<type>) { \
         return func(lhs, (const ch_signed_t<type>&)rhs.value); \
       } else { \
         auto _lhs = logic_cast<type>(lhs); \
@@ -647,7 +647,7 @@ auto make_logic_op(const A& a, const B& b) {
   friend auto func(const sloc_proxy<type>& lhs, const U& rhs) { \
     CH_SOURCE_LOCATION(1); \
     if constexpr (is_strictly_constructible_v<type, U>) { \
-      if constexpr (!is_signed_v<type> && is_signed_v<U>) { \
+      if constexpr (!std::is_integral_v<U> && is_signed_v<U> && !is_signed_v<type>) { \
         return func((const ch_signed_t<type>&)lhs.value, rhs); \
       } else { \
         auto _rhs = logic_cast<type>(rhs); \
@@ -662,7 +662,7 @@ auto make_logic_op(const A& a, const B& b) {
   friend auto func(const sloc_proxy<type>& lhs, const U& rhs) { \
     CH_SOURCE_LOCATION(1); \
     if constexpr (is_strictly_constructible_v<type, U>) { \
-      if constexpr (!is_signed_v<type> && is_signed_v<U>) { \
+      if constexpr (!std::is_integral_v<U> && is_signed_v<U> && !is_signed_v<type>) { \
         return func<R>((const ch_signed_t<type>&)lhs.value, rhs); \
       } else { \
         auto _rhs = logic_cast<type>(rhs); \
@@ -682,7 +682,7 @@ auto make_logic_op(const A& a, const B& b) {
   friend auto func(const U& lhs, const sloc_proxy<type>& rhs) { \
     CH_SOURCE_LOCATION(1); \
     if constexpr (is_strictly_constructible_v<type, U>) { \
-      if constexpr (is_signed_v<U> && !is_signed_v<type>) { \
+      if constexpr (!std::is_integral_v<U> && is_signed_v<U> && !is_signed_v<type>) { \
         return func(lhs, (const ch_signed_t<type>&)rhs.value); \
       } else { \
         auto _lhs = logic_cast<type>(lhs); \
@@ -697,7 +697,7 @@ auto make_logic_op(const A& a, const B& b) {
   friend auto func(const U& lhs, const sloc_proxy<type>& rhs) { \
     CH_SOURCE_LOCATION(1); \
     if constexpr (is_strictly_constructible_v<type, U>) { \
-      if constexpr (is_signed_v<U> && !is_signed_v<type>) { \
+      if constexpr (!std::is_integral_v<U> && is_signed_v<U> && !is_signed_v<type>) { \
         return func<R>(lhs, (const ch_signed_t<type>&)rhs.value); \
       } else { \
         auto _lhs = logic_cast<type>(lhs); \

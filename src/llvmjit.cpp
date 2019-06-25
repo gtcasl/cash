@@ -1106,6 +1106,15 @@ jit_value_t jit_insn_to_bool(jit_function_t func, jit_value_t value) {
   return func->create_value(res);
 }
 
+jit_value_t jit_insn_to_not_bool(jit_function_t func, jit_value_t value) {
+  auto ctx = func->ctx();
+  auto builder = ctx->builder();
+  auto in = func->resolve_value(value);
+  auto zero = jit_value_create_int_constant(func, 0, value->type());
+  auto res = builder->CreateICmpEQ(in, zero->impl());
+  return func->create_value(res);
+}
+
 int jit_insn_branch(jit_function_t func, jit_label_t *label) {
   auto BB = func->create_block(label);
   if (!BB)

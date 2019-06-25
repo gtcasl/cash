@@ -668,7 +668,7 @@ private:
         scalar_map_[node->id()] = this->emit_cast(j_dst, j_ntype);
       } else {
         auto j_dst = this->emit_eq_vector(j_src0, node->src(0).size(), j_src1, node->src(1).size(), is_signed);
-        auto j_dst_n = jit_insn_not(j_func_, j_dst);
+        auto j_dst_n = jit_insn_to_not_bool(j_func_, j_dst);
         scalar_map_[node->id()] = this->emit_cast(j_dst_n, j_ntype);
       }
       break;
@@ -703,7 +703,7 @@ private:
         scalar_map_[node->id()] = this->emit_cast(j_dst, j_ntype);
       } else {
         auto j_dst = __op_call_relational(bv_lt_vector, j_src1, node->src(1).size(), j_src0, node->src(0).size());
-        auto j_dst_n = jit_insn_not(j_func_, j_dst);
+        auto j_dst_n = jit_insn_to_not_bool(j_func_, j_dst);
         scalar_map_[node->id()] = this->emit_cast(j_dst_n, j_ntype);
       }
       break;
@@ -715,7 +715,7 @@ private:
         scalar_map_[node->id()] = this->emit_cast(j_dst, j_ntype);
       } else {
         auto j_dst = __op_call_relational(bv_lt_vector, j_src0, node->src(0).size(), j_src1, node->src(1).size());
-        auto j_dst_n = jit_insn_not(j_func_, j_dst);
+        auto j_dst_n = jit_insn_to_not_bool(j_func_, j_dst);
         scalar_map_[node->id()] = this->emit_cast(j_dst_n, j_ntype);
       }
       break;

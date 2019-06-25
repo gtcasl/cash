@@ -40,8 +40,22 @@ TEST_CASE("arithmetic", "[arithmetic]") {
       ch_bit<65> a(0x0'ffffffff'00000000_h65);
       auto c = ~a;
       ch_bit<64> d = 0x00000000'ffffffff_h64;
-      //ch_println("c={0}, d={1}", c, d);
+      //ch_println("c={}, d={}, t={}", c, d, (c != d));
       return (c != d);
+    });
+    TEST([]()->ch_bool {
+      ch_uint<65> a(0x0'ffffffff'00000000_h65);
+      auto c = ~a;
+      ch_uint<66> d = 0x3'00000000'ffffffff_h66;
+      //ch_println("c={}, d={}, t={}", c, d, (c != d));
+      return (c <= d);
+    });
+    TEST([]()->ch_bool {
+      ch_bit<65> a(0x0'ffffffff'00000000_h65);
+      auto c = ~a;
+      ch_bit<66> d = 0x1'00000000'ffffffff_h66;
+      //ch_println("c={}, d={}, t={}", c, d, (c != d));
+      return (c == d);
     });
     TEST([]()->ch_bool {
       ch_bit128 a(0xBA), b(0xDC);

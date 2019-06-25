@@ -69,12 +69,12 @@ public:
   ch_sint(ch_sint&& other) : buffer_(std::move(other.buffer_)) {}
 
   ch_sint& operator=(const ch_sint& other) {
-    system_accessor::assign(*this, other);
+    this->as_bit().operator=(other);
     return *this;
   }
 
   ch_sint& operator=(ch_sint&& other) {
-    system_accessor::move(*this, std::move(other));
+    this->as_bit().operator=(std::move(other.as_bit()));
     return *this;
   }
 
@@ -189,13 +189,13 @@ public:
 
   ch_int& operator=(const ch_int& other) {
     CH_SOURCE_LOCATION(1);
-    logic_accessor::assign(*this, other);
+    this->as_bit().operator=(other);
     return *this;
   }
 
   ch_int& operator=(ch_int&& other) {
     CH_SOURCE_LOCATION(1);
-    logic_accessor::move(*this, std::move(other));
+    this->as_bit().operator=(std::move(other.as_bit()));
     return *this;
   }
 
