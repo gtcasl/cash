@@ -32,7 +32,7 @@ int char2int(char x, int base);
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T>
-auto idname(bool remove_template_params = false) {
+std::string idname(bool remove_template_params = false) {
   return identifier_from_typeid(typeid(T).name(), remove_template_params);
 }
 

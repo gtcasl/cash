@@ -254,7 +254,7 @@ auto ch_cat(const Args&... args) {
   static constexpr unsigned N = (ch_width_v<Args> + ...);
   static_assert(ch_width_v<R> == N, "size mismatch");
   CH_SOURCE_LOCATION(1);
-  R ret(logic_buffer(N, "cat"));
+  R ret(make_logic_buffer(N, "cat"));
   cat_impl(ret, N, to_logic<ch_width_v<Args>>(args)...);
   return ret;
 }
@@ -272,7 +272,7 @@ template <unsigned N, typename T>
 auto ch_dup(const T& obj) {
   static_assert(is_logic_type_v<T>, "invalid type");
   CH_SOURCE_LOCATION(1);
-  ch_bit<ch_width_v<T> * N> out(logic_buffer(ch_width_v<T> * N, "dup"));
+  ch_bit<ch_width_v<T> * N> out(make_logic_buffer(ch_width_v<T> * N, "dup"));
   for (unsigned i = 0; i < N; ++i) {
     ch_asliceref<ch_width_v<T>>(out, i) = obj;
   }

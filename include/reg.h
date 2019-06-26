@@ -55,26 +55,26 @@ public:
   using base = T;
 
   ch_reg_impl()
-    : base(logic_buffer(createRegNode(ch_width_v<T>, idname<T>()))) {
+    : base(make_logic_buffer(createRegNode(ch_width_v<T>, idname<T>()))) {
     __next__ = std::make_unique<next_t>(getRegNextNode(get_lnode(*this)));
   }
 
   template <typename U0,
             CH_REQUIRE(std::is_convertible_v<U0, T>)>
   explicit ch_reg_impl(const U0& init0)
-    : base(logic_buffer(createRegNode(to_lnode<T>(init0), idname<T>()))) {
+    : base(make_logic_buffer(createRegNode(to_lnode<T>(init0), idname<T>()))) {
     __next__ = std::make_unique<next_t>(getRegNextNode(get_lnode(*this)));
   }
 
   template <typename... Us,
             CH_REQUIRE(std::is_constructible_v<T, Us...>)>
   explicit ch_reg_impl(const Us&... inits)
-    : base(logic_buffer(createRegNode(get_lnode(T(inits...)), idname<T>()))) {
+    : base(make_logic_buffer(createRegNode(get_lnode(T(inits...)), idname<T>()))) {
     __next__ = std::make_unique<next_t>(getRegNextNode(get_lnode(*this)));
   }
 
   ch_reg_impl(const ch_reg_impl& other)
-    : base(logic_buffer(copyRegNode(get_lnode(other), idname<T>()))) {
+    : base(make_logic_buffer(copyRegNode(get_lnode(other), idname<T>()))) {
     __next__ = std::make_unique<next_t>(getRegNextNode(get_lnode(*this)));
   }
 
@@ -92,7 +92,7 @@ private:
   ch_reg_impl& operator=(ch_reg_impl&&) = delete;
 
   struct next_t {
-    next_t(lnodeimpl* impl) : next(logic_buffer(impl)) {}
+    next_t(lnodeimpl* impl) : next(make_logic_buffer(impl)) {}
     T next;
   };
 

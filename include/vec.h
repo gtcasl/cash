@@ -43,14 +43,14 @@ public:
   using base = vec_base<T, N>;
   using base::operator [];
 
-  ch_vec(const logic_buffer& buffer = logic_buffer(traits::bitwidth, idname<ch_vec>()))
+  ch_vec(const logic_buffer& buffer = make_logic_buffer(traits::bitwidth, idname<ch_vec>()))
     : ch_vec(buffer, std::make_index_sequence<N>())
   {}
 
   template <typename U,
             CH_REQUIRE(std::is_integral_v<U>)>
   explicit ch_vec(U value)
-    : ch_vec(logic_buffer(traits::bitwidth, idname<ch_vec>())) {
+    : ch_vec(make_logic_buffer(traits::bitwidth, idname<ch_vec>())) {
     ch_sbit<traits::bitwidth> tmp(make_system_buffer(sdata_from_fill(value, ch_width_v<T>, N)));
     this->operator=(tmp);
   }
@@ -58,21 +58,21 @@ public:
   template <typename U,
             CH_REQUIRE(std::is_constructible_v<T, U>)>
   explicit ch_vec(const std::initializer_list<U>& values)
-    : ch_vec(logic_buffer(traits::bitwidth, idname<ch_vec>())) {
+    : ch_vec(make_logic_buffer(traits::bitwidth, idname<ch_vec>())) {
     this->operator=(values);
   }
 
   template <typename U,
             CH_REQUIRE(std::is_constructible_v<T, U>)>
   explicit ch_vec(const vec_base<U, N>& other)
-    : ch_vec(logic_buffer(traits::bitwidth, idname<ch_vec>())) {
+    : ch_vec(make_logic_buffer(traits::bitwidth, idname<ch_vec>())) {
     this->operator=(other);
   }
 
   template <typename U,
             CH_REQUIRE(is_system_type_v<U>)>
   explicit ch_vec(const U& other)
-    : ch_vec(logic_buffer(traits::bitwidth, idname<ch_vec>())) {
+    : ch_vec(make_logic_buffer(traits::bitwidth, idname<ch_vec>())) {
     static_assert(ch_width_v<U> == N * ch_width_v<T>, "invalid size");
     this->operator=(other);
   }
@@ -80,13 +80,13 @@ public:
   template <typename U,
             CH_REQUIRE(is_logic_type_v<U>)>
   explicit ch_vec(const U& other)
-    : ch_vec(logic_buffer(traits::bitwidth, idname<ch_vec>())) {
+    : ch_vec(make_logic_buffer(traits::bitwidth, idname<ch_vec>())) {
     static_assert(ch_width_v<U> == N * ch_width_v<T>, "invalid size");
     this->operator=(other);
   }
 
   ch_vec(const ch_vec& other)
-    : ch_vec(logic_buffer(traits::bitwidth, idname<ch_vec>())) {
+    : ch_vec(make_logic_buffer(traits::bitwidth, idname<ch_vec>())) {
     this->operator=(other);
   }
 
@@ -150,7 +150,7 @@ protected:
 
   template <std::size_t...Is>
   ch_vec(const logic_buffer& buffer, std::index_sequence<Is...>)
-    : base(logic_buffer(ch_width_v<T>, buffer, Is * ch_width_v<T>, stringf("%d", Is))...)
+    : base(make_logic_buffer(ch_width_v<T>, buffer, Is * ch_width_v<T>, stringf("%d", Is))...)
   {}
 
   const logic_buffer& __buffer() const {
@@ -172,7 +172,7 @@ public:
   using base = vec_base<T, N>;
   using base::operator [];
 
-  ch_vec(const system_buffer_ptr& buffer
+  ch_vec(const system_buffer& buffer
          = make_system_buffer(traits::bitwidth, idname<ch_vec>()))
     : ch_vec(buffer, std::make_index_sequence<N>())
   {}
@@ -260,11 +260,11 @@ public:
 protected:
 
   template <std::size_t...Is>
-  ch_vec(const system_buffer_ptr& buffer, std::index_sequence<Is...>)
+  ch_vec(const system_buffer& buffer, std::index_sequence<Is...>)
     : base(make_system_buffer(ch_width_v<T>, buffer, Is * ch_width_v<T>, stringf("%d", Is))...)
   {}
 
-  const system_buffer_ptr& __buffer() const {
+  const system_buffer& __buffer() const {
     return system_accessor::source(this->at(0));
   }
 

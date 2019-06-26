@@ -44,58 +44,58 @@ public:
   using base = ch_snumber_base<ch_sfixed<N, F>>;
   using base::operator=;
 
-  ch_sfixed(const system_buffer_ptr& buffer
-            = make_system_buffer(N, ch::internal::idname<ch_sfixed>()))
+  ch_sfixed(const system_buffer& buffer
+            = make_system_buffer(N, idname<ch_sfixed>()))
     : buffer_(buffer)
   {}
 
   explicit ch_sfixed(float other)
-    : ch_sfixed(make_system_buffer(N, ch::internal::idname<ch_sfixed>())) {
+    : ch_sfixed(make_system_buffer(N, idname<ch_sfixed>())) {
     this->operator=(other);
   }
 
   explicit ch_sfixed(double other)
-    : ch_sfixed(make_system_buffer(N, ch::internal::idname<ch_sfixed>())) {
+    : ch_sfixed(make_system_buffer(N, idname<ch_sfixed>())) {
     this->operator=(other);
   }
 
   template <typename U,
             CH_REQUIRE(ch_width_v<U> <= N)>
   explicit ch_sfixed(const ch_sbit_base<U>& other)
-    : ch_sfixed(make_system_buffer(N, ch::internal::idname<ch_sfixed>())) {
+    : ch_sfixed(make_system_buffer(N, idname<ch_sfixed>())) {
     base::operator=(reinterpret_cast<const U&>(other));
   }
 
   template <typename U,
             CH_REQUIRE(std::is_integral_v<U>)>
   ch_sfixed(const U& other)
-    : ch_sfixed(make_system_buffer(N, ch::internal::idname<ch_sfixed>())) {
+    : ch_sfixed(make_system_buffer(N, idname<ch_sfixed>())) {
     base::operator=(other);
   }
 
   template <unsigned M,
             CH_REQUIRE(M <= N)>
   ch_sfixed(const ch_sbit<M>& other)
-    : ch_sfixed(make_system_buffer(N, ch::internal::idname<ch_sfixed>())) {
+    : ch_sfixed(make_system_buffer(N, idname<ch_sfixed>())) {
     base::operator=(other);
   }
 
   template <unsigned M,
             CH_REQUIRE(M <= N)>
   ch_sfixed(const ch_suint<M>& other)
-    : ch_sfixed(make_system_buffer(N, ch::internal::idname<ch_sfixed>())) {
+    : ch_sfixed(make_system_buffer(N, idname<ch_sfixed>())) {
     base::operator=(other);
   }
 
   template <unsigned M,
             CH_REQUIRE(M <= N)>
   ch_sfixed(const ch_sint<M>& other)
-    : ch_sfixed(make_system_buffer(N, ch::internal::idname<ch_sfixed>())) {
+    : ch_sfixed(make_system_buffer(N, idname<ch_sfixed>())) {
     base::operator=(other);
   }
 
   ch_sfixed(const ch_sfixed& other)
-    : ch_sfixed(make_system_buffer(N, ch::internal::idname<ch_sfixed>())) {
+    : ch_sfixed(make_system_buffer(N, idname<ch_sfixed>())) {
     this->operator=(other);
   }
 
@@ -153,11 +153,11 @@ protected:
     return ret.template as<ch_sfixed>();
   }
 
-  const system_buffer_ptr& __buffer() const {
+  const system_buffer& __buffer() const {
     return buffer_;
   }
 
-  system_buffer_ptr buffer_;
+  system_buffer buffer_;
 
   friend class ch::extension::system_accessor;
 };
@@ -174,19 +174,18 @@ public:
   using base = ch_number_base<ch_fixed<N, F>>;
   using base::operator=;
 
-  ch_fixed(const logic_buffer& buffer =
-      logic_buffer(N, ch::internal::idname<ch_fixed>()))
+  ch_fixed(const logic_buffer& buffer = make_logic_buffer(N, idname<ch_fixed>()))
     : buffer_(buffer)
   {}
 
   explicit ch_fixed(float other)
-    : ch_fixed(logic_buffer(N, ch::internal::idname<ch_fixed>())) {
+    : ch_fixed(make_logic_buffer(N, idname<ch_fixed>())) {
     __source_location(1);
     this->operator=(other);
   }
 
   explicit ch_fixed(double other)
-    : ch_fixed(logic_buffer(N, ch::internal::idname<ch_fixed>())) {
+    : ch_fixed(make_logic_buffer(N, idname<ch_fixed>())) {
     __source_location(1);
     this->operator=(other);
   }
@@ -194,7 +193,7 @@ public:
   template <typename U,
             CH_REQUIRE(ch_width_v<U> <= N)>
   explicit ch_fixed(const ch_sbit_base<U>& other)
-    : ch_fixed(logic_buffer(N, ch::internal::idname<ch_fixed>())) {
+    : ch_fixed(make_logic_buffer(N, idname<ch_fixed>())) {
     __source_location(1);
     base::operator=(reinterpret_cast<const U&>(other));
   }
@@ -202,7 +201,7 @@ public:
   template <typename U,
             CH_REQUIRE(ch_width_v<U> <= N)>
   explicit ch_fixed(const ch_bit_base<U>& other)
-    : ch_fixed(logic_buffer(N, ch::internal::idname<ch_fixed>())) {
+    : ch_fixed(make_logic_buffer(N, idname<ch_fixed>())) {
     __source_location(1);
     base::operator=(reinterpret_cast<const U&>(other));
   }
@@ -210,7 +209,7 @@ public:
   template <typename U,
             CH_REQUIRE(std::is_integral_v<U>)>
   ch_fixed(const U& other)
-    : ch_fixed(logic_buffer(N, ch::internal::idname<ch_fixed>())) {
+    : ch_fixed(make_logic_buffer(N, idname<ch_fixed>())) {
     __source_location(1);
     base::operator=(other);
   }
@@ -218,7 +217,7 @@ public:
   template <unsigned M,
             CH_REQUIRE(M <= N)>
   ch_fixed(const ch_sbit<M>& other)
-    : ch_fixed(logic_buffer(N, ch::internal::idname<ch_fixed>())) {
+    : ch_fixed(make_logic_buffer(N, idname<ch_fixed>())) {
     __source_location(1);
     base::operator=(other);
   }
@@ -226,7 +225,7 @@ public:
   template <unsigned M,
             CH_REQUIRE(M <= N)>
   ch_fixed(const ch_sint<M>& other)
-    : ch_fixed(logic_buffer(N, ch::internal::idname<ch_fixed>())) {
+    : ch_fixed(make_logic_buffer(N, idname<ch_fixed>())) {
     __source_location(1);
     base::operator=(other);
   }
@@ -234,7 +233,7 @@ public:
   template <unsigned M,
             CH_REQUIRE(M <= N)>
   ch_fixed(const ch_suint<M>& other)
-    : ch_fixed(logic_buffer(N, ch::internal::idname<ch_fixed>())) {
+    : ch_fixed(make_logic_buffer(N, idname<ch_fixed>())) {
     __source_location(1);
     base::operator=(other);
   }
@@ -242,7 +241,7 @@ public:
   template <unsigned M,
             CH_REQUIRE(M <= N)>
   ch_fixed(const ch_bit<M>& other)
-    : ch_fixed(logic_buffer(N, ch::internal::idname<ch_fixed>())) {
+    : ch_fixed(make_logic_buffer(N, idname<ch_fixed>())) {
     __source_location(1);
     base::operator=(other);
   }
@@ -250,7 +249,7 @@ public:
   template <unsigned M,
             CH_REQUIRE(M <= N)>
   ch_fixed(const ch_uint<M>& other)
-    : ch_fixed(logic_buffer(N, ch::internal::idname<ch_fixed>())) {
+    : ch_fixed(make_logic_buffer(N, idname<ch_fixed>())) {
     __source_location(1);
     base::operator=(other);
   }
@@ -258,19 +257,19 @@ public:
   template <unsigned M,
             CH_REQUIRE(M <= N)>
   ch_fixed(const ch_int<M>& other)
-    : ch_fixed(logic_buffer(N, ch::internal::idname<ch_fixed>())) {
+    : ch_fixed(make_logic_buffer(N, idname<ch_fixed>())) {
     __source_location(1);
     base::operator=(other);
   }
 
   ch_fixed(const ch_sfixed<N, F>& other)
-    : ch_fixed(logic_buffer(N, ch::internal::idname<ch_fixed>())) {
+    : ch_fixed(make_logic_buffer(N, idname<ch_fixed>())) {
     __source_location(1);
     base::operator=(other);
   }
 
   ch_fixed(const ch_fixed& other)
-    : ch_fixed(logic_buffer(N, ch::internal::idname<ch_fixed>())) {
+    : ch_fixed(make_logic_buffer(N, idname<ch_fixed>())) {
     __source_location(1);
     this->operator=(other);
   }

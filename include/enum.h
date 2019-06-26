@@ -29,7 +29,7 @@ void registerEnumString(const lnode& node, void* callback);
 #define CH_ENUM_STRING(a, i, x) case CH_ENUM_STRING_(CH_NARG(CH_REM x))(CH_REM x, x)
 
 #define CH_ENUM_SYSTEM_IMPL(enum_name) \
-  enum_name(const ch::internal::system_buffer_ptr& buffer = \
+  enum_name(const ch::internal::system_buffer& buffer = \
     ch::internal::make_system_buffer(traits::bitwidth, CH_STRINGIZE(enum_name))) \
     : buffer_(buffer) {} \
   enum_name(type __other) \
@@ -56,17 +56,17 @@ void registerEnumString(const lnode& node, void* callback);
 
 #define CH_ENUM_LOGIC_IMPL(enum_name) \
   enum_name(const ch::internal::logic_buffer& buffer = \
-    ch::internal::logic_buffer(traits::bitwidth, CH_STRINGIZE(enum_name))) \
+    ch::internal::make_logic_buffer(traits::bitwidth, CH_STRINGIZE(enum_name))) \
     : buffer_(buffer) { \
     ch::internal::registerEnumString(ch::internal::get_lnode(*this), (void*)to_string); \
   } \
   enum_name(type __other) \
-    : enum_name(ch::internal::logic_buffer(traits::bitwidth, CH_STRINGIZE(enum_name))) { \
+    : enum_name(ch::internal::make_logic_buffer(traits::bitwidth, CH_STRINGIZE(enum_name))) { \
     CH_SOURCE_LOCATION(1); \
     this->operator=(__other); \
   } \
   enum_name(const enum_name& __other) \
-    : enum_name(ch::internal::logic_buffer(traits::bitwidth, CH_STRINGIZE(enum_name))) { \
+    : enum_name(ch::internal::make_logic_buffer(traits::bitwidth, CH_STRINGIZE(enum_name))) { \
     CH_SOURCE_LOCATION(1); \
     this->operator=(__other); \
   } \
@@ -111,10 +111,10 @@ void registerEnumString(const lnode& node, void* callback);
     \
     class __system_type__ : public ch::internal::ch_sbit_base<__system_type__> { \
     private: \
-      const ch::internal::system_buffer_ptr& __buffer() const { \
+      const ch::internal::system_buffer& __buffer() const { \
         return buffer_; \
       } \
-      ch::internal::system_buffer_ptr buffer_; \
+      ch::internal::system_buffer buffer_; \
       friend class ch::internal::system_accessor; \
     public: \
       using traits = ch::internal::system_traits<size, false, __system_type__, enum_name>; \

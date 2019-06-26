@@ -32,32 +32,32 @@ auto to_system(T&& obj) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class system_buffer;
+class system_buffer_impl;
 
-using system_buffer_ptr = std::shared_ptr<system_buffer>;
+using system_buffer = std::shared_ptr<system_buffer_impl>;
 
-class system_buffer {
+class system_buffer_impl {
 public:
-  explicit system_buffer(const sdata_type& data);
+  explicit system_buffer_impl(const sdata_type& data);
 
-  system_buffer(sdata_type&& data);
+  system_buffer_impl(sdata_type&& data);
 
-  system_buffer(uint32_t size, const std::string& name);
+  system_buffer_impl(uint32_t size, const std::string& name);
 
-  system_buffer(uint32_t size,
-                const system_buffer_ptr& buffer,
+  system_buffer_impl(uint32_t size,
+                const system_buffer& buffer,
                 uint32_t offset,
                 const std::string& name);
 
-  system_buffer(const system_buffer& other);
+  system_buffer_impl(const system_buffer_impl& other);
 
-  system_buffer(system_buffer&& other);
+  system_buffer_impl(system_buffer_impl&& other);
 
-  virtual ~system_buffer() {}
+  virtual ~system_buffer_impl() {}
 
-  system_buffer& operator=(const system_buffer& other);
+  system_buffer_impl& operator=(const system_buffer_impl& other);
 
-  system_buffer& operator=(system_buffer&& other);
+  system_buffer_impl& operator=(system_buffer_impl&& other);
 
   virtual const sdata_type& data() const;
 
@@ -84,7 +84,7 @@ public:
   std::string to_verilog() const;
 
   void copy(uint32_t dst_offset,
-            const system_buffer& src,
+            const system_buffer_impl& src,
             uint32_t src_offset,
             uint32_t length);
 
@@ -112,7 +112,7 @@ public:
 
 protected:
 
-  system_buffer_ptr source_;
+  system_buffer source_;
   mutable sdata_type value_;
   uint32_t offset_;
   uint32_t size_;
@@ -121,7 +121,7 @@ protected:
 
 template <typename... Args>
 auto make_system_buffer(Args&&... args) {
-  return std::make_shared<system_buffer>(std::forward<Args>(args)...);
+  return std::make_shared<system_buffer_impl>(std::forward<Args>(args)...);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

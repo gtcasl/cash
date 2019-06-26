@@ -47,9 +47,9 @@ lnodeimpl* getOutputNode(const lnode& src);
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class system_io_buffer : public system_buffer {
+class system_io_buffer : public system_buffer_impl {
 public:
-  using base = system_buffer;
+  using base = system_buffer_impl;
 
   explicit system_io_buffer(uint32_t size, const std::string& name);
 
@@ -104,19 +104,19 @@ public:
   using base = T;
 
   ch_logic_in(const std::string& name = "io")
-     : base(logic_buffer(createInputNode(name, ch_width_v<T>))) {
+     : base(make_logic_buffer(createInputNode(name, ch_width_v<T>))) {
     input_ = get_lnode(*this);
   }
 
   template <typename U>
   explicit ch_logic_in(const ch_logic_out<U>& other)
-    : base(logic_buffer(bindOutputNode(other.output_))) {
+    : base(make_logic_buffer(bindOutputNode(other.output_))) {
     static_assert((ch_width_v<T>) == (ch_width_v<U>), "invalid size");
   }
 
   template <typename U>
   explicit ch_logic_in(const ch_system_out<U>& other)
-     : base(logic_buffer(bindOutputNode(reinterpret_cast<system_io_buffer*>(
+     : base(make_logic_buffer(bindOutputNode(reinterpret_cast<system_io_buffer*>(
                             system_accessor::buffer(other).get())))) {
     static_assert((ch_width_v<T>) == (ch_width_v<U>), "invalid size");
   }
@@ -162,19 +162,19 @@ public:
   using base::operator=;
 
   ch_logic_out(const std::string& name = "io")
-    : base(logic_buffer(createOutputNode(name, ch_width_v<T>))) {
+    : base(make_logic_buffer(createOutputNode(name, ch_width_v<T>))) {
     output_ = getOutputNode(get_lnode(*this));
   }
 
   template <typename U>
   explicit ch_logic_out(const ch_logic_in<U>& other)
-    : base(logic_buffer(bindInputNode(other.input_))) {
+    : base(make_logic_buffer(bindInputNode(other.input_))) {
     static_assert((ch_width_v<T>) == (ch_width_v<U>), "invalid size");
   }
 
   template <typename U>
   explicit ch_logic_out(const ch_system_in<U>& other)
-     : base(logic_buffer(bindInputNode(reinterpret_cast<system_io_buffer*>(
+     : base(make_logic_buffer(bindInputNode(reinterpret_cast<system_io_buffer*>(
                             system_accessor::buffer(other).get())))) {
     static_assert((ch_width_v<T>) == (ch_width_v<U>), "invalid size");
   }

@@ -41,6 +41,7 @@ namespace utility {
   using ch::internal::make_array_n;
   using ch::internal::make_list_n;
   using ch::internal::static_for;
+  using ch::internal::idname;
 }
 
 //
@@ -398,18 +399,17 @@ namespace extension {
   using ch::internal::is_sbit_convertible_v;
   using ch::internal::is_bitvector_extended_type_v;
 
-  using ch::internal::source_location;
   using ch::internal::logic_traits;
   using ch::internal::system_traits;
   using ch::internal::logic_buffer;
-  using ch::internal::system_buffer_ptr;
-  using ch::internal::logic_buffer;
+  using ch::internal::system_buffer;
+  using ch::internal::make_logic_buffer;
   using ch::internal::make_system_buffer;
   using ch::internal::system_accessor;
   using ch::internal::logic_accessor;
   using ch::internal::udf_verilog;
   using ch::internal::udf_vostream;
-  using ch::internal::lnode;
+  using ch::internal::source_location;
 }
 
 //

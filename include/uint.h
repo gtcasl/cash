@@ -13,7 +13,7 @@ public:
   using base = ch_snumber_base<ch_suint<N>>;
   using base::operator=;
 
-  ch_suint(const system_buffer_ptr& buffer
+  ch_suint(const system_buffer& buffer
            = make_system_buffer(N, idname<ch_suint>()))
     : buffer_(buffer) {
     assert(N == buffer->size());
@@ -80,11 +80,11 @@ public:
 
 protected:
 
-  const system_buffer_ptr& __buffer() const {
+  const system_buffer& __buffer() const {
     return buffer_;
   }
 
-  system_buffer_ptr buffer_;
+  system_buffer buffer_;
 
   friend class system_accessor;
 };
@@ -99,7 +99,7 @@ public:
   using base = ch_number_base<ch_uint<N>>;
   using base::operator=;
 
-  ch_uint(const logic_buffer& buffer = logic_buffer(N, idname<ch_uint>()))
+  ch_uint(const logic_buffer& buffer = make_logic_buffer(N, idname<ch_uint>()))
     : buffer_(buffer) {
     assert(N == buffer.size());
   }
@@ -107,7 +107,7 @@ public:
   template <typename U,
             CH_REQUIRE(std::is_integral_v<U>)>
   ch_uint(const U& other)
-    : ch_uint(logic_buffer(N, idname<ch_uint>())) {
+    : ch_uint(make_logic_buffer(N, idname<ch_uint>())) {
     CH_SOURCE_LOCATION(1);
     base::operator=(other);
   }
@@ -115,7 +115,7 @@ public:
   template <typename U,
             CH_REQUIRE(ch_width_v<U> <= N)>
   explicit ch_uint(const ch_sbit_base<U>& other)
-    : ch_uint(logic_buffer(N, idname<ch_uint>())) {
+    : ch_uint(make_logic_buffer(N, idname<ch_uint>())) {
     CH_SOURCE_LOCATION(1);
     base::operator=(reinterpret_cast<const U&>(other));
   }
@@ -123,7 +123,7 @@ public:
   template <unsigned M,
             CH_REQUIRE(M <= N)>
   ch_uint(const ch_sbit<M>& other)
-    : ch_uint(logic_buffer(N, idname<ch_uint>())) {
+    : ch_uint(make_logic_buffer(N, idname<ch_uint>())) {
     CH_SOURCE_LOCATION(1);
     base::operator=(other);
   }
@@ -131,7 +131,7 @@ public:
   template <unsigned M,
             CH_REQUIRE(M <= N)>
   ch_uint(const ch_sint<M>& other)
-    : ch_uint(logic_buffer(N, idname<ch_uint>())) {
+    : ch_uint(make_logic_buffer(N, idname<ch_uint>())) {
     CH_SOURCE_LOCATION(1);
     base::operator=(other);
   }
@@ -139,7 +139,7 @@ public:
   template <unsigned M,
             CH_REQUIRE(M <= N)>
   ch_uint(const ch_suint<M>& other)
-    : ch_uint(logic_buffer(N, idname<ch_uint>())) {
+    : ch_uint(make_logic_buffer(N, idname<ch_uint>())) {
     CH_SOURCE_LOCATION(1);
     base::operator=(other);
   }
@@ -147,7 +147,7 @@ public:
   template <typename U,
             CH_REQUIRE(ch_width_v<U> <= N)>
   explicit ch_uint(const ch_bit_base<U>& other)
-    : ch_uint(logic_buffer(N, idname<ch_uint>())) {
+    : ch_uint(make_logic_buffer(N, idname<ch_uint>())) {
     CH_SOURCE_LOCATION(1);
     base::operator=(reinterpret_cast<const U&>(other));
   }
@@ -155,7 +155,7 @@ public:
   template <unsigned M,
             CH_REQUIRE(M <= N)>
   ch_uint(const ch_bit<M>& other)
-    : ch_uint(logic_buffer(N, idname<ch_uint>())) {
+    : ch_uint(make_logic_buffer(N, idname<ch_uint>())) {
     CH_SOURCE_LOCATION(1);
     base::operator=(other);
   }
@@ -163,7 +163,7 @@ public:
   template <unsigned M,
             CH_REQUIRE(M < N)>
   ch_uint(const ch_int<M>& other)
-    : ch_uint(logic_buffer(N, idname<ch_uint>())) {
+    : ch_uint(make_logic_buffer(N, idname<ch_uint>())) {
     CH_SOURCE_LOCATION(1);
     base::operator=(other);
   }
@@ -171,13 +171,13 @@ public:
   template <unsigned M,
             CH_REQUIRE(M < N)>
   ch_uint(const ch_uint<M>& other)
-    : ch_uint(logic_buffer(N, idname<ch_uint>())) {
+    : ch_uint(make_logic_buffer(N, idname<ch_uint>())) {
     CH_SOURCE_LOCATION(1);
     base::operator=(other);
   }
 
   ch_uint(const ch_uint& other)
-    : ch_uint(logic_buffer(N, idname<ch_uint>())) {
+    : ch_uint(make_logic_buffer(N, idname<ch_uint>())) {
     CH_SOURCE_LOCATION(1);
     this->operator=(other);
   }

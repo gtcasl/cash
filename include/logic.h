@@ -50,20 +50,6 @@ inline constexpr bool is_logic_op_constructible_v =
 class logic_buffer : public lnode {
 public:
 
-  explicit logic_buffer(lnodeimpl* impl) : lnode(impl) {}
-
-  explicit logic_buffer(const sdata_type& value) : lnode(value) {}
-
-  logic_buffer(uint32_t size,
-               const std::string& name,
-               const sloc_getter& slg = sloc_getter());
-
-  logic_buffer(uint32_t size,
-               const logic_buffer& src,
-               uint32_t src_offset,
-               const std::string& name,
-               const sloc_getter& slg = sloc_getter());
-
   const logic_buffer& source() const;
 
   logic_buffer& source();
@@ -79,8 +65,29 @@ public:
 
 protected:
 
+  logic_buffer(lnodeimpl* impl) : lnode(impl) {}
+
+  logic_buffer(const sdata_type& value) : lnode(value) {}
+
+  logic_buffer(uint32_t size,
+               const std::string& name,
+               const sloc_getter& slg = sloc_getter());
+
+  logic_buffer(uint32_t size,
+               const logic_buffer& src,
+               uint32_t src_offset,
+               const std::string& name,
+               const sloc_getter& slg = sloc_getter());
+
   void ensure_proxy();
+
+  template <typename... Args> friend auto make_logic_buffer(Args&&... args);
 };
+
+template <typename... Args>
+auto make_logic_buffer(Args&&... args) {
+  return logic_buffer(std::forward<Args>(args)...);
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -101,7 +108,7 @@ public:
   template <typename T>
   static auto move(T&& obj) {
     assert(obj.__buffer().size() == ch_width_v<T>);
-    return logic_buffer(std::move(obj.__buffer()));
+    return make_logic_buffer(std::move(obj.__buffer()));
   }
 
   template <typename U>
@@ -138,7 +145,7 @@ public:
   static auto clone(const T& obj) {
     assert(obj.__buffer().size() == ch_width_v<T>);
     auto data = obj.__buffer().clone();
-    return T(logic_buffer(data));
+    return T(make_logic_buffer(data));
   }
 
   template <typename R, typename T>
@@ -146,7 +153,7 @@ public:
     static_assert(ch_width_v<R> <= ch_width_v<T>, "invalid size");
     assert(start + ch_width_v<R> <= ch_width_v<T>);
     assert(obj.__buffer().size() == ch_width_v<T>);
-    logic_buffer buffer(ch_width_v<R>, "slice");
+    auto buffer = make_logic_buffer(ch_width_v<R>, "slice");
     buffer.write(0, obj.__buffer(), start, ch_width_v<R>);
     return std::add_const_t<R>(buffer);
   }
@@ -157,7 +164,7 @@ public:
     assert(start + ch_width_v<R> <= ch_width_v<T>);
     assert(obj.__buffer().size() == ch_width_v<T>);
     auto data = obj.__buffer().sliceref(ch_width_v<R>, start);
-    return R(logic_buffer(data));
+    return R(make_logic_buffer(data));
   }
 
   template <typename R, typename T>
@@ -347,12 +354,12 @@ auto logic_cast(const T& obj) {
     return obj.template as<ch_size_cast_t<R, ch_width_v<T>>>();
   } else
   if constexpr (is_system_type_v<T>) {
-    return ch_size_cast_t<R, ch_width_v<T>>(logic_buffer(get_snode(obj)));
+    return ch_size_cast_t<R, ch_width_v<T>>(make_logic_buffer(get_snode(obj)));
   } else
   if constexpr (std::is_integral_v<T>) {
     static const auto N = std::min(ch_width_v<T>, ch_width_v<R>);
     ch_size_cast_t<ch_system_t<T>, N> tmp(obj);
-    return ch_size_cast_t<R, N>(logic_buffer(get_snode(tmp)));
+    return ch_size_cast_t<R, N>(make_logic_buffer(get_snode(tmp)));
   } else {
     return R(obj);
   }
@@ -360,7 +367,7 @@ auto logic_cast(const T& obj) {
 
 template <typename T>
 auto make_logic_type(const lnode& node) {
-  return std::add_const_t<T>(logic_buffer(node.impl()));
+  return std::add_const_t<T>(make_logic_buffer(node.impl()));
 }
 
 template <ch_op op, typename A>

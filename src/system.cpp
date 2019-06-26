@@ -2,27 +2,27 @@
 
 using namespace ch::internal;
 
-system_buffer::system_buffer(const sdata_type& data)
+system_buffer_impl::system_buffer_impl(const sdata_type& data)
   : value_(data)
   , offset_(0)
   , size_(data.size())
 {}
 
-system_buffer::system_buffer(sdata_type&& data)
+system_buffer_impl::system_buffer_impl(sdata_type&& data)
   : value_(std::move(data))
   , offset_(0)
   , size_(value_.size())
 {}
 
-system_buffer::system_buffer(uint32_t size, const std::string& name)
+system_buffer_impl::system_buffer_impl(uint32_t size, const std::string& name)
   : value_(size)
   , offset_(0)
   , size_(size)
   , name_(name)
 {}
 
-system_buffer::system_buffer(uint32_t size,
-                             const system_buffer_ptr& buffer,
+system_buffer_impl::system_buffer_impl(uint32_t size,
+                             const system_buffer& buffer,
                              uint32_t offset,
                              const std::string& name)
   : source_(buffer)
@@ -32,7 +32,7 @@ system_buffer::system_buffer(uint32_t size,
   assert(offset_ + size_ <= buffer->size());
 }
 
-system_buffer::system_buffer(const system_buffer& other)
+system_buffer_impl::system_buffer_impl(const system_buffer_impl& other)
   : source_(other.source_)
   , offset_(other.offset_)
   , size_(other.size_) {  
@@ -41,19 +41,19 @@ system_buffer::system_buffer(const system_buffer& other)
   }
 }
 
-system_buffer::system_buffer(system_buffer&& other)
+system_buffer_impl::system_buffer_impl(system_buffer_impl&& other)
   : source_(std::move(other.source_))
   , value_(std::move(other.value_))
   , offset_(std::move(other.offset_))
   , size_(std::move(other.size_))
 {}
 
-system_buffer& system_buffer::operator=(const system_buffer& other) {
+system_buffer_impl& system_buffer_impl::operator=(const system_buffer_impl& other) {
   this->copy(0, other, 0, size_);
   return *this;
 }
 
-system_buffer& system_buffer::operator=(system_buffer&& other) {
+system_buffer_impl& system_buffer_impl::operator=(system_buffer_impl&& other) {
   // disable move for indirect nodes
   if (source_ || value_.size() != size_) {
     return this->operator=(other);
@@ -65,7 +65,7 @@ system_buffer& system_buffer::operator=(system_buffer&& other) {
   return *this;
 }
 
-const sdata_type& system_buffer::data() const {
+const sdata_type& system_buffer_impl::data() const {
   if (source_) {
     if (value_.empty()) {
       value_.resize(size_);
@@ -75,8 +75,8 @@ const sdata_type& system_buffer::data() const {
   return value_;
 }
 
-void system_buffer::copy(uint32_t dst_offset,
-                         const system_buffer& src,
+void system_buffer_impl::copy(uint32_t dst_offset,
+                         const system_buffer_impl& src,
                          uint32_t src_offset,
                          uint32_t length) {
   if (src.source()) {
@@ -86,7 +86,7 @@ void system_buffer::copy(uint32_t dst_offset,
   }
 }
 
-void system_buffer::read(uint32_t src_offset,
+void system_buffer_impl::read(uint32_t src_offset,
                          sdata_type& dst,
                          uint32_t dst_offset,
                          uint32_t length) const {
@@ -97,7 +97,7 @@ void system_buffer::read(uint32_t src_offset,
   }
 }
 
-void system_buffer::write(uint32_t dst_offset,
+void system_buffer_impl::write(uint32_t dst_offset,
                           const sdata_type& src,
                           uint32_t src_offset,
                           uint32_t length) {
@@ -108,7 +108,7 @@ void system_buffer::write(uint32_t dst_offset,
   }
 }
 
-void system_buffer::read(uint32_t src_offset,
+void system_buffer_impl::read(uint32_t src_offset,
                          void* out,
                          uint32_t byte_alignment,
                          uint32_t dst_offset,
@@ -120,7 +120,7 @@ void system_buffer::read(uint32_t src_offset,
   }
 }
 
-void system_buffer::write(uint32_t dst_offset,
+void system_buffer_impl::write(uint32_t dst_offset,
                           const void* in,
                           uint32_t byte_alignment,
                           uint32_t src_offset,
@@ -132,7 +132,7 @@ void system_buffer::write(uint32_t dst_offset,
   }
 }
 
-std::string system_buffer::to_verilog() const {
+std::string system_buffer_impl::to_verilog() const {
   if (source_) {
     return source_->to_verilog() + stringf("[%d:%d]", (offset_ + size_ - 1), offset_);
   } else {
