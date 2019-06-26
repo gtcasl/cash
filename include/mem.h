@@ -87,13 +87,13 @@ public:
   template <typename U, std::size_t M>
   explicit ch_rom(const std::array<U, M>& init_data)
     : mem_(ch_width_v<T>, N, loadInitData(init_data, data_width, N), ForceLogicRAM, idname<T>()) {
-    static_assert(is_bitvector_array_type_v<U>, "invalid type");
+    static_assert(std::is_integral_v<U>, "invalid type");
   }
 
   template <typename U>
   explicit ch_rom(const std::vector<U>& init_data)
     : mem_(ch_width_v<T>, N, loadInitData(init_data, data_width, N), ForceLogicRAM, idname<T>()) {
-    static_assert(is_bitvector_array_type_v<U>, "invalid type");
+    static_assert(std::is_integral_v<U>, "invalid type");
   }
 
   template <typename U,
@@ -135,13 +135,13 @@ public:
   template <typename U, std::size_t M>
   explicit ch_mem(const std::array<U, M>& init_data)
     : mem_(ch_width_v<T>, N, loadInitData(init_data, data_width, N), false, idname<T>()) {
-    static_assert(is_bitvector_array_type_v<U>, "invalid type");
+    static_assert(std::is_integral_v<U>, "invalid type");
   }
 
   template <typename U>
   explicit ch_mem(const std::vector<U>& init_data)
     : mem_(ch_width_v<T>, N, loadInitData(init_data, data_width, N), false, idname<T>()) {
-    static_assert(is_bitvector_array_type_v<U>, "invalid type");
+    static_assert(std::is_integral_v<U>, "invalid type");
   }
 
   template <typename U,

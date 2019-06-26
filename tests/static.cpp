@@ -5,6 +5,7 @@ using namespace ch::system;
 using namespace ch::literals;
 
 #pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-variable"
 #pragma GCC diagnostic ignored "-Wunused-but-set-variable"
 
 __union (u4_t, (

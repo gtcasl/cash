@@ -38,6 +38,8 @@ auto ch_slice(T&& obj, size_t start = 0) {
   static_assert(ch_width_v<R> <= ch_width_v<T>, "invalid size");
   assert(start + ch_width_v<R> <= ch_width_v<T>);
   if constexpr (ch_width_v<T> == ch_width_v<R>) {
+    CH_DBGCHECK(0 == start, "invalid offset");
+    CH_UNUSED(start);
     return obj.template as<R>();
   } else
   if constexpr (is_logic_type_v<T>) {
@@ -54,6 +56,8 @@ auto ch_sliceref(T&& obj, size_t start = 0) {
   static_assert(ch_width_v<R> <= ch_width_v<T>, "invalid size");
   assert(start + ch_width_v<R> <= ch_width_v<T>);
   if constexpr (ch_width_v<T> == ch_width_v<R>) {
+    CH_DBGCHECK(0 == start, "invalid offset");
+    CH_UNUSED(start);
     return obj.template as<R>();
   } else
   if constexpr (is_logic_type_v<T>) {
@@ -84,6 +88,7 @@ auto ch_slice(T&& obj, size_t start = 0) {
   if constexpr (ch_width_v<T> == N || !is_resizable_v<T>) {
     static_assert(ch_width_v<T> == N, "invalid size");
     CH_DBGCHECK(0 == start, "invalid offset");
+    CH_UNUSED(start);
     return std::move(obj);
   } else {
     return ch_slice<ch_size_cast_t<T, N>>(std::forward<T>(obj), start);
@@ -97,6 +102,7 @@ auto ch_aslice(T&& obj, size_t start = 0) {
   if constexpr (ch_width_v<T> == N || !is_resizable_v<T>) {
     static_assert(ch_width_v<T> == N, "invalid size");
     CH_DBGCHECK(0 == start, "invalid offset");
+    CH_UNUSED(start);
     return std::move(obj);
   } else {
     return ch_aslice<ch_size_cast_t<T, N>>(std::forward<T>(obj), start);
@@ -110,6 +116,7 @@ auto ch_sliceref(T&& obj, size_t start = 0) {
   if constexpr (ch_width_v<T> == N || !is_resizable_v<T>) {
     static_assert(ch_width_v<T> == N, "invalid size");
     CH_DBGCHECK(0 == start, "invalid offset");
+    CH_UNUSED(start);
     return std::move(obj);
   } else {
     return ch_sliceref<ch_size_cast_t<T, N>>(std::forward<T>(obj), start);
@@ -123,6 +130,7 @@ auto ch_asliceref(T&& obj, size_t start = 0) {
   if constexpr (ch_width_v<T> == N || !is_resizable_v<T>) {
     static_assert(ch_width_v<T> == N, "invalid size");
     CH_DBGCHECK(0 == start, "invalid offset");
+    CH_UNUSED(start);
     return std::move(obj);
   } else {
     return ch_asliceref<ch_size_cast_t<T, N>>(std::forward<T>(obj), start);

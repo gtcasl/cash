@@ -160,16 +160,38 @@ TEST_CASE("misc", "[misc]") {
 
    SECTION("bitvector", "[bitvector]") {
      TESTX([]()->bool {
-       sdata_type x(32);
-       x = "7_h";
+       sdata_type x(12, 0x707);
        auto y = static_cast<int32_t>(x);
-       return (0x7 == y);
+       return (0x707 == y);
      });
      TESTX([]()->bool {
-       sdata_type x(32);
-       x = std::array<uint16_t, 2>{0x0, 0x7};
+       sdata_type x(12, "707_h");
        auto y = static_cast<int32_t>(x);
-       return (0x7 == y);
+       return (0x707 == y);
+     });
+     TESTX([]()->bool {
+       std::vector<uint16_t> tmp({0x707});
+       sdata_type x(12, tmp);
+       auto y = static_cast<int32_t>(x);
+       return (0x707 == y);
+     });
+     TESTX([]()->bool {
+       std::vector<uint8_t> tmp({0x7, 0x7});
+       sdata_type x(12, tmp);
+       auto y = static_cast<int32_t>(x);
+       return (0x707 == y);
+     });
+     TESTX([]()->bool {
+       std::array<uint16_t, 1> tmp{0x707};
+       sdata_type x(12, tmp);
+       auto y = static_cast<int32_t>(x);
+       return (0x707 == y);
+     });
+     TESTX([]()->bool {
+       std::array<uint8_t, 2> tmp{0x7, 0x7};
+       sdata_type x(12, tmp);
+       auto y = static_cast<int32_t>(x);
+       return (0x707 == y);
      });
    }
 

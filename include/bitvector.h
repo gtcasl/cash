@@ -5,19 +5,6 @@
 namespace ch {
 namespace internal {
 
-template <typename T> struct is_bitvector_array_type_impl : std::false_type {};
-template <> struct is_bitvector_array_type_impl<int8_t> : std::true_type {};
-template <> struct is_bitvector_array_type_impl<uint8_t> : std::true_type {};
-template <> struct is_bitvector_array_type_impl<int16_t> : std::true_type {};
-template <> struct is_bitvector_array_type_impl<uint16_t> : std::true_type {};
-template <> struct is_bitvector_array_type_impl<int32_t> : std::true_type {};
-template <> struct is_bitvector_array_type_impl<uint32_t> : std::true_type {};
-template <> struct is_bitvector_array_type_impl<int64_t> : std::true_type {};
-template <> struct is_bitvector_array_type_impl<uint64_t> : std::true_type {};
-
-template <typename T>
-inline constexpr bool is_bitvector_array_type_v = is_bitvector_array_type_impl<std::decay_t<T>>::value;
-
 template <typename T> struct is_bitvector_extended_type_impl : std::false_type {};
 
 template <typename T, std::size_t N>
@@ -459,14 +446,14 @@ public:
   template <typename U,
             CH_REQUIRE(std::is_integral_v<U> && std::is_signed_v<U>)>
   bitvector& operator=(U value) {
-    bv_assign<U>(words_, size_, value);
+    bv_assign(words_, size_, value);
     return *this;
   }
 
   template <typename U,
             CH_REQUIRE(std::is_integral_v<U> && std::is_unsigned_v<U>)>
   bitvector& operator=(U value) {
-    bv_assign<U>(words_, size_, value);
+    bv_assign(words_, size_, value);
     return *this;
   }
 
@@ -477,25 +464,13 @@ public:
 
   template <typename U, std::size_t N>
   bitvector& operator=(const std::array<U, N>& value) {
-    static_assert(is_bitvector_array_type_v<U>, "invalid array type");
-    for (std::size_t i = 0; i < N; ++i) {
-      this->write(i * bitwidth_v<U>, value.data(), sizeof(U), (N - 1 - i) * bitwidth_v<U>, bitwidth_v<U>);
-    }
-    auto src_num_words = ceildiv<uint32_t>(N * bitwidth_v<U>, bitwidth_v<word_t>);
-    auto num_words = this->num_words();
-    std::fill_n(words_ + src_num_words, num_words - src_num_words, 0);
+    bv_assign(words_, size_, value);
     return *this;
   }
 
   template <typename U>
   bitvector& operator=(const std::vector<U>& value) {
-    static_assert(is_bitvector_array_type_v<U>, "invalid array type");
-    for (std::size_t i = 0, n = value.size(); i < n; ++i) {
-      this->write(i * bitwidth_v<U>, value.data(), sizeof(U), (n - 1 - i) * bitwidth_v<U>, bitwidth_v<U>);
-    }
-    auto src_num_words = ceildiv<uint32_t>(value.size() * bitwidth_v<U>, bitwidth_v<word_t>);
-    auto num_words = this->num_words();
-    std::fill_n(words_ + src_num_words, num_words - src_num_words, 0);
+    bv_assign(words_, size_, value);
     return *this;
   }
 

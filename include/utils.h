@@ -900,8 +900,8 @@ auto sign_ext(T value, unsigned width) {
       std::abort(); \
     } while (false)
 
-  #define CH_DBGCHECK(pred, ...) CH_UNUSED(pred, __VA_ARGS__)
-  #define CH_DBG(level, ...) CH_UNUSED(level, __VA_ARGS__)
+  #define CH_DBGCHECK(pred, ...) CH_UNUSED(pred)
+  #define CH_DBG(level, ...)
 #else
   #define CH_ABORT(...) \
     do { \
