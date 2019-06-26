@@ -15,6 +15,7 @@
 #include "select.h"
 #include "if.h"
 #include "switch.h"
+#include "apifunc.h"
 #include "module.h"
 #include "device.h"
 #include "simulator.h"

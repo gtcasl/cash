@@ -111,18 +111,6 @@ auto ch_sel(const P& pred, const U& _true, const V& _false) {
   return ch_sel<ch_logic_t<deduce_first_type_t<U, V>>, U, V, P>(pred, _true, _false);
 }
 
-template <typename U, typename V>
-auto ch_min(const U& lhs, const V& rhs) {
-  CH_SOURCE_LOCATION(1);
-  return ch_sel(lhs < rhs, lhs, rhs);
-}
-
-template <typename U, typename V>
-auto ch_max(const U& lhs, const V& rhs) {
-  CH_SOURCE_LOCATION(1);
-  return ch_sel(lhs > rhs, lhs, rhs);
-}
-
 template <typename R, typename V, typename K, typename P>
 auto ch_case(const K& key, const P& pred, const V& value) {
   static_assert(std::is_constructible_v<R, V>, "invalid type");
