@@ -505,7 +505,7 @@ int main() {
     assert(b == 0xc_h);
   }*/
 
-  {
+  /*{
     static const int N = 2;
     ch_device<QueueWrapper<ch_bit4, N>> queue;
     RetCheck ret;
@@ -594,7 +594,7 @@ int main() {
     ret &= !!queue.io.enq.ready; // !full
     ret &= 0 == queue.io.size;   // 0
     assert(!!ret);
-  }
+  }*/
 
   return 0;
 }

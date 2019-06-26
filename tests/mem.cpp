@@ -96,7 +96,7 @@ TEST_CASE("memory", "[memory]") {
            (7,  0xC_h)
            (9,  0xC_h)
                (q);
-      ch_println("t={0}, a={1}, q={2}, e={3}", ch_now(), a, q, e);
+      //ch_println("t={0}, a={1}, q={2}, e={3}", ch_now(), a, q, e);
       return (q == e);
     }, 4);
     TEST([]()->ch_bool {

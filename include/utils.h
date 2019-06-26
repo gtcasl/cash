@@ -880,6 +880,8 @@ auto sign_ext(T value, unsigned width) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+#define CH_UNUSED(...) ch::internal::unused(__VA_ARGS__)
+
 #define CH_CHECK(pred, ...) \
   do { \
     if (!(pred)) { \
@@ -920,7 +922,5 @@ auto sign_ext(T value, unsigned width) {
   struct type_name##_impl<T, std::enable_if_t<(predicate)>> : std::true_type {}; \
   template <typename T> \
   inline constexpr bool type_name##_v = type_name##_impl<std::decay_t<T>>::value
-
-#define CH_UNUSED(...) ch::internal::unused(__VA_ARGS__)
 
 #define CH_TODO() CH_ABORT("Not yet implemented");

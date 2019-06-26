@@ -161,13 +161,15 @@ TEST_CASE("misc", "[misc]") {
    SECTION("bitvector", "[bitvector]") {
      TESTX([]()->bool {
        sdata_type x(32);
-       x = std::array<uint16_t, 2>{0x0, 0x7};
-       return 0x7 == (int)x;
+       x = "7_h";
+       auto y = static_cast<int32_t>(x);
+       return (0x7 == y);
      });
      TESTX([]()->bool {
        sdata_type x(32);
-       x = "7_h";
-       return 0x7 == (int)x;
+       x = std::array<uint16_t, 2>{0x0, 0x7};
+       auto y = static_cast<int32_t>(x);
+       return (0x7 == y);
      });
    }
 
