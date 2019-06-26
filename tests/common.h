@@ -157,13 +157,13 @@ auto TestFunction(F&& f, const T0& a, const T1& b, const T2& c, const T2& d) {
 
 bool checkVerilog(const std::string& moduleName);
 
-bool TEST(const std::function<ch_bool()> &test, ch_tick cycles = 0);
+bool TEST(const std::function<ch_bool()> &test, ch_tick cycles = 0, CH_SLOC);
 
-bool TEST1(const std::function<ch_bool(const ch_int8&)> &test, ch_tick cycles = 0);
+bool TEST1(const std::function<ch_bool(const ch_int8&)> &test, ch_tick cycles = 0, CH_SLOC);
 
-bool TEST2(const std::function<ch_bool(const ch_int8&, const ch_int8&)> &test, ch_tick cycles = 0);
+bool TEST2(const std::function<ch_bool(const ch_int8&, const ch_int8&)> &test, ch_tick cycles = 0, CH_SLOC);
 
-bool TESTX(const std::function<bool()> &test);
+bool TESTX(const std::function<bool()> &test, CH_SLOC);
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -171,7 +171,7 @@ class RetCheck {
 public:
   RetCheck() : count_(0) {}
 
-  RetCheck& operator&=(bool value);
+  RetCheck& operator&=(const sloc_proxy<bool>& value);
 
   operator bool() const {
     return count_ > 0;

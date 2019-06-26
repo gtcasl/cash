@@ -25,16 +25,16 @@ public:
     : buffer_(buffer)
   {}
 
-  ch_sfloat32(float other)
-    : ch_sfloat32(make_system_buffer(32, ch::internal::idname<ch_sfloat32>())) {
-    this->operator=(other);
-  }
-
   template <typename U,
             CH_REQUIRE(ch_width_v<U> <= 32)>
   explicit ch_sfloat32(const ch_sbit_base<U>& other)
     : ch_sfloat32(make_system_buffer(32, ch::internal::idname<ch_sfloat32>())) {
-    base::operator=((const U&)other);
+    base::operator=(reinterpret_cast<const U&>(other));
+  }
+
+  ch_sfloat32(float other)
+    : ch_sfloat32(make_system_buffer(32, ch::internal::idname<ch_sfloat32>())) {
+    this->operator=(other);
   }
 
   ch_sfloat32(const ch_sfloat32& other)
@@ -118,7 +118,7 @@ protected:
 
   system_buffer_ptr buffer_;
 
-  friend class ch::internal::system_accessor;
+  friend class ch::extension::system_accessor;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -132,24 +132,12 @@ public:
     : buffer_(buffer)
   {}
 
-  ch_float32(float other)
-    : ch_float32(logic_buffer(32, ch::internal::idname<ch_float32>())) {
-    __source_location(1);
-    this->operator=(other);
-  }
-
   template <typename U,
             CH_REQUIRE(ch_width_v<U> <= 32)>
   explicit ch_float32(const ch_sbit_base<U>& other)
     : ch_float32(logic_buffer(32, ch::internal::idname<ch_float32>())) {
     __source_location(1);
-    base::operator=((const U&)other);
-  }
-
-  ch_float32(const ch_sfloat32& other)
-    : ch_float32(logic_buffer(32, ch::internal::idname<ch_float32>())) {
-    __source_location(1);
-    base::operator=(other);
+    base::operator=(reinterpret_cast<const U&>(other));
   }
 
   template <typename U,
@@ -157,7 +145,19 @@ public:
   explicit ch_float32(const ch_bit_base<U>& other)
     : ch_float32(logic_buffer(32, ch::internal::idname<ch_float32>())) {
     __source_location(1);
-    base::operator=((const U&)other);
+    base::operator=(reinterpret_cast<const U&>(other));
+  }
+
+  ch_float32(float other)
+    : ch_float32(logic_buffer(32, ch::internal::idname<ch_float32>())) {
+    __source_location(1);
+    this->operator=(other);
+  }
+
+  ch_float32(const ch_sfloat32& other)
+    : ch_float32(logic_buffer(32, ch::internal::idname<ch_float32>())) {
+    __source_location(1);
+    base::operator=(other);
   }
 
   ch_float32(const ch_float32& other)
@@ -212,11 +212,12 @@ protected:
 
   logic_buffer buffer_;
 
-  friend class ch::internal::logic_accessor;
+  friend class ch::extension::logic_accessor;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
+namespace detail {
 template <typename T>
 class sc_pipereg {
 public:
@@ -239,6 +240,7 @@ private:
   std::vector<T> buffer_;
   unsigned index_;
 };
+}
 
 class sfAdd {
 public:
@@ -270,7 +272,7 @@ public:
   }
 
 private:
-  sc_pipereg<float> pipe_;
+  detail::sc_pipereg<float> pipe_;
 };
 
 class sfSub {
@@ -303,7 +305,7 @@ public:
   }
 
 private:
-  sc_pipereg<float> pipe_;
+  detail::sc_pipereg<float> pipe_;
 };
 
 class sfMul {
@@ -340,7 +342,7 @@ public:
   }
 
 private:
-  sc_pipereg<float> pipe_;
+  detail::sc_pipereg<float> pipe_;
 };
 
 class sfDiv {
@@ -377,7 +379,7 @@ public:
   }
 
 private:
-  sc_pipereg<float> pipe_;
+  detail::sc_pipereg<float> pipe_;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

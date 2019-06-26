@@ -10,7 +10,6 @@ class ch_sbit : public ch_sbit_base<ch_sbit<N>> {
 public:
   static_assert(N != 0, "invalid size");
   using traits = system_traits<N, false, ch_sbit, ch_bit<N>>;
-  template <unsigned M> using size_cast = ch_sbit<M>;
   using base = ch_sbit_base<ch_sbit<N>>;
   using base::operator=;
 
@@ -38,7 +37,7 @@ public:
             CH_REQUIRE(ch_width_v<U> <= N)>
   explicit ch_sbit(const ch_sbit_base<U>& other)
     : ch_sbit(make_system_buffer(N, idname<ch_sbit>())) {
-    base::operator=((const U&)other);
+    base::operator=(reinterpret_cast<const U&>(other));
   }
 
   template <unsigned M,
@@ -88,7 +87,6 @@ protected:
   system_buffer_ptr buffer_;
 
   friend class system_accessor;
-  template <unsigned M> friend class ch_sbit;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -98,7 +96,6 @@ class ch_bit : public ch_bit_base<ch_bit<N>> {
 public:
   static_assert(N != 0, "invalid size");
   using traits = logic_traits<N, false, ch_bit, ch_sbit<N>>;
-  template <unsigned M> using size_cast = ch_bit<M>;
   using base = ch_bit_base<ch_bit<N>>;
   using base::operator=;
 
@@ -121,7 +118,7 @@ public:
   explicit ch_bit(const ch_sbit_base<U>& other)
     : ch_bit(logic_buffer(N, idname<ch_bit>())) {
     CH_SOURCE_LOCATION(1);
-    base::operator=((const U&)other);
+    base::operator=(reinterpret_cast<const U&>(other));
   }
 
   template <unsigned M,
@@ -153,7 +150,7 @@ public:
   explicit ch_bit(const ch_bit_base<U>& other)
     : ch_bit(logic_buffer(N, idname<ch_bit>())) {
     CH_SOURCE_LOCATION(1);
-    base::operator=((const U&)other);
+    base::operator=(reinterpret_cast<const U&>(other));
   }
 
   template <unsigned M,
@@ -209,7 +206,6 @@ protected:
   logic_buffer buffer_;
 
   friend class logic_accessor;
-  template <unsigned M> friend class ch_bit;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -238,150 +234,101 @@ void ch_write(T& obj,
 
 // slicing functions
 
-template <typename R, typename T>
-auto ch_slice(const ch_sbit_base<T>& obj, size_t start = 0) {
+template <typename R, typename T,
+          CH_REQUIRE(is_data_type_v<T>)>
+auto ch_slice(T&& obj, size_t start = 0) {
+  CH_SOURCE_LOCATION(1);
   static_assert(ch_width_v<R> <= ch_width_v<T>, "invalid size");
   assert(start + ch_width_v<R> <= ch_width_v<T>);
-  return system_accessor::slice<R>((const T&)obj, start);
+  if constexpr (ch_width_v<T> == ch_width_v<R>) {
+    return obj.template as<R>();
+  } else
+  if constexpr (is_logic_type_v<T>) {
+    return logic_accessor::slice<R>(std::forward<T>(obj), start);
+  } else {
+    return system_accessor::slice<R>(std::forward<T>(obj), start);
+  }
 }
 
-template <typename R, typename T>
-auto ch_aslice(const ch_sbit_base<T>& obj, size_t start = 0) {
+template <typename R, typename T,
+          CH_REQUIRE(is_data_type_v<T>)>
+auto ch_sliceref(T&& obj, size_t start = 0) {
   CH_SOURCE_LOCATION(1);
-  return ch_slice<R>(obj, start * ch_width_v<R>);
-}
-
-template <typename R, typename T>
-auto ch_sliceref(ch_sbit_base<T>& obj, size_t start = 0) {
   static_assert(ch_width_v<R> <= ch_width_v<T>, "invalid size");
   assert(start + ch_width_v<R> <= ch_width_v<T>);
-  return system_accessor::sliceref<R>((T&)obj, start);
-}
-
-template <typename R, typename T>
-auto ch_asliceref(ch_sbit_base<T>& obj, size_t start = 0) {
-  return ch_sliceref<R>(obj, start * ch_width_v<R>);
-}
-
-template <unsigned N, typename T>
-auto ch_slice(const ch_sbit_base<T>& obj, size_t start = 0) {
-  if constexpr (ch_width_v<T> == N || !is_resizable_v<T>) {
-    static_assert(ch_width_v<T> == N, "invalid size");
-    assert(0 == start);
-    return (const T&)obj;
+  if constexpr (ch_width_v<T> == ch_width_v<R>) {
+    return obj.template as<R>();
+  } else
+  if constexpr (is_logic_type_v<T>) {
+    return logic_accessor::sliceref<R>(std::forward<T>(obj), start);
   } else {
-    return ch_slice<ch_size_cast_t<T, N>>(obj, start);
+    return system_accessor::sliceref<R>(std::forward<T>(obj), start);
   }
 }
 
-template <unsigned N, typename T>
-auto ch_aslice(const ch_sbit_base<T>& obj, size_t start = 0) {
+template <typename R, typename T,
+          CH_REQUIRE(is_data_type_v<T>)>
+auto ch_aslice(T&& obj, size_t start = 0) {
+  CH_SOURCE_LOCATION(1);
+  return ch_slice<R>(std::forward<T>(obj), start * ch_width_v<R>);
+}
+
+template <typename R, typename T,
+          CH_REQUIRE(is_data_type_v<T>)>
+auto ch_asliceref(T&& obj, size_t start = 0) {
+  CH_SOURCE_LOCATION(1);
+  return ch_sliceref<R>(std::forward<T>(obj), start * ch_width_v<R>);
+}
+
+template <unsigned N, typename T,
+          CH_REQUIRE(is_data_type_v<T>)>
+auto ch_slice(T&& obj, size_t start = 0) {
+  CH_SOURCE_LOCATION(1);
   if constexpr (ch_width_v<T> == N || !is_resizable_v<T>) {
     static_assert(ch_width_v<T> == N, "invalid size");
-    assert(0 == start);
-    return (const T&)obj;
+    CH_DBGCHECK(0 == start, "invalid offset");
+    return std::move(obj);
   } else {
-    return ch_aslice<ch_size_cast_t<T, N>>(obj, start);
+    return ch_slice<ch_size_cast_t<T, N>>(std::forward<T>(obj), start);
   }
 }
 
-template <unsigned N, typename T>
-auto ch_sliceref(ch_sbit_base<T>& obj, size_t start = 0) {
+template <unsigned N, typename T,
+          CH_REQUIRE(is_data_type_v<T>)>
+auto ch_aslice(T&& obj, size_t start = 0) {
+  CH_SOURCE_LOCATION(1);
   if constexpr (ch_width_v<T> == N || !is_resizable_v<T>) {
     static_assert(ch_width_v<T> == N, "invalid size");
-    assert(0 == start);
-    return (const T&)obj;
+    CH_DBGCHECK(0 == start, "invalid offset");
+    return std::move(obj);
   } else {
-    return ch_sliceref<ch_size_cast_t<T, N>>(obj, start);
+    return ch_aslice<ch_size_cast_t<T, N>>(std::forward<T>(obj), start);
   }
 }
 
-template <unsigned N, typename T>
-auto ch_asliceref(ch_sbit_base<T>& obj, size_t start = 0) {
+template <unsigned N, typename T,
+          CH_REQUIRE(is_data_type_v<T>)>
+auto ch_sliceref(T&& obj, size_t start = 0) {
+  CH_SOURCE_LOCATION(1);
   if constexpr (ch_width_v<T> == N || !is_resizable_v<T>) {
     static_assert(ch_width_v<T> == N, "invalid size");
-    assert(0 == start);
-    return (const T&)obj;
+    CH_DBGCHECK(0 == start, "invalid offset");
+    return std::move(obj);
   } else {
-    return ch_asliceref<ch_size_cast_t<T, N>>(obj, start);
+    return ch_sliceref<ch_size_cast_t<T, N>>(std::forward<T>(obj), start);
   }
 }
 
-///////////////////////////////////////////////////////////////////////////////
-
-template <typename R, typename T>
-auto ch_slice(const ch_bit_base<T>& obj, size_t start = 0) {
-  static_assert(ch_width_v<R> <= ch_width_v<T>, "invalid size");
-  assert(start + ch_width_v<R> <= ch_width_v<T>);
-  CH_SOURCE_LOCATION(1);            
-  return logic_accessor::slice<R>((const T&)obj, start);
-} 
-
-template <typename R, typename T>
-auto ch_aslice(const ch_bit_base<T>& obj, size_t start = 0) {
-  CH_SOURCE_LOCATION(1);
-  return ch_slice<R>(obj, start * ch_width_v<R>);
-}
-
-template <typename R, typename T>
-auto ch_sliceref(ch_bit_base<T>& obj, size_t start = 0) {
-  static_assert(ch_width_v<R> <= ch_width_v<T>, "invalid size");
-  assert(start + ch_width_v<R> <= ch_width_v<T>);
-  CH_SOURCE_LOCATION(1);
-  return logic_accessor::sliceref<R>((T&)obj, start);
-}
-
-template <typename R, typename T>
-auto ch_asliceref(ch_bit_base<T>& obj, size_t start = 0) {
-  CH_SOURCE_LOCATION(1);
-  return ch_sliceref<R>(obj, start * ch_width_v<R>);
-}
-
-template <unsigned N, typename T>
-auto ch_slice(const ch_bit_base<T>& obj, size_t start = 0) {
+template <unsigned N, typename T,
+          CH_REQUIRE(is_data_type_v<T>)>
+auto ch_asliceref(T&& obj, size_t start = 0) {
   CH_SOURCE_LOCATION(1);
   if constexpr (ch_width_v<T> == N || !is_resizable_v<T>) {
     static_assert(ch_width_v<T> == N, "invalid size");
-    assert(0 == start);
-    return (const T&)obj;
+    CH_DBGCHECK(0 == start, "invalid offset");
+    return std::move(obj);
   } else {
-    return ch_slice<ch_size_cast_t<T, N>>(obj, start);
-  }
-}
-
-template <unsigned N, typename T>
-auto ch_aslice(const ch_bit_base<T>& obj, size_t start = 0) {
-  CH_SOURCE_LOCATION(1);
-  if constexpr (ch_width_v<T> == N || !is_resizable_v<T>) {
-    static_assert(ch_width_v<T> == N, "invalid size");
-    assert(0 == start);
-    return (const T&)obj;
-  } else {
-    return ch_aslice<ch_size_cast_t<T, N>>(obj, start);
-  }
-}
-
-template <unsigned N, typename T>
-auto ch_sliceref(ch_bit_base<T>& obj, size_t start = 0) {
-  CH_SOURCE_LOCATION(1);
-  if constexpr (ch_width_v<T> == N || !is_resizable_v<T>) {
-    static_assert(ch_width_v<T> == N, "invalid size");
-    assert(0 == start);
-    return ((T&)obj).ref();
-  } else {
-    return ch_sliceref<ch_size_cast_t<T, N>>(obj, start);
-  }
-}
-
-template <unsigned N, typename T>
-auto ch_asliceref(ch_bit_base<T>& obj, size_t start = 0) {
-  CH_SOURCE_LOCATION(1);
-  if constexpr (ch_width_v<T> == N || !is_resizable_v<T>) {
-    static_assert(ch_width_v<T> == N, "invalid size");
-    assert(0 == start);
-    return ((T&)obj).ref();
-  } else {
-    return ch_asliceref<ch_size_cast_t<T, N>>(obj, start);
+    return ch_asliceref<ch_size_cast_t<T, N>>(std::forward<T>(obj), start);
   }
 }
 
@@ -390,47 +337,52 @@ auto ch_asliceref(ch_bit_base<T>& obj, size_t start = 0) {
 template <typename T>
 inline auto ch_rotl(const ch_bit_base<T>& lhs, uint32_t rhs) {
   CH_SOURCE_LOCATION(1);
-  return make_logic_type<T>(createRotateNode(get_lnode((const T&)lhs), rhs, false));
+  auto& _lhs = reinterpret_cast<const T&>(lhs);
+  return make_logic_type<T>(createRotateNode(get_lnode(_lhs), rhs, false));
 }
 
 template <typename T>
 inline auto ch_rotr(const ch_bit_base<T>& lhs, uint32_t rhs) {
   CH_SOURCE_LOCATION(1);
-  return make_logic_type<T>(createRotateNode(get_lnode((const T&)lhs), rhs, true));
+  auto& _lhs = reinterpret_cast<const T&>(lhs);
+  return make_logic_type<T>(createRotateNode(get_lnode(_lhs), rhs, true));
 }
 
 // padding function
 
-template <unsigned N, typename T>
-auto ch_pad(const ch_bit_base<T>& obj) {
+template <unsigned N, typename T,
+          CH_REQUIRE(is_data_type_v<T>)>
+auto ch_pad(T&& obj) {
   CH_SOURCE_LOCATION(1);
   if constexpr (0 == N || !is_resizable_v<T>) {
     static_assert(0 == N, "invalid size");
-    return (const T&)obj;
+    return std::move(obj);
   } else {
-    return ch_size_cast_t<T, (ch_width_v<T> + N)>((const T&)obj);
+    return ch_size_cast_t<T, (ch_width_v<T> + N)>(std::forward<T>(obj));
   }
 }
 
 // resize function
 
-template <typename R, typename T>
-auto ch_resize(const ch_bit_base<T>& obj) {
+template <typename R, typename T,
+          CH_REQUIRE(is_data_type_v<T>)>
+auto ch_resize(T&& obj) {
   CH_SOURCE_LOCATION(1);
   if constexpr (ch_width_v<T> <= ch_width_v<R>) {
-    return ch_pad<ch_width_v<R>-ch_width_v<T>>(obj).template as<R>();
+    return ch_pad<ch_width_v<R>-ch_width_v<T>>(std::forward<T>(obj)).template as<R>();
   } else {
-    return ch_slice<R>(obj, 0);
+    return ch_slice<R>(std::forward<T>(obj), 0);
   }
 }
 
-template <unsigned M, typename T>
-auto ch_resize(const ch_bit_base<T>& obj) {
+template <unsigned M, typename T,
+          CH_REQUIRE(is_data_type_v<T>)>
+auto ch_resize(T&& obj) {
   CH_SOURCE_LOCATION(1);
   if constexpr (ch_width_v<T> <= M) {
-    return ch_pad<M-ch_width_v<T>>(obj);
+    return ch_pad<M-ch_width_v<T>>(std::forward<T>(obj));
   } else {
-    return ch_slice<M>(obj, 0);
+    return ch_slice<M>(std::forward<T>(obj), 0);
   }
 }
 
@@ -440,7 +392,7 @@ template <unsigned M, typename T>
 auto ch_shuffle(const ch_bit_base<T>& obj, const std::array<unsigned, M>& indices) {
   static_assert(0 == (ch_width_v<T> % M), "invalid indices size");
   CH_SOURCE_LOCATION(1);
-  auto node = createShuffleNode(get_lnode((const T&)obj),
+  auto node = createShuffleNode(get_lnode(reinterpret_cast<const T&>(obj)),
                                 std::vector<unsigned>(indices.begin(), indices.end()));
   return make_logic_type<T>(node);
 }

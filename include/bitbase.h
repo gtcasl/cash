@@ -45,10 +45,10 @@ public:
     auto self = reinterpret_cast<T*>(this);
     if constexpr (ch_width_v<U> < ch_width_v<T>) {
       sdata_type tmp(ch_width_v<T>);
-      bv_pad<is_signed_v<U>>(tmp.words(), ch_width_v<T>, system_accessor::data((const U&)other).words(), ch_width_v<U>);
+      bv_pad<is_signed_v<U>>(tmp.words(), ch_width_v<T>, system_accessor::data(reinterpret_cast<const U&>(other)).words(), ch_width_v<U>);
       system_accessor::assign(*self, tmp);
     } else {
-      system_accessor::assign(*self, (const U&)other);
+      system_accessor::assign(*self, reinterpret_cast<const U&>(other));
     }
     return *self;
   }
@@ -129,7 +129,7 @@ protected:
   template <typename U>
   auto do_andl(const U& other) const {
     auto self = reinterpret_cast<const T*>(this);
-    return make_system_op<ch_op::andl, false>(*self, other);
+    return make_system_op<ch_op::andl>(*self, other);
   }
 
   template <typename U>
@@ -196,29 +196,29 @@ protected:
     return out << system_accessor::data(*self);
   }
 
-  template <typename U> friend class ch_sbit_base;
+  friend class system_accessor;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
-CH_LOGIC_FUNCTION2B_DECL(ch_eq)
-CH_LOGIC_FUNCTION2B_DECL(ch_ne)
+CH_LOGIC_FUNCTION2B_DECL(ch_bit_base, ch_eq)
+CH_LOGIC_FUNCTION2B_DECL(ch_bit_base, ch_ne)
 
-CH_LOGIC_FUNCTION1B_DECL(ch_not)
-CH_LOGIC_FUNCTION2B_DECL(ch_andl)
-CH_LOGIC_FUNCTION2B_DECL(ch_orl)
+CH_LOGIC_FUNCTION1B_DECL(ch_bit_base, ch_not)
+CH_LOGIC_FUNCTION2B_DECL(ch_bit_base, ch_andl)
+CH_LOGIC_FUNCTION2B_DECL(ch_bit_base, ch_orl)
 
-CH_LOGIC_FUNCTION1X_DECL(ch_inv)
-CH_LOGIC_FUNCTION2X_DECL(ch_and)
-CH_LOGIC_FUNCTION2X_DECL(ch_or)
-CH_LOGIC_FUNCTION2X_DECL(ch_xor)
+CH_LOGIC_FUNCTION1X_DECL(ch_bit_base, ch_inv)
+CH_LOGIC_FUNCTION2X_DECL(ch_bit_base, ch_and)
+CH_LOGIC_FUNCTION2X_DECL(ch_bit_base, ch_or)
+CH_LOGIC_FUNCTION2X_DECL(ch_bit_base, ch_xor)
 
-CH_LOGIC_FUNCTION2B_DECL(ch_andr)
-CH_LOGIC_FUNCTION2B_DECL(ch_orr)
-CH_LOGIC_FUNCTION2B_DECL(ch_xorr)
+CH_LOGIC_FUNCTION2B_DECL(ch_bit_base, ch_andr)
+CH_LOGIC_FUNCTION2B_DECL(ch_bit_base, ch_orr)
+CH_LOGIC_FUNCTION2B_DECL(ch_bit_base, ch_xorr)
 
-CH_LOGIC_FUNCTION2X_DECL(ch_shl)
-CH_LOGIC_FUNCTION2X_DECL(ch_shr)
+CH_LOGIC_FUNCTION2X_DECL(ch_bit_base, ch_shl)
+CH_LOGIC_FUNCTION2X_DECL(ch_bit_base, ch_shr)
 
 template <typename T>
 class ch_bit_base {
@@ -241,10 +241,10 @@ public:
     static_assert(ch_width_v<U> <= ch_width_v<T>, "invalid size");
     auto self = reinterpret_cast<T*>(this);
     if constexpr (ch_width_v<U> < ch_width_v<T>) {
-      ch_sbit<ch_width_v<T>> tmp((const U&)other);
+      ch_sbit<ch_width_v<T>> tmp(reinterpret_cast<const U&>(other));
       logic_accessor::assign(*self, system_accessor::data(tmp));
     } else {
-      logic_accessor::assign(*self, system_accessor::data((const U&)other));
+      logic_accessor::assign(*self, system_accessor::data(reinterpret_cast<const U&>(other)));
     }
     return *self;
   }
@@ -256,10 +256,10 @@ public:
     auto self = reinterpret_cast<T*>(this);
     if constexpr (ch_width_v<U> < ch_width_v<T>) {
       ch_bit<ch_width_v<T>> tmp(logic_buffer(
-          createOpNode(ch_op::pad, ch_width_v<T>, is_signed_v<U>, get_lnode((const U&)other))));
+          createOpNode(ch_op::pad, ch_width_v<T>, is_signed_v<U>, get_lnode(reinterpret_cast<const U&>(other)))));
       logic_accessor::assign(*self, tmp);
     } else {
-      logic_accessor::assign(*self,(const U&)other);
+      logic_accessor::assign(*self,reinterpret_cast<const U&>(other));
     }
     return *self;
   }
@@ -282,39 +282,39 @@ public:
 
   CH_LOGIC_INTERFACE(T)
 
-  CH_LOGIC_OPERATOR2B_IMPL(T, operator==, do_eq)
-  CH_LOGIC_OPERATOR2B_IMPL(T, operator!=, do_ne)
+  CH_LOGIC_OPERATOR2B_IMPL(ch_bit_base, operator==, do_eq)
+  CH_LOGIC_OPERATOR2B_IMPL(ch_bit_base, operator!=, do_ne)
 
-  CH_LOGIC_OPERATOR1B_IMPL(T, operator!, do_not)
-  CH_LOGIC_OPERATOR2B_IMPL(T, operator&&, do_andl)
-  CH_LOGIC_OPERATOR2B_IMPL(T, operator||, do_orl)
+  CH_LOGIC_OPERATOR1B_IMPL(ch_bit_base, operator!, do_not)
+  CH_LOGIC_OPERATOR2B_IMPL(ch_bit_base, operator&&, do_andl)
+  CH_LOGIC_OPERATOR2B_IMPL(ch_bit_base, operator||, do_orl)
 
-  CH_LOGIC_OPERATOR1X_IMPL(T, operator~, do_inv)
-  CH_LOGIC_OPERATOR2X_IMPL(T, operator&, do_and)
-  CH_LOGIC_OPERATOR2X_IMPL(T, operator|, do_or)
-  CH_LOGIC_OPERATOR2X_IMPL(T, operator^, do_xor)
+  CH_LOGIC_OPERATOR1X_IMPL(ch_bit_base, operator~, do_inv)
+  CH_LOGIC_OPERATOR2X_IMPL(ch_bit_base, operator&, do_and)
+  CH_LOGIC_OPERATOR2X_IMPL(ch_bit_base, operator|, do_or)
+  CH_LOGIC_OPERATOR2X_IMPL(ch_bit_base, operator^, do_xor)
 
-  CH_LOGIC_OPERATOR2Y_IMPL(T, operator<<, do_shl)
-  CH_LOGIC_OPERATOR2Y_IMPL(T, operator>>, do_shr)
+  CH_LOGIC_OPERATOR2Y_IMPL(ch_bit_base, operator<<, do_shl)
+  CH_LOGIC_OPERATOR2Y_IMPL(ch_bit_base, operator>>, do_shr)
 
-  CH_LOGIC_FUNCTION2B_IMPL(T, ch_eq, do_eq)
-  CH_LOGIC_FUNCTION2B_IMPL(T, ch_ne, do_ne)
+  CH_LOGIC_FUNCTION2B_IMPL(ch_bit_base, ch_eq, do_eq)
+  CH_LOGIC_FUNCTION2B_IMPL(ch_bit_base, ch_ne, do_ne)
 
-  CH_LOGIC_FUNCTION1B_IMPL(T, ch_not, do_not)
-  CH_LOGIC_FUNCTION2B_IMPL(T, ch_andl, do_andl)
-  CH_LOGIC_FUNCTION2B_IMPL(T, ch_orl, do_orl)
+  CH_LOGIC_FUNCTION1B_IMPL(ch_bit_base, ch_not, do_not)
+  CH_LOGIC_FUNCTION2B_IMPL(ch_bit_base, ch_andl, do_andl)
+  CH_LOGIC_FUNCTION2B_IMPL(ch_bit_base, ch_orl, do_orl)
 
-  CH_LOGIC_FUNCTION1X_IMPL(T, ch_inv, do_inv)
-  CH_LOGIC_FUNCTION2X_IMPL(T, ch_and, do_and)
-  CH_LOGIC_FUNCTION2X_IMPL(T, ch_or, do_or)
-  CH_LOGIC_FUNCTION2X_IMPL(T, ch_xor, do_xor)
+  CH_LOGIC_FUNCTION1X_IMPL(ch_bit_base, ch_inv, do_inv)
+  CH_LOGIC_FUNCTION2X_IMPL(ch_bit_base, ch_and, do_and)
+  CH_LOGIC_FUNCTION2X_IMPL(ch_bit_base, ch_or, do_or)
+  CH_LOGIC_FUNCTION2X_IMPL(ch_bit_base, ch_xor, do_xor)
 
-  CH_LOGIC_FUNCTION2Y_IMPL(T, ch_shl, do_shl)
-  CH_LOGIC_FUNCTION2Y_IMPL(T, ch_shr, do_shr)
+  CH_LOGIC_FUNCTION2Y_IMPL(ch_bit_base, ch_shl, do_shl)
+  CH_LOGIC_FUNCTION2Y_IMPL(ch_bit_base, ch_shr, do_shr)
 
-  CH_LOGIC_FUNCTION1B_IMPL(T, ch_andr, do_andr)
-  CH_LOGIC_FUNCTION1B_IMPL(T, ch_orr, do_orr)
-  CH_LOGIC_FUNCTION1B_IMPL(T, ch_xorr, do_xorr)
+  CH_LOGIC_FUNCTION1B_IMPL(ch_bit_base, ch_andr, do_andr)
+  CH_LOGIC_FUNCTION1B_IMPL(ch_bit_base, ch_orr, do_orr)
+  CH_LOGIC_FUNCTION1B_IMPL(ch_bit_base, ch_xorr, do_xorr)
 
 protected:
 
@@ -400,7 +400,7 @@ protected:
     return make_logic_op<ch_op::xorr>(*self);
   }
 
-  template <typename U> friend class ch_bit_base;
+  friend class logic_accessor;
 };
 
 }

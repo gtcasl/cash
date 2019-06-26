@@ -12,11 +12,9 @@ using namespace extension;
 // |1|<- N-F-1 bits ->|<--- F bits -->|
 // |S|IIIIIIIIIIIIIIII|FFFFFFFFFFFFFFF|
 
-template <unsigned N, unsigned F>
-class ch_fixed;
-
+namespace detail {
 template <typename T>
-inline T ToFixed(double value, unsigned I, unsigned F) {
+inline T to_fixed(double value, unsigned I, unsigned F) {
   assert(I >= 1 && (I + F) <= 8 * sizeof(T));
   auto xOne = T(1) << F;
   auto step = 1.0 / xOne;
@@ -31,6 +29,10 @@ inline T ToFixed(double value, unsigned I, unsigned F) {
   }
   return static_cast<T>(floor(value * xOne + 0.5));
 }
+}
+
+template <unsigned N, unsigned F>
+class ch_fixed;
 
 template <unsigned N, unsigned F>
 class ch_sfixed : public ch_snumber_base<ch_sfixed<N, F>> {
@@ -38,20 +40,14 @@ public:
   static constexpr unsigned Intg = N-F;
   static constexpr unsigned Frac = F;
   static_assert(N >= (Frac+1), "invalid size");
-  using traits = system_traits<N, true, ch_sfixed, ch_fixed<N, Frac>>;
+  using traits = system_traits<N, true, ch_sfixed, ch_fixed<N, F>>;
   using base = ch_snumber_base<ch_sfixed<N, F>>;
+  using base::operator=;
 
   ch_sfixed(const system_buffer_ptr& buffer
             = make_system_buffer(N, ch::internal::idname<ch_sfixed>()))
     : buffer_(buffer)
   {}
-
-  template <typename U,
-            CH_REQUIRE(std::is_integral_v<U>)>
-  ch_sfixed(const U& other)
-    : ch_sfixed(make_system_buffer(N, ch::internal::idname<ch_sfixed>())) {
-    base::operator=(other);
-  }
 
   explicit ch_sfixed(float other)
     : ch_sfixed(make_system_buffer(N, ch::internal::idname<ch_sfixed>())) {
@@ -67,7 +63,14 @@ public:
             CH_REQUIRE(ch_width_v<U> <= N)>
   explicit ch_sfixed(const ch_sbit_base<U>& other)
     : ch_sfixed(make_system_buffer(N, ch::internal::idname<ch_sfixed>())) {
-    base::operator=((const U&)other);
+    base::operator=(reinterpret_cast<const U&>(other));
+  }
+
+  template <typename U,
+            CH_REQUIRE(std::is_integral_v<U>)>
+  ch_sfixed(const U& other)
+    : ch_sfixed(make_system_buffer(N, ch::internal::idname<ch_sfixed>())) {
+    base::operator=(other);
   }
 
   template <unsigned M,
@@ -91,7 +94,7 @@ public:
     base::operator=(other);
   }
 
-  explicit ch_sfixed(const ch_sfixed& other)
+  ch_sfixed(const ch_sfixed& other)
     : ch_sfixed(make_system_buffer(N, ch::internal::idname<ch_sfixed>())) {
     this->operator=(other);
   }
@@ -110,13 +113,13 @@ public:
 
   ch_sfixed& operator=(float other) {
     static_assert(N <= 32, "invalid size");
-    base::operator=(ToFixed<int32_t>(other, Intg, Frac));
+    base::operator=(detail::to_fixed<int32_t>(other, Intg, Frac));
     return *this;
   }
 
   ch_sfixed& operator=(double other) {
     static_assert(N <= 64, "invalid size");
-    base::operator=(ToFixed<int64_t>(other, Intg, Frac));
+    base::operator=(detail::to_fixed<int64_t>(other, Intg, Frac));
     return *this;
   }
 
@@ -156,8 +159,7 @@ protected:
 
   system_buffer_ptr buffer_;
 
-  friend class ch::internal::system_accessor;
-  template <unsigned M, unsigned E> friend class ch_sfixed;
+  friend class ch::extension::system_accessor;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -168,21 +170,14 @@ public:
   static constexpr unsigned Intg = N-F;
   static constexpr unsigned Frac = F;
   static_assert(N >= (Frac+1), "invalid size");
-  using traits = logic_traits<N, true, ch_fixed, ch_sfixed<N, Frac>>;
+  using traits = logic_traits<N, true, ch_fixed, ch_sfixed<N, F>>;
   using base = ch_number_base<ch_fixed<N, F>>;
+  using base::operator=;
 
   ch_fixed(const logic_buffer& buffer =
       logic_buffer(N, ch::internal::idname<ch_fixed>()))
     : buffer_(buffer)
   {}
-
-  template <typename U,
-            CH_REQUIRE(std::is_integral_v<U>)>
-  ch_fixed(const U& other)
-    : ch_fixed(logic_buffer(N, ch::internal::idname<ch_fixed>())) {
-    __source_location(1);
-    base::operator=(other);
-  }
 
   explicit ch_fixed(float other)
     : ch_fixed(logic_buffer(N, ch::internal::idname<ch_fixed>())) {
@@ -201,7 +196,23 @@ public:
   explicit ch_fixed(const ch_sbit_base<U>& other)
     : ch_fixed(logic_buffer(N, ch::internal::idname<ch_fixed>())) {
     __source_location(1);
-    base::operator=((const U&)other);
+    base::operator=(reinterpret_cast<const U&>(other));
+  }
+
+  template <typename U,
+            CH_REQUIRE(ch_width_v<U> <= N)>
+  explicit ch_fixed(const ch_bit_base<U>& other)
+    : ch_fixed(logic_buffer(N, ch::internal::idname<ch_fixed>())) {
+    __source_location(1);
+    base::operator=(reinterpret_cast<const U&>(other));
+  }
+
+  template <typename U,
+            CH_REQUIRE(std::is_integral_v<U>)>
+  ch_fixed(const U& other)
+    : ch_fixed(logic_buffer(N, ch::internal::idname<ch_fixed>())) {
+    __source_location(1);
+    base::operator=(other);
   }
 
   template <unsigned M,
@@ -228,14 +239,6 @@ public:
     base::operator=(other);
   }
 
-  template <typename U,
-            CH_REQUIRE(ch_width_v<U> <= N)>
-  explicit ch_fixed(const ch_bit_base<U>& other)
-    : ch_fixed(logic_buffer(N, ch::internal::idname<ch_fixed>())) {
-    __source_location(1);
-    base::operator=((const U&)other);
-  }
-
   template <unsigned M,
             CH_REQUIRE(M <= N)>
   ch_fixed(const ch_bit<M>& other)
@@ -260,6 +263,12 @@ public:
     base::operator=(other);
   }
 
+  ch_fixed(const ch_sfixed<N, F>& other)
+    : ch_fixed(logic_buffer(N, ch::internal::idname<ch_fixed>())) {
+    __source_location(1);
+    base::operator=(other);
+  }
+
   ch_fixed(const ch_fixed& other)
     : ch_fixed(logic_buffer(N, ch::internal::idname<ch_fixed>())) {
     __source_location(1);
@@ -270,13 +279,13 @@ public:
 
   ch_fixed& operator=(float other) {
     __source_location(1);
-    base::operator=(ToFixed<int>(other, Intg, Frac));
+    base::operator=(detail::to_fixed<int32_t>(other, Intg, Frac));
     return *this;
   }
 
   ch_fixed& operator=(double other) {
     __source_location(1);
-    base::operator=(ToFixed<int>(other, Intg, Frac));
+    base::operator=(detail::to_fixed<int64_t>(other, Intg, Frac));
     return *this;
   }
 
@@ -314,8 +323,7 @@ protected:
 
   logic_buffer buffer_;
 
-  friend class ch::internal::logic_accessor;
-  template <unsigned M, unsigned E> friend class ch_fixed;
+  friend class ch::extension::logic_accessor;
 };
 
 }

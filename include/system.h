@@ -420,12 +420,17 @@ auto get_op_function1() {
 
 template <ch_op op, typename A, typename B>
 auto get_op_function2() {
-  static const auto resize_type = CH_OP_RESIZE(op);
-  static_assert(op_flags::resize_src == resize_type, "invalid type");
-  static const bool sign_enable = is_signed_v<A>;
-  static const bool resize_enable = (ch_width_v<A> != ch_width_v<B>);
-  CH_OP_FUNC_X(ch_op::eq, bv_eq)
-  else CH_OP_FUNC_X(ch_op::lt, bv_lt)
+  static const auto resize_type = CH_OP_RESIZE(op);  
+  if constexpr (0 != (int)resize_type) {
+    static_assert(op_flags::resize_src == resize_type, "invalid type");
+    static const bool sign_enable = is_signed_v<A>;
+    static const bool resize_enable = (ch_width_v<A> != ch_width_v<B>);
+    CH_OP_FUNC_X(ch_op::eq, bv_eq)
+    else CH_OP_FUNC_X(ch_op::lt, bv_lt)
+  } else {
+    CH_OP_FUNC(ch_op::andl, bv_andl)
+    else CH_OP_FUNC(ch_op::orl, bv_orl)
+  }
 }
 
 template <typename R, ch_op op, typename A, typename B>
@@ -442,9 +447,7 @@ auto get_op_function2() {
     else CH_OP_FUNC_X(ch_op::add, bv_add)
     else CH_OP_FUNC_X(ch_op::sub, bv_sub)
   } else {
-    CH_OP_FUNC(ch_op::andl, bv_andl)
-    else CH_OP_FUNC(ch_op::orl, bv_orl)
-    else CH_OP_FUNC(ch_op::shl, bv_shl)
+    CH_OP_FUNC(ch_op::shl, bv_shl)
     else CH_OP_FUNC_S(ch_op::shr, bv_shr)
     else CH_OP_FUNC_S(ch_op::mul, bv_mul)
     else CH_OP_FUNC_S(ch_op::div, bv_div)
@@ -541,79 +544,93 @@ auto make_system_op(const A& lhs, const B& rhs) {
 
 #define CH_SYSTEM_OPERATOR1B_IMPL(base, op, method) \
   friend auto op(const base& self) { \
-    return ch::internal::system_accessor::method((const T&)self); \
+    auto& _self = reinterpret_cast<const T&>(self); \
+    return ch::internal::system_accessor::method(_self); \
   }
 
 #define CH_SYSTEM_OPERATOR1X_IMPL(base, op, method) \
   friend auto op(const base& self) { \
-    return ch::internal::system_accessor::method<T>((const T&)self); \
+    auto& _self = reinterpret_cast<const T&>(self); \
+    return ch::internal::system_accessor::method<T>(_self); \
   }
 
 #define CH_SYSTEM_OPERATOR2B_IMPL(base, op, method) \
   friend auto op(const base& lhs, const base& rhs) { \
-    return ch::internal::system_accessor::method((const T&)lhs, (const T&)rhs); \
+    auto& _lhs = reinterpret_cast<const T&>(lhs); \
+    auto& _rhs = reinterpret_cast<const T&>(rhs); \
+    return ch::internal::system_accessor::method(_lhs, _rhs); \
   } \
   template <typename U, \
             CH_REQUIRE(is_strictly_constructible_v<T, U>)> \
   friend auto op(const base& lhs, const U& rhs) { \
+    auto& _lhs = reinterpret_cast<const T&>(lhs); \
     if constexpr (!std::is_integral_v<U> && is_signed_v<U> && !is_signed_v<T>) { \
-      return op((const ch_signed_t<T>&)lhs, rhs); \
+      return op(reinterpret_cast<const ch_signed_t<T>&>(lhs), rhs); \
     } else { \
       auto _rhs = system_cast<T>(rhs); \
-      return ch::internal::system_accessor::method((const T&)lhs, _rhs); \
+      return ch::internal::system_accessor::method(_lhs, _rhs); \
     } \
   } \
   template <typename U, \
             CH_REQUIRE(is_strictly_constructible_v<T, U>)> \
   friend auto op(const U& lhs, const base& rhs) { \
+    auto& _rhs = reinterpret_cast<const T&>(rhs); \
     if constexpr (!std::is_integral_v<U> && is_signed_v<U> && !is_signed_v<T>) { \
-      return op(lhs, (const ch_signed_t<T>&)rhs); \
+      return op(lhs, reinterpret_cast<const ch_signed_t<T>&>(rhs)); \
     } else { \
       auto _lhs = system_cast<T>(lhs); \
-      return ch::internal::system_accessor::method(_lhs, (const T&)rhs); \
+      return ch::internal::system_accessor::method(_lhs, _rhs); \
     } \
   }
 
 #define CH_SYSTEM_OPERATOR2X_IMPL(base, op, method) \
   friend auto op(const base& lhs, const base& rhs) { \
-    return ch::internal::system_accessor::method<T>((const T&)lhs, (const T&)rhs); \
+    auto& _lhs = reinterpret_cast<const T&>(lhs); \
+    auto& _rhs = reinterpret_cast<const T&>(rhs); \
+    return ch::internal::system_accessor::method<T>(_lhs, _rhs); \
   } \
   template <typename U, \
             CH_REQUIRE(is_strictly_constructible_v<T, U>)> \
   friend auto op(const base& lhs, const U& rhs) { \
+    auto& _lhs = reinterpret_cast<const T&>(lhs); \
     if constexpr (!std::is_integral_v<U> && is_signed_v<U> && !is_signed_v<T>) { \
-      return op((const ch_signed_t<T>&)lhs, rhs); \
+      return op(reinterpret_cast<const ch_signed_t<T>&>(lhs), rhs); \
     } else { \
       auto _rhs = system_cast<T>(rhs); \
-      return ch::internal::system_accessor::method<T>((const T&)lhs, _rhs); \
+      return ch::internal::system_accessor::method<T>(_lhs, _rhs); \
     } \
   } \
   template <typename U, \
             CH_REQUIRE(is_strictly_constructible_v<T, U>)> \
   friend auto op(const U& lhs, const base& rhs) { \
+    auto& _rhs = reinterpret_cast<const T&>(rhs); \
     if constexpr (!std::is_integral_v<U> && is_signed_v<U> && !is_signed_v<T>) { \
-      return op(lhs, (const ch_signed_t<T>&)rhs); \
+      return op(lhs, reinterpret_cast<const ch_signed_t<T>&>(rhs)); \
     } else { \
       auto _lhs = system_cast<T>(lhs); \
-      return ch::internal::system_accessor::method<T>(_lhs, (const T&)rhs); \
+      return ch::internal::system_accessor::method<T>(_lhs, _rhs); \
     } \
   }
 
 #define CH_SYSTEM_OPERATOR2Y_IMPL(base, op, method) \
   friend auto op(const base& lhs, const base& rhs) { \
-    return ch::internal::system_accessor::method<T>((const T&)lhs, (const T&)rhs); \
+    auto& _lhs = reinterpret_cast<const T&>(lhs); \
+    auto& _rhs = reinterpret_cast<const T&>(rhs); \
+    return ch::internal::system_accessor::method<T>(_lhs, _rhs); \
   } \
   template <typename U, \
             CH_REQUIRE(is_strictly_constructible_v<T, U>)> \
   friend auto op(const base& lhs, const U& rhs) { \
+    auto& _lhs = reinterpret_cast<const T&>(lhs); \
     auto _rhs = ch_system_t<U>(rhs); \
-    return ch::internal::system_accessor::method<T>((const T&)lhs, _rhs); \
+    return ch::internal::system_accessor::method<T>(_lhs, _rhs); \
   } \
   template <typename U, \
             CH_REQUIRE(is_strictly_constructible_v<T, U>)> \
   friend auto op(const U& lhs, const base& rhs) { \
     auto _lhs = system_cast<T>(lhs); \
-    return ch::internal::system_accessor::method<T>(_lhs, (const T&)rhs); \
+    auto& _rhs = reinterpret_cast<const T&>(rhs); \
+    return ch::internal::system_accessor::method<T>(_lhs, _rhs); \
   }
 
 #define CH_SYSTEM_FUNCTION1B_DECL(base, func) \
@@ -621,25 +638,6 @@ auto make_system_op(const A& lhs, const B& rhs) {
 
 #define CH_SYSTEM_FUNCTION1X_DECL(base, func) \
   template <unsigned R = 0, typename T> auto func(const base<T>& self);
-
-#define CH_SYSTEM_FUNCTION1B_IMPL(base, func, method) \
-  friend auto func(const base& self) { \
-    return ch::internal::system_accessor::method((const T&)self); \
-  }
-
-#define CH_SYSTEM_FUNCTION1X_IMPL(base, func, method) \
-  friend auto func(const base& self) { \
-    return ch::internal::system_accessor::method<T>((const T&)self); \
-  } \
-  template <unsigned R> \
-  friend auto func(const base& self) { \
-    if constexpr (ch_width_v<T> == R || !is_resizable_v<T>) { \
-      static_assert(ch_width_v<T> == R, "invalid output size"); \
-      return ch::internal::system_accessor::method<T>((const T&)self); \
-    } else { \
-      return ch::internal::system_accessor::method<ch_size_cast_t<T, R>>((const T&)self); \
-    } \
-  }
 
 #define CH_SYSTEM_FUNCTION2B_DECL(base, func) \
   template <typename T> auto func(const base<T>& lhs, const base<T>& rhs); \
@@ -654,140 +652,182 @@ auto make_system_op(const A& lhs, const B& rhs) {
   template <typename T, typename U, CH_REQUIRE(is_strictly_constructible_v<T, U>)> auto func(const U& lhs, const base<T>& rhs); \
   template <unsigned R, typename T, typename U, CH_REQUIRE(is_strictly_constructible_v<T, U>)> auto func(const U& lhs, const base<T>& rhs);
 
+#define CH_SYSTEM_FUNCTION1B_IMPL(base, func, method) \
+  friend auto func(const base& self) { \
+    auto& _self = reinterpret_cast<const T&>(self); \
+    return ch::internal::system_accessor::method(_self); \
+  }
+
+#define CH_SYSTEM_FUNCTION1X_IMPL(base, func, method) \
+  friend auto func(const base& self) { \
+    auto& _self = reinterpret_cast<const T&>(self); \
+    return ch::internal::system_accessor::method<T>(_self); \
+  } \
+  template <unsigned R> \
+  friend auto func(const base& self) { \
+    auto& _self = reinterpret_cast<const T&>(self); \
+    if constexpr (ch_width_v<T> == R || !is_resizable_v<T>) { \
+      static_assert(ch_width_v<T> == R, "invalid output size"); \
+      return ch::internal::system_accessor::method<T>(_self); \
+    } else { \
+      return ch::internal::system_accessor::method<ch_size_cast_t<T, R>>(_self); \
+    } \
+  }
+
 #define CH_SYSTEM_FUNCTION2B_IMPL(base, func, method) \
   friend auto func(const base& lhs, const base& rhs) { \
-    return ch::internal::system_accessor::method((const T&)lhs, (const T&)rhs); \
+    auto& _lhs = reinterpret_cast<const T&>(lhs); \
+    auto& _rhs = reinterpret_cast<const T&>(rhs); \
+    return ch::internal::system_accessor::method(_lhs, _rhs); \
   } \
   template <typename U, \
             CH_REQUIRE(is_strictly_constructible_v<T, U>)> \
   friend auto func(const base& lhs, const U& rhs) { \
+    auto& _lhs = reinterpret_cast<const T&>(lhs); \
     if constexpr (!std::is_integral_v<U> && is_signed_v<U> && !is_signed_v<T>) { \
-      return func((const ch_signed_t<T>&)lhs, rhs); \
+      return func(reinterpret_cast<const ch_signed_t<T>&>(lhs), rhs); \
     } else { \
       auto _rhs = system_cast<T>(rhs); \
-      return ch::internal::system_accessor::method((const T&)lhs, _rhs); \
+      return ch::internal::system_accessor::method(_lhs, _rhs); \
     } \
   } \
   template <typename U, \
             CH_REQUIRE(is_strictly_constructible_v<T, U>)> \
   friend auto func(const U& lhs, const base& rhs) { \
+    auto& _rhs = reinterpret_cast<const T&>(rhs); \
     if constexpr (!std::is_integral_v<U> && is_signed_v<U> && !is_signed_v<T>) { \
-      return func(lhs, (const ch_signed_t<T>&)rhs); \
+      return func(lhs, reinterpret_cast<const ch_signed_t<T>&>(rhs)); \
     } else { \
       auto _lhs = system_cast<T>(lhs); \
-      return ch::internal::system_accessor::method(_lhs, (const T&)rhs); \
+      return ch::internal::system_accessor::method(_lhs, _rhs); \
     } \
   }
 
 #define CH_SYSTEM_FUNCTION2X_IMPL(base, func, method) \
   friend auto func(const base& lhs, const base& rhs) { \
-    return ch::internal::system_accessor::method<T>((const T&)lhs, (const T&)rhs); \
+    auto& _lhs = reinterpret_cast<const T&>(lhs); \
+    auto& _rhs = reinterpret_cast<const T&>(rhs); \
+    return ch::internal::system_accessor::method<T>(_lhs, _rhs); \
   } \
   template <unsigned R> \
   friend auto func(const base& lhs, const base& rhs) { \
+    auto& _lhs = reinterpret_cast<const T&>(lhs); \
+    auto& _rhs = reinterpret_cast<const T&>(rhs); \
     if constexpr (ch_width_v<T> == R || !is_resizable_v<T>) { \
       static_assert(ch_width_v<T> == R, "invalid output size"); \
-      return ch::internal::system_accessor::method<T>((const T&)lhs, (const T&)rhs); \
+      return ch::internal::system_accessor::method<T>(_lhs, _rhs); \
     } else { \
-      return ch::internal::system_accessor::method<ch_size_cast_t<T, R>>((const T&)lhs, (const T&)rhs); \
+      return ch::internal::system_accessor::method<ch_size_cast_t<T, R>>(_lhs, _rhs); \
     } \
   } \
   template <typename U, \
             CH_REQUIRE(is_strictly_constructible_v<T, U>)> \
   friend auto func(const base& lhs, const U& rhs) { \
+    auto& _lhs = reinterpret_cast<const T&>(lhs); \
     if constexpr (!std::is_integral_v<U> && is_signed_v<U> && !is_signed_v<T>) { \
-      return func((const ch_signed_t<T>&)lhs, rhs); \
+      return func(reinterpret_cast<const ch_signed_t<T>&>(lhs), rhs); \
     } else { \
       auto _rhs = system_cast<T>(rhs); \
-      return ch::internal::system_accessor::method<T>((const T&)lhs, _rhs); \
+      return ch::internal::system_accessor::method<T>(_lhs, _rhs); \
     } \
   } \
   template <unsigned R, typename U, \
             CH_REQUIRE(is_strictly_constructible_v<T, U>)> \
   friend auto func(const base& lhs, const U& rhs) { \
+    auto& _lhs = reinterpret_cast<const T&>(lhs); \
     if constexpr (!std::is_integral_v<U> && is_signed_v<U> && !is_signed_v<T>) { \
-      return func<R>((const ch_signed_t<T>&)lhs, rhs); \
+      return func<R>(reinterpret_cast<const ch_signed_t<T>&>(lhs), rhs); \
     } else { \
       auto _rhs = system_cast<T>(rhs); \
       if constexpr (ch_width_v<T> == R || !is_resizable_v<T>) { \
         static_assert(ch_width_v<T> == R, "invalid output size"); \
-        return ch::internal::system_accessor::method<T>((const T&)lhs, _rhs); \
+        return ch::internal::system_accessor::method<T>(_lhs, _rhs); \
       } else { \
-        return ch::internal::system_accessor::method<ch_size_cast_t<T, R>>((const T&)lhs, _rhs); \
+        return ch::internal::system_accessor::method<ch_size_cast_t<T, R>>(_lhs, _rhs); \
       } \
     } \
   } \
   template <typename U, \
             CH_REQUIRE(is_strictly_constructible_v<T, U>)> \
   friend auto func(const U& lhs, const base& rhs) { \
+    auto& _rhs = reinterpret_cast<const T&>(rhs); \
     if constexpr (!std::is_integral_v<U> && is_signed_v<U> && !is_signed_v<T>) { \
-      return func(lhs, (const ch_signed_t<T>&)rhs); \
+      return func(lhs, reinterpret_cast<const ch_signed_t<T>&>(rhs)); \
     } else { \
       auto _lhs = system_cast<T>(lhs); \
-      return ch::internal::system_accessor::method<T>(_lhs, (const T&)rhs); \
+      return ch::internal::system_accessor::method<T>(_lhs, _rhs); \
     } \
   } \
   template <unsigned R, typename U, \
             CH_REQUIRE(is_strictly_constructible_v<T, U>)> \
   friend auto func(const U& lhs, const base& rhs) { \
+    auto& _rhs = reinterpret_cast<const T&>(rhs); \
     if constexpr (!std::is_integral_v<U> && is_signed_v<U> && !is_signed_v<T>) { \
-      return func<R>(lhs, (const ch_signed_t<T>&)rhs); \
+      return func<R>(lhs, reinterpret_cast<const ch_signed_t<T>&>(rhs)); \
     } else { \
       auto _lhs = system_cast<T>(lhs); \
       if constexpr (ch_width_v<T> == R || !is_resizable_v<T>) { \
         static_assert(ch_width_v<T> == R, "invalid output size"); \
-        return ch::internal::system_accessor::method<T>(_lhs, (const T&)rhs); \
+        return ch::internal::system_accessor::method<T>(_lhs, _rhs); \
       } else { \
-        return ch::internal::system_accessor::method<ch_size_cast_t<T, R>>(_lhs, (const T&)rhs); \
+        return ch::internal::system_accessor::method<ch_size_cast_t<T, R>>(_lhs, _rhs); \
       } \
     } \
   }
 
 #define CH_SYSTEM_FUNCTION2Y_IMPL(base, func, method) \
   friend auto func(const base& lhs, const base& rhs) { \
-    return ch::internal::system_accessor::method<T>((const T&)lhs, (const T&)rhs); \
+    auto& _lhs = reinterpret_cast<const T&>(lhs); \
+    auto& _rhs = reinterpret_cast<const T&>(rhs); \
+    return ch::internal::system_accessor::method<T>(_lhs, _rhs); \
   } \
   template <unsigned R> \
   friend auto func(const base& lhs, const base& rhs) { \
+    auto& _lhs = reinterpret_cast<const T&>(lhs); \
+    auto& _rhs = reinterpret_cast<const T&>(rhs); \
     if constexpr (ch_width_v<T> == R || !is_resizable_v<T>) { \
       static_assert(ch_width_v<T> == R, "invalid output size"); \
-      return ch::internal::system_accessor::method<T>((const T&)lhs, (const T&)rhs); \
+      return ch::internal::system_accessor::method<T>(_lhs, _rhs); \
     } else { \
-      return ch::internal::system_accessor::method<ch_size_cast_t<T, R>>((const T&)lhs, (const T&)rhs); \
+      return ch::internal::system_accessor::method<ch_size_cast_t<T, R>>(_lhs, _rhs); \
     } \
   } \
   template <typename U, \
             CH_REQUIRE(is_strictly_constructible_v<T, U>)> \
   friend auto func(const base& lhs, const U& rhs) { \
+    auto& _lhs = reinterpret_cast<const T&>(lhs); \
     auto _rhs = ch_system_t<U>(rhs); \
-    return ch::internal::system_accessor::method<T>((const T&)lhs, _rhs); \
+    return ch::internal::system_accessor::method<T>(_lhs, _rhs); \
   } \
   template <unsigned R, typename U, \
             CH_REQUIRE(is_strictly_constructible_v<T, U>)> \
   friend auto func(const base& lhs, const U& rhs) { \
+    auto& _lhs = reinterpret_cast<const T&>(lhs); \
     auto _rhs = ch_system_t<U>(rhs); \
     if constexpr (ch_width_v<T> == R || !is_resizable_v<T>) { \
       static_assert(ch_width_v<T> == R, "invalid output size"); \
-      return ch::internal::system_accessor::method<T>((const T&)lhs, _rhs); \
+      return ch::internal::system_accessor::method<T>(_lhs, _rhs); \
     } else { \
-      return ch::internal::system_accessor::method<ch_size_cast_t<T, R>>((const T&)lhs, _rhs); \
+      return ch::internal::system_accessor::method<ch_size_cast_t<T, R>>(_lhs, _rhs); \
     } \
   } \
   template <typename U, \
             CH_REQUIRE(is_strictly_constructible_v<T, U>)> \
   friend auto func(const U& lhs, const base& rhs) { \
     auto _lhs = system_cast<T>(lhs); \
-    return ch::internal::system_accessor::method<T>(_lhs, (const T&)rhs); \
+    auto& _rhs = reinterpret_cast<const T&>(rhs); \
+    return ch::internal::system_accessor::method<T>(_lhs, _rhs); \
   } \
   template <unsigned R, typename U, \
             CH_REQUIRE(is_strictly_constructible_v<T, U>)> \
   friend auto func(const U& lhs, const base& rhs) { \
     auto _lhs = system_cast<T>(lhs); \
+    auto& _rhs = reinterpret_cast<const T&>(rhs); \
     if constexpr (ch_width_v<T> == R || !is_resizable_v<T>) { \
       static_assert(ch_width_v<T> == R, "invalid output size"); \
-      return ch::internal::system_accessor::method<T>(_lhs, (const T&)rhs); \
+      return ch::internal::system_accessor::method<T>(_lhs, _rhs); \
     } else { \
-      return ch::internal::system_accessor::method<ch_size_cast_t<T, R>>(_lhs, (const T&)rhs); \
+      return ch::internal::system_accessor::method<ch_size_cast_t<T, R>>(_lhs, _rhs); \
     } \
   }
 
@@ -803,6 +843,9 @@ auto make_system_op(const A& lhs, const B& rhs) {
     } else { \
       return ret; \
     } \
+  } \
+  explicit operator sdata_type() const { \
+    return system_accessor::data(reinterpret_cast<const type&>(*this)); \
   }
 
 }

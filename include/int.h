@@ -9,7 +9,6 @@ template <unsigned N = 32>
 class ch_sint : public ch_snumber_base<ch_sint<N>> {
 public:
   using traits = system_traits<N, true, ch_sint, ch_int<N>>;
-  template <unsigned M> using size_cast = ch_sint<M>;
   using base = ch_snumber_base<ch_sint<N>>;
   using base::operator=;
 
@@ -37,7 +36,7 @@ public:
             CH_REQUIRE(ch_width_v<U> <= N)>
   explicit ch_sint(const ch_sbit_base<U>& other)
     : ch_sint(make_system_buffer(N, idname<ch_sint>())) {
-    base::operator=((const U&)other);
+    base::operator=(reinterpret_cast<const U&>(other));
   }
 
   template <unsigned M,
@@ -87,7 +86,6 @@ protected:
   system_buffer_ptr buffer_;
 
   friend class system_accessor;
-  template <unsigned M> friend class ch_sint;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -97,7 +95,6 @@ class ch_int : public ch_number_base<ch_int<N>> {
 public:  
   static_assert(N != 0, "invalid size");
   using traits = logic_traits<N, true, ch_int, ch_sint<N>>;
-  template <unsigned M> using size_cast = ch_int<M>;
   using base = ch_number_base<ch_int<N>>;
   using base::operator=;
 
@@ -120,7 +117,7 @@ public:
   explicit ch_int(const ch_sbit_base<U>& other)
     : ch_int(logic_buffer(N, idname<ch_int>())) {
     CH_SOURCE_LOCATION(1);
-    base::operator=((const U&)other);
+    base::operator=(reinterpret_cast<const U&>(other));
   }
 
   template <unsigned M,
@@ -152,7 +149,7 @@ public:
   explicit ch_int(const ch_bit_base<U>& other)
     : ch_int(logic_buffer(N, idname<ch_int>())) {
     CH_SOURCE_LOCATION(1);
-    base::operator=((const U&)other);
+    base::operator=(reinterpret_cast<const U&>(other));
   }
 
   template <unsigned M,
@@ -208,7 +205,6 @@ protected:
   logic_buffer buffer_;
 
   friend class logic_accessor;
-  template <unsigned M> friend class ch_int;
 };
 
 }}

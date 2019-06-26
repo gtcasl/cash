@@ -482,6 +482,84 @@ void foo() {
     auto e = ch_shr<3>(a, 1010_b);
     auto f = ch_eq(1010_b, a);
   }
+
+  {
+    ch_reg<ch_uint2> a(0);
+    ch_uint2 b(1);
+    auto c = a & b;
+  }
+
+  {
+    ch_reg<ch_uint2> a(0);
+    ch_reg<ch_uint2> b(1);
+    auto c = a & b;
+  }
+
+  {
+    ch_reg<ch_uint4> a(0);
+    ch_uint2 b(1);
+    auto c = a & b;
+  }
+
+  {
+    ch_reg<ch_uint2> a(0);
+    ch_uint4 b(1);
+    auto c = a & b;
+  }
+
+  {
+    ch_reg<ch_uint4> a(0);
+    ch_reg<ch_uint2> b(1);
+    auto c = a & b;
+  }
+
+  {
+    ch_reg<ch_int2> a(0);
+    ch_uint2 b(1);
+    auto c = a & b;
+  }
+
+  {
+    ch_reg<ch_int2> a(0);
+    ch_reg<ch_uint2> b(1);
+    auto c = a & b;
+  }
+
+  {
+    ch_reg<ch_int2> a(0);
+    ch_uint4 b(1);
+    auto c = a & b;
+  }
+
+  {
+    ch_in<ch_suint4> a;
+    ch_sint2 b(1);
+    auto c = a & b;
+  }
+
+  {
+    ch_in<ch_sint2> a;
+    ch_in<ch_suint4> b;
+    auto c = a & b;
+  }
+
+  {
+    ch_uint4 a(0);
+    ch_int2 b(1);
+    auto c = a & b;
+  }
+
+  {
+    ch_in<ch_uint4> a;
+    ch_int2 b(1);
+    auto c = a & b;
+  }
+
+  {
+    ch_in<ch_int2> a;
+    ch_in<ch_uint4> b;
+    auto c = a & b;
+  }
 }
 
 void bar() {

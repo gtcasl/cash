@@ -356,6 +356,18 @@ TEST_CASE("system", "[system]") {
       return (x == 8);
     });
     TESTX([]()->bool {
+      ch_sint<4> x(8);
+      return (x != 7);
+    });
+    TESTX([]()->bool {
+      ch_sint<5> x(8);
+      return (x > 7 && x < 9);
+    });
+    TESTX([]()->bool {
+      ch_sint<5> x(8);
+      return (x >= 7 || x <= 9);
+    });
+    TESTX([]()->bool {
       ch_sbit<4> x(8);
       return (static_cast<int>(x) == 8);
     });

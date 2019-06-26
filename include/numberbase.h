@@ -107,22 +107,22 @@ protected:
     return make_system_op<R, ch_op::mod>(*self, other);
   }
 
-  template <typename U> friend class ch_snumber_base;
+  friend class system_accessor;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
-CH_LOGIC_FUNCTION2B_DECL(ch_lt)
-CH_LOGIC_FUNCTION2B_DECL(ch_le)
-CH_LOGIC_FUNCTION2B_DECL(ch_gt)
-CH_LOGIC_FUNCTION2B_DECL(ch_ge)
+CH_LOGIC_FUNCTION2B_DECL(ch_number_base, ch_lt)
+CH_LOGIC_FUNCTION2B_DECL(ch_number_base, ch_le)
+CH_LOGIC_FUNCTION2B_DECL(ch_number_base, ch_gt)
+CH_LOGIC_FUNCTION2B_DECL(ch_number_base, ch_ge)
 
-CH_LOGIC_FUNCTION1X_DECL(ch_neg)
-CH_LOGIC_FUNCTION2X_DECL(ch_add)
-CH_LOGIC_FUNCTION2X_DECL(ch_sub)
-CH_LOGIC_FUNCTION2X_DECL(ch_mul)
-CH_LOGIC_FUNCTION2X_DECL(ch_div)
-CH_LOGIC_FUNCTION2X_DECL(ch_mod)
+CH_LOGIC_FUNCTION1X_DECL(ch_number_base, ch_neg)
+CH_LOGIC_FUNCTION2X_DECL(ch_number_base, ch_add)
+CH_LOGIC_FUNCTION2X_DECL(ch_number_base, ch_sub)
+CH_LOGIC_FUNCTION2X_DECL(ch_number_base, ch_mul)
+CH_LOGIC_FUNCTION2X_DECL(ch_number_base, ch_div)
+CH_LOGIC_FUNCTION2X_DECL(ch_number_base, ch_mod)
 
 template <typename T>
 class ch_number_base : public ch_bit_base<T> {
@@ -130,29 +130,29 @@ public:
   using base = ch_bit_base<T>;
   using base::operator=;
 
-  CH_LOGIC_OPERATOR2B_IMPL(T, operator<, do_lt)
-  CH_LOGIC_OPERATOR2B_IMPL(T, operator<=, do_le)
-  CH_LOGIC_OPERATOR2B_IMPL(T, operator>, do_gt)
-  CH_LOGIC_OPERATOR2B_IMPL(T, operator>=, do_ge)
+  CH_LOGIC_OPERATOR2B_IMPL(ch_number_base, operator<, do_lt)
+  CH_LOGIC_OPERATOR2B_IMPL(ch_number_base, operator<=, do_le)
+  CH_LOGIC_OPERATOR2B_IMPL(ch_number_base, operator>, do_gt)
+  CH_LOGIC_OPERATOR2B_IMPL(ch_number_base, operator>=, do_ge)
 
-  CH_LOGIC_OPERATOR1X_IMPL(T, operator-, do_neg)
-  CH_LOGIC_OPERATOR2X_IMPL(T, operator+, do_add)
-  CH_LOGIC_OPERATOR2X_IMPL(T, operator-, do_sub)
-  CH_LOGIC_OPERATOR2X_IMPL(T, operator*, do_mul)
-  CH_LOGIC_OPERATOR2X_IMPL(T, operator/, do_div)
-  CH_LOGIC_OPERATOR2X_IMPL(T, operator%, do_mod)
+  CH_LOGIC_OPERATOR1X_IMPL(ch_number_base, operator-, do_neg)
+  CH_LOGIC_OPERATOR2X_IMPL(ch_number_base, operator+, do_add)
+  CH_LOGIC_OPERATOR2X_IMPL(ch_number_base, operator-, do_sub)
+  CH_LOGIC_OPERATOR2X_IMPL(ch_number_base, operator*, do_mul)
+  CH_LOGIC_OPERATOR2X_IMPL(ch_number_base, operator/, do_div)
+  CH_LOGIC_OPERATOR2X_IMPL(ch_number_base, operator%, do_mod)
 
-  CH_LOGIC_FUNCTION2B_IMPL(T, ch_lt, do_lt)
-  CH_LOGIC_FUNCTION2B_IMPL(T, ch_le, do_le)
-  CH_LOGIC_FUNCTION2B_IMPL(T, ch_gt, do_gt)
-  CH_LOGIC_FUNCTION2B_IMPL(T, ch_ge, do_ge)
+  CH_LOGIC_FUNCTION2B_IMPL(ch_number_base, ch_lt, do_lt)
+  CH_LOGIC_FUNCTION2B_IMPL(ch_number_base, ch_le, do_le)
+  CH_LOGIC_FUNCTION2B_IMPL(ch_number_base, ch_gt, do_gt)
+  CH_LOGIC_FUNCTION2B_IMPL(ch_number_base, ch_ge, do_ge)
 
-  CH_LOGIC_FUNCTION1X_IMPL(T, ch_neg, do_neg)
-  CH_LOGIC_FUNCTION2X_IMPL(T, ch_add, do_add)
-  CH_LOGIC_FUNCTION2X_IMPL(T, ch_sub, do_sub)
-  CH_LOGIC_FUNCTION2X_IMPL(T, ch_mul, do_mul)
-  CH_LOGIC_FUNCTION2X_IMPL(T, ch_div, do_div)
-  CH_LOGIC_FUNCTION2X_IMPL(T, ch_mod, do_mod)
+  CH_LOGIC_FUNCTION1X_IMPL(ch_number_base, ch_neg, do_neg)
+  CH_LOGIC_FUNCTION2X_IMPL(ch_number_base, ch_add, do_add)
+  CH_LOGIC_FUNCTION2X_IMPL(ch_number_base, ch_sub, do_sub)
+  CH_LOGIC_FUNCTION2X_IMPL(ch_number_base, ch_mul, do_mul)
+  CH_LOGIC_FUNCTION2X_IMPL(ch_number_base, ch_div, do_div)
+  CH_LOGIC_FUNCTION2X_IMPL(ch_number_base, ch_mod, do_mod)
 
 protected:
 
@@ -216,7 +216,7 @@ protected:
     return make_logic_op<R, ch_op::mod>(*self, other);
   }
 
-  template <typename U> friend class ch_number_base;
+  friend class logic_accessor;
 };
 
 }}
