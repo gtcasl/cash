@@ -49,7 +49,9 @@ lnode& lnode::operator=(const lnode& other) {
     impl_->remove_user(this);
   }
   impl_ = other.impl();
-  impl_->add_user(this);
+  if (impl_) {
+    impl_->add_user(this);
+  }
   return *this;
 }
 

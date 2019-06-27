@@ -184,13 +184,15 @@ TEST_CASE("misc", "[misc]") {
      TESTX([]()->bool {
        std::array<uint16_t, 1> tmp{0x707};
        sdata_type x(12, tmp);
-       auto y = static_cast<int32_t>(x);
+       auto q = x;
+       auto y = static_cast<int32_t>(q);
        return (0x707 == y);
      });
      TESTX([]()->bool {
        std::array<uint8_t, 2> tmp{0x7, 0x7};
        sdata_type x(12, tmp);
-       auto y = static_cast<int32_t>(x);
+       auto q = x;
+       auto y = static_cast<int32_t>(q);
        return (0x707 == y);
      });
    }

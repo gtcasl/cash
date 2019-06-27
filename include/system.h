@@ -167,53 +167,54 @@ public:
 
   template <typename T>
   static auto move(T&& obj) {
-    assert(obj.__buffer()->size() == ch_width_v<T>);
+    assert(ch_width_v<T> == obj.__buffer()->size());
     return make_system_buffer(std::move(*obj.__buffer()));
   }
 
   template <typename T>
   static std::string to_verilog(const T& obj) {
-    assert(obj.__buffer()->size() == ch_width_v<T>);
+    assert(ch_width_v<T> == obj.__buffer()->size());
     return obj.__buffer()->to_verilog();
   }
 
-  template <typename U>
-  static void assign(U& dst, const sdata_type& src) {
-    assert(ch_width_v<U> == src.size());
-    assert(ch_width_v<U> == dst.__buffer()->size());
-    dst.__buffer()->write(0, src, 0, ch_width_v<U>);
+  template <typename T>
+  static void assign(T& obj, const sdata_type& src) {
+    assert(ch_width_v<T> == obj.__buffer()->size());
+    assert(ch_width_v<T> == src.size());
+    obj.__buffer()->write(0, src, 0, ch_width_v<T>);
   }
 
-  template <typename U, typename V>
-  static void assign(U& dst, const V& src) {
-    static_assert(ch_width_v<U> == ch_width_v<V>, "invalid size");
-    assert(ch_width_v<U> == dst.__buffer()->size());
-    assert(ch_width_v<V> == src.__buffer()->size());
-    *dst.__buffer() = *src.__buffer();
+  template <typename T, typename U>
+  static void assign(T& obj, const U& src) {
+    static_assert(ch_width_v<T> == ch_width_v<U>, "invalid size");
+    assert(ch_width_v<T> == obj.__buffer()->size());
+    assert(ch_width_v<U> == src.__buffer()->size());
+    *obj.__buffer() = *src.__buffer();
   }
 
-  template <typename U, typename V>
-  static void move(U& dst, V&& src) {
-    static_assert(ch_width_v<U> == ch_width_v<V>, "invalid size");
-    assert(ch_width_v<U> == dst.__buffer()->size());
-    *dst.__buffer() = std::move(*src.__buffer());
+  template <typename T, typename U>
+  static void move(T& obj, U&& src) {
+    static_assert(ch_width_v<T> == ch_width_v<U>, "invalid size");
+    assert(ch_width_v<T> == obj.__buffer()->size());
+    assert(ch_width_v<U> == src.__buffer()->size());
+    *obj.__buffer() = std::move(*src.__buffer());
   }
 
-  template <typename U, typename V>
-  static void write(U& dst,
+  template <typename T, typename U>
+  static void write(T& obj,
                     uint32_t dst_offset,
-                    const V& src,
+                    const U& src,
                     uint32_t src_offset,
                     uint32_t length) {
-    auto data = src.__buffer()->data();
-    dst.__buffer()->write(dst_offset, data, src_offset, length);
+    assert(ch_width_v<T> == obj.__buffer()->size());
+    obj.__buffer()->write(dst_offset, src.__buffer()->data(), src_offset, length);
   }
 
   template <typename R, typename T>
   static auto slice(const T& obj, size_t start) {
     static_assert(ch_width_v<R> <= ch_width_v<T>, "invalid size");
+    assert(ch_width_v<T> == obj.__buffer()->size());
     assert(start + ch_width_v<R> <= ch_width_v<T>);
-    assert(obj.__buffer()->size() == ch_width_v<T>);
     R ret;
     system_accessor::write(ret, 0, obj, start, ch_width_v<R>);
     return std::add_const_t<R>(ret);
@@ -222,15 +223,15 @@ public:
   template <typename R, typename T>
   static auto sliceref(const T& obj, size_t start) {
     static_assert(ch_width_v<R> <= ch_width_v<T>, "invalid size");
+    assert(ch_width_v<T> == obj.__buffer()->size());
     assert(start + ch_width_v<R> <= ch_width_v<T>);
-    assert(obj.__buffer()->size() == ch_width_v<T>);
     return R(make_system_buffer(ch_width_v<R>, obj.__buffer(), start, "sliceref"));
   }
 
   template <typename R, typename T>
   static auto cast(const T& obj) {
     static_assert(ch_width_v<T> == ch_width_v<R>, "invalid size");
-    assert(obj.__buffer()->size() == ch_width_v<T>);
+    assert(ch_width_v<T> == obj.__buffer()->size());
     return R(obj.__buffer());
   }
 

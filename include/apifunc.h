@@ -338,3 +338,16 @@ auto ch_abs(const ch_int<N>& obj) {
 
 }
 }
+
+#ifndef NDEBUG
+  #define CH_TAP(x) ch_tap(x, #x)
+#else
+  #define CH_TAP(x)
+#endif
+
+#ifndef NDEBUG
+  #define CH_ASSERT(x) \
+    ch_assert(x, stringf("Failed assertion in %s: %d", __FILE__, __LINE__))
+#else
+  #define CH_ASSERT(x)
+#endif

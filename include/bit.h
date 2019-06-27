@@ -23,7 +23,7 @@ public:
             CH_REQUIRE(std::is_integral_v<U>)>
   ch_sbit(const U& other)
     : ch_sbit(make_system_buffer(N, idname<ch_sbit>())) {
-    base::operator=(other);
+    this->operator=(other);
   }
 
   template <typename U,
@@ -37,28 +37,28 @@ public:
             CH_REQUIRE(ch_width_v<U> <= N)>
   explicit ch_sbit(const ch_sbit_base<U>& other)
     : ch_sbit(make_system_buffer(N, idname<ch_sbit>())) {
-    base::operator=(reinterpret_cast<const U&>(other));
+    this->operator=(reinterpret_cast<const U&>(other));
   }
 
   template <unsigned M,
             CH_REQUIRE(M < N)>
   ch_sbit(const ch_sint<M>& other)
     : ch_sbit(make_system_buffer(N, idname<ch_sbit>())) {
-    base::operator=(other);
+    this->operator=(other);
   }
 
   template <unsigned M,
             CH_REQUIRE(M < N)>
   ch_sbit(const ch_suint<M>& other)
     : ch_sbit(make_system_buffer(N, idname<ch_sbit>())) {
-    base::operator=(other);
+    this->operator=(other);
   }
 
   template <unsigned M,
             CH_REQUIRE(M < N)>
   ch_sbit(const ch_sbit<M>& other)
     : ch_sbit(make_system_buffer(N, idname<ch_sbit>())) {
-    base::operator=(other);
+    this->operator=(other);
   }
 
   ch_sbit(const ch_sbit& other)
@@ -109,7 +109,7 @@ public:
   ch_bit(const U& other)
     : ch_bit(make_logic_buffer(N, idname<ch_bit>())) {
     CH_SOURCE_LOCATION(1);
-    base::operator=(other);
+    this->operator=(other);
   }
 
   template <typename U,
@@ -117,7 +117,7 @@ public:
   explicit ch_bit(const ch_sbit_base<U>& other)
     : ch_bit(make_logic_buffer(N, idname<ch_bit>())) {
     CH_SOURCE_LOCATION(1);
-    base::operator=(reinterpret_cast<const U&>(other));
+    this->operator=(reinterpret_cast<const U&>(other));
   }
 
   template <unsigned M,
@@ -125,7 +125,7 @@ public:
   ch_bit(const ch_sbit<M>& other)
     : ch_bit(make_logic_buffer(N, idname<ch_bit>())) {
     CH_SOURCE_LOCATION(1);
-    base::operator=(other);
+    this->operator=(other);
   }
 
   template <unsigned M,
@@ -133,7 +133,7 @@ public:
   ch_bit(const ch_sint<M>& other)
     : ch_bit(make_logic_buffer(N, idname<ch_bit>())) {
     CH_SOURCE_LOCATION(1);
-    base::operator=(other);
+    this->operator=(other);
   }
 
   template <unsigned M,
@@ -141,7 +141,7 @@ public:
   ch_bit(const ch_suint<M>& other)
     : ch_bit(make_logic_buffer(N, idname<ch_bit>())) {
     CH_SOURCE_LOCATION(1);
-    base::operator=(other);
+    this->operator=(other);
   }
 
   template <typename U,
@@ -149,7 +149,7 @@ public:
   explicit ch_bit(const ch_bit_base<U>& other)
     : ch_bit(make_logic_buffer(N, idname<ch_bit>())) {
     CH_SOURCE_LOCATION(1);
-    base::operator=(reinterpret_cast<const U&>(other));
+    this->operator=(reinterpret_cast<const U&>(other));
   }
 
   template <unsigned M,
@@ -157,7 +157,7 @@ public:
   ch_bit(const ch_uint<M>& other)
     : ch_bit(make_logic_buffer(N, idname<ch_bit>())) {
     CH_SOURCE_LOCATION(1);
-    base::operator=(other);
+    this->operator=(other);
   }
 
   template <unsigned M,
@@ -165,7 +165,7 @@ public:
   ch_bit(const ch_int<M>& other)
     : ch_bit(make_logic_buffer(N, idname<ch_bit>())) {
     CH_SOURCE_LOCATION(1);
-    base::operator=(other);
+    this->operator=(other);
   }
 
   template <unsigned M,
@@ -173,7 +173,7 @@ public:
   ch_bit(const ch_bit<M>& other)
     : ch_bit(make_logic_buffer(N, idname<ch_bit>())) {
     CH_SOURCE_LOCATION(1);
-    base::operator=(other);
+    this->operator=(other);
   }
 
   ch_bit(const ch_bit& other)
@@ -208,17 +208,4 @@ protected:
 };
 
 }
-}                           
-
-#ifndef NDEBUG
-  #define CH_TAP(x) ch_tap(x, #x)
-#else
-  #define CH_TAP(x)
-#endif
-
-#ifndef NDEBUG
-  #define CH_ASSERT(x) \
-    ch_assert(x, stringf("Failed assertion in %s: %d", __FILE__, __LINE__))
-#else
-  #define CH_ASSERT(x)
-#endif
+}

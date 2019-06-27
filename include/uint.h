@@ -23,7 +23,7 @@ public:
             CH_REQUIRE(std::is_integral_v<U>)>
   ch_suint(const U& other)
     : ch_suint(make_system_buffer(N, idname<ch_suint>())) {
-    base::operator=(other);
+    this->operator=(other);
   }
 
   template <typename U,
@@ -37,28 +37,28 @@ public:
             CH_REQUIRE(ch_width_v<U> <= N)>
   explicit ch_suint(const ch_sbit_base<U>& other)
     : ch_suint(make_system_buffer(N, idname<ch_suint>())) {
-    base::operator=(reinterpret_cast<const U&>(other));
+    this->operator=(reinterpret_cast<const U&>(other));
   }
 
   template <unsigned M,
             CH_REQUIRE(M <= N)>
   ch_suint(const ch_sbit<M>& other)
     : ch_suint(make_system_buffer(N, idname<ch_suint>())) {
-    base::operator=(other);
+    this->operator=(other);
   }
 
   template <unsigned M,
             CH_REQUIRE(M < N)>
   ch_suint(const ch_sint<M>& other)
     : ch_suint(make_system_buffer(N, idname<ch_suint>())) {
-    base::operator=(other);
+    this->operator=(other);
   }
 
   template <unsigned M,
             CH_REQUIRE(M < N)>
   ch_suint(const ch_suint<M>& other)
     : ch_suint(make_system_buffer(N, idname<ch_suint>())) {
-    base::operator=(other);
+    this->operator=(other);
   }
 
   ch_suint(const ch_suint& other)
@@ -69,12 +69,12 @@ public:
   ch_suint(ch_suint&& other) : buffer_(std::move(other.buffer_)) {}
 
   ch_suint& operator=(const ch_suint& other) {
-    this->as_bit().operator=(other);
+    system_accessor::assign(*this, other);
     return *this;
   }
 
   ch_suint& operator=(ch_suint&& other) {
-    this->as_bit().operator=(std::move(other.as_bit()));
+    system_accessor::move(*this, std::move(other));
     return *this;
   }
 
@@ -109,7 +109,7 @@ public:
   ch_uint(const U& other)
     : ch_uint(make_logic_buffer(N, idname<ch_uint>())) {
     CH_SOURCE_LOCATION(1);
-    base::operator=(other);
+    this->operator=(other);
   }
 
   template <typename U,
@@ -117,7 +117,7 @@ public:
   explicit ch_uint(const ch_sbit_base<U>& other)
     : ch_uint(make_logic_buffer(N, idname<ch_uint>())) {
     CH_SOURCE_LOCATION(1);
-    base::operator=(reinterpret_cast<const U&>(other));
+    this->operator=(reinterpret_cast<const U&>(other));
   }
 
   template <unsigned M,
@@ -125,7 +125,7 @@ public:
   ch_uint(const ch_sbit<M>& other)
     : ch_uint(make_logic_buffer(N, idname<ch_uint>())) {
     CH_SOURCE_LOCATION(1);
-    base::operator=(other);
+    this->operator=(other);
   }
 
   template <unsigned M,
@@ -133,7 +133,7 @@ public:
   ch_uint(const ch_sint<M>& other)
     : ch_uint(make_logic_buffer(N, idname<ch_uint>())) {
     CH_SOURCE_LOCATION(1);
-    base::operator=(other);
+    this->operator=(other);
   }
 
   template <unsigned M,
@@ -141,7 +141,7 @@ public:
   ch_uint(const ch_suint<M>& other)
     : ch_uint(make_logic_buffer(N, idname<ch_uint>())) {
     CH_SOURCE_LOCATION(1);
-    base::operator=(other);
+    this->operator=(other);
   }
 
   template <typename U,
@@ -149,7 +149,7 @@ public:
   explicit ch_uint(const ch_bit_base<U>& other)
     : ch_uint(make_logic_buffer(N, idname<ch_uint>())) {
     CH_SOURCE_LOCATION(1);
-    base::operator=(reinterpret_cast<const U&>(other));
+    this->operator=(reinterpret_cast<const U&>(other));
   }
 
   template <unsigned M,
@@ -157,7 +157,7 @@ public:
   ch_uint(const ch_bit<M>& other)
     : ch_uint(make_logic_buffer(N, idname<ch_uint>())) {
     CH_SOURCE_LOCATION(1);
-    base::operator=(other);
+    this->operator=(other);
   }
 
   template <unsigned M,
@@ -165,7 +165,7 @@ public:
   ch_uint(const ch_int<M>& other)
     : ch_uint(make_logic_buffer(N, idname<ch_uint>())) {
     CH_SOURCE_LOCATION(1);
-    base::operator=(other);
+    this->operator=(other);
   }
 
   template <unsigned M,
@@ -173,7 +173,7 @@ public:
   ch_uint(const ch_uint<M>& other)
     : ch_uint(make_logic_buffer(N, idname<ch_uint>())) {
     CH_SOURCE_LOCATION(1);
-    base::operator=(other);
+    this->operator=(other);
   }
 
   ch_uint(const ch_uint& other)
@@ -186,13 +186,13 @@ public:
 
   ch_uint& operator=(const ch_uint& other) {
     CH_SOURCE_LOCATION(1);
-    this->as_bit().operator=(other);
+    logic_accessor::assign(*this, other);
     return *this;
   }
 
   ch_uint& operator=(ch_uint&& other) {
     CH_SOURCE_LOCATION(1);
-    this->as_bit().operator=(std::move(other.as_bit()));
+    logic_accessor::move(*this, std::move(other));
     return *this;
   }
 
@@ -206,28 +206,5 @@ protected:
 
   friend class logic_accessor;
 };
-
-/*CH_LOGIC_FUNCTION_EQUALITY(ch_uint, ch_eq, ch_op::eq)
-CH_LOGIC_FUNCTION_EQUALITY(ch_uint, ch_ne, ch_op::ne)
-
-CH_LOGIC_FUNCTION_RELATIONAL(ch_uint, ch_lt, ch_op::lt)
-CH_LOGIC_FUNCTION_RELATIONAL(ch_uint, ch_le, ch_op::le)
-CH_LOGIC_FUNCTION_RELATIONAL(ch_uint, ch_gt, ch_op::gt)
-CH_LOGIC_FUNCTION_RELATIONAL(ch_uint, ch_ge, ch_op::ge)
-
-CH_LOGIC_FUNCTION_BITWISE1(ch_uint, ch_inv, ch_op::inv)
-CH_LOGIC_FUNCTION_BITWISE2(ch_uint, ch_and, ch_op::andb)
-CH_LOGIC_FUNCTION_BITWISE2(ch_uint, ch_or, ch_op::orb)
-CH_LOGIC_FUNCTION_BITWISE2(ch_uint, ch_xor, ch_op::xorb)
-
-CH_LOGIC_FUNCTION_SHIFT(ch_uint, ch_shl, ch_op::shl)
-CH_LOGIC_FUNCTION_SHIFT(ch_uint, ch_shr, ch_op::shr)
-
-CH_LOGIC_FUNCTION_ARITHMETIC1(ch_uint, ch_neg, ch_op::neg)
-CH_LOGIC_FUNCTION_ARITHMETIC2(ch_uint, ch_add, ch_op::add)
-CH_LOGIC_FUNCTION_ARITHMETIC2(ch_uint, ch_sub, ch_op::sub)
-CH_LOGIC_FUNCTION_ARITHMETIC3(ch_uint, ch_mul, ch_op::mul)
-CH_LOGIC_FUNCTION_ARITHMETIC3(ch_uint, ch_div, ch_op::div)
-CH_LOGIC_FUNCTION_ARITHMETIC3(ch_uint, ch_mod, ch_op::mod)*/
 
 }}

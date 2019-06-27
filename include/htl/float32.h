@@ -44,18 +44,18 @@ public:
 
   ch_sfloat32(ch_sfloat32&& other) : buffer_(std::move(other.buffer_)) {}
 
+  ch_sfloat32& operator=(float other) {
+    base::operator=(bit_cast<int32_t>(other));
+    return *this;
+  }
+
   ch_sfloat32& operator=(const ch_sfloat32& other) {
-    this->as_bit().operator=(other.as_bit());
+    system_accessor::assign(*this, other);
     return *this;
   }
 
   ch_sfloat32& operator=(ch_sfloat32&& other) {
-    this->as_bit().operator=(std::move(other.as_bit()));
-    return *this;
-  }
-
-  ch_sfloat32& operator=(float other) {
-    base::operator=(bit_cast<int32_t>(other));
+    system_accessor::move(*this, std::move(other));
     return *this;
   }
 
@@ -176,13 +176,13 @@ public:
 
   ch_float32& operator=(const ch_float32& other) {
     __source_location(1);
-    this->as_bit().operator=(other.as_bit());
+    logic_accessor::assign(*this, other);
     return *this;
   }
 
   ch_float32& operator=(ch_float32&& other) {
     __source_location(1);
-    this->as_bit().operator=(std::move(other.as_bit()));
+    logic_accessor::move(*this, std::move(other));
     return *this;
   }
 

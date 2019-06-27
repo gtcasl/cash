@@ -63,35 +63,35 @@ public:
             CH_REQUIRE(ch_width_v<U> <= N)>
   explicit ch_sfixed(const ch_sbit_base<U>& other)
     : ch_sfixed(make_system_buffer(N, idname<ch_sfixed>())) {
-    base::operator=(reinterpret_cast<const U&>(other));
+    this->operator=(reinterpret_cast<const U&>(other));
   }
 
   template <typename U,
             CH_REQUIRE(std::is_integral_v<U>)>
   ch_sfixed(const U& other)
     : ch_sfixed(make_system_buffer(N, idname<ch_sfixed>())) {
-    base::operator=(other);
+    this->operator=(other);
   }
 
   template <unsigned M,
             CH_REQUIRE(M <= N)>
   ch_sfixed(const ch_sbit<M>& other)
     : ch_sfixed(make_system_buffer(N, idname<ch_sfixed>())) {
-    base::operator=(other);
+    this->operator=(other);
   }
 
   template <unsigned M,
             CH_REQUIRE(M <= N)>
   ch_sfixed(const ch_suint<M>& other)
     : ch_sfixed(make_system_buffer(N, idname<ch_sfixed>())) {
-    base::operator=(other);
+    this->operator=(other);
   }
 
   template <unsigned M,
             CH_REQUIRE(M <= N)>
   ch_sfixed(const ch_sint<M>& other)
     : ch_sfixed(make_system_buffer(N, idname<ch_sfixed>())) {
-    base::operator=(other);
+    this->operator=(other);
   }
 
   ch_sfixed(const ch_sfixed& other)
@@ -102,12 +102,12 @@ public:
   ch_sfixed(ch_sfixed&& other) : buffer_(std::move(other.buffer_)) {}
 
   ch_sfixed& operator=(const ch_sfixed& other) {
-    this->as_bit().operator=(other.as_bit());
+    system_accessor::assign(*this, other);
     return *this;
   }
 
   ch_sfixed& operator=(ch_sfixed&& other) {
-    this->as_bit().operator=(std::move(other.as_bit()));
+    system_accessor::move(*this, std::move(other));
     return *this;
   }
 
@@ -195,7 +195,7 @@ public:
   explicit ch_fixed(const ch_sbit_base<U>& other)
     : ch_fixed(make_logic_buffer(N, idname<ch_fixed>())) {
     __source_location(1);
-    base::operator=(reinterpret_cast<const U&>(other));
+    this->operator=(reinterpret_cast<const U&>(other));
   }
 
   template <typename U,
@@ -203,7 +203,7 @@ public:
   explicit ch_fixed(const ch_bit_base<U>& other)
     : ch_fixed(make_logic_buffer(N, idname<ch_fixed>())) {
     __source_location(1);
-    base::operator=(reinterpret_cast<const U&>(other));
+    this->operator=(reinterpret_cast<const U&>(other));
   }
 
   template <typename U,
@@ -211,7 +211,7 @@ public:
   ch_fixed(const U& other)
     : ch_fixed(make_logic_buffer(N, idname<ch_fixed>())) {
     __source_location(1);
-    base::operator=(other);
+    this->operator=(other);
   }
 
   template <unsigned M,
@@ -219,7 +219,7 @@ public:
   ch_fixed(const ch_sbit<M>& other)
     : ch_fixed(make_logic_buffer(N, idname<ch_fixed>())) {
     __source_location(1);
-    base::operator=(other);
+    this->operator=(other);
   }
 
   template <unsigned M,
@@ -227,7 +227,7 @@ public:
   ch_fixed(const ch_sint<M>& other)
     : ch_fixed(make_logic_buffer(N, idname<ch_fixed>())) {
     __source_location(1);
-    base::operator=(other);
+    this->operator=(other);
   }
 
   template <unsigned M,
@@ -235,7 +235,7 @@ public:
   ch_fixed(const ch_suint<M>& other)
     : ch_fixed(make_logic_buffer(N, idname<ch_fixed>())) {
     __source_location(1);
-    base::operator=(other);
+    this->operator=(other);
   }
 
   template <unsigned M,
@@ -243,7 +243,7 @@ public:
   ch_fixed(const ch_bit<M>& other)
     : ch_fixed(make_logic_buffer(N, idname<ch_fixed>())) {
     __source_location(1);
-    base::operator=(other);
+    this->operator=(other);
   }
 
   template <unsigned M,
@@ -251,7 +251,7 @@ public:
   ch_fixed(const ch_uint<M>& other)
     : ch_fixed(make_logic_buffer(N, idname<ch_fixed>())) {
     __source_location(1);
-    base::operator=(other);
+    this->operator=(other);
   }
 
   template <unsigned M,
@@ -259,13 +259,13 @@ public:
   ch_fixed(const ch_int<M>& other)
     : ch_fixed(make_logic_buffer(N, idname<ch_fixed>())) {
     __source_location(1);
-    base::operator=(other);
+    this->operator=(other);
   }
 
   ch_fixed(const ch_sfixed<N, F>& other)
     : ch_fixed(make_logic_buffer(N, idname<ch_fixed>())) {
     __source_location(1);
-    base::operator=(other);
+    this->operator=(other);
   }
 
   ch_fixed(const ch_fixed& other)
@@ -290,13 +290,13 @@ public:
 
   ch_fixed& operator=(const ch_fixed& other) {
     __source_location(1);
-    this->as_bit().operator=(other.as_bit());
+    logic_accessor::assign(*this, other);
     return *this;
   }
 
   ch_fixed& operator=(ch_fixed&& other) {
     __source_location(1);
-    this->as_bit().operator=(std::move(other.as_bit()));
+    logic_accessor::move(*this, std::move(other));
     return *this;
   }
 

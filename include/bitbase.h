@@ -45,7 +45,10 @@ public:
     auto self = reinterpret_cast<T*>(this);
     if constexpr (ch_width_v<U> < ch_width_v<T>) {
       sdata_type tmp(ch_width_v<T>);
-      bv_pad<is_signed_v<U>>(tmp.words(), ch_width_v<T>, system_accessor::data(reinterpret_cast<const U&>(other)).words(), ch_width_v<U>);
+      bv_pad<is_signed_v<U>>(tmp.words(),
+                             ch_width_v<T>,
+                             system_accessor::data(reinterpret_cast<const U&>(other)).words(),
+                             ch_width_v<U>);
       system_accessor::assign(*self, tmp);
     } else {
       system_accessor::assign(*self, reinterpret_cast<const U&>(other));
@@ -244,7 +247,8 @@ public:
       ch_sbit<ch_width_v<T>> tmp(reinterpret_cast<const U&>(other));
       logic_accessor::assign(*self, system_accessor::data(tmp));
     } else {
-      logic_accessor::assign(*self, system_accessor::data(reinterpret_cast<const U&>(other)));
+      logic_accessor::assign(*self,
+                             system_accessor::data(reinterpret_cast<const U&>(other)));
     }
     return *self;
   }
@@ -256,10 +260,13 @@ public:
     auto self = reinterpret_cast<T*>(this);
     if constexpr (ch_width_v<U> < ch_width_v<T>) {
       ch_bit<ch_width_v<T>> tmp(make_logic_buffer(
-          createOpNode(ch_op::pad, ch_width_v<T>, is_signed_v<U>, get_lnode(reinterpret_cast<const U&>(other)))));
+          createOpNode(ch_op::pad,
+                       ch_width_v<T>,
+                       is_signed_v<U>,
+                       get_lnode(reinterpret_cast<const U&>(other)))));
       logic_accessor::assign(*self, tmp);
     } else {
-      logic_accessor::assign(*self,reinterpret_cast<const U&>(other));
+      logic_accessor::assign(*self, reinterpret_cast<const U&>(other));
     }
     return *self;
   }

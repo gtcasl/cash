@@ -49,6 +49,14 @@ inline constexpr bool is_logic_op_constructible_v =
 
 class logic_buffer : public lnode {
 public:
+  using base = lnode;
+
+  logic_buffer(const logic_buffer& other) : lnode(other) {}
+
+  logic_buffer& operator=(const logic_buffer& other) {
+    this->write(0, other, 0, other.size());
+    return *this;
+  }
 
   const logic_buffer& source() const;
 
@@ -61,7 +69,7 @@ public:
 
   lnodeimpl* clone() const;
 
-  lnodeimpl* sliceref(size_t size, size_t start) const;
+  lnodeimpl* sliceref(size_t size, size_t start) const;  
 
 protected:
 
@@ -101,49 +109,53 @@ public:
 
   template <typename T>
   static auto& source(const T& obj) {
-    assert(obj.__buffer().size() == ch_width_v<T>);
+    assert(ch_width_v<T> == obj.__buffer().size());
     return obj.__buffer().source();
   }
 
   template <typename T>
   static auto move(T&& obj) {
-    assert(obj.__buffer().size() == ch_width_v<T>);
+    assert(ch_width_v<T> == obj.__buffer().size());
     return make_logic_buffer(std::move(obj.__buffer()));
   }
 
-  template <typename U>
-  static void assign(U& dst, const sdata_type& src) {
-    assert(ch_width_v<U> == src.size());
-    const_cast<logic_buffer&>(dst.__buffer()).write(0, src, 0, ch_width_v<U>);
+  template <typename T>
+  static void assign(T& obj, const sdata_type& src) {
+    assert(ch_width_v<T> == obj.__buffer().size());
+    assert(ch_width_v<T> == src.size());
+    const_cast<logic_buffer&>(obj.__buffer()).write(0, src, 0, ch_width_v<T>);
   }
 
-  template <typename U, typename V>
-  static void assign(U& dst, const V& src) {
-    static_assert(ch_width_v<U> == ch_width_v<V>, "invalid size");
-    assert(ch_width_v<U> == dst.__buffer().size());
-    assert(ch_width_v<V> == src.__buffer().size());
-    const_cast<logic_buffer&>(dst.__buffer()).write(
-          0, src.__buffer(), 0, ch_width_v<U>);
+  template <typename T, typename U>
+  static void assign(T& obj, const U& src) {
+    static_assert(ch_width_v<T> == ch_width_v<U>, "invalid size");
+    assert(ch_width_v<T> == obj.__buffer().size());
+    assert(ch_width_v<U> == src.__buffer().size());
+    const_cast<logic_buffer&>(obj.__buffer()) = src.__buffer();
   }
 
-  template <typename U, typename V>
-  static void move(U& dst, V&& src) {
-    logic_accessor::assign(dst, src);
+  template <typename T, typename U>
+  static void move(T& obj, U&& src) {
+    static_assert(ch_width_v<T> == ch_width_v<U>, "invalid size");
+    assert(ch_width_v<T> == obj.__buffer().size());
+    assert(ch_width_v<U> == src.__buffer().size());
+    const_cast<logic_buffer&>(obj.__buffer()) = src.__buffer();
   }
 
-  template <typename U, typename V>
-  static void write(U& dst,
+  template <typename T, typename U>
+  static void write(T& obj,
                     uint32_t dst_offset,
-                    const V& src,
+                    const U& src,
                     uint32_t src_offset,
                     uint32_t length) {
-    const_cast<logic_buffer&>(dst.__buffer()).write(
+    assert(ch_width_v<T> == obj.__buffer().size());
+    const_cast<logic_buffer&>(obj.__buffer()).write(
           dst_offset, src.__buffer(), src_offset, length);
   }
 
   template <typename T>
   static auto clone(const T& obj) {
-    assert(obj.__buffer().size() == ch_width_v<T>);
+    assert(ch_width_v<T> == obj.__buffer().size());
     auto data = obj.__buffer().clone();
     return T(make_logic_buffer(data));
   }
@@ -151,8 +163,8 @@ public:
   template <typename R, typename T>
   static auto slice(const T& obj, size_t start) {
     static_assert(ch_width_v<R> <= ch_width_v<T>, "invalid size");
+    assert(ch_width_v<T> == obj.__buffer().size());
     assert(start + ch_width_v<R> <= ch_width_v<T>);
-    assert(obj.__buffer().size() == ch_width_v<T>);
     auto buffer = make_logic_buffer(ch_width_v<R>, "slice");
     buffer.write(0, obj.__buffer(), start, ch_width_v<R>);
     return std::add_const_t<R>(buffer);
@@ -161,8 +173,8 @@ public:
   template <typename R, typename T>
   static auto sliceref(const T& obj, size_t start) {
     static_assert(ch_width_v<R> <= ch_width_v<T>, "invalid size");
+    assert(ch_width_v<T> == obj.__buffer().size());
     assert(start + ch_width_v<R> <= ch_width_v<T>);
-    assert(obj.__buffer().size() == ch_width_v<T>);
     auto data = obj.__buffer().sliceref(ch_width_v<R>, start);
     return R(make_logic_buffer(data));
   }
@@ -170,7 +182,7 @@ public:
   template <typename R, typename T>
   static auto cast(const T& obj) {
     static_assert(ch_width_v<T> == ch_width_v<R>, "invalid size");
-    assert(obj.__buffer().size() == ch_width_v<T>);
+    assert(ch_width_v<T> == obj.__buffer().size());
     return R(obj.__buffer());
   }
 
