@@ -123,10 +123,6 @@ public:
    return users_;
   }
 
-  auto is_shared() const {
-    return users_ && users_->next_;
-  }
-
   void add_user(lnode* user);
 
   void replace_uses(lnodeimpl* node);

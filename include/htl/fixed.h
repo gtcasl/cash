@@ -35,13 +35,13 @@ template <unsigned N, unsigned F>
 class ch_fixed;
 
 template <unsigned N, unsigned F>
-class ch_sfixed : public ch_snumber_base<ch_sfixed<N, F>> {
+class ch_sfixed : public ch_snumbase<ch_sfixed<N, F>> {
 public:  
   static constexpr unsigned Intg = N-F;
   static constexpr unsigned Frac = F;
   static_assert(N >= (Frac+1), "invalid size");
   using traits = system_traits<N, true, ch_sfixed, ch_fixed<N, F>>;
-  using base = ch_snumber_base<ch_sfixed<N, F>>;
+  using base = ch_snumbase<ch_sfixed<N, F>>;
   using base::operator=;
 
   ch_sfixed(const system_buffer& buffer
@@ -61,7 +61,7 @@ public:
 
   template <typename U,
             CH_REQUIRE(ch_width_v<U> <= N)>
-  explicit ch_sfixed(const ch_sbit_base<U>& other)
+  explicit ch_sfixed(const ch_sbitbase<U>& other)
     : ch_sfixed(make_system_buffer(N, idname<ch_sfixed>())) {
     this->operator=(reinterpret_cast<const U&>(other));
   }
@@ -165,13 +165,13 @@ protected:
 ///////////////////////////////////////////////////////////////////////////////
 
 template <unsigned N, unsigned F>
-class ch_fixed : public ch_number_base<ch_fixed<N, F>> {
+class ch_fixed : public ch_numbase<ch_fixed<N, F>> {
 public:  
   static constexpr unsigned Intg = N-F;
   static constexpr unsigned Frac = F;
   static_assert(N >= (Frac+1), "invalid size");
   using traits = logic_traits<N, true, ch_fixed, ch_sfixed<N, F>>;
-  using base = ch_number_base<ch_fixed<N, F>>;
+  using base = ch_numbase<ch_fixed<N, F>>;
   using base::operator=;
 
   ch_fixed(const logic_buffer& buffer = make_logic_buffer(N, idname<ch_fixed>()))
@@ -192,7 +192,7 @@ public:
 
   template <typename U,
             CH_REQUIRE(ch_width_v<U> <= N)>
-  explicit ch_fixed(const ch_sbit_base<U>& other)
+  explicit ch_fixed(const ch_sbitbase<U>& other)
     : ch_fixed(make_logic_buffer(N, idname<ch_fixed>())) {
     __source_location(1);
     this->operator=(reinterpret_cast<const U&>(other));
@@ -200,7 +200,7 @@ public:
 
   template <typename U,
             CH_REQUIRE(ch_width_v<U> <= N)>
-  explicit ch_fixed(const ch_bit_base<U>& other)
+  explicit ch_fixed(const ch_bitbase<U>& other)
     : ch_fixed(make_logic_buffer(N, idname<ch_fixed>())) {
     __source_location(1);
     this->operator=(reinterpret_cast<const U&>(other));

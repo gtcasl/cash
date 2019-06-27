@@ -320,11 +320,13 @@ TEST_CASE("proxies", "[proxies]") {
       return (c == 11100_b);
     });
     TEST([]()->ch_bool {
-      auto c = ch_cat(011_b, 011_b);
+      ch_bit<3> a = 011_b;
+      auto c = ch_cat(a, 011_b);
       return (c == 011011_b);
     });
     TEST([]()->ch_bool {
-      auto c = ch_cat(10_b, 1011_b);
+      ch_bit2 a = 10_b;
+      auto c = ch_cat(a, 1011_b);
       return (c == 101011_b);
     });
     TEST([]()->ch_bool {
@@ -350,8 +352,8 @@ TEST_CASE("proxies", "[proxies]") {
       return (x == 01_b && y == 01_b && z == 01_b);
     });
     TEST([]()->ch_bool {
-      ch_bit2 x, y;
-      ch_tie(x, y) = ch_cat(01_b, 00_b);
+      ch_bit2 x, y, a(01_b);
+      ch_tie(x, y) = ch_cat(a, 00_b);
       //ch_println("x={0}, y={1}", x, y);
       return (x == 1 && y == 0);
     });

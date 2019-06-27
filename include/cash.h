@@ -55,11 +55,11 @@ namespace logic {
   // data types
   //
 
-  using ch::internal::ch_bit_base;
-  using ch::internal::ch_sbit_base;
+  using ch::internal::ch_bitbase;
+  using ch::internal::ch_sbitbase;
 
-  using ch::internal::ch_number_base;
-  using ch::internal::ch_snumber_base;
+  using ch::internal::ch_numbase;
+  using ch::internal::ch_snumbase;
 
   using ch::internal::ch_bit;
   using ch::internal::ch_sbit;
@@ -395,10 +395,6 @@ namespace system {
 //
 namespace extension {
   using ch::internal::is_data_type_v;
-  using ch::internal::is_bit_convertible_v;
-  using ch::internal::is_sbit_convertible_v;
-  using ch::internal::is_bitvector_extended_type_v;
-
   using ch::internal::logic_traits;
   using ch::internal::system_traits;
   using ch::internal::logic_buffer;

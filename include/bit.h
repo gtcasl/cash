@@ -6,11 +6,11 @@ namespace ch {
 namespace internal {
 
 template <unsigned N>
-class ch_sbit : public ch_sbit_base<ch_sbit<N>> {
+class ch_sbit : public ch_sbitbase<ch_sbit<N>> {
 public:
   static_assert(N != 0, "invalid size");
   using traits = system_traits<N, false, ch_sbit, ch_bit<N>>;
-  using base = ch_sbit_base<ch_sbit<N>>;
+  using base = ch_sbitbase<ch_sbit<N>>;
   using base::operator=;
 
   ch_sbit(const system_buffer& buffer
@@ -35,7 +35,7 @@ public:
 
   template <typename U,
             CH_REQUIRE(ch_width_v<U> <= N)>
-  explicit ch_sbit(const ch_sbit_base<U>& other)
+  explicit ch_sbit(const ch_sbitbase<U>& other)
     : ch_sbit(make_system_buffer(N, idname<ch_sbit>())) {
     this->operator=(reinterpret_cast<const U&>(other));
   }
@@ -92,11 +92,11 @@ protected:
 ///////////////////////////////////////////////////////////////////////////////
 
 template <unsigned N>
-class ch_bit : public ch_bit_base<ch_bit<N>> {
+class ch_bit : public ch_bitbase<ch_bit<N>> {
 public:
   static_assert(N != 0, "invalid size");
   using traits = logic_traits<N, false, ch_bit, ch_sbit<N>>;
-  using base = ch_bit_base<ch_bit<N>>;
+  using base = ch_bitbase<ch_bit<N>>;
   using base::operator=;
 
   ch_bit(const logic_buffer& buffer = make_logic_buffer(N, idname<ch_bit>()))
@@ -114,7 +114,7 @@ public:
 
   template <typename U,
             CH_REQUIRE(ch_width_v<U> <= N)>
-  explicit ch_bit(const ch_sbit_base<U>& other)
+  explicit ch_bit(const ch_sbitbase<U>& other)
     : ch_bit(make_logic_buffer(N, idname<ch_bit>())) {
     CH_SOURCE_LOCATION(1);
     this->operator=(reinterpret_cast<const U&>(other));
@@ -146,7 +146,7 @@ public:
 
   template <typename U,
             CH_REQUIRE(ch_width_v<U> <= N)>
-  explicit ch_bit(const ch_bit_base<U>& other)
+  explicit ch_bit(const ch_bitbase<U>& other)
     : ch_bit(make_logic_buffer(N, idname<ch_bit>())) {
     CH_SOURCE_LOCATION(1);
     this->operator=(reinterpret_cast<const U&>(other));

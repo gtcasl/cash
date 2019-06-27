@@ -1,6 +1,6 @@
 #pragma once
 
-#include "logic.h"
+#include "uint.h"
 
 namespace ch {
 namespace internal {
@@ -102,9 +102,7 @@ public:
     : mem_(ch_width_v<T>, N, sdata_from_fill(value, data_width, N), ForceLogicRAM, idname<T>())
   {}
 
-  template <typename U>
-  auto read(const U& addr) const {
-    static_assert(is_bit_convertible_v<U, addr_width>, "invalid type");
+  auto read(const ch_uint<addr_width>& addr) const {
     CH_SOURCE_LOCATION(1);
     auto laddr = to_lnode<addr_width>(addr);
     return make_logic_type<T>(mem_.aread(laddr));
@@ -150,9 +148,7 @@ public:
     : mem_(ch_width_v<T>, N, sdata_from_fill(value, data_width, N), false, idname<T>())
   {}
 
-  template <typename U>
-  auto read(const U& addr) const {
-    static_assert(is_bit_convertible_v<U, addr_width>, "invalid type");
+  auto read(const ch_uint<addr_width>& addr) const {
     CH_SOURCE_LOCATION(1);
     auto laddr = to_lnode<addr_width>(addr);
     if constexpr (SyncRead) {
@@ -162,33 +158,27 @@ public:
     }
   }
 
-  template <typename U, typename E>
-  auto read(const U& addr, const E& enable) const {
+  auto read(const ch_uint<addr_width>& addr, const ch_bool& enable) const {
     static_assert(SyncRead, "invalid memory type");
-    static_assert(is_bit_convertible_v<U, addr_width>, "invalid type");
-    static_assert(is_bit_base_v<E>, "invalid type");
-    static_assert(ch_width_v<E> == 1, "invalid size");
     CH_SOURCE_LOCATION(1);
     auto laddr = to_lnode<addr_width>(addr);
     auto l_enable = get_lnode(enable);
     return make_logic_type<T>(mem_.sread(laddr, l_enable));
   }
 
-  template <typename U, typename V>
-  void write(const U& addr, const V& value) {
-    static_assert(is_bit_convertible_v<U, addr_width>, "invalid type");
-    static_assert(std::is_constructible_v<T, V>, "invalid type");
+  template <typename U>
+  void write(const ch_uint<addr_width>& addr, const U& value) {
+    static_assert(std::is_constructible_v<T, U>, "invalid type");
     CH_SOURCE_LOCATION(1);
     auto l_addr  = to_lnode<addr_width>(addr);
     auto l_value = to_lnode<T>(value);
     mem_.write(l_addr, l_value, sdata_type(1,1));
   }
 
-  template <typename U, typename V, typename E>
-  void write(const U& addr, const V& value, const E& enable) {
-    static_assert(is_bit_convertible_v<U, addr_width>, "invalid address type");
-    static_assert(std::is_constructible_v<T, V>, "invalidvalue  type");
-    static_assert(is_bit_base_v<E>, "invalid enable type");
+  template <typename U, typename E>
+  void write(const ch_uint<addr_width>& addr, const U& value, const E& enable) {
+    static_assert(std::is_constructible_v<T, U>, "invalidvalue  type");
+    static_assert(is_bitbase_v<E>, "invalid enable type");
     static_assert(ch_width_v<E> * (ch_width_v<T> / ch_width_v<E>) == ch_width_v<T>, "invalid enable size");
     CH_SOURCE_LOCATION(1);
     auto l_addr   = to_lnode<addr_width>(addr);

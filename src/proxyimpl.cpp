@@ -394,33 +394,3 @@ bool refimpl::check_fully_initialized() const {
   }
   return (start == end);
 }
-
-///////////////////////////////////////////////////////////////////////////////
-
-lnodeimpl* ch::internal::createRotateNode(const lnode& next, uint32_t dist, bool right) {
-  auto N = next.size();
-  auto mod = dist % N;
-  auto sloc = get_source_location();
-  auto ret = next.impl()->ctx()->create_node<proxyimpl>(N, (right ? "rotr" : "rotl"), sloc);
-  if (right) {
-    ret->add_source(0, next.impl(), mod, N - mod);
-    ret->add_source(N - mod, next.impl(), 0, mod);
-  } else {
-    ret->add_source(0, next.impl(), N - mod, mod);
-    ret->add_source(mod, next.impl(), 0, N - mod);
-  }
-  return ret;
-}
-
-lnodeimpl* ch::internal::createShuffleNode(const lnode& in, const std::vector<unsigned>& indices) {
-  auto sloc = get_source_location();
-  auto ret = in.impl()->ctx()->create_node<proxyimpl>(in.size(), "shuffle", sloc);
-  auto stride = in.size() / indices.size();
-  CH_CHECK(stride * indices.size() == in.size(), "invalid size");
-  for (unsigned i = 0, n = indices.size(); i < n; ++i) {
-    auto j = indices[n - 1 - i];
-    CH_CHECK(j < n, "invalid index");
-    ret->add_source(i * stride, in.impl(), j * stride, stride);
-  }
-  return ret;
-}

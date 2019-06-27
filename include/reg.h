@@ -140,7 +140,7 @@ template <typename R, typename T, typename E>
 auto ch_nextEn(const T& in, const E& enable) {
   static_assert(is_logic_type_v<R>, "invalid type");
   static_assert(std::is_constructible_v<R, T>, "invalid type");
-  static_assert(is_bit_base_v<E>, "invalid type");
+  static_assert(is_bitbase_v<E>, "invalid type");
   static_assert(ch_width_v<E> == 1, "invalid size");
   CH_SOURCE_LOCATION(1);
   return make_logic_type<R>(createRegNext(to_lnode<R>(in),
@@ -160,7 +160,7 @@ auto ch_nextEn(const T& in, const E& enable, const I& init) {
   static_assert(is_logic_type_v<R>, "invalid type");
   static_assert(std::is_constructible_v<R, T>, "invalid type");
   static_assert(std::is_constructible_v<R, I>, "invalid type");  
-  static_assert(is_bit_base_v<E>, "invalid type");
+  static_assert(is_bitbase_v<E>, "invalid type");
   static_assert(ch_width_v<E> == 1, "invalid size");
   CH_SOURCE_LOCATION(1);
   return make_logic_type<R>(createRegNext(to_lnode<R>(in),
@@ -222,7 +222,7 @@ template <typename R, typename T, typename E>
 auto ch_delayEn(const T& in, const E& enable, uint32_t delay = 1) {
   static_assert(is_logic_type_v<R>, "invalid type");
   static_assert(std::is_constructible_v<R, T>, "invalid type");
-  static_assert(is_bit_base_v<E>, "invalid type");
+  static_assert(is_bitbase_v<E>, "invalid type");
   static_assert(ch_width_v<E> == 1, "invalid size");
   CH_SOURCE_LOCATION(1);
   if (0 == delay) {
@@ -245,7 +245,7 @@ auto ch_delayEn(const T& in, const E& enable, uint32_t delay, const I& init) {
   static_assert(is_logic_type_v<R>, "invalid type");
   static_assert(std::is_constructible_v<R, T>, "invalid type");
   static_assert(std::is_constructible_v<R, I>, "invalid type");
-  static_assert(is_bit_base_v<E>, "invalid type");
+  static_assert(is_bitbase_v<E>, "invalid type");
   static_assert(ch_width_v<E> == 1, "invalid size");
   CH_SOURCE_LOCATION(1);
   if (0 == delay) {
@@ -277,7 +277,7 @@ auto ch_pipe(Func&& func, uint32_t length, Bs&&... bounds) {
 
 template <typename Func, typename E, typename... Bs>
 auto ch_pipeEn(Func&& func, const E& enable, uint32_t length, Bs&&... bounds) {
-  static_assert(is_bit_base_v<E>, "invalid type");
+  static_assert(is_bitbase_v<E>, "invalid type");
   static_assert(ch_width_v<E> == 1, "invalid size");
   CH_SOURCE_LOCATION(1);
   beginPipe(length, get_lnode(enable), {std::forward<Bs>(bounds)...});

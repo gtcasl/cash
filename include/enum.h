@@ -88,7 +88,7 @@ void registerEnumString(const lnode& node, void* callback);
   }
 
 #define CH_ENUM_IMPL(enum_name, size, ...) \
-  class enum_name : public ch::internal::ch_bit_base<enum_name> { \
+  class enum_name : public ch::internal::ch_bitbase<enum_name> { \
   public: \
     enum type { \
       CH_FOR_EACH(CH_ENUM_FIELD, , CH_SEP_COMMA, __VA_ARGS__) \
@@ -109,7 +109,7 @@ void registerEnumString(const lnode& node, void* callback);
     ch::internal::logic_buffer buffer_; \
     friend class ch::internal::logic_accessor; \
     \
-    class __system_type__ : public ch::internal::ch_sbit_base<__system_type__> { \
+    class __system_type__ : public ch::internal::ch_sbitbase<__system_type__> { \
     private: \
       const ch::internal::system_buffer& __buffer() const { \
         return buffer_; \
@@ -118,12 +118,12 @@ void registerEnumString(const lnode& node, void* callback);
       friend class ch::internal::system_accessor; \
     public: \
       using traits = ch::internal::system_traits<size, false, __system_type__, enum_name>; \
-      using base = ch::internal::ch_sbit_base<__system_type__>; \
+      using base = ch::internal::ch_sbitbase<__system_type__>; \
       CH_ENUM_SYSTEM_IMPL(__system_type__) \
     }; \
   public: \
     using traits = ch::internal::logic_traits<size, false, enum_name, __system_type__>; \
-    using base = ch::internal::ch_bit_base<enum_name>; \
+    using base = ch::internal::ch_bitbase<enum_name>; \
     CH_ENUM_LOGIC_IMPL(enum_name) \
   }
 

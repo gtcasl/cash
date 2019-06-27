@@ -25,9 +25,9 @@ inline auto ch_reset() {
 
 template <typename C, typename R = ch_bool>
 void ch_pushcd(const C& clk, const R& reset = ch_reset(), bool pos_edge = true) {
-  static_assert(is_bit_base_v<C>, "invalid type");
+  static_assert(is_bitbase_v<C>, "invalid type");
   static_assert(ch_width_v<C> == 1, "invalid size");
-  static_assert(is_bit_base_v<R>, "invalid type");
+  static_assert(is_bitbase_v<R>, "invalid type");
   static_assert(ch_width_v<R> == 1, "invalid size");
   CH_SOURCE_LOCATION(1);
   pushClockDomain(get_lnode(clk), get_lnode(reset), pos_edge);

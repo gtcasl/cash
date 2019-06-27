@@ -35,12 +35,7 @@ elseif (LLVMJIT)
     set(PROJECT_SOURCES src/llvmjit.cpp)
 endif()
 set(PROJECT_SOURCES
-    ${PROJECT_SOURCES}    
-    #tests/fixed.cpp
-    #tests/float.cpp
-    #tests/static.cpp
-    #tests/system.cpp
-    #tests/aggregates.cpp
+    ${PROJECT_SOURCES}
     src/utils.cpp
     src/platform.cpp    
     src/system.cpp
@@ -62,7 +57,7 @@ set(PROJECT_SOURCES
     src/udfimpl.cpp
     src/deviceimpl.cpp
     src/context.cpp
-    src/branchconv.cpp
+    src/brconv.cpp
     src/compile.cpp
     src/simref.cpp
     src/simjit.cpp    

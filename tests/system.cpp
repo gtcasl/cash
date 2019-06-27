@@ -566,4 +566,62 @@ TEST_CASE("system", "[system]") {
       return (x[0] == 3) && (x[1] == 0);
     });
   }
+  SECTION("funcapi", "[funcapi]") {
+    TESTX([]()->bool {
+      ch_sbit4 x(3);
+      auto y = ch_dup<3>(x);
+      return (y == 0x333_h);
+    });
+    TESTX([]()->bool {
+      ch_sbit2 x(3);
+      ch_sbit4 y(8);
+      auto z = ch_cat(x, y);
+      return (z == 111000_b);
+    });
+    TESTX([]()->bool {
+      ch_suint2 x(3);
+      ch_suint4 y(8);
+      auto z = ch_min(x, y);
+      return (z == 3);
+    });
+    TESTX([]()->bool {
+      ch_suint2 x(3);
+      ch_suint4 y(8);
+      auto z = ch_max(x, y);
+      return (z == 8);
+    });
+    TESTX([]()->bool {
+      ch_suint4 x(1), y(-1);
+      auto a = ch_abs(x);
+      auto b = ch_abs(y);
+      return (a == 1 && b == -1);
+    });
+    TESTX([]()->bool {
+      ch_sint4 x(1), y(-1);
+      auto a = ch_abs(x);
+      auto b = ch_abs(y);
+      return (a == 1 && b == 1);
+    });
+    TESTX([]()->bool {
+      ch_sbit4 x;
+      ch_sbit2 y;
+      ch_tie(x, y) = 011010_b;
+      return (x == 0110_b && y == 10_b);
+    });
+    TESTX([]()->bool {
+      ch_suint8 x(11000011_b);
+      auto y = ch_rotl(x, 2);
+      return (y == 00001111_b);
+    });
+    TESTX([]()->bool {
+      ch_suint8 x(11000011_b);
+      auto y = ch_rotr(x, 2);
+      return (y == 11110000_b);
+    });
+    TESTX([]()->bool {
+      ch_suint8 x(11000011_b);
+      auto y = ch_shuffle<2>(x, {0, 1});
+      return (y == 00111100_b);
+    });
+  }
 }

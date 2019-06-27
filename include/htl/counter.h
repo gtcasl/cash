@@ -12,7 +12,10 @@ class ch_counter {
 public:
 
   template <typename S, typename I>
-  ch_counter(const ch_bool& incr, const S& step, const I& init, const ch_bool& reset = ch_reset()) {
+  ch_counter(const ch_bool& incr,
+             const S& step,
+             const I& init,
+             const ch_bool& reset = ch_reset()) {
     incr_ = incr;
     step_ = step;
     init_ = init;

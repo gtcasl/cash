@@ -13,14 +13,10 @@ lnodeimpl* createOpNode(ch_op op,
                         const lnode& lhs,
                         const lnode& rhs);
 
-lnodeimpl* createRotateNode(const lnode& next, uint32_t dist, bool right);
-
-lnodeimpl* createShuffleNode(const lnode& in, const std::vector<unsigned>& indices);
-
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> class ch_bit_base;
-template <typename T> class ch_number_base;
+template <typename T> class ch_bitbase;
+template <typename T> class ch_numbase;
 
 template <unsigned N> class ch_bit;
 template <unsigned N> class ch_int;
@@ -32,11 +28,8 @@ template <typename T> using ch_reg = std::add_const_t<ch_reg_impl<T>>;
 using ch_bool = ch_uint<1>;
 
 template <typename T>
-inline constexpr bool is_bit_base_v = is_logic_type_v<T>
-              && std::is_base_of_v<ch_bit_base<ch_logic_t<T>>, ch_logic_t<T>>;
-
-template <typename T, unsigned N = ch_width_v<T>>
-inline constexpr bool is_bit_convertible_v = std::is_constructible_v<ch_bit<N>, T>;
+inline constexpr bool is_bitbase_v = is_logic_type_v<T>
+              && std::is_base_of_v<ch_bitbase<ch_logic_t<T>>, ch_logic_t<T>>;
 
 template <typename T, typename U>
 inline constexpr bool is_logic_op_constructible_v =
@@ -310,18 +303,24 @@ public:
   static auto do_mod(const T& obj, const U& other) {
     return obj.template do_mod<R>(other);
   }
+
+  template <typename R, typename T, typename U>
+  static auto do_min(const T& obj, const U& other) {
+    return obj.template do_min<R>(other);
+  }
+
+  template <typename R, typename T, typename U>
+  static auto do_max(const T& obj, const U& other) {
+    return obj.template do_max<R>(other);
+  }
+
+  template <typename R, typename T>
+  static auto do_abs(const T& obj) {
+    return obj.template do_abs<R>();
+  }
 };
 
 ///////////////////////////////////////////////////////////////////////////////
-
-template <unsigned N, typename T>
-auto to_logic(T&& obj) {
-  if constexpr (is_logic_type_v<T> && ch_width_v<T> == N) {
-    return std::move(obj);
-  } else {
-    return ch_bit<N>(std::forward<T>(obj));
-  }
-}
 
 template <typename T>
 auto get_lnode(const T& obj) {
@@ -357,7 +356,7 @@ auto to_lnode(const T& obj) {
 }
 
 template <typename R, typename T>
-auto logic_cast(const T& obj) {
+auto logic_op_cast(const T& obj) {
   static_assert(std::is_constructible_v<R, T>, "invalid cast");
   if constexpr ((is_signed_v<T> != is_signed_v<R> || !is_resizable_v<R>)) {
     return R(obj);
@@ -494,7 +493,7 @@ auto make_logic_op(const A& a, const B& b) {
       if constexpr (!std::is_integral_v<U> && is_signed_v<U> && !is_signed_v<T>) { \
         return op(reinterpret_cast<const ch_signed_t<T>&>(_lhs), rhs); \
       } else { \
-        auto _rhs = logic_cast<T>(rhs); \
+        auto _rhs = logic_op_cast<T>(rhs); \
         return ch::internal::logic_accessor::method(_lhs, _rhs); \
       } \
     } else { \
@@ -510,7 +509,7 @@ auto make_logic_op(const A& a, const B& b) {
       if constexpr (!std::is_integral_v<U> && is_signed_v<U> && !is_signed_v<T>) { \
         return op(lhs, reinterpret_cast<const ch_signed_t<T>&>(_rhs)); \
       } else { \
-        auto _lhs = logic_cast<T>(lhs); \
+        auto _lhs = logic_op_cast<T>(lhs); \
         return ch::internal::logic_accessor::method(_lhs, _rhs); \
       } \
     } else { \
@@ -534,7 +533,7 @@ auto make_logic_op(const A& a, const B& b) {
       if constexpr (!std::is_integral_v<U> && is_signed_v<U> && !is_signed_v<T>) { \
         return op(reinterpret_cast<const ch_signed_t<T>&>(_lhs), rhs); \
       } else { \
-        auto _rhs = logic_cast<T>(rhs); \
+        auto _rhs = logic_op_cast<T>(rhs); \
         return ch::internal::logic_accessor::method<T>(_lhs, _rhs); \
       } \
     } else { \
@@ -550,7 +549,7 @@ auto make_logic_op(const A& a, const B& b) {
       if constexpr (!std::is_integral_v<U> && is_signed_v<U> && !is_signed_v<T>) { \
         return op(lhs, reinterpret_cast<const ch_signed_t<T>&>(_rhs)); \
       } else { \
-        auto _lhs = logic_cast<T>(lhs); \
+        auto _lhs = logic_op_cast<T>(lhs); \
         return ch::internal::logic_accessor::method<T>(_lhs, _rhs); \
       } \
     } else { \
@@ -583,7 +582,7 @@ auto make_logic_op(const A& a, const B& b) {
     CH_SOURCE_LOCATION(1); \
     auto& _rhs = reinterpret_cast<const T&>(rhs); \
     if constexpr (is_strictly_constructible_v<T, U>) { \
-      auto _lhs = logic_cast<T>(lhs); \
+      auto _lhs = logic_op_cast<T>(lhs); \
       return ch::internal::logic_accessor::method<T>(_lhs, _rhs); \
     } else { \
       return op(ch_size_cast_t<T, ch_width_v<U>>(lhs), _rhs); \
@@ -650,7 +649,7 @@ auto make_logic_op(const A& a, const B& b) {
       if constexpr (!std::is_integral_v<U> && is_signed_v<U> && !is_signed_v<T>) { \
         return func(reinterpret_cast<const ch_signed_t<T>&>(_lhs), rhs); \
       } else { \
-        auto _rhs = logic_cast<T>(rhs); \
+        auto _rhs = logic_op_cast<T>(rhs); \
         return ch::internal::logic_accessor::method(_lhs, _rhs); \
       } \
     } else { \
@@ -666,7 +665,7 @@ auto make_logic_op(const A& a, const B& b) {
       if constexpr (!std::is_integral_v<U> && is_signed_v<U> && !is_signed_v<T>) { \
         return func(lhs, reinterpret_cast<const ch_signed_t<T>&>(_rhs)); \
       } else { \
-        auto _lhs = logic_cast<T>(lhs); \
+        auto _lhs = logic_op_cast<T>(lhs); \
         return ch::internal::logic_accessor::method(_lhs, _rhs); \
       } \
     } else { \
@@ -702,7 +701,7 @@ auto make_logic_op(const A& a, const B& b) {
       if constexpr (!std::is_integral_v<U> && is_signed_v<U> && !is_signed_v<T>) { \
         return func(reinterpret_cast<const ch_signed_t<T>&>(_lhs), rhs); \
       } else { \
-        auto _rhs = logic_cast<T>(rhs); \
+        auto _rhs = logic_op_cast<T>(rhs); \
         return ch::internal::logic_accessor::method<T>(_lhs, _rhs); \
       } \
     } else { \
@@ -718,7 +717,7 @@ auto make_logic_op(const A& a, const B& b) {
       if constexpr (!std::is_integral_v<U> && is_signed_v<U> && !is_signed_v<T>) { \
         return func<R>(reinterpret_cast<const ch_signed_t<T>&>(_lhs), rhs); \
       } else { \
-        auto _rhs = logic_cast<T>(rhs); \
+        auto _rhs = logic_op_cast<T>(rhs); \
         if constexpr (ch_width_v<T> == R || !is_resizable_v<T>) { \
           static_assert(ch_width_v<T> == R, "invalid output size"); \
           return ch::internal::logic_accessor::method<T>(_lhs, _rhs); \
@@ -739,7 +738,7 @@ auto make_logic_op(const A& a, const B& b) {
       if constexpr (!std::is_integral_v<U> && is_signed_v<U> && !is_signed_v<T>) { \
         return func(lhs, reinterpret_cast<const ch_signed_t<T>&>(_rhs)); \
       } else { \
-        auto _lhs = logic_cast<T>(lhs); \
+        auto _lhs = logic_op_cast<T>(lhs); \
         return ch::internal::logic_accessor::method<T>(_lhs, _rhs); \
       } \
     } else { \
@@ -755,7 +754,7 @@ auto make_logic_op(const A& a, const B& b) {
       if constexpr (!std::is_integral_v<U> && is_signed_v<U> && !is_signed_v<T>) { \
         return func<R>(lhs, reinterpret_cast<const ch_signed_t<T>&>(_rhs)); \
       } else { \
-        auto _lhs = logic_cast<T>(lhs); \
+        auto _lhs = logic_op_cast<T>(lhs); \
         if constexpr (ch_width_v<T> == R || !is_resizable_v<T>) { \
           static_assert(ch_width_v<T> == R, "invalid output size"); \
           return ch::internal::logic_accessor::method<T>(_lhs, _rhs); \
@@ -822,7 +821,7 @@ auto make_logic_op(const A& a, const B& b) {
     CH_SOURCE_LOCATION(1); \
     auto& _rhs = reinterpret_cast<const T&>(rhs); \
     if constexpr (is_strictly_constructible_v<T, U>) { \
-      auto _lhs = logic_cast<T>(lhs); \
+      auto _lhs = logic_op_cast<T>(lhs); \
       return ch::internal::logic_accessor::method<T>(_lhs, _rhs); \
     } else { \
       return func(ch_size_cast_t<T, ch_width_v<U>>(lhs), _rhs); \
@@ -834,7 +833,7 @@ auto make_logic_op(const A& a, const B& b) {
     CH_SOURCE_LOCATION(1); \
     auto& _rhs = reinterpret_cast<const T&>(rhs); \
     if constexpr (is_strictly_constructible_v<T, U>) { \
-      auto _lhs = logic_cast<T>(lhs); \
+      auto _lhs = logic_op_cast<T>(lhs); \
       if constexpr (ch_width_v<T> == R || !is_resizable_v<T>) { \
         static_assert(ch_width_v<T> == R, "invalid output size"); \
         return ch::internal::logic_accessor::method<T>(_lhs, _rhs); \

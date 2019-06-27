@@ -6,27 +6,27 @@
 namespace ch {
 namespace internal {
 
-CH_SYSTEM_FUNCTION2B_DECL(ch_sbit_base, ch_eq)
-CH_SYSTEM_FUNCTION2B_DECL(ch_sbit_base, ch_ne)
+CH_SYSTEM_FUNCTION2B_DECL(ch_sbitbase, ch_eq)
+CH_SYSTEM_FUNCTION2B_DECL(ch_sbitbase, ch_ne)
 
-CH_SYSTEM_FUNCTION1B_DECL(ch_sbit_base, ch_not)
-CH_SYSTEM_FUNCTION2B_DECL(ch_sbit_base, ch_andl)
-CH_SYSTEM_FUNCTION2B_DECL(ch_sbit_base, ch_orl)
+CH_SYSTEM_FUNCTION1B_DECL(ch_sbitbase, ch_not)
+CH_SYSTEM_FUNCTION2B_DECL(ch_sbitbase, ch_andl)
+CH_SYSTEM_FUNCTION2B_DECL(ch_sbitbase, ch_orl)
 
-CH_SYSTEM_FUNCTION1X_DECL(ch_sbit_base, ch_inv)
-CH_SYSTEM_FUNCTION2X_DECL(ch_sbit_base, ch_and)
-CH_SYSTEM_FUNCTION2X_DECL(ch_sbit_base, ch_or)
-CH_SYSTEM_FUNCTION2X_DECL(ch_sbit_base, ch_xor)
+CH_SYSTEM_FUNCTION1X_DECL(ch_sbitbase, ch_inv)
+CH_SYSTEM_FUNCTION2X_DECL(ch_sbitbase, ch_and)
+CH_SYSTEM_FUNCTION2X_DECL(ch_sbitbase, ch_or)
+CH_SYSTEM_FUNCTION2X_DECL(ch_sbitbase, ch_xor)
 
-CH_SYSTEM_FUNCTION2B_DECL(ch_sbit_base, ch_andr)
-CH_SYSTEM_FUNCTION2B_DECL(ch_sbit_base, ch_orr)
-CH_SYSTEM_FUNCTION2B_DECL(ch_sbit_base, ch_xorr)
+CH_SYSTEM_FUNCTION2B_DECL(ch_sbitbase, ch_andr)
+CH_SYSTEM_FUNCTION2B_DECL(ch_sbitbase, ch_orr)
+CH_SYSTEM_FUNCTION2B_DECL(ch_sbitbase, ch_xorr)
 
-CH_SYSTEM_FUNCTION2X_DECL(ch_sbit_base, ch_shl)
-CH_SYSTEM_FUNCTION2X_DECL(ch_sbit_base, ch_shr)
+CH_SYSTEM_FUNCTION2X_DECL(ch_sbitbase, ch_shl)
+CH_SYSTEM_FUNCTION2X_DECL(ch_sbitbase, ch_shr)
 
 template <typename T>
-class ch_sbit_base {
+class ch_sbitbase {
 public:
 
   // assignment operators
@@ -40,7 +40,7 @@ public:
   }
 
   template <typename U>
-  T& operator=(const ch_sbit_base<U>& other) {
+  T& operator=(const ch_sbitbase<U>& other) {
     static_assert((ch_width_v<U>) <= (ch_width_v<T>), "invalid type");
     auto self = reinterpret_cast<T*>(this);
     if constexpr (ch_width_v<U> < ch_width_v<T>) {
@@ -73,39 +73,39 @@ public:
   CH_SYSTEM_INTERFACE(T)
   CH_SYSTEM_OP_CAST(T)
 
-  CH_SYSTEM_OPERATOR2B_IMPL(ch_sbit_base, operator==, do_eq)
-  CH_SYSTEM_OPERATOR2B_IMPL(ch_sbit_base, operator!=, do_ne)
+  CH_SYSTEM_OPERATOR2B_IMPL(ch_sbitbase, operator==, do_eq)
+  CH_SYSTEM_OPERATOR2B_IMPL(ch_sbitbase, operator!=, do_ne)
 
-  CH_SYSTEM_OPERATOR1B_IMPL(ch_sbit_base, operator!, do_not)
-  CH_SYSTEM_OPERATOR2B_IMPL(ch_sbit_base, operator&&, do_andl)
-  CH_SYSTEM_OPERATOR2B_IMPL(ch_sbit_base, operator||, do_orl)
+  CH_SYSTEM_OPERATOR1B_IMPL(ch_sbitbase, operator!, do_not)
+  CH_SYSTEM_OPERATOR2B_IMPL(ch_sbitbase, operator&&, do_andl)
+  CH_SYSTEM_OPERATOR2B_IMPL(ch_sbitbase, operator||, do_orl)
 
-  CH_SYSTEM_OPERATOR1X_IMPL(ch_sbit_base, operator~, do_inv)
-  CH_SYSTEM_OPERATOR2X_IMPL(ch_sbit_base, operator&, do_and)
-  CH_SYSTEM_OPERATOR2X_IMPL(ch_sbit_base, operator|, do_or)
-  CH_SYSTEM_OPERATOR2X_IMPL(ch_sbit_base, operator^, do_xor)
+  CH_SYSTEM_OPERATOR1X_IMPL(ch_sbitbase, operator~, do_inv)
+  CH_SYSTEM_OPERATOR2X_IMPL(ch_sbitbase, operator&, do_and)
+  CH_SYSTEM_OPERATOR2X_IMPL(ch_sbitbase, operator|, do_or)
+  CH_SYSTEM_OPERATOR2X_IMPL(ch_sbitbase, operator^, do_xor)
 
-  CH_SYSTEM_OPERATOR2Y_IMPL(ch_sbit_base, operator<<, do_shl)
-  CH_SYSTEM_OPERATOR2Y_IMPL(ch_sbit_base, operator>>, do_shr)
+  CH_SYSTEM_OPERATOR2Y_IMPL(ch_sbitbase, operator<<, do_shl)
+  CH_SYSTEM_OPERATOR2Y_IMPL(ch_sbitbase, operator>>, do_shr)
 
-  CH_SYSTEM_FUNCTION2B_IMPL(ch_sbit_base, ch_eq, do_eq)
-  CH_SYSTEM_FUNCTION2B_IMPL(ch_sbit_base, ch_ne, do_ne)
+  CH_SYSTEM_FUNCTION2B_IMPL(ch_sbitbase, ch_eq, do_eq)
+  CH_SYSTEM_FUNCTION2B_IMPL(ch_sbitbase, ch_ne, do_ne)
 
-  CH_SYSTEM_FUNCTION1B_IMPL(ch_sbit_base, ch_not, do_not)
-  CH_SYSTEM_FUNCTION2B_IMPL(ch_sbit_base, ch_andl, do_andl)
-  CH_SYSTEM_FUNCTION2B_IMPL(ch_sbit_base, ch_orl, do_orl)
+  CH_SYSTEM_FUNCTION1B_IMPL(ch_sbitbase, ch_not, do_not)
+  CH_SYSTEM_FUNCTION2B_IMPL(ch_sbitbase, ch_andl, do_andl)
+  CH_SYSTEM_FUNCTION2B_IMPL(ch_sbitbase, ch_orl, do_orl)
 
-  CH_SYSTEM_FUNCTION1X_IMPL(ch_sbit_base, ch_inv, do_inv)
-  CH_SYSTEM_FUNCTION2X_IMPL(ch_sbit_base, ch_and, do_and)
-  CH_SYSTEM_FUNCTION2X_IMPL(ch_sbit_base, ch_or, do_or)
-  CH_SYSTEM_FUNCTION2X_IMPL(ch_sbit_base, ch_xor, do_xor)
+  CH_SYSTEM_FUNCTION1X_IMPL(ch_sbitbase, ch_inv, do_inv)
+  CH_SYSTEM_FUNCTION2X_IMPL(ch_sbitbase, ch_and, do_and)
+  CH_SYSTEM_FUNCTION2X_IMPL(ch_sbitbase, ch_or, do_or)
+  CH_SYSTEM_FUNCTION2X_IMPL(ch_sbitbase, ch_xor, do_xor)
 
-  CH_SYSTEM_FUNCTION2Y_IMPL(ch_sbit_base, ch_shl, do_shl)
-  CH_SYSTEM_FUNCTION2Y_IMPL(ch_sbit_base, ch_shr, do_shr)
+  CH_SYSTEM_FUNCTION2Y_IMPL(ch_sbitbase, ch_shl, do_shl)
+  CH_SYSTEM_FUNCTION2Y_IMPL(ch_sbitbase, ch_shr, do_shr)
 
-  CH_SYSTEM_FUNCTION1B_IMPL(ch_sbit_base, ch_andr, do_andr)
-  CH_SYSTEM_FUNCTION1B_IMPL(ch_sbit_base, ch_orr, do_orr)
-  CH_SYSTEM_FUNCTION1B_IMPL(ch_sbit_base, ch_xorr, do_xorr)
+  CH_SYSTEM_FUNCTION1B_IMPL(ch_sbitbase, ch_andr, do_andr)
+  CH_SYSTEM_FUNCTION1B_IMPL(ch_sbitbase, ch_orr, do_orr)
+  CH_SYSTEM_FUNCTION1B_IMPL(ch_sbitbase, ch_xorr, do_xorr)
 
 protected:
 
@@ -204,27 +204,27 @@ protected:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-CH_LOGIC_FUNCTION2B_DECL(ch_bit_base, ch_eq)
-CH_LOGIC_FUNCTION2B_DECL(ch_bit_base, ch_ne)
+CH_LOGIC_FUNCTION2B_DECL(ch_bitbase, ch_eq)
+CH_LOGIC_FUNCTION2B_DECL(ch_bitbase, ch_ne)
 
-CH_LOGIC_FUNCTION1B_DECL(ch_bit_base, ch_not)
-CH_LOGIC_FUNCTION2B_DECL(ch_bit_base, ch_andl)
-CH_LOGIC_FUNCTION2B_DECL(ch_bit_base, ch_orl)
+CH_LOGIC_FUNCTION1B_DECL(ch_bitbase, ch_not)
+CH_LOGIC_FUNCTION2B_DECL(ch_bitbase, ch_andl)
+CH_LOGIC_FUNCTION2B_DECL(ch_bitbase, ch_orl)
 
-CH_LOGIC_FUNCTION1X_DECL(ch_bit_base, ch_inv)
-CH_LOGIC_FUNCTION2X_DECL(ch_bit_base, ch_and)
-CH_LOGIC_FUNCTION2X_DECL(ch_bit_base, ch_or)
-CH_LOGIC_FUNCTION2X_DECL(ch_bit_base, ch_xor)
+CH_LOGIC_FUNCTION1X_DECL(ch_bitbase, ch_inv)
+CH_LOGIC_FUNCTION2X_DECL(ch_bitbase, ch_and)
+CH_LOGIC_FUNCTION2X_DECL(ch_bitbase, ch_or)
+CH_LOGIC_FUNCTION2X_DECL(ch_bitbase, ch_xor)
 
-CH_LOGIC_FUNCTION2B_DECL(ch_bit_base, ch_andr)
-CH_LOGIC_FUNCTION2B_DECL(ch_bit_base, ch_orr)
-CH_LOGIC_FUNCTION2B_DECL(ch_bit_base, ch_xorr)
+CH_LOGIC_FUNCTION2B_DECL(ch_bitbase, ch_andr)
+CH_LOGIC_FUNCTION2B_DECL(ch_bitbase, ch_orr)
+CH_LOGIC_FUNCTION2B_DECL(ch_bitbase, ch_xorr)
 
-CH_LOGIC_FUNCTION2X_DECL(ch_bit_base, ch_shl)
-CH_LOGIC_FUNCTION2X_DECL(ch_bit_base, ch_shr)
+CH_LOGIC_FUNCTION2X_DECL(ch_bitbase, ch_shl)
+CH_LOGIC_FUNCTION2X_DECL(ch_bitbase, ch_shr)
 
 template <typename T>
-class ch_bit_base {
+class ch_bitbase {
 public:
 
   // assignment operators
@@ -239,7 +239,7 @@ public:
   }
 
   template <typename U>
-  T& operator=(const ch_sbit_base<U>& other) {
+  T& operator=(const ch_sbitbase<U>& other) {
     CH_SOURCE_LOCATION(1);
     static_assert(ch_width_v<U> <= ch_width_v<T>, "invalid size");
     auto self = reinterpret_cast<T*>(this);
@@ -254,7 +254,7 @@ public:
   }
 
   template <typename U>
-  T& operator=(const ch_bit_base<U>& other) {
+  T& operator=(const ch_bitbase<U>& other) {
     CH_SOURCE_LOCATION(1);
     static_assert(ch_width_v<U> <= ch_width_v<T>, "invalid size");
     auto self = reinterpret_cast<T*>(this);
@@ -289,39 +289,39 @@ public:
 
   CH_LOGIC_INTERFACE(T)
 
-  CH_LOGIC_OPERATOR2B_IMPL(ch_bit_base, operator==, do_eq)
-  CH_LOGIC_OPERATOR2B_IMPL(ch_bit_base, operator!=, do_ne)
+  CH_LOGIC_OPERATOR2B_IMPL(ch_bitbase, operator==, do_eq)
+  CH_LOGIC_OPERATOR2B_IMPL(ch_bitbase, operator!=, do_ne)
 
-  CH_LOGIC_OPERATOR1B_IMPL(ch_bit_base, operator!, do_not)
-  CH_LOGIC_OPERATOR2B_IMPL(ch_bit_base, operator&&, do_andl)
-  CH_LOGIC_OPERATOR2B_IMPL(ch_bit_base, operator||, do_orl)
+  CH_LOGIC_OPERATOR1B_IMPL(ch_bitbase, operator!, do_not)
+  CH_LOGIC_OPERATOR2B_IMPL(ch_bitbase, operator&&, do_andl)
+  CH_LOGIC_OPERATOR2B_IMPL(ch_bitbase, operator||, do_orl)
 
-  CH_LOGIC_OPERATOR1X_IMPL(ch_bit_base, operator~, do_inv)
-  CH_LOGIC_OPERATOR2X_IMPL(ch_bit_base, operator&, do_and)
-  CH_LOGIC_OPERATOR2X_IMPL(ch_bit_base, operator|, do_or)
-  CH_LOGIC_OPERATOR2X_IMPL(ch_bit_base, operator^, do_xor)
+  CH_LOGIC_OPERATOR1X_IMPL(ch_bitbase, operator~, do_inv)
+  CH_LOGIC_OPERATOR2X_IMPL(ch_bitbase, operator&, do_and)
+  CH_LOGIC_OPERATOR2X_IMPL(ch_bitbase, operator|, do_or)
+  CH_LOGIC_OPERATOR2X_IMPL(ch_bitbase, operator^, do_xor)
 
-  CH_LOGIC_OPERATOR2Y_IMPL(ch_bit_base, operator<<, do_shl)
-  CH_LOGIC_OPERATOR2Y_IMPL(ch_bit_base, operator>>, do_shr)
+  CH_LOGIC_OPERATOR2Y_IMPL(ch_bitbase, operator<<, do_shl)
+  CH_LOGIC_OPERATOR2Y_IMPL(ch_bitbase, operator>>, do_shr)
 
-  CH_LOGIC_FUNCTION2B_IMPL(ch_bit_base, ch_eq, do_eq)
-  CH_LOGIC_FUNCTION2B_IMPL(ch_bit_base, ch_ne, do_ne)
+  CH_LOGIC_FUNCTION2B_IMPL(ch_bitbase, ch_eq, do_eq)
+  CH_LOGIC_FUNCTION2B_IMPL(ch_bitbase, ch_ne, do_ne)
 
-  CH_LOGIC_FUNCTION1B_IMPL(ch_bit_base, ch_not, do_not)
-  CH_LOGIC_FUNCTION2B_IMPL(ch_bit_base, ch_andl, do_andl)
-  CH_LOGIC_FUNCTION2B_IMPL(ch_bit_base, ch_orl, do_orl)
+  CH_LOGIC_FUNCTION1B_IMPL(ch_bitbase, ch_not, do_not)
+  CH_LOGIC_FUNCTION2B_IMPL(ch_bitbase, ch_andl, do_andl)
+  CH_LOGIC_FUNCTION2B_IMPL(ch_bitbase, ch_orl, do_orl)
 
-  CH_LOGIC_FUNCTION1X_IMPL(ch_bit_base, ch_inv, do_inv)
-  CH_LOGIC_FUNCTION2X_IMPL(ch_bit_base, ch_and, do_and)
-  CH_LOGIC_FUNCTION2X_IMPL(ch_bit_base, ch_or, do_or)
-  CH_LOGIC_FUNCTION2X_IMPL(ch_bit_base, ch_xor, do_xor)
+  CH_LOGIC_FUNCTION1X_IMPL(ch_bitbase, ch_inv, do_inv)
+  CH_LOGIC_FUNCTION2X_IMPL(ch_bitbase, ch_and, do_and)
+  CH_LOGIC_FUNCTION2X_IMPL(ch_bitbase, ch_or, do_or)
+  CH_LOGIC_FUNCTION2X_IMPL(ch_bitbase, ch_xor, do_xor)
 
-  CH_LOGIC_FUNCTION2Y_IMPL(ch_bit_base, ch_shl, do_shl)
-  CH_LOGIC_FUNCTION2Y_IMPL(ch_bit_base, ch_shr, do_shr)
+  CH_LOGIC_FUNCTION2Y_IMPL(ch_bitbase, ch_shl, do_shl)
+  CH_LOGIC_FUNCTION2Y_IMPL(ch_bitbase, ch_shr, do_shr)
 
-  CH_LOGIC_FUNCTION1B_IMPL(ch_bit_base, ch_andr, do_andr)
-  CH_LOGIC_FUNCTION1B_IMPL(ch_bit_base, ch_orr, do_orr)
-  CH_LOGIC_FUNCTION1B_IMPL(ch_bit_base, ch_xorr, do_xorr)
+  CH_LOGIC_FUNCTION1B_IMPL(ch_bitbase, ch_andr, do_andr)
+  CH_LOGIC_FUNCTION1B_IMPL(ch_bitbase, ch_orr, do_orr)
+  CH_LOGIC_FUNCTION1B_IMPL(ch_bitbase, ch_xorr, do_xorr)
 
 protected:
 

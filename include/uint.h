@@ -1,16 +1,16 @@
 #pragma once
 
-#include "numberbase.h"
+#include "numbase.h"
 
 namespace ch {
 namespace internal {
 
 template <unsigned N = 32>
-class ch_suint : public ch_snumber_base<ch_suint<N>> {
+class ch_suint : public ch_snumbase<ch_suint<N>> {
 public:
   static_assert(N != 0, "invalid size");
   using traits = system_traits<N, false, ch_suint, ch_uint<N>>;
-  using base = ch_snumber_base<ch_suint<N>>;
+  using base = ch_snumbase<ch_suint<N>>;
   using base::operator=;
 
   ch_suint(const system_buffer& buffer
@@ -35,7 +35,7 @@ public:
 
   template <typename U,
             CH_REQUIRE(ch_width_v<U> <= N)>
-  explicit ch_suint(const ch_sbit_base<U>& other)
+  explicit ch_suint(const ch_sbitbase<U>& other)
     : ch_suint(make_system_buffer(N, idname<ch_suint>())) {
     this->operator=(reinterpret_cast<const U&>(other));
   }
@@ -92,11 +92,11 @@ protected:
 ///////////////////////////////////////////////////////////////////////////////
 
 template <unsigned N = 32>
-class ch_uint : public ch_number_base<ch_uint<N>> {
+class ch_uint : public ch_numbase<ch_uint<N>> {
 public:  
   static_assert(N != 0, "invalid size");
   using traits = logic_traits<N, false, ch_uint, ch_suint<N>>;
-  using base = ch_number_base<ch_uint<N>>;
+  using base = ch_numbase<ch_uint<N>>;
   using base::operator=;
 
   ch_uint(const logic_buffer& buffer = make_logic_buffer(N, idname<ch_uint>()))
@@ -114,7 +114,7 @@ public:
 
   template <typename U,
             CH_REQUIRE(ch_width_v<U> <= N)>
-  explicit ch_uint(const ch_sbit_base<U>& other)
+  explicit ch_uint(const ch_sbitbase<U>& other)
     : ch_uint(make_logic_buffer(N, idname<ch_uint>())) {
     CH_SOURCE_LOCATION(1);
     this->operator=(reinterpret_cast<const U&>(other));
@@ -146,7 +146,7 @@ public:
 
   template <typename U,
             CH_REQUIRE(ch_width_v<U> <= N)>
-  explicit ch_uint(const ch_bit_base<U>& other)
+  explicit ch_uint(const ch_bitbase<U>& other)
     : ch_uint(make_logic_buffer(N, idname<ch_uint>())) {
     CH_SOURCE_LOCATION(1);
     this->operator=(reinterpret_cast<const U&>(other));

@@ -1,15 +1,15 @@
 #pragma once
 
-#include "numberbase.h"
+#include "numbase.h"
 
 namespace ch {
 namespace internal {
 
 template <unsigned N = 32>
-class ch_sint : public ch_snumber_base<ch_sint<N>> {
+class ch_sint : public ch_snumbase<ch_sint<N>> {
 public:
   using traits = system_traits<N, true, ch_sint, ch_int<N>>;
-  using base = ch_snumber_base<ch_sint<N>>;
+  using base = ch_snumbase<ch_sint<N>>;
   using base::operator=;
 
   ch_sint(const system_buffer& buffer
@@ -34,7 +34,7 @@ public:
 
   template <typename U,
             CH_REQUIRE(ch_width_v<U> <= N)>
-  explicit ch_sint(const ch_sbit_base<U>& other)
+  explicit ch_sint(const ch_sbitbase<U>& other)
     : ch_sint(make_system_buffer(N, idname<ch_sint>())) {
     this->operator=(reinterpret_cast<const U&>(other));
   }
@@ -91,11 +91,11 @@ protected:
 ///////////////////////////////////////////////////////////////////////////////
 
 template <unsigned N = 32>
-class ch_int : public ch_number_base<ch_int<N>> {
+class ch_int : public ch_numbase<ch_int<N>> {
 public:  
   static_assert(N != 0, "invalid size");
   using traits = logic_traits<N, true, ch_int, ch_sint<N>>;
-  using base = ch_number_base<ch_int<N>>;
+  using base = ch_numbase<ch_int<N>>;
   using base::operator=;
 
   ch_int(const logic_buffer& buffer = make_logic_buffer(N, idname<ch_int>()))
@@ -113,7 +113,7 @@ public:
 
   template <typename U,
             CH_REQUIRE(ch_width_v<U> <= N)>
-  explicit ch_int(const ch_sbit_base<U>& other)
+  explicit ch_int(const ch_sbitbase<U>& other)
     : ch_int(make_logic_buffer(N, idname<ch_int>())) {
     CH_SOURCE_LOCATION(1);
     this->operator=(reinterpret_cast<const U&>(other));
@@ -145,7 +145,7 @@ public:
 
   template <typename U,
             CH_REQUIRE(ch_width_v<U> <= N)>
-  explicit ch_int(const ch_bit_base<U>& other)
+  explicit ch_int(const ch_bitbase<U>& other)
     : ch_int(make_logic_buffer(N, idname<ch_int>())) {
     CH_SOURCE_LOCATION(1);
     this->operator=(reinterpret_cast<const U&>(other));

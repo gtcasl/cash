@@ -379,46 +379,34 @@ inline constexpr bool is_resizable_v = !std::is_void<ch_size_cast_t<std::decay_t
 
 //////////////////////////////////////////////////////////////////////////////
 
-struct non_object_type {
-  struct traits {
-    static constexpr int type = traits_none;
-    static constexpr unsigned bitwidth = 0;
-    static constexpr bool is_signed = false;
-  };
-};
+template <bool size_match, typename... Ts>
+struct deduce_type_impl;
 
-template <bool resize, typename T0, typename T1>
-struct deduce_type_impl {
-  using U0 = std::conditional_t<is_data_type_v<T0>, T0, non_object_type>;
-  using U1 = std::conditional_t<is_data_type_v<T1>, T1, non_object_type>;
+template <bool size_match, typename T0, typename T1>
+struct deduce_type_impl<size_match, T0, T1> {
+  using U0 = std::conditional_t<is_data_type_v<T0>, T0, void>;
+  using U1 = std::conditional_t<is_data_type_v<T1>, T1, void>;
   using type = std::conditional_t<(ch_width_v<U0> != 0) && (ch_width_v<U1> != 0),
-    std::conditional_t<(ch_width_v<U0> == ch_width_v<U1>) || ((ch_width_v<U0> > ch_width_v<U1>) && resize), U0,
-        std::conditional_t<(ch_width_v<U0> < ch_width_v<U1>) && resize, U1, non_object_type>>,
+    std::conditional_t<(ch_width_v<U0> == ch_width_v<U1>) || ((ch_width_v<U0> > ch_width_v<U1>) && !size_match), U0,
+        std::conditional_t<(ch_width_v<U0> < ch_width_v<U1>) && !size_match, U1, void>>,
           std::conditional_t<(ch_width_v<U0> != 0), U0, U1>>;
 };
 
-template <bool resize, typename... Ts>
-struct deduce_type;
-
-template <bool resize, typename T0, typename T1>
-struct deduce_type<resize, T0, T1> {
-  using type = typename deduce_type_impl<resize, T0, T1>::type;
+template <bool size_match, typename T0, typename T1, typename... Ts>
+struct deduce_type_impl<size_match, T0, T1, Ts...> {
+  using type = typename deduce_type_impl<size_match,
+               typename deduce_type_impl<size_match, T0, T1>::type, Ts...>::type;
 };
-
-template <bool resize, typename T0, typename T1, typename... Ts>
-struct deduce_type<resize, T0, T1, Ts...> {
-  using type = typename deduce_type<resize, typename deduce_type_impl<resize, T0, T1>::type, Ts...>::type;
-};
-
-template <bool resize, typename... Ts>
-using deduce_type_t = typename deduce_type<resize, Ts...>::type;
 
 template <typename T0, typename T1>
 struct deduce_first_type_impl {
-  using U0 = std::conditional_t<is_data_type_v<T0>, T0, non_object_type>;
-  using U1 = std::conditional_t<is_data_type_v<T1>, T1, non_object_type>;
+  using U0 = std::conditional_t<is_data_type_v<T0>, T0, void>;
+  using U1 = std::conditional_t<is_data_type_v<T1>, T1, void>;
   using type = std::conditional_t<(ch_width_v<U0> != 0), U0, U1>;
 };
+
+template <bool size_match, typename... Ts>
+using deduce_type_t = typename deduce_type_impl<size_match, Ts...>::type;
 
 template <typename T0, typename T1>
 using deduce_first_type_t = typename deduce_first_type_impl<std::decay_t<T0>, std::decay_t<T1>>::type;

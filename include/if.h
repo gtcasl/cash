@@ -76,7 +76,7 @@ inline if_cond_t if_body_t::operator,(const fvoid_t& body) {
 
 template <typename P>
 inline if_body_t ch_if(const P& pred) {
-  static_assert(is_bit_base_v<P>, "invalid type");
+  static_assert(is_bitbase_v<P>, "invalid type");
   static_assert(ch_width_v<P> == 1, "invalid size");
   CH_SOURCE_LOCATION(1);
   return if_body_t(std::make_shared<if_t>(), get_lnode(pred));
