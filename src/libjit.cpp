@@ -379,7 +379,7 @@ int jit_dump_ast(FILE *stream, jit_function_t func, const char *name) {
 
   fprintf(stream, ") : ");
   jit_dump_type(stream, jit_type_get_return(signature));
-  putc('\n', stream);
+  fputc('\n', stream);
 
   // dump blocks
   jit_block_t block = nullptr;
@@ -388,12 +388,9 @@ int jit_dump_ast(FILE *stream, jit_function_t func, const char *name) {
     if (meta) {
       if (((char*)meta)[0] != '\0') {
         auto sinfo = (const char*)meta;
-        fprintf(stream, "# </sref %s\n", sinfo);
-        if (strchr(sinfo, '@')) {
-          delete [] sinfo; // release allocation
-        }
+        fprintf(stream, "<sref %s/>\n", sinfo);
       } else {
-        fprintf(stream, "# sref/>\n");
+        fprintf(stream, "</sref>\n");
       }
     }
 
@@ -416,9 +413,9 @@ int jit_dump_ast(FILE *stream, jit_function_t func, const char *name) {
     jit_insn_iter_init(&iter, block);
     jit_insn_t insn = nullptr;
     while ((insn = jit_insn_iter_next(&iter)) != nullptr) {
-      putc('\t', stream);
+      fputc('\t', stream);
       jit_dump_insn(stream, func, insn);
-      putc('\n', stream);
+      fputc('\n', stream);
     }
   }
   fprintf(stream, "end\n");

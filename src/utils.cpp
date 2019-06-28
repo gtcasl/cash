@@ -80,17 +80,31 @@ std::string ch::internal::identifier_from_string(const std::string& name) {
 
 std::string ch::internal::identifier_from_typeid(const std::string& name,
                                                  bool remove_template_params) {
-  std::string sd = demanged_typeid(name);
+  std::string s_out, s_in;
+
+  auto it_out = std::back_inserter(s_out);
+  s_in = demanged_typeid(name);
+
   if (remove_template_params) {
-    sd = std::regex_replace(sd, std::regex("<.*>"), "");
+    std::regex_replace(it_out, s_in.begin(), s_in.end(), std::regex("<.*>"), "");
+    std::swap(s_out, s_in);
+    s_out.clear();
   }
+
   // remove all spaces, close brakets and parenthesis
-  sd = std::regex_replace(sd, std::regex("[\\s>\\(\\)]+"), "");
+  std::regex_replace(it_out, s_in.begin(), s_in.end(), std::regex("[\\s>\\(\\)]+"), "");
+  std::swap(s_out, s_in);
+  s_out.clear();
+
   // remove all namespaces
-  sd = std::regex_replace(sd, std::regex("[a-zA-Z_][a-zA-Z0-9_]*::"), "");
+  std::regex_replace(it_out, s_in.begin(), s_in.end(), std::regex("[a-zA-Z_][a-zA-Z0-9_]*::"), "");
+  std::swap(s_out, s_in);
+  s_out.clear();
+
   // replace template open brackets and commas
-  sd = std::regex_replace(sd, std::regex("[<,]"), "_");
-  return sd;
+  std::regex_replace(it_out, s_in.begin(), s_in.end(), std::regex("[<,]"), "_");
+
+  return s_out;
 }
 
 int ch::internal::char2int(char x, int base) {
