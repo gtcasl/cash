@@ -51,8 +51,10 @@ public:
   template <typename... Args>
   module_loader(device* dev, Args&&... args) {
     if (dev->begin_build()) {
-      CH_SOURCE_LOCATION(2);
-      obj_ = new T(std::forward<Args>(args)...);
+      {
+        CH_SOURCE_LOCATION(2);
+        obj_ = new T(std::forward<Args>(args)...);
+      }
       obj_->describe();
       empty_ = nullptr;
     } else {

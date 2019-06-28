@@ -18,9 +18,6 @@ template <typename T>
 inline constexpr bool is_sbitbase_v = is_system_type_v<T>
               && std::is_base_of_v<ch_sbitbase<ch_system_t<T>>, ch_system_t<T>>;
 
-template <typename T, unsigned N>
-inline constexpr bool is_sbit_convertible_v = std::is_constructible_v<ch_sbit<N>, T>;
-
 template <unsigned N, typename T>
 auto to_system(T&& obj) {
   if constexpr (is_system_type_v<T> && ch_width_v<T> == N) {

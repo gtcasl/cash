@@ -115,7 +115,7 @@ template <typename R, typename V, typename K, typename P>
 auto ch_case(const K& key, const P& pred, const V& value) {
   static_assert(std::is_constructible_v<R, V>, "invalid type");
   static_assert(is_logic_type_v<K>, "invalid type");
-  static_assert(is_sbit_convertible_v<P, ch_width_v<K>>, "invalid type");
+  static_assert(!is_logic_type_v<P>, "invalid type");
   static_assert(is_equality_comparable_v<P, K>, "invalid type");
   CH_SOURCE_LOCATION(1);
   return case_t<K, R>(get_lnode(key),
