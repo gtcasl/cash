@@ -532,7 +532,6 @@ private:
 
   void emit_node(litimpl* node) {
     __source_marker();
-
     auto dst_width = node->size();
     if (dst_width <= WORD_SIZE) {
       auto j_ntype = to_native_type(dst_width);

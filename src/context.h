@@ -269,7 +269,8 @@ protected:
   inputimpl* sys_reset_;
   timeimpl*  sys_time_;
   udfimpl*   curr_udf_;
-  
+  branchconverter* branchconv_;
+
   node_list literals_;
   node_list proxies_;
   node_list inputs_;
@@ -295,14 +296,13 @@ protected:
   node_list_view udfs_;
 
   enum_strings_t   enum_strings_;
-  branchconverter* branchconv_;
   cd_stack_t       cd_stack_;
   dup_tracker<std::string> dup_tap_names_;
 };
 
-context* ctx_create(const std::type_index& signature,
-                    bool is_pod,
-                    const std::string& name);
+std::pair<context*, bool> ctx_create(const std::type_index& signature,
+                                     bool is_pod,
+                                     const std::string& name);
 
 context* ctx_swap(context* ctx);
 

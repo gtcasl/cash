@@ -373,8 +373,8 @@ memory::memory(uint32_t data_width,
                uint32_t num_items,
                const sdata_type& init_data,
                bool is_logic_rom,
-               const std::string& name,
-               const sloc_getter&) {
+               const std::string& name) {
+  CH_API_ENTRY(2);
   CH_CHECK(!ctx_curr()->conditional_enabled(), "memory objects disallowed inside conditional blocks");  
   auto sloc = get_source_location();
   impl_ = ctx_curr()->create_node<memimpl>(data_width, num_items, init_data, is_logic_rom, name, sloc);

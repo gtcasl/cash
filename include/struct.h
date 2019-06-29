@@ -98,23 +98,21 @@ public: \
     : CH_FOR_EACH(CH_STRUCT_LOGIC_CTOR, , CH_SEP_COMMA, __VA_ARGS__) {} \
   type_name(CH_REVERSE_FOR_EACH(CH_STRUCT_LOGIC_FIELD_CTOR_ARGS, , CH_SEP_COMMA, __VA_ARGS__)) \
     : type_name(ch::internal::make_logic_buffer(traits::bitwidth, CH_STRINGIZE(struct_name))) { \
-    CH_SOURCE_LOCATION(1); \
     CH_REVERSE_FOR_EACH(CH_STRUCT_FIELD_CTOR_INIT, , CH_SEP_SEMICOLON, __VA_ARGS__); \
   } \
   type_name(const type_name& __other) \
     : type_name(ch::internal::make_logic_buffer(traits::bitwidth, CH_STRINGIZE(struct_name))) { \
-    CH_SOURCE_LOCATION(1); \
     this->operator=(__other); \
   } \
   type_name(type_name&& __other) \
     : type_name(ch::internal::logic_accessor::move(__other)) {} \
   type_name& operator=(const type_name& __other) { \
-    CH_SOURCE_LOCATION(1); \
+    CH_API_ENTRY(1); \
     ch::internal::logic_accessor::assign(*this, __other); \
     return *this; \
   } \
   type_name& operator=(type_name&& __other) { \
-    CH_SOURCE_LOCATION(1); \
+    CH_API_ENTRY(1); \
     ch::internal::logic_accessor::move(*this, std::move(__other)); \
     return *this; \
   } \
@@ -181,24 +179,22 @@ public: \
     , CH_FOR_EACH(CH_STRUCT_LOGIC_CTOR, , CH_SEP_COMMA, __VA_ARGS__) {} \
   type_name(CH_REVERSE_FOR_EACH(CH_STRUCT_LOGIC_FIELD_CTOR_ARGS, , CH_SEP_COMMA, __VA_ARGS__), const base& __base) \
     : type_name(ch::internal::make_logic_buffer(traits::bitwidth, CH_STRINGIZE(struct_name))) { \
-    CH_SOURCE_LOCATION(1); \
     ch::internal::logic_accessor::write(*this, 0, __base, 0, ch_width_v<base>); \
     CH_REVERSE_FOR_EACH(CH_STRUCT_FIELD_CTOR_INIT, , CH_SEP_SEMICOLON, __VA_ARGS__); \
   } \
   type_name(const type_name& __other) \
     : type_name(ch::internal::make_logic_buffer(traits::bitwidth, CH_STRINGIZE(struct_name))) { \
-    CH_SOURCE_LOCATION(1); \
     this->operator=(__other); \
   } \
   type_name(type_name&& __other) \
     : type_name(ch::internal::logic_accessor::move(__other)) {} \
   type_name& operator=(const type_name& __other) { \
-    CH_SOURCE_LOCATION(1); \
+    CH_API_ENTRY(1); \
     ch::internal::logic_accessor::assign(*this, __other); \
     return *this; \
   } \
   type_name& operator=(type_name&& __other) { \
-    CH_SOURCE_LOCATION(1); \
+    CH_API_ENTRY(1); \
     ch::internal::logic_accessor::move(*this, std::move(__other)); \
     return *this; \
   } \

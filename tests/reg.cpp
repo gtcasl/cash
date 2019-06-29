@@ -241,7 +241,7 @@ TEST_CASE("registers", "[registers]") {
 
     TEST([]()->ch_bool {
       auto_cflags_disable reg_init_off(cflags::force_reg_init);
-      ch_reg<V2> a, b(0), c(0000_b);
+      ch_reg<V2> a;
       a->next = V2{3, 1};
       auto e = ch_case(ch_now(), 3, 1101_b)(a.as_uint());
       //ch_println("t={0}, a={1}, e={2}", ch_now(), a, e);
@@ -250,7 +250,7 @@ TEST_CASE("registers", "[registers]") {
 
     TEST([]()->ch_bool {
       auto_cflags_disable reg_init_off(cflags::force_reg_init);
-      ch_reg<X> a, b{00_b, 00_b};
+      ch_reg<X> a;
       a->next = X{3, 1};
       auto e = ch_case(ch_now(), 3, 1101_b)(a.as_uint());
       //ch_println("t={0}, a={1}, e={2}", ch_now(), a, e);
@@ -259,7 +259,7 @@ TEST_CASE("registers", "[registers]") {
 
     TEST([]()->ch_bool {
       auto_cflags_disable reg_init_off(cflags::force_reg_init);
-      ch_reg<U> a{00_b}, b{1_b};
+      ch_reg<U> a{00_b};
       a->next = U{10_b};
       auto e = ch_case(ch_now(), 3, 10_b)(a.as_uint());
       //ch_println("t={0}, a={1}, e={2}", ch_now(), a, e);

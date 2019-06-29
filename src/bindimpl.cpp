@@ -158,7 +158,8 @@ void bindportimpl::print(std::ostream& out) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-lnodeimpl* ch::internal::bindInputNode(const lnode& input, const sloc_getter&) {
+lnodeimpl* ch::internal::bindInputNode(const lnode& input) {
+  CH_API_ENTRY(2);
   auto sloc = get_source_location();
   auto ctx = ctx_curr();
   auto binding = ctx->current_binding();
@@ -167,7 +168,8 @@ lnodeimpl* ch::internal::bindInputNode(const lnode& input, const sloc_getter&) {
   return node;
 }
 
-lnodeimpl* ch::internal::bindOutputNode(const lnode& output, const sloc_getter&) {
+lnodeimpl* ch::internal::bindOutputNode(const lnode& output) {
+  CH_API_ENTRY(2);
   auto sloc = get_source_location();
   auto ctx = ctx_curr();
   auto binding = ctx->current_binding();

@@ -62,27 +62,25 @@ void registerEnumString(const lnode& node, void* callback);
   } \
   enum_name(type __other) \
     : enum_name(ch::internal::make_logic_buffer(traits::bitwidth, CH_STRINGIZE(enum_name))) { \
-    CH_SOURCE_LOCATION(1); \
     this->operator=(__other); \
   } \
   enum_name(const enum_name& __other) \
     : enum_name(ch::internal::make_logic_buffer(traits::bitwidth, CH_STRINGIZE(enum_name))) { \
-    CH_SOURCE_LOCATION(1); \
     this->operator=(__other); \
   } \
   enum_name(enum_name&& __other) : buffer_(std::move(__other.buffer_)) {} \
   enum_name& operator=(const enum_name& __other) { \
-    CH_SOURCE_LOCATION(1); \
+    CH_API_ENTRY(1); \
     ch::internal::logic_accessor::assign(*this, __other); \
     return *this; \
   } \
   enum_name& operator=(enum_name&& __other) { \
-    CH_SOURCE_LOCATION(1); \
+    CH_API_ENTRY(1); \
     ch::internal::logic_accessor::move(*this, std::move(__other)); \
     return *this; \
   } \
   enum_name& operator=(type __other) { \
-    CH_SOURCE_LOCATION(1); \
+    CH_API_ENTRY(1); \
     base::operator=(static_cast<unsigned>(__other)); \
     return *this; \
   }

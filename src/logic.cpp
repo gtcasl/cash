@@ -4,17 +4,14 @@
 
 using namespace ch::internal;
 
-logic_buffer::logic_buffer(uint32_t size,
-                           const std::string& name,
-                           const sloc_getter&)
+logic_buffer::logic_buffer(uint32_t size, const std::string& name)
   : lnode(size, name)
 {}
 
 logic_buffer::logic_buffer(uint32_t size,
                            const logic_buffer& src,
                            uint32_t src_offset,
-                           const std::string& name,
-                           const sloc_getter&)
+                           const std::string& name)
   : lnode(src.impl()->ctx()->create_node<refimpl>(
       src.impl(),
       src_offset,

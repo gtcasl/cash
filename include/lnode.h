@@ -92,24 +92,16 @@ using ch_tick = uint64_t;
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool register_source_location(uint32_t level);
-void release_source_location();
-
-class sloc_getter {
+class sloc_api_entry {
 public:
-  sloc_getter(uint32_t level = 1) {
-    owned_ = register_source_location(level+1);
-  }
-  ~sloc_getter() {
-    if (owned_) {
-      release_source_location();
-    }
-  }
+  sloc_api_entry(uint32_t stack_level);
+  ~sloc_api_entry();
+
 private:
   bool owned_;
 };
 
-#define CH_SOURCE_LOCATION(level) ch::internal::sloc_getter __sloc_getter__(level)
+#define CH_API_ENTRY(stack_level) ch::internal::sloc_api_entry __sloc_api_entry__(stack_level)
 
 ///////////////////////////////////////////////////////////////////////////////
 

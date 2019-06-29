@@ -84,7 +84,7 @@ protected: \
   type_name(type_name&& __other) \
     : CH_FOR_EACH(CH_INOUT_MOVE_CTOR, , CH_SEP_COMMA, __VA_ARGS__) {} \
   void operator()(typename traits::flip_io& __other) { \
-    CH_SOURCE_LOCATION(1); \
+    CH_API_ENTRY(1); \
     CH_FOR_EACH(CH_INOUT_BIND_BODY, , CH_SEP_SEMICOLON, __VA_ARGS__); \
   } \
 protected: \
@@ -138,8 +138,8 @@ protected: \
     : base(std::move(__other)) \
     , CH_FOR_EACH(CH_INOUT_MOVE_CTOR, , CH_SEP_COMMA, __VA_ARGS__) {} \
   void operator()(typename traits::flip_io& __other) { \
+    CH_API_ENTRY(1); \
     base::operator()(__other); \
-    CH_SOURCE_LOCATION(1); \
     CH_FOR_EACH(CH_INOUT_BIND_BODY, , CH_SEP_SEMICOLON, __VA_ARGS__); \
   } \
 protected: \

@@ -31,9 +31,11 @@ protected:
 
   device(const std::type_index& signature, bool is_pod, const std::string& name);
 
-  bool begin_build() const;
+  bool begin();
 
-  void end_build();
+  void build();
+
+  void end();
 
   deviceimpl* impl_;
 
@@ -50,31 +52,36 @@ class module_loader {
 public:
   template <typename... Args>
   module_loader(device* dev, Args&&... args) {
-    if (dev->begin_build()) {
+    if (dev->begin()) {
       {
-        CH_SOURCE_LOCATION(2);
-        obj_ = new T(std::forward<Args>(args)...);
+        CH_API_ENTRY(2);
+        obj_ = new T(std::forward<Args>(args)...);        
       }
       obj_->describe();
       empty_ = nullptr;
     } else {
-      CH_SOURCE_LOCATION(2);
+      CH_API_ENTRY(2);
       obj_ = nullptr;
       empty_ = new empty_t();
     }
     {
-      CH_SOURCE_LOCATION(2);
-      dev->end_build();
+      CH_API_ENTRY(2);
+      dev->build();
     }
+    dev->end();
   }
+
   ~module_loader() {
     delete obj_;
     delete empty_;
   }
+
   auto& get() {
     return obj_ ? obj_->io : empty_->io;
   }
+
 private:
+
   struct empty_t {
     decltype(T::io) io;
   };

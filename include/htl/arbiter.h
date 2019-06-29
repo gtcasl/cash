@@ -12,7 +12,7 @@ using namespace ch::logic;
 template <unsigned N>
 struct ch_rrArbiter {
   __io (
-    __in (ch_vec<ch_bool, N>) in,
+    __in (ch_bit<N>) in,
     __out (ch_bit<N>) grant
   );
 

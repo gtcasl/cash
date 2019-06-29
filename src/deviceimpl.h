@@ -7,6 +7,7 @@ namespace internal {
 
 class context;
 class lnodeimpl;
+class sloc_ctx_t;
 
 class deviceimpl : public refcounted {
 public:
@@ -17,13 +18,11 @@ public:
 
   ~deviceimpl();
 
-  void begin_context();
+  bool begin();
 
-  void end_context();
+  void build();
 
-  bool begin_build() const;
-
-  void end_build();
+  void end();
 
   context* ctx() const {
     return ctx_;
@@ -33,6 +32,7 @@ protected:
 
   context* ctx_;
   context* old_ctx_;
+  sloc_ctx_t* sloc_ctx_;
   bool is_new_ctx_;
 };
 

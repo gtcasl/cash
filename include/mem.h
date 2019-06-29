@@ -53,8 +53,7 @@ public:
          uint32_t num_items,
          const sdata_type& init_data,
          bool force_logic_ram,
-         const std::string& name,
-         const sloc_getter& slg = sloc_getter());
+         const std::string& name);
 
   lnode aread(const lnode& addr) const;
 
@@ -103,7 +102,7 @@ public:
   {}
 
   auto read(const ch_uint<addr_width>& addr) const {
-    CH_SOURCE_LOCATION(1);
+    CH_API_ENTRY(1);
     auto laddr = to_lnode<addr_width>(addr);
     return make_logic_type<T>(mem_.aread(laddr));
   }
@@ -149,7 +148,7 @@ public:
   {}
 
   auto read(const ch_uint<addr_width>& addr) const {
-    CH_SOURCE_LOCATION(1);
+    CH_API_ENTRY(1);
     auto laddr = to_lnode<addr_width>(addr);
     if constexpr (SyncRead) {
       return make_logic_type<T>(mem_.sread(laddr, sdata_type(1,1)));
@@ -159,8 +158,8 @@ public:
   }
 
   auto read(const ch_uint<addr_width>& addr, const ch_bool& enable) const {
+    CH_API_ENTRY(1);
     static_assert(SyncRead, "invalid memory type");
-    CH_SOURCE_LOCATION(1);
     auto laddr = to_lnode<addr_width>(addr);
     auto l_enable = get_lnode(enable);
     return make_logic_type<T>(mem_.sread(laddr, l_enable));
@@ -168,8 +167,8 @@ public:
 
   template <typename U>
   void write(const ch_uint<addr_width>& addr, const U& value) {
+    CH_API_ENTRY(1);
     static_assert(std::is_constructible_v<T, U>, "invalid type");
-    CH_SOURCE_LOCATION(1);
     auto l_addr  = to_lnode<addr_width>(addr);
     auto l_value = to_lnode<T>(value);
     mem_.write(l_addr, l_value, sdata_type(1,1));
@@ -177,10 +176,10 @@ public:
 
   template <typename U, typename E>
   void write(const ch_uint<addr_width>& addr, const U& value, const E& enable) {
+    CH_API_ENTRY(1);
     static_assert(std::is_constructible_v<T, U>, "invalidvalue  type");
     static_assert(is_bitbase_v<E>, "invalid enable type");
     static_assert(ch_width_v<E> * (ch_width_v<T> / ch_width_v<E>) == ch_width_v<T>, "invalid enable size");
-    CH_SOURCE_LOCATION(1);
     auto l_addr   = to_lnode<addr_width>(addr);
     auto l_value  = to_lnode<T>(value);
     auto l_enable = get_lnode(enable);

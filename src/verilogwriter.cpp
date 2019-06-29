@@ -352,7 +352,7 @@ bool verilogwriter::print_decl(std::ostream& out,
         out << ";";
         auto& sloc = node->sloc();
         if (!sloc.empty()) {
-          out << " // " << sloc;
+          out << " // @sloc=" << sloc;
         }
       } else {        
         for (auto other : node->ctx()->nodes()) {

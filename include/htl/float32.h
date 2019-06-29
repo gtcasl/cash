@@ -136,7 +136,6 @@ public:
             CH_REQUIRE(ch_width_v<U> <= 32)>
   explicit ch_float32(const ch_sbitbase<U>& other)
     : ch_float32(make_logic_buffer(32, idname<ch_float32>())) {
-    __source_location(1);
     base::operator=(reinterpret_cast<const U&>(other));
   }
 
@@ -144,44 +143,40 @@ public:
             CH_REQUIRE(ch_width_v<U> <= 32)>
   explicit ch_float32(const ch_bitbase<U>& other)
     : ch_float32(make_logic_buffer(32, idname<ch_float32>())) {
-    __source_location(1);
     base::operator=(reinterpret_cast<const U&>(other));
   }
 
   ch_float32(float other)
     : ch_float32(make_logic_buffer(32, idname<ch_float32>())) {
-    __source_location(1);
     this->operator=(other);
   }
 
   ch_float32(const ch_sfloat32& other)
     : ch_float32(make_logic_buffer(32, idname<ch_float32>())) {
-    __source_location(1);
     base::operator=(other);
   }
 
   ch_float32(const ch_float32& other)
     : ch_float32(make_logic_buffer(32, idname<ch_float32>())) {
-    __source_location(1);
     this->operator=(other);
   }
 
   ch_float32(ch_float32&& other) : buffer_(std::move(other.buffer_)) {}
 
   ch_float32& operator=(float other) {
-    __source_location(1);
+    __api_entry(1);
     base::operator=(bit_cast<int32_t>(other));
     return *this;
   }
 
   ch_float32& operator=(const ch_float32& other) {
-    __source_location(1);
+    __api_entry(1);
     logic_accessor::assign(*this, other);
     return *this;
   }
 
   ch_float32& operator=(ch_float32&& other) {
-    __source_location(1);
+    __api_entry(1);
     logic_accessor::move(*this, std::move(other));
     return *this;
   }
@@ -459,7 +454,6 @@ struct cfMod {
 template <typename R>
 auto ch_float32::do_neg() const {
   static_assert(std::is_same_v<R, ch_float32>, "invalid type");
-  __source_location(1);
   ch_udf_comb<cfSub> udf;
   udf.io.lhs = 0.0f;
   udf.io.rhs = *this;
@@ -469,7 +463,6 @@ auto ch_float32::do_neg() const {
 template <typename R, typename U>
 auto ch_float32::do_add(const U& other) const {
   static_assert(std::is_same_v<R, ch_float32>, "invalid type");
-  __source_location(1);
   ch_udf_comb<cfAdd> udf;
   udf.io.lhs = *this;
   udf.io.rhs = other;
@@ -479,7 +472,6 @@ auto ch_float32::do_add(const U& other) const {
 template <typename R, typename U>
 auto ch_float32::do_sub(const U& other) const {
   static_assert(std::is_same_v<R, ch_float32>, "invalid type");
-  __source_location(1);
   ch_udf_comb<cfSub> udf;
   udf.io.lhs = *this;
   udf.io.rhs = other;
@@ -489,7 +481,6 @@ auto ch_float32::do_sub(const U& other) const {
 template <typename R, typename U>
 auto ch_float32::do_mul(const U& other) const {
   static_assert(std::is_same_v<R, ch_float32>, "invalid type");
-  __source_location(1);
   ch_udf_comb<cfMul> udf;
   udf.io.lhs = *this;
   udf.io.rhs = other;
@@ -499,7 +490,6 @@ auto ch_float32::do_mul(const U& other) const {
 template <typename R, typename U>
 auto ch_float32::do_div(const U& other) const {
   static_assert(std::is_same_v<R, ch_float32>, "invalid type");
-  __source_location(1);
   ch_udf_comb<cfDiv> udf;
   udf.io.lhs = *this;
   udf.io.rhs = other;
@@ -509,7 +499,6 @@ auto ch_float32::do_div(const U& other) const {
 template <typename R, typename U>
 auto ch_float32::do_mod(const U& other) const {
   static_assert(std::is_same_v<R, ch_float32>, "invalid type");
-  __source_location(1);
   ch_udf_comb<cfMod> udf;
   udf.io.lhs = *this;
   udf.io.rhs = other;
@@ -520,7 +509,7 @@ auto ch_float32::do_mod(const U& other) const {
 
 template <unsigned Delay>
 auto ch_fadd(const ch_float32& lhs, const ch_float32& rhs, const ch_bool& enable = true) {
-  __source_location(1);
+  __api_entry(1);
   ch_udf_seq<sfAdd> udf(Delay);
   udf.io.en  = enable;
   udf.io.lhs = lhs;
@@ -530,7 +519,7 @@ auto ch_fadd(const ch_float32& lhs, const ch_float32& rhs, const ch_bool& enable
 
 template <unsigned Delay>
 auto ch_fsub(const ch_float32& lhs, const ch_float32& rhs, const ch_bool& enable = true) {
-  __source_location(1);
+  __api_entry(1);
   ch_udf_seq<sfSub> udf(Delay);
   udf.io.en  = enable;
   udf.io.lhs = lhs;
@@ -540,7 +529,7 @@ auto ch_fsub(const ch_float32& lhs, const ch_float32& rhs, const ch_bool& enable
 
 template <unsigned Delay>
 auto ch_fmul(const ch_float32& lhs, const ch_float32& rhs, const ch_bool& enable = true) {
-  __source_location(1);
+  __api_entry(1);
   ch_udf_seq<sfMul> udf(Delay);
   udf.io.en  = enable;
   udf.io.lhs = lhs;
@@ -550,7 +539,7 @@ auto ch_fmul(const ch_float32& lhs, const ch_float32& rhs, const ch_bool& enable
 
 template <unsigned Delay>
 auto ch_fdiv(const ch_float32& lhs, const ch_float32& rhs, const ch_bool& enable = true) {
-  __source_location(1);
+  __api_entry(1);
   ch_udf_seq<sfDiv> udf(Delay);
   udf.io.en  = enable;
   udf.io.lhs = lhs;

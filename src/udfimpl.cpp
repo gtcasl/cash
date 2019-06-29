@@ -131,8 +131,8 @@ void ch::internal::createUDFNode(const std::string& name,
   ctx_curr()->create_udf_node(udf, is_seq, name, sloc);
 }
 
-lnodeimpl* ch::internal::bindInputNode(system_io_buffer* input,
-                                       const sloc_getter&) {
+lnodeimpl* ch::internal::bindInputNode(system_io_buffer* input) {
+  CH_API_ENTRY(2);
   auto sloc = get_source_location();
   auto ctx  = ctx_curr();
   auto udf  = ctx->current_udf();
@@ -143,8 +143,8 @@ lnodeimpl* ch::internal::bindInputNode(system_io_buffer* input,
   return src;
 }
 
-lnodeimpl* ch::internal::bindOutputNode(system_io_buffer* output,
-                                        const sloc_getter&) {
+lnodeimpl* ch::internal::bindOutputNode(system_io_buffer* output) {
+  CH_API_ENTRY(2);
   auto sloc = get_source_location();
   auto ctx  = ctx_curr();
   auto udf  = ctx->current_udf();

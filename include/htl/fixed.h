@@ -180,13 +180,11 @@ public:
 
   explicit ch_fixed(float other)
     : ch_fixed(make_logic_buffer(N, idname<ch_fixed>())) {
-    __source_location(1);
     this->operator=(other);
   }
 
   explicit ch_fixed(double other)
     : ch_fixed(make_logic_buffer(N, idname<ch_fixed>())) {
-    __source_location(1);
     this->operator=(other);
   }
 
@@ -194,7 +192,6 @@ public:
             CH_REQUIRE(ch_width_v<U> <= N)>
   explicit ch_fixed(const ch_sbitbase<U>& other)
     : ch_fixed(make_logic_buffer(N, idname<ch_fixed>())) {
-    __source_location(1);
     this->operator=(reinterpret_cast<const U&>(other));
   }
 
@@ -202,7 +199,6 @@ public:
             CH_REQUIRE(ch_width_v<U> <= N)>
   explicit ch_fixed(const ch_bitbase<U>& other)
     : ch_fixed(make_logic_buffer(N, idname<ch_fixed>())) {
-    __source_location(1);
     this->operator=(reinterpret_cast<const U&>(other));
   }
 
@@ -210,7 +206,6 @@ public:
             CH_REQUIRE(std::is_integral_v<U>)>
   ch_fixed(const U& other)
     : ch_fixed(make_logic_buffer(N, idname<ch_fixed>())) {
-    __source_location(1);
     this->operator=(other);
   }
 
@@ -218,7 +213,6 @@ public:
             CH_REQUIRE(M <= N)>
   ch_fixed(const ch_sbit<M>& other)
     : ch_fixed(make_logic_buffer(N, idname<ch_fixed>())) {
-    __source_location(1);
     this->operator=(other);
   }
 
@@ -226,7 +220,6 @@ public:
             CH_REQUIRE(M <= N)>
   ch_fixed(const ch_sint<M>& other)
     : ch_fixed(make_logic_buffer(N, idname<ch_fixed>())) {
-    __source_location(1);
     this->operator=(other);
   }
 
@@ -234,7 +227,6 @@ public:
             CH_REQUIRE(M <= N)>
   ch_fixed(const ch_suint<M>& other)
     : ch_fixed(make_logic_buffer(N, idname<ch_fixed>())) {
-    __source_location(1);
     this->operator=(other);
   }
 
@@ -242,7 +234,6 @@ public:
             CH_REQUIRE(M <= N)>
   ch_fixed(const ch_bit<M>& other)
     : ch_fixed(make_logic_buffer(N, idname<ch_fixed>())) {
-    __source_location(1);
     this->operator=(other);
   }
 
@@ -250,7 +241,6 @@ public:
             CH_REQUIRE(M <= N)>
   ch_fixed(const ch_uint<M>& other)
     : ch_fixed(make_logic_buffer(N, idname<ch_fixed>())) {
-    __source_location(1);
     this->operator=(other);
   }
 
@@ -258,44 +248,41 @@ public:
             CH_REQUIRE(M <= N)>
   ch_fixed(const ch_int<M>& other)
     : ch_fixed(make_logic_buffer(N, idname<ch_fixed>())) {
-    __source_location(1);
     this->operator=(other);
   }
 
   ch_fixed(const ch_sfixed<N, F>& other)
     : ch_fixed(make_logic_buffer(N, idname<ch_fixed>())) {
-    __source_location(1);
     this->operator=(other);
   }
 
   ch_fixed(const ch_fixed& other)
     : ch_fixed(make_logic_buffer(N, idname<ch_fixed>())) {
-    __source_location(1);
     this->operator=(other);
   }
 
   ch_fixed(ch_fixed&& other) : buffer_(std::move(other.buffer_)) {}
 
   ch_fixed& operator=(float other) {
-    __source_location(1);
+    __api_entry(1);
     base::operator=(detail::to_fixed<int32_t>(other, Intg, Frac));
     return *this;
   }
 
   ch_fixed& operator=(double other) {
-    __source_location(1);
+    __api_entry(1);
     base::operator=(detail::to_fixed<int64_t>(other, Intg, Frac));
     return *this;
   }
 
   ch_fixed& operator=(const ch_fixed& other) {
-    __source_location(1);
+    __api_entry(1);
     logic_accessor::assign(*this, other);
     return *this;
   }
 
   ch_fixed& operator=(ch_fixed&& other) {
-    __source_location(1);
+    __api_entry(1);
     logic_accessor::move(*this, std::move(other));
     return *this;
   }

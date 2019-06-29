@@ -556,14 +556,21 @@ TEST_CASE("system", "[system]") {
     });
   }
   SECTION("vector", "[vector]") {
+
+    TESTX([]()->bool {
+      ch_system_t<v2_2_t> x{0, 3};
+      return (x[0] == 3) && (x[1] == 0);
+    });
     TEST([]()->ch_bool {
-      ch_system_t<v2_2_t> x(3_h);
-      v2_2_t y(x.as_bit());
+      ch_system_t<v2_2_t> x{0, 3};
+      v2_2_t y(x);
       return (y[0] == 3) && (y[1] == 0);
     });
-    TESTX([]()->bool {
-      ch_system_t<v2_2_t> x(3_h);
-      return (x[0] == 3) && (x[1] == 0);
+    TEST([]()->ch_bool {
+      ch_system_t<v2_2_t> a{11_b, 00_b};
+      ch_system_t<ch_vec<v2_2_t, 2>> b{{11_b, 00_b}, {11_b, 00_b}};
+      auto x = b[0][1];
+      return (x == 11_b);
     });
   }
   SECTION("funcapi", "[funcapi]") {

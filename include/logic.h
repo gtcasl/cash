@@ -66,19 +66,16 @@ public:
 
 protected:
 
-  logic_buffer(lnodeimpl* impl) : lnode(impl) {}
+  explicit logic_buffer(lnodeimpl* impl) : lnode(impl) {}
 
-  logic_buffer(const sdata_type& value) : lnode(value) {}
+  explicit logic_buffer(const sdata_type& value) : lnode(value) {}
 
-  logic_buffer(uint32_t size,
-               const std::string& name,
-               const sloc_getter& slg = sloc_getter());
+  logic_buffer(uint32_t size, const std::string& name);
 
   logic_buffer(uint32_t size,
                const logic_buffer& src,
                uint32_t src_offset,
-               const std::string& name,
-               const sloc_getter& slg = sloc_getter());
+               const std::string& name);
 
   void ensure_proxy();
 
@@ -87,6 +84,7 @@ protected:
 
 template <typename... Args>
 auto make_logic_buffer(Args&&... args) {
+  CH_API_ENTRY(1);
   return logic_buffer(std::forward<Args>(args)...);
 }
 
@@ -439,47 +437,47 @@ auto make_logic_op(const A& a, const B& b) {
     return this->template as<ch_uint<type::traits::bitwidth>>(); \
   } \
   auto as_reg() { \
-    CH_SOURCE_LOCATION(1); \
+    CH_API_ENTRY(1); \
     auto self = reinterpret_cast<type*>(this); \
     ch_reg<type> s; \
     *self = s; \
     return s; \
   } \
   auto as_reg(const type& init) { \
-    CH_SOURCE_LOCATION(1); \
+    CH_API_ENTRY(1); \
     auto self = reinterpret_cast<type*>(this); \
     ch_reg<type> s(init); \
     *self = s; \
     return s; \
   } \
   auto ref() { \
-    CH_SOURCE_LOCATION(1); \
+    CH_API_ENTRY(1); \
     auto self = reinterpret_cast<type*>(this); \
     return ch::internal::logic_accessor::sliceref<type>(*self, 0); \
   } \
   auto clone() const { \
-    CH_SOURCE_LOCATION(1); \
+    CH_API_ENTRY(1); \
     auto self = reinterpret_cast<const type*>(this); \
     return ch::internal::logic_accessor::clone(*self); \
   }
 
 #define CH_LOGIC_OPERATOR1B_IMPL(base, op, method) \
   friend auto op(const base& self) { \
-    CH_SOURCE_LOCATION(1); \
+    CH_API_ENTRY(1); \
     auto& _self = reinterpret_cast<const T&>(self); \
     return ch::internal::logic_accessor::method(_self); \
   }
 
 #define CH_LOGIC_OPERATOR1X_IMPL(base, op, method) \
   friend auto op(const base& self) { \
-    CH_SOURCE_LOCATION(1); \
+    CH_API_ENTRY(1); \
     auto& _self = reinterpret_cast<const T&>(self); \
     return ch::internal::logic_accessor::method<T>(_self); \
   }
 
 #define CH_LOGIC_OPERATOR2B_IMPL(base, op, method) \
   friend auto op(const base& lhs, const base& rhs) { \
-    CH_SOURCE_LOCATION(1); \
+    CH_API_ENTRY(1); \
     auto& _lhs = reinterpret_cast<const T&>(lhs); \
     auto& _rhs = reinterpret_cast<const T&>(rhs); \
     return ch::internal::logic_accessor::method(_lhs, _rhs); \
@@ -487,7 +485,7 @@ auto make_logic_op(const A& a, const B& b) {
   template <typename U, \
             CH_REQUIRE(is_logic_op_constructible_v<T, U>)> \
   friend auto op(const base& lhs, const U& rhs) { \
-    CH_SOURCE_LOCATION(1); \
+    CH_API_ENTRY(1); \
     auto& _lhs = reinterpret_cast<const T&>(lhs); \
     if constexpr (is_strictly_constructible_v<T, U>) { \
       if constexpr (!std::is_integral_v<U> && is_signed_v<U> && !is_signed_v<T>) { \
@@ -503,7 +501,7 @@ auto make_logic_op(const A& a, const B& b) {
   template <typename U, \
             CH_REQUIRE(is_logic_op_constructible_v<T, U>)> \
   friend auto op(const U& lhs, const base& rhs) { \
-    CH_SOURCE_LOCATION(1); \
+    CH_API_ENTRY(1); \
     auto& _rhs = reinterpret_cast<const T&>(rhs); \
     if constexpr (is_strictly_constructible_v<T, U>) { \
       if constexpr (!std::is_integral_v<U> && is_signed_v<U> && !is_signed_v<T>) { \
@@ -519,7 +517,7 @@ auto make_logic_op(const A& a, const B& b) {
 
 #define CH_LOGIC_OPERATOR2X_IMPL(base, op, method) \
   friend auto op(const base& lhs, const base& rhs) { \
-    CH_SOURCE_LOCATION(1); \
+    CH_API_ENTRY(1); \
     auto& _lhs = reinterpret_cast<const T&>(lhs); \
     auto& _rhs = reinterpret_cast<const T&>(rhs); \
     return ch::internal::logic_accessor::method<T>(_lhs, _rhs); \
@@ -527,7 +525,7 @@ auto make_logic_op(const A& a, const B& b) {
   template <typename U, \
             CH_REQUIRE(is_logic_op_constructible_v<T, U>)> \
   friend auto op(const base& lhs, const U& rhs) { \
-    CH_SOURCE_LOCATION(1); \
+    CH_API_ENTRY(1); \
     auto& _lhs = reinterpret_cast<const T&>(lhs); \
     if constexpr (is_strictly_constructible_v<T, U>) { \
       if constexpr (!std::is_integral_v<U> && is_signed_v<U> && !is_signed_v<T>) { \
@@ -543,7 +541,7 @@ auto make_logic_op(const A& a, const B& b) {
   template <typename U, \
             CH_REQUIRE(is_logic_op_constructible_v<T, U>)> \
   friend auto op(const U& lhs, const base& rhs) { \
-    CH_SOURCE_LOCATION(1); \
+    CH_API_ENTRY(1); \
     auto& _rhs = reinterpret_cast<const T&>(rhs); \
     if constexpr (is_strictly_constructible_v<T, U>) { \
       if constexpr (!std::is_integral_v<U> && is_signed_v<U> && !is_signed_v<T>) { \
@@ -559,7 +557,7 @@ auto make_logic_op(const A& a, const B& b) {
 
 #define CH_LOGIC_OPERATOR2Y_IMPL(base, op, method) \
   friend auto op(const base& lhs, const base& rhs) { \
-    CH_SOURCE_LOCATION(1); \
+    CH_API_ENTRY(1); \
     auto& _lhs = reinterpret_cast<const T&>(lhs); \
     auto& _rhs = reinterpret_cast<const T&>(rhs); \
     return ch::internal::logic_accessor::method<T>(_lhs, _rhs); \
@@ -567,7 +565,7 @@ auto make_logic_op(const A& a, const B& b) {
   template <typename U, \
             CH_REQUIRE(is_logic_op_constructible_v<T, U>)> \
   friend auto op(const base& lhs, const U& rhs) { \
-    CH_SOURCE_LOCATION(1); \
+    CH_API_ENTRY(1); \
     auto& _lhs = reinterpret_cast<const T&>(lhs); \
     if constexpr (is_strictly_constructible_v<T, U>) { \
       auto _rhs = ch_logic_t<U>(rhs); \
@@ -579,7 +577,7 @@ auto make_logic_op(const A& a, const B& b) {
   template <typename U, \
             CH_REQUIRE(is_logic_op_constructible_v<T, U>)> \
   friend auto op(const U& lhs, const base& rhs) { \
-    CH_SOURCE_LOCATION(1); \
+    CH_API_ENTRY(1); \
     auto& _rhs = reinterpret_cast<const T&>(rhs); \
     if constexpr (is_strictly_constructible_v<T, U>) { \
       auto _lhs = logic_op_cast<T>(lhs); \
@@ -610,20 +608,20 @@ auto make_logic_op(const A& a, const B& b) {
 
 #define CH_LOGIC_FUNCTION1B_IMPL(base, func, method) \
   friend auto func(const base& self) { \
-    CH_SOURCE_LOCATION(1); \
+    CH_API_ENTRY(1); \
     auto& _self = reinterpret_cast<const T&>(self); \
     return ch::internal::logic_accessor::method(_self); \
   }
 
 #define CH_LOGIC_FUNCTION1X_IMPL(base, func, method) \
   friend auto func(const base& self) { \
-    CH_SOURCE_LOCATION(1); \
+    CH_API_ENTRY(1); \
     auto& _self = reinterpret_cast<const T&>(self); \
     return ch::internal::logic_accessor::method<T>(_self); \
   } \
   template <unsigned R> \
   friend auto func(const base& self) { \
-    CH_SOURCE_LOCATION(1); \
+    CH_API_ENTRY(1); \
     auto& _self = reinterpret_cast<const T&>(self); \
     if constexpr (ch_width_v<T> == R || !is_resizable_v<T>) { \
       static_assert(ch_width_v<T> == R, "invalid output size"); \
@@ -635,7 +633,7 @@ auto make_logic_op(const A& a, const B& b) {
 
 #define CH_LOGIC_FUNCTION2B_IMPL(base, func, method) \
   friend auto func(const base& lhs, const base& rhs) { \
-    CH_SOURCE_LOCATION(1); \
+    CH_API_ENTRY(1); \
     auto& _lhs = reinterpret_cast<const T&>(lhs); \
     auto& _rhs = reinterpret_cast<const T&>(rhs); \
     return ch::internal::logic_accessor::method(_lhs, _rhs); \
@@ -643,7 +641,7 @@ auto make_logic_op(const A& a, const B& b) {
   template <typename U, \
             CH_REQUIRE(is_logic_op_constructible_v<T, U>)> \
   friend auto func(const base& lhs, const U& rhs) { \
-    CH_SOURCE_LOCATION(1); \
+    CH_API_ENTRY(1); \
     auto& _lhs = reinterpret_cast<const T&>(lhs); \
     if constexpr (is_strictly_constructible_v<T, U>) { \
       if constexpr (!std::is_integral_v<U> && is_signed_v<U> && !is_signed_v<T>) { \
@@ -659,7 +657,7 @@ auto make_logic_op(const A& a, const B& b) {
   template <typename U, \
             CH_REQUIRE(is_logic_op_constructible_v<T, U>)> \
   friend auto func(const U& lhs, const base& rhs) { \
-    CH_SOURCE_LOCATION(1); \
+    CH_API_ENTRY(1); \
     auto& _rhs = reinterpret_cast<const T&>(rhs); \
     if constexpr (is_strictly_constructible_v<T, U>) { \
       if constexpr (!std::is_integral_v<U> && is_signed_v<U> && !is_signed_v<T>) { \
@@ -675,14 +673,14 @@ auto make_logic_op(const A& a, const B& b) {
 
 #define CH_LOGIC_FUNCTION2X_IMPL(base, func, method) \
   friend auto func(const base& lhs, const base& rhs) { \
-    CH_SOURCE_LOCATION(1); \
+    CH_API_ENTRY(1); \
     auto& _lhs = reinterpret_cast<const T&>(lhs); \
     auto& _rhs = reinterpret_cast<const T&>(rhs); \
     return ch::internal::logic_accessor::method<T>(_lhs, _rhs); \
   } \
   template <unsigned R> \
   friend auto func(const base& lhs, const base& rhs) { \
-    CH_SOURCE_LOCATION(1); \
+    CH_API_ENTRY(1); \
     auto& _lhs = reinterpret_cast<const T&>(lhs); \
     auto& _rhs = reinterpret_cast<const T&>(rhs); \
     if constexpr (ch_width_v<T> == R || !is_resizable_v<T>) { \
@@ -695,7 +693,7 @@ auto make_logic_op(const A& a, const B& b) {
   template <typename U, \
             CH_REQUIRE(is_logic_op_constructible_v<T, U>)> \
   friend auto func(const base& lhs, const U& rhs) { \
-    CH_SOURCE_LOCATION(1); \
+    CH_API_ENTRY(1); \
     auto& _lhs = reinterpret_cast<const T&>(lhs); \
     if constexpr (is_strictly_constructible_v<T, U>) { \
       if constexpr (!std::is_integral_v<U> && is_signed_v<U> && !is_signed_v<T>) { \
@@ -711,7 +709,7 @@ auto make_logic_op(const A& a, const B& b) {
   template <unsigned R, typename U, \
             CH_REQUIRE(is_logic_op_constructible_v<T, U>)> \
   friend auto func(const base& lhs, const U& rhs) { \
-    CH_SOURCE_LOCATION(1); \
+    CH_API_ENTRY(1); \
     auto& _lhs = reinterpret_cast<const T&>(lhs); \
     if constexpr (is_strictly_constructible_v<T, U>) { \
       if constexpr (!std::is_integral_v<U> && is_signed_v<U> && !is_signed_v<T>) { \
@@ -732,7 +730,7 @@ auto make_logic_op(const A& a, const B& b) {
   template <typename U, \
             CH_REQUIRE(is_logic_op_constructible_v<T, U>)> \
   friend auto func(const U& lhs, const base& rhs) { \
-    CH_SOURCE_LOCATION(1); \
+    CH_API_ENTRY(1); \
     auto& _rhs = reinterpret_cast<const T&>(rhs); \
     if constexpr (is_strictly_constructible_v<T, U>) { \
       if constexpr (!std::is_integral_v<U> && is_signed_v<U> && !is_signed_v<T>) { \
@@ -748,7 +746,7 @@ auto make_logic_op(const A& a, const B& b) {
   template <unsigned R, typename U, \
             CH_REQUIRE(is_logic_op_constructible_v<T, U>)> \
   friend auto func(const U& lhs, const base& rhs) { \
-    CH_SOURCE_LOCATION(1); \
+    CH_API_ENTRY(1); \
     auto& _rhs = reinterpret_cast<const T&>(rhs); \
     if constexpr (is_strictly_constructible_v<T, U>) { \
       if constexpr (!std::is_integral_v<U> && is_signed_v<U> && !is_signed_v<T>) { \
@@ -769,14 +767,14 @@ auto make_logic_op(const A& a, const B& b) {
 
 #define CH_LOGIC_FUNCTION2Y_IMPL(base, func, method) \
   friend auto func(const base& lhs, const base& rhs) { \
-    CH_SOURCE_LOCATION(1); \
+    CH_API_ENTRY(1); \
     auto& _lhs = reinterpret_cast<const T&>(lhs); \
     auto& _rhs = reinterpret_cast<const T&>(rhs); \
     return ch::internal::logic_accessor::method<T>(_lhs, _rhs); \
   } \
   template <unsigned R> \
   friend auto func(const base& lhs, const base& rhs) { \
-    CH_SOURCE_LOCATION(1); \
+    CH_API_ENTRY(1); \
     auto& _lhs = reinterpret_cast<const T&>(lhs); \
     auto& _rhs = reinterpret_cast<const T&>(rhs); \
     if constexpr (ch_width_v<T> == R || !is_resizable_v<T>) { \
@@ -789,7 +787,7 @@ auto make_logic_op(const A& a, const B& b) {
   template <typename U, \
             CH_REQUIRE(is_logic_op_constructible_v<T, U>)> \
   friend auto func(const base& lhs, const U& rhs) { \
-    CH_SOURCE_LOCATION(1); \
+    CH_API_ENTRY(1); \
     auto& _lhs = reinterpret_cast<const T&>(lhs); \
     if constexpr (is_strictly_constructible_v<T, U>) { \
       auto _rhs = ch_logic_t<U>(rhs); \
@@ -801,7 +799,7 @@ auto make_logic_op(const A& a, const B& b) {
   template <unsigned R, typename U, \
             CH_REQUIRE(is_logic_op_constructible_v<T, U>)> \
   friend auto func(const base& lhs, const U& rhs) { \
-    CH_SOURCE_LOCATION(1); \
+    CH_API_ENTRY(1); \
     auto& _lhs = reinterpret_cast<const T&>(lhs); \
     if constexpr (is_strictly_constructible_v<T, U>) { \
       auto _rhs = ch_logic_t<U>(rhs); \
@@ -818,7 +816,7 @@ auto make_logic_op(const A& a, const B& b) {
   template <typename U, \
             CH_REQUIRE(is_logic_op_constructible_v<T, U>)> \
   friend auto func(const U& lhs, const base& rhs) { \
-    CH_SOURCE_LOCATION(1); \
+    CH_API_ENTRY(1); \
     auto& _rhs = reinterpret_cast<const T&>(rhs); \
     if constexpr (is_strictly_constructible_v<T, U>) { \
       auto _lhs = logic_op_cast<T>(lhs); \
@@ -830,7 +828,7 @@ auto make_logic_op(const A& a, const B& b) {
   template <unsigned R, typename U, \
             CH_REQUIRE(is_logic_op_constructible_v<T, U>)> \
   friend auto func(const U& lhs, const base& rhs) { \
-    CH_SOURCE_LOCATION(1); \
+    CH_API_ENTRY(1); \
     auto& _rhs = reinterpret_cast<const T&>(rhs); \
     if constexpr (is_strictly_constructible_v<T, U>) { \
       auto _lhs = logic_op_cast<T>(lhs); \

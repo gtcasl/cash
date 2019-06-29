@@ -445,6 +445,6 @@ inline namespace literals {
 
 #define __require  CH_REQUIRE
 
-#define __source_location CH_SOURCE_LOCATION
+#define __api_entry CH_API_ENTRY
 
 #define __unused   CH_UNUSED

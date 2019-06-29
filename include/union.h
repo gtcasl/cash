@@ -108,9 +108,8 @@ public:
     : CH_FOR_EACH(CH_UNION_LOGIC_CTOR, , CH_SEP_COMMA, __VA_ARGS__) {} \
   template <typename __U, \
             CH_REQUIRE(CH_FOR_EACH(CH_UNION_ARG_MATCH, , CH_SEP_OR, __VA_ARGS__))> \
-  explicit type_name(const __U& __other) \
+  type_name(const __U& __other) \
     : type_name(ch::internal::make_logic_buffer(traits::bitwidth, CH_STRINGIZE(union_name))) { \
-    CH_SOURCE_LOCATION(1); \
     using arg_type = ch::internal::select_constructible_t<__U, CH_FOR_EACH(CH_UNION_ARG_TYPES, , CH_SEP_COMMA, __VA_ARGS__)>; \
     auto arg = ch_sliceref<arg_type>(*this) = __other; \
     if constexpr (ch_width_v<arg_type> < traits::bitwidth) { \
@@ -119,18 +118,17 @@ public:
   } \
   type_name(const type_name& __other) \
     : type_name(ch::internal::make_logic_buffer(traits::bitwidth, CH_STRINGIZE(union_name))) { \
-    CH_SOURCE_LOCATION(1); \
     this->operator=(__other); \
   } \
   type_name(type_name&& __other) \
     : type_name(ch::internal::logic_accessor::move(__other)) {} \
   type_name& operator=(const type_name& __other) { \
-    CH_SOURCE_LOCATION(1); \
+    CH_API_ENTRY(1); \
     ch::internal::logic_accessor::assign(*this, __other); \
     return *this; \
   } \
   type_name& operator=(type_name&& __other) { \
-    CH_SOURCE_LOCATION(1); \
+    CH_API_ENTRY(1); \
     ch::internal::logic_accessor::move(*this, std::move(__other)); \
     return *this; \
   } \

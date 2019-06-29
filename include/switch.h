@@ -75,7 +75,7 @@ switch_case_t<K> switch_body_t<K>::operator,(const fvoid_t& body) {
 template <typename K>
 auto ch_switch(const K& key) {
   static_assert(is_bitbase_v<K>, "invalid type");
-  CH_SOURCE_LOCATION(1);
+  CH_API_ENTRY(1);
   return switch_case_t<K>(std::make_shared<switch_t>(get_lnode(key)));
 }
 

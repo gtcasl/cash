@@ -58,6 +58,7 @@ set(PROJECT_SOURCES
     src/deviceimpl.cpp
     src/context.cpp
     src/brconv.cpp
+    src/slocmgr.cpp
     src/compile.cpp
     src/simref.cpp
     src/simjit.cpp    

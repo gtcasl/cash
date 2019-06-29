@@ -6,17 +6,11 @@
 namespace ch {
 namespace internal {
 
-lnodeimpl* createRegNode(unsigned size,
-                         const std::string& name,
-                         const sloc_getter& slg = sloc_getter());
+lnodeimpl* createRegNode(unsigned size, const std::string& name);
 
-lnodeimpl* createRegNode(const lnode& init,
-                         const std::string& name,
-                         const sloc_getter& slg = sloc_getter());
+lnodeimpl* createRegNode(const lnode& init, const std::string& name);
 
-lnodeimpl* copyRegNode(const lnode& node,
-                       const std::string& name,
-                       const sloc_getter& slg = sloc_getter());
+lnodeimpl* copyRegNode(const lnode& node, const std::string& name);
 
 lnodeimpl* getRegNextNode(const lnode& node);
 
@@ -103,25 +97,25 @@ private:
 
 template <typename R, typename T>
 auto ch_next(const T& in) {
+  CH_API_ENTRY(1);
   static_assert(is_logic_type_v<R>, "invalid type");
   static_assert(std::is_constructible_v<R, T>, "invalid type");
-  CH_SOURCE_LOCATION(1);
   return make_logic_type<R>(createRegNext(to_lnode<R>(in), 1, idname<R>()));
 }
 
 template <typename T>
 auto ch_next(const T& in) {
+  CH_API_ENTRY(1);
   static_assert(is_data_type_v<T>, "invalid type");
-  CH_SOURCE_LOCATION(1);
   return ch_next<ch_logic_t<T>, T>(in);
 }
 
 template <typename R, typename T, typename I>
 auto ch_next(const T& in, const I& init) {
+  CH_API_ENTRY(1);
   static_assert(is_logic_type_v<R>, "invalid type");
   static_assert(std::is_constructible_v<R, T>, "invalid type");
   static_assert(std::is_constructible_v<R, I>, "invalid type");
-  CH_SOURCE_LOCATION(1);
   return make_logic_type<R>(createRegNext(to_lnode<R>(in),
                                     to_lnode<R>(init),
                                     1,
@@ -130,7 +124,7 @@ auto ch_next(const T& in, const I& init) {
 
 template <typename T, typename I>
 auto ch_next(const T& in, const I& init) {
-  CH_SOURCE_LOCATION(1);
+  CH_API_ENTRY(1);
   return ch_next<ch_logic_t<T>, T, I>(in, init);
 }
 
@@ -138,11 +132,11 @@ auto ch_next(const T& in, const I& init) {
 
 template <typename R, typename T, typename E>
 auto ch_nextEn(const T& in, const E& enable) {
+  CH_API_ENTRY(1);
   static_assert(is_logic_type_v<R>, "invalid type");
   static_assert(std::is_constructible_v<R, T>, "invalid type");
   static_assert(is_bitbase_v<E>, "invalid type");
   static_assert(ch_width_v<E> == 1, "invalid size");
-  CH_SOURCE_LOCATION(1);
   return make_logic_type<R>(createRegNext(to_lnode<R>(in),
                                     1,
                                     get_lnode(enable),
@@ -151,18 +145,18 @@ auto ch_nextEn(const T& in, const E& enable) {
 
 template <typename T, typename E>
 auto ch_nextEn(const T& in, const E& enable) {
-  CH_SOURCE_LOCATION(1);
+  CH_API_ENTRY(1);
   return ch_nextEn<ch_logic_t<T>, T, E>(in, enable);
 }
 
 template <typename R, typename T, typename I, typename E>
 auto ch_nextEn(const T& in, const E& enable, const I& init) {
+  CH_API_ENTRY(1);
   static_assert(is_logic_type_v<R>, "invalid type");
   static_assert(std::is_constructible_v<R, T>, "invalid type");
   static_assert(std::is_constructible_v<R, I>, "invalid type");  
   static_assert(is_bitbase_v<E>, "invalid type");
   static_assert(ch_width_v<E> == 1, "invalid size");
-  CH_SOURCE_LOCATION(1);
   return make_logic_type<R>(createRegNext(to_lnode<R>(in),
                                     to_lnode<R>(init),
                                     1,
@@ -172,7 +166,7 @@ auto ch_nextEn(const T& in, const E& enable, const I& init) {
 
 template <typename T, typename I, typename E>
 auto ch_nextEn(const T& in, const E& enable, const I& init) {
-  CH_SOURCE_LOCATION(1);
+  CH_API_ENTRY(1);
   return ch_nextEn<ch_logic_t<T>, T, I, E>(in, enable, init);
 }
 
@@ -180,9 +174,9 @@ auto ch_nextEn(const T& in, const E& enable, const I& init) {
 
 template <typename R, typename T>
 auto ch_delay(const T& in, uint32_t delay = 1) {
+  CH_API_ENTRY(1);
   static_assert(is_logic_type_v<R>, "invalid type");
   static_assert(std::is_constructible_v<R, T>, "invalid type");
-  CH_SOURCE_LOCATION(1);
   if (0 == delay) {
     return R(in);
   }
@@ -191,16 +185,16 @@ auto ch_delay(const T& in, uint32_t delay = 1) {
 
 template <typename T>
 auto ch_delay(const T& in, uint32_t delay = 1) {
-  CH_SOURCE_LOCATION(1);
+  CH_API_ENTRY(1);
   return ch_delay<ch_logic_t<T>, T>(in, delay);
 }
 
 template <typename R, typename T, typename I>
 auto ch_delay(const T& in, uint32_t delay, const I& init) {
+  CH_API_ENTRY(1);
   static_assert(is_logic_type_v<R>, "invalid type");
   static_assert(std::is_constructible_v<R, T>, "invalid type");
   static_assert(std::is_constructible_v<R, I>, "invalid type");
-  CH_SOURCE_LOCATION(1);
   if (0 == delay) {
     return R(in);
   }
@@ -212,7 +206,7 @@ auto ch_delay(const T& in, uint32_t delay, const I& init) {
 
 template <typename T, typename I>
 auto ch_delay(const T& in, uint32_t delay, const I& init) {
-  CH_SOURCE_LOCATION(1);
+  CH_API_ENTRY(1);
   return ch_delay<ch_logic_t<T>, T>(in, delay, init);
 }
 
@@ -220,11 +214,11 @@ auto ch_delay(const T& in, uint32_t delay, const I& init) {
 
 template <typename R, typename T, typename E>
 auto ch_delayEn(const T& in, const E& enable, uint32_t delay = 1) {
+  CH_API_ENTRY(1);
   static_assert(is_logic_type_v<R>, "invalid type");
   static_assert(std::is_constructible_v<R, T>, "invalid type");
   static_assert(is_bitbase_v<E>, "invalid type");
   static_assert(ch_width_v<E> == 1, "invalid size");
-  CH_SOURCE_LOCATION(1);
   if (0 == delay) {
     return R(in);
   }
@@ -236,18 +230,18 @@ auto ch_delayEn(const T& in, const E& enable, uint32_t delay = 1) {
 
 template <typename T, typename E>
 auto ch_delayEn(const T& in, const E& enable, uint32_t delay = 1) {
-  CH_SOURCE_LOCATION(1);
+  CH_API_ENTRY(1);
   return ch_delayEn<ch_logic_t<T>, T, E>(in, enable, delay);
 }
 
 template <typename R, typename T, typename I, typename E>
 auto ch_delayEn(const T& in, const E& enable, uint32_t delay, const I& init) {
+  CH_API_ENTRY(1);
   static_assert(is_logic_type_v<R>, "invalid type");
   static_assert(std::is_constructible_v<R, T>, "invalid type");
   static_assert(std::is_constructible_v<R, I>, "invalid type");
   static_assert(is_bitbase_v<E>, "invalid type");
   static_assert(ch_width_v<E> == 1, "invalid size");
-  CH_SOURCE_LOCATION(1);
   if (0 == delay) {
     return R(in);
   }
@@ -260,7 +254,7 @@ auto ch_delayEn(const T& in, const E& enable, uint32_t delay, const I& init) {
 
 template <typename T, typename I, typename E>
 auto ch_delayEn(const T& in, const E& enable, uint32_t delay, const I& init) {
-  CH_SOURCE_LOCATION(1);
+  CH_API_ENTRY(1);
   return ch_delayEn<ch_logic_t<T>, T, I, E>(in, enable, delay, init);
 }
 
@@ -268,7 +262,7 @@ auto ch_delayEn(const T& in, const E& enable, uint32_t delay, const I& init) {
 
 template <typename Func, typename... Bs>
 auto ch_pipe(Func&& func, uint32_t length, Bs&&... bounds) {
-  CH_SOURCE_LOCATION(1);
+  CH_API_ENTRY(1);
   beginPipe(length, {std::forward<Bs>(bounds)...});
   auto ret = func;
   endPipe(get_lnode(ret));
@@ -277,9 +271,9 @@ auto ch_pipe(Func&& func, uint32_t length, Bs&&... bounds) {
 
 template <typename Func, typename E, typename... Bs>
 auto ch_pipeEn(Func&& func, const E& enable, uint32_t length, Bs&&... bounds) {
+  CH_API_ENTRY(1);
   static_assert(is_bitbase_v<E>, "invalid type");
   static_assert(ch_width_v<E> == 1, "invalid size");
-  CH_SOURCE_LOCATION(1);
   beginPipe(length, get_lnode(enable), {std::forward<Bs>(bounds)...});
   auto ret = func;
   endPipe(get_lnode(ret));

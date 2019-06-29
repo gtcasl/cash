@@ -46,7 +46,7 @@ public:
   template <typename V>
   auto operator()(const V& def_value) {
     static_assert(std::is_constructible_v<T, V>, "invalid type");
-    CH_SOURCE_LOCATION(1);
+    CH_API_ENTRY(1);
     return make_logic_type<T>(impl_.emit(to_lnode<T>(def_value)));
   }
   
@@ -75,7 +75,7 @@ public:
   template <typename T>
   auto operator()(const T& def_value) {
     static_assert(std::is_constructible_v<V, T>, "invalid type");
-    CH_SOURCE_LOCATION(1);
+    CH_API_ENTRY(1);
     return make_logic_type<V>(impl_.emit(to_lnode<V>(def_value)));
   }
   
@@ -100,14 +100,14 @@ auto ch_sel(const P& pred, const T& value) {
 
 template <typename R, typename U, typename V, typename P>
 auto ch_sel(const P& pred, const U& _true, const V& _false) {
-  CH_SOURCE_LOCATION(1);
+  CH_API_ENTRY(1);
   return ch_sel<R, U, P>(pred, _true)(_false);
 }
 
 template <typename U, typename V, typename P>
 auto ch_sel(const P& pred, const U& _true, const V& _false) {
   static_assert(ch_width_v<deduce_type_t<true, U, V>> != 0, "invalid type");
-  CH_SOURCE_LOCATION(1);
+  CH_API_ENTRY(1);
   return ch_sel<ch_logic_t<deduce_first_type_t<U, V>>, U, V, P>(pred, _true, _false);
 }
 
@@ -117,7 +117,7 @@ auto ch_case(const K& key, const P& pred, const V& value) {
   static_assert(is_logic_type_v<K>, "invalid type");
   static_assert(!is_logic_type_v<P>, "invalid type");
   static_assert(is_equality_comparable_v<P, K>, "invalid type");
-  CH_SOURCE_LOCATION(1);
+  CH_API_ENTRY(1);
   return case_t<K, R>(get_lnode(key),
                       to_lnode<ch_width_v<K>>(pred),
                       to_lnode<R>(value));
@@ -126,7 +126,7 @@ auto ch_case(const K& key, const P& pred, const V& value) {
 template <typename V, typename K, typename P>
 auto ch_case(const K& key, const P& pred, const V& value) {
   static_assert(is_data_type_v<V>, "invalid type");
-  CH_SOURCE_LOCATION(1);
+  CH_API_ENTRY(1);
   return ch_case<ch_logic_t<V>, V, K, P>(key, pred, value);
 }
 

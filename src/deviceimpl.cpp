@@ -9,36 +9,42 @@ using namespace ch::internal;
 
 deviceimpl::deviceimpl(const std::type_index& signature,
                        bool is_pod,
-                       const std::string& name) {
-  ctx_ = ctx_create(signature, is_pod, name);
+                       const std::string& name)
+  : old_ctx_(nullptr)
+  , sloc_ctx_(nullptr) {
+  auto ret = ctx_create(signature, is_pod, name);
+  ctx_ = ret.first;
+  is_new_ctx_ = ret.second;
   ctx_->acquire();
-  is_new_ctx_ = (0 == ctx_->nodes().size());
 }
 
 deviceimpl::~deviceimpl() {
   ctx_->release();  
 }
 
-void deviceimpl::begin_context() {
+bool deviceimpl::begin() {
   old_ctx_ = ctx_swap(ctx_);
+  if (is_new_ctx_) {
+    sloc_ctx_ = sloc_begin_module();
+  }
+  return is_new_ctx_;
 }
 
-void deviceimpl::end_context() {
+void deviceimpl::build() {
+  if (is_new_ctx_) {
+    compiler compiler(ctx_);
+    compiler.optimize();
+  }
+}
+
+void deviceimpl::end() {
+  if (is_new_ctx_) {
+    sloc_end_module(sloc_ctx_);
+  }
   ctx_swap(old_ctx_);
   if (old_ctx_) {
     auto sloc = get_source_location();
     old_ctx_->create_binding(ctx_, sloc);
-  }
-}
-
-bool deviceimpl::begin_build() const {
-  return is_new_ctx_;
-}
-
-void deviceimpl::end_build() {
-  if (is_new_ctx_) {
-    compiler compiler(ctx_);
-    compiler.optimize();
   }
 }
 
@@ -51,16 +57,17 @@ device::device(const std::type_index& signature,
                const std::string& name) {
   impl_ = new deviceimpl(signature, is_pod, name);
   impl_->acquire();
-  impl_->begin_context();
 }
 
-device::device(const device& other) : impl_(other.impl_) {
+device::device(const device& other)
+  : impl_(other.impl_) {
   if (impl_) {
     impl_->acquire();
   }
 }
 
-device::device(device&& other) : impl_(std::move(other.impl_)) {
+device::device(device&& other)
+  : impl_(std::move(other.impl_)) {
   other.impl_ = nullptr;
 }
 
@@ -87,13 +94,16 @@ device& device::operator=(device&& other) {
   return *this;
 }
 
-bool device::begin_build() const {
-  return impl_->begin_build();
+bool device::begin() {
+  return impl_->begin();
 }
 
-void device::end_build() {
-  impl_->end_build();
-  impl_->end_context();
+void device::build() {
+  impl_->build();
+}
+
+void device::end() {
+  impl_->end();
 }
 
 ///////////////////////////////////////////////////////////////////////////////

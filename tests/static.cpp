@@ -561,6 +561,20 @@ void foo() {
     ch_in<ch_uint4> b;
     auto c = a & b;
   }
+
+  {
+    ch_vec<ch_bit2, 2> a{11_b, 00_b};
+    ch_vec<ch_vec<ch_bit2, 2>, 2> b{{11_b, 00_b}, {11_b, 00_b}};
+    auto x = b[0][1];
+    auto y = (x == 11_b);
+  }
+
+  {
+    ch_system_t<ch_vec<ch_bit2, 2>> a{11_b, 00_b};
+    ch_system_t<ch_vec<ch_vec<ch_bit2, 2>, 2>> b{{11_b, 00_b}, {11_b, 00_b}};
+    auto x = b[0][1];
+    auto y = (x == 11_b);
+  }
 }
 
 void bar() {

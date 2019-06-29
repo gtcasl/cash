@@ -25,23 +25,17 @@ using ch_out = std::conditional_t<is_logic_type_v<T>,
 
 using io_value_t = smart_ptr<sdata_type>;
 
-lnodeimpl* createInputNode(const std::string& name, uint32_t size,
-                           const sloc_getter& slg = sloc_getter());
+lnodeimpl* createInputNode(const std::string& name, uint32_t size);
 
-lnodeimpl* createOutputNode(const std::string& name, uint32_t size,
-                            const sloc_getter& slg = sloc_getter());
+lnodeimpl* createOutputNode(const std::string& name, uint32_t size);
 
-lnodeimpl* bindInputNode(const lnode& input,
-                         const sloc_getter& slg = sloc_getter());
+lnodeimpl* bindInputNode(const lnode& input);
 
-lnodeimpl* bindOutputNode(const lnode& ouptut,
-                          const sloc_getter& slg = sloc_getter());
+lnodeimpl* bindOutputNode(const lnode& ouptut);
 
-lnodeimpl* bindInputNode(system_io_buffer* input,
-                         const sloc_getter& slg = sloc_getter());
+lnodeimpl* bindInputNode(system_io_buffer* input);
 
-lnodeimpl* bindOutputNode(system_io_buffer* output,
-                          const sloc_getter& slg = sloc_getter());
+lnodeimpl* bindOutputNode(system_io_buffer* output);
 
 lnodeimpl* getOutputNode(const lnode& src);
 
@@ -130,8 +124,8 @@ public:
 
   template <typename U>
   void operator()(ch_logic_out<U>& out) const {
+    CH_API_ENTRY(1);
     static_assert(std::is_constructible_v<U, T>, "invalid type");
-    CH_SOURCE_LOCATION(1);
     out = *this;
   }
 
@@ -187,13 +181,13 @@ public:
   {}
 
   ch_logic_out& operator=(const ch_logic_out& other) {
-    CH_SOURCE_LOCATION(1);
+    CH_API_ENTRY(1);
     base::operator=(other);
     return *this;
   }
 
   ch_logic_out& operator=(ch_logic_out&& other) {
-    CH_SOURCE_LOCATION(1);
+    CH_API_ENTRY(1);
     base::operator=(std::move(other));
     output_ = std::move(other.output_);
     return *this;
@@ -201,8 +195,8 @@ public:
 
   template <typename U>
   void operator()(const ch_logic_in<U>& in) {
+    CH_API_ENTRY(1);
     static_assert(std::is_constructible_v<U, T>, "invalid type");
-    CH_SOURCE_LOCATION(1);
     *this = in;
   }
 

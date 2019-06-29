@@ -107,7 +107,6 @@ public:
             CH_REQUIRE(std::is_integral_v<U>)>
   ch_int(const U& other)
     : ch_int(make_logic_buffer(N, idname<ch_int>())) {
-    CH_SOURCE_LOCATION(1);
     this->operator=(other);
   }
 
@@ -115,7 +114,6 @@ public:
             CH_REQUIRE(ch_width_v<U> <= N)>
   explicit ch_int(const ch_sbitbase<U>& other)
     : ch_int(make_logic_buffer(N, idname<ch_int>())) {
-    CH_SOURCE_LOCATION(1);
     this->operator=(reinterpret_cast<const U&>(other));
   }
 
@@ -123,7 +121,6 @@ public:
             CH_REQUIRE(M <= N)>
   ch_int(const ch_sbit<M>& other)
     : ch_int(make_logic_buffer(N, idname<ch_int>())) {
-    CH_SOURCE_LOCATION(1);
     this->operator=(other);
   }
 
@@ -131,7 +128,6 @@ public:
             CH_REQUIRE(M <= N)>
   ch_int(const ch_sint<M>& other)
     : ch_int(make_logic_buffer(N, idname<ch_int>())) {
-    CH_SOURCE_LOCATION(1);
     this->operator=(other);
   }
 
@@ -139,7 +135,6 @@ public:
             CH_REQUIRE(M <= N)>
   ch_int(const ch_suint<M>& other)
     : ch_int(make_logic_buffer(N, idname<ch_int>())) {
-    CH_SOURCE_LOCATION(1);
     this->operator=(other);
   }
 
@@ -147,7 +142,6 @@ public:
             CH_REQUIRE(ch_width_v<U> <= N)>
   explicit ch_int(const ch_bitbase<U>& other)
     : ch_int(make_logic_buffer(N, idname<ch_int>())) {
-    CH_SOURCE_LOCATION(1);
     this->operator=(reinterpret_cast<const U&>(other));
   }
 
@@ -155,7 +149,6 @@ public:
             CH_REQUIRE(M <= N)>
   ch_int(const ch_bit<M>& other)
     : ch_int(make_logic_buffer(N, idname<ch_int>())) {
-    CH_SOURCE_LOCATION(1);
     this->operator=(other);
   }
 
@@ -163,7 +156,6 @@ public:
             CH_REQUIRE(M <= N)>
   ch_int(const ch_uint<M>& other)
     : ch_int(make_logic_buffer(N, idname<ch_int>())) {
-    CH_SOURCE_LOCATION(1);
     this->operator=(other);
   }
 
@@ -171,26 +163,24 @@ public:
             CH_REQUIRE(M < N)>
   ch_int(const ch_int<M>& other)
     : ch_int(make_logic_buffer(N, idname<ch_int>())) {
-    CH_SOURCE_LOCATION(1);
     this->operator=(other);
   }
 
   ch_int(const ch_int& other)
     : ch_int(make_logic_buffer(N, idname<ch_int>())) {
-    CH_SOURCE_LOCATION(1);
     this->operator=(other);
   }
 
   ch_int(ch_int&& other) : buffer_(std::move(other.buffer_)) {}
 
   ch_int& operator=(const ch_int& other) {
-    CH_SOURCE_LOCATION(1);
+    CH_API_ENTRY(1);
     logic_accessor::assign(*this, other);
     return *this;
   }
 
   ch_int& operator=(ch_int&& other) {
-    CH_SOURCE_LOCATION(1);
+    CH_API_ENTRY(1);
     logic_accessor::move(*this, std::move(other));
     return *this;
   }

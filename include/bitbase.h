@@ -232,7 +232,7 @@ public:
   template <typename U,
             CH_REQUIRE(std::is_integral_v<U>)>
   T& operator=(const U& other) {
-    CH_SOURCE_LOCATION(1);
+    CH_API_ENTRY(1);
     auto self = reinterpret_cast<T*>(this);
     logic_accessor::assign(*self, sdata_type(ch_width_v<T>, other));
     return *self;
@@ -240,7 +240,7 @@ public:
 
   template <typename U>
   T& operator=(const ch_sbitbase<U>& other) {
-    CH_SOURCE_LOCATION(1);
+    CH_API_ENTRY(1);
     static_assert(ch_width_v<U> <= ch_width_v<T>, "invalid size");
     auto self = reinterpret_cast<T*>(this);
     if constexpr (ch_width_v<U> < ch_width_v<T>) {
@@ -255,7 +255,7 @@ public:
 
   template <typename U>
   T& operator=(const ch_bitbase<U>& other) {
-    CH_SOURCE_LOCATION(1);
+    CH_API_ENTRY(1);
     static_assert(ch_width_v<U> <= ch_width_v<T>, "invalid size");
     auto self = reinterpret_cast<T*>(this);
     if constexpr (ch_width_v<U> < ch_width_v<T>) {
@@ -274,15 +274,15 @@ public:
   // subscript operators
 
   auto operator[](size_t index) const {
+    CH_API_ENTRY(1);
     assert(index < ch_width_v<T>);
-    CH_SOURCE_LOCATION(1);
     auto self = reinterpret_cast<const T*>(this);
     return logic_accessor::slice<ch_bool>(*self, index);
   }
 
   auto operator[](size_t index) {
+    CH_API_ENTRY(1);
     assert(index < ch_width_v<T>);
-    CH_SOURCE_LOCATION(1);
     auto self = reinterpret_cast<T*>(this);
     return logic_accessor::sliceref<ch_bool>(*self, index);
   }

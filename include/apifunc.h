@@ -34,7 +34,7 @@ void ch_write(T& obj,
 template <typename R, typename T,
           CH_REQUIRE(is_data_type_v<T>)>
 auto ch_slice(T&& obj, size_t start = 0) {
-  CH_SOURCE_LOCATION(1);
+  CH_API_ENTRY(1);
   static_assert(ch_width_v<R> <= ch_width_v<T>, "invalid size");
   assert(start + ch_width_v<R> <= ch_width_v<T>);
   if constexpr (ch_width_v<T> == ch_width_v<R>) {
@@ -52,7 +52,7 @@ auto ch_slice(T&& obj, size_t start = 0) {
 template <typename R, typename T,
           CH_REQUIRE(is_data_type_v<T>)>
 auto ch_sliceref(T&& obj, size_t start = 0) {
-  CH_SOURCE_LOCATION(1);
+  CH_API_ENTRY(1);
   static_assert(ch_width_v<R> <= ch_width_v<T>, "invalid size");
   assert(start + ch_width_v<R> <= ch_width_v<T>);
   if constexpr (ch_width_v<T> == ch_width_v<R>) {
@@ -70,21 +70,21 @@ auto ch_sliceref(T&& obj, size_t start = 0) {
 template <typename R, typename T,
           CH_REQUIRE(is_data_type_v<T>)>
 auto ch_aslice(T&& obj, size_t start = 0) {
-  CH_SOURCE_LOCATION(1);
+  CH_API_ENTRY(1);
   return ch_slice<R>(std::forward<T>(obj), start * ch_width_v<R>);
 }
 
 template <typename R, typename T,
           CH_REQUIRE(is_data_type_v<T>)>
 auto ch_asliceref(T&& obj, size_t start = 0) {
-  CH_SOURCE_LOCATION(1);
+  CH_API_ENTRY(1);
   return ch_sliceref<R>(std::forward<T>(obj), start * ch_width_v<R>);
 }
 
 template <unsigned N, typename T,
           CH_REQUIRE(is_data_type_v<T>)>
 auto ch_slice(T&& obj, size_t start = 0) {
-  CH_SOURCE_LOCATION(1);
+  CH_API_ENTRY(1);
   if constexpr (ch_width_v<T> == N || !is_resizable_v<T>) {
     static_assert(ch_width_v<T> == N, "invalid size");
     CH_DBGCHECK(0 == start, "invalid offset");
@@ -98,7 +98,7 @@ auto ch_slice(T&& obj, size_t start = 0) {
 template <unsigned N, typename T,
           CH_REQUIRE(is_data_type_v<T>)>
 auto ch_aslice(T&& obj, size_t start = 0) {
-  CH_SOURCE_LOCATION(1);
+  CH_API_ENTRY(1);
   if constexpr (ch_width_v<T> == N || !is_resizable_v<T>) {
     static_assert(ch_width_v<T> == N, "invalid size");
     CH_DBGCHECK(0 == start, "invalid offset");
@@ -112,7 +112,7 @@ auto ch_aslice(T&& obj, size_t start = 0) {
 template <unsigned N, typename T,
           CH_REQUIRE(is_data_type_v<T>)>
 auto ch_sliceref(T&& obj, size_t start = 0) {
-  CH_SOURCE_LOCATION(1);
+  CH_API_ENTRY(1);
   if constexpr (ch_width_v<T> == N || !is_resizable_v<T>) {
     static_assert(ch_width_v<T> == N, "invalid size");
     CH_DBGCHECK(0 == start, "invalid offset");
@@ -126,7 +126,7 @@ auto ch_sliceref(T&& obj, size_t start = 0) {
 template <unsigned N, typename T,
           CH_REQUIRE(is_data_type_v<T>)>
 auto ch_asliceref(T&& obj, size_t start = 0) {
-  CH_SOURCE_LOCATION(1);
+  CH_API_ENTRY(1);
   if constexpr (ch_width_v<T> == N || !is_resizable_v<T>) {
     static_assert(ch_width_v<T> == N, "invalid size");
     CH_DBGCHECK(0 == start, "invalid offset");
@@ -142,7 +142,7 @@ auto ch_asliceref(T&& obj, size_t start = 0) {
 template <unsigned N, typename T,
           CH_REQUIRE(is_data_type_v<T>)>
 auto ch_pad(T&& obj) {
-  CH_SOURCE_LOCATION(1);
+  CH_API_ENTRY(1);
   if constexpr (0 == N || !is_resizable_v<T>) {
     static_assert(0 == N, "invalid size");
     return std::move(obj);
@@ -156,7 +156,7 @@ auto ch_pad(T&& obj) {
 template <typename R, typename T,
           CH_REQUIRE(is_data_type_v<T>)>
 auto ch_resize(T&& obj) {
-  CH_SOURCE_LOCATION(1);
+  CH_API_ENTRY(1);
   if constexpr (ch_width_v<T> <= ch_width_v<R>) {
     return ch_pad<ch_width_v<R>-ch_width_v<T>>(std::forward<T>(obj)).template as<R>();
   } else {
@@ -167,7 +167,7 @@ auto ch_resize(T&& obj) {
 template <unsigned M, typename T,
           CH_REQUIRE(is_data_type_v<T>)>
 auto ch_resize(T&& obj) {
-  CH_SOURCE_LOCATION(1);
+  CH_API_ENTRY(1);
   if constexpr (ch_width_v<T> <= M) {
     return ch_pad<M-ch_width_v<T>>(std::forward<T>(obj));
   } else {
@@ -179,8 +179,8 @@ auto ch_resize(T&& obj) {
 
 template <typename T>
 inline auto ch_rotl(const T& obj, uint32_t dist) {
-  static_assert(is_data_type_v<T>, "invalid type");
-  CH_SOURCE_LOCATION(1);
+  CH_API_ENTRY(1);
+  static_assert(is_data_type_v<T>, "invalid type");  
   auto mod = dist % ch_width_v<T>;
   if constexpr (is_logic_type_v<T>) {
     ch_bit<ch_width_v<T>> out(make_logic_buffer(ch_width_v<T>, "rotl"));
@@ -197,8 +197,8 @@ inline auto ch_rotl(const T& obj, uint32_t dist) {
 
 template <typename T>
 inline auto ch_rotr(const T& obj, uint32_t dist) {
-  static_assert(is_data_type_v<T>, "invalid type");
-  CH_SOURCE_LOCATION(1);
+  CH_API_ENTRY(1);
+  static_assert(is_data_type_v<T>, "invalid type");  
   auto mod = dist % ch_width_v<T>;
   if constexpr (is_logic_type_v<T>) {
     ch_bit<ch_width_v<T>> out(make_logic_buffer(ch_width_v<T>, "rotl"));
@@ -217,9 +217,9 @@ inline auto ch_rotr(const T& obj, uint32_t dist) {
 
 template <unsigned N, typename T>
 auto ch_shuffle(const T& obj, const std::array<size_t, N>& indices) {
+  CH_API_ENTRY(1);
   static_assert(is_data_type_v<T>, "invalid type");
-  static_assert(0 == (ch_width_v<T> % N), "invalid indices size");
-  CH_SOURCE_LOCATION(1);
+  static_assert(0 == (ch_width_v<T> % N), "invalid indices size");  
   auto stride = ch_width_v<T> / N;
   CH_CHECK(stride * N == ch_width_v<T>, "invalid size");
   if constexpr (is_logic_type_v<T>) {
@@ -287,8 +287,8 @@ protected:
 
 template <typename... Args>
   auto ch_tie(Args&... args) {
-  static_assert((is_data_type_v<Args> && ...), "invalid type for argument");
-  CH_SOURCE_LOCATION(1);
+  CH_API_ENTRY(1);
+  static_assert((is_data_type_v<Args> && ...), "invalid type for argument");  
   return tie_impl(args...);
 }
 
@@ -315,10 +315,10 @@ void cat_impl(O& inout, uint32_t dst_offset, const I0& arg0, const Is&... args) 
 
 template <typename R, typename... Args>
 auto ch_cat(const Args&... args) {
+  CH_API_ENTRY(1);
   static_assert((is_data_type_v<Args> && ...), "invalid argument type");
   static constexpr unsigned N = (ch_width_v<Args> + ...);
-  static_assert(ch_width_v<R> == N, "size mismatch");
-  CH_SOURCE_LOCATION(1);
+  static_assert(ch_width_v<R> == N, "size mismatch");  
   if constexpr (is_logic_type_v<R>) {
     R ret(make_logic_buffer(N, "cat"));
     cat_impl(ret, N, args...);
@@ -332,9 +332,9 @@ auto ch_cat(const Args&... args) {
 
 template <typename... Args>
 auto ch_cat(const Args&... args) {
+  CH_API_ENTRY(1);
   static_assert((is_data_type_v<Args> && ...), "invalid argument type");
-  static constexpr unsigned N = (ch_width_v<Args> + ...);
-  CH_SOURCE_LOCATION(1);
+  static constexpr unsigned N = (ch_width_v<Args> + ...);  
   if constexpr ((is_logic_type_v<Args> || ...)) {
     return ch_cat<ch_bit<N>>(args...);
   } else {
@@ -346,7 +346,7 @@ auto ch_cat(const Args&... args) {
 
 template <unsigned N, typename T>
 auto ch_dup(T&& obj) {
-  CH_SOURCE_LOCATION(1);
+  CH_API_ENTRY(1);
   static_assert(is_data_type_v<T>, "invalid type");
   static_assert(N > 0, "invalid size");
   if constexpr (1 == N) {
@@ -371,8 +371,8 @@ auto ch_dup(T&& obj) {
 
 template <typename R, typename T>
 auto ch_as(const T& obj) {
+  CH_API_ENTRY(1);
   static_assert(is_data_type_v<T>, "invalid type");
-  CH_SOURCE_LOCATION(1);
   return obj.template as<R>();
 }
 
@@ -380,8 +380,8 @@ auto ch_as(const T& obj) {
 
 template <typename T>
 auto ch_ref(T& obj) {
+  CH_API_ENTRY(1);
   static_assert(is_logic_type_v<T>, "invalid type");
-  CH_SOURCE_LOCATION(1);
   return obj.ref();
 }
 
@@ -389,23 +389,10 @@ auto ch_ref(T& obj) {
 
 template <typename T>
 auto ch_clone(const T& obj) {
+  CH_API_ENTRY(1);
   static_assert(is_logic_type_v<T>, "invalid type");
-  CH_SOURCE_LOCATION(1);
   return obj.clone();
 }
 
 }
 }
-
-#ifndef NDEBUG
-  #define CH_TAP(x) ch_tap(x, #x)
-#else
-  #define CH_TAP(x)
-#endif
-
-#ifndef NDEBUG
-  #define CH_ASSERT(x) \
-    ch_assert(x, stringf("Failed assertion in %s: %d", __FILE__, __LINE__))
-#else
-  #define CH_ASSERT(x)
-#endif

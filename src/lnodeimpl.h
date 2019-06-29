@@ -1,6 +1,7 @@
 #pragma once
 
 #include "lnode.h"
+#include "slocmgr.h"
 
 #define CH_LNODE_TYPE(t) type_##t,
 #define CH_LNODE_NAME(n) #n,
@@ -173,8 +174,6 @@ private:
 const char* to_string(lnodetype type);
 
 std::ostream& operator<<(std::ostream& out, lnodetype type);
-
-source_location get_source_location();
 
 }
 }

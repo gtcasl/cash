@@ -18,7 +18,7 @@ void registerTap(const lnode& node, const std::string& name);
 // time function
 
 inline auto ch_now() {
-  CH_SOURCE_LOCATION(1);
+  CH_API_ENTRY(1);
   return make_logic_type<ch_uint<64>>(getCurrentTimeNode());
 }
 
@@ -26,21 +26,21 @@ inline auto ch_now() {
 
 template <typename... Args>
 void ch_print(const std::string& format, const Args&... args) {
+  CH_API_ENTRY(1);
   static_assert((is_logic_type_v<Args> && ...), "invalid argument type");
-  CH_SOURCE_LOCATION(1);
   createPrintNode(format, {get_lnode(args)...});
 }
 
 template <typename... Args>
 void ch_println(const std::string& format, const Args&... args) {
-  CH_SOURCE_LOCATION(1);
+  CH_API_ENTRY(1);
   ch_print(format + '\n', args...);
 }
 
 // assert function
 
 inline void ch_assert(const ch_bool& cond, const std::string& msg) {
-  CH_SOURCE_LOCATION(1);
+  CH_API_ENTRY(1);
   createAssertNode(get_lnode(cond), msg);
 }
 
@@ -48,10 +48,23 @@ inline void ch_assert(const ch_bool& cond, const std::string& msg) {
 
 template <typename T>
 void ch_tap(const T& value, const std::string& name) {
+  CH_API_ENTRY(1);
   static_assert(is_logic_type_v<T>, "invalid type");
-  CH_SOURCE_LOCATION(1);
   registerTap(get_lnode(value), name);
 }
 
 }
 }
+
+#ifndef NDEBUG
+  #define CH_TAP(x) ch_tap(x, #x)
+#else
+  #define CH_TAP(x)
+#endif
+
+#ifndef NDEBUG
+  #define CH_ASSERT(x) \
+    ch_assert(x, stringf("Failed assertion in %s: %d", __FILE__, __LINE__))
+#else
+  #define CH_ASSERT(x)
+#endif

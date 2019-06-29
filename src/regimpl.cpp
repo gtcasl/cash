@@ -87,9 +87,8 @@ void regimpl::print(std::ostream& out) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-lnodeimpl* ch::internal::createRegNode(unsigned size,
-                                       const std::string& name,
-                                       const sloc_getter&) {
+lnodeimpl* ch::internal::createRegNode(unsigned size, const std::string& name) {
+  CH_API_ENTRY(2);
   auto sloc = get_source_location();
   auto ctx  = ctx_curr();
   auto cd   = ctx->current_cd(sloc);
@@ -100,9 +99,8 @@ lnodeimpl* ch::internal::createRegNode(unsigned size,
   return reg;
 }
 
-lnodeimpl* ch::internal::createRegNode(const lnode& init_data,
-                                       const std::string& name,
-                                       const sloc_getter&) {
+lnodeimpl* ch::internal::createRegNode(const lnode& init_data, const std::string& name) {
+  CH_API_ENTRY(2);
   auto sloc = get_source_location();
   auto ctx  = init_data.impl()->ctx();
   auto cd   = ctx->current_cd(sloc);
@@ -114,9 +112,8 @@ lnodeimpl* ch::internal::createRegNode(const lnode& init_data,
   return reg;
 }
 
-lnodeimpl* ch::internal::copyRegNode(const lnode& node,
-                                     const std::string& name,
-                                     const sloc_getter&) {
+lnodeimpl* ch::internal::copyRegNode(const lnode& node, const std::string& name) {
+  CH_API_ENTRY(2);
   auto sloc   = get_source_location();
   auto reg    = reinterpret_cast<regimpl*>(node.impl());
   auto ctx    = reg->ctx();

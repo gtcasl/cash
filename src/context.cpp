@@ -20,10 +20,6 @@
 #include "udf.h"
 #include "debug.h"
 
-#ifdef CALLTRACE
-#include "slocmgr.h"
-#endif
-
 using namespace ch::internal;
 
 class context_manager {
@@ -35,9 +31,9 @@ public:
     assert(pod_contexts_.empty());
   }
 
-  context* create_context(const std::type_index& signature,
-                          bool is_pod,
-                          const std::string& name) {
+  std::pair<context*, bool> create_context(const std::type_index& signature,
+                                           bool is_pod,
+                                           const std::string& name) {
     context* ctx;
     if (is_pod) {
       auto its = pod_signatures_.find(signature);
@@ -46,7 +42,7 @@ public:
         assert(itc != pod_contexts_.end());
         auto ctx = itc->second;
         if (0 == ctx->udfs().size())
-          return ctx;
+          return std::make_pair(ctx, false);
         is_pod = false;
       }
     }
@@ -61,8 +57,8 @@ public:
       [[maybe_unused]] auto status = pod_signatures_.emplace(signature, ctx->id());
       assert(status.second);
       ctx->set_managed(true);
-    }
-    return ctx;
+    }    
+    return std::make_pair(ctx, true);
   }
 
   void destroy_context(uint32_t id) {
@@ -87,18 +83,6 @@ public:
     return ctx;
   }
 
-#ifdef CALLTRACE
-  bool register_source_location(uint32_t level) {
-    return src_loc_manager_.register_source_location(level+1);
-  }
-  void release_source_location() {
-    src_loc_manager_.release_source_location();
-  }
-  const source_location& get_source_location() {
-    return src_loc_manager_.get_source_location();
-  }
-#endif
-
   static context_manager& instance(){
     static context_manager inst;
     return inst;
@@ -120,14 +104,13 @@ protected:
   std::unordered_map<std::type_index, uint32_t> pod_signatures_;
   std::unordered_map<uint32_t, context*> pod_contexts_;
   dup_tracker<std::string> dup_ctx_names_;
-#ifdef CALLTRACE
-  sloc_manager src_loc_manager_;
-#endif
 };
 
-context* ch::internal::ctx_create(const std::type_index& signature,
-                                  bool is_pod,
-                                  const std::string& name) {
+///////////////////////////////////////////////////////////////////////////////
+
+std::pair<context*, bool> ch::internal::ctx_create(const std::type_index& signature,
+                                                   bool is_pod,
+                                                   const std::string& name) {
   return context_manager::instance().create_context(signature, is_pod, name);
 }
 
@@ -137,29 +120,6 @@ context* ch::internal::ctx_swap(context* ctx) {
 
 context* ch::internal::ctx_curr() {
   return context_manager::instance().current();
-}
-
-bool ch::internal::register_source_location(uint32_t level) {
-#ifdef CALLTRACE
-  return context_manager::instance().register_source_location(level+1);
-#else
-  CH_UNUSED(level);
-  return false;
-#endif
-}
-
-void ch::internal::release_source_location() {
-#ifdef CALLTRACE
-  context_manager::instance().release_source_location();
-#endif
-}
-
-source_location ch::internal::get_source_location() {
-#ifdef CALLTRACE
-  return context_manager::instance().get_source_location();
-#else
-  return source_location();
-#endif
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -173,6 +133,7 @@ context::context(const std::string& name, context* parent)
   , sys_reset_(nullptr)
   , sys_time_(nullptr)
   , curr_udf_(nullptr)
+  , branchconv_(nullptr)
   , nodes_(&mems_, &marports_, &msrports_, &mwports_, &regs_,
            &proxies_, &sels_, &ops_,
            &inputs_, &outputs_, &cdomains_, &bindings_, &bindports_,

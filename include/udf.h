@@ -122,7 +122,7 @@ protected:
 
   template <typename... Args>
   auto create(Args&&... args) {
-    CH_SOURCE_LOCATION(2);
+    CH_API_ENTRY(2);
     auto obj = new udf_wrapper<T>(std::forward<Args>(args)...);
     createUDFNode(idname<T>(), false, obj);
     return obj;
@@ -159,7 +159,7 @@ protected:
 
   template <typename... Args>
   auto create(Args&&... args) {
-    CH_SOURCE_LOCATION(2);
+    CH_API_ENTRY(2);
     auto obj = new udf_wrapper<T>(std::forward<Args>(args)...);
     createUDFNode(idname<T>(), true, obj);
     return obj;

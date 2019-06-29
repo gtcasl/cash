@@ -149,9 +149,8 @@ TEST_CASE("basics", "[basics]") {
     });
 
     TEST([]()->ch_bool {
-      ch_vec<ch_bit4, 2> a(0);
-      a = 11_h;
-      return (a.as_uint() == 11_h);
+      ch_vec<ch_bit4, 2> a{2, 1};
+      return (a.as_uint() == 21_h);
     });
 
     TEST1([](const ch_int8& t)->ch_bool {
