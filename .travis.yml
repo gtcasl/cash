@@ -38,8 +38,10 @@ script:
   - CASH_CFLAGS=256 make test    # Turn off JIT
   - CASH_CFLAGS=261760 make test # Turn off all opts
   #- valgrind bin/testsuite
-  #- CASH_CFLAGS=261760 valgrind bin/testsuite
-  - CASH_CFLAGS=256 valgrind bin/testsuite
+  - pushd tests
+  - CASH_CFLAGS=262016 valgrind ../bin/testsuite
+  - CASH_CFLAGS=256 valgrind ../bin/testsuite
+  - popd
   - popd
   # Build libjit Release project
   - mkdir -p build_jbr
@@ -48,9 +50,11 @@ script:
   - make -j8 all
   - make test
   - CASH_CFLAGS=261760 make test
-  - valgrind bin/testsuite
-  - CASH_CFLAGS=261760 valgrind bin/testsuite
+  - pushd tests
+  - valgrind ../bin/testsuite
+  - CASH_CFLAGS=261760 valgrind ../bin/testsuite
   - popd
+   -popd
   # Build llvm Debug project
   - export CASH_DEBUG_LEVEL=3
   - mkdir -p build_lld
