@@ -2,9 +2,7 @@
 #include <math.h>
 #include "common.h"
 
-using namespace ch::logic;
-using namespace ch::system;
-using namespace ch::literals;
+using namespace ch::core;
 using namespace ch::extension;
 
 // reference: https://github.com/tchoi8/verilog/blob/master/examples/sqrt.vl

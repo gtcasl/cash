@@ -1,8 +1,7 @@
 #include <cash.h>
 #include "common.h"
 
-using namespace ch::logic;
-using namespace ch::system;
+using namespace ch::core;
 
 struct FastMul {
   __io (

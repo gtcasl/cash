@@ -2,9 +2,7 @@
 #include <htl/decoupled.h>
 #include "common.h"
 
-using namespace ch::logic;
-using namespace ch::literals;
-using namespace ch::system;
+using namespace ch::core;
 using namespace ch::htl;
 
 namespace aes {

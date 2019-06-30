@@ -4,10 +4,8 @@
 #include <htl/queue.h>
 #include "common.h"
 
-using namespace ch::logic;
-using namespace ch::system;
+using namespace ch::core;
 using namespace ch::htl;
-using namespace ch::literals;
 
 template <typename T>
 class sobel {

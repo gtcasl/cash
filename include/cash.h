@@ -391,6 +391,19 @@ namespace system {
 }
 
 //
+// literals
+//
+inline namespace literals {
+  using namespace ch::internal::literals;
+}
+
+namespace core {
+  using namespace ch::logic;
+  using namespace ch::system;
+  using namespace ch::literals;
+}
+
+//
 // user defined functions
 //
 namespace extension {
@@ -406,13 +419,6 @@ namespace extension {
   using ch::internal::udf_verilog;
   using ch::internal::udf_vostream;
   using ch::internal::source_location;
-}
-
-//
-// literals
-//
-inline namespace literals {
-  using namespace ch::internal::literals;
 }
 
 }

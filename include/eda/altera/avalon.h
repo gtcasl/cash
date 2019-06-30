@@ -12,15 +12,6 @@ using namespace ch::logic;
 using namespace ch::literals;
 using namespace ch::htl;
 
-template <unsigned Bitwidth, bool Signed, typename SystemType, typename LogicType>
-struct my_traits {
-  static constexpr int type = ch::internal::traits_system;
-  static constexpr unsigned bitwidth  = Bitwidth;
-  static constexpr unsigned is_signed = Signed;
-  using system_type = SystemType;
-  using logic_type  = LogicType;
-};
-
 __inout (avalon_st_io, (
   __in  (ch_bool) valid_in,  // inputs available
   __out (ch_bool) ready_out, // can receive inputs

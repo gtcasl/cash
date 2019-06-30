@@ -8,9 +8,7 @@
 #include <htl/fixed.h>
 #include "common.h"
 
-using namespace ch::logic;
-using namespace ch::system;
-using namespace ch::literals;
+using namespace ch::core;
 using namespace ch::htl;
 
 // reference: https://ieeexplore.ieee.org/document/508145/

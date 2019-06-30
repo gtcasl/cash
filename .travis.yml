@@ -54,7 +54,7 @@ script:
   - valgrind ../bin/testsuite
   - CASH_CFLAGS=261760 valgrind ../bin/testsuite
   - popd
-   -popd
+  - popd
   # Build llvm Debug project
   - export CASH_DEBUG_LEVEL=3
   - mkdir -p build_lld

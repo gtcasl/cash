@@ -5,9 +5,8 @@
 #include <htl/counter.h>
 #include "common.h"
 
-using namespace ch::logic;
+using namespace ch::core;
 using namespace ch::htl;
-using namespace ch::system;
 
 template <typename T>
 class Matrix {
