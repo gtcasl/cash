@@ -322,7 +322,10 @@ void proxyimpl::print(std::ostream& out) const {
   uint32_t d(0);
   auto_separator sep(", ");
   for (auto& range : ranges_) {
-    out << sep;
+    out << sep;        
+    if (d != range.dst_offset) {
+      out << range.dst_offset << "-";
+    }
     d += range.length;
     auto& src = this->src(range.src_idx);
     out << "#" << src.id();

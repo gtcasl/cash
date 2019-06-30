@@ -21,6 +21,7 @@ TEST_CASE("proxies", "[proxies]") {
       a[1] = y;
       x = 1_b;
       y = 0_b;
+      //ch_println("a={}", a);
       return (a[3] == 1_b && a[1] == 0_b);
     });    
     TEST([]()->ch_bool {

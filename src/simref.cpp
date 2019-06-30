@@ -49,7 +49,8 @@ protected:
 
   struct range_t {
     const block_type* data;
-    uint32_t offset;
+    uint32_t dst_offset;
+    uint32_t src_offset;
     uint32_t length;
   };
 
@@ -81,8 +82,10 @@ public:
 
 private:
 
-  instr_slice(block_type* dst, uint32_t dst_size,
-              const block_type* src_data, uint32_t src_offset)
+  instr_slice(block_type* dst,
+              uint32_t dst_size,
+              const block_type* src_data,
+              uint32_t src_offset)
     : instr_proxy_base(dst, dst_size)
     , src_data_(src_data)
     , src_offset_(src_offset)
@@ -107,40 +110,34 @@ public:
     if constexpr (is_scalar) {
       if (dst_size_ <= bitwidth_v<block_type>) {
         block_type dst_block = 0;
-        uint32_t dst_offset = 0;
         for (auto *r = ranges_, *r_end = r + num_ranges_ ;r != r_end; ++r) {
           uint32_t lr = (bitwidth_v<block_type> - r->length);
-          auto src_block = (block_type((r->data[0] >> r->offset) << lr) >> lr);
-          dst_block |= src_block << dst_offset;
-          dst_offset += r->length;
+          auto src_block = (block_type((r->data[0] >> r->src_offset) << lr) >> lr);
+          dst_block |= src_block << r->dst_offset;
         }
         dst_[0] = dst_block;
       } else {
         auto dst = dst_;
         block_type dst_block = 0;
-        uint32_t dst_offset = 0;
         for (auto *r = ranges_, *r_end = r + num_ranges_ ;r != r_end; ++r) {
-          auto dst_lsb = dst_offset % bitwidth_v<block_type>;
+          auto dst_lsb = r->dst_offset % bitwidth_v<block_type>;
           uint32_t lr = (bitwidth_v<block_type> - r->length);
-          auto src_block = (block_type((r->data[0] >> r->offset) << lr) >> lr);
+          auto src_block = (block_type((r->data[0] >> r->src_offset) << lr) >> lr);
           dst_block |= src_block << dst_lsb;
           if (dst_lsb >= lr) {
             *dst++ = dst_block; // flush current block
             dst_block = dst_lsb ? (src_block >> (bitwidth_v<block_type> - dst_lsb)) : 0;
           }
-          dst_offset += r->length;
         }
         if ((dst_size_ % bitwidth_v<block_type>) != 0) {
           *dst = dst_block; // flush last block
         }
       }
     } else {
-      uint32_t dst_offset(0);
       for (auto *r = ranges_, *r_end = r + num_ranges_ ;r != r_end; ++r) {
-        auto dst_idx = dst_offset / bitwidth_v<block_type>;
-        auto dst_lsb = dst_offset % bitwidth_v<block_type>;
-        bv_copy_vector(dst_ + dst_idx, dst_lsb, r->data, r->offset, r->length);
-        dst_offset += r->length;
+        auto dst_idx = r->dst_offset / bitwidth_v<block_type>;
+        auto dst_lsb = r->dst_offset % bitwidth_v<block_type>;
+        bv_copy_vector(dst_ + dst_idx, dst_lsb, r->data, r->src_offset, r->length);
       }
     }
   }
@@ -207,7 +204,8 @@ instr_proxy_base* instr_proxy_base::create(proxyimpl* node, data_map_t& map) {
       uint32_t src_idx = src_range.src_offset / bitwidth_v<block_type>;
       uint32_t src_lsb = src_range.src_offset % bitwidth_v<block_type>;
       dst_range.data   = map.at(src.id()) + src_idx;
-      dst_range.offset = src_lsb;
+      dst_range.dst_offset = src_range.dst_offset;
+      dst_range.src_offset = src_lsb;
       dst_range.length = src_range.length;
       is_scalar &= (src_lsb + src_range.length <= bitwidth_v<block_type>);
     }
