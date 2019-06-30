@@ -109,7 +109,7 @@ TEST_CASE("memory", "[memory]") {
            (7,  0xB_h)
            (9,  0xC_h)
                (q);
-      ch_println("t={0}, a={1}, q={2}, e={3}", ch_now(), a, q, e);
+      ch_println("t={}, rst={}, clk={}, a={}, q={}, e={}", ch_now(), ch_reset(), ch_clock(), a, q, e);
       return (q == e);
     }, 4);
   }

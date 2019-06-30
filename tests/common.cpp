@@ -92,16 +92,18 @@ bool TEST(const std::function<ch_bool ()>& test,
   ch_device<TestRunner> device(test);
   ch_simulator sim(device);  
 
-  auto ticks = (0 == cycles) ? 1 : (cycles * 2);
+  auto ticks = (0 == cycles) ? 1 : (cycles * 2);  
+  bool ret = true;
 
   sim.run([&](ch_tick t)->bool {
+  #ifndef NDEBUG
     std::cout << "t" << t << ": ret=" << device.io.out << std::endl;
-    if (t > 0 && !(bool)device.io.out)
-      return false;
+  #endif
+    ret &= (bool)device.io.out;
     return (t < ticks);
   });
 
-  return end_test((bool)device.io.out, sloc);
+  return end_test(ret, sloc);
 }
 
 bool TEST1(const std::function<ch_bool (const ch_int8&)>& test,
@@ -114,17 +116,19 @@ bool TEST1(const std::function<ch_bool (const ch_int8&)>& test,
   ch_simulator sim(device);
 
   auto ticks = (0 == cycles) ? 1 : (cycles * 2);
+  bool ret = true;
 
   device.io.in1 = 1;
 
   sim.run([&](ch_tick t)->bool {
+  #ifndef NDEBUG
     std::cout << "t" << t << ": ret=" << device.io.out << std::endl;
-    if (t > 0 && !(bool)device.io.out)
-      return false;
+  #endif
+    ret &= (bool)device.io.out;
     return (t < ticks);
   });
 
-  return end_test((bool)device.io.out, sloc);
+  return end_test(ret, sloc);
 }
 
 bool TEST2(const std::function<ch_bool (const ch_int8&, const ch_int8&)>& test,
@@ -137,18 +141,20 @@ bool TEST2(const std::function<ch_bool (const ch_int8&, const ch_int8&)>& test,
   ch_simulator sim(device);
 
   auto ticks = (0 == cycles) ? 1 : (cycles * 2);
+  bool ret = true;
 
   device.io.in1 = 1;
   device.io.in2 = 2;
 
   sim.run([&](ch_tick t)->bool {
+  #ifndef NDEBUG
     std::cout << "t" << t << ": ret=" << device.io.out << std::endl;
-    if (t > 0 && !(bool)device.io.out)
-      return false;
+  #endif
+    ret &= (bool)device.io.out;
     return (t < ticks);
   });
 
-  return end_test((bool)device.io.out, sloc);
+  return end_test(ret, sloc);
 }
 
 bool TESTX(const std::function<bool()>& test,
