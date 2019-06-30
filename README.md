@@ -16,13 +16,13 @@ It has been tested with GCC 7 and Clang 5.
 
 Other dependencies include:
 
-  - [LLVM](https://www.llvm.org)
-  - [Catch](https://github.com/catchorg/Catch2)
-  - [iVerilog](http://iverilog.icarus.com/)
-  - [lcov]
-  - [texinfo]
-  - [build-essential]
-  - [binutils-dev]
+  - [LLVM] (https://www.llvm.org)
+  - [Catch] (https://github.com/catchorg/Catch2)
+  - [iVerilog] (http://iverilog.icarus.com/)
+  - [lcov] (http://ltp.sourceforge.net/coverage/lcov.php)
+  - [texinfo] (https://www.gnu.org/software/texinfo/)
+  - [build-essential] (https://packages.debian.org/jessie/build-essential)
+  - [binutils-dev] (https://www.gnu.org/software/binutils/)
 
 System Setup (Ubuntu Trusty)
 ----------------------------
