@@ -47,11 +47,13 @@ sdata_type ch::internal::loadInitData(const std::string& file,
     return str;
   };
 
+  std::ifstream in(file, std::ios::binary);
+  CH_CHECK(in.is_open(), "failed to open file '%s'", file.c_str());
+
   auto addr_width = log2ceil(num_items);
   sdata_type out(data_width * num_items);
   sdata_type sword(data_width);
   sdata_type saddr(addr_width);
-  std::ifstream in(file, std::ios::binary);
   std::string line;
   uint32_t addr = 0;
 
