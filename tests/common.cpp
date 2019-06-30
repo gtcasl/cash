@@ -99,7 +99,7 @@ bool TEST(const std::function<ch_bool ()>& test,
   #ifndef NDEBUG
     std::cout << "t" << t << ": ret=" << device.io.out << std::endl;
   #endif
-    ret &= (bool)device.io.out;
+    ret &= (cycles && !t) || (bool)device.io.out;
     return (t < ticks);
   });
 
@@ -124,7 +124,7 @@ bool TEST1(const std::function<ch_bool (const ch_int8&)>& test,
   #ifndef NDEBUG
     std::cout << "t" << t << ": ret=" << device.io.out << std::endl;
   #endif
-    ret &= (bool)device.io.out;
+    ret &= (cycles && !t) || (bool)device.io.out;
     return (t < ticks);
   });
 
@@ -150,7 +150,7 @@ bool TEST2(const std::function<ch_bool (const ch_int8&, const ch_int8&)>& test,
   #ifndef NDEBUG
     std::cout << "t" << t << ": ret=" << device.io.out << std::endl;
   #endif
-    ret &= (bool)device.io.out;
+    ret &= (cycles && !t) || (bool)device.io.out;
     return (t < ticks);
   });
 

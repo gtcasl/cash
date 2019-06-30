@@ -19,6 +19,10 @@ Other dependencies include:
   - [LLVM](https://www.llvm.org)
   - [Catch](https://github.com/catchorg/Catch2)
   - [iVerilog](http://iverilog.icarus.com/)
+  - [lcov]
+  - [texinfo]
+  - [build-essential]
+  - [binutils-dev]
 
 System Setup (Ubuntu Trusty)
 ----------------------------
