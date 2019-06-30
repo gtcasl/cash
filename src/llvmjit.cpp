@@ -1350,6 +1350,6 @@ int jit_dump_asm(FILE *stream, jit_function_t func, const char *name) {
       return 0;
     pass.run(*module);
   }
-  fprintf(stream, "%s", sv.data());
+  fwrite(sv.data(), 1, sv.size(), stream);
   return 1;
 }
