@@ -79,8 +79,7 @@ A generic binary adder.
 ```C++
 #include <cash.h>
 
-using namespace ch::logic;
-using namespace ch::system;
+using namespace ch::core;
 
 // hardware description
 template <unsigned N>
