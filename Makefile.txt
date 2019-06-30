@@ -35,6 +35,8 @@ SRCS = utils.cpp \
        udfimpl.cpp \
        lnode.cpp \
        logic.cpp \
+       brconv.cpp \
+       slocmgr.cpp \
        context.cpp \
        compile.cpp \
        simref.cpp \

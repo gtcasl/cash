@@ -1,7 +1,6 @@
 #include <cash.h>
 #include <htl/decoupled.h>
-
-#define CHECK(x) do { if (!(x)) { std::cout << "FAILED: " << #x << std::endl; std::abort(); } } while (false)
+#include "common.h"
 
 using namespace ch::logic;
 using namespace ch::system;
@@ -53,12 +52,12 @@ int main() {
 
   ch_tracer tracer(gcd);
   auto ticks = tracer.run([&](ch_tick t)->bool {
-    std::cout << "t" << t << ": in="  << gcd.io.in.ready
-              << ", out="  << gcd.io.out.data << std::endl;
-    return !gcd.io.out.valid && t < 20;
+    return !gcd.io.out.valid && (t < 20);
   });
 
   std::cout << "completed after " << (ticks/2) << " cycles" << std::endl;
+  std::cout << "result:" << std::endl;
+  std::cout << "out = "  << gcd.io.out.data << std::endl;
 
   CHECK(gcd.io.out.data == 16);
 
@@ -68,7 +67,7 @@ int main() {
   tracer.toText("gcd.log");
   tracer.toVCD("gcd.vcd");
   tracer.toTestBench("gcd_tb.v", "gcd.v");
-  int ret = system("iverilog gcd_tb.v -o gcd_tb.iv")
-          | system("! vvp gcd_tb.iv | grep 'ERROR' || false");
-  return ret != 0;
+  int ret = !system("iverilog gcd_tb.v -o gcd_tb.iv")
+          & !system("! vvp gcd_tb.iv | grep 'ERROR' || false");
+  return (0 == ret);
 }

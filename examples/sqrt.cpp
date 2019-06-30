@@ -1,7 +1,6 @@
 #include <cash.h>
 #include <math.h>
-
-#define CHECK(x) do { if (!(x)) { std::cout << "FAILED: " << #x << std::endl; std::abort(); } } while (false)
+#include "common.h"
 
 using namespace ch::logic;
 using namespace ch::system;
@@ -108,7 +107,7 @@ int main() {
   tracer.toText("sqrt.log");
   tracer.toVCD("sqrt.vcd");
   tracer.toTestBench("sqrt_tb.v", "sqrt.v", true);
-  int ret = system("iverilog sqrt_tb.v -o sqrt_tb.iv")
-          | system("! vvp sqrt_tb.iv | grep 'ERROR' || false");
-  return ret != 0;
+  int ret = !system("iverilog sqrt_tb.v -o sqrt_tb.iv")
+          & !system("! vvp sqrt_tb.iv | grep 'ERROR' || false");
+  return (0 == ret);
 }

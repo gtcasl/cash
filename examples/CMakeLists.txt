@@ -6,9 +6,12 @@ set(EXAMPLES
     fastmul 
     fifo 
     gcd 
-    vending
-    matmul
+    vending    
     sqrt
+    matmul
+    aes
+    sobel
+    fft
 )
 
 foreach(EXAMPLE ${EXAMPLES})

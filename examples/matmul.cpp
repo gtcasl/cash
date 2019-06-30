@@ -3,8 +3,7 @@
 #include <assert.h>
 #include <cash.h>
 #include <htl/counter.h>
-
-#define CHECK(x) do { if (!(x)) { std::cout << "FAILED: " << #x << std::endl; std::abort(); } } while (false)
+#include "common.h"
 
 using namespace ch::logic;
 using namespace ch::htl;
@@ -188,7 +187,7 @@ int main() {
   tracer.toVCD("matmul.vcd");
   tracer.toTestBench("matmul_tb.v", "matmul.v");
   tracer.toVerilator("matmul_tb.h", "MatMul");
-  int ret = system("iverilog matmul_tb.v -o matmul_tb.iv")
-          | system("! vvp matmul_tb.iv | grep 'ERROR' || false");
-  return ret != 0;
+  int ret = !system("iverilog matmul_tb.v -o matmul_tb.iv")
+          & !system("! vvp matmul_tb.iv | grep 'ERROR' || false");
+  return (0 == ret);
 }

@@ -1,6 +1,5 @@
 #include <cash.h>
-
-#define CHECK(x) do { if (!(x)) { std::cout << "FAILED: " << #x << std::endl; std::abort(); } } while (false)
+#include "common.h"
 
 using namespace ch::logic;
 using namespace ch::system;
@@ -35,7 +34,7 @@ int main() {
   tracer.toText("counter.log");
   tracer.toVCD("counter.vcd");  
   tracer.toTestBench("counter_tb.v", "counter.v");
-  int ret = system("iverilog counter_tb.v -o counter_tb.iv")
-          | system("! vvp counter_tb.iv | grep 'ERROR' || false");
-  return ret != 0;
+  int ret = !system("iverilog counter_tb.v -o counter_tb.iv")
+          & !system("! vvp counter_tb.iv | grep 'ERROR' || false");
+  return (0 == ret);
 }

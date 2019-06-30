@@ -1,6 +1,5 @@
 #include <cash.h>
-
-#define CHECK(x) do { if (!(x)) { std::cout << "FAILED: " << #x << std::endl; std::abort(); } } while (false)
+#include "common.h"
 
 using namespace ch::logic;
 using namespace ch::system;
@@ -59,8 +58,8 @@ int main() {
   tracer.toText("vending.log");
   tracer.toVCD("vending.vcd");
   tracer.toTestBench("vending_tb.v", "vending.v");
-  int ret = system("iverilog vending_tb.v -o vending_tb.iv")
-          | system("! vvp vending_tb.iv | grep 'ERROR' || false");
+  int ret = !system("iverilog vending_tb.v -o vending_tb.iv")
+          & !system("! vvp vending_tb.iv | grep 'ERROR' || false");
   std::cout << "ret=" << ret << std::endl;
-  return ret != 0;
+  return (0 == ret);
 }

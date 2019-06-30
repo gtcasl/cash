@@ -1,6 +1,5 @@
 #include <cash.h>
-
-#define CHECK(x) do { if (!(x)) { std::cout << "FAILED: " << #x << std::endl; std::abort(); } } while (false)
+#include "common.h"
 
 using namespace ch::logic;
 using namespace ch::system;
@@ -46,7 +45,7 @@ int main() {
   tracer.toText("fastmul.log");
   tracer.toVCD("fastmul.vcd");
   tracer.toTestBench("fastmul_tb.v", "fastmul.v");
-  int ret = system("iverilog fastmul_tb.v -o fastmul_tb.iv")
-          | system("! vvp fastmul_tb.iv | grep 'ERROR' || false");
-  return ret != 0;
+  int ret = !system("iverilog fastmul_tb.v -o fastmul_tb.iv")
+          & !system("! vvp fastmul_tb.iv | grep 'ERROR' || false");
+  return (0 == ret);
 }
