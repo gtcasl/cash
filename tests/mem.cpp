@@ -101,16 +101,15 @@ TEST_CASE("memory", "[memory]") {
     }, 4);
     TEST([]()->ch_bool {
       ch_reg<ch_uint2> a(0);
-      ch_bit4 q;
       ch_rom<ch_bit4, 4> rom("res/rom.hex");
-      q = ch_delay(rom.read(a));
+      auto q = ch_delay(rom.read(a));
       a->next = ch_min(a + 1, 3);
-      ch_bit4 e = ch_case(ch_now(),
+      auto e = ch_case(ch_now(),
             3,  0xA_h)
            (7,  0xB_h)
            (9,  0xC_h)
                (q);
-      //ch_println("t={0}, a={1}, q={2}, e={3}", ch_now(), a, q, e);
+      ch_println("t={0}, a={1}, q={2}, e={3}", ch_now(), a, q, e);
       return (q == e);
     }, 4);
   }
