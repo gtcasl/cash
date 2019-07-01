@@ -124,6 +124,8 @@ public:
    return users_;
   }
 
+  auto is_shared() const;
+
   void add_user(lnode* user);
 
   void replace_uses(lnodeimpl* node);
