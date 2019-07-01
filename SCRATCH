@@ -1,3 +1,46 @@
+
+
+std::function<bool (proxyimpl*, uint32_t, uint32_t)>
+    is_nested_constant = [&](proxyimpl* proxy, uint32_t start, uint32_t end)->bool {
+  for (auto& range : proxy->ranges()) {
+    if (range.dst_offset < end
+     && range.dst_offset + range.length > start) {
+      auto src_impl = proxy->src(range.src_idx).impl();
+      if (type_lit == src_impl->type())
+        continue;
+      if (type_proxy == src_impl->type()) {
+        auto s = std::max(start, range.dst_offset);
+        auto e = std::min(end, range.dst_offset + range.length);
+        if (is_nested_constant(reinterpret_cast<proxyimpl*>(src_impl), s, e))
+          continue;
+      }
+      return false;
+    }
+  }
+  return true;
+};
+
+auto resolve_hidden_constants = [&]() {
+  for (auto node : ctx_->proxies()) {
+    auto proxy = reinterpret_cast<proxyimpl*>(node);
+    bool check = true;
+    for (auto& src : proxy->srcs()) {
+      auto type = src.impl()->type();
+      if (type_lit != type && type_proxy != type) {
+        check = false;
+        break;
+      }
+    }
+    if (check) {
+      bool is_contant = is_nested_constant(proxy, 0, proxy->size());
+      if (is_contant) {
+        std::abort();
+      }
+    }
+  }
+};
+
+
 template<class C>
 auto join(C&& c)
 -> decltype(boost::make_iterator_range(std::begin(c),std::end(c))) {

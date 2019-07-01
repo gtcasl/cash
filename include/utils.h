@@ -25,15 +25,15 @@ std::string demanged_typeid(const std::string& name);
 
 std::string identifier_from_string(const std::string& name);
 
-std::string identifier_from_typeid(const std::string& name, bool remove_template_params = false);
+std::string identifier_from_typeid(const std::string& name, bool no_args);
 
 int char2int(char x, int base);
 
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T>
-std::string idname(bool remove_template_params = false) {
-  return identifier_from_typeid(typeid(T).name(), remove_template_params);
+std::string idname(bool no_args = false) {
+  return identifier_from_typeid(typeid(T).name(), no_args);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

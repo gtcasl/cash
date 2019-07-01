@@ -430,11 +430,17 @@ bool compiler::constant_folding() {
       return;
     visited_nodes.emplace(node->id());
 
+    for (auto& src : node->srcs()) {
+      dfs_visit(src.impl());
+    }
+
     bool is_constant = true;
     for (auto& src : node->srcs()) {
       auto src_impl = src.impl();
-      dfs_visit(src_impl);
-      is_constant &= (type_lit == src_impl->type());
+      if (src_impl->type() != type_lit) {
+        is_constant = false;
+        break;
+      }
     }
 
     switch (node->type()) {

@@ -1,6 +1,5 @@
 #include <stdarg.h>
 #include <cxxabi.h>
-#include <regex>
 #include "common.h"
 #include "platform.h"
 
@@ -79,32 +78,44 @@ std::string ch::internal::identifier_from_string(const std::string& name) {
 }
 
 std::string ch::internal::identifier_from_typeid(const std::string& name,
-                                                 bool remove_template_params) {
-  std::string s_out, s_in;
+                                                 bool no_args) {
+  // get demanged type name
+  auto dt = demanged_typeid(name);
 
-  auto it_out = std::back_inserter(s_out);
-  s_in = demanged_typeid(name);
+  // extract name
+  auto name_e = dt.find_first_of('<', 0);
+  auto name_s = dt.find_last_of(':', name_e);
+  if (name_s != std::string::npos) {
+    ++name_s;
+  } else {
+    name_s = 0;
+  }
+  auto ret = dt.substr(name_s, name_e - name_s);
 
-  if (remove_template_params) {
-    std::regex_replace(it_out, s_in.begin(), s_in.end(), std::regex("<.*>"), "");
-    std::swap(s_out, s_in);
-    s_out.clear();
+  // process template arguments
+  if (!no_args
+   && name_e != std::string::npos) {
+    std::stringstream ss;
+    ss << "_";
+    auto pos = name_e + 1;
+    for (;;) {
+      auto start = pos;
+      pos = dt.find_first_of(" ,:<>", pos);
+      if (pos == std::string::npos)
+        break;
+      auto token = dt[pos];
+      if (token != ':') {
+        ss << dt.substr(start, pos - start);
+        if (token == ' ' || token == '<') {
+          ss << "_";
+        }
+      }
+      ++pos;
+    }
+    ret += ss.str();
   }
 
-  // remove all spaces, close brakets and parenthesis
-  std::regex_replace(it_out, s_in.begin(), s_in.end(), std::regex("[\\s>\\(\\)]+"), "");
-  std::swap(s_out, s_in);
-  s_out.clear();
-
-  // remove all namespaces
-  std::regex_replace(it_out, s_in.begin(), s_in.end(), std::regex("[a-zA-Z_][a-zA-Z0-9_]*::"), "");
-  std::swap(s_out, s_in);
-  s_out.clear();
-
-  // replace template open brackets and commas
-  std::regex_replace(it_out, s_in.begin(), s_in.end(), std::regex("[<,]"), "_");
-
-  return s_out;
+  return ret;
 }
 
 int ch::internal::char2int(char x, int base) {
