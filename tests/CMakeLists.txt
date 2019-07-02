@@ -22,6 +22,7 @@ set(TEST_SOURCES
     complex.cpp    
     router.cpp
     cache.cpp
+    jitregress.cpp
     main.cpp
 )
 

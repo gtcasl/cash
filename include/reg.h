@@ -34,12 +34,6 @@ lnodeimpl* createRegNext(const lnode& next,
                          const lnode& enable,
                          const std::string& name);
 
-void beginPipe(uint32_t length, const std::vector<int>& bounds);
-
-void beginPipe(uint32_t length, const lnode& enable, const std::vector<int>& bounds);
-
-void endPipe(const lnode& ret);
-
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T>
@@ -256,28 +250,6 @@ template <typename T, typename I, typename E>
 auto ch_delayEn(const T& in, const E& enable, uint32_t delay, const I& init) {
   CH_API_ENTRY(1);
   return ch_delayEn<ch_logic_t<T>, T, I, E>(in, enable, delay, init);
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-template <typename Func, typename... Bs>
-auto ch_pipe(Func&& func, uint32_t length, Bs&&... bounds) {
-  CH_API_ENTRY(1);
-  beginPipe(length, {std::forward<Bs>(bounds)...});
-  auto ret = func;
-  endPipe(get_lnode(ret));
-  return ret;
-}
-
-template <typename Func, typename E, typename... Bs>
-auto ch_pipeEn(Func&& func, const E& enable, uint32_t length, Bs&&... bounds) {
-  CH_API_ENTRY(1);
-  static_assert(is_bitbase_v<E>, "invalid type");
-  static_assert(ch_width_v<E> == 1, "invalid size");
-  beginPipe(length, get_lnode(enable), {std::forward<Bs>(bounds)...});
-  auto ret = func;
-  endPipe(get_lnode(ret));
-  return ret;
 }
 
 }

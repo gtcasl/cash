@@ -317,7 +317,6 @@ namespace logic {
   using ch::internal::ch_next;
   using ch::internal::ch_nextEn;
   using ch::internal::ch_delay;
-  using ch::internal::ch_pipe;
   using ch::internal::ch_clock;
   using ch::internal::ch_reset;
   using ch::internal::ch_pushcd;

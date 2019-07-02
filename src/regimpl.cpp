@@ -210,23 +210,3 @@ lnodeimpl* ch::internal::createRegNext(const lnode& next,
   }
   return ctx->create_node<proxyimpl>(reg, name, sloc);
 }
-
-///////////////////////////////////////////////////////////////////////////////
-
-void ch::internal::beginPipe(uint32_t length,
-                             const std::vector<int>& bounds) {
-  CH_UNUSED(length, bounds);
-  CH_TODO();
-}
-
-void ch::internal::beginPipe(uint32_t length,
-                             const lnode& enable,
-                             const std::vector<int>& bounds) {
-  CH_UNUSED(length, enable, bounds);
-  CH_TODO();
-}
-
-void ch::internal::endPipe(const lnode& ret) {
-  CH_UNUSED(ret);
-  CH_TODO();
-}

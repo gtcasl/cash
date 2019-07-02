@@ -2,7 +2,7 @@
 #include <htl/mux.h>
 #include <htl/xbar.h>
 #include <htl/arbiter.h>
-#include <htl/pipereg.h>
+#include <htl/pipe.h>
 #include <htl/float32.h>
 #include <htl/counter.h>
 #include <htl/enc.h>
@@ -20,7 +20,7 @@ struct PipeTest {
     __out (T) value
   );
   void describe() {
-    ch_module<ch_pipereg<T, Delay>> pipe;
+    ch_module<ch_pipe<T, Delay>> pipe;
     pipe.io.enq(io.enq);
     pipe.io.deq(io.deq);
 

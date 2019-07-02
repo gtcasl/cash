@@ -9,10 +9,13 @@ set(EXAMPLES
     vending    
     sqrt
     matmul
-    aes
-    sobel
+    aes    
     fft
+    sobel
 )
+
+# copy resource directory
+file(COPY "res" DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 
 foreach(EXAMPLE ${EXAMPLES})
 
