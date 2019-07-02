@@ -165,7 +165,6 @@ protected:
   }
 
   void controller(const state_t& out) {
-    //--
     ch_counter<N> index(sdf_.io.in.valid && sdf_.io.out.ready);
     sdf_.io.in.ready = (0 == index.value());
     sdf_.io.out.valid = out.valid;

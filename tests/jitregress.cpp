@@ -1,5 +1,7 @@
 #include "common.h"
 
+#ifdef NDEBUG
+
 static bool verify_asm(const char* program, int lines) {
   auto cmd = stringf("cd ../examples && CASH_CFLAGS=8 ../bin/%s", program);
   std::cout << cmd << std::endl;
@@ -33,20 +35,22 @@ TEST_CASE("jitregress", "[jitregress]") {
   SECTION("asm-size", "[asm-size]") {
     TESTX([]()->bool {
       RetCheck ret;
-    #ifdef NDEBUG
+    #if defined(LLVMJIT)
       ret &= verify_asm("fifo", 97);
       ret &= verify_asm("matmul", 538);
       ret &= verify_asm("aes", 3378);
       ret &= verify_asm("fft", 931);
       ret &= verify_asm("sobel", 411);
     #else
-      ret &= verify_asm("fifo", 102);
-      ret &= verify_asm("matmul", 538);
-      ret &= verify_asm("aes", 3357);
-      ret &= verify_asm("fft", 951);
-      ret &= verify_asm("sobel", 411);
+      ret &= verify_asm("fifo", 162);
+      ret &= verify_asm("matmul", 817);
+      ret &= verify_asm("aes", 4935);
+      ret &= verify_asm("fft", 1342);
+      ret &= verify_asm("sobel", 627);
     #endif
       return ret;
     });
   }
 }
+
+#endif
