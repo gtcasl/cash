@@ -23,6 +23,7 @@ install:
   - mkdir build
   - pushd build
   - ../configure --with-pic
+  - make -j8 all
   - sudo make install
   - popd
   - popd
