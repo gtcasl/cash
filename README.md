@@ -68,26 +68,26 @@ Alternative build using LIBJIT compiler
 
 Install LIBJIT dependencies:
   
-  $ sudo apt-get install libtool flex bison texinfo
+    $ sudo apt-get install libtool flex bison texinfo
   
 Building and Installing LIBJIT:
   
-  $ git clone https://git.savannah.gnu.org/git/libjit.git
-  $ pushd libjit
-  $ git apply ${CASH_HOME}/scripts/libjit.patch
-  $ ./bootstrap
-  $ mkdir build
-  $ pushd build
-  $ ../configure --with-pic
-  $ make -j8 all
-  $ sudo make install
-  $ popd
-  $ popd
+    $ git clone https://git.savannah.gnu.org/git/libjit.git  
+    $ pushd libjit
+    $ git apply ${CASH_HOME}/scripts/libjit.patch
+    $ ./bootstrap
+    $ mkdir build
+    $ pushd build
+    $ ../configure --with-pic
+    $ make -j8 all
+    $ sudo make install
+    $ popd
+    $ popd
   
 Build Cash using the JIT=LIBJIT configuration option
   
-  $ mkdir build_lj && cd build_lj
-  $ cmake .. -DJIT=LIBJIT
+    $ mkdir build_lj && cd build_lj
+    $ cmake .. -DJIT=LIBJIT
 
 Using the Cash library
 ----------------------
