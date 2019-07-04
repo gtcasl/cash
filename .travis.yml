@@ -12,24 +12,33 @@ addons:
         - iverilog
         - lcov
         - valgrind
-        - texinfo
 
-install: 
-  # C++17
+install:
+  # LIBJIT
+  - sudo apt-get install libtool flex bison texinfo
+  - git clone https://git.savannah.gnu.org/git/libjit.git
+  - pushd libjit
+  - git apply ../scripts/libjit.patch
+  - ./bootstrap
+  - mkdir build
+  - pushd build
+  - ../configure --with-pic
+  - sudo make install
+  - popd
+  - popd
+  # GCC-7
   - sudo add-apt-repository --yes ppa:ubuntu-toolchain-r/test
   - sudo apt-get update
   - sudo apt-get install gcc-7 g++-7
   - sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-7 60 --slave /usr/bin/g++ g++ /usr/bin/g++-7
-  # llvm
+  # LLVM-8
   - wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
   - sudo apt-add-repository "deb http://apt.llvm.org/trusty/ llvm-toolchain-trusty-8 main"
   - sudo apt-get update
   - sudo apt-get install llvm-8-dev
 
 script: 
-  # patch libjit
-  - scripts/libjit_patch.sh  
-  # Build llvm Release project
+  # Build LLVM Release project
   - mkdir -p build_llr
   - pushd build_llr
   - cmake -DLLVMJIT=ON -DCMAKE_BUILD_TYPE=Release ..
@@ -43,7 +52,7 @@ script:
   - CASH_CFLAGS=256 valgrind ../bin/testsuite
   - popd
   - popd
-  # Build libjit Release project
+  # Build LIBJIT Release project
   - mkdir -p build_jbr
   - pushd build_jbr
   - cmake -DLIBJIT=ON -DCMAKE_BUILD_TYPE=Release ..
@@ -55,7 +64,7 @@ script:
   - CASH_CFLAGS=261760 valgrind ../bin/testsuite
   - popd
   - popd
-  # Build llvm Debug project
+  # Build LLVM Debug project
   - export CASH_DEBUG_LEVEL=3
   - mkdir -p build_lld
   - pushd build_lld

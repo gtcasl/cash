@@ -33,10 +33,4 @@ private:
   sloc_ctx_t* ctx_;
 };
 
-sloc_ctx_t* sloc_begin_module();
-
-void sloc_end_module(sloc_ctx_t* ctx);
-
-source_location get_source_location();
-
 }}

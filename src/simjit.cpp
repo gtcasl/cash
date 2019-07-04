@@ -1,6 +1,4 @@
-﻿#ifndef NLIBJIT
-
-#include "simjit.h"
+﻿#include "simjit.h"
 #include "bindimpl.h"
 #include "litimpl.h"
 #include "cdimpl.h"
@@ -3366,5 +3364,3 @@ void driver::eval() {
 }
 
 }
-
-#endif

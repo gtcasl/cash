@@ -1,7 +1,6 @@
 #pragma once
 
 #include "lnode.h"
-#include "slocmgr.h"
 
 #define CH_LNODE_TYPE(t) type_##t,
 #define CH_LNODE_NAME(n) #n,
@@ -37,6 +36,7 @@ namespace internal {
   
 class context;
 class cdimpl;
+struct sloc_ctx_t;
 
 enum lnodetype {
   CH_LNODE_ENUM(CH_LNODE_TYPE)
@@ -174,6 +174,12 @@ private:
 const char* to_string(lnodetype type);
 
 std::ostream& operator<<(std::ostream& out, lnodetype type);
+
+sloc_ctx_t* sloc_begin_module();
+
+void sloc_end_module(sloc_ctx_t* ctx);
+
+source_location get_source_location();
 
 }
 }

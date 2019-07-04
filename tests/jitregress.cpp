@@ -2,6 +2,8 @@
 
 #ifdef NDEBUG
 
+#pragma GCC diagnostic ignored "-Wunused-function"
+
 static bool verify_asm(const char* program, int lines) {
   auto cmd = stringf("cd ../examples && CASH_CFLAGS=8 ../bin/%s", program);
   std::cout << cmd << std::endl;
@@ -31,6 +33,8 @@ static bool verify_asm(const char* program, int lines) {
   return true;
 }
 
+#pragma GCC diagnostic pop
+
 TEST_CASE("jitregress", "[jitregress]") {
   SECTION("asm-size", "[asm-size]") {
     TESTX([]()->bool {
@@ -41,7 +45,7 @@ TEST_CASE("jitregress", "[jitregress]") {
       ret &= verify_asm("aes", 3378);
       ret &= verify_asm("fft", 931);
       ret &= verify_asm("sobel", 411);
-    #else
+    #elif defined(LIBJIT)
       ret &= verify_asm("fifo", 162);
       ret &= verify_asm("matmul", 817);
       ret &= verify_asm("aes", 4935);
