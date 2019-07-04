@@ -42,7 +42,7 @@ script:
   # Build LLVM Release project
   - mkdir -p build_llr
   - pushd build_llr
-  - cmake -DLLVMJIT=ON -DCMAKE_BUILD_TYPE=Release ..
+  - cmake -DJIT=LLVM -DCMAKE_BUILD_TYPE=Release ..
   - make -j8 all
   - make test   
   - CASH_CFLAGS=256 make test    # Turn off JIT
@@ -56,7 +56,7 @@ script:
   # Build LIBJIT Release project
   - mkdir -p build_jbr
   - pushd build_jbr
-  - cmake -DLIBJIT=ON -DCMAKE_BUILD_TYPE=Release ..
+  - cmake -DJIT=LIBJIT -DCMAKE_BUILD_TYPE=Release ..
   - make -j8 all
   - make test
   - CASH_CFLAGS=261760 make test
@@ -69,7 +69,7 @@ script:
   - export CASH_DEBUG_LEVEL=3
   - mkdir -p build_lld
   - pushd build_lld
-  - cmake -DLLVMJIT=ON -DCMAKE_BUILD_TYPE=Debug -DCODECOV=ON ..
+  - cmake -DJIT=LLVM -DCMAKE_BUILD_TYPE=Debug -DCODECOV=ON ..
   - make -j8 all 
   - CASH_CFLAGS=15  make test
   - CASH_CFLAGS=271 make test
