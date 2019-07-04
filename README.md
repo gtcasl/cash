@@ -17,18 +17,25 @@ It has been tested with GCC 7 and Clang 5.
 Other dependencies include:
 
   - [LLVM] (https://www.llvm.org)
+  - [LIJIT] (https://www.gnu.org/software/libjit/)
   - [Catch] (https://github.com/catchorg/Catch2)
   - [iVerilog] (http://iverilog.icarus.com/)
   - [lcov] (http://ltp.sourceforge.net/coverage/lcov.php)
-  - [texinfo] (https://www.gnu.org/software/texinfo/)
-  - [build-essential] (https://packages.debian.org/jessie/build-essential)
   - [binutils-dev] (https://www.gnu.org/software/binutils/)
 
-System Setup (Ubuntu Trusty)
-----------------------------
+Default Build Instructions (Ubuntu Trusty)
+------------------------------------------
 
-C++17 Install:
+IVerilog Install:
+
+    $ sudo apt-get install iverilog
     
+Binutils Install:
+
+    $ sudo apt-get install binutils-dev
+
+GCC 7.1 Install:
+
     $ sudo add-apt-repository --yes ppa:ubuntu-toolchain-r/test
     $ sudo apt-get update
     $ sudo apt-get install gcc-7 g++-7
@@ -41,12 +48,6 @@ LLVM 8.0 Install:
     $ sudo apt-get update
     $ sudo apt-get install llvm-8-dev
 
-IVerilog Install:
-
-    $ sudo apt-get install iverilog
-
-Installation
-------------
 To install Cash you must clone the repository and create a build directory:
 
     $ git clone https://github.com/gtcasl/cash.git && cd cash
@@ -54,23 +55,45 @@ To install Cash you must clone the repository and create a build directory:
 
 Then use run cmake to generate the makefile and export the package informations:
 
-    $ cmake ..
+    $ cmake .. -DJIT=LLVM
 
 Optionally, you can also install Cash on your system:
 
-    # make install
+    $ make install
     
 That's all!
 
+Alternative build using LIBJIT compiler
+---------------------------------------
+
+Install LIBJIT dependencies:
+  
+  $ sudo apt-get install libtool flex bison texinfo
+  
+Building and Installing LIBJIT:
+  
+  $ git clone https://git.savannah.gnu.org/git/libjit.git
+  $ pushd libjit
+  $ git apply ${CASH_HOME}/scripts/libjit.patch
+  $ ./bootstrap
+  $ mkdir build
+  $ pushd build
+  $ ../configure --with-pic
+  $ make -j8 all
+  $ sudo make install
+  $ popd
+  $ popd
+  
+Build Cash using the JIT=LIBJIT configuration option
+  
+  $ mkdir build_lj && cd build_lj
+  $ cmake .. -DJIT=LIBJIT
+
 Using the Cash library
 ----------------------
-You must link the following library from the install location to your project
+You must link the Cash library from its install location to your project
 
     libcash.so
-
-Then you can include the header as follow:
-
-    #include <cash.hpp>
 
 Example
 -------
