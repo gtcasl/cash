@@ -25,22 +25,22 @@ typedef void *jit_ptr;
 #define	jit_max_ulong	((jit_ulong)(~((jit_ulong)0)))
 
 // Opaque structure that represents a type descriptor.
-typedef struct _jit_type *jit_type_t;
+typedef class _jit_type *jit_type_t;
 
 // Opaque structure that represents a context.
-typedef struct _jit_context *jit_context_t;
+typedef class _jit_context *jit_context_t;
 
 // Opaque structure that represents a function.
-typedef struct _jit_function *jit_function_t;
+typedef class _jit_function *jit_function_t;
 
 // Opaque structure that represents a block.
-typedef struct _jit_block *jit_block_t;
+typedef class _jit_block *jit_block_t;
 
 // Opaque structure that represents an instruction.
-typedef struct _jit_insn *jit_insn_t;
+typedef class _jit_insn *jit_insn_t;
 
 // Opaque structure that represents a value.
-typedef struct _jit_value *jit_value_t;
+typedef class _jit_value *jit_value_t;
 
 // Block label identifier.
 typedef jit_nuint jit_label_t;

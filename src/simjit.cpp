@@ -29,7 +29,6 @@ using label_map_t  = std::unordered_map<uint32_t, jit_label_t>;
 using bypass_set_t = std::unordered_set<uint32_t>;
 
 static constexpr uint32_t WORD_SIZE = bitwidth_v<block_type>;
-static constexpr uint32_t WORD_LOGSIZE = log2floor(WORD_SIZE);
 static constexpr uint32_t WORD_MASK = WORD_SIZE - 1;
 static constexpr block_type WORD_MAX = std::numeric_limits<block_type>::max();
 static constexpr uint32_t INLINE_THRESHOLD = 8;
@@ -40,13 +39,13 @@ static constexpr uint32_t INLINE_THRESHOLD = 8;
 #define __countof(arr) (sizeof(arr) / sizeof(arr[0]))
 
 #ifndef NDEBUG
-  #define __source_marker() SrcMarker marker(this, __func__, __builtin_FILE(), __builtin_LINE())
+  #define __source_marker() SrcMarker marker(this, __func__)
 #else
   #define __source_marker()
 #endif
 
 #ifndef NDEBUG
-  #define __source_info_ex(x) SrcMarker marker(this, __func__, __builtin_FILE(), __builtin_LINE(), x)
+  #define __source_info_ex(x) SrcMarker marker(this, __func__, x)
 #else
   #define __source_info_ex(x)
 #endif
@@ -243,9 +242,8 @@ class SrcMarker {
 public:  
   SrcMarker(Compiler* cp,
             const char* fname,
-            const char* file,
-            int line,
-            const char* node = nullptr);
+            const char* node = nullptr,
+            CH_SLOC);
 
   ~SrcMarker();
 
@@ -3289,17 +3287,16 @@ public:
 
 SrcMarker::SrcMarker(Compiler* cp,
                      const char* fname,
-                     const char* file,
-                     int line,
-                     const char* node)
+                     const char* node,
+                     const source_location& sloc)
   : cp_(cp) {
   if (node) {
-    auto str = stringf("%s @var=%s @file=%s @line=%d", fname, node, file, line);
+    auto str = stringf("%s @var=%s @file=%s @line=%d", fname, node, sloc.file().c_str(), sloc.line());
     auto tmp = (char*)cp_->create_meta_allocation(str.length() + 1);
     strncpy(tmp, str.c_str(), str.length()+1);
     jit_insn_set_marker(cp_->j_func_, tmp);
   } else {
-    auto str = stringf("%s @file=%s @line=%d", fname, file, line);
+    auto str = stringf("%s @file=%s @line=%d", fname, sloc.file().c_str(), sloc.line());
     auto tmp = (char*)cp_->create_meta_allocation(str.length() + 1);
     strncpy(tmp, str.c_str(), str.length()+1);
     jit_insn_set_marker(cp_->j_func_, tmp);

@@ -149,7 +149,7 @@ int main() {
 
   // write ouput image
   if (!writePGM(dst_image, width, height, "sobel.pgm"))
-    return false;
+    return -1;
 
   // verify output image
   CHECK(verify(src_image, dst_image, width, height));

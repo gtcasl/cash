@@ -4,10 +4,6 @@ using namespace ch::logic;
 using namespace ch::system;
 using namespace ch::literals;
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wunused-variable"
-#pragma GCC diagnostic ignored "-Wunused-but-set-variable"
-
 __union (u4_t, (
   (ch_bit4) a
 ));
@@ -143,7 +139,7 @@ void foo() {
     ch_suint<4> c(a), d(b);
   }
   {
-    ch_sbit<4> a(a);
+    ch_sbit<4> a(0);
     ch_sint<2> b(-1);
     ch_suint<2> c(1);
     auto q0 = a << 1;
@@ -341,7 +337,7 @@ void foo() {
     ch_int<4> d(c);
   }
   {
-    ch_bit<4> a(a);
+    ch_bit<4> a(0);
     ch_int<2> b(-1);
     ch_uint<2> c(1);
     auto q0 = a << 1;
@@ -603,5 +599,3 @@ void bar() {
   ch_reg<s2_4_t> h{0101_b, 01_b};
   ch_reg<u2_4_t> i{0101_b};
 }
-
-#pragma GCC diagnostic pop

@@ -15,7 +15,7 @@ option(CALLTRACE "Enable code coverage." ON)
 set(DEFAULT_BUILD_TYPE "Release")
 
 # use C++17 compiler
-add_compile_options(-std=c++17 -pedantic -Wall -Wextra -fmax-errors=5)
+add_compile_options(-std=c++17)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake")
 set(EXECUTABLE_OUTPUT_PATH ${CMAKE_BINARY_DIR}/bin)
@@ -79,6 +79,7 @@ set(PROJECT_SOURCES
 
 # build library
 add_library(${PROJECT_NAME} SHARED ${PROJECT_SOURCES})
+target_compile_options(${PROJECT_NAME} PRIVATE -pedantic -Werror -Wall -Wextra)
 
 target_include_directories(${PROJECT_NAME} PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>

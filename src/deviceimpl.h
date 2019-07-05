@@ -7,7 +7,7 @@ namespace internal {
 
 class context;
 class lnodeimpl;
-class sloc_ctx_t;
+struct sloc_ctx_t;
 
 class deviceimpl : public refcounted {
 public:
