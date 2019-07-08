@@ -394,5 +394,47 @@ auto ch_clone(const T& obj) {
   return obj.clone();
 }
 
+// fold function
+
+template <typename T, typename U, typename F,
+          CH_REQUIRE(is_logic_type_v<T>)>
+auto ch_fold(const T& obj, const F& f, const U& init) {
+  std::result_of_t<F(U, ch_bool)> ret(init);
+  for (unsigned i = 0; i < ch_width_v<T>; ++i) {
+    ret = f(ch_clone(ret), obj[i]);
+  }
+  return ret;
+}
+
+template <typename T, typename U, typename F,
+          CH_REQUIRE(is_system_type_v<T>)>
+auto ch_fold(const T& obj, const F& f, const U& init) {
+  std::result_of_t<F(U, ch_sbool)> ret(init);
+  for (unsigned i = 0; i < ch_width_v<T>; ++i) {
+    ret = f(ret, obj[i]);
+  }
+  return ret;
+}
+
+template <typename T, unsigned N, typename U, typename F,
+          CH_REQUIRE(is_logic_type_v<T> || is_logic_io_v<T>)>
+auto ch_fold(const ch_vec<T, N>& obj, const F& f, const U& init) {
+  std::result_of_t<F(U, T)> ret(init);
+  for (unsigned i = 0; i < N; ++i) {
+    ret = f(ch_clone(ret), obj[i]);
+  }
+  return ret;
+}
+
+template <typename T, unsigned N, typename U, typename F,
+          CH_REQUIRE(is_system_type_v<T> || is_system_io_v<T>)>
+auto ch_fold(const ch_vec<T, N>& obj, const F& f, const U& init) {
+  std::result_of_t<F(U, T)> ret(init);
+  for (unsigned i = 0; i < N; ++i) {
+    ret = f(ret, obj[i]);
+  }
+  return ret;
+}
+
 }
 }

@@ -1,4 +1,7 @@
 #include "common.h"
+#include <htl/decoupled.h>
+
+using namespace ch::htl;
 
 namespace {
 
@@ -50,6 +53,17 @@ struct TestAssign3 {
 
   void describe() {
     io.out.as_bit() = (io.in.as_bit() == 0xA);
+  }
+};
+
+struct TestAssign4 {
+  __io (
+    (ch_enq_io<>) in,
+    (ch_deq_io<>) out
+  );
+
+  void describe() {
+    io.out(io.in);
   }
 };
 
