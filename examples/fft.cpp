@@ -76,8 +76,7 @@ public:
     controller(state);
   }
 
-protected:
-
+private:
   auto trivial_rotate(const ch_complex<T>& x) {
     ch_complex<T> out;
     out.re = x.im;
@@ -205,7 +204,6 @@ int main() {
   ch_device<Fft<ch::htl::ch_fixed<16, 15>, FFT_SIZE>> device;
   ch_tracer tracer(device);
 
-  //--
   unsigned in_sample = 0;
   unsigned out_sample = 0;  
   std::vector<uint32_t> out_samples(FFT_SIZE);

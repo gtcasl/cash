@@ -46,12 +46,15 @@ using avm_v0 = avm_properties<512, 64, 5>;
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename AVM, unsigned Qsize = (1 << (AVM::BurstW - 1))>
+template <typename T, typename AVM, unsigned Qsize = (1 << (AVM::BurstW - 1))>
 class avm_reader {
 public:
+  using data_type = T;
+
   static constexpr unsigned LMaxBurst = AVM::BurstW - 1;
   static constexpr unsigned MaxBurst = 1 << LMaxBurst;
-  static_assert(Qsize >= MaxBurst && ispow2(Qsize));
+  static_assert(Qsize >= MaxBurst, "invalid size");
+  static_assert(ispow2(Qsize), "invalid size");
 
   static constexpr unsigned DataW  = AVM::DataW;
   static constexpr unsigned AddrW  = AVM::AddrW;
@@ -61,14 +64,19 @@ public:
   static constexpr unsigned DataB  = DataW/8;
   static constexpr unsigned LDataB = log2floor(DataB);
 
+  static constexpr unsigned DataPerBlk = DataW / ch_width_v<data_type>;
+  static_assert(ch_width_v<data_type> <= DataW, "invalid size");
+  static_assert(DataW == DataPerBlk * ch_width_v<data_type>, "invalid size");
+  static_assert(ispow2(DataPerBlk), "invalid size");
+
   using burst_t = ch_uint<AVM::BurstW>;
 
   __io (
     __in  (ch_uint<AddrW>) base_addr,
-    __in  (ch_uint32)      num_blocks,
+    __in  (ch_uint32)      count,
     __in  (ch_bool)        start,
-    __out (ch_bool)        buzy,
-    (ch_deq_io<ch_bit<DataW>>) deq,
+    __out (ch_bool)        busy,
+    (ch_deq_io<T>)         deq,
     (avalon_mm_io<AVM>)    avm,
     __out (ch_uint64)      req_stalls,
     __out (ch_uint64)      mem_stalls
@@ -81,7 +89,7 @@ public:
     ch_reg<ch_uint<32-LMaxBurst>> remain_reqs(0);
     ch_reg<ch_bool> read_enabled(false);
     ch_reg<burst_t> burst_count(0);
-    ch_reg<ch_bool> buzy(false);
+    ch_reg<ch_bool> busy(false);
 
     // the read request was granted
     auto read_granted = read_enabled && !io.avm.waitrequest;
@@ -136,11 +144,11 @@ public:
       address->next = address + (ch_resize<AddrW>(burst_count) << LDataB);
     };
 
-    // the device is buzy until all requests are submitted
+    // the device is busy until all requests are submitted
     __if (io.start) {
-      buzy->next = (io.num_blocks != 0);
+      busy->next = (io.num_blocks != 0);
     }__elif (read_granted && (1 == remain_reqs)) {
-      buzy->next = false;
+      busy->next = false;
     };
 
     // we have a request stall when we have pending requests with the Avalon bus ready but the request deasserted
@@ -149,7 +157,7 @@ public:
       req_stalls->next = req_stalls + 1;
     };
 
-    // we have a memory stall when we a request is asserted but he Avalon bus is buzy
+    // we have a memory stall when we a request is asserted but he Avalon bus is busy
     ch_reg<ch_uint64> mem_stalls(0);
     __if (io.avm.read && io.avm.waitrequest) {
       mem_stalls->next = mem_stalls + 1;
@@ -158,7 +166,36 @@ public:
     //--
     out_fifo_.io.enq.data  = io.avm.readdata;
     out_fifo_.io.enq.valid = io.avm.readdatavalid;
-    out_fifo_.io.deq(io.deq);
+
+    //--
+    if constexpr ((ch_width_v<data_type>) < DataW) {
+      ch_reg<ch_bit<DataW>> in_buf;
+      ch_reg<ch_bool> in_buf_valid(false);
+
+      auto in_buf_shift = in_buf_valid && io.deq.ready;
+      ch_counter<DataPerBlk> counter(in_buf_shift);
+      auto in_buf_going_invalid = (counter.value() == (DataPerBlk-1)) && io.deq.ready;
+      auto in_buf_ready = !in_buf_valid || in_buf_going_invalid;
+      auto pop_data_block = out_fifo_.io.deq.valid && in_buf_ready;
+
+      __if (pop_data_block) {
+        in_buf->next = out_fifo_.io.deq.data;
+      }__elif (in_buf_shift) {
+        in_buf->next = in_buf >> ch_width_v<data_type>;
+      };
+
+      __if (pop_data_block) {
+        in_buf_valid->next = true;
+      }__elif (in_buf_going_invalid) {
+        in_buf_valid->next = false;
+      };
+
+      io.deq.data  = ch_slice<data_type>(in_buf);
+      io.deq.valid = in_buf_valid;
+      out_fifo_.io.deq.ready = in_buf_ready;
+    } else {
+      out_fifo_.io.deq(io.deq);
+    }
 
     //--
     io.avm.address    = address;
@@ -169,7 +206,7 @@ public:
     io.avm.burstcount = burst_count;
 
     //--
-    io.buzy = buzy;
+    io.busy = busy;
 
     //--
     io.req_stalls = req_stalls;
@@ -180,10 +217,10 @@ public:
     };*/
 
     /*__if (ch_clock()) {
-      ch_println("{}: AVMR: start={}, rd={}, addr={}, burst={}, rdg={}, rmqs={}, pns={}, rsp={}, pop={}, ffs={}, buzy={}",
+      ch_println("{}: AVMR: start={}, rd={}, addr={}, burst={}, rdg={}, rmqs={}, pns={}, rsp={}, pop={}, ffs={}, busy={}",
              ch_now(), io.start, io.avm.read, io.avm.address, io.avm.burstcount,
                read_granted, remain_reqs, pending_size, io.avm.readdatavalid,
-               fifo_dequeued, out_fifo_.io.size, io.buzy);
+               fifo_dequeued, out_fifo_.io.size, io.busy);
     };*/
   }
 
@@ -193,11 +230,12 @@ private:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename AVM, unsigned Qsize = (1 << (AVM::BurstW - 1))>
+template <typename T, typename AVM, unsigned Qsize = (1 << (AVM::BurstW - 1))>
 class avm_writer {
 public:
   static constexpr unsigned MaxBurst = 1 << (AVM::BurstW - 1);
-  static_assert(Qsize >= MaxBurst && ispow2(Qsize));
+  static_assert(Qsize >= MaxBurst, "invalid size");
+  static_assert(ispow2(Qsize), "invalid size");
 
   static constexpr unsigned DataW  = AVM::DataW;
   static constexpr unsigned AddrW  = AVM::AddrW;
@@ -207,6 +245,11 @@ public:
   static constexpr unsigned DataB  = DataW/8;
   static constexpr unsigned LDataB = log2floor(DataB);
 
+  static constexpr unsigned DataPerBlk = DataW / ch_width_v<data_type>;
+  static_assert(ch_width_v<data_type> <= DataW, "invalid size");
+  static_assert(DataW == DataPerBlk * ch_width_v<data_type>, "invalid size");
+  static_assert(ispow2(DataPerBlk), "invalid size");
+
   using burst_t = ch_uint<AVM::BurstW>;
 
   __io (
@@ -214,8 +257,8 @@ public:
     __in  (ch_bool)        start,
     __in  (ch_bool)        flush,
     __out (ch_bool)        busy,
-    (ch_enq_io<ch_bit<DataW>>) enq,
-    (avalon_mm_io<AVM>)   avm,
+    (ch_enq_io<T>)         enq,
+    (avalon_mm_io<AVM>)    avm,
     __out (ch_uint64)      req_stalls,
     __out (ch_uint64)      mem_stalls
   );
@@ -263,7 +306,7 @@ public:
       address->next = address + DataB;
     };
 
-    // the device is buzy until all requests are submitted
+    // the device is busy until all requests are submitted
     __if (in_fifo_.io.enq.ready && in_fifo_.io.enq.valid) {
       busy->next = true;
     }__elif (write_granted && (1 == in_fifo_.io.size)) {
@@ -276,7 +319,7 @@ public:
       req_stalls->next = req_stalls + 1;
     };
 
-    // we have a memory stall when a write is asserted but the Avalon bus is buzy
+    // we have a memory stall when a write is asserted but the Avalon bus is busy
     ch_reg<ch_uint64> mem_stalls(0);
     __if (io.avm.write && io.avm.waitrequest) {
       mem_stalls->next = mem_stalls + 1;
@@ -292,7 +335,31 @@ public:
 
     //--
     in_fifo_.io.deq.ready = write_granted;
-    in_fifo_.io.enq(io.enq);
+
+    //--
+    if constexpr ((ch_width_v<data_type>) < DataW) {
+      ch_reg<ch_bit<DataW>> out_buf;
+      ch_reg<ch_bool> out_buf_full(false);
+
+      auto out_buf_shift = io.enq.valid && io.enq.ready;
+      ch_counter<DataPerBlk> counter(out_buf_shift);
+      auto out_buf_going_full = (counter.value() == (DataPerBlk-1)) && io.enq.valid;
+      auto flush_data_block = out_buf_full && in_fifo_.io.enq.ready;
+
+      __if (out_buf_going_full) {
+        out_buf_full->next = true;
+      }__elif (flush_data_block) {
+        out_buf_full->next = false;
+      };
+
+      __if (out_buf_shift) {
+        auto value  = ch_resize<DataW>(io.enq.data.as_bit());
+        auto offset = ch_resize<LDataW>(counter.value()) * ch_width_v<data_type>;
+        out_buf->next = ch_sel(0 == counter.value(), value, (value << offset) | out_buf);
+      };
+    } else {
+      in_fifo_.io.enq(io.enq);
+    }
 
     //--
     io.busy = busy;

@@ -58,15 +58,8 @@ public:
     auto g5  = ch_nextEn(ch_add<12>(gx4, gy4), sdf_.io.out.ready);
     auto out = ch_slice<8>(ch_min(g5, 255));
 
-    //--
     ch_counter<~0u> delay_ctr(sdf_.io.out.ready);
-    ch_reg<ch_bool> done(false);
-    __if (delay_ctr.value() == (5 + width_ * height_)) {
-      done->next = true;
-    };    
-
-    //--
-    io.done = done;
+    io.done = ch_next(delay_ctr.value() == (5 + width_ * height_), false);
     sdf_.io.in.ready = !(delay_ctr.value() < (width_ * height_));
     sdf_.io.out.valid = (delay_ctr.value() >= 2 * width_ + 3 + 5) && !done;
     sdf_.io.out.data = out;
@@ -74,8 +67,7 @@ public:
     sdf_.io.deq(io.out);
   }
 
-protected:
-
+private:
   ch_module<ch_sdf<T>> sdf_;
   uint32_t width_;
   uint32_t height_;  
@@ -123,7 +115,6 @@ int main() {
   auto num_pixels = width * height;
   std::vector<uint8_t> dst_image(num_pixels);
 
-  //--
   ch_device<sobel<ch_uint8>> device(width, height);
   ch_tracer tracer(device);
 

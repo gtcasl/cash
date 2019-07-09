@@ -47,93 +47,6 @@ const std::array<uint8_t, 256> sbox_table {
   0x8C, 0xA1, 0x89, 0x0D, 0xBF, 0xE6, 0x42, 0x68, 0x41, 0x99, 0x2D, 0x0F, 0xB0, 0x54, 0xBB, 0x16
 };
 
-inline auto get_subword(const ch_rom<ch_bit8, 256>& table, const ch_bit32& in) {
-  auto out0 = table.read(ch_aslice<8>(in, 0));
-  auto out1 = table.read(ch_aslice<8>(in, 1));
-  auto out2 = table.read(ch_aslice<8>(in, 2));
-  auto out3 = table.read(ch_aslice<8>(in, 3));
-  return ch_cat(out3, out2, out1, out0);
-}
-
-inline auto get_subbytes(const ch_rom<ch_bit8, 256>& table, const ch_bit128& state) {
-  auto out0 = get_subword(table, ch_aslice<32>(state, 0));
-  auto out1 = get_subword(table, ch_aslice<32>(state, 1));
-  auto out2 = get_subword(table, ch_aslice<32>(state, 2));
-  auto out3 = get_subword(table, ch_aslice<32>(state, 3));
-  return ch_cat(out3, out2, out1, out0);
-}
-
-inline auto add_roundkey(const ch_bit128& state, const ch_bit128& key) {
-  return state ^ key;
-}
-
-inline auto shift_rows(const ch_bit128& state) {
-  return ch_shuffle<16>(state, {11, 6, 1, 12, 7, 2, 13, 8, 3, 14, 9, 4, 15, 10, 5, 0});
-}
-
-inline auto xtime(const ch_bit8& x) {
-  auto m = ch_cat(0_b, 0_b, 0_b, x[7], x[7], 0_b, x[7], x[7]);
-  return ch_cat(ch_slice<7>(x), 0_b) ^ m;
-}
-
-inline auto mix_row(const ch_bit8& x) {
-  auto x2 = xtime(x);
-  auto x3 = x2 ^ x;
-  return ch_cat<ch_vec<ch_bit8, 4>>(x3, x, x, x2);
-}
-
-inline auto mix_columns(const ch_bit128& state) {
-  ch_bit128 out;
-  for (unsigned c = 0; c < 16; c += 4) {
-    auto r0 = mix_row(ch_aslice<8>(state, c+0));
-    auto r1 = mix_row(ch_aslice<8>(state, c+1));
-    auto r2 = mix_row(ch_aslice<8>(state, c+2));
-    auto r3 = mix_row(ch_aslice<8>(state, c+3));
-    ch_asliceref<8>(out, c+0) = r0[0] ^ r1[3] ^ r2[2] ^ r3[1];
-    ch_asliceref<8>(out, c+1) = r0[1] ^ r1[0] ^ r2[3] ^ r3[2];
-    ch_asliceref<8>(out, c+2) = r0[2] ^ r1[1] ^ r2[0] ^ r3[3];
-    ch_asliceref<8>(out, c+3) = r0[3] ^ r1[2] ^ r2[1] ^ r3[0];
-  }
-  return out;
-}
-
-inline auto rot_word(const ch_bit32& w) {
-  return ch_shuffle<4>(w, {0, 3, 2, 1});
-}
-
-template <unsigned Nk>
-auto key_expand(const ch_bit<32 * Nk>& key,
-                    const ch_rom<ch_bit8, 256>& sbox) {
-  static const unsigned Nr = Nk + 6;
-  static const unsigned Nw = 4 * (Nr + 1);
-
-  ch_bit32 rkeys[Nw];
-  for (unsigned i = 0; i < Nk; ++i) {
-    rkeys[i] = ch_aslice<32>(key, i);
-  }
-
-  for (unsigned i = Nk; i < Nw; ++i) {
-    ch_bit32 temp;
-    if (0 == i % Nk) {
-      auto rot = rot_word(rkeys[i-1]);
-      temp = get_subword(sbox, rot) ^ rcon_table[i/Nk];
-    } else
-    if (Nk > 6 && (4 == i % Nk)) {
-      temp = get_subword(sbox, rkeys[i-1]);
-    } else {
-      temp = rkeys[i-1];
-    }
-    rkeys[i] = rkeys[i-Nk] ^ temp;
-  }
-
-  ch_vec<ch_bit128, Nr+1> out;
-  for (unsigned i = 0; i <= Nr; ++i) {
-    out[i] = ch_cat(rkeys[4*i+3], rkeys[4*i+2], rkeys[4*i+1], rkeys[4*i+0]);
-  }
-
-  return out;
-}
-
 template <unsigned Nk>
 struct encrypt {
   static const unsigned Nr = Nk + 6;
@@ -146,20 +59,108 @@ struct encrypt {
   encrypt() : sbox_(sbox_table) {}
 
   void describe() {
-    auto rkeys = key_expand<Nk>(io.key, sbox_);
+    auto rkeys = key_expand<Nk>(io.key);
     auto state = ch_delay(add_roundkey(io.in.data, rkeys[0]));
 
     for (unsigned i = 1; i < Nr; ++i) {
-      auto s_box = get_subbytes(sbox_, state.clone());
+      auto s_box = get_subbytes(state.clone());
       auto s_row = shift_rows(s_box);
       auto s_col = mix_columns(s_row);
       state = ch_delay(add_roundkey(s_col, rkeys[i]));
     }
 
-    auto s_box = get_subbytes(sbox_, state);
+    auto s_box = get_subbytes(state);
     auto s_row = shift_rows(s_box);
     io.out.data  = ch_delay(add_roundkey(s_row, rkeys[Nr]));
     io.out.valid = ch_delay(io.in.valid.as_int(), Nr+1, false);
+  }  
+
+private:
+
+  auto get_subword(const ch_bit32& in) {
+    auto out0 = sbox_.read(ch_aslice<8>(in, 0));
+    auto out1 = sbox_.read(ch_aslice<8>(in, 1));
+    auto out2 = sbox_.read(ch_aslice<8>(in, 2));
+    auto out3 = sbox_.read(ch_aslice<8>(in, 3));
+    return ch_cat(out3, out2, out1, out0);
+  }
+
+  auto get_subbytes(const ch_bit128& state) {
+    auto out0 = get_subword(sbox_, ch_aslice<32>(state, 0));
+    auto out1 = get_subword(sbox_, ch_aslice<32>(state, 1));
+    auto out2 = get_subword(sbox_, ch_aslice<32>(state, 2));
+    auto out3 = get_subword(sbox_, ch_aslice<32>(state, 3));
+    return ch_cat(out3, out2, out1, out0);
+  }
+
+  auto add_roundkey(const ch_bit128& state, const ch_bit128& key) {
+    return state ^ key;
+  }
+
+  auto shift_rows(const ch_bit128& state) {
+    return ch_shuffle<16>(state, {11, 6, 1, 12, 7, 2, 13, 8, 3, 14, 9, 4, 15, 10, 5, 0});
+  }
+
+  auto xtime(const ch_bit8& x) {
+    auto m = ch_cat(0_b, 0_b, 0_b, x[7], x[7], 0_b, x[7], x[7]);
+    return ch_cat(ch_slice<7>(x), 0_b) ^ m;
+  }
+
+  auto mix_row(const ch_bit8& x) {
+    auto x2 = xtime(x);
+    auto x3 = x2 ^ x;
+    return ch_cat<ch_vec<ch_bit8, 4>>(x3, x, x, x2);
+  }
+
+  auto mix_columns(const ch_bit128& state) {
+    ch_bit128 out;
+    for (unsigned c = 0; c < 16; c += 4) {
+      auto r0 = mix_row(ch_aslice<8>(state, c+0));
+      auto r1 = mix_row(ch_aslice<8>(state, c+1));
+      auto r2 = mix_row(ch_aslice<8>(state, c+2));
+      auto r3 = mix_row(ch_aslice<8>(state, c+3));
+      ch_asliceref<8>(out, c+0) = r0[0] ^ r1[3] ^ r2[2] ^ r3[1];
+      ch_asliceref<8>(out, c+1) = r0[1] ^ r1[0] ^ r2[3] ^ r3[2];
+      ch_asliceref<8>(out, c+2) = r0[2] ^ r1[1] ^ r2[0] ^ r3[3];
+      ch_asliceref<8>(out, c+3) = r0[3] ^ r1[2] ^ r2[1] ^ r3[0];
+    }
+    return out;
+  }
+
+  auto rot_word(const ch_bit32& w) {
+    return ch_shuffle<4>(w, {0, 3, 2, 1});
+  }
+
+  template <unsigned Nk>
+  auto key_expand(const ch_bit<32 * Nk>& key) {
+    static const unsigned Nr = Nk + 6;
+    static const unsigned Nw = 4 * (Nr + 1);
+
+    ch_bit32 rkeys[Nw];
+    for (unsigned i = 0; i < Nk; ++i) {
+      rkeys[i] = ch_aslice<32>(key, i);
+    }
+
+    for (unsigned i = Nk; i < Nw; ++i) {
+      ch_bit32 temp;
+      if (0 == i % Nk) {
+        auto rot = rot_word(rkeys[i-1]);
+        temp = get_subword(rot) ^ rcon_table[i/Nk];
+      } else
+      if (Nk > 6 && (4 == i % Nk)) {
+        temp = get_subword(rkeys[i-1]);
+      } else {
+        temp = rkeys[i-1];
+      }
+      rkeys[i] = rkeys[i-Nk] ^ temp;
+    }
+
+    ch_vec<ch_bit128, Nr+1> out;
+    for (unsigned i = 0; i <= Nr; ++i) {
+      out[i] = ch_cat(rkeys[4*i+3], rkeys[4*i+2], rkeys[4*i+1], rkeys[4*i+0]);
+    }
+
+    return out;
   }
 
   ch_rom<ch_bit8, 256> sbox_;
