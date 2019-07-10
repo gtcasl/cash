@@ -95,8 +95,7 @@ std::string ch::internal::identifier_from_typeid(const std::string& name,
   // process template arguments
   if (!no_args
    && name_e != std::string::npos) {
-    std::stringstream ss;
-    ss << "_";
+    std::stringstream ss;    
     auto pos = name_e + 1;
     for (;;) {
       auto start = pos;
@@ -104,11 +103,8 @@ std::string ch::internal::identifier_from_typeid(const std::string& name,
       if (pos == std::string::npos)
         break;
       auto token = dt[pos];
-      if (token != ':') {
-        ss << dt.substr(start, pos - start);
-        if (token == ' ' || token == '<') {
-          ss << "_";
-        }
+      if (token != ':' && pos != start) {
+        ss << "_" << dt.substr(start, pos - start);
       }
       ++pos;
     }

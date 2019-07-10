@@ -12,6 +12,7 @@ set(EXAMPLES
     aes    
     fft
     sobel
+	vectoradd
 )
 
 # copy resource directory

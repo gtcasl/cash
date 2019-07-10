@@ -15,17 +15,17 @@ public:
   ch_counter(const ch_bool& incr,
              const S& step,
              const I& init,
-             const ch_bool& reset = ch_reset()) {
-    incr_ = incr;
-    step_ = step;
-    init_ = init;
+             const ch_bool& reset) {
+    incr_  = incr;
+    step_  = step;
+    init_  = init;
     reset_ = reset;
     if constexpr (N == 1) {
       value_ = 0;
       next_ = 0;
     } else {
       static_assert(std::is_constructible_v<ch_uint<log2ceil(N)>, I>, "invalid type");
-      ch_pushcd(ch_clock(), reset_);
+      ch_pushcd(ch_clock(), ch_reset() || reset_);
       ch_reg<ch_uint<log2ceil(N)>> count(init_);
       ch_popcd();
       if constexpr (ispow2(N)) {
@@ -40,7 +40,7 @@ public:
   }
 
   template <typename S>
-  ch_counter(const ch_bool& incr, const S& step) : ch_counter(incr, step, 0) {}
+  ch_counter(const ch_bool& incr, const S& step) : ch_counter(incr, step, 0, false) {}
 
   ch_counter(const ch_bool& incr = true) : ch_counter(incr, 1) {}
 

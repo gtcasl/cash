@@ -52,7 +52,7 @@ public:
 
 template <typename T, unsigned N>
 class Fft {
-public:
+public:  
   static_assert(ispow2(N), "invalid size");
   static constexpr unsigned logN = log2floor(N);
   static_assert(0 == (logN & 0x1), "invalid size");
@@ -65,7 +65,7 @@ public:
   );
 
   void describe() {
-    state_t state{sdf_.io.in.valid, sdf_.io.in.data};
+    state_t state{sdf_.io.deq.valid, sdf_.io.deq.data};
     static_for<0, logN/2>([&](auto stage) {
       state = this->butterfly21<stage>(state.clone());
       state = this->butterfly22<stage>(state.clone());
@@ -77,6 +77,7 @@ public:
   }
 
 private:
+
   auto trivial_rotate(const ch_complex<T>& x) {
     ch_complex<T> out;
     out.re = x.im;
@@ -93,8 +94,8 @@ private:
     auto r_i = rhs.im.as_int();
     auto m_r = ch_slice<T>(ch_mul<K>(l_r, r_r) - ch_mul<K>(l_i, r_i), T::Frac);
     auto m_i = ch_slice<T>(ch_mul<K>(l_i, r_r) + ch_mul<K>(l_r, r_i), T::Frac);
-    out.re = ch_delayEn(m_r, sdf_.io.out.ready, 1);
-    out.im = ch_delayEn(m_i, sdf_.io.out.ready, 1);
+    out.re = ch_delayEn(m_r, sdf_.io.enq.ready, 1);
+    out.im = ch_delayEn(m_i, sdf_.io.enq.ready, 1);
     return std::tuple(out, 1);
   }
 
@@ -110,14 +111,14 @@ private:
     value_type d_in;
     constexpr unsigned A = 1 << (logN - 2 * stage);
 
-    ch_counter<A> index(in.valid && sdf_.io.out.ready);
+    ch_counter<A> index(in.valid && sdf_.io.enq.ready);
     auto toggle= index.value()[log2ceil(A)-1];
-    auto d_out = ch_delayEn(d_in, sdf_.io.out.ready, A/2);
+    auto d_out = ch_delayEn(d_in, sdf_.io.enq.ready, A/2);
     auto [bf1, bf2] = butterfly(d_out, in.data);
         d_in = ch_sel(toggle, bf2, in.data);
     auto ret = ch_sel(toggle, bf1, d_out);
-    out.data = ch_delayEn(ret, sdf_.io.out.ready, 1);
-    out.valid = ch_delayEn(in.valid, sdf_.io.out.ready, A/2 + 1, false);
+    out.data = ch_delayEn(ret, sdf_.io.enq.ready, 1);
+    out.valid = ch_delayEn(in.valid, sdf_.io.enq.ready, A/2 + 1, false);
 
     return out;
   }
@@ -128,21 +129,21 @@ private:
     value_type d_in;
     constexpr unsigned A = 1 << (logN - 2 * stage);
 
-    ch_counter<A> index1(in.valid && sdf_.io.out.ready);
+    ch_counter<A> index1(in.valid && sdf_.io.enq.ready);
     auto rotate = index1.value()[log2ceil(A)-1];
     auto tv_rot = trivial_rotate(in.data);
-    auto b_in   = ch_delayEn(ch_sel(rotate, tv_rot, in.data), sdf_.io.out.ready, 1);
-    auto value  = ch_delayEn(in.data, sdf_.io.out.ready, 1);
-    auto valid  = ch_delayEn(in.valid, sdf_.io.out.ready, 1, false);
+    auto b_in   = ch_delayEn(ch_sel(rotate, tv_rot, in.data), sdf_.io.enq.ready, 1);
+    auto value  = ch_delayEn(in.data, sdf_.io.enq.ready, 1);
+    auto valid  = ch_delayEn(in.valid, sdf_.io.enq.ready, 1, false);
 
-    ch_counter<A/2> index2(valid && sdf_.io.out.ready);
+    ch_counter<A/2> index2(valid && sdf_.io.enq.ready);
     auto toggle = index2.value()[log2ceil(A)-2];
-    auto d_out  = ch_delayEn(d_in, sdf_.io.out.ready, A/4);
+    auto d_out  = ch_delayEn(d_in, sdf_.io.enq.ready, A/4);
     auto [bf1, bf2] = butterfly(d_out, b_in);
         d_in = ch_sel(toggle, bf2, value);
     auto ret = ch_sel(toggle, bf1, d_out);
-    out.data = ch_delayEn(ret, sdf_.io.out.ready, 1);
-    out.valid = ch_delayEn(valid, sdf_.io.out.ready, A/4 + 1, false);
+    out.data = ch_delayEn(ret, sdf_.io.enq.ready, 1);
+    out.valid = ch_delayEn(valid, sdf_.io.enq.ready, A/4 + 1, false);
 
     return out;
   }
@@ -153,23 +154,23 @@ private:
     twiddle_table<T, N, stage> twiddles;
     constexpr unsigned A = 1 << (logN - 2 * stage);
 
-    ch_counter<A> index(in.valid && sdf_.io.out.ready);
-    auto [tw, d1] = twiddles.read(index.value(), sdf_.io.out.ready);
-    auto x = ch_delayEn(in.data, sdf_.io.out.ready, d1);
+    ch_counter<A> index(in.valid && sdf_.io.enq.ready);
+    auto [tw, d1] = twiddles.read(index.value(), sdf_.io.enq.ready);
+    auto x = ch_delayEn(in.data, sdf_.io.enq.ready, d1);
     auto [ret, d2] = multiply(x, tw);
     out.data = ret;
-    out.valid = ch_delayEn(in.valid, sdf_.io.out.ready, d1 + d2, false);
+    out.valid = ch_delayEn(in.valid, sdf_.io.enq.ready, d1 + d2, false);
 
     return out;
   }
 
   void controller(const state_t& out) {
-    ch_counter<N> index(sdf_.io.in.valid && sdf_.io.out.ready);
-    sdf_.io.in.ready = (0 == index.value());
-    sdf_.io.out.valid = out.valid;
-    sdf_.io.out.data = out.data;
-    sdf_.io.enq(io.in);
-    sdf_.io.deq(io.out);
+    ch_counter<N> index(sdf_.io.deq.valid && sdf_.io.enq.ready);
+    sdf_.io.deq.ready = (0 == index.value());
+    sdf_.io.enq.valid = out.valid;
+    sdf_.io.enq.data = out.data;
+    sdf_.io.in(io.in);
+    sdf_.io.out(io.out);
   }
 
   ch_module<ch_sdf<value_type>> sdf_;
@@ -221,7 +222,7 @@ int main() {
       out_samples[out_sample++] = (int)device.io.out.data.as_int();
     }
     // stop simulation when done
-    return (out_sample < FFT_SIZE) && (t < 100000);
+    return (out_sample < FFT_SIZE) && (t < MAX_TICKS);
   });
 
   std::cout << "Simulation run time: " << std::dec << ticks/2 << " cycles" << std::endl;

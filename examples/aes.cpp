@@ -59,7 +59,7 @@ struct encrypt {
   encrypt() : sbox_(sbox_table) {}
 
   void describe() {
-    auto rkeys = key_expand<Nk>(io.key);
+    auto rkeys = key_expand(io.key);
     auto state = ch_delay(add_roundkey(io.in.data, rkeys[0]));
 
     for (unsigned i = 1; i < Nr; ++i) {
@@ -86,10 +86,10 @@ private:
   }
 
   auto get_subbytes(const ch_bit128& state) {
-    auto out0 = get_subword(sbox_, ch_aslice<32>(state, 0));
-    auto out1 = get_subword(sbox_, ch_aslice<32>(state, 1));
-    auto out2 = get_subword(sbox_, ch_aslice<32>(state, 2));
-    auto out3 = get_subword(sbox_, ch_aslice<32>(state, 3));
+    auto out0 = get_subword(ch_aslice<32>(state, 0));
+    auto out1 = get_subword(ch_aslice<32>(state, 1));
+    auto out2 = get_subword(ch_aslice<32>(state, 2));
+    auto out3 = get_subword(ch_aslice<32>(state, 3));
     return ch_cat(out3, out2, out1, out0);
   }
 
@@ -131,7 +131,6 @@ private:
     return ch_shuffle<4>(w, {0, 3, 2, 1});
   }
 
-  template <unsigned Nk>
   auto key_expand(const ch_bit<32 * Nk>& key) {
     static const unsigned Nr = Nk + 6;
     static const unsigned Nw = 4 * (Nr + 1);
@@ -168,6 +167,10 @@ private:
 
 }
 
+static const auto KEY = 0x3c4fcf098815f7aba6d2ae2816157e2b_h;
+static const auto PLAIN_TEXT = 0x340737e0a29831318d305a88a8f64332_h;
+static const auto CIPHER_TEXT = 0x320b6a19978511dcfb09dc021d842539_h;
+
 int main() {
 
   ch_device<aes::encrypt<4>> encrypt;
@@ -177,8 +180,8 @@ int main() {
   ticks += tracer.run([&](ch_tick t)->bool {
     switch (t) {
     case 0:
-      encrypt.io.key     = 0x3c4fcf098815f7aba6d2ae2816157e2b_h;
-      encrypt.io.in.data = 0x340737e0a29831318d305a88a8f64332_h;
+      encrypt.io.key     = KEY;
+      encrypt.io.in.data = PLAIN_TEXT;
       break;
     case 2:
       encrypt.io.in.valid = true;
@@ -187,7 +190,7 @@ int main() {
       encrypt.io.in.valid = false;
       break;
     }
-    return (!encrypt.io.out.valid && t < 100000);
+    return (!encrypt.io.out.valid && t < MAX_TICKS);
   });
 
   std::cout << "simulation ended after " << ticks << " ticks" << std::endl;
@@ -197,7 +200,7 @@ int main() {
   std::cout << "encrypt.out.valid = " << encrypt.io.out.valid << std::endl;
 
   CHECK(!!encrypt.io.out.valid);
-  CHECK(encrypt.io.out.data == 0x320b6a19978511dcfb09dc021d842539_h);
+  CHECK(encrypt.io.out.data == CIPHER_TEXT);
 
   ch_toVerilog("aes.v", encrypt);
   ch_toFIRRTL("aes.fir", encrypt);

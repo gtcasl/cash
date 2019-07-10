@@ -11,10 +11,10 @@ using namespace ch::logic;
 template <typename T, unsigned I=2, unsigned O=2>
 struct ch_sdf {
   __io (
-    (ch_enq_io<T>) enq,
+    (ch_enq_io<T>) in,
+    (ch_deq_io<T>) out,
     (ch_deq_io<T>) deq,
-    (ch_deq_io<T>) in,
-    (ch_enq_io<T>) out
+    (ch_enq_io<T>) enq
   );
 
   void describe() {
@@ -22,20 +22,20 @@ struct ch_sdf {
     ch_module<ch_llqueue<T, O>> q_out;
 
     //--
-    auto enq_stalled = !io.in.ready && !q_in.io.deq.valid;
+    auto enq_stalled = !io.deq.ready && !q_in.io.deq.valid;
     auto deq_stalled = q_out.io.enq.valid && !q_out.io.enq.ready;
 
     //--
-    q_in.io.enq(io.enq);
+    q_in.io.enq(io.in);
     q_in.io.deq.ready = !deq_stalled;
-    q_out.io.deq(io.deq);
-    q_out.io.enq.data  = io.out.data;
-    q_out.io.enq.valid = io.out.valid && !enq_stalled;
+    q_out.io.deq(io.out);
+    q_out.io.enq.data  = io.enq.data;
+    q_out.io.enq.valid = io.enq.valid && !enq_stalled;
 
     //--
-    io.out.ready = !enq_stalled && !deq_stalled;
-    io.in.data = q_in.io.deq.data;
-    io.in.valid = q_in.io.deq.ready && q_in.io.deq.valid;
+    io.enq.ready = !enq_stalled && !deq_stalled;
+    io.deq.data  = q_in.io.deq.data;
+    io.deq.valid = q_in.io.deq.ready && q_in.io.deq.valid;
   }
 };
 
