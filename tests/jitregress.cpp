@@ -9,7 +9,7 @@ auto remove_numbers(const std::string& str) {
   in << str;
   while (!in.eof()) {
     in >> word;
-    if (!(std::stringstream(word) >> number))
+    if (!(std::stringstream(word) >> std::hex >> number))
       out << word;
   }
   return out.str();
