@@ -12,6 +12,17 @@ using namespace ch::logic;
 using namespace ch::literals;
 using namespace ch::htl;
 
+template <unsigned D, unsigned A, unsigned B>
+struct avm_properties {
+  static constexpr unsigned DataW  = D;
+  static constexpr unsigned AddrW  = A;
+  static constexpr unsigned BurstW = B;
+  static_assert(ispow2(D), "invalid data width");
+  static_assert(ispow2(A), "invalid address width");
+};
+
+using avm_v0 = avm_properties<512, 64, 5>;
+
 __inout (avalon_st_io, (
   __in  (ch_bool) valid_in,  // inputs available
   __out (ch_bool) ready_out, // can receive inputs
@@ -19,7 +30,7 @@ __inout (avalon_st_io, (
   __in  (ch_bool) ready_in   // can receive outputs
 ));
 
-template <typename T>
+template <typename T = avm_v0>
 __inout (avalon_mm_io, (
   __in  (ch_bit<T::DataW>)   readdata,
   __in  (ch_bool)            readdatavalid,
@@ -33,28 +44,11 @@ __inout (avalon_mm_io, (
   __out (ch_bit<T::BurstW>)  burstcount
 ));
 
-__struct (perf_counters, (
-  (ch_uint64) run_time,
-  (ch_uint64) rq_stalls,
-  (ch_uint64) rm_stalls,
-  (ch_uint64) wq_stalls,
-  (ch_uint64) wm_stalls
-));
-
-template <unsigned D, unsigned A, unsigned B>
-struct avm_properties {
-  static constexpr unsigned DataW  = D;
-  static constexpr unsigned AddrW  = A;
-  static constexpr unsigned BurstW = B;
-  static_assert(ispow2(D), "invalid data width");
-  static_assert(ispow2(A), "invalid address width");
-};
-
-using avm_v0 = avm_properties<512, 64, 5>;
-
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T, unsigned Qsize = (1 << (avm_v0::BurstW - 1)), typename AVM = avm_v0>
+template <typename T,
+          unsigned Qsize = (1 << (avm_v0::BurstW - 1)),
+          typename AVM = avm_v0>
 class avm_reader {
 public:
   using data_type = T;

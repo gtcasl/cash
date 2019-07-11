@@ -127,7 +127,6 @@ memportimpl* memimpl::create_arport(lnodeimpl* addr, const source_location& sloc
       return port;
   }
   auto impl = ctx_->create_node<marportimpl>(this, addr, sloc);
-  rdports_.emplace_back(impl);
   return impl;
 }
 
@@ -146,7 +145,6 @@ memportimpl* memimpl::create_srport(lnodeimpl* cd,
     }
   }
   auto impl = ctx_->create_node<msrportimpl>(this, cd, addr, enable, sloc);
-  rdports_.emplace_back(impl);
   return impl;
 }
 
@@ -160,7 +158,6 @@ mwportimpl* memimpl::create_wport(lnodeimpl* cd,
       CH_ABORT("duplicate memory write to the same address not allowed");
   }
   auto impl = ctx_->create_node<mwportimpl>(this, cd, addr, wdata, enable, sloc);
-  wrports_.emplace_back(impl);
   return impl;
 }
 
