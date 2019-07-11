@@ -1984,7 +1984,7 @@ private:
       jit_insn_store_relative(j_func_, j_vars_, dst_addr, j_src_x);
       jit_insn_store(j_func_, j_dst, j_src_n);
     } else {
-       auto j_dst_ptr = this->emit_pointer_address(node);
+      auto j_dst_ptr = this->emit_pointer_address(node);
       this->emit_load_array_vector(j_dst_ptr, dst_width, j_array_ptr, j_src_addr);
     }
   }

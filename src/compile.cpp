@@ -2,6 +2,7 @@
 #include "litimpl.h"
 #include "cdimpl.h"
 #include "regimpl.h"
+#include "memimpl.h"
 #include "opimpl.h"
 #include "selectimpl.h"
 #include "proxyimpl.h"
@@ -476,6 +477,27 @@ bool compiler::constant_folding() {
       if (op_flags::bitwise == CH_OP_CLASS(alu->op())
        && op_flags::binary == CH_OP_ARY(alu->op())) {
         replace_constant(alu, this->constant_fold_bitwise(alu));
+      }
+      break;
+    }
+    case type_reg: {
+      auto reg = reinterpret_cast<regimpl*>(node);
+      if (reg->has_enable() && is_literal_one(reg->enable().impl())) {
+        auto impl = reg->remove_enable();
+        if (!impl->users()) {
+          deleted_list.push_back(impl);
+        }
+      }
+      break;
+    }
+    case type_msrport:
+    case type_mwport: {
+      auto mport = reinterpret_cast<memportimpl*>(node);
+      if (mport->has_enable() && is_literal_one(mport->enable().impl())) {
+        auto impl = mport->remove_enable();
+        if (!impl->users()) {
+          deleted_list.push_back(impl);
+        }
       }
       break;
     }

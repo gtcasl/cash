@@ -30,6 +30,16 @@ TEST_CASE("registers", "[registers]") {
     }, 1);
 
     TEST([]()->ch_bool {
+      auto_cflags_disable reg_init_off(cflags::force_reg_init);
+      ch_bit2 a;
+      ch_bool en(true);
+      a = ch_delayEn(11_b, en);
+      auto e = ch_case(ch_now(), 3, 11_b)(a);
+      //ch_println("t={0}, a={1}, e={2}", ch_now(), a, e);
+      return (a == e);
+    }, 1);
+
+    TEST([]()->ch_bool {
       auto en = ch_case<ch_bool>(ch_now(), 7, 1)(5, 1)(3, 0)(0);
       auto a = ch_delayEn<ch_bit4>(3, en, 1, 2);
       auto e = ch_case<ch_bit4>(ch_now(), 7, 3)(5, 3)(3, 2)(a);

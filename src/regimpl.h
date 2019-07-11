@@ -48,6 +48,8 @@ public:
     return this->src(initdata_idx_);
   }
 
+  lnodeimpl* remove_enable();
+
   bool equals(const lnodeimpl& other) const override;
 
   lnodeimpl* clone(context* ctx, const clone_map& cloned_nodes) const override;

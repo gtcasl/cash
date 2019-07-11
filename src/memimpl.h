@@ -136,6 +136,8 @@ public:
     return this->src(cd_idx_);
   }
 
+  lnodeimpl* remove_enable();
+
 protected:
 
   memportimpl(context* ctx,

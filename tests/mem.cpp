@@ -219,6 +219,17 @@ TEST_CASE("memory", "[memory]") {
 
     TEST([]()->ch_bool {
       auto_cflags_disable reg_init_off(cflags::force_reg_init);
+      ch_mem<ch_bit<65>, 3, true> mem;
+      ch_bool en(true);
+      mem.write(1, 0x55);
+      auto x = mem.read(1, en).as_bit();
+      auto e = ch_delay<ch_bit<65>>(0x55, 2);
+      //ch_println("t={0}, x={1}, e={2}", ch_now(), x, e);
+      return (ch_now() < 3 || x == e);
+    }, 3);
+
+    TEST([]()->ch_bool {
+      auto_cflags_disable reg_init_off(cflags::force_reg_init);
       ch_mem<ch_bit<33>, 3> mem;
       mem.write(1, 0x55);
       auto x = mem.read(1).as_bit();

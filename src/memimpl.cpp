@@ -281,6 +281,14 @@ memportimpl::~memportimpl() {
   mem_->release();
 }
 
+lnodeimpl* memportimpl::remove_enable() {
+  assert(this->has_enable() && is_literal_one(this->enable().impl()));
+  auto ret = this->enable().impl();
+  this->remove_src(enable_idx_);
+  enable_idx_ = -1;
+  return ret;
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 marportimpl::marportimpl(context* ctx,
