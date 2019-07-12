@@ -163,7 +163,8 @@ lnodeimpl* ch::internal::bindInputNode(const lnode& input) {
   auto sloc = get_source_location();
   auto ctx = ctx_curr();
   auto binding = ctx->current_binding();
-  auto node = ctx->create_node<proxyimpl>(input.size(), input.name(), sloc);
+  auto name = stringf("%s.%s", binding->module()->name().c_str(), input.name().c_str());
+  auto node = ctx->create_node<proxyimpl>(input.size(), name, sloc);
   binding->bind_input(node, reinterpret_cast<inputimpl*>(input.impl()), sloc);
   return node;
 }
@@ -173,7 +174,8 @@ lnodeimpl* ch::internal::bindOutputNode(const lnode& output) {
   auto sloc = get_source_location();
   auto ctx = ctx_curr();
   auto binding = ctx->current_binding();
-  auto node = ctx->create_node<proxyimpl>(output.size(), output.name(), sloc);
+  auto name = stringf("%s.%s", binding->module()->name().c_str(), output.name().c_str());
+  auto node = ctx->create_node<proxyimpl>(output.size(), name, sloc);
   binding->bind_output(node, reinterpret_cast<outputimpl*>(output.impl()), sloc);
   return node;
 }

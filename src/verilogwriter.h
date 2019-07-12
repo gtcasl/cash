@@ -34,8 +34,6 @@ public:
 
   void print(std::ostream& out, std::unordered_set<std::string_view>& visited);
 
-protected:
-
   bool is_inline_subscript(lnodeimpl* node) const;
 
   void print_header(std::ostream& out);
@@ -93,6 +91,8 @@ protected:
   void print_operator(std::ostream& out, ch_op op);
 
   void print_sloc(std::ostream& out, const source_location& sloc);
+
+protected:
 
   context* ctx_;
   std::unordered_map<uint32_t, std::unordered_set<lnodeimpl*>> uses_;

@@ -29,8 +29,6 @@ public:
 
   void print(std::ostream& out, std::unordered_set<std::string_view>& visited);
 
-protected:
-
   void print_header(std::ostream& out);
 
   void print_body(std::ostream& out);
@@ -76,6 +74,8 @@ protected:
   bool print_mem(std::ostream& out, memimpl* node);
 
   void print_operator(std::ostream& out, ch_op op);
+
+protected:
 
   context* ctx_;
   uint32_t num_temps_;
