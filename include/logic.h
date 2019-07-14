@@ -567,12 +567,8 @@ auto make_logic_op(const A& a, const B& b) {
   friend auto op(const base& lhs, const U& rhs) { \
     CH_API_ENTRY(1); \
     auto& _lhs = reinterpret_cast<const T&>(lhs); \
-    if constexpr (is_strictly_constructible_v<T, U>) { \
-      auto _rhs = ch_logic_t<U>(rhs); \
-      return ch::internal::logic_accessor::method<T>(_lhs, _rhs); \
-    } else { \
-      return op(_lhs, ch_size_cast_t<T, ch_width_v<U>>(rhs)); \
-    } \
+    auto _rhs = ch_logic_t<U>(rhs); \
+    return ch::internal::logic_accessor::method<T>(_lhs, _rhs); \
   } \
   template <typename U, \
             CH_REQUIRE(is_logic_op_constructible_v<T, U>)> \
@@ -581,7 +577,11 @@ auto make_logic_op(const A& a, const B& b) {
     auto& _rhs = reinterpret_cast<const T&>(rhs); \
     if constexpr (is_strictly_constructible_v<T, U>) { \
       auto _lhs = logic_op_cast<T>(lhs); \
-      return ch::internal::logic_accessor::method<T>(_lhs, _rhs); \
+      if constexpr (std::is_integral_v<U>) { \
+        return ch::internal::logic_accessor::method<T>(_lhs, _rhs); \
+      } else { \
+        return ch::internal::logic_accessor::method<ch_size_cast_t<T, ch_width_v<U>>>(_lhs, _rhs); \
+      } \
     } else { \
       return op(ch_size_cast_t<T, ch_width_v<U>>(lhs), _rhs); \
     } \
@@ -789,12 +789,8 @@ auto make_logic_op(const A& a, const B& b) {
   friend auto func(const base& lhs, const U& rhs) { \
     CH_API_ENTRY(1); \
     auto& _lhs = reinterpret_cast<const T&>(lhs); \
-    if constexpr (is_strictly_constructible_v<T, U>) { \
-      auto _rhs = ch_logic_t<U>(rhs); \
-      return ch::internal::logic_accessor::method<T>(_lhs, _rhs); \
-    } else { \
-      return func(_lhs, ch_size_cast_t<T, ch_width_v<U>>(rhs)); \
-    } \
+    auto _rhs = ch_logic_t<U>(rhs); \
+    return ch::internal::logic_accessor::method<T>(_lhs, _rhs); \
   } \
   template <unsigned R, typename U, \
             CH_REQUIRE(is_logic_op_constructible_v<T, U>)> \
@@ -820,7 +816,11 @@ auto make_logic_op(const A& a, const B& b) {
     auto& _rhs = reinterpret_cast<const T&>(rhs); \
     if constexpr (is_strictly_constructible_v<T, U>) { \
       auto _lhs = logic_op_cast<T>(lhs); \
-      return ch::internal::logic_accessor::method<T>(_lhs, _rhs); \
+      if constexpr (std::is_integral_v<U>) { \
+        return ch::internal::logic_accessor::method<T>(_lhs, _rhs); \
+      } else { \
+        return ch::internal::logic_accessor::method<ch_size_cast_t<T, ch_width_v<U>>>(_lhs, _rhs); \
+      } \
     } else { \
       return func(ch_size_cast_t<T, ch_width_v<U>>(lhs), _rhs); \
     } \

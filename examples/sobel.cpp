@@ -22,7 +22,7 @@ public:
   {}
 
   void describe() {
-    std::array<std::array<T, 3>, 3> window;
+    std::array<std::array<T, 3>, 3> box;
     std::array<T, 3> input_rows;
 
     input_rows[2] = sdf_.io.deq.data;
@@ -31,32 +31,15 @@ public:
 
     for (int j = 0; j < 3; ++j) {
       for (int i = 0; i < 2; ++i) {
-        window[j][i] = ch_nextEn(window[j][i + 1], sdf_.io.enq.ready);
+        box[j][i] = ch_nextEn(box[j][i + 1], sdf_.io.enq.ready);
       }
-      window[j][2] = ch_nextEn(input_rows[j], sdf_.io.enq.ready);
+      box[j][2] = ch_nextEn(input_rows[j], sdf_.io.enq.ready);
     }
 
     // 5-cycles compute pipeline
-    auto gx1a = ch_nextEn(ch_add<9>(window[0][0], window[2][0]), sdf_.io.enq.ready);
-    auto gx1b = ch_nextEn(ch_cat(window[1][0], 0_b).as_uint(), sdf_.io.enq.ready);
-    auto gx1c = ch_nextEn(ch_add<9>(window[0][2], window[2][2]), sdf_.io.enq.ready);
-    auto gx1d = ch_nextEn(ch_cat(window[1][2], 0_b).as_uint(), sdf_.io.enq.ready);
-    auto gx2a = ch_nextEn(ch_add<10>(gx1a, gx1b), sdf_.io.enq.ready);
-    auto gx2b = ch_nextEn(ch_add<10>(gx1c, gx1d), sdf_.io.enq.ready);
-    auto gx3  = ch_nextEn(ch_sub<11>(gx2b, gx2a), sdf_.io.enq.ready);
-    auto gx4  = ch_nextEn(ch_abs(gx3.as_int()), sdf_.io.enq.ready);
-
-    auto gy1a = ch_nextEn(ch_add<9>(window[0][0], window[0][2]), sdf_.io.enq.ready);
-    auto gy1b = ch_nextEn(ch_cat(window[0][1], 0_b).as_uint(), sdf_.io.enq.ready);
-    auto gy1c = ch_nextEn(ch_add<9>(window[2][0], window[2][2]), sdf_.io.enq.ready);
-    auto gy1d = ch_nextEn(ch_cat(window[2][1], 0_b).as_uint(), sdf_.io.enq.ready);
-    auto gy2a = ch_nextEn(ch_add<10>(gy1a, gy1b), sdf_.io.enq.ready);
-    auto gy2b = ch_nextEn(ch_add<10>(gy1c, gy1d), sdf_.io.enq.ready);
-    auto gy3  = ch_nextEn(ch_sub<11>(gy2b, gy2a), sdf_.io.enq.ready);
-    auto gy4  = ch_nextEn(ch_abs(gy3.as_int()), sdf_.io.enq.ready);
-
-    auto g5  = ch_nextEn(ch_add<12>(gx4, gy4), sdf_.io.enq.ready);
-    auto out = ch_slice<8>(ch_min(g5, 255));
+    auto gx  = ch_abs((box[0][2] + box[2][2] + (box[1][2] << 1)) - (box[0][0] + box[2][0] + (box[1][0] << 1)));
+    auto gy  = ch_abs((box[2][0] + box[2][2] + (box[2][1] << 1)) - (box[0][0] + box[0][2] + (box[0][1] << 1)));
+    auto out = ch_delayEn(ch_slice<8>(ch_min(gx + gy, 255)), sdf_.io.enq.ready, 5);
 
     ch_counter<~0u> delay_ctr(sdf_.io.enq.ready);
     io.done = ch_next(delay_ctr.value() >= (5 + width_ * height_), false);

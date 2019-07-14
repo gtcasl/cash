@@ -15,7 +15,7 @@ addons:
 
 install:
   # LIBJIT
-  - sudo apt-get install libtool flex bison texinfo
+  - sudo apt-get install libtool autoconf flex bison texinfo
   - git clone https://git.savannah.gnu.org/git/libjit.git
   - pushd libjit
   - git apply ../scripts/libjit.patch

@@ -68,7 +68,7 @@ Alternative build using LIBJIT compiler
 
 Install LIBJIT dependencies:
   
-    $ sudo apt-get install libtool flex bison texinfo
+    $ sudo apt-get install libtool autoconf flex bison texinfo
   
 Building and Installing LIBJIT:
   
