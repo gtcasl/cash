@@ -10,7 +10,7 @@ set(JITs "LLVM;LIBJIT;OFF")
 set_property(CACHE JIT PROPERTY STRINGS ${JITs})
 
 option(CODECOV "Enable code coverage." OFF)
-option(CALLTRACE "Enable code coverage." ON)
+option(CALLTRACE "Enable call trace." ON)
 
 set(DEFAULT_BUILD_TYPE "Release")
 

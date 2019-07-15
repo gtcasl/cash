@@ -16,36 +16,44 @@ public:
     __out(ch_bool) done
   );
 
-  sobel(uint32_t width, uint32_t height)
+  sobel(uint32_t width, uint32_t height, uint32_t pipelen)
     : width_(width)
     , height_(height)
+    , pipelen_(pipelen)
   {}
 
   void describe() {
-    std::array<std::array<T, 3>, 3> box;
-    std::array<T, 3> input_rows;
+    const static uint32_t W = ch_width_v<T>;
+    ch_vec<ch_vec<T, 3>, 3> filter;
+    ch_vec<T, 3> filter_rows;
 
-    input_rows[2] = sdf_.io.deq.data;
-    input_rows[1] = ch_delayEn(input_rows[2], sdf_.io.enq.ready, width_);
-    input_rows[0] = ch_delayEn(input_rows[1], sdf_.io.enq.ready, width_);
-
+    // sliding filter window
+    filter_rows[2] = sdf_.io.deq.data;
+    filter_rows[1] = ch_delayEn(filter_rows[2], sdf_.io.enq.ready, width_);
+    filter_rows[0] = ch_delayEn(filter_rows[1], sdf_.io.enq.ready, width_);
     for (int j = 0; j < 3; ++j) {
       for (int i = 0; i < 2; ++i) {
-        box[j][i] = ch_nextEn(box[j][i + 1], sdf_.io.enq.ready);
+        filter[j][i] = ch_nextEn(filter[j][i + 1], sdf_.io.enq.ready);
       }
-      box[j][2] = ch_nextEn(input_rows[j], sdf_.io.enq.ready);
+      filter[j][2] = ch_nextEn(filter_rows[j], sdf_.io.enq.ready);
     }
 
-    // 5-cycles compute pipeline
-    auto gx  = ch_abs((box[0][2] + box[2][2] + (box[1][2] << 1)) - (box[0][0] + box[2][0] + (box[1][0] << 1)));
-    auto gy  = ch_abs((box[2][0] + box[2][2] + (box[2][1] << 1)) - (box[0][0] + box[0][2] + (box[0][1] << 1)));
-    auto out = ch_delayEn(ch_slice<8>(ch_min(gx + gy, 255)), sdf_.io.enq.ready, 5);
+    // compute pipeline
+    auto gx1 = ch_add<W+2>(ch_add<W+1>(filter[0][2], filter[2][2]), ch_shl<W+1>(filter[1][2], 1)); 
+    auto gx2 = ch_add<W+2>(ch_add<W+1>(filter[0][0], filter[2][0]), ch_shl<W+1>(filter[1][0], 1));
+    auto gy1 = ch_add<W+2>(ch_add<W+1>(filter[2][0], filter[2][2]), ch_shl<W+1>(filter[2][1], 1));
+    auto gy2 = ch_add<W+2>(ch_add<W+1>(filter[0][0], filter[0][2]), ch_shl<W+1>(filter[0][1], 1));
+    auto gx  = ch_sel(gx1 > gx2, ch_sub<W+2>(gx1, gx2), ch_sub<W+2>(gx2, gx1));
+    auto gy  = ch_sel(gy1 > gy2, ch_sub<W+2>(gy1, gy2), ch_sub<W+2>(gy2, gy1));
+    auto g   = ch_add<W+3>(gx, gy);
+    auto out = ch_sel(g < T(-1), ch_slice<T>(g), T(-1));
 
+    // controls
     ch_counter<~0u> delay_ctr(sdf_.io.enq.ready);
-    io.done = ch_next(delay_ctr.value() >= (5 + width_ * height_), false);
+    io.done = ch_next(delay_ctr.value() >= (pipelen_ + width_ * height_), false);
     sdf_.io.deq.ready = !(delay_ctr.value() < (width_ * height_));
-    sdf_.io.enq.valid = (delay_ctr.value() >= 2 * width_ + 3 + 5) && !io.done;
-    sdf_.io.enq.data = out;
+    sdf_.io.enq.valid = (delay_ctr.value() >= 2 * width_ + 3 + pipelen_) && !io.done;
+    sdf_.io.enq.data  = ch_delayEn(out, sdf_.io.enq.ready, pipelen_);
     sdf_.io.in(io.in);
     sdf_.io.out(io.out);
   }
@@ -54,6 +62,7 @@ private:
   ch_module<ch_sdf<T>> sdf_;
   uint32_t width_;
   uint32_t height_;  
+  uint32_t pipelen_;
 };
 
 static bool verify(const std::vector<uint8_t>& input,
@@ -71,7 +80,7 @@ static bool verify(const std::vector<uint8_t>& input,
         for (uint32_t wi = 0; wi < 3; ++wi) {
           uint32_t addr = (i+wi) + (j+wj) * width;
           if (addr >= size)
-            return true;
+            goto l_exit;
           int src = input.at(addr);
           sumx += Gx[wj][wi] * src;
           sumy += Gy[wj][wi] * src;
@@ -81,11 +90,12 @@ static bool verify(const std::vector<uint8_t>& input,
       int ref = std::min(sum, 255);
       int out = output.at(o++);
       if (out != ref) {
-        std::cout << o << ": out=" << out << ", ref=" << ref << std::endl;
+        std::cout << o << ": out=" << out << ", ref=" << ref << std::endl;        
         ++errors;
       }
     }
   }
+l_exit:
   if (errors != 0) {
     std::cout << "\tFound " << errors << " errors: FAILED!" << std::endl;
   }
@@ -101,7 +111,7 @@ int main() {
   auto num_pixels = width * height;
   std::vector<uint8_t> dst_image(num_pixels);
 
-  ch_device<sobel<ch_uint8>> device(width, height);
+  ch_device<sobel<ch_uint8>> device(width, height, 4);
   ch_tracer tracer(device);
 
   uint32_t in_pixel = 0;

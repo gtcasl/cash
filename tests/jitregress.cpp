@@ -16,11 +16,16 @@ auto remove_numbers(const std::string& str) {
 }
 
 static bool verify_asm(const char* program) {
+#if defined(LLVMJIT)
+  std::cout << "verifying llvmjit assembly for '" << program << "'..." << std::endl;
+#elif defined(LIBJIT)
+  std::cout << "verifying libjit assembly for '" << program << "'..." << std::endl;
+#endif
+
   auto cmd = stringf("cd ../examples && CASH_CFLAGS=8 ../bin/%s", program);
-  std::cout << cmd << std::endl;
   int ret = system(cmd.c_str());
-  if (ret != 0) {
-    std::cout << "error: command returned exitcode " << ret << std::endl;
+  if (ret != 0) {    
+    std::cout << "error: command '" << cmd << "', returned exitcode " << ret << std::endl;
     return false;
   }
 
@@ -45,7 +50,7 @@ static bool verify_asm(const char* program) {
   }
 
   std::string asm_line, ref_line;
-  int line = 0;
+  int line = 1;
   while (std::getline(asm_file, asm_line)
       && std::getline(ref_file, ref_line)) {
     asm_line = remove_numbers(asm_line);
@@ -71,7 +76,7 @@ static bool verify_asm(const char* program) {
 }
 
 TEST_CASE("jitregress", "[jitregress]") {
-  SECTION("asm-size", "[asm-size]") {
+  SECTION("asm", "[asm]") {
     TESTX([]()->bool {
       RetCheck ret;
       ret &= verify_asm("fifo");
