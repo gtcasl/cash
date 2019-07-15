@@ -17,11 +17,10 @@ template <typename T, unsigned N, unsigned stage>
 class twiddle_table {
 private:
   static constexpr unsigned A = N / (1 << (2*stage+2));
-  using value_t = ch_complex<T>;
-  using rom_t = ch_rom<value_t, 4*A>;
+  using rom_t = ch_rom<T, 4*A>;
 
   static auto init_data() {
-    std::vector<uint8_t> buffer(ceildiv<uint32_t>(ch_width_v<value_t>, 8) * 4*A);
+    std::vector<uint8_t> buffer(ceildiv<uint32_t>(ch_width_v<T>, 8) * 4*A);
     double coeff = -2.0 * M_PI / N;
     for (unsigned x = 0; x < 4*A; ++x) {
       unsigned k = 0;
@@ -32,8 +31,10 @@ private:
       } else if (x >= 1*A) {
         k = (2 << (2*stage)) * (x-1*A);
       }
-      ch_system_t<value_t> tw(ch_system_t<T>(std::sin(coeff * k)), ch_system_t<T>(std::cos(coeff * k)));
-      ch_read(tw, 0, buffer.data(), x * ch_width_v<value_t>, ch_width_v<value_t>);
+      ch_system_t<T> tw;
+      tw.re = std::cos(coeff * k);
+      tw.im = std::sin(coeff * k);
+      ch_read(tw, 0, buffer.data(), x * ch_width_v<T>, ch_width_v<T>);
     }
     return buffer;
   }
@@ -44,9 +45,8 @@ public:
 
   twiddle_table() : rom_(init_data()) {}
 
-  auto read(const ch_uint<rom_t::addr_width>& addr, const ch_bool& enable) const {
-    auto out = ch_delayEn(rom_.read(addr), enable, 1);
-    return std::tuple(out, 1);
+  auto read(const ch_uint<rom_t::addr_width>& addr) const {
+    return rom_.read(addr);
   }
 };
 
@@ -79,30 +79,11 @@ public:
 private:
 
   auto trivial_rotate(const ch_complex<T>& x) {
-    ch_complex<T> out;
-    out.re = x.im;
-    out.im =-x.re;
-    return out;
-  }
-
-  auto multiply(const ch_complex<T>& lhs, const ch_complex<T>& rhs) {
-    ch_complex<T> out;
-    static constexpr unsigned K = ch_width_v<T> + T::Frac;
-    auto l_r = lhs.re.as_int();
-    auto l_i = lhs.im.as_int();
-    auto r_r = rhs.re.as_int();
-    auto r_i = rhs.im.as_int();
-    auto m_r = ch_slice<T>(ch_mul<K>(l_r, r_r) - ch_mul<K>(l_i, r_i), T::Frac);
-    auto m_i = ch_slice<T>(ch_mul<K>(l_i, r_r) + ch_mul<K>(l_r, r_i), T::Frac);
-    out.re = ch_delayEn(m_r, sdf_.io.enq.ready, 1);
-    out.im = ch_delayEn(m_i, sdf_.io.enq.ready, 1);
-    return std::tuple(out, 1);
+    return ch_complex<T>(-x.re, x.im);
   }
 
   auto butterfly(const ch_complex<T>& lhs, const ch_complex<T>& rhs) const {
-    auto sum = lhs + rhs;
-    auto sub = lhs - rhs;
-    return std::tuple(sum, sub);
+    return std::tuple(lhs + rhs, lhs - rhs);
   }
 
   template <unsigned stage>
@@ -112,7 +93,7 @@ private:
     constexpr unsigned A = 1 << (logN - 2 * stage);
 
     ch_counter<A> index(in.valid && sdf_.io.enq.ready);
-    auto toggle= index.value()[log2ceil(A)-1];
+    auto toggle = index.value()[log2ceil(A)-1];
     auto d_out = ch_delayEn(d_in, sdf_.io.enq.ready, A/2);
     auto [bf1, bf2] = butterfly(d_out, in.data);
         d_in = ch_sel(toggle, bf2, in.data);
@@ -138,7 +119,7 @@ private:
 
     ch_counter<A/2> index2(valid && sdf_.io.enq.ready);
     auto toggle = index2.value()[log2ceil(A)-2];
-    auto d_out  = ch_delayEn(d_in, sdf_.io.enq.ready, A/4);
+    auto d_out = ch_delayEn(d_in, sdf_.io.enq.ready, A/4);
     auto [bf1, bf2] = butterfly(d_out, b_in);
         d_in = ch_sel(toggle, bf2, value);
     auto ret = ch_sel(toggle, bf1, d_out);
@@ -151,15 +132,14 @@ private:
   template <unsigned stage>
   auto rotation(const state_t& in) {
     state_t out;
-    twiddle_table<T, N, stage> twiddles;
+    twiddle_table<value_type, N, stage> twiddle;
     constexpr unsigned A = 1 << (logN - 2 * stage);
 
     ch_counter<A> index(in.valid && sdf_.io.enq.ready);
-    auto [tw, d1] = twiddles.read(index.value(), sdf_.io.enq.ready);
-    auto x = ch_delayEn(in.data, sdf_.io.enq.ready, d1);
-    auto [ret, d2] = multiply(x, tw);
-    out.data = ret;
-    out.valid = ch_delayEn(in.valid, sdf_.io.enq.ready, d1 + d2, false);
+    auto x  = ch_delayEn(in.data, sdf_.io.enq.ready, 1);
+    auto tw = ch_delayEn(twiddle.read(index.value()), sdf_.io.enq.ready, 1);    
+    out.data  = ch_delayEn(x * tw, sdf_.io.enq.ready, 5);
+    out.valid = ch_delayEn(in.valid, sdf_.io.enq.ready, 6, false);
 
     return out;
   }

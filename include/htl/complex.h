@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cash.h>
+#include <htl/fixed.h>
 
 namespace ch {
 namespace htl {
@@ -45,6 +46,14 @@ auto operator*(const ch_complex<T>& lhs, const ch_complex<T>& rhs) {
   return ch_complex<T>(im, re);
 }
 
+template <unsigned N, unsigned F>
+auto operator*(const ch_complex<ch_fixed<N, F>>& lhs, const ch_complex<ch_fixed<N, F>>& rhs) {
+  static constexpr unsigned K = N + F;
+  auto re = ch_mul<K>(lhs.re.as_int(), rhs.re.as_int()) - ch_mul<K>(lhs.im.as_int(), rhs.im.as_int());
+  auto im = ch_mul<K>(lhs.im.as_int(), rhs.re.as_int()) + ch_mul<K>(lhs.re.as_int(), rhs.im.as_int());
+  return ch_complex<ch_fixed<N, F>>(ch_slice<N>(im, F), ch_slice<N>(re, F));
+}
+
 template <typename T>
 auto operator/(const ch_complex<T>& lhs, const ch_complex<T>& rhs) {
   auto q_1 = rhs.re * rhs.re;
@@ -52,12 +61,20 @@ auto operator/(const ch_complex<T>& lhs, const ch_complex<T>& rhs) {
   auto q  = q_1 + q_2;
   auto re_1 = lhs.re * rhs.re;
   auto re_2 = lhs.im * rhs.im;
-  auto re_3 = re_1 + re_2;
-  auto re = re_3 / q;
+  auto re = (re_1 + re_2) / q;
   auto im_1 = lhs.im * rhs.re;
   auto im_2 = lhs.re * rhs.im;
   auto im = (im_1 - im_2) / q;
   return ch_complex<T>(im, re);
+}
+
+template <unsigned N, unsigned F>
+auto operator/(const ch_complex<ch_fixed<N, F>>& lhs, const ch_complex<ch_fixed<N, F>>& rhs) {
+  static constexpr unsigned K = N + F;  
+  auto re = ch_mul<K>(lhs.re.as_int(), rhs.re.as_int()) + ch_mul<K>(lhs.im.as_int(), rhs.im.as_int());
+  auto im = ch_mul<K>(lhs.im.as_int(), rhs.re.as_int()) - ch_mul<K>(lhs.re.as_int(), rhs.im.as_int());
+  auto q  = ch_mul<K>(rhs.re.as_int(), rhs.re.as_int()) + ch_mul<K>(rhs.im.as_int(), rhs.im.as_int());
+  return ch_complex<ch_fixed<N, F>>(ch_slice<N>(im / q), ch_slice<N>(re / q));
 }
 
 }
