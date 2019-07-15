@@ -49,9 +49,9 @@ auto operator*(const ch_complex<T>& lhs, const ch_complex<T>& rhs) {
 template <unsigned N, unsigned F>
 auto operator*(const ch_complex<ch_fixed<N, F>>& lhs, const ch_complex<ch_fixed<N, F>>& rhs) {
   static constexpr unsigned K = N + F;
-  auto re = ch_mul<K>(lhs.re.as_int(), rhs.re.as_int()) - ch_mul<K>(lhs.im.as_int(), rhs.im.as_int());
-  auto im = ch_mul<K>(lhs.im.as_int(), rhs.re.as_int()) + ch_mul<K>(lhs.re.as_int(), rhs.im.as_int());
-  return ch_complex<ch_fixed<N, F>>(ch_slice<N>(im, F), ch_slice<N>(re, F));
+  auto re = ch_shr<N>(ch_mul<K>(lhs.re.as_int(), rhs.re.as_int()) - ch_mul<K>(lhs.im.as_int(), rhs.im.as_int()), F);
+  auto im = ch_shr<N>(ch_mul<K>(lhs.im.as_int(), rhs.re.as_int()) + ch_mul<K>(lhs.re.as_int(), rhs.im.as_int()), F);
+  return ch_complex<ch_fixed<N, F>>(im, re);
 }
 
 template <typename T>
@@ -71,10 +71,10 @@ auto operator/(const ch_complex<T>& lhs, const ch_complex<T>& rhs) {
 template <unsigned N, unsigned F>
 auto operator/(const ch_complex<ch_fixed<N, F>>& lhs, const ch_complex<ch_fixed<N, F>>& rhs) {
   static constexpr unsigned K = N + F;  
-  auto re = ch_mul<K>(lhs.re.as_int(), rhs.re.as_int()) + ch_mul<K>(lhs.im.as_int(), rhs.im.as_int());
-  auto im = ch_mul<K>(lhs.im.as_int(), rhs.re.as_int()) - ch_mul<K>(lhs.re.as_int(), rhs.im.as_int());
-  auto q  = ch_mul<K>(rhs.re.as_int(), rhs.re.as_int()) + ch_mul<K>(rhs.im.as_int(), rhs.im.as_int());
-  return ch_complex<ch_fixed<N, F>>(ch_slice<N>(im / q), ch_slice<N>(re / q));
+  auto re = ch_shr<N>(ch_mul<K>(lhs.re.as_int(), rhs.re.as_int()) + ch_mul<K>(lhs.im.as_int(), rhs.im.as_int()), F);
+  auto im = ch_shr<N>(ch_mul<K>(lhs.im.as_int(), rhs.re.as_int()) - ch_mul<K>(lhs.re.as_int(), rhs.im.as_int()), F);
+  auto q  = ch_shr<N>(ch_mul<K>(rhs.re.as_int(), rhs.re.as_int()) + ch_mul<K>(rhs.im.as_int(), rhs.im.as_int()), F);
+  return ch_complex<ch_fixed<N, F>>(ch_slice<N>(ch_shl<N+F>(im, F) / q), ch_slice<N>(ch_shl<N+F>(re, F) / q));
 }
 
 }
