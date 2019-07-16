@@ -1,51 +1,70 @@
-#CXX = clang-6.0
+#CXX = clang-8.0
 CXX = g++-7.3
 
 PREFIX ?= /usr/local
 
-CXXFLAGS += -fPIC -std=c++17 -O3 -DNDEBUG -I$(CASH_HOME)/include -Wall -Wextra -pedantic
-#CXXFLAGS += -fPIC -std=c++17 -O0 -g -I$(CASH_HOME)/include -Wall -Wextra -pedantic
+JIT=LLVMJIT
+#JIT=LIBJIT
 
-LDFLAGS += -shared -L$(CURDIR)/lib
+LLVMSRC = llvmjit.cpp
+LLVMINC = $(LLVM_HOME)/include
+LLVMLIB = $(LLVM_HOME)/lib
+LLVMLIBS = $(shell llvm-config --ldflags --libs)
+
+LIBJITSRC  = libjit.cpp
+LIBJITINC  = $(LIBJIT_HOME)/include
+LIBJITLIB  = $(LIBJIT_HOME)/lib
+LIBJITLIBS = $(LIBJITLIB)/libjit.a
+
+ifeq ($(JIT), LIBJIT)
+    JITSRC=$(LIBJITSRC)
+    JITINC=$(LIBJITINC)
+    JITLIBS=$(LIBJITLIBS)
+else
+    JITSRC=$(LLVMSRC)
+    JITINC=$(LLVMINC)
+    JITLIBS=$(LLVMLIBS)
+endif
+
+CXXFLAGS += -fPIC -std=c++17 -O3 -DNDEBUG -D$(JIT) -I$(CASH_HOME)/include -I$(JITINC) -Wall -Wextra -pedantic
+#CXXFLAGS += -fPIC -std=c++17 -O0 -g -DLLVMJIT -I$(CASH_HOME)/include -Wall -Wextra -pedantic
+LDFLAGS += -shared $(JITLIBS) -ldl -pthread
 
 PROJECT = libcash
-
-# Target
 TARGET_DIR = lib
-
-# Source
 SOURCE_DIR = ../src
 
-SRCS = utils.cpp \
-       platform.cpp \
-       system.cpp \
-       lnodeimpl.cpp \
-       ioimpl.cpp \
-       proxyimpl.cpp \
-       cdimpl.cpp \
-       litimpl.cpp \
-       regimpl.cpp \
-       memimpl.cpp \
-       selectimpl.cpp \
-       opimpl.cpp \
-       bindimpl.cpp \
-       assertimpl.cpp \
-       timeimpl.cpp \
-       printimpl.cpp \
-       udfimpl.cpp \
-       lnode.cpp \
-       logic.cpp \
-       brconv.cpp \
-       context.cpp \
-       compile.cpp \
-       simref.cpp \
-       simjit.cpp \
-       deviceimpl.cpp \
-       simulatorimpl.cpp \
-       tracerimpl.cpp \
-       verilogwriter.cpp \
-       firrtlwriter.cpp \
-       eda/altera/avalon_sim.cpp
+SRCS =  $(JITSRC) \
+        simjit.cpp \
+        utils.cpp \
+        platform.cpp  \
+        system.cpp \
+        logic.cpp \
+        lnode.cpp \
+        lnodeimpl.cpp \
+        ioimpl.cpp \
+        proxyimpl.cpp \
+        cdimpl.cpp \
+        litimpl.cpp \
+        regimpl.cpp \
+        memimpl.cpp \
+        selectimpl.cpp \
+        opimpl.cpp \
+        bindimpl.cpp \
+        timeimpl.cpp \
+        assertimpl.cpp \
+        printimpl.cpp \
+        udfimpl.cpp \
+        deviceimpl.cpp \
+        context.cpp \
+        brconv.cpp \
+        compile.cpp \
+        simref.cpp \
+        simulatorimpl.cpp \
+        tracerimpl.cpp \
+        verilogwriter.cpp \
+        firrtlwriter.cpp \
+        eda/altera/avalon_sim.cpp
 
 OBJS = $(SRCS:.cpp=.o)
 #$(info objs=$(OBJS))
