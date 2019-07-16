@@ -1,5 +1,5 @@
 #CXX = clang-8.0
-CXX = g++-7.3
+#CXX = g++-7.3
 
 CXXFLAGS += -std=c++17 -O3 -DNDEBUG -I$(CASH_HOME)/include -Wall -Wextra -pedantic
 #CXXFLAGS += -std=c++17 -O0 -g -I$(CASH_HOME)/include -Wall -Wextra -pedantic
