@@ -311,6 +311,15 @@ namespace logic {
   using ch::internal::ch_max;
 
   //
+  // higher order functions
+  //
+
+  using ch::internal::ch_map;
+  using ch::internal::ch_fold;
+  using ch::internal::ch_zip;
+  using ch::internal::ch_scan;
+
+  //
   // sequential functions
   //
 

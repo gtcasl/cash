@@ -394,44 +394,114 @@ auto ch_clone(const T& obj) {
   return obj.clone();
 }
 
+// map function
+
+template <typename T, typename F,
+          CH_REQUIRE(is_object_type_v<T>)>
+auto ch_map(const T& obj, const F& f) {
+  using ret_t = std::result_of_t<F(decltype(obj[0]))>;
+  ch_vec<ret_t, ch_width_v<T>> ret;
+  for (unsigned i = 0; i < ch_width_v<T>; ++i) {
+    ret[i] = f(obj[i]);
+  }
+  return ret;
+}
+
+template <typename T, std::size_t N, typename F>
+auto ch_map(const std::array<T, N>& obj, const F& f) {
+  using ret_t = std::result_of_t<F(T)>;
+  std::array<ret_t, N> ret;
+  for (unsigned i = 0; i < N; ++i) {
+    ret[i] = f(obj[i]);
+  }
+  return ret;
+}
+
 // fold function
 
-template <typename T, typename U, typename F,
-          CH_REQUIRE(is_logic_type_v<T>)>
-auto ch_fold(const T& obj, const F& f, const U& init) {
-  std::result_of_t<F(U, ch_bool)> ret(init);
+template <typename T, typename F, typename I,
+          CH_REQUIRE(is_object_type_v<T>)>
+auto ch_fold(const T& obj, const F& f, const I& init) {
+  using ret_t = std::result_of_t<F(I, decltype(obj[0]))>;
+  ret_t ret(init);
   for (unsigned i = 0; i < ch_width_v<T>; ++i) {
-    ret = f(ch_clone(ret), obj[i]);
+    if constexpr (is_logic_type_v<ret_t>) {
+      ret = f(ch_clone(ret), obj[i]);
+    } else {
+      ret = f(ret, obj[i]);
+    }
   }
   return ret;
 }
+
+template <typename T, std::size_t N, typename F, typename I>
+auto ch_fold(const std::array<T, N>& obj, const F& f, const I& init) {
+  using ret_t = std::result_of_t<F(I, T)>;
+  ret_t ret(init);
+  for (unsigned i = 0; i < N; ++i) {
+    if constexpr (is_logic_type_v<ret_t>) {
+      ret = f(ch_clone(ret), obj[i]);
+    } else {
+      ret = f(ret, obj[i]);
+    }
+  }
+  return ret;
+}
+
+// zip function
 
 template <typename T, typename U, typename F,
-          CH_REQUIRE(is_system_type_v<T>)>
-auto ch_fold(const T& obj, const F& f, const U& init) {
-  std::result_of_t<F(U, ch_sbool)> ret(init);
+          CH_REQUIRE(is_object_type_v<T> && ch_width_v<T> == ch_width_v<U>)>
+auto ch_zip(const T& obj1, const U& obj2, const F& f) {
+  using ret_t = std::result_of_t<F(decltype(obj1[0]), decltype(obj2[0]))>;
+  ch_vec<ret_t, ch_width_v<T>> ret;
   for (unsigned i = 0; i < ch_width_v<T>; ++i) {
-    ret = f(ret, obj[i]);
+    ret[i] = f(obj1[i], obj2[i]);
   }
   return ret;
 }
 
-template <typename T, unsigned N, typename U, typename F,
-          CH_REQUIRE(is_logic_type_v<T> || is_logic_io_v<T>)>
-auto ch_fold(const ch_vec<T, N>& obj, const F& f, const U& init) {
-  std::result_of_t<F(U, T)> ret(init);
+template <typename T, typename U, std::size_t N, typename F>
+auto ch_zip(const std::array<T, N>& obj1, const std::array<U, N>& obj2, const F& f) {
+  using ret_t = std::result_of_t<F(T, U)>;
+  std::array<ret_t, N> ret;
   for (unsigned i = 0; i < N; ++i) {
-    ret = f(ch_clone(ret), obj[i]);
+    ret[i] = f(obj1[i], obj2[i]);
   }
   return ret;
 }
 
-template <typename T, unsigned N, typename U, typename F,
-          CH_REQUIRE(is_system_type_v<T> || is_system_io_v<T>)>
-auto ch_fold(const ch_vec<T, N>& obj, const F& f, const U& init) {
-  std::result_of_t<F(U, T)> ret(init);
+// scan function
+
+template <typename T, typename F, typename I,
+          CH_REQUIRE(is_object_type_v<T>)>
+auto ch_scan(const T& obj, const F& f, const I& init) {
+  using ret_t = std::result_of_t<F(I, decltype(obj[0]))>;
+  ch_vec<ret_t, ch_width_v<T>> ret;
+  ret_t tmp(init);
+  for (unsigned i = 0; i < ch_width_v<T>; ++i) {
+    if constexpr (is_logic_type_v<ret_t>) {
+      tmp = f(ch_clone(tmp), obj[i]);
+    } else {
+      tmp = f(tmp, obj[i]);
+    }
+    ret[i] = tmp;
+  }
+  return ret;
+}
+
+template <typename T, std::size_t N, typename F, typename I>
+auto ch_scan(const std::array<T, N>& obj, const F& f, const I& init) {
+  using ret_t = std::result_of_t<F(I, T)>;
+  std::array<ret_t, N> ret;
+  ret_t tmp(init);
   for (unsigned i = 0; i < N; ++i) {
-    ret = f(ret, obj[i]);
+    if constexpr (is_logic_type_v<ret_t>) {
+      tmp = f(ch_clone(tmp), obj[i]);
+    } else {
+      tmp = f(tmp, obj[i]);
+    }
+    ret[i] = tmp;
   }
   return ret;
 }
