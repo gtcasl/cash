@@ -1,6 +1,0 @@
-examples
-include
-include/eda/altera
-include/htl
-src
-tests
