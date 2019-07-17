@@ -1420,7 +1420,7 @@ public:
       || static_cast<bool>(cond_[0]))
       return;
     auto tick = bv_cast<uint64_t>(time_, 64);
-    fprintf(stderr, "assertion failure at tick %ld, %s (%s:%d)\n",
+    fprintf(stderr, "assertion failure at tick %lld, %s (%s:%d)\n",
             tick, msg_.c_str(), sloc_.file().c_str(), sloc_.line());
     std::abort();
   }
