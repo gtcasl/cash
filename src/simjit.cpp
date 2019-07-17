@@ -374,7 +374,7 @@ struct assert_data_t {
 };
 
 extern "C" void assert_data_eval(assert_data_t* self) {
-  fprintf(stderr, "assertion failure at tick %lld, %s (%s:%d)\n",
+  fprintf(stderr, "assertion failure at tick %ld, %s (%s:%d)\n",
           static_cast<uint64_t>(self->time), self->msg, self->file, self->line);
   std::abort();
 }
@@ -1297,7 +1297,7 @@ private:
     for (uint32_t i = start; i < l; i += 2) {
       auto j_pred = scalar_map_.at(node->src(i+0).id());
       if (is_switch) {
-        uint64_t pred_value = jit_value_get_int_constant(j_pred);
+        auto pred_value = jit_value_get_int_constant(j_pred);
         pred_delta += (i != start) ? (pred_value - i_pred_prev) : 0;
         pred_min = std::min(pred_value, pred_min);
         pred_max = std::max(pred_value, pred_max);
