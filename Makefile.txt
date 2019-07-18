@@ -1,5 +1,5 @@
 #CXX = clang-8.0
-CXX = g++-7.3
+#CXX = g++-7.4
 
 PREFIX ?= /usr/local
 

@@ -288,8 +288,7 @@ public:
   }
 
   void* closure(const std::string& name) {
-    llvm::StringRef sr(name); // BUG: workaround to string memory overrun in LLVM 8.1 update (07/16/2019)
-    return (void*)engine_->getFunctionAddress(sr.str());
+    return (void*)engine_->getFunctionAddress(name);
   }
 
   _jit_function* create_function(jit_type_t signature,
