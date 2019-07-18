@@ -201,7 +201,6 @@ class _jit_context {
 public:
 
   _jit_context() : builder_(context_) {
-    //--
     jit_type_void_def.init(JIT_TYPE_VOID, llvm::Type::getVoidTy(context_));
     jit_type_bool_def.init(JIT_TYPE_BOOL, llvm::Type::getInt1Ty(context_));
     jit_type_int8_def.init(JIT_TYPE_INT8, llvm::Type::getInt8Ty(context_));
@@ -227,8 +226,10 @@ public:
       std::cerr << "Error: failed to create llvm::EngineBuilder; " << error << std::endl;
       return false;
     }
+
+    module_->setDataLayout(engine_->getDataLayout());
     target_ = engine_->getTargetMachine();
-    module_->setDataLayout(target_->createDataLayout());
+    
     return true;
   }
 
@@ -287,7 +288,8 @@ public:
   }
 
   void* closure(const std::string& name) {
-    return (void*)engine_->getFunctionAddress(name);
+    llvm::StringRef sr(name); // BUG: workaround to string memory overrun in LLVM 8.1 update (07/16/2019)
+    return (void*)engine_->getFunctionAddress(sr.str());
   }
 
   _jit_function* create_function(jit_type_t signature,
@@ -477,7 +479,7 @@ static jit_type_t find_common_type(jit_value_t lhs, jit_value_t rhs) {
 ///////////////////////////////////////////////////////////////////////////////
 
 jit_context_t jit_context_create() {
-  llvm::InitializeNativeTarget();
+  llvm::InitializeNativeTarget();  
   llvm::InitializeNativeTargetAsmPrinter();
 
   auto context = new _jit_context();
