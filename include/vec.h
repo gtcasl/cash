@@ -23,6 +23,54 @@ public:
   vec_base(vec_base&& other) : base(std::move(other)) {}
 };
 
+template <typename T, typename U, unsigned N>
+auto operator==(const vec_base<T, N>& lhs, const vec_base<U, N>& rhs) {
+  static_assert(is_equality_comparable_v<T, U>, "nested type is not equality-comparable");
+  auto ret(lhs.at(0) == rhs.at(0));
+  for (unsigned i = 1; i < N; ++i) {
+    if constexpr (is_logic_type_v<T>) {
+      ret = ch_clone(ret) && (lhs.at(i) == rhs.at(i));
+    } else {
+      ret = ret && (lhs.at(i) == rhs.at(i));
+    }    
+  }
+  return ret;
+}
+
+template <typename T, typename U, unsigned N>
+auto operator<(const vec_base<T, N>& lhs, const vec_base<U, N>& rhs) {
+  static_assert(is_lessthan_comparable_v<T, U>, "nested type is not less-than-comparable");
+  auto ret(lhs.at(0) < rhs.at(0));
+  for (unsigned i = 1; i < N; ++i) {
+    if constexpr (is_logic_type_v<T>) {
+      ret = ch_clone(ret) && (lhs.at(i) < rhs.at(i));
+    } else {
+      ret = ret && (lhs.at(i) < rhs.at(i));
+    }    
+  }
+  return ret;
+}
+
+template <typename T, typename U, unsigned N>
+auto operator!=(const vec_base<T, N>& lhs, const vec_base<U, N>& rhs) {
+  return !(lhs == rhs);
+}
+
+template <typename T, typename U, unsigned N>
+auto operator>=(const vec_base<T, N>& lhs, const vec_base<U, N>& rhs) {
+  return !(lhs < rhs);
+}
+
+template <typename T, typename U, unsigned N>
+auto operator>(const vec_base<T, N>& lhs, const vec_base<U, N>& rhs) {
+  return (rhs < lhs);
+}
+
+template <typename T, typename U, unsigned N>
+auto operator<=(const vec_base<T, N>& lhs, const vec_base<U, N>& rhs) {
+  return !(rhs < lhs);
+}
+
 template <typename T, unsigned N, typename Enable = void>
 class ch_vec {};
 

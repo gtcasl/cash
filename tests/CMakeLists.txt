@@ -15,6 +15,7 @@ set(TEST_SOURCES
     module.cpp
     sim.cpp
     misc.cpp
+    hof.cpp
     htl.cpp
     float.cpp
     udf.cpp
@@ -22,7 +23,7 @@ set(TEST_SOURCES
     complex.cpp    
     router.cpp
     cache.cpp
-    jitregress.cpp
+    jitregress.cpp    
     main.cpp
 )
 

@@ -572,46 +572,6 @@ void foo() {
     auto x = b[0][1];
     auto y = (x == 11_b);
   }
-
-  {
-    ch_uint<8> a;
-    auto r = ch_map(a, [](ch_bool x)->ch_bool { return x; });
-  }
-
-  {
-    ch_vec<ch_uint<8>, 4> a;
-    auto r = ch_map(a, [](ch_uint<8> x)->ch_uint<8> { return x + 1; });
-  }
-
-  {
-    ch_uint<8> a;
-    auto r = ch_fold(a, std::plus<ch_bool>(), 0);
-  }
-
-  {
-    ch_vec<ch_uint<8>, 4> a;
-    auto r = ch_fold(a, std::plus<ch_uint<8>>(), 0);
-  }
-
-  {
-    ch_uint<8> a, b;
-    auto r = ch_zip(a, b, std::plus<ch_bool>());
-  }
-
-  {
-    ch_vec<ch_uint<8>, 4> a, b;
-    auto r = ch_zip(a, b, std::plus<ch_uint<8>>());
-  }
-
-  {
-    ch_uint<8> a;
-    auto r = ch_scan(a, std::plus<ch_bool>(), 0);
-  }
-
-  {
-    ch_vec<ch_uint<8>, 4> a;
-    auto r = ch_scan(a, std::plus<ch_uint<8>>(), 0);
-  }
 }
 
 void bar() {

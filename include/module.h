@@ -21,14 +21,17 @@ public:
     , io(module_loader<T>(this, std::forward<Args>(args)...).get())
   {}
 
+  ch_module(const ch_module& other) 
+    : base(other)
+    , io(other.io) 
+  {}
+
   ch_module(ch_module&& other)
     : base(std::move(other))
     , io(std::move(other.io))
   {}
 
 protected:
-
-  ch_module(const ch_module& other) = delete;
 
   ch_module& operator=(const ch_module& other) = delete;
 

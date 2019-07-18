@@ -43,88 +43,6 @@ static constexpr unsigned bitwidth_v = std::numeric_limits<T>::digits + std::is_
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename Func, typename Arg>
-void for_each_impl(const Func& func, Arg&& arg) {
-  func(std::forward<Arg>(arg));
-}
-
-template <typename Func, typename Arg0, typename... Args>
-void for_each_impl(const Func& func, Arg0&& arg0, Args&&... args) {
-  func(std::forward<Arg0>(arg0));
-  for_each_impl(func, std::forward<Args>(args)...);
-}
-
-template <typename F, typename... Args>
-void for_each(const F& func, Args&&... args) {
-  for_each_impl(func, std::forward<Args>(args)...);
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-template <typename Func, typename Arg>
-void for_each_reverse_impl(const Func& func, Arg&& arg) {
-  func(std::forward<Arg>(arg));
-}
-
-template <typename Func, typename Arg0, typename... Args>
-void for_each_reverse_impl(const Func& func, Arg0&& arg0, Args&&... args) {
-  for_each_reverse_impl(func, std::forward<Args>(args)...);
-  func(std::forward<Arg0>(arg0));
-}
-
-template <typename Func, typename... Args>
-void for_each_reverse(const Func& func, Args&&... args) {
-  for_each_reverse_impl(func, std::forward<Args>(args)...);
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-template <typename T, std::size_t... Is>
-constexpr auto make_array_n_impl(T&& value, std::index_sequence<Is...>) {
-  return std::array<std::decay_t<T>, sizeof...(Is) + 1>{
-    std::forward<T>(value), (static_cast<void>(Is), value)...
-  };
-}
-
-template <typename T>
-constexpr auto make_array_n_impl(T&&, std::integral_constant<std::size_t, 0>) {
-  return std::array<std::decay_t<T>, 0>{};
-}
-
-template <typename T, std::size_t N>
-constexpr auto make_array_n_impl(T&& value, std::integral_constant<std::size_t, N>) {
-  return make_array_n_impl(std::forward<T>(value), std::make_index_sequence<N - 1>{});
-}
-
-template <std::size_t N, typename T>
-constexpr auto make_array_n(T&& value) {
-  return make_array_n_impl(std::forward<T>(value), std::integral_constant<std::size_t, N>{});
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-template <typename T, std::size_t... Is>
-constexpr std::initializer_list<T> make_list_n_impl(T&& value, std::index_sequence<Is...>) {
-    return {std::forward<T>(value), (static_cast<void>(Is), value)...};
-}
-
-template <typename T>
-constexpr std::initializer_list<T> make_list_n_impl(T&&, std::integral_constant<std::size_t, 0>) {
-    return {};
-}
-
-template <typename T, std::size_t N>
-constexpr auto make_list_n_impl(T&& value, std::integral_constant<std::size_t, N>) {
-    return make_list_n_impl(std::forward<T>(value), std::make_index_sequence<N - 1>{});
-}
-
-template <std::size_t N, typename T>
-constexpr auto make_list_n(T&& value) {
-    return make_list_n_impl(std::forward<T>(value), std::integral_constant<std::size_t, N>{});
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
 constexpr inline std::size_t hash_combine(std::size_t hash1, std::size_t hash2) {
   return hash1 ^ (hash2 * 0x9e3779b9 + (hash1 << 6) + (hash1 >> 2));
 }
@@ -166,59 +84,92 @@ inline constexpr bool bool_constant_v = std::bool_constant<B>::value;
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename To, typename... Froms>
-inline constexpr bool is_fold_constructible_v = std::conjunction_v<std::is_constructible<To, Froms>...>;
+inline constexpr bool is_fold_constructible_v = 
+    std::conjunction_v<std::is_constructible<To, Froms>...>;
 
 ///////////////////////////////////////////////////////////////////////////////
 
+namespace detail {
 template <typename To, typename From>
-struct is_explicitly_constructible : std::bool_constant<
+struct is_explicitly_constructible_impl : std::bool_constant<
     (std::is_constructible_v<To, From> && !std::is_convertible_v<From, To>)> {};
+}
 
 template<typename To, typename From>
-inline constexpr bool is_explicitly_constructible_v = is_explicitly_constructible<To, From>::value;
+inline constexpr bool is_explicitly_constructible_v = 
+    detail::is_explicitly_constructible_impl<To, From>::value;
 
 ///////////////////////////////////////////////////////////////////////////////
 
+namespace detail {
 template <typename To, typename From>
-struct is_implicitly_constructible : std::bool_constant<
+struct is_implicitly_constructible_impl : std::bool_constant<
     (std::is_constructible_v<To, From> && std::is_convertible_v<From, To>)> {};
+}
 
 template<typename To, typename From>
-inline constexpr bool is_implicitly_constructible_v = is_implicitly_constructible<To, From>::value;
+inline constexpr bool is_implicitly_constructible_v = 
+    detail::is_implicitly_constructible_impl<To, From>::value;
 
 ///////////////////////////////////////////////////////////////////////////////
 
+namespace detail {
 template <typename To, typename From>
-struct is_strictly_constructible : std::bool_constant<
-    (is_implicitly_constructible_v<To, From> && !std::is_base_of_v<To, From>)> {};
+struct is_strictly_constructible_impl : std::bool_constant<
+    (is_implicitly_constructible_impl<To, From>::value && !std::is_base_of_v<To, From>)> {};
+}
 
 template<typename To, typename From>
-inline constexpr bool is_strictly_constructible_v = is_strictly_constructible<To, From>::value;
+inline constexpr bool is_strictly_constructible_v = 
+    detail::is_strictly_constructible_impl<To, From>::value;
 
 ///////////////////////////////////////////////////////////////////////////////
 
+namespace detail {
 template<typename A, typename B, typename = void>
-struct is_equality_comparable : std::false_type {};
+struct is_equality_comparable_impl : std::false_type {};
 
 template<typename A, typename B>
-struct is_equality_comparable<A, B,
+struct is_equality_comparable_impl<A, B,
     std::enable_if_t<
       true,
       decltype(std::declval<A&>() == std::declval<B&>(), (void)0)
     >> : std::true_type {};
+}
 
-template<typename A, typename B>
-inline constexpr bool is_equality_comparable_v = is_equality_comparable<A, B>::value;
+template<typename A, typename B = A>
+inline constexpr bool is_equality_comparable_v = 
+    detail::is_equality_comparable_impl<A, B>::value;
 
 ///////////////////////////////////////////////////////////////////////////////
 
+namespace detail {
+template<typename A, typename B, typename = void>
+struct is_lessthan_comparable_impl : std::false_type {};
+
+template<typename A, typename B>
+struct is_lessthan_comparable_impl<A, B,
+    std::enable_if_t<
+      true,
+      decltype(std::declval<A&>() < std::declval<B&>(), (void)0)
+    >> : std::true_type {};
+}
+
+template<typename A, typename B = A>
+inline constexpr bool is_lessthan_comparable_v = 
+    detail::is_lessthan_comparable_impl<A, B>::value;
+
+///////////////////////////////////////////////////////////////////////////////
+
+namespace detail {
 template<typename T>
 struct identity_impl {
   typedef T type;
 };
+}
 
 template<typename T>
-using identity_t = typename identity_impl<T>::type;
+using identity_t = typename detail::identity_impl<T>::type;
 
 struct empty_t {};
 
@@ -227,16 +178,192 @@ using void_t = void;
 
 ///////////////////////////////////////////////////////////////////////////////
 
+namespace detail {
 template <typename T>
-struct to_function : public to_function<decltype(&T::operator())> {};
+struct to_function_impl : public to_function_impl<decltype(&T::operator())> {};
 
 template <typename Class, typename Ret, typename... Args>
-struct to_function<Ret(Class::*)(Args...) const> {
+struct to_function_impl<Ret(Class::*)(Args...) const> {
   using type = const std::function<Ret(Args...)>;
 };
+}
 
 template <typename T>
-using to_function_t = typename to_function<T>::type;
+using to_function_t = typename detail::to_function_impl<T>::type;
+
+///////////////////////////////////////////////////////////////////////////////
+
+namespace detail {
+template <typename Func, typename Arg>
+void for_each_impl(const Func& func, Arg&& arg) {
+  func(std::forward<Arg>(arg));
+}
+
+template <typename Func, typename Arg0, typename... Args>
+void for_each_impl(const Func& func, Arg0&& arg0, Args&&... args) {
+  func(std::forward<Arg0>(arg0));
+  for_each_impl(func, std::forward<Args>(args)...);
+}
+}
+
+template <typename F, typename... Args>
+void for_each(const F& func, Args&&... args) {
+  detail::for_each_impl(func, std::forward<Args>(args)...);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+namespace detail {
+template <typename Func, typename Arg>
+void for_each_reverse_impl(const Func& func, Arg&& arg) {
+  func(std::forward<Arg>(arg));
+}
+
+template <typename Func, typename Arg0, typename... Args>
+void for_each_reverse_impl(const Func& func, Arg0&& arg0, Args&&... args) {
+  for_each_reverse_impl(func, std::forward<Args>(args)...);
+  func(std::forward<Arg0>(arg0));
+}
+}
+
+template <typename Func, typename... Args>
+void for_each_reverse(const Func& func, Args&&... args) {
+  detail::for_each_reverse_impl(func, std::forward<Args>(args)...);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+namespace detail {
+template <typename T, std::size_t... Is>
+constexpr auto make_array_n_impl(T&& value, std::index_sequence<Is...>) {
+  return std::array<std::decay_t<T>, sizeof...(Is) + 1>{
+    std::forward<T>(value), (static_cast<void>(Is), value)...
+  };
+}
+
+template <typename T>
+constexpr auto make_array_n_impl(T&&, std::integral_constant<std::size_t, 0>) {
+  return std::array<std::decay_t<T>, 0>{};
+}
+
+template <typename T, std::size_t N>
+constexpr auto make_array_n_impl(T&& value, std::integral_constant<std::size_t, N>) {
+  return make_array_n_impl(std::forward<T>(value), std::make_index_sequence<N - 1>{});
+}
+}
+
+template <std::size_t N, typename T>
+constexpr auto make_array_n(T&& value) {
+  return detail::make_array_n_impl(std::forward<T>(value), std::integral_constant<std::size_t, N>{});
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+namespace detail {
+template <typename T, std::size_t... Is>
+constexpr std::initializer_list<T> make_list_n_impl(T&& value, std::index_sequence<Is...>) {
+    return {std::forward<T>(value), (static_cast<void>(Is), value)...};
+}
+
+template <typename T>
+constexpr std::initializer_list<T> make_list_n_impl(T&&, std::integral_constant<std::size_t, 0>) {
+    return {};
+}
+
+template <typename T, std::size_t N>
+constexpr auto make_list_n_impl(T&& value, std::integral_constant<std::size_t, N>) {
+    return make_list_n_impl(std::forward<T>(value), std::make_index_sequence<N - 1>{});
+}
+}
+
+template <std::size_t N, typename T>
+constexpr auto make_list_n(T&& value) {
+    return detail::make_list_n_impl(std::forward<T>(value), std::integral_constant<std::size_t, N>{});
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+namespace detail {
+template <typename Func, auto Step, typename T, T Start, T ...Is>
+constexpr void static_for_impl(Func&& func, std::integer_sequence<T, Is...>) {
+  (func(std::integral_constant<T, Start + Is * Step>{}), ...);
+}
+}
+
+template <auto Stop, typename Func>
+constexpr void static_for(Func&& func) {
+  static_assert(Stop > 0, "invalid size");
+  using type_t = decltype(Stop);
+  detail::static_for_impl<Func, 1, type_t, 0>(
+    std::forward<Func>(func), std::make_integer_sequence<type_t, (Stop - 0)>{}
+  );
+}
+
+template <auto Start, auto Stop, typename Func>
+constexpr void static_for(Func&& func) {
+  static_assert((Stop - Start) > 0, "invalid size");
+  using type_t = std::common_type_t<decltype(Start), decltype(Stop)>;
+  detail::static_for_impl<Func, 1, type_t, Start>(
+    std::forward<Func>(func), std::make_integer_sequence<type_t, (Stop - Start)>{}
+  );
+}
+
+template <auto Start, auto Stop, auto Step, typename Func>
+constexpr void static_for(Func&& func) {
+  static_assert(((Stop - Start) / Step) > 0, "invalid size");
+  using type_t = std::common_type_t<decltype(Start), decltype(Stop)>;
+  detail::static_for_impl<Func, Step, type_t, Start>(
+    std::forward<Func>(func), std::make_integer_sequence<type_t, (Stop - Start) / Step>{}
+  );
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+namespace detail {
+template <typename T>
+struct static_print_impl {};
+}
+
+template <typename T>
+auto static_print() {
+  return detail::static_print_impl<T>::value;
+}
+
+template <size_t N>
+auto static_print() {
+  return detail::static_print_impl<std::integral_constant<size_t, N>>::value;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+namespace detail {
+struct nonesuch {
+  ~nonesuch() = delete;
+  nonesuch(nonesuch const&) = delete;
+  void operator=(nonesuch const&) = delete;
+};
+
+template <class Default, class Void, template<class...> class Op, class... Args>
+struct detector {
+  using value_t = std::false_type;
+  using type = Default;
+};
+
+template <class Default, template<class...> class Op, class... Args>
+struct detector<Default, std::void_t<Op<Args...>>, Op, Args...> {
+  using value_t = std::true_type;
+  using type = Op<Args...>;
+};
+}
+
+template <template<class...> class Op, class... Args>
+using detected_t = typename detail::detector<detail::nonesuch, void, Op, Args...>::type;
+
+template <class Default, template<class...> class Op, class... Args>
+using detected_or_t = typename detail::detector<Default, void, Op, Args...>::type;
+
+template<template<class...> class Op, class... Args>
+constexpr bool is_detected_v = detail::detector<detail::nonesuch, void, Op, Args...>::value_t::value;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -670,97 +797,6 @@ protected:
 
 using auto_separator = basic_auto_separator<char>;
 
-///////////////////////////////////////////////////////////////////////////////
-
-template <typename... Args>
-void unused(Args&&...) {}
-
-///////////////////////////////////////////////////////////////////////////////
-
-template <typename Func, auto Step, typename T, T Start, T ...Is>
-constexpr void static_for_impl(Func&& func, std::integer_sequence<T, Is...>) {
-  (func(std::integral_constant<T, Start + Is * Step>{}), ...);
-}
-
-template <auto Stop, typename Func>
-constexpr void static_for(Func&& func) {
-  static_assert(Stop > 0, "invalid size");
-  using type_t = decltype(Stop);
-  static_for_impl<Func, 1, type_t, 0>(
-    std::forward<Func>(func), std::make_integer_sequence<type_t, (Stop - 0)>{}
-  );
-}
-
-template <auto Start, auto Stop, typename Func>
-constexpr void static_for(Func&& func) {
-  static_assert((Stop - Start) > 0, "invalid size");
-  using type_t = std::common_type_t<decltype(Start), decltype(Stop)>;
-  static_for_impl<Func, 1, type_t, Start>(
-    std::forward<Func>(func), std::make_integer_sequence<type_t, (Stop - Start)>{}
-  );
-}
-
-template <auto Start, auto Stop, auto Step, typename Func>
-constexpr void static_for(Func&& func) {
-  static_assert(((Stop - Start) / Step) > 0, "invalid size");
-  using type_t = std::common_type_t<decltype(Start), decltype(Stop)>;
-  static_for_impl<Func, Step, type_t, Start>(
-    std::forward<Func>(func), std::make_integer_sequence<type_t, (Stop - Start) / Step>{}
-  );
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-template <typename T>
-struct static_print_impl {};
-
-template <typename T>
-auto static_print() {
-  return static_print_impl<T>::value;
-}
-
-template <size_t N>
-auto static_print() {
-  return static_print_impl<std::integral_constant<size_t, N>>::value;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-struct nonesuch {
-  ~nonesuch() = delete;
-  nonesuch(nonesuch const&) = delete;
-  void operator=(nonesuch const&) = delete;
-};
-
-///////////////////////////////////////////////////////////////////////////////
-
-namespace detail {
-template <class Default, class Void, template<class...> class Op, class... Args>
-struct detector {
-  using value_t = std::false_type;
-  using type = Default;
-};
-
-template <class Default, template<class...> class Op, class... Args>
-struct detector<Default, std::void_t<Op<Args...>>, Op, Args...> {
-  using value_t = std::true_type;
-  using type = Op<Args...>;
-};
-
-}
-
-template <template<class...> class Op, class... Args>
-using is_detected = typename detail::detector<nonesuch, void, Op, Args...>::value_t;
-
-template <template<class...> class Op, class... Args>
-using detected_t = typename detail::detector<nonesuch, void, Op, Args...>::type;
-
-template <class Default, template<class...> class Op, class... Args>
-using detected_or = detail::detector<Default, void, Op, Args...>;
-
-template<template<class...> class Op, class... Args>
-constexpr bool is_detected_v = is_detected<Op, Args...>::value;
-
 /// ///////////////////////////////////////////////////////////////////////////
 
 template <typename Dst, typename Src>
@@ -874,6 +910,11 @@ auto sign_ext(T value, unsigned width) {
   auto m = U(1) << (width - 1);
   return std::make_signed_t<T>((value ^ m) - m);
 }
+
+///////////////////////////////////////////////////////////////////////////////
+
+template <typename... Args>
+void unused(Args&&...) {}
 
 }
 }

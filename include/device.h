@@ -121,14 +121,17 @@ public:
     , io(module_loader<T>(this, std::forward<Args>(args)...).get())
   {}
 
+  ch_device(const ch_device& other) 
+    : base(other)
+    , io(other.io) 
+  {}
+
   ch_device(ch_device&& other)
     : base(std::move(other))
     , io(std::move(other.io))
   {}
 
-protected:
-
-  ch_device(const ch_device& other) = delete;
+protected: 
 
   ch_device& operator=(const ch_device& other) = delete;
 

@@ -26,10 +26,10 @@ protected:
   using rd_rsp_t = std::pair<uint32_t, sdata_type>;
   using wr_rsp_t = uint32_t;
 
+  avm_slave_driver_base* instance_;
   std::vector<std::pair<uint8_t*, uint32_t>> buffers_;
   std::list<req_t> reqs_;
-  std::list<sdata_type> wr_data_;
-  avm_slave_driver_base* instance_;
+  std::list<sdata_type> wr_data_;  
   uint32_t data_size_;
   uint32_t max_burst_size_;
   uint32_t reqs_queue_size_;
@@ -119,11 +119,13 @@ protected:
 public:
 
   avm_slave_driver_impl(avm_slave_driver_base* instance,
+                        uint32_t num_ports,
                         uint32_t data_size,
                         uint32_t max_burst_size,
                         uint32_t reqs_queue_size,
                         uint32_t latency)
     : instance_(instance)
+    , buffers_(num_ports)
     , data_size_(data_size)
     , max_burst_size_(max_burst_size)
     , reqs_queue_size_(reqs_queue_size)
@@ -132,10 +134,6 @@ public:
     , arbiter_idx_(0)
     , wr_burst_({}) {
     assert(reqs_queue_size >= 2 * max_burst_size);
-  }
-
-  void create_channel() {
-    buffers_.resize(buffers_.size() + 1);
   }
 
   void bind(uint32_t channel, const void* buffer, uint32_t size) {
@@ -190,20 +188,17 @@ public:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-avm_slave_driver_base::avm_slave_driver_base(uint32_t data_size,
+avm_slave_driver_base::avm_slave_driver_base(uint32_t num_ports,
+                                             uint32_t data_size,
                                              uint32_t max_burst_size,
                                              uint32_t reqs_queue_size,
                                              uint32_t latency) {
   impl_ = new avm_slave_driver_impl(
-        this, data_size, max_burst_size, reqs_queue_size, latency);
+        this, num_ports, data_size, max_burst_size, reqs_queue_size, latency);
 }
 
 avm_slave_driver_base::~avm_slave_driver_base() {
   delete impl_;
-}
-
-void avm_slave_driver_base::create_channel() {
-  impl_->create_channel();
 }
 
 void avm_slave_driver_base::bind(uint32_t channel, const void* buffer, uint32_t size) {

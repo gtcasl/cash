@@ -115,7 +115,10 @@ public:
     static_assert((ch_width_v<T>) == (ch_width_v<U>), "invalid size");
   }
 
-  ch_logic_in(const ch_logic_in& other) : base(other) {}
+  ch_logic_in(const ch_logic_in& other) 
+    : base(logic_accessor::buffer(other))
+    , input_(other.input_) 
+  {}
 
   ch_logic_in(const ch_logic_in&& other)
     : base(std::move(other))
@@ -173,7 +176,10 @@ public:
     static_assert((ch_width_v<T>) == (ch_width_v<U>), "invalid size");
   }
 
-  ch_logic_out(const ch_logic_out& other) : base(other) {}
+  ch_logic_out(const ch_logic_out& other) 
+    : base(logic_accessor::buffer(other))
+    , output_(other.output_) 
+  {}
 
   ch_logic_out(ch_logic_out&& other)
     : base(std::move(other))

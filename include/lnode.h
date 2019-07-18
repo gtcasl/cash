@@ -120,7 +120,7 @@ public:
 
   lnode(const lnode& src, const std::string& name);
 
-  lnode(const lnode& other) : lnode(other.impl()) {}
+  lnode(const lnode& other) : lnode(other.impl_) {}
 
   ~lnode();
 
@@ -128,8 +128,7 @@ public:
     return (nullptr == impl_);
   }
 
-  lnodeimpl* impl() const {
-    assert(impl_);
+  auto impl() const {
     return impl_;
   }
 

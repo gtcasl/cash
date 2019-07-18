@@ -124,20 +124,17 @@ int main() {
   std::cout << "hardware stats:" << std::endl;
   ch_stats(std::cout, device);
 
-  // allocate test buffer
+  // allocate test buffers
   auto alloc_size = 64 * ceildiv<uint32_t>(count * (ch_width_v<data_type>/8), 64);
   std::vector<uint8_t> buffer_in0(alloc_size);
   std::vector<uint8_t> buffer_in1(alloc_size);
   std::vector<uint8_t> buffer_out(alloc_size + 64);
 
-  // setup Avalon salve driver
-  avm_slave_driver<avm_v0> avm_driver(128, 84);
-  avm_driver.connect(device.io.avm_src0);
-  avm_driver.connect(device.io.avm_src1);
-  avm_driver.connect(device.io.avm_dst);
-  avm_driver.bind(0, buffer_in0.data(), buffer_in0.size());
-  avm_driver.bind(1, buffer_in1.data(), buffer_in1.size());
-  avm_driver.bind(2, buffer_out.data(), buffer_out.size());
+  // setup Avalon slave driver
+  avm_slave_driver<avm_v0> avm_driver(3, 128, 84);
+  avm_driver.bind(0, device.io.avm_src0, buffer_in0.data(), buffer_in0.size());
+  avm_driver.bind(1, device.io.avm_src1, buffer_in1.data(), buffer_in1.size());
+  avm_driver.bind(2, device.io.avm_dst, buffer_out.data(), buffer_out.size());
 
   // copy input data
   for (unsigned i = 0; i < count; ++i) {

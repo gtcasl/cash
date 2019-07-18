@@ -21,8 +21,9 @@ std::ostream& ch::internal::operator<<(std::ostream& out, ch_op op) {
 ///////////////////////////////////////////////////////////////////////////////
 
 lnode::lnode(lnodeimpl* impl) : impl_(impl), next_(nullptr) {
-  assert(impl);
-  impl->add_user(this);
+  if (impl) {
+    impl->add_user(this);
+  }
 }
 
 lnode::lnode(const sdata_type& value)

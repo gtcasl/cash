@@ -223,16 +223,7 @@ struct Dogfood {
     __out (ch_bool) out
   );
   void describe() {
-    ch_int4 a(2), b;
-    __if (a == 1) {
-      b[0] = 1;
-    } __elif (a == 0) {
-      b[1] = 1;
-    } __else {
-      b[2] = 1;
-    };
-    //ch_println("b={0}", b);
-    io.out = (b == 1001_b);
+    io.out = (io.in != 0);
   }
 };
 

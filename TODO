@@ -199,7 +199,9 @@ $ kcachegrind profiler.callgrin
 
 // cmake build
 cmake -DCMAKE_BUILD_TYPE=Release .. && make -j4 all test
+cmake -DCMAKE_BUILD_TYPE=Debug .. && make -j4 all test
 cmake -DCMAKE_BUILD_TYPE=Release -DJIT=LIBJIT .. && make -j4 all test
+cmake -DCMAKE_BUILD_TYPE=Debug -DJIT=LIBJIT .. && make -j4 all test
 cmake -DCMAKE_BUILD_TYPE=Debug -DCODECOV=ON .. && make -j4 all test && ../codecov.sh .
 
 // dump assembly
