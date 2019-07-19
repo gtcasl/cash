@@ -34,11 +34,6 @@ lnode::lnode(uint32_t size, const std::string& name)
   : lnode(ctx_curr()->create_node<proxyimpl>(size, name, get_source_location()))
 {}
 
-lnode::lnode(const lnode& src, const std::string& name)
-: lnode(src.impl()->ctx()->create_node<proxyimpl>(
-    src.impl(), (name.empty() ? src.name() : name), get_source_location()))
-{}
-
 lnode::~lnode() {
   if (impl_) {
     impl_->remove_user(this);
@@ -68,11 +63,6 @@ const std::string& lnode::name() const {
 
 uint32_t lnode::size() const {
   return impl_ ? impl_->size() : 0;
-}
-
-const source_location& lnode::sloc() const {
-  assert(impl_);
-  return impl_->sloc();
 }
 
 std::ostream& ch::internal::operator<<(std::ostream& out, lnodetype type) {

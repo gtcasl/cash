@@ -396,9 +396,8 @@ bool compiler::dead_code_elimination() {
         auto proxy = reinterpret_cast<proxyimpl*>(node);
         if (proxy->check_fully_initialized())
           continue;
-        fprintf(stderr, "error: uninitialized variable %s\n", proxy->debug_info().c_str());
+        throw std::domain_error(sstreamf() << "uninitialized variable " << node->debug_info());
       }
-      std::abort();
     #define LCOV_EXCL_END
     }
   }
@@ -570,6 +569,8 @@ lnodeimpl* compiler::constant_fold(opimpl* node) {
   bool is_signed = node->is_signed();
 
   switch (node->op()) {
+  default:
+    assert(false);
   case ch_op::eq:
     if (is_signed) {
       bv_assign_scalar(tmp.words(), bv_eq<true, block_type, SDBA>(src0_data, src0_size, src1_data, src1_size));
@@ -719,9 +720,6 @@ lnodeimpl* compiler::constant_fold(opimpl* node) {
       bv_pad<false>(tmp.words(), tmp.size(), src0_data, src0_size);
     }
     break;
-
-  default:
-    CH_ABORT("invalid opcode");
   }
   return ctx_->create_literal(tmp);
 }
@@ -1440,9 +1438,7 @@ void compiler::build_eval_list(std::vector<lnodeimpl*>& eval_list) {
           std::cerr << std::endl;
         }
       }
-      fprintf(stderr, "error: found a cycle on variable %s\n", node->debug_info().c_str());
-      std::abort();
-      return false;
+      throw std::domain_error(sstreamf() << "found a cycle on variable " << node->debug_info());
 #define LCOV_EXCL_END
     }
     cyclic_nodes.insert(node->id());

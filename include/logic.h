@@ -52,7 +52,7 @@ public:
   }
 
   const logic_buffer& source() const;
-
+  
   logic_buffer& source();
 
   void write(uint32_t dst_offset,

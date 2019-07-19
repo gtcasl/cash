@@ -72,6 +72,26 @@ TEST_CASE("system", "[system]") {
       return ret;
     });
     TESTX([]()->bool {
+      ch_sbit4 a(2);
+      ch_sbit8 b(a);
+      b = a | 1;
+      return (b == 3);
+    });
+
+    TESTX([]()->bool {
+      ch_sint4 a(2);
+      ch_sint8 b(a);
+      b = a | 1;
+      return (b == 3);
+    });
+
+    TESTX([]()->bool {
+      ch_suint4 a(2);
+      ch_suint8 b(a);
+      b = a | 1;
+      return (b == 3);
+    });
+    TESTX([]()->bool {
       ch_sbit<4> a(0xb);
       ch_sbit<4> b(0x5);
       int v(a & b);

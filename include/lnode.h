@@ -118,8 +118,6 @@ public:
 
   lnode(uint32_t size, const std::string& name);
 
-  lnode(const lnode& src, const std::string& name);
-
   lnode(const lnode& other) : lnode(other.impl_) {}
 
   ~lnode();
@@ -141,8 +139,6 @@ public:
   auto next() const {
     return next_;
   }
-
-  const source_location& sloc() const;
 
   lnode& operator=(const lnode& other);
 

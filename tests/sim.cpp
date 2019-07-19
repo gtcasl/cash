@@ -1,5 +1,7 @@
+#include <htl/pipe.h>
 #include "common.h"
 
+using namespace ch::htl;
 namespace {
 
 template <typename T>
@@ -67,7 +69,23 @@ TEST_CASE("simulation", "[sim]") {
 
   SECTION("stats", "[stats]") {
     TESTX([]()->bool {
-      ch_device<inverter<ch_bit2>> device;
+      ch_device<GenericModule<ch_bit2, ch_bit2>> device(
+        [](ch_bit2 in)->ch_bit2 { return ~in; }
+      );
+      ch_stats(std::cout, device);
+      return true;
+    });
+
+    TESTX([]()->bool {
+      ch_device<GenericModule2<ch_int2, ch_int2, ch_int2>> device(
+        [](ch_int2 lhs, ch_int2 rhs)->ch_int2 { 
+          ch_module<ch_pipe<ch_int2, 4>> pipe;
+          pipe.io.enq.data = lhs + rhs;
+          pipe.io.enq.valid = true;
+          pipe.io.deq.ready = true;
+          return pipe.io.deq.data; 
+        }
+      );
       ch_stats(std::cout, device);
       return true;
     });

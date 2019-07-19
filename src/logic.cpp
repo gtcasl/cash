@@ -25,11 +25,6 @@ const logic_buffer& logic_buffer::source() const {
   return reinterpret_cast<const logic_buffer&>(impl_->src(0));
 }
 
-logic_buffer& logic_buffer::source() {
-  assert(impl_);
-  return reinterpret_cast<logic_buffer&>(impl_->mutable_src(0));
-}
-
 void logic_buffer::write(uint32_t dst_offset,
                          const lnode& src,
                          uint32_t src_offset,

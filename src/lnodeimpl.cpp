@@ -69,11 +69,6 @@ void lnodeimpl::remove_src(uint32_t index) {
   hash_ = 0;
 }
 
-void lnodeimpl::clear_srcs() {
-  srcs_.clear();
-  hash_ = 0;
-}
-
 void lnodeimpl::resize(uint32_t size) {
   size_ = size;
   hash_ = 0;

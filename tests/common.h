@@ -183,6 +183,25 @@ private:
 
 ///////////////////////////////////////////////////////////////////////////////
 
+class auto_cflags_enable {
+public:
+  auto_cflags_enable(int flags) {
+    cflags_ = platform::self().cflags();
+    platform::self().set_cflags(cflags(cflags_ | flags));
+  }
+  auto_cflags_enable(cflags flags) {
+    cflags_ = platform::self().cflags();
+    platform::self().set_cflags(cflags(cflags_ | (int)flags));
+  }
+  ~auto_cflags_enable() {
+    platform::self().set_cflags(cflags_);
+  }
+private:
+  ch::internal::cflags cflags_;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
 class auto_cflags_disable {
 public:
   auto_cflags_disable(int flags) {
@@ -198,4 +217,39 @@ public:
   }
 private:
   ch::internal::cflags cflags_;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+template <typename I, typename O>
+struct GenericModule {
+  __io (
+    __in (I)  in,
+    __out (O) out
+  );
+  template <typename F>
+  GenericModule(F f) : f_(f) {}
+  
+  void describe() {
+    io.out = f_(io.in);
+  }
+  
+  std::function<O(I)> f_;
+};
+
+template <typename L, typename R, typename O>
+struct GenericModule2 {
+  __io (
+    __in (L)  lhs,
+    __in (R)  rhs,
+    __out (O) out
+  );
+  template <typename F>
+  GenericModule2(F f) : f_(f) {}
+
+  void describe() {
+    io.out = f_(io.lhs, io.rhs);
+  }
+  
+  std::function<O(L, R)> f_;
 };

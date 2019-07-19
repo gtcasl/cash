@@ -351,8 +351,7 @@ branchconverter::emit(proxyimpl* dst,
     // check sources
     for (auto& src : sel->srcs()) {
       if (src.empty()) {
-        fprintf(stderr, "error: not-fully initialized conditional variable: %s\n", sel->debug_info().c_str());
-        std::abort();
+        throw std::domain_error(sstreamf() << "uninitialized variable " << sel->debug_info());
       }
     }
     return sel;

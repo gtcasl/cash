@@ -226,10 +226,8 @@ extern "C" void ext_copy_vector(block_type* dst,
 static void error_handler(int error_code) {
   switch (error_code) {
   case 1:
-    std::cerr << "memory access out of bounds." << std::endl;
-    break;
+    throw std::out_of_range("memory access out of bounds.");
   }
-  std::abort();
 }
 
 class Compiler;
@@ -374,9 +372,11 @@ struct assert_data_t {
 };
 
 extern "C" void assert_data_eval(assert_data_t* self) {
-  fprintf(stderr, "assertion failure at tick %ld, %s (%s:%d)\n",
-          static_cast<uint64_t>(self->time), self->msg, self->file, self->line);
-  std::abort();
+  throw std::domain_error(sstreamf() << "assertion failure at tick " 
+                                     << static_cast<uint64_t>(self->time) << ", " 
+                                     << self->msg << "(" 
+                                     << self->file << ":" 
+                                     << self->line << ")");
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -669,6 +669,8 @@ private:
     auto j_src1 = this->emit_op_operand(node, 1, is_scalar, need_resize);
 
     switch (node->op()) {
+    default:
+      assert(false);
     case ch_op::eq:
       if (is_scalar) {
         auto j_dst = jit_insn_eq(j_func_, j_src0, j_src1);
@@ -1057,9 +1059,6 @@ private:
         auto_store_addr_t auto_dst(this, node);
         __op_call_arithmetic2(bv_pad_vector, auto_dst.ptr(), dst_width, j_src0, node->src(0).size());
       }
-      break;
-    default:
-      std::abort();
       break;
     }
   }
@@ -1673,6 +1672,8 @@ private:
         }
 
         switch (node->type()) {
+        default:
+          assert(false);
         case type_reg:
           this->emit_snode_value(reinterpret_cast<regimpl*>(node));
           break;
@@ -1685,8 +1686,6 @@ private:
         case type_udfs:
           this->emit_snode_value(reinterpret_cast<udfsimpl*>(node));
           break;
-        default:
-          std::abort();
         }
       }
       if (l_skip != jit_label_undefined) {
@@ -2211,6 +2210,8 @@ private:
       auto dst_width = node->size();
       auto type = node->type();
       switch (type) {
+      default:
+        assert(false);
       case type_lit: {
         auto lit =  reinterpret_cast<litimpl*>(node);
         consts_size += alloc_constant(lit, constants);
@@ -2274,8 +2275,6 @@ private:
           var_addr += __align_word_size(dst_width);
         }
         break;
-      default:
-        std::abort();
       }
     }
 
@@ -2355,6 +2354,8 @@ private:
       auto type = node->type();
 
       switch (type) {
+      default:
+        assert(false);
       case type_lit:
         break;
       case type_input:
@@ -2452,8 +2453,6 @@ private:
           bv_init(reinterpret_cast<block_type*>(sim_ctx_->state.vars + addr), dst_width);
         }
         break;
-      default:
-        std::abort();
       }
     }
   }
@@ -3188,6 +3187,8 @@ public:
     for (auto node : eval_list) {
       this->resolve_branch(node);
       switch (node->type()) {
+      default:
+        assert(false);
       case type_lit:
         this->emit_node(reinterpret_cast<litimpl*>(node));
         break;
@@ -3239,8 +3240,6 @@ public:
       case type_udfs:
         this->emit_node(reinterpret_cast<udfsimpl*>(node));
         break;
-      default:
-        std::abort();
       case type_mem:
         break;
       }

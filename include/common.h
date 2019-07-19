@@ -23,5 +23,6 @@
 #include <memory>
 #include <typeindex>
 #include <type_traits>
+#include <stdexcept>
 #include "macros.h"
 #include "utils.h"

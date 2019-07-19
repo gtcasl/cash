@@ -30,11 +30,5 @@ inline void ch_toFIRRTL(const std::string& file, const device& device) {
   ch_toFIRRTL(out, device);
 }
 
-inline void ch_toFIRRTL(const std::string& file, const ch_device_list& devices) {
-  std::ofstream out(file);
-  ch_toFIRRTL(out, devices);
-}
-
-
 }
 }

@@ -34,6 +34,7 @@ protected:
   context* old_ctx_;
   sloc_ctx_t* sloc_ctx_;
   bool is_new_ctx_;
+  bool is_opened_;
 };
 
 }

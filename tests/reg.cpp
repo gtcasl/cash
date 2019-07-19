@@ -268,7 +268,14 @@ TEST_CASE("registers", "[registers]") {
     }, 1);
 
     TEST([]()->ch_bool {
-      auto_cflags_disable reg_init_off(cflags::force_reg_init);
+      ch_reg<X> a{0, 0};
+      a->next = X{3, 1};
+      auto e = ch_case(ch_now(), 3, 1101_b)(a.as_uint());
+      //ch_println("t={0}, a={1}, e={2}", ch_now(), a, e);
+      return (a.as_bit() == e);
+    }, 1);
+
+    TEST([]()->ch_bool {
       ch_reg<U> a{00_b};
       a->next = U{10_b};
       auto e = ch_case(ch_now(), 3, 10_b)(a.as_uint());

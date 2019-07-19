@@ -597,7 +597,7 @@ inline int string_literal_base(const char* value, int len) {
     base = 4;
     break;
   default:
-    CH_ABORT("invalid binary format, missing encoding base type.");
+    throw std::invalid_argument("invalid binary encoding type.");
   }
   return base;
 }
@@ -2122,7 +2122,7 @@ void bv_udiv(T* quot, uint32_t quot_size,
   auto r = reinterpret_cast<xword_t*>(rem);
 
   if (0 == n) {
-    CH_ABORT("divide by zero");
+    throw std::runtime_error("divide by zero");
   }
 
   // reset the outputs

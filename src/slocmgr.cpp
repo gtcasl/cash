@@ -112,29 +112,22 @@ static syminfo_t* load_symbols(const char* module) {
   if (!bfd_check_format(abfd.get(), bfd_object))
     return nullptr;
   if ((bfd_get_file_flags(abfd.get()) & HAS_SYMS) == 0)
-    return nullptr;
-  asymbol** syms = nullptr;
-  ssize_t symcount = 0;
+    return nullptr;  
+  bool dynamic = false;
   auto storage = bfd_get_symtab_upper_bound(abfd.get());
-  if (storage > 0) {
-    syms = (asymbol**)malloc(storage);
-    if (syms) {
-      symcount = bfd_canonicalize_symtab(abfd.get(), syms);
-    }
+  if (storage <= 0) {
+    storage = bfd_get_dynamic_symtab_upper_bound(abfd.get());
+    if (storage <= 0)
+      return nullptr;    
+    dynamic = true;
   }
+  auto syms = (asymbol**)malloc(storage);
+  if (nullptr == syms)
+    return nullptr;
+  auto symcount =  dynamic ? bfd_canonicalize_dynamic_symtab(abfd.get(), syms) :
+                             bfd_canonicalize_symtab(abfd.get(), syms);
   if (symcount <= 0) {
-    auto storage = bfd_get_dynamic_symtab_upper_bound(abfd.get());
-    if (storage) {
-      syms = (asymbol**)malloc(storage);
-      if (syms) {
-        symcount = bfd_canonicalize_symtab(abfd.get(), syms);
-      }
-    }
-  }
-  if (symcount <= 0) {
-    if (syms) {
-      free(syms);
-    }
+    free(syms);
     return nullptr;
   }
   return new syminfo_t(abfd.release(), syms);

@@ -673,8 +673,7 @@ void tracerimpl::toVerilator(std::ofstream& out,
   };
 
   if (contexts_.size() > 1) {
-    CH_ABORT("multiple devices not supported!");
-    return;
+    throw std::invalid_argument("multiple devices not supported!");
   }
 
   uint64_t tc = 0;

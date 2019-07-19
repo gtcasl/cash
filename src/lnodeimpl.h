@@ -80,12 +80,6 @@ public:
     return srcs_[index];
   }
 
-  lnode& mutable_src(uint32_t index) {
-    assert(index < srcs_.size());
-    hash_ = 0;
-    return srcs_[index];
-  }
-
   uint32_t size() const {
     return size_;
   }
@@ -103,8 +97,6 @@ public:
   void insert_src(uint32_t index, lnodeimpl* src);
 
   void remove_src(uint32_t index);
-
-  void clear_srcs();
 
   void resize(uint32_t size);
 

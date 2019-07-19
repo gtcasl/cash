@@ -11,7 +11,8 @@ deviceimpl::deviceimpl(const std::type_index& signature,
                        bool is_pod,
                        const std::string& name)
   : old_ctx_(nullptr)
-  , sloc_ctx_(nullptr) {
+  , sloc_ctx_(nullptr)
+  , is_opened_(false) {
   auto ret = ctx_create(signature, is_pod, name);
   ctx_ = ret.first;
   is_new_ctx_ = ret.second;
@@ -19,10 +20,14 @@ deviceimpl::deviceimpl(const std::type_index& signature,
 }
 
 deviceimpl::~deviceimpl() {
+  if (is_opened_) {
+    this->end();
+  }
   ctx_->release();  
 }
 
 bool deviceimpl::begin() {
+  is_opened_ = true;
   old_ctx_ = ctx_swap(ctx_);
   if (is_new_ctx_) {
     sloc_ctx_ = sloc_begin_module();
@@ -46,6 +51,7 @@ void deviceimpl::end() {
     auto sloc = get_source_location();
     old_ctx_->create_binding(ctx_, sloc);
   }
+  is_opened_ = false;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

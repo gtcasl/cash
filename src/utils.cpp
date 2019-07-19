@@ -133,5 +133,5 @@ int ch::internal::char2int(char x, int base) {
       return (x - 'a') + 10;
     break;
   }
-  CH_ABORT("invalid value");
+  throw std::invalid_argument("invalid base value");
 }

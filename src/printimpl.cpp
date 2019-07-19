@@ -26,7 +26,7 @@ const char* fmtparser::parse(fmtinfo_t* out, const char* str) {
   } else {
     out->index = strtoul(str, (char**)&str_idx_end, 0);
     if (str_idx_end == str || errno == ERANGE) {
-      CH_ABORT("print format invalid index value");
+      throw std::invalid_argument("print format invalid index value");
       return str;
     }
   }
@@ -51,7 +51,7 @@ const char* fmtparser::parse(fmtinfo_t* out, const char* str) {
         out->type = fmttype::Enum;
         break;
       default:
-        CH_ABORT("invalid print argument type: %c", *str);
+        throw std::invalid_argument(sstreamf() << "invalid print argument type: " << *str);
       }
       ++str; // advance pointer
     }    
@@ -59,7 +59,7 @@ const char* fmtparser::parse(fmtinfo_t* out, const char* str) {
   
   // check terminating bracket
   if (*str == '\0' || *str != '}') {
-    CH_ABORT("print format missing terminating index bracket");
+    throw std::invalid_argument("print format missing terminating index bracket");
     return str;
   }
   

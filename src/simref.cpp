@@ -319,6 +319,8 @@ public:
     using bit_accessor_t = StaticBitAccessor<block_type, resize_opds, is_signed>;
 
     switch (op) {
+    default:
+      assert(false);
     case ch_op::eq:
       if constexpr (is_scalar) {
         bv_assign_scalar(dst_, bv_eq_scalar<is_signed, block_type, bit_accessor_t>(src0_, src0_size_, src1_, src1_size_));
@@ -506,9 +508,6 @@ public:
         bv_pad_vector<is_signed>(dst_, dst_size_, src0_, src0_size_);
       }
       break;
-
-    default:
-      CH_ABORT("invalid opcode");
     }
   }
 
@@ -594,6 +593,8 @@ instr_op_base* instr_op_base::create(opimpl* node, data_map_t& map) {
     }
 
   switch (node->op()) {
+  default:
+    assert(false);
   CREATE_OP_INST(ch_op::eq, true, true);
   CREATE_OP_INST(ch_op::ne, true, true);
   CREATE_OP_INST(ch_op::lt, true, true);
@@ -619,8 +620,6 @@ instr_op_base* instr_op_base::create(opimpl* node, data_map_t& map) {
   CREATE_OP_INST(ch_op::div, true, false);
   CREATE_OP_INST(ch_op::mod, true, false);
   CREATE_OP_INST(ch_op::pad, true, false);
-  default:
-    CH_ABORT("invalid opcode");
   }
 #undef CREATE_OP_INST
 }
@@ -1420,9 +1419,10 @@ public:
       || static_cast<bool>(cond_[0]))
       return;
     auto tick = bv_cast<uint64_t>(time_, 64);
-    fprintf(stderr, "assertion failure at tick %ld, %s (%s:%d)\n",
-            tick, msg_.c_str(), sloc_.file().c_str(), sloc_.line());
-    std::abort();
+    throw std::domain_error(sstreamf() << "assertion failure at tick " 
+                                       << tick << ", " 
+                                       << msg_ << "(" 
+                                       << sloc_ << ")");
   }
 
 private:
@@ -1702,6 +1702,8 @@ public:
     for (auto node : eval_list) {
       instr_base* instr = nullptr;
       switch (node->type()) {
+      default:
+        assert(false);
       case type_proxy:
         instr = instr_proxy_base::create(reinterpret_cast<proxyimpl*>(node), data_map);
         break;
@@ -1767,9 +1769,6 @@ public:
       } break;
       case type_lit:
       case type_mem:
-        break;
-      default:
-        std::abort();
         break;
       }
 

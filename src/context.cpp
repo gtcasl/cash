@@ -157,15 +157,6 @@ context::~context() {
   }
 }
 
-context* context::clone() const {
-  clone_map cloned_nodes;
-  auto ctx = new context(name_, parent_);
-  for (auto node : nodes_) {
-    node->clone(ctx, cloned_nodes);
-  }
-  return ctx;
-}
-
 uint32_t context::node_id() {
   auto nodeid = context_manager::instance().node_id();
 #ifndef NDEBUG

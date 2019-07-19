@@ -41,6 +41,8 @@ void cdimpl::print(std::ostream& out) const {
 
 cdimpl* ch::internal::get_snode_cd(lnodeimpl* node) {
   switch (node->type()) {
+  default:
+    assert(false);
   case type_reg:
     return reinterpret_cast<cdimpl*>(
           reinterpret_cast<regimpl*>(node)->cd().impl());
@@ -53,14 +55,14 @@ cdimpl* ch::internal::get_snode_cd(lnodeimpl* node) {
   case type_udfs:
     return reinterpret_cast<cdimpl*>(
           reinterpret_cast<udfsimpl*>(node)->cd().impl());
-  default:
-    std::abort();
   }
   return nullptr;
 }
 
 lnodeimpl* ch::internal::get_snode_enable(lnodeimpl* node) {
   switch (node->type()) {
+  default:
+    assert(false);
   case type_reg: {
     auto reg = reinterpret_cast<regimpl*>(node);
     return reg->has_enable() ? reg->enable().impl() : nullptr;
@@ -72,14 +74,14 @@ lnodeimpl* ch::internal::get_snode_enable(lnodeimpl* node) {
    }
   case type_udfs:
     return nullptr;
-  default:
-    std::abort();
   }
   return nullptr;
 }
 
 lnodeimpl* ch::internal::get_snode_reset(lnodeimpl* node) {
   switch (node->type()) {
+  default:
+    assert(false);
   case type_reg: {
     auto reg = reinterpret_cast<regimpl*>(node);
     return reg->has_init_data() ? reg->reset().impl() : nullptr;
@@ -91,8 +93,6 @@ lnodeimpl* ch::internal::get_snode_reset(lnodeimpl* node) {
   case type_msrport:
   case type_mwport:
     return nullptr;
-  default:
-    std::abort();
   }
   return nullptr;
 }

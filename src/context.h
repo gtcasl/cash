@@ -253,8 +253,6 @@ public:
   void register_enum_string(uint32_t id, enum_string_cb callback);
 
   enum_string_cb enum_to_string(uint32_t id);
-
-  context* clone() const;
   
 protected:
 

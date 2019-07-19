@@ -77,12 +77,14 @@ TEST_CASE("basics", "[basics]") {
       b = 0;
       return (d == 14);
     });
+
     TEST([]()->ch_bool {
       ch_int4 a(14), b(1);
       auto d = a + b;
       d[0] = 0;
       return (d == 14);
     });
+
     TEST([]()->ch_bool {
       ch_bit4 a(0);
       ch_bit32 e(64);
@@ -101,10 +103,24 @@ TEST_CASE("basics", "[basics]") {
     });
 
     TEST([]()->ch_bool {
-      ch_int4 a(0);
+      ch_bit4 a(2);
+      ch_bit8 b(a);
+      b = a | 1;
+      return (b == 3);
+    });
+
+    TEST([]()->ch_bool {
+      ch_int4 a(2);
       ch_int8 b(a);
-      b = 1;
-      return (b == 1);
+      b = a | 1;
+      return (b == 3);
+    });
+
+    TEST([]()->ch_bool {
+      ch_uint4 a(2);
+      ch_uint8 b(a);
+      b = a | 1;
+      return (b == 3);
     });
 
     TEST([]()->ch_bool {
@@ -136,6 +152,15 @@ TEST_CASE("basics", "[basics]") {
       b = a;
       a = 1;
       return (b == 1);
+    });
+
+    TEST([]()->ch_bool {
+      ch_uint32 a;
+      ch_uint8 x, y;
+      ch_asliceref<8>(a, 0) = x;
+      ch_asliceref<8>(a, 1) = y;
+      ch_asliceref<4>(y, 1) = 0x5;
+      return (ch_aslice<4>(a, 3) == 0x5);
     });
 
     TEST([]()->ch_bool {

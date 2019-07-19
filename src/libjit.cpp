@@ -5,6 +5,8 @@
 static jit_type_t to_native_type(jit_type_t type) {
   auto kind = jit_type_get_kind(type);
   switch (kind) {
+  default:
+    assert(false);
   case JIT_TYPE_UBYTE:
   case JIT_TYPE_SBYTE:
   case JIT_TYPE_USHORT:
@@ -15,14 +17,14 @@ static jit_type_t to_native_type(jit_type_t type) {
   case JIT_TYPE_ULONG:
   case JIT_TYPE_LONG:
     return jit_type_int64;
-  default:
-    std::abort();
   }
 }
 
 static jit_type_t to_signed_type(jit_type_t type) {
   auto kind = jit_type_get_kind(type);
   switch (kind) {
+  default:
+    assert(false);
   case JIT_TYPE_UBYTE:
   case JIT_TYPE_SBYTE:
     return jit_type_sbyte;
@@ -35,14 +37,14 @@ static jit_type_t to_signed_type(jit_type_t type) {
   case JIT_TYPE_ULONG:
   case JIT_TYPE_LONG:
     return jit_type_long;
-  default:
-    std::abort();
   }
 }
 
 static jit_type_t to_unsigned_type(jit_type_t type) {
   auto kind = jit_type_get_kind(type);
   switch (kind) {
+  default:
+    assert(false);
   case JIT_TYPE_UBYTE:
   case JIT_TYPE_SBYTE:
     return jit_type_ubyte;
@@ -55,8 +57,6 @@ static jit_type_t to_unsigned_type(jit_type_t type) {
   case JIT_TYPE_ULONG:
   case JIT_TYPE_LONG:
     return jit_type_ulong;
-  default:
-    std::abort();
   }
 }
 

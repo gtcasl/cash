@@ -78,6 +78,33 @@ private:
 
 ///////////////////////////////////////////////////////////////////////////////
 
+class sstreamf {
+public:
+  sstreamf() {}
+  ~sstreamf() {}
+
+  template <typename T>
+  sstreamf& operator<<(const T& value) {
+    ss_ << value;
+    return *this;
+  }
+
+  auto str() const { 
+    return ss_.str(); 
+  }
+  
+  operator std::string() const { 
+    return ss_.str(); 
+  }
+
+private:
+    std::stringstream ss_;
+    sstreamf(const sstreamf&);
+    sstreamf& operator=(const sstreamf&);
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
 template <bool B>
 inline constexpr bool bool_constant_v = std::bool_constant<B>::value;
 
@@ -926,10 +953,8 @@ void unused(Args&&...) {}
 #define CH_CHECK(pred, ...) \
   do { \
     if (!(pred)) { \
-      fprintf(stderr, "ERROR: assertion `" CH_STRINGIZE(pred) "' failed, "); \
-      fprintf(stderr, __VA_ARGS__); \
-      fprintf(stderr, " (" __FILE__ ":" CH_STRINGIZE(__LINE__) ")\n"); \
-      std::abort(); \
+      throw std::runtime_error(ch::internal::sstreamf() << "assertion `" CH_STRINGIZE(pred) \
+                                                        << "` failed, " << stringf(__VA_ARGS__)); \
     } \
   } while (false)
 

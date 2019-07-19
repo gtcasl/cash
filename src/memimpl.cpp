@@ -155,7 +155,7 @@ mwportimpl* memimpl::create_wport(lnodeimpl* cd,
                                   const source_location& sloc) {
   for (auto port : wrports_) {
     if (port->addr().id() == addr->id())
-      CH_ABORT("duplicate memory write to the same address not allowed");
+      throw std::domain_error("duplicate memory write to the same address not allowed");
   }
   auto impl = ctx_->create_node<mwportimpl>(this, cd, addr, wdata, enable, sloc);
   return impl;
