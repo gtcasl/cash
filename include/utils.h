@@ -953,8 +953,9 @@ void unused(Args&&...) {}
 #define CH_CHECK(pred, ...) \
   do { \
     if (!(pred)) { \
-      throw std::runtime_error(ch::internal::sstreamf() << "assertion `" CH_STRINGIZE(pred) \
-                                                        << "` failed, " << stringf(__VA_ARGS__)); \
+      throw std::runtime_error(ch::internal::sstreamf() \
+                  << "assertion `" CH_STRINGIZE(pred) \
+                  << "` failed, " << ch::internal::stringf(__VA_ARGS__)); \
     } \
   } while (false)
 
