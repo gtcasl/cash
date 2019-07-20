@@ -1,5 +1,6 @@
 #include "common.h"
 #include <htl/complex.h>
+#include <htl/queue.h>
 #include <htl/fixed.h>
 
 using namespace ch::htl;
@@ -236,5 +237,20 @@ TEST_CASE("misc", "[misc]") {
     CHECK(sign_ext<uint32_t>(0xf555, 16) == 0xfffff555);
     CHECK(sign_ext<uint32_t>(0x05555555, 32) == 0x05555555);
     CHECK(sign_ext<uint32_t>(0xf5555555, 32) == 0xf5555555);
-  } 
+  }
+
+  SECTION("unused", "unused") {
+    TEST([]()->ch_bool {
+      ch_device<GenericModule2<ch_int2, ch_int2, ch_int2>> device(
+        [](ch_int2 lhs, ch_int2 rhs)->ch_int2 { 
+          ch_module<ch_queue<ch_int2, 4>> queue;
+          queue.io.enq.data = lhs + rhs;
+          queue.io.enq.valid = true;
+          queue.io.deq.ready = true;
+          return lhs * rhs; 
+        }
+      );
+      return true;
+    });
+  }
 }

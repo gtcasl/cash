@@ -177,6 +177,8 @@ void context::add_node(lnodeimpl* node) {
   //--
   auto type = node->type();
   switch (type) {
+  default:
+    assert(false);
   case type_lit:
     literals_.push_back(node);
     break;
@@ -238,8 +240,6 @@ void context::add_node(lnodeimpl* node) {
   case type_udfout:
     udfports_.push_back(node);
     break;
-  default:
-    assert(false);
   }
 
   // register local nodes, io objects & literals have global scope
@@ -259,6 +259,8 @@ void context::delete_node(lnodeimpl* node) {
   // remove from list
   auto type = node->type();
   switch (type) {
+  default:
+    assert(false);
   case type_lit:
     literals_.remove(node);
     break;
@@ -320,8 +322,6 @@ void context::delete_node(lnodeimpl* node) {
   case type_udfout:
     udfports_.remove(node);
     break;
-  default:
-    assert(false);
   }
 
   // destroy object
