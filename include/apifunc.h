@@ -408,11 +408,11 @@ auto ch_map(const T& obj, const F& f) {
   return ret;
 }
 
-template <typename T, unsigned N, typename F>
+template <typename T, std::size_t N, typename F>
 auto ch_map(const std::array<T, N>& obj, const F& f) {
   using ret_t = std::result_of_t<F(T)>;
-  std::array<ret_t, N> ret;
-  for (unsigned i = 0; i < N; ++i) {
+  ch_vec<ret_t, N> ret;
+  for (std::size_t i = 0; i < N; ++i) {
     ret[i] = f(obj[i]);
   }
   return ret;
@@ -436,11 +436,11 @@ auto ch_fold(const T& obj, const F& f, const I& init) {
   return ret;
 }
 
-template <typename T, unsigned N, typename F, typename I>
+template <typename T, std::size_t N, typename F, typename I>
 auto ch_fold(const std::array<T, N>& obj, const F& f, const I& init) {
   using ret_t = std::result_of_t<F(I, T)>;
   ret_t ret(init);
-  for (unsigned i = 0; i < N; ++i) {
+  for (std::size_t i = 0; i < N; ++i) {
     if constexpr (is_logic_type_v<ret_t>) {
       ret = f(ch_clone(ret), obj[i]);
     } else {
@@ -464,11 +464,11 @@ auto ch_zip(const T& obj1, const U& obj2, const F& f) {
   return ret;
 }
 
-template <typename T, typename U, unsigned N, typename F>
+template <typename T, typename U, std::size_t N, typename F>
 auto ch_zip(const std::array<T, N>& obj1, const std::array<U, N>& obj2, const F& f) {
   using ret_t = std::result_of_t<F(T, U)>;
-  std::array<ret_t, N> ret;
-  for (unsigned i = 0; i < N; ++i) {
+  ch_vec<ret_t, N> ret;
+  for (std::size_t i = 0; i < N; ++i) {
     ret[i] = f(obj1[i], obj2[i]);
   }
   return ret;
@@ -494,12 +494,12 @@ auto ch_scan(const T& obj, const F& f, const I& init) {
   return ret;
 }
 
-template <typename T, unsigned N, typename F, typename I>
+template <typename T, std::size_t N, typename F, typename I>
 auto ch_scan(const std::array<T, N>& obj, const F& f, const I& init) {
   using ret_t = std::result_of_t<F(I, T)>;
-  std::array<ret_t, N> ret;
+  ch_vec<ret_t, N> ret;
   ret_t tmp(init);
-  for (unsigned i = 0; i < N; ++i) {
+  for (std::size_t i = 0; i < N; ++i) {
     if constexpr (is_logic_type_v<ret_t>) {
       tmp = f(ch_clone(tmp), obj[i]);
     } else {

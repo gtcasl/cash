@@ -27,6 +27,12 @@ TEST_CASE("hof", "[hof]") {
       auto r = ch_fold(a, [](auto x, auto y)->ch_uint<4> { return x + y; }, 0);
       return (r == 6);
     });
+
+    TEST([]()->ch_bool {
+      std::array<ch_uint<4>, 4> a{3, 2, 1, 0};
+      auto r = ch_fold(a, [](auto x, auto y)->ch_uint<4> { return x + y; }, 0);
+      return (r == 6);
+    });
   }
 
   SECTION("scan", "[scan]") {
