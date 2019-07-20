@@ -489,7 +489,11 @@ auto ch_scan(const T& obj, const F& f, const I& init) {
     } else {
       tmp = f(tmp, obj[i]);
     }
-    ret[i] = ch_clone(tmp);
+    if constexpr (is_logic_type_v<ret_t>) {
+      ret[i] = ch_clone(tmp);
+    } else {
+      ret[i] = tmp;
+    }
   }
   return ret;
 }
@@ -504,8 +508,12 @@ auto ch_scan(const std::array<T, N>& obj, const F& f, const I& init) {
       tmp = f(ch_clone(tmp), obj[i]);
     } else {
       tmp = f(tmp, obj[i]);
+    }    
+    if constexpr (is_logic_type_v<ret_t>) {
+      ret[i] = ch_clone(tmp);
+    } else {
+      ret[i] = tmp;
     }
-    ret[i] = tmp;
   }
   return ret;
 }

@@ -23,54 +23,6 @@ public:
   vec_base(vec_base&& other) : base(std::move(other)) {}
 };
 
-template <typename T, typename U, unsigned N>
-auto operator==(const vec_base<T, N>& lhs, const vec_base<U, N>& rhs) {
-  static_assert(is_equality_comparable_v<T, U>, "nested type is not equality-comparable");
-  auto ret(lhs.at(0) == rhs.at(0));
-  for (unsigned i = 1; i < N; ++i) {
-    if constexpr (is_logic_type_v<T>) {
-      ret = ch_clone(ret) && (lhs.at(i) == rhs.at(i));
-    } else {
-      ret = ret && (lhs.at(i) == rhs.at(i));
-    }    
-  }
-  return ret;
-}
-
-template <typename T, typename U, unsigned N>
-auto operator<(const vec_base<T, N>& lhs, const vec_base<U, N>& rhs) {
-  static_assert(is_lessthan_comparable_v<T, U>, "nested type is not less-than-comparable");
-  auto ret(lhs.at(0) < rhs.at(0));
-  for (unsigned i = 1; i < N; ++i) {
-    if constexpr (is_logic_type_v<T>) {
-      ret = ch_clone(ret) && (lhs.at(i) < rhs.at(i));
-    } else {
-      ret = ret && (lhs.at(i) < rhs.at(i));
-    }    
-  }
-  return ret;
-}
-
-template <typename T, typename U, unsigned N>
-auto operator!=(const vec_base<T, N>& lhs, const vec_base<U, N>& rhs) {
-  return !(lhs == rhs);
-}
-
-template <typename T, typename U, unsigned N>
-auto operator>=(const vec_base<T, N>& lhs, const vec_base<U, N>& rhs) {
-  return !(lhs < rhs);
-}
-
-template <typename T, typename U, unsigned N>
-auto operator>(const vec_base<T, N>& lhs, const vec_base<U, N>& rhs) {
-  return (rhs < lhs);
-}
-
-template <typename T, typename U, unsigned N>
-auto operator<=(const vec_base<T, N>& lhs, const vec_base<U, N>& rhs) {
-  return !(rhs < lhs);
-}
-
 template <typename T, unsigned N, typename Enable = void>
 class ch_vec {};
 
@@ -97,7 +49,7 @@ public:
 
   template <typename U,
             CH_REQUIRE(std::is_constructible_v<T, U>)>
-  explicit ch_vec(const vec_base<U, N>& other)
+  explicit ch_vec(const std::array<U, N>& other)
     : ch_vec(make_logic_buffer(traits::bitwidth, idname<ch_vec>())) {
     this->operator=(other);
   }
@@ -122,7 +74,7 @@ public:
   }
 
   template <typename U>
-  ch_vec& operator=(const vec_base<U, N>& other) {
+  ch_vec& operator=(const std::array<U, N>& other) {
     static_assert(std::is_constructible_v<T, U>, "invalid type");
     CH_API_ENTRY(1);
     for (unsigned i = 0; i < N; ++i) {
@@ -139,6 +91,39 @@ public:
       this->at(i--) = value;
     }
     return *this;
+  }
+
+  auto operator==(const ch_vec& other) const {
+    return (this->as_bit() == other.as_bit());
+  }
+
+  auto operator!=(const ch_vec& other) const {
+    return (this->as_bit() != other.as_bit());
+  }
+
+  template <typename U>
+  friend auto operator==(const ch_vec& lhs, const std::array<U, N>& rhs) {
+    static_assert(is_equality_comparable_v<T, U>, "nested type is not equality-comparable");
+    auto ret(lhs.at(0) == rhs.at(0));
+    for (unsigned i = 1; i < N; ++i) {
+      ret = ch_clone(ret) && (lhs.at(i) == rhs.at(i));
+    }
+    return ret;
+  }
+
+  template <typename U>
+  friend auto operator==(const std::array<U, N>& lhs, const ch_vec& rhs) {
+    return (rhs == lhs);
+  }
+
+  template <typename U>
+  friend auto operator!=(const ch_vec& lhs, const std::array<U, N>& rhs) {
+    return !(lhs == rhs);
+  }
+
+  template <typename U>
+  friend auto operator!=(const std::array<U, N>& lhs, const ch_vec& rhs) {
+    return !(rhs == lhs);
   }
 
   CH_LOGIC_INTERFACE(ch_vec)
@@ -185,7 +170,7 @@ public:
 
   template <typename U,
             CH_REQUIRE(std::is_constructible_v<T, U>)>
-  explicit ch_vec(const vec_base<U, N>& other)
+  explicit ch_vec(const std::array<U, N>& other)
     : ch_vec(make_system_buffer(traits::bitwidth, idname<ch_vec>())) {
     base::operator=(other);
   }
@@ -208,7 +193,7 @@ public:
   }
 
   template <typename U>
-  ch_vec& operator=(const vec_base<U, N>& other) {
+  ch_vec& operator=(const std::array<U, N>& other) {
     static_assert(std::is_constructible_v<T, U>, "invalid type");
     for (unsigned i = 0; i < N; ++i) {
       this->at(i) = other.at(i);
@@ -223,6 +208,39 @@ public:
       this->at(i--) = value;
     }
     return *this;
+  }
+
+  auto operator==(const ch_vec& other) const {
+    return (this->as_bit() == other.as_bit());
+  }
+
+  auto operator!=(const ch_vec& other) const {
+    return (this->as_bit() != other.as_bit());
+  }
+
+  template <typename U>
+  friend auto operator==(const ch_vec& lhs, const std::array<U, N>& rhs) {
+    static_assert(is_equality_comparable_v<T, U>, "nested type is not equality-comparable");
+    auto ret(lhs.at(0) == rhs.at(0));
+    for (unsigned i = 1; i < N; ++i) {
+      ret = ret && (lhs.at(i) == rhs.at(i));
+    }
+    return ret;
+  }
+
+  template <typename U>
+  friend auto operator==(const std::array<U, N>& lhs, const ch_vec& rhs) {
+    return (rhs == lhs);
+  }
+
+  template <typename U>
+  friend auto operator!=(const ch_vec& lhs, const std::array<U, N>& rhs) {
+    return !(lhs == rhs);
+  }
+
+  template <typename U>
+  friend auto operator!=(const std::array<U, N>& lhs, const ch_vec& rhs) {
+    return !(rhs == lhs);
   }
 
   CH_SYSTEM_INTERFACE(ch_vec)

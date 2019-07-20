@@ -31,12 +31,30 @@ template <typename T>
 inline constexpr bool is_bitbase_v = is_logic_type_v<T>
               && std::is_base_of_v<ch_bitbase<ch_logic_t<T>>, ch_logic_t<T>>;
 
+namespace detail {
+template <typename T, typename U, typename Enable = void>
+struct is_logic_op_system_constructible1_impl : std::false_type {};
+
 template <typename T, typename U>
-inline constexpr bool is_logic_op_constructible_v =
-       is_strictly_constructible_v<T, U>
-    || (is_system_type_v<U>
-     && is_resizable_v<T>
-     && is_strictly_constructible_v<ch_size_cast_t<T, ch_width_v<U>>, U>);
+struct is_logic_op_system_constructible1_impl<T, U, std::enable_if_t<(
+  is_strictly_constructible_v<ch_size_cast_t<T, ch_width_v<U>>, U>)>> : std::true_type {};
+
+template <typename T, typename U, typename Enable = void>
+struct is_logic_op_system_constructible0_impl {
+  using next = std::false_type;
+};
+
+template <typename T, typename U>
+struct is_logic_op_system_constructible0_impl<T, U, std::enable_if_t<(
+    is_system_type_v<U> && is_resizable_v<T>)>> {
+  using next = is_logic_op_system_constructible1_impl<T, U>;    
+};
+}
+
+template <typename T, typename U>
+inline constexpr bool is_logic_op_constructible_v = 
+    is_strictly_constructible_v<T, U> 
+ || detail::is_logic_op_system_constructible0_impl<std::decay_t<T>, std::decay_t<U>>::next::value;
 
 ///////////////////////////////////////////////////////////////////////////////
 
