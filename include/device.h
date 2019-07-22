@@ -8,20 +8,20 @@ namespace internal {
 class deviceimpl;
 class context;
 
-class device {
+class device_base {
 public:
 
-  device();
+  device_base();
 
-  virtual ~device();
+  virtual ~device_base();
 
-  device(const device& other);
+  device_base(const device_base& other);
 
-  device(device&& other);
+  device_base(device_base&& other);
 
-  device& operator=(const device& other);
+  device_base& operator=(const device_base& other);
 
-  device& operator=(device&& other);
+  device_base& operator=(device_base&& other);
 
   auto impl() const {
     return impl_;
@@ -29,7 +29,7 @@ public:
 
 protected:
 
-  device(const std::type_index& signature, bool is_pod, const std::string& name);
+  device_base(const std::type_index& signature, bool is_pod, const std::string& name);
 
   bool begin();
 
@@ -39,19 +39,16 @@ protected:
 
   deviceimpl* impl_;
 
-  template <typename T> friend class device_base;
-  template <typename T> friend class module_loader;
+  template <typename T> friend class io_loader;
 };
-
-using ch_device_list = std::vector<device>;
 
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T>
-class module_loader {
+class io_loader {
 public:
   template <typename... Args>
-  module_loader(device* dev, Args&&... args) {
+  io_loader(device_base* dev, Args&&... args) {
     if (dev->begin()) {
       {
         CH_API_ENTRY(2);
@@ -71,7 +68,7 @@ public:
     dev->end();
   }
 
-  ~module_loader() {
+  ~io_loader() {
     delete obj_;
     delete empty_;
   }
@@ -100,25 +97,27 @@ using detect_describe_t = decltype(std::declval<T&>().describe());
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T = void>
-class ch_device final : public device {
+class ch_device final : public device_base {
 public:
   static_assert(has_logic_io_v<T>, "missing io port");
   static_assert(is_detected_v<detect_describe_t, T>, "missing describe() method");
-  using base = device;
+  using base = device_base;
   using io_type = ch_flip_io<ch_system_io<decltype(T::io)>>;
 
   io_type io;
 
-  template <typename... Args>
+  template <typename... Args,
+            CH_REQUIRE(std::is_constructible_v<T, Args...>)>
   ch_device(const std::string& name, Args&&... args)
-    : device(std::type_index(typeid(T)), 0 == sizeof...(Args), name)
-    , io(module_loader<T>(this, std::forward<Args>(args)...).get())
+    : base(std::type_index(typeid(T)), 0 == sizeof...(Args), name)
+    , io(io_loader<T>(this, std::forward<Args>(args)...).get())
   {}
 
-  template <typename... Args>
+  template <typename... Args,
+            CH_REQUIRE(std::is_constructible_v<T, Args...>)>
   ch_device(Args&&... args)
-    : device(std::type_index(typeid(T)), 0 == sizeof...(Args), idname<T>(true))
-    , io(module_loader<T>(this, std::forward<Args>(args)...).get())
+    : base(std::type_index(typeid(T)), 0 == sizeof...(Args), idname<T>(true))
+    , io(io_loader<T>(this, std::forward<Args>(args)...).get())
   {}
 
   ch_device(const ch_device& other) 
@@ -139,9 +138,9 @@ protected:
 };
 
 template <>
-class ch_device<void> : public device {
+class ch_device<void> : public device_base {
 public:
-  using base = device;
+  using base = device_base;
 
   ch_device() {}
 
@@ -162,7 +161,7 @@ public:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void ch_stats(std::ostream& out, const device& device);
+void ch_stats(std::ostream& out, const device_base& device);
 
 }
 }

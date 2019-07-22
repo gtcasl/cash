@@ -1076,7 +1076,7 @@ std::function<bool (udf_vostream& out, context*, std::unordered_set<uint32_t>&)>
   return changed;
 };
 
-void ch::internal::ch_toVerilog(std::ostream& out, const device& device) {
+void ch::internal::ch_toVerilog(std::ostream& out, const device_base& device) {
   //--
   std::unordered_set<std::string_view> visited;
   std::unordered_set<uint32_t> udf_visited;
@@ -1090,34 +1090,4 @@ void ch::internal::ch_toVerilog(std::ostream& out, const device& device) {
 
   verilogwriter writer(ctx);  
   writer.print(out, visited);
-}
-
-void ch::internal::ch_toVerilog(std::ostream& out, const ch_device_list& devices) {
-  {
-    std::unordered_set<uint32_t> udf_visited;
-
-    bool changed = false;
-    udf_vostream udf_os(out.rdbuf());
-    for (auto& device : devices) {
-      auto ctx = device.impl()->ctx();      
-      if (print_udf_dependencies(udf_os, ctx, udf_visited)) {
-        changed = true;
-      }
-    }
-    if (changed) {
-      out << std::endl;
-    }
-  }
-
-  {
-    std::unordered_set<std::string_view> visited;
-
-    for (auto& device : devices) {
-      auto ctx = device.impl()->ctx();
-      if (visited.count(ctx->name()))
-        continue;
-      verilogwriter writer(ctx);
-      writer.print(out, visited);
-    }
-  }
 }

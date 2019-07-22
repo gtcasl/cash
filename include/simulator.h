@@ -12,11 +12,11 @@ public:
   
   ch_simulator();
 
-  ch_simulator(const ch_device_list& devices);
+  ch_simulator(const std::vector<device_base>& devices);
 
   template <typename... Devices>
-  ch_simulator(const device& first, const Devices&... more)
-    : ch_simulator(ch_device_list{first, (more)...})
+  ch_simulator(const device_base& first, const Devices&... more)
+    : ch_simulator(std::vector<device_base>{first, (more)...})
   {}
 
   ch_simulator(const ch_simulator& other);

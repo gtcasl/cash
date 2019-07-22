@@ -378,7 +378,6 @@ namespace system {
   //
 
   using ch::internal::ch_device;
-  using ch::internal::ch_device_list;
   using ch::internal::ch_simulator;
   using ch::internal::ch_tracer;
 

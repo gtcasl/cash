@@ -250,6 +250,7 @@ TEST_CASE("misc", "[misc]") {
           return lhs * rhs; 
         }
       );
+      ch_toVerilog("unused_module.v", device);
       return true;
     });
   }

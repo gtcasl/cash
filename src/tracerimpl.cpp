@@ -13,7 +13,7 @@ auto remove_path = [](const std::string& path) {
   return (pos != std::string::npos) ? path.substr(pos+1) : path;
 };
 
-tracerimpl::tracerimpl(const ch_device_list& devices)
+tracerimpl::tracerimpl(const std::vector<device_base>& devices)
   : simulatorimpl(devices)
   , trace_width_(0)
   , ticks_(0)
@@ -820,7 +820,7 @@ void tracerimpl::toVerilator(std::ofstream& out,
 
 ///////////////////////////////////////////////////////////////////////////////
 
-ch_tracer::ch_tracer(const ch_device_list& devices)
+ch_tracer::ch_tracer(const std::vector<device_base>& devices)
   : ch_simulator(new tracerimpl(devices))
 {}
 

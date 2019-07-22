@@ -399,6 +399,7 @@ auto ch_clone(const T& obj) {
 template <typename T, typename F,
           CH_REQUIRE(is_data_type_v<T>)>
 auto ch_map(const T& obj, const F& f) {
+  CH_API_ENTRY(1);
   using ret_t = std::result_of_t<F(decltype(obj[0]))>;
   static const unsigned N = ch_width_v<T> / ch_width_v<ret_t>;
   ch_vec<ret_t, N> ret;
@@ -410,6 +411,7 @@ auto ch_map(const T& obj, const F& f) {
 
 template <typename T, std::size_t N, typename F>
 auto ch_map(const std::array<T, N>& obj, const F& f) {
+  CH_API_ENTRY(1);
   using ret_t = std::result_of_t<F(T)>;
   ch_vec<ret_t, N> ret;
   for (std::size_t i = 0; i < N; ++i) {
@@ -423,6 +425,7 @@ auto ch_map(const std::array<T, N>& obj, const F& f) {
 template <typename T, typename F, typename I,
           CH_REQUIRE(is_data_type_v<T>)>
 auto ch_fold(const T& obj, const F& f, const I& init) {
+  CH_API_ENTRY(1);
   using ret_t = std::result_of_t<F(I, decltype(obj[0]))>;
   static const unsigned N = ch_width_v<T> / ch_width_v<ret_t>;
   ret_t ret(init);
@@ -438,6 +441,7 @@ auto ch_fold(const T& obj, const F& f, const I& init) {
 
 template <typename T, std::size_t N, typename F, typename I>
 auto ch_fold(const std::array<T, N>& obj, const F& f, const I& init) {
+  CH_API_ENTRY(1);
   using ret_t = std::result_of_t<F(I, T)>;
   ret_t ret(init);
   for (std::size_t i = 0; i < N; ++i) {
@@ -455,6 +459,7 @@ auto ch_fold(const std::array<T, N>& obj, const F& f, const I& init) {
 template <typename T, typename U, typename F,
           CH_REQUIRE(is_data_type_v<T> && is_data_type_v<U> && ch_width_v<T> == ch_width_v<U>)>
 auto ch_zip(const T& obj1, const U& obj2, const F& f) {
+  CH_API_ENTRY(1);
   using ret_t = std::result_of_t<F(decltype(obj1[0]), decltype(obj2[0]))>;
   static const unsigned N = ch_width_v<T> / ch_width_v<ret_t>;
   ch_vec<ret_t, N> ret;
@@ -466,6 +471,7 @@ auto ch_zip(const T& obj1, const U& obj2, const F& f) {
 
 template <typename T, typename U, std::size_t N, typename F>
 auto ch_zip(const std::array<T, N>& obj1, const std::array<U, N>& obj2, const F& f) {
+  CH_API_ENTRY(1);
   using ret_t = std::result_of_t<F(T, U)>;
   ch_vec<ret_t, N> ret;
   for (std::size_t i = 0; i < N; ++i) {
@@ -479,6 +485,7 @@ auto ch_zip(const std::array<T, N>& obj1, const std::array<U, N>& obj2, const F&
 template <typename T, typename F, typename I,
           CH_REQUIRE(is_data_type_v<T>)>
 auto ch_scan(const T& obj, const F& f, const I& init) {
+  CH_API_ENTRY(1);
   using ret_t = std::result_of_t<F(I, decltype(obj[0]))>;
   static const unsigned N = ch_width_v<T> / ch_width_v<ret_t>;
   ch_vec<ret_t, N> ret;
@@ -500,6 +507,7 @@ auto ch_scan(const T& obj, const F& f, const I& init) {
 
 template <typename T, std::size_t N, typename F, typename I>
 auto ch_scan(const std::array<T, N>& obj, const F& f, const I& init) {
+  CH_API_ENTRY(1);
   using ret_t = std::result_of_t<F(I, T)>;
   ch_vec<ret_t, N> ret;
   ret_t tmp(init);

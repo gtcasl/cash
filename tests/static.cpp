@@ -1,9 +1,11 @@
-#include "cash.h"
 #include <functional>
+#include "cash.h"
+#include "htl/decoupled.h"
 
 using namespace ch::logic;
 using namespace ch::system;
 using namespace ch::literals;
+using namespace ch::htl;
 
 __union (u4_t, (
   (ch_bit4) a
@@ -72,14 +74,44 @@ struct TestModule {
   }
 };
 
+struct QQ {
+  __io (
+    __in (ch_bool) w,
+    (ch_enq_io<>) x,
+    (ch_deq_io<>) y,
+    __out (ch_bool) r
+  );
+
+  void describe() {
+    io.y(io.x);
+  }
+};
+
 void foo() {
+  {
+    ch_module<QQ> q;
+    auto q2(q);
+    auto a = q2.io.y.ready;
+    auto b = q2.io.x.valid;        
+    q2.io.x.valid = true;
+    q2.io.y.ready = true;
+  }
+  {
+    ch_device<QQ> q;
+    auto q2(q);
+    auto a = q2.io.x.ready;
+    auto b = q2.io.y.valid;        
+    q2.io.x.valid = true;
+    q2.io.y.ready = true;
+  }
+
   {
     qw_t qw{false, false, 1};
     qw2_t qw2{e2_t::done, false, false};
   }
   {
     auto d1 = ch_device<TestModule>();
-    ch_device d2;
+    ch_device<> d2;
     d2 = d1;
   }
   {

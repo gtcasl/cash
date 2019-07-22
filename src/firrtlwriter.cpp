@@ -870,7 +870,7 @@ void firrtlwriter::print_value(std::ostream& out,
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void ch::internal::ch_toFIRRTL(std::ostream& out, const device& device) {
+void ch::internal::ch_toFIRRTL(std::ostream& out, const device_base& device) {
   std::unordered_set<std::string_view> visited;
   auto ctx = device.impl()->ctx();
   visited.insert(ctx->name());

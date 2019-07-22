@@ -87,7 +87,7 @@ protected:
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T>
-class ch_logic_in final : public T {
+class ch_logic_in : public T {
 public:
   static_assert(is_logic_type_v<T>, "invalid type");
   using traits = base_logic_io_traits<ch_direction::in,
@@ -147,7 +147,7 @@ protected:
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T>
-class ch_logic_out final : public T {
+class ch_logic_out : public T {
 public:
   static_assert(is_logic_type_v<T>, "invalid type");
   using traits = base_logic_io_traits<ch_direction::out,
@@ -217,7 +217,7 @@ protected:
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T>
-class ch_system_in final : public T {
+class ch_system_in : public T {
 public:
   static_assert(is_system_type_v<T>, "invalid type");
   using traits = base_system_io_traits<ch_direction::out,
@@ -264,7 +264,7 @@ protected:
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T>
-class ch_system_out final : public T {
+class ch_system_out : public T {
 public:
   static_assert(is_system_type_v<T>, "invalid type");
   using traits = base_system_io_traits<ch_direction::in,

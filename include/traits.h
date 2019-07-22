@@ -52,6 +52,7 @@ CH_DEF_SFINAE_CHECK(is_io_type, 0 != (T::traits::type & (traits_logic_io | trait
 
 ///////////////////////////////////////////////////////////////////////////////
 
+namespace detail {
 template <typename T, typename Enable = void>
 struct direction_impl {
   static constexpr ch_direction value = ch_direction::none;
@@ -61,12 +62,14 @@ template <typename T>
 struct direction_impl<T, std::enable_if_t<is_io_type_v<T>>> {
   static constexpr ch_direction value = T::traits::direction;
 };
+}
 
 template <typename T>
-inline constexpr ch_direction ch_direction_v = direction_impl<std::decay_t<T>>::value;
+inline constexpr ch_direction ch_direction_v = detail::direction_impl<std::decay_t<T>>::value;
 
 ///////////////////////////////////////////////////////////////////////////////
 
+namespace detail {
 template <typename T, typename Enable = void>
 struct width_impl {
   static constexpr uint32_t value = 0;
@@ -94,12 +97,14 @@ template <typename T0, typename... Ts>
 struct width_list_impl<T0, Ts...> {
   static constexpr uint32_t value = width_list_impl<T0>::value + width_list_impl<Ts...>::value;
 };
+}
 
 template <typename... Ts>
-inline constexpr uint32_t ch_width_v = width_list_impl<std::decay_t<Ts>...>::value;
+inline constexpr uint32_t ch_width_v = detail::width_list_impl<std::decay_t<Ts>...>::value;
 
 ///////////////////////////////////////////////////////////////////////////////
 
+namespace detail {
 template <typename T, typename Enable = void>
 struct is_signed_impl {
   static constexpr bool value = false;
@@ -114,9 +119,10 @@ template <typename T>
 struct is_signed_impl<T, std::enable_if_t<std::is_arithmetic_v<T>>> {
   static constexpr bool value = std::is_signed_v<T>;
 };
+}
 
 template <typename T>
-inline constexpr bool is_signed_v = is_signed_impl<std::decay_t<T>>::value;
+inline constexpr bool is_signed_v = detail::is_signed_impl<std::decay_t<T>>::value;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -133,6 +139,7 @@ struct system_traits {
   using logic_type  = LogicType;
 };
 
+namespace detail {
 template <typename T, typename Enable = void>
 struct system_t_impl {
   using type = void;
@@ -147,9 +154,10 @@ template <typename T>
 struct system_t_impl<T, std::enable_if_t<std::is_arithmetic_v<T>>> {
   using type = std::conditional_t<std::is_signed_v<T>, ch_sint<ch_width_v<T>>, ch_suint<ch_width_v<T>>>;
 };
+}
 
 template <typename T>
-using ch_system_t = typename system_t_impl<std::decay_t<T>>::type;
+using ch_system_t = typename detail::system_t_impl<std::decay_t<T>>::type;
 
 CH_DEF_SFINAE_CHECK(is_system_only, (T::traits::type == traits_system));
 
@@ -170,6 +178,7 @@ struct logic_traits {
   using system_type = SystemType;
 };
 
+namespace detail {
 template <typename T, typename Enable = void>
 struct logic_t_impl {
   using type = void;
@@ -184,9 +193,10 @@ template <typename T>
 struct logic_t_impl<T, std::enable_if_t<std::is_arithmetic_v<T>>> {
   using type = std::conditional_t<std::is_signed_v<T>, ch_int<ch_width_v<T>>, ch_uint<ch_width_v<T>>>;
 };
+}
 
 template <typename T>
-using ch_logic_t = typename logic_t_impl<std::decay_t<T>>::type;
+using ch_logic_t = typename detail::logic_t_impl<std::decay_t<T>>::type;
 
 CH_DEF_SFINAE_CHECK(is_logic_only, (T::traits::type == traits_logic));
 
@@ -285,6 +295,7 @@ CH_DEF_SFINAE_CHECK(is_logic_io, 0 != (T::traits::type & traits_logic_io));
 
 ///////////////////////////////////////////////////////////////////////////////
 
+namespace detail {
 template <typename T, typename Enable = void>
 struct signed_type_impl {
   using type = void;
@@ -299,7 +310,6 @@ template <typename T>
 struct signed_type_impl<T, std::enable_if_t<std::is_arithmetic_v<T>>> {
   using type = std::make_signed_t<T>;
 };
-
 
 template <typename T>
 struct signed_type_impl<T, std::enable_if_t<is_logic_type_v<T>
@@ -324,12 +334,14 @@ struct signed_type_impl<T, std::enable_if_t<is_system_type_v<T>
               && std::is_same_v<ch_system_t<T>, ch_suint<ch_width_v<T>>>>> {
   using type = ch_sint<ch_width_v<T>>;
 };
+}
 
 template <typename T>
-using ch_signed_t = typename signed_type_impl<std::decay_t<T>>::type;
+using ch_signed_t = typename detail::signed_type_impl<std::decay_t<T>>::type;
 
 ///////////////////////////////////////////////////////////////////////////////
 
+namespace detail {
 template <typename T, unsigned N, typename Enable = void>
 struct size_cast_impl {
   using type = void;
@@ -370,15 +382,17 @@ struct size_cast_impl<T, N, std::enable_if_t<is_system_type_v<T>
               && std::is_same_v<ch_system_t<T>, ch_suint<ch_width_v<T>>>>> {
   using type = ch_suint<N>;
 };
+}
 
 template <typename T, unsigned N>
-using ch_size_cast_t = typename size_cast_impl<std::decay_t<T>, N>::type;
+using ch_size_cast_t = typename detail::size_cast_impl<std::decay_t<T>, N>::type;
 
 template <typename T>
 inline constexpr bool is_resizable_v = !std::is_void<ch_size_cast_t<std::decay_t<T>, 1>>::value;
 
 //////////////////////////////////////////////////////////////////////////////
 
+namespace detail {
 template <bool size_match, typename... Ts>
 struct deduce_type_impl;
 
@@ -404,12 +418,13 @@ struct deduce_first_type_impl {
   using U1 = std::conditional_t<is_data_type_v<T1>, T1, void>;
   using type = std::conditional_t<(ch_width_v<U0> != 0), U0, U1>;
 };
+}
 
 template <bool size_match, typename... Ts>
-using deduce_type_t = typename deduce_type_impl<size_match, Ts...>::type;
+using deduce_type_t = typename detail::deduce_type_impl<size_match, Ts...>::type;
 
 template <typename T0, typename T1>
-using deduce_first_type_t = typename deduce_first_type_impl<std::decay_t<T0>, std::decay_t<T1>>::type;
+using deduce_first_type_t = typename detail::deduce_first_type_impl<std::decay_t<T0>, std::decay_t<T1>>::type;
 
 }
 }

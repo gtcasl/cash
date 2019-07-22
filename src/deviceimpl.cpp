@@ -56,34 +56,34 @@ void deviceimpl::end() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-device::device() : impl_(nullptr) {}
+device_base::device_base() : impl_(nullptr) {}
 
-device::device(const std::type_index& signature,
-               bool is_pod,
-               const std::string& name) {
+device_base::device_base(const std::type_index& signature,
+                         bool is_pod,
+                         const std::string& name) {
   impl_ = new deviceimpl(signature, is_pod, name);
   impl_->acquire();
 }
 
-device::device(const device& other)
+device_base::device_base(const device_base& other)
   : impl_(other.impl_) {
   if (impl_) {
     impl_->acquire();
   }
 }
 
-device::device(device&& other)
+device_base::device_base(device_base&& other)
   : impl_(std::move(other.impl_)) {
   other.impl_ = nullptr;
 }
 
-device::~device() {
+device_base::~device_base() {
   if (impl_) {
     impl_->release();
   }
 }
 
-device& device::operator=(const device& device) {
+device_base& device_base::operator=(const device_base& device) {
   if (device.impl_) {
     device.impl_->acquire();
   }
@@ -94,26 +94,26 @@ device& device::operator=(const device& device) {
   return *this;
 }
 
-device& device::operator=(device&& other) {
+device_base& device_base::operator=(device_base&& other) {
   impl_ = std::move(other.impl_);
   other.impl_ = nullptr;
   return *this;
 }
 
-bool device::begin() {
+bool device_base::begin() {
   return impl_->begin();
 }
 
-void device::build() {
+void device_base::build() {
   impl_->build();
 }
 
-void device::end() {
+void device_base::end() {
   impl_->end();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void ch::internal::ch_stats(std::ostream& out, const device& device) {
+void ch::internal::ch_stats(std::ostream& out, const device_base& device) {
   device.impl()->ctx()->dump_stats(out);
 }

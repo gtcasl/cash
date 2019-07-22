@@ -10,11 +10,11 @@ public:
 
   ch_tracer() {}
 
-  ch_tracer(const ch_device_list& devices);
+  ch_tracer(const std::vector<device_base>& devices);
 
   template <typename... Devices>
-  ch_tracer(const device& first, const Devices&... more)
-    : ch_tracer(ch_device_list{first, (more)...})
+  ch_tracer(const device_base& first, const Devices&... more)
+    : ch_tracer(std::vector<device_base>{first, (more)...})
   {}
 
   ch_tracer(const ch_tracer& other);

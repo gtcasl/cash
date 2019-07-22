@@ -9,7 +9,7 @@ namespace internal {
 class tracerimpl : public simulatorimpl {
 public:
 
-  tracerimpl(const ch_device_list& devices);
+  tracerimpl(const std::vector<device_base>& devices);
 
   ~tracerimpl();
 

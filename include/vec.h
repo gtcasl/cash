@@ -75,8 +75,8 @@ public:
 
   template <typename U>
   ch_vec& operator=(const std::array<U, N>& other) {
-    static_assert(std::is_constructible_v<T, U>, "invalid type");
     CH_API_ENTRY(1);
+    static_assert(std::is_constructible_v<T, U>, "invalid type");
     for (unsigned i = 0; i < N; ++i) {
       this->at(i) = other.at(i);
     }
@@ -94,15 +94,18 @@ public:
   }
 
   auto operator==(const ch_vec& other) const {
+    CH_API_ENTRY(1);
     return (this->as_bit() == other.as_bit());
   }
 
   auto operator!=(const ch_vec& other) const {
+    CH_API_ENTRY(1);
     return (this->as_bit() != other.as_bit());
   }
 
   template <typename U>
   friend auto operator==(const ch_vec& lhs, const std::array<U, N>& rhs) {
+    CH_API_ENTRY(1);
     static_assert(is_equality_comparable_v<T, U>, "nested type is not equality-comparable");
     auto ret(lhs.at(0) == rhs.at(0));
     for (unsigned i = 1; i < N; ++i) {
@@ -113,16 +116,19 @@ public:
 
   template <typename U>
   friend auto operator==(const std::array<U, N>& lhs, const ch_vec& rhs) {
+    CH_API_ENTRY(1);
     return (rhs == lhs);
   }
 
   template <typename U>
   friend auto operator!=(const ch_vec& lhs, const std::array<U, N>& rhs) {
+    CH_API_ENTRY(1);
     return !(lhs == rhs);
   }
 
   template <typename U>
   friend auto operator!=(const std::array<U, N>& lhs, const ch_vec& rhs) {
+    CH_API_ENTRY(1);
     return !(rhs == lhs);
   }
 

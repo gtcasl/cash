@@ -24,7 +24,7 @@ void clock_driver::eval() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-simulatorimpl::simulatorimpl(const ch_device_list& devices)
+simulatorimpl::simulatorimpl(const std::vector<device_base>& devices)
   : eval_ctx_(nullptr)
   , clk_driver_(true)
   , reset_driver_(false)
@@ -154,7 +154,7 @@ void simulatorimpl::run(ch_tick num_ticks) {
 
 ch_simulator::ch_simulator() : impl_(nullptr) {}
 
-ch_simulator::ch_simulator(const ch_device_list& devices) {
+ch_simulator::ch_simulator(const std::vector<device_base>& devices) {
   impl_ = new simulatorimpl(devices);
   impl_->acquire();
 }

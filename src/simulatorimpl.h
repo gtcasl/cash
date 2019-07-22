@@ -61,7 +61,7 @@ public:
 class simulatorimpl : public refcounted {
 public:
 
-  simulatorimpl(const ch_device_list& devices);
+  simulatorimpl(const std::vector<device_base>& devices);
 
   virtual ~simulatorimpl();
 
