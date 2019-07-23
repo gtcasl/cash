@@ -50,23 +50,18 @@ struct ch_rv_hxbar {
     (out_io) out
   );
   void describe() {
+    ch_module<ch_hxbar<ch_valid_t<T>, I, 1>> xbar;
     for (unsigned i = 0; i < I; ++i) {
-      xbar_.io.in[i].data  = io.in[i].data;
-      xbar_.io.in[i].valid = io.in[i].valid;
+      xbar.io.in[i].data  = io.in[i].data;
+      xbar.io.in[i].valid = io.in[i].valid;
     }
-    io.out.data  = xbar_.io.out[0].data;
-    io.out.valid = xbar_.io.out[0].valid;
-    xbar_.io.sel = io.sel;
+    io.out.data  = xbar.io.out[0].data;
+    io.out.valid = xbar.io.out[0].valid;
+    xbar.io.sel = io.sel;
     for (unsigned i = 0; i < I; ++i) {
       io.in[i].ready = io.out.ready && (i == io.sel);
     }
-  }
-private:
-  __struct (xb_data_t, (
-    (T) data,
-    (ch_bool) valid
-  ));
-  ch_module<ch_hxbar<xb_data_t, I, 1>> xbar_;
+  }  
 };
 
 template <typename T, unsigned I, unsigned O>
@@ -80,23 +75,18 @@ struct ch_rv_xbar {
     (out_io) out
   );
   void describe() {
+    ch_module<ch_xbar<ch_valid_t<T>, I, 1>> xbar;
     for (unsigned i = 0; i < I; ++i) {
-      xbar_.io.in[i].data  = io.in[i].data;
-      xbar_.io.in[i].valid = io.in[i].valid;
+      xbar.io.in[i].data  = io.in[i].data;
+      xbar.io.in[i].valid = io.in[i].valid;
     }
-    io.out.data  = xbar_.io.out[0].data;
-    io.out.valid = xbar_.io.out[0].valid;
-    xbar_.io.sel = io.sel;
+    io.out.data  = xbar.io.out[0].data;
+    io.out.valid = xbar.io.out[0].valid;
+    xbar.io.sel = io.sel;
     for (unsigned i = 0; i < I; ++i) {
       io.in[i].ready = io.out.ready && (i == io.sel);
     }
   }
-private:
-  __struct (xb_data_t, (
-    (T) data,
-    (ch_bool) valid
-  ));
-  ch_module<ch_xbar<xb_data_t, I, 1>> xbar_;
 };
 
 }
