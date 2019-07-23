@@ -240,18 +240,21 @@ TEST_CASE("misc", "[misc]") {
   }
 
   SECTION("unused", "unused") {
-    TEST([]()->ch_bool {
-      ch_device<GenericModule2<ch_int2, ch_int2, ch_int2>> device(
-        [](ch_int2 lhs, ch_int2 rhs)->ch_int2 { 
-          ch_module<ch_queue<ch_int2, 4>> queue;
+    TESTX([]()->bool {
+      ch_device<GenericModule2<ch_int4, ch_int4, ch_int4>> device(
+        [](auto lhs, auto rhs) { 
+          ch_module<ch_queue<ch_int4, 4>> queue;
           queue.io.enq.data = lhs + rhs;
           queue.io.enq.valid = true;
           queue.io.deq.ready = true;
           return lhs * rhs; 
         }
-      );
-      ch_toVerilog("unused_module.v", device);
-      return true;
+      );      
+      device.io.lhs = 2;
+      device.io.rhs = 3;
+      ch_simulator sim(device);
+      sim.run();
+      return (device.io.out == 6);
     });
   }
 }
