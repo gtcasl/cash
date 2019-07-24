@@ -1124,7 +1124,7 @@ TEST_CASE("arithmetic", "[arithmetic]") {
     });
     TEST([]()->ch_bool {
       ch_uint<4> a(5);
-      ch_int<3> b(2);
+      ch_uint<3> b(2);
       a %= b;
       return a == 1;
     });

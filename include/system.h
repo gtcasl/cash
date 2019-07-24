@@ -647,6 +647,13 @@ auto make_system_op(const A& lhs, const B& rhs) {
   }
 
  #define CH_SYSTEM_OPERATOR2Z_IMPL(base, op, method) \
+ T& op(const base& rhs) { \
+    CH_API_ENTRY(1); \
+    auto& _lhs = reinterpret_cast<T&>(*this); \
+    auto& _rhs = reinterpret_cast<const T&>(rhs); \
+    _lhs = system_accessor::method<T>(_lhs, _rhs); \
+    return _lhs; \
+  } \
   template <typename U, \
             CH_REQUIRE(is_strictly_constructible_v<T, U>)> \
   T& op(const U& rhs) { \

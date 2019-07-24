@@ -417,7 +417,7 @@ TEST_CASE("system", "[system]") {
     });
     TESTX([]()->bool {
       ch_suint<4> a(5);
-      ch_sint<3> b(2);
+      ch_suint<3> b(2);
       a %= b;
       return a == 1;
     });

@@ -606,6 +606,13 @@ auto make_logic_op(const A& a, const B& b) {
   }
   
 #define CH_LOGIC_OPERATOR2Z_IMPL(base, op, method) \
+  T& op(const base& rhs) { \
+    CH_API_ENTRY(1); \
+    auto& _lhs = reinterpret_cast<T&>(*this); \
+    auto& _rhs = reinterpret_cast<const T&>(rhs); \
+    _lhs = logic_accessor::method<T>(ch_clone(_lhs), _rhs); \
+    return _lhs; \
+  } \
   template <typename U, \
             CH_REQUIRE(is_strictly_constructible_v<T, U>)> \
   T& op(const U& rhs) { \
