@@ -109,7 +109,7 @@ public:
     static_assert(is_equality_comparable_v<T, U>, "nested type is not equality-comparable");
     auto ret(lhs.at(0) == rhs.at(0));
     for (unsigned i = 1; i < N; ++i) {
-      ret = ch_clone(ret) && (lhs.at(i) == rhs.at(i));
+      ret &= (lhs.at(i) == rhs.at(i));
     }
     return ret;
   }
