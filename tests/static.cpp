@@ -603,6 +603,16 @@ void foo() {
   }
 
   {
+    ch_reg<ch_bit2> a(0), b(0);
+    auto test = (a == b);
+  }
+
+  {
+    auto dev = ch_device<TestModule>();
+    auto test = (dev.io.lhs == dev.io.rhs);
+  }
+
+  {
     ch_system_t<ch_vec<ch_bit2, 2>> a{11_b, 00_b};
     ch_system_t<ch_vec<ch_vec<ch_bit2, 2>, 2>> b{{11_b, 00_b}, {11_b, 00_b}};
     auto x = b[0][1];

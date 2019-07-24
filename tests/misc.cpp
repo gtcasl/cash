@@ -239,6 +239,21 @@ TEST_CASE("misc", "[misc]") {
     CHECK(sign_ext<uint32_t>(0xf5555555, 32) == 0xf5555555);
   }
 
+  SECTION("log2", "[log2]") {
+    CHECK(log2floor(1) == 0);
+    CHECK(log2floor(2) == 1);
+    CHECK(log2floor(3) == 1);
+    CHECK(log2floor(4) == 2);
+    CHECK(log2ceil(1) == 0);
+    CHECK(log2ceil(2) == 1);
+    CHECK(log2ceil(3) == 2);
+    CHECK(log2ceil(4) == 2);
+    CHECK(log2up(1) == 1);
+    CHECK(log2up(2) == 1);
+    CHECK(log2up(3) == 2);
+    CHECK(log2up(4) == 2);
+  }
+
   SECTION("unused", "unused") {
     TESTX([]()->bool {
       ch_device<GenericModule2<ch_int4, ch_int4, ch_int4>> device(

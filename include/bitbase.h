@@ -58,16 +58,24 @@ public:
 
   // subscript operators
 
-  auto operator[](size_t index) const {
+  auto at(std::size_t index) const {
     assert(index < ch_width_v<T>);
     auto self = reinterpret_cast<const T*>(this);
     return system_accessor::slice<ch_sbool>(*self, index);
   }
 
-  auto operator[](size_t index) {
+  auto at(std::size_t index) {
     assert(index < ch_width_v<T>);
     auto self = reinterpret_cast<T*>(this);
     return system_accessor::sliceref<ch_sbool>(*self, index);
+  }
+
+  auto operator[](std::size_t index) const {
+    return this->at(index);
+  }
+
+  auto operator[](std::size_t index) {
+    return this->at(index);
   }
 
   CH_SYSTEM_INTERFACE(T)
@@ -280,18 +288,28 @@ public:
 
   // subscript operators
 
-  auto operator[](size_t index) const {
+  auto at(std::size_t index) const {
     CH_API_ENTRY(1);
     assert(index < ch_width_v<T>);
     auto self = reinterpret_cast<const T*>(this);
     return logic_accessor::slice<ch_bool>(*self, index);
   }
 
-  auto operator[](size_t index) {
+  auto at(std::size_t index) {
     CH_API_ENTRY(1);
     assert(index < ch_width_v<T>);
     auto self = reinterpret_cast<T*>(this);
     return logic_accessor::sliceref<ch_bool>(*self, index);
+  }
+
+  auto operator[](std::size_t index) const {
+    CH_API_ENTRY(1);
+    return this->at(index);
+  }
+
+  auto operator[](std::size_t index) {
+    CH_API_ENTRY(1);
+    return this->at(index);
   }
 
   CH_LOGIC_INTERFACE(T)
