@@ -1,7 +1,7 @@
 #include "common.h"
 
 TEST_CASE("arithmetic", "[arithmetic]") {
-  SECTION("binary", "[binary]") {
+  SECTION("logical", "[logical]") {
     TEST([]()->ch_bool {
       ch_bit4 a(1100_b);
       auto c = ~a;
@@ -72,7 +72,7 @@ TEST_CASE("arithmetic", "[arithmetic]") {
       ch_bit128 a(0xBA), b(0xDC);
       auto c = ch_xor<8>(a, b);
       return (c == 0x66);
-    });
+    });    
     TEST([]()->ch_bool {
       ch_bit128 a(0xBA), b(0xDC);
       auto c = a | b;
@@ -82,6 +82,24 @@ TEST_CASE("arithmetic", "[arithmetic]") {
       ch_bit128 a(0xBA), b(0xDC);
       auto c = a & b;
       return (ch_slice<8>(c) == 0x98);
+    });
+    TEST([]()->ch_bool {
+      ch_bit<4> a(5);
+      ch_bit<3> b(1);
+      a &= b;
+      return a == 1;
+    });
+    TEST([]()->ch_bool {
+      ch_bit<4> a(5);
+      ch_bit<3> b(1);
+      a |= b;
+      return a == 5;
+    });
+    TEST([]()->ch_bool {
+      ch_bit<4> a(5);
+      ch_bit<3> b(1);
+      a ^= b;
+      return a == 4;
     });
   }
   
@@ -721,6 +739,19 @@ TEST_CASE("arithmetic", "[arithmetic]") {
       //ch_println("y={0}, e={1}", y, e);
       return (y == e);
     });
+
+    TEST([]()->ch_bool {
+      ch_bit<4> a(5);
+      ch_bit<3> b(1);
+      a <<= b;
+      return a == 10;
+    });
+    TEST([]()->ch_bool {
+      ch_bit<4> a(5);
+      ch_bit<3> b(1);
+      a >>= b;
+      return a == 2;
+    });
   }
   SECTION("rotate", "[rotate]") {
     TEST([]()->ch_bool {
@@ -1065,6 +1096,37 @@ TEST_CASE("arithmetic", "[arithmetic]") {
       ch_uint128 b(0x335);
       auto c = ch_mod(a, b);
       return (c == 0x269);
+    });
+
+    TEST([]()->ch_bool {
+      ch_uint<4> a(5);
+      ch_int<3> b(2);
+      a += b;
+      return a == 7;
+    });
+    TEST([]()->ch_bool {
+      ch_uint<4> a(5);
+      ch_int<3> b(2);
+      a -= b;
+      return a == 3;
+    });
+    TEST([]()->ch_bool {
+      ch_uint<4> a(5);
+      ch_int<3> b(2);
+      a *= b;
+      return a == 10;
+    });
+    TEST([]()->ch_bool {
+      ch_uint<4> a(5);
+      ch_int<3> b(2);
+      a /= b;
+      return a == 2;
+    });
+    TEST([]()->ch_bool {
+      ch_uint<4> a(5);
+      ch_int<3> b(2);
+      a %= b;
+      return a == 1;
     });
   }
 }

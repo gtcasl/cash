@@ -558,20 +558,20 @@ auto make_system_op(const A& lhs, const B& rhs) {
 #define CH_SYSTEM_OPERATOR1B_IMPL(base, op, method) \
   friend auto op(const base& self) { \
     auto& _self = reinterpret_cast<const T&>(self); \
-    return ch::internal::system_accessor::method(_self); \
+    return system_accessor::method<T>(_self); \
   }
 
 #define CH_SYSTEM_OPERATOR1X_IMPL(base, op, method) \
   friend auto op(const base& self) { \
     auto& _self = reinterpret_cast<const T&>(self); \
-    return ch::internal::system_accessor::method<T>(_self); \
+    return system_accessor::method<T>(_self); \
   }
 
 #define CH_SYSTEM_OPERATOR2B_IMPL(base, op, method) \
   friend auto op(const base& lhs, const base& rhs) { \
     auto& _lhs = reinterpret_cast<const T&>(lhs); \
     auto& _rhs = reinterpret_cast<const T&>(rhs); \
-    return ch::internal::system_accessor::method(_lhs, _rhs); \
+    return system_accessor::method<T>(_lhs, _rhs); \
   } \
   template <typename U, \
             CH_REQUIRE(is_strictly_constructible_v<T, U>)> \
@@ -581,7 +581,7 @@ auto make_system_op(const A& lhs, const B& rhs) {
       return op(reinterpret_cast<const ch_signed_t<T>&>(lhs), rhs); \
     } else { \
       auto _rhs = system_op_cast<T>(rhs); \
-      return ch::internal::system_accessor::method(_lhs, _rhs); \
+      return system_accessor::method<T>(_lhs, _rhs); \
     } \
   } \
   template <typename U, \
@@ -592,7 +592,7 @@ auto make_system_op(const A& lhs, const B& rhs) {
       return op(lhs, reinterpret_cast<const ch_signed_t<T>&>(rhs)); \
     } else { \
       auto _lhs = system_op_cast<T>(lhs); \
-      return ch::internal::system_accessor::method(_lhs, _rhs); \
+      return system_accessor::method<T>(_lhs, _rhs); \
     } \
   }
 
@@ -600,7 +600,7 @@ auto make_system_op(const A& lhs, const B& rhs) {
   friend auto op(const base& lhs, const base& rhs) { \
     auto& _lhs = reinterpret_cast<const T&>(lhs); \
     auto& _rhs = reinterpret_cast<const T&>(rhs); \
-    return ch::internal::system_accessor::method<T>(_lhs, _rhs); \
+    return system_accessor::method<T>(_lhs, _rhs); \
   } \
   template <typename U, \
             CH_REQUIRE(is_strictly_constructible_v<T, U>)> \
@@ -610,7 +610,7 @@ auto make_system_op(const A& lhs, const B& rhs) {
       return op(reinterpret_cast<const ch_signed_t<T>&>(lhs), rhs); \
     } else { \
       auto _rhs = system_op_cast<T>(rhs); \
-      return ch::internal::system_accessor::method<T>(_lhs, _rhs); \
+      return system_accessor::method<T>(_lhs, _rhs); \
     } \
   } \
   template <typename U, \
@@ -621,7 +621,7 @@ auto make_system_op(const A& lhs, const B& rhs) {
       return op(lhs, reinterpret_cast<const ch_signed_t<T>&>(rhs)); \
     } else { \
       auto _lhs = system_op_cast<T>(lhs); \
-      return ch::internal::system_accessor::method<T>(_lhs, _rhs); \
+      return system_accessor::method<T>(_lhs, _rhs); \
     } \
   }
 
@@ -629,21 +629,36 @@ auto make_system_op(const A& lhs, const B& rhs) {
   friend auto op(const base& lhs, const base& rhs) { \
     auto& _lhs = reinterpret_cast<const T&>(lhs); \
     auto& _rhs = reinterpret_cast<const T&>(rhs); \
-    return ch::internal::system_accessor::method<T>(_lhs, _rhs); \
+    return system_accessor::method<T>(_lhs, _rhs); \
   } \
   template <typename U, \
             CH_REQUIRE(is_strictly_constructible_v<T, U>)> \
   friend auto op(const base& lhs, const U& rhs) { \
     auto& _lhs = reinterpret_cast<const T&>(lhs); \
     auto _rhs = ch_system_t<U>(rhs); \
-    return ch::internal::system_accessor::method<T>(_lhs, _rhs); \
+    return system_accessor::method<T>(_lhs, _rhs); \
   } \
   template <typename U, \
             CH_REQUIRE(is_strictly_constructible_v<T, U>)> \
   friend auto op(const U& lhs, const base& rhs) { \
     auto _lhs = system_op_cast<T>(lhs); \
     auto& _rhs = reinterpret_cast<const T&>(rhs); \
-    return ch::internal::system_accessor::method<T>(_lhs, _rhs); \
+    return system_accessor::method<T>(_lhs, _rhs); \
+  }
+
+ #define CH_SYSTEM_OPERATOR2Z_IMPL(base, op, method) \
+  template <typename U, \
+            CH_REQUIRE(is_strictly_constructible_v<T, U>)> \
+  T& op(const U& rhs) { \
+    CH_API_ENTRY(1); \
+    auto& _lhs = reinterpret_cast<T&>(*this); \
+    if constexpr (!std::is_integral_v<U> && is_signed_v<U> && !is_signed_v<T>) { \
+      reinterpret_cast<ch_signed_t<T>&>(_lhs).op(rhs); \
+    } else { \
+      auto _rhs = system_op_cast<T>(rhs); \
+      _lhs = system_accessor::method<T>(_lhs, _rhs); \
+    } \
+    return _lhs; \
   }
 
 #define CH_SYSTEM_FUNCTION1B_DECL(base, func) \
@@ -668,22 +683,22 @@ auto make_system_op(const A& lhs, const B& rhs) {
 #define CH_SYSTEM_FUNCTION1B_IMPL(base, func, method) \
   friend auto func(const base& self) { \
     auto& _self = reinterpret_cast<const T&>(self); \
-    return ch::internal::system_accessor::method(_self); \
+    return system_accessor::method<T>(_self); \
   }
 
 #define CH_SYSTEM_FUNCTION1X_IMPL(base, func, method) \
   friend auto func(const base& self) { \
     auto& _self = reinterpret_cast<const T&>(self); \
-    return ch::internal::system_accessor::method<T>(_self); \
+    return system_accessor::method<T>(_self); \
   } \
   template <unsigned R> \
   friend auto func(const base& self) { \
     auto& _self = reinterpret_cast<const T&>(self); \
     if constexpr (ch_width_v<T> == R || !is_resizable_v<T>) { \
       static_assert(ch_width_v<T> == R, "invalid output size"); \
-      return ch::internal::system_accessor::method<T>(_self); \
+      return system_accessor::method<T>(_self); \
     } else { \
-      return ch::internal::system_accessor::method<ch_size_cast_t<T, R>>(_self); \
+      return system_accessor::method<ch_size_cast_t<T, R>>(_self); \
     } \
   }
 
@@ -691,7 +706,7 @@ auto make_system_op(const A& lhs, const B& rhs) {
   friend auto func(const base& lhs, const base& rhs) { \
     auto& _lhs = reinterpret_cast<const T&>(lhs); \
     auto& _rhs = reinterpret_cast<const T&>(rhs); \
-    return ch::internal::system_accessor::method(_lhs, _rhs); \
+    return system_accessor::method<T>(_lhs, _rhs); \
   } \
   template <typename U, \
             CH_REQUIRE(is_strictly_constructible_v<T, U>)> \
@@ -701,7 +716,7 @@ auto make_system_op(const A& lhs, const B& rhs) {
       return func(reinterpret_cast<const ch_signed_t<T>&>(lhs), rhs); \
     } else { \
       auto _rhs = system_op_cast<T>(rhs); \
-      return ch::internal::system_accessor::method(_lhs, _rhs); \
+      return system_accessor::method<T>(_lhs, _rhs); \
     } \
   } \
   template <typename U, \
@@ -712,7 +727,7 @@ auto make_system_op(const A& lhs, const B& rhs) {
       return func(lhs, reinterpret_cast<const ch_signed_t<T>&>(rhs)); \
     } else { \
       auto _lhs = system_op_cast<T>(lhs); \
-      return ch::internal::system_accessor::method(_lhs, _rhs); \
+      return system_accessor::method<T>(_lhs, _rhs); \
     } \
   }
 
@@ -720,7 +735,7 @@ auto make_system_op(const A& lhs, const B& rhs) {
   friend auto func(const base& lhs, const base& rhs) { \
     auto& _lhs = reinterpret_cast<const T&>(lhs); \
     auto& _rhs = reinterpret_cast<const T&>(rhs); \
-    return ch::internal::system_accessor::method<T>(_lhs, _rhs); \
+    return system_accessor::method<T>(_lhs, _rhs); \
   } \
   template <unsigned R> \
   friend auto func(const base& lhs, const base& rhs) { \
@@ -728,9 +743,9 @@ auto make_system_op(const A& lhs, const B& rhs) {
     auto& _rhs = reinterpret_cast<const T&>(rhs); \
     if constexpr (ch_width_v<T> == R || !is_resizable_v<T>) { \
       static_assert(ch_width_v<T> == R, "invalid output size"); \
-      return ch::internal::system_accessor::method<T>(_lhs, _rhs); \
+      return system_accessor::method<T>(_lhs, _rhs); \
     } else { \
-      return ch::internal::system_accessor::method<ch_size_cast_t<T, R>>(_lhs, _rhs); \
+      return system_accessor::method<ch_size_cast_t<T, R>>(_lhs, _rhs); \
     } \
   } \
   template <typename U, \
@@ -741,7 +756,7 @@ auto make_system_op(const A& lhs, const B& rhs) {
       return func(reinterpret_cast<const ch_signed_t<T>&>(lhs), rhs); \
     } else { \
       auto _rhs = system_op_cast<T>(rhs); \
-      return ch::internal::system_accessor::method<T>(_lhs, _rhs); \
+      return system_accessor::method<T>(_lhs, _rhs); \
     } \
   } \
   template <unsigned R, typename U, \
@@ -754,9 +769,9 @@ auto make_system_op(const A& lhs, const B& rhs) {
       auto _rhs = system_op_cast<T>(rhs); \
       if constexpr (ch_width_v<T> == R || !is_resizable_v<T>) { \
         static_assert(ch_width_v<T> == R, "invalid output size"); \
-        return ch::internal::system_accessor::method<T>(_lhs, _rhs); \
+        return system_accessor::method<T>(_lhs, _rhs); \
       } else { \
-        return ch::internal::system_accessor::method<ch_size_cast_t<T, R>>(_lhs, _rhs); \
+        return system_accessor::method<ch_size_cast_t<T, R>>(_lhs, _rhs); \
       } \
     } \
   } \
@@ -768,7 +783,7 @@ auto make_system_op(const A& lhs, const B& rhs) {
       return func(lhs, reinterpret_cast<const ch_signed_t<T>&>(rhs)); \
     } else { \
       auto _lhs = system_op_cast<T>(lhs); \
-      return ch::internal::system_accessor::method<T>(_lhs, _rhs); \
+      return system_accessor::method<T>(_lhs, _rhs); \
     } \
   } \
   template <unsigned R, typename U, \
@@ -781,9 +796,9 @@ auto make_system_op(const A& lhs, const B& rhs) {
       auto _lhs = system_op_cast<T>(lhs); \
       if constexpr (ch_width_v<T> == R || !is_resizable_v<T>) { \
         static_assert(ch_width_v<T> == R, "invalid output size"); \
-        return ch::internal::system_accessor::method<T>(_lhs, _rhs); \
+        return system_accessor::method<T>(_lhs, _rhs); \
       } else { \
-        return ch::internal::system_accessor::method<ch_size_cast_t<T, R>>(_lhs, _rhs); \
+        return system_accessor::method<ch_size_cast_t<T, R>>(_lhs, _rhs); \
       } \
     } \
   }
@@ -792,7 +807,7 @@ auto make_system_op(const A& lhs, const B& rhs) {
   friend auto func(const base& lhs, const base& rhs) { \
     auto& _lhs = reinterpret_cast<const T&>(lhs); \
     auto& _rhs = reinterpret_cast<const T&>(rhs); \
-    return ch::internal::system_accessor::method<T>(_lhs, _rhs); \
+    return system_accessor::method<T>(_lhs, _rhs); \
   } \
   template <unsigned R> \
   friend auto func(const base& lhs, const base& rhs) { \
@@ -800,9 +815,9 @@ auto make_system_op(const A& lhs, const B& rhs) {
     auto& _rhs = reinterpret_cast<const T&>(rhs); \
     if constexpr (ch_width_v<T> == R || !is_resizable_v<T>) { \
       static_assert(ch_width_v<T> == R, "invalid output size"); \
-      return ch::internal::system_accessor::method<T>(_lhs, _rhs); \
+      return system_accessor::method<T>(_lhs, _rhs); \
     } else { \
-      return ch::internal::system_accessor::method<ch_size_cast_t<T, R>>(_lhs, _rhs); \
+      return system_accessor::method<ch_size_cast_t<T, R>>(_lhs, _rhs); \
     } \
   } \
   template <typename U, \
@@ -810,7 +825,7 @@ auto make_system_op(const A& lhs, const B& rhs) {
   friend auto func(const base& lhs, const U& rhs) { \
     auto& _lhs = reinterpret_cast<const T&>(lhs); \
     auto _rhs = ch_system_t<U>(rhs); \
-    return ch::internal::system_accessor::method<T>(_lhs, _rhs); \
+    return system_accessor::method<T>(_lhs, _rhs); \
   } \
   template <unsigned R, typename U, \
             CH_REQUIRE(is_strictly_constructible_v<T, U>)> \
@@ -819,9 +834,9 @@ auto make_system_op(const A& lhs, const B& rhs) {
     auto _rhs = ch_system_t<U>(rhs); \
     if constexpr (ch_width_v<T> == R || !is_resizable_v<T>) { \
       static_assert(ch_width_v<T> == R, "invalid output size"); \
-      return ch::internal::system_accessor::method<T>(_lhs, _rhs); \
+      return system_accessor::method<T>(_lhs, _rhs); \
     } else { \
-      return ch::internal::system_accessor::method<ch_size_cast_t<T, R>>(_lhs, _rhs); \
+      return system_accessor::method<ch_size_cast_t<T, R>>(_lhs, _rhs); \
     } \
   } \
   template <typename U, \
@@ -829,7 +844,7 @@ auto make_system_op(const A& lhs, const B& rhs) {
   friend auto func(const U& lhs, const base& rhs) { \
     auto _lhs = system_op_cast<T>(lhs); \
     auto& _rhs = reinterpret_cast<const T&>(rhs); \
-    return ch::internal::system_accessor::method<T>(_lhs, _rhs); \
+    return system_accessor::method<T>(_lhs, _rhs); \
   } \
   template <unsigned R, typename U, \
             CH_REQUIRE(is_strictly_constructible_v<T, U>)> \
@@ -838,9 +853,9 @@ auto make_system_op(const A& lhs, const B& rhs) {
     auto& _rhs = reinterpret_cast<const T&>(rhs); \
     if constexpr (ch_width_v<T> == R || !is_resizable_v<T>) { \
       static_assert(ch_width_v<T> == R, "invalid output size"); \
-      return ch::internal::system_accessor::method<T>(_lhs, _rhs); \
+      return system_accessor::method<T>(_lhs, _rhs); \
     } else { \
-      return ch::internal::system_accessor::method<ch_size_cast_t<T, R>>(_lhs, _rhs); \
+      return system_accessor::method<ch_size_cast_t<T, R>>(_lhs, _rhs); \
     } \
   }
 

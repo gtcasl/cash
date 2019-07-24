@@ -88,6 +88,13 @@ public:
   CH_SYSTEM_OPERATOR2Y_IMPL(ch_sbitbase, operator<<, do_shl)
   CH_SYSTEM_OPERATOR2Y_IMPL(ch_sbitbase, operator>>, do_shr)
 
+  CH_SYSTEM_OPERATOR2Z_IMPL(ch_sbitbase, operator&=, do_and)
+  CH_SYSTEM_OPERATOR2Z_IMPL(ch_sbitbase, operator|=, do_or)
+  CH_SYSTEM_OPERATOR2Z_IMPL(ch_sbitbase, operator^=, do_xor)
+
+  CH_SYSTEM_OPERATOR2Z_IMPL(ch_sbitbase, operator<<=, do_shl)
+  CH_SYSTEM_OPERATOR2Z_IMPL(ch_sbitbase, operator>>=, do_shr)
+
   CH_SYSTEM_FUNCTION2B_IMPL(ch_sbitbase, ch_eq, do_eq)
   CH_SYSTEM_FUNCTION2B_IMPL(ch_sbitbase, ch_ne, do_ne)
 
@@ -303,6 +310,13 @@ public:
 
   CH_LOGIC_OPERATOR2Y_IMPL(ch_bitbase, operator<<, do_shl)
   CH_LOGIC_OPERATOR2Y_IMPL(ch_bitbase, operator>>, do_shr)
+
+  CH_LOGIC_OPERATOR2Z_IMPL(ch_bitbase, operator&=, do_and)
+  CH_LOGIC_OPERATOR2Z_IMPL(ch_bitbase, operator|=, do_or)
+  CH_LOGIC_OPERATOR2Z_IMPL(ch_bitbase, operator^=, do_xor)
+
+  CH_LOGIC_OPERATOR2Z_IMPL(ch_bitbase, operator<<=, do_shl)
+  CH_LOGIC_OPERATOR2Z_IMPL(ch_bitbase, operator>>=, do_shr)
 
   CH_LOGIC_FUNCTION2B_IMPL(ch_bitbase, ch_eq, do_eq)
   CH_LOGIC_FUNCTION2B_IMPL(ch_bitbase, ch_ne, do_ne)

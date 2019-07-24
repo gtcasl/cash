@@ -359,7 +359,67 @@ TEST_CASE("system", "[system]") {
       ch_suint<128> b(257);
       RetCheck ret;
       ret &= ((a / b) == 512/257);
-      return ret;
+      return ret;      
+    });
+    TESTX([]()->bool {
+      ch_sbit<4> a(5);
+      ch_sbit<3> b(1);
+      a &= b;
+      return a == 1;
+    });
+    TESTX([]()->bool {
+      ch_sbit<4> a(5);
+      ch_sbit<3> b(1);
+      a |= b;
+      return a == 5;
+    });
+    TESTX([]()->bool {
+      ch_sbit<4> a(5);
+      ch_sbit<3> b(1);
+      a ^= b;
+      return a == 4;
+    });
+    TESTX([]()->bool {
+      ch_sbit<4> a(5);
+      ch_sbit<3> b(1);
+      a <<= b;
+      return a == 10;
+    });
+    TESTX([]()->bool {
+      ch_sbit<4> a(5);
+      ch_sbit<3> b(1);
+      a >>= b;
+      return a == 2;
+    });
+    TESTX([]()->bool {
+      ch_suint<4> a(5);
+      ch_sint<3> b(2);
+      a += b;
+      return a == 7;
+    });
+    TESTX([]()->bool {
+      ch_suint<4> a(5);
+      ch_sint<3> b(2);
+      a -= b;
+      return a == 3;
+    });
+    TESTX([]()->bool {
+      ch_suint<4> a(5);
+      ch_sint<3> b(2);
+      a *= b;
+      return a == 10;
+    });
+    TESTX([]()->bool {
+      ch_suint<4> a(5);
+      ch_sint<3> b(2);
+      a /= b;
+      return a == 2;
+    });
+    TESTX([]()->bool {
+      ch_suint<4> a(5);
+      ch_sint<3> b(2);
+      a %= b;
+      return a == 1;
     });
   }
   SECTION("cast", "[cast]") {

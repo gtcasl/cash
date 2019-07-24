@@ -39,6 +39,12 @@ public:
   CH_SYSTEM_OPERATOR2X_IMPL(ch_snumbase, operator/, do_div)
   CH_SYSTEM_OPERATOR2X_IMPL(ch_snumbase, operator%, do_mod)
 
+  CH_SYSTEM_OPERATOR2Z_IMPL(ch_snumbase, operator+=, do_add)
+  CH_SYSTEM_OPERATOR2Z_IMPL(ch_snumbase, operator-=, do_sub)
+  CH_SYSTEM_OPERATOR2Z_IMPL(ch_snumbase, operator*=, do_mul)
+  CH_SYSTEM_OPERATOR2Z_IMPL(ch_snumbase, operator/=, do_div)
+  CH_SYSTEM_OPERATOR2Z_IMPL(ch_snumbase, operator%=, do_mod)
+
   CH_SYSTEM_FUNCTION2B_IMPL(ch_snumbase, ch_lt, do_lt)
   CH_SYSTEM_FUNCTION2B_IMPL(ch_snumbase, ch_le, do_le)
   CH_SYSTEM_FUNCTION2B_IMPL(ch_snumbase, ch_gt, do_gt)
@@ -191,6 +197,12 @@ public:
   CH_LOGIC_OPERATOR2X_IMPL(ch_numbase, operator*, do_mul)
   CH_LOGIC_OPERATOR2X_IMPL(ch_numbase, operator/, do_div)
   CH_LOGIC_OPERATOR2X_IMPL(ch_numbase, operator%, do_mod)
+
+  CH_LOGIC_OPERATOR2Z_IMPL(ch_numbase, operator+=, do_add)
+  CH_LOGIC_OPERATOR2Z_IMPL(ch_numbase, operator-=, do_sub)
+  CH_LOGIC_OPERATOR2Z_IMPL(ch_numbase, operator*=, do_mul)
+  CH_LOGIC_OPERATOR2Z_IMPL(ch_numbase, operator/=, do_div)
+  CH_LOGIC_OPERATOR2Z_IMPL(ch_numbase, operator%=, do_mod)
 
   CH_LOGIC_FUNCTION2B_IMPL(ch_numbase, ch_lt, do_lt)
   CH_LOGIC_FUNCTION2B_IMPL(ch_numbase, ch_le, do_le)
