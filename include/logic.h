@@ -358,7 +358,7 @@ auto to_lnode(const T& obj) {
       return lnode(get_snode(tmp));
     }
   } else
-  if constexpr (std::is_integral_v<T>) {
+  if constexpr (std::is_integral_v<T> || std::is_enum_v<T>) {
     ch_system_t<R> tmp(obj);
     return lnode(get_snode(tmp));
   } else {
@@ -383,7 +383,7 @@ auto logic_op_cast(const T& obj) {
   if constexpr (is_system_type_v<T>) {
     return ch_size_cast_t<R, ch_width_v<T>>(make_logic_buffer(get_snode(obj)));
   } else
-  if constexpr (std::is_integral_v<T>) {
+  if constexpr (std::is_integral_v<T> || std::is_enum_v<T>) {
     static const auto N = std::min(ch_width_v<T>, ch_width_v<R>);
     ch_size_cast_t<ch_system_t<T>, N> tmp(obj);
     return ch_size_cast_t<R, N>(make_logic_buffer(get_snode(tmp)));

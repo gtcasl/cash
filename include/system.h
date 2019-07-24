@@ -391,7 +391,7 @@ auto system_op_cast(const T& obj) {
   if constexpr (is_system_type_v<T>) {
     return obj.template as<ch_size_cast_t<R, ch_width_v<T>>>();
   } else
-  if constexpr (std::is_integral_v<T>) {
+  if constexpr (std::is_integral_v<T> || std::is_enum_v<T>) {
     static const auto N = std::min(ch_width_v<T>, ch_width_v<R>);
     return ch_size_cast_t<R, N>(obj);
   } else {
