@@ -599,6 +599,10 @@ void foo() {
   }
 
   {
+    std::array<ch_reg<ch_bit2>, 2> a{11_b, 00_b};
+  }
+
+  {
     ch_system_t<ch_vec<ch_bit2, 2>> a{11_b, 00_b};
     ch_system_t<ch_vec<ch_vec<ch_bit2, 2>, 2>> b{{11_b, 00_b}, {11_b, 00_b}};
     auto x = b[0][1];

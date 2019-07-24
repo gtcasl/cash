@@ -94,11 +94,11 @@ private:
 
     ch_counter<A> index(in.valid && sdf_.io.enq.ready);
     auto toggle = index.value()[log2ceil(A)-1];
-    auto d_out = ch_delayEn(d_in, sdf_.io.enq.ready, A/2);
+    auto d_out  = ch_delayEn(d_in, sdf_.io.enq.ready, A/2);
     auto [bf1, bf2] = butterfly(d_out, in.data);
-        d_in = ch_sel(toggle, bf2, in.data);
-    auto ret = ch_sel(toggle, bf1, d_out);
-    out.data = ch_delayEn(ret, sdf_.io.enq.ready, 1);
+        d_in  = ch_sel(toggle, bf2, in.data);
+    auto ret  = ch_sel(toggle, bf1, d_out);
+    out.data  = ch_delayEn(ret, sdf_.io.enq.ready, 1);
     out.valid = ch_delayEn(in.valid, sdf_.io.enq.ready, A/2 + 1, false);
 
     return out;
@@ -119,11 +119,11 @@ private:
 
     ch_counter<A/2> index2(valid && sdf_.io.enq.ready);
     auto toggle = index2.value()[log2ceil(A)-2];
-    auto d_out = ch_delayEn(d_in, sdf_.io.enq.ready, A/4);
+    auto d_out  = ch_delayEn(d_in, sdf_.io.enq.ready, A/4);
     auto [bf1, bf2] = butterfly(d_out, b_in);
-        d_in = ch_sel(toggle, bf2, value);
-    auto ret = ch_sel(toggle, bf1, d_out);
-    out.data = ch_delayEn(ret, sdf_.io.enq.ready, 1);
+        d_in  = ch_sel(toggle, bf2, value);
+    auto ret  = ch_sel(toggle, bf1, d_out);
+    out.data  = ch_delayEn(ret, sdf_.io.enq.ready, 1);
     out.valid = ch_delayEn(valid, sdf_.io.enq.ready, A/4 + 1, false);
 
     return out;
@@ -148,7 +148,7 @@ private:
     ch_counter<N> index(sdf_.io.deq.valid && sdf_.io.enq.ready);
     sdf_.io.deq.ready = (0 == index.value());
     sdf_.io.enq.valid = out.valid;
-    sdf_.io.enq.data = out.data;
+    sdf_.io.enq.data  = out.data;
     sdf_.io.in(io.in);
     sdf_.io.out(io.out);
   }

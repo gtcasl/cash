@@ -443,6 +443,11 @@ TEST_CASE("registers", "[registers]") {
       //ch_println("t={0}, clk={1}, rst={2}, next={3}, out={4}, expected={5}", ch_now(), clk, reset, next, r, e);
       ch_popcd();
       return (r == e);
-    }, 4);
+    }, 4);   
+
+    TEST([]()->ch_bool {
+      std::array<ch_reg<ch_int4>, 2> a{1, 2};
+      return (a[0] == 1 && a[1] == 2);
+    }, 1);
   }
 }
