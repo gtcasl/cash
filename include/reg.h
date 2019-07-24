@@ -47,16 +47,9 @@ public:
     __next__ = std::make_unique<next_t>(getRegNextNode(get_lnode(*this)));
   }
 
-  template <typename U0,
-            CH_REQUIRE(std::is_convertible_v<U0, T>)>
-  explicit ch_reg_impl(const U0& init0)
-    : base(make_logic_buffer(createRegNode(to_lnode<T>(init0), idname<T>()))) {
-    __next__ = std::make_unique<next_t>(getRegNextNode(get_lnode(*this)));
-  }
-
   template <typename... Us,
             CH_REQUIRE(std::is_constructible_v<T, Us...>)>
-  explicit ch_reg_impl(const Us&... inits)
+  ch_reg_impl(const Us&... inits)
     : base(make_logic_buffer(createRegNode(get_lnode(T(inits...)), idname<T>()))) {
     __next__ = std::make_unique<next_t>(getRegNextNode(get_lnode(*this)));
   }
