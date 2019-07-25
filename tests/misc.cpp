@@ -252,6 +252,7 @@ TEST_CASE("misc", "[misc]") {
     CHECK(log2up(2) == 1);
     CHECK(log2up(3) == 2);
     CHECK(log2up(4) == 2);
+    CHECK(roundup(7, 3) == 9);
   }
 
   SECTION("unused", "unused") {
@@ -262,6 +263,21 @@ TEST_CASE("misc", "[misc]") {
           queue.io.enq.data = lhs + rhs;
           queue.io.enq.valid = true;
           queue.io.deq.ready = true;
+          return lhs * rhs; 
+        }
+      );      
+      device.io.lhs = 2;
+      device.io.rhs = 3;
+      ch_simulator sim(device);
+      sim.run();
+      return (device.io.out == 6);
+    });
+    
+    TESTX([]()->bool {
+      ch_device<GenericModule2<ch_int4, ch_int4, ch_int4>> device(
+        [](auto lhs, auto rhs) { 
+          ch_module<ch_queue<ch_int4, 4>> queue;
+          queue.io.enq.data = lhs + rhs;
           return lhs * rhs; 
         }
       );      

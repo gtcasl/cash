@@ -906,6 +906,11 @@ constexpr T ceildiv(T a, U b) {
   return T((a + b - 1) / b);
 }
 
+template <typename T, typename U>
+constexpr T roundup(T a, U b) {
+  return b * ceildiv(a, b);
+}
+
 template <typename T = uint32_t>
 constexpr T blend(T mask, T a, T b) {
   static_assert(std::is_integral_v<T>, "invalid type");

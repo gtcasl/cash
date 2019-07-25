@@ -33,9 +33,10 @@ namespace utility {
   using ch::internal::ispow2;
   using ch::internal::log2floor;
   using ch::internal::log2ceil;
-  using ch::internal::log2up;
-  using ch::internal::blend;
+  using ch::internal::log2up;  
   using ch::internal::ceildiv;
+  using ch::internal::roundup;
+  using ch::internal::blend;
   using ch::internal::bit_cast;
   using ch::internal::stringf;
   using ch::internal::make_array_n;

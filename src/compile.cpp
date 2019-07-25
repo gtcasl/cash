@@ -392,11 +392,16 @@ bool compiler::dead_code_elimination() {
         ctx_->dump_ast(std::cout);
       }
     #endif
+      std::stringstream ss;
       for (auto node : undefs) {
         auto proxy = reinterpret_cast<proxyimpl*>(node);
         if (proxy->check_fully_initialized())
-          continue;
-        throw std::domain_error(sstreamf() << "uninitialized variable " << node->debug_info());
+          continue;        
+        ss << "uninitialized variable " << node->debug_info() << std::endl;
+      }
+      auto str_error = ss.str();
+      if (!str_error.empty()) {
+        throw std::domain_error(str_error);
       }
     #define LCOV_EXCL_END
     }
