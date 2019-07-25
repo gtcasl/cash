@@ -208,19 +208,23 @@ bool verilogwriter::print_binding(std::ostream& out, bindimpl* node) {
   out << m->name() << " ";
   print_name(out, node);
   out << "(";
-  for (auto& input : node->inputs()) {
-    auto b = reinterpret_cast<bindportimpl*>(input.impl());
-    auto p = reinterpret_cast<ioimpl*>(b->ioport().impl());
-    out << sep << "." << identifier_from_string(p->name()) << "(";
-    this->print_name(out, b);
-    out << ")";
-  }
-  for (auto& output : node->outputs()) {
-    auto b = reinterpret_cast<bindportimpl*>(output.impl());
-    auto p = reinterpret_cast<ioimpl*>(b->ioport().impl());
-    out << sep << "." << identifier_from_string(p->name()) << "(";
-    this->print_name(out, b);
-    out << ")";
+  {
+    auto_indent indent(out);
+    auto_separator sep2(",");
+    for (auto& input : node->inputs()) {
+      auto b = reinterpret_cast<bindportimpl*>(input.impl());
+      auto p = reinterpret_cast<ioimpl*>(b->ioport().impl());
+      out << sep2 << std::endl << "." << identifier_from_string(p->name()) << "(";
+      this->print_name(out, b);
+      out << ")";
+    }
+    for (auto& output : node->outputs()) {
+      auto b = reinterpret_cast<bindportimpl*>(output.impl());
+      auto p = reinterpret_cast<ioimpl*>(b->ioport().impl());
+      out << sep2 << std::endl << "." << identifier_from_string(p->name()) << "(";
+      this->print_name(out, b);
+      out << ")";
+    }
   }
   out << ");" << std::endl;
   return true;
