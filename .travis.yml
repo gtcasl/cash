@@ -74,6 +74,7 @@ script:
   - CASH_CFLAGS=15  make test
   - CASH_CFLAGS=271 make test
   - CASH_CFLAGS=261775 make test
+  - CASH_CFLAGS=262144 make test
   - popd  
   
 after_success:

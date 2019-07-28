@@ -110,6 +110,10 @@ using v2_3_t = ch_vec<ch_bit2, 3>;
 TEST_CASE("aggregates", "[aggregates]") {
   SECTION("structs", "[structs]") {
     TEST([]()->ch_bool {
+      s2_t s2{2, 3};           
+      return (s2.a == 3) && (s2.b == 2);
+    });
+    TEST([]()->ch_bool {
       s1_t s1(1_h);
       s2_t s2(1_h, 0_h);
       s3_t s3(1_h, 0_h, 0_h);

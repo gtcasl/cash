@@ -13,7 +13,7 @@ enum class cflags {
   show_sloc       = (1 << 4),
   check_reg_init  = (1 << 5),
   force_reg_init  = (1 << 6),
-  disable_sub_opt = (1 << 7),
+  disable_smo     = (1 << 7),
   disable_jit     = (1 << 8),
   disable_cfo     = (1 << 9),
   disable_cse     = (1 << 10),
@@ -24,6 +24,7 @@ enum class cflags {
   disable_swo     = (1 << 15),
   disable_sro     = (1 << 16),
   disable_snc     = (1 << 17),
+  merged_module   = (1 << 18)
 };
 
 inline constexpr auto operator|(cflags lsh, cflags rhs) {

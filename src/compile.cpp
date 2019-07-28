@@ -178,7 +178,7 @@ void compiler::optimize() {
   // run optimization passes
   bool changed =true;
   if (ctx_->parent()
-   && (platform::self().cflags() & cflags::disable_sub_opt) != 0) {
+   && (platform::self().cflags() & cflags::disable_smo) != 0) {
     changed = false;
   }
 
@@ -1407,9 +1407,13 @@ void compiler::create_merged_context(context* ctx) {
   CH_DBG(2, "create merged context for %s (#%d) ...\n", ctx->name().c_str(), ctx->id());
 
   clone_map map;
-  node_path.push_back(stringf("%s_%d", ctx->name().c_str(), ctx->id()));
-  visit(ctx, map);
-  node_path.pop_back();
+  if (ctx_->name() != ctx->name()) {
+    node_path.push_back(stringf("%s_%d", ctx->name().c_str(), ctx->id()));
+    visit(ctx, map);
+    node_path.pop_back();
+  } else {
+    visit(ctx, map);
+  }
 }
 
 void compiler::build_eval_list(std::vector<lnodeimpl*>& eval_list) {
