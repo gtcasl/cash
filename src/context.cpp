@@ -381,29 +381,25 @@ inputimpl* context::create_input(uint32_t size,
   return this->create_node<inputimpl>(size, value, name, sloc);
 }
 
-outputimpl* context::create_output(uint32_t size,
-                                   const std::string& name,
-                                   const source_location& sloc) {
+outputimpl* context::get_output(const std::string& name) {
   for (auto node : outputs_) {
     auto output = reinterpret_cast<outputimpl*>(node);
     if (output->name() == name) {
       return output;
     }
   }
+  return nullptr;
+}
+
+outputimpl* context::create_output(uint32_t size,
+                                   const std::string& name,
+                                   const source_location& sloc) {
+  auto output = this->get_output(name);
+  if (output)
+    return output;
   auto src = this->create_node<proxyimpl>(size, name, sloc);
   auto value = smart_ptr<sdata_type>::make(size);
   return this->create_node<outputimpl>(size, src, value, name, sloc);
-}
-
-outputimpl* context::get_output(const lnode& src) {
-  for (auto node : outputs_) {
-    auto output = reinterpret_cast<outputimpl*>(node);
-    if (output->src(0).id() == src.id()) {
-      return output;
-    }
-  }
-  std::abort();
-  return nullptr;
 }
 
 litimpl* context::create_literal(const sdata_type& value) {

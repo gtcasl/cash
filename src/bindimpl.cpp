@@ -145,13 +145,13 @@ lnodeimpl* bindportimpl::clone(context*, const clone_map&) const {
 void bindportimpl::print(std::ostream& out) const {
   out << "#" << id_ << " <- " << this->type() << this->size();
   out << "(";
-  if (type_bindout == type_) {
-    out << "#" << ioport_.id() << ", ";
-  }
   for (uint32_t i = 0; i < this->num_srcs(); ++i) {
     if (i)
       out << ", ";
     out << "#" << this->src(i).id();
+  }
+  if (type_bindout == type_) {
+    out << ", #" << ioport_.id();
   }
   out << ")";
 }

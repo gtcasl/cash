@@ -30,8 +30,8 @@ struct placeholder_user_t {
 
 class placeholder_node : public lnodeimpl {
 public:
-  placeholder_node(uint32_t id, uint32_t size)
-    : lnodeimpl(id, type_none, size, nullptr, "", source_location())
+  placeholder_node(uint32_t id, uint32_t size, context* ctx)
+    : lnodeimpl(id, type_none, size, ctx, "", source_location())
   {}
 
   lnodeimpl* clone(context*, const clone_map&) const override {
@@ -1267,21 +1267,25 @@ void compiler::create_merged_context(context* ctx) {
     //--
     std::vector<std::unique_ptr<placeholder_node>> placeholders;
     std::unordered_map<uint32_t, std::vector<lnodeimpl**>> unresolved_nodes;
+    std::vector<uint32_t> unresolved_bindouts;
 
     //--
     auto ensure_placeholder = [&](lnodeimpl* node, uint32_t src_idx) {
       auto& src = node->src(src_idx);
       auto it = map.find(src.id());
       if (it != map.end()) {
-        if (type_none == it->second->type()) {
-          auto placeholder = reinterpret_cast<placeholder_node*>(it->second);
+        auto cloned_src = it->second;
+        // check if it is a placeholder
+        if (type_none == cloned_src->type()) {
+          auto placeholder = reinterpret_cast<placeholder_node*>(cloned_src);
           auto& user = placeholder->users.emplace_back(src_idx);
           unresolved_nodes[node->id()].emplace_back(&user.node);
         }
         return;
       }
 
-      auto placeholder = std::make_unique<placeholder_node>(src.id(), src.size());
+      // create new placeholder
+      auto placeholder = std::make_unique<placeholder_node>(src.id(), src.size(), curr);
       auto& user = placeholder->users.emplace_back(src_idx);
       unresolved_nodes[node->id()].emplace_back(&user.node);
 
@@ -1304,8 +1308,8 @@ void compiler::create_merged_context(context* ctx) {
     for (auto node : curr->nodes()) {
       switch (node->type()) {
       case type_bind: {
-        auto bind = reinterpret_cast<bindimpl*>(node);
         clone_map sub_map;
+        auto bind = reinterpret_cast<bindimpl*>(node);        
         auto module = bind->module();
 
         // map module inputs to bind inputs
@@ -1334,8 +1338,12 @@ void compiler::create_merged_context(context* ctx) {
         // map bindoutputs to module outputs
         for (auto& bo : bind->outputs()) {
           auto bo_impl = reinterpret_cast<bindportimpl*>(bo.impl());
-          auto bo_value = sub_map.at(bo_impl->ioport().impl()->src(0).id());
-          map[bo.id()] = bo_value;
+          auto bo_port = bo_impl->ioport().impl();
+          auto bo_value = sub_map.at(bo_port->src(0).id());
+          update_map(bo.id(), bo_value);
+          if (bo_value->type() == type_none) {
+            unresolved_bindouts.push_back(bo.id());
+          }
         }
       } break;
       case type_bindin:
@@ -1358,9 +1366,9 @@ void compiler::create_merged_context(context* ctx) {
         }
       } break;
       case type_output: {        
-        if (nullptr == curr->parent()) {
-          auto output = reinterpret_cast<outputimpl*>(node);
-          ensure_placeholder(output, 0);
+        auto output = reinterpret_cast<outputimpl*>(node);
+        ensure_placeholder(output, 0);
+        if (nullptr == curr->parent()) {          
           auto eval_node = output->clone(ctx_, map);
           eval_node->rename(full_name(eval_node));
           update_map(output->id(), eval_node);
@@ -1389,16 +1397,26 @@ void compiler::create_merged_context(context* ctx) {
       }
     }
 
+    // resolve bindouts
+    for (auto id : unresolved_bindouts) {
+      auto cloned_src = map.at(id);
+      if (cloned_src->ctx() == curr
+       && cloned_src->type() == type_none) {
+        map[id] = map.at(cloned_src->id());
+      }
+    }
+
     // resolve placeholders
     for (auto& placeholder : placeholders) {
-      auto src = map.at(placeholder->id());
-      assert(src->type() != type_none);
+      auto cloned_src = map.at(placeholder->id());
       for (auto& user : placeholder->users) {
         auto target = user.node;
-        if (target) {
-          assert(target->type() != type_none);
-          if (type_none == target->src(user.src_idx).impl()->type())
-            target->set_src(user.src_idx, src);
+        if (nullptr == target)
+          continue;
+        assert(target->type() != type_none);
+        if (type_none == target->src(user.src_idx).impl()->type()) {
+          assert(target->src(user.src_idx).impl() == placeholder.get());
+          target->set_src(user.src_idx, cloned_src);
         }
       }
     }

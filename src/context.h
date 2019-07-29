@@ -172,7 +172,7 @@ public:
                             const std::string& name,
                             const source_location& sloc);
 
-  outputimpl* get_output(const lnode& src);
+  outputimpl* get_output(const std::string& name);
 
   //--
 

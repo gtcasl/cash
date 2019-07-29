@@ -217,6 +217,24 @@ __struct (dooh_t, (
 
 __enum (WSS, (X, Q, W));
 
+
+template <typename T>
+struct EgressNIC {
+  __io (
+    (ch_vec<ch_enq_io<T>, 2>) putData,
+    (ch_vec<ch_deq_io<T>, 2>) getData
+  );
+
+  void describe() {
+    std::array<ch_module<ch_llqueue<T, 1>>, 2> buf;
+
+    for (unsigned i = 0; i < 2; ++i) {
+      buf.at(i).io.enq(io.putData.at(i));
+      buf.at(i).io.deq(io.getData.at(i));
+    }
+  }
+};
+
 struct Dogfood {
   __io (
     __in (ch_uint4) in,
@@ -586,6 +604,9 @@ int main() {
     ret &= 0 == queue.io.size;   // 0
     assert(!!ret);
   }*/
+
+  /*ch_device<EgressNIC<ch_bit4>> device;
+  ch_toVerilog("test.v", device);*/
 
   return 0;
 }

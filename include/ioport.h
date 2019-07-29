@@ -37,7 +37,7 @@ lnodeimpl* bindInputNode(system_io_buffer* input);
 
 lnodeimpl* bindOutputNode(system_io_buffer* output);
 
-lnodeimpl* getOutputNode(const lnode& src);
+lnodeimpl* getOutputNode(const std::string& name);
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -160,7 +160,7 @@ public:
 
   ch_logic_out(const std::string& name = "io")
     : base(make_logic_buffer(createOutputNode(name, ch_width_v<T>))) {
-    output_ = getOutputNode(get_lnode(*this));
+    output_ = getOutputNode(name);
   }
 
   template <typename U>

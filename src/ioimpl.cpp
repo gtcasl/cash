@@ -113,8 +113,8 @@ lnodeimpl* ch::internal::createOutputNode(const std::string& name, uint32_t size
   return output->src(0).impl();
 }
 
-lnodeimpl* ch::internal::getOutputNode(const lnode& src) {
-  return ctx_curr()->get_output(src);
+lnodeimpl* ch::internal::getOutputNode(const std::string& name) {
+  return ctx_curr()->get_output(name);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
