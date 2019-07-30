@@ -20,11 +20,11 @@ enum class cflags {
   disable_pip     = (1 << 11),
   disable_pcx     = (1 << 12),
   disable_bro     = (1 << 13),
-  disable_cpb     = (1 << 14),
-  disable_swo     = (1 << 15),
-  disable_sro     = (1 << 16),
-  disable_snc     = (1 << 17),
-  disable_rpo     = (1 << 18),
+  disable_rpo     = (1 << 14),
+  disable_cpb     = (1 << 15),
+  disable_swo     = (1 << 16),
+  disable_sro     = (1 << 17),
+  disable_snc     = (1 << 18),
   merged_module   = (1 << 19)
 };
 
