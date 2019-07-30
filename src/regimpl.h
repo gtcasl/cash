@@ -48,6 +48,8 @@ public:
     return this->src(initdata_idx_);
   }
 
+  void set_enable(lnodeimpl* node);
+
   lnodeimpl* remove_enable();
 
   bool equals(const lnodeimpl& other) const override;

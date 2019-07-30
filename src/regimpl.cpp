@@ -64,6 +64,11 @@ lnodeimpl* regimpl::clone(context* ctx, const clone_map& cloned_nodes) const {
         this->size(), length_, cd, reset, enable, next, init_data, name_, sloc_);
 }
 
+void regimpl::set_enable(lnodeimpl* node) {
+  assert(enable_idx_ == -1);
+  enable_idx_ = this->add_src(node);
+}
+
 lnodeimpl* regimpl::remove_enable() {
   assert(this->has_enable() && is_literal_one(this->enable().impl()));
   auto ret = this->enable().impl();

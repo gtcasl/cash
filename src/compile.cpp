@@ -165,7 +165,7 @@ private:
 compiler::compiler(context* ctx) : ctx_(ctx) {}
 
 void compiler::optimize() {
-  size_t cfo_total(0), dce_total(0), cse_total(0), pip_total(0), pcx_total(0), bro_total(0);
+  size_t cfo_total(0), dce_total(0), cse_total(0), pip_total(0), pcx_total(0), bro_total(0), rpo_total(0);
 
   CH_DBG(2, "compiling %s (#%d) ...\n", ctx_->name().c_str(), ctx_->id());
 
@@ -193,6 +193,8 @@ void compiler::optimize() {
     cse_total += tracker.deleted();
     changed |= this->branch_coalescing();
     bro_total += tracker.deleted();
+    changed |= this->register_promotion();
+    rpo_total += tracker.deleted();
   }
 
 #ifndef NDEBUG
@@ -218,6 +220,7 @@ void compiler::optimize() {
   CH_DBG(2, "*** deleted %lu CFO nodes\n", cfo_total);
   CH_DBG(2, "*** deleted %lu CSE nodes\n", cse_total);
   CH_DBG(2, "*** deleted %lu BRO nodes\n", bro_total);
+  CH_DBG(2, "*** deleted %lu RPO nodes\n", rpo_total);
   CH_DBG(2, "Before optimization: %lu\n", orig_num_nodes);
   CH_DBG(2, "After optimization: %lu\n", tracker.current());
 }
@@ -889,9 +892,8 @@ bool compiler::prune_identity_proxies() {
   node_deleter deleter(ctx_);
   bool changed = false;
 
-  for (auto it = ctx_->proxies().begin(),
-       end = ctx_->proxies().end(); it != end;) {
-    auto proxy = reinterpret_cast<proxyimpl*>(*it++);
+  for (auto node : ctx_->proxies()) {
+    auto proxy = reinterpret_cast<proxyimpl*>(node);
     if (!proxy->is_identity())
       continue;
     // replace identity proxy's uses with proxy's source
@@ -1048,9 +1050,8 @@ bool compiler::proxies_coalescing() {
   // delete unreferenced detached nodes
   node_deleter deleter(ctx_);
   for (auto node : detached_list) {
-    if (nullptr == node->users()) {
+    if (nullptr == node->users())
       deleter.add(node);
-    }
   }  
   deleter.apply();
 
@@ -1233,8 +1234,8 @@ bool compiler::branch_coalescing() {
     return nullptr;
   };
 
-  for (auto it = ctx_->sels().begin(), end = ctx_->sels().end(); it != end;) {
-    auto sel = reinterpret_cast<selectimpl*>(*it++);
+  for (auto node : ctx_->sels()) {
+    auto sel = reinterpret_cast<selectimpl*>(node);
     auto x = coalesce_branch(sel);
     if (x) {
       sel->replace_uses(x);
@@ -1243,6 +1244,39 @@ bool compiler::branch_coalescing() {
     }
   }
   deleter.apply();
+
+  return changed;
+}
+
+bool compiler::register_promotion() {
+  if (platform::self().cflags() & cflags::disable_rpo)
+    return false;
+
+  CH_DBG(3, "Begin Compiler::RPO\n");
+
+  node_deleter deleter(ctx_);
+  bool changed = false;
+
+  for (auto node : ctx_->snodes()) {
+    if (node->type() != type_reg)
+      continue;
+    auto reg = reinterpret_cast<regimpl*>(node);
+    if (reg->has_enable())
+      continue;
+    auto next = reg->next().impl();
+    if (next->type() == type_sel
+     && next->srcs().size() == 3
+     && next->src(2).impl() == reg) {
+      reg->set_enable(next->src(0).impl());
+      reg->set_src(1, next->src(1).impl());
+      if (nullptr == next->users())
+        deleter.add(next);
+      changed = true;
+    }
+  }
+  deleter.apply();
+
+  CH_DBG(3, "End Compiler::RPO\n");
 
   return changed;
 }

@@ -34,6 +34,8 @@ protected:
 
   bool branch_coalescing();
 
+  bool register_promotion();
+
   lnodeimpl* constant_fold(proxyimpl* node);
   lnodeimpl* constant_fold(selectimpl* node);
   lnodeimpl* constant_fold(opimpl* node);
